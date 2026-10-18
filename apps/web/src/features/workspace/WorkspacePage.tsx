@@ -9,8 +9,10 @@ import type { AssignmentBuffer } from './assignment-api.ts';
 import type { DocumentSession } from '../design-trace/editor-api.ts';
 import { ProjectConstitutionPanel } from '../knowledge/ProjectConstitutionPanel.tsx';
 import { WorkspaceConversationSources } from './WorkspaceConversationSources.tsx';
+import { ConversationPanel } from '../knowledge/ConversationPanel.tsx';
+import type { ConversationBuffer } from '../knowledge/conversation-api.ts';
 
-export function WorkspacePage({ client, projectId, session, assignmentBuffer, onAssignmentChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
+export function WorkspacePage({ client, projectId, session, assignmentBuffer, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
@@ -35,6 +37,10 @@ export function WorkspacePage({ client, projectId, session, assignmentBuffer, on
         </section>
         <section className="status-card" aria-label="총괄 작업"><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
           <WorkspaceAssignments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
+          <h4>사용자 발언·지시 원문 보관</h4><p className="meta">프로젝트 공통 원문입니다. 아래 저장은 총괄·단계 세션이나 Agent에 지시를 전달하는 기능이 아닙니다.</p>
+          {project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId
+            ? <ConversationPanel key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost}/>
+            : <p>원문 작성은 현재 제어권을 가진 소유자만 할 수 있습니다. 보관된 입력과 미확인 명령은 유지하며 원문 조회는 프로젝트 자료에서 할 수 있습니다.</p>}
           <p>총괄·단계책임자 세션과 지시 전달은 미연결입니다.</p><p className="meta">이 화면을 열거나 자료를 조회해도 Agent를 호출하거나 작업을 시작하지 않습니다.</p>
           <button disabled>지시 전송 · 미연결</button>
           <h4>준비 상태</h4>{project.readinessIssues.length ? <ul>{project.readinessIssues.map((item, index) => <li key={index}>{issueLabel(item.code)}</li>)}</ul> : <p>프로젝트 조회에서 보고된 준비 부족 없음 · 실행 준비 완료 판정은 아닙니다.</p>}
