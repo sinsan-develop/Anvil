@@ -7,6 +7,7 @@ import type { MethodBuffer } from './common-api.ts';
 import type { FormBuffer } from '../methodologies/form-editor-state.ts';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import { MethodReviewPanel } from './MethodReviewPanel.tsx';
+import { StoredMethodValidation } from './StoredMethodValidation.tsx';
 
 const approvalLabels: Record<string, string> = {
   USER_REQUIREMENTS_CONFIRMATION: '사용자 요구사항 확인', USER_ITERATION_SCOPE_CONFIRMATION: '사용자 반복 범위 확인',
@@ -66,7 +67,7 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
           <h4>작업 기록</h4><ul>{node.recordRequirements.map((text, index) => <li key={index}>{text}</li>)}</ul></div><div><h4>입력·산출 문서의 고정 버전</h4><ul>{[...node.inputs, ...node.outputs].map(item => <li key={item.itemId}><strong>{item.itemId}</strong><p className="meta">{item.sourceNodeId ? `${item.sourceNodeId}의 입력` : '단계 산출물'} · 버전 {item.formRef.version} · {item.formRef.contentHash}</p></li>)}</ul></div></div>
           <details><summary>다음·재작업 경로</summary><ul>{version.graph.edges.filter(edge => edge.fromNodeId === node.nodeId).map(edge => <li key={edge.edgeId}>{edge.kind === 'REWORK' ? '재작업/반복' : '다음'} → {edge.toNodeId}: {edge.reason}</li>)}</ul></details>
         </section> : null}
-        <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><p>{version.validation.validForConfirmation ? '구조 오류 없음' : '구조 보완 필요'}</p><ul>{version.validation.issues.map((issue, index) => <li key={index}>{issue.location}: {issue.message}</li>)}</ul></details>
+        <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><StoredMethodValidation graph={version.graph} validation={version.validation} onSelect={setNodeId} /></details>
       </section> : null}
       <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={resetList} />
       {version && !pending && !error ? <MethodReviewPanel client={client} session={session} source={version} buffer={buffer} onChange={onChange} onVerified={setVersion} onAuthenticationLost={onAuthenticationLost} /> : null}
