@@ -353,3 +353,11 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 원 내부 Error를 보존하지 않고 phase enum만 남겨 직접 원인은 미확정이다. 별도 허용 읽기의 동일 O_NOFOLLOW/stat/hash 알고리즘에서7968항목4801ms(원 preflight 상한5000ms)였으며 추가 전체 도구 검사의 부담은 시간초과 가설을 지지하지만 원 실패의 내부 원인을 확정하지 못한다. 상한 연장·보안 검사 생략·기준 완화·실제 runner 재실행0이다.
 - 독립 읽기 exit0/3341ms: exact root 아래7969항목(bootstrap 포함)의 known/current metadata·hash 일치, parent변경/missing/changed/unknown0, `started.json`/`receipt.json` 부재, 전용 PG container/network 부재다. root/Git/node_modules/cache 등 **본인 신규 QA 폴더만 보존**됐다. root하위 cwd 프로세스 관측0이나 UID1000 보호 proc8개를 읽지 못했으므로 전역 writer 종료 보장은 아니다. native 자체 closeWriters 오류는 최종에 없었고 outer SSH child 종료는 확인했다.
 - 현재 첫 시도는 소비됐고 기존 회수30초는 종료됐다. 원 승인을 새 actual 시도/새 nonce/창 갱신이나 추가 파괴 회수 권한으로 해석하지 않는다. 추가 조치는 새 QA root의 위 exact inode/nonce/7969 known inventory와 종료 근거를 보존한 **별도 한정 회수 경계 확인**이며, 포괄 삭제/다른 경로/권한 수리/정식 자원 변경을 요청하지 않는다. 전체 FN01/Stage/계획 완료보고가 아니다. 정식 서비스 대상 명령·DB접속은 없었지만 기존 runtime 전후 독립 비교는 미실행으로 구분한다.
+
+### 18.2 별도 직접 승인 exact 잔여 회수 — 2026-10-18
+
+- PMO가 신산님 20:54:05 KST/11:54:05 UTC 직접 `잔여 QA 폴더 정리 승인해`를 전달했다. 원 QA 재실행이 아니라 exact root inode8501865/nonce·controller/bootstrap hash·known7969에 대한 `FN01_FAILED_QA_EXACT_CLEANUP` 1회만 승인이다.
+- 원 SSH 종료 영수증·native closeWriters 오류 없음과 Main의 새 writer 미개시를 대조했다. 현재 부모/root realpath·UID1000/0700/dev/ino, controller/bootstrap hash, known7969 전체 metadata/hash 일치와 관측 가능한 root 하위 cwd/fd 프로세스0을 확인했다. 보호 UID1000 proc8개는 미관측으로 남겨 전역 프로세스 종료를 보장하지 않는다.
+- 최초 삭제 직전 회수전용 issuedAt `1792324656875`/expiresAt `1792324776875`(20:57:36.875~20:59:36.875 KST, 최대120초)를 기록했다. **6911개 정규 파일을 개별 unlink, 1058개 디렉터리를 leaf 우선 rmdir, 마지막에 동일 inode의 빈 root만 제거**했다. controller/bootstrap은 다른 known 항목을 제거할 때까지 보존했다. 효과 직전 회수 기한과 소유·부모를 재검사하며 재귀/glob·소유 자동 채택·권한 수리·강제 process 종료0이다.
+- 완료시각 `1792324673307`/20:57:53.307 KST, 회수16432ms, SSH exit0·timeoutfalse·24470ms다. root 제거 뒤 독립 경로/전용 container·network 조회에서 **rootAbsent/containerAbsent/networkAbsent 모두 true**를 확인했다. 새 root/nonce·설치·PG·SQL·Agent·정식 서비스/DB·계정/Secret/권한·main 변경0이다.
+- 이 PASS는 **별도 승인 잔여 회수만** 증명한다. 원 `FN01_PREFLIGHT_FAILED`와 당시 `FN01_RESIDUE_REMAINS`, actualWorkflowVerified=false/16조건 미도달/최초 QA 1회 소비는 그대로 보존한다. 삭제한 일회성 QA 환경은 복원하지 않으며 소스 H1/원 실패 증거는 private Git·정본에 남긴다. 전체 FN01/Stage/계획·제품 인수 완료가 아니다.
