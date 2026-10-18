@@ -7,7 +7,7 @@ import { sourceReadMigrationId } from './source-read-migration.ts';
 import { sourceReadPsqlText as quote } from './source-read-psql-batches.ts';
 
 export const assignmentContentQaResource = Object.freeze({ ...assignmentDraftSqlQaResource, container:'anvil-v3-fn09-content-sql-qa-pg-02',network:'anvil-v3-fn09-content-sql-qa-net-02',database:'anvil_v3_fn09_content_qa_02' });
-export const assignmentContentWorkflowQaResource=Object.freeze({...assignmentContentQaResource,container:'anvil-v3-fn09-content-workflow-pg-05',network:'anvil-v3-fn09-content-workflow-net-05',database:'anvil_v3_fn09_content_workflow_qa_05',port:5432,hostPublish:false,artifactRoot:'/tmp/anvil-v3-fn09-content-workflow-05'});
+export const assignmentContentWorkflowQaResource=Object.freeze({...assignmentContentQaResource,container:'anvil-v3-fn09-content-workflow-pg-06',network:'anvil-v3-fn09-content-workflow-net-06',database:'anvil_v3_fn09_content_workflow_qa_06',port:5432,hostPublish:false,artifactRoot:'/tmp/anvil-v3-fn09-content-workflow-06'});
 /** owner/fullID 검증 후 새 단독 internal network의 실제 주소만 사용한다. host port는 게시하지 않는다. */
 export function assignmentContentQaAddress(item:any,networkId:string){
  const requested=item?.HostConfig?.PortBindings,actual=item?.NetworkSettings?.Ports,networks=item?.NetworkSettings?.Networks,endpoint=networks?.[assignmentContentWorkflowQaResource.network],address=endpoint?.IPAddress,octets=typeof address==='string'?address.split('.').map(Number):[];

@@ -18,10 +18,13 @@ import { readWorkPlanDecision, newWorkPlanDecision, prepareWorkPlanDecision, sen
 import { newAssignmentDraft, prepareAssignmentWrite, sendAssignmentDraft, readAssignmentDraft } from '../../../apps/web/src/features/workspace/assignment-api.ts';
 import { newAssignmentDecision, prepareAssignmentDecision, sendAssignmentDecision, readAssignmentDecision, readConfirmedAssignment } from '../../../apps/web/src/features/workspace/assignment-confirmation-api.ts';
 import type { AssignmentContentReview } from '../../../apps/server/modules/assignments/assignment-confirmation-input.ts';
-import type { FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
+import { buildOfficialForms, type FormDefinition } from '../../../apps/server/modules/documents/forms.ts';
+import { seedOfficialForms } from '../../../apps/server/modules/documents/catalog-seed.ts';
+import { buildBuiltinMethodologies } from '../../../apps/server/modules/methodologies/builtins.ts';
+import { seedBuiltinMethodologies } from '../../../apps/server/modules/methodologies/catalog-seed.ts';
 import { assignmentQaMutation } from './assignment-qa-safety.ts';
 
-const id=(n:number)=>'a6f20930-0000-4000-8000-'+String(n).padStart(12,'0'),users=[id(101),id(102)],project=id(201),application=id(301),root='/tmp/anvil-v3-fn09-content-workflow-05';
+const id=(n:number)=>'a6f20930-0000-4000-8000-'+String(n).padStart(12,'0'),users=[id(101),id(102)],project=id(201),application=id(301),root='/tmp/anvil-v3-fn09-content-workflow-06';
 async function cleanRoot(){
   const top=await lstat(root);assert(!top.isSymbolicLink()&&top.isDirectory()&&top.uid===1000&&(top.mode&0o777)===0o700);assert.equal(await realpath(root),root);
   const files:{path:string;hash:string}[]=[],dirs:string[]=[];
@@ -31,9 +34,9 @@ async function cleanRoot(){
 test('새 격리 PG에서 실제 인증·명시정책·원본 선행을 거친 임무 내용검토·별도확정·영수증 재확인', {timeout:90000}, async t=>{
   const deadline=Date.parse(process.env.ANVIL_FN09_CONTENT_QA_EXPIRES_AT??'');
   const host=process.env.ANVIL_FN09_CONTENT_QA_PG_HOST??'';
-  if(process.platform!=='linux'||process.getuid?.()!==1000||process.env.ANVIL_FN09_CONTENT_WORKFLOW_QA!=='CONTENT_WORKFLOW_05'||!/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)||!Number.isFinite(deadline)||deadline<=Date.now()||deadline>Date.now()+1200000||await realpath(process.cwd())!=='/home/daon/deploy/anvil-v3'||process.env.ANVIL_DB_CONFIG||process.env.ANVIL_MIGRATOR_CONFIG)throw Error('CONTENT_WORKFLOW_EXACT_ISOLATED_TARGET_REQUIRED');
+  if(process.platform!=='linux'||process.getuid?.()!==1000||process.env.ANVIL_FN09_CONTENT_WORKFLOW_QA!=='CONTENT_WORKFLOW_06'||!/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host)||!Number.isFinite(deadline)||deadline<=Date.now()||deadline>Date.now()+1200000||await realpath(process.cwd())!=='/home/daon/deploy/anvil-v3'||process.env.ANVIL_DB_CONFIG||process.env.ANVIL_MIGRATOR_CONFIG)throw Error('CONTENT_WORKFLOW_EXACT_ISOLATED_TARGET_REQUIRED');
   const appPassword=process.env.ANVIL_FN09_CONTENT_APP_PASSWORD??'',migratorPassword=process.env.ANVIL_FN09_CONTENT_MIGRATOR_PASSWORD??'';assert(/^[0-9a-f]{64}$/.test(appPassword)&&/^[0-9a-f]{64}$/.test(migratorPassword));
-  const common={host,port:5432,database:'anvil_v3_fn09_content_workflow_qa_05',connectionTimeoutMillis:5000,query_timeout:10000,application_name:'anvil-v3-fn09-content-workflow-05'};
+  const common={host,port:5432,database:'anvil_v3_fn09_content_workflow_qa_06',connectionTimeoutMillis:5000,query_timeout:10000,application_name:'anvil-v3-fn09-content-workflow-06'};
   const pool=new Pool({...common,user:'anvil_v3_app',password:appPassword}),admin=new Pool({...common,user:'anvil_v3_migrator',password:migratorPassword}),access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830',artifactRoot:root});
   let phase='TARGET',rootCreated=false,lastResponseCode:string|null=null,failure:Record<string,unknown>|null=null;const cases:string[]=[],fresh=()=>assert(!t.signal.aborted&&Date.now()<deadline,'CONTENT_WORKFLOW_EXPIRED');
   const mutate=<T>(operation:()=>Promise<T>)=>assignmentQaMutation(deadline,t.signal,operation);
@@ -42,6 +45,10 @@ test('새 격리 PG에서 실제 인증·명시정책·원본 선행을 거친 �
     const migrations=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;assert.equal(migrations.length,48);assert.equal(migrations.find(r=>r.id==='0013_assignment_confirmation')?.checksum,'fe064af94b23185066047f8e202806cd4c3a7fe69ab7855bd2d2f6b961ae7cca');
     phase='TARGET_APP_ROLE';const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);phase='TARGET_ROOT';
     await assert.rejects(lstat(root),(e:any)=>e.code==='ENOENT');await mutate(()=>mkdir(root,{mode:0o700}));rootCreated=true;assert.equal(await realpath(root),root);
+    phase='CATALOG_SEED';const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url))),methods=buildBuiltinMethodologies(await readFile(new URL('../../../docs/design/기본방법론_상세검토안.md',import.meta.url)),catalog.forms),catalogClient=await admin.connect();
+    // 기존 공식 seed의 모든 query 시작을 fence한다. 정식 migration runner/config는 호출하지 않는다.
+    const fencedCatalog=new Proxy(catalogClient,{get(target,key){if(key==='query')return(...args:any[])=>mutate(()=>Reflect.apply(target.query,target,args));return Reflect.get(target,key,target);}});
+    try{await fencedCatalog.query('BEGIN');await seedOfficialForms(fencedCatalog,catalog);await seedBuiltinMethodologies(fencedCatalog,methods,catalog.forms);await fencedCatalog.query('COMMIT');}catch(e){await catalogClient.query('ROLLBACK');throw e;}finally{catalogClient.release();}cases.push('OFFICIAL_CATALOG_SEEDED');
     phase='SEED';const source=(await admin.query("SELECT * FROM anvil.methodology_versions WHERE definition_id='a6f20000-0000-4000-8000-000000000001' AND version=2")).rows[0];assert(source);
     const snapshot={name:source.name,purpose:source.purpose,graph:source.graph_json,sourceRef:{id:source.definition_id,version:2,contentHash:source.content_hash}},applicationRef={id:application,version:1,contentHash:contentHash(canonicalJson(snapshot))},password=randomBytes(32).toString('base64url'),phc=await hashPassword(password),seed=await admin.connect();
     try{await mutate(()=>seed.query('BEGIN'));for(const user of users){await mutate(()=>seed.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'내용 확정 합성 QA','ACTIVE')",[user,'qa-fn09-content-'+user]));await mutate(()=>seed.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)',[user,phc]));}
