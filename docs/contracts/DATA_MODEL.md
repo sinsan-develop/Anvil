@@ -1,5 +1,14 @@
 # P02 데이터 관계·보존 계약 초안
 
+## FN01 기능 분류 시작 기준선 후보 — 2026-10-18
+
+신산님 직접 승인 A안(부모 FN01_BASELINE_GAP_AND_PROPOSAL SHA256 C7C5B6D39C4889A156246B94C0073C1EBDFFE2680B7B9849B94B5F58D33E44E0)의 후보 구현이다. 상세 wire·허용 범위는 [FN01 카드](../work_packages/FN01_BASELINE_IMPLEMENTATION.md)를 따른다. 실제 적용/PG 시험/서비스·실사용자 정책/Agent 승인이 아니다.
+
+- forward `0015_project_baselines.sql`은 baseline_drafts/head·baseline_draft_versions/불변 초안·baseline_content_reviews/불변 검토·baseline_heads/명시 채택 pointer를 추가하는 후보다. 기존 project_baselines를 재생성하지 않고 FEATURE_STATUS_V1용 nullable draft/command/client/source-version/hash metadata와 guard/FK만 추가한다. 모든 기존 SQL/행을 보존하고 backfill·빈 표 추정0이다.
+- 기존 source_snapshot_ref의 NOT NULL 해제는 source 종류/정확 version1/hash·프로젝트/ref 검사를 함께 요구하는 새 계약이다. NONE_SELECTED/DECLARATION_ONLY는 null, ATTRIBUTE_REPORT는 실제 source_snapshots의 READ_ATTRIBUTES·CONNECTOR_REPORTED/OS UNVERIFIED 참조다. 이 보고 hash는 파일 내용/Git hash가 아니다. 아래 기존 source/dirty snapshot 개괄을 실제 이 표의 필드로 해석하지 않는다.
+- 채택은 매번 새 id·기존 legacy를 포함한 project MAX(version)+1을 프로젝트 잠금 안에서 기록한다. legacy metadata 없는 옛행은 LEGACY_UNVERIFIED·본문 비공개로만 조회하고 자동 head/확정본으로 만들지 않는다. 현재 pointer는 새 명시 채택만 가리킨다.
+- 초안·검토·채택의 불변 snapshot/hash와 command/receipt/audit를 대조하며 contentConfirmed(분류 기록 채택)와 currentContentReviewValid(최신 선택 검토/근거 가용성), sourceAuthorizationVerified/coverageVerified/executionAuthorized/dispatchPerformed=false를 구별한다. 실제 바이트·현재 접근은 서버 보호 reader, 의미 판정은 사용자 내용 검토 책임이다. SQL 후보의 실제 문법·COMMIT/동시성/직접 DML 거절은 미검증이다.
+
 ## FN09 임무 초안 후보 — 미적용
 
 AV3-FN09-ASSIGNMENT-DRAFT의 새 assignment_drafts(project/id·head·최초actor/client·생성/수정시각)와 assignment_draft_versions(project/draft/version·snapshot JSON/hash·actor/client/command·생성시각) 2표 forward0012 후보를 작성했다. head FK는deferred, 명령/project·client FK·정확base/불변이력·명시AUTO/DENY우선·현재세대/활성세션/정확현재확정계획·설계/적용node를 receipt/감사와 결박하는 guard 후보다. DRAFT/ready=false/executionAuthorized=false/dispatchPerformed=false만 허용하며 확정/실행 상태나 outbox를 만들지 않는다. 기존46 SQL·정식DB표/권한 적용0, 실제문법/COMMIT/거절/동시성·hash 동등성은 아직 미검증이고 후보 검수/격리시험 뒤 별도정식적용결정이 필요하다.

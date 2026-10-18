@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN01 기능 분류 시작 기준선 후보 — 2026-10-18
+
+신산님 직접 승인 A안의 상세 계약은 [FN01 카드](../work_packages/FN01_BASELINE_IMPLEMENTATION.md) Task1~4·상세 wire다. 기존 §9.2의 items/sourceSnapshotRef:Id 단일 confirmBaseline 개괄은 이 후보에서 초안→내용검토→별도채택으로 구체화한다. 실제 적용/서비스·정책/Agent 실행 승인이 아니다.
+
+- 프로젝트 commands에 saveBaselineDraft(정확 baseRef/source/items/coverageReason/reason), reviewBaselineContent(정확 draftRef·항목별4상태/판정·HUMAN 내용 검토·CORE 실제 정상/저장조회/중요실패 근거), confirmBaseline(draftRef/reviewRefs/reason/acknowledged=true)을 추가한다. 현재 OWNER/client/control·명시 AUTO/DENY·기한/CAS/replay/감사를 기존 명령 계층에서 확인한다. REQUIRE_APPROVAL/approvalRef는 BASELINE_APPROVAL_NOT_CONNECTED로 닫으며 uploadArtifact 전용 일회 소비를 넓히지 않는다.
+- protected same-origin GET: projects/:projectId의 /baseline-drafts, /baseline-drafts/:id/versions/:version, 해당 /decision, /baselines, /baselines/:id/versions/:version, /baseline-current. 목록은 limit20/최대50·서명 cursor와 metadataIntegrity=NOT_RECHECKED이며 raw 원문을 반환하지 않는다. exact GET은 고정 snapshot과 현재 source/증거 대조를 분리한다.
+- 기록의 contentConfirmed=true는 기능 분류를 과거 채택한 사실이다. 뒤 REWORK/새 검토·격리/접근불가 등은 currentContentReviewValid=false와 currentCheck(CHANGED/UNAVAILABLE)로 표시하고 과거 기록을 덮지 않는다. NONE_SELECTED는 빈 소스 검증이 아니고 sourceAuthorizationVerified/coverageVerified/executionAuthorized/dispatchPerformed는 false다. SourceScope/Agent 실행 허가로 자동 소비하지 않는다.
+
 ## FN09 사람 내용 검토·별도 확정 후보 — 2026-10-18 결정 A
 
 AV3-FN09-ASSIGNMENT-CONFIRMATION-PREP/01:29:50Z 결정은 [상세안](FN09_ASSIGNMENT_CONFIRMATION_PROPOSAL.md) SHA256 3369C4A2A0E595524DD06001FF3E7B57B9B5EA0B8B346B054BFDF1AF01B66701의 후보 구현·격리 검증에만 적용한다. reviewAssignmentContent/confirmAssignment는 기존 프로젝트 명령의 OWNER·현재client/제어·각 명시정책·기한/DENY·idempotency/CAS/감사를 소비한다. 정확 payload·6기준/수동판단·내용 필수검사·최신 감사순번·두 전용 GET은 상세안 그대로이며 초안 ref와 확정 ref를 id/version만으로 치환하지 않는다. 확정 snapshot은 ref/관측시각을 제외한 저장 전체(confirmedAt 포함)를 canonical SHA256하며 confirmationId는 불변 저장행/영수증에 별도로 결박한다. 검토 독립성은 NOT_CLAIMED이고 같은 작성자 여부를 조회한다. UI04 보관 입력은 기존 주체/client/project 버퍼에 포함하고, 원명령·불확실성/조회거절 원문숨김·실행false를 유지한다. 새0013은 assignment_content_reviews/assignment_versions만 추가하는 후보이며 기존0012·정식DB 적용 승인을 대체하지 않는다. 실제 구현/검증·미검증은 WORK_STATUS를 따른다.
