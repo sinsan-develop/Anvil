@@ -8,6 +8,7 @@ import { DesignChangeRequest } from './DesignChangeRequest.tsx';
 import { ImpactReviewEditor } from './ImpactReviewEditor.tsx';
 import type { ImpactReviewBuffer } from './impact-review-api.ts';
 import { StoredChangeComparison } from './StoredChangeComparison.tsx';
+import { StoredChangeSources } from './StoredChangeSources.tsx';
 
 const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${value.contentHash}`;
 export interface ChangeEditorGate { acquire: () => boolean; release: () => void; allowed: () => boolean }
@@ -39,7 +40,7 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
     {value ? <section aria-label="보관 설계 변경"><h3>변경 요청 · 제안 상태</h3><p>{reference(value.change.ref)}</p><dl>
       <div><dt>변경 이유</dt><dd><pre>{value.change.reason}</pre></dd></div><div><dt>요청자</dt><dd>사람 · {value.change.requestedBy.userId}</dd></div><div><dt>요청 시각</dt><dd><time dateTime={value.change.createdAt}>{value.change.createdAt}</time></dd></div>
       <div><dt>변경 전 설계</dt><dd>{reference(value.change.beforeRef)}</dd></div><div><dt>변경 후 수정 제안 ID · 원문은 별도 조회</dt><dd>{value.change.afterProposalRef}</dd></div>
-    </dl><details><summary>요청 출처 참조</summary>{value.change.sourceRefs.length ? <ul>{value.change.sourceRefs.map((source, index) => <li key={index}>{source.kind} · {source.id}{source.kind === 'DOCUMENT_VERSION' ? ' · v' + source.version : ''} · {source.contentHash}</li>)}</ul> : <p>출처 참조 없음</p>}</details>
+    </dl><StoredChangeSources key={JSON.stringify([projectId,session.user.id,session.clientId,value.change.ref])} client={client} projectId={projectId} session={session} change={value.change} onAuthenticationLost={onAuthenticationLost}/>
       <p>기준 미적용 · 이 조회는 승인·계획 개정·작업 재개를 실행하지 않습니다.</p>
       <StoredChangeComparison key={value.change.ref.id+':'+value.change.ref.contentHash} client={client} projectId={projectId} change={value.change} onAuthenticationLost={onAuthenticationLost}/>
       <h3>영향 검토 이력</h3><p className="meta">최신 영향 참조: {reference(value.latestImpactRef)} · {before === null ? '최신부터 조회' : `v${before} 이전 구간`} · 관측 {value.observedAt}</p>
