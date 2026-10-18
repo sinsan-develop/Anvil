@@ -1,6 +1,6 @@
 import { readFile, readdir } from 'node:fs/promises';
 import type { Page } from '@playwright/test';
-const allowed = new Set(['D:/tmp/anvil-v3-stage-b/ui04-context-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-context-02/dist', 'D:/tmp/anvil-v3-stage-b/ui04-context-03/dist', 'D:/tmp/anvil-v3-stage-b/ui04-forms-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-stage-documents-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-02/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-03/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-04/dist']);
+const allowed = new Set(['D:/tmp/anvil-v3-stage-b/ui04-context-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-context-02/dist', 'D:/tmp/anvil-v3-stage-b/ui04-context-03/dist', 'D:/tmp/anvil-v3-stage-b/ui04-forms-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-stage-documents-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-01/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-02/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-03/dist', 'D:/tmp/anvil-v3-stage-b/ui04-assignment-draft-04/dist', 'D:/tmp/anvil-v3-stage-b/ui07-design-change-read-01/dist']);
 if (allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '')) {
   process.env.TEMP = process.env.ANVIL_UI04_QA_DIST!.replace(/\/dist$/, '/temp'); process.env.TMP = process.env.TEMP;
 }
