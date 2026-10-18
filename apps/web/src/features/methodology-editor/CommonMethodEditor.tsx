@@ -8,6 +8,7 @@ import { NodeDefinitionFields } from './NodeDefinitionFields.tsx';
 import { GraphRelationsEditor } from './GraphRelationsEditor.tsx';
 import { NodeDocumentFields } from './NodeDocumentFields.tsx';
 import { NodeDeletionPanel } from './NodeDeletionPanel.tsx';
+import { methodIssueNodeTargets } from './method-issue-targets.ts';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 
 export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway }: {
@@ -97,7 +98,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
         <label htmlFor={fieldId + '-reason'}>개정 이유</label><textarea id={fieldId + '-reason'} value={buffer.reason} onChange={event => change('reason', event.target.value)} maxLength={20000} />
         <button disabled={!buffer.dirty || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()} onClick={save}>{gateway ? '전용본 새 버전 저장' : '공통본 새 버전 저장'}</button>
       </fieldset>
-      {buffer.validation ? <div aria-label="저장한 그래프 구조 검사"><p>{buffer.validation.validForConfirmation ? '저장본 구조 오류 없음 · 내용 검토/양식 확정/실행 연결은 별도' : '저장본 구조 보완 필요'}</p><ul>{buffer.validation.issues.map((issue, index) => { const target = buffer.graph.nodes.find(node => issue.location === `nodes.${node.nodeId}` || issue.location.startsWith(`nodes.${node.nodeId}.`)); return <li key={index}>{issue.location}: {issue.message}{target ? <button onClick={() => onChange(previous => ({ ...previous, nodeId: target.nodeId }))}>문제 단계 선택 {target.name}</button> : null}</li>; })}</ul></div> : <p className="meta">현재 입력은 검사 전입니다. 초안 저장 후 서버의 구조 검사 결과와 오류 위치를 확인하세요.</p>}
+      {buffer.validation ? <div aria-label="저장한 그래프 구조 검사"><p>{buffer.validation.validForConfirmation ? '저장본 구조 오류 없음 · 내용 검토/양식 확정/실행 연결은 별도' : '저장본 구조 보완 필요'}</p><ul>{buffer.validation.issues.map((issue, index) => { const targets = methodIssueNodeTargets(buffer.graph, issue.location); return <li key={index}>{issue.severity} · {issue.code} · {issue.location}: {issue.message}{targets.length ? targets.map(target => <button key={target.nodeId} disabled={locked} onClick={() => onChange(previous => previous.graph !== buffer.graph || previous.validation !== buffer.validation || previous.pending || previous.review?.pending ? previous : ({ ...previous, nodeId: target.nodeId }))}>문제 단계 선택 {target.nodeId}: {target.name}</button>) : <span> 연결할 단계 미확인 · 원 오류는 유지합니다.</span>}</li>; })}</ul></div> : <p className="meta">현재 입력은 검사 전입니다. 초안 저장 후 서버의 구조 검사 결과와 오류 위치를 확인하세요.</p>}
     </section> : null}
     {pending ? <p role="status">서버 저장·재조회를 확인하고 있습니다.</p> : null}
     {buffer.pending && !pending ? <><p role="alert">저장 결과가 아직 확인되지 않았습니다. 새 명령을 만들지 않고 같은 명령으로 결과를 확인하세요.</p><button disabled={buffer.pending.request.clientId !== session.clientId} onClick={() => { const work = buffer.pending!; void submit(work.request, work.name, work.purpose); }}>같은 명령 결과 다시 확인</button></> : null}
