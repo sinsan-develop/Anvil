@@ -1,5 +1,12 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-18 06:54 UTC 읽기 재확인 — 개발 서비스 중단 관측
+
+- 후속 별도 읽기에서 Windows3830/5546 모두 LISTEN0·Node exe hash9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE 일치, 실제 SINSAN\\cyhuh CurrentUser Root의 지정 CA498348218A4015B341A90B10FF4FE176987D4424 신뢰1을 확인했다. sandbox의 CIM 접근 거부·trust0은 실행격리 결과이며 실제 인증서 제거/권한 오류로 승격하지 않는다. 인증서/신뢰/포트·환경 변경0이다.
+- Windows Node54212/relay26052 부재·3830 LISTEN0은 Main/PMO 독립 읽기 관측이다. 기존 개발 PG는 동일 fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba·image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f이나 현재 exited/exitCode255, finished2026-10-18T05:12:28.197325125Z·OOMKilled=false·restart0이다. 원인/중지 주체는 미확정이고 이번 Main의 시작/중지/재시작0이다.
+- WSL Git exact ff0fcd13695ae0affa2fd773dc96667e1d7c88f8·tracked clean. 보호11파일 hash·현재 사용자 owner/nonlink는 기존과 일치했다. 공개 leaf 만료는2026-10-22T18:29:01Z. 인증서 첫 조회의 CreateFromPemFile API오용은 공개cert전용 CreateFromPem으로 정정했으며 키/인증서 변경0이다. DB SQL 연결·현재 논리지문·원문root·실제HTTP는 재검증하지 않았다.
+- 아래 N4 PASS는 과거 실행 증거이며 현재 서비스 PASS가 아니다. N4/rollback Git 객체는 존재하지만 현재 build는 새 후보로 바뀌었고 N4 exact 정적 asset3종을 즉시 재사용할 수 없다. 소진/만료된 전환 승인·옛 PID/relay 전제의 명령을 다시 실행하지 않는다. 복구는 정확 source/build·기존PG/relay/API 재개 대상·새 유한 허가·실패 rollback과 검증을 별도 판단한 뒤에만 가능하며 새 후보 배포·migration·Secret/포트 변경으로 확대하지 않는다. PMO에는 실제 상태/지원만 전달하고 영향받지 않는 계획 구현은 계속한다.
+
 ## UI04 적용본 조회 정식 PG 핵심 확인 — 2026-10-18
 
 - 정식 WSL Git /home/daon/deploy/anvil-v3는 private exact8c539c7a206bc5be1bf221d55f44ede3b5adb5b7·detached clean으로 옮겨 신규조회 Fastify.inject→정식PG/실Web함수의 직접1건10조건 PASS를 확인했다. 새서비스 배포나 실제 servedBrowser 증거가 아니다. 기존 Windows Node54212의 source6781703a·exe/start·단일3830/relay26052는 그대로다.

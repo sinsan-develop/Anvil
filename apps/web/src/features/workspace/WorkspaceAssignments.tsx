@@ -9,6 +9,7 @@ import { AssignmentContentDecision } from './AssignmentContentDecision.tsx';
 import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 import { WorkPlanTaskOriginal } from './work-plan-task-original.ts';
 import type { ContextPreparationBuffer } from './context-api.ts';
+import { AssignmentBasisDocuments } from './AssignmentBasisDocuments.ts';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -88,6 +89,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {plans ? <ul>{plans.items.map(item => <li key={item.ref.id}>{item.title} · v{item.ref.version}<button disabled={busy || !!buffer?.pending} onClick={() => void perform(async () => { setPlan(null); const value = await readWorkPlan(client, project.id, item.ref); if (alive.current) { setPlan(value); setTaskCode(value.tasks[0]?.taskCode ?? ''); } })}>계획 열기: {item.title}</button></li>)}</ul> : null}
     {plans?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = plans.nextCursor; setPlan(null); setPlans(null); const page = await listWorkPlans(client, project.id, cursor); if (alive.current) setPlans(page); })}>계획 다음 목록</button> : null}
     {plan ? <><label>임무의 계획 업무<select value={taskCode} disabled={busy || !!buffer?.pending} onChange={event => setTaskCode(event.target.value)}>{plan.tasks.map(task => <option key={task.taskCode} value={task.taskCode}>{task.taskCode} · {task.title}</option>)}</select></label><WorkPlanTaskOriginal key={[plan.ref.id,plan.ref.version,plan.ref.contentHash,taskCode].join(':')} plan={plan} taskCode={taskCode}/><button disabled={busy || !owner || !stage || !taskCode || !!buffer?.pending} onClick={() => void perform(prepare)}>선택 업무로 임무 초안 준비</button></> : null}
+    {plan ? <AssignmentBasisDocuments key={[ordered(plan.ref), ordered(plan.documentRef), ordered(plan.designRef)].join(':')} client={client} projectId={project.id} plan={plan} busy={busy} run={action => void perform(action)} /> : null}
     {buffer && bound ? <fieldset disabled={locked}><legend>작성 중인 임무 · {buffer.input.definition.taskRef.taskCode}</legend>
       {!sameStage ? <p>보관한 초안과 선택 단계/적용본이 다릅니다. 원 단계로 돌아오거나 별도로 새 초안을 준비하세요.</p> : null}
       {([['purpose', '목적'], ['goal', '목표'], ['ownerRole', '책임 역할'], ['integrationResponsibility', '통합 책임']] as const).map(([field, label]) => <label key={field}>임무 {label}<textarea maxLength={field === 'ownerRole' ? 200 : 20000} value={buffer.input.definition[field]} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value } } }))} /></label>)}
