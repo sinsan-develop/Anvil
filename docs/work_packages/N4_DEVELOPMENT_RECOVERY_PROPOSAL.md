@@ -1,5 +1,23 @@
 # 마지막 검증 개발 서비스 복구 — 실행 전 제안
 
+## 2026-10-19 PG 단독 최소 복구 한정안 — 별도 결정 필요
+
+이 절만 새 결정 대상이다. 기존 광범위 N4 source/build/경로 예외를 승인·재사용하거나 PATH_GUARD 거절을 해소하지 않는다. 상태는 **PROPOSED_NOT_AUTHORIZED**이며 runner 작성·start/stop 실행0이다.
+
+| 항목 | 고정 한정안 |
+|---|---|
+| 대상 | WSL-server/daon, Docker `unix:///var/run/docker.sock`, daemon `e3349f1d-dbfc-478a-96d9-295bf6c6839e`; 기존 PG `e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba`, 이름 `anvil-v3-development-pg`, image `sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f`만 |
+| 기존 정의 | network `anvil-v3-development`/ID `d3253166eb1adc16fad8a22948b99321238860a74233e3e6318be027f248504e`, pgdata volume `anvil-v3-development-pgdata`, `127.0.0.1:5546→5432/tcp`, 기존 bootstrap-password bind는 읽기전용. 재생성·정의/내용 변경0 |
+| 최초 창/횟수 | 직접 승인 게시시각을 최초 issuedAt으로 고정한 30분 한 창·start 최대1회/자동재시도0. 실제 승인 ref/runId/issuedAt/expiresAt은 현재 null이며 승인 뒤 단1회 고정·대조 전 실행0. 마지막180초에는 새 start 금지. 만료·거절·중지/새 답변은 즉시 우선하며 창 자동갱신0 |
+| 직전 precheck | user/socket/daemon/fullID/image/name·mount/network/port·exited255/Finished2026-10-18T05:12:28.197325125Z/restart0·기존 Windows3830/5546 listener0을 다시 대조. 이미 running/다른 상태·정체성/정의 변경·권한 오류면 시작하지 않고 보존/보고. 값/키/DB본문 읽기0 |
+| 단1회 start | `docker --host unix:///var/run/docker.sock start e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba`. 정상 기동/WAL 복구의 기존 데이터 디스크 쓰기는 가능하며 물리 DB쓰기0을 보장하지 않음. 설정·schema·seed·SQL·권한 변경0 |
+| 최대2분 관측 | 같은 daemon/fullID/image·StartedAt/RestartCount·State만 읽고, 이번 StartedAt 이후 container 로그에서 PostgreSQL의 ready 고정 marker 유무만 원격에서 boolean/count로 축약(로그 원문 전송/출력0). 새 healthcheck/exec/pg_isready·TCP/DB 접속·SQL0. 기존 healthcheck가 **none**이므로 성공도 `RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED`일 뿐 health·인증·SQL·기능 PASS 아님. marker 부재/종료/관측불가면 실패/미확인 |
+| 실패 때 정상 stop | 이번 run이 위 exited 기준에서 실제 시작한 같은 fullID·daemon/image·StartedAt/restart/정의 불변을 확인한 경우에만 `docker --host unix:///var/run/docker.sock container stop --signal=SIGTERM --timeout=-1 e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba` 정상stop 최대1회. stop도 정상 checkpoint/WAL 디스크 쓰기 가능. 다른 run 변경/소유 불명확이면 stop0 |
+| 복귀 한계 | stop 요청 뒤15초까지만 관측. daemon의 정상종료 대기는 무기한일 수 있고 대기 SSH/stop 명령을 강제 종료하지 않는다. 종료를 확인하면 `STOPPED_AFTER_FAILED_START`; 아니면 `STOP_UNCONFIRMED`로 대상·미종료 helper 관측을 보존/보고. 원정지상태 복귀를 보장하거나 SIGKILL/재stop/삭제·volume복원/권한수리로 강행하지 않음 |
+| 성공 보존·제외 | 성공한 동일 PG는 개발용 보존. API/Web·relay/새포트·실제 DB접속/SQL·migration/QA entity·계정/정책/Secret/cert·새 runner/설치·Agent/비용·FN01H4/FN05신규GET·Oracle/운영 변경0. 다른 계획 작업을 중단시키지 않음 |
+
+필요한 직접 결정은 **이 절의 단1회 start·최대2분 상태/ready-log 관측·실패 때만 강제kill 없는 정상stop1회와 STOP_UNCONFIRMED 한계·startup/stop의 WAL 쓰기 위험·성공 개발용 보존**이다. 권장안은 이 한정안, 대안은 정지 상태 보존이다. 관측의 첫 Go-template range 오류는 SSH shell 변수 확장으로 발생했고, 변수 없는 기존 network JSON 읽기로 정정했다. Docker stop의 SIGKILL/무기한 대기는 이 문서의 공식 문서와 실제 설치 도움말로 대조했다. 새 실행기 작성이나 실제 명령 허가는 아직 없다.
+
 상태: `PROPOSED_NOT_AUTHORIZED / PATH_GUARD_UNRESOLVED`, r2. 실행기 작성·자원 생성·실행 0. Main 어울, 2026-10-18. 최초 tmp안은 아래 ACL 대조로 철회했고 승인 대상으로 유지하지 않는다.
 
 ## 목적과 현재 사실

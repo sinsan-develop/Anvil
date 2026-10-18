@@ -1,5 +1,11 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-19 00:08~00:10 KST 읽기 재확인 — 여전히 개발 서비스 중단
+
+- Windows listener 조회는 성공했고3830/5546 각0이다. 기존 WSL 개발 PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9…는 exited255·Finished2026-10-18T05:12:28.197325125Z·restart0이다. 원인·중지주체는 미확정이다.
+- 기존127.0.0.1:5546→5432와 anvil-v3-development-pgdata·read-only 비밀 mount 정의는 유지돼 있다. 비밀값/DB본문은 읽지 않았으며 현재 SQL/논리지문·migration은 미검증이다. 정식 Git ff0fcd13695ae0affa2fd773dc96667e1d7c88f8 clean이다.
+- 시작/중지·서비스/설정/계정/권한/Secret/cert·SQL쓰기0이다. Main은 PMO에 기존 동일 PG의 최소 새 복구 결정을 요청하며 옛 N4 전환 허가/만료 window·옛 PID를 재사용하지 않는다. API/Web·relay·새 migration/QA/Agent 실행은 이번 요청에 포함하지 않는다. 과거 PASS는 현재 서비스 PASS가 아니다.
+
 ## 2026-10-18 06:54 UTC 읽기 재확인 — 개발 서비스 중단 관측
 
 - 후속 별도 읽기에서 Windows3830/5546 모두 LISTEN0·Node exe hash9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE 일치, 실제 SINSAN\\cyhuh CurrentUser Root의 지정 CA498348218A4015B341A90B10FF4FE176987D4424 신뢰1을 확인했다. sandbox의 CIM 접근 거부·trust0은 실행격리 결과이며 실제 인증서 제거/권한 오류로 승격하지 않는다. 인증서/신뢰/포트·환경 변경0이다.
