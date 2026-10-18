@@ -263,7 +263,7 @@ BEGIN
   SELECT v.* INTO candidate FROM anvil.connection_candidate_versions v JOIN anvil.connection_candidates h ON h.project_id=v.project_id AND h.id=v.candidate_id AND h.head_version=v.version
    WHERE v.project_id=NEW.project_id AND v.candidate_id::text=i->field->>'id' AND v.version=(i->field->>'version')::bigint AND v.expires_at>clock_timestamp();
   IF candidate.candidate_id IS NULL OR i->field IS DISTINCT FROM jsonb_build_object('id',candidate.candidate_id,'version',candidate.version,'contentHash',candidate.content_hash)
-   OR candidate.kind IS DISTINCT FROM CASE WHEN field='connectionRef' THEN 'CONNECTION_CANDIDATE' ELSE 'ENVIRONMENT_CANDIDATE' END
+   OR candidate.kind IS DISTINCT FROM (CASE WHEN field='connectionRef' THEN 'CONNECTION_CANDIDATE' ELSE 'ENVIRONMENT_CANDIDATE' END)
    THEN RAISE EXCEPTION 'EXECUTION_PREPARATION_CANDIDATE_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
  END LOOP;
  IF jsonb_typeof(i->'sourceScopes') IS DISTINCT FROM 'array' OR jsonb_array_length(i->'sourceScopes') NOT BETWEEN 1 AND 200 THEN RAISE EXCEPTION 'EXECUTION_SOURCE_SCOPE_REQUIRED' USING ERRCODE='42501';END IF;
