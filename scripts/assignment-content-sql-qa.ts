@@ -6,7 +6,7 @@ import { legacyMigrationIds, sourceRootMigrationId } from './source-root-migrati
 import { sourceReadMigrationId } from './source-read-migration.ts';
 import { sourceReadPsqlText as quote } from './source-read-psql-batches.ts';
 
-export const assignmentContentQaResource = Object.freeze({ ...assignmentDraftSqlQaResource, container:'anvil-v3-fn09-content-sql-qa-pg',network:'anvil-v3-fn09-content-sql-qa-net',database:'anvil_v3_fn09_content_qa' });
+export const assignmentContentQaResource = Object.freeze({ ...assignmentDraftSqlQaResource, container:'anvil-v3-fn09-content-sql-qa-pg-02',network:'anvil-v3-fn09-content-sql-qa-net-02',database:'anvil_v3_fn09_content_qa_02' });
 export const assignmentContentMigrationId='0013_assignment_confirmation';
 const check=(expression:string,code:string)=>`DO $contentcheck$ BEGIN IF (${expression}) IS DISTINCT FROM TRUE THEN RAISE EXCEPTION '${code}' USING ERRCODE='P0001';END IF;END $contentcheck$;`;
 export function assertAssignmentContentQaBinding(input:{platform:string;uid:number;cwd:string;module:string;head:string;commit:string;dirty:string;remote:string;sqlHash:string;expiresAt:string;env:NodeJS.ProcessEnv},now=Date.now()){
