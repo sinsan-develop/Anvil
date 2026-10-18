@@ -1,5 +1,7 @@
 # A3 System.Core 참조 단일변수 후보 — 결정 지원
 
+> 후속: PMO가 새 Core 질문의 게시 권장A를 별도 위임으로 선택했으며, [새 실행안](A3_CORE_REFERENCE_COMPILE_EXECUTION_PLAN.md)에 준비 runner/hash·한정 검수 C0/I0/M1을 기록했다. 실제 유한창/유효Apply는 아직 없고 아래 새 runner 필요 문구는 준비 당시 선행 설명이다. 기존 소비창을 재사용하지 않는다.
+
 Main 어울 · 2026-10-18 · **실행 없는 준비 / 실제 compiler·QA·새 소비 파일 0**
 
 ## 원인 근거와 한계
