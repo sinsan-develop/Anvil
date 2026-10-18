@@ -1,5 +1,12 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-19 00:25 KST PG 단독 기동 관측 — DB접속/API 미검증
+
+- 신산님 HUMAN_DIRECT_REPLY를 PMO에서 전달받아 고정1199CC1E 최소안/runId PG_ONLY_START_ONCE_20261019_002239의 기존 PG 한 개만 단1회 start했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f·daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e 불변, StartedAt2026-10-18T15:25:12.085069883Z/restart0/running·ready-log marker count1이다. 원문로그는 WSL에서 축약해 전송하지 않았다.
+- 기존 pgdata volume/readonly비밀bind/networkID d3253166…/127.0.0.1:5546→5432 정의 불변. 동일PG를 개발용보존하고 start1회소진/stop0·retry0이다. healthcheck가 없어 판정은 RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED이며 SQL·migration/논리지문·인증/접속·API/Web/사용자 기능은 미검증이다.
+- API/relay/계정/Secret/cert/권한·schema/SQL/Agent는 변경0이다. 아래 정지관측은 당시이력이며 현재PG정지로해석하지 않는다. 실제화면복구로승격하지 않는다.
+
+
 ## 2026-10-19 00:08~00:10 KST 읽기 재확인 — 여전히 개발 서비스 중단
 
 - Windows listener 조회는 성공했고3830/5546 각0이다. 기존 WSL 개발 PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9…는 exited255·Finished2026-10-18T05:12:28.197325125Z·restart0이다. 원인·중지주체는 미확정이다.
