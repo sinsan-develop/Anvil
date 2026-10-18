@@ -93,3 +93,20 @@ exact GET/유한 목록으로 초안·검토·채택과 source/증거의 현재 
 - 개정 CAS는 옛 head/hash·불변 기록을 대조하되 옛 격리 근거를 제거한 새 입력까지 막지 않는다. 새 입력의 source/근거/설계는 여전히 보호 reader로 확인한다. 검토·채택은 현재 head의 모든 기존/추가 근거를 재검사한다.
 - 채택 이력의 contentConfirmed=true는 과거 명시 채택 사실이다. 뒤 REWORK·새 검토 또는 선택 검토의 추가 근거 격리/미접근이면 currentContentReviewValid=false/currentCheck로 현재 가용성과 구분한다. execution/dispatch false는 불변이다.
 - 명령 목록 const는 project-command와 store의 순환 import를 피하기 위해 신규 baseline-operations.ts에 분리한다(내부 파일 배치만 보완). actual SQL은 승인 범위상 실행하지 못하므로 문자열 존재 시험으로 PASS를 만들지 않고 독립 정적 검토/미실행으로 기록한다.
+
+### Task4 소비·버퍼 상세화 (Main 비의미 재확정)
+
+- 시작 checkpoint3719a277. Task1~3 완료 후보를 재구현하지 않는다. `baseline-validation.ts`는 browser 순수 JSON/형식 검사, `baseline-api.ts`는 기존 상대경로 transport/보호 reader와 WebCrypto snapshot hash 대조를 맡는다. server 모듈은 type-only로만 가져온다. 새 의존성/공개 계약 변경0.
+- App의 project/user/client별 BaselineBuffer에 입력·저장 ref·검토 입력·채택 이유/확인·원 upload bytes와 동일 pending 명령을 보존한다. 화면 이동/인증 상실은 자동 폐기·새 명령 재생성을 하지 않는다. 미확인 명령이 있으면 편집/다른 쓰기를 잠그고 정확 동일 명령 재확인만 허용한다. 현재 controller 세대가 달라지면 기존 입력은 유지하되 전송하지 않는다. 명시 새 초안/저장본 편집은 미해결 명령이 없고 사용자 확인 후에만 가능하다.
+- 조회 이력은 mutation 결과와 별도 상태다. 늦은 원문/보고/초안/검토/채택 응답은 mount·project/user/client/control·선택 epoch 및 buffer binding/pending identity를 대조하고 무시한다. 실패401/403·변조 시 이전 조회본문은 숨긴다. 오류 코드 외 서버 원문/비밀을 오류로 표시하지 않는다.
+- source는 실제 project의 보호 선언 ref와 기존 source-read 목록→exact snapshot 보호 helper만 선택한다. NONE_SELECTED는 미선택일 뿐 실제 빈 source를 증명하지 않는다. ATTRIBUTE_REPORT는 정확 root/snapshot/grant를 그대로 소비하고 CONNECTOR_REPORTED/OS UNVERIFIED를 표시한다. 보고 조회는 새 관측/native실행이 아니다.
+- 근거는 새 파일을 기존 uploadArtifact 명령으로 보호 저장하고 READY exact artifact/hash만 항목에 연결한다. upload도 원 bytes/명령 보존·중복 재확인·격리 거절을 따른다. 원문은 보호 files GET의 hash/크기 대조 후 text/plain·markdown만 텍스트로 표시하고 나머지는 명시 다운로드로 제공하며 HTML/스크립트를 실행하지 않는다.
+- 초안 항목의4상태/한계·분류 이유를 편집한다. 검토는 저장된 정확 버전의 전체 항목/분류와 근거를 고정하고 판정·이유를 사용자가 입력한다. CORE의 ACTUAL/환경/시각/정상·저장조회·중요실패 근거는 각각 명시 선택하며 자동 ACCEPTED/실행합격을 만들지 않는다. 최신 적합검토를 재조회한 뒤 별도 채택 이유/체크를 요구한다. currentContentReviewValid와 과거 contentConfirmed를 분리 표시한다.
+- 직접 TDD는 동일명령 재확인/다른주체·변조·false flag·source mismatch·늦은응답·원문거절을 다룬다. React 연결은 생성 후 별도 panel과 기존 workspace 재진입에 같은 App 버퍼를 사용한다. 최종 영향범위 test/type/build 및 독립 scoped 검토를 수행하되 실제PG/브라우저/서비스 검증은 실행하지 않았다고 남긴다. 개별 transport 후보 checkpoint는 Task4/전체FN01 완료가 아니다.
+
+### Task4 단일 보완 판정
+
+- 최초 독립 정적 검토 C0/I2/M1을 보존한다. I1의 검증된 APPLIED 격리 receipt는 기존 helper의 quarantinedArtifactId를 보존해 결과 미확인을 해소하되 명시 분리 전 pending을 유지한다. 최초 시도의 명확한 거절은 별도 분리 가능, 이전 단절 뒤 일반4xx는 미확인 그대로다. 분리는 원명령/실패/격리 ID를 탭 rejectedCommands에 보존하고 입력만 다시 편집하게 하며 서버 원문 삭제·격리해제0이다.
+- I2는 현재 OWNER/HELD의 새 초안 시작 권한과 옛 buffer의 전송 권한을 분리한다. 원 pending/uncertain이 있으면 새 binding 불가, 해결된 이전 세대 버퍼만 사용자 확인·현재 제어 재조회 뒤 새 binding/현재세대 초안으로 전환한다. 기존 입력 자동 재전송/권한 이전0.
+- Main 재등급 Ruling: M1의 중복/빈 항목 ID 업로드는 단순 표시 문제가 아니라 다른 기능에 근거가 오귀속될 수 있어 Important로 처리한다. 업로드 준비와 전송에서 비공백·유일한 대상 itemId만 허용한다. 계약 변경이 아니라 기존 exact 항목 귀속을 지키는 보정이며 잘못 판단하면 새 파일 연결이 불필요하게 거절될 비용이 있다.
+- 독립 판단밖(actual 브라우저/주체전환·digest 경쟁, PG/COMMIT/SQL, 실제 권한·격리/파일, 사람의 근거 의미, host/Agent/서비스)은 미검증으로 남긴다. merge 입력 fingerprint의 추가 반례는 확인되지 않았고 현재 single flight·busy/epoch/unmount/binding/pending guard 밖 보장으로 확대하지 않는다. 새로운 독립 C0/I0를 주장하거나 보정 후 재검토를 반복하지 않는다. 실제 검증 가능한 실행 경계가 열리기 전 이 후보를 실사용/전체FN01 완료로 승격하지 않는다.

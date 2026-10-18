@@ -4,12 +4,13 @@ const id = '32b5f276-13e6-4d8a-b93f-27a15d21c788', projectId = '51c0439f-791e-4b
 const ref = { id: 'a6f20000-0000-4000-8000-000000000001', version: 2, contentHash: 'a'.repeat(64) }, csrf = 'C'.repeat(43);
 const input = { name: '사용자 소유 프로젝트', purpose: 'Agent 교체에도 원본 보존', desiredOutcome: '방법론대로 작업', sourceMode: 'EMPTY', methodologySelection: { kind: 'CONFIRMED_REFERENCE', versionRef: ref }, artifactRefs: [] };
 const criteria = ['METHOD_PURPOSE_SCOPE', 'METHOD_FLOW_CONTROL', 'METHOD_INPUT_OUTPUT', 'METHOD_COMPLETION_APPROVAL', 'METHOD_RECORD_LIMITS'];
-const project = { id: projectId, name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, version: 1, createdAt: '2026-10-16T01:00:00.000Z', updatedAt: '2026-10-16T01:00:00.000Z', currentMethodologyRef: { id: reviewId, version: 1, contentHash: 'b'.repeat(64) }, baselineRef: null, readinessIssues: [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }], participation: 'OWNER', viewerPermissions: ['READ_PROJECT'], controlState: { actorId: id, clientId: id, generation: 1, status: 'HELD' } };
+const project = { id: projectId, name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, version: 1, createdAt: '2026-10-16T01:00:00.000Z', updatedAt: '2026-10-16T01:00:00.000Z', currentMethodologyRef: { id: reviewId, version: 1, contentHash: 'b'.repeat(64) }, baselineRef: null, sourceMode:'EMPTY',sourceDeclaration:null, readinessIssues: [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }], participation: 'OWNER', viewerPermissions: ['READ_PROJECT'], controlState: { actorId: id, clientId: id, generation: 1, status: 'HELD' } };
 const unexpected = new WeakMap<object, string[]>();
 test.beforeEach(async ({ page }) => {
   unexpected.set(page, []);
   await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); });
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id, displayName: 'QA' }, clientId: id, csrfToken: csrf } }));
+  await page.route('**/api/v1/projects/'+projectId, route=>route.fulfill({json:project}));
   for (const path of ['methodologies', 'forms']) await page.route('**/api/v1/' + path, route => route.fulfill({ json: { items: [], observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
 });
 test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
