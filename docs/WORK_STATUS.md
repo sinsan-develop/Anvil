@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C1 실제 선행통과·QA 정책미설정 기대 대조 / Main 어울(2026-10-19)**: 3cbe0d91 실제 새 격리는 SQL51 exact ID/hash·ADMIN/APP identity·공식합성catalog/seed/login을 통과했다. POLICY 첫 음성에서 fixture가403을 기대했으나 기존 authorizeMaterial(project-command.ts:58)/INTERFACES 계약대로 정책 미설정412 PERMISSION_POLICY_UNCONFIGURED였다. 이는 제품허용 오류가 아니라 새QA 기대값의 계약오독이다. 정확412+오류코드+project_roles 저장0을 함께 요구하도록 보정하며403을아무실패로대체하거나제품기준을완화하지않는다. 원실패를보존하고 새exact후보에서반증한다. d741d67c…/network20bc0c37…/instanceebff1b7a…의exact정리성공·artifact0. 현재행위전송/정책부여는신규합성QA한정·정식계정/DB/Agent변경0이다.
+
 - **C1 실제 접속 확인·manifest 정확 집합 대조 / Main 어울(2026-10-19)**: 067315307258f7a91c19e079f30aad0564d05ccb 실제 격리에서 ADMIN/APP 연결·DB/role/address·비관리자 경계를 통과해 IDENTITY_MANIFEST 비교에서 실패했다. 연결불가 가설은 반증됐고 공식DB 접속0이다. PG locale의 결과 순서를 JSlocale 순서와 직접 비교하던 검수 대신51개 exact ID/지문 집합·중복/누락/변조 거절을 명시했다. 새 직접1 RED→GREEN으로 순서독립/변조음성을 확인하며 합격 기준의 ID/hash를 낮추지 않는다; 실제차이가 지문이면 여전히거절한다. ec115b89…/networkbe963600…/instance9179cd96… 정리성공·artifact0, 새빈시험직전독립0확인. 정상 저장/DML/rollback은 아직미실행이고 전체PASS0이다.
 
 - **C1 실제 SQL51 COMMIT·후속 identity 미확인 / Main 어울(2026-10-19)**: 2a8128e2193e8bf1e5d1d69fd8b87877ebb03d2a/0016 SHA612BE372C2A82F201C072DDE62E7C1222FF96168172EDF22A11226E7291FE91D에서51개SQL 실제COMMIT marker까지 도달해0014·0016 구문42601은 해소됐다. 이후 workflow IDENTITY 단계에서 실패했고 정상 저장·DML·rollback 미도달이다. SQL 설치/COMMIT만 실제확인, 전체기능PASS0. b1fc446a… PG/2d3f385b… network/instance515fe426…는 exact정리 성공·artifact cleanup true/파일0이다. 원인이 DB연결인지 identity assertion인지 구분하기 위해 기존 비밀 없는 연결오류 분류기를 적용하고 단계별 위치만 좁힌다. 정렬 가설은 로컬 순수비교에서 차이0으로 기각했고 DB효과0이었다. 정상 조건/포트/권한을 추측으로 변경하지 않으며 다음새빈검증은 정확원인수집만 수행한다.

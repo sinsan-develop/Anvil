@@ -79,7 +79,8 @@ export async function executionPreparationWorkflow(host:string,passwords:{app:st
       fresh();const r=await app.inject({method:(init?.method??'GET')as any,url:String(url),headers:{...headers,...init?.headers as Record<string,string>},payload});lastResponseCode=r.statusCode>=400?r.json().code:null;return new Response(r.body,{status:r.statusCode,headers:{'content-type':String(r.headers['content-type']??'')}});});
     phase='POLICY';
     const coordinatorInput={kind:'COORDINATOR',stageRef:null,parentRoleRef:null,reason:'격리 역할'};
-    assert.equal((await send(command('defineProjectRole',coordinatorInput))).statusCode,403);cases.push('EXPLICIT_POLICY_REQUIRED');
+    const unconfigured=await send(command('defineProjectRole',coordinatorInput));assert.equal(unconfigured.statusCode,412);assert.equal(unconfigured.json().code,'PERMISSION_POLICY_UNCONFIGURED');
+    assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.project_roles')).rows[0].n,0);cases.push('EXPLICIT_POLICY_REQUIRED');
     const operations=['uploadArtifact','saveDocumentDraft','recordContentReview','confirmDocument','indexDesignDocument','saveWorkPlanDraft','confirmWorkPlan','prepareAssignment','reviewAssignmentContent','confirmAssignment','defineProjectRole','bindResponsibleSession','prepareExecution','buildTaskContext','registerConnection','saveEnvironment'];
     const policy=await save('savePermissionPolicy',{rules:[{ruleId:'C1_QA_ONLY',subjectRef:{kind:'HUMAN',userId:user},targetScopes:[{kind:'PROJECT',projectId:project}],operations,disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(deadline).toISOString()}],reason:'일회 격리 합성 정책',reviewRefs:[]});
     async function confirmedDocument(formId:string,title:string,lead:string) {
