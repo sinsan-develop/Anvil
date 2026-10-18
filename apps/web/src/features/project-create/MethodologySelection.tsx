@@ -3,14 +3,16 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, listMethods, type MethodSummary } from '../methodology-editor/api.ts';
 import type { DraftMethodSelection } from '../../../../../contracts/project-drafts.ts';
 import { DraftMethodEditor } from './DraftMethodEditor.tsx';
+import { MethodologyPreview } from './MethodologyPreview.tsx';
 
-export function MethodologySelection({ client, value, disabled, confirmed = false, onChange, onAuthenticationLost, onBusyChange }: {
-  client: ApiClient; value: DraftMethodSelection | null; disabled: boolean; confirmed?: boolean; onChange: (selection: DraftMethodSelection | null) => void; onAuthenticationLost: () => void; onBusyChange: (busy: boolean) => void;
+export function MethodologySelection({ client, value, disabled, confirmed = false, onChange, onAuthenticationLost, onBusyChange, previewContext }: {
+  client: ApiClient; value: DraftMethodSelection | null; disabled: boolean; confirmed?: boolean; onChange: (selection: DraftMethodSelection | null) => void; onAuthenticationLost: () => void; onBusyChange: (busy: boolean) => void; previewContext: string;
 }) {
   const fieldId = useId();
   const [items, setItems] = useState<MethodSummary[]>([]), [selected, setSelected] = useState(''), [loading, setLoading] = useState(true), [retry, setRetry] = useState(0), [error, setError] = useState<ApiError | null>(null);
   const active = useRef(true), copying = useRef(false);
   const [copyPending, setCopyPending] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null), [nextCursor, setNextCursor] = useState<string | null>(null);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEffect(() => {
@@ -35,6 +37,8 @@ export function MethodologySelection({ client, value, disabled, confirmed = fals
   return <section aria-label="프로젝트 방법론 선택" className="definition-editor">
     <h3>방법론·자료</h3><p>시스템 기본본 또는 내 공통 확정본의 정확 버전을 선택합니다. 선택·중간 저장은 프로젝트 생성이나 Agent 실행이 아닙니다.</p>
     <label htmlFor={fieldId}>사용할 방법론</label><select id={fieldId} disabled={locked || loading || !!error} value={selected} onChange={event => setSelected(event.target.value)}><option value="">선택하세요</option>{items.map(item => <option key={item.ref.id} value={item.ref.id}>{item.name} · {item.scope === 'SYSTEM' ? '승인된 기본본' : '내 확정본'} · 버전 {item.ref.version}</option>)}</select>
+    <button type="button" disabled={locked || loading || !!error || !chosen} onClick={() => setShowPreview(previous => !previous)}>{showPreview ? '선택 원본 미리보기 닫기' : '선택 방법론 원본 미리보기'}</button>
+    {showPreview && chosen && !loading && !error ? <MethodologyPreview key={JSON.stringify([previewContext, chosen])} client={client} selected={chosen} onAuthenticationLost={onAuthenticationLost} /> : null}
     <button type="button" disabled={locked || loading || !!error || !chosen} onClick={() => { if (chosen && replaceAllowed()) onChange({ kind: 'CONFIRMED_REFERENCE', versionRef: chosen.ref }); }}>선택한 방법론 연결</button>
     <button type="button" disabled={locked || loading || !!error || !chosen} onClick={() => { void copy(); }}>선택 방법론을 이 프로젝트 초안으로 복사</button>
     <button type="button" disabled={locked} onClick={() => { if (replaceAllowed()) onChange({ kind: 'NEW_PROJECT_DRAFT', name: '', purpose: '', graph: { nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, sourceRefs: [], reviewRefs: [] }); }}>이 프로젝트 방법론 직접 작성</button>

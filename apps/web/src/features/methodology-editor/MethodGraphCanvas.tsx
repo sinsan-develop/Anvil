@@ -23,13 +23,13 @@ export function MethodGraphCanvas({ graph, selectedId, onSelect, onMove, label =
       <defs><marker id={arrowId} markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" className="graph-arrow" /></marker></defs>
       {graph.edges.map(edge => { const from = byId.get(edge.fromNodeId), to = byId.get(edge.toNodeId); if (!from || !to) return null;
         const x1 = from.x + 180, y1 = from.y + 36, x2 = to.x, y2 = to.y + 36;
-        return <path key={edge.edgeId} d={`M${x1},${y1} C${x1 + 60},${y1} ${x2 - 60},${y2} ${x2},${y2}`} markerEnd={`url(#${arrowId})`} className={edge.kind === 'REWORK' ? 'graph-edge graph-rework' : 'graph-edge'}><title>{edge.kind}: {edge.fromNodeId} → {edge.toNodeId} {edge.reason}</title></path>;
+        return <path key={edge.edgeId} d={`M${x1},${y1} C${x1 + 60},${y1} ${x2 - 60},${y2} ${x2},${y2}`} markerEnd={`url(#${arrowId})`} className={edge.kind === 'REWORK' ? 'graph-edge graph-rework' : 'graph-edge'}><title>{`${edge.kind}: ${edge.fromNodeId} → ${edge.toNodeId} ${edge.reason}`}</title></path>;
       })}
       {points.map(node => <g key={node.nodeId} role="button" tabIndex={0} aria-label={`흐름도 단계 ${node.nodeId}: ${node.name}`} aria-pressed={node.nodeId === selectedId} className="graph-node" transform={`translate(${node.x},${node.y})`} onClick={() => onSelect(node.nodeId)} onKeyDown={event => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(node.nodeId); }
         const delta: Record<string, [number, number]> = { ArrowLeft: [-20, 0], ArrowRight: [20, 0], ArrowUp: [0, -20], ArrowDown: [0, 20] };
         if (onMove && delta[event.key]) { event.preventDefault(); onSelect(node.nodeId); onMove(node.nodeId, ...delta[event.key]!); }
-      }}><title>{node.nodeId} {node.name}: {node.purpose}</title><rect width="180" height="72" rx="8" /><text x="12" y="25">{Array.from(node.name || '이름 미작성').slice(0, 20).join('')}</text><text x="12" y="48" className="graph-node-meta">{node.nodeId} · {node.kind}</text></g>)}
+      }}><title>{`${node.nodeId} ${node.name}: ${node.purpose}`}</title><rect width="180" height="72" rx="8" /><text x="12" y="25">{Array.from(node.name || '이름 미작성').slice(0, 20).join('')}</text><text x="12" y="48" className="graph-node-meta">{node.nodeId} · {node.kind}</text></g>)}
     </svg></div>
     {onMove ? <div className="methodology-flow">{([['왼쪽', -20, 0], ['오른쪽', 20, 0], ['위', 0, -20], ['아래', 0, 20]] as const).map(([direction, dx, dy]) => <button key={direction} disabled={!selected} onClick={() => onMove(selectedId, dx, dy)}>선택 단계 {direction} 이동</button>)}</div> : null}
   </div>;
