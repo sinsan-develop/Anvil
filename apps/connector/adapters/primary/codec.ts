@@ -211,7 +211,7 @@ export class Codex0161Codec{
   if(method==='turn/started'||method==='turn/completed')return fact({kind:'TURN_FACT',method,toolStatus:p.turn.status,contextDigest,payloadDigest});
   if(method==='thread/started')return fact({kind:'THREAD_FACT',method,payloadDigest});
   if(method==='error')return fact({kind:'TOOL_ERROR_FACT',method,contextDigest,payloadDigest});
-  return fact({kind:method==='item/commandExecution/outputDelta'?'OUTPUT_FACT':'ITEM_FACT',method,contextDigest,payloadDigest});
+  return fact({kind:method==='item/commandExecution/outputDelta'||method==='item/agentMessage/delta'?'OUTPUT_FACT':'ITEM_FACT',method,contextDigest,payloadDigest});
  }
  #response(value:Record<string,any>):CodecFact{
   const isError=Object.hasOwn(value,'error');

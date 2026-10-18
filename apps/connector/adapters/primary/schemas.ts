@@ -24,7 +24,7 @@ function compile(key:string,schema:()=>any):ValidateFunction{
 export const requestMethods=['initialize','thread/start','thread/resume','turn/start','turn/steer','turn/interrupt'] as const;
 export type CodexMethod=typeof requestMethods[number];
 export const approvalMethods=['item/commandExecution/requestApproval','item/fileChange/requestApproval','item/permissions/requestApproval'] as const;
-export const notificationMethods=['thread/started','turn/started','turn/completed','item/started','item/completed','item/commandExecution/outputDelta','error'] as const;
+export const notificationMethods=['thread/started','turn/started','turn/completed','item/started','item/completed','item/commandExecution/outputDelta','item/agentMessage/delta','error'] as const;
 export type InboundMethod=typeof approvalMethods[number]|typeof notificationMethods[number];
 function branch(file:string,method:string,value:unknown):boolean{
  const validate=compile(file+':'+method,()=>{
