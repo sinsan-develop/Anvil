@@ -33,3 +33,8 @@ test('회수는 정확 nonce뿐 아니라 image/tmpfs/mount/무공개 포트/단
   for(const patch of [{Image:'other'},{Mounts:[{Source:'/formal'}]},{HostConfig:{...item.HostConfig,PortBindings:{'5432/tcp':[{HostPort:'5546'}]}}},{NetworkSettings:{...item.NetworkSettings,Networks:{other:{NetworkID:network}}}}])assert.throws(()=>module.assertExecutionPreparationQaResource({...item,...patch},'container',id,'nonce',network));
   assert.equal(module.executionPreparationQaMayCleanup(false),false);assert.equal(module.executionPreparationQaMayCleanup(true),true);
 });
+test('SQL 진단은 오류의 숫자 행과 코드만 남기고 원문 SQL/비밀을 내보내지 않는다',()=>{
+  assert.equal(typeof module.executionPreparationQaSqlDiagnostic,'function');
+  const result=module.executionPreparationQaSqlDiagnostic({stderr:'psql:<stdin>:9142: ERROR:  42601\nraw_private_query\n',status:3});
+  assert.deepEqual(result,{pgCode:'42601',line:9142,exitCode:3,timedOut:false});
+});

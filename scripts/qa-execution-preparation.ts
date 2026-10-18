@@ -2,9 +2,8 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { realpath, stat, lstat } from 'node:fs/promises';
-import { executionPreparationQa as qa, assertExecutionPreparationQaBinding, buildExecutionPreparationQaSchema, assertExecutionPreparationQaResource, executionPreparationQaMayCleanup, executionPreparationQaRemaining } from './execution-preparation-qa.ts';
+import { executionPreparationQa as qa, assertExecutionPreparationQaBinding, buildExecutionPreparationQaSchema, assertExecutionPreparationQaResource, executionPreparationQaMayCleanup, executionPreparationQaRemaining, executionPreparationQaSqlDiagnostic } from './execution-preparation-qa.ts';
 import { assertSourceRootQaTmpfs, sourceRootQaError } from './source-root-qa-guard.ts';
-import { sourceReadPsqlError } from './source-read-psql-batches.ts';
 
 if(process.argv.length!==3||process.argv[2]!=='--run')throw Error('C1_QA_RUN_REQUIRED');
 const instance=randomBytes(16).toString('hex');let deadline=0,containerId:string|null=null,networkId:string|null=null,creating=false,cleanup=false;
@@ -14,7 +13,7 @@ function docker(args:string[],input?:string,env=process.env,timeout=30000) {
   if(!cleanup)fresh();
   const remaining=executionPreparationQaRemaining(cleanup?cleanupDeadline:deadline,Date.now(),cleanup?0:120000);
   try{return execFileSync('/usr/bin/docker',['--host','unix:///var/run/docker.sock',...args],{input,env,encoding:'utf8',stdio:['pipe','pipe','pipe'],timeout:Math.max(1,Math.min(timeout,remaining)),maxBuffer:2*1024*1024}).trim();}
-  catch(error){if(args.includes('psql'))psqlDiagnostic=sourceReadPsqlError(error);throw Error('C1_QA_'+(args.includes('psql')?'PSQL_FAILED':'DOCKER_FAILED'));}
+  catch(error){if(args.includes('psql'))psqlDiagnostic=executionPreparationQaSqlDiagnostic(error);throw Error('C1_QA_'+(args.includes('psql')?'PSQL_FAILED':'DOCKER_FAILED'));}
 }
 const inspect=(kind:'container'|'network',id:string)=>JSON.parse(docker([kind,'inspect',id]))[0];
 function owned(item:any,id:string,kind:'container'|'network') {
