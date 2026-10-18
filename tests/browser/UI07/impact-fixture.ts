@@ -1,0 +1,12 @@
+import type {Page} from '@playwright/test';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {designChangeFixture} from '../../unit/UI07/design-change-fixture.ts';
+import {installRequestFixture,pid,user,changeId,proposalId,documentId} from './request-fixture.ts';
+export async function installImpactFixture(page:Page,lost=false){
+ const facts=await installRequestFixture(page),fixture=designChangeFixture(),changeBody={beforeRef:facts.beforeRef,afterProposalRef:proposalId,reason:'복구 절차 변경 요청',sourceRefs:[]},change={...fixture.change,...changeBody,ref:{id:changeId,version:1,contentHash:contentHash(canonicalJson(changeBody))}},raw=fixture.impactVersions[1]!,{ref:oldRef,observedAt,...source}=raw,snapshot={...source,changeRef:change.ref,beforeRef:facts.beforeRef},mechanical={ref:{...oldRef,contentHash:contentHash(canonicalJson(snapshot))},...snapshot,observedAt};
+ let current:any={change,impactVersions:[mechanical],latestImpactRef:mechanical.ref,hasMoreImpacts:false,nextBeforeVersion:null,activatedAsBaseline:false,observedAt},receipt:any=null;const reviews:any[]=[];
+ await page.route(`**/api/v1/projects/${pid}/design-changes/${changeId}?*`,route=>route.fulfill({json:current}));
+ await page.route(`**/api/v1/projects/${pid}/documents?*`,route=>route.fulfill({json:{items:[{id:documentId,title:'확정 설계',headVersion:1,confirmedVersion:1,updatedAt:observedAt}],hasMore:false,nextCursor:null,observedAt}}));
+ await page.route(`**/api/v1/projects/${pid}/commands`,route=>{const c=route.request().postDataJSON();reviews.push(c);if(c.operation!=='reviewChangeImpact')throw Error('UNEXPECTED_IMPACT_QA_WRITE');if(!receipt){const body={...c.payload,sourceKind:'HUMAN_REVIEW',beforeRef:facts.beforeRef,requiresReview:true,inputs:mechanical.inputs,reviewer:{kind:'HUMAN',userId:user}},ref={id:mechanical.ref.id,version:c.expectedVersion+1,contentHash:contentHash(canonicalJson(body))},impact={ref,...body,observedAt};receipt={operationId:crypto.randomUUID(),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:ref.id,version:ref.version,data:{status:'DESIGN_IMPACT_REVIEWED',ref,impact,activatedAsBaseline:false},serverReceivedAt:observedAt};current={...current,impactVersions:[impact,mechanical],latestImpactRef:ref};}if(lost&&reviews.length===1)return route.abort();if(receipt.commandId!==c.commandId)return route.fulfill({status:409,json:{code:'VERSION_CONFLICT'}});return route.fulfill({json:receipt});});
+ return{...facts,reviews};
+}

@@ -5,12 +5,21 @@ import type { PlanRef } from '../design-trace/work-plan-api.ts';
 import type { DocumentSession } from '../design-trace/editor-api.ts';
 import type { ChangeRequestBuffer } from './request-api.ts';
 import { DesignChangeRequest } from './DesignChangeRequest.tsx';
+import { ImpactReviewEditor } from './ImpactReviewEditor.tsx';
+import type { ImpactReviewBuffer } from './impact-review-api.ts';
 
 const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${value.contentHash}`;
+export interface ChangeEditorGate { acquire: () => boolean; release: () => void; allowed: () => boolean }
 const targetLabel = (value: ImpactTargetRef) => `${value.kind} · ${value.localCode ?? value.id} · v${value.versionRef.version}${value.anchor ? ' · ' + value.anchor : ''}`;
-export function DesignChangesPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; onAuthenticationLost: () => void }) {
+export function DesignChangesPage({ client, projectId, session, buffer, onChange, reviewBuffer, onReviewChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; reviewBuffer: ImpactReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<ImpactReviewBuffer | null>>; onAuthenticationLost: () => void }) {
   const [requestId, setRequestId] = useState(''), [value, setValue] = useState<DesignChangePage | null>(null), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [before, setBefore] = useState<number | null>(null);
   const alive = useRef(true), flight = useRef(false);
+  const editorFlight=useRef(false), latest=useRef({buffer,reviewBuffer});latest.current={buffer,reviewBuffer};
+  const [editorBusy,setEditorBusy]=useState(false);
+  const acquire=()=>{if(editorFlight.current)return false;editorFlight.current=true;setEditorBusy(true);return true;};
+  const release=()=>{editorFlight.current=false;if(alive.current)setEditorBusy(false);};
+  const requestGate:ChangeEditorGate={acquire,release,allowed:()=>!latest.current.reviewBuffer||!!latest.current.reviewBuffer.result};
+  const reviewGate:ChangeEditorGate={acquire,release,allowed:()=>!latest.current.buffer||!!latest.current.buffer.result};
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   async function load(id: string, beforeVersion: number | null) {
     if (flight.current) return; flight.current = true; setBusy(true); setValue(null); setError(null); setBefore(beforeVersion);
@@ -19,8 +28,9 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
     finally { flight.current = false; if (alive.current) setBusy(false); }
   }
   return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>
-    <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} reading={busy} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
-    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 검토 작성·승인·기준 적용·작업 재개는 아직 연결되지 않았습니다.</p>
+    <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} gate={requestGate} reading={busy} blocked={editorBusy||!!reviewBuffer&&!reviewBuffer.result} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
+    <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
+    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 승인·기준 적용·작업 재개는 아직 연결되지 않았습니다.</p>
     <form onSubmit={event => { event.preventDefault(); void load(requestId, null); }}><fieldset disabled={busy}><legend>저장된 요청 찾기</legend>
       <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { setRequestId(event.target.value); setValue(null); setError(null); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>
     </fieldset></form>
