@@ -51,3 +51,8 @@ test('잘못된 상태·출처 형태와 한도·이유의 비밀을 거절하�
  const result = module.planContextText([item('first', 'a'), item('later', 'b')], { maxPartBytes: 1, maxParts: 1 });
  assert.equal(result.parts.length, 1); assert.equal(result.parts[0].text, 'a'); assert.deepEqual(result.missingRequired, ['later']);
 });
+test('외부 소비 전 매체 형식의 배열·객체 coercion을 텍스트 원문으로 채택하지 않는다', () => {
+ const original = item();
+ for (const mediaType of [['text/plain;charset=utf-8'], { value: 'text/plain;charset=utf-8' }])
+  assert.throws(() => module.planContextText([{ ...original, bodyRef: { ...original.bodyRef, mediaType } }], { maxPartBytes: 100, maxParts: 20 }), /CONTEXT_TEXT_INPUT_INVALID/);
+});

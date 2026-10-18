@@ -42,7 +42,7 @@ export function planContextText(input: unknown, limits: { maxPartBytes: number; 
    record.issue = 'SOURCE_' + item.state;
    continue;
   }
-  if (!item.sourceRef || !textArtifact(item.bodyRef) || typeof item.body !== 'string' || !item.body.isWellFormed()) return invalid();
+  if (!item.sourceRef || !textArtifact(item.bodyRef) || typeof item.bodyRef.mediaType !== 'string' || typeof item.body !== 'string' || !item.body.isWellFormed()) return invalid();
   if (Buffer.byteLength(item.body, 'utf8') !== item.bodyRef.bytes || contentHash(item.body) !== item.bodyRef.contentHash) throw new AuthFailure('CONTEXT_TEXT_INTEGRITY_INVALID', 422);
   try { assertKnowledgeTextSafe(item.body); } catch { record.includedState = 'REDACTED'; record.issue = 'SENSITIVE_CONTENT_SUSPECTED'; continue; }
   const pieces: string[] = []; let buffer = '', bytes = 0;
