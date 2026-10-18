@@ -412,3 +412,10 @@ bootstrap 실패는 Main이 그때 생성/수집한 항목만 회수 후보이�
 - 독립 조회의 literal QA root·전용container/network는 모두 부재true다. 새 root/Git/npm/PG/DB/SQL·합성계정/회수 발급0, cleanup120초를 새로 열 필요가 없다. 정식 서비스·기존DB의 현재 동작은 재조회하지 않았고 해당 변경명령0이다.
 - 변경된 도구 식별자/부모/소켓을 자동 채택하거나 strict 검사를 삭제·완화하지 않는다. 같은 actual 명령 재시도/새 nonce·창 발급/소유·ACL수리0이다. 이 dispatch의 실패는 보존하고 재실행 가능 여부를 임의 판단하지 않는다. 기존 H1 실패·별도 회수PASS와 M1·전체FN01/Stage/사용자기능 미완료를 유지한다.
 - 다음 지원 경계는 현재 도구/부모/소켓의 정확 변경을 확인하여 제한된 새 관측 결박과 후속1회 실행 여부를 결정하는 것이다. PMO의 다음 업무 배정은 기다리지 않고 영향없는 승인 계획을 대조하되, 이번에 제품/API/DB 계약 변경이나 실행 범위를 추가하지 않는다.
+
+### 22.1 후속 결정용 읽기 관측 — 기존 결박 자동 대체 아님
+
+- 2026-10-18T13:07:53.954Z~13:07:55.332Z, SSH exit0·1837ms에서 같은2389 tuple의 전체 차이 필드를 별도로 집계했다. `dev:2389`, `ino:1`이며 나머지 kind/uid/gid/mode/links/hash/realpath 차이는0이다. 이는 이 읽기 시점의 대조 결과이며 앞선 미출력 필드가 이미 확인돼 있었다고 소급하지 않는다.
+- 파일계열 dev2112→2096. socket `/var/run/docker.sock`→`/run/docker.sock`의 dev97→63·ino867→634. exact 부모 `/`의 nlink28→30이며 디스크 부모dev도2096·`/run`dev63이다. 종류/소유/mode/realpath는 관측값에 보존한다. 변경 원인·주체나 재시작 여부는 미확인이다.
+- 같은 daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/SINSAN, PG imageID594290e9…를 확인했다. literal QA root/container/network는 부재true, mutable effects0/actual 재시도false다. 정식DB/서비스 현재동작을 이 증거로 PASS라고 하지 않는다.
+- 새 rawSHA256 `071a8bb1e488c15b1cfbeb461c44b983c1621525bc10e9a81ed984dfa325ae7c`, canonicalSHA256 `7e9ac39b638e30d7a698e289bf51b68a6534dc0c68011013b904e623eedbf942`, full2389 zlib 자료와12부모는 manifest의 `readOnlyRetryIdentityObservation`에 보존했다. `adopted:false/approved:false`이며 원관측/고정issuer/controller 기대값을 대체하지 않았다. 정확한 후속 결박/유한1회 여부의 결정 자료일 뿐 실행 재승인이 아니다.
