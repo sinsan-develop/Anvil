@@ -38,3 +38,9 @@ test('SQL 진단은 오류의 숫자 행과 코드만 남기고 원문 SQL/비�
   const result=module.executionPreparationQaSqlDiagnostic({stderr:'psql:<stdin>:9142: ERROR:  42601\nraw_private_query\n',status:3});
   assert.deepEqual(result,{pgCode:'42601',line:9142,exitCode:3,timedOut:false});
 });
+test('schema 집합은 정렬에 의존하지 않되51개 정확 ID/지문·중복 부재를 요구한다',()=>{
+  assert.equal(typeof module.assertExecutionPreparationQaManifest,'function');
+  const expected=Array.from({length:51},(_,n)=>({id:'qa_'+n,checksum:'a'.repeat(64)}));
+  assert.doesNotThrow(()=>module.assertExecutionPreparationQaManifest([...expected].reverse(),expected));
+  for(const rows of [expected.slice(1),[...expected.slice(1),expected[1]],[...expected.slice(1),{id:'qa_0',checksum:'b'.repeat(64)}],[...expected.slice(1),{id:'unexpected',checksum:'a'.repeat(64)}]])assert.throws(()=>module.assertExecutionPreparationQaManifest(rows,expected));
+});

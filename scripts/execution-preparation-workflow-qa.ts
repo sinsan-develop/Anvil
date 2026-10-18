@@ -22,7 +22,7 @@ import { seedOfficialForms } from '../apps/server/modules/documents/catalog-seed
 import { buildBuiltinMethodologies } from '../apps/server/modules/methodologies/builtins.ts';
 import { seedBuiltinMethodologies } from '../apps/server/modules/methodologies/catalog-seed.ts';
 import { contextSlotCodes } from '../apps/server/modules/context/context-input.ts';
-import { executionPreparationQa as qa, executionPreparationQaDatabase, executionPreparationQaInsert, executionPreparationQaRemaining, cleanExecutionPreparationQaRoot, assertExecutionPreparationQaBinding, buildExecutionPreparationQaSchema } from './execution-preparation-qa.ts';
+import { executionPreparationQa as qa, executionPreparationQaDatabase, executionPreparationQaInsert, executionPreparationQaRemaining, cleanExecutionPreparationQaRoot, assertExecutionPreparationQaBinding, buildExecutionPreparationQaSchema, assertExecutionPreparationQaManifest } from './execution-preparation-qa.ts';
 import { sourceReadQaError } from './source-read-qa-guard.ts';
 
 /** 새 runner가 검증한 내부 PG 주소/메모리 비밀만 받는다. 공식 config·외부 Agent·listener는 사용하지 않는다. */
@@ -45,7 +45,7 @@ export async function executionPreparationWorkflow(host:string,passwords:{app:st
     phase='IDENTITY_APP_FACTS';
     assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);
     phase='IDENTITY_MANIFEST';const actual=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;
-    assert.deepEqual(actual,[...manifest].sort((a,b)=>a.id.localeCompare(b.id)));
+    assertExecutionPreparationQaManifest(actual,manifest);
     await assert.rejects(lstat(qa.artifactRoot),(e:any)=>e.code==='ENOENT');fresh();await mkdir(qa.artifactRoot,{mode:0o700});rootCreated=true;
     assert.equal(await realpath(qa.artifactRoot),qa.artifactRoot);cases.push('EXACT_ISOLATED_DATABASE_51');
     phase='CATALOG';

@@ -7,6 +7,11 @@ import { sourceReadPsqlText } from './source-read-psql-batches.ts';
 
 export const executionPreparationQa=Object.freeze({runId:'c1-prep-sql-20261019-01',owner:'AV3_C1_PREPARATION_SQL_QA',cwd:'/home/daon/deploy/anvil-v3-c1-prep-sql-qa-01',artifactRoot:'/tmp/anvil-v3-c1-prep-sql-01',container:'anvil-v3-c1-prep-sql-pg-01',network:'anvil-v3-c1-prep-sql-net-01',database:'anvil_v3_c1_prep_sql_qa_01',image:'postgres@sha256:6eb0add3b77c081df18aa518ce43df58fdcc40f2e6d868a6fd08038dc7acd425',imageId:'sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',daemonId:'e3349f1d-dbfc-478a-96d9-295bf6c6839e',port:null,hostPublish:false,tmpfsBytes:268435456,maxMs:1200000});
 export const executionPreparationQaMayCleanup=(creating:boolean)=>creating===true;
+export function assertExecutionPreparationQaManifest(actual:{id:string;checksum:string}[],expected:{id:string;checksum:string}[]) {
+  if(actual.length!==51||expected.length!==51||new Set(actual.map(r=>r.id)).size!==51||new Set(expected.map(r=>r.id)).size!==51)throw Error('C1_QA_MANIFEST_SET_INVALID');
+  const hashes=new Map(expected.map(r=>[r.id,r.checksum]));
+  if(actual.some(r=>hashes.get(r.id)!==r.checksum))throw Error('C1_QA_MANIFEST_HASH_INVALID');
+}
 export function executionPreparationQaSqlDiagnostic(error:unknown) {
   const e=error as any,stderr=String(e?.stderr??''),line=Number(/psql:<stdin>:(\d+):/.exec(stderr)?.[1]);
   return {pgCode:/(?:ERROR|FATAL):\s+([A-Z0-9]{5})(?:\s|$)/.exec(stderr)?.[1]??null,line:Number.isSafeInteger(line)&&line>0?line:null,exitCode:Number.isInteger(e?.status)?e.status:null,timedOut:e?.code==='ETIMEDOUT'};
