@@ -1869,5 +1869,42 @@
     ],
     "executionState": "NOT_INSTALLED_NOT_AUTHORIZED",
     "toolchainTrustState": "UNRESOLVED"
+  },
+  "codePreparation": {
+    "approval": "FN01_QA_CODE_PREPARATION",
+    "approvedAt": "2026-10-18T18:10:34+09:00",
+    "approvedProposalSha256": "EC52CAAE81A2E4740F4B485E874B9751C7BA0A53D32652A540A34650FDBBFE64",
+    "state": "CANDIDATE_WRITTEN_UNEXECUTED",
+    "actualAuthorization": null,
+    "nativeAdapter": "NOT_CONNECTED",
+    "bootstrap": "UNRESOLVED",
+    "review": {
+      "original": "C0/I3/M1",
+      "mainFix": "STATIC_SINGLE_PASS_UNVERIFIED",
+      "independentRereview": false
+    },
+    "testsExecuted": 0,
+    "files": [
+      {
+        "path": "scripts/fn01-baseline-qa-guard.ts",
+        "sha256": "7c77faeab43d4feedba70d60b4d8ea252be2d42966506d03dcb70ff14569dc92",
+        "verification": "NOT_EXECUTED"
+      },
+      {
+        "path": "scripts/qa-fn01-baseline-isolated.ts",
+        "sha256": "56661dc9374798b761a70df4dcedcfdac1f9662d593e946cdcd2d9eb04c126df",
+        "verification": "NOT_EXECUTED"
+      },
+      {
+        "path": "tests/integration/FN01/baseline-isolated.test.ts",
+        "sha256": "7c097b4dba6602ee18804dcef4c64fab5cd7c76ee47f2c94c6f624833b1d6a6a",
+        "verification": "NOT_EXECUTED"
+      },
+      {
+        "path": "tests/unit/FN01/baseline-qa-guard.test.ts",
+        "sha256": "db166eddfb483d3e42d1df193abe4ea2065bb759879eedffad27da73ae8d5f59",
+        "verification": "NOT_EXECUTED"
+      }
+    ]
   }
 }
