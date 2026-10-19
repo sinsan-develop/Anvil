@@ -39,6 +39,31 @@ async function prepare(page: Page) {
   await page.getByRole('textbox', { name: '임무 목표', exact: true }).fill('사용 가능한 실제 기능'); await page.getByRole('textbox', { name: '임무 통합 책임', exact: true }).fill('책임자가 검수하고 통합'); await page.getByRole('textbox', { name: '임무 저장 이유', exact: true }).fill('작업 지시를 준비');
 }
 
+for(const mode of ['FILE','ROOT','ALL','LOSS'])test('ASSIGNMENT_SCOPE_REDUCTION_'+mode,async({page})=>{
+ const facts=await setup(page),commands:any[]=[];
+ const scopes=[{sourceRootRef:ref(planId),mappingRef:null,observationRef:ref(user),baselineRef:ref(applicationId),targets:[{relativePath:'src/a.ts',kind:'FILE',access:'WRITE',recursive:false},{relativePath:'src/b.ts',kind:'FILE',access:'READ',recursive:false}]},{sourceRootRef:ref(user),mappingRef:null,observationRef:ref(planId),baselineRef:ref(applicationId),targets:[{relativePath:'README.md',kind:'FILE',access:'READ',recursive:false}]}];
+ const definition={taskRef:{planRef,taskCode:'FN01',applicationRef,nodeId:'N1'},purpose:'작업 범위 최소화',goal:'사용 가능한 기능',baselineRefs:[planRef,applicationRef,plan.designRef],inputs:['설계'],outputs:['구현'],acceptanceCriteria:['핵심 동작'],verificationRequirements:['변경 확인'],included:['개발'],excluded:['운영'],allowedScopes:scopes,environmentRef:null,requiredCapabilities:['파일 작업'],budgetRef:null,ownerRole:'단계책임자',parentAssignmentRef:null,recordingPolicyRef:null,integrationResponsibility:'검수·통합'};
+ const snapshot={definition,reason:'보관 초안',previousRef:null,basis:{planRef,applicationRef,designRef:plan.designRef,taskCode:'FN01',nodeId:'N1',taskCardHash:contentHash(canonicalJson(card))},readinessIssues:[{code:'SOURCE_SCOPE_UNVERIFIED',location:'allowedScopes'}],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false},reference={id:draftId,version:1,contentHash:contentHash(canonicalJson(snapshot))};
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts?*`,route=>route.fulfill({json:{items:[{ref:reference,status:'DRAFT',goal:definition.goal,taskRef:definition.taskRef,issueCount:1,updatedAt:at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/1`,route=>route.fulfill({json:{projectId:pid,ref:reference,snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:at}}));
+ await page.route(`**/api/v1/projects/${pid}/commands`,route=>{
+  const command=route.request().postDataJSON();commands.push(command);expect(command.operation).toBe('prepareAssignment');expect(command.targetId).toBe(draftId);expect(command.expectedVersion).toBe(1);expect(command.payload.baseRef).toEqual(reference);
+  if(mode==='LOSS'&&commands.length===1)return route.abort();
+  const stored={...snapshot,definition:command.payload.definition,reason:command.payload.reason,previousRef:reference,readinessIssues:[{code:command.payload.definition.allowedScopes.length?'SOURCE_SCOPE_UNVERIFIED':'SOURCE_SCOPE_MISSING',location:'allowedScopes'}]},storedRef={id:draftId,version:2,contentHash:contentHash(canonicalJson(stored))};
+  return route.fulfill({json:{operationId:draftId,commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:draftId,version:2,data:{ref:storedRef,status:'ASSIGNMENT_DRAFT_STORED',snapshot:stored},evidenceRefs:[],warnings:[],serverReceivedAt:at}});
+ });
+ await page.getByRole('button',{name:'임무 초안 목록 조회',exact:true}).click();await page.getByRole('button',{name:'임무 버전 열기: 1',exact:true}).click();await page.getByRole('button',{name:'현재 버전으로 개정 준비',exact:true}).click();
+ const editor=page.getByRole('region',{name:'임무 소스 범위 축소',exact:true});await expect(editor.getByRole('button',{name:'소스 범위 1에서 src/a.ts 제외',exact:true})).toBeEnabled();
+ if(mode==='FILE'||mode==='LOSS')await editor.getByRole('button',{name:'소스 범위 1에서 src/a.ts 제외',exact:true}).click();
+ else {await editor.getByRole('button',{name:'소스 범위 1 전체 제외',exact:true}).click();if(mode==='ALL')await editor.getByRole('button',{name:'소스 범위 1 전체 제외',exact:true}).click();}
+ const expected=structuredClone(scopes);if(mode==='FILE'||mode==='LOSS')expected[0]!.targets.splice(0,1);else expected.splice(0,mode==='ALL'?2:1);
+ if(mode==='ALL')await expect(editor.getByText('선택 범위 없음 · 범위 미충족이며 전체 접근 허가가 아닙니다.',{exact:true})).toBeVisible();
+ expect(commands).toHaveLength(0);await page.getByRole('textbox',{name:'임무 저장 이유',exact:true}).fill('불필요한 범위만 축소');await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();
+ if(mode==='LOSS'){await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await expect(editor.getByRole('button',{name:'소스 범위 1 전체 제외',exact:true})).toBeDisabled();await page.getByRole('button',{name:'같은 임무 명령 결과 확인',exact:true}).click();await expect(page.getByText('임무 초안 저장 확인',{exact:true})).toBeVisible();expect(commands).toHaveLength(2);expect(commands[1]).toEqual(commands[0]);}
+ else {await expect(page.getByText('임무 초안 저장 확인',{exact:true})).toBeVisible();expect(commands).toHaveLength(1);}
+ expect(commands[0].payload.definition).toEqual({...definition,allowedScopes:expected});await expect(page.getByText((mode==='ALL'?'SOURCE_SCOPE_MISSING':'SOURCE_SCOPE_UNVERIFIED')+' · allowedScopes',{exact:true})).toBeVisible();expect(facts.unexpected).toEqual([]);expect(facts.errors).toEqual([]);
+});
+
 for(const mode of ['NORMAL','EXPIRED','HASH','DETAIL_DENIED','PAGE_DENIED'])test('ASSIGNMENT_ENVIRONMENT_'+mode,async({page})=>{
  const facts=await setup(page);await prepare(page);
  const id='77777777-7777-4777-8777-777777777777',codes=['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'],input={kind:'ENVIRONMENT_CANDIDATE',candidate:{label:'WSL 대상 후보'},candidateRef:null,policyRef:ref(user),expiresAt:'2026-10-21T00:00:00.000Z',reason:'실행 전 후보 보관'};

@@ -5,6 +5,7 @@ import { readCurrentBaseline } from '../project-create/baseline-api.ts';
 import { readSourceRoot, type RootView } from '../connections/source-roots-api.ts';
 import { readSourceReadSnapshot, type SourceReadSnapshotView } from '../connections/source-read-api.ts';
 import { applyAssignmentSourceSelection, type AssignmentBuffer } from './assignment-api.ts';
+import { AssignmentScopeReduction } from './AssignmentScopeReduction.tsx';
 
 interface SourceSelection {baseline:any;root:RootView;observation:SourceReadSnapshotView}
 /** exact 조회 자료만 선택한다. Agent 호출·경로 권한 발급·새 관측 실행을 하지 않는다. */
@@ -46,5 +47,6 @@ export function AssignmentSourceSelection({client,buffer,session,locked,update,r
       <button type="button" disabled={locked||!Object.keys(selected).length} onClick={()=>run(async()=>apply())}>선택 파일을 임무 초안에 반영</button>
     </>:null}
     {buffer.input.definition.allowedScopes.length?<pre aria-label="선택한 임무 소스 범위">{JSON.stringify(buffer.input.definition.allowedScopes,null,2)}</pre>:<p>범위 미선택 · 빈 범위를 임의 허가로 바꾸지 않습니다.</p>}
+    <AssignmentScopeReduction buffer={buffer} session={session} locked={locked} update={update} run={run}/>
   </section>;
 }

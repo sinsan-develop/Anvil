@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN09/UI04 소스 의도 범위 축소**: 미저장 임무의 기존 파일/root 항목만 명시 제거→기존 저장/조회로 연결했다. 신규4·직접10/type/build235·새DOM4+직접1·scopedC0/I0/M0·QA0 범위다. 빈 범위는 부족 상태이며 파일 삭제/실제 허가회수/Agent 중지가 아니다. 실제 DB/served·이탈 직후 지연 DOM/전체FN09/UI04는 미검증/부분 상태를 유지한다.
+
 - **2026-10-20 FN06/FN09/UI04 환경 후보 선택**: 기존 ENVIRONMENT_CANDIDATE 목록/고정원문을 대조해 초안 environmentRef 선택과 별도 저장/원문 조회를 source 연결했다. 신규/직접13PASS/type/build233·새DOM5+직접1=6PASS·scopedC0/I0/M0·QA0 범위다. NOT_READY/ENVIRONMENT_UNVERIFIED를 유지하며 실제 환경/능력·정식DB/served·실Agent/인수·전체FN06/FN09/UI04 완료는 아니다.
 
 - **2026-10-20 FN09/UI04 임무 예산 고정 선택**: 기존 한도 보관본 exact id/version/hash를 조회해 APPLIED ref만 미저장 임무→기존 저장/조회로 연결했다. 신규/직접13PASS·최종회수fixture3/type/build·새DOM4+직접1/QA0이다. scopedC0/I0/M1의 음성 fixture는 Main 보완·재리뷰0이며 현재정책/실제강제/실행허가 및 BUDGET_UNVERIFIED 해소를 주장하지 않는다. 정식DB/served/실Agent·인수·전체FN09/UI04 상태는 부분/미검증으로 유지한다.
