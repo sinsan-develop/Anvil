@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI06 관계 탐색 source 확인 / Main 어울(2026-10-20)**: 신규2RED174.8944ms→원문SELF역방향시험기대누락1수정→2PASS156.7698ms/type0/build218이다. PLAN_RELATIONS 화면부재RED 뒤첫구현실패1은fixture P01유형을PREPARATION으로기대했으나blank기본FUNCTION이었던것을actualsnapshot으로확인했다. 시험에유형만명시·제품build그대로1PASS3.1초, 기준완화0이다. 단1회staticC0/I0/M1(형제key중복)을받아정적source회귀1RED138.95ms→key namespace만분리→직접3PASS181.2511ms/type0으로보완했다. 새M1원결과를지우거나독립C0/I0/M0로승격하지않으며동일재리뷰0·key보완후browser재실행0이다. 동일계획카드직접관계/정확원문·없음/중복/SELF차단·검색보존/쓰기0만확인하고실제DB/현재진도·전이영향/주체·버전교체DOM/served는미검증이다. 종료후RED3/실패3/GREEN1결과와buildexact회수·독립잔여0·경고유지다.
+
+- **UI06 관계 탐색 TDD·UI등록 / Main 어울(2026-10-20)**: 신규2RED174.8944ms 뒤1PASS/1FAIL177.5899ms는자기선행이역방향에도나타나는동일원문을시험기대에서누락한1건이다. 원문삭제/제품정규화없이양방향SELF 기대를보존해보완했다. 새PLAN_RELATIONS는Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui06-plan-relations-01·전용Edge만생성전부재/realpath/link확인후최대30초사용한다. 같은버전선행/후속·모호/없음·검색입력보존/쓰기0만fixture확인하며실제진도/현재권한·Agent/DB변경0이다. 종료exit수집뒤exact정리/독립잔여0·경고유지다.
+
+- **FN04/UI06 고정계획 선행·후속 원문 탐색 착수 / Main 어울(2026-10-20)**:9bf7c679 local/private exact·main불변이다. 승인설계의업무선행/역방향추적을같은hash검증WorkPlanView의카드정의에서명시탐색한다. 착수/검수·직접선행/직접후속을구분하고없음/중복/자기참조를임의정상연결하지않는다. 검색조건/편집buffer/원명령을건드리지않고선택대상카드원문만읽으며새GET/쓰기/API/schema·현재진도/실행허가0이다. source같은planref를표시·계획교체시이전선택을숨긴다. 관계정의가실제선행완료/Ready나서버추적edge라는주장은하지않는다.
+
 - **FN09 보관 검토 상세 확인 / Main 어울(2026-10-20)**:UI04_REVIEW_DETAIL 상세부재RED(session10178exit1수집)→새상세/직접영향기존검토·별도확정2PASS5.0초/type0/build216이다. 기존hash검증GET의6항목·개별이유/판정·종합판단·당시사람/시각·원문/대상fullref를명시펼쳐표시하며script문자열실행0·조회거절시원문숨김/새쓰기0을확인했다. scopedstatic1회C0/I0/M0·동일단위재리뷰/기존전체회귀0, 종료뒤RED3/GREEN1결과/buildexact회수·독립잔여0·경고유지다. 기존API/DB계약변경없어이표시보완의실제DB여정은재실행하지않았고served/현재권한·검토의미/독립성은미확인이다. 상세표시를내용적합·배정/실행허가로승격하지않는다.
 
 - **FN09 보관 임무 검토 상세 착수 / Main 어울(2026-10-20)**: 다음독립누락은UI04의보관사람검토6항목·각이유/판단·검토자/시각/원문ref가요약목록에서숨겨져검수가불가능한점이다. 기존검증된decision GET의원문을명시펼쳐읽도록연결하며새API/DB/schema·확정/허가/Agent0이다. 검토evidenceRefs[]는서버현계약이빈값만허용하므로임의입력/허용완화로늘리지않는다. 추가증거입력은별도계약범위로미구현유지·재승인질문0이다. 조회만으로적합/독립검수/실행허가를만들지않고조회실패시기존숨김동작을유지한다. 조사중없는project-design-changes 파일/옛design_changes폴더읽기os2각1을보존하고실제rg목록의traceability/design-changes.ts만참조한다.
