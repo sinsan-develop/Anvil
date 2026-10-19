@@ -49,6 +49,7 @@ import {ProjectResultCriteria} from '../results/project-result-criteria.ts';
 import {ProjectResultReviews} from '../results/project-result-reviews.ts';
 import {ProjectResultReworkPreparation} from '../results/project-result-rework-preparation.ts';
 import {ProjectResultReworks} from '../results/project-result-reworks.ts';
+import {ProjectResultExecutionSource} from '../results/project-result-execution-source.ts';
 import {ProjectReportedCoverage} from '../results/project-reported-coverage.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
@@ -78,6 +79,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const assignments = new ProjectAssignmentDrafts(workPlans, projectMethods), assignmentCodec = new ProjectListCodec(value => options.repository.signProjectCursor('ASSIGNMENT_DRAFTS:' + value));
   const assignmentConfirmations = new ProjectAssignmentConfirmations(assignments);
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
+  const resultExecutionSource=new ProjectResultExecutionSource(results);
+  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/execution-source',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultExecutionSource.read(db,actor,request.params.projectId,request.params.id));});
   const resultCriteria=new ProjectResultCriteria(assignmentConfirmations);
   const resultReviews=new ProjectResultReviews(results,resultCriteria);
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/reviews',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReviews.list(db,actor,request.params.projectId,request.params.id));});
