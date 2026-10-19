@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 감사 I1 GREEN·정리 / Main 어울(2026-10-19)**: private/WSL exacted07f4ddb06d9d816a8dde1fb65fd9fa1ce70ffd 새 빈 PG b03b529d87180d8ee1602a25b934d569fe7f663d9b17ded7bb54c260fc979d8e/internal network10d4fbb8b7454f81395d561fc25d82395fbd6268da8cffa5785f4de063f5ea0a, 고정image594290/PG15.18·Node24.21·60SQL checksum exact에서 신규 audit mode1 PASS1896.864083ms(기능1542.834147), skip0·phaseDONE다. WRONG_TARGET/DUPLICATE_AUDIT 전체tx rollback·COMMIT후 감사 추가 거절/원문GET 유지·원5guard hash불변을 확인했다. 원RED/시험입력실패는 보존하고 독립 원C0/I1/M1은 Main TDD 보완 범위만 해결했으며 독립 재검토C0로 바꾸지 않는다. M1 입력오류503 분류 deferred다.
+  등록QA raw2파일/5디렉터리·PG/network/Git경로는 exact 확인 뒤 제거했고 별도SSH 잔여0이다. 정식PG e6f798c3/image594290/exited/StartedAt2026-10-18T15:25:12.085069883Z/FinishedAt2026-10-19T12:56:52.490883698Z/restart0 불변, 정식DB·서비스·키·실Agent 변경0이다. SQL 저장 핵심 확인은 UI05 사용자 입력/정식DB/served/실제 환경·검수/보완 저장·전체FN12/Stage 완료가 아니다. 다음 미완료는 UI05 기존 검수 원문에서 명시적 criteria/test종류·환경·원조건 매핑을 입력해 준비→명시저장→exact 재조회하는 연결이며 Main이 이어간다.
+
+
 - **FN12 감사 I1 실제 RED·최소 보완 / Main 어울(2026-10-19)**: 반증 exact15ef7574 첫 시험은 confirmed receipt를 원문봉투로 잘못 넣어 RESULT_CRITERIA_ASSIGNMENT_INVALID·1 FAIL1833.863114ms였고 결함 반증으로 세지 않는다. 실제 확정본 GET 봉투로 바꾼 exact082c5597 새 빈 격리 PG60SQL에서 감사 WRONG_TARGET가 거절되지 않아1 FAIL1759.686789ms/ERR_ASSERTION, 별도 읽기 committed_criteria=1/wrong_target_audits=1로 I1을 재현했다. 두 생성세대 raw각2파일/5디렉터리·등록PG/network/path exact 회수했다. 가변 postgres:15 태그40710과 고정594290 불일치의 준비 최초 exit1은 생성0이었으며 고정digest 자체 확인으로 진행했다.
   변경 전0026은 audit 존재만 검사했다. 변경 후 해당 신규 연산에만 감사 전체1행/정확target_ref와 최초 audit actor/client/policy/digest 대응을 강제하고 project잠금 아래 중복/기준저장후 추가를 차단한다. 기존 공유5guard/SQL·정식DB·서비스·권한·키·Agent 변경0이다. 직접 소비자/route10 PASS932.362ms이며 새 SQL의 GREEN은 아직 미검증이다. M1 입력오류503 분류 deferred는 보존한다. 다음은 새 빈 Green QA에서 동일 반증과 정상 read를 확인하며 독립 원C0/I1/M1을 독립C0로 소급하지 않는다.
 
