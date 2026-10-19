@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN15 최소 인계 계약 제안 한정 작성(2026-10-20)**: FN15_CONTROL_HANDOFF_CONTRACT_PROPOSAL.md SHA256 8EA266474A50F64B6618AD1318CAD5290C5F7EF096C71B340CABD254D2030F4D를 DRAFT/NOT_ADOPTED로 작성했다. 부모설계/계획·INTERFACES/DATA_MODEL/FN15카드와 현재 OWNER-only제어/단일control·요청처리부재를 대조해 A SELF요청·고정조회·미확인요약과 B실회수/원자수락·HANDOFF_ELIGIBLE 변경권한을 분리했다. 단1회C0/I0/M1을 Main이모호한기존권한차단 I1로재분류·보완했으며 독립재리뷰/0승격0이다. 현재이어갈수있는것은 상세화/분리 검토, 채택전미수행은 신규접근예외/보호GET·persistent요청저장/실인계이며 다른업무전체불가능주장0이다. 기능/코드/API/SQL/DB·서비스/권한·Agent실행/시험PASS0·임시자원0, diff check0·보류6/main불변이다.
+
+- **FN15 제안 범위 검토 보완(2026-10-20)**: 단1회 독립 C0/I0/M1은 A의 ‘모든 수락/새 변경 불가’가 기존 제어자까지 멈추게 읽히는 모호성을 지적했다. Main은 잘못된 권한 차단으로 이어질 수 있어 설계 중요도 I1로 재분류하고 인수 요청자 변경불가/기존 제어자의 정상권한 유지로 한정했다. 요청/생성 주체·제어불명·요약 수치/누락도 명시 제안으로 보완했다. 원 리뷰·declined wire/schema/실회수/CAS·OS미검증을 보존하고 독립 재합격/기능테스트 PASS0이다. DRAFT/NOT_ADOPTED·제품/API/SQL/권한0은 불변이다.
+
+- **FN15 상세화 PMO 보고 안전 거절(2026-10-20)**: 첫 PMO 메시지는 내부 구현 심벌/구조·파일명 포함으로 실행심사에서 거절됐다. 도구 원문: ‘PMO 보고 자체는 승인됐지만 payload에 내부 저장소 구조·파일 경로와 구현 심벌을 외부화하는 내용이 포함되어 있어, 내부 경로를 보고하지 말라는 명시 규칙을 위반한다.’ 숨은 전송/우회0, 구현정보를 제외한 기능·판단·권한 경계 요약만 별도 안전 대안으로 전달했다. 제안/원문·보류자료/실제권한 변경0이다.
+
+- **FN15 인계 계약 공백 상세화 착수 / Main 어울(2026-10-20)**: PMO가 일반 checkpoint 후 idle을 재확인했다. 433b2cec/c3b5c2c9/47102cdb source한정/미검증 기록 뒤 일반final로 멈춘 것은 실제 새경계 때문이 아닌 Main 연속진행 관리 오류다. 최신직접중지0, ‘할일없음/전체동결’로 일반화0이다. FN15카드186~197·설계9.3/S12·INTERFACES13.6·실제 project_control/currentProjectController/operation목록을 대조해 request/handoff저장·소비 부재와 HANDOFF_ELIGIBLE의 OWNER-only집행 충돌을 확인했다. 새계약 제안 작성은 승인된 범위에서 즉시 수행하고 API/DDL/권한·실수락은 자동채택하지 않는다. FN15_CONTROL_HANDOFF_CONTRACT_PROPOSAL.md의 A SELF요청·고정조회·미확인요약과 B 실회수/원자수락을 분리하며 기존 CapReport/0029/보호GET/정식PG 질문 반복0이다. 후속 SQL literal glob OS123 1은 rg -g 목록으로 정정했고 파일/권한변경0이다.
+
 - **FN09/UI04 임무 예산·환경 선택 해제 한정 확인 / Main 어울(2026-10-20)**: 신규3 missing-function RED293.6662ms→3PASS356.5311ms/type0/build240·새DOM3+직접기존저장1=4PASS6.2초·단1회 scopedC0/I0/M0다. 예산만/환경만/둘다 미저장선택을 명시 null로 해제→별도 기존 prepareAssignment 저장을 연결하고 다른입력/참조·원본·권한 쓰기0을 확인했다. owner/client·프로젝트/binding/세대/input/ref/design·동결/불명/이탈 CAS의 새초안 덮기 거절과 빈선택 부족/실행false도 유지한다. 실제DB/served·모든React지연/주체전환·실제정책/환경/Agent효과와 전체FN09/UI04는 미검증/부분이다. 등록QA 결과1파일/build exact정리·별도잔여0·원경고/보류6·CapReport NOT_ADOPTED 보존, 불변선택/PG 전수 반복0이다. rollback은 신규해제helper/두panel import·버튼만 일반revert하며 보관자료·현재권한은 보존한다.
 
 - **UI04 선택 해제 QA 사전등록(2026-10-20)**: 신규3 missing-function RED293.6662ms→3PASS356.5311ms/type0이다. `D:\tmp\anvil-v3-stage-b\ui04-assignment-selection-clear-01`와 `apps/web/dist`만 현재사용자/Main 소유·수명15분·생성전 부재/부모owner/realpath/nonlink확인·종료exact정리/독립0이다. 실제bundle/msedge/same-origin합성의 예산만/환경만/둘다 해제→별도기존저장3와 직접기존저장1만 검사하며 과거이력/실PG 전수는 반복하지 않는다. 실제DB/served/권한회수/Agent0이다.
