@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND store 서명·nonce·journal 결합 한정 검토 / Main 어울(2026-10-19)**: 기존 current 양성 준비를 공통 fixture로 추출하고 실제 메모리 P256 서명→challenge→authenticated SEND consumer→새 PG-store 앱 코드→전용 journal을 같은 가짜 DB 연결로 결합했다. 같은 proof의 원결과 재조회는 receipt/permit 각1건과 원 SEND 예약을 유지한다. journal append 직후 주입 오류는 fake ROLLBACK에서 기존 challenge만 보존하고 receipt/permit을 되돌리며 모든 연결을 반환한다. 추가/직접 영향2 PASS1176.1688ms·typecheck0·diffcheck0, 변경 시험 한정 독립 정적 C0/I0/M0다. 검토자는 시험을 재실행하지 않았다. SQL 응답은 prefix 기반이고 rollback 모델은 events/receipts/permits에 한정된다. nonce 기록 이후 실패·deferred guard/COMMIT 실패·응답유실/경합·물리 내구·실제 PG/HTTP/OS/Agent는 미검증이다. 기존 original5 guard 거절/pending·actual DB 미지원과 원 시험 한계는 유지하며 전체 기능 완료로 표시하지 않는다. 다음은 이 저장부와 정규화 요청/선택 경로의 연결이며 실제 서비스 자동등록이나 외부 실행은 하지 않는다.
+
 - **C3 store 추가 현재 양성 fixture 한정 검토 / Main 어울(2026-10-19)**: 신규 양성 시험/optional setup/전체 reservationRef 선택 변화는 독립 정적 C0/I0/M0다. 기존 challenge current의 원문 정책 검사 코드는 소비하지만, SQL 결과·고정조회/current 제공자와 SEND 예산의 정책 resolver는 합성/주입 fixture임을 명확히 유지한다. 검토자는 시험을 재실행하지 않았고 실제SQL 조건·권한/잠금·COMMIT·제공자 진위·전체 서명nonce/HTTP·OS/Agent는 미판정이다. 원4시험의 호출0 한계를 새 앱 분기 합성 검증으로만 보완했으며 실제 DB PASS로 바꾸지 않는다. store/추가시험/현황3경로만 같은 branch에 보존하고 전체 서명 nonce·원결과/journal 결합의 미완료를 이어간다.
 
 - **C3 SEND store 현재 양성 코드 결합 추가 / Main 어울(2026-10-19)**: 앞4시험의 current 호출0 한계를 보존한 뒤 Main이 기존 challenge.current→runtime 명시 정책→기본 ProjectLimitPolicies의 원문/hash·원명령 검토→기존 예산 START 원예약 검사→새 store의 grant subject/session→새 basis의 SEND 새예약 검사를 같은 합성 DB에서 실제 코드로 연결했다. 키는 시험 메모리 P256 공개키이며 고정 read/current 제공자와 SQL 결과는 합성이다. 정상 code-path를 확인했지만 실제 권한 진위/SQL/RLS·잠금/COMMIT·전체 서명nonce 소비·OS/Agent 증거는 아니다.
