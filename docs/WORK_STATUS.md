@@ -2,6 +2,20 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND 파일 내구 checkpoint / Main 어울(2026-10-19)**: 신규 adapter 부재1RED195.9903ms→실Windows 파일 sync/재열기·원응답 metadata 재조회·UNKNOWN 새command 무전송·quota/부분/기존잠금/sync실패/버린비동기 sticky검수1PASS444.5443ms다. 독립 C0/I1/신규M0의 lock.stat실패 후 미확인잠금삭제를 별도 새QA1RED145.3617ms로재현했다. Main이 생성된lock의 identity실패를poison으로보존하고finally의lockId필수검사를추가해 새GREEN1PASS130.5441ms(callback0/잠금보존/다음진입거절)로보완했다. 원검토를 독립C0/I0으로고치지않고같은후보재리뷰0이다. 세QA exact정리·별도 C3_INSTRUCTION_STORE_ALL_THREE_QA_INDEPENDENT_RESIDUAL_ZERO/exit0이며 원RED/실패를보존한다.
+
+  저장부는 caller-owned 기존root/실행전체잠금·순차300개/2MiB 상한이고 metadata file.sync만 제공한다. 새시험은 실제SENDjournal과 고정codec에 합성source/current/consume/wire를붙인 검수이며 실Agent·OS/현재권한진위·전원손실·directoryfsync/정식DB·서비스는미검증이다. 원문/handle저장0·기존START/client/자료저장부변경0·수신기이월Minor1미해소다. 변경은신규adapter/직접실파일시험/잠금I1음성시험/WORK_STATUS 정확4경로이며C3/Stage부분구현이다. 다음 회수전용 HUMAN 서버 선행은같은승인범위에서계속한다.
+
+- **C3 SEND 파일 저장 독립 I1·한정 보정 등록 / Main 어울(2026-10-19)**: 독립 C0/I1/신규M0는 wx 잠금 생성 뒤 FileHandle.stat 실패 시 lockId 미확인인데 finally가 잠금을 삭제할 수 있다는 경계다. wire기실행 주장은 아니며 불명잠금 자동삭제 금지를 보정한다. 최초 미구현1RED195.9903ms→실파일1PASS444.5443ms/type0·정리/독립0 증거와 분리한다. 기존 QA는 소진하여 다시 실행하지 않는다.
+
+  새 D:\tmp\anvil-v3-c3-instruction-store-lock-red-qa-01와 D:\tmp\anvil-v3-c3-instruction-store-lock-green-qa-01만 현재Windows사용자/Main소유·각10분으로등록한다. 생성전부재/부모realpath/nonlink/owner확인, probe.lock/instruction.lock만 사용해 잠금stat실패·callback0/잠금보존/다음진입거절을 확인하고 native주입은finally원복한다. identity/nonlink/허용파일 확인 exact정리·독립잔여0, 정식환경/Agent/키/권한/서비스변경0이다. Main보정을새독립 C0/I0으로승격하지않는다.
+
+- **C3 회수 전용 HUMAN 서버 선행 착수 / Main 어울(2026-10-19)**: SEND 파일 저장의 독립 검토 중, 다음 미구현은 승인 제안 §6.1의 authorizeExecutionRecovery 내부 서비스다. 현재 HUMAN 로그인/단독제어·최근 재인증·정확 실행/세대·최종서버ACK/알려진 processRef 또는 UNKNOWN·현재 신뢰host·명시 회수정책을 같은 인증 transaction에서 대조하고 별도 짧은 RECOVERY 계획/영수증만 저장하는 필수 SYNTHETIC_ONLY port로 구현한다. 원 실행grant가 회수/만료돼도 회수만 허용하고 START/SEND/새permit/일반원문 접근·강제kill·writer회수/ACK초기화는 열지 않는다. 실제 current/PG adapter·credential/HTTP/OS/Agent는 미연결로 남기며 새외부자원0, 기존SQL/정식DB 변경0이다. 같은승인C3의 내부구현으로 재승인 대기하지 않는다.
+
+- **C3 SEND 파일 내구 연결 착수 / Main 어울(2026-10-19)**: 1c9628a3 local/private exact·clean 뒤 SEND의 메모리 journal 선행을 실제 파일 저장으로 연결한다. 기존 START/자료/client 저장부는 변경하지 않고 실행별 instruction.lock·000001~000300.json, 전체2MiB 이하의 필수 SYNTHETIC_ONLY adapter만 추가한다. root/ACL/키는 호출자가 준비하며 제품은 생성하지 않는다. file.sync·재열기·원결과/UNKNOWN 무재전송, quota·부분파일/남은잠금·sync실패와 버린 비동기작업의 sticky 불명을 확인한다. directory fsync/전원손실·동일사용자 악의적 변경 내성/실Agent/OS/현재서버허가를 주장하지 않는다.
+
+  새 D:\tmp\anvil-v3-c3-instruction-store-qa-01와 normal/unknown/sync/abandon/quota/partial/lock 하위만 현재Windows사용자/Main소유·20분으로 사전등록한다. 생성전부재·D:\tmp realpath/nonlink/owner·고정Node hash를 대조하고 일회성 합성metadata만 저장한다. 정확 root/identity/nonlink/허용파일명을 확인한 뒤 성공/실패 모두 전용파일을 정리·독립잔류0을 확인한다. 정식환경/Secret/서비스/키/네트워크 변경0, 기존완료QA 재실행0이며 서버SEND/STOP·회수는 별도 미완료로 보존한다.
+
 - **C3 부분 inbox→SEND source 핵심 확인 / Main 어울(2026-10-19)**: 기존6PASS+신규2RED172.4871ms→직접8PASS190.7954ms/type0 뒤 실제 파일 재열기·원수신ref/hash→합성SEND1회·변조거절1PASS400.1192ms를 확인했다. 독립 C0/I0/신규M1은 만료음성이 앞선 blob변조와 섞인 시험증거 문제이며, Main이 새 전용 검수에서 만료요청의 inbox접근0을 명시검사해1PASS461.135ms/type0으로 보완했다. 원검토를 독립 C0/I0/M0로 바꾸거나 첫시험의 만료독립PASS를 주장하지 않는다. 두 전용root 모두 exact정리 뒤 별도 C3_INSTRUCTION_SOURCE_BOTH_QA_INDEPENDENT_RESIDUAL_ZERO/exit0이다. 기존 record 중복조회 기한검사 Minor1은 그대로 미해소다.
 
   변경은 수신기 SEND읽기/직접시험/새실파일연결시험/WORK_STATUS 정확4경로다. actual inbox bytes/file.sync·재열기/해시만 실파일 증거이며 SEND journal/current/consume/wire는 메모리 SYNTHETIC_ONLY다. 현재 서버권한·최신이해의 진위/실Agent·OS/HTTP/정식DB·서비스는 미연결·미검증, 전체C3/Stage 부분구현이다. 완료검사 재실행 없이 다음 승인 C3 서버 SEND/STOP·회수 선행을 이어간다.
