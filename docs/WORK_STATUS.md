@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 중지 실파일 내구 checkpoint / Main 어울(2026-10-19)**: 미구현class1RED178.903ms→새 Windows 전용실파일1PASS347.0204ms/type0, 기존 중지 transport 직접인접6PASS372.7066ms다. 실제 STOP_ATTEMPTED file.sync 뒤 합성 codec interrupt1회/STOP_UNCONFIRMED providerclaim·재열기 원응답/응답유실 무재전송·새명령우회거절·총64KiB/2개상한·부분/기존잠금/lock.stat/sync실패·버린비동기/종료tx거절을 확인했다. 독립 신규 C0/I0/M0는 두 새파일 정적 한정판정이며 검토자가 재실행한 증거가 아니다. marker C3_STOP_FILE_SYNC_REOPEN_REPLAY_UNKNOWN_QUOTA_PARTIAL_LOCK_STAT_ABANDON_VERIFIED, finally정확정리0 뒤 별도 C3_STOP_FILE_QA_01_INDEPENDENT_RESIDUAL_ZERO/exit0이다.
+
+  실제file.sync/재열기만 증명하고 verifier/wire는 SYNTHETIC_ONLY다. directoryfsync/전원손실·다중프로세스crash·동일OS사용자악의변조 내성/실제Agent·OS중지·현재권한진위·회수credential·writer회수는 미검증, 전체C3/Stage부분구현이다. 원문·핸들 저장0·root/ACL/키/정식환경 변경0, 기존START/SEND저장부는변경하지않았다. 신규adapter/실파일시험/현황 정확3경로를 보존하고 다음은 계획된 API 경로의 필수합성인증·exact요청·해당서비스 연결을 계속한다. 기존 소진QA는 반복하지 않는다.
+
+
+- **C3 실행기 중지 파일 내구 착수 / Main 어울(2026-10-19)**: d71a898e local/private exact·clean 뒤 기존 session-transport의 STOP_ATTEMPTED→STOP_UNCONFIRMED 최대2개 기록을 실제 전용 파일에 sync/재열기하도록 연결한다. 원 봉투/key·불명 시도와 provider claim만 보존, 실제 Agent/OS/회수credential·writer회수 false 계약은 그대로다. 기존 START/SEND 저장부는 수정하지 않고 root/ACL/키도 생성하지 않는다. 신규 D:\tmp\anvil-v3-c3-stop-store-qa-01 및 normal/unknown/sync/abandon/quota/partial/lock/lockstat 하위만 현재Windows사용자/Main소유·최대20분으로 생성전등록한다. 부재/부모realpath/nonlink·owner/고정Node를 확인하고 stop.lock·probe.lock·000001~000002.json만 사용, 파일/경로identity·nonlink·허용이름 확인 뒤 성공/실패 정확정리·독립잔여0이다. 부분파일/미확인잠금·버린비동기작업은 자동복구하지 않고 불명으로 보존하는 음성을 확인하며 전원손실/directoryfsync·동일사용자 악의변조 내성은 주장하지 않는다. 완료된 다른 실파일/PGQA는 반복하지 않는다.
+
+
 - **C3 회수 서명 중지지시 읽기 내부 checkpoint / Main 어울(2026-10-19)**: 신규5RED167.1638ms→4PASS1FAIL406.0482ms의 예약 음성은 fixture가 동일 객체를 공유한 문제여서 저장 JSON별 분리·유효한 grant/hash를 먼저 만든 뒤 시험하여5PASS386.2945ms/type0, 직접/기존 proof·회수 관측 인접20PASS405.4881ms다. 독립 신규 C0/I0/M0는 두 새파일 정적 한정 판정이며 실제 transaction/credential/HTTP·current 진위는 미판정이다. 검토 미확인인 RECOVERY grant 기반 중지 정상은 Main이 새 시험으로 확인했다. 이 추가 점검의 마지막 selection 공개키 교체1RED(5PASS1FAIL453.5586ms)는 fingerprint 재대조를 추가해 직접6PASS419.6086ms/type0로 보완했고, 원검토 뒤 Main보정을 새 독립검토로 승격하지 않는다.
 
   정확 RECOVERY GET/nullbody/host 서명·원 grant/세션/등록/source/정책·기한의 nonce와 선택 binding을 한 합성 tx에 저장해 원결과/동시 중복을 보존한다. 중지 없음 뒤 같은 proof의 범위 확대·잘못된 mode/route/서명·변조/만료/최종await기한과 저장 실패는 거절/rollback한다. 출력은 commandRef·봉투/no-store뿐이며 HUMAN 요청·reason·일반 원문/START/SEND/permit을 반환하지 않는다. 이 검수의 tx/current/results는 in-memory 합성이라 실제PG 원자성/불변성과 current/OS/Agent·HTTP/credential·writer회수는 미검증, 신규외부자원/정식DB·서비스변경0이다. 변경은 신규내부서비스/직접시험/현황3경로이며 전체C3/Stage는부분구현, 다음은 실행기 중지시도의 실제파일 내구저장과 남은 회수/서버SEND 연결을 계속한다.
