@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND basis 한정 독립 검토 / Main 어울(2026-10-19)**: 신규 basis·공유 검사 export alias·직접 시험 diff의 정적 C0/I0/M0를 확인했다. 검토자는 시험을 재실행하지 않았으며 실제 SQL/RLS·잠금/COMMIT·원영수증/outbox/current 진위·HTTP/credential/OS/Agent는 미판정이다. 새 소비자는 기존 차단 guard를 교체·우회하지 않는다. 탐색1회에서 rg에 PowerShell 전용 -ErrorAction 인자를 전달해 구문 오류가 났으나 파일·권한 변경0이며 실행검증/PASS에 포함하지 않는다. 변경5 PASS/type0와 범위별 미검증을 유지해 기존 branch에 보존하고 전용 permit journal의 미구현 접점을 계속 대조한다.
+
+- **C3 SEND permit PG basis 연결 후보 / Main 어울(2026-10-19)**: 8103c600 local/private exact·clean 및 main 불변 뒤, caller가 잠근 동일 db/주체로 정확 명령 ref 한 행→기존 원영수증/outbox 고정 판독→공유 현재검사→새 예약 최신 RESERVED head/정책→최종 현재·기한을 결합했다. 기존 readCurrent에는 export alias만 추가하여 본문/기존 호출을 변경하지 않았다. pool/BEGIN/COMMIT/DML·공용 SQL guard·START/STOP·서비스 활성화는 변경0이다.
+  class 부재 최초2 RED/1 generic 음성의 잘못된 PASS855.7171ms는 음성을 정확 오류 코드로 강화하여3 RED780.4468ms로 다시 확인했다. 구현3 PASS939.6002ms 뒤 Main이 최초 nested fact의 짧은 기한이 뒤 관측으로 연장되는1 RED972.1919ms를 찾아 최초/최종 fact 시각+30초·전체 상위기한의 min을 추가했다. 단축 기한은 현재 fact의 humanSession 유효기간에만 반영하고 원 기록·grant/예약·관측시각은 재발급하지 않는다. 실제 기존 예산 checkDelivery 코드→basis→permit consumer 결합을 포함해 변경5 PASS955.3276ms/type0이다. DB·원영수증 고정read·현재provider는 합성이며 actual SQL/RLS/잠금/COMMIT·HTTP/credential/OS·Agent 증거가 아니다. 기존 완료검사/소진QA 반복0·정식DB/키/서비스·외부 자원 변경0, 원 guard5 함수 거절/pending 미검증 유지. 신규 basis/alias/추가 시험만 한정 독립 검토 중이다.
+
 - **C3 permit 선택기 한정 검토 / Main 어울(2026-10-19)**: 신규 selector와 추가 시험 diff만 정적 독립 C0/I0/M0를 확인했다. 검토자는 시험을 재실행하지 않았으며 actual PG 잠금/COMMIT·원영수증/outbox/current 진위·실HTTP/credential/OS/Agent와 실제 START consumer 결합은 미판정이다. 변경5 PASS/type0의 Main 증거와 독립 정적 판단을 구분하여 같은 branch에 보존한 후 다음 독립 구현을 계속한다.
 
 - **C3 저장 명령 기반 permit 소비자 선택 후보 / Main 어울(2026-10-19)**: 49fc94d7의 local/private exact·clean과 main f976ed5e 불변을 대조한 뒤, 같은 permit 요청을 저장 START/SEND 기록으로 분기하는 신규 선택기를 구현했다. caller operation·STOP/RECOVERY·알 수 없는 기록·다른 grant·비합성·consumer 실패 때 다른 종류 fallback은 거절한다. 기존 START/SEND consumer와 공개 요청·공용 SQL·기본 서비스 등록은 변경하지 않는다. 필수 주입 계약은 같은 실행/세대 잠금에서 명령/원영수증/outbox/current와 선택 consumer의 nonce/result/permit을 하나의 transaction에 묶는다.

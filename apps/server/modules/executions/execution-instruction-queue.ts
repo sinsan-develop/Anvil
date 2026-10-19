@@ -40,6 +40,8 @@ function readCurrent(raw:unknown,scope:Scope,request:ProjectCommand,actor:Authen
  if(f.writerState!=='OWNED'||Date.parse(f.checkedAt)>at||at-Date.parse(f.checkedAt)>30000||Object.values(f.expires).some(v=>Date.parse(v)<=at)||executionFactChecks.some(n=>n!=='understanding'&&f.checks[n].state!=='VERIFIED_CURRENT')||f.intent.mode==='WORK'&&(f.understandingReviewRef===null||f.checks.understanding.state!=='VERIFIED_CURRENT')||f.intent.mode==='CONTEXT_REVIEW'&&f.intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return fail('INSTRUCTION_QUEUE_FACT_REQUIRED');
  const{checkedAt:_,expiresAt:__,fact:___,...currentBinding}=c,{checkedAt:____,...factBinding}=f;return{c:{...c,fact:f},binding:{...currentBinding,fact:factBinding} as Binding};
 }
+// 저장 서비스와 permit basis가 같은 현재 문법/주체 검사를 소비한다. 실제 조회 권위를 대신하지 않는다.
+export {readCurrent as readSyntheticInstructionCurrent};
 /** 저장 당시의 exact 결박·문법만 판독한다. 현재 grant/자료·실제 영수증/outbox·전달 권위는 별도 제공자가 대조한다. */
 export function readSyntheticInstructionQueueRecord(raw:unknown,scope:Scope):SyntheticInstructionQueueRecord {
  try{
