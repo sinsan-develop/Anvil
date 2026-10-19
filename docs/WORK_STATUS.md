@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI11 형제 key 보정 한정 확인 / Main 어울(2026-10-19)**: 새03에서 화면 이탈 시 앞선 heading0·복귀 화면1개·원입력·원소스명령 전체2건 동일/버전1·unknown/error/off-origin0의 browser1 PASS2.2초/type0/build183 0이다. App key 한 줄/직접 시험2경로 독립 정적 C0/I0/M0이며 재실행0이다. 원01 source결함 RED와02 fixture누락 FAIL은 각각 보존하고 소급 PASS0이다. 해당 성공03의 passed JSON1개·빈 폴더만 exact realpath/link0/내용 대조 뒤 비재귀 제거해 부재, 해당 runner literal의 node 잔류조회0을 확인했다. 원 실패01/02는 비활성 진단으로 보존한다. 실제 API/DB·원문권한/Agent 및 주체 교체 중 지연 응답·전체 UI11은 미검증이다. 완료 QA 반복/서비스·DB·키/권한 변경0. 다음 승인계획 미구현 선정은 Main이 이어간다.
+
+- **UI11 key 보정·후속 시험 등록 / Main 어울(2026-10-19)**: 새01의1 RED는 /session 이동 뒤 도구 화면 heading1개가 남는 실제 DOM 잔류다. SourceRootsPanel key에 source-roots-panel 접두사 한 줄만 추가했다. 새02는 전 화면 제거/복귀1개·입력과 같은 원명령2건/버전1 기대값까지 확인했으나 기존 source-read-grants?limit=20 GET의 빈 목록 fixture가 없어 unknown0에서1 FAIL이었다. 실제 코드의 SOURCE_READ_GRANTS 계약을 대조해 정확 해당 GET만 추가했고 합격기준·생산코드 범위 완화0이다. 원01/02는 실패로 보존한다.
+  실패1건만 새 Main 소유 D:/Project/Anvil/.av3-data/qa-ui11-route-20261019-03(생성 전 부재/동일 보호부모link0 확인)에 실행한다. in-process 합성 API/dist·headless Edge 각15초·실서비스/TCP/DB/Agent0이며 성공 출력만 exact 정리한다. 현재 build183/type0·큰chunk 경고 유지, 전체UI11/실접근·Agent 완료가 아니다.
+
+- **UI11 동일 형제 key 충돌 대조 착수 / Main 어울(2026-10-19)**: UI05 왕복 결함과 같은 App 형제 ConnectionsPage/SourceRootsPanel의 candidateKey 중복을 좁게 대조한다. 기존 소스 저장 단절→/session으로 이동 시 전 화면 제거→복귀 시 화면1개·입력/같은 원명령/버전1을 검사하는 신규 browser1건만 추가했다. readonly/current dist와 API route fulfillment이며 실제 원문/서버/DB/Agent·권한 변경0이다.
+  전용 자원 사전등록: Main 소유 D:/Project/Anvil/.av3-data/qa-ui11-route-20261019-01은 보정 전 RED 확인, 02는 최소 source 보정이 있을 때만 후속 검증(각 생성 전 부재·동일 보호부모link0 확인)이다. headless Edge 일회/각15초·새 TCP서비스0, 실패 출력은 보존하고 성공 출력만 exact 확인 후 비재귀 정리한다. 기존 소진 QA/UI05 완료시험은 반복하지 않는다.
+
 - **UI05 한정 확인·보존 / Main 어울(2026-10-19)**: 새04의 기존 왕복1 PASS2.4초는 고유 baseline-panel key 한 줄 보정 후 활성 재확인1개·원입력·같은 명령 전체2건·unexpected0·pageerror0을 확인했다. 신규UI05 정상/403 시험은 앞01의1 PASS이며 source 변경과 무관한 완료 시험은 반복하지 않았다. 최종 type0·183module build0·diff0이다. 원 M1 정적 보정과 추가 key/시험 설정 부위는 각 한정 C0/I0/M0이며 검토자는 재실행하지 않았다. 원01/02/03 실패는 보존한다.
   04의 passed .last-run.json 1개와 빈 폴더만 exact realpath/link0/내용1개 확인 뒤 비재귀 정리해04 부재를 확인했다. 원 실패01/02/03 진단은 보호 경로에 남기고 해당 runner literal의 node process 조회0이다. 실제 서비스/DB/키·권한/Agent·TCP 서버 변경0. UI05/FN08/FN09는 실제 착수에 맞춰 부분 구현으로 등록부만 정정하고, 과거 UI04 검토1건 누락도 맞췄다. 완료 합계3은 불변이며 실제 served/DB권한·지연 주체 전환/전체UI05·FN12/13/전체 계획은 미완료다. React 지침은 선택 primitive key·이전 결과 폐기/렌더 수명에만 적용하고 최적화나 구조 확장으로 범위를 늘리지 않았다. 정본 현황의 기존 A-1 행은 보존했으며 한 번의 mirror patch는 원문 차이로 적용 전 실패한 뒤 정확 행만 보완했다. 다음은 원 실행 차단과 무관한 계획 미구현을 계속 진행한다.
 
