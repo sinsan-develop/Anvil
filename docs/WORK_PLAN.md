@@ -118,7 +118,7 @@
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0·직접10/UI5·목록cursor2 확인. 목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·플랫폼실행전거절/적용0·실제저장/API/서비스·배정/Agent·전체완료 미확인 |
 | FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 시작 전 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
-| FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 부분 구현·증거/문제 분류·원문 PG 저장/조회·분리 COMMIT/재해시 음성, HTTP/UI05 조회 source. 새 목록 실제 PG·검수/보완·정식 DB/Agent·전체 선행은 미완료 |
+| FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 부분 구현·증거/문제 분류·원문 PG 저장/조회·분리 COMMIT/재해시 음성, HTTP/UI05 source·새 목록 격리PG→Web소비 확인. 검수/보완·정식 DB/Agent·전체 선행은 미완료 |
 | FN13 | 체크포인트·중지·재개 | C | FN08,FN09,FN11 | FN08,FN09,FN11 | 시작 전 |
 | FN14 | 총괄/책임자 최소 손실 이전 | D | FN05,FN07,FN12,FN13 | FN05,FN07,FN12,FN13 | 시작 전 |
 | FN15 | 사람·클라이언트 제어권 | E | FN01,FN11,FN13 | FN01,FN11,FN13 | 시작 전 |

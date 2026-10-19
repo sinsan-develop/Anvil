@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 목록 실제PG→Web 소비 확인 / Main 어울(2026-10-19)**: private/WSL exact9735bff19befac2133bbc94fe760cb67bc2ddf30·clean의 새 등록QA에서 목록mode1만 실행했다. Node24.21 고정SHA7fde7b8a/npm11.19.0·신규dependencies102·PG15.18 image594290·59 exactSQL이다. 신규 PG b871e23e6952e706808015f0c407a0d7c80681a50e125d48226dfd80e73e3c87/internal network e78144bb93223cb80c3cfcc3db055c795f8adfc84f4718f23237a7919dfab0e6, host172.31.0.2/port{}/tmpfs512MiB였다. 신규1 PASS4124.580914ms(기능3736.820399ms), skip0/phaseDONE다. 정상 임무/원실행 graph는필수fixture만사용했고old양성/재해시음성모드는반복0이다.
+  새 명시정책·합성 주체로 원문21건을보관한뒤실제인증PG/HTTP와Web readAssignmentResults/readAssignmentResult를연결해정확임무최근20/hasMore·중복0·선택원문hash/미실행보존을확인했다. 타사용자·없는임무버전404/fallback400·조회전후result/command/receipt/audit행수불변·원5guard정의hash불변이다. 결과는주장/완료false이며실제Agent/OS신뢰·served HTTPS/실제브라우저DB통합·정식DB/검수/보완·전체FN12/UI05/Stage완료가아니다.
+  시험원문2파일/5dir·poolclose실패0, exactID/label/sourceSHA/image/mount/port·network단독/internal/경로owner/Gitclean/내부npm링크/해당cwd프로세스0확인후등록PG/network/clone만제거했다. 별도조회FN12_LIST_INDEPENDENT_RESIDUALS=0,복구는privateGit/package-lock에서가능하다. 기존정식PG e6f798c3/image594290/StartedAt2026-10-18T15:25:12.085069883Z/restart0보존·DB46/서비스/relay/키변경0이다. 첫read-only preflight의PowerShell끝CR1로exit1이었으나모든검사marker/정식PG불변은확인됐고생성0이었다. 실제setup은stdin CR정규화로실행했으며환경/ACL변경0이다. 다음Main선정미완료는FN12의정확기준·등록증거를분리한검수판정/보완연결이다. 기존blocked SEND5guard나해결된검사를재시도하지않고승인계획/독립경계를따라이어간다.
+
+
 - **UI05 결과 목록 실제PG 연결 QA 사전등록 / Main 어울(2026-10-19)**: 44e7924a local/private exact·clean, Main이 새 목록의 실제PG/인증HTTP→Web소비를 선택했다. 기존 FN12 양성·재해시음성은 소진이므로 재실행하지 않는다. 기존 정상 임무/원실행 graph는 fixture 준비에만 재사용하고 새 list mode에서 결과21건→최근20/hasMore·선택원문hash/미실행, 타사용자/없는임무버전/fallback거절·조회ledger쓰기0·원5guard불변만 확인한다. 실제Agent/OS현재성·served TLS/브라우저·정식DB/인수는 아니다.
   신규 literal: Main 소유 /home/daon/deploy/anvil-v3-fn12-results-list-qa-01·그 하위 .av3-data/fn12-raw, anvil-v3-fn12-results-list-pg-01/internal network anvil-v3-fn12-results-list-net-01·DB anvil_v3_fn12_results_list_qa_01. 고정PG15 image594290/512MiB tmpfs·공개port0/영구volume0/기존network연결0·새합성역할만 사용한다. exact private Git source/Node24.21 SHA7fde7b8a/npm11.19.0와59 exactSQL만 새일회성DB에 적용하고정식46/원5guard/pending·서비스/키는불변이다. Node시험90초/runner110초·10분실행창, 생성전부재/realpath/link/daon·Docker daemon/image/실행중다른QA0확인, 완료/실패후exact ID/label/image/mount/port·경로/소유/Gitclean/내부링크를확인해등록신규자원만제거하고독립잔여0을기록한다. 새mode는수행전type0이며신규test실제결과는아직미확인이다.
 
@@ -1906,7 +1911,7 @@
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 빈소스 초안/고정 선택·직접 정의·내용 검토/별도 확정→명시 생성/단절 시 동일 명령 재확인 연결. UI02/03 fixture23, actual API/DB는 별도4 PASS | 기존 소스/문서·자료/총괄·환경·실제 UI DB 여정 |
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [1] | 기존GET 원본/적용참조·3영역/자료탐색 후보, unit8/browser5·원C0I1/Main시험보완·UI04_CONTEXT_PREP_RESULT | 실제served·DB·단계/세션·지시/Agent·시작/중지 미연결 |
-| UI05 책임자·실행 상세 | [2] | 고정 임무·책임/준비·제출결과 최근20/원문 조회 source, 직접/인접19·type/build·합성 browser 재선택/403 음성 확인 | 새 목록 실제 PG/served·Agent 관측·하위임무/diff bytes·증거 검수/보완/중지 미연결·미검증 |
+| UI05 책임자·실행 상세 | [2] | 고정 임무·책임/준비·제출결과 최근20/원문 조회 source, 직접/인접19·type/build·합성 browser 재선택/403 음성,9735bff1 실제 격리PG/인증HTTP→Web소비1 PASS | 정식served·Agent 관측·전체이력·하위임무/diff bytes·증거 검수/보완/중지 미연결·미검증 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
@@ -1934,7 +1939,7 @@
 | FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
-| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, e0dc5920 격리 PG 제출/분리 COMMIT·재해시 INSERT 거절 확인, HTTP·UI05 조회 source/합성 browser 연결 | 새 목록 실제 PG·검수/보완·UI08·정식 DB/Agent/served 미연결·미검증 |
+| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, e0dc5920 격리 PG 제출/COMMIT·재해시거절,9735bff1 목록PG/HTTP→Web소비·UI05 source/합성 browser | 검수판정/보완·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
 | FN15 사람·클라이언트 제어권 | [] | 단독작업/동시조회 계약 | 인수·구기기 차단·실제 권한 검수 |
