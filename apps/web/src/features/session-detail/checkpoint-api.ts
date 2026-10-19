@@ -6,6 +6,12 @@ import type {CheckpointInput} from '../../../../server/modules/checkpoints/check
 import type {ProjectCheckpointPreparation} from '../../../../server/modules/checkpoints/project-checkpoint-preparation.ts';
 export type CheckpointRecordDraft=Awaited<ReturnType<ProjectCheckpointPreparation['prepare']>>;
 export type {CheckpointInput};
+/** 사용자 클릭으로 전달할 바이트만 구성한다. 실제 로컬 저장 완료를 주장하지 않는다. */
+export async function checkpointDownloadFile(raw:CheckpointRecordDraft){
+ const v=structuredClone(raw),r=v?.assignmentRef,bytes=new TextEncoder().encode(v?.recordText),prefix='# Anvil 작업현황 · 기록 초안\n\n이 기록은 수행자 선언이며 실제 파일/중지/회수·완료/재개를 인증하지 않습니다.\n\n';
+ if(!r||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(r.id)||!Number.isSafeInteger(r.version)||r.version<1||!same(r,v.snapshot?.input?.state?.assignmentRef)||Object.keys(flags).some(k=>(v as any)[k]!==false||(v.snapshot as any)?.[k]!==false)||bytes.byteLength!==v.recordFile?.bytes||await digest(v.recordText)!==v.recordFile.contentHash||await digest(ordered(v.snapshot))!==v.contentHash||!v.recordText.startsWith(prefix))fail();
+ try{if(!same(JSON.parse(v.recordText.slice(prefix.length)),v.snapshot))fail();}catch{fail();}return{name:`anvil-checkpoint-${r.id}-v${r.version}.md`,bytes};
+}
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),flags={checkpointStored:false,recordFileStored:false,currentFactsVerified:false,writerReleaseVerified:false,resumeAuthorized:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
 function fail():never{throw new ApiError('CHECKPOINT_RESPONSE_INVALID');}
 async function digest(text:string){const b=new TextEncoder().encode(text);if(b.length>2*1024*1024)fail();return[...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(n=>n.toString(16).padStart(2,'0')).join('');}
