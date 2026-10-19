@@ -6,6 +6,11 @@ import type {CheckpointInput} from '../../../../server/modules/checkpoints/check
 import type {ProjectCheckpointPreparation} from '../../../../server/modules/checkpoints/project-checkpoint-preparation.ts';
 export type CheckpointRecordDraft=Awaited<ReturnType<ProjectCheckpointPreparation['prepare']>>;
 export type {CheckpointInput};
+export function checkpointBufferKey(session:DocumentSession,projectId:string,ref:ConfirmedAssignmentView['ref']){
+ const uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
+ if(![session?.user?.id,session?.clientId,projectId,ref?.id].every(uuid)||!Number.isSafeInteger(ref?.version)||ref.version<1||!/^[0-9a-f]{64}$/.test(ref?.contentHash))throw new ApiError('CHECKPOINT_INPUT_INVALID');
+ return[session.user.id,session.clientId,projectId,ref.id,ref.version,ref.contentHash].join(':');
+}
 /** 사용자 클릭으로 전달할 바이트만 구성한다. 실제 로컬 저장 완료를 주장하지 않는다. */
 export async function checkpointDownloadFile(raw:CheckpointRecordDraft){
  const v=structuredClone(raw),r=v?.assignmentRef,bytes=new TextEncoder().encode(v?.recordText),prefix='# Anvil 작업현황 · 기록 초안\n\n이 기록은 수행자 선언이며 실제 파일/중지/회수·완료/재개를 인증하지 않습니다.\n\n';

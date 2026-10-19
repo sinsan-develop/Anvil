@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 현황 초안 화면왕복 보존 source 확인 / Main 어울(2026-10-20)**: key부재1RED/기존4PASS396.4976ms→Web5PASS328.4683ms/type0/build0(202modules), 화면왕복 후 빈입력 RED→왕복/준비/다운로드·수정/권한회수1PASS3.9초다. 같은사용자/client/project/확정임무id/version/hash별 controlled App메모리 입력만 보존하고 사용자/client 변경·세션종료시 비운다. 이탈경고와 새로고침/앱종료 영속복원 미제공을 명시했다. scoped static1회 C0/I0/M0이며 실제주체전환·지연경합/종료경고는 재실행하지 않은 판단유보, 실제PG/파일내구성/served·전체FN13 완료아니다. 종료수집 뒤 등록결과2파일/build exact정리·별도잔여0, 경고보존이다.
+  다음 독립 작업은 내려받은 현황 파일을 사용자가 다시 선택해 정확 임무로 대조·원문조회하는 기능이다. 명시대조에만 기존 동일origin 준비API를 소비하고 새저장/자동재개·현재입력덮기·외부Agent전달0, 파일 내용의 일치와 작성출처/수행진위는 구별한다. SQL source정확승인 대기는 유지하되 이 독립조회는 계속한다.
+
+
+- **FN13 화면왕복 초안 보존 착수 / Main 어울(2026-10-20)**: 87265356 local/private exact·main불변, 미게시 저장후보5파일은 별도보존한다. 사용자/client/project/확정임무id/version/hash별 App메모리로 현황입력을 보존하며 이탈중 준비결과는 회수한다. 새로고침/앱종료 영속저장은 미제공이며 명시 이탈경고를 연결한다. 사용자/client 변경 시 버퍼를 비우고 다른임무 자료로 대체하지 않는다. 새key시험1RED/기존4PASS396.4976ms다. 신규 직접영향 왕복browser는 기존 Main소유 apps/web/dist와 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01/checkpoint-draft.md(전용Edge·최대30초)를 생성전부재/parent link검사 후 사용하고 종료 후exact정리/독립잔여0을 확인한다. DB/서비스/권한/Secret/Agent·거절된SQL생성0이다.
+
+
 - **FN13 기록 다운로드 한정 검증 / Main 어울(2026-10-20)**: 기존 준비결과의 고정 안전이름·UTF8 원바이트/hash·본문/snapshot 일치·false flags를 재검사해 명시 클릭으로 브라우저에만 전달한다. 신규1RED/기존3PASS→Web4PASS333.293ms/type0/build0(202modules), 실제 전용 browser saveAs의 파일바이트와 화면hash일치/입력수정숨김·권한회수1PASS4.1초다. static 새단위1회 C0/I0/M0이며 실제 다른browser·로컬내구성/served는 판단유보, 작성자 saveAs와 제품의 실제저장완료 판정은 구분한다. 종료exit수집 뒤 등록파일2/정확build 제거·별도잔여0, chunk/NO_COLOR 경고보존이다. 서버 snapshot/파일등록은 미완료이며 SQL 거절은 해제되지 않았다. 다음은 현재입력의 같은사용자/client/프로젝트/정확임무별 App메모리 보존으로 화면왕복손실을 막되 refresh/앱종료 영속복원은 미제공으로 표시한다.
 
 

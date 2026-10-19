@@ -9,9 +9,10 @@ import {ResultReviewSources} from './ResultReviewSources.tsx';
 import type {CriteriaEditorProps} from './ResultCriteriaEditor.tsx';
 import {readStoredBudgetUsage,type BudgetUsageView} from './budget-usage-api.ts';
 import {CheckpointEditor} from './CheckpointEditor.tsx';
+import type {CheckpointBuffers} from './CheckpointEditor.tsx';
 
 type Loaded={key:string;revision:number;value:SessionDetail|null;error:string|null};
-export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps}){
+export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria,checkpoint}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps;checkpoint:CheckpointBuffers}){
  const [loaded,setLoaded]=useState<Loaded|null>(null),[revision,setRevision]=useState(0),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const id=assignmentRef?.id,version=assignmentRef?.version,hash=assignmentRef?.contentHash,key=[projectId,id,version,hash].join(':');
  const shown=loaded?.key===key&&loaded.revision===revision?loaded:null,pending=!!assignmentRef&&!shown;
@@ -27,7 +28,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
-  {shown?.value?<><SessionDetailContent detail={shown.value}/><StoredBudgetUsage key={'budget:'+key+':'+revision} client={client} projectId={projectId} reference={shown.value.draft.snapshot.definition.budgetRef} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>{shown.value.confirmed?<><CheckpointEditor key={'checkpoint:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/><SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={shown.value.state}/></>:null}</>:null}
+{shown?.value?<><SessionDetailContent detail={shown.value}/><StoredBudgetUsage key={'budget:'+key+':'+revision} client={client} projectId={projectId} reference={shown.value.draft.snapshot.definition.budgetRef} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>{shown.value.confirmed?<><CheckpointEditor key={'checkpoint:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={checkpoint} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/><SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={shown.value.state}/></>:null}</>:null}
  </section>;
 }
 function StoredBudgetUsage({client,projectId,reference,onUnavailable}:{client:ApiClient;projectId:string;reference:PlanRef|null;onUnavailable:(code:string)=>void}){
