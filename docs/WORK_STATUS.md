@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 HTTP 경계 연결 / Main 어울(2026-10-19)**: 2338c5283e593b173c5dfb65a7ebfa2f2dfab255 뒤 GET /api/v1/projects/:projectId/results/:id와 기존 project commands의 submitResult를 source에 연결했다. GET는 정확host·빈query·HUMAN 인증/멤버 조회, POST는 기존Origin/JSON·CSRF·project/idempotency·단독제어/명시정책tx와0025저장 adapter를 사용한다. 실제계정/정책·서비스·DB 반영/Agent·키는 변경하지 않았다. 구현한 route 등록 자체를 사용자 정상 저장/사용가능으로 보고하지 않는다.
+  신규3 RED1246.7127ms(미등록404/400) 뒤 신규2+기존runtime10 PASS/신규fixture undefined header1 FAIL 총12/13·1482.8814ms였다. 시험의 undefined header만 실제 누락으로 보내도록 보완해 신규3 PASS1002.1483ms/type0, 기존runtime10 완료검사는 반복0이다. route/직접시험2경로 한정 독립 정적 C0/I0/M0·재실행0이며 SQL 원C0/I2 미검증을 해소한 판정이 아니다. 두 patch문맥 실패는 적용 전 실패이고 실제diff확인 뒤 원자 작은hunk로 보완했다. 추정 HTTP/runtime시험명2건 부재는 실제 파일목록으로 좁혔고 제품/ACL 오류로 분류하지 않는다.
+  Ruling: INTERFACES §13.3의 계획된 submit/read를 기존 프로젝트 HTTP 경로 형식으로 구체화한 것이며 새 실행·권한·검수승인을 만들지 않는다. 실제 정상 제출/조회/COMMIT·정식 개발DB·실제권한·servedHTTP/UI05/08·Agent는 아직 미완료다. 다음은 기존 FN09 정상 임무/확정계획 fixture와 FN08 원 실행 graph를 재사용해 FN12 저장 양성·원요청/다른manifest 재해시 음성을 실제 격리PG에서 연결하는 것이다. 완료된 소비검사는 반복하지 않고 필요한 새 연결만 검사한다. 계획 재승인/다음PMO배정 대기가 아니다.
+
 - **FN12 격리 SQL 보정 확인·정리 / Main 어울(2026-10-19)**: private/WSL exact1f4055cdef658dc8c7618d57cb668556f770757e 새 빈 시도2 PG e2d58d73d20d252c9e18a455d63645fb914b676e414512d3f9f9676ed7fcf8de/PG15.18에서 기존46+신규계열을 포함한59 SQL 실제 구문 적용 exit0, 필수필드 누락·NULL enum/변경kind·시험status·증거source·부모경로·알려진비밀·한글/비BMP UTF16 길이 벡터가 RESULT_MANIFEST_VECTORS_PASS였다. 최초93308978의 NULL 허용 FAIL은 보존한다. 새 QA app 직접INSERT 음성 첫 시도는 프로젝트 FOR UPDATE에 필요한 UPDATE grant 누락으로 permission denied for table projects였고 제품 guard PASS가 아니다. 신규 격리 역할의 프로젝트 잠금용 UPDATE만 보완(행변경0)한 뒤 정확 RESULT_SUBMISSION_EXACT_RECEIPT_REQUIRED 거절·행0 exit0을 확인했다. 기존 SQL/정식역할·권한은 바꾸지 않았다.
   신규소비4+SQL static4=8 PASS463.6741ms, 앞 parser 직접영향14 PASS448.6769ms/type0이다. 원독립 C0/I2/M0는 이력으로 유지한다. I1 request 재구성·I2 전체형태는 Main 정적 RED→GREEN과 순수PG validator 확인이며 정상 제출/원요청A-원문B 재해시 INSERT/COMMIT·동시성/실제 권한/HTTP/UI·Agent는 아직 미검증이다. 독립 재검토 C0/전체 FN12 완료로 승격하지 않는다. source parser와 SQL의 전체 입력 동등성도 제한 벡터 외 미검증이다.
   시도1·2의 등록 컨테이너만 exact ID/owner/image/network none/port{}·read-only mount 검증 후 제거했다. clone은 exactSHA·clean/realpath/owner/link0 확인 후 정확 신규 경로만 제거했고 private Git에서 복구 가능하다. 별도 조회로 등록 경로/이름·owner label 컨테이너 부재를 확인했다. 첫 독립 조회의 PowerShell $() 인용 오류1은 로컬 docker 명령을 찾지 못한 읽기 실패이며 서버변경0, literal stdin으로 바로잡았다. 사전등록 SQL시험 디렉터리 최초 생성 실패1도 정확 신규dir 생성 후 보완했다. 개발PG e6f798c3/image594290·StartedAt2026-10-18T15:25:12.085069883Z/restart0 불변이다. 다음은 FN12 정상 제출의 실제 인증tx/assignment·원실행/receipt graph fixture를 잇는 한정 PG 저장·읽기/재해시 음성과 HTTP/UI 연결이며, 기존 거절5guard나 소진QA를 재실행하지 않는다. 재승인/PMO 배정 대기가 아니라 Main이 계속할 정확 미완료 작업이다.
@@ -1902,7 +1906,7 @@
 | FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
-| FN12 결과·검증·이상 판정 | [2] | Main 어울. 고정 조건/증거 출처·환경/종류·산출물 hash의 내부 source/합성 수집·부족 계산 후보 | 실제 등록 증거/명령·저장/검수 권한·문제 분류/보완·UI05/08 미연결 |
+| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, PG 저장/조회·HTTP source 연결, 격리 SQL validator/무권한 음성 확인 | 정상 PG 제출/재해시 INSERT·COMMIT·검수/보완·UI05/08·정식 DB/Agent 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
 | FN15 사람·클라이언트 제어권 | [] | 단독작업/동시조회 계약 | 인수·구기기 차단·실제 권한 검수 |
