@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 회수 actual PG 핵심 checkpoint / Main 어울(2026-10-19)**: Git a540e644638cc3d1e2be3128194189de5855b004·0020 SHA A81C04227ECD0EF85FDB604C1E37085BD83AFCE6BEBAE39426C97DD16D22E918의 새빈격리 PG969e6dbc0fc1022186389d6781c5d09ead58378e9675b8b645ca2e340f1d8584/instance0b3493e8-dc6b-4b1b-a2ae-8b4471a9b2f4·internal망2a0bb9388344569b80ee9106ce1b96d0f21bd796ed38ce268dd52db44a8d5f83에서55DDL COMMIT·빈초기모델을확인했다. 실제비관리자app/HUMAN로그인·재인증·명시정책의기존EXECUTIONqueue 보존/RECOVERY정상INSERT·COMMIT·원응답재조회·고정조회·동시2회/INSERT전후실패의명령까지rollback/command-only역방향COMMIT거절/직접DML3음성/재계산hash의process null·숫자reason·START연산·ACK/소스불일치5음성/회수정책SQL AUTO·DENY·REQUIRE_APPROVAL/종전2연산helper불변/회수grant의실행deadline NULL/기존writer·원grant·ACK불변과이력trigger를확인했다. marker C3_RECOVERY_ACTUAL_PG_SYNTHETIC_CURRENT_SAVE_REPLAY_READ_CONCURRENT_ROLLBACK_REVERSE_DML_HASH_DENY_WRITER_ACK_UNCHANGED_VERIFIED/exit0이다.
+
+  원독립C0/I1/M0는Main의회수전용helper보정·실PG정상/거절로다뤘고새독립C0/I0로바꾸지않는다. 기존0017/18/19지문불변·정식0020적용0이며 실제한도100건/2MiB끝값·gap ACK0/ref의실제PG생성/전원손실은미검증이다(gap은단위검사만). 합성facts의host/OS/process/원grant상태 주장을SQL/credential권위로승격하지않으며실제회수credential·HTTP/OS중지/Agent는미연결이다.
+
+  exact경로·PG·망정리failure0 뒤별도SSH C3_RECOVERY_QA_01_INDEPENDENT_RESIDUAL_ZERO/exit0, 기존보호PG동일fullID/image/running/StartedAt/restart0을확인했다. 일회성합성사용자/자료는전용tmpfs와함께제거했고기존개발자료는삭제0이다. 변경실행기/후보의타입0·diff0이며현재C3/전체Stage는부분구현이다. 다음은회수전용관측/저장된중지지시와서버REQUEST_STOP/SEND선행을같은승인범위에서계속한다. 완료QA는재실행하지않는다.
+
 - **C3 회수 PG 후보·I1 보정·새 격리 등록 / Main 어울(2026-10-19)**: adapter 부재4RED145.9631ms→store/core11PASS358.9957ms/type0. 기존실제ACK모델의첫gap은highestContiguous0이어도ACK ref가있음을확인해신규1RED351.0776ms→0/null과0/ref를구분하여12PASS292.5108ms로보완했다. 독립C0/I1/신규M0는0020이기존2연산전용execution_policy_deadline에회수연산을넣어항상NULL이되는정상경로차단이다. 파일회귀1PASS1FAIL132.9414ms→기존함수는보존하고회수전용helper만추가하여직접/파일계약14PASS367.797ms/type0이다. 실제SQL PASS는아직없고원검토를C0/I0로바꾸지않는다. 새QA실행기타입의sourceScopes일반string추론2건은기존typedintent소비로보정했다.
 
   새 /home/daon/deploy/anvil-v3-c3-recovery-qa-01·PG anvil-v3-c3-recovery-pg-01·network anvil-v3-c3-recovery-net-01·DB anvil_v3_c3_recovery_qa_01만 owner AV3_C3_RECOVERY_QA/새UUID·20분으로생성전등록한다. exact게시Git/uid1000/고정PG15 image594290e9…·daemon e3349f1d…/internal망·hostport/bind/volume0/PGdata tmpfs256MiB, 생성전부재·realpath/nonlink/currentowner/image·기존보호PG불변을검사한다. 55DDL→실제HUMAN/비관리자app의초기EXECUTION보존·회수정상INSERT/COMMIT/원응답·고정조회/동시·rollback/역방향·직접DML/재계산hash음성·정책AUTO/DENY/REQUIRE_APPROVAL·원grant/writer/ACK불변·회수grant의실행목적사용거절만확인한다. 합성Secret/비밀번호는해당새DB/메모리안에서만쓰며원문/키/DSN출력0이다. 성공/실패exactID/label/mount/network/경로identity확인후전용자원정리·독립잔여0, 정식SQL/서비스/Agent/계정·키변경0이다. 소진된기존QA는재사용하지않는다.
