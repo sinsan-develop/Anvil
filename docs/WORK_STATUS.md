@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 산출물 텍스트 실제 QA02 한정 확인 / Main 어울(2026-10-20)**: exactd3407d5eb875f5c876fb497aded21e453ce368e1 새PG9d0e5ee217279d341230f0b2623f8f40663186692773109fcbaad8eb2a8c8f29/network4b3c2c366cc987e80641a342ebb8f1dce4541df31d2447c570cffceeaa742dbb·PG15.18/기존59SQLchecksum exact에서1PASS2485.621204ms(기능2142.674402),skip0·DONE다. 실제 파일 업로드/보호보관 bytes→인증API/PG→Webconsumer의 BOM/CRLF·hash·선택ref·false승격·읽기5표불변, 격리412/미지원binary412/미선언404·query/outsider/회수member거절·원5guard불변을 확인했다. 원QA01/STORAGE_FAILED는 소급PASS하지 않는다.
+  raw6파일/5dir와 전용PG/network/Git경로 exact회수 후 별도조회01/02잔여0, 정식PG e6f798c3/image594290/exited·기동/종료시각/restart0 불변이다. 새schema/정식DB·서비스/키·실정책/Agent변경0이다. 정적 원C0/I0/M1의 한도안내 차이는 보류, 앞 UI저장M1도 보존한다. 현재source+합성browser1/type/build·실제격리API/파일검증 범위이며 실제served사용/Provider·명령/환경·시험진위/검수합격·사용자인수·전체FN12/UI05/Stage는 미완료다. 기존완료QA반복 없이 다음 미완료를 이어간다.
+
+
 - **FN12 산출물 실제 QA01 실패·인증 객체 보정 / Main 어울(2026-10-20)**: exact9fcd457e 신규PGf23d5628c7fc64f5a868e5799ad7f35c56d058e392a64d7a4d5650e8cc0e98ab/networkac6452feb8a752938667159fafbf63fe2d9b98287694429fae02500e1391faa1·PG15.18/59SQLexact에서1FAIL2462.185089ms(기능2140.879319),phaseRESULT_ARTIFACT_TEXT_READ/STORAGE_FAILED다. raw6파일/5dir와등록PG/network/path exact회수·별도잔여0이다. actual AuthenticatedIdentity.reauthUntil은 Date이고 JSON전용 cloneV1이 INPUT_INVALID를 던지는 원인을 소스로 확인했다. 같은 실제identity형태 신규시험1RED328.6123ms→identity만 structuredClone으로 보존하는 최소보정→직접인접9PASS505.8714ms/type0이다. 권한/원문검사·기존기준완화0, 원QA01실패는 보존한다. M1 전체응답한도 안내는 보류 유지한다.
   후속은 새 /home/daon/deploy/anvil-v3-fn12-artifact-text-qa-02, anvil-v3-fn12-artifact-text-pg-02/internal anvil-v3-fn12-artifact-text-net-02/DB anvil_v3_fn12_artifact_text_qa_02, owner AV3_FN12_ARTIFACT_TEXT_QA/instance artifact-text-02/run artifact-text-20261020-02다. 앞01과 동일59SQL·고정image/Node·uid1000·tmpfs512MiB·port/volume0·10분/Node90/외부110초·생성전부재/realpath/link/owner/daemon→끝/실패exact정리·별도잔여0 계약이다. 정식PG/서비스/키·실정책/Agent/기존특정거절 변경0, 실패한 새기능의 실제조회만 재확인하고 앞완료QA반복0이다.
 

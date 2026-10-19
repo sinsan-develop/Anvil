@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 제출 산출물 텍스트 조회 한정 확인**: FN12/UI05의 선언된 프로젝트 보관파일을 권한·hash·격리 대조 후 명시조회/escaped텍스트로 연결했다. exactd3407d5e 실제격리PG/파일→Web consumer1PASS·QA정리0, source직접9/type/build와 합성browser1은 별도범위다. 초기Date복사 실패·2MiB 안내M1은 WORK_STATUS에 보존한다. PDF/image·실명령/Agent·시험진위/합격·served/인수는 미구현/미확인으로 남으며 전체FN12/UI05 상태·44업무/선행·검수·승인범위는 바꾸지 않는다.
+
+
 - **2026-10-20 원실행 고정 결박 조회 한정 확인**: FN12/UI05 선택 결과의 역사 START·grant·권한영수증/감사 참조를 명시조회로 연결했다. exact2c7cdfc5의 실제 격리PG→Web consumer1PASS·정리0, 정적 C0/I0/M0다. 역사참조/SYNTHETIC_ONLY만이며 현재 Agent·권한/원인/증거진위·완료·실패집계·served/인수·전체 FN12/UI05는 미완료다. 44업무·선행·검수·승인범위는 바꾸지 않는다.
 
 
