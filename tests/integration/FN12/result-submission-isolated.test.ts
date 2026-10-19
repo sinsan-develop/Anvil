@@ -109,9 +109,9 @@ test(criteriaQa?'FN12명시검수기준의실제PG버전/영수증·감사불변
    const make=(payload:any,targetId:string|null=null,expectedVersion=0)=>({...context,commandId:randomUUID(),operation:'saveResultCriteria',targetId,expectedVersion,payload}),request=make(input);
    if(auditQa){
     // 기존 정상/coverage/COMMIT 시험을 반복하지 않고 감사 결박 I1만 반증한다.
-    phase='CRITERIA_AUDIT_EXACT';const counts=async()=>{const out:any={};for(const table of ['result_criteria_versions','commands','authorization_receipts','audit_events'])out[table]=(await admin.query('SELECT count(*)::int n FROM anvil.'+table)).rows[0].n;return out;};
+    phase='CRITERIA_AUDIT_EXACT';const bound=await readConfirmedAssignment(client,project,assignmentRef,draft),counts=async()=>{const out:any={};for(const table of ['result_criteria_versions','commands','authorization_receipts','audit_events'])out[table]=(await admin.query('SELECT count(*)::int n FROM anvil.'+table)).rows[0].n;return out;};
     for(const variant of ['WRONG_TARGET','DUPLICATE_AUDIT']){
-     const before=await counts(),prepared=prepareResultCriteria(confirmed,input),rid=randomUUID(),ref={id:rid,version:1,contentHash:hash(prepared.criteriaSnapshot)},req=make(input);
+     const before=await counts(),prepared=prepareResultCriteria(bound,input),rid=randomUUID(),ref={id:rid,version:1,contentHash:hash(prepared.criteriaSnapshot)},req=make(input);
      await assert.rejects(access.authenticated(login.token,login.csrfToken,async(db,actor)=>{
       await currentProjectController(db,actor,req);const allowed=await authorizeMaterial(db,actor,req);
       const intercepted=new Proxy(db,{get(target,key){if(key==='query')return async(sql:string,args:any[])=>{if(sql.startsWith('INSERT INTO anvil.audit_events')){const changed=[...args];if(variant==='WRONG_TARGET')changed[6]=JSON.stringify({...ref,id:randomUUID()});const result=await target.query(sql,changed);if(variant==='DUPLICATE_AUDIT'){changed[1]=randomUUID();await target.query(sql,changed);}return result;}return target.query(sql,args);};const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});
