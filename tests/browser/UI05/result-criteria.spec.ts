@@ -37,7 +37,7 @@ if(scenario==='STORED_READ'||scenario==='REPORTED_COVERAGE'||scenario==='EVIDENC
   else if(p===base+'assignment-drafts/'+aid+'/versions/1/decision')body=decision;
   else if(p===base+'assignments/'+aid+'/versions/1')body=f.assignment;
   else if(p===base+'assignments/'+aid+'/versions/1/execution-preparation-state')body=state;
-  else if(p===base+'assignments/'+aid+'/versions/1/results')body=result.page;
+else if(p===base+'assignments/'+aid+'/versions/1/result-pages')body={...result.page,nextCursor:null,selectionState:'NOT_SELECTED'};
   else if(p===base+'results/'+result.entry.ref.id)body=result.entry;
   else if(p===base+'results/'+result.entry.ref.id+'/review-sources')body=sources;
   else if(['ARTIFACT_TEXT','EVIDENCE_FILE'].includes(scenario)&&p===base+'results/'+result.entry.ref.id+'/artifacts/'+artifactRef.id+'/text'){artifactReads++;if(artifactReads>1){await new Promise<void>(resolve=>release=resolve);return r.fulfill({status:403,json:{code:'ACCESS_DENIED'}});}body={projectId:pid,resultRef:result.entry.ref,artifactRef,bytes:Buffer.byteLength(artifactText),mediaType:'text/plain;charset=utf-8',text:artifactText,sourceState:'REGISTERED_BYTES_ONLY',evidenceProvenanceVerified:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false,observedAt:at};}

@@ -2,6 +2,17 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **제출페이지 정적 검토 한정 채택 / Main 어울(2026-10-20)**: 기존 Reviewer 새단위1회 C0/I0/M0를 한정 채택했다. 사용자/프로젝트/정확임무·HMAC20행/30분과20번째cursor·keyset·metadata정렬/미검증·페이지이동/재조회중선택숨김을 대조했으나 실제PG구문·동시삽입·실권한/served·Agent/전체FN12/UI05는 판단유보다. 앞예산/순서계산/보완페이지·기존M1을 재판정하지 않는다. 새 등록 result-page QA01은 exact게시후보/59SQL로 신규페이지 핵심만 수행하며 기존완료QA 반복0이다.
+
+- **FN12 제출페이지 source·독립 검토 중 / Main 어울(2026-10-20)**: 신규UI missing버튼 RED8.8856초→RESULT_PAGES1PASS2.8초, 직접 source10PASS712.0536ms/type0/build0(200modules)다. 새endpoint로 직접영향3경로 중2PASS/기존검수원문1FAIL9.1초는 앞서 구현한 보완·차단 기록을 여전히 미연결로 기대한 옛문구였다. 제품변경 없이 ‘보완·차단기록연결’과 ‘합격·배정미연결’ 양쪽을 검증하도록 시험만보정해 해당1PASS3.5초·type0, chunk/NO_COLOR 경고보존이다. 결과metadata/원문·권한검사/합격기준 완화0이다.
+  실행 관리 오류: 직접영향3경로 도구가 session_id를 반환했는데 Main이 종료수집 전에 결과정리를 요청했다. 실제삭제와 프로세스종료의 정확 선후는 미확인으로 남긴다. 이후 session종료/전체출력을 수집했고 위1FAIL을 보존했으며 새 단일검사 종료 확인 뒤 결과exact정리·별도부재확인을 했다. 사용자browser/제품자료·서비스 변경0이며 이후 종료확인 전 정리하지 않는다.
+  새 /home/daon/deploy/anvil-v3-fn12-result-page-qa-01, PG anvil-v3-fn12-result-page-pg-01/internal network anvil-v3-fn12-result-page-net-01/DB anvil_v3_fn12_result_page_qa_01, owner AV3_FN12_RESULT_PAGE_QA/instance result-page-01/run result-page-20261020-01·uid1000daon을 등록한다. Git exact게시SHA·기존59SQL ID/hash·PG15image594290/Node24.21hash7fde7b8a·tmpfs512MiB·외부port/영구volume0·10분/Node90/외부110초, 생성전부재/realpath/link/owner/image/daemon 확인→끝/실패 exactID/label/mount/port/path/process 회수→독립잔여0 계약이다. 새mode는 선행22합성제출 준비 후 서명20+2/이전원문 GET·읽기4표불변·위조/만료/다른임무cursor·query/outsider/회수멤버/원5guard불변만 확인하고 기존목록전체/보완저장·예산actualQA는 반복0이다. 새schema/정식DB/서비스/실정책·Secret·Agent0, 물리경합/served·증거진위/인수는 미검증이다.
+
+- **FN12 제출페이지 TDD·로컬 QA 등록 / Main 어울(2026-10-20)**: provider page부재RED409.0191ms→직접7PASS561.9258ms·type0, route404/Web미구현3RED1380.2313ms→신규3PASS1260.8814ms다. 기존 no-query 목록과 원문 검사는 같은 helper로 보존했고 서명keyset/30분만료·사용자/정확임무/20+2·변형/만료거절을 확인했다.
+  기존 Main소유 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01 결과/전용Edge만 생성전부재·parent realpath/link 재확인 후 신규 RESULT_PAGES 한 경로에 사용한다. 최대30초/종료·실패 exact정리/별도잔여0·DB/서비스/Secret/실Agent0이며 source UI 페이지 전환·선택원문·재조회중숨김/403만 검증한다. 기존완료QA 반복0, 실제SQL/served/인수는 아직 미확인이다.
+
+- **FN12/UI05 제출목록 이전 페이지 착수 / Main 어울(2026-10-20)**: d760096e local/private exact·clean에서 기존 최근20건 결과목록의 미완료를 이어간다. 기존 no-query results 목록은 보존하고 별도 result-pages 읽기에서 ProjectListCodec의 서명/30분만료·사용자/프로젝트/정확 확정임무ref/hash/limit20 결박과 submitted_at/id keyset을 재사용한다. 이전페이지에서도 자동원문선택0·페이지변경/재조회중 앞선택숨김·접근거절회수를 연결한다. 새schema/쓰기·정책/키·정식DB/서비스·Agent0, 이미완료한 보완페이지/예산/저장 QA 반복0이다. source/직접영향 TDD 후 별도 실제SQL 경계만 검증하며 실제증거진위/완료로 승격하지 않는다.
+
 - **FN10 선택 예산 조회 실제 PG 한정 확인 / Main 어울(2026-10-20)**: exact268cd8ae67f9b081422c2190e877d6844ff7bd3c·새PG35568b5224db89f3949eced405c2e795fc8304ee67617eca1fe0fa9a06c1e82f/network2efc20953d24d1af535c4eeaa517f2cb8856bb9fad08cca8148317af94ed4a09·PG15.18/기존59SQL ID/hash exact에서1PASS2929.60059ms(기능2441.977253),skip0·DONE다. 실제HUMAN API→PG→Web consumer의 정확 정책ref/hash·프로젝트전체 예약호출1/정산0·읽기5표불변·잘못hash/query/outsider/회수member거절·원5guard불변을 확인했다. QA01의 서로 다른 조회시각 전체비교 실패는 시험만 보정한 후 해소됐고 원FAIL은 보존한다.
   raw2파일/5dir·등록PG/network/Git경로 exact회수 뒤 별도조회 QA01/02모두잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 신규schema/정식DB·서비스/정책·Secret·실Agent/비용0이다. 독립 C0/I1/M0·Main UNKNOWN단위 TDD해소와 합성browser1은 별도증거이며 실제UNKNOWN다건/경합·공급자과금/현재효력·served/사용자인수·전체FN10/UI05/Stage는 미확인/부분구현이다. Main은 다음 미완료인 UI05 제출목록의 최근20 이후 keyset페이지 연결을 선정했고 이미완료한 예산/보완목록 실제QA전체를 반복하지 않는다.
 

@@ -7,6 +7,7 @@ import {prepareSubmittedResult} from './result-submission.ts';
 import {readSubmittedResultRecord,type SyntheticSubmittedResult} from './result-submission-store.ts';
 import {readPgResultExecution} from './result-execution-pg.ts';
 import type {ResultEvidenceScope} from './result-evidence.ts';
+import {ProjectListCodec} from '../projects/service.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=(code:string,status=503):never=>{throw new AuthFailure(code,status);};
 /** 0025 결과 테이블을 사용하는 실제 PG adapter. caller의 인증 tx를 재사용한다.
@@ -46,14 +47,15 @@ export class ProjectResultSubmissions{
   if(!scope||scope.projectId!==projectId)return fail('RESULT_SUBMISSION_LEDGER_INVALID');const entry=this.#entry(row,scope,id,await this.#clock(db));await readPgResultExecution(db,entry.snapshot.scope);
   await projectMember(db,actor,projectId);return cloneV1(entry);
  }
- /** 최근 20건의 고정 원문 참조만 반환한다. 더 오래된 이력은 이 소비 화면에서 아직 미연결이다. */
- async list(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
+ async #assignmentRef(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
   if(!uuidV1(projectId)||!uuidV1(assignmentId)||!Number.isSafeInteger(version)||version<1)return fail('RESULT_SUBMISSION_INPUT_INVALID',400);
   await projectMember(db,actor,projectId);
   const assignmentRows=(await db.query('SELECT content_hash FROM anvil.assignment_versions WHERE project_id=$1 AND assignment_id=$2 AND version=$3 LIMIT 2',[projectId,assignmentId,version])).rows;
   if(!assignmentRows.length)return fail('NOT_FOUND',404);const assignmentRef={id:assignmentId,version,contentHash:assignmentRows[0]?.content_hash};
   if(assignmentRows.length!==1||!refV1(assignmentRef))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
-  const rows=(await db.query('SELECT * FROM anvil.result_submissions WHERE project_id=$1 AND assignment_ref=$2::jsonb ORDER BY submitted_at DESC,id DESC LIMIT 21',[projectId,JSON.stringify(assignmentRef)])).rows,now=await this.#clock(db);
+  return assignmentRef;
+ }
+ async #summaries(db:PoolClient,projectId:string,assignmentRef:RuntimeRefV1,rows:any[],now:string){
   if(rows.length>21||new Set(rows.map(row=>row.id)).size!==rows.length)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
   const items=[];
   for(const row of rows){
@@ -62,7 +64,18 @@ export class ProjectResultSubmissions{
    const entry=this.#entry(row,scope,row.id,now),s=entry.snapshot;await readPgResultExecution(db,scope);
    items.push({ref:entry.ref,manifestRef:row.manifest_ref,executionRef:scope.executionRef,submissionState:s.manifest.submissionState,submittedByRef:s.submittedByRef,submittedAt:s.submittedAt,sourceKind:s.sourceKind,evidenceProvenanceVerified:false,completionAccepted:false});
   }
-  await projectMember(db,actor,projectId);
-  return cloneV1({projectId,assignmentRef,items:items.slice(0,20),hasMore:rows.length>20,observedAt:now});
+  return items;
+ }
+ /** 최근 목록의 no-query 계약은 유지하고 이전 이력은 별도 page로 제공한다. */
+ async list(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
+  const assignmentRef=await this.#assignmentRef(db,actor,projectId,assignmentId,version),rows=(await db.query('SELECT * FROM anvil.result_submissions WHERE project_id=$1 AND assignment_ref=$2::jsonb ORDER BY submitted_at DESC,id DESC LIMIT 21',[projectId,JSON.stringify(assignmentRef)])).rows,now=await this.#clock(db),items=await this.#summaries(db,projectId,assignmentRef,rows,now);
+  await projectMember(db,actor,projectId);return cloneV1({projectId,assignmentRef,items:items.slice(0,20),hasMore:rows.length>20,observedAt:now});
+ }
+ async page(db:PoolClient,rawActor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number,query:Record<string,unknown>,codec:ProjectListCodec){
+  if(!query||Object.keys(query).some(k=>k!=='cursor')||query.cursor!==undefined&&(typeof query.cursor!=='string'||!query.cursor.length||query.cursor.length>4096))return fail('RESULT_SUBMISSION_INPUT_INVALID',400);
+  const actor=structuredClone(rawActor),assignmentRef=await this.#assignmentRef(db,actor,projectId,assignmentId,version),now=await this.#clock(db),filter={query:canonicalJson({kind:'ASSIGNMENT_RESULT_SUBMISSIONS',projectId,assignmentRef}),archived:false,limit:20};let position:{at:string;id:string}|null=null;
+  if(query.cursor!==undefined)try{position=codec.read(String(query.cursor),actor.actorId,filter,new Date(now));}catch{return fail('CURSOR_INVALID',400);}
+  const rows=(await db.query(`SELECT *,to_char(submitted_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM anvil.result_submissions WHERE project_id=$1 AND assignment_ref=$2::jsonb AND ($3::timestamptz IS NULL OR (submitted_at,id)<($3::timestamptz,$4::uuid)) ORDER BY submitted_at DESC,id DESC LIMIT 21`,[projectId,JSON.stringify(assignmentRef),position?.at??null,position?.id??null])).rows,items=await this.#summaries(db,projectId,assignmentRef,rows,await this.#clock(db)),hasMore=rows.length>20,last=rows[19],nextCursor=hasMore?codec.create(actor.actorId,filter,{at:last.cursor_at,id:last.id},new Date(now)):null;
+  await projectMember(db,actor,projectId);return cloneV1({projectId,assignmentRef,items:items.slice(0,20),hasMore,nextCursor,selectionState:'NOT_SELECTED',observedAt:await this.#clock(db)});
  }
 }
