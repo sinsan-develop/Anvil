@@ -3,7 +3,7 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {SyntheticPgChallengeStore,type SyntheticHostKeys} from './execution-challenge-store.ts';
-import type {SyntheticChallengeScope} from './execution-challenges.ts';
+import type {SyntheticChallengeScope,SyntheticChallengeTransaction} from './execution-challenges.ts';
 import type {SyntheticPermitTransaction} from './execution-permits.ts';
 import type {SyntheticAuthenticatedPermitStore} from './execution-authenticated-permits.ts';
 type JointTransaction=Parameters<Parameters<SyntheticAuthenticatedPermitStore['transaction']>[1]>[0];
@@ -21,7 +21,11 @@ export class SyntheticPgPermitStore implements SyntheticAuthenticatedPermitStore
  async transaction<T>(scope:SyntheticChallengeScope,body:(tx:JointTransaction)=>Promise<T>):Promise<T>{
   let db:PoolClient|undefined;const bound={connect:async()=>{db=await this.pool.connect();return db;}};
   return new SyntheticPgChallengeStore(bound,this.keys).transaction(cloneV1(scope),async challenges=>{
-   if(!db)throw Error('PERMIT_CONNECTION_UNAVAILABLE');const client=db;
+   if(!db)throw Error('PERMIT_CONNECTION_UNAVAILABLE');return body(this.bind(db,scope,challenges));
+  });
+ }
+ /** 호출자가 이미 잠근 동일 연결을 사용한다. BEGIN/COMMIT이나 새 권한을 만들지 않는다. */
+ bind(client:PoolClient,scope:SyntheticChallengeScope,challenges:SyntheticChallengeTransaction):JointTransaction{
    const permits:SyntheticPermitTransaction={clock:challenges.clock,current:async(commandId)=>{
     if(this.facts.transport!=='SYNTHETIC_ONLY')throw new AuthFailure('SYNTHETIC_PERMIT_FACTS_REQUIRED',412);
     const c=await challenges.current(),rows=(await client.query("SELECT * FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=$3 AND snapshot_json->'envelope'->>'commandId'=$4 LIMIT 2",[scope.projectId,scope.executionId,scope.executionGeneration,commandId])).rows;
@@ -36,7 +40,6 @@ export class SyntheticPgPermitStore implements SyntheticAuthenticatedPermitStore
    },append:async value=>{
     if(value.ref.contentHash!==contentHash(canonicalJson(value.snapshot)))throw Error('PERMIT_HASH_MISMATCH');
     await client.query('INSERT INTO anvil.execution_start_permits(project_id,execution_id,generation,id,version,proof_result_id,proof_result_version,content_hash,snapshot_json) VALUES($1,$2,$3,$4,1,$5,$6,$7,$8)',[scope.projectId,scope.executionId,scope.executionGeneration,value.ref.id,value.snapshot.proofRef.id,value.snapshot.proofRef.version,value.ref.contentHash,JSON.stringify(value.snapshot)]);
-   }};return body({challenges,permits});
-  });
+   }};return{challenges,permits};
  }
 }

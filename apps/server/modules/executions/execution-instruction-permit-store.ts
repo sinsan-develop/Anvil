@@ -4,7 +4,7 @@ import {readServerExecutionFactV1} from '../../../../contracts/runtime/server-ex
 import {cloneV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {SyntheticPgChallengeStore,type SyntheticHostKeys} from './execution-challenge-store.ts';
-import type {SyntheticChallengeScope as Scope} from './execution-challenges.ts';
+import type {SyntheticChallengeScope as Scope,SyntheticChallengeTransaction} from './execution-challenges.ts';
 import type {SyntheticAuthenticatedInstructionPermitStore} from './execution-authenticated-instruction-permits.ts';
 import type {SyntheticPgInstructionPermitBasis} from './execution-instruction-permit-basis.ts';
 import type {SyntheticPgInstructionPermitJournal} from './execution-instruction-permit-journal.ts';
@@ -25,7 +25,13 @@ export class SyntheticPgInstructionPermitStore implements SyntheticAuthenticated
    this.#ports();const scope=cloneV1(rawScope);let selected:PoolClient|undefined;
    const bound={connect:async()=>{this.#ports();selected=await this.pool.connect();return selected;}};
    return await new SyntheticPgChallengeStore(bound,this.keys).transaction(cloneV1(scope),async challenges=>{
-    if(!selected)return reject();const db=selected;
+    if(!selected)return reject();const result=await body(this.bind(selected,scope,challenges));this.#ports();return result;
+   });
+  }catch{return reject();}
+ }
+ /** caller의 단일 challenge tx에만 결합한다. 독립 pool/COMMIT을 열지 않는다. */
+ bind(db:PoolClient,scope:Scope,challenges:SyntheticChallengeTransaction):JointTransaction{
+    this.#ports();
     const current=async(commandId:string)=>{
      this.#ports();const before=await challenges.current(),context:any=before.context;
      if(!Object.keys(scope).every(k=>same(context[k],(scope as any)[k]))||!isoV1(context.grantExpiresAt))return reject();
@@ -39,8 +45,6 @@ export class SyntheticPgInstructionPermitStore implements SyntheticAuthenticated
      if(!same(context,end)||!isoV1(now)||Date.parse(end.grantExpiresAt)<=Date.parse(now)||basis.fact.registration.hostPublicKeyFingerprint!==end.publicKeyFingerprint)return reject();
      basis.fact.expires.humanSession=new Date(Math.min(Date.parse(basis.fact.expires.humanSession),Date.parse(context.grantExpiresAt),Date.parse(end.grantExpiresAt))).toISOString();return basis;
     };
-    const result=await body({challenges,permits:{clock:challenges.clock,current,read:async()=>{this.#ports();const value=await this.journal.read(db,cloneV1(scope));this.#ports();return value;},append:async record=>{this.#ports();await this.journal.append(db,cloneV1(scope),cloneV1(record));this.#ports();}}});this.#ports();return result;
-   });
-  }catch{return reject();}
+    return{challenges,permits:{clock:challenges.clock,current,read:async()=>{this.#ports();const value=await this.journal.read(db,cloneV1(scope));this.#ports();return value;},append:async record=>{this.#ports();await this.journal.append(db,cloneV1(scope),cloneV1(record));this.#ports();}}};
  }
 }
