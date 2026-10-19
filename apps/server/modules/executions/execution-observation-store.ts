@@ -2,14 +2,19 @@ import type {Pool,PoolClient} from 'pg';
 import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {SyntheticPgChallengeStore,type SyntheticHostKeys} from './execution-challenge-store.ts';
 import type {ObservationScope,SyntheticObservationStore,SyntheticObservationTransaction} from './execution-observations.ts';
+import type {SyntheticAuthenticatedObservationTransaction} from './execution-authenticated-observations.ts';
 type Observation=Parameters<SyntheticObservationTransaction['append']>[0];
 type Ack=Parameters<SyntheticObservationTransaction['saveAck']>[0];
 /** 전용 합성 PG의 관측/ACK 저장 adapter. 현재 HUMAN/제어/정책/예산·키 결박은 기존 grant tx와 같은 connection이다.
- * 실행 credential/관측 proof·nonce 집행/회수 grant·실제 OS 검증을 제공하거나 HTTP에 등록하지 않는다. */
+ * 단독 transaction은 관측 저장만, withChallenges는 같은 SQL tx의 서명/nonce 연결용 port다.
+ * 실행 credential/회수 grant·실제 OS 검증을 제공하거나 HTTP에 등록하지 않는다. */
 export class SyntheticPgObservationStore implements SyntheticObservationStore{
  readonly transport='SYNTHETIC_ONLY' as const;readonly pool:Pick<Pool,'connect'>;readonly keys:SyntheticHostKeys;
  constructor(pool:Pick<Pool,'connect'>,keys:SyntheticHostKeys){new SyntheticPgChallengeStore(pool,keys);this.pool=pool;this.keys=keys;}
  async transaction<T>(scope:ObservationScope,body:(tx:SyntheticObservationTransaction)=>Promise<T>):Promise<T>{
+  return this.withChallenges(scope,tx=>body(tx.observations));
+ }
+ async withChallenges<T>(scope:ObservationScope,body:(tx:SyntheticAuthenticatedObservationTransaction)=>Promise<T>):Promise<T>{
   let db:PoolClient|undefined;
   // 기존 현재 검사/잠금/COMMIT/rollback을 재사용하되 새 connection이나 nested BEGIN을 열지 않는다.
   const boundPool={connect:async()=>{db=await this.pool.connect();return db;}};
@@ -26,7 +31,7 @@ export class SyntheticPgObservationStore implements SyntheticObservationStore{
     await client.query('INSERT INTO anvil.execution_observations(project_id,execution_id,generation,id,version,event_sequence,grant_id,grant_version,content_hash,snapshot_json) VALUES($1,$2,$3,$4,1,$5,$6,$7,$8,$9)',[scope.projectId,scope.executionId,scope.executionGeneration,e.ref.id,e.snapshot.event.sequence,scope.grantRef.id,scope.grantRef.version,e.ref.contentHash,JSON.stringify(e.snapshot)]);
    },saveAck:async(a:Ack)=>{
     await client.query('INSERT INTO anvil.execution_acknowledgements(project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,snapshot_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[scope.projectId,scope.executionId,scope.executionGeneration,a.ref.id,a.ref.version,scope.grantRef.id,scope.grantRef.version,a.ref.contentHash,JSON.stringify(a.snapshot)]);
-   }};return body(tx);
+   }};return body({challenges:grant,observations:tx});
   });
  }
 }

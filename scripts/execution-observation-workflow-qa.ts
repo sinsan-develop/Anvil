@@ -11,13 +11,14 @@ import { ProjectLimitPolicies } from '../apps/server/modules/executions/runtime-
 import { ProjectInitialExecutionQueue, type SyntheticQueueResolver } from '../apps/server/modules/executions/execution-commands.ts';
 import { SyntheticPgChallengeStore } from '../apps/server/modules/executions/execution-challenge-store.ts';
 import { SyntheticExecutionChallenges } from '../apps/server/modules/executions/execution-challenges.ts';
-import { executionChallengeRequestBytes, executionProofBytes } from '../apps/server/modules/executions/execution-proof.ts';
+import { executionChallengeRequestBytes, executionProofBytes, executionTarget } from '../apps/server/modules/executions/execution-proof.ts';
 import { publicKeyFingerprint } from '../apps/server/modules/connections/registration-proof.ts';
 
 import {SyntheticPgObservationStore} from '../apps/server/modules/executions/execution-observation-store.ts';
 import {SyntheticExecutionObservations} from '../apps/server/modules/executions/execution-observations.ts';
+import {SyntheticAuthenticatedObservations} from '../apps/server/modules/executions/execution-authenticated-observations.ts';
 
-const mode=process.argv[2];assert(['RED','GREEN','VERIFIED'].includes(mode!));
+const mode=process.argv[2];assert(['RED','GREEN','VERIFIED','SIGNED'].includes(mode!));
 const label=mode!.toLowerCase(),database='anvil_v3_c3_observations_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-observations-'+label.replaceAll('_','-')+'-qa-01');assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,database);const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
@@ -61,6 +62,37 @@ try{
  const event=(sequence:number)=>({projectId:'',executionId:'',executionGeneration:1,sequence,eventId:randomUUID(),type:'UNKNOWN',commandId:randomUUID(),envelopeHash:'b'.repeat(64),localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date().toISOString(),reasonCode:'PROVIDER_RESPONSE_LOST'});
  const prepare=async()=>{const f=await setup();await f.issue(f.request());const row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0];assert(row?.envelope);const makeEvent=(n:number)=>({...event(n),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash});return{...f,makeEvent,observations:new SyntheticExecutionObservations(new SyntheticPgObservationStore(pool,f.keys))};};
  const batch=(events:any[])=>({events,batchHash:contentHash(canonicalJson(events))});
+ if(mode==='SIGNED'){
+  const signedCounts=async(pid:string)=>{const n:number[]=[];for(const table of ['execution_challenges','execution_receipts','execution_observations','execution_acknowledgements'])n.push((await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n);return n;};
+  const service=(source:any,keys:any)=>{const store=new SyntheticPgObservationStore(source,keys);return new SyntheticAuthenticatedObservations({transport:'SYNTHETIC_ONLY',transaction:(s,fn)=>store.withChallenges(s,fn)});};
+  const signed=async(kind='NORMAL')=>{
+   const f=await setup(),row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0],e={...event(1),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash};
+   const input=batch([e]),raw=canonicalJson(kind==='INVALID_BATCH'?{...input,batchHash:'f'.repeat(64)}:input),base='/api/v1/connectors/'+f.scope.connectorId+'/executions/'+f.scope.executionId;
+   const path=base+(kind==='WRONG_ROUTE'?'/heartbeat':'/observations'),target=executionTarget('POST',path,[],raw),p={...f.request(),target:{method:'POST',path,queryHash:target.queryHash,bodyHash:target.bodyHash}},issued=await f.issue(p);
+   const proof={requestId:p.requestId,...p.target,grantRef:f.scope.grantRef,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');return{...f,raw,proof,signature,issued};
+  };
+  phase='SIGNED_NORMAL';const f=await signed();let connects=0,begins=0,commits=0;
+  const tracked:any={connect:async()=>{connects++;const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,args?:any[])=>{if(sql==='BEGIN')begins++;if(sql==='COMMIT')commits++;return db.query(sql,args);}};}};
+  const ingest=(s:SyntheticAuthenticatedObservations,x:any)=>s.ingest(x.scope,x.issued.ref,x.proof,x.signature,x.raw),s=service(tracked,f.keys);
+  const results=await Promise.all([ingest(s,f),ingest(s,f)]);assert.deepEqual(results[0],results[1]);assert.deepEqual(await ingest(s,f),results[0]);assert.deepEqual([connects,begins,commits],[3,3,3]);
+  assert.deepEqual(await signedCounts(f.pid),[2,1,1,1]);assert.equal(results[0].ack.snapshot.highestContiguous,1);assert.equal(results[0].executionAuthorized,false);assert.equal(results[0].ack.snapshot.writerReleaseVerified,false);
+  console.log('C3_SIGNED_OBSERVATIONS_ACTUAL_ONE_CONNECTION_TX_NONCE_ACK_CONCURRENT_REPLAY_ONCE');
+  phase='SIGNED_FAILURES';
+  for(const fault of ['FAIL_RESULT','FAIL_CONSUMPTION','FAIL_EVENT','FAIL_ACK','CONTROL_AFTER_ACK']){
+   const x=await signed(),source:any={connect:async()=>{const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,args?:any[])=>{
+    if(sql.startsWith('INSERT INTO anvil.execution_receipts')&&fault==='FAIL_RESULT'||sql.startsWith('INSERT INTO anvil.execution_challenges')&&args?.[2]===2&&fault==='FAIL_CONSUMPTION'||sql.startsWith('INSERT INTO anvil.execution_observations')&&fault==='FAIL_EVENT'||sql.startsWith('INSERT INTO anvil.execution_acknowledgements')&&fault==='FAIL_ACK')throw Error('PRIVATE_TOKEN_QA_FAILURE');
+    const result=await db.query(sql,args);if(sql.startsWith('INSERT INTO anvil.execution_acknowledgements')&&fault==='CONTROL_AFTER_ACK')await db.query('UPDATE anvil.project_control SET revoked_at=clock_timestamp() WHERE project_id=$1',[x.pid]);return result;
+   }};}};
+   await assert.rejects(ingest(service(source,x.keys),x),(e:any)=>e.message==='AUTHENTICATED_OBSERVATION_REJECTED');assert.deepEqual(await signedCounts(x.pid),[1,0,0,0]);
+  }
+  console.log('C3_SIGNED_OBSERVATIONS_FIVE_ACTUAL_FAILURES_NONCE_RESULT_EVENT_ACK_ROLLBACK');
+  phase='SIGNED_BINDINGS';
+  for(const kind of ['BAD_SIGNATURE','WRONG_BODY','WRONG_ROUTE','WRONG_GENERATION','INVALID_BATCH']){
+   const x=await signed(kind);if(kind==='BAD_SIGNATURE')x.signature=Buffer.alloc(64).toString('base64url');if(kind==='WRONG_BODY')x.raw=canonicalJson({events:[],batchHash:'f'.repeat(64)});
+   const input:any=kind==='WRONG_GENERATION'?{...x,scope:{...x.scope,executionGeneration:2}}:x;await assert.rejects(ingest(service(pool,x.keys),input));assert.deepEqual(await signedCounts(x.pid),[1,0,0,0]);
+  }
+  console.log('C3_SIGNED_OBSERVATIONS_FIVE_EXACT_BINDINGS_REJECTED_NO_CONSUMPTION');
+ }else{
  phase='OBSERVATIONS_FIRST';const f=await prepare(),one=f.makeEvent(1),three=f.makeEvent(3);
  if(mode==='RED'){await assert.rejects(admin.query('SELECT 1 FROM anvil.execution_observations'),(e:any)=>e.code==='42P01');await assert.rejects(f.observations.ingest(f.scope,batch([one,three])),(e:any)=>e.message==='OBSERVATION_STORAGE_UNAVAILABLE');console.log('C3_OBSERVATIONS_RED_MISSING_RELATION_42P01_STORAGE_REJECTED');}
  else{
@@ -101,6 +133,7 @@ try{
   }
   assert.equal((await admin.query("SELECT count(*)::int n FROM anvil.execution_acknowledgements WHERE snapshot_json->'writerReleaseVerified'<>'false'::jsonb OR snapshot_json->'executionAuthorized'<>'false'::jsonb OR snapshot_json->'dispatchPerformed'<>'false'::jsonb")).rows[0].n,0);
   console.log('C3_OBSERVATIONS_APP_SIX_MUTATIONS_DENIED_AUTHORITY_FALSE');
+ }
  }
  console.log('C3_OBSERVATIONS_WORKFLOW_'+mode+'_LIMITED_VERIFIED');
 }catch(e:any){console.error('C3_OBSERVATIONS_QA_FAILURE phase='+phase+' code='+(e.code??e.constructor?.name)+' message='+String(e.message).replace(/[^A-Za-z0-9_ .:-]/g,'').slice(0,180));process.exitCode=1;}
