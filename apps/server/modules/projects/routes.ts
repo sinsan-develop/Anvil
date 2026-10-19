@@ -32,6 +32,7 @@ import { ProjectExecutionPreparations } from '../executions/project-execution-pr
 import { readExecutionPreparationState } from '../executions/project-execution-state.ts';
 import { executionPreparationOperations } from '../executions/preparation-input.ts';
 import { ProjectLimitPolicies } from '../executions/runtime-policy.ts';
+import {ProjectExecutionBudget} from '../executions/execution-budget.ts';
 import {sourceReadOperations} from '../connections/source-read-input.ts';
 import {ProjectSourceReadGrants} from '../connections/project-source-read-grants.ts';
 import { contextPreparationOperations } from '../context/context-input.ts';
@@ -107,6 +108,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   app.post<{Params:{projectId:string};Body:Record<string,unknown>}>('/api/v1/projects/:projectId/result-reworks/prepare',{schema:{params:object({projectId:idSchema}),querystring:object({}),body:object({resultRef:{type:'object'},reviewRef:{type:'object'},responsibleBindingRef:{type:'object'},missingItems:{type:'array',maxItems:100},sourceScopes:{type:'array',maxItems:200},reason:{type:'string',maxLength:20000}})}},request=>{if(request.headers.host!==host||request.headers.origin!==options.origin)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),csrf(request),(db,actor)=>resultReworkPreparation.prepare(db,actor,request.params.projectId,request.body));});
   const executionPreparations = new ProjectExecutionPreparations(assignmentConfirmations, assignments, responsibleSessions, contexts, connectionCandidates);
   const limitPolicies = new ProjectLimitPolicies();
+  const budgetUsage=new ProjectExecutionBudget(limitPolicies);
+  app.get<{Params:{projectId:string;id:string;version:string};Querystring:{contentHash:string}}>('/api/v1/projects/:projectId/limit-policies/:id/versions/:version/usage',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}}),querystring:object({contentHash:{type:'string',pattern:'^[a-f0-9]{64}$'}})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>budgetUsage.readUsage(db,actor,request.params.projectId,{id:request.params.id,version:Number(request.params.version),contentHash:request.query.contentHash}));});
   const sourceRoots = new ProjectSourceRoots(options.repository),sourceRootsCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('SOURCE_ROOTS:'+value));
   const sourceReadGrants=new ProjectSourceReadGrants(options.repository);
   const connectorRegistrations = new ProjectConnectorRegistrations(options.repository);

@@ -170,8 +170,18 @@ export function recheckExecutionBudgetDelivery(events: BudgetRecord[],policy: Ch
  * 후속 queue 소비자는 같은 transaction에서 원자적으로 명령/예약을 저장하고, wire 전 다시 검사해야 한다.
  */
 export class ProjectExecutionBudget {
-  readonly policies: Pick<ProjectLimitPolicies,'resolveCurrent'>;
-  constructor(policies: Pick<ProjectLimitPolicies,'resolveCurrent'> = new ProjectLimitPolicies()){this.policies=policies;}
+  readonly policies: Pick<ProjectLimitPolicies,'resolveCurrent'> & Partial<Pick<ProjectLimitPolicies,'read'>>;
+  constructor(policies: Pick<ProjectLimitPolicies,'resolveCurrent'> & Partial<Pick<ProjectLimitPolicies,'read'>> = new ProjectLimitPolicies()){this.policies=policies;}
+  /** 선택한 정책 원문과 서버 보관 원장만 조회한다. 현재 적용/가용성·실제 공급자 과금/실행 허가가 아니다. */
+  async readUsage(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,rawRef:VersionRef){
+    if(!uuidV1(projectId)||!refV1(rawRef))return fail('BUDGET_INPUT_INVALID',422);const selected=cloneV1(rawRef);
+    await projectMember(db,actor,projectId);if(typeof this.policies.read!=='function')return fail('BUDGET_POLICY_READER_UNAVAILABLE',503);
+    const policy=await this.policies.read(db,actor,projectId,selected.id,selected.version);
+    if(policy.projectId!==projectId||!same(policy.ref,selected)||contentHash(canonicalJson(policy.snapshot))!==selected.contentHash)return fail('BUDGET_POLICY_BINDING_INVALID',503);
+    const events=await this.#read(db,projectId),observedAt=await this.#clock(db);if(events.some(e=>Date.parse(e.snapshot.checkedAt)>Date.parse(observedAt)))return fail('BUDGET_TIME_CONFLICT',503);
+    const summary=inspectExecutionBudget(events,policy,observedAt);await projectMember(db,actor,projectId);
+    return{projectId,policy:cloneV1(policy),summary,ledgerScope:'PROJECT_ALL_POLICIES' as const,ledgerRowCount:events.length,ledgerLastRef:events.at(-1)?.ref??null,observedAt,sourceAssurance:'SERVER_STORED_LEDGER_ONLY' as const,currentPolicyVerified:false as const,providerChargesVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }
   async #lock(db: PoolClient,actor: AuthenticatedIdentity,projectId: string){
     if(!uuidV1(projectId))return fail('BUDGET_INPUT_INVALID',422);
     const member=await projectMember(db,actor,projectId,true);if(member.archived_at)return fail('PROJECT_ARCHIVED');

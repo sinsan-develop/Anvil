@@ -7,6 +7,7 @@ import {readAssignmentResults,readAssignmentResult,type AssignmentResults,type R
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import {ResultReviewSources} from './ResultReviewSources.tsx';
 import type {CriteriaEditorProps} from './ResultCriteriaEditor.tsx';
+import {readStoredBudgetUsage,type BudgetUsageView} from './budget-usage-api.ts';
 
 type Loaded={key:string;revision:number;value:SessionDetail|null;error:string|null};
 export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps}){
@@ -25,7 +26,17 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
-  {shown?.value?<><SessionDetailContent detail={shown.value}/>{shown.value.confirmed?<SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={shown.value.state}/>:null}</>:null}
+  {shown?.value?<><SessionDetailContent detail={shown.value}/><StoredBudgetUsage key={'budget:'+key+':'+revision} client={client} projectId={projectId} reference={shown.value.draft.snapshot.definition.budgetRef} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>{shown.value.confirmed?<SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={shown.value.state}/>:null}</>:null}
+ </section>;
+}
+function StoredBudgetUsage({client,projectId,reference,onUnavailable}:{client:ApiClient;projectId:string;reference:PlanRef|null;onUnavailable:(code:string)=>void}){
+ const [attempt,setAttempt]=useState(0),[loaded,setLoaded]=useState<{key:string;value:BudgetUsageView|null;error:string|null}|null>(null),unavailable=useRef(onUnavailable);unavailable.current=onUnavailable;
+ const key=[projectId,reference?.id,reference?.version,reference?.contentHash,attempt].join(':'),shown=loaded?.key===key?loaded:null;
+ useEffect(()=>{if(!attempt||!reference)return;let active=true;readStoredBudgetUsage(client,projectId,reference,()=>active).then(value=>{if(active&&value)setLoaded({key,value,error:null});}).catch(cause=>{if(!active)return;const e=cause instanceof ApiError?cause:new ApiError('BUDGET_USAGE_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'BUDGET_USAGE_RESPONSE_INVALID';setLoaded({key,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(e.status===401?'AUTH_REQUIRED':code);});return()=>{active=false;};},[client,projectId,reference,key,attempt]);
+ const v=shown?.value;
+ return <section className="status-card" aria-label="선택 예산 보관 원장"><h3>선택 예산 · 보관 원장 조회</h3><p>현재 정책·실제 공급자 과금·실행 허가 미검증</p>{reference?<><Reference label="고정 임무의 예산 참조" value={reference}/><button type="button" disabled={!!attempt&&!shown} onClick={()=>{setLoaded(null);setAttempt(n=>n+1);}}>{attempt?'예산 원장 다시 조회':'예산 원장 조회'}</button></>:<p>임무 예산 참조 미연결 · 기본값/무제한으로 추정하지 않습니다.</p>}
+  {attempt&&!shown?<p role="status">선택 정책과 보관 원장 조회 중 · 이전 값 숨김</p>:null}{shown?.error?<p role="alert">{shown.error} · 예산 상태 미확인</p>:null}
+  {v?<><p>프로젝트 전체 정책의 누적 원장 · 특정 임무만의 사용량이 아닙니다.</p><p>조회 시각: <time dateTime={v.observedAt}>{v.observedAt}</time> · 원장 {v.ledgerRowCount}행</p><p>보관된 정산 호출: {v.summary.used.calls} · 예약 호출: {v.summary.reserved.calls}</p><p>사용량 미확인 예약: {v.summary.unknownReservations}</p><p>보관 원장상 진행/미확인 실행: {v.summary.liveExecutions} · 실제 Agent 가동 관측 아님</p><p>선택 정책 상태: {v.policy.snapshot.state} · {v.summary.policyIssues.join(', ')||'조회시각 기준 만료/회수 표식 없음 · 현재 적용 인증 아님'}</p><details><summary>한도·사용량·예약 비용 원문</summary><pre>{JSON.stringify({selectedPolicy:v.policy,used:v.summary.used,reserved:v.summary.reserved,ledgerLastRef:v.ledgerLastRef},null,2)}</pre></details><p>관측/예약 원장 보관값이며 공급자 청구서·OS 실행·새 호출 허가로 검증하지 않았습니다. UNKNOWN을 0으로 지우거나 정책/세션 변경으로 누적을 초기화하지 않습니다.</p></>:null}
  </section>;
 }
 const errorCode=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'RESULT_RESPONSE_INVALID';

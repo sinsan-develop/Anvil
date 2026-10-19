@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN10/UI05 선택 예산 원장 조회 부분 연결**: 임무 budgetRef의 정확 정책버전/hash와 서버 보관 프로젝트전체 누적/예약/UNKNOWN을 명시 조회한다. source 직접19·신규Web4/type/build·합성browser1 범위이며 독립 C0/I1/M0의 UNKNOWN예약수/실행수 단위오류는 Main 반례TDD로 보정했다. 실제PG는 신규 격리 한정 검증 예정, 정식DB/served·실공급자과금/현재적용·실행허가·Agent는 미확인/false다. 전체 FN10/UI05/Stage 완료로 표시하지 않는다.
+
 - **2026-10-20 FN10 다음 행동 내부 후보 계산**: 고정 graph/결과·typed 판단에서 AUTO/CASE·승인/사람/역할/종료경계·합류/재작업/반복방지를 source 부분 구현했다. 신규13+직접 graph/application14=27PASS·type0이며 독립 C0/I1/M0의 잔존 ACCEPTED 반례는 Main TDD 보정으로 해소했다(재리뷰0). 실제 서버 완료/권한·예산/대기열·Agent/served는 미연결이고 SYNTHETIC_ONLY/실행 플래그 false다. FN10은 내부 부분 구현일 뿐 사용자 기능 완료가 아니며 나머지 완료조건/승인 경계는 유지한다.
 
 - **2026-10-20 완료 주장·미확인 원인 표시**: 기존 reported-coverage에서 COMPLETED와 부족/미실행/불일치·미검증 조건을 구분해 UI05에 표시한다. pure/직접7·합성browser1/type/build·정적C0/I0/M0 범위이며 실제 원인/명령/commit·Provider/시험출처·served/인수는 미확인이다. canonical Issue/검수저장·완료/실패집계·재실행0, 새서버/API/DB/권한0·기존완료QA반복0이다. 전체FN12/UI05/Stage와 44업무 상태·검수조건은 바꾸지 않는다.

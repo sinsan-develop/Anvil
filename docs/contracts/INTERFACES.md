@@ -720,6 +720,8 @@ GET assignments/:id는 불변 임무/부모·자식·책임 역할/세션 bindin
 
 ### 13.2 FN10 자동/건별·분기·한도·queue
 
+- GET `projects/:projectId/limit-policies/:id/versions/:version/usage?contentHash=<정확hash>`는 현재 HUMAN 멤버·동일 host 아래 선택 정책 원문과 `usage_reservations` 프로젝트 전체 보관 원장을 읽는다. 필수 hash 외 query는 거절하고 읽기후 멤버를 다시 대조한다. 응답은 used/reserved·liveExecutions/unknownReservations·정책만료/회수 표식을 분리하며 `SERVER_STORED_LEDGER_ONLY/PROJECT_ALL_POLICIES`와 `currentPolicyVerified/providerChargesVerified/executionAuthorized/dispatchPerformed=false`다. 선택 임무의 전용 합계/현재정책·공급자 청구 검증이나 새 호출 허가가 아니며 queue/write/dispatch하지 않는다. UI05는 임무 budgetRef exact로 명시조회하고 재조회중 앞값숨김·권한거절시 부모원문회수를 수행한다.
+
 - 내부 준비 구현 `evaluateSyntheticNext(raw)`는 고정 application/graph·선택 currentResult·typed 노드기록·AUTO/CASE·종료경계·fingerprint 누적입력에서 후보/대기 이유만 계산한다. hash는 입력 결박일 뿐 서버 사실 인증이 아니며 `SYNTHETIC_ONLY/UNAUTHENTICATED_INPUT_SNAPSHOTS`와 `serverFactsVerified/queueStored/writerReservationPerformed/executionAuthorized/dispatchPerformed=false`를 고정한다. HTTP/DB/Agent에는 등록하지 않고 실제 `evaluateNext` 제공자·허가/예산·queue/dispatch는 후속 미구현이다. ACCEPTED는 COMPLETED+completionRef 정합성을 요구하고 생략 단계의 잔존 값은 합류 완료 근거로 쓰지 않는다.
 
 `startStage` 입력은 `stageRef,methodologyApplicationRef,mode:AUTO/CASE_BY_CASE,startNodeRef,endBoundaryRef,baselineRefs,budgetRef,approvalRef?`다. 결과는 `RunRequest{id,queueState,readinessIssues}`이고 서버 영속/대기→실행기 수신→실제 수행을 구별한다. CASE_BY_CASE는 선택한 단계의 내부 임무만, AUTO는 명시한 경계/승인 지점 전까지만 허가한다. 모드 변경이 진행 중 scope를 확대하지 않는다.
