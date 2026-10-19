@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 보고 coverage 실제 PG 확인 / Main 어울(2026-10-20)**: private/WSL exactf7074cc1a2ee8e036f45462a711155303b295558·clean, 신규 PG2936d5d4de8df0eb93ef79e28a14c92348d6af881a44c0ff88967a000fa88c10/networkdf34bbc6e6b1f036a1bc71a3f1e8aa2b796e8c9bf3a55cee21c36d955b066616, 고정PG15image594290/15.18·Node24.21hash7fde7b8a·기존60SQL checksum exact에서 coverage mode1PASS2984.472778ms(기능2623.804387),skip0·phaseDONE다. 실제 인증 API→저장 원제출/별도 등록기준에서 미실행원문/기준차이·5표읽기불변을 확인했고 COMPLETED/PASS/TEST_ARTIFACT 주장은 REPORTED_ONLY/EVIDENCE_NOT_VERIFIED 및 전체승격false다. 타사용자/없는기준version/query/revoked-member거절·원5guard hash불변이다. 원FN09/FN08graph는 합성fixture 선행에만 재사용했고 실제Agent/browser·관측권한으로 승격하지 않았다.
+  raw2파일/5디렉터리·등록PG/network/clone exact회수 후 별도조회잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. direct13PASS972.0898ms/type0이다. 정식DB/served/실제 증거bytes·검수저장·Agent/전체FN12/UI05/Stage완료는 미확인·미완료로 유지한다. 다음은 선택한 고정 기준에서 조건별 보고부족을 명시 GET로 S05에 표시하는 연결이며 자동 검수/저장/실행은 하지 않는다.
+
+
 - **FN12 조건별 보고 대조 API 착수 / Main 어울(2026-10-20)**: 순수 모델의 다음 연결은 기존 HUMAN멤버 read tx가 별도 원제출/정확 등록기준을 읽고 같은 임무·hash와 현재 membership을 재대조하는 것이다. 내부 GET results/:resultId/criteria/:criteriaId/versions/:version/reported-coverage이며 query/fallback/변경연산0이다. 제출자 actor와 등록자료를 혼동하지 않고 reader에 actor 복사본만 전달한다. provider2RED170.0395ms→2PASS, route미등록RED404→1PASS679.1937ms/type0이며 실제PG/화면은 아직 미확인이다. 시험 CLI pattern을 파일 뒤에 둬 인접7건도 실행된 사실은 추가 PASS 범위로만 기록하고 전수검사로 확대하지 않는다.
   Main 신규 일회성 /home/daon/deploy/anvil-v3-fn12-reported-coverage-qa-01(exactGit·node_modules·.av3-data/fn12-raw), PG anvil-v3-fn12-reported-coverage-pg-01/internal network anvil-v3-fn12-reported-coverage-net-01/DB anvil_v3_fn12_reported_coverage_qa_01·owner AV3_FN12_REPORTED_COVERAGE_QA/instance reported-coverage-01을 사전등록한다. 고정PG15image594290·Node24.21hash7fde7b8a·기존60SQL, 공개port/영구volume/기존network0·tmpfs512MiB·합성주체/정책/선언만이다. 실제Agent·browser/관측증거·비용0, 기존 FN09/FN08 graph는 저장 원문 fixture에만 사용하고 완료시험은 재실행하지 않는다. 10분창/Node90초·외부110초·생성전 부재/owner/realpath/link/daemon/image 확인, 종료/실패시 exactID/label/mount/port/owner/link/process 확인 후 등록자원만 회수·독립잔여0이다. 정식PG/DB·서비스·키/Secret·원5guard/pending/기존거절 변경0이다.
 
