@@ -10,6 +10,10 @@ import {SyntheticExecutionClient} from '../../../apps/connector/runtime/executio
 const m:any=await import('../../../apps/server/modules/executions/execution-materials.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const authenticated:any=await import('../../../apps/server/modules/executions/execution-authenticated-materials.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at='2026-10-19T12:00:00.000Z',until='2026-10-19T12:01:00.000Z';
+test('부분 자료 내부 읽기는 실제 최단기한을 전달하되 기존 receiver 응답 필드는 바꾸지 않는다',async()=>{
+ const f=fixture();assert.equal(typeof f.make().readWithDeadline,'function');const internal=await f.make().readWithDeadline(f.scope,f.id,f.mid);assert.equal(internal.validUntil,'2026-10-19T12:00:30.000Z');assert.deepEqual(Buffer.from(internal.material.bytes),f.bytes);assert.equal(Object.hasOwn(await f.run(),'validUntil'),false);assert.equal(Object.hasOwn(await f.run(),'expiresAt'),false);
+ const g=signedFixture(),p=await g.issue();assert.equal(typeof g.make().readWithDeadline,'function');const signed=await g.make().readWithDeadline(g.scope,g.id,g.mid,p.issued.ref,p.proof,p.signature);assert.equal(signed.validUntil,'2026-10-19T12:00:30.000Z');assert.deepEqual(Buffer.from(signed.result.material.bytes),g.bytes);assert.equal(Object.hasOwn(await g.run(p),'validUntil'),false);
+});
 function fixture(){
  const id=randomUUID(),eid=randomUUID(),mid=randomUUID(),ref={id,version:1,contentHash:'a'.repeat(64)},scope={mode:'EXECUTION' as const,projectId:id,connectorId:id,executionId:eid,executionGeneration:1,grantRef:ref,credentialGeneration:1};
  const sourceScopes=[{sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}];

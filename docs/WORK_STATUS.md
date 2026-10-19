@@ -2,6 +2,16 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 정규화 실행 요청 router checkpoint / Main 어울(2026-10-19)**: 신규5RED141.1272ms→4PASS1FAIL150.0812ms는 요청에없는실행세대1을시험이단정한문제였다. 구현을1로고정하지않고서명proof의credential세대불일치음성으로정정해5PASS146.1595ms/type0, 직접/회수읽기/permit인접18PASS464.4808ms다. 독립 C0/I1/신규M0는 서비스결과보다늦은마지막credential조회에서더짧은결과기한경과를놓치는경계다. Main이마지막credential조회에서만시각을전진시키는permit음성과자료내부기한부재를2RED241.475ms로확인했다. permit/중지의원기한과자료의actual최단기한을최종await뒤검사하도록보완해router/자료직접20PASS486.371ms/type0이다. 원검토는그대로보존하고새독립C0/I0으로표기하지않는다.
+
+  기존완료자료코드변경이유는위I1이다. 변경전 read가부분응답만반환→변경후내부readWithDeadline이최단기한을함께전달하되기존read는원부분응답만반환하는wrapper로보존했다. authenticated read도동일해기존receiver/client의필드/바이트·외부응답추가0을직접시험했다. 이는실행중인정식서비스/API변경이아니며새헤더/공개경로/실credential발급·listener등록0이다.
+
+  신규router는정확method/path/query/body/proof·두목적prefix·cookie혼합거절후현재credential scope만도출하고기존관측/permit/부분자료/회수중지읽기로분기한다. 오래된관측ACK는과거수신결과이지유효permit이아니므로새권한으로승격하지않는다. router의credential/service port시험은fake 분기인자·최종거절증거이며실제HTTP/nonce/SQL/권한진위·Agent/사용자기능완료가아니다. 기존자료단위는실제서명/nonceclass·합성transaction증거로구분한다. 변경은신규router/시험·기존자료2파일/시험·현황6경로, 새외부자원/정식환경변경0·전체C3/Stage부분구현이다. 다음은계획의HUMAN runtime명령을기존project command경로에명시주입하는미완료연결을진행한다.
+
+
+- **C3 실행 요청 경로 분기 착수 / Main 어울(2026-10-19)**: c0bab45c local/private exact·clean 뒤 계획 execution-routes.ts의 내부 합성 router를 구현한다. 기존 §6 경로/메서드·query/body hash·RECOVERY/EXECUTION purpose·현재 credential scope를 검사하고 기존 authenticated 관측/permit/부분자료/회수중지 읽기로만 전달한다. HTTP 헤더·공개 새경로/새토큰 발급 계약을 임의 추가하지 않고 정규화된 요청 port만 소비하며 listener/실서비스 등록은 하지 않는다. 기존 proof와두prefix전용scope·cookie 혼합거절/최종현재검사·오류은폐/false flags를보존한다. auth/service는필수SYNTHETIC_ONLY이며 실제credential/DBauthority/OS/Agent는미연결이다. 새외부자원0·정식DB/서비스/키변경0, 완료QA반복0이다.
+
+
 - **C3 중지 실파일 내구 checkpoint / Main 어울(2026-10-19)**: 미구현class1RED178.903ms→새 Windows 전용실파일1PASS347.0204ms/type0, 기존 중지 transport 직접인접6PASS372.7066ms다. 실제 STOP_ATTEMPTED file.sync 뒤 합성 codec interrupt1회/STOP_UNCONFIRMED providerclaim·재열기 원응답/응답유실 무재전송·새명령우회거절·총64KiB/2개상한·부분/기존잠금/lock.stat/sync실패·버린비동기/종료tx거절을 확인했다. 독립 신규 C0/I0/M0는 두 새파일 정적 한정판정이며 검토자가 재실행한 증거가 아니다. marker C3_STOP_FILE_SYNC_REOPEN_REPLAY_UNKNOWN_QUOTA_PARTIAL_LOCK_STAT_ABANDON_VERIFIED, finally정확정리0 뒤 별도 C3_STOP_FILE_QA_01_INDEPENDENT_RESIDUAL_ZERO/exit0이다.
 
   실제file.sync/재열기만 증명하고 verifier/wire는 SYNTHETIC_ONLY다. directoryfsync/전원손실·다중프로세스crash·동일OS사용자악의변조 내성/실제Agent·OS중지·현재권한진위·회수credential·writer회수는 미검증, 전체C3/Stage부분구현이다. 원문·핸들 저장0·root/ACL/키/정식환경 변경0, 기존START/SEND저장부는변경하지않았다. 신규adapter/실파일시험/현황 정확3경로를 보존하고 다음은 계획된 API 경로의 필수합성인증·exact요청·해당서비스 연결을 계속한다. 기존 소진QA는 반복하지 않는다.

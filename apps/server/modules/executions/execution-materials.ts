@@ -39,14 +39,16 @@ export class SyntheticExecutionMaterials{
   const deadline=Math.min(Date.parse(c.grantExpiresAt),Date.parse(envelope.expiresAt),Date.parse(proof.challengeExpiresAt),...Object.values(fact.expires).map(Date.parse));if(deadline<=Date.parse(now))fail('MATERIAL_EXPIRED');
   const {checkedAt:_,...stableFact}=fact;return{material:cloneV1(material),now,deadline,binding:hash({scope,fact:stableFact,commandRef:c.commandRef,authorizationReceiptRef:c.authorizationReceiptRef,material,proof})};
  }
- async read(rawScope:unknown,commandId:unknown,materialId:unknown){
+ async read(rawScope:unknown,commandId:unknown,materialId:unknown){return(await this.readWithDeadline(rawScope,commandId,materialId)).material;}
+ /** 서버 내부 반환 장벽용 기한이며 기존 부분자료 wire 응답에는 필드를 추가하지 않는다. */
+ async readWithDeadline(rawScope:unknown,commandId:unknown,materialId:unknown){
   try{
    this.#port();if(!recordV1(rawScope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||rawScope.mode!=='EXECUTION'||!uuidV1(rawScope.projectId)||!uuidV1(rawScope.connectorId)||!uuidV1(rawScope.executionId)||!positive(rawScope.executionGeneration)||!positive(rawScope.credentialGeneration)||!refV1(rawScope.grantRef)||!uuidV1(commandId)||!uuidV1(materialId))fail('MATERIAL_SCOPE_INVALID');const scope=cloneV1(rawScope) as unknown as SyntheticChallengeScope;
    return await this.store.transaction(cloneV1(scope),async tx=>{
     const before=await this.#current(tx,scope,commandId as string,materialId as string),raw=await tx.readPart(cloneV1(before.material.ref));this.#port();if(!(raw instanceof Uint8Array)||raw.byteLength!==before.material.snapshot.utf8Bytes)fail('MATERIAL_BYTES_INVALID');const bytes=Buffer.from(raw);
     if(contentHash(bytes)!==before.material.snapshot.contentHash)fail('MATERIAL_BYTES_INVALID');const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);assertKnowledgeTextSafe(text);
     const final=await this.#current(tx,scope,commandId as string,materialId as string);if(final.binding!==before.binding||Date.parse(final.now)>=Math.min(before.deadline,final.deadline))fail('MATERIAL_CURRENT_CHANGED');const d=final.material.snapshot;
-    return{transport:'SYNTHETIC_ONLY' as const,materialId,materialRef:cloneV1(final.material.ref),sourceRef:cloneV1(d.sourceRef),partIndex:d.partIndex,partCount:d.partCount,byteOffset:d.byteOffset,sourceBytes:d.sourceBytes,contentHash:d.contentHash,mediaType:d.mediaType,bytes:new Uint8Array(bytes),cacheControl:'no-store' as const,completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false};
+return{validUntil:new Date(Math.min(before.deadline,final.deadline)).toISOString(),material:{transport:'SYNTHETIC_ONLY' as const,materialId,materialRef:cloneV1(final.material.ref),sourceRef:cloneV1(d.sourceRef),partIndex:d.partIndex,partCount:d.partCount,byteOffset:d.byteOffset,sourceBytes:d.sourceBytes,contentHash:d.contentHash,mediaType:d.mediaType,bytes:new Uint8Array(bytes),cacheControl:'no-store' as const,completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false}};
    });
   }catch(error){if(error instanceof MaterialFailure)throw error;return fail('MATERIAL_UNAVAILABLE');}
  }
