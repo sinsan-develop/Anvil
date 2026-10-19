@@ -48,6 +48,12 @@ export class SyntheticPgChallengeStore implements SyntheticChallengeStore {
     const at=await clock(db);
     if(!s||s.user_status!=='ACTIVE'||s.revoked_at||s.user_revoked_at||s.client_revoked_at||Number(s.credential_generation)!==Number(s.current_generation)
      ||Number(s.current_generation)!==f.subject.credentialGeneration||s.idle_expires_at.getTime()<=Date.parse(at)||s.absolute_expires_at.getTime()<=Date.parse(at))return bad('EXECUTION_HUMAN_SESSION_NOT_CURRENT');
+    // 회수와 같은 project 잠금 순서로 직렬화한다. 자기 HUMAN 명령 제외를 전달 권위에 적용하지 않는다.
+    const project=(await db.query('SELECT id FROM anvil.projects WHERE id=$1 AND archived_at IS NULL FOR UPDATE',[scope.projectId])).rows;
+    if(project.length!==1||project[0].id!==scope.projectId)return bad('EXECUTION_PROJECT_NOT_CURRENT');
+    const revocation=(await db.query('SELECT EXISTS(SELECT 1 FROM anvil.execution_grant_revocations WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3) AS revoked',[scope.projectId,scope.grantRef.id,scope.grantRef.version])).rows;
+    if(revocation.length!==1||typeof revocation[0].revoked!=='boolean')return bad('EXECUTION_GRANT_REVOCATION_UNVERIFIED',503);
+    if(revocation[0].revoked)return bad('EXECUTION_GRANT_REVOKED');
     const actor:AuthenticatedIdentity={actorId:f.subject.userId,clientId:f.subject.clientId,credentialGeneration:f.subject.credentialGeneration,serverOwner:false,reauthUntil:null};
     const request={schemaVersion:1 as const,projectId:scope.projectId,commandId:randomUUID(),clientId:actor.clientId,controlGeneration:f.subject.controlGeneration,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{}};
     const input={executionId:scope.executionId,executionGeneration:scope.executionGeneration,permissionPolicyRef:f.permissionPolicyRef,budgetPolicyRef:f.intent.budgetPolicyRef,sourceScopes:f.intent.sourceScopes};
