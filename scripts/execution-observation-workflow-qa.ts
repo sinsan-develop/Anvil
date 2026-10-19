@@ -59,7 +59,7 @@ try{
 
  const counts=async(pid:string)=>{const out:number[]=[];for(const table of ['execution_observations','execution_acknowledgements'])out.push((await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n);return out;};
  const event=(sequence:number)=>({projectId:'',executionId:'',executionGeneration:1,sequence,eventId:randomUUID(),type:'UNKNOWN',commandId:randomUUID(),envelopeHash:'b'.repeat(64),localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date().toISOString(),reasonCode:'PROVIDER_RESPONSE_LOST'});
- const prepare=async()=>{const f=await setup();await f.issue(f.request());const makeEvent=(n:number)=>({...event(n),projectId:f.pid,executionId:f.scope.executionId});return{...f,makeEvent,observations:new SyntheticExecutionObservations(new SyntheticPgObservationStore(pool,f.keys))};};
+ const prepare=async()=>{const f=await setup();await f.issue(f.request());const row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0];assert(row?.envelope);const makeEvent=(n:number)=>({...event(n),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash});return{...f,makeEvent,observations:new SyntheticExecutionObservations(new SyntheticPgObservationStore(pool,f.keys))};};
  const batch=(events:any[])=>({events,batchHash:contentHash(canonicalJson(events))});
  phase='OBSERVATIONS_FIRST';const f=await prepare(),one=f.makeEvent(1),three=f.makeEvent(3);
  if(mode==='RED'){await assert.rejects(admin.query('SELECT 1 FROM anvil.execution_observations'),(e:any)=>e.code==='42P01');await assert.rejects(f.observations.ingest(f.scope,batch([one,three])),(e:any)=>e.message==='OBSERVATION_STORAGE_UNAVAILABLE');console.log('C3_OBSERVATIONS_RED_MISSING_RELATION_42P01_STORAGE_REJECTED');}
@@ -85,6 +85,9 @@ try{
    assert.deepEqual(await counts(fresh.pid),[0,0]);
   }
   console.log('C3_OBSERVATIONS_FIVE_ACTUAL_FAILURES_ROLLBACK_NO_ORPHAN');
+  phase='UNKNOWN_COMMAND';const unknown=await prepare();
+  await assert.rejects(unknown.observations.ingest(unknown.scope,batch([{...unknown.makeEvent(1),commandId:randomUUID()}])));assert.deepEqual(await counts(unknown.pid),[0,0]);
+  console.log('C3_OBSERVATIONS_UNKNOWN_COMMAND_REJECTED');
   phase='APP_GUARDS';for(const table of ['execution_observations','execution_acknowledgements']){
    await assert.rejects(pool.query('INSERT INTO anvil.'+table+' DEFAULT VALUES'),(e:any)=>e.code==='42501');
    for(const sql of ['UPDATE anvil.'+table+' SET project_id=project_id WHERE false','DELETE FROM anvil.'+table+' WHERE false'])await assert.rejects(pool.query(sql),(e:any)=>e.code==='42501');

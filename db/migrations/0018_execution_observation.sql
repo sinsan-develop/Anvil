@@ -223,3 +223,100 @@ CREATE CONSTRAINT TRIGGER synthetic_credential_challenge_complete AFTER INSERT O
 CREATE CONSTRAINT TRIGGER execution_challenge_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
 CREATE CONSTRAINT TRIGGER synthetic_execution_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
 GRANT INSERT ON anvil.execution_credentials,anvil.execution_challenges,anvil.execution_receipts TO anvil_v3_app;
+
+-- 관측은 합성 공급자의 주장만 보존하며 STARTED/STOPPED도 실제 실행/회수 확정이 아니다.
+CREATE TABLE anvil.execution_observations (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ event_sequence bigint NOT NULL CHECK(event_sequence BETWEEN 1 AND 10000),grant_id uuid NOT NULL,grant_version bigint NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,
+ event_id uuid GENERATED ALWAYS AS ((snapshot_json->'event'->>'eventId')::uuid) STORED,
+ PRIMARY KEY(project_id,execution_id,generation,id,version),UNIQUE(project_id,execution_id,generation,event_sequence),UNIQUE(project_id,execution_id,generation,event_id),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(project_id,grant_id,grant_version) REFERENCES anvil.execution_grants(project_id,id,version)
+);
+CREATE TABLE anvil.execution_acknowledgements (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 10000),
+ grant_id uuid NOT NULL,grant_version bigint NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,
+ PRIMARY KEY(project_id,execution_id,generation,id,version),UNIQUE(project_id,execution_id,generation,version),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(project_id,grant_id,grant_version) REFERENCES anvil.execution_grants(project_id,id,version)
+);
+GRANT SELECT ON anvil.execution_observations,anvil.execution_acknowledgements TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.execution_observations,anvil.execution_acknowledgements FROM anvil_v3_app;
+CREATE FUNCTION anvil.execution_observation_current(pid uuid,eid uuid,gen bigint,gid uuid,ver bigint) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(EXISTS(SELECT 1 FROM anvil.execution_grants g WHERE g.project_id=pid AND g.id=gid AND g.version=ver AND g.execution_id=eid AND g.generation=gen
+  AND anvil.synthetic_challenge_context(pid,gid,ver,jsonb_build_object('id',gid,'version',ver,'contentHash',g.content_hash))
+  AND EXISTS(SELECT 1 FROM anvil.execution_credentials c WHERE c.project_id=pid AND c.grant_id=gid AND c.grant_version=ver AND c.credential_generation=1)),false);
+$$;
+CREATE FUNCTION anvil.execution_observation_summary(pid uuid,eid uuid,gen bigint) RETURNS jsonb LANGUAGE plpgsql AS $$
+DECLARE item record;highest bigint=0;expected bigint=1;max_seq bigint=0;stored bigint=0;digest text=anvil.execution_json_hash('[]'::jsonb);gaps jsonb='[]'::jsonb;
+BEGIN
+ FOR item IN SELECT event_sequence,snapshot_json->'event' AS event FROM anvil.execution_observations WHERE project_id=pid AND execution_id=eid AND generation=gen ORDER BY event_sequence LOOP
+  IF item.event_sequence>expected THEN gaps=gaps||jsonb_build_array(jsonb_build_object('from',expected,'to',item.event_sequence-1));END IF;
+  expected=item.event_sequence+1;max_seq=item.event_sequence;stored=stored+1;
+  IF item.event_sequence=highest+1 THEN highest=highest+1;digest=anvil.execution_json_hash(jsonb_build_object('previous',digest,'eventHash',anvil.execution_json_hash(item.event)));END IF;
+ END LOOP;
+ RETURN jsonb_build_object('execution',jsonb_build_object('projectId',pid,'executionId',eid,'executionGeneration',gen),'highestContiguous',highest,'maxSequence',max_seq,'contiguousDigest',digest,'gaps',gaps,'storedCount',stored,'writerReleaseVerified',false,'executionAuthorized',false,'dispatchPerformed',false);
+END;
+$$;
+CREATE FUNCTION anvil.guard_execution_observation() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;e jsonb;g anvil.execution_grants%ROWTYPE;at_time timestamptz=clock_timestamp();
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_IMMUTABLE' USING ERRCODE='42501';END IF;
+ s=NEW.snapshot_json;e=s->'event';SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=NEW.grant_id AND version=NEW.grant_version;
+ IF NEW.version IS DISTINCT FROM 1 OR NOT anvil.execution_observation_current(NEW.project_id,NEW.execution_id,NEW.generation,NEW.grant_id,NEW.grant_version)
+  OR NOT anvil.execution_json_shape(s,ARRAY['event','grantRef','credentialGeneration','mode','receivedAt','transport','verification'])
+  OR s->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash) OR s->'credentialGeneration' IS DISTINCT FROM '1'::jsonb
+  OR s->>'mode' IS DISTINCT FROM 'EXECUTION' OR s->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY' OR s->>'verification' IS DISTINCT FROM 'PROVIDER_CLAIM_ONLY'
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(e))>65536
+  OR NOT anvil.execution_iso_valid(s->'receivedAt') OR (s->>'receivedAt')::timestamptz>at_time OR (s->>'receivedAt')::timestamptz<at_time-interval '30 seconds'
+  OR NOT anvil.execution_json_shape(e,ARRAY['projectId','executionId','executionGeneration','sequence','eventId','type','commandId','envelopeHash','localRecordRef','processRef','occurredAt','reasonCode'])
+  OR e->'projectId' IS DISTINCT FROM to_jsonb(NEW.project_id) OR e->'executionId' IS DISTINCT FROM to_jsonb(NEW.execution_id) OR e->'executionGeneration' IS DISTINCT FROM to_jsonb(NEW.generation)
+  OR e->'sequence' IS DISTINCT FROM to_jsonb(NEW.event_sequence) OR NOT anvil.execution_preparation_ref_valid(e->'localRecordRef')
+  OR (e->'processRef' IS DISTINCT FROM 'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(e->'processRef'))
+  OR jsonb_typeof(e->'eventId') IS DISTINCT FROM 'string' OR e->>'eventId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR jsonb_typeof(e->'commandId') IS DISTINCT FROM 'string' OR e->>'commandId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR jsonb_typeof(e->'envelopeHash') IS DISTINCT FROM 'string' OR e->>'envelopeHash' !~ '^[0-9a-f]{64}$'
+  OR jsonb_typeof(e->'type') IS DISTINCT FROM 'string' OR e->>'type' NOT IN('RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED','STARTED','REJECTED','UNKNOWN','STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED','HEARTBEAT')
+  OR jsonb_typeof(e->'reasonCode') IS DISTINCT FROM 'string' OR e->>'reasonCode' NOT IN('NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER')
+  OR NOT anvil.execution_iso_valid(e->'occurredAt') OR (e->>'occurredAt')::timestamptz>at_time+interval '30 seconds' THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_EXACT_CLAIM_REQUIRED' USING ERRCODE='42501';END IF;
+ IF (SELECT count(*) FROM anvil.execution_observations WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation)>=10000
+  OR (SELECT COALESCE(sum(octet_length(anvil.execution_authority_canonical(snapshot_json))),0) FROM anvil.execution_observations WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation)+octet_length(anvil.execution_authority_canonical(s))>16777216 THEN
+  RAISE EXCEPTION 'EXECUTION_OBSERVATION_LIMIT' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_EXACT_CLAIM_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+CREATE FUNCTION anvil.guard_execution_acknowledgement() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;prior anvil.execution_acknowledgements%ROWTYPE;summary jsonb;at_time timestamptz=clock_timestamp();
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_ACK_IMMUTABLE' USING ERRCODE='42501';END IF;s=NEW.snapshot_json;
+ SELECT * INTO prior FROM anvil.execution_acknowledgements WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation ORDER BY version DESC LIMIT 1;
+ summary=anvil.execution_observation_summary(NEW.project_id,NEW.execution_id,NEW.generation);
+ IF NOT anvil.execution_observation_current(NEW.project_id,NEW.execution_id,NEW.generation,NEW.grant_id,NEW.grant_version)
+  OR NEW.version IS DISTINCT FROM COALESCE(prior.version,0)+1 OR (prior.id IS NOT NULL AND NEW.id IS DISTINCT FROM prior.id)
+  OR NOT anvil.execution_json_shape(s,ARRAY['execution','highestContiguous','maxSequence','contiguousDigest','gaps','storedCount','writerReleaseVerified','executionAuthorized','dispatchPerformed','recordedAt'])
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR s-'recordedAt' IS DISTINCT FROM summary
+  OR (summary->>'storedCount')::bigint<=COALESCE((prior.snapshot_json->>'storedCount')::bigint,0)
+  OR NOT anvil.execution_iso_valid(s->'recordedAt') OR (s->>'recordedAt')::timestamptz>at_time OR (s->>'recordedAt')::timestamptz<at_time-interval '30 seconds'
+  OR (prior.id IS NOT NULL AND (s->>'recordedAt')::timestamptz<(prior.snapshot_json->>'recordedAt')::timestamptz) THEN
+   RAISE EXCEPTION 'EXECUTION_ACK_EXACT_CONTIGUOUS_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_ACK_EXACT_CONTIGUOUS_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+CREATE FUNCTION anvil.guard_execution_observation_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE latest anvil.execution_acknowledgements%ROWTYPE;
+BEGIN
+ IF NOT anvil.execution_observation_current(NEW.project_id,NEW.execution_id,NEW.generation,NEW.grant_id,NEW.grant_version) THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO latest FROM anvil.execution_acknowledgements WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation ORDER BY version DESC LIMIT 1;
+ IF latest.id IS NULL OR latest.content_hash IS DISTINCT FROM anvil.execution_json_hash(latest.snapshot_json)
+  OR latest.snapshot_json-'recordedAt' IS DISTINCT FROM anvil.execution_observation_summary(NEW.project_id,NEW.execution_id,NEW.generation) THEN
+   RAISE EXCEPTION 'EXECUTION_OBSERVATION_ACK_ATOMIC_REQUIRED' USING ERRCODE='42501';END IF;RETURN NULL;
+END;
+$$;
+CREATE TRIGGER execution_observation_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.execution_observations FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation();
+CREATE TRIGGER execution_acknowledgement_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.execution_acknowledgements FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_acknowledgement();
+CREATE CONSTRAINT TRIGGER execution_observation_complete AFTER INSERT ON anvil.execution_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_complete();
+CREATE CONSTRAINT TRIGGER execution_acknowledgement_complete AFTER INSERT ON anvil.execution_acknowledgements DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_complete();
+GRANT INSERT ON anvil.execution_observations,anvil.execution_acknowledgements TO anvil_v3_app;
