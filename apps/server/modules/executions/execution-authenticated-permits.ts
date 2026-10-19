@@ -16,6 +16,11 @@ const reject=():never=>{throw new AuthFailure('AUTHENTICATED_PERMIT_REJECTED',41
 export class SyntheticAuthenticatedPermits{
  readonly store:SyntheticAuthenticatedPermitStore;
  constructor(store:SyntheticAuthenticatedPermitStore){if(!store||store.transport!=='SYNTHETIC_ONLY'||typeof store.transaction!=='function')reject();this.store=store;}
+ /** 기존 실행기 7필드 port로만 투영하며 false 권한을 실행 허가로 승격하지 않는다. */
+ async consumeForReceiver(scope:unknown,commandId:unknown,challengeRef:unknown,proof:unknown,signature:unknown,bodyRaw:unknown){
+  const result=await this.consume(scope,commandId,challengeRef,proof,signature,bodyRaw),{executionAuthorized,dispatchPerformed,...permit}=result.permit;
+  if(result.executionAuthorized!==false||result.dispatchPerformed!==false||executionAuthorized!==false||dispatchPerformed!==false)return reject();return permit;
+ }
  async consume(rawScope:unknown,commandId:unknown,rawChallengeRef:unknown,rawProof:unknown,signature:unknown,bodyRaw:unknown){
   try{
    if(this.store.transport!=='SYNTHETIC_ONLY'||!recordV1(rawScope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||rawScope.mode!=='EXECUTION'

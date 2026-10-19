@@ -5,6 +5,7 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {executionChallengeRequestBytes,executionProofBytes,executionTarget} from '../../../apps/server/modules/executions/execution-proof.ts';
 import {SyntheticExecutionChallenges} from '../../../apps/server/modules/executions/execution-challenges.ts';
+import {SyntheticStartReceiver} from '../../../apps/connector/runtime/execution-start-receiver.ts';
 const m:any=await import('../../../apps/server/modules/executions/execution-authenticated-permits.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at='2026-10-19T12:00:00.000Z',until='2026-10-19T12:01:00.000Z';
 function fixture(){
@@ -29,7 +30,7 @@ function fixture(){
   const proof={requestId:p.requestId,...target,grantRef:ref,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');return{issued,proof,signature,raw};
  }
  const make=()=>{assert.equal(typeof m.SyntheticAuthenticatedPermits,'function');return new m.SyntheticAuthenticatedPermits(store);},run=(p:any)=>make().consume(scope,id,p.issued.ref,p.proof,p.signature,p.raw);
- return{scope,id,request,issue,make,run,state:()=>state,connections:()=>connections,fault:(s:string)=>fault=s,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString()};
+ return{scope,id,request,envelope,issue,make,run,state:()=>state,connections:()=>connections,fault:(s:string)=>fault=s,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString()};
 }
 test('실제 P256 서명/nonce와 같은 transaction의 정확 permit 1개만 소비하고 재조회는 기한을 연장하지 않는다',async()=>{
  const f=fixture(),p=await f.issue(),before=f.connections(),[a,b]=await Promise.all([f.run(p),f.run(p)]);assert.deepEqual(a,b);assert.equal(f.connections()-before,2);assert.equal(a.permit.expiresAt,'2026-10-19T12:00:30.000Z');
@@ -49,4 +50,12 @@ test('이미 소비한 명령에 새 challenge/시도로 permit을 재발급하�
 });
 test('소비 완료 journal에서 permit이 없으면 사후 생성하지 않고 불완전 상태로 거절한다',async()=>{
  const f=fixture(),p=await f.issue();await f.run(p);f.state().permits.splice(0);await assert.rejects(f.run(p));assert.equal(f.state().permits.length,0);assert.equal(f.state().results.length,1);assert.equal(f.state().challenges.length,2);
+});
+test('실행기 sync된 시도→서명/nonce/서버permit→permitRef sync 뒤에만 합성 wire1회를 연결한다',async()=>{
+ const f=fixture(),events:any[]=[];let sends=0;
+ const store:any={transport:'SYNTHETIC_ONLY',exclusive:async(_s:any,fn:any)=>fn({read:async()=>({complete:true,events:structuredClone(events)}),appendAndSync:async(e:any)=>{events.push(structuredClone(e));}})};
+ const authority:any={transport:'SYNTHETIC_ONLY',consume:async(_e:any,attempt:any)=>{assert.deepEqual(attempt,events[1].ref);const p=await f.issue({...f.request,localAttemptRef:attempt});return f.make().consumeForReceiver(f.scope,f.id,p.issued.ref,p.proof,p.signature,p.raw);}};
+ const wire:any={transport:'SYNTHETIC_ONLY',send:async()=>{assert.equal(events[2].snapshot.state,'PERMIT_RECORDED');assert.deepEqual(events[2].snapshot.permitRef,f.state().permits[0].ref);assert.deepEqual(f.state().permits[0].snapshot.request.localAttemptRef,events[1].ref);sends++;return{transport:'SYNTHETIC_ONLY',responseRef:f.request.osOwnershipRef};}};
+ const receiver=new SyntheticStartReceiver(store,authority,wire,{context:f.envelope.context as any,executorRegistrationRef:f.envelope.executorRegistrationRef,grantRef:f.scope.grantRef},()=>Date.parse(at));
+ await receiver.receive(f.envelope);assert.equal((await receiver.start(f.envelope)).state,'RESPONSE_RECORDED');assert.equal(sends,1);await receiver.start(f.envelope);assert.equal(sends,1);assert.equal(f.state().permits.length,1);assert.equal(f.state().results.length,1);
 });
