@@ -4,7 +4,7 @@ import {installWorkspaceBundle} from '../UI04/bundle.ts';
 const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',id='33333333-3333-4333-8333-333333333333',at='2026-10-17T00:00:00.000Z';
 const codes=['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'];
 async function fixture(page:Page,options:{lost?:boolean;status?:number;code?:string;noPolicy?:boolean;disposition?:'AUTO'|'REQUIRE_APPROVAL'|'DENY'}={}){
- const writes:any[]=[],unknown:string[]=[],errors:string[]=[];let saved:any=null,ref:any=null;
+ const writes:any[]=[],unknown:string[]=[],errors:string[]=[],history=new Map<number,{ref:any;candidate:any}>();let saved:any=null,ref:any=null;
  await installWorkspaceBundle(page);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')unknown.push(r.url());});
  await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
  await page.route('**/api/v1/projects/*/connector-registrations?*',r=>r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}));
@@ -19,14 +19,25 @@ async function fixture(page:Page,options:{lost?:boolean;status?:number;code?:str
   const fields=c.payload.kind==='CONNECTION_CANDIDATE'?['toolProduct','toolVersion','adapterKind','connectorRef','environmentRef']:['executionHostRef','sourceRootRefs','targetHostRefs','commandProfileRefs'];
   const missing=fields.flatMap(field=>!Object.hasOwn(c.payload.candidate,field)?[{field,reason:'NOT_PROVIDED'}]:c.payload.candidate[field]===''||Array.isArray(c.payload.candidate[field])&&!c.payload.candidate[field].length?[{field,reason:'EMPTY'}]:[]);
   saved={kind:c.payload.kind,input:c.payload,readiness:{state:'NOT_READY',executionAuthorized:false,missingRequirements:[...missing,{field:'hostTrust',reason:'UNVERIFIED'},{field:'agentMeasurement',reason:'NOT_EXECUTED'}]},capabilities:codes.map(code=>{const doc=c.payload.candidate.documentation?.find((d:any)=>d.code===code);return{code,documentation:doc?{...doc,sourceKind:'USER_REPORTED'}:null,measurement:{state:'UNVERIFIED',toolVersion:c.payload.candidate.toolVersion??null,environmentRef:null,executionRef:null,evidenceRefs:[]},controlLevel:'UNVERIFIED',limitations:['HOST_NOT_TRUSTED','NO_AGENT_MEASUREMENT','NOT_EXECUTABLE_CANDIDATE']};})};ref={id,version:c.expectedVersion+1,contentHash:contentHash(canonicalJson(saved))};
+  history.set(ref.version,structuredClone({ref,candidate:saved}));
   if(options.lost&&writes.length===1)return r.abort('connectionreset');return r.fulfill({json:{operationId:id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:id,version:ref.version,data:{status:'CANDIDATE_STORED',ref,candidate:saved,previousRef:c.payload.candidateRef},serverReceivedAt:at}});
  });
- await page.route(`**/api/v1/projects/${pid}/connection-candidates/${id}/versions/*`,r=>r.fulfill({json:{ref,candidate:saved,expired:false,createdAt:at,recordedBy:uid,executionAuthorized:false,observedAt:at}}));
- await page.goto(`/#/projects/${pid}/connections`);return{writes,unknown,errors};
+ await page.route(`**/api/v1/projects/${pid}/connection-candidates/${id}/versions/*`,r=>{const value=history.get(Number(new URL(r.request().url()).pathname.split('/').at(-1)));return value?r.fulfill({json:{...value,expired:false,createdAt:at,recordedBy:uid,executionAuthorized:false,observedAt:at}}):r.fulfill({status:404,json:{code:'CANDIDATE_NOT_FOUND'}});});
+ await page.goto(`/#/projects/${pid}/connections`);return{writes,unknown,errors,history};
 }
 async function fill(page:Page){await page.getByRole('button',{name:'새 도구 후보',exact:true}).click();await page.getByLabel('후보 이름',{exact:true}).fill('Windows 로컬 도구');await page.getByLabel('후보 만료 시각 UTC',{exact:true}).fill(new Date(Date.now()+600000).toISOString());await page.getByLabel('후보 저장 이유',{exact:true}).fill('실행 전 후보 보존');}
 
 const docNames=['지시·세션','상태·원문','결과·근거','도구 승인','중지·회수','경로·쓰기 통제'];
+for(const mode of ['NORMAL','DENIED','HASH'])test('CANDIDATE_HISTORY_'+mode,async({page})=>{
+ const f=await fixture(page);await fill(page);await page.getByRole('button',{name:'후보 저장',exact:true}).click();await expect(page.getByRole('status')).toContainText('v1');await page.getByRole('button',{name:'저장한 정확 버전 보기',exact:true}).click();const stored=page.getByRole('region',{name:'보관 후보',exact:true});await expect(stored).toContainText('Windows 로컬 도구 · v1');await expect(page.getByRole('button',{name:'이전 후보 버전 보기',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'작성 닫기',exact:true}).click();await page.getByRole('button',{name:'이 버전에서 후보 개정',exact:true}).click();await page.getByLabel('후보 이름',{exact:true}).fill('개정 후보');await page.getByLabel('후보 저장 이유',{exact:true}).fill('이력 조회용 개정');await page.getByRole('button',{name:'후보 저장',exact:true}).click();await expect(page.getByRole('status')).toContainText('v2');await page.getByRole('button',{name:'저장한 정확 버전 보기',exact:true}).click();await expect(stored).toContainText('개정 후보 · v2');
+ if(mode==='DENIED')await page.route(`**/api/v1/projects/${pid}/connection-candidates/${id}/versions/1`,r=>r.fulfill({status:403,json:{code:'PROJECT_READ_DENIED'}}));
+ if(mode==='HASH')await page.route(`**/api/v1/projects/${pid}/connection-candidates/${id}/versions/1`,r=>{const value=structuredClone(f.history.get(1)!);value.ref.contentHash='b'.repeat(64);return r.fulfill({json:{...value,expired:false,createdAt:at,recordedBy:uid,executionAuthorized:false,observedAt:at}});});
+ await page.getByRole('button',{name:'이전 후보 버전 보기',exact:true}).click();
+ if(mode==='NORMAL'){await expect(stored).toContainText('Windows 로컬 도구 · v1');await expect(stored).toContainText('NOT_READY');await expect(page.getByRole('button',{name:'이전 후보 버전 보기',exact:true})).toHaveCount(0);}
+ else {await expect(page.getByRole('alert')).toContainText(mode==='DENIED'?'PROJECT_READ_DENIED':'RESPONSE_INVALID');await expect(stored).toHaveCount(0);}
+ await expect(page.getByLabel('후보 이름',{exact:true})).toHaveValue('개정 후보');expect(f.writes).toHaveLength(2);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
 for(const mode of ['AUTO','APPROVAL','MISSING','DENIED_REFRESH','CONTROL','LATE_SWITCH','ABA_SWITCH'])test('CANDIDATE_ACTION_POLICY_'+mode,async({page})=>{
  const f=await fixture(page,{noPolicy:mode==='MISSING',disposition:mode==='APPROVAL'?'REQUIRE_APPROVAL':'AUTO'});await fill(page);const panel=page.getByRole('region',{name:'후보 저장 허용 행동 조회',exact:true}),read=panel.getByRole('button',{name:'후보 저장 정책 조회',exact:true});
  if(mode==='CONTROL')await page.route(`**/api/v1/projects/${pid}`,r=>r.fulfill({json:{id:pid,participation:'OWNER',controlState:{status:'OTHER_CLIENT',actorId:uid,clientId:id,generation:2}}}));
