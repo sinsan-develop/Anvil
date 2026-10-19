@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 회수 HUMAN 내부 선행 checkpoint / Main 어울(2026-10-19)**: 신규5RED153.7457ms→3PASS2FAIL325.3747ms는 시험fixture 공용scope오염을확인해각fixture복제로분리했다. 이어최종정책await중기한경과누락5PASS1FAIL383.1329ms→Main최종clock장벽6PASS313.9344ms/type0, 직접/기존runtime정책·허가 인접20PASS860.6117ms다. 독립 C0/I1/신규M0는마지막current의단축기한이저장snapshot기한에반영되지않고마지막정책await뒤30초freshness가누락된경계다. 새회귀6PASS1FAIL331.8668ms의SHORT_CURRENT를RED로확인하고Main이짧아진current/정책기한은transaction거절·마지막current freshness재검사로보완해직접7PASS272.4741ms/type0이다. 동일후보재리뷰0·원finding/RED보존이며이를독립C0/I0으로바꾸지않는다.
+
+  타입검사중미구현recovery module TS2307 1건과시험assert.rejects 메시지overload TS2345 1건은각각구현/시험타입만보정해최종exit0이다. 이미완료된SEND실파일QA를되풀이하지않았다. 새서버서비스는실제AccessRepository 인증/CSRF/currentOWNER·단독제어·최근재인증/명시runtime회수정책·유한budget·exact실행/ACK/KNOWN processRef또는UNKNOWN·현재신뢰host/경로를같은transaction에서대조해4개회수연산만최단기한/불변requesthash·영수증과저장한다. 원실행회수/만료는별도이며ACK/writer상태를바꾸지않고새START/SEND/permit/일반원문/강제kill권한은없다.
+
+  current/append는필수SYNTHETIC_ONLY port이고실PGguard/저장adapter·서버credential·recoveryHTTP/현재OS/실Agent는미연결이다. fakeDB transaction/rollback증거를실PG원자성으로승격하지않는다. 변경은새내부서비스/직접시험/WORK_STATUS 정확3경로, 앞SEND파일4경로commit ae207fa는local보존중이며전체C3/Stage미완료다. 다음은회수RECOVERY kind의PG저장·원실행grant보호guard와서버STOP/SEND연결을승인범위에서이어간다.
+
 - **C3 SEND 파일 내구 checkpoint / Main 어울(2026-10-19)**: 신규 adapter 부재1RED195.9903ms→실Windows 파일 sync/재열기·원응답 metadata 재조회·UNKNOWN 새command 무전송·quota/부분/기존잠금/sync실패/버린비동기 sticky검수1PASS444.5443ms다. 독립 C0/I1/신규M0의 lock.stat실패 후 미확인잠금삭제를 별도 새QA1RED145.3617ms로재현했다. Main이 생성된lock의 identity실패를poison으로보존하고finally의lockId필수검사를추가해 새GREEN1PASS130.5441ms(callback0/잠금보존/다음진입거절)로보완했다. 원검토를 독립C0/I0으로고치지않고같은후보재리뷰0이다. 세QA exact정리·별도 C3_INSTRUCTION_STORE_ALL_THREE_QA_INDEPENDENT_RESIDUAL_ZERO/exit0이며 원RED/실패를보존한다.
 
   저장부는 caller-owned 기존root/실행전체잠금·순차300개/2MiB 상한이고 metadata file.sync만 제공한다. 새시험은 실제SENDjournal과 고정codec에 합성source/current/consume/wire를붙인 검수이며 실Agent·OS/현재권한진위·전원손실·directoryfsync/정식DB·서비스는미검증이다. 원문/handle저장0·기존START/client/자료저장부변경0·수신기이월Minor1미해소다. 변경은신규adapter/직접실파일시험/잠금I1음성시험/WORK_STATUS 정확4경로이며C3/Stage부분구현이다. 다음 회수전용 HUMAN 서버 선행은같은승인범위에서계속한다.
