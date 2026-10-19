@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 명시 검수 기준 입력 후보 확인 / Main 어울(2026-10-19)**: 새 prepareResultCriteria는 확정 임무/hash·모든 원조건 index/문구hash·명시 시험 ID/종류·같은 환경ref를 대조하고, 고정 기준 snapshot과 source binding을 분리해 준비한다. 모든 원조건을 포함하고 required=true이며 환경/기준/문구가 없거나 변하면 추측·자동 보충하지 않는다. 기존 SyntheticResultEvidence에 새 snapshot을 직접 소비시켜 제출 주장이 COMPLETED여도 실제 근거 없는 두 항목은 MISSING/완료false로 남는 것을 확인했다. 이 함수는 순수 초안이며 registryStored=false, 실제 권한/등록/DB·환경 관측·검수/실행 완료가 아니다.
+  초기시험2 PASS/2 FAIL134.6705ms에서 음성2가 미구현 AssertionError도 인정하는 문제를 발견해 정확 RESULT_CRITERIA 거절만 인정하도록 보완했고 전체4 RED143.9093ms를 확인했다. 구현 뒤4 PASS302.404ms/type0이다. 잘못된 초기 음성을 기능 PASS로 소급하지 않으며 기준/기대값을 느슨하게 하지 않았다. 코드/실행 환경 불변인 옛PG/브라우저/전체회귀는 반복0, 새QA자원0·정식DB/서비스·원5guard/pending·Agent 변경0이다. 다음은 이 명시 입력을 FN12의 불변 버전·현재 제어/별도 명시 정책·원문/영수증·감사에 결박해 저장하는 제공자다. 새 실제 migration은 새 빈 격리에만 검증하고 정식DB/서비스 반영과 분리한다.
+
+- **FN12 명시 검수 기준 입력 착수 / Main 어울(2026-10-19)**: 5d64d17e local/private exact·clean 뒤, Main이 typed 검수 기준의 명시 매핑을 다음 미완료로 선정했다. Ruling: 내용 확정 임무의 acceptanceCriteria/verificationRequirements 각 index·문구hash를 criterion/test ID·시험종류·동일 환경ref와 명시적으로 연결한다. 모든 원조건을 누락 없이 포함하고 현재 문구에는 선택사항 구분이 없으므로 required=true를 보존한다. 문구에서 종류/환경을 추측하거나 등록되지 않은 초안을 검수 기준 활성화/실제 저장/권한으로 승격하지 않는다. 기존 고정 criteria snapshot의 소비 형태는 유지하고 source binding을 함께 준비한다. source 검증→계획된 저장 provider/검수 연결 순서이며 정식DB/서비스·실제Agent·원5guard/pending은 변경하지 않는다. 원조건/환경이 미정이면 정확 부족으로 거절하고 다른 계획 작업을 멈추는 일반 대기로 바꾸지 않는다.
+
 - **UI05 검수 원문 화면 후보 확인 / Main 어울(2026-10-19)**: 선택 제출에 ‘검수 기준 원문 조회’를 연결했다. 앞서 hash 검증한 제출/확정 임무와 새 응답의 원문·ref/hash를 다시 대조하며, 완료/검증 조건·시험 기준 미연결/환경 미정·검수 저장/보완 미연결을 구분해 표시한다. 명시 조회 전 GET0, 재조회 대기/거절 때 이전 자료를 숨긴다. UI source이며 정식 서비스 반영/실사용 가능/전체 업무 완료가 아니다.
   새 API3 RED152.9753ms→3 PASS173.0147ms, browser1 RED8.5초(미구현 영역)→1 PASS2.1초다. 자기검토로 403 뒤 제출 본문 잔존을 추가 반증해 새 RED8.5초(expected0/actual1)→401/403/404에서 목록·선택/본문 제거→최종 browser1 PASS2.0초, 쓰기/off-origin/JS오류0을 확인했다. 실제 DB/served TLS/계정·Agent 검증이 아닌 합성 route 시험이다. 최종 type0·build0/186module211ms, 기존500KiB/NO_COLOR 경고는 보존하고 무관 최적화0이다.
   직접/인접 unit은7 PASS/1 FAIL355.4272ms였다. 실패는 새 TSX 자식을 변환하지 못한 기존 SSR 시험 loader의 ERR_UNKNOWN_FILE_EXTENSION이며 제품 예외와 구분했다. 해당 자식도 같은 Oxc로 변환한 뒤 기존 화면/escape 기대값을 유지해 실패했던 SSR1 PASS361.4571ms·최종type0이다. 성공 총8을 한 번에 재실행한 것처럼 보고하지 않는다.
