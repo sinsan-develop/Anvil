@@ -13,7 +13,7 @@ export class ProjectResultArtifacts{
  readonly results:Pick<ProjectResultSubmissions,'read'>;readonly store:Pick<ArtifactStore,'read'>|null;
  constructor(results:Pick<ProjectResultSubmissions,'read'>,store:Pick<ArtifactStore,'read'>|null){if(typeof results?.read!=='function'||store!==null&&typeof store?.read!=='function')fail('RESULT_ARTIFACT_READER_REQUIRED');this.results=results;this.store=store;}
  async read(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,id:string,artifactId:string){
-  if(![pid,id,artifactId].every(uuidV1))fail('RESULT_ARTIFACT_INPUT_INVALID',400);const actor=cloneV1(rawActor);await projectMember(db,actor,pid);
+  if(![pid,id,artifactId].every(uuidV1))fail('RESULT_ARTIFACT_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);
   const result=cloneV1(await this.results.read(db,actor,pid,id)),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))fail();
   try{if(result.snapshot.scope.projectId!==pid)fail();readSubmittedResultRecord(result,result.snapshot.scope,id,at.toISOString());}catch{fail();}
   const refs:RuntimeRefV1[]=result.snapshot.manifest.artifactRefs.filter((r:RuntimeRefV1)=>r.id===artifactId);if(refs.length!==1)fail('RESULT_ARTIFACT_NOT_DECLARED',404);const ref=refs[0]!;if(ref.version!==1)fail('RESULT_ARTIFACT_VERSION_UNSUPPORTED',412);
