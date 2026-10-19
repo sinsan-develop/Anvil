@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {SyntheticExecutionObservations} from '../../../apps/server/modules/executions/execution-observations.ts';
 const m:any=await import('../../../apps/connector/runtime/execution-start-receiver.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const id='11111111-1111-4111-8111-111111111111',ref={id,version:1,contentHash:'a'.repeat(64)},now=Date.parse('2026-10-19T12:00:00.000Z');
 function envelope(){const context={projectId:id,assignmentId:id,executionId:id,executionGeneration:1,connectionRef:ref,environmentRef:ref,authorizationReceiptRef:ref,capabilityRef:ref,budgetRef:ref,sourceScopes:[{sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}]};const unsigned={schemaVersion:1,commandId:id,issuedAt:new Date(now-1000).toISOString(),expiresAt:new Date(now+30000).toISOString(),executorRegistrationRef:ref,context,operation:'START_SESSION',payload:{contextBundleRef:ref,optionsRef:ref}};return{...unsigned,envelopeHash:contentHash(canonicalJson(unsigned))};}
@@ -70,4 +71,20 @@ test('permit TTL은 checkedAt+30초 및 원 봉투의 기한을 넘지 못한다
   const r=h.make(),consume=h.authority.consume;await r.receive(h.e);h.authority.consume=async(e:any)=>({...await consume(e),checkedAt:new Date(now-1000).toISOString(),expiresAt:new Date(now+(shorter?25000:30000)).toISOString()});
   assert.equal((await r.start(h.e)).state,'UNKNOWN');assert.equal(h.sends,0);
  }
+});
+test('서버 permit 요청에는 sync 완료한 정확 START_ATTEMPTED ref를 전달한다',async()=>{
+ const h=harness(),r=h.make(),consume=h.authority.consume;await r.receive(h.e);
+ h.authority.consume=async(e:any,localAttemptRef:any)=>{assert.deepEqual(localAttemptRef,h.events[1].ref);return consume(e);};
+ assert.equal((await r.start(h.e)).state,'RESPONSE_RECORDED');assert.equal(h.sends,1);
+});
+test('내구 local ref를 비밀 없는 관측 batch로 연결하고 응답 기록을 STARTED로 승격하지 않는다',async()=>{
+ const h=harness(),r=h.make();await r.receive(h.e);await r.start(h.e);const packet=await r.observationBatch(h.e);
+ assert.deepEqual(packet.events.map((e:any)=>e.type),['RECEIVED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);assert.equal(packet.events.some((e:any)=>e.type==='STARTED'),false);assert.deepEqual(packet.events.map((e:any)=>e.localRecordRef),h.events.map(e=>e.ref));
+ let stored:any[]=[],ack:any=null;const server:any={transport:'SYNTHETIC_ONLY',transaction:async(s:any,body:any)=>body({clock:async()=>new Date(now).toISOString(),current:async()=>({transport:'SYNTHETIC_ONLY',scope:s,operation:'SYNC_OBSERVATIONS',authorityRef:ref,checkedAt:new Date(now).toISOString(),expiresAt:new Date(now+1000).toISOString()}),read:async()=>({complete:true,events:structuredClone(stored),ack:structuredClone(ack)}),append:async(e:any)=>{stored.push(structuredClone(e));},saveAck:async(a:any)=>{ack=structuredClone(a);}})};
+ const scope={mode:'EXECUTION',projectId:id,connectorId:id,executionId:id,executionGeneration:1,grantRef:ref,credentialGeneration:1},result=await new SyntheticExecutionObservations(server).ingest(scope,packet);
+ assert.equal(result.snapshot.highestContiguous,4);assert.equal(result.snapshot.writerReleaseVerified,false);assert.deepEqual(await new SyntheticExecutionObservations(server).ingest(scope,await r.observationBatch(h.e)),result);assert.equal(stored.length,4);assert.equal(h.sends,1);
+});
+test('만료 봉투의 기존 UNKNOWN 관측도 조회할 수 있지만 새 permit/wire를 호출하지 않는다',async()=>{
+ const h=harness(),r=h.make();await r.receive(h.e);h.wire.send=async()=>{throw Error('PRIVATE_TOKEN_RESPONSE_LOST');};await r.start(h.e);
+ const first=await r.observationBatch(h.e),count=h.order.length;h.clock=now+30001;assert.deepEqual(await h.make().observationBatch(h.e),first);assert.equal(h.order.length,count);assert.equal(first.events.at(-1).type,'UNKNOWN');assert.equal(JSON.stringify(first).includes('PRIVATE_TOKEN'),false);await assert.rejects(h.make().start(h.e),/ENVELOPE_EXPIRED/);
 });

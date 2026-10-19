@@ -19,7 +19,7 @@ export interface SyntheticStartStore{
  /** 같은 project/execution/generation의 전 journal을 단일 writer로 잠근다. */
  exclusive<T>(scope:Scope,body:(tx:SyntheticStartTransaction)=>Promise<T>):Promise<T>;
 }
-export interface SyntheticStartAuthority{transport:'SYNTHETIC_ONLY';consume(envelope:DispatchEnvelopeV1):Promise<unknown>}
+export interface SyntheticStartAuthority{transport:'SYNTHETIC_ONLY';consume(envelope:DispatchEnvelopeV1,localAttemptRef:RuntimeRefV1):Promise<unknown>}
 export interface SyntheticStartWire{transport:'SYNTHETIC_ONLY';send(value:{envelope:DispatchEnvelopeV1;permitRef:RuntimeRefV1}):Promise<unknown>}
 interface Expected{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1;grantRef:RuntimeRefV1}
 class StartFailure extends Error{}
@@ -79,13 +79,27 @@ export class SyntheticStartReceiver{
   this.#validNow(e);
   try{await this.#append(tx,e,events,'RECEIVED');return this.#existing(e,events);}catch{return this.#result(e,'UNKNOWN','STORAGE_UNCERTAIN');}
  });}
+ /** 만료 후에도 기존 불명 기록을 회수할 수 있는 관측 전용 조회다. permit/wire/현재 실행 허가를 호출하지 않는다. */
+ async observationBatch(raw:unknown){
+  if(this.store.transport!=='SYNTHETIC_ONLY')fail('SYNTHETIC_START_PORTS_REQUIRED');
+  if(!recordV1(raw,['schemaVersion','commandId','issuedAt','expiresAt','executorRegistrationRef','context','operation','payload','envelopeHash'])||!isoV1(raw.issuedAt))return fail('START_HISTORY_ENVELOPE_INVALID');
+  const e=readDispatchEnvelopeV1(raw,Date.parse(raw.issuedAt));
+  if(e.operation!=='START_SESSION'||!same(e.context,this.#expected.context)||!same(e.executorRegistrationRef,this.#expected.executorRegistrationRef))fail('START_CONTEXT_MISMATCH');
+  return this.#exclusive(e,async tx=>{
+   const entries=this.#journal(await tx.read(),e),events=entries.map(entry=>{const s=entry.snapshot;
+    return{projectId:s.key.projectId,executionId:s.key.executionId,executionGeneration:s.key.executionGeneration,sequence:s.sequence,eventId:entry.ref.id,
+     type:s.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':s.state,commandId:s.key.commandId,envelopeHash:s.envelopeHash,localRecordRef:cloneV1(entry.ref),processRef:null,
+     occurredAt:s.at,reasonCode:s.state==='UNKNOWN'?(s.reason==='RESPONSE_UNCERTAIN'?'PROVIDER_RESPONSE_LOST':'RECORD_UNCERTAIN'):'NONE'};
+   });return{events,batchHash:hash(events)};
+  });
+ }
  async start(raw:unknown){const e=this.#input(raw);return this.#exclusive(e,async tx=>{
   const events=this.#journal(await tx.read(),e);if(!events.length)fail('START_NOT_RECEIVED');if(events.length>1)return this.#existing(e,events);
   this.#validNow(e);
   try{await this.#append(tx,e,events,'START_ATTEMPTED');}catch{return this.#result(e,'UNKNOWN','STORAGE_UNCERTAIN');}
   let permit:RuntimeRefV1|null=null,reason:Reason='PERMIT_UNCERTAIN';
   try{
-   this.#ports();this.#validNow(e);const p=cloneV1(await this.authority.consume(cloneV1(e))),at=this.#now();
+   this.#ports();this.#validNow(e);const p=cloneV1(await this.authority.consume(cloneV1(e),cloneV1(events.at(-1)!.ref))),at=this.#now();
    if(!recordV1(p,['transport','key','envelopeHash','grantRef','permitRef','checkedAt','expiresAt'])||p.transport!=='SYNTHETIC_ONLY'||!same(p.key,receiptKeyV1(e))||p.envelopeHash!==e.envelopeHash||!same(p.grantRef,this.#expected.grantRef)||!refV1(p.permitRef)
     ||!isoV1(p.checkedAt)||!isoV1(p.expiresAt)||Date.parse(p.checkedAt)>at||at-Date.parse(p.checkedAt)>30000||Date.parse(p.expiresAt)<=at||Date.parse(p.expiresAt)>Date.parse(p.checkedAt)+30000||Date.parse(p.expiresAt)>Date.parse(e.expiresAt)||at>=Date.parse(e.expiresAt))throw Error('SYNTHETIC_PERMIT_INVALID');
    permit=cloneV1(p.permitRef);
