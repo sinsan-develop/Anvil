@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 관측 참조 입력 source 확인 / Main 어울(2026-10-20)**: 신규3RED275.0595ms→신규3/인접7=10PASS412.9238ms, type0/build0(207modules)다. CHECKPOINT_OBSERVATION은 입력미구현15초RED(session75635 종료exit1수집)→1PASS3.2초(exit0)로 구조화입력→원문·모순전송0/왕복보존·입력수정중지연응답회수를 확인했다. type오류1은 보장된시험배열[0]nonnull로한정수정했고 제품계약완화0이다. 새단위독립static1회C0/I0/M0; 선언ref의 실제귀속/존재·PG/served·OS/재개는판단유보다. RED결과3파일/GREEN1파일과각build는 종료뒤exact정리·별도잔여0, 경고유지다. 공유편집기파일명을추정한두번째읽기os2는오류로보존하며 읽기허가/ACL변경0이다. 실행/ACK·로컬순번입력은이제연결됐지만 파일변경/시험/오류·미전송 상세참조입력과 불변저장/재개는미완료다. 0029거절/후보5파일미게시를유지한다. 다음은 승인기록의 파일변경·시험/오류/시도/미전송·기록파일 참조를 같은준비/다운로드 경로에 구조화입력으로 연결한다.
+
+- **FN13 관측 입력 TDD·일회성 UI 검증 등록 / Main 어울(2026-10-20)**: 신규 순수소비3RED275.0595ms→구현뒤9PASS/1FAIL390.9002ms는 ApiError.message에code가포함된다고잘못기대한시험1이었다. 기존 ApiError.code exact대조로시험만수정→신규3+직접인접7=10PASS412.9238ms, 제품거절완화0이다. 없는 UI05 도구파일 추정읽기 os2 1은 읽기오류로보존/권한변경0이며 실제bundle.ts를 사용한다. 새 CHECKPOINT_OBSERVATION은 기존 Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01·전용Edge만 생성전부재/realpath/link확인 후 최대30초 사용하고 종료exit수집 뒤exact정리/별도잔여0이다. 구조화입력·모순전송0/원문·왕복보존/지연결과회수만 확인, 실제PG·저장/OS/Agent/served0이다.
+
+- **FN13 관측 참조 구조화 입력 착수 / Main 어울(2026-10-20)**: 909e5fa5 local/private exact·main불변, 저장후보5파일은 미게시 보존한다. 기존 CheckpointEditor가 실행참조[]/localnull/ACKnull을 고정해 상세기록이 누락됨을 확인했다. 기존 §13.4/카드의 실행ref배열·마지막local/ACK를 사용자가 명시 입력하는 bounded 보완이다. 구조화 ID/version/hash·순번은 안전정수/중복/부분입력·ACK모순을 요청전거절하고 빈값unknown/0+ref를 보존, 화면왕복·입력변경중결과회수·기록원문/download/재선택에 잇는다. 새schema/저장API·권한/키/서비스·실Agent/OS조회/자동재개0, 기존 준비API 기준은유지한다. 브레인스토밍의 목적/경계는 승인된본문에서 대조했으며 재승인질문은반복하지 않는다. React스킬은 사용자이벤트·controlled입력/원시의존성만 적용하고 구조개편/도구추가0이다.
+
 - **FN13 보관 관측/ACK 실제 격리 읽기 / Main 어울(2026-10-20)**: ab461149 exact Git·tracked clean·PG15.18/image594290e9·기존59SQL checksum을 확인했다. 실제인증/확정임무/원제출/역사START를 거쳐 빈 원장의 ACKnull/localnull·원제출/실행ref→API/Web 읽기1PASS2075.987597ms(exit0), 다른query400/외부사용자404/조회권회수404·5표 행수조회불변/기존5guardhash불변이다. 양성관측행·실제Agent/OS·현재실권한/중지/회수/재개·served는 미검증이며 공백을 ACK0으로 추정하지 않는다. 새schema/0029·정식DB·서비스·키·실정책변경0이다.
   종료exit수집 후 전용PG7cbd1596/networkca35ba7b의 정확ID/label/image/mount[]/port{}·경로owner/link/process/Git검사 후 일회성QA만 제거했다. 별도읽기에서 등록3자원잔여0·기존정식PGe6f798c3 exited/started/finished/restart0불변이다. 합성원문2파일/5dir는 시험finally로정리됐으며 closeFailures0/rootCleanupFailedfalse다. 전체FN13은 부분구현이며 불변서버기록·실제파일결박·상태대조/회수/재개는 남는다. 다음은 새SQL 없이 상세현황의 관측순번/ACK·실행참조 입력 연결을 구현한다. 거절된 저장후보5파일 보존/미게시·정확승인대기는유지한다.
 
