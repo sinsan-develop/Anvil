@@ -31,6 +31,7 @@ function limitsValid(v:any):v is ExecutionLimits{
 function binding(b:LimitBuffer,s:DocumentSession){
  if(!uuid(b.bufferId)||!uuid(b.projectId)||b.ownerUserId!==s.user.id||!uuid(s.user.id)||b.ownerClientId!==s.clientId||!uuid(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!integer(b.controlGeneration,Number.MAX_SAFE_INTEGER))fail('LIMIT_BINDING_INVALID');
 }
+export {validateView as validateStoredLimitPolicy};
 async function validateView(v:LimitPolicyRecord,pid:string,ref:Ref){
  const s=v?.snapshot;
  if(!exact(v,['projectId','ref','snapshot'])||v.projectId!==pid||!same(v.ref,ref)||!validRef(ref)||ref.version>=Number.MAX_SAFE_INTEGER

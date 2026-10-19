@@ -14,6 +14,7 @@ async function setup(page: Page, lost = false) {
   const unexpected: string[] = [], commands: any[] = [], errors: string[] = []; let stored: any = null, original: any = null;
   await page.route('**/api/v1/**', route => { unexpected.push(route.request().url()); return route.abort(); }); await installWorkspaceBundle(page);
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id: user, displayName: 'QA' }, clientId: pid, csrfToken: 'C'.repeat(43) } }));
+  await page.route(`**/api/v1/projects/${pid}/conversations?*`,route=>route.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:at}}));
   await page.route(`**/api/v1/projects/${pid}`, route => route.fulfill({ json: project }));
   await page.route(`**/api/v1/projects/${pid}/methodology-application`, route => route.fulfill({ json: { projectId: pid, applicationRef, snapshot: methodology, executionState: 'NOT_CONNECTED', observedAt: at } }));
   await page.route(`**/api/v1/projects/${pid}/work-plans?*`, route => route.fulfill({ json: { items: [{ ref: planRef, status: 'DRAFT', title: '합의한 계획', documentRef: plan.documentRef, designRef: plan.designRef, issueCount: 0, updatedAt: at, integrity: 'NOT_RECHECKED' }], hasMore: false, nextCursor: null, observedAt: at } }));
@@ -37,6 +38,27 @@ async function prepare(page: Page) {
   await page.getByRole('button', { name: '선택 업무로 임무 초안 준비', exact: true }).click();
   await page.getByRole('textbox', { name: '임무 목표', exact: true }).fill('사용 가능한 실제 기능'); await page.getByRole('textbox', { name: '임무 통합 책임', exact: true }).fill('책임자가 검수하고 통합'); await page.getByRole('textbox', { name: '임무 저장 이유', exact: true }).fill('작업 지시를 준비');
 }
+
+for(const mode of ['NORMAL','REVOKED','HASH','READ_DENIED'])test('ASSIGNMENT_BUDGET_'+mode,async({page})=>{
+ const facts=await setup(page);await prepare(page);
+ const id='66666666-6666-4666-8666-666666666666',snapshot:any={scope:{kind:'PROJECT',projectId:pid},limits:{maxAttempts:3,maxElapsedMs:7200000,maxCalls:50,maxConcurrentAssignments:1,maxSpoolBytes:1073741824,maxOfflineMs:300000},reason:'유한 작업 한도',policyBaseVersion:0,state:'APPLIED',previousRef:null,decidedBy:{kind:'HUMAN',userId:user},decidedAt:'2026-10-20T00:00:00.000Z',expiresAt:'2026-10-20T02:00:00.000Z',executionAuthorized:false,dispatchPerformed:false};
+ const base={id,version:1,contentHash:contentHash(canonicalJson(snapshot))};if(mode==='REVOKED'){snapshot.previousRef={...base};snapshot.policyBaseVersion=1;snapshot.state='REVOKED';}
+ const policyRef={id,version:mode==='REVOKED'?2:1,contentHash:contentHash(canonicalJson(snapshot))},panel=page.getByLabel('임무 예산 정책 선택',{exact:true});
+ await page.route('**/api/v1/projects/'+pid+'/limit-policies/'+id+'/versions/*',r=>r.fulfill({json:{projectId:pid,ref:policyRef,snapshot}}));
+ await panel.getByLabel('선택 예산 정책 ID',{exact:true}).fill(id);await panel.getByLabel('선택 예산 정책 버전',{exact:true}).fill(String(policyRef.version));await panel.getByLabel('선택 예산 정책 hash',{exact:true}).fill(mode==='HASH'?'0'.repeat(64):policyRef.contentHash);
+ await panel.getByRole('button',{name:'임무 예산 고정 버전 조회',exact:true}).click();
+ if(mode==='HASH'){await expect(page.getByRole('alert')).toContainText('LIMIT_POLICY_RESPONSE_INVALID');await expect(panel.getByLabel('선택 전 예산 보관본',{exact:true})).toHaveCount(0);await expect(panel).toContainText('초안 예산 참조 없음');}
+ else{
+  await expect(panel.getByLabel('선택 전 예산 보관본',{exact:true})).toContainText('현재 유효성 미검증');
+  if(mode==='REVOKED'){await expect(panel.getByRole('button',{name:'이 보관 예산을 임무 초안에 선택',exact:true})).toBeDisabled();await expect(panel).toContainText('초안 예산 참조 없음');}
+  else{
+   await panel.getByRole('button',{name:'이 보관 예산을 임무 초안에 선택',exact:true}).click();await expect(panel.getByLabel('초안 예산 고정 참조',{exact:true})).toContainText('BUDGET_UNVERIFIED');expect(facts.commands).toHaveLength(0);
+   if(mode==='READ_DENIED'){await page.route('**/api/v1/projects/'+pid+'/limit-policies/'+id+'/versions/*',r=>r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}));await panel.getByRole('button',{name:'임무 예산 고정 버전 조회',exact:true}).click();await expect(page.getByRole('alert')).toContainText('PROJECT_OPERATION_DENIED');await expect(panel.getByLabel('선택 전 예산 보관본',{exact:true})).toHaveCount(0);await expect(panel.getByLabel('초안 예산 고정 참조',{exact:true})).toContainText(policyRef.contentHash);}
+   else{await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');expect(facts.commands[0].payload.definition.budgetRef).toEqual(policyRef);expect(facts.stored.snapshot.ready).toBe(false);expect(facts.stored.snapshot.executionAuthorized).toBe(false);await expect(page.getByLabel('임무 고정 조건',{exact:true})).toContainText(policyRef.contentHash);}
+  }
+ }
+ expect(facts.commands).toHaveLength(mode==='NORMAL'?1:0);expect(facts.unexpected).toEqual([]);expect(facts.errors).toEqual([]);
+});
 test('임무 초안을 계획에서 작성·저장하고 고정 원문 재조회하되 실행으로 표시하지 않는다', async ({ page }) => {
   const facts = await setup(page); await prepare(page); await page.getByRole('button', { name: '임무 초안 저장', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인'); await expect(page.getByRole('region', { name: '저장한 임무 초안', exact: true })).toContainText('실제 배정·Agent 실행 아님');
