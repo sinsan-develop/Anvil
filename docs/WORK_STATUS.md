@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08/FN13 직접 소비 fence 실제 확인 / Main 어울(2026-10-20)**:1c48b935 exact새빈Git/PG15.18/image594290e9/기존59SQLchecksum에서실제합성STOP COMMIT후직접START current412·SENDpermit/자료current각503·downstream facts/basis/bytes0·8표불변을확인했다. actual1PASS2006.450645ms(exit0), 원문이력읽기/7표불변·query400/외부404/회수404/기존5guardhash불변이다. 기존서명challenge발급은합성키메모리/nonce미소비이고실허가소비·SEND/자료양성실명령·동시경합/OS·Agent/실중지/회수·정식서비스는미검증이다. scopedstatic1회C0/I0/M0·같은단위재리뷰0이다.
+  QA05 PGf94b1c51/netd3d05513/등록Git literal의ID/label/image/mount[]/port{}·owner/link/process확인후exact회수·독립3자원잔여0이다. 합성원문2파일/5dir finally정리·closeFailures0/rootCleanupFailedfalse,정식PGexited/기존시각/restart0불변·후보5未게시/0029거절보존이다. 이는계획의실행단위중지후새전달소비거절일부이며단계/프로젝트전체중지·실제회수·checkpoint저장/대조/재개는미완료유지다.
+
 - **FN08/FN13 직접 소비 fence TDD·QA등록 / Main 어울(2026-10-20)**:신규3RED1092.3319ms(START거절누락/SEND·자료basis실행)→직접인접포함6PASS/기존START fake1FAIL1663.9571ms→기존fake에새STOP조회false/정확tuple·query5순서를보완해7PASS1604.8592ms/type0이다. 제품3파일은기존같은tx/project잠금뒤중지helper만추가하며일반관측/역사/회수변경0이다. 실DB/서명허가소비·동시경합은아직미검증이며실Agent활성화가아니다.
   새QA literal /home/daon/deploy/anvil-v3-fn13-stop-history-qa-05 / anvil-v3-fn13-stop-history-pg-05 / anvil-v3-fn13-stop-history-net-05 / DB anvil_v3_fn13_stop_history_qa_05; owner AV3_FN13_DIRECT_STOP_QA·instance stop-history-05·run direct-stop-20261020-05·uid1000daon이다. 생성전부재/realpath/link/owner/image/daemon확인·새빈Git exact게시SHA/pinnedPG15 image594290e9·Node24.21hash7fde7b8a·기존59SQL/tmpfs512MiB/internalnetwork/hostport·volume0/수명10분/Node90·외부110초다. 기존합성서명challenge/고정START와STOP보관뒤직접START/SEND/자료current의거절·downstream0·8표불변만확인한다. SEND/자료의양성실명령/자료준비는이번DB시험대상이아니며가짜DB직접인접검증과구분한다. 키는메모리QA만/실credential·nonce소비/키파일/Agent·OS·정식DB/서비스·0029변경0이다. 종료ID/label/image/mount/port/경로owner/link/process대조후exact정리·독립잔여0이다.
 
