@@ -34,6 +34,18 @@ export class ProjectResultCriteria{
   if(!uuidV1(projectId)||!uuidV1(id)||!Number.isSafeInteger(version)||version<1)fail('RESULT_CRITERIA_INPUT_INVALID',400);await projectMember(db,actor,projectId);
   const rows=(await db.query(select+'WHERE v.project_id=$1 AND v.criteria_id=$2 AND v.version=$3 LIMIT 2',[projectId,id,version])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('RESULT_CRITERIA_LEDGER_INVALID');const v=await this.#view(db,actor,rows[0],projectId,id,version);await projectMember(db,actor,projectId);return cloneV1(v);
  }
+ /** 최근 보관 버전만 조회한다. 최신 항목을 자동 활성 기준으로 선택하지 않는다. */
+ async list(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
+  if(!uuidV1(projectId)||!uuidV1(assignmentId)||!Number.isSafeInteger(version)||version<1)fail('RESULT_CRITERIA_INPUT_INVALID',400);
+  await projectMember(db,actor,projectId);const a=cloneV1(await this.assignments.read(db,actor,projectId,assignmentId,version));
+  if(a.projectId!==projectId||a.ref.id!==assignmentId||a.ref.version!==version||!refV1(a.ref)||a.ref.contentHash!==hash(a.snapshot))fail('RESULT_CRITERIA_LEDGER_INVALID');
+  const rows=(await db.query('SELECT criteria_id,version,content_hash FROM anvil.result_criteria_versions WHERE project_id=$1 AND assignment_ref=$2::jsonb ORDER BY created_at DESC,criteria_id DESC,version DESC LIMIT 21',[projectId,JSON.stringify(a.ref)])).rows,items=[];
+  if(rows.length>21||new Set(rows.map(r=>r.criteria_id+':'+r.version)).size!==rows.length)fail('RESULT_CRITERIA_LEDGER_INVALID');
+  for(const row of rows){const reference={id:row.criteria_id,version:Number(row.version),contentHash:row.content_hash};if(!refV1(reference))fail('RESULT_CRITERIA_LEDGER_INVALID');const value=await this.read(db,actor,projectId,reference.id,reference.version);
+   if(!same(value.ref,reference)||!same(value.snapshot.assignmentRef,a.ref))fail('RESULT_CRITERIA_LEDGER_INVALID');items.push({ref:value.ref,createdBy:value.createdBy,registeredAt:value.registeredAt,conditionCount:value.snapshot.items.length,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false});
+  }
+  await projectMember(db,actor,projectId);return cloneV1({projectId,assignmentRef:a.ref,items:items.slice(0,20),hasMore:rows.length>20,selectionState:'NOT_SELECTED',observedAt:await this.#clock(db)});
+ }
  async save(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicyRef:RuntimeRefV1){
   const request=cloneV1(raw),policyRef=cloneV1(rawPolicyRef),input=request.payload;
   if(request.operation!=='saveResultCriteria'||request.approvalRef!==null||request.baselineRefs.length||!refV1(policyRef)||!recordV1(input,['assignmentRef','baseRef','items','reason'])||!refV1(input.assignmentRef)||!Number.isSafeInteger(request.expectedVersion)||request.expectedVersion<0)fail('RESULT_CRITERIA_INPUT_INVALID',422);

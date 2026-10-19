@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {canonicalJson} from '../../../contracts/canonical.ts';
 import {materialRules} from '../../../apps/server/modules/access/project-command.ts';
 import {criteriaFixture,criteriaHash as hash,criteriaId as id,criteriaRef as ref} from './result-criteria-fixture.ts';
 const mod:any=await import('../../../apps/server/modules/results/project-result-criteria.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
@@ -17,6 +18,7 @@ function fixture(){
   if(sql.startsWith('INSERT INTO anvil.audit_events')){audits.add(p[4]);return{rows:[]};}
   if(sql.startsWith('SELECT set_config'))return{rows:[]};
   if(sql.startsWith('INSERT INTO anvil.result_criteria_versions')){rows.push({project_id:p[0],criteria_id:p[1],version:p[2],assignment_ref:JSON.parse(p[3]),content_hash:p[4],criteria_json:JSON.parse(p[5]),input_json:JSON.parse(p[6]),created_by:p[7],client_id:p[8],command_id:p[9],created_at:new Date(p[10])});return{rows:[],rowCount:1};}
+  if(sql.startsWith('SELECT criteria_id,version,content_hash FROM anvil.result_criteria_versions')){assert(sql.includes('assignment_ref=$2::jsonb')&&sql.includes('LIMIT 21'));return{rows:rows.filter(r=>r.project_id===p[0]&&canonicalJson(r.assignment_ref)===canonicalJson(JSON.parse(p[1]))).sort((a,b)=>b.created_at.getTime()-a.created_at.getTime()||b.criteria_id.localeCompare(a.criteria_id)||b.version-a.version).slice(0,21).map(r=>({criteria_id:r.criteria_id,version:r.version,content_hash:r.content_hash}))};}
   if(sql.includes('FROM anvil.result_criteria_versions v'))return{rows:rows.filter(r=>r.project_id===p[0]&&r.criteria_id===p[1]&&r.version===p[2]).map(r=>{const c=structuredClone(commands.get(r.command_id)),ar=structuredClone(receipts.get(c.authorization_receipt_id));return{...structuredClone(r),...c,command_client_id:c.client_id,receipt_subject:ar.subject_ref,receipt_policy_ref:ar.policy_ref,scope_digest:ar.scope_digest,approval_decision_ref:ar.approval_decision_ref,audit_count:audits.has(r.command_id)?1:0};})};
   if(sql.includes('FROM anvil.result_criteria_versions'))return{rows:rows.filter(r=>r.project_id===p[0]&&r.criteria_id===p[1]).sort((a,b)=>b.version-a.version).slice(0,1).map(r=>structuredClone(r))};
   throw Error('UNEXPECTED_QUERY:'+sql);
@@ -25,6 +27,14 @@ function fixture(){
  return{...f,actor,request,policy,policyRef,db,assignments,rows,calls,commands,member:(v:boolean)=>member=v,controlled:(v:boolean)=>controlled=v,policyHead:(v:any)=>head=v,afterRead:(fn:()=>void)=>afterRead=fn,now:(v:string)=>now=v};
 }
 function service(f:ReturnType<typeof fixture>){assert.equal(typeof mod.ProjectResultCriteria,'function','FN12 불변 검수 기준 저장 미구현');return new mod.ProjectResultCriteria(f.assignments);}
+
+test('고정임무의보관기준은20개metadata만조회하고옛버전·더있음·미선택을구분한다',async()=>{
+ const f=fixture(),s=service(f);assert.equal(typeof s.list,'function','임무별 보관 기준 조회 미구현');const empty=await s.list(f.db,f.actor,f.request.projectId,f.assignment.ref.id,1);assert.deepEqual(empty.items,[]);assert.equal(empty.hasMore,false);const saved:any[]=[];
+ for(let n=0;n<22;n++){f.now(new Date(Date.parse('2026-10-19T10:02:00.000Z')+n*1000).toISOString());saved.push((await s.save(f.db,f.actor,{...structuredClone(f.request),commandId:crypto.randomUUID()},f.policyRef)).data.ref);}
+ f.now('2026-10-19T10:03:00.000Z');const previous=saved[21],revision={...structuredClone(f.request),commandId:crypto.randomUUID(),targetId:previous.id,expectedVersion:1,payload:{...structuredClone(f.input),baseRef:previous}};revision.payload.items[0].kind='BROWSER';saved.push((await s.save(f.db,f.actor,revision,f.policyRef)).data.ref);
+ const writes=f.calls.filter(c=>c.startsWith('INSERT')).length,page=await s.list(f.db,f.actor,f.request.projectId,f.assignment.ref.id,1);assert.equal(page.items.length,20);assert.equal(page.hasMore,true);assert.deepEqual(page.assignmentRef,f.assignment.ref);assert.deepEqual(page.items.map((v:any)=>v.ref),saved.slice(3).reverse());assert.equal(page.items[0].ref.id,page.items[1].ref.id);assert.equal(page.items[0].ref.version,2);assert.equal(page.items[1].ref.version,1);assert.equal(page.selectionState,'NOT_SELECTED');assert.equal(page.items[0].conditionCount,2);assert(page.items.every((v:any)=>v.createdBy===f.actor.actorId&&v.registryStored===true&&v.completionAccepted===false&&v.reviewStored===false&&!('input'in v)&&!('snapshot'in v)));assert.equal(f.calls.filter(c=>c.startsWith('INSERT')).length,writes);
+ f.member(false);await assert.rejects(s.list(f.db,f.actor,f.request.projectId,f.assignment.ref.id,1),(e:any)=>e.statusCode===404);f.member(true);f.rows[21].criteria_json.items[0].required=false;await assert.rejects(s.list(f.db,f.actor,f.request.projectId,f.assignment.ref.id,1),(e:any)=>e.message==='RESULT_CRITERIA_LEDGER_INVALID');
+});
 test('계획된기준등록은사용자자동부여가아닌별도명시정책연산이다',()=>{const f=fixture();assert.equal(materialRules(f.policy.rules_json,f.request.projectId,f.actor.actorId,new Date('2026-10-19T10:02:00.000Z'))[0]!.operations[0],'saveResultCriteria');});
 test('확정임무의정확조건을영수증/감사와저장하고개정해도이전버전을보존한다',async()=>{
  const f=fixture(),s=service(f),saved=await s.save(f.db,f.actor,f.request,f.policyRef),first=structuredClone(saved.data.ref);assert.equal(saved.data.status,'RESULT_CRITERIA_STORED');assert.equal(saved.data.registryStored,true);assert.equal(saved.data.reviewStored,false);assert.equal(saved.data.completionAccepted,false);assert(f.rows[0].criteria_json.items.every((i:any)=>i.required===true));

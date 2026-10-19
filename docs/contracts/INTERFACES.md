@@ -730,6 +730,8 @@ queue 항목은 `requestRef,state:WAITING/RESERVED/DISPATCHED/CANCELLED/UNKNOWN,
 
 ### 13.3 FN12 결과 제출·검수·문제 분류
 
+- 보관 기준 탐색 GET `projects/:projectId/assignments/:id/versions/:version/result-criteria`는 HUMAN 멤버 전용이며 exact 확정 임무의 최근20 불변 버전 metadata(ref/작성자/등록시각/조건수·저장/검수false flags), hasMore/observedAt와 `selectionState:NOT_SELECTED`를 반환한다. 각 원문의 해시/영수증/감사를 재대조하며 최신 자동 선택/활성·임의 query/fallback·새 권한 부여는 없다. 선택 원문은 기존 고정 버전 GET로 별도 확인한다.
+
 `ResultManifest`: `assignmentRef,executionRef,baselineRefs,submissionState:COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED,changes:배열,commandResults:배열,testResults:배열,artifactRefs,unexecuted,risks,rollback,checkpointRef`. 각 증거는 `sourceKind:WORKER_CLAIM/CONNECTOR_OBSERVED/TEST_ARTIFACT/REVIEWER_CONFIRMED,ref,contentHash,environmentRef,recordedAt`를 가진다. commandResult는 profile/정확 인자·cwd/host·실행ID·시각·exit/원문 참조를, testResult는 criterion/testID·기준/기대/실제·PASS/FAIL/NOT_EXECUTED/BLOCKED/NOT_APPLICABLE·근거를 가진다.
 
 - `submitResult(assignmentRef,manifest)`→SubmittedResult. 완료 조건별 실제 근거와 누락을 수집하며 제출 상태를 검수 ACCEPTED로 변환하지 않는다.
