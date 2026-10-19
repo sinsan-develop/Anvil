@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 명령페이지 client 수신 checkpoint / Main 어울(2026-10-19)**: 기존client/ledger에COMMANDS를연결한신규3RED355.7539ms→client13PASS371.2159ms/type0을확인했다. 독립C0/I0/M0는client/ledger/직접시험3경로의정적한정판정이며실제서버/client결합·cursorHMAC/물리sync·nonceCOMMIT/현재권위·HTTP/Agent는미판정이다. 이후Main이실제합성client→challenge/P256서명→credential-current resolver/router→고정pager→client journal의결합정상·서버저장후응답유실2건을추가해page7PASS938.7648ms를확인했다. 추가시험의배열첫항목타입TS2532 1건은존재assert로보정하여type0,직접/인접client13+page7+router7=27PASS623.4376ms/diff0이다. 새결합시험은기존독립검토범위에포함시키지않는다.
+  GET body=null·pollId는내부중복키/afterCursor·waitMs만서명query,같은pollId의선택/grant변경conflict·기존PERMIT불명우회차단을보존한다. 정확page/ref/순번/봉투/2MiB/기한/falseflags를sync기록하고응답유실UNKNOWN은자동재전송하지않는다. in-memory ledger/synthetic authority의결합증거이지실DB/실HTTP/Agent·사용자기능완료가아니다. 새외부자원/완료PGQA재실행/정식DB·키·서비스변경0,다음은수신명령의기존실행준비/permit경로연결이다. sandbox Git상태읽기worktree오류와경로추정읽기실패는권한/파일변경없는도구실패로분리했다. local main은04430432의오래된ref이고실제private main f976ed5e 불변을재확인했으며로컬ref동일로보고하지않는다.
+
+- **C3 실행기 명령페이지 내구 수신 착수 / Main 어울(2026-10-19)**: f7dc7685 exact·clean 뒤 기존SyntheticExecutionClient/ledger에없는COMMANDS 읽기를연결한다. 내부선택metadata는 {pollId,afterCursor,waitMs}이며HTTP GET본문이아니고서명query에는afterCursor/waitMs만포함한다. 명시pollId는같은읽기의재조회/UNKNOWN을보존하는내부중복키로만사용하고자동생성/자동재시도하지않는다. 같은pollId에서선택·grant변경은conflict이며PERMIT의불명변경/새nonce우회규칙은보존한다.
+  수신page의exact형식/현재실행·순번/ref/봉투·상한/기한/false주장을검사해기존appendAndSync 상태기로기록하되목록수신만으로dispatch하지않는다. cursor는client에서서명권위를꾸미지않는불투명값이고서버가검증한다. 필수합성authority/signer/transport만·실token/키/HTTP/Agent/새자원0,기존정상client검증을변경영향범위로대조한다.
+
 - **C3 합성 proof-고정페이지 checkpoint / Main 어울(2026-10-19)**: 신규pager부재4RED284.8244ms 후 시험공개키를PEM으로준4 HOST_PROOF_INVALID/383.659ms는기존DER-base64url계약으로fixture만정정해4PASS452.3473ms/type0이다. 정규화 GET 명령경로2RED164.5674ms→pager+route11PASS538.1963ms, 고정조회에원binding ref객체를넘기는누락을Main이추가1RED499.3704ms로재현한뒤cloneV1 인자복제로보정해12PASS486.6916ms다. 독립원후보C0/I1/M0도같은alias finding이며MainTDD보완을독립C0/I0로소급하지않는다. 신규declined범위의실DB순번/원자COMMIT·provider진위/transaction반환지연·HTTP/Agent는미검증이다.
   기존nonce서명검증과현재권한/고정페이지/원결과binding을하나의필수합성tx로연결했다. 정확query/proof/등록·grant/기한/2MiB·51lookahead→50/서명cursor·유한waitMs/원ref목록고정재조회·rollback음성을검사한다. 같은proof에뒤추가행을끼워넣지않고RECOVERY polling/비합성fallback을거절한다. 기존정규화router에는명시commands port가있을때만GETcommands를열며기본HTTPlistener/실token/키/Agent를생성하지않는다. 51개START단위fixture는페이지상한의합성입력이지기존SQL이51회시작을허용한다는증거가아니다. 실제DB의불변server순번/현재HUMAN영수증·outbox/fixed조회는후속provider미완료다. 다음은기존실행기client의명령목록수신/응답내구기록연결이며이전PGQA/HUMAN시험반복0·새외부자원0이다.
 
