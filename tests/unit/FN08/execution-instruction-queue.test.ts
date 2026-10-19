@@ -120,6 +120,10 @@ test('PGpermit선택store는START/SEND서명route를같은연결에서정확분�
  assert.equal(h.connects(),h.releases());assert.equal(h.trace.some(v=>v.includes(fault==='START'?'execution_instruction_permits':'execution_start_permits')),false);
  }
 });
+test('중지 보관후 PGpermit선택은기존START/SEND의새전달소비를차단하며조회오류도허용하지않음',async()=>{
+ for(const fault of['STOP','ERROR','NON_BOOLEAN']){const h=await pgInstructionStoreFixture(),query=h.f.f.db.query;h.f.f.db.query=async(sql:string,args:any[])=>{if(sql.startsWith('SELECT EXISTS(SELECT 1 FROM anvil.execution_commands')){assert.deepEqual(args,[h.f.scope.projectId,h.f.scope.executionId,h.f.scope.executionGeneration]);if(fault==='ERROR')throw Error('PRIVATE_STOP_READ');return{rows:[{stopped:fault==='STOP'?true:'false'}]};}return query(sql,args);};const store=pgPermitSelection(h);await assert.rejects(store.transaction(h.f.scope,(tx:any)=>tx.current(h.f.record.snapshot.envelope.commandId)),/PERMIT_SELECTION_STORE_UNAVAILABLE/);assert.equal(h.state().events.length,0);assert.equal(h.state().receipts.length,0);assert.equal(h.state().permits.length,0);assert.equal(h.trace.some(v=>v==='COMMIT'),false);assert.equal(h.connects(),h.releases());}
+});
+
 test('PGpermit선택store의누락/복수/알수없는종류는현재소비실패이며임의START전환을하지않는다',async()=>{
  for(const fault of ['SELECTION_MISSING','SELECTION_DUPLICATE','SELECTION_UNKNOWN']){const h=await pgInstructionStoreFixture(),store=pgPermitSelection(h);h.fault(fault);await assert.rejects(store.transaction(h.f.scope,(tx:any)=>tx.current(h.f.record.snapshot.envelope.commandId)),/PERMIT_SELECTION_STORE_UNAVAILABLE/);assert.equal(h.state().permits.length,0);assert.equal(h.connects(),h.releases());assert.equal(h.trace.some(v=>v==='COMMIT'),false);}
 });

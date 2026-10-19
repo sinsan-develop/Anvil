@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08/FN13 queued명령 permit선택 TDD·QA등록 / Main 어울(2026-10-20)**: 신규중지1RED1590.7432ms/인접2PASS→신규1+직접인접2=3PASS1656.552ms/type0이다. 같은DB current의project잠금뒤STOP검사를두어원명령선택/permit소비전거절하고일반관측/회수/STOP·역사읽기를변경하지않는다. 실제SQL/동시성/실전달은아직미검증이다. 첫integration타입오류1은opaque current반환을시험지역에서만명시타입처리한뒤type0이다.
+  신규QA literal /home/daon/deploy/anvil-v3-fn13-stop-history-qa-03 / anvil-v3-fn13-stop-history-pg-03 / anvil-v3-fn13-stop-history-net-03 / DB anvil_v3_fn13_stop_history_qa_03; owner AV3_FN13_PERMIT_STOP_QA·instance stop-history-03·run permit-stop-20261020-03·uid1000daon이다. 새빈Git exact게시SHA·pinnedPG15 image594290e9/Node24.21hash7fde7b8a·기존59SQL·tmpfs512MiB/internalnetwork/hostport·volume0/수명10분/Node90·외부110초다. 생성전부재·realpath/link/owner/image/daemon확인후합성HUMAN/고정START·메모리내QA P256공개키fingerprint로기존challengePGcurrent/잠금/무token예약metadata→STOP전정확START선택→기존합성STOP COMMIT→동일선택503·소비facts호출0·8표불변을확인한다. STOP전기존SYNTHETIC_RESERVED_NO_TOKEN행1은명시QA대상이고실token/키파일/등록실호스트/Agent/OS·실중지/회수는생성하지않는다. 성공/실패모두등록자원만ID/label/image/mount/port/경로owner/link/process대조후exact회수·독립잔여0,정식PG/서비스·0029/실권한변경0이다.
+
+- **FN08/FN13 대기명령 permit 선택 경계 착수 / Main 어울(2026-10-20)**:5f497cd6 local/private exact·main불변이다. 새SEND생성차단과달리이미queued된START/SEND의새전달permit선택은STOP존재를읽지않음을확인했다. 기존challenge.current가동일tx에서HUMAN/session/project FOR UPDATE를취득한뒤선택current에서정확exec/gen중지fence를추가한다. 일반challenge/관측ACK/회수·STOP지시는막지않으며역사원문조회도유지한다. permit소비/replay는현재전달권한검사경계이므로중지존재시거절하되실제프로세스/OS회수완료로승격하지않는다. 아직자료소비·직접별도permitport·실전달·프로젝트/단계전체는범위밖미완료다. 새schema/권한·실서비스/Agent/키0,거절0029우회0이다.
+
 - **FN08/FN13 새SEND 중지fence 실제 확인 / Main 어울(2026-10-20)**:4221052b exact새빈Git/clean·PG15.18/image594290e9/기존59SQLchecksum에서같은인증tx/project잠금의중지없음통과→기존합성STOP COMMIT→새후속서비스412 EXECUTION_STOP_REQUESTED·claim/append0·예약/명령/영수증/outbox불변·비밀없는DENIED감사1을확인했다. 실제1PASS2030.312676ms(exit0), 후속원문읽기/7표불변·query400/외부404/회수404·기존5guardhash불변이다. 합성current의OWNED선언은OS관측이아니며 실Agent/실중지/쓰기회수/재개·정식서비스PASS로승격하지않는다.
   PGf9f6a1e5/network30c292e1·등록경로ID/label/image/mount[]/port{}·owner/link/process확인후exact회수·독립3자원잔여0, 합성원문2파일/5dir finally정리/closeFailures0/rootCleanupFailedfalse다. 정식PGexited/started/finished/restart0불변·거절0029/미게시후보5파일보존이다. 남은중지경계는이미queued된명령의새permit/자료소비·stage/project범위·실전달/회수이며다음은기존permit/current읽기를대조한다.
 

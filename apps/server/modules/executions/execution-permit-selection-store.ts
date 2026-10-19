@@ -11,6 +11,7 @@ import {SyntheticAuthenticatedInstructionPermits} from './execution-authenticate
 import type {SyntheticPermitSelectionStore} from './execution-permit-selector.ts';
 import {readSyntheticQueuedCommandRecord} from './execution-command-record.ts';
 import {readSyntheticInstructionQueueRecord} from './execution-instruction-queue.ts';
+import {assertNoStoredExecutionStop} from './execution-stop-fence.ts';
 
 type Tx=Parameters<Parameters<SyntheticPermitSelectionStore['transaction']>[1]>[0];
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -36,6 +37,7 @@ export class SyntheticPgPermitSelectionStore implements SyntheticPermitSelection
     const current=async(commandId:string)=>{
      this.#ports();if(!uuidV1(commandId))return reject();const c=await challenges.current(),context:any=c.context;
      if(!Object.keys(scope).every(k=>same(context[k],(scope as any)[k]))||!isoV1(context.grantExpiresAt))return reject();
+     await assertNoStoredExecutionStop(db,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration});
      const rows=(await db.query("SELECT id,version,content_hash,snapshot_json FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=$3 AND snapshot_json->'envelope'->>'commandId'=$4 LIMIT 2",[scope.projectId,scope.executionId,scope.executionGeneration,commandId])).rows;
      if(rows.length!==1)return reject();const row=rows[0],raw={ref:{id:row.id,version:Number(row.version),contentHash:row.content_hash},snapshot:row.snapshot_json},s={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration},kind=raw.snapshot?.state;
      const record=kind==='SYNTHETIC_QUEUED'?readSyntheticQueuedCommandRecord(raw,s):kind==='SYNTHETIC_INSTRUCTION_QUEUED'?readSyntheticInstructionQueueRecord(raw,s):reject();this.#ports();
