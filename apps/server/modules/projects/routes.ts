@@ -55,6 +55,7 @@ import {ProjectResultExecutionSource} from '../results/project-result-execution-
 import {ProjectReportedCoverage} from '../results/project-reported-coverage.ts';
 import {ProjectCheckpointPreparation} from '../checkpoints/project-checkpoint-preparation.ts';
 import {ProjectObservationJournal} from '../checkpoints/project-observation-journal.ts';
+import {ProjectStopRequestHistory} from '../checkpoints/project-stop-request-history.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
 const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
@@ -89,6 +90,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
   const resultExecutionSource=new ProjectResultExecutionSource(results);
   const observationJournal=new ProjectObservationJournal(resultExecutionSource);
+  const stopRequestHistory=new ProjectStopRequestHistory(resultExecutionSource);
+  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/stop-requests',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>stopRequestHistory.read(db,actor,request.params.projectId,request.params.id));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/observation-journal',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>observationJournal.read(db,actor,request.params.projectId,request.params.id));});
   const resultArtifacts=new ProjectResultArtifacts(results,options.artifactRoot?new ArtifactStore(options.artifactRoot):null);
   app.get<{Params:{projectId:string;id:string;artifactId:string}}>('/api/v1/projects/:projectId/results/:id/artifacts/:artifactId/text',{schema:{params:object({projectId:idSchema,id:idSchema,artifactId:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultArtifacts.read(db,actor,request.params.projectId,request.params.id,request.params.artifactId));});
