@@ -13,7 +13,7 @@ import {ProjectUnderstandingReviews,understandingCodes} from '../apps/server/mod
 import {SyntheticPgUnderstandingStore} from '../apps/server/modules/executions/execution-understanding-store.ts';
 
 const diagnostic=process.argv[2]==='DIAGNOSE_03';assert(['VERIFY','DIAGNOSE_03'].includes(process.argv[2]!));assert.equal(process.getuid?.(),1000);
-const suffix=diagnostic?'03':'02';assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-'+suffix);
+const suffix=diagnostic?'03':'04';assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-'+suffix);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,'anvil_v3_c3_understanding_qa_'+suffix);
 const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
 const config={host,port:5432,database:'anvil_v3_c3_understanding_qa_'+suffix,connectionTimeoutMillis:3000,statement_timeout:10000};

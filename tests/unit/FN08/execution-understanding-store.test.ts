@@ -42,3 +42,6 @@ test('독립 검토 I1/I2: 일반 DELETE는 OLD를 반환하고 reason의 JSON �
 test('실제 42601의 PLpgSQL IF 내 CASE 판정식은 SQL 표현식 괄호로 구분한다',async()=>{
  const sql=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');assert(sql.includes("OR s->>'outcome' IS DISTINCT FROM (CASE WHEN"));assert(sql.includes("THEN 'ACCEPTED' ELSE 'NOT_ACCEPTED' END)"));
 });
+test('실제 boolean→json 연산 오류는 containment 양쪽 JSON 추출을 괄호로 구분한다',async()=>{
+ const sql=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');for(const expression of ["(binding->'receivedPartRefs') @> (binding->'requiredPartRefs')","(binding->'basisRefs') @> (item->'sourceRefs')","(binding->'responsePartRefs') @> (item->'responsePartRefs')"])assert(sql.includes(expression));
+});

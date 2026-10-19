@@ -32,7 +32,7 @@ BEGIN
   OR NOT anvil.execution_preparation_ref_valid(input->'bundleRef') OR NOT anvil.execution_preparation_ref_valid(input->'responseRef') OR NOT anvil.execution_preparation_ref_valid(input->'subjectBindingRef')
   OR input->'bundleRef' IS DISTINCT FROM binding->'bundleRef' OR input->'responseRef' IS DISTINCT FROM binding->'responseRef' OR input->'subjectBindingRef' IS DISTINCT FROM binding->'subjectBindingRef'
   OR NOT anvil.understanding_refs_valid(binding->'basisRefs') OR NOT anvil.understanding_refs_valid(binding->'requiredPartRefs') OR NOT anvil.understanding_refs_valid(binding->'receivedPartRefs') OR NOT anvil.understanding_refs_valid(binding->'responsePartRefs')
-  OR NOT(binding->'receivedPartRefs' @> binding->'requiredPartRefs') OR jsonb_typeof(binding->'latestInstructionRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(binding->'latestInstructionRefs')>200
+  OR NOT((binding->'receivedPartRefs') @> (binding->'requiredPartRefs')) OR jsonb_typeof(binding->'latestInstructionRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(binding->'latestInstructionRefs')>200
   OR EXISTS(SELECT 1 FROM jsonb_array_elements(binding->'latestInstructionRefs')v WHERE NOT anvil.execution_json_shape(v,ARRAY['kind','id','contentHash']) OR v->>'kind' IS DISTINCT FROM 'CONVERSATION' OR NOT anvil.execution_preparation_ref_valid(jsonb_build_object('id',v->'id','version',1,'contentHash',v->'contentHash')))
   OR jsonb_typeof(input->'items') IS DISTINCT FROM 'array' OR jsonb_array_length(input->'items')<>6 OR jsonb_typeof(binding->'criteria') IS DISTINCT FROM 'array' OR jsonb_array_length(binding->'criteria')<>6
   OR (SELECT count(DISTINCT v->>'code') FROM jsonb_array_elements(binding->'criteria')v)<>6 THEN RETURN false;END IF;
@@ -42,7 +42,7 @@ BEGIN
    OR NOT anvil.understanding_refs_valid(item->'sourceRefs') OR NOT anvil.understanding_refs_valid(item->'responsePartRefs') THEN RETURN false;END IF;
   SELECT v INTO criterion FROM jsonb_array_elements(binding->'criteria')v WHERE v->>'code'=item->>'code';
   IF criterion IS NULL OR NOT anvil.execution_json_shape(criterion,ARRAY['code','sourceRefs','responsePartRefs']) OR item->'sourceRefs' IS DISTINCT FROM criterion->'sourceRefs' OR item->'responsePartRefs' IS DISTINCT FROM criterion->'responsePartRefs'
-   OR NOT(binding->'basisRefs' @> item->'sourceRefs') OR NOT(binding->'responsePartRefs' @> item->'responsePartRefs') THEN RETURN false;END IF;
+   OR NOT((binding->'basisRefs') @> (item->'sourceRefs')) OR NOT((binding->'responsePartRefs') @> (item->'responsePartRefs')) THEN RETURN false;END IF;
   seen=array_append(seen,item->>'code');
  END LOOP;RETURN true;
 EXCEPTION WHEN OTHERS THEN RETURN false;
