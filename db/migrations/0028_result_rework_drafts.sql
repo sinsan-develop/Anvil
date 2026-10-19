@@ -72,6 +72,43 @@ EXCEPTION WHEN OTHERS THEN RETURN false;
 END;
 $$;
 
+CREATE FUNCTION anvil.result_rework_plan_current(pid uuid,reference jsonb,task_code text,expected_card_hash text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE w anvil.work_plans%ROWTYPE;v anvil.work_plan_versions%ROWTYPE;f anvil.work_plan_confirmations%ROWTYPE;source jsonb;chosen jsonb;latest uuid;outcome text;
+BEGIN
+ IF NOT anvil.execution_preparation_ref_valid(reference) THEN RETURN false;END IF;
+ SELECT * INTO w FROM anvil.work_plans WHERE project_id=pid AND id::text=reference->>'id';
+ SELECT * INTO v FROM anvil.work_plan_versions WHERE project_id=pid AND plan_id=w.id AND version=w.head_version;
+ SELECT * INTO f FROM anvil.work_plan_confirmations WHERE project_id=pid AND plan_id=w.id AND version=w.head_version AND target_hash=v.content_hash;
+ IF w.id IS NULL OR v.plan_id IS NULL OR f.id IS NULL OR w.head_version IS DISTINCT FROM w.confirmed_version
+  OR reference IS DISTINCT FROM jsonb_build_object('id',w.id,'version',w.head_version,'contentHash',v.content_hash)
+  OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(v.version_json-ARRAY['ref','status'])
+  OR v.version_json->>'relationalProjection' IS DISTINCT FROM 'STORED' OR v.version_json->'issues' IS DISTINCT FROM '[]'::jsonb
+  OR f.validation_json->'validForConfirmation' IS DISTINCT FROM 'true'::jsonb OR f.validation_json->'issues' IS DISTINCT FROM '[]'::jsonb
+  OR f.validation_json->'sourceRefs' IS DISTINCT FROM jsonb_build_array(v.version_json->'documentRef',v.version_json->'designRef')
+  OR f.validation_json->'screenReviewRefs' IS DISTINCT FROM v.screen_review_refs
+  OR NOT EXISTS(SELECT 1 FROM anvil.plan_tasks pt WHERE pt.project_id=pid AND pt.plan_id=w.id AND pt.plan_version=w.head_version AND pt.task_code=result_rework_plan_current.task_code AND pt.card_hash=expected_card_hash AND pt.card_hash=anvil.execution_json_hash(pt.card_json))
+  OR NOT EXISTS(SELECT 1 FROM anvil.commands c WHERE c.project_id=pid AND c.id=f.command_id AND c.operation='confirmWorkPlan' AND c.state='APPLIED'
+    AND c.result_ref->'data'->>'confirmationId'=f.id::text AND c.result_ref->'data'->'ref'=reference AND c.result_ref->'data'->'validation'=f.validation_json)
+  THEN RETURN false;END IF;
+ SELECT r.id,r.outcome INTO latest,outcome FROM anvil.content_reviews r JOIN anvil.audit_events e ON e.command_id=r.command_id AND e.project_id=r.project_id
+  WHERE r.project_id=pid AND r.scope_kind='PROJECT' AND r.target_kind='WORK_PLAN' AND r.target_id=w.id AND r.target_version=w.head_version AND r.target_hash=v.content_hash AND r.criteria_version=1 AND r.source_kind='HUMAN_REVIEW' ORDER BY e.server_sequence DESC LIMIT 1;
+ IF latest IS NULL OR outcome IS DISTINCT FROM 'ACCEPTED' THEN RETURN false;END IF;
+ FOR source IN SELECT value FROM jsonb_array_elements(jsonb_build_array(v.version_json->'documentRef',v.version_json->'designRef')) LOOP
+  IF NOT EXISTS(SELECT 1 FROM anvil.documents d JOIN anvil.document_versions dv ON dv.project_id=d.project_id AND dv.document_id=d.id AND dv.version=d.head_version
+   WHERE d.project_id=pid AND d.id::text=source->>'id' AND d.head_version::text=source->>'version' AND d.confirmed_version=d.head_version AND dv.content_hash=source->>'contentHash'
+   AND (SELECT r.outcome FROM anvil.content_reviews r JOIN anvil.audit_events e ON e.command_id=r.command_id AND e.project_id=r.project_id
+    WHERE r.project_id=pid AND r.scope_kind='PROJECT' AND r.target_kind='DOCUMENT' AND r.target_id=d.id AND r.target_version=d.head_version AND r.target_hash=dv.content_hash AND r.criteria_version=1 AND r.source_kind='HUMAN_REVIEW' ORDER BY e.server_sequence DESC LIMIT 1)='ACCEPTED') THEN RETURN false;END IF;
+ END LOOP;
+ FOR chosen IN SELECT value FROM jsonb_array_elements(v.screen_review_refs) LOOP
+  IF NOT EXISTS(SELECT 1 FROM anvil.content_reviews r WHERE r.project_id=pid AND r.id::text=chosen->>'id' AND r.scope_kind='PROJECT' AND r.target_kind='DOCUMENT' AND r.criteria_version=1 AND r.source_kind='HUMAN_REVIEW' AND r.outcome='ACCEPTED'
+   AND chosen=jsonb_build_object('id',r.id,'targetRef',jsonb_build_object('id',r.target_id,'version',r.target_version,'contentHash',r.target_hash),'criteriaVersion',1,'outcome','ACCEPTED')
+   AND r.id=(SELECT r2.id FROM anvil.content_reviews r2 JOIN anvil.audit_events e ON e.command_id=r2.command_id AND e.project_id=r2.project_id WHERE r2.project_id=pid AND r2.scope_kind='PROJECT' AND r2.target_kind='DOCUMENT' AND r2.target_id=r.target_id AND r2.target_version=r.target_version AND r2.target_hash=r.target_hash ORDER BY e.server_sequence DESC LIMIT 1)) THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+
 CREATE FUNCTION anvil.guard_result_rework_insert() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE cmd anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;r anvil.result_submissions%ROWTYPE;rv anvil.result_reviews%ROWTYPE;
  b anvil.role_bindings%ROWTYPE;role anvil.project_roles%ROWTYPE;a anvil.assignment_versions%ROWTYPE;dv anvil.assignment_draft_versions%ROWTYPE;ad anvil.assignment_drafts%ROWTYPE;
@@ -91,6 +128,8 @@ BEGIN
  SELECT * INTO dv FROM anvil.assignment_draft_versions WHERE project_id=NEW.project_id AND draft_id=ad.id AND version=ad.head_version;
  SELECT * INTO pm FROM anvil.project_methodologies WHERE project_id=NEW.project_id ORDER BY application_version DESC LIMIT 1;
  s=NEW.snapshot_json;input=s->'input';task=a.version_json->'definition'->'taskRef';reference=jsonb_build_object('id',NEW.id,'version',1,'contentHash',NEW.content_hash);
+ IF NOT COALESCE(anvil.result_rework_plan_current(NEW.project_id,task->'planRef',task->>'taskCode',dv.version_json->'basis'->>'taskCardHash'),false)
+  THEN RAISE EXCEPTION 'RESULT_REWORK_PLAN_NOT_CURRENT' USING ERRCODE='42501';END IF;
  SELECT COALESCE(jsonb_agg(i->'criterionId' ORDER BY ord),'[]'::jsonb) INTO remaining
  FROM jsonb_array_elements(rv.snapshot_json->'input'->'items') WITH ORDINALITY AS parts(i,ord)
  WHERE i->>'outcome' IN('REWORK','BLOCKED') AND NOT ((input->'missingItems') ? (i->>'criterionId'));

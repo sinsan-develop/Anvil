@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 I1 반증 RED·SQL 보정 / Main 어울(2026-10-20)**: exactc9533613 새QA02 PG1b82e0cc46fc92d7853a522a8e9d0304134b959517afa3793c1581da69e0edf2/networkd87ec440bceb8b644138c74efe33ea91fe055da2799fe7a8b0538fc6e781d7d6·62SQL exact에서1FAIL3495.488787ms(기능3118.638232), phaseREWORK_STALE_PLAN_DIRECT_INSERT였다. 앞 서비스는 이번에는 정확 ASSIGNMENT_PLAN_NOT_CURRENT412에 도달해 행잠금 보정 효과를 확인했으나 직접INSERT의 요구 거절 assertion이 RED였다. 안전 로그는 assertion의 원SQL 오류/허용 여부 상세를 남기지 않아 직접 허용됐다고까지 단정하지 않고 기대 거절 미확인으로 보존한다. raw2파일/5dir·전용PG/network/Git경로 exact회수했다.
+  Main은 신규0028에만 현재 plan ref/head/confirmed·정확snapshot/taskCard·확정영수증·최신검토/원문·연결화면 검토를 대조하는 helper와 명시 RESULT_REWORK_PLAN_NOT_CURRENT 거절을 추가했다. 기존SQL/guard·권한변경0, 독립C0/I1/M0와 Main보정을 구분하고 재리뷰0이다. 실제 GREEN/전체 저장 경계는 아직 미실행이다.
+
+- **FN12 저장 보정 QA 세 번째 신규자원 등록 / Main 어울(2026-10-20)**: 새 /home/daon/deploy/anvil-v3-fn12-rework-store-qa-03, anvil-v3-fn12-rework-store-pg-03/internal anvil-v3-fn12-rework-store-net-03/DB anvil_v3_fn12_rework_store_qa_03, owner AV3_FN12_REWORK_STORE_QA/instance rework-store-03/run rework-store-20261020-03이다. 같은 고정PG15/Node24.21·62SQL exact·uid1000·tmpfs512MiB·port/volume0·10분/90초/110초/생성전부재·realpath/link·정식영향0/끝·실패exact정리·독립잔여0 계약이다. 이번은 저장/replay/고정GET·재해시 세션/범위 거절·orphan COMMIT·최신예약 바뀜·I1 계획전진 직접INSERT와 과거기록 보존만 확인하고 앞 준비/목록/검수전체시험 반복0이다. 정식DB/서비스·키/실정책/Agent/기존거절 변경0이다.
+
 - **FN12 저장 QA 선행 실패·최소 보정 / Main 어울(2026-10-20)**: exactce33c189 신규PG c796fc0a6c209ea5b4989d6efbd1ae277742dc0c9085c0c0ee10f4f96434fcbf/network2d2178a22bec2bc957ebcd4a8a276d388d723d95eb1a36875d326fa174b786da·PG15.18·62SQLchecksum exact에서1FAIL2543.941633ms(기능2226.146939), phaseREWORK_STALE_PLAN_FIXTURE였다. 서비스의 계획현재성 expected412 전에 STORAGE_FAILED503으로 직접INSERT 반증 미도달이며 I1 RED/PASS로 해석하지 않는다. raw2파일/5dir·전용PG/network/Git경로 exact회수했다.
   Main 원인 대조: 불변 role_bindings는 SELECT/INSERT만 허용되는데 새 제공자의 FOR SHARE는 행잠금 UPDATE 권한을 요구한다는 가설이다. 동등권한 fake 경계 신규1RED397.5248ms→이미 확보한 프로젝트 FOR UPDATE 잠금과 같은 잠금을 쓰는 예약 insert guard를 유지하고 불필요한 role row FOR SHARE만 제거→1PASS340.8037ms, 권한부여/SQL기준완화0이다. 실제 원인 확인은 다음 실제 QA로 분리한다. I1 SQL 계획현재성은 아직 미보완이며 재현을 먼저 이어간다.
 
