@@ -277,6 +277,8 @@ BEGIN
   OR jsonb_typeof(e->'eventId') IS DISTINCT FROM 'string' OR e->>'eventId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
   OR jsonb_typeof(e->'commandId') IS DISTINCT FROM 'string' OR e->>'commandId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
   OR jsonb_typeof(e->'envelopeHash') IS DISTINCT FROM 'string' OR e->>'envelopeHash' !~ '^[0-9a-f]{64}$'
+  OR NOT EXISTS(SELECT 1 FROM anvil.execution_commands c WHERE c.project_id=NEW.project_id AND c.execution_id=NEW.execution_id AND c.generation=NEW.generation
+   AND c.envelope_hash=e->>'envelopeHash' AND c.snapshot_json->'envelope'->>'commandId'=e->>'commandId')
   OR jsonb_typeof(e->'type') IS DISTINCT FROM 'string' OR e->>'type' NOT IN('RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED','STARTED','REJECTED','UNKNOWN','STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED','HEARTBEAT')
   OR jsonb_typeof(e->'reasonCode') IS DISTINCT FROM 'string' OR e->>'reasonCode' NOT IN('NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER')
   OR NOT anvil.execution_iso_valid(e->'occurredAt') OR (e->>'occurredAt')::timestamptz>at_time+interval '30 seconds' THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_EXACT_CLAIM_REQUIRED' USING ERRCODE='42501';END IF;
