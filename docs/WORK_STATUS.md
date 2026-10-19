@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 시작 수신기·서명 permit client checkpoint / Main 어울(2026-10-19)**: 신규연결부재5RED186.1318ms→직접5PASS260.2914ms다. 최초type검사는생성자return의TS2564 3건·fixture recursive literal TS2322 1건으로실패해초기화흐름/시험literal만보정했다. Main이기존서버permit의source순서계약을대조해추가1RED(6PASS1FAIL233.212ms)로순서불일치를재현하고,같은set검사후봉투의중복제거원순서로요청을만들도록보정했다. 신규7+기존receiver14/client13=34PASS448.828ms/type0·diff0이다. 독립신규2경로C0/I0/M0는정적한정검토로source/OS진위·실제현재권한/nonceCOMMIT·물리sync/HTTP/wire·Agent/취소종료를미판정했다.
+  기존receiver의sync된시도ref를서명PERMIT내구요청에결박하고정확기한/현재source·OSref를전후대조한뒤원7필드permit만반환한다. 정상합성결합은시도→clientjournal→permit기록뒤wire1회이며같은명령재조회는추가0이다. 응답유실UNKNOWN·OS변경·만료·provider무응답유한timeout은wire0,원client기록은숨기거나초기화하지않는다. 시험signer/transport는합성이고새서버proof/실PG·실Agent검증이라하지않는다. 새자원/정식SQL·서비스·키변경0·완료QA재실행0,전체FN08/Stage부분구현을유지하며수신/서버후속명령연결을계속한다.
+
+- **C3 시작 수신기·서명 client permit 연결 착수 / Main 어울(2026-10-19)**: ae7f406e exact private/clean 뒤 기존SyntheticStartReceiver의필수authority.consume와SyntheticExecutionClient의PERMIT을연결한다. START_ATTEMPTED의정확localAttemptRef·봉투/key/grant와현재합성source관측/OS소유ref를검사해같은명령의서명요청을내구기록하고,원permit만기존7필드수신기계약으로투영한다. 응답UNKNOWN/오래된현재근거·최종await기한/소유변경은wire없이불명으로보존한다. source/OS제공자는SYNTHETIC_ONLY필수이며관측의실제진위/실HTTP·credential발급/Agent를꾸미지않는다. 새외부자원/정식DB·키·서비스변경0,기존PERMIT/수신기준·완료QA반복0이다.
+
 - **C3 명령페이지 client 수신 checkpoint / Main 어울(2026-10-19)**: 기존client/ledger에COMMANDS를연결한신규3RED355.7539ms→client13PASS371.2159ms/type0을확인했다. 독립C0/I0/M0는client/ledger/직접시험3경로의정적한정판정이며실제서버/client결합·cursorHMAC/물리sync·nonceCOMMIT/현재권위·HTTP/Agent는미판정이다. 이후Main이실제합성client→challenge/P256서명→credential-current resolver/router→고정pager→client journal의결합정상·서버저장후응답유실2건을추가해page7PASS938.7648ms를확인했다. 추가시험의배열첫항목타입TS2532 1건은존재assert로보정하여type0,직접/인접client13+page7+router7=27PASS623.4376ms/diff0이다. 새결합시험은기존독립검토범위에포함시키지않는다.
   GET body=null·pollId는내부중복키/afterCursor·waitMs만서명query,같은pollId의선택/grant변경conflict·기존PERMIT불명우회차단을보존한다. 정확page/ref/순번/봉투/2MiB/기한/falseflags를sync기록하고응답유실UNKNOWN은자동재전송하지않는다. in-memory ledger/synthetic authority의결합증거이지실DB/실HTTP/Agent·사용자기능완료가아니다. 새외부자원/완료PGQA재실행/정식DB·키·서비스변경0,다음은수신명령의기존실행준비/permit경로연결이다. sandbox Git상태읽기worktree오류와경로추정읽기실패는권한/파일변경없는도구실패로분리했다. local main은04430432의오래된ref이고실제private main f976ed5e 불변을재확인했으며로컬ref동일로보고하지않는다.
 
