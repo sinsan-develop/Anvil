@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 회수 서명 중지지시 읽기 내부 checkpoint / Main 어울(2026-10-19)**: 신규5RED167.1638ms→4PASS1FAIL406.0482ms의 예약 음성은 fixture가 동일 객체를 공유한 문제여서 저장 JSON별 분리·유효한 grant/hash를 먼저 만든 뒤 시험하여5PASS386.2945ms/type0, 직접/기존 proof·회수 관측 인접20PASS405.4881ms다. 독립 신규 C0/I0/M0는 두 새파일 정적 한정 판정이며 실제 transaction/credential/HTTP·current 진위는 미판정이다. 검토 미확인인 RECOVERY grant 기반 중지 정상은 Main이 새 시험으로 확인했다. 이 추가 점검의 마지막 selection 공개키 교체1RED(5PASS1FAIL453.5586ms)는 fingerprint 재대조를 추가해 직접6PASS419.6086ms/type0로 보완했고, 원검토 뒤 Main보정을 새 독립검토로 승격하지 않는다.
+
+  정확 RECOVERY GET/nullbody/host 서명·원 grant/세션/등록/source/정책·기한의 nonce와 선택 binding을 한 합성 tx에 저장해 원결과/동시 중복을 보존한다. 중지 없음 뒤 같은 proof의 범위 확대·잘못된 mode/route/서명·변조/만료/최종await기한과 저장 실패는 거절/rollback한다. 출력은 commandRef·봉투/no-store뿐이며 HUMAN 요청·reason·일반 원문/START/SEND/permit을 반환하지 않는다. 이 검수의 tx/current/results는 in-memory 합성이라 실제PG 원자성/불변성과 current/OS/Agent·HTTP/credential·writer회수는 미검증, 신규외부자원/정식DB·서비스변경0이다. 변경은 신규내부서비스/직접시험/현황3경로이며 전체C3/Stage는부분구현, 다음은 실행기 중지시도의 실제파일 내구저장과 남은 회수/서버SEND 연결을 계속한다.
+
+
+- **C3 회수 서명 중지지시 읽기 착수 / Main 어울(2026-10-19)**: c39f1bb7 local/private exact·clean 뒤 계획C3/제안§6.1의 recovery/stop-instruction 읽기를 내부 합성 연결로 구현한다. 기존 RECOVERY purpose의 host 서명·현재 grant/ref/등록/세대·짧은 nonce 소비와 저장된 정확 REQUEST_STOP 봉투를 같은 transaction에 결박한다. 결과에는 중지 봉투/ref만 반환하고 원 HUMAN 요청/reason·일반 자료·START/SEND/permit은 노출하지 않는다. 현재 허가 제공자·DB/credential/HTTP·OS/Agent는 필수 SYNTHETIC_ONLY로 미연결이며 false 권한/회수 플래그는 보존한다. 신규 외부 자원0·정식DB/서비스변경0, 테스트 주도 개발 skill로 신규 정상/중요 음성만 확인한다.
+
+
 - **C3 중지 actual PG 핵심 checkpoint / Main 어울(2026-10-19)**: exact5fcdf7d4cce54681eee370f3212c8a874983af68·0021 SHA940DF8F3B16171FFB79433C2EFC5B4EA62EE4CBBD43BEF222AC16E9293F43450의 새 빈 격리 PGf84893aa8e1c1969dedeabbc8ec3beecb7c92e2aeb3ea98aaba110de389484f0/instance97ce0313-b4f0-41f9-aaa1-70f1efe60d52·internal망f39da6a5a6629216a8a235a2979a6dbddddf041f31bf56927f57d55ca49052e8에서56DDL COMMIT·빈 초기 모델을 확인했다. 실제 비관리자 app/HUMAN 로그인·정책의 기존 초기 queue 보존, 정상/RECOVERY 중지 저장·원응답 재조회·HUMAN 고정조회·동시2회, 명령/outbox INSERT 전후4 rollback, outbox 누락/command-only 역방향 COMMIT 거절, 직접DML3·READY 전환 거절, 전체 hash 재계산의 잘못된 예약/force/START/writertrue/옛영수증5음성, 중지정책 AUTO/DENY/REQUIRE_APPROVAL·원 grant/writer/ACK 불변·이력 trigger를 확인했다. marker C3_STOP_ACTUAL_PG_SYNTHETIC_TARGET_RECEIPT_RESERVATION_NORMAL_RECOVERY_REPLAY_READ_CONCURRENT_ROLLBACK_REVERSE_OUTBOX_HASH_DENY_WRITER_ACK_UNCHANGED_VERIFIED/exit0이다.
 
   정리 failure0 뒤 별도 SSH C3_STOP_QA_01_INDEPENDENT_RESIDUAL_ZERO/exit0, 등록 경로·컨테이너·망 잔여0·기존 보호PG 동일fullID/image/running/StartedAt/restart0이다. 합성 사용자/일회성자료는 전용tmpfs와 제거, 기존 개발자료 변경0이다. 독립 C0/I0/M0는 실제 실행 전 정적 한정 검토였으며 실제SQL 결과와 구분한다. 실제 current/host/OS의 진위·회수 credential/HTTP·Agent 중지·writer 회수·전원손실·quota 끝값/전체Stage는 여전히 미검증/미연결, 정식0021 적용0이다. 다음은 저장된 중지지시를 허가된 실행기 요청에 결박해 읽는 연결과 남은 회수/서버SEND 선행을 같은 승인범위에서 계속한다. 완료 QA를 반복하지 않는다.
