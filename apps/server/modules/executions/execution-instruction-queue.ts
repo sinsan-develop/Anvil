@@ -9,6 +9,7 @@ import {currentProjectController,persistProjectReceipt,projectReplay,recordProje
 import {assertKnowledgeTextSafe} from '../knowledge/knowledge-entry.ts';
 import {ProjectExecutionBudget,type BudgetClaim,type BudgetRecord} from './execution-budget.ts';
 import {authorizeRuntimePolicy,ProjectLimitPolicies} from './runtime-policy.ts';
+import {assertNoStoredExecutionStop} from './execution-stop-fence.ts';
 type Scope={projectId:string;executionId:string;executionGeneration:number};
 type Subject=ServerExecutionFactV1['subject'];
 interface Current {
@@ -70,6 +71,7 @@ export class ProjectExecutionInstructionQueue {
    this.#port();await currentProjectController(db,actor,request);this.#human(actor,await this.#now(db));const first=readCurrent(await this.store.current(db,actor,cloneV1(scope)),scope,request,actor,await this.#now(db),true);
    const policyInput={executionId:scope.executionId,executionGeneration:scope.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:first.c.fact.intent.sourceScopes};let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);const replay=await projectReplay(db,actor,request);if(replay!==undefined)return replay;
    // BUSY여도 원명령 영수증을 읽을 수 있지만 새 지시·예약은 IDLE 확인 뒤에만 만든다.
+   await assertNoStoredExecutionStop(db,scope);
    if(first.c.turnState!=='IDLE')fail('INSTRUCTION_QUEUE_CURRENT_REQUIRED');
    const claim=cloneV1(await this.store.claim(db,actor,cloneV1(scope),cloneV1(request)));if(claim.projectId!==scope.projectId||claim.executionId!==scope.executionId||claim.executionGeneration!==scope.executionGeneration||claim.commandId!==request.commandId||claim.operation!=='SEND_INSTRUCTION'||!same(claim.assignmentRef,first.c.fact.intent.assignmentRef)||!same(claim.policyRef,p.budgetPolicyRef))fail('INSTRUCTION_QUEUE_CLAIM_MISMATCH');
    const planned=await this.budgets.planReservation(db,actor,claim),reservation=planned.record;if(reservation.snapshot.state!=='RESERVED'||reservation.ref.version!==1||!same(reservation.snapshot.claim,claim)||reservation.snapshot.executionAuthorized!==false||reservation.snapshot.dispatchPerformed!==false)fail('INSTRUCTION_QUEUE_RESERVATION_INVALID');
