@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 보관 관측/ACK 실제 격리 읽기 / Main 어울(2026-10-20)**: ab461149 exact Git·tracked clean·PG15.18/image594290e9·기존59SQL checksum을 확인했다. 실제인증/확정임무/원제출/역사START를 거쳐 빈 원장의 ACKnull/localnull·원제출/실행ref→API/Web 읽기1PASS2075.987597ms(exit0), 다른query400/외부사용자404/조회권회수404·5표 행수조회불변/기존5guardhash불변이다. 양성관측행·실제Agent/OS·현재실권한/중지/회수/재개·served는 미검증이며 공백을 ACK0으로 추정하지 않는다. 새schema/0029·정식DB·서비스·키·실정책변경0이다.
+  종료exit수집 후 전용PG7cbd1596/networkca35ba7b의 정확ID/label/image/mount[]/port{}·경로owner/link/process/Git검사 후 일회성QA만 제거했다. 별도읽기에서 등록3자원잔여0·기존정식PGe6f798c3 exited/started/finished/restart0불변이다. 합성원문2파일/5dir는 시험finally로정리됐으며 closeFailures0/rootCleanupFailedfalse다. 전체FN13은 부분구현이며 불변서버기록·실제파일결박·상태대조/회수/재개는 남는다. 다음은 새SQL 없이 상세현황의 관측순번/ACK·실행참조 입력 연결을 구현한다. 거절된 저장후보5파일 보존/미게시·정확승인대기는유지한다.
+
 - **FN13 보관 관측/ACK 조회 source 검증 / Main 어울(2026-10-20)**: OBSERVATION_JOURNAL 화면 부재 RED→1PASS2.5초, build0(205modules)/type0, 직접8PASS1527.5401ms다. 기존 FN08 원장8을 포함한 앞10PASS와 구별한다. 새단위 독립 정적1회 C0/I0/M0이며 실제PG양성행/동시append·현재권한/공급자/OS/회수 진위는 판단유보다. DB공백·ACKnull/localnull의 실제 읽기만 다음 격리QA로 확인한다. 최종diff의 공백2개는 비의미 정리, integration runner 편집 첫apply_patch는 같은줄 중복hunk로 불일치/변경0→단일hunk로 수정했다. 기존 저장후보5파일은 미게시/미등록으로 보존하고0029 source거절은 미해제다. 종료수집 뒤 UI결과1파일/build exact정리·별도부재0을 확인했다. 서버저장/served·전체FN13 완료 주장은 없다.
   신규 WSL 격리QA 사전등록: /home/daon/deploy/anvil-v3-fn13-observation-read-qa-01, anvil-v3-fn13-observation-read-pg-01, anvil-v3-fn13-observation-read-net-01, DB anvil_v3_fn13_observation_read_qa_01; owner AV3_FN13_OBSERVATION_READ_QA/instance observation-read-01/run observation-read-20261020-01·uid1000 daon. 기존 pinned PG15 image594290e9와 Node24.21 hash7fde7b8a만, 새빈 Git exact 게시SHA·기존59SQL, tmpfs512MiB/internalnetwork·hostport/volume0, 수명10분·Node90초/외부110초. 원제출→역사실행→빈관측/ACK없음 API/Web·권한거절·5표조회불변/5guardhash만 검증하며 양성행주입/실Agent/OS/정식DB·서비스/권한·키변경0이다. 생성직전 부재/realpath/link/owner/image/daemon·exactSHA를 재확인하고 성공·실패 모두 ID/label/image/mount/port/경로/process 일치 후 등록자원만 회수·별도잔여0을 확인한다.
 
