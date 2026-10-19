@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 준비·선택bytes·ACK 비교 실제 API 연결 / Main 어울(2026-10-20)**:30842b9b exactGit/clean·PG15.18/image594290e9·기존59SQLchecksum에서 실제 HUMAN/확정임무GET→현황준비POST→UTF8선택bytes명시검사→보관빈ACK API/Web비교1PASS2048.15042ms(exit0)다. 잘못된임무hash409/외부사용자404·query400/조회회수404·5표행수조회불변/5guardhash불변, checkpointDB쓰기0·local/ACKnull·current/readyfalse다. 새모드준비중 조율JS괄호구문오류1은실행0/자원추가변경0으로즉시정정했고 제품실패와분리한다.
+  전용PGe53053cc/networka09efd5d·exactGit경로의ID/label/image/mount[]/port{}·owner/link/process를확인한뒤회수했고독립등록3자원잔여0/정식PGexited·started/finished/restart0불변이다. 합성원문2파일/5dir는finally정리·closeFailures0/rootCleanupFailedfalse다. 이것은격리API/consumer검증이지 served/TLS·양성관측/실파일/OS·회수/재개·FN13전체완료가아니다. 거절된0029 source/정식DB·서비스/키·실정책/실Agent변경0/미등록후보5파일미게시는유지한다. 다음은항목별증거와판단요청담당/사유/출처의상세입력이며텍스트변경시원래ref를자동재결박하지않고명시재선택을요구한다.
+
 - **FN13 파일/ACK 비교 보완확인·실제API QA등록 / Main 어울(2026-10-20)**: 초기화면부재RED→합성browser1PASS2.9초 뒤 staticM1은Main의미판정Important1로상향했다. 순번차이반례1RED/3PASS354.745ms→직접/인접13PASS397.0559ms/type0/build211·같은browser보완1PASS2.9초, 재리뷰0으로단1회해소했다. old‘미수신수’가부정확했던사실을소급삭제하지않는다. 마지막결과1/buildexact정리·독립0이며경고보존이다.
   실제읽기검증 새모드는 기존확정명령receipt의ref/snapshot만을정식조회응답으로오인한시험type오류2를 보여주었다. readConfirmedAssignment 실제GET의project/observedAt·hash를소비하도록시험만보완했다. 새로운제품기능TDD가아닌기존API의첫실제연결검증으로기록한다. 조율도구JS문자열구문오류1은실행전발견/파일변경0이었다. 신규QA literal /home/daon/deploy/anvil-v3-fn13-checkpoint-compare-qa-01 / anvil-v3-fn13-checkpoint-compare-pg-01 / anvil-v3-fn13-checkpoint-compare-net-01 / DB anvil_v3_fn13_checkpoint_compare_qa_01; owner AV3_FN13_CHECKPOINT_COMPARE_QA·instance checkpoint-compare-01·run checkpoint-compare-20261020-01·uid1000daon다. pinnedPG15 image594290e9/Node24.21 hash7fde7b8a·기존59SQL만, tmpfs512MiB/internal/hostport·volume0/수명10분·Node90/외부110초다. exact게시Git·생성전부재/realpath/link/owner/image/daemon검사후준비POST→선택bytes검사→보관빈ACK API/Web/거절·5표/guard불변만확인한다. DB저장/양성관측·실파일/Agent/OS·정식DB·서비스/권한·키·0029변경0이다. 성공/실패모두exact등록자원만회수/독립잔여0을확인한다.
 
