@@ -13,6 +13,12 @@ BEGIN
  item=jsonb_build_object('path','src/main.ts','kind','MODIFIED','diffRef',NULL,'beforeHash',NULL,'afterHash',NULL);
  IF NOT anvil.result_manifest_valid(jsonb_set(m,'{changes}',jsonb_build_array(item))) THEN RAISE EXCEPTION 'VALID_CHANGE_REJECTED';END IF;
  IF anvil.result_manifest_valid(jsonb_set(m,'{changes}',jsonb_build_array(jsonb_set(item,'{kind}','null')))) THEN RAISE EXCEPTION 'NULL_CHANGE_KIND_ACCEPTED';END IF;
+ item=jsonb_build_object('criterionId','flow','testId','FLOW-01','baselineRefs','[]'::jsonb,'expected','정상','actual','미실행','status','NOT_EXECUTED','evidence','[]'::jsonb);
+ IF NOT anvil.result_manifest_valid(jsonb_set(m,'{testResults}',jsonb_build_array(item))) THEN RAISE EXCEPTION 'VALID_TEST_REJECTED';END IF;
+ IF anvil.result_manifest_valid(jsonb_set(m,'{testResults}',jsonb_build_array(jsonb_set(item,'{status}','null')))) THEN RAISE EXCEPTION 'NULL_TEST_STATUS_ACCEPTED';END IF;
+ item=jsonb_build_object('sourceKind',NULL,'ref',r,'contentHash',repeat('a',64),'environmentRef',r,'recordedAt','2026-10-19T08:30:00.000Z');
+ IF anvil.result_evidence_valid(jsonb_build_array(item)) THEN RAISE EXCEPTION 'NULL_EVIDENCE_SOURCE_ACCEPTED';END IF;
+ item=jsonb_build_object('path','src/main.ts','kind','MODIFIED','diffRef',NULL,'beforeHash',NULL,'afterHash',NULL);
  bad=jsonb_set(m,'{changes}',jsonb_build_array(jsonb_set(item,'{path}',to_jsonb('../escape.ts'::text))));
  IF anvil.result_manifest_valid(bad) THEN RAISE EXCEPTION 'PARENT_PATH_ACCEPTED';END IF;
  IF anvil.result_manifest_valid(jsonb_set(m,'{rollback}',to_jsonb('Bearer '||repeat('z',24)))) THEN RAISE EXCEPTION 'SENSITIVE_TEXT_ACCEPTED';END IF;

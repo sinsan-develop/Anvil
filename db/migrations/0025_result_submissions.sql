@@ -67,7 +67,7 @@ DECLARE item jsonb;
 BEGIN
  IF jsonb_typeof(v) IS DISTINCT FROM 'array' OR jsonb_array_length(v)>20 THEN RETURN false;END IF;
  FOR item IN SELECT value FROM jsonb_array_elements(v) LOOP
-  IF NOT anvil.execution_json_shape(item,ARRAY['sourceKind','ref','contentHash','environmentRef','recordedAt']) OR item->>'sourceKind' NOT IN('WORKER_CLAIM','CONNECTOR_OBSERVED','TEST_ARTIFACT','REVIEWER_CONFIRMED') OR NOT anvil.execution_preparation_ref_valid(item->'ref') OR NOT anvil.execution_preparation_ref_valid(item->'environmentRef') OR jsonb_typeof(item->'contentHash') IS DISTINCT FROM 'string' OR item->>'contentHash' !~ '^[0-9a-f]{64}$' OR NOT anvil.execution_iso_valid(item->'recordedAt') THEN RETURN false;END IF;
+  IF NOT anvil.execution_json_shape(item,ARRAY['sourceKind','ref','contentHash','environmentRef','recordedAt']) OR jsonb_typeof(item->'sourceKind') IS DISTINCT FROM 'string' OR item->>'sourceKind' NOT IN('WORKER_CLAIM','CONNECTOR_OBSERVED','TEST_ARTIFACT','REVIEWER_CONFIRMED') OR NOT anvil.execution_preparation_ref_valid(item->'ref') OR NOT anvil.execution_preparation_ref_valid(item->'environmentRef') OR jsonb_typeof(item->'contentHash') IS DISTINCT FROM 'string' OR item->>'contentHash' !~ '^[0-9a-f]{64}$' OR NOT anvil.execution_iso_valid(item->'recordedAt') THEN RETURN false;END IF;
  END LOOP;RETURN true;
 EXCEPTION WHEN OTHERS THEN RETURN false;
 END;
@@ -77,14 +77,14 @@ DECLARE item jsonb;arg jsonb;name text;path text;
 BEGIN
  IF NOT anvil.execution_json_shape(m,ARRAY['assignmentRef','executionRef','baselineRefs','submissionState','changes','commandResults','testResults','artifactRefs','unexecuted','risks','rollback','checkpointRef'])
   OR NOT anvil.execution_preparation_ref_valid(m->'assignmentRef') OR NOT anvil.execution_preparation_ref_valid(m->'executionRef') OR NOT anvil.result_refs_valid(m->'baselineRefs') OR NOT anvil.result_refs_valid(m->'artifactRefs')
-  OR m->>'submissionState' NOT IN('COMPLETED','FAILURE_REPORT','INCOMPLETE','BLOCKED','CANCELLED') OR NOT anvil.result_text_valid(m->'rollback',20000) OR (m->'checkpointRef'<>'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(m->'checkpointRef')) OR octet_length(anvil.execution_authority_canonical(m))>2097152 OR NOT anvil.result_texts_safe(m) THEN RETURN false;END IF;
+  OR jsonb_typeof(m->'submissionState') IS DISTINCT FROM 'string' OR m->>'submissionState' NOT IN('COMPLETED','FAILURE_REPORT','INCOMPLETE','BLOCKED','CANCELLED') OR NOT anvil.result_text_valid(m->'rollback',20000) OR (m->'checkpointRef'<>'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(m->'checkpointRef')) OR octet_length(anvil.execution_authority_canonical(m))>2097152 OR NOT anvil.result_texts_safe(m) THEN RETURN false;END IF;
  FOREACH name IN ARRAY ARRAY['changes','commandResults','testResults','unexecuted','risks'] LOOP
   IF jsonb_typeof(m->name) IS DISTINCT FROM 'array' OR jsonb_array_length(m->name)>(CASE WHEN name='risks' THEN 100 ELSE 200 END) THEN RETURN false;END IF;
  END LOOP;
  FOR item IN SELECT value FROM jsonb_array_elements(m->'risks') LOOP IF NOT anvil.result_text_valid(item,20000) THEN RETURN false;END IF;END LOOP;
  FOR item IN SELECT value FROM jsonb_array_elements(m->'changes') LOOP
   path=item->>'path';
-  IF NOT anvil.execution_json_shape(item,ARRAY['path','kind','diffRef','beforeHash','afterHash']) OR NOT anvil.result_text_valid(item->'path',2000) OR length(btrim(path))=0 OR path ~ '^[\\/]|^[A-Za-z]:|[\u0001-\u001f]' OR EXISTS(SELECT 1 FROM regexp_split_to_table(replace(path,chr(92),'/'),'/') part WHERE part IN('','.','..')) OR item->>'kind' NOT IN('ADDED','MODIFIED','DELETED')
+  IF NOT anvil.execution_json_shape(item,ARRAY['path','kind','diffRef','beforeHash','afterHash']) OR NOT anvil.result_text_valid(item->'path',2000) OR length(btrim(path))=0 OR path ~ '^[\\/]|^[A-Za-z]:|[\u0001-\u001f]' OR EXISTS(SELECT 1 FROM regexp_split_to_table(replace(path,chr(92),'/'),'/') part WHERE part IN('','.','..')) OR jsonb_typeof(item->'kind') IS DISTINCT FROM 'string' OR item->>'kind' NOT IN('ADDED','MODIFIED','DELETED')
    OR (item->'diffRef'<>'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(item->'diffRef')) THEN RETURN false;END IF;
   FOREACH name IN ARRAY ARRAY['beforeHash','afterHash'] LOOP IF item->name<>'null'::jsonb AND (jsonb_typeof(item->name) IS DISTINCT FROM 'string' OR item->>name !~ '^[0-9a-f]{64}$') THEN RETURN false;END IF;END LOOP;
  END LOOP;
@@ -96,7 +96,7 @@ BEGIN
   IF item->'exitCode'<>'null'::jsonb AND (jsonb_typeof(item->'exitCode') IS DISTINCT FROM 'number' OR (item->>'exitCode') !~ '^(0|[1-9][0-9]{0,15})$' OR (item->>'exitCode')::numeric>9007199254740991) THEN RETURN false;END IF;
  END LOOP;
  FOR item IN SELECT value FROM jsonb_array_elements(m->'testResults') LOOP
-  IF NOT anvil.execution_json_shape(item,ARRAY['criterionId','testId','baselineRefs','expected','actual','status','evidence']) OR jsonb_typeof(item->'criterionId') IS DISTINCT FROM 'string' OR item->>'criterionId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR jsonb_typeof(item->'testId') IS DISTINCT FROM 'string' OR item->>'testId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR NOT anvil.result_refs_valid(item->'baselineRefs') OR NOT anvil.result_text_valid(item->'expected',20000) OR NOT anvil.result_text_valid(item->'actual',20000) OR item->>'status' NOT IN('PASS','FAIL','NOT_EXECUTED','BLOCKED','NOT_APPLICABLE') OR NOT anvil.result_evidence_valid(item->'evidence') THEN RETURN false;END IF;
+  IF NOT anvil.execution_json_shape(item,ARRAY['criterionId','testId','baselineRefs','expected','actual','status','evidence']) OR jsonb_typeof(item->'criterionId') IS DISTINCT FROM 'string' OR item->>'criterionId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR jsonb_typeof(item->'testId') IS DISTINCT FROM 'string' OR item->>'testId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR NOT anvil.result_refs_valid(item->'baselineRefs') OR NOT anvil.result_text_valid(item->'expected',20000) OR NOT anvil.result_text_valid(item->'actual',20000) OR jsonb_typeof(item->'status') IS DISTINCT FROM 'string' OR item->>'status' NOT IN('PASS','FAIL','NOT_EXECUTED','BLOCKED','NOT_APPLICABLE') OR NOT anvil.result_evidence_valid(item->'evidence') THEN RETURN false;END IF;
  END LOOP;
  FOR item IN SELECT value FROM jsonb_array_elements(m->'unexecuted') LOOP
   IF NOT anvil.execution_json_shape(item,ARRAY['criterionId','testId','reason']) OR jsonb_typeof(item->'criterionId') IS DISTINCT FROM 'string' OR item->>'criterionId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR jsonb_typeof(item->'testId') IS DISTINCT FROM 'string' OR item->>'testId' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' OR NOT anvil.result_text_valid(item->'reason',20000) OR length(btrim(item->>'reason'))=0 THEN RETURN false;END IF;
