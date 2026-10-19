@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 polling 선행 cursor·저장명령 판독 checkpoint / Main 어울(2026-10-19)**: cursor부재4RED144.2054ms→4PASS173.1598ms/type0, 신규역사판독의첫2RED1PASS130.5131ms중음성1개는모듈부재assert도거절로보던시험문제를구체오류패턴으로강화하여3RED149.4413ms→두모듈7PASS182.2663ms/type0다. cursor 신규2파일 독립C0/I0/M0와역사판독 신규2파일 독립C0/I0/M0는각정적범위이며실제PG/키관리/HTTP·Agent나현재provider진위를판정하지않는다.
+  cursor는전용purpose/domain HMAC·canonical base64url/JSON·exact프로젝트/connector/실행·세대/grant/credential세대·고정50·원기한/15분상한을검사하고RECOVERY polling을거절한다. 메모리시험key명시주입만하며실키생성/환경fallback/파일/새외부자원0이다. afterSequence는후속합성제공자의불변서버순번계약이며현재DB에해당순번이있다고주장하지않는다. 역사판독은기존queue의intent hash와나중receipt-bound envelope를분리하고서버recordID≠원HUMAN commandID·예약ref≠예산정책ref를보존한다. queuedAt검사는역사문법일뿐현재grant/HUMAN영수증·outbox/순번·전달권위검증이아니다. 이둘만으로사용자기능완료/실Agent연결을주장하지않으며다음은원proof결과/고정페이지/현재권한을같은합성tx에결박하는pager다.
+
+- **C3 저장 명령 polling cursor 선행 착수 / Main 어울(2026-10-19)**: b2102a0f local/private exact·clean 뒤 승인 §6 GET commands/afterCursor의 빠진서명결박을준비한다. 현재credential resolver/정규화서명대상검사는있으나 명령목록의서명cursor/원결과결박은없다. 새합성cursor codec은명시메모리시험key만주입받고 실제키/파일·credential발급·환경fallback은없다. exact프로젝트/connector/실행·세대/grant/credential세대·afterSequence·고정page50·발급/원기한을purpose분리HMAC에결박한다. cursor는위치일뿐인증/현재권한/새명령실행허가가아니고후속pager는기존proof/current를별도검사해야한다. 현재새GET/pager/DB연결은미구현이며이codec만으로사용자기능완료라고하지않는다. 새외부자원0·이전검증반복0,원설계/승인범위불변으로진행한다.
+
 - **C3 credential-current 소비 checkpoint / Main 어울(2026-10-19)**: 신규모듈부재4RED144.8285ms→4PASS150.5163ms/type0, 기존정규화router에새resolver를실제주입한합성연결포함11PASS180.4316ms다. 독립신규C0/I1/M0는마지막await뒤provider의원 checkedAt을보존하지않고조회clock으로덮는신선성오류다. 관측T/두조회T+29초/최종T+31초·기한T+120초의한정재현은5PASS1RED163.2688ms, 원관측시각을보존/최종대조하도록보정해직접·인접12PASS202.7747ms/type0이다. 원독립I1을C0/I0로바꾸거나재리뷰하지않으며router backend호출0 음성도후속추가확인했다.
   신규resolver는token생성/발급/원문저장·키/SQL을만들지않고 digest만필수SYNTHETIC_ONLY store에전달한다. 정확내부기록hash/프로젝트·실행/credential세대/등록ref·지문/목적prefix/현재상태·유한기한과전후변경을검사하고최초최단기한을자동연장하지않는다. 반환checkedAt은실제provider관측시각이며grant/current/실DB/서명·nonce/credential발급/OS·Agent·served 권위가검증됐다는뜻이아니다. 기존router·정식환경변경0·이전PGQA재실행0·새외부자원0,후속미완료는정확저장명령의서명proof/페이지·cursor에결박한송수신연결이다.
 
