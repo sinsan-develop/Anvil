@@ -2,6 +2,16 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 기준 등록 입력·저장 후보 / Main 어울(2026-10-19)**: 원조건마다 명시 criterion/test ID·종류를 입력하고 고정 환경/source hash와 준비→별도 명시 저장→exact GET 확인을 연결했다. App 메모리의 사용자/client/project/임무별 초안·pending을 화면왕복 보존하고 새로고침/종료 후 복원 미제공을 표시한다. 서버/정식DB/실제 사용자 정책·서비스/Agent는 변경0이다. UI가 저장을 실제 완료했다는 정식served 증거는 아니다.
+  최초 합성browser 미구현RED8.3초 뒤 종류select label명칭으로15초timeout1이었고 명시aria-label 보완 후1PASS2.6초다. 직접인접12 중11PASS/새TSX 자식 로더1FAIL401.8272ms→기존기대값을 유지해 로더 연결1PASS339.7434ms, 최종13PASS401.4834ms/type0/build0이다. chunk500KiB 경고와 NO_COLOR/FORCE_COLOR 경고는 보존하며 무관한 최적화/설정 변경0이다. 기존 원문 조회·거절숨김/쓰기0 browser1PASS2.0초다.
+  독립 원검토 C0/I2/M0: I1 APPLIED후 GET403·POST중이탈에서 명령을 확정거절로 오인, I2 제어세대 재취득 후 미전송 입력 재결박 부재. Main은 API 새1 RED171.5849ms와 browser READBACK_DENIED/NAVIGATE_PENDING/CONTROL_REBIND 개별 실패를 확인했다(합계 wrapper30초 만료·총exit 미수집은 개별실패와 구분, 신규 runner 잔류0). POST 직전 부모버퍼 불명상태 보존·APPLIED후 readback 실패형 분리·미전송/pending없는 입력의 명시 재결박만 추가했다. 세경로3PASS5.5초·기존 단절 재확인1PASS2.5초, API5PASS184.2774ms이며 독립C0로 소급하지 않는다. 미확인 명령의ID/세대 자동변경·새명령 생성0이다.
+  검토유보 실제DB/COMMIT·권한집행/served/네트워크실중지/Agent·전체인수는 기존 storage 격리증거와 별도로 미검증이다. 등록 결과·기준 자동활성/검수합격/실행은 분리했다. 등록로컬QA 결과 exact회수·별도경로 잔여0, 기존 사용자브라우저/공유folder보존이다. 다음은 재접속 뒤에도 기존 고정 기준을 명시 선택할 수 있는 임무별 보관기준 조회와 이후 증거/검수 저장 연결이며 Main이 이어간다. 전체UI05/FN12/Stage/계획 완료가 아니다. backend M1 입력오류503 분류는 별도deferred다.
+
+
+- **UI05 명시 검수 기준 입력 연결 착수 / Main 어울(2026-10-19)**: 기존 원문 조회→원조건별 criterion/test ID·종류 명시(자동 추정0)/고정 환경·원문hash→현재 제어 아래 준비→별도 명시 저장→exact GET 확인을 같은 S05에 붙인다. 초안·pending은 사용자/client/project/확정 임무별 App 메모리에서 화면왕복 보존하고 문서 재시작 영속 보존은 미제공으로 명시한다. 단절/불확실 응답은 동일 명령 재확인만 허용한다. 등록은 적용/검수합격/완료·실행 허가가 아니다. 새 schema/권한·정식서비스/Agent 변경0이다. 소비자4 RED153.1588ms→초기3PASS/1FAIL211.4994ms(서버fixture가 caller pending과 같은 객체)→응답분리 보정4PASS187.3193ms; type은source optional1오류로 보완 중이다.
+  신규 로컬 시험 잔여 경로 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01(Playwright 결과만·Main 소유·당 회차 종료 즉시 exact삭제), 기존 apps/web/dist는 현재 로컬 Vite 산출물로만 갱신한다. 새 서버/포트/DB·Agent0, 기존 사용자 브라우저 PID/공유 browser 폴더는 건드리지 않는다. 합성route browser는 실제served/DB저장/사용자 인수 증거가 아니다.
+
+
 - **FN12 감사 I1 GREEN·정리 / Main 어울(2026-10-19)**: private/WSL exacted07f4ddb06d9d816a8dde1fb65fd9fa1ce70ffd 새 빈 PG b03b529d87180d8ee1602a25b934d569fe7f663d9b17ded7bb54c260fc979d8e/internal network10d4fbb8b7454f81395d561fc25d82395fbd6268da8cffa5785f4de063f5ea0a, 고정image594290/PG15.18·Node24.21·60SQL checksum exact에서 신규 audit mode1 PASS1896.864083ms(기능1542.834147), skip0·phaseDONE다. WRONG_TARGET/DUPLICATE_AUDIT 전체tx rollback·COMMIT후 감사 추가 거절/원문GET 유지·원5guard hash불변을 확인했다. 원RED/시험입력실패는 보존하고 독립 원C0/I1/M1은 Main TDD 보완 범위만 해결했으며 독립 재검토C0로 바꾸지 않는다. M1 입력오류503 분류 deferred다.
   등록QA raw2파일/5디렉터리·PG/network/Git경로는 exact 확인 뒤 제거했고 별도SSH 잔여0이다. 정식PG e6f798c3/image594290/exited/StartedAt2026-10-18T15:25:12.085069883Z/FinishedAt2026-10-19T12:56:52.490883698Z/restart0 불변, 정식DB·서비스·키·실Agent 변경0이다. SQL 저장 핵심 확인은 UI05 사용자 입력/정식DB/served/실제 환경·검수/보완 저장·전체FN12/Stage 완료가 아니다. 다음 미완료는 UI05 기존 검수 원문에서 명시적 criteria/test종류·환경·원조건 매핑을 입력해 준비→명시저장→exact 재조회하는 연결이며 Main이 이어간다.
 

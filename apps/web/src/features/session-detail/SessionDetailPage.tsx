@@ -6,9 +6,10 @@ import {readSessionDetail,type SessionDetail} from './api.ts';
 import {readAssignmentResults,readAssignmentResult,type AssignmentResults,type ResultSummary,type SubmittedResultView} from './result-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import {ResultReviewSources} from './ResultReviewSources.tsx';
+import type {CriteriaEditorProps} from './ResultCriteriaEditor.tsx';
 
 type Loaded={key:string;revision:number;value:SessionDetail|null;error:string|null};
-export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void}){
+export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps}){
  const [loaded,setLoaded]=useState<Loaded|null>(null),[revision,setRevision]=useState(0),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const id=assignmentRef?.id,version=assignmentRef?.version,hash=assignmentRef?.contentHash,key=[projectId,id,version,hash].join(':');
  const shown=loaded?.key===key&&loaded.revision===revision?loaded:null,pending=!!assignmentRef&&!shown;
@@ -24,11 +25,11 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
-  {shown?.value?<><SessionDetailContent detail={shown.value}/>{shown.value.confirmed?<SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost}/>:null}</>:null}
+  {shown?.value?<><SessionDetailContent detail={shown.value}/>{shown.value.confirmed?<SessionResults key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria}/>:null}</>:null}
  </section>;
 }
 const errorCode=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'RESULT_RESPONSE_INVALID';
-function SessionResults({client,projectId,confirmed,onAuthenticationLost}:{client:ApiClient;projectId:string;confirmed:ConfirmedAssignmentView;onAuthenticationLost:()=>void}){
+function SessionResults({client,projectId,confirmed,onAuthenticationLost,criteria}:{client:ApiClient;projectId:string;confirmed:ConfirmedAssignmentView;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps}){
  const assignmentRef=confirmed.ref;
  const [page,setPage]=useState<AssignmentResults|null>(null),[error,setError]=useState<string|null>(null),[revision,setRevision]=useState(0),[selected,setSelected]=useState<ResultSummary|null>(null),[attempt,setAttempt]=useState(0),[original,setOriginal]=useState<{key:string;value:SubmittedResultView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const {id,version,contentHash}=assignmentRef,scopeKey=[projectId,id,version,contentHash,revision].join(':'),[pageKey,setPageKey]=useState(''),itemKey=selected?scopeKey+':'+selected.ref.id+':'+selected.ref.contentHash+':'+attempt:null,shown=original?.key===itemKey?original:null,currentPage=pageKey===scopeKey?page:null;
@@ -43,7 +44,7 @@ function SessionResults({client,projectId,confirmed,onAuthenticationLost}:{clien
   {error?<p role="alert">{error} · 결과 조회 미확인. 이전 결과를 현재 자료로 표시하지 않습니다.</p>:!currentPage?<p role="status">정확 임무의 제출 결과 조회 중</p>:<><p>조회 시각: <time dateTime={currentPage.observedAt}>{currentPage.observedAt}</time></p>{currentPage.items.length?<ul>{currentPage.items.map(item=><li key={item.ref.id}><button type="button" aria-pressed={selected?.ref.id===item.ref.id} onClick={()=>{setOriginal(null);setAttempt(v=>v+1);setSelected(item);}}>제출 원문 {item.ref.id}</button><p>{item.submissionState} · 제출자 주장 · 검수 전 · <time dateTime={item.submittedAt}>{item.submittedAt}</time></p></li>)}</ul>:<p>확인된 제출 결과 없음 · 작업 미수행/정상/완료로 추정하지 않습니다.</p>}{currentPage.hasMore?<p>최근 20건만 조회했습니다. 더 오래된 제출 이력은 이 화면에서 아직 미연결입니다.</p>:null}</>}
   {currentPage&&selected&&!shown?<p role="status">선택 제출의 고정 원문 조회 중</p>:null}
   {currentPage&&shown?.error?<p role="alert">{shown.error} · 원문 미확인. 다른 제출로 대체하지 않습니다.</p>:null}
-  {currentPage&&shown?.value?<><ResultContent value={shown.value}/><ResultReviewSources key={itemKey} client={client} projectId={projectId} result={shown.value} assignment={confirmed} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={code=>{setOriginal(null);setSelected(null);setPage(null);setError(code);}}/></>:null}
+  {currentPage&&shown?.value?<><ResultContent value={shown.value}/><ResultReviewSources key={itemKey} client={client} projectId={projectId} result={shown.value} assignment={confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} onAccessUnavailable={code=>{setOriginal(null);setSelected(null);setPage(null);setError(code);}}/></>:null}
  </section>;
 }
 export function ResultContent({value}:{value:SubmittedResultView}){
