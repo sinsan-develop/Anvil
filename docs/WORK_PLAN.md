@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 예산 원장 실제 조회 한정 확인**: exact268cd8ae의 새격리PG15/59SQL→인증API→Web consumer1PASS·정리0. 선택한 정책ref/hash·프로젝트전체 예약합계/읽기5표불변·거절/원5guard불변 확인이며 정식DB/served·실제과금/현재허가/Agent·전체FN10/UI05 완료가 아니다. QA01 조회시각시험 실패와 독립 I1·Main TDD해소는 WORK_STATUS에 보존한다.
+
 - **2026-10-20 FN10/UI05 선택 예산 원장 조회 부분 연결**: 임무 budgetRef의 정확 정책버전/hash와 서버 보관 프로젝트전체 누적/예약/UNKNOWN을 명시 조회한다. source 직접19·신규Web4/type/build·합성browser1 범위이며 독립 C0/I1/M0의 UNKNOWN예약수/실행수 단위오류는 Main 반례TDD로 보정했다. 실제PG는 신규 격리 한정 검증 예정, 정식DB/served·실공급자과금/현재적용·실행허가·Agent는 미확인/false다. 전체 FN10/UI05/Stage 완료로 표시하지 않는다.
 
 - **2026-10-20 FN10 다음 행동 내부 후보 계산**: 고정 graph/결과·typed 판단에서 AUTO/CASE·승인/사람/역할/종료경계·합류/재작업/반복방지를 source 부분 구현했다. 신규13+직접 graph/application14=27PASS·type0이며 독립 C0/I1/M0의 잔존 ACCEPTED 반례는 Main TDD 보정으로 해소했다(재리뷰0). 실제 서버 완료/권한·예산/대기열·Agent/served는 미연결이고 SYNTHETIC_ONLY/실행 플래그 false다. FN10은 내부 부분 구현일 뿐 사용자 기능 완료가 아니며 나머지 완료조건/승인 경계는 유지한다.
