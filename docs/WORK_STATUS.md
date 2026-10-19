@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 검수 이력 실제 PG 한정 확인 / Main 어울(2026-10-20)**: private/WSL exact954c10049e540033604fb6843aec7ef342062e0e·clean, 새 PG e298c43e3e43a412837c433ff3a7a6eeb9052132e55064903ca808b5debd2f70/networkcea66ca3315f9e71ec8ac25d748083ed32949ca7c65e0c4aeca73f5cc297c9f7·고정PG15image594290/15.18·Node24.21·기존61SQL ID/checksum exact에서1PASS4671.624658ms(기능4350.001322),skip0·DONE다. 검수22합성fixture에서 최근20metadata/hasMore/NOT_SELECTED·정확 정렬·옛 최초판정0 원문GET과ref·읽기4표불변, 타사용자/없는원제출/query/회수member거절·원5guard hash불변을 확인했다. 기존 저장 전체음성/COMMIT 검증은 이 mode에서 반복0이다.
+  raw2파일/5디렉터리·새PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG동일fullID/image/StartedAt/FinishedAt/restart0·exited불변이다. direct15PASS1083.1545ms/type0, 실제served/실사용권한·전체이력페이지/사용자인수·FN12/UI05완료는 미확인이다. 다음은 S05에서 보관 검수 목록을 명시조회하고 선택한 과거 판정의 고정원문을 읽는 화면 소비이며 Main이 이어간다.
+
 - **FN12 검수 이력 목록 연결 착수 / Main 어울(2026-10-20)**: 재접속용 원제출별 명시 GET results/:id/reviews를 기존 HUMAN멤버 read tx에 연결했다. 정확 원제출/ref/hash와 각 검수의 기존원문/영수증/감사를 다시 검사한 최근20metadata·hasMore/NOT_SELECTED만 반환하며 최신 자동적용/쓰기0이다. provider1RED639.179ms→1PASS365.6098ms, route404RED5063.9807ms→1PASS708.0448ms/type0이며 실제PG/화면은 아직 미검증이다.
   새 Main소유 /home/daon/deploy/anvil-v3-fn12-result-review-list-qa-01(exactGit·node_modules·.av3-data/fn12-raw), PG anvil-v3-fn12-result-review-list-pg-01/internal network anvil-v3-fn12-result-review-list-net-01/DB anvil_v3_fn12_result_review_list_qa_01을 사전등록한다. owner AV3_FN12_RESULT_REVIEW_LIST_QA/instance result-review-list-01/run result-review-list-20261020, uid1000daon·고정PG15image594290/Node24.21hash7fde7b8a·기존61SQLchecksum exact·새schema0, tmpfs512MiB/내부망·외부port/영구volume0·합성주체/정책·자료만이다. 10분창/Node90초·외부110초, 생성전부재/realpath/link/owner/daemon/image/정식서비스 영향0 확인, 끝/실패 후 exactID/label/mount/port/Gitclean/owner/link/process 검사→등록자원만 회수→독립잔여0이다. 검수22이력 fixture에서20metadata/hasMore/미선택·옛판정원문·읽기불변/거절만 확인하며 기존합격음성/COMMIT 검증은 반복하지 않는다. 정식DB/서비스·키/실제정책·Agent/원5guard/pending 변경0이다.
 
