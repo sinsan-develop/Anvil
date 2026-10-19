@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 후속 SEND HUMAN 연결 checkpoint / Main 어울(2026-10-19)**: 선택적합성instructions서비스와기존targetnull초기queue를분리한신규2RED1148.8052ms→14PASS1FAIL1365.0397ms의실패는Fastify lazy ready전REAL port변경으로등록단계가차단된시험경계였다. ready뒤runtime음성으로수정하여15PASS1382.4119ms/type0이다. Main이새실제route→분기→후속core→인증/정책/budget/receipt·BUSY재조회까지결합한시험을추가해core7PASS984.8652ms/type0을확인했으나DB는합성이어서실HUMAN/PG/served증거가아니다.
+  원신규한정3경로독립C0/I1/M0는snapshot만false를확인하고data의executionAuthorized/dispatchPerformed true를놓친표시오류다. Main신규음성은HTTP[200,200]인1RED940.5467ms,두층필드를각각정확false로검사하도록보완해직접/인접17PASS1555.6747ms/type0·diff0이다. 기존일반4서비스의응답계약은바꾸지않고신규후속서비스fixture에실제core와같은data false필드를명시했다. 원I1을재검토C0로소급하지않는다.
+  기존core에는합성transport1줄과기존HUMAN분기/시험·core결합시험/현황소유5경로만변경했다. 기본앱/main시작·실환경서비스자동주입0,없는/비합성port·잘못된결과에서초기queue fallback0·실Agent/credential/새외부자원/정식DB·키·서비스변경0이다. 다음미완료는SEND저장기록판독/명령page소비·PGadapter/forwardguard이며새승인/PMO배정을기다리지않는다. 경로추정읽기실패1건은rg실목록으로정정했고파일/권한변경없다.
+
+- **C3 후속 SEND HUMAN 분기 연결 착수 / Main 어울(2026-10-19)**: 6d25ce2b exact private/clean 뒤 기존queue명령에선택적합성instructions서비스를연결한다. target=null의기존초기queue와선택서비스없는기존동작은유지하고,명시서비스가있고기존execution target을선택한경우만후속서비스로보낸다. 원HUMAN cookie/CSRF/Origin/project·idempotency/중복JSON/Bearer거절과각서비스의인증tx를유지한다. 기본앱/main시작/환경자동활성0·실DB/credential/Agent/새외부자원0이며반환을실제SEND성공으로표시하지않는다.
+
 - **C3 후속 SEND 원영수증 재조회 보완 / Main 어울(2026-10-19)**: 원독립신규2경로C0/I1/M0는IDLE검사를projectReplay앞에서강제해저장후BUSY로바뀐같은명령의원영수증을읽지못하는오류다. Main의저장→BUSY→동일명령재조회1RED337.774ms로확인했고현재인증/제어/grant·정책/fact검사는유지한채IDLE을새SEND/예약직전에만요구하도록보완해직접6PASS396.5976ms/type0·diff0이다. 동일명령은원결과/예약1건을보존하고새명령만거절하며자동재전송/새writer가없다. 원I1을새독립C0로표시하지않고실자료·이해·소유권진위/PG COMMIT·동시성/HTTP/credential·실SEND/Agent는미검증으로남긴다. 다음은이후속내부서비스를기존명시HUMAN queue분기에연결하고저장판독/PG후속을진행한다.
 
 - **C3 후속 SEND 내부 후보·검토 중 / Main 어울(2026-10-19)**: 신규class부재4RED345.24ms→2PASS2FAIL335.488ms의정상실패는runtimePolicyInput에scope.projectId까지spread한구현오류였다. 기존정확6필드를명시해4PASS364.8184ms/type0,다른command/assignment·미확인비용/attempts음성추가뒤신규5+기존START14/STOP6=25PASS475.7884ms/type0·diff0이다. 기존AccessRepository의HUMAN/CSRF·제어·정책·영수증과ProjectExecutionBudget의실제예약코드를소비하되DB/현재제공자/append는합성이다. 따라서메모리rollback/순서증거만이며실제PG COMMIT/trigger·영속outbox검증으로표시하지않는다.

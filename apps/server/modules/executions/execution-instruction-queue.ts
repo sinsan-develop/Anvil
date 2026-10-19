@@ -43,6 +43,7 @@ function readCurrent(raw:unknown,scope:Scope,request:ProjectCommand,actor:Authen
 /** 기존 실행의 후속 지시 저장 소비자다. 새 grant/writer·credential·HTTP/OS/Agent를 만들지 않는다.
  * 현재 제공자/append는 필수 합성 port이며 실제 PG 구현/원자성은 별도 검증 대상이다. */
 export class ProjectExecutionInstructionQueue {
+ readonly transport='SYNTHETIC_ONLY' as const;
  readonly access:AccessRepository;readonly store:SyntheticInstructionQueueStore;readonly budgets:ProjectExecutionBudget;readonly policies:Pick<ProjectLimitPolicies,'resolveCurrent'>;
  constructor(access:AccessRepository,store:SyntheticInstructionQueueStore,budgets=new ProjectExecutionBudget(),policies:Pick<ProjectLimitPolicies,'resolveCurrent'>=new ProjectLimitPolicies()) {this.access=access;this.store=store;this.budgets=budgets;this.policies=policies;this.#port();}
  #port(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.current!=='function'||typeof this.store.claim!=='function'||typeof this.store.append!=='function')fail('SYNTHETIC_INSTRUCTION_QUEUE_STORE_REQUIRED');}
