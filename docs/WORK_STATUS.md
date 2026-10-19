@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 결과 목록 실제PG 연결 QA 사전등록 / Main 어울(2026-10-19)**: 44e7924a local/private exact·clean, Main이 새 목록의 실제PG/인증HTTP→Web소비를 선택했다. 기존 FN12 양성·재해시음성은 소진이므로 재실행하지 않는다. 기존 정상 임무/원실행 graph는 fixture 준비에만 재사용하고 새 list mode에서 결과21건→최근20/hasMore·선택원문hash/미실행, 타사용자/없는임무버전/fallback거절·조회ledger쓰기0·원5guard불변만 확인한다. 실제Agent/OS현재성·served TLS/브라우저·정식DB/인수는 아니다.
+  신규 literal: Main 소유 /home/daon/deploy/anvil-v3-fn12-results-list-qa-01·그 하위 .av3-data/fn12-raw, anvil-v3-fn12-results-list-pg-01/internal network anvil-v3-fn12-results-list-net-01·DB anvil_v3_fn12_results_list_qa_01. 고정PG15 image594290/512MiB tmpfs·공개port0/영구volume0/기존network연결0·새합성역할만 사용한다. exact private Git source/Node24.21 SHA7fde7b8a/npm11.19.0와59 exactSQL만 새일회성DB에 적용하고정식46/원5guard/pending·서비스/키는불변이다. Node시험90초/runner110초·10분실행창, 생성전부재/realpath/link/daon·Docker daemon/image/실행중다른QA0확인, 완료/실패후exact ID/label/image/mount/port·경로/소유/Gitclean/내부링크를확인해등록신규자원만제거하고독립잔여0을기록한다. 새mode는수행전type0이며신규test실제결과는아직미확인이다.
+
+
 - **FN12→UI05 조회 후보 검증 / Main 어울(2026-10-19)**: 결과 목록→원문/변경·명령·시험·미실행/위험·복구 표시 source를 연결했다. server 직접10 PASS1047.1297ms, Web 직접/인접9 PASS658.5272ms/type0·최종build0(184module/323ms)이다. 첫build는sandbox .vite-temp EPERM1, CIM조회도sandbox 접근거절1이었으며 동일 명령의허용된실행으로확인했고ACL/설정변경0이다. build500KiB 경고/Playwright NO_COLOR 경고는기록하되관련없는최적화0이다.
   독립 원검토C0/I1/M1: A→지연B→A에서이전A본문재노출, 일부음성의앞선ref불일치단락이다. Main은실제browser1 FAIL9.3초/expected0 actual1로I1을재현한후선택시원문즉시제거+조회세대를key에결박했다. 재해시음성의item/manifestRef도함께보정해목표false flag/필수형태검사까지도달시켰다. 해당browser1 PASS3.1초, write/off-origin/JS오류0,401API음성과403목록/최종A조회이전원문0이다. 독립C0로소급하지않으며실제PG목록/served HTTPS/Agent/검수·보완은미검증이다.
   등록신규결과root는링크0·파일4 SHA256/Edge해당프로세스0확인후제거했다. 실패png/error-context·성공결과는실행기록/hash와Git시험으로재현가능하며기존browser폴더5항목은보존했다. 추정project result/assignment파일2회부재는실제modules/results·assignments로바로잡았고파일/ACL변경0이다. 다음은새목록의실제PG·인증HTTP→Web소비를새격리fixture로연결하며완료된기존SQL/재해시검사/옛회귀는반복하지않는다.
