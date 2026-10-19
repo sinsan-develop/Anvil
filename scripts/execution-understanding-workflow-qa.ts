@@ -12,15 +12,24 @@ import {ProjectInitialExecutionQueue,type SyntheticQueueResolver} from '../apps/
 import {ProjectUnderstandingReviews,understandingCodes} from '../apps/server/modules/executions/execution-understanding.ts';
 import {SyntheticPgUnderstandingStore} from '../apps/server/modules/executions/execution-understanding-store.ts';
 
-assert.equal(process.argv[2],'VERIFY');assert.equal(process.getuid?.(),1000);
-assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-02');
-assert.equal(process.env.ANVIL_C3_QA_DATABASE,'anvil_v3_c3_understanding_qa_02');
+const diagnostic=process.argv[2]==='DIAGNOSE_03';assert(['VERIFY','DIAGNOSE_03'].includes(process.argv[2]!));assert.equal(process.getuid?.(),1000);
+const suffix=diagnostic?'03':'02';assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-'+suffix);
+assert.equal(process.env.ANVIL_C3_QA_DATABASE,'anvil_v3_c3_understanding_qa_'+suffix);
 const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
-const config={host,port:5432,database:'anvil_v3_c3_understanding_qa_02',connectionTimeoutMillis:3000,statement_timeout:10000};
+const config={host,port:5432,database:'anvil_v3_c3_understanding_qa_'+suffix,connectionTimeoutMillis:3000,statement_timeout:10000};
 const admin=new pg.Pool({...config,user:'postgres',max:1}),pool=new pg.Pool({...config,user:'anvil_v3_app',max:4});
 const hash=(v:unknown)=>contentHash(canonicalJson(v));let phase='EMPTY';
 try{
  assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.users')).rows[0].n,0);
+ if(diagnostic){
+  phase='DIAGNOSTIC_ONLY';let definition=(await admin.query("SELECT pg_get_functiondef('anvil.guard_understanding_review()'::regprocedure) AS definition")).rows[0].definition as string;
+  const expression=/IF NOT anvil\.execution_json_shape\(s,[\s\S]*?THEN RAISE EXCEPTION 'UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;/,match=definition.match(expression);assert(match);
+  const raw=match[0].slice(3).split("THEN RAISE EXCEPTION 'UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED'")[0]!,terms:string[]=[];let depth=0,quoted=false,start=0;
+  for(let i=0;i<raw.length;i++){const c=raw[i];if(c==="'"){if(quoted&&raw[i+1]==="'"){i++;continue;}quoted=!quoted;continue;}if(quoted)continue;if(c==='(')depth++;if(c===')')depth--;if(depth===0&&raw.slice(i,i+4)===' OR '){terms.push(raw.slice(start,i));start=i+4;i+=3;}}
+  terms.push(raw.slice(start));assert.equal(depth,0);assert.equal(quoted,false);assert(terms.length>30&&terms.length<100);
+  definition=definition.replace(expression,terms.map((term,i)=>"IF "+term+" THEN RAISE EXCEPTION 'UNDERSTANDING_DIAGNOSTIC_CHECK_"+(i+1)+"' USING ERRCODE='42501';END IF;").join('\n')).replace("EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED' USING ERRCODE='42501';","EXCEPTION WHEN OTHERS THEN RAISE;");
+  await admin.query(definition);console.log('C3_UNDERSTANDING_QA_DIAGNOSTIC_ONLY_NO_ACCEPTANCE');
+ }
  const identity=(await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];assert.equal(identity.db,config.database);assert.equal(identity.role,'anvil_v3_app');assert.equal(identity.rolsuper,false);assert.equal(identity.rolbypassrls,false);
  const user=randomUUID(),password=randomBytes(24).toString('base64url');
  await admin.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'C3 이해 검토 합성 사용자','ACTIVE')",[user,'qa-c3-'+user]);
@@ -49,7 +58,7 @@ try{
  const store=new SyntheticPgUnderstandingStore(facts),service=new ProjectUnderstandingReviews(access,store);
  const review=()=>command('reviewUnderstanding',{bundleRef:ref,responseRef,subjectBindingRef,criteriaVersion:1,items:current.criteria.map((i:any)=>({...i,judgement:'MATCH',reason:'합성 원문 대조'})),reason:'HUMAN 별도 판단'},1,eid);
  const count=async()=>Number((await admin.query('SELECT count(*)::int n FROM anvil.understanding_reviews WHERE project_id=$1',[pid])).rows[0].n);
- phase='SAVE_REPLAY';const request=review(),accepted:any=await service.command(login.token,login.csrfToken,request);assert.equal(accepted.data.snapshot.outcome,'ACCEPTED');assert.equal(accepted.data.snapshot.executionAuthorized,false);assert.deepEqual(await service.command(login.token,login.csrfToken,request),accepted);assert.equal(await count(),1);assert.equal((await service.list(login.token,scope)).items.length,1);
+ phase='SAVE_REPLAY';const request=review(),accepted:any=await service.command(login.token,login.csrfToken,request);if(diagnostic)throw Error('DIAGNOSTIC_ONLY_NOT_ACCEPTANCE');assert.equal(accepted.data.snapshot.outcome,'ACCEPTED');assert.equal(accepted.data.snapshot.executionAuthorized,false);assert.deepEqual(await service.command(login.token,login.csrfToken,request),accepted);assert.equal(await count(),1);assert.equal((await service.list(login.token,scope)).items.length,1);
  phase='LATEST_NEGATIVE';const negative=review();negative.payload.items[0].judgement='INSUFFICIENT';await service.command(login.token,login.csrfToken,negative);await assert.rejects(access.authenticated(login.token,null,(db,a)=>service.requireAccepted(db,a,scope,accepted.data.ref)));
  phase='CONCURRENT';await Promise.all([service.command(login.token,login.csrfToken,review()),service.command(login.token,login.csrfToken,review())]);assert.equal(await count(),4);const history=await service.list(login.token,scope);assert.deepEqual(history.items.map(v=>v.ref.version),[1,2,3,4]);
  phase='ROLLBACK';for(const after of [false,true]){const bound:any={connect:async()=>{const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,p:any[])=>{if(sql.startsWith('INSERT INTO anvil.understanding_reviews')){if(after)await db.query(sql,p);throw Error('SYNTHETIC_FAULT');}return db.query(sql,p);}};}};const faultAccess=new AccessRepository(bound,{installationId:randomUUID(),key:randomBytes(32)}),faultService=new ProjectUnderstandingReviews(faultAccess,store);const r=review();await assert.rejects(faultService.command(login.token,login.csrfToken,r));assert.equal(await count(),4);assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.commands WHERE command_id=$1',[r.commandId])).rows[0].n,0);}

@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 이해 검토 actual QA02 상태 / Main 어울(2026-10-19)**: f827d30c exact 신규 PG5aeb2125710e5a45ebaaca6e1ee5e5120fb1a039dd885b1a8408571b90e9d90e/instance034c008f-e98f-48d9-80fe-9dd5123387a7에서 C3_SCHEMA_54_COMMITTED·빈 queue model을 실제 확인했다. 첫 SAVE_REPLAY에서42501 UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED exit1이며 검토 저장/재조회·동시·rollback·DML 음성은 아직 PASS가 아니다. 정확정리failure0·독립 C3_UNDERSTANDING_QA_02_INDEPENDENT_RESIDUAL_ZERO·기존PG불변이다. 첫42601은보정됐지만 뒤42501은별도원인1회이며 묶어성공으로보고하지않는다.
+
+  새 진단용 /home/daon/deploy/anvil-v3-c3-understanding-qa-03·PG anvil-v3-c3-understanding-pg-03·network anvil-v3-c3-understanding-net-03·DB anvil_v3_c3_understanding_qa_03, owner AV3_C3_UNDERSTANDING_DIAGNOSTIC_QA/새UUID·20분을 등록한다. 동일PG15/daemon/내부망/hostport0/bind0/tmpfs/부재·realpath·owner 확인과 exact정리/독립잔류0 계약이다. 이 새 빈DB에서만 guard의 동일 OR조건을 번호별 IF 진단으로 분리하고 예외마스킹을 제거해 원 SQLSTATE/조건번호만 관측한다. 제품SQL/정식DB guard는 변경하지 않으며 원문/Secret/row값 출력0, 진단 경로는 성공해도 DIAGNOSTIC_ONLY_NOT_ACCEPTANCE로 끝낸다. 실제 기능PASS 목적이 아닌42501원인확인이고 구QA는 재생성하지 않는다. 정식원문/Agent/정책·Secret/서비스0, 영향없는 나머지 승인작업은 계속한다.
+
 - **C3 actual SQL 원인 확인·보정 / Main 어울(2026-10-19)**: 새 DDL 전용 진단 PG77a5f6f6f53ebcb8b1925bfe52b049737d2b870e2ef30b97afa5f30f21ace0d1/instance1d5df3c5-506a-43d4-ad99-c88293b558dc의 같은 실패 SHA7dfd51f3에서 `syntax error at end of input / LINE30 CASE ... THEN`을 확인했다. PLpgSQL IF 조건의 CASE 표현식 괄호 누락을 정확히 좁혀 Main이 CASE 전체를 괄호로 감쌌다. 첫 실패와 진단 실패를 각각 보존하며 같은원인2회이고 기능QA는 아직0이다. 진단 자원정리failure0·독립 C3_UNDERSTANDING_DIAGNOSTIC_QA_INDEPENDENT_RESIDUAL_ZERO이며 npm/사용자seed/Agent0이다. SQL 파일 보정 직접7PASS361.9336ms는 실제SQL PASS가 아니다.
 
   다음 새 빈 /home/daon/deploy/anvil-v3-c3-understanding-qa-02·PG anvil-v3-c3-understanding-pg-02·network anvil-v3-c3-understanding-net-02·DB anvil_v3_c3_understanding_qa_02, owner AV3_C3_UNDERSTANDING_QA/새UUID·20분을 생성 전에 등록한다. 새 보정 Git exact 게시 SHA·고정PG15 image/daemon·internal/hostport0/bind0/tmpfs256MiB·uid1000·부재/realpath/nonlink/currentowner·보호PG 불변을 확인하고 54DDL→정확 합성검토/동시/rollback/역방향·reason4DML음성·일반DELETE/검토DELETE 회귀만 수행한다. 이전QA01/진단01은 소진 자원으로 재생성하지 않는다. 성공/실패 exact정리·독립잔류0 및 미실행 구분은 동일하다.
