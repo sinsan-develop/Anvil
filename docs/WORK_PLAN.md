@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 완료 주장·미확인 원인 표시**: 기존 reported-coverage에서 COMPLETED와 부족/미실행/불일치·미검증 조건을 구분해 UI05에 표시한다. pure/직접7·합성browser1/type/build·정적C0/I0/M0 범위이며 실제 원인/명령/commit·Provider/시험출처·served/인수는 미확인이다. canonical Issue/검수저장·완료/실패집계·재실행0, 새서버/API/DB/권한0·기존완료QA반복0이다. 전체FN12/UI05/Stage와 44업무 상태·검수조건은 바꾸지 않는다.
+
+
 - **2026-10-20 시험 근거↔보관파일 화면 연결**: FN12/UI05 고정조건/test/환경·기준·선언hash/ref를 대조한 뒤 기존 text GET를 소비한다. 불일치·미선언은 파일요청0, bytes일치는 수행자PASS/sourceKind·실제시험/명령/출처와 분리한다. 신규3/직접인접10·합성browser1/type/build·정적C0/I0/M0 범위이고 새API/서버/DB변경0이므로 기존actualQA전체는 반복하지 않는다. 실제served·명령/exit/commit/Agent·검수합격·전체FN12/UI05/Stage미완료와 앞M1은 유지한다.
 
 

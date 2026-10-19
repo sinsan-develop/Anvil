@@ -2,6 +2,17 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **완료 주장 점검 표시 한정 채택 / Main 어울(2026-10-20)**: 신규UI missingregionRED8.876초→COMPLETION_GAP1PASS2.6초, 직접인접7PASS520.4859ms다. 이후상태mapping undefined 타입오류1은 미정 상태를 fail로 거절하도록 보강해 pure3PASS300.7166ms/type0·freshbuild0(199modules), 경고보존이다. 등록browser결과 exact제거/별도부재확인이다. 기존Reviewer 새단위1회 C0/I0/M0는 표시 전용범위로 채택하며 원coverage/서버·파일은 재검토하지 않았다. actual중단원인/출처·시험·환경/Agent·served/인수는 판단유보이며 원인추정/검수합격으로 승격하지 않는다.
+  새API/서버Provider·DB/정책/Secret/서비스·Agent/비용0·기존완료QA반복0, canonical Issue·검수/완료·실패집계·재실행·writer회수0이다. 선택coverage의 COMPLETED/미확인과 미보고/미실행/불일치/출처미검증을 분리했고 기준전환/접근거절에 앞점검숨김을 확인했다. 전체FN12/UI05/Stage부분구현·원실패/앞M1은 유지한다.
+
+
+- **완료 주장 점검 표시 TDD·로컬 QA 등록 / Main 어울(2026-10-20)**: 신규 모듈부재RED298.028ms→pure3PASS302.6589ms다. 완료 주장에서도 미보고·미실행·불일치·출처/실제시험 미검증을 보존하고 실패/차단/미완료/취소 선언의 원인을 추정하지 않는다. TS2건은 시험의 고정 첫항목 nonnull 증명 표기만 보정해 type0이고 제품검사완화0이다. canonical Issue·검수·실패집계/재실행은 생성하지 않는다.
+  Main소유 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01 결과/해당전용Edge만 생성전부재·parent realpath/link 재확인 후 신규 COMPLETION_GAP 한 경로에 사용한다. 최대30초/종료·실패exact정리→별도잔여0·사용자browser/DB/서비스/Secret·Agent0이다. 새서버/API·schema/권한0, 앞완료QA반복0이며 실제served/원인·출처 판정은 미검증이다.
+
+
+- **FN12/UI05 완료 주장·미확인 원인 표시 착수 / Main 어울(2026-10-20)**: abc4f593 local/private exact·clean에서 다음 미완료를 이어간다. 기존 인증된 reported-coverage 소비 결과로 COMPLETED 주장과 미보고/미실행/불일치/출처미검증 조건을 구분해 S05에 표시한다. 파일bytes일치가 실제시험/합격이 아님을 유지하며 현재 중단원인은 관측 미조회/미확인으로 남긴다. canonical Issue/실패집계·검수저장·자동재실행/새writer를 만들지 않는 Web표시이며 새API/서버Provider·schema/DB/정책·서비스/Secret·Agent0이다. 기존완료QA반복 없이 pure표시와 직접영향browser를 TDD하고 아직 기능미연결이다.
+
+
 - **시험 근거 파일 소비 한정 채택 / Main 어울(2026-10-20)**: 기존Reviewer 새단위1회 C0/I0/M0를 정적범위로 채택한다. 선언↔파일 exact결박·불일치요청0·선택/재조회 세대·401/403/404회수·bytes/수행자PASS·출처미검증 구분을 확인했으며 기존reader/권한·민감검사/앞한도M1은 재판정하지 않았다. 실제파일/PG·현재환경/명령·Agent출처/served/인수는 판단유보이고 새로운PASS로 올리지 않는다. 필수보완finding0, 같은단위재리뷰/앞완료QA재실행0이다.
 
 
