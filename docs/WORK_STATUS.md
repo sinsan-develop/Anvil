@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 책임 도구 후보 원문 연결 후보 / Main 어울(2026-10-19)**: a5650adb local/private exact·clean 뒤 예약의 exact connectionRef별 기존 readCandidate를 재사용해 이름·제품/버전·유형·조회상기한을 표시한다. 후보는 여전히 사용자 등록/능력·실연결·가동 미확인이다. 중복 ref는 한 번 조회하고 독립 최대2건만 병렬 조회한다. 항목별403/무결성·기타실패는 해당 도구 원문 미확인으로 남기되 다른 후보/옛자료로 대체하지 않으며401은 상세 반환 전체를 거절한다. 취소 후 반환/후속 시작을 차단한다. 새 API/DB·Agent/키/서비스·외부자원0이다.
+  처음 누락은 TypeError1 FAIL392.2511ms여서 명시 tools 배열 assertion으로 검사를 강화한1 RED383.2069ms 후 직접5 PASS404.9855ms, 이름/미가동·거절 시 후보 내용 비표시 SSR 추가 뒤5 PASS422.9259ms/type0/build183 0이다. 원내용 검증을 약화하지 않았다. 큰 chunk 경고는 유지하고 최적화는 추가하지 않았다. source/시험3경로 한정 독립 정적 C0/I0/M0이며 검토자는 시험 재실행0이다. 두 후보 병렬·중복 제거·후보 조회 중 취소의 실제 DOM, 실제 API·DB권한·현재 후보진위·브라우저 추가실행/Agent는 미검증이다. 앞 완료QA 반복0, 전체 UI05/FN06 완료가 아니다.
+
 - **UI11 형제 key 보정 한정 확인 / Main 어울(2026-10-19)**: 새03에서 화면 이탈 시 앞선 heading0·복귀 화면1개·원입력·원소스명령 전체2건 동일/버전1·unknown/error/off-origin0의 browser1 PASS2.2초/type0/build183 0이다. App key 한 줄/직접 시험2경로 독립 정적 C0/I0/M0이며 재실행0이다. 원01 source결함 RED와02 fixture누락 FAIL은 각각 보존하고 소급 PASS0이다. 해당 성공03의 passed JSON1개·빈 폴더만 exact realpath/link0/내용 대조 뒤 비재귀 제거해 부재, 해당 runner literal의 node 잔류조회0을 확인했다. 원 실패01/02는 비활성 진단으로 보존한다. 실제 API/DB·원문권한/Agent 및 주체 교체 중 지연 응답·전체 UI11은 미검증이다. 완료 QA 반복/서비스·DB·키/권한 변경0. 다음 승인계획 미구현 선정은 Main이 이어간다.
 
 - **UI11 key 보정·후속 시험 등록 / Main 어울(2026-10-19)**: 새01의1 RED는 /session 이동 뒤 도구 화면 heading1개가 남는 실제 DOM 잔류다. SourceRootsPanel key에 source-roots-panel 접두사 한 줄만 추가했다. 새02는 전 화면 제거/복귀1개·입력과 같은 원명령2건/버전1 기대값까지 확인했으나 기존 source-read-grants?limit=20 GET의 빈 목록 fixture가 없어 unknown0에서1 FAIL이었다. 실제 코드의 SOURCE_READ_GRANTS 계약을 대조해 정확 해당 GET만 추가했고 합격기준·생산코드 범위 완화0이다. 원01/02는 실패로 보존한다.

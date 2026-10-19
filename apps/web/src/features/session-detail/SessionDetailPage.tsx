@@ -25,6 +25,12 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
  </section>;
 }
 function Reference({label,value}:{label:string;value:PlanRef|null}){return <div><dt>{label}</dt><dd>{value?<>{value.id} · v{value.version}<br/>{value.contentHash}</>:'미연결'}</dd></div>;}
+function Tool({detail,reference}:{detail:SessionDetail;reference:PlanRef}){
+ const tool=detail.tools.find(t=>t.connectionRef.id===reference.id&&t.connectionRef.version===reference.version&&t.connectionRef.contentHash===reference.contentHash);
+ if(!tool?.value)return <p>도구 후보 원문 미확인{tool?.error?' · '+tool.error:''} · 다른 후보로 대체하지 않습니다.</p>;
+ const c=tool.value.candidate.input.candidate;
+ return <div><p>{c.label} · 사용자 등록 후보</p><p>제품: {typeof c.toolProduct==='string'&&c.toolProduct?c.toolProduct:'미기재'} · 버전: {typeof c.toolVersion==='string'&&c.toolVersion?c.toolVersion:'미기재'} · 유형: {typeof c.adapterKind==='string'&&c.adapterKind?c.adapterKind:'미기재'}</p><p>{tool.value.expired?'조회상 기한 경과':'조회상 기한 이내'} · 능력·실제 연결·가동 미확인</p></div>;
+}
 export function SessionDetailContent({detail}:{detail:SessionDetail}){
  const d=detail.draft.snapshot.definition,s=detail.state;
  return <>
@@ -38,7 +44,7 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
   </section>
   <section className="status-card" aria-label="책임 도구와 세션"><h3>책임 역할·예약 세션</h3>
    {s?.roles.length?<ul>{s.roles.map(r=><li key={r.ref.id}>{r.snapshot.kind==='COORDINATOR'?'총괄':'단계책임자'} · {r.ref.id} · v{r.ref.version}</li>)}</ul>:<p>확인된 책임 역할 없음</p>}
-   {s?.bindings.length?<ul>{s.bindings.map(b=><li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label="도구 연결 후보" value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><p>세대 {b.snapshot.generation} · 후보 연결이며 실제 가동 상태가 아닙니다.</p></li>)}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
+   {s?.bindings.length?<ul>{s.bindings.map(b=><li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label="도구 연결 후보" value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><Tool detail={detail} reference={b.snapshot.connectionRef}/><p>세대 {b.snapshot.generation} · 후보 연결이며 실제 가동 상태가 아닙니다.</p></li>)}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
    <p>현재 권한·OS 소유·외부 도구 상태 미재검사</p>
   </section>
   <section className="status-card" aria-label="실행 준비 이력"><h3>저장된 실행 준비 이력</h3>
