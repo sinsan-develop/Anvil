@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08/FN13 새SEND 중지fence 실제 확인 / Main 어울(2026-10-20)**:4221052b exact새빈Git/clean·PG15.18/image594290e9/기존59SQLchecksum에서같은인증tx/project잠금의중지없음통과→기존합성STOP COMMIT→새후속서비스412 EXECUTION_STOP_REQUESTED·claim/append0·예약/명령/영수증/outbox불변·비밀없는DENIED감사1을확인했다. 실제1PASS2030.312676ms(exit0), 후속원문읽기/7표불변·query400/외부404/회수404·기존5guardhash불변이다. 합성current의OWNED선언은OS관측이아니며 실Agent/실중지/쓰기회수/재개·정식서비스PASS로승격하지않는다.
+  PGf9f6a1e5/network30c292e1·등록경로ID/label/image/mount[]/port{}·owner/link/process확인후exact회수·독립3자원잔여0, 합성원문2파일/5dir finally정리/closeFailures0/rootCleanupFailedfalse다. 정식PGexited/started/finished/restart0불변·거절0029/미게시후보5파일보존이다. 남은중지경계는이미queued된명령의새permit/자료소비·stage/project범위·실전달/회수이며다음은기존permit/current읽기를대조한다.
+
 - **FN08/FN13 중지fence TDD·격리QA 등록 / Main 어울(2026-10-20)**: 새중지2RED/인접2PASS1419.2442ms(거절누락)→새2+직접인접2=4PASS912.2009ms/type0이다. scopedstatic1회C0/I0/M0·동일재리뷰0, 실제PG/동시잠금·permit/실전달/프로젝트전체는미검증이다. 예산/예약·명령전exactSTOP존재를확인하고동일명령replay는먼저원결과반환한다. 조회오류/누락/문자열false는503·중지있음412, 시간만으로중지의도를해제하지않는다.
   신규QA literal /home/daon/deploy/anvil-v3-fn13-stop-history-qa-02 / anvil-v3-fn13-stop-history-pg-02 / anvil-v3-fn13-stop-history-net-02 / DB anvil_v3_fn13_stop_history_qa_02; owner AV3_FN13_STOP_FENCE_QA·instance stop-history-02·run stop-fence-20261020-02·uid1000daon이다. 새빈Git exact게시SHA·pinnedPG15 image594290e9/Node24.21hash7fde7b8a·기존59SQL만·tmpfs512MiB/internalnetwork/hostport·volume0·수명10분/Node90·외부110초다. 생성전부재/realpath/link/owner/image/daemon재확인후기존합성HUMAN/고정START/STOP COMMIT에서같은인증tx/잠금의없음허용→새SEND 412·claim/예약/명령/outbox0·비밀없는DENIED감사1만확인한다. 실제OS/Agent·실중지/회수·새schema/정식DB/서비스/키·실정책변경0이다. 종료뒤등록ID/label/image/mount/port·경로owner/link/process확인후exact정리·독립잔여0, 거절0029/후보5미게시보존이다.
 
