@@ -18,7 +18,7 @@ import {SyntheticPgObservationStore} from '../apps/server/modules/executions/exe
 import {SyntheticExecutionObservations} from '../apps/server/modules/executions/execution-observations.ts';
 import {SyntheticAuthenticatedObservations} from '../apps/server/modules/executions/execution-authenticated-observations.ts';
 
-const mode=process.argv[2];assert(['RED','GREEN','VERIFIED','SIGNED'].includes(mode!));
+const mode=process.argv[2];assert(['RED','GREEN','VERIFIED','SIGNED','SIGNED_VERIFIED'].includes(mode!));
 const label=mode!.toLowerCase(),database='anvil_v3_c3_observations_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-observations-'+label.replaceAll('_','-')+'-qa-01');assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,database);const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
@@ -62,11 +62,11 @@ try{
  const event=(sequence:number)=>({projectId:'',executionId:'',executionGeneration:1,sequence,eventId:randomUUID(),type:'UNKNOWN',commandId:randomUUID(),envelopeHash:'b'.repeat(64),localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date().toISOString(),reasonCode:'PROVIDER_RESPONSE_LOST'});
  const prepare=async()=>{const f=await setup();await f.issue(f.request());const row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0];assert(row?.envelope);const makeEvent=(n:number)=>({...event(n),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash});return{...f,makeEvent,observations:new SyntheticExecutionObservations(new SyntheticPgObservationStore(pool,f.keys))};};
  const batch=(events:any[])=>({events,batchHash:contentHash(canonicalJson(events))});
- if(mode==='SIGNED'){
-  const signedCounts=async(pid:string)=>{const n:number[]=[];for(const table of ['execution_challenges','execution_receipts','execution_observations','execution_acknowledgements'])n.push((await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n);return n;};
+ if(mode!.startsWith('SIGNED')){
+  const signedCounts=async(pid:string)=>{const n:number[]=[];for(const table of ['execution_challenges','execution_receipts','execution_observations','execution_acknowledgements','execution_observation_results'])n.push((await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n);return n;};
   const service=(source:any,keys:any)=>{const store=new SyntheticPgObservationStore(source,keys);return new SyntheticAuthenticatedObservations({transport:'SYNTHETIC_ONLY',transaction:(s,fn)=>store.withChallenges(s,fn)});};
-  const signed=async(kind='NORMAL')=>{
-   const f=await setup(),row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0],e={...event(1),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash};
+  const signed=async(kind='NORMAL',prior?:Awaited<ReturnType<typeof setup>>,sequence=1)=>{
+   const f=prior??await setup(),row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0],e={...event(sequence),projectId:f.pid,executionId:f.scope.executionId,commandId:row.envelope.commandId,envelopeHash:row.envelope.envelopeHash};
    const input=batch([e]),raw=canonicalJson(kind==='INVALID_BATCH'?{...input,batchHash:'f'.repeat(64)}:input),base='/api/v1/connectors/'+f.scope.connectorId+'/executions/'+f.scope.executionId;
    const path=base+(kind==='WRONG_ROUTE'?'/heartbeat':'/observations'),target=executionTarget('POST',path,[],raw),p={...f.request(),target:{method:'POST',path,queryHash:target.queryHash,bodyHash:target.bodyHash}},issued=await f.issue(p);
    const proof={requestId:p.requestId,...p.target,grantRef:f.scope.grantRef,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');return{...f,raw,proof,signature,issued};
@@ -75,23 +75,31 @@ try{
   const tracked:any={connect:async()=>{connects++;const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,args?:any[])=>{if(sql==='BEGIN')begins++;if(sql==='COMMIT')commits++;return db.query(sql,args);}};}};
   const ingest=(s:SyntheticAuthenticatedObservations,x:any)=>s.ingest(x.scope,x.issued.ref,x.proof,x.signature,x.raw),s=service(tracked,f.keys);
   const results=await Promise.all([ingest(s,f),ingest(s,f)]);assert.deepEqual(results[0],results[1]);assert.deepEqual(await ingest(s,f),results[0]);assert.deepEqual([connects,begins,commits],[3,3,3]);
-  assert.deepEqual(await signedCounts(f.pid),[2,1,1,1]);assert.equal(results[0].ack.snapshot.highestContiguous,1);assert.equal(results[0].executionAuthorized,false);assert.equal(results[0].ack.snapshot.writerReleaseVerified,false);
+  assert.deepEqual(await signedCounts(f.pid),[2,1,1,1,1]);assert.equal(results[0].ack.snapshot.highestContiguous,1);assert.equal(results[0].executionAuthorized,false);assert.equal(results[0].ack.snapshot.writerReleaseVerified,false);
   console.log('C3_SIGNED_OBSERVATIONS_ACTUAL_ONE_CONNECTION_TX_NONCE_ACK_CONCURRENT_REPLAY_ONCE');
+  const second=await signed('NORMAL',f,2),advanced=await ingest(s,second);assert.equal(advanced.ack.snapshot.highestContiguous,2);const beforeReplay=await signedCounts(f.pid);assert.deepEqual(await ingest(s,f),results[0]);assert.deepEqual(await signedCounts(f.pid),beforeReplay);assert.deepEqual(beforeReplay,[4,2,2,2,2]);assert.deepEqual([connects,begins,commits],[5,5,5]);
+  console.log('C3_SIGNED_OBSERVATIONS_ORIGINAL_ACK_AFTER_LATER_REQUEST_IMMUTABLE');
   phase='SIGNED_FAILURES';
-  for(const fault of ['FAIL_RESULT','FAIL_CONSUMPTION','FAIL_EVENT','FAIL_ACK','CONTROL_AFTER_ACK']){
-   const x=await signed(),source:any={connect:async()=>{const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,args?:any[])=>{
+  for(const fault of ['FAIL_RESULT','FAIL_CONSUMPTION','FAIL_EVENT','FAIL_ACK','CONTROL_AFTER_ACK','FAIL_BIND','OMIT_BIND','ALTER_BIND_REHASH']){
+   const x=await signed(),source:any={connect:async()=>{const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,params?:any[])=>{
+    const args=params&&structuredClone(params);
     if(sql.startsWith('INSERT INTO anvil.execution_receipts')&&fault==='FAIL_RESULT'||sql.startsWith('INSERT INTO anvil.execution_challenges')&&args?.[2]===2&&fault==='FAIL_CONSUMPTION'||sql.startsWith('INSERT INTO anvil.execution_observations')&&fault==='FAIL_EVENT'||sql.startsWith('INSERT INTO anvil.execution_acknowledgements')&&fault==='FAIL_ACK')throw Error('PRIVATE_TOKEN_QA_FAILURE');
+    if(sql.startsWith('INSERT INTO anvil.execution_observation_results')){
+     if(fault==='FAIL_BIND')throw Error('PRIVATE_TOKEN_QA_BIND');if(fault==='OMIT_BIND')return{rows:[],rowCount:0};
+     if(fault==='ALTER_BIND_REHASH'&&args){const value=JSON.parse(args[8]);value.ackRef.id=randomUUID();args[5]=value.ackRef.id;args[7]=contentHash(canonicalJson(value));args[8]=JSON.stringify(value);}
+    }
     const result=await db.query(sql,args);if(sql.startsWith('INSERT INTO anvil.execution_acknowledgements')&&fault==='CONTROL_AFTER_ACK')await db.query('UPDATE anvil.project_control SET revoked_at=clock_timestamp() WHERE project_id=$1',[x.pid]);return result;
    }};}};
-   await assert.rejects(ingest(service(source,x.keys),x),(e:any)=>e.message==='AUTHENTICATED_OBSERVATION_REJECTED');assert.deepEqual(await signedCounts(x.pid),[1,0,0,0]);
+   await assert.rejects(ingest(service(source,x.keys),x),(e:any)=>e.message==='AUTHENTICATED_OBSERVATION_REJECTED');assert.deepEqual(await signedCounts(x.pid),[1,0,0,0,0]);
   }
-  console.log('C3_SIGNED_OBSERVATIONS_FIVE_ACTUAL_FAILURES_NONCE_RESULT_EVENT_ACK_ROLLBACK');
+  console.log('C3_SIGNED_OBSERVATIONS_EIGHT_ACTUAL_FAILURES_NONCE_RESULT_EVENT_ACK_BINDING_ROLLBACK');
   phase='SIGNED_BINDINGS';
   for(const kind of ['BAD_SIGNATURE','WRONG_BODY','WRONG_ROUTE','WRONG_GENERATION','INVALID_BATCH']){
    const x=await signed(kind);if(kind==='BAD_SIGNATURE')x.signature=Buffer.alloc(64).toString('base64url');if(kind==='WRONG_BODY')x.raw=canonicalJson({events:[],batchHash:'f'.repeat(64)});
-   const input:any=kind==='WRONG_GENERATION'?{...x,scope:{...x.scope,executionGeneration:2}}:x;await assert.rejects(ingest(service(pool,x.keys),input));assert.deepEqual(await signedCounts(x.pid),[1,0,0,0]);
+   const input:any=kind==='WRONG_GENERATION'?{...x,scope:{...x.scope,executionGeneration:2}}:x;await assert.rejects(ingest(service(pool,x.keys),input));assert.deepEqual(await signedCounts(x.pid),[1,0,0,0,0]);
   }
   console.log('C3_SIGNED_OBSERVATIONS_FIVE_EXACT_BINDINGS_REJECTED_NO_CONSUMPTION');
+  await assert.rejects(pool.query('INSERT INTO anvil.execution_observation_results DEFAULT VALUES'),(e:any)=>e.code==='42501');for(const sql of ['UPDATE anvil.execution_observation_results SET project_id=project_id WHERE false','DELETE FROM anvil.execution_observation_results WHERE false'])await assert.rejects(pool.query(sql),(e:any)=>e.code==='42501');console.log('C3_SIGNED_OBSERVATION_RESULT_APP_THREE_MUTATIONS_DENIED');
  }else{
  phase='OBSERVATIONS_FIRST';const f=await prepare(),one=f.makeEvent(1),three=f.makeEvent(3);
  if(mode==='RED'){await assert.rejects(admin.query('SELECT 1 FROM anvil.execution_observations'),(e:any)=>e.code==='42P01');await assert.rejects(f.observations.ingest(f.scope,batch([one,three])),(e:any)=>e.message==='OBSERVATION_STORAGE_UNAVAILABLE');console.log('C3_OBSERVATIONS_RED_MISSING_RELATION_42P01_STORAGE_REJECTED');}

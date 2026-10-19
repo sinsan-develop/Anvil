@@ -322,3 +322,45 @@ CREATE TRIGGER execution_acknowledgement_guard BEFORE INSERT OR UPDATE OR DELETE
 CREATE CONSTRAINT TRIGGER execution_observation_complete AFTER INSERT ON anvil.execution_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_complete();
 CREATE CONSTRAINT TRIGGER execution_acknowledgement_complete AFTER INSERT ON anvil.execution_acknowledgements DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_complete();
 GRANT INSERT ON anvil.execution_observations,anvil.execution_acknowledgements TO anvil_v3_app;
+
+-- 같은 서명 요청은 이후 ACK가 진전해도 최초 결과의 ACK 버전을 그대로 반환한다.
+CREATE TABLE anvil.execution_observation_results (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL,
+ proof_result_id uuid NOT NULL,proof_result_version bigint NOT NULL CHECK(proof_result_version=1),ack_id uuid NOT NULL,ack_version bigint NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,
+ PRIMARY KEY(project_id,execution_id,generation,proof_result_id,proof_result_version),UNIQUE(project_id,proof_result_id,proof_result_version),
+ FOREIGN KEY(project_id,proof_result_id,proof_result_version) REFERENCES anvil.execution_receipts(project_id,id,version),
+ FOREIGN KEY(project_id,execution_id,generation,ack_id,ack_version) REFERENCES anvil.execution_acknowledgements(project_id,execution_id,generation,id,version)
+);
+GRANT SELECT ON anvil.execution_observation_results TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.execution_observation_results FROM anvil_v3_app;
+CREATE FUNCTION anvil.guard_execution_observation_result() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;r anvil.execution_receipts%ROWTYPE;c anvil.execution_challenges%ROWTYPE;a anvil.execution_acknowledgements%ROWTYPE;g anvil.execution_grants%ROWTYPE;at_time timestamptz=clock_timestamp();
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_RESULT_IMMUTABLE' USING ERRCODE='42501';END IF;s=NEW.snapshot_json;
+ SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=NEW.project_id AND id=NEW.proof_result_id AND version=NEW.proof_result_version;
+ SELECT * INTO c FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=r.challenge_version;
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=r.project_id AND id=r.grant_id AND version=r.grant_version;
+ SELECT * INTO a FROM anvil.execution_acknowledgements WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation ORDER BY version DESC LIMIT 1;
+ IF r.id IS NULL OR c.id IS NULL OR g.id IS NULL OR a.id IS NULL OR g.execution_id IS DISTINCT FROM NEW.execution_id OR g.generation IS DISTINCT FROM NEW.generation
+  OR NOT anvil.execution_observation_current(NEW.project_id,NEW.execution_id,NEW.generation,g.id,g.version)
+  OR NOT anvil.execution_json_shape(s,ARRAY['transport','proofResultRef','ackRef','bodyHash','recordedAt','executionAuthorized','dispatchPerformed'])
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR s->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY'
+  OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+  OR s->'proofResultRef' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash)
+  OR s->'ackRef' IS DISTINCT FROM jsonb_build_object('id',a.id,'version',a.version,'contentHash',a.content_hash)
+  OR NEW.ack_id IS DISTINCT FROM a.id OR NEW.ack_version IS DISTINCT FROM a.version
+  OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(r.snapshot_json) OR a.content_hash IS DISTINCT FROM anvil.execution_json_hash(a.snapshot_json)
+  OR c.snapshot_json->'request'->>'purpose' IS DISTINCT FROM 'EXECUTION_REQUEST'
+  OR c.snapshot_json->'request'->'target'->>'method' IS DISTINCT FROM 'POST'
+  OR c.snapshot_json->'request'->'target'->>'path' IS DISTINCT FROM '/api/v1/connectors/'||(g.snapshot_json->'binding'->'registration'->>'connectorId')||'/executions/'||NEW.execution_id::text||'/observations'
+  OR c.snapshot_json->'request'->'target'->>'queryHash' IS DISTINCT FROM anvil.execution_json_hash('{}'::jsonb)
+  OR s->'bodyHash' IS DISTINCT FROM c.snapshot_json->'request'->'target'->'bodyHash'
+  OR NOT anvil.execution_iso_valid(s->'recordedAt') OR (s->>'recordedAt')::timestamptz>at_time OR (s->>'recordedAt')::timestamptz<at_time-interval '30 seconds' THEN
+   RAISE EXCEPTION 'EXECUTION_OBSERVATION_RESULT_EXACT_BINDING_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_RESULT_EXACT_BINDING_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+CREATE TRIGGER execution_observation_result_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.execution_observation_results FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_result();
+GRANT INSERT ON anvil.execution_observation_results TO anvil_v3_app;

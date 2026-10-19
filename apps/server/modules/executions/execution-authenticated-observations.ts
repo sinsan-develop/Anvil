@@ -1,11 +1,15 @@
-import {canonicalJson,parseWireJson} from '../../../../contracts/canonical.ts';
+import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {cloneV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {SyntheticExecutionChallenges,type SyntheticChallengeTransaction} from './execution-challenges.ts';
 import {SyntheticExecutionObservations,type ObservationScope,type SyntheticObservationTransaction} from './execution-observations.ts';
 import {executionTarget} from './execution-proof.ts';
 
-export interface SyntheticAuthenticatedObservationTransaction{challenges:SyntheticChallengeTransaction;observations:SyntheticObservationTransaction}
+type Ack=Awaited<ReturnType<SyntheticExecutionObservations['ingest']>>;
+export interface SyntheticAuthenticatedObservationTransaction{
+ challenges:SyntheticChallengeTransaction;observations:SyntheticObservationTransaction;
+ results:{bind(proofResultRef:RuntimeRefV1,ack:Ack,bodyHash:string):Promise<void>;read(proofResultRef:RuntimeRefV1):Promise<{bodyHash:string;ack:Ack}|null>};
+}
 export interface SyntheticAuthenticatedObservationStore{
  transport:'SYNTHETIC_ONLY';
  /** 같은 실행/세대의 현재 권한 잠금·nonce/결과·관측·ACK를 단일 COMMIT/rollback으로 집행한다. */
@@ -31,10 +35,20 @@ export class SyntheticAuthenticatedObservations{
     ||!same({method:proof.method,path:proof.path,queryHash:proof.queryHash,bodyHash:proof.bodyHash},target))return reject();
    return await this.store.transaction(cloneV1(scope),async tx=>{
     // 기존 service는 같은 tx 객체만 소비하며 nested BEGIN/새 connection을 만들지 않는다.
-    const challenges=new SyntheticExecutionChallenges({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{if(!same(s,scope))return reject();return fn(tx.challenges);}});
     const observations=new SyntheticExecutionObservations({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{if(!same(s,scope))return reject();return fn(tx.observations);}});
+    let firstAck:Ack|undefined;
+    const challenges=new SyntheticExecutionChallenges({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{
+     if(!same(s,scope))return reject();return fn({...tx.challenges,recordResult:async value=>{
+      firstAck=await observations.ingest(cloneV1(scope),batch);
+      const resultRef=cloneV1(await tx.challenges.recordResult(value));
+      await tx.results.bind(cloneV1(resultRef),cloneV1(firstAck),target.bodyHash);return resultRef;
+     }});
+    }});
     const before=await challenges.consume(cloneV1(scope),challengeRef,proof,signature);
-    const ack=await observations.ingest(cloneV1(scope),batch);
+    const stored=cloneV1(await tx.results.read(cloneV1(before.resultRef))),ack=stored?.ack;
+    if(!stored||stored.bodyHash!==target.bodyHash||!ack||!refV1(ack.ref)||ack.ref.contentHash!==contentHash(canonicalJson(ack.snapshot))
+     ||!same(ack.snapshot.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration})
+     ||ack.snapshot.writerReleaseVerified!==false||ack.snapshot.executionAuthorized!==false||ack.snapshot.dispatchPerformed!==false||firstAck&&!same(firstAck,ack))return reject();
     const final=await challenges.consume(cloneV1(scope),challengeRef,proof,signature);
     if(!same(before,final)||before.nonceConsumed!==true||before.credentialIssued!==false||before.executionAuthorized!==false||before.dispatchPerformed!==false)return reject();
     return{transport:'SYNTHETIC_ONLY' as const,proofResultRef:cloneV1(before.resultRef),ack:cloneV1(ack),nonceConsumed:true as const,executionAuthorized:false as const,dispatchPerformed:false as const};
