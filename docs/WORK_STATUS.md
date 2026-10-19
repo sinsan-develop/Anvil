@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 원제출 읽기 경계 / Main 어울(2026-10-19)**: 7620e01f0350f3ca4f9efb6c7f499aa185ce6101 게시 뒤 기존 submit 전용 current 검사에 내부 READ_RESULT 목적과 새 read를 추가했다. submit의 기본 목적/준비hash non-null 결박은 그대로다. 조회는 exact scope/제출ID·current manifestHash/조회주체·허가영수증·freshness/기한을 전후 대조하고 원기록hash를 다시 확인하며 append0이다. 조회자가 원제출자와 달라도 원제출자/당시영수증·WORKER_CLAIM·완료false를 보존하고 원문 반환값/저장본을 분리한다.
+  새read부재3 RED284.7859ms→read3+직접영향submit5=8 PASS309.8256ms/type0/diff0, 변경2경로 한정 독립 정적 C0/I0/M0/재실행0이다. 실제 조회권한/current 제공자·DB 불변성/동시성/COMMIT·HTTP/원문 provenance는 미검증이다. 소스 주석 이문자1건은 실행 전 한국어로 정정했다. 실제DB/권한·키/서비스/Agent·외부자원/기존guard 거절 재시도0이며 전체 FN12/UI/Stage는 여전히 부분 구현이다. 다음 정확 작업은 FN12의 정본 submitted_results/result_reviews와 실제 기존 SQL/명령·허가 스키마를 대조해 아직 없는 물리 저장/current 제공자 경계를 구현하는 것이다. 새 근거 없는 공개API/권한/서비스를 만들지 않고 기존거절5함수는 제외한다.
+
 - **FN12 제출 journal 저장 경계 후보 / Main 어울(2026-10-19)**: f1fa3679d65e25108ba5f7375338cb6ecde8c937 local/private exact·clean 뒤 원문 준비 함수를 source/합성 transaction에 연결했다. current의 exact 프로젝트/임무/실행·SUBMIT_RESULT·제출ID/manifestHash·주체/허가 영수증·30초 freshness/원기한을 전후 대조한다. 동일 ID/내용/주체 재확인은 원불변기록/시각 그대로이고 다른 내용/주체·원문hash손상은 거절한다. append 후 같은tx에서 정확원문을 다시 확인하며 모드/기한/허가 변경은 성공으로 반환하지 않는다. 모든 snapshot은 WORKER_CLAIM·출처미검증·완료/정식실패count/실행false다.
   신규부재4 RED124.8467ms→4 PASS272.3712ms/type0 뒤 append-noop가 성공을 반환하는1 RED232.7191ms를 추가했다. 재조회 장벽 보완 뒤 직접5+소비4=9 PASS290.0685ms/type0이다. fakeMap callback 오류의 되돌림만 검증했으며 실제 SQL/권한·동시성·COMMIT/내구는 미검증이다. 특히 tx 반환 뒤 모드 변경은 Map행1이 이미 남을 수 있음을 시험하며 rollback/저장0으로 단정하지 않는다. 실제 current/원문 DB·명령/감사 제공자·HTTP/UI/Agent는 미연결이다. 신규2경로 한정 독립 정적 C0/I0/M0·재실행0이다. 실제 인증/제어·영수증/감사 제공자/SQL 유일성·동시성·COMMIT·물리내구/원문 provenance는 미판정이며  정식DB/키/서비스·외부QA/기존거절 재시도0이다. 다음 정확 단위는 원제출의 current 조회권한/정확ID·원문hash를 대조하는 읽기 경계이며 제출/조회/API·검수완료를 혼동하지 않는다.
 

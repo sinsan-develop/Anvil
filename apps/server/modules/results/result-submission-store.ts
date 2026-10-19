@@ -31,9 +31,9 @@ export class SyntheticResultSubmissions {
  readonly store:SyntheticResultSubmissionStore;
  constructor(store:SyntheticResultSubmissionStore){this.store=store;this.#port();}
  #port(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.transaction!=='function')fail('SYNTHETIC_RESULT_SUBMISSION_STORE_REQUIRED');}
- async #current(tx:SyntheticResultSubmissionTransaction,scope:ResultEvidenceScope,submissionId:string,manifestHash:string){
+ async #current(tx:SyntheticResultSubmissionTransaction,scope:ResultEvidenceScope,submissionId:string,manifestHash:string|null,operation:'SUBMIT_RESULT'|'READ_RESULT'='SUBMIT_RESULT'){
   this.#port();const value=cloneV1(await tx.current());this.#port();const now=await tx.clock();this.#port();
-  if(!isoV1(now)||!recordV1(value,['transport','scope','operation','submissionId','manifestHash','submitterRef','authorizationReceiptRef','checkedAt','expiresAt'])||value.transport!=='SYNTHETIC_ONLY'||!same(value.scope,scope)||value.operation!=='SUBMIT_RESULT'||value.submissionId!==submissionId||value.manifestHash!==manifestHash||!refV1(value.submitterRef)||!refV1(value.authorizationReceiptRef)||!isoV1(value.checkedAt)||!isoV1(value.expiresAt)||Date.parse(value.checkedAt)>Date.parse(now)||Date.parse(now)-Date.parse(value.checkedAt)>30000||Date.parse(value.expiresAt)<=Date.parse(now))fail('RESULT_SUBMISSION_CURRENT_REQUIRED');
+  if(!isoV1(now)||!recordV1(value,['transport','scope','operation','submissionId','manifestHash','submitterRef','authorizationReceiptRef','checkedAt','expiresAt'])||value.transport!=='SYNTHETIC_ONLY'||!same(value.scope,scope)||value.operation!==operation||value.submissionId!==submissionId||!hashV1(value.manifestHash)||manifestHash!==null&&value.manifestHash!==manifestHash||!refV1(value.submitterRef)||!refV1(value.authorizationReceiptRef)||!isoV1(value.checkedAt)||!isoV1(value.expiresAt)||Date.parse(value.checkedAt)>Date.parse(now)||Date.parse(now)-Date.parse(value.checkedAt)>30000||Date.parse(value.expiresAt)<=Date.parse(now))fail('RESULT_SUBMISSION_CURRENT_REQUIRED');
   const {checkedAt:_,...binding}=value;return{value,now,binding};
  }
  #entry(raw:unknown,scope:ResultEvidenceScope,id:string,now:string):SyntheticSubmittedResult{
@@ -42,6 +42,20 @@ export class SyntheticResultSubmissions {
   if(!recordV1(s,['transport','scope','submittedByRef','authorizationReceiptRef','manifest','manifestHash','submittedAt','sourceKind','evidenceProvenanceVerified','completionAccepted','formalFailureCounted','executionAuthorized','dispatchPerformed'])||s.transport!=='SYNTHETIC_ONLY'||!same(s.scope,scope)||!refV1(s.submittedByRef)||!refV1(s.authorizationReceiptRef)||!hashV1(s.manifestHash)||!isoV1(s.submittedAt)||Date.parse(s.submittedAt)>Date.parse(now)||s.sourceKind!=='WORKER_CLAIM'||s.evidenceProvenanceVerified!==false||s.completionAccepted!==false||s.formalFailureCounted!==false||s.executionAuthorized!==false||s.dispatchPerformed!==false||Buffer.byteLength(canonicalJson(entry))>2*1024*1024)fail('RESULT_SUBMISSION_LEDGER_INVALID');
   try{if(prepareSubmittedResult(scope,s.manifest).contentHash!==s.manifestHash)fail('RESULT_SUBMISSION_LEDGER_INVALID');}catch{fail('RESULT_SUBMISSION_LEDGER_INVALID');}
   return cloneV1(entry) as SyntheticSubmittedResult;
+ }
+ /** 현재 조회 권한으로 원제출을 읽는다. 제출자와 조회자를 혼동하지 않으며 append/확정을 수행하지 않는다. */
+ async read(rawScope:unknown,rawId:unknown):Promise<SyntheticSubmittedResult>{
+  if(!recordV1(rawScope,['projectId','assignmentRef','executionRef'])||!uuidV1(rawScope.projectId)||!refV1(rawScope.assignmentRef)||!refV1(rawScope.executionRef)||!uuidV1(rawId))fail('RESULT_SUBMISSION_READ_SCOPE_INVALID');
+  const scope=cloneV1(rawScope) as ResultEvidenceScope;
+  try{
+   this.#port();const result=await this.store.transaction(cloneV1(scope),async tx=>{
+    const before=await this.#current(tx,scope,rawId,null,'READ_RESULT'),raw=await tx.read(rawId);this.#port();
+    if(raw===null)fail('RESULT_SUBMISSION_NOT_FOUND');const entry=this.#entry(raw,scope,rawId,before.now);
+    if(entry.snapshot.manifestHash!==before.value.manifestHash)fail('RESULT_SUBMISSION_READ_BINDING_MISMATCH');
+    const final=await this.#current(tx,scope,rawId,before.value.manifestHash,'READ_RESULT');this.#port();if(!same(before.binding,final.binding))fail('RESULT_SUBMISSION_CURRENT_CHANGED');
+    return cloneV1(entry);
+   });this.#port();return cloneV1(result);
+  }catch(error){if(error instanceof ResultSubmissionFailure)throw error;fail('RESULT_SUBMISSION_STORAGE_UNAVAILABLE');}
  }
  async submit(rawScope:unknown,rawId:unknown,rawManifest:unknown):Promise<SyntheticSubmittedResult>{
   const prepared=prepareSubmittedResult(rawScope,rawManifest),scope=prepared.scope as ResultEvidenceScope;
