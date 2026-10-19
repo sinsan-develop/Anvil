@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 원 ACK 보존 actual GREEN / Main 어울(2026-10-19)**: private exact6f610f64e2fffb24f79fa9464f8e817467194cde·0018 SHA256 D18AD70DDFDBACCAA63C56F052FBDC82A91698C57D22FCF5BEDA748245D44B20를 새 signed-verified PG373f0826e3f10c212cddf832a03b54f6c9ff1b768a51115681b5b5439899eabc·instancefb2a0fff-552e-49e0-a755-9b018500a638·internal망eeec44b5…에서53 DDL COMMIT 후실행했다. 실제3요청각connection/BEGIN/COMMIT1·동시/재조회효과1에이어 A저장→B의ACK2→A재조회가최초A전체결과와같고추가쓰기0(누적5요청각tx1/표수4,2,2,2,2)을확인했다. result/challenge소비/event/ACK/current/bind실패·bind누락·hash재계산ACK위조8실패는nonce/결과/관측/ACK/결박모두rollback,서명/본문/경로/세대/서명된invalidbatch5음성거절·새결박표app3mutation거절이다. C3_OBSERVATIONS_WORKFLOW_SIGNED_VERIFIED_LIMITED_VERIFIED/exit0·exact정리failure0·별도SSH C3_OBSERVATIONS_SIGNED_VERIFIED_INDEPENDENT_RESIDUAL_ZERO/exit0·정식PG metadata불변/정식SQL0이다. 삭제는등록한일회성합성clone/PG/tmpfs/망뿐이며기존자료삭제0이다.
+
+  최종신규7+직접인접18=25PASS/5091.1512ms·FAIL/SKIP/취소0, type0·diff0다. 독립C0/I1은Main의반례RED→실제보정이며재리뷰PASS를꾸미지않는다. generic회수mode단위는합성port이고PG회수grant는미제공/거절한다. 이번실측은메모리합성키의실제서명과격리PG저장원자성만이며실host/OS·execution credential/HTTP·Agent/화면완료가아니다. C3/FN08/Stage전체는부분구현이다. 다음미완료는정확명령의현재source/OS근거와hostproof·nonce를일회permit저장에같은tx로결박하는실저장adapter,그뒤SEND/STOP·회수선행이다. Main의계획내구현은재승인/PMO배정대기없이이어가며formal복구차단을이독립단위의중단근거로사용하지않는다.
+
 - **C3 서명관측 독립 I1·원 ACK 불변 보정 / Main 어울(2026-10-19)**: exact4122905a51cda308432294329c081a972f7d7362/기존SQL50670641의 signed PGff535cbfb688ca13d5ed43829afc85a5fb85cb6a68b89c93741b7d3d317a3725·instanceec795128-22f4-47ea-bac3-daa3513457c5·망5a8504b3…는53 DDL/세요청각connection1·BEGIN1/COMMIT1·실동시/재조회효과1·다섯실패전부rollback·다섯정확결박거절을확인했다. C3_OBSERVATIONS_WORKFLOW_SIGNED_LIMITED_VERIFIED/exit0·exact정리failure0/별도잔류0·정식PG불변이지만, 별도독립 C0/I1/M0는 중간다른요청뒤원요청재조회가최신ACK로달라지는결함이다. A→B→A 실제 service 단위반례가6PASS/1FAIL RED/295.1613ms로재현돼기존합격범위를전체불변재조회PASS로확대하지않는다.
 
   Main은최초proof결과ref와그때의정확ACKref/hash·본문hash를같은tx의불변execution_observation_results에결박했다. 재조회는원ACK버전만읽고관측을다시ingest하지않으며실행/회수확정false·generic관측의최신ACK동작은유지한다. 새result저장/누락/rehash위조도동시rollback하며정식미적용0018후보 SHA256 D18AD70DDFDBACCAA63C56F052FBDC82A91698C57D22FCF5BEDA748245D44B20이다. 직접7PASS/276.2627ms·type0, 같은후보재리뷰0·원독립I1/원RED보존이다.
