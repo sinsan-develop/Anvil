@@ -80,7 +80,7 @@ export function ResultContent({value}:{value:SubmittedResultView}){
   <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
   <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
   <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>
-  <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>산출물·diff의 실제 바이트 조회, 증거 검수·보완·중지·이전 처리는 아직 미연결입니다.</p>
+  <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>등록 산출물 텍스트·변경 diff/명령 출력 참조는 별도 명시 조회로 확인합니다. 보관 bytes/hash 일치는 실제 Git diff·명령/시험 출처의 증명이 아니며, 보완 초안 저장은 실제 재작업·검수 합격이 아닙니다. 실제 중지·쓰기 회수/이전 처리는 미확인입니다.</p>
  </article>;
 }
 function Reference({label,value}:{label:string;value:PlanRef|null}){return <div><dt>{label}</dt><dd>{value?<>{value.id} · v{value.version}<br/>{value.contentHash}</>:'미연결'}</dd></div>;}
@@ -110,6 +110,6 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
    {s?.preparations.length?<ul>{s.preparations.map(p=><li key={p.ref.id}><dl><Reference label="준비 원본" value={p.ref}/></dl><p>{p.snapshot.intent.mode==='WORK'?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p><p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p></li>)}</ul>:<p>확인된 실행 준비 기록 없음</p>}
    {s?.hasMorePreparations?<p>최근 20건만 조회했습니다. 이전 준비 이력은 이 화면에서 미연결입니다.</p>:null}
   </section>
-  <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>실제 관측·증거 검수 미연결</h3><p>제출된 변경·시험 주장은 아래 결과 원문에서 확인합니다. 실제 Agent 관측·작업현황 파일·파일 diff 원본·하위 임무와 증거 검수는 아직 연결되지 않았습니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>중지·보완·이전의 실제 처리도 미연결입니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>
+  <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>보관 조회·보고 검토와 미확인 범위</h3><p>제출 변경·명령·시험 보고와 현황 파일 대조·보관 관측/중지 요청 이력은 별도로 명시 조회합니다. 제출자 주장·합성 실행 기록·초안/요청 저장과 실제 수행은 구분합니다. 실제 Agent 수행·증거 출처·쓰기 회수·안전 재개/이전은 미확인입니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>보완 초안/중지 요청 이력이 실제 재작업·중지 확인은 아닙니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>
  </>;
 }

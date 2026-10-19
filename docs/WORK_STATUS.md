@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 안내 정합성 정정 확인 / Main 어울(2026-10-20)**: JSX 안내 두 곳만 등록 텍스트/참조 명시 조회·보완 초안/보관 이력과 실제 수행·출처·검수/쓰기회수·재개 미확인을 구분했다. 신규 정적 문구검사2RED127.8564ms→2PASS127.4119ms/type0·단1회 scopedC0/I0/M0이며 기능 추가/완료 진도로 계산하지 않는다. 불변 기능/build/실제PG·DOM/served 재검사0, 새 API/권한/DB/서비스·Agent0·임시자원 생성0이다. 탐색 중 PowerShell에 literal docs/design/P01*를 넘긴 OS123 오류1은 glob 경로 입력 오류로 실제 파일 목록/rg -g 방식으로 정정하며 ACL 변경/재권한0이다. rollback은 이번 안내 두 문단만 일반 revert하고 기존 기능과 자료는 보존한다.
+
+- **FN12/UI05 안내 정합성 정정 착수 / Main 어울(2026-10-20)**: 현재 ResultContent/SessionDetailContent의 예전 '산출물 실제 bytes 조회·보완·작업현황 파일까지 미연결' 안내는 이미 연결한 등록 텍스트/참조·보완 초안·현황 파일 대조/보관 이력과 혼동된다. 해당 JSX 안내 두 곳만 실제 지원의 명시 조회/초안·이력 범위와 아직 미확인인 수행/출처/검수 합격·실제 중지·쓰기회수/재개·이전을 분리한다. 기능·API/권한/DB·판정 기준 변경0이며 기능 구현 진도로 계산하지 않는다. 문구 정적 RED/GREEN·타입 구문 검사만 선택하고 불변 reader/실제PG/전체 browser·build 재실행0, 실제 DOM/served를 검증했다고 주장하지 않는다.
+
 - **FN12/UI05 명령 보고 탐색 한정 확인 / Main 어울(2026-10-20)**: 신규2RED130.6994ms→직접 인접7PASS208.4338ms, TS18047 보정 뒤 최종 변경 경계4PASS159.3515ms/type0/build227이다. DOM 첫 확인은 새 COMMAND_REPORTS1+직접 기존 COMMAND_OUTPUT1=2PASS3.5초이며 새 DOM RED를 소급 주장하지 않는다. 종결시각 보고 여부/프로필·인자 검색·시간/exit·원실행/출력·근거 명시 상세를 연결했고, null/부적합 원위치·중복/순서·다른 원실행/불일치·raw JSON을 유지했다. 기존 출력 선택의 같은 원실행/단일등록v1/hash 제약은 보존, script 실행/명령 POST0·exit0의 성공/실제수행 승격0이다. 단1회 scopedC0/I0/M0이며 보고된 실제 명령/출처·환경·DB/served/인수는 미검증, 전체 FN12/UI05·Stage 완료가 아니다. 등록 결과/build exact 정리·독립잔여0·기존 경고 유지. 새 API/권한/DB/키·Agent0, rollback은 표시 component/mount와 검사 추출만 일반 revert하며 원문/기존 출력 조회·지속 자료를 보존한다.
 
 - **FN12/UI05 명령 보고 QA 사전등록(2026-10-20)**: 신규 표시검사2RED130.6994ms→신규/직접출력·artifact 인접7PASS208.4338ms. 타입1진단(TS18047: filter callback 안 outputRef null 가능)은 원 출력 참조를 local const로 고정해 보정했다. 새 일회 결과 `D:\tmp\anvil-v3-stage-b\ui05-command-reports-01` 및 재생성 `apps/web/dist`만 Main 현재 Windows 사용자 소유·수명15분·종료후 exact정리/독립0이며 생성전 부재/부모 owner/nonlink를 확인한다. 기존 headless msedge/same-origin fixture의 새 명령보고 탐색1+직접 기존 출력원문1만 확인하고, 이미 불변인 다른 보고/실제PG 전수 시험은 반복하지 않는다. 새 DOM의 첫 확인이며 DOM RED를 실행했다고 주장하지 않는다. 새 서비스/포트/DB/명령 실행·Agent0이다.
