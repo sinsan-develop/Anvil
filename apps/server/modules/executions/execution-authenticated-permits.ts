@@ -26,7 +26,8 @@ export class SyntheticAuthenticatedPermits{
    const target=executionTarget('POST','/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands/'+commandId+'/permit',[],bodyRaw);
    if(!recordV1(proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||!same({method:proof.method,path:proof.path,queryHash:proof.queryHash,bodyHash:proof.bodyHash},target))return reject();
    return await this.store.transaction(cloneV1(scope),async tx=>{
-    const permitFor=async(resultRef:RuntimeRefV1)=>{
+    const permitFor=async(resultRef:RuntimeRefV1,allowCreate=false)=>{
+     if(!allowCreate){const saved=await tx.permits.read();if(!saved.complete||!saved.permits.some(e=>same(e.snapshot.proofRef,resultRef)))return reject();}
      const journal=await tx.challenges.read(),original=journal.events.find(e=>same(e.ref,challengeRef));
      if(!journal.complete||!original||original.snapshot.request.purpose!=='EXECUTION_REQUEST')return reject();
      const head=[...journal.events].reverse().find(e=>e.ref.id===challengeRef.id),current=cloneV1(await tx.challenges.current()),c:any=current.context;
@@ -44,7 +45,7 @@ export class SyntheticAuthenticatedPermits{
     };
     const challenges=new SyntheticExecutionChallenges({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{
      if(!same(s,scope))return reject();return fn({...tx.challenges,recordResult:async value=>{
-      const ref=cloneV1(await tx.challenges.recordResult(value));await permitFor(ref);return ref;
+      const ref=cloneV1(await tx.challenges.recordResult(value));await permitFor(ref,true);return ref;
      }});
     }});
     const before=await challenges.consume(cloneV1(scope),challengeRef,proof,signature),permit=await permitFor(before.resultRef),final=await challenges.consume(cloneV1(scope),challengeRef,proof,signature);

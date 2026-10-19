@@ -58,3 +58,7 @@ test('같은 결과 재조회도 현재 grant보다 긴 permit을 다시 제공�
  const h=harness();await h.make().consume(scope,pid,h.request);h.current.grantExpiresAt=iso(now+5000);
  await assert.rejects(h.make().consume(scope,pid,h.request));assert.equal(h.records.length,1);
 });
+test('갱신된 OS 근거를 승인한 정확 현재 fact를 permit의 불변 snapshot에 보존한다',async()=>{
+ const h=harness(),fresh={...ref,version:2};h.current.fact.checks.osFence.evidenceRefs=[fresh];h.request.osOwnershipRef=fresh;h.current.proof.target=executionTarget('POST','/api/v1/connectors/'+pid+'/executions/'+eid+'/commands/'+pid+'/permit',[],canonicalJson(h.request));
+ await h.make().consume(scope,pid,h.request);assert.deepEqual(h.records[0].snapshot.currentFact,h.current.fact);
+});
