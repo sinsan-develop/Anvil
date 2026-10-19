@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {readFileSync,existsSync} from 'node:fs';
+const path=new URL('../../../db/migrations/0027_result_reviews.sql',import.meta.url);
+test('검수 보완/차단 이력은 새 전용 표·명시 허가·불변/역방향 원자 guard로만 추가한다',()=>{assert(existsSync(path),'FN12 검수 판정 forward migration 미구현');const sql=readFileSync(path,'utf8');for(const marker of ['CREATE TABLE anvil.result_reviews','CREATE FUNCTION anvil.result_review_authorized','CREATE FUNCTION anvil.result_review_payload_valid','CREATE FUNCTION anvil.guard_result_review_insert','CREATE CONSTRAINT TRIGGER result_review_receipt_commit','DEFERRABLE INITIALLY DEFERRED','CREATE TRIGGER result_review_audit_insert','CREATE TRIGGER result_review_immutable','FOREIGN KEY(project_id,result_id)','FOREIGN KEY(project_id,criteria_id,criteria_version)',"'evaluateResult'","'RESULT_REVIEW_RECORDED'","'RESULT_REVIEW_EVIDENCE_VERIFICATION_REQUIRED'"])assert(sql.includes(marker),marker);assert(!/CREATE OR REPLACE|DROP\s|TRUNCATE\s|GRANT\s+(UPDATE|DELETE)/i.test(sql));});

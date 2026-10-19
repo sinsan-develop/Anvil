@@ -730,6 +730,8 @@ queue 항목은 `requestRef,state:WAITING/RESERVED/DISPATCHED/CANCELLED/UNKNOWN,
 
 ### 13.3 FN12 결과 제출·검수·문제 분류
 
+- `evaluateResult`의 최초 영속 연결은 실제 증거 제공자 미연결로 REWORK/BLOCKED만 지원한다. 기존 프로젝트 명령의 별도 명시 AUTO 정책·현재 HUMAN/단독 제어·세션·원제출/등록기준 exact ref/hash와 영수증/감사를 같은 tx에서 대조한다. 모든 기준을 항목별 이유/evidenceRefs=[]로 포함하고 ACCEPTED/NOT_APPLICABLE·임의 증거refs는 명확 거절한다. 새 result_reviews는 불변 원문·검수자와 제출자 동일성·시각을 보관하며 과거 판정을 덮지 않는다. GET `projects/:projectId/result-reviews/:id`는 HUMAN멤버 전용 고정 조회/query없음이며 저장만 reviewStored=true, completionAccepted/formalFailureCounted/evidenceProvenanceVerified/executionAuthorized/dispatchPerformed=false다. 합격 검수·실제 증거 bytes·보완 실행/자동기준 적용·정식DB 반영은 미연결이며 후속 구현 대상으로 남긴다.
+
 - 보고 coverage의 내부 GET `projects/:projectId/results/:resultId/criteria/:criteriaId/versions/:version/reported-coverage`는 HUMAN멤버 read tx에서 별도 저장 원제출/등록기준과 정확 임무·hash를 대조한다. `purpose:REPORTED_COVERAGE_ONLY`로 미보고/보고미실행·중복·다른시험ID·기준/환경차이·미등록조건을 원주장과 함께 반환한다. PASS/출처표시는 수행자 선언이며 검수 저장/완료·실패집계/증거진위·실행false다. 등록증거/산출물 bytes를 읽거나 기존 거절을 우회하지 않고 최신기준 자동선택·권한부여·query/fallback·변경연산은 없다.
 
 - 보관 기준 탐색 GET `projects/:projectId/assignments/:id/versions/:version/result-criteria`는 HUMAN 멤버 전용이며 exact 확정 임무의 최근20 불변 버전 metadata(ref/작성자/등록시각/조건수·저장/검수false flags), hasMore/observedAt와 `selectionState:NOT_SELECTED`를 반환한다. 각 원문의 해시/영수증/감사를 재대조하며 최신 자동 선택/활성·임의 query/fallback·새 권한 부여는 없다. 선택 원문은 기존 고정 버전 GET로 별도 확인한다.
