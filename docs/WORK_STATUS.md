@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND 원영수증·예약 고정조회 checkpoint / Main 어울(2026-10-19)**: e4a08358뒤누락된PG adapter.read를신규부재1RED785.9378ms→1PASS806.1589ms로구현했다. projectMember뒤exact프로젝트/실행/세대/ref로원HUMAN PROJECT명령·영수증/감사·새예약·HELD outbox를join하고기존역사reader·예약hash·정확주체/정책/버전·원receipt/result양층false를대조한다. 저장/append코드는유지하며역사조회가현재grant/전달허가가되지는않는다. 직접14PASS1234.4783ms/type0·diff0·신규조회/시험한정독립C0/I0/M0(정적/재실행0)다. 실제SQL구문/JOIN/RLS·회원권한집행/PG일관성·현재provider진위는미검증이며실제DB적용·외부자원·서비스변경0이다.
+  신산님최신직접지시대로승인된계획내구현/시험/필수개발을재승인없이수행하고PMO위임결정을동일권위로적용한다. 새로운승인필요주장은기존범위밖차이를입증하며특정차단을전체중단으로확장하지않는다. 다음미완료는현재DB가SEND를거절하는0023forwardguard와서명페이지용PG고정제공자/서버SENDpermit·실행기결합이며Main이계속주도한다. 원P1 DB제외는이력과구분해새실행은이미위임된시험원칙/정확자원계약·플랫폼심사로판단하고정식DB/P2/P3/키·Agent비용까지임의확대하지않는다.
+
 - **C3 SEND PG adapter checkpoint / Main 어울(2026-10-19)**: 신규adapter부재3RED739.4805ms→직접12PASS1159.3019ms,예약/ref·봉투/intent전해시재결박음성및실core→adapter의합성db동일tx/rollback결합추가뒤13PASS1157.0022ms다. 새예약RESERVED/hash/정확claim·임무/정책/command·attempts0/calls/finitecost와실행별100건/명령+예약2MiB를검사하여usage예약→명령→HELD합성outbox3INSERT만작성한다. SQL파라미터는uuid/bigint를명시했으나실PG구문/추론을시험한것은아니다. 직접/인접29PASS1261.0876ms·type0·diff0,신규adapter/시험한정독립C0/I0/M0(정적·재실행0)다.
   실제PG trigger/FK/잠금COMMIT·provider현재성/비용진위는미판정이며기존forwardguard없는DB의SEND거절을유지한다. 서비스자동주입/새grant·writer·ACK/별도poolBEGINCOMMIT·실전달0,새외부자원/소진QA재실행/정식DB·키·서비스변경0이다. PG권위있는고정조회/새forwardguard·서버SENDpermit은후속미완료이며전체C3/FN06/FN08완료로보고하지않는다.
 
