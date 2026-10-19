@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND 시도→서명 client→전송기 결합 checkpoint / Main 어울(2026-10-19)**: 신규연결부재3RED332.3709ms→직접3PASS428.9955ms,유한current/permit조회timeout·비밀오류음성추가후직접/인접31PASS620.4236ms/type0이다. 실제기존sender/codec/client상태기를소비하지만signer/verifier/wire는합성이어서실제서버nonce/COMMIT·물리sync·HTTP/credential·OS/Agent가아니다. 신규2경로한정독립C0/I0/M0(정적/재실행0),원시도ref·로컬binding/현재grant/source/OS·원permit기한을전후대조하고응답유실·소유변경·만료는client기록/UNKNOWN보존·새nonce/wire0이다. 기존START경로/공개PERMIT4필드본문변경0·실키/서비스/새외부자원0·diff0이며반환bindingHash를서버의추가서명권위로표시하지않는다.
+  공용guard5함수source교체거절은별도로유지한다. PMO는실제declined를확인해정확5함수source-only/기존START·STOP조건·불변이력보존/영향회귀만직접결정요청하고정식DB·credential/키·서비스/OS/Agent/P2/P3는제외한다고회신했다. 일반위임으로거절해제/재시도/우회0,그외승인작업은진행했다. pending문서게시때LF→CRLF예고warning1은공백검사exit0/실행검증과분리했다. 다음미완료는기존독립서버SEND permit consumer/정확현재provider·서명요청결합이며전체C3/Stage/계획완료아니다.
+
+- **C3 독립 SEND 서명 client 결합 착수 / Main 어울(2026-10-19)**: e169bed3에차단초안/상태를안전게시한뒤공용SQL과무관한실행기authority결합을진행한다. 기존SyntheticPrimaryInstructionTransport의sync된SEND시도ref/불변binding과현재source·OSref를기존SyntheticExecutionClient PERMIT정확본문/서명/내구상태에결박한다. START client나기존public요청형식은수정하지않고필수합성verifier.current/permitCurrent를명시주입한다. 반환bindingHash는로컬현재대조metadata일뿐서버서명추가필드라주장하지않는다. 서버SEND permit미구현/실HTTP·credential·OS/Agent와구분하고새자원/실DB·키·서비스변경0이다.
+
 - **C3 SEND forward 공용 guard 교체 차단 / Main 어울(2026-10-19)**: 신규0023선행함수3개 source작성뒤기존guard_initial_execution_row/guard_execution_command_kind/guard_execution_command_complete/guard_initial_execution_complete/guard_initial_execution_shared_history의5공용함수CREATE OR REPLACE패치가플랫폼에서적용전1회거절됐다. 원문: 새migration이기존START/STOP공용guard함수를CREATE OR REPLACE하여기존경로의지속적보안·동작경계도바꾸므로SEND전용추가범위를넘는높은영향변경. 기존0017/0021파일/실DB/서비스/권한·키/실Agent변경0이며우회/재시도0이다.
   신규3함수초안은자동migration경로에서제외하여docs/contracts/0023_execution_instruction.sql.pending로보존했다. SQL구문/실행·능력·적합성은미검증이고구현완료/PASS아니다. PMO에원거절·정확5함수/START·STOP영향·직접결정필요여부를전달했고일반승인대기/전체중단으로확장하지않는다. 승인계획내코드/시험은유지하며다음독립작업은기존서명client와후속SEND permit authority의합성결합이다. 초안분리첫시도는새하위폴더생성권한오류로실패·원본존재를확인해기존contracts폴더내pending경로로보존했다. sandbox Gitstatus읽기1회worktree오류는도구경계이며권한/파일변경없이정확elevated읽기로구분한다.
 
