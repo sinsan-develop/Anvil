@@ -8,6 +8,7 @@ import type { AssignmentContentReview, AssignmentReviewOutcome } from '../../../
 import { WorkspaceContextPreparation } from './WorkspaceContextPreparation.tsx';
 import type { ContextPreparationBuffer } from './context-api.ts';
 import { WorkspaceResponsibleSessions } from './WorkspaceResponsibleSessions.tsx';
+import { sessionDetailHref } from '../../shell/routes.ts';
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 
 const labels = { PURPOSE_SCOPE:'목적·범위', BASELINE_TASK:'설계·계획·업무·단계', INPUT_OUTPUT:'입출력·책임', COMPLETION_VERIFICATION:'완료·검증', BOUNDARIES:'미확인 경계', RECORD_RECOVERY:'기록·복구' };
@@ -43,7 +44,7 @@ export function AssignmentContentDecision({client,session,draft,buffer,onChange,
     </fieldset>{buffer.result?<p role="status">{buffer.mode==='REVIEW'?'임무 내용 검토 저장 확인':'임무 내용 확정 저장 확인 · 실행 허가 아님'}</p>:<button disabled={busy||!owner||!sameTarget} onClick={()=>run(save)}>{buffer.pending?'같은 임무 판단 명령 결과 확인':'임무 내용 판단 저장'}</button>}
       {buffer.pending&&buffer.failure&&!buffer.uncertain?<button disabled={busy} onClick={()=>{if(confirm('거절된 원 판단 명령을 확인했습니다. 입력을 수정할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 임무 판단 확인 후 수정</button>:null}
     </>:null}{hidden?<p>원문 조회 미확인 · 이전 판단·확정 원문은 숨깁니다. 보관 입력·미확인 명령은 유지합니다.</p>:null}
-    {confirmed&&!hidden?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p><pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
+    {confirmed&&!hidden?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p><a href={sessionDetailHref(draft.projectId,draft.ref)}>책임자·실행 상세</a><pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
     {confirmed&&!hidden?<WorkspaceContextPreparation key={ordered(confirmed.ref)} client={client} confirmed={confirmed} session={session} buffer={contextBuffer} onChange={onContextChange} owner={owner} busy={busy} run={run}/>:null}
     {confirmed&&!hidden&&onResponsibleChange?<WorkspaceResponsibleSessions key={[ordered(confirmed.ref),session.user.id,session.clientId].join(':')} client={client} confirmed={confirmed} session={session} buffer={responsibleBuffer??null} onChange={onResponsibleChange} owner={owner} busy={busy} run={run}/>:null}
   </section>;

@@ -5,7 +5,9 @@ allowed.add('D:/tmp/anvil-v3-stage-b/ui07-impact-review-02/dist');
 allowed.add('D:/tmp/anvil-v3-stage-b/ui07-request-sources-01/dist');
 allowed.add('D:/tmp/anvil-v3-stage-b/ui07-stored-comparison-01/dist');
 allowed.add('D:/tmp/anvil-v3-stage-b/ui04-assignment-confirmation-01/dist');
-if (allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '')) {
+// 명시적으로 선택한 현재 로컬 빌드의 in-process 브라우저 시험. HTTP 서버를 만들지 않는다.
+allowed.add('apps/web/dist');
+if (allowed.has(process.env.ANVIL_UI04_QA_DIST ?? '') && process.env.ANVIL_UI04_QA_DIST !== 'apps/web/dist') {
   process.env.TEMP = process.env.ANVIL_UI04_QA_DIST!.replace(/\/dist$/, '/temp'); process.env.TMP = process.env.TEMP;
 }
 

@@ -2,6 +2,19 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 한정 확인·보존 / Main 어울(2026-10-19)**: 새04의 기존 왕복1 PASS2.4초는 고유 baseline-panel key 한 줄 보정 후 활성 재확인1개·원입력·같은 명령 전체2건·unexpected0·pageerror0을 확인했다. 신규UI05 정상/403 시험은 앞01의1 PASS이며 source 변경과 무관한 완료 시험은 반복하지 않았다. 최종 type0·183module build0·diff0이다. 원 M1 정적 보정과 추가 key/시험 설정 부위는 각 한정 C0/I0/M0이며 검토자는 재실행하지 않았다. 원01/02/03 실패는 보존한다.
+  04의 passed .last-run.json 1개와 빈 폴더만 exact realpath/link0/내용1개 확인 뒤 비재귀 정리해04 부재를 확인했다. 원 실패01/02/03 진단은 보호 경로에 남기고 해당 runner literal의 node process 조회0이다. 실제 서비스/DB/키·권한/Agent·TCP 서버 변경0. UI05/FN08/FN09는 실제 착수에 맞춰 부분 구현으로 등록부만 정정하고, 과거 UI04 검토1건 누락도 맞췄다. 완료 합계3은 불변이며 실제 served/DB권한·지연 주체 전환/전체UI05·FN12/13/전체 계획은 미완료다. React 지침은 선택 primitive key·이전 결과 폐기/렌더 수명에만 적용하고 최적화나 구조 확장으로 범위를 늘리지 않았다. 정본 현황의 기존 A-1 행은 보존했으며 한 번의 mirror patch는 원문 차이로 적용 전 실패한 뒤 정확 행만 보완했다. 다음은 원 실행 차단과 무관한 계획 미구현을 계속 진행한다.
+
+- **UI05 왕복 중 기존 화면 중복 실결함 보정 / Main 어울(2026-10-19)**: 전용03의 failed1은 활성 재확인 버튼2개였으며 앞선 ‘시험 설정만’ 설명은 불충분했다. 실제 snapshot은 프로젝트 작업 region2벌이고 App의 WorkspacePage candidateKey와 형제 ProjectBaselinePanel baselineKey가 동일 user/client/project 문자열임을 코드로 확인했다. 기준선 패널 key에 고유 baseline-panel 접두사만 추가하는 최소 source 보정을 적용한다. 기존 입력·명령/권한·데이터는 그대로이고 다른 기능 구조를 재작성하지 않는다. 활성 버튼 정확1/같은 명령2건 동일·unexpected0 기대값은 유지한다.
+  보정 검증은 실패1건만 새 D:/Project/Anvil/.av3-data/qa-ui05-detail-20261019-04(생성 전 부재·보호부모link0 확인)로 수행한다. Main 소유/Edge 종료·actual API/DB/Agent0/완료UI05시험 반복0 경계는 같다. 01/02/03은 각각 원 실패 증거로 보존하고 PASS로 소급하지 않는다. 동일 정식 Developer 실패로 임의 계상하지 않는다.
+
+- **UI05 한정 browser 첫 결과·시험 설정 보완 / Main 어울(2026-10-19)**: 전용01의2시험은 신규 상세 정상/403 원문 제거1 PASS, 기존 응답유실/화면왕복1 FAIL/총7.1초였다. 원 DOM은 동일 이름 재확인 버튼2개(하나는disabled)여서 strict selector가 실패했다. 실제 활성 버튼이 정확1개인지 assert하고 선택하도록 시험만 구체화했다. 새 전용02에서 원 입력/원 명령2건 동일 확인까지 통과했으나 현재 화면의 기존 conversations?limit=50 GET2건이 옛 fixture에 없어 unknown=[] 검사가 실패했다. 정확 해당 GET에만 기존 빈 page 계약을 추가하며 unknown/다른요청·원payload/동일명령 기대값은 유지한다. 제품 source/합격 기준 완화0이다. 두 실패 출력01/02는 원 증거로 보존한다.
+  다음은 수정한 실패1건만 새 D:/Project/Anvil/.av3-data/qa-ui05-detail-20261019-03(생성 전 부재·동일 보호부모link0 확인)에서 한 번 검사한다. owner Main·headless Edge·각15초/가짜API·현재 dist route fulfillment, 외부 TCP/실DB/Agent0·완료된 신규UI05 시험 반복0이다. 종료 후 browser close·성공03 경로만 정확 정리하며 실패01/02는 비활성 진단 증거로 유지한다. TS18047 보정 뒤 type0·최신183module build0 확인, 큰 chunk 경고는 유지한다. 임시출력01/02·color env 경고를 제품 오류나 전체기능 PASS로 바꾸지 않는다.
+
+- **UI05 초기 상세 조회 연결·브라우저 자원 등록 / Main 어울(2026-10-19)**: 기존 /session placeholder에 고정 초안 id/version/hash 선택과 임무 판단→확정 원문→책임 역할/예약·준비 GET를 연결했다. 확정 원문 화면의 링크로 진입하고 이전 선택 결과/실패 결과를 현재로 보여주지 않는다. 조회뿐이며 실제 실행·중지·관측·결과/하위임무·diff/시험·완료 증거는 미연결이다. 기존 GET·권한/false 계약을 소비하며 새 DB/API·실행·서비스를 만들지 않는다.
+  초기 신규3 RED165.3518ms→route/loader와 기존경로4 PASS223.1203ms, 화면 부재1 RED1005.1759ms→5 PASS577.0871ms·인접7 PASS405.2872ms/type0였다. 독립 원 C0/I0/M1은 역할별 최신 binding의 다른 임무 혼동이다. Main 1 RED370.4286ms→assignmentRef id/version/hash·다른 임무 표시 보완4 PASS382.9826ms, 해당 두 부위 한정 재검토 C0/I0/M0다. 원M1은 유지한다. 후속 type TS18047 null2건은 명시 confirmed!==null guard로 보정 중/후속 type 확인 전이며 build와 구분한다. 로컬 build183module exit0/큰 chunk 경고 유지·임의최적화0. 첫 sandbox build EPERM1은 같은 elevated 명령으로 성공, 권한변경0이며 미존재 package.json 탐색1회와 초기 새 폴더 생성 실패1회도 제품 실패와 구분한다.
+  최소 브라우저 시험 사전등록: Main 소유 새 D:/Project/Anvil/.av3-data/qa-ui05-detail-20261019-01 결과 경로(부재·부모link0 확인), headless Edge 일회 runner(시험2개·각15초), 현재 로컬 dist를 in-process route fulfillment로만 제공한다. API/화면 응답은 합성이며 HTTPS/TLS/실서비스·DB/Agent 검증이 아니다. 새 TCP 서비스/컨테이너/키/DB0, 시험 종료 시 browser 자동close·성공 결과 전용 경로만 정확 확인 후 정리한다. 기존소진QA/자료 삭제·재실행0. 새 상세 정상/거절과 기존 응답유실→화면 이동→원 입력/명령 재확인만 실행하며 실제served·권한/원문 저장 진위는 미검증으로 남긴다.
+
 - **C3 후속 등록자료 서명 조회 store 연결 / Main 어울(2026-10-19)**: 9a0a7d46 local/private exact·clean 뒤 동일 challenge 연결에서 grant/HUMAN 세션 actor→기존 materialbasis→등록 ref bytes·proof 원결과 binding을 결합했다. 정확 GET/materialRef/hash, provider 인자 복제·bytes 별도 반환/상한, await 전후·callback 마지막 필수 합성 port를 검사한다. parts/results/registered provider는 필수이며 실제 원문 접근권한·결과 journal의 유일/불변/물리 저장은 아직 제공자 미완료다. 임의 경로/원문·기본키/자동HTTP·SQL/서비스·Agent를 만들지 않았다.
   모듈 부재3 RED950.7389ms→2 PASS/직접 fixture의 dummy target 거절1 FAIL1298.3151ms였다. dummy target을 실제 GET 계약으로 고쳐(검사 완화0) 신규/optional setup 영향11 PASS2163.2531ms·type0·diff0이다. 정상 실P256 코드/nonce replay 및 읽기 오류/마지막 port 변경의 같은 fake tx rollback을 확인했다. 신규 source/시험2경로 한정 독립 정적 C0/I0/M0이며 검토자는 재실행하지 않았다. 실제 SQL/RLS/잠금·COMMIT·내구/원문진위·물리결과journal, binding 저장 이후 실패·동시 replay·COMMIT 응답유실, HTTP/OS/Agent는 미검증이다. 원5 공용guard 거절/pending·formal DB/키/권한/서비스 불변, 전체 C3/기능 완료로 표시하지 않는다. 다음은 필수 registered/bytes/result 제공자의 실제 저장 접점과 남은 계획 UI 연결 중 차단 없는 범위를 계속 선정한다.
 
@@ -1783,7 +1796,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 0 / [2] 15 / [] 26 — 총44개**. P01/P02/P03 준비 수용, UI00/UI01/UI02/UI03/UI06/UI08/UI10/UI11/FN01/FN02/FN03/FN04/FN05/FN06/FN11을 Main 어울이 순차 작업 중(동시 writer 아님). FN06/UI11 후보와 UI08 승인 화면은 부분 구현이며 실제 Agent 연결 완료가 아니다. 준비 산출물·schema 존재는 제품 기능 완료가 아니다.
+- 현재 합계: **[0] 3 / [1] 1 / [2] 18 / [] 22 — 총44개**. P01/P02/P03 준비 수용, UI04 검토·보완, 기존 구현 중15업무와 UI05/FN08/FN09를 Main 어울이 순차 진행한다(동시 writer 아님). 최근 source/합성·브라우저 결합과 과거 격리 실측은 아래 증거 범위에 한정하며 실제 Agent 연결·전체 기능/Stage 완료가 아니다. 오래된 요약 집계와 실제 등록부 불일치를 바로잡았고 완료 수는 바꾸지 않았다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -1821,7 +1834,7 @@
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 빈소스 초안/고정 선택·직접 정의·내용 검토/별도 확정→명시 생성/단절 시 동일 명령 재확인 연결. UI02/03 fixture23, actual API/DB는 별도4 PASS | 기존 소스/문서·자료/총괄·환경·실제 UI DB 여정 |
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [1] | 기존GET 원본/적용참조·3영역/자료탐색 후보, unit8/browser5·원C0I1/Main시험보완·UI04_CONTEXT_PREP_RESULT | 실제served·DB·단계/세션·지시/Agent·시작/중지 미연결 |
-| UI05 책임자·실행 상세 | [] | S05 정적 시안 | 실제 임무/관측·원문/diff/시험/현황 조회 |
+| UI05 책임자·실행 상세 | [2] | 고정 임무·판단·확정/책임 역할·예약/준비 GET 연결 후보, 직접4/인접7·type/build·합성 browser 신규1/왕복1 및 한정 검토 | 실제 served/API·DB·Agent 관측·결과/하위임무·diff/시험·중지 미연결 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
@@ -1845,8 +1858,8 @@
 | FN05 헌법·지식·원문·맥락 | [2] | Main 어울. 원문/지식·이유/이력·검색/정정/제외·검토/확정·헌법 적용/교체/무효 이력 actual7cf8c005·SQL37 | 공유·맥락 선별/전달/이해(FN09/IX04 선행) |
 | FN06 첫 코딩 Agent·환경 | [2] | Main 어울. 후보/환경/6능력 기록·41/42 적용, 350b2e30 내부/HTTP·인접 actual3 PASS·독립 잔여0. 완성형·실측/실제 Agent·UI11 미연결 | Main이 다음 미완료/선행을 선정·진행하고 필요한 실행/권한 결정만 PMO 요청. 전체 연결/사용자 browser 완료 주장 금지 |
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
-| FN08 Windows 실행·회수·중복방지 | [] | 회수/스풀 논리 계약 | 실제 관측·ACK·재전송/중복부작용 차단 |
-| FN09 총괄·단계·하위 임무 | [] | 역할/위임 설계만 있음 | 필수맥락·임무·권한부분집합·단일writer |
+| FN08 Windows 실행·회수·중복방지 | [2] | P1 C3 START/SEND 선택·서명nonce/현재검사·전용permit/자료 연결 source·합성 후보, 현재 false 효과 유지 | original5 공용SQL guard 거절/pending·물리 provider/actual DB·OS/Agent 실행 미완료 |
+| FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
 | FN12 결과·검증·이상 판정 | [] | 제출≠완료·분류 설계 | 실제 증거 대조·보완·원인미확인/미실행 |
