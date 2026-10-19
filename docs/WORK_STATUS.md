@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 보관 기준 조회 후보 검수 / Main 어울(2026-10-19)**: 원문 소비자4RED140.5008ms→4PASS196.5702ms, 명시목록/선택v2→지연v1거절 browser 미구현RED9.7초→1PASS2.2초다. 같은 화면/파일의 직접17PASS411.4567ms/type0/build0·등록로컬QA결과 exact제거/별도경로잔여0이다. 최신 자동선택/활성·검수합격·쓰기/실Agent·정식서비스 변경0이다.
+  이 조회 단위 독립 C0/I0/M1(증거 문구 공백)이다. 실제 새 PG의 범위는 옛v1 metadata 포함·v2 원문/input/ref 재조회이며 이번 시험에서 v1 성공 원문 GET을 했다고 주장하지 않는다. M1 권고에 따라 증거 범위를 좁혔고 문구 보완을 위해 완료검사를 반복하지 않았다. 검토유보 actualPG·동시성/권한실행·지연browser/served/인수는 Main의 한정 실행 증거와 분리하고 독립PASS로 승격하지 않는다. 화면은 보관목록 명시조회→고정버전 원문조회까지이며 현재 적용·조건별 검수 저장·보완 배정·전체FN12/UI05/Stage 완료는 아니다.
+
+
+- **UI05 보관 기준 선택 조회 착수 / Main 어울(2026-10-19)**: 목록과 원문은 각각 명시 GET하며 최신 자동선택/활성·검수합격으로 바꾸지 않는다. 재조회/다른버전 선택 대기·권한거절에서 앞선 원문을 숨기고 정확 임무/ref/hash·전체 source/coverage/필수조건/환경을 재대조한다. 읽기는 다른 작성자·이전버전/다중source 매핑을 지원하고 작성 UI의1원조건1행 제한을 계약 전체에 강제하지 않는다. 신규 소비자4RED140.5008ms→4PASS196.5702ms/type0, 새 schema/정책/서비스·Agent0이다. 새 명시목록/선택v2→지연v1거절 실제클릭 시험은 기존 등록 로컬QA 결과 경로 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01만 사용·종료즉시 정확정리하며 기존 사용자브라우저/공유폴더보존이다.
+
+
 - **FN12 보관 기준 목록 실제 PG 확인 / Main 어울(2026-10-19)**: private/WSL exact5b5f462c55ef739b00a40b2adbf7f4e5e24a8d32·clean, 신규 PG7a061b9b49e5f02e92ded21b7bb71b758946c98aad8355173d39c5ba8801b39d/network3efb1d1282bd3a0c9735c937fd8c62dee8e7926710a01de644c9e29b4540cad3·고정image594290/PG15.18/Node24.21·60SQL checksum exact에서 신규 list mode1 PASS4414.796502ms(기능4057.856609),skip0·phaseDONE다. 실제 인증 API에서 새22개+개정v2 fixture로 최근20/옛v1/hasMore/NOT_SELECTED·선택v2의exactinput/원문GET·조회4표쓰기0·타사용자/없는임무version/query/회수member거절·원5guard hash불변을 확인했다. 기존 전체기준·감사반증/Agentgraph 시험 반복0이다.
   raw2파일/5디렉터리·등록 PG/network/Git경로 exact회수 뒤 별도조회 잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 정식DB/서비스/계정·키·Agent 변경0이며 정식served UI/사용자 인수·전체FN12완료가 아니다. 직접12PASS944.7294ms/type0이다. 다음은 임무별 보관목록과 선택한exact버전 원문의 화면 소비 연결이고 자동 기준활성/검수저장은 하지 않는다.
 

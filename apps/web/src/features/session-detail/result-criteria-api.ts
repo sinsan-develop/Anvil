@@ -5,7 +5,7 @@ import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 export const resultTestKinds=['BUILD','TYPECHECK','UNIT','INTEGRATION','BROWSER','AGENT','DEPLOYMENT','SECURITY'] as const;
 export interface CriteriaRow{field:'acceptanceCriteria'|'verificationRequirements';index:number;criterionId:string;testId:string;kind:string}
-type CriteriaInput={assignmentRef:PlanRef;baseRef:null;items:{criterionId:string;testId:string;kind:string;environmentRef:PlanRef;sources:{field:CriteriaRow['field'];index:number;contentHash:string}[]}[];reason:string};
+type CriteriaInput={assignmentRef:PlanRef;baseRef:PlanRef|null;items:{criterionId:string;testId:string;kind:string;environmentRef:PlanRef;sources:{field:CriteriaRow['field'];index:number;contentHash:string}[]}[];reason:string};
 export interface CriteriaRegistration{ownerUserId:string;assignment:ConfirmedAssignmentView;command:{schemaVersion:1;projectId:string;commandId:string;clientId:string;controlGeneration:number;operation:'saveResultCriteria';targetId:null;expectedVersion:0;baselineRefs:[];approvalRef:null;payload:CriteriaInput}}
 /** POST APPLIED 이후 조회 거절은 저장 명령 자체의 확정 거절이 아니다. */
 export class CriteriaReadbackUnconfirmed extends ApiError{readonly writeMayHaveApplied=true;}
@@ -47,4 +47,32 @@ export async function saveCriteriaRegistration(client:ApiClient,pending:Criteria
  if(!active())return null;let value:RegisteredCriteria;
  try{value=await client.get<RegisteredCriteria>(`/api/v1/projects/${c.projectId}/result-criteria/${d.ref.id}/versions/1`);}catch(cause){const error=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID');throw new CriteriaReadbackUnconfirmed(error.code,error.status);}
  if(!active())return null;await validateView(value,p,d.ref,v.serverReceivedAt);return active()?structuredClone(value):null;
+}
+export interface StoredCriteriaSummary{ref:PlanRef;createdBy:string;registeredAt:string;conditionCount:number;registryStored:true;reviewStored:false;completionAccepted:false;executionAuthorized:false;dispatchPerformed:false}
+export interface StoredCriteriaList{projectId:string;assignmentRef:PlanRef;items:StoredCriteriaSummary[];hasMore:boolean;selectionState:'NOT_SELECTED';observedAt:string}
+const summary=(v:any)=>exact(v,['ref','createdBy','registeredAt','conditionCount','registryStored','reviewStored','completionAccepted','executionAuthorized','dispatchPerformed'])&&ref(v.ref)&&uuid(v.createdBy)&&date(v.registeredAt)&&Number.isSafeInteger(v.conditionCount)&&v.conditionCount>0&&v.conditionCount<=100&&v.registryStored===true&&v.reviewStored===false&&v.completionAccepted===false&&v.executionAuthorized===false&&v.dispatchPerformed===false;
+async function storedAssignment(a:ConfirmedAssignmentView){if(!exact(a,['projectId','ref','snapshot','observedAt'])||!uuid(a.projectId)||!ref(a.ref)||!date(a.observedAt)||a.snapshot?.contentConfirmed!==true||a.snapshot.ready!==false||a.snapshot.executionAuthorized!==false||a.snapshot.dispatchPerformed!==false||await hash(a.snapshot)!==a.ref.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');}
+/** 목록과 원문을 따로 명시 조회한다. 최근 버전은 활성/선택된 검수 기준이 아니다. */
+export async function readStoredCriteriaList(client:ApiClient,assignment:ConfirmedAssignmentView,active:()=>boolean):Promise<StoredCriteriaList|null>{
+ const a=structuredClone(assignment);await storedAssignment(a);if(!active())return null;const v=await client.get<StoredCriteriaList>(`/api/v1/projects/${a.projectId}/assignments/${a.ref.id}/versions/${a.ref.version}/result-criteria`);if(!active())return null;
+ if(!exact(v,['projectId','assignmentRef','items','hasMore','selectionState','observedAt'])||v.projectId!==a.projectId||!same(v.assignmentRef,a.ref)||!Array.isArray(v.items)||v.items.length>20||typeof v.hasMore!=='boolean'||v.hasMore&&v.items.length!==20||v.selectionState!=='NOT_SELECTED'||!date(v.observedAt)||v.items.some(i=>!summary(i)||Date.parse(i.registeredAt)>Date.parse(v.observedAt))||new Set(v.items.map(i=>i.ref.id+':'+i.ref.version)).size!==v.items.length)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+ for(let i=1;i<v.items.length;i++){const p=v.items[i-1]!,n=v.items[i]!;if(p.registeredAt<n.registeredAt||p.registeredAt===n.registeredAt&&(p.ref.id<n.ref.id||p.ref.id===n.ref.id&&p.ref.version<=n.ref.version))fail('RESULT_CRITERIA_RESPONSE_INVALID');}
+ return active()?structuredClone(v):null;
+}
+/** 읽기는 서버의 다중 source 매핑/이전 버전도 지원한다. 작성 UI의 1원조건=1행 제한을 강제하지 않는다. */
+export async function readStoredCriteria(client:ApiClient,assignment:ConfirmedAssignmentView,item:StoredCriteriaSummary,active:()=>boolean):Promise<RegisteredCriteria|null>{
+ const a=structuredClone(assignment),selected=structuredClone(item);await storedAssignment(a);if(!summary(selected))fail('RESULT_CRITERIA_RESPONSE_INVALID');if(!active())return null;
+ const v=await client.get<RegisteredCriteria>(`/api/v1/projects/${a.projectId}/result-criteria/${selected.ref.id}/versions/${selected.ref.version}`);if(!active())return null;
+ try{
+  const d=a.snapshot.definition,input=v?.input;
+  if(!exact(v,['projectId','ref','snapshot','input','sourceBindings','createdBy','registeredAt','registryStored','reviewStored','completionAccepted','executionAuthorized','dispatchPerformed','observedAt'])||v.projectId!==a.projectId||!same(v.ref,selected.ref)||v.createdBy!==selected.createdBy||v.registeredAt!==selected.registeredAt||!date(v.observedAt)||Date.parse(v.observedAt)<Date.parse(v.registeredAt)||v.registryStored!==true||v.reviewStored!==false||v.completionAccepted!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false||!exact(input,['assignmentRef','baseRef','items','reason'])||!same(input.assignmentRef,a.ref)||!Array.isArray(input.items)||input.items.length!==selected.conditionCount||typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>20000||!ref(d.environmentRef)||!Array.isArray(d.baselineRefs)||!d.baselineRefs.length||!d.baselineRefs.every(ref)||new TextEncoder().encode(ordered({assignment:a,input})).length>2*1024*1024)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+  if(v.ref.version===1?input.baseRef!==null:!ref(input.baseRef)||input.baseRef.id!==v.ref.id||input.baseRef.version!==v.ref.version-1)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+  const ids=new Set<string>(),covered=new Set<string>();
+  for(const i of input.items){if(!exact(i,['criterionId','testId','kind','environmentRef','sources'])||!code(i.criterionId)||ids.has(i.criterionId)||!code(i.testId)||!resultTestKinds.includes(i.kind as any)||!same(i.environmentRef,d.environmentRef)||!Array.isArray(i.sources)||!i.sources.length||i.sources.length>20)fail('RESULT_CRITERIA_RESPONSE_INVALID');ids.add(i.criterionId);const local=new Set<string>();
+   for(const source of i.sources){if(!exact(source,['field','index','contentHash'])||!['acceptanceCriteria','verificationRequirements'].includes(source.field)||!Number.isSafeInteger(source.index)||source.index<0)fail('RESULT_CRITERIA_RESPONSE_INVALID');const key=source.field+':'+source.index,text=d[source.field]?.[source.index];if(local.has(key)||typeof text!=='string'||!text.trim()||text.length>20000||await hash(text)!==source.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');local.add(key);covered.add(key);}
+  }
+  for(const field of ['acceptanceCriteria','verificationRequirements'] as const){if(!Array.isArray(d[field])||!d[field].length)fail('RESULT_CRITERIA_RESPONSE_INVALID');for(let index=0;index<d[field].length;index++)if(!covered.has(field+':'+index))fail('RESULT_CRITERIA_RESPONSE_INVALID');}
+  const expected=projection(a,input);if(!same(v.snapshot,expected.snapshot)||!same(v.sourceBindings,expected.sourceBindings)||await hash(v.snapshot)!==selected.ref.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+ }catch(cause){if(cause instanceof ApiError)throw cause;fail('RESULT_CRITERIA_RESPONSE_INVALID');}
+ return active()?structuredClone(v):null;
 }
