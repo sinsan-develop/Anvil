@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 결과용 역사 실행 참조 / Main 어울(2026-10-19)**: 4fd680b246e0eb3599515a2067fcc2b5c9454578 local/private exact·clean 뒤 실제0017 executions에는 hash 열이 없음을 확인했다. readSyntheticResultExecutionReference는 원 START 명령·원 grant의 역사 plannedAt·임무/실행 세대·원 봉투/영수증을 대조해 결과용 내부 고정 참조를 만든다. planner의 임시 새 ref는 폐기하고 기존 grant/명령을 발행·변경하지 않는다. 출처 인증/현재 권한·실행/dispatch는 모두 false이며 실제 DB 원행·영수증·명령 출처 제공자는 미연결이다.
+  신규3 RED171.611ms→3 PASS189.164ms/type0, 정확2경로 독립 정적 C0/I0/M0·재실행0이다. 이후 Main이 실행세대2 정상 assertion만 추가해3 PASS182.8862ms를 확인했다. Ruling: 없는 execution hash 열을 추정하지 않고 namespace+원 명령/grant/봉투/영수증의 내부 snapshot hash로 고정한다. 공개 계약/기존 SQL 변경이 아니며 잘못된 경우 내부 mapper/소비 시험을 보완하고 actual 저장 전 다시 대조한다. result_submissions가 DATA_MODEL 정본 명칭이며 앞 submitted_results 오기를 정정한다. 추정 파일명3건 부재와 Windows literal glob 오류123 1건은 실제 파일목록/-g 탐색으로 바로잡았으며 파일/ACL/권한 변경0, 제품/정식 Developer 실패가 아니다. 기존거절5guard/pending·실제 DB/키/서비스/Agent 변경0이다. 다음은 결과 제출의 물리 result_submissions 저장 및 기존 명령·허가/현재 조회 제공자 연결이며 FN12/Stage 완료로 판정하지 않는다.
+
 - **FN12 원제출 읽기 경계 / Main 어울(2026-10-19)**: 7620e01f0350f3ca4f9efb6c7f499aa185ce6101 게시 뒤 기존 submit 전용 current 검사에 내부 READ_RESULT 목적과 새 read를 추가했다. submit의 기본 목적/준비hash non-null 결박은 그대로다. 조회는 exact scope/제출ID·current manifestHash/조회주체·허가영수증·freshness/기한을 전후 대조하고 원기록hash를 다시 확인하며 append0이다. 조회자가 원제출자와 달라도 원제출자/당시영수증·WORKER_CLAIM·완료false를 보존하고 원문 반환값/저장본을 분리한다.
   새read부재3 RED284.7859ms→read3+직접영향submit5=8 PASS309.8256ms/type0/diff0, 변경2경로 한정 독립 정적 C0/I0/M0/재실행0이다. 실제 조회권한/current 제공자·DB 불변성/동시성/COMMIT·HTTP/원문 provenance는 미검증이다. 소스 주석 이문자1건은 실행 전 한국어로 정정했다. 실제DB/권한·키/서비스/Agent·외부자원/기존guard 거절 재시도0이며 전체 FN12/UI/Stage는 여전히 부분 구현이다. 다음 정확 작업은 FN12의 정본 submitted_results/result_reviews와 실제 기존 SQL/명령·허가 스키마를 대조해 아직 없는 물리 저장/current 제공자 경계를 구현하는 것이다. 새 근거 없는 공개API/권한/서비스를 만들지 않고 기존거절5함수는 제외한다.
 
