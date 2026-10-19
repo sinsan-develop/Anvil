@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 중지이력 실제 양성 조회 확인 / Main 어울(2026-10-20)**:7515178e exact새빈Git/clean·PG15.18/image594290e9/기존59SQL checksum에서 실제HUMAN/확정임무/역사START·제출→빈이력→기존합성STOP 명령·보류outbox COMMIT→기존무결성reader/새API/Web소비1PASS2075.734807ms(exit0)다. 같은result/execution exact·요청보관1/실제stop NOT_OBSERVED·dispatch/releasefalse, query400/외부404/조회회수404·7표조회불변/기존5guard불변을확인했다. 이는격리Fastify/PG·Web소비함수이지 served/TLS·실Agent/OS/중지/회수/재개·정식기능/인수가아니다.
+  PG34f13660/networkf49c4c97·등록Git경로의ID/label/image/mount[]/port{}·owner/link/process일치후exact회수·독립3자원잔여0이다. 합성원문2파일/5dir는finally회수·closeFailures0/rootCleanupFailedfalse, 기존정식PGexited/started/finished/restart0불변이다. local/private7515178e·mainf976ed5e불변, 거절0029/미게시후보5파일보존·새승인재질문/우회0이다. FN13은여전히부분구현이며서버checkpoint저장/실제상태대조·중지회수·안전재개가남는다.
+
 - **FN13 중지이력 source 검수·격리QA 등록 / Main 어울(2026-10-20)**: 제공자2RED196.6731ms→직접/인접6PASS490.0718ms·route/Web3RED1189.7611ms→5PASS1124.2538ms/type0/build216이다. 새STOP_REQUEST_HISTORY 화면부재RED→1PASS2.5초·쓰기0/재조회숨김/403부모회수확인, scopedstatic1회C0/I0/M0·동일단위재리뷰0이다. 첫타입2오류는시험입력Pick한정으로수정했다. 종료뒤RED3/GREEN1결과와buildexact회수/독립잔여0·경고유지다. 이후같은rg literalglob os123은추가1회오류로보존하며wildcard경로사용을중단하고확정파일만읽었다. 실제PG/양성기존reader연결은이source시험으로승격하지않는다.
   신규QA literal /home/daon/deploy/anvil-v3-fn13-stop-history-qa-01 / anvil-v3-fn13-stop-history-pg-01 / anvil-v3-fn13-stop-history-net-01 / DB anvil_v3_fn13_stop_history_qa_01; owner AV3_FN13_STOP_HISTORY_QA·instance stop-history-01·run stop-history-20261020-01·uid1000daon이다. 새빈Git exact게시SHA·pinnedPG15 image594290e9/Node24.21 hash7fde7b8a·기존59SQL만·tmpfs512MiB/internalnetwork/hostport·volume0·수명10분/Node90·외부110초다. 생성전부재·realpath/link/owner/image/daemon재확인, 합성HUMAN/확정임무/원START/제출→빈중지이력→기존합성STOP 보류저장1→양성이력API/Web·권한거절/7표조회불변/기존5guard불변만확인한다. 새schema/0029·정식PG/서비스/키·실정책/Agent/OS/회수/재개0이다. 종료후ID/label/image/mount/port·경로owner/link/process일치등록자원만정리하고독립잔여0을확인한다. 실제통합시험은최초미실행이며결과전PASS없다.
 
