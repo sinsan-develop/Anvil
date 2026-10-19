@@ -53,6 +53,7 @@ import {ProjectResultReworkPreparation} from '../results/project-result-rework-p
 import {ProjectResultReworks} from '../results/project-result-reworks.ts';
 import {ProjectResultExecutionSource} from '../results/project-result-execution-source.ts';
 import {ProjectReportedCoverage} from '../results/project-reported-coverage.ts';
+import {ProjectCheckpointPreparation} from '../checkpoints/project-checkpoint-preparation.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
 const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
@@ -82,6 +83,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const projectMethods = new ProjectMethodologies();
   const assignments = new ProjectAssignmentDrafts(workPlans, projectMethods), assignmentCodec = new ProjectListCodec(value => options.repository.signProjectCursor('ASSIGNMENT_DRAFTS:' + value));
   const assignmentConfirmations = new ProjectAssignmentConfirmations(assignments);
+  const checkpointPreparation=new ProjectCheckpointPreparation(assignmentConfirmations);
+  app.post<{Params:{projectId:string};Body:{assignmentRef:unknown;input:unknown}}>('/api/v1/projects/:projectId/checkpoints/prepare',{schema:{params:object({projectId:idSchema}),querystring:object({}),body:object({assignmentRef:{type:'object'},input:{type:'object'}})}},request=>{if(request.headers.host!==host||request.headers.origin!==options.origin)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),csrf(request),(db,actor)=>checkpointPreparation.prepare(db,actor,request.params.projectId,request.body.assignmentRef,request.body.input));});
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
   const resultExecutionSource=new ProjectResultExecutionSource(results);
   const resultArtifacts=new ProjectResultArtifacts(results,options.artifactRoot?new ArtifactStore(options.artifactRoot):null);

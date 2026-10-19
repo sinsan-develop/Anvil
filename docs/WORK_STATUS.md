@@ -2,6 +2,17 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 상세 현황 준비 source 부분 연결 / Main 어울(2026-10-20)**: 신규 input6/provider3/route1/Web3=13PASS1608.3817ms/type0·build0(202modules)·CHECKPOINT_PREP 1PASS2.9초·diff0다. UI05 선택 확정임무에서 현재 위치·완료 주장/진행/잔여·판단대기·다음/금지/이유를 작성하고 exact ref/hash·기록text/hash를 대조한다. 입력변경/늦은응답·권한거절 회수를 확인했다. 준비/API/UI 새단위 정적 검토1회 C0/I0/M0이며 앞 입력 C0/I1/M0는 Main ACK 반례해소와 구별한다. 실제PG/served·파일내구성/OS회수/재개/Agent는 독립검토 유보이며 DB·파일저장과 상세참조 편집은 아직 미완료다. SOURCE 준비를 사용자기능 완료로 승격하지 않는다.
+  관리오류: 생성전 검사에서 dist가 이미 존재해 QA_TARGET_PRESENT가 났는데 Main이 그 실패를 후속 build 중단으로 연결하지 않았다. 이전 소유 빌드 산출물만 같은 경로에 재생성했고 제품/사용자 소스 변경은 없으나 사전확인 누락은 보존한다. 뒤에 정확 realpath/link·현재 산출물목록/시험 exit를 확인하고 브라우저실패1(exit1·8초대)은 화면미구현 RED로 보존했다. 구현 후 단일 GREEN을 수집한 뒤 등록결과1파일·build정확경로 회수, 별도부재확인이다. 이후 preflight 실패시 즉시 해당후속 실행을 차단한다. chunk/NO_COLOR 경고 유지·기존전체QA 반복0.
+  다음은 승인 FN13 카드/§13.4의 불변 서버 checkpoint 저장·정확원문 조회다. 원본 준비/누락을 보존하고 파일ref 부재와 실제file저장은 false로 분리하며 현재 HUMAN·단독제어·명시정책/정확버전·receipt/audit를 소비한다. 상세 schema는 새 forward source만 작성/신규 격리QA로 검증하고 정식DB·서비스/실정책·키·OS복원/Agent는 바꾸지 않는다. 파일/DB 차이는 자동덮기·미확인0 치환하지 않는다.
+
+
+- **FN13 현황 준비 TDD·화면 검증 등록 / Main 어울(2026-10-20)**: 입력 검토 C0/I1/M0의 ACK0+ref 거절은 반례1RED/5PASS→수정 후6PASS375.1235ms로 Main이 해소했다(같은 입력 재리뷰0). 선택 확정임무 reader 준비2RED→Node strip-only parameter-property 구문오류1 수정→2PASS335.8275ms. 새 보안422/route404 2RED→직접4PASS1199.9538ms/type0. Web 미구현3RED→정렬된 입력과 기록텍스트 불일치1FAIL/2PASS→정규 순서 보정 후3PASS450.9726ms다. source-only/fixture이며 실제 PG·기록파일 저장/served·OS회수/재개는 아직 아니다. 읽기 조사에서 잘못 추측한 미존재 파일 경로와 PowerShell glob 조회 오류는 파일·권한 변경 없이 남기며 재실행으로 PASS로 바꾸지 않았다. 비한국어 주석2건은 게시 전 한국어로 정정했다.
+  신규 화면 검증은 기존 Main소유 apps/web/dist와 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01/전용 Edge를 사용한다. 생성 전 부재·부모 realpath/link 확인, build 및 단일 신규 CHECKPOINT_PREP 시나리오 최대30초, 프로세스 종료 확인 후 해당 산출물만 정확 정리·별도 부재확인한다. 새DB/서비스/권한/키·실Agent/비용0, 기존완료QA 반복0이다.
+
+
+- **FN13 상세 체크포인트 착수 / Main 어울(2026-10-20)**: 2ae20bfe local/private exact·clean에서 FN13/FUNCTION_WORK·INTERFACES§13.4와 기존FN08 execution-recovery를 대조했다. 기존 복구는 최소 ACK/process·STOP 수신용이며 상세 CheckpointState/보관·조회는 미구현이다. 먼저 정확 확정임무·기준/현재작업·완료/진행/잔여·변경/시험·오류/시도·local/ACK/미수신·판단/금지/기록파일ref의 typed 입력/누락 표시와 안전한 현황파일 내용을 TDD한다. 이어 기존 현재HUMAN/단독제어/명시정책·영수증/감사 아래 불변저장/조회로 연결한다. 입력 준비를 저장/실파일·서버사실/완료·실패집계·OS회수/안전재개로 승격하지 않는다. 새외부실행·복원/reset/kill/정식DB/정책/Secret·서비스/Agent0, 기존특정거절 변경0이다. 공개/DB 연결은 승인계획 내 상세기록 구체화만 수행하고 구체 새 위험이 있으면 근거를 PMO로 전달하며 무관 작업은 계속한다.
+
 - **FN12 제출 이전페이지 실제 PG 한정 확인 / Main 어울(2026-10-20)**: exact50dba7d298239cd8b8e39f187e0b1c612c0eec6b·새PGa157ab4b8d92da7ae79f691a8d5daa2495a7907b27f6535c23dfe362fe542b7d/network11be6911c12d1f3ff985da3d985e02fa6f9072a466c01fddbd73ca8688a6e8c6·PG15.18/기존59SQL ID/hash exact에서1PASS4066.443233ms(기능3666.947596),skip0·DONE다. 실제HUMAN API→PG→Web의 서명20+2/중복0·선택 이전 원문 exactGET/읽기4표불변·위조/만료/다른임무cursor400·query/outsider/회수멤버거절·원5guard불변을 확인했다. 새page mode에서 기존목록전체/보완저장·예산QA는 반복0이다.
   raw2파일/5dir·등록PG/network/Git경로 exact회수 뒤 별도 잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 신규schema/정식DB·서비스/권한/Secret·Agent0, 정적C0/I0/M0·합성browser와actual PG 범위는 별도다. 동시삽입/물리경합·실제servedbrowser/Agent·증거진위/검수합격/사용자인수·전체FN12/UI05/Stage는 미확인/부분구현이다. Main 다음선정은 FN13의 상세 체크포인트이며 기존FN08 최소 관측회복/STOP과 구별한다. 기록을 실제중지/회수·재개허가로 승격하지 않고 승인계획§13.4의 임무/기준·완료/미완료·변경/시험·오류/시도·로컬/서버순번/미수신·판단/금지·원기록 참조를 불변 보관/조회하는 단위부터 이어간다.
 
