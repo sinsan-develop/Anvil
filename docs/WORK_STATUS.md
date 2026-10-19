@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 제출 이전페이지 실제 PG 한정 확인 / Main 어울(2026-10-20)**: exact50dba7d298239cd8b8e39f187e0b1c612c0eec6b·새PGa157ab4b8d92da7ae79f691a8d5daa2495a7907b27f6535c23dfe362fe542b7d/network11be6911c12d1f3ff985da3d985e02fa6f9072a466c01fddbd73ca8688a6e8c6·PG15.18/기존59SQL ID/hash exact에서1PASS4066.443233ms(기능3666.947596),skip0·DONE다. 실제HUMAN API→PG→Web의 서명20+2/중복0·선택 이전 원문 exactGET/읽기4표불변·위조/만료/다른임무cursor400·query/outsider/회수멤버거절·원5guard불변을 확인했다. 새page mode에서 기존목록전체/보완저장·예산QA는 반복0이다.
+  raw2파일/5dir·등록PG/network/Git경로 exact회수 뒤 별도 잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 신규schema/정식DB·서비스/권한/Secret·Agent0, 정적C0/I0/M0·합성browser와actual PG 범위는 별도다. 동시삽입/물리경합·실제servedbrowser/Agent·증거진위/검수합격/사용자인수·전체FN12/UI05/Stage는 미확인/부분구현이다. Main 다음선정은 FN13의 상세 체크포인트이며 기존FN08 최소 관측회복/STOP과 구별한다. 기록을 실제중지/회수·재개허가로 승격하지 않고 승인계획§13.4의 임무/기준·완료/미완료·변경/시험·오류/시도·로컬/서버순번/미수신·판단/금지·원기록 참조를 불변 보관/조회하는 단위부터 이어간다.
+
 - **제출페이지 정적 검토 한정 채택 / Main 어울(2026-10-20)**: 기존 Reviewer 새단위1회 C0/I0/M0를 한정 채택했다. 사용자/프로젝트/정확임무·HMAC20행/30분과20번째cursor·keyset·metadata정렬/미검증·페이지이동/재조회중선택숨김을 대조했으나 실제PG구문·동시삽입·실권한/served·Agent/전체FN12/UI05는 판단유보다. 앞예산/순서계산/보완페이지·기존M1을 재판정하지 않는다. 새 등록 result-page QA01은 exact게시후보/59SQL로 신규페이지 핵심만 수행하며 기존완료QA 반복0이다.
 
 - **FN12 제출페이지 source·독립 검토 중 / Main 어울(2026-10-20)**: 신규UI missing버튼 RED8.8856초→RESULT_PAGES1PASS2.8초, 직접 source10PASS712.0536ms/type0/build0(200modules)다. 새endpoint로 직접영향3경로 중2PASS/기존검수원문1FAIL9.1초는 앞서 구현한 보완·차단 기록을 여전히 미연결로 기대한 옛문구였다. 제품변경 없이 ‘보완·차단기록연결’과 ‘합격·배정미연결’ 양쪽을 검증하도록 시험만보정해 해당1PASS3.5초·type0, chunk/NO_COLOR 경고보존이다. 결과metadata/원문·권한검사/합격기준 완화0이다.

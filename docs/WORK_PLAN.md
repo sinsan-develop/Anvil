@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 제출 이전페이지 실제 조회 한정 확인**: exact50dba7d2의 새격리PG15/59SQL→인증API→Web consumer에서 서명20+2·이전원문·거절/읽기4표불변·원5guard불변1PASS/정리0 확인. 원문/페이지를 열 수 있게 source연결했지만 정식DB/served·실Agent/검수/인수·전체FN12/UI05 완료는 아니며 동시삽입/물리경합은 미검증이다.
+
 - **2026-10-20 FN12/UI05 제출 이전 페이지 source 연결**: 기존 no-query 목록을 유지하고 별도 서명keyset 페이지·명시 원문선택을 연결했다. 신규/직접10PASS·type/build, 합성browser의20→2/재조회중숨김·거절 및 직접영향 예산/검수원문을 한정 확인했다. 실제SQL/서명·인증PG는 신규 격리 검증 전이며 source를 전체FN12/UI05·사용자인수로 승격하지 않는다. 원 실패/경고·정리·독립 검토는 WORK_STATUS를 따른다.
 
 - **2026-10-20 예산 원장 실제 조회 한정 확인**: exact268cd8ae의 새격리PG15/59SQL→인증API→Web consumer1PASS·정리0. 선택한 정책ref/hash·프로젝트전체 예약합계/읽기5표불변·거절/원5guard불변 확인이며 정식DB/served·실제과금/현재허가/Agent·전체FN10/UI05 완료가 아니다. QA01 조회시각시험 실패와 독립 I1·Main TDD해소는 WORK_STATUS에 보존한다.
