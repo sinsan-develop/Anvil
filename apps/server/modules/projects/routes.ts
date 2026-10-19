@@ -44,6 +44,7 @@ import { SourceReadRecords } from '../connections/source-read-records.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import {syntheticHumanExecutionOperations,enabledSyntheticHumanExecutionOperations,checkSyntheticHumanExecutionPorts,dispatchSyntheticHumanExecution,type SyntheticHumanExecutionPorts} from '../executions/project-runtime-commands.ts';
 import {ProjectResultSubmissions} from '../results/project-result-submissions.ts';
+import {ProjectResultReviewSources} from '../results/project-result-review-sources.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
 const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
@@ -71,6 +72,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const projectMethods = new ProjectMethodologies();
   const assignments = new ProjectAssignmentDrafts(workPlans, projectMethods), assignmentCodec = new ProjectListCodec(value => options.repository.signProjectCursor('ASSIGNMENT_DRAFTS:' + value));
   const assignmentConfirmations = new ProjectAssignmentConfirmations(assignments);
+  const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
+  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/review-sources',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReviewSources.read(db,actor,request.params.projectId,request.params.id));});
   const baselines = new ProjectBaselines(new ProjectBaselineSources({ snapshots: new SourceReadRecords(options.repository.installationId), artifacts: options.artifactRoot ? new ArtifactStore(options.artifactRoot) : null }), documents);
   const baselineCodec = new ProjectListCodec(value => options.repository.signProjectCursor('FEATURE_BASELINES:' + value));
   const contexts = new ProjectContexts(new ProjectContextSources({ confirmations: assignmentConfirmations, drafts: assignments, documents, knowledge, conversations }), assignmentConfirmations);

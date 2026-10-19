@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 검수 원문 API 후보·실제 QA 사전등록 / Main 어울(2026-10-19)**: 원제출/확정 임무 resolver4 RED136.2845ms(미구현)→최종4 PASS319.6959ms, 신규 GET 인증경계1 RED813.8545ms(404)→1 PASS665.1398ms/type0이다. 첫 한도 fixture는 개별 임무2MiB에서 먼저 거절되어 3 PASS/1 FAIL395.5597ms였으며, 각 원문은 한도 내이고 합계만 초과하도록 보정했다. 성공으로 소급하지 않는다. 실제 API/PG·사용자 화면 검수는 아직 미확인이다.
+  신규 Main 소유 /home/daon/deploy/anvil-v3-fn12-review-sources-qa-01(새 Git exact 후보/의존성·.av3-data/fn12-raw), container anvil-v3-fn12-review-sources-pg-01/internal network anvil-v3-fn12-review-sources-net-01·DB anvil_v3_fn12_review_sources_qa_01을 등록한다. Node24.21 SHA7fde7b8a/npm11.19.0·PG15 image594290·59 exactSQL, 신규 역할·합성 QA만 사용하며 공개port0/영구volume0/기존network연결0·PGdata512MiB tmpfs다. 실행창10분/Node90초·외부110초, 생성 직전 부재/link/owner·daemon/image·Git exact/clean 확인→성공/실패 후 exactID/label/image/ports/mount·owner/realpath/내부link/해당process 확인 후 등록 신규자원만 제거·별도잔여0을 확인한다. 기존 정상graph는 source 조회 fixture 선행으로만 쓰며 옛PG SQL반증/목록20/브라우저를 반복하지 않는다.
+  새 읽기에서 정식PG e6f798c3/image594290/StartedAt2026-10-18T15:25:12.085069883Z/restart0은 현재 exited다. 원인·중지주체 미확정, Main 시작/중지/서비스변경0이며 PMO에 별도 사실 보고했다. 과거 running을 현재 PASS로 쓰지 않는다. 정식DB/Secret·원5guard/pending·실제Agent는 변경하지 않는다.
+
+- **FN12 실제 검수 원본 연결 착수 / Main 어울(2026-10-19)**: f63ef945 local/private exact·clean에서 다음 독립 단위를 선정했다. Ruling: 기존 인증 PG tx에서 원제출과 정확한 내용 확정 임무를 함께 읽는 결과 검수 source resolver를 먼저 연결한다. 기존 완료/검증 문구·환경·기준은 원문 그대로 반환하고 임의 시험 ID/종류를 추론하지 않는다. 두 원문의 hash/동일 프로젝트·exact assignment를 재대조하고 최종 membership을 다시 확인한다. 이는 FN12 검수 준비의 내부 읽기 구체화이며 새 SQL/실제 정책 부여·Agent·서비스·실제 검수 ACCEPTED/보완 배정은 포함하지 않는다. 원문 크기·범위·정합성/권한 회수 음성을 TDD로 확인한 뒤 실제 PG 연결 검증과 저장 provider를 이어간다. 전부 완료/사용 가능으로 표시하지 않는다.
+
 - **FN12 검수·보완 범위 공유 결함 보완 / Main 어울(2026-10-19)**: 기준8ba4062e·codex/av3-stage-b local/private exact에서 독립 원검토 C0/I1/M0를 인수했다. evaluateResult/requestRework가 내부 기대 scope를 provider에 같은 객체로 전달해 A→B 변조 후 일관된 B 자료를 수락하는 결함을 Main이 재현했다. 새 음성2 RED314.8024ms(거절 누락)→transaction에는 deep clone만 전달→직접15 PASS633.4373ms·인접 evidence/submission-store12 PASS289.3191ms·type0·diff check0이다. caller A 보존/append0을 확인했으며 원검토 이력은 독립 C0로 소급하지 않는다. 실제 DB 권한 우회가 증명된 것은 아니고 실제 검수/보완 저장·사용자 화면 완료도 아니다.
   Ruling: 스킬의 전체회귀 반복 대신 신산님 1단계 지시에 따라 변경 두 경로와 직접 소비 reader만 검증했다. 이전 실제PG/브라우저 검증은 코드 영향 없어 반복0이다. 이번 추정 경로 읽기 부재는 실제 rg 파일 목록으로 바로잡았고 자료/권한 변경0이다. 원5guard/pending·정식DB/서비스·실제Agent·계정/키 변경0, 신규QA자원0. 다음은 승인 FN12의 원문·기준·증거를 실제 저장 제공자에 연결하는 미완료 부분이며 checkpoint는 완료보고/새 승인 대기가 아니다.
 
