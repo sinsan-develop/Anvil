@@ -47,7 +47,7 @@ function currentShape(raw:unknown,scope:Scope,at:string){
  for(const i of c.criteria){if(!recordV1(i,['code','sourceRefs','responsePartRefs'])||!understandingCodes.includes(i.code)||seen.has(i.code)||!refs(i.sourceRefs)||!i.sourceRefs.every(r=>c.basisRefs.some(v=>same(r,v)))||!refs(i.responsePartRefs)||!i.responsePartRefs.every(r=>c.responsePartRefs.some(v=>same(r,v))))bad('UNDERSTANDING_CURRENT_REQUIRED');seen.add(i.code);}
  const {checkedAt:_,expiresAt:__,...binding}=c;return{c,binding};
 }
-function history(raw:unknown,scope:Scope):UnderstandingRecord[]{
+export function readUnderstandingHistory(raw:unknown,scope:Scope):UnderstandingRecord[]{
  if(!arrayV1(raw,1000)||Buffer.byteLength(canonicalJson(raw))>2*1024*1024)return bad('UNDERSTANDING_HISTORY_INVALID',503);
  let previous:UnderstandingRecord|null=null;
  const commands=new Set<string>();
@@ -72,22 +72,22 @@ export class ProjectUnderstandingReviews{
    if(!actor.authSession||!uuidV1(actor.authSession.id))return bad('UNDERSTANDING_HUMAN_REQUIRED');
    const replay=await projectReplay(db,actor,request);if(replay!==undefined)return replay;
    const before=await this.#current(db,actor,scope);matches(input,before.c);
-   const entries=history(await this.store.list(db,cloneV1(scope)),scope),previous=entries.at(-1)??null;if(entries.length>=1000)bad('UNDERSTANDING_HISTORY_FULL');
+   const entries=readUnderstandingHistory(await this.store.list(db,cloneV1(scope)),scope),previous=entries.at(-1)??null;if(entries.length>=1000)bad('UNDERSTANDING_HISTORY_FULL');
    await currentProjectController(db,actor,request);policy=await authorizeMaterial(db,actor,request);
    const final=await this.#current(db,actor,scope);
    if(!same(before.binding,final.binding)||Date.parse(final.at)>=Math.min(Date.parse(before.c.expiresAt),Date.parse(final.c.expiresAt),policy.validUntil,Date.parse(actor.authSession.idleExpiresAt),Date.parse(actor.authSession.absoluteExpiresAt)))bad('UNDERSTANDING_CURRENT_CHANGED');
    matches(input,final.c);
    const snapshot:Snapshot={scope,sequence:entries.length+1,previousRef:previous?.ref??null,request,requestHash:hash(request),reviewer:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId,humanSessionId:actor.authSession.id,credentialGeneration:actor.credentialGeneration,controlGeneration:request.controlGeneration},policyRef:policy.ref,currentBinding:final.binding,input,outcome:input.items.every(i=>i.judgement==='MATCH')?'ACCEPTED':'NOT_ACCEPTED',recordedAt:final.at,executionAuthorized:false,dispatchPerformed:false};
-   const record={ref:{id:previous?.ref.id??randomUUID(),version:snapshot.sequence,contentHash:hash(snapshot)},snapshot};history([...entries,record],scope);
+   const record={ref:{id:previous?.ref.id??randomUUID(),version:snapshot.sequence,contentHash:hash(snapshot)},snapshot};readUnderstandingHistory([...entries,record],scope);
    const receipt=await persistProjectReceipt(db,actor,request,record.ref,{status:'SYNTHETIC_UNDERSTANDING_REVIEWED',snapshot},policy.ref,'EXPLICIT_HUMAN_UNDERSTANDING_REVIEW');
    await this.store.append(db,cloneV1(scope),cloneV1(record),receipt.id);return receipt.result;
   });}catch(error){await recordProjectDenial(this.access,token,request.projectId,error);throw error;}
  }
- async list(token:string,rawScope:unknown){const scope=scopeOf(rawScope);return this.access.authenticated(token,null,async(db,actor)=>{this.#port();await projectMember(db,actor,scope.projectId);return{transport:'SYNTHETIC_ONLY',scope,items:history(await this.store.list(db,cloneV1(scope)),scope),currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};});}
+ async list(token:string,rawScope:unknown){const scope=scopeOf(rawScope);return this.access.authenticated(token,null,async(db,actor)=>{this.#port();await projectMember(db,actor,scope.projectId);return{transport:'SYNTHETIC_ONLY',scope,items:readUnderstandingHistory(await this.store.list(db,cloneV1(scope)),scope),currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};});}
  /** 상위 서버 현재 사실 resolver의 동일 transaction용 선행 대조. 이 결과만으로 WORK 허가를 만들지 않는다. */
  async requireAccepted(db:PoolClient,actor:AuthenticatedIdentity,rawScope:unknown,expectedRef:unknown){
   const scope=scopeOf(rawScope);if(!refV1(expectedRef))bad('UNDERSTANDING_LATEST_ACCEPTANCE_REQUIRED');this.#port();await projectMember(db,actor,scope.projectId,true);
-  const before=await this.#current(db,actor,scope),entries=history(await this.store.list(db,cloneV1(scope)),scope),latest=entries.at(-1);
+  const before=await this.#current(db,actor,scope),entries=readUnderstandingHistory(await this.store.list(db,cloneV1(scope)),scope),latest=entries.at(-1);
   if(!latest||!same(latest.ref,expectedRef)||latest.snapshot.outcome!=='ACCEPTED'||!same(latest.snapshot.currentBinding,before.binding))return bad('UNDERSTANDING_LATEST_ACCEPTANCE_REQUIRED');
   const final=await this.#current(db,actor,scope);if(!same(before.binding,final.binding)||Date.parse(final.at)>=Math.min(Date.parse(before.c.expiresAt),Date.parse(final.c.expiresAt)))bad('UNDERSTANDING_CURRENT_CHANGED');
   return{transport:'SYNTHETIC_ONLY' as const,ref:cloneV1(latest.ref),scope,currentBinding:cloneV1(final.binding),checkedAt:final.at,executionAuthorized:false as const,dispatchPerformed:false as const};
