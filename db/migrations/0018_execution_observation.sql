@@ -364,3 +364,70 @@ END;
 $$;
 CREATE TRIGGER execution_observation_result_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.execution_observation_results FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation_result();
 GRANT INSERT ON anvil.execution_observation_results TO anvil_v3_app;
+
+-- 합성 시작 허가는 같은 실행/세대에서 1회만 보존한다. 실제 OS 실행 권한은 아니다.
+CREATE TABLE anvil.execution_start_permits (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ proof_result_id uuid NOT NULL,proof_result_version bigint NOT NULL CHECK(proof_result_version=1),content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,
+ PRIMARY KEY(project_id,execution_id,generation,id,version),UNIQUE(project_id,execution_id,generation),UNIQUE(project_id,proof_result_id,proof_result_version),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(project_id,proof_result_id,proof_result_version) REFERENCES anvil.execution_receipts(project_id,id,version)
+);
+GRANT SELECT ON anvil.execution_start_permits TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.execution_start_permits FROM anvil_v3_app;
+CREATE FUNCTION anvil.guard_execution_start_permit() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;sc jsonb;req jsonb;g anvil.execution_grants%ROWTYPE;c anvil.execution_commands%ROWTYPE;r anvil.execution_receipts%ROWTYPE;ch anvil.execution_challenges%ROWTYPE;source_refs jsonb;deadline timestamptz;at_time timestamptz=clock_timestamp();
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_START_PERMIT_IMMUTABLE' USING ERRCODE='42501';END IF;s=NEW.snapshot_json;sc=s->'scope';req=s->'request';
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=(sc->'grantRef'->>'id')::uuid AND version=(sc->'grantRef'->>'version')::bigint;
+ SELECT * INTO c FROM anvil.execution_commands WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation AND snapshot_json->'envelope'->>'commandId'=s->>'commandId';
+ SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=NEW.project_id AND id=NEW.proof_result_id AND version=NEW.proof_result_version;
+ SELECT * INTO ch FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=1;
+ SELECT jsonb_agg(v.ref ORDER BY v.pos) INTO source_refs FROM(SELECT source->'observationRef' AS ref,min(pos) AS pos FROM jsonb_array_elements(g.snapshot_json->'binding'->'intent'->'sourceScopes') WITH ORDINALITY AS x(source,pos) GROUP BY source->'observationRef')v;
+ deadline=anvil.synthetic_grant_deadline(NEW.project_id,g.id,g.version,g.content_hash);
+ IF NEW.version IS DISTINCT FROM 1 OR NEW.proof_result_version IS DISTINCT FROM 1 OR g.id IS NULL OR c.id IS NULL OR r.id IS NULL OR ch.id IS NULL OR deadline IS NULL
+  OR g.execution_id IS DISTINCT FROM NEW.execution_id OR g.generation IS DISTINCT FROM NEW.generation OR r.grant_id IS DISTINCT FROM g.id OR r.grant_version IS DISTINCT FROM g.version
+  OR NOT anvil.synthetic_challenge_context(NEW.project_id,g.id,g.version,sc->'grantRef')
+  OR NOT anvil.execution_json_shape(s,ARRAY['scope','commandId','commandRef','request','requestHash','proofRef','bindingHash','state','issuedAt','expiresAt','executionAuthorized','dispatchPerformed'])
+  OR NOT anvil.execution_json_shape(sc,ARRAY['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])
+  OR sc->>'mode' IS DISTINCT FROM 'EXECUTION' OR sc->'projectId' IS DISTINCT FROM to_jsonb(NEW.project_id) OR sc->'executionId' IS DISTINCT FROM to_jsonb(NEW.execution_id)
+  OR sc->'executionGeneration' IS DISTINCT FROM to_jsonb(NEW.generation) OR sc->'credentialGeneration' IS DISTINCT FROM '1'::jsonb
+  OR sc->'connectorId' IS DISTINCT FROM g.snapshot_json->'binding'->'registration'->'connectorId'
+  OR sc->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash)
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR s->>'state' IS DISTINCT FROM 'SYNTHETIC_CONSUMED_NO_AUTHORITY'
+  OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+  OR s->'commandRef' IS DISTINCT FROM jsonb_build_object('id',c.id,'version',c.version,'contentHash',c.content_hash)
+  OR c.grant_id IS DISTINCT FROM g.id OR c.grant_version IS DISTINCT FROM g.version OR c.snapshot_json->>'operation' IS DISTINCT FROM 'START_SESSION'
+  OR s->'proofRef' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash) OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(r.snapshot_json)
+  OR jsonb_typeof(s->'bindingHash') IS DISTINCT FROM 'string' OR s->>'bindingHash' !~ '^[0-9a-f]{64}$'
+  OR NOT anvil.execution_json_shape(req,ARRAY['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])
+  OR NOT anvil.execution_preparation_ref_valid(req->'localAttemptRef') OR NOT anvil.execution_preparation_ref_valid(req->'osOwnershipRef')
+  OR req->>'envelopeHash' IS DISTINCT FROM c.envelope_hash OR req->'sourceObservationRefs' IS DISTINCT FROM source_refs
+  OR NOT(g.snapshot_json->'binding'->'checks'->'osFence'->'evidenceRefs' @> jsonb_build_array(req->'osOwnershipRef'))
+  OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(req)
+  OR ch.snapshot_json->'request'->>'purpose' IS DISTINCT FROM 'EXECUTION_REQUEST' OR ch.snapshot_json->'request'->'target'->>'method' IS DISTINCT FROM 'POST'
+  OR ch.snapshot_json->'request'->'target'->>'path' IS DISTINCT FROM '/api/v1/connectors/'||(sc->>'connectorId')||'/executions/'||NEW.execution_id::text||'/commands/'||(s->>'commandId')||'/permit'
+  OR ch.snapshot_json->'request'->'target'->>'queryHash' IS DISTINCT FROM anvil.execution_json_hash('{}'::jsonb)
+  OR ch.snapshot_json->'request'->'target'->>'bodyHash' IS DISTINCT FROM anvil.execution_json_hash(req)
+  OR NOT anvil.execution_iso_valid(s->'issuedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+  OR (s->>'issuedAt')::timestamptz>at_time OR (s->>'issuedAt')::timestamptz<at_time-interval '30 seconds'
+  OR (s->>'expiresAt')::timestamptz<=(s->>'issuedAt')::timestamptz OR (s->>'expiresAt')::timestamptz>(s->>'issuedAt')::timestamptz+interval '30 seconds'
+  OR (s->>'expiresAt')::timestamptz>LEAST(deadline,(c.snapshot_json->'envelope'->>'expiresAt')::timestamptz,(ch.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz)
+  OR (s->>'expiresAt')::timestamptz<=at_time THEN RAISE EXCEPTION 'EXECUTION_START_PERMIT_EXACT_BINDING_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_START_PERMIT_EXACT_BINDING_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+CREATE FUNCTION anvil.guard_execution_start_permit_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE sc jsonb=NEW.snapshot_json->'scope';g anvil.execution_grants%ROWTYPE;
+BEGIN
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=(sc->'grantRef'->>'id')::uuid AND version=(sc->'grantRef'->>'version')::bigint;
+ IF g.id IS NULL OR anvil.synthetic_grant_deadline(NEW.project_id,g.id,g.version,g.content_hash) IS NULL OR clock_timestamp()>=(NEW.snapshot_json->>'expiresAt')::timestamptz
+  OR NOT EXISTS(SELECT 1 FROM anvil.execution_receipts r JOIN anvil.execution_challenges c ON c.project_id=r.project_id AND c.id=r.challenge_id AND c.version=2
+   WHERE r.project_id=NEW.project_id AND r.id=NEW.proof_result_id AND r.version=NEW.proof_result_version AND r.grant_id=g.id AND r.grant_version=g.version
+    AND c.snapshot_json->'consumption'->'resultRef'=NEW.snapshot_json->'proofRef') THEN RAISE EXCEPTION 'EXECUTION_START_PERMIT_PROOF_ATOMIC_REQUIRED' USING ERRCODE='42501';END IF;RETURN NULL;
+END;
+$$;
+CREATE TRIGGER execution_start_permit_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.execution_start_permits FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_start_permit();
+CREATE CONSTRAINT TRIGGER execution_start_permit_complete AFTER INSERT ON anvil.execution_start_permits DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_start_permit_complete();
+GRANT INSERT ON anvil.execution_start_permits TO anvil_v3_app;
