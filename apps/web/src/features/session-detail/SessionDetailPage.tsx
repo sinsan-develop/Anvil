@@ -14,6 +14,7 @@ import {CheckpointFileReader} from './CheckpointFileReader.tsx';
 import {StoredObservationJournal} from './StoredObservationJournal.tsx';
 import {StoredStopRequests} from './StoredStopRequests.tsx';
 import {ReportedTestResults} from './ReportedTestResults.tsx';
+import {ReportedCommandResults} from './ReportedCommandResults.tsx';
 
 import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
 import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
@@ -73,6 +74,7 @@ export function ResultContent({value}:{value:SubmittedResultView}){
  const s=value.snapshot,m=s.manifest;
  return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
   <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
+  <ReportedCommandResults key={JSON.stringify([s.scope,value.ref])} commands={m.commandResults} executionRef={s.scope.executionRef}/>
   <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
   <ReportedTestResults key={JSON.stringify([s.scope,value.ref])} tests={m.testResults}/>
   <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
