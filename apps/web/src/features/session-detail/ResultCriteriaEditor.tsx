@@ -3,9 +3,10 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
+import type {ResultReviewBuffers} from './result-review-write-api.ts';
 import {CriteriaReadbackUnconfirmed,criteriaRows,prepareCriteriaRegistration,saveCriteriaRegistration,resultTestKinds,type CriteriaRow,type CriteriaRegistration,type RegisteredCriteria} from './result-criteria-api.ts';
 export interface CriteriaBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];controlGeneration:number;rows:CriteriaRow[];reason:string;pending:CriteriaRegistration|null;stored:RegisteredCriteria|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
-export interface CriteriaEditorProps{session:DocumentSession;buffer:CriteriaBuffer|null;onChange:(change:CriteriaBuffer|((value:CriteriaBuffer|null)=>CriteriaBuffer|null))=>void}
+export interface CriteriaEditorProps{session:DocumentSession;buffer:CriteriaBuffer|null;onChange:(change:CriteriaBuffer|((value:CriteriaBuffer|null)=>CriteriaBuffer|null))=>void;reviews?:ResultReviewBuffers}
 /** App 메모리의 주체·임무별 초안/미확인 명령을 소비한다. localStorage/Secret 저장은 하지 않는다. */
 export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}&CriteriaEditorProps){
  const [busy,setBusy]=useState(false),[failure,setFailure]=useState<string|null>(null),live=useRef(true),working=useRef(false);useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
@@ -34,7 +35,7 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
    {!bound.pending&&!bound.stored?<><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('PREPARE')}>검수 기준 저장 준비</button><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('REBIND')}>현재 제어로 미전송 입력 재결박</button></>:null}
    {bound.pending&&!bound.stored?<><details><summary>저장할 고정 명령·원조건 매핑</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void run('SAVE')}>{bound.failure||bound.uncertain?'같은 기준 저장 명령 재확인':'검수 기준 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={()=>change({...bound,pending:null,failure:null,dirty:true})}>확인된 거절 이후 입력 수정</button>:null}</>:null}
    {bound.uncertain?<p role="status">저장 결과 미확인 · 입력/명령을 보존했습니다. 새 명령을 만들지 않고 같은 명령으로만 확인하세요.</p>:null}
-   {bound.stored?<div><p>등록 원문 확인 완료 · 검수 합격/적용/실행 허가 아님</p><p>{bound.stored.ref.id} · v{bound.stored.ref.version} · {bound.stored.ref.contentHash}</p><details><summary>저장된 기준 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details><p>개정·기준 선택과 검수/보완 저장은 아직 이 화면에 미연결입니다.</p></div>:null}
+   {bound.stored?<div><p>등록 원문 확인 완료 · 검수 합격/적용/실행 허가 아님</p><p>{bound.stored.ref.id} · v{bound.stored.ref.version} · {bound.stored.ref.contentHash}</p><details><summary>저장된 기준 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details><p>보관 기준 선택·보완/차단 검수는 아래 별도 영역에서 제공합니다. 기준 개정·합격 판정·보완 실행은 미연결입니다.</p></div>:null}
   </>}
   {failure||bound?.failure?<p role="alert">{failure??bound?.failure?.code} · 저장 완료로 표시하지 않습니다.</p>:null}
   {busy?<p role="status">현재 제어·입력·정확 저장 결과 확인 중</p>:null}<p className="meta">입력과 미확인 명령은 이 브라우저 화면을 이동해도 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 아직 미제공입니다.</p>

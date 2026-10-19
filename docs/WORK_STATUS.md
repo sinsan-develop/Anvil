@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 보완·차단 검수 화면 후보 확인 / Main 어울(2026-10-20)**: 총/조건별 명시판정·이유→현재제어/고정명령 준비→별도POST/exactGET와 주체/client/project/제출/기준별 App메모리·이탈 경고를 연결했다. 초안/불확실 명령은 화면왕복 보존, APPLIED 후GET403/변형·POST중이탈에서 같은ID 재확인만 허용하고 미전송 입력만 명시 세대 재결박한다. 합격/해당없음·실제증거검증·보완실행/완료·실패집계는 미연결/false다.
+  consumer3RED164.1827ms→3PASS175.744ms·Headers/Body TS3건 명시검사 뒤type0, 신규 REVIEW_SAVED missingregion RED→첫4경로3PASS/LOSS1FAIL8.8초다. LOSS는 시험이click뒤 비동기제어/명령 도착 전에 length를 검사한 오류로 expected2는 유지하고 expect.poll 대기만 보완→해당1PASS3.1초다. 전체4를 다시 돌렸다고 주장하지 않는다. 직접 UI05 23PASS683.6094ms/type0/build0,500KiB/색상경고보존,신규결과 exact정리/독립잔여0이다. 단일 diff patch1회는 추가행 prefix 오류로 적용 전 거절→정확행보정 후 적용,제품 손실0이다.
+  독립 이번 UI단위 C0/I0/M1(상단 옛 검수저장 미연결 문구)이며 Main은 실제 제공 범위를 보완·차단 기록/합격·보완배정 미연결로 고쳤다. DB/COMMIT·실사용브라우저경합/주체전환·served/사람판단/Agent는 검토유보, 앞9d9c 격리PG 실제저장과 합성route클릭은 분리한다. 정식DB/서비스·키/실정책·Agent 변경0·사용자인수/전체FN12/UI05/Stage완료 아님. 다음은 재접속 뒤에도 이전 판정을 조회할 원제출별 보관 검수 이력이다. 새 provider목록1RED639.179ms→1PASS365.6098ms(20metadata/옛판정/미선택/쓰기0)이며 HTTP/실제PG/화면은 아직 미연결이다.
+
+- **UI05 보완/차단 검수 입력 연결 착수 / Main 어울(2026-10-20)**: 고정 제출/선택 기준별 항목과 총 REWORK/BLOCKED 이유를 명시 입력하고 현재제어 확인→고정 명령 준비→별도 저장→정확 원문 GET로 연결한다. App 메모리는 사용자/client/project/제출/기준별로 초안·pending·불확실 상태를 화면왕복 보존하고 새로고침/종료 영속 복원 미제공은 명시한다. APPLIED 후 GET거절/변형과 POST중 이탈은 저장 확정거절로 오인하지 않고 동일ID 재확인만 허용한다. 합격/해당없음·실행/보완 자동배정0이다. consumer3RED164.1827ms→3PASS175.744ms이며 시험 Header/Body의 TS형3건을 명시검사로 보완 중이다. 새 실제SQL/DBQA 재실행0·정식서비스/Agent변경0이다.
+  새 화면클릭은 기존 Main등록 로컬 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01의 일회 결과만 사용하고 기존 apps/web/dist 빌드·합성 route/전용 Edge child로만 확인한다. 시작 전 부재/nonlink, 종료/실패 즉시 exact결과·해당child/profile만 회수·별도잔여0, 사용자Edge/shared browser 보존이다. 합성클릭을 정식served/DB/사용자인수로 승격하지 않는다.
+
 - **FN12 검수 판정 실제 저장 한정 확인 / Main 어울(2026-10-20)**: 보정 exact9d9c59a216bb0ea8c64c95d9c09433c839a98ef0·private/WSL clean, 새 PG e541dfc0b823de094b9de43fbbbf4762740f550fcdfacf877f4ae449612ce9f9/networkab217a0bbaafc4fd5ca4945a34dfef0de2a57ba7a2ad1da676f428e81d307fc3·고정PG15image594290/15.18·Node24.21·61SQL ID/checksum exact에서1PASS2439.572086ms(기능2084.658662),skip0·phaseDONE다. 실제 인증 API→PG의 검수정책부재403·별도 합성정책 뒤 REWORK COMMIT/동일명령 재확인1행·고정GET/sameAsSubmitter·모든 승격false, 실제증거없는 합격/누락422, 재해시 ACCEPTED 직접INSERT의 정확42501/RESULT_REVIEW_EVIDENCE_VERIFICATION_REQUIRED·UPDATE/DELETE거절·명령영수증단독COMMIT rollback·타사용자/query/회수member거절·원5guard hash불변을 확인했다. 앞0732의422실패는 보존하고 PASS로 소급하지 않는다.
   raw2파일/5디렉터리·등록PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG동일fullID/image/StartedAt/FinishedAt/restart0·exited불변이다. 독립C0/I0/M1과 Main의 M1기대강화/실제검사를 분리하며 재리뷰PASS 주장0이다. 정식DB/서비스·키/실제정책·Agent0, 잠금실경합/전체RLS/served·합격검수·보완실행/사용자인수는 미확인이다. 다음은 기존 고정 제출/기준에서 명시 보완·차단 입력→준비→저장→고정GET의 UI05 연결이며 현재 FN12/UI05/Stage는 부분 구현 유지다.
 
