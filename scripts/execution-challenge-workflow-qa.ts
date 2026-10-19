@@ -14,7 +14,7 @@ import { SyntheticExecutionChallenges } from '../apps/server/modules/executions/
 import { executionChallengeRequestBytes, executionProofBytes } from '../apps/server/modules/executions/execution-proof.ts';
 import { publicKeyFingerprint } from '../apps/server/modules/connections/registration-proof.ts';
 
-const mode=process.argv[2];assert(['RED','REVIEW_RED','GREEN'].includes(mode!));
+const mode=process.argv[2];assert(['RED','REVIEW_RED','REVIEW_RED_02','GREEN'].includes(mode!));
 const label=mode!.toLowerCase(),database='anvil_v3_c3_challenge_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-challenge-'+label.replaceAll('_','-')+'-qa-01');assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,database);const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));

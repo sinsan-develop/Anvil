@@ -119,7 +119,7 @@ BEGIN
   OR NOT anvil.execution_nonce_valid(p->'serverNonce') OR NOT anvil.execution_nonce_valid(p->'clientNonce') OR p->'clientNonce' IS DISTINCT FROM r->'clientNonce'
   OR NOT anvil.execution_iso_valid(p->'issuedAt') OR NOT anvil.execution_iso_valid(p->'expiresAt') OR (p->>'issuedAt')::timestamptz>at_time
   OR (p->>'expiresAt')::timestamptz<=(p->>'issuedAt')::timestamptz
-  OR (p->>'expiresAt')::timestamptz>(p->>'issuedAt')::timestamptz+CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN interval '2 minutes' ELSE interval '30 seconds' END
+  OR (p->>'expiresAt')::timestamptz>(p->>'issuedAt')::timestamptz+(CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN interval '2 minutes' ELSE interval '30 seconds' END)
   OR NOT anvil.execution_json_shape(r,ARRAY['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt'])
   OR jsonb_typeof(r->'requestId') IS DISTINCT FROM 'string' OR r->>'requestId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
   OR r->'purpose' NOT IN('"CREDENTIAL_EXCHANGE"'::jsonb,'"EXECUTION_REQUEST"'::jsonb) OR r->'grantRef' IS DISTINCT FROM b->'grantRef'
@@ -148,7 +148,7 @@ BEGIN
   IF (SELECT count(*) FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND grant_id=NEW.grant_id AND grant_version=NEW.grant_version AND version=1)>=10000 THEN
    RAISE EXCEPTION 'EXECUTION_CHALLENGE_LIFETIME_LIMIT' USING ERRCODE='42501';END IF;
   IF (SELECT count(*) FROM anvil.execution_challenges c WHERE c.project_id=NEW.project_id AND c.grant_id=NEW.grant_id AND c.grant_version=NEW.grant_version AND c.version=1
-    AND c.snapshot_json->'publicChallenge'->'purpose'=p->'purpose' AND (c.snapshot_json->'publicChallenge'->>'issuedAt')::timestamptz>at_time-interval '1 minute')>=CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN 5 ELSE 60 END THEN
+    AND c.snapshot_json->'publicChallenge'->'purpose'=p->'purpose' AND (c.snapshot_json->'publicChallenge'->>'issuedAt')::timestamptz>at_time-interval '1 minute')>=(CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN 5 ELSE 60 END) THEN
    RAISE EXCEPTION 'EXECUTION_CHALLENGE_RATE_LIMIT' USING ERRCODE='42501';END IF;
   IF r->>'purpose'='EXECUTION_REQUEST' AND EXISTS(SELECT 1 FROM anvil.execution_challenges c WHERE c.project_id=NEW.project_id AND c.grant_id=NEW.grant_id AND c.grant_version=NEW.grant_version AND c.version=1
    AND c.snapshot_json->'publicChallenge'->>'purpose'='EXECUTION_REQUEST' AND (c.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz>at_time
