@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 검수 판정 실제 저장 한정 확인 / Main 어울(2026-10-20)**: 보정 exact9d9c59a216bb0ea8c64c95d9c09433c839a98ef0·private/WSL clean, 새 PG e541dfc0b823de094b9de43fbbbf4762740f550fcdfacf877f4ae449612ce9f9/networkab217a0bbaafc4fd5ca4945a34dfef0de2a57ba7a2ad1da676f428e81d307fc3·고정PG15image594290/15.18·Node24.21·61SQL ID/checksum exact에서1PASS2439.572086ms(기능2084.658662),skip0·phaseDONE다. 실제 인증 API→PG의 검수정책부재403·별도 합성정책 뒤 REWORK COMMIT/동일명령 재확인1행·고정GET/sameAsSubmitter·모든 승격false, 실제증거없는 합격/누락422, 재해시 ACCEPTED 직접INSERT의 정확42501/RESULT_REVIEW_EVIDENCE_VERIFICATION_REQUIRED·UPDATE/DELETE거절·명령영수증단독COMMIT rollback·타사용자/query/회수member거절·원5guard hash불변을 확인했다. 앞0732의422실패는 보존하고 PASS로 소급하지 않는다.
+  raw2파일/5디렉터리·등록PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG동일fullID/image/StartedAt/FinishedAt/restart0·exited불변이다. 독립C0/I0/M1과 Main의 M1기대강화/실제검사를 분리하며 재리뷰PASS 주장0이다. 정식DB/서비스·키/실제정책·Agent0, 잠금실경합/전체RLS/served·합격검수·보완실행/사용자인수는 미확인이다. 다음은 기존 고정 제출/기준에서 명시 보완·차단 입력→준비→저장→고정GET의 UI05 연결이며 현재 FN12/UI05/Stage는 부분 구현 유지다.
+
 - **FN12 검수 QA 첫 실제 실패와 정리 / Main 어울(2026-10-20)**: exact0732c5b73204a9e2a928f103d5f54fc34a25c497·clean, PG a963ff74850a6cb6c924e1afbda05ae39c91cfe04d8c49110dd8b5ef76af2dd0/network4254a0e6b74110c70fb68ed8c6a88bbdce8e5cce2014c64cad86d5f3b216bab5·고정PG15/61SQL checksum exact에서1FAIL2350.055375ms(기능1966.520346)다. 정책부재403까지 확인했으나 REVIEW_COMMIT에서 RESULT_REVIEW_INPUT_INVALID422/expected200으로 중단했다. 직접 코드 대조로 시험이 RESULT_SUBMITTED 영수증의 manifestRef hash를 저장 원제출 ref/hash로 잘못 사용한 것을 확인했다. 제품 계약/기대값 완화 없이 기존 GET results/:id의 실제 원제출ref를 별도 읽어 입력하도록 시험만 수정하고 두 hash가 다름도 명시 검사한다. 원 실패는 제품 검수 PASS로 소급하지 않는다.
   raw2파일/5디렉터리·등록 PG/network/Git경로를 exactID/label/image/mount/port/owner/link/process 검사 후 회수했고 별도 SSH 잔여0이다. 정식PG/서비스·Agent 변경0이다. 동일 사전등록 literal 경로/자원은 생성전 부재를 다시 확인해 새 빈 ID/10분창의 보정 QA로만 재생성한다. 앞 epoch/자원ID/실행허가를 재사용하거나 미완료 검수 저장을 PASS로 승격하지 않는다.
 
