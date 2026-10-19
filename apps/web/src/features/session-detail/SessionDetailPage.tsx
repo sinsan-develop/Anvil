@@ -13,6 +13,7 @@ import type {CheckpointBuffers} from './CheckpointEditor.tsx';
 import {CheckpointFileReader} from './CheckpointFileReader.tsx';
 import {StoredObservationJournal} from './StoredObservationJournal.tsx';
 import {StoredStopRequests} from './StoredStopRequests.tsx';
+import {ReportedTestResults} from './ReportedTestResults.tsx';
 
 import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
 import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
@@ -73,6 +74,7 @@ export function ResultContent({value}:{value:SubmittedResultView}){
  return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
   <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
   <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
+  <ReportedTestResults key={JSON.stringify([s.scope,value.ref])} tests={m.testResults}/>
   <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
   <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
   <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>

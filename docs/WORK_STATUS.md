@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 시험보고 탐색 확인 / Main 어울(2026-10-20)**:새형식검사2RED158.255ms→2PASS128.099ms,선언근거보존추가/직접API인접포함6PASS189.3504ms/type0/build222이다. 새UI부재RED→첫구현실패1은기존미실행JSON과전체JSON에같은문구가있어selector가중복된시험오류였고정확미실행JSON원문으로시험만한정해동일productbuild TEST_REPORTS1PASS3.3초다. 직접인접COMPLETION_GAP1PASS2.8초로완료주장/별도미실행구분유지를확인했다. 타입오류1은assert.deepEqual후새시험배열인덱스nonnull한정으로고쳤으며제품타입/검사기준완화0이다.
+  단1회scopedstaticC0/I0/M0·동일재리뷰0이다. 정상5상태/중복·원순서/검색/부적합행index미확인·script비실행·원JSON/미실행보존/새쓰기0만확인했다. 유효근거의전체browser상세는미검증(순수시험에서선언ref/환경/시각보존·잘못된ref거절확인),실제API/DB/served·Agent/출처진위·검수/실행/완료는미확인이다. RED/실패/GREEN/인접결과와Main등록build를exact정리·독립잔여0, NO_COLOR/chunk경고유지다. 후보5미게시/거절0029/정식자원불변이다.
+
+- **FN12/UI05 시험보고 UI등록 / Main 어울(2026-10-20)**:새구조검사2RED158.255ms후유효행/부적합index·원순서/중복보존을연결했다. TEST_REPORTS는Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-reported-tests-01·전용Edge만생성전부재/realpath/link확인후최대30초사용한다. 새상태/시험조건ID필터·원문상세/불신문자열·부적합행미확인·기존미실행원문/쓰기0만fixture검사하며실제DB/served·재검증·출처진위·원인/완료판정0이다. 종료exit수집뒤exact정리/독립잔여0·기존경고보존이다.
+
+- **FN12/UI05 시험보고 조회 착수 / Main 어울(2026-10-20)**:c3ffdcea local/private exact·main불변이다. 현재ResultContent는시험보고를JSON으로만노출해상태/시험ID·근거를찾기어렵다. 기존원제출GET/hash와전체원문을유지하고보고상태·시험/조건ID 필터/전체카드정의·근거ref/환경/시각을읽기전용연결한다. PASS/출처표시는제출자선언으로유지·중복시험합치기/미실행을실패로변환/실검수·원인분류/완료집계0이다. 원응답은hash만대조하고개별보고필드검사가없으므로새구조화표시전유효shape만채택·부적합행은미확인목록으로보존하고전체원문JSON을남긴다. 새API/schema/권한/키/서비스·Agent0,정식PG/0029거절불변이다. 잘못된Get-Content Raw+TotalCount조합오류1은제품오류와분리해보존했다.
+
 - **문서 대조 보존(2026-10-20)**:UI06 정본행은기존served01 FAIL/원API복구·02승인차단기록을포함해branch기준문구와달랐다. 예상행불일치patch1은적용전거절됐으며기존행을유지하고이번후보증거만추가했다. 이력삭제/기존served실패의PASS승격0, 다른행/다른소유변경수정0이다.
 
 - **UI06 trace계획원문 독립 한정 검토 / Main 어울(2026-10-20)**:단1회C0/I0/M1이며실제PG/served/전화면조합·부모scope전반은미판정이다. M1은현재anchor이동을지원하지않는동일원문SCREEN_REGION/본문미확인도'현재본문과다른원문참조'로표현하는문구다. 실제fullref/hash는그대로표시·자동이동/쓰기0이므로Main도Minor로유지해이월하며범위확대·동일재리뷰루프없이기록한다. 원검토를C0/I0/M0로승격하지않는다. 전체UI06/FN04/Stage완료아니다.
