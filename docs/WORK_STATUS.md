@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND PG adapter checkpoint / Main 어울(2026-10-19)**: 신규adapter부재3RED739.4805ms→직접12PASS1159.3019ms,예약/ref·봉투/intent전해시재결박음성및실core→adapter의합성db동일tx/rollback결합추가뒤13PASS1157.0022ms다. 새예약RESERVED/hash/정확claim·임무/정책/command·attempts0/calls/finitecost와실행별100건/명령+예약2MiB를검사하여usage예약→명령→HELD합성outbox3INSERT만작성한다. SQL파라미터는uuid/bigint를명시했으나실PG구문/추론을시험한것은아니다. 직접/인접29PASS1261.0876ms·type0·diff0,신규adapter/시험한정독립C0/I0/M0(정적·재실행0)다.
+  실제PG trigger/FK/잠금COMMIT·provider현재성/비용진위는미판정이며기존forwardguard없는DB의SEND거절을유지한다. 서비스자동주입/새grant·writer·ACK/별도poolBEGINCOMMIT·실전달0,새외부자원/소진QA재실행/정식DB·키·서비스변경0이다. PG권위있는고정조회/새forwardguard·서버SENDpermit은후속미완료이며전체C3/FN06/FN08완료로보고하지않는다.
+
+- **C3 SEND PG 저장 adapter 착수 / Main 어울(2026-10-19)**: bf836d98 exact private/clean뒤기존후속서비스의필수current/claim제공자를명시주입하고같은인증tx에서새usage예약·execution명령·HELD합성outbox를저장하는누락을연결한다. 실제SELECT/INSERT를작성하지만시험db는합성이며기존SQLguard를우회/수정하지않아forwardguard없는DB는거절해야한다. 새grant/writer/ACK·별도pool/COMMIT·서비스자동활성·정식DB적용0,새자원/완료QA반복0이다. 후속정확read/forwardSQL·실PG는별도남은구현/검증이다. 경로추정읽기2건은파일없음으로실패했으며권한/파일변경없이rg실목록으로정정했다.
+
 - **C3 bootstrap 보정 부위 한정 재검토 / Main 어울(2026-10-19)**: 원I1의중첩관측시각분리와신규4시험만정적재검토C0/I0/M0로해소를확인했다. 시험재실행0·기존전체재합격아니며실제provider/권한·OS·서버permit·물리내구/HTTP·Agent미판정은유지한다. 직접11PASS/type0·소유3경로diff0후기존branch에만게시하고후속DB저장연결을진행한다.
 
 - **C3 READ 맥락 bootstrap 순환조건 보완 / Main 어울(2026-10-19)**: 승인P1 §4의CONTEXT_REVIEW에도아직없는사전이해ref를요구하던기존실행기조건을신규positive1RED323.9224ms(음성1PASS)로확인했다. 기존WORK의현재shape/이해ref필수는유지하고authority.current의추가contextReviewFact만기존ServerExecutionFactV1로검사하여READ/NOT_REQUIRED·나머지현재check·OWNED·실행/session/등록/assignment/connection/environment/capability/source결박과최단기한을요구한다. caller mode만으로예외를열거나실제무변경능력을확인한것으로표시하지않는다.
