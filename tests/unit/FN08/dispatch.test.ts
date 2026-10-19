@@ -9,7 +9,7 @@ function inspect(value:unknown,expected:unknown){assert.equal(typeof (dispatch a
 
 test('참조와 snapshot이 맞아도 내부 구조검사일 뿐 실제 실행허가·실행receipt가 아니다',()=>{
  const report=inspect(context(),context());assert.equal(report.structuralChecksPassed,true);assert.equal(report.executionAuthorized,false);assert.equal(report.dispatchPerformed,false);assert.equal(report.kind,'INTERNAL_PRECONDITION_REPORT');
- assert.ok(report.reasons.some((r:any)=>r.code==='SERVER_VERIFIERS_NOT_CONNECTED'));assert.equal(report.reasons.some((r:any)=>r.code==='SOURCE_SCOPE_CONTRACT_UNRESOLVED'),false);
+ assert.ok(report.reasons.some((r:any)=>r.code==='SERVER_VERIFIERS_NOT_CONNECTED'));assert.equal(report.reasons.some((r:any)=>r.code==='SOURCE_SCOPE_CONTRACT_UNRESOLVED'),true);
  assert.ok(report.unverifiedChecks.includes('AUTHORIZATION'));assert.ok(report.unverifiedChecks.includes('CURRENT_CONTROL'));assert.ok(report.unverifiedChecks.includes('OWNERSHIP'));assert.ok(report.unverifiedChecks.includes('DURABLE_REPLAY'));
  assert.equal('status' in report,false);assert.equal('receipt' in report,false);assert.equal('operationId' in report,false);
 });

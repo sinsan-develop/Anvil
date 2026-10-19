@@ -5,7 +5,7 @@ import {readSourceScopesV1} from '../../../contracts/runtime/source-scope-v1.ts'
 // INTERFACES §12.3의 명시 필드만 대조한다. 공개 wire/실행 receipt가 아니다.
 const fields=['projectId','assignmentId','executionId','executionGeneration','connectionRef','environmentRef','authorizationReceiptRef','capabilityRef','budgetRef','sourceScopes'] as const;
 type ContextField=typeof fields[number];
-type ReasonCode='CONTEXT_SHAPE_INVALID'|'EXPECTED_SNAPSHOT_SHAPE_INVALID'|'IDENTIFIER_INVALID'|'GENERATION_INVALID'|'REFERENCE_INVALID'|'SOURCE_SCOPE_INVALID'|'EXPECTED_SOURCE_SCOPE_INVALID'|'EXPECTED_SNAPSHOT_MISMATCH'|'SERVER_VERIFIERS_NOT_CONNECTED';
+type ReasonCode='CONTEXT_SHAPE_INVALID'|'EXPECTED_SNAPSHOT_SHAPE_INVALID'|'IDENTIFIER_INVALID'|'GENERATION_INVALID'|'REFERENCE_INVALID'|'SOURCE_SCOPE_INVALID'|'EXPECTED_SOURCE_SCOPE_INVALID'|'EXPECTED_SNAPSHOT_MISMATCH'|'SERVER_VERIFIERS_NOT_CONNECTED'|'SOURCE_SCOPE_CONTRACT_UNRESOLVED';
 interface Reason{readonly code:ReasonCode;readonly field?:ContextField}
 const unverifiedChecks=['AUTHORIZATION','CURRENT_CONTROL','SOURCE_SCOPE','OWNERSHIP','CAPABILITY','BUDGET','DURABLE_REPLAY'] as const;
 
@@ -57,6 +57,7 @@ export function inspectDispatchPreconditions(value:unknown,expectedSnapshot:unkn
  }
  const structuralChecksPassed=reasons.length===0;
  // 정확해 보이는 가짜 snapshot이라도 현재 제품의 실행 차단은 해제하지 않는다.
- reasons.push({code:'SERVER_VERIFIERS_NOT_CONNECTED'});
+ // A1에서 고정한 구 소비자 미연결 표식은 공통 문법 검사만으로 해제하지 않는다.
+ reasons.push({code:'SERVER_VERIFIERS_NOT_CONNECTED'},{code:'SOURCE_SCOPE_CONTRACT_UNRESOLVED'});
  return {kind:'INTERNAL_PRECONDITION_REPORT',structuralChecksPassed,executionAuthorized:false,dispatchPerformed:false,reasons,unverifiedChecks};
 }
