@@ -1,5 +1,10 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-19 FN12 source QA 별도 종료 관측 — 정식 PG 정지/원인 미확정
+
+- 별도 읽기에서 기존 정식 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290은 exited다. StartedAt2026-10-18T15:25:12.085069883Z·FinishedAt2026-10-19T12:56:52.490883698Z·ExitCode0·OOMKilledfalse·RestartCount0을 관측했다. 종료 원인/주체는 미확정이고 담당자의 시작/중지·정식DB/서비스/설정 변경은 없다. 아래 00:25 running 기록은 과거 관측이며 현재 기능 PASS가 아니다.
+- exact54ad16f2 신규 FN12 검수 source 격리 QA1 PASS 뒤 등록 PG/network/Git경로를 회수해 독립 잔여0을 확인했다. 정식 API/Web·SQL접속·자료/사용자 인수는 이 격리 시험으로 확인되지 않았다.
+
 ## 2026-10-19 00:25 KST PG 단독 기동 관측 — DB접속/API 미검증
 
 - 신산님 HUMAN_DIRECT_REPLY를 PMO에서 전달받아 고정1199CC1E 최소안/runId PG_ONLY_START_ONCE_20261019_002239의 기존 PG 한 개만 단1회 start했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f·daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e 불변, StartedAt2026-10-18T15:25:12.085069883Z/restart0/running·ready-log marker count1이다. 원문로그는 WSL에서 축약해 전송하지 않았다.
