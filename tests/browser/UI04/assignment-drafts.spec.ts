@@ -39,6 +39,18 @@ async function prepare(page: Page) {
   await page.getByRole('textbox', { name: '임무 목표', exact: true }).fill('사용 가능한 실제 기능'); await page.getByRole('textbox', { name: '임무 통합 책임', exact: true }).fill('책임자가 검수하고 통합'); await page.getByRole('textbox', { name: '임무 저장 이유', exact: true }).fill('작업 지시를 준비');
 }
 
+for(const mode of ['NORMAL','DENIED','HASH'])test('ASSIGNMENT_HISTORY_'+mode,async({page})=>{
+ const facts=await setup(page);await prepare(page);await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');const old=structuredClone(facts.stored),snapshot={...old.snapshot,definition:{...old.snapshot.definition,goal:'개정된 보관 목표'},reason:'두 번째 보관',previousRef:old.ref},nextRef={id:draftId,version:2,contentHash:contentHash(canonicalJson(snapshot))};
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts?*`,r=>r.fulfill({json:{items:[{ref:nextRef,status:'DRAFT',goal:snapshot.definition.goal,taskRef:snapshot.definition.taskRef,issueCount:1,updatedAt:at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/2`,r=>r.fulfill({json:{projectId:pid,ref:nextRef,snapshot,headVersion:2,sourceCurrentness:'NOT_RECHECKED',observedAt:at}}));
+ const open=async()=>{await page.getByRole('button',{name:'임무 초안 목록 조회',exact:true}).click();await page.getByRole('button',{name:'임무 버전 열기: 2',exact:true}).click();};await open();await page.getByRole('button',{name:'현재 버전으로 개정 준비',exact:true}).click();await page.getByRole('textbox',{name:'임무 목표',exact:true}).fill('아직 저장하지 않은 입력');await open();
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/1`,r=>mode==='DENIED'?r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}):r.fulfill({json:{projectId:pid,ref:mode==='HASH'?{...old.ref,contentHash:'b'.repeat(64)}:old.ref,snapshot:old.snapshot,headVersion:2,sourceCurrentness:'NOT_RECHECKED',observedAt:at}}));
+ await page.getByRole('button',{name:'이전 임무 초안 원문 열기',exact:true}).click();const shown=page.getByRole('region',{name:'저장한 임무 초안',exact:true});
+ if(mode==='NORMAL'){await expect(shown).toContainText('고정 버전 1');await expect(shown).toContainText('사용 가능한 실제 기능');await expect(shown).toContainText('실제 배정·Agent 실행 아님');await expect(page.getByRole('button',{name:'이전 임무 초안 원문 열기',exact:true})).toHaveCount(0);}
+ else {await expect(page.getByRole('alert')).toContainText(mode==='DENIED'?'PROJECT_OPERATION_DENIED':'RESPONSE_INVALID');await expect(shown).toHaveCount(0);}
+ await expect(page.getByRole('textbox',{name:'임무 목표',exact:true})).toHaveValue('아직 저장하지 않은 입력');expect(facts.commands).toHaveLength(1);expect(facts.unexpected).toEqual([]);expect(facts.errors).toEqual([]);
+});
+
 for(const mode of ['FILE','ROOT','ALL','LOSS'])test('ASSIGNMENT_SCOPE_REDUCTION_'+mode,async({page})=>{
  const facts=await setup(page),commands:any[]=[];
  const scopes=[{sourceRootRef:ref(planId),mappingRef:null,observationRef:ref(user),baselineRef:ref(applicationId),targets:[{relativePath:'src/a.ts',kind:'FILE',access:'WRITE',recursive:false},{relativePath:'src/b.ts',kind:'FILE',access:'READ',recursive:false}]},{sourceRootRef:ref(user),mappingRef:null,observationRef:ref(planId),baselineRef:ref(applicationId),targets:[{relativePath:'README.md',kind:'FILE',access:'READ',recursive:false}]}];

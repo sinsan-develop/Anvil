@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN09/UI04 임무 직전 원문 조회**: 보관 snapshot.previousRef로 기존 고정GET/원문대조를 열어 과거조건을 조회한다. 버튼부재DOM1RED→새3+직접1=4PASS/type/build239/scopedC0I0M0/QA0이며 초안/명령 쓰기0·정식DB/served/실행/전체업무는 미검증/부분으로 유지한다.
+
 - **2026-10-20 FN06/UI11 후보 직전 원문 조회**: 기존 보관 input.candidateRef의 동일id/직전version/hash를 고정GET으로 명시 읽도록 연결했다. 신규3/type/build239·새DOM3+직접1=4PASS/scopedC0I0M0/QA0이며 조회거절/변조는 이전원문숨김·초안/명령보존이다. 정식DB/served·실능력/Agent·전체FN06/UI11은 미검증/부분으로 유지한다.
 
 - **2026-10-20 FN06/FN11/UI11 후보 허용행동 조회**: 기존 project/control·permission-policy 읽기로 AUTO규칙/별도승인필요·거절을 명시 조회한다. 새DOM버튼부재·ABA지연 반례 보완 후 신규7+직접기존1=8PASS/type/build238/scopedC0I0M0/QA0이다. 표시를 저장/승인/실행 허가로 소비하지 않고 현재효력·원문hash·실제DB/served/Agent는 미검증, 전체업무는 부분 상태로 유지한다.

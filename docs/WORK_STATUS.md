@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN09/UI04 임무 직전 원문 조회 한정 확인 / Main 어울(2026-10-20)**: 실제bundle의 버튼부재1RED(15초 timeout)→신규 정상/403/hash변조3+직접기존저장1=4PASS7.1초/type0/build239·단1회 scopedC0/I0/M0다. 기존 snapshot.previousRef→perform/open/readAssignmentDraft만 연결해 v2→v1 과거 고정조건과 이전hash를 읽고 거절시 원문숨김·미저장목표/원명령 POST1 보존을 확인했다. 새helper/API/schema/권한/DB/서비스·Agent0, 과거본을 현재head/확정/배정으로 승격0이다. 실제DB/served의 이력·권한/모든주체·지연조합과 전체FN09/UI04는 미검증/부분이다. QA 결과1파일/build exact정리·별도잔여0·NO_COLOR/chunk경고와 보류6 유지다. 첫patch1은 축약anchor 불일치로 적용전 거부돼 정확행 대조 후 버튼1줄만 적용했고 원실패는 보존한다. rollback은 이 버튼1줄 일반revert이며 입력/보관자료/판단/권한 불변이다.
+
+- **FN09/UI04 임무 직전 원문 조회 착수 / Main 어울(2026-10-20)**: 47102cdb 후 보관 임무 snapshot.previousRef는 표시에만 있어 개정 전 조건을 화면에서 열 수 없는 누락을 선정했다. 기존 assignment-drafts 고정GET/원문검사·open만 소비해 과거조건을 명시 열고 현재 초안/판단/맥락/세션·pending/uncertain은 덮지 않는다. 기존 원문 reader의 동일id/직전버전/hash검사·과거 head 구분을 유지하며 확정/기준/재개·실행으로 승격0이다. 새API/SQL/권한/서비스·Agent0이다. 한정 실제bundle DOM RED→GREEN/직접기존조회/type/build만 검증한다. 후속 읽기의 기존 approvals·environments·assignments spec 경로 추정 os3/os2 오류는 실제 파일목록으로 정정했고 새폴더/ACL변경0이다.
+
+- **UI04 임무 이력 QA 사전등록(2026-10-20)**: `D:\tmp\anvil-v3-stage-b\ui04-assignment-history-01`와 `apps/web/dist`만 현재사용자/Main 소유·수명15분·생성전 부재/부모realpath/owner/nonlink확인 후 생성하고 종료 exact정리/독립0이다. 새 이전원문 정상/403/hash변조3와 직접기존저장1의 bundle/msedge/same-origin합성만 검사하며 실제DB/served·Agent는 미검증이다.
+
 - **FN06/UI11 후보 직전 원문 조회 한정 확인 / Main 어울(2026-10-20)**: 신규helper3 missing-function RED255.242ms→3PASS284.8133ms/type0/build239·새DOM3+직접기존저장1=4PASS6.6초·단1회 scopedC0/I0/M0다. 같은id/직전version/fullref hash만 기존 고정GET으로 조회하며 최초v1 GET0, 자기/다른id/건너뜀/부적합ref·403/hash/kind불일치·이탈은 반영0, 현재초안/명령/보관자료 쓰기0이다. 만료이력도 NOT_READY/실행false를 보존한다. browser fixture는 각 고정버전을 분리 보관해 과거조회가 최신본으로 바뀌는 허위성공을 막았다. 실제DB/served의 이력/조회권한·모든주체/지연DOM·실능력/Agent와 전체FN06/UI11은 미검증/부분이다. 등록QA 결과2파일/build exact정리·별도잔여0·기존 NO_COLOR/chunk경고·보류6/NOT_ADOPTED 보존이다. 후속 파일목록의 contracts/agent-adapter 부재1은 계획경로와 실제소스 목록을 구분해 기록하고 임의생성0이다. rollback은 새helper/import·inspect/버튼만 일반revert하며 기존 자료/권한을 보존한다.
 
 - **FN06/UI11 이전 후보 QA 사전등록(2026-10-20)**: 신규helper3 missing-function RED255.242ms→3PASS284.8133ms/type0. 일회 `D:\tmp\anvil-v3-stage-b\ui11-candidate-history-01`와 `apps/web/dist`만 현재사용자/Main 소유·수명15분·부재/부모realpath/owner/nonlink 확인 뒤 생성하고 exact정리/독립0으로 종료한다. 실제bundle/msedge/same-origin 합성의 이전v1조회·403·hash불일치3와 직접기존저장1만 확인한다. 버전별fixture를 실제불변보관처럼 분리하고 새endpoint/DB/서버포트/Agent0, 정식DB/served·전체업무 완료를 주장하지 않는다.
