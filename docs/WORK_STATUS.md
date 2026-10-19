@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 원실행 결박 실제 PG 한정 확인 / Main 어울(2026-10-20)**: exact2c7cdfc5f59b681c0d7fe191e1ffd49344e6ab85 새PG342e60425e231a04603058ac2646f15529b40d3245483a4205c5b60b738dd06f/network2087e6bdbfb6d3eaf920c7906a161aad09648c8859b3e94fad1e2dd73b96e17a·PG15.18/기존59SQLchecksum exact에서1PASS2080.928341ms(기능1744.853016),skip0·DONE다. 실제 인증API→격리PG→Web consumer로 선택 원제출/원START·grant·영수증/감사 exact snapshot·읽기9표불변/관측·ACK0·outsider/미존재/query/회수member거절·원5guard불변을 확인했다. raw2파일/5dir와 등록PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG e6f798c3/image594290/exited·기동/종료시각/restart0 불변이다.
+  source 단위 정적 C0/I0/M0와 실제 한정검증을 구분한다. 이력은 SYNTHETIC_ONLY/HISTORICAL_REFERENCE_ONLY이며 실Provider/OS·현재권한·writer회수·완료/실패집계·현재Agent관측·served/사용자인수는 미확인이다. 신규schema/정식DB·서비스/정책·Secret/실Agent 변경0, 기존완료QA반복0이다. FN12/UI05/Stage 부분구현을 유지하고 다음 실제 증거 대조·문제원인/실보완배정·재시작복원 미완료를 계속한다.
+
+
 - **FN12/UI05 원실행 결박 source 검수·새 QA 등록 / Main 어울(2026-10-20)**: 신규 UI missing-region RED8.664초→1PASS2.5초, 직접인접9PASS519.2402ms·type0/build0(196modules)/diff예정, chunk/NO_COLOR 경고 보존이다. 기존 Reviewer의 새단위1회 C0/I0/M0는 정적 범위로 채택한다. 역사 START/영수증 reader·앞 저장/목록/페이지는 재판정하지 않았고 실제PG·실Provider/OS·현재권한·served/인수는 미확인이다. 등록 로컬browser결과 exact제거/독립0이다.
   새 /home/daon/deploy/anvil-v3-fn12-execution-source-qa-01, PG anvil-v3-fn12-execution-source-pg-01/internal network anvil-v3-fn12-execution-source-net-01/DB anvil_v3_fn12_execution_source_qa_01, owner AV3_FN12_EXECUTION_SOURCE_QA/instance execution-source-01/run execution-source-20261020-01·uid1000daon을 등록한다. Git exact게시SHA·기존59SQLchecksum·고정PG15image594290/Node24.21hash7fde7b8a·tmpfs512MiB·외부port/영구volume0·10분/Node90/외부110초다. 생성전부재·realpath/link/owner/image/daemon 확인→끝/실패exactID/label/mount/port/path/process검증정리→별도잔여0이다. 새 실제 인증API→PG→Web 소비의 선택 원제출/START·grant·영수증/감사결박·읽기9표불변/관측0·outsider/회수member/query거절·원5guard불변만 검증한다. 기존 완료 storage/list/page QA 반복0, 새schema/정식DB·서비스/키·정책·실Agent/기존특정거절 변경0이다.
 
