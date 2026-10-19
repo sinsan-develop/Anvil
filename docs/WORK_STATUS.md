@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 bootstrap 보정 부위 한정 재검토 / Main 어울(2026-10-19)**: 원I1의중첩관측시각분리와신규4시험만정적재검토C0/I0/M0로해소를확인했다. 시험재실행0·기존전체재합격아니며실제provider/권한·OS·서버permit·물리내구/HTTP·Agent미판정은유지한다. 직접11PASS/type0·소유3경로diff0후기존branch에만게시하고후속DB저장연결을진행한다.
+
+- **C3 READ 맥락 bootstrap 순환조건 보완 / Main 어울(2026-10-19)**: 승인P1 §4의CONTEXT_REVIEW에도아직없는사전이해ref를요구하던기존실행기조건을신규positive1RED323.9224ms(음성1PASS)로확인했다. 기존WORK의현재shape/이해ref필수는유지하고authority.current의추가contextReviewFact만기존ServerExecutionFactV1로검사하여READ/NOT_REQUIRED·나머지현재check·OWNED·실행/session/등록/assignment/connection/environment/capability/source결박과최단기한을요구한다. caller mode만으로예외를열거나실제무변경능력을확인한것으로표시하지않는다.
+  독립두경로원C0/I1/M0는중첩fact.checkedAt을불변binding에넣어정상재관측도변경으로오인하는오류다. Main추가1RED289.216ms→중첩관측시각만분리,각조회freshness/최초·중간·최종deadline유지후직접11PASS542.6466ms/type0다. permit뒤원근거만료/자료변경은wire0·원시도/permit2기록보존·재조회UNKNOWN이며기존WORK음성/무자동재전송을유지한다. 기존실파일QA의literal자원은소진됐으므로재실행하지않았고새자원/정식DB·키·서비스/실Agent변경0이다. 실제provider진위/OS무변경/서버SENDpermit·HTTP/물리journal은미검증,후속PG저장adapter/forwardguard미구현을계속연결한다.
+
 - **C3 SEND 기록·명령page 연결 checkpoint / Main 어울(2026-10-19)**: 신규역사reader부재2RED748.6761ms→직접9PASS1013.0278ms, SEND page소비부재1RED371.5627ms→1PASS388.6116ms다. reader는정확request/intent/ref·주체/실행/session/자료·원grant와새예약·봉투/등록·30초/상위기한을queuedAt에검사하고producer append전에도소비한다. pager는기존현재grant/등록·서명/고정ref/nonce·false효과를유지하며SEND기록분기만추가했다. 직접/인접28PASS1670.0579ms·type0·diff0,4개code/test경로한정독립C0/I0/M0(정적,재실행0)다. 실제영수증/예약/outbox존재·현재provider진위/PG잠금COMMIT·실HTTP/Agent는미판정이며후속PGadapter/forwardguard·실행기연결이남았다. 새외부자원/완료QA반복/정식DB·키·서비스변경0이다. 다음은기존CONTEXT_REVIEW READ bootstrap이실행기후속SEND의사전이해필수검사와충돌하는미연결을필요범위TDD로보완한다.
 
 - **C3 SEND 기록 판독·명령page 소비 착수 / Main 어울(2026-10-19)**: a0eea949 exact private/clean 뒤 저장후속SEND의역사record검사를추가한다. 기존request/intent hash·원영수증봉투·현재결박snapshot·새예약ref와source/session/자료refs를정확대조하되queuedAt의역사문법일뿐현재허가/자료진위·전달권위로삼지않는다. 검증된SEND record를기존server명령page의같은grant/등록·현재기한·고정ref/nonce결과선택에연결하며START/STOP판독과false효과를보존한다. 기존PGguard는아직SEND를허용하지않아실DB/정식적용/실Agent와구분하고새자원/키·서비스변경0·완료QA재실행0이다.
