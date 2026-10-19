@@ -27,6 +27,7 @@ function fixture(){
   if(sql.startsWith('SELECT operation,request_hash,result_ref'))return{rows:tables.commands!.filter(r=>r.project_id===p[0]&&r.actor_id===p[1]&&r.command_key===p[2])};
   if(sql.startsWith('SELECT clock_timestamp()'))return{rows:[{at:new Date(clock)}]};
   if(sql.startsWith('SELECT transaction_timestamp()'))return{rows:[{at:new Date(at)}]};
+  if(mode==='IMMUTABLE_PRIVILEGES'&&/FROM anvil\.(writer_claims|executions).*FOR UPDATE/.test(sql))throw Object.assign(Error('IMMUTABLE_TABLE_UPDATE_PRIVILEGE_DENIED'),{code:'42501'});
   if(sql.includes('FROM anvil.writer_claims'))return{rows:tables.writer_claims!.filter(r=>r.project_id===p[0]&&!r.reclaimed_at)};
   if(sql.includes('FROM anvil.executions'))return{rows:tables.executions!.filter(r=>r.project_id===p[0]&&r.id===p[1])};
   if(sql.includes('FROM anvil.usage_reservations'))return{rows:tables.usage_reservations!.filter(r=>r.project_id===p[0]).sort((a,b)=>a.server_sequence-b.server_sequence)};
@@ -64,6 +65,9 @@ function fixture(){
  return{tables,rules,request,provider,run:(r=request())=>repo.command(token,csrf,r),fail:(table:string)=>{failAt=table;},revoke:()=>{revoked=true;},stale:()=>{control=3;},mode:(value:string)=>{mode=value;},advance:(ms:number)=>{clock=new Date(Date.parse(at)+ms);},calls:()=>({basisCalls,currentCalls})};
 }
 const domain=['commands','authorization_receipts','executions','execution_grants','execution_commands','usage_reservations','writer_claims','delivery_outbox'];
+test('불변 queue 이력 조회는 프로젝트 잠금 안에서 UPDATE 권한을 요구하지 않는다',async()=>{
+ const f=fixture();f.mode('IMMUTABLE_PRIVILEGES');assert.equal((await f.run()).status,'APPLIED');
+});
 test('초기 합성 queue는 같은 transaction에 명령·grant·예약·writer·보류 outbox를 저장하고 실행 성공으로 표시하지 않는다',async()=>{
  const f=fixture(),result:any=await f.run();assert.equal(result.status,'APPLIED');assert.equal(result.data.status,'SYNTHETIC_QUEUE_STORED');assert.equal(result.data.executionAuthorized,false);assert.equal(result.data.dispatchPerformed,false);
  for(const table of domain)assert.equal(f.tables[table]!.length,1,table);

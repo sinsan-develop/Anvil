@@ -12,8 +12,8 @@ import { ProjectInitialExecutionQueue, type SyntheticQueueResolver } from '../ap
 import type { ServerExecutionFactV1 } from '../contracts/runtime/server-execution-fact-v1.ts';
 
 const mode=process.argv[2];
-assert(['RED','GREEN'].includes(mode!));
-const label=mode!.toLowerCase(),directory='/home/daon/deploy/anvil-v3-c2-queue-'+label+'-qa-01',database='anvil_v3_c2_queue_'+label+'_qa_01';
+assert(['RED','GREEN','REVIEW_RED','VERIFIED'].includes(mode!));
+const label=mode!.toLowerCase(),directory='/home/daon/deploy/anvil-v3-c2-queue-'+label.replaceAll('_','-')+'-qa-01',database='anvil_v3_c2_queue_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),directory);
 assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C2_QA_DATABASE,database);
@@ -112,7 +112,7 @@ try {
     const grantRef={id:g[1],version:g[2],contentHash:hash(gs)};g[5]=grantRef.contentHash;g[6]=JSON.stringify(gs);q.grantRef=grantRef;
     const commandRef={id:x[1],version:x[2],contentHash:hash(q)};result.data.ref=commandRef;c[14]=JSON.stringify(result);
     const scopeHash=hash({projectId:f.project,actorId:user,clientId:login.clientId,controlGeneration:1,requestHash:c[6],policyRef:JSON.parse(c[12]),targetRef:commandRef});
-    r[5]=scopeHash;a[6]=JSON.stringify(commandRef);a[11]=scopeHash;
+    r[5]=scopeHash;a[6]=JSON.stringify(commandRef);a[10]=scopeHash;
     const authRef={id:r[0],version:1,contentHash:scopeHash};envelope.context.authorizationReceiptRef=authRef;envelope.context.budgetRef=reservationRef;
     const {envelopeHash:_,...unsigned}=envelope;envelope.envelopeHash=hash(unsigned);
     x[7]=commandRef.contentHash;x[8]=envelope.envelopeHash;x[9]=JSON.stringify({...q,envelope});x[10]=JSON.stringify(authRef);
@@ -125,18 +125,19 @@ try {
    catch(error:any){assert.equal(error.code,'42501');assert(Object.values(await queueCounts(f.project)).every(n=>n===0));}
   }
   // 각각의 hash/ref/receipt까지 일관된 null graph를 검사하며 원 hash 불일치 거절로 대신하지 않는다.
-  assert.equal(openNullTimes,0,'C2_REHASHED_NULL_TIME_GUARD_MISSING');
-  console.log('C2_QUEUE_THREE_REHASHED_NULL_TIMES_REJECTED');
   phase='UNICODE_POLICY';
   const unicode=(await admin.query("SELECT anvil.source_read_uppercase_v1('straße.ts') fixed,upper('straße.ts') local")).rows[0];
   assert.equal(unicode.fixed,'STRASSE.TS');
   const ref=syntheticRef(),scope={sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'straße.ts',kind:'FILE',access:'READ',recursive:false}]};
   const duplicate=[{...scope,targets:[...scope.targets,{...scope.targets[0],relativePath:'STRASSE.TS'}]}];
-  assert.equal((await admin.query('SELECT anvil.execution_source_scopes_valid($1::jsonb) valid',[JSON.stringify(duplicate)])).rows[0].valid,false);
+  const duplicateRejected=(await admin.query('SELECT anvil.execution_source_scopes_valid($1::jsonb) valid',[JSON.stringify(duplicate)])).rows[0].valid===false;
   const pid=randomUUID(),eid=randomUUID(),until=new Date(Date.now()+300000).toISOString(),at=new Date().toISOString();
   const allow={ruleId:'ALLOW',subjectRef:{kind:'HUMAN',userId:user},operations:['authorizeExecution'],targetScopes:[{kind:'EXECUTION',projectId:pid,executionId:eid,executionGeneration:1,sourceScopes:[scope]}],disposition:'AUTO',limitPolicyRef:ref,expiresAt:until};
   const deny={...allow,ruleId:'DENY',disposition:'DENY',targetScopes:[{...allow.targetScopes[0],sourceScopes:[{...scope,targets:[{...scope.targets[0],relativePath:'STRASSE.TS'}]}]}]};
-  assert.equal((await admin.query('SELECT anvil.execution_policy_deadline($1::jsonb,$2,$3,1,$4,\'authorizeExecution\',$5::jsonb,$6::jsonb,$7) deadline',[JSON.stringify([allow,deny]),pid,eid,user,JSON.stringify(ref),JSON.stringify([scope]),at])).rows[0].deadline,null);
+  const denyRejected=(await admin.query('SELECT anvil.execution_policy_deadline($1::jsonb,$2,$3,1,$4,\'authorizeExecution\',$5::jsonb,$6::jsonb,$7) deadline',[JSON.stringify([allow,deny]),pid,eid,user,JSON.stringify(ref),JSON.stringify([scope]),at])).rows[0].deadline===null;
+  if(!duplicateRejected)console.log('C2_UNICODE_DUPLICATE_OPEN');if(!denyRejected)console.log('C2_UNICODE_DENY_OPEN');
+  assert.equal(openNullTimes,0,'C2_REHASHED_NULL_TIME_GUARD_MISSING');assert(duplicateRejected&&denyRejected,'C2_UNICODE_GUARD_MISSING');
+  console.log('C2_QUEUE_THREE_REHASHED_NULL_TIMES_REJECTED');
   console.log('C2_QUEUE_UNICODE_DUPLICATE_AND_DENY_REJECTED');
   phase='CONCURRENT_QUEUE';const concurrent=await setup();
   const concurrentResult=await Promise.allSettled([concurrent.queue.command(login.token,login.csrfToken,concurrent.request),concurrent.queue.command(login.token,login.csrfToken,{...concurrent.request,commandId:randomUUID()})]);

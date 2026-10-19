@@ -77,8 +77,9 @@ export class ProjectInitialExecutionQueue {
         let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);
         const replay=await projectReplay(db,actor,request);if(replay!==undefined)return replay;
         // 만료만으로 미확인 writer를 회수하지 않는다. project 잠금 아래 보수적으로 한 실행만 저장한다.
-        if((await db.query('SELECT id FROM anvil.writer_claims WHERE project_id=$1 AND reclaimed_at IS NULL FOR UPDATE',[request.projectId])).rows.length)throw new AuthFailure('EXECUTION_WRITER_UNAVAILABLE',409);
-        if((await db.query('SELECT id FROM anvil.executions WHERE project_id=$1 AND id=$2 FOR UPDATE',[request.projectId,p.executionId])).rows.length)throw new AuthFailure('EXECUTION_ALREADY_EXISTS',409);
+        // 같은 project 행은 currentProjectController가 이미 잠갔다. 불변 이력의 UPDATE 권한은 열지 않는다.
+        if((await db.query('SELECT id FROM anvil.writer_claims WHERE project_id=$1 AND reclaimed_at IS NULL',[request.projectId])).rows.length)throw new AuthFailure('EXECUTION_WRITER_UNAVAILABLE',409);
+        if((await db.query('SELECT id FROM anvil.executions WHERE project_id=$1 AND id=$2',[request.projectId,p.executionId])).rows.length)throw new AuthFailure('EXECUTION_ALREADY_EXISTS',409);
         const reservation=await this.budgets.planReservation(db,actor,c);
         if(reservation.record.snapshot.state!=='RESERVED'||reservation.record.ref.version!==1||!same(reservation.record.snapshot.claim,c))throw new AuthFailure('EXECUTION_RESERVATION_INVALID',409);
         const fact=readServerExecutionFactV1(await this.resolver.current(db,actor,cloneV1(request),cloneV1(basis),cloneV1(reservation)));
