@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 명령출력 원문 한정 확인 / Main 어울(2026-10-20)**:2RED151.5029ms→2PASS117.5356ms·직접공유artifactAPI합5PASS251.1658ms/type0/build224. 새COMMAND_OUTPUT 버튼부재DOM RED→새1+공유기존ARTIFACT_TEXT1=2PASS3.4초,동일원실행/fullref/단일등록v1/hash선택·다른실행/다른hash차단·escaped원문/script,img실행0/POST0·기존재조회403회수확인이다. 한정독립단1회C0/I0/M0·동일재리뷰0이며실명령/exit성공·출력출처·DB/served/Agent/전체FN12/UI05는미확인이다. RED결과sandbox삭제 Access denied1→동일exact일반실행정리exit0(ACL변경0);그사이경로존재preflight1은browser미실행이지제품실패아니다. 최종등록결과/build exact제거/독립잔여0,NO_COLOR/chunk기존경고유지. 원0029거절/미게시5·정식자원불변,rollback은이번원문선택module/import/UL만되돌려기존목록을유지한다.
+
+- **FN12/UI05 명령출력 QA 사전등록 / Main 어울(2026-10-20)**:새결박2RED151.5029ms→2PASS117.5356ms이다. 새일회결과literal `D:\tmp\anvil-v3-stage-b\ui05-command-output-01`·기존재생성build `apps/web/dist`는Main현재Windows사용자소유·이번검증최대15분·종료후exact정리/독립잔여0이다. 기존Playwright msedge headless/same-origin route fixture만사용하며새서버/포트/DB/계정/Agent0,합성DOM과보호reader계약만검증한다. 생성전부재/nonlink확인,기존서비스영향0을대조한다. 읽기실수 `submitted-result.ts`/`modules/execution-preparation` 없는추정경로2건은exit오류뒤실제목록으로정정했고ACL변경/재권한0이다.
+
+- **FN12/UI05 명령출력 원문 착수 / Main 어울(2026-10-20)**:105614a2 local/private exact·main불변이다. 다음기존계약누락은commandResults.outputRef에서동일원제출등록산출물로직접이동하지못하는점이다. 원명령의실행ref가제출scope의full executionRef와일치하고출력이단일등록v1/hash일때만기존보호텍스트reader를명시선택한다. 다른실행/없는·중복·다른hash출력은차단/미확인으로남기고명령실행·argv해석·exit/성공판정·재시도0이다. 기존raw보고/산출물목록은보존,새API/schema/정식DB·서비스·권한/키·Agent0이다.
+
 - **FN12/UI05 diff 한정 검토(2026-10-20)**:단1회C0/I0/M0·동일재리뷰0이다. 설명에서변경'6필드'라고한오기는검토자가지적했으며실제기존계약/코드는path/kind/diffRef/beforeHash/afterHash 정확5필드이고계약변경0이다. 기존서버권한/reader전반·실파일출처/현재Git일치는미판정으로유지한다. 새API/DB/키/서비스·Agent/OS0·전체FN12/UI05완료아니다.
 
 - **FN12/UI05 변경diff 원문 확인 / Main 어울(2026-10-20)**:새결박2RED126.2601ms→2PASS146.2499ms·직접artifactAPI인접5PASS227.4521ms/type0/build223이다. 새버튼부재DOM RED→새CHANGE_DIFF와공유기존ARTIFACT_TEXT 2PASS4.3초다. 동일원제출의단일등록/v1/hash만선택GET,다른hash/없는diff차단·script/img실행0/POST0·기존재조회403부모회수확인이다. 실제Gitdiff/현재변경일치·증거출처/환경·DB/served/Agent검증은미실행이다. RED/GREEN결과와등록build를exact정리·독립잔여0·기존경고유지,거절0029/미게시후보5·정식자원불변이다.
