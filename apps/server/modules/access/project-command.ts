@@ -13,25 +13,41 @@ import { assignmentDraftOperations } from '../assignments/assignment-input.ts';
 import { assignmentConfirmationOperations } from '../assignments/assignment-confirmation-input.ts';
 import { contextPreparationOperations } from '../context/context-input.ts';
 import { baselineOperations } from '../projects/baseline-operations.ts';
+import { readSourceScopesV1, type SourceScopeV1 } from '../../../../contracts/runtime/source-scope-v1.ts';
+import { cloneV1, refV1, uuidV1, isoV1 } from '../../../../contracts/runtime/validation-v1.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
 export const documentOperations = ['uploadArtifact', 'saveDocumentDraft', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
+export const runtimeOperations = ['authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery'] as const;
+export interface ExecutionRule extends Omit<MaterialRule, 'targetScopes' | 'limitPolicyRef'> {
+  targetScopes: [{ kind: 'EXECUTION'; projectId: string; executionId: string; executionGeneration: number; sourceScopes: SourceScopeV1[] }];
+  limitPolicyRef: VersionRef;
+}
+export type ProjectPermissionRule = MaterialRule | ExecutionRule;
 function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
-export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): MaterialRule[] {
+export function materialRules(value: unknown, projectId: string, actorId: string, now = new Date()): ProjectPermissionRule[] {
   if (!Array.isArray(value) || value.length > 200) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
   const seen = new Set<string>();
   for (const rule of value) {
     if (!exact(rule, ['ruleId', 'subjectRef', 'operations', 'targetScopes', 'disposition', 'limitPolicyRef', 'expiresAt']) || typeof rule.ruleId !== 'string' || !/^[A-Za-z0-9_-]{1,64}$/.test(rule.ruleId) || seen.has(rule.ruleId)
       || !exact(rule.subjectRef, ['kind', 'userId']) || rule.subjectRef.kind !== 'HUMAN' || rule.subjectRef.userId !== actorId
-      || !Array.isArray(rule.targetScopes) || rule.targetScopes.length !== 1 || !exact(rule.targetScopes[0], ['kind', 'projectId']) || rule.targetScopes[0].kind !== 'PROJECT' || rule.targetScopes[0].projectId !== projectId
+      || !Array.isArray(rule.targetScopes) || rule.targetScopes.length !== 1
       || !Array.isArray(rule.operations) || !rule.operations.length || rule.operations.length > 200 || rule.operations.some(item => typeof item !== 'string') || new Set(rule.operations).size !== rule.operations.length
-      || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(String(rule.disposition)) || typeof rule.expiresAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(rule.expiresAt) || !Number.isFinite(Date.parse(rule.expiresAt)) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
-    if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+      || typeof rule.disposition !== 'string' || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(rule.disposition) || !isoV1(rule.expiresAt) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
+    const scope = rule.targetScopes[0];
+    if (exact(scope, ['kind','projectId']) && scope.kind === 'PROJECT' && scope.projectId === projectId) {
+      if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+    } else {
+      if (!exact(scope, ['kind','projectId','executionId','executionGeneration','sourceScopes']) || scope.kind !== 'EXECUTION' || scope.projectId !== projectId
+        || !uuidV1(scope.executionId) || !Number.isSafeInteger(scope.executionGeneration) || Number(scope.executionGeneration) < 1) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
+      try { readSourceScopesV1(scope.sourceScopes); } catch { throw new AuthFailure('POLICY_INPUT_INVALID', 422); }
+      if (!refV1(rule.limitPolicyRef) || rule.operations.some(item => !(runtimeOperations as readonly string[]).includes(item))) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+    }
     if(rule.disposition==='REQUIRE_APPROVAL'&&rule.operations.some(op=>['requestApproval','decideApproval'].includes(op)))throw new AuthFailure('APPROVAL_POLICY_RECURSION_INVALID',422);
     seen.add(rule.ruleId);
   }
-  return value as MaterialRule[];
+  return cloneV1(value) as ProjectPermissionRule[];
 }
 export async function projectMember(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, lock = false) {
   const row = (await db.query(`SELECT p.id,p.archived_at,m.participation FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=$1 AND m.user_id=$2 AND m.revoked_at IS NULL ${lock ? 'FOR UPDATE OF p,m' : ''}`, [projectId, actor.actorId])).rows[0];
@@ -50,8 +66,9 @@ export async function currentProjectController(db: PoolClient, actor: Authentica
 export async function currentPolicy(db: PoolClient, projectId: string) {
   const row = (await db.query('SELECT p.id,p.head_version,v.rules_json,v.content_hash,v.reason,v.review_refs,v.created_at FROM anvil.permission_policies p JOIN anvil.permission_policy_versions v ON v.policy_id=p.id AND v.project_id=p.project_id AND v.version=p.head_version WHERE p.project_id=$1 FOR SHARE OF p', [projectId])).rows[0];
   if (!row) return null;
+  if (!Array.isArray(row.rules_json) || row.rules_json.some((rule: {disposition?: unknown} | null) => !rule || typeof rule.disposition !== 'string' || !['AUTO','REQUIRE_APPROVAL','DENY'].includes(rule.disposition))) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
   if (contentHash(canonicalJson({ rules: row.rules_json, reason: row.reason, reviewRefs: row.review_refs })) !== row.content_hash) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
-  return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as MaterialRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
+  return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as ProjectPermissionRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
 }
 export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, inspectPending=false) {
   const policy = await currentPolicy(db, request.projectId);
@@ -120,6 +137,15 @@ export class ProjectPolicyRepository {
         if (p.reviewRefs.length) throw new AuthFailure('REVIEW_ARTIFACT_STORAGE_NOT_READY', 412);
         const rules = materialRules(p.rules, request.projectId, actor.actorId), current = await currentPolicy(db, request.projectId);
         if (current ? request.targetId !== current.ref.id || request.expectedVersion !== current.ref.version : request.targetId !== null || request.expectedVersion !== 0) throw new AuthFailure('VERSION_CONFLICT', 409);
+        // 같은 project/control 잠금 안에서 현재 예산을 확인한다. 문서 PROJECT/null 규칙에는 적용하지 않는다.
+        if (rules.some(rule => rule.limitPolicyRef !== null)) {
+          const { ProjectLimitPolicies } = await import('../executions/runtime-policy.ts');
+          const budgets = new ProjectLimitPolicies();
+          for (const rule of rules) if (rule.limitPolicyRef !== null) {
+            const budget = await budgets.resolveCurrent(db, actor, request.projectId, rule.limitPolicyRef, {kind:'PROJECT',projectId:request.projectId});
+            if (Date.parse(rule.expiresAt) > Date.parse(budget.snapshot.expiresAt)) throw new AuthFailure('RUNTIME_POLICY_EXCEEDS_BUDGET_EXPIRY', 422);
+          }
+        }
         const version = request.expectedVersion + 1, id = current?.ref.id ?? randomUUID();
         if (!Number.isSafeInteger(version)) throw new AuthFailure('VERSION_CONFLICT', 409);
         const ref = { id, version, contentHash: contentHash(canonicalJson({ rules, reason: p.reason, reviewRefs: [] })) };

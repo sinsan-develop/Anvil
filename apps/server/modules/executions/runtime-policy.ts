@@ -4,7 +4,8 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { cloneV1, isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
-import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
+import { currentPolicy, currentProjectController, persistProjectReceipt, projectMember, runtimeOperations, type ExecutionRule, type ProjectCommand } from '../access/project-command.ts';
+import { readSourceScopesV1, type SourceScopeV1 } from '../../../../contracts/runtime/source-scope-v1.ts';
 import { assertKnowledgeTextSafe } from '../knowledge/knowledge-entry.ts';
 
 export interface ExecutionLimits {
@@ -130,4 +131,50 @@ export class ProjectLimitPolicies {
     if (!Number.isFinite(at) || Date.parse(head.snapshot.expiresAt) <= at) throw new AuthFailure('LIMIT_POLICY_EXPIRED', 412);
     return head;
   }
+}
+
+export interface RuntimeAuthorizationInput {
+  executionId: string; executionGeneration: number; permissionPolicyRef: VersionRef; budgetPolicyRef: VersionRef; sourceScopes: SourceScopeV1[];
+}
+function runtimeInput(value: unknown): RuntimeAuthorizationInput {
+  try {
+    if (!recordV1(value, ['executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','sourceScopes']) || !uuidV1(value.executionId)
+      || !integer(value.executionGeneration, Number.MAX_SAFE_INTEGER) || !refV1(value.permissionPolicyRef) || !refV1(value.budgetPolicyRef)) throw Error();
+    readSourceScopesV1(value.sourceScopes);
+    if (Buffer.byteLength(canonicalJson(value),'utf8') > 2 * 1024 * 1024) throw Error();
+    return cloneV1(value) as RuntimeAuthorizationInput;
+  } catch { throw new AuthFailure('RUNTIME_SCOPE_INVALID', 422); }
+}
+function targetMatches(granted: SourceScopeV1, asked: SourceScopeV1, target: SourceScopeV1['targets'][number], denial = false) {
+  // DENY는 같은 root의 대소문자 별칭/버전 변경으로 우회하지 못한다. 허용은 모든 ref·경로·접근을 정확히 대조한다.
+  if (denial ? granted.sourceRootRef.id !== asked.sourceRootRef.id : !same(
+    {sourceRootRef:granted.sourceRootRef,mappingRef:granted.mappingRef,observationRef:granted.observationRef,baselineRef:granted.baselineRef},
+    {sourceRootRef:asked.sourceRootRef,mappingRef:asked.mappingRef,observationRef:asked.observationRef,baselineRef:asked.baselineRef})) return false;
+  return granted.targets.some(t => (denial ? t.relativePath.toUpperCase() === target.relativePath.toUpperCase() : t.relativePath === target.relativePath)
+    && t.kind === target.kind && t.access === target.access && t.recursive === target.recursive);
+}
+/** 현재 HUMAN 정책 범위만 검사한다. DB grant/원자 예약·queue와 OS/wire 허가를 대신하지 않는다. */
+export async function authorizeRuntimePolicy(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, value: RuntimeAuthorizationInput,
+  budgets: Pick<ProjectLimitPolicies, 'resolveCurrent'> = new ProjectLimitPolicies()) {
+  const input = runtimeInput(value);
+  await currentProjectController(db, actor, request);
+  const policy = await currentPolicy(db, request.projectId);
+  if (!policy) throw new AuthFailure('PERMISSION_POLICY_UNCONFIGURED', 412);
+  if (!same(input.permissionPolicyRef,policy.ref)) throw new AuthFailure('RUNTIME_POLICY_NOT_CURRENT', 409);
+  if (!(runtimeOperations as readonly string[]).includes(request.operation)) throw new AuthFailure('RUNTIME_OPERATION_DENIED', 403);
+  const at = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at.getTime();
+  if (!Number.isFinite(at)) throw new AuthFailure('RUNTIME_CLOCK_INVALID', 503);
+  const candidates = policy.rules.filter((r): r is ExecutionRule => r.limitPolicyRef !== null && r.subjectRef.kind === 'HUMAN' && r.subjectRef.userId === actor.actorId
+    && r.operations.includes(request.operation) && Date.parse(r.expiresAt) > at && r.targetScopes.length === 1 && r.targetScopes[0].kind === 'EXECUTION'
+    && r.targetScopes[0].projectId === request.projectId && r.targetScopes[0].executionId === input.executionId && r.targetScopes[0].executionGeneration === input.executionGeneration);
+  const overlaps = (r:ExecutionRule) => input.sourceScopes.some(s => s.targets.some(t => r.targetScopes[0].sourceScopes.some(g => targetMatches(g,s,t,true))));
+  if (candidates.some(r => r.disposition === 'DENY' && overlaps(r))) throw new AuthFailure('RUNTIME_OPERATION_DENIED',403);
+  const allowed = candidates.filter(r => r.disposition !== 'DENY' && same(r.limitPolicyRef,input.budgetPolicyRef));
+  if (!input.sourceScopes.every(s => s.targets.every(t => allowed.some(r => r.targetScopes[0].sourceScopes.some(g => targetMatches(g,s,t)))))) throw new AuthFailure('RUNTIME_OPERATION_DENIED',403);
+  if (allowed.some(r => r.disposition === 'REQUIRE_APPROVAL' && overlaps(r))) throw new AuthFailure('EXECUTION_APPROVAL_NOT_CONNECTED',412);
+  if (request.approvalRef !== null) throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
+  const budget = await budgets.resolveCurrent(db,actor,request.projectId,input.budgetPolicyRef,{kind:'PROJECT',projectId:request.projectId});
+  const validUntil = Math.min(Date.parse(budget.snapshot.expiresAt), ...allowed.map(r => Date.parse(r.expiresAt)));
+  if (!Number.isFinite(validUntil) || validUntil <= at) throw new AuthFailure('RUNTIME_OPERATION_DENIED',403);
+  return {policyRef:policy.ref,budgetPolicyRef:budget.ref,validUntil,executionAuthorized:false as const,dispatchPerformed:false as const};
 }
