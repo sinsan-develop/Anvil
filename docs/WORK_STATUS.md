@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 보관 검수 목록·선택 원문 후보 확인 / Main 어울(2026-10-20)**: 원제출별 명시 목록/선택원문을 S05에 연결했다. 최근20metadata/미선택·검수자/동일제출자·조건별 이유/고정 기준과 원제출/hash를 표시하고 선택대기/재조회/403에서 앞선 원문과 부모제출을 회수한다. 보관기록이며 현재기준 적용·조건coverage/실제증거 재검수·합격/완료/실패집계/보완실행으로 승격하지 않는다.
+  consumer3RED159.3279ms→caller/응답 fixture참조분리 뒤3PASS177.1071ms, 신규 REVIEW_HISTORY missingregion RED→1PASS2.2초다. 직접 UI05 26PASS492.4223ms/type0/build0·diff0,500KiB/색상경고보존,등록결과 exact제거·독립잔여0이다. 독립 이력단위 C0/I0/M1이며 M1은 시험명이 재해시거절을 주장하나 실제본문변형/hash불일치만 확인한 표현공백이다. Main은 시험명을 실제범위 ‘변형된 원문’으로 좁혔고 제품코드/합격기준변경·문구용중복시험0, 독립C0/I0/M0 소급0이다.
+  actualPG/권한/COMMIT·browser/served/빠른연속선택·주체전환은 reviewer유보, Main 앞954c 격리PG1PASS와 합성UI클릭을 분리한다. 정식DB/서비스·키/실정책·Agent0·전체FN12/UI05/Stage 부분구현 유지다. 다음은 저장된 보완/차단 판정의 부족항목만 같은 단계책임자 예약세션에 연결하는 보완 초안으로, 실제배정/새writer·실행/정식실패집계는 연결하지 않는다.
+
+- **UI05 보관 검수 이력 화면 착수 / Main 어울(2026-10-20)**: 원제출별 metadata 명시목록→사용자 선택 고정원문 GET/hash·같은scope/criteriaRef·작성자/시각/이유·승격false를 대조한다. 원문조회이며 기준 원조건 coverage·실제증거/판정을 새로 검증하거나 현재기준/업무완료로 적용하지 않는다. source consumer3RED159.3279ms→초기2PASS/1FAIL164.7317ms는 음성fixture 응답ref가 caller기대와 같은객체였던 문제로 각응답/caller를 복사분리했고 기존거절기대는 유지한다. 실제PG는 앞954c 목록1PASS와분리한다. 현재 새UI 미연결·정식서비스/계정/키/Agent변경0이다. 기존등록 로컬 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01 결과·해당전용Edge만 생성전부재/link 확인 후 사용하고 종료/실패즉시exact정리·독립잔여0,사용자browser보존이며 새DBQA반복0이다.
+
 - **FN12 검수 이력 실제 PG 한정 확인 / Main 어울(2026-10-20)**: private/WSL exact954c10049e540033604fb6843aec7ef342062e0e·clean, 새 PG e298c43e3e43a412837c433ff3a7a6eeb9052132e55064903ca808b5debd2f70/networkcea66ca3315f9e71ec8ac25d748083ed32949ca7c65e0c4aeca73f5cc297c9f7·고정PG15image594290/15.18·Node24.21·기존61SQL ID/checksum exact에서1PASS4671.624658ms(기능4350.001322),skip0·DONE다. 검수22합성fixture에서 최근20metadata/hasMore/NOT_SELECTED·정확 정렬·옛 최초판정0 원문GET과ref·읽기4표불변, 타사용자/없는원제출/query/회수member거절·원5guard hash불변을 확인했다. 기존 저장 전체음성/COMMIT 검증은 이 mode에서 반복0이다.
   raw2파일/5디렉터리·새PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG동일fullID/image/StartedAt/FinishedAt/restart0·exited불변이다. direct15PASS1083.1545ms/type0, 실제served/실사용권한·전체이력페이지/사용자인수·FN12/UI05완료는 미확인이다. 다음은 S05에서 보관 검수 목록을 명시조회하고 선택한 과거 판정의 고정원문을 읽는 화면 소비이며 Main이 이어간다.
 
