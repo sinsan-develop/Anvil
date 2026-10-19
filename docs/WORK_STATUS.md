@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 HUMAN runtime 명령 경로 내부 checkpoint / Main 어울(2026-10-19)**: 첫1PASS3FAIL1651.0869ms 중runtime enum 미구현2와inject undefined header를실제누락으로보내지못한시험harness1을분리했다. 명시합성주입4연산/기본미활성·원명령전달/익명·CSRF/Origin·project/idempotency/중복JSON/Bearer혼합·비합성/true결과·비밀오류거절4PASS833.1715ms/type0다. Main이기존understanding snapshot은top transport없고currentBinding에출처가있음을대조해별도1RED709.8354ms로반환형오판을확인, 원형보존분기로신규5+기존임무경로인접1=6PASS1003.7774ms/type0·diff0이다. 독립신규C0/I0/M0는새helper/시험과app/projectroute주입diff만한정검토했고서비스core/실인증/PG·Agent는미판정이다.
+
+  실제Fastify.inject의라우팅/입력/거절은확인했지만backend는fake서비스port여서HUMAN인증/현재제어/정책·실제저장COMMIT·served사용자기능완료로승격하지않는다. 원서비스의AccessRepository tx소유/기존응답불변을유지하고기본app/main.ts는주입0·연산미활성,환경flag/fallback/새허가·DB/서비스/키/Agent변경0이다. 기존완료코드변경사유는승인§6의미연결runtime경로연결이며변경전enum/handler미등록→변경후명시합성주입에한해4연산을각기존서비스로전달하는diff다. 신규helper/시험·app/projectroute·현황5경로보존,전체C3/Stage부분구현이다. 다음은회수/실행허가회수·서버SEND·현재credential/관측원자저장선행을대조해계획의다음미구현을계속한다.
+
+
+- **C3 HUMAN runtime 명령 경로 연결 착수 / Main 어울(2026-10-19)**: 4d9ebb7c local/private exact·clean 뒤 기존 project commands에 queueExecutionCommand/requestExecutionStop/authorizeExecutionRecovery/reviewUnderstanding 서비스를 명시 합성 주입할 수 있도록 연결한다. 기본 app은 현재처럼 주입없음·연산미활성이고 production 시작파일/환경은 바꾸지 않는다. 주입시에도 기존 Host/Origin/엄격JSON·projectId/idempotency/로그인cookie·CSRF와각실제서비스의HUMAN/현재정책/제어tx를그대로소비한다. Bearer혼합/없는필수서비스/비합성port·성공true승격을거절하고예산/허가를route가새로만들지않는다. 검수는 listener없는Fastify.inject와합성serviceport의인자/거절만이며실DB인증/정식endpoint활성·Agent실행으로승격하지않는다. 새외부자원0·정식환경/SQL/키변경0이다.
+
+
 - **C3 정규화 실행 요청 router checkpoint / Main 어울(2026-10-19)**: 신규5RED141.1272ms→4PASS1FAIL150.0812ms는 요청에없는실행세대1을시험이단정한문제였다. 구현을1로고정하지않고서명proof의credential세대불일치음성으로정정해5PASS146.1595ms/type0, 직접/회수읽기/permit인접18PASS464.4808ms다. 독립 C0/I1/신규M0는 서비스결과보다늦은마지막credential조회에서더짧은결과기한경과를놓치는경계다. Main이마지막credential조회에서만시각을전진시키는permit음성과자료내부기한부재를2RED241.475ms로확인했다. permit/중지의원기한과자료의actual최단기한을최종await뒤검사하도록보완해router/자료직접20PASS486.371ms/type0이다. 원검토는그대로보존하고새독립C0/I0으로표기하지않는다.
 
   기존완료자료코드변경이유는위I1이다. 변경전 read가부분응답만반환→변경후내부readWithDeadline이최단기한을함께전달하되기존read는원부분응답만반환하는wrapper로보존했다. authenticated read도동일해기존receiver/client의필드/바이트·외부응답추가0을직접시험했다. 이는실행중인정식서비스/API변경이아니며새헤더/공개경로/실credential발급·listener등록0이다.

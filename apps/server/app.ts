@@ -11,8 +11,9 @@ import { registerProjectFileRoutes } from './modules/documents/project-files.ts'
 import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
 import { registerConnectorRegistrationRoutes } from './modules/connections/registration-routes.ts';
 import { registerSourceReadRoutes } from './modules/connections/source-read-routes.ts';
+import type {SyntheticHumanExecutionPorts} from './modules/executions/project-runtime-commands.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -22,7 +23,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     return payload;
   });
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); }
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); }
   if (webRoot) {
     app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(await readFile(new URL('index.html', webRoot))));
     app.get<{ Params: { name: string } }>('/assets/:name', async (request, reply) => {
