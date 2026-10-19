@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN09/UI04 임무 예산·환경 선택 해제 한정 확인 / Main 어울(2026-10-20)**: 신규3 missing-function RED293.6662ms→3PASS356.5311ms/type0/build240·새DOM3+직접기존저장1=4PASS6.2초·단1회 scopedC0/I0/M0다. 예산만/환경만/둘다 미저장선택을 명시 null로 해제→별도 기존 prepareAssignment 저장을 연결하고 다른입력/참조·원본·권한 쓰기0을 확인했다. owner/client·프로젝트/binding/세대/input/ref/design·동결/불명/이탈 CAS의 새초안 덮기 거절과 빈선택 부족/실행false도 유지한다. 실제DB/served·모든React지연/주체전환·실제정책/환경/Agent효과와 전체FN09/UI04는 미검증/부분이다. 등록QA 결과1파일/build exact정리·별도잔여0·원경고/보류6·CapReport NOT_ADOPTED 보존, 불변선택/PG 전수 반복0이다. rollback은 신규해제helper/두panel import·버튼만 일반revert하며 보관자료·현재권한은 보존한다.
+
+- **UI04 선택 해제 QA 사전등록(2026-10-20)**: 신규3 missing-function RED293.6662ms→3PASS356.5311ms/type0이다. `D:\tmp\anvil-v3-stage-b\ui04-assignment-selection-clear-01`와 `apps/web/dist`만 현재사용자/Main 소유·수명15분·생성전 부재/부모owner/realpath/nonlink확인·종료exact정리/독립0이다. 실제bundle/msedge/same-origin합성의 예산만/환경만/둘다 해제→별도기존저장3와 직접기존저장1만 검사하며 과거이력/실PG 전수는 반복하지 않는다. 실제DB/served/권한회수/Agent0이다.
+
+- **FN09/UI04 임무 선택 참조 해제 착수 / Main 어울(2026-10-20)**: c3b5c2c9 후 예산·환경은 선택/교체되지만 선택없음으로 되돌리는 조작이 없는 누락을 보완한다. 기존 nullable budgetRef/environmentRef의 미저장선택만 명시 null로 되돌리고 다른조건/소스·기준·이유/보존명령·판단/맥락/세션은 보존한다. owner/client·프로젝트/binding/세대/input/ref/design·pending/result/uncertain·수명을 updater에서 재검사하며 빈선택은 기존 미충족/실행false로 저장된다. 기존 정책/환경/후보/권한 회수·삭제/Agent중지와 구별한다. 새API/schema/DB/서비스/비용/Agent0, 신규단위 TDD·직접새DOM/저장만 검사한다.
+
 - **FN09/UI04 임무 직전 원문 조회 한정 확인 / Main 어울(2026-10-20)**: 실제bundle의 버튼부재1RED(15초 timeout)→신규 정상/403/hash변조3+직접기존저장1=4PASS7.1초/type0/build239·단1회 scopedC0/I0/M0다. 기존 snapshot.previousRef→perform/open/readAssignmentDraft만 연결해 v2→v1 과거 고정조건과 이전hash를 읽고 거절시 원문숨김·미저장목표/원명령 POST1 보존을 확인했다. 새helper/API/schema/권한/DB/서비스·Agent0, 과거본을 현재head/확정/배정으로 승격0이다. 실제DB/served의 이력·권한/모든주체·지연조합과 전체FN09/UI04는 미검증/부분이다. QA 결과1파일/build exact정리·별도잔여0·NO_COLOR/chunk경고와 보류6 유지다. 첫patch1은 축약anchor 불일치로 적용전 거부돼 정확행 대조 후 버튼1줄만 적용했고 원실패는 보존한다. rollback은 이 버튼1줄 일반revert이며 입력/보관자료/판단/권한 불변이다.
 
 - **FN09/UI04 임무 직전 원문 조회 착수 / Main 어울(2026-10-20)**: 47102cdb 후 보관 임무 snapshot.previousRef는 표시에만 있어 개정 전 조건을 화면에서 열 수 없는 누락을 선정했다. 기존 assignment-drafts 고정GET/원문검사·open만 소비해 과거조건을 명시 열고 현재 초안/판단/맥락/세션·pending/uncertain은 덮지 않는다. 기존 원문 reader의 동일id/직전버전/hash검사·과거 head 구분을 유지하며 확정/기준/재개·실행으로 승격0이다. 새API/SQL/권한/서비스·Agent0이다. 한정 실제bundle DOM RED→GREEN/직접기존조회/type/build만 검증한다. 후속 읽기의 기존 approvals·environments·assignments spec 경로 추정 os3/os2 오류는 실제 파일목록으로 정정했고 새폴더/ACL변경0이다.

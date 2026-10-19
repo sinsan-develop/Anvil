@@ -4,6 +4,7 @@ import type {DocumentSession} from '../design-trace/editor-api.ts';
 import {listCandidates,type CandidateHit,type CandidateView,type Ref} from '../connections/api.ts';
 import type {AssignmentBuffer} from './assignment-api.ts';
 import {selectAssignmentEnvironment} from './assignment-environment-selection.ts';
+import {clearAssignmentSelection} from './assignment-selection-clear.ts';
 
 export function AssignmentEnvironmentSelection({client,buffer,session,locked,update,run}:{client:ApiClient;buffer:AssignmentBuffer;session:DocumentSession;locked:boolean;update:(change:(value:AssignmentBuffer)=>AssignmentBuffer)=>void;run:(action:()=>Promise<void>)=>void}){
  const[items,setItems]=useState<CandidateHit[]|null>(null),[cursor,setCursor]=useState<string|null>(null),[view,setView]=useState<CandidateView|null>(null);
@@ -29,5 +30,6 @@ export function AssignmentEnvironmentSelection({client,buffer,session,locked,upd
    <ul>{view.candidate.readiness.missingRequirements.map((item,index)=><li key={index}>{item.field} · {item.reason}</li>)}</ul><p>실제 지원 능력·호스트 신뢰·명령/비밀 접근·OS 통제는 미확인입니다.</p>
   </article>:null}
   {buffer.input.definition.environmentRef?<p aria-label="초안 환경 고정 참조">{buffer.input.definition.environmentRef.id} · v{buffer.input.definition.environmentRef.version} · {buffer.input.definition.environmentRef.contentHash} · ENVIRONMENT_UNVERIFIED · 별도 임무 저장 필요</p>:<p>초안 환경 참조 없음 · 미검증</p>}
+  <button type="button" disabled={locked||buffer.uncertain||!buffer.input.definition.environmentRef} onClick={()=>run(async()=>{clearAssignmentSelection(buffer,session,'environmentRef',update,()=>alive.current);if(alive.current)setView(null);})}>초안 환경 선택 해제</button>
  </section>;
 }

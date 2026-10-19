@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN09/UI04 임무 예산·환경 선택 해제**: 미저장 budgetRef/environmentRef의 명시 해제와 별도 기존저장을 연결했다. 신규3/type/build240·새3+직접1 DOM4PASS/scopedC0I0M0/QA0이며 원본/권한 삭제·회수0, 빈선택의 부족/실행false·정식DB/served/전체업무 미검증/부분을 유지한다.
+
 - **2026-10-20 FN09/UI04 임무 직전 원문 조회**: 보관 snapshot.previousRef로 기존 고정GET/원문대조를 열어 과거조건을 조회한다. 버튼부재DOM1RED→새3+직접1=4PASS/type/build239/scopedC0I0M0/QA0이며 초안/명령 쓰기0·정식DB/served/실행/전체업무는 미검증/부분으로 유지한다.
 
 - **2026-10-20 FN06/UI11 후보 직전 원문 조회**: 기존 보관 input.candidateRef의 동일id/직전version/hash를 고정GET으로 명시 읽도록 연결했다. 신규3/type/build239·새DOM3+직접1=4PASS/scopedC0I0M0/QA0이며 조회거절/변조는 이전원문숨김·초안/명령보존이다. 정식DB/served·실능력/Agent·전체FN06/UI11은 미검증/부분으로 유지한다.
