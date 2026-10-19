@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 조건별 보고 대조 화면 연결 / Main 어울(2026-10-20)**: 선택 제출과 보관 기준의 고정 ref/hash를 결박한 명시 GET 버튼을 연결했다. 미보고/보고된 미실행·보고 불일치/수행자 주장, 필요 시험 종류·기준 밖 보고·원문/이유를 분리하고 실제 검수·완료 판정 아님을 표시한다. 목록/기준 재선택·재조회 중 이전 대조를 즉시 숨기며 지연 응답을 폐기하고403에서 부모 원문도 회수한다. 기존 완료 코드를 수정한 이유는 보관 기준 조회 뒤 실제 보고부족 확인이 미연결이어서이며, 변경은 ResultReviewSources의 result 전달·명시 조회 상태/표시에 한정했다. 기존 기준 저장/권한·수행자 원문은 바꾸지 않았다.
+  신규 browser REPORTED_COVERAGE는 버튼 미구현 RED(15초 timeout)→구현 뒤1PASS2.3초, 직접 UI05 소비/등록/원문/상세20PASS443.2097ms·type0/build0·diff check0이다. 독립 이번 coverage 단위 C0/I0/M0이며 실제 증거진위/검수합격·실사용권한/DB동시성·실브라우저지연경합/served는 검토유보다. Main의 앞 exactf7074cc1 격리PG1PASS와 합성route 클릭을 독립/정식 통합 증거로 승격하지 않는다. chunk500KiB·NO_COLOR/FORCE_COLOR 경고 보존, 신규 결과폴더 exact정리 후 별도 잔여0이다. 정식DB/서비스·권한/키·Agent 변경0, rollback은 이 조회 UI/consumer commit의 정상 되돌림이며 데이터 변경0이다. FN12/UI05/Stage는 부분 구현 유지, 다음은 기존 결과 검수 판정/보완의 영속 연결 경계를 선정·구현한다.
+
+- **UI05 선택 기준의 보고 대조 연결 착수 / Main 어울(2026-10-20)**: 기존 선택 제출/검증한 보관기준에서 명시GET로만 조건별 미보고/보고미실행·중복/다른시험·기준/환경차이와 기준밖보고 원문을 대조한다. 결과를 실제 검수·완료·실패집계/증거진위/실행으로 올리지 않고 선택전환/재조회/접근거절에서 앞선 대조를 숨긴다. 새 consumer3RED155.2422ms→3PASS182.42ms, wire 콜백/고정fixture행의 명시형9건 보완 뒤 type0이다. 신규 schema/권한·정식DB/서비스·Agent 변경0이다. 실제클릭 신규 REPORTED_COVERAGE는 기존 등록 로컬 결과 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01만 사용하고 종료/실패 후 exact정리·독립잔여0, 공유브라우저/사용자PID 보존이다.
+
+
 - **FN12 보고 coverage 실제 PG 확인 / Main 어울(2026-10-20)**: private/WSL exactf7074cc1a2ee8e036f45462a711155303b295558·clean, 신규 PG2936d5d4de8df0eb93ef79e28a14c92348d6af881a44c0ff88967a000fa88c10/networkdf34bbc6e6b1f036a1bc71a3f1e8aa2b796e8c9bf3a55cee21c36d955b066616, 고정PG15image594290/15.18·Node24.21hash7fde7b8a·기존60SQL checksum exact에서 coverage mode1PASS2984.472778ms(기능2623.804387),skip0·phaseDONE다. 실제 인증 API→저장 원제출/별도 등록기준에서 미실행원문/기준차이·5표읽기불변을 확인했고 COMPLETED/PASS/TEST_ARTIFACT 주장은 REPORTED_ONLY/EVIDENCE_NOT_VERIFIED 및 전체승격false다. 타사용자/없는기준version/query/revoked-member거절·원5guard hash불변이다. 원FN09/FN08graph는 합성fixture 선행에만 재사용했고 실제Agent/browser·관측권한으로 승격하지 않았다.
   raw2파일/5디렉터리·등록PG/network/clone exact회수 후 별도조회잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. direct13PASS972.0898ms/type0이다. 정식DB/served/실제 증거bytes·검수저장·Agent/전체FN12/UI05/Stage완료는 미확인·미완료로 유지한다. 다음은 선택한 고정 기준에서 조건별 보고부족을 명시 GET로 S05에 표시하는 연결이며 자동 검수/저장/실행은 하지 않는다.
 
