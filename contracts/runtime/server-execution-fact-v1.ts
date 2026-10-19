@@ -7,7 +7,7 @@ export type ExecutionFactCheck = typeof executionFactChecks[number];
 export interface ExecutionFactEvidence { state: 'VERIFIED_CURRENT'|'UNVERIFIED'|'STALE'|'CONFLICT'|'UNSUPPORTED'|'NOT_REQUIRED'; evidenceRefs: RuntimeRefV1[] }
 export interface ServerExecutionFactV1 {
   schemaVersion: 1; purpose: 'SERVER_EXECUTION_CURRENTNESS'; transport: 'SYNTHETIC_ONLY'; projectId: string; executionId: string; executionGeneration: number;
-  subject: { userId: string; clientId: string; controlGeneration: number; credentialGeneration: number };
+  subject: { userId: string; clientId: string; humanSessionId: string; controlGeneration: number; credentialGeneration: number };
   agentSession: { sessionRef: RuntimeRefV1; roleBindingRef: RuntimeRefV1; credentialGeneration: number };
   registration: { ref: RuntimeRefV1; connectorId: string; generation: number; hostPublicKeyFingerprint: string };
   intent: ExecutionIntentV1; preparationRef: RuntimeRefV1; permissionPolicyRef: RuntimeRefV1; budgetReservationRef: RuntimeRefV1;
@@ -28,7 +28,7 @@ export function readServerExecutionFactV1(value: unknown): ServerExecutionFactV1
   if(!recordV1(input,['schemaVersion','purpose','transport','projectId','executionId','executionGeneration','subject','agentSession','registration','intent','preparationRef','permissionPolicyRef','budgetReservationRef','basisRefs','latestInstructionRefs','understandingReviewRef','checks','writerState','expires','checkedAt','executionAuthorized','dispatchPerformed'])
     ||input.schemaVersion!==1||input.purpose!=='SERVER_EXECUTION_CURRENTNESS'||input.transport!=='SYNTHETIC_ONLY'||!uuidV1(input.projectId)||!uuidV1(input.executionId)||!positive(input.executionGeneration)
     ||input.executionAuthorized!==false||input.dispatchPerformed!==false||!isoV1(input.checkedAt)
-    ||!recordV1(input.subject,['userId','clientId','controlGeneration','credentialGeneration'])||!uuidV1(input.subject.userId)||!uuidV1(input.subject.clientId)||!positive(input.subject.controlGeneration)||!positive(input.subject.credentialGeneration)
+    ||!recordV1(input.subject,['userId','clientId','humanSessionId','controlGeneration','credentialGeneration'])||!uuidV1(input.subject.userId)||!uuidV1(input.subject.clientId)||!uuidV1(input.subject.humanSessionId)||!positive(input.subject.controlGeneration)||!positive(input.subject.credentialGeneration)
     ||!recordV1(input.agentSession,['sessionRef','roleBindingRef','credentialGeneration'])||!refV1(input.agentSession.sessionRef)||!refV1(input.agentSession.roleBindingRef)||!positive(input.agentSession.credentialGeneration)
     ||!recordV1(input.registration,['ref','connectorId','generation','hostPublicKeyFingerprint'])||!refV1(input.registration.ref)||!uuidV1(input.registration.connectorId)||!positive(input.registration.generation)||!hashV1(input.registration.hostPublicKeyFingerprint)
     ||!refV1(input.preparationRef)||!refV1(input.permissionPolicyRef)||!refV1(input.budgetReservationRef)||!refs(input.basisRefs)||!input.basisRefs.length

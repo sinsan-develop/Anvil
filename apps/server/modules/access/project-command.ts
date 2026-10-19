@@ -103,7 +103,8 @@ export async function persistProjectReceipt(db: PoolClient, actor: Authenticated
   await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
   await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
   if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals().consume(db,actor,request,policyRef,id,consumptionId);}
-  return { result, id };
+  // 실행 봉투는 실제 저장된 receipt의 불변 scope digest를 참조한다. 일반 API result의 의미는 바꾸지 않는다.
+  return { result, id, authorizationReceiptRef: {id:receiptId,version:1,contentHash:scopeDigest} };
 }
 export async function recordProjectDenial(access: AccessRepository, token: string, projectId: string, error: unknown) {
   if (!(error instanceof AuthFailure) || error.statusCode < 400 || error.statusCode >= 500 || error.statusCode === 404 || error.statusCode === 401) return;

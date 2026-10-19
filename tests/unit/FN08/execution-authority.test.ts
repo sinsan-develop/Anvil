@@ -7,7 +7,7 @@ const pid='11111111-1111-4111-8111-111111111111',eid='22222222-2222-4222-8222-22
 const scope=()=>({sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/main.ts',kind:'FILE',access:'READ',recursive:false}]});
 function fact():any{return {
  schemaVersion:1,purpose:'SERVER_EXECUTION_CURRENTNESS',transport:'SYNTHETIC_ONLY',projectId:pid,executionId:eid,executionGeneration:1,
- subject:{userId:pid,clientId:eid,controlGeneration:2,credentialGeneration:3},agentSession:{sessionRef:ref,roleBindingRef:ref,credentialGeneration:4},
+ subject:{userId:pid,clientId:eid,humanSessionId:eid,controlGeneration:2,credentialGeneration:3},agentSession:{sessionRef:ref,roleBindingRef:ref,credentialGeneration:4},
  registration:{ref,connectorId:pid,generation:5,hostPublicKeyFingerprint:'b'.repeat(64)},
  intent:{projectId:pid,assignmentRef:ref,roleBindingRef:ref,contextBundleRef:ref,connectionRef:ref,environmentRef:ref,capabilityRef:ref,budgetPolicyRef:ref,sourceScopes:[scope()],mode:'CONTEXT_REVIEW',reason:'변경 없는 맥락 확인'},
  preparationRef:ref,permissionPolicyRef:ref,budgetReservationRef:ref,basisRefs:[ref],latestInstructionRefs:[{kind:'CONVERSATION',id:pid,contentHash:'c'.repeat(64)}],understandingReviewRef:null,

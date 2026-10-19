@@ -163,3 +163,47 @@ CREATE TABLE anvil.usage_reservations (
 );
 GRANT SELECT ON anvil.usage_reservations TO anvil_v3_app;
 REVOKE INSERT,UPDATE,DELETE ON anvil.usage_reservations FROM anvil_v3_app;
+
+-- C2 최초 합성 queue의 저장 모델. 실제 credential/Agent 집행 테이블이 아니다.
+-- 정확 receipt·전체 graph deferred guard를 연결하기 전 app mutation은 fail-closed로 유지한다.
+CREATE TABLE anvil.executions (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
+ transport text NOT NULL CHECK(transport='SYNTHETIC_ONLY'),state text NOT NULL CHECK(state='SYNTHETIC_QUEUED'),
+ created_by uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(project_id,id,generation),UNIQUE(project_id,command_id),
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id),
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id)
+);
+CREATE TABLE anvil.execution_grants (
+ project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),execution_id uuid NOT NULL,generation bigint NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ created_by uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,id,version,execution_id,generation),UNIQUE(project_id,command_id),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id),FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id)
+);
+CREATE TABLE anvil.writer_claims (
+ project_id uuid NOT NULL,id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL,grant_id uuid NOT NULL,grant_version bigint NOT NULL,
+ scope_json jsonb NOT NULL CHECK(jsonb_typeof(scope_json)='array'),expires_at timestamptz NOT NULL,
+ ownership_state text NOT NULL CHECK(ownership_state='SYNTHETIC_CLAIM'),created_command_id uuid NOT NULL,
+ issued_at timestamptz NOT NULL DEFAULT now(),reclaimed_at timestamptz,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,created_command_id),
+ FOREIGN KEY(project_id,grant_id,grant_version,execution_id,generation) REFERENCES anvil.execution_grants(project_id,id,version,execution_id,generation),
+ FOREIGN KEY(project_id,created_command_id) REFERENCES anvil.commands(project_id,id)
+);
+-- 만료만으로 미확인 소유를 새 writer에게 넘기지 않는다. 실제 OS/경로 통제의 증명은 별도다.
+CREATE UNIQUE INDEX execution_single_unreclaimed_writer ON anvil.writer_claims(project_id) WHERE reclaimed_at IS NULL;
+CREATE TABLE anvil.execution_commands (
+ project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),execution_id uuid NOT NULL,generation bigint NOT NULL,
+ grant_id uuid NOT NULL,grant_version bigint NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ envelope_hash text NOT NULL CHECK(envelope_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ authorization_ref jsonb NOT NULL CHECK(jsonb_typeof(authorization_ref)='object'),created_command_id uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,created_command_id),
+ FOREIGN KEY(project_id,grant_id,grant_version,execution_id,generation) REFERENCES anvil.execution_grants(project_id,id,version,execution_id,generation),
+ FOREIGN KEY(project_id,created_command_id) REFERENCES anvil.commands(project_id,id)
+);
+ALTER TABLE anvil.usage_reservations ADD COLUMN created_command_id uuid NOT NULL;
+ALTER TABLE anvil.usage_reservations ADD CONSTRAINT usage_reservation_queue_command_fk
+ FOREIGN KEY(project_id,created_command_id) REFERENCES anvil.commands(project_id,id);
+GRANT SELECT ON anvil.executions,anvil.execution_grants,anvil.writer_claims,anvil.execution_commands TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.executions,anvil.execution_grants,anvil.writer_claims,anvil.execution_commands FROM anvil_v3_app;
