@@ -9,9 +9,9 @@ export interface SyntheticClientSigner{transport:'SYNTHETIC_ONLY';sign(purpose:P
 export interface SyntheticClientTransport{
  transport:'SYNTHETIC_ONLY';
  challenge(scope:ClientScope,request:unknown,signature:string,signal:AbortSignal):Promise<unknown>;
- /** MATERIAL은 bytes 대신 검증/sync한 partReceipt, COMMANDS는 검증할 고정 page를 반환한다.
-  * 두 읽기의 bodyRaw는 GET 선택 metadata다. wire body는 null이며 COMMANDS는 afterCursor/waitMs만 query로 보낸다. */
- perform(scope:ClientScope,operation:{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS';commandId:string|null},challengeRef:unknown,proof:unknown,signature:string,bodyRaw:string,signal:AbortSignal):Promise<unknown>;
+ /** MATERIAL은 bytes 대신 sync한 partReceipt, COMMANDS는 고정 page, STOP_INSTRUCTION은 회수 중지 봉투/null이다.
+  * 읽기의 bodyRaw는 내부 metadata다. wire body는 null이며 COMMANDS만 afterCursor/waitMs query를 보낸다. */
+ perform(scope:ClientScope,operation:{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS'|'STOP_INSTRUCTION';commandId:string|null},challengeRef:unknown,proof:unknown,signature:string,bodyRaw:string,signal:AbortSignal):Promise<unknown>;
 }
 class StorageFailure extends Error{}
 /** P1 요청 전송 기록 연결이다. 실제 키/token/HTTP·OS/Agent 기본값이 없고 UNKNOWN은 자동 재전송하지 않는다.

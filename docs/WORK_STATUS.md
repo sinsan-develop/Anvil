@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 회수중지 client 한정 검토·합성 결합 / Main 어울(2026-10-19)**: client/ledger/직접시험의회수추가diff3경로독립C0/I0/M0를확인했다. 실제wire null본문·credential/current진위·DBnonceCOMMIT·물리내구/OS·Agent효과는미판정이며Main시험PASS를검토자의재실행으로표시하지않는다. Main이기존회수서비스/실P256 challenge·proof/clientjournal의정상중지/null/서버결과저장후응답유실3상황을추가결합해직접7+client16=23PASS605.3659ms/type0·diff0을확인했다. 새결합시험은독립3경로검토밖이다. 응답에는사용자reason/원request·오류원문을넣지않고원nonce결과1/자동재전송0·false효과를보존한다. 명령admission 원I1은Main의grant사전대조보완으로해소했으며새독립C0로소급하지않는다. 총소유9경로만보존하고실제Agent/HTTP·정식서비스완료나전체계획완료를주장하지않는다.
+
+- **C3 명령 선택 수신·회수중지 client 후속 checkpoint / Main 어울(2026-10-19)**: admission부재4RED189.8223ms→4PASS224.6429ms,nullable id fixture TS2322를분기형태만보정해추가중지/수신중만료포함직접·인접19PASS745.0063ms/type0이다. Main의실제합성 serverpager→P256서명client→선택admission→기존receiver 결합추가후13PASS678.094ms/type0이며이추가시험은독립범위밖이다. 원독립C0/I1/M0는조회scope grant A와receiver고정grant B의누락이다. Main이정확B 음성1RED171.9819ms를확인,기존receiver.receive(raw,expectedGrantRef?)에서append/lock전private grant대조·admission전달을보완했다. 기존단일인자호출동작은유지했고해당diff가완료코드변경사유/전후다. 보정후직접·인접44PASS680.1945ms/type0·diff0,원I1을독립C0/I0로소급하지않는다.
+  이검토와무관하게기존계약§6.1의RECOVERY GET stop-instruction client미연결도동일writer가진행했다. 신규정상/null원결과/응답유실·scope변경/START·다른실행·writertrue거절3RED379.4144ms→client16PASS434.2825ms/type0,내부{pollId}만중복키·GET null본문/query{}·전용purpose와원결과/UNKNOWN을보존한다. 기존서버응답9필드와최단기한/2MiB를소비하고자동다음poll/permit·START/SEND/회수완료를만들지않는다. 회수client3경로는새한정검토중이며server현재권위·실nonceCOMMIT/물리sync/HTTP/OS/Agent는미검증이다. 새외부자원/정식DB·키·서비스변경0·완료QA반복0,전체C3/Stage부분구현이다.
+
+- **C3 고정 명령페이지→시작 수신 연결 착수 / Main 어울(2026-10-19)**: d8c8d101 exact private/clean 뒤 명령목록을임의봉투입력대신기존client의저장응답에서읽고사용자가선택한정확server commandRef한건만기존SyntheticStartReceiver.receive에연결한다. server commandRef와봉투commandId의차이는보존하며선택불일치/UNKNOWN·만료page/다른연산은거절한다. prepare수신은permit/wire/Agent를자동호출하지않고start는기존별도명시호출로남긴다. 기존client/receiver내구중복규칙과SYNTHETIC_ONLY를소비하며새외부자원/SQL·키·서비스변경0·완료QA반복0이다.
+
 - **C3 시작 수신기·서명 permit client checkpoint / Main 어울(2026-10-19)**: 신규연결부재5RED186.1318ms→직접5PASS260.2914ms다. 최초type검사는생성자return의TS2564 3건·fixture recursive literal TS2322 1건으로실패해초기화흐름/시험literal만보정했다. Main이기존서버permit의source순서계약을대조해추가1RED(6PASS1FAIL233.212ms)로순서불일치를재현하고,같은set검사후봉투의중복제거원순서로요청을만들도록보정했다. 신규7+기존receiver14/client13=34PASS448.828ms/type0·diff0이다. 독립신규2경로C0/I0/M0는정적한정검토로source/OS진위·실제현재권한/nonceCOMMIT·물리sync/HTTP/wire·Agent/취소종료를미판정했다.
   기존receiver의sync된시도ref를서명PERMIT내구요청에결박하고정확기한/현재source·OSref를전후대조한뒤원7필드permit만반환한다. 정상합성결합은시도→clientjournal→permit기록뒤wire1회이며같은명령재조회는추가0이다. 응답유실UNKNOWN·OS변경·만료·provider무응답유한timeout은wire0,원client기록은숨기거나초기화하지않는다. 시험signer/transport는합성이고새서버proof/실PG·실Agent검증이라하지않는다. 새자원/정식SQL·서비스·키변경0·완료QA재실행0,전체FN08/Stage부분구현을유지하며수신/서버후속명령연결을계속한다.
 

@@ -3,9 +3,9 @@ import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} fr
 import {readDispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 export interface ClientScope{mode:'EXECUTION'|'RECOVERY';projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:RuntimeRefV1;credentialGeneration:number}
 export interface ClientJournalScope{projectId:string;executionId:string;executionGeneration:number;requestKey:string}
-/** MATERIAL/COMMANDS의 bodyRaw는 내부 선택 metadata이며 HTTP GET body가 아니다.
- * COMMANDS.pollId는 명시 읽기의 중복키다. 같은 pollId를 UNKNOWN 자동 재전송이나 선택 변경에 재사용하지 않는다. */
-export interface ClientOperation{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS';commandId:string|null;bodyRaw:string}
+/** MATERIAL/COMMANDS/STOP_INSTRUCTION의 bodyRaw는 내부 선택 metadata이며 HTTP GET body가 아니다.
+ * pollId는 명시 읽기의 중복키다. 같은 pollId를 UNKNOWN 자동 재전송이나 선택 변경에 재사용하지 않는다. */
+export interface ClientOperation{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS'|'STOP_INSTRUCTION';commandId:string|null;bodyRaw:string}
 export type ClientState='PREPARED'|'CHALLENGE_ATTEMPTED'|'CHALLENGE_RECEIVED'|'REQUEST_ATTEMPTED'|'RESPONSE_RECORDED'|'UNKNOWN';
 export type ClientReason='NONE'|'CHALLENGE_UNCERTAIN'|'REQUEST_UNCERTAIN'|'REQUEST_EXPIRED'|'INVALID_RESPONSE'|'AUTHORITY_UNAVAILABLE';
 export interface ClientEntry{ref:RuntimeRefV1;snapshot:{transport:'SYNTHETIC_ONLY';sequence:number;state:ClientState;requestKey:string;preparedRef:RuntimeRefV1|null;previousRef:RuntimeRefV1|null;at:string;payload:any;reason:ClientReason}}
@@ -22,7 +22,7 @@ export function readClientScope(raw:unknown):ClientScope{
  if(!recordV1(raw,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||!['EXECUTION','RECOVERY'].includes(raw.mode)||!uuidV1(raw.projectId)||!uuidV1(raw.connectorId)||!uuidV1(raw.executionId)||!positive(raw.executionGeneration)||!positive(raw.credentialGeneration)||!refV1(raw.grantRef))return clientReject('CLIENT_SCOPE_INVALID');return cloneV1(raw) as unknown as ClientScope;
 }
 export function readClientOperation(scope:ClientScope,raw:unknown,now:number){
- if(!recordV1(raw,['kind','commandId','bodyRaw'])||!['PERMIT','OBSERVATIONS','MATERIAL','COMMANDS'].includes(raw.kind)||typeof raw.bodyRaw!=='string'||Buffer.byteLength(raw.bodyRaw)>1024*1024)return clientReject('CLIENT_OPERATION_INVALID');
+ if(!recordV1(raw,['kind','commandId','bodyRaw'])||!['PERMIT','OBSERVATIONS','MATERIAL','COMMANDS','STOP_INSTRUCTION'].includes(raw.kind)||typeof raw.bodyRaw!=='string'||Buffer.byteLength(raw.bodyRaw)>1024*1024)return clientReject('CLIENT_OPERATION_INVALID');
  const body=parseWireJson(raw.bodyRaw);
  if(raw.kind==='PERMIT'){
   if(scope.mode!=='EXECUTION'||!uuidV1(raw.commandId)||!recordV1(body,['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])||!hashV1(body.envelopeHash)||!refV1(body.localAttemptRef)||!refV1(body.osOwnershipRef)||!arrayV1(body.sourceObservationRefs,200)||!body.sourceObservationRefs.length||!body.sourceObservationRefs.every(refV1)||new Set(body.sourceObservationRefs.map(canonicalJson)).size!==body.sourceObservationRefs.length)return clientReject('CLIENT_OPERATION_INVALID');
@@ -30,17 +30,19 @@ export function readClientOperation(scope:ClientScope,raw:unknown,now:number){
   if(scope.mode!=='EXECUTION'||!uuidV1(raw.commandId)||!recordV1(body,['envelopeHash','materialRef'])||!hashV1(body.envelopeHash)||!refV1(body.materialRef))return clientReject('CLIENT_OPERATION_INVALID');
  }else if(raw.kind==='COMMANDS'){
   if(scope.mode!=='EXECUTION'||raw.commandId!==null||!recordV1(body,['pollId','afterCursor','waitMs'])||!uuidV1(body.pollId)||body.afterCursor!==null&&(typeof body.afterCursor!=='string'||!/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(body.afterCursor)||body.afterCursor.length>4096)||!Number.isSafeInteger(body.waitMs)||body.waitMs<0||body.waitMs>10000)return clientReject('CLIENT_OPERATION_INVALID');
+ }else if(raw.kind==='STOP_INSTRUCTION'){
+  if(scope.mode!=='RECOVERY'||raw.commandId!==null||!recordV1(body,['pollId'])||!uuidV1(body.pollId))return clientReject('CLIENT_OPERATION_INVALID');
  }else{
   if(raw.commandId!==null||!recordV1(body,['events','batchHash'])||!arrayV1(body.events,200)||!body.events.length||body.batchHash!==clientHash(body.events))return clientReject('CLIENT_OPERATION_INVALID');
   for(const e of body.events){if(!recordV1(e,['projectId','executionId','executionGeneration','sequence','eventId','type','commandId','envelopeHash','localRecordRef','processRef','occurredAt','reasonCode'])||Buffer.byteLength(canonicalJson(e))>65536
    ||e.projectId!==scope.projectId||e.executionId!==scope.executionId||e.executionGeneration!==scope.executionGeneration||!positive(e.sequence)||e.sequence>10000||!uuidV1(e.eventId)||!uuidV1(e.commandId)||!hashV1(e.envelopeHash)||!refV1(e.localRecordRef)||e.processRef!==null&&!refV1(e.processRef)||!isoV1(e.occurredAt)||Date.parse(e.occurredAt)>now+30000
    ||!['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED','STARTED','REJECTED','UNKNOWN','STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED','HEARTBEAT'].includes(e.type)||!['NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER'].includes(e.reasonCode))return clientReject('CLIENT_OPERATION_INVALID');}
  }
- const operation={kind:raw.kind,commandId:raw.commandId,bodyRaw:canonicalJson(body)} as ClientOperation,path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+(scope.mode==='RECOVERY'?'/recovery':'')+(raw.kind==='COMMANDS'?'/commands':raw.kind==='OBSERVATIONS'?'/observations':'/commands/'+raw.commandId+(raw.kind==='MATERIAL'?'/materials/'+(body as any).materialRef.id:'/permit'));
+ const operation={kind:raw.kind,commandId:raw.commandId,bodyRaw:canonicalJson(body)} as ClientOperation,path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+(scope.mode==='RECOVERY'?'/recovery':'')+(raw.kind==='STOP_INSTRUCTION'?'/stop-instruction':raw.kind==='COMMANDS'?'/commands':raw.kind==='OBSERVATIONS'?'/observations':'/commands/'+raw.commandId+(raw.kind==='MATERIAL'?'/materials/'+(body as any).materialRef.id:'/permit'));
  const query=raw.kind==='COMMANDS'?{waitMs:(body as any).waitMs,...((body as any).afterCursor===null?{}:{afterCursor:(body as any).afterCursor})}:{};
- const target={method:raw.kind==='MATERIAL'||raw.kind==='COMMANDS'?'GET':'POST',path,queryHash:clientHash(query),bodyHash:clientHash(raw.kind==='MATERIAL'||raw.kind==='COMMANDS'?null:body)};
+ const target={method:['MATERIAL','COMMANDS','STOP_INSTRUCTION'].includes(raw.kind)?'GET':'POST',path,queryHash:clientHash(query),bodyHash:clientHash(['MATERIAL','COMMANDS','STOP_INSTRUCTION'].includes(raw.kind)?null:body)};
  // permit은 grant/본문을 바꿔 같은 command의 불명 시도를 우회하지 못한다. 회수 관측은 새 명시 scope로만 가능하다.
- const requestKey=clientHash({projectId:scope.projectId,connectorId:scope.connectorId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,kind:operation.kind,identity:raw.kind==='COMMANDS'?{pollId:(body as any).pollId}:raw.kind==='PERMIT'?raw.commandId:raw.kind==='MATERIAL'?{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,commandId:raw.commandId,selection:body}:{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,batchHash:(body as any).batchHash}});
+ const requestKey=clientHash({projectId:scope.projectId,connectorId:scope.connectorId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,kind:operation.kind,identity:raw.kind==='COMMANDS'||raw.kind==='STOP_INSTRUCTION'?{pollId:(body as any).pollId}:raw.kind==='PERMIT'?raw.commandId:raw.kind==='MATERIAL'?{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,commandId:raw.commandId,selection:body}:{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,batchHash:(body as any).batchHash}});
  return{operation,body,target,requestKey};
 }
 export function readClientPrepared(raw:unknown,key:string,at:number){
@@ -58,6 +60,13 @@ export function readClientProof(raw:unknown,p:ReturnType<typeof readClientPrepar
  const expected={requestId:p.request.requestId,...p.target,grantRef:p.scope.grantRef,credentialGeneration:p.scope.credentialGeneration,serverNonce:issued.challenge.serverNonce};if(!clientSame(raw.proof,expected))return clientReject('CLIENT_LEDGER_INVALID');return cloneV1(raw);
 }
 export function readClientResponse(raw:unknown,p:ReturnType<typeof readClientPrepared>,issued:any,at:number){
+ if(p.operation.kind==='STOP_INSTRUCTION'){
+  try{
+   if(!recordV1(raw,['transport','proofResultRef','instruction','expiresAt','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed','writerReleaseVerified'])||raw.transport!=='SYNTHETIC_ONLY'||!refV1(raw.proofResultRef)||raw.proofResultRef.version!==1||raw.cacheControl!=='no-store'||raw.nonceConsumed!==true||raw.executionAuthorized!==false||raw.dispatchPerformed!==false||raw.writerReleaseVerified!==false||!isoV1(raw.expiresAt)||Date.parse(raw.expiresAt)<=at||Date.parse(raw.expiresAt)>Math.min(Date.parse(p.authorityExpiresAt),Date.parse(issued.challenge.expiresAt))||Buffer.byteLength(canonicalJson(raw))>2097152)return clientReject('CLIENT_RESPONSE_INVALID');
+   if(raw.instruction!==null){if(!recordV1(raw.instruction,['commandRef','envelope'])||!refV1(raw.instruction.commandRef)||raw.instruction.commandRef.version!==1)return clientReject('CLIENT_RESPONSE_INVALID');const e=readDispatchEnvelopeV1(raw.instruction.envelope,at),c=e.context;if(e.operation!=='REQUEST_STOP'||c.projectId!==p.scope.projectId||c.executionId!==p.scope.executionId||c.executionGeneration!==p.scope.executionGeneration||Date.parse(e.expiresAt)<Date.parse(raw.expiresAt))return clientReject('CLIENT_RESPONSE_INVALID');}
+   return cloneV1(raw);
+  }catch{return clientReject('CLIENT_RESPONSE_INVALID');}
+ }
  if(p.operation.kind==='COMMANDS'){
   try{
    if(!recordV1(raw,['transport','proofResultRef','items','nextCursor','hasMore','observedAt','expiresAt','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||raw.transport!=='SYNTHETIC_ONLY'||!refV1(raw.proofResultRef)||raw.proofResultRef.version!==1||!arrayV1(raw.items,50)||typeof raw.nextCursor!=='string'||raw.nextCursor.length>4096||!/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(raw.nextCursor)||typeof raw.hasMore!=='boolean'||raw.hasMore&&raw.items.length!==50||raw.cacheControl!=='no-store'||raw.nonceConsumed!==true||raw.executionAuthorized!==false||raw.dispatchPerformed!==false||!isoV1(raw.observedAt)||!isoV1(raw.expiresAt)||Date.parse(raw.observedAt)>at||Date.parse(raw.observedAt)<Date.parse(issued.challenge.issuedAt)||Date.parse(raw.expiresAt)<=at||Date.parse(raw.expiresAt)<=Date.parse(raw.observedAt)||Date.parse(raw.expiresAt)>Math.min(Date.parse(p.authorityExpiresAt),Date.parse(issued.challenge.expiresAt))||Buffer.byteLength(canonicalJson(raw))>2097152)return clientReject('CLIENT_RESPONSE_INVALID');

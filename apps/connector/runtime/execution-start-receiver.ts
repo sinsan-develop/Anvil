@@ -74,7 +74,8 @@ export class SyntheticStartReceiver{
   const snapshot:Entry['snapshot']={sequence:events.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#expected.grantRef),permitRef:cloneV1(permitRef),responseRef:cloneV1(responseRef),at:new Date(this.#now()).toISOString(),previousRef:cloneV1(events.at(-1)?.ref??null),reason};
   const entry:Entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(cloneV1(entry));events.push(entry);
  }
- async receive(raw:unknown){const e=this.#input(raw);return this.#exclusive(e,async tx=>{
+ /** grant를 가진 상위 수신 경로는 append 전에 고정 expected와 대조한다. 기존 단일인자 호출은 보존한다. */
+ async receive(raw:unknown,expectedGrantRef?:unknown){const e=this.#input(raw);if(expectedGrantRef!==undefined&&(!refV1(expectedGrantRef)||!same(expectedGrantRef,this.#expected.grantRef)))fail('START_GRANT_MISMATCH');return this.#exclusive(e,async tx=>{
   const events=this.#journal(await tx.read(),e);if(events.length)return this.#existing(e,events);
   this.#validNow(e);
   try{await this.#append(tx,e,events,'RECEIVED');return this.#existing(e,events);}catch{return this.#result(e,'UNKNOWN','STORAGE_UNCERTAIN');}
