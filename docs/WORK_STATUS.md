@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 보관 기준 목록 실제 PG 확인 / Main 어울(2026-10-19)**: private/WSL exact5b5f462c55ef739b00a40b2adbf7f4e5e24a8d32·clean, 신규 PG7a061b9b49e5f02e92ded21b7bb71b758946c98aad8355173d39c5ba8801b39d/network3efb1d1282bd3a0c9735c937fd8c62dee8e7926710a01de644c9e29b4540cad3·고정image594290/PG15.18/Node24.21·60SQL checksum exact에서 신규 list mode1 PASS4414.796502ms(기능4057.856609),skip0·phaseDONE다. 실제 인증 API에서 새22개+개정v2 fixture로 최근20/옛v1/hasMore/NOT_SELECTED·선택v2의exactinput/원문GET·조회4표쓰기0·타사용자/없는임무version/query/회수member거절·원5guard hash불변을 확인했다. 기존 전체기준·감사반증/Agentgraph 시험 반복0이다.
+  raw2파일/5디렉터리·등록 PG/network/Git경로 exact회수 뒤 별도조회 잔여0, 정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 정식DB/서비스/계정·키·Agent 변경0이며 정식served UI/사용자 인수·전체FN12완료가 아니다. 직접12PASS944.7294ms/type0이다. 다음은 임무별 보관목록과 선택한exact버전 원문의 화면 소비 연결이고 자동 기준활성/검수저장은 하지 않는다.
+
+
 - **FN12 보관 기준 재조회 착수 / Main 어울(2026-10-19)**: c3d1f21f local/private exact·clean 뒤 재접속용 assignmentRef별 고정 기준 목록을 Main 선정했다. Ruling: 기존 FN12 보관/원문 조회를 HUMAN멤버 전용 내부 GET assignments/:id/versions/:version/result-criteria의 최근20버전 metadata/hasMore/NOT_SELECTED로 구체화한다. 매 항목은 기존 exact input/snapshot/영수증/감사 reader로 대조하며 최신을 자동활성/선택하지 않는다. 새 schema·정책·실권한·정식DB/서비스·Agent 변경0이다. 신규목록1 RED245.1736ms/신규route1 RED661.4507ms→초기route1PASS/목록fake canonical import누락1FAIL749.2009ms→시험보정 및 옛version 포함1PASS337.502ms/type0이다. 패치 서명 rawPolicyRef 문맥 불일치는 적용0 뒤 실제서명으로 보완했다. 아직 실제PG/화면 연결은 미확인이다.
   신규 Main 일회성 /home/daon/deploy/anvil-v3-fn12-criteria-list-qa-01(exactGit·의존성·.av3-data/fn12-raw), PG anvil-v3-fn12-criteria-list-pg-01/internal network anvil-v3-fn12-criteria-list-net-01/DB anvil_v3_fn12_criteria_list_qa_01·owner AV3_FN12_CRITERIA_LIST_QA/instance criteria-list-01을 등록한다. 고정 PG15image594290·Node24.21hash7fde7b8a·60exactSQL, 공개port/영구volume/기존network0·512MiB tmpfs·합성주체/명시정책만, 각10분창/Node90초·외부110초다. 생성전 부재/owner/realpath/link/image/daemon, 종료/실패 후 exactID/label/mount/port/process/owner/link검사→등록자원회수→별도잔여0을 확인한다. 앞 감사/fullcriteria/Agentgraph 전수 재실행0, 새목록/선택원문GET·20경계·권한/회수만 검사한다.
 
