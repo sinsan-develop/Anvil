@@ -6,6 +6,15 @@ import type {CheckpointInput} from '../../../../server/modules/checkpoints/check
 import type {ProjectCheckpointPreparation} from '../../../../server/modules/checkpoints/project-checkpoint-preparation.ts';
 export type CheckpointRecordDraft=Awaited<ReturnType<ProjectCheckpointPreparation['prepare']>>;
 export type {CheckpointInput};
+/** 선택 파일의 원바이트를 기존 준비 API로 명시 대조한다. 출처 인증·저장·재개는 하지 않는다. */
+export async function inspectCheckpointFile(client:ApiClient,assignment:ConfirmedAssignmentView,rawBytes:Uint8Array,session:DocumentSession,active:()=>boolean){
+ if(!active())return null;if(!(rawBytes instanceof Uint8Array)||rawBytes.byteLength>2*1024*1024)throw new ApiError('CHECKPOINT_FILE_INVALID');
+ const bytes=new Uint8Array(rawBytes),prefix='# Anvil 작업현황 · 기록 초안\n\n이 기록은 수행자 선언이며 실제 파일/중지/회수·완료/재개를 인증하지 않습니다.\n\n';let text:string,snapshot:any;
+ try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);if(!text.startsWith(prefix))throw Error();snapshot=JSON.parse(text.slice(prefix.length));if(!snapshot||snapshot.schemaVersion!==1||snapshot.projectId!==assignment.projectId||snapshot.sourceAssurance!=='CALLER_DECLARED_STATE_NOT_VERIFIED'||!same(snapshot.input?.state?.assignmentRef,assignment.ref)||Object.keys(flags).some(k=>snapshot[k]!==false))throw Error();}catch{throw new ApiError('CHECKPOINT_FILE_INVALID');}
+ const prepared=await prepareCheckpointRecord(client,assignment,snapshot.input,session,active);if(!active()||!prepared)return null;
+ if(text!==prepared.recordText||bytes.byteLength!==prepared.recordFile.bytes||await digest(text)!==prepared.recordFile.contentHash)throw new ApiError('CHECKPOINT_FILE_MISMATCH');
+ return active()?{fileSource:'USER_SELECTED_BYTES_ONLY' as const,authenticityVerified:false as const,prepared}:null;
+}
 export function checkpointBufferKey(session:DocumentSession,projectId:string,ref:ConfirmedAssignmentView['ref']){
  const uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
  if(![session?.user?.id,session?.clientId,projectId,ref?.id].every(uuid)||!Number.isSafeInteger(ref?.version)||ref.version<1||!/^[0-9a-f]{64}$/.test(ref?.contentHash))throw new ApiError('CHECKPOINT_INPUT_INVALID');

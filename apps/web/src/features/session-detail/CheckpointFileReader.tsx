@@ -1,0 +1,18 @@
+import {useEffect,useRef,useState} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
+import type {DocumentSession} from '../design-trace/editor-api.ts';
+import {checkpointBufferKey,inspectCheckpointFile} from './checkpoint-api.ts';
+type Inspection=Awaited<ReturnType<typeof inspectCheckpointFile>>;
+/** 사용자 선택 파일만 대조한다. 현재 입력·서버 자료·실행 상태를 덮어쓰지 않는다. */
+export function CheckpointFileReader({client,assignment,session,onUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;onUnavailable:(code:string)=>void}){
+ const key=checkpointBufferKey(session,assignment.projectId,assignment.ref),[selected,setSelected]=useState<Uint8Array|null>(null),[value,setValue]=useState<Inspection>(null),[error,setError]=useState<string|null>(null),[pending,setPending]=useState(false),generation=useRef(0),unavailable=useRef(onUnavailable);unavailable.current=onUnavailable;
+ useEffect(()=>()=>{generation.current++;},[client,key,session.csrfToken]);
+ async function select(file:File|undefined){const ticket=++generation.current;setSelected(null);setValue(null);setError(null);setPending(false);if(!file)return;if(file.size>2*1024*1024){setError('CHECKPOINT_FILE_TOO_LARGE');return;}setPending(true);try{const bytes=new Uint8Array(await file.arrayBuffer());if(generation.current===ticket)setSelected(bytes);}catch{if(generation.current===ticket)setError('CHECKPOINT_FILE_READ_FAILED');}finally{if(generation.current===ticket)setPending(false);}}
+ async function inspect(){if(!selected)return;const ticket=++generation.current,active=()=>generation.current===ticket,bytes=new Uint8Array(selected);setValue(null);setError(null);setPending(true);try{const result=await inspectCheckpointFile(client,assignment,bytes,session,active);if(active()&&result)setValue(result);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_FILE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_FILE_INVALID';setError(code);if([401,403,404].includes(e.status))unavailable.current(e.status===401?'AUTH_REQUIRED':code);}finally{if(active())setPending(false);}}
+ const s=value?.prepared.input.state;
+ return <section className="status-card" aria-label="현황 기록 파일 대조" lang="ko"><h3>현황 기록 파일 대조</h3><p>Anvil에서 내려받은 UTF-8 현황 초안(최대 2MiB)을 선택하세요. 파일 선택만으로 전송하지 않습니다.</p><p>‘선택 기록 대조’를 누르면 현재 Anvil 서버의 기존 준비 API로 정확 임무·내용을 대조합니다. 외부 Agent 전달·서버 저장·현재 입력 덮기·작업 재개는 하지 않습니다.</p><label>현황 기록 파일<input type="file" accept=".md,text/plain,text/markdown" onChange={e=>void select(e.target.files?.[0])}/></label><button type="button" disabled={!selected||pending} onClick={()=>void inspect()}>{pending?'기록 읽기·대조 중':'선택 기록 대조'}</button>
+ {pending?<p role="status">선택 파일 처리 중 · 이전 원문 숨김</p>:null}{error?<p role="alert">{error} · 파일 대조 미확인. 다른 자료로 대체하지 않습니다.</p>:null}
+ {value&&s?<section aria-label="선택 현황 기록 원문"><p>내용 일치 · 출처·수행 진위/서버 저장 미확인</p><p>사용자가 선택한 파일 바이트만 확인했습니다. 실제 등록 Checkpoint·중지/회수·완료·재개 승인으로 사용하지 않습니다.</p><h4>현재 위치</h4><p>{s.currentPosition.description}</p><h4>완료 주장</h4>{s.completedItems.length?<ul>{s.completedItems.map(item=><li key={item.itemId}>{item.description}</li>)}</ul>:<p>완료 주장 기재 없음</p>}<h4>남은 작업</h4>{s.remaining.length?<ul>{s.remaining.map(item=><li key={item.itemId}>{item.description}</li>)}</ul>:<p>잔여 작업 기재 없음 · 프로젝트 완료 판정 아님</p>}<h4>다음 행동</h4><p>{s.nextAction}</p><p>누락·미확인: {value.prepared.gaps.join(', ')}</p><p>{value.prepared.recordFile.bytes}바이트 · SHA-256 {value.prepared.recordFile.contentHash}</p><details><summary>원문과 상세 참조 보기</summary><pre>{value.prepared.recordText}</pre></details></section>:null}
+ </section>;
+}

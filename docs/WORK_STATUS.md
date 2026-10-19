@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 선택 파일 원문 대조 source 확인 / Main 어울(2026-10-20)**: Web7PASS373.0082ms/type0/build0(203modules), 파일대조화면 부재15초timeout RED는 session_id70714의종료exit1을수집한 뒤만정리했다. 구현후 파일명시선택→대조/readonly원문·원바이트hash/비UTF8거절/앞원문숨김·작성입력비덮기1PASS3.4초다. 새단위static1회 C0/I0/M0; file요청자체403·실제PG/served/파일출처/내구성·지연경합은 미실행/판단유보다. browser 마지막403은 기존편집기 준비 요청이므로 file요청403증거로확대하지 않는다. 출처진위/서버저장·자동재개false 유지, 전체FN13완료아니다. 종료후결과2파일/build exact정리·독립잔여0, 경고보존이다. 신규SQL생성0/저장후보5파일미게시·정확승인경계는유지한다.
+
+
+- **FN13 선택 현황파일 대조 착수 / Main 어울(2026-10-20)**: 새 inspect 소비2RED/기존5PASS342.4893ms→Web7PASS373.0082ms/type0다. 2MiB/UTF8·원바이트·정확 project/확정임무·스키마/false flags를 검사하고 사용자 명시 대조에만 기존 same-origin 준비 POST를 사용한다. 다른임무/승격·비UTF8/대용량은 전송0, 원문포맷/바이트불일치 거절·이탈중응답회수, 서버저장/출처진위false다. 선택파일은 내용 대조일 뿐 실제등록 체크포인트나 안전재개로 승격하지 않는다.
+  신규 파일선택/대조 화면 단일시험은 기존 Main소유 apps/web/dist와 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01/checkpoint-draft.md·전용Edge만 생성전부재/realpath/link 확인 후 최대30초 사용, 종료수집 후exact정리/별도잔여0이다. 서버·DB·권한·Secret/Agent 새변경0·거절SQL0, 파일선택만으로 전송/현재입력 덮기0이며 동작을 화면에 안내한다.
+
+
 - **FN13 현황 초안 화면왕복 보존 source 확인 / Main 어울(2026-10-20)**: key부재1RED/기존4PASS396.4976ms→Web5PASS328.4683ms/type0/build0(202modules), 화면왕복 후 빈입력 RED→왕복/준비/다운로드·수정/권한회수1PASS3.9초다. 같은사용자/client/project/확정임무id/version/hash별 controlled App메모리 입력만 보존하고 사용자/client 변경·세션종료시 비운다. 이탈경고와 새로고침/앱종료 영속복원 미제공을 명시했다. scoped static1회 C0/I0/M0이며 실제주체전환·지연경합/종료경고는 재실행하지 않은 판단유보, 실제PG/파일내구성/served·전체FN13 완료아니다. 종료수집 뒤 등록결과2파일/build exact정리·별도잔여0, 경고보존이다.
   다음 독립 작업은 내려받은 현황 파일을 사용자가 다시 선택해 정확 임무로 대조·원문조회하는 기능이다. 명시대조에만 기존 동일origin 준비API를 소비하고 새저장/자동재개·현재입력덮기·외부Agent전달0, 파일 내용의 일치와 작성출처/수행진위는 구별한다. SQL source정확승인 대기는 유지하되 이 독립조회는 계속한다.
 
