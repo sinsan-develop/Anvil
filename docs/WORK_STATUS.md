@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 후속 등록자료 서명 조회 store 연결 / Main 어울(2026-10-19)**: 9a0a7d46 local/private exact·clean 뒤 동일 challenge 연결에서 grant/HUMAN 세션 actor→기존 materialbasis→등록 ref bytes·proof 원결과 binding을 결합했다. 정확 GET/materialRef/hash, provider 인자 복제·bytes 별도 반환/상한, await 전후·callback 마지막 필수 합성 port를 검사한다. parts/results/registered provider는 필수이며 실제 원문 접근권한·결과 journal의 유일/불변/물리 저장은 아직 제공자 미완료다. 임의 경로/원문·기본키/자동HTTP·SQL/서비스·Agent를 만들지 않았다.
+  모듈 부재3 RED950.7389ms→2 PASS/직접 fixture의 dummy target 거절1 FAIL1298.3151ms였다. dummy target을 실제 GET 계약으로 고쳐(검사 완화0) 신규/optional setup 영향11 PASS2163.2531ms·type0·diff0이다. 정상 실P256 코드/nonce replay 및 읽기 오류/마지막 port 변경의 같은 fake tx rollback을 확인했다. 신규 source/시험2경로 한정 독립 정적 C0/I0/M0이며 검토자는 재실행하지 않았다. 실제 SQL/RLS/잠금·COMMIT·내구/원문진위·물리결과journal, binding 저장 이후 실패·동시 replay·COMMIT 응답유실, HTTP/OS/Agent는 미검증이다. 원5 공용guard 거절/pending·formal DB/키/권한/서비스 불변, 전체 C3/기능 완료로 표시하지 않는다. 다음은 필수 registered/bytes/result 제공자의 실제 저장 접점과 남은 계획 UI 연결 중 차단 없는 범위를 계속 선정한다.
+
 - **C3 명령 선택 store 한정 독립 검토 / Main 어울(2026-10-19)**: 신규 selector store·기존 두 store의 bind 추출·두 시험 diff만 독립 정적 C0/I0/M0다. 한 challenge 연결, START/SEND 반대표 접근 금지, 원결과 재조회와 최종 명령 교체 rollback 기대값을 확인했다. 검토자의 실행 재검증은 없으며 Main의 영향11 PASS/추가 START 결합2 PASS/type0와 구분한다. 실제 SQL·현재 HUMAN 진위/제약·잠금/COMMIT·내구·HTTP/credential/OS/Agent 및 기존 공용 guard 거절 해소는 판정하지 않았다. 신규·영향5경로와 현황만 같은 branch에 보존하고, 다음은 후속 지시의 등록 자료 본문과 서명 조회를 같은 저장 연결에 결합하는 미구현이다. 후속 탐색에서 미존재 추정 service/routes 경로2회가 추가로 실패했으며 파일/권한 변경0·실제 목록 재대조로 분리했다.
 
 - **C3 저장 명령별 permit 선택 연결 후보 / Main 어울(2026-10-19)**: b1f31bab local/private exact·clean 뒤 기존 START와 전용 SEND의 tx 본문을 bind로 분리해 caller가 이미 잠근 단일 challenge 연결에 결합했다. 신규 SyntheticPgPermitSelectionStore는 저장된 정확 명령의 역사 형식·현재 scope를 읽고 기존 selector/각 authenticated consumer를 선택하며 소비자가 원 현재/예산·proof를 다시 검사한다. 독립 pool/BEGIN/COMMIT·종류 실패 fallback·서비스 자동등록·원5 SQL guard/pending 변경0이다. bind 추출은 중첩 tx 없이 기존 검증을 재사용하기 위한 변경이고 기존 query/입출력은 유지했다.
