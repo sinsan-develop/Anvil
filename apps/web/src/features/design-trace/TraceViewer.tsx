@@ -7,6 +7,7 @@ import { traceAnchorSelection } from './trace-anchor-selection.ts';
 import { TraceMissingLinks } from './TraceMissingLinks.tsx';
 import {TracePlanTaskOriginal} from './TracePlanTaskOriginal.tsx';
 import type {ScreenRegion} from './design-index-api.ts';
+import {TraceScreenLink} from './TraceScreenLink.tsx';
 const key=(r:TraceRef)=>[r.kind,r.id,r.versionRef.version,r.versionRef.contentHash,r.localCode??'',r.anchor??''].join(':');
 export function TraceViewer({client,projectId,designRef,bodyHash,onAnchorSelect,onScreenOpen,onAuthenticationLost}:{client:ApiClient;projectId:string;designRef:PlanRef;bodyHash?:string;onAnchorSelect?:(selection:DesignAnchorSelection|null)=>void;onScreenOpen?:(source:PlanRef,region:ScreenRegion)=>void;onAuthenticationLost:()=>void}){
  const[value,setValue]=useState<TraceView|null>(null),[direction,setDirection]=useState<'FORWARD'|'REVERSE'>('FORWARD'),[cursor,setCursor]=useState<string|null>(null),[reload,setReload]=useState(0),[error,setError]=useState<ApiError|null>(null),[loading,setLoading]=useState(true);
@@ -16,6 +17,7 @@ export function TraceViewer({client,projectId,designRef,bodyHash,onAnchorSelect,
  const title=(r:TraceRef)=>value?.nodes.find(n=>key(n.ref)===key(r))?.title??r.id;
  const anchors=(endpoints:TraceRef[])=>endpoints.map(endpoint=>{
   if(endpoint.kind==='PLAN_TASK')return <button key={key(endpoint)} disabled={loading} onClick={()=>setPlanTarget(structuredClone(endpoint))}>{endpoint.localCode} 연결 계획 업무 원문 보기</button>;
+  if(endpoint.kind==='SCREEN_REGION'&&onScreenOpen)return <TraceScreenLink key={'screen:'+key(endpoint)} client={client} projectId={projectId} sourceRef={designRef} target={endpoint} disabled={loading} onScreenOpen={onScreenOpen} onUnavailable={e=>{setValue(null);setPlanTarget(null);setError(e);if(e.status===401)onAuthenticationLost();}}/>;
   const selection=bodyHash&&onAnchorSelect?traceAnchorSelection({projectId,documentRef:designRef,bodyHash},endpoint):null;
   return selection&&onAnchorSelect?<button key={key(endpoint)} disabled={loading} onClick={()=>onAnchorSelect(selection)}>{endpoint.localCode} 연결 설계 원문 보기</button>:null;
  });

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI06 추적 목록 고정 시안 직접 열기**: 기존 고정 index/원문 보호 reader를 재사용해 정·역방향 SCREEN_REGION 원문 진입을 연결했다. 새 DOM3+직접 인접1/type/build·한정 C0/I0/M0·QA 잔여0이며, 다른 hash는 목표 원문 GET0이다. 실제 DB/served·disabled 전환 중 지연의 전용 실행 검증과 전체 UI06/FN04 완료는 아니며 앞선 원 실패·미검증은 WORK_STATUS에 보존한다.
+
 - **2026-10-20 제출 이전페이지 실제 조회 한정 확인**: exact50dba7d2의 새격리PG15/59SQL→인증API→Web consumer에서 서명20+2·이전원문·거절/읽기4표불변·원5guard불변1PASS/정리0 확인. 원문/페이지를 열 수 있게 source연결했지만 정식DB/served·실Agent/검수/인수·전체FN12/UI05 완료는 아니며 동시삽입/물리경합은 미검증이다.
 
 - **2026-10-20 FN12/UI05 제출 이전 페이지 source 연결**: 기존 no-query 목록을 유지하고 별도 서명keyset 페이지·명시 원문선택을 연결했다. 신규/직접10PASS·type/build, 합성browser의20→2/재조회중숨김·거절 및 직접영향 예산/검수원문을 한정 확인했다. 실제SQL/서명·인증PG는 신규 격리 검증 전이며 source를 전체FN12/UI05·사용자인수로 승격하지 않는다. 원 실패/경고·정리·독립 검토는 WORK_STATUS를 따른다.
