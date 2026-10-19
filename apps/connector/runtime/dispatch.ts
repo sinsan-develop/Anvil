@@ -1,10 +1,11 @@
 import {canonicalJson} from '../../../contracts/canonical.ts';
 import {isVersionRef} from '../../../contracts/references.ts';
+import {readSourceScopesV1} from '../../../contracts/runtime/source-scope-v1.ts';
 
 // INTERFACES §12.3의 명시 필드만 대조한다. 공개 wire/실행 receipt가 아니다.
 const fields=['projectId','assignmentId','executionId','executionGeneration','connectionRef','environmentRef','authorizationReceiptRef','capabilityRef','budgetRef','sourceScopes'] as const;
 type ContextField=typeof fields[number];
-type ReasonCode='CONTEXT_SHAPE_INVALID'|'EXPECTED_SNAPSHOT_SHAPE_INVALID'|'IDENTIFIER_INVALID'|'GENERATION_INVALID'|'REFERENCE_INVALID'|'EXPECTED_SNAPSHOT_MISMATCH'|'SERVER_VERIFIERS_NOT_CONNECTED'|'SOURCE_SCOPE_CONTRACT_UNRESOLVED';
+type ReasonCode='CONTEXT_SHAPE_INVALID'|'EXPECTED_SNAPSHOT_SHAPE_INVALID'|'IDENTIFIER_INVALID'|'GENERATION_INVALID'|'REFERENCE_INVALID'|'SOURCE_SCOPE_INVALID'|'EXPECTED_SOURCE_SCOPE_INVALID'|'EXPECTED_SNAPSHOT_MISMATCH'|'SERVER_VERIFIERS_NOT_CONNECTED';
 interface Reason{readonly code:ReasonCode;readonly field?:ContextField}
 const unverifiedChecks=['AUTHORIZATION','CURRENT_CONTROL','SOURCE_SCOPE','OWNERSHIP','CAPABILITY','BUDGET','DURABLE_REPLAY'] as const;
 
@@ -36,7 +37,8 @@ function readContext(value:unknown,expected:boolean,reasons:Reason[]):Record<Con
  for(const field of ['connectionRef','environmentRef','authorizationReceiptRef','capabilityRef','budgetRef'] as const){
   if(!isVersionRef(context[field])){reasons.push({code:'REFERENCE_INVALID',field});valid=false;}
  }
- // sourceScopes item 계약은 미정이다. 경로를 읽거나 허가 scope로 해석하지 않는다.
+ // 공통 wire 문법만 검사한다. 실제 경로/관측·권한·OS 소유는 검사하지 않는다.
+ try{readSourceScopesV1(context.sourceScopes);}catch{reasons.push({code:expected?'EXPECTED_SOURCE_SCOPE_INVALID':'SOURCE_SCOPE_INVALID',field:'sourceScopes'});valid=false;}
  return valid?context:null;
 }
 
@@ -50,12 +52,11 @@ export function inspectDispatchPreconditions(value:unknown,expectedSnapshot:unkn
  const context=readContext(value,false,reasons),expected=readContext(expectedSnapshot,true,reasons);
  if(context&&expected){
   for(const field of fields){
-   if(field==='sourceScopes')continue;
    if(canonicalJson(context[field])!==canonicalJson(expected[field]))reasons.push({code:'EXPECTED_SNAPSHOT_MISMATCH',field});
   }
  }
  const structuralChecksPassed=reasons.length===0;
  // 정확해 보이는 가짜 snapshot이라도 현재 제품의 실행 차단은 해제하지 않는다.
- reasons.push({code:'SERVER_VERIFIERS_NOT_CONNECTED'},{code:'SOURCE_SCOPE_CONTRACT_UNRESOLVED'});
+ reasons.push({code:'SERVER_VERIFIERS_NOT_CONNECTED'});
  return {kind:'INTERNAL_PRECONDITION_REPORT',structuralChecksPassed,executionAuthorized:false,dispatchPerformed:false,reasons,unverifiedChecks};
 }
