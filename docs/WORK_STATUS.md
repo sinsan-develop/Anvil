@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 보완 이전 페이지 실제 PG 확인 / Main 어울(2026-10-20)**: exact279f384abbba2ee040fbd69992562f9f7eac72a7 새PG f320fc8cdb132c324d22a18c140312c20fa9c454f497be6186344eb9234d8ac1/network9c106ac2c65c55053d711ca6b72eee62beac848d342d448f08eb34947c07d91d·고정PG15.18/62SQLchecksum exact에서1PASS12177.90095ms(기능11832.395979),skip0·DONE다. 실제 인증API→PG와 Web consumer에서 서명keyset20+2/중복0·더이전 원문 exactGET·읽기9표불변·위조/만료/다른원제출cursor 정확400/CURSOR_INVALID·기존no-query목록 불변·outsider/회수멤버거절·원5guard불변을 확인했다. 앞 기본목록/저장 검사전체는 재실행하지 않았다.
+  raw2파일/5dir와 전용PG/network/Git경로를 exact회수한 뒤 별도조회 잔여0, 기존정식PG e6f798c3/image594290/exited·StartedAt/FinishedAt/restart0 불변이다. 신규schema·정식DB/서비스·실정책/키/Agent 변경0이다. scoped정적C0/I0/M0와 Main실행 범위를 구분하며 물리경합·실제servedbrowser/사용자인수·전체FN12/UI05/Stage는 미확인/부분구현이다. 명시저장·같은명령재확인·보관목록/고정원문·더이전페이지가 이번 source 연결이고 실증거검수/원인분류·실배정/Agent·브라우저재시작 명령복원은 남았다. UI저장M1의 지연hash완료 장벽 시험공백은 보류 유지한다.
+
 - **보완 이전 페이지 정적 검수 / Main 어울(2026-10-20)**: 기존 Reviewer의 새 페이지 단위1회 C0/I0/M0를 한정 채택했다. actor/project/result fullref/limit·만료/HMAC·keyset 마지막 표시행과20건/terminal·화면 지연/권한회수를 검토했으나 실제PG keyset/권한·경합/served·사용자인수는 판단유보다. 앞 저장/기본목록 및 UI저장M1은 이번 판정으로 바꾸지 않는다. 새schema/정식자원 변경 없이 게시후 신규 pageQA01의 실제cursor 핵심만 확인한다.
 
 - **FN12/UI05 보완 이전 페이지 source 결과·새 QA 등록 / Main 어울(2026-10-20)**: provider1RED380.5382ms→1PASS563.7745ms, consumer1RED388.9363ms·route404RED995.3695ms 뒤 optional 첫cursor를 필수로 둔 오류400을 고쳐 둘합계2PASS1032.8303ms다. 기존 `/reworks` no-query와 strict 목록 기준은 보존, 두 경로가 같은 원문 대조를 소비하도록 summaries/validator만 분리했다. 새 page UI미연결RED8.5초→직접영향 HISTORY/PAGES2PASS3.3초·등록결과exact회수/독립0, 직접26PASS1691.5147ms/type0/build0/diff0이며 chunk/NO_COLOR 경고를 보존했다. 독립검토1회 요청, 실제페이지 SQL/cursor는 미실행이다.
