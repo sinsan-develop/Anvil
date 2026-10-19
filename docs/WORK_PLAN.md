@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN06/FN11/UI11 후보 허용행동 조회**: 기존 project/control·permission-policy 읽기로 AUTO규칙/별도승인필요·거절을 명시 조회한다. 새DOM버튼부재·ABA지연 반례 보완 후 신규7+직접기존1=8PASS/type/build238/scopedC0I0M0/QA0이다. 표시를 저장/승인/실행 허가로 소비하지 않고 현재효력·원문hash·실제DB/served/Agent는 미검증, 전체업무는 부분 상태로 유지한다.
+
 - **2026-10-20 FN06/UI11 후보 문서 근거 작성·조회**: 기존 CandidateInput의6능력 문서 URL/UTC/호환 사용자보고를 작성·해제·기존 저장/고정조회/개정에 연결했다. 신규3/직접8/type/build237·새7+직접1 DOM8PASS·scopedC0/I0/M0·QA0이다. 목록권한403/종류전환의 이전원문 숨김을 실제 반례로 보완했지만 문서주장과 실측/현재권한은 구분한다. 새 CapabilityReport/API/DB/Agent0이며 정식DB/served·전체FN06/UI11/Stage는 미완료/미검증이다.
 
 - **2026-10-20 FN09/UI04 소스 의도 범위 축소**: 미저장 임무의 기존 파일/root 항목만 명시 제거→기존 저장/조회로 연결했다. 신규4·직접10/type/build235·새DOM4+직접1·scopedC0/I0/M0·QA0 범위다. 빈 범위는 부족 상태이며 파일 삭제/실제 허가회수/Agent 중지가 아니다. 실제 DB/served·이탈 직후 지연 DOM/전체FN09/UI04는 미검증/부분 상태를 유지한다.

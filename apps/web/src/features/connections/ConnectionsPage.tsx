@@ -6,6 +6,7 @@ import {candidateAccess,capabilityNames,listCandidates,newCandidate,prepareCandi
 import {TrustPanel} from './TrustPanel.tsx';
 import {LimitPolicyPanel} from './LimitPolicyPanel.tsx';
 import {CandidateDocumentationEditor,CandidateDocumentationFact} from './CandidateDocumentation.tsx';
+import {CandidateActionPolicy} from './CandidateActionPolicy.tsx';
 import type {CandidateDocumentation} from './candidate-documentation.ts';
 import type {LimitBuffer,LimitBufferChange} from './limit-policy-api.ts';
 import type {TrustBuffer,TrustBufferChange} from './trust-api.ts';
@@ -34,6 +35,7 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
  return <section className="editor-page connections-page"><header><h2>도구·환경·권한</h2><span title="후보 저장은 신뢰 등록이나 연결 완료가 아닙니다. 실제 Agent를 실행하지 않습니다.">ⓘ</span></header>
   <TrustPanel client={client} projectId={projectId} session={session} buffer={trustBuffer} onChange={onTrustChange} onAuthenticationLost={onAuthenticationLost}/>
   <LimitPolicyPanel client={client} projectId={projectId} session={session} buffer={limitBuffer} onChange={onLimitChange} onAuthenticationLost={onAuthenticationLost}/>
+  <CandidateActionPolicy client={client} projectId={projectId} session={session} onAuthenticationLost={onAuthenticationLost}/>
   <p>미연결 후보 · NOT_READY · 실제 Agent 미검증</p><p>Windows 로컬 실행기와 WSL 시험·배포 대상은 서로 다릅니다. 이 화면은 어느 쪽에도 연결하지 않습니다.</p>
   <button disabled={!!work||working} onClick={()=>void start('CONNECTION_CANDIDATE')}>새 도구 후보</button><button disabled={!!work||working} onClick={()=>void start('ENVIRONMENT_CANDIDATE')}>새 환경 후보</button>
   {work?<section aria-label="후보 작성"><h3>{work.kind==='CONNECTION_CANDIDATE'?'도구 후보':'환경 후보'} {work.draft.candidateRef?`v${work.draft.candidateRef.version}에서 명시 개정`:'새 작성'}</h3><fieldset disabled={frozen}>
