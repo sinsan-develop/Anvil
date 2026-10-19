@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN09 보관 검토 상세 확인 / Main 어울(2026-10-20)**:UI04_REVIEW_DETAIL 상세부재RED(session10178exit1수집)→새상세/직접영향기존검토·별도확정2PASS5.0초/type0/build216이다. 기존hash검증GET의6항목·개별이유/판정·종합판단·당시사람/시각·원문/대상fullref를명시펼쳐표시하며script문자열실행0·조회거절시원문숨김/새쓰기0을확인했다. scopedstatic1회C0/I0/M0·동일단위재리뷰/기존전체회귀0, 종료뒤RED3/GREEN1결과/buildexact회수·독립잔여0·경고유지다. 기존API/DB계약변경없어이표시보완의실제DB여정은재실행하지않았고served/현재권한·검토의미/독립성은미확인이다. 상세표시를내용적합·배정/실행허가로승격하지않는다.
+
+- **FN09 보관 임무 검토 상세 착수 / Main 어울(2026-10-20)**: 다음독립누락은UI04의보관사람검토6항목·각이유/판단·검토자/시각/원문ref가요약목록에서숨겨져검수가불가능한점이다. 기존검증된decision GET의원문을명시펼쳐읽도록연결하며새API/DB/schema·확정/허가/Agent0이다. 검토evidenceRefs[]는서버현계약이빈값만허용하므로임의입력/허용완화로늘리지않는다. 추가증거입력은별도계약범위로미구현유지·재승인질문0이다. 조회만으로적합/독립검수/실행허가를만들지않고조회실패시기존숨김동작을유지한다. 조사중없는project-design-changes 파일/옛design_changes폴더읽기os2각1을보존하고실제rg목록의traceability/design-changes.ts만참조한다.
+  새UI04_REVIEW_DETAIL은Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui04-review-detail-01·전용Edge만생성전부재/realpath/link확인후최대30초사용한다. 보관6항목/이유·불신본문의텍스트표시·명시조회·실패숨김/쓰기0을fixture확인하고종료exit수집뒤exact정리/독립잔여0·경고보존한다. 정식PG/서비스/키·실정책·실Agent0이다.
+
 - **FN13 중지이력 실제 양성 조회 확인 / Main 어울(2026-10-20)**:7515178e exact새빈Git/clean·PG15.18/image594290e9/기존59SQL checksum에서 실제HUMAN/확정임무/역사START·제출→빈이력→기존합성STOP 명령·보류outbox COMMIT→기존무결성reader/새API/Web소비1PASS2075.734807ms(exit0)다. 같은result/execution exact·요청보관1/실제stop NOT_OBSERVED·dispatch/releasefalse, query400/외부404/조회회수404·7표조회불변/기존5guard불변을확인했다. 이는격리Fastify/PG·Web소비함수이지 served/TLS·실Agent/OS/중지/회수/재개·정식기능/인수가아니다.
   PG34f13660/networkf49c4c97·등록Git경로의ID/label/image/mount[]/port{}·owner/link/process일치후exact회수·독립3자원잔여0이다. 합성원문2파일/5dir는finally회수·closeFailures0/rootCleanupFailedfalse, 기존정식PGexited/started/finished/restart0불변이다. local/private7515178e·mainf976ed5e불변, 거절0029/미게시후보5파일보존·새승인재질문/우회0이다. FN13은여전히부분구현이며서버checkpoint저장/실제상태대조·중지회수·안전재개가남는다.
 
