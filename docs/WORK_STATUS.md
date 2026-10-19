@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 불변 보완 저장 실제 PG 보정 확인 / Main 어울(2026-10-20)**: exact4d5781562249c0ec1df4e38cd514923bde0b19bf 새 QA03 PG303b147a04d811c4390757c9913d81a3a70626b137e1e825e2aa47569f5170ca/network7853d5d105333d1afbee86dab8dceb5dce73c59acb3455057bdf2bba7885ac39·고정PG15.18/62SQLchecksum exact에서1PASS3386.57586ms(기능3044.550514),skip0·DONE다. 명시정책없음거절→불변draft COMMIT/replay/exactGET·같은예약session/false승격·읽기8표불변, UPDATE/DELETE/재해시 세션·범위 INSERT 정확42501거절·orphan receipt COMMIT 정확역결박 거절, 최신예약 변경 뒤 새저장409/옛기록 보존, plan head만 전진시킨 서비스412 및 정확 새명령/영수증/감사의 직접INSERT RESULT_REWORK_PLAN_NOT_CURRENT 거절, outsider/회수멤버·원5guard 불변을 확인했다. I1의 요구 거절 GREEN은 실제QA로 확인했으나 독립 원 C0/I1/M0를 재리뷰 C0/I0/M0로 소급하지 않는다.
+  원 QA01 예상412대신503·QA02 직접INSERT 거절 assertion RED는 위에 보존한다. QA03 raw2파일/5dir와 신규 PG/network/Git경로 exact정리 후 별도 QA01/02/03 모두 잔여0, 정식PG 동일fullID/image/StartedAt/FinishedAt/restart0/exited불변이다. 실제transport는 Fastify.inject→격리PG이며 정식DB/schema·서비스·실정책/키·Agent변경0, served/실사용인수·경합/현재OS 및 전체FN12/UI05/Stage는 미확인/부분구현이다. 다음은 S05의 준비초안→명시저장/고정GET·저장불명시 같은명령 보존·화면왕복/재조회 연결이다. 새 임무/worker·실행·정식실패집계는 포함하지 않으며 Main이 이어간다.
+
 - **FN12 I1 반증 RED·SQL 보정 / Main 어울(2026-10-20)**: exactc9533613 새QA02 PG1b82e0cc46fc92d7853a522a8e9d0304134b959517afa3793c1581da69e0edf2/networkd87ec440bceb8b644138c74efe33ea91fe055da2799fe7a8b0538fc6e781d7d6·62SQL exact에서1FAIL3495.488787ms(기능3118.638232), phaseREWORK_STALE_PLAN_DIRECT_INSERT였다. 앞 서비스는 이번에는 정확 ASSIGNMENT_PLAN_NOT_CURRENT412에 도달해 행잠금 보정 효과를 확인했으나 직접INSERT의 요구 거절 assertion이 RED였다. 안전 로그는 assertion의 원SQL 오류/허용 여부 상세를 남기지 않아 직접 허용됐다고까지 단정하지 않고 기대 거절 미확인으로 보존한다. raw2파일/5dir·전용PG/network/Git경로 exact회수했다.
   Main은 신규0028에만 현재 plan ref/head/confirmed·정확snapshot/taskCard·확정영수증·최신검토/원문·연결화면 검토를 대조하는 helper와 명시 RESULT_REWORK_PLAN_NOT_CURRENT 거절을 추가했다. 기존SQL/guard·권한변경0, 독립C0/I1/M0와 Main보정을 구분하고 재리뷰0이다. 실제 GREEN/전체 저장 경계는 아직 미실행이다.
 
