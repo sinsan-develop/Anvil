@@ -13,3 +13,6 @@ test('새 전달 current/deadline은 자기 명령 예외 없이 회수 ledger�
  assert(deadline.includes('execution_grant_revocations'));assert(!deadline.includes('created_command_id IS DISTINCT FROM'));assert(sql.includes('EXECUTION_GRANT_REVOKED'));
  for(const table of ['execution_credentials','execution_challenges','execution_receipts','execution_commands','execution_observations','execution_acknowledgements'])assert(sql.includes(`BEFORE INSERT ON anvil.${table}`),table);
 });
+test('PLpgSQL IF의 grantState CASE 비교는 괄호식으로 구분한다 (실제 구문 재검증 필요)',async()=>{
+ const sql=await readFile(migration,'utf8');assert(sql.includes("IS DISTINCT FROM (CASE WHEN (g.snapshot_json->>'expiresAt')"));assert(!sql.includes("END THEN RETURN false;END IF;"));
+});

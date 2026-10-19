@@ -103,7 +103,7 @@ BEGIN
   OR b->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash) OR b->'grantKind' IS DISTINCT FROM g.snapshot_json->'kind'
   OR g.snapshot_json->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY' OR g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json)
   OR NOT anvil.execution_iso_valid(g.snapshot_json->'expiresAt')
-  OR b->>'grantState' IS DISTINCT FROM CASE WHEN (g.snapshot_json->>'expiresAt')::timestamptz<=(s->>'recordedAt')::timestamptz THEN 'EXPIRED' ELSE 'ACTIVE' END THEN RETURN false;END IF;
+  OR b->>'grantState' IS DISTINCT FROM (CASE WHEN (g.snapshot_json->>'expiresAt')::timestamptz<=(s->>'recordedAt')::timestamptz THEN 'EXPIRED' ELSE 'ACTIVE' END) THEN RETURN false;END IF;
  IF g.snapshot_json->>'kind'='EXECUTION' THEN subject=g.snapshot_json->'binding'->'subject';scopes=g.snapshot_json->'binding'->'intent'->'sourceScopes';
  ELSIF g.snapshot_json->>'kind'='RECOVERY' THEN subject=(g.snapshot_json->'reviewer')-'kind';scopes=g.snapshot_json->'binding'->'sourceScopes';
  ELSE RETURN false;END IF;
