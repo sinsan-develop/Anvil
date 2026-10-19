@@ -149,3 +149,17 @@ BEGIN
 END;
 $$;
 CREATE TRIGGER limit_policy_version_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.limit_policy_versions FOR EACH ROW EXECUTE FUNCTION anvil.guard_limit_policy_version();
+
+-- C2 예산 계획의 원문 이력 모델. runtime grant/queue의 정확 명령·허가·감사 저장을 연결하기 전에는
+-- app의 mutation을 열지 않는다. 아래 SELECT/계획이 예약 저장 성공이나 실행 허가를 뜻하지 않는다.
+CREATE TABLE anvil.usage_reservations (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),reservation_id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
+ server_sequence bigint NOT NULL CHECK(server_sequence BETWEEN 1 AND 9007199254740991),command_id uuid NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ policy_id uuid GENERATED ALWAYS AS ((snapshot_json->'claim'->'policyRef'->>'id')::uuid) STORED,
+ policy_version bigint GENERATED ALWAYS AS ((snapshot_json->'claim'->'policyRef'->>'version')::bigint) STORED,
+ PRIMARY KEY(project_id,reservation_id,version),UNIQUE(project_id,server_sequence),UNIQUE(project_id,command_id,version),
+ FOREIGN KEY(project_id,policy_id,policy_version) REFERENCES anvil.limit_policy_versions(project_id,policy_id,version)
+);
+GRANT SELECT ON anvil.usage_reservations TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.usage_reservations FROM anvil_v3_app;
