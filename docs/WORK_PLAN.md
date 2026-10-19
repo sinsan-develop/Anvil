@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI04 문서 고정 양식 직접 조회**: 주작업에서 연 문서의 정확 formRef로 기존 공식양식·작성/검수·공통기준 조회를 연결했다. 버튼부재1RED→새3+직접1 DOM4PASS/type/build240/scopedC0I0M0/QA0이다. 기존reader 재사용2줄이며 exactref대조와 원문hash 재암호검증/실제DB·served·작성/확정완료는 구분한다.
+
 - **2026-10-20 FN15 상세 인계 계약 제안**: 실제 기존제어 조회/옛세대차단과 없는 요청·요약·수락 소비를 분리하고 [최소 계약 제안](work_packages/FN15_CONTROL_HANDOFF_CONTRACT_PROPOSAL.md)을 DRAFT/NOT_ADOPTED로 작성했다. A SELF요청/조회/미확인요약과 B실회수/원자수락·권한행렬을 구분하며 제품/DDL/실인계0·기능완료0이다. 신규접근예외/데이터·API 채택은 새결정이나 제안작성·무관업무는 동결하지 않는다.
 
 - **2026-10-20 FN09/UI04 임무 예산·환경 선택 해제**: 미저장 budgetRef/environmentRef의 명시 해제와 별도 기존저장을 연결했다. 신규3/type/build240·새3+직접1 DOM4PASS/scopedC0I0M0/QA0이며 원본/권한 삭제·회수0, 빈선택의 부족/실행false·정식DB/served/전체업무 미검증/부분을 유지한다.

@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI04 문서 고정 양식 직접 조회 한정 확인(2026-10-20)**: 실제bundle 버튼부재1RED(15초 timeout)→새 exact양식/403/다른ref3+직접기존문서1=4PASS4.1초/type0/build240·단1회 scopedC0/I0/M0다. 기존 PinnedFormOriginal import/mount2줄만 추가하고 project/문서 fullref/formRef key·명시GET전0/지정버전1·작성/검수·공통기준 원문텍스트·script비실행·부모재조회 자식숨김을 확인했다. 거절된 양식은 다른 버전으로 대체하지 않고 기존 문서는 유지한다. 실제DB/served·모든주체/지연조합·기존reader의 양식원문hash재암호검증은 미검증이며 exactref대조를 전체무결성/작성·확정/실행완료로 승격0이다. React스킬은 기존컴포넌트 재사용/안정key·명시GET만 적용했고 일반리팩토링0이다. QA 결과1파일/build exact정리·별도잔여0·NO_COLOR/chunk경고/보류6·FN15/CapReport NOT_ADOPTED 유지, 새API/schema/권한/DB/Agent0이다. rollback은 import/mount2줄 일반revert이며 원문/양식/입력/권한은 보존한다.
+
+- **UI04 문서 고정 양식 직접 조회 착수(2026-10-20)**: FN15 A는 PMO가 정확 신규결정을 요청 중/NOT_ADOPTED·제품API SQL0으로 유지한다. 독립 누락은 주작업에서 연 문서의 formRef로 공식 양식·작성/검수 기준을 직접 여는 경로다. 기존 PinnedFormOriginal/getPinnedForm의 exactref 보호GET만 명시 소비하고 원문조회·기준/쓰기·권한/DB·Agent변경0이다. 부모문서 재조회/대상전환시 자식원문도 숨기고 종류/권한거절·다른ref는 대체조회0, 내용/원문hash의 재암호검증·확정/작성완료로 승격0이다. Ruling: 승인된 UI04/FN03 기존 계약 소비만 연결하며 사용자 재승인/새helper/ledger 도입0, 실제DOM 반례→한정새3/직접1·type/build만 확인한다. React 스킬은 기존컴포넌트 재사용/안정key·명시GET에만 적용하고 일반최적화0이다.
+
+- **UI04 문서 양식 QA 사전등록(2026-10-20)**: `D:\tmp\anvil-v3-stage-b\ui04-document-form-01`와 `apps/web/dist`만 현재사용자/Main 소유·수명15분·생성전 부재/부모owner/realpath/nonlink확인·종료 exact정리/독립0이다. 실제bundle/msedge/same-origin합성의 exact문서양식조회·403·다른ref3와 직접기존문서조회1만 실행하고 완료된 단계양식/다른화면·PG검사는 반복하지 않는다. 정식DB/served·실Agent는 미검증이다.
+
 - **FN15 최소 인계 계약 제안 한정 작성(2026-10-20)**: FN15_CONTROL_HANDOFF_CONTRACT_PROPOSAL.md SHA256 8EA266474A50F64B6618AD1318CAD5290C5F7EF096C71B340CABD254D2030F4D를 DRAFT/NOT_ADOPTED로 작성했다. 부모설계/계획·INTERFACES/DATA_MODEL/FN15카드와 현재 OWNER-only제어/단일control·요청처리부재를 대조해 A SELF요청·고정조회·미확인요약과 B실회수/원자수락·HANDOFF_ELIGIBLE 변경권한을 분리했다. 단1회C0/I0/M1을 Main이모호한기존권한차단 I1로재분류·보완했으며 독립재리뷰/0승격0이다. 현재이어갈수있는것은 상세화/분리 검토, 채택전미수행은 신규접근예외/보호GET·persistent요청저장/실인계이며 다른업무전체불가능주장0이다. 기능/코드/API/SQL/DB·서비스/권한·Agent실행/시험PASS0·임시자원0, diff check0·보류6/main불변이다.
 
 - **FN15 제안 범위 검토 보완(2026-10-20)**: 단1회 독립 C0/I0/M1은 A의 ‘모든 수락/새 변경 불가’가 기존 제어자까지 멈추게 읽히는 모호성을 지적했다. Main은 잘못된 권한 차단으로 이어질 수 있어 설계 중요도 I1로 재분류하고 인수 요청자 변경불가/기존 제어자의 정상권한 유지로 한정했다. 요청/생성 주체·제어불명·요약 수치/누락도 명시 제안으로 보완했다. 원 리뷰·declined wire/schema/실회수/CAS·OS미검증을 보존하고 독립 재합격/기능테스트 PASS0이다. DRAFT/NOT_ADOPTED·제품/API/SQL/권한0은 불변이다.

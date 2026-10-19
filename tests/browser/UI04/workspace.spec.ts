@@ -163,10 +163,20 @@ test('다른 프로젝트로 이동한 뒤 완료된 옛 적용본의 실제 dig
   await expect(page.getByRole('heading', { name: appliedSnapshot.name, exact: true })).toHaveCount(0); expect(facts).toEqual({ unexpected: [], writes: [], errors: [] });
 });
 
+for(const mode of ['NORMAL','DENIED','REFERENCE'])test('WORKSPACE_DOCUMENT_FORM_'+mode,async({page})=>{
+ const facts=await documentSetup(page),reads:string[]=[];await page.route(`**/api/v1/forms/${artifactId}/versions/1`,r=>{reads.push(new URL(r.request().url()).pathname);return mode==='DENIED'?r.fulfill({status:403,json:{code:'FORM_READ_DENIED'}}):r.fulfill({json:mode==='REFERENCE'?{...pinnedForm,ref:{...pinnedForm.ref,contentHash:'c'.repeat(64)}}:pinnedForm});});
+ await page.getByRole('button',{name:'프로젝트 문서 조회',exact:true}).click();const panel=page.getByRole('region',{name:'주 작업 문서 조회',exact:true});await panel.getByRole('button',{name:'문서: 원문을 보존하는 요구사항 v2 조회',exact:true}).click();await expect(panel.getByLabel('주 작업 문서 원문',{exact:true})).toHaveText(documentBody);expect(reads).toEqual([]);
+ await panel.getByRole('button',{name:'고정 양식 원문 보기',exact:true}).click();
+ if(mode==='NORMAL'){const form=panel.getByRole('region',{name:'고정 양식 원문',exact:true});await expect(form).toContainText('AF01 고정 요구사항 양식');await expect(form).toContainText('요구 목록');await expect(form).toContainText('근거와 이유를 기록');await form.getByText('항목 검수 규칙',{exact:true}).click();await expect(form).toContainText('누락 요구 확인');await form.getByText('이 양식에 고정된 문서 작성 공통 기준',{exact:true}).click();await expect(form).toContainText(pinnedForm.authoringStandard.content);expect(await page.evaluate(()=>(window as any).WORKSPACE_FORM_EXECUTED)).toBeUndefined();await panel.getByRole('button',{name:'문서 목록 새로고침',exact:true}).click();await expect(form).toHaveCount(0);await expect(panel.getByLabel('주 작업 문서 원문',{exact:true})).toHaveCount(0);}
+ else {await expect(panel.getByRole('alert')).toContainText(mode==='DENIED'?'FORM_READ_DENIED':'RESPONSE_INVALID');await expect(panel.getByRole('region',{name:'고정 양식 원문',exact:true})).toHaveCount(0);await expect(panel.getByLabel('주 작업 문서 원문',{exact:true})).toHaveText(documentBody);}
+ expect(reads).toEqual([`/api/v1/forms/${artifactId}/versions/1`]);expect(facts).toEqual({unexpected:[],writes:[],errors:[]});
+});
+
 async function documentSetup(page: Page) {
   const facts = await setup(page);
   await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: data() }));
   await page.route(`**/api/v1/projects/${pid}/documents?*`, route => route.fulfill({ json: documents }));
+  await page.route(`**/api/v1/projects/${pid}/conversations?*`,route=>route.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:'2026-10-20T00:00:00Z'}}));
   await page.route(`**/api/v1/projects/${pid}/documents/${documentId}/versions/2`, route => route.fulfill({ json: document }));
   await page.route(`**/api/v1/projects/${pid}/files/${artifactId}`, route => route.fulfill({ body: documentBytes, contentType: 'application/octet-stream' }));
   await page.goto(`/#/projects/${pid}/workspace`);
