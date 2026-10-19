@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 이월 부분수신 Minor1 한정 보정 / Main 어울(2026-10-19)**: 다음 서버연결 전에 앞독립검토의 record중복반환 기한검사누락을Main이신규음성1RED149.1788ms로확인했다. journal/blob재조회 await 뒤 합성port와envelope현재기한을다시검사하는2호출만추가해직접9PASS188.7262ms/type0이다. 정상재조회는재저장0/같은원결과이고읽는동안기한·port가바뀐경우반환/추가저장0·원자료보존이다. 기존Minor1은Main보정으로처리했으며독립재검토C0/I0으로표시하지않는다. 저장형식/manifest/보안기준·현재권한플래그는그대로이고새외부자원0·완료파일/PGQA재실행0, 전체C3/Stage는부분구현이다.
+
 - **C3 회수 actual PG 핵심 checkpoint / Main 어울(2026-10-19)**: Git a540e644638cc3d1e2be3128194189de5855b004·0020 SHA A81C04227ECD0EF85FDB604C1E37085BD83AFCE6BEBAE39426C97DD16D22E918의 새빈격리 PG969e6dbc0fc1022186389d6781c5d09ead58378e9675b8b645ca2e340f1d8584/instance0b3493e8-dc6b-4b1b-a2ae-8b4471a9b2f4·internal망2a0bb9388344569b80ee9106ce1b96d0f21bd796ed38ce268dd52db44a8d5f83에서55DDL COMMIT·빈초기모델을확인했다. 실제비관리자app/HUMAN로그인·재인증·명시정책의기존EXECUTIONqueue 보존/RECOVERY정상INSERT·COMMIT·원응답재조회·고정조회·동시2회/INSERT전후실패의명령까지rollback/command-only역방향COMMIT거절/직접DML3음성/재계산hash의process null·숫자reason·START연산·ACK/소스불일치5음성/회수정책SQL AUTO·DENY·REQUIRE_APPROVAL/종전2연산helper불변/회수grant의실행deadline NULL/기존writer·원grant·ACK불변과이력trigger를확인했다. marker C3_RECOVERY_ACTUAL_PG_SYNTHETIC_CURRENT_SAVE_REPLAY_READ_CONCURRENT_ROLLBACK_REVERSE_DML_HASH_DENY_WRITER_ACK_UNCHANGED_VERIFIED/exit0이다.
 
   원독립C0/I1/M0는Main의회수전용helper보정·실PG정상/거절로다뤘고새독립C0/I0로바꾸지않는다. 기존0017/18/19지문불변·정식0020적용0이며 실제한도100건/2MiB끝값·gap ACK0/ref의실제PG생성/전원손실은미검증이다(gap은단위검사만). 합성facts의host/OS/process/원grant상태 주장을SQL/credential권위로승격하지않으며실제회수credential·HTTP/OS중지/Agent는미연결이다.
