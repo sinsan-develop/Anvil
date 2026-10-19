@@ -74,6 +74,11 @@ test('봉투 권한 참조는 임의 UUID가 아니라 같은 transaction의 실
  const f=fixture();await f.run();const stored=JSON.parse(f.tables.execution_commands![0].params[9]),receipt=f.tables.authorization_receipts![0].params;
  assert.deepEqual(stored.envelope.context.authorizationReceiptRef,{id:receipt[0],version:1,contentHash:receipt[5]});
 });
+test('불변 queue intent는 DB guard가 확인할 실제 로그인 세션·소스범위·예산정책을 함께 결박한다',async()=>{
+ const f=fixture(),result:any=await f.run(),snapshot=result.data.snapshot;
+ assert.equal(snapshot.humanSessionId,other);assert.deepEqual(snapshot.sourceScopes,scopes());assert.deepEqual(snapshot.budgetPolicyRef,ref);
+ assert.equal(result.data.ref.contentHash,contentHash(canonicalJson(snapshot)));
+});
 test('grant는 실제 로그인 session id와 가장 짧은 세션 만료에 결박하고 provider의 긴 기한을 쓰지 않는다',async()=>{
  const f=fixture();f.mode('SESSION_SOON');await f.run();const grant=JSON.parse(f.tables.execution_grants![0].params[6]);
  assert.equal(grant.binding.subject.humanSessionId,other);assert.equal(grant.expiresAt,new Date(Date.parse(at)+300000).toISOString());

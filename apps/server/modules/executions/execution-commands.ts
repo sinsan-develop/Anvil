@@ -97,6 +97,7 @@ export class ProjectInitialExecutionQueue {
         // 실제 receipt id/scope hash로 봉투를 만든 뒤 같은 transaction의 execution_commands에 결박한다.
         const queueIntent={transport:'SYNTHETIC_ONLY',executionId:p.executionId,executionGeneration:p.executionGeneration,state:'SYNTHETIC_QUEUED',grantRef:grant.ref,
           reservationRef:reservation.record.ref,executorRegistrationRef:fact.registration.ref,operation:'START_SESSION',payload:p.payload,
+          humanSessionId:actor.authSession.id,sourceScopes:basis.intent.sourceScopes,budgetPolicyRef:p.budgetPolicyRef,
           queuedAt:at.toISOString(),executionAuthorized:false,dispatchPerformed:false};
         const commandRef={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(queueIntent))};
         const receipt=await persistProjectReceipt(db,actor,request,commandRef,{status:'SYNTHETIC_QUEUE_STORED',snapshot:queueIntent,executionAuthorized:false,dispatchPerformed:false},policy.policyRef,'EXPLICIT_SYNTHETIC_QUEUE_ONLY');
