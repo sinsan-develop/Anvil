@@ -17,7 +17,7 @@ import { publicKeyFingerprint } from '../apps/server/modules/connections/registr
 import {SyntheticPgObservationStore} from '../apps/server/modules/executions/execution-observation-store.ts';
 import {SyntheticExecutionObservations} from '../apps/server/modules/executions/execution-observations.ts';
 
-const mode=process.argv[2];assert(['RED','GREEN'].includes(mode!));
+const mode=process.argv[2];assert(['RED','GREEN','VERIFIED'].includes(mode!));
 const label=mode!.toLowerCase(),database='anvil_v3_c3_observations_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-observations-'+label.replaceAll('_','-')+'-qa-01');assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,database);const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
@@ -85,9 +85,16 @@ try{
    assert.deepEqual(await counts(fresh.pid),[0,0]);
   }
   console.log('C3_OBSERVATIONS_FIVE_ACTUAL_FAILURES_ROLLBACK_NO_ORPHAN');
-  phase='UNKNOWN_COMMAND';const unknown=await prepare();
-  await assert.rejects(unknown.observations.ingest(unknown.scope,batch([{...unknown.makeEvent(1),commandId:randomUUID()}])));assert.deepEqual(await counts(unknown.pid),[0,0]);
-  console.log('C3_OBSERVATIONS_UNKNOWN_COMMAND_REJECTED');
+  phase='COMMAND_BINDING';let open=0;
+  for(const kind of ['UNKNOWN_COMMAND','WRONG_HASH','CROSS_EXECUTION_PAIR']){
+   const fresh=await prepare();let claim=fresh.makeEvent(1);
+   if(kind==='UNKNOWN_COMMAND')claim={...claim,commandId:randomUUID()};
+   if(kind==='WRONG_HASH')claim={...claim,envelopeHash:'f'.repeat(64)};
+   if(kind==='CROSS_EXECUTION_PAIR'){const other=await prepare(),foreign=other.makeEvent(1);claim={...claim,commandId:foreign.commandId,envelopeHash:foreign.envelopeHash};}
+   let accepted=false;try{await fresh.observations.ingest(fresh.scope,batch([claim]));accepted=true;}catch{assert.deepEqual(await counts(fresh.pid),[0,0]);}
+   if(accepted){open++;console.log('C3_OBSERVATION_COMMAND_BINDING_OPEN kind='+kind);}
+  }
+  assert.equal(open,0,'C3_OBSERVATION_COMMAND_BINDING_GUARD_MISSING');console.log('C3_OBSERVATIONS_THREE_COMMAND_BINDINGS_REJECTED');
   phase='APP_GUARDS';for(const table of ['execution_observations','execution_acknowledgements']){
    await assert.rejects(pool.query('INSERT INTO anvil.'+table+' DEFAULT VALUES'),(e:any)=>e.code==='42501');
    for(const sql of ['UPDATE anvil.'+table+' SET project_id=project_id WHERE false','DELETE FROM anvil.'+table+' WHERE false'])await assert.rejects(pool.query(sql),(e:any)=>e.code==='42501');
