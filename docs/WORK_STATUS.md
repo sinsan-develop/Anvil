@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 파일→빈 입력 복원 확인 / Main 어울(2026-10-20)**: 신규3RED289.0004ms→3PASS332.699ms·직접/인접25PASS567.8695ms/type0/build214modules다. CHECKPOINT_RESTORE 화면부재RED(session58315 exit1수집)→새복원+직접영향CHECKPOINT_COMPARE 2PASS4.3초다. 기존입력/공백·부분참조덮기차단·파일전체입력완전왕복/상세refs보존·명시2단계/자동POST0을확인했다. scopedstatic1회C0/I0/M0, 시험재실행/동일단위재리뷰0이다. 종료뒤결과1/buildexact정리·독립잔여0, NO_COLOR/chunk경고유지다. 사용자선택bytes를현재임무의빈App입력으로되돌릴뿐 서버저장/파일진위·실제상태/OS·writer회수·안전재개는미검증이다. 0029거절/미게시저장후보5파일은보존한다. 다음중지경계읽기에서기존requestExecutionStop는SYNTHETIC_ONLY·STOP_REQUEST_STORED/dispatchfalse/releasefalse이며실제중지로승격하지않는다. PowerShell literalglob의rg os123 읽기오류1은제품/ACL문제와분리하고실제파일목록으로경로를확인했다.
+
+- **FN13 빈입력복원 TDD·UI자원등록 / Main 어울(2026-10-20)**:순수3RED289.0004ms→3PASS332.699ms다. 새CHECKPOINT_RESTORE는 Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01·전용Edge만 생성전부재/realpath/link확인후최대30초사용한다. 파일검사→완전왕복준비→빈입력명시반영·작성중덮기차단/자동POST0·상세refs보존을fixture검증한다. 복원후확인할현황초안만새준비하며실작업/OS재개·서버저장·새서비스/DB/권한/키/Agent0이다. 종료exit수집후exact정리/독립잔여0, 거절된SQL우회0이다.
+
+- **FN13 선택파일→빈편집입력 복원 착수 / Main 어울(2026-10-20)**:신규3RED289.0004ms이다. 서버검사한선택파일을현재정확임무의관측/상세근거/항목근거/판단을포함한편집형식으로변환하고전체입력완전왕복이같을때만허용한다. 사용자지정ID/복수줄손실·baseRef/현재허용기준변경/변형hash는자동보정/버림없이거절·readonly대조유지다. 기존작성입력은빈것으로취급하지않고복원교체를차단한다(공백/부분ref/금지기준변경도보존). 사용자명시준비→확인후빈App메모리에만반영하며조회/전송/서버저장·실작업/OS재개0, 거절된0029저장우회0이다. 자동undo/기존입력삭제·새영속저장은추가하지않는다.
+
 - **FN13 항목 근거·판단 상세 source 확인 / Main 어울(2026-10-20)**:신규3RED298.0079ms→순수3PASS299.6149ms/직접인접22PASS452.5667ms/type0/build213, 새CHECKPOINT_WORK 화면부재15초RED(session49497exit1수집)→1PASS3.1초다. 정확본문근거refs/판단담당·이유/출처를원문에보존하며본문변경시POST0·refs보존/명시재연결을확인했다. scopedstatic1회C0/I0/M0; 실제근거진위/담당현재권한/저장·전달·재개·지연/주체전환/왕복은이번단위판단유보다. 종료뒤RED3/GREEN1결과와buildexact정리·독립잔여0, 경고유지다. 다음파일→편집입력복원은손실없는완전왕복대조와명시선택에서만진행하며기존작성입력이있으면덮어쓰지않는보수적경계를사용한다. 이기능은App메모리입력복원이지서버Checkpoint저장·실작업재개/OS복원/거절SQL우회가아니다.
 
 - **FN13 항목근거 TDD/UI등록 / Main 어울(2026-10-20)**: 신규3RED298.0079ms→순수3PASS299.6149ms다. 새CHECKPOINT_WORK는 Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01·전용Edge만 생성전부재/parent realpath/link확인후최대30초사용한다. 현재본문·항목refs/판단담당·이유/출처→원문·본문변경거절/명시재연결을검증하며실제승인/Agent전달/DB저장/OS0이다. 종료exit수집후exact정리/독립잔여0·경고보존, 다른완료기능전체반복0이다.

@@ -2,28 +2,29 @@ import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
-import {checkpointBufferKey,checkpointDownloadFile,prepareCheckpointRecord,type CheckpointInput,type CheckpointRecordDraft} from './checkpoint-api.ts';
+import {checkpointBufferKey,checkpointDownloadFile,prepareCheckpointRecord,type CheckpointRecordDraft} from './checkpoint-api.ts';
 import {CheckpointObservationFields} from './CheckpointObservationFields.tsx';
-import {checkpointObservationInput,type CheckpointObservationForm} from './checkpoint-observation-input.ts';
+import type {CheckpointObservationForm} from './checkpoint-observation-input.ts';
 import {CheckpointEvidenceFields} from './CheckpointEvidenceFields.tsx';
-import {checkpointEvidenceInput,type CheckpointEvidenceForm} from './checkpoint-evidence-input.ts';
+import type {CheckpointEvidenceForm} from './checkpoint-evidence-input.ts';
 import {CheckpointWorkFields} from './CheckpointWorkFields.tsx';
-import {checkpointWorkInput,type CheckpointWorkDetails} from './checkpoint-work-input.ts';
+import type {CheckpointWorkDetails} from './checkpoint-work-input.ts';
+import {checkpointInputFromForm,emptyCheckpointForm} from './checkpoint-form-restore.ts';
 const fields=[['position','현재 작업 위치'],['completed','완료한 내용 · 수행자 주장'],['progress','진행 중인 작업'],['remaining','남은 작업'],['decisions','판단·승인 대기'],['next','다음 행동'],['forbidden','금지 행동'],['reason','기록 이유']] as const;
 export type CheckpointForm=Record<typeof fields[number][0],string>&{observations?:CheckpointObservationForm;evidence?:CheckpointEvidenceForm;workDetails?:CheckpointWorkDetails};
 export interface CheckpointBuffers{buffers:Record<string,CheckpointForm|null>;onChange:(key:string,change:(previous:CheckpointForm|null)=>CheckpointForm)=>void}
-const empty:CheckpointForm={position:'',completed:'',progress:'',remaining:'',decisions:'',next:'',forbidden:'자동 재개\n확인되지 않은 완료 처리',reason:''};
-const lines=(v:string)=>v.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
+const empty=emptyCheckpointForm();
 export function CheckpointEditor({client,assignment,session,storage,onUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:CheckpointBuffers;onUnavailable:(code:string)=>void}){
  const bufferKey=checkpointBufferKey(session,assignment.projectId,assignment.ref),form=storage.buffers[bufferKey]??empty;
  const [value,setValue]=useState<CheckpointRecordDraft|null>(null),[error,setError]=useState<string|null>(null),[pending,setPending]=useState(false),generation=useRef(0),unavailable=useRef(onUnavailable);unavailable.current=onUnavailable;
  useEffect(()=>()=>{generation.current++;},[client,bufferKey,session.csrfToken]);
+ useEffect(()=>{generation.current++;setValue(null);setError(null);setPending(false);},[form]);
  function change(key:typeof fields[number][0],text:string){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,[key]:text}));}
  function changeObservations(observations:CheckpointObservationForm){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,observations}));}
  function changeEvidence(evidence:CheckpointEvidenceForm){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,evidence}));}
  function changeWorkDetails(workDetails:CheckpointWorkDetails){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,workDetails}));}
  async function prepare(){const ticket=++generation.current;setPending(true);setValue(null);setError(null);const active=()=>generation.current===ticket;
-  try{const observation=checkpointObservationInput(form.observations),evidence=checkpointEvidenceInput(assignment,form.evidence),work=checkpointWorkInput(form,form.workDetails),input:CheckpointInput={baseRef:null,reason:form.reason,state:{assignmentRef:assignment.ref,...observation,baselineRefs:assignment.snapshot.definition.baselineRefs,currentPosition:{taskRef:assignment.snapshot.definition.taskRef,description:form.position},...work,...evidence,nextAction:form.next,forbiddenActions:lines(form.forbidden)}};
+  try{const input=checkpointInputFromForm(assignment,form);
   const result=await prepareCheckpointRecord(client,assignment,input,session,active);if(active()&&result)setValue(result);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))unavailable.current(e.status===401?'AUTH_REQUIRED':code);}finally{if(active())setPending(false);}
  }
  async function download(){if(!value)return;const ticket=generation.current;try{const file=await checkpointDownloadFile(value);if(generation.current!==ticket)return;const url=URL.createObjectURL(new Blob([new Uint8Array(file.bytes).buffer],{type:'text/markdown;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=file.name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),0);}catch{if(generation.current===ticket)setError('CHECKPOINT_DOWNLOAD_INVALID');}}
