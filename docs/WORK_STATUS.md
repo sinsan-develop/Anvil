@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND 기록·명령page 연결 checkpoint / Main 어울(2026-10-19)**: 신규역사reader부재2RED748.6761ms→직접9PASS1013.0278ms, SEND page소비부재1RED371.5627ms→1PASS388.6116ms다. reader는정확request/intent/ref·주체/실행/session/자료·원grant와새예약·봉투/등록·30초/상위기한을queuedAt에검사하고producer append전에도소비한다. pager는기존현재grant/등록·서명/고정ref/nonce·false효과를유지하며SEND기록분기만추가했다. 직접/인접28PASS1670.0579ms·type0·diff0,4개code/test경로한정독립C0/I0/M0(정적,재실행0)다. 실제영수증/예약/outbox존재·현재provider진위/PG잠금COMMIT·실HTTP/Agent는미판정이며후속PGadapter/forwardguard·실행기연결이남았다. 새외부자원/완료QA반복/정식DB·키·서비스변경0이다. 다음은기존CONTEXT_REVIEW READ bootstrap이실행기후속SEND의사전이해필수검사와충돌하는미연결을필요범위TDD로보완한다.
+
+- **C3 SEND 기록 판독·명령page 소비 착수 / Main 어울(2026-10-19)**: a0eea949 exact private/clean 뒤 저장후속SEND의역사record검사를추가한다. 기존request/intent hash·원영수증봉투·현재결박snapshot·새예약ref와source/session/자료refs를정확대조하되queuedAt의역사문법일뿐현재허가/자료진위·전달권위로삼지않는다. 검증된SEND record를기존server명령page의같은grant/등록·현재기한·고정ref/nonce결과선택에연결하며START/STOP판독과false효과를보존한다. 기존PGguard는아직SEND를허용하지않아실DB/정식적용/실Agent와구분하고새자원/키·서비스변경0·완료QA재실행0이다.
+
 - **C3 후속 SEND HUMAN 연결 checkpoint / Main 어울(2026-10-19)**: 선택적합성instructions서비스와기존targetnull초기queue를분리한신규2RED1148.8052ms→14PASS1FAIL1365.0397ms의실패는Fastify lazy ready전REAL port변경으로등록단계가차단된시험경계였다. ready뒤runtime음성으로수정하여15PASS1382.4119ms/type0이다. Main이새실제route→분기→후속core→인증/정책/budget/receipt·BUSY재조회까지결합한시험을추가해core7PASS984.8652ms/type0을확인했으나DB는합성이어서실HUMAN/PG/served증거가아니다.
   원신규한정3경로독립C0/I1/M0는snapshot만false를확인하고data의executionAuthorized/dispatchPerformed true를놓친표시오류다. Main신규음성은HTTP[200,200]인1RED940.5467ms,두층필드를각각정확false로검사하도록보완해직접/인접17PASS1555.6747ms/type0·diff0이다. 기존일반4서비스의응답계약은바꾸지않고신규후속서비스fixture에실제core와같은data false필드를명시했다. 원I1을재검토C0로소급하지않는다.
   기존core에는합성transport1줄과기존HUMAN분기/시험·core결합시험/현황소유5경로만변경했다. 기본앱/main시작·실환경서비스자동주입0,없는/비합성port·잘못된결과에서초기queue fallback0·실Agent/credential/새외부자원/정식DB·키·서비스변경0이다. 다음미완료는SEND저장기록판독/명령page소비·PGadapter/forwardguard이며새승인/PMO배정을기다리지않는다. 경로추정읽기실패1건은rg실목록으로정정했고파일/권한변경없다.

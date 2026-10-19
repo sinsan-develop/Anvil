@@ -6,6 +6,7 @@ import {publicKeyFingerprint} from '../connections/registration-proof.ts';
 import {SyntheticExecutionChallenges,type SyntheticChallengeScope as Scope,type SyntheticChallengeTransaction} from './execution-challenges.ts';
 import {SyntheticExecutionCommandCursor} from './execution-command-cursor.ts';
 import {readSyntheticQueuedCommandRecord} from './execution-command-record.ts';
+import {readSyntheticInstructionQueueRecord} from './execution-instruction-queue.ts';
 import {readSyntheticStopCommandRecord} from './execution-stop.ts';
 import {executionTarget} from './execution-proof.ts';
 type Item={sequence:number;commandRef:Ref;envelope:ReturnType<typeof readDispatchEnvelopeV1>};
@@ -38,7 +39,7 @@ export class SyntheticExecutionCommandPages{
     const itemsOf=(raw:unknown,afterSequence:number,limit:number,selected:Awaited<ReturnType<typeof current>>)=>{
      if(!recordV1(raw,['complete','entries'])||raw.complete!==true||!arrayV1(raw.entries,limit)||Buffer.byteLength(canonicalJson(raw))>2097152)return reject();let previous=afterSequence;const ids=new Set<string>();return raw.entries.map((entry:any):Item=>{
       if(!recordV1(entry,['sequence','record'])||!positive(entry.sequence)||entry.sequence<=previous)return reject();previous=entry.sequence;
-      const record=entry.record?.snapshot?.state==='STOP_REQUEST_STORED'?readSyntheticStopCommandRecord(entry.record,execution):readSyntheticQueuedCommandRecord(entry.record,execution),s=record.snapshot,grant='currentBinding'in s?s.currentBinding.grantRef:s.grantRef;
+      const record=entry.record?.snapshot?.state==='STOP_REQUEST_STORED'?readSyntheticStopCommandRecord(entry.record,execution):entry.record?.snapshot?.state==='SYNTHETIC_INSTRUCTION_QUEUED'?readSyntheticInstructionQueueRecord(entry.record,execution):readSyntheticQueuedCommandRecord(entry.record,execution),s=record.snapshot,grant='currentBinding'in s?s.currentBinding.grantRef:s.grantRef;
       if(!same(grant,scope.grantRef)||'currentBinding'in s&&s.currentBinding.grantKind!=='EXECUTION'||ids.has(record.ref.id))return reject();ids.add(record.ref.id);const envelope=readDispatchEnvelopeV1(s.envelope,Date.parse(selected.now));if(!same(envelope.executorRegistrationRef,selected.registrationRef))return reject();return{sequence:entry.sequence,commandRef:cloneV1(record.ref),envelope};
      });
     };
