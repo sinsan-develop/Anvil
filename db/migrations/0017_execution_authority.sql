@@ -207,3 +207,95 @@ ALTER TABLE anvil.usage_reservations ADD CONSTRAINT usage_reservation_queue_comm
  FOREIGN KEY(project_id,created_command_id) REFERENCES anvil.commands(project_id,id);
 GRANT SELECT ON anvil.executions,anvil.execution_grants,anvil.writer_claims,anvil.execution_commands TO anvil_v3_app;
 REVOKE INSERT,UPDATE,DELETE ON anvil.executions,anvil.execution_grants,anvil.writer_claims,anvil.execution_commands FROM anvil_v3_app;
+
+-- 신규 초기 queue graph guard용 순수 정책 경계. 이 함수 자체는 INSERT 권한/실행 허가를 발급하지 않는다.
+CREATE FUNCTION anvil.execution_source_scopes_valid(scopes jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE source_scope jsonb;target jsonb;field text;relative_file text;segment text;roots text[]=ARRAY[]::text[];paths text[];total integer=0;utf16_length integer;
+BEGIN
+ IF jsonb_typeof(scopes) IS DISTINCT FROM 'array' OR jsonb_array_length(scopes) NOT BETWEEN 1 AND 200 THEN RETURN false;END IF;
+ FOR source_scope IN SELECT value FROM jsonb_array_elements(scopes) LOOP
+  IF jsonb_typeof(source_scope) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(source_scope))<>5
+   OR NOT(source_scope ?& ARRAY['sourceRootRef','mappingRef','observationRef','baselineRef','targets']) THEN RETURN false;END IF;
+  FOREACH field IN ARRAY ARRAY['sourceRootRef','observationRef','baselineRef'] LOOP
+   IF NOT anvil.execution_preparation_ref_valid(source_scope->field) THEN RETURN false;END IF;
+  END LOOP;
+  IF source_scope->'mappingRef'<>'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(source_scope->'mappingRef') THEN RETURN false;END IF;
+  IF source_scope->'sourceRootRef'->>'id'=ANY(roots) THEN RETURN false;END IF;
+  roots=array_append(roots,source_scope->'sourceRootRef'->>'id');paths=ARRAY[]::text[];
+  IF jsonb_typeof(source_scope->'targets') IS DISTINCT FROM 'array' OR jsonb_array_length(source_scope->'targets') NOT BETWEEN 1 AND 200 THEN RETURN false;END IF;
+  FOR target IN SELECT value FROM jsonb_array_elements(source_scope->'targets') LOOP
+   total=total+1;
+   IF total>200 OR jsonb_typeof(target) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(target))<>4
+    OR NOT(target ?& ARRAY['relativePath','kind','access','recursive']) OR target->'kind' IS DISTINCT FROM '"FILE"'::jsonb
+    OR target->'recursive' IS DISTINCT FROM 'false'::jsonb OR jsonb_typeof(target->'access') IS DISTINCT FROM 'string' OR target->>'access' NOT IN('READ','WRITE')
+    OR jsonb_typeof(target->'relativePath') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+   relative_file=target->>'relativePath';
+   IF octet_length(relative_file) NOT BETWEEN 1 AND 1024 OR relative_file IS DISTINCT FROM normalize(relative_file,NFC)
+    OR relative_file ~ '[[:cntrl:]\\:%?*"<>|]' OR upper(relative_file)=ANY(paths) THEN RETURN false;END IF;
+   paths=array_append(paths,upper(relative_file));
+   FOREACH segment IN ARRAY string_to_array(relative_file,'/') LOOP
+    SELECT char_length(segment)+count(*) FILTER(WHERE ascii(substr(segment,n,1))>65535) INTO utf16_length FROM generate_series(1,char_length(segment)) n;
+    IF segment IN('','.','..') OR utf16_length>255 OR segment ~ '[. ]$'
+     OR segment ~* '^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(\.|$)' THEN RETURN false;END IF;
+   END LOOP;
+  END LOOP;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+CREATE FUNCTION anvil.execution_source_target_matches(base jsonb,requested jsonb,target jsonb,restrictive boolean) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE((CASE WHEN restrictive THEN base->'sourceRootRef'->>'id'=requested->'sourceRootRef'->>'id' ELSE base-'targets'=requested-'targets' END)
+  AND EXISTS(SELECT 1 FROM jsonb_array_elements(base->'targets') t WHERE t->'kind'=target->'kind' AND t->'access'=target->'access' AND t->'recursive'=target->'recursive'
+   AND CASE WHEN restrictive THEN upper(t->>'relativePath')=upper(target->>'relativePath') ELSE t->'relativePath'=target->'relativePath' END),false);
+$$;
+CREATE FUNCTION anvil.execution_policy_deadline(rules jsonb,pid uuid,eid uuid,generation bigint,actor uuid,op text,budget_ref jsonb,scopes jsonb,at_time timestamptz)
+ RETURNS timestamptz LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE rule jsonb;scope jsonb;requested jsonb;target jsonb;base jsonb;allowed_scopes jsonb='[]'::jsonb;rule_deadline timestamptz;deadline timestamptz;overlap boolean;
+BEGIN
+ IF rules IS NULL OR pid IS NULL OR eid IS NULL OR actor IS NULL OR at_time IS NULL OR generation IS NULL OR generation NOT BETWEEN 1 AND 9007199254740991
+  OR op IS NULL OR op NOT IN('authorizeExecution','queueExecutionCommand') OR jsonb_typeof(rules) IS DISTINCT FROM 'array' OR jsonb_array_length(rules)>200
+  OR NOT anvil.execution_preparation_ref_valid(budget_ref) OR NOT anvil.execution_source_scopes_valid(scopes) THEN RETURN NULL;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(rules) LOOP
+  IF jsonb_typeof(rule) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(rule))<>7
+   OR NOT(rule ?& ARRAY['ruleId','subjectRef','operations','targetScopes','disposition','limitPolicyRef','expiresAt'])
+   OR jsonb_typeof(rule->'disposition') IS DISTINCT FROM 'string' OR rule->>'disposition' NOT IN('AUTO','DENY','REQUIRE_APPROVAL')
+   OR jsonb_typeof(rule->'operations') IS DISTINCT FROM 'array' OR jsonb_array_length(rule->'operations') NOT BETWEEN 1 AND 200
+   OR EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'operations') x WHERE jsonb_typeof(x)<>'string')
+   OR jsonb_typeof(rule->'targetScopes') IS DISTINCT FROM 'array' OR jsonb_array_length(rule->'targetScopes')<>1 THEN RETURN NULL;END IF;
+  scope=rule->'targetScopes'->0;
+  IF scope->>'kind'='PROJECT' THEN
+   IF rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb OR (rule->'operations') ?| ARRAY['authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery'] THEN RETURN NULL;END IF;
+   CONTINUE;
+  END IF;
+  IF jsonb_typeof(scope) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(scope))<>5
+   OR NOT(scope ?& ARRAY['kind','projectId','executionId','executionGeneration','sourceScopes']) OR scope->'kind' IS DISTINCT FROM '"EXECUTION"'::jsonb
+   OR NOT anvil.execution_preparation_ref_valid(rule->'limitPolicyRef') OR NOT anvil.execution_source_scopes_valid(scope->'sourceScopes')
+   OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(rule->'operations') x WHERE x NOT IN('authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery')) THEN RETURN NULL;END IF;
+  IF rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',actor) OR scope->'projectId' IS DISTINCT FROM to_jsonb(pid)
+   OR scope->'executionId' IS DISTINCT FROM to_jsonb(eid) OR scope->'executionGeneration' IS DISTINCT FROM to_jsonb(generation) OR NOT((rule->'operations') ? op) THEN CONTINUE;END IF;
+  IF jsonb_typeof(rule->'expiresAt') IS DISTINCT FROM 'string' OR rule->>'expiresAt' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' THEN RETURN NULL;END IF;
+  rule_deadline=(rule->>'expiresAt')::timestamptz;IF rule_deadline<=at_time THEN CONTINUE;END IF;
+  overlap=false;
+  FOR requested IN SELECT value FROM jsonb_array_elements(scopes) LOOP
+   FOR target IN SELECT value FROM jsonb_array_elements(requested->'targets') LOOP
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements(scope->'sourceScopes') b WHERE anvil.execution_source_target_matches(b,requested,target,true)) THEN overlap=true;END IF;
+   END LOOP;
+  END LOOP;
+  IF rule->>'disposition'='DENY' AND overlap THEN RETURN NULL;END IF;
+  IF rule->'limitPolicyRef' IS DISTINCT FROM budget_ref THEN CONTINUE;END IF;
+  IF rule->>'disposition'='REQUIRE_APPROVAL' AND overlap THEN RETURN NULL;END IF;
+  IF rule->>'disposition' IN('AUTO','REQUIRE_APPROVAL') THEN
+   deadline=CASE WHEN deadline IS NULL THEN rule_deadline ELSE LEAST(deadline,rule_deadline) END;
+   IF rule->>'disposition'='AUTO' THEN allowed_scopes=allowed_scopes||(scope->'sourceScopes');END IF;
+  END IF;
+ END LOOP;
+ FOR requested IN SELECT value FROM jsonb_array_elements(scopes) LOOP
+  FOR target IN SELECT value FROM jsonb_array_elements(requested->'targets') LOOP
+   IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(allowed_scopes) b WHERE anvil.execution_source_target_matches(b,requested,target,false)) THEN RETURN NULL;END IF;
+  END LOOP;
+ END LOOP;
+ RETURN deadline;
+EXCEPTION WHEN OTHERS THEN RETURN NULL;
+END;
+$$;
