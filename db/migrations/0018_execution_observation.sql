@@ -157,6 +157,7 @@ BEGIN
   event_time=(p->>'issuedAt')::timestamptz;
  ELSE
   IF previous.version IS DISTINCT FROM 1 OR s->'previousRef' IS DISTINCT FROM jsonb_build_object('id',previous.id,'version',previous.version,'contentHash',previous.content_hash)
+   OR at_time>=(p->>'expiresAt')::timestamptz
    OR s-ARRAY['sequence','previousRef','consumption'] IS DISTINCT FROM previous.snapshot_json-ARRAY['sequence','previousRef','consumption']
    OR NOT anvil.execution_json_shape(s->'consumption',ARRAY['proofHash','resultRef','consumedAt']) OR NOT anvil.execution_preparation_ref_valid(s->'consumption'->'resultRef')
    OR jsonb_typeof(s->'consumption'->'proofHash') IS DISTINCT FROM 'string' OR s->'consumption'->>'proofHash' !~ '^[0-9a-f]{64}$'
@@ -186,6 +187,7 @@ BEGIN
   OR s->'credentialIssued' IS DISTINCT FROM 'false'::jsonb OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
   OR NOT anvil.execution_iso_valid(s->'recordedAt') OR (s->>'recordedAt')::timestamptz>clock_timestamp() OR (s->>'recordedAt')::timestamptz<clock_timestamp()-interval '30 seconds'
   OR (s->>'recordedAt')::timestamptz<(c.snapshot_json->'publicChallenge'->>'issuedAt')::timestamptz
+  OR clock_timestamp()>=(c.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz
   OR (s->>'recordedAt')::timestamptz>=(c.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz THEN RAISE EXCEPTION 'EXECUTION_RECEIPT_EXACT_CHALLENGE_REQUIRED' USING ERRCODE='42501';END IF;
  RETURN NEW;
 EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_RECEIPT_EXACT_CHALLENGE_REQUIRED' USING ERRCODE='42501';
@@ -206,6 +208,7 @@ BEGIN
   SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=c.project_id AND challenge_id=c.id AND grant_id=c.grant_id AND grant_version=c.grant_version;
  END IF;
  IF c.id IS NULL OR r.id IS NULL OR c.grant_id IS DISTINCT FROM r.grant_id OR c.grant_version IS DISTINCT FROM r.grant_version
+  OR clock_timestamp()>=(c.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz
   OR c.snapshot_json->'consumption'->'resultRef' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash)
   OR c.snapshot_json->'consumption'->'proofHash' IS DISTINCT FROM r.snapshot_json->'proofHash'
   OR (r.snapshot_json->>'recordedAt')::timestamptz>(c.snapshot_json->'consumption'->>'consumedAt')::timestamptz THEN

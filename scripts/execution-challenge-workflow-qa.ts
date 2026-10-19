@@ -105,6 +105,21 @@ try{
   if(backdateOpen)console.log('C3_EXPIRED_BACKDATED_CONSUMPTION_OPEN');
   assert.equal(backdateOpen,false,'C3_EXPIRED_BACKDATE_GUARD_MISSING');assert.deepEqual(await counts(expired.pid),[1,1,0]);
   console.log('C3_CHALLENGE_EXPIRED_BACKDATE_WITH_REHASH_REJECTED');
+  phase='COMMIT_EXPIRED';const late=await setup(),lateRequest=late.request();
+  await late.issue(lateRequest,new SyntheticExecutionChallenges(new SyntheticPgChallengeStore(shortened,late.keys)));
+  const lateRow=(await admin.query('SELECT * FROM anvil.execution_challenges WHERE project_id=$1 AND version=1',[late.pid])).rows[0];
+  const lateIssued={ref:{id:lateRow.id,version:1,contentHash:lateRow.content_hash},challenge:lateRow.snapshot_json.publicChallenge};
+  const waitExpired=async(expiresAt:string)=>{for(let n=0;n<50;n++){if((await admin.query('SELECT clock_timestamp()>$1::timestamptz expired',[expiresAt])).rows[0].expired)return;await new Promise(resolve=>setTimeout(resolve,100));}throw Error('QA_EXPIRY_NOT_OBSERVED');};
+  const delayed:any={connect:async()=>{const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,params?:any[])=>{if(sql==='COMMIT')await waitExpired(lateIssued.challenge.expiresAt);return db.query(sql,params);}};}};
+  await assert.rejects(late.consume(lateIssued,lateRequest,new SyntheticExecutionChallenges(new SyntheticPgChallengeStore(delayed,late.keys))),(e:any)=>e.code==='42501');assert.deepEqual(await counts(late.pid),[1,1,0]);
+  console.log('C3_CHALLENGE_EXPIRY_DURING_COMMIT_ROLLBACK');
+  phase='CONSUMED_REPLAY_AFTER_EXPIRY';const replay=await setup(),replayRequest=replay.request();
+  await replay.issue(replayRequest,new SyntheticExecutionChallenges(new SyntheticPgChallengeStore(shortened,replay.keys)));
+  const replayRow=(await admin.query('SELECT * FROM anvil.execution_challenges WHERE project_id=$1 AND version=1',[replay.pid])).rows[0];
+  const replayIssued={ref:{id:replayRow.id,version:1,contentHash:replayRow.content_hash},challenge:replayRow.snapshot_json.publicChallenge};
+  const originalResult=await replay.consume(replayIssued,replayRequest);await waitExpired(replayIssued.challenge.expiresAt);
+  assert.deepEqual(await replay.consume(replayIssued,replayRequest),originalResult);assert.deepEqual(await counts(replay.pid),[1,2,1]);
+  console.log('C3_CHALLENGE_CONSUMED_REPLAY_AFTER_EXPIRY_NO_NEW_EFFECT');
   phase='APP_GUARDS';for(const table of ['execution_credentials','execution_challenges','execution_receipts']){
    await assert.rejects(pool.query('INSERT INTO anvil.'+table+' DEFAULT VALUES'),(e:any)=>e.code==='42501');for(const sql of ['UPDATE anvil.'+table+' SET project_id=project_id WHERE false','DELETE FROM anvil.'+table+' WHERE false'])await assert.rejects(pool.query(sql),(e:any)=>e.code==='42501');
   }
