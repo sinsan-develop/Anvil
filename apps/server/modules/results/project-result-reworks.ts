@@ -7,6 +7,7 @@ import {authorizeMaterial,currentProjectController,persistProjectReceipt,project
 import type {ResponsibleSessions} from '../assignments/responsible-sessions.ts';
 import type {ProjectResultReworkPreparation} from './project-result-rework-preparation.ts';
 import type {ResultReworkInput} from './result-rework-input.ts';
+import type {ProjectListCodec} from '../projects/service.ts';
 type Prepared=Awaited<ReturnType<ProjectResultReworkPreparation['prepare']>>;
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 function fail(code:string,status=503):never{throw new AuthFailure(code,status);}
@@ -32,13 +33,25 @@ export class ProjectResultReworks{
   }catch(e){if(e instanceof AuthFailure&&e.statusCode===404)throw e;fail('RESULT_REWORK_LEDGER_INVALID');}
   await projectMember(db,actor,pid);return cloneV1(value);
  }
+ async #summaries(db:PoolClient,actor:AuthenticatedIdentity,pid:string,resultRef:RuntimeRefV1,rows:{id:string;content_hash:string}[]){
+  const items=[];if(rows.length>21||new Set(rows.map(r=>r.id)).size!==rows.length)fail('RESULT_REWORK_LEDGER_INVALID');
+  for(const row of rows){const ref={id:row.id,version:1,contentHash:row.content_hash};if(!refV1(ref))fail('RESULT_REWORK_LEDGER_INVALID');const value=await this.read(db,actor,pid,row.id),s=value.snapshot;if(!same(value.ref,ref)||!same(s.input.resultRef,resultRef))fail('RESULT_REWORK_LEDGER_INVALID');items.push({ref:value.ref,reviewRef:s.input.reviewRef,responsibleBindingRef:s.input.responsibleBindingRef,stageSessionRef:s.stageSessionRef,missingItems:s.input.missingItems,remainingMissingItems:s.remainingMissingItems,requestedBy:s.requestedBy,requestedAt:s.requestedAt,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false});}return items;
+ }
+ /** 별도 읽기 경로이며 기존 no-query 목록 계약은 변경하지 않는다. */
+ async page(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,resultId:string,query:Record<string,unknown>,codec:ProjectListCodec){
+  if(!uuidV1(pid)||!uuidV1(resultId))fail('RESULT_REWORK_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);
+  if(!query||Object.keys(query).some(k=>k!=='cursor')||query.cursor!==undefined&&(typeof query.cursor!=='string'||!query.cursor.length||query.cursor.length>4096))fail('RESULT_REWORK_INPUT_INVALID',400);
+  const result=await this.preparation.readers.results.read(db,structuredClone(actor),pid,resultId);if(!refV1(result.ref)||result.ref.id!==resultId||result.snapshot.scope.projectId!==pid)fail('RESULT_REWORK_SOURCE_INVALID');
+  const filter={query:canonicalJson({kind:'RESULT_REWORK_DRAFTS',projectId:pid,resultRef:result.ref}),archived:false,limit:20},observedAt=await this.#clock(db);let position:{at:string;id:string}|null=null;
+  if(query.cursor!==undefined)try{position=codec.read(String(query.cursor),actor.actorId,filter,new Date(observedAt));}catch{fail('CURSOR_INVALID',400);}
+  const rows=(await db.query(`SELECT id,content_hash,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM anvil.result_rework_drafts WHERE project_id=$1 AND result_id=$2 AND ($3::timestamptz IS NULL OR (created_at,id)<($3::timestamptz,$4::uuid)) ORDER BY created_at DESC,id DESC LIMIT 21`,[pid,resultId,position?.at??null,position?.id??null])).rows,items=await this.#summaries(db,actor,pid,result.ref,rows),hasMore=rows.length>20,last=rows[19];
+  const nextCursor=hasMore?codec.create(actor.actorId,filter,{at:last.cursor_at,id:last.id},new Date(observedAt)):null;await projectMember(db,actor,pid);return cloneV1({projectId:pid,resultRef:result.ref,items:items.slice(0,20),hasMore,nextCursor,selectionState:'NOT_SELECTED',observedAt:await this.#clock(db)});
+ }
  /** 보관된 초안만 찾는다. 최신 자동선택·현재 예약/권한 확인·실행은 하지 않는다. */
  async list(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,resultId:string){
   if(!uuidV1(pid)||!uuidV1(resultId))fail('RESULT_REWORK_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);
   const result=await this.preparation.readers.results.read(db,structuredClone(actor),pid,resultId);if(!refV1(result.ref)||result.ref.id!==resultId||result.snapshot.scope.projectId!==pid)fail('RESULT_REWORK_SOURCE_INVALID');
-  const rows=(await db.query('SELECT id,content_hash FROM anvil.result_rework_drafts WHERE project_id=$1 AND result_id=$2 ORDER BY created_at DESC,id DESC LIMIT 21',[pid,resultId])).rows,items=[];
-  if(rows.length>21||new Set(rows.map(r=>r.id)).size!==rows.length)fail('RESULT_REWORK_LEDGER_INVALID');
-  for(const row of rows){const ref={id:row.id,version:1,contentHash:row.content_hash};if(!refV1(ref))fail('RESULT_REWORK_LEDGER_INVALID');const value=await this.read(db,actor,pid,row.id),s=value.snapshot;if(!same(value.ref,ref)||!same(s.input.resultRef,result.ref))fail('RESULT_REWORK_LEDGER_INVALID');items.push({ref:value.ref,reviewRef:s.input.reviewRef,responsibleBindingRef:s.input.responsibleBindingRef,stageSessionRef:s.stageSessionRef,missingItems:s.input.missingItems,remainingMissingItems:s.remainingMissingItems,requestedBy:s.requestedBy,requestedAt:s.requestedAt,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false});}
+  const rows=(await db.query('SELECT id,content_hash FROM anvil.result_rework_drafts WHERE project_id=$1 AND result_id=$2 ORDER BY created_at DESC,id DESC LIMIT 21',[pid,resultId])).rows,items=await this.#summaries(db,actor,pid,result.ref,rows);
   await projectMember(db,actor,pid);return cloneV1({projectId:pid,resultRef:result.ref,items:items.slice(0,20),hasMore:rows.length>20,selectionState:'NOT_SELECTED',observedAt:await this.#clock(db)});
  }
  async save(db:PoolClient,rawActor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicyRef:RuntimeRefV1){const actor=structuredClone(rawActor),request=cloneV1(raw),policyRef=cloneV1(rawPolicyRef);if(request.operation!=='requestRework'||request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null||request.baselineRefs.length||!refV1(policyRef))fail('RESULT_REWORK_INPUT_INVALID',422);

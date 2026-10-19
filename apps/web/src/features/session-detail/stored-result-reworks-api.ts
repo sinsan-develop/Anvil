@@ -6,6 +6,7 @@ import type {StoredResultRework} from './result-rework-write-api.ts';
 import {scopesWithin} from './result-rework-api.ts';
 export type StoredReworkSummary=Pick<StoredResultRework,'ref'|'reworkStored'|'currentBindingVerified'|'currentAuthorityVerified'|'completionAccepted'|'formalFailureCounted'|'executionAuthorized'|'dispatchPerformed'>&Pick<StoredResultRework['snapshot'],'stageSessionRef'|'remainingMissingItems'|'requestedBy'|'requestedAt'>&Pick<StoredResultRework['snapshot']['input'],'reviewRef'|'responsibleBindingRef'|'missingItems'>;
 export interface StoredResultReworks{projectId:string;resultRef:SubmittedResultView['ref'];items:StoredReworkSummary[];hasMore:boolean;selectionState:'NOT_SELECTED';observedAt:string}
+export interface StoredResultReworkPage extends StoredResultReworks{nextCursor:string|null}
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),exact=(v:any,k:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...k].sort().join(','),uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v),ref=(v:any)=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash),date=(v:unknown)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v,ids=(v:any)=>Array.isArray(v)&&v.length<=100&&new Set(v).size===v.length&&v.every(i=>typeof i==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/.test(i)),flagKeys=['currentBindingVerified','currentAuthorityVerified','completionAccepted','formalFailureCounted','executionAuthorized','dispatchPerformed'],flags=(v:any)=>flagKeys.every(k=>v?.[k]===false),requester=(v:any)=>exact(v,['kind','userId','clientId'])&&v.kind==='HUMAN'&&uuid(v.userId)&&uuid(v.clientId);
 function fail():never{throw new ApiError('RESULT_REWORK_HISTORY_RESPONSE_INVALID');}
 async function hash(v:unknown){const b=new TextEncoder().encode(ordered(v));if(b.length>2*1024*1024)fail();return[...new Uint8Array(await crypto.subtle.digest('SHA-256',b))].map(n=>n.toString(16).padStart(2,'0')).join('');}
@@ -14,8 +15,18 @@ function summary(v:any,r:SubmittedResultView){return exact(v,['ref','reviewRef',
 /** 목록은 보관기록 발견 경로다. 자동선택·현재 예약 확인·새 배정을 하지 않는다. */
 export async function readStoredResultReworks(client:ApiClient,original:SubmittedResultView,active:()=>boolean):Promise<StoredResultReworks|null>{
  const r=structuredClone(original);await result(r);if(!active())return null;const v=await client.get<StoredResultReworks>(`/api/v1/projects/${r.snapshot.scope.projectId}/results/${r.ref.id}/reworks`);if(!active())return null;
+ validateList(v,r);return active()?structuredClone(v):null;
+}
+function validateList(v:StoredResultReworks,r:SubmittedResultView){
  if(!exact(v,['projectId','resultRef','items','hasMore','selectionState','observedAt'])||v.projectId!==r.snapshot.scope.projectId||!same(v.resultRef,r.ref)||!Array.isArray(v.items)||v.items.length>20||new Set(v.items.map(i=>i.ref?.id)).size!==v.items.length||typeof v.hasMore!=='boolean'||v.hasMore&&v.items.length!==20||v.selectionState!=='NOT_SELECTED'||!date(v.observedAt)||v.items.some(i=>!summary(i,r)||Date.parse(i.requestedAt)>Date.parse(v.observedAt)))fail();
- for(let n=1;n<v.items.length;n++){const a=v.items[n-1]!,b=v.items[n]!;if(a.requestedAt<b.requestedAt||a.requestedAt===b.requestedAt&&a.ref.id<=b.ref.id)fail();}return active()?structuredClone(v):null;
+ for(let n=1;n<v.items.length;n++){const a=v.items[n-1]!,b=v.items[n]!;if(a.requestedAt<b.requestedAt||a.requestedAt===b.requestedAt&&a.ref.id<=b.ref.id)fail();}
+}
+/** 받은 서명 cursor를 그대로 사용하며 browser가 위치/대상을 만들어내지 않는다. */
+export async function readStoredResultReworkPage(client:ApiClient,original:SubmittedResultView,cursor:string|null,active:()=>boolean):Promise<StoredResultReworkPage|null>{
+ const r=structuredClone(original),validCursor=(v:unknown)=>typeof v==='string'&&v.length<=4096&&/^[A-Za-z0-9_-]+\.[a-f0-9]{64}$/.test(v);await result(r);if(cursor!==null&&!validCursor(cursor))fail();if(!active())return null;
+ const v=await client.get<StoredResultReworkPage>(`/api/v1/projects/${r.snapshot.scope.projectId}/results/${r.ref.id}/rework-pages${cursor===null?'':'?cursor='+encodeURIComponent(cursor)}`);if(!active())return null;
+ if(!exact(v,['projectId','resultRef','items','hasMore','nextCursor','selectionState','observedAt']))fail();const{nextCursor,...list}=v;validateList(list,r);
+ if(v.hasMore?(!validCursor(nextCursor)||nextCursor===cursor):nextCursor!==null)fail();return active()?structuredClone(v):null;
 }
 export async function readStoredResultRework(client:ApiClient,assignment:ConfirmedAssignmentView,original:SubmittedResultView,item:StoredReworkSummary,active:()=>boolean):Promise<StoredResultRework|null>{
  const a=structuredClone(assignment),r=structuredClone(original),selected=structuredClone(item);await result(r);if(a?.projectId!==r.snapshot.scope.projectId||!same(a.ref,r.snapshot.scope.assignmentRef)||await hash(a.snapshot)!==a.ref.contentHash||!summary(selected,r))fail();if(!active())return null;
