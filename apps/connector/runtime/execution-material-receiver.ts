@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import {readDispatchEnvelopeV1,type AdapterContextV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
+import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1,type ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {arrayV1,cloneV1,recordV1,refV1,uuidV1,hashV1,isoV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 type Material={ref:RuntimeRefV1;snapshot:{projectId:string;executionId:string;executionGeneration:number;commandId:string;envelopeHash:string;payloadRef:RuntimeRefV1;sourceRef:RuntimeRefV1;partIndex:number;partCount:number;byteOffset:number;sourceBytes:number;utf8Bytes:number;contentHash:string;mediaType:string}};
@@ -39,6 +39,22 @@ export class SyntheticMaterialReceiver{
   return events;
  }
  #result(events:Entry[]){const received=new Set(events.map(e=>e.snapshot.materialRef.id)),missing=this.#materials.filter(m=>!received.has(m.ref.id));return{transport:'SYNTHETIC_ONLY' as const,state:missing.length?'PARTIAL' as const:'REGISTERED_PARTS_RECEIVED' as const,manifestHash:this.#manifestHash,receivedMaterialRefs:this.#materials.filter(m=>received.has(m.ref.id)).map(m=>cloneV1(m.ref)),missingMaterialIds:missing.map(m=>m.ref.id),completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false};}
+ /** 내구 부분 inbox의 읽기 전용 SEND 자료 연결. 이 ref는 현재 서버 허가/이해 판정을 대신하지 않는다. */
+ instructionSource(){return{transport:'SYNTHETIC_ONLY' as const,read:(envelope:DispatchEnvelopeV1)=>this.instruction(envelope)};}
+ async instruction(rawEnvelope:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);if(envelope.operation!=='SEND_INSTRUCTION'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_INSTRUCTION_ENVELOPE_INVALID');
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||![envelope.payload.instructionRef,envelope.payload.partsRef].some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const instruction=this.#materials.filter(m=>same(m.snapshot.payloadRef,envelope.payload.instructionRef)).sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);
+   if(!instruction.length||new Set(instruction.map(m=>canonicalJson(m.snapshot.sourceRef))).size!==1||instruction.reduce((sum,m)=>sum+m.snapshot.utf8Bytes,0)>2*1024*1024)fail('MATERIAL_INSTRUCTION_SOURCE_INVALID');
+   return await this.store.exclusive(cloneV1(scope),async tx=>{
+    readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash);if(this.#result(events).missingMaterialIds.length)fail('MATERIAL_REQUIRED_PART_MISSING');
+    const parts:Buffer[]=[];for(const m of instruction){const entry=events.find(e=>same(e.snapshot.materialRef,m.ref));if(!entry)return fail('MATERIAL_REQUIRED_PART_MISSING');parts.push(this.#bytes(await tx.readPart(cloneV1(entry.ref)),m));}
+    const bytes=this.#safe(Buffer.concat(parts));this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+    return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(scope),envelopeHash:envelope.envelopeHash,instructionRef:cloneV1(envelope.payload.instructionRef),partsRef:cloneV1(envelope.payload.partsRef),materialReceiptRef:cloneV1(events.at(-1)!.ref),utf8Bytes:bytes.byteLength,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes)};
+   });
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_INSTRUCTION_UNAVAILABLE');}
+ }
  async record(rawEnvelope:unknown,response:unknown){
   try{
    this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);if(envelope.operation==='REQUEST_STOP'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_ENVELOPE_MISMATCH');

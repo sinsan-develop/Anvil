@@ -2,6 +2,18 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 부분 inbox→SEND source 핵심 확인 / Main 어울(2026-10-19)**: 기존6PASS+신규2RED172.4871ms→직접8PASS190.7954ms/type0 뒤 실제 파일 재열기·원수신ref/hash→합성SEND1회·변조거절1PASS400.1192ms를 확인했다. 독립 C0/I0/신규M1은 만료음성이 앞선 blob변조와 섞인 시험증거 문제이며, Main이 새 전용 검수에서 만료요청의 inbox접근0을 명시검사해1PASS461.135ms/type0으로 보완했다. 원검토를 독립 C0/I0/M0로 바꾸거나 첫시험의 만료독립PASS를 주장하지 않는다. 두 전용root 모두 exact정리 뒤 별도 C3_INSTRUCTION_SOURCE_BOTH_QA_INDEPENDENT_RESIDUAL_ZERO/exit0이다. 기존 record 중복조회 기한검사 Minor1은 그대로 미해소다.
+
+  변경은 수신기 SEND읽기/직접시험/새실파일연결시험/WORK_STATUS 정확4경로다. actual inbox bytes/file.sync·재열기/해시만 실파일 증거이며 SEND journal/current/consume/wire는 메모리 SYNTHETIC_ONLY다. 현재 서버권한·최신이해의 진위/실Agent·OS/HTTP/정식DB·서비스는 미연결·미검증, 전체C3/Stage 부분구현이다. 완료검사 재실행 없이 다음 승인 C3 서버 SEND/STOP·회수 선행을 이어간다.
+
+- **C3 부분 inbox→SEND source 검토 보완·새 검수 등록 / Main 어울(2026-10-19)**: 첫 실제파일source QA1PASS400.1192ms/정확정리·독립잔여0은 재열기→수신ref/해시→합성SEND1회/변조 거절을 증명한다. 독립C0/I0/신규M1은 변조blob뒤만료검사가섞여실파일만료단독입증이부족하다는시험증거문제였으며제품결함은미확정이다. 기존record의이월Minor1과구분해보존한다. Main이 만료요청의inbox접근횟수0을명시확인하도록시험만보완했고첫QA만료독립PASS주장은철회한다.
+
+  새 D:\tmp\anvil-v3-c3-instruction-source-review-qa-01와inbox하위만 현재Windows사용자/Main소유·20분으로등록한다. 생성전부재/부모realpath/nonlink/currentowner 확인,000001~000002.bin/.json/material.lock만사용·정확identity/nonlink/파일명확인후정리/독립잔류0계약이다. 새음성은같은변조blob이있더라도inbox접근0을확인하므로blob/잠금실패로만료시험을통과시키지않는다. 실제자료/서버허가/이해/OS/wire진위·실파일SENDjournal·정식환경변경0,기존완료PG/파일QA재실행0이다.
+
+- **C3 실제 부분 inbox→SEND source 착수 / Main 어울(2026-10-19)**: 33aa0365 local/private exact·clean 뒤 신규 instructionSource/읽기 경로의 기존6PASS+신규2RED172.4871ms→직접8PASS190.7954ms/type0을확인했다. 기존record동작/duplicate기한Minor1은건드리지않고 새SEND읽기만 exact등록범위·전수신/순서/hash/blob재조회·단일지시source·2MiB·마지막수신ref와최종만료를검사한다. 이는현재서버권한/이해판정이아니다.
+
+  실제파일 연결 검수는 신규 D:\tmp\anvil-v3-c3-instruction-source-qa-01와 단독 inbox 하위폴더만 현재Windows사용자/Main소유·20분으로등록한다. 생성전부재/부모realpath·nonlink/current owner를대조하고 일회성합성bytes/000001~000002.bin/.json·material.lock만쓴다. 기존실파일adapter bytes→metadata file.sync·재열기→receiver instructionSource→고정codec합성SEND1회의직접연결·blob변조/만료거절과원파일hash/수신ref를확인한다. SEND시도journal/current/consume/wire는메모리합성으로실파일내구/실Agent/OS허가를주장하지않는다. 원문/Secret/키/계정/정식DB/서비스/네트워크변경0이고 성공/실패정확root/identity/nonlink/허용파일명확인후일회성파일만제거·독립잔여0을확인한다. 기존완료QA는반복하지않는다.
+
 - **C3 SEND 합성 transport checkpoint / Main 어울(2026-10-19)**: 신규미구현5RED239.97ms→응답 원사실의 출처wrapper 미흡1실패/codec 타입narrowing1건을 Main이 한정보정해5PASS361.0461ms/type0다. exact수신bytes/해시/참조·책임세션/최신이해ref/소유/IDLE·최단기한을 확인한 뒤 SEND_ATTEMPTED sync→짧은1회permit→PERMIT_RECORDED sync→fresh current→고정Codex0161Codec turn/start1회→본문/handle없는원RPC provider fact를보존한다. permit/응답유실·미대응응답은UNKNOWN, 새instance/새command우회재전송0이며 원정상응답뒤새현재허가의다음명령만허용한다. 과거원결과는만료후에도읽기재조회만하고timeout뒤늦은응답도전송1회/UNKNOWN을바꾸지않는다.
 
   직접7+고정codec23=30PASS701.2666ms·fail/skip/취소0·최종type0·diff0, 새후보한정독립C0/I0/M0다. `Final: Ruling: 정상RPC응답은provider주장일뿐업무완료/인수/소유회수가아니다 — 실제실행·결과수용과분리 — executionAuthorized/dispatchPerformed/workAccepted는false를유지한다.` store/자료/current/consume/wire는모두필수SYNTHETIC_ONLY port이고실제자료출처/최신판정·서버SENDpermit·파일sync/OS/HTTP/Agent/강제취소는아직미구현/미검증이다. 원문/credential/정식환경·외부자원변경0이며 전체C3/Stage는부분구현, 자료수신기duplicate기한검사Minor1도미해소다. 변경은신규SEND transport/직접시험/WORK_STATUS 정확3경로이며 다음은기존검증부분inbox의실제bytes/수신ref→SEND source연결과서버SEND/STOP·회수전용선행을계속한다.
