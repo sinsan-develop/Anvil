@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 회수 PG 후보·I1 보정·새 격리 등록 / Main 어울(2026-10-19)**: adapter 부재4RED145.9631ms→store/core11PASS358.9957ms/type0. 기존실제ACK모델의첫gap은highestContiguous0이어도ACK ref가있음을확인해신규1RED351.0776ms→0/null과0/ref를구분하여12PASS292.5108ms로보완했다. 독립C0/I1/신규M0는0020이기존2연산전용execution_policy_deadline에회수연산을넣어항상NULL이되는정상경로차단이다. 파일회귀1PASS1FAIL132.9414ms→기존함수는보존하고회수전용helper만추가하여직접/파일계약14PASS367.797ms/type0이다. 실제SQL PASS는아직없고원검토를C0/I0로바꾸지않는다. 새QA실행기타입의sourceScopes일반string추론2건은기존typedintent소비로보정했다.
+
+  새 /home/daon/deploy/anvil-v3-c3-recovery-qa-01·PG anvil-v3-c3-recovery-pg-01·network anvil-v3-c3-recovery-net-01·DB anvil_v3_c3_recovery_qa_01만 owner AV3_C3_RECOVERY_QA/새UUID·20분으로생성전등록한다. exact게시Git/uid1000/고정PG15 image594290e9…·daemon e3349f1d…/internal망·hostport/bind/volume0/PGdata tmpfs256MiB, 생성전부재·realpath/nonlink/currentowner/image·기존보호PG불변을검사한다. 55DDL→실제HUMAN/비관리자app의초기EXECUTION보존·회수정상INSERT/COMMIT/원응답·고정조회/동시·rollback/역방향·직접DML/재계산hash음성·정책AUTO/DENY/REQUIRE_APPROVAL·원grant/writer/ACK불변·회수grant의실행목적사용거절만확인한다. 합성Secret/비밀번호는해당새DB/메모리안에서만쓰며원문/키/DSN출력0이다. 성공/실패exactID/label/mount/network/경로identity확인후전용자원정리·독립잔여0, 정식SQL/서비스/Agent/계정·키변경0이다. 소진된기존QA는재사용하지않는다.
+
+- **C3 회수 PG 저장 후보 착수 / Main 어울(2026-10-19)**: 980294b2 local/private exact·clean 뒤 같은 인증 PoolClient의 execution_grants(kind RECOVERY) INSERT/허가HUMAN 고정조회 adapter와 기존0016~0019를수정하지않는0020 forward guard를준비한다. 기존 EXECUTION 초기graph 보호/다른표·권한은보존하고회수명령-영수증-감사-원grant/ACK와RECOVERY기록의원자/역방향·불변/100건·2MiB한도를별도로결박한다. 아직실제SQL/PG/HTTP/credential·Agent연결은없고현재host/OS사실은필수SYNTHETIC_ONLY port다. 정식SQL적용0·새외부자원0, 실제격리QA는exact후보/자원을생성전에별도등록한다.
+
 - **C3 회수 HUMAN 내부 선행 checkpoint / Main 어울(2026-10-19)**: 신규5RED153.7457ms→3PASS2FAIL325.3747ms는 시험fixture 공용scope오염을확인해각fixture복제로분리했다. 이어최종정책await중기한경과누락5PASS1FAIL383.1329ms→Main최종clock장벽6PASS313.9344ms/type0, 직접/기존runtime정책·허가 인접20PASS860.6117ms다. 독립 C0/I1/신규M0는마지막current의단축기한이저장snapshot기한에반영되지않고마지막정책await뒤30초freshness가누락된경계다. 새회귀6PASS1FAIL331.8668ms의SHORT_CURRENT를RED로확인하고Main이짧아진current/정책기한은transaction거절·마지막current freshness재검사로보완해직접7PASS272.4741ms/type0이다. 동일후보재리뷰0·원finding/RED보존이며이를독립C0/I0으로바꾸지않는다.
 
   타입검사중미구현recovery module TS2307 1건과시험assert.rejects 메시지overload TS2345 1건은각각구현/시험타입만보정해최종exit0이다. 이미완료된SEND실파일QA를되풀이하지않았다. 새서버서비스는실제AccessRepository 인증/CSRF/currentOWNER·단독제어·최근재인증/명시runtime회수정책·유한budget·exact실행/ACK/KNOWN processRef또는UNKNOWN·현재신뢰host/경로를같은transaction에서대조해4개회수연산만최단기한/불변requesthash·영수증과저장한다. 원실행회수/만료는별도이며ACK/writer상태를바꾸지않고새START/SEND/permit/일반원문/강제kill권한은없다.

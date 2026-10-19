@@ -52,3 +52,6 @@ test('마지막 current/정책의 더 짧은 기한이나 최종 await 뒤 30초
   await assert.rejects(f.run(),mode);assert.equal(f.entries().length,0);assert.equal(f.commands().length,0);
  }
 });
+test('첫 사건 공백으로 contiguous0인 실제 ACK ref도 없는 ACK와 구분해 그대로 회수한다',async()=>{
+ const f=fixture();f.current.lastServerAck={sequence:0,batchRef:ref};const result=await f.run();assert.deepEqual(result.data.snapshot.binding.lastServerAck,{sequence:0,batchRef:ref});assert.equal(f.current.lastServerAck.sequence,0);
+});
