@@ -2,6 +2,20 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **시험 근거 파일 소비 한정 채택 / Main 어울(2026-10-20)**: 기존Reviewer 새단위1회 C0/I0/M0를 정적범위로 채택한다. 선언↔파일 exact결박·불일치요청0·선택/재조회 세대·401/403/404회수·bytes/수행자PASS·출처미검증 구분을 확인했으며 기존reader/권한·민감검사/앞한도M1은 재판정하지 않았다. 실제파일/PG·현재환경/명령·Agent출처/served/인수는 판단유보이고 새로운PASS로 올리지 않는다. 필수보완finding0, 같은단위재리뷰/앞완료QA재실행0이다.
+
+
+- **FN12/UI05 시험 근거 파일 소비 source 검증 / Main 어울(2026-10-20)**: 신규3RED142.6212ms→3PASS215.5972ms, 새UI missingregionRED8.948초→EVIDENCE_FILE1PASS2.5초다. 직접인접10PASS556.7266ms/type0/build0(198modules)/diff예정, chunk/NO_COLOR 경고를 보존한다. Main소유로 등록한 브라우저 결과 exact제거/별도부재확인, 외부새자원/DB/서비스/Secret/실Agent변경0이다. 시험근거별 정확ref/hash·기준/환경·test ID 불일치/미선언은 요청0으로 표시하고 정상파일만 bytes일치 상태로 분리한다. 원제출의 PASS/TEST_ARTIFACT 표기는 수행자 주장으로 남으며 실제BROWSER/Agent·정확commit·명령/exit·출처·검수합격/완료·정식실패집계는 미검증/false다.
+  새API/서버제공자·schema/권한변경 없이 이미 실제검증한textGET를 소비하는 Web수정이므로 앞DB·파일QA전체를 반복하지 않는다. 이번 자체검증은 합성browser/직접소비이며 실제served·교차파일/DB경합·출처/인수는 미검증이다. 기존Reviewer에게 새단위1회 읽기전용검토를 요청했다. 전체FN12/UI05/Stage부분구현·앞2건M1/원실패는 보존한다.
+
+
+- **시험 근거 파일 소비 TDD·로컬 QA 등록 / Main 어울(2026-10-20)**: 신규 consumer모듈부재 RED142.6212ms→3PASS215.5972ms이며 선택 원제출/기준hash·test/환경/기준·선언hash/ref·artifactRefs를 대조한다. 불일치/미선언은 GET0·이유유지, 정상은 기존text API의 bytes검증만 소비하고 실제BROWSER/명령exit·출처/PASS/완료·실패집계를 false로 유지한다. 시험flags index TS1은 literal as const로 보정, type0이며 제품검사완화0이다.
+  Main소유 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01 결과·해당전용Edge 자식만 생성전부재·parent realpath/link 확인 후 신규 EVIDENCE_FILE 경로에 사용한다. 최대30초/끝·실패exact정리→별도잔여0·사용자browser/DB/서비스/Secret·Agent0이다. 새API/등록출처/Provider·schema/권한변경0이며 앞완료browser/PG QA는 재실행하지 않는다.
+
+
+- **FN12/UI05 시험 근거 선언↔보관파일 소비 착수 / Main 어울(2026-10-20)**: PMO 재개 후 current6021bcc1 clean/private exact·main f976ed5e 불변에서 Main이 다음 미완료를 선정했다. 기존 선택 결과/고정 검수기준과 reported-coverage·artifact text GET만 소비하여 조건/test ID·기준/환경·evidence fullref/선언hash·명시 artifactRefs를 대조한 뒤 별도 명시조회로 bytes를 확인한다. 불일치/미선언은 파일을 조회하지 않고 이유를 표시한다. 실제파일 일치와 Provider/OS·명령/exit·시험종류/수행·출처/검수합격·완료·실패집계는 분리한다. 새 API/Provider등록·schema/정식DB·정책/Secret/서비스·Agent/비용0, 앞완료QA반복0이다. 새 consumer/선택UI TDD와 직접 영향검사를 진행하며 현재는 미연결이다.
+
+
 - **FN12/UI05 산출물 텍스트 실제 QA02 한정 확인 / Main 어울(2026-10-20)**: exactd3407d5eb875f5c876fb497aded21e453ce368e1 새PG9d0e5ee217279d341230f0b2623f8f40663186692773109fcbaad8eb2a8c8f29/network4b3c2c366cc987e80641a342ebb8f1dce4541df31d2447c570cffceeaa742dbb·PG15.18/기존59SQLchecksum exact에서1PASS2485.621204ms(기능2142.674402),skip0·DONE다. 실제 파일 업로드/보호보관 bytes→인증API/PG→Webconsumer의 BOM/CRLF·hash·선택ref·false승격·읽기5표불변, 격리412/미지원binary412/미선언404·query/outsider/회수member거절·원5guard불변을 확인했다. 원QA01/STORAGE_FAILED는 소급PASS하지 않는다.
   raw6파일/5dir와 전용PG/network/Git경로 exact회수 후 별도조회01/02잔여0, 정식PG e6f798c3/image594290/exited·기동/종료시각/restart0 불변이다. 새schema/정식DB·서비스/키·실정책/Agent변경0이다. 정적 원C0/I0/M1의 한도안내 차이는 보류, 앞 UI저장M1도 보존한다. 현재source+합성browser1/type/build·실제격리API/파일검증 범위이며 실제served사용/Provider·명령/환경·시험진위/검수합격·사용자인수·전체FN12/UI05/Stage는 미완료다. 기존완료QA반복 없이 다음 미완료를 이어간다.
 

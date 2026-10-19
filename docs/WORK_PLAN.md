@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 시험 근거↔보관파일 화면 연결**: FN12/UI05 고정조건/test/환경·기준·선언hash/ref를 대조한 뒤 기존 text GET를 소비한다. 불일치·미선언은 파일요청0, bytes일치는 수행자PASS/sourceKind·실제시험/명령/출처와 분리한다. 신규3/직접인접10·합성browser1/type/build·정적C0/I0/M0 범위이고 새API/서버/DB변경0이므로 기존actualQA전체는 반복하지 않는다. 실제served·명령/exit/commit/Agent·검수합격·전체FN12/UI05/Stage미완료와 앞M1은 유지한다.
+
+
 - **2026-10-20 제출 산출물 텍스트 조회 한정 확인**: FN12/UI05의 선언된 프로젝트 보관파일을 권한·hash·격리 대조 후 명시조회/escaped텍스트로 연결했다. exactd3407d5e 실제격리PG/파일→Web consumer1PASS·QA정리0, source직접9/type/build와 합성browser1은 별도범위다. 초기Date복사 실패·2MiB 안내M1은 WORK_STATUS에 보존한다. PDF/image·실명령/Agent·시험진위/합격·served/인수는 미구현/미확인으로 남으며 전체FN12/UI05 상태·44업무/선행·검수·승인범위는 바꾸지 않는다.
 
 
