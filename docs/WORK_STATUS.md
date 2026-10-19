@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN10 내부 다음 행동 후보 한정 구현 / Main 어울(2026-10-20)**: evaluateSyntheticNext는 고정 graph/application·선택 currentResult fullref/hash와 typed 노드기록에서 AUTO/CASE·사람/역할판단·승인/종료경계·합류·완료반복금지·기존세션 유지·fingerprint 누적한도 대기 이유를 계산한다. 실제 서버 상태·권한 인증/예산·queue/dispatch는 연결하지 않았고 관련 플래그는 false이며 SYNTHETIC_ONLY 입력이다. FN10은 시작 전에서 내부 source 부분 구현으로만 갱신하며 사용자 기능 완료가 아니다.
+  시험: 모듈부재 RED127.6583ms→초기7PASS307.9393ms, 단계 우선순위/전용 snapshot/실패한 대상 3RED266.8037ms→10PASS292.0738ms, 역할판단/다중선행 2RED278.786ms→12PASS331.4581ms다. 독립1회 C0/I1/M0에서 SKIPPED의 잔존 ACCEPTED가 명시조건 JOIN을 통과함을 확인했다. 재해시 반례1RED290.4883ms 후 ACCEPTED에 COMPLETED+completionRef 정합성을 요구하는 2줄 보정으로 신규13+직접 graph/application14=27PASS1199.026ms·type0다. 같은단위 재리뷰0, 원 I1을 삭제하거나 독립 C0/I0로 바꾸지 않으며 Main 반례 해소 증거로 구분한다.
+  기존 검사를 느슨하게 하지 않았고 추가 HTTP/DB/schema/정식자원·실제정책/Secret·Agent/비용 변경0, 완료한 앞 QA 반복0이다. 아직 실제 완료/판단 제공자·현재 사용량·권한/원자 queue·재시작/dispatch·served/인수 미연결/미검증이다. 초기 시험의 고정 fixture 타입 오류15건은 시험 인덱스 증명만, 알려진 exact 폴더 생성 제한1회는 부모2개 생성 승인 후 해결했으며 ACL 변경0이다. 이번 이어받기에서 잘못 추정한 skill 경로 읽기1회는 경로없음으로 실패한 뒤 실제 목록 경로를 읽었다. rollback은 이 내부 모듈/시험·진행기록 commit의 일반 revert이며 실행 데이터 변경은 없다.
+
+- **FN10 evaluateNext 내부 계산 착수 / Main 어울(2026-10-20)**: 기존 INTERFACES§13.2/FUNCTION_WORK FN10과 FN02 graph·FN09 고정임무/FN11 경계를 대조해 Main이 다음 독립단위를 선정했다. 첫 범위는 고정 application/graph/hash·선택 현재결과·노드별 typed기록·AUTO/CASE·명시 종료경계에서 바로 다음 후보/대기 이유만 계산하는 SYNTHETIC_ONLY 내부 함수다. 건별 다음단계대기·사람/승인지점대기·분기미확인·합류 SKIP≠완료·완료/진행작업반복0·동일fingerprint 누적시도 미설정/상한대기를 TDD한다.
+  Ruling: caller의 hash/완료·정책 주장은 실제 서버판정/현재권한 인증이 아니므로 모든 후보에 serverFactsVerified/queueStored/writerReservationPerformed/executionAuthorized/dispatchPerformed=false를 고정한다. 실제 완료결정 제공자/한도·재시도 누적저장/현재권한·queue/dispatch연결은 후속미완료다. 잘못되면 거짓준비 승격 위험이 있어 공개HTTP/DB/Agent에등록하지 않고 내부합성계산만 둔다. 실제새API/Provider계약·schema/권한/정식DB/키/서비스·Agent/비용0, 기존완료QA반복0이다. 직전 안내언어 오류1회는 한국어로 즉시 정정했다.
+
+
 - **완료 주장 점검 표시 한정 채택 / Main 어울(2026-10-20)**: 신규UI missingregionRED8.876초→COMPLETION_GAP1PASS2.6초, 직접인접7PASS520.4859ms다. 이후상태mapping undefined 타입오류1은 미정 상태를 fail로 거절하도록 보강해 pure3PASS300.7166ms/type0·freshbuild0(199modules), 경고보존이다. 등록browser결과 exact제거/별도부재확인이다. 기존Reviewer 새단위1회 C0/I0/M0는 표시 전용범위로 채택하며 원coverage/서버·파일은 재검토하지 않았다. actual중단원인/출처·시험·환경/Agent·served/인수는 판단유보이며 원인추정/검수합격으로 승격하지 않는다.
   새API/서버Provider·DB/정책/Secret/서비스·Agent/비용0·기존완료QA반복0, canonical Issue·검수/완료·실패집계·재실행·writer회수0이다. 선택coverage의 COMPLETED/미확인과 미보고/미실행/불일치/출처미검증을 분리했고 기준전환/접근거절에 앞점검숨김을 확인했다. 전체FN12/UI05/Stage부분구현·원실패/앞M1은 유지한다.
 
@@ -2120,7 +2128,7 @@
 - **완료 [0] / 검토·테스트 중 [1] / 개발·작업 중 [2] / 시작 안 함 []**. P업무는 코드가 아니라 각 준비 산출·검토의 실제 완료를 기준으로 한다.
 - [0]은 해당 카드의 완료 조건과 검수 증거가 있을 때만 표시한다. 제출만 됐으면 검수 대기이며 완료가 아니다. 실패·미검증·차단은 사유와 함께 별도 표시한다.
 - 기능 사용 가능성은 `구현 완료·핵심 동작 확인 / 구현했지만 동작 미확인 / 부분 구현 / 미구현`으로 따로 기록한다. IX08 미실행을 1단계 미구현과 혼동하지 않는다.
-- 현재 합계: **[0] 3 / [1] 1 / [2] 19 / [] 21 — 총44개**. P01/P02/P03 준비 수용, UI04 검토·보완, 기존 구현 중15업무와 UI05/FN08/FN09/FN12를 Main 어울이 순차 진행한다(동시 writer 아님). 최근 source/합성·브라우저 결합과 과거 격리 실측은 아래 증거 범위에 한정하며 실제 Agent 연결·전체 기능/Stage 완료가 아니다. 오래된 요약 집계와 실제 등록부 불일치를 바로잡았고 완료 수는 바꾸지 않았다.
+- 현재 합계: **[0] 3 / [1] 1 / [2] 20 / [] 20 — 총44개**. P01/P02/P03 준비 수용, UI04 검토·보완, 기존 구현 중19업무와 신규 FN10 내부 후보계산을 Main 어울이 순차 진행한다(동시 writer 아님). 최근 source/합성·브라우저 결합과 과거 격리 실측은 아래 증거 범위에 한정하며 실제 Agent 연결·전체 기능/Stage 완료가 아니다. FN10 착수만 반영했고 완료 수는 바꾸지 않았다.
 - 시작·주요 변경·시험·오류·중단·검수 때 아래 해당 행과 일자별 기록을 함께 갱신한다. 행에는 현재 지점·담당/시작·최근 변경·증거/검수·미확인·다음을 추가한다.
 - 일자별 기록에는 날짜·업무 ID·담당·branch/HEAD·변경 파일·명령/exit·결과·오류 횟수/원인/조치·QA 정리·미검증·다음 행동을 남긴다. 지시/승인과 실측을 구분한다.
 - 이 파일이 실제 진행/증거의 정본이다. 계획의 정의·의존·완료 기준은 WORK_PLAN과 업무 카드가 정본이며, 계획 등록부 상태와 불일치하면 실제 증거를 대조해 함께 정정한다. 이력은 삭제하거나 과거 실패를 PASS로 덮지 않는다.
@@ -2184,7 +2192,7 @@
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
 | FN08 Windows 실행·회수·중복방지 | [2] | P1 C3 START/SEND 선택·서명nonce/현재검사·전용permit/자료 연결 source·합성 후보, 현재 false 효과 유지 | original5 공용SQL guard 거절/pending·물리 provider/actual DB·OS/Agent 실행 미완료 |
 | FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
-| FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
+| FN10 자동/건별·분기·한도 | [2] | SYNTHETIC_ONLY 내부 후보계산27PASS/type0 | 실제 상태·권한/예산/단계전이·슬롯/대기열·Agent 미연결 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
 | FN12 결과·검증·이상 판정 | [2] | Main 어울. 제출/목록 실제PG, 합성 검수/보완15·범위변조거절 보완. 54ad16f2 원제출+확정임무 검수source 실제PG1 PASS·UI05 조회후보 | typed기준/등록증거·검수/보완의 실제 저장·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |

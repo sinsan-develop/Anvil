@@ -720,6 +720,8 @@ GET assignments/:id는 불변 임무/부모·자식·책임 역할/세션 bindin
 
 ### 13.2 FN10 자동/건별·분기·한도·queue
 
+- 내부 준비 구현 `evaluateSyntheticNext(raw)`는 고정 application/graph·선택 currentResult·typed 노드기록·AUTO/CASE·종료경계·fingerprint 누적입력에서 후보/대기 이유만 계산한다. hash는 입력 결박일 뿐 서버 사실 인증이 아니며 `SYNTHETIC_ONLY/UNAUTHENTICATED_INPUT_SNAPSHOTS`와 `serverFactsVerified/queueStored/writerReservationPerformed/executionAuthorized/dispatchPerformed=false`를 고정한다. HTTP/DB/Agent에는 등록하지 않고 실제 `evaluateNext` 제공자·허가/예산·queue/dispatch는 후속 미구현이다. ACCEPTED는 COMPLETED+completionRef 정합성을 요구하고 생략 단계의 잔존 값은 합류 완료 근거로 쓰지 않는다.
+
 `startStage` 입력은 `stageRef,methodologyApplicationRef,mode:AUTO/CASE_BY_CASE,startNodeRef,endBoundaryRef,baselineRefs,budgetRef,approvalRef?`다. 결과는 `RunRequest{id,queueState,readinessIssues}`이고 서버 영속/대기→실행기 수신→실제 수행을 구별한다. CASE_BY_CASE는 선택한 단계의 내부 임무만, AUTO는 명시한 경계/승인 지점 전까지만 허가한다. 모드 변경이 진행 중 scope를 확대하지 않는다.
 
 서버 내부 `evaluateNext(projectRef,resultRef)`는 정확 graph 버전·선행/분기/합류 조건·현재 typed 결과로 NextAction을 만든다. 자유문장 판단은 명시된 사람/총괄 판단 노드의 근거를 요구하고 임의 eval/도구 호출로 추정하지 않는다. 생략·취소/실패 분기를 완료로 세지 않는다. 재작업 edge도 설정한 시도·시간·비용 한도와 fingerprint를 누적하며 새 세션/재시작으로 초기화하지 않는다.

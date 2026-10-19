@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN10 다음 행동 내부 후보 계산**: 고정 graph/결과·typed 판단에서 AUTO/CASE·승인/사람/역할/종료경계·합류/재작업/반복방지를 source 부분 구현했다. 신규13+직접 graph/application14=27PASS·type0이며 독립 C0/I1/M0의 잔존 ACCEPTED 반례는 Main TDD 보정으로 해소했다(재리뷰0). 실제 서버 완료/권한·예산/대기열·Agent/served는 미연결이고 SYNTHETIC_ONLY/실행 플래그 false다. FN10은 내부 부분 구현일 뿐 사용자 기능 완료가 아니며 나머지 완료조건/승인 경계는 유지한다.
+
 - **2026-10-20 완료 주장·미확인 원인 표시**: 기존 reported-coverage에서 COMPLETED와 부족/미실행/불일치·미검증 조건을 구분해 UI05에 표시한다. pure/직접7·합성browser1/type/build·정적C0/I0/M0 범위이며 실제 원인/명령/commit·Provider/시험출처·served/인수는 미확인이다. canonical Issue/검수저장·완료/실패집계·재실행0, 새서버/API/DB/권한0·기존완료QA반복0이다. 전체FN12/UI05/Stage와 44업무 상태·검수조건은 바꾸지 않는다.
 
 
@@ -132,7 +134,7 @@
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 bbb239dd 합성 실제1 PASS/71523.4163ms·정리0/19960·relay 보존은 유지. 별도 내부precondition2파일 집중4 PASS/type0·항상실행불가이며 사용자기능진도 아님. sourceScopes/envelope/durable 결과형 미정·verifier/실제dispatch·ACK/spool/Agent 연결 미구현. 원QA-01 REWORK/40744미확정·잔여OS미검증·전체인수와 구분 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0·직접10/UI5·목록cursor2 확인. 목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·플랫폼실행전거절/적용0·실제저장/API/서비스·배정/Agent·전체완료 미확인 |
-| FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 시작 전 |
+| FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 부분 구현·내부 SYNTHETIC_ONLY 후보계산27PASS/type0. 실제 상태/권한·예산/queue/Agent·served 미연결 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
 | FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 부분 구현·증거/문제 분류·원문 PG 저장/조회·분리 COMMIT/재해시 음성, HTTP/UI05 source·새 목록 격리PG→Web소비 확인. 검수/보완·정식 DB/Agent·전체 선행은 미완료 |
 | FN13 | 체크포인트·중지·재개 | C | FN08,FN09,FN11 | FN08,FN09,FN11 | 시작 전 |
