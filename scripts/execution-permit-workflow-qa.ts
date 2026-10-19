@@ -18,7 +18,7 @@ import {SyntheticPgPermitStore} from '../apps/server/modules/executions/executio
 
 import {SyntheticAuthenticatedPermits} from '../apps/server/modules/executions/execution-authenticated-permits.ts';
 
-const mode=process.argv[2];assert(['RED','VERIFIED'].includes(mode!));
+const mode=process.argv[2];assert(['RED','VERIFIED','REVIEW_RED','REVIEW_GREEN'].includes(mode!));
 const label=mode!.toLowerCase(),database='anvil_v3_c3_permits_'+label+'_qa_01';
 assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-permits-'+label.replaceAll('_','-')+'-qa-01');assert.equal(process.getuid?.(),1000);
 assert.equal(process.env.ANVIL_C3_QA_DATABASE,database);const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
@@ -60,11 +60,12 @@ try{
 
 
  const counts=async(pid:string)=>{const result:number[]=[];for(const table of ['execution_challenges','execution_receipts','execution_start_permits'])result.push((await admin.query('SELECT count(*)::int n FROM anvil.'+table+' WHERE project_id=$1',[pid])).rows[0].n);return result;};
+ const currentOs=new Map<string,any>();
  const facts={transport:'SYNTHETIC_ONLY' as const,current:async(db:pg.PoolClient,scope:any,binding:any)=>{
   // 이 fixture의 source/OS는 명시적인 합성 근거이며 실제 host 관측을 주장하지 않는다.
   const w=(await db.query("SELECT * FROM anvil.writer_claims WHERE project_id=$1 AND execution_id=$2 AND generation=$3 AND grant_id=$4 AND grant_version=$5 AND ownership_state='SYNTHETIC_CLAIM' AND reclaimed_at IS NULL AND expires_at>clock_timestamp()",[scope.projectId,scope.executionId,scope.executionGeneration,scope.grantRef.id,scope.grantRef.version])).rows;
   assert.equal(w.length,1);assert.equal(canonicalJson(w[0].scope_json),canonicalJson(binding.intent.sourceScopes));
-  const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0].at.toISOString();return{...structuredClone(binding),writerState:'OWNED',checkedAt:at};
+  const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0].at.toISOString(),out={...structuredClone(binding),writerState:'OWNED',checkedAt:at};if(currentOs.has(scope.projectId))out.checks.osFence.evidenceRefs=[structuredClone(currentOs.get(scope.projectId))];return out;
  }};
  const prepare=async(kind='NORMAL',prior?:Awaited<ReturnType<typeof setup>>)=>{
   const f=prior??await setup(),row=(await admin.query("SELECT snapshot_json->'envelope' envelope FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=1",[f.pid,f.scope.executionId])).rows[0];
@@ -72,10 +73,11 @@ try{
   let body={envelopeHash:row.envelope.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:'a'.repeat(64)},sourceObservationRefs:[g.binding.intent.sourceScopes[0].observationRef],osOwnershipRef:g.binding.checks.osFence.evidenceRefs[0]};
   if(kind==='BAD_SOURCE')body={...body,sourceObservationRefs:[{...body.sourceObservationRefs[0],version:2}]};
   if(kind==='BAD_OS')body={...body,osOwnershipRef:{...body.osOwnershipRef,version:2}};
+  if(kind==='NEW_OS'){const ref={id:randomUUID(),version:1,contentHash:'b'.repeat(64)};currentOs.set(f.pid,ref);body={...body,osOwnershipRef:ref};}
   const commandId=row.envelope.commandId,raw=canonicalJson(body),path='/api/v1/connectors/'+f.scope.connectorId+'/executions/'+f.scope.executionId+'/commands/'+commandId+'/permit',target=executionTarget('POST',path,[],raw);
   const p={...f.request(),target:{method:'POST',path,queryHash:target.queryHash,bodyHash:target.bodyHash}},issued=await f.issue(p),proof={requestId:p.requestId,...p.target,grantRef:f.scope.grantRef,credentialGeneration:1,serverNonce:issued.challenge.serverNonce};
   const signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
-  return{...f,commandId,raw,proof,signature,issued};
+  return{...f,commandId,raw,proof,signature,issued,signedRequest:p};
  };
  const service=(source:any,keys:any)=>new SyntheticAuthenticatedPermits(new SyntheticPgPermitStore(source,keys,facts));
  const run=(s:SyntheticAuthenticatedPermits,x:any)=>s.consume(x.scope,x.commandId,x.issued.ref,x.proof,x.signature,x.raw);
@@ -86,6 +88,12 @@ try{
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.execution_receipts WHERE project_id=$1',[f.pid])).rows[0].n,0);
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.execution_challenges WHERE project_id=$1',[f.pid])).rows[0].n,1);
   console.log('C3_PERMIT_RED_MISSING_RELATION_42P01_NONCE_RESULT_ROLLBACK');
+ }else if(mode==='REVIEW_RED'){
+  phase='CURRENT_OS';const updated=await prepare('NEW_OS');let updatedAccepted=false;try{await run(service(pool,updated.keys),updated);updatedAccepted=true;}catch{}console.log(updatedAccepted?'C3_PERMIT_CURRENT_OS_REFRESH_ACCEPTED':'C3_PERMIT_CURRENT_OS_REFRESH_REJECTED');
+  phase='PROOF_WITHOUT_PERMIT';const x=await prepare();let proofOnly=false,late=false;
+  try{await x.consume(x.issued,x.signedRequest);proofOnly=true;}catch{}console.log(proofOnly?'C3_PERMIT_PROOF_WITHOUT_PERMIT_OPEN':'C3_PERMIT_PROOF_WITHOUT_PERMIT_REJECTED');
+  if(proofOnly){assert.deepEqual(await counts(x.pid),[2,1,0]);try{await run(service(pool,x.keys),x);late=true;}catch{}console.log(late?'C3_PERMIT_LATE_PERMIT_REPAIR_OPEN':'C3_PERMIT_LATE_PERMIT_REPAIR_REJECTED');}
+  assert(updatedAccepted&&!proofOnly&&!late,'C3_PERMIT_REVIEW_I1_I2_UNRESOLVED');
  }else{
   phase='PERMIT_NORMAL';let connects=0,begins=0,commits=0;
   const tracked:any={connect:async()=>{connects++;const db=await pool.connect();return{release:()=>db.release(),query:async(sql:string,args?:any[])=>{if(sql==='BEGIN')begins++;if(sql==='COMMIT')commits++;return db.query(sql,args);}};}};
@@ -115,6 +123,11 @@ try{
   console.log('C3_PERMIT_FOUR_BINDINGS_AND_NEW_ATTEMPT_REJECTED_NO_REISSUE');
   for(const sql of ['INSERT INTO anvil.execution_start_permits DEFAULT VALUES','UPDATE anvil.execution_start_permits SET project_id=project_id WHERE false','DELETE FROM anvil.execution_start_permits WHERE false'])await assert.rejects(pool.query(sql),(e:any)=>e.code==='42501');
   console.log('C3_PERMIT_APP_THREE_DIRECT_MUTATIONS_DENIED_AUTHORITY_FALSE');
+  if(mode==='REVIEW_GREEN'){
+   phase='CURRENT_OS';const updated=await prepare('NEW_OS'),out=await run(service(pool,updated.keys),updated);assert.equal(out.permit.executionAuthorized,false);assert.deepEqual(await counts(updated.pid),[2,1,1]);
+   const wrong=await prepare('BAD_OS');await assert.rejects(run(service(pool,wrong.keys),wrong));assert.deepEqual(await counts(wrong.pid),[1,0,0]);console.log('C3_PERMIT_CURRENT_OS_B_ACCEPTED_FOREIGN_C_REJECTED');
+   phase='PROOF_WITHOUT_PERMIT';const only=await prepare();await assert.rejects(only.consume(only.issued,only.signedRequest));assert.deepEqual(await counts(only.pid),[1,0,0]);console.log('C3_PERMIT_REVERSE_ATOMIC_PROOF_WITHOUT_PERMIT_COMMIT_REJECTED');
+  }
  }
  console.log('C3_PERMIT_WORKFLOW_'+mode+'_LIMITED_VERIFIED');
 }catch(e:any){console.error('C3_PERMIT_QA_FAILURE phase='+phase+' code='+(e.code??e.constructor?.name)+' message='+String(e.message).replace(/[^A-Za-z0-9_ .:-]/g,'').slice(0,180));process.exitCode=1;}

@@ -47,3 +47,6 @@ test('다른 body·서명·경로·회수 scope로는 permit을 얻지 못한다
 test('이미 소비한 명령에 새 challenge/시도로 permit을 재발급하거나 새 nonce를 소비하지 않는다',async()=>{
  for(const changed of [false,true]){const f=fixture(),p=await f.issue(),first=await f.run(p),q=await f.issue(changed?{...f.request,localAttemptRef:{...f.request.localAttemptRef,version:2}}:f.request);await assert.rejects(f.run(q));assert.equal(f.state().permits.length,1);assert.equal(f.state().results.length,1);assert.equal(f.state().challenges.length,3);assert.equal(first.permit.expiresAt,'2026-10-19T12:00:30.000Z');}
 });
+test('소비 완료 journal에서 permit이 없으면 사후 생성하지 않고 불완전 상태로 거절한다',async()=>{
+ const f=fixture(),p=await f.issue();await f.run(p);f.state().permits.splice(0);await assert.rejects(f.run(p));assert.equal(f.state().permits.length,0);assert.equal(f.state().results.length,1);assert.equal(f.state().challenges.length,2);
+});
