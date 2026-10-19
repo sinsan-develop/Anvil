@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 grant 회수 내부 checkpoint / Main 어울(2026-10-19)**: 미구현5RED146.5916ms→직접5PASS259.2775ms, typedcurrent 정책참조 소비로 unknown ref TS2345 3건 보정 후 type0·직접/기존runtime정책인접15PASS673.3248ms다. 독립신규C0/I0/M0는원 service command본문/최초5시험의정적한정판정이며실제PG/current진위/회수효과는미판정이다. 이어후속고정조회용역사validator의export부재1RED254.5625ms→전체hash/원명령·scope·30초판단기한·false주장음성을추가해직접6PASS300.844ms/type0다. 후속validator/6번째시험은이번독립판정에서명시제외했으며다음PG후보검토대상으로남긴다.
+
+  현재HUMAN/제어·명시회수정책/유한budget·정확grant/source/current에결박한원영수증과회수의도만저장한다. 원grant의EXPIRED는새권한이아니며REVOKED새명령거절/같은원명령재조회·다른hash·append실패와최종current/정책기한을검사한다. 원grant/credential/writer/ACK쓰기0·실제새delivery차단/credential회수/OS종결/writer해제는모두false·미연결이다. fakeDB rollback을PG원자성으로승격하지않으며새외부자원/정식DB·서비스·키변경0이다. 신규service/직접시험/현황3경로보존,전체C3/Stage부분구현,다음은회수의도PG고정저장/조회와새전달허가소비부의회수반영·정확검수로이어간다.
+
+
+- **C3 실행 grant 회수 내부 선행 착수 / Main 어울(2026-10-19)**: 6e5d01b4 local/private exact·clean 뒤 승인 runtimeOperations의 revokeExecutionGrant를 구현한다. 현재 HUMAN/제어·명시회수정책·유한budget·정확실행/세대/grant와현재회수대상을확인해불변회수의도/기존영수증을같은tx에저장한다. 원grant/credential/writer/ACK는덮어쓰지않으며 state는합성회수저장일뿐, 실제delivery차단/credential회수·OS종결/writer회수검증은모두false·미연결로남긴다. 현재grant만료는기록하되현재HUMAN/정책기한을늘리지않고새권한도발급하지않는다. 필수store/current는SYNTHETIC_ONLY, PGadapter/forwardSQL·모든권한소비자의회수반영과HTTP는후속미완료다. 새외부자원/정식환경/키변경0이고이미완료검증은반복하지않는다.
+
+
 - **C3 HUMAN runtime 명령 경로 내부 checkpoint / Main 어울(2026-10-19)**: 첫1PASS3FAIL1651.0869ms 중runtime enum 미구현2와inject undefined header를실제누락으로보내지못한시험harness1을분리했다. 명시합성주입4연산/기본미활성·원명령전달/익명·CSRF/Origin·project/idempotency/중복JSON/Bearer혼합·비합성/true결과·비밀오류거절4PASS833.1715ms/type0다. Main이기존understanding snapshot은top transport없고currentBinding에출처가있음을대조해별도1RED709.8354ms로반환형오판을확인, 원형보존분기로신규5+기존임무경로인접1=6PASS1003.7774ms/type0·diff0이다. 독립신규C0/I0/M0는새helper/시험과app/projectroute주입diff만한정검토했고서비스core/실인증/PG·Agent는미판정이다.
 
   실제Fastify.inject의라우팅/입력/거절은확인했지만backend는fake서비스port여서HUMAN인증/현재제어/정책·실제저장COMMIT·served사용자기능완료로승격하지않는다. 원서비스의AccessRepository tx소유/기존응답불변을유지하고기본app/main.ts는주입0·연산미활성,환경flag/fallback/새허가·DB/서비스/키/Agent변경0이다. 기존완료코드변경사유는승인§6의미연결runtime경로연결이며변경전enum/handler미등록→변경후명시합성주입에한해4연산을각기존서비스로전달하는diff다. 신규helper/시험·app/projectroute·현황5경로보존,전체C3/Stage부분구현이다. 다음은회수/실행허가회수·서버SEND·현재credential/관측원자저장선행을대조해계획의다음미구현을계속한다.
