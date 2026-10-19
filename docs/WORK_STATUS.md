@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 서버 중지 내부 checkpoint / Main 어울(2026-10-19)**: 신규4RED140.433ms→직접4PASS293.5075ms/type0, 회수kind/다른주체음성추가후직접5+기존runtime10=15PASS732.6797ms다. 독립C0/I1/신규M0의예산결박누락은Main이기존execution-commands의context.budgetRef=예약ref(정책ref가아님)를대조해보정했다. 권장된정책ref와봉투ref의동일화는적용하지않고current에별도budgetReservationRef를명시해정확봉투예약을검사한다. 첫신규필드거절247.4694ms는반례재현과분리했고,정상필드소비후봉투예약만변경한1RED258.5049ms→직접6PASS277.1032ms/type0·명령/영수증/append0음성을확인했다. 원검토를새독립C0/I0로바꾸지않는다.
+
+  실제AccessRepository 인증/CSRF/OWNER·단독제어/현재명시중지정책·유한budget와grant주체/session/stopScope/currenttarget을대조하고intent→실제auth receipt→기존REQUEST_STOP 봉투→같은tx append를연결했다. TTL최대30초와모든최단기한·최종단축/freshness장벽,같은명령원결과/기한·다른hash거절/저장오류rollback을확인했다. EXECUTION의중지연산또는RECOVERY고정4연산외추가는거절한다. 요청저장/Agent응답은STOPPED나writer회수가아니며false상태를유지한다.
+
+  current/append는필수SYNTHETIC_ONLY port이고PGadapter/SQL·HTTP/실credential·OS/Agent는미연결이다. 새외부자원0·정식DB/서비스·기존봉투/시작/SEND계약변경0이며정책ref와예약ref의구분은기존계약보존이다. 변경은신규중지서비스/직접시험/WORK_STATUS 정확3경로, 전체C3/Stage는부분구현이다. 다음은이중지명령의PG원자저장/회수전용조회와서버SEND의남은선행을이어간다.
+
+- **C3 서버 중지 요청 저장 착수 / Main 어울(2026-10-19)**: 3803d131 local/private exact·clean 뒤 승인 requestExecutionStop 내부 서비스를 구현한다. 현재HUMAN/제어·명시 runtime 중지정책·유한budget·정확 실행/grant/session/stopScope/currenttarget을 같은transaction에서 대조하고 명령intent→실제authorization receipt→기존REQUEST_STOP 봉투→불변저장을연결한다. wire/OS/강제kill·writer회수는수행하지않고결과는합성중지지시저장일뿐이다. 실제store/current는필수SYNTHETIC_ONLY, production HTTP/credential·정식DB변경0, 기존시작/SEND·완료QA재실행0이다. 새외부자원은없다.
+
 - **C3 이월 부분수신 Minor1 한정 보정 / Main 어울(2026-10-19)**: 다음 서버연결 전에 앞독립검토의 record중복반환 기한검사누락을Main이신규음성1RED149.1788ms로확인했다. journal/blob재조회 await 뒤 합성port와envelope현재기한을다시검사하는2호출만추가해직접9PASS188.7262ms/type0이다. 정상재조회는재저장0/같은원결과이고읽는동안기한·port가바뀐경우반환/추가저장0·원자료보존이다. 기존Minor1은Main보정으로처리했으며독립재검토C0/I0으로표시하지않는다. 저장형식/manifest/보안기준·현재권한플래그는그대로이고새외부자원0·완료파일/PGQA재실행0, 전체C3/Stage는부분구현이다.
 
 - **C3 회수 actual PG 핵심 checkpoint / Main 어울(2026-10-19)**: Git a540e644638cc3d1e2be3128194189de5855b004·0020 SHA A81C04227ECD0EF85FDB604C1E37085BD83AFCE6BEBAE39426C97DD16D22E918의 새빈격리 PG969e6dbc0fc1022186389d6781c5d09ead58378e9675b8b645ca2e340f1d8584/instance0b3493e8-dc6b-4b1b-a2ae-8b4471a9b2f4·internal망2a0bb9388344569b80ee9106ce1b96d0f21bd796ed38ce268dd52db44a8d5f83에서55DDL COMMIT·빈초기모델을확인했다. 실제비관리자app/HUMAN로그인·재인증·명시정책의기존EXECUTIONqueue 보존/RECOVERY정상INSERT·COMMIT·원응답재조회·고정조회·동시2회/INSERT전후실패의명령까지rollback/command-only역방향COMMIT거절/직접DML3음성/재계산hash의process null·숫자reason·START연산·ACK/소스불일치5음성/회수정책SQL AUTO·DENY·REQUIRE_APPROVAL/종전2연산helper불변/회수grant의실행deadline NULL/기존writer·원grant·ACK불변과이력trigger를확인했다. marker C3_RECOVERY_ACTUAL_PG_SYNTHETIC_CURRENT_SAVE_REPLAY_READ_CONCURRENT_ROLLBACK_REVERSE_DML_HASH_DENY_WRITER_ACK_UNCHANGED_VERIFIED/exit0이다.
