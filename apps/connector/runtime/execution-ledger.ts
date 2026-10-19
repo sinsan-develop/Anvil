@@ -2,7 +2,8 @@ import {canonicalJson,contentHash,parseWireJson} from '../../../contracts/canoni
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 export interface ClientScope{mode:'EXECUTION'|'RECOVERY';projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:RuntimeRefV1;credentialGeneration:number}
 export interface ClientJournalScope{projectId:string;executionId:string;executionGeneration:number;requestKey:string}
-export interface ClientOperation{kind:'PERMIT'|'OBSERVATIONS';commandId:string|null;bodyRaw:string}
+/** MATERIAL의 bodyRaw는 {envelopeHash,materialRef} 내부 선택 metadata이며 HTTP GET body가 아니다. */
+export interface ClientOperation{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL';commandId:string|null;bodyRaw:string}
 export type ClientState='PREPARED'|'CHALLENGE_ATTEMPTED'|'CHALLENGE_RECEIVED'|'REQUEST_ATTEMPTED'|'RESPONSE_RECORDED'|'UNKNOWN';
 export type ClientReason='NONE'|'CHALLENGE_UNCERTAIN'|'REQUEST_UNCERTAIN'|'REQUEST_EXPIRED'|'INVALID_RESPONSE'|'AUTHORITY_UNAVAILABLE';
 export interface ClientEntry{ref:RuntimeRefV1;snapshot:{transport:'SYNTHETIC_ONLY';sequence:number;state:ClientState;requestKey:string;preparedRef:RuntimeRefV1|null;previousRef:RuntimeRefV1|null;at:string;payload:any;reason:ClientReason}}
@@ -19,20 +20,22 @@ export function readClientScope(raw:unknown):ClientScope{
  if(!recordV1(raw,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||!['EXECUTION','RECOVERY'].includes(raw.mode)||!uuidV1(raw.projectId)||!uuidV1(raw.connectorId)||!uuidV1(raw.executionId)||!positive(raw.executionGeneration)||!positive(raw.credentialGeneration)||!refV1(raw.grantRef))return clientReject('CLIENT_SCOPE_INVALID');return cloneV1(raw) as unknown as ClientScope;
 }
 export function readClientOperation(scope:ClientScope,raw:unknown,now:number){
- if(!recordV1(raw,['kind','commandId','bodyRaw'])||!['PERMIT','OBSERVATIONS'].includes(raw.kind)||typeof raw.bodyRaw!=='string'||Buffer.byteLength(raw.bodyRaw)>1024*1024)return clientReject('CLIENT_OPERATION_INVALID');
+ if(!recordV1(raw,['kind','commandId','bodyRaw'])||!['PERMIT','OBSERVATIONS','MATERIAL'].includes(raw.kind)||typeof raw.bodyRaw!=='string'||Buffer.byteLength(raw.bodyRaw)>1024*1024)return clientReject('CLIENT_OPERATION_INVALID');
  const body=parseWireJson(raw.bodyRaw);
  if(raw.kind==='PERMIT'){
   if(scope.mode!=='EXECUTION'||!uuidV1(raw.commandId)||!recordV1(body,['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])||!hashV1(body.envelopeHash)||!refV1(body.localAttemptRef)||!refV1(body.osOwnershipRef)||!arrayV1(body.sourceObservationRefs,200)||!body.sourceObservationRefs.length||!body.sourceObservationRefs.every(refV1)||new Set(body.sourceObservationRefs.map(canonicalJson)).size!==body.sourceObservationRefs.length)return clientReject('CLIENT_OPERATION_INVALID');
+ }else if(raw.kind==='MATERIAL'){
+  if(scope.mode!=='EXECUTION'||!uuidV1(raw.commandId)||!recordV1(body,['envelopeHash','materialRef'])||!hashV1(body.envelopeHash)||!refV1(body.materialRef))return clientReject('CLIENT_OPERATION_INVALID');
  }else{
   if(raw.commandId!==null||!recordV1(body,['events','batchHash'])||!arrayV1(body.events,200)||!body.events.length||body.batchHash!==clientHash(body.events))return clientReject('CLIENT_OPERATION_INVALID');
   for(const e of body.events){if(!recordV1(e,['projectId','executionId','executionGeneration','sequence','eventId','type','commandId','envelopeHash','localRecordRef','processRef','occurredAt','reasonCode'])||Buffer.byteLength(canonicalJson(e))>65536
    ||e.projectId!==scope.projectId||e.executionId!==scope.executionId||e.executionGeneration!==scope.executionGeneration||!positive(e.sequence)||e.sequence>10000||!uuidV1(e.eventId)||!uuidV1(e.commandId)||!hashV1(e.envelopeHash)||!refV1(e.localRecordRef)||e.processRef!==null&&!refV1(e.processRef)||!isoV1(e.occurredAt)||Date.parse(e.occurredAt)>now+30000
    ||!['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED','STARTED','REJECTED','UNKNOWN','STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED','HEARTBEAT'].includes(e.type)||!['NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER'].includes(e.reasonCode))return clientReject('CLIENT_OPERATION_INVALID');}
  }
- const operation={kind:raw.kind,commandId:raw.commandId,bodyRaw:canonicalJson(body)} as ClientOperation,path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+(scope.mode==='RECOVERY'?'/recovery':'')+(raw.kind==='PERMIT'?'/commands/'+raw.commandId+'/permit':'/observations');
- const target={method:'POST',path,queryHash:clientHash({}),bodyHash:clientHash(body)};
+ const operation={kind:raw.kind,commandId:raw.commandId,bodyRaw:canonicalJson(body)} as ClientOperation,path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+(scope.mode==='RECOVERY'?'/recovery':'')+(raw.kind==='OBSERVATIONS'?'/observations':'/commands/'+raw.commandId+(raw.kind==='MATERIAL'?'/materials/'+(body as any).materialRef.id:'/permit'));
+ const target={method:raw.kind==='MATERIAL'?'GET':'POST',path,queryHash:clientHash({}),bodyHash:clientHash(raw.kind==='MATERIAL'?null:body)};
  // permit은 grant/본문을 바꿔 같은 command의 불명 시도를 우회하지 못한다. 회수 관측은 새 명시 scope로만 가능하다.
- const requestKey=clientHash({projectId:scope.projectId,connectorId:scope.connectorId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,kind:operation.kind,identity:raw.kind==='PERMIT'?raw.commandId:{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,batchHash:(body as any).batchHash}});
+ const requestKey=clientHash({projectId:scope.projectId,connectorId:scope.connectorId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,kind:operation.kind,identity:raw.kind==='PERMIT'?raw.commandId:raw.kind==='MATERIAL'?{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,commandId:raw.commandId,selection:body}:{mode:scope.mode,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,batchHash:(body as any).batchHash}});
  return{operation,body,target,requestKey};
 }
 export function readClientPrepared(raw:unknown,key:string,at:number){
@@ -50,11 +53,14 @@ export function readClientProof(raw:unknown,p:ReturnType<typeof readClientPrepar
  const expected={requestId:p.request.requestId,...p.target,grantRef:p.scope.grantRef,credentialGeneration:p.scope.credentialGeneration,serverNonce:issued.challenge.serverNonce};if(!clientSame(raw.proof,expected))return clientReject('CLIENT_LEDGER_INVALID');return cloneV1(raw);
 }
 export function readClientResponse(raw:unknown,p:ReturnType<typeof readClientPrepared>,issued:any,at:number){
- const field=p.operation.kind==='PERMIT'?'permit':'ack';
+ const field=p.operation.kind==='PERMIT'?'permit':p.operation.kind==='MATERIAL'?'partReceipt':'ack';
  if(!recordV1(raw,['transport','proofResultRef',field,'nonceConsumed','executionAuthorized','dispatchPerformed'])||raw.transport!=='SYNTHETIC_ONLY'||!refV1(raw.proofResultRef)||raw.nonceConsumed!==true||raw.executionAuthorized!==false||raw.dispatchPerformed!==false)return clientReject('CLIENT_RESPONSE_INVALID');
  if(field==='permit'){
   const v=raw.permit;
   if(!recordV1(v,['transport','key','envelopeHash','grantRef','permitRef','checkedAt','expiresAt','executionAuthorized','dispatchPerformed'])||v.transport!=='SYNTHETIC_ONLY'||!recordV1(v.key,['projectId','executionId','executionGeneration','commandId'])||!clientSame(v.key,{projectId:p.scope.projectId,executionId:p.scope.executionId,executionGeneration:p.scope.executionGeneration,commandId:p.operation.commandId})||v.envelopeHash!==(p.body as any).envelopeHash||!clientSame(v.grantRef,p.scope.grantRef)||!refV1(v.permitRef)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>at||Date.parse(v.expiresAt)<=at||Date.parse(v.expiresAt)>Date.parse(v.checkedAt)+30000||Date.parse(v.expiresAt)>Math.min(Date.parse(p.authorityExpiresAt),Date.parse(issued.challenge.expiresAt))||v.executionAuthorized!==false||v.dispatchPerformed!==false)return clientReject('CLIENT_RESPONSE_INVALID');
+ }else if(field==='partReceipt'){
+  const r=raw.partReceipt,s=r?.snapshot;
+  if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||r.ref.contentHash!==clientHash(s)||!recordV1(s,['sequence','scope','envelopeHash','manifestHash','materialRef','recordedAt','previousRef'])||!positive(s.sequence)||s.sequence>200||!clientSame(s.scope,{projectId:p.scope.projectId,executionId:p.scope.executionId,executionGeneration:p.scope.executionGeneration,commandId:p.operation.commandId})||s.envelopeHash!==(p.body as any).envelopeHash||!hashV1(s.manifestHash)||!clientSame(s.materialRef,(p.body as any).materialRef)||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)>at||(s.sequence===1?s.previousRef!==null:!refV1(s.previousRef)))return clientReject('CLIENT_RESPONSE_INVALID');
  }else{
   const a=raw.ack,s=a?.snapshot;
   if(!recordV1(a,['ref','snapshot'])||!refV1(a.ref)||a.ref.contentHash!==clientHash(s)||!recordV1(s,['execution','highestContiguous','maxSequence','contiguousDigest','gaps','storedCount','writerReleaseVerified','executionAuthorized','dispatchPerformed','recordedAt'])||!clientSame(s.execution,{projectId:p.scope.projectId,executionId:p.scope.executionId,executionGeneration:p.scope.executionGeneration})||!natural(s.highestContiguous)||!natural(s.maxSequence)||s.highestContiguous>s.maxSequence||!positive(s.storedCount)||s.storedCount>10000||s.storedCount>s.maxSequence||!hashV1(s.contiguousDigest)||!arrayV1(s.gaps,10000)||s.writerReleaseVerified!==false||s.executionAuthorized!==false||s.dispatchPerformed!==false||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)>at)return clientReject('CLIENT_RESPONSE_INVALID');

@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 서명 자료 요청·내구 client 연결 checkpoint / Main 어울(2026-10-19)**: authenticated-materials 신규3RED(기존8PASS)/323.0348ms→서명·nonce·최초 materialRef/hash/target binding 단일 합성 tx11PASS/510.032ms. 독립 C0/I1/M0는 results.read 지연 뒤 이미 소비한 proof의 재조회가 challenge 만료를 다시 거절하지 않아 cached bytes를 반환하는 경계였다. 시계를 정확30초로 진행하는11PASS/1FAIL RED/536.9102ms→Main이 최종 consume 뒤 material current/source·최단 기한과 bytes를 다시 대조해12PASS/530.0271ms로 보정했다. nonce/기한 갱신0·누락 binding 사후 생성0·같은 후보 재리뷰0이며 원검토/RED를 보존한다. 실제 PG 원자성은 아직 미검증이다.
+
+  client의 MATERIAL 선택 metadata는 {envelopeHash,materialRef}이며 실제 GET 서명 body는 null이다. bytes는 별도 수신 inbox에 검증/sync하고 요청 journal에는 정확 metadata partReceipt만 보존한다. 신규2RED(기존8PASS)/406.7521ms→직접10PASS/404.0353ms, 이 새 분기 한정 독립 C0/I0/M0이며 실제 내구성 합격으로 확대하지 않는다. client→실P256 challenge/auth자료 resolver→부분 sync/blob재조회→원문 없는 receipt 연결은 수신뒤 응답유실에서도 UNKNOWN·서버/수신 재호출0을 확인했다. 최종 직접/서명/수신/client/permit 인접44PASS/640.5559ms·fail/skip/취소0·type exit0·diff check0이다.
+
+  실제 키/credential·HTTP·보호 원문/거절된 대화원문·Agent/OS·정식DB/SQL·서비스 변경0이고, 합성 tx/bytes/inbox를 실제 저장/원문 권한으로 표시하지 않는다. 앞 수신기 중복 재조회 후 기한 재검사 Minor1은 미해소로 유지한다. 변경은 신규 auth자료1·client/ledger2·직접 자료/client시험2·WORK_STATUS1의 정확6경로다. C3/FN08/전체 Stage는 부분 구현이며 다음은 물리 부분자료 inbox의 metadata/bytes 동시 내구 기록·보존과 SEND/STOP·회수전용 선행이다. 일반 checkpoint 뒤 같은 승인 작업을 계속한다.
+
+- **C3 서명 자료 요청 원자 결박 착수 / Main 어울(2026-10-19)**: dfb17c56 local/private exact·clean 뒤 같은 승인 C3의 후속 인증 연결을 진행한다. 기존 challenge/proof 서비스와 단일 mandatory SYNTHETIC_ONLY transaction 안의 material resolver/result binding을 연결한다. 자료 GET의 정확 scope/명령/materialId/target/null body·서명·nonce와 반환 materialRef/hash를 함께 저장하고, replay는 최초 binding 누락을 사후 생성하지 않으며 현재 source/current를 다시 확인한다. actual 원문/HTTP/credential/Agent 및 실제 DB adapter/SQL 변경은 없고 in-process 합성 transaction의 정상/rollback/위조·회수/누락 binding을 RED→GREEN으로 검증한다. 이후 동일 요청 client의 자료 수신 연결과 SEND/STOP·회수 선행을 계속한다.
+
 - **C3 부분 자료 resolver·수신 기록 checkpoint / Main 어울(2026-10-19)**: 서버 resolver6RED→6GREEN 뒤 독립 C0/I1/M0가 transaction에 전달한 scope 변조 경계를 발견했다. 일관된 새 세대 fact/명령/부분을 공급하는 6PASS/1FAIL RED/338.6185ms를 재현해 Main이 내부 scope 보존/port별 복사로 최소 보정, 7PASS/362.9041ms다. 같은 후보 재리뷰0·원 finding 보존이다. 실행기 수신기는 정확 등록 manifest·부분 순서/범위·해시·수신 ref/bytes 동시 sync·재조회·중복 저장0·불완전 journal/blob/만료를 검사한다. 첫 RED에서 예외만으로 통과했던 manifest 시험1개는 기능 존재 검사를 추가해5RED로 바로잡았고, 분할 경계를 가로지르는 비밀 표식은 5PASS/1FAIL RED/212.564ms→재결합 검사6PASS/221.8778ms로 보정했다. 오류를 숨기거나 기대값을 완화하지 않았다.
 
   resolver→실행기 수신/재조회 직접 연결과 기존 context manifest/분할·proof 인접은31PASS/799.5828ms·실패/skip/취소0, 최종 type exit0이다. 저장/bytes/current는 in-process 합성 port이며 실제 보호 원문·HTTP·실키/credential·Agent·물리 blob adapter·정식SQL/서비스 변경0이다. 등록 부분 수신은 completeContextVerified/executionAuthorized/dispatchPerformed:false를 유지하며 전체 맥락/WORK 준비를 완료로 표시하지 않는다.
