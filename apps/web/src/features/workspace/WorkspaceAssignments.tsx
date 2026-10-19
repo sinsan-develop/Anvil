@@ -12,6 +12,7 @@ import type { ContextPreparationBuffer } from './context-api.ts';
 import { AssignmentBasisDocuments } from './AssignmentBasisDocuments.ts';
 import { AssignmentSourceSelection } from './WorkspaceExecutionPreparation.tsx';
 import { AssignmentBudgetSelection } from './AssignmentBudgetSelection.tsx';
+import { AssignmentEnvironmentSelection } from './AssignmentEnvironmentSelection.tsx';
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
@@ -108,6 +109,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
       {([['inputs', '입력'], ['outputs', '산출물'], ['acceptanceCriteria', '완료 조건'], ['verificationRequirements', '검증 조건'], ['included', '포함 범위'], ['excluded', '제외 범위'], ['requiredCapabilities', '필요 능력']] as const).map(([field, label]) => <label key={field}>임무 {label} · 한 줄 한 항목<textarea maxLength={20000} value={buffer.input.definition[field].join('\n')} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value.split('\n') } } }))} /></label>)}
       <AssignmentSourceSelection key={buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked} update={update} run={action=>void perform(action)}/>
       <AssignmentBudgetSelection key={'budget:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain} update={update} run={action=>void perform(action)}/>
+      <AssignmentEnvironmentSelection key={'environment:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain} update={update} run={action=>void perform(action)}/>
       <p className="meta">선택한 소스 범위는 임무 의도입니다. 실제 소스 허가·환경·예산·상황기록 정책·맥락 이해는 미확인입니다. 이 초안으로 실행할 수 없습니다.</p>
       <label>임무 저장 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, reason: event.target.value } }))} /></label>
     </fieldset> : null}

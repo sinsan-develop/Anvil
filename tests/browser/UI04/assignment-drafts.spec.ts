@@ -39,6 +39,26 @@ async function prepare(page: Page) {
   await page.getByRole('textbox', { name: '임무 목표', exact: true }).fill('사용 가능한 실제 기능'); await page.getByRole('textbox', { name: '임무 통합 책임', exact: true }).fill('책임자가 검수하고 통합'); await page.getByRole('textbox', { name: '임무 저장 이유', exact: true }).fill('작업 지시를 준비');
 }
 
+for(const mode of ['NORMAL','EXPIRED','HASH','DETAIL_DENIED','PAGE_DENIED'])test('ASSIGNMENT_ENVIRONMENT_'+mode,async({page})=>{
+ const facts=await setup(page);await prepare(page);
+ const id='77777777-7777-4777-8777-777777777777',codes=['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'],input={kind:'ENVIRONMENT_CANDIDATE',candidate:{label:'WSL 대상 후보'},candidateRef:null,policyRef:ref(user),expiresAt:'2026-10-21T00:00:00.000Z',reason:'실행 전 후보 보관'};
+ const candidate={kind:input.kind,input,readiness:{state:'NOT_READY',executionAuthorized:false,missingRequirements:[{field:'executionHostRef',reason:'NOT_PROVIDED'},{field:'hostTrust',reason:'UNVERIFIED'}]},capabilities:codes.map(code=>({code,documentation:null,measurement:{state:'UNVERIFIED',toolVersion:null,environmentRef:null,executionRef:null,evidenceRefs:[]},controlLevel:'UNVERIFIED',limitations:['NO_AGENT_MEASUREMENT']}))},candidateRef={id,version:1,contentHash:contentHash(canonicalJson(candidate))},view={ref:candidateRef,candidate,expired:mode==='EXPIRED',createdAt:'2026-10-20T00:00:00.000Z',recordedBy:user,executionAuthorized:false,observedAt:'2026-10-20T00:01:00.000Z'};
+ const queries:string[]=[];await page.route('**/api/v1/projects/'+pid+'/connection-candidates?*',r=>{const q=new URL(r.request().url()).searchParams;queries.push(q.toString());if(q.has('cursor'))return r.fulfill({status:403,json:{code:'PROJECT_READ_DENIED'}});return r.fulfill({json:{view:'CANDIDATES_ONLY',items:[{ref:candidateRef,kind:'ENVIRONMENT_CANDIDATE',label:input.candidate.label,readiness:'NOT_READY',expiresAt:input.expiresAt,integrity:'NOT_RECHECKED'}],hasMore:mode==='PAGE_DENIED',nextCursor:mode==='PAGE_DENIED'?'ENV-NEXT':null,observedAt:at}});});
+ await page.route('**/api/v1/projects/'+pid+'/connection-candidates/'+id+'/versions/1',r=>mode==='DETAIL_DENIED'?r.fulfill({status:403,json:{code:'PROJECT_READ_DENIED'}}):r.fulfill({json:mode==='HASH'?{...view,ref:{...candidateRef,contentHash:'0'.repeat(64)}}:view}));
+ const panel=page.getByLabel('임무 환경 후보 선택',{exact:true});await panel.getByRole('button',{name:'환경 후보 목록 조회',exact:true}).click();await panel.getByRole('button',{name:'환경 원문 대조 후 초안 선택: WSL 대상 후보',exact:true}).click();
+ if(['EXPIRED','HASH','DETAIL_DENIED'].includes(mode)){
+  await expect(page.getByRole('alert')).toContainText(mode==='EXPIRED'?'ASSIGNMENT_ENVIRONMENT_CANDIDATE_UNAVAILABLE':mode==='HASH'?'RESPONSE_INVALID':'PROJECT_READ_DENIED');await expect(panel).toContainText('초안 환경 참조 없음');await expect(panel.getByLabel('대조한 환경 후보',{exact:true})).toHaveCount(0);
+ }else{
+  await expect(panel.getByLabel('초안 환경 고정 참조',{exact:true})).toContainText(candidateRef.contentHash);await expect(panel.getByLabel('대조한 환경 후보',{exact:true})).toContainText('NOT_READY');expect(facts.commands).toHaveLength(0);
+  if(mode==='PAGE_DENIED'){
+   await panel.getByRole('button',{name:'환경 후보 다음 목록',exact:true}).click();await expect(page.getByRole('alert')).toContainText('PROJECT_READ_DENIED');await expect(panel.getByRole('button',{name:'환경 원문 대조 후 초안 선택: WSL 대상 후보',exact:true})).toHaveCount(0);await expect(panel.getByLabel('대조한 환경 후보',{exact:true})).toHaveCount(0);await expect(panel.getByLabel('초안 환경 고정 참조',{exact:true})).toContainText(candidateRef.contentHash);expect(queries.at(-1)).toBe('limit=50&kind=ENVIRONMENT_CANDIDATE&cursor=ENV-NEXT');
+  }else{
+   await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');expect(facts.commands[0].payload.definition.environmentRef).toEqual(candidateRef);expect(facts.stored.snapshot.ready).toBe(false);expect(facts.stored.snapshot.executionAuthorized).toBe(false);await expect(page.getByLabel('임무 고정 조건',{exact:true})).toContainText(candidateRef.contentHash);
+  }
+ }
+ expect(queries[0]).toBe('limit=50&kind=ENVIRONMENT_CANDIDATE');expect(facts.commands).toHaveLength(mode==='NORMAL'?1:0);expect(facts.unexpected).toEqual([]);expect(facts.errors).toEqual([]);
+});
+
 for(const mode of ['NORMAL','REVOKED','HASH','READ_DENIED'])test('ASSIGNMENT_BUDGET_'+mode,async({page})=>{
  const facts=await setup(page);await prepare(page);
  const id='66666666-6666-4666-8666-666666666666',snapshot:any={scope:{kind:'PROJECT',projectId:pid},limits:{maxAttempts:3,maxElapsedMs:7200000,maxCalls:50,maxConcurrentAssignments:1,maxSpoolBytes:1073741824,maxOfflineMs:300000},reason:'유한 작업 한도',policyBaseVersion:0,state:'APPLIED',previousRef:null,decidedBy:{kind:'HUMAN',userId:user},decidedAt:'2026-10-20T00:00:00.000Z',expiresAt:'2026-10-20T02:00:00.000Z',executionAuthorized:false,dispatchPerformed:false};
