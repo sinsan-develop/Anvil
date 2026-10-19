@@ -730,6 +730,8 @@ queue 항목은 `requestRef,state:WAITING/RESERVED/DISPATCHED/CANCELLED/UNKNOWN,
 
 ### 13.3 FN12 결과 제출·검수·문제 분류
 
+- 보고 coverage의 내부 GET `projects/:projectId/results/:resultId/criteria/:criteriaId/versions/:version/reported-coverage`는 HUMAN멤버 read tx에서 별도 저장 원제출/등록기준과 정확 임무·hash를 대조한다. `purpose:REPORTED_COVERAGE_ONLY`로 미보고/보고미실행·중복·다른시험ID·기준/환경차이·미등록조건을 원주장과 함께 반환한다. PASS/출처표시는 수행자 선언이며 검수 저장/완료·실패집계/증거진위·실행false다. 등록증거/산출물 bytes를 읽거나 기존 거절을 우회하지 않고 최신기준 자동선택·권한부여·query/fallback·변경연산은 없다.
+
 - 보관 기준 탐색 GET `projects/:projectId/assignments/:id/versions/:version/result-criteria`는 HUMAN 멤버 전용이며 exact 확정 임무의 최근20 불변 버전 metadata(ref/작성자/등록시각/조건수·저장/검수false flags), hasMore/observedAt와 `selectionState:NOT_SELECTED`를 반환한다. 각 원문의 해시/영수증/감사를 재대조하며 최신 자동 선택/활성·임의 query/fallback·새 권한 부여는 없다. 선택 원문은 기존 고정 버전 GET로 별도 확인한다.
 
 `ResultManifest`: `assignmentRef,executionRef,baselineRefs,submissionState:COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED,changes:배열,commandResults:배열,testResults:배열,artifactRefs,unexecuted,risks,rollback,checkpointRef`. 각 증거는 `sourceKind:WORKER_CLAIM/CONNECTOR_OBSERVED/TEST_ARTIFACT/REVIEWER_CONFIRMED,ref,contentHash,environmentRef,recordedAt`를 가진다. commandResult는 profile/정확 인자·cwd/host·실행ID·시각·exit/원문 참조를, testResult는 criterion/testID·기준/기대/실제·PASS/FAIL/NOT_EXECUTED/BLOCKED/NOT_APPLICABLE·근거를 가진다.

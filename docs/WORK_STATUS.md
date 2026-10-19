@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 조건별 보고 대조 API 착수 / Main 어울(2026-10-20)**: 순수 모델의 다음 연결은 기존 HUMAN멤버 read tx가 별도 원제출/정확 등록기준을 읽고 같은 임무·hash와 현재 membership을 재대조하는 것이다. 내부 GET results/:resultId/criteria/:criteriaId/versions/:version/reported-coverage이며 query/fallback/변경연산0이다. 제출자 actor와 등록자료를 혼동하지 않고 reader에 actor 복사본만 전달한다. provider2RED170.0395ms→2PASS, route미등록RED404→1PASS679.1937ms/type0이며 실제PG/화면은 아직 미확인이다. 시험 CLI pattern을 파일 뒤에 둬 인접7건도 실행된 사실은 추가 PASS 범위로만 기록하고 전수검사로 확대하지 않는다.
+  Main 신규 일회성 /home/daon/deploy/anvil-v3-fn12-reported-coverage-qa-01(exactGit·node_modules·.av3-data/fn12-raw), PG anvil-v3-fn12-reported-coverage-pg-01/internal network anvil-v3-fn12-reported-coverage-net-01/DB anvil_v3_fn12_reported_coverage_qa_01·owner AV3_FN12_REPORTED_COVERAGE_QA/instance reported-coverage-01을 사전등록한다. 고정PG15image594290·Node24.21hash7fde7b8a·기존60SQL, 공개port/영구volume/기존network0·tmpfs512MiB·합성주체/정책/선언만이다. 실제Agent·browser/관측증거·비용0, 기존 FN09/FN08 graph는 저장 원문 fixture에만 사용하고 완료시험은 재실행하지 않는다. 10분창/Node90초·외부110초·생성전 부재/owner/realpath/link/daemon/image 확인, 종료/실패시 exactID/label/mount/port/owner/link/process 확인 후 등록자원만 회수·독립잔여0이다. 정식PG/DB·서비스·키/Secret·원5guard/pending/기존거절 변경0이다.
+
+
 - **FN12 보고 조건별 대조 준비 / Main 어울(2026-10-19)**: 다음 read-only 대조는 저장된 원제출과 별도 선택 고정 criteriaRef/hash/임무를 결박해 조건별 미보고·보고미실행·중복/다른testID·기준/환경차이·필수해당없음·미등록조건을 보존한다. Ruling: 이는 REPORTED_COVERAGE_ONLY이며 PASS/TEST_ARTIFACT 등 sourceKind도 수행자 선언으로만 보여준다. 실제 등록증거/bytes·관측/검수 권한·검수 저장·정식실패 집계/업무완료·실행은 만들지 않는다. 기존 증거 조회 거절·정식DB/서비스/Agent 범위를 우회하지 않으며 원5guard/schema/정책 변경0이다.
   순수 모델 신규3RED124.5706ms→3PASS233.6769ms/type0이다. 실제 API·DB·화면은 아직 미연결이며 이 결과를 사용자 사용가능/실제검수 완료로 부르지 않는다. 다음은 기존 HUMAN멤버 read tx의 원제출/정확 보관기준 reader에 연결하고 선택기준별 부족을 S05에 표시하는 것이다. 새로운 QA자원0, 앞 완료시험 반복0이다.
 
