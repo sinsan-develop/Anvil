@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 항목 근거·판단 상세 source 확인 / Main 어울(2026-10-20)**:신규3RED298.0079ms→순수3PASS299.6149ms/직접인접22PASS452.5667ms/type0/build213, 새CHECKPOINT_WORK 화면부재15초RED(session49497exit1수집)→1PASS3.1초다. 정확본문근거refs/판단담당·이유/출처를원문에보존하며본문변경시POST0·refs보존/명시재연결을확인했다. scopedstatic1회C0/I0/M0; 실제근거진위/담당현재권한/저장·전달·재개·지연/주체전환/왕복은이번단위판단유보다. 종료뒤RED3/GREEN1결과와buildexact정리·독립잔여0, 경고유지다. 다음파일→편집입력복원은손실없는완전왕복대조와명시선택에서만진행하며기존작성입력이있으면덮어쓰지않는보수적경계를사용한다. 이기능은App메모리입력복원이지서버Checkpoint저장·실작업재개/OS복원/거절SQL우회가아니다.
+
+- **FN13 항목근거 TDD/UI등록 / Main 어울(2026-10-20)**: 신규3RED298.0079ms→순수3PASS299.6149ms다. 새CHECKPOINT_WORK는 Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01·전용Edge만 생성전부재/parent realpath/link확인후최대30초사용한다. 현재본문·항목refs/판단담당·이유/출처→원문·본문변경거절/명시재연결을검증하며실제승인/Agent전달/DB저장/OS0이다. 종료exit수집후exact정리/독립잔여0·경고보존, 다른완료기능전체반복0이다.
+
+- **FN13 항목별 증거·판단요청 상세 착수 / Main 어울(2026-10-20)**:33af579d local/private exact·main불변, 미등록저장5파일보존이다. 기존완료/진행/잔여의evidenceRefs[]·판단요청HUMAN/기록이유/sourceRefnull고정을보완한다. 현재텍스트의정확생성itemId/description·decisionId/question에상세참조를결박하고원문이변하면기존참조를보존한채준비를거절한다. 명시재선택/현재본문재결박또는연결제거로만해소하며자동재연결/삭제0이다. 기록항목의근거ref·판단담당/이유/출처는선언일뿐실제승인/Agent전달아님, 기존서버검증/준비원문/다운로드유지다. 새API/schema/저장/권한/키/서비스/실Agent/거절SQL0, 직접영향TDD/단일UI/한정정적1회만진행한다.
+
 - **FN13 준비·선택bytes·ACK 비교 실제 API 연결 / Main 어울(2026-10-20)**:30842b9b exactGit/clean·PG15.18/image594290e9·기존59SQLchecksum에서 실제 HUMAN/확정임무GET→현황준비POST→UTF8선택bytes명시검사→보관빈ACK API/Web비교1PASS2048.15042ms(exit0)다. 잘못된임무hash409/외부사용자404·query400/조회회수404·5표행수조회불변/5guardhash불변, checkpointDB쓰기0·local/ACKnull·current/readyfalse다. 새모드준비중 조율JS괄호구문오류1은실행0/자원추가변경0으로즉시정정했고 제품실패와분리한다.
   전용PGe53053cc/networka09efd5d·exactGit경로의ID/label/image/mount[]/port{}·owner/link/process를확인한뒤회수했고독립등록3자원잔여0/정식PGexited·started/finished/restart0불변이다. 합성원문2파일/5dir는finally정리·closeFailures0/rootCleanupFailedfalse다. 이것은격리API/consumer검증이지 served/TLS·양성관측/실파일/OS·회수/재개·FN13전체완료가아니다. 거절된0029 source/정식DB·서비스/키·실정책/실Agent변경0/미등록후보5파일미게시는유지한다. 다음은항목별증거와판단요청담당/사유/출처의상세입력이며텍스트변경시원래ref를자동재결박하지않고명시재선택을요구한다.
 
