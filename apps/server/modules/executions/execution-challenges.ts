@@ -8,6 +8,8 @@ import { executionChallengeRequestBytes, executionProofBytes, verifyExecutionCha
 
 interface Scope {mode:'EXECUTION'|'RECOVERY';projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:VersionRef;credentialGeneration:number}
 interface Entry {ref:VersionRef;snapshot:{sequence:number;binding:any;request:any;requestHash:string;publicChallenge:any;previousRef:VersionRef|null;consumption:null|{proofHash:string;resultRef:VersionRef;consumedAt:string}}}
+export type SyntheticChallengeScope=Scope;
+export type SyntheticChallengeEntry=Entry;
 /** 이 port는 같은 grant를 잠그고 read·result·append·rollback을 한 transaction에서 처리해야 한다.
  * 현재 P1에는 합성 구현만 주입한다. 실제 SQL/현재 HUMAN·host 제공자 없이 HTTP/실제 실행에 연결하지 않는다.
  */
