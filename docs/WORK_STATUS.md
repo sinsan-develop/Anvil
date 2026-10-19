@@ -2,6 +2,16 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN13 보관 관측/ACK 조회 source 검증 / Main 어울(2026-10-20)**: OBSERVATION_JOURNAL 화면 부재 RED→1PASS2.5초, build0(205modules)/type0, 직접8PASS1527.5401ms다. 기존 FN08 원장8을 포함한 앞10PASS와 구별한다. 새단위 독립 정적1회 C0/I0/M0이며 실제PG양성행/동시append·현재권한/공급자/OS/회수 진위는 판단유보다. DB공백·ACKnull/localnull의 실제 읽기만 다음 격리QA로 확인한다. 최종diff의 공백2개는 비의미 정리, integration runner 편집 첫apply_patch는 같은줄 중복hunk로 불일치/변경0→단일hunk로 수정했다. 기존 저장후보5파일은 미게시/미등록으로 보존하고0029 source거절은 미해제다. 종료수집 뒤 UI결과1파일/build exact정리·별도부재0을 확인했다. 서버저장/served·전체FN13 완료 주장은 없다.
+  신규 WSL 격리QA 사전등록: /home/daon/deploy/anvil-v3-fn13-observation-read-qa-01, anvil-v3-fn13-observation-read-pg-01, anvil-v3-fn13-observation-read-net-01, DB anvil_v3_fn13_observation_read_qa_01; owner AV3_FN13_OBSERVATION_READ_QA/instance observation-read-01/run observation-read-20261020-01·uid1000 daon. 기존 pinned PG15 image594290e9와 Node24.21 hash7fde7b8a만, 새빈 Git exact 게시SHA·기존59SQL, tmpfs512MiB/internalnetwork·hostport/volume0, 수명10분·Node90초/외부110초. 원제출→역사실행→빈관측/ACK없음 API/Web·권한거절·5표조회불변/5guardhash만 검증하며 양성행주입/실Agent/OS/정식DB·서비스/권한·키변경0이다. 생성직전 부재/realpath/link/owner/image/daemon·exactSHA를 재확인하고 성공·실패 모두 ID/label/image/mount/port/경로/process 일치 후 등록자원만 회수·별도잔여0을 확인한다.
+
+- **FN13 보관 관측/ACK source TDD / Main 어울(2026-10-20)**: 새 journal시험 최초 await-in-sync 구문오류1은 시험만수정→새2RED172.8024ms, 기존 검증을 side-effect없는 inspect로분리해 신규2+직접영향FN08기존8=10PASS238.7901ms/type0다. 검증된 원제출/역사 START tuple에서 단일 SQL snapshot으로 원장·ACK를 읽는 제공자2RED→2PASS443.034ms. 새조회route404 RED 뒤 bearer실행credential의 기존 실제거절401을403으로잘못기대한 시험1을 정확401로교정했다(인증허용/기준완화0). Web미구현2RED→직접4PASS1294.1508ms이며 ACKalias/fixtureliteral 타입은 guard와시험nonnull만 보완해type0다. 보관합성주장/ACKhash·순번/공백만, localSequence null·현재OS/실권한/회수/완료·재개false유지다. 실제SQL/PG/served는 아직미검증이다.
+  신규 OBSERVATION_JOURNAL 단일browser는 기존 Main소유 apps/web/dist와 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01·전용Edge를 생성전부재/realpath/link 확인 후 최대30초 사용하고 종료수집 후exact정리·별도잔여0을확인한다. 기본조회0·명시ACK0/누락/local미확인·재조회중숨김/403·쓰기0만 검증한다. 새schema·정식DB/서비스/권한/키·Agent/비용0·거절SQL재시도0이다.
+
+
+- **FN13 보관 관측/ACK 조회 착수 / Main 어울(2026-10-20)**: 5ee2cc09 local/private exact·main불변, 로컬 저장후보5파일은 그대로보존한다. 읽기대조에서 기존 SyntheticPgObservationStore의 원장read가 현재grant transaction 안에만 있고 HUMAN 조회API는 없으며, ProjectResultExecutionSource는 역사 START/receipt만/관측NOT_QUERIED임을 확인했다. 다음은 기존 순번/ACK 원장 검증을 side-effect없는 읽기 함수로 분리하고 원제출의 검증된 exact 실행tuple에서 보관합성주장/ACK를 읽는 한정 제공자·UI를 TDD한다. 기존ingest/저장권한/5SQLguard를 바꾸거나 현재OS/공급자·writer회수/재개로 승격하지 않는다. 새schema/정식DB·서비스/권한·Secret/실Agent0, SQL source거절우회0이다. 실제 새 읽기계약/권한 경계가 생기면 구체근거를 PMO에 공유하고 무관작업은계속한다.
+
+
 - **FN13 선택 파일 원문 대조 source 확인 / Main 어울(2026-10-20)**: Web7PASS373.0082ms/type0/build0(203modules), 파일대조화면 부재15초timeout RED는 session_id70714의종료exit1을수집한 뒤만정리했다. 구현후 파일명시선택→대조/readonly원문·원바이트hash/비UTF8거절/앞원문숨김·작성입력비덮기1PASS3.4초다. 새단위static1회 C0/I0/M0; file요청자체403·실제PG/served/파일출처/내구성·지연경합은 미실행/판단유보다. browser 마지막403은 기존편집기 준비 요청이므로 file요청403증거로확대하지 않는다. 출처진위/서버저장·자동재개false 유지, 전체FN13완료아니다. 종료후결과2파일/build exact정리·독립잔여0, 경고보존이다. 신규SQL생성0/저장후보5파일미게시·정확승인경계는유지한다.
 
 
