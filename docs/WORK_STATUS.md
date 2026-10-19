@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND 합성 transport checkpoint / Main 어울(2026-10-19)**: 신규미구현5RED239.97ms→응답 원사실의 출처wrapper 미흡1실패/codec 타입narrowing1건을 Main이 한정보정해5PASS361.0461ms/type0다. exact수신bytes/해시/참조·책임세션/최신이해ref/소유/IDLE·최단기한을 확인한 뒤 SEND_ATTEMPTED sync→짧은1회permit→PERMIT_RECORDED sync→fresh current→고정Codex0161Codec turn/start1회→본문/handle없는원RPC provider fact를보존한다. permit/응답유실·미대응응답은UNKNOWN, 새instance/새command우회재전송0이며 원정상응답뒤새현재허가의다음명령만허용한다. 과거원결과는만료후에도읽기재조회만하고timeout뒤늦은응답도전송1회/UNKNOWN을바꾸지않는다.
+
+  직접7+고정codec23=30PASS701.2666ms·fail/skip/취소0·최종type0·diff0, 새후보한정독립C0/I0/M0다. `Final: Ruling: 정상RPC응답은provider주장일뿐업무완료/인수/소유회수가아니다 — 실제실행·결과수용과분리 — executionAuthorized/dispatchPerformed/workAccepted는false를유지한다.` store/자료/current/consume/wire는모두필수SYNTHETIC_ONLY port이고실제자료출처/최신판정·서버SENDpermit·파일sync/OS/HTTP/Agent/강제취소는아직미구현/미검증이다. 원문/credential/정식환경·외부자원변경0이며 전체C3/Stage는부분구현, 자료수신기duplicate기한검사Minor1도미해소다. 변경은신규SEND transport/직접시험/WORK_STATUS 정확3경로이며 다음은기존검증부분inbox의실제bytes/수신ref→SEND source연결과서버SEND/STOP·회수전용선행을계속한다.
+
 - **C3 이해 검토 actual PG 핵심 검수 checkpoint / Main 어울(2026-10-19)**: 원래제품guard의 Git26050e1e54bbd432af009d9901db08df82c681d2/new0019 SHA5FFC3EE4DB2FC53614794E6F2D1F3CEC81B48548E2237259307E5C17BAE14008을 새빈QA04에서 검수했다. PG50a5abdf09af9f1a9f984326bf9755d90a8dd7a840375e64f96abbcbda038c53/instance45f91e06-b780-45dc-8f39-3e3571fecafc, internal network9b5149a34a39e8a829e6bb4c0e9655b9231ce4e3653e28eafdf7d45c735ecebd·hostport/bind/volume0·tmpfs256MiB·PG15 image594290e9…이며54DDL COMMIT·빈초기상태를 실제확인했다. 비관리자app의실제HUMAN로그인/명시정책으로6항목저장·동일명령원결과/이력조회·뒤부적합의옛수용차단·동시2요청순번1~4·INSERT전후2실패의명령/검토함께rollback·app3직접DML거절·검토없는command-only COMMIT거절·정확재계산hash의숫자/객체reason4DML음성·동일trigger의타연산DELETE rowCount1/검토DELETE거절·source격리시수용재사용거절을확인했다. marker C3_UNDERSTANDING_ACTUAL_PG_SYNTHETIC_SOURCE_SAVE_REPLAY_LATEST_CONCURRENT_ROLLBACK_DIRECT_DENY_REVERSE_REASON_DELETE_VERIFIED/exit0이다.
 
   최초7dfd51f의42601 및f827d30의저장42501/진단실패는과거실패로보존한다. 독립첫C0/I2/M0는Main보정·실제reason/DELETE회귀로다뤘으며독립재리뷰C0/I0으로바꾸지않는다. 신규unit/file계약8PASS418.1436ms/type0, 기존0017/0018hash불변·정식0019적용0이다. 진단guard변형은QA03/helper진단의한정새DB뿐이며이번VERIFY에서는0이다.
