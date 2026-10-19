@@ -34,7 +34,7 @@ export class SyntheticResultReworks {
  }
  async requestRework(rawScope:unknown,reworkId:unknown,rawInput:unknown):Promise<SyntheticResultRework>{
   if(!recordV1(rawScope,['projectId','assignmentRef','executionRef'])||!uuidV1(rawScope.projectId)||!refV1(rawScope.assignmentRef)||!refV1(rawScope.executionRef)||!uuidV1(reworkId))fail('RESULT_REWORK_SCOPE_INVALID');const scope=cloneV1(rawScope) as ResultEvidenceScope,input=readInput(rawInput);
-  try{return await this.#await(()=>this.store.transaction(scope,async tx=>{
+  try{return await this.#await(()=>this.store.transaction(cloneV1(scope),async tx=>{
    const initial=await this.#current(tx,scope,input),submission=readSubmittedResultRecord(await this.#await(()=>tx.readResult(cloneV1(input.resultRef))),scope,input.resultRef.id,initial.now);if(!same(submission.ref,input.resultRef))fail('RESULT_REWORK_RESULT_MISMATCH');
    const review=readSyntheticResultReviewRecord(await this.#await(()=>tx.readReview(cloneV1(input.reviewRef))),scope,input.reviewRef,initial.now),r=review.snapshot;
    if(!same(r.input.resultRef,input.resultRef)||r.input.outcome==='ACCEPTED'||Date.parse(r.reviewedAt)<Date.parse(submission.snapshot.submittedAt))fail('RESULT_REWORK_REVIEW_MISMATCH');

@@ -64,7 +64,7 @@ export class SyntheticResultReviews {
   if(!recordV1(rawScope,['projectId','assignmentRef','executionRef'])||!uuidV1(rawScope.projectId)||!refV1(rawScope.assignmentRef)||!refV1(rawScope.executionRef)||!uuidV1(reviewId))fail('RESULT_REVIEW_SCOPE_INVALID');
   const scope=cloneV1(rawScope) as ResultEvidenceScope,input=readInput(rawInput);
   try{
-   const result=await this.#await(()=>this.store.transaction(scope,async tx=>{
+   const result=await this.#await(()=>this.store.transaction(cloneV1(scope),async tx=>{
     const initial=await this.#current(tx,scope,input),raw=await this.#await(()=>tx.readResult(cloneV1(input.resultRef))),submission=readSubmittedResultRecord(raw,scope,input.resultRef.id,initial.now);
     if(!same(submission.ref,input.resultRef)||!same(submission.snapshot.manifest.baselineRefs,initial.value.criteria.snapshot.baselineRefs))fail('RESULT_REVIEW_SUBMISSION_BINDING_INVALID');
     const criteria=initial.value.criteria.snapshot.items,manifest=submission.snapshot.manifest;

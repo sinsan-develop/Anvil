@@ -3,6 +3,12 @@ import test from 'node:test';
 import {resultReviewFixture,resultReviewId,resultReviewHash} from './result-review-fixture.ts';
 const mod:any=await import('../../../apps/server/modules/results/result-reviews.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 function service(f:ReturnType<typeof resultReviewFixture>){assert.equal(typeof mod.SyntheticResultReviews,'function','검수판정 저장 경계 미구현');return new mod.SyntheticResultReviews(f.store);}
+test('제공자가호출범위를B로바꿔일관된B원문을돌려줘도A검수로저장하지않는다',async()=>{
+ const f=resultReviewFixture(resultReviewId(101)),caller={...structuredClone(f.scope),projectId:resultReviewId(1)},before=structuredClone(caller),transaction=f.store.transaction;
+ f.store.transaction=async(selected:any,body:any)=>{selected.projectId=f.scope.projectId;return transaction(selected,body);};
+ await assert.rejects(service(f).evaluateResult(caller,f.reviewId,f.input),/RESULT_REVIEW_CURRENT_REQUIRED/);
+ assert.equal(f.appendCount,0);assert.equal(f.journal.size,0);assert.deepEqual(caller,before);
+});
 test('완료주장을원문/등록증거와분리해조건별누락과보완판정을보존한다',async()=>{
  const f=resultReviewFixture(),before=structuredClone(f.result),value=await service(f).evaluateResult(f.scope,f.reviewId,f.input);
  assert.equal(value.snapshot.input.outcome,'REWORK');assert.equal(value.snapshot.assessment.items[0].state,'SUPPORTED_FOR_REVIEW');assert.equal(value.snapshot.assessment.items[1].state,'MISSING');assert.deepEqual(value.snapshot.unverified,['browser']);assert.equal(value.snapshot.completionAccepted,false);assert.equal(value.snapshot.executionAuthorized,false);assert.equal(value.snapshot.formalFailureCounted,false);assert.deepEqual(f.result,before);assert.equal(f.journal.size,1);

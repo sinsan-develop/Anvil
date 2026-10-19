@@ -4,6 +4,12 @@ import {resultReworkFixture} from './result-rework-fixture.ts';
 import {resultReviewHash,resultReviewId} from './result-review-fixture.ts';
 const mod:any=await import('../../../apps/server/modules/results/result-reworks.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 function service(f:any){assert.equal(typeof mod.SyntheticResultReworks,'function','원결과 보완 연결 미구현');return new mod.SyntheticResultReworks(f.store);}
+test('제공자가호출범위를B로바꿔일관된B검수를돌려줘도A보완으로저장하지않는다',async()=>{
+ const f=await resultReworkFixture(resultReviewId(101)),caller={...structuredClone(f.scope),projectId:resultReviewId(1)},before=structuredClone(caller),transaction=f.store.transaction;
+ f.store.transaction=async(selected:any,body:any)=>{selected.projectId=f.scope.projectId;return transaction(selected,body);};
+ await assert.rejects(service(f).requestRework(caller,f.reworkId,f.input),/RESULT_REWORK_CURRENT_REQUIRED/);
+ assert.equal(f.appends,0);assert.equal(f.journal.size,0);assert.deepEqual(caller,before);
+});
 test('부족조건만원결과/검수/같은단계세션에연결하고합격조건은보존한다',async()=>{
  const f=await resultReworkFixture(),before=structuredClone(f.review),r=await service(f).requestRework(f.scope,f.reworkId,f.input);
  assert.deepEqual(r.snapshot.originalResultRef,f.result.ref);assert.deepEqual(r.snapshot.reviewRef,f.review.ref);assert.deepEqual(r.snapshot.missingItems,['browser']);assert.deepEqual(r.snapshot.preservedItems,['unit']);assert.deepEqual(r.snapshot.remainingMissingItems,[]);assert.deepEqual(r.snapshot.stageSessionRef,f.basis.stageSessionRef);assert.deepEqual(r.snapshot.sourceScopes,f.input.sourceScopes);assert.equal(r.snapshot.status,'REWORK_ASSIGNMENT_DRAFT');for(const flag of ['executionAuthorized','dispatchPerformed','formalFailureCounted','completionAccepted'])assert.equal(r.snapshot[flag],false);assert.deepEqual(f.review,before);assert.equal(f.journal.size,1);

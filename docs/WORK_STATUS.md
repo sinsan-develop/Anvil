@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 검수·보완 범위 공유 결함 보완 / Main 어울(2026-10-19)**: 기준8ba4062e·codex/av3-stage-b local/private exact에서 독립 원검토 C0/I1/M0를 인수했다. evaluateResult/requestRework가 내부 기대 scope를 provider에 같은 객체로 전달해 A→B 변조 후 일관된 B 자료를 수락하는 결함을 Main이 재현했다. 새 음성2 RED314.8024ms(거절 누락)→transaction에는 deep clone만 전달→직접15 PASS633.4373ms·인접 evidence/submission-store12 PASS289.3191ms·type0·diff check0이다. caller A 보존/append0을 확인했으며 원검토 이력은 독립 C0로 소급하지 않는다. 실제 DB 권한 우회가 증명된 것은 아니고 실제 검수/보완 저장·사용자 화면 완료도 아니다.
+  Ruling: 스킬의 전체회귀 반복 대신 신산님 1단계 지시에 따라 변경 두 경로와 직접 소비 reader만 검증했다. 이전 실제PG/브라우저 검증은 코드 영향 없어 반복0이다. 이번 추정 경로 읽기 부재는 실제 rg 파일 목록으로 바로잡았고 자료/권한 변경0이다. 원5guard/pending·정식DB/서비스·실제Agent·계정/키 변경0, 신규QA자원0. 다음은 승인 FN12의 원문·기준·증거를 실제 저장 제공자에 연결하는 미완료 부분이며 checkpoint는 완료보고/새 승인 대기가 아니다.
+
 - **FN12 미게시 중단점 보존 / Main 어울(2026-10-19)**: 현재 대화의 최신 직접 중지/대기 지시 없음, PMO의 notLoaded/직전 interrupted 관측 원인은 미확정이다. 실제 기준7493a068·codex/av3-stage-b에서 소유dirty는이현황1문서와검수/보완source2·직접시험/fixture4 미추적파일뿐임을확인했다. 자료소실0·reset/clean/덮기0이다. 실행변수저장소가비어첫읽기가기본경로의과거Git상태/신규파일부재를반환했으나쓰기0이고,명시된기존실행위치/branch/HEAD와파일6의실재로바로잡았다. 기본경로의기존자료는보존했다.
   마지막실제출력은새검수/보완13 PASS530.0124ms·type0이다. 재개전12/type나초기5/type로대체하지않는다. 검수raw합계2MiB 누락은단독RED364.5879ms(저장거절누락)→append전/기존원문reader검사로보완했다. 보완4 RED369.895ms→직접9/12/최종13으로확인했고implicit-any1타입은명시형보완후type0이다. 독립read-only검토는요청했으나현중단점에서결과미확정이므로C0/전체완료로승격하지않는다. 합성tx commit후transport오류는이미기록될수있다는음성도구분했고저장0으로단정하지않는다.
   실제API/DB/사용자권한·Agent·서비스·원5guard/pending 변경0,새QA자원0이며이7경로만복구checkpoint로보존·게시한다. 이후원문/현재성·합격항목/영향범위·같은단계세션의독립검토/필요영향검증및실제저장제공자연결을계속한다. 정상checkpoint를새승인/PMO배정대기로종료하지않는다.
