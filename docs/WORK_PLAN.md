@@ -145,7 +145,7 @@
 | FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 부분 구현·내부 SYNTHETIC_ONLY 후보계산27PASS/type0. 실제 상태/권한·예산/queue/Agent·served 미연결 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
 | FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 부분 구현·증거/문제 분류·원문 PG 저장/조회·분리 COMMIT/재해시 음성, HTTP/UI05 source·새 목록 격리PG→Web소비 확인. 검수/보완·정식 DB/Agent·전체 선행은 미완료 |
-| FN13 | 체크포인트·중지·재개 | C | FN08,FN09,FN11 | FN08,FN09,FN11 | 부분 구현·현황 준비/API/UI05·다운로드/선택파일대조·관측/파일/시험/항목근거/판단 상세입력·빈App입력 명시복원. 직접영향25PASS/type/build·복원/비교browser2PASS·한정정적C0/I0/M0. 보관빈ACK 실제격리API/Web1PASS/QA0. 실제 불변서버저장·양성관측/상태대조/실제중지·회수/재개·served/인수 미완료 |
+| FN13 | 체크포인트·중지·재개 | C | FN08,FN09,FN11 | FN08,FN09,FN11 | 부분 구현·현황 준비/API/UI05·다운로드/선택파일대조·상세입력·빈App입력 명시복원·보관ACK/중지이력 조회. 기존 직접25PASS/type/build·복원/비교browser2PASS. 중지후 새SEND·queued선택·직접START/SEND permit·SEND자료 current 차단을 기존59SQL 격리PG에서 확인(각1PASS/QA0), 직접경계7PASS/type0·한정정적C0/I0/M0. 불변서버checkpoint저장·양성상태대조/실제중지·쓰기회수/안전재개·served/인수는 미완료 |
 | FN14 | 총괄/책임자 최소 손실 이전 | D | FN05,FN07,FN12,FN13 | FN05,FN07,FN12,FN13 | 시작 전 |
 | FN15 | 사람·클라이언트 제어권 | E | FN01,FN11,FN13 | FN01,FN11,FN13 | 시작 전 |
 | FN16 | 백업·반출·검증 복원 | E | FN03,FN05,FN12,FN13,FN15 | FN03,FN05,FN12,FN13,FN15 | 시작 전 |

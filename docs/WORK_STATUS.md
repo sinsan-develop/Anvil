@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **후속 경계 대조·오류 보존 / Main 어울(2026-10-20)**: 기본START자료의PG adapter를추정한execution-material-store.ts 읽기1은파일부재였으며실제목록에는execution-materials/인증추상port와SEND전용store만있다. 실제소스없이기본START자료전체까지보호됐다고확대하지않는다. UI06후속대조에서잘못된browser상위경로의rg/Get-Content/rg 총3명령파일부재를기록하고정확실재경로tests/browser/UI06/work-plan-edit.spec.ts를목록으로확인했다. 파일/ACL/권한변경0이다. TraceViewer의현재범위전환·지연조회표시경계는읽기후보이며실제DOM/부모reset대조전결함확정/수정0이다. 이번안전보완과무관한완료기능전수재실행0·계획완료율승격0이다.
+
 - **FN08/FN13 직접 소비 fence 실제 확인 / Main 어울(2026-10-20)**:1c48b935 exact새빈Git/PG15.18/image594290e9/기존59SQLchecksum에서실제합성STOP COMMIT후직접START current412·SENDpermit/자료current각503·downstream facts/basis/bytes0·8표불변을확인했다. actual1PASS2006.450645ms(exit0), 원문이력읽기/7표불변·query400/외부404/회수404/기존5guardhash불변이다. 기존서명challenge발급은합성키메모리/nonce미소비이고실허가소비·SEND/자료양성실명령·동시경합/OS·Agent/실중지/회수·정식서비스는미검증이다. scopedstatic1회C0/I0/M0·같은단위재리뷰0이다.
   QA05 PGf94b1c51/netd3d05513/등록Git literal의ID/label/image/mount[]/port{}·owner/link/process확인후exact회수·독립3자원잔여0이다. 합성원문2파일/5dir finally정리·closeFailures0/rootCleanupFailedfalse,정식PGexited/기존시각/restart0불변·후보5未게시/0029거절보존이다. 이는계획의실행단위중지후새전달소비거절일부이며단계/프로젝트전체중지·실제회수·checkpoint저장/대조/재개는미완료유지다.
 
