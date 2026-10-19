@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 합성 proof-고정페이지 checkpoint / Main 어울(2026-10-19)**: 신규pager부재4RED284.8244ms 후 시험공개키를PEM으로준4 HOST_PROOF_INVALID/383.659ms는기존DER-base64url계약으로fixture만정정해4PASS452.3473ms/type0이다. 정규화 GET 명령경로2RED164.5674ms→pager+route11PASS538.1963ms, 고정조회에원binding ref객체를넘기는누락을Main이추가1RED499.3704ms로재현한뒤cloneV1 인자복제로보정해12PASS486.6916ms다. 독립원후보C0/I1/M0도같은alias finding이며MainTDD보완을독립C0/I0로소급하지않는다. 신규declined범위의실DB순번/원자COMMIT·provider진위/transaction반환지연·HTTP/Agent는미검증이다.
+  기존nonce서명검증과현재권한/고정페이지/원결과binding을하나의필수합성tx로연결했다. 정확query/proof/등록·grant/기한/2MiB·51lookahead→50/서명cursor·유한waitMs/원ref목록고정재조회·rollback음성을검사한다. 같은proof에뒤추가행을끼워넣지않고RECOVERY polling/비합성fallback을거절한다. 기존정규화router에는명시commands port가있을때만GETcommands를열며기본HTTPlistener/실token/키/Agent를생성하지않는다. 51개START단위fixture는페이지상한의합성입력이지기존SQL이51회시작을허용한다는증거가아니다. 실제DB의불변server순번/현재HUMAN영수증·outbox/fixed조회는후속provider미완료다. 다음은기존실행기client의명령목록수신/응답내구기록연결이며이전PGQA/HUMAN시험반복0·새외부자원0이다.
+
+- **C3 서명 proof-고정 명령페이지 연결 착수 / Main 어울(2026-10-19)**: 2340d70c local/private exact·clean 뒤 cursor·역사명령검사를 실제소비하는합성 command pager를선정했다. 기존SyntheticExecutionChallenges의서명/nonce와현재권한·명령페이지/원결과binding을같은필수store.transaction에묶는다. 최초GETcommands의exact query/hash·page최대50/유한waitMs·2MiB·순번/원ref/봉투·등록·grant/현재기한을검사하고같은proof재조회는저장된동일ref목록만읽어새명령으로확장하지않는다. RECOVERY/기존token·실키/실Agent·정식DB/HTTP fallback은없다. 필수provider는불변server순번·현재영수증/outbox·정확고정조회/원자성을별도로제공해야하며P1합성fixture로이를실PG증거라하지않는다. 신규code/test RED부터진행하며외부자원/완료시험반복0이다.
+
 - **C3 polling 선행 cursor·저장명령 판독 checkpoint / Main 어울(2026-10-19)**: cursor부재4RED144.2054ms→4PASS173.1598ms/type0, 신규역사판독의첫2RED1PASS130.5131ms중음성1개는모듈부재assert도거절로보던시험문제를구체오류패턴으로강화하여3RED149.4413ms→두모듈7PASS182.2663ms/type0다. cursor 신규2파일 독립C0/I0/M0와역사판독 신규2파일 독립C0/I0/M0는각정적범위이며실제PG/키관리/HTTP·Agent나현재provider진위를판정하지않는다.
   cursor는전용purpose/domain HMAC·canonical base64url/JSON·exact프로젝트/connector/실행·세대/grant/credential세대·고정50·원기한/15분상한을검사하고RECOVERY polling을거절한다. 메모리시험key명시주입만하며실키생성/환경fallback/파일/새외부자원0이다. afterSequence는후속합성제공자의불변서버순번계약이며현재DB에해당순번이있다고주장하지않는다. 역사판독은기존queue의intent hash와나중receipt-bound envelope를분리하고서버recordID≠원HUMAN commandID·예약ref≠예산정책ref를보존한다. queuedAt검사는역사문법일뿐현재grant/HUMAN영수증·outbox/순번·전달권위검증이아니다. 이둘만으로사용자기능완료/실Agent연결을주장하지않으며다음은원proof결과/고정페이지/현재권한을같은합성tx에결박하는pager다.
 
