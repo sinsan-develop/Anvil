@@ -2,6 +2,13 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 중지 PG 후보·독립 검토·새 격리 등록 / Main 어울(2026-10-19)**: 같은 PoolClient의 명령/HELD outbox 원자 저장·실제 영수증/봉투/예약/정책 고정 조회와 신규0021의 중지 전용·역방향 COMMIT guard를 구현했다. adapter 최초4RED119.4664ms→core/store10PASS345.7132ms, hash를 모두 재계산한 음성 분리 뒤 store4PASS259.0353ms·SQL 파일계약 포함6PASS284.3219ms/type0이다. 독립 신규 C0/I0/M0는 정적 범위이며 실제SQL PASS가 아니다. 신규 QA 실행기의 고의 false→true 변조 테스트 타입 TS2322 1건은 시험 변수만 any로 명시해 type exit0; 제품 false 계약은 보존했다.
+
+  새 /home/daon/deploy/anvil-v3-c3-stop-qa-01·PG anvil-v3-c3-stop-pg-01·network anvil-v3-c3-stop-net-01·DB anvil_v3_c3_stop_qa_01만 owner AV3_C3_STOP_QA/새UUID·최대20분으로 생성 전 등록한다. exact 게시 Git/uid1000/고정 PG15 image594290e9…·daemon e3349f1d…/internal망·hostport/bind/volume0/PGdata tmpfs256MiB, 부재·realpath/nonlink/owner/image와 기존 보호PG 불변을 검사한다. 56DDL 뒤 실제 비관리자 app/HUMAN·정책의 정상/회수 중지 저장·재조회·동시·rollback·missing outbox/command-only COMMIT 거절·직접 DML·정확 hash 음성·원 grant/writer/ACK 불변을 확인한다. 실제 current/OS/Agent·HTTP/credential·정식0021은 제외하고 합성 Secret은 새DB/메모리 안에서만 사용·원문/DSN 출력0이다. 성공/실패 exact ID/label/image/mount/network/경로 identity 확인 뒤 전용 자원만 정리·독립잔여0, 기존 완료 QA 재실행0이다.
+
+
+- **C3 중지 PG 저장/조회 착수 / Main 어울(2026-10-19)**: b507482e local/private exact·clean 뒤 같은인증PoolClient로execution_commands와HELD_SYNTHETIC_ONLY중지outbox를함께저장하고허가HUMAN고정조회하는adapter/forward0021을준비한다. 명령ref는기존intenthash이며request/envelope/실제authreceipt·grant/예약/정책을분리결박한다. 기존SQL/시작graph·writer/ACK불변, 실제SQL/PG·회수credential/HTTP·OS/Agent는아직미연결이다. 저장부별도pool/transaction/fallback0·한도100건/2MiB, 새외부자원은생성하지않는다.
+
 - **C3 서버 중지 내부 checkpoint / Main 어울(2026-10-19)**: 신규4RED140.433ms→직접4PASS293.5075ms/type0, 회수kind/다른주체음성추가후직접5+기존runtime10=15PASS732.6797ms다. 독립C0/I1/신규M0의예산결박누락은Main이기존execution-commands의context.budgetRef=예약ref(정책ref가아님)를대조해보정했다. 권장된정책ref와봉투ref의동일화는적용하지않고current에별도budgetReservationRef를명시해정확봉투예약을검사한다. 첫신규필드거절247.4694ms는반례재현과분리했고,정상필드소비후봉투예약만변경한1RED258.5049ms→직접6PASS277.1032ms/type0·명령/영수증/append0음성을확인했다. 원검토를새독립C0/I0로바꾸지않는다.
 
   실제AccessRepository 인증/CSRF/OWNER·단독제어/현재명시중지정책·유한budget와grant주체/session/stopScope/currenttarget을대조하고intent→실제auth receipt→기존REQUEST_STOP 봉투→같은tx append를연결했다. TTL최대30초와모든최단기한·최종단축/freshness장벽,같은명령원결과/기한·다른hash거절/저장오류rollback을확인했다. EXECUTION의중지연산또는RECOVERY고정4연산외추가는거절한다. 요청저장/Agent응답은STOPPED나writer회수가아니며false상태를유지한다.
