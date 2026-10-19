@@ -6,6 +6,7 @@ import {publicKeyFingerprint} from '../../../apps/server/modules/connections/reg
 import {executionChallengeRequestBytes,executionProofBytes,executionTarget} from '../../../apps/server/modules/executions/execution-proof.ts';
 import {SyntheticExecutionChallenges} from '../../../apps/server/modules/executions/execution-challenges.ts';
 import {SyntheticStartReceiver} from '../../../apps/connector/runtime/execution-start-receiver.ts';
+import {SyntheticExecutionClient} from '../../../apps/connector/runtime/execution-client.ts';
 const m:any=await import('../../../apps/server/modules/executions/execution-authenticated-permits.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at='2026-10-19T12:00:00.000Z',until='2026-10-19T12:01:00.000Z';
 function fixture(){
@@ -30,7 +31,7 @@ function fixture(){
   const proof={requestId:p.requestId,...target,grantRef:ref,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');return{issued,proof,signature,raw};
  }
  const make=()=>{assert.equal(typeof m.SyntheticAuthenticatedPermits,'function');return new m.SyntheticAuthenticatedPermits(store);},run=(p:any)=>make().consume(scope,id,p.issued.ref,p.proof,p.signature,p.raw);
- return{scope,id,request,envelope,issue,make,run,state:()=>state,connections:()=>connections,fault:(s:string)=>fault=s,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString()};
+ return{scope,id,request,envelope,issue,make,run,challengeStore,signer:{transport:'SYNTHETIC_ONLY' as const,sign:async(_purpose:string,bytes:Buffer)=>sign('sha256',bytes,{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')},state:()=>state,connections:()=>connections,fault:(s:string)=>fault=s,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString()};
 }
 test('실제 P256 서명/nonce와 같은 transaction의 정확 permit 1개만 소비하고 재조회는 기한을 연장하지 않는다',async()=>{
  const f=fixture(),p=await f.issue(),before=f.connections(),[a,b]=await Promise.all([f.run(p),f.run(p)]);assert.deepEqual(a,b);assert.equal(f.connections()-before,2);assert.equal(a.permit.expiresAt,'2026-10-19T12:00:30.000Z');
@@ -58,4 +59,14 @@ test('실행기 sync된 시도→서명/nonce/서버permit→permitRef sync 뒤�
  const wire:any={transport:'SYNTHETIC_ONLY',send:async()=>{assert.equal(events[2].snapshot.state,'PERMIT_RECORDED');assert.deepEqual(events[2].snapshot.permitRef,f.state().permits[0].ref);assert.deepEqual(f.state().permits[0].snapshot.request.localAttemptRef,events[1].ref);sends++;return{transport:'SYNTHETIC_ONLY',responseRef:f.request.osOwnershipRef};}};
  const receiver=new SyntheticStartReceiver(store,authority,wire,{context:f.envelope.context as any,executorRegistrationRef:f.envelope.executorRegistrationRef,grantRef:f.scope.grantRef},()=>Date.parse(at));
  await receiver.receive(f.envelope);assert.equal((await receiver.start(f.envelope)).state,'RESPONSE_RECORDED');assert.equal(sends,1);await receiver.start(f.envelope);assert.equal(sends,1);assert.equal(f.state().permits.length,1);assert.equal(f.state().results.length,1);
+});
+
+test('내구 요청 client가 실제 서명 challenge/permit 클래스로 연결되며 서버 COMMIT 뒤 응답유실도 자동 재전송하지 않는다',async()=>{
+ for(const lost of [false,true]){
+  const f=fixture(),events:any[]=[],localStore:any={transport:'SYNTHETIC_ONLY',exclusive:async(_scope:any,fn:any)=>fn({read:async()=>({complete:true,events:structuredClone(events)}),appendAndSync:async(e:any)=>{events.push(structuredClone(e));}})};
+  const authority:any={transport:'SYNTHETIC_ONLY',current:async(v:any)=>({...v,transport:'SYNTHETIC_ONLY',checkedAt:at,expiresAt:until})};
+  const transport:any={transport:'SYNTHETIC_ONLY',challenge:(scope:any,request:any,signature:string)=>{assert.equal(events.at(-1).snapshot.state,'CHALLENGE_ATTEMPTED');return new SyntheticExecutionChallenges(f.challengeStore).issue(scope,request,signature);},perform:async(scope:any,operation:any,challengeRef:any,proof:any,signature:string,bodyRaw:string)=>{assert.equal(events.at(-1).snapshot.state,'REQUEST_ATTEMPTED');assert.equal(operation.kind,'PERMIT');const out=await f.make().consume(scope,operation.commandId,challengeRef,proof,signature,bodyRaw);if(lost)throw Error('PRIVATE_RESPONSE_AFTER_COMMIT');return out;}};
+  const make=()=>new SyntheticExecutionClient(localStore,authority,f.signer,transport,{clock:()=>Date.parse(at),timeoutMs:1000}),operation={kind:'PERMIT',commandId:f.id,bodyRaw:canonicalJson(f.request)};
+  const first=await make().execute(f.scope,operation);assert.equal(first.state,lost?'UNKNOWN':'RESPONSE_RECORDED');assert.equal(f.state().permits.length,1);assert.equal(f.state().results.length,1);assert.equal(f.state().challenges.length,2);const connections=f.connections();assert.deepEqual(await make().execute(f.scope,operation),first);assert.equal(f.connections(),connections);assert.equal(first.executionAuthorized,false);assert.equal(first.dispatchPerformed,false);assert(!JSON.stringify(first).includes('PRIVATE'));
+ }
 });
