@@ -47,6 +47,7 @@ import {ProjectResultSubmissions} from '../results/project-result-submissions.ts
 import {ProjectResultReviewSources} from '../results/project-result-review-sources.ts';
 import {ProjectResultCriteria} from '../results/project-result-criteria.ts';
 import {ProjectResultReviews} from '../results/project-result-reviews.ts';
+import {ProjectResultReworkPreparation} from '../results/project-result-rework-preparation.ts';
 import {ProjectReportedCoverage} from '../results/project-reported-coverage.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
@@ -90,6 +91,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const contexts = new ProjectContexts(new ProjectContextSources({ confirmations: assignmentConfirmations, drafts: assignments, documents, knowledge, conversations }), assignmentConfirmations);
   const connectionCandidates = new ProjectConnectionCandidates(options.repository);
   const responsibleSessions = new ResponsibleSessions(projectMethods, assignmentConfirmations, assignments, connectionCandidates);
+  const resultReworkPreparation=new ProjectResultReworkPreparation({assignments:assignmentConfirmations,results,criteria:resultCriteria,reviews:resultReviews,sessions:responsibleSessions});
+  app.post<{Params:{projectId:string};Body:Record<string,unknown>}>('/api/v1/projects/:projectId/result-reworks/prepare',{schema:{params:object({projectId:idSchema}),querystring:object({}),body:object({resultRef:{type:'object'},reviewRef:{type:'object'},responsibleBindingRef:{type:'object'},missingItems:{type:'array',maxItems:100},sourceScopes:{type:'array',maxItems:200},reason:{type:'string',maxLength:20000}})}},request=>{if(request.headers.host!==host||request.headers.origin!==options.origin)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),csrf(request),(db,actor)=>resultReworkPreparation.prepare(db,actor,request.params.projectId,request.body));});
   const executionPreparations = new ProjectExecutionPreparations(assignmentConfirmations, assignments, responsibleSessions, contexts, connectionCandidates);
   const limitPolicies = new ProjectLimitPolicies();
   const sourceRoots = new ProjectSourceRoots(options.repository),sourceRootsCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('SOURCE_ROOTS:'+value));
