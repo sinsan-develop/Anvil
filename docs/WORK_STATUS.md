@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 보완 준비 실제 PG 한정 확인 / Main 어울(2026-10-20)**: private/WSL exact2d251efcf69040632eb382eadbfbc1fbb00a72e1·clean, 새 PG c38d796aec1e3f892f07c4d9e7a74abcdfec24f61095951eb8d0666c638d8a68/network26486fdf52eaf79f273af75bd180ec6c36222aec18c3f808015ce73e95daf123·고정image594290/PG15.18·기존61SQL ID/checksum exact에서1PASS2850.340333ms(기능2502.909219),skip0·DONE다. 정상 API로 만든 내용확정 임무/등록기준/원제출/저장검수·단계역할/예약을 읽어 동일 session·선택부족/잔여·READ subset을 반환하고 준비 전후8표 행수불변/쓰기·dispatch false, 미달아닌조건/hash불일치/다른경로 및 outsider/query/회수멤버 거절·원5guard hash불변을 확인했다. 기존 검수 저장 전체음성과20건목록은 반복0이다.
+  raw2파일/5dir·해당PG/network/Git경로 exact정리 후 별도조회잔여0, 정식PG 동일fullID/image/StartedAt/FinishedAt/restart0·exited불변이다. 실제 transport는 Fastify.inject→격리PG이며 실socket/served·현재binding/OS/권한/실Agent·사용자인수나 전체FN12/UI05/Stage완료가 아니다. 다음은 준비결과를 현재 제어/별도 정책·최신 예약/정확 기준·영수증/감사에 결박해 불변 보완 초안으로 저장·재조회하는 경계이며 실제 새 임무/worker·실행·정식실패집계는 연결하지 않는다. Main이 다음 단위를 이어간다.
+
 - **FN12/UI05 보완 준비 후보·한정 검수 / Main 어울(2026-10-20)**: 고정 reader→HUMAN/CSRF same-origin 준비 API→S05 검수이력의 부족조건/같은단계 예약/허용파일 선택·잔여조건·미저장/미실행 표시를 연결했다. 원문/입력 변경·이탈/403은 앞선 초안을 숨긴다. 순수4/reader3/route1/Web3의 RED→GREEN은 위 기록대로이며 type0·로컬build0, REWORK_PREPARED missingregion RED→1PASS2.7초다. 최초 sandbox mkdir EPERM과 Vite 임시파일 open EPERM은 승인된 elevated 동일 범위에서 실행한 환경 경계로 분리하고 ACL/설정변경0이다. 신규 브라우저 결과 실패3파일/성공1파일 exact정리·각 독립잔여0·색상/500KiB경고보존이다.
   직접·인접 60개는59PASS/1FAIL1821.5502ms였고, 실패는 기존 기준선에도 있는 result-content.test.ts의 TSX 하위 import loader 누락이다. 이미 정상인 session-detail 시험의 실제 TSX 변환 방식을 같은 loader에 적용해 원문·HTML/검수 기대값 불변→해당1PASS446.6126ms다. 전체60 재실행/60동시PASS로 소급하지 않는다. 독립 준비단위 C0/I0/M0, 실제PG/권한·경합·예약/OS 현재성·served/주체전환·사람의 범위 적합성은 판단유보이며 저장·실제배정·실패집계/Agent·전체FN12/Stage완료는 미연결/미확인이다. React스킬은 기존 keyed상태/늦은요청 폐기·직접import만 적용했고 구조개편0이다.
 
