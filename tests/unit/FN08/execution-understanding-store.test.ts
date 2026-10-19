@@ -39,3 +39,6 @@ test('직접 DML도 한 실행 전체 이력2MiB 한도를 누락하지 않는�
 test('독립 검토 I1/I2: 일반 DELETE는 OLD를 반환하고 reason의 JSON 문자열 타입을 고정한다',async()=>{
  const sql=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');assert(sql.includes("IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;"));assert(sql.includes("jsonb_typeof(input->'reason') IS DISTINCT FROM 'string'"));assert(sql.includes("jsonb_typeof(item->'reason') IS DISTINCT FROM 'string'"));
 });
+test('실제 42601의 PLpgSQL IF 내 CASE 판정식은 SQL 표현식 괄호로 구분한다',async()=>{
+ const sql=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');assert(sql.includes("OR s->>'outcome' IS DISTINCT FROM (CASE WHEN"));assert(sql.includes("THEN 'ACCEPTED' ELSE 'NOT_ACCEPTED' END)"));
+});

@@ -13,10 +13,10 @@ import {ProjectUnderstandingReviews,understandingCodes} from '../apps/server/mod
 import {SyntheticPgUnderstandingStore} from '../apps/server/modules/executions/execution-understanding-store.ts';
 
 assert.equal(process.argv[2],'VERIFY');assert.equal(process.getuid?.(),1000);
-assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-01');
-assert.equal(process.env.ANVIL_C3_QA_DATABASE,'anvil_v3_c3_understanding_qa_01');
+assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-c3-understanding-qa-02');
+assert.equal(process.env.ANVIL_C3_QA_DATABASE,'anvil_v3_c3_understanding_qa_02');
 const host=process.env.ANVIL_C3_QA_HOST;assert(host&&/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(host));
-const config={host,port:5432,database:'anvil_v3_c3_understanding_qa_01',connectionTimeoutMillis:3000,statement_timeout:10000};
+const config={host,port:5432,database:'anvil_v3_c3_understanding_qa_02',connectionTimeoutMillis:3000,statement_timeout:10000};
 const admin=new pg.Pool({...config,user:'postgres',max:1}),pool=new pg.Pool({...config,user:'anvil_v3_app',max:4});
 const hash=(v:unknown)=>contentHash(canonicalJson(v));let phase='EMPTY';
 try{
