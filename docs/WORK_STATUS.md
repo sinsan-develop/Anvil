@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 제출 journal 저장 경계 후보 / Main 어울(2026-10-19)**: f1fa3679d65e25108ba5f7375338cb6ecde8c937 local/private exact·clean 뒤 원문 준비 함수를 source/합성 transaction에 연결했다. current의 exact 프로젝트/임무/실행·SUBMIT_RESULT·제출ID/manifestHash·주체/허가 영수증·30초 freshness/원기한을 전후 대조한다. 동일 ID/내용/주체 재확인은 원불변기록/시각 그대로이고 다른 내용/주체·원문hash손상은 거절한다. append 후 같은tx에서 정확원문을 다시 확인하며 모드/기한/허가 변경은 성공으로 반환하지 않는다. 모든 snapshot은 WORKER_CLAIM·출처미검증·완료/정식실패count/실행false다.
+  신규부재4 RED124.8467ms→4 PASS272.3712ms/type0 뒤 append-noop가 성공을 반환하는1 RED232.7191ms를 추가했다. 재조회 장벽 보완 뒤 직접5+소비4=9 PASS290.0685ms/type0이다. fakeMap callback 오류의 되돌림만 검증했으며 실제 SQL/권한·동시성·COMMIT/내구는 미검증이다. 특히 tx 반환 뒤 모드 변경은 Map행1이 이미 남을 수 있음을 시험하며 rollback/저장0으로 단정하지 않는다. 실제 current/원문 DB·명령/감사 제공자·HTTP/UI/Agent는 미연결이다. 신규2경로 한정 독립 정적 C0/I0/M0·재실행0이다. 실제 인증/제어·영수증/감사 제공자/SQL 유일성·동시성·COMMIT·물리내구/원문 provenance는 미판정이며  정식DB/키/서비스·외부QA/기존거절 재시도0이다. 다음 정확 단위는 원제출의 current 조회권한/정확ID·원문hash를 대조하는 읽기 경계이며 제출/조회/API·검수완료를 혼동하지 않는다.
+
 - **FN12 전체 제출 manifest 준비 / Main 어울(2026-10-19)**: b6160d9a8d454aa5ec7f5c92f0c429fb3b44a04e local/private exact·clean 뒤 내부 prepareSubmittedResult를 구현했다. 변경·명령 profile/argv/cwd/host/실행/시각/exit/원문ref·시험 기대/실제/상태/증거·기준/산출물·미실행·위험/rollback/checkpoint를 필수 구획으로 보존한다. canonical 표현/hash와 복제본이지 원 wire/file 바이트 보존이 아니다. 선언된 CONNECTOR_OBSERVED/REVIEWER_CONFIRMED를 원manifest에서 지우지 않되 최상위 WORKER_CLAIM/provenance 미검증·persisted/완료/실패count/실행false로 분리한다. 상대경로 형태만 검사하고 파일은 읽거나 실행하지 않는다. 알려진 비밀 표식/명시 민감 argv만 거절하며 완전 탐지·원문격리·실자료 안전 판정은 아니다.
   신규부재4 RED122.8648ms→직접4 PASS308.9291ms/type0, 신규2경로 독립 정적 C0/I0/M0이며 재실행0이다. 시험용 문구 이문자1건은 실행 전 한국어로 정정했다. 선언 PASS/출처/참조 진위·자료존재/current권한·실제 저장·HTTP/UI/Agent는 미검증/미연결, DB/키/서비스·외부QA/원5guard 거절 재시도0이다. 공개 API/schema를 바꾸지 않는 내부 필드 구체화이며 범위/검수 기준 완화가 아니다. 다음 정확 단위는 이 원문 후보를 소비하는 current/동일 submissionId·payload/원자 append/조회 보존의 source·합성 저장 경계이며 실제 SQL/DB 제공자는 별도 미완료다.
 
