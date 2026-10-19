@@ -2,6 +2,18 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **문서 대조 보존(2026-10-20)**:UI06 정본행은기존served01 FAIL/원API복구·02승인차단기록을포함해branch기준문구와달랐다. 예상행불일치patch1은적용전거절됐으며기존행을유지하고이번후보증거만추가했다. 이력삭제/기존served실패의PASS승격0, 다른행/다른소유변경수정0이다.
+
+- **UI06 trace계획원문 독립 한정 검토 / Main 어울(2026-10-20)**:단1회C0/I0/M1이며실제PG/served/전화면조합·부모scope전반은미판정이다. M1은현재anchor이동을지원하지않는동일원문SCREEN_REGION/본문미확인도'현재본문과다른원문참조'로표현하는문구다. 실제fullref/hash는그대로표시·자동이동/쓰기0이므로Main도Minor로유지해이월하며범위확대·동일재리뷰루프없이기록한다. 원검토를C0/I0/M0로승격하지않는다. 전체UI06/FN04/Stage완료아니다.
+
+- **UI06 trace계획원문 확인 / Main 어울(2026-10-20)**:신규소비2RED169.7066ms→2PASS225.7756ms·직접인접포함7PASS229.9788ms/type0/build220이다. 새버튼부재DOM RED 뒤첫구현실패1은fixture계획route가기본503catch-all보다앞에등록돼가려진시험준비오류였다. exact경로순서만보정해동일제품build의새3+직접인접1=4PASS6초다. 추가새TRACE_PLAN_REFRESH RED1(새선택state잔류로갱신후자동표시)→방향/refresh event에서선택만초기화→새4+직접인접1=5PASS5.8초/type0/build220으로보완했다. 기존기준완화/timeout증가/전체회귀반복0이다.
+  기존GET/hash·full planRef/정확유일taskCode의카드/시험정의/원문refs를읽고현재정확설계줄로왕복하며다른참조자동대체0·지연닫기/403숨김/쓰기0·본문보존을fixtureDOM으로확인했다. 현재상태/실행·검수합격·다른종류원문자동이동/실제DB·served/사용자인수는미검증이다. 사용한RED/실패/보완RED/GREEN결과와등록build를exact정리·독립잔여0, NO_COLOR/500kchunk경고유지다. 후보5/0029거절·정식자원불변이다.
+
+- **UI06 trace계획원문 TDD·UI등록 / Main 어울(2026-10-20)**:새API소비2RED169.7066ms후정확ref/readWorkPlan hash·유일업무/lateactive 검사를연결했다. 신규 TRACE_PLAN_TASK 시험은Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui06-trace-plan-task-01·전용Edge만생성전부재/realpath/link확인후최대30초사용한다. 새버튼→정확계획GET·원카드/시험정의·원설계줄왕복/쓰기0만fixture검사하고실제DB/served/권한/Agent·진도확정0이다. 종료exit수집뒤exact정리/독립잔여0, build/NO_COLOR경고보존이다.
+
+- **UI06 후속 선정 / Main 어울(2026-10-20)**:TraceViewer범위전환후보를App의user/client/project key→DocumentsPage의문서id/version/hash key→DesignIndexViewer의동일fullref key/cleanup과대조했다. 원UI06-TRACE-ANCHOR-01의실제fixtureDOM5PASS/지연프로젝트응답폐기기록이존재하므로결함으로확정하거나기존5건을재실행/수정하지않는다. 이번읽기중잘못추정한tests/browser/playwright.config.ts 부재1은실제root playwright.config.ts로확인·보존,실환경/ACL변경0이다.
+  다음독립미완료는설계trace의PLAN_TASK가표시만되고해당정확계획업무원문으로열리지않는점이다. 기존readTrace/readWorkPlan GET·hash검사를재사용해명시선택한full planRef/정확taskCode의카드와설계/화면refs를읽고현재정확본문참조만기존anchor로왕복한다. 수정buffer/기존원문/명령·API/schema/권한/Agent·정식PG/서비스0, 실제진도/실행가능/시험합격은추정하지않는다. 버전/hash불일치·중복업무·늦은선택교체는채택하지않는다. React스킬의선택fullref key/primitive effect 원칙을이한정읽기에적용한다.
+
 - **후속 경계 대조·오류 보존 / Main 어울(2026-10-20)**: 기본START자료의PG adapter를추정한execution-material-store.ts 읽기1은파일부재였으며실제목록에는execution-materials/인증추상port와SEND전용store만있다. 실제소스없이기본START자료전체까지보호됐다고확대하지않는다. UI06후속대조에서잘못된browser상위경로의rg/Get-Content/rg 총3명령파일부재를기록하고정확실재경로tests/browser/UI06/work-plan-edit.spec.ts를목록으로확인했다. 파일/ACL/권한변경0이다. TraceViewer의현재범위전환·지연조회표시경계는읽기후보이며실제DOM/부모reset대조전결함확정/수정0이다. 이번안전보완과무관한완료기능전수재실행0·계획완료율승격0이다.
 
 - **FN08/FN13 직접 소비 fence 실제 확인 / Main 어울(2026-10-20)**:1c48b935 exact새빈Git/PG15.18/image594290e9/기존59SQLchecksum에서실제합성STOP COMMIT후직접START current412·SENDpermit/자료current각503·downstream facts/basis/bytes0·8표불변을확인했다. actual1PASS2006.450645ms(exit0), 원문이력읽기/7표불변·query400/외부404/회수404/기존5guardhash불변이다. 기존서명challenge발급은합성키메모리/nonce미소비이고실허가소비·SEND/자료양성실명령·동시경합/OS·Agent/실중지/회수·정식서비스는미검증이다. scopedstatic1회C0/I0/M0·같은단위재리뷰0이다.
