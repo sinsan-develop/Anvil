@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 credential-current 소비 checkpoint / Main 어울(2026-10-19)**: 신규모듈부재4RED144.8285ms→4PASS150.5163ms/type0, 기존정규화router에새resolver를실제주입한합성연결포함11PASS180.4316ms다. 독립신규C0/I1/M0는마지막await뒤provider의원 checkedAt을보존하지않고조회clock으로덮는신선성오류다. 관측T/두조회T+29초/최종T+31초·기한T+120초의한정재현은5PASS1RED163.2688ms, 원관측시각을보존/최종대조하도록보정해직접·인접12PASS202.7747ms/type0이다. 원독립I1을C0/I0로바꾸거나재리뷰하지않으며router backend호출0 음성도후속추가확인했다.
+  신규resolver는token생성/발급/원문저장·키/SQL을만들지않고 digest만필수SYNTHETIC_ONLY store에전달한다. 정확내부기록hash/프로젝트·실행/credential세대/등록ref·지문/목적prefix/현재상태·유한기한과전후변경을검사하고최초최단기한을자동연장하지않는다. 반환checkedAt은실제provider관측시각이며grant/current/실DB/서명·nonce/credential발급/OS·Agent·served 권위가검증됐다는뜻이아니다. 기존router·정식환경변경0·이전PGQA재실행0·새외부자원0,후속미완료는정확저장명령의서명proof/페이지·cursor에결박한송수신연결이다.
+
+- **C3 credential 현재성 소비부 착수 / Main 어울(2026-10-19)**: PMO의7b11158f 뒤 idle 지적을 받고 같은기존branch local/private exact·clean/main불변과 WORK_PLAN FN08/P1 C3를대조해현재성callback의미구현을이어간다. 이미실측한회수QA02/HUMAN경로시험은반복하지않는다. 기존정규화router의필수credentials.current가소비할합성 resolver를추가하며, store가제공하는비밀없는digest결박기록/정확scope·세대/등록ref·지문/ACTIVEgrant·현재credential/기한을전후대조한다. plaintexttoken은조회입력에서digest로바꾼뒤저장소에전달하지않고출력하지않으며mint/파일/키/기본환경fallback·정식DB/서비스/Agent는만들지않는다.
+  내부기록은SYNTHETIC_ONLY·credentialIssued/executionAuthorized/dispatchPerformed=false이고실제인증권위가아니다. 명시된EXECUTION15분/RECOVERY5분상한·현재기한·옛등록/다른실행/회수/미확인거절과await중단축기한을직접RED→GREEN으로검사한다. 기존P1권한/범위변경이아닌필수합성제공자소비구현이며재승인/PMO다음배정대기0,새외부자원생성0이다.
+
 - **C3 HUMAN 회수 명령 연결 checkpoint / Main 어울(2026-10-19)**: 승인계약의 revokeExecutionGrant를 기존 projects/commands의 선택적 합성 service 주입에 연결했다. 기존4포트만제공하면종전4연산 schema를유지하고 회수포트가명시된경우만5번째연산을허용한다. 기존cookie/CSRF·Origin/project/idempotency·Bearer혼합거절과서비스자체HUMAN/제어/정책/DB transaction은보존한다. 기본앱/main.ts 자동주입·pool접속·키/정식서비스변경0이다. 회수응답 data/snapshot의5효과flag는각각정확false를요구해 실제회수/credential회수/종료/writer해제를꾸미지않는다.
   신규정상1RED(400≠200)/1466.8553ms→기존/신규7PASS1225.5333ms/type0, 독립신규C0/I0/M0는정확3코드/시험경로의정적판정이다. 실제HUMAN·서비스transaction/PG회수·served/브라우저/OS/Agent는이번Fastify.inject/fakebackend검수에서미판정이며이전QA02의실SQL을재실행·재검토했다고하지않는다. 기능자체의사용화면/실제Agent연결은아직미완료이고 후속credential/current 권위와송수신연결을계속한다. 원실패/기준보존·전체Stage부분구현을유지한다.
 
