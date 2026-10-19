@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { realpath } from 'node:fs/promises';
 import pg from 'pg';
+import { canonicalJson, contentHash } from '../contracts/canonical.ts';
 import { AccessRepository } from '../apps/server/modules/access/repository.ts';
 import { hashPassword } from '../apps/server/modules/access/service.ts';
 import { ProjectPolicyRepository } from '../apps/server/modules/access/project-command.ts';
@@ -69,12 +70,16 @@ try {
   await assert.rejects(first.queue.command(login.token,login.csrfToken,{...first.request,payload:{...first.request.payload,preparationRef:syntheticRef()}}),/IDEMPOTENCY_CONFLICT/);
   console.log('C2_QUEUE_ACTUAL_COMMIT_EXACT_REPLAY_NO_SECOND_RESERVATION');
   phase='ROLLBACK_GRAPH';
-  for(const fault of ['FAIL_OUTBOX','OMIT_OUTBOX','ALTER_ENVELOPE','ALTER_RESERVATION','ALTER_WRITER','ALTER_SESSION']){
+  for(const fault of ['FAIL_OUTBOX','OMIT_OUTBOX','ALTER_ENVELOPE','ALTER_RESERVATION','ALTER_WRITER','ALTER_SESSION','CURRENT_SESSION_EXPIRED','CONTROL_REVOKED']){
    const f=await setup();
    // 변경된 SQL을 실제 PG에 보내는 시험 port. 제품/제공자의 성공 값을 가짜 DB로 대체하지 않는다.
    const intercepted:any={connect:async()=>{const db=await app.connect();return{release:()=>db.release(),query:async(sql:string,params?:any[])=>{
     if(sql.startsWith('INSERT INTO anvil.delivery_outbox')){if(fault==='FAIL_OUTBOX')throw Error('QA_STORAGE_FAILURE');if(fault==='OMIT_OUTBOX')return{rows:[],rowCount:0};}
     const p=params&&structuredClone(params);
+    if(p&&sql.startsWith('INSERT INTO anvil.executions')){
+     if(fault==='CURRENT_SESSION_EXPIRED')await db.query('UPDATE anvil.auth_sessions SET idle_expires_at=clock_timestamp()-interval \'1 second\' WHERE user_id=$1 AND client_id=$2',[user,login.clientId]);
+     if(fault==='CONTROL_REVOKED')await db.query('UPDATE anvil.project_control SET revoked_at=clock_timestamp() WHERE project_id=$1',[f.project]);
+    }
     if(p&&sql.startsWith('INSERT INTO anvil.execution_commands')&&fault==='ALTER_ENVELOPE'){const s=JSON.parse(p[9]);s.envelope.context.executionGeneration=2;p[9]=JSON.stringify(s);}
     if(p&&sql.startsWith('INSERT INTO anvil.usage_reservations')&&fault==='ALTER_RESERVATION'){const s=JSON.parse(p[6]);s.claim.demand.calls=51;p[6]=JSON.stringify(s);}
     if(p&&sql.startsWith('INSERT INTO anvil.writer_claims')&&fault==='ALTER_WRITER')p[6]=JSON.stringify([]);
@@ -85,7 +90,59 @@ try {
    await assert.rejects(faulty.command(login.token,login.csrfToken,f.request),(error:any)=>fault==='FAIL_OUTBOX'?error.message==='QA_STORAGE_FAILURE':error.code==='42501');
    assert(Object.values(await queueCounts(f.project)).every(n=>n===0),fault);
   }
-  console.log('C2_QUEUE_SIX_ACTUAL_FAILURES_ROLLBACK_ZERO');
+  console.log('C2_QUEUE_EIGHT_ACTUAL_FAILURES_ROLLBACK_ZERO');
+  phase='REHASHED_NULL_TIMES';let openNullTimes=0;
+  for(const fault of ['NULL_QUEUE_TIME','NULL_FACT_TIME','NULL_RESERVATION_TIME']){
+   const f=await setup(),pending:{sql:string;params:any[]}[]=[];let buffering=false;
+   const intercepted:any={connect:async()=>{const db=await app.connect();return{release:()=>db.release(),query:async(sql:string,params?:any[])=>{
+    if(sql.startsWith('INSERT INTO anvil.commands')&&params?.[4]==='queueExecutionCommand')buffering=true;
+    if(!buffering||!sql.startsWith('INSERT INTO anvil.'))return db.query(sql,params);
+    pending.push({sql,params:structuredClone(params??[])});
+    if(!sql.startsWith('INSERT INTO anvil.delivery_outbox'))return{rows:[],rowCount:1};
+    const p=(table:string)=>pending.find(row=>row.sql.startsWith('INSERT INTO anvil.'+table+'('))!.params;
+    const c=p('commands'),r=p('authorization_receipts'),a=p('audit_events'),g=p('execution_grants'),u=p('usage_reservations'),x=p('execution_commands'),o=p('delivery_outbox');
+    const result=JSON.parse(c[14]),q=result.data.snapshot,gs=JSON.parse(g[6]),us=JSON.parse(u[6]),envelope=JSON.parse(x[9]).envelope;
+    if(fault==='NULL_QUEUE_TIME'){q.queuedAt=null;gs.plannedAt=null;envelope.issuedAt=null;}
+    if(fault==='NULL_FACT_TIME')gs.binding.checkedAt=null;
+    if(fault==='NULL_RESERVATION_TIME')us.checkedAt=null;
+    const hash=(value:unknown)=>contentHash(canonicalJson(value));
+    const reservationRef={id:u[1],version:u[2],contentHash:hash(us)};u[5]=reservationRef.contentHash;u[6]=JSON.stringify(us);
+    q.reservationRef=reservationRef;gs.binding.budgetReservationRef=reservationRef;gs.binding.checks.budget.evidenceRefs=[reservationRef];
+    gs.factHash=hash(gs.binding);gs.scopeDigest=hash({binding:gs.binding,allowedOperations:gs.allowedOperations,expiresAt:gs.expiresAt});
+    const grantRef={id:g[1],version:g[2],contentHash:hash(gs)};g[5]=grantRef.contentHash;g[6]=JSON.stringify(gs);q.grantRef=grantRef;
+    const commandRef={id:x[1],version:x[2],contentHash:hash(q)};result.data.ref=commandRef;c[14]=JSON.stringify(result);
+    const scopeHash=hash({projectId:f.project,actorId:user,clientId:login.clientId,controlGeneration:1,requestHash:c[6],policyRef:JSON.parse(c[12]),targetRef:commandRef});
+    r[5]=scopeHash;a[6]=JSON.stringify(commandRef);a[11]=scopeHash;
+    const authRef={id:r[0],version:1,contentHash:scopeHash};envelope.context.authorizationReceiptRef=authRef;envelope.context.budgetRef=reservationRef;
+    const {envelopeHash:_,...unsigned}=envelope;envelope.envelopeHash=hash(unsigned);
+    x[7]=commandRef.contentHash;x[8]=envelope.envelopeHash;x[9]=JSON.stringify({...q,envelope});x[10]=JSON.stringify(authRef);
+    o[5]=JSON.stringify({commandRef,grantRef,envelopeHash:envelope.envelopeHash});o[7]=gs.scopeDigest;
+    for(const row of pending)await db.query(row.sql,row.params);
+    return{rows:[],rowCount:1};
+   }};}};
+   const faulty=new ProjectInitialExecutionQueue(new AccessRepository(intercepted,config),f.provider);
+   try{await faulty.command(login.token,login.csrfToken,f.request);openNullTimes++;console.log('C2_REHASHED_TIME_OPEN '+fault);}
+   catch(error:any){assert.equal(error.code,'42501');assert(Object.values(await queueCounts(f.project)).every(n=>n===0));}
+  }
+  // 각각의 hash/ref/receipt까지 일관된 null graph를 검사하며 원 hash 불일치 거절로 대신하지 않는다.
+  assert.equal(openNullTimes,0,'C2_REHASHED_NULL_TIME_GUARD_MISSING');
+  console.log('C2_QUEUE_THREE_REHASHED_NULL_TIMES_REJECTED');
+  phase='UNICODE_POLICY';
+  const unicode=(await admin.query("SELECT anvil.source_read_uppercase_v1('straße.ts') fixed,upper('straße.ts') local")).rows[0];
+  assert.equal(unicode.fixed,'STRASSE.TS');
+  const ref=syntheticRef(),scope={sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'straße.ts',kind:'FILE',access:'READ',recursive:false}]};
+  const duplicate=[{...scope,targets:[...scope.targets,{...scope.targets[0],relativePath:'STRASSE.TS'}]}];
+  assert.equal((await admin.query('SELECT anvil.execution_source_scopes_valid($1::jsonb) valid',[JSON.stringify(duplicate)])).rows[0].valid,false);
+  const pid=randomUUID(),eid=randomUUID(),until=new Date(Date.now()+300000).toISOString(),at=new Date().toISOString();
+  const allow={ruleId:'ALLOW',subjectRef:{kind:'HUMAN',userId:user},operations:['authorizeExecution'],targetScopes:[{kind:'EXECUTION',projectId:pid,executionId:eid,executionGeneration:1,sourceScopes:[scope]}],disposition:'AUTO',limitPolicyRef:ref,expiresAt:until};
+  const deny={...allow,ruleId:'DENY',disposition:'DENY',targetScopes:[{...allow.targetScopes[0],sourceScopes:[{...scope,targets:[{...scope.targets[0],relativePath:'STRASSE.TS'}]}]}]};
+  assert.equal((await admin.query('SELECT anvil.execution_policy_deadline($1::jsonb,$2,$3,1,$4,\'authorizeExecution\',$5::jsonb,$6::jsonb,$7) deadline',[JSON.stringify([allow,deny]),pid,eid,user,JSON.stringify(ref),JSON.stringify([scope]),at])).rows[0].deadline,null);
+  console.log('C2_QUEUE_UNICODE_DUPLICATE_AND_DENY_REJECTED');
+  phase='CONCURRENT_QUEUE';const concurrent=await setup();
+  const concurrentResult=await Promise.allSettled([concurrent.queue.command(login.token,login.csrfToken,concurrent.request),concurrent.queue.command(login.token,login.csrfToken,{...concurrent.request,commandId:randomUUID()})]);
+  assert.equal(concurrentResult.filter(r=>r.status==='fulfilled').length,1);assert.equal(concurrentResult.filter(r=>r.status==='rejected'&&r.reason.message==='EXECUTION_WRITER_UNAVAILABLE').length,1);
+  assert(Object.values(await queueCounts(concurrent.project)).every(n=>n===1));
+  console.log('C2_QUEUE_ACTUAL_SERIALIZED_CONCURRENCY_SINGLE_WRITER');
   phase='DIRECT_MUTATION';
   for(const table of ['executions','execution_grants','execution_commands','writer_claims','usage_reservations']){
    await assert.rejects(app.query('INSERT INTO anvil.'+table+' DEFAULT VALUES'),(error:any)=>error.code==='42501');
