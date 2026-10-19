@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 검수 QA 첫 실제 실패와 정리 / Main 어울(2026-10-20)**: exact0732c5b73204a9e2a928f103d5f54fc34a25c497·clean, PG a963ff74850a6cb6c924e1afbda05ae39c91cfe04d8c49110dd8b5ef76af2dd0/network4254a0e6b74110c70fb68ed8c6a88bbdce8e5cce2014c64cad86d5f3b216bab5·고정PG15/61SQL checksum exact에서1FAIL2350.055375ms(기능1966.520346)다. 정책부재403까지 확인했으나 REVIEW_COMMIT에서 RESULT_REVIEW_INPUT_INVALID422/expected200으로 중단했다. 직접 코드 대조로 시험이 RESULT_SUBMITTED 영수증의 manifestRef hash를 저장 원제출 ref/hash로 잘못 사용한 것을 확인했다. 제품 계약/기대값 완화 없이 기존 GET results/:id의 실제 원제출ref를 별도 읽어 입력하도록 시험만 수정하고 두 hash가 다름도 명시 검사한다. 원 실패는 제품 검수 PASS로 소급하지 않는다.
+  raw2파일/5디렉터리·등록 PG/network/Git경로를 exactID/label/image/mount/port/owner/link/process 검사 후 회수했고 별도 SSH 잔여0이다. 정식PG/서비스·Agent 변경0이다. 동일 사전등록 literal 경로/자원은 생성전 부재를 다시 확인해 새 빈 ID/10분창의 보정 QA로만 재생성한다. 앞 epoch/자원ID/실행허가를 재사용하거나 미완료 검수 저장을 PASS로 승격하지 않는다.
+
 - **FN12 검수 저장 후보 독립 검토 / Main 어울(2026-10-20)**: source 단위 C0/I0/M1이다. M1은 재해시 ACCEPTED INSERT 음성의 포괄 assert.rejects가 다른 유일성/GUC 거절도 인정하는 증거 공백이다. 첫 실제 실행 전에 SQLSTATE42501과 RESULT_REVIEW_EVIDENCE_VERIFICATION_REQUIRED를 함께 요구하도록 기대를 강화했다. 새 실제 실행은 아직 미실행이며 독립 C0/I0/M0로 소급하지 않는다. 실제PG문법/직접DML/잠금·COMMIT·실환경 정책/세션·사람판단·HTTP/UI/Agent는 검토유보이고 source 직접17PASS/type0와 구별한다.
 
 - **FN12 검수 저장 source 및 격리 QA 준비 / Main 어울(2026-10-20)**: 입력3RED130.3981ms→3PASS232.8552ms(첫fixture함수 structuredClone 오류는 별도 보정), provider4RED251.8864ms→정확 ref/snapshot 전달 보정/가짜SELECT가 review ID를 command ID로 덮던 시험 어댑터 보정 후4PASS282.063ms다. 원본 입력/거절 기대는 유지했다. 신규SQL정적1RED118.8008ms→PASS, route명령 미등록400RED780.8381ms→1PASS665.5751ms, 직접17PASS1002.9356ms/type0·diff check0이다. 실제SQL/COMMIT·화면은 아직 미검증이다.
