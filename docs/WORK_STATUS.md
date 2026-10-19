@@ -2,6 +2,11 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08/FN13 직접 소비 fence TDD·QA등록 / Main 어울(2026-10-20)**:신규3RED1092.3319ms(START거절누락/SEND·자료basis실행)→직접인접포함6PASS/기존START fake1FAIL1663.9571ms→기존fake에새STOP조회false/정확tuple·query5순서를보완해7PASS1604.8592ms/type0이다. 제품3파일은기존같은tx/project잠금뒤중지helper만추가하며일반관측/역사/회수변경0이다. 실DB/서명허가소비·동시경합은아직미검증이며실Agent활성화가아니다.
+  새QA literal /home/daon/deploy/anvil-v3-fn13-stop-history-qa-05 / anvil-v3-fn13-stop-history-pg-05 / anvil-v3-fn13-stop-history-net-05 / DB anvil_v3_fn13_stop_history_qa_05; owner AV3_FN13_DIRECT_STOP_QA·instance stop-history-05·run direct-stop-20261020-05·uid1000daon이다. 생성전부재/realpath/link/owner/image/daemon확인·새빈Git exact게시SHA/pinnedPG15 image594290e9·Node24.21hash7fde7b8a·기존59SQL/tmpfs512MiB/internalnetwork/hostport·volume0/수명10분/Node90·외부110초다. 기존합성서명challenge/고정START와STOP보관뒤직접START/SEND/자료current의거절·downstream0·8표불변만확인한다. SEND/자료의양성실명령/자료준비는이번DB시험대상이아니며가짜DB직접인접검증과구분한다. 키는메모리QA만/실credential·nonce소비/키파일/Agent·OS·정식DB/서비스·0029변경0이다. 종료ID/label/image/mount/port/경로owner/link/process대조후exact정리·독립잔여0이다.
+
+- **FN08/FN13 직접 소비 경계 착수 / Main 어울(2026-10-20)**:6accf213 local/private exact·main불변이다. 기존선택store의STOP차단만으로직접START/SEND permit store와SEND자료store의current까지보호되지는않음을source로확인했다. 각기존challenge.current의HUMAN/project동일tx잠금후정확exec/gen STOP검사를소비facts/basis·자료읽기전에추가한다. 없는중지양성/있음·조회오류·비boolean음성과동일tx rollback/소비0만좁게TDD한다. 일반challenge/관측/STOP·회수/역사읽기와schema·실서비스/키/권한·Agent0,0029거절우회0이다. 해당합성provider는실제로활성화됐다는주장이아니며기존미활성직접경계의누락보완이다.
+
 - **FN08/FN13 permit선택 실제 확인 / Main 어울(2026-10-20)**:3f64e4e1 exact새빈Git/PG15.18/image594290e9/기존59SQLchecksum에서current-only COMMIT의42501 SYNTHETIC_CREDENTIAL_CHALLENGE_REQUIRED·예약rollback을직접확인했다. QA03원인은시험선행누락이며제품/SQL변경없이기존합성P256서명challenge issue1(credentialIssuedfalse/nonceConsumedfalse)→중지전START선택허용→실제합성STOP COMMIT→같은선택503·소비facts호출0/8표불변을확인했다. actual1PASS1975.98705ms(exit0),원문이력API/Web·7표읽기불변/query400/외부404/회수404/기존5guardhash불변이다. 실nonce/permit소비·동시잠금경합·직접별도port·자료소비/OS·Agent/실중지/회수·정식서비스는미검증으로남긴다.
   QA04 PG959980a5/netbadb0c30/Git literal을ID/label/image/mount[]/port{}·owner/link/process대조뒤exact회수·독립3자원잔여0이다. 합성원문2파일/5dir finally정리·closeFailures0/rootCleanupFailedfalse·정식PGexited/기존시각/restart0불변이다. source2e96의기존scoped C0/I0/M0·시험선행보완type0을구분하고실패QA03을PASS로소급하지않는다. 후보5미게시/0029거절보존, 다음은자료/직접permit소비경계의STOP검사를계획범위안에서좁힌다.
 

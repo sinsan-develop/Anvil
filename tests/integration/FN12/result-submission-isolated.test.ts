@@ -51,6 +51,9 @@ import {SyntheticPgStopCommandStore} from '../../../apps/server/modules/executio
 import {assertNoStoredExecutionStop} from '../../../apps/server/modules/executions/execution-stop-fence.ts';
 import {ProjectExecutionInstructionQueue} from '../../../apps/server/modules/executions/execution-instruction-queue.ts';
 import {SyntheticPgPermitSelectionStore} from '../../../apps/server/modules/executions/execution-permit-selection-store.ts';
+import {SyntheticPgPermitStore} from '../../../apps/server/modules/executions/execution-permit-store.ts';
+import {SyntheticPgInstructionPermitStore} from '../../../apps/server/modules/executions/execution-instruction-permit-store.ts';
+import {SyntheticPgInstructionMaterialStore} from '../../../apps/server/modules/executions/execution-instruction-material-store.ts';
 import {SyntheticPgInstructionPermitJournal} from '../../../apps/server/modules/executions/execution-instruction-permit-journal.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {SyntheticPgChallengeStore} from '../../../apps/server/modules/executions/execution-challenge-store.ts';
@@ -59,9 +62,10 @@ import {executionChallengeRequestBytes,executionTarget} from '../../../apps/serv
 import {readStoredBudgetUsage} from '../../../apps/web/src/features/session-detail/budget-usage-api.ts';
 const checkpointCompareQa=process.env.ANVIL_FN13_CHECKPOINT_COMPARE_QA==='1';
 const stopFenceQa=process.env.ANVIL_FN13_STOP_FENCE_QA==='1';
-const permitStopQa=process.env.ANVIL_FN13_PERMIT_STOP_QA==='1';
+const directStopQa=process.env.ANVIL_FN13_DIRECT_STOP_QA==='1';
+const permitStopQa=directStopQa||process.env.ANVIL_FN13_PERMIT_STOP_QA==='1';
 const stopHistoryQa=permitStopQa||stopFenceQa||process.env.ANVIL_FN13_STOP_HISTORY_QA==='1';
-const stopHistoryInstance=process.env.ANVIL_FN13_STOP_HISTORY_INSTANCE??'01';if(stopHistoryQa&&!['01','02','03','04'].includes(stopHistoryInstance)||stopFenceQa&&stopHistoryInstance!=='02'||permitStopQa&&!['03','04'].includes(stopHistoryInstance)||stopFenceQa&&permitStopQa)throw Error('FN13_STOP_QA_INSTANCE_INVALID');
+const stopHistoryInstance=process.env.ANVIL_FN13_STOP_HISTORY_INSTANCE??'01';if(stopHistoryQa&&!['01','02','03','04','05'].includes(stopHistoryInstance)||stopFenceQa&&stopHistoryInstance!=='02'||permitStopQa&&!['03','04','05'].includes(stopHistoryInstance)||directStopQa&&stopHistoryInstance!=='05'||stopFenceQa&&permitStopQa)throw Error('FN13_STOP_QA_INSTANCE_INVALID');
 const observationReadQa=checkpointCompareQa||process.env.ANVIL_FN13_OBSERVATION_READ_QA==='1';
 const budgetUsageQa=process.env.ANVIL_FN10_BUDGET_USAGE_QA==='1';
 const budgetUsageInstance=process.env.ANVIL_FN10_BUDGET_USAGE_INSTANCE??'01';if(budgetUsageQa&&!['01','02'].includes(budgetUsageInstance))throw Error('FN10_QA_INSTANCE_INVALID');
@@ -229,7 +233,15 @@ test(permitStopQa?'FN13실제PG중지후대기START의새permit선택거절/소�
     phase='PERMIT_STOP_BEFORE';const before:any=await selection.transaction(permitScope,tx=>tx.current(q.snapshot_json.envelope.commandId));assert.equal(before.record.snapshot.state,'SYNTHETIC_QUEUED');assert.equal(unusedFacts,0);cases.push('ACTUAL_CHALLENGE_CURRENT_LOCKED_START_SELECTION_BEFORE_STOP_NO_CONSUMPTION');
    }
    const saved:any=await mutate(()=>new ProjectExecutionStops(access,store).command(login.token,login.csrfToken,stopRequest));assert.equal(saved.data.status,'SYNTHETIC_STOP_STORED');assert.equal(saved.data.writerReleaseVerified,false);assert.equal(saved.data.dispatchPerformed,false);cases.push('ACTUAL_AUTH_TRANSACTION_SYNTHETIC_STOP_HELD_OUTBOX_COMMITTED_NO_DISPATCH');
-   if(selection){phase='PERMIT_STOP_AFTER';const tables=['execution_credentials','execution_challenges','execution_receipts','execution_start_permits','execution_instruction_permits','commands','authorization_receipts','audit_events'],count=async()=>Object.fromEntries(await Promise.all(tables.map(async t=>[t,(await admin.query('SELECT count(*)::int n FROM anvil.'+t)).rows[0].n]))),before=await count();await assert.rejects(selection.transaction(permitScope,tx=>tx.current(q.snapshot_json.envelope.commandId)),(e:any)=>e.message==='PERMIT_SELECTION_STORE_UNAVAILABLE'&&e.statusCode===503);assert.equal(unusedFacts,0);assert.deepEqual(await count(),before);cases.push('ACTUAL_STOP_FENCE_AFTER_CHALLENGE_CURRENT_NO_CREDENTIAL_NONCE_PERMIT_COMMAND_WRITE');}
+   if(selection){phase='PERMIT_STOP_AFTER';const tables=['execution_credentials','execution_challenges','execution_receipts','execution_start_permits','execution_instruction_permits','commands','authorization_receipts','audit_events'],count=async()=>Object.fromEntries(await Promise.all(tables.map(async t=>[t,(await admin.query('SELECT count(*)::int n FROM anvil.'+t)).rows[0].n]))),before=await count();await assert.rejects(selection.transaction(permitScope,tx=>tx.current(q.snapshot_json.envelope.commandId)),(e:any)=>e.message==='PERMIT_SELECTION_STORE_UNAVAILABLE'&&e.statusCode===503);assert.equal(unusedFacts,0);assert.deepEqual(await count(),before);cases.push('ACTUAL_STOP_FENCE_AFTER_CHALLENGE_CURRENT_NO_CREDENTIAL_NONCE_PERMIT_COMMAND_WRITE');
+    if(directStopQa){
+     phase='DIRECT_STOP_CURRENT';let downstream=0;const unused=async()=>{downstream++;throw Error('DIRECT_CONSUMPTION_MUST_NOT_RUN');},keys={transport:'SYNTHETIC_ONLY' as const,key:async()=>ephemeralSpki},start=new SyntheticPgPermitStore(pool,keys,{transport:'SYNTHETIC_ONLY',current:unused}),send=new SyntheticPgInstructionPermitStore(pool,keys,{transport:'SYNTHETIC_ONLY',current:unused},new SyntheticPgInstructionPermitJournal()),materials=new SyntheticPgInstructionMaterialStore(pool,keys,{transport:'SYNTHETIC_ONLY',current:unused},{transport:'SYNTHETIC_ONLY',readPart:unused},{transport:'SYNTHETIC_ONLY',bind:unused,read:unused});
+     await assert.rejects(start.transaction(permitScope,tx=>tx.permits.current(q.snapshot_json.envelope.commandId)),(e:any)=>e.message==='EXECUTION_STOP_REQUESTED'&&e.statusCode===412);
+     await assert.rejects(send.transaction(permitScope,tx=>tx.permits.current(q.snapshot_json.envelope.commandId)),(e:any)=>e.message==='INSTRUCTION_PERMIT_STORE_UNAVAILABLE'&&e.statusCode===503);
+     await assert.rejects(materials.transaction(permitScope,tx=>tx.materials.current(q.snapshot_json.envelope.commandId,ref.id)),(e:any)=>e.message==='INSTRUCTION_MATERIAL_STORE_UNAVAILABLE'&&e.statusCode===503);
+     assert.equal(downstream,0);assert.deepEqual(await count(),before);cases.push('ACTUAL_STOP_DIRECT_START_SEND_MATERIAL_CURRENT_REJECTED_BEFORE_FACTS_BASIS_BYTES_EIGHT_TABLES_UNCHANGED');
+    }
+   }
    if(stopFenceQa){
     phase='STOP_FENCE_NEW_SEND';const tables=['usage_reservations','execution_commands','delivery_outbox','commands','authorization_receipts','audit_events'],count=async()=>Object.fromEntries(await Promise.all(tables.map(async t=>[t,(await admin.query('SELECT count(*)::int n FROM anvil.'+t)).rows[0].n]))),before=await count();let claimCalls=0,appendCalls=0;
     const followup=new ProjectExecutionInstructionQueue(access,{transport:'SYNTHETIC_ONLY',current:async(db)=>{const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0].at.toISOString(),fact={...structuredClone(grant.binding),checkedAt:at,writerState:'OWNED' as const};return{transport:'SYNTHETIC_ONLY',scope:stopScope,grantRef:historical.snapshot.grantRef,grantKind:'EXECUTION',grantState:'ACTIVE',grantExpiresAt:grant.expiresAt,grantSubject:fact.subject,grantAllowedOperations:grant.allowedOperations,sessionBindingRef:ref,instructionRef:ref,partsRef:ref,materialManifestRef:ref,turnState:'IDLE',fact,checkedAt:at,expiresAt:grant.expiresAt};},claim:async()=>{claimCalls++;throw Error('STOP_FENCE_MUST_PRECEDE_CLAIM');},append:async()=>{appendCalls++;throw Error('STOP_FENCE_MUST_PRECEDE_APPEND');}});

@@ -8,6 +8,7 @@ import type {SyntheticChallengeScope as Scope} from './execution-challenges.ts';
 import type {SyntheticAuthenticatedMaterialStore} from './execution-authenticated-materials.ts';
 import type {SyntheticPgInstructionMaterialBasis} from './execution-instruction-material-basis.ts';
 import {executionTarget} from './execution-proof.ts';
+import {assertNoStoredExecutionStop} from './execution-stop-fence.ts';
 
 type Joint=Parameters<Parameters<SyntheticAuthenticatedMaterialStore['transaction']>[1]>[0];
 type Binding=Parameters<Joint['results']['bind']>[1];
@@ -49,6 +50,7 @@ export class SyntheticPgInstructionMaterialStore implements SyntheticAuthenticat
     const current=async(commandId:string,materialId:string)=>{
      this.#ports();const before=await challenges.current(),context:any=before.context;
      if(!Object.keys(scope).every(k=>same(context[k],(scope as any)[k]))||!isoV1(context.grantExpiresAt))return reject();
+     await assertNoStoredExecutionStop(db,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration});
      const grants=(await db.query('SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1::uuid AND id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2',[scope.projectId,scope.grantRef.id,scope.grantRef.version,scope.grantRef.contentHash])).rows;
      if(grants.length!==1)return reject();const fact=readServerExecutionFactV1(grants[0].snapshot_json?.binding),subject=fact.subject;
      const rows=(await db.query('SELECT id,user_id,client_id,credential_generation,idle_expires_at,absolute_expires_at FROM anvil.auth_sessions WHERE id=$1::uuid AND user_id=$2::uuid AND client_id=$3::uuid LIMIT 2',[subject.humanSessionId,subject.userId,subject.clientId])).rows;

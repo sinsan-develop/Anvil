@@ -6,6 +6,7 @@ import {SyntheticPgChallengeStore,type SyntheticHostKeys} from './execution-chal
 import type {SyntheticChallengeScope,SyntheticChallengeTransaction} from './execution-challenges.ts';
 import type {SyntheticPermitTransaction} from './execution-permits.ts';
 import type {SyntheticAuthenticatedPermitStore} from './execution-authenticated-permits.ts';
+import {assertNoStoredExecutionStop} from './execution-stop-fence.ts';
 type JointTransaction=Parameters<Parameters<SyntheticAuthenticatedPermitStore['transaction']>[1]>[0];
 export interface SyntheticPermitFacts{
  transport:'SYNTHETIC_ONLY';
@@ -28,7 +29,9 @@ export class SyntheticPgPermitStore implements SyntheticAuthenticatedPermitStore
  bind(client:PoolClient,scope:SyntheticChallengeScope,challenges:SyntheticChallengeTransaction):JointTransaction{
    const permits:SyntheticPermitTransaction={clock:challenges.clock,current:async(commandId)=>{
     if(this.facts.transport!=='SYNTHETIC_ONLY')throw new AuthFailure('SYNTHETIC_PERMIT_FACTS_REQUIRED',412);
-    const c=await challenges.current(),rows=(await client.query("SELECT * FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=$3 AND snapshot_json->'envelope'->>'commandId'=$4 LIMIT 2",[scope.projectId,scope.executionId,scope.executionGeneration,commandId])).rows;
+    const c=await challenges.current();
+    await assertNoStoredExecutionStop(client,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration});
+    const rows=(await client.query("SELECT * FROM anvil.execution_commands WHERE project_id=$1 AND execution_id=$2 AND generation=$3 AND snapshot_json->'envelope'->>'commandId'=$4 LIMIT 2",[scope.projectId,scope.executionId,scope.executionGeneration,commandId])).rows;
     if(rows.length!==1)throw new AuthFailure('PERMIT_COMMAND_NOT_FOUND',412);const command=rows[0];
     const grant=(await client.query('SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1 AND id=$2 AND version=$3 AND content_hash=$4',[scope.projectId,scope.grantRef.id,scope.grantRef.version,scope.grantRef.contentHash])).rows[0];
     if(!grant)throw new AuthFailure('PERMIT_GRANT_NOT_FOUND',412);
