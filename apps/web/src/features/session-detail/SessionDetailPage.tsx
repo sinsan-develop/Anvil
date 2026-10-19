@@ -3,6 +3,7 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref} from '../../shell/routes.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {readSessionDetail,type SessionDetail} from './api.ts';
+import {readAssignmentResults,readAssignmentResult,type AssignmentResults,type ResultSummary,type SubmittedResultView} from './result-api.ts';
 
 type Loaded={key:string;revision:number;value:SessionDetail|null;error:string|null};
 export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost}:{client:ApiClient;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void}){
@@ -21,8 +22,37 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
-  {shown?.value?<SessionDetailContent detail={shown.value}/>:null}
+  {shown?.value?<><SessionDetailContent detail={shown.value}/>{shown.value.confirmed?<SessionResults key={key+':'+revision} client={client} projectId={projectId} assignmentRef={shown.value.confirmed.ref} onAuthenticationLost={onAuthenticationLost}/>:null}</>:null}
  </section>;
+}
+const errorCode=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'RESULT_RESPONSE_INVALID';
+function SessionResults({client,projectId,assignmentRef,onAuthenticationLost}:{client:ApiClient;projectId:string;assignmentRef:PlanRef;onAuthenticationLost:()=>void}){
+ const [page,setPage]=useState<AssignmentResults|null>(null),[error,setError]=useState<string|null>(null),[revision,setRevision]=useState(0),[selected,setSelected]=useState<ResultSummary|null>(null),[attempt,setAttempt]=useState(0),[original,setOriginal]=useState<{key:string;value:SubmittedResultView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
+ const {id,version,contentHash}=assignmentRef,scopeKey=[projectId,id,version,contentHash,revision].join(':'),[pageKey,setPageKey]=useState(''),itemKey=selected?scopeKey+':'+selected.ref.id+':'+selected.ref.contentHash+':'+attempt:null,shown=original?.key===itemKey?original:null,currentPage=pageKey===scopeKey?page:null;
+ useEffect(()=>{let active=true;setError(null);
+  readAssignmentResults(client,projectId,{id,version,contentHash},()=>active).then(value=>{if(active&&value){setPage(value);setPageKey(scopeKey);}}).catch(cause=>{if(active){setError(errorCode(cause));setPage(null);setSelected(null);if(cause instanceof ApiError&&cause.status===401)lost.current();}});return()=>{active=false;};
+ },[client,projectId,id,version,contentHash,revision,scopeKey]);
+ useEffect(()=>{if(!selected||!itemKey||!currentPage)return;let active=true;
+  readAssignmentResult(client,projectId,{id,version,contentHash},selected,()=>active).then(value=>{if(active&&value)setOriginal({key:itemKey,value,error:null});}).catch(cause=>{if(active){setOriginal({key:itemKey,value:null,error:errorCode(cause)});if(cause instanceof ApiError&&cause.status===401){setPage(null);setSelected(null);setError('AUTH_REQUIRED');lost.current();}}});return()=>{active=false;};
+ },[client,projectId,id,version,contentHash,selected,itemKey,currentPage]);
+ return <section className="status-card" aria-label="제출 결과" lang="ko"><div className="project-toolbar"><h3>제출 결과 · 검수 전</h3><button type="button" onClick={()=>{setSelected(null);setOriginal(null);setPage(null);setError(null);setRevision(v=>v+1);}}>결과 목록 새로고침</button></div>
+  <p>제출자 주장과 실제 관측·검수는 다릅니다. 기록이 없거나 제출 상태가 COMPLETED여도 Anvil의 완료 판정이 아닙니다.</p>
+  {error?<p role="alert">{error} · 결과 조회 미확인. 이전 결과를 현재 자료로 표시하지 않습니다.</p>:!currentPage?<p role="status">정확 임무의 제출 결과 조회 중</p>:<><p>조회 시각: <time dateTime={currentPage.observedAt}>{currentPage.observedAt}</time></p>{currentPage.items.length?<ul>{currentPage.items.map(item=><li key={item.ref.id}><button type="button" aria-pressed={selected?.ref.id===item.ref.id} onClick={()=>{setOriginal(null);setAttempt(v=>v+1);setSelected(item);}}>제출 원문 {item.ref.id}</button><p>{item.submissionState} · 제출자 주장 · 검수 전 · <time dateTime={item.submittedAt}>{item.submittedAt}</time></p></li>)}</ul>:<p>확인된 제출 결과 없음 · 작업 미수행/정상/완료로 추정하지 않습니다.</p>}{currentPage.hasMore?<p>최근 20건만 조회했습니다. 더 오래된 제출 이력은 이 화면에서 아직 미연결입니다.</p>:null}</>}
+  {currentPage&&selected&&!shown?<p role="status">선택 제출의 고정 원문 조회 중</p>:null}
+  {currentPage&&shown?.error?<p role="alert">{shown.error} · 원문 미확인. 다른 제출로 대체하지 않습니다.</p>:null}
+  {currentPage&&shown?.value?<ResultContent value={shown.value}/>:null}
+ </section>;
+}
+export function ResultContent({value}:{value:SubmittedResultView}){
+ const s=value.snapshot,m=s.manifest;
+ return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
+  <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
+  <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
+  <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
+  <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
+  <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>
+  <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>산출물·diff의 실제 바이트 조회, 증거 검수·보완·중지·이전 처리는 아직 미연결입니다.</p>
+ </article>;
 }
 function Reference({label,value}:{label:string;value:PlanRef|null}){return <div><dt>{label}</dt><dd>{value?<>{value.id} · v{value.version}<br/>{value.contentHash}</>:'미연결'}</dd></div>;}
 function Tool({detail,reference}:{detail:SessionDetail;reference:PlanRef}){
@@ -51,6 +81,6 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
    {s?.preparations.length?<ul>{s.preparations.map(p=><li key={p.ref.id}><dl><Reference label="준비 원본" value={p.ref}/></dl><p>{p.snapshot.intent.mode==='WORK'?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p><p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p></li>)}</ul>:<p>확인된 실행 준비 기록 없음</p>}
    {s?.hasMorePreparations?<p>최근 20건만 조회했습니다. 이전 준비 이력은 이 화면에서 미연결입니다.</p>:null}
   </section>
-  <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>실행·변경·시험 증거 미연결</h3><p>Agent 보고·실제 관측·작업현황 파일·파일 diff·시험 결과·하위 임무는 아직 연결되지 않았습니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>중지·보완·이전의 실제 처리도 미연결입니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>
+  <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>실제 관측·증거 검수 미연결</h3><p>제출된 변경·시험 주장은 아래 결과 원문에서 확인합니다. 실제 Agent 관측·작업현황 파일·파일 diff 원본·하위 임무와 증거 검수는 아직 연결되지 않았습니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>중지·보완·이전의 실제 처리도 미연결입니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>
  </>;
 }

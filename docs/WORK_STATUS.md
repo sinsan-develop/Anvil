@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12→UI05 조회 후보 검증 / Main 어울(2026-10-19)**: 결과 목록→원문/변경·명령·시험·미실행/위험·복구 표시 source를 연결했다. server 직접10 PASS1047.1297ms, Web 직접/인접9 PASS658.5272ms/type0·최종build0(184module/323ms)이다. 첫build는sandbox .vite-temp EPERM1, CIM조회도sandbox 접근거절1이었으며 동일 명령의허용된실행으로확인했고ACL/설정변경0이다. build500KiB 경고/Playwright NO_COLOR 경고는기록하되관련없는최적화0이다.
+  독립 원검토C0/I1/M1: A→지연B→A에서이전A본문재노출, 일부음성의앞선ref불일치단락이다. Main은실제browser1 FAIL9.3초/expected0 actual1로I1을재현한후선택시원문즉시제거+조회세대를key에결박했다. 재해시음성의item/manifestRef도함께보정해목표false flag/필수형태검사까지도달시켰다. 해당browser1 PASS3.1초, write/off-origin/JS오류0,401API음성과403목록/최종A조회이전원문0이다. 독립C0로소급하지않으며실제PG목록/served HTTPS/Agent/검수·보완은미검증이다.
+  등록신규결과root는링크0·파일4 SHA256/Edge해당프로세스0확인후제거했다. 실패png/error-context·성공결과는실행기록/hash와Git시험으로재현가능하며기존browser폴더5항목은보존했다. 추정project result/assignment파일2회부재는실제modules/results·assignments로바로잡았고파일/ACL변경0이다. 다음은새목록의실제PG·인증HTTP→Web소비를새격리fixture로연결하며완료된기존SQL/재해시검사/옛회귀는반복하지않는다.
+
+- **FN12→UI05 결과 조회 연결 착수 / Main 어울(2026-10-19)**: bec53f0a clean에서 다음 선정 업무를 계속한다. 승인 FN12 제출/read·UI05 결과/원문 표시에 필요한 정확 임무 버전의 최근20 metadata GET와 기존 원문 GET 소비를 구현하며, 새 schema/실제 정책·Agent/서비스 변경은 없다. 원문 검수/실제 증거 조회·전체 이력은 미완료로 표시한다. React 지침은 고정 참조/화면 전환의 이전 응답 차단에만 적용하고 구조개편0이다. 신규 목록2 RED391.9834ms(기존4 PASS)→JSONB fixture key순서 비교 보정 후 해당 server/route10 PASS1047.1297ms, 새 route1 RED935.5734ms 이력 보존. Web API3 RED144.9552ms→3 PASS163.3174ms·본문1 RED453.1239ms→Web 직접/인접9 PASS446.1089ms, type0이다. 실제 목록 PG/served browser는 아직 미검증이며 과거 PG 제출시험을 반복하지 않는다.
+  새 UI 한정 QA 사전등록: Main 소유 D:\tmp\anvil-v3-stage-b\ui05-results-01 의 Playwright 결과만, 기존 설정의 D:\tmp\anvil-v3-stage-b\browser 내 해당 시험 소유 Edge 임시 profile만 생성한다. 로컬 기존 dependencies/Edge·apps/web/dist build를 사용하고 HTTP서버/port·CA·실계정/DB 생성0, https://localhost:3830은 합성 route fulfillment로만 소비한다. 1개 직접 영향 browser시험/15초, 실제 TLS·서버/DB·Agent 증거가 아니다. 시작 전 대상부재/link·기존 browser프로세스 대조→종료 후 해당 child/profile·신규결과 경로만 exact정리·잔여 확인, 다른 파일/프로세스 보존한다. 전체FN12/UI05/Stage 완료가 아니며 다음 기능/정상 목록 PG 검증은 계속 선정한다.
+
+
 - **FN12 실제 저장·조회/COMMIT 및 재해시 음성 확인 / Main 어울(2026-10-19)**: private/WSL exact e0dc59205fe2a71150d8bf1cf7e86992b732d9e0·clean, 신규QA02 PG1594904ed8c65a2a795991a0b1951f5c064e5eb48c21e22ddf3d8948301530bf/internal networked279a6bb0e3fd168766d13049844a52d6760a6a9c181b095823147b3a1455e8·고정image594290/PG15.18·Node24.21고정hash·59 exactSQL을 사용했다. 새연결시험1 PASS3110.907688ms(기능2710.126941ms), skip0·phaseDONE다. FN09의 실제 산출물/계획/내용확정임무와 FN08의 합성 START graph를 setup에만사용해 RESULT_SUBMITTED의원문/hash/WORKER_CLAIM·완료/실행false를 저장, 별도PG연결에서COMMIT행1과원문확인, 실제Fastify.inject GET의정확원문·동일명령재확인/추가행0을확인했다. 원요청A/재해시manifestB와필수changes누락재해시의직접 app INSERT는각정확RESULT_SUBMISSION_EXACT_RECEIPT_REQUIRED(42501)로거절됐고결과/명령/영수증/감사 전체tx행수원복을확인했다. 타사용자조회404·원5guard 정의hash전후동일이다.
   이는해당신규연결의실제PG/인증/명시정책/원자저장·in-processHTTP증거이며실제OS/source신뢰·Agent/유료호출/실socketHTTPS/servedBrowser/정식DB·UI05/08·검수/보완·전체FN12/Stage/계획완료가아니다. 원SQL C0/I2/M0의요청hash/불완전원문은Main의실제해당반증으로보완확인했으며독립재검토C0로소급하지않는다. 첫41619bc5 미도달FAIL과시험fixture 원C0/I3도보존한다. 정상회귀/validator/옛route의완료검사는반복0이다.
   시험소유 원문2파일/5dir정리·poolclose0실패, 종료후exactcontainer/network owner/image/port0/mount·sourceSHA/Gitclean/daon·내부npm symlink확인후등록QA02의PG/network/clone만제거했다. 별도조회에서QA01/02 경로/link·owner container/network·해당node시험잔여0이다. 제거한clone/의존성은같은privateGit/package-lock으로복구가능하다. 기존정식PG e6f798c3/image594290/StartedAt2026-10-18T15:25:12.085069883Z/restart0보존·서비스/DB46/relay/키·원5guard거절/pending변경0이다. 다음Main선정작업은FN12 저장결과를UI05의정확임무에연결해주장원문/미실행·검수전상태를조회하는미완료화면이며,일반재승인/PMO배정을기다리지않고진행한다.
@@ -1894,7 +1902,7 @@
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 빈소스 초안/고정 선택·직접 정의·내용 검토/별도 확정→명시 생성/단절 시 동일 명령 재확인 연결. UI02/03 fixture23, actual API/DB는 별도4 PASS | 기존 소스/문서·자료/총괄·환경·실제 UI DB 여정 |
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [1] | 기존GET 원본/적용참조·3영역/자료탐색 후보, unit8/browser5·원C0I1/Main시험보완·UI04_CONTEXT_PREP_RESULT | 실제served·DB·단계/세션·지시/Agent·시작/중지 미연결 |
-| UI05 책임자·실행 상세 | [2] | 고정 임무·판단·확정/책임 역할·예약/준비 GET 연결 후보, 직접4/인접7·type/build·합성 browser 신규1/왕복1 및 한정 검토 | 실제 served/API·DB·Agent 관측·결과/하위임무·diff/시험·중지 미연결 |
+| UI05 책임자·실행 상세 | [2] | 고정 임무·책임/준비·제출결과 최근20/원문 조회 source, 직접/인접19·type/build·합성 browser 재선택/403 음성 확인 | 새 목록 실제 PG/served·Agent 관측·하위임무/diff bytes·증거 검수/보완/중지 미연결·미검증 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
@@ -1922,7 +1930,7 @@
 | FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
-| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, PG 저장/조회·HTTP source 연결, 격리 SQL validator/무권한 음성 확인 | 정상 PG 제출/재해시 INSERT·COMMIT·검수/보완·UI05/08·정식 DB/Agent 미연결·미검증 |
+| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, e0dc5920 격리 PG 제출/분리 COMMIT·재해시 INSERT 거절 확인, HTTP·UI05 조회 source/합성 browser 연결 | 새 목록 실제 PG·검수/보완·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
 | FN15 사람·클라이언트 제어권 | [] | 단독작업/동시조회 계약 | 인수·구기기 차단·실제 권한 검수 |

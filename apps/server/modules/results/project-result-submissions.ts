@@ -46,4 +46,23 @@ export class ProjectResultSubmissions{
   if(!scope||scope.projectId!==projectId)return fail('RESULT_SUBMISSION_LEDGER_INVALID');const entry=this.#entry(row,scope,id,await this.#clock(db));await readPgResultExecution(db,entry.snapshot.scope);
   await projectMember(db,actor,projectId);return cloneV1(entry);
  }
+ /** 최근 20건의 고정 원문 참조만 반환한다. 더 오래된 이력은 이 소비 화면에서 아직 미연결이다. */
+ async list(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
+  if(!uuidV1(projectId)||!uuidV1(assignmentId)||!Number.isSafeInteger(version)||version<1)return fail('RESULT_SUBMISSION_INPUT_INVALID',400);
+  await projectMember(db,actor,projectId);
+  const assignmentRows=(await db.query('SELECT content_hash FROM anvil.assignment_versions WHERE project_id=$1 AND assignment_id=$2 AND version=$3 LIMIT 2',[projectId,assignmentId,version])).rows;
+  if(!assignmentRows.length)return fail('NOT_FOUND',404);const assignmentRef={id:assignmentId,version,contentHash:assignmentRows[0]?.content_hash};
+  if(assignmentRows.length!==1||!refV1(assignmentRef))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+  const rows=(await db.query('SELECT * FROM anvil.result_submissions WHERE project_id=$1 AND assignment_ref=$2::jsonb ORDER BY submitted_at DESC,id DESC LIMIT 21',[projectId,JSON.stringify(assignmentRef)])).rows,now=await this.#clock(db);
+  if(rows.length>21||new Set(rows.map(row=>row.id)).size!==rows.length)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+  const items=[];
+  for(const row of rows){
+   const scope=row.snapshot_json?.scope;
+   if(!scope||scope.projectId!==projectId||!same(scope.assignmentRef,assignmentRef))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+   const entry=this.#entry(row,scope,row.id,now),s=entry.snapshot;await readPgResultExecution(db,scope);
+   items.push({ref:entry.ref,manifestRef:row.manifest_ref,executionRef:scope.executionRef,submissionState:s.manifest.submissionState,submittedByRef:s.submittedByRef,submittedAt:s.submittedAt,sourceKind:s.sourceKind,evidenceProvenanceVerified:false,completionAccepted:false});
+  }
+  await projectMember(db,actor,projectId);
+  return cloneV1({projectId,assignmentRef,items:items.slice(0,20),hasMore:rows.length>20,observedAt:now});
+ }
 }

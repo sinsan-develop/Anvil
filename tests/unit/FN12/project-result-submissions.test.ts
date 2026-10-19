@@ -15,8 +15,9 @@ function fixture(){
   if(sql.includes('JOIN anvil.project_members'))return{rows:member?[{id:f.scope.projectId,archived_at:null,participation:'OWNER'}]:[]};
   if(sql.includes('FROM anvil.project_control'))return{rows:[{actor_id:actor.actorId,client_id:actor.clientId,generation:2,revoked_at:null}]};
   if(sql.includes('FROM anvil.permission_policies'))return{rows:head?[head]:[]};
+  if(sql.includes('FROM anvil.assignment_versions'))return{rows:[{content_hash:f.scope.assignmentRef.contentHash}]};
   if(sql.includes('transaction_timestamp()')||sql.includes('clock_timestamp()'))return{rows:[{at:new Date(now)}]};
-  if(sql.startsWith('SELECT')&&sql.includes('FROM anvil.result_submissions'))return{rows:row?[structuredClone(row)]:[]};
+  if(sql.startsWith('SELECT')&&sql.includes('FROM anvil.result_submissions')){if(sql.includes('assignment_ref=$2')){assert.equal(p[0],f.scope.projectId);assert.deepEqual(JSON.parse(p[1]),f.scope.assignmentRef);}return{rows:row?[structuredClone(row)]:[]};}
   if(sql.startsWith('INSERT INTO anvil.result_submissions')){assert.equal(row,null);row={project_id:p[0],id:p[1],execution_id:p[2],generation:p[3],assignment_ref:JSON.parse(p[4]),execution_ref:JSON.parse(p[5]),manifest_ref:JSON.parse(p[6]),manifest_hash:p[7],submission_state:p[8],submitted_by:p[9],client_id:p[10],command_id:p[11],content_hash:p[12],snapshot_json:JSON.parse(p[13]),submitted_at:new Date(p[14])};return{rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.commands')||sql.startsWith('INSERT INTO anvil.authorization_receipts')||sql.startsWith('INSERT INTO anvil.audit_events')||sql.startsWith('SELECT set_config'))return{rows:[],rowCount:1};
   throw Error('UNEXPECTED_QUERY:'+sql);
@@ -37,4 +38,15 @@ test('명시정책부재/권한·세션만료/중복ID·원실행불일치는저
 });
 test('다른프로젝트/멤버회수·저장hash손상은조회로노출하지않는다',async()=>{
  for(const alter of [(f:any)=>f.member(false),(f:any)=>f.row().snapshot_json.manifest.rollback='손상',(f:any)=>f.row().project_id=id(80)]){const f=fixture(),s=service();await s.submit(f.db,f.actor,f.request,{id:f.policy.id,version:1,contentHash:f.policy.content_hash});alter(f);await assert.rejects(s.read(f.db,f.actor,f.scope.projectId,f.request.targetId));}
+});
+test('정확내용확정임무의최근제출목록은원문검증후주장메타데이터만조회한다',async()=>{
+ const f=fixture(),s=service();await s.submit(f.db,f.actor,f.request,{id:f.policy.id,version:1,contentHash:f.policy.content_hash});
+ assert.equal(typeof s.list,'function','정확 임무 결과 목록 미연결');const value=await s.list(f.db,f.actor,f.scope.projectId,f.scope.assignmentRef.id,f.scope.assignmentRef.version);
+ assert.deepEqual(value.assignmentRef,f.scope.assignmentRef);assert.equal(value.projectId,f.scope.projectId);assert.equal(value.hasMore,false);assert.equal(value.items.length,1);assert.deepEqual(value.items[0].ref,{id:f.request.targetId,version:1,contentHash:f.row().content_hash});assert.equal(value.items[0].submissionState,'INCOMPLETE');assert.equal(value.items[0].sourceKind,'WORKER_CLAIM');assert.equal(value.items[0].completionAccepted,false);assert.equal(value.items[0].manifest,undefined);
+ f.row().snapshot_json.manifest.rollback='손상';await assert.rejects(s.list(f.db,f.actor,f.scope.projectId,f.scope.assignmentRef.id,1),/RESULT_SUBMISSION_LEDGER_INVALID/);
+});
+test('목록도멤버회수와다른임무원문을거절한다',async()=>{
+ const f=fixture(),s=service();assert.equal(typeof s.list,'function');await s.submit(f.db,f.actor,f.request,{id:f.policy.id,version:1,contentHash:f.policy.content_hash});
+ f.member(false);await assert.rejects(s.list(f.db,f.actor,f.scope.projectId,f.scope.assignmentRef.id,1));f.member(true);
+ f.row().snapshot_json.scope.assignmentRef.contentHash='f'.repeat(64);await assert.rejects(s.list(f.db,f.actor,f.scope.projectId,f.scope.assignmentRef.id,1));
 });
