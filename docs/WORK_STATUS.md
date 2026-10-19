@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12/UI05 diff 한정 검토(2026-10-20)**:단1회C0/I0/M0·동일재리뷰0이다. 설명에서변경'6필드'라고한오기는검토자가지적했으며실제기존계약/코드는path/kind/diffRef/beforeHash/afterHash 정확5필드이고계약변경0이다. 기존서버권한/reader전반·실파일출처/현재Git일치는미판정으로유지한다. 새API/DB/키/서비스·Agent/OS0·전체FN12/UI05완료아니다.
+
+- **FN12/UI05 변경diff 원문 확인 / Main 어울(2026-10-20)**:새결박2RED126.2601ms→2PASS146.2499ms·직접artifactAPI인접5PASS227.4521ms/type0/build223이다. 새버튼부재DOM RED→새CHANGE_DIFF와공유기존ARTIFACT_TEXT 2PASS4.3초다. 동일원제출의단일등록/v1/hash만선택GET,다른hash/없는diff차단·script/img실행0/POST0·기존재조회403부모회수확인이다. 실제Gitdiff/현재변경일치·증거출처/환경·DB/served/Agent검증은미실행이다. RED/GREEN결과와등록build를exact정리·독립잔여0·기존경고유지,거절0029/미게시후보5·정식자원불변이다.
+
+- **FN12/UI05 변경diff UI등록 / Main 어울(2026-10-20)**:새ref결박2RED126.2601ms후정확단일등록/v1/hash·형식검사만연결했다. CHANGE_DIFF는Main소유 apps/web/dist·D:\tmp\anvil-v3-stage-b\ui05-change-diff-01·전용Edge를생성전부재/realpath/link확인후최대30초사용한다. 등록exactdiff1GET·hash다름/없음버튼차단·원문escaped/HTML실행0·POST0만fixture검사하며실제파일변경일치·출처진위/DB/served/Agent0이다. 종료exact정리/독립잔여0·기존경고유지다.
+
+- **FN12/UI05 변경diff 직접원문 착수 / Main 어울(2026-10-20)**:155577ac local/private exact·main불변이다. 원제출changes.diffRef는JSON표시뿐이며기존등록artifact텍스트GET와직접선택이연결되지않았다. exactdiffRef가동일원제출artifactRefs에단일ID/v1/hash로등록된경우에만기존readResultArtifactText로명시조회한다. 다른ref/버전·없음/중복은미확인/버튼차단·최신/다른파일대체0이다. path는제출자의표시문자열이지OS경로입력/파일읽기·실diff일치증명이아니다. 새API/schema/권한/키/정식서비스/Agent0, 원증거/미확인보존이다. 앞FN06 보고폴더추정읽기os2 1은실제파일목록과분리해보존하고없는경로를반복하지않는다.
+
 - **FN12/UI05 시험보고 탐색 확인 / Main 어울(2026-10-20)**:새형식검사2RED158.255ms→2PASS128.099ms,선언근거보존추가/직접API인접포함6PASS189.3504ms/type0/build222이다. 새UI부재RED→첫구현실패1은기존미실행JSON과전체JSON에같은문구가있어selector가중복된시험오류였고정확미실행JSON원문으로시험만한정해동일productbuild TEST_REPORTS1PASS3.3초다. 직접인접COMPLETION_GAP1PASS2.8초로완료주장/별도미실행구분유지를확인했다. 타입오류1은assert.deepEqual후새시험배열인덱스nonnull한정으로고쳤으며제품타입/검사기준완화0이다.
   단1회scopedstaticC0/I0/M0·동일재리뷰0이다. 정상5상태/중복·원순서/검색/부적합행index미확인·script비실행·원JSON/미실행보존/새쓰기0만확인했다. 유효근거의전체browser상세는미검증(순수시험에서선언ref/환경/시각보존·잘못된ref거절확인),실제API/DB/served·Agent/출처진위·검수/실행/완료는미확인이다. RED/실패/GREEN/인접결과와Main등록build를exact정리·독립잔여0, NO_COLOR/chunk경고유지다. 후보5미게시/거절0029/정식자원불변이다.
 
