@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **UI05 검수 원문 화면 후보 확인 / Main 어울(2026-10-19)**: 선택 제출에 ‘검수 기준 원문 조회’를 연결했다. 앞서 hash 검증한 제출/확정 임무와 새 응답의 원문·ref/hash를 다시 대조하며, 완료/검증 조건·시험 기준 미연결/환경 미정·검수 저장/보완 미연결을 구분해 표시한다. 명시 조회 전 GET0, 재조회 대기/거절 때 이전 자료를 숨긴다. UI source이며 정식 서비스 반영/실사용 가능/전체 업무 완료가 아니다.
+  새 API3 RED152.9753ms→3 PASS173.0147ms, browser1 RED8.5초(미구현 영역)→1 PASS2.1초다. 자기검토로 403 뒤 제출 본문 잔존을 추가 반증해 새 RED8.5초(expected0/actual1)→401/403/404에서 목록·선택/본문 제거→최종 browser1 PASS2.0초, 쓰기/off-origin/JS오류0을 확인했다. 실제 DB/served TLS/계정·Agent 검증이 아닌 합성 route 시험이다. 최종 type0·build0/186module211ms, 기존500KiB/NO_COLOR 경고는 보존하고 무관 최적화0이다.
+  직접/인접 unit은7 PASS/1 FAIL355.4272ms였다. 실패는 새 TSX 자식을 변환하지 못한 기존 SSR 시험 loader의 ERR_UNKNOWN_FILE_EXTENSION이며 제품 예외와 구분했다. 해당 자식도 같은 Oxc로 변환한 뒤 기존 화면/escape 기대값을 유지해 실패했던 SSR1 PASS361.4571ms·최종type0이다. 성공 총8을 한 번에 재실행한 것처럼 보고하지 않는다.
+  등록 결과 .last-run.json SHA25691D1C43004802CD49950D78EB11C8FA7D05DA8FFFFE219A8B13B2F561BC00903/상태passed·exact경로/nonlink·해당 Edge profile0 확인 후 파일1개/빈root만 제거했다. 별도 UI05_REVIEW_INDEPENDENT_RESIDUALS=0, 기존 browser5항목/사용자Edge7PID는 보존했다. 현재 API/PG·서비스·권한/Secret·원5guard/pending·Agent 변경0이다. React 지침은 읽기 상태/취소와 명시 연결에만 영향을 주었고 화면 개편0이다. 다음 Main 선정은 FN12의 텍스트 조건을 임의 추론하지 않는 고정 검수 기준/등록 증거·검수 저장 연결이며 일반승인/PMO배정 대기로 끝내지 않는다.
+
+- **UI05 검수 원문 화면 연결 착수 / Main 어울(2026-10-19)**: f63bb970에서 기존 선택 제출에만 명시 조회를 추가한다. 기존에 검증한 제출·확정 임무 원문과 응답을 exact/hash로 대조하며 문구/환경/기준 차이와 typed기준 미연결을 표시한다. 검수 저장/보완·실행 버튼·정책/schema/서비스 변경0이다. 새 API소비3 RED152.9753ms→3 PASS173.0147ms, React 지침은 scope-key/조회세대·원문즉시숨김·direct type import에만 적용하고 최적화/구조개편0이다.
+  신규 Main 소유 D:\tmp\anvil-v3-stage-b\ui05-review-sources-01 Playwright 결과와 기존 browser 임시 root의 해당 시험 소유 Edge profile만 생성한다. 기존 dependencies/Edge·로컬 apps/web/dist bundle·합성 route fulfillment만 사용하며 HTTP listener/port·실TLS/DB/계정/Agent 생성0이다. 신규 browser1/15초만, 기존 상세 browser는 반복0. 시작 전 대상부재/link·기존 browser하위목록/Edge process를 대조하고 종료 후 해당 child/profile·새 결과root만 exact정리·별도잔여0, 기존 파일/프로세스는 보존한다. 첫 로컬 build0/184module·500KiB 경고는 보존하고 현재 서비스 반영으로 보고하지 않는다.
+
 - **FN12 검수 원문 실제 PG 연결 확인 / Main 어울(2026-10-19)**: private/WSL exact54ad16f24c4464b08aacf42cbb3787ff51b1a64c·clean, 신규 PG9754f1c2042a950df3b0beaec82279924699d9a6810ee1779ea0f56ad7e77740/internal networke31d96b10a2cc4bef43793ae054d0be0e9c9567969a9e913ff849a7523d81068·image594290/PG15.18·Node24.21고정hash/npm11.19.0·59개 ID/파일checksum exact를 확인했다. 신규 source mode1 PASS2310.445757ms(기능1898.012385ms), skip0·phaseDONE다. 실제 인증 HTTP inject→PG에서 원제출/확정 임무의 정확 원문/hash·완료/검증 문구를 함께 조회하고 typed기준 미등록/기준차이/미정환경·미실행을 그대로 분리했다. 타사용자/없는결과/fallback/멤버회수 거절, 읽기 전후 result/command/receipt/audit 행수불변·원5guard hash불변이다. 기존 graph는 fixture에만 재사용했고 옛 목록20/재해시SQL 반증은 반복0이다. 후보 직접9 PASS996.5246ms/type0도 확인했다.
   원문2파일/5dir·pool close실패0, exactID/label/image/mount/port/network·Gitclean/owner/내부npm링크/해당cwd process0 확인 후 등록 신규 PG·network·Git/deps를 제거했다. 별도 FN12_REVIEW_SOURCE_INDEPENDENT_RESIDUALS=0이다. 최초 잔여조회1회는 PowerShell의 잘못된 이중문자열 확장으로 로컬 docker 명령 부재2건을 반환해 실제 조회 미실행이었다. 삭제 오류나 잔여0으로 오인하지 않고 단일 here-string으로 WSL을 다시 읽어 확인했으며 권한/설정 변경0이다. 재현 소스는 private exact SHA/lockfile에 보존된다.
   정식PG e6f798c3/image594290/StartedAt2026-10-18T15:25:12.085069883Z/restart0은 여전히 exited, FinishedAt2026-10-19T12:56:52.490883698Z/exit0/OOMfalse다. 정상 종료 원인/주체는 미확정, 이번 Main start/stop·정식DB/서비스/Secret 변경0이다. 신규 GET은 검수 원문 조회만이며 typed기준/증거 registry·검수/보완 저장·servedBrowser/Agent·전체 FN12/UI05/Stage/계획 완료는 아니다. 다음은 기존 UI05의 선택 제출에 해당 읽기 결과를 연결하고 이후 저장 경계를 계속한다.
@@ -1934,7 +1942,7 @@
 | UI02 프로젝트 생성·기준선 | [2] | Main 어울. 빈소스 초안/고정 선택·직접 정의·내용 검토/별도 확정→명시 생성/단절 시 동일 명령 재확인 연결. UI02/03 fixture23, actual API/DB는 별도4 PASS | 기존 소스/문서·자료/총괄·환경·실제 UI DB 여정 |
 | UI03 방법론 흐름도 | [2] | Main 어울. 공간형·노드/문서/조건 편집·공통/초안 검토·확정, 첫 프로젝트 고정 적용 snapshot을 실제 API/DB 확인. 전체 UI DB 여정 미검증 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 검수 |
 | UI04 프로젝트 주 작업 | [1] | 기존GET 원본/적용참조·3영역/자료탐색 후보, unit8/browser5·원C0I1/Main시험보완·UI04_CONTEXT_PREP_RESULT | 실제served·DB·단계/세션·지시/Agent·시작/중지 미연결 |
-| UI05 책임자·실행 상세 | [2] | 고정 임무·책임/준비·제출결과 최근20/원문 조회 source, 직접/인접19·type/build·합성 browser 재선택/403 음성,9735bff1 실제 격리PG/인증HTTP→Web소비1 PASS | 정식served·Agent 관측·전체이력·하위임무/diff bytes·증거 검수/보완/중지 미연결·미검증 |
+| UI05 책임자·실행 상세 | [2] | 고정 임무·책임/준비·제출 최근20/원문과 검수기준 원문 조회 source. 54ad16f2 검수source 실제PG1 PASS, 신규 API3/합성browser1·타입/빌드 확인 | 정식served·Agent 관측·전체이력·하위임무/diff bytes·typed기준/증거 검수 저장·보완/중지 미연결·미검증 |
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | UI07 설계 변경·영향·역사 | [] | S07 정적 시안 | 전후/영향·승인·계획개정·재개·과거근거 조회 |
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
@@ -1962,7 +1970,7 @@
 | FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [] | 진행모드/그래프 설계 | 실제 단계전이·승인지점·슬롯/대기열 |
 | FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
-| FN12 결과·검증·이상 판정 | [2] | Main 어울. 원문/문제 분류·고정 조건/증거 수집, e0dc5920 격리 PG 제출/COMMIT·재해시거절,9735bff1 목록PG/HTTP→Web소비·UI05 source/합성 browser | 검수판정/보완·UI08·정식 DB/Agent/served 미연결·미검증 |
+| FN12 결과·검증·이상 판정 | [2] | Main 어울. 제출/목록 실제PG, 합성 검수/보완15·범위변조거절 보완. 54ad16f2 원제출+확정임무 검수source 실제PG1 PASS·UI05 조회후보 | typed기준/등록증거·검수/보완의 실제 저장·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [] | 상세현황/복구 계약 | 현재지점 파일·정지확인·옛권한/중복 차단 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
 | FN15 사람·클라이언트 제어권 | [] | 단독작업/동시조회 계약 | 인수·구기기 차단·실제 권한 검수 |

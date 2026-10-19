@@ -9,6 +9,29 @@ const definition={taskRef:{planRef:ref,taskCode:'FN09',applicationRef:ref,nodeId
 const snapshot={definition,reason:'고정 원문',previousRef:null,basis:{planRef:ref,applicationRef:ref,designRef:ref,taskCode:'FN09',nodeId:'개발',taskCardHash:'b'.repeat(64)},readinessIssues:[],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false},draftRef={id:aid,version:1,contentHash:hash(snapshot)},draft={projectId:pid,ref:draftRef,snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:at};
 const cs={draftRef,definition,reviewRefs:[ref],reason:'과거 내용 확정',confirmedBy:{kind:'HUMAN',userId:pid},confirmedAt:at,contentConfirmed:true,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false},cr={id:aid,version:1,contentHash:hash(cs)},confirmed={projectId:pid,ref:cr,snapshot:cs,observedAt:at},decision={projectId:pid,draftRef,criteriaVersion:1,criteria:contentCriteria,reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:'REVIEW_REQUIRED',confirmedRef:cr,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:at},state={projectId:pid,assignmentRef:cr,roles:[],bindings:[],preparations:[],hasMorePreparations:false,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
 // 모든 응답은 합성 route fulfillment다. 실제 HTTPS/TLS·서버/DB·Agent 검증이 아니다.
+test('검수기준원문은명시조회하고재조회대기/거절때이전자료를숨기며쓰기하지않는다',async({page})=>{
+ const result=resultFixture();result.entry.snapshot.scope.assignmentRef=cr;result.entry.snapshot.manifest.assignmentRef=cr;result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);result.item.ref=result.entry.ref;result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;result.page.assignmentRef=cr;
+ const sources={projectId:pid,result:result.entry,assignment:confirmed,criteriaState:'TEXT_ONLY_NOT_MAPPED',issues:['TYPED_CRITERIA_NOT_REGISTERED','ENVIRONMENT_NOT_DEFINED'],reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false},unexpected:string[]=[],writes:string[]=[],errors:string[]=[];let sourceReads=0,release:()=>void=()=>{};
+ await page.route('**/*',r=>{unexpected.push(r.request().url());return r.abort();});await installWorkspaceBundle(page);
+ await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:pid,displayName:'합성 QA'},clientId:pid,csrfToken:'A'.repeat(43)}}));
+ await page.route('**/api/v1/projects/'+pid+'/**',async r=>{
+  const p=new URL(r.request().url()).pathname,base='/api/v1/projects/'+pid+'/';let body:any;
+  if(p===base+'assignment-drafts/'+aid+'/versions/1')body=draft;
+  else if(p===base+'assignment-drafts/'+aid+'/versions/1/decision')body=decision;
+  else if(p===base+'assignments/'+aid+'/versions/1')body=confirmed;
+  else if(p===base+'assignments/'+aid+'/versions/1/execution-preparation-state')body=state;
+  else if(p===base+'assignments/'+aid+'/versions/1/results')body=result.page;
+  else if(p===base+'results/'+result.item.ref.id)body=result.entry;
+  else if(p===base+'results/'+result.item.ref.id+'/review-sources'){sourceReads++;if(sourceReads>1){await new Promise<void>(resolve=>release=resolve);return r.fulfill({status:403,json:{code:'ACCESS_DENIED'}});}body=sources;}
+  else{unexpected.push(p);return r.abort();}return r.fulfill({json:body});
+ });
+ page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method());if(new URL(r.url()).origin!=='https://localhost:3830')unexpected.push(r.url());});
+ await page.goto('/'+sessionDetailHref(pid,draftRef));const results=page.getByRole('region',{name:'제출 결과',exact:true});await results.getByRole('button',{name:'제출 원문 '+result.item.ref.id,exact:true}).click();
+ const panel=results.getByRole('region',{name:'검수 기준 원문',exact:true});await expect(panel).toBeVisible();expect(sourceReads).toBe(0);await panel.getByRole('button',{name:'검수 기준 원문 조회',exact:true}).click();
+ await expect(panel.getByRole('heading',{name:'완료 조건 원문',exact:true})).toBeVisible();await expect(panel).toContainText('핵심 동작 확인');await expect(panel).toContainText('중요 실패 확인');await expect(panel).toContainText('시험 기준 미연결');await expect(panel).toContainText('환경 미정');await expect(panel).toContainText('검수 저장·보완 배정 미연결');
+ try{await panel.getByRole('button',{name:'검수 기준 원문 다시 조회',exact:true}).click();await expect.poll(()=>sourceReads).toBe(2);await expect(panel.getByRole('heading',{name:'완료 조건 원문',exact:true})).toHaveCount(0);release();await expect(results.getByRole('alert')).toContainText('ACCESS_DENIED');await expect(results.getByRole('article',{name:'선택 제출 원문',exact:true})).toHaveCount(0);await expect(panel).toHaveCount(0);}finally{release();}
+ expect({unexpected,writes,errors}).toEqual({unexpected:[],writes:[],errors:[]});
+});
 test('상세조회의정상표시후접근거절은앞선원문을제거하며쓰기/실행/외부요청이없다',async({page})=>{
  const unexpected:string[]=[],writes:string[]=[],errors:string[]=[];let denied=false,resultDenied=false,delaySelection=false,originalReads=0;let releaseA:()=>void=()=>{},releaseB:()=>void=()=>{};
  const result=resultFixture();result.a=cr;result.entry.snapshot.scope.assignmentRef=cr;result.entry.snapshot.manifest.assignmentRef=cr;result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);result.item.ref=result.entry.ref;result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;result.page.assignmentRef=cr;
