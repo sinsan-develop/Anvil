@@ -2,6 +2,16 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 미게시 중단점 보존 / Main 어울(2026-10-19)**: 현재 대화의 최신 직접 중지/대기 지시 없음, PMO의 notLoaded/직전 interrupted 관측 원인은 미확정이다. 실제 기준7493a068·codex/av3-stage-b에서 소유dirty는이현황1문서와검수/보완source2·직접시험/fixture4 미추적파일뿐임을확인했다. 자료소실0·reset/clean/덮기0이다. 실행변수저장소가비어첫읽기가기본경로의과거Git상태/신규파일부재를반환했으나쓰기0이고,명시된기존실행위치/branch/HEAD와파일6의실재로바로잡았다. 기본경로의기존자료는보존했다.
+  마지막실제출력은새검수/보완13 PASS530.0124ms·type0이다. 재개전12/type나초기5/type로대체하지않는다. 검수raw합계2MiB 누락은단독RED364.5879ms(저장거절누락)→append전/기존원문reader검사로보완했다. 보완4 RED369.895ms→직접9/12/최종13으로확인했고implicit-any1타입은명시형보완후type0이다. 독립read-only검토는요청했으나현중단점에서결과미확정이므로C0/전체완료로승격하지않는다. 합성tx commit후transport오류는이미기록될수있다는음성도구분했고저장0으로단정하지않는다.
+  실제API/DB/사용자권한·Agent·서비스·원5guard/pending 변경0,새QA자원0이며이7경로만복구checkpoint로보존·게시한다. 이후원문/현재성·합격항목/영향범위·같은단계세션의독립검토/필요영향검증및실제저장제공자연결을계속한다. 정상checkpoint를새승인/PMO배정대기로종료하지않는다.
+
+
+- **FN12 검수판정/보완 연결 재개 / Main 어울(2026-10-19)**: 7493a068 local/private exact·clean에서 Main이 선정한 evaluateResult/requestRework를 이어간다. PMO 재개는 새 일반 승인이나 다음배정이 아니며 checkpoint final/idle을 반복하지 않는다. 기존 제출/목록·SQL QA는 변경영향 없어 재실행0, 새Agent/정식DB/서비스·원5guard 거절/pending 변경0이다.
+  Ruling: 기존 ResultManifest와 SyntheticResultEvidence를 같은 필수 주입 tx에서 소비하는 검수journal source를 먼저 연결한다. 현재 검수자/권한·독립성·기준은 worker 입력이 아닌 서버port에서만 받으며 실제 DAL/정식권한·HTTP 기본제공자는 만들지 않는다. 포트가 없으면 거절하며 합성판정은 실제ACCEPTED/업무완료/실행허가가 아니다. 이 순서는 승인FN12의검수준비를구현하는것으로실제사용완료가아니고,판정결과가실제권한으로오인될경우큰영향이있으므로모든completion/execution/dispatch/formalFailure는false로고정한다.
+  신규검수5 RED158.6004ms(미구현)→5 PASS365.6217ms, TypeScript의never arrow 제어흐름19건과unknown snapshot1건은선언함수/shape선검사로보완후type0이다. 정상/음성은고정원문·등록근거·필수누락·미실행·BUILD≠BROWSER/독립검수·현재성/중복ID·원문손상이며합성Map이지PG저장/사용자검수가아니다. 다음은부족항목만선별해원결과·검수·같은단계세션과좁은범위에결박한보완journal및현재성/위조음성이다.
+
+
 - **UI05 목록 실제PG→Web 소비 확인 / Main 어울(2026-10-19)**: private/WSL exact9735bff19befac2133bbc94fe760cb67bc2ddf30·clean의 새 등록QA에서 목록mode1만 실행했다. Node24.21 고정SHA7fde7b8a/npm11.19.0·신규dependencies102·PG15.18 image594290·59 exactSQL이다. 신규 PG b871e23e6952e706808015f0c407a0d7c80681a50e125d48226dfd80e73e3c87/internal network e78144bb93223cb80c3cfcc3db055c795f8adfc84f4718f23237a7919dfab0e6, host172.31.0.2/port{}/tmpfs512MiB였다. 신규1 PASS4124.580914ms(기능3736.820399ms), skip0/phaseDONE다. 정상 임무/원실행 graph는필수fixture만사용했고old양성/재해시음성모드는반복0이다.
   새 명시정책·합성 주체로 원문21건을보관한뒤실제인증PG/HTTP와Web readAssignmentResults/readAssignmentResult를연결해정확임무최근20/hasMore·중복0·선택원문hash/미실행보존을확인했다. 타사용자·없는임무버전404/fallback400·조회전후result/command/receipt/audit행수불변·원5guard정의hash불변이다. 결과는주장/완료false이며실제Agent/OS신뢰·served HTTPS/실제브라우저DB통합·정식DB/검수/보완·전체FN12/UI05/Stage완료가아니다.
   시험원문2파일/5dir·poolclose실패0, exactID/label/sourceSHA/image/mount/port·network단독/internal/경로owner/Gitclean/내부npm링크/해당cwd프로세스0확인후등록PG/network/clone만제거했다. 별도조회FN12_LIST_INDEPENDENT_RESIDUALS=0,복구는privateGit/package-lock에서가능하다. 기존정식PG e6f798c3/image594290/StartedAt2026-10-18T15:25:12.085069883Z/restart0보존·DB46/서비스/relay/키변경0이다. 첫read-only preflight의PowerShell끝CR1로exit1이었으나모든검사marker/정식PG불변은확인됐고생성0이었다. 실제setup은stdin CR정규화로실행했으며환경/ACL변경0이다. 다음Main선정미완료는FN12의정확기준·등록증거를분리한검수판정/보완연결이다. 기존blocked SEND5guard나해결된검사를재시도하지않고승인계획/독립경계를따라이어간다.
