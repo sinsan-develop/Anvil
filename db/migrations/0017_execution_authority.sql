@@ -1,5 +1,5 @@
--- 승인 P1 C2의 비실행 한도 작성 부분 후보. 실제 적용/SQL 검수는 미실행이다.
--- execution/grant/outbox/usage reservation은 후속 C2이며 이 파일만으로 실행 허가가 생기지 않는다.
+-- 승인 P1 C2의 합성 한도/초기 queue 후보. 정식 DB 반영·실제 Agent 실행은 포함하지 않는다.
+-- 격리 검증 결과는 exact Git SHA의 WORK_STATUS에 기록한다. 이 파일만으로 실제 실행 허가가 생기지 않는다.
 CREATE TABLE anvil.limit_policy_versions (
  project_id uuid NOT NULL REFERENCES anvil.projects(id),policy_id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
  content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
@@ -151,8 +151,8 @@ END;
 $$;
 CREATE TRIGGER limit_policy_version_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.limit_policy_versions FOR EACH ROW EXECUTE FUNCTION anvil.guard_limit_policy_version();
 
--- C2 예산 계획의 원문 이력 모델. runtime grant/queue의 정확 명령·허가·감사 저장을 연결하기 전에는
--- app의 mutation을 열지 않는다. 아래 SELECT/계획이 예약 저장 성공이나 실행 허가를 뜻하지 않는다.
+-- C2 예산 원문 이력 모델. 초기에는 SELECT만 주고 파일 후반의 정확 queue guard 뒤 INSERT만 연다.
+-- UPDATE/DELETE는 계속 거절하며 SELECT/계획만으로 예약 저장·실제 실행 성공을 뜻하지 않는다.
 CREATE TABLE anvil.usage_reservations (
  project_id uuid NOT NULL REFERENCES anvil.projects(id),reservation_id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
  server_sequence bigint NOT NULL CHECK(server_sequence BETWEEN 1 AND 9007199254740991),command_id uuid NOT NULL,
@@ -166,7 +166,7 @@ GRANT SELECT ON anvil.usage_reservations TO anvil_v3_app;
 REVOKE INSERT,UPDATE,DELETE ON anvil.usage_reservations FROM anvil_v3_app;
 
 -- C2 최초 합성 queue의 저장 모델. 실제 credential/Agent 집행 테이블이 아니다.
--- 정확 receipt·전체 graph deferred guard를 연결하기 전 app mutation은 fail-closed로 유지한다.
+-- 파일 후반의 정확 receipt·전체 graph deferred guard가 최초 합성 INSERT만 보호한다.
 CREATE TABLE anvil.executions (
  project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
  transport text NOT NULL CHECK(transport='SYNTHETIC_ONLY'),state text NOT NULL CHECK(state='SYNTHETIC_QUEUED'),
@@ -232,8 +232,8 @@ BEGIN
     OR jsonb_typeof(target->'relativePath') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
    relative_file=target->>'relativePath';
    IF octet_length(relative_file) NOT BETWEEN 1 AND 1024 OR relative_file IS DISTINCT FROM normalize(relative_file,NFC)
-    OR relative_file ~ '[[:cntrl:]\\:%?*"<>|]' OR upper(relative_file)=ANY(paths) THEN RETURN false;END IF;
-   paths=array_append(paths,upper(relative_file));
+    OR relative_file ~ '[[:cntrl:]\\:%?*"<>|]' OR anvil.source_read_uppercase_v1(relative_file) COLLATE "C"=ANY(paths) THEN RETURN false;END IF;
+   paths=array_append(paths,anvil.source_read_uppercase_v1(relative_file));
    FOREACH segment IN ARRAY string_to_array(relative_file,'/') LOOP
     SELECT char_length(segment)+count(*) FILTER(WHERE ascii(substr(segment,n,1))>65535) INTO utf16_length FROM generate_series(1,char_length(segment)) n;
     IF segment IN('','.','..') OR utf16_length>255 OR segment ~ '[. ]$'
@@ -248,7 +248,7 @@ $$;
 CREATE FUNCTION anvil.execution_source_target_matches(base jsonb,requested jsonb,target jsonb,restrictive boolean) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
  SELECT COALESCE((CASE WHEN restrictive THEN base->'sourceRootRef'->>'id'=requested->'sourceRootRef'->>'id' ELSE base-'targets'=requested-'targets' END)
   AND EXISTS(SELECT 1 FROM jsonb_array_elements(base->'targets') t WHERE t->'kind'=target->'kind' AND t->'access'=target->'access' AND t->'recursive'=target->'recursive'
-   AND CASE WHEN restrictive THEN upper(t->>'relativePath')=upper(target->>'relativePath') ELSE t->'relativePath'=target->'relativePath' END),false);
+   AND CASE WHEN restrictive THEN anvil.source_read_uppercase_v1(t->>'relativePath') COLLATE "C"=anvil.source_read_uppercase_v1(target->>'relativePath') COLLATE "C" ELSE t->'relativePath'=target->'relativePath' END),false);
 $$;
 CREATE FUNCTION anvil.execution_policy_deadline(rules jsonb,pid uuid,eid uuid,generation bigint,actor uuid,op text,budget_ref jsonb,scopes jsonb,at_time timestamptz)
  RETURNS timestamptz LANGUAGE plpgsql IMMUTABLE AS $$
@@ -312,6 +312,17 @@ $$;
 CREATE FUNCTION anvil.execution_json_hash(value jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$
  SELECT encode(sha256(convert_to(anvil.execution_authority_canonical(value),'UTF8')),'hex');
 $$;
+-- Node isoV1와 같은 필수 UTC millisecond 문자열만 허용한다. NULL 비교는 거절을 대신하지 못한다.
+CREATE FUNCTION anvil.execution_iso_valid(value jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE raw text;
+BEGIN
+ IF jsonb_typeof(value) IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+ raw=value#>>'{}';
+ IF raw !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' THEN RETURN false;END IF;
+ RETURN COALESCE(to_char(raw::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')=raw,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
 
 -- 호출 시점의 현재 HUMAN/session/control·두 실행 정책·유한 예산과 정확 영수증을 대조한다.
 CREATE FUNCTION anvil.execution_queue_authorized(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
@@ -342,6 +353,7 @@ BEGIN
   OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM pid::text
   OR c.result_ref->'targetId' IS DISTINCT FROM c.result_ref->'data'->'ref'->'id' OR c.result_ref->'version' IS DISTINCT FROM '1'::jsonb
   OR c.result_ref->'data'->'ref'->>'contentHash' IS DISTINCT FROM anvil.execution_json_hash(q)
+  OR NOT anvil.execution_iso_valid(q->'queuedAt')
   OR (q->>'queuedAt')::timestamptz>at_time OR (q->>'queuedAt')::timestamptz<at_time-interval '30 seconds'
   OR octet_length(anvil.execution_authority_canonical(q))>2097152 THEN RETURN false;END IF;
  IF NOT EXISTS(SELECT 1 FROM anvil.project_control pc JOIN anvil.project_members m ON m.project_id=pc.project_id AND m.user_id=pc.actor_id
@@ -425,7 +437,9 @@ BEGIN
   OR f->'subject'->>'humanSessionId' IS DISTINCT FROM q->>'humanSessionId' OR f->'subject'->'controlGeneration' IS DISTINCT FROM to_jsonb(c.control_generation)
   OR intent->>'projectId' IS DISTINCT FROM pid::text OR intent->'budgetPolicyRef' IS DISTINCT FROM q->'budgetPolicyRef' OR intent->'sourceScopes' IS DISTINCT FROM q->'sourceScopes'
   OR intent->'contextBundleRef' IS DISTINCT FROM q->'payload'->'contextBundleRef' OR intent->'roleBindingRef' IS DISTINCT FROM f->'agentSession'->'roleBindingRef'
-  OR f->'registration'->'ref' IS DISTINCT FROM q->'executorRegistrationRef' OR (f->>'checkedAt')::timestamptz>(q->>'queuedAt')::timestamptz
+  OR f->'registration'->'ref' IS DISTINCT FROM q->'executorRegistrationRef'
+  OR NOT anvil.execution_iso_valid(f->'checkedAt') OR NOT anvil.execution_iso_valid(gs->'plannedAt') OR NOT anvil.execution_iso_valid(gs->'expiresAt')
+  OR (f->>'checkedAt')::timestamptz>(q->>'queuedAt')::timestamptz
   OR (f->>'checkedAt')::timestamptz<(q->>'queuedAt')::timestamptz-interval '30 seconds' THEN RETURN false;END IF;
  IF NOT anvil.execution_json_shape(f->'checks',ARRAY['subject','session','registration','permissionPolicy','basis','context','capability','source','osFence','budget','storage','understanding'])
   OR NOT anvil.execution_json_shape(f->'expires',ARRAY['humanSession','permissionPolicy','registration','budget','automaticScope']) THEN RETURN false;END IF;
@@ -447,7 +461,7 @@ BEGIN
   anvil.execution_policy_deadline(policy.rules_json,pid,e.id,e.generation,c.actor_id,'authorizeExecution',q->'budgetPolicyRef',q->'sourceScopes',at_time),
   anvil.execution_policy_deadline(policy.rules_json,pid,e.id,e.generation,c.actor_id,'queueExecutionCommand',q->'budgetPolicyRef',q->'sourceScopes',at_time));
  FOREACH field IN ARRAY ARRAY['humanSession','permissionPolicy','registration','budget','automaticScope'] LOOP
-  IF jsonb_typeof(f->'expires'->field) IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+  IF NOT anvil.execution_iso_valid(f->'expires'->field) THEN RETURN false;END IF;
   deadline=LEAST(deadline,(f->'expires'->>field)::timestamptz);
  END LOOP;
  IF (gs->>'expiresAt')::timestamptz IS DISTINCT FROM deadline OR deadline<=at_time THEN RETURN false;END IF;
@@ -473,7 +487,7 @@ BEGIN
   OR us->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR us->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
   OR claim->>'projectId' IS DISTINCT FROM pid::text OR claim->>'executionId' IS DISTINCT FROM e.id::text OR claim->'executionGeneration' IS DISTINCT FROM to_jsonb(e.generation)
   OR claim->>'commandId' IS DISTINCT FROM c.command_id::text OR claim->'policyRef' IS DISTINCT FROM q->'budgetPolicyRef' OR claim->'assignmentRef' IS DISTINCT FROM intent->'assignmentRef'
-  OR claim->>'operation' IS DISTINCT FROM 'START_SESSION' OR (us->>'checkedAt')::timestamptz>(q->>'queuedAt')::timestamptz
+  OR claim->>'operation' IS DISTINCT FROM 'START_SESSION' OR NOT anvil.execution_iso_valid(us->'checkedAt') OR (us->>'checkedAt')::timestamptz>(q->>'queuedAt')::timestamptz
   OR (us->>'checkedAt')::timestamptz<(q->>'queuedAt')::timestamptz-interval '30 seconds'
   OR NOT anvil.execution_json_shape(claim->'demand',ARRAY['attempts','calls','spoolBytes','cost','costStatus'])
   OR claim->'demand'->'attempts' IS DISTINCT FROM '1'::jsonb OR jsonb_typeof(claim->'demand'->'calls') IS DISTINCT FROM 'number'
