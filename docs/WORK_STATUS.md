@@ -2,6 +2,9 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **C3 SEND forward 공용 guard 교체 차단 / Main 어울(2026-10-19)**: 신규0023선행함수3개 source작성뒤기존guard_initial_execution_row/guard_execution_command_kind/guard_execution_command_complete/guard_initial_execution_complete/guard_initial_execution_shared_history의5공용함수CREATE OR REPLACE패치가플랫폼에서적용전1회거절됐다. 원문: 새migration이기존START/STOP공용guard함수를CREATE OR REPLACE하여기존경로의지속적보안·동작경계도바꾸므로SEND전용추가범위를넘는높은영향변경. 기존0017/0021파일/실DB/서비스/권한·키/실Agent변경0이며우회/재시도0이다.
+  신규3함수초안은자동migration경로에서제외하여docs/contracts/0023_execution_instruction.sql.pending로보존했다. SQL구문/실행·능력·적합성은미검증이고구현완료/PASS아니다. PMO에원거절·정확5함수/START·STOP영향·직접결정필요여부를전달했고일반승인대기/전체중단으로확장하지않는다. 승인계획내코드/시험은유지하며다음독립작업은기존서명client와후속SEND permit authority의합성결합이다. 초안분리첫시도는새하위폴더생성권한오류로실패·원본존재를확인해기존contracts폴더내pending경로로보존했다. sandbox Gitstatus읽기1회worktree오류는도구경계이며권한/파일변경없이정확elevated읽기로구분한다.
+
 - **C3 SEND 원영수증·예약 고정조회 checkpoint / Main 어울(2026-10-19)**: e4a08358뒤누락된PG adapter.read를신규부재1RED785.9378ms→1PASS806.1589ms로구현했다. projectMember뒤exact프로젝트/실행/세대/ref로원HUMAN PROJECT명령·영수증/감사·새예약·HELD outbox를join하고기존역사reader·예약hash·정확주체/정책/버전·원receipt/result양층false를대조한다. 저장/append코드는유지하며역사조회가현재grant/전달허가가되지는않는다. 직접14PASS1234.4783ms/type0·diff0·신규조회/시험한정독립C0/I0/M0(정적/재실행0)다. 실제SQL구문/JOIN/RLS·회원권한집행/PG일관성·현재provider진위는미검증이며실제DB적용·외부자원·서비스변경0이다.
   신산님최신직접지시대로승인된계획내구현/시험/필수개발을재승인없이수행하고PMO위임결정을동일권위로적용한다. 새로운승인필요주장은기존범위밖차이를입증하며특정차단을전체중단으로확장하지않는다. 다음미완료는현재DB가SEND를거절하는0023forwardguard와서명페이지용PG고정제공자/서버SENDpermit·실행기결합이며Main이계속주도한다. 원P1 DB제외는이력과구분해새실행은이미위임된시험원칙/정확자원계약·플랫폼심사로판단하고정식DB/P2/P3/키·Agent비용까지임의확대하지않는다.
 
