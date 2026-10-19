@@ -26,7 +26,8 @@ CREATE FUNCTION anvil.result_criteria_authorized(pid uuid) RETURNS boolean LANGU
  AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
  AND c.approval_consumption_id IS NULL AND c.payload_ref IS NULL AND ar.approval_decision_ref IS NULL
  AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
- AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest)
+ AND (SELECT count(*) FROM anvil.audit_events a WHERE a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref')
  AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
   WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
   AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
@@ -131,3 +132,25 @@ $$;
 CREATE TRIGGER result_criteria_command_history BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.guard_result_criteria_shared_history();
 CREATE TRIGGER result_criteria_receipt_history BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.guard_result_criteria_shared_history();
 CREATE TRIGGER result_criteria_audit_history BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.guard_result_criteria_shared_history();
+
+-- 原 감사는 receipt 직후/criteria 행과 GUC 설정 전에 들어온다. 기존 연산은 건드리지 않는다.
+-- 최초 1행의 전체 대응과 이후 추가 금지를 같은 project 잠금으로 직렬화한다.
+CREATE FUNCTION anvil.guard_result_criteria_audit_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cmd anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;
+BEGIN
+ SELECT * INTO cmd FROM anvil.commands WHERE id=NEW.command_id;
+ IF cmd.operation IS DISTINCT FROM 'saveResultCriteria' THEN RETURN NEW;END IF;
+ PERFORM id FROM anvil.projects WHERE id=cmd.project_id FOR UPDATE;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id AND command_id=cmd.id;
+ IF ar.id IS NULL OR NEW.project_id IS DISTINCT FROM cmd.project_id OR NEW.operation_id IS DISTINCT FROM cmd.operation_id
+  OR NEW.outcome IS DISTINCT FROM 'APPLIED' OR NEW.source_kind IS DISTINCT FROM 'HUMAN_COMMAND'
+  OR NEW.scope_digest IS DISTINCT FROM ar.scope_digest OR NEW.target_ref IS DISTINCT FROM cmd.result_ref->'data'->'ref'
+  OR NEW.actor_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id) OR NEW.client_ref IS DISTINCT FROM cmd.client_id
+  OR NEW.policy_ref IS DISTINCT FROM cmd.policy_ref OR NEW.approval_ref IS NOT NULL
+  OR EXISTS(SELECT 1 FROM anvil.audit_events WHERE command_id=cmd.id)
+  OR EXISTS(SELECT 1 FROM anvil.result_criteria_versions WHERE command_id=cmd.id)
+ THEN RAISE EXCEPTION 'RESULT_CRITERIA_AUDIT_EXACT_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE TRIGGER result_criteria_audit_insert BEFORE INSERT ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.guard_result_criteria_audit_insert();

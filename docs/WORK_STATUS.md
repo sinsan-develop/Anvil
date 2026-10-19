@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 감사 I1 실제 RED·최소 보완 / Main 어울(2026-10-19)**: 반증 exact15ef7574 첫 시험은 confirmed receipt를 원문봉투로 잘못 넣어 RESULT_CRITERIA_ASSIGNMENT_INVALID·1 FAIL1833.863114ms였고 결함 반증으로 세지 않는다. 실제 확정본 GET 봉투로 바꾼 exact082c5597 새 빈 격리 PG60SQL에서 감사 WRONG_TARGET가 거절되지 않아1 FAIL1759.686789ms/ERR_ASSERTION, 별도 읽기 committed_criteria=1/wrong_target_audits=1로 I1을 재현했다. 두 생성세대 raw각2파일/5디렉터리·등록PG/network/path exact 회수했다. 가변 postgres:15 태그40710과 고정594290 불일치의 준비 최초 exit1은 생성0이었으며 고정digest 자체 확인으로 진행했다.
+  변경 전0026은 audit 존재만 검사했다. 변경 후 해당 신규 연산에만 감사 전체1행/정확target_ref와 최초 audit actor/client/policy/digest 대응을 강제하고 project잠금 아래 중복/기준저장후 추가를 차단한다. 기존 공유5guard/SQL·정식DB·서비스·권한·키·Agent 변경0이다. 직접 소비자/route10 PASS932.362ms이며 새 SQL의 GREEN은 아직 미검증이다. M1 입력오류503 분류 deferred는 보존한다. 다음은 새 빈 Green QA에서 동일 반증과 정상 read를 확인하며 독립 원C0/I1/M1을 독립C0로 소급하지 않는다.
+
+
 - **FN12 감사 결박 I1 반증 착수 / Main 어울(2026-10-19)**: 530fd3b2의 첫 격리 criteria 시험은1 PASS2251.454363ms(기능1906.29418),60SQL exact·raw2파일/5디렉터리 회수·등록 PG/network/path 독립잔여0이다. 이는 감사 target_ref/유일성 반증을 포함하지 않는다. 독립 원검토 C0/I1/M1에서 I1 잘못된/중복 감사 연결로 불변 이력 조회503 가능성을 확인해 새 실제 음성으로 보완한다. M1 잘못된 입력의503 분류는 쓰기차단 유지의 안내 미진으로 deferred이며 독립C0로 소급하지 않는다.
   새 Main 소유 /home/daon/deploy/anvil-v3-fn12-criteria-audit-qa-01(Git exact clone·의존성·.av3-data/fn12-raw), PG anvil-v3-fn12-criteria-audit-pg-01/internal network anvil-v3-fn12-criteria-audit-net-01·DB anvil_v3_fn12_criteria_audit_qa_01, label owner AV3_FN12_CRITERIA_AUDIT_QA/instance criteria-audit-01을 등록한다. 고정 PG15 image594290/Node24.21 hash7fde7b8a·60SQL, 공개port/영구volume/기존network0·512MiB tmpfs·합성 계정/정책만 사용한다. RED와 보완 GREEN 각 새 빈 생성세대를 exact SHA/run label로 구분하고 사이에 전체 회수/독립0을 확인한다. 각10분창/Node90초/외부110초, 종료·실패 즉시 exact ID/label/image/mount/owner/link/process 확인 후 등록자원만 회수한다. 정식PG exited·메타데이터 불변/정식DB·서비스·키·실Agent 변경0이다.
 
