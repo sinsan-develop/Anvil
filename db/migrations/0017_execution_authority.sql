@@ -16,7 +16,7 @@ REVOKE UPDATE,DELETE ON anvil.limit_policy_versions FROM anvil_v3_app;
 -- 지역 함수에서 shortest float8 표기의 소수점/지수를 JSON.stringify 경계로 정규화한다.
 -- 기존 적용 SQL/공유 canonical은 교체하지 않는다. 실제 PG 교차 벡터 검수 전 후보이다.
 CREATE FUNCTION anvil.execution_authority_number(value jsonb) RETURNS text LANGUAGE plpgsql IMMUTABLE STRICT SET extra_float_digits=3 AS $$
-DECLARE raw text;parts text[];digits text;sign text;power integer;leading integer;
+DECLARE raw text;parts text[];digits text;sign text;power integer;zero_prefix integer;
 BEGIN
  IF jsonb_typeof(value)<>'number' THEN RAISE EXCEPTION 'EXECUTION_AUTHORITY_NUMBER_INVALID';END IF;
  raw=(value::text)::double precision::text;
@@ -24,7 +24,7 @@ BEGIN
  parts=regexp_match(raw,'^(-?)([0-9]+)(?:\.([0-9]+))?(?:e([+-]?[0-9]+))?$');
  IF parts IS NULL THEN RAISE EXCEPTION 'EXECUTION_AUTHORITY_NUMBER_INVALID';END IF;
  sign=parts[1];digits=parts[2]||COALESCE(parts[3],'');power=length(parts[2])-1+COALESCE(parts[4],'0')::integer;
- leading=length(digits)-length(ltrim(digits,'0'));power=power-leading;digits=rtrim(ltrim(digits,'0'),'0');
+ zero_prefix=length(digits)-length(ltrim(digits,'0'));power=power-zero_prefix;digits=rtrim(ltrim(digits,'0'),'0');
  IF digits='' THEN RETURN '0';END IF;
  IF power < -6 OR power >=21 THEN
   RETURN sign||left(digits,1)||(CASE WHEN length(digits)>1 THEN '.'||substr(digits,2) ELSE '' END)||'e'||(CASE WHEN power>=0 THEN '+' ELSE '' END)||power::text;
