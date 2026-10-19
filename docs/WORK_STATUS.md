@@ -2,6 +2,17 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN12 제출 산출물 텍스트 scoped 검수·새 실제 QA 등록 / Main 어울(2026-10-20)**: missingregion browserRED8.658초→1PASS2.4초, 신규/직접인접8PASS488.1908ms·type0/build0(197modules)/diff예정이며 chunk/NO_COLOR 경고를 보존한다. 추가 민감원문 시험1FAIL538.9502ms는 정확 거절이 이미 발생했으나 시험이 AuthFailure의 없는code필드를 읽은 오류였다. 실제 message/412 계약으로 시험만 정정해 GREEN이고 제품검사완화0이다. 로컬결과 exact제거/별도부재확인이다.
+  기존 Reviewer 새단위1회 C0/I0/M1이며 M1(보류)은 화면의 원문2MiB 안내와 전체JSON/metadata까지2MiB인 응답한도 차이로 정상 큰 원문도 더 일찍 거절될 수 있다는 점이다. 제한을 풀거나 완료로 숨기지 않는다. 기존 ArtifactStore/앞 조회는 재검토하지 않았고 실제PG·파일권한/경합·served·Agent출처/사용자인수는 검토유보다. 이번 API는 실제보관 bytes일치만 확인하고 수행/시험진위는 false로 유지한다.
+  새 /home/daon/deploy/anvil-v3-fn12-artifact-text-qa-01, PG anvil-v3-fn12-artifact-text-pg-01/internal network anvil-v3-fn12-artifact-text-net-01/DB anvil_v3_fn12_artifact_text_qa_01을 owner AV3_FN12_ARTIFACT_TEXT_QA/instance artifact-text-01/run artifact-text-20261020-01·uid1000daon으로 등록한다. Git exact게시SHA·기존59SQLchecksum·고정PG15image594290/Node24.21hash7fde7b8a·tmpfs512MiB·외부port/영구volume0·10분/Node90/외부110초, 생성전부재/realpath/link/owner/image/daemon→끝/실패exactID/label/mount/port/path/process검증정리→별도잔여0이다. 새실제 보관파일UTF8/BOM/hash→인증API→PG/Web소비·읽기5표불변·격리/binary/미선언/query/outsider/회수member거절·원5guard불변만 검증한다. 신규schema/정식DB·서비스/키/실정책/Agent/기존특정거절 변경0, 완료QA반복0이다.
+
+
+- **제출 산출물 텍스트 source 후보·로컬 QA 등록 / Main 어울(2026-10-20)**: 신규provider 모듈부재 RED473.0426ms→3PASS406.2829ms, 신규route404RED/consumer모듈부재RED1420.5592ms→합계4PASS1246.4202ms다. strict TS4오류는 원ref타입 명시/never제어흐름·crypto ArrayBuffer타입을 보존해 보정했고 type0, 제품검사완화0이다. 다음은 Main소유 D:\tmp\anvil-v3-stage-b\ui05-result-criteria-01 결과/해당전용Edge 자식만 생성전부재·parent realpath/link 확인 후 ARTIFACT_TEXT 신규한경로에 사용한다. 최대30초·끝/실패exact결과/전용browser정리·별도잔여0, 사용자browser·DB/서비스/Secret·실Agent0이다. 명시선택·rawHTML escaped·재조회대기 앞원문숨김·403부모회수를 검증하며 아직 실제PG/served·전체FN12 완료가 아니다.
+
+
+- **FN12/UI05 제출 산출물 텍스트 확인 착수 / Main 어울(2026-10-20)**: 다음 미완료는 원제출 manifest.artifactRefs에 명시된 프로젝트 등록파일의 실제 bytes→S05 명시선택 원문조회다. 기존 파일보관소/격리검사·멤버와 정확ref/hash를 재사용하고 UTF-8 plain/markdown 최대2MiB만 escaped텍스트로 제공한다. binary/PDF/image·미등록/다른project/격리/변형/권한회수는 거절하며 원주장 sourceKind를 검증된Agent/시험출처·PASS로 승격하지 않는다. 새schema/정책·정식DB/서비스·키/Agent0, 기존완료QA반복0이다. source/route/consumer/명시클릭 TDD와 직접영향검사를 진행하며 아직 구현전이다. 방금 문서기록 첫patch1회는 제목불일치로 거부→실제제목확인 후 적용, guessed경로 읽기오류는 rg실재목록으로 정정했고 ACL/권한변경0이다.
+
+
 - **FN12/UI05 원실행 결박 실제 PG 한정 확인 / Main 어울(2026-10-20)**: exact2c7cdfc5f59b681c0d7fe191e1ffd49344e6ab85 새PG342e60425e231a04603058ac2646f15529b40d3245483a4205c5b60b738dd06f/network2087e6bdbfb6d3eaf920c7906a161aad09648c8859b3e94fad1e2dd73b96e17a·PG15.18/기존59SQLchecksum exact에서1PASS2080.928341ms(기능1744.853016),skip0·DONE다. 실제 인증API→격리PG→Web consumer로 선택 원제출/원START·grant·영수증/감사 exact snapshot·읽기9표불변/관측·ACK0·outsider/미존재/query/회수member거절·원5guard불변을 확인했다. raw2파일/5dir와 등록PG/network/Git경로 exact회수 후 별도조회잔여0, 정식PG e6f798c3/image594290/exited·기동/종료시각/restart0 불변이다.
   source 단위 정적 C0/I0/M0와 실제 한정검증을 구분한다. 이력은 SYNTHETIC_ONLY/HISTORICAL_REFERENCE_ONLY이며 실Provider/OS·현재권한·writer회수·완료/실패집계·현재Agent관측·served/사용자인수는 미확인이다. 신규schema/정식DB·서비스/정책·Secret/실Agent 변경0, 기존완료QA반복0이다. FN12/UI05/Stage 부분구현을 유지하고 다음 실제 증거 대조·문제원인/실보완배정·재시작복원 미완료를 계속한다.
 

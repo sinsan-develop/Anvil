@@ -730,6 +730,8 @@ queue 항목은 `requestRef,state:WAITING/RESERVED/DISPATCHED/CANCELLED/UNKNOWN,
 
 ### 13.3 FN12 결과 제출·검수·문제 분류
 
+- 제출 산출물 내부 GET `projects/:projectId/results/:id/artifacts/:artifactId/text`는 HUMAN·host/no-query·현재멤버 아래 exact 원제출 manifest.artifactRefs의 단일ID/v1/hash와 프로젝트 등록파일을 대조한다. 기존 보호 ArtifactStore의 소유/실경로·bytes/hash·격리/민감검사와 전후 파일metadata/멤버를 확인하고 UTF-8 plain/markdown만 fatal decode/BOM보존으로 반환한다. bytes 최대2MiB 외에 metadata·JSON escaping을 포함한 전체응답2MiB도 적용되므로 실제 허용 원문은 더 작을 수 있다. Web은 선택 result/artifact fullref와 UTF-8 bytes/hash·false flags를 대조해 명시조회/escaped텍스트로 표시하고 재조회대기·권한거절 시 앞원문을 재사용하지 않는다. `REGISTERED_BYTES_ONLY`는 저장바이트 일치일 뿐 실제Agent/명령·환경/시험출처/합격 검증이 아니며 자동다운로드·HTML/PDF/image실행·임의path/새schema/권한은 없다.
+
 - 원실행 고정 결박 GET `projects/:projectId/results/:id/execution-source`는 HUMAN·host/no-query·현재 멤버를 검사하고 선택 결과 원문과 기존 역사 START/grant·봉투/권한영수증·감사의 정확 결박을 읽는다. 정규화된 `SYNTHETIC_RESULT_EXECUTION_REFERENCE`/`SYNTHETIC_ONLY` snapshot만 제공하며 raw credential/봉투 본문은 제공하지 않는다. `sourceState:HISTORICAL_REFERENCE_ONLY`, `observationState:NOT_QUERIED`이며 현재권한·실Provider관측·writer회수·완료·실패집계·실행은 false다. Web은 선택 결과/실행 ref/hash를 재대조하고 명시 조회·재조회대기 앞원문숨김·권한회수 처리를 제공한다. 이력 참조는 현재 실행 진위/원인 분류나 허가가 아니며 새 schema/정책·실Agent 호출은 없다.
 
 - 원제출별 검수 이력 GET `projects/:projectId/results/:id/reviews`는 HUMAN멤버에게 정확 원제출의 최근20개 검수 metadata(ref/criteriaRef·판정/작성자/동일제출자/시각과 false승격 flags), hasMore/observedAt·NOT_SELECTED만 제공한다. 각 항목의 고정 원문·명령/영수증/감사를 다시 대조하고 원문은 기존 result-reviews/:id로 명시 선택한다. 자동 최신선택/합격판정·query/fallback·새권한/변경연산은 없다.

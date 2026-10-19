@@ -42,6 +42,7 @@ import { ProjectBaselines } from './project-baselines.ts';
 import { ProjectBaselineSources } from './baseline-sources.ts';
 import { SourceReadRecords } from '../connections/source-read-records.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
+import {ProjectResultArtifacts} from '../results/project-result-artifacts.ts';
 import {syntheticHumanExecutionOperations,enabledSyntheticHumanExecutionOperations,checkSyntheticHumanExecutionPorts,dispatchSyntheticHumanExecution,type SyntheticHumanExecutionPorts} from '../executions/project-runtime-commands.ts';
 import {ProjectResultSubmissions} from '../results/project-result-submissions.ts';
 import {ProjectResultReviewSources} from '../results/project-result-review-sources.ts';
@@ -80,6 +81,8 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const assignmentConfirmations = new ProjectAssignmentConfirmations(assignments);
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
   const resultExecutionSource=new ProjectResultExecutionSource(results);
+  const resultArtifacts=new ProjectResultArtifacts(results,options.artifactRoot?new ArtifactStore(options.artifactRoot):null);
+  app.get<{Params:{projectId:string;id:string;artifactId:string}}>('/api/v1/projects/:projectId/results/:id/artifacts/:artifactId/text',{schema:{params:object({projectId:idSchema,id:idSchema,artifactId:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultArtifacts.read(db,actor,request.params.projectId,request.params.id,request.params.artifactId));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/execution-source',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultExecutionSource.read(db,actor,request.params.projectId,request.params.id));});
   const resultCriteria=new ProjectResultCriteria(assignmentConfirmations);
   const resultReviews=new ProjectResultReviews(results,resultCriteria);
