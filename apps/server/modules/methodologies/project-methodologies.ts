@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
-import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
+import { currentProjectController, persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
@@ -10,6 +10,7 @@ import { validateMethodologyGraph } from './service.ts';
 import { methodContentReviewCriteria, requirePreparedForms } from './content-review.ts';
 import { exactMethodObject, readProjectMethodInput, readProjectMethodReview } from './project-input.ts';
 import { readApplicationSnapshot } from './application-snapshot.ts';
+import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 
 async function formsFor(db: PoolClient, actorId: string) {
   return (await db.query("SELECT v.definition_id AS id,v.version,v.content_hash FROM anvil.form_definitions d JOIN anvil.form_versions v ON v.definition_id=d.id WHERE d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1", [actorId])).rows.map(r => ({ id: r.id, version: Number(r.version), contentHash: r.content_hash }));
@@ -111,5 +112,29 @@ export class ProjectMethodologies {
     await db.query('INSERT INTO anvil.methodology_reviews(id,project_id,definition_id,version,target_hash,validation_json,review_refs,decision,decided_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,\'CONFIRMED\',$8,$9,$10)', [confirmationId, request.projectId, ref.id, ref.version, ref.contentHash, JSON.stringify(validation), JSON.stringify(input.reviewRefs), actor.actorId, actor.clientId, receipt.id]);
     return receipt.result;
   }
-  async apply() { throw new AuthFailure('EXECUTION_STATE_UNVERIFIED', 412); }
+  /** 기존 command transaction 안에서만 사용한다. 이력이 한 건이라도 있으면 기존 영향/안전 절차가 필요하다. */
+  async apply(db?:PoolClient,actor?:AuthenticatedIdentity,request?:ProjectCommand,policyRef?:VersionRef) {
+    if(!db||!actor||!request||!policyRef)throw new AuthFailure('EXECUTION_STATE_UNVERIFIED',412);
+    const p=request.payload;
+    if(request.operation!=='applyMethodology'||request.targetId!==request.projectId||!exactMethodObject(p,['methodologyRef','expectedApplicationVersion','reason'])||!isVersionRef(p.methodologyRef)||!Number.isSafeInteger(p.expectedApplicationVersion)||Number(p.expectedApplicationVersion)<0||Number(p.expectedApplicationVersion)>=Number.MAX_SAFE_INTEGER||request.expectedVersion!==p.expectedApplicationVersion||typeof p.reason!=='string'||!p.reason.trim()||p.reason.length>20000||!p.reason.isWellFormed())throw new AuthFailure('METHOD_APPLICATION_INPUT_INVALID',422);
+    if(request.baselineRefs.length||request.approvalRef!==null)throw new AuthFailure('METHOD_APPLICATION_REFERENCE_NOT_CONNECTED',412);
+    if(inspectArtifact(Buffer.from(canonicalJson(p),'utf8')).state==='SUSPECTED')throw new AuthFailure('METHOD_SENSITIVE_CONTENT_SUSPECTED',412);
+    await currentProjectController(db,actor,request);
+    const empty=(await db.query('SELECT NOT ('+[
+      'assignment_drafts','execution_preparations','agent_sessions','executions','execution_grants','writer_claims','execution_commands'
+    ].map(table=>`EXISTS(SELECT 1 FROM anvil.${table} WHERE project_id=$1)`).join(' OR ')+') AS assignment_history_empty',[request.projectId])).rows;
+    if(empty.length!==1||empty[0]?.assignment_history_empty!==true)throw new AuthFailure('EXECUTION_STATE_UNVERIFIED',412);
+    const application=await this.readApplication(db,actor,request.projectId);
+    if((application.applicationRef?.version??0)!==p.expectedApplicationVersion)throw new AuthFailure('VERSION_CONFLICT',409);
+    const ref=p.methodologyRef,row=await this.row(db,request.projectId,ref.id,ref.version,true),view=await this.read(db,actor,request.projectId,ref.id,ref.version);
+    if(Number(row.head_version)!==ref.version||row.content_hash!==ref.contentHash||view.headVersion!==ref.version||canonicalJson(view.ref)!==canonicalJson(ref))throw new AuthFailure('VERSION_CONFLICT',409);
+    const latest=view.contentReviews[0]?.ref;
+    if(!view.validation.validForConfirmation||!view.confirmation||latest?.outcome!=='ACCEPTED'||!view.confirmation.reviewRefs.some((value:unknown)=>canonicalJson(value)===canonicalJson(latest)))throw new AuthFailure('CONTENT_REVIEW_REQUIRED',422);
+    await requirePreparedForms(db,actor.actorId,view.graph as MethodologyGraph);
+    if(application.snapshot&&canonicalJson(application.snapshot.sourceRef)===canonicalJson(ref))throw new AuthFailure('METHODOLOGY_ALREADY_APPLIED',409);
+    const snapshot={name:view.name,purpose:view.purpose,graph:view.graph,sourceRef:ref},next={id:randomUUID(),version:Number(p.expectedApplicationVersion)+1,contentHash:contentHash(canonicalJson(snapshot))};
+    const receipt=await persistProjectReceipt(db,actor,request,next,{status:'METHODOLOGY_APPLIED',snapshot,reason:p.reason,previousApplicationRef:application.applicationRef},policyRef,'EXPLICIT_EMPTY_PROJECT_METHODOLOGY_APPLICATION');
+    await db.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)',[next.id,request.projectId,next.version,ref.id,ref.version,ref.contentHash,JSON.stringify(snapshot),next.contentHash,actor.actorId]);
+    return receipt.result;
+  }
 }

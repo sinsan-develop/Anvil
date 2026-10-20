@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 빈 프로젝트 적용 전환 source 부분 구현**: 기존 논리 applyMethodology에서 동일 project/control 잠금·7원장 직접 부재·확정/최신검토/양식·적용 CAS·불변 snapshot/이유 영수증을 연결했다. 신규/직접11·보정 집중4/type0·한정 재검수 C0/I0/M0이며 원RED/I1·PowerShell 초기화 오류를 WORK_STATUS에 보존한다. 실제0011/새forward·SQL/DB/서비스 변경0, 저장 보호/직접 DML 경합·역방향 COMMIT·UI/served 미완료이며 [정확 후속 diff](work_packages/FN02_EMPTY_APPLICATION_STORAGE_GUARD_DIFF.md)로 이어간다. 이 source 후보를 기능 완료로 승격하지 않는다.
+
 - **2026-10-20 UI03 공통 양식 반복 필드 제거**: 기존개정의exact필드선택해제·명시저장/재조회·미확인동결을연결했다. 신규/직접5·UI2/type/build/diff·scoped각C0/I0/M0·QA잔여0이며마지막필드기존확정불가기준유지,실제DB/served/권한·전체업무미완료는WORK_STATUS에보존한다. 새API/DB/실권한/Agent0.
 
 - **2026-10-20 UI06 보관 계획 변경 비교**: 기존 조회한 두 snapshot을 업무/선행/기준원문 차이 구간으로 비교한다. 신규/직접6·화면1/type/build/diff·scopedC0/I0/M0·QA잔여0이며 원 타입오류/표시시험 한계·실제DB/served/현재효력·전체업무미완료를 WORK_STATUS에 보존한다. 새 GET/쓰기·API/DB/권한0.
