@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 정식 선행 실제 확인**: exacta6682968의단발기동/READ ONLY metadata에서정식migration46·고정8객체중project_methodologies만존재를실측했다. 개발PG는정상보존/임시조회경로잔여0·API/Web재개0. 46 ID/checksum·배열순서rawhash차이·한계는FORMAL_SCHEMA_METADATA_RESULT/WORK_STATUS에보존하며전체기능완료아니다. 다음핵심단위는누락0012~0017의정식채택·반영/보존·복구경계정리이며52선행미충족에서0031자동실행하지않는다. Stage/44업무/검수기준불변.
+
 - **2026-10-20 FN02/UI03 적용 연결의 현재 위치**: 빈 프로젝트 명시 적용의 source·화면 fixture, 격리 실제 적용/이력 거절·유효 임무 material 직렬화와0031 명시 등록 helper의 rollback/COMMIT·실패종료/재호출을 한정 확인했다. 정식 개발 DB/서비스 반영·실제 사용자 served 사용은 미완료다. 마지막 정식 schema 보존기록46과 QA53을 구분하며, 필요한52 선행 미충족에서 자동 적용하지 않는다. 기존 Stage/44업무·승인·검수 기준은 바꾸지 않고 WORK_STATUS/각 결과서에 정확 증거와 미검증을 보존한다.
 
 - **2026-10-20 FN02 저장 보호 첫 실제 함수 QA 한정 PASS**: exactd9a56d1a/SQLE9DEE26A의새빈PG15·정확53 SQL/초기guard함수정의보존·비관리자·35canonical×2설정/graph17/잘못된검토4를실측했다. 원정렬2회/graph숨김·42702 2회실패→좁은보정GREEN과7211파일/13링크/734dir·전용PG/network/2경로정확회수/독립잔여0을현황·결과서에보존한다. 실제적용행/명령·양방향COMMIT·직접DML/race·초기생성실행·정식DB/served/UI03/전체FN02는여전히미완료다. 바로이핵심저장workflow를이어가며작은표시업무로대체하지않는다.
