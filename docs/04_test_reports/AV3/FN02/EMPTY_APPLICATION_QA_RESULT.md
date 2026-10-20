@@ -35,3 +35,9 @@
 - PG `2cb154b1cff732ad8b9e1cb390d1e5ae635d7a3fd9c41ec8e6f08593e0357ffa`, network `43fe7506b7712413d1058524424619151c20c0b7c72474a0b10b823af3b4a171`, instance `f70ba4321e280c1ac198da3e99e2433a`: finally 회수 및 독립 SSH exit0의 등록 PG/network/tmp 잔류0.
 - 직접 원인은 아직 미확정이다. 독립 source I1 후보는 조건 함수의 인자 `value`와 `jsonb_array_elements`의 기본 출력 열 `value` 충돌이다. 원 `WHEN OTHERS`가 내부 42702를 false로 숨길 수 있으며 첫 SEQUENCE의 정상 조건이 해당 조회를 소비한다.
 - 진단 후보 SQL `49401D4DB4E046A82A0955DD74A999208AA75A20AED8F19775EEC2DD405EE048`: 4개 helper가 자료 오류(class22)만 false로 처리하고 내부 SQL/프로그램 오류는 드러내도록 좁혔다. canonical의 지원불가 3예외는 class22로 명시했다. true 조건/그래프/검토 기준은 그대로이며 이 시점에 별칭 수정은 아직 하지 않았다. 새 manifest는 같은53개/마지막checksum만 갱신했다. 원 F70와 3회 실패는 이력이다. 직접 원인 재현 전 실제42702라고 확정하지 않는다.
+
+## 시도 4 — 내부 모호한 참조 42702 직접 재현
+
+- source `30445def4c45092195430e6ad59eaa1baa75a1ce`, 진단 SQL49401D4D. 실제 새 빈53SQL/함수 실행은 exit1, `GRAPH/caseIndex0/code42702`였다. 이전 false와 달리 내부 모호한 참조 오류가 드러났다. 함수 양성/전체 PASS가 아니다.
+- PG `c8188909719c57288597ff1494cc35825480383b3512ee5b43eb64bf718e608a`, network `bc50cbb60f321245cf341f21b0914be25078712728d3d0def7bbe814c9df0e8e`, instance `517bb6150979fcd61aa9f9d5c736b6af`, `cleanupFailure=null`. 별도 잔류 확인은 후속 기록한다.
+- 정확 보정: condition 함수의 SRF 기본 출력 열 `value`와 입력 `value`가 충돌하지 않도록 `node_row(node_json)`/명시 열 참조만 변경했다. SQL 새지문 `E9DEE26A03DDD643F06DDC9DFBFE39DCCFB91FC305FCC465E53A5D15FD2880C6`. 원래 조건·graph/form·검토/합격 기준 불변이며 자료 예외만 false/내부 오류 노출 정책을 유지한다. 이 직접 SQL RED 뒤 같은 조건의 실제 GREEN 여부를 아직 확인하지 않았다.

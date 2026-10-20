@@ -99,7 +99,8 @@ BEGIN
  IF NOT anvil.fn02_keys(value,ARRAY['fieldRef','operator','value'],ARRAY['fieldRef','operator','value'])
   OR NOT anvil.fn02_keys(value->'fieldRef',ARRAY['nodeId','field'],ARRAY['nodeId','field']) THEN RETURN false;END IF;
  field=value->'fieldRef'->>'field';op=value->>'operator';
- SELECT n INTO source FROM jsonb_array_elements(graph->'nodes') n WHERE n->'nodeId'=value->'fieldRef'->'nodeId';
+ SELECT node_row.node_json INTO source FROM jsonb_array_elements(graph->'nodes') node_row(node_json)
+  WHERE node_row.node_json->'nodeId'=value->'fieldRef'->'nodeId';
  IF source IS NULL OR field NOT IN('REVIEW_OUTCOME','USER_DECISION') OR field IS NULL
   OR (field='USER_DECISION' AND (source->>'role'<>'USER' OR source->>'kind' NOT IN('HUMAN','DECISION'))) THEN RETURN false;END IF;
  IF op='IS_PRESENT' THEN RETURN value->'value'='null'::jsonb;END IF;
