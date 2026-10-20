@@ -3,6 +3,7 @@ import test from 'node:test';
 import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {Codex0161Codec} from '../../../apps/connector/adapters/primary/codec.ts';
+import {SyntheticObservationSpool} from '../../../apps/connector/runtime/execution-observation-spool.ts';
 const m:any=await import('../../../apps/connector/adapters/primary/instruction-transport.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at=Date.parse('2026-10-19T12:00:00.000Z'),frame=(v:unknown)=>Buffer.from(canonicalJson(v)+'\n');
 function fixture(){
@@ -17,6 +18,22 @@ function fixture(){
  const make=()=>{const codec=new Codex0161Codec({maxFrameBytes:4096,maxPending:1});codec.encodeRequest('initialize','init',{clientInfo:{name:'anvil',version:'0.1'}});codec.push(frame({id:'init',result:{codexHome:'C:\\synthetic',platformFamily:'windows',platformOs:'windows',userAgent:'synthetic'}}));codec.encodeInitialized();return new m.SyntheticPrimaryInstructionTransport(store,materials,authority,wire,codec,{context,envelopeExecutorRef:ref},{clock:()=>clock,timeoutMs:100});};
  return{make,source,current,envelope,store,materials,authority,wire,events:()=>events,calls:()=>calls,consumes:()=>consumes,fault:(v:string)=>fault=v,advance:(n:number)=>clock+=n,releaseLate:()=>releaseLate?.(),next:()=>{envelope.commandId=randomUUID();key.commandId=envelope.commandId;const{envelopeHash,...u}=envelope;envelope.envelopeHash=hash(u);source.envelopeHash=envelope.envelopeHash;current.envelopeHash=envelope.envelopeHash;}};
 }
+
+test('SEND관측은원장3행의정확ref/시각·고정ID를읽고응답을실행완료로승격하거나재전송하지않는다',async()=>{
+ const f=fixture();await f.make().send(f.envelope);const source=f.make();assert.equal(typeof source.observations,'function');const facts=await source.observations(f.envelope);assert.deepEqual(facts.inputs.map((x:any)=>x.type),['PREPARED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);assert.deepEqual(facts.inputs.map((x:any)=>x.localRecordRef),f.events().map((x:any)=>x.ref));assert.deepEqual(facts.inputs.map((x:any)=>x.eventId),f.events().map((x:any)=>x.ref.id));assert.deepEqual(facts.inputs.map((x:any)=>x.occurredAt),f.events().map((x:any)=>x.snapshot.at));assert(facts.inputs.every((x:any)=>x.processRef===null));assert.equal(facts.currentAuthorityVerified,false);assert.equal(facts.workAccepted,false);assert.equal(facts.inputs[2].reasonCode,'UNVERIFIED_PROVIDER_CLAIM');assert.equal(f.calls(),1);assert.equal(f.consumes(),1);facts.inputs[0].localRecordRef.version=99;f.advance(120000);assert.deepEqual((await f.make().observations(f.envelope)).inputs[0].localRecordRef,f.events()[0].ref);assert.equal(f.calls(),1);
+});
+test('SEND관측은permit/응답유실UNKNOWN을출처대로구분하고위조원장/다른문맥을거절한다',async()=>{
+ for(const fault of ['permitLost','lost']){const f=fixture();f.fault(fault);await f.make().send(f.envelope);const facts=await f.make().observations(f.envelope),last=facts.inputs.at(-1);assert.equal(last.type,'UNKNOWN');assert.equal(last.reasonCode,fault==='permitLost'?'RECORD_UNCERTAIN':'PROVIDER_RESPONSE_LOST');assert.equal(f.calls(),fault==='permitLost'?0:1);}
+ const g=fixture();await g.make().send(g.envelope);g.events()[0].snapshot.bindingHash='f'.repeat(64);await assert.rejects(g.make().observations(g.envelope));const h=fixture(),e=structuredClone(h.envelope);e.context.assignmentId=randomUUID();const{envelopeHash:_,...u}=e;e.envelopeHash=hash(u);await assert.rejects(h.make().observations(e));assert.equal(h.calls(),0);assert.equal(h.events().length,0);
+});
+test('SEND관측의명시spool소비는원ID로부분재개/반복수집중복0이며서버전송·ACK감사0이다',async()=>{
+ const f=fixture();await f.make().send(f.envelope);const rows:any[]=[],scope={projectId:f.envelope.context.projectId,executionId:f.envelope.context.executionId,executionGeneration:1};let writes=0,failAt=2;
+ const spool=new SyntheticObservationSpool({transport:'SYNTHETIC_ONLY',exclusive:async(s,body)=>{assert.deepEqual(s,scope);return body({read:async()=>({complete:true,events:structuredClone(rows)}),appendAndSync:async r=>{if(rows.length+1===failAt){failAt=-1;throw Error('OWN_QA_BEFORE_WRITE');}rows.push(structuredClone(r));writes++;}});} },scope,{clock:()=>at,maxEntries:10,maxBytes:1048576,maxBatchEntries:10,maxBatchBytes:1048576});
+ await assert.rejects(f.make().recordObservations(f.envelope,spool));assert.equal(rows.length,1);const recorded=await f.make().recordObservations(f.envelope,spool);assert.equal(recorded.recordedRefs.length,3);assert.equal(recorded.dispatchPerformed,false);assert.equal(recorded.ackAudited,false);assert.deepEqual(await f.make().recordObservations(f.envelope,spool),recorded);assert.equal(writes,3);assert.equal(rows.length,3);assert.deepEqual((await spool.prepareBatch(0)).events.map(x=>x.type),['PREPARED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);assert.equal(f.calls(),1);assert.equal(f.consumes(),1);
+});
+test('SEND관측의원장종료뒤port변경은읽기결과를거절하고미기록명령은관측을발명하지않는다',async()=>{
+ const f=fixture();assert.deepEqual((await f.make().observations(f.envelope)).inputs,[]);const source=f.make(),exclusive=f.store.exclusive;f.store.exclusive=async(s:any,body:any)=>{const result=await exclusive(s,body);f.wire.transport='REAL';return result;};await assert.rejects(source.observations(f.envelope));assert.equal(f.calls(),0);assert.equal(f.consumes(),0);assert.equal(f.events().length,0);
+});
 test('수신 자료와 최신 이해 검토·짧은 permit을 대조하고 시도 sync 뒤 한 번 보내며 응답 원 사실만 보존한다',async()=>{
  const f=fixture(),[a,b]=await Promise.all([f.make().send(f.envelope),f.make().send(f.envelope)]);assert.deepEqual(a,b);assert.equal(a.state,'RESPONSE_RECORDED');assert.equal(a.executionAuthorized,false);assert.equal(a.workAccepted,false);assert.equal(f.calls(),1);assert.equal(f.consumes(),1);assert.deepEqual(f.events().map((e:any)=>e.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.equal(f.events()[2].snapshot.responseFact.fact.method,'turn/start');assert(!JSON.stringify(f.events()).includes('합성 지시문'));assert(!JSON.stringify(f.events()).includes('thread-synthetic'));f.advance(120000);assert.deepEqual(await f.make().send(f.envelope),a);
 });

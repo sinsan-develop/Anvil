@@ -5,6 +5,7 @@ import {receiptKeyV1,type ReceiptKeyV1} from '../../../../contracts/runtime/disp
 import {executionFactChecks,readServerExecutionFactV1} from '../../../../contracts/runtime/server-execution-fact-v1.ts';
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../../contracts/runtime/validation-v1.ts';
 import {Codex0161Codec,type CodecFact} from './codec.ts';
+import {SyntheticObservationSpool} from '../../runtime/execution-observation-spool.ts';
 type Scope={projectId:string;executionId:string;executionGeneration:number};
 type State='SEND_ATTEMPTED'|'PERMIT_RECORDED'|'RESPONSE_RECORDED'|'UNKNOWN';
 type Reason='NONE'|'PERMIT_UNCERTAIN'|'RESPONSE_UNCERTAIN'|'ATTEMPT_UNCERTAIN';
@@ -53,6 +54,25 @@ export class SyntheticPrimaryInstructionTransport{
   }return events;
  }
  #result(entry:Entry){const s=entry.snapshot;return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(s.key),state:s.state,reason:s.reason,receiptRef:cloneV1(entry.ref),executionAuthorized:false,dispatchPerformed:false,workAccepted:false,ownership:'UNVERIFIED' as const};}
+ /** 보관된 정확 지시 원장만 읽는다. 현재 권한/자료/provider를 재호출하거나 실제 수행을 판정하지 않는다. */
+ async observations(rawEnvelope:unknown){
+  try{
+   this.#ports();const raw=cloneV1(rawEnvelope),e=readDispatchEnvelopeV1(raw,Date.parse((raw as any)?.issuedAt));
+   if(e.operation!=='SEND_INSTRUCTION'||Date.parse(e.issuedAt)>this.#now()||!same(e.context,this.#expected.context)||!same(e.executorRegistrationRef,this.#expected.envelopeExecutorRef))return fail('INSTRUCTION_OBSERVATION_ENVELOPE_INVALID');
+   const key=receiptKeyV1(e),inputs=await this.store.exclusive(scopeOf(key),async tx=>{
+    this.#ports();const events=this.#journal(await tx.read(),scopeOf(key)),own=events.filter(v=>v.snapshot.key.commandId===key.commandId);if(own.some(v=>v.snapshot.envelopeHash!==e.envelopeHash))fail('INSTRUCTION_RECORD_CONFLICT');
+    return own.map(entry=>{const s=entry.snapshot,type=s.state==='SEND_ATTEMPTED'?'PREPARED':s.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':s.state,reasonCode=s.state==='RESPONSE_RECORDED'?'UNVERIFIED_PROVIDER_CLAIM':s.state==='UNKNOWN'?(s.reason==='RESPONSE_UNCERTAIN'?'PROVIDER_RESPONSE_LOST':'RECORD_UNCERTAIN'):'NONE';return{projectId:key.projectId,executionId:key.executionId,executionGeneration:key.executionGeneration,eventId:entry.ref.id,type,commandId:key.commandId,envelopeHash:e.envelopeHash,localRecordRef:cloneV1(entry.ref),processRef:null,occurredAt:s.at,reasonCode};});
+   });this.#ports();return{transport:'SYNTHETIC_ONLY' as const,inputs,verification:'PROVIDER_CLAIM_ONLY' as const,currentAuthorityVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const,workAccepted:false as const};
+  }catch(error){if(error instanceof InstructionFailure)throw error;return fail('INSTRUCTION_OBSERVATION_UNAVAILABLE');}
+ }
+ /** 사용자/호출자의 명시 수집만 수행한다. 일부 append 뒤 오류도 원기록을 보존하며 안정 ID로 다시 대조한다. */
+ async recordObservations(rawEnvelope:unknown,spool:SyntheticObservationSpool){
+  try{
+   if(!(spool instanceof SyntheticObservationSpool))return fail('INSTRUCTION_OBSERVATION_SPOOL_REQUIRED');const source=await this.observations(rawEnvelope),recordedRefs:Ref[]=[];
+   for(const input of source.inputs){this.#ports();const saved=await spool.append(input);this.#ports();recordedRefs.push(cloneV1(saved.ref));}
+   return{transport:'SYNTHETIC_ONLY' as const,recordedRefs,verification:'PROVIDER_CLAIM_ONLY' as const,ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const,workAccepted:false as const};
+  }catch(error){if(error instanceof InstructionFailure)throw error;return fail('INSTRUCTION_OBSERVATION_RECORD_UNAVAILABLE');}
+ }
  /** selection은 내부 합성 page의 추가 상한이며 현재 허가를 대신하지 않는다. */
  async send(raw:unknown,selection?:{grantRef:Ref;expiresAt:string}){
   try{this.#ports();if(selection!==undefined&&(!recordV1(selection,['grantRef','expiresAt'])||!refV1(selection.grantRef)||!isoV1(selection.expiresAt)))return fail('INSTRUCTION_SELECTION_INVALID');const boundary=selection===undefined?undefined:cloneV1(selection);const input=cloneV1(raw),e=readDispatchEnvelopeV1(input,Date.parse((input as any)?.issuedAt));if(e.operation!=='SEND_INSTRUCTION'||Date.parse(e.issuedAt)>this.#now()||!same(e.context,this.#expected.context)||!same(e.executorRegistrationRef,this.#expected.envelopeExecutorRef))return fail('INSTRUCTION_ENVELOPE_INVALID');const key=receiptKeyV1(e),scope=scopeOf(key),ceiling=Math.min(Date.parse(e.expiresAt),boundary?Date.parse(boundary.expiresAt):Infinity);

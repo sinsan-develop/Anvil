@@ -1,6 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
 
+- **2026-10-20 FN08 SEND 원장→공급자주장 관측**: 기존검증원장의준비/permit/응답/UNKNOWN을정확ref·안정ID·원시각으로읽어명시spool소비에연결했다. 신규4/type0/diff0·한정C0/I0/M0·자원0이며쓰기전부분수집오류뒤중복0만확인했다. 기존send/실권한불변·물리sync/서버COMMIT/Agent/전체업무미검증,기존START관측은재구현하지않는다.
+
 - **2026-10-20 FN08 관측 spool 실제파일 저장**: 신규전용root에서관측순번의wx/file.sync·재열기/중복0·부분/lock/수명/진행IO/상한·불명보존1PASS/type0/diff0·한정C0/I0/M0·등록자원잔여0이다. 기존store/API/DB불변·실OS/프로세스간경합·directory내구/전원손실/current진위·Agent미검증이며상세·원RED는현황보존한다.
 
 - **2026-10-20 FN08 관측 보관→명시 batch/client 연결**: 실행별잠금/불변순번·원기록중복/hash·유한상한보관과명시afterSequence의batch/기존client회수를연결했다. 신규6/type0·한정정적C0/I0/M0,뒤Main기존서버처리기결합1·직접client2PASS/diff0이다. 실제file/서버COMMIT·서명/current진위/Agent미검증·자원0이며ACK감사/삭제·실행/회수false·기존API/DB불변,원실패와후속범위는현황에보존한다.
