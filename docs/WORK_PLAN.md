@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI05 고정 환경 원문 조회**: 확정임무의exact환경을기존GET로명시조회/닫기·만료/NOT_READY/실측미확인보존한다. 신규3/직접선택3·parentRED후UI3·직접상세/SSR보완·최종type0/build251/diff0, 검수M1fixture보강/한정C0/I0/M0·QA잔여0. 기존SSR 원실패/옛문구 시점정합 보완 근거는WORK_STATUS에보존, API/DB/권한/선택/Agent0·실제served/환경진위/전체업무미완료다.
+
 - **2026-10-20 UI10 미저장 문서 출처 선택 해제**: 기존source-ref 작성범위에서문서fullref1건만해제하고입력/다른출처보존·동결/불명/주체오류거절을연결했다. 원문/저장지식삭제·새API/DB/권한/Agent0. 신규3/직접4·새browser2/type0/build249/diff0·제품/단위scoped C0/I0/M0·QA잔여0,실제DB/served/전체UI10은미완료이며현황에증거/시험보완이력을보존한다.
 
 - **2026-10-20 UI03 복사 전 원본 단계 정의 조회**: 기존 GET/표시 helper로 책임·mode·작업범위·요구 능력/환경·한도/join 원문을 연결하고 malformed필수형식은 거절한다. 신규/직접11·새UI3/type0/build249/diff0·제품 scoped C0/I0/M0, 시험M1 보강/해소·QA01/02잔여0이다. 실제DB/served·Agent·모든비동기전환과 전체UI03/Stage는 미완료이며 원 실패·검수·정확 증거는 WORK_STATUS에 보존한다. 새API/schema/실권한·서비스 변경0이다.

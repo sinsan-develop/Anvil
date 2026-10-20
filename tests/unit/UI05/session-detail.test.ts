@@ -5,10 +5,8 @@ import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {contentCriteria} from '../../../apps/web/src/features/workspace/assignment-confirmation-api.ts';
 import {capabilityNames} from '../../../apps/web/src/features/connections/api.ts';
 import {parseRoute} from '../../../apps/web/src/shell/routes.ts';
-import {createRequire} from 'node:module';
-import {fileURLToPath,pathToFileURL} from 'node:url';
-import {readFile} from 'node:fs/promises';
-import {transformWithOxc} from 'vite';
+import {fileURLToPath} from 'node:url';
+import {createServer} from 'vite';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 const routes:any=await import('../../../apps/web/src/shell/routes.ts');
@@ -47,13 +45,14 @@ test('책임도구는예약의정확후보원문을읽고403은미확인으로�
  const lost=fixture(true);lost.fault('TOOL_EXPIRED_AUTH');await assert.rejects(mod.readSessionDetail(lost.client,pid,lost.draft.ref),(e:any)=>e.status===401);
 });
 test('상세화면은고정임무·완료조건과누락증거를표시하고미관측실행을완료/가동으로꾸미지않는다',async()=>{
- const sourceUrl=new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url),require=createRequire(import.meta.url);
- const compile=async(url:URL,reviewModule?:string,criteriaModule?:string)=>{const compiled=(await transformWithOxc(await readFile(url,'utf8'),fileURLToPath(url),{lang:'tsx'})).code,code=compiled.replace(/(from\s*['"])([^'"]+)(['"])/g,(_m,start,path,end)=>start+(path==='./ResultReviewSources.tsx'&&reviewModule?reviewModule:path==='./ResultCriteriaEditor.tsx'&&criteriaModule?criteriaModule:path.startsWith('.')?new URL(path,url).href:pathToFileURL(require.resolve(path)).href)+end);return'data:text/javascript;base64,'+Buffer.from(code).toString('base64');};
- const criteriaModule=await compile(new URL('./ResultCriteriaEditor.tsx',sourceUrl)),reviewModule=await compile(new URL('./ResultReviewSources.tsx',sourceUrl),undefined,criteriaModule),screen=await import(await compile(sourceUrl,reviewModule));
- const f=fixture(),detail=await mod.readSessionDetail(f.client,pid,f.draft.ref),before=f.calls.length,html=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert.equal(f.calls.length,before);for(const value of ['등록된 임무 조회','핵심 동작 확인','재검토 필요','현재 실행 미확인','실제 관측·증거 검수 미연결'])assert(html.includes(value));assert(!html.includes('실행 완료'));
+ const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});
+ try{
+ const screen=await compiler.ssrLoadModule('/src/features/session-detail/SessionDetailPage.tsx');
+ const f=fixture(),detail=await mod.readSessionDetail(f.client,pid,f.draft.ref),before=f.calls.length,html=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert.equal(f.calls.length,before);for(const value of ['등록된 임무 조회','핵심 동작 확인','재검토 필요','현재 실행 미확인','실제 Agent 수행·증거 출처·쓰기 회수·안전 재개/이전은 미확인입니다.','기록 부재를 대기·정상·완료로 판단하지 않습니다.'])assert(html.includes(value),value);assert(!html.includes('실행 완료'));
  detail.draft.snapshot.definition.goal='<script>private()</script>';const escaped=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert(!escaped.includes('<script>private'));assert(escaped.includes('&lt;script&gt;'));
  detail.state.bindings=[{ref, snapshot:{assignmentRef:{...ref,id:'33333333-3333-4333-8333-333333333333',contentHash:'c'.repeat(64)},roleRef:ref,connectionRef:ref,sessionRef:ref,generation:1}}];const other=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert(other.includes('다른 임무의 현재 예약'));assert(other.includes('33333333-3333-4333-8333-333333333333'));assert(other.includes('c'.repeat(64)));
  const empty=renderToStaticMarkup(createElement(screen.SessionDetailPage,{client:f.client,projectId:pid,onAuthenticationLost:()=>assert.fail('NO_AUTH_CHANGE')}));assert(empty.includes('프로젝트 작업에서 임무를 선택'));assert.equal(f.calls.length,before);
  const named=fixture(true),namedDetail=await mod.readSessionDetail(named.client,pid,named.draft.ref),namedHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:namedDetail}));for(const value of ['저장된 도구 후보','합성 코딩 도구','능력·실제 연결·가동 미확인'])assert(namedHtml.includes(value));
  const denied=fixture(true);denied.fault('TOOL_DENIED');const deniedHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:await mod.readSessionDetail(denied.client,pid,denied.draft.ref)}));assert(deniedHtml.includes('도구 후보 원문 미확인'));assert(deniedHtml.includes('ACCESS_DENIED'));assert(!deniedHtml.includes('저장된 도구 후보'));
+ }finally{await compiler.close();}
 });

@@ -16,6 +16,7 @@ import {StoredStopRequests} from './StoredStopRequests.tsx';
 import {ReportedTestResults} from './ReportedTestResults.tsx';
 import {ReportedCommandResults} from './ReportedCommandResults.tsx';
 import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
+import {AssignmentEnvironmentOriginal} from './AssignmentEnvironmentOriginal.tsx';
 
 import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
 import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
@@ -39,6 +40,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
+  {shown?.value?.confirmed?.snapshot.definition.environmentRef?<AssignmentEnvironmentOriginal key={JSON.stringify([criteria.session.user.id,criteria.session.clientId,key,revision,shown.value.confirmed.ref,shown.value.confirmed.snapshot.definition.environmentRef])} client={client} projectId={projectId} assignmentRef={shown.value.confirmed.ref} environmentRef={shown.value.confirmed.snapshot.definition.environmentRef} onAuthenticationLost={onAuthenticationLost}/>:null}
 {shown?.value?<><SessionDetailContent detail={shown.value}/><StoredBudgetUsage key={'budget:'+key+':'+revision} client={client} projectId={projectId} reference={shown.value.draft.snapshot.definition.budgetRef} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>{shown.value.confirmed?<><CheckpointEditor key={'checkpoint:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={checkpoint} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/><CheckpointFileReader currentForm={checkpoint.buffers[checkpointBufferKey(criteria.session,projectId,shown.value.confirmed.ref)]??null} onRestore={form=>checkpoint.onChange(checkpointBufferKey(criteria.session,projectId,shown.value!.confirmed!.ref),previous=>isEmptyCheckpointForm(previous)?form:previous??emptyCheckpointForm())} onInspection={value=>setFileInspection(previous=>value?{key:fileKey,value}:previous?.key===fileKey?null:previous)} key={'checkpoint-file:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/><SessionResults checkpointFile={checkpointFile} onCheckpointUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}} key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={shown.value.state}/></>:null}</>:null}
  </section>;
 }
