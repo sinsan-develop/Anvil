@@ -3,6 +3,10 @@
 ## 1. 현재 상태와 기록 기준
 
 
+- **FN08 C3 선택→합성 전송기 한정 수용 / Main 어울(2026-10-20)**: 새sendInstruction→기존sender선택 grant/기한추가3 missing-methodRED252.312ms→3PASS369.9987ms/type0, 직접기존sender11PASS529.2703ms/diff0이다. 독립정적C0/I0/M0이며 최초snapshot의제목-본문자료대기만료차이는Main도병행확인해 material/permit await후만료를추가·신규3만3PASS392.0269ms/type0로직접확인했다. 추가분은독립snapshot이후/Main검증이며기존11/옛QA재실행0이다. 최초grant불일치append0/보관grant재사용거절·선택기한과기존현재자료/세션/이해/permit/wire직전기한검사를유지,permit후만료는원2행보존·추가wire0/재조회UNKNOWN이다. 기존sender수정사유와전후diff는선택상한추가21줄이며기본직접send의봉투기한·원API/형식/권한불변이다. 적용전문자열줄바꿈조립오류1은sender부분적용0·정확newline보정후진행했다. 실제서버/nonce/COMMIT/자료·권한진위/Agent/P3·모든비동기타이밍은미검증,Web불변/build/browser0·QA자원0·제외6보존·전체업무완료아니다. rollback은선택연결/상한의일반revert·원원장삭제0이다.
+
+- **FN08 C3 후속 선택→전송기 명시 연결 착수 / Main 어울(2026-10-20)**: 읽기 선택만 있는 b45ead98 다음으로 같은 client/정확 ref를 재소비하는 명시 sendInstruction을 기존 합성 primary sender에 연결한다. 선택 grant와 page 만료를 sender의 선택 경계로 전달해 원장 재조회/최초시도·현재권한·wire직전에도 다른grant/기한경과를 거절하며 기존 직접send 경로는 불변이다. source선택은 권한이 아니고 기존현재자료/세션/이해/permit검사를 모두 유지한다. 메모리서명client/codec/원장만 사용·실Agent/OS/socket·API/SQL/DB/권한/P3/자원생성0, TDD/직접인접/type/독립검토로 진행한다. 직전 추정 wildcard execution-session* 읽기1 오류도 경로패턴오류로 보존하고 실제목록기준검색으로 전환·설정변경0이다.
+
 - **FN08 C3 후속 지시 명시 선택 한정 수용 / Main 어울(2026-10-20)**: 신규4 missing-methodRED/기존6PASS231.7188ms→총10PASS314.7604ms/type0·한정 정적C0/I0/M0이다. 독립 검토가 읽은 snapshot에서 STOP 제목/본문 누락을 지적했고 Main은 병행 발견한 같은 누락과 ref version/ID 사례를 새시험에 추가해 신규4만4PASS237.8694ms/type0로 직접확인했다(추가분 독립검토/기존6재실행0). 기존 START/서버API/SQL/DB/권한/실Agent 불변이며 정확 저장page/원봉투 선택만 반환·수신/permit/wire/다음page0이다. 실제 서명/서버현재권한·물리내구/자료진위·외부세션은 미검증, 전체FN06/FN08완료아니다. 자원생성/정리0·제외6보존, rollback은새선택함수/시험의 일반revert이며원저장자료삭제0이다.
 
 - **FN08 C3 후속 지시 명시 선택 연결 착수 / Main 어울(2026-10-20)**: 기존 command admission은 START 수신만 가능하고 SEND 원봉투의 server명령ref 선택 소비가 없어 readInstruction을 추가한다. 기존 서명 client의 내구 COMMANDS 결과에서 정확 ref/hash/version·project/execution/generation·fresh page/envelope·EXECUTION scope만 대조해 원봉투와 page증거를 반환한다. 수신/합격·permit/자료·wire/자동 polling·다음page를 만들지 않으며 기존 START 행동 불변이다. 새API/SQL/DB·권한·실Agent/OS/P3변경0, 메모리 TDD/직접 START/queue/type 한정·QA자원0이다. 직전 실제목록에 없는 contracts/agent-adapter 읽기1회 실패는 경로부재로 보존·ACL변경0이다.

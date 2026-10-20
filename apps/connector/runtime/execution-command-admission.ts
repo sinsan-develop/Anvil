@@ -5,6 +5,7 @@ import {arrayV1,cloneV1,isoV1,recordV1,refV1} from '../../../contracts/runtime/v
 import {SyntheticExecutionClient} from './execution-client.ts';
 import {readClientOperation,readClientScope} from './execution-ledger.ts';
 import {SyntheticStartReceiver} from './execution-start-receiver.ts';
+import {SyntheticPrimaryInstructionTransport} from '../adapters/primary/instruction-transport.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 class CommandAdmissionFailure extends Error{}
 const fail=(code:string):never=>{throw new CommandAdmissionFailure(code);};
@@ -19,6 +20,15 @@ export class SyntheticExecutionCommandAdmission {
  }
  #ports(){if(!(this.client instanceof SyntheticExecutionClient)||!(this.receiver instanceof SyntheticStartReceiver))fail('COMMAND_ADMISSION_PORTS_REQUIRED');}
  #now(){const at=this.#clock();if(!Number.isSafeInteger(at)||!Number.isFinite(new Date(at).getTime()))return fail('COMMAND_ADMISSION_CLOCK_INVALID');return at;}
+ /** 명시 호출 하나만 전송기로 연결한다. 선택은 허가가 아니며 sender의 현재자료/세션/이해/permit 검사는 유지한다. */
+ async sendInstruction(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,sender:SyntheticPrimaryInstructionTransport){
+  try{
+   if(!(sender instanceof SyntheticPrimaryInstructionTransport))return fail('COMMAND_ADMISSION_SENDER_REQUIRED');
+   const selected=await this.readInstruction(rawScope,rawOperation,rawCommandRef);
+   const sent=await sender.send(selected.envelope,{grantRef:selected.grantRef,expiresAt:selected.expiresAt});
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,sent,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_SEND_UNAVAILABLE');}
+ }
  /** 후속 지시 원봉투의 명시 선택 읽기만 한다. START 수신·지시전송/permit·자동 다음 page를 수행하지 않는다.
   * 반환값은 저장된 합성 page의 선택 사실이며 실제 서버/Agent 현재권한이나 전송 허가가 아니다. */
  async readInstruction(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown){

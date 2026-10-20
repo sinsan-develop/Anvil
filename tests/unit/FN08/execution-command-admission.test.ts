@@ -4,6 +4,8 @@ import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {SyntheticExecutionClient} from '../../../apps/connector/runtime/execution-client.ts';
 import {SyntheticStartReceiver} from '../../../apps/connector/runtime/execution-start-receiver.ts';
+import {SyntheticPrimaryInstructionTransport} from '../../../apps/connector/adapters/primary/instruction-transport.ts';
+import {Codex0161Codec} from '../../../apps/connector/adapters/primary/codec.ts';
 const m:any=await import('../../../apps/connector/runtime/execution-command-admission.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),initial=Date.parse('2026-10-19T12:00:00.000Z');
 function fixture(){
@@ -54,4 +56,27 @@ test('후속선택의만료cached page/UNKNOWN은재조회/부작용없이거절
 test('후속선택의회수scope/비명령operation/다른실행봉투는거절한다',async()=>{
  const f=instructionFixture();await assert.rejects(f.make().readInstruction({...f.scope,mode:'RECOVERY'},f.operation,f.commandRef),/COMMAND_ADMISSION_/);await assert.rejects(f.make().readInstruction(f.scope,{...f.operation,kind:'OBSERVATIONS'},f.commandRef),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),[0,0,0]);
  const g=instructionFixture();g.envelope.context={...g.envelope.context,executionId:randomUUID()};const{envelopeHash:_,...u}=g.envelope;g.envelope.envelopeHash=hash(u);await assert.rejects(g.make().readInstruction(g.scope,g.operation,g.commandRef),/COMMAND_ADMISSION_/);assert.equal(g.events.length,0);assert.deepEqual(g.counts(),[1,0,0]);
+});
+
+function selectedSender(f:ReturnType<typeof instructionFixture>){
+ const e=f.envelope,key={projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:1,commandId:e.commandId},ref=f.scope.grantRef,bytes=Buffer.from('선택한 합성 지시');let clock=initial,calls=0,permits=0,grant=ref,expireOnRead=false;const rows:any[]=[];
+ const store:any={transport:'SYNTHETIC_ONLY',exclusive:async(_s:any,body:any)=>body({read:async()=>{if(expireOnRead)clock+=10000;return{complete:true,events:structuredClone(rows)};},appendAndSync:async(v:any)=>rows.push(structuredClone(v))})};
+ const materials:any={transport:'SYNTHETIC_ONLY',read:async()=>({transport:'SYNTHETIC_ONLY',key,envelopeHash:e.envelopeHash,instructionRef:(e.payload as any).instructionRef,partsRef:(e.payload as any).partsRef,materialReceiptRef:ref,utf8Bytes:bytes.length,contentHash:contentHash(bytes),bytes})};
+ const authority:any={transport:'SYNTHETIC_ONLY',current:async()=>({transport:'SYNTHETIC_ONLY',key,envelopeHash:e.envelopeHash,sessionBindingRef:(e.payload as any).sessionBindingRef,instructionRef:(e.payload as any).instructionRef,partsRef:(e.payload as any).partsRef,materialReceiptRef:ref,instructionContentHash:contentHash(bytes),understandingReviewRef:ref,grantRef:grant,ownershipRef:ref,threadId:'thread-selected',turnState:'IDLE',checkedAt:new Date(initial).toISOString(),expiresAt:new Date(initial+30000).toISOString()}),consume:async(_e:any,attempt:any,bindingHash:string)=>{permits++;assert.deepEqual(attempt,rows.at(-1).ref);return{transport:'SYNTHETIC_ONLY',key,envelopeHash:e.envelopeHash,grantRef:grant,permitRef:ref,bindingHash,checkedAt:new Date(initial).toISOString(),expiresAt:new Date(initial+30000).toISOString()};}};
+ const codec=new Codex0161Codec({maxFrameBytes:4096,maxPending:1}),frame=(v:unknown)=>Buffer.from(canonicalJson(v)+'\n');codec.encodeRequest('initialize','init',{clientInfo:{name:'anvil',version:'0.1'}});codec.push(frame({id:'init',result:{codexHome:'C:\\synthetic',platformFamily:'windows',platformOs:'windows',userAgent:'synthetic'}}));codec.encodeInitialized();
+ const wire:any={transport:'SYNTHETIC_ONLY',exchange:async(raw:Uint8Array)=>{calls++;assert.equal(rows.at(-1).snapshot.state,'PERMIT_RECORDED');const r=JSON.parse(Buffer.from(raw).toString());assert.equal(r.method,'turn/start');assert.deepEqual(r.params,{threadId:'thread-selected',input:[{type:'text',text:'선택한 합성 지시'}]});return frame({id:r.id,result:{turn:{id:'turn-selected',items:[],status:'inProgress'}}});}},sender=new SyntheticPrimaryInstructionTransport(store,materials,authority,wire,codec,{context:e.context,envelopeExecutorRef:e.executorRegistrationRef},{clock:()=>clock,timeoutMs:1000});
+ return{sender,rows,counts:()=>[calls,permits],wrongGrant:()=>grant={...ref,version:2},expireRead:()=>expireOnRead=true,advance:(n:number)=>clock+=n};
+}
+test('선택전송은server page→동일grant·자료/permit→codec를명시연결하고동일명령wire1만유지한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),a=f.make();assert.equal(typeof a.sendInstruction,'function');const first=await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender);assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.equal(first.sent.executionAuthorized,false);assert.equal(first.sent.workAccepted,false);assert.deepEqual(first.commandRef,f.commandRef);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(s.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.deepEqual(await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender),first);assert.deepEqual(s.counts(),[1,1]);
+});
+test('선택전송의다른grant는최초append전거절하고저장된다른grant재사용도거절한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f);s.wrongGrant();await assert.rejects(f.make().sendInstruction(f.scope,f.operation,f.commandRef,s.sender));assert.deepEqual(s.counts(),[0,0]);assert.equal(s.rows.length,0);
+ const g=instructionFixture(),t=selectedSender(g);await t.sender.send(g.envelope);await assert.rejects(t.sender.send(g.envelope,{grantRef:{...g.scope.grantRef,version:2},expiresAt:new Date(initial+10000).toISOString()}),/INSTRUCTION_SELECTION_/);assert.deepEqual(t.counts(),[1,1]);assert.equal(t.rows.length,3);
+});
+test('선택전송은page기한뒤lock진입/자료대조중만료와가짜sender를wire없이거절한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f);s.expireRead();await assert.rejects(f.make().sendInstruction(f.scope,f.operation,f.commandRef,s.sender));assert.deepEqual(s.counts(),[0,0]);assert.equal(s.rows.length,0);
+ const material=instructionFixture(),ms=selectedSender(material),read=ms.sender.materials.read.bind(ms.sender.materials);ms.sender.materials.read=async e=>{const value=await read(e);ms.advance(10000);return value;};await assert.rejects(material.make().sendInstruction(material.scope,material.operation,material.commandRef,ms.sender));assert.deepEqual(ms.counts(),[0,0]);assert.equal(ms.rows.length,0);
+ const permit=instructionFixture(),ps=selectedSender(permit),consume=ps.sender.authority.consume.bind(ps.sender.authority);ps.sender.authority.consume=async(...args)=>{const value=await consume(...args);ps.advance(10000);return value;};await assert.rejects(permit.make().sendInstruction(permit.scope,permit.operation,permit.commandRef,ps.sender));assert.deepEqual(ps.counts(),[0,1]);assert.deepEqual(ps.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED']);const unknown=await ps.sender.send(permit.envelope);assert.equal(unknown.state,'UNKNOWN');assert.deepEqual(ps.counts(),[0,1]);
+ const g=instructionFixture();await assert.rejects(g.make().sendInstruction(g.scope,g.operation,g.commandRef,{send:async()=>assert.fail('NO_FAKE_SENDER')}),/COMMAND_ADMISSION_/);assert.deepEqual(g.counts(),[0,0,0]);
 });
