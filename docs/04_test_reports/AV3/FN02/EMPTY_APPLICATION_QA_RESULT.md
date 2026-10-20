@@ -1,8 +1,10 @@
-# FN02 저장 보호 후보 첫 격리 검수 — 진행 중
+# FN02 저장 보호 후보 첫 격리 검수 — 한정 PASS
 
 ## 범위와 판정
 
 기존 Stage B/FN02의 미적용 SQL 컴파일·graph/form/숫자/검토 함수 대조다. 실제 양성 적용·직접 DML 위조/양방향 COMMIT·경합·초기 createProject 실행·정식 DB/served·전체 FN02 완료를 검증하지 않았다.
+
+최신 판정은 시도5의 한정 PASS다. 앞선 4회 실패·미실행과 각각의 source/지문은 이력으로 보존한다. 미적용 파일을 정식 runner/DB에 등록하지 않았다.
 
 ## 시도 1 — 원 실패 보존
 
@@ -41,3 +43,17 @@
 - source `30445def4c45092195430e6ad59eaa1baa75a1ce`, 진단 SQL49401D4D. 실제 새 빈53SQL/함수 실행은 exit1, `GRAPH/caseIndex0/code42702`였다. 이전 false와 달리 내부 모호한 참조 오류가 드러났다. 함수 양성/전체 PASS가 아니다.
 - PG `c8188909719c57288597ff1494cc35825480383b3512ee5b43eb64bf718e608a`, network `bc50cbb60f321245cf341f21b0914be25078712728d3d0def7bbe814c9df0e8e`, instance `517bb6150979fcd61aa9f9d5c736b6af`, `cleanupFailure=null`. 별도 잔류 확인은 후속 기록한다.
 - 정확 보정: condition 함수의 SRF 기본 출력 열 `value`와 입력 `value`가 충돌하지 않도록 `node_row(node_json)`/명시 열 참조만 변경했다. SQL 새지문 `E9DEE26A03DDD643F06DDC9DFBFE39DCCFB91FC305FCC465E53A5D15FD2880C6`. 원래 조건·graph/form·검토/합격 기준 불변이며 자료 예외만 false/내부 오류 노출 정책을 유지한다. 이 직접 SQL RED 뒤 같은 조건의 실제 GREEN 여부를 아직 확인하지 않았다.
+
+## 시도 5 — 실제 SQL RED→GREEN / 한정 PASS
+
+- source `d9a56d1aca1bbe55180cf82e655b10208a5d87be`, SQL E9DEE26A, manifest rows hash `261620dbbe23286752b329aacb8c71b34260f9a98cc914b69a3ed883670f85d0`. 최초와 동일53개/고정 실행 순서이며 마지막 후보의 오류 보정 지문만 변했다.
+- 동일한 전용 새 빈 PG15/image594290·Node24.21.0에서 실제 exit0, `status=PASS/phase=DONE/failure=null/cleanupFailure=null/diagnostic=null`.
+- 실제 확인: 53 SQL 컴파일·COMMIT/정확 ID·checksum, 초기 `guard_initial_project_methodology` 함수 정의 hash 전후 동일, 비관리자 app 접속, canonical 35벡터×세션0/3=70대조·공식8양식/3방법론, 정상3/변조14의 graph17 JS/PG 결과 일치, 검토 항목 변조4 거절, 기준 snapshot 및 v/VT/NBSP 구분·unsafe integer 거절.
+- 이는 actual42702 RED 뒤 동일 함수 시험의 GREEN이며 기대값·합격 기준은 느슨하게 바꾸지 않았다. 모든 숫자/그래프 조합을 전수 검증한 것은 아니다.
+- PG `d3fe48191d89f531a887f09bba4ab35da00ef273cc736c8dd33fbec3c1fd9849`, network `bdd13853d0fb5a7b0af01ca64ea0a8075fb82160e5aaa04b49fd7aeac7b07d10`, instance `448806733a0ff97121f825525f9c3d26`, exact 회수. 시도4 자원 부재도 시도5 시작 전 별도 확인했다.
+- 종료 정리: QA Git 경로 exact d9a56d1a/clean·UID1000/nonlink·열린 process0·파일별 hash와 symlink 내부 대상 확인 뒤 7211파일/734디렉터리(루트 포함)/13내부 symlink·327272797 bytes를 비재귀 회수했다. 소스와 증거는 private Git에 보존돼 복구 가능하다.
+- 별도 SSH 읽기 exit0: 등록 두 경로·PG/network 잔류0. 기존 정식 PG의 동일 fullID/exited/Runningfalse/Pid0/Exit0/StartedAt/FinishedAt/image/127.0.0.1:5546 정의 및 Windows3830/5546 listener0 유지. 기본 npm cache의 실제 쓰기량 미측정/임의 삭제0이라는 준비 예외는 그대로 보존한다.
+
+## 남은 실제 기능 검수
+
+다음은 같은 승인 FN02의 실제 인증 API→확정 방법론→명시 적용·영수증/replay·적용본 재조회와 row-only/receipt-only COMMIT·직접 DML 위조/7원장·동시 요청·초기 createProject 회귀다. 첫 함수 QA를 이 결과로 승격하지 않는다. 이 핵심 저장 흐름을 검증한 뒤 기존 UI03의 별도 적용/미확인 명령 보존/재조회까지 연결한다.

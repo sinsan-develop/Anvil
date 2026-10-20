@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 저장 보호 첫 실제 함수 QA 한정 PASS**: exactd9a56d1a/SQLE9DEE26A의새빈PG15·정확53 SQL/초기guard함수정의보존·비관리자·35canonical×2설정/graph17/잘못된검토4를실측했다. 원정렬2회/graph숨김·42702 2회실패→좁은보정GREEN과7211파일/13링크/734dir·전용PG/network/2경로정확회수/독립잔여0을현황·결과서에보존한다. 실제적용행/명령·양방향COMMIT·직접DML/race·초기생성실행·정식DB/served/UI03/전체FN02는여전히미완료다. 바로이핵심저장workflow를이어가며작은표시업무로대체하지않는다.
+
 - **2026-10-20 FN02 적용 저장 보호 후보 진행 중**: 기존 논리 적용을 위한 새0031 .sql.pending·새정적배선검사·격리PG검수코드만 작성했다. 초기생성/옛SQL/권한/이력보존, 신규명령결박·동일project잠금·RC제한·정확receipt/검토/구조·양방향COMMIT 보호 후보이며 실제DB/runner등록0이다. 독립 I2 뒤 구조/5항목/숫자setting을 보완했고 추가별칭/VT지적도 source보정, 실제PG반례실행은미검증이다. 기능은부분구현이며 실제저장·양성/음성COMMIT/경합·UI연결 완료를 주장하지 않는다. 이전 '새forward0'는 작성 전 이력이다.
 
 - **2026-10-20 FN02 빈 프로젝트 적용 전환 source 부분 구현**: 기존 논리 applyMethodology에서 동일 project/control 잠금·7원장 직접 부재·확정/최신검토/양식·적용 CAS·불변 snapshot/이유 영수증을 연결했다. 신규/직접11·보정 집중4/type0·한정 재검수 C0/I0/M0이며 원RED/I1·PowerShell 초기화 오류를 WORK_STATUS에 보존한다. 실제0011/새forward·SQL/DB/서비스 변경0, 저장 보호/직접 DML 경합·역방향 COMMIT·UI/served 미완료이며 [정확 후속 diff](work_packages/FN02_EMPTY_APPLICATION_STORAGE_GUARD_DIFF.md)로 이어간다. 이 source 후보를 기능 완료로 승격하지 않는다.
