@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN03/FN11/UI11 연결 해제 정책 입력 일부**: 기존 정책 편집기의 누락 detach항목만 자료프로필에 연결했다. 본인·같은project·기존규칙 보존/별도전송과 실제분리 승인미연결412 안내를 유지한다. 직접14·가짜DOM5/type/build/diff·한정정적C0/I0/M0 범위이며 actual DB/정책효력/served·전체FN03/FN11/UI11은 여전히 부분/미검증이다. 드리프트 contentprovider는 아직 없어 MATCH/성공을 만들지 않는다.
+
 - **2026-10-21 FN03/UI06 연결 해제 UI 일부**: 기존 ACTIVE exact 링크에서 준비/별도전송/receipt/재조회와 원명령 App 보존을 연결했다. dispatch시 불명확 고정·시도ID로 중첩 오래된 거절의 상태 덮어쓰기를 막고 최초 단독 확정거절 닫기는 유지했다. 신규helper6·가짜DOM6/type/build/diff 확인과 한정 독립 재검토 I1 해소·추가 C0/I0/M0다. 실제 DB/0032 적용·served·초기LINKED/현재내용관측은 미완료이므로 전체업무/사용자 기능 완료가 아니다. 원 실패·지문·제외는 WORK_STATUS에 보존한다.
 
 - **2026-10-21 FN03/UI06 source-links 조회 소비 일부**: 정확 문서 version/hash의 기존 GET·회원 잠금/기존 reader·최대20/부분목록과 명시 조회 UI를 연결했다. UNVERIFIED/DETACHED·권한별 이력 제한·hash/범위·오류/이탈 숨김은 신규6 및 가짜DOM2/type/build/diff로 확인했다. 독립 M2는 문서 전환 토글 해제·실제JSON 소비 장벽으로 보정했다. 0032 미적용/actual DB·SQL/served·초기연결·현재관측·분리 UI는 여전히 미완료이며 사용자 기능 전체 완료로 승격하지 않는다.

@@ -41,6 +41,10 @@ for(const mode of ['INITIAL','EDIT','LOSS','REAUTH','STALE','LATE_SEND'])test('M
 });
 
 
+for(const disposition of ['AUTO','DENY','REQUIRE_APPROVAL'])test('MATERIAL_DETACH_POLICY_'+disposition,async({page})=>{
+ const f=await fixture(page,'EDIT'),panel=page.getByRole('region',{name:'문서·방법론 권한 정책 편집',exact:true});await panel.getByRole('button',{name:'자료 정책 작성 준비',exact:true}).click();const action=panel.getByLabel('자료 정책 행동: 문서 소스 연결 해제',{exact:true});await expect(action).not.toBeChecked();await action.check();await panel.getByRole('combobox',{name:'자료 정책 처리',exact:true}).selectOption(disposition);await panel.getByLabel('자료 정책 만료 UTC',{exact:true}).fill(new Date(Date.now()+600000).toISOString());await panel.getByLabel('자료 정책 변경 이유',{exact:true}).fill('본인 연결 분리 정책');await panel.getByLabel('자료 정책 범위와 기존 규칙 보존 확인',{exact:true}).check();await expect(panel.getByText(/DOCUMENT_SOURCE_APPROVAL_NOT_CONNECTED/)).toBeVisible();await panel.getByRole('button',{name:'자료 정책 명령 준비',exact:true}).click();await expect(panel.getByRole('button',{name:'보존 자료 정책 명령 전송',exact:true})).toBeVisible();expect(f.writes).toHaveLength(0);await panel.getByRole('button',{name:'보존 자료 정책 명령 전송',exact:true}).click();await expect(panel.getByRole('status')).toContainText('자료 정책 저장 확인');expect(f.writes).toHaveLength(1);const rules=f.writes[0].payload.rules;expect(rules.slice(0,2)).toMatchObject([{ruleId:'DOC',operations:['saveDocumentDraft']},{ruleId:'CANDIDATE',operations:['registerConnection']}]);expect(rules[2]).toMatchObject({subjectRef:{kind:'HUMAN',userId:uid},operations:['detachDocumentSource'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition});expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 test('MATERIAL_POLICY_APPROVAL_RECURSION',async({page})=>{
  const f=await fixture(page,'INITIAL'),panel=page.getByRole('region',{name:'문서·방법론 권한 정책 편집',exact:true});
  await panel.getByRole('button',{name:'자료 정책 작성 준비',exact:true}).click();
