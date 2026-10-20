@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN06 공급자 식별 연결 상세설계 후보**: [최소 계약 제안](contracts/FN06_PROVIDER_HANDLE_BINDING_PROPOSAL.md) r2는 원예약 불변/별도 제한 claim·보호 handle·현재성/OS소유 분리의 정확 계약 후보다. PMO는 상세설계 작성만 허용했으며 제품 계약 NOT_ADOPTED·코드/TDD/API/SQL/native/root/실DB/Agent 착수0이다. 최초 C0/I3/M0→보완 scoped C0/I0/M0는 문서 정합성 판정일 뿐 제품 완료가 아니다. 정확 채택/실행 경계는 WORK_STATUS에 구분한다.
+
 - **2026-10-20 UI11 실행기 신뢰 HUMAN 정책 편집**: 기존 허용3행동만 별도 프로필/주체별 버퍼로 연결했다. 신규4/직접8·새 UI3/type0/build249/diff0·한정 정적 C0/I0/M0·QA 잔여0이다. 정책 저장과 실제 등록/지문 확인·credential 발급을 분리하며 최근인증/현재세대·범위 guard 불변·DB/서비스/실Agent 미검증·전체 업무 미완료, 원기록은 현황에 보존한다.
 
 - **2026-10-20 FN01/UI11 소스 관측·시작 기준선 HUMAN 정책 편집**: 기존 서버 허용2/3행동을 별도 프로필·주체별 버퍼로 연결했다. 신규8/직접4·새 UI6/type0/build249/diff0·두 scoped 정적 C0/I0/M0·QA 잔여0이다. 원 메모리/명령 오류는 현황 보존, 같은 타입 범위에 자식 병렬2만 적용했다. 실제 정책 효력/관측/확정·DB/served/Agent 미검증·기존 승인 guard 유지·전체 업무 미완료다.
