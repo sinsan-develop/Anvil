@@ -4,6 +4,7 @@ import type {WorkPlanView} from '../design-trace/work-plan-api.ts';
 import {WorkPlanTaskOriginal} from '../workspace/work-plan-task-original.ts';
 import {readAssignmentPlanOriginal} from './assignment-plan-original.ts';
 import type {SessionDetail} from './api.ts';
+import {AssignmentDesignOriginal} from './AssignmentDesignOriginal.tsx';
 export function AssignmentPlanOriginal({client,detail,onAuthenticationLost}:{client:ApiClient;detail:SessionDetail;onAuthenticationLost:()=>void}){
  const [request,setRequest]=useState<object|null>(null),[loaded,setLoaded]=useState<{request:object;value:WorkPlanView|null;error:ApiError|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const shown=loaded?.request===request?loaded:null;
@@ -17,6 +18,6 @@ export function AssignmentPlanOriginal({client,detail,onAuthenticationLost}:{cli
   {request?<button type="button" onClick={()=>setRequest(null)}>계획 업무 조회 닫기</button>:null}
   {request&&!shown?<p role="status">고정 계획과 업무 원문 확인 중</p>:null}
   {shown?.error?<p role="alert">{shown.error.code} · 임무의 원 업무로 채택하지 않았습니다.</p>:null}
-  {shown?.value?<WorkPlanTaskOriginal plan={shown.value} taskCode={detail.draft.snapshot.basis.taskCode}/>:null}
+  {shown?.value?<><WorkPlanTaskOriginal plan={shown.value} taskCode={detail.draft.snapshot.basis.taskCode}/><AssignmentDesignOriginal client={client} detail={detail} onAuthenticationLost={onAuthenticationLost}/></>:null}
  </section>;
 }
