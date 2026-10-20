@@ -17,6 +17,35 @@ async function installAccessList(page:import('@playwright/test').Page){
  const writes:string[]=[],errors:string[]=[];page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method()+' '+new URL(r.url()).pathname);});page.on('pageerror',e=>errors.push(e.message));return{writes,errors};
 }
 
+const pendingAt='2026-10-20T00:00:00.000Z',pendingId='33333333-3333-4333-8333-333333333333';
+function pendingPage(){return{items:[{id:pendingId,currentVersion:1,storedStatus:'PENDING',effectiveState:'PENDING',operation:'uploadArtifact',targetRef:null,scopeDigest:'a'.repeat(64),expiresAt:'2026-10-21T00:00:00.000Z',createdAt:pendingAt,integrity:'NOT_RECHECKED'}],hasMore:true,nextCursor:'signed-page-2',observedAt:pendingAt};}
+
+test('프로젝트 대기 승인은 명시 조회·다음 페이지만 읽고 페이지 건수를 전체로 합산하지 않는다',async({page})=>{
+ const f=await installAccessList(page),queries:string[]=[];await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>{const q=new URL(r.request().url()).searchParams;queries.push(q.toString());expect(q.get('status')).toBe('PENDING');return r.fulfill({json:q.has('cursor')?{items:[],hasMore:false,nextCursor:null,observedAt:pendingAt}:pendingPage()});});
+ await page.goto('/');const region=page.getByRole('region',{name:'Anvil 대기 승인 조회',exact:true});await expect(region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true})).toBeVisible();expect(queries).toEqual([]);
+ await region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true}).click();await expect(region).toContainText('1페이지 · 표시된 대기 요청 1건 · 전체 건수 미산정');await expect(region).toContainText(pendingId);
+ await region.getByRole('button',{name:'대기 승인 다음 페이지',exact:true}).click();await expect(region).toContainText('2페이지 · 표시된 대기 요청 0건 · 전체 건수 미산정');await expect(region).not.toContainText(pendingId);await expect(region).toContainText('전체 문제·다른 상태 요청 없음이라는 뜻은 아닙니다.');
+ expect(queries).toEqual(['limit=50&status=PENDING','limit=50&status=PENDING&cursor=signed-page-2']);expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+test('대기 승인 재조회403은 과거 요청 수를 0건으로 바꾸지 않고 숨긴다',async({page})=>{
+ const f=await installAccessList(page);let denied=false;await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>denied?r.fulfill({status:403,json:{code:'PROJECT_ACCESS_DENIED'}}):r.fulfill({json:pendingPage()}));await page.goto('/');
+ const region=page.getByRole('region',{name:'Anvil 대기 승인 조회',exact:true});await region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true}).click();await expect(region).toContainText(pendingId);denied=true;await region.getByRole('button',{name:'Anvil 대기 승인 다시 조회',exact:true}).click();await expect(region.getByRole('alert')).toContainText('PROJECT_ACCESS_DENIED');await expect(region).not.toContainText(pendingId);await expect(region).not.toContainText('표시된 대기 요청 0건');expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+test('대기 승인 다음 커서가 반복되면 무한 조회 대신 명시 오류를 보여준다',async({page})=>{
+ const f=await installAccessList(page);await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>r.fulfill({json:pendingPage()}));await page.goto('/');
+ const region=page.getByRole('region',{name:'Anvil 대기 승인 조회',exact:true});await region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true}).click();await expect(region).toContainText(pendingId);await region.getByRole('button',{name:'대기 승인 다음 페이지',exact:true}).click();
+ await expect(region.getByRole('alert')).toContainText('PROJECT_DECISIONS_RESPONSE_INVALID');await expect(region.getByRole('status')).toHaveCount(0);await expect(region).not.toContainText(pendingId);await expect(region.getByRole('button',{name:'Anvil 대기 승인 다시 조회',exact:true})).toBeEnabled();expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+test('대기 승인 응답 소비 전에 닫아도 늦은 목록을 다시 표시하지 않는다',async({page})=>{
+ await page.addInitScript(pid=>{const original=globalThis.fetch;(globalThis as any).pendingApprovalQa={consumed:false};globalThis.fetch=async(...args)=>{const response=await original(...args);if(new URL(String(args[0]),location.href).pathname==='/api/v1/projects/'+pid+'/approvals'){const json=response.json.bind(response);response.json=async()=>{const value=await json();setTimeout(()=>{(globalThis as any).pendingApprovalQa.consumed=true;},0);return value;};}return response;};},one.id);
+ const f=await installAccessList(page);let entered=false,release!:()=>void;const gate=new Promise<void>(resolve=>release=resolve);await page.route('**/api/v1/projects/'+one.id+'/approvals?*',async r=>{entered=true;await gate;await r.fulfill({json:pendingPage()});});await page.goto('/');
+ const region=page.getByRole('region',{name:'Anvil 대기 승인 조회',exact:true});await region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true}).click();await expect.poll(()=>entered).toBe(true);await region.getByRole('button',{name:'대기 승인 조회 닫기',exact:true}).click();release();await expect.poll(()=>page.evaluate(()=>(globalThis as any).pendingApprovalQa.consumed)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>setTimeout(resolve,0)));
+ await expect(region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true})).toHaveAttribute('aria-expanded','false');await expect(region).not.toContainText(pendingId);expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 test('프로젝트 카드의 승인 바로가기는 정확 프로젝트 조회 화면만 열고 명령을 보내지 않는다',async({page})=>{
  const f=await installAccessList(page);await page.route('**/api/v1/projects/'+one.id,r=>r.fulfill({json:accessDetail()}));await page.goto('/');
  await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>r.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:one.updatedAt}}));
