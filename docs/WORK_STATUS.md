@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08 부분자료 상태조회 한정 수용(2026-10-20)**: 신규3 부재RED356.4854ms→3PASS222.4275ms/type0/diff0·독립정적C0/I0/M0이다. 메모리store새instance에서빈/역순부분/등록완료·만료역사·원ref복사/변조·고정오류/종료port를확인했으며실파일재시작/내구·source/current진위·Agent/OS미판정이다. 기존record/receipt/START/SEND·원형식/공개API/DB/서비스불변·자원0·제외6보존·전체FN08미완료이며원자료삭제/자동재수신0이다. rollback은새readStatus/시험의일반revert다. identity활성화는PMO에정확계약차이만보고한상태이며그답변을다음배정으로기다리지않고남은독립소비경로를대조한다.
+
+- **FN08 C3 provider identity 경계 대조·부분자료 상태조회 착수(2026-10-20)**:789937ef local/private exact·main불변·trackedclean/제외6보존·자원0이다. start/codec는외부handle비보관의digest/ref만기록하고responsible-sessions와준비/결과소비는RESERVED/externalSessionHandleRef=null만허용한다. digest→threadId복원/ACTIVE갱신은불가능하며새지속/공개소비계약을임의추가하지않고정확사실·A현계약유지/B별도보호handleclaim설계대안을PMO에보고했다. 대기전환없이기존material inbox의재시작뒤부분상태/누락조회미연결을선정한다. readStatus는기존#journal/blob/hash·exactmanifest를읽어본문없는수신상태만반환하고과거만료자료도역사/EXPIRED로구분한다. 자동재수신/삭제·현재권한/전체맥락/이해합격/WORK판정0·메모리TDD/type/한정검토·API/SQL/DB/서비스/Agent0이다.
+
 - **FN08 회수 중지지시 읽기선택 한정 수용(2026-10-20)**: 신규3 missing-methodRED281.7492ms→3PASS334.9587ms·시험callbackimplicitany2정정후type0/diff0·독립정적C0/I0/M0이다. 기존client전용GET/원장실코드의exactref/null/UNKNOWN/만료캐시를소비했으며불변client기존3/옛QA전수는재실행하지않았다. null은NO_STOP_INSTRUCTION이고중지/안전/회수성공아님·stopper/permit/wire호출0·원자료/기존정상stop/공개API/DB/서비스불변·자원0·제외6보존이다. 실제서명/키/current진위/COMMIT·Agent/OS회수미판정·전체FN08미완료,rollback은신규읽기method/시험일반revert다. 최초test helper의한줄오추정patch1은적용전거절/부분수정0이며같은오추정반복을중단하고확인된전체줄로만수정했다.
 
 - **FN08 C3 회수 중지지시 읽기선택 착수(2026-10-20)**: 1b784a37 local/private exact·main불변·trackedclean/제외6보존이다. 기존client STOP_INSTRUCTION/RECOVERY 응답은이미지원되지만명시server ref 선택소비가없다. 새readRecoveryStop은기존정확응답/ref/봉투·기한을읽어선택정보만반환하며null지시는중지성공/안전으로추정하지않는다. 기존EXECUTION stop/현재target/권한소비에연결하지않고permit/interrupt/START/SEND/회수·완료판정0·API/DB/서비스/Agent/자원0이다. 메모리TDD/직접기존client범위/type/한정검토만한다.

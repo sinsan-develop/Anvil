@@ -39,6 +39,17 @@ export class SyntheticMaterialReceiver{
   return events;
  }
  #result(events:Entry[]){const received=new Set(events.map(e=>e.snapshot.materialRef.id)),missing=this.#materials.filter(m=>!received.has(m.ref.id));return{transport:'SYNTHETIC_ONLY' as const,state:missing.length?'PARTIAL' as const:'REGISTERED_PARTS_RECEIVED' as const,manifestHash:this.#manifestHash,receivedMaterialRefs:this.#materials.filter(m=>received.has(m.ref.id)).map(m=>cloneV1(m.ref)),missingMaterialIds:missing.map(m=>m.ref.id),completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false};}
+ /** 재시작 뒤 기존 수신/누락을 읽기만 한다. 만료된 봉투도 역사로 조회하며 현재 허가나 필수 맥락 충족은 만들지 않는다. */
+ async readStatus(rawEnvelope:unknown){
+  try{
+   this.#port();const raw=cloneV1(rawEnvelope),envelope=readDispatchEnvelopeV1(raw,Date.parse((raw as any)?.issuedAt)),scope=receiptKeyV1(envelope);
+   if(envelope.operation==='REQUEST_STOP'||Date.parse(envelope.issuedAt)>this.#now()||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_STATUS_ENVELOPE_INVALID');
+   const payloadRefs=envelope.operation==='START_SESSION'?[envelope.payload.contextBundleRef,envelope.payload.optionsRef]:[envelope.payload.instructionRef,envelope.payload.partsRef];
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||!payloadRefs.some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{this.#port();return this.#result(await this.#journal(tx,scope,envelope.envelopeHash));});this.#port();const now=this.#now();
+   return{...result,readOnly:true as const,envelopeTimeState:now>=Date.parse(envelope.expiresAt)?'EXPIRED' as const:'WITHIN_ENVELOPE_WINDOW' as const,observedAt:new Date(now).toISOString(),currentAuthorityVerified:false as const};
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_STATUS_UNAVAILABLE');}
+ }
  /** 내구 부분 inbox의 읽기 전용 SEND 자료 연결. 이 ref는 현재 서버 허가/이해 판정을 대신하지 않는다. */
  instructionSource(){return{transport:'SYNTHETIC_ONLY' as const,read:(envelope:DispatchEnvelopeV1)=>this.instruction(envelope)};}
  async instruction(rawEnvelope:unknown){
