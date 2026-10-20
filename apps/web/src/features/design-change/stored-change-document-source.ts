@@ -17,7 +17,7 @@ export async function readStoredChangeDocumentSource(client:ApiClient,selection:
   if(page.change.ref.contentHash!==chosen.changeRef.contentHash||page.change.ref.version!==chosen.changeRef.version)throw new ApiError('DESIGN_CHANGE_SOURCE_CHANGED');
   const source=chosen.source;
   if(page.change.sourceRefs.filter(value=>value.kind==='DOCUMENT_VERSION'&&value.id===source.id&&value.version===source.version&&value.contentHash===source.contentHash).length!==1)throw new ApiError('DESIGN_CHANGE_SOURCE_CHANGED');
-  const value=await readDocument(client,chosen.projectId,source.id,source.version);check();
+  const value=await readDocument(client,chosen.projectId,source.id,source.version,{active,expectedContentHash:source.contentHash});check();
   const document=value.document;
   // 현 문서 저장 hash 계약은 sourceRefs=[]만 지원한다. 다른 값을 비워서 검증하지 않는다.
   if(document.content.sourceRefs.length!==0)throw new ApiError('DESIGN_CHANGE_SOURCE_CHANGED');

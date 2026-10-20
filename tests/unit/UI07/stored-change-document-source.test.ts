@@ -44,3 +44,9 @@ test('닫기/전환 뒤 결과를 버리고 후속 읽기를 막으며 선택 �
  const h=fixture(),request=fn(h.client,h.selection,()=>true);h.selection.source.id=changeId;assert.equal((await request).document.id,documentId);
  let open=true;const j=fixture((k,v)=>{if(k==='body')open=false;return v;});await assert.rejects(fn(j.client,j.selection,()=>open),ApiError);
 });
+
+test('보관 출처 문서 metadata 응답 중 이탈하면 후속 파일 GET을 시작하지 않는다',async()=>{
+ let active=true;const f=fixture((kind,value)=>{if(kind==='document')active=false;return value;});
+ await assert.rejects(read()(f.client,f.selection,()=>active),ApiError);
+ assert.equal(f.calls.filter(path=>path.includes('/files/')).length,0);
+});
