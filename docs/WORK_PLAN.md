@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN06/FN08 C3 primary 시작 파일 원장**: 준비된전용root에서2행/64KiB·wxlock/file.sync·재열기·불명/부분자료보존을연결했다. 실제파일직접1PASS/type0/diff0·tx수명I1은반례RED→보정·재리뷰C0/I0/M0·QA잔여0이다. directoryfsync/전원손실·프로세스간경합/실Agent/OS·서비스는미검증이고root/ACL자동생성·제품활성화0,원실패·보정내역은현황에보존한다.
+
 - **2026-10-20 FN06/FN08 C3 합성 primary 시작 연결**: 기존 수신기뒤고정thread/start어댑터후보를추가했다. 명시옵션·정확자료/permit/grant/소유검사·시도sync/중복차단·응답digest/UNKNOWN을신규12+직접기존54/type0·재리뷰C0/I0/M0범위로검수했다. 원I1·자체RED/오판가설은현황보존,실제Provider/OS/socket/파일내구·외부handle/본문전달·서비스/전체업무는미완료/미검증이며P1SYNTHETIC_ONLY·false경계유지다.
 
 - **2026-10-20 FN11/UI11 결과 제출·검수 정책 작성**: 기존4결과행동의별도프로필/버퍼·명시준비/전송·동일명령재확인을연결했다. 신규4+직접공유17/type/build248·새DOM4+기존2=6PASS·scoped정적C0/I0/M0·QA0이다. 다른규칙/실행false·기본DENY를유지하며새API/DB/실권한자동부여0,실제DB/served/현재정책·Agent·전체FN11/UI11은미검증/부분이다. 원실패·미실행범위는WORK_STATUS에보존한다.
