@@ -96,23 +96,23 @@ test('유효한 임무 초안 저장과 명시 방법론 적용의 material 직�
    }
    assert.fail('FN02_EXPECTED_MATERIAL_CONTROLLER_WAIT_NOT_OBSERVED');
   }
-  async function race(leaderRequest:ProjectCommand,followerRequest:ProjectCommand,expectedFailure:string):Promise<any>{
+  async function race(leaderRequest:ProjectCommand,followerRequest:ProjectCommand,expectedFailure:string,expectedStatus:number):Promise<any>{
    const leader=await pool.connect();let follower:PoolClient|undefined,pending:Promise<any>|null=null;
    try{
     follower=await pool.connect();
     await leader.query('BEGIN');await follower.query('BEGIN');const leaderPid=(await leader.query('SELECT pg_backend_pid() id')).rows[0].id,followerPid=(await follower.query('SELECT pg_backend_pid() id')).rows[0].id;
     const result=await material(leader,leaderRequest);pending=material(follower,followerRequest).then(value=>({value}),error=>({error}));await waitBlocked(followerPid,leaderPid);await leader.query('COMMIT');
-    const denied=await pending;assert(denied.error instanceof AuthFailure);assert.equal(denied.error.message,expectedFailure);await follower.query('ROLLBACK');return result;
+    const denied=await pending;assert(denied.error instanceof AuthFailure);assert.equal(denied.error.message,expectedFailure);assert.equal(denied.error.statusCode,expectedStatus);await follower.query('ROLLBACK');return result;
    }finally{
     const rolled=await Promise.allSettled([leader.query('ROLLBACK'),...(follower?[follower.query('ROLLBACK')]:[])]);
     if(pending)await pending;leader.release(rolled[0]?.status==='rejected');follower?.release(rolled[1]?.status==='rejected');
     assert(rolled.every(result=>result.status==='fulfilled'),'FN02_RACE_ROLLBACK_UNVERIFIED');
    }
   }
-  phase='ASSIGNMENT_FIRST';const assignment=await race(first.request,first.apply,'EXECUTION_STATE_UNVERIFIED');assert.deepEqual((await readAssignmentDraft(client,first.pid,assignment.data.ref)).ref,assignment.data.ref);
+  phase='ASSIGNMENT_FIRST';const assignment=await race(first.request,first.apply,'EXECUTION_STATE_UNVERIFIED',412);assert.deepEqual((await readAssignmentDraft(client,first.pid,assignment.data.ref)).ref,assignment.data.ref);
   assert.deepEqual((await admin.query('SELECT id,application_version,snapshot_json,snapshot_hash FROM anvil.project_methodologies WHERE project_id=$1 ORDER BY application_version',[first.pid])).rows,first.original);
   const denied=await send({...first.apply,commandId:randomUUID()});assert.equal(denied.statusCode,412);assert.equal(denied.json().code,'EXECUTION_STATE_UNVERIFIED');assert.equal((await admin.query("SELECT count(*)::int n FROM anvil.commands WHERE project_id=$1 AND operation='applyMethodology'",[first.pid])).rows[0].n,0);markers.push('COMMITTED_VALID_ASSIGNMENT_BLOCKS_APPLICATION_NO_APPEND');
-  phase='APPLICATION_FIRST';const applied=await race(second.apply,second.request,'METHODOLOGY_APPLICATION_CHANGED');assert.equal(applied.data.ref.version,2);
+  phase='APPLICATION_FIRST';const applied=await race(second.apply,second.request,'METHODOLOGY_APPLICATION_CHANGED',409);assert.equal(applied.data.ref.version,2);
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.assignment_drafts WHERE project_id=$1',[second.pid])).rows[0].n,0);assert.equal((await admin.query("SELECT count(*)::int n FROM anvil.commands WHERE project_id=$1 AND operation='prepareAssignment'",[second.pid])).rows[0].n,0);
   const rows=(await admin.query('SELECT id,application_version,snapshot_json,snapshot_hash FROM anvil.project_methodologies WHERE project_id=$1 ORDER BY application_version',[second.pid])).rows;assert.equal(rows.length,2);assert.deepEqual(rows.slice(0,1),second.original);markers.push('COMMITTED_APPLICATION_REJECTS_STALE_ASSIGNMENT_NO_ORPHAN');
   phase='EXPLICIT_REBASE';const retry=structuredClone(second.request);retry.commandId=randomUUID();const definition=retry.payload.definition as any;definition.taskRef.applicationRef=applied.data.ref;definition.baselineRefs=definition.baselineRefs.map((ref:any)=>ref.id===second.applicationRef.id?applied.data.ref:ref);

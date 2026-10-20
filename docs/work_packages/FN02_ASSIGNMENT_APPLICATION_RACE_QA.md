@@ -21,7 +21,7 @@ material 경로의 직렬화나 이력 거절이 상실되면 다음 두 실제 
 ## 실행 후보·자원
 
 - `scripts/qa-fn02-empty-application.ts --history`는 신규 `tests/integration/FN02/application-assignment-race-isolated.test.ts`만 선택한다. SQL E9DEE26A03DDD643F06DDC9DFBFE39DCCFB91FC305FCC465E53A5D15FD2880C6/동일53 ID·checksum·초기 guard 함수 정의 보존. 기존 formal runner 등록0.
-- source 초기 지문84AB2EA3는 작성 이력이다. rollback 양쪽 독립 회수와 대기 SQL 관찰/주장 범위 보완 후 시험9E389A95E69050EE0B7D6CD027C9A91F8F3E0F4669A0D67BCFEBFA42E65324F2, runnerC142E77B06E80C03F5F6EDC14B15EB52D07BC0DC60094B0B4DB5A1CF5965D399. 검수 보완 시 새 지문·정확 게시 SHA를 WORK_STATUS/commentary에 고정한 뒤 실행한다.
+- source 초기 지문84AB2EA3/9E389A95는 작성 이력이다. rollback 양쪽 독립 회수·대기 SQL 관찰/주장 범위·경합 거절의 정확 상태412/409 assertion 보완 후 시험214928F00608C6B284BD45660018F4A4B9D6E8FF8F32AC01E59BC7FBFC5B748E, runnerC142E77B06E80C03F5F6EDC14B15EB52D07BC0DC60094B0B4DB5A1CF5965D399. 검수 보완 시 새 지문·정확 게시 SHA를 WORK_STATUS/commentary에 고정한 뒤 실행한다.
 - WSL-server/daon UID1000/Main 어울, owner AV3_FN02_EMPTY_APPLICATION_QA+새 instance, daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e(SINSAN).
 - 새 빈 Git `/home/daon/deploy/anvil-v3-fn02-empty-application-qa-01`, tmp0700 `/tmp/anvil-v3-fn02-empty-application-01`/전용 npm-cache. **추가 저장 경로**는 그 tmp 하위 새0700 `assignment-artifacts`이며 합성 설계·계획 원문만 보관한다. 기존·외부 원본/Secret을 수집하지 않는다. child 전에는 npm-cache만 허용하는 기존 runner guard를 유지한다.
 - PG `anvil-v3-fn02-empty-application-pg-01`, internal network `anvil-v3-fn02-empty-application-net-01`, DB `anvil_v3_fn02_empty_application_qa_01`.
