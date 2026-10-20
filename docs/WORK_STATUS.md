@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 UI05 미전송 준비 해제 한정 검수**: 위 source/test2파일 정적 C0/I0/M0·필수보완 finding0·리뷰어 독립 실행0. 확인창 중 부모버퍼/주체교체 CAS 음성의 실제 DOM은 미검증이며 코드가 원결박/명령과 현재 불확실/저장/실패를 재검사하는 범위만 확인했다. 실제DB/served/모든비동기조합·전체FN12/UI05는 미완료로 유지한다.
+
+- **2026-10-21 UI05/FN12 미전송 준비 해제 구현·최소 검증 / Main 어울**: source7ED25D6E/browser67642995. 준비만 된 기준 명령을 확인창 취소 시 그대로 보존하고 수락 시 bindingId/원명령ID/불확실·저장·실패 여부를 다시 대조해 pending만 비운다. 원조건/시험ID·이유/제어세대는 보존·dirtytrue이며 새준비 뒤 수정 SAVE-02의 새명령만 기존POST/원문GET로 확인한다. 전송 유실/APPLIED후조회거절/미확인 화면왕복에서는 해제0·같은명령 재확인 유지. 버튼부재 RED1(15초)→신규 DOM1PASS12.1초·기존연결유실1PASS와 readback거절/왕복미확인2PASS(후자2는13.6초실행내), criteria직접4PASS220.154ms·type/build0(265module/453ms·기존chunk경고)·최종type/diff0이다. 시험중 hidden details innerText 빈문자/textarea label선택/새scenario 유실fake미설정 각1은 시험오류로 분리, 원 기대값/제품기준완화0. 실제WSL 저장/served·새API/DB/명령취소/Agent·전체FN12/UI05 완료0이며 단위source 기능만 판정한다. 보호6/main·특정실행거절/질문미답변·r2미채택·정본 과거차이 유지. source/test 한정독립검토 뒤 소유4파일만 보존하고 rollback은 후속revert·사용자자료삭제0이다.
+
+- **2026-10-21 UI05/FN12 미전송 검수 기준 준비 해제 착수 / Main 어울**: 기준37e87483. 검수 기준 작성→저장 준비 뒤 아직 전송하지 않은 명령만 사용자 확인으로 해제해 입력을 보존하고 수정/재준비→기존 저장/원문 확인으로 연결한다. busy/working·uncertain·저장완료·실패기록이 있으면 이 경로로 명령을 버리지 않으며 기존 확인된 거절/같은명령 재확인 경계를 유지한다. 새 API/DB/실제 취소·Agent0이고 FN12 기준 등록의 기존 내부 작성흐름 보완이다. 완료조건: 준비해제 취소/수락·원입력 보존·수정한 새명령만 전송/유실 시 동일명령 재확인 DOM RED→GREEN, 직접criteria단위·기존 유실/조회거절 음성·type/build·한정검토. 정본 과거 차이는 일괄동기화하지 않고 이 단위만 양쪽 문서에 추가한다.
+
 - **2026-10-21 UI04 후보 선택 한정 독립 검수**: 위 source/test2파일 정적 C0/I0/M0, 리뷰어 독립 실행0이다. 원 fullref의 페이지 밖 보존만 판정했으며 실제 BIND 만료 거절·같은 fullref 재등장·기존예약/pending/uncertain 조합은 신규 DOM 미검증이다. 기존 직접단위10의 선행/명령검사 증거와 구분하고 전체예약/Agent 완료로 확대하지 않는다.
 
 - **2026-10-21 UI04/FN09 후보 선택 유지 구현·최소 검증 / Main 어울**: source1D257E5F/browser1A021FCF. 후보 페이지가 원 fullref를 포함하지 않을 때 보관 선택 option과 ID/버전/hash·현재성 미확인을 표시하며 BIND 직전 기존 후보/서버 검사는 변경하지 않았다. 최초 시험은 확정 원문 재조회 누락으로 예약 화면에 도달하지 못한 fixture오류1이며, 정정 뒤 다음 페이지에서 선택값 빈문자 RED1을 실제 확인했다. 최소3줄 보완 후 다른후보/동일ID다른hash2+기존확정/403흐름1 가짜API Edge DOM3PASS6.4초, 직접 책임세션web/screen10PASS377.954ms·type/build0(265module/301ms·기존 chunk 경고 유지)·diff0이다. 새 API/DB/권한·실제예약·Agent/서비스0, 실제 WSL 저장/served·현재 후보 능력/전체FN09/UI04는 미검증/부분이다. 보호6/main·특정 실행거절/직접질문 미답변·FN06r2미채택을 유지한다. 한정 독립 검토 후 소유source/시험/계획/현황만 보존하며 rollback은 후속revert·사용자DB삭제0이다.
