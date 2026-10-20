@@ -45,4 +45,3 @@ exit0, status PASS/phase DONE, failure·cleanupFailure·diagnostic null, applica
 ## 남은 핵심 작업
 
 UI03의 별도 명시 적용·미확인 명령 재확인·재조회 연결, 초기 createProject 실행 회귀, 7원장 직접 INSERT와 적용의 경합/다른project·비기본isolation 영향, 정식개발DB/served는 미검증이다. 일반 함수/단위PASS로 이를 완료 처리하지 않는다. 다음은 UI03 기존 계약의 실제 적용 소비를 이어간다.
-
