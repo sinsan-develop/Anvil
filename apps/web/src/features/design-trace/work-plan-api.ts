@@ -34,6 +34,18 @@ export async function readWorkPlan(client:ApiClient,projectId:string,planRef:Pla
   if(!uuid.test(projectId)||!ref(planRef)) throw new ApiError('CLIENT_PATH_INVALID');
   return validate(await client.get<WorkPlanView>(`/api/v1/projects/${projectId}/work-plans/${planRef.id}/versions/${planRef.version}`),planRef);
 }
+/** 보관 기준 버전 이하만 조회한다. 과거 본문 자체 hash를 검사하며 현재 적용/개정 대상으로 바꾸지 않는다. */
+export async function readWorkPlanAtVersion(client:ApiClient,projectId:string,observedRef:PlanRef,version:number,active:()=>boolean=()=>true){
+  if(!uuid.test(projectId)||!ref(observedRef)||!Number.isSafeInteger(version)||version<1||version>observedRef.version)throw new ApiError('CLIENT_PATH_INVALID');
+  const selected=structuredClone(observedRef);
+  if(!active())return null;
+  const value=await client.get<WorkPlanView>(`/api/v1/projects/${projectId}/work-plans/${selected.id}/versions/${version}`);
+  if(!active())return null;
+  const verified=await validate(value,version===selected.version?selected:undefined);
+  if(!active())return null;
+  if(verified.ref.id!==selected.id||verified.ref.version!==version)throw new ApiError('RESPONSE_INVALID');
+  return verified;
+}
 export async function listWorkPlans(client:ApiClient,projectId:string,cursor:string|null,documentId:string|null=null):Promise<WorkPlanPage>{
   if(!uuid.test(projectId)||documentId!==null&&!uuid.test(documentId)||cursor!==null&&(typeof cursor!=='string'||!cursor||cursor.length>4096))throw new ApiError('CLIENT_PATH_INVALID');
   const query=new URLSearchParams({limit:'50'});if(cursor!==null)query.set('cursor',cursor);if(documentId!==null)query.set('documentId',documentId);
