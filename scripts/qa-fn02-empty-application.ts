@@ -63,8 +63,14 @@ try{
  psql('anvil_v3_migrator',migrator,'BEGIN;'+authority+'\n;INSERT INTO anvil.schema_migrations(id,checksum) VALUES('+sqlText(manifest[51]!.id)+','+sqlText(manifest[51]!.checksum)+');COMMIT;');
  const oldGuardSql="SELECT encode(sha256(convert_to(pg_get_functiondef('anvil.guard_initial_project_methodology()'::regprocedure),'UTF8')),'hex');",oldGuard=psql('anvil_v3_migrator',migrator,oldGuardSql);
  phase='CANDIDATE_SCHEMA';psql('anvil_v3_migrator',migrator,'BEGIN;'+candidate+'\n;INSERT INTO anvil.schema_migrations(id,checksum) VALUES('+sqlText(manifest[52]!.id)+','+sqlText(sqlHash)+');COMMIT;');
+ phase='OLD_GUARD_COMPARE';
  assert.equal(psql('anvil_v3_migrator',migrator,oldGuardSql),oldGuard,'FN02_OLD_INITIAL_FUNCTION_CHANGED');
+ phase='MANIFEST_READ';
  const actual=JSON.parse(psql('anvil_v3_migrator',migrator,"SELECT json_agg(x ORDER BY id) FROM (SELECT id,checksum FROM anvil.schema_migrations)x;"));
+ phase='MANIFEST_COMPARE';
+ console.log('FN02_SCHEMA_CHECK '+JSON.stringify({actualCount:actual?.length,expectedCount:manifest.length,
+  actualIds:Array.isArray(actual)?actual.map((r:any)=>r.id):null,expectedIds:manifest.toSorted((a,b)=>a.id.localeCompare(b.id)).map(r=>r.id),
+  mismatches:Array.isArray(actual)?actual.filter((r:any)=>manifest.find(m=>m.id===r.id)?.checksum!==r.checksum).map((r:any)=>({id:r.id,checksum:r.checksum,expected:manifest.find(m=>m.id===r.id)?.checksum??null})):null}));
  assert.deepEqual(actual,manifest.toSorted((a,b)=>a.id.localeCompare(b.id)));phase='FUNCTIONS';
  let output='';let childFailed=false;
  try{output=execFileSync(process.execPath,['--experimental-strip-types','--test','tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(90000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
@@ -77,7 +83,10 @@ try{
  const marker=output.split(/\r?\n/).map(s=>s.replace(/^# /,'')).find(s=>s.startsWith('FN02_CANONICAL_GRAPH_PG_JS_MATCH '));
  if(childFailed||!marker)throw Error('FN02_QA_FUNCTION_TEST_FAILED');
  report=JSON.parse(marker.slice('FN02_CANONICAL_GRAPH_PG_JS_MATCH '.length));phase='DONE';
-}catch(e){const message=(e as any)?.message;failure=typeof message==='string'&&/^[A-Z0-9_]{1,100}$/.test(message)?message:'FN02_QA_ASSERTION_OR_UNCLASSIFIED_FAILURE';}
+}catch(e){const message=(e as any)?.message;failure=typeof message==='string'&&/^[A-Z0-9_]{1,100}$/.test(message)?message:'FN02_QA_ASSERTION_OR_UNCLASSIFIED_FAILURE';
+ if(diagnostic===null){const code=(e as any)?.code,location=/qa-fn02-empty-application\.ts:(\d+):(\d+)/.exec(String((e as any)?.stack??''));
+  diagnostic={code:typeof code==='string'&&/^[A-Z0-9_]{1,80}$/.test(code)?code:null,line:location?Number(location[1]):null};}
+}
 finally{
  cleanup=true;cleanupUntil=Date.now()+120000;
  if(creating)try{
