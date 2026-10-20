@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 FN05 후보 한정 재검토**: 563B9256 정적재검토에서 원M1해소·replay순서명확/추가C0/I0/M1(신규작성과신규철회 적격성 문구혼재). Main은 작성에만 원지식·최초기한 검사, 철회는 작성자/현재권한·요청head/ref/hash CAS만 검사하고 원지식변경/만료를 철회차단사유로 삼지 않는다고 명시했다. 후속문구 독립재검토0·제품실행0/NOT_ADOPTED 유지.
+
+- **2026-10-21 FN05/UI10 공유 요청 계약 후보 / Main 어울**: PMO가 exact 공개·자료/권한 결정을 위해 요청한 FN05_KNOWLEDGE_SHARE_REQUEST_PROPOSAL.md 한 문서를 DRAFT/NOT_ADOPTED로 작성했다. A 출발OWNER 본인 사적초안(targetUUID 존재조회/metadata전달0)과 B 양쪽전달을 분리하고 exact DTO/노출범위·작성/조회/철회 주체·타source 동일404·기존 FN11 consumable/원HUMAN-client 결박의 재사용불가·replay/CAS/감사/철회·후속공유0·가역성과 새수치20/20/24시간 후보를 고정했다. 한정독립 원본116683D0 정적C0/I0/M2(철회작성자/유실replay순서)는 Main이 본인조건/다른작성자404 및 현재권한→replay→신규적격성 순서로 보완했다. 이후 본문 source근거절10.3 정정/상세known-secret 재검사도 명시했다. 제품TDD/코드/라우트/SQL/DB·실권한/외부전송/Agent0·기능진도0이며 문서만으로 채택하지 않는다. FN03 최소source-only 판단은 수신했으나 실제content 관측없음412·새권위 가정0으로 유지하고 성공경로/거절코드 양산을 진행하지 않았다. 필요한 결정은 공유 요청 자체를 사적초안A로 구체화할지 또는 source공개승인·target수락B와 묶을지이며 PMO에 후보를 전달한다. 기존직접질문/거절/r2미채택·보호6/main/정본과거차이는 해제0이다.
+
 - **2026-10-21 Stage B 실제 소비경로 재대조 / Main 어울**: 기준cfedb7ee. App의 ProjectCreatePage/ProjectMethodologyPage/DocumentsPage/KnowledgePage→각 준비·송신 helper→projects/routes 명령 분기→ProjectsRepository/ProjectMethodologies/ProjectDocuments/ProjectWorkPlans/ProjectKnowledge의 실제 INSERT·version/search GET을 대조했다. 아래는 현재 source 판정이며 과거 격리/actual을 새 served 증거로 승격하지 않는다.
   - FN01/UI01·02 생성/초안·목록/격리: 소스 구현·과거 핵심 확인이 있으나 현재 정식DB/사용자 화면 여정은 **구현했지만 동작 미확인**. 실제 소스 관측/기준선 전체는 **부분 구현**이다.
   - FN02/UI03: 그래프·내장/공통/전용 개정·검토/확정·빈 프로젝트 적용은 저장/조회까지 소스가 있다. apply는 임무/실행이력 존재 시412이며 이를 기능누락으로 재작성하지 않는다. 현재 사용자 여정은 **구현했지만 동작 미확인**, 진행 중 적용 전환은 **부분 구현**/실제 실행·영향 선행 필요다.
