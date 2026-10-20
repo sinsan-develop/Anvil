@@ -25,6 +25,27 @@ async function select(page:Page){await page.getByRole('button',{name:'문서 출
 const panel=(p:Page)=>p.getByRole('region',{name:'지식 문서 출처 선택',exact:true});
 const attach=(p:Page)=>p.getByRole('button',{name:'이 버전을 지식 출처에 붙이기',exact:true});
 function clean(s:Awaited<ReturnType<typeof fixture>>){expect(s.unknown).toEqual([]);expect(s.offOrigin).toEqual([]);expect(s.errors).toEqual([]);}
+
+test('미저장 문서 선택 해제는 입력·원문을 보존하고 명시 저장에서 본문 파일만 유지한다',async({page})=>{
+ const s=await fixture(page);await start(page);await select(page);await attach(page).click();
+ const chosen=page.getByRole('region',{name:'지식 작성',exact:true});await chosen.getByText('선택 출처',{exact:true}).click();
+ await page.getByRole('button',{name:'문서 출처 1 선택 해제',exact:true}).click();
+ await expect(page.getByText('선택한 원문 출처 1건 · 지식 저장 전',{exact:true})).toHaveCount(0);
+ await expect(page.getByLabel('지식 제목',{exact:true})).toHaveValue('사용자 판단');await expect(page.getByLabel('지식 원문',{exact:true})).toHaveValue('내가 작성한 본문');await expect(page.getByLabel('지식 작성 이유',{exact:true})).toHaveValue('명시 출처의 이유');
+ expect(s.writes).toEqual([]);await expect(panel(page).getByLabel('붙일 문서 원문',{exact:true})).toHaveText(body);
+ await page.getByRole('button',{name:'지식 초안 저장',exact:true}).click();await expect(page.getByText('지식 초안 저장 확인 · v1 · 별도 확정 전',{exact:true})).toBeVisible();
+ expect(s.writes).toHaveLength(2);expect(s.writes[1].payload.entry.sourceRefs).toEqual([{kind:'ARTIFACT',id:uid,contentHash:contentHash(Buffer.from('내가 작성한 본문'))}]);clean(s);
+});
+
+test('동결된 저장 결과 미확인에서는 문서 해제가 잠기고 원 명령을 보존한다',async({page})=>{
+ const s=await fixture(page,{lostSave:true});await start(page);await select(page);await attach(page).click();
+ await page.getByRole('region',{name:'지식 작성',exact:true}).getByText('선택 출처',{exact:true}).click();
+ await expect(page.getByRole('button',{name:'문서 출처 1 선택 해제',exact:true})).toBeEnabled();
+ await page.getByRole('button',{name:'지식 초안 저장',exact:true}).click();await expect(page.getByRole('button',{name:'같은 지식 명령 결과 확인',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'문서 출처 1 선택 해제',exact:true})).toBeDisabled();
+ await page.getByRole('button',{name:'같은 지식 명령 결과 확인',exact:true}).click();await expect(page.getByText('지식 초안 저장 확인 · v1 · 별도 확정 전',{exact:true})).toBeVisible();
+ expect(s.writes[1]).toEqual(s.writes[2]);expect(s.writes[2].payload.entry.sourceRefs[0]).toEqual(source);clean(s);
+});
 test('목록의 최신과 다른 명시 버전을 검증해 출처만 붙이고 저장/재조회까지 기존 계약으로 연결한다',async({page})=>{
  const s=await fixture(page);await start(page);await select(page);await expect(panel(page).getByLabel('붙일 문서 원문',{exact:true})).toHaveText(body);await expect(page.getByLabel('지식 원문',{exact:true})).toHaveValue('내가 작성한 본문');expect(s.writes).toEqual([]);expect(await page.evaluate(()=>(window as any).ATTACH_EXECUTED)).toBeUndefined();await attach(page).click();await expect(page.getByText('선택한 원문 출처 1건 · 지식 저장 전',{exact:true})).toBeVisible();await attach(page).click();await expect(panel(page).getByRole('alert')).toContainText('KNOWLEDGE_SOURCE_DUPLICATE');await page.getByRole('button',{name:'지식 초안 저장',exact:true}).click();await expect(page.getByText('지식 초안 저장 확인 · v1 · 별도 확정 전',{exact:true})).toBeVisible();expect(s.writes).toHaveLength(2);expect(s.writes[1].payload.entry.sourceRefs[0]).toEqual(source);expect(s.writes[1].payload.entry.title).toBe('사용자 판단');await page.getByRole('button',{name:'작성 닫기',exact:true}).click();await page.getByRole('button',{name:'지식 원문 보기',exact:true}).click();await expect(page.getByLabel('보관 지식 원문',{exact:true})).toHaveText('내가 작성한 본문');clean(s);
 });

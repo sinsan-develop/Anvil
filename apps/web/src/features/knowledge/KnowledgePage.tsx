@@ -16,7 +16,7 @@ import{readProjectConstitution}from'./constitution-api.ts';
 import{ProjectConstitutionPanel}from'./ProjectConstitutionPanel.tsx';
 import {KnowledgeDocumentSources} from './KnowledgeDocumentSources.tsx';
 import {KnowledgeDocumentPicker} from './KnowledgeDocumentPicker.tsx';
-import {attachKnowledgeDocument} from './knowledge-document-attach.ts';
+import {attachKnowledgeDocument,detachKnowledgeDocument} from './knowledge-document-attach.ts';
 import {attachKnowledgeConversation} from './knowledge-conversation-attach.ts';
 export const knowledgeLabels={PURPOSE:'목적',CONSTITUTION:'헌법',DECISION:'결정',FACT:'사실',HYPOTHESIS:'가설',FAILURE_SOLUTION:'실패·해결',CAUTION:'주의 사항'};
 const stateLabels={PROPOSED:'제안 상태',CONFIRMED:'확정 이력 있음',SUPERSEDED:'대체된 과거 버전',EXCLUDED:'사용 제외'};
@@ -66,7 +66,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
     {correction?<KnowledgeCorrectionForm key={correction.projectId+':'+correction.target.ref.id+':'+correction.target.ref.version} client={client} session={session} buffer={correction} onChange={onCorrectionChange} onSaved={()=>void list()} onAuthenticationLost={onAuthenticationLost}/>:null}
     {decision?<KnowledgeDecisionForm key={decision.projectId+':'+decision.target.ref.id+':'+decision.target.ref.version+':'+decision.kind} client={client} session={session} buffer={decision} onChange={onDecisionChange} onSaved={()=>void list()} onAuthenticationLost={onAuthenticationLost}/>:null}
     {ownedElsewhere?<p role="alert">다른 사용자·기기의 작성 자료는 이 세션에서 열거나 전송하지 않습니다.</p>:null}
-    {work?<section aria-label="지식 작성"><h3>지식 초안 작성</h3>{work.sourceRefs.length?<><p>선택한 원문 출처 {work.sourceRefs.length}건 · 지식 저장 전</p><details><summary>선택 출처</summary><pre>{JSON.stringify(work.sourceRefs,null,2)}</pre></details></>:null}<fieldset disabled={working||!!work.pending||!!work.resultRef}>
+    {work?<section aria-label="지식 작성"><h3>지식 초안 작성</h3>{work.sourceRefs.length?<><p>선택한 원문 출처 {work.sourceRefs.length}건 · 지식 저장 전</p><details><summary>선택 출처</summary><pre>{JSON.stringify(work.sourceRefs,null,2)}</pre><ul>{work.sourceRefs.map((source,index)=>source.kind==='DOCUMENT_VERSION'?<li key={JSON.stringify(source)}>문서 {source.id} · v{source.version}<button type="button" aria-label={'문서 출처 '+(index+1)+' 선택 해제'} disabled={working||!!work.pending||!!work.resultRef||work.uncertain} onClick={()=>{if(locked.current||working)return;try{onChange(detachKnowledgeDocument(work,session,projectId,source));setError(null);}catch(e){failed(e);}}}>선택 해제 · 원문은 보존</button></li>:null)}</ul></details></>:null}<fieldset disabled={working||!!work.pending||!!work.resultRef}>
       <label>지식 종류<select aria-label="지식 종류" value={work.kind} onChange={e=>edit({kind:e.target.value as KnowledgeBuffer['kind']})}>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label>
       <label>지식 제목<input aria-label="지식 제목" maxLength={200} value={work.title} onChange={e=>edit({title:e.target.value})}/></label>
       <label>지식 원문<textarea aria-label="지식 원문" rows={10} value={work.body} onChange={e=>edit({body:e.target.value})}/></label>
