@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN03/UI06 연결 해제 UI 일부**: 기존 ACTIVE exact 링크에서 준비/별도전송/receipt/재조회와 원명령 App 보존을 연결했다. dispatch시 불명확 고정·시도ID로 중첩 오래된 거절의 상태 덮어쓰기를 막고 최초 단독 확정거절 닫기는 유지했다. 신규helper6·가짜DOM6/type/build/diff 확인과 한정 독립 재검토 I1 해소·추가 C0/I0/M0다. 실제 DB/0032 적용·served·초기LINKED/현재내용관측은 미완료이므로 전체업무/사용자 기능 완료가 아니다. 원 실패·지문·제외는 WORK_STATUS에 보존한다.
+
 - **2026-10-21 FN03/UI06 source-links 조회 소비 일부**: 정확 문서 version/hash의 기존 GET·회원 잠금/기존 reader·최대20/부분목록과 명시 조회 UI를 연결했다. UNVERIFIED/DETACHED·권한별 이력 제한·hash/범위·오류/이탈 숨김은 신규6 및 가짜DOM2/type/build/diff로 확인했다. 독립 M2는 문서 전환 토글 해제·실제JSON 소비 장벽으로 보정했다. 0032 미적용/actual DB·SQL/served·초기연결·현재관측·분리 UI는 여전히 미완료이며 사용자 기능 전체 완료로 승격하지 않는다.
 
 - **2026-10-21 FN03 연결 해제 명령·저장 구조 일부**: detach만 기존 현재 제어/정책·replay/receipt·감사에 연결하고 링크 헤더/불변 이력의 미적용0032를 추가했다. 원문/파일 불변·exact ref/CAS·중복 저장 방지·현재정책/인증 거절의 신규7·인접23/type/diff 확인, 원 독립 I1의 command-only 완결성 공백 보정 후 정적 C0/I0/M0다. 초기 LINKED 생성 app권한0·관측/일회승인소비/목록·UI 미연결, 실제 SQL/DB/rollback·served는 미실행이다. 사용자 기능 전체 완료나 실제 저장 가능 판정은 하지 않는다.

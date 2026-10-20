@@ -22,8 +22,11 @@ import type{DesignAnchorSelection}from'./design-anchor.ts';
 import { DocumentVersionComparison } from './DocumentVersionComparison.tsx';
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentSourceLinks} from './DocumentSourceLinks.tsx';
+import {newSourceDetach,type SourceDetachBuffer,type SourceDetachChange} from './source-detach-api.ts';
+import {SourceDetachEditor} from './SourceDetachEditor.tsx';
+import type {SourceLinkView} from './source-links-api.ts';
 
-export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
+export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
   const [page, setPage] = useState<DocumentPage | null>(null), [cursor, setCursor] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
   const [listError, setListError] = useState<ApiError | null>(null), [loading, setLoading] = useState(false);
@@ -40,6 +43,11 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [showSourceLinks,setShowSourceLinks]=useState(false);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
+  const ownsSourceDetach=sourceDetach?.ownerUserId===session.user.id&&sourceDetach.ownerClientId===session.clientId&&sourceDetach.projectId===projectId;
+  function beginSourceDetach(item:SourceLinkView){
+    if(sourceDetach||!onSourceDetachChange||!opened||item.projectId!==projectId||item.documentRef.id!==opened.document.id||item.documentRef.version!==opened.document.version||item.documentRef.contentHash!==opened.document.contentHash)return;
+    try{const next=newSourceDetach(projectId,item,session);onSourceDetachChange(p=>p??next);}catch(cause){setEditingError(cause instanceof ApiError?cause:new ApiError('SOURCE_DETACH_INPUT_INVALID'));}
+  }
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setListError(null);
@@ -169,7 +177,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
         <button disabled={reading||!!readError||loading||!!listError} onClick={()=>setShowSourceLinks(v=>!v)}>{showSourceLinks?'소스 연결 조회 닫기':'이 버전 소스 연결 조회'}</button>
-        {showSourceLinks&&!reading&&!readError&&!loading&&!listError?<DocumentSourceLinks key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onAuthenticationLost={onAuthenticationLost}/>:null}
+{showSourceLinks&&!reading&&!readError&&!loading&&!listError?<DocumentSourceLinks key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onDetach={!sourceDetach&&onSourceDetachChange&&!buffer?.pending&&!review?.pending&&!confirmation?.pending?beginSourceDetach:undefined} onAuthenticationLost={onAuthenticationLost}/>:null}
         {!reading && !readError && !loading && !listError ? <PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, projectId, opened.document.id, opened.document.version, opened.document.contentHash, opened.document.formRef])} client={client} formRef={opened.document.formRef} onAuthenticationLost={onAuthenticationLost} /> : null}
         <button disabled={reading} onClick={() => setShowComparison(value => !value)}>{showComparison ? '저장 버전 비교 닫기' : '저장 버전 비교 열기'}</button>
         {showComparison && !reading ? <DocumentVersionComparison key={projectId+':'+session.user.id+':'+session.clientId+':'+opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} base={opened} maxVersion={selected?.headVersion ?? opened.document.version} onAuthenticationLost={onAuthenticationLost} /> : null}
@@ -189,6 +197,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {opened ? <><h3>양식의 내용 검토 기준</h3><ul>{opened.document.contentReviewCriteria.items.map(item => <li key={item.criterionId}>{item.title}<ul>{item.reviewCriteria.map((criterion, index) => <li key={index}>{criterion}</li>)}</ul></li>)}</ul>
         <h3>기록된 내용 검토</h3>{!opened.document.contentReviews.length ? <p>아직 내용 검토가 기록되지 않았습니다.</p> : opened.document.contentReviews.map(review => <section className="status-card" key={review.ref.id}><p>{review.ref.outcome} · {new Date(review.reviewedAt).toLocaleString('ko-KR')}</p><p>{review.reason}</p><p className="meta">검토자 {review.reviewer.userId}</p>{review.reviewer.sameAsTargetRecorder ? <p>작성 기록자와 같은 사용자 · 독립 검수 아님</p> : null}<ul>{review.items.map(item => <li key={item.criterionId}>{item.criterionId} · {item.outcome} · {item.reason}</li>)}</ul><p className="meta">내용 검토자의 판단이며 사용자 확정/실제 시험 합격/Agent 실행 승인이 아닙니다.</p></section>)}</> : null}
       {editingError ? <p role="alert">{editingError.message} · {editingError.code}</p> : null}
+      {ownsSourceDetach&&sourceDetach&&onSourceDetachChange?<SourceDetachEditor key={sourceDetach.bindingId} client={client} session={session} buffer={sourceDetach} onChange={onSourceDetachChange} onVerified={()=>setShowSourceLinks(false)} onAuthenticationLost={onAuthenticationLost}/>:null}
       {confirmation && !confirming ? <p>다른 사용자 또는 프로젝트의 확정 요청은 숨겨 보존했습니다.</p> : null}
       {confirming && confirmation ? <DocumentConfirmation key={confirmation.ref.id + ':' + confirmation.ref.version} client={client} session={session} buffer={confirmation} onChange={onConfirmationChange} onAuthenticationLost={onAuthenticationLost} onConfirmed={() => { setRefresh(value => value + 1); void refreshOpened(confirmation.ref); }} /> : null}
       {review && (review.ownerUserId !== session.user.id || review.projectId !== projectId) ? <p>다른 사용자 또는 프로젝트의 검토 입력은 숨겨 보존했습니다.</p> : null}
