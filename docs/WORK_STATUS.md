@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08 STOP 선택→중지 한정 수용(2026-10-20)**: 신규3/추가기한1·직접기존6/type0/diff0범위에서독립정적C0/I0/M0이다. 독립재실행0·실제current제공자진위/물리내구·process경합/Agent·OS효과미판정이다. 정확page원봉투만선택·기한상한/기존소유target검사유지·STOP_UNCONFIRMED/회수false·원자료/기존START/SEND/API/DB불변·자원0·제외6보존·전체FN08미완료다. rollback은선택bridge와기한guard의일반revert·원기록삭제0이다. 후속조사의rg wildcard경로오류1은읽기실패/변경0으로보존하고directory+glob검색으로정정했다. 다음은카드의getExecutionFacts에해당하는로컬공급자주장/누락상태조회소비를구현하되실행사실이나완료판정과구별한다.
+
+- **FN08 STOP 명시 선택 직접검사(2026-10-20)**: 신규3 missing-methodRED379.2573ms→3PASS424.9314ms/type0이다. 기한시험에시도sync후선택만료·잘못된/초과선택기한반례를더해해당1PASS422.7259ms,변경직접기존stop6PASS687.2623ms/type0/diff0을확인했다. 원page ref와원봉투commandId를구분·START/SEND/RECOVERY/UNKNOWN/만료·가짜stopper거절/interrupt추가0·동일요청응답재조회중복0이다. 선택상한없는직접stop의봉투기한은유지하며current await후만료검사만강화한다. 독립한정검토중·실Agent중지/OS회수/현재권한진위/물리sync/서버COMMIT미검증·자원0이다. 최초시험파일patch의function한줄오추정1은적용전거절/부분수정0으로보존한다.
+
+- **FN08 C3 STOP 명시 선택→기존 중지 연결 착수 / Main 어울(2026-10-20)**: 8a356346 local/private exact·trackedclean/제외6보존·main불변이다. 기존START/SEND는page의정확ref선택소비가있으나STOP는caller봉투만받는누락을확인했다. 새readStop/requestStop은현재client의정확REQUEST_STOP봉투만선택하며기존stop의현재target/소유·codec검사를유지한다. page기한을선택상한으로stop에전달해잠금/current대기/interrupt직전만료를거절한다. 새grant권한을발명하지않고선택자체는허가아님·STOPPED/회수판정0·강제kill/실Agent/API/SQL/DB/서비스0·자원0이다. 기존직접stop은선택상한미지정시봉투기한그대로이며새메모리TDD/변경직접회귀/type/한정독립검토만한다.
+
 - **FN08 ACK 내용 대조 한정 수용(2026-10-20)**: 신규4 메모리검사(3PASS329.5939ms+수명1PASS210.5349ms)·추가후type0·diff0·독립정적C0/I0/M0이다. 독립재실행0이며실제ACK출처/서명·서버COMMIT/내구·gap뒤보관내용·file/OS/Agent미판정이다. 기록없음/0prefix구분과낮은prefix·정확내용대조만수용·원자료변경/자동cursor·삭제0·자원0·전체FN08미완료다. 후속은명령page의STOP선택을기존중지전송기와결합하는누락경로의기한/현재target경계를먼저대조한다.
 
 - **FN08 C3 ACK 연속내용 읽기 대조 / Main 어울(2026-10-20)**: 전달된 ACK의 정확 실행/ref hash·유한 순번·canonical gap/count·시각을 확인하고 로컬 spool 연속prefix digest만 대조하는 compareAck를 추가했다. ACK없음은 null/ACK_NOT_PROVIDED이며 0수신으로 추정하지 않는다. 과거 낮은prefix도 내용주장일치만 반환·gap뒤내용/출처진위/서버내구·삭제허가/회수/실행false·자동전진/전송/write0이다. 신규3 missing-methodRED313.814ms→3PASS329.5939ms/type0, 뒤불완전/잠금종료후port반례1PASS210.5349ms·독립한정정적검토중이다. 기존append/prepare/sync·API/SQL/DB/권한/서비스/Agent불변·자원0·제외6보존·전체FN08미완료, rollback은신규읽기method/시험일반revert·원자료삭제0이다. 초기공식root read는기존v2삭제/사용자변경을확인했을뿐수정0,PowerShell프로필conda오류는login:false로회피했고ACL/설정변경0이다.

@@ -6,6 +6,7 @@ import {SyntheticExecutionClient} from './execution-client.ts';
 import {readClientOperation,readClientScope} from './execution-ledger.ts';
 import {SyntheticStartReceiver} from './execution-start-receiver.ts';
 import {SyntheticPrimaryInstructionTransport} from '../adapters/primary/instruction-transport.ts';
+import {SyntheticPrimaryStopTransport} from '../adapters/primary/session-transport.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 class CommandAdmissionFailure extends Error{}
 const fail=(code:string):never=>{throw new CommandAdmissionFailure(code);};
@@ -42,6 +43,32 @@ export class SyntheticExecutionCommandAdmission {
    const selected=page.items.filter((i:any)=>same(i?.commandRef,commandRef));if(selected.length!==1)return fail('COMMAND_ADMISSION_NOT_SELECTED');const item=selected[0];
    if(!recordV1(item,['sequence','commandRef','envelope'])||!Number.isSafeInteger(item.sequence)||item.sequence<1)return fail('COMMAND_ADMISSION_ITEM_INVALID');
    const envelope=readDispatchEnvelopeV1(item.envelope,now);if(envelope.operation!=='SEND_INSTRUCTION'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||envelope.context.executionGeneration!==scope.executionGeneration)return fail('COMMAND_ADMISSION_OPERATION_UNSUPPORTED');
+   const end=Math.min(Date.parse(page.expiresAt),Date.parse(envelope.expiresAt));this.#ports();if(this.#now()>=end)return fail('COMMAND_ADMISSION_EXPIRED');
+   return{transport:'SYNTHETIC_ONLY' as const,state:'SELECTED_NOT_DISPATCHED' as const,commandRef,pageResultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),envelope:cloneV1(envelope),expiresAt:new Date(end).toISOString(),executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_UNAVAILABLE');}
+ }
+ /** 정확 page의 중지 요청을 명시 전달한다. 선택은 권한이 아니며 실제 target/소유 검사는 stop이 수행한다. */
+ async requestStop(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,stopper:SyntheticPrimaryStopTransport){
+  try{
+   this.#ports();if(!(stopper instanceof SyntheticPrimaryStopTransport))return fail('COMMAND_ADMISSION_STOPPER_REQUIRED');
+   const selected=await this.readStop(rawScope,rawOperation,rawCommandRef);
+   const stopped=await stopper.stop(selected.envelope,{expiresAt:selected.expiresAt});this.#ports();
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,stopped,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_STOP_UNAVAILABLE');}
+ }
+ /** 중지 원봉투의 명시 선택 읽기만 한다. START 수신·중지/permit·자동 다음 page를 수행하지 않는다.
+  * 반환값은 저장된 합성 page의 선택 사실이며 실제 서버/Agent 현재권한이나 전송 허가가 아니다. */
+ async readStop(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown){
+  try{
+   this.#ports();const scope=readClientScope(rawScope),operation=readClientOperation(scope,cloneV1(rawOperation),this.#now()).operation;
+   if(scope.mode!=='EXECUTION'||operation.kind!=='COMMANDS'||!refV1(rawCommandRef))return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const commandRef=cloneV1(rawCommandRef),result=await this.client.execute(scope,operation);this.#ports();
+   if(result.transport!=='SYNTHETIC_ONLY'||result.state!=='RESPONSE_RECORDED'||!refV1(result.resultRef)||result.executionAuthorized!==false||result.dispatchPerformed!==false||result.writerReleaseVerified!==false||result.ackAudited!==false)return fail('COMMAND_ADMISSION_PAGE_UNCERTAIN');
+   const page=result.response,now=this.#now();
+   if(!recordV1(page,['transport','proofResultRef','items','nextCursor','hasMore','observedAt','expiresAt','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||page.transport!=='SYNTHETIC_ONLY'||!refV1(page.proofResultRef)||!arrayV1(page.items,50)||!isoV1(page.observedAt)||!isoV1(page.expiresAt)||Date.parse(page.observedAt)>now||Date.parse(page.expiresAt)<=now||page.nonceConsumed!==true||page.executionAuthorized!==false||page.dispatchPerformed!==false||page.cacheControl!=='no-store')return fail('COMMAND_ADMISSION_PAGE_INVALID');
+   const selected=page.items.filter((i:any)=>same(i?.commandRef,commandRef));if(selected.length!==1)return fail('COMMAND_ADMISSION_NOT_SELECTED');const item=selected[0];
+   if(!recordV1(item,['sequence','commandRef','envelope'])||!Number.isSafeInteger(item.sequence)||item.sequence<1)return fail('COMMAND_ADMISSION_ITEM_INVALID');
+   const envelope=readDispatchEnvelopeV1(item.envelope,now);if(envelope.operation!=='REQUEST_STOP'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||envelope.context.executionGeneration!==scope.executionGeneration)return fail('COMMAND_ADMISSION_OPERATION_UNSUPPORTED');
    const end=Math.min(Date.parse(page.expiresAt),Date.parse(envelope.expiresAt));this.#ports();if(this.#now()>=end)return fail('COMMAND_ADMISSION_EXPIRED');
    return{transport:'SYNTHETIC_ONLY' as const,state:'SELECTED_NOT_DISPATCHED' as const,commandRef,pageResultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),envelope:cloneV1(envelope),expiresAt:new Date(end).toISOString(),executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_UNAVAILABLE');}
