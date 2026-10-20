@@ -79,7 +79,8 @@ test('프로젝트 전용 복사·개정은 공통본과 분리되고 미확인 
   await page.getByRole('button', { name: '이전 방법론 버전', exact: true }).click();
   await expect(page.getByText('이 버전의 확정 이력 있음 · 적용 여부와 별도', { exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: '고정 적용본 조회', exact: true }).getByText('적용 세대 1', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '프로젝트 적용 전환', exact: true })).toBeDisabled();
-  await expect(page.getByText('실행 상태 미확인 · 적용 전환 불가', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '확정 방법론 별도 적용', exact: true })).toBeDisabled();
+  await expect(page.getByText('최신 전용 방법론의 적합 검토·확정과 현재 적용본 조회가 필요합니다. 미저장 편집·미확인 명령을 먼저 확인하세요.', { exact: true })).toBeVisible();
+  expect(requests.some(item => item.operation === 'applyMethodology')).toBe(false);
   expect(unexpected).toEqual([]);
 });

@@ -3,6 +3,12 @@ import type { MethodologyGraph } from '../../../../../contracts/methodologies.ts
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { MethodVersion } from './api.ts';
 import type { FormReviewWork } from '../methodologies/form-editor-state.ts';
+import type { MethodApplicationCommand } from './project-api.ts';
+
+export interface MethodApplicationWork {
+  ownerUserId:string;clientId:string;reason:string;preparationId:string|null;
+  pending:{request:MethodApplicationCommand;previous:VersionRef|null;uncertain:boolean}|null;verifiedRef:VersionRef|null;
+}
 
 export interface MethodCommand { schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm' | 'confirmMethodology'; targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown>; projectId?: string; controlGeneration?: number; baselineRefs?: []; approvalRef?: null }
 export interface MethodGateway { prepare: (request: MethodCommand) => Promise<MethodCommand>; write: (request: MethodCommand) => Promise<CommonCommandReceipt>; read: (ref: VersionRef, name: string, purpose: string) => Promise<MethodVersion> }
@@ -13,6 +19,8 @@ export interface MethodBuffer {
   validation: MethodVersion['validation'] | null;
   pending: { request: MethodCommand; name: string; purpose: string } | null;
   review: FormReviewWork | null;
+  application?:MethodApplicationWork;
+  preparationId?:string|null;
 }
 export function emptyMethodBuffer(): MethodBuffer { return { ownerUserId: null, targetId: null, version: 0, name: '', purpose: '', reason: '', graph: { nodes: [], edges: [], entryNodeId: '', terminalNodeIds: [] }, nodeId: '', dirty: false, pending: null, validation: null, review: null }; }
 export function methodBuffer(value: MethodVersion, ownerUserId: string): MethodBuffer {

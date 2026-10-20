@@ -101,7 +101,7 @@ export function App() {
   const [methodBuffer, setMethodBuffer] = useState(emptyMethodBuffer);
   const [projectMethodBuffers, setProjectMethodBuffers] = useState<Record<string, MethodBuffer>>({});
   useEffect(() => {
-    if (!Object.values(projectMethodBuffers).some(value => value.dirty || value.pending || value.review?.dirty || value.review?.pending)) return;
+    if (!Object.values(projectMethodBuffers).some(value => value.dirty || value.pending || value.preparationId || value.review?.dirty || value.review?.pending || value.application?.reason || value.application?.pending || value.application?.preparationId)) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     addEventListener('beforeunload', warn); return () => removeEventListener('beforeunload', warn);
   }, [projectMethodBuffers]);

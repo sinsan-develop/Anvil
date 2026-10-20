@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useState, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, type MethodVersion } from './api.ts';
 import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, type MethodCommand, type MethodGateway } from './common-api.ts';
@@ -16,6 +16,8 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;
 }) {
   const fieldId = useId();
+  const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
+  useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [savedVersion, setSavedVersion] = useState<number | null>(null);
   const node = buffer.graph.nodes.find(item => item.nodeId === buffer.nodeId), editing = !!buffer.targetId || buffer.dirty;
   const [forms, setForms] = useState<FormSummary[]>([]), [formError, setFormError] = useState<ApiError | null>(null);
@@ -25,8 +27,8 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     listForms(client).then(value => { if (current) { setForms(value.items); setFormError(null); } }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setForms([]); setFormError(failure); if (failure.status === 401) onAuthenticationLost(); } });
     return () => { current = false; };
   }, [client, session.user.id, editing]);
-  const locked = pending || !!buffer.pending || !!buffer.review?.pending;
-  function replaceAllowed() { return !buffer.pending && !buffer.review?.pending && (!(buffer.dirty || buffer.review?.dirty) || confirm('저장하지 않은 편집·내용 검토 입력을 바꿀까요?')); }
+  const locked = pending || !!buffer.preparationId || !!buffer.pending || !!buffer.review?.pending || !!buffer.application?.pending || !!buffer.application?.preparationId;
+  function replaceAllowed() { return !locked && (!(buffer.dirty || buffer.review?.dirty || buffer.application?.reason) || confirm('저장하지 않은 편집·내용 검토·적용 입력을 바꿀까요?')); }
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
   function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? { ...item, ...patch } : item) } })); setSavedVersion(null); }
   function changeGraph(graph: MethodologyGraph) { onChange(previous => ({ ...previous, graph, dirty: true, validation: null })); setSavedVersion(null); }
@@ -39,20 +41,24 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   async function submit(command: MethodCommand, name: string, purpose: string) {
     if (pending || command.clientId !== session.clientId) return;
     setPending(true); setError(null); setSavedVersion(null);
+    const preparationId=crypto.randomUUID();preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));
     let applied = false;
     try {
       command = gateway ? await gateway.prepare(command) : command;
-      onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: { request: command, name, purpose } }));
+      if(!active.current)return;
+      onChange(previous => previous.preparationId===preparationId?({ ...previous,preparationId:null, ownerUserId: session.user.id, pending: { request: command, name, purpose } }):previous);
       const ref = gateway ? (await gateway.write(command)).data.ref : await writeCommonMethod(client, command, session.csrfToken, session.user.id);
       applied = true;
       const value = gateway ? await gateway.read(ref, name, purpose) : await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
-      onChange(previous => previous.pending?.request.commandId === command.commandId ? methodBuffer(value, session.user.id) : previous);
+      if(!active.current)return;
+      onChange(previous => previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),application:previous.application} : previous);
       setSavedVersion(ref.version); onSaved();
     } catch (cause: unknown) {
+      if(!active.current)return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
       if (failure.status === 401) onAuthenticationLost();
-    } finally { setPending(false); }
+    } finally { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;if(active.current)setPending(false); }
   }
   function copy() {
     if (!source || locked || !copyName.trim() || !replaceAllowed()) return;

@@ -1,4 +1,4 @@
-import { useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useId, useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonCommand, type MethodCommand, type MethodGateway } from './common-api.ts';
 import { getMethod, type MethodVersion } from './api.ts';
@@ -12,10 +12,12 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
   buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway;
 }) {
   const fieldId = useId();
+  const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
+  useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
   const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState(false);
   const work = buffer.review, criteria = source.contentReviewCriteria;
   const matches = !!work && work.ref.id === source.ref.id && work.ref.version === source.ref.version && work.ref.contentHash === source.ref.contentHash && work.criteriaVersion === criteria?.criteriaVersion;
-  const locked = pending || !!work?.pending || !!buffer.pending || buffer.dirty;
+  const locked = pending || !!buffer.preparationId || !!work?.pending || !!buffer.pending || buffer.dirty || !!buffer.application?.pending || !!buffer.application?.preparationId;
   const latest = source.contentReviews?.[0];
   function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(false); }
   function start() {
@@ -27,20 +29,24 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
   async function execute(request: MethodCommand) {
     if (pending || request.clientId !== session.clientId || !matches) return;
     setPending(true); setError(null); let applied = false;
+    const preparationId=crypto.randomUUID();preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));
     try {
       request = gateway ? await gateway.prepare(request) : request;
-      onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: request } } : previous);
+      if(!active.current)return;
+      onChange(previous => previous.preparationId===preparationId&&previous.review ? { ...previous,preparationId:null, review: { ...previous.review, pending: request } } : previous);
       const receipt = gateway ? await gateway.write(request) : await writeCommonCommand(client, request, session.csrfToken, session.user.id); applied = true;
       if (receipt.data.ref.contentHash !== source.ref.contentHash || request.operation === 'recordContentReview' && (!reviewRefFor(receipt.data.reviewRef, source.ref) || receipt.data.reviewRef.outcome !== request.payload.outcome)
         || request.operation === 'confirmMethodology' && !/^[0-9a-f-]{36}$/.test(receipt.data.confirmationId ?? '')) throw new ApiError('RESPONSE_INVALID');
       const value = gateway ? await gateway.read(source.ref, source.name, source.purpose) : await getMethod(client, { ref: source.ref, name: source.name, purpose: source.purpose, systemCode: null, status: 'DRAFT', sourceAvailable: false, scope: 'USER_COMMON' });
+      if(!active.current)return;
       onChange(previous => previous.review?.pending?.commandId === request.commandId ? { ...previous, review: { ...previous.review, dirty: false, pending: null } } : previous);
       onVerified(value); setRecorded(request.operation === 'recordContentReview');
     } catch (cause: unknown) {
+      if(!active.current)return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (!applied && !(gateway && work?.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: null } } : previous);
       if (failure.status === 401) onAuthenticationLost();
-    } finally { setPending(false); }
+    } finally { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;if(active.current)setPending(false); }
   }
   function record() {
     if (!work || !matches || locked || !work.reason.trim() || work.items.some(item => !item.reason.trim())) return;

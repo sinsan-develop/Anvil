@@ -11,6 +11,7 @@ import { MethodVersionComparison } from './MethodVersionComparison.tsx';
 import { StoredMethodValidation } from './StoredMethodValidation.tsx';
 import { StoredNodeDefinition } from './StoredNodeDefinition.tsx';
 import { StoredNodeRoutes } from './StoredNodeRoutes.tsx';
+import { MethodApplicationPanel } from './MethodApplicationPanel.tsx';
 
 export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: {
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
@@ -52,6 +53,6 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
     <CommonMethodEditor client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => { setAfterId(null); setRevision(value => value + 1); }} />
     {source?.scope === 'PROJECT' ? <MethodReviewPanel client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
-    <section className="status-card" aria-label="방법론 적용 경계"><h3>기존 적용본 전환</h3><p>실행 상태 미확인 · 적용 전환 불가</p><button disabled>프로젝트 적용 전환</button></section>
+    <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error} buffer={buffer} onChange={onChange} onApplied={setAppliedRef} onAuthenticationLost={onAuthenticationLost}/>
   </>;
 }
