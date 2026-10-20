@@ -1,9 +1,11 @@
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
-import {readWorkPlanAtVersion,type PlanRef,type WorkPlanView} from './work-plan-api.ts';
+import {readWorkPlanAtVersion,type WorkPlanView} from './work-plan-api.ts';
 import {StoredPlanTasks} from './StoredPlanTasks.tsx';
 import {StoredPlanTaskRelations} from './StoredPlanTaskRelations.tsx';
-export function WorkPlanVersionHistory({client,projectId,observedRef,onAuthenticationLost}:{client:ApiClient;projectId:string;observedRef:PlanRef;onAuthenticationLost:()=>void}){
+import {WorkPlanVersionComparison} from './WorkPlanVersionComparison.ts';
+export function WorkPlanVersionHistory({client,projectId,observedPlan,onAuthenticationLost}:{client:ApiClient;projectId:string;observedPlan:WorkPlanView;onAuthenticationLost:()=>void}){
+ const observedRef=observedPlan.ref;
  const [version,setVersion]=useState(String(Math.max(1,observedRef.version-1))),[request,setRequest]=useState<{version:number}|null>(null);
  const [loaded,setLoaded]=useState<{request:typeof request;value:WorkPlanView|null;error:ApiError|null}|null>(null);
  const lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
@@ -22,6 +24,7 @@ export function WorkPlanVersionHistory({client,projectId,observedRef,onAuthentic
   {request&&!shown?<p role="status">지정 보관 계획 원문 확인 중</p>:null}
   {shown?.error?<p role="alert">{shown.error.code} · 원문 미확인 · 앞선 결과로 대체하지 않습니다.</p>:null}
   {value?<section aria-label="조회한 보관 계획 버전"><h4>계획 v{value.ref.version}</h4><p>저장 당시 초안 · 별도 확정/현재 적용·실행은 미확인</p><p>{value.reason}</p><p className="meta">{value.ref.id} · SHA256 {value.ref.contentHash}</p>
+   <WorkPlanVersionComparison before={value} after={observedPlan}/>
    <StoredPlanTasks key={JSON.stringify(value.ref)} tasks={value.tasks}/><StoredPlanTaskRelations key={'history:'+JSON.stringify(value.ref)} view={value}/>
    <details><summary>원문·검토 참조와 저장된 구조 문제</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({documentRef:value.documentRef,designRef:value.designRef,screenReviewRefs:value.screenReviewRefs,issues:value.issues,relationalProjection:value.relationalProjection},null,2)}</pre></details>
   </section>:null}

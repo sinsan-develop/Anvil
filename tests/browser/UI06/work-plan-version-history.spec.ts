@@ -24,6 +24,7 @@ test('PLAN_VERSION_HISTORY 과거 원문은 현재 계획을 바꾸지 않고 �
  const s=await setup(page);await expect(panel(page)).toBeVisible();expect(s.reads()).toBe(0);
  await panel(page).getByLabel('조회할 보관 계획 버전',{exact:true}).fill('1');await panel(page).getByRole('button',{name:'지정 보관 계획 버전 열기',exact:true}).click();
  await expect(panel(page)).toContainText('당시 개정 이유 v1');await expect(panel(page)).toContainText('보관 업무 v1');await expect(page.getByRole('region',{name:'보관 작업계획 상세',exact:true})).toContainText('계획 v3');
+ await panel(page).getByText('보관 버전과 기준 계획의 변경 비교',{exact:true}).click();await expect(panel(page).getByLabel('보관 계획 차이 구간',{exact:true})).toContainText('당시 목적 v1');await expect(panel(page).getByLabel('기준 계획 차이 구간',{exact:true})).toContainText('당시 목적 v3');expect(s.reads()).toBe(1);
  s.set('TAMPER');await panel(page).getByRole('button',{name:'지정 보관 계획 버전 열기',exact:true}).click();await expect(panel(page).getByRole('alert')).toContainText('WORK_PLAN_INTEGRITY_FAILED');await expect(panel(page).getByRole('region',{name:'조회한 보관 계획 버전',exact:true})).toHaveCount(0);
  s.set('DENIED');await panel(page).getByRole('button',{name:'지정 보관 계획 버전 열기',exact:true}).click();await expect(panel(page).getByRole('alert')).toContainText('ACCESS_DENIED');await expect(panel(page).getByRole('region',{name:'조회한 보관 계획 버전',exact:true})).toHaveCount(0);s.clean();
 });
