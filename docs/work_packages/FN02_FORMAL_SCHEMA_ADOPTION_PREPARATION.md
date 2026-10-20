@@ -65,12 +65,15 @@
 
 ### 최소 읽기 전용 사전 확인 요청안 — 아직 실행0
 
+**도구/공간 부분만 후속 실측:** 별도PMO판정11:46:07~11:56:07Z 안에서11:48:04.600026Z(20:48KST) 단1회 tools/filesystem 관측exit0. 기존PG에각1회짧은version프로세스2개만실행했고pg_dump/pg_restore모두15.18(Debian15.18-1.pgdg13+1). Node실파일hash7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c, /usr/bin/docker실파일hash7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b. 보호root UID1000/0700/realpath/nonlink·가용550560096256bytes,제안backup경로/복원container부재. 동일PG running/StartedAt11:21:54.792276193Z·정의개별필드일치/raw1eb. daemon/안전정의/두version/복원이름부재5단계모두exit0·retry0. DB접속/config/Env/본문/로그/폴더·backup·복원·DDL0이며공간관측은미래예약이나dump가능판정이아니다. 아래요청안중migrator접속/SQL부분은여전히미실행이다.
+
 실제 dump/DDL 승인 요청 전에 아래 한정 정보만 추가 확인하는 별도 범위다. 이전 metadata 창/기존 config 접근 허가를 재사용하지 않으며, PMO의 이번 정확 판정/새 유한 binding과 플랫폼 심사 전 실행하지 않는다.
 
 - host/대상: WSL-server daon/기존동일PG fullID·daemon/image·volume/network/5546. 시작/중지/정의 변경0. `/usr/bin/docker --host unix:///var/run/docker.sock exec <fullID> /usr/bin/pg_dump --version` 및 pg_restore --version 각1회만(새 일회 프로세스/DB접속0). `/opt/node-v24.21.0-linux-x64/bin/node`와기존도구의실경로/파일hash만,보호 root의statvfs가용bytes/기존복원후보경로·container명부재만확인한다. Config.Env/로그/파일본문/새폴더 생성0.
 - DB 사전 확인이 필요하면 도구 확인과 분리하여 기존 `/home/daon/.local/share/anvil-v3-development/migrator.json` 한 파일만 O_NOFOLLOW/owner1000/0600/nonlink/size 검증으로메모리소비하는 새 범위가 필요하다. 기존 anvil_v3_migrator/127.0.0.1:5546/DB anvil_v3_development만,대체role/config0·키/DSN/rawerror출력0. 이 보호파일/역할은 앞선 app-role 조회와 다른 범위다.
 - 제안 SQL은 BEGIN READ ONLY/statement5초·lock1초·idle10초 안에서 (a)current_database/current_user/server_version_num/transaction_read_only/pg_roles의현재역할superuser·bypass·create권한boolean (b)pg_database_size(current_database()) (c)pg_stat_activity의현재DB connection수와현재세션제외active/정보불명 수,SQL본문·query문자열/사용자명출력0 (d)pg_class/pg_namespace의anvil·anvil_qa table개수·owner일치/has_table_privilege(current_user,oid,'SELECT')/relrowsecurity·relforcerowsecurity만 읽는다. 본문/계정행·통계rowcount·dump·migration재조회0. 목록은진단boolean/count만전송하며불명확하면실행자격을추정하지않는다.
-- 새 명령은1회/전체30초/connect5초·각query5초·전체창최대10분/연장·retry0,시작/접속/조회/응답전후만료검사. 실패rollback/close만·DB쓰기/backup/restore0. 아직해당CLI/새접속mode는구현·활성화하지않았으며이문서로기존거절을해제하지않는다.
+- 위 고정 SQL 후보는 `scripts/fn02-backup-readiness.ts`의fn02BackupReadinessSql/readFn02BackupReadiness에준비했다. 함수만의fake검수후 고정caller후보도source로작성해 --plan 무접속출력/--read-only 잘못된binding·apply거절을로컬에서검수했다. 후보는LinuxUID1000/Node고정실경로/private Git clean·exactSHA·고정root·보호config/O_NOFOLLOW·각await전후10분상한·close5초/성공출력전종료검사를갖는다. 실제WSL실행·서비스/runner등록은0이며새정확판정·발급window전실행하지않는다. 관측출력은dumpCapability UNVERIFIED/executionAllowed false로유지한다.
+- caller 후보의등록대상은새Git `/home/daon/deploy/anvil-v3-fn02-readiness-01` 및전용cache `/tmp/anvil-v3-fn02-readiness-01/npm-cache`,daon0700/10분·회수2분제안이다. 현재생성0이다. 실제실행전기존samePG/daemon/image·정의/포트상태대조는별도실행제어에서필요하며caller자체가Docker를검증/시작하지않는다. 새 명령은1회/외부프로세스전체30초/connect5초·각query5초/연장·retry0,실패rollback/close만·DB쓰기/backup/restore0이다. source에읽기전용mode후보는있으나실제새접속을활성화/실행한것이아니며기존거절을해제하지않는다.
 
 ### 복원 자원·실행 제한의 literal 후보 — 생성0
 

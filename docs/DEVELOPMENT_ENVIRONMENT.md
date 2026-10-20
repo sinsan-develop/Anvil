@@ -2,6 +2,8 @@
 
 ## 2026-10-20 20:22~20:23 KST 정식 PG metadata 관측 — API/Web는 중단
 
+- 후속20:48KST 도구·filesystem만새허가로확인:같은PG running/동일StartedAt·pg_dump/pg_restore15.18·보호root가용550560096256bytes/UID1000·0700/nonlink,제안backup/복원container부재. 이후DBschema/본문은조회하지않았고version프로세스각1회외새resource/서비스0이다. 향후migrator읽기caller후보는별도source/검토이며아직실DB실행0이다.
+
 - PMO 새 exact 판정 아래 기존 PG 한 개를 단1회 기동했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9·StartedAt2026-10-20T11:21:54.792276193Z/ready marker1·정상 개발용 보존이다. 아래10/19 exited는 과거 관측으로 삭제하지 않는다. 현재 항목 역시 해당 시점의 관측이며 매번 자동 재접속한 기록은 아니다.
 - exact a6682968 READ ONLY probe exit0에서 app-role anvil_v3_app/PG15.18·migration46/고정8개중project_methodologies만존재를확인했다. 신규0012~0017/0031은미적용, API/Web3830 listener0·PG5546 listener1이다. 화면/기능 복구나 전체객체 인증은아니다. 정식DB 본문/DDL·서비스반영/Secret/Agent변경0.
 - 일회Git/cache 두경로는exact 회수 후별도SSH에서부재확인했다. 정의rawhash1eb/a721은Docker Mounts두항목배열순서차이로계산대응했고원raw차이를결과서에보존했다. 기존 ID/image/network/volume/port/labels/마운트필드의변경명령0. 상세/46 ID-checksum은docs/04_test_reports/AV3/FN02/FORMAL_SCHEMA_METADATA_RESULT.md와WORK_STATUS를따른다.
