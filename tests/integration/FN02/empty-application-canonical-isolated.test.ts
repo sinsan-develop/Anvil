@@ -20,6 +20,7 @@ test('FN02 새 canonical 후보를 같은 Git의 JS graph/form·경계 숫자와
     ||process.env.ANVIL_DB_CONFIG||process.env.ANVIL_MIGRATOR_CONFIG)throw Error('FN02_EXACT_ISOLATED_QA_REQUIRED');
   const check=()=>assert(!t.signal.aborted&&Date.now()<until,'FN02_QA_EXPIRED');
   const pool=fenceResultQaPool(new Pool({host,port:5432,database:'anvil_v3_fn02_empty_application_qa_01',user:'anvil_v3_app',password,max:1,connectionTimeoutMillis:3000,statement_timeout:3000}),check);
+  let phase='IDENTITY',caseIndex=-1;
   try{
     const identity=(await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];
     assert.deepEqual(identity,{db:'anvil_v3_fn02_empty_application_qa_01',role:'anvil_v3_app',rolsuper:false,rolbypassrls:false});
@@ -33,8 +34,10 @@ test('FN02 새 canonical 후보를 같은 Git의 JS graph/form·경계 숫자와
       {z:2,a:[{key:'원문',value:0.1}]},...forms.forms.map(f=>f.definition),...methods.map(m=>m.graph)];
     // 호출 세션의 설정이 달라도 같은 결과여야 한다. 로그에 원문/credential을 출력하지 않는다.
     for(const setting of [0,3]){
+      phase='CANONICAL_SETTING_'+setting;caseIndex=-1;
       await pool.query('SET extra_float_digits='+setting);
       for(const value of values){
+        caseIndex++;
         const actual=(await pool.query('SELECT anvil.fn02_canonical($1::jsonb) body,anvil.fn02_hash($1::jsonb) hash',[JSON.stringify(value)])).rows[0];
         assert.equal(actual.body,canonicalJson(value));assert.equal(actual.hash,contentHash(canonicalJson(value)));
       }
@@ -50,10 +53,13 @@ test('FN02 새 canonical 후보를 같은 Git의 JS graph/form·경계 숫자와
     bad(g=>g.edges.push({edgeId:'cycle',fromNodeId:g.terminalNodeIds[0],toNodeId:g.entryNodeId,kind:'SEQUENCE',condition:null,reason:''}));
     bad(g=>g.edges.push({edgeId:'conditionless',fromNodeId:g.entryNodeId,toNodeId:g.terminalNodeIds[0],kind:'BRANCH',condition:null,reason:''}));
     bad(g=>g.edges.push({edgeId:'unlimited',fromNodeId:g.terminalNodeIds[0],toNodeId:g.entryNodeId,kind:'REWORK',condition:{fieldRef:{nodeId:g.entryNodeId,field:'REVIEW_OUTCOME'},operator:'EQ',value:'REWORK'},reason:'횟수 없음'}));
+    phase='GRAPH';caseIndex=-1;
     for(const graph of graphs){
+      caseIndex++;
       const expected=validateMethodologyGraph(graph,forms.forms.map(f=>f.ref)).validForConfirmation;
       assert.equal((await pool.query('SELECT anvil.fn02_graph_valid($1::jsonb) valid',[JSON.stringify(graph)])).rows[0].valid,expected);
     }
+    phase='ITEMS_AND_WHITESPACE';caseIndex=-1;
     const items=methodContentReviewCriteria.items.map(item=>({criterionId:item.criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'합성 검토'}));
     assert.deepEqual((await pool.query('SELECT anvil.fn02_method_criteria() criteria')).rows[0].criteria,methodContentReviewCriteria);
     for(const [text,expected] of [['v',true],['\u000b',false],['\u00a0',false],['\u000bv\u000b',true]] as const)
@@ -64,5 +70,9 @@ test('FN02 새 canonical 후보를 같은 Git의 JS graph/form·경계 숫자와
     // 깊이/unsafe integer를 조용히 재해시하지 않는다. statement 실패는 원 transaction 성공과 구분한다.
     await assert.rejects(pool.query("SELECT anvil.fn02_canonical('9007199254740992'::jsonb)"));
     console.log('FN02_CANONICAL_GRAPH_PG_JS_MATCH '+JSON.stringify({cases:values.length,settings:2,graphs:graphs.length,invalidItems:invalidItems.length,officialForms:forms.forms.length,methods:methods.length,actualAgentCalls:0,formalDbChanges:0}));
+  }catch(error){
+    const code=(error as any)?.code;
+    console.log('FN02_FUNCTION_TEST_FAILURE '+JSON.stringify({phase,caseIndex,code:typeof code==='string'&&/^[A-Z0-9_]{1,80}$/.test(code)?code:null}));
+    throw error;
   }finally{await pool.end();}
 });
