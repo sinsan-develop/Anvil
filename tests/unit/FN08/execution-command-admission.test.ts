@@ -9,6 +9,24 @@ import {SyntheticPrimaryStopTransport} from '../../../apps/connector/adapters/pr
 import {Codex0161Codec} from '../../../apps/connector/adapters/primary/codec.ts';
 const m:any=await import('../../../apps/connector/runtime/execution-command-admission.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),initial=Date.parse('2026-10-19T12:00:00.000Z');
+function recoveryFixture(absent=false){
+ const f=stopFixture(),a=f.make();Object.assign(f.scope,{mode:'RECOVERY'});let queries=0,lost=false;
+ a.client.transport.perform=async(_scope:unknown,op:{kind:string})=>{queries++;assert.equal(op.kind,'STOP_INSTRUCTION');if(lost)throw Error('PRIVATE_RECOVERY_LOST');return{transport:'SYNTHETIC_ONLY',proofResultRef:f.scope.grantRef,instruction:absent?null:{commandRef:f.commandRef,envelope:f.envelope},expiresAt:new Date(initial+10000).toISOString(),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false,writerReleaseVerified:false};};
+ return{...f,a,operation:{kind:'STOP_INSTRUCTION',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID()})},queries:()=>queries,lose:()=>lost=true};
+}
+test('회수선택은정확ref의중지봉투만읽고기존실행중지/permit/회수권한을만들지않는다',async()=>{
+ const f=recoveryFixture();assert.equal(typeof f.a.readRecoveryStop,'function');const r=await f.a.readRecoveryStop(f.scope,f.operation,f.commandRef);assert.equal(r.state,'SELECTED_NOT_DISPATCHED');assert.deepEqual(r.envelope,f.envelope);assert.deepEqual(r.commandRef,f.commandRef);assert.equal(r.writerReleaseVerified,false);assert.equal(r.executionAuthorized,false);assert.equal(r.dispatchPerformed,false);r.envelope.payload.stopScopeRef.version=99;const again=await f.a.readRecoveryStop(f.scope,f.operation,f.commandRef);assert.deepEqual(again.envelope,f.envelope);assert.equal(f.queries(),1);assert.deepEqual(f.counts(),[0,0,0]);assert.equal(f.events.length,0);
+ const empty=recoveryFixture(true),v=await empty.a.readRecoveryStop(empty.scope,empty.operation,null);assert.equal(v.state,'NO_STOP_INSTRUCTION');assert.equal(v.envelope,null);assert.equal(v.commandRef,null);assert.equal(v.writerReleaseVerified,false);assert.equal(empty.events.length,0);
+});
+test('회수선택은정상실행scope/잘못된ref·null선택·다른연산을거절하고정상stop에연결하지않는다',async()=>{
+ for(const selection of [null,{version:2},{contentHash:'f'.repeat(64)},{id:randomUUID()}]){const f=recoveryFixture();await assert.rejects(f.a.readRecoveryStop(f.scope,f.operation,selection===null?null:{...f.commandRef,...selection}));assert.equal(f.queries(),1);assert.equal(f.events.length,0);}
+ const f=recoveryFixture();await assert.rejects(f.a.readRecoveryStop({...f.scope,mode:'EXECUTION'},f.operation,f.commandRef));assert.equal(f.queries(),0);await assert.rejects(f.a.readRecoveryStop(f.scope,{...f.operation,kind:'COMMANDS'},f.commandRef));assert.equal(f.queries(),0);
+ const g=recoveryFixture(true);await assert.rejects(g.a.readRecoveryStop(g.scope,g.operation,g.commandRef));assert.equal(g.queries(),1);assert.equal(g.events.length,0);
+});
+test('회수선택의UNKNOWN/기한경과cached응답은자동재전송/중지/새page를만들지않는다',async()=>{
+ const f=recoveryFixture();f.lose();for(let i=0;i<2;i++)await assert.rejects(f.a.readRecoveryStop(f.scope,f.operation,f.commandRef));assert.equal(f.queries(),1);assert.equal(f.events.length,0);
+ const g=recoveryFixture();await g.a.readRecoveryStop(g.scope,g.operation,g.commandRef);g.advance(10000);await assert.rejects(g.a.readRecoveryStop(g.scope,g.operation,g.commandRef));assert.equal(g.queries(),1);assert.equal(g.events.length,0);assert.deepEqual(g.counts(),[0,0,0]);
+});
 function stopFixture(){const f=fixture();Object.assign(f.envelope,{operation:'REQUEST_STOP',payload:{sessionBindingRef:f.commandRef,stopScopeRef:f.commandRef}});const{envelopeHash:_,...u}=f.envelope;f.envelope.envelopeHash=hash(u);return f;}
 function selectedStop(f:ReturnType<typeof stopFixture>){
  let clock=initial,calls=0,currentCalls=0,advanceRead=false,advanceCurrent=false;const rows:any[]=[],e=f.envelope,ref=f.scope.grantRef;

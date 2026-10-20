@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08 회수 중지지시 읽기선택 한정 수용(2026-10-20)**: 신규3 missing-methodRED281.7492ms→3PASS334.9587ms·시험callbackimplicitany2정정후type0/diff0·독립정적C0/I0/M0이다. 기존client전용GET/원장실코드의exactref/null/UNKNOWN/만료캐시를소비했으며불변client기존3/옛QA전수는재실행하지않았다. null은NO_STOP_INSTRUCTION이고중지/안전/회수성공아님·stopper/permit/wire호출0·원자료/기존정상stop/공개API/DB/서비스불변·자원0·제외6보존이다. 실제서명/키/current진위/COMMIT·Agent/OS회수미판정·전체FN08미완료,rollback은신규읽기method/시험일반revert다. 최초test helper의한줄오추정patch1은적용전거절/부분수정0이며같은오추정반복을중단하고확인된전체줄로만수정했다.
+
+- **FN08 C3 회수 중지지시 읽기선택 착수(2026-10-20)**: 1b784a37 local/private exact·main불변·trackedclean/제외6보존이다. 기존client STOP_INSTRUCTION/RECOVERY 응답은이미지원되지만명시server ref 선택소비가없다. 새readRecoveryStop은기존정확응답/ref/봉투·기한을읽어선택정보만반환하며null지시는중지성공/안전으로추정하지않는다. 기존EXECUTION stop/현재target/권한소비에연결하지않고permit/interrupt/START/SEND/회수·완료판정0·API/DB/서비스/Agent/자원0이다. 메모리TDD/직접기존client범위/type/한정검토만한다.
+
 - **FN08 로컬 관측 조회 한정 수용(2026-10-20)**: 신규3 부재RED170.6187ms→3PASS185.5627ms/type0/diff0·독립정적C0/I0/M0이다. 뒤store예외의고정오류비공개assertion추가1PASS179.247ms/type0는Main후속검증으로독립snapshot과구분한다. 서버실정규화메모리transaction3→1→2 ACK공백결합추가1PASS184.4272ms도한정정적검토했으며실제서명/COMMIT아니다. 로컬claim개수/원순번ref만조회·실행/writer UNVERIFIED/서버NOT_CHECKED·삭제/자동전송/상태승격0·기존코드/API/DB/Agent불변·자원0·제외6보존·전체FN08미완료다. 실제file/OS·source/current진위·서비스/Agent는미검증,rollback은새조회method/시험의일반revert다. 후속조사FN06 wildcard읽기오류1도변경0으로보존하며이후명시목록의정확경로만읽는다.
 
 - **FN08 로컬 관측 사실조회 소비 착수(2026-10-20)**: STOP선택31c99574 local/private exact·main불변·제외6보존이다. 카드getExecutionFacts의미연결로컬조회는검증된spool에서종류별claim수/원순번·첫/마지막ref·해당순번시각만반환한다. 빈기록을정상/중지로추정하거나STARTED/STOPPED공급자주장을실제실행/회수/완료로승격하지않는다. 서버수신확인은별도NOT_CHECKED이고읽기조회가ACK/전송·cursor전진/삭제를만들지않는다. 신규메모리TDD/type/한정검토만하며자원/API/SQL/DB/서비스/Agent변경0이다. 앞선ACK의서버실코드메모리transaction3→1→2공백결합추가1PASS184.4272ms/type0는Main후속검증/독립snapshot이후이며실인증/COMMIT아니다.
