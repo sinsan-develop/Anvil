@@ -72,7 +72,15 @@ test('확정 방법론의 빈 프로젝트 명시 적용·replay·불변 이력�
   const revised=await success(command('saveMethodologyDraft',{name:'절차 v2',purpose:'변경 이력 보존',scope:'PROJECT',graph:nextGraph,reason:'새 위치 버전'},method.id,method.version)),nextMethod=revised.data.ref;
   const stale=await send(command('applyMethodology',{methodologyRef:method,expectedApplicationVersion:1,reason:'옛 source head 거절'},pid,1));assert.equal(stale.statusCode,409);await confirm(nextMethod);
   phase='ORPHAN_COMMIT';const orphan=command('applyMethodology',{methodologyRef:nextMethod,expectedApplicationVersion:1,reason:'행 없는 영수증 COMMIT 거절'},pid,1),snapshot={name:'절차 v2',purpose:'변경 이력 보존',graph:nextGraph,sourceRef:nextMethod},orphanRef={id:randomUUID(),version:2,contentHash:contentHash(canonicalJson(snapshot))};
-  await assert.rejects(access.authenticated(who.token,who.csrfToken,async(db,actor)=>{await currentProjectController(db,actor,orphan);const material=await authorizeMaterial(db,actor,orphan);await persistProjectReceipt(db,actor,orphan,orphanRef,{status:'METHODOLOGY_APPLIED',snapshot,reason:orphan.payload.reason,previousApplicationRef:applied.data.ref},material.ref,'EXPLICIT_EMPTY_PROJECT_METHODOLOGY_APPLICATION');}),(e:any)=>e.code==='42501');
+  let receiptPrepared=false;
+  await assert.rejects(access.authenticated(who.token,who.csrfToken,async(db,actor)=>{
+   await currentProjectController(db,actor,orphan);const material=await authorizeMaterial(db,actor,orphan);
+   const receipt=await persistProjectReceipt(db,actor,orphan,orphanRef,{status:'METHODOLOGY_APPLIED',snapshot,reason:orphan.payload.reason,previousApplicationRef:applied.data.ref},material.ref,'EXPLICIT_EMPTY_PROJECT_METHODOLOGY_APPLICATION');
+   const beforeCommit=(await db.query('SELECT (SELECT count(*)::int FROM anvil.commands WHERE id=$1) AS commands,(SELECT count(*)::int FROM anvil.authorization_receipts WHERE command_id=$1) AS receipts,(SELECT count(*)::int FROM anvil.audit_events WHERE command_id=$1) AS audits,(SELECT count(*)::int FROM anvil.project_methodologies WHERE application_command_id=$1) AS applications',[receipt.id])).rows[0];
+   assert.deepEqual(beforeCommit,{commands:1,receipts:1,audits:1,applications:0});
+   receiptPrepared=true; // callback는 정상 반환하고 authenticated의 후속 COMMIT에서만 실패해야 한다.
+  }),(e:any)=>e.code==='42501');
+  assert.equal(receiptPrepared,true,'INSERT 단계 거절을 deferred COMMIT 성공 음성으로 표시하지 않는다');
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.commands WHERE project_id=$1 AND command_id=$2',[pid,orphan.commandId])).rows[0].n,0);markers.push('RECEIPT_ONLY_DEFERRED_COMMIT_ROLLBACK');
   phase='SAME_GENERATION_RACE';const nextApply=command('applyMethodology',{methodologyRef:nextMethod,expectedApplicationVersion:1,reason:'다음 절차의 별도 적용'},pid,1);
   const raced=await Promise.all([send(nextApply),send({...nextApply,commandId:randomUUID()})]);assert.deepEqual(raced.map(r=>r.statusCode).toSorted(),[200,409]);
