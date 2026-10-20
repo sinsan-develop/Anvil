@@ -32,8 +32,8 @@ function owned(item:any,id:string,kind:'container'|'network'){
 function psql(user:string,password:string,sql:string){return docker(['exec','-i','--env','PGPASSWORD','--env','PGCONNECT_TIMEOUT=5',containerId!,'psql','--no-psqlrc','--no-password','--quiet','--no-align','--tuples-only','--host=127.0.0.1','--port=5432','--username='+user,'--dbname='+qa.database,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=sqlstate','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'],sql,{...process.env,PGPASSWORD:password},90000);}
 const sqlText=(s:string)=>"'"+s.replaceAll("'","''")+"'";
 try{
- if(process.argv.length!==3||!['--run','--workflow','--compatibility'].includes(process.argv[2]!))throw Error('FN02_QA_RUN_REQUIRED');
- const compatibility=process.argv[2]==='--compatibility',workflow=process.argv[2]==='--workflow'||compatibility;
+ if(process.argv.length!==3||!['--run','--workflow','--compatibility','--history'].includes(process.argv[2]!))throw Error('FN02_QA_RUN_REQUIRED');
+ const history=process.argv[2]==='--history',compatibility=process.argv[2]==='--compatibility',workflow=process.argv[2]==='--workflow'||compatibility||history;
  until=Date.parse(process.env.ANVIL_FN02_QA_UNTIL??'');const sha=process.env.ANVIL_FN02_QA_SHA??'',sqlHash=process.env.ANVIL_FN02_QA_SQL_HASH??'';
  const git=(args:string[])=>execFileSync('/usr/bin/git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:10000}).trim();
  assert(process.platform==='linux'&&process.getuid?.()===1000&&await realpath(process.cwd())===qa.cwd&&await realpath(new URL(import.meta.url))===qa.cwd+'/scripts/qa-fn02-empty-application.ts','FN02_QA_PATH_INVALID');
@@ -79,23 +79,23 @@ try{
  console.log('FN02_SCHEMA_CHECK '+JSON.stringify({actualCount:actual?.length,expectedCount:manifest.length,
   actualIds:Array.isArray(actual)?actual.map((r:any)=>r.id):null,expectedIds:manifest.toSorted((a,b)=>a.id.localeCompare(b.id)).map(r=>r.id),
   mismatches:Array.isArray(actual)?actual.filter((r:any)=>manifest.find(m=>m.id===r.id)?.checksum!==r.checksum).map((r:any)=>({id:r.id,checksum:r.checksum,expected:manifest.find(m=>m.id===r.id)?.checksum??null})):null}));
- assertFn02QaManifest(actual,manifest);phase=compatibility?'COMPATIBILITY':workflow?'WORKFLOW':'FUNCTIONS';
+ assertFn02QaManifest(actual,manifest);phase=history?'ASSIGNMENT_RACE':compatibility?'COMPATIBILITY':workflow?'WORKFLOW':'FUNCTIONS';
  let output='';let childFailed=false;
- try{output=execFileSync(process.execPath,['--experimental-strip-types','--test',compatibility?'tests/integration/FN02/empty-application-compatibility-isolated.test.ts':workflow?'tests/integration/FN02/empty-application-workflow-isolated.test.ts':'tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app,...(workflow?{ANVIL_FN02_QA_MIGRATOR:migrator}:{})},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(100000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
+ try{output=execFileSync(process.execPath,['--experimental-strip-types','--test',history?'tests/integration/FN02/application-assignment-race-isolated.test.ts':compatibility?'tests/integration/FN02/empty-application-compatibility-isolated.test.ts':workflow?'tests/integration/FN02/empty-application-workflow-isolated.test.ts':'tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app,...(workflow?{ANVIL_FN02_QA_MIGRATOR:migrator}:{})},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(100000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
  catch(e){childFailed=true;output=String((e as any)?.stdout??'');}
  for(const line of output.split(/\r?\n/).map(s=>s.replace(/^# /,'')))if(line.startsWith('FN02_FUNCTION_TEST_FAILURE ')){
   const item=JSON.parse(line.slice('FN02_FUNCTION_TEST_FAILURE '.length));
   if(typeof item.phase==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.phase)&&Number.isInteger(item.caseIndex)
    &&(item.code===null||typeof item.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.code)))console.log('FN02_FUNCTION_TEST_FAILURE '+JSON.stringify({phase:item.phase,caseIndex:item.caseIndex,code:item.code}));
  }
- const failurePrefix=compatibility?'FN02_APPLICATION_COMPATIBILITY_FAILURE ':'FN02_APPLICATION_WORKFLOW_FAILURE ';
+ const failurePrefix=history?'FN02_APPLICATION_ASSIGNMENT_RACE_FAILURE ':compatibility?'FN02_APPLICATION_COMPATIBILITY_FAILURE ':'FN02_APPLICATION_WORKFLOW_FAILURE ';
  if(workflow)for(const line of output.split(/\r?\n/).map(s=>s.replace(/^# /,'')))if(line.startsWith(failurePrefix)){
   const item=JSON.parse(line.slice(failurePrefix.length));
   if(typeof item.phase==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.phase)&&(item.code===null||typeof item.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.code)))console.log(failurePrefix+JSON.stringify({phase:item.phase,code:item.code}));
  }
- const prefix=compatibility?'FN02_APPLICATION_COMPATIBILITY ':workflow?'FN02_APPLICATION_WORKFLOW ':'FN02_CANONICAL_GRAPH_PG_JS_MATCH ';
+ const prefix=history?'FN02_APPLICATION_ASSIGNMENT_RACE ':compatibility?'FN02_APPLICATION_COMPATIBILITY ':workflow?'FN02_APPLICATION_WORKFLOW ':'FN02_CANONICAL_GRAPH_PG_JS_MATCH ';
  const marker=output.split(/\r?\n/).map(s=>s.replace(/^# /,'')).find(s=>s.startsWith(prefix));
- if(childFailed||!marker)throw Error(compatibility?'FN02_QA_COMPATIBILITY_TEST_FAILED':workflow?'FN02_QA_WORKFLOW_TEST_FAILED':'FN02_QA_FUNCTION_TEST_FAILED');
+ if(childFailed||!marker)throw Error(history?'FN02_QA_ASSIGNMENT_RACE_TEST_FAILED':compatibility?'FN02_QA_COMPATIBILITY_TEST_FAILED':workflow?'FN02_QA_WORKFLOW_TEST_FAILED':'FN02_QA_FUNCTION_TEST_FAILED');
  report=JSON.parse(marker.slice(prefix.length));phase='DONE';
 }catch(e){const message=(e as any)?.message;failure=typeof message==='string'&&/^[A-Z0-9_]{1,100}$/.test(message)?message:'FN02_QA_ASSERTION_OR_UNCLASSIFIED_FAILURE';
  if(diagnostic===null){const code=(e as any)?.code,location=/qa-fn02-empty-application\.ts:(\d+):(\d+)/.exec(String((e as any)?.stack??''));
