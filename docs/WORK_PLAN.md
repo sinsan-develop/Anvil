@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN08 로컬 관측 조회 소비**: 원장검증뒤원순번ref/시각·종류별공급자claim개수만조회한다. 신규3/type0/diff0·한정정적C0/I0/M0,Main추가오류1/서버메모리ACK공백결합1PASS·자원0이다. 실제실행/회수·서버내구/Agent미검증·완료판정0·전체업무미완료이며정확snapshot/원RED는현황보존한다.
+
 - **2026-10-20 FN08 STOP 명시선택→중지 소비**: 기존정확page/ref의REQUEST_STOP만선택해concrete중지기에전달하고page기한을lock/current/wire상한으로추가했다. 신규3/추가기한1·직접6/type0/diff0·한정정적C0/I0/M0·자원0이다. 실제중지/회수·current진위/Agent미증명·STOP_UNCONFIRMED이며원실패/영향은현황보존·전체업무미완료다.
 
 - **2026-10-20 FN08 ACK 연속내용 대조**: null과0prefix를분리하고정확실행/ref/hash·gap/count뒤로컬prefix만읽기대조한다. 신규4/type0/diff0·한정정적C0/I0/M0·자원0이다. 인증/서버내구·gap뒤내용·삭제허가/회수/실행판정0·전체업무미완료이며원실패/검수범위는현황보존한다.

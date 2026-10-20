@@ -63,6 +63,15 @@ export class SyntheticObservationSpool{
    });this.#port();return result;
   }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_READ_UNAVAILABLE');}
  }
+ /** 로컬 원장 내용의 읽기 요약이다. 공급자 주장·기록 부재를 실제 실행/종료/서버 저장 판정으로 바꾸지 않는다. */
+ async getExecutionFacts(){
+  try{this.#port();const result=await this.store.exclusive(cloneV1(this.#scope),async tx=>{
+   this.#port();const stored=this.#journal(await tx.read()),eventCounts:Record<string,number>=Object.fromEntries(types.map(type=>[type,0]));
+   for(const row of stored)eventCounts[row.snapshot.event.type]!++;
+   const first=stored[0],last=stored.at(-1);return{transport:'SYNTHETIC_ONLY' as const,state:stored.length?'LOCAL_CLAIMS_ONLY' as const:'NO_LOCAL_OBSERVATIONS' as const,execution:cloneV1(this.#scope),recordCount:stored.length,highestSequence:stored.length,firstRecordRef:cloneV1(first?.ref??null),lastRecordRef:cloneV1(last?.ref??null),firstSequenceOccurredAt:first?.snapshot.event.occurredAt??null,lastSequenceOccurredAt:last?.snapshot.event.occurredAt??null,eventCounts,observedAt:new Date(this.#now()).toISOString(),verification:'PROVIDER_CLAIM_ONLY' as const,serverReceiptState:'NOT_CHECKED' as const,executionState:'UNVERIFIED' as const,writerState:'UNVERIFIED' as const,sourceAuthenticated:false as const,ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  });this.#port();return result;
+  }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_FACTS_UNAVAILABLE');}
+ }
  /** ACK는 전달받은 주장이다. prefix 내용 일치만 대조하며 인증/서버 내구/삭제 허가를 증명하지 않는다. */
  async compareAck(raw:unknown){
   try{this.#port();const claim=raw===null?null:cloneAck(raw,this.#scope,this.#now());
