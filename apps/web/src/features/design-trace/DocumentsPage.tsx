@@ -21,6 +21,7 @@ import {DesignAnchorOriginal}from'./DesignAnchorOriginal.tsx';
 import type{DesignAnchorSelection}from'./design-anchor.ts';
 import { DocumentVersionComparison } from './DocumentVersionComparison.tsx';
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
+import {DocumentSourceLinks} from './DocumentSourceLinks.tsx';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
@@ -36,6 +37,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
   const [registeredView,setRegisteredView]=useState<string|null>(null);
   const [showComparison, setShowComparison] = useState(false);
+  const [showSourceLinks,setShowSourceLinks]=useState(false);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
   const confirming = confirmation?.ownerUserId === session.user.id && confirmation.projectId === projectId;
   useEffect(() => () => { generation.current++; }, []);
@@ -48,6 +50,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     return () => { current = false; };
   }, [client, projectId, cursor, refresh]);
   async function open(item: DocumentSummary, requested: number) {
+    setShowSourceLinks(false);
     const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
@@ -56,6 +59,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   async function openScreen(sourceRef:ScreenRegion['documentRef'],region:ScreenRegion){
     if(!opened||reading||starting||opened.document.id!==sourceRef.id||opened.document.version!==sourceRef.version||opened.document.contentHash!==sourceRef.contentHash)return;
     const context:ScreenRegionContext={projectId,userId:session.user.id,clientId:session.clientId,sourceRef:{...sourceRef}},request=++generation.current;
+    setShowSourceLinks(false);
     setReadError(null);setReading(true);setShowComparison(false);
     try{
       const value=await readRegisteredScreen(client,context,{...context,region},()=>request===generation.current);
@@ -164,6 +168,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView} 고정 시안 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
+        <button disabled={reading||!!readError||loading||!!listError} onClick={()=>setShowSourceLinks(v=>!v)}>{showSourceLinks?'소스 연결 조회 닫기':'이 버전 소스 연결 조회'}</button>
+        {showSourceLinks&&!reading&&!readError&&!loading&&!listError?<DocumentSourceLinks key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onAuthenticationLost={onAuthenticationLost}/>:null}
         {!reading && !readError && !loading && !listError ? <PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, projectId, opened.document.id, opened.document.version, opened.document.contentHash, opened.document.formRef])} client={client} formRef={opened.document.formRef} onAuthenticationLost={onAuthenticationLost} /> : null}
         <button disabled={reading} onClick={() => setShowComparison(value => !value)}>{showComparison ? '저장 버전 비교 닫기' : '저장 버전 비교 열기'}</button>
         {showComparison && !reading ? <DocumentVersionComparison key={projectId+':'+session.user.id+':'+session.clientId+':'+opened.document.id+':'+opened.document.version+':'+opened.document.contentHash} client={client} projectId={projectId} base={opened} maxVersion={selected?.headVersion ?? opened.document.version} onAuthenticationLost={onAuthenticationLost} /> : null}

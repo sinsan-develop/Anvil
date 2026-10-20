@@ -19,6 +19,7 @@ import { createDocumentImport, readDocumentImport, checkImportSelection } from '
 import { createDocumentProposal, readDocumentProposal, checkProposalSelection } from './project-proposals.ts';
 import { listDocumentMaterials } from './material-list.ts';
 import { readApplicationSnapshot } from '../methodologies/application-snapshot.ts';
+import {readDocumentSourceLinks} from './document-source-link-list.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -168,6 +169,7 @@ export class ProjectDocuments {
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
   const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
   const codec = new ProjectListCodec(value => options.repository.signProjectCursor('DOCUMENTS:' + value));
+  app.get<{Params:{projectId:string;documentId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/documents/:documentId/source-links',{schema:{params:{type:'object',additionalProperties:false,required:['projectId','documentId'],properties:{projectId:idSchema,documentId:idSchema}},querystring:{type:'object',additionalProperties:false,required:['version','contentHash'],properties:{version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},contentHash:{type:'string',pattern:'^[0-9a-f]{64}$'}}}}},request=>options.repository.authenticated(readToken(request),null,(db,actor)=>readDocumentSourceLinks(db,actor,request.params.projectId,request.params.documentId,request.query)));
   app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/documents/stage-options', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documentStageOptions(db, actor, request.params.projectId, request.query)));
   function readToken(request: FastifyRequest) {
     if (request.headers.host !== new URL(options.origin).host) throw new AuthFailure('ORIGIN_INVALID', 403);
