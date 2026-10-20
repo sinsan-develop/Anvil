@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listProjects, type ProjectPage } from './api.ts';
 import {ProjectAccessSummary} from './ProjectAccessSummary.tsx';
+import {routeHref} from '../../shell/routes.ts';
 
 export function ProjectsPage({ client, onAuthenticationLost, onNewProject }: { client: ApiClient; onAuthenticationLost: () => void; onNewProject: () => boolean }) {
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('projectQuery') ?? '');
@@ -42,7 +43,7 @@ export function ProjectsPage({ client, onAuthenticationLost, onNewProject }: { c
     {error ? <p role="alert">{error.message}{page ? ' 앞선 목록은 오래된 자료입니다.' : ''}</p> : null}
     {page ? <p className="meta">관측 시각: <time dateTime={page.observedAt}>{new Date(page.observedAt).toLocaleString('ko-KR')}</time>{error || pending ? ' · 현재 상태 미확인' : ''}</p> : null}
     {page && !page.items.length && !error && !pending ? <section className="status-card"><h2>프로젝트가 없습니다</h2><p>새 프로젝트를 만들거나 먼저 방법론을 준비하세요.</p><a href="#/methodologies">방법론 준비</a></section> : null}
-    <ul className="project-list">{page?.items.map(item => <li className="status-card" key={item.id}><h2><a href={`#/projects/${item.id}/workspace`} aria-label={`${item.name} 프로젝트 열기`}>{item.name}</a></h2><p>{item.purpose}</p><p className="meta">버전 {item.version} · 원본 변경 {new Date(item.updatedAt).toLocaleString('ko-KR')}</p><p className="meta">현재 실행 단계·다음 행동: 연결 전</p><ProjectAccessSummary key={[item.id,applied,archived,refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={pending||!!error} onAuthenticationLost={onAuthenticationLost}/></li>)}</ul>
+    <ul className="project-list">{page?.items.map(item => <li className="status-card" key={item.id}><h2><a href={`#/projects/${item.id}/workspace`} aria-label={`${item.name} 프로젝트 열기`}>{item.name}</a></h2><p>{item.purpose}</p><p className="meta">버전 {item.version} · 원본 변경 {new Date(item.updatedAt).toLocaleString('ko-KR')}</p><p className="meta">현재 실행 단계·다음 행동: 연결 전</p>{!pending&&!error?<a href={routeHref('approvals',item.id)} aria-label={item.name+' 승인 요청 보기'}>승인 요청 화면 열기 · 건수 미조회</a>:null}<ProjectAccessSummary key={[item.id,applied,archived,refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={pending||!!error} onAuthenticationLost={onAuthenticationLost}/></li>)}</ul>
     {page?.hasMore ? <button disabled={pending || !!error} onClick={() => setCursor(page.nextCursor)}>다음 프로젝트 더 보기</button> : null}
   </section>;
 }

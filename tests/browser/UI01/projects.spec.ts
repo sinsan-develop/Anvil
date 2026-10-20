@@ -17,6 +17,16 @@ async function installAccessList(page:import('@playwright/test').Page){
  const writes:string[]=[],errors:string[]=[];page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method()+' '+new URL(r.url()).pathname);});page.on('pageerror',e=>errors.push(e.message));return{writes,errors};
 }
 
+test('프로젝트 카드의 승인 바로가기는 정확 프로젝트 조회 화면만 열고 명령을 보내지 않는다',async({page})=>{
+ const f=await installAccessList(page);await page.route('**/api/v1/projects/'+one.id,r=>r.fulfill({json:accessDetail()}));await page.goto('/');
+ await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>r.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:one.updatedAt}}));
+ await expect(page.getByRole('link',{name:'Anvil 프로젝트 열기',exact:true})).toBeVisible();
+ await page.getByRole('textbox',{name:'프로젝트 검색',exact:true}).fill('Anvil');await page.getByRole('button',{name:'검색',exact:true}).click();
+ const link=page.getByRole('link',{name:'Anvil 승인 요청 보기',exact:true});await expect(link).toBeVisible({timeout:1000});await expect(link).toHaveAttribute('href',`#/projects/${one.id}/approvals`);await link.click();
+ await expect(page.getByRole('heading',{name:'승인·중요 문제',level:2,exact:true})).toBeVisible();await expect(page).toHaveURL(new RegExp(one.id+'/approvals$'));await page.goBack();
+ await expect(page.getByRole('textbox',{name:'프로젝트 검색',exact:true})).toHaveValue('Anvil');expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 test('프로젝트 목록에서 명시 조회한 참여·제어·준비 상태만 표시하고 시작/인수를 하지 않는다',async({page})=>{
  const f=await installAccessList(page);let calls=0,state='OTHER_CLIENT';await page.route('**/api/v1/projects/'+one.id,r=>{calls++;return r.fulfill({json:accessDetail(state)});});
  await page.goto('/');const region=page.getByRole('region',{name:'Anvil 제어·준비 상태',exact:true});await expect(region.getByRole('button',{name:'Anvil 제어·준비 상태 조회',exact:true})).toBeVisible();expect(calls).toBe(0);
