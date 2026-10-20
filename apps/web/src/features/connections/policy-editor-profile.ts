@@ -1,4 +1,4 @@
-export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARATION'|'PROJECT_RESULTS'|'PROJECT_LIMITS'|'PROJECT_SOURCE_DECLARATIONS';
+export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARATION'|'PROJECT_RESULTS'|'PROJECT_LIMITS'|'PROJECT_SOURCE_DECLARATIONS'|'PROJECT_SOURCE_OBSERVATIONS'|'PROJECT_BASELINES';
 export const policyEditorOperations={
  CANDIDATE:[['registerConnection','도구 후보 저장'],['saveEnvironment','환경 후보 저장']],
  PROJECT_MATERIAL:[
@@ -15,6 +15,8 @@ export const policyEditorOperations={
  ],
  PROJECT_LIMITS:[['applyLimitPolicy','한도 정책 작성·개정'],['revokeLimitPolicy','한도 정책 회수']],
  PROJECT_SOURCE_DECLARATIONS:[['saveSourceRoot','위치 선언 등록'],['reviseSourceRoot','위치 선언 개정'],['revokeSourceRoot','위치 선언 철회']],
+ PROJECT_SOURCE_OBSERVATIONS:[['requestSourceReadObservation','읽기 관측 허가 요청'],['revokeSourceReadObservation','읽기 관측 허가 회수']],
+ PROJECT_BASELINES:[['saveBaselineDraft','시작 기준선 초안 저장'],['reviewBaselineContent','시작 기준선 내용 검토'],['confirmBaseline','시작 기준선 별도 확정']],
  PROJECT_RESULTS:[
   ['submitResult','결과 제출 등록'],['saveResultCriteria','결과 검수 기준 저장'],['evaluateResult','결과 검토 기록'],['requestRework','보완 요청 기록']
  ]
