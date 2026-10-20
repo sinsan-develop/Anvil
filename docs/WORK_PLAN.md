@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN09/FN11/UI11 임무·책임자 준비 정책 작성**: 기존8준비행동의별도프로필/버퍼·준비/명시송신을source연결했다. 신규4RED→신규4+공유13PASS/type/build243·새DOM4+직접2=6PASS·scopedC0/I0/M0·QA정리0이다. 실제Agent실행/전달/중지·credential허가가아니고서버의각도메인선행/현재권한검사는유지한다. 새8행동의실제DB/served/도메인소비는미검증이며전체FN09/FN11/UI11은부분상태다.
+
 - **2026-10-20 FN11/UI11 정책 작성 실제 한정 소비**: exacta890840a 새격리PG15/51SQL의실인증API→Web consumer에서정책COMMIT/exacthash·유실replay/후보저장NOT_READY·DENY/권한/옛세대/DML거절7marker actual1PASS·exact자원정리/독립잔여0이다. source/bundle합성DOM과실PG소비를구분하고정식DB/served·전체24행동/동시경합·전체FN11/UI11/Stage미완료를유지한다. 원setup/SCHEMA실패와검수I1보완은WORK_STATUS에보존한다.
 
 - **2026-10-20 FN11/UI11 문서·방법론 정책 작성**: 기존24자료행동을 별도프로필/버퍼·준비/전송으로 연결하고후보strict2행동/실행false·다른규칙보존을 유지했다. 신규6+직접후보7/type/build243·동일bundle새7/공유후보6의사례별한정확인이다. 원DOM실패2/미실행·독립M1/Main보완·재리뷰0은WORK_STATUS에보존했다. 실제DB/served/정책현재성/전체FN11/UI11은미검증/부분이며새서버API/DB/실권한/Agent0이다.

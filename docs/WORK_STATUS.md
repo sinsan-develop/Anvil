@@ -2,6 +2,12 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN09/FN11/UI11 임무·책임자 준비 정책 한정 연결(2026-10-20)**: 기존정책소비의새PROJECT_PREPARATION 프로필은정확8행동을별도버퍼로작성/전용규칙개정·명시준비/전송한다. 후보2/자료24기준·기본[]/DENY/ack===true·다른규칙보존/혼합수정0·실행/전달/중지/credential포함0을유지했다. 신규4RED321.462ms→신규4+직접공유13=17PASS435.8744ms/type0/build243·새DOM4+후보/자료초기각1=6PASS6.1초,단1회scopedC0/I0/M0·diffcheck0이다. 실제bundle의신규/전용개정/유실왕복동일명령·기준변경을확인했으며새spec의REAUTH/LATE_SEND분기는이번실행목록에없고독립재시험0이다. 실제DB/서버현재권한·각8준비도메인의선행/승인소비·served/Agent/전체FN09/FN11/UI11은미검증/부분이며정책작성으로준비성공·실행허가를주장0이다. 이전a890840a의actual정책/후보7marker를새8행동실측으로소급0이다. 등록QA결과1파일과build는owner/realpath/nonlink검사후exact정리·후속별도각false로잔여0,원chunk/NO_COLOR경고·보류6/FN15·CapReport미채택유지다. rollback은새8행동프로필·mount/buffer확장만일반revert하며기존원문/정책/역할/권한은보존한다.
+
+- **FN09/FN11/UI11 준비 정책 QA 사전등록(2026-10-20)**: 신규4RED321.462ms→4+공유직접13=17PASS435.8744ms/type0이다. 첫소스patch는첫행context생성오류1로적용전거부되어정확context로보완했고제품중간상태/원문손상0이다. `D:\tmp\anvil-v3-stage-b\ui11-preparation-policy-01`와`apps/web/dist`만SINSAN\cyhuh/Main소유·수명15분·생성전부재/owner/realpath/nonlink대조후bundle검증4(신규/전용규칙개정/불명왕복/기준변경)와공유후보/자료초기각1만확인한다. 새profile는정확8행동을3처리로서버materialRules에대조했고다른프로필/실행·전달·중지·credential은요청0음성이다. 실제정식DB/served/현재권한·8도메인실수행/Agent는미검증이며앞actual정책QA를새profile실측으로소급0,종료exact정리·별도잔여0이다. 독립검토는새profile/diff만요청한다.
+
+- **FN09/FN11/UI11 임무·책임자 준비 정책 작성 착수 / Main 어울(2026-10-20)**: 정책자료24/후보2는한정연결했지만임무준비·내용검토·별도확정/맥락구성·지속역할·동일세션예약/실행준비·이해검토8행동의정책작성소비는아직없다. 기존documentOperations·PROJECT/HUMAN규칙의prepareAssignment/reviewAssignmentContent/confirmAssignment/buildTaskContext/defineProjectRole/bindResponsibleSession/prepareExecution/reviewUnderstanding만새PROJECT_PREPARATION 프로필/actor-client-project별버퍼로연결한다. 후보/자료프로필기준은확대0·타주체/혼합/실EXECUTION규칙은개정0/원문보존·기본[]/DENY·사용자명시확인→준비POST0→별도전송/CAS/불명보존을재사용한다. prepareExecution 허용작성은 실제authorize/queue/stop/recovery/credential·도구전달허가가아니며현재실행false·모든서버선행/권한/재인증검사는그대로다. 새API/schema/SQL/실사용자정책/역할/Agent/서비스0, 현재보류6/FN15·CapReport미채택경계유지다. 신규TDD·공유프로필직접영향·한정bundle검사만하고기존actualQA반복0,Main이설계/순서판단을기록하고같은계획으로진행한다.
+
 - **FN11/UI11 정책 작성 실제 소비 한정 확인 / Main 어울(2026-10-20)**: exacta890840a76def92677ec4f31c1ed55d0ae113be5의새빈Git/고정PG15 image594290e9/internalnetwork/tmpfs256MiB·hostport/volume0에서기존51SQL exact ID/checksum/중복0·비관리자app를확인했다. PG행순서와JS정렬의idOrderEqual=false를실측했고순서무관기존exactsetguard로모든51지문일치를확인했다. Web정책consumer→실인증Fastify.inject→PG에서준비POST0/재인증전412·자료정책COMMIT/exacthash·후보정책COMMIT후응답유실/동일명령replay/다른자료규칙보존·후보실저장/재조회NOT_READY·현재DENY/과거정책기준·다른사용자/다른client/옛generation/직접DML거절의7marker가actual1PASS919.162405ms(exit0)였다. 실제policy3버전/command4·APPLIED감사4/outbox0, executionAuthorizedfalse/실Agent0/정식DB변경0이다. source/bundle의앞선새7+직접6DOM과이번API/PG소비는서로다른검증이며실served브라우저/현재실사용자정책·UI전체여정/모든24도메인수행·동시경합/최신62전체schema/전체FN11/UI11·Stage완료로승격0이다. 원첫setup/두번째SCHEMA실패는보존한다.
 -   QA PG74e5a9bc0d12b9df0aa359e5a6958a7c2252c8969155a8a9fbe4a47f1c591d55/networka216b9111b728868d271f80f483834847cbcb9003148dbcaa90da3b5a34fd5ca·instance138d81b9523bf44e196d5e4e886f2541을name/label/owner/image/mount[]/port{}·networkID·tmpfs검사후exact회수하고checkout1493원본/package3link는owner/nonlink·고정대상·child종료/gitclean대조후일회성등록root만정리했다. 부모180초제한실제적용·childexit관측/cleanupFailurefalse,후속별도SSH조회checkout/PG/network잔여0·정식PGfullID/exited/기존StartedAt/restart0/image불변이다. 정리시간원I1은scoped정적재검토해소이며실제만료/timeout강제종료·query취소는시험하지않았다. 보류6/미채택FN15·CapReport/특정기존거절·원chunk/NO_COLOR경고보존이다.
 
@@ -2501,7 +2507,7 @@
 | UI08 승인·중요 문제 | [2] | Main 어울. FN11 요청/조회·3종 결정·정확 후보 재결박/별도 소비·단절/원명령, same-client36fa3e51 actual1 PASS·QA잔여0 | FN12 문제 분류/회수·실제 사용자 로그인 browser·Agent 인수 미연결/미확인 |
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/지식 정정·헌법 이력 actual7cf8c005는 과거 근거. 고정 문서출처 조회17b5af47 게시, 문서 명시선택→기존저장·재조회 후보browser6/unit14 핵심 확인 | 새후보 실제served/PG·다른종류 출처 직접열기·공유·임무 선별/이해 대조 |
-| UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존, same-client actual747c6f37 1 PASS·QA41종 잔여0·fixture/배치 확인 | 실제 host/credential/Agent·정책 생성/승인 결정 UI 및 실제 사용자 로그인 browser 인수 미연결/미확인 |
+| UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존과 후보2/자료24/임무준비8의 별도 정책 작성 UI source·한정 bundle 확인. a890840a 정책/후보 actual7marker·QA잔여0 | 실제 host/credential/Agent·정식DB/served·8준비 도메인/전체 사용자 여정은 미완료·미확인 |
 | UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
 | UI14 설정·백업·보조 조회 | [] | S14 정적 시안 | 백업/영향·한도/알림·원화면과 같은 상태 조회 |
@@ -2520,9 +2526,9 @@
 | FN06 첫 코딩 Agent·환경 | [2] | Main 어울. 후보/환경/6능력 기록·41/42 적용, 350b2e30 내부/HTTP·인접 actual3 PASS·독립 잔여0. 완성형·실측/실제 Agent·UI11 미연결 | Main이 다음 미완료/선행을 선정·진행하고 필요한 실행/권한 결정만 PMO 요청. 전체 연결/사용자 browser 완료 주장 금지 |
 | FN07 두 번째 Agent·계정 교체 | [] | 실제 두 번째 연결 미확인 | 공통계약으로 타도구·계정교체·원본유지 |
 | FN08 Windows 실행·회수·중복방지 | [2] | P1 C3 START/SEND 선택·서명nonce/현재검사·전용permit/자료 연결 source·합성 후보, 현재 false 효과 유지 | original5 공용SQL guard 거절/pending·물리 provider/actual DB·OS/Agent 실행 미완료 |
-| FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측 기록, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·실행 연결 미완료 |
+| FN09 총괄·단계·하위 임무 | [2] | 임무 초안/내용 검토·별도 확정·C1 역할/예약·준비 source·과거 한정 격리 실측과 준비8행동 정책 UI source, 현재 runtime 미확인 | Agent 총괄/실외부 세션·하위 임무/자동 조율·정식served·전체 실행 연결 미완료 |
 | FN10 자동/건별·분기·한도 | [2] | SYNTHETIC_ONLY 내부 후보계산27PASS/type0 | 실제 상태·권한/예산/단계전이·슬롯/대기열·Agent 미연결 |
-| FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control 세대·최근 재인증의 명시 정책/불변 버전·기본 DENY·중복/거절 감사·구세대 replay actual 확인 | 일회 승인 소비·검토/한도/Agent 범위·정책 편집 화면·전체 실제 여정 |
+| FN11 권한·일회 승인·통제 | [2] | Main 어울. 현재 OWNER/client/control·재인증/불변 정책/기본 DENY·일회 업로드 승인 소비의 기존 한정 actual 유지. 후보2/자료24 정책 UI·a890840a actual7marker와 임무준비8 source/한정 bundle 연결 | 준비8행동의 실제 DB·각도메인/현재권한·다른 승인 소비/Agent 범위·정식served/전체 실제 여정 미완료 |
 | FN12 결과·검증·이상 판정 | [2] | Main 어울. 제출/목록 실제PG, 합성 검수/보완15·범위변조거절 보완. 54ad16f2 원제출+확정임무 검수source 실제PG1 PASS·UI05 조회후보 | typed기준/등록증거·검수/보완의 실제 저장·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [2] | 42671006 상세 입력/준비API/UI·13PASS/type/build·합성browser1 | 실제 불변저장/원문조회·상세참조·현재지점 파일/대조·정지확인·옛권한/중복 차단·안전재개 미완료 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
