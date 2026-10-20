@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN03 조회 보정 검수**: 최초 문서 참조의 대기 중 변조·DB 오류 원문 전파를 반례 RED→GREEN으로 보정했다. 신규8+이력5=13PASS/typecheck/diff0·한정 정적 C0/I0/M0다. 저장 구조·쓰기/분리·route/UI·실제 내용 관측은 여전히 미연결이며 기능 전체 완료로 승격하지 않는다.
+
+- **2026-10-21 FN03 source-link 이력 조회 저장소 일부**: 내부 repository가 기존 이력검사를 소비하고 회원/문서/헤더·APPLIED command/receipt를 한조회로 대조·OWNER외민감경로를숨긴다. 신규5+이력5/type/diff의가짜DB 단위만확인했다. 저장DDL/실SQL·DB·목록/route/UI/현재source진위가미연결이므로 실제저장/조회·사용자기능완료가아니다.
+
 - **2026-10-21 FN03 source-link 불변 이력 기반 일부**: §15.4 link/detach의 내부입력·LINKED→DETACHED/hash/앞버전/원참조 보존·분리snapshot 준비를 TDD로 구현했다. 신규5+직접인접6/type/diff 확인. 저장소/SQL/명령·권한/receipt/audit·화면 소비는 미연결이며 실제contentprovider가 없어 연결 성공을 열지 않는다. 사용자기능 완료가 아닌 내부기반 일부로 유지하고 정확 반례/미검증은 WORK_STATUS를 따른다.
 
 - **2026-10-21 UI03/FN02·FN10 프로젝트 단계 한도 참조**: 프로젝트 전용 편집에서 기존 same-project APPLIED 보관정책 fullref를 선택/해제하고 기존 초안 저장·재조회로 연결했다. 신규/인접단위·가짜API DOM 정상/403/늦은노드전환·저장알림 반례와 type/build/diff를 확인했고 한정 정적 C0/I0/M0다. 실제DB/served·현재한도/예산가용·실행강제·전체업무는 미검증/부분이며 기존 LIMIT_POLICY_NOT_VERIFIED를 유지한다.
