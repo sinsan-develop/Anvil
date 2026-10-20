@@ -15,6 +15,19 @@ function fixture(send=false){
  return{scope,envelope,materials,bodies,response,events,blobs,store,make,syncs:()=>syncs,fault:(v:string)=>fault=v,advance:(n:number)=>time+=n,rebind:(i:number)=>materials[i]!.ref.contentHash=hash(materials[i]!.snapshot)};
 }
 
+test('부분수신영수증은sync후전체원장/bytes를재대조한정확receipt만돌려주고중복write0이다',async()=>{
+ const f=fixture(),a=f.make();assert.equal(typeof a.recordReceipt,'function');const first=await a.recordReceipt(f.envelope,f.response(1));assert.deepEqual(first,f.events[0]);assert.equal(first.snapshot.materialRef.id,f.materials[1]!.ref.id);assert.equal(f.syncs(),1);assert(!JSON.stringify(first).includes('둘째'));assert.equal(Object.hasOwn(first,'bytes'),false);assert.deepEqual(await f.make().recordReceipt(f.envelope,f.response(1)),first);assert.equal(f.syncs(),1);assert.equal((await f.make().record(f.envelope,f.response(0))).completeContextVerified,false);
+});
+test('부분수신영수증의두번째잠금오류/변조는sync된원자료를지우거나성공반환하지않는다',async()=>{
+ for(const fault of ['LOCK','BLOB']){const f=fixture(),exclusive=f.store.exclusive;let calls=0;f.store.exclusive=async(s:any,body:any)=>{calls++;if(calls===2){if(fault==='LOCK')throw Error('PRIVATE_RECEIPT_LOCK');f.blobs.set(f.events[0].ref.id,Buffer.from('변조'));}return exclusive(s,body);};await assert.rejects(f.make().recordReceipt(f.envelope,f.response(0)),(e:Error)=>!e.message.includes('PRIVATE'));assert.equal(f.syncs(),1);assert.equal(f.events.length,1);}
+});
+test('부분수신영수증은재잠금종료후만료/port전환을거절하고이미보관한부분을보존한다',async()=>{
+ for(const fault of ['EXPIRE','PORT']){const f=fixture(),exclusive=f.store.exclusive;let calls=0;f.store.exclusive=async(s:any,body:any)=>{calls++;const out=await exclusive(s,body);if(calls===2){if(fault==='EXPIRE')f.advance(60000);else f.store.transport='REAL';}return out;};await assert.rejects(f.make().recordReceipt(f.envelope,f.response(0)));assert.equal(f.syncs(),1);assert.equal(f.events.length,1);}
+});
+test('부분수신영수증은다른ref/권한true를저장전거절한다',async()=>{
+ for(const change of [(r:any)=>r.materialRef.version++,(r:any)=>r.executionAuthorized=true]){const f=fixture(),r=f.response(0);change(r);await assert.rejects(f.make().recordReceipt(f.envelope,r));assert.equal(f.syncs(),0);}
+});
+
 test('순서가 바뀌어 도착한 합성 두 부분을 sync·hash 재조회하고 동일 부분은 다시 저장하지 않는다',async()=>{
  const f=fixture(),a=await f.make().record(f.envelope,f.response(1));assert.equal(a.state,'PARTIAL');assert.equal(a.missingMaterialIds.length,1);assert.equal(f.syncs(),1);
  const b=await f.make().record(f.envelope,f.response(0));assert.equal(b.state,'REGISTERED_PARTS_RECEIVED');assert.equal(b.missingMaterialIds.length,0);assert.equal(b.completeContextVerified,false);assert.equal(b.executionAuthorized,false);assert.equal(b.dispatchPerformed,false);assert.equal(f.syncs(),2);assert.deepEqual(await f.make().record(f.envelope,f.response(1)),b);assert.equal(f.syncs(),2);assert.equal(f.blobs.size,2);

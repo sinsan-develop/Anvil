@@ -72,6 +72,19 @@ export class SyntheticMaterialReceiver{
    });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
   }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_START_UNAVAILABLE');}
  }
+ /** client 원장에는 본문 대신 이 정확 수신 영수증만 전달한다. 부분 수신은 전체 맥락/현재 허가가 아니다.
+  * 기존 record 뒤 재잠금 재조회 실패도 원 bytes/영수증을 삭제하거나 자동 재수신하지 않는다. */
+ async recordReceipt(rawEnvelope:unknown,response:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);
+   if(!recordV1(response,['transport','materialId','materialRef','sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType','bytes','cacheControl','completeContextVerified','executionAuthorized','dispatchPerformed'])||!refV1(response.materialRef))return fail('MATERIAL_RESPONSE_INVALID');
+   const selected=cloneV1(response.materialRef);await this.record(envelope,response);this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+   const receipt=await this.store.exclusive(cloneV1(scope),async tx=>{
+    this.#port();readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash),matches=events.filter(e=>same(e.snapshot.materialRef,selected));
+    if(matches.length!==1)return fail('MATERIAL_RECEIPT_NOT_RECORDED');this.#port();readDispatchEnvelopeV1(envelope,this.#now());return cloneV1(matches[0]!);
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return receipt;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_RECEIPT_UNAVAILABLE');}
+ }
  async record(rawEnvelope:unknown,response:unknown){
   try{
    this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);if(envelope.operation==='REQUEST_STOP'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_ENVELOPE_MISMATCH');

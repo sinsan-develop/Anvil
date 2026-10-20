@@ -3,6 +3,12 @@
 ## 1. 현재 상태와 기록 기준
 
 
+- **FN08 C3 부분 수신 영수증 한정 수용 / Main 어울(2026-10-20)**: 독립정적C0/I0/M0·신규4/직접기존포함14PASS·type0/diff0범위로recordReceipt를수용한다. 실제파일내구/물리동시성·source/current진위·client MATERIAL 전체결합/서버·Agent는미검증이고전체FN06/FN08완료가아니다. 기존record/원장형식·API/SQL/DB/권한/서비스불변·자원0·제외6보존이다. rollback은새receipt메서드/시험의일반revert·원자료삭제0이다. 다음 C3 미완료는 server의material응답을receiver.recordReceipt로받아client가본문대신receipt만기록하는합성transport결합이며실HTTP/Agent/P3와구분한다.
+
+- **FN08 C3 부분 수신 영수증 직접검사(2026-10-20)**: 신규4 missing-methodRED137.2112ms→4PASS178.8905ms/type0이다. 기존record를바꾸지않고재잠금전체journal/blob/hash뒤정확receipt반환·중복write0·재조회lock오류/변조/종료후만료/port변경의원자료보존을확인했다. 직접기존10만의도한 test-name negative필터가실제로는신규4도포함해총14PASS217.9587ms로출력되어그대로기록하며'기존10만실행'으로보고하지않는다. 추가반복/필터재시도0·diff0, 독립정적검토중이다. 메모리sync계약이며물리file/실권한/자료진위/실Agent·전체기능미검증·API/DB/자원0이다.
+
+- **FN08 C3 자료 수신→서명client 영수증 연결 착수 / Main 어울(2026-10-20)**: 기존 client MATERIAL 계약은 bytes가 아닌 sync된 partReceipt를 소비하지만 receiver.record는 summary만 반환한다. 새 recordReceipt에서 기존record를그대로소비하고재잠금/전체journal·blob/hash대조뒤정확부분receipt만반환한다. 본문/원장형식·record동작/API/SQL/권한·실Agent0,부분수신은전체맥락·허가가아니다. 메모리TDD/직접receiver/type·한정독립검토만·자원0이다. 조사중apps/connector/spool·spool 부재읽기2/추정http wildcard패턴오류1은그대로기록하며실제목록검색으로전환·ACL/설정변경0이다.
+
 - **FN08 C3 선택→합성 전송기 한정 수용 / Main 어울(2026-10-20)**: 새sendInstruction→기존sender선택 grant/기한추가3 missing-methodRED252.312ms→3PASS369.9987ms/type0, 직접기존sender11PASS529.2703ms/diff0이다. 독립정적C0/I0/M0이며 최초snapshot의제목-본문자료대기만료차이는Main도병행확인해 material/permit await후만료를추가·신규3만3PASS392.0269ms/type0로직접확인했다. 추가분은독립snapshot이후/Main검증이며기존11/옛QA재실행0이다. 최초grant불일치append0/보관grant재사용거절·선택기한과기존현재자료/세션/이해/permit/wire직전기한검사를유지,permit후만료는원2행보존·추가wire0/재조회UNKNOWN이다. 기존sender수정사유와전후diff는선택상한추가21줄이며기본직접send의봉투기한·원API/형식/권한불변이다. 적용전문자열줄바꿈조립오류1은sender부분적용0·정확newline보정후진행했다. 실제서버/nonce/COMMIT/자료·권한진위/Agent/P3·모든비동기타이밍은미검증,Web불변/build/browser0·QA자원0·제외6보존·전체업무완료아니다. rollback은선택연결/상한의일반revert·원원장삭제0이다.
 
 - **FN08 C3 후속 선택→전송기 명시 연결 착수 / Main 어울(2026-10-20)**: 읽기 선택만 있는 b45ead98 다음으로 같은 client/정확 ref를 재소비하는 명시 sendInstruction을 기존 합성 primary sender에 연결한다. 선택 grant와 page 만료를 sender의 선택 경계로 전달해 원장 재조회/최초시도·현재권한·wire직전에도 다른grant/기한경과를 거절하며 기존 직접send 경로는 불변이다. source선택은 권한이 아니고 기존현재자료/세션/이해/permit검사를 모두 유지한다. 메모리서명client/codec/원장만 사용·실Agent/OS/socket·API/SQL/DB/권한/P3/자원생성0, TDD/직접인접/type/독립검토로 진행한다. 직전 추정 wildcard execution-session* 읽기1 오류도 경로패턴오류로 보존하고 실제목록기준검색으로 전환·설정변경0이다.

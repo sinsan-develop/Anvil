@@ -1,6 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
 
+- **2026-10-20 FN08 자료 수신 영수증 반환**: 기존record후재잠금/전체journal·blob/hash를재검사해선택부분receipt만반환한다. 신규4/직접기존포함14PASS/type0·한정C0/I0/M0·자원0이다. 본문client복제·실Agent/현재권한·물리file/전체MATERIAL결합/API/DB변경0·전체업무미완료,필터추가실행등원증거는현황보존한다.
+
 - **2026-10-20 FN08 명시 선택→기존 합성 SEND 연결**: 정확page선택과grant/기한상한을기존sender에연결·자료/이해/permit/직전current는유지했다. 신규3/직접11/type0·한정정적C0/I0/M0,뒤추가material/permit await만료는Main의신규3한정PASS다. 실제Agent/현재권한진위·서버COMMIT/물리내구·전체기능완료아니며API/SQL/DB/실권한변경0·자원0이다. 원RED/독립snapshot범위는현황보존한다.
 
 - **2026-10-20 FN08 후속 지시 명시 선택 읽기**: 기존 내구COMMANDS에서 정확 명령ref/실행세대·기한/SEND만 원봉투로 연결했다. 새4+직접기존6=10PASS/type0·한정C0/I0/M0, 뒤추가음성version/ID/STOP는Main의새4한정PASS다. 선택은수신/전송허가가아니며실서버/Agent·전체업무미검증, 기존START/API/SQL불변·자원0이다. 원RED/검토snapshot한계는현황보존한다.
