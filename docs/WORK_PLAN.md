@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN11/UI11 정책 작성 실제 한정 소비**: exacta890840a 새격리PG15/51SQL의실인증API→Web consumer에서정책COMMIT/exacthash·유실replay/후보저장NOT_READY·DENY/권한/옛세대/DML거절7marker actual1PASS·exact자원정리/독립잔여0이다. source/bundle합성DOM과실PG소비를구분하고정식DB/served·전체24행동/동시경합·전체FN11/UI11/Stage미완료를유지한다. 원setup/SCHEMA실패와검수I1보완은WORK_STATUS에보존한다.
+
 - **2026-10-20 FN11/UI11 문서·방법론 정책 작성**: 기존24자료행동을 별도프로필/버퍼·준비/전송으로 연결하고후보strict2행동/실행false·다른규칙보존을 유지했다. 신규6+직접후보7/type/build243·동일bundle새7/공유후보6의사례별한정확인이다. 원DOM실패2/미실행·독립M1/Main보완·재리뷰0은WORK_STATUS에보존했다. 실제DB/served/정책현재성/전체FN11/UI11은미검증/부분이며새서버API/DB/실권한/Agent0이다.
 
 - **2026-10-20 FN11/UI11 후보 저장 정책 작성·개정**: 기존 계약의 본인/동일PROJECT 후보저장 두행동·3처리·기한/이유·명시확인→명령준비→별도전송을 연결했다. 신규/직접서버7PASS/type/build242·새DOM6+직접1=7PASS/scopedC0I0M0/QA0이다. 다른규칙보존·미확인명령/CAS/reauth/충돌 거절을 유지하며 타작성자/만료된다른규칙은 이 화면에서 자동정리하지 않는다. 실제DB/사용자정책·전체정책/FN11·실행허가는 미검증/부분이다.
