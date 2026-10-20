@@ -87,7 +87,10 @@ test('유효한 임무 초안 저장과 명시 방법론 적용의 material 직�
    return{pid,request,apply,original,applicationRef:project.currentMethodologyRef,design,command};
   }
   const first=await prepareProject('ASSIGNMENT_FIRST'),second=await prepareProject('APPLICATION_FIRST');
-  async function material(db:PoolClient,request:ProjectCommand){fresh();await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request);assert.equal(await projectReplay(db,actor,request),undefined);return request.operation==='prepareAssignment'?assignments.save(db,actor,request,policy.ref):methodsService.apply(db,actor,request,policy.ref);}
+  async function material(connection:PoolClient,request:ProjectCommand,active=fresh){
+   const db=new Proxy(connection,{get(target,key){if(key==='query')return(...args:unknown[])=>{active();return Reflect.apply(target.query,target,args);};const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});
+   active();await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request);assert.equal(await projectReplay(db,actor,request),undefined);return request.operation==='prepareAssignment'?assignments.save(db,actor,request,policy.ref):methodsService.apply(db,actor,request,policy.ref);
+  }
   async function waitBlocked(waiter:number,blocker:number){
    const end=Date.now()+2000;
    while(Date.now()<end){fresh();const observed=(await pool.query('SELECT $2::int=ANY(pg_blocking_pids($1)) blocked,query FROM pg_stat_activity WHERE pid=$1',[waiter,blocker])).rows[0];
@@ -97,16 +100,18 @@ test('유효한 임무 초안 저장과 명시 방법론 적용의 material 직�
    assert.fail('FN02_EXPECTED_MATERIAL_CONTROLLER_WAIT_NOT_OBSERVED');
   }
   async function race(leaderRequest:ProjectCommand,followerRequest:ProjectCommand,expectedFailure:string,expectedStatus:number):Promise<any>{
-   const leader=await pool.connect();let follower:PoolClient|undefined,pending:Promise<any>|null=null;
+   const leader=await pool.connect();let follower:PoolClient|undefined,pending:Promise<any>|null=null,closing=false;
+   const active=()=>{fresh();assert(!closing,'FN02_MATERIAL_FOLLOWER_CANCELLED');};
    try{
     follower=await pool.connect();
     await leader.query('BEGIN');await follower.query('BEGIN');const leaderPid=(await leader.query('SELECT pg_backend_pid() id')).rows[0].id,followerPid=(await follower.query('SELECT pg_backend_pid() id')).rows[0].id;
-    const result=await material(leader,leaderRequest);pending=material(follower,followerRequest).then(value=>({value}),error=>({error}));await waitBlocked(followerPid,leaderPid);await leader.query('COMMIT');
+    const result=await material(leader,leaderRequest);pending=material(follower,followerRequest,active).then(value=>({value}),error=>({error}));await waitBlocked(followerPid,leaderPid);await leader.query('COMMIT');
     const denied=await pending;assert(denied.error instanceof AuthFailure);assert.equal(denied.error.message,expectedFailure);assert.equal(denied.error.statusCode,expectedStatus);await follower.query('ROLLBACK');return result;
    }finally{
-    const rolled=await Promise.allSettled([leader.query('ROLLBACK'),...(follower?[follower.query('ROLLBACK')]:[])]);
-    if(pending)await pending;leader.release(rolled[0]?.status==='rejected');follower?.release(rolled[1]?.status==='rejected');
-    assert(rolled.every(result=>result.status==='fulfilled'),'FN02_RACE_ROLLBACK_UNVERIFIED');
+    closing=true;const leaderRollback=await Promise.allSettled([leader.query('ROLLBACK')]);if(pending)await pending;
+    const followerRollback=follower?await Promise.allSettled([follower.query('ROLLBACK')]):[];
+    leader.release(leaderRollback[0]?.status==='rejected');follower?.release(followerRollback[0]?.status==='rejected');
+    assert([...leaderRollback,...followerRollback].every(result=>result.status==='fulfilled'),'FN02_RACE_ROLLBACK_UNVERIFIED');
    }
   }
   phase='ASSIGNMENT_FIRST';const assignment=await race(first.request,first.apply,'EXECUTION_STATE_UNVERIFIED',412);assert.deepEqual((await readAssignmentDraft(client,first.pid,assignment.data.ref)).ref,assignment.data.ref);
