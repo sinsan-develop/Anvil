@@ -15,6 +15,7 @@ import {StoredObservationJournal} from './StoredObservationJournal.tsx';
 import {StoredStopRequests} from './StoredStopRequests.tsx';
 import {ReportedTestResults} from './ReportedTestResults.tsx';
 import {ReportedCommandResults} from './ReportedCommandResults.tsx';
+import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
 
 import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
 import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
@@ -64,6 +65,7 @@ function SessionResults({client,projectId,confirmed,onAuthenticationLost,criteri
  },[client,projectId,id,version,contentHash,selected,itemKey,currentPage]);
  return <section className="status-card" aria-label="제출 결과" lang="ko"><div className="project-toolbar"><h3>제출 결과 · 검수 전</h3><button type="button" onClick={()=>{setSelected(null);setOriginal(null);setPage(null);setError(null);setCursor(null);setPageNumber(1);setRevision(v=>v+1);}}>결과 목록 새로고침</button></div>
   <p>제출자 주장과 실제 관측·검수는 다릅니다. 기록이 없거나 제출 상태가 COMPLETED여도 Anvil의 완료 판정이 아닙니다.</p>
+  {criteria.submissions?<ResultSubmissionEditor key={'submit:'+projectId+':'+id+':'+version+':'+contentHash} client={client} assignment={confirmed} session={criteria.session} storage={criteria.submissions} onAuthenticationLost={onAuthenticationLost} onStored={()=>{setCursor(null);setPageNumber(1);setSelected(null);setOriginal(null);setPage(null);setError(null);setRevision(v=>v+1);}}/>:null}
   {error?<p role="alert">{error} · 결과 조회 미확인. 이전 결과를 현재 자료로 표시하지 않습니다.</p>:!currentPage?<p role="status">정확 임무의 제출 결과 조회 중</p>:<><p>제출 이력 {pageNumber}페이지 · 조회 시각: <time dateTime={currentPage.observedAt}>{currentPage.observedAt}</time></p>{currentPage.items.length?<ul>{currentPage.items.map(item=><li key={item.ref.id}><button type="button" aria-pressed={selected?.ref.id===item.ref.id} onClick={()=>{setOriginal(null);setAttempt(v=>v+1);setSelected(item);}}>제출 원문 {item.ref.id}</button><p>{item.submissionState} · 제출자 주장 · 검수 전 · <time dateTime={item.submittedAt}>{item.submittedAt}</time></p></li>)}</ul>:<p>확인된 제출 결과 없음 · 작업 미수행/정상/완료로 추정하지 않습니다.</p>}{currentPage.hasMore&&currentPage.nextCursor?<button type="button" onClick={()=>{setSelected(null);setOriginal(null);setPage(null);setError(null);setCursor(currentPage.nextCursor);setPageNumber(n=>n+1);}}>더 이전 제출 보기</button>:<p>조회된 범위의 더 이전 제출 없음 · 프로젝트 완료 판정 아님</p>}</>}
   {currentPage&&selected&&!shown?<p role="status">선택 제출의 고정 원문 조회 중</p>:null}
   {currentPage&&shown?.error?<p role="alert">{shown.error} · 원문 미확인. 다른 제출로 대체하지 않습니다.</p>:null}
