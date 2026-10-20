@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN06/FN08 C3 합성 primary 시작 연결**: 기존 수신기뒤고정thread/start어댑터후보를추가했다. 명시옵션·정확자료/permit/grant/소유검사·시도sync/중복차단·응답digest/UNKNOWN을신규12+직접기존54/type0·재리뷰C0/I0/M0범위로검수했다. 원I1·자체RED/오판가설은현황보존,실제Provider/OS/socket/파일내구·외부handle/본문전달·서비스/전체업무는미완료/미검증이며P1SYNTHETIC_ONLY·false경계유지다.
+
 - **2026-10-20 FN11/UI11 결과 제출·검수 정책 작성**: 기존4결과행동의별도프로필/버퍼·명시준비/전송·동일명령재확인을연결했다. 신규4+직접공유17/type/build248·새DOM4+기존2=6PASS·scoped정적C0/I0/M0·QA0이다. 다른규칙/실행false·기본DENY를유지하며새API/DB/실권한자동부여0,실제DB/served/현재정책·Agent·전체FN11/UI11은미검증/부분이다. 원실패·미실행범위는WORK_STATUS에보존한다.
 
 - **2026-10-20 FN12/UI05 결과 제출 파일→등록 연결**: 기존scope/manifest JSON을원문/hash와구분보존·명시확인·기존submitResult/유실원명령재확인/목록갱신에연결했다. 신규9/type/build248·합성새6+직접기존1=7PASS·한정정적C0/I0/M0·QA잔여0이다. 실제DB/COMMIT/권한·실행귀속·POST중이탈경합/Agent·출처/완료판정은미검증이며서버선행·false경계는유지한다. 원파일bytes의서버보관/새API/schema/정책자동부여를추가하지않았고전체FN12/UI05는부분상태다.
