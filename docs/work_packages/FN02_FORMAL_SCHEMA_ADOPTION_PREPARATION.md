@@ -27,6 +27,22 @@
 -0031은 새 적용 명령과 저장 보호/receipt·CAS/7원장 이력·동시성 guard를 바꾼다. 기존46/소스 SQL/pending 원문은 덮어쓰지 않는다. SQL hash가 달라지면 후보를 조용히 추종하지 않고 실패한다.
 - 제안은 한 migration TX에서46→53(기존 migration advisory lock과 고정순서/각기록 확인) 후 단1회 COMMIT이다. planner는 이 순서의 before/after 수와 manifest hash만 계산한다. 실제 TX/DDL/COMMIT 코드는 현재 없다. 중간47~52를 성공 checkpoint로 만들거나 실패를 지나쳐 적용하지 않는다.
 
+### 허용 diff를 확정할 source 대조 목록
+
+아래는 고정 SQL 본문에서 읽은 주요 대상이며 자동 SQL 파서/실DB 객체 검증이 아니다. 실제 실행 전에는 함수 signature·trigger·index·constraint·권한의 전체 정의를 SQL hash와 함께 고정해야 한다.
+
+| SQL | 신규 table | 기존 객체에 대한 핵심 변화 |
+|---|---|---|
+|0012|assignment_drafts, assignment_draft_versions|새 초안의 SELECT/INSERT/UPDATE와 불변 버전 SELECT/INSERT·guard. 기존 사용자 정책/계정 자동 생성 없음|
+|0013|assignment_content_reviews, assignment_versions|새 검토/확정 이력 SELECT/INSERT·UPDATE/DELETE 금지·검증 함수/guard|
+|0014|context_bundles, context_items|새 맥락 묶음/항목 SELECT/INSERT·불변 이력/완전성 검증|
+|0015|baseline_drafts, baseline_draft_versions, baseline_content_reviews, baseline_heads|기존 project_baselines.source_snapshot_ref의 NOT NULL 제거, nullable metadata7개·legacy/FEATURE_STATUS_V1 CHECK/FK/UNIQUE/index와guard추가·기존table app-role INSERT허용/UPDATE·DELETE거절. 기존 행의 신규 metadata는 NULL로 보존한다는 SQL 계약이며 실제 기존 행 보존은 미검증|
+|0016|project_roles, agent_sessions, role_bindings, execution_preparations|새 프로젝트 논리 역할/세션/준비 table의 SELECT/INSERT·guard. PostgreSQL 실제 계정/role을 생성하는 기능은 아님|
+|0017|limit_policy_versions, usage_reservations, executions, execution_grants, writer_claims, execution_commands|새 원장 SELECT 및 최종 INSERT권한·초기 실행 graph/불변성 guard. 초기 REVOKE만 보고 최종 INSERT 허용을 누락하지 않는다|
+|0031|없음|기존 project_methodologies.application_command_id UNIQUE/FK 및 적용guard/지연완전성 추가, initial_project_methodology_guard trigger의명시적교체(기존함수본문은보존), commands의완전성/불변guard추가, 앞서생긴7개이력table에project lock trigger추가|
+
+새 table은합20개이며, 이 표 밖의 기존 객체 변화가 발견되면 source/정확 SQL과 대조해야 한다. 특히 기존 project_baselines·project_methodologies·commands의 구조/trigger 변화는 '대상외 불변'에서 숨기지 않는다.0031의 DO 블록이 생성하는7개 trigger도 단순 CREATE행 검색만으로 누락하지 않는다.
+
 ## 기존 증거를 재사용할 범위
 
 -0012 기존 formal executor는46→47 한 개만 다룬다.0013~0017을 자동등록하거나 이번 거절을 해제하지 않는다.
@@ -46,5 +62,22 @@
 7. COMMIT 전 오류는 같은 TX rollback/신규 세션의 복원된46 확인이 필요하다. **COMMITUNKNOWN**(응답 유실/연결종료/기한만료)은 rollback 성공/미적용으로 보고하지 않고 상태불명으로 보존한다. 자동 SQL replay·down migration·restore-in-place·table DROP0, 별도 허가된 읽기로46/53·정확 전체 지문과 원 기록을 대조한 뒤 결정한다. COMMIT 후 실패도 파괴적 자동 복원이 아니라 검토된 forward repair 또는 사용자 승인 복원으로 분리한다.
 
 ## 다음 완료조건
+
+### 최소 읽기 전용 사전 확인 요청안 — 아직 실행0
+
+실제 dump/DDL 승인 요청 전에 아래 한정 정보만 추가 확인하는 별도 범위다. 이전 metadata 창/기존 config 접근 허가를 재사용하지 않으며, PMO의 이번 정확 판정/새 유한 binding과 플랫폼 심사 전 실행하지 않는다.
+
+- host/대상: WSL-server daon/기존동일PG fullID·daemon/image·volume/network/5546. 시작/중지/정의 변경0. `/usr/bin/docker --host unix:///var/run/docker.sock exec <fullID> /usr/bin/pg_dump --version` 및 pg_restore --version 각1회만(새 일회 프로세스/DB접속0). `/opt/node-v24.21.0-linux-x64/bin/node`와기존도구의실경로/파일hash만,보호 root의statvfs가용bytes/기존복원후보경로·container명부재만확인한다. Config.Env/로그/파일본문/새폴더 생성0.
+- DB 사전 확인이 필요하면 도구 확인과 분리하여 기존 `/home/daon/.local/share/anvil-v3-development/migrator.json` 한 파일만 O_NOFOLLOW/owner1000/0600/nonlink/size 검증으로메모리소비하는 새 범위가 필요하다. 기존 anvil_v3_migrator/127.0.0.1:5546/DB anvil_v3_development만,대체role/config0·키/DSN/rawerror출력0. 이 보호파일/역할은 앞선 app-role 조회와 다른 범위다.
+- 제안 SQL은 BEGIN READ ONLY/statement5초·lock1초·idle10초 안에서 (a)current_database/current_user/server_version_num/transaction_read_only/pg_roles의현재역할superuser·bypass·create권한boolean (b)pg_database_size(current_database()) (c)pg_stat_activity의현재DB connection수와현재세션제외active/정보불명 수,SQL본문·query문자열/사용자명출력0 (d)pg_class/pg_namespace의anvil·anvil_qa table개수·owner일치/has_table_privilege(current_user,oid,'SELECT')/relrowsecurity·relforcerowsecurity만 읽는다. 본문/계정행·통계rowcount·dump·migration재조회0. 목록은진단boolean/count만전송하며불명확하면실행자격을추정하지않는다.
+- 새 명령은1회/전체30초/connect5초·각query5초·전체창최대10분/연장·retry0,시작/접속/조회/응답전후만료검사. 실패rollback/close만·DB쓰기/backup/restore0. 아직해당CLI/새접속mode는구현·활성화하지않았으며이문서로기존거절을해제하지않는다.
+
+### 복원 자원·실행 제한의 literal 후보 — 생성0
+
+- 복원검수 container `anvil-v3-schema-restore-verify-pg-01`, image는동일PG15 digest6eb0add3…/image594290e9, `--network none`/publish0/추가bridge0/hostbind0/persistentvolume0, data는2GiB전용tmpfs다. 실제dump512MiB/원DB1GiB초과·가용공간이dump크기×3+2GiB미만이면이후실행0/자동확대0으로재판단한다. 임의큰운영DB를복제하지않는다.
+- 일회admin `anvil_v3_restore_admin`과초기접속DB `anvil_v3_schema_restore_qa_01`은해당분리PG에만존재한다. 실제복원DB이름은원archive의 `anvil_v3_development`를**이분리PG안에서만**재생성한다(정식같은이름DB에는접속하지않음). 원소유권/ACL의복원을위해원source의anvil_v3_bootstrap/anvil_v3_migrator/anvil_v3_app 이름을**이분리PG에만 NOLOGIN**으로만들고회원/원password/key/실로그인·외부정책을복제하지않는다. 원dump의DB내용에는hash/세션이남을수있으나외부접속과API/Agent는없다. 원정식role/권한/Secret변경0. 복원PG만의역할생성도최종직접실행안에명시한다.
+- 라벨 owner AV3_FN02_FORMAL_RESTORE_CANDIDATE/project v3·실행시새고정instance,PID/ID/image/소유·none-network/tmpfs/publish를생성전후확인한다. 준비후최대30분/복원최대10분/검수최대5분/회수2분후exactcontainer정상종료·등록전용tmpfs회수,남으면격리보존/보고·다른container/정식PG손대지않는다. host의backup은별도보존하여임시잔여0과혼동하지않는다.
+- 실제검수는PG15 pg_restore `--create --exit-on-error --dbname=anvil_v3_schema_restore_qa_01`로원archive의DB명/DB자체ACL·설정/owner까지보존복원하는제안이다. 이미빈분리container에서만생성하며 `--clean`·원정식DB접속·no-owner/no-privileges0이다. 이복원은CREATE DATABASE를포함하므로single-transaction성공으로주장하지않으며실패partial은분리자원전체실패로기록/격리·회수한다. 복원후46 ID/checksum·pg_get_*객체정의/ACL/owner와각table의내용노출없는count/hash를원consistent snapshot과대조해야한다. 일회admin/초기접속DB등명시차이만분리한다. hash만들기에도본문을서버안에서읽으므로그범위는직접승인대상이다. 실제구동·복원가능성/정리PASS아직없다. 근거는[PostgreSQL15 pg_restore 공식문서](https://www.postgresql.org/docs/15/app-pgrestore.html)의create/owner/ACL계약이며source초안의DB다른이름/single-transaction안은검토중보정한것이다. 정식46→53migration한TX제안과분리PG전체복원의원자성은서로다르다.
+- 향후정식반영은전체최대2시간의새단1회창(issued/expires는최종직접결정후literal발급),DB쓰기단계최대10분/lock5초/statement30초/COMMIT응답10초·만료/응답유실시UNKNOWN처리제안이다. 새창없음/원거절미해소면외부실행0. 차단을피하려명령을다른실행기에옮기지않는다. 단순길이초과를이유로자동연장하지않는다.
 
 code-only planner의 source drift/관측 불일치·입력변조/명시모드 거절 음성 및 타입 검사, 독립 scoped 검토, 기존46 보존·복구의 남은 정확 결정/미검증 기록. 이것은 정식 반영이나 기능 완료의 완료조건을 대신하지 않는다. Main이 기존 승인 계획을 주도하며 PMO에는 이 실행 경계의 결정·지원만 요청한다.

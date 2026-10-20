@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test,{mock} from 'node:test';
+import fs from 'node:fs/promises';
+import {syncBuiltinESMExports} from 'node:module';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -20,6 +22,17 @@ test('누락·중복·현재52·미채택 추가·옛 checksum을 새 실행 계
 
 test('비동기 source 로드 중 호출자 baseline 변경은 계획에 유입되지 않는다',async()=>{
  const m:any=await load();assert.equal(typeof m.createFn02DevelopmentAdoptionPlan,'function');const rows=await observed();const pending=m.createFn02DevelopmentAdoptionPlan(rows);rows[0]!.checksum='f'.repeat(64);rows.push({id:'0029_unadopted',checksum:'f'.repeat(64)});const plan=await pending;assert.equal(plan.baseline.count,46);assert.equal(plan.steps.length,7);assert.equal(plan.execution.allowed,false);
+});
+
+test('source 읽기 경계에서 각 선행 SQL 바이트가 달라지면 계획을 거절한다',async()=>{
+ const m:any=await load(),base=await observed(),original=fs.readFile;
+ // 실제 파일은 수정하지 않고 느린 IO의 반환 바이트만 변조한다. 실제 manifest/고정 지문 검사는 그대로 소비한다.
+ for(const id of nextIds.slice(0,6)){
+  const handle=mock.method(fs,'readFile',async(...args:any[])=>{const content=await (original as any)(...args);return String(args[0]).replaceAll('\\','/').endsWith('/'+id+'.sql')?typeof content==='string'?content+'\n-- drift\n':Buffer.concat([content,Buffer.from('\n-- drift\n')]):content;});
+  syncBuiltinESMExports();
+  try{await assert.rejects(m.createFn02DevelopmentAdoptionPlan(base),/FN02_ADOPTION_SOURCE_CHANGED/);}
+  finally{handle.mock.restore();syncBuiltinESMExports();}
+ }
 });
 
 test('CLI는 보존 metadata의 plan만 출력하고 apply·추가인자는 설정 없이 거절한다',()=>{
