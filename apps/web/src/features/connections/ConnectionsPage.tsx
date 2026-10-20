@@ -7,15 +7,17 @@ import {TrustPanel} from './TrustPanel.tsx';
 import {LimitPolicyPanel} from './LimitPolicyPanel.tsx';
 import {CandidateDocumentationEditor,CandidateDocumentationFact} from './CandidateDocumentation.tsx';
 import {CandidateActionPolicy} from './CandidateActionPolicy.tsx';
+import {CandidatePolicyPanel} from './CandidatePolicyPanel.tsx';
+import type {CandidatePolicyBuffer,CandidatePolicyChange} from './candidate-policy-api.ts';
 import {readPreviousCandidate} from './candidate-history.ts';
 import type {CandidateDocumentation} from './candidate-documentation.ts';
 import type {LimitBuffer,LimitBufferChange} from './limit-policy-api.ts';
 import type {TrustBuffer,TrustBufferChange} from './trust-api.ts';
 
-interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void;trustBuffer:TrustBuffer|null;onTrustChange:(value:TrustBufferChange)=>void;limitBuffer:LimitBuffer|null;onLimitChange:(change:LimitBufferChange)=>void}
+interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:CandidateBuffer|null;onChange:(value:CandidateBuffer|null)=>void;onAuthenticationLost:()=>void;trustBuffer:TrustBuffer|null;onTrustChange:(value:TrustBufferChange)=>void;limitBuffer:LimitBuffer|null;onLimitChange:(change:LimitBufferChange)=>void;policyBuffer:CandidatePolicyBuffer|null;onPolicyChange:(change:CandidatePolicyChange)=>void}
 const asError=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
 const rejection=(e:{status:number})=>[400,403,404,409,412,422].includes(e.status);
-export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuthenticationLost,trustBuffer,onTrustChange,limitBuffer,onLimitChange}:Props){
+export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuthenticationLost,trustBuffer,onTrustChange,limitBuffer,onLimitChange,policyBuffer,onPolicyChange}:Props){
  const[kind,setKind]=useState<CandidateKind|''>(''),[items,setItems]=useState<CandidateHit[]>([]),[cursor,setCursor]=useState<string|null>(null),[storedView,setView]=useState<CandidateView|null>(null),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null);
  const [viewTag,setViewTag]=useState<string|null>(null),viewIdentity=[projectId,session.user.id,session.clientId,kind].join(':'),view=!loading&&viewTag===viewIdentity?storedView:null;
  const alive=useRef(true),lock=useRef(false),request=useRef(0);
@@ -37,6 +39,7 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
   <TrustPanel client={client} projectId={projectId} session={session} buffer={trustBuffer} onChange={onTrustChange} onAuthenticationLost={onAuthenticationLost}/>
   <LimitPolicyPanel client={client} projectId={projectId} session={session} buffer={limitBuffer} onChange={onLimitChange} onAuthenticationLost={onAuthenticationLost}/>
   <CandidateActionPolicy client={client} projectId={projectId} session={session} onAuthenticationLost={onAuthenticationLost}/>
+  <CandidatePolicyPanel client={client} projectId={projectId} session={session} buffer={policyBuffer} onChange={onPolicyChange} onAuthenticationLost={onAuthenticationLost}/>
   <p>미연결 후보 · NOT_READY · 실제 Agent 미검증</p><p>Windows 로컬 실행기와 WSL 시험·배포 대상은 서로 다릅니다. 이 화면은 어느 쪽에도 연결하지 않습니다.</p>
   <button disabled={!!work||working} onClick={()=>void start('CONNECTION_CANDIDATE')}>새 도구 후보</button><button disabled={!!work||working} onClick={()=>void start('ENVIRONMENT_CANDIDATE')}>새 환경 후보</button>
   {work?<section aria-label="후보 작성"><h3>{work.kind==='CONNECTION_CANDIDATE'?'도구 후보':'환경 후보'} {work.draft.candidateRef?`v${work.draft.candidateRef.version}에서 명시 개정`:'새 작성'}</h3><fieldset disabled={frozen}>
