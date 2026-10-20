@@ -18,3 +18,12 @@
 ## 다음 확인
 
 같은 SQL/53개 기준의 진단만 보강한 exact Git 후보를 새 빈 PG로 한정 재현하고 실패·정리까지 기록한다. 직접 원인 확인 전 조건 완화나 SQL 변경은 하지 않는다. 본문 작성 시점에 재현은 미실행이다.
+
+## 시도 2 — 직접 원인 확인, 함수 시험 미도달
+
+- source `36ff01f96d5b666ea5c4981fdb6af0c82819a98c`, SQL/53 기준 불변. 새 PG `452000ffb7f36c40f5bbf6caf58aa4d7de052adba5c483347af2cdfb96e660f6`, network `b8d81d4b189389ee1294d2309ad7291a8e8db2c78099ea48d2906fd3c629160f`, instance `3daf7b48642930038c3734dff5be2f9f`.
+- 실제 exit1, `phase=MANIFEST_COMPARE`, `ERR_ASSERTION` source74, `actualCount=expectedCount=53`, `mismatches=[]`. 앞선 53개 새 SQL 실행/COMMIT과 초기 guard 함수 정의 동일 검사는 통과했으나 함수 시험은 아직 미도달이다.
+- 직접 차이: DB 조회는 `0003_documents` 다음 `0003_document_stage_bindings`, Node locale 정렬은 그 반대다. **DB 조회 순서와 명시 적용 순서를 혼동한 실행기 비교 오류**다. 로컬 정렬 가설 기각은 로컬/WSL/DB collation이 같다는 증거가 아니었다.
+- finally 회수와 별도 SSHexit0로 두 등록 자원/tmp 잔류0을 확인했다. 같은 SQL로 실제 함수 PASS를 선취하지 않는다.
+- 보정: 명시 실행 manifest 순서는 그대로 보존한다. 조회 집합은 양쪽의 동일 ASCII ID 정렬 후 정확53/중복0·ID/checksum을 대조한다. 잘못된 hash·누락·추가·중복·미지ID와 기준 자체 변조는 여전히 거절한다.
+- 신규 helper 부재 RED108.4256ms 후, 기존 locale 방식 반례 1FAIL/2PASS141.401ms → 보정 뒤3PASS125.3112ms/type0. 합격 기준/제품 SQL은 변경하지 않았다. 후속은 이 직접 원인 보정만 반영한 exact 후보의 한정 실제 검수다.

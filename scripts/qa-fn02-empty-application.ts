@@ -5,6 +5,7 @@ import {randomBytes} from 'node:crypto';
 import {readFile,realpath,lstat,stat} from 'node:fs/promises';
 import {contentHash} from '../contracts/canonical.ts';
 import {buildExecutionPreparationQaSchema,executionPreparationQaSqlDiagnostic} from './execution-preparation-qa.ts';
+import {assertFn02QaManifest} from './fn02-empty-application-manifest.ts';
 
 const qa=Object.freeze({cwd:'/home/daon/deploy/anvil-v3-fn02-empty-application-qa-01',artifact:'/tmp/anvil-v3-fn02-empty-application-01',container:'anvil-v3-fn02-empty-application-pg-01',network:'anvil-v3-fn02-empty-application-net-01',database:'anvil_v3_fn02_empty_application_qa_01',owner:'AV3_FN02_EMPTY_APPLICATION_QA',image:'postgres@sha256:6eb0add3b77c081df18aa518ce43df58fdcc40f2e6d868a6fd08038dc7acd425',imageId:'sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',daemon:'e3349f1d-dbfc-478a-96d9-295bf6c6839e'});
 const instance=randomBytes(16).toString('hex');
@@ -71,7 +72,7 @@ try{
  console.log('FN02_SCHEMA_CHECK '+JSON.stringify({actualCount:actual?.length,expectedCount:manifest.length,
   actualIds:Array.isArray(actual)?actual.map((r:any)=>r.id):null,expectedIds:manifest.toSorted((a,b)=>a.id.localeCompare(b.id)).map(r=>r.id),
   mismatches:Array.isArray(actual)?actual.filter((r:any)=>manifest.find(m=>m.id===r.id)?.checksum!==r.checksum).map((r:any)=>({id:r.id,checksum:r.checksum,expected:manifest.find(m=>m.id===r.id)?.checksum??null})):null}));
- assert.deepEqual(actual,manifest.toSorted((a,b)=>a.id.localeCompare(b.id)));phase='FUNCTIONS';
+ assertFn02QaManifest(actual,manifest);phase='FUNCTIONS';
  let output='';let childFailed=false;
  try{output=execFileSync(process.execPath,['--experimental-strip-types','--test','tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(90000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
  catch(e){childFailed=true;output=String((e as any)?.stdout??'');}
