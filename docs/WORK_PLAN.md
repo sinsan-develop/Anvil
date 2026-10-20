@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN03 source-link 불변 이력 기반 일부**: §15.4 link/detach의 내부입력·LINKED→DETACHED/hash/앞버전/원참조 보존·분리snapshot 준비를 TDD로 구현했다. 신규5+직접인접6/type/diff 확인. 저장소/SQL/명령·권한/receipt/audit·화면 소비는 미연결이며 실제contentprovider가 없어 연결 성공을 열지 않는다. 사용자기능 완료가 아닌 내부기반 일부로 유지하고 정확 반례/미검증은 WORK_STATUS를 따른다.
+
 - **2026-10-21 UI03/FN02·FN10 프로젝트 단계 한도 참조**: 프로젝트 전용 편집에서 기존 same-project APPLIED 보관정책 fullref를 선택/해제하고 기존 초안 저장·재조회로 연결했다. 신규/인접단위·가짜API DOM 정상/403/늦은노드전환·저장알림 반례와 type/build/diff를 확인했고 한정 정적 C0/I0/M0다. 실제DB/served·현재한도/예산가용·실행강제·전체업무는 미검증/부분이며 기존 LIMIT_POLICY_NOT_VERIFIED를 유지한다.
 
 - **2026-10-21 UI05/FN12·FN13 기준 입력 수동 파일 보존·복원**: 부분 작성 입력을 명시 JSON파일로 내려받고 새 화면의 빈 입력에만 복원→수정/기존 저장·원문조회로 연결했다. project/확정임무/fullref/hash·원조건/알려진비밀·2MiB 및 현재제어를 검사하고 명령/인증은 제외한다. 신규/직접단위6·최종 파일/경쟁/준비DOM4+직접음성2/type/build/diff 확인, 최초독립I1은 반례TDD후 해소/추가C0I0M0다. 파일 진위/완전비밀탐지·실DB/served·canonical checkpoint/중지·전체업무완료는 미검증/부분이다.
