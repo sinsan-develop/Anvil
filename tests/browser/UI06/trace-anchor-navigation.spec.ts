@@ -36,6 +36,9 @@ async function fixture(page:Page,options:{foreign?:boolean;badHash?:boolean;miss
 }
 async function open(page:Page){await page.goto(`/#/projects/${project}/documents`);await page.getByRole('button',{name:'설계 열기',exact:true}).click();await page.getByRole('button',{name:'이 버전 설계 추적 조회',exact:true}).click();await page.getByRole('button',{name:'업무 연결 조회',exact:true}).click();}
 function clean(s:Awaited<ReturnType<typeof fixture>>){expect(s.unknown).toEqual([]);expect(s.writes).toEqual([]);expect(s.errors).toEqual([]);expect(s.offOrigin).toEqual([]);}
+test('고정 계획 업무 원문은 같은 프로젝트·버전·업무의 임무 준비 링크를 제공한다',async({page})=>{
+ const s=await fixture(page,{planTask:true});await open(page);await page.getByRole('button',{name:'FN01 연결 계획 업무 원문 보기',exact:true}).click();const original=page.getByLabel('연결 계획 업무 원문',{exact:true}),link=original.getByRole('link',{name:'선택 업무로 임무 준비 화면 열기',exact:true});await expect(link).toBeVisible();const href=await link.getAttribute('href');expect(href).toMatch(new RegExp('^#/projects/'+project+'/workspace/plans/'+plan+'/versions/1/[0-9a-f]{64}/tasks/FN01$'));await expect(original).toContainText('저장·확정·Agent 실행하지 않습니다.');clean(s);
+});
 const link=(page:Page)=>page.getByRole('button',{name:'D01 연결 설계 원문 보기',exact:true});
 
 for(const direction of['FORWARD','REVERSE'])test('TRACE_SCREEN_LINK '+direction+' 연결목록에서정확시안을직접열고쓰기하지않는다',async({page})=>{

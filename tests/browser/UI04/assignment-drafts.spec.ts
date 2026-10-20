@@ -10,7 +10,7 @@ const project = { id: pid, name: '임무 프로젝트', purpose: '지식과 통�
 const card = { taskCode: 'FN01', type: 'FUNCTION', title: '실제 기능 구현', purpose: '사용자 소유 시스템에서 작업', designRefs: [], screenRefs: [], ownerRole: '단계책임자', inputs: ['합의한 요구'], outputs: ['처리·저장·조회'], included: ['개발'], excluded: ['운영 배포'], allowedFileRefs: ['src/a.ts'], startPrerequisites: [], acceptancePrerequisites: [], steps: ['기능 연결'], testCases: [{ id: 'T1', kind: 'NORMAL', steps: ['처리'], expected: '저장됨', environment: 'WSL' }], acceptanceCriteria: ['핵심 동작'], evidenceRequirements: ['결과'], rollback: '국소복구', recoveryNotes: '기록 인계' };
 const planSnapshot = { documentRef: ref(pid), designRef: ref(user), screenReviewRefs: [], tasks: [card], dependencies: [], reason: '승인 계획', issues: [], relationalProjection: 'STORED' };
 const planRef = { ...ref(planId), contentHash: contentHash(canonicalJson(planSnapshot)) }, plan = { ref: planRef, status: 'DRAFT', ...planSnapshot, executionEvidence: 'NOT_CONNECTED', observedAt: at };
-async function setup(page: Page, lost = false) {
+async function setup(page: Page, lost = false, target=`/#/projects/${pid}/workspace`) {
   const unexpected: string[] = [], commands: any[] = [], errors: string[] = []; let stored: any = null, original: any = null;
   await page.route('**/api/v1/**', route => { unexpected.push(route.request().url()); return route.abort(); }); await installWorkspaceBundle(page);
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id: user, displayName: 'QA' }, clientId: pid, csrfToken: 'C'.repeat(43) } }));
@@ -30,7 +30,7 @@ async function setup(page: Page, lost = false) {
     if (lost && commands.length === 1) return route.abort(); return route.fulfill({ json: original });
   });
   page.on('pageerror', error => errors.push(error.message)); page.on('request', request => { if (new URL(request.url()).origin !== 'https://localhost:3830') unexpected.push(request.url()); });
-  await page.goto(`/#/projects/${pid}/workspace`); await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
+  await page.goto(target); await page.getByRole('button', { name: '적용 절차 조회', exact: true }).click();
   return { commands, unexpected, errors, get stored() { return stored; } };
 }
 async function prepare(page: Page) {
@@ -38,6 +38,20 @@ async function prepare(page: Page) {
   await page.getByRole('button', { name: '선택 업무로 임무 초안 준비', exact: true }).click();
   await page.getByRole('textbox', { name: '임무 목표', exact: true }).fill('사용 가능한 실제 기능'); await page.getByRole('textbox', { name: '임무 통합 책임', exact: true }).fill('책임자가 검수하고 통합'); await page.getByRole('textbox', { name: '임무 저장 이유', exact: true }).fill('작업 지시를 준비');
 }
+
+const taskPath=(code='FN01')=>`/#/projects/${pid}/workspace/plans/${planId}/versions/1/${planRef.contentHash}/tasks/${code}`;
+test('LINKED_TASK 경로 hash와 보관 계획이 다르면 기존 계획으로 대체하지 않는다',async({page})=>{
+ const f=await setup(page,false,taskPath().replace(planRef.contentHash,'0'.repeat(64)));await page.getByRole('button',{name:'연결된 계획 업무 확인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('RESPONSE_INVALID');await expect(page.getByRole('button',{name:'선택 업무로 임무 초안 준비',exact:true})).toHaveCount(0);expect(f.commands).toEqual([]);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
+});
+test('LINKED_TASK 미확인 저장 명령은 경로 이동 뒤에도 보존하고 같은 명령으로만 확인한다',async({page})=>{
+ const f=await setup(page,true);await prepare(page);await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');const command=structuredClone(f.commands[0]);await page.evaluate(h=>{location.hash=h;},taskPath().slice(1));await page.getByRole('button',{name:'적용 절차 조회',exact:true}).click();await expect(page.getByRole('button',{name:'연결된 계획 업무 확인',exact:true})).toBeDisabled();await expect(page.getByRole('textbox',{name:'임무 목표',exact:true})).toHaveValue('사용 가능한 실제 기능');await page.getByRole('button',{name:'같은 임무 명령 결과 확인',exact:true}).click();await expect(page.getByText('임무 초안 저장 확인',{exact:true})).toBeVisible();expect(f.commands).toHaveLength(2);expect(f.commands[1]).toEqual(command);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
+});
+test('LINKED_TASK 고정 업무를 명시 확인한 뒤 기존 임무 초안으로 저장·조회한다',async({page})=>{
+ const f=await setup(page,false,taskPath());expect(f.commands).toEqual([]);await page.getByRole('button',{name:'연결된 계획 업무 확인',exact:true}).click();await expect(page.getByRole('combobox',{name:'임무의 계획 업무',exact:true})).toHaveValue('FN01');expect(f.commands).toEqual([]);await page.getByRole('button',{name:'선택 업무로 임무 초안 준비',exact:true}).click();await page.getByRole('textbox',{name:'임무 목표',exact:true}).fill('설계 업무에서 이어진 목표');await page.getByRole('textbox',{name:'임무 통합 책임',exact:true}).fill('검수 통합');await page.getByRole('textbox',{name:'임무 저장 이유',exact:true}).fill('고정 계획 업무의 명시 준비');await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();await expect(page.getByText('임무 초안 저장 확인',{exact:true})).toBeVisible();await page.getByRole('button',{name:'저장 버전 재조회',exact:true}).click();await expect(page.getByText('저장 버전 재조회 확인',{exact:true})).toBeVisible();await expect(page.getByRole('region',{name:'저장한 임무 초안',exact:true})).toContainText('설계 업무에서 이어진 목표');expect(f.commands).toHaveLength(1);expect(f.commands[0].payload.definition.taskRef).toEqual({planRef,taskCode:'FN01',applicationRef,nodeId:'N1'});expect(f.stored.snapshot.ready).toBe(false);expect(f.stored.snapshot.dispatchPerformed).toBe(false);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
+});
+test('LINKED_TASK 없는 고정 업무는 첫 카드로 대체하거나 초안을 만들지 않는다',async({page})=>{
+ const f=await setup(page,false,taskPath('FN_MISSING'));await page.getByRole('button',{name:'연결된 계획 업무 확인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('LINKED_PLAN_TASK_UNVERIFIED');await expect(page.getByRole('button',{name:'선택 업무로 임무 초안 준비',exact:true})).toHaveCount(0);expect(f.commands).toEqual([]);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
+});
 
 for(const mode of ['BUDGET','ENVIRONMENT','BOTH'])test('ASSIGNMENT_SELECTION_CLEAR_'+mode,async({page})=>{
  const facts=await setup(page),commands:any[]=[];

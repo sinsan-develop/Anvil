@@ -14,8 +14,9 @@ import { AssignmentSourceSelection } from './WorkspaceExecutionPreparation.tsx';
 import { AssignmentBudgetSelection } from './AssignmentBudgetSelection.tsx';
 import { AssignmentEnvironmentSelection } from './AssignmentEnvironmentSelection.tsx';
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
+import type {PlanTaskSelection} from '../../shell/routes.ts';
 
-export function WorkspaceAssignments({ client, project, session, stage, buffer, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
+export function WorkspaceAssignments({ client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
   const [drafts, setDrafts] = useState<AssignmentPage | null>(null), [opened, setOpened] = useState<AssignmentDraftView | null | undefined>(undefined), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [reread, setReread] = useState(false);
   const alive = useRef(true), flight = useRef(false);
@@ -98,6 +99,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {!stage ? <p>먼저 적용 절차를 조회하고 단계를 선택하세요.</p> : <p>선택 정의: {stage.nodeName} · 실제 수행 단계 아님</p>}
     {!owner ? <p>초안 변경은 현재 제어권을 가진 소유자만 가능합니다. 조회는 가능합니다.</p> : null}
     {error ? <p role="alert">{error.code} · 원입력·미확인 명령은 자동 재발행하지 않습니다.</p> : null}
+    {requestedTask?<section aria-label="설계에서 연결한 계획 업무"><h5>고정 업무 {requestedTask.taskCode}</h5><p>계획 {requestedTask.planRef.id} · v{requestedTask.planRef.version} · {requestedTask.planRef.contentHash}</p><p>먼저 단계를 선택한 뒤 해당 버전·업무를 확인하세요. 조회는 기존 초안·명령을 바꾸지 않으며 새 준비는 별도 선택입니다.</p><button type="button" disabled={busy||!stage||!!buffer?.pending} onClick={()=>void perform(async()=>{setPlan(null);setTaskCode('');const target=structuredClone(requestedTask),value=await readWorkPlan(client,project.id,target.planRef);if(value.relationalProjection!=='STORED'||value.tasks.filter(t=>t.taskCode===target.taskCode).length!==1)throw new ApiError('LINKED_PLAN_TASK_UNVERIFIED',422);if(alive.current){setPlan(value);setTaskCode(target.taskCode);}})}>연결된 계획 업무 확인</button></section>:null}
     <button disabled={busy || !owner || !stage || !!buffer?.pending} onClick={() => void perform(async () => { setPlan(null); setPlans(null); const page = await listWorkPlans(client, project.id, null); if (alive.current) setPlans(page); })}>계획 목록 조회</button>
     {plans ? <ul>{plans.items.map(item => <li key={item.ref.id}>{item.title} · v{item.ref.version}<button disabled={busy || !!buffer?.pending} onClick={() => void perform(async () => { setPlan(null); const value = await readWorkPlan(client, project.id, item.ref); if (alive.current) { setPlan(value); setTaskCode(value.tasks[0]?.taskCode ?? ''); } })}>계획 열기: {item.title}</button></li>)}</ul> : null}
     {plans?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = plans.nextCursor; setPlan(null); setPlans(null); const page = await listWorkPlans(client, project.id, cursor); if (alive.current) setPlans(page); })}>계획 다음 목록</button> : null}
