@@ -63,6 +63,20 @@ export class SyntheticObservationSpool{
    });this.#port();return result;
   }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_READ_UNAVAILABLE');}
  }
+ /** ACK는 전달받은 주장이다. prefix 내용 일치만 대조하며 인증/서버 내구/삭제 허가를 증명하지 않는다. */
+ async compareAck(raw:unknown){
+  try{this.#port();const claim=raw===null?null:cloneAck(raw,this.#scope,this.#now());
+   const result=await this.store.exclusive(cloneV1(this.#scope),async tx=>{
+    this.#port();const stored=this.#journal(await tx.read());
+    const base={transport:'SYNTHETIC_ONLY' as const,comparison:'CONTENT_ONLY_NOT_DURABILITY' as const,localHighestSequence:stored.length,claimBeyondPrefixVerified:false as const,sourceAuthenticated:false as const,ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+    if(claim===null)return{...base,state:'ACK_NOT_PROVIDED' as const,ackRef:null,claimedHighestContiguous:null,claimedMaxSequence:null,prefixDigest:null,gaps:null};
+    const s=claim.snapshot;if(s.maxSequence>stored.length)fail('OBSERVATION_SPOOL_ACK_OUTSIDE_LOCAL_RANGE');
+    let digest=hash([]);for(const row of stored.slice(0,s.highestContiguous))digest=hash({previous:digest,eventHash:hash(row.snapshot.event)});
+    if(digest!==s.contiguousDigest)fail('OBSERVATION_SPOOL_ACK_PREFIX_MISMATCH');
+    return{...base,state:'PREFIX_CONTENT_MATCH' as const,ackRef:cloneV1(claim.ref),claimedHighestContiguous:s.highestContiguous,claimedMaxSequence:s.maxSequence,prefixDigest:digest,gaps:cloneV1(s.gaps)};
+   });this.#port();return result;
+  }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_ACK_UNAVAILABLE');}
+ }
  async sync(client:SyntheticExecutionClient,rawScope:unknown,afterSequence:unknown){
   try{this.#port();if(!(client instanceof SyntheticExecutionClient))fail('OBSERVATION_SPOOL_CLIENT_INVALID');const scope=readClientScope(rawScope);if(!same({projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration},this.#scope))fail('OBSERVATION_SPOOL_CLIENT_SCOPE_INVALID');
    const batch=await this.prepareBatch(afterSequence);if(!batch.operation)fail('OBSERVATION_SPOOL_BATCH_EMPTY');const delivery=await client.execute(scope,batch.operation);this.#port();
@@ -70,4 +84,17 @@ export class SyntheticObservationSpool{
    return{transport:'SYNTHETIC_ONLY' as const,batch,delivery:cloneV1(delivery),ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_SYNC_UNAVAILABLE');}
  }
+}
+function cloneAck(raw:unknown,scope:Scope,now:number){
+ const keys=['execution','highestContiguous','maxSequence','contiguousDigest','gaps','storedCount','writerReleaseVerified','executionAuthorized','dispatchPerformed','recordedAt'];
+ if(!recordV1(raw,['ref','snapshot'])||!refV1(raw.ref)||!recordV1(raw.snapshot,keys))return fail('OBSERVATION_SPOOL_ACK_INVALID');
+ const s=raw.snapshot,natural=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>=0&&Number(v)<=10000;
+ if(!recordV1(s.execution,['projectId','executionId','executionGeneration'])||!uuidV1(s.execution.projectId)||!uuidV1(s.execution.executionId)||!positive(s.execution.executionGeneration)||!same(s.execution,scope)||!natural(s.highestContiguous)||!natural(s.maxSequence)||s.maxSequence===0||s.highestContiguous>s.maxSequence||!natural(s.storedCount)||s.storedCount===0||!hashV1(s.contiguousDigest)||!arrayV1(s.gaps,10000)||s.writerReleaseVerified!==false||s.executionAuthorized!==false||s.dispatchPerformed!==false||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)>now)return fail('OBSERVATION_SPOOL_ACK_INVALID');
+ let missing=0,last=s.highestContiguous;
+ for(const [i,g] of s.gaps.entries()){
+  if(!recordV1(g,['from','to'])||!natural(g.from)||!natural(g.to)||g.from===0||g.from>g.to||g.to>=s.maxSequence||(i===0?g.from!==s.highestContiguous+1:g.from<=last+1))return fail('OBSERVATION_SPOOL_ACK_INVALID');
+  missing+=g.to-g.from+1;last=g.to;
+ }
+ if((s.highestContiguous===s.maxSequence?s.gaps.length!==0:s.gaps.length===0)||s.storedCount!==s.maxSequence-missing||raw.ref.contentHash!==hash(s))return fail('OBSERVATION_SPOOL_ACK_INVALID');
+ return cloneV1(raw) as {ref:Ref;snapshot:{highestContiguous:number;maxSequence:number;contiguousDigest:string;gaps:{from:number;to:number}[]}};
 }

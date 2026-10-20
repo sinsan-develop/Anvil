@@ -6,6 +6,32 @@ import {SyntheticExecutionClient} from '../../../apps/connector/runtime/executio
 import {SyntheticExecutionObservations} from '../../../apps/server/modules/executions/execution-observations.ts';
 const m:any=await import('../../../apps/connector/runtime/execution-observation-spool.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at=Date.parse('2026-10-20T00:00:00.000Z');
+function ackClaim(f:ReturnType<typeof fixture>,highest:number,max=highest,gaps:{from:number;to:number}[]=[]){
+ let digest=hash([]);for(const row of f.rows.slice(0,highest))digest=hash({previous:digest,eventHash:hash(row.snapshot.event)});
+ const snapshot={execution:f.scope,highestContiguous:highest,maxSequence:max,contiguousDigest:digest,gaps,storedCount:max-gaps.reduce((n,g)=>n+g.to-g.from+1,0),writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:new Date(at).toISOString()};
+ return{ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};
+}
+test('ACK대조는없음을0으로바꾸지않고로컬prefix내용만읽으며과거ACK도삭제나전진권한이아니다',async()=>{
+ const f=fixture(),spool=f.make();assert.equal((await spool.compareAck(null)).state,'ACK_NOT_PROVIDED');
+ for(let i=0;i<3;i++)await spool.append(f.event());const before=structuredClone(f.rows),missing=await spool.compareAck(null);assert.equal(missing.claimedHighestContiguous,null);assert.equal(missing.prefixDigest,null);
+ for(const highest of [2,1,3]){const claim=ackClaim(f,highest),r=await spool.compareAck(claim);assert.equal(r.state,'PREFIX_CONTENT_MATCH');assert.deepEqual(r.ackRef,claim.ref);assert.equal(r.claimedHighestContiguous,highest);assert.equal(r.localHighestSequence,3);assert.equal(r.prefixDigest,claim.snapshot.contiguousDigest);assert.equal(r.sourceAuthenticated,false);assert.equal(r.ackAudited,false);assert.equal(r.writerReleaseVerified,false);assert.equal(r.executionAuthorized,false);assert.equal(r.dispatchPerformed,false);assert.equal(r.claimBeyondPrefixVerified,false);}
+ assert.deepEqual(f.rows,before);assert.deepEqual(f.counts(),[3,0]);
+});
+test('ACK대조는gap이후내용을확인했다고하지않으며0prefix도빈digest일치만반환한다',async()=>{
+ const f=fixture();for(let i=0;i<3;i++)await f.make().append(f.event());
+ for(const claim of [ackClaim(f,1,3,[{from:2,to:2}]),ackClaim(f,0,3,[{from:1,to:2}])]){const r=await f.make().compareAck(claim);assert.equal(r.state,'PREFIX_CONTENT_MATCH');assert.deepEqual(r.gaps,claim.snapshot.gaps);assert.equal(r.claimBeyondPrefixVerified,false);assert.equal(r.ackAudited,false);}
+ assert.deepEqual(f.counts(),[3,0]);
+});
+test('ACK대조는불완전원장과잠금종료후port변경에서도내용일치를반환하지않는다',async()=>{
+ const f=fixture();await f.make().append(f.event());const claim=ackClaim(f,1),before=structuredClone(f.rows);f.fault('INCOMPLETE');await assert.rejects(f.make().compareAck(claim));f.fault('');
+ const exclusive=f.store.exclusive;f.store.exclusive=async(s:any,body:any)=>{const r=await exclusive(s,body);f.store.transport='OTHER';return r;};const spool=f.make();await assert.rejects(spool.compareAck(claim));assert.deepEqual(f.rows,before);assert.deepEqual(f.counts(),[1,0]);
+});
+test('ACK대조는위조digest·다른실행·미보관범위·불일치gap/count·미래시각·hash를거절하고원행을보존한다',async()=>{
+ const f=fixture();for(let i=0;i<4;i++)await f.make().append(f.event());const before=structuredClone(f.rows);
+ const changes=[(s:any)=>s.contiguousDigest='f'.repeat(64),(s:any)=>s.execution.executionGeneration++,(s:any)=>{s.maxSequence=5;s.highestContiguous=5;s.storedCount=5;},(s:any)=>{s.highestContiguous=1;s.gaps=[{from:3,to:3}];s.storedCount=3;},(s:any)=>{s.highestContiguous=0;s.gaps=[{from:1,to:1},{from:2,to:2}];s.storedCount=2;},(s:any)=>s.storedCount=3,(s:any)=>s.recordedAt=new Date(at+1).toISOString(),(s:any)=>s.executionAuthorized=true];
+ for(const change of changes){const c=ackClaim(f,4);change(c.snapshot);c.ref.contentHash=hash(c.snapshot);await assert.rejects(f.make().compareAck(c));}
+ const c=ackClaim(f,4);c.ref.contentHash='e'.repeat(64);await assert.rejects(f.make().compareAck(c));assert.deepEqual(f.rows,before);assert.deepEqual(f.counts(),[4,0]);
+});
 function fixture(maxEntries=10){
  const id=randomUUID(),ref={id,version:1,contentHash:'a'.repeat(64)},scope={projectId:id,executionId:id,executionGeneration:1},clientScope={mode:'EXECUTION' as const,...scope,connectorId:id,grantRef:ref,credentialGeneration:1},rows:any[]=[],streams=new Map<string,any[]>();let fault='',tail=Promise.resolve(),appends=0,queries=0,clock=at;
  const store:any={transport:'SYNTHETIC_ONLY',exclusive:async(s:any,body:any)=>{assert.deepEqual(s,scope);const prior=tail;let release!:()=>void;tail=new Promise(r=>release=r);await prior;try{return await body({read:async()=>({complete:fault!=='INCOMPLETE',events:structuredClone(rows)}),appendAndSync:async(v:any)=>{rows.push(structuredClone(v));appends++;if(fault==='SYNC'){fault='INCOMPLETE';throw Error('PRIVATE_SPOOL_SYNC');}}});}finally{release();}}};

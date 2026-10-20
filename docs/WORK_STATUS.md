@@ -2,6 +2,10 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08 ACK 내용 대조 한정 수용(2026-10-20)**: 신규4 메모리검사(3PASS329.5939ms+수명1PASS210.5349ms)·추가후type0·diff0·독립정적C0/I0/M0이다. 독립재실행0이며실제ACK출처/서명·서버COMMIT/내구·gap뒤보관내용·file/OS/Agent미판정이다. 기록없음/0prefix구분과낮은prefix·정확내용대조만수용·원자료변경/자동cursor·삭제0·자원0·전체FN08미완료다. 후속은명령page의STOP선택을기존중지전송기와결합하는누락경로의기한/현재target경계를먼저대조한다.
+
+- **FN08 C3 ACK 연속내용 읽기 대조 / Main 어울(2026-10-20)**: 전달된 ACK의 정확 실행/ref hash·유한 순번·canonical gap/count·시각을 확인하고 로컬 spool 연속prefix digest만 대조하는 compareAck를 추가했다. ACK없음은 null/ACK_NOT_PROVIDED이며 0수신으로 추정하지 않는다. 과거 낮은prefix도 내용주장일치만 반환·gap뒤내용/출처진위/서버내구·삭제허가/회수/실행false·자동전진/전송/write0이다. 신규3 missing-methodRED313.814ms→3PASS329.5939ms/type0, 뒤불완전/잠금종료후port반례1PASS210.5349ms·독립한정정적검토중이다. 기존append/prepare/sync·API/SQL/DB/권한/서비스/Agent불변·자원0·제외6보존·전체FN08미완료, rollback은신규읽기method/시험일반revert·원자료삭제0이다. 초기공식root read는기존v2삭제/사용자변경을확인했을뿐수정0,PowerShell프로필conda오류는login:false로회피했고ACL/설정변경0이다.
+
 
 - **FN08 C3 STOP 역사→관측 한정 수용(2026-10-20)**: 신규4 missing-methodRED308.1766ms→4PASS314.2153ms/type0/diff0·독립정적C0/I0/M0다. 원rowID/ref/at의STOP_REQUESTED/STOP_UNCONFIRMED만보관·응답유실/protocol이유는원행보존·추가interrupt/current0·명시spool재수집중복0을확인했다. 부분반례는쓰기전오류이며실sync복구/OS중지·writer회수증거아니다. 기존stop/서버API/DB/권한·서비스/Agent불변·실source/current/내구/COMMIT/전체FN08미검증·자원0·제외6보존이다. rollback은신규읽기/보관method·시험의일반revert·원STOP기록삭제0이다. 다음은저장된서버ACK주장의연속prefix digest를로컬spool에읽기대조하되인증/서버내구/삭제허가와구분하는미연결검수다.
 
