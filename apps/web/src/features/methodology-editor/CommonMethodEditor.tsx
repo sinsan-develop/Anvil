@@ -9,11 +9,12 @@ import { GraphRelationsEditor } from './GraphRelationsEditor.tsx';
 import { NodeDocumentFields } from './NodeDocumentFields.tsx';
 import { NodeDeletionPanel } from './NodeDeletionPanel.tsx';
 import { methodIssueNodeTargets } from './method-issue-targets.ts';
+import {NodeBudgetSelection} from './NodeBudgetSelection.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 
-export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway }: {
+export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;projectId?:string;
 }) {
   const fieldId = useId();
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
@@ -96,6 +97,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
           <label htmlFor={fieldId + '-criteria'}>완료·검수 조건 편집</label><textarea id={fieldId + '-criteria'} value={node.completionCriteria.join('\n')} onChange={event => patchNode({ completionCriteria: event.target.value.split('\n') })} />
           <label htmlFor={fieldId + '-records'}>작업 기록 요구 편집</label><textarea id={fieldId + '-records'} value={node.recordRequirements.join('\n')} onChange={event => patchNode({ recordRequirements: event.target.value.split('\n') })} />
           <NodeDefinitionFields node={node} nodes={buffer.graph.nodes} onChange={patchNode} />
+          {gateway&&projectId?<NodeBudgetSelection key={[projectId,session.user.id,session.clientId,buffer.targetId,buffer.version,node.nodeId].join(':')} client={client} projectId={projectId} owner={session.user.id} buffer={buffer} onChange={change=>{onChange(change);setSavedVersion(null);}} locked={locked} onAuthenticationLost={onAuthenticationLost}/>:null}
           {formError ? <p role="alert">{formError.message} 기존 문서 참조는 유지했습니다. 새 양식 선택만 제한됩니다.</p> : null}
           <NodeDocumentFields node={node} nodes={buffer.graph.nodes} forms={forms} onChange={patchNode} />
           <NodeDeletionPanel graph={buffer.graph} nodeId={node.nodeId} locked={locked} onRemove={removeNode} />
