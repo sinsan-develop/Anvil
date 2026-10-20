@@ -1,6 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
 
+- **2026-10-20 FN08 후속 지시 명시 선택 읽기**: 기존 내구COMMANDS에서 정확 명령ref/실행세대·기한/SEND만 원봉투로 연결했다. 새4+직접기존6=10PASS/type0·한정C0/I0/M0, 뒤추가음성version/ID/STOP는Main의새4한정PASS다. 선택은수신/전송허가가아니며실서버/Agent·전체업무미검증, 기존START/API/SQL불변·자원0이다. 원RED/검토snapshot한계는현황보존한다.
+
 - **2026-10-20 C3 START 옵션 실제파일 연결**: exact25700098 제품불변에서 신규실파일1PASS/type0·exact정리/별도잔여0이다. inbox부분수신/재열기→옵션만분리→receiver허가/primary시도sync→고정codec합성wire1·receiver재조회중복0을한정확인했다. 독립C0/I0/M1의primary재조회주장부족은주장축소로수용·이번primary재조회미검증을명시한다. 실제Agent/권한·source진위/OS/전원손실·전체업무완료아니며원상세는현황보존한다.
 - **2026-10-20 FN06/FN08 C3 START 옵션 source 연결**: 수신원장의정확한context/options구별·전체등록부분/재hash·유일JSON옵션재조합을primary시작입력에읽기연결했다. 원I1 종료대기후합성/만료변경을START와기존SEND에재현해결과반환전후검사만보완,최종신규/직접28PASS/type0/diff0·한정재리뷰C0/I0/M0다. 새API/DB/실Agent·원문재저장0이고실file/현재권한·source진위/handle·서비스는미검증,원실패·기존코드수정근거는현황보존한다.
 

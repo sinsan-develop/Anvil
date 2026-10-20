@@ -35,3 +35,23 @@ test('중지명령은시작수신기로전달하지않고수신중page기한경�
 test('조회grant와다른receiver는append전에거절하고정상grant로다시연결할수있다',async()=>{
  const f=fixture(),wrong=new SyntheticStartReceiver(f.receiver.store,f.receiver.authority,f.receiver.wire,{context:f.envelope.context,executorRegistrationRef:f.envelope.executorRegistrationRef,grantRef:{...f.scope.grantRef,id:randomUUID()}},()=>initial),admission=new m.SyntheticExecutionCommandAdmission((f.make() as any).client,wrong,{clock:()=>initial});await assert.rejects(admission.receive(f.scope,f.operation,f.commandRef),/COMMAND_ADMISSION_/);assert.equal(f.events.length,0);assert.deepEqual(f.counts(),[1,0,0]);assert.equal((await f.make().receive(f.scope,f.operation,f.commandRef)).state,'RECEIVED');assert.equal(f.events.length,1);assert.deepEqual(f.counts(),[1,0,0]);
 });
+
+function instructionFixture(){const f=fixture();Object.assign(f.envelope,{operation:'SEND_INSTRUCTION',payload:{sessionBindingRef:f.commandRef,instructionRef:f.commandRef,partsRef:{...f.commandRef,version:2}}});const{envelopeHash:_,...u}=f.envelope;f.envelope.envelopeHash=hash(u);return f;}
+test('후속지시는명시server ref로원봉투와page근거만읽고수신/permit/wire0을유지한다',async()=>{
+ const f=instructionFixture(),a=f.make();assert.equal(typeof a.readInstruction,'function');const selected=await a.readInstruction(f.scope,f.operation,f.commandRef);assert.equal(selected.state,'SELECTED_NOT_DISPATCHED');assert.deepEqual(selected.envelope,f.envelope);assert.deepEqual(selected.commandRef,f.commandRef);assert.equal(selected.executionAuthorized,false);assert.equal(selected.dispatchPerformed,false);assert.equal(selected.expiresAt,new Date(initial+10000).toISOString());assert.deepEqual(f.counts(),[1,0,0]);assert.equal(f.events.length,0);
+ selected.envelope.payload.partsRef.version=99;assert.deepEqual((await f.make().readInstruction(f.scope,f.operation,f.commandRef)).envelope,f.envelope);assert.deepEqual(f.counts(),[1,0,0]);
+});
+test('후속선택은잘못된ref와START/STOP를거절하며기존START수신을대신하지않는다',async()=>{
+ for(const key of ['hash','version','id']){const f=instructionFixture(),wrong={...f.commandRef,...(key==='hash'?{contentHash:'f'.repeat(64)}:key==='version'?{version:2}:{id:f.envelope.commandId})};await assert.rejects(f.make().readInstruction(f.scope,f.operation,wrong),/COMMAND_ADMISSION_/);assert.equal(f.events.length,0);assert.deepEqual(f.counts(),[1,0,0]);}
+ const g=fixture();await assert.rejects(g.make().readInstruction(g.scope,g.operation,g.commandRef),/COMMAND_ADMISSION_OPERATION_UNSUPPORTED/);assert.equal(g.events.length,0);assert.deepEqual(g.counts(),[1,0,0]);
+ const stop=fixture();Object.assign(stop.envelope,{operation:'REQUEST_STOP',payload:{sessionBindingRef:stop.commandRef,stopScopeRef:stop.commandRef}});const{envelopeHash:_,...u}=stop.envelope;stop.envelope.envelopeHash=hash(u);await assert.rejects(stop.make().readInstruction(stop.scope,stop.operation,stop.commandRef),/COMMAND_ADMISSION_OPERATION_UNSUPPORTED/);assert.equal(stop.events.length,0);assert.deepEqual(stop.counts(),[1,0,0]);
+ const h=instructionFixture();await assert.rejects(h.make().receive(h.scope,h.operation,h.commandRef),/COMMAND_ADMISSION_OPERATION_UNSUPPORTED/);assert.equal(h.events.length,0);assert.deepEqual(h.counts(),[1,0,0]);
+});
+test('후속선택의만료cached page/UNKNOWN은재조회/부작용없이거절한다',async()=>{
+ const f=instructionFixture();await f.make().readInstruction(f.scope,f.operation,f.commandRef);f.advance(10000);await assert.rejects(f.make().readInstruction(f.scope,f.operation,f.commandRef),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),[1,0,0]);
+ const g=instructionFixture();g.lose();await assert.rejects(g.make().readInstruction(g.scope,g.operation,g.commandRef),/COMMAND_ADMISSION_/);await assert.rejects(g.make().readInstruction(g.scope,g.operation,g.commandRef),/COMMAND_ADMISSION_/);assert.deepEqual(g.counts(),[1,0,0]);assert.equal(g.events.length,0);
+});
+test('후속선택의회수scope/비명령operation/다른실행봉투는거절한다',async()=>{
+ const f=instructionFixture();await assert.rejects(f.make().readInstruction({...f.scope,mode:'RECOVERY'},f.operation,f.commandRef),/COMMAND_ADMISSION_/);await assert.rejects(f.make().readInstruction(f.scope,{...f.operation,kind:'OBSERVATIONS'},f.commandRef),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),[0,0,0]);
+ const g=instructionFixture();g.envelope.context={...g.envelope.context,executionId:randomUUID()};const{envelopeHash:_,...u}=g.envelope;g.envelope.envelopeHash=hash(u);await assert.rejects(g.make().readInstruction(g.scope,g.operation,g.commandRef),/COMMAND_ADMISSION_/);assert.equal(g.events.length,0);assert.deepEqual(g.counts(),[1,0,0]);
+});
