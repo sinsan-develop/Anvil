@@ -1,8 +1,8 @@
-// 고정된 첫 FN02 격리 컴파일/함수 시험만 수행한다. 정식 DB/서비스/runner는 소비하지 않는다.
+// 고정된 FN02 격리 함수 또는 적용 workflow만 수행한다. 정식 DB/서비스/runner는 소비하지 않는다.
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
-import {readFile,realpath,lstat,stat} from 'node:fs/promises';
+import {readFile,realpath,lstat,stat,readdir} from 'node:fs/promises';
 import {contentHash} from '../contracts/canonical.ts';
 import {buildExecutionPreparationQaSchema,executionPreparationQaSqlDiagnostic} from './execution-preparation-qa.ts';
 import {assertFn02QaManifest} from './fn02-empty-application-manifest.ts';
@@ -32,7 +32,8 @@ function owned(item:any,id:string,kind:'container'|'network'){
 function psql(user:string,password:string,sql:string){return docker(['exec','-i','--env','PGPASSWORD','--env','PGCONNECT_TIMEOUT=5',containerId!,'psql','--no-psqlrc','--no-password','--quiet','--no-align','--tuples-only','--host=127.0.0.1','--port=5432','--username='+user,'--dbname='+qa.database,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=sqlstate','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'],sql,{...process.env,PGPASSWORD:password},90000);}
 const sqlText=(s:string)=>"'"+s.replaceAll("'","''")+"'";
 try{
- if(process.argv.length!==3||process.argv[2]!=='--run')throw Error('FN02_QA_RUN_REQUIRED');
+ if(process.argv.length!==3||!['--run','--workflow'].includes(process.argv[2]!))throw Error('FN02_QA_RUN_REQUIRED');
+ const workflow=process.argv[2]==='--workflow';
  until=Date.parse(process.env.ANVIL_FN02_QA_UNTIL??'');const sha=process.env.ANVIL_FN02_QA_SHA??'',sqlHash=process.env.ANVIL_FN02_QA_SQL_HASH??'';
  const git=(args:string[])=>execFileSync('/usr/bin/git',args,{encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:10000}).trim();
  assert(process.platform==='linux'&&process.getuid?.()===1000&&await realpath(process.cwd())===qa.cwd&&await realpath(new URL(import.meta.url))===qa.cwd+'/scripts/qa-fn02-empty-application.ts','FN02_QA_PATH_INVALID');
@@ -49,7 +50,13 @@ try{
  assert.equal(docker(['image','inspect',qa.image,'--format','{{.Id}}']),qa.imageId);
  assert(!names('container').includes(qa.container)&&!names('network').includes(qa.network),'FN02_QA_RESOURCE_EXISTS');
  assert.equal(await realpath('/home/daon/deploy'),'/home/daon/deploy');assert.equal(await realpath('/tmp'),'/tmp');
- await assert.rejects(lstat(qa.artifact),(e:any)=>e.code==='ENOENT');
+ if(workflow){
+  const cache=await lstat(qa.artifact);
+  assert(cache.isDirectory()&&!cache.isSymbolicLink()&&cache.uid===1000&&(cache.mode&0o777)===0o700&&await realpath(qa.artifact)===qa.artifact,'FN02_QA_CACHE_INVALID');
+  assert((await readdir(qa.artifact)).every(name=>name==='npm-cache'),'FN02_QA_CACHE_CONTENT_INVALID');
+  const npmCache=await lstat(qa.artifact+'/npm-cache');
+  assert(npmCache.isDirectory()&&!npmCache.isSymbolicLink()&&npmCache.uid===1000&&await realpath(qa.artifact+'/npm-cache')===qa.artifact+'/npm-cache','FN02_QA_CACHE_INVALID');
+ }else await assert.rejects(lstat(qa.artifact),(e:any)=>e.code==='ENOENT');
  const bootstrap=randomBytes(32).toString('hex'),migrator=randomBytes(32).toString('hex'),app=randomBytes(32).toString('hex');
  const labels=['--label','anvil.project=v3','--label','anvil.owner='+qa.owner,'--label','anvil.instance='+instance];
  creating=true;phase='NETWORK';networkId=docker(['network','create','--internal',...labels,qa.network]);owned(inspect('network',networkId),networkId,'network');
@@ -72,18 +79,23 @@ try{
  console.log('FN02_SCHEMA_CHECK '+JSON.stringify({actualCount:actual?.length,expectedCount:manifest.length,
   actualIds:Array.isArray(actual)?actual.map((r:any)=>r.id):null,expectedIds:manifest.toSorted((a,b)=>a.id.localeCompare(b.id)).map(r=>r.id),
   mismatches:Array.isArray(actual)?actual.filter((r:any)=>manifest.find(m=>m.id===r.id)?.checksum!==r.checksum).map((r:any)=>({id:r.id,checksum:r.checksum,expected:manifest.find(m=>m.id===r.id)?.checksum??null})):null}));
- assertFn02QaManifest(actual,manifest);phase='FUNCTIONS';
+ assertFn02QaManifest(actual,manifest);phase=workflow?'WORKFLOW':'FUNCTIONS';
  let output='';let childFailed=false;
- try{output=execFileSync(process.execPath,['--experimental-strip-types','--test','tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(90000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
+ try{output=execFileSync(process.execPath,['--experimental-strip-types','--test',workflow?'tests/integration/FN02/empty-application-workflow-isolated.test.ts':'tests/integration/FN02/empty-application-canonical-isolated.test.ts'],{env:{...process.env,ANVIL_FN02_QA_UNTIL:new Date(Math.min(until-120000,Date.now()+600000)).toISOString(),ANVIL_FN02_QA_HOST:host,ANVIL_FN02_QA_APP:app,...(workflow?{ANVIL_FN02_QA_MIGRATOR:migrator}:{})},encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:Math.min(100000,until-Date.now()-120000),maxBuffer:2*1024*1024});}
  catch(e){childFailed=true;output=String((e as any)?.stdout??'');}
  for(const line of output.split(/\r?\n/).map(s=>s.replace(/^# /,'')))if(line.startsWith('FN02_FUNCTION_TEST_FAILURE ')){
   const item=JSON.parse(line.slice('FN02_FUNCTION_TEST_FAILURE '.length));
   if(typeof item.phase==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.phase)&&Number.isInteger(item.caseIndex)
    &&(item.code===null||typeof item.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.code)))console.log('FN02_FUNCTION_TEST_FAILURE '+JSON.stringify({phase:item.phase,caseIndex:item.caseIndex,code:item.code}));
  }
- const marker=output.split(/\r?\n/).map(s=>s.replace(/^# /,'')).find(s=>s.startsWith('FN02_CANONICAL_GRAPH_PG_JS_MATCH '));
- if(childFailed||!marker)throw Error('FN02_QA_FUNCTION_TEST_FAILED');
- report=JSON.parse(marker.slice('FN02_CANONICAL_GRAPH_PG_JS_MATCH '.length));phase='DONE';
+ if(workflow)for(const line of output.split(/\r?\n/).map(s=>s.replace(/^# /,'')))if(line.startsWith('FN02_APPLICATION_WORKFLOW_FAILURE ')){
+  const item=JSON.parse(line.slice('FN02_APPLICATION_WORKFLOW_FAILURE '.length));
+  if(typeof item.phase==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.phase)&&(item.code===null||typeof item.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(item.code)))console.log('FN02_APPLICATION_WORKFLOW_FAILURE '+JSON.stringify({phase:item.phase,code:item.code}));
+ }
+ const prefix=workflow?'FN02_APPLICATION_WORKFLOW ':'FN02_CANONICAL_GRAPH_PG_JS_MATCH ';
+ const marker=output.split(/\r?\n/).map(s=>s.replace(/^# /,'')).find(s=>s.startsWith(prefix));
+ if(childFailed||!marker)throw Error(workflow?'FN02_QA_WORKFLOW_TEST_FAILED':'FN02_QA_FUNCTION_TEST_FAILED');
+ report=JSON.parse(marker.slice(prefix.length));phase='DONE';
 }catch(e){const message=(e as any)?.message;failure=typeof message==='string'&&/^[A-Z0-9_]{1,100}$/.test(message)?message:'FN02_QA_ASSERTION_OR_UNCLASSIFIED_FAILURE';
  if(diagnostic===null){const code=(e as any)?.code,location=/qa-fn02-empty-application\.ts:(\d+):(\d+)/.exec(String((e as any)?.stack??''));
   diagnostic={code:typeof code==='string'&&/^[A-Z0-9_]{1,80}$/.test(code)?code:null,line:location?Number(location[1]):null};}
