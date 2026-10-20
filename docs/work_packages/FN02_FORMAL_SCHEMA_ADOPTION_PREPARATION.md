@@ -94,6 +94,10 @@ anvil.work_plan_versions, anvil.work_plans, anvil_qa.fixtures
 
 ## 별도 실행 결정 전에 필요한 보존·복원 계약 초안
 
+### 순수 보존 입력 비교의 현재 구현
+
+`scripts/fn02-preservation-comparison.ts`는 고정81표·구46 manifest, 옛열 projection/행수/내용hash, 옛migration행·표밖객체 hash와 identity sequence 정의/값/is_called/중단확인 입력을 비교한다. backup의 BACKUP_EXPORTED_SNAPSHOT, 분리 복원의 ISOLATED_RESTORE, 잠금 후 현재값의 AFTER_LOCK_READ_COMMITTED를 구분하고 누락·추가·중복·희소 배열·비정규 숫자·불일치는 거절한다. 성공도 MATCHED_INPUTS_ONLY/executionAllowed:false/liveEvidenceVerified:false다. 이 helper에는 DB/SQL 실행·지문 수집·잠금·backup·restore·DDL caller가 없으며, phase/중단확인 문자열·boolean 자체는 실제 관측의 증명이 아니다. 옛46행 timestamp 포함 여부와 원컬럼 선택·객체 제외차이 정당성은 후속 수집기/실제 검수 책임으로 남긴다. 단위시험6 및 인접 계획6 PASS는 이 입력 비교 범위의 증거만 된다.
+
 아래는 실행 제안이며 경로 생성/DB 조회/백업/복원 모두 미실행이다. 실제 역할의 덤프 권한/도구 설치 여부도 미확인이고 새 superuser·GRANT·Secret로 우회하지 않는다.
 
 1. 대상은 기존 WSL-server PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba / image594290e9 / DB anvil_v3_development 한 개다. 정식 현재46의 정확 ID/checksum·예상 기존 객체·실제 active writer/공유 소비자를 새 허가 안에서 확인해야 한다. 서비스3830=0만으로 writer0을 단정하지 않으며 advisory lock도 일반 DML을 막지 않는다. 불명확하면 적용0/기존 자원 보존이다.
