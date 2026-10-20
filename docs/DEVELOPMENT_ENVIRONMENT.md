@@ -1,5 +1,11 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-20 20:22~20:23 KST 정식 PG metadata 관측 — API/Web는 중단
+
+- PMO 새 exact 판정 아래 기존 PG 한 개를 단1회 기동했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9·StartedAt2026-10-20T11:21:54.792276193Z/ready marker1·정상 개발용 보존이다. 아래10/19 exited는 과거 관측으로 삭제하지 않는다. 현재 항목 역시 해당 시점의 관측이며 매번 자동 재접속한 기록은 아니다.
+- exact a6682968 READ ONLY probe exit0에서 app-role anvil_v3_app/PG15.18·migration46/고정8개중project_methodologies만존재를확인했다. 신규0012~0017/0031은미적용, API/Web3830 listener0·PG5546 listener1이다. 화면/기능 복구나 전체객체 인증은아니다. 정식DB 본문/DDL·서비스반영/Secret/Agent변경0.
+- 일회Git/cache 두경로는exact 회수 후별도SSH에서부재확인했다. 정의rawhash1eb/a721은Docker Mounts두항목배열순서차이로계산대응했고원raw차이를결과서에보존했다. 기존 ID/image/network/volume/port/labels/마운트필드의변경명령0. 상세/46 ID-checksum은docs/04_test_reports/AV3/FN02/FORMAL_SCHEMA_METADATA_RESULT.md와WORK_STATUS를따른다.
+
 ## 2026-10-19 FN12 source QA 별도 종료 관측 — 정식 PG 정지/원인 미확정
 
 - 별도 읽기에서 기존 정식 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290은 exited다. StartedAt2026-10-18T15:25:12.085069883Z·FinishedAt2026-10-19T12:56:52.490883698Z·ExitCode0·OOMKilledfalse·RestartCount0을 관측했다. 종료 원인/주체는 미확정이고 담당자의 시작/중지·정식DB/서비스/설정 변경은 없다. 아래 00:25 running 기록은 과거 관측이며 현재 기능 PASS가 아니다.
