@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN12/UI08 보고 원문 소비 일부**: UI05 고정결과 선택→UI08 사용자/client/project별 선택·명시 원문재조회/거절·변조·닫기지연숨김→정확초안 임무복귀를 연결했다. 실제원인분류·현재상태·조치/Agent는없으며 기존GET/validator만소비한다. 새3/직접인접2 DOM5PASS/type/build/diff·독립 I1/M1의Main TDD보완/QA잔여0이며 실제DB/served/전체업무완료와구분한다. 상세·원RED/미검증은WORK_STATUS를따른다.
+
 - **2026-10-21 FN03/FN11 일회 승인 코드·화면 연결 일부**: exact sourceLink/원명령의 요청·결정·일회 소비 서버 경로와 UI06→UI08→미전송 원명령 결박→별도분리/재조회 소비를 연결했다. 신규0033은 미적용이다. 합성 검사·독립 발견 보완과 실제 DB/서비스 미검증을 WORK_STATUS에 구분하며 전체 FN03/FN11/Stage 완료로 승격하지 않는다. 초기 LINKED/본문 관측·드리프트와 기존 실제 실행 승인 경계는 유지한다.
 
 - **2026-10-21 FN03/FN11 연결 해제 일회 승인 후속 착수**: 직접 계속 지시와 PMO 원대화 확인으로 기존 한 연산의 exact 요청/결정/소비·새 미적용SQL·UI08→별도전송을 구현한다. 상세는 work_packages/FN03_SOURCE_DETACH_APPROVAL_IMPLEMENTATION.md다. 실제DB/권한/서비스/Agent·다른대기항목은 제외하며 전체업무는 부분 상태를 유지한다.

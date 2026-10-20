@@ -769,6 +769,8 @@ queue 항목은 `requestRef,state:WAITING/RESERVED/DISPATCHED/CANCELLED/UNKNOWN,
 
 사용자는 UI05에서 실제 변경/명령·기준별 판정·미실행과 현재 위치를 열고 UI08에서 정확 문제/선택을 본다. 수행자 제출·업무 진행/기능4상태·검수/실행/회수는 각각 표시한다. 전체 완료는 해당 TaskCard 조건과 실제 연결 검수가 충족됐을 때만 판정하며 fixture/빌드를 DB/Agent/배포 합격으로 승격하지 않는다.
 
+2026-10-21 UI08 보고 원문 소비: UI05에서 선택한 정확 assignmentRef/ResultSummary만 같은 사용자·client·project의 메모리에 보존한다. 이동만으로 원문을 다시 읽거나 명령을 보내지 않고, UI08 명시 확인에서 기존 `GET projects/:projectId/results/:id`와 `readAssignmentResult`의 원문/hash·임무/실행·metadata 대조를 재사용한다. 보고 상태·미실행·위험/복구는 수행자 주장으로 표시하며 실제 원인/현재 실행·정식 실패집계/완료 판정을 만들지 않는다. 이탈/재조회/접근 거절·내용 불일치에서는 이전 원문을 숨긴다. 새로고침 뒤 선택은 복원되지 않으며 UI05에서 다시 선택한다. 새 endpoint/권한/저장·승인/재작업/교체/Agent 실행은 없고 실제 DB/served 검증은 별개다.
+
 ### 13.4 FN13 checkpoint·중지·재개·부분 변경 보존
 
 `CheckpointState`: `assignmentRef,executionRefs,baselineRefs,currentPosition,completedItems,inProgress,remaining,sourceSnapshotRefs,changedFiles,verificationRefs,errorFingerprints,attemptCounts,lastLocalSequence,lastServerAck,untransmittedRefs,pendingDecisions,nextAction,forbiddenActions,recordFileRef`. `saveCheckpoint`는 서버 snapshot ID/hash·기준 시각/순번과 책임자가 읽을 파일을 연결한다. 둘이 다르면 차이를 보존하며 조용히 한쪽을 덮지 않는다. 기록 시점은 착수·주요 변경·검증·오류·중단/인계 전이다.
