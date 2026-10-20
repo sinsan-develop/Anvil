@@ -24,14 +24,14 @@ export class SyntheticFileStartStore implements SyntheticStartStore{
  }
  async exclusive<T>(scope:Scope,body:(tx:SyntheticStartTransaction)=>Promise<T>):Promise<T>{
   if(!validScope(scope)||canonicalJson(scope)!==canonicalJson(this.#scope))fail('START_SCOPE_MISMATCH');
-  const directory=this.#root,lockPath=join(directory,'start.lock');let lock:FileHandle|undefined,lockId:Identity|undefined,identity:Identity,uncertain=false,poisoned=false,operating=false;
-  const check=async()=>{try{const s=await lstat(directory);if(!s.isDirectory()||s.isSymbolicLink()||!same(s,identity)||!samePath(await realpath(directory),directory))fail('START_STORAGE_UNAVAILABLE');}catch{return fail('START_STORAGE_UNAVAILABLE');}};
+  const directory=this.#root,lockPath=join(directory,'start.lock');let lock:FileHandle|undefined,lockId:Identity|undefined,identity:Identity,uncertain=false,poisoned=false,operating=false,closed=false;
+  const check=async(allowClosed=false)=>{try{if(closed&&!allowClosed)fail('START_STORAGE_UNAVAILABLE');const s=await lstat(directory);if(!s.isDirectory()||s.isSymbolicLink()||!same(s,identity)||!samePath(await realpath(directory),directory))fail('START_STORAGE_UNAVAILABLE');if(closed&&!allowClosed)fail('START_STORAGE_UNAVAILABLE');}catch{return fail('START_STORAGE_UNAVAILABLE');}};
   try{
    try{const before=await lstat(directory);if(!before.isDirectory()||before.isSymbolicLink()||!samePath(await realpath(directory),directory))fail('START_STORAGE_UNAVAILABLE');identity={dev:before.dev,ino:before.ino};}catch{return fail('START_STORAGE_UNAVAILABLE');}
    try{lock=await open(lockPath,'wx',0o600);lockId=await lock.stat();}catch(e:any){if(e.code==='EEXIST')return fail('START_INBOX_BUSY');return fail('START_STORAGE_UNAVAILABLE');}
    await check();let loaded=false,count=0,total=0;
    const tx:SyntheticStartTransaction={read:async()=>{
-    if(poisoned||operating){poisoned=true;return fail('START_STORAGE_UNAVAILABLE');}operating=true;
+    if(closed)return fail('START_STORAGE_UNAVAILABLE');if(poisoned||operating){poisoned=true;return fail('START_STORAGE_UNAVAILABLE');}operating=true;
     try{
      await check();const names=(await readdir(directory)).filter(name=>name!=='start.lock').sort();if(names.length>4)fail('START_STORAGE_UNAVAILABLE');const events:Entry[]=[];total=0;
      for(let i=0;i<names.length;i++){
@@ -44,10 +44,10 @@ export class SyntheticFileStartStore implements SyntheticStartStore{
        if(canonicalJson(entry)+'\n'!==text)fail('START_STORAGE_UNAVAILABLE');await check();const after=await lstat(path);if(!after.isFile()||after.isSymbolicLink()||!same(st,after)||after.size!==st.size)fail('START_STORAGE_UNAVAILABLE');events.push(entry as Entry);total+=st.size;
       }finally{await f.close();}
      }
-     count=events.length;loaded=true;return{complete:true,events};
+     if(closed||poisoned)return fail('START_STORAGE_UNAVAILABLE');count=events.length;loaded=true;return{complete:true,events};
     }catch{uncertain=true;poisoned=true;return fail('START_STORAGE_UNAVAILABLE');}finally{operating=false;}
    },appendAndSync:async(entry:Entry)=>{
-    if(poisoned||operating){poisoned=true;return fail('START_STORAGE_UNAVAILABLE');}operating=true;
+    if(closed)return fail('START_STORAGE_UNAVAILABLE');if(poisoned||operating){poisoned=true;return fail('START_STORAGE_UNAVAILABLE');}operating=true;
     let f:FileHandle|undefined;
     try{
      if(!loaded||count>=4||entry.snapshot.sequence!==count+1)fail('START_STORAGE_UNAVAILABLE');const bytes=Buffer.from(canonicalJson(entry)+'\n');if(bytes.length+total>65536)fail('START_STORAGE_UNAVAILABLE');
@@ -58,10 +58,11 @@ export class SyntheticFileStartStore implements SyntheticStartStore{
    }};
    const value=await body(tx);if(poisoned||operating){poisoned=true;fail('START_STORAGE_UNAVAILABLE');}return value;
   }finally{
+   closed=true;if(operating){poisoned=true;uncertain=true;}
    if(lock){
     await lock.close().catch(()=>{uncertain=true;poisoned=true;});
     if(poisoned)fail('START_STORAGE_UNAVAILABLE');
-    if(!uncertain){try{await check();const st=await lstat(lockPath);if(!st.isFile()||st.isSymbolicLink()||!lockId||!same(st,lockId))fail('START_STORAGE_UNAVAILABLE');await unlink(lockPath);}catch{fail('START_STORAGE_UNAVAILABLE');}}
+    if(!uncertain){try{await check(true);const st=await lstat(lockPath);if(!st.isFile()||st.isSymbolicLink()||!lockId||!same(st,lockId))fail('START_STORAGE_UNAVAILABLE');await unlink(lockPath);}catch{fail('START_STORAGE_UNAVAILABLE');}}
    }
   }
  }

@@ -47,7 +47,7 @@ export class SyntheticPrimaryFileStartStore implements SyntheticPrimaryStartStor
        if(canonicalJson(entry)+'\n'!==text)fail('PRIMARY_START_STORAGE_UNAVAILABLE');await check();const after=await lstat(path);if(!after.isFile()||after.isSymbolicLink()||!same(st,after)||after.size!==st.size)fail('PRIMARY_START_STORAGE_UNAVAILABLE');events.push(entry as Entry);total+=st.size;
       }finally{await f.close();}
      }
-     count=events.length;loaded=true;return{complete:true,events};
+     if(closed||poisoned)return fail('PRIMARY_START_STORAGE_UNAVAILABLE');count=events.length;loaded=true;return{complete:true,events};
     }catch{uncertain=true;poisoned=true;return fail('PRIMARY_START_STORAGE_UNAVAILABLE');}finally{operating=false;}
    },appendAndSync:async(entry:Entry)=>{
     if(closed)return fail('PRIMARY_START_STORAGE_UNAVAILABLE');if(poisoned||operating){poisoned=true;return fail('PRIMARY_START_STORAGE_UNAVAILABLE');}operating=true;
@@ -61,7 +61,7 @@ export class SyntheticPrimaryFileStartStore implements SyntheticPrimaryStartStor
    }};
    const value=await body(tx);if(poisoned||operating){poisoned=true;fail('PRIMARY_START_STORAGE_UNAVAILABLE');}return value;
   }finally{
-   closed=true;
+   closed=true;if(operating){poisoned=true;uncertain=true;}
    if(lock){
     await lock.close().catch(()=>{uncertain=true;poisoned=true;});
     if(poisoned)fail('PRIMARY_START_STORAGE_UNAVAILABLE');

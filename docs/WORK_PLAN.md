@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN08 시작 파일 원장 수명 보완**: 기존 수신/신규primary store의종료tx·예외중진행IO·잠금보존반례를실제재현해closed/poison검사만보완했다. 정상기존수신file.sync/재열기와새음성1PASS/type0/diff0·독립한정C0/I0/M0·QA잔여0이다. 저장형식/권한·다른store·서비스/Agent불변이며전체검증·모든IO/실OS/전원손실은미확인,원실패와전후diff근거는현황에보존한다.
+
 - **2026-10-20 FN06/FN08 C3 primary 시작 파일 원장**: 준비된전용root에서2행/64KiB·wxlock/file.sync·재열기·불명/부분자료보존을연결했다. 실제파일직접1PASS/type0/diff0·tx수명I1은반례RED→보정·재리뷰C0/I0/M0·QA잔여0이다. directoryfsync/전원손실·프로세스간경합/실Agent/OS·서비스는미검증이고root/ACL자동생성·제품활성화0,원실패·보정내역은현황에보존한다.
 
 - **2026-10-20 FN06/FN08 C3 합성 primary 시작 연결**: 기존 수신기뒤고정thread/start어댑터후보를추가했다. 명시옵션·정확자료/permit/grant/소유검사·시도sync/중복차단·응답digest/UNKNOWN을신규12+직접기존54/type0·재리뷰C0/I0/M0범위로검수했다. 원I1·자체RED/오판가설은현황보존,실제Provider/OS/socket/파일내구·외부handle/본문전달·서비스/전체업무는미완료/미검증이며P1SYNTHETIC_ONLY·false경계유지다.

@@ -2,6 +2,14 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN08 START 수명 보완 한정 수용 / Main 어울(2026-10-20)**: 기존수신/새primary2store의종료·예외tx/진행중read·잠금조기해제 보완은독립정적C0/I0/M0이다. 최종전용실파일1PASS196.6246ms/type0/diff0·정상receiver sync/permit/원명령재열기·합성wire1/중복0·exact7하위정리/별도잔여0으로한정수용한다. 원RED4수명/추가primary예외·앞선PASS의미검증범위를보존하며모든IO/프로세스간경합·전원손실·실Agent/OS·기존전체QA완료로승격0이다. 변경전후는scope/format/quota/권한이아닌closed/운영수명guard13줄과primary4줄,새시험뿐이다. 별도서비스/DB/권한·다른3store변경0·제외6보존,rollback은수명보완의일반revert이며실원장초기화0이다. 다음은이미수신하는START options부분을정확재조합하여새primary시작어댑터에읽기만연결하는C3미완료다.
+
+- **FN08 기존/primary START 수명 직접 보완 최종검사(2026-10-20)**: 원START4수명반례RED210.2252ms→1PASS236.2657ms 뒤callback throw+진행중IO의두store잠금보존을추가했다. 원START는유지/primary는lock조기해제[true,false]1RED167.1886ms여서primary finally의operating→poison/uncertain1줄을보완했다. 양reader는모든await뒤최종반환도closed/poison을재검사한다. 최종고정7하위실파일QA1PASS196.6246ms/type0·원수신기정상sync/permit뒤wire1/새instance중복0유지·각실행exact정리/별도False/잔여0이다. 실제data schema/기존원장포맷·quota/허가의미불변이고확인된전후diff는closed·IO수명/정상self-lock정리guard뿐이다. 다른store·Agent/OS·정식DB/서비스/build/browser/옛실QA는변경·재실행0,모든I/O타이밍·process간경합/전원손실·실Provider는미검증으로남기고독립한정검토중이다.
+
+- **기존 START 수명 보정·예외중IO 추가 반례 등록(2026-10-20)**: 원수신store의정상종료read/write·예외종료read·미대기read4건허용을[false4]1RED210.2252ms로재현→closed/await전후guard·finally진입operating의poison/lock보존을추가해1PASS236.2657ms/type0·각별도잔여0이다. 코드대조중새primary원장도callback이진행중IO를남긴채throw하면lock보존분기가빠질수있어같은근본원인의추가음성을먼저확인한다. 같은등록literalroot에새빈7하위(기존5+throw-inflight/primary-throw-inflight)·현재사용자/Main·새15분·부재/parentrealpath/nonlink/owner재확인·종료exact정리/별도0으로한정재등록,실제서비스/Agent·다른저장소수정0이다.
+
+- **FN08 기존 시작 수신 원장 수명 보완 착수/QA등록(2026-10-20)**: 새primary원장I1의관련대조에서기존execution-start-file-store만root-onlycheck/closed부재를확인했다. 이미완료된코드수정사유는종료후tx가잠금없이읽기/쓰기할수있는무결성위험이며외부API/저장형식/허가의미변경없이수명guard만추가하는최소diff로한정한다. SEND/STOP·client/material은수정0이다. `D:\tmp\anvil-v3-stage-b\receiver-start-lifecycle-01`만현재사용자SINSAN\cyhuh/Main소유·새15분·생성전부재/parentrealpath/nonlink/owner확인·종료고정5하위/rootexact정리/별도잔여0으로등록한다. 정상기존수신기file.sync/재열기와종료/예외tx read/write·미완료IO보존을검수,정식runtime/DB/Agent/OS설정·기존실QA재실행0이다.
+
 - **FN06/FN08 C3 primary 시작 파일 원장 한정 수용 / Main 어울(2026-10-20)**: 원C0/I1/M0의tx수명보정은독립재검토에서해소·새C0/I0/M0이다. 새전용root의실file.sync/재열기·유실UNKNOWN·부분파일/lock·범위/경쟁lock·syncpoison·종료tx읽기/쓰기차단1PASS406.367ms/type0/diff0와별도잔여0으로한정수용한다. file.sync도전원손실/디렉터리내구·실OS소유/프로세스간경합/실Agent를증명하지않으며자동제품활성화0·전체FN06/FN08미완료다. 실패/root정리·원1RED/최초한정PASS와I1이력은보존,rollback은신규store/시험의일반revert이며실자료삭제0이다. 관련기존store읽기대조에서SEND/STOP는이미closedguard,client/material은lockidentity도확인하므로일괄수정하지않는다. 원START수신기store만동일root-onlycheck·closed부재가확인돼다음필수무결성보완에서실제반례로좁혀판정한다.
 
 - **C3 primary 파일 원장 tx수명 I1 보정 실측(2026-10-20)**: 종료후escaped tx의read/write가둘다허용되는[false,false]를1RED431.9289ms로재현했다. finally진입closed와read/append첫IO전거절·운영check의await전후closed검사를추가했고자기lock정리만별도root검사를허용한다. 기존poison/진행중IO·불명lock보존은유지한다. 같은새빈등록root의추가수명음성포함1PASS406.367ms/type0,양실행모두정확8하위/파일정리·각별도False/잔여0이다. 원최초C0/I1/M0은이력이며해소한정재검토중·실Agent/OS/DB/서비스/전원손실검증0이다.
