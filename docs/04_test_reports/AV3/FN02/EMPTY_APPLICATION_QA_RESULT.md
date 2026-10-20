@@ -27,3 +27,11 @@
 - finally 회수와 별도 SSHexit0로 두 등록 자원/tmp 잔류0을 확인했다. 같은 SQL로 실제 함수 PASS를 선취하지 않는다.
 - 보정: 명시 실행 manifest 순서는 그대로 보존한다. 조회 집합은 양쪽의 동일 ASCII ID 정렬 후 정확53/중복0·ID/checksum을 대조한다. 잘못된 hash·누락·추가·중복·미지ID와 기준 자체 변조는 여전히 거절한다.
 - 신규 helper 부재 RED108.4256ms 후, 기존 locale 방식 반례 1FAIL/2PASS141.401ms → 보정 뒤3PASS125.3112ms/type0. 합격 기준/제품 SQL은 변경하지 않았다. 후속은 이 직접 원인 보정만 반영한 exact 후보의 한정 실제 검수다.
+
+## 시도 3 — 정렬 오류 해소, 정상 graph 실패 발견
+
+- source `58ea594d374083c0d3a10e39988c9088a414a907`, SQL F70 유지. manifest 집합 strict 대조를 통과하고 함수 시험까지 진입했다.
+- 실제 exit1/FUNCTIONS, 자식 `GRAPH/caseIndex0/ERR_ASSERTION`. 앞선 canonical의 두 세션 설정 루프를 지나 첫 정상 내장 graph의 SQL 결과가 JS의 true와 달랐다. 전체 함수 검수 PASS가 아니다.
+- PG `2cb154b1cff732ad8b9e1cb390d1e5ae635d7a3fd9c41ec8e6f08593e0357ffa`, network `43fe7506b7712413d1058524424619151c20c0b7c72474a0b10b823af3b4a171`, instance `f70ba4321e280c1ac198da3e99e2433a`: finally 회수 및 독립 SSH exit0의 등록 PG/network/tmp 잔류0.
+- 직접 원인은 아직 미확정이다. 독립 source I1 후보는 조건 함수의 인자 `value`와 `jsonb_array_elements`의 기본 출력 열 `value` 충돌이다. 원 `WHEN OTHERS`가 내부 42702를 false로 숨길 수 있으며 첫 SEQUENCE의 정상 조건이 해당 조회를 소비한다.
+- 진단 후보 SQL `49401D4DB4E046A82A0955DD74A999208AA75A20AED8F19775EEC2DD405EE048`: 4개 helper가 자료 오류(class22)만 false로 처리하고 내부 SQL/프로그램 오류는 드러내도록 좁혔다. canonical의 지원불가 3예외는 class22로 명시했다. true 조건/그래프/검토 기준은 그대로이며 이 시점에 별칭 수정은 아직 하지 않았다. 새 manifest는 같은53개/마지막checksum만 갱신했다. 원 F70와 3회 실패는 이력이다. 직접 원인 재현 전 실제42702라고 확정하지 않는다.

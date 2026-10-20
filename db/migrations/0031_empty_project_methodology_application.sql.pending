@@ -11,11 +11,11 @@ CREATE FUNCTION anvil.fn02_canonical(value jsonb,depth integer DEFAULT 0) RETURN
  LANGUAGE plpgsql IMMUTABLE STRICT SET extra_float_digits=1 AS $$
 DECLARE encoded text;n double precision;s text;exponent integer;
 BEGIN
- IF depth>64 THEN RAISE EXCEPTION 'FN02_CANONICAL_DEPTH';END IF;
+ IF depth>64 THEN RAISE EXCEPTION 'FN02_CANONICAL_DEPTH' USING ERRCODE='22023';END IF;
  CASE jsonb_typeof(value)
  WHEN 'object' THEN
   IF EXISTS(SELECT 1 FROM jsonb_object_keys(value) k WHERE k !~ '^[ -~]*$') THEN
-   RAISE EXCEPTION 'FN02_CANONICAL_KEY_UNSUPPORTED';
+   RAISE EXCEPTION 'FN02_CANONICAL_KEY_UNSUPPORTED' USING ERRCODE='22023';
   END IF;
   SELECT '{'||COALESCE(string_agg(to_jsonb(k)::text||':'||anvil.fn02_canonical(v,depth+1),',' ORDER BY k COLLATE "C"),'')||'}'
    INTO encoded FROM jsonb_each(value) item(k,v);
@@ -25,7 +25,7 @@ BEGIN
  WHEN 'number' THEN
   n=(value::text)::double precision;
   IF n::text IN('Infinity','-Infinity','NaN') OR (trunc(n)=n AND abs(n)>9007199254740991) THEN
-   RAISE EXCEPTION 'FN02_CANONICAL_NUMBER_UNSUPPORTED';
+   RAISE EXCEPTION 'FN02_CANONICAL_NUMBER_UNSUPPORTED' USING ERRCODE='22023';
   END IF;
   IF n=0 THEN RETURN '0';END IF;
   s=lower(n::text);
@@ -81,7 +81,7 @@ BEGIN
   AND jsonb_typeof(value->'version')='number' AND (value->>'version')::numeric BETWEEN 1 AND 9007199254740991
   AND trunc((value->>'version')::numeric)=(value->>'version')::numeric
   AND jsonb_typeof(value->'contentHash')='string' AND value->>'contentHash' ~ '^[0-9a-f]{64}$',false);
-EXCEPTION WHEN OTHERS THEN RETURN false;
+EXCEPTION WHEN data_exception THEN RETURN false;
 END;
 $$;
 CREATE FUNCTION anvil.fn02_condition_valid(value jsonb,graph jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
@@ -108,7 +108,7 @@ BEGIN
  ELSE RETURN false;END IF;
  RETURN NOT EXISTS(SELECT 1 FROM jsonb_array_elements(item) v WHERE NOT anvil.fn02_text(v)
   OR (field='REVIEW_OUTCOME' AND v#>>'{}' NOT IN('ACCEPTED','REWORK','BLOCKED')));
-EXCEPTION WHEN OTHERS THEN RETURN false;
+EXCEPTION WHEN data_exception THEN RETURN false;
 END;
 $$;
 CREATE FUNCTION anvil.fn02_graph_valid(graph jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
@@ -197,7 +197,7 @@ BEGIN
    WHERE COALESCE(doc_row.value->>'sourceNodeId','')<>'' AND NOT doc_row.value->>'sourceNodeId'=ANY(ids)) THEN RETURN false;END IF;
  END LOOP;
  RETURN true;
-EXCEPTION WHEN OTHERS THEN RETURN false;
+EXCEPTION WHEN data_exception THEN RETURN false;
 END;
 $$;
 CREATE FUNCTION anvil.fn02_accepted_items(items jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
@@ -212,7 +212,7 @@ BEGIN
   seen=array_append(seen,item->>'criterionId');
  END LOOP;
  RETURN true;
-EXCEPTION WHEN OTHERS THEN RETURN false;
+EXCEPTION WHEN data_exception THEN RETURN false;
 END;
 $$;
 
