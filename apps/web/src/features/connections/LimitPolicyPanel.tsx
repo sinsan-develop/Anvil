@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
+import {SelectedLimitUsage} from './SelectedLimitUsage.tsx';
 import {newLimitBuffer,freezeLimitCommand,sendLimitCommand,limitPolicyAccess,readLimitPolicy,settleLimitBuffer,matchesLimitBuffer,type LimitBuffer,type LimitBufferChange,type LimitPolicyRecord,type LimitOperation,type ExecutionLimits} from './limit-policy-api.ts';
 
 interface Props{client:ApiClient;projectId:string;session:DocumentSession;buffer:LimitBuffer|null;onChange:(change:LimitBufferChange)=>void;onAuthenticationLost:()=>void}
@@ -62,6 +63,7 @@ export function LimitPolicyPanel({client,projectId,session,buffer,onChange,onAut
    <button type="button" onClick={()=>void inspect()}>정확 한도 버전 조회</button>
   </fieldset>
   {view?<article aria-label="보관 한도 정책"><h4>보관본 · 현재 적용/실행 준비 판정 아님</h4><p>{view.ref.id} · v{view.ref.version}<br/>{view.ref.contentHash}</p><p>보관 상태 {view.snapshot.state} · 결정 {view.snapshot.decidedAt} · 기한 {view.snapshot.expiresAt}</p><pre>{JSON.stringify(view.snapshot,null,2)}</pre><button type="button" disabled={busy||!!work} onClick={()=>void begin(view)}>이 한도 버전에서 작성</button></article>:null}
+  {view?.projectId===projectId?<SelectedLimitUsage key={[projectId,session.user.id,session.clientId,view.ref.id,view.ref.version,view.ref.contentHash].join(':')} client={client} projectId={projectId} reference={view.ref} onAuthenticationLost={onAuthenticationLost}/>:null}
   {error&&!work?.failure?<p role="alert">{error.code}</p>:null}
  </section>;
 }
