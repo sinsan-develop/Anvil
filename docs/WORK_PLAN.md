@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN04/UI07 영향 문서 고정 원문**: 기존 보호 조회를 재사용해 같은 영향 구간·정확 문서 snapshot/hash와 본문을 확인하고 명시 조회에 연결했다. 최종 신규9+직접8/type/build245·합성 DOM7PASS·원 I1 보완/한정 재검토·QA잔여0이다. 원 실패는 현황에 보존하며 실제 DB/served·현재권한/증거 의미·승인/설계적용/계획개정/재개 및 전체 업무 완료가 아니다. 등록부의 과거 ‘정적 시안만’ 상태는 실제 부분 구현으로 정정하고 업무 범위·검수 기준은 바꾸지 않는다.
+
 - **2026-10-20 FN09/FN11/UI11 임무·책임자 준비 정책 작성**: 기존8준비행동의별도프로필/버퍼·준비/명시송신을source연결했다. 신규4RED→신규4+공유13PASS/type/build243·새DOM4+직접2=6PASS·scopedC0/I0/M0·QA정리0이다. 실제Agent실행/전달/중지·credential허가가아니고서버의각도메인선행/현재권한검사는유지한다. 새8행동의실제DB/served/도메인소비는미검증이며전체FN09/FN11/UI11은부분상태다.
 
 - **2026-10-20 FN11/UI11 정책 작성 실제 한정 소비**: exacta890840a 새격리PG15/51SQL의실인증API→Web consumer에서정책COMMIT/exacthash·유실replay/후보저장NOT_READY·DENY/권한/옛세대/DML거절7marker actual1PASS·exact자원정리/독립잔여0이다. source/bundle합성DOM과실PG소비를구분하고정식DB/served·전체24행동/동시경합·전체FN11/UI11/Stage미완료를유지한다. 원setup/SCHEMA실패와검수I1보완은WORK_STATUS에보존한다.
