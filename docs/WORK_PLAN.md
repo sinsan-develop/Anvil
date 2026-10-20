@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI01→UI08 정확 대기 요청 원문 이동**: 목록의 특정 요청 링크로 기존 보호 상세 GET를 연결했다. 경로2/DOM2 RED→단위3·새/직접DOM6·인접UI01 DOM3/type/build/diff PASS, 6파일 scoped C0/I0/M0다. 보관 입력·미확인 원명령은 유지하고 링크만으로 승인하지 않는다. 실제DB/served·전체업무 미완료, 지문/실패/한계는 WORK_STATUS를 따른다.
+
 - **2026-10-20 UI08 정확 요청 ID 원문 조회**: 기존 상세 GET에 입력을 연결하고 조회 오류와 미확인 결정 명령을 분리했다. 잘못된 조회 뒤 같은 목록 요청 복귀 RED→최소 보정, 최종 가짜 DOM6/type/build/diff PASS·한정 독립 C0/I0/M1 후 Main 보정이다. 실제 WSL/DB/served 권한·전체 UI08/Stage 완료가 아니며 정확 실패·지문·미검증은 WORK_STATUS에 기록한다.
 
 - **2026-10-20 UI01 대기 페이지 한정검수**: scoped C0/I0/반복cursor M1은Main RED→GREEN으로보완, 최종직접·인접7/type/build·관련DOM4PASS다. 전체건수·실행준비로승격하지않고실제DB/served권한·모든주체전환은미검증으로남긴다.
