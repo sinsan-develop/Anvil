@@ -47,13 +47,30 @@ export class SyntheticMaterialReceiver{
    for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||![envelope.payload.instructionRef,envelope.payload.partsRef].some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
    const instruction=this.#materials.filter(m=>same(m.snapshot.payloadRef,envelope.payload.instructionRef)).sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);
    if(!instruction.length||new Set(instruction.map(m=>canonicalJson(m.snapshot.sourceRef))).size!==1||instruction.reduce((sum,m)=>sum+m.snapshot.utf8Bytes,0)>2*1024*1024)fail('MATERIAL_INSTRUCTION_SOURCE_INVALID');
-   return await this.store.exclusive(cloneV1(scope),async tx=>{
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
     readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash);if(this.#result(events).missingMaterialIds.length)fail('MATERIAL_REQUIRED_PART_MISSING');
     const parts:Buffer[]=[];for(const m of instruction){const entry=events.find(e=>same(e.snapshot.materialRef,m.ref));if(!entry)return fail('MATERIAL_REQUIRED_PART_MISSING');parts.push(this.#bytes(await tx.readPart(cloneV1(entry.ref)),m));}
     const bytes=this.#safe(Buffer.concat(parts));this.#port();readDispatchEnvelopeV1(envelope,this.#now());
     return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(scope),envelopeHash:envelope.envelopeHash,instructionRef:cloneV1(envelope.payload.instructionRef),partsRef:cloneV1(envelope.payload.partsRef),materialReceiptRef:cloneV1(events.at(-1)!.ref),utf8Bytes:bytes.byteLength,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes)};
-   });
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
   }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_INSTRUCTION_UNAVAILABLE');}
+ }
+ /** 내구 수신된 START 옵션의 읽기 전용 연결. 기본 옵션/실제 Agent/현재 권한을 만들지 않는다. */
+ startSource(){return{transport:'SYNTHETIC_ONLY' as const,read:(envelope:DispatchEnvelopeV1)=>this.startOptions(envelope)};}
+ async startOptions(rawEnvelope:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);
+   if(envelope.operation!=='START_SESSION'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef)||same(envelope.payload.contextBundleRef,envelope.payload.optionsRef))return fail('MATERIAL_START_ENVELOPE_INVALID');
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||![envelope.payload.contextBundleRef,envelope.payload.optionsRef].some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const options=this.#materials.filter(m=>same(m.snapshot.payloadRef,envelope.payload.optionsRef)).sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);
+   if(!this.#materials.some(m=>same(m.snapshot.payloadRef,envelope.payload.contextBundleRef))||!options.length||new Set(options.map(m=>canonicalJson(m.snapshot.sourceRef))).size!==1||options.some(m=>m.snapshot.mediaType!=='application/json')||options.reduce((sum,m)=>sum+m.snapshot.utf8Bytes,0)>2*1024*1024)fail('MATERIAL_START_SOURCE_INVALID');
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
+    readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash);if(this.#result(events).missingMaterialIds.length)fail('MATERIAL_REQUIRED_PART_MISSING');
+    const parts:Buffer[]=[];for(const m of options){const entry=events.find(e=>same(e.snapshot.materialRef,m.ref));if(!entry)return fail('MATERIAL_REQUIRED_PART_MISSING');parts.push(this.#bytes(await tx.readPart(cloneV1(entry.ref)),m));}
+    const bytes=this.#safe(Buffer.concat(parts));this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+    return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(scope),envelopeHash:envelope.envelopeHash,contextBundleRef:cloneV1(envelope.payload.contextBundleRef),optionsRef:cloneV1(envelope.payload.optionsRef),materialReceiptRef:cloneV1(events.at(-1)!.ref),utf8Bytes:bytes.byteLength,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes)};
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_START_UNAVAILABLE');}
  }
  async record(rawEnvelope:unknown,response:unknown){
   try{

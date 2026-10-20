@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN06/FN08 C3 START 옵션 source 연결**: 수신원장의정확한context/options구별·전체등록부분/재hash·유일JSON옵션재조합을primary시작입력에읽기연결했다. 원I1 종료대기후합성/만료변경을START와기존SEND에재현해결과반환전후검사만보완,최종신규/직접28PASS/type0/diff0·한정재리뷰C0/I0/M0다. 새API/DB/실Agent·원문재저장0이고실file/현재권한·source진위/handle·서비스는미검증,원실패·기존코드수정근거는현황보존한다.
+
 - **2026-10-20 FN08 시작 파일 원장 수명 보완**: 기존 수신/신규primary store의종료tx·예외중진행IO·잠금보존반례를실제재현해closed/poison검사만보완했다. 정상기존수신file.sync/재열기와새음성1PASS/type0/diff0·독립한정C0/I0/M0·QA잔여0이다. 저장형식/권한·다른store·서비스/Agent불변이며전체검증·모든IO/실OS/전원손실은미확인,원실패와전후diff근거는현황에보존한다.
 
 - **2026-10-20 FN06/FN08 C3 primary 시작 파일 원장**: 준비된전용root에서2행/64KiB·wxlock/file.sync·재열기·불명/부분자료보존을연결했다. 실제파일직접1PASS/type0/diff0·tx수명I1은반례RED→보정·재리뷰C0/I0/M0·QA잔여0이다. directoryfsync/전원손실·프로세스간경합/실Agent/OS·서비스는미검증이고root/ACL자동생성·제품활성화0,원실패·보정내역은현황에보존한다.

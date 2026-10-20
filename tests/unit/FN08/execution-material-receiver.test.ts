@@ -56,3 +56,6 @@ test('SEND source는 blob 변조·부분/본문 불명·읽기 도중 만료에�
 test('동일 부분의 재조회 중 기한/합성 port가 바뀌면 기존 수신 결과라도 반환하지 않고 재저장0이다',async()=>{
  for(const mode of ['expiry','port']){const f=fixture(),receiver=f.make();await receiver.record(f.envelope,f.response(0));const before=structuredClone(f.events),base=f.store.exclusive;f.store.exclusive=(s:any,fn:any)=>base(s,(tx:any)=>fn({...tx,readPart:async(r:any)=>{const bytes=await tx.readPart(r);if(mode==='expiry')f.advance(60000);else f.store.transport='REAL';return bytes;}}));await assert.rejects(receiver.record(f.envelope,f.response(0)));assert.equal(f.syncs(),1);assert.deepEqual(f.events,before);}
 });
+test('SEND inbox종료대기후port/기한변경도지시문반환을거절하고추가sync0이다',async()=>{
+ for(const mode of ['port','expiry']){const f=fixture(true);await f.make().record(f.envelope,f.response(0));await f.make().record(f.envelope,f.response(1));const base=f.store.exclusive;f.store.exclusive=async(s:any,body:any)=>{const out=await base(s,body);if(mode==='port')f.store.transport='REAL';else f.advance(60000);return out;};await assert.rejects(f.make().instruction(f.envelope));assert.equal(f.syncs(),2);}
+});
