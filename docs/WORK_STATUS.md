@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **FN11 정책 실제 QA 두번째 SCHEMA 실패·잔여0(2026-10-20)**: exactddee4e7a의일반dependency디렉터리/고정package3참조로Gitclean검사는통과했으나실제시험SCHEMA단계ERR_ASSERTION으로1FAIL766.230613ms였다. PG378ffaa15/net660357a9는runner소유검사뒤exact회수(cleanupFailurefalse), 부모checkout도정리·정식PG불변을확인했고별도후속조회세자원잔여0이다. 기존51SQL의PG정렬결과를JS localeCompare순서와직접비교한시험을의심하되원오류의세부assert를단정하지않는다. 다음후보는정렬순서를계약으로추가하지않고기존 assertExecutionPreparationQaManifest의정확51ID/중복0/hash일치검사를그대로소비하며단계/ID순서일치여부·비밀없는오류명진단을추가했다. 실제테스트기대/보안guard·SQL내용은완화0이고source검증만으로원원인을확정하지않는다. 첫guard unit필터가맞지않아file-levelPASS만나온출력은개별guardPASS/개발진도로계산0, 정확schema집합패턴의실제기존음성검사만다시실행했다. 로컬sandboxGitstatus의knownnot-work-tree1은권한/metadata조치없이보존했다.
+
 - **FN11 정책 실제 QA 첫 준비 실패·정리(2026-10-20)**: exact1efa5c2b의첫원격자식exit1/stdout0, 부모cleanupfalse였다. 원stderr는부모에서출력/보존하지못했으므로원문을추정제시하지않는다. 읽기전용대조로node_modules 전체symlink만`?? node_modules`로보여 runner의clean source검사와부모마지막clean검사에부합하지않는setup을확인했다. 구문검사0·uid/Node/Docker실경로/entry환경이상0이며PG/network생성0·실제API/DB시험미도달이다. exactHEAD/uid1000/비linkroot·1493파일과유일한참조link를검사후link만unlink→gitclean확인→등록checkout만정리했고 후속별도조회checkout/PG/network잔여0·원의존성보존이다. 정식PGfullID/exited/StartedAt/restart0/image불변도독립조회했다. 재시도는전체link대신새checkout의실제node_modules디렉터리안에확인된기존package별읽기참조link만준비해기존`.gitignore`와일반의존성구조를따른다. gitclean/entry/DB/보안guard수정·예외완화0이며각하위link는정리전고정참조대상을다시대조한다. 등록literal은잔여0확인후서로새빈checkout으로재사용, instance는새난수·정리/시간경계동일이다. 원실패를PASS로소급0이다.
 
 - **FN11 정책 QA 실행 전 정리시간 I1 보완(2026-10-20)**: 독립C0/I1/M0는 남은40초에도고정90초workflow를시작하고정리도시험until을공유해1ms로소진되는문제를지적했다. Main은시간전용helper의2RED134.5794ms→2PASS125.5119ms/type0으로 WORKFLOW직전 잔여-120초 예약·최대90초/1초이하거절, finally는별도60초deadline·각Docker잔여내30초로보완했다. 외부부모총량은시험+정리포함180초, 자원수명10분+예외정리최대1분으로명시하며이미생성된자원0이다. 원I1보존·scoped재검토요청중이고시험query취소/OS종료/실제정리성공으로승격0이다.

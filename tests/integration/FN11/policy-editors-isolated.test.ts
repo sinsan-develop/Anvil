@@ -4,7 +4,7 @@ import {Pool} from 'pg';import {AccessRepository} from '../../../apps/server/mod
 import {ApiClient,ApiError} from '../../../apps/web/src/api/client.ts';
 import {newCandidatePolicyBuffer,prepareCandidatePolicy,sendCandidatePolicy,readCandidatePermissionPolicy} from '../../../apps/web/src/features/connections/candidate-policy-api.ts';
 import {candidateAccess,newCandidate,prepareCandidate,sendCandidate,readCandidate} from '../../../apps/web/src/features/connections/api.ts';
-import {buildExecutionPreparationQaSchema} from '../../../scripts/execution-preparation-qa.ts';
+import {buildExecutionPreparationQaSchema,assertExecutionPreparationQaManifest} from '../../../scripts/execution-preparation-qa.ts';
 import {fenceResultQaPool} from '../FN12/result-qa-fence.ts';
 test('정책 화면 consumer의 실제 격리 인증·정책 COMMIT/replay·후보저장·현재 거절',{timeout:90000},async t=>{
  const directory='/home/daon/deploy/anvil-v3-fn11-policy-editors-qa-01',host=process.env.ANVIL_POLICY_QA_HOST??'',until=Date.parse(process.env.ANVIL_POLICY_QA_UNTIL??''),expected=process.env.ANVIL_POLICY_QA_SHA??'';
@@ -15,8 +15,8 @@ test('정책 화면 consumer의 실제 격리 인증·정책 COMMIT/replay·후�
  const access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830'}),pid=randomUUID(),uid=randomUUID(),otherId=randomUUID(),markers:string[]=[];
  let phase='SCHEMA',transportLoss=false,posts=0,actor:any,sibling:any,other:any;
  try{
-  const manifest=await buildExecutionPreparationQaSchema();assert.deepEqual((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,manifest.manifest.toSorted((a,b)=>a.id.localeCompare(b.id)));assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.users')).rows[0].n,0);
-  const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);markers.push('EXACT_51_SQL_NONADMIN');
+  phase='SCHEMA_MANIFEST';const manifest=await buildExecutionPreparationQaSchema(),actual=(await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows;console.log('POLICY_QA_MANIFEST '+JSON.stringify({actual:actual.length,expected:manifest.manifest.length,idOrderEqual:actual.map(r=>r.id).join(',')===manifest.manifest.toSorted((a,b)=>a.id.localeCompare(b.id)).map(r=>r.id).join(',')}));assertExecutionPreparationQaManifest(actual,manifest.manifest);phase='SCHEMA_EMPTY';assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.users')).rows[0].n,0);
+  phase='ROLE';const role=(await pool.query('SELECT current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows[0];assert.equal(role.role,'anvil_v3_app');assert.equal(role.rolsuper,false);assert.equal(role.rolbypassrls,false);markers.push('EXACT_51_SQL_NONADMIN');
   phase='AUTH';const password=randomBytes(32).toString('base64url'),phc=await hashPassword(password);
   for(const user of [uid,otherId]){await pool.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'격리 정책 QA','ACTIVE')",[user,'qa-policy-'+user]);await pool.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)',[user,phc]);}
   actor=await access.login('qa-policy-'+uid,password,'격리 정책 QA','qa-policy-own');sibling=await access.login('qa-policy-'+uid,password,'다른 기기 QA','qa-policy-sibling');other=await access.login('qa-policy-'+otherId,password,'다른 사용자 QA','qa-policy-other');
@@ -39,6 +39,6 @@ test('정책 화면 consumer의 실제 격리 인증·정책 COMMIT/replay·후�
   await admin.query('UPDATE anvil.project_control SET generation=3 WHERE project_id=$1',[pid]);await assert.rejects(sendCandidatePolicy(api,material,session(),()=>true),{code:'CONTROL_GENERATION_CONFLICT',status:409});markers.push('OTHER_USER_CLIENT_OLD_GENERATION_DIRECT_DML_REJECTED');
   phase='COUNTS';assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.commands WHERE project_id=$1',[pid])).rows[0].n,4);assert.equal((await pool.query("SELECT count(*)::int n FROM anvil.audit_events WHERE project_id=$1 AND outcome='APPLIED'",[pid])).rows[0].n,4);assert.equal((await pool.query('SELECT count(*)::int n FROM anvil.delivery_outbox')).rows[0].n,0);
   console.log('POLICY_EDITOR_WORKFLOW '+JSON.stringify({status:'PASS',markers,policyVersions:3,commands:4,executionAuthorized:false,actualAgentCalls:0,formalDbChanges:0}));
- }catch(error){const e=error as any;console.log('POLICY_EDITOR_FAILURE '+JSON.stringify({phase,code:typeof e.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(e.code)?e.code:null,status:e.status??null}));throw Error('POLICY_EDITOR_WORKFLOW_FAILED_'+phase);}
+ }catch(error){const e=error as any;console.log('POLICY_EDITOR_FAILURE '+JSON.stringify({phase,code:typeof e.code==='string'&&/^[A-Z0-9_]{1,80}$/.test(e.code)?e.code:null,status:e.status??null,reason:typeof e.message==='string'&&/^[A-Z0-9_]{1,95}$/.test(e.message)?e.message:null}));throw Error('POLICY_EDITOR_WORKFLOW_FAILED_'+phase);}
  finally{await app.close();await pool.end();await admin.end();}
 });
