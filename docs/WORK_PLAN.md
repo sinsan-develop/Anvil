@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI03 복사 전 원본 단계 정의 조회**: 기존 GET/표시 helper로 책임·mode·작업범위·요구 능력/환경·한도/join 원문을 연결하고 malformed필수형식은 거절한다. 신규/직접11·새UI3/type0/build249/diff0·제품 scoped C0/I0/M0, 시험M1 보강/해소·QA01/02잔여0이다. 실제DB/served·Agent·모든비동기전환과 전체UI03/Stage는 미완료이며 원 실패·검수·정확 증거는 WORK_STATUS에 보존한다. 새API/schema/실권한·서비스 변경0이다.
+
 - **2026-10-20 FN06 공급자 식별 연결 상세설계 후보**: [최소 계약 제안](contracts/FN06_PROVIDER_HANDLE_BINDING_PROPOSAL.md) r2는 원예약 불변/별도 제한 claim·보호 handle·현재성/OS소유 분리의 정확 계약 후보다. PMO는 상세설계 작성만 허용했으며 제품 계약 NOT_ADOPTED·코드/TDD/API/SQL/native/root/실DB/Agent 착수0이다. 최초 C0/I3/M0→보완 scoped C0/I0/M0는 문서 정합성 판정일 뿐 제품 완료가 아니다. 정확 채택/실행 경계는 WORK_STATUS에 구분한다.
 
 - **2026-10-20 UI11 실행기 신뢰 HUMAN 정책 편집**: 기존 허용3행동만 별도 프로필/주체별 버퍼로 연결했다. 신규4/직접8·새 UI3/type0/build249/diff0·한정 정적 C0/I0/M0·QA 잔여0이다. 정책 저장과 실제 등록/지문 확인·credential 발급을 분리하며 최근인증/현재세대·범위 guard 불변·DB/서비스/실Agent 미검증·전체 업무 미완료, 원기록은 현황에 보존한다.

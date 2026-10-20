@@ -21,6 +21,19 @@ export function StoredMethodDocuments({ side, items, formAccess }: { side: '입�
 }
 
 // 서버가 돌려준 고정 버전의 정의만 표시한다. 조회·편집·평가·명령/권한 발급 없음.
+export function StoredNodeResponsibilities({ node }: { node: MethodologyNode }) {
+ return <section aria-label="원본 단계 책임·실행 조건">
+  <dl><dt>책임 역할</dt><dd>{roles[node.role]}</dd><dt>진행 방식</dt><dd>{node.mode === 'AUTO' ? '허용 범위 안 자동' : '건별'}</dd></dl>
+  <p className="meta">저장 원본 정의입니다. 실제 도구 배정·권한·한도 검증이 아닙니다.</p>
+  <details><summary>작업 범위·환경·한도·합류 정의</summary>
+   <Values title="포함 작업" values={node.taskScope.included} /><Values title="제외 작업" values={node.taskScope.excluded} />
+   <Values title="요구 능력" values={node.requirements?.capabilities ?? []} /><Values title="요구 환경" values={node.requirements?.environment ?? []} />
+   <h5>한도 정책 고정 참조</h5>{node.limitPolicyRef ? <p><Reference value={node.limitPolicyRef} /></p> : <p>연결된 한도 정책 없음</p>}
+   {node.kind === 'JOIN' ? <section aria-label="원본 합류 정의"><h5>합류 규칙</h5>{node.joinRule?.mode === 'ALL' ? <p>모든 선행 결과</p> : node.joinRule?.mode === 'DECLARED_CONDITION' ? <><p>명시한 결과 조건 · 평가하지 않은 원문</p>{node.joinRule.condition ? <pre>{JSON.stringify(node.joinRule.condition, null, 2)}</pre> : <p>합류 조건 미작성</p>}</> : <p>합류 규칙 미작성</p>}</section> : null}
+  </details>
+ </section>;
+}
+
 export function StoredNodeDefinition({ node, formAccess }: { node: MethodologyNode; formAccess?: PinnedFormAccess }) {
  return <div><h4>{node.nodeId}: {node.name}</h4><p>{node.purpose}</p>
   <dl><dt>단계 유형</dt><dd>{kinds[node.kind]}</dd><dt>책임 역할</dt><dd>{roles[node.role]}</dd><dt>진행 방식</dt><dd>{node.mode === 'AUTO' ? '허용 범위 안 자동' : '건별'}</dd></dl>

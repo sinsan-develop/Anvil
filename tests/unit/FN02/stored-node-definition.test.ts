@@ -24,6 +24,14 @@ function render(node: MethodologyNode) {
  assert.equal(typeof module.StoredNodeDefinition, 'function');
  return renderToStaticMarkup(createElement(module.StoredNodeDefinition, { node }));
 }
+
+test('복사 전 공통 원본의 책임·범위·요구·한도·합류를 별도 읽기 표시한다', () => {
+ assert.equal(typeof module.StoredNodeResponsibilities, 'function');
+ const node = fixture(); node.kind = 'JOIN'; node.joinRule = { mode: 'ALL' };
+ const html = renderToStaticMarkup(createElement(module.StoredNodeResponsibilities, { node }));
+ for (const value of ['단계책임자', '허용 범위 안 자동', '화면 상세 설계', '운영 배포', 'READ_PROJECT_FILES', 'Windows 개발환경', 'v5', '모든 선행 결과']) assert.ok(html.includes(value), value);
+ assert.doesNotMatch(html, /<(button|input|textarea|select)\b/);
+});
 test('저장된 단계의 책임·문서 exact 양식/검수·범위·기록/한도를 원본 그대로 읽기 표시한다', () => {
  const node = fixture(), before = JSON.stringify(node), html = render(node);
  for (const value of ['단계책임자', '허용 범위 안 자동', '화면 상세 설계', '운영 배포', '원 요구 근거 확인', '화면과 처리 연결', 'ANALYSIS', 'USER_DESIGN_CONFIRM', 'READ_PROJECT_FILES', 'Windows 개발환경', '작업 위치와 오류 기록', inputRef.id, outputRef.id, 'v3', 'v7', 'v5', 'a'.repeat(64), 'b'.repeat(64)]) assert.ok(html.includes(value), value);

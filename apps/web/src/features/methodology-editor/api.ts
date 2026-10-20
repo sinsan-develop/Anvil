@@ -17,6 +17,20 @@ export interface MethodVersion {
 const idPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const validRef = (ref: VersionRef) => !!ref && typeof ref === 'object' && idPattern.test(ref.id) && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
 const texts = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === 'string');
+function conditionShape(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const item = value as Record<string, unknown>, keys = Object.keys(item);
+  if (keys.length === 1 && ('all' in item || 'any' in item)) {
+    const children = item.all ?? item.any;
+    return Array.isArray(children) && children.length > 0 && children.every(conditionShape);
+  }
+  if (keys.length === 1 && 'not' in item) return conditionShape(item.not);
+  const field = item.fieldRef as Record<string, unknown> | null;
+  return keys.length === 3 && !!field && typeof field === 'object' && Object.keys(field).length === 2 && typeof field.nodeId === 'string'
+    && ['REVIEW_OUTCOME', 'USER_DECISION'].includes(String(field.field))
+    && (['EQ', 'NE'].includes(String(item.operator)) && typeof item.value === 'string'
+      || item.operator === 'IN' && texts(item.value) || item.operator === 'IS_PRESENT' && item.value === null);
+}
 export async function listMethods(client: ApiClient, options: MethodListOptions = {}): Promise<MethodPage> {
   if (Object.keys(options).some(key => !['scope', 'name', 'status', 'cursor', 'limit'].includes(key)) || options.scope !== undefined && !['SYSTEM', 'USER_COMMON'].includes(options.scope)
     || options.status !== undefined && !['DRAFT', 'CONFIRMED'].includes(options.status) || options.name !== undefined && (typeof options.name !== 'string' || options.name.length > 200)
@@ -48,6 +62,11 @@ export function validateMethodVersion(value: MethodVersion, selected: Pick<Metho
   if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || typeof graph.entryNodeId !== 'string' || !texts(graph.terminalNodeIds)
     || new Set(graph.nodes.map(node => node?.nodeId)).size !== graph.nodes.length
     || graph.nodes.some(node => !node || typeof node.nodeId !== 'string' || typeof node.name !== 'string' || typeof node.purpose !== 'string' || !['HUMAN', 'AGENT', 'DECISION', 'JOIN'].includes(node.kind)
+      || !['USER', 'COORDINATOR', 'STAGE_OWNER'].includes(node.role) || !['AUTO', 'CASE_BY_CASE'].includes(node.mode)
+      || !node.taskScope || !texts(node.taskScope.included) || !texts(node.taskScope.excluded)
+      || node.limitPolicyRef !== null && !validRef(node.limitPolicyRef)
+      || node.requirements !== undefined && (!node.requirements || !texts(node.requirements.capabilities) || !texts(node.requirements.environment))
+      || node.joinRule !== undefined && (!node.joinRule || !['ALL', 'DECLARED_CONDITION'].includes(node.joinRule.mode) || node.joinRule.condition !== undefined && !conditionShape(node.joinRule.condition))
       || !node.position || !Number.isFinite(node.position.x) || !Number.isFinite(node.position.y) || !texts(node.completionCriteria) || !texts(node.approvalBoundary) || !texts(node.recordRequirements)
       || !Array.isArray(node.inputs) || !Array.isArray(node.outputs) || [...node.inputs, ...node.outputs].some(item => !item || typeof item.itemId !== 'string' || !validRef(item.formRef) || !texts(item.reviewCriteria)))
     || graph.edges.some(edge => !edge || typeof edge.edgeId !== 'string' || typeof edge.fromNodeId !== 'string' || typeof edge.toNodeId !== 'string' || typeof edge.reason !== 'string' || !['SEQUENCE', 'BRANCH', 'JOIN', 'REWORK'].includes(edge.kind))) throw new ApiError('RESPONSE_INVALID');
