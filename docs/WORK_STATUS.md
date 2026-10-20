@@ -3,6 +3,10 @@
 ## 1. 현재 상태와 기록 기준
 
 
+- **FN08 C3 START→global spool 한정 수용(2026-10-20)**: 신규3 missing-methodRED161.8364ms→3PASS183.8767ms/type0/diff0·독립정적C0/I0/M0다. 기존batch전후deepEqual·원rowID/ref/시각보존·새global순번/응답claim이유정규화·과거UNKNOWN수집·추가permit/wire0을확인했다. 부분실패는쓰기전오류/안정ID재수집중복0만이며물리sync복구아니다. 기존batch/source구현전체재검수나원계약변경0·실file/current/source진위·OS/서버COMMIT/Agent미검증·자원0·제외6보존·전체FN08미완료다. rollback은추가bridge/시험의일반revert이며원batch/자료삭제0이다. 다음은STOP원장2행을STOP_REQUESTED/STOP_UNCONFIRMED로만읽어같은spool에소비하는누락경로다.
+
+- **FN08 C3 기존 START batch→global 관측 spool bridge 착수(2026-10-20)**: START의기존observationBatch/read/시퀀스/hash계약을재구현·변경하지않는다. 명시recordObservations만추가해원source의local sequence는출처로남기고globalspool이새순번을부여하도록strip·원rowID/ref/at유지·응답reason만새providerclaim경계에맞게UNVERIFIED_PROVIDER_CLAIM으로정규화한다. 기존batch본문/hash는그대로이며STARTED/완료/현재권한판정0·새permit/wire/자동전송0이다. 부분수집재개·과거UNKNOWN/문맥/port거절을새메모리3검사·type로확인하고실QA/DB/서비스/키/Agent/자원0이다.
+
 - **FN08 C3 SEND 원장→관측 한정 수용 / Main 어울(2026-10-20)**: 신규4 missing-methodRED462.5998ms→4PASS341.5062ms/type0/diff0·독립정적C0/I0/M0다. 정확원rowref/안정ID/원시각·UNKNOWN계열과providerclaim만정규화·명시spool수집중복0·추가permit/wire0을확인했다. 신규부분수집반례는쓰기전오류이며물리sync불명복구증거가아님을명시한다. 처음start파일import를잘못추정한patch1거절은적용전/부분변경0으로보존한다. 기존send/현재권한·자료·API/DB/서비스/Agent불변·자원0·제외6보존·실source/current/OS/서버COMMIT·전체FN08미검증,rollback은신규읽기/수집method와시험일반revert다. 다음대조에서START는기존observationBatch가이미있음을확인했으므로재구현하지않고원source순번/원응답이유를보존한채새globalspool에소비하는누락bridge만진행한다.
 
 - **FN08 C3 SEND 원장→관측 소비 착수 / Main 어울(2026-10-20)**: cb5f0432까지local/privateexact·main불변·제외6보존이며새file QA잔여0이다. 기존sender #journal로검증한정확명령의역사행을읽기전용관측input으로정규화하고명시recordObservations에서기존spool.append를소비한다. SEND_ATTEMPTED는전송전준비/PREPARED,허가행PERMIT_RECORDED,응답행PROVIDER_RESPONSE_RECEIVED/UNVERIFIED_PROVIDER_CLAIM,UNKNOWN은기존불명원인계열로만표시하고원localRecordRef/eventId·시각을보존한다. wire/permit/current/material재호출0·현재권한/Agent완료·OS소유/회수판정false,새API/SQL/DB/자원0·기존send불변이다. 원행ID로중복0/부분수집재개·만료역사읽기/변조/다른문맥·포트변경을신규메모리검사만수행한다.

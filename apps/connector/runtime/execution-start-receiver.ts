@@ -3,6 +3,7 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1,type ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
+import {SyntheticObservationSpool} from './execution-observation-spool.ts';
 
 type State='RECEIVED'|'START_ATTEMPTED'|'PERMIT_RECORDED'|'RESPONSE_RECORDED'|'UNKNOWN';
 type Reason='NONE'|'PERMIT_UNCERTAIN'|'RESPONSE_UNCERTAIN'|'STORAGE_UNCERTAIN'|'START_UNCERTAIN';
@@ -93,6 +94,15 @@ export class SyntheticStartReceiver{
      occurredAt:s.at,reasonCode:s.state==='UNKNOWN'?(s.reason==='RESPONSE_UNCERTAIN'?'PROVIDER_RESPONSE_LOST':'RECORD_UNCERTAIN'):'NONE'};
    });return{events,batchHash:hash(events)};
   });
+ }
+ /** 기존 source batch는 그대로 두고 명시 global spool 수집만 연결한다. source 순번은 global 순번/ACK가 아니다. */
+ async recordObservations(raw:unknown,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(spool instanceof SyntheticObservationSpool))return fail('START_OBSERVATION_SPOOL_REQUIRED');const packet=await this.observationBatch(raw);this.#ports();
+   if(!Array.isArray(packet.events)||packet.events.length>4||packet.batchHash!==hash(packet.events))return fail('START_OBSERVATION_BATCH_INVALID');const recordedRefs:RuntimeRefV1[]=[];
+   for(const source of packet.events){const{sequence:_,...input}=source;if(input.type==='PROVIDER_RESPONSE_RECEIVED')input.reasonCode='UNVERIFIED_PROVIDER_CLAIM';this.#ports();const saved=await spool.append(input);this.#ports();recordedRefs.push(cloneV1(saved.ref));}
+   return{transport:'SYNTHETIC_ONLY' as const,recordedRefs,verification:'PROVIDER_CLAIM_ONLY' as const,currentAuthorityVerified:false as const,ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof StartFailure)throw error;return fail('START_OBSERVATION_RECORD_UNAVAILABLE');}
  }
  async start(raw:unknown){const e=this.#input(raw);return this.#exclusive(e,async tx=>{
   const events=this.#journal(await tx.read(),e);if(!events.length)fail('START_NOT_RECEIVED');if(events.length>1)return this.#existing(e,events);
