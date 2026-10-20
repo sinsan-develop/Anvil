@@ -15,6 +15,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   const update=(change:(b:ResponsibleSessionBuffer)=>ResponsibleSessionBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
   const coordinator=state?.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER'),binding=state?.bindings.find(r=>ordered(r.snapshot.roleRef)===ordered(stage?.ref??null));
   const locked=busy||!owner||!bound||!!buffer?.pending||!!buffer?.uncertain;
+  const retainedSelection=buffer&&bound&&!binding&&buffer.connectionRef&&!candidates.some(hit=>ordered(hit.ref)===ordered(buffer.connectionRef))?buffer.connectionRef:null;
   async function load(cursor:string|null=null) {
     const ticket=epoch.current;setState(null);setNotice(null);
     const [value,page]=await Promise.all([readResponsibleSessionState(client,confirmed),listCandidates(client,confirmed.projectId,'CONNECTION_CANDIDATE',cursor)]);
@@ -72,8 +73,10 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
         <label>책임 역할·예약 이유<textarea maxLength={20000} value={buffer.reason} onChange={e=>update(b=>({...b,reason:e.target.value,dirty:true,failure:null}))}/></label>
         <label>기존 코딩 Agent 연결 후보<select value={buffer.connectionRef?ordered(buffer.connectionRef):''} disabled={!!binding} onChange={e=>{const hit=candidates.find(c=>ordered(c.ref)===e.target.value);update(b=>({...b,connectionRef:hit?structuredClone(hit.ref):null,dirty:true}));}}>
           <option value="">연결 후보 선택</option>{binding?<option value={ordered(binding.snapshot.connectionRef)}>기존 예약의 연결 유지 · {binding.snapshot.connectionRef.id}</option>:null}
+          {retainedSelection?<option value={ordered(retainedSelection)}>보관 선택 · {retainedSelection.id} · v{retainedSelection.version} · 현재 페이지 밖/현재성 미확인</option>:null}
           {candidates.filter(hit=>!binding||ordered(hit.ref)!==ordered(binding.snapshot.connectionRef)).map(hit=><option key={hit.ref.id} value={ordered(hit.ref)}>{hit.label} · 후보/실제 능력 미확인</option>)}
         </select></label>
+        {buffer.connectionRef?<p>선택 참조 {buffer.connectionRef.id} · v{buffer.connectionRef.version} · {buffer.connectionRef.contentHash} · 선택 보관은 현재성·실제 연결 인증이 아닙니다.</p>:null}
         <button disabled={!!coordinator||!buffer.reason.trim()} onClick={()=>run(()=>write('COORDINATOR'))}>총괄 역할 정의</button>
         <button disabled={!coordinator||!!stage||!buffer.reason.trim()} onClick={()=>run(()=>write('STAGE_OWNER'))}>선택 단계 책임 역할 정의</button>
         <button disabled={!stage||!buffer.connectionRef||!buffer.reason.trim()} onClick={()=>run(()=>write('BIND'))}>{binding?'같은 책임 세션으로 임무 결박':'책임 세션 예약'}</button>
