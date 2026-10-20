@@ -96,6 +96,8 @@ anvil.work_plan_versions, anvil.work_plans, anvil_qa.fixtures
 
 ### 순수 보존 입력 비교의 현재 구현
 
+`scripts/fn02-table-preservation-collection.ts`는 caller가 이미 연 TX의 SAVEPOINT 아래에서 고정81표/구46 manifest와 원컬럼 정의·행지문을 수집하는 함수 후보다. 옛migration 행은 정확46 ID로 한정하고 applied_at까지 projection에 포함한다. 행별SHA256을 정렬 집계하여 중복을 보존하며 기본식 평문은 hash로만 반환한다. 시각/문자열 표현은 SET LOCAL로 고정하지만 실제PG에서의 구문·집계·복원 간 동등성은 미검증이다. 성공 후 설정은 외부TX 종료까지 남으며 SAVEPOINT는 caller의 잠금·snapshot 일관성을 인증하지 않는다. 함수에는 접속/CLI/BEGIN/COMMIT/잠금/backup/DDL 실행기가 없고, 표밖객체·sequence 수집도 아직 없어 PARTIAL_TABLE_PRESERVATION_INPUTS/nonTableObjectsCollected:false/sequenceCollected:false/comparisonReady:false/executionAllowed:false를 유지한다. PG15 SHA256·순서가 있는 집계는 공식 [바이너리 함수](https://www.postgresql.org/docs/15/functions-binarystring.html), [집계 함수](https://www.postgresql.org/docs/15/functions-aggregate.html)를 참조했으며 문서 확인을 실제SQL PASS로 바꾸지 않는다.
+
 `scripts/fn02-preservation-comparison.ts`는 고정81표·구46 manifest, 옛열 projection/행수/내용hash, 옛migration행·표밖객체 hash와 identity sequence 정의/값/is_called/중단확인 입력을 비교한다. backup의 BACKUP_EXPORTED_SNAPSHOT, 분리 복원의 ISOLATED_RESTORE, 잠금 후 현재값의 AFTER_LOCK_READ_COMMITTED를 구분하고 누락·추가·중복·희소 배열·비정규 숫자·불일치는 거절한다. 성공도 MATCHED_INPUTS_ONLY/executionAllowed:false/liveEvidenceVerified:false다. 이 helper에는 DB/SQL 실행·지문 수집·잠금·backup·restore·DDL caller가 없으며, phase/중단확인 문자열·boolean 자체는 실제 관측의 증명이 아니다. 옛46행 timestamp 포함 여부와 원컬럼 선택·객체 제외차이 정당성은 후속 수집기/실제 검수 책임으로 남긴다. 단위시험6 및 인접 계획6 PASS는 이 입력 비교 범위의 증거만 된다.
 
 아래는 실행 제안이며 경로 생성/DB 조회/백업/복원 모두 미실행이다. 실제 역할의 덤프 권한/도구 설치 여부도 미확인이고 새 superuser·GRANT·Secret로 우회하지 않는다.
