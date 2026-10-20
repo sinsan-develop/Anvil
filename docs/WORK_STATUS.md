@@ -3,6 +3,14 @@
 ## 1. 현재 상태와 기록 기준
 
 
+- **FN08 C3 자료 transport 결합 한정 수용 / Main 어울(2026-10-20)**: 신규raw자료→receiver영수증→client본문미기록 연결의최초정적C0/I0/M0와Main기한반례보완1guard의한정재리뷰C0/I0/M0를구분수용한다. 최종신규7/직접2=9PASS255.787ms/type0/diff0·미실행/원RED/TS오류는보존한다. 자료원문은inbox에만남고client는정확receipt·proofref만기록,기한경과/불확실은UNKNOWN·동일요청추가전송0이며실자료/서명/current진위·HTTP/DBCOMMIT/물리내구/Agent/P3는미검증이다. 기존receiver·다른clientoperation/외부계약·정식DB/서비스/권한불변·자원0·제외6보존,전체FN06/FN08미완료다. rollback은신규adapter와MATERIAL응답뒤guard의일반revert·원자료/원장삭제0이다.
+
+- **FN08 C3 자료 client 기한 추가 반례/보완(2026-10-20)**: 최초adapter한정독립C0/I0/M0뒤Main이봉투60초/조회current·challenge30초인자료응답을추가했다. 기존client가30초뒤에도RESPONSE_RECORDED로채택하는1RED166.9573ms를재현했다. 기존execution-client의MATERIAL perform await뒤현재deadline검사1guard만추가해기존CLIENT_REQUEST_EXPIRED→UNKNOWN/REQUEST_EXPIRED를기록하고이미sync한inbox자료1개·원요청·nonce를보존/재전송0이다. 최종신규7+직접기존자료2=9PASS255.787ms/type0/diff검사예정,다른operation/서버API/DB/권한/Agent불변이다. 신규adapter최초정적검토는새반례전snapshot이며1guard한정재리뷰중이다. 실HTTP/서명/nonce·물리file/current진위/Agent/P3는계속미검증·자원0이다.
+
+- **FN08 C3 자료 client transport 직접검사(2026-10-20)**: 신규5 missing-classRED156.4909ms→5PASS286.6098ms 뒤 type의constructor확정할당/literal/시험callback오류를검증된bound객체배정/명시type으로보완했다(첫보정후callback1잔여실패도보존). 생성자표현변경후5PASS234.9587ms/type0·응답뒤/receipt뒤abort·port4사례추가후최종6PASS236.6706ms/type0이다. 정확GET/null본문target·grant/세대/봉투/선택ref를고정해raw자료를receiver sync·재조회후본문없는receipt로기록,UNKNOWN동일요청재전송0·sync후오류원자료보존을메모리port에서확인했다. 기존receiver/client/공개API/SQL/DB/권한/서비스·실HTTP/Agent/P3불변/미검증이며자원0·독립한정검토중이다.
+
+- **FN08 C3 자료 응답→client 영수증 transport 착수 / Main 어울(2026-10-20)**: b6bb4427의recordReceipt를소비하는합성전용adapter로정확scope/봉투/MATERIAL선택을고정한다. 기존client가전달한challenge/정확GET proof를기존raw합성port로보내고인증material응답을receiver에저장한뒤본문없는receipt만client에반환한다. bytes를client원장에복제하거나새HTTP/nonce/권한/API/DB를만들지않고같은요청UNKNOWN자동재시도0·clock/abort/port를await후에도검사한다. 외부Agent·실HTTP/서명진위/P3·물리file은미검증,메모리TDD/직접client/type/독립검토·자원0이다.
+
 - **FN08 C3 부분 수신 영수증 한정 수용 / Main 어울(2026-10-20)**: 독립정적C0/I0/M0·신규4/직접기존포함14PASS·type0/diff0범위로recordReceipt를수용한다. 실제파일내구/물리동시성·source/current진위·client MATERIAL 전체결합/서버·Agent는미검증이고전체FN06/FN08완료가아니다. 기존record/원장형식·API/SQL/DB/권한/서비스불변·자원0·제외6보존이다. rollback은새receipt메서드/시험의일반revert·원자료삭제0이다. 다음 C3 미완료는 server의material응답을receiver.recordReceipt로받아client가본문대신receipt만기록하는합성transport결합이며실HTTP/Agent/P3와구분한다.
 
 - **FN08 C3 부분 수신 영수증 직접검사(2026-10-20)**: 신규4 missing-methodRED137.2112ms→4PASS178.8905ms/type0이다. 기존record를바꾸지않고재잠금전체journal/blob/hash뒤정확receipt반환·중복write0·재조회lock오류/변조/종료후만료/port변경의원자료보존을확인했다. 직접기존10만의도한 test-name negative필터가실제로는신규4도포함해총14PASS217.9587ms로출력되어그대로기록하며'기존10만실행'으로보고하지않는다. 추가반복/필터재시도0·diff0, 독립정적검토중이다. 메모리sync계약이며물리file/실권한/자료진위/실Agent·전체기능미검증·API/DB/자원0이다.
