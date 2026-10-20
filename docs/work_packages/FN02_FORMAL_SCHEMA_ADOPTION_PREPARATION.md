@@ -7,7 +7,7 @@
 - 목표는 기존 승인 FN02/UI03의 빈 프로젝트 방법론 명시 적용과 임무·맥락·시작 기준선·실행 준비의 실제 저장 연결이다. 이 문서는 새로운 제품 기능/자동 승인/실제 Agent 실행을 추가하지 않는다.
 - 실제 정식 PG는 2026-10-20T11:21:54.792276193Z 시작 후 running/PG15.18이며 고정 READ ONLY 관측은46개다. API/Web3830=0/PG5546=1은 해당 관측 시점의 값이다. 이후 live 재확인은 하지 않았다.
 - **기존0012 정식 실행의 안전 거절·직접 질문 미답변은 미해소**다. 다른 실행기로 같은 행위를 우회하지 않는다. 이전 단발 metadata 창은 이 후보의 백업·DDL·추가 조회 허가가 아니다.
-- 현재 허용: source/기존 결과서 대조, `scripts/fn02-development-adoption-plan.ts --plan`, 로컬 단위시험, 문서 보완. 접속·백업·DDL·서비스·Secret/권한의 실제 변경은0이다. `--apply`/`--apply-schema-only` 등은 거절한다. 외부 효과를 가진 orchestrator/runner 등록은 구현하지 않았다.
+- 현재 준비 범위: source/기존 결과서 대조, `scripts/fn02-development-adoption-plan.ts --plan`, 로컬 단위시험, 문서 보완. 별도새판정아래도구/fs와migrator READ ONLY metadata는각1회실행·정리완료했고추가접속허가는아니다. 백업·DDL·서비스·Secret/권한의실제변경은0이다. `--apply`/`--apply-schema-only` 등은거절하며backup/DDL orchestrator/runner는외부등록하지않았다.
 
 ## 고정 반영 차이 — 자동 실행이 아닌 제안 순서
 
@@ -45,6 +45,49 @@
 
 ## 기존 증거를 재사용할 범위
 
+### 보존 대상과 snapshot·잠금의 최소 제안 — 실행0
+
+고정81표는기존46의source등록부 assignmentDevelopmentBaselineNames에서가져온기대목록이다. 최신metadata는표수81만관측했고현재이름전체가같다고인증한것은아니다. 계획출력도 liveNamesVerified false로유지한다. 정식실행전실제집합/열목록/타입·소유/ACL·정의가다르면dump/DDL0이다. 이름목록의sorted JSON SHA256은0212665828281ced090d33d1c73888cd439b54eacac24bc4bcaebc1e30b306a6으로고정한다.
+
+```text
+anvil.approval_consumptions, anvil.approval_decisions, anvil.approval_requests
+anvil.artifacts, anvil.audit_events, anvil.auth_actions
+anvil.auth_attempt_windows, anvil.auth_audit_events, anvil.auth_sessions
+anvil.authoring_standard_versions, anvil.authorization_receipts, anvil.clients
+anvil.commands, anvil.connection_candidate_versions, anvil.connection_candidates
+anvil.connector_credentials, anvil.connector_registration_challenges, anvil.connector_registrations
+anvil.connectors, anvil.constitution_applications, anvil.content_reviews
+anvil.conversation_messages, anvil.conversations, anvil.delivery_outbox
+anvil.design_change_impacts, anvil.design_changes, anvil.design_items
+anvil.document_artifact_links, anvil.document_confirmations, anvil.document_import_selections
+anvil.document_imports, anvil.document_proposal_selections, anvil.document_proposals
+anvil.document_version_events, anvil.document_versions, anvil.documents
+anvil.draft_audit_events, anvil.draft_methodology_reviews, anvil.form_definitions
+anvil.form_reviews, anvil.form_versions, anvil.installation_claims
+anvil.knowledge_entries, anvil.knowledge_events, anvil.knowledge_versions
+anvil.methodology_definitions, anvil.methodology_reviews, anvil.methodology_versions
+anvil.password_credentials, anvil.permission_policies, anvil.permission_policy_versions
+anvil.plan_dependencies, anvil.plan_tasks, anvil.project_baselines
+anvil.project_constitutions, anvil.project_control, anvil.project_drafts
+anvil.project_events, anvil.project_members, anvil.project_methodologies
+anvil.project_source_declarations, anvil.projects, anvil.recovery_credentials
+anvil.schema_migrations, anvil.screen_regions, anvil.source_declaration_versions
+anvil.source_declarations, anvil.source_read_challenges, anvil.source_read_credentials
+anvil.source_read_grants, anvil.source_root_versions, anvil.source_roots
+anvil.source_snapshots, anvil.trace_edges, anvil.user_common_audit_events
+anvil.user_invitations, anvil.users, anvil.work_plan_confirmations
+anvil.work_plan_versions, anvil.work_plans, anvil_qa.fixtures
+```
+
+- 표밖의함수/trigger/index/constraint/도메인·type/DB설정·owner/ACL/default privileges·extension정의·sequence상태·large object도full custom dump의보존범위다. 표fingerprint만으로이들을대신하지않는다. 기존source는auth_audit_events.server_sequence의identity를정의하므로기대sequence는 `anvil.auth_audit_events_server_sequence_seq`다. 실제목록/속성/소유권·의존을확인하기전현재DB에그하나만있다고단정하지않는다. 예상밖schema/객체·권한·sequence/extension이있으면자동제외/삭제하지않고정확차이를보고한다.
+- 프로젝트의외부원문blob/보호config·DBcluster role/password·인증서는DBdump에포함되지않는다. 이번7SQL이그파일/cluster를변경하지않는다는범위를지키며원경로/원본은그대로보존한다. 전체프로젝트백업완료라고주장하지않는다.
+- **A: backup 단계 제안** — 기존migration advisory xact lock과고정정렬81표 SHARE잠금을새RW/REPEATABLE READ TX에서획득한다(READ ONLY TX의강한LOCK허용을가정하지않음). 표잠금요청은고정목록순서/lock_timeout5초,타임아웃·이름/권한불명은rollback/DDL0. 새덤프전용TX에는데이터쓰기/권한변경을넣지않는다. 동일 exported snapshot에pg_dump와원본의81표count/hash·기존46/객체metadata를결박한다. snapshot발급후최대120초/단계전체180초·idle-in-TX180초안에종료하고넘으면backup불완전표시/rollback/DDL0이다. snapshot획득시점보다늦게끝난다른변경이있을가능성은B단계현재값재대조로처리하고'항상최신'이라고보장하지않는다.
+- **표 외 sequence 주의** — sequence상태는MVCC snapshot·표SHARE잠금만으로고정되지않는다. 덤프전후각sequence의last_value/is_called/속성을별도비변경읽기로대조하고,정확복원값도비교해야한다. 다른sequence소비자가있거나지속적인중단을확인할수없으면DDL0이다. nextval/setval/ALTER SEQUENCE로검사를통과시키지않으며현재접속수0을미래보장으로쓰지않는다. 이quiescence전제의실제충족은아직미검증이다.
+- **분리복원** — A완료/잠금해제후보호backup을앞서고정한none-network/tmpfsPG에복원해동일46·원래객체/owner/ACL·표count/hash·sequence/large-object보존을검수한다. DB18.5MB/가용550GB는사전관측이며최종생성전공간·메모리/소유권·대상부재를확인한다. tmpfs2GiB외에최소1GiB의메모리여유를확보하지못하면생성0/자동확대0이다. 복원실패는분리자원partial실패이지정식DB복구/다운그레이드명령이아니다.
+- **B: 정식migration 단계 제안** — 새로운 READ COMMITTED TX에서같은migration advisory xact lock과동일정렬81표 SHARE잠금을획득한뒤A의기존46/객체·데이터보존지문과현재값을재대조한다. SHARE잠금대기전에잡힌옛MVCC snapshot으로현재값을검사하지않도록대조SELECT는잠금획득뒤의새READ COMMITTED snapshot을사용한다. 그사이변경/예상밖writer/sequence변화가있으면기존backup은과거시점자료로보존하고DDL0/자동새dump·retry0이다. 대조가맞아도별도직접결정없으면0이며,그후에만고정7SQL/기록을한TX로소비/검수/COMMIT하는제안이다. SHARE는일반DML을막지만관리자·독립sequence변경등을완전통제한다고주장하지않는다. 필요한ALTER가자기잠금에서승격하더라도다른reader때문에막히면lock5초/statement30초/전체10분상한에서rollback한다.
+- **기존 행 비교** — old-column projection은A때관측/고정한기존열의순서·타입·표식별자로만만든다.0015/0031의새nullable열때문에to_jsonb(전체행)지문이달라지는것을원데이터손상으로혼동하지않고,기존열값count/hash를비교한다. schema_migrations는추가7행을별도검증하되과거46행의timestamp포함원본은정확기존ID목록으로필터해보존지문을비교한다. hash에의해본문을DB안에서읽으므로이역시새직접결정대상이며평문/개별row를Git·출력에넣지않는다.
+- **완료·불명 처리** — 별도postcheck도기존열/허용DDLdiff·53·새20표의예상빈상태·권한/trigger/sequence를각각대조해야한다. COMMITUNKNOWN/종료불명·postcheck실패는자동재실행/restore-in-place/drop0·원backup/실상태보존·필요한새읽기결정으로분리한다. 지금source는고정계획/기대대상만출력하며이잠금·덤프·본문hash·복원·DDL경로를실행/등록하지않았다.
+
 -0012 기존 formal executor는46→47 한 개만 다룬다.0013~0017을 자동등록하거나 이번 거절을 해제하지 않는다.
 - [등록 helper 실제 검수](../04_test_reports/AV3/FN02/FORWARD_REGISTRATION_RESULT.md)는 새 빈 격리52→53/rollback/실패종료/동시 재호출의 증거다. 정식46→53·현재 데이터/권한 보존·복구 증거가 아니다.
 - 실제46 metadata 조회와 전용 경로 정리는 완료한 범위로 유지하며 같은 조회/격리 시험을 반복하지 않는다. 아래 backup/restore와 정확46→53 결합 검수는 **기존 시험과 다른 미검증 범위**다.
@@ -63,17 +106,19 @@
 
 ## 다음 완료조건
 
-### 최소 읽기 전용 사전 확인 요청안 — 아직 실행0
+### 최소 읽기 전용 사전 확인 — 도구/fs 및 DB metadata 각1회 종료
 
-**도구/공간 부분만 후속 실측:** 별도PMO판정11:46:07~11:56:07Z 안에서11:48:04.600026Z(20:48KST) 단1회 tools/filesystem 관측exit0. 기존PG에각1회짧은version프로세스2개만실행했고pg_dump/pg_restore모두15.18(Debian15.18-1.pgdg13+1). Node실파일hash7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c, /usr/bin/docker실파일hash7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b. 보호root UID1000/0700/realpath/nonlink·가용550560096256bytes,제안backup경로/복원container부재. 동일PG running/StartedAt11:21:54.792276193Z·정의개별필드일치/raw1eb. daemon/안전정의/두version/복원이름부재5단계모두exit0·retry0. DB접속/config/Env/본문/로그/폴더·backup·복원·DDL0이며공간관측은미래예약이나dump가능판정이아니다. 아래요청안중migrator접속/SQL부분은여전히미실행이다.
+**migrator metadata 후속 실측:** 별도판정11:57:38~12:07:38Z/source95086727의고정READ ONLY/close후exit0에서DB18505063bytes·other/active/unknown접속각0·표81/nonowner0/SELECT불가0/RLS0을관측했다. 기존보호config는메모리소비/hash a78daab0…만출력했고본문/계정행/새manifest·backup·DDL0이다. 등록두경로정확회수/별도부재·PG보존/3830=0/5546=1확인. 정상보호파일/DB조회·close만의양성증거이며미래writer0·dump/복원성공·실행허가아니다. 상세는[실제결과](../04_test_reports/AV3/FN02/BACKUP_READINESS_METADATA_RESULT.md)로고정하고원실행당시2BBF774A계약은95086727에보존한다. 아래도구조회직후기록은당시이력이다.
 
-실제 dump/DDL 승인 요청 전에 아래 한정 정보만 추가 확인하는 별도 범위다. 이전 metadata 창/기존 config 접근 허가를 재사용하지 않으며, PMO의 이번 정확 판정/새 유한 binding과 플랫폼 심사 전 실행하지 않는다.
+**도구/공간 부분만 후속 실측:** 별도PMO판정11:46:07~11:56:07Z 안에서11:48:04.600026Z(20:48KST) 단1회 tools/filesystem 관측exit0. 기존PG에각1회짧은version프로세스2개만실행했고pg_dump/pg_restore모두15.18(Debian15.18-1.pgdg13+1). Node실파일hash7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c, /usr/bin/docker실파일hash7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b. 보호root UID1000/0700/realpath/nonlink·가용550560096256bytes,제안backup경로/복원container부재. 동일PG running/StartedAt11:21:54.792276193Z·정의개별필드일치/raw1eb. daemon/안전정의/두version/복원이름부재5단계모두exit0·retry0. DB접속/config/Env/본문/로그/폴더·backup·복원·DDL0이며공간관측은미래예약이나dump가능판정이아니다. 이는도구조회직후이력이며migrator의별도후속실측은위요약을따른다.
+
+아래요청은각별도새판정/유한binding/플랫폼심사를거쳐1회씩종료했다. 실제dump/DDL승인이아니며이전또는소비된창을추가작업에재사용하지않는다.
 
 - host/대상: WSL-server daon/기존동일PG fullID·daemon/image·volume/network/5546. 시작/중지/정의 변경0. `/usr/bin/docker --host unix:///var/run/docker.sock exec <fullID> /usr/bin/pg_dump --version` 및 pg_restore --version 각1회만(새 일회 프로세스/DB접속0). `/opt/node-v24.21.0-linux-x64/bin/node`와기존도구의실경로/파일hash만,보호 root의statvfs가용bytes/기존복원후보경로·container명부재만확인한다. Config.Env/로그/파일본문/새폴더 생성0.
 - DB 사전 확인이 필요하면 도구 확인과 분리하여 기존 `/home/daon/.local/share/anvil-v3-development/migrator.json` 한 파일만 O_NOFOLLOW/owner1000/0600/nonlink/size 검증으로메모리소비하는 새 범위가 필요하다. 기존 anvil_v3_migrator/127.0.0.1:5546/DB anvil_v3_development만,대체role/config0·키/DSN/rawerror출력0. 이 보호파일/역할은 앞선 app-role 조회와 다른 범위다.
 - 제안 SQL은 BEGIN READ ONLY/statement5초·lock1초·idle10초 안에서 (a)current_database/current_user/server_version_num/transaction_read_only/pg_roles의현재역할superuser·bypass·create권한boolean (b)pg_database_size(current_database()) (c)pg_stat_activity의현재DB connection수와현재세션제외active/정보불명 수,SQL본문·query문자열/사용자명출력0 (d)pg_class/pg_namespace의anvil·anvil_qa table개수·owner일치/has_table_privilege(current_user,oid,'SELECT')/relrowsecurity·relforcerowsecurity만 읽는다. 본문/계정행·통계rowcount·dump·migration재조회0. 목록은진단boolean/count만전송하며불명확하면실행자격을추정하지않는다.
-- 위 고정 SQL 후보는 `scripts/fn02-backup-readiness.ts`의fn02BackupReadinessSql/readFn02BackupReadiness에준비했다. 함수만의fake검수후 고정caller후보도source로작성해 --plan 무접속출력/--read-only 잘못된binding·apply거절을로컬에서검수했다. 후보는LinuxUID1000/Node고정실경로/private Git clean·exactSHA·고정root·보호config/O_NOFOLLOW·각await전후10분상한·close5초/성공출력전종료검사를갖는다. 실제WSL실행·서비스/runner등록은0이며새정확판정·발급window전실행하지않는다. 관측출력은dumpCapability UNVERIFIED/executionAllowed false로유지한다.
-- caller 후보의등록대상은새Git `/home/daon/deploy/anvil-v3-fn02-readiness-01` 및전용cache `/tmp/anvil-v3-fn02-readiness-01/npm-cache`,daon0700/10분·회수2분제안이다. 현재생성0이다. 실제실행전기존samePG/daemon/image·정의/포트상태대조는별도실행제어에서필요하며caller자체가Docker를검증/시작하지않는다. 새 명령은1회/외부프로세스전체30초/connect5초·각query5초/연장·retry0,실패rollback/close만·DB쓰기/backup/restore0이다. source에읽기전용mode후보는있으나실제새접속을활성화/실행한것이아니며기존거절을해제하지않는다.
+- 고정SQL/caller는 `scripts/fn02-backup-readiness.ts`에존재하며위별도판정95086727에서1회만실행했다. LinuxUID1000/Node고정실경로/private Git clean·exactSHA·고정root·보호config/O_NOFOLLOW·각await전후10분상한·close5초/성공출력전종료검사를갖는다. 관측은dumpCapability UNVERIFIED/executionAllowed false이며서비스/backup/DDL runner등록0이다. close실패/만료/파일교체의실제음성은여전히미검증이다.
+- 사용한Git `/home/daon/deploy/anvil-v3-fn02-readiness-01` 및cache `/tmp/anvil-v3-fn02-readiness-01/npm-cache`는daon0700/1회생성·사용후회수완료/현재잔여0이며재생성허가아니다. 실행제어가samePG/daemon/image·정의/포트를별도대조했고caller자체는Docker를시작하지않았다. 외부30초/connect5·query5/기한·retry0의읽기만소비했고DB쓰기/backup/restore0·기존거절미해소를유지한다.
 
 ### 복원 자원·실행 제한의 literal 후보 — 생성0
 

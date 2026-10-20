@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 실제반영 사전준비의 현재 위치**: source95086727의별도단발READ ONLY에서DB18.5MB·접속집계0·81표소유/SELECT/RLS집계0을확인/정리했고실제dump·분리복원·46→53·사용자기능은미완료다. source기대81표/identitysequence·표밖객체범위/옛컬럼projection·snapshot/잠금실패DDL0은실행불가후보로고정/새계획검사6PASS/type0이다. 실제민감자료복제·권한DDL/기존0012거절의정확직접결정은아직없으며,구현완료나추가접속/실행허가로승격하지않는다.
+
 - **2026-10-20 FN02 다음반영 준비**: 정식46보존과누락6+0031제안순서의 code-only planner를작성/신규4·직접5검사9PASS/type0로확인했다. 실행/백업/새조회/DDL/서비스0·과거0012거절미해소·전체FN02미완료이며정확효과/복구후보는work_packages/FN02_FORMAL_SCHEMA_ADOPTION_PREPARATION.md에연결한다. 현재환경은20:22~23KST의PG running46/3830=0/5546=1관측이며갱신을위한재조회는하지않았다.
 
 - **2026-10-20 FN02 정식 선행 실제 확인**: exacta6682968의단발기동/READ ONLY metadata에서정식migration46·고정8객체중project_methodologies만존재를실측했다. 개발PG는정상보존/임시조회경로잔여0·API/Web재개0. 46 ID/checksum·배열순서rawhash차이·한계는FORMAL_SCHEMA_METADATA_RESULT/WORK_STATUS에보존하며전체기능완료아니다. 다음핵심단위는누락0012~0017의정식채택·반영/보존·복구경계정리이며52선행미충족에서0031자동실행하지않는다. Stage/44업무/검수기준불변.

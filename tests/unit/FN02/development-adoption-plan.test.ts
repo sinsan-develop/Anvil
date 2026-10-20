@@ -24,6 +24,8 @@ test('비동기 source 로드 중 호출자 baseline 변경은 계획에 유입�
  const m:any=await load();assert.equal(typeof m.createFn02DevelopmentAdoptionPlan,'function');const rows=await observed();const pending=m.createFn02DevelopmentAdoptionPlan(rows);rows[0]!.checksum='f'.repeat(64);rows.push({id:'0029_unadopted',checksum:'f'.repeat(64)});const plan=await pending;assert.equal(plan.baseline.count,46);assert.equal(plan.steps.length,7);assert.equal(plan.execution.allowed,false);
 });
 
+test('보존 계획은 기존81표·identity sequence를 명시하고 현재이름 검증으로 승격하지 않는다',async()=>{const m:any=await load();const p=await m.createFn02DevelopmentAdoptionPlan(await observed());assert.equal(p.preservation.expectedTables.length,81);assert.equal(new Set(p.preservation.expectedTables).size,81);for(const name of ['anvil.auth_audit_events','anvil.project_baselines','anvil.project_methodologies','anvil.commands','anvil_qa.fixtures'])assert.ok(p.preservation.expectedTables.includes(name));assert.deepEqual(p.preservation.expectedSequences,['anvil.auth_audit_events_server_sequence_seq']);assert.equal(p.preservation.liveNamesVerified,false);assert.equal(p.preservation.dumpIncludesNonTableObjects,true);assert.equal(p.preservation.rowFingerprintProjection,'PRE_BACKUP_COLUMNS_ONLY');});
+
 test('source 읽기 경계에서 각 선행 SQL 바이트가 달라지면 계획을 거절한다',async()=>{
  const m:any=await load(),base=await observed(),original=fs.readFile;
  // 실제 파일은 수정하지 않고 느린 IO의 반환 바이트만 변조한다. 실제 manifest/고정 지문 검사는 그대로 소비한다.

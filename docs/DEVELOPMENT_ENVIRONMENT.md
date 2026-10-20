@@ -2,6 +2,8 @@
 
 ## 2026-10-20 20:22~20:23 KST 정식 PG metadata 관측 — API/Web는 중단
 
+- 이후20:57:38~21:07:38KST의새단발범위에서source95086727 migrator READ ONLY metadata1회exit0/정상close:DB18505063bytes·다른접속각집계0·표81/소유불일치·SELECT불가·RLS집계각0을확인했다. source46manifest를다시읽지않았고dump/복원/DDL·서비스0이다. 등록일회두경로는정확회수/독립부재·PG같은StartedAt/running·3830=0/5546=1/backup경로부재확인,이번양성관측은미래writer0/덤프권한·복원인증아니다. 상세BACKUP_READINESS_METADATA_RESULT/WORK_STATUS를따른다.
+
 - 후속20:48KST 도구·filesystem만새허가로확인:같은PG running/동일StartedAt·pg_dump/pg_restore15.18·보호root가용550560096256bytes/UID1000·0700/nonlink,제안backup/복원container부재. 이후DBschema/본문은조회하지않았고version프로세스각1회외새resource/서비스0이다. 향후migrator읽기caller후보는별도source/검토이며아직실DB실행0이다.
 
 - PMO 새 exact 판정 아래 기존 PG 한 개를 단1회 기동했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9·StartedAt2026-10-20T11:21:54.792276193Z/ready marker1·정상 개발용 보존이다. 아래10/19 exited는 과거 관측으로 삭제하지 않는다. 현재 항목 역시 해당 시점의 관측이며 매번 자동 재접속한 기록은 아니다.

@@ -3,6 +3,7 @@ import {createHash} from 'node:crypto';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {fn02MethodApplicationManifest,fn02MethodApplicationMigrationId} from './fn02-method-application-migration.ts';
+import {assignmentDevelopmentBaselineNames} from './assignment-draft-development-guard.ts';
 
 // source 검수 후보의 고정 순서/바이트. 이 목록은 실행 권한이나 migration runner 등록이 아니다.
 const additions=Object.freeze([
@@ -24,6 +25,8 @@ export async function createFn02DevelopmentAdoptionPlan(observed:readonly Row[])
  const baseline=observed.map(r=>({id:r.id,checksum:r.checksum}));
  if(new Set(baseline.map(r=>r.id)).size!==46)throw Error('FN02_ADOPTION_BASELINE_INVALID');
  const manifest=await fn02MethodApplicationManifest();
+ const expectedTables=[...assignmentDevelopmentBaselineNames].sort();
+ if(expectedTables.length!==81||new Set(expectedTables).size!==81||createHash('sha256').update(JSON.stringify(expectedTables)).digest('hex')!=='0212665828281ced090d33d1c73888cd439b54eacac24bc4bcaebc1e30b306a6')throw Error('FN02_ADOPTION_SOURCE_CHANGED');
  const expected=new Map(manifest.expected);
  for(const [id,pinned] of additions){const actual=id===fn02MethodApplicationMigrationId?manifest.checksum:expected.get(id);if(actual!==pinned)throw Error('FN02_ADOPTION_SOURCE_CHANGED');expected.delete(id);}
  if(expected.size!==46||baseline.some(r=>expected.get(r.id)!==r.checksum))throw Error('FN02_ADOPTION_BASELINE_INVALID');
@@ -32,6 +35,7 @@ export async function createFn02DevelopmentAdoptionPlan(observed:readonly Row[])
   return Object.freeze({id,checksum,sqlPath:'db/migrations/'+id+'.sql',beforeCount,afterCount:chain.length,beforeManifestHash,afterManifestHash:hashManifest(chain)});
  });
  return Object.freeze({kind:'CODE_ONLY_NOT_EXECUTABLE',observationCurrentness:'NOT_RECHECKED',baseline:Object.freeze({count:46,manifestHash:hashManifest(baseline)}),targetCount:53,steps:Object.freeze(steps),
+  preservation:Object.freeze({expectedTables:Object.freeze(expectedTables),expectedSequences:Object.freeze(['anvil.auth_audit_events_server_sequence_seq']),liveNamesVerified:false,dumpIncludesNonTableObjects:true,rowFingerprintProjection:'PRE_BACKUP_COLUMNS_ONLY'}),
   execution:Object.freeze({allowed:false,prior0012RejectionUnresolved:true,databaseConnections:0,sqlExecuted:0,backupsCreated:0,protectedConfigReads:0,servicesChanged:0,requiredDecision:'EXACT_BACKUP_RESTORE_AND_SCHEMA_EXECUTION',proposedDataAndPrivilegeChanges:true})});
 }
 
