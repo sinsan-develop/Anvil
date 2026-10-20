@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 UI03 공통 양식 반복 필드 제거**: 기존개정의exact필드선택해제·명시저장/재조회·미확인동결을연결했다. 신규/직접5·UI2/type/build/diff·scoped각C0/I0/M0·QA잔여0이며마지막필드기존확정불가기준유지,실제DB/served/권한·전체업무미완료는WORK_STATUS에보존한다. 새API/DB/실권한/Agent0.
+
 - **2026-10-20 UI06 보관 계획 변경 비교**: 기존 조회한 두 snapshot을 업무/선행/기준원문 차이 구간으로 비교한다. 신규/직접6·화면1/type/build/diff·scopedC0/I0/M0·QA잔여0이며 원 타입오류/표시시험 한계·실제DB/served/현재효력·전체업무미완료를 WORK_STATUS에 보존한다. 새 GET/쓰기·API/DB/권한0.
 
 - **2026-10-20 UI05 임무 고정 설계 원문**: 기존 metadata/bytes 보호 GET로 확정/초안/basis/baseline exact 설계를 명시 조회한다. 신규/직접6·UI2/보강지연1·type/build/diff 및 scoped 검토를 한정 확인하고 QA잔여0이다. 원실패·M1/보강·실제DB/served/출처·현재효력/Agent/전체업무 미검증은 WORK_STATUS에 보존한다. 새 API/DB/권한0이며 다음 독립 계획 소비를 계속한다.

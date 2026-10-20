@@ -3,6 +3,7 @@ import type { MethodCommand } from '../methodology-editor/common-api.ts';
 import type { FormVersion } from './forms-api.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { ReviewOutcome } from './forms-api.ts';
+import {ApiError} from '../../api/client.ts';
 
 export interface FormReviewWork {
   ref: VersionRef; criteriaVersion: number; criteria: { criterionId: string; title: string }[];
@@ -19,4 +20,10 @@ export interface FormBuffer {
 export function emptyFormBuffer(): FormBuffer { return { ownerUserId: null, targetId: null, version: 0, definition: null, itemId: '', reason: '', dirty: false, pending: null, review: null }; }
 export function formBuffer(value: FormVersion, ownerUserId: string): FormBuffer {
   return { ownerUserId, targetId: value.ref.id, version: value.ref.version, definition: structuredClone(value.definition), itemId: value.definition.items[0]?.itemId ?? '', reason: '', dirty: false, pending: null, review: null };
+}
+/** 미저장 공통 양식의 한 필드만 해제한다. 마지막 필드의 기존 검증 문제는 유지한다. */
+export function removeFormRepeatField(buffer:FormBuffer,ownerUserId:string,itemId:string,fieldId:string):FormBuffer{
+ const items=buffer.definition?.items.filter(item=>item.itemId===itemId),item=items?.[0];
+ if(!ownerUserId||buffer.ownerUserId!==ownerUserId||buffer.pending||buffer.review?.pending||buffer.itemId!==itemId||buffer.definition?.scope!=='USER_COMMON'||items?.length!==1||!item||item.valueType!=='RECORDS'||!item.repeated||item.fields.filter(field=>field.fieldId===fieldId).length!==1)throw new ApiError('FORM_REPEAT_FIELD_REMOVAL_INVALID');
+ return {...buffer,dirty:true,definition:{...buffer.definition,items:buffer.definition.items.map(value=>value===item?{...value,fields:value.fields.filter(field=>field.fieldId!==fieldId)}:value)}};
 }

@@ -2,7 +2,7 @@ import { useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonMethod as writeCommonFormDraft, type MethodCommand } from '../methodology-editor/common-api.ts';
 import { getForm, type FormVersion } from './forms-api.ts';
-import { emptyFormBuffer, formBuffer, type FormBuffer } from './form-editor-state.ts';
+import { emptyFormBuffer, formBuffer, removeFormRepeatField, type FormBuffer } from './form-editor-state.ts';
 import type { FormDefinition, FormItem } from '../../../../server/modules/documents/forms.ts';
 
 export function CommonFormEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved }: {
@@ -47,6 +47,11 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
     const next: FormItem = { itemId, title: '', required: true, valueType: 'TEXT', repeated: false, fields: [], authoringRules: [], reviewCriteria: [] };
     change({ items: [...definition.items, next] }); onChange(previous => ({ ...previous, itemId }));
   }
+  function removeField(itemId:string,repeatFieldId:string){
+    if(locked||!confirm('이 초안의 선택 반복 필드만 제거할까요? 항목 규칙·다른 필드·서버 원본은 유지하며 저장은 별도로 합니다.'))return;
+    try{const updated=removeFormRepeatField(buffer,session.user.id,itemId,repeatFieldId);onChange(previous=>previous===buffer?updated:previous);setSaved(null);setError(null);}
+    catch(cause){setError(cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID'));}
+  }
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section><p role="alert">다른 로그인 사용자의 양식 편집은 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭의 이전 사용자 양식 편집만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyFormBuffer()); }}>탭의 이전 양식 편집 닫기</button></section>;
   return <section className="status-card definition-editor" aria-label="내 공통 양식 작업"><h3>내 양식 작성·개정</h3><p className="meta">공식 8종·구버전은 보존합니다. 초안 저장은 내용 검토·사용자 확정이 아닙니다.</p>
     <fieldset disabled={locked}><label>양식 복사본 이름<input maxLength={200} value={copyName} onChange={event => setCopyName(event.target.value)} /></label><button disabled={!source || !copyName.trim()} onClick={copy}>내 공통 양식으로 복사</button>
@@ -62,7 +67,7 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
       {item ? <div><p className="meta">안정 항목 ID {item.itemId}</p><label>양식 항목 제목<input value={item.title} onChange={event => changeItem({ title: event.target.value })} /></label><label><input type="checkbox" checked={item.required} onChange={event => changeItem({ required: event.target.checked })} />필수 항목</label>
         <label htmlFor={fieldId + '-rules'}>항목 작성 규칙</label><textarea id={fieldId + '-rules'} value={item.authoringRules.join('\n')} onChange={event => changeItem({ authoringRules: event.target.value.split('\n') })} />
         <label htmlFor={fieldId + '-review'}>항목 검토 기준</label><textarea id={fieldId + '-review'} value={item.reviewCriteria.join('\n')} onChange={event => changeItem({ reviewCriteria: event.target.value.split('\n') })} />
-        {item.fields.map(field => <label key={field.fieldId}>반복 필드 {field.fieldId}<input value={field.title} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, title: event.target.value } : value) })} /></label>)}
+        {item.fields.map(field => <div key={field.fieldId}><label>반복 필드 {field.fieldId}<input value={field.title} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, title: event.target.value } : value) })} /></label><button type="button" aria-label={'반복 필드 '+field.fieldId+' 제거'} onClick={()=>removeField(item.itemId,field.fieldId)}>이 반복 필드 제거</button></div>)}
         <button disabled={item.fields.length >= 200} onClick={() => changeItem({ valueType: 'RECORDS', repeated: true, fields: [...item.fields, { fieldId: 'FIELD-' + crypto.randomUUID().slice(0, 8), title: '', required: true, valueType: 'TEXT' }] })}>반복 필드 추가</button>
         <button onClick={() => { if (confirm('이 초안에서 선택 항목을 뺄까요? 기존 저장 버전은 유지됩니다.')) { change({ items: definition.items.filter(value => value.itemId !== item.itemId) }); onChange(previous => ({ ...previous, itemId: '' })); } }}>이 초안의 항목 제거</button>
       </div> : null}
