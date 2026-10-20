@@ -11,7 +11,7 @@ import { ApiClient, ApiError } from '../../../apps/web/src/api/client.ts';
 import { prepareProjectMethod, writeProjectMethod, readProjectMethod, readProjectMethodAtVersion, readMethodApplicationRef } from '../../../apps/web/src/features/methodology-editor/project-api.ts';
 
 // 결함 검출: 별도 정책·정확 버전 없이 개정/확정, 다른 프로젝트/기기 접근, 확정 후 자동 적용.
-test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고 실행 상태 미확인 적용을 거절한다', async () => {
+test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고 미확정 개정의 적용을 거절한다', async () => {
   if (!process.env.ANVIL_DB_CONFIG || !process.env.ANVIL_MIGRATOR_CONFIG) throw Error('ACTUAL_PROTECTED_DB_REQUIRED_NOT_SKIP');
   const pool = new Pool(validateDevelopmentDbConfig(JSON.parse(await readFile(process.env.ANVIL_DB_CONFIG, 'utf8')), 'app'));
   const admin = new Pool(validateDevelopmentDbConfig(JSON.parse(await readFile(process.env.ANVIL_MIGRATOR_CONFIG, 'utf8')), 'migrator'));
@@ -65,8 +65,11 @@ test('프로젝트 방법론은 명시 허가로만 개정·검토·확정하고
     const newer = await get(path + '/methodologies/' + ref.id + '/versions/2'); assert.equal(newer.statusCode, 200); assert.equal(newer.json().confirmation, null); assert.deepEqual(newer.json().contentReviews, []);
     assert.equal((await get(versionPath)).json().confirmation.id, confirmed.json().data.confirmationId, '과거 확정 사건 보존');
     assert.deepEqual((await get('/api/v1/methodologies/' + original.ref.id + '/versions/2')).json().graph, original.graph);
-    const apply = await send(command('applyMethodology', { methodologyRef: amended.json().data.ref, expectedApplicationVersion: 0, reason: '아직 실행 상태 미확인', acknowledged: true }, projects[0]!, 0));
-    assert.equal(apply.statusCode, 412); assert.equal(apply.json().code, 'EXECUTION_STATE_UNVERIFIED');
+    // 승인된 3필드 계약으로 요청한다. 빈 이력이어도 새 개정은 아직 확정하지 않았으므로 적용할 수 없다.
+    const apply = await send(command('applyMethodology', { methodologyRef: amended.json().data.ref, expectedApplicationVersion: 0, reason: '아직 확정하지 않은 개정' }, projects[0]!, 0));
+    assert.equal(apply.statusCode, 422); assert.equal(apply.json().code, 'CONTENT_REVIEW_REQUIRED');
+    const extraField = await send(command('applyMethodology', { methodologyRef: amended.json().data.ref, expectedApplicationVersion: 0, reason: '계약 외 필드 거절', acknowledged: true }, projects[0]!, 0));
+    assert.equal(extraField.statusCode, 422); assert.equal(extraField.json().code, 'METHOD_APPLICATION_INPUT_INVALID');
     const listing = await get(path + '/methodologies'); assert.equal(listing.statusCode, 200, listing.body); assert.equal(listing.json().items.length, 1); assert.equal(listing.json().items[0].ref.version, 2);
     assert.equal((await get(path + '/methodologies?limit=9999')).statusCode, 400);
     await assert.rejects(pool.query('UPDATE anvil.methodology_versions SET reason=$2 WHERE definition_id=$1', [ref.id, '위장']), (e: unknown) => (e as { code: string }).code === '42501');

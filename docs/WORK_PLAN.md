@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 적용 저장 보호 후보 진행 중**: 기존 논리 적용을 위한 새0031 .sql.pending·새정적배선검사·격리PG검수코드만 작성했다. 초기생성/옛SQL/권한/이력보존, 신규명령결박·동일project잠금·RC제한·정확receipt/검토/구조·양방향COMMIT 보호 후보이며 실제DB/runner등록0이다. 독립 I2 뒤 구조/5항목/숫자setting을 보완했고 추가별칭/VT지적도 source보정, 실제PG반례실행은미검증이다. 기능은부분구현이며 실제저장·양성/음성COMMIT/경합·UI연결 완료를 주장하지 않는다. 이전 '새forward0'는 작성 전 이력이다.
+
 - **2026-10-20 FN02 빈 프로젝트 적용 전환 source 부분 구현**: 기존 논리 applyMethodology에서 동일 project/control 잠금·7원장 직접 부재·확정/최신검토/양식·적용 CAS·불변 snapshot/이유 영수증을 연결했다. 신규/직접11·보정 집중4/type0·한정 재검수 C0/I0/M0이며 원RED/I1·PowerShell 초기화 오류를 WORK_STATUS에 보존한다. 실제0011/새forward·SQL/DB/서비스 변경0, 저장 보호/직접 DML 경합·역방향 COMMIT·UI/served 미완료이며 [정확 후속 diff](work_packages/FN02_EMPTY_APPLICATION_STORAGE_GUARD_DIFF.md)로 이어간다. 이 source 후보를 기능 완료로 승격하지 않는다.
 
 - **2026-10-20 UI03 공통 양식 반복 필드 제거**: 기존개정의exact필드선택해제·명시저장/재조회·미확인동결을연결했다. 신규/직접5·UI2/type/build/diff·scoped각C0/I0/M0·QA잔여0이며마지막필드기존확정불가기준유지,실제DB/served/권한·전체업무미완료는WORK_STATUS에보존한다. 새API/DB/실권한/Agent0.
