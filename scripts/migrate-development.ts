@@ -7,10 +7,11 @@ import { seedOfficialForms } from '../apps/server/modules/documents/catalog-seed
 import { buildBuiltinMethodologies } from '../apps/server/modules/methodologies/builtins.ts';
 import { seedBuiltinMethodologies } from '../apps/server/modules/methodologies/catalog-seed.ts';
 import {applySourceRootSchemaOnly,legacyMigrationIds,sourceRootMigrationId} from './source-root-migration.ts';
+import {applyFn02MethodApplicationSchemaOnly} from './fn02-method-application-migration.ts';
 
 const configFile = process.env.ANVIL_DB_CONFIG;
 const mode=process.env.ANVIL_MIGRATION_MODE;
-if(mode!==undefined&&mode!=='SOURCE_ROOT_REGISTRY_ONLY')throw Error('MIGRATION_MODE_INVALID');
+if(mode!==undefined&&mode!=='SOURCE_ROOT_REGISTRY_ONLY'&&mode!=='FN02_METHOD_APPLICATION_ONLY')throw Error('MIGRATION_MODE_INVALID');
 if (!configFile) throw Error('PROTECTED_DB_CONFIG_REQUIRED');
 const config = validateDevelopmentDbConfig(JSON.parse(await readFile(configFile, 'utf8')), 'migrator');
 const client = new Client(config);
@@ -23,7 +24,10 @@ try {
   if (identity.database !== config.database || identity.username !== config.user || identity.port !== 5432) throw Error('CONNECTED_DB_TARGET_INVALID');
   await client.query('BEGIN');
   await client.query("SELECT pg_advisory_xact_lock(hashtext('anvil-v3-migrations'))");
-  if(mode==='SOURCE_ROOT_REGISTRY_ONLY'){
+  if(mode==='FN02_METHOD_APPLICATION_ONLY'){
+    const migration=await applyFn02MethodApplicationSchemaOnly(client);await client.query('COMMIT');
+    console.log(JSON.stringify({migration,fixtures:0,realProductUsersCreated:0,status:'fn02-method-application-schema-only'}));
+  }else if(mode==='SOURCE_ROOT_REGISTRY_ONLY'){
     const migration=await applySourceRootSchemaOnly(client);await client.query('COMMIT');
     console.log(JSON.stringify({migration,fixtures:0,realProductUsersCreated:0,status:'source-root-schema-only'}));
   }else{

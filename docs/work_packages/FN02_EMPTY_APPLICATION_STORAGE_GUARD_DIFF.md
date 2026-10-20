@@ -1,5 +1,20 @@
 # FN02 빈 프로젝트 적용 전환 — 저장 보호 차이와 후속 검수
 
+## 2026-10-20 후속: code-only 정식 채택·명시 등록 후보
+
+PMO는 기존 승인 FN02의 실제 사용 연결을 위한 이 source 후속을 위임 범위로 확인했다. 앞선 runner등록0은 당시 범위/실행 사실이며 영구 금지가 아니다. 아래 과거 후보·미실행 기록과 원 지문은 소급 변경하지 않는다.
+
+- 기존 `.sql.pending`는 보존하고 같은 바이트의 `0031_empty_project_methodology_application.sql`을 추가했다. 두 SHA256은 모두 E9DEE26A03DDD643F06DDC9DFBFE39DCCFB91FC305FCC465E53A5D15FD2880C6이다. SQL 본문·기존 SQL/권한·guard·과거 snapshot·실제 DB는 변경0.
+- 새 `scripts/fn02-method-application-migration.ts`는 기존 legacy44+sourceRoot/sourceRead2+0012~0017 여섯 개의 **정확52 선행**을 명시한다. 실경로/SQL root·각 checksum·후보 E9를 대조하며 누락/추가/중복/지문 불일치·지원 밖 future 상태는 DDL 전에 거절한다. 정확52일 때0031 SQL/기록만, 정확53 재호출은 DDL0. 선행을 자동 적용하거나 glob으로 찾지 않는다.
+- 기존 세 경로 중 source-root-migration.ts/기존 SOURCE_ROOT_REGISTRY_ONLY와 source-read-migration.ts는 유지한다. migrate-development.ts에 **명시적인** ANVIL_MIGRATION_MODE=FN02_METHOD_APPLICATION_ONLY만 추가해 기존 대상 확인/BEGIN/advisory lock 안에서 새 helper를 소비하고 COMMIT한다. 이 분기에는 seed/계정/fixture0이며 default45·기존 mode의 목록은 그대로다. 보호 config 없이 닫히는 기존 동작도 보존한다.
+- 현재 정식 schema의 마지막 보존 기록은46이며 PG는exited다. 최신 schema를 live 조회한 것이 아니다. QA53을 정식의 현재 상태로 간주하지 않는다. 이 후보를46에 호출하면 누락 선행으로 거절해야 하며46→53 일괄 적용·서비스 재개·실제 사용자 정책·Agent 실행 허가가 아니다.
+- 신규 함수 부재4RED125.0284ms→신규4/직접 기존5 9PASS1298.3009ms. CLI mode/config 기대 거절과 후보 뒤 future 상태 거절을 추가해10PASS2249.67ms. 테스트 env 추론 type 오류1은 명시 ProcessEnv로 정정하고 fresh typecheck exit0. DB 실행/COMMIT 증거로 승격하지 않는다.
+- 기존 pending 배선 검사의 소스 문자열 부재는 새 helper를 통한 간접 명시 등록 부재를 증명하지 않는다. 과거 결과는 당시 사실로 보존하고 이번 등록 동작은 새 manifest/거절·재호출/정확 SQL 소비 검사로 구분한다. 기존 검사 삭제·기준 완화0.
+
+최종 code-only 독립 검토 C0/I0/M0, 신규5·직접 기존5·기존 pending 배선4 총14PASS2183.861ms·fresh type0·diff0다. SQL 두 파일은 각각35477bytes/E9, helper190441A5756967F535A911EADDAECCDEB8B01D6CD15226AF7BA86ABDBC8F6A9D, runnerECA900DDD9895F12EFE128DDA2E81F4813CBB9E3B016040E02A2A96988A7321D, 시험6C3982B2F66CECE6522CBADDD1D623492515050519E0CD0F5A99353D6EB6C116다. 검수자는 실제 시험을 실행하지 않았고 source 검토만 했다.
+
+정식 DB 접속/forward 실행·서비스 시작·기존 특정 거절/미채택 계약 해제는0이다. 신규 정식 helper의 실제 PG 적용/COMMIT·동시 재호출·객체 정의/파일 교체 경쟁은 미검증이며, 앞선 pending SQL 시험을 새 runner 실행 증거로 전용하지 않는다. 별도 실행은 정확 게시 후보와 정식 현재 manifest·백업·영향/복구·명령/플랫폼 승인을 대조한 후에만 수행한다.
+
 - 담당: Main 어울. 2026-10-20, 기존 Stage B/FN02 구현의 부분 작업이다.
 - 상위 범위: `docs/contracts/INTERFACES.md`의 `applyMethodology(methodologyRef,expectedApplicationVersion,reason)` 및 FN02 카드. 새 Agent/계정·방법론 기능을 제안하지 않는다.
 - 상태: 서버 source 후보·합성 DB 검수 및 새 **미적용** forward 후보 작성. `0031_empty_project_methodology_application.sql.pending`는 실제 runner 등록/실행/정식 적용 0이며 실제 DB/양성 COMMIT/served 미검증이다. 아래 내용은 현재 SQL의 실행 허가나 이미 적용된 보호가 아니다.
