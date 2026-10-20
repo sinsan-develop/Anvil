@@ -6,7 +6,7 @@ const fail=(reason:string):never=>{throw Error('FN02_SEQUENCE_'+reason);};
 const hash=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const int64=(v:unknown):v is string=>typeof v==='string'&&v.length<=20&&/^(0|-?[1-9][0-9]*)$/.test(v)&&BigInt(v)>=-9223372036854775808n&&BigInt(v)<=9223372036854775807n;
 export const fn02SequenceCollectionSql=Object.freeze({
- definitions:`SELECT n.nspname||'.'||c.relname name,
+ definitions:`SELECT n.nspname||'.'||c.relname name,s.seqcache::text cache_size,s.seqincrement::text increment_by,s.seqcycle cycle,
  encode(sha256(convert_to(jsonb_build_object(
  'owner',pg_get_userbyid(c.relowner),'type',format_type(s.seqtypid,NULL),
  'start',s.seqstart::text,'increment',s.seqincrement::text,'min',s.seqmin::text,'max',s.seqmax::text,'cache',s.seqcache::text,'cycle',s.seqcycle,
@@ -24,7 +24,7 @@ export async function collectFn02SequencePreservation(db:Db,isolation:'repeatabl
  const query=async(sql:string)=>{fresh();const r=await db.query(sql);fresh();return r;};
  const definition=async()=>{
   const rows=(await query(fn02SequenceCollectionSql.definitions)).rows;
-  if(!Array.isArray(rows)||rows.length!==1||rows[0]?.name!==name||!hash(rows[0]?.definition_hash))fail('DEFINITION_INVALID');
+  if(!Array.isArray(rows)||rows.length!==1||rows[0]?.name!==name||!hash(rows[0]?.definition_hash)||rows[0]?.cache_size!=='1'||rows[0]?.increment_by!=='1'||rows[0]?.cycle!==false)fail('DEFINITION_INVALID');
   return rows[0]!.definition_hash as string;
  };
  const state=async()=>{
@@ -41,7 +41,7 @@ export async function collectFn02SequencePreservation(db:Db,isolation:'repeatabl
   const firstDefinition=await definition(),firstState=await state(),lastState=await state(),lastDefinition=await definition();
   if(firstDefinition!==lastDefinition||firstState.lastValue!==lastState.lastValue||firstState.isCalled!==lastState.isCalled)fail('CHANGED');
   await query('RELEASE SAVEPOINT fn02_sequence_collection');acquired=false;fresh();
-  return {kind:'PARTIAL_SEQUENCE_PRESERVATION_INPUTS',sequences:[{name,definitionHash:firstDefinition,...firstState}],sameSampleEndpoints:true,sequenceQuiescenceConfirmed:false,comparisonReady:false,executionAllowed:false};
+  return {kind:'PARTIAL_SEQUENCE_PRESERVATION_INPUTS',sequences:[{name,definitionHash:firstDefinition,...firstState}],profile:{cacheSize:'1',incrementBy:'1',cycle:false},sameSampleEndpoints:true,sequenceQuiescenceConfirmed:false,comparisonReady:false,executionAllowed:false};
  }catch{
   if(acquired){try{await db.query('ROLLBACK TO SAVEPOINT fn02_sequence_collection');await db.query('RELEASE SAVEPOINT fn02_sequence_collection');}catch{fail('CLEANUP_FAILED');}}
   fail('FAILED');

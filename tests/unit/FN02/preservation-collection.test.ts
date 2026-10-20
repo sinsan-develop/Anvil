@@ -15,7 +15,7 @@ async function fixture(isolation='repeatable read',badCatalog=false){
   if(sql.startsWith('/* FN02_UNSUPPORTED */'))return {rows:unsupported.map(kind=>({kind,n:badCatalog&&kind==='large_objects'?'1':'0'}))};
   if(sql.startsWith('/* FN02_OBJECTS:triggers */'))return {rows:[]};
   if(sql.startsWith('/* FN02_OBJECTS:'))return {rows:[{object_count:sql.startsWith('/* FN02_OBJECTS:schemas */')?'3':sql.startsWith('/* FN02_OBJECTS:database */')?'1':'0',objects_hash:'a'.repeat(64)}]};
-  if(sql.includes('FROM pg_sequence'))return {rows:[{name:'anvil.auth_audit_events_server_sequence_seq',definition_hash:'a'.repeat(64)}]};
+  if(sql.includes('FROM pg_sequence'))return {rows:[{name:'anvil.auth_audit_events_server_sequence_seq',definition_hash:'a'.repeat(64),cache_size:'1',increment_by:'1',cycle:false}]};
   if(sql.startsWith('SELECT last_value'))return {rows:[{last_value:'1',is_called:false}]};
   if(sql.includes('FROM pg_class c JOIN pg_namespace'))return {rows:[...assignmentDevelopmentBaselineNames].map(name=>({name,rls:false,readable:true}))};
   if(sql.includes('FROM pg_attribute'))return {rows:(values?.[0]==='anvil.schema_migrations'?['id','checksum','applied_at']:['id']).map((name,i)=>({position:i+1,name,type:name==='applied_at'?'timestamp with time zone':'text',collation:null,required:true,identity:'',generated:'',default:null}))};

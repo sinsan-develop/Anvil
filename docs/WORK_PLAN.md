@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 TOC·sequence source 보완**: 목록 문자열의 고정81표/DATA·identity2항목 분류와 CACHE1/증가1/비순환 가드를 추가했다. 독립 I1의 잘못된 OWNED BY 필수 가정은 producer와 대조해 RED→GREEN 보정, 직접33PASS/type0이다. 실제 백업/복원·전체 archive/지속 중단/정식46→53·화면 저장은 미완료이며 실행false다. raw 행 바이트 제한 M1을 잔여로 명시했다. 이 준비를 실제 기능 완료나 Stage 진도로 대신하지 않고 다음 미완료 제품 연결을 이어간다.
+
 - **2026-10-20 FN02 coverage 누락3범주 source 보완**: type ACL·주석·cast를추가하여선언수집14범주로확장/신규누락음성RED→GREEN·총25합성PASS/type0·새범주한정독립C0/I0/M0다. 실제SQL/원본·복원동등성·full archive coverage/sequence중단은미검증이며비교/실행false·기존실행경계불변이다. 뒤따를실행전대조계약·기존계획을계속하며이를전체FN02나Stage완료로기록하지않는다.
 
 - **2026-10-20 FN02 표밖객체 수집·부분 연결**: 논리정의/owner·ACL의11범주와미지원24종거절·원컬럼/catalog/sequence연결함수를작성했고,내부FKtrigger의OID이름비동등성지적은논리식별자정규화와음성으로보완했다. 신규9+인접15 총24PASS/type0다. 실제PG/복원검수·전체archive범위/sequence지속중단은미검증·연결결과는불완전/실행false로유지한다. 다음은타입ACL·주석·cast등누락범주와bootstrap소유권차이의archive coverage계약보완이며Stage/44업무·합격기준불변이다.

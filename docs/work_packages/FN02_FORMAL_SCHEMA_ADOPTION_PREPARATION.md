@@ -4,6 +4,12 @@
 
 ## 경계와 완료할 기능
 
+- 2026-10-20 code-only 추가: TOC 분류는 합성 목록 문자열만 읽으며 고정81표/DATA와 identity의 SEQUENCE·SEQUENCE SET을 요구한다. PG15.18 dumpSequence는 identity에서 OWNED BY를 만들지 않아 기존 잘못된 fixture/필수 가정을 RED→GREEN 정정했다. 예상 밖 OWNED BY는 검토 대상이다. 실제 native TOC를 얻거나 archive를 열지 않았고 출력의 archiveBytesVerified/selectedListCompletenessVerified/logicalObjectIdentityVerified/fullArchiveCoverageVerified/executionAllowed는 모두false다.
+- 향후 정확한 archive와 새 실행 결정이 있을 때 목록 후보는 pg_restore --list --create --verbose이며 아직 실행하지 않았다. 기본 --list는 createDB 선택 때문에 DATABASE/PROPERTIES가 빠질 수 있고 헤더 전체 수와 출력 선택 수가 달라질 수 있다. 편집 목록·-L 선택·순서 변경을 만들지 않는다. 공백/정제된 표시 이름은 손실 없는 객체 식별자가 아니므로 모호함을 검토 대상으로 남긴다. 선언14범주와 실제 전체 archive의 동등성은 별도 미확인이다.
+- sequence source 기본 CACHE1/증가1/비순환과 다르거나 누락이면 상태 수집 전 거절한다. 실제 프로필은 관측하지 않았고 두 표본 동일성은 전체 구간 consumer 중단·privileged rewind/ABA·catalog MVCC 변경 부재를 증명하지 않는다. 지속 중단 증거가 없으면 비교/실행false다.
+- Bootstrap/extension/default schema owner·ACL의 실제 원본 값은 미관측이다. 분리 clone의 NOLOGIN 역할3개 생성만으로 initdb/extension 소유권 일치를 보장하지 않는다. 불명/불일치면 DDL0이며 owner를 지문에서 제외하거나 원본 역할/키/소유권을 자동 변경하지 않는다. 대체 초기 owner/재할당은 별도 정확 계약 검토 대상이지 현재 실행 승인이 아니다.
+- 독립 M1 잔여: 행16KiB 검사는 raw UTF8 bytes가 아닌 trim 후 문자 길이다. 전체 입력2MiB는 제한하지만 행별 바이트 상한을 충족했다고 주장하지 않는다. 실제 실행/전체 보존 검수는 미완료다.
+
 - 목표는 기존 승인 FN02/UI03의 빈 프로젝트 방법론 명시 적용과 임무·맥락·시작 기준선·실행 준비의 실제 저장 연결이다. 이 문서는 새로운 제품 기능/자동 승인/실제 Agent 실행을 추가하지 않는다.
 - 실제 정식 PG는 2026-10-20T11:21:54.792276193Z 시작 후 running/PG15.18이며 고정 READ ONLY 관측은46개다. API/Web3830=0/PG5546=1은 해당 관측 시점의 값이다. 이후 live 재확인은 하지 않았다.
 - **기존0012 정식 실행의 안전 거절·직접 질문 미답변은 미해소**다. 다른 실행기로 같은 행위를 우회하지 않는다. 이전 단발 metadata 창은 이 후보의 백업·DDL·추가 조회 허가가 아니다.
