@@ -6,6 +6,7 @@ import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation
 import type {ResultReviewBuffers} from './result-review-write-api.ts';
 import type {ResultReworkBuffers} from './result-rework-write-api.ts';
 import type {ResultSubmissionBuffers} from './result-submission-write-api.ts';
+import {CriteriaDraftFiles} from './CriteriaDraftFiles.tsx';
 import {CriteriaReadbackUnconfirmed,criteriaRows,prepareCriteriaRegistration,saveCriteriaRegistration,resultTestKinds,type CriteriaRow,type CriteriaRegistration,type RegisteredCriteria} from './result-criteria-api.ts';
 export interface CriteriaBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];controlGeneration:number;rows:CriteriaRow[];reason:string;pending:CriteriaRegistration|null;stored:RegisteredCriteria|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
 export interface CriteriaEditorProps{session:DocumentSession;buffer:CriteriaBuffer|null;onChange:(change:CriteriaBuffer|((value:CriteriaBuffer|null)=>CriteriaBuffer|null))=>void;reviews?:ResultReviewBuffers;reworks?:ResultReworkBuffers;submissions?:ResultSubmissionBuffers}
@@ -19,7 +20,7 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
   if(working.current)return;working.current=true;setBusy(true);setFailure(null);const b=bound;let attempted=false;
   try{
    const generation=await documentControl(client,assignment.projectId,session);if(!live.current)return;
-   if(mode==='CREATE'){if(!canCreate||b)return;onChange({bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,assignmentRef:structuredClone(assignment.ref),controlGeneration:generation,rows:criteriaRows(assignment),reason:'',pending:null,stored:null,dirty:false,uncertain:false,failure:null});return;}
+   if(mode==='CREATE'){if(!canCreate||b)return;onChange(current=>current===null?{bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,assignmentRef:structuredClone(assignment.ref),controlGeneration:generation,rows:criteriaRows(assignment),reason:'',pending:null,stored:null,dirty:false,uncertain:false,failure:null}:current);return;}
    if(mode==='REBIND'){if(!b||b.pending||b.uncertain||b.stored)throw new ApiError('RESULT_CRITERIA_BINDING_INVALID');change({...b,controlGeneration:generation,failure:null});return;}
    if(!b||b.stored||generation!==b.controlGeneration)throw new ApiError('PROJECT_CONTROL_CHANGED',409);
    if(mode==='PREPARE'){if(b.pending||b.uncertain)return;const pending=await prepareCriteriaRegistration(assignment,b.rows,b.reason,session,generation);if(live.current)change({...b,pending,failure:null});return;}
@@ -35,6 +36,7 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
  }
  return <section className="status-card" aria-label="검수 기준 등록"><h5>명시 검수 기준 등록</h5><p>원조건마다 시험 ID·종류를 직접 지정합니다. 환경은 확정 임무의 고정 참조이며 실제 가동·검수 합격·실행 허가를 뜻하지 않습니다.</p>
   {!canCreate?<p role="status">확정 임무의 기준·환경·완료/검증 조건이 부족하여 등록할 수 없습니다. 먼저 임무를 보완하세요.</p>:null}
+  <CriteriaDraftFiles key={[assignment.projectId,assignment.ref.id,assignment.ref.version,assignment.ref.contentHash,session.user.id,session.clientId].join(':')} client={client} assignment={assignment} session={session} draft={bound} canImport={canCreate&&!buffer} canExport={!!bound&&!bound.pending&&!bound.uncertain&&!bound.stored} disabled={busy} onRestore={(value,generation)=>onChange(current=>current===null?{bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,assignmentRef:structuredClone(assignment.ref),controlGeneration:generation,rows:value.rows,reason:value.reason,pending:null,stored:null,dirty:true,uncertain:false,failure:null}:current)} onAccessUnavailable={onAccessUnavailable} onAuthenticationLost={onAuthenticationLost}/>
   {!bound?<button type="button" disabled={busy||!canCreate||!!buffer} onClick={()=>void run('CREATE')}>검수 기준 작성</button>:<>
    <p>필수 원조건 전체 포함 · 환경 {d.environmentRef?.id} v{d.environmentRef?.version}</p>
 {bound.rows.map((row,index)=><fieldset key={row.field+':'+row.index} disabled={frozen}><legend>{row.field==='acceptanceCriteria'?'완료 조건':'검증 조건'} {row.index+1}</legend><p>{d[row.field][row.index]}</p><label>기준 ID {index+1}<input value={row.criterionId} maxLength={80} onChange={e=>edit('rows',bound.rows.map((v,i)=>i===index?{...v,criterionId:e.target.value}:v))}/></label><label>시험 ID {index+1}<input value={row.testId} maxLength={80} onChange={e=>edit('rows',bound.rows.map((v,i)=>i===index?{...v,testId:e.target.value}:v))}/></label><label>시험 종류 {index+1}<select aria-label={'시험 종류 '+(index+1)} value={row.kind} onChange={e=>edit('rows',bound.rows.map((v,i)=>i===index?{...v,kind:e.target.value}:v))}><option value="">직접 선택</option>{resultTestKinds.map(k=><option key={k} value={k}>{k}</option>)}</select></label></fieldset>)}
@@ -46,6 +48,6 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
    {bound.stored?<div><p>등록 원문 확인 완료 · 검수 합격/적용/실행 허가 아님</p><p>{bound.stored.ref.id} · v{bound.stored.ref.version} · {bound.stored.ref.contentHash}</p><details><summary>저장된 기준 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details><p>보관 기준 선택·보완/차단 검수는 아래 별도 영역에서 제공합니다. 기준 개정·합격 판정·보완 실행은 미연결입니다.</p></div>:null}
   </>}
   {failure||bound?.failure?<p role="alert">{failure??bound?.failure?.code} · 저장 완료로 표시하지 않습니다.</p>:null}
-  {busy?<p role="status">현재 제어·입력·정확 저장 결과 확인 중</p>:null}<p className="meta">입력과 미확인 명령은 이 브라우저 화면을 이동해도 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 아직 미제공입니다.</p>
+  {busy?<p role="status">현재 제어·입력·정확 저장 결과 확인 중</p>:null}<p className="meta">입력과 미확인 명령은 화면 이동 중 메모리에 보존됩니다. 미전송 입력은 명시 파일 저장/불러오기를 이용할 수 있으나, 미확인 명령은 파일 복원하거나 자동 재발행하지 않습니다. 새로고침·종료로 미확인 명령을 잃으면 서버 적용 여부를 먼저 확인해야 합니다.</p>
  </section>;
 }
