@@ -4,27 +4,29 @@ import { listDocumentMaterials, type MaterialPage, type ProposalSummary, type Im
 import {readChangeImportSource,attachChangeImportSource} from './change-import-source.ts';
 import { readStoredProposal, type ProposalComparison } from '../design-trace/proposal-api.ts';
 import { getPinnedForm } from '../methodologies/forms-api.ts';
-import { documentControl, documentDraftHash, type DocumentContent, type DocumentSession } from '../design-trace/editor-api.ts';
-import {listDocuments,readDocument,type DocumentPage} from '../design-trace/api.ts';
-import type {StageNodeRef} from '../design-trace/stage-api.ts';
+import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
+import {listDocuments,type DocumentPage} from '../design-trace/api.ts';
+import {readChangeRequestDocumentSource,attachChangeRequestDocumentSource,changeRequestSourceBindingMatches} from './change-request-document-source.ts';
 import { newDesignChangeRequest, prepareDesignChangeRequest, sendDesignChangeRequest, type ChangeRequestBuffer } from './request-api.ts';
 import type {ChangeEditorGate} from './DesignChangesPage.tsx';
 
 export function DesignChangeRequest({ client, projectId, session, buffer, onChange, onOpen, reading, blocked = false, gate, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; onOpen: (id: string) => void; reading: boolean; blocked?: boolean; gate:ChangeEditorGate; onAuthenticationLost: () => void }) {
   const [page, setPage] = useState<MaterialPage<ProposalSummary> | null>(null), [comparison, setComparison] = useState<ProposalComparison | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState<ApiError | null>(null), [ack, setAck] = useState(false);
   const alive = useRef(true), flight = useRef(false);
-  const [sourcePage,setSourcePage]=useState<DocumentPage|null>(null),[source,setSource]=useState<Awaited<ReturnType<typeof readDocument>>|null>(null);
+  const [sourcePage,setSourcePage]=useState<DocumentPage|null>(null),[source,setSource]=useState<{client:ApiClient;buffer:ChangeRequestBuffer;value:Awaited<ReturnType<typeof readChangeRequestDocumentSource>>}|null>(null);
   const [imports,setImports]=useState<MaterialPage<ImportSummary>|null>(null),[importSource,setImportSource]=useState<{client:ApiClient;buffer:ChangeRequestBuffer;value:Awaited<ReturnType<typeof readChangeImportSource>>}|null>(null);
-  const latest=useRef({buffer,client});latest.current={buffer,client};
+  const latest=useRef({buffer,client,session,projectId});latest.current={buffer,client,session,projectId};
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => { setAck(false);setSourcePage(null);setSource(null);setImports(null);setImportSource(null); }, [buffer?.bindingId]);
   const bound = !buffer || buffer.projectId === projectId && buffer.ownerUserId === session.user.id && buffer.ownerClientId === session.clientId;
   async function perform(action: () => Promise<void>) { if(flight.current||!gate.acquire())return;flight.current=true;setBusy(true);setError(null);try{await action();}catch(cause){if(!alive.current)return;const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setError(failure);if(failure.status===401)onAuthenticationLost();}finally{flight.current=false;gate.release();if(alive.current)setBusy(false);} }
   async function list(cursor: string | null) { setPage(null); const value = await listDocumentMaterials(client, projectId, 'proposals', cursor, 'PENDING'); if(alive.current)setPage(value); }
-  const sourceLocked=blocked||busy||!buffer||!bound||!!buffer.pending||!!buffer.result;
-  async function listSources(cursor:string|null){setSourcePage(null);setSource(null);const value=await listDocuments(client,projectId,cursor);if(alive.current)setSourcePage(value);}
-  async function inspectSource(id:string,version:number){setSource(null);const value=await readDocument(client,projectId,id,version),d=value.document;if(await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,d.stageNodeRef as StageNodeRef|null)!==d.contentHash)throw new ApiError('DOCUMENT_INTEGRITY_FAILED');if(alive.current)setSource(value);}
-  function attachSource(){if(sourceLocked||!source||!buffer||buffer.sourceRefs.length>=200)return;const binding=buffer.bindingId,d=source.document,ref={kind:'DOCUMENT_VERSION' as const,id:d.id,version:d.version,contentHash:d.contentHash};onChange(current=>current?.bindingId===binding?{...current,dirty:true,failure:null,sourceRefs:current.sourceRefs.some(r=>r.kind==='DOCUMENT_VERSION'&&r.id===ref.id&&r.version===ref.version&&r.contentHash===ref.contentHash)?current.sourceRefs:[...current.sourceRefs,ref]}:current);setAck(false);}
+  const sourceLocked=blocked||busy||!buffer||!bound||!!buffer.pending||!!buffer.result||buffer.uncertain;
+  function sourceActive(expected:ChangeRequestBuffer){const now=latest.current;return alive.current&&now.client===client&&now.projectId===expected.projectId&&changeRequestSourceBindingMatches(now.buffer,expected,now.session);}
+  async function listSources(cursor:string|null){if(sourceLocked||!buffer)return;const expected=structuredClone(buffer);setSourcePage(null);setSource(null);const value=await listDocuments(client,projectId,cursor);if(sourceActive(expected))setSourcePage(value);}
+  async function inspectSource(id:string,version:number){if(sourceLocked||!buffer)return;const expected=structuredClone(buffer);setSource(null);const value=await readChangeRequestDocumentSource(client,projectId,id,version,()=>sourceActive(expected));if(sourceActive(expected))setSource({client,buffer:expected,value});}
+  const currentSource=source?.client===client&&changeRequestSourceBindingMatches(buffer,source.buffer,session)?source:null;
+  function attachSource(){if(sourceLocked||!currentSource)return;const selected=currentSource,d=selected.value.document,ref={kind:'DOCUMENT_VERSION' as const,id:d.id,version:d.version,contentHash:d.contentHash};onChange(current=>latest.current.client===selected.client?attachChangeRequestDocumentSource(current,selected.buffer,latest.current.session,ref):current);setAck(false);}
   function importActive(expected:ChangeRequestBuffer){return alive.current&&latest.current.client===client&&latest.current.buffer?.bindingId===expected.bindingId&&!latest.current.buffer.pending&&!latest.current.buffer.result;}
   async function listImports(cursor:string|null){if(sourceLocked||!buffer)return;const expected=buffer;setImports(null);setImportSource(null);const value=await listDocumentMaterials(client,projectId,'imports',cursor,'READY');if(importActive(expected))setImports(value);}
   async function inspectImport(summary:ImportSummary){if(sourceLocked||!buffer)return;const expected=structuredClone(buffer);setImportSource(null);const value=await readChangeImportSource(client,projectId,summary,()=>importActive(expected));if(importActive(expected))setImportSource({client,buffer:expected,value});}
@@ -59,8 +61,8 @@ export function DesignChangeRequest({ client, projectId, session, buffer, onChan
       <section aria-label="변경 요청 문서 출처"><h4>변경 요청의 문서·가져온 원문 출처</h4><p className="meta">원문을 읽고 직접 연결합니다. 과거 지시의 현재 적용·내용 승인·Agent 전달은 아닙니다. 대화/사용자 지시의 새 선택은 아직 미연결입니다.</p>
        <button disabled={sourceLocked} onClick={()=>void perform(()=>listSources(null))}>변경 요청 출처 문서 목록</button>
        {sourcePage?<><ul>{sourcePage.items.map(d=><li key={d.id}><button disabled={sourceLocked} onClick={()=>void perform(()=>inspectSource(d.id,d.headVersion))}>변경 요청 출처 원문: {d.title} v{d.headVersion}</button></li>)}</ul>{sourcePage.hasMore?<button disabled={sourceLocked} onClick={()=>{const cursor=sourcePage.nextCursor;void perform(()=>listSources(cursor));}}>변경 요청 출처 다음 목록</button>:null}</>:null}
-       {source?<details open><summary>선택한 문서 · 자동 연결 아님</summary><p>{source.document.id} · v{source.document.version} · {source.document.contentHash}</p><pre aria-label="선택한 변경 요청 출처 원문">{source.body}</pre></details>:null}
-       <button disabled={sourceLocked||!source||buffer.sourceRefs.length>=200} onClick={attachSource}>이 문서를 변경 요청 출처로 연결</button>
+       {currentSource?<details open><summary>선택한 문서 · 자동 연결 아님</summary><p>{currentSource.value.document.id} · v{currentSource.value.document.version} · {currentSource.value.document.contentHash}</p><pre aria-label="선택한 변경 요청 출처 원문">{currentSource.value.body}</pre></details>:null}
+       <button disabled={sourceLocked||!currentSource||buffer.sourceRefs.length>=200} onClick={attachSource}>이 문서를 변경 요청 출처로 연결</button>
        <button disabled={sourceLocked} onClick={()=>void perform(()=>listImports(null))}>변경 요청 가져온 원문 목록</button>
        {imports?<><ul>{imports.items.map(item=><li key={item.id}><button disabled={sourceLocked} onClick={()=>void perform(()=>inspectImport(item))}>변경 요청 가져온 원문: {item.id}</button></li>)}</ul>{imports.hasMore?<button disabled={sourceLocked} onClick={()=>{const cursor=imports.nextCursor;void perform(()=>listImports(cursor));}}>변경 요청 가져온 원문 다음 목록</button>:null}</>:null}
        {currentImport?<details open><summary>선택한 가져온 원문 · 자동 연결 아님</summary><p>{currentImport.value.source.id} · {currentImport.value.source.contentHash}</p><pre aria-label="선택한 변경 요청 가져온 원문">{currentImport.value.body}</pre></details>:null}
