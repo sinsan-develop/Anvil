@@ -9,7 +9,8 @@ import{isVersionRef}from'../../../../contracts/references.ts';
 import type{VersionRef}from'../../../../contracts/generated-types.ts';
 import { candidateOperations } from '../connections/candidate-input.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
-const consumableOperations = ['uploadArtifact', ...candidateOperations, ...trustRegistrationOperations];
+import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.ts';
+const consumableOperations = ['uploadArtifact', 'detachDocumentSource', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
@@ -43,8 +44,9 @@ export class ProjectApprovals{
  async request(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
   const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!p||Object.keys(p).join(',')!=='details')throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date;
-  // 원문/후보와 상태조회 전용 신뢰3연산만 소비한다. 자료/Agent 실행 승인이 아니다.
+  // 요청 지원과 실제 소비는 별개다. 분리의 새 저장 보호/소비 연결 완료 전 실제 실행은 거절한다.
   const details=readApprovalDetails(p.details,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,allowedOperations:consumableOperations,now});
+  if(details.actionScope.operation==='detachDocumentSource')await assertSourceDetachApprovalTarget(db,actor,c.projectId,details.actionScope.targetRef!);
   if(details.candidateCommandId===c.commandId)throw new AuthFailure('APPROVAL_SELF_CANDIDATE_INVALID',422);
   const candidatePolicy=await authorizeMaterial(db,actor,{...c,operation:details.actionScope.operation},true);
   if(!candidatePolicy.approvalRequired)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);

@@ -45,13 +45,13 @@ test('명시 정책은 기존 detach 연산만 허용하며 link 생성/관측 �
  assert.deepEqual(materialRules([rule],pid,uid),[rule]);assert.throws(()=>materialRules([{...rule,operations:['linkDocumentSource']}],pid,uid));
 });
 
-test('현재 정책 없음·DENY·만료·미연결 일회승인은 분리 허가가 아니다',async()=>{
+test('현재 정책 없음·DENY·만료·승인 누락과 불필요한 승인은 분리 허가가 아니다',async()=>{
  const now='2099-01-01T00:00:00.000Z';
  const rule={ruleId:'DETACH',subjectRef:{kind:'HUMAN',userId:uid},operations:['detachDocumentSource'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:now};
  const make=(rules:any[]|null)=>({query:async()=>({rows:rules===null?[]:[{id:policy.id,head_version:1,rules_json:rules,reason:'분리 정책',review_refs:[],content_hash:contentHash(canonicalJson({rules,reason:'분리 정책',reviewRefs:[]})),created_at:new Date('2026-10-21T00:00:00.000Z')}]})})as unknown as PoolClient;
  const accepted=await authorizeMaterial(make([rule]),actor,command());assert.equal(accepted.approvalRequired,false);
- for(const [rules,code]of [[null,'PERMISSION_POLICY_UNCONFIGURED'],[[{...rule,disposition:'DENY'}],'PROJECT_OPERATION_DENIED'],[[{...rule,expiresAt:'2000-01-01T00:00:00.000Z'}],'PROJECT_OPERATION_DENIED'],[[{...rule,disposition:'REQUIRE_APPROVAL'}],'DOCUMENT_SOURCE_APPROVAL_NOT_CONNECTED']]as const)await assert.rejects(authorizeMaterial(make(rules as any),actor,command()),{message:code});
- await assert.rejects(authorizeMaterial(make([rule]),actor,{...command(),approvalRef:{}}),{message:'DOCUMENT_SOURCE_APPROVAL_NOT_CONNECTED'});
+ for(const [rules,code]of [[null,'PERMISSION_POLICY_UNCONFIGURED'],[[{...rule,disposition:'DENY'}],'PROJECT_OPERATION_DENIED'],[[{...rule,expiresAt:'2000-01-01T00:00:00.000Z'}],'PROJECT_OPERATION_DENIED'],[[{...rule,disposition:'REQUIRE_APPROVAL'}],'APPROVAL_REQUIRED']]as const)await assert.rejects(authorizeMaterial(make(rules as any),actor,command()),{message:code});
+ await assert.rejects(authorizeMaterial(make([rule]),actor,{...command(),approvalRef:{}}),{message:'APPROVAL_NOT_REQUIRED'});
 });
 
 test('분리 명령은 기존 same-origin·인증/CSRF·명령 ID 경계 안에서만 진입한다',async()=>{

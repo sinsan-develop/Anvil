@@ -7,13 +7,14 @@ import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {persistProjectReceipt,type ProjectCommand} from '../access/project-command.ts';
 import {DocumentSourceLinkRecords} from './document-source-link-records.ts';
 import {prepareDocumentSourceDetach,readDocumentSourceLinkInput} from './document-source-link-history.ts';
+import {readApprovalRef} from '../approvals/approval-input.ts';
 
 /** ProjectPolicyRepository.command의 현재 인증·제어·정책·replay 검사 이후, 같은 transaction에서만 호출한다.
  * 초기 LINKED 생성·source 관측 권위·문서/파일 수정은 제공하지 않는다. 0032 적용 전 실제 사용 불가. */
 export class ProjectDocumentSourceLinks{
  async detach(db:PoolClient,actor:AuthenticatedIdentity,input:ProjectCommand,policyRef:VersionRef){
   const request=cloneV1(input),payload=readDocumentSourceLinkInput('detachDocumentSource',request.payload);
-  if(request.approvalRef!==null)throw new AuthFailure('DOCUMENT_SOURCE_APPROVAL_NOT_CONNECTED',412);
+  if(request.approvalRef!==null)readApprovalRef(request.approvalRef);
   if(!uuidV1(actor.actorId)||!uuidV1(actor.clientId)||!refV1(policyRef)||!uuidV1(request.projectId)||!uuidV1(request.commandId)
    ||request.operation!=='detachDocumentSource'||request.clientId!==actor.clientId||request.targetId!==payload.sourceLinkRef.id
    ||request.expectedVersion!==payload.sourceLinkRef.version||request.baselineRefs.length)throw new AuthFailure('DOCUMENT_SOURCE_LINK_INPUT_INVALID',422);

@@ -77,7 +77,6 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   const matched = policy.rules.filter(rule => rule.subjectRef.kind === 'HUMAN' && rule.subjectRef.userId === actor.actorId && rule.targetScopes.some(scope => scope.kind === 'PROJECT' && scope.projectId === request.projectId) && rule.operations.includes(request.operation) && Date.parse(rule.expiresAt) > Date.now());
   if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const approvalRequired=matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL');
-  if(request.operation==='detachDocumentSource'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('DOCUMENT_SOURCE_APPROVAL_NOT_CONNECTED',412);
   if (['applyLimitPolicy','revokeLimitPolicy'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('LIMIT_POLICY_APPROVAL_NOT_CONNECTED',412);
   if (['defineProjectRole','bindResponsibleSession','prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if ((baselineOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);

@@ -1,11 +1,15 @@
 import {test,expect,type Page} from '@playwright/test';
+import {installWorkspaceBundle} from '../UI04/bundle.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',id='33333333-3333-4333-8333-333333333333',did='44444444-4444-4444-8444-444444444444',at='2026-10-17T00:00:00.000Z',policyRef={id,version:1,contentHash:'a'.repeat(64)};
 async function fixture(page:Page,lost=false){
+ await installWorkspaceBundle(page);
  const writes:any[]=[],unknown:string[]=[];let view:any=null,candidate:any=null,ref:any=null,requested:any=null,requestReceipt:any=null;
  const base=(c:any,data:any,targetId:string,version:number)=>({operationId:id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId,version,serverReceivedAt:new Date().toISOString(),data});
  await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
  await page.route('**/api/v1/projects/*/connector-registrations?*',r=>r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}}));
+ await page.route('**/api/v1/projects/*/source-roots?*',r=>r.fulfill({json:{view:'SOURCE_ROOT_DECLARATIONS',items:[],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route('**/api/v1/projects/*/source-read-grants?*',r=>r.fulfill({json:{view:'SOURCE_READ_GRANTS',items:[],hasMore:false,nextCursor:null,observedAt:at}}));
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'후보 승인 합성 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
  await page.route(`**/api/v1/projects/${pid}`,r=>r.fulfill({json:{id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:uid,generation:1}}}));
  await page.route(`**/api/v1/projects/${pid}/permission-policy`,r=>r.fulfill({json:{configured:true,policy:{ref:policyRef,rules:[{subjectRef:{kind:'HUMAN',userId:uid},operations:['registerConnection'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'REQUIRE_APPROVAL',expiresAt:new Date(Date.now()+3600000).toISOString()}]}}}));

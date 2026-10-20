@@ -33,6 +33,8 @@ export function SourceDetachEditor({client,session,buffer,onChange,onVerified,on
   <label htmlFor={reasonId}>연결 해제 사유</label><textarea id={reasonId} value={buffer.reason} disabled={locked} maxLength={20000} onChange={e=>onChange(p=>same(p)&&!p!.pending?{...p!,reason:e.target.value,failure:null}:p)}/>
   <label><input type="checkbox" checked={buffer.acknowledged} disabled={locked} onChange={e=>onChange(p=>same(p)&&!p!.pending?{...p!,acknowledged:e.target.checked}:p)}/>표시된 문서와 연결만 분리하며 파일·원문을 보존함을 확인했습니다</label>
   {buffer.pending?<details><summary>분리 원명령</summary><pre aria-label="분리 원명령">{JSON.stringify(buffer.pending,null,2)}</pre></details>:null}
+  {buffer.pending&&!buffer.sent&&!buffer.uncertain&&!buffer.receipt&&buffer.pending.approvalRef===null?<a href={'#/projects/'+buffer.projectId+'/approvals'}>연결 해제 승인 화면</a>:null}
+  {buffer.pending?.approvalRef?<p>이번 승인 결박됨 · 아직 소비/연결 해제 아님</p>:null}
   {buffer.failure?<p role="alert">{buffer.failure.code} · 원래 대상과 명령을 보존했습니다.</p>:null}
   {buffer.uncertain?<p role="status">전송 결과 미확인 · 새 명령을 만들지 않습니다. 이 탭의 같은 명령으로만 결과를 확인하세요. 새로고침하면 보존 중인 입력이 사라질 수 있습니다.</p>:null}
   {buffer.receipt&&!buffer.verified?<p role="status">연결 해제 저장 응답 확인 · 목록 재조회 미확인</p>:null}
