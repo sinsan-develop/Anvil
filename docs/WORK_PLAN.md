@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-20 FN02 coverage 누락3범주 source 보완**: type ACL·주석·cast를추가하여선언수집14범주로확장/신규누락음성RED→GREEN·총25합성PASS/type0·새범주한정독립C0/I0/M0다. 실제SQL/원본·복원동등성·full archive coverage/sequence중단은미검증이며비교/실행false·기존실행경계불변이다. 뒤따를실행전대조계약·기존계획을계속하며이를전체FN02나Stage완료로기록하지않는다.
+
 - **2026-10-20 FN02 표밖객체 수집·부분 연결**: 논리정의/owner·ACL의11범주와미지원24종거절·원컬럼/catalog/sequence연결함수를작성했고,내부FKtrigger의OID이름비동등성지적은논리식별자정규화와음성으로보완했다. 신규9+인접15 총24PASS/type0다. 실제PG/복원검수·전체archive범위/sequence지속중단은미검증·연결결과는불완전/실행false로유지한다. 다음은타입ACL·주석·cast등누락범주와bootstrap소유권차이의archive coverage계약보완이며Stage/44업무·합격기준불변이다.
 
 - **2026-10-20 FN02 sequence 수집 후보**: 두 표본의 sequence 정의/값 차이를 거절하는 source와 합성검사3을 추가했다. 원컬럼/비교 인접검사와 총15PASS/type0이며 표본 동일성만 확인한다. 지속 중단·표밖객체·완전한 비교 연결/실DB/served 기능은 미완료이며 실행허가는 만들지 않았다. 다음은 표밖객체 정의·owner/ACL 및 미지원 대상 거절의 수집 연결이다.

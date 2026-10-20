@@ -27,7 +27,7 @@ async function fixture(isolation='repeatable read',badCatalog=false){
 test('세 수집기를 연결해도 원문·완전한 archive 증명·sequence 중단·실행허가로 승격하지 않는다',async()=>{
  const m:any=await load();assert.equal(typeof m.collectFn02PreservationInputs,'function');
  const f=await fixture();const output=await m.collectFn02PreservationInputs(f.db,'BACKUP_EXPORTED_SNAPSHOT',()=>{});
- assert.equal(output.tables.length,81);assert.equal(output.categories.length,11);assert.equal(output.sequences.length,1);
+ assert.equal(output.tables.length,81);assert.equal(output.categories.length,14);assert.equal(output.sequences.length,1);
  assert.equal(output.comparisonReady,false);assert.equal(output.executionAllowed,false);assert.equal(output.fullArchiveCoverageVerified,false);assert.equal(output.sequenceQuiescenceConfirmed,false);
  assert.deepEqual(output.blockers,['ARCHIVE_COVERAGE_UNVERIFIED','SEQUENCE_QUIESCENCE_UNVERIFIED']);
  assert.throws(()=>compareFn02Preservation(output,{...output,phase:'ISOLATED_RESTORE'},{...output,phase:'AFTER_LOCK_READ_COMMITTED'}),/FN02_PRESERVATION_INVALID/);

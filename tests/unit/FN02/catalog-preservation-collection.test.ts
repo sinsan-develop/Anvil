@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 const load=()=>import(new URL('../../../scripts/fn02-catalog-preservation-collection.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
-const categories=['schemas','database','database_settings','relations','columns','constraints','indexes','functions','triggers','default_privileges','extensions'];
+const categories=['schemas','database','database_settings','relations','columns','constraints','indexes','functions','triggers','default_privileges','extensions','types','comments','casts'];
 const unsupported=['schemas','public_objects','relation_kinds','routine_kinds','custom_types','custom_collations','rules','policies','inheritance','large_objects','extensions','event_triggers','foreign_servers','foreign_wrappers','user_mappings','publications','security_labels','extended_statistics','operators','operator_classes','operator_families','conversions','text_search','internal_triggers'];
 function fixture(){const calls:string[]=[];return {calls,db:{query:async(sql:string):Promise<{rows:Record<string,unknown>[]}>=>{
  calls.push(sql);
@@ -72,4 +72,15 @@ test('사용자 trigger의 이름과 정의 지문은 정규화에서 보존한�
  const row={schema_name:'anvil',table_name:'child',internal:false,routine_schema:'anvil',routine_name:'guard_child',routine_args:'',trigger_type:7,enabled:'O',deferrable:false,initially_deferred:false,attributes:'',args_hash:'a'.repeat(64),user_name:'guard_child',user_definition_hash:'b'.repeat(64)};
  const original=m.normalizeFn02TriggerRows([row]);
  for(const changed of [{user_name:'guard_other'},{user_definition_hash:'c'.repeat(64)}])assert.notEqual(m.normalizeFn02TriggerRows([{...row,...changed}]).objectsHash,original.objectsHash);
+});
+
+test('타입 ACL·주석·cast 지문 변경도 전체 객체 지문에서 빠지지 않는다',async()=>{
+ const m:any=await load();assert.equal(typeof m.collectFn02CatalogPreservation,'function');
+ const baseline=await m.collectFn02CatalogPreservation(fixture().db,'repeatable read',()=>{});
+ for(const kind of ['types','comments','casts']){
+  assert.ok(baseline.categories.some((row:any)=>row.kind===kind),'누락 범주 '+kind);
+  const f=fixture(),query=f.db.query;f.db.query=async(sql)=>sql.startsWith('/* FN02_OBJECTS:'+kind+' */')?{rows:[{object_count:'1',objects_hash:'b'.repeat(64)}]}:query(sql);
+  const changed=await m.collectFn02CatalogPreservation(f.db,'repeatable read',()=>{});
+  assert.notEqual(changed.objectsHash,baseline.objectsHash);
+ }
 });
