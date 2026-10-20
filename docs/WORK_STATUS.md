@@ -3,6 +3,10 @@
 ## 1. 현재 상태와 기록 기준
 
 
+- **FN08 C3 STOP 역사→관측 한정 수용(2026-10-20)**: 신규4 missing-methodRED308.1766ms→4PASS314.2153ms/type0/diff0·독립정적C0/I0/M0다. 원rowID/ref/at의STOP_REQUESTED/STOP_UNCONFIRMED만보관·응답유실/protocol이유는원행보존·추가interrupt/current0·명시spool재수집중복0을확인했다. 부분반례는쓰기전오류이며실sync복구/OS중지·writer회수증거아니다. 기존stop/서버API/DB/권한·서비스/Agent불변·실source/current/내구/COMMIT/전체FN08미검증·자원0·제외6보존이다. rollback은신규읽기/보관method·시험의일반revert·원STOP기록삭제0이다. 다음은저장된서버ACK주장의연속prefix digest를로컬spool에읽기대조하되인증/서버내구/삭제허가와구분하는미연결검수다.
+
+- **FN08 C3 STOP 역사→관측 spool 착수(2026-10-20)**: 기존정확STOP원장/검증#journal을읽어STOP_ATTEMPTED→STOP_REQUESTED,최종행→STOP_UNCONFIRMED로만정규화한다. 원rowID/ref/시각은유지하며ACK/응답유실·protocol불명세부는원localRecordRef에남고실제STOPPED/OS회수로승격하지않는다. 명시recordObservations의sourceID중복0·부분쓰기전실패보존·만료역사읽기·변조/context/port거절만새메모리검사한다. 기존stop/current/interrupt동작·API/SQL/DB/권한·실Agent/강제kill/P3/서비스변경0·자원0이다.
+
 - **FN08 C3 START→global spool 한정 수용(2026-10-20)**: 신규3 missing-methodRED161.8364ms→3PASS183.8767ms/type0/diff0·독립정적C0/I0/M0다. 기존batch전후deepEqual·원rowID/ref/시각보존·새global순번/응답claim이유정규화·과거UNKNOWN수집·추가permit/wire0을확인했다. 부분실패는쓰기전오류/안정ID재수집중복0만이며물리sync복구아니다. 기존batch/source구현전체재검수나원계약변경0·실file/current/source진위·OS/서버COMMIT/Agent미검증·자원0·제외6보존·전체FN08미완료다. rollback은추가bridge/시험의일반revert이며원batch/자료삭제0이다. 다음은STOP원장2행을STOP_REQUESTED/STOP_UNCONFIRMED로만읽어같은spool에소비하는누락경로다.
 
 - **FN08 C3 기존 START batch→global 관측 spool bridge 착수(2026-10-20)**: START의기존observationBatch/read/시퀀스/hash계약을재구현·변경하지않는다. 명시recordObservations만추가해원source의local sequence는출처로남기고globalspool이새순번을부여하도록strip·원rowID/ref/at유지·응답reason만새providerclaim경계에맞게UNVERIFIED_PROVIDER_CLAIM으로정규화한다. 기존batch본문/hash는그대로이며STARTED/완료/현재권한판정0·새permit/wire/자동전송0이다. 부분수집재개·과거UNKNOWN/문맥/port거절을새메모리3검사·type로확인하고실QA/DB/서비스/키/Agent/자원0이다.

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {Codex0161Codec} from '../../../apps/connector/adapters/primary/codec.ts';
+import {SyntheticObservationSpool} from '../../../apps/connector/runtime/execution-observation-spool.ts';
 const m:any=await import('../../../apps/connector/adapters/primary/session-transport.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),at=Date.parse('2026-10-19T12:00:00.000Z'),frame=(v:unknown)=>Buffer.from(canonicalJson(v)+'\n');
 function fixture(){
@@ -16,6 +17,19 @@ function fixture(){
  return{envelope,current,store,verifier,wire,make,events:()=>events,calls:()=>calls,fault:(v:string)=>fault=v,advance:(n:number)=>clock+=n,releaseLate:()=>releaseLate?.()};
 }
 
+test('STOP관측은정확원row의요청/미확인만읽으며응답을STOPPED나writer회수로승격하지않는다',async()=>{
+ const f=fixture();await f.make().stop(f.envelope);const source=f.make();assert.equal(typeof source.observations,'function');const packet=await source.observations(f.envelope);assert.deepEqual(packet.inputs.map((x:any)=>x.type),['STOP_REQUESTED','STOP_UNCONFIRMED']);assert.deepEqual(packet.inputs.map((x:any)=>x.localRecordRef),f.events().map((x:any)=>x.ref));assert.deepEqual(packet.inputs.map((x:any)=>x.eventId),f.events().map((x:any)=>x.ref.id));assert.equal(packet.inputs[1].reasonCode,'STOP_UNCONFIRMED');assert.equal(packet.writerReleaseVerified,false);assert.equal(packet.dispatchPerformed,false);assert(packet.inputs.every((x:any)=>x.processRef===null));assert(!JSON.stringify(packet).includes('thread-synthetic'));f.advance(120000);assert.deepEqual(await f.make().observations(f.envelope),packet);assert.equal(f.calls(),1);
+});
+test('STOP관측은응답유실/protocol오류도미확인으로남기고변조/다른context는거절한다',async()=>{
+ for(const fault of ['lost','wrongId','remoteError']){const f=fixture();f.fault(fault);await f.make().stop(f.envelope);const packet=await f.make().observations(f.envelope);assert.equal(packet.inputs.at(-1).type,'STOP_UNCONFIRMED');assert.equal(packet.inputs.at(-1).reasonCode,'STOP_UNCONFIRMED');assert.equal(f.calls(),1);assert(!JSON.stringify(packet).includes('PRIVATE'));}
+ const f=fixture();await f.make().stop(f.envelope);f.events()[0].snapshot.bindingHash='f'.repeat(64);await assert.rejects(f.make().observations(f.envelope));const g=fixture(),e=structuredClone(g.envelope);e.context.assignmentId=randomUUID();const{envelopeHash:_,...u}=e;e.envelopeHash=hash(u);await assert.rejects(g.make().observations(e));assert.equal(g.calls(),0);
+});
+test('STOP관측의명시spool수집은부분쓰기전실패뒤원ID중복0·추가interrupt0을유지한다',async()=>{
+ const f=fixture();await f.make().stop(f.envelope);const rows:any[]=[],scope={projectId:f.envelope.context.projectId,executionId:f.envelope.context.executionId,executionGeneration:1};let failAt=2;const spool=new SyntheticObservationSpool({transport:'SYNTHETIC_ONLY',exclusive:async(_s,body)=>body({read:async()=>({complete:true,events:structuredClone(rows)}),appendAndSync:async r=>{if(rows.length+1===failAt){failAt=-1;throw Error('OWN_QA_BEFORE_APPEND');}rows.push(structuredClone(r));}})},scope,{clock:()=>at,maxEntries:10,maxBytes:1048576,maxBatchEntries:10,maxBatchBytes:1048576});await assert.rejects(f.make().recordObservations(f.envelope,spool));assert.equal(rows.length,1);const result=await f.make().recordObservations(f.envelope,spool);assert.equal(result.recordedRefs.length,2);assert.equal(result.ackAudited,false);assert.equal(result.writerReleaseVerified,false);assert.deepEqual(await f.make().recordObservations(f.envelope,spool),result);assert.equal(rows.length,2);assert.deepEqual((await spool.prepareBatch(0)).events.map(x=>x.type),['STOP_REQUESTED','STOP_UNCONFIRMED']);assert.equal(f.calls(),1);
+});
+test('STOP관측은미기록명령을발명하지않고원장종료뒤port전환도거절한다',async()=>{
+ const f=fixture();assert.deepEqual((await f.make().observations(f.envelope)).inputs,[]);const source=f.make(),exclusive=f.store.exclusive;f.store.exclusive=async(s:any,body:any)=>{const result=await exclusive(s,body);f.wire.transport='REAL';return result;};await assert.rejects(source.observations(f.envelope));assert.equal(f.events().length,0);assert.equal(f.calls(),0);
+});
 test('정확 중지 시도를 sync한 뒤 고정 codec interrupt1회를 보내고 응답은 STOP_UNCONFIRMED로만 보존한다',async()=>{
  const f=fixture(),[a,b]=await Promise.all([f.make().stop(f.envelope),f.make().stop(f.envelope)]);assert.deepEqual(a,b);assert.equal(a.state,'STOP_UNCONFIRMED');assert.equal(a.reason,'PROVIDER_ACK_ONLY');assert.equal(a.writerReleaseVerified,false);assert.equal(a.executionAuthorized,false);assert.equal(a.dispatchPerformed,false);assert.equal(f.calls(),1);assert.deepEqual(f.events().map((e:any)=>e.snapshot.state),['STOP_ATTEMPTED','STOP_UNCONFIRMED']);const fact=f.events()[1].snapshot.responseFact;assert(fact,'응답 ref의 비밀 없는 원 사실이 내구 기록에 있어야 한다');assert.equal(hash(fact),a.responseRef.contentHash);assert.equal(fact.fact.kind,'INTERRUPT_RESPONSE');f.advance(120000);assert.deepEqual(await f.make().stop(f.envelope),a);assert.equal(f.calls(),1);
 });

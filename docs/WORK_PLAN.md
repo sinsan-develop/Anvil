@@ -1,6 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
 
+- **2026-10-20 FN08 STOP 역사→관측 보관**: 정확원장2행의안정ID/ref/at를요청/미확인으로만읽어spool소비에연결했다. 신규4/type0/diff0·한정C0/I0/M0·자원0이며실제STOPPED/OS회수·현재권한/서버COMMIT/전체업무미검증이다. 기존stop동작/외부계약불변·상세실패는현황보존한다.
+
 - **2026-10-20 FN08 기존 START batch→globalspool bridge**: 기존batch/body/hash·source순번계약은보존하고원ID/ref/시각의명시spool소비만추가했다. 신규3/type0/diff0·한정C0/I0/M0·자원0이며부분쓰기전실패재수집중복0만확인했다. 실제내구/current/서버COMMIT/Agent미검증·원START추가실행0·전체업무미완료다.
 
 - **2026-10-20 FN08 SEND 원장→공급자주장 관측**: 기존검증원장의준비/permit/응답/UNKNOWN을정확ref·안정ID·원시각으로읽어명시spool소비에연결했다. 신규4/type0/diff0·한정C0/I0/M0·자원0이며쓰기전부분수집오류뒤중복0만확인했다. 기존send/실권한불변·물리sync/서버COMMIT/Agent/전체업무미검증,기존START관측은재구현하지않는다.

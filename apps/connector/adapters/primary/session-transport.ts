@@ -4,6 +4,7 @@ import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} fr
 import {receiptKeyV1,type ReceiptKeyV1} from '../../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {Codex0161Codec,type CodecFact} from './codec.ts';
+import {SyntheticObservationSpool} from '../../runtime/execution-observation-spool.ts';
 type Reason='NONE'|'PROVIDER_ACK_ONLY'|'RESPONSE_LOST'|'PROTOCOL_UNCERTAIN'|'ATTEMPT_UNCERTAIN';
 type ResponseFact={transport:'SYNTHETIC_ONLY';source:'CODEX_0161_PROVIDER_CLAIM';fact:CodecFact};
 type Entry={ref:RuntimeRefV1;snapshot:{sequence:number;state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED';key:ReceiptKeyV1;envelopeHash:string;bindingHash:string;at:string;responseRef:RuntimeRefV1|null;responseFact:ResponseFact|null;previousRef:RuntimeRefV1|null;reason:Reason}};
@@ -39,6 +40,24 @@ export class SyntheticPrimaryStopTransport{
  }
  #response(raw:unknown,e:DispatchEnvelopeV1){if(!recordV1(raw,['transport','source','fact'])||raw.transport!=='SYNTHETIC_ONLY'||raw.source!=='CODEX_0161_PROVIDER_CLAIM'||!recordV1(raw.fact,['kind','method','requestIdDigest','payloadDigest','executionAuthorized','workAccepted','ownership']))return false;const f=raw.fact;return f.kind==='INTERRUPT_RESPONSE'&&f.method==='turn/interrupt'&&f.requestIdDigest===hash(hash({key:receiptKeyV1(e),envelopeHash:e.envelopeHash}))&&hashV1(f.payloadDigest)&&f.executionAuthorized===false&&f.workAccepted===false&&f.ownership==='UNVERIFIED';}
  #result(events:Entry[]){const e=events.at(-1)!;return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(e.snapshot.key),state:'STOP_UNCONFIRMED' as const,reason:e.snapshot.reason,receiptRef:cloneV1(e.ref),responseRef:cloneV1(e.snapshot.responseRef),writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false};}
+ /** 역사 중지 요청/미확인만 읽는다. interrupt ACK도 STOPPED/실제 writer 회수로 승격하지 않는다. */
+ async observations(rawEnvelope:unknown){
+  try{
+   this.#ports();const raw=cloneV1(rawEnvelope),e=readDispatchEnvelopeV1(raw,Date.parse((raw as any)?.issuedAt));
+   if(e.operation!=='REQUEST_STOP'||Date.parse(e.issuedAt)>this.#now()||!same(e.context,this.#expected.context)||!same(e.executorRegistrationRef,this.#expected.envelopeExecutorRef))return fail('STOP_OBSERVATION_ENVELOPE_INVALID');
+   const scope={projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration},inputs=await this.store.exclusive(cloneV1(scope),async tx=>{
+    this.#ports();return this.#journal(await tx.read(),e).map(entry=>{const s=entry.snapshot;return{...scope,eventId:entry.ref.id,type:s.state==='STOP_ATTEMPTED'?'STOP_REQUESTED':'STOP_UNCONFIRMED',commandId:e.commandId,envelopeHash:e.envelopeHash,localRecordRef:cloneV1(entry.ref),processRef:null,occurredAt:s.at,reasonCode:s.state==='STOP_ATTEMPTED'?'NONE':'STOP_UNCONFIRMED'};});
+   });this.#ports();return{transport:'SYNTHETIC_ONLY' as const,inputs,verification:'PROVIDER_CLAIM_ONLY' as const,currentAuthorityVerified:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof StopFailure)throw error;return fail('STOP_OBSERVATION_UNAVAILABLE');}
+ }
+ /** 명시 보관만 연결한다. 원 ID 중복 검사로 재수집하며 서버 전송·자동 회수/삭제는 하지 않는다. */
+ async recordObservations(rawEnvelope:unknown,spool:SyntheticObservationSpool){
+  try{
+   if(!(spool instanceof SyntheticObservationSpool))return fail('STOP_OBSERVATION_SPOOL_REQUIRED');const source=await this.observations(rawEnvelope),recordedRefs:RuntimeRefV1[]=[];
+   for(const input of source.inputs){this.#ports();const saved=await spool.append(input);this.#ports();recordedRefs.push(cloneV1(saved.ref));}
+   return{transport:'SYNTHETIC_ONLY' as const,recordedRefs,verification:'PROVIDER_CLAIM_ONLY' as const,ackAudited:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof StopFailure)throw error;return fail('STOP_OBSERVATION_RECORD_UNAVAILABLE');}
+ }
  async stop(rawEnvelope:unknown){
   try{
    this.#ports();const raw=cloneV1(rawEnvelope),e=readDispatchEnvelopeV1(raw,Date.parse((raw as any)?.issuedAt));if(e.operation!=='REQUEST_STOP'||Date.parse(e.issuedAt)>this.#now()||!same(e.context,this.#expected.context)||!same(e.executorRegistrationRef,this.#expected.envelopeExecutorRef))return fail('STOP_ENVELOPE_INVALID');const scope={projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration};
