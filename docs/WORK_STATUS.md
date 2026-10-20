@@ -2,6 +2,8 @@
 
 ## 1. 현재 상태와 기록 기준
 
+- **2026-10-20 FN06 상세 r2 제품 계약의 정확 승인 경계 확인**: PMO가 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027 전체를 직접 대조했다. 상세 방향은 타당하지만 새 SESSION_CLAIM 서명 target·POST/metadata/역사receipt GET 권한·append-only2표/trigger는 현 계약에 없는 데이터/API/권한 차이이므로 제품 NOT_ADOPTED다. PMO가 신산님께 source/fake 검증·미적용 forwardSQL까지만 한정 채택 또는 현상유지의 정확 선택을 요청했다. 답변 전 이 계약의 제품/TDD/API/SQL파일/live등록0, 실제 보호root/ACL/DPAPI/native/helper·키/credential·실DB/QA DB/서비스/Agent·비용은 그 한정 요청에도 제외된다. 이 단위의 새 계약 결정을 기존 승인 범위의 다른 작업 중지나 전체 할일없음으로 일반화하지 않는다. 이번 코드 수용은 UI11 HUMAN 정책 소비의 한정 source/fixture뿐이며 실제 Agent 연결/전체 Stage·계획 완료보고가 아니다. 최신 안전 코드5283a2c2·상세 후보3f1f326e·main f976/제외6·QA 잔여0을 보존한다.
+
 - **2026-10-20 FN06 공급자 연결 상세설계 r2 한정 재검토**: C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027의 보완 범위 C0/I0/M0, 기존 r1 I1/I2/I3는 문서상 해소 판정이다. 전체 제품/DPAPI·ACL/helper/SQL COMMIT·실제 인증·소유/백업 제외·Agent 동작은 미검증이다. 최초 C0/I3/M0 이력과 상세설계만 허용/제품 NOT_ADOPTED 상태를 유지한다. 새 자료형/API·지속 schema/root·권한 차이의 정확 계약 결정은 PMO에 요청하며 코드/TDD/실제 자원은 착수하지 않았다. Main은 계획 책임을 유지하며 일반 다음 배정을 요청하지 않는다.
 
 - **2026-10-20 FN06 세션 연결 상세설계 r2 보완 / Main 어울**: PMO는 원예약불변·별도 제한claim 방향의 상세설계 작성만 허용했고 제품계약/SQL/API/native/root/DB·Agent는 미채택이다. 신규 제안 §6~7에 자료형/새 연산·보호root/DPAPI·수명/권한·로그/백업·충돌/불명/위협/rollback을 고정했다. 최초 독립 snapshot6581D074…의 C0/I3/M0(비순환 binding preimage 미정/만료 뒤 정확 원결과 조회 부재/정상 분할·선행알림 표현모호)를 수용했다. r2는 protectedRef 제외 exact bindingInput→암호문→ref 순서·현재 HUMAN exact 사건/hash 역사GET(새권한0)·완성RPC 재조립후만capture를 보완했다. Main은 신규 responseRef를 서버 기검증 원문인 것처럼 취급할 수 없다는 출처 한계도 추가·PROVIDER_CLAIM_ONLY 유지했다. r2 SHA256 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027, scoped 재검토 전이며 제품코드/TDD/자원 생성0·전체완료0이다. 보완 patch1은 마지막 행 불일치로 적용 전 거절(부분수정0) 후 정확 원행으로 수정했다.
