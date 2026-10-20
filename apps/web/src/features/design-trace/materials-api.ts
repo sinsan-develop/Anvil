@@ -24,11 +24,14 @@ export async function listDocumentMaterials(client: ApiClient, projectId: string
   if (!value || !Array.isArray(value.items) || value.items.length > 50 || typeof value.hasMore !== 'boolean' || value.hasMore !== (typeof value.nextCursor === 'string' && value.nextCursor.length > 0 && value.nextCursor.length <= 4096) || !value.hasMore && value.nextCursor !== null || !Number.isFinite(Date.parse(value.observedAt)) || new Set(value.items.map(v => v?.id)).size !== value.items.length || value.items.some(v => !v || !uuid.test(v.id) || v.integrity !== 'NOT_RECHECKED' || !Number.isFinite(Date.parse(v.createdAt)) || (kind === 'imports' ? !validImport(v as ImportSummary) : !validRef((v as ProposalSummary).baseRef) || !artifact((v as ProposalSummary).diffRef) || !artifact((v as ProposalSummary).proposedContentRef) || !['PENDING','SELECTED'].includes(v.status) || typeof (v as ProposalSummary).title !== 'string'))) throw new ApiError('RESPONSE_INVALID');
   return value;
 }
-export async function readStoredImport(client: ApiClient, projectId: string, id: string): Promise<StoredImportView> {
+export async function readStoredImport(client: ApiClient, projectId: string, id: string, options?:{expectedOriginalRef?:ImportCandidate['originalRef'];active?:()=>boolean}): Promise<StoredImportView> {
+  const check=()=>{if(options?.active&&!options.active())throw new ApiError('IMPORT_SOURCE_READ_PAUSED');};check();
+  if(options?.expectedOriginalRef!==undefined&&!artifact(options.expectedOriginalRef))throw new ApiError('CLIENT_PATH_INVALID');
   if (!uuid.test(id)) throw new ApiError('CLIENT_PATH_INVALID');
   const c = await client.get<StoredImportView['candidate']>(`${path(projectId)}/imports/${id}`);
+  check();if(options?.expectedOriginalRef!==undefined&&!sameArtifact(c?.originalRef,options.expectedOriginalRef))throw new ApiError('IMPORT_SOURCE_CHANGED');
   if (!validImport(c) || c.id !== id || !Number.isFinite(Date.parse(c.createdAt)) || !Array.isArray(c.selections) || c.selections.length > 2000 || c.selections.some(s => !uuid.test(s.documentId) || !Number.isSafeInteger(s.version) || s.version < 1 || !uuid.test(s.selectedBy) || !Number.isFinite(Date.parse(s.at)))) throw new ApiError('RESPONSE_INVALID');
-  return { candidate: c, body: c.status === 'READY' ? await readPreservedDocumentText(client, projectId, c.originalRef) : null };
+  const body=c.status==='READY'?await readPreservedDocumentText(client, projectId, c.originalRef):null;check();return { candidate: c, body };
 }
 export async function prepareStoredImport(client: ApiClient, projectId: string, value: StoredImportView, session: DocumentSession, selectedForm: Ref | null): Promise<DocumentBuffer> {
   const c = value.candidate, ref = c.intendedFormRef ?? selectedForm;

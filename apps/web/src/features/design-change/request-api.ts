@@ -3,7 +3,8 @@ import { postDocumentCommand, type DocumentSession, type DocumentWrite } from '.
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import { validateDesignChangePage, type DesignChangePage } from './api.ts';
-export interface ChangeRequestBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; beforeRef: PlanRef; proposalId: string; reason: string; sourceRefs: (PlanRef & {kind:'DOCUMENT_VERSION'})[]; pending: DocumentWrite | null; result: DesignChangePage | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null }
+export type ChangeRequestSource=(PlanRef & {kind:'DOCUMENT_VERSION'})|{kind:'ARTIFACT';id:string;contentHash:string};
+export interface ChangeRequestBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; beforeRef: PlanRef; proposalId: string; reason: string; sourceRefs: ChangeRequestSource[]; pending: DocumentWrite | null; result: DesignChangePage | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null }
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref = (v: any): v is PlanRef => !!v && Object.keys(v).sort().join(',') === 'contentHash,id,version' && uuid(v.id) && Number.isSafeInteger(v.version) && v.version > 0 && typeof v.contentHash === 'string' && /^[0-9a-f]{64}$/.test(v.contentHash);
 const same = (a: unknown, b: unknown) => ordered(a) === ordered(b);
@@ -15,7 +16,7 @@ export function prepareDesignChangeRequest(buffer: ChangeRequestBuffer, session:
   if (!acknowledged) throw new ApiError('DESIGN_CHANGE_CONFIRM_REQUIRED');
   if (!uuid(buffer.bindingId) || !uuid(buffer.projectId) || buffer.ownerUserId !== session.user.id || buffer.ownerClientId !== session.clientId || !uuid(session.user.id) || !uuid(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1 || !ref(buffer.beforeRef) || !uuid(buffer.proposalId) || buffer.result) throw new ApiError('DESIGN_CHANGE_BINDING_INVALID');
   if (typeof buffer.reason !== 'string' || !buffer.reason.trim() || buffer.reason.length > 20000 || !buffer.reason.isWellFormed()) throw new ApiError('DESIGN_CHANGE_REASON_REQUIRED');
-  if(!Array.isArray(buffer.sourceRefs)||buffer.sourceRefs.length>200||new Set(buffer.sourceRefs.map(ordered)).size!==buffer.sourceRefs.length||buffer.sourceRefs.some(r=>!r||Object.keys(r).sort().join(',')!=='contentHash,id,kind,version'||r.kind!=='DOCUMENT_VERSION'||!ref({id:r.id,version:r.version,contentHash:r.contentHash})))throw new ApiError('DESIGN_CHANGE_SOURCE_INVALID');
+  if(!Array.isArray(buffer.sourceRefs)||buffer.sourceRefs.length>200||new Set(buffer.sourceRefs.map(ordered)).size!==buffer.sourceRefs.length||buffer.sourceRefs.some(r=>!r||!(r.kind==='DOCUMENT_VERSION'?Object.keys(r).sort().join(',')==='contentHash,id,kind,version'&&ref({id:r.id,version:r.version,contentHash:r.contentHash}):r.kind==='ARTIFACT'&&Object.keys(r).sort().join(',')==='contentHash,id,kind'&&ref({id:r.id,version:1,contentHash:r.contentHash}))))throw new ApiError('DESIGN_CHANGE_SOURCE_INVALID');
   const input = { beforeRef: buffer.beforeRef, afterProposalRef: buffer.proposalId, reason: buffer.reason, sourceRefs: buffer.sourceRefs };
   if (buffer.pending) {
     const c = buffer.pending;
