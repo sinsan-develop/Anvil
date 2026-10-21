@@ -49,3 +49,12 @@ for(const mode of ['NORMAL','LOST'])test(mode+' 첨부 선택/제외는 참조�
 for(const mode of ['DENIED','HASH'])test(mode+' 원문은 첨부되지 않고 본문/기존첨부/저장명령을 보존한다',async({page})=>{
  const f=await fixture(page,mode);await select(page);await expect(page.getByRole('alert')).toContainText(mode==='DENIED'?'PERMISSION_DENIED':'ARTIFACT_INTEGRITY_FAILED');await expect(page.getByRole('button',{name:'이 원본을 문서에 첨부',exact:true})).toHaveCount(0);await expect(page.getByLabel('문서 본문 편집',{exact:true})).toHaveValue(body);await expect(page.getByRole('button',{name:'첨부 1 제외',exact:true})).toBeVisible();expect(f.writes).toEqual([]);expect(f.uploads).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
 });
+test('고정 저장첨부 원문은 확인 후 열고 재조회 거절 때 앞선 원문을 숨긴다',async({page})=>{
+ const f=await fixture(page);await page.getByRole('button',{name:'저장 첨부 1 원문 열기',exact:true}).click();
+ await expect(page.getByRole('region',{name:'고정 저장첨부 원문',exact:true})).toContainText('기존 첨부');expect(f.writes).toEqual([]);expect(f.uploads).toEqual([]);
+ await page.route('**/api/v1/projects/'+pid+'/documents/'+did+'/versions/1',r=>r.fulfill({status:403,json:{code:'PERMISSION_DENIED'}}));
+ await page.getByRole('button',{name:'저장 첨부 1 원문 열기',exact:true}).click();await expect(page.getByRole('alert')).toContainText('PERMISSION_DENIED');await expect(page.getByRole('region',{name:'고정 저장첨부 원문',exact:true})).toHaveCount(0);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);expect(f.writes).toEqual([]);
+});
+test('저장첨부 원문 변조는 hash 오류로 숨기고 쓰기를 만들지 않는다',async({page})=>{
+ const f=await fixture(page);await page.route('**/api/v1/projects/'+pid+'/files/'+uid,r=>r.fulfill({contentType:'application/octet-stream',body:Buffer.from('바뀐원문')}));await page.getByRole('button',{name:'저장 첨부 1 원문 열기',exact:true}).click();await expect(page.getByRole('alert')).toContainText('ARTIFACT_INTEGRITY_FAILED');await expect(page.getByRole('region',{name:'고정 저장첨부 원문',exact:true})).toHaveCount(0);expect(f.writes).toEqual([]);expect(f.uploads).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});

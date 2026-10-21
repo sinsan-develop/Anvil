@@ -22,6 +22,7 @@ import type{DesignAnchorSelection}from'./design-anchor.ts';
 import { DocumentVersionComparison } from './DocumentVersionComparison.tsx';
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentSourceLinks} from './DocumentSourceLinks.tsx';
+import {StoredDocumentAttachments} from './StoredDocumentAttachments.tsx';
 import {newSourceDetach,type SourceDetachBuffer,type SourceDetachChange} from './source-detach-api.ts';
 import {SourceDetachEditor} from './SourceDetachEditor.tsx';
 import type {SourceLinkView} from './source-links-api.ts';
@@ -192,6 +193,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
         {confirming && confirmation && !confirmation.pending && !confirmation.saved && !confirmation.uncertain && confirmation.rejectedAttempts?.length ? <button disabled={starting || reading || choosingForm || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void replaceConfirmation(); }}>열어 둔 버전으로 확정 대상 변경</button> : null}
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
         <DesignAnchorOriginal body={opened.body} context={{projectId,documentRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash},bodyHash:opened.document.content.body.contentHash}} selection={anchorSelection} onClear={()=>setAnchorSelection(null)}/>
+        {!reading&&!readError&&!loading&&!listError?<StoredDocumentAttachments key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} document={opened.document} onAuthenticationLost={onAuthenticationLost}/>:null}
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}
         <h3>저장 이력</h3><ul>{opened.document.statusHistory.map((event, index) => <li key={index}>{event.kind} · {event.reason} · {new Date(event.at).toLocaleString('ko-KR')}</li>)}</ul></> : null}
       {opened ? <><h3>양식의 내용 검토 기준</h3><ul>{opened.document.contentReviewCriteria.items.map(item => <li key={item.criterionId}>{item.title}<ul>{item.reviewCriteria.map((criterion, index) => <li key={index}>{criterion}</li>)}</ul></li>)}</ul>
