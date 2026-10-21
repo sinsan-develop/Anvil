@@ -15,6 +15,7 @@ import{WorkPlanDecisionEditor}from'./WorkPlanDecisionEditor.tsx';
 import{canReopenRejectedWorkPlan,reopenRejectedWorkPlan}from'./rejected-work-plan.ts';
 import {WorkPlanApprovalEditor} from './WorkPlanApprovalEditor.tsx';
 import {PlanTaskCodeRename} from './PlanTaskCodeRename.tsx';
+import {movePlanTask} from './plan-task-order.ts';
 
 const listFields=[['inputs','입력'],['outputs','출력'],['included','포함 범위'],['excluded','제외 범위'],['allowedFileRefs','허용 파일'],['startPrerequisites','착수 선행'],['acceptancePrerequisites','검수 선행'],['steps','수행 절차'],['acceptanceCriteria','검수 조건'],['evidenceRequirements','증거 요구']]as const;
 const lines=(s:string)=>s===''?[]:s.split('\n');
@@ -23,6 +24,11 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
   const[screenChoices,setScreenChoices]=useState<ScreenReviewChoice[]>([]);
   useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   const locked=busy||!!s.pending||!!s.result;
+  const moveLocked=locked||!!s.uncertain||!!s.sent||!!s.approval||!!s.decision||!!s.traceLink;
+  function moveTask(index:number,direction:-1|1){
+    if(moveLocked||running.current)return;
+    try{const next=movePlanTask(s,index,direction);if(next===s)return;setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===s?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
+  }
   function update(change:(s:WorkPlanBuffer)=>WorkPlanBuffer,dirty=true){onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState?.bindingId===s.bindingId?{...b,workPlanState:change(b.workPlanState),dirty:dirty||b.dirty}:b);}
   function input(change:(s:WorkPlanBuffer['input'])=>WorkPlanBuffer['input']){if(!locked)update(v=>({...v,input:change(v.input),failure:null}));}
   function task(n:number,patch:Partial<TaskCard>){setScreenChoices([]);input(v=>({...v,tasks:v.tasks.map((t,k)=>k===n?{...t,...patch}:t)}));}
@@ -59,6 +65,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
       <ul>{s.input.screenReviewRefs.map((r:any,n)=><li key={n}>선택 검토 {typeof r?.id==='string'?r.id:'형식 미확인'} · <button type="button" onClick={()=>input(v=>({...v,screenReviewRefs:v.screenReviewRefs.filter((_,k)=>k!==n)}))}>선택 검토 {n+1} 해제</button></li>)}</ul>
     </fieldset>
     {s.input.tasks.map((t,n)=><fieldset key={n} disabled={locked}><legend>업무 {n+1}</legend>
+      <button type="button" disabled={moveLocked||n===0} onClick={()=>moveTask(n,-1)}>업무 {n+1} 위로</button><button type="button" disabled={moveLocked||n===s.input.tasks.length-1} onClick={()=>moveTask(n,1)}>업무 {n+1} 아래로</button>
       <label>업무 {n+1} 코드<input maxLength={64} value={t.taskCode} onChange={e=>task(n,{taskCode:e.target.value})}/></label><label htmlFor={'plan-type-'+n}>업무 {n+1} 유형</label><select id={'plan-type-'+n} value={t.type} onChange={e=>task(n,{type:e.target.value as TaskCard['type']})}><option value="SCREEN">화면</option><option value="FUNCTION">기능</option><option value="INTEGRATION">연결·통합</option><option value="PREPARATION">준비</option></select>
       <PlanTaskCodeRename key={[s.bindingId,n,t.taskCode].join(':')} state={s} index={n} locked={locked} onApply={next=>{setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===s?{...b,dirty:true,workPlanState:next}:b);}}/>
       {([['title','제목'],['purpose','목적'],['ownerRole','책임 역할']]as const).map(([k,label])=><label key={k}>업무 {n+1} {label}<input maxLength={k==='title'?200:20_000} value={t[k]} onChange={e=>task(n,{[k]:e.target.value})}/></label>)}
