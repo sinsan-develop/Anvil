@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI03/FN02 노드 드래그 일부**: 누락 포인터 이동을 기존 초안/명시 저장·재조회에 연결했다. 확대좌표·단일 pointerup 반영/취소·잠금·기존 방향키를 한정 검증했다. 최초RED→현재bundle DOM2PASS/typebuild0, 독립 C0/I0/M1의 시험공백을 assertion만 보강해 fresh 영향1PASS/type0로 확인했으며 독립M0나 최신3건으로 승격하지 않는다. QA01/02 독립잔여0, 실제DB/served·전체UI03/FN02/Stage미완료. 세부 지문/원오류/검증·정리는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN03/UI06·UI04 저장 첨부 원본 회수 일부**: 기존 보호 파일GET/native .bin 다운로드를 고정 저장첨부 목록에 연결했다. 미지원 미리보기 제한·서버현재인증/격리/바이트검사 유지·새API/SQL/권한/Agent/자동열기0. fake native취소를PASS로바꾸지 않고 기존개발TLS의 단발loopback 실제전송으로 원본bytes/hash·HTML비실행을 확인(분리후native1PASS/type0·scoped독립C0/I0/M0), listener/PID/등록경로독립잔여0. actualserver권한/격리/20MiB·정식DB/served·전체FN03/UI04/UI06/Stage미완료이며 원실패/지문/분리시험/정리는 WORK_STATUS에 보존한다.
 
 - **2026-10-22 UI04/FN03 선택 단계 자료의 서식·저장첨부 소비 일부**: 기존 단계filter/고정문서 상세에 Markdown서식/보호 PNG·텍스트 첨부 명시조회·귀속/hash 재검사를 연결했다. 새API/SQL/권한/Agent·쓰기/외부조회0, 문서원문 유지·전환때기존첨부숨김. 버튼부재RED→현재bundle 정상/변조/지연전환 DOM3PASS/typebuild0·scoped독립C0/I0/M0·QA독립잔여0. actualDB/served/권한회수·모든주체·전체UI04/FN03·Stage미완료이며 세부증거/지문/원오류는WORK_STATUS에 보존한다.
