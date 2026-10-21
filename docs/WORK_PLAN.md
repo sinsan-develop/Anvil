@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI03/FN03 반복 필드 필수/선택 일부**: 기존 required boolean의누락checkbox를연결해선택필드만수정→기존별도새버전저장/재조회·UNKNOWN잠금/동일명령확인을소비했다. 신규2+인접2DOM4·직접인접단위5/typebuild·한정C0/I0/M0·QA독립잔여0이며공식원본/서버검사기준/API/SQL/권한변경0. 실DB/served/전체FN03미검증·미완료, 원실패/지문/한계는WORK_STATUS를따른다.
+
 - **2026-10-22 UI03/FN03 저장 양식 과거 버전 일부**: 기존보호GET으로과거정의/공통작성기준hash를대조하고최신↔과거양식차이·작성기준원문을명시조회한다. 미저장편집/검토/명령보존·권한거절원문회수·지연폐기, 신규3+인접5단위8/신규3+기존forms4DOM7/typebuild/diff·QA독립잔여0범위다. 새API/SQL/권한/정식DB/Agent0이며실제DB/served/전체UI03·FN03미검증·미완료. FN10결정후보는미채택분리하고독립승인범위의실제화면기능으로선정, 원오류·지문·독립검토는WORK_STATUS를따른다.
 
 - **2026-10-22 FN10 사람 결정 저장 선행 후보**: 기존 §13.2/USER_DECISION의 실제 저장 선행을 `docs/contracts/FN10_HUMAN_DECISION_CANDIDATE.md`에 한정 구체화했다. PROPOSED/NOT_ADOPTED 문서이며 새 명령/불변 자료·OWNER/별도 정책·현재 기준 reader/소비 결박의 정확 delta 판단 전 제품/SQL 채택0. HUMAN USER 유한 문자열·현재 권한/CAS·정정철회/replay·향후소비경합·총괄/평가 미연결412·실DB/Agent/자동전이0. 독립 문서 검토 후 후보SHA 전달, 기능/전이 구현완료로 세지 않는다.

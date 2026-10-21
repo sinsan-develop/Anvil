@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 02:04 KST UI03/FN03 반복 필드 필수/선택 연결 / Main 어울**: 기존 boolean 계약의 반복 필드 required를 사용자공통초안에서수정하도록checkbox1개를연결했다. 선택필드의required만변경·다른필드순서/ID/양식항목required/작성·검토규칙보존·POST0, 기존별도새버전저장/재조회와저장결과미확인시fieldset잠금/같은명령재확인유지. 공식원본/서버검사·합격기준변경0이며사용자가자신의공통양식을정의하는기존기능입력이다.
+  - 증거/오류: DOMcheckbox부재1RED5000ms→신규2/기존2 첫3PASS1FAIL7.0s(status조회중+저장확인2개strict충돌)→신규시험선택자만저장확인status로좁혀최종4PASS4.6s. 직접인접단위5PASS662.5446ms/typebuild/diff0·323modules354ms/원chunk500k·NO_COLOR경고보존·전체회귀/기존과거조회·동일성공PG재시험0. 독립한정source/testC0/I0/M0·실행0, sourceSHA07B5F5D7D0C7D947E14A809D868E8F3A071B2883F97423F4F6C0040C8655EC26/bundleindex-hzbzeWmT.js SHA1B40EC3B31367B45F1A28F64C033CBCA7A6A199469869F0C07332B866FB48173. 잘못된빈patch요청1은거절/파일변경0이다.
+  - QA/한계: 등록경로02:01:35생성→02:03:37exactroot/owner SINSAN/cyhuh·childlink0/process0뒤시험2파일회수(복구불가/사용자원본보존)→별도02:03:41pathfalse/process0. 새API/SQL/실DB/정책/서비스/Agent·비용0/보호6/main·FN10후보미채택보존. fixture고정hash는실제무결성증거아니며실제DB/served·전체FN03/Stage는미검증·미완료다. 소유5파일만기존branch에보존한다.
+
+- **2026-10-22 02:01 KST UI03/FN03 반복 필드 필수/선택 편집 착수 / Main 어울**: 기준3d599300. 기존 FormField.required boolean/저장·조회 계약은 있으나 CommonFormEditor의반복필드는제목/제거만있고필수·선택입력이없어사용자공통양식의선택열을작성할수없었다. 해당checkbox만추가하고기존명시새버전저장/재조회·미확인명령잠금을소비한다. 공식내장원본/양식항목required·규칙/다른필드·서버validator/API/SQL/권한0. 새QA 사전등록 D:\tmp\anvil-v3-stage-b\ui03-form-required-01(temp/results), Main/SINSAN/cyhuh·최대30분·기존localbundle/headlessEdge/in-process합성API·새listener/DB/WSL0. 생성전부재·부모realpath/link→종료exactowner/link/process확인뒤등록자료만회수·독립잔여0. 기존양식과거조회/성공시험반복을진도로세지않고실제편집누락만선정했다. FN10후보미채택/보호6/main불변·정식DB/정책/Agent0. 인수중추정파일명읽기3건실패는자료변경0으로보존하고실목록기준으로확인했다.
+
 - **UI03/FN03 양식 이력 한정 독립 검토**: helper85028330/PanelD73BD16B 일치·신규소스/해당시험 한정C0/I0/M0·독립실행/수정0. 과거이름변경허용/definition·standardhash·동버전고정·fullref/주체key·403부모회수/지연장벽을확인했다. reader의진행중GET/처리취소는지원하지않고이탈뒤표시만폐기한다는미검증경계를유지한다. 실제DB권한/모든주체전환·과거조합은미검증, 전체완료0. 정확소유10파일만기존branch에보존하고정식서비스로자동반영하지않는다.
 
 - **2026-10-22 01:55 KST UI03/FN03 저장 양식 과거 버전 연결 / Main 어울**: 기존 form-version GET만으로 명시 과거 버전의 이름/목적·항목/규칙·역할/작성기준참조를 최신 저장본과 비교하고 과거 작성기준 escaped원문을 연다. 현재base를복제/검증한뒤 exact id/version/scope·동버전hash/definitioncanonicalhash·공통기준byteshash를대조하며 새API/서버/SQL/권한0이다. 미저장양식/검토/원명령은변경0, user/client/ref key분리·명시event·generation으로늦은응답폐기·401/403시부모원문/비교함께회수. 기존양식의 재조회실패 stale표시는보존하고 실제원인code만추가했다.

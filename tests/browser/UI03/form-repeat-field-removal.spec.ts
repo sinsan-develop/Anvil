@@ -2,6 +2,17 @@ import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
 import {installWorkspaceBundle} from '../UI04/bundle.ts';
+test('FORM_FIELD_REQUIRED 선택열로 바꾼 뒤 기존 별도 저장·재조회하며 다른 필드/규칙은 보존한다',async({page})=>{
+ const s=await setup(page),optional=page.getByRole('checkbox',{name:`반복 필드 ${s.removed.fieldId} 필수`,exact:true}),kept=page.getByRole('checkbox',{name:`반복 필드 ${s.kept.fieldId} 필수`,exact:true});
+ await expect(optional).toBeChecked();await optional.uncheck();await expect(optional).not.toBeChecked();await expect(kept).toBeChecked();expect(s.writes).toHaveLength(0);
+ await page.getByRole('button',{name:'공통 양식 새 버전 저장',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'양식 서버 저장·재조회 확인'})).toBeVisible();
+ expect(s.writes).toHaveLength(1);const saved=s.writes[0].payload.definition.items.find((i:any)=>i.itemId===s.row.itemId);expect(saved.fields).toEqual(s.row.fields.map(f=>f.fieldId===s.removed.fieldId?{...f,required:false}:f));expect(saved.required).toBe(s.row.required);expect(saved.authoringRules).toEqual(s.row.authoringRules);expect(saved.reviewCriteria).toEqual(s.row.reviewCriteria);
+ await page.getByRole('button',{name:s.row.title+' 편집',exact:true}).click();await expect(optional).not.toBeChecked();await expect(kept).toBeChecked();await optional.check();await expect(optional).toBeChecked();expect(s.writes).toHaveLength(1);s.clean();
+});
+test('FORM_FIELD_REQUIRED_UNKNOWN 선택열을 저장한 명령의 결과 미확인 중에는 필수여부 수정도 잠기고 같은 명령만 재확인한다',async({page})=>{
+ const s=await setup(page),field=page.getByRole('checkbox',{name:`반복 필드 ${s.removed.fieldId} 필수`,exact:true});await field.uncheck();s.setUncertain();await page.getByRole('button',{name:'공통 양식 새 버전 저장',exact:true}).click();await expect(page.getByRole('button',{name:'같은 양식 명령 결과 확인',exact:true})).toBeVisible();await expect(field).toBeDisabled();await expect(field).not.toBeChecked();const original=structuredClone(s.writes[0]);
+ await page.getByRole('button',{name:'같은 양식 명령 결과 확인',exact:true}).click();await expect.poll(()=>s.writes.length).toBe(2);expect(s.writes[1]).toEqual(original);await expect(field).toBeDisabled();await expect(field).not.toBeChecked();s.clean();
+});
 const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url)));
 async function setup(page:Page){
  const id='a6f30000-0000-4000-8000-000000000099',uid=catalog.forms[0]!.ref.id,source=catalog.forms.find(f=>f.definition.items.some(i=>i.fields.length>1))!,definition={...structuredClone(source.definition),name:'편집용 반복 양식',scope:'USER_COMMON' as const};let saved=definition,version=1,uncertain=false;const row=definition.items.find(i=>i.fields.length>1)!,removed=row.fields[0]!,kept=row.fields[1]!,writes:any[]=[],unknown:string[]=[],errors:string[]=[];
