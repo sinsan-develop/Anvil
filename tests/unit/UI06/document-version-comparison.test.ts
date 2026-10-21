@@ -11,6 +11,26 @@ function compare(before: string, after: string) {
   return implementation.compareDocumentBodies(before, after);
 }
 
+const definition=()=>({title:'원제목',formRef:{id:'F01',version:1,contentHash:'a'.repeat(64)},stageNodeRef:null,content:{sections:[{itemId:'purpose',anchor:'line:1'}],attachments:[],sourceRefs:[]}});
+function definitions(before:ReturnType<typeof definition>,after:ReturnType<typeof definition>){
+ assert.equal(typeof implementation.compareDocumentDefinitions,'function','저장 문서 정의의 비교 소비 누락');return implementation.compareDocumentDefinitions(before,after);
+}
+test('같은 본문이라도 제목·양식·단계·목차·첨부·출처의 변경을 독립 구분한다',()=>{
+ const before=definition(),after:any=definition();after.title='<script>제목</script>';after.formRef.version=2;after.stageNodeRef={applicationId:'M01',nodeId:'build'};after.content.sections=[];after.content.attachments=[{artifactId:'FILE',bytes:4,contentHash:'b'.repeat(64),mediaType:'text/plain'}];after.content.sourceRefs=[{id:'SOURCE'}];
+ const result=definitions(before,after);assert.deepEqual(result.map((i:any)=>[i.field,i.kind]),[['title','CHANGED'],['formRef','CHANGED'],['stageNodeRef','CHANGED'],['sections','CHANGED'],['attachments','CHANGED'],['sourceRefs','CHANGED']]);assert.equal(result[0].before,'"원제목"');assert.equal(result[0].after,'"<script>제목</script>"');assert.equal(before.formRef.version,1);
+});
+test('객체 키 순서는 변경으로 만들지 않고 배열 순서·누락 단계와 표시 한도는 구분한다',()=>{
+ const before=definition(),same:any={...definition(),formRef:{contentHash:'a'.repeat(64),version:1,id:'F01'}};delete same.stageNodeRef;
+ assert(definitions(before,same).every((i:any)=>i.kind==='IDENTICAL'));
+ const after=definition();after.content.sections=[{itemId:'second',anchor:'line:2'},...after.content.sections];assert.equal(definitions(before,after).find((i:any)=>i.field==='sections').kind,'CHANGED');
+ after.title='가'.repeat(131073);const limited=definitions(before,after).find((i:any)=>i.field==='title');assert.deepEqual(limited,{field:'title',kind:'UNVERIFIED',reason:'DISPLAY_LIMIT'});
+});
+test('출처의 과도한 중첩·노드 수는 렌더 예외 없이 해당 항목만 미확인으로 남긴다',()=>{
+ const before=definition(),after:any=definition();let nested:any='끝';for(let i=0;i<12000;i++)nested={next:nested};after.content.sourceRefs=[nested];
+ const result=definitions(before,after);assert.deepEqual(result.find((i:any)=>i.field==='sourceRefs'),{field:'sourceRefs',kind:'UNVERIFIED',reason:'DISPLAY_LIMIT'});assert.equal(result.find((i:any)=>i.field==='title').kind,'IDENTICAL');
+ after.content.sourceRefs=Array.from({length:20001},()=>0);assert.equal(definitions(before,after).find((i:any)=>i.field==='sourceRefs').kind,'UNVERIFIED');
+});
+
 // 앞/뒤 공통줄을 잘못 잘라 다른 원문을 표시하거나 줄바꿈을 정규화하면 실패한다.
 test('공통 앞뒤 줄 밖의 두 원문 구간을 BOM·CRLF·태그 그대로 반환한다', () => {
   assert.deepEqual(compare('\uFEFF제목\r\n이전\r\n끝\n', '\uFEFF제목\r\n<script>변경</script>\r\n끝\n'), {

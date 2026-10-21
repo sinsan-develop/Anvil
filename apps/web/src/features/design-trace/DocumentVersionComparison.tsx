@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { readDocument, type DocumentVersion } from './api.ts';
-import { compareDocumentBodies } from './document-version-comparison.ts';
+import { compareDocumentBodies,compareDocumentDefinitions,documentDefinitionLabels } from './document-version-comparison.ts';
 
 type OpenedDocument = { document: DocumentVersion; body: string };
 
@@ -15,6 +15,7 @@ export function DocumentVersionComparison({ client, projectId, base, maxVersion,
   useEffect(() => () => { generation.current++; }, []);
   const requested = Number(version), valid = Number.isSafeInteger(requested) && requested >= 1 && requested <= maxVersion;
   const comparison = useMemo(() => result ? compareDocumentBodies(base.body, result.body) : null, [base.body, result]);
+  const definitions=useMemo(()=>result?compareDocumentDefinitions(base.document,result.document):[],[base.document,result]);
 
   async function compare() {
     if (!valid || loading) return;
@@ -47,6 +48,9 @@ export function DocumentVersionComparison({ client, projectId, base, maxVersion,
         <p className="meta">비교 문서 SHA256 {result.document.contentHash} · 본문 SHA256 {result.document.content.body.contentHash}</p>
         <p>줄바꿈·BOM을 포함한 원문 문자열 비교입니다. 공통 앞뒤 줄을 제외한 차이 포함 구간이며 최소 편집 diff가 아닙니다. 구간 안에 같은 줄이 포함될 수 있습니다. 미저장 입력·저장/확정 상태는 바꾸지 않습니다.</p>
       </details>
+      <section aria-label="문서 정의 항목 비교"><h4>본문 외 문서 정의 비교</h4><p>서버가 반환한 제목·양식·단계·목차·첨부/출처 참조를 비교합니다. 첨부 원본 바이트·현재 권한/확정 상태의 비교가 아닙니다. 객체 키 순서는 무시하고 배열 순서는 보존합니다.</p>
+       {definitions.map(item=>{const label=documentDefinitionLabels[item.field];return item.kind==='CHANGED'?<details key={item.field}><summary>{label} · 변경</summary><p>기준 v{base.document.version}</p><pre aria-label={label+' 기준 버전 값'} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.before}</pre><p>비교 v{result.document.version}</p><pre aria-label={label+' 비교 버전 값'} style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{item.after}</pre></details>:<p key={item.field}>{label} · {item.kind==='IDENTICAL'?'같음':'비교 미확인 · 표시 안전 한도(131072자·32단계·20000노드) 초과'}</p>;})}
+      </section>
       {comparison.kind === 'IDENTICAL' ? <p>두 저장 버전의 본문이 같습니다. 검토·확정 상태가 같다는 뜻은 아닙니다.</p>
         : comparison.kind === 'UNVERIFIED' ? <p role="status">비교 미확인 · 각 원문 131072자/4000줄 표시 한도 초과. 기존 원문 조회는 유지합니다.</p>
           : <>

@@ -10,7 +10,7 @@ const at = '2026-10-17T10:00:00Z';
 const bodyFor = (version: number) => version === 1 ? older : current;
 const artifactFor = (version: number) => artifact.slice(0, -1) + String(version);
 
-async function fixture(page: Page, options: { corrupt?: boolean; wrongVersion?: boolean; delayed?: boolean; large?: boolean; unauthorized?: boolean } = {}) {
+async function fixture(page: Page, options: { corrupt?: boolean; wrongVersion?: boolean; delayed?: boolean; large?: boolean; unauthorized?: boolean;definitionChange?:boolean;deepSource?:boolean } = {}) {
   const dist = process.env.ANVIL_UI06_COMPARE_DIST;
   if (!dist) throw Error('REGISTERED_CANDIDATE_DIST_REQUIRED');
   const errors: string[] = [], unknown: string[] = [], writes: string[] = [], offOrigin: string[] = [];
@@ -35,8 +35,8 @@ async function fixture(page: Page, options: { corrupt?: boolean; wrongVersion?: 
     const version = Number(new URL(r.request().url()).pathname.split('/').pop()); reads.push(version);
     if (options.unauthorized && version === 1) return r.fulfill({ status: 401, json: { code: 'AUTHENTICATION_REQUIRED' } });
     const body = options.large && version === 1 ? '가'.repeat(131073) : bodyFor(version);
-    const formRef = { id: artifact, version: 1, contentHash: 'a'.repeat(64) };
-    return r.fulfill({ json: { id, version: options.wrongVersion && version === 1 ? 2 : version, title: '저장 문서', contentHash: String(version).repeat(64), confirmed: false, formRef, stageNodeRef: null, content: { body: { artifactId: artifactFor(version), bytes: Buffer.byteLength(body), contentHash: createHash('sha256').update(body).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, attachments: [], sections: [], sourceRefs: [] }, validation: { validForConfirmation: false, issues: [] }, statusHistory: [], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [] }, contentReviews: [] } });
+    const changed=options.definitionChange&&version===2,formRef = { id: artifact, version: changed?2:1, contentHash: 'a'.repeat(64) };let nested:unknown='출처';if(options.deepSource&&version===2)for(let i=0;i<80;i++)nested={next:nested};
+    return r.fulfill({ json: { id, version: options.wrongVersion && version === 1 ? 2 : version, title: changed?'<img src=x onerror=alert(1)>예전 제목':'저장 문서', contentHash: String(version).repeat(64), confirmed: false, formRef, stageNodeRef: null, content: { body: { artifactId: artifactFor(version), bytes: Buffer.byteLength(body), contentHash: createHash('sha256').update(body).digest('hex'), mediaType: 'text/markdown;charset=utf-8' }, attachments: changed?[{artifactId:artifactFor(1),bytes:Buffer.byteLength(older),contentHash:createHash('sha256').update(older).digest('hex'),mediaType:'text/plain;charset=utf-8'}]:[], sections: changed?[{itemId:'purpose',anchor:'line:1'}]:[], sourceRefs: options.deepSource&&version===2?[nested]:[] }, validation: { validForConfirmation: false, issues: [] }, statusHistory: [], contentReviewCriteria: { criteriaVersion: 1, formRef, items: [] }, contentReviews: [] } });
   });
   for (const version of [1, 2, 3]) await page.route(`**/api/v1/projects/${project}/files/${artifactFor(version)}`, async r => {
     if (options.delayed && version === 1) { seen(); await pending; }
@@ -57,6 +57,16 @@ async function compare(page: Page, version = '1') {
   await panel(page).getByRole('button', { name: '지정 저장 버전과 비교', exact: true }).click();
 }
 function clean(s: Awaited<ReturnType<typeof fixture>>, writes: string[] = []) { expect(s.errors).toEqual([]); expect(s.unknown).toEqual([]); expect(s.writes).toEqual(writes); expect(s.offOrigin).toEqual([]); }
+
+test('DEFINITION_COMPARE 같은 본문의 제목·양식·목차·첨부 변경을 별도 표시하고 실행하지 않는다',async({page})=>{
+ const s=await fixture(page,{definitionChange:true});await open(page);await compare(page,'2');await expect(panel(page)).toContainText('본문이 같습니다');
+ const definition=panel(page).getByRole('region',{name:'문서 정의 항목 비교',exact:true});await expect(definition).toBeVisible();for(const label of ['제목','양식 참조','목차 위치','첨부 참조'])await expect(definition.getByText(label+' · 변경',{exact:true})).toBeVisible();
+ await definition.getByText('제목 · 변경',{exact:true}).click();await expect(definition.getByLabel('제목 비교 버전 값',{exact:true})).toHaveText('"<img src=x onerror=alert(1)>예전 제목"');await expect(definition.getByLabel('제목 기준 버전 값',{exact:true})).toHaveText('"저장 문서"');
+ await expect(definition).toContainText('첨부 원본 바이트·현재 권한/확정 상태의 비교가 아닙니다.');await expect(definition.locator('img,script')).toHaveCount(0);expect(s.reads).toEqual([3,2]);expect(await page.getByLabel('문서 원문',{exact:true}).textContent()).toBe(current);clean(s);
+});
+test('DEFINITION_COMPARE 과도한 출처 중첩만 미확인으로 남기고 본문 비교와 닫기를 유지한다',async({page})=>{
+ const s=await fixture(page,{deepSource:true});await open(page);await compare(page,'2');const definition=panel(page).getByRole('region',{name:'문서 정의 항목 비교',exact:true});await expect(definition).toContainText('출처 참조 · 비교 미확인');await expect(definition).toContainText('제목 · 같음');await expect(panel(page)).toContainText('본문이 같습니다');expect(await page.getByLabel('문서 원문',{exact:true}).textContent()).toBe(current);await page.getByRole('button',{name:'저장 버전 비교 닫기',exact:true}).click();await expect(panel(page)).toHaveCount(0);clean(s);
+});
 
 test('두 저장 버전의 실제 본문 구간·hash를 조회하고 원문 지시를 실행하거나 저장하지 않는다', async ({ page }) => {
   const s = await fixture(page); await open(page); await compare(page);
