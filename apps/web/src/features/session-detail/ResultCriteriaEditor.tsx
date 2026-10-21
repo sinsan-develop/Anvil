@@ -6,10 +6,11 @@ import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation
 import type {ResultReviewBuffers} from './result-review-write-api.ts';
 import type {ResultReworkBuffers} from './result-rework-write-api.ts';
 import type {ResultSubmissionBuffers} from './result-submission-write-api.ts';
+import type {QueueCancellationStorage} from './stage-queue-api.ts';
 import {CriteriaDraftFiles} from './CriteriaDraftFiles.tsx';
 import {CriteriaReadbackUnconfirmed,criteriaRows,prepareCriteriaRegistration,saveCriteriaRegistration,resultTestKinds,type CriteriaRow,type CriteriaRegistration,type RegisteredCriteria} from './result-criteria-api.ts';
 export interface CriteriaBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];controlGeneration:number;rows:CriteriaRow[];reason:string;pending:CriteriaRegistration|null;stored:RegisteredCriteria|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
-export interface CriteriaEditorProps{session:DocumentSession;buffer:CriteriaBuffer|null;onChange:(change:CriteriaBuffer|((value:CriteriaBuffer|null)=>CriteriaBuffer|null))=>void;reviews?:ResultReviewBuffers;reworks?:ResultReworkBuffers;submissions?:ResultSubmissionBuffers}
+export interface CriteriaEditorProps{session:DocumentSession;buffer:CriteriaBuffer|null;onChange:(change:CriteriaBuffer|((value:CriteriaBuffer|null)=>CriteriaBuffer|null))=>void;reviews?:ResultReviewBuffers;reworks?:ResultReworkBuffers;submissions?:ResultSubmissionBuffers;stageQueue?:QueueCancellationStorage}
 /** App 메모리의 주체·임무별 초안/미확인 명령을 소비한다. localStorage/Secret 저장은 하지 않는다. */
 export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}&CriteriaEditorProps){
  const [busy,setBusy]=useState(false),[failure,setFailure]=useState<string|null>(null),live=useRef(true),working=useRef(false);useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
