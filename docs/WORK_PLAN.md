@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10 대기 요청 실제 핵심 한정 확인**: exactd5028727 새60SQL격리PG에서Web공통명령→인증API→비관리자PG 저장/별도조회/replay·고유순번·정확미시작취소·DML/COMMIT/옛세대음성을확인했다. workflowDONE지만자동checkout회수실패로전체exit1이며 별도동일정리함수회수후독립잔여0이다. 정식DB/served·실Agent·물리경합·자동회수원인/전체FN10/Stage미완료유지, 원실패/지문·한계는WORK_STATUS/실PG결과서를따른다.
+
 - **FN10 격리 실제PG 검증 착수 (2026-10-22)**: 새빈60SQL/0036 후보에 Web공통command·Fastify·비관리자PG 저장/별도연결조회/replay·취소/순번·DML/역방향COMMIT·옛제어거절을 검증한다. 새QAguard7PASS/type/bash-n0·독립실행전I3/별도wrapperI2정적보정확인이다. 아직실DBPASS아니며 exact자원·수명·회수·wrapper/manifest는 STAGE_QUEUE_PG_QA_01.md에사전기록했다. 정식DB/served/전체FN10/Agent로승격하지않는다.
 
 - **FN10/UI05 시작 요청 작성 화면 일부 (2026-10-22)**: 확정임무fullref의적용graph/기준/예산으로 CASE동일단계·AUTO도달경계/이유→현재제어/적용본재대조→명시startStage→WAITING영수증을연결했다. App주체/임무별입력보존·UNKNOWN동일명령/거절뒤유지·이탈전송차단·실행/예약false/readiness4를유지한다. 신규unit5+인접5/화면신규9+인접1/type/build PASS, 독립source와당시시험한정C0I0M0/실행0. 미적용0036·실DB/served/COMMIT/권한/Agent는미검증·전체FN10미완료다. 다음은기존승인내격리실PG검증경계대조이며정식DB적용이나실행허가로승격하지않는다.

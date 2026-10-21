@@ -6,7 +6,28 @@
 
 다음 후보의 runner는 F30B008BFFBCA3FCA2D41FFF3E49CAF74C870EAB7DDDD6993BA614DE9BBADD7B, wrapper는3317856CEBC3236B483D287E02BDBD27B588E5BED1594015DD67FD5D8B537291이다. 아래 원후보 hash는 이력이다. workflow/SQL/manifest는 불변이며, 허용 Git 상태는 **tracked clean + 정확한 등록 링크 한 개**다. 다른 변경/비추적 파일은 거절하고 링크의 실제 대상도 계속 대조한다. 링크 제거 후에는 완전 clean이어야 한다. 신규 단위1RED→최종8PASS4475.1013ms/type/bash-n0, 아직 실제PG PASS가 아니다.
 
-상태: exact56328b99 실제 PG 검증은 WORKFLOW FAIL / 임시자원 독립 잔여0. 아래 미실행 표기는 준비 당시 이력이다. 담당 Main 어울, 2026-10-22. 공식 D:\Project\Anvil / codex/av3-stage-b의 게시 exact commit만 사용한다.
+상태: exactd5028727 실제 PG workflow DONE / 자동 checkout 회수 실패로 전체 exit1 / 별도 회수 뒤 독립 잔여0. 아래56328b99 실패·미실행은 당시 이력이다. 담당 Main 어울, 2026-10-22. 공식 D:\Project\Anvil / codex/av3-stage-b의 게시 exact commit만 사용한다.
+
+## d5028727 실제 결과 — workflow와 회수 분리
+
+등록 root/PG/net 새생성·같은60manifest/SQL0036, workflow B5E1339E/runnerF30/wrapper331의 WSL blob 지문일치 후 실행했다.
+
+```text
+FN10_SCHEMA_60_COMMITTED_APP_NON_SUPER
+FN10_NO_POLICY_DENIED_NO_QUEUE
+FN10_WEB_HTTP_APP_COMMIT_READ_REPLAY_WAITING
+FN10_CONCURRENT_DISTINCT_REQUESTS_MONOTONIC_SEQUENCE
+FN10_CANCEL_V1_TO_V2_COMMIT_REPLAY_STALE_DENIED
+FN10_DIRECT_DOMAIN_MUTATION_DENIED
+FN10_ORPHAN_RECEIPT_COMMIT_REJECTED_ROLLBACK
+FN10_NULL_MODE_DENIED_OLD_GENERATION_REPLAY_BLOCKED
+```
+
+실제 source Web 공통명령→Fastify.inject→PG15 비관리자 저장/다른DB연결 조회·동일명령replay·서로다른요청순번1,2,3·v1취소/v2영수증·직접DML거절·callback완료뒤고유deferred오류의COMMIT거절/rollback·정책없음/권한없는주체/옛세대 음성 범위다. PG ID158a5c6828c5f95ab0f0138ab149fd46721e8d2ba99bd8a1ac0242c39a3b3354/networkID252d42ca83b9d82006c3f7e33f9d71a449f8f8bf32b6d0e12c3e3bb8f802829d/instancef828ea4782097950b5102ad2daacc8b6만사용했다. manifest464c3a31a6d89b5da81926b1dd591a02da747f59a3cb3dc9c2631c42ac71b19d·formalDbChanges0/agentCalls0이다.
+
+runner는 phaseDONE/failurefalse/cleanupFailurefalse였으나 wrapper가FN10_QA_CLEANUP_INCOMPLETE를출력해원SSH명령전체exit1이다. exec부모대체만으로해결되지않았으므로부모cwd원인가설을확정하지않는다. 등록clone만남은상태에서원문동일cleanup함수만호출해안전가드를유지했다. 첫xtrace는open의stderr수집을오염시켜거절했으며 전용FD3으로trace를분리한두번째호출은exit0/FN10_QA_CHECKOUT_REMOVED였다. workflow/DB시험을재실행하지않았다.
+
+별도00:53:56KST SSH에서rootabsent·PG/net0·공유node_modules보존·기존정식PG/Web/API의ID/image/StartedAt/정지상태불변을확인했다. 등록생성부터10분내회수, 임시tmpfsDB와clone만제거했으며사용자/공유원본은보존했다. 원자동정리실패원인/실browser/정식서비스·DB/실Agent·물리lock경합/전체FN10·Stage완료는미확인이다. 이결과를전체프로세스exit0이나정식기능수용으로승격하지않는다.
 
 ## 첫 workflow 결과와 보완 후보
 
