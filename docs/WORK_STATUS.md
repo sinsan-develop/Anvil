@@ -1,5 +1,8 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 431bc382 이후 다음 핵심 소비 대조 / Main 어울**: 채택 A의 생성→계획 업무 선택→개정/범위축소→고정/과거조회는 기존 checkpoint 범위로 보존하며 같은 경로 재시험0이다. 다음 실제 사용자 소비는 정식 assignment-drafts 저장(현재 정식 migration46/필요 SQL 미적용·서비스 중단은 마지막 관측)과 실제 책임 세션/전달이다. 전자는 기존 backup/정식SQL 실행결정, 후자는 responsible-sessions의 RESERVED/externalSessionHandleRef=null·CANDIDATE_ONLY 계약과 FN06_PROVIDER_HANDLE_BINDING_PROPOSAL의 DRAFT/NOT_ADOPTED에 걸린다. 새 claim·보호 handle 수신/저장과 START/SEND 소비는 기존 예약 getter만 붙이는 구현이 아니라 명시 계약 delta다. child 확정/배정/실행은 한정 A 제외이며 이를 후속으로 열지 않았다. FN10 실제 상태/queue는 SYNTHETIC_ONLY 계산을 실제 완료·허가로 전환할 수 없고 FN03 본문/MATCH·FN05 DD166F·공유B 등 기존 경계는 불변이다. PMO에는 기존 결정 상태와 핵심 소비 우선순위/지원만 전달하며 새 중복 질문을 만들지 않는다. 전체계획 완료/전체 독립업무 부재로 일반화하지 않는다.
+  - 독립 후보로 root 준비의 지연 입력 덮어쓰기를 조사했으나 현재 busy 입력잠금과 project/application/stage key 교체 시 unmount/alive 검사가 있어 실제 도달 결함을 입증하지 못했다. 따라서 추가 코드·보여주기용 회귀는 만들지 않았다. 존재하지 않는 경로/literal wildcard 읽기 오류는 자료변경0이며 실제 rg목록을 기준으로 바로잡았다. 이 대조/기록은 기능 진도로 집계하지 않고 새 실제DB/서비스/Agent·QA자원 생성0이다.
+
 - **2026-10-21 하위 개정 QA 정리**: 등록 ui04-child-revision-01의 정확 경로·SINSAN/cyhuh 소유·하위 link0/process0을 확인 후 일회 결과만 제거했다. 별도 조회 QaPathExists=false/MatchingProcesses=0이며 시험 결과 폴더는 회수됐다. 소스/기존 build/DB·지속 자료 삭제0이다.
 
 - **2026-10-21 FN09/UI04 하위 초안 개정 cycle 보완 / Main 어울**: 단계 미선택 child에서 개정 준비가 조용히 반환하던 오류를 고쳤다. root 단계선택 선행은 유지하고 최신 고정 초안/head·적용본·선택 단계가 있으면 node·제어 세대를 다시 검사한다. 각 await 뒤 이탈을 검사하고 시작 당시와 동일한 버퍼일 때만 교체한다. child 개정→목표 수정/소스 범위 축소→별도 저장→응답 유실 같은 원명령 재확인→새/과거 고정 버전 조회를 연결했으며 부모 fullref/과거 snapshot은 보존한다. 확정·배정·실행/API/SQL·실DB/서비스 변경0이다.
