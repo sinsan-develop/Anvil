@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI06/FN04 저장 구조오류의 업무 위치 이동 일부**: 실제 tasks/시험/원선행 위치를 검증해 저장당시내용과 같은 카드로 focus/scroll한다. 미지원오류는연결미확인·원오류보존, 입력/POST/잠금·기준변경0. 신규/4자리반례RED→unit3PASS/typebuild0·새DOM1/직접제거영향1, 독립C0I0M0뒤 jsonb키순서정상반례RED→ordered보정/최종typebuild0·새DOMfresh1PASS는별도증거다. QA01/02독립잔여0·actualDB/served/모든위치·전체FN04/UI06/Stage미완료, 원오류/미실행/검토delta/지문은WORK_STATUS에보존한다.
+
 - **2026-10-22 UI06/FN04 작업계획 업무 제거 일부**: 제거영향→취소/명시확인→대상초안카드만제외→기존저장/재조회에 연결했다. 다른업무 착수/검수선행·화면검토refs/원문/저장본은 자동수정하지 않고 기존검사를유지한다. 신규2RED/DOM부재RED→직접영향unit7PASS/typebuild0·DOM1PASS·scoped독립C0I0M0 후 Main 폐기effect보강/typebuild0·핵심DOMfresh1PASS는 별도증거다. QA01/02독립잔여0, actualDB/served/최종잠금만복귀/전체FN04/UI06·Stage미완료이며 원오류/지문/검토한계는WORK_STATUS에보존한다.
 
 - **2026-10-22 FN05/UI10 정정 전 사용자 지시 원문 일부**: 기존 고정참조 보호GET/hash·같은대화/이전순번/지시종류 대조 후 명시조회한다. 기존 목록/작성입력·원문보존·쓰기/새API/SQL/권한/Agent0. 버튼부재RED→정상/세거절 DOM4PASS/typebuild0·독립C0/I0/M0, 뒤 test-only 화면이탈 지연1PASS/type0은 별도 증거다. QA독립잔여0, 실제DB/served/현재효력·전체FN05/UI10/Stage는 미완료이며 세부 원오류/지문/검토범위는WORK_STATUS에 기록한다.
