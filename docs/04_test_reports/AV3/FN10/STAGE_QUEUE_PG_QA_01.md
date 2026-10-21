@@ -6,7 +6,15 @@
 
 다음 후보의 runner는 F30B008BFFBCA3FCA2D41FFF3E49CAF74C870EAB7DDDD6993BA614DE9BBADD7B, wrapper는3317856CEBC3236B483D287E02BDBD27B588E5BED1594015DD67FD5D8B537291이다. 아래 원후보 hash는 이력이다. workflow/SQL/manifest는 불변이며, 허용 Git 상태는 **tracked clean + 정확한 등록 링크 한 개**다. 다른 변경/비추적 파일은 거절하고 링크의 실제 대상도 계속 대조한다. 링크 제거 후에는 완전 clean이어야 한다. 신규 단위1RED→최종8PASS4475.1013ms/type/bash-n0, 아직 실제PG PASS가 아니다.
 
-상태: 실제PG 미실행. 담당 Main 어울, 2026-10-22. 공식 D:\Project\Anvil / codex/av3-stage-b의 게시 exact commit만 사용한다.
+상태: exact56328b99 실제 PG 검증은 WORKFLOW FAIL / 임시자원 독립 잔여0. 아래 미실행 표기는 준비 당시 이력이다. 담당 Main 어울, 2026-10-22. 공식 D:\Project\Anvil / codex/av3-stage-b의 게시 exact commit만 사용한다.
+
+## 첫 workflow 결과와 보완 후보
+
+60SQL COMMIT·PG15 비관리자 접속과 정책없음412/queue0은 확인했다. 이후 METHODOLOGY_APPLICATION_INTEGRITY_FAILED exit1로 저장·조회·취소는 미도달이다. PG/network 자체 회수는 성공했으나 checkout wrapper는 불완전이었다. Main이 exactroot/HEAD/owner/link/process/PGnet 부재를 재확인해00:46:51링크와새clone만회수했고 별도00:47:16rootabsent/shareddeps보존·PGnet0/정식3컨테이너 불변을확인했다.
+
+실제validator는 합성 AGENT seed의 requirements 누락을 AGENT_REQUIREMENTS_REQUIRED로 재현(1RED687.2788ms)했다. 제품검사/기준은바꾸지않고 같은seed에능력FILE_READ·환경WSL_QA만추가, 최종집중9PASS1289.5835ms/type0. workflow SHA256 B5E1339E494FB9A51F9DFF42A84D19CD18581BB0970A8F53580A2C490AFFDB47이며runnerF30B008B/wrapper3317856C/SQL5349703B/manifest464c3a31불변이다. 보완후 실제저장/조회/취소는아직미확인이다.
+
+bootstrap의부모shell이root cwd로자식을기다려lsof가거절했을가능성은정적가설이며당시차단PID는수집하지않았다. 새bootstrap은마지막 exec bash로부모를대체하고정리guard는유지한다. 원실패를PASS로소급하지않는다.
 
 ## 대상·지문
 
@@ -35,7 +43,7 @@ issued=$(date +%s%3N)
 /usr/bin/timeout 40s /usr/bin/git clone --quiet --single-branch --branch codex/av3-stage-b --no-checkout git@github-sinsan-develop:sinsan-develop/Anvil.git "$root"
 git -C "$root" checkout --quiet --detach "$QA_COMMIT"
 ln -s /home/daon/deploy/anvil-v3/node_modules "$root/node_modules"
-bash "$root/scripts/stage-queue-qa-launch.sh" "$QA_COMMIT" "$issued"
+exec /usr/bin/bash "$root/scripts/stage-queue-qa-launch.sh" "$QA_COMMIT" "$issued"
 ```
 
 생성/실행 플랫폼 거절은 우회하지 않는다. bootstrap실패는현재상태/소유를읽고exact정리만수행한다. PG/net잔류시source보존·신규실행/성공선언보다회수/정확실패보고가우선이다. 고정daemon/부재·root/owner/Git/링크·process검사에실패하면삭제로넘어가지않는다. **삭제 진행 중 timeout이면 부분 삭제될 수 있으며 정리 불완전으로 판정한다.**
