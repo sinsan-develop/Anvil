@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 FN11 후보 채택 경계 확인 / Main 어울**: PMO는 cf83d90e/동일BD8DE5F2 상세후보를대조한뒤 승인입력원문의추가보관·한정원문조회/집행계약변경을설명하고, 코드/화면/미적용SQL/합성구현 한건의직접채택을신산님께질문했다(PMO turn01a15d08-4f1a-7fb1-a89d-1d8c654ee042). 이는일반다음업무배정이아닌이번정확자료/권한계약채택경계다. PMO질문을복제하지않고답변확인전DRAFT/NOT_ADOPTED·제품코드/SQL/실DB/정책/서비스/Agent0을유지한다. 상세후보작성/정적C0I0M0는기능사용가능이나개발완료가아니다. 이전FN03 actual1회/그결과는변경·재실행하지않고보호6/main을보존한다.
+
 - **2026-10-21 FN11 작업계획 승인소비 상세후보 독립 검토 수신 / Main 어울**: `FN11_WORK_PLAN_DRAFT_APPROVAL_PROPOSAL.md`의 동일 SHA256 BD8DE5F2D391D66DC378C3BC8AE07B378D58BA76EEF504D1765BB1E8873EE0EA에 한정 정적 C0/I0/M0를 받았다. 원payload와정규화tasks구분·현재권한뒤exact replay/신규CAS·정상미결정candidate/AUTO예외·과거이력·제한원문조회를확인한문서정합성판정이다. 기존0033의data.previousRef/연산·target전제는새작업계획영수증에그대로재사용할수없으므로후속SQL한연산분기에서대조해야한다. 실제SQL/COMMIT·잠금경합·직접DML/권한·UI비동기·DB/서비스는판정하지않았다. 문서DRAFT/NOT_ADOPTED와제품코드/SQL0을유지하며정확후보/위험/대안/가역성·이판정으로PMO의한건채택결정을지원한다. 기존서버JSON2MiB는늘리지않고구현시요청전체크기초과413에도입력보존을검수해야한다. 사용자재승인질문을중복하지않고기존VIEWER/r2/DD166F/공유B·정식DB/서비스/실Agent경계를해제하지않는다.
 
 - **2026-10-21 FN11→FN04 작업계획 초안 저장 일회 승인 상세 DRAFT 착수 / Main 어울 — 기능 구현 진도 아님**: FN03 actual1회 완료/소진 뒤 다음 실질 누락으로 saveWorkPlanDraft 한 연산의 REQUIRE_APPROVAL 소비를 선정했다. PMO가 상세후보/정적검토만 위임가능하다고 판단했으며 구현기준채택·새허가코드/SQL은 아직허용되지않았다. `docs/contracts/FN11_WORK_PLAN_DRAFT_APPROVAL_PROPOSAL.md` r1/SHA256 BD8DE5F2D391D66DC378C3BC8AE07B378D58BA76EEF504D1765BB1E8873EE0EA에 신규/개정 exacttarget/payload/command·원문후보보관/제한상세조회·현재권한/정책/기한→exact replay→신규CAS/소비·최종기준잠금·요청/실행양방향완결성·UI준비/요청/결정/명시저장·유실/거절후편집·직접DML음성·기존AUTO/DENY회귀·위험/대안/가역성을구체화했다. 단순approvalRef추가로기존guard를열지않고 source/API 자료계약추가를명시했다.
