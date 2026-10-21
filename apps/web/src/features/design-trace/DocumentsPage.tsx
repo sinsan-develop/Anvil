@@ -27,7 +27,7 @@ import {newSourceDetach,type SourceDetachBuffer,type SourceDetachChange} from '.
 import {SourceDetachEditor} from './SourceDetachEditor.tsx';
 import type {SourceLinkView} from './source-links-api.ts';
 import {DocumentStageFilter} from './DocumentStageFilter.tsx';
-import type {StageNodeRef} from './stage-api.ts';
+import {sameStageRef,type StageNodeRef} from './stage-api.ts';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
@@ -68,7 +68,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   async function open(item: DocumentSummary, requested: number) {
     setShowSourceLinks(false);
     const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
-    try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) setOpened(value); }
+    try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) { if(stageFilter&&!sameStageRef(value.document.stageNodeRef,stageFilter.ref))throw new ApiError('DOCUMENT_STAGE_CHANGED');setOpened(value); } }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
   }

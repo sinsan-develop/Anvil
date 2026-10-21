@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 17:03 KST UI06 필터 원문 귀속 보완 검수 / Main 어울**: c0c0b9da 뒤 새 단계필터 경로에서 반환 문서의 stageNodeRef가 다르면 원문을 표시하지 않는 검사를 기존 sameStageRef로 추가했다. 새 불일치 DOM은 오류 부재/원문표시 RED1→DOCUMENT_STAGE_CHANGED·원문숨김 GREEN, 정상 단계 원문도 같은 시험의 양성으로 추가했다. `npm run build` type0·291module, `npx playwright test --config tests/browser/stage-list.config.ts --grep STAGE_LIST`5PASS4.5s/diff0, index-BlFvi2ix.js SHA256 17D23264F99FA279D61966BB33252E2B863218C35E9783FBA36C319F40F9503A. 앞 한정 독립C0I0M0는 이 추가가드 전이며 최신 독립재검토/실DB 인증으로 승격하지 않는다.
+  - 같은 literal QA의 새 수명은17:02:32 exact회수→17:03:20별도pathfalse/process0을 확인했다. 앞16:55:49잔여0을 재사용하지 않았다. 소유변경은 DocumentsPage·그 시험·WORK_STATUS뿐, 기존API/SQL·실DB/정책·서비스·Agent/보호6/main변경0이다. UI10 출처 연결 후속 대조에서는 DOCUMENT_VERSION/ARTIFACT는 이미 연결됐고 남은 CONVERSATION/USER_INSTRUCTION 원문은 기존 DD166F 경계를 건드리므로 추가연결을 실행하지 않았다(계획 전체가 없거나 끝났다는 뜻 아님). 문서정의 비교/단계별 목록/원문 귀속의 합성결과와 실제미확인을 구분하며 전체UI06/FN03/Stage는미완료로 유지한다.
+
+- **2026-10-21 UI06 단계 목록→원문 귀속 보완 착수 / Main 어울**: c0c0b9da 게시후 같은 기존 WorkspaceDocuments 소비와 대조하여 새 DocumentsPage.open이 선택필터와 반환문서 stageNodeRef를 다시 비교하지 않는 누락을 발견했다. 목록 관측과 원문조회 사이의 기준 차이를 숨기지 않도록 같은 sameStageRef로 원문 표시를 거절하는 범위이며 새API/정책/SQL0이다. 필터원문정상·불일치 RED→최소가드→해당DOM/typebuild만 확인한다. 앞QA16:55:49잔여0을재사용하지않고 같은 `D:\tmp\anvil-v3-stage-b\ui06-stage-list-01`temp/results 새수명·owner이번귀속보완/Main·최대30분을생성전등록한다. 실DB/서비스/Agent0, exact회수/독립잔여확인을다시수행한다.
+
 - **2026-10-21 UI06 단계목록 Git 보존 후 원격 읽기 재확인 / Main 어울**: 소유6파일의 로컬766d5df340167430b3ebef3d05dad1a3e42ca57e 커밋은 성공했다. 직후 ls-remote1회가 `fatal: Could not read from remote repository.`로 실패했으나 같은 검증 development URL의 다음 읽기 exit0에서 private8a9d97d8/main f976ed5e를 확인했다. push는 아직 시도하지 않았던 구간이고 도구거절 우회/인증키·권한·설정 변경0이다. 이 오류를 제품/합성검증 실패나 새 승인 사유로 바꾸지 않는다.
 
 - **2026-10-21 16:55 KST UI06 적용 단계별 문서 목록 연결 일부 / Main 어울**: 열린 문서의 정확 양식 버전으로 기존 stage-options를 명시 조회→검증된 applicationId/nodeId 선택→동일 조건의 listDocuments/cursor→전체 단계 목록 복귀를 연결했다. 필터 전환은 커서/조회원문/비교와 비동기 원문 요청만 초기화하며 App의 작성·검토·확정·미확인 명령 버퍼는 수정하지 않는다. 현재 실행단계/방법론 변경이나 모든 프로젝트단계 자동수집으로 해석하지 않으며, 양식이 연결된 단계만 제시한다.
