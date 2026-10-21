@@ -5,6 +5,14 @@ const m:any=await import('../../../apps/web/src/features/session-detail/manual-r
 const fn=(n:string)=>{assert.equal(typeof m[n],'function');return m[n];};
 function setup(){const f=criteriaFixture(),s={user:{id:f.assignment.snapshot.confirmedBy.userId},clientId:f.assignment.projectId,csrfToken:'A'.repeat(43)},d=fn('newManualResultReport')(f.assignment,s),e=criteriaRef(99);Object.assign(d,{executionId:e.id,executionVersion:'1',executionHash:e.contentHash,rows:[{criterionId:'save',testId:'SAVE-01',reason:'DB 접속 미확인'}],risks:'변경 검증 안 됨',rollback:'기존 자료 보존'});return{...f,s,d,e};}
 
+test('화면의 파일 변경 세 종류와 선택 hash를 보존하고 실제 diff 확인/완료를 만들지 않는다',async()=>{
+ const f=setup();f.d.changes=[{path:'apps/new.ts',kind:'ADDED',beforeHash:'',afterHash:'a'.repeat(64)},{path:'apps/task.ts',kind:'MODIFIED',beforeHash:'b'.repeat(64),afterHash:'c'.repeat(64)},{path:'apps/old.ts',kind:'DELETED',beforeHash:'d'.repeat(64),afterHash:''}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3),p=prepareSubmittedResult(b.scope,b.manifest);
+ assert.deepEqual(p.manifest.changes,f.d.changes.map((r:any)=>({...r,beforeHash:r.beforeHash||null,afterHash:r.afterHash||null,diffRef:null})));f.d.changes[1].path='altered.ts';assert.equal(b.manifest.changes[1].path,'apps/task.ts');assert.equal(p.completionAccepted,false);assert.equal(p.evidenceProvenanceVerified,false);assert.equal(b.pending,null);assert.deepEqual(b.manifest.unexecuted,f.d.rows);
+});
+test('파일 변경의 절대/상위/빈 경로·잘못된 hash/종류·추가필드·개수는 자동 정규화나 무시 없이 거절한다',async()=>{
+ for(const mode of ['absolute','parent','empty','hash','kind','extra','count','null']){const f=setup();f.d.changes=[{path:'apps/task.ts',kind:'MODIFIED',beforeHash:'',afterHash:''}];if(mode==='absolute')f.d.changes[0].path='C:/private.ts';if(mode==='parent')f.d.changes[0].path='../outside.ts';if(mode==='empty')f.d.changes[0].path='';if(mode==='hash')f.d.changes[0].afterHash='not-a-hash';if(mode==='kind')f.d.changes[0].kind='RENAMED';if(mode==='extra')f.d.changes[0].verified=true;if(mode==='count')f.d.changes=Array.from({length:201},()=>f.d.changes[0]);if(mode==='null')f.d.changes=null;await assert.rejects(fn('prepareManualResultReport')(f.d,f.assignment,f.s,3));}
+});
+
 test('직접 작성한 시험 결과를 고정 기준의 제출자 주장으로 보존하고 별도 검수/실행 허가로 승격하지 않는다',async()=>{
  const f=setup();f.d.tests=[{criterionId:'save',testId:'SAVE-02',expected:'저장 후 재조회',actual:'조회 응답 오류',status:'FAIL'}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3),p=prepareSubmittedResult(b.scope,b.manifest);
  assert.deepEqual(p.manifest.testResults,[{...f.d.tests[0],baselineRefs:f.d.baselineRefs,evidence:[]}]);assert.equal(p.completionAccepted,false);assert.equal(p.evidenceProvenanceVerified,false);assert.equal(p.executionAuthorized,false);assert.equal(b.pending,null);f.d.tests[0].actual='사후변경';assert.equal(b.manifest.testResults[0].actual,'조회 응답 오류');assert.deepEqual(b.manifest.unexecuted,f.d.rows);
