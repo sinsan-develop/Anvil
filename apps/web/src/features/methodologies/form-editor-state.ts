@@ -30,6 +30,17 @@ export function changeFormItemType(buffer:FormBuffer,ownerUserId:string,itemId:s
  const next={...item,valueType,repeated:valueType==='RECORDS',fields:valueType==='TEXT'?[]:item.fields};
  return {...buffer,dirty:true,definition:{...buffer.definition,items:buffer.definition.items.map(value=>value===item?next:value)}};
 }
+/** 저장하지 않은 항목/열의 순서만 바꾼다. ID·본문·서버 버전과 기존 명령은 변경하지 않는다. */
+export function moveFormEntry(buffer:FormBuffer,ownerUserId:string,itemId:string,fieldId:string|null,direction:-1|1):FormBuffer{
+ const definition=buffer.definition,items=definition?.items,item=items?.find(value=>value.itemId===itemId);
+ if(!ownerUserId||buffer.ownerUserId!==ownerUserId||buffer.pending||buffer.review?.pending||buffer.itemId!==itemId||definition?.scope!=='USER_COMMON'||!items||!item||new Set(items.map(value=>value.itemId)).size!==items.length||![-1,1].includes(direction)||fieldId!==null&&(typeof fieldId!=='string'||!fieldId))throw new ApiError('FORM_ENTRY_MOVE_INVALID');
+ if(fieldId!==null&&(item.valueType!=='RECORDS'||!item.repeated||new Set(item.fields.map(value=>value.fieldId)).size!==item.fields.length))throw new ApiError('FORM_ENTRY_MOVE_INVALID');
+ const index=fieldId===null?items.indexOf(item):item.fields.findIndex(value=>value.fieldId===fieldId),length=fieldId===null?items.length:item.fields.length,next=index+direction;
+ if(index<0)throw new ApiError('FORM_ENTRY_MOVE_INVALID');
+ if(next<0||next>=length)return buffer;
+ function swap<T>(source:T[]):T[]{const result=[...source],entry=result[index]!;result[index]=result[next]!;result[next]=entry;return result;}
+ return {...buffer,dirty:true,definition:{...definition,items:fieldId===null?swap(items):items.map(value=>value===item?{...value,fields:swap(value.fields)}:value)}};
+}
 /** 미저장 공통 양식의 한 필드만 해제한다. 마지막 필드의 기존 검증 문제는 유지한다. */
 export function removeFormRepeatField(buffer:FormBuffer,ownerUserId:string,itemId:string,fieldId:string):FormBuffer{
  const items=buffer.definition?.items.filter(item=>item.itemId===itemId),item=items?.[0];

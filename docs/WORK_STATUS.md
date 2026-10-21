@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 02:22 KST UI03/FN03 안정ID 보존 순서 편집 / Main 어울**: 선택항목 위/아래·반복열 좌/우 한칸조정→기존별도새버전저장/재조회에연결했다. 기존items/fields배열만복제교환하며원버퍼/ID/내용·규칙/required·타항목·선택/원버전보존, 경계no-op·중복ID/타주체·pending/reviewpending·비공통본/일반항목열·임의방향거절·exactbuffer CAS를적용했다. 자동전송/새API/SQL/권한/서버검사기준0이다.
+  - 증거/오류: helper부재4RED106.6507ms→신규4+직접인접9=13PASS231.8497ms/0SKIP. 이동버튼부재DOM1RED15000ms→시험fixture의known배열 index nullable타입2건을non-null표기로보정(제품guard완화0)→최종신규2+직접인접7=9PASS9.2s·typebuild/diff0·323modules253ms/원chunk500k·NO_COLOR경고보존. 저장payload의원0/선택row/원1/나머지·열kept/removed/나머지및별도재조회DOM열title순서와UNKNOWN동일명령을확인했다. 독립한정source/testC0/I0/M0·실행0. sourceCommonFormEditor556A4BE2283381F10DB7A1C02CF5B62F22CF2BB48BF1993B9AD9869CE626F874/stateE1D281F7306E214DF57CDC4F0BF843D6B55551AB853E93E0AEB3D2F6287E6021/bundleindex-DkdL9q9b.js SHA7D593173DDD73168A658BF435A885B82BEC0C8F61684760DEEFC1CBFA16EE620.
+  - 회수/한계: 등록root02:19:13생성→02:21:42exactowner SINSAN/cyhuh·childlink0/process0뒤시험2파일회수(복구불가/사용자원본보존)→별도02:21:45pathfalse/process0. DB/WSL/listener/Agent0·fixture고정hash는실무결성증거아님·실DB/served/실권한·모든주체전환·전체FN03/Stage미검증·미완료. 보호6/main/FN10후보미채택보존·소유7파일만기존branch에보존하고서비스자동반영0.
+
+- **2026-10-22 02:18 KST UI03/FN03 양식 항목·반복열 순서 입력 착수 / Main 어울**: 기준b95ee2dd. 기존 FormDefinition.items/fields 배열순서는저장/원문계약에있으나 UI는추가/제거만있어안정ID/내용을보존한순서개정을할수없었다. 선택항목위/아래·반복열좌/우한칸만명시조정하고기존별도새버전저장/재조회·UNKNOWN잠금을소비한다. 기존순서를자동변경하거나ID/규칙·원버전을바꾸지않으며새API/SQL/권한0. 신규helper4RED106.6507ms. QA사전등록 D:\tmp\anvil-v3-stage-b\ui03-form-order-01(temp/results), Main/SINSAN/cyhuh·최대30분·현재localbundle/headlessEdge/in-process합성API·새listener/DB/WSL0. 생성전부재/부모realpath/link→종료exactowner/link/process→등록시험자료만회수/독립잔여0. 완료한이력/required/형식입력동일성공시험반복진도0·보호6/main/FN10후보미채택보존.
+
 - **UI03/FN03 항목 형식 한정 독립 결과**: 제품2지문9AD96B6A/85E0869F일치·이번소스/신규단위4·DOM3한정 C0/I0/M0/독립실행0. 소유자/선택유일성/공통본·명령잠금/same-kind no-op·필드손실확인·exact buffer CAS를확인했다. 기존분리6+1검증을동시7PASS로승격하지않고실DB/권한/모든주체전환/전체FN03미검증을유지한다. 보호6/main/미채택후보는불변이며소유7파일만기존branch에보존한다.
 
 - **2026-10-22 02:14 KST UI03/FN03 양식 항목 형식 명시 편집 / Main 어울**: 기존TEXT/RECORDS계약의미연결selector를연결했다. 반복필드있는항목을TEXT로바꿀때없어지는초안필드수를확인/취소하고명시확인뒤에만fields[]/repeatedfalse로준비한다. 원서버버전/항목ID·규칙·이유/다른항목은보존·자동저장0. TEXT→RECORDS는빈fields/repeatedtrue로남기며기존 REPEAT_FIELDS_INVALID와사용자필드추가필요를보존한다. helper는현재owner/USER_COMMON·선택유일항목·원명령/검토잠금을검사하고같은형식은no-op,상태반영은capturedbuffer동일때만한다. 새API/SQL/서버validator/합격기준·권한변경0.

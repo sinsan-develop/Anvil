@@ -2,6 +2,16 @@ import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
 import {installWorkspaceBundle} from '../UI04/bundle.ts';
+test('FORM_ORDER_SAVE 항목과 반복열의 순서만 명시 이동하고 별도 저장/재조회에서 안정ID·내용을 보존한다',async({page})=>{
+ const s=await setup(page);await page.getByRole('button',{name:'반복 필드 '+s.removed.fieldId+' 왼쪽 이동',exact:true}).isDisabled().then(v=>expect(v).toBe(true));
+ await page.getByRole('button',{name:'반복 필드 '+s.removed.fieldId+' 오른쪽 이동',exact:true}).click();await page.getByRole('button',{name:'양식 항목 '+s.row.itemId+' 위로 이동',exact:true}).click();expect(s.writes).toHaveLength(0);
+ await page.getByRole('button',{name:'공통 양식 새 버전 저장',exact:true}).click();await expect(page.getByRole('status').filter({hasText:'양식 서버 저장·재조회 확인'})).toBeVisible();const saved=s.writes[0].payload.definition;
+ expect(saved.items.map((i:any)=>i.itemId)).toEqual([s.original.items[0]!.itemId,s.row.itemId,s.original.items[1]!.itemId,...s.original.items.slice(3).map((i:any)=>i.itemId)]);
+ const row=saved.items.find((i:any)=>i.itemId===s.row.itemId);expect(row).toEqual({...s.row,fields:[s.kept,s.removed,...s.row.fields.slice(2)]});await page.getByRole('button',{name:s.row.title+' 편집',exact:true}).click();const titles=await page.getByRole('region',{name:'공통 양식 편집',exact:true}).locator('label').evaluateAll(labels=>labels.filter(label=>label.textContent?.startsWith('반복 필드 ')).map(label=>(label.querySelector('input') as HTMLInputElement)?.value));expect(titles.slice(0,2)).toEqual([s.kept.title,s.removed.title]);expect(s.writes).toHaveLength(1);s.clean();
+});
+test('FORM_ORDER_UNKNOWN 저장 미확인 중 항목/열 이동은 잠기며 동일 순서의 원명령만 재확인한다',async({page})=>{
+ const s=await setup(page),item=page.getByRole('button',{name:'양식 항목 '+s.row.itemId+' 위로 이동',exact:true}),field=page.getByRole('button',{name:'반복 필드 '+s.removed.fieldId+' 오른쪽 이동',exact:true});await field.click();s.setUncertain();await page.getByRole('button',{name:'공통 양식 새 버전 저장',exact:true}).click();await expect(page.getByRole('button',{name:'같은 양식 명령 결과 확인',exact:true})).toBeVisible();await expect(item).toBeDisabled();await expect(field).toBeDisabled();const original=structuredClone(s.writes[0]);await page.getByRole('button',{name:'같은 양식 명령 결과 확인',exact:true}).click();await expect.poll(()=>s.writes.length).toBe(2);expect(s.writes[1]).toEqual(original);s.clean();
+});
 test('FORM_ITEM_TYPE_CANCEL 반복항목 전환 취소는 모든 필드를 보존하고 명시 TEXT 전환만 별도 새버전으로 저장한다',async({page})=>{
  const s=await setup(page),type=page.getByLabel('양식 항목 형식',{exact:true}),oldField=page.getByLabel('반복 필드 '+s.removed.fieldId,{exact:true});await expect(type).toHaveValue('RECORDS');
  page.once('dialog',d=>d.dismiss());await type.selectOption('TEXT');await expect(type).toHaveValue('RECORDS');await expect(oldField).toHaveValue(s.removed.title);expect(s.writes).toHaveLength(0);
@@ -35,7 +45,7 @@ async function setup(page:Page){
  await page.route('**/api/v1/user-common/commands',r=>{const body=r.request().postDataJSON();writes.push(body);if(uncertain)return r.fulfill({status:503,json:{code:'STORAGE_UNAVAILABLE'}});expect(body.operation).toBe('saveFormDraft');saved=body.payload.definition;version=2;return r.fulfill({json:{scopeKind:'USER_COMMON',ownerUserId:uid,operationId:'a6f30000-0000-4000-8000-000000000088',commandId:body.commandId,status:'APPLIED',targetId:id,version,data:{ref:{id,version,contentHash:'b'.repeat(64)},status:'DRAFT'},serverReceivedAt:new Date().toISOString()}});});
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')unknown.push(r.url());if(r.method()!=='GET'&&!r.url().endsWith('/user-common/commands'))unknown.push(r.url());});
  await page.goto('/#/methodologies');await page.getByRole('button',{name:'이 공통 양식 편집',exact:true}).click();await page.getByRole('button',{name:row.title+' 편집',exact:true}).click();await page.getByLabel('양식 개정 이유',{exact:true}).fill('필드 선택 조정');
- return{row,removed,kept,writes,setUncertain(){uncertain=true;},clean(){expect(unknown).toEqual([]);expect(errors).toEqual([]);}};
+ return{row,removed,kept,original:structuredClone(definition),writes,setUncertain(){uncertain=true;},clean(){expect(unknown).toEqual([]);expect(errors).toEqual([]);}};
 }
 test('FORM_FIELD_REMOVE 취소는 입력 불변·선택 제거는 POST0이고 별도 저장/재조회에만 반영한다',async({page})=>{
  const s=await setup(page),field=page.getByRole('button',{name:`반복 필드 ${s.removed.fieldId} 제거`,exact:true});page.once('dialog',d=>d.dismiss());await field.click();await expect(page.getByLabel('반복 필드 '+s.removed.fieldId,{exact:true})).toHaveValue(s.removed.title);expect(s.writes).toHaveLength(0);
