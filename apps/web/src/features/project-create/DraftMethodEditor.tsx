@@ -6,6 +6,7 @@ import { MethodGraphCanvas } from '../methodology-editor/MethodGraphCanvas.tsx';
 import { NodeDefinitionFields } from '../methodology-editor/NodeDefinitionFields.tsx';
 import { NodeDocumentFields } from '../methodology-editor/NodeDocumentFields.tsx';
 import { GraphRelationsEditor } from '../methodology-editor/GraphRelationsEditor.tsx';
+import {NodeDeletionPanel} from '../methodology-editor/NodeDeletionPanel.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 
 type Authored = Extract<DraftMethodSelection, { kind: 'NEW_PROJECT_DRAFT' }>;
@@ -23,6 +24,10 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
   function graph(next: MethodologyGraph) { if (!disabled) onChange({ ...value, graph: next, reviewRefs: [] }); }
   function patchNode(patch: Partial<MethodologyNode>) { if (node) graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === node.nodeId ? { ...item, ...patch } : item) }); }
   function move(nodeId: string, dx: number, dy: number) { graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === nodeId ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) }); }
+  function removeNode(current:MethodologyGraph,nodeId:string){
+    if(disabled||value.graph!==current||node?.nodeId!==nodeId)return;
+    graph({...current,nodes:current.nodes.filter(item=>item.nodeId!==nodeId),edges:current.edges.filter(edge=>edge.fromNodeId!==nodeId&&edge.toNodeId!==nodeId),entryNodeId:current.entryNodeId===nodeId?'':current.entryNodeId,terminalNodeIds:current.terminalNodeIds.filter(id=>id!==nodeId)});setSelectedId('');
+  }
   function add() {
     const nodeId = 'N-' + crypto.randomUUID().slice(0, 8);
     const next: MethodologyNode = { nodeId, name: '새 단계', purpose: '', kind: 'HUMAN', role: 'USER', mode: 'CASE_BY_CASE', position: { x: value.graph.nodes.length * 240, y: 0 },
@@ -47,7 +52,7 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
         <NodeDefinitionFields node={node} nodes={value.graph.nodes} onChange={patchNode} />
         {error ? <p role="alert">{error.message} 기존 문서 참조는 유지하고 새 양식 선택만 제한합니다.</p> : null}
         <NodeDocumentFields node={node} nodes={value.graph.nodes} forms={forms} onChange={patchNode} />
-        <button type="button" onClick={() => { if (confirm('이 프로젝트 초안의 단계와 직접 연결만 제거할까요? 원본·저장본은 유지합니다.')) graph({ ...value.graph, nodes: value.graph.nodes.filter(item => item.nodeId !== node.nodeId), edges: value.graph.edges.filter(edge => edge.fromNodeId !== node.nodeId && edge.toNodeId !== node.nodeId), entryNodeId: value.graph.entryNodeId === node.nodeId ? '' : value.graph.entryNodeId, terminalNodeIds: value.graph.terminalNodeIds.filter(item => item !== node.nodeId) }); }}>이 초안의 단계 제거</button>
+        <NodeDeletionPanel key={node.nodeId} graph={value.graph} nodeId={node.nodeId} locked={disabled} onRemove={removeNode}/>
       </div> : <p>단계를 추가해 절차를 작성하세요. 비어 있는 초안은 확정·실행할 수 없습니다.</p>}
       <GraphRelationsEditor graph={value.graph} onChange={graph} />
     </fieldset>
