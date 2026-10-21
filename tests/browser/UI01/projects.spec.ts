@@ -20,6 +20,42 @@ async function installAccessList(page:import('@playwright/test').Page){
 const pendingAt='2026-10-20T00:00:00.000Z',pendingId='33333333-3333-4333-8333-333333333333';
 function pendingPage(){return{items:[{id:pendingId,currentVersion:1,storedStatus:'PENDING',effectiveState:'PENDING',operation:'uploadArtifact',targetRef:null,scopeDigest:'a'.repeat(64),expiresAt:'2026-10-21T00:00:00.000Z',createdAt:pendingAt,integrity:'NOT_RECHECKED'}],hasMore:true,nextCursor:'signed-page-2',observedAt:pendingAt};}
 
+const draftRef={id:'33333333-3333-4333-8333-333333333339',version:2,contentHash:'b'.repeat(64)};
+test('PROJECT_DRAFTS_PARENT 다음 프로젝트 로딩 뒤 과거 임무를 재노출·자동 재조회하지 않는다',async({page})=>{
+ const f=await installAccessList(page);let drafts=0,entered=false,release!:()=>void;
+ const gate=new Promise<void>(resolve=>release=resolve);
+ await page.route(/\/api\/v1\/projects(?:\?|$)/,async r=>{const q=new URL(r.request().url()).searchParams;if(q.has('cursor')){entered=true;await gate;}await r.fulfill({json:{items:q.has('cursor')?[two]:[one],nextCursor:q.has('cursor')?null:'projects-page-2',hasMore:!q.has('cursor'),observedAt:pendingAt,baselineVersion:null}});});
+ await page.route('**/api/v1/projects/'+one.id+'/assignment-drafts?*',r=>{drafts++;return r.fulfill({json:draftPage()});});
+ await page.goto('/');const region=page.getByRole('region',{name:'Anvil 저장 임무 초안',exact:true});await region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true}).click();await expect(region).toContainText('요구사항과 연결된 저장 작업');
+ await page.getByRole('button',{name:'다음 프로젝트 더 보기',exact:true}).click();await expect.poll(()=>entered).toBe(true);await expect(region).not.toContainText('요구사항과 연결된 저장 작업');release();await expect(page.getByRole('link',{name:'두 번째 프로젝트 프로젝트 열기',exact:true})).toBeVisible();
+ await expect(region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true})).toHaveAttribute('aria-expanded','false');await expect(region).not.toContainText('요구사항과 연결된 저장 작업');expect(drafts).toBe(1);
+ await region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true}).click();await expect(region).toContainText('요구사항과 연결된 저장 작업');expect(drafts).toBe(2);expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+function draftPage(){return{items:[{ref:draftRef,status:'DRAFT',goal:'요구사항과 연결된 저장 작업',taskRef:{planRef:{...draftRef,id:two.id},taskCode:'FN03',applicationRef:{...draftRef,id:one.id},nodeId:'build'},issueCount:2,updatedAt:pendingAt,ready:false,executionAuthorized:false}],hasMore:true,nextCursor:'drafts-page-2',observedAt:pendingAt};}
+test('PROJECT_DRAFTS 명시 조회·페이지·고정 상세 이동은 저장초안을 실행 상태로 바꾸지 않는다',async({page})=>{
+ const f=await installAccessList(page),queries:string[]=[];
+ await page.route('**/api/v1/projects/'+one.id+'/assignment-drafts?*',r=>{const q=new URL(r.request().url()).searchParams;queries.push(q.toString());return r.fulfill({json:q.has('cursor')?{items:[],hasMore:false,nextCursor:null,observedAt:pendingAt}:draftPage()});});
+ await page.goto('/');const region=page.getByRole('region',{name:'Anvil 저장 임무 초안',exact:true});await expect(region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true})).toBeVisible();expect(queries).toEqual([]);
+ await region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true}).click();await expect(region).toContainText('요구사항과 연결된 저장 작업');await expect(region).toContainText('FN03');await expect(region).toContainText('초안 · 실행 상태 아님');
+ const link=region.getByRole('link',{name:'저장 임무 v2 상세 조회',exact:true});await expect(link).toHaveAttribute('href',`#/projects/${one.id}/session/assignments/${draftRef.id}/versions/2/${draftRef.contentHash}`);
+ await region.getByRole('button',{name:'저장 임무 다음 페이지',exact:true}).click();await expect(region).toContainText('2페이지 · 이 페이지 0건 · 전체 건수 미산정');await expect(link).toHaveCount(0);await expect(region).not.toContainText('요구사항과 연결된 저장 작업');
+ await region.getByRole('button',{name:'Anvil 저장 임무 다시 조회',exact:true}).click();await expect(link).toBeVisible();
+ await page.route('**/api/v1/projects/'+one.id+'/assignment-drafts/'+draftRef.id+'/versions/2',r=>r.fulfill({status:403,json:{code:'PROJECT_ACCESS_DENIED'}}));
+ await link.click();await expect(page.getByRole('region',{name:'단계책임자·실행 상세',exact:true}).getByRole('alert')).toContainText('PROJECT_ACCESS_DENIED');
+ expect(queries).toEqual(['limit=50','limit=50&cursor=drafts-page-2','limit=50']);expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+test('PROJECT_DRAFTS 재조회 거절과 반복 커서는 과거 임무를 숨기고 0건 성공으로 만들지 않는다',async({page})=>{
+ const f=await installAccessList(page);let denied=false;await page.route('**/api/v1/projects/'+one.id+'/assignment-drafts?*',r=>denied?r.fulfill({status:403,json:{code:'PROJECT_ACCESS_DENIED'}}):r.fulfill({json:draftPage()}));await page.goto('/');
+ const region=page.getByRole('region',{name:'Anvil 저장 임무 초안',exact:true});await region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true}).click();await expect(region).toContainText('요구사항과 연결된 저장 작업');await region.getByRole('button',{name:'저장 임무 다음 페이지',exact:true}).click();await expect(region.getByRole('alert')).toContainText('PROJECT_DRAFTS_RESPONSE_INVALID');await expect(region).not.toContainText('요구사항과 연결된 저장 작업');
+ denied=true;await region.getByRole('button',{name:'Anvil 저장 임무 다시 조회',exact:true}).click();await expect(region.getByRole('alert')).toContainText('PROJECT_ACCESS_DENIED');await expect(region).not.toContainText('이 페이지 0건');expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+test('PROJECT_DRAFTS 닫은 뒤 소비된 지연 목록은 이전 임무를 다시 표시하지 않는다',async({page})=>{
+ await page.addInitScript(pid=>{const original=globalThis.fetch;(globalThis as any).draftsQa={consumed:false};globalThis.fetch=async(...args)=>{const response=await original(...args);if(new URL(String(args[0]),location.href).pathname==='/api/v1/projects/'+pid+'/assignment-drafts'){const json=response.json.bind(response);response.json=async()=>{const value=await json();setTimeout(()=>{(globalThis as any).draftsQa.consumed=true;},0);return value;};}return response;};},one.id);
+ const f=await installAccessList(page);let entered=false,release!:()=>void;const gate=new Promise<void>(resolve=>release=resolve);await page.route('**/api/v1/projects/'+one.id+'/assignment-drafts?*',async r=>{entered=true;await gate;await r.fulfill({json:draftPage()});});await page.goto('/');
+ const region=page.getByRole('region',{name:'Anvil 저장 임무 초안',exact:true});await region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true}).click();await expect.poll(()=>entered).toBe(true);await region.getByRole('button',{name:'저장 임무 조회 닫기',exact:true}).click();release();await expect.poll(()=>page.evaluate(()=>(globalThis as any).draftsQa.consumed)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>setTimeout(resolve,0)));
+ await expect(region).not.toContainText('요구사항과 연결된 저장 작업');await expect(region.getByRole('button',{name:'Anvil 저장 임무 조회',exact:true})).toHaveAttribute('aria-expanded','false');expect(f.writes).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 test('프로젝트 대기 승인은 명시 조회·다음 페이지만 읽고 페이지 건수를 전체로 합산하지 않는다',async({page})=>{
  const f=await installAccessList(page),queries:string[]=[];await page.route('**/api/v1/projects/'+one.id+'/approvals?*',r=>{const q=new URL(r.request().url()).searchParams;queries.push(q.toString());expect(q.get('status')).toBe('PENDING');return r.fulfill({json:q.has('cursor')?{items:[],hasMore:false,nextCursor:null,observedAt:pendingAt}:pendingPage()});});
  await page.goto('/');const region=page.getByRole('region',{name:'Anvil 대기 승인 조회',exact:true});await expect(region.getByRole('button',{name:'Anvil 대기 승인 조회',exact:true})).toBeVisible();expect(queries).toEqual([]);
