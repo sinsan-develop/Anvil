@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN03/UI06 공식 양식 빈 작성틀 일부**: 기존 빈작성과 별개로 고정양식/공통기준hash→항목/빈반복표/시작줄 준비→사람편집·이유작성→기존명시저장/재조회로 연결했다. 내용/검토/확정·Agent/새API/SQL/권한0. 신규2RED→8종순회직접2+저장인접4 unit6/typebuild0·초기DOM3(본문표시)·M1fixture보정후 영향1(hash/content일치)/scoped C0/I0/M0·QA01/02독립잔여0. 실제DB/served/단계산출물전용틀·모든주체/특수문자렌더/Agent·전체FN03·Stage완료아님. 원오류·분리증거·지문/미검증은WORK_STATUS를따른다.
+
 - **2026-10-22 FN05/UI04 저장 맥락의 문서·사용자지시 소비 일부**: 기존 보관 선택을 다시 대조한 후 기존 문서/발언 GET→고정원문/본문hash→명시 텍스트표시를 연결했다. 종류·본문/선언hash/다른원문·거절/지연경계를 확인하며 지시 현재효력·문서 metadata 자체hash 재계산·Agent전달은 주장하지 않는다. 신규3RED→신규3+직접영향4 unit7/typebuild0·새2+지식1 DOM3PASS·독립M1 음성분리 보강/추가검증·QA독립잔여0 범위다. 새API/SQL/권한0·원입력/저장본불변, 실제DB/served/모든주체/Agent·전체FN05/IX04·Stage 미완료이며 오류·지문/최종검토는WORK_STATUS를따른다.
 
 - **2026-10-22 FN05/UI04 저장 맥락의 지식 원문 소비 일부**: 기존 저장 준비→고정 선택/임무/INCLUDED/bodyRef→기존 지식 exactGET/hash→명시 원문 표시를 연결했다. 새API/SQL/권한/Agent전달·효력판정0·원입력/저장본불변. 새2RED→직접2+인접3 PASS·별도성공응답이탈2 PASS/새DOM1PASS·typebuild0·한정독립C0/I0/M1→단위보강후 scopedC0/I0/M0·QA독립잔여0. 합성API 화면 소비만 확인했으며 문서/지시 원문·DOM닫기/모든주체·실DB/served/Agent·전체FN05/IX04·Stage미완료, 실제오류/범위/지문은WORK_STATUS를따른다.
