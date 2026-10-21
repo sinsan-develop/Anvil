@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
-import {routeHref} from '../../shell/routes.ts';
+import {routeHref,transferPreparationHref} from '../../shell/routes.ts';
 import type {ResultIssueSelection} from '../decisions/ReportedResultIssue.tsx';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {readSessionDetail,type SessionDetail} from './api.ts';
@@ -38,6 +38,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   });return()=>{active=false;};
  },[client,projectId,id,version,hash,revision,key]);
  return <section aria-label="단계책임자·실행 상세" lang="ko">
+  {assignmentRef?<a href={transferPreparationHref(projectId,assignmentRef)}>읽기 인계 준비</a>:null}
   <div className="project-toolbar"><a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>{assignmentRef?<button type="button" disabled={pending} onClick={()=>setRevision(v=>v+1)}>상세 원본 새로고침</button>:null}</div>
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}

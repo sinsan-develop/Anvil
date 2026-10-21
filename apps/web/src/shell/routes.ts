@@ -12,6 +12,8 @@ export function parseRoute(hash: string): Route {
   if (path === '/projects') return { screen: 'projects', projectId: null };
   if (path === '/projects/new') return { screen: 'create', projectId: null };
   if (path === '/methodologies' || path === '/settings') return { screen: path.slice(1) as Screen, projectId: null };
+  const transfer=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/transfers\/assignments\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})$/.exec(path);
+  if(transfer&&Number.isSafeInteger(Number(transfer[3])))return{screen:'transfers',projectId:transfer[1]!,assignmentRef:{id:transfer[2]!,version:Number(transfer[3]),contentHash:transfer[4]!}};
   const mobile=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/mobile\/approvals$/.exec(path);
   if(mobile)return{screen:'mobile',projectId:mobile[1]!,mobileScreen:'approvals'};
   const document=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/documents\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})$/.exec(path);
@@ -31,6 +33,10 @@ export function sessionDetailHref(projectId:string,ref:{id:string;version:number
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
  if(!uuid.test(projectId)||!ref||Object.keys(ref).sort().join(',')!=='contentHash,id,version'||!uuid.test(ref.id)||!Number.isSafeInteger(ref.version)||ref.version<1||!/^[0-9a-f]{64}$/.test(ref.contentHash))throw Error('CLIENT_PATH_INVALID');
  return '#/projects/'+projectId+'/session/assignments/'+ref.id+'/versions/'+ref.version+'/'+ref.contentHash;
+}
+/** 고정 임무의 읽기 인계 준비 진입이다. 대상 배정·새 쓰기 권한을 만들지 않는다. */
+export function transferPreparationHref(projectId:string,ref:DocumentVersionSelection):string{
+ return sessionDetailHref(projectId,ref).replace('/session/assignments/','/transfers/assignments/');
 }
 /** 단순 조회 선택이다. 원문 GET의 인증·귀속·현재 상태 검사는 별도로 수행한다. */
 export function approvalRequestHref(projectId:string,requestId:string):string{

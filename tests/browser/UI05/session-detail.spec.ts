@@ -133,7 +133,7 @@ await expect(panel.getByRole('heading',{name:'완료 조건 원문',exact:true})
 test('상세조회의정상표시후접근거절은앞선원문을제거하며쓰기/실행/외부요청이없다',async({page})=>{
  const unexpected:string[]=[],writes:string[]=[],errors:string[]=[];let denied=false,resultDenied=false,delaySelection=false,originalReads=0;let releaseA:()=>void=()=>{},releaseB:()=>void=()=>{};
  const result=resultFixture();result.a=cr;result.entry.snapshot.scope.assignmentRef=cr;result.entry.snapshot.manifest.assignmentRef=cr;result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);result.item.ref=result.entry.ref;result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;result.page.assignmentRef=cr;
- const other=structuredClone(result.item);other.ref.id='33333333-3333-4333-8333-333333333333';other.manifestRef.id=other.ref.id;result.page.items.push(other);
+ const other=structuredClone(result.item);other.ref.id='33333333-3333-4333-8333-333333333333';other.manifestRef.id=other.ref.id;result.page.items.unshift(other);
  await page.route('**/*',r=>{unexpected.push(r.request().url());return r.abort();});await installWorkspaceBundle(page);
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:pid,displayName:'합성 QA'},clientId:pid,csrfToken:'A'.repeat(43)}}));
  await page.route('**/api/v1/projects/'+pid+'/**',async r=>{
@@ -150,7 +150,7 @@ test('상세조회의정상표시후접근거절은앞선원문을제거하며�
  });
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method());if(new URL(r.url()).origin!=='https://localhost:3830')unexpected.push(r.url());});
  await page.goto('/'+sessionDetailHref(pid,draftRef));const region=page.getByRole('region',{name:'단계책임자·실행 상세',exact:true});
- await expect(region.getByRole('heading',{name:definition.goal,exact:true})).toBeVisible();await expect(region).toContainText('재검토 필요');await expect(region).toContainText('현재 실행 미확인');await expect(region).toContainText('실제 관측·증거 검수 미연결');
+ await expect(region.getByRole('heading',{name:definition.goal,exact:true})).toBeVisible();await expect(region).toContainText('재검토 필요');await expect(region).toContainText('현재 실행 미확인');await expect(region.getByRole('region',{name:'실제 결과와 누락 증거',exact:true})).toContainText('실제 Agent 수행·증거 출처·쓰기 회수·안전 재개/이전은 미확인입니다.');
  const results=region.getByRole('region',{name:'제출 결과',exact:true});await results.getByRole('button',{name:'제출 원문 '+result.item.ref.id,exact:true}).click();const original=results.getByRole('article',{name:'선택 제출 원문',exact:true});await expect(original).toContainText('INCOMPLETE');await expect(original).toContainText('NOT_EXECUTED');await expect(original).toContainText('실제 Agent 미연결');await expect(original).toContainText('검수 전');
  delaySelection=true;try{
   await results.getByRole('button',{name:'제출 원문 '+other.ref.id,exact:true}).click();await expect(original).toHaveCount(0);
