@@ -3,7 +3,8 @@ import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 import {prepareResultSubmissionFile} from './result-submission-write-api.ts';
-export interface ManualResultReport {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];baselineRefs:ConfirmedAssignmentView['ref'][];executionId:string;executionVersion:string;executionHash:string;submissionState:'INCOMPLETE'|'BLOCKED'|'CANCELLED';rows:{criterionId:string;testId:string;reason:string}[];risks:string;rollback:string}
+export interface ManualReportedTest {criterionId:string;testId:string;expected:string;actual:string;status:'PASS'|'FAIL'|'NOT_EXECUTED'|'BLOCKED'|'NOT_APPLICABLE'}
+export interface ManualResultReport {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];baselineRefs:ConfirmedAssignmentView['ref'][];executionId:string;executionVersion:string;executionHash:string;submissionState:'INCOMPLETE'|'BLOCKED'|'CANCELLED';rows:{criterionId:string;testId:string;reason:string}[];tests?:ManualReportedTest[];risks:string;rollback:string}
 export interface ManualResultReportStorage {drafts:Record<string,ManualResultReport|null>;onChange:(key:string,change:(value:ManualResultReport|null)=>ManualResultReport|null)=>void}
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 function fail():never{throw new ApiError('MANUAL_RESULT_REPORT_INVALID');}
@@ -13,6 +14,9 @@ export async function prepareManualResultReport(raw:ManualResultReport,a:Confirm
  const d=structuredClone(raw);
  if(d.projectId!==a.projectId||d.ownerUserId!==s.user.id||d.ownerClientId!==s.clientId||!same(d.assignmentRef,a.ref)||!same(d.baselineRefs,a.snapshot.definition.baselineRefs)||!['INCOMPLETE','BLOCKED','CANCELLED'].includes(d.submissionState)||!Array.isArray(d.rows)||d.rows.length<1||d.rows.length>200||typeof d.risks!=='string'||typeof d.rollback!=='string'||!d.rollback.trim()||!/^\d{1,16}$/.test(d.executionVersion))fail();
  const executionRef={id:d.executionId,version:Number(d.executionVersion),contentHash:d.executionHash};
- const manifest={assignmentRef:d.assignmentRef,executionRef,baselineRefs:d.baselineRefs,submissionState:d.submissionState,changes:[],commandResults:[],testResults:[],artifactRefs:[],unexecuted:d.rows,risks:d.risks.trim()?[d.risks]:[],rollback:d.rollback,checkpointRef:null};
+ const tests=d.tests===undefined?[]:d.tests;
+ if(!Array.isArray(tests)||tests.length>200||tests.some(t=>!t||Object.keys(t).sort().join(',')!=='actual,criterionId,expected,status,testId'))fail();
+ const testResults=tests.map(t=>({...t,baselineRefs:structuredClone(d.baselineRefs),evidence:[]}));
+ const manifest={assignmentRef:d.assignmentRef,executionRef,baselineRefs:d.baselineRefs,submissionState:d.submissionState,changes:[],commandResults:[],testResults,artifactRefs:[],unexecuted:d.rows,risks:d.risks.trim()?[d.risks]:[],rollback:d.rollback,checkpointRef:null};
  return prepareResultSubmissionFile(new TextEncoder().encode(JSON.stringify({scope:{projectId:d.projectId,assignmentRef:d.assignmentRef,executionRef},manifest})),a.projectId,a.ref,s,generation);
 }

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 시험 결과 화면 작성 일부**: 별도 JSON이 필요했던 시험 조건/ID·기대/실제·상태를 기존 직접작성→명시 submitResult→목록/원문 조회로 연결했다. 고정 기준/evidence없음·수행자주장/검수false·전체미완료·원미실행보존/동일명령, 새API/SQL/권한0. 신규2RED→단위15·최종신규3+인접3 DOM6/typebuild/diff0·한정독립C0/I0/M0·QA독립잔여0. 실제DB/served/모든주체·상태/증거진위·전체FN12/Stage 미완료, 원라벨오류·지문/한계는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN03 고정 양식 본문 무결성 보정 일부**: 원 ref 대조에 실제 정의·공통기준 hash 검사를 추가하여 동일 표식의 변조 내용은 표시하지 않는다. 기존 검증 재사용·새API/SQL/권한0. 신규2RED→단위8+별도3/최초DOM10/typebuild0, 지연검사 M1은 실제 native hash 완료까지 기다리도록 시험만 보강해 영향unit1/DOM2/typecheck0·scoped C0/I0/M0·QA 독립잔여0이다. 분리 증거/원오류·지문은 WORK_STATUS를 따른다. 실DB/served/전체FN03·Stage 미완료, Agent 실행 연결 진도로 승격0.
 
 - **2026-10-22 UI02/FN02 생성 초안 삭제영향 일부**: 기존 공통 영향component를 생성 초안의단계제거→확인/취소·참조보존→기존중간저장/조회에연결했다. 선택왕복시예전확인재등장M1은실제반례RED후nodeId key로보정·한정C0/I0/M0, 최종DOM1/typebuild·재사용unit2·QA독립잔여0. 새API/SQL/권한·자동참조복구/확정0, 실DB/served/서버검사·프로젝트최종생성·전체FN02/Stage 미검증·미완료. 원오류/지문·범위는 WORK_STATUS를따른다.
