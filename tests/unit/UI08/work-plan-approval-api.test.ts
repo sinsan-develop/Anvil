@@ -59,3 +59,21 @@ test('요청 봉투가 2MiB를 넘으면 기준을 늘리거나 입력을 자르
  w.details.reason='r'.repeat(20000);for(const key of ['data','security','cost','interruption','unverified'])w.details.risks[key]='r'.repeat(20000);
  await assert.rejects(m.prepareWorkPlanApprovalRequest(f.client,w,f.b,session,()=>true),{code:'WORK_PLAN_INPUT_TOO_LARGE',status:413});assert.deepEqual(f.b,before);assert.equal(f.posts(),0);
 });
+test('제어·정책·승인 GET 도착 전 주체/기기/프로젝트/세대가 바뀌면 늦은 결박을 버린다',async()=>{
+ const m=await api();
+ for(const gate of ['CONTROL','POLICY','APPROVAL'])for(const changed of ['USER','CLIENT','PROJECT','GENERATION']){
+  const f=fixture(),w=fill(m.newWorkPlanApprovalRequest(f.b,session)),request=await m.prepareWorkPlanApprovalRequest(f.client,w,f.b,session,()=>true);f.approve(request);
+  const before=structuredClone(f.b),captured={user:uid,client:uid,project:pid,generation:1};let current={...captured},release!:()=>void,started!:()=>void;
+  const ready=new Promise<void>(resolve=>{started=resolve;}),delayed=new Promise<void>(resolve=>{release=resolve;}),calls:string[]=[];
+  const client=new ApiClient(async(path,options)=>{const url=String(path);calls.push(url);assert.notEqual(options?.method,'POST');const hit=gate==='POLICY'?url.endsWith('/permission-policy'):gate==='APPROVAL'?url.includes('/approvals/'):!url.endsWith('/permission-policy')&&!url.includes('/approvals/');if(hit){started();await delayed;}return f.client.transport(path,options);});
+  const active=()=>canonicalJson(current)===canonicalJson(captured),pending=m.bindWorkPlanApproval(client,f.b,rid,session,active);
+  await ready;current={...current,...changed==='USER'?{user:did}:changed==='CLIENT'?{client:did}:changed==='PROJECT'?{project:did}:{generation:2}};const count=calls.length;release();
+  await assert.rejects(pending,{code:'WORK_PLAN_CONTINUATION_PAUSED',status:412});assert.equal(calls.length,count,'컨텍스트가 바뀐 뒤 후속 원문 GET도 시작하지 않는다');assert.deepEqual(f.b,before);assert.equal(f.posts(),0);
+ }
+});
+test('승인 요청 준비 중 뒤늦은 정책 응답은 이탈한 화면에 새 명령을 만들지 않는다',async()=>{
+ const m=await api(),f=fixture(),w=fill(m.newWorkPlanApprovalRequest(f.b,session)),before=structuredClone(f.b);let active=true,release!:()=>void,started!:()=>void;
+ const ready=new Promise<void>(resolve=>{started=resolve;}),delayed=new Promise<void>(resolve=>{release=resolve;});
+ const client=new ApiClient(async(path,options)=>{if(String(path).endsWith('/permission-policy')){started();await delayed;}return f.client.transport(path,options);});
+ const pending=m.prepareWorkPlanApprovalRequest(client,w,f.b,session,()=>active);await ready;active=false;release();await assert.rejects(pending,{code:'WORK_PLAN_CONTINUATION_PAUSED'});assert.deepEqual(f.b,before);assert.equal(w.pending,null);assert.equal(f.posts(),0);
+});

@@ -243,6 +243,27 @@ CREATE FUNCTION anvil.work_plan_approval_required_issues(tasks jsonb) RETURNS TA
  UNION ALL SELECT 'DUPLICATE_DEPENDENCY','dependencies['||edge_n||']' FROM edges WHERE occurrence>1 AND a<>b AND anvil.work_plan_utf16_length(b)<=200 AND anvil.work_plan_text_present(b) AND EXISTS(SELECT 1 FROM cards WHERE task->>'taskCode'=b);
 $$;
 
+-- 순환의 DFS 표시 edge 자체를 재선택하지 않는다. 실제 TS가 낸 원위치의
+-- 유효 edge여야 하며, START/ACCEPTANCE별 각 순환 연결성분의 경고를 숨길 수 없다.
+CREATE FUNCTION anvil.work_plan_approval_cycle_issues_valid(tasks jsonb,issues jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ WITH RECURSIVE cards AS(SELECT task,n FROM jsonb_array_elements(tasks) WITH ORDINALITY c(task,n)),
+ raw AS(SELECT task->>'taskCode' a,dep#>>'{}' b,phase,n,p,dn FROM cards
+ CROSS JOIN LATERAL(VALUES('START',1,task->'startPrerequisites'),('ACCEPTANCE',2,task->'acceptancePrerequisites')) phases(phase,p,items)
+ CROSS JOIN LATERAL jsonb_array_elements(items) WITH ORDINALITY e(dep,dn)),
+ numbered AS(SELECT *,row_number() OVER(ORDER BY n,p,dn)-1 edge_n,row_number() OVER(PARTITION BY a,b,phase ORDER BY n,p,dn) occurrence FROM raw),
+ edges AS(SELECT * FROM numbered WHERE occurrence=1 AND a<>b AND anvil.work_plan_text_present(b) AND anvil.work_plan_utf16_length(b)<=200
+ AND EXISTS(SELECT 1 FROM cards WHERE task->>'taskCode'=b)),
+ reach(a,b,phase) AS(SELECT a,b,phase FROM edges UNION SELECT r.a,e.b,r.phase FROM reach r JOIN edges e ON e.a=r.b AND e.phase=r.phase),
+ cyclic AS(SELECT a,phase FROM reach WHERE a=b),
+ markers AS(SELECT e.* FROM edges e WHERE EXISTS(SELECT 1 FROM jsonb_array_elements(issues) issue WHERE issue->>'code'='DEPENDENCY_CYCLE' AND issue->>'location'='dependencies['||e.edge_n||']'))
+ SELECT NOT EXISTS(SELECT 1 FROM cyclic c WHERE NOT EXISTS(SELECT 1 FROM markers m
+ JOIN reach outward ON outward.a=c.a AND outward.b=m.a AND outward.phase=c.phase
+ JOIN reach inward ON inward.a=m.b AND inward.b=c.a AND inward.phase=c.phase WHERE m.phase=c.phase))
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(issues) issue WHERE issue->>'code'='DEPENDENCY_CYCLE'
+ AND NOT EXISTS(SELECT 1 FROM markers m JOIN reach back ON back.a=m.b AND back.b=m.a AND back.phase=m.phase
+ WHERE issue->>'location'='dependencies['||m.edge_n||']'));
+$$;
+
 CREATE FUNCTION anvil.check_work_plan_approval_command(pid uuid,cid uuid) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE c anvil.commands%ROWTYPE;r anvil.approval_requests%ROWTYPE;b anvil.work_plan_approval_candidates%ROWTYPE;v anvil.work_plan_versions%ROWTYPE;s jsonb;did uuid;
 BEGIN
@@ -285,6 +306,7 @@ BEGIN
   OR s->>'relationalProjection' NOT IN('STORED','ISSUES_ONLY') OR s->>'status' IS DISTINCT FROM 'DRAFT'
   OR s->'dependencies' IS DISTINCT FROM anvil.work_plan_approval_dependencies(b.payload_json->'tasks')
   OR s->>'relationalProjection' IS DISTINCT FROM CASE WHEN anvil.work_plan_approval_structure_invalid(b.payload_json->'tasks') THEN 'ISSUES_ONLY' ELSE 'STORED' END
+  OR NOT anvil.work_plan_approval_cycle_issues_valid(b.payload_json->'tasks',s->'issues')
   OR EXISTS(SELECT 1 FROM anvil.work_plan_approval_required_issues(b.payload_json->'tasks') required
    WHERE (SELECT count(*) FROM jsonb_array_elements(s->'issues') issue WHERE issue->>'code'=required.code AND issue->>'location'=required.location)
     <(SELECT count(*) FROM anvil.work_plan_approval_required_issues(b.payload_json->'tasks') other WHERE other.code=required.code AND other.location=required.location))

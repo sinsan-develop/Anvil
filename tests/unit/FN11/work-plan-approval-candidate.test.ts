@@ -86,3 +86,10 @@ test('문제가 있는 유니코드 선행도 초안 입력으로 보존하고 J
  assert(analyzeWorkPlanCards([task]).issues.some(i=>i.code==='DEPENDENCY_INPUT_INVALID'&&i.location==='dependencies[0]'));
  assert(!analyzeWorkPlanCards([task]).issues.some(i=>i.code==='DEPENDENCY_TASK_NOT_FOUND'));
 });
+test('서로 분리된 순환의 경고는 단계와 원 선행 위치별로 보존해야 한다',async()=>{
+ const {analyzeWorkPlanCards}=await import('../../../apps/server/modules/traceability/work-plan-card.ts');
+ const tasks=[{...screenTask(),taskCode:'A',startPrerequisites:['B']},{...screenTask(),taskCode:'B',startPrerequisites:['A']},{...screenTask(),taskCode:'C',acceptancePrerequisites:['D']},{...screenTask(),taskCode:'D',acceptancePrerequisites:['C']}];
+ const result=analyzeWorkPlanCards(tasks);assert.deepEqual(result.dependencies,[{taskCode:'A',dependencyTaskCode:'B',phase:'START'},{taskCode:'B',dependencyTaskCode:'A',phase:'START'},{taskCode:'C',dependencyTaskCode:'D',phase:'ACCEPTANCE'},{taskCode:'D',dependencyTaskCode:'C',phase:'ACCEPTANCE'}]);
+ assert.deepEqual(result.issues.filter(i=>i.code==='DEPENDENCY_CYCLE').map(i=>i.location),['dependencies[1]','dependencies[3]']);
+ // 이 기대값은 기존 TS 계약이다. SQL 실행·DML 거절의 증거로 사용하지 않는다.
+});

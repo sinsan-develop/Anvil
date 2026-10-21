@@ -64,6 +64,35 @@ test('PLAN_APPROVAL 준비·요청유실·별도결정·명시저장과 고정 �
  await page.getByRole('link',{name:'문서·설계 추적',exact:true}).click();await page.getByRole('button',{name:'계획 승인 재조회·미전송 명령 결박',exact:true}).click();await expect(page.getByText('정확 승인 결박 확인 · 아래 저장 버튼으로 별도 전송하세요.',{exact:true})).toBeVisible();expect(writes).toHaveLength(3);
  await page.getByRole('button',{name:'같은 작업계획 명령 결과 확인',exact:true}).click();await expect(page.getByText('작업계획 초안 저장 확인 · 실행/완료 아님',{exact:true})).toBeVisible();await page.getByRole('button',{name:'저장한 작업계획 재조회',exact:true}).click();await expect(page.getByText('저장한 버전 재조회 확인',{exact:true})).toBeVisible();expect(writes).toHaveLength(4);expect(f.unknown).toEqual([]);
 });
+test('PLAN_APPROVAL_LATE 이탈·복귀 뒤 옛 GET는 결박하지 않고 현재 재조회만 채택한다',async({page})=>{
+ await fixture(page);const requestId='a6f30000-0000-4000-8000-000000000094',decisionId='a6f30000-0000-4000-8000-000000000095',at=new Date().toISOString(),expiresAt=new Date(Date.now()+600000).toISOString();let view:any=null,posts=0,reads=0,release!:()=>Promise<void>,started!:()=>void;
+ const ready=new Promise<void>(resolve=>{started=resolve;}),rules=[{ruleId:'SAVE',subjectRef:{kind:'HUMAN',userId:user},operations:['saveWorkPlanDraft'],targetScopes:[{kind:'PROJECT',projectId:project}],disposition:'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt}],policy={rules,reason:'한 계획',reviewRefs:[]},policyRef={id:itemId,version:1,contentHash:contentHash(canonicalJson(policy))};
+ await page.addInitScript(({id})=>{
+  const w=window as any;w.__fn11LateProbe={json:0,digests:0};const originalJson=Response.prototype.json;
+  Response.prototype.json=async function(){const value=await originalJson.call(this);if(new URL(this.url,location.href).pathname.endsWith('/approvals/'+id))w.__fn11LateProbe.json++;return value;};
+  const subtle=crypto.subtle as any,originalDigest=subtle.digest.bind(subtle);
+  subtle.digest=(...args:unknown[])=>{w.__fn11LateProbe.digests++;return originalDigest(...args).finally(()=>{w.__fn11LateProbe.digests--;});};
+ },{id:requestId});
+ await page.route(`**/api/v1/projects/${project}/permission-policy`,r=>r.fulfill({json:{configured:true,policy:{ref:policyRef,...policy,createdAt:at}}}));
+ await page.route(`**/api/v1/projects/${project}/approvals?*`,r=>r.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${project}/commands`,r=>{
+  const c=r.request().postDataJSON();posts++;expect(c.operation).toBe('requestApproval');const details=c.payload.details,scopeDigest=contentHash(canonicalJson(details.actionScope)),body={projectId:project,details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:user},policyRef,requestedBy:{kind:'HUMAN',userId:user,clientId:user},controlGeneration:1},ref={id:requestId,version:1,contentHash:contentHash(canonicalJson(body))},request={id:requestId,version:1,status:'PENDING',...body,createdAt:at},d={requestId,requestVersion:1,requestRef:ref,scopeDigest,decision:'APPROVE',reason:'합성 결정',decidedBy:{kind:'HUMAN',userId:user,clientId:user},controlGeneration:1,policyRef};
+  view={request,requestRef:ref,currentVersion:2,storedStatus:'APPROVED',effectiveState:'APPROVED',decision:{ref:{id:decisionId,version:1,contentHash:contentHash(canonicalJson(d))},id:decisionId,...d,decidedAt:at},consumption:null,expired:false,basisCurrent:true,executionAuthorized:false,observedAt:at,candidatePlan:{candidateCommandId:details.candidateCommandId,payloadHash:details.actionScope.payloadHash,payload:c.payload.candidatePayload}};
+  return r.fulfill({json:{operationId:itemId,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:requestId,version:1,data:{ref,status:'APPROVAL_REQUESTED',request},serverReceivedAt:at}});
+ });
+ await page.route(`**/api/v1/projects/${project}/approvals/${requestId}`,r=>{reads++;if(reads===1)return new Promise<void>(resolve=>{release=async()=>{await r.fulfill({json:view});resolve();};started();});return r.fulfill({json:view});});
+ await fill(page);await page.getByRole('button',{name:'작업계획 저장 승인 준비',exact:true}).click();
+ for(const label of ['계획 승인 요청 이유','계획 데이터 위험','계획 보안 위험','계획 비용 위험','계획 중단 영향','계획 미확인 사항','계획 복구 방법','계획 복구 한계'])await page.getByLabel(label,{exact:true}).fill('보존 확인');
+ await page.getByLabel('계획 승인 만료 UTC',{exact:true}).fill(new Date(Date.now()+300000).toISOString());await page.getByRole('button',{name:'작업계획 일회 승인 요청 저장',exact:true}).click();await expect(page.getByText('요청 저장 확인 · 계획 저장 전',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'계획 승인 재조회·미전송 명령 결박',exact:true}).click();await ready;
+ await page.getByRole('link',{name:'승인·중요 문제',exact:true}).click();await page.getByRole('link',{name:'문서·설계 추적',exact:true}).click();await expect(page.getByRole('button',{name:'계획 승인 재조회·미전송 명령 결박',exact:true})).toBeEnabled();
+ await release();await page.waitForFunction(()=>(window as any).__fn11LateProbe?.json===1);
+ // fulfill은 소비 완료가 아니다. JSON 실제 소비·연속 hash 작업의 완료와 후속 task 장벽을 확인한다.
+ await page.evaluate(async()=>{const probe=(window as any).__fn11LateProbe;for(let settled=0;settled<2;){await new Promise<void>(resolve=>{const channel=new MessageChannel();channel.port1.onmessage=()=>{channel.port1.close();channel.port2.close();resolve();};channel.port2.postMessage(null);});settled=probe.digests===0?settled+1:0;}});
+ await expect(page.getByText('정확 승인 결박 확인 · 아래 저장 버튼으로 별도 전송하세요.',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'같은 작업계획 명령 결과 확인',exact:true})).toBeDisabled();expect(posts).toBe(1);
+ await page.getByRole('button',{name:'계획 승인 재조회·미전송 명령 결박',exact:true}).click();await expect(page.getByText('정확 승인 결박 확인 · 아래 저장 버튼으로 별도 전송하세요.',{exact:true})).toBeVisible();expect(reads).toBe(2);expect(posts).toBe(1);await expect(page.getByRole('textbox',{name:'작업계획 저장 이유',exact:true})).toHaveValue('설계와 업무 연결');
+});
+
 test('첫 확실한 계획 저장거절은 입력을 보존해 수정한 뒤 별도 명령으로 저장/재조회한다',async({page})=>{
  await installWorkspaceBundle(page);const f=await fixture(page),writes:any[]=[];let result:any;const at='2026-10-21T04:00:00Z';
  await page.route(`**/api/v1/projects/${project}/commands`,r=>{const c=r.request().postDataJSON();writes.push(c);if(writes.length===1)return r.fulfill({status:422,json:{code:'INPUT_INVALID'}});const snapshot={...c.payload,dependencies:[],issues:[],relationalProjection:'STORED'},ref={id:savedId,version:1,contentHash:contentHash(canonicalJson(snapshot))};result={ref,status:'DRAFT',...snapshot};return r.fulfill({json:{operationId:itemId,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:savedId,version:1,data:{ref,status:'WORK_PLAN_DRAFT_SAVED',workPlan:result},serverReceivedAt:at}});});
