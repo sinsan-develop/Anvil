@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **FN14 후속 저장 delta는 미채택**: 준비기록의 exact 명령/보호조회/불변schema·현재권한/replay/CAS/원문보존은 [계약 후보](contracts/FN14_TRANSFER_PREPARATION_RECORD_PROPOSAL.md)에만 정리한다. 제품/SQL/실DB/Agent 구현 착수나 FN14 완료 기준 변경은 아니다. PMO의 직접질문 통합용 한정 검토 대상이다.
+
 - **2026-10-21 FN14 내부 인계 준비 분석 일부**: PMO 허용 B 범위의 순수 계산으로 정확 임무·맥락 기준/예산 및 누락/미수집·미지원·수행자 주장 구분을 구현했다. 신규 단위11PASS/typecheck·diff0, 원 I1 RED 재현 후 exact 결합 보정·scoped 독립 C0/I0/M0. 실제 caller/UI/저장/DB/동결/Agent/이전/재개는 미구현이며 FN14 완료가 아니다. 영속 준비본 최소delta는 WORK_STATUS의 DRAFT/NOT_ADOPTED 제안으로만 남겨 PMO 검토한다. 기존 정상검사 반복0·보호6 보존.
 
 
