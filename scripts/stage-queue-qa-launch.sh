@@ -12,7 +12,7 @@ readonly issued=${2:?creation window required}
 [[ "$sha" =~ ^[0-9a-f]{40}$ && "$issued" =~ ^[0-9]{13}$ ]]
 [[ $(id -u) == 1000 && $(realpath -e "$root") == "$root" && ! -L "$root" ]]
 [[ $(stat -c %u "$root") == 1000 && $(realpath -e "$parent") == "$parent" ]]
-[[ $(git -C "$root" rev-parse HEAD) == "$sha" && -z $(git -C "$root" status --porcelain) ]]
+[[ $(git -C "$root" rev-parse HEAD) == "$sha" && $(git -C "$root" status --porcelain) == '?? node_modules' ]]
 [[ $(git -C "$root" remote get-url origin) == git@github-sinsan-develop:sinsan-develop/Anvil.git ]]
 [[ -L "$root/node_modules" && $(realpath -e "$root/node_modules") == "$deps" ]]
 [[ $(date +%s%3N) -ge "$issued" && $(( $(date +%s%3N) - issued )) -lt 300000 ]]
@@ -39,7 +39,7 @@ cleanup_checkout() {
   [[ $(qa_bounded /usr/bin/realpath -e "$root") == "$root" && ! -L "$root" && $(qa_bounded /usr/bin/stat -c %u "$root") == 1000 ]] || return 1
   [[ $(qa_bounded /usr/bin/git -C "$root" rev-parse HEAD) == "$sha" ]] || return 1
   dirty=$(qa_bounded /usr/bin/git -C "$root" status --porcelain) || return 1
-  [[ -z "$dirty" ]] || return 1
+  [[ "$dirty" == '?? node_modules' ]] || return 1
   wrong=$(qa_bounded /usr/bin/find "$root" -xdev ! -user daon -print -quit) || return 1
   [[ -z "$wrong" ]] || return 1
   links=$(qa_bounded /usr/bin/find "$root" -xdev -type l -print) || return 1

@@ -1,5 +1,11 @@
 # FN10 새 빈 PG 대기 요청 QA 01
 
+## 첫 bootstrap 및 보정
+
+첫 후보 a6b83915b5fb51c1040f2735f4649bc63cab4b5f는 PG/Node 생성 전에 clean 검사에서 exit1이었다. 등록 node_modules 링크가 Git에서 `?? node_modules`로 표시되는 것을 확인했다. 00:37:38 exact clone·링크만 회수했고 별도 부재/공유 의존성 보존·PG/net0을 확인했다. SQL/제품 검증은 미실행이다.
+
+다음 후보의 runner는 F30B008BFFBCA3FCA2D41FFF3E49CAF74C870EAB7DDDD6993BA614DE9BBADD7B, wrapper는3317856CEBC3236B483D287E02BDBD27B588E5BED1594015DD67FD5D8B537291이다. 아래 원후보 hash는 이력이다. workflow/SQL/manifest는 불변이며, 허용 Git 상태는 **tracked clean + 정확한 등록 링크 한 개**다. 다른 변경/비추적 파일은 거절하고 링크의 실제 대상도 계속 대조한다. 링크 제거 후에는 완전 clean이어야 한다. 신규 단위1RED→최종8PASS4475.1013ms/type/bash-n0, 아직 실제PG PASS가 아니다.
+
 상태: 실제PG 미실행. 담당 Main 어울, 2026-10-22. 공식 D:\Project\Anvil / codex/av3-stage-b의 게시 exact commit만 사용한다.
 
 ## 대상·지문
