@@ -530,6 +530,8 @@ GET traces는 기존 designId/version/direction과 유한 limit/cursor를 소비
 | `reviewChangeImpact` | `changeRef,baseImpactRef,items의 판단/근거,coverageGaps,reason`→새 ImpactVersion. 확인 근거 없는 UNKNOWN 제거 금지. 검토 자체가 변경 승인 아님 |
 | `activateDesignChange` | `changeRef,impactRef,approvedDesignRef,confirmedPlanRef,approvalRef,reason`→`AppliedBaseline{id,designRef,planRef,affectedTasks,recheckRequired,activatedAt}`. 현재 기준/영향 version·정확 승인·새 설계/계획·필수 영향 미확인 해소를 원자 대조. 진행 중 영향 writer의 안전 상태 미확인412 |
 
+2026-10-21 비의미 위치 명료화: 위 `activateDesignChange` 행의 `approvalRef`는 §2·§9.1 CommandRequest·§10.1에서 상속하는 **공통 명령 봉투/context의 논리 인자**다. 연산별 payload에는 `changeRef,impactRef,approvedDesignRef,confirmedPlanRef,reason`을 두며 같은 ApprovalRef/scopeDigest를 payload에 중복 삽입하지 않는다. 기존 ActionScope.payloadHash와 scopeDigest 계산·ApprovalRef 형식은 불변이다. 이 명료화는 실제 지원 operation·승인 후보 원문 조회·권한/정책·SQL 소비 범위를 추가 채택하거나 실행을 승인하지 않는다. 현재 코드의 FN11 지원 연산과 실제 적용 여부는 WORK_STATUS의 증거를 별도로 따른다.
+
 적용은 design/plan pointer와 영향 업무의 재확인 표시·이력/감사를 함께 갱신하고 과거 증거는 삭제하지 않는다. 무관한 임무를 재실행하지 않는다. 영향 있음/미확인 업무만 준비 재검토하며 실제 재개는 FN13/09의 별도 준비/제어를 소비한다. 작업계획/추적 결과는 UI06, 변경/영향/결정/적용은 UI07, 승인 상세는 UI08에 같은 ID로 연결한다. GET design-changes/:id는 전후/영향 버전·결정·계획 개정·적용 이력을 함께 반환한다.
 
 ### 10.3 FN05 — 원문·헌법·지식·검색
