@@ -16,7 +16,7 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
   catch(cause){if(active()){const e=cause instanceof ApiError?cause:new ApiError('MANUAL_RESULT_REPORT_INVALID');setError(e.code);if(e.status===401)onAuthenticationLost();}}
   finally{flight.current=false;if(live.current)setBusy(false);}
  }
- return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·명령·시험 결과도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 산출물과 출력/diff/증거 참조는 기존 JSON 파일 등록을 사용하세요. 시험/완료 합격을 만들지 않습니다.</p>
+ return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·명령·시험 결과·산출물 참조도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 출력/diff/증거 참조는 기존 JSON 파일 등록을 사용하세요. 시험/완료 합격을 만들지 않습니다.</p>
   {error?<p role="alert">{error} · 작성 입력은 보존합니다.</p>:null}
   {!draft?<button type="button" disabled={occupied||busy} onClick={()=>storage.onChange(key,old=>old??newManualResultReport(assignment,session))}>미완료 결과 직접 작성</button>:<>
    <fieldset disabled={busy||occupied}><legend>결과 주장 입력</legend>
@@ -55,6 +55,15 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
       <button type="button" onClick={()=>edit(d=>{d.tests?.splice(i,1);})}>시험 결과 {i+1} 제거</button>
      </fieldset>)}
      <button type="button" disabled={(draft.tests?.length??0)>=200} onClick={()=>edit(d=>{(d.tests??=[]).push({criterionId:'',testId:'',expected:'',actual:'',status:'NOT_EXECUTED'});})}>시험 결과 추가</button>
+    </fieldset>
+    <fieldset><legend>산출물 참조 주장</legend><p className="meta">기존 자료의 ID·버전·해시를 선언합니다. 참조만으로 파일을 만들거나 실존·접근·원문·시험 출처를 확인하지 않습니다.</p>
+     {(draft.artifacts??[]).map((row,i)=><fieldset key={i}><legend>산출물 참조 {i+1}</legend>
+      <label>보고 산출물 ID {i+1}<input maxLength={36} value={row.id} onChange={e=>edit(d=>{const r=d.artifacts?.[i];if(r)r.id=e.target.value;})}/></label>
+      <label>보고 산출물 버전 {i+1}<input inputMode="numeric" maxLength={16} value={row.version} onChange={e=>edit(d=>{const r=d.artifacts?.[i];if(r)r.version=e.target.value;})}/></label>
+      <label>보고 산출물 해시 {i+1}<input maxLength={64} value={row.contentHash} onChange={e=>edit(d=>{const r=d.artifacts?.[i];if(r)r.contentHash=e.target.value;})}/></label>
+      <button type="button" onClick={()=>edit(d=>{d.artifacts?.splice(i,1);})}>산출물 참조 {i+1} 제거</button>
+     </fieldset>)}
+     <button type="button" disabled={(draft.artifacts?.length??0)>=200} onClick={()=>edit(d=>{(d.artifacts??=[]).push({id:'',version:'',contentHash:''});})}>산출물 참조 추가</button>
     </fieldset>
     <label>보고 위험<textarea aria-label="보고 위험" maxLength={20000} value={draft.risks} onChange={e=>edit(d=>{d.risks=e.target.value;})}/></label><label>보고 복구 방법<textarea aria-label="보고 복구 방법" maxLength={20000} value={draft.rollback} onChange={e=>edit(d=>{d.rollback=e.target.value;})}/></label>
    </fieldset>

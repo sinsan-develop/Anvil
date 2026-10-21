@@ -6,7 +6,7 @@ import {prepareResultSubmissionFile} from './result-submission-write-api.ts';
 export interface ManualReportedTest {criterionId:string;testId:string;expected:string;actual:string;status:'PASS'|'FAIL'|'NOT_EXECUTED'|'BLOCKED'|'NOT_APPLICABLE'}
 export interface ManualReportedChange {path:string;kind:'ADDED'|'MODIFIED'|'DELETED';beforeHash:string;afterHash:string}
 export interface ManualReportedCommand {profile:{id:string;version:string;contentHash:string};cwd:{id:string;version:string;contentHash:string};host:{id:string;version:string;contentHash:string};argv:string;startedAt:string;finishedAt:string;exitCode:string}
-export interface ManualResultReport {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];baselineRefs:ConfirmedAssignmentView['ref'][];executionId:string;executionVersion:string;executionHash:string;submissionState:'INCOMPLETE'|'BLOCKED'|'CANCELLED';rows:{criterionId:string;testId:string;reason:string}[];tests?:ManualReportedTest[];changes?:ManualReportedChange[];commands?:ManualReportedCommand[];risks:string;rollback:string}
+export interface ManualResultReport {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;assignmentRef:ConfirmedAssignmentView['ref'];baselineRefs:ConfirmedAssignmentView['ref'][];executionId:string;executionVersion:string;executionHash:string;submissionState:'INCOMPLETE'|'BLOCKED'|'CANCELLED';rows:{criterionId:string;testId:string;reason:string}[];tests?:ManualReportedTest[];changes?:ManualReportedChange[];commands?:ManualReportedCommand[];artifacts?:{id:string;version:string;contentHash:string}[];risks:string;rollback:string}
 export interface ManualResultReportStorage {drafts:Record<string,ManualResultReport|null>;onChange:(key:string,change:(value:ManualResultReport|null)=>ManualResultReport|null)=>void}
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 function fail():never{throw new ApiError('MANUAL_RESULT_REPORT_INVALID');}
@@ -30,6 +30,9 @@ export async function prepareManualResultReport(raw:ManualResultReport,a:Confirm
  const rawChanges=d.changes===undefined?[]:d.changes;
  if(!Array.isArray(rawChanges)||rawChanges.length>200||rawChanges.some(c=>!c||Object.keys(c).sort().join(',')!=='afterHash,beforeHash,kind,path'||typeof c.beforeHash!=='string'||typeof c.afterHash!=='string'))fail();
  const changes=rawChanges.map(c=>({...c,beforeHash:c.beforeHash===''?null:c.beforeHash,afterHash:c.afterHash===''?null:c.afterHash,diffRef:null}));
- const manifest={assignmentRef:d.assignmentRef,executionRef,baselineRefs:d.baselineRefs,submissionState:d.submissionState,changes,commandResults,testResults,artifactRefs:[],unexecuted:d.rows,risks:d.risks.trim()?[d.risks]:[],rollback:d.rollback,checkpointRef:null};
+ const rawArtifacts=d.artifacts===undefined?[]:d.artifacts;
+ if(!Array.isArray(rawArtifacts)||rawArtifacts.length>200)fail();
+ const artifactRefs=rawArtifacts.map(r=>{if(!r||Object.keys(r).sort().join(',')!=='contentHash,id,version'||typeof r.id!=='string'||typeof r.contentHash!=='string'||typeof r.version!=='string'||! /^[1-9][0-9]{0,15}$/.test(r.version))fail();return{...r,version:Number(r.version)};});
+ const manifest={assignmentRef:d.assignmentRef,executionRef,baselineRefs:d.baselineRefs,submissionState:d.submissionState,changes,commandResults,testResults,artifactRefs,unexecuted:d.rows,risks:d.risks.trim()?[d.risks]:[],rollback:d.rollback,checkpointRef:null};
  return prepareResultSubmissionFile(new TextEncoder().encode(JSON.stringify({scope:{projectId:d.projectId,assignmentRef:d.assignmentRef,executionRef},manifest})),a.projectId,a.ref,s,generation);
 }
