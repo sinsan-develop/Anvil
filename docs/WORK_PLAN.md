@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN03/UI06·UI04 저장 첨부 원본 회수 일부**: 기존 보호 파일GET/native .bin 다운로드를 고정 저장첨부 목록에 연결했다. 미지원 미리보기 제한·서버현재인증/격리/바이트검사 유지·새API/SQL/권한/Agent/자동열기0. fake native취소를PASS로바꾸지 않고 기존개발TLS의 단발loopback 실제전송으로 원본bytes/hash·HTML비실행을 확인(분리후native1PASS/type0·scoped독립C0/I0/M0), listener/PID/등록경로독립잔여0. actualserver권한/격리/20MiB·정식DB/served·전체FN03/UI04/UI06/Stage미완료이며 원실패/지문/분리시험/정리는 WORK_STATUS에 보존한다.
+
 - **2026-10-22 UI04/FN03 선택 단계 자료의 서식·저장첨부 소비 일부**: 기존 단계filter/고정문서 상세에 Markdown서식/보호 PNG·텍스트 첨부 명시조회·귀속/hash 재검사를 연결했다. 새API/SQL/권한/Agent·쓰기/외부조회0, 문서원문 유지·전환때기존첨부숨김. 버튼부재RED→현재bundle 정상/변조/지연전환 DOM3PASS/typebuild0·scoped독립C0/I0/M0·QA독립잔여0. actualDB/served/권한회수·모든주체·전체UI04/FN03·Stage미완료이며 세부증거/지문/원오류는WORK_STATUS에 보존한다.
 
 - **2026-10-22 FN03/UI06 양식 항목·반복행 내용 작성 일부**: 기존 빈새문서에서 정확 양식·현재제어 확인→사람 TEXT/RECORDS 입력/이동보존→기존 명시저장·본문재조회에 연결했다. 기존 원문/새API/SQL/권한/Agent/자동확정 변경0. 실제 서버표 확인기준을 낮추지 않고 출력표를 보정했으며 최종 신규·영향 unit9/typebuild0·현재bundle DOM 직접/원문전환2PASS, 변조거절은 이전별도1PASS다. actualPG/served/현재권한·모든양식·Agent/전체FN03/UI06·Stage는 미완료다. 원오류·지문·한정검토/정리·정확Git은 WORK_STATUS에 분리 기록한다.
