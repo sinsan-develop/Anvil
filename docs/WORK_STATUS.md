@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 18:44 KST UI05 보관 검수의 기준·원조건 연결 검수 / Main 어울**: 보관 판정의 exact criteriaRef를 기존 최근20개 목록/fullref·고정원문/source hash에 대조해 원조건·시험종류·보관 판정을 함께 열고 닫도록 연결했다. 목록 밖은 미확인·최신 대체0, 닫기 epoch/effect cleanup과 검수/임무 fullref key로 후속·늦은 표시를 제한한다. 기존 입력/검수·보완 명령, API/SQL·실DB/정책/Agent 변경0이다.
+  - 증거: helper부재4RED→4PASS165.6441ms, 화면버튼부재1RED→신규4DOM PASS4.9s. 한글 오탈자 정정 최신 bundle index-DXEfZqZm.js SHA256 C02AD75179BB9CA888DFCECE99B753702CCA731CBDE35A47A3EE4FE9D18D65BC에서 신규4+직접 기존 REVIEW_HISTORY1 총5DOM PASS5.7s, 신규4+직접인접7 단위11PASS191.7558ms·type/build/diff0. 기존 chunk500k/NO_COLOR 경고 유지·전체 회귀 반복0. 기존 reviewer 한정 정적C0/I0/M0·시험 독립 실행 아님.
+  - 정리/한계: 등록 exact QA owner SINSAN/cyhuh/link0/process0 검사 후18:44:27 회수→별도18:44:31 pathfalse/process0. 목록 JSON 소비 후 닫힌 상태의 원문GET0은 직접 확인했고, 원문GET 자체 대기 중 닫기/다른 검수 선택·모든 actor/client DOM·실DB/served/권한 진위·전체 UI05/FN12/Stage는 미확인이다. 합성 시험을 실제 사용 가능/완료로 승격하지 않는다. 보호6/main·기존 소진/미채택 경계 보존이다.
+
+
+- **2026-10-21 UI05 보관 검수의 정확 기준·원조건 조회 착수 / Main 어울**: 기준 fd15395e. UI05/FN12의 보관 판정은 criteriaRef만 표시해 원조건을 별도 수동 탐색해야 했다. 기존 최근20개 기준 목록에서 같은 fullref를 찾은 뒤 기존 고정 원문 reader로 읽고, 조건별 원조건과 보관 판정을 함께 표시한다. 목록 밖 버전은 미확인으로 남기며 최신 대체·검수 재실행·저장/실행0. 화면 이탈·선택 전환 후 후속 요청/늦은 본문을 차단한다. 새 API/SQL·실DB/정책/Agent0·보호6/main 보존이다.
+  - QA 사전등록: D:\tmp\anvil-v3-stage-b\ui05-review-criteria-original-01 temp/results, owner UI05검수원조건/Main·최대30분·in-process 합성 API/로컬 bundle/headless Edge, HTTP listener/WSL/DB0. 생성 전 부재/parent link 확인, 종료 즉시 exact 회수·별도 경로/process 잔여 확인. 조사 중 추정 파일/디렉터리 읽기 실패는 실제 목록으로 정정했으며 ACL 오류·권한 변경이 아니다.
+
 - **2026-10-21 18:26 KST UI06 단계 산출물 → 빈 문서 초안 준비 검수 / Main 어울**: 기준8fef41b4의새문서작성에기존전체양식방식과분리된단계산출물방식을추가했다. 명시조회/선택후적용snapshot fullref·고유노드/OUTPUT item·정확양식·stage-options의OUTPUT/currentfullref·현재OWNER/client/세대를다시읽고제목/본문이빈로컬초안만준비한다. stageNodeRef와dirty만초기화하며서버저장/승인요청·소비/Agent실행은없다. 기존전체양식선택을돌아가도보존하고준비후사용자입력/화면재진입을유지한다. 표시한도는200단계/단계당200산출물/전체1000이며초과는명시오류,이미작성됐는지는조회/판정하지않는다. 읽기조합은원자적저장허가가아니며기존최종저장귀속/권한재검사를유지한다.
   - 검증: helper부재4RED→4GREEN211.4504ms·화면진입버튼부재1RED→첫bundle신규정상/적용변경/OWNER거절/form응답대기이탈4DOM PASS4.2s. 표시문구정정최신bundle에서정상+직접기존계획버전/닫기2DOM 총3PASS3.5s,동시에신규4+기존문서저장4단위8PASS178.6967ms. 독립M1의이탈후stage-optionsGET시험공백을제품변경없이계수/0assert로보완하고최신신규단위6PASS212.1925ms(적용없음/정합hash201node한도포함)·보강이탈1DOM PASS2.3s/typecheck/diff0. 최종scoped정적C0/I0/M0·검수자실제시험재실행은아니다. build type0/300module·index-b9uWGlHA.js SHA256 4DAA15F15DD5C4BA2618C8FE7A11965438FF6E0CDF92B979C3D1C9F13F703AD5. chunk/NO_COLOR경고보존,최신bundle전체4DOM동시PASS로소급하지않는다.
   - 정리/미확인: 등록 ui06-stage-document-draft-01은owner SINSAN/cyhuh·exact경로/link없음·관련process0확인후18:25:59회수→별도18:26:03 pathfalse/process0. 실제DB/served권한·이새경로의최종실제저장·모든주체/동시입력조합/전체UI06/FN03/Stage는미확인이다. 코드/화면·합성확인범위이며현서비스에반영하거나실사용가능이라고판정하지않는다. 새API/SQL·실DB/정책/Agent·보호6/main변경0·기존미채택/소진경계보존이다.
