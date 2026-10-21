@@ -1,9 +1,10 @@
 import { useId } from 'react';
 import type { MethodologyDocumentItem, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import type { FormSummary } from '../methodologies/forms-api.ts';
+import {PinnedFormOriginal,type PinnedFormAccess} from '../methodologies/PinnedFormOriginal.tsx';
 
 const refKey = (ref: MethodologyDocumentItem['formRef']) => `${ref.id}:${ref.version}:${ref.contentHash}`;
-export function NodeDocumentFields({ node, nodes, forms, onChange }: { node: MethodologyNode; nodes: MethodologyNode[]; forms: FormSummary[]; onChange: (patch: Partial<MethodologyNode>) => void }) {
+export function NodeDocumentFields({ node, nodes, forms, onChange,formAccess }: { node: MethodologyNode; nodes: MethodologyNode[]; forms: FormSummary[]; onChange: (patch: Partial<MethodologyNode>) => void;formAccess?:PinnedFormAccess }) {
   const id = useId();
   function patch(side: 'inputs' | 'outputs', itemId: string, patch: Partial<MethodologyDocumentItem>) { onChange({ [side]: node[side].map(item => item.itemId === itemId ? { ...item, ...patch } : item) }); }
   function add(side: 'inputs' | 'outputs') {
@@ -15,6 +16,7 @@ export function NodeDocumentFields({ node, nodes, forms, onChange }: { node: Met
       {node[side].map((item, index) => <div className="graph-fields" key={item.itemId}><p className="meta">{item.itemId}</p><label htmlFor={`${id}-${side}-${index}-form`}>{side === 'inputs' ? '입력' : '산출'} {index + 1} 양식</label><select id={`${id}-${side}-${index}-form`} value={refKey(item.formRef)} onChange={event => { const selected = forms.find(form => refKey(form.ref) === event.target.value); if (selected) patch(side, item.itemId, { formRef: selected.ref }); }}>
         {!forms.some(form => refKey(form.ref) === refKey(item.formRef)) ? <option value={refKey(item.formRef)}>기존 고정 양식 {item.formRef.id} / v{item.formRef.version} · 현재 목록에서 미확인</option> : null}{forms.map(form => <option key={refKey(form.ref)} value={refKey(form.ref)}>{form.formCode} {form.name} / v{form.ref.version}</option>)}
       </select><label><input type="checkbox" checked={item.required} onChange={event => patch(side, item.itemId, { required: event.target.checked })} />필수 문서</label>
+        {formAccess?<section aria-label={`${side==='inputs'?'입력':'산출'} 문서 ${index+1} 고정 양식 확인`}><PinnedFormOriginal key={JSON.stringify([formAccess.contextKey,node.nodeId,side,item.itemId,item.formRef])} client={formAccess.client} formRef={item.formRef} onAuthenticationLost={formAccess.onAuthenticationLost}/></section>:null}
         {side === 'inputs' ? <><label htmlFor={`${id}-${side}-${index}-source`}>입력 {index + 1} 원본 단계</label><select id={`${id}-${side}-${index}-source`} value={item.sourceNodeId ?? ''} onChange={event => {
           const next = { ...item }; if (event.target.value) next.sourceNodeId = event.target.value; else delete next.sourceNodeId;
           onChange({ inputs: node.inputs.map(value => value.itemId === item.itemId ? next : value) });

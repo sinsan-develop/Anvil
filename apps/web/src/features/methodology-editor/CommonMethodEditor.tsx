@@ -120,7 +120,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
           <NodeDefinitionFields node={node} nodes={buffer.graph.nodes} onChange={patchNode} />
           {gateway&&projectId?<NodeBudgetSelection key={[projectId,session.user.id,session.clientId,buffer.targetId,buffer.version,node.nodeId].join(':')} client={client} projectId={projectId} owner={session.user.id} buffer={buffer} onChange={change=>{onChange(change);setSavedVersion(null);}} locked={locked} onAuthenticationLost={onAuthenticationLost}/>:null}
           {formError ? <p role="alert">{formError.message} 기존 문서 참조는 유지했습니다. 새 양식 선택만 제한됩니다.</p> : null}
-          <NodeDocumentFields node={node} nodes={buffer.graph.nodes} forms={forms} onChange={patchNode} />
+          <NodeDocumentFields node={node} nodes={buffer.graph.nodes} forms={forms} onChange={patchNode} formAccess={!locked?{client,onAuthenticationLost,contextKey:JSON.stringify([session.user.id,session.clientId,projectId??null,buffer.targetId,buffer.version])}:undefined}/>
           <NodeDeletionPanel graph={buffer.graph} nodeId={node.nodeId} locked={locked} onRemove={removeNode} />
         </div> : <p>단계를 추가해 절차를 작성하세요. 빈 초안도 저장할 수 있지만 확정할 수 없습니다.</p>}
         <GraphRelationsEditor graph={buffer.graph} onChange={changeGraph} />
