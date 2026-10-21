@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12 직접보고 저장 공백 일부 해소**: source4aab0af5의 새 tests2/changes3 직접입력→기존submitResult→격리PG59SQL 실제COMMIT·별도app-role hash 원문/목록조회와 응답유실 같은명령/4원장 추가행0·변조거절을 단일모드1회 확인했다. PG/net/checkout 독립잔여0·정식3서비스 보존. 새API/SQL/권한0·수행자주장/검수false 유지, 실Agent/served/정식DB/전체FN12·IX02·인수는 미완료다. bootstrap 외부OS timeout/실패trap 미진은 기능핵심통과와 분리하고 다음자원실행전 보완하며 성공workflow 재실행하지 않는다. 상세실행·오류·미확인은 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12/UI05 변경 파일 보고 입력 일부**: 기존 changes 계약의 JSON전용공백을 상대경로·추가/수정/삭제·전후hash→명시등록/별도원문조회로연결했다. 입력주장만보존·실제파일/diff검사0·diffRef없음·원미완료/미실행/시험보고유지·새API/SQL/권한0이다. 신규2RED→단위8/신규DOM3+인접1=4PASS/typebuild/diff0·한정독립C0/I0/M0·QA독립잔여0. ADDED/DELETED는단위범위/DOM은MODIFIED, 실DB/served/실권한/전체FN12·Stage미검증·미완료이며상세지문/한계는WORK_STATUS를따른다. 후보82189A3E는미채택·일반구현과분리한다.
 
 - **2026-10-22 FN12 미채택 후보 exact 영향지도 보완**: 위 후보부록A에 실제기존연산·파일/anchor·현재성/부재행 보호와추가필요/미지원412를구분했다. auth-first·FN12전용명시READ COMMITTED/제한최종hook·보호replay·COMMIT후freshREAD실패의snapshot/receipt0·상태무관UNKNOWN/HTTP비원자한계를고정, 최종SHA82189A3EEBA5FDFB3613D12676CF1F91B6949DA929CB125560B4CD3DC0949677/문서delta독립C0/I0/M0이다. 채택·구현·실경합/COMMIT검증아님·제품SQL0, 정확채택결정은PMO에전달하고기존다른미채택질문재발행0을유지한다.
