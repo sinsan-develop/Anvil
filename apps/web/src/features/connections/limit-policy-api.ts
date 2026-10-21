@@ -9,7 +9,7 @@ export type {ExecutionLimits,LimitPolicyRecord};
 export type LimitOperation='applyLimitPolicy'|'revokeLimitPolicy';
 export interface LimitBuffer {
  bufferId:string;projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;
- base:LimitPolicyRecord|null;draft:{limits:ExecutionLimits;reason:string};pending:ProjectCommand|null;pendingHash:string|null;
+ base:LimitPolicyRecord|null;draft:{limits:ExecutionLimits;reason:string;costText?:string};pending:ProjectCommand|null;pendingHash:string|null;
  dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null;result:LimitPolicyRecord|null;
 }
 export type LimitBufferChange=(previous:LimitBuffer|null)=>LimitBuffer|null;
@@ -66,6 +66,9 @@ export async function limitPolicyAccess(client:ApiClient,b:LimitBuffer,s:Documen
  if(matched.some(r=>r.disposition==='REQUIRE_APPROVAL'))fail('LIMIT_POLICY_APPROVAL_NOT_CONNECTED',412);
 }
 function payload(b:LimitBuffer,operation:LimitOperation){
+ // 원문은 App 입력 보존용이며 API payload에는 포함하지 않는다. 빈칸을 명시한 0으로 바꾸지 않는다.
+ const cost=b.draft.costText;
+ if(operation==='applyLimitPolicy'&&cost!==undefined&&(typeof cost!=='string'||!/^\d*\.?\d+(?:[eE][+-]?\d+)?$/.test(cost)||!Number.isFinite(Number(cost))||Number(cost)!==b.draft.limits.maxCost))fail('LIMIT_COST_INPUT_INVALID');
  if(!reasonValid(b.draft.reason)||!limitsValid(b.draft.limits))fail();
  const base=b.base,version=base?.ref.version??0;
  if(version>=Number.MAX_SAFE_INTEGER-1||operation==='revokeLimitPolicy'&&(!base||base.snapshot.state!=='APPLIED'))fail();

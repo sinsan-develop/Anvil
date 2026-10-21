@@ -10,6 +10,10 @@ const hash=(v:unknown)=>contentHash(canonicalJson(v));
 function buffer(){assert.equal(typeof m.newLimitBuffer,'function');const b=m.newLimitBuffer(pid,s,2);b.draft.reason='작업에 사용할 유한 한도';return b;}
 function view(command:any){const p=command.payload,snapshot={...p,limits:p.limits??limits,state:command.operation==='applyLimitPolicy'?'APPLIED':'REVOKED',previousRef:null,decidedBy:{kind:'HUMAN',userId:uid},decidedAt:at,expiresAt:'2026-10-20T02:00:00.000Z',executionAuthorized:false,dispatchPerformed:false};return{projectId:pid,ref:{id,version:1,contentHash:hash(snapshot)},snapshot};}
 function receipt(c:any){const v=view(c);return{operationId:id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:id,version:1,data:{status:'LIMIT_POLICY_APPLIED',ref:v.ref,snapshot:v.snapshot},evidenceRefs:[],warnings:[],serverReceivedAt:at};}
+test('비운 비용 입력을0원으로 동결하지 않고 명시한0·소수만 저장한다',async()=>{
+ for(const raw of['',' ','Infinity','0x10','0.5']){const b=buffer();b.draft.limits.maxCost=0;b.draft.limits.currency='USD';b.draft.costText=raw;await assert.rejects(m.freezeLimitCommand(b,s,'applyLimitPolicy'),{code:'LIMIT_COST_INPUT_INVALID'});assert.equal(b.pending,null);}
+ for(const [raw,amount] of[['0',0],['0.25',0.25]] as const){const b=buffer();b.draft.limits.maxCost=amount;b.draft.limits.currency='USD';b.draft.costText=raw;await m.freezeLimitCommand(b,s,'applyLimitPolicy');assert.equal(b.pending.payload.limits.maxCost,amount);assert.equal(Object.hasOwn(b.pending.payload,'costText'),false);assert.equal(Object.hasOwn(b.pending.payload.limits,'costText'),false);const sent=await m.sendLimitCommand(new ApiClient(async()=>json(receipt(b.pending))),b,s);assert.equal(sent.snapshot.limits.maxCost,amount);}
+});
 const json=(v:any,status=200)=>new Response(JSON.stringify(v),{status,headers:{'content-type':'application/json'}});
 test('회수 영수증의 원 한도·기한 결박을 바꾸면 보관 확인으로 받아들이지 않는다',async()=>{
  const first=buffer();await m.freezeLimitCommand(first,s,'applyLimitPolicy');const base=view(first.pending),b=m.newLimitBuffer(pid,s,2,base);b.draft.reason='한도 회수';await m.freezeLimitCommand(b,s,'revokeLimitPolicy');
