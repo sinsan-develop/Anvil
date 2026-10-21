@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 FN05/UI10 보관원본 파일의 지식 작성 출처 연결 일부**: 기존ARTIFACT계약을같은project READY원문확인→명시출처추가/참조해제→별도지식저장/고정재조회/파일원문재열기로소비한다. 사용자본문/이유·다른출처·미확인원명령보존,source199개예약/중복ID·다른주체거절·binary미지원이다. 합성DOM4·신규/인접단위12/typebuild·한정독립C0/I0/M0범위이며실DB/served·전체FN05/Stage는미검증이다. 새API/SQL·실DB/서비스/Agent0·기존기준변경0,정확QA회수/잔여0·한계는WORK_STATUS를따른다.
+
 - **2026-10-21 FN04/UI06 계획작성 거절회복 기능 보완**: 첫확실한거절만사용자확인후업무/본문/기준/세대를보존해수정·새별도명령저장/고정재조회로이어간다. 이미pending재전송은전송전에persistent미확인으로보존해이탈/복귀·유실·후속거절로원명령을버리지못한다. 독립I1경합1RED→Main보완후DOM4/직접인접단위11/typebuild통과,실DB/served·전체FN04/Stage는미검증이다. 새API/SQL·권한·실DB/서비스/Agent변경0·기존검수기준유지,원독립판정/보완증거/일회QA회수잔여0은WORK_STATUS에기록한다.
 
 - **2026-10-21 FN03/UI06 고정 저장첨부 원문 소비 연결 일부**: 고정문서snapshot hash/첨부fullref귀속 재검사→기존sameproject 보호raw읽기/bytes/hash확인→escaped텍스트조회와재거절시원문숨김을연결했다. 텍스트2MiB이하만지원·쓰기/삭제/새API/SQL·실DB/서비스/Agent0이다. 신규/인접합성DOM6·단위12·type/build통과·한정독립C0/I0/M0이며실제PG/served·전체FN03/Stage완료가아니다. 닫기/주체전환지연DOM미검증과exact QA회수/독립잔여0은WORK_STATUS에기록했다. 승인범위·검수기준변경0이다.
