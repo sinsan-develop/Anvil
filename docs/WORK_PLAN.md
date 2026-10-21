@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN05/UI04 저장 맥락의 지식 원문 소비 일부**: 기존 저장 준비→고정 선택/임무/INCLUDED/bodyRef→기존 지식 exactGET/hash→명시 원문 표시를 연결했다. 새API/SQL/권한/Agent전달·효력판정0·원입력/저장본불변. 새2RED→직접2+인접3 PASS·별도성공응답이탈2 PASS/새DOM1PASS·typebuild0·한정독립C0/I0/M1→단위보강후 scopedC0/I0/M0·QA독립잔여0. 합성API 화면 소비만 확인했으며 문서/지시 원문·DOM닫기/모든주체·실DB/served/Agent·전체FN05/IX04·Stage미완료, 실제오류/범위/지문은WORK_STATUS를따른다.
+
 - **2026-10-22 FN12 직접보고 저장 공백 일부 해소**: source4aab0af5의 새 tests2/changes3 직접입력→기존submitResult→격리PG59SQL 실제COMMIT·별도app-role hash 원문/목록조회와 응답유실 같은명령/4원장 추가행0·변조거절을 단일모드1회 확인했다. PG/net/checkout 독립잔여0·정식3서비스 보존. 새API/SQL/권한0·수행자주장/검수false 유지, 실Agent/served/정식DB/전체FN12·IX02·인수는 미완료다. bootstrap 외부OS timeout/실패trap 미진은 기능핵심통과와 분리하고 다음자원실행전 보완하며 성공workflow 재실행하지 않는다. 상세실행·오류·미확인은 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN12/UI05 변경 파일 보고 입력 일부**: 기존 changes 계약의 JSON전용공백을 상대경로·추가/수정/삭제·전후hash→명시등록/별도원문조회로연결했다. 입력주장만보존·실제파일/diff검사0·diffRef없음·원미완료/미실행/시험보고유지·새API/SQL/권한0이다. 신규2RED→단위8/신규DOM3+인접1=4PASS/typebuild/diff0·한정독립C0/I0/M0·QA독립잔여0. ADDED/DELETED는단위범위/DOM은MODIFIED, 실DB/served/실권한/전체FN12·Stage미검증·미완료이며상세지문/한계는WORK_STATUS를따른다. 후보82189A3E는미채택·일반구현과분리한다.
