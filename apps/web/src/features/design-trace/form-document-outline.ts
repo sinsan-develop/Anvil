@@ -3,6 +3,7 @@ import {getPinnedForm} from '../methodologies/forms-api.ts';
 import {verifyFormVersionIntegrity} from '../methodologies/form-version-read.ts';
 import {documentControl,newDocument,type DocumentSession} from './editor-api.ts';
 import type {VersionRef} from '../../../../../contracts/generated-types.ts';
+import {prepareStageDocumentDraft,type StageDocumentChoice} from './stage-document-draft.ts';
 function label(value:string){if(typeof value!=='string'||!value.trim()||!value.isWellFormed()||/[\u0000-\u001f\u007f]/.test(value))throw new ApiError('FORM_OUTLINE_UNSUPPORTED');return value.replace(/[\\|[\]_*#`<>]/g,'\\$&');}
 /** 정확 양식의 빈 항목만 로컬에 만든다. 내용 작성·저장·내용검토/확정·Agent 호출이 아니다. */
 export async function prepareFormDocumentOutline(client:ApiClient,projectId:string,ref:VersionRef,session:DocumentSession,active:()=>boolean){
@@ -23,5 +24,15 @@ export async function prepareFormDocumentOutline(client:ApiClient,projectId:stri
   }
   const body=lines.join('\n');if(new TextEncoder().encode(body).length>2097152)throw new ApiError('FORM_OUTLINE_UNSUPPORTED');
   return{...draft,title:form.definition.name,body,content:{...draft.content,sections},dirty:true};
+ }catch(cause){if(!active())return null;throw cause;}
+}
+/** 현재 단계의 산출물 귀속을 먼저 확인하고, 같은 세대의 빈 작성틀만 결합한다. */
+export async function prepareStageFormOutline(client:ApiClient,selection:StageDocumentChoice,session:DocumentSession,active:()=>boolean){
+ if(!active())return null;const choice=structuredClone(selection),actor=structuredClone(session);
+ try{
+  const stage=await prepareStageDocumentDraft(client,choice,actor,active);if(!active())return null;
+  const draft=await prepareFormDocumentOutline(client,choice.projectId,stage.formRef,actor,active);if(!active()||!draft)return null;
+  if(draft.controlGeneration!==stage.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+  return{...draft,stageNodeRef:structuredClone(stage.stageNodeRef)};
  }catch(cause){if(!active())return null;throw cause;}
 }
