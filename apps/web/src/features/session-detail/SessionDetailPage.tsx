@@ -20,6 +20,7 @@ import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
 import {AssignmentEnvironmentOriginal} from './AssignmentEnvironmentOriginal.tsx';
 import {AssignmentPlanOriginal} from './AssignmentPlanOriginal.tsx';
 import {StageQueuePanel} from './StageQueuePanel.tsx';
+import {StageStartPanel} from './StageStartPanel.tsx';
 
 import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
 import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
@@ -44,6 +45,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
+  {shown?.value?.confirmed&&criteria.stageStart?<StageStartPanel key={JSON.stringify(['start',criteria.session.user.id,criteria.session.clientId,key,revision])} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={criteria.stageStart} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>:null}
   {shown?.value?.confirmed&&criteria.stageQueue?<StageQueuePanel key={JSON.stringify(['queue',criteria.session.user.id,criteria.session.clientId,key,revision])} client={client} projectId={projectId} session={criteria.session} storage={criteria.stageQueue} onUnavailable={code=>{setLoaded({key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')lost.current();}}/>:null}
   {shown?.value?.confirmed?<AssignmentPlanOriginal key={JSON.stringify([criteria.session.user.id,criteria.session.clientId,key,revision,shown.value.confirmed.ref,shown.value.draft.ref])} client={client} detail={shown.value} onAuthenticationLost={onAuthenticationLost}/>:null}
   {shown?.value?.confirmed?.snapshot.definition.environmentRef?<AssignmentEnvironmentOriginal key={JSON.stringify([criteria.session.user.id,criteria.session.clientId,key,revision,shown.value.confirmed.ref,shown.value.confirmed.snapshot.definition.environmentRef])} client={client} projectId={projectId} assignmentRef={shown.value.confirmed.ref} environmentRef={shown.value.confirmed.snapshot.definition.environmentRef} onAuthenticationLost={onAuthenticationLost}/>:null}
