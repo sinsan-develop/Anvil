@@ -20,6 +20,7 @@ import {removePlanTask} from './plan-task-removal.ts';
 import {PlanTaskRemoval} from './PlanTaskRemoval.tsx';
 import {planIssueTaskTarget} from './plan-issue-target.ts';
 import {ordered} from '../knowledge/review-view.ts';
+import {WorkPlanDraftFile} from './WorkPlanDraftFile.tsx';
 
 const listFields=[['inputs','입력'],['outputs','출력'],['included','포함 범위'],['excluded','제외 범위'],['allowedFileRefs','허용 파일'],['startPrerequisites','착수 선행'],['acceptancePrerequisites','검수 선행'],['steps','수행 절차'],['acceptanceCriteria','검수 조건'],['evidenceRequirements','증거 요구']]as const;
 const lines=(s:string)=>s===''?[]:s.split('\n');
@@ -74,6 +75,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
       {screenChoices.map(c=><section key={c.documentRef.id+':'+c.documentRef.version}><label><input type="checkbox" aria-label={`화면 ${c.title} v${c.documentRef.version} 최신 적합 검토 선택`} disabled={!c.available||locked} checked={!!c.latestReview&&s.input.screenReviewRefs.some((r:any)=>r?.id===c.latestReview!.ref.id)} onChange={e=>chooseScreenReview(c,e.target.checked)}/>{c.title} · v{c.documentRef.version} · {c.available?'최신 검토 적합':c.latestReview?'최신 검토 미적합':'검토 없음'}</label>{c.latestReview?<p>검토 이유: {c.latestReview.reason} · 실제 사람 검토 기록 · 독립 사용자 인수 보증 아님</p>:null}</section>)}
       <ul>{s.input.screenReviewRefs.map((r:any,n)=><li key={n}>선택 검토 {typeof r?.id==='string'?r.id:'형식 미확인'} · <button type="button" onClick={()=>input(v=>({...v,screenReviewRefs:v.screenReviewRefs.filter((_,k)=>k!==n)}))}>선택 검토 {n+1} 해제</button></li>)}</ul>
     </fieldset>
+    <WorkPlanDraftFile key={[session.user.id,session.clientId,buffer.projectId,s.bindingId].join(':')} buffer={buffer} session={session} disabled={moveLocked} onApply={(captured,next)=>{setScreenChoices([]);onChange(current=>current===captured&&current.ownerUserId===session.user.id&&current.projectId===buffer.projectId?next:current);}}/>
     {s.input.tasks.map((t,n)=><section key={n} tabIndex={-1} aria-label={'업무 '+(n+1)+' 카드 위치'} ref={element=>{taskLocations.current[n]=element;}}><fieldset disabled={locked}><legend>업무 {n+1}</legend>
       <button type="button" disabled={moveLocked||n===0} onClick={()=>moveTask(n,-1)}>업무 {n+1} 위로</button><button type="button" disabled={moveLocked||n===s.input.tasks.length-1} onClick={()=>moveTask(n,1)}>업무 {n+1} 아래로</button>
       <label>업무 {n+1} 코드<input maxLength={64} value={t.taskCode} onChange={e=>task(n,{taskCode:e.target.value})}/></label><label htmlFor={'plan-type-'+n}>업무 {n+1} 유형</label><select id={'plan-type-'+n} value={t.type} onChange={e=>task(n,{type:e.target.value as TaskCard['type']})}><option value="SCREEN">화면</option><option value="FUNCTION">기능</option><option value="INTEGRATION">연결·통합</option><option value="PREPARATION">준비</option></select>
