@@ -9,7 +9,9 @@ import { persistProjectReceipt, projectMember, type ProjectCommand } from '../ac
 import type { ProjectWorkPlans } from '../traceability/work-plans.ts';
 import { ProjectMethodologies } from '../methodologies/project-methodologies.ts';
 import type { ProjectListCodec } from '../projects/service.ts';
-import { readAssignmentDraftInput, type AssignmentDraftInput } from './assignment-input.ts';
+import { assertAssignmentRoot, readAssignmentDraftInput, type AssignmentDraftInput } from './assignment-input.ts';
+import { ProjectAssignmentConfirmations } from './project-assignment-confirmations.ts';
+import { inspectSourceScopeContainment } from './source-scope-containment.ts';
 
 const same = (one: unknown, two: unknown) => canonicalJson(one) === canonicalJson(two);
 const uuid = (id: unknown) => isVersionRef({ id, version: 1, contentHash: '0'.repeat(64) });
@@ -19,7 +21,36 @@ const select = 'SELECT v.*,d.head_version,d.updated_at,c.result_ref,c.operation,
 export class ProjectAssignmentDrafts {
   readonly plans: Pick<ProjectWorkPlans, 'read' | 'decision'>;
   readonly methods: Pick<ProjectMethodologies, 'readApplication'>;
-  constructor(plans: Pick<ProjectWorkPlans, 'read' | 'decision'>, methods: Pick<ProjectMethodologies, 'readApplication'> = new ProjectMethodologies()) { this.plans = plans; this.methods = methods; }
+  readonly parents: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>;
+  constructor(plans: Pick<ProjectWorkPlans, 'read' | 'decision'>, methods: Pick<ProjectMethodologies, 'readApplication'> = new ProjectMethodologies(), parents?: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>) {
+    this.plans = plans; this.methods = methods; this.parents = parents ?? new ProjectAssignmentConfirmations(this);
+  }
+  async #parent(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, input: AssignmentDraftInput) {
+    const child = input.definition, ref = child.parentAssignmentRef;
+    if (ref === null) return;
+    if (ref.id === request.targetId) throw new AuthFailure('ASSIGNMENT_PARENT_INVALID', 422);
+    // 부모 검토/개정도 이 head를 잠근다. 같은 transaction의 COMMIT까지 보유한다.
+    const head = (await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [request.projectId, ref.id])).rows[0];
+    if (!head || Number(head.head_version) !== ref.version) throw new AuthFailure('ASSIGNMENT_PARENT_NOT_CURRENT', 409);
+    const parent = await this.parents.read(db, actor, request.projectId, ref.id, ref.version);
+    if (parent.projectId !== request.projectId || !same(parent.ref, ref) || parent.snapshot.contentConfirmed !== true
+      || parent.snapshot.ready !== false || parent.snapshot.executionAuthorized !== false || parent.snapshot.dispatchPerformed !== false)
+      throw new AuthFailure('ASSIGNMENT_PARENT_INVALID', 409);
+    const original = parent.snapshot.definition;
+    assertAssignmentRoot(original);
+    const draft = await this.current(db, actor, request.projectId, parent.snapshot.draftRef);
+    if (!same(original, draft.snapshot.definition)) throw new AuthFailure('ASSIGNMENT_PARENT_INVALID', 409);
+    const decision = await this.parents.decision(db, actor, request.projectId, ref.id, ref.version);
+    if (decision.currentIssue !== null || !decision.latestReviewAccepted || !same(decision.draftRef, draft.ref) || !same(decision.confirmedRef, ref))
+      throw new AuthFailure('ASSIGNMENT_PARENT_NOT_CURRENT', 409);
+    if (!same(child.taskRef.planRef, original.taskRef.planRef) || !same(child.taskRef.applicationRef, original.taskRef.applicationRef)
+      || child.taskRef.nodeId !== original.taskRef.nodeId
+      || (['environmentRef', 'budgetRef', 'recordingPolicyRef'] as const).some(field => !same(child[field], original[field]))
+      || child.baselineRefs.some(item => !original.baselineRefs.some((base: VersionRef) => same(item, base)))
+      || child.requiredCapabilities.some(item => !original.requiredCapabilities.includes(item))
+      || (child.allowedScopes.length > 0 && !inspectSourceScopeContainment(original.allowedScopes, child.allowedScopes).scopeContained))
+      throw new AuthFailure('ASSIGNMENT_PARENT_SCOPE_MISMATCH', 422);
+  }
   async #basis(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, input: AssignmentDraftInput) {
     const task = input.definition.taskRef;
     const plan = await this.plans.read(db, actor, projectId, task.planRef.id, task.planRef.version);
@@ -42,6 +73,7 @@ export class ProjectAssignmentDrafts {
     if (request.approvalRef !== null) throw new AuthFailure('ASSIGNMENT_APPROVAL_NOT_CONNECTED', 412);
     const analysis = readAssignmentDraftInput(request.payload), input = analysis.input;
     const basis = await this.#basis(db, actor, request.projectId, input);
+    await this.#parent(db, actor, request, input);
     let previousRef: VersionRef | null = null;
     if (request.targetId === null) {
       if (request.expectedVersion !== 0 || input.baseRef !== null) throw new AuthFailure('VERSION_CONFLICT', 409);
@@ -52,6 +84,7 @@ export class ProjectAssignmentDrafts {
       if (Number(head.head_version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
       const old = await this.read(db, actor, request.projectId, request.targetId, request.expectedVersion);
       if (!same(old.ref, input.baseRef)) throw new AuthFailure('VERSION_CONFLICT', 409);
+      if (!same(old.snapshot.definition.parentAssignmentRef, input.definition.parentAssignmentRef)) throw new AuthFailure('ASSIGNMENT_PARENT_BINDING_CHANGED', 409);
       previousRef = old.ref;
     }
     const id = request.targetId ?? randomUUID(), version = request.expectedVersion + 1;
@@ -95,6 +128,7 @@ export class ProjectAssignmentDrafts {
     if (Number(head.head_version) !== ref.version) throw new AuthFailure('VERSION_CONFLICT', 409);
     const draft = await this.read(db, actor, projectId, ref.id, ref.version);
     if (!same(draft.ref, ref)) throw new AuthFailure('VERSION_CONFLICT', 409);
+    assertAssignmentRoot(draft.snapshot.definition);
     const basis = await this.#basis(db, actor, projectId, { baseRef: draft.snapshot.previousRef, definition: draft.snapshot.definition, reason: draft.snapshot.reason });
     if (!same(draft.snapshot.basis, basis)) throw new AuthFailure('ASSIGNMENT_BASIS_CHANGED', 409);
     return draft;

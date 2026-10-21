@@ -6,7 +6,7 @@ import { ordered } from '../knowledge/review-view.ts';
 import { listAssignmentDrafts, newAssignmentDraft, prepareAssignmentWrite, readAssignmentDraft, sendAssignmentDraft, type AssignmentBuffer, type AssignmentDraftView, type AssignmentPage } from './assignment-api.ts';
 import type { WorkspaceProject, WorkspaceStageSelection } from './api.ts';
 import { AssignmentContentDecision } from './AssignmentContentDecision.tsx';
-import type { AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
+import { readAssignmentDecision, readConfirmedAssignment, type AssignmentDecisionBuffer } from './assignment-confirmation-api.ts';
 import { WorkPlanTaskOriginal } from './work-plan-task-original.ts';
 import type { ContextPreparationBuffer } from './context-api.ts';
 import { AssignmentBasisDocuments } from './AssignmentBasisDocuments.ts';
@@ -23,7 +23,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const owner = project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId;
   const bound = !buffer || buffer.ownerUserId === session.user.id && buffer.ownerClientId === session.clientId && buffer.projectId === project.id;
-  const sameStage = !buffer || !!stage && ordered(buffer.input.definition.taskRef.applicationRef) === ordered(project.currentMethodologyRef) && buffer.input.definition.taskRef.nodeId === stage.nodeId && buffer.input.definition.taskRef.applicationRef.id === stage.applicationId;
+  const sameStage = !buffer || ordered(buffer.input.definition.taskRef.applicationRef) === ordered(project.currentMethodologyRef) && (stage ? buffer.input.definition.taskRef.nodeId === stage.nodeId && buffer.input.definition.taskRef.applicationRef.id === stage.applicationId : buffer.input.definition.parentAssignmentRef !== null);
   const update = (change: (value: AssignmentBuffer) => AssignmentBuffer) => { const binding = buffer?.bindingId; onChange(value => value && value.bindingId === binding ? change(value) : value); };
   async function perform(action: () => Promise<void>) {
     if (flight.current) return; flight.current = true; setBusy(true); setError(null);
@@ -57,6 +57,27 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     }
   }
   async function open(ref: PlanRef) { setOpened(null); setReread(false); const value = await readAssignmentDraft(client, project.id, ref); if (alive.current) { setOpened(value); setReread(true); } }
+  async function prepareChild(view: AssignmentDraftView) {
+    if (!owner || !bound || !safeToReplace()) return;
+    const captured = buffer;
+    setOpened(null); setReread(false);
+    const latest = await readAssignmentDraft(client, project.id, view.ref);
+    if (!alive.current) return;
+    if (latest.headVersion !== latest.ref.version || latest.snapshot.definition.parentAssignmentRef !== null) throw new ApiError('ASSIGNMENT_PARENT_NOT_CURRENT', 409);
+    const decision = await readAssignmentDecision(client, project.id, latest);
+    if (!alive.current) return;
+    if (decision.currentIssue !== null || !decision.latestReviewAccepted || !decision.confirmedRef) throw new ApiError('ASSIGNMENT_PARENT_NOT_CURRENT', 409);
+    const parent = await readConfirmedAssignment(client, project.id, decision.confirmedRef, latest);
+    if (!alive.current) return;
+    const task = parent.snapshot.definition.taskRef;
+    if (ordered(task.applicationRef) !== ordered(project.currentMethodologyRef) || stage && (task.nodeId !== stage.nodeId || task.applicationRef.id !== stage.applicationId)) throw new ApiError('ASSIGNMENT_BINDING_INVALID');
+    const generation = await documentControl(client, project.id, session); if (!alive.current) return;
+    if (generation !== project.controlState.generation) throw new ApiError('CONTROL_GENERATION_CONFLICT', 409);
+    const value: AssignmentBuffer = { bindingId: crypto.randomUUID(), projectId: project.id, ownerUserId: session.user.id, ownerClientId: session.clientId, controlGeneration: generation, expectedDesignRef: latest.snapshot.basis.designRef,
+      input: { baseRef: null, reason: '', definition: { ...structuredClone(parent.snapshot.definition), parentAssignmentRef: structuredClone(parent.ref) } },
+      ref: null, pending: null, result: null, dirty: true, uncertain: false, failure: null };
+    onChange(current => current === captured ? value : current);
+  }
   async function revise(view: AssignmentDraftView) {
     if (!owner || !bound || !stage || !safeToReplace()) return;
     const latest = await readAssignmentDraft(client, project.id, view.ref), generation = await documentControl(client, project.id, session); if (!alive.current) return;
@@ -106,12 +127,14 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {plan ? <><label>임무의 계획 업무<select value={taskCode} disabled={busy || !!buffer?.pending} onChange={event => setTaskCode(event.target.value)}>{plan.tasks.map(task => <option key={task.taskCode} value={task.taskCode}>{task.taskCode} · {task.title}</option>)}</select></label><WorkPlanTaskOriginal key={[plan.ref.id,plan.ref.version,plan.ref.contentHash,taskCode].join(':')} plan={plan} taskCode={taskCode}/><button disabled={busy || !owner || !stage || !taskCode || !!buffer?.pending} onClick={() => void perform(prepare)}>선택 업무로 임무 초안 준비</button></> : null}
     {plan ? <AssignmentBasisDocuments key={[ordered(plan.ref), ordered(plan.documentRef), ordered(plan.designRef)].join(':')} client={client} projectId={project.id} plan={plan} busy={busy} run={action => void perform(action)} /> : null}
     {buffer && bound ? <fieldset disabled={locked}><legend>작성 중인 임무 · {buffer.input.definition.taskRef.taskCode}</legend>
+      {buffer.input.definition.parentAssignmentRef ? <p>부모 연결 하위 초안 · 검토·확정·배정·실행 불가</p> : null}
+      {buffer.input.definition.parentAssignmentRef ? <p>고정 부모 {buffer.input.definition.parentAssignmentRef.id} · v{buffer.input.definition.parentAssignmentRef.version} · {buffer.input.definition.parentAssignmentRef.contentHash} · 허용 범위 축소만 가능하며 현재성은 저장 시 다시 확인합니다.</p> : null}
       {!sameStage ? <p>보관한 초안과 선택 단계/적용본이 다릅니다. 원 단계로 돌아오거나 별도로 새 초안을 준비하세요.</p> : null}
       {([['purpose', '목적'], ['goal', '목표'], ['ownerRole', '책임 역할'], ['integrationResponsibility', '통합 책임']] as const).map(([field, label]) => <label key={field}>임무 {label}<textarea maxLength={field === 'ownerRole' ? 200 : 20000} value={buffer.input.definition[field]} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value } } }))} /></label>)}
       {([['inputs', '입력'], ['outputs', '산출물'], ['acceptanceCriteria', '완료 조건'], ['verificationRequirements', '검증 조건'], ['included', '포함 범위'], ['excluded', '제외 범위'], ['requiredCapabilities', '필요 능력']] as const).map(([field, label]) => <label key={field}>임무 {label} · 한 줄 한 항목<textarea maxLength={20000} value={buffer.input.definition[field].join('\n')} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value.split('\n') } } }))} /></label>)}
       <AssignmentSourceSelection key={buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked} update={update} run={action=>void perform(action)}/>
-      <AssignmentBudgetSelection key={'budget:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain} update={update} run={action=>void perform(action)}/>
-      <AssignmentEnvironmentSelection key={'environment:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain} update={update} run={action=>void perform(action)}/>
+      <AssignmentBudgetSelection key={'budget:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain||buffer.input.definition.parentAssignmentRef!==null} update={update} run={action=>void perform(action)}/>
+      <AssignmentEnvironmentSelection key={'environment:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked||buffer.uncertain||buffer.input.definition.parentAssignmentRef!==null} update={update} run={action=>void perform(action)}/>
       <p className="meta">선택한 소스 범위는 임무 의도입니다. 실제 소스 허가·환경·예산·상황기록 정책·맥락 이해는 미확인입니다. 이 초안으로 실행할 수 없습니다.</p>
       <label>임무 저장 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, reason: event.target.value } }))} /></label>
     </fieldset> : null}
@@ -120,8 +143,10 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {drafts ? <ul>{drafts.items.map(item => <li key={item.ref.id}>{item.goal || '목표 미입력'} · v{item.ref.version}<button disabled={busy} onClick={() => void perform(() => open(item.ref))}>임무 버전 열기: {item.ref.version}</button></li>)}</ul> : null}
     {drafts?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = drafts.nextCursor; setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, cursor); if (alive.current) setDrafts(page); })}>임무 다음 목록</button> : null}
     {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
+    {shown && shown.snapshot.definition.parentAssignmentRef === null ? <button disabled={busy || !owner || !bound || !!buffer?.pending} onClick={() => void perform(() => prepareChild(shown))}>이 임무를 부모로 하위 초안 준비</button> : null}
+    {shown?.snapshot.definition.parentAssignmentRef ? <p>하위 초안은 저장·개정·조회만 가능합니다. 내용 검토·확정·책임자 배정·실행은 지원하지 않습니다.</p> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
-    {shown&&bound?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
+    {shown&&bound&&shown.snapshot.definition.parentAssignmentRef===null?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
 
@@ -136,7 +161,7 @@ function AssignmentConditions({ snapshot }: { snapshot: AssignmentDraftView['sna
     <div><dt>기준 참조 · 현재 유효성 미검증</dt><dd>{value.baselineRefs.length ? <ul>{value.baselineRefs.map(ref => <li key={ref.id + ':' + ref.version + ':' + ref.contentHash}>{ref.id} · v{ref.version} · {ref.contentHash}</li>)}</ul> : '기준 참조 없음'}</dd></div>
     <div><dt>소스 허가 범위 · 현재 권한 미검증</dt><dd>{value.allowedScopes.length ? <pre>{JSON.stringify(value.allowedScopes, null, 2)}</pre> : '등록 범위 없음 · 실행 허가 아님'}</dd></div>
     {([['environmentRef', '환경 참조'], ['budgetRef', '예산 참조'], ['recordingPolicyRef', '상황기록 정책 참조']] as const).map(([field, label]) => { const ref = value[field]; return <div key={field}><dt>{label}</dt><dd>{ref ? <>{ref.id} · v{ref.version} · {ref.contentHash} · 현재 유효성 미검증</> : '미연결 · 미검증'}</dd></div>; })}
-    <div><dt>부모 임무</dt><dd>실임무 미연결</dd></div>
+    <div><dt>부모 임무</dt><dd>{value.parentAssignmentRef ? <>{value.parentAssignmentRef.id} · v{value.parentAssignmentRef.version} · {value.parentAssignmentRef.contentHash} · 초안 연결이며 위임·실행 허가 아님</> : '부모 임무 없음'}</dd></div>
     <div><dt>이전 초안 버전</dt><dd>{snapshot.previousRef ? <>{snapshot.previousRef.id} · v{snapshot.previousRef.version} · {snapshot.previousRef.contentHash}</> : '최초 초안'}</dd></div>
     <div><dt>저장 이유</dt><dd><pre>{snapshot.reason}</pre></dd></div>
   </dl><p className="meta">저장 당시 고정 원문입니다. 참조와 범위 표시는 현재 권한·환경·예산·능력 검증이나 실행 허가가 아닙니다.</p></section>;

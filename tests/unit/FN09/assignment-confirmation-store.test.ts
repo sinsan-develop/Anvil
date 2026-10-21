@@ -7,6 +7,13 @@ const pid = '11111111-1111-4111-8111-111111111111', id = '22222222-2222-4222-822
 const actor: any = { actorId: pid, clientId: pid, serverOwner: false, credentialGeneration: 1, reauthUntil: null };
 const ref = { id, version: 1, contentHash: 'a'.repeat(64) }, policyRef = { ...ref, id: pid };
 const criteria = ['PURPOSE_SCOPE', 'BASELINE_TASK', 'INPUT_OUTPUT', 'COMPLETION_VERIFICATION', 'BOUNDARIES', 'RECORD_RECOVERY'];
+
+test('하위 초안은 검토·확정을 거절하고 영수증·검토·확정 쓰기를 만들지 않는다', async () => {
+  const q = setup(); q.draft.snapshot.definition.parentAssignmentRef = policyRef;
+  await assert.rejects(q.store.review(q.db, actor, q.command('reviewAssignmentContent', q.reviewInput()), policyRef), /ASSIGNMENT_CHILD_DRAFT_ONLY/);
+  await assert.rejects(q.store.confirm(q.db, actor, q.command('confirmAssignment', { draftRef: ref, reviewRefs: [policyRef], reason: '차단 검사', acknowledged: true }), policyRef), /ASSIGNMENT_CHILD_DRAFT_ONLY/);
+  assert.equal(q.commands.size, 0); assert.equal(q.reviews.length, 0); assert.equal(q.versions.length, 0);
+});
 function setup() {
   assert.equal(typeof module.ProjectAssignmentConfirmations, 'function');
   const definition: any = { taskRef: { planRef: ref, taskCode: 'FN01', applicationRef: ref, nodeId: 'N1' }, purpose: '주도권 보존', goal: '기능 구현', baselineRefs: [ref], inputs: ['요구'], outputs: ['결과'], acceptanceCriteria: ['정상 흐름'], verificationRequirements: ['핵심 실패'], included: ['개발'], excluded: ['운영'], allowedScopes: [{ sourceRootRef: ref, mappingRef: null, observationRef: ref, baselineRef: ref, targets: [{ relativePath: 'src/a.ts', kind: 'FILE', access: 'WRITE', recursive: false }] }], environmentRef: null, requiredCapabilities: ['코드 수정'], budgetRef: null, ownerRole: '단계책임자', parentAssignmentRef: null, recordingPolicyRef: null, integrationResponsibility: '검수·통합' };
@@ -40,6 +47,18 @@ test('사람 검토와 별도 확정은 불변 원문·영수증으로 보관하
   assert.equal(contentHash(canonicalJson(read.snapshot)), read.ref.contentHash);
   await assert.rejects(q.store.confirm(q.db, actor, q.command('confirmAssignment', { draftRef: ref, reviewRefs: [review.data.ref], reason: '중복', acknowledged: true }), policyRef), /VERSION_CONFLICT/);
 });
+test('관리자가 만든 유효 hash의 하위 확정본도 준비·실행 소비 원문으로 읽지 않는다', async () => {
+  const q=setup(), review=await q.store.review(q.db,actor,q.command('reviewAssignmentContent',q.reviewInput()),policyRef);
+  const result=await q.store.confirm(q.db,actor,q.command('confirmAssignment',{draftRef:ref,reviewRefs:[review.data.ref],reason:'내용만 확정',acknowledged:true}),policyRef);
+  q.draft.snapshot.definition.parentAssignmentRef=policyRef;
+  const row=q.versions[0], receipt=q.commands.get(row.command_id);
+  row.version_json.definition.parentAssignmentRef=policyRef;
+  row.content_hash=contentHash(canonicalJson(row.version_json));
+  receipt.result_ref.data.snapshot=structuredClone(row.version_json);
+  receipt.result_ref.data.ref={...result.data.ref,contentHash:row.content_hash};
+  await assert.rejects(q.store.read(q.db,actor,pid,id,1), /ASSIGNMENT_CHILD_DRAFT_ONLY/);
+});
+
 test('옛 적합이 있어도 최신 감사 판단이 부적합이면 확정하지 않는다', async () => {
   const q = setup(), accepted = await q.store.review(q.db, actor, q.command('reviewAssignmentContent', q.reviewInput()), policyRef);
   await q.store.review(q.db, actor, q.command('reviewAssignmentContent', q.reviewInput('REWORK')), policyRef);

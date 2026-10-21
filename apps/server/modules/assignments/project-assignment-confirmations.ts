@@ -6,7 +6,7 @@ import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
 import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
 import type { ProjectAssignmentDrafts } from './project-assignment-drafts.ts';
-import { readAssignmentDraftInput } from './assignment-input.ts';
+import { assertAssignmentRoot, readAssignmentDraftInput } from './assignment-input.ts';
 import { assignmentContentCriteria, readAssignmentConfirmation, readAssignmentContentReview } from './assignment-confirmation-input.ts';
 
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
@@ -52,7 +52,8 @@ export class ProjectAssignmentConfirmations {
   }
   async review(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     const input = readAssignmentContentReview(request.payload); this.#envelope(request, 'reviewAssignmentContent', input.draftRef);
-    await this.drafts.current(db, actor, request.projectId, input.draftRef);
+    const draft = await this.drafts.current(db, actor, request.projectId, input.draftRef);
+    assertAssignmentRoot(draft.snapshot.definition);
     const at = (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
     const snapshot = { ...input, reviewedBy: { kind: 'HUMAN', userId: actor.actorId }, reviewedAt: at, independence: 'NOT_CLAIMED' };
     const ref = { id: randomUUID(), version: 1, contentHash: contentHash(canonicalJson(snapshot)) };
@@ -63,6 +64,7 @@ export class ProjectAssignmentConfirmations {
   async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     const input = readAssignmentConfirmation(request.payload); this.#envelope(request, 'confirmAssignment', input.draftRef);
     const draft = await this.drafts.current(db, actor, request.projectId, input.draftRef);
+    assertAssignmentRoot(draft.snapshot.definition);
     if ((await db.query(versionsSelect + 'WHERE v.project_id=$1 AND v.assignment_id=$2 AND v.version=$3', [request.projectId, input.draftRef.id, input.draftRef.version])).rows.length) throw new AuthFailure('VERSION_CONFLICT', 409);
     const analysis = readAssignmentDraftInput({ baseRef: draft.snapshot.previousRef ?? null, definition: draft.snapshot.definition, reason: draft.snapshot.reason ?? '내용 필수 검사' });
     if (contentIssues([...analysis.readinessIssues, ...draft.snapshot.readinessIssues]).length) throw new AuthFailure('ASSIGNMENT_CONTENT_INCOMPLETE', 422);
@@ -84,6 +86,7 @@ export class ProjectAssignmentConfirmations {
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
     try {
       const ref = { id, version, contentHash: row.content_hash }, snapshot = row.version_json;
+      assertAssignmentRoot(snapshot.definition);
       this.#receipt(row, ref, snapshot, 'confirmAssignment', 'ASSIGNMENT_CONTENT_CONFIRMED');
       readAssignmentConfirmation({ draftRef: snapshot.draftRef, reviewRefs: snapshot.reviewRefs, reason: snapshot.reason, acknowledged: true });
       const draft = await this.drafts.read(db, actor, projectId, id, version);
@@ -92,7 +95,7 @@ export class ProjectAssignmentConfirmations {
         || snapshot.contentConfirmed !== true || snapshot.ready !== false || snapshot.executionAuthorized !== false || snapshot.dispatchPerformed !== false || Object.keys(snapshot).length !== 11) throw Error();
       for (const reviewRef of snapshot.reviewRefs) { const review = await this.#referencedReview(db, projectId, reviewRef); if (!same(review.snapshot.draftRef, draft.ref) || review.snapshot.outcome !== 'ACCEPTED') throw Error(); }
       return { projectId, ref, snapshot, observedAt: new Date().toISOString() };
-    } catch (error) { if (error instanceof AuthFailure && error.statusCode === 404) throw error; throw new AuthFailure('ASSIGNMENT_CONFIRMATION_INTEGRITY_FAILED', 503); }
+    } catch (error) { if (error instanceof AuthFailure && (error.statusCode === 404 || error.message === 'ASSIGNMENT_CHILD_DRAFT_ONLY')) throw error; throw new AuthFailure('ASSIGNMENT_CONFIRMATION_INTEGRITY_FAILED', 503); }
   }
   async decision(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
     const draft = await this.drafts.read(db, actor, projectId, id, version);

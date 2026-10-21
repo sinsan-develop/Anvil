@@ -37,7 +37,7 @@ export function readAssignmentDraftInput(value: unknown) {
     || !Array.isArray(d.baselineRefs) || d.baselineRefs.length > 200 || !d.baselineRefs.every(isVersionRef) || !nullableRefs.every(field => d[field] === null || isVersionRef(d[field])) || !Array.isArray(d.allowedScopes)) return invalid();
   if (new Set(d.baselineRefs.map((ref: VersionRef) => canonicalJson(ref))).size !== d.baselineRefs.length) return invalid();
   if (d.allowedScopes.length) { try { d.allowedScopes = readSourceScopesV1(d.allowedScopes); } catch { return invalid(); } }
-  if (d.parentAssignmentRef !== null) throw new AuthFailure('ASSIGNMENT_PARENT_NOT_CONNECTED', 412);
+  // 부모 fullref의 문법만 보존한다. 현재 확정 원문·범위는 저장 transaction에서 대조한다.
   const inspectText = (item: unknown): void => {
     if (typeof item === 'string') { try { assertKnowledgeTextSafe(item); } catch { throw new AuthFailure('ASSIGNMENT_SENSITIVE_CONTENT_SUSPECTED', 412); } }
     else if (item !== null && typeof item === 'object') for (const entry of Object.values(item)) inspectText(entry);
@@ -51,4 +51,9 @@ export function readAssignmentDraftInput(value: unknown) {
   for (const ref of [task.planRef, task.applicationRef]) if (!d.baselineRefs.some((value: VersionRef) => canonicalJson(value) === canonicalJson(ref))) issue('BASELINE_REFERENCE_MISSING', 'baselineRefs');
   for (const [code, location] of [['CONTEXT_NOT_REVIEWED', 'taskRef'], ['EXECUTION_NOT_CONNECTED', 'taskRef'], ['BUDGET_UNVERIFIED', 'budgetRef'], ['ENVIRONMENT_UNVERIFIED', 'environmentRef'], ['CAPABILITY_UNVERIFIED', 'requiredCapabilities'], ['RECORDING_POLICY_UNVERIFIED', 'recordingPolicyRef']] as const) issue(code, location);
   return { input: parsed as unknown as AssignmentDraftInput, readinessIssues, ready: false as const, executionAuthorized: false as const, dispatchPerformed: false as const };
+}
+
+/** 하위 업무는 초안 저장·조회까지만 채택됐다. 확정·배정·준비·실행 권위는 아니다. */
+export function assertAssignmentRoot(definition: Pick<AssignmentDefinition, 'parentAssignmentRef'>) {
+  if (definition.parentAssignmentRef != null) throw new AuthFailure('ASSIGNMENT_CHILD_DRAFT_ONLY', 412);
 }

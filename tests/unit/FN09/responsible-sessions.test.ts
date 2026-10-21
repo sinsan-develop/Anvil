@@ -99,6 +99,14 @@ function storeFixture() {
   return { store, db, command, define, roles, bindings, sessions, connection, application, assignment, setStale: () => { current = false; } };
 }
 
+test('이미 존재하는 nonnull 하위 확정본도 책임 세션 배정 근거가 되지 않는다', async () => {
+  const q = storeFixture(), role = await q.define();
+  q.assignment.snapshot.definition.parentAssignmentRef = { ...ref, version: 2 };
+  const rolesBefore = q.roles.length;
+  await assert.rejects(q.store.bind(q.db, actor, q.command('bindResponsibleSession', { assignmentRef: ref, roleRef: role.data.ref, connectionRef: ref, existingSessionBindingRef: null, reason: '하위 배정 금지' }), ref), /ASSIGNMENT_CHILD_DRAFT_ONLY/);
+  assert.equal(q.sessions.length, 0); assert.equal(q.bindings.length, 0); assert.equal(q.roles.length, rolesBefore);
+});
+
 test('역할 저장·고정 조회와 책임 세션 예약을 연결하되 외부 세션을 만들지 않는다', async () => {
   const q = storeFixture(), result = await q.define();
   const saved = await q.store.readRole(q.db, actor, pid, result.data.ref.id, 1);

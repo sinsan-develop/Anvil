@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN09 부모 연결 하위 초안 한정 A — 2026-10-21 직접 채택
+
+PMO가 전달한 신산님의 HUMAN_DIRECT_REPLY '승인해'로 FN09_PARENT_DRAFT_LINK_PROPOSAL.md의 SHA256 283E8601C8951574740630D7EA4F6A1EE59260E925B20FC2C5B9579E9D326B87 한정 A를 채택한다. 제안 파일의 PROPOSED 표기는 승인 전 원문 이력으로 보존하며 현재 채택 범위는 이 절을 따른다. 과거 제한 A/§13.1의 parent=null 문구는 아래 초안 범위에서만 대체한다.
+
+- 기존 prepareAssignment의 definition.parentAssignmentRef는 null 또는 같은 프로젝트의 정확한 현재 내용확정 부모 fullref다. 부모 자체의 parent는 null이며 현재 head/최신 ACCEPTED 검토·원문 해시/영수증/감사와 계획·적용 기준을 저장 transaction에서 대조한다.
+- taskRef의 applicationRef/planRef/nodeId 및 environmentRef/budgetRef/recordingPolicyRef는 부모와 exact 동일, baselineRefs/requiredCapabilities와 FILE allowedScopes는 exact 부분집합이다. taskCode는 같은 현재 확정 계획 내 실제 업무다. 부모 fullref의 개정 중 제거·교체/child→root 전환은 이번 범위에 없고 거절한다. 자유 문장·실제 OS/내용·권한의 적합은 별도 미확인이다.
+- child는 초안 저장·개정·조회만 허용하며 ready/executionAuthorized/dispatchPerformed=false다. child 검토·확정·책임 세션 배정·준비·START/SEND는 계속 거절한다. 기존 root/null 업무와 과거 버전·미확인 원명령을 보존한다.
+- UI04에서 root 초안을 명시 선택해 현재 확정 원문을 조회한 뒤에만 하위 초안을 준비한다. 부모 정의를 복사해 구체화/축소하고, 별도 저장·정확 버전 재조회로 확인한다. 부모 확인 자체는 쓰기·Agent 호출이 아니다. 이미 조회한 부모도 저장 때 재검사한다.
+- 기존 SQL은 수정하지 않고 새 0034_assignment_parent_drafts.sql 후보만 추가한다. 현재 실제 DB/SQL 적용·정식 서비스·실정책 부여·실제 위임/Agent/비용·Secret 변경은 승인에 없으며 실행하지 않는다. 합성 시험/정적 검토를 실제 PG 컴파일·직접 DML·COMMIT/MVCC·사용자 기능 완료로 승격하지 않는다.
+
 ## FN01 기능 분류 시작 기준선 후보 — 2026-10-18
 
 신산님 직접 승인 A안의 상세 계약은 [FN01 카드](../work_packages/FN01_BASELINE_IMPLEMENTATION.md) Task1~4·상세 wire다. 기존 §9.2의 items/sourceSnapshotRef:Id 단일 confirmBaseline 개괄은 이 후보에서 초안→내용검토→별도채택으로 구체화한다. 실제 적용/서비스·정책/Agent 실행 승인이 아니다.

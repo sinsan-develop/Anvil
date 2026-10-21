@@ -30,6 +30,52 @@ async function setup(page:Page,lost=false){
 }
 async function fillReview(page:Page){await page.getByRole('button',{name:'임무 내용 검토 준비',exact:true}).click();for(const criterion of criteria){const judgment=page.getByRole('combobox',{name:`${criterion} 판단`,exact:true});await expect(judgment).toHaveValue('NOT_EXECUTED');await judgment.selectOption('ACCEPTED');await page.getByRole('textbox',{name:`${criterion} 이유`,exact:true}).fill('사람이 해당 기준을 검토');}await page.getByRole('combobox',{name:'임무 검토 종합 판단',exact:true}).selectOption('ACCEPTED');await page.getByRole('textbox',{name:'임무 내용 판단 이유',exact:true}).fill('내용만 검토·실행 조건은 미확인');await page.getByLabel('임무 내용 판단을 직접 확인했습니다',{exact:true}).check();}
 
+for(const mode of ['DENIED','STALE'] as const) test('CHILD_PARENT_'+mode+' 부모 조회 실패는 기존 원문을 숨기고 저장 명령을 만들지 않는다',async({page})=>{
+ const f=await setup(page);
+ if(mode==='DENIED') await page.route('**/api/v1/projects/'+pid+'/assignment-drafts/'+id+'/versions/1',r=>r.fulfill({status:403,json:{code:'PERMISSION_DENIED'}}));
+ else await page.route('**/api/v1/projects/'+pid+'/assignment-drafts/'+id+'/versions/1/decision',r=>r.fulfill({json:{projectId:pid,draftRef,criteriaVersion:1,criteria,reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:'VERSION_CONFLICT',confirmedRef:null,latestReviewAccepted:false,readinessIssues:snapshot.readinessIssues,ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:at}}));
+ await page.getByRole('button',{name:'이 임무를 부모로 하위 초안 준비',exact:true}).click();
+ await expect(page.getByRole('alert')).toContainText(mode==='DENIED'?'PERMISSION_DENIED':'ASSIGNMENT_PARENT_NOT_CURRENT');
+ await expect(page.getByRole('region',{name:'저장한 임무 초안',exact:true})).toHaveCount(0);
+ await expect(page.getByText('부모 연결 하위 초안 · 검토·확정·배정·실행 불가',{exact:true})).toHaveCount(0);
+ expect(f.commands).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+test('CHILD_DRAFT 명시 부모 조회·준비 뒤 별도 저장/정확 재조회와 후속 확정 차단',async({page})=>{
+ const f=await setup(page); await fillReview(page);
+ await page.getByRole('button',{name:'임무 내용 판단 저장',exact:true}).click();
+ await expect(page.getByText('임무 내용 검토 저장 확인',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'임무 별도 확정 준비',exact:true}).click();
+ await page.getByLabel('임무 내용 판단 이유',{exact:true}).fill('부모 내용 확정');
+ await page.getByLabel('임무 내용 판단을 직접 확인했습니다',{exact:true}).check();
+ await page.getByRole('button',{name:'임무 내용 판단 저장',exact:true}).click();
+ await expect(page.getByText('임무 내용 확정 저장 확인 · 실행 허가 아님',{exact:true})).toBeVisible();
+ const commands:any[]=[];let saved:any=null;
+ await page.route('**/api/v1/projects/'+pid+'/commands',r=>{
+   const c=r.request().postDataJSON();commands.push(c);expect(c.operation).toBe('prepareAssignment');expect(c.payload.definition.parentAssignmentRef).toEqual(f.confirmed.ref);
+   const s={...structuredClone(snapshot),definition:c.payload.definition,reason:c.payload.reason},childRef={id:'99999999-9999-4999-8999-999999999999',version:1,contentHash:contentHash(canonicalJson(s))};
+   saved={projectId:pid,ref:childRef,snapshot:s,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:at};
+   return r.fulfill({json:{operationId:childRef.id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:childRef.id,version:1,data:{ref:childRef,status:'ASSIGNMENT_DRAFT_STORED',snapshot:s},evidenceRefs:[],warnings:[],serverReceivedAt:at}});
+ });
+ await page.route('**/api/v1/projects/'+pid+'/assignment-drafts/99999999-9999-4999-8999-999999999999/versions/1',r=>r.fulfill({json:saved}));
+ await page.getByRole('button',{name:'이 임무를 부모로 하위 초안 준비',exact:true}).click();
+ expect(commands).toHaveLength(0);
+ await expect(page.getByText('부모 연결 하위 초안 · 검토·확정·배정·실행 불가',{exact:true})).toBeVisible();
+ await page.getByRole('textbox',{name:'임무 목표',exact:true}).fill('한정 하위 목표');
+ await page.getByRole('textbox',{name:'임무 저장 이유',exact:true}).fill('부모 연결 초안 저장');
+ await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');
+ expect(commands).toHaveLength(1);expect(commands[0].payload.definition.goal).toBe('한정 하위 목표');
+ await page.getByRole('button',{name:'저장 버전 재조회',exact:true}).click();
+ await expect(page.getByText('저장 버전 재조회 확인',{exact:true})).toBeVisible();
+ const stored=page.getByRole('region',{name:'저장한 임무 초안',exact:true});
+ await expect(stored.getByText(f.confirmed.ref.id+' · v1 · '+f.confirmed.ref.contentHash+' · 초안 연결이며 위임·실행 허가 아님',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'임무 내용 검토 준비',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'임무 별도 확정 준비',exact:true})).toHaveCount(0);
+ expect(f.commands.map(c=>c.operation)).toEqual(['reviewAssignmentContent','confirmAssignment']);
+ expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 for(const mode of ['OTHER','HASH']as const)test('RESPONSIBLE_SELECTION_'+mode+' 후보 페이지가 바뀌어도 정확 원 선택과 이유를 보존한다',async({page})=>{
  const f=await setup(page);await fillReview(page);await page.getByRole('button',{name:'임무 내용 판단 저장',exact:true}).click();await expect(page.getByText('임무 내용 검토 저장 확인',{exact:true})).toBeVisible();await page.getByRole('button',{name:'임무 별도 확정 준비',exact:true}).click();await page.getByLabel('임무 내용 판단 이유',{exact:true}).fill('예약 입력 전 내용 확정');await page.getByLabel('임무 내용 판단을 직접 확인했습니다',{exact:true}).check();await page.getByRole('button',{name:'임무 내용 판단 저장',exact:true}).click();await expect(page.getByText('임무 내용 확정 저장 확인 · 실행 허가 아님',{exact:true})).toBeVisible();
  const original={id:'77777777-7777-4777-8777-777777777777',version:1,contentHash:'a'.repeat(64)},other=mode==='OTHER'?{...original,id:'88888888-8888-4888-8888-888888888888'}:{...original,contentHash:'b'.repeat(64)};let pages=0;

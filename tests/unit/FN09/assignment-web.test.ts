@@ -26,6 +26,26 @@ function reply(command: any) {
   return { operationId: pid, commandId: command.commandId, projectId: pid, status: 'APPLIED', targetId: target.id, version: 1, data: { ref: target, status: 'ASSIGNMENT_DRAFT_STORED', snapshot }, evidenceRefs: [], warnings: [], serverReceivedAt: '2026-10-17T23:00:00Z' };
 }
 
+test('부모 연결 하위 초안은 정확 원명령으로 별도 저장하고 원문 재조회에 parent fullref를 보존한다', async () => {
+  const b=buffer(), parentRef={...ref,id:'99999999-9999-4999-8999-999999999999'};
+  b.input.definition.parentAssignmentRef=parentRef;
+  const command=fn('prepareAssignmentWrite')(b,session), response=reply(command), urls:string[]=[];
+  const client=new ApiClient(async (url:any,init:any)=>{
+    urls.push(String(url));
+    if(init?.method==='POST') {assert.deepEqual(JSON.parse(init.body),command);return new Response(JSON.stringify(response),{headers:{'content-type':'application/json'}});}
+    return new Response(JSON.stringify({projectId:pid,ref:response.data.ref,snapshot:response.data.snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:'2026-10-21T00:00:00Z'}),{headers:{'content-type':'application/json'}});
+  });
+  const saved=await fn('sendAssignmentDraft')(client,command,design,session.csrfToken);
+  const viewed=await fn('readAssignmentDraft')(client,pid,saved.ref);
+  assert.deepEqual(viewed.snapshot.definition.parentAssignmentRef,parentRef);
+  assert.equal(viewed.snapshot.executionAuthorized,false); assert.equal(urls.length,2);
+  assert(urls.every(url=>url.startsWith('/api/v1/projects/')));
+  b.pending=structuredClone(command); b.uncertain=true;
+  assert.deepEqual(fn('prepareAssignmentWrite')(b,session),command);
+  b.input.definition.parentAssignmentRef={...parentRef,version:2};
+  assert.throws(()=>fn('prepareAssignmentWrite')(b,session), (error:unknown)=>error instanceof ApiError&&error.code==='ASSIGNMENT_BINDING_INVALID');
+});
+
 function selectedSourceViews() {
   const sourceRootRef={...ref,id:'55555555-5555-4555-8555-555555555555'},snapshotRef={...ref,id:'66666666-6666-4666-8666-666666666666'},grantRef={...ref,id:'77777777-7777-4777-8777-777777777777'},baselineRef={...ref,id:'88888888-8888-4888-8888-888888888888'};
   return {

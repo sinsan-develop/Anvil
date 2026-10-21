@@ -29,8 +29,8 @@ test('잘못된 형태·unknown 완료필드·초과 배열/텍스트·잘못된
     const value = sample(); mutate(value); assert.throws(() => read(value), /ASSIGNMENT_INPUT_INVALID/);
   }
 });
-test('부모 실임무 미연결과 의심 비밀은 실행이나 저장 대상으로 채택하지 않는다', () => {
-  const parent: any = sample(); parent.definition.parentAssignmentRef = { ...ref }; assert.throws(() => read(parent), /ASSIGNMENT_PARENT_NOT_CONNECTED/);
+test('부모 fullref 입력은 초안 문법으로만 보존하고 의심 비밀은 거절한다', () => {
+  const parent: any = sample(); parent.definition.parentAssignmentRef = { ...ref }; const parsed = read(parent); assert.deepEqual(parsed.input.definition.parentAssignmentRef, ref); assert.equal(parsed.executionAuthorized, false);
   const secret = sample(); secret.definition.goal = 'api_key=DO_NOT_ECHO_THIS'; assert.throws(() => read(secret), error => error instanceof Error && error.message === 'ASSIGNMENT_SENSITIVE_CONTENT_SUSPECTED');
 });
 test('허가 scope는 FILE 문법만 대조하며 GETTER 실행·절대/상위/recursive 범위를 거절한다', () => {

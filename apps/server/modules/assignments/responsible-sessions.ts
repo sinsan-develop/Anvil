@@ -158,6 +158,7 @@ export class ResponsibleSessions {
     const input = readResponsibleSessionBinding(request.payload); this.#envelope(request, 'bindResponsibleSession', input.existingSessionBindingRef);
     await projectMember(db, actor, request.projectId, true);
     const assignment = await this.assignments.read(db, actor, request.projectId, input.assignmentRef.id, input.assignmentRef.version);
+    if (assignment.snapshot.definition.parentAssignmentRef != null) throw new AuthFailure('ASSIGNMENT_CHILD_DRAFT_ONLY', 412);
     if (!same(assignment.ref, input.assignmentRef) || assignment.snapshot.contentConfirmed !== true || assignment.snapshot.executionAuthorized !== false || assignment.snapshot.dispatchPerformed !== false) throw new AuthFailure('VERSION_CONFLICT', 409);
     await this.drafts.current(db, actor, request.projectId, assignment.snapshot.draftRef);
     const role = await this.readRole(db, actor, request.projectId, input.roleRef.id, input.roleRef.version);
