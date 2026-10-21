@@ -3,6 +3,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { emptyDraft, readProjectDraft, writeProjectDraft, runDraftAction, type DraftAction, type DraftEditorState, type PendingDraftCommand } from './api.ts';
 import { MethodologySelection } from './MethodologySelection.tsx';
 import { DraftReviewPanel } from './DraftReviewPanel.tsx';
+import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 
 export function ProjectCreatePage({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: DraftEditorState; onChange: Dispatch<SetStateAction<DraftEditorState>>; onAuthenticationLost: () => void }) {
   const fieldId = useId();
@@ -29,6 +30,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   }, [client, session.clientId, session.user.id, requestedId, reload, wrongOwner]);
   async function save() {
     if (pending || selectionBusy || !editable || wrongOwner || buffer.pendingAction) return;
+    const previouslyPending=!!buffer.pendingCommand;
     const fingerprint = JSON.stringify({ draftId: buffer.draftId, version: buffer.version, input: buffer.input, step });
     if (buffer.pendingCommand && buffer.pendingCommand.fingerprint !== fingerprint) { setError(new ApiError('DRAFT_RECONCILIATION_REQUIRED')); return; }
     const command: PendingDraftCommand = buffer.pendingCommand ?? {
@@ -37,7 +39,8 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
         ? { schemaVersion: 1, commandId: crypto.randomUUID(), clientId: session.clientId, expectedVersion: buffer.version, step, input: buffer.input }
         : { schemaVersion: 1, commandId: crypto.randomUUID(), clientId: session.clientId, expectedVersion: 0, targetId: null, ...buffer.input },
     };
-    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingCommand: command }));
+    const dispatchId=crypto.randomUUID();
+    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingCommand: {...command,dispatchId} }));
     setPending(true); setError(null);
     try {
       const result = await writeProjectDraft(client, command.draftId, command.body, session.csrfToken);
@@ -47,8 +50,8 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
       setError(failure);
-      if (failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pendingCommand: null }));
-      if (failure.status === 403) setEditable(false);
+      if (!previouslyPending && isKnownDocumentRejection(failure)) onChange(previous => previous.ownerUserId===session.user.id&&previous.pendingCommand?.body.commandId===command.body.commandId&&previous.pendingCommand?.dispatchId===dispatchId?({ ...previous, pendingCommand: null }):previous);
+      if (!previouslyPending && isKnownDocumentRejection(failure) && failure.status === 403) setEditable(false);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
   }
@@ -56,15 +59,17 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   function sourceMode(value:'EMPTY'|'EXISTING'){if(locked||wrongOwner)return;if(value==='EMPTY'&&buffer.input.sourceDeclaration&&Object.values(buffer.input.sourceDeclaration).some(Boolean)&&!confirm('이 탭의 기존 소스 선언 입력만 비울까요? 서버에 저장한 이전 선언 이력은 보존합니다.'))return;onChange(previous=>{const{sourceDeclaration,...input}=previous.input;return{...previous,ownerUserId:session.user.id,dirty:true,input:{...input,sourceMode:value,...(value==='EXISTING'?{sourceDeclaration:sourceDeclaration??{hostLabel:'',displayName:'',pathHint:'',reason:''}}:{})}};});}
   function changeSource(field:'hostLabel'|'displayName'|'pathHint'|'reason',value:string){if(locked||wrongOwner)return;onChange(previous=>({...previous,ownerUserId:session.user.id,dirty:true,input:{...previous.input,sourceDeclaration:{hostLabel:'',displayName:'',pathHint:'',reason:'',...previous.input.sourceDeclaration,[field]:value}}}));}
   function restore() {
-    if (!buffer.draftId || pending || selectionBusy || wrongOwner || buffer.pendingAction) return;
-    if ((buffer.dirty || buffer.pendingCommand) && !confirm('현재 미저장 입력을 서버 저장본으로 바꿀까요?')) return;
+    if (!buffer.draftId || pending || selectionBusy || wrongOwner || buffer.pendingAction || buffer.pendingCommand) return;
+    if (buffer.dirty && !confirm('현재 미저장 입력을 서버 저장본으로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, dirty: false, pendingCommand: null }));
     setRequestedId(buffer.draftId); setReload(value => value + 1); setError(null);
   }
   async function action(command: DraftAction) {
     if (pending || selectionBusy || wrongOwner || command.body.clientId !== session.clientId || command.draftId !== buffer.draftId) return;
     if (!buffer.pendingAction && (!editable || buffer.dirty || buffer.pendingCommand)) return;
-    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingAction: command }));
+    const previouslyPending=!!buffer.pendingAction;
+    const dispatchId=crypto.randomUUID();
+    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingAction: {...command,dispatchId} }));
     setPending(true); setError(null); let applied = false;
     try {
       const created = await runDraftAction(client, command, session.csrfToken, session.user.id); applied = true;
@@ -74,7 +79,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       if (created) setEditable(false);
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pendingAction: null }));
+      if (!applied && !previouslyPending && isKnownDocumentRejection(failure)) onChange(previous => previous.ownerUserId===session.user.id&&previous.pendingAction?.body.commandId===command.body.commandId&&previous.pendingAction?.dispatchId===dispatchId?({ ...previous, pendingAction: null }):previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
   }
@@ -95,7 +100,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       <label htmlFor={fieldId+'-source-mode'}>프로젝트 소스 방식</label><select id={fieldId+'-source-mode'} value={buffer.input.sourceMode} disabled={locked} onChange={event=>sourceMode(event.target.value as'EMPTY'|'EXISTING')}><option value="EMPTY">새 빈 프로젝트</option><option value="EXISTING">기존 소스 사용자 선언</option></select>
       {buffer.input.sourceMode==='EXISTING'?<fieldset disabled={locked}><legend>기존 소스 위치 설명 · 실제 접근 전</legend><label htmlFor={fieldId+'-source-host'}>소스가 있는 기기</label><input id={fieldId+'-source-host'} maxLength={200} value={buffer.input.sourceDeclaration?.hostLabel??''} onChange={e=>changeSource('hostLabel',e.target.value)}/><label htmlFor={fieldId+'-source-name'}>소스 표시 이름</label><input id={fieldId+'-source-name'} maxLength={200} value={buffer.input.sourceDeclaration?.displayName??''} onChange={e=>changeSource('displayName',e.target.value)}/><label htmlFor={fieldId+'-source-path'}>소스 위치 설명</label><input id={fieldId+'-source-path'} maxLength={4096} value={buffer.input.sourceDeclaration?.pathHint??''} onChange={e=>changeSource('pathHint',e.target.value)}/><label htmlFor={fieldId+'-source-reason'}>소스 선언 이유</label><textarea id={fieldId+'-source-reason'} maxLength={20000} rows={3} value={buffer.input.sourceDeclaration?.reason??''} onChange={e=>changeSource('reason',e.target.value)}/><p>기존 소스 사용자 선언 · 미확인</p><span title="기기·위치 설명은 읽기/쓰기 권한이 아닙니다. Anvil은 이 경로로 실제 파일을 조회하거나 실행하지 않습니다.">ⓘ</span></fieldset>:null}
       <button disabled={pending || selectionBusy || !editable || !!buffer.pendingAction} type="submit">{pending ? '처리 확인 중' : buffer.pendingCommand ? '저장 결과 다시 확인' : '중간 저장'}</button>
-      <button disabled={pending || selectionBusy || !!buffer.pendingAction || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
+      <button disabled={pending || selectionBusy || !!buffer.pendingAction || !!buffer.pendingCommand || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
     </form>
     {step === 2 ? <MethodologySelection client={client} previewContext={JSON.stringify([session.user.id, session.clientId, buffer.draftId])} value={buffer.input.methodologySelection} confirmed={!buffer.dirty && !!buffer.methodologyState?.confirmation} disabled={locked} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
     {step === 2 ? <DraftReviewPanel buffer={buffer} session={session} disabled={locked} onChange={onChange} onExecute={command => { void action(command); }} /> : null}
