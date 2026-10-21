@@ -40,6 +40,20 @@
 - 순수 target/만료/잘못된 비밀 오류 검사 **3 PASS / 545.7255ms**, `--plan` exit0/actualExecuted=false, 최신 typecheck exit0. 실제 QA 0.
 - 첫 typecheck TS7022 한 건은 주입 응답의 명시 타입으로 보완했다. 읽기 경로 추정 오류 및 Windows literal wildcard 오류는 파일/권한 변경 없이 정정했다.
 - 초기 독립 정적 검토(snapshot6413E8AE) **C0/I3/M1**: 중간 만료·후속 close 누락·비밀 오류 객체·비회원 marker 과장. Main이 query/connect마다 기존 QA proxy 검사/30초 여유, allSettled·10초 정리 기한, 고정 비밀 오류/최상위 안전 출력, marker 축소로 보완했다. 최종 독립 재검토/실행 증거는 아직 없다.
-- **오케스트레이터는 아직 작성하지 않았다.** exact Git/image/network/mount/tmpfs/owner/instance 검증·hard timeout·성공/실패 모두 Node→PG→network→보호 root/checkout 정확 정리와 독립 잔여0 검사를 작성·정적 검토하고 PMO의 exact 실행 판정을 받기 전 `--execute` 금지다. 환경변수는 승인 수단이 아니다.
+- 최초 준비 때 오케스트레이터 미작성 상태였고, 아래 후속 준비에서 작성했다. PMO의 exact 실행 판정을 받기 전 `--run`/`--execute` 금지는 유지한다. 환경변수는 승인 수단이 아니다.
 - 실패 시 로그는 고정 코드/phase만 남기고 credentials/DSN/사용자 본문을 출력하지 않는다. 자원 회수 실패는 원인과 남은 exact ID를 기록해 보고하며 광범위 삭제하지 않는다. 제거된 일회 checkout은 Git으로 재생성 가능, 합성 DB/원문은 폐기 대상이다.
 - 정식 DB·기존 Secret/계정/정책/인증서·서비스·소스관측·실제 Agent/비용·새 권한 계약은 변경0. 기존 특정 거절 우회0·보호 untracked6 보존.
+
+## 후속 자원 실행기 준비 — 실제 생성/실행0
+
+- `scripts/qa-fn03-document-resources.ts` SHA256 `2F2F9A311C609CD4AB374A73C9FB27592A707C492FAD84AD9600DA7967DCF05E`, 순수 `scripts/fn03-resource-guard.ts` SHA256 `2DC44D01795A9ADF10FE3E69C135A81018B1D4226F1DBCE3E4F4B8F34CE31D05`.
+- 신규 source는 실행 직전 새 빈 Git clone으로만 준비하고 origin URL/clean/exact SHA·root uid1000/새 생성시각·realpath를 검사한다. 이 문서의 최초 기준/69928483에는 후속 실행기가 없으므로 최종 게시 SHA를 따로 고정해야 한다.
+- Node 공개 의존성은 기존 `/home/daon/deploy/anvil-v3/node_modules`를 읽기 전용 nested mount로만 사용한다. 읽기 관측에서 이 root는 실제 디렉터리/uid1000·상위 link0이었다. 실제 실행 직전 전체 하위 symlink가 해당 의존성 root 안에서 끝나는지와 새 checkout의 package-lock 동일성을 검사한다. 기존 의존성 설치/수정0·Docker socket의 Node 전달0이다. 신규 checkout에는 빈 node_modules mount point만 만든다.
+- 오케스트레이터는 host `/opt/node-v24.21.0-linux-x64/bin/node` SHA256 `7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c` 및 Docker daemon `e3349f1d-dbfc-478a-96d9-295bf6c6839e`를 검사한다. 이 두 값은 기존 기록의 고정값이며 이번 실제 실행 관측은 아직 없다.
+- 외부 실행은 `/usr/bin/timeout --signal=TERM --kill-after=60s 29m /opt/node-v24.21.0-linux-x64/bin/node /home/daon/deploy/anvil-v3-fn03-document-qa-01/scripts/qa-fn03-document-resources.ts --run` 형식만 허용한다. `/proc/부모PID/cmdline`을 exact 대조하고 issued/until 간격 최대30분·남은시간/정리60초를 검사한다. 실행 시각·후보 SHA는 실제 직전에 결박하며 지금 발급/실행하지 않았다.
+- Node는 처음에는 고정 builtin 대기문만 실행하고, inspect에서 UID/RO mount/이미지/network/tmpfs/비공개 port를 확인한 후 보호 경로의 instance go 파일을 생성해야 실제 entry를 읽는다. go 대기는30초, workflow는120초 이내의 짧은 상태 조회/비동기 간격으로 검사한다. 장기 동기 docker wait는 사용하지 않는다. 각 Docker 호출은 최대15초 및 남은시간을 넘지 않는다.
+- TERM/INT는 새 Docker 작업을 차단하고 finally에서 동일 instance/ID/label/image/mount/port를 재대조해 Node→PG→network를 각각 회수 시도한다. 한 회수 실패로 다른 컨테이너 회수를 생략하지 않는다. 다른 자원/설정 불일치는 삭제하지 않고 정리 실패로 보고한다.
+- 보호 디렉터리의 생성 dev/ino, 파일의 dev/ino·uid/nlink·내용 hash를 저장하고 삭제 직전 다시 검사한다. 불일치/추가 파일/링크는 보존한다. 비밀 원문이나 그 hash를 보고/출력하지 않는다. 컨테이너 잔류가 없을 때만 새 보호 root와, 원 SHA/clean·dev/ino·하위 uid1000/비링크/일반파일만 확인한 새 checkout을 exact 제거한다. 보호검사 이전 preflight 실패나 강제종료 시 회수를 보장했다고 주장하지 않고 잔여를 별도 확인한다.
+- **독립 후속 SSH 조회 준비:** 두 등록 경로에 각각 `test ! -e`와 `test ! -L`, `docker container ls -a --filter label=anvil.owner=AV3_FN03_DOCUMENT_ISOLATED_QA`, `docker network ls --filter label=anvil.owner=AV3_FN03_DOCUMENT_ISOLATED_QA` 출력0과 해당 QA Node 명령 process0을 별도 연결에서 확인한다. 실제 실행 결과/정리 결과와 분리해 exit code·exact 잔여 ID를 기록한다. 잔여가 있으면 다른 이름으로 재시도하지 않고 정확 실패·보존 대상을 PMO에 보고한다. 현재 독립 잔여 확인은 NOT_PERFORMED이며 이번 자원 생성도0이다.
+- 독립 초기 실행기 정적 리뷰 **C0/I2/M0**: 동기120초 wait의 TERM 지연, 보호경로 생성 identity 미결박. Main이 짧은 상태 조회/15초 호출 및 dev/ino·파일 hash 비교로 보완했다. 이 독립 판정은 보완 전 snapshot의 결과이며 최종 독립 C0/I0 판정으로 바꾸지 않는다.
+- 후속 직접 guard4+앞선 target3의 **7 PASS / 560.9487ms**, typecheck exit0. 객체 fixture/순수 시간·소유권·변조거절을 증명할 뿐 실제 Docker 생성·TERM/실패회수·PG/API 성공·독립 정리0은 미검증이다. 범위 밖 기존 전체회귀/build 반복0이다. 사용자 기능 사용가능/전체 완료로 보고하지 않는다.
