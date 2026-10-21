@@ -7,6 +7,7 @@ import {buildExecutionPreparationQaSchema} from '../../../scripts/execution-prep
 export const manualReportQa=Object.freeze({root:'/home/daon/deploy/anvil-v3-fn12-manual-report-qa-01',pg:'anvil-v3-fn12-manual-report-pg-01',net:'anvil-v3-fn12-manual-report-net-01',database:'anvil_v3_fn12_manual_report_qa_01',owner:'AV3_FN12_MANUAL_REPORT_QA',image:'postgres@sha256:6eb0add3b77c081df18aa518ce43df58fdcc40f2e6d868a6fd08038dc7acd425',imageId:'sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',daemon:'e3349f1d-dbfc-478a-96d9-295bf6c6839e',maxMs:600000});
 export function validateManualReportQaEntry(v:{cwd:string;sha:string;expires:number;now:number;env:NodeJS.ProcessEnv}){
  assert.equal(v.cwd,manualReportQa.root);assert.match(v.sha,/^[a-f0-9]{40}$/);
+ assert(['REPORT','ARTIFACTS'].includes(v.env.ANVIL_FN12_MANUAL_REPORT_CASE??'REPORT'));
  assert(Number.isFinite(v.now)&&Number.isFinite(v.expires)&&v.expires>v.now+60000&&v.expires<=v.now+manualReportQa.maxMs);
  assert(!Object.entries(v.env).some(([k,x])=>x&&(k.startsWith('PG')||k.startsWith('DOCKER_')||['ANVIL_DB_CONFIG','ANVIL_MIGRATOR_CONFIG','NODE_OPTIONS','NODE_PATH'].includes(k))));
  assert(!Object.entries(v.env).some(([k,x])=>x==='1'&&/^ANVIL_FN\d+_.*QA$/.test(k)&&k!=='ANVIL_FN12_MANUAL_REPORT_QA'));

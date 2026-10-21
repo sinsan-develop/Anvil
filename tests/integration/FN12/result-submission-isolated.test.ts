@@ -64,6 +64,7 @@ import {manualReportQa as manualQaSpec} from './manual-report-qa.ts';
 import {newManualResultReport,prepareManualResultReport} from '../../../apps/web/src/features/session-detail/manual-result-report.ts';
 import {prepareResultSubmitCommand,sendResultSubmission} from '../../../apps/web/src/features/session-detail/result-submission-write-api.ts';
 const manualReportQa=process.env.ANVIL_FN12_MANUAL_REPORT_QA==='1';
+const manualReportCase=process.env.ANVIL_FN12_MANUAL_REPORT_CASE??'REPORT';if(!['REPORT','ARTIFACTS'].includes(manualReportCase)||!manualReportQa&&manualReportCase!=='REPORT')throw Error('FN12_MANUAL_CASE_INVALID');
 const checkpointCompareQa=process.env.ANVIL_FN13_CHECKPOINT_COMPARE_QA==='1';
 const stopFenceQa=process.env.ANVIL_FN13_STOP_FENCE_QA==='1';
 const directStopQa=process.env.ANVIL_FN13_DIRECT_STOP_QA==='1';
@@ -219,10 +220,15 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    const selectedAssignment=await readConfirmedAssignment(client,project,assignmentRef,draft);
    const reportDraft=newManualResultReport(selectedAssignment,session);
    Object.assign(reportDraft,{executionId:scope.executionRef.id,executionVersion:String(scope.executionRef.version),executionHash:scope.executionRef.contentHash,rows:[{criterionId:'flow',testId:'FLOW-01',reason:'실제 Agent/browser 미실행'}],risks:'격리 합성 실행에 대한 직접 작성 주장',rollback:'원문 불변 보존'});
+   const artifactText='수기 참조로 연결한 합성 산출물\n실제 Agent 수행 아님',artifactBytes=Buffer.from(artifactText);let manualArtifactRef:{id:string;version:number;contentHash:string}|null=null;
+   if(manualReportCase==='ARTIFACTS'){
+    phase='MANUAL_ARTIFACT_UPLOAD';const upload={...context,commandId:randomUUID(),operation:'uploadArtifact',payload:{mediaType:'text/plain;charset=utf-8',bytes:artifactBytes.length,contentHash:contentHash(artifactBytes)}},response=await app.inject({method:'POST',url:`/api/v1/projects/${project}/files`,headers:{...headers,'content-type':'application/octet-stream','x-anvil-command':canonicalJson(upload)},payload:artifactBytes});assert.equal(response.statusCode,201,response.body);const stored=response.json().data.artifactRef;assert.equal(stored.contentHash,contentHash(artifactBytes));manualArtifactRef={id:stored.artifactId,version:1,contentHash:stored.contentHash};reportDraft.artifacts=[{...manualArtifactRef,version:'1'}];
+   }else{
    reportDraft.tests=[{criterionId:'flow',testId:'FLOW-01',expected:'저장 후 조회',actual:'합성 제출이며 실제 실행 아님',status:'NOT_EXECUTED'},{criterionId:'flow',testId:'FLOW-02',expected:'일치',actual:'수행자 실패 주장',status:'FAIL'}];
    reportDraft.changes=[{path:'src/new.ts',kind:'ADDED',beforeHash:'',afterHash:'a'.repeat(64)},{path:'src/current.ts',kind:'MODIFIED',beforeHash:'b'.repeat(64),afterHash:'c'.repeat(64)},{path:'src/old.ts',kind:'DELETED',beforeHash:'d'.repeat(64),afterHash:''}];
    const declaredRef={...scope.executionRef,version:String(scope.executionRef.version)};
    reportDraft.commands=[{profile:structuredClone(declaredRef),cwd:structuredClone(declaredRef),host:structuredClone(declaredRef),argv:'node\n--version',startedAt:'',finishedAt:'',exitCode:'1'}];
+   }
    const frozen=structuredClone(reportDraft),before=await manualCounts(),buffer=await prepareManualResultReport(reportDraft,selectedAssignment,session,1);
    buffer.pending=await prepareResultSubmitCommand(buffer,session,true);
    const pending=structuredClone(buffer.pending);
@@ -238,9 +244,8 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    const committed=await manualCounts();for(const table of Object.keys(before))assert.equal(committed[table],before[table]!+1,table);
    const separate=(await pool.query('SELECT manifest_hash,content_hash,snapshot_json FROM anvil.result_submissions WHERE project_id=$1 AND id=$2',[project,buffer.submissionId])).rows[0];
    assert(separate);assert.deepEqual(separate.snapshot_json.manifest,buffer.manifest);assert.equal(separate.manifest_hash,hash(buffer.manifest));assert.equal(separate.content_hash,hash(separate.snapshot_json));
-   assert.deepEqual(separate.snapshot_json.manifest.commandResults,[{profileRef:scope.executionRef,cwdRef:scope.executionRef,hostRef:scope.executionRef,executionRef:scope.executionRef,argv:['node','--version'],startedAt:null,finishedAt:null,exitCode:1,outputRef:null,evidence:[]}]);assert.equal(separate.snapshot_json.evidenceProvenanceVerified,false);
-   cases.push('MANUAL_COMMAND_CLAIM_SEPARATE_COMMIT_UNVERIFIED_REFS');
-   cases.push('MANUAL_TESTS_AND_CHANGES_SEPARATE_APP_ROLE_COMMIT_FOUR_TABLES_PLUS_ONE');
+   if(manualArtifactRef){assert.deepEqual(separate.snapshot_json.manifest.artifactRefs,[manualArtifactRef]);for(const field of ['commandResults','testResults','changes'])assert.deepEqual(separate.snapshot_json.manifest[field],[]);assert.equal(separate.snapshot_json.evidenceProvenanceVerified,false);cases.push('MANUAL_ARTIFACT_REF_SEPARATE_APP_ROLE_COMMIT_FOUR_TABLES_PLUS_ONE');}
+   else{assert.deepEqual(separate.snapshot_json.manifest.commandResults,[{profileRef:scope.executionRef,cwdRef:scope.executionRef,hostRef:scope.executionRef,executionRef:scope.executionRef,argv:['node','--version'],startedAt:null,finishedAt:null,exitCode:1,outputRef:null,evidence:[]}]);assert.equal(separate.snapshot_json.evidenceProvenanceVerified,false);cases.push('MANUAL_COMMAND_CLAIM_SEPARATE_COMMIT_UNVERIFIED_REFS');cases.push('MANUAL_TESTS_AND_CHANGES_SEPARATE_APP_ROLE_COMMIT_FOUR_TABLES_PLUS_ONE');}
    phase='MANUAL_REPORT_SAME_COMMAND_REPLAY';
    const receipt=await sendResultSubmission(lossy,buffer,session,()=>true);assert.equal(posts,2);assert.deepEqual(buffer.pending,pending);assert.deepEqual(await manualCounts(),committed);assert.equal(receipt.completionAccepted,false);assert.equal(receipt.executionAuthorized,false);assert.equal(receipt.dispatchPerformed,false);
    cases.push('LOST_REPLY_EXACT_COMMAND_REPLAY_NO_EXTRA_FOUR_TABLE_ROWS');
@@ -248,13 +253,16 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    const page=await readAssignmentResultPage(client,project,assignmentRef,null,()=>true);assert(page);assert.equal(page.items.length,1);
    const read=await readAssignmentResult(client,project,assignmentRef,page.items[0]!,()=>true);assert(read);assert.deepEqual(read.snapshot.manifest,buffer.manifest);assert.equal(read.ref.contentHash,separate.content_hash);assert.equal(read.snapshot.evidenceProvenanceVerified,false);assert.equal(read.snapshot.completionAccepted,false);assert.equal(read.snapshot.formalFailureCounted,false);assert.equal(read.snapshot.executionAuthorized,false);assert.equal(read.snapshot.dispatchPerformed,false);assert.deepEqual(reportDraft,frozen);assert.deepEqual(await manualCounts(),committed);
    cases.push('AUTHENTICATED_API_PG_WEB_HASH_ORIGINAL_CLAIMS_NOT_ACCEPTANCE');
+   if(manualArtifactRef){const text=await readResultArtifactText(client,read,manualArtifactRef,()=>true);assert(text);assert.equal(text.text,artifactText);assert.equal(text.artifactRef.contentHash,contentHash(artifactBytes));assert.equal(text.evidenceProvenanceVerified,false);assert.equal(text.completionAccepted,false);assert.deepEqual(await manualCounts(),committed);const denied=await app.inject({method:'GET',url:`/api/v1/projects/${project}/results/${buffer.submissionId}/artifacts/${manualArtifactRef.id}/text`,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+outsider.token}});assert.equal(denied.statusCode,404);cases.push('MANUAL_ARTIFACT_REGISTERED_BYTES_API_WEB_HASH_OUTSIDER_DENIED');}
    phase='MANUAL_REPORT_NEGATIVES';
+   if(manualArtifactRef){const bad=structuredClone(reportDraft);bad.artifacts![0]!.contentHash='invalid';await assert.rejects(prepareManualResultReport(bad,selectedAssignment,session,1));const duplicate=structuredClone(reportDraft);duplicate.artifacts!.push({...duplicate.artifacts![0]!});await assert.rejects(prepareManualResultReport(duplicate,selectedAssignment,session,1));}else{
    const bad=structuredClone(reportDraft);bad.changes![0]!.path='../outside.ts';await assert.rejects(prepareManualResultReport(bad,selectedAssignment,session,1));
    const secret=structuredClone(reportDraft);secret.tests![0]!.actual='password=synthetic-qa-only-value';await assert.rejects(prepareManualResultReport(secret,selectedAssignment,session,1));
    const commandSecret=structuredClone(reportDraft);commandSecret.commands![0]!.argv='node\n--token\nsynthetic-invalid-marker';await assert.rejects(prepareManualResultReport(commandSecret,selectedAssignment,session,1));
+   }
    const tampered=structuredClone(buffer);tampered.manifest.rollback='변조';await assert.rejects(sendResultSubmission(lossy,tampered,session,()=>true));assert.equal(posts,2);
    const outside=await app.inject({method:'GET',url:'/api/v1/projects/'+project+'/results/'+buffer.submissionId,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+outsider.token}});assert.equal(outside.statusCode,404);assert.deepEqual(await manualCounts(),committed);
-   cases.push('PATH_SECRET_TAMPER_PRE_POST_DENIED_OUTSIDER_NO_ORIGINAL');
+   cases.push(manualArtifactRef?'ARTIFACT_BAD_DUPLICATE_AND_TAMPER_NO_EXTRA_POST_OUTSIDER_DENIED':'PATH_SECRET_TAMPER_PRE_POST_DENIED_OUTSIDER_NO_ORIGINAL');
    assert.deepEqual((await admin.query("SELECT proname,md5(pg_get_functiondef(p.oid)) hash FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND proname=ANY($1::text[]) ORDER BY proname",[guarded])).rows,guardBefore);cases.push('ORIGINAL_FIVE_GUARDS_UNCHANGED');phase='DONE';return;
    async function manualCounts(){const out:Record<string,number>={};for(const table of ['result_submissions','commands','authorization_receipts','audit_events'])out[table]=(await pool.query('SELECT count(*)::int n FROM anvil.'+table)).rows[0].n;return out;}
   }
