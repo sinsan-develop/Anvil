@@ -15,6 +15,7 @@ import { AssignmentBudgetSelection } from './AssignmentBudgetSelection.tsx';
 import { AssignmentEnvironmentSelection } from './AssignmentEnvironmentSelection.tsx';
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 import type {PlanTaskSelection} from '../../shell/routes.ts';
+import { AssignmentChildTaskSelection } from './AssignmentChildTaskSelection.tsx';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -128,6 +129,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {plan ? <AssignmentBasisDocuments key={[ordered(plan.ref), ordered(plan.documentRef), ordered(plan.designRef)].join(':')} client={client} projectId={project.id} plan={plan} busy={busy} run={action => void perform(action)} /> : null}
     {buffer && bound ? <fieldset disabled={locked}><legend>작성 중인 임무 · {buffer.input.definition.taskRef.taskCode}</legend>
       {buffer.input.definition.parentAssignmentRef ? <p>부모 연결 하위 초안 · 검토·확정·배정·실행 불가</p> : null}
+      {buffer.input.definition.parentAssignmentRef ? <AssignmentChildTaskSelection key={'child-task:'+buffer.bindingId} client={client} buffer={buffer} session={session} locked={locked || buffer.uncertain} update={update} run={action=>void perform(action)} /> : null}
       {buffer.input.definition.parentAssignmentRef ? <p>고정 부모 {buffer.input.definition.parentAssignmentRef.id} · v{buffer.input.definition.parentAssignmentRef.version} · {buffer.input.definition.parentAssignmentRef.contentHash} · 허용 범위 축소만 가능하며 현재성은 저장 시 다시 확인합니다.</p> : null}
       {!sameStage ? <p>보관한 초안과 선택 단계/적용본이 다릅니다. 원 단계로 돌아오거나 별도로 새 초안을 준비하세요.</p> : null}
       {([['purpose', '목적'], ['goal', '목표'], ['ownerRole', '책임 역할'], ['integrationResponsibility', '통합 책임']] as const).map(([field, label]) => <label key={field}>임무 {label}<textarea maxLength={field === 'ownerRole' ? 200 : 20000} value={buffer.input.definition[field]} onChange={event => update(value => ({ ...value, dirty: true, failure: null, input: { ...value.input, definition: { ...value.input.definition, [field]: event.target.value } } }))} /></label>)}
