@@ -12,6 +12,7 @@ import { StoredMethodValidation } from './StoredMethodValidation.tsx';
 import { StoredNodeDefinition } from './StoredNodeDefinition.tsx';
 import { StoredNodeRoutes } from './StoredNodeRoutes.tsx';
 import { MethodApplicationPanel } from './MethodApplicationPanel.tsx';
+import { AppliedMethodOriginal } from './AppliedMethodOriginal.tsx';
 
 export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: {
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
@@ -37,6 +38,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     <section aria-label="프로젝트 전용 방법론 조회"><h2>프로젝트 전용 방법론</h2>
       <p className="meta">공통 원본과 기존 적용본은 유지됩니다. 저장·내용 검토·확정은 적용 전환이나 Agent 실행이 아닙니다.</p>
       <section aria-label="고정 적용본 조회" className="status-card"><h3>현재 고정 적용본</h3>{appliedRef === undefined ? <p>적용본 조회 미확인</p> : appliedRef === null ? <p>확인된 적용본 없음</p> : <><p>적용 세대 {appliedRef.version}</p><p className="meta">{appliedRef.id} · {appliedRef.contentHash}</p><p className="meta">아래 편집·확정 후보와 별개인 적용 snapshot 참조입니다.</p></>}</section>
+      {!loading&&!error&&appliedRef?<AppliedMethodOriginal key={JSON.stringify([projectId,session.user.id,session.clientId,appliedRef])} client={client} projectId={projectId} expected={appliedRef} onAuthenticationLost={onAuthenticationLost}/>:null}
       <button disabled={loading} onClick={() => { setAfterId(null); setCatalogCursor(null); setRevision(value => value + 1); }}>전용 방법론 목록 갱신</button>
       {page?.items.map(item => <button disabled={loading} key={item.ref.id} onClick={() => { void select(() => readProjectMethod(client, projectId, item.ref, item.name, item.purpose)); }}>{item.name} v{item.ref.version} 열기</button>)}
       <button disabled={loading || !page?.hasMore} onClick={() => { if (page?.nextAfterId) setAfterId(page.nextAfterId); }}>전용 방법론 다음 목록</button>

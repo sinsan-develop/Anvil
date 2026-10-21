@@ -1,5 +1,14 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 17:46 KST UI03 고정 적용 방법론 내용 조회 검수 / Main 어울**: 기준26524add 뒤 현재 적용ref와 편집 후보를 분리해 명시 열기→기존 snapshot/graph hash·project/fullref 검증→원본 흐름도/단계 선택·정의·연결→닫기를 연결했다. 부모 loading/error·user/client/project/ref전환은선택분리·원문제거, 재조회nonce·cleanup으로과거/지연응답숨김이다. 새API/SQL·실DB/정책/Agent·적용명령/편집buffer변경0.
+  - 검증: 원문버튼부재1RED→새정상/403재조회/적용ref변경/갱신중지연4DOM PASS3.2s(JSON소비+digest2/rAF장벽). 기존 snapshot/fullref·변조·403/401 단위5PASS148.6615ms, 직접인접기존적용명령503동일재확인/준비중이탈2DOM PASS2.7s. typecheck/build/diff0·296module·index-B5mzH1gB.js SHA256 DB1B510DD3DC59F6E790571D3D3C2D944901132FA195769D82DB90FE9677C92B. chunk/NO_COLOR경고보존, 한정독립정적C0I0M0이며실제검사재실행증거아니다.
+  - 정리/미확인: owner SINSAN/cyhuh·exact경로/재분석점없음/관련process0 확인후 등록 ui03-applied-method-original-01을17:46:30회수·17:46:33별도pathfalse/process0. 신규fixture는단일노드여서다중노드선택/경로DOM·모든주체전환timing·실DB/served권한·전체UI03/FN02/Stage는미확인이다. 실제API/DB/Agent미연결을화면에유지, 보호6/main불변·불변검사전수반복0. WORK_PLAN 범위·기존검수기준완화0이며단계전체완료보고아니다.
+
+
+- **2026-10-21 UI03 현재 고정 적용 절차 조회 착수 / Main 어울**: UI03 카드의 기존 적용본 보존/조회와 ProjectMethodologyPage를 대조해 현재 ref표시만 있고 snapshot흐름/단계내용을 열 수 없음을 확인했다. 기존 readWorkspaceMethodology의 project/ref·snapshot/graph hash 검사를 명시조회로 소비하고 기존 흐름도·단계정의/연결 컴포넌트로 읽기만 제공한다. 편집후보/원입력과 분리하며 ref변경·권한거절·조회이탈은 원문숨김, 새API/SQL·실DB/정책/Agent0. 새 임무/배정/적용명령을 만들지 않는다.
+  - QA 생성전등록: 새 D:\tmp\anvil-v3-stage-b\ui03-applied-method-original-01 의 temp/results만, owner UI03현재적용조회/Main·최대30분·로컬bundle/in-process합성API/headlessEdge·HTTPlistener/WSL/DB0. 부재/realpath/link확인후생성·종료즉시exact회수/독립잔여확인. 앞 입력계획QA잔여0을 재사용하지 않는다. 조사중 유사이름경로3회 읽기실패는 실제목록으로정정했으며 ACL/권한변경아니다.
+
+
 - **2026-10-21 17:40 KST UI07 영향 계산 입력 계획 소비 검수 / Main 어울**: 기준d7eafafa 뒤 기존 input planRefs의 ID 전용 표시를 같은 변경/영향 fullref·beforeVersion·입력계획 단일귀속 재조회→기존 work-plan exact GET/hash→계획 이유·문제/저장 업무 검색·내용→닫기로 연결했다. 영향항목0이어도 실제 입력에 있으면 읽고, 다른 입력·변조·403은 채택하지 않는다. 새API/SQL·실DB/정책/Agent/기존 명령buffer변경0. 승인계획 내부 bounded 소비 구현이며 전체UI07/FN04/Stage 완료나 실사용가능 판정은 아니다.
   - 증거: 함수부재4RED→신규4+직접인접5 단위9PASS209.4561ms. 처음 변조시험은 ApiError.message 정규식으로 code를 확인하려다1실패했고 실제 e.code 검사로 바로잡았다(제품guard/기대기준완화0). 화면버튼부재1RED→신규정상/403/이탈3PASS3.3s. 독립 M1의 fulfill직후검사공백은 실제JSON·digest소비/rAF장벽으로 보강하고 해당이탈+기존문서정상/403 3PASS3.2s/typecheck0/diff0. build type0/295module·index-BeHo8Cda.js SHA256 7CC4AB469DA95C55AD6085F69DE825F039D4D2EA0691F37723C5C5A523319291. chunk크기/NO_COLOR 경고 유지. 최종 한정 독립정적 C0/I0/M0, 검수자 실제시험 재실행은 아니다.
   - 회수/한계: 등록 ui07-impact-input-plan-01의 owner SINSAN/cyhuh·exact절대경로/재분석점없음·관련process0 확인후 폴더회수, 별도17:40:10 pathfalse/process0이다. PMO는 중간 capacity/systemError를 통지했으나 이는 플랫폼중단이며 제품실패로 계수하지 않았고 모델/담당/세션 변경0. 실제DB/served권한·원문출처진위/모든주체전환timing·전체업무는미확인, FN11 SQL0035미적용·실DB/정책/Agent 제외·보호6/main·기존미채택경계 유지. 다음 미완료는 계획상 실제경로·승인차이를 대조해 선정하며 이 checkpoint를 전체완료로 바꾸지 않는다.
