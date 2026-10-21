@@ -2,6 +2,7 @@ import { useId } from 'react';
 import type { MethodologyDocumentItem, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import type { FormSummary } from '../methodologies/forms-api.ts';
 import {PinnedFormOriginal,type PinnedFormAccess} from '../methodologies/PinnedFormOriginal.tsx';
+import {moveNodeDocument} from './node-document-order.ts';
 
 const refKey = (ref: MethodologyDocumentItem['formRef']) => `${ref.id}:${ref.version}:${ref.contentHash}`;
 export function NodeDocumentFields({ node, nodes, forms, onChange,formAccess }: { node: MethodologyNode; nodes: MethodologyNode[]; forms: FormSummary[]; onChange: (patch: Partial<MethodologyNode>) => void;formAccess?:PinnedFormAccess }) {
@@ -22,6 +23,7 @@ export function NodeDocumentFields({ node, nodes, forms, onChange,formAccess }: 
           onChange({ inputs: node.inputs.map(value => value.itemId === item.itemId ? next : value) });
         }}><option value="">외부 입력·단계 미지정</option>{item.sourceNodeId && !nodes.some(value => value.nodeId === item.sourceNodeId) ? <option value={item.sourceNodeId}>없는 단계 {item.sourceNodeId}</option> : null}{nodes.filter(value => value.nodeId !== node.nodeId).map(value => <option key={value.nodeId} value={value.nodeId}>{value.name || value.nodeId}</option>)}</select></> : null}
         <label htmlFor={`${id}-${side}-${index}-criteria`}>{side === 'inputs' ? '입력' : '산출'} {index + 1} 내용 검수 기준</label><textarea id={`${id}-${side}-${index}-criteria`} value={item.reviewCriteria.join('\n')} onChange={event => patch(side, item.itemId, { reviewCriteria: event.target.value.split('\n') })} />
+        <button type="button" disabled={index===0} onClick={()=>onChange({[side]:moveNodeDocument(node,side,index,-1)[side]})}>{side==='inputs'?'입력':'산출'} 문서 {index+1} 위로</button><button type="button" disabled={index===node[side].length-1} onClick={()=>onChange({[side]:moveNodeDocument(node,side,index,1)[side]})}>{side==='inputs'?'입력':'산출'} 문서 {index+1} 아래로</button>
         <button onClick={() => { if (confirm('이 초안의 문서 항목을 뺄까요? 원본 양식·저장된 버전은 유지합니다.')) onChange({ [side]: node[side].filter(value => value.itemId !== item.itemId) }); }}>이 문서 항목 제거</button>
       </div>)}
     </section>)}

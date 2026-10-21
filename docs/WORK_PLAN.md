@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN02/UI03 단계 입력·산출 문서 순서 작성 일부**: 기존 배열 저장 계약 안에서 위/아래 이동과 항목·양식·출처·검수 기준 보존을 연결했다. 신규2 RED→인접 포함 unit5 PASS/typebuild0, 현재 bundle 합성 HTTP DOM1 PASS(별도 저장/유실 같은 명령/재조회·잠금),08:29:35 등록 QA 잔여0. 실제DB/정식served·다른 소비자/전체FN02/Stage는 미검증·미완료이며 실행 순서/새API·SQL·권한 변경은 없다. 상세 검토·지문·오류는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12/UI05 산출물 직접참조의 격리 실제저장 확인**: exact89de6732 ARTIFACTS단일실행1건phaseDONE/exit0에서새합성파일upload→수기ref/submitCOMMIT·별도app-role원문/hash/4표+1→유실같은명령추가0·보호reader실bytes/hash/타인404를확인했다. cases8은marker8개/시험8아님·옛명령/시험/changes검사0. 59SQL동일·정식3서비스불변·08:21:01독립QA경로/PG/netID·label/process잔여0. 실Agent/시험진위/정식served브라우저DB·전체FN12/Stage미완료, 상세ID/원오류/범위는WORK_STATUS를따른다.
 
 - **2026-10-22 FN12/UI05 산출물 참조 실제 저장 검증 착수**: 기존수기실제QA에ARTIFACTS단일분기를추가해기존공통선행만재사용하고옛명령/시험/changes성공검사는실행하지않는다. 새합성파일upload→수기ref/submitCOMMIT·별도app-role원문/hash·보호reader/타인거절·동일명령추가행0을계획했다. 진입guard RED1→guard3/type0·59SQL동일/한정독립C0/I0/M0는source만확인, actual실행전미검증이다. 정식DB/정책/서비스/Agent0·등록자원/회수는WORK_STATUS를따른다.
