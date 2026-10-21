@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN05/UI04 저장 맥락의 문서·사용자지시 소비 일부**: 기존 보관 선택을 다시 대조한 후 기존 문서/발언 GET→고정원문/본문hash→명시 텍스트표시를 연결했다. 종류·본문/선언hash/다른원문·거절/지연경계를 확인하며 지시 현재효력·문서 metadata 자체hash 재계산·Agent전달은 주장하지 않는다. 신규3RED→신규3+직접영향4 unit7/typebuild0·새2+지식1 DOM3PASS·독립M1 음성분리 보강/추가검증·QA독립잔여0 범위다. 새API/SQL/권한0·원입력/저장본불변, 실제DB/served/모든주체/Agent·전체FN05/IX04·Stage 미완료이며 오류·지문/최종검토는WORK_STATUS를따른다.
+
 - **2026-10-22 FN05/UI04 저장 맥락의 지식 원문 소비 일부**: 기존 저장 준비→고정 선택/임무/INCLUDED/bodyRef→기존 지식 exactGET/hash→명시 원문 표시를 연결했다. 새API/SQL/권한/Agent전달·효력판정0·원입력/저장본불변. 새2RED→직접2+인접3 PASS·별도성공응답이탈2 PASS/새DOM1PASS·typebuild0·한정독립C0/I0/M1→단위보강후 scopedC0/I0/M0·QA독립잔여0. 합성API 화면 소비만 확인했으며 문서/지시 원문·DOM닫기/모든주체·실DB/served/Agent·전체FN05/IX04·Stage미완료, 실제오류/범위/지문은WORK_STATUS를따른다.
 
 - **2026-10-22 FN12 직접보고 저장 공백 일부 해소**: source4aab0af5의 새 tests2/changes3 직접입력→기존submitResult→격리PG59SQL 실제COMMIT·별도app-role hash 원문/목록조회와 응답유실 같은명령/4원장 추가행0·변조거절을 단일모드1회 확인했다. PG/net/checkout 독립잔여0·정식3서비스 보존. 새API/SQL/권한0·수행자주장/검수false 유지, 실Agent/served/정식DB/전체FN12·IX02·인수는 미완료다. bootstrap 외부OS timeout/실패trap 미진은 기능핵심통과와 분리하고 다음자원실행전 보완하며 성공workflow 재실행하지 않는다. 상세실행·오류·미확인은 WORK_STATUS를 따른다.
