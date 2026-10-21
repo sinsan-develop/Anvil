@@ -1,6 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DocumentVersion } from './api.ts';
 import type { FormVersion } from '../methodologies/forms-api.ts';
+import type {FormContentEntry} from './form-content-entry.ts';
 import type { DocumentImportBuffer } from './import-api.ts';
 import type { DocumentProposalBuffer } from './proposal-api.ts';
 import type { DesignIndexBuffer } from './design-index-api.ts';
@@ -13,6 +14,7 @@ export interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]
 export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'startStage' | 'cancelQueuedRequest' | 'submitResult' | 'defineProjectRole' | 'bindResponsibleSession' | 'prepareExecution' | 'saveBaselineDraft' | 'reviewBaselineContent' | 'confirmBaseline' | 'uploadArtifact' | 'saveDocumentDraft' | 'detachDocumentSource' | 'importDocument' | 'proposeDocumentChange' | 'proposeDesignChange' | 'reviewChangeImpact' | 'indexDesignDocument' | 'saveWorkPlanDraft' | 'prepareAssignment' | 'reviewAssignmentContent' | 'confirmAssignment' | 'buildTaskContext' | 'linkTrace' | 'saveKnowledge' | 'appendConversation' | 'excludeKnowledge' | 'correctKnowledge' | 'recordContentReview' | 'confirmKnowledge' | 'confirmWorkPlan' | 'applyConstitution'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null | {requestId:string;decisionId:string;scopeDigest:string}; payload: Record<string, unknown> }
 export interface PendingDocumentSave { body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
 export interface DocumentBuffer {
+  formEntry?:FormContentEntry;
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
   title: string; body: string; mediaType: string; content: Omit<DocumentContent, 'body'>; criteria: DocumentVersion['contentReviewCriteria']['items'];
 reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocumentSave | null; savedRef: VersionRef | null; failure: { code: string; status: number; quarantinedArtifactId?:string } | null;

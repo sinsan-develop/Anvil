@@ -213,11 +213,11 @@ test('양식과 첨부가 달라진 충돌은 비교·명시 수동 조정 후�
   await page.getByRole('button',{name:'새 초안 버전 저장',exact:true}).click(); await expect(page.getByText('초안 버전 4 저장 확인',{exact:true})).toBeVisible(); expect(writes).toHaveLength(2);
 });
 
-for(const mode of ['BARE','OUTLINE','TAMPER'] as const)test(mode==='BARE'?'빈 프로젝트에서 공식 양식을 선택하고 새 문서를 초안으로 저장한다':'FORM_OUTLINE_'+mode+' 정확 양식의 빈 작성틀을 편집·명시저장·재조회한다', async ({ page }) => {
+for(const mode of ['BARE','OUTLINE','TAMPER','ENTRY','ENTRY_DIRECT','ENTRY_TAMPER'] as const)test(mode==='BARE'?'빈 프로젝트에서 공식 양식을 선택하고 새 문서를 초안으로 저장한다':'FORM_AUTHOR_'+mode+' 정확 양식의 빈 작성틀을 편집·명시저장·재조회한다', async ({ page }) => {
   const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url)));
   const form = catalog.forms[0]!; let created = false, bytes = Buffer.alloc(0), uploaded: any, saved: any, storedRef:any,readSnapshot:any;
   await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: catalog.forms.map(value => ({ ref: value.ref, name: value.definition.name, formCode: value.definition.formCode, scope: 'SYSTEM' })), observedAt: '2026-10-16T05:00:00.000Z', hasMore: false, nextCursor: null, baselineVersion: null } }));
-  await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`, route => route.fulfill({ json: { ...form,definition:mode==='TAMPER'?{...form.definition,purpose:'변조된 작성 목적'}:form.definition, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } }));
+  await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`, route => route.fulfill({ json: { ...form,definition:(mode==='TAMPER'||mode==='ENTRY_TAMPER')?{...form.definition,purpose:'변조된 작성 목적'}:form.definition, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } }));
   await page.route(`**/api/v1/projects/${project}/documents?*`, route => route.fulfill({ json: { items: created ? [{ id, title: saved.payload.title, headVersion: 1, confirmedVersion: null, updatedAt: '2026-10-16T05:00:00.000Z' }] : [], hasMore: false, nextCursor: null, observedAt: '2026-10-16T05:00:00.000Z' } }));
   await page.route(`**/api/v1/projects/${project}/files`, route => {
     const command = JSON.parse(route.request().headers()['x-anvil-command']!); bytes = Buffer.from(route.request().postDataBuffer()!); uploaded = { artifactId, ...command.payload };
@@ -232,12 +232,15 @@ for(const mode of ['BARE','OUTLINE','TAMPER'] as const)test(mode==='BARE'?'빈 �
   await page.goto(`/#/projects/${project}/documents`);
   await page.getByRole('button', { name: '새 문서 작성', exact: true }).click();
   await page.getByLabel('새 문서 양식', { exact: true }).selectOption(form.ref.id);
-  await page.getByRole('button', { name: mode==='BARE'?'선택 양식으로 작성':'선택 양식의 빈 작성틀로 준비', exact: true }).click();
+  await page.getByRole('button', { name: (mode==='BARE'||mode==='ENTRY'||mode==='ENTRY_DIRECT'||mode==='ENTRY_TAMPER')?'선택 양식으로 작성':'선택 양식의 빈 작성틀로 준비', exact: true }).click();
   if(mode==='TAMPER'){await expect(page.getByRole('alert')).toContainText('RESPONSE_INVALID');await expect(page.getByLabel('문서 본문 편집',{exact:true})).toHaveCount(0);expect(created).toBe(false);expect(bytes.length).toBe(0);return;}
   const bodyInput=page.getByLabel('문서 본문 편집',{exact:true});let text='# 목적\n프로젝트의 요구 원문';
+  if(mode==='ENTRY_TAMPER'){await page.getByRole('button',{name:'양식 내용 입력 열기',exact:true}).click();await expect(page.getByRole('alert')).toContainText('RESPONSE_INVALID');await expect(bodyInput).toHaveValue('');expect(created).toBe(false);expect(bytes.length).toBe(0);return;}
+  if(mode==='ENTRY'||mode==='ENTRY_DIRECT'){await page.getByRole('button',{name:'양식 내용 입력 열기',exact:true}).click();const item=form.definition.items.find(i=>i.valueType==='TEXT')!,record=form.definition.items.find(i=>i.valueType==='RECORDS')!;await page.getByLabel(item.title+' 내용',{exact:true}).fill('사람이 정의한 목적\n필요한 사용자 흐름');await page.getByRole('button',{name:record.title+' 행 추가',exact:true}).click();await page.getByLabel(record.title+' 1행 '+record.fields[0]!.title,{exact:true}).fill('실제 첫 요구사항\n추가 설명');text=await bodyInput.inputValue();expect(text).toContain('사람이 정의한 목적\n필요한 사용자 흐름');expect(text).toContain('실제 첫 요구사항<br>추가 설명');await expect(bodyInput).toHaveJSProperty('readOnly',true);await page.getByRole('link',{name:'프로젝트 작업',exact:true}).click();await expect(page).toHaveURL(/workspace$/);await page.getByRole('link',{name:'문서·설계 추적',exact:true}).click();await expect(page).toHaveURL(/documents$/);await expect(page.getByLabel(item.title+' 내용',{exact:true})).toHaveValue('사람이 정의한 목적\n필요한 사용자 흐름');expect(created).toBe(false);expect(bytes.length).toBe(0);if(mode==='ENTRY'){await page.getByRole('button',{name:'입력 본문을 유지하고 원문 편집으로 전환',exact:true}).click();await expect(bodyInput).toHaveValue(text);await expect(bodyInput).toHaveJSProperty('readOnly',false);}for(const section of form.definition.items){const anchor=await page.getByLabel(section.title+' 시작 줄',{exact:true}).inputValue();expect(text.split('\n')[Number(anchor)-1]).toContain(section.itemId);}}
+
   if(mode==='OUTLINE'){const outline=await bodyInput.inputValue();expect(outline).toContain('# '+form.definition.name);for(const item of form.definition.items){expect(outline).toContain(item.itemId);const anchor=await page.getByLabel(item.title+' 시작 줄',{exact:true}).inputValue();expect(outline.split('\n')[Number(anchor)-1]).toContain(item.itemId);}expect(created).toBe(false);expect(bytes.length).toBe(0);text=outline+'\n사용자가 별도로 작성한 목적과 범위\n';}
   await page.getByLabel('문서 제목', { exact: true }).fill('처음 작성한 요구사항');
-  await page.getByLabel('문서 본문 편집', { exact: true }).fill(text);
+  if(mode!=='ENTRY'&&mode!=='ENTRY_DIRECT')await page.getByLabel('문서 본문 편집', { exact: true }).fill(text);
   await page.getByLabel('문서 변경 이유', { exact: true }).fill('새 요구사항 작성');
   await page.getByRole('button', { name: '새 초안 버전 저장', exact: true }).click();
   await expect(page.getByText('초안 버전 1 저장 확인', { exact: true })).toBeVisible();
