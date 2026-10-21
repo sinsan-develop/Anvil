@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI04/FN03 선택 단계 자료의 서식·저장첨부 소비 일부**: 기존 단계filter/고정문서 상세에 Markdown서식/보호 PNG·텍스트 첨부 명시조회·귀속/hash 재검사를 연결했다. 새API/SQL/권한/Agent·쓰기/외부조회0, 문서원문 유지·전환때기존첨부숨김. 버튼부재RED→현재bundle 정상/변조/지연전환 DOM3PASS/typebuild0·scoped독립C0/I0/M0·QA독립잔여0. actualDB/served/권한회수·모든주체·전체UI04/FN03·Stage미완료이며 세부증거/지문/원오류는WORK_STATUS에 보존한다.
+
 - **2026-10-22 FN03/UI06 양식 항목·반복행 내용 작성 일부**: 기존 빈새문서에서 정확 양식·현재제어 확인→사람 TEXT/RECORDS 입력/이동보존→기존 명시저장·본문재조회에 연결했다. 기존 원문/새API/SQL/권한/Agent/자동확정 변경0. 실제 서버표 확인기준을 낮추지 않고 출력표를 보정했으며 최종 신규·영향 unit9/typebuild0·현재bundle DOM 직접/원문전환2PASS, 변조거절은 이전별도1PASS다. actualPG/served/현재권한·모든양식·Agent/전체FN03/UI06·Stage는 미완료다. 원오류·지문·한정검토/정리·정확Git은 WORK_STATUS에 분리 기록한다.
 
 - **2026-10-22 FN03/UI04·UI06 단계 산출물 작성틀 소비 일부**: 현재 적용/노드/산출물·OUTPUT 귀속 확인 뒤 같은 제어세대의 고정양식 작성틀을 선택 단계에 연결했다. 기존 빈준비/일반작성틀 유지·새API/SQL/권한/Agent·자동저장/확정0. 신규단계2RED→직접영향12 unit/typebuild0·새OUTLINE1+영향NORMAL1 DOM2PASS/한정독립C0/I0/M0/QA독립잔여0. 선택보존·세대/입력전용거절·사람편집/이유→명시저장/고정단계·본문재조회 한정이며 실제DB/served·모든주체/추가hash이탈/Agent·전체FN03·Stage미완료다. 상세지문/한계는WORK_STATUS를따른다.
