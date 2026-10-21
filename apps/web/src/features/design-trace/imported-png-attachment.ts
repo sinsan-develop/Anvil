@@ -2,13 +2,14 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentBuffer,DocumentSession} from './editor-api.ts';
 import {attachDocumentOriginal} from './document-attachments.ts';
 import {readPngArtifact,type StoredDocumentPng} from './stored-document-image.ts';
+import {matchesDocumentImportTarget} from './import-api.ts';
 import type {ImportCandidate} from '../../../../server/modules/documents/project-imports.ts';
 type Artifact=ImportCandidate['originalRef'];
 export interface ImportedPngSelection{projectId:string;commandId:string;candidateId:string;artifact:Artifact;image:StoredDocumentPng}
 const equal=(a:Artifact,b:Artifact)=>!!a&&!!b&&a.artifactId===b.artifactId&&a.bytes===b.bytes&&a.contentHash===b.contentHash&&a.mediaType===b.mediaType;
 function current(b:DocumentBuffer,s:DocumentSession){
  const state=b.importState,c=state?.candidate,u=state?.upload,r=state?.record;
- if(!state||!c||!u||!r||b.ownerUserId!==s.user.id||state.ownerUserId!==s.user.id||u.clientId!==s.clientId||u.projectId!==b.projectId||u.controlGeneration!==b.controlGeneration||b.documentId!==null||b.baseVersion!==0||b.pending||b.importCandidateRef||b.importPreparationId||b.proposalState||b.workPlanState||b.designIndexState||state.uncertain||state.failure||c.status!=='UNSUPPORTED'||c.parserVersion!==null||c.extractedContentRef!==null||c.losses.length||c.originalRef.mediaType!=='image/png'||c.originalRef.bytes<57||c.originalRef.bytes>2097152||u.operation!=='uploadArtifact'||u.payload.mediaType!=='image/png'||u.payload.bytes!==c.originalRef.bytes||u.payload.contentHash!==c.originalRef.contentHash||r.operation!=='importDocument'||r.commandId!==state.recordCommandId||!equal(r.payload.fileRef as Artifact,c.originalRef)||!c.intendedFormRef||c.intendedFormRef.id!==b.formRef.id||c.intendedFormRef.version!==b.formRef.version||c.intendedFormRef.contentHash!==b.formRef.contentHash)throw new ApiError('IMPORT_SELECTION_REQUIRED');
+ if(!state||!c||!u||!r||b.ownerUserId!==s.user.id||state.ownerUserId!==s.user.id||u.clientId!==s.clientId||u.projectId!==b.projectId||u.controlGeneration!==b.controlGeneration||!matchesDocumentImportTarget(b,state)||b.pending||b.importCandidateRef||b.importPreparationId||b.proposalState||b.workPlanState||b.designIndexState||state.uncertain||state.failure||c.status!=='UNSUPPORTED'||c.parserVersion!==null||c.extractedContentRef!==null||c.losses.length||c.originalRef.mediaType!=='image/png'||c.originalRef.bytes<57||c.originalRef.bytes>2097152||u.operation!=='uploadArtifact'||u.payload.mediaType!=='image/png'||u.payload.bytes!==c.originalRef.bytes||u.payload.contentHash!==c.originalRef.contentHash||r.operation!=='importDocument'||r.commandId!==state.recordCommandId||!equal(r.payload.fileRef as Artifact,c.originalRef)||!c.intendedFormRef||c.intendedFormRef.id!==b.formRef.id||c.intendedFormRef.version!==b.formRef.version||c.intendedFormRef.contentHash!==b.formRef.contentHash)throw new ApiError('IMPORT_SELECTION_REQUIRED');
  return{state,c};
 }
 /** UNSUPPORTED는 본문 추출 상태 그대로다. 보호 원문을 별도 첨부로만 확인한다. */

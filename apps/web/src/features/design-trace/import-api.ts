@@ -1,7 +1,8 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentBuffer, type DocumentSession, type DocumentWrite } from './editor-api.ts';
 import type { ImportCandidate } from '../../../../server/modules/documents/project-imports.ts';
-export interface DocumentImportBuffer { ownerUserId: string; name: string; bytes: Uint8Array<ArrayBuffer>; upload: DocumentWrite; record: DocumentWrite | null; recordCommandId: string; attempted: boolean; uncertain: boolean; candidate: ImportCandidate | null; failure: { code: string; status: number; quarantinedArtifactId?:string } | null }
+type AttachmentTarget={id:string;version:number;contentHash:string};
+export interface DocumentImportBuffer { ownerUserId: string; name: string; bytes: Uint8Array<ArrayBuffer>; upload: DocumentWrite; record: DocumentWrite | null; recordCommandId: string; attempted: boolean; uncertain: boolean; candidate: ImportCandidate | null; failure: { code: string; status: number; quarantinedArtifactId?:string } | null; attachmentTarget?:AttachmentTarget; attemptId?:string }
 export function rejectedDocumentImport(state: DocumentImportBuffer): boolean {
   // 유효한 JSON 거절을 받은 경우만 명시 해제할 수 있다. 단절/HTML/5xx는 결과 미확인이다.
   return !state.uncertain && !!state.failure && [400,401,403,404,409,412,413,415,422].includes(state.failure.status) && state.failure.code !== 'RESPONSE_INVALID';
@@ -11,10 +12,24 @@ const normalize = (v: unknown): unknown => Array.isArray(v) ? v.map(normalize) :
 const equal = (a: unknown, b: unknown) => JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
 async function digest(bytes: Uint8Array<ArrayBuffer>) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(v => v.toString(16).padStart(2, '0')).join(''); }
 export async function prepareDocumentImport(buffer: DocumentBuffer, session: DocumentSession, file: { name: string; bytes: Uint8Array<ArrayBuffer> }): Promise<DocumentImportBuffer> {
-  if (buffer.documentId !== null || buffer.pending || buffer.importState || buffer.importCandidateRef || buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || !uuid.test(session.clientId) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1 || file.bytes.byteLength > 20 * 1024 * 1024 || !file.name || file.name.length > 255) throw new ApiError('IMPORT_INPUT_INVALID');
+  if(buffer.documentId!==null)throw new ApiError('IMPORT_INPUT_INVALID');
+  return prepareImport(buffer,session,file);
+}
+/** 브라우저 편집 대상 고정일 뿐 서버 권한/새 데이터 계약이 아니다. */
+export function matchesDocumentImportTarget(buffer:DocumentBuffer,state:Pick<DocumentImportBuffer,'attachmentTarget'>):boolean{
+ const t=state.attachmentTarget;
+ return t===undefined?buffer.documentId===null&&buffer.baseVersion===0:!!t&&uuid.test(t.id)&&Number.isSafeInteger(t.version)&&t.version>0&&/^[a-f0-9]{64}$/.test(t.contentHash)&&buffer.documentId===t.id&&buffer.baseVersion===t.version&&buffer.baseHash===t.contentHash;
+}
+export async function preparePngAttachmentImport(buffer:DocumentBuffer,session:DocumentSession,file:{name:string;bytes:Uint8Array<ArrayBuffer>}):Promise<DocumentImportBuffer>{
+ const attachmentTarget={id:buffer.documentId??'',version:buffer.baseVersion,contentHash:buffer.baseHash??''};
+ if(!matchesDocumentImportTarget(buffer,{attachmentTarget})||!file.name.toLowerCase().endsWith('.png')||file.bytes.byteLength<57||file.bytes.byteLength>2097152||buffer.proposalState||buffer.designIndexState||buffer.workPlanState)throw new ApiError('IMPORT_INPUT_INVALID');
+ return prepareImport(buffer,session,file,attachmentTarget);
+}
+async function prepareImport(buffer:DocumentBuffer,session:DocumentSession,file:{name:string;bytes:Uint8Array<ArrayBuffer>},attachmentTarget?:AttachmentTarget):Promise<DocumentImportBuffer>{
+  if (!matchesDocumentImportTarget(buffer,{attachmentTarget}) || buffer.pending || buffer.importState || buffer.importCandidateRef || buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || !uuid.test(session.clientId) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1 || file.bytes.byteLength > 20 * 1024 * 1024 || !file.name || file.name.length > 255) throw new ApiError('IMPORT_INPUT_INVALID');
   const bytes = new Uint8Array(file.bytes), name = file.name;
   const mediaType = /\.md$/i.test(name) ? 'text/markdown;charset=utf-8' : /\.txt$/i.test(name) ? 'text/plain;charset=utf-8' : /\.png$/i.test(name) ? 'image/png' : 'application/octet-stream';
-  return { ownerUserId: session.user.id, name, bytes, upload: { schemaVersion: 1, projectId: buffer.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: buffer.controlGeneration, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType, bytes: bytes.length, contentHash: await digest(bytes) } }, record: null, recordCommandId: crypto.randomUUID(), attempted: false, uncertain: false, candidate: null, failure: null };
+  return { ownerUserId: session.user.id, name, bytes, upload: { schemaVersion: 1, projectId: buffer.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: buffer.controlGeneration, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType, bytes: bytes.length, contentHash: await digest(bytes) } }, record: null, recordCommandId: crypto.randomUUID(), attempted: false, uncertain: false, candidate: null, failure: null,...(attachmentTarget?{attachmentTarget:{...attachmentTarget}}:{}) };
 }
 function validCandidate(candidate: ImportCandidate, state: DocumentImportBuffer) {
   return candidate && uuid.test(candidate.id) && equal(candidate.originalRef, state.record?.payload.fileRef) && equal(candidate.intendedFormRef, state.record?.payload.intendedFormRef) && ['READY','FAILED','UNSUPPORTED'].includes(candidate.status) && Array.isArray(candidate.losses) && candidate.losses.length === 0 && Array.isArray(candidate.issues) && candidate.issues.length <= 200 && candidate.issues.every(i => i && typeof i.code === 'string' && typeof i.message === 'string') && (candidate.status === 'READY' ? candidate.parserVersion === 'UTF8_IDENTITY_1' && equal(candidate.extractedContentRef, candidate.originalRef) && candidate.originalRef.bytes <= 2 * 1024 * 1024 && ['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(candidate.originalRef.mediaType) : candidate.extractedContentRef === null);
@@ -34,6 +49,8 @@ export async function continueDocumentImport(client: ApiClient, state: DocumentI
   const a = record.payload.fileRef as ImportCandidate['originalRef'];
   if (!a || !uuid.test(a.artifactId) || a.bytes !== u.payload.bytes || a.contentHash !== u.payload.contentHash || a.mediaType !== u.payload.mediaType || record.commandId !== state.recordCommandId || record.projectId !== u.projectId || record.clientId !== u.clientId || record.controlGeneration !== u.controlGeneration || record.operation !== 'importDocument' || record.targetId !== null || record.expectedVersion !== 0 || record.schemaVersion !== 1 || record.approvalRef !== null || record.baselineRefs.length || !equal(record.payload.intendedFormRef, formRef) || !equal(record.payload.sourceRefs, [])) throw new ApiError('IMPORT_INPUT_INVALID');
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
+  // 업로드 receipt는 가져오기 명령까지 해소하지 않는다. 재진입 전에 전송 중 상태를 보존한다.
+  next={...next,uncertain:true};checkpoint(next);
   const response = await postDocumentCommand(client, record, session.csrfToken), candidate = response.data?.candidate as ImportCandidate;
   if (!validCandidate(candidate, next) || response.targetId !== candidate.originalRef.artifactId || response.version !== null || response.data.status !== 'IMPORT_CANDIDATE') throw new ApiError('RESPONSE_INVALID');
   return { ...next, uncertain: false, candidate, failure: null };
