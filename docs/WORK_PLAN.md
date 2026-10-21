@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 산출물 직접참조의 격리 실제저장 확인**: exact89de6732 ARTIFACTS단일실행1건phaseDONE/exit0에서새합성파일upload→수기ref/submitCOMMIT·별도app-role원문/hash/4표+1→유실같은명령추가0·보호reader실bytes/hash/타인404를확인했다. cases8은marker8개/시험8아님·옛명령/시험/changes검사0. 59SQL동일·정식3서비스불변·08:21:01독립QA경로/PG/netID·label/process잔여0. 실Agent/시험진위/정식served브라우저DB·전체FN12/Stage미완료, 상세ID/원오류/범위는WORK_STATUS를따른다.
+
 - **2026-10-22 FN12/UI05 산출물 참조 실제 저장 검증 착수**: 기존수기실제QA에ARTIFACTS단일분기를추가해기존공통선행만재사용하고옛명령/시험/changes성공검사는실행하지않는다. 새합성파일upload→수기ref/submitCOMMIT·별도app-role원문/hash·보호reader/타인거절·동일명령추가행0을계획했다. 진입guard RED1→guard3/type0·59SQL동일/한정독립C0/I0/M0는source만확인, actual실행전미검증이다. 정식DB/정책/서비스/Agent0·등록자원/회수는WORK_STATUS를따른다.
 
 - **2026-10-22 FN12/UI05 결과 산출물 참조 직접 작성 일부**: 기존manifest.artifactRefs의JSON전용공백을ID/버전/hash입력·추가/제거→별도submit/유실동일명령/원문재조회로연결했다. 실존/접근/원bytes·증거출처/검수합격은미판정·WORKER_CLAIM/미완료·원미실행유지, 새API/SQL/정식DB/권한/Agent0. 신규2RED→unit12/typebuild0/최초DOM3·scoped독립C0/I0/M1후실제DOM3필드검사test-only보강/type0·정상fresh1PASS·각QA독립잔여0이다. 실DB/served·전체FN12/Stage는미검증·미완료, 범위/원오류/지문은WORK_STATUS를따른다.
