@@ -16,6 +16,8 @@ import{canReopenRejectedWorkPlan,reopenRejectedWorkPlan}from'./rejected-work-pla
 import {WorkPlanApprovalEditor} from './WorkPlanApprovalEditor.tsx';
 import {PlanTaskCodeRename} from './PlanTaskCodeRename.tsx';
 import {movePlanTask} from './plan-task-order.ts';
+import {removePlanTask} from './plan-task-removal.ts';
+import {PlanTaskRemoval} from './PlanTaskRemoval.tsx';
 
 const listFields=[['inputs','입력'],['outputs','출력'],['included','포함 범위'],['excluded','제외 범위'],['allowedFileRefs','허용 파일'],['startPrerequisites','착수 선행'],['acceptancePrerequisites','검수 선행'],['steps','수행 절차'],['acceptanceCriteria','검수 조건'],['evidenceRequirements','증거 요구']]as const;
 const lines=(s:string)=>s===''?[]:s.split('\n');
@@ -28,6 +30,10 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
   function moveTask(index:number,direction:-1|1){
     if(moveLocked||running.current)return;
     try{const next=movePlanTask(s,index,direction);if(next===s)return;setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===s?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
+  }
+  function removeTask(captured:WorkPlanBuffer,index:number){
+    if(moveLocked||running.current||captured!==s)return;
+    try{const next=removePlanTask(captured,index,true);setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===captured?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
   }
   function update(change:(s:WorkPlanBuffer)=>WorkPlanBuffer,dirty=true){onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState?.bindingId===s.bindingId?{...b,workPlanState:change(b.workPlanState),dirty:dirty||b.dirty}:b);}
   function input(change:(s:WorkPlanBuffer['input'])=>WorkPlanBuffer['input']){if(!locked)update(v=>({...v,input:change(v.input),failure:null}));}
@@ -72,7 +78,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
       <div>실제 설계·화면 위치 연결{s.designIndex?.items.map(i=><label key={i.id}><input type="checkbox" checked={t.designRefs.some(r=>r.id===i.id)} aria-label={`업무 ${n+1} 설계 ${i.localCode}`} onChange={e=>link(n,'DESIGN_ITEM',i.id,e.target.checked)}/>{i.localCode} · {i.title} · {i.anchor}</label>)}{s.designIndex?.screenRegions.map(i=><label key={i.id}><input type="checkbox" checked={t.screenRefs.some(r=>r.id===i.id)} aria-label={`업무 ${n+1} 화면 ${i.screenCode}`} onChange={e=>link(n,'SCREEN_REGION',i.id,e.target.checked)}/>{i.screenCode} · v{i.documentRef.version} · {i.anchor}</label>)}</div>
       {listFields.map(([k,label])=><div key={k}><label htmlFor={`plan-${n}-${k}`}>업무 {n+1} {label}</label><textarea id={`plan-${n}-${k}`} aria-describedby={`plan-${n}-${k}-help`} maxLength={20_000} value={t[k].join('\n')} onChange={e=>task(n,{[k]:lines(e.target.value)})}/><small id={`plan-${n}-${k}-help`}>한 줄에 한 항목{k==='startPrerequisites'||k==='acceptancePrerequisites'?' · 같은 계획의 업무 코드':''}</small></div>)}
       <h3>검증 계획</h3>{t.testCases.map((c,k)=><section key={k}><label>업무 {n+1} 시험 {k+1} 코드<input value={c.id} maxLength={64} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,id:e.target.value}:v)})}/></label><label htmlFor={`plan-case-${n}-${k}`}>업무 {n+1} 시험 {k+1} 구분</label><select id={`plan-case-${n}-${k}`} value={c.kind} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,kind:e.target.value as typeof c.kind}:v)})}><option value="NORMAL">정상</option><option value="IMPORTANT_FAILURE">중요 실패</option><option value="DIRECT_IMPACT">직접 영향</option></select>{(['steps','expected','environment']as const).map(f=><label key={f}>업무 {n+1} 시험 {k+1} {f==='steps'?'절차':f==='expected'?'기대 결과':'환경'}<textarea value={f==='steps'?c.steps.join('\n'):c[f]} maxLength={20_000} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,[f]:f==='steps'?lines(e.target.value):e.target.value}:v)})}/></label>)}<button onClick={()=>task(n,{testCases:t.testCases.filter((_,j)=>j!==k)})}>업무 {n+1} 시험 {k+1} 제거</button></section>)}<button disabled={t.testCases.length>=200} onClick={()=>task(n,{testCases:[...t.testCases,{id:'',kind:'NORMAL',steps:[],expected:'',environment:''}]})}>업무 {n+1} 시험 추가</button>
-      <label>업무 {n+1} 복구 방법<textarea value={t.rollback} maxLength={20_000} onChange={e=>task(n,{rollback:e.target.value})}/></label><label>업무 {n+1} 재개 유의사항<textarea value={t.recoveryNotes} maxLength={20_000} onChange={e=>task(n,{recoveryNotes:e.target.value})}/></label><button onClick={()=>input(v=>({...v,tasks:v.tasks.filter((_,k)=>k!==n)}))}>업무 {n+1} 제거</button>
+      <label>업무 {n+1} 복구 방법<textarea value={t.rollback} maxLength={20_000} onChange={e=>task(n,{rollback:e.target.value})}/></label><label>업무 {n+1} 재개 유의사항<textarea value={t.recoveryNotes} maxLength={20_000} onChange={e=>task(n,{recoveryNotes:e.target.value})}/></label><PlanTaskRemoval state={s} index={n} locked={moveLocked} onRemove={removeTask}/>
     </fieldset>)}<button disabled={locked||s.input.tasks.length>=200} onClick={()=>input(v=>({...v,tasks:[...v.tasks,blankPlanTask()]}))}>업무 추가</button>
     <label>작업계획 저장 이유<textarea value={s.input.reason} readOnly={locked} maxLength={20_000} onChange={e=>input(v=>({...v,reason:e.target.value}))}/></label>
     {!s.result?<WorkPlanApprovalEditor client={client} session={session} buffer={buffer} disabled={busy} update={update} onAuthenticationLost={onAuthenticationLost}/>:null}
