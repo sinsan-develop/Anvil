@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12 미채택 후보 exact 영향지도 보완**: 위 후보부록A에 실제기존연산·파일/anchor·현재성/부재행 보호와추가필요/미지원412를구분했다. auth-first·FN12전용명시READ COMMITTED/제한최종hook·보호replay·COMMIT후freshREAD실패의snapshot/receipt0·상태무관UNKNOWN/HTTP비원자한계를고정, 최종SHA82189A3EEBA5FDFB3613D12676CF1F91B6949DA929CB125560B4CD3DC0949677/문서delta독립C0/I0/M0이다. 채택·구현·실경합/COMMIT검증아님·제품SQL0, 정확채택결정은PMO에전달하고기존다른미채택질문재발행0을유지한다.
+
 - **2026-10-22 FN12 다음 영속 처리 경로의 계약 후보 — 미채택**: 시험 자료 주장 등록/보호조회가 실제 source에없어 PMO 요청으로 docs/contracts/FN12_TEST_EVIDENCE_CLAIM_REGISTRY_PROPOSAL.md를작성·한정독립검토했다. 최초I1/M1→문서보정 scopedC0/I0/M0, 최종SHA503D307FCFA4FEFA0CAE6B73B4C171D99A9616D8F9B73CCA4141C4184ACE4C84. 별도미검증ClaimRef·신뢰증거adapter금지·기존검수거절/실패집계0·권한/상호잠금·원자성/UNKNOWN을고정한문서일뿐이며제품/API/SQL/실DB채택·구현/검증완료아니다. 정확delta판단은PMO에요청하고기존FN06등질문반복0·독립승인작업선정책임유지. WORK_STATUS의근거/미검증을따른다.
 
 - **2026-10-22 FN12/UI05 시험 결과 화면 작성 일부**: 별도 JSON이 필요했던 시험 조건/ID·기대/실제·상태를 기존 직접작성→명시 submitResult→목록/원문 조회로 연결했다. 고정 기준/evidence없음·수행자주장/검수false·전체미완료·원미실행보존/동일명령, 새API/SQL/권한0. 신규2RED→단위15·최종신규3+인접3 DOM6/typebuild/diff0·한정독립C0/I0/M0·QA독립잔여0. 실제DB/served/모든주체·상태/증거진위·전체FN12/Stage 미완료, 원라벨오류·지문/한계는 WORK_STATUS를 따른다.
