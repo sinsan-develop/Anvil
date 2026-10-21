@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **FN14 후보 게시 후 서식 보정**: d6977dde는 문서3개만 게시했다. staged diffcheck에서 신규후보 EOF 빈줄1 경고를 확인했으나 후속명령이 계속되어 게시됐음을 보존한다. 해당 빈줄만 제거했고 본문 의미/검토범위 변경0이다. 최종후보 SHA256 834CEDB7E70EDC3F5204206C98F7237E95B37C755B6C63C70F74A2AA09DF21B6, 직전 독립검토 CFD6929E와 EOF1줄만 다르며 새hash 독립검토를 주장하지 않는다. 후속 일반commit으로 정정하고 history rewrite0·보호6/제품코드불변이다.
+
 - **FN14 후보 문서 검수**: 실제 routes.ts188의 /api/v1 대조, 원 독립 C0/I1/M1(검증 뒤 잠금 순서·MessageRef 형식 모호)을 보존한다. 잠금 전 적격성 확정0→READ COMMITTED 잠금 대기 후 별도 SELECT·현재권한/신규CAS 재검사·충돌 전체rollback/자동재전송0, sourceRefs의 VersionRef/MessageRef+CID exact union으로 보정했다. 한정 재검토 C0/I0/M0·독립실행0. 후보 SHA256 CFD6929E67F3338AF6779A73804E17F858D4AD9D50311CAC6B8DEF2EE43819E8, 정본 두 위치 hash일치·diffcheck0. 코드/시험/SQL/DB/환경/Agent 변화0이므로 제품 시험 반복0이며 실제 동시성·권한 검증 PASS가 아니다. 문서3파일만 checkpoint, 원6f5b646f 코드 불변·보호6/main 보존.
 
 
