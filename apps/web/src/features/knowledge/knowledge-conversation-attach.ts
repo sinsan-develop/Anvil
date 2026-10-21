@@ -9,3 +9,11 @@ export function attachKnowledgeConversation(buffer:KnowledgeBuffer,session:Docum
  if(buffer.sourceRefs.some(v=>['CONVERSATION','USER_INSTRUCTION'].includes(v.kind)&&v.id===r.id))throw new ApiError('KNOWLEDGE_SOURCE_DUPLICATE');
  return{...buffer,sourceRefs:[...buffer.sourceRefs,{...r,kind:m.kind==='USER_INSTRUCTION'?'USER_INSTRUCTION':'CONVERSATION'}],dirty:true,failure:null};
 }
+/** 현재 미저장 초안의 참조만 해제한다. 대화 원문·지식 본문·저장 이력은 삭제하지 않는다. */
+export function detachKnowledgeConversation(buffer:KnowledgeBuffer,session:DocumentSession,projectId:string,source:KnowledgeBuffer['sourceRefs'][number]):KnowledgeBuffer{
+ if(!buffer||![projectId,session.user.id,session.clientId].every(v=>uuid.test(v))||buffer.projectId!==projectId||buffer.ownerUserId!==session.user.id||buffer.ownerClientId!==session.clientId||!Number.isSafeInteger(buffer.controlGeneration)||buffer.controlGeneration<1||buffer.pending||buffer.resultRef||buffer.uncertain)throw new ApiError('KNOWLEDGE_SOURCE_LOCKED');
+ if(!source||Object.keys(source).sort().join(',')!=='contentHash,id,kind'||!['CONVERSATION','USER_INSTRUCTION'].includes(source.kind)||!uuid.test(source.id)||!/^[0-9a-f]{64}$/.test(source.contentHash))throw new ApiError('KNOWLEDGE_SOURCE_INVALID');
+ const matches=(r:KnowledgeBuffer['sourceRefs'][number])=>r.kind===source.kind&&r.id===source.id&&r.contentHash===source.contentHash;
+ if(!Array.isArray(buffer.sourceRefs)||buffer.sourceRefs.filter(matches).length!==1)throw new ApiError('KNOWLEDGE_SOURCE_INVALID');
+ return{...buffer,sourceRefs:buffer.sourceRefs.filter(r=>!matches(r)),dirty:true,failure:null};
+}
