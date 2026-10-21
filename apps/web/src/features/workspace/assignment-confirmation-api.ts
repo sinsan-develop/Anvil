@@ -1,6 +1,6 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentSession, type DocumentWrite } from '../design-trace/editor-api.ts';
-import type { AssignmentDraftView } from './assignment-api.ts';
+import { readAssignmentDraft, type AssignmentDraftView } from './assignment-api.ts';
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentContentReview, AssignmentConfirmation, AssignmentReviewOutcome } from '../../../../server/modules/assignments/assignment-confirmation-input.ts';
@@ -64,4 +64,25 @@ export async function readConfirmedAssignment(client: ApiClient, projectId: stri
   if (!uuid(projectId) || draft.projectId !== projectId || !ref(assignmentRef)) throw new ApiError('CLIENT_PATH_INVALID');
   const v = await client.get<ConfirmedAssignmentView>(`/api/v1/projects/${projectId}/assignments/${assignmentRef.id}/versions/${assignmentRef.version}`);
   if (!exact(v,['projectId','ref','snapshot','observedAt']) || v.projectId !== projectId || !same(v.ref,assignmentRef) || !Number.isFinite(Date.parse(v.observedAt))) throw new ApiError('RESPONSE_INVALID'); await confirmationSnapshot(v.snapshot,assignmentRef,draft); return v;
+}
+
+/** 저장 child에 고정된 부모만 읽는다. 과거 원문 조회이며 현재성·실행 허가를 판정하지 않는다. */
+export async function readParentAssignmentOriginal(client: ApiClient, projectId: string, child: AssignmentDraftView, active: () => boolean = () => true) {
+  const reference = structuredClone(child?.snapshot?.definition?.parentAssignmentRef);
+  if (!uuid(projectId) || child.projectId !== projectId || !ref(reference)) throw new ApiError('CLIENT_PATH_INVALID');
+  if (!active()) return null;
+  const value = await client.get<ConfirmedAssignmentView>(`/api/v1/projects/${projectId}/assignments/${reference.id}/versions/${reference.version}`);
+  if (!active()) return null;
+  if (!exact(value, ['projectId','ref','snapshot','observedAt']) || value.projectId !== projectId || !same(value.ref, reference)
+    || !Number.isFinite(Date.parse(value.observedAt)) || !ref(value.snapshot?.draftRef)
+    || value.snapshot.draftRef.id !== reference.id || value.snapshot.draftRef.version !== reference.version
+    || value.snapshot.definition?.parentAssignmentRef !== null) throw new ApiError('RESPONSE_INVALID');
+  // 원문 hash를 먼저 검사해 불신 응답의 draftRef로 추가 조회하지 않는다.
+  await hash(value.snapshot, reference);
+  if (!active()) return null;
+  const draft = await readAssignmentDraft(client, projectId, value.snapshot.draftRef);
+  if (!active()) return null;
+  await confirmationSnapshot(value.snapshot, reference, draft);
+  if (!active()) return null;
+  return { parent: value, draft, sourceCurrentness: 'NOT_RECHECKED' as const };
 }

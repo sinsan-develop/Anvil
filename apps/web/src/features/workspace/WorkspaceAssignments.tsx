@@ -16,6 +16,7 @@ import { AssignmentEnvironmentSelection } from './AssignmentEnvironmentSelection
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 import type {PlanTaskSelection} from '../../shell/routes.ts';
 import { AssignmentChildTaskSelection } from './AssignmentChildTaskSelection.tsx';
+import { AssignmentParentOriginal } from './AssignmentParentOriginal.tsx';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -147,6 +148,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
     {shown && shown.snapshot.definition.parentAssignmentRef === null ? <button disabled={busy || !owner || !bound || !!buffer?.pending} onClick={() => void perform(() => prepareChild(shown))}>이 임무를 부모로 하위 초안 준비</button> : null}
     {shown?.snapshot.definition.parentAssignmentRef ? <p>하위 초안은 저장·개정·조회만 가능합니다. 내용 검토·확정·책임자 배정·실행은 지원하지 않습니다.</p> : null}
+    {shown?.snapshot.definition.parentAssignmentRef ? <AssignmentParentOriginal key={['parent-original',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} child={shown} busy={busy} run={action=>void perform(action)} renderConditions={snapshot=><AssignmentConditions snapshot={snapshot}/>} /> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
     {shown&&bound&&shown.snapshot.definition.parentAssignmentRef===null?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
