@@ -21,6 +21,15 @@ export function emptyFormBuffer(): FormBuffer { return { ownerUserId: null, targ
 export function formBuffer(value: FormVersion, ownerUserId: string): FormBuffer {
   return { ownerUserId, targetId: value.ref.id, version: value.ref.version, definition: structuredClone(value.definition), itemId: value.definition.items[0]?.itemId ?? '', reason: '', dirty: false, pending: null, review: null };
 }
+/** 명시 형식 전환만 수행한다. TEXT로 필드가 사라지는 전환은 별도 확인이 필요하다. */
+export function changeFormItemType(buffer:FormBuffer,ownerUserId:string,itemId:string,valueType:'TEXT'|'RECORDS',acknowledged:boolean):FormBuffer{
+ const items=buffer.definition?.items.filter(item=>item.itemId===itemId),item=items?.[0];
+ if(!ownerUserId||buffer.ownerUserId!==ownerUserId||buffer.pending||buffer.review?.pending||buffer.itemId!==itemId||buffer.definition?.scope!=='USER_COMMON'||items?.length!==1||!item||!['TEXT','RECORDS'].includes(valueType))throw new ApiError('FORM_ITEM_TYPE_INVALID');
+ if(item.valueType===valueType)return buffer;
+ if(valueType==='TEXT'&&item.fields.length&&!acknowledged)throw new ApiError('FORM_ITEM_TYPE_CONFIRMATION_REQUIRED');
+ const next={...item,valueType,repeated:valueType==='RECORDS',fields:valueType==='TEXT'?[]:item.fields};
+ return {...buffer,dirty:true,definition:{...buffer.definition,items:buffer.definition.items.map(value=>value===item?next:value)}};
+}
 /** 미저장 공통 양식의 한 필드만 해제한다. 마지막 필드의 기존 검증 문제는 유지한다. */
 export function removeFormRepeatField(buffer:FormBuffer,ownerUserId:string,itemId:string,fieldId:string):FormBuffer{
  const items=buffer.definition?.items.filter(item=>item.itemId===itemId),item=items?.[0];

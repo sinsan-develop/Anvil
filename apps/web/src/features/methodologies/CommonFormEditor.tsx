@@ -2,7 +2,7 @@ import { useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonMethod as writeCommonFormDraft, type MethodCommand } from '../methodology-editor/common-api.ts';
 import { getForm, type FormVersion } from './forms-api.ts';
-import { emptyFormBuffer, formBuffer, removeFormRepeatField, type FormBuffer } from './form-editor-state.ts';
+import { emptyFormBuffer, formBuffer, removeFormRepeatField, changeFormItemType, type FormBuffer } from './form-editor-state.ts';
 import type { FormDefinition, FormItem } from '../../../../server/modules/documents/forms.ts';
 
 export function CommonFormEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved }: {
@@ -47,6 +47,13 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
     const next: FormItem = { itemId, title: '', required: true, valueType: 'TEXT', repeated: false, fields: [], authoringRules: [], reviewCriteria: [] };
     change({ items: [...definition.items, next] }); onChange(previous => ({ ...previous, itemId }));
   }
+  function changeType(valueType:'TEXT'|'RECORDS'){
+    if(locked||!item||item.valueType===valueType)return;
+    const acknowledged=valueType!=='TEXT'||!item.fields.length||confirm('일반 텍스트로 전환하면 이 초안의 반복 필드 '+item.fields.length+'개가 사라집니다. 기존 저장 버전·항목 ID·작성/검수 규칙은 유지하며 저장은 별도입니다. 전환할까요?');
+    if(!acknowledged)return;
+    try{const updated=changeFormItemType(buffer,session.user.id,item.itemId,valueType,acknowledged);onChange(previous=>previous===buffer?updated:previous);setSaved(null);setError(null);}
+    catch(cause){setError(cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID'));}
+  }
   function removeField(itemId:string,repeatFieldId:string){
     if(locked||!confirm('이 초안의 선택 반복 필드만 제거할까요? 항목 규칙·다른 필드·서버 원본은 유지하며 저장은 별도로 합니다.'))return;
     try{const updated=removeFormRepeatField(buffer,session.user.id,itemId,repeatFieldId);onChange(previous=>previous===buffer?updated:previous);setSaved(null);setError(null);}
@@ -65,6 +72,8 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
       <label htmlFor={fieldId + '-inputs'}>양식 필수 입력 자료</label><textarea id={fieldId + '-inputs'} value={definition.requiredInputs.join('\n')} onChange={event => change({ requiredInputs: event.target.value.split('\n') })} />
       <div className="methodology-flow">{definition.items.map(value => <button key={value.itemId} aria-pressed={value.itemId === buffer.itemId} onClick={() => onChange(previous => ({ ...previous, itemId: value.itemId }))}>{value.title || value.itemId} 편집</button>)}</div><button disabled={definition.items.length >= 200} onClick={addItem}>양식 항목 추가</button>
       {item ? <div><p className="meta">안정 항목 ID {item.itemId}</p><label>양식 항목 제목<input value={item.title} onChange={event => changeItem({ title: event.target.value })} /></label><label><input type="checkbox" checked={item.required} onChange={event => changeItem({ required: event.target.checked })} />필수 항목</label>
+        <label htmlFor={fieldId+'-item-type'}>양식 항목 형식</label><select id={fieldId+'-item-type'} value={item.valueType} onChange={event=>changeType(event.target.value as 'TEXT'|'RECORDS')}><option value="TEXT">일반 텍스트</option><option value="RECORDS">반복 행</option></select>
+        {item.valueType==='RECORDS'&&!item.fields.length?<p role="status">반복 항목의 필드를 추가해야 합니다. 초안 저장과 내용 확정은 다릅니다.</p>:null}
         <label htmlFor={fieldId + '-rules'}>항목 작성 규칙</label><textarea id={fieldId + '-rules'} value={item.authoringRules.join('\n')} onChange={event => changeItem({ authoringRules: event.target.value.split('\n') })} />
         <label htmlFor={fieldId + '-review'}>항목 검토 기준</label><textarea id={fieldId + '-review'} value={item.reviewCriteria.join('\n')} onChange={event => changeItem({ reviewCriteria: event.target.value.split('\n') })} />
         {item.fields.map(field => <div key={field.fieldId}><label>반복 필드 {field.fieldId}<input value={field.title} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, title: event.target.value } : value) })} /></label><label><input type="checkbox" aria-label={'반복 필드 '+field.fieldId+' 필수'} checked={field.required} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, required: event.target.checked } : value) })} />필수 필드</label><button type="button" aria-label={'반복 필드 '+field.fieldId+' 제거'} onClick={()=>removeField(item.itemId,field.fieldId)}>이 반복 필드 제거</button></div>)}
