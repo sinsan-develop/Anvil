@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 UI04→UI06 고정 문서 작성 일부**: 주작업조회문서의fullref를작성화면초기조회로전달→hash/body확인→명시편집·기존별도v2저장/CAS·원v1재조회연결. 새API/SQL·실DB/정책/서비스/Agent0·미확인buffer보존. 신규2/직접인접6단위8·새DOM6/인접2·typebuild/diff·독립정적C0/I0/M0·QA독립잔여0. 원실패/정정·URL초기선택vs저장후v2구분은WORK_STATUS. 실제DB/served/선택단계직접DOM/모든전환·전체UI04/FN03/Stage미완료·미확인이다.
+
 - **2026-10-21 UI10 보관 지식의 대화·지시 출처 열기 일부**: 대화방 수동 명시선택→기존 고정지식/귀속·발언GET/hash/kind→원문조회·닫기를 연결, 일반CONVERSATION의지시발언도보존·현재효력/전달승격0. 새위치발견metadataGET/SQL·서버응답·권한·실DB/서비스/Agent0이며 DD166F미채택/원거절은유지한다. 과거17:03 위치발견필요가정과이번수동선택의정확차이는WORK_STATUS. 새6단위/직접인접8 관측·새7DOM/인접파일5·typebuild PASS, 독립C0/I0/M1뒤JSON·두hash장벽시험만추가1PASS(재리뷰합격주장0),두QA수명각독립잔여0. 실제권한/DB/served/모든전환·전체UI10/FN05/Stage미완료·미확인이다.
 
 - **2026-10-21 UI06 등록 시안→원설계 왕복 조회 일부**: 등록 시안에서 원설계의 고정 버전·항목 줄로 돌아가기를 연결했다. 기존 project/user/client·exact source/region/index/AF02/body·anchor 재대조 및 거절/이탈/편집버퍼 보존, 새 API/SQL·실DB/정책/서비스/Agent0이다. 신규3+인접4 단위7/typebuild·신규3+인접7 DOM10PASS/독립정적 C0/I0/M1·QA독립잔여0. M1은 지연 DOM의 소비완료 장벽 보강으로 보류; 실제 DB/served/전체 주체·pending복귀 직접DOM·전체UI06/Stage 완료 미확인. 원실패/지문/한계는 WORK_STATUS를 따른다.

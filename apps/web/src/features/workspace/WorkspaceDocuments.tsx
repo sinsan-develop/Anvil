@@ -4,6 +4,7 @@ import { listDocuments, readDocument, type DocumentPage, type DocumentVersion } 
 import { sameStageRef } from '../design-trace/stage-api.ts';
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import type { WorkspaceStageSelection } from './api.ts';
+import {documentVersionHref} from '../../shell/routes.ts';
 
 export function WorkspaceDocuments({ client, projectId, selectedStage, onAuthenticationLost }: { client: ApiClient; projectId: string; selectedStage: WorkspaceStageSelection | null; onAuthenticationLost: () => void }) {
   const [request, setRequest] = useState<{ cursor: string | null; revision: number } | null>(null);
@@ -44,6 +45,7 @@ export function WorkspaceDocuments({ client, projectId, selectedStage, onAuthent
       <p className="meta">목록 관측 {page.observedAt}</p></> : null}
     {reading ? <p role="status">고정 문서 버전 조회 중</p> : null}{readError ? <p role="alert">{readError.code} · 원문 미확인</p> : null}
     {opened && !reading && !readError && !listError ? <article><h4>{opened.document.title}</h4><p className="meta">저장 버전 {opened.document.version} · {opened.document.contentHash}</p>
+      <a href={documentVersionHref(projectId,{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash})}>이 고정 문서로 작성 화면 열기</a>
       <pre className="document-plain" aria-label="주 작업 문서 원문">{opened.body}</pre>
       <PinnedFormOriginal key={JSON.stringify([projectId,opened.document.id,opened.document.version,opened.document.contentHash,opened.document.formRef])} client={client} formRef={opened.document.formRef} onAuthenticationLost={onAuthenticationLost}/>
       <p className="meta">{opened.document.stageBinding ? `이 버전에 저장된 단계: ${opened.document.stageBinding.methodologyName} · ${opened.document.stageBinding.nodeName}` : '이 문서 버전의 단계 연결 없음'}</p>

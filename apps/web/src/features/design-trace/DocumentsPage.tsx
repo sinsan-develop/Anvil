@@ -29,8 +29,9 @@ import type {SourceLinkView} from './source-links-api.ts';
 import {DocumentStageFilter} from './DocumentStageFilter.tsx';
 import {DocumentMarkdownPreview} from './DocumentMarkdownPreview.tsx';
 import {sameStageRef,type StageNodeRef} from './stage-api.ts';
+import type {DocumentVersionSelection} from '../../shell/routes.ts';
 
-export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; onAuthenticationLost: () => void }) {
+export function DocumentsPage({ client, projectId, session, requestedDocument, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, onAuthenticationLost }: { requestedDocument?:DocumentVersionSelection; client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
   const [stageFilter,setStageFilter]=useState<{ref:StageNodeRef;name:string}|null>(null);
   const [page, setPage] = useState<DocumentPage | null>(null), [cursor, setCursor] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
@@ -43,7 +44,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [showMaterials, setShowMaterials] = useState(false);
   const [showDesignIndex,setShowDesignIndex]=useState(false);
   const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
-  const [registeredView,setRegisteredView]=useState<{code:string;kind:'시안'|'설계'}|null>(null);
+  const [registeredView,setRegisteredView]=useState<{code:string;kind:'시안'|'설계'|'문서'}|null>(null);
   const [screenOrigin,setScreenOrigin]=useState<ScreenRegionSelection|null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [showSourceLinks,setShowSourceLinks]=useState(false);
@@ -67,6 +68,13 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [client, projectId, cursor, refresh,stageFilter]);
+  useEffect(()=>{
+    if(!requestedDocument)return;
+    const ref=structuredClone(requestedDocument),request=++generation.current;
+    setSelected(null);setOpened(null);setReadError(null);setReading(true);setScreenOrigin(null);setRegisteredView(null);setAnchorSelection(null);
+    readDocument(client,projectId,ref.id,ref.version,{expectedContentHash:ref.contentHash,active:()=>request===generation.current}).then(value=>{if(request!==generation.current)return;setOpened(value);setVersion(String(value.document.version));setRegisteredView({code:'선택한 문서',kind:'문서'});}).catch(cause=>{if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if(error.status===401)onAuthenticationLost();}).finally(()=>{if(request===generation.current)setReading(false);});
+    return()=>{generation.current++;};
+  },[client,projectId,requestedDocument]);
   async function open(item: DocumentSummary, requested: number) {
     setScreenOrigin(null);
     setShowSourceLinks(false);

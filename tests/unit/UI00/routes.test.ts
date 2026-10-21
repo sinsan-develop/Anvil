@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as routing from '../../../apps/web/src/shell/routes.ts';
 const {parseRoute,routeHref}=routing;
+test('주 작업의 정확 문서 참조를 작성 화면에 전달하며 자동 편집 명령은 없다',()=>{const pid='11111111-1111-4111-8111-111111111111',ref={id:'33333333-3333-4333-8333-333333333333',version:2,contentHash:'a'.repeat(64)},build=(routing as any).documentVersionHref;assert.equal(typeof build,'function');const expected='#/projects/'+pid+'/documents/'+ref.id+'/versions/2/'+ref.contentHash;assert.equal(build(pid,ref),expected);assert.deepEqual(parseRoute(expected),{screen:'documents',projectId:pid,documentRef:ref});for(const suffix of ['?edit=true','/save','/../1'])assert.equal(parseRoute(expected+suffix).screen,'not-found');});
+test('문서 고정 경로의 잘못된 주체/참조·비유한 버전은 거절한다',()=>{const build=(routing as any).documentVersionHref;assert.equal(typeof build,'function');const pid='11111111-1111-4111-8111-111111111111',ref={id:'33333333-3333-4333-8333-333333333333',version:1,contentHash:'a'.repeat(64)};for(const patch of [{version:0},{version:NaN},{version:9007199254740992},{id:'../escape'},{contentHash:'bad'},{edit:true}])assert.throws(()=>build(pid,{...ref,...patch}),/CLIENT_PATH_INVALID/);assert.throws(()=>build('bad',ref),/CLIENT_PATH_INVALID/);assert.equal(parseRoute('#/projects/'+pid+'/documents/'+ref.id+'/versions/9007199254740992/'+ref.contentHash).screen,'not-found');});
 
 test('설계에서 선택한 고정 계획 업무 경로는 정확 참조·코드를 임무 준비 화면에 전달한다',()=>{
  const pid='11111111-1111-4111-8111-111111111111',planRef={id:'33333333-3333-4333-8333-333333333333',version:2,contentHash:'a'.repeat(64)},build=(routing as any).workspaceTaskHref;assert.equal(typeof build,'function');
