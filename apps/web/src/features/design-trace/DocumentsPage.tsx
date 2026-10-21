@@ -12,7 +12,7 @@ import { MaterialLibrary } from './MaterialLibrary.tsx';
 import { DesignIndexViewer } from './DesignIndexViewer.tsx';
 import { DesignIndexEditor } from './DesignIndexEditor.tsx';
 import { newDesignIndex,type ScreenRegion } from './design-index-api.ts';
-import {readRegisteredScreen,type ScreenRegionContext} from './screen-region-navigation.ts';
+import {readRegisteredScreen,readRegisteredDesignOrigin,type ScreenRegionContext,type ScreenRegionSelection} from './screen-region-navigation.ts';
 import { getPinnedForm } from '../methodologies/forms-api.ts';
 import { WorkPlanEditor } from './WorkPlanEditor.tsx';
 import { newWorkPlan,blankPlanTask } from './work-plan-api.ts';
@@ -43,7 +43,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   const [showMaterials, setShowMaterials] = useState(false);
   const [showDesignIndex,setShowDesignIndex]=useState(false);
   const [anchorSelection,setAnchorSelection]=useState<DesignAnchorSelection|null>(null);
-  const [registeredView,setRegisteredView]=useState<string|null>(null);
+  const [registeredView,setRegisteredView]=useState<{code:string;kind:'시안'|'설계'}|null>(null);
+  const [screenOrigin,setScreenOrigin]=useState<ScreenRegionSelection|null>(null);
   const [showComparison, setShowComparison] = useState(false);
   const [showSourceLinks,setShowSourceLinks]=useState(false);
   const reviewing = review?.ownerUserId === session.user.id && review.projectId === projectId;
@@ -54,7 +55,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     try{const next=newSourceDetach(projectId,item,session);onSourceDetachChange(p=>p??next);}catch(cause){setEditingError(cause instanceof ApiError?cause:new ApiError('SOURCE_DETACH_INPUT_INVALID'));}
   }
   function selectListStage(value:{ref:StageNodeRef;name:string}|null){
-    generation.current++;setReading(false);setSelected(null);setOpened(null);setVersion('');setRegisteredView(null);setAnchorSelection(null);setShowComparison(false);setShowDesignIndex(false);setShowSourceLinks(false);setReadError(null);
+    generation.current++;setScreenOrigin(null);setReading(false);setSelected(null);setOpened(null);setVersion('');setRegisteredView(null);setAnchorSelection(null);setShowComparison(false);setShowDesignIndex(false);setShowSourceLinks(false);setReadError(null);
     setPage(null);setCursor(null);setListError(null);setStageFilter(value);
   }
   useEffect(() => () => { generation.current++; }, []);
@@ -67,6 +68,7 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     return () => { current = false; };
   }, [client, projectId, cursor, refresh,stageFilter]);
   async function open(item: DocumentSummary, requested: number) {
+    setScreenOrigin(null);
     setShowSourceLinks(false);
     const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) { if(stageFilter&&!sameStageRef(value.document.stageNodeRef,stageFilter.ref))throw new ApiError('DOCUMENT_STAGE_CHANGED');setOpened(value); } }
@@ -81,8 +83,16 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     try{
       const value=await readRegisteredScreen(client,context,{...context,region},()=>request===generation.current);
       if(request!==generation.current)return;
-      setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setShowDesignIndex(false);setRegisteredView(region.screenCode);setAnchorSelection(value.anchorSelection);
+      setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setShowDesignIndex(false);setRegisteredView({code:region.screenCode,kind:'시안'});setScreenOrigin(structuredClone({...context,region}));setAnchorSelection(value.anchorSelection);
     }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setSelected(null);setRegisteredView(null);setAnchorSelection(null);setShowDesignIndex(false);if(error.status===401)onAuthenticationLost();}}
+    finally{if(request===generation.current)setReading(false);}
+  }
+  async function returnToDesign(){
+    if(!opened||!screenOrigin||reading||starting)return;
+    const current={projectId,userId:session.user.id,clientId:session.clientId,screenRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}},selection=screenOrigin,request=++generation.current;
+    setReading(true);setReadError(null);setOpened(null);setAnchorSelection(null);setShowDesignIndex(false);setShowComparison(false);setShowSourceLinks(false);setRegisteredView(null);setScreenOrigin(null);
+    try{const value=await readRegisteredDesignOrigin(client,current,selection,()=>request===generation.current);if(request!==generation.current)return;setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setRegisteredView({code:'원설계',kind:'설계'});setAnchorSelection(value.anchorSelection);}
+    catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if(error.status===401)onAuthenticationLost();}
     finally{if(request===generation.current)setReading(false);}
   }
   async function refreshOpened(ref:ScreenRegion['documentRef']){
@@ -184,7 +194,8 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
       {showPlans?<WorkPlanLibrary client={client} projectId={projectId} session={session} documents={page?.items??[]} canPrepare={!buffer&&!review&&!confirmation&&!starting&&!choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next=>{onChange(previous=>previous===null?next:previous);setShowPlans(false);}}/>:null}
       {showMaterials ? <MaterialLibrary client={client} projectId={projectId} session={session} canPrepare={!buffer && !review && !confirmation && !starting && !choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous === null ? next : previous); setShowMaterials(false); }} /> : null}
       {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous?.proposalState || (previous?.designIndexState||previous?.workPlanState) || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
-      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView} 고정 시안 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
+      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView.code} 고정 {registeredView.kind} 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
+      {opened&&screenOrigin&&screenOrigin.projectId===projectId&&screenOrigin.userId===session.user.id&&screenOrigin.clientId===session.clientId&&screenOrigin.region.documentRef.id===opened.document.id&&screenOrigin.region.documentRef.version===opened.document.version&&screenOrigin.region.documentRef.contentHash===opened.document.contentHash?<button disabled={reading||starting||!!readError||loading||!!listError} onClick={()=>{void returnToDesign();}}>원설계 항목으로 돌아가기</button>:null}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
         <button disabled={reading||!!readError||loading||!!listError} onClick={()=>setShowSourceLinks(v=>!v)}>{showSourceLinks?'소스 연결 조회 닫기':'이 버전 소스 연결 조회'}</button>

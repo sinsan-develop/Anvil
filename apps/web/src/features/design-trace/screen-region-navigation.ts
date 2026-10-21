@@ -6,6 +6,7 @@ import {resolveDesignAnchor,type DesignAnchorSelection} from './design-anchor.ts
 type Ref=ScreenRegion['documentRef'];
 export interface ScreenRegionContext{projectId:string;userId:string;clientId:string;sourceRef:Ref}
 export interface ScreenRegionSelection extends ScreenRegionContext{region:ScreenRegion}
+export interface ScreenRegionOriginContext{projectId:string;userId:string;clientId:string;screenRef:Ref}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,hash=/^[0-9a-f]{64}$/;
 const ref=(r:Ref)=>r&&uuid.test(r.id)&&Number.isSafeInteger(r.version)&&r.version>0&&hash.test(r.contentHash);
 const same=(a:Ref,b:Ref)=>ref(a)&&ref(b)&&a.id===b.id&&a.version===b.version&&a.contentHash===b.contentHash;
@@ -25,5 +26,21 @@ export async function readRegisteredScreen(client:ApiClient,current:ScreenRegion
  const anchorSelection:DesignAnchorSelection={projectId:selected.projectId,documentRef:{...region.documentRef},bodyHash:region.artifactRef.contentHash,anchor:region.anchor};
  const located=resolveDesignAnchor(value.body,anchorSelection,anchorSelection);
  if(located.kind!=='READY'||!new RegExp('(?<![A-Za-z0-9_-])'+region.screenCode+'(?![A-Za-z0-9_-])').test(located.line))throw new ApiError('SCREEN_REGION_ANCHOR_UNVERIFIED');
+ check();return {...value,anchorSelection};
+}
+/** 원설계의 고정 버전과 등록 연결을 다시 확인한다. 최신 head나 편집 버퍼를 채택하지 않는다. */
+export async function readRegisteredDesignOrigin(client:ApiClient,current:ScreenRegionOriginContext,selection:ScreenRegionSelection,active:()=>boolean){
+ if(!current||!context(selection)||current.projectId!==selection.projectId||current.userId!==selection.userId||current.clientId!==selection.clientId||!selection.region||!same(current.screenRef,selection.region.documentRef))throw new ApiError('SCREEN_REGION_CONTEXT_CHANGED');
+ const selected=structuredClone(selection),check=()=>{if(!active())throw new ApiError('SCREEN_REGION_CONTINUATION_PAUSED');};check();
+ const index=await readDesignIndex(client,selected.projectId,selected.sourceRef);check();
+ const chosen=selected.region,region=index.screenRegions.find(r=>r.id===chosen.id);
+ if(!region||region.designItemId!==chosen.designItemId||region.screenCode!==chosen.screenCode||region.anchor!==chosen.anchor||region.regionHash!==chosen.regionHash||!same(region.documentRef,chosen.documentRef)||!artifact(region.artifactRef,chosen.artifactRef))throw new ApiError('SCREEN_REGION_REFERENCE_CHANGED');
+ const item=index.items.find(i=>i.id===region.designItemId);if(!item)throw new ApiError('SCREEN_REGION_REFERENCE_CHANGED');
+ const value=await readDocument(client,selected.projectId,selected.sourceRef.id,selected.sourceRef.version,{expectedContentHash:selected.sourceRef.contentHash,active});check();
+ const form=await getPinnedForm(client,value.document.formRef);check();
+ if(form.definition.formCode!=='AF02')throw new ApiError('SCREEN_REGION_DOCUMENT_KIND_INVALID');
+ const anchorSelection:DesignAnchorSelection={projectId:selected.projectId,documentRef:{...selected.sourceRef},bodyHash:value.document.content.body.contentHash,anchor:item.anchor};
+ const located=resolveDesignAnchor(value.body,anchorSelection,anchorSelection);
+ if(located.kind!=='READY'||!new RegExp('(?<![A-Za-z0-9_-])'+item.localCode+'(?![A-Za-z0-9_-])').test(located.line)||!located.line.includes(item.title))throw new ApiError('SCREEN_REGION_ANCHOR_UNVERIFIED');
  check();return {...value,anchorSelection};
 }

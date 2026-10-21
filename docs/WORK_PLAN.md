@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 UI06 등록 시안→원설계 왕복 조회 일부**: 등록 시안에서 원설계의 고정 버전·항목 줄로 돌아가기를 연결했다. 기존 project/user/client·exact source/region/index/AF02/body·anchor 재대조 및 거절/이탈/편집버퍼 보존, 새 API/SQL·실DB/정책/서비스/Agent0이다. 신규3+인접4 단위7/typebuild·신규3+인접7 DOM10PASS/독립정적 C0/I0/M1·QA독립잔여0. M1은 지연 DOM의 소비완료 장벽 보강으로 보류; 실제 DB/served/전체 주체·pending복귀 직접DOM·전체UI06/Stage 완료 미확인. 원실패/지문/한계는 WORK_STATUS를 따른다.
+
 - **2026-10-21 UI06 기존 문서 새 PNG 직접 첨부 일부**: 현재 문서 fullref 고정→새PNG 원본보관/UNSUPPORTED후보→보호 확인/명시첨부→별도 새버전 저장을 연결해 앞 직접업로드 공백을 코드/합성에서 해소했다. 기존본문·구버전/양식/목차·미확인명령 유지, 독립I1 중첩 늦은거절은 Main RED→GREEN 보완(독립재검토PASS 주장0). 단위17/typebuild·새DOM7/직접인접3 범위·QA독립잔여0이며 실제DB/served·모든동시성/권한·전체UI06/FN03/Stage 완료는 미확인이다. 새API/SQL·실DB/정책/Agent0, 상세원실패/지문은 WORK_STATUS를 따른다.
 
 - **2026-10-21 UI06 기존 문서의 보관 PNG 추가 일부**: 기존 미지원본문 후보 목록/보호 원문 재조회→PNG확인/명시첨부/제외→별도 v2 저장·시안/과거v1 조회를 연결했다. 기존 본문·양식/단계·목차·첨부·pending/충돌·구버전 불변. 신규3+인접8 단위11, DOM 새음성4·정정정상/인접3/typebuild·한정 정적C0/I0/M0·QA 독립 잔여0 범위이며 실제 DB/served·기존문서 새파일 직접업로드·전체 UI06/FN03/Stage는 미완료/미확인이다. 새 API/SQL·실DB/정책/Agent0, 상세 실패/지문/한계는 WORK_STATUS를 따른다.
