@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { installWorkspaceBundle } from './bundle.ts';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+import {assignmentRevisionFixture} from '../../unit/FN09/assignment-revision-fixture.ts';
 const pid = '11111111-1111-4111-8111-111111111111', user = '22222222-2222-4222-8222-222222222222', planId = '33333333-3333-4333-8333-333333333333', applicationId = '44444444-4444-4444-8444-444444444444', draftId = '55555555-5555-4555-8555-555555555555';
 const ref = (id: string) => ({ id, version: 1, contentHash: 'a'.repeat(64) });
 const at = '2026-10-17T22:58:36Z';
@@ -40,6 +41,19 @@ async function prepare(page: Page) {
 }
 
 const taskPath=(code='FN01')=>`/#/projects/${pid}/workspace/plans/${planId}/versions/1/${planRef.contentHash}/tasks/${code}`;
+for(const mode of ['NORMAL','HASH','DENIED','CLOSE_LATE']as const)test('ASSIGNMENT_REVISION_'+mode+' 직전 고정 원문과 달라진 정의만 비교하고 명령을 만들지 않는다',async({page})=>{
+ await page.addInitScript(()=>{const fetch=globalThis.fetch;globalThis.fetch=async(...args)=>{const r=await fetch(...args);if(String(args[0]).endsWith('/assignment-drafts/55555555-5555-4555-8555-555555555555/versions/1')){const json=r.json.bind(r);r.json=async()=>{const v=await json();(globalThis as any).__revisionParsed=((globalThis as any).__revisionParsed??0)+1;return v;};}return r;};const digest=crypto.subtle.digest.bind(crypto.subtle);crypto.subtle.digest=async(...args)=>{const result=await digest(...args);(globalThis as any).__revisionDigest=((globalThis as any).__revisionDigest??0)+1;return result;};});
+ const f=await setup(page),q=assignmentRevisionFixture(),reads:string[]=[];let release=()=>{};const gate=new Promise<void>(r=>release=r);
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts?*`,r=>r.fulfill({json:{items:[{ref:q.current.ref,status:'DRAFT',goal:q.current.snapshot.definition.goal,taskRef:q.current.snapshot.definition.taskRef,issueCount:1,updatedAt:at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/2`,r=>r.fulfill({json:q.current}));
+ await page.route(`**/api/v1/projects/${pid}/assignment-drafts/${draftId}/versions/1`,async r=>{reads.push(r.request().url());if(mode==='CLOSE_LATE')await gate;if(mode==='DENIED')return r.fulfill({status:403,json:{code:'REVISION_DENIED'}});const value=structuredClone(q.previous);if(mode==='HASH')value.snapshot.definition.goal='보이면 안 되는 변조';return r.fulfill({json:value});});
+ await page.getByRole('button',{name:'임무 초안 목록 조회',exact:true}).click();await page.getByRole('button',{name:'임무 버전 열기: 2',exact:true}).click();expect(reads).toEqual([]);
+ await page.getByRole('button',{name:'직전 임무와 변경 비교',exact:true}).click();const comparison=page.getByRole('region',{name:'임무 개정 값 비교',exact:true});
+ if(mode==='CLOSE_LATE'){await expect.poll(()=>reads.length).toBe(1);const before=await page.evaluate(()=>(globalThis as any).__revisionDigest??0);await page.getByRole('button',{name:'임무 비교 닫기',exact:true}).click();release();await expect.poll(()=>page.evaluate(()=>(globalThis as any).__revisionParsed??0)).toBe(1);await expect.poll(()=>page.evaluate(()=>(globalThis as any).__revisionDigest??0)).toBe(before+1);await expect(comparison).toHaveCount(0);}
+ else if(mode==='HASH'||mode==='DENIED'){await expect(page.getByRole('alert')).toContainText(mode==='HASH'?'ASSIGNMENT_INTEGRITY_FAILED':'REVISION_DENIED');await expect(comparison).toHaveCount(0);await expect(page.getByText('보이면 안 되는 변조',{exact:true})).toHaveCount(0);}
+ else{await expect(comparison).toContainText('이전 목표');await expect(comparison).toContainText(q.current.snapshot.definition.goal);await expect(comparison).toContainText('이전 이유');await expect(comparison).toContainText('개정 이유');await expect(comparison).toContainText('변경 항목 2개');expect(await page.evaluate(()=>(globalThis as any).revisionExecuted)).toBeUndefined();await page.getByRole('button',{name:'임무 비교 닫기',exact:true}).click();await expect(comparison).toHaveCount(0);}
+ expect(reads).toHaveLength(1);expect(f.commands).toEqual([]);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
+});
 test('LINKED_TASK 경로 hash와 보관 계획이 다르면 기존 계획으로 대체하지 않는다',async({page})=>{
  const f=await setup(page,false,taskPath().replace(planRef.contentHash,'0'.repeat(64)));await page.getByRole('button',{name:'연결된 계획 업무 확인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('RESPONSE_INVALID');await expect(page.getByRole('button',{name:'선택 업무로 임무 초안 준비',exact:true})).toHaveCount(0);expect(f.commands).toEqual([]);expect(f.unexpected).toEqual([]);expect(f.errors).toEqual([]);
 });

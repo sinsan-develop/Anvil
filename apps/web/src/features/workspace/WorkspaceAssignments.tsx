@@ -17,6 +17,7 @@ import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 import type {PlanTaskSelection} from '../../shell/routes.ts';
 import { AssignmentChildTaskSelection } from './AssignmentChildTaskSelection.tsx';
 import { AssignmentParentOriginal } from './AssignmentParentOriginal.tsx';
+import {AssignmentRevisionComparison} from './AssignmentRevisionComparison.tsx';
 
 export function WorkspaceAssignments({ client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
@@ -152,6 +153,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {shown?.snapshot.definition.parentAssignmentRef ? <p>하위 초안은 저장·개정·조회만 가능합니다. 내용 검토·확정·책임자 배정·실행은 지원하지 않습니다.</p> : null}
     {shown?.snapshot.definition.parentAssignmentRef ? <AssignmentParentOriginal key={['parent-original',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} child={shown} busy={busy} run={action=>void perform(action)} renderConditions={snapshot=><AssignmentConditions snapshot={snapshot}/>} /> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
+    {shown?.snapshot.previousRef?<AssignmentRevisionComparison key={['revision',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} current={shown} busy={busy} run={action=>void perform(action)}/>:null}
     {shown&&bound&&shown.snapshot.definition.parentAssignmentRef===null?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
