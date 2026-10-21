@@ -12,6 +12,7 @@ import { methodIssueNodeTargets } from './method-issue-targets.ts';
 import {NodeBudgetSelection} from './NodeBudgetSelection.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 import {readMethodDraftFile,importMethodDraft} from './method-draft-import.ts';
+import {MethodDraftExport} from './MethodDraftExport.tsx';
 
 export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
@@ -99,6 +100,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   return <section className="status-card definition-editor" aria-label={gateway ? '프로젝트 방법론 작업' : '공통 방법론 작업'}>
     <h3>{gateway ? '전용 방법론 작성·개정' : '내 방법론 작성·개정'}</h3><p className="meta">내장 원본은 보존합니다. 저장은 초안이며 사용자 확정·프로젝트 적용·Agent 실행이 아닙니다.</p>
     <label>방법론 초안 JSON 가져오기<input type="file" accept=".json,application/json" disabled={locked||!!buffer.review||!!buffer.application} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void importFile(file);}}/></label>
+    <MethodDraftExport key={session.user.id+':'+(gateway?'PROJECT':'USER_COMMON')} buffer={buffer} userId={session.user.id} scope={gateway?'PROJECT':'USER_COMMON'} disabled={locked||!editing}/>
     <details><summary>방법론 가져오기 형식</summary><p>기존 초안 저장의 name·purpose·scope·graph·reason JSON만 읽습니다. UTF-8 최대 2MiB, scope는 현재 작성 공간과 같아야 합니다. 가져온 참조는 미검증이며 명령·확정·적용 권한을 가져오지 않습니다. 편집 후 별도로 저장하세요.</p><pre>{JSON.stringify({name:'새 방법론',purpose:'개발 절차 정의',scope:gateway?'PROJECT':'USER_COMMON',graph:{nodes:[],edges:[],entryNodeId:'',terminalNodeIds:[]},reason:'기존 절차 가져오기'},null,2)}</pre></details>
     {importing?<p role="status">방법론 파일 대조 중</p>:null}{importError?<p role="alert">{importError} · 기존 입력과 명령은 보존했습니다.</p>:null}
     <fieldset disabled={locked}><label>복사본 이름<input value={copyName} onChange={event => setCopyName(event.target.value)} maxLength={200} /></label>

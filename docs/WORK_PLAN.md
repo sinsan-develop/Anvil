@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN02/UI03 초안 파일 왕복 일부**: 기존5필드 형식의 파일준비·명시다운로드→재가져오기→별도저장/조회 연결. owner/명령잠금·비밀/형식검사·입력변경URL회수 유지, 단위8/비어있지않은그래프 보강2·DOM3/최종정상1·URL회수보강1은 분리 증거다. scoped C0/I0/M1 뒤 시험보강, QA07:13:26 독립잔여0. 실DB/served/PROJECT실화면·전체FN02 미완료, 전체프로젝트 백업/권한·확정/실행 이전 아님. 상세 지문·원오류·미검증은 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12 명령 직접보고 실제 저장 일부 확인**: exact c8d2b995의 새 commands를 manual-only 격리 실행 1건으로 실제 PG COMMIT·별도 app-role 원문/hash·인증 in-process API/Web reader에 대조했다. phase DONE/exit0, 동일 명령 유실 재확인 추가 행0·민감 argv 거절, 등록 QA exact ID/runlabel/경로·Node 독립 잔여0(07:00:20/43). 첫 CR 호출 오류는 별도 보존한다. 실제 명령 실행·개별 ref 권한·정식 served 브라우저→DB 및 전체 FN12/Stage는 미확인·미완료이며 다음 독립 미완료 기능을 이어간다. 상세 증거는 WORK_STATUS를 따른다.
 
 - **2026-10-22 Stage C FN12/UI05 새 명령 직접보고의 실제 저장 검증 준비**: commands가추가된새제출1건에만 기존manual 격리모드 COMMIT/별도원문hash·유실명령재확인/비밀거절을연결한다. 기존PG성공복제·다른mode/정식DB/서비스/Agent0. 새빈exactSHA QA·owner/image/수명/전체bootstrap trap/cleanup·잔류시source보존을WORK_STATUS에사전등록했으며 현재실행미검증이다.
