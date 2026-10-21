@@ -13,7 +13,7 @@ function Original({client,projectId,expected,onClose,onAuthenticationLost}:{clie
   {result?.error?<p role="alert">{result.error.code} · 적용 절차 원문 미확인. 목록을 갱신해 적용 참조를 확인하세요.</p>:snapshot&&selected?<><h4>{snapshot.name}</h4><p>{snapshot.purpose}</p><p className="meta">원본 방법론 {snapshot.sourceRef.id} · v{snapshot.sourceRef.version} · {snapshot.sourceRef.contentHash} · 관측 {value?.observedAt}</p>
    <MethodGraphCanvas graph={snapshot.graph} selectedId={selected.nodeId} onSelect={setNodeId} label="고정 적용 방법론 흐름"/>
    <label>적용본 단계 선택<select value={selected.nodeId} onChange={e=>setNodeId(e.target.value)}>{snapshot.graph.nodes.map(n=><option key={n.nodeId} value={n.nodeId}>{n.nodeId} · {n.name}</option>)}</select></label>
-   <section aria-label="고정 적용 단계 상세"><StoredNodeDefinition node={selected}/><StoredNodeRoutes graph={snapshot.graph} nodeId={selected.nodeId}/></section>
+   <section aria-label="고정 적용 단계 상세"><StoredNodeDefinition node={selected} formAccess={{client,contextKey:JSON.stringify([projectId,expected,snapshot.sourceRef,selected.nodeId]),onAuthenticationLost}}/><StoredNodeRoutes graph={snapshot.graph} nodeId={selected.nodeId}/></section>
   </>:<p role="status">적용 절차 고정 원문 확인 중</p>}
  </section>;
 }

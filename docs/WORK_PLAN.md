@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 UI03 적용 단계의 공식 양식 조회 일부**: 적용 snapshot의 정확 양식 ref를 기존 양식 reader로 연결해 작성·검수 규칙과 공통 기준을 명시 조회/닫는다. 신규 두 단계 전환/403/지연 DOM3·직접 인접 단위4·type/build·한정 정적C0/I0/M0·QA 독립 잔여0 범위다. 편집/자동 작성·새 API/SQL·실제 DB/정책/Agent 변경0이며 실제 served·전체 업무 완료는 미확인이다. 시험 설정 오류·RED·미검증은 WORK_STATUS를 따른다.
+
+
 - **2026-10-21 UI06 보관 계획의 작성 문서 원문 소비 일부**: 기존고정계획→documentfullref/hash·bytes/AF04를대조해당시문서를명시조회/닫는다. 기존편집·승인·개정/실행변경0,새API/SQL·실DB/정책/Agent0이다. 신규DOM4+양식음성1·직접인접2/typebuild·한정정적C0I0M0·QA독립잔여0 범위이며실DB/served·전체UI06/FN04/Stage는미확인이다. 증거/한계/원RED는WORK_STATUS를따른다.
 
 

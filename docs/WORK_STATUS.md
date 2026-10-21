@@ -1,5 +1,14 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 18:09 KST UI03 적용 단계의 공식 양식 원문 연결 검수 / Main 어울**: 기준 31943f4d에서 적용 snapshot의 선택 단계에 기존 formAccess를 전달했다. 입력·산출물의 고정 양식 → 작성/검수 규칙·역할·공통 작성 기준을 명시 조회/닫기로 사용할 수 있다. 프로젝트·적용 fullref·원본 ref·nodeId와 기존 부모 user/client key로 선택을 분리한다. 방법론 편집·문서 자동 작성·새 API/SQL·실제 DB/정책/Agent 실행 변경은 없다.
+  - TDD/오류: 접힌 상세를 열지 않은 시험 설정 오류로 처음 1건 및 다음 3건이 실패했고, 실제 화면을 대조해 시험에서 상세를 열도록 정정했다. 미연결 원본에서 정정 시험 1 RED를 확인한 뒤 기존 reader 전달 1개 prop으로 연결했다. 이후 exact getByLabel이 option 텍스트와 맞지 않아 정상/지연 2건 실패(거절 1 PASS)한 시험은 실제 접근성 tree의 이름이 같은 combobox로 정정했다. 제품 접힘·기대값·합격 기준·timeout은 변경하지 않았다. 최종 신규 DOM 3 PASS/3.3초: 두 단계 AF02→AF04·공통 기준 원문, 403 미표시, 단계 전환 후 JSON 소비/rAF 뒤 늦은 양식 미표시·쓰기/unknown/pageerror0. 직접 인접 양식 reader 단위 4 PASS/140.8705ms, typecheck/build/diff exit0. bundle index-CoLB2PjF.js SHA256 A0EC2D543E0CE44D1D5A393AA5FBE9A79B8B2C662F9B8A5A940AFC4D8874CD58. chunk/NO_COLOR 경고는 유지했다.
+  - 한정 독립 정적 검토 C0/I0/M0이며 검수자 시험 재실행은 아니다. 실제 DB/served 권한·모든 주체/client 교체 타이밍·전체 UI03/FN02/FN03/Stage는 미확인이다. 등록 ui03-applied-method-forms-01은 owner SINSAN/cyhuh·exact 경로/link 없음·관련 process0 검사 후18:09:49 회수, 별도18:09:53 pathfalse/process0이다. 보호6/main·소진 FN03/기존 미채택 경계 보존, 기존 완료 검사 전수 반복0·전체 완료보고가 아니다.
+
+
+- **2026-10-21 UI03 적용 단계의 공식 양식 원문 소비 착수 / Main 어울**: 기준31943f4d에서AppliedMethodOriginal의StoredNodeDefinition은formAccess미전달로입력/산출양식ref만보이고기존PinnedFormOriginal을소비하지않는다. 승인UI03/FN02~03의단계문서/양식조회안에서적용snapshot의정확formref를기존양식reader에명시연결한다. 현재적용/편집후보·단계전환·사용자/client경계를유지하고폼전환후늦은이전원문을숨긴다. 새API/SQL·실DB/정책/Agent·방법론편집/문서자동작성0. 이미완료한적용본검사를재실행하는대신새양식소비와직접선택회귀를검증한다.
+  - QA사전등록: 새 D:\tmp\anvil-v3-stage-b\ui03-applied-method-forms-01 temp/results만·owner UI03적용양식조회/Main·최대30분·로컬bundle/in-process합성API/headlessEdge·HTTP서비스/WSL/DB0. 생성전부재/realpath/link확인·종료시exact회수/별도process/경로잔여확인. 조사중없는StageMaterials.tsx조회1은실제WorkspaceDocuments.tsx로정정했으며ACL·권한변경아니다.
+
+
 - **2026-10-21 17:54 KST UI06 보관 계획 작성 문서 원문 소비 검수 / Main 어울**: 기준8e0bc4a8 뒤 보관계획의 documentRef를 명시열기→동일planfullref/hash재조회·documentRef대조→기존보호문서reader의expectedhash/active·bytes검증→고정AF04양식→escaped원문·닫기로연결했다. ISSUES_ONLY초안도조회하되확정/현재성/실행을주장하지않는다. 재조회nonce·부모busy/loading/error·user/client/project/fullref/목록회차로과거/지연본문숨김, 기존편집/승인/개정buffer·새API/SQL·실DB/정책/Agent변경0.
   - 검증: 원문버튼부재1RED→신규정상/403재조회/metadatahash변조/닫기지연4DOMPASS3.9s. 추가다른공식양식(AF02)거절1+직접기존보관버전/닫기입력보존2DOM 총3PASS3.3s(신규5전체를한번에돌렸다는뜻아님). hash불일치/metadata소비후닫힘은rawGET0,잘못된양식은본문미표시,원문BOM/CRLF보존·스크립트/쓰기0을확인했다. typecheck/build/diff0·298module·index-B1e8rxVI.js SHA256 18C503168971546B12FFDB6D15AFDEB1FF0E0ADB961321F1C3795C871006CE5B. chunk/NO_COLOR경고유지. 한정독립정적C0I0M0,추가양식음성은Main실행이며검수자독립실행은아니다.
   - 정리/한계: owner SINSAN/cyhuh·exact절대경로/link없음·관련process0검사후 등록 ui06-plan-document-original-01을17:54:35회수→17:54:39별도pathfalse/process0. 모든주체전환/응답순서·실DB/served권한·원문출처진위/전체UI06/FN04/Stage는미확인이다. 보호6/main·소진FN03/기존미채택경계보존·실DB/정책/Agent제외유지,불변전수검사반복0·전체완료보고아니다.
