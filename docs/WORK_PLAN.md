@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **FN10 WAITING 요청 서버 일부 (2026-10-21)**: 기존 startStage/getQueue/cancelQueuedRequest의 실제 명령·HTTP/DB소비 코드와 미적용0036 SQL을 추가했다. 현재graph/제어·정책/세션·예산원문을검사하고 확정임무/기준/실제실행미확인은readiness로유지한다. WAITING저장·정확v1취소만, 예약/stop/dispatch/Agent0이다. 신규7+직접인접22=29PASS/type/diff0·독립첫I2보정/scopedC0I0M0은소스/fakeDB/정적SQL범위다. SQL컴파일/실DB/DML·경합/HTTP양성·화면/served와전체lifecycle은미검증/미완료다. 정확계약은INTERFACES13.2·원오류/지문은WORK_STATUS, 실제DB/정책부여는제외범위를유지한다.
+
+
 - **FN12/UI05 미완료 보고 화면 작성 일부 (2026-10-21)**: 외부JSON파일만가능하던 결과등록에 INCOMPLETE/BLOCKED/CANCELLED의 실행fullref·미실행/위험/복구 화면작성→기존현재제어/검증·명시submitResult/영수증을 연결했다. user/client/project/임무별입력왕복보존·거절/제어조회지연이탈·기존파일등록과응답유실보존, 새API/SQL/DB/정책/Agent0. 신규단위4+직접9·신규DOM3/직접4 분리관측·type/build0·한정독립C0/I0/M1(표시문구Main정정)·QA독립잔여0. 실제DB/served·실행진위/전체FN12는미완료이며 source/가짜API 검증을 실제저장완료로 승격하지 않는다. 상세 오류/검증/지문은 WORK_STATUS.
 
 

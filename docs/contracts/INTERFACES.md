@@ -732,6 +732,17 @@ GET assignments/:id는 불변 임무/부모·자식·책임 역할/세션 bindin
 
 ### 13.2 FN10 자동/건별·분기·한도·queue
 
+#### FN10 WAITING 요청의 첫 서버 소비 — 미적용 SQL/소스 부분 구현
+
+- 기존 project POST commands에 startStage/cancelQueuedRequest를 연결하고 GET `/api/v1/projects/:projectId/queue`는 HUMAN·same-host·query 없음으로 제공하는 소스다. DB 적용·화면/served·scheduler/Agent는 미검증이다. 신규 연산을 기존 사용자 정책에 자동 추가하지 않는다. 별도 명시 AUTO 정책만 허용하고 REQUIRE_APPROVAL/approvalRef는 STAGE_QUEUE_APPROVAL_NOT_CONNECTED로 거절한다.
+- startStage payload exact: `{stageRef,methodologyApplicationRef,mode,startNodeRef,endBoundaryRef,baselineRefs,budgetRef,reason}`. 세 node ref는 `{applicationRef:VersionRef,nodeId}`, applicationRef는 공통 methodologyApplicationRef와 exact, stageRef=startNodeRef다. CASE_BY_CASE는 시작=끝, AUTO는 시작 노드가 AUTO이며 끝이 graph에서 도달 가능해야 한다. 외피 targetId=null/expectedVersion=0/baselineRefs=[]/approvalRef=null. baselineRefs는 이 payload 안에서 보존하되 현재 기준 검증으로 승격하지 않는다.
+- 현재 제어·정책/세션·정확 적용 graph 및 현재 프로젝트 한도 정책 원문을 서버 reader로 대조한다. FN09의 실제 확정임무/책임 연결·기준/실행 verifier는 아직 이 요청에 연결하지 않았으므로 assignmentRef=null과 ASSIGNMENT_BINDING_UNVERIFIED/BASELINE_STATE_UNVERIFIED/EXECUTION_STATE_UNVERIFIED/DISPATCH_NOT_CONNECTED를 반드시 남긴다. 이는 WAITING ‘요청 보관’만 허용하는 부분 구현이지 실행 선행조건 통과가 아니다. 예약/새 writer·grant/outbox/한도 소비0이다.
+- 미적용 `db/migrations/0036_stage_queue.sql`의 stage_runs는 project/id/단조 sequence/input/작성자/client/command/시각, queue_requests는 project/request/version/sequence/hash/snapshot/command의 불변 이력이다. v1 WAITING·v2 CANCELLED만 구현한다. 동일 project 잠금 아래 순번/CAS, 공통 command/receipt/audit와 역방향 COMMIT guard를 묶으며 실제 SQL 동작은 아직 검증하지 않았다.
+- POST 결과는 기존 APPLIED 영수증 data의 `{ref,queueState,snapshot}`이며 snapshot의 slotReserved/writerReservationPerformed/executionAuthorized/dispatchPerformed는 false다. 명령 재확인은 기존 공통 계층의 현재 권한 검사 뒤 exact requestHash에만 과거 영수증을 반환하고 새 요청/실제 실행을 만들지 않는다.
+- 취소 payload는 `{requestRef,reason}`, 외피 targetId=requestRef.id/expectedVersion=requestRef.version. 현재 허가 아래 정확 v1 WAITING만 v2 CANCELLED로 append한다. 예산 만료는 미시작 취소를 막지 않는다. 실제 stop·예약 해제·재개를 수행하지 않는다.
+- GET은 단일 `{projectId,items,selection:"WAITING_ONLY",cancelledHistoryOmitted:true,observedAt,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false}`. items는 `{requestRef,state:"WAITING",sequence,reasonCodes,blockedBy:[],reservedBudgetRef:null}`이며 cancelled 이력은 원 취소 영수증/불변 저장에 남긴다. blockedBy 빈 배열은 확인한 block 참조가 없다는 뜻이지 선행 통과가 아니다. 목록 200개를 넘으면 413 QUEUE_VIEW_LIMIT_EXCEEDED로 거절하고 일부를 전체인 것처럼 반환하지 않는다. 아직 RESERVED/DISPATCHED/UNKNOWN의 전체 lifecycle 구현·평가/실행 공급자는 없다.
+
+
 - GET `projects/:projectId/limit-policies/:id/versions/:version/usage?contentHash=<정확hash>`는 현재 HUMAN 멤버·동일 host 아래 선택 정책 원문과 `usage_reservations` 프로젝트 전체 보관 원장을 읽는다. 필수 hash 외 query는 거절하고 읽기후 멤버를 다시 대조한다. 응답은 used/reserved·liveExecutions/unknownReservations·정책만료/회수 표식을 분리하며 `SERVER_STORED_LEDGER_ONLY/PROJECT_ALL_POLICIES`와 `currentPolicyVerified/providerChargesVerified/executionAuthorized/dispatchPerformed=false`다. 선택 임무의 전용 합계/현재정책·공급자 청구 검증이나 새 호출 허가가 아니며 queue/write/dispatch하지 않는다. UI05는 임무 budgetRef exact로 명시조회하고 재조회중 앞값숨김·권한거절시 부모원문회수를 수행한다.
 
 - 내부 준비 구현 `evaluateSyntheticNext(raw)`는 고정 application/graph·선택 currentResult·typed 노드기록·AUTO/CASE·종료경계·fingerprint 누적입력에서 후보/대기 이유만 계산한다. hash는 입력 결박일 뿐 서버 사실 인증이 아니며 `SYNTHETIC_ONLY/UNAUTHENTICATED_INPUT_SNAPSHOTS`와 `serverFactsVerified/queueStored/writerReservationPerformed/executionAuthorized/dispatchPerformed=false`를 고정한다. HTTP/DB/Agent에는 등록하지 않고 실제 `evaluateNext` 제공자·허가/예산·queue/dispatch는 후속 미구현이다. ACCEPTED는 COMPLETED+completionRef 정합성을 요구하고 생략 단계의 잔존 값은 합류 완료 근거로 쓰지 않는다.
