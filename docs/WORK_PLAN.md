@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-21 UI06 보관 계획의 작성 문서 원문 소비 일부**: 기존고정계획→documentfullref/hash·bytes/AF04를대조해당시문서를명시조회/닫는다. 기존편집·승인·개정/실행변경0,새API/SQL·실DB/정책/Agent0이다. 신규DOM4+양식음성1·직접인접2/typebuild·한정정적C0I0M0·QA독립잔여0 범위이며실DB/served·전체UI06/FN04/Stage는미확인이다. 증거/한계/원RED는WORK_STATUS를따른다.
+
+
 - **2026-10-21 UI03 현재 적용 방법론 원문 소비 일부**: 적용fullref만보이던곳에기존snapshot/hash조회와흐름도·단계정의/연결의명시열기/닫기를연결했다. 편집후보/원입력·적용명령과분리·새API/SQL/실DB/정책/Agent0이다. 신규합성4/직접인접2DOM·기존단위5/typebuild·한정정적C0I0M0·QA독립잔여0 범위이며다중단계DOM/실DB/served·전체UI03/FN02완료는미확인이다. 정확증거/한계는WORK_STATUS를따른다.
 
 

@@ -1,5 +1,14 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 17:54 KST UI06 보관 계획 작성 문서 원문 소비 검수 / Main 어울**: 기준8e0bc4a8 뒤 보관계획의 documentRef를 명시열기→동일planfullref/hash재조회·documentRef대조→기존보호문서reader의expectedhash/active·bytes검증→고정AF04양식→escaped원문·닫기로연결했다. ISSUES_ONLY초안도조회하되확정/현재성/실행을주장하지않는다. 재조회nonce·부모busy/loading/error·user/client/project/fullref/목록회차로과거/지연본문숨김, 기존편집/승인/개정buffer·새API/SQL·실DB/정책/Agent변경0.
+  - 검증: 원문버튼부재1RED→신규정상/403재조회/metadatahash변조/닫기지연4DOMPASS3.9s. 추가다른공식양식(AF02)거절1+직접기존보관버전/닫기입력보존2DOM 총3PASS3.3s(신규5전체를한번에돌렸다는뜻아님). hash불일치/metadata소비후닫힘은rawGET0,잘못된양식은본문미표시,원문BOM/CRLF보존·스크립트/쓰기0을확인했다. typecheck/build/diff0·298module·index-B1e8rxVI.js SHA256 18C503168971546B12FFDB6D15AFDEB1FF0E0ADB961321F1C3795C871006CE5B. chunk/NO_COLOR경고유지. 한정독립정적C0I0M0,추가양식음성은Main실행이며검수자독립실행은아니다.
+  - 정리/한계: owner SINSAN/cyhuh·exact절대경로/link없음·관련process0검사후 등록 ui06-plan-document-original-01을17:54:35회수→17:54:39별도pathfalse/process0. 모든주체전환/응답순서·실DB/served권한·원문출처진위/전체UI06/FN04/Stage는미확인이다. 보호6/main·소진FN03/기존미채택경계보존·실DB/정책/Agent제외유지,불변전수검사반복0·전체완료보고아니다.
+
+
+- **2026-10-21 UI06 보관 계획의 작성 문서 원문 조회 착수 / Main 어울**: WorkPlanLibrary는보관업무·설계참조만표시하며view.documentRef의문서본문소비가없다. UI06공식산출물원문조회범위에서명시열기→같은planfullref재조회→정확documentRef/hash·기존bytes/본문검증→고정AF04양식대조→escaped원문→닫기를연결한다. ISSUES_ONLY도원문조회가능하나완료/확정/실행으로승격하지않는다. 부모조회중/오류·주체/ref전환은원문숨김, 기존입력/승인·개정buffer·API/SQL/실DB/정책/Agent변경0.
+  - QA사전등록: 새 D:\tmp\anvil-v3-stage-b\ui06-plan-document-original-01 temp/results만·owner UI06계획문서원문/Main·최대30분·로컬bundle/in-process합성API/headlessEdge·HTTP서비스/WSL/DB0. 부재/realpath/link검사후생성·종료즉시exact회수/별도잔여확인. 조사중rgliteral wildcard오류1/존재하지않는유사시험파일조회1은실제목록으로정정했고ACL오류·권한변경아니다.
+
+
 - **2026-10-21 17:46 KST UI03 고정 적용 방법론 내용 조회 검수 / Main 어울**: 기준26524add 뒤 현재 적용ref와 편집 후보를 분리해 명시 열기→기존 snapshot/graph hash·project/fullref 검증→원본 흐름도/단계 선택·정의·연결→닫기를 연결했다. 부모 loading/error·user/client/project/ref전환은선택분리·원문제거, 재조회nonce·cleanup으로과거/지연응답숨김이다. 새API/SQL·실DB/정책/Agent·적용명령/편집buffer변경0.
   - 검증: 원문버튼부재1RED→새정상/403재조회/적용ref변경/갱신중지연4DOM PASS3.2s(JSON소비+digest2/rAF장벽). 기존 snapshot/fullref·변조·403/401 단위5PASS148.6615ms, 직접인접기존적용명령503동일재확인/준비중이탈2DOM PASS2.7s. typecheck/build/diff0·296module·index-B5mzH1gB.js SHA256 DB1B510DD3DC59F6E790571D3D3C2D944901132FA195769D82DB90FE9677C92B. chunk/NO_COLOR경고보존, 한정독립정적C0I0M0이며실제검사재실행증거아니다.
   - 정리/미확인: owner SINSAN/cyhuh·exact경로/재분석점없음/관련process0 확인후 등록 ui03-applied-method-original-01을17:46:30회수·17:46:33별도pathfalse/process0. 신규fixture는단일노드여서다중노드선택/경로DOM·모든주체전환timing·실DB/served권한·전체UI03/FN02/Stage는미확인이다. 실제API/DB/Agent미연결을화면에유지, 보호6/main불변·불변검사전수반복0. WORK_PLAN 범위·기존검수기준완화0이며단계전체완료보고아니다.
