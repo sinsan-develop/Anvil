@@ -1,12 +1,16 @@
 import {ApiClient,ApiError} from '../../api/client.ts';import {readMethodApplicationRef} from '../methodology-editor/project-api.ts';import {readWorkspaceMethodology} from '../workspace/api.ts';import {getPinnedForm} from '../methodologies/forms-api.ts';import {readDocumentStageOptions,sameStageRef} from './stage-api.ts';import {documentControl,newDocument,type DocumentSession} from './editor-api.ts';import type {PlanRef} from './work-plan-api.ts';import {ordered} from '../knowledge/review-view.ts';
 export interface StageDocumentChoice{projectId:string;userId:string;clientId:string;applicationRef:PlanRef;nodeId:string;itemId:string;formRef:PlanRef}
+export type StageDocumentScope=Pick<StageDocumentChoice,'applicationRef'|'nodeId'>;
 const uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref=(v:PlanRef)=>v&&Object.keys(v).sort().join(',')==='contentHash,id,version'&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[0-9a-f]{64}$/.test(v.contentHash);
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 const text=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=200&&v.isWellFormed()&&!/[\u0000-\u001f\u007f]/.test(v);
-export async function readStageDocumentApplication(client:ApiClient,projectId:string,active:()=>boolean){
+export async function readStageDocumentApplication(client:ApiClient,projectId:string,active:()=>boolean,scope?:StageDocumentScope){
+ if(scope&&(!ref(scope.applicationRef)||!text(scope.nodeId)))throw new ApiError('STAGE_DOCUMENT_CHOICE_INVALID');
+ const expected=scope?structuredClone(scope):undefined;
  const check=()=>{if(!active())throw new ApiError('STAGE_DOCUMENT_PREPARATION_PAUSED');};check();const current=await readMethodApplicationRef(client,projectId);check();const value=await readWorkspaceMethodology(client,projectId,current);check();
- if(value.snapshot&&(value.snapshot.graph.nodes.length>200||value.snapshot.graph.nodes.some(n=>n.outputs.length>200)||value.snapshot.graph.nodes.reduce((n,v)=>n+v.outputs.length,0)>1000))throw new ApiError('STAGE_DOCUMENT_DISPLAY_LIMIT');return value;
+ if(value.snapshot&&(value.snapshot.graph.nodes.length>200||value.snapshot.graph.nodes.some(n=>n.outputs.length>200)||value.snapshot.graph.nodes.reduce((n,v)=>n+v.outputs.length,0)>1000))throw new ApiError('STAGE_DOCUMENT_DISPLAY_LIMIT');
+ if(expected&&(!same(value.applicationRef,expected.applicationRef)||!value.snapshot||value.snapshot.graph.nodes.filter(n=>n.nodeId===expected.nodeId).length!==1))throw new ApiError('STAGE_DOCUMENT_APPLICATION_CHANGED');return value;
 }
 /** 읽기와 로컬 초안 준비뿐이다. 저장·승인 요청/사용·문서 생성은 별도 명시 명령이다. */
 export async function prepareStageDocumentDraft(client:ApiClient,selection:StageDocumentChoice,session:DocumentSession,active:()=>boolean){

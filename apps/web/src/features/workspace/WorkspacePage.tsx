@@ -12,11 +12,14 @@ import { WorkspaceConversationSources } from './WorkspaceConversationSources.tsx
 import { ConversationPanel } from '../knowledge/ConversationPanel.tsx';
 import type { ConversationBuffer } from '../knowledge/conversation-api.ts';
 import type {PlanTaskSelection} from '../../shell/routes.ts';
+import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
+import type {DocumentBuffer} from '../design-trace/editor-api.ts';
 
-export function WorkspacePage({ client, projectId, session, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
+export function WorkspacePage({ client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
+  const [preparingDocument,setPreparingDocument]=useState(false);
   useEffect(() => {
     let current = true; setPending(true); setError(null); setProject(null); setSelectedStage(null);
     readWorkspaceProject(client, projectId).then(value => { if (current) setProject(value); }).catch((cause: unknown) => {
@@ -59,6 +62,7 @@ export function WorkspacePage({ client, projectId, session, assignmentBuffer, re
             <p className="meta">사용자가 저장한 위치 설명이며 파일 접근·검증·실행 권한이 아닙니다.</p>
           </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
           <WorkspaceDocuments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} projectId={projectId} selectedStage={selectedStage} onAuthenticationLost={onAuthenticationLost} />
+          {selectedStage&&project.currentMethodologyRef&&documentPreparation?<section aria-label="선택 단계 문서 작성"><p>선택 단계: {selectedStage.nodeName} · 별도 저장 전 서버 문서를 만들지 않습니다.</p><button type="button" disabled={!documentPreparation.available||project.participation!=='OWNER'||project.controlState.status!=='HELD'||project.controlState.actorId!==session.user.id||project.controlState.clientId!==session.clientId} onClick={()=>setPreparingDocument(true)}>선택 단계 산출문서 작성</button>{!documentPreparation.available?<p>기존 문서 편집·검토·확정 입력을 보존했습니다. 문서 화면에서 해당 작업을 마친 뒤 새 초안을 준비하세요.</p>:null}{preparingDocument&&documentPreparation.available?<NewStageDocumentForm key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId])} client={client} projectId={projectId} session={session} scope={{applicationRef:project.currentMethodologyRef,nodeId:selectedStage.nodeId}} backLabel="단계 문서 준비 닫기" onPrepared={documentPreparation.onPrepared} onBack={()=>setPreparingDocument(false)} onAuthenticationLost={onAuthenticationLost}/>:null}</section>:null}
           <ProjectConstitutionPanel key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} history={false} onAuthenticationLost={onAuthenticationLost}/>
           <WorkspaceConversationSources key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost}/>
           <p className="meta">상세 작성·검토는 자료 화면에서 진행합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
