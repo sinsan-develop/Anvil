@@ -81,12 +81,14 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     onChange(current => current === captured ? value : current);
   }
   async function revise(view: AssignmentDraftView) {
-    if (!owner || !bound || !stage || !safeToReplace()) return;
-    const latest = await readAssignmentDraft(client, project.id, view.ref), generation = await documentControl(client, project.id, session); if (!alive.current) return;
+    if (!owner || !bound || !stage && view.snapshot.definition.parentAssignmentRef === null || !safeToReplace()) return;
+    const captured = buffer;
+    const latest = await readAssignmentDraft(client, project.id, view.ref); if (!alive.current) return;
+    const generation = await documentControl(client, project.id, session); if (!alive.current) return;
     if (latest.headVersion !== latest.ref.version) throw new ApiError('VERSION_CONFLICT', 409);
-    if (ordered(latest.snapshot.basis.applicationRef) !== ordered(project.currentMethodologyRef) || latest.snapshot.basis.nodeId !== stage.nodeId || generation !== project.controlState.generation) throw new ApiError('ASSIGNMENT_BINDING_INVALID');
+    if (ordered(latest.snapshot.basis.applicationRef) !== ordered(project.currentMethodologyRef) || stage && latest.snapshot.basis.nodeId !== stage.nodeId || generation !== project.controlState.generation) throw new ApiError('ASSIGNMENT_BINDING_INVALID');
     const value: AssignmentBuffer = { bindingId: crypto.randomUUID(), projectId: project.id, ownerUserId: session.user.id, ownerClientId: session.clientId, controlGeneration: generation, expectedDesignRef: latest.snapshot.basis.designRef, input: { baseRef: latest.ref, definition: structuredClone(latest.snapshot.definition), reason: '' }, ref: latest.ref, pending: null, result: null, dirty: false, uncertain: false, failure: null };
-    const oldBinding = buffer?.bindingId; onChange(current => current?.bindingId === oldBinding ? value : current); setOpened(null); setReread(false);
+    onChange(current => current === captured ? value : current); setOpened(null); setReread(false);
   }
   const locked = busy || !!buffer?.pending || !!buffer?.result || !owner || !sameStage;
   // undefined는 새 저장영수증 보기, null은 명시 재조회/오류로 이전 원문을 감춘 상태다.

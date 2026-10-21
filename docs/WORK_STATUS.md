@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 하위 개정 QA 정리**: 등록 ui04-child-revision-01의 정확 경로·SINSAN/cyhuh 소유·하위 link0/process0을 확인 후 일회 결과만 제거했다. 별도 조회 QaPathExists=false/MatchingProcesses=0이며 시험 결과 폴더는 회수됐다. 소스/기존 build/DB·지속 자료 삭제0이다.
+
+- **2026-10-21 FN09/UI04 하위 초안 개정 cycle 보완 / Main 어울**: 단계 미선택 child에서 개정 준비가 조용히 반환하던 오류를 고쳤다. root 단계선택 선행은 유지하고 최신 고정 초안/head·적용본·선택 단계가 있으면 node·제어 세대를 다시 검사한다. 각 await 뒤 이탈을 검사하고 시작 당시와 동일한 버퍼일 때만 교체한다. child 개정→목표 수정/소스 범위 축소→별도 저장→응답 유실 같은 원명령 재확인→새/과거 고정 버전 조회를 연결했으며 부모 fullref/과거 snapshot은 보존한다. 확정·배정·실행/API/SQL·실DB/서비스 변경0이다.
+  - 증거/오류: 수정 전 단계 미선택 NORMAL 편집부재1RED를 재현했다. 수정 후 첫 신규4건은2PASS/2FAIL로, 두 실패는 비동기 POST 전 즉시 명령수를 읽은 테스트 타이밍 오류였다. 저장 확인 UI를 기다린 뒤 기존 동일 횟수/원명령 일치 assertion을 수행하도록 고쳤고 기대값·제품 기준은 낮추지 않았다. 최종 기존 UI04 전체 파일12PASS14.3s, 제품 build(type 포함)0/278modules243ms·diff0이다. 불변 서버·인접 단위/전체 회귀는 반복하지 않았다.
+  - 검토/한계: 기존 reviewer의 해당 함수/신규4건 읽기 전용 독립 C0/I0/M0·독립실행0. await 중 이탈/버퍼변경과 root 단계미선택의 직접 DOM 회귀는 이번4건에 없고 정적 확인만 했다. 합성 저장/브라우저 결과는 실제 PG 저장·정식 서비스 사용가능·FN09 전체/Stage/사용자인수 완료가 아니다. 기존 미적용 SQL0034·별도 실행 경계/보호6/main 보존. 소유 코드2/계획·현황만 같은 branch checkpoint로 남기며 필요시 후속 revert한다.
+
+- **2026-10-21 FN09 하위 개정 cycle QA 등록**: 신규 D:/tmp/anvil-v3-stage-b/browser/ui04-child-revision-01은 Main 소유/이번 검수만/생성 전 부재·부모 realpath/link 확인 뒤 사용·exact 정리/독립 부재 확인한다. 기존 apps/web/dist만 갱신하며 실제 HTTP/DB/Agent0. 단계 미선택 child 개정·범위축소/새저장·유실replay/부모거절/옛head/과거보존을 한 cycle로 합성 검수한다.
+
+- **2026-10-21 FN09 채택 A 생성→수정→고정조회 실질 공백 착수 / Main 어울**: 기준798be566. 다른 주요 미완료는 정식DB/서비스 반영·source 본문 관측/실제 Agent/기존 별도 계약 선행과 겹친다. 작은 표시를 늘리지 않고 현재 채택 A cycle을 우선 대조했다. prepareChild/sameStage는 부모 고정단계로 stage 미선택 생성/저장을 지원하지만 revise는 !stage에서 조용히 반환해 같은 사용자가 개정할 수 없는 공백을 확인했다. 시스템 디버깅/TDD로 실제 합성 화면에서 재현하고, child의 현재 고정 적용/선택 단계 일치·현재head/제어·기존 parent 보존 아래 개정→범위축소/별도저장→응답유실 같은명령 재확인→과거/새 고정조회까지 한 단위로 보완한다. root의 단계선택 선행은 유지하며 API/SQL/권한·실DB/서비스/child확정/배정/실행0이다.
+
 - **2026-10-21 FN09/UI04 저장 child 부모 고정 원문 연결 일부 / Main 어울**: 기준2d7f3fb. 저장 child의 부모 fullref를 복제→같은 project/id/version의 confirmed GET→snapshot hash 선검사→snapshot.draftRef로 기존 draft GET/hash→definition/readiness·확정 구조 대조 후 표시한다. 확정ref를 초안ref로 바꾸지 않고 과거 고정 버전도 최신으로 대체하지 않는다. 부모 원문/초안 두 hash·목적/완료/검증/범위·확정 이유/주체/시각은 기존 AssignmentConditions를 렌더 callback으로 재사용해 읽기만 표시하며 현재 효력·권한/위임·실행은 미판정이다. API/schema/SQL·실DB/서비스/Agent/권한0.
   - TDD/증거: 신규함수부재2RED→부모 고정/교차project·hash·draft귀속/본문·ready위조·403 음성 GREEN. fixture는 confirmed와 draft의 definition/ref를 분리 복제해 한쪽변조가 다른쪽까지 바뀌지 않게 했다. 닫기 뒤 raw부모응답이 추가draftGET/결과를 만드는 반례1RED→각 await/해시 뒤 active 검사·null 반환으로 보완, 신규3+기존확정클라이언트4의7PASS187.9487ms다. UI 원문 panel부재1RED→표시·403재조회숨김·실제 Response.json 소비marker+후속 task장벽 뒤 닫힌본문0/추가draftGET0·쓰기증가0의 정상1PASS3.4s. 최신 UI04 CHILD3+root인접확정/원명령유실2 DOM5PASS6.7s, 최신type0·제품build0/278modules256ms·diff0, 기존 chunk500k/NO_COLOR 경고 유지. 불변 backend56/인접80 검사는 반복0이다.
   - 검토/한계: 기존 같은 reviewer 변경5파일 정적 C0/I0/M0·독립실행0. 사용자/client/project/childfullref key·load시 oldbody숨김·close/unmount attempt무효화와 rawhash 선검사→별도drafthash/definition 대조를 확인했다. 실제 서버권한/DB/서비스·hash의 독립출처 인증·모든주체전환/digest대기 조합·현재부모효력/실행허가는 미판정이다. 합성 GET/DOM을 실제 사용가능·전체FN09/Stage/사용자인수로 승격하지 않는다.

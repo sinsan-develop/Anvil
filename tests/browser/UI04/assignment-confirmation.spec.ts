@@ -45,6 +45,60 @@ for(const mode of ['DENIED','STALE'] as const) test('CHILD_PARENT_'+mode+' 부�
  expect(f.commands).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
 });
 
+for(const mode of ['NORMAL','LOSS','PARENT_STALE','HEAD_STALE'] as const) test('CHILD_REVISION_'+mode+' 단계 미선택에서도 하위 개정·범위축소·원명령/과거버전을 보존한다',async({page})=>{
+ const f=await setup(page),childId='99999999-9999-4999-8999-999999999999',parentRef={...reference(id),contentHash:'c'.repeat(64)};
+ const firstSnapshot={...structuredClone(snapshot),definition:{...structuredClone(definition),parentAssignmentRef:parentRef,goal:'수정 전 하위 업무'}};
+ const firstRef={id:childId,version:1,contentHash:contentHash(canonicalJson(firstSnapshot))};
+ const versions=new Map<number,any>([[1,{ref:firstRef,snapshot:firstSnapshot}]]),commands:any[]=[];let head=1,reads=0,original:any=null,commits=0;
+ await page.route('**/api/v1/projects/'+pid+'/assignment-drafts?*',r=>r.fulfill({json:{items:[{ref:firstRef,status:'DRAFT',goal:'수정 전 하위 업무',taskRef:definition.taskRef,issueCount:1,updatedAt:at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route('**/api/v1/projects/'+pid+'/assignment-drafts/'+childId+'/versions/*',r=>{
+  reads++;const version=Number(new URL(r.request().url()).pathname.split('/').at(-1));
+  return r.fulfill({json:{projectId:pid,...versions.get(version),headVersion:mode==='HEAD_STALE'&&reads>1?2:head,sourceCurrentness:'NOT_RECHECKED',observedAt:at}});
+ });
+ await page.route('**/api/v1/projects/'+pid+'/commands',r=>{
+  const c=r.request().postDataJSON();commands.push(c);expect(c.operation).toBe('prepareAssignment');expect(c.targetId).toBe(childId);expect(c.expectedVersion).toBe(1);expect(c.payload.baseRef).toEqual(firstRef);expect(c.payload.definition.parentAssignmentRef).toEqual(parentRef);
+  if(mode==='PARENT_STALE')return r.fulfill({status:409,json:{code:'ASSIGNMENT_PARENT_NOT_CURRENT'}});
+  if(original){expect(c).toEqual(commands[0]);return r.fulfill({json:original});}
+  const next={...structuredClone(firstSnapshot),definition:c.payload.definition,reason:c.payload.reason,previousRef:firstRef},nextRef={id:childId,version:2,contentHash:contentHash(canonicalJson(next))};
+  versions.set(2,{ref:nextRef,snapshot:next});head=2;commits++;
+  original={operationId:childId,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:childId,version:2,data:{ref:nextRef,status:'ASSIGNMENT_DRAFT_STORED',snapshot:next},evidenceRefs:[],warnings:[],serverReceivedAt:at};
+  return mode==='LOSS'?r.abort():r.fulfill({json:original});
+ });
+ await page.getByRole('button',{name:'임무 초안 목록 조회',exact:true}).click();
+ await page.getByRole('button',{name:'임무 버전 열기: 1',exact:true}).click();
+ await page.getByRole('button',{name:'현재 버전으로 개정 준비',exact:true}).click();
+ if(mode==='HEAD_STALE'){
+  await expect(page.getByRole('alert')).toContainText('VERSION_CONFLICT');
+  await expect(page.getByRole('textbox',{name:'임무 목표',exact:true})).toHaveCount(0);
+  expect(commands).toEqual([]);expect(commits).toBe(0);
+ }else{
+  const goal=page.getByRole('textbox',{name:'임무 목표',exact:true});await expect(goal).toHaveValue('수정 전 하위 업무');
+  await goal.fill('수정한 하위 업무');await page.getByRole('button',{name:'소스 범위 1 전체 제외',exact:true}).click();
+  await page.getByRole('textbox',{name:'임무 저장 이유',exact:true}).fill('하위 수정·범위 축소');
+  expect(commands).toHaveLength(0);
+  await page.getByRole('button',{name:'임무 초안 저장',exact:true}).click();
+  if(mode==='PARENT_STALE'){
+   await expect(page.getByRole('alert')).toContainText('ASSIGNMENT_PARENT_NOT_CURRENT');
+   await expect(goal).toHaveValue('수정한 하위 업무');expect(commands).toHaveLength(1);expect(commits).toBe(0);
+  }else{
+   if(mode==='LOSS'){
+    await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await expect(goal).toBeDisabled();
+    await page.getByRole('button',{name:'같은 임무 명령 결과 확인',exact:true}).click();
+   }
+   await expect(page.getByRole('status')).toContainText('임무 초안 저장 확인');expect(commits).toBe(1);
+   expect(commands).toHaveLength(mode==='LOSS'?2:1);if(mode==='LOSS')expect(commands[1]).toEqual(commands[0]);
+   expect(commands[0].payload.definition.allowedScopes).toEqual([]);
+   await page.getByRole('button',{name:'저장 버전 재조회',exact:true}).click();
+   const stored=page.getByRole('region',{name:'저장한 임무 초안',exact:true});
+   await expect(stored).toContainText('고정 버전 2');await expect(stored.getByText('수정한 하위 업무',{exact:true})).toBeVisible();
+   await page.getByRole('button',{name:'이전 임무 초안 원문 열기',exact:true}).click();
+   await expect(stored).toContainText('고정 버전 1');await expect(stored.getByText('수정 전 하위 업무',{exact:true})).toBeVisible();
+   expect(versions.get(1).snapshot).toEqual(firstSnapshot);expect(versions.get(2).snapshot.definition.parentAssignmentRef).toEqual(parentRef);
+  }
+ }
+ expect(f.commands).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
 test('CHILD_DRAFT 명시 부모 조회·준비 뒤 별도 저장/정확 재조회와 후속 확정 차단',async({page})=>{
  const f=await setup(page); await fillReview(page);
  await page.getByRole('button',{name:'임무 내용 판단 저장',exact:true}).click();
