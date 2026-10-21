@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 UI06 단계목록 Git 보존 후 원격 읽기 재확인 / Main 어울**: 소유6파일의 로컬766d5df340167430b3ebef3d05dad1a3e42ca57e 커밋은 성공했다. 직후 ls-remote1회가 `fatal: Could not read from remote repository.`로 실패했으나 같은 검증 development URL의 다음 읽기 exit0에서 private8a9d97d8/main f976ed5e를 확인했다. push는 아직 시도하지 않았던 구간이고 도구거절 우회/인증키·권한·설정 변경0이다. 이 오류를 제품/합성검증 실패나 새 승인 사유로 바꾸지 않는다.
+
 - **2026-10-21 16:55 KST UI06 적용 단계별 문서 목록 연결 일부 / Main 어울**: 열린 문서의 정확 양식 버전으로 기존 stage-options를 명시 조회→검증된 applicationId/nodeId 선택→동일 조건의 listDocuments/cursor→전체 단계 목록 복귀를 연결했다. 필터 전환은 커서/조회원문/비교와 비동기 원문 요청만 초기화하며 App의 작성·검토·확정·미확인 명령 버퍼는 수정하지 않는다. 현재 실행단계/방법론 변경이나 모든 프로젝트단계 자동수집으로 해석하지 않으며, 양식이 연결된 단계만 제시한다.
   - **검증/검토**: 기존bundle 버튼부재 RED1→신규 정상/필터cursor·403 DOM2PASS2.5s, 이어 실제JSON소비 뒤 지연응답 미재등장·dirty제목/본문/이유 보존 DOM2PASS2.6s, DocumentsPage 직접 인접 원문/비교·dirty/pending보존 DOM2PASS2.7s다. `node --test tests/unit/UI04/stage-documents.test.ts tests/unit/UI06/editor-api.test.ts`6PASS182.0858ms, `npm run build` type0·291module, 시험추가 후 최종type0/diff0. index-DXZDQfLZ.js SHA256 8DAD830A68AB62687B9DECD39A69BB79615EAA1996439337ADD22C39175714A3. 독립 한정 C0/I0/M0는 최초제품/정상2시험 기준이며 이후 제품수정0·추가2시험의 독립재실행은없다. chunk>500k/NO_COLOR경고 보존, 없는 stage-api 시험 경로 추정읽기1은 실제 발견 UI04/stage-documents로 정정했고 ACL변경0이다.
   - **정리/제외**: 등록QA는16:55:37 exact회수→16:55:49별도pathfalse/process0. 새API/SQL·실DB·정책·서비스·Agent0, 보호6/main·기존미채택계약 보존. 실제DB/served권한·모든주체/프로젝트전환·실제단계와 문서 연결 진위·전체UI06/FN03/Stage는미확인/미완료다. 실제 사용가능 완료로 승격하지 않으며 다음 승인계획 소비연결 선정은 Main이 이어간다.
