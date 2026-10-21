@@ -35,6 +35,35 @@ async function fill(page:Page){
   await page.getByLabel('기준 설계 문서',{exact:true}).selectOption(designId);await page.getByRole('button',{name:'기준 설계 항목 확인',exact:true}).click();await expect(page.getByLabel('업무 1 설계 D01',{exact:true})).toBeVisible();await page.getByLabel('업무 1 설계 D01',{exact:true}).check();
   for(const [name,value]of [['업무 1 코드','FN01'],['업무 1 제목','문서 저장'],['업무 1 목적','원문 보존'],['업무 1 책임 역할','개발 책임자'],['업무 1 입력','설계 원문'],['업무 1 출력','저장 API'],['업무 1 포함 범위','문서 저장'],['업무 1 제외 범위','Agent 실행'],['업무 1 허용 파일','apps/server/documents.ts'],['업무 1 수행 절차','구현 후 저장 조회'],['업무 1 검수 조건','원문 바이트 동일'],['업무 1 증거 요구','실제 API DB 결과'],['업무 1 복구 방법','이전 검증 commit 복구'],['업무 1 재개 유의사항','미완료 지점 보존'],['작업계획 저장 이유','설계와 업무 연결']]as const)await page.getByLabel(name,{exact:true}).fill(value);
 }
+
+test('PLAN_APPROVAL 준비·요청유실·별도결정·명시저장과 고정 재조회',async({page})=>{
+ const f=await fixture(page),writes:any[]=[],requestId='a6f30000-0000-4000-8000-000000000094',decisionId='a6f30000-0000-4000-8000-000000000095',at=new Date().toISOString();let view:any=null,requestReceipt:any=null,result:any=null;
+ const expiresAt=new Date(Date.now()+600000).toISOString(),rules=[{ruleId:'SAVE',subjectRef:{kind:'HUMAN',userId:user},operations:['saveWorkPlanDraft'],targetScopes:[{kind:'PROJECT',projectId:project}],disposition:'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt}],policy={rules,reason:'한 계획 저장',reviewRefs:[]},policyRef={id:itemId,version:1,contentHash:contentHash(canonicalJson(policy))};
+ await page.route(`**/api/v1/projects/${project}/permission-policy`,r=>r.fulfill({json:{configured:true,policy:{ref:policyRef,...policy,createdAt:at}}}));
+ await page.route(`**/api/v1/projects/${project}/approvals?*`,r=>r.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:at}}));
+ await page.route(`**/api/v1/projects/${project}/approvals/${requestId}`,r=>r.fulfill({json:view}));
+ await page.route(`**/api/v1/projects/${project}/commands`,r=>{
+  const c=r.request().postDataJSON();writes.push(c);
+  const receipt=(ref:any,data:any)=>({operationId:itemId,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:ref.id,version:ref.version,data:{ref,...data},serverReceivedAt:at});
+  if(c.operation==='requestApproval'){
+   if(!requestReceipt){const details=c.payload.details,scopeDigest=contentHash(canonicalJson(details.actionScope)),body={projectId:project,details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:user},policyRef,requestedBy:{kind:'HUMAN',userId:user,clientId:user},controlGeneration:1},ref={id:requestId,version:1,contentHash:contentHash(canonicalJson(body))},request={id:requestId,version:1,status:'PENDING',...body,createdAt:at};view={request,requestRef:ref,currentVersion:1,storedStatus:'PENDING',effectiveState:'PENDING',decision:null,consumption:null,expired:false,basisCurrent:true,executionAuthorized:false,observedAt:at,candidatePlan:{candidateCommandId:details.candidateCommandId,payloadHash:details.actionScope.payloadHash,payload:c.payload.candidatePayload}};requestReceipt=receipt(ref,{status:'APPROVAL_REQUESTED',request});return r.abort('connectionreset');}
+   return r.fulfill({json:requestReceipt});
+  }
+  if(c.operation==='decideApproval'){const body={requestId,requestVersion:1,requestRef:view.requestRef,scopeDigest:view.request.scopeDigest,decision:c.payload.decision,reason:c.payload.reason,decidedBy:{kind:'HUMAN',userId:user,clientId:user},controlGeneration:1,policyRef},ref={id:decisionId,version:1,contentHash:contentHash(canonicalJson(body))},decision={id:decisionId,...body,decidedAt:at};view={...view,currentVersion:2,storedStatus:'APPROVED',effectiveState:'APPROVED',decision:{ref,...decision}};return r.fulfill({json:receipt(ref,{status:'APPROVAL_DECIDED',decision})});}
+  expect(c.operation).toBe('saveWorkPlanDraft');expect(c.commandId).toBe(view.request.details.candidateCommandId);expect(c.payload).toEqual(view.candidatePlan.payload);expect(c.approvalRef).toEqual({requestId,decisionId,scopeDigest:view.request.scopeDigest});
+  const snapshot={...c.payload,dependencies:[],issues:[],relationalProjection:'STORED'},ref={id:savedId,version:1,contentHash:contentHash(canonicalJson(snapshot))};result={ref,status:'DRAFT',...snapshot};return r.fulfill({json:receipt(ref,{status:'WORK_PLAN_DRAFT_SAVED',workPlan:result})});
+ });
+ await page.route(`**/api/v1/projects/${project}/work-plans/${savedId}/versions/1`,r=>r.fulfill({json:{...result,executionEvidence:'NOT_CONNECTED',observedAt:at}}));
+ await fill(page);await page.getByRole('button',{name:'작업계획 저장 승인 준비',exact:true}).click();expect(writes).toHaveLength(0);
+ for(const label of ['계획 승인 요청 이유','계획 데이터 위험','계획 보안 위험','계획 비용 위험','계획 중단 영향','계획 미확인 사항','계획 복구 방법','계획 복구 한계'])await page.getByLabel(label,{exact:true}).fill('정확 입력 보존 확인');
+ await page.getByLabel('계획 승인 만료 UTC',{exact:true}).fill(new Date(Date.now()+300000).toISOString());
+ await page.getByRole('button',{name:'작업계획 일회 승인 요청 저장',exact:true}).click();await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');
+ await page.getByRole('button',{name:'같은 계획 승인 요청 결과 확인',exact:true}).click();await expect(page.getByText('요청 저장 확인 · 계획 저장 전',{exact:true})).toBeVisible();expect(writes[0]).toEqual(writes[1]);
+ await page.getByRole('link',{name:'이 계획 승인 요청에서 별도 결정',exact:true}).click();await expect(page.getByLabel('승인 요청 상세')).toContainText('계획 저장 전체 입력');
+ await page.getByLabel('결정 이유',{exact:true}).fill('전체 업무와 정확 입력 확인');await page.getByLabel('정확 범위·위험·복구 한계를 확인했습니다',{exact:true}).check();await page.getByRole('button',{name:'이번만 승인',exact:true}).click();await expect(page.getByLabel('승인 요청 상세')).toContainText('APPROVED');expect(writes).toHaveLength(3);
+ await page.getByRole('link',{name:'문서·설계 추적',exact:true}).click();await page.getByRole('button',{name:'계획 승인 재조회·미전송 명령 결박',exact:true}).click();await expect(page.getByText('정확 승인 결박 확인 · 아래 저장 버튼으로 별도 전송하세요.',{exact:true})).toBeVisible();expect(writes).toHaveLength(3);
+ await page.getByRole('button',{name:'같은 작업계획 명령 결과 확인',exact:true}).click();await expect(page.getByText('작업계획 초안 저장 확인 · 실행/완료 아님',{exact:true})).toBeVisible();await page.getByRole('button',{name:'저장한 작업계획 재조회',exact:true}).click();await expect(page.getByText('저장한 버전 재조회 확인',{exact:true})).toBeVisible();expect(writes).toHaveLength(4);expect(f.unknown).toEqual([]);
+});
 test('첫 확실한 계획 저장거절은 입력을 보존해 수정한 뒤 별도 명령으로 저장/재조회한다',async({page})=>{
  await installWorkspaceBundle(page);const f=await fixture(page),writes:any[]=[];let result:any;const at='2026-10-21T04:00:00Z';
  await page.route(`**/api/v1/projects/${project}/commands`,r=>{const c=r.request().postDataJSON();writes.push(c);if(writes.length===1)return r.fulfill({status:422,json:{code:'INPUT_INVALID'}});const snapshot={...c.payload,dependencies:[],issues:[],relationalProjection:'STORED'},ref={id:savedId,version:1,contentHash:contentHash(canonicalJson(snapshot))};result={ref,status:'DRAFT',...snapshot};return r.fulfill({json:{operationId:itemId,commandId:c.commandId,projectId:project,status:'APPLIED',targetId:savedId,version:1,data:{ref,status:'WORK_PLAN_DRAFT_SAVED',workPlan:result},serverReceivedAt:at}});});

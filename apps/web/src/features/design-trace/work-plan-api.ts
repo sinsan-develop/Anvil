@@ -8,7 +8,7 @@ import {readDesignIndex} from './design-index-api.ts';
 export type PlanRef={id:string;version:number;contentHash:string};
 export interface WorkPlanInput{documentRef:PlanRef;designRef:PlanRef|null;screenReviewRefs:unknown[];tasks:TaskCard[];reason:string}
 export interface WorkPlanView{ref:PlanRef;status:'DRAFT';documentRef:PlanRef;designRef:PlanRef;screenReviewRefs:unknown[];tasks:TaskCard[];dependencies:{taskCode:string;dependencyTaskCode:string;phase:'START'|'ACCEPTANCE'}[];reason:string;issues:{code:string;location:string;message:string}[];relationalProjection:'STORED'|'ISSUES_ONLY';executionEvidence:'NOT_CONNECTED';observedAt:string}
-export interface WorkPlanBuffer{bindingId:string;input:WorkPlanInput;planRef:PlanRef|null;pending:DocumentWrite|null;result:WorkPlanView|null;uncertain:boolean;failure:{code:string;status:number}|null;designDocumentId:string;designVersion:string;designIndex:import('./design-index-api.ts').DesignIndexView|null;traceLink?:import('./trace-api.ts').TaskTraceBuffer|null;decision?:import('./work-plan-decision-api.ts').WorkPlanDecisionBuffer|null}
+export interface WorkPlanBuffer{bindingId:string;input:WorkPlanInput;planRef:PlanRef|null;pending:DocumentWrite|null;result:WorkPlanView|null;uncertain:boolean;failure:{code:string;status:number}|null;designDocumentId:string;designVersion:string;designIndex:import('./design-index-api.ts').DesignIndexView|null;traceLink?:import('./trace-api.ts').TaskTraceBuffer|null;decision?:import('./work-plan-decision-api.ts').WorkPlanDecisionBuffer|null;sent?:boolean;approval?:{request:import('../decisions/api.ts').ApprovalRequestWork;requestId:string;commandHash:string|null};approvalHistory?:{request:import('../decisions/api.ts').ApprovalRequestWork;requestId:string;commandHash:string|null}[]}
 export interface WorkPlanSummary{ref:PlanRef;status:'DRAFT';title:string;documentRef:PlanRef;designRef:PlanRef;issueCount:number;updatedAt:string;integrity:'NOT_RECHECKED'}
 export interface WorkPlanPage{items:WorkPlanSummary[];hasMore:boolean;nextCursor:string|null;observedAt:string}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,hash=/^[0-9a-f]{64}$/;
@@ -75,7 +75,8 @@ export function prepareWorkPlan(buffer:DocumentBuffer,session:DocumentSession):D
 }
 export async function sendWorkPlan(client:ApiClient,buffer:DocumentBuffer,session:DocumentSession,active:()=>boolean){
   const s=work(buffer,session),c=s.pending;
-  if(!c||c.schemaVersion!==1||!uuid.test(c.commandId)||c.projectId!==buffer.projectId||c.clientId!==session.clientId||c.controlGeneration!==buffer.controlGeneration||c.operation!=='saveWorkPlanDraft'||c.targetId!==(s.planRef?.id??null)||c.expectedVersion!==(s.planRef?.version??0)||c.baselineRefs.length||c.approvalRef!==null||!same(c.payload,s.input))throw new ApiError('WORK_PLAN_INPUT_INVALID');
+  if(!c||c.schemaVersion!==1||!uuid.test(c.commandId)||c.projectId!==buffer.projectId||c.clientId!==session.clientId||c.controlGeneration!==buffer.controlGeneration||c.operation!=='saveWorkPlanDraft'||c.targetId!==(s.planRef?.id??null)||c.expectedVersion!==(s.planRef?.version??0)||c.baselineRefs.length||!same(c.payload,s.input))throw new ApiError('WORK_PLAN_INPUT_INVALID');
+  if(c.approvalRef!==null&&(!s.approval?.commandHash||await digest(c)!==s.approval.commandHash))throw new ApiError('APPROVAL_CANDIDATE_MISMATCH');
   if(!active())throw new ApiError('WORK_PLAN_CONTINUATION_PAUSED');
   const r=await postDocumentCommand(client,c,session.csrfToken);
   if(r.data?.status!=='WORK_PLAN_DRAFT_SAVED'||!ref(r.data.ref)||r.targetId!==r.data.ref.id||r.version!==c.expectedVersion+1||r.data.ref.version!==r.version||c.targetId!==null&&r.data.ref.id!==c.targetId)throw new ApiError('RESPONSE_INVALID');
