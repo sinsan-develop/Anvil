@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12 다음 영속 처리 경로의 계약 후보 — 미채택**: 시험 자료 주장 등록/보호조회가 실제 source에없어 PMO 요청으로 docs/contracts/FN12_TEST_EVIDENCE_CLAIM_REGISTRY_PROPOSAL.md를작성·한정독립검토했다. 최초I1/M1→문서보정 scopedC0/I0/M0, 최종SHA503D307FCFA4FEFA0CAE6B73B4C171D99A9616D8F9B73CCA4141C4184ACE4C84. 별도미검증ClaimRef·신뢰증거adapter금지·기존검수거절/실패집계0·권한/상호잠금·원자성/UNKNOWN을고정한문서일뿐이며제품/API/SQL/실DB채택·구현/검증완료아니다. 정확delta판단은PMO에요청하고기존FN06등질문반복0·독립승인작업선정책임유지. WORK_STATUS의근거/미검증을따른다.
+
 - **2026-10-22 FN12/UI05 시험 결과 화면 작성 일부**: 별도 JSON이 필요했던 시험 조건/ID·기대/실제·상태를 기존 직접작성→명시 submitResult→목록/원문 조회로 연결했다. 고정 기준/evidence없음·수행자주장/검수false·전체미완료·원미실행보존/동일명령, 새API/SQL/권한0. 신규2RED→단위15·최종신규3+인접3 DOM6/typebuild/diff0·한정독립C0/I0/M0·QA독립잔여0. 실제DB/served/모든주체·상태/증거진위·전체FN12/Stage 미완료, 원라벨오류·지문/한계는 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN03 고정 양식 본문 무결성 보정 일부**: 원 ref 대조에 실제 정의·공통기준 hash 검사를 추가하여 동일 표식의 변조 내용은 표시하지 않는다. 기존 검증 재사용·새API/SQL/권한0. 신규2RED→단위8+별도3/최초DOM10/typebuild0, 지연검사 M1은 실제 native hash 완료까지 기다리도록 시험만 보강해 영향unit1/DOM2/typecheck0·scoped C0/I0/M0·QA 독립잔여0이다. 분리 증거/원오류·지문은 WORK_STATUS를 따른다. 실DB/served/전체FN03·Stage 미완료, Agent 실행 연결 진도로 승격0.
