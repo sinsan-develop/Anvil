@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **FN10 보호조회 문구 한정 검토 결과**: 후보4DC5269C…68807B에 대해 독립 문서 delta C0/I0/M0·실행/시험/수정0을 확인했다. 실제 잠금/권한 회수 효력·COMMIT 후 응답 전 보호 재검사·PG·채택은 미검증/미판정이다. 후보와 이 WORK_STATUS 정확2문서만 기존 branch에 보존하며 PMO에 최종 hash를 전달한다. 이전 원지적/보정은 보존하고 제품 진도나 구현 합격으로 승격하지 않는다.
+
+- **2026-10-22 01:42 KST FN10 후보 보호조회 delta 보완 / Main 어울**: PMO는 후보037F96A8 검토 후 POST exact replay가 GET보다 옛 receipt/snapshot을 넓게 노출할 위험을 지적했다. 후보 §4/5에 신규 응답/replay/GET 모두 별도 현재 readNodeDecisions·반환 출처 현재 접근/격리를 검사하고, write만 남은 경우403/검사·직렬화 미연결412로 receipt 존재/성공/ref/value/reason/sourceRefs 노출0·원자료 보존/UNKNOWN 유지로 명시했다. 신규 저장의 현재 기준·출처 최신검토는 관련 변경 경로와 공통 잠금 뒤 최종 재검사하며 미연결412, replay에 옛 basis/app/head CAS 재적용0이다. §1/6/8·검수표는 향후 평가/소비 원장 코드·SQL을 이번 채택에서 제외하고 저장/정정/철회/보호조회·receipt/audit만 후보로 한정했다. 후보SHA256 4DC5269C1D3A77073AF07DD19E15B736A6D60638C58DDFEBB70173530668807B, NOT_ADOPTED/제품·SQL·실DB·정책·Agent·QA0·기존 성공시험 반복0. 해당 문구만 독립 한정 확인 요청, 기준4eb9c6ab·보호6/main 보존.
+
 - **FN10 후보 검토 종료 한정 기록**: SHA037F96A8…DF726C에 대해 독립 검토자가 원 I1/M1 문서상 해소·보정범위 C0/I0/M0/실행0을 확인했다. 최초 C0/I1/M1은 보존하고 NOT_ADOPTED/제품·SQL 미채택/실제 권한·PG 미검증을 유지한다. 정확3문서를 기존 작업 branch에 checkpoint 보존하며 PMO에는 전체 FN10 재승인이 아닌 이 후보의 신규 명령/자료·정책 delta 채택 판단만 요청한다.
 
 - **2026-10-22 01:38 KST FN10 후보 독립 검토 보정**: 첫 독립 문서 검토 C0/I1/M1. I1은 v1 응답유실 뒤 head v2/기준변경 시 원receipt 재확인과 신규 CAS의 순서 충돌로 확인해 현재 인증/제어/정책→exact 기존 명령 replay→신규만 현재 app/basis/출처/head CAS로 보정했다. M1 VIEWER 집계권한 모호함은 최초 OWNER+별도 readNodeDecisions만·VIEWER metadata/존재집계도403/별도계약전미지원으로 좁혔다. 문서 SHA256 037F96A8DC3B770D454FE3226186929B1EC488CD3D0F5ED3BE5170DD83DF726C 양쪽 정본 일치·diff check0이며 두 delta 한정 독립 재확인을 요청했다. 제품/SQL/테스트 실행/환경 변경0, 기존 성공 QA 반복0. 문서 후보만 보존·판단 요청하며 채택/구현/실제 전이 완료가 아니다.
