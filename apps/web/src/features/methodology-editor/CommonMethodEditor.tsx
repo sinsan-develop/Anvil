@@ -11,12 +11,16 @@ import { NodeDeletionPanel } from './NodeDeletionPanel.tsx';
 import { methodIssueNodeTargets } from './method-issue-targets.ts';
 import {NodeBudgetSelection} from './NodeBudgetSelection.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
+import {readMethodDraftFile,importMethodDraft} from './method-draft-import.ts';
 
 export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
   buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;projectId?:string;
 }) {
   const fieldId = useId();
+  const latestBuffer=useRef(buffer);latestBuffer.current=buffer;
+  const [importing,setImporting]=useState(false),[importError,setImportError]=useState<string|null>(null);
+  const importingNow=useRef(false);
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
   useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [savedVersion, setSavedVersion] = useState<number | null>(null);
@@ -28,7 +32,21 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     listForms(client).then(value => { if (current) { setForms(value.items); setFormError(null); } }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setForms([]); setFormError(failure); if (failure.status === 401) onAuthenticationLost(); } });
     return () => { current = false; };
   }, [client, session.user.id, editing]);
-  const locked = pending || !!buffer.preparationId || !!buffer.pending || !!buffer.review?.pending || !!buffer.application?.pending || !!buffer.application?.preparationId;
+  const locked = importing || pending || !!buffer.preparationId || !!buffer.pending || !!buffer.review?.pending || !!buffer.application?.pending || !!buffer.application?.preparationId;
+  async function importFile(file:File){
+    if(locked||importingNow.current||buffer.review||buffer.application)return;
+    const captured=buffer;importingNow.current=true;setImporting(true);setImportError(null);
+    try{
+      if(file.size>2097152)throw new ApiError('METHOD_DRAFT_FILE_INVALID');
+      const raw=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());
+      const draft=readMethodDraftFile(raw,gateway?'PROJECT':'USER_COMMON');
+      if(!active.current||latestBuffer.current!==captured)return;
+      if(captured.dirty&&!confirm('미저장 방법론 입력을 가져온 새 초안으로 바꿀까요? 서버 원본은 보존합니다.'))return;
+      const next=importMethodDraft(captured,session.user.id,draft);
+      onChange(previous=>previous===captured?next:previous);setSavedVersion(null);setError(null);
+    }catch(cause){if(active.current&&latestBuffer.current===captured)setImportError(cause instanceof ApiError?cause.code:'METHOD_DRAFT_FILE_INVALID');}
+    finally{importingNow.current=false;if(active.current)setImporting(false);}
+  }
   function replaceAllowed() { return !locked && (!(buffer.dirty || buffer.review?.dirty || buffer.application?.reason) || confirm('저장하지 않은 편집·내용 검토·적용 입력을 바꿀까요?')); }
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
   function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? { ...item, ...patch } : item) } })); setSavedVersion(null); }
@@ -80,6 +98,9 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section className="status-card"><p role="alert">이 탭의 편집 자료는 다른 로그인 사용자의 자료입니다. 내용을 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭에 남은 다른 사용자의 편집 자료만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyMethodBuffer()); }}>탭의 이전 사용자 편집 닫기</button></section>;
   return <section className="status-card definition-editor" aria-label={gateway ? '프로젝트 방법론 작업' : '공통 방법론 작업'}>
     <h3>{gateway ? '전용 방법론 작성·개정' : '내 방법론 작성·개정'}</h3><p className="meta">내장 원본은 보존합니다. 저장은 초안이며 사용자 확정·프로젝트 적용·Agent 실행이 아닙니다.</p>
+    <label>방법론 초안 JSON 가져오기<input type="file" accept=".json,application/json" disabled={locked||!!buffer.review||!!buffer.application} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void importFile(file);}}/></label>
+    <details><summary>방법론 가져오기 형식</summary><p>기존 초안 저장의 name·purpose·scope·graph·reason JSON만 읽습니다. UTF-8 최대 2MiB, scope는 현재 작성 공간과 같아야 합니다. 가져온 참조는 미검증이며 명령·확정·적용 권한을 가져오지 않습니다. 편집 후 별도로 저장하세요.</p><pre>{JSON.stringify({name:'새 방법론',purpose:'개발 절차 정의',scope:gateway?'PROJECT':'USER_COMMON',graph:{nodes:[],edges:[],entryNodeId:'',terminalNodeIds:[]},reason:'기존 절차 가져오기'},null,2)}</pre></details>
+    {importing?<p role="status">방법론 파일 대조 중</p>:null}{importError?<p role="alert">{importError} · 기존 입력과 명령은 보존했습니다.</p>:null}
     <fieldset disabled={locked}><label>복사본 이름<input value={copyName} onChange={event => setCopyName(event.target.value)} maxLength={200} /></label>
       <button disabled={!source || !copyName.trim()} onClick={copy}>{gateway ? '프로젝트 전용으로 복사' : '내 공통본으로 복사'}</button>
       <button onClick={() => { if (replaceAllowed()) { onChange({ ...emptyMethodBuffer(), ownerUserId: session.user.id, dirty: true }); setError(null); setSavedVersion(null); } }}>새 방법론 작성</button>
