@@ -9,6 +9,7 @@ import { DocumentStageSelector } from './DocumentStageSelector.tsx';
 import { sameStageRef, type StageNodeRef } from './stage-api.ts';
 import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, type DocumentProposalBuffer } from './proposal-api.ts';
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
+import {DocumentAttachments} from './DocumentAttachments.tsx';
 
 export function DocumentEditor({ client, session, buffer, onChange, onSaved, onAuthenticationLost }: { client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
@@ -110,6 +111,7 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
     <label>문서 제목<input value={buffer.title} maxLength={200} readOnly={locked} onChange={event => change({ title: event.target.value })} /></label>
     <label htmlFor={'document-body-' + buffer.documentId}>문서 본문 편집</label><textarea id={'document-body-' + buffer.documentId} value={buffer.body} rows={14} readOnly={locked} onChange={event => change({ body: event.target.value })} />
     <fieldset disabled={locked}><legend>양식 항목의 원문 위치</legend>{buffer.criteria.map(item => <label key={item.criterionId}>{item.title} 시작 줄<input type="number" min="1" value={buffer.content.sections.find(section => section.itemId === item.criterionId)?.anchor.slice(5) ?? ''} onChange={event => { const kept = buffer.content.sections.filter(section => section.itemId !== item.criterionId); change({ content: { ...buffer.content, sections: event.target.value ? [...kept, { itemId: item.criterionId, anchor: 'line:' + event.target.value }] : kept } }); }} /></label>)}</fieldset>
+    <DocumentAttachments key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.baseVersion])} client={client} session={session} buffer={buffer} locked={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>
     <label htmlFor={'document-reason-' + buffer.documentId}>문서 변경 이유</label><textarea id={'document-reason-' + buffer.documentId} value={buffer.reason} rows={2} maxLength={20_000} readOnly={locked} onChange={event => change({ reason: event.target.value })} />
     <div className="project-toolbar"><button disabled={busy || !!buffer.proposalState || !!buffer.importState || !!buffer.importPreparationId || !buffer.pending && (!buffer.dirty || !buffer.title.trim() || !buffer.reason.trim())} onClick={() => { void save(); }}>{buffer.pending ? '같은 저장 명령 결과 확인' : '새 초안 버전 저장'}</button>
       {buffer.documentId && !proposal ? <button disabled={locked || !buffer.dirty || !buffer.reason.trim() || buffer.title !== buffer.baseTitle || !sameStageRef(buffer.stageNodeRef ?? null, buffer.baseStageNodeRef ?? null)} onClick={() => { void propose(); }}>수정 제안으로 저장</button> : null}
