@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN02/UI03 조건의 없는 원 단계 표시·명시 보완 일부**: 미존재참조를 다른 단계처럼 표시하지 않고 exact 원ID를 보존해 보여주며 사용자의 명시 선택→기존별도저장/유실동일명령/재조회로 연결했다. 새현재bundle DOM1 RED→GREEN2.1초/typebuild0·독립C0/I0/M0/08:39:40등록QA잔여0. 실행규칙/서버검사/새API·SQL변경0, 실제DB/정식served·합류/중첩 개별화면/전체FN02·Stage 미검증·미완료. 상세 지문·오류·복구는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN02/UI03 단계 입력·산출 문서 순서 작성 일부**: 기존 배열 저장 계약 안에서 위/아래 이동과 항목·양식·출처·검수 기준 보존을 연결했다. 신규2 RED→인접 포함 unit5 PASS/typebuild0, 현재 bundle 합성 HTTP DOM1 PASS(별도 저장/유실 같은 명령/재조회·잠금),08:29:35 등록 QA 잔여0. 실제DB/정식served·다른 소비자/전체FN02/Stage는 미검증·미완료이며 실행 순서/새API·SQL·권한 변경은 없다. 상세 검토·지문·오류는 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN12/UI05 산출물 직접참조의 격리 실제저장 확인**: exact89de6732 ARTIFACTS단일실행1건phaseDONE/exit0에서새합성파일upload→수기ref/submitCOMMIT·별도app-role원문/hash/4표+1→유실같은명령추가0·보호reader실bytes/hash/타인404를확인했다. cases8은marker8개/시험8아님·옛명령/시험/changes검사0. 59SQL동일·정식3서비스불변·08:21:01독립QA경로/PG/netID·label/process잔여0. 실Agent/시험진위/정식served브라우저DB·전체FN12/Stage미완료, 상세ID/원오류/범위는WORK_STATUS를따른다.

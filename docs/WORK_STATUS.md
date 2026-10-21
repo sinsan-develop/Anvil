@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 Stage B FN02/UI03 없는 조건 단계 원참조 표시·직접 보완 / Main 어울**: ConditionEditor가 미존재 nodeId의 exact 원값 option을 표시한다. 기존 조건을 자동 바꾸거나 실제 단계가 있다고 판정하지 않으며, 사용자 명시 선택 때 nodeId만 바꿔 기존 별도저장 경로를 소비한다. 선택 전 비교값/전체graph·POST0, 정정 후 다른필드불변·유실같은명령/입력잠금/재조회를 현재bundle 합성HTTP로 확인했다. DOM1 RED(원값option 기대1/실제0)→최소한줄수정→type/build exit0·343modules293ms→DOM1 GREEN2.1초. 기준완화/timeout연장0·기존chunk500k/NO_COLOR경고유지다.
+  - 검토/정리: scoped read-only 독립 C0/I0/M0·실행수정0, 제품SHA B96CFEC03CBE1B82A6332559283713F00FBA81674BF432D6604B8256A63E9DE7, bundle index-BUzfYxAz.js SHA8BA1E9730BD189E4F337D556AEF5D1AD2164C1A892314CAC932E074D6F622A1E. RED01 일회4파일08:38:26회수/08:38:54독립부재, GREEN02 일회2파일08:39:36회수·08:39:40독립양경로false/관련process0. exactrealpath/owner/nonlink/process/hash 확인 뒤 등록자원만제거해복구불가·소스Git보존이다.
+  - 범위/다음: 실제DB/정식served·합류/중첩 개별화면·다른소비자/전체FN02·Stage·계획완료는 미검증·미완료다. 새API/SQL/권한/서비스/Agent0, 보호6/main·미채택/특정거절불변. 소유제품1·시험2·정본기록2 정확5경로만같은branch보존한다. 일반revert가rollback후보/실행0, 다음 미완료 사용자 기능은 Main이 정본·실코드 대조해 선정한다.
+
+- **FN02 조건 최소수정/typebuild 확인**: 기존값을 바꾸지 않고 없는 nodeId의 option만 표시하도록 ConditionEditor 한줄변경. type/build exit0·343modules293ms, 제품B96CFEC03CBE1B82A6332559283713F00FBA81674BF432D6604B8256A63E9DE7·bundle index-BUzfYxAz.js 8BA1E9730BD189E4F337D556AEF5D1AD2164C1A892314CAC932E074D6F622A1E. RED01정리08:38:26/독립08:38:54 pathfalse, GREEN02는기등록범위에서새bundle단일동작만실행한다. 기존chunk500k경고유지/검사완화0이다.
+
+- **FN02 조건 단계 표시 RED 확인**: 현재 기준 bundle에서 신규 DOM1은 기대한 없는 단계 option1이 실제0으로 실패(exit1·5000ms 기대 대기)하여 원 참조 미표시를 재현했다. timeout 연장/기준 완화0이며 자동쓰기 전 구간이다. RED 등록 경로는 exact realpath/owner/nonlink/process0·파일hash 대조 후 제거했다. 다음은 기존조건을 바꾸지 않는 누락 option 최소수정과 새bundle GREEN이다.
+
+- **FN02 조건 원참조 QA 사전등록**: Windows 새 D:\tmp\anvil-v3-stage-b\ui03-missing-condition-node-01(RED)/ui03-missing-condition-node-02(GREEN), 각각 temp/results·owner SINSAN\cyhuh·생성전부재/부모realpath/owner/nonlink 확인·생성후최대5분·외부120초/기존15초유지. 현재기준bundle에서새MISSING_CONDITION_NODE1건만결함RED→최소수정/typebuild→새bundle동일1건GREEN으로대조한다. 각종료exactowner/link/process/hash확인후등록일회경로만정리·독립부재확인, 실DB/정식서비스/Agent/Secret/포트0이다.
+
+- **2026-10-22 Stage B FN02/UI03 조건 원본 단계 보완 착수 / Main 어울**: 기준31cae5b5·소유tracked clean/보호6보존. 카드의 조건정의·validation 보완 경로에서 ConditionEditor 판단 단계 select가 없는 nodeId의 option을 제공하지 않아 원 참조를 화면에서 식별하지 못하는 공백을 확인했다. 없는 원 단계 ID를 명시 표시하고 사용자 선택으로만 고쳐 기존 별도저장/같은명령/조회로 연결한다. 기존조건/검사·API/SQL/권한/서비스/Agent 변경0. 완료조건은 미존재참조의 원문 표시→다른필드불변/자동POST0→직접수정/별도저장/재조회이며 이번 새구간만 검증한다. 탐색에서 없는 work-plans/UI10 unit 경로 조회오류2는 inventory로정정·변경0이다.
+
 - **FN02 순서 변경 scoped 독립 검수**: 현재 제품2파일/전용시험 delta를 독립 read-only 검토하여 C0/I0/M0, 전달한 제품 SHA256 일치를 확인했다. 검수자의 실행·수정0이며 Main의 단위/합성 HTTP 화면 증거와 구분한다. 실제DB/정식served·다른 소비자·모든 주체/제어 전환은 미판정이다. 소유 제품2·시험3·WORK_PLAN/WORK_STATUS 정확7경로만 기존 승인 branch에 보존한다.
 
 - **2026-10-22 FN02/UI03 입력·산출 문서 순서 변경 일부 / Main 어울**: 기존 추가/제거에 위·아래 이동을 연결했다. 문서 itemId·양식 exact 참조·required·sourceNodeId·reviewCriteria와 반대 목록을 보존하며 초안 배열만 변경한다. 별도 저장·응답 유실 시 같은 명령 재확인·재조회, 경계 및 기존 명령 잠금을 유지한다. 실행 절차 순서·API/SQL/권한/정식 서비스·Agent 변경0이다.
