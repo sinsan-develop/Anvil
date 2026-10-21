@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10 사람 결정 저장 선행 후보**: 기존 §13.2/USER_DECISION의 실제 저장 선행을 `docs/contracts/FN10_HUMAN_DECISION_CANDIDATE.md`에 한정 구체화했다. PROPOSED/NOT_ADOPTED 문서이며 새 명령/불변 자료·OWNER/별도 정책·현재 기준 reader/소비 결박의 정확 delta 판단 전 제품/SQL 채택0. HUMAN USER 유한 문자열·현재 권한/CAS·정정철회/replay·향후소비경합·총괄/평가 미연결412·실DB/Agent/자동전이0. 독립 문서 검토 후 후보SHA 전달, 기능/전이 구현완료로 세지 않는다.
+
 - **2026-10-22 FN10/UI11 기존 비용 저장오류 보완**: 빈비용이0원으로동결되는문제를원문보존/명시거절로수정했고기존명시0·소수/회수·유실재확인을유지했다. 신규1+인접7단위8·DOM신규3/인접2=5/typebuild·한정C0/I0/M0/QA잔여0범위이며신규기능/evaluateNext진도로세지않는다. 실제전이는ACCEPTED물리/입력거절·관측PROVIDER_CLAIM_ONLY·typed결정source/저장결박선행을PMO에구체보고, 기존안내/순수계산반복0·정식DB/권한/Agent0이다. 원오류/지문/미검증은WORK_STATUS를따른다.
 
 - **2026-10-22 FN10/UI05 선택 검수의 다음 행동 근거 일부**: 기존고정결과/명시선택검수·임무와현재적용본을대조해선택단계보완검토/사람차단판단을조회연결했다. 신규4+인접3단위7/typebuild·최종DOM분리4+1·독립보강한정C0/I0/M0/QA잔여0범위다. 실제완료/총괄typed판정/실행상태·모드/분기/합류provider와전체evaluateNext/FN10은미완료이며SYNTHETIC_ONLY/실행false를유지한다. 새API/SQL/실DB/권한/Agent0, 원실패/지문/범위는WORK_STATUS를따른다.
