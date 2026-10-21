@@ -221,6 +221,8 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    Object.assign(reportDraft,{executionId:scope.executionRef.id,executionVersion:String(scope.executionRef.version),executionHash:scope.executionRef.contentHash,rows:[{criterionId:'flow',testId:'FLOW-01',reason:'실제 Agent/browser 미실행'}],risks:'격리 합성 실행에 대한 직접 작성 주장',rollback:'원문 불변 보존'});
    reportDraft.tests=[{criterionId:'flow',testId:'FLOW-01',expected:'저장 후 조회',actual:'합성 제출이며 실제 실행 아님',status:'NOT_EXECUTED'},{criterionId:'flow',testId:'FLOW-02',expected:'일치',actual:'수행자 실패 주장',status:'FAIL'}];
    reportDraft.changes=[{path:'src/new.ts',kind:'ADDED',beforeHash:'',afterHash:'a'.repeat(64)},{path:'src/current.ts',kind:'MODIFIED',beforeHash:'b'.repeat(64),afterHash:'c'.repeat(64)},{path:'src/old.ts',kind:'DELETED',beforeHash:'d'.repeat(64),afterHash:''}];
+   const declaredRef={...scope.executionRef,version:String(scope.executionRef.version)};
+   reportDraft.commands=[{profile:structuredClone(declaredRef),cwd:structuredClone(declaredRef),host:structuredClone(declaredRef),argv:'node\n--version',startedAt:'',finishedAt:'',exitCode:'1'}];
    const frozen=structuredClone(reportDraft),before=await manualCounts(),buffer=await prepareManualResultReport(reportDraft,selectedAssignment,session,1);
    buffer.pending=await prepareResultSubmitCommand(buffer,session,true);
    const pending=structuredClone(buffer.pending);
@@ -236,6 +238,8 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    const committed=await manualCounts();for(const table of Object.keys(before))assert.equal(committed[table],before[table]!+1,table);
    const separate=(await pool.query('SELECT manifest_hash,content_hash,snapshot_json FROM anvil.result_submissions WHERE project_id=$1 AND id=$2',[project,buffer.submissionId])).rows[0];
    assert(separate);assert.deepEqual(separate.snapshot_json.manifest,buffer.manifest);assert.equal(separate.manifest_hash,hash(buffer.manifest));assert.equal(separate.content_hash,hash(separate.snapshot_json));
+   assert.deepEqual(separate.snapshot_json.manifest.commandResults,[{profileRef:scope.executionRef,cwdRef:scope.executionRef,hostRef:scope.executionRef,executionRef:scope.executionRef,argv:['node','--version'],startedAt:null,finishedAt:null,exitCode:1,outputRef:null,evidence:[]}]);assert.equal(separate.snapshot_json.evidenceProvenanceVerified,false);
+   cases.push('MANUAL_COMMAND_CLAIM_SEPARATE_COMMIT_UNVERIFIED_REFS');
    cases.push('MANUAL_TESTS_AND_CHANGES_SEPARATE_APP_ROLE_COMMIT_FOUR_TABLES_PLUS_ONE');
    phase='MANUAL_REPORT_SAME_COMMAND_REPLAY';
    const receipt=await sendResultSubmission(lossy,buffer,session,()=>true);assert.equal(posts,2);assert.deepEqual(buffer.pending,pending);assert.deepEqual(await manualCounts(),committed);assert.equal(receipt.completionAccepted,false);assert.equal(receipt.executionAuthorized,false);assert.equal(receipt.dispatchPerformed,false);
@@ -247,6 +251,7 @@ test(manualReportQa?'FN12직접보고시험과파일변경→실PGCOMMIT/유실�
    phase='MANUAL_REPORT_NEGATIVES';
    const bad=structuredClone(reportDraft);bad.changes![0]!.path='../outside.ts';await assert.rejects(prepareManualResultReport(bad,selectedAssignment,session,1));
    const secret=structuredClone(reportDraft);secret.tests![0]!.actual='password=synthetic-qa-only-value';await assert.rejects(prepareManualResultReport(secret,selectedAssignment,session,1));
+   const commandSecret=structuredClone(reportDraft);commandSecret.commands![0]!.argv='node\n--token\nsynthetic-invalid-marker';await assert.rejects(prepareManualResultReport(commandSecret,selectedAssignment,session,1));
    const tampered=structuredClone(buffer);tampered.manifest.rollback='변조';await assert.rejects(sendResultSubmission(lossy,tampered,session,()=>true));assert.equal(posts,2);
    const outside=await app.inject({method:'GET',url:'/api/v1/projects/'+project+'/results/'+buffer.submissionId,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+outsider.token}});assert.equal(outside.statusCode,404);assert.deepEqual(await manualCounts(),committed);
    cases.push('PATH_SECRET_TAMPER_PRE_POST_DENIED_OUTSIDER_NO_ORIGINAL');
