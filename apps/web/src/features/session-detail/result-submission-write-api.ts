@@ -2,6 +2,7 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {postDocumentCommand,type DocumentSession,type DocumentWrite} from '../design-trace/editor-api.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
+import type {ManualResultReportStorage} from './manual-result-report.ts';
 
 type Scope={projectId:string;assignmentRef:PlanRef;executionRef:PlanRef};
 export interface ResultSubmissionReceipt {submissionId:string;manifestRef:PlanRef;registeredAt:string;sourceKind:'WORKER_CLAIM';completionAccepted:false;executionAuthorized:false;dispatchPerformed:false}
@@ -11,7 +12,7 @@ export interface ResultSubmissionBuffer {
  pending:DocumentWrite|null;result:ResultSubmissionReceipt|null;uncertain:boolean;dirty:boolean;
  failure:{code:string;status:number}|null;executionAuthorized:false;
 }
-export interface ResultSubmissionBuffers {buffers:Record<string,ResultSubmissionBuffer|null>;onChange:(key:string,change:(value:ResultSubmissionBuffer|null)=>ResultSubmissionBuffer|null)=>void}
+export interface ResultSubmissionBuffers {buffers:Record<string,ResultSubmissionBuffer|null>;onChange:(key:string,change:(value:ResultSubmissionBuffer|null)=>ResultSubmissionBuffer|null)=>void;manual?:ManualResultReportStorage}
 const uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const exact=(v:any,keys:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const ref=(v:any):v is PlanRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash);
