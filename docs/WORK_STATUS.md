@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 07:32 KST FN04/UI06 작업계획 초안 파일 보관·이어쓰기 일부 / Main 어울**: 현재 편집 input5필드를 동일 import검사로 검증한 뒤 Blob 명시 다운로드를 연결했다. 실제파일 바이트를 기존import로 복원→기존별도save/유실동일명령/재조회하며 현재buffer변경·잠금·읽기중 옛URL숨김/폐기·unmount cleanup경로를 유지한다. export도 owner/현재문서·설계index·검토ref/형식/비밀/명령 잠금검사에 결박되고 권한/승인/확정/실행·새API/SQL·정식서비스/Agent·전체백업을 추가하지 않는다.
+  - 증거/원실패: export신규1RED162.711ms→이전입력2+신규1=3PASS159.7996ms, 현재bundle 내보내기버튼부재RED1(15000)→typebuild0/338modules270ms·다운로드바이트5필드/수정시정확URLrevoke/재import·별도저장재조회 왕복1PASS. 같은실행의비밀시험1은 입력선택자 fill대기 timeout15000이어서 해당2건전체PASS가아니다(원1PASS/1FAIL18.4s보존). 실패snapshot에서해당textbox존재를대조해 정확role/name선택자로만 바꾸고 비밀거절1freshPASS2.8s를확인했다. timeout/기대값/제품변경0이며 최초label대기의직접원인은미확정이다. scoped독립C0/I0/M0·실행/수정0은제품/추가왕복시험기준이며 마지막selector delta는Main한정시험이다. 기존chunk500k/NO_COLOR경고유지.
+  - 지문/정리/한계: helperBD448512C7E5AF285930274324AAF7AEBC788545777D54ED8453FBB7521A53F6, componentE4A6469CD6D06E1DB0564A59F1217407DEB0DD70ECD877EB330A8DC977A02A53, bundle index-3F7VLt3U.js FC85909F3CD4A185B932069CEB454B5F073DB19AF8578CA9AFAF21FCE13DED4A. QA02는07:31:59 exactroot/owner/nonlink/process/hash뒤일회2산출물제거·07:32:02별도pathfalse/process0·생성5분내이다. 산출물복구불가/sourceGit보존. 실제DB/served·모든주체/client/언마운트회수조합·완전비밀탐지·서버의계획의미/실권한검증·전체FN04/Stage/계획완료는미확인·미완료다. 소유7경로만같은branch보존·보호6/main·미채택/특정거절유지·일반revert가rollback후보/실행0.
+
+- **FN04 파일 왕복 QA02 사전등록**: export함수부재RED162.711ms→기존2+신규1=unit3PASS159.7996ms. Windows 신규 D:\tmp\anvil-v3-stage-b\ui06-plan-file-02(temp/results), owner SINSAN\cyhuh·생성전부재/부모실경로·link/owner확인·생성후5분/외부120초/기존15초유지. 현재bundle 명시Blob다운로드byte→입력변경시URL회수→실제파일import→별도save/유실같은명령/재조회와 비밀거절만확인한다. 종료exactowner/link/process/hash뒤등록경로만삭제·별도잔여0, 실DB/served/서비스·Agent/Secret/포트0.
+
+- **2026-10-22 FN04/UI06 파일 보관→이어쓰기 반대 연결 착수 / Main 어울**: ff68e1f8 가져오기 완료부분을 다시실행하지않고 현재편집본을같은기존5필드로명시다운로드하도록연결한다. export도기존import동일owner/현재기준·명령잠금/형식/비밀검사를소비하며 명령/권한/승인·확정/프로젝트전체자료를추가하지않는다. 신규내보내기unit RED162.711ms(함수부재) 확인. 기존화면에서파일실제다운로드→편집변경시옛URL폐기→같은파일import복원→별도save/유실같은명령/재조회만검증한다. 새API/SQL/정식DB/서비스/Agent0.
+
 - **FN04 파일 입력 독립 scoped 검토**: 기존 담당 read-only C0/I0/M0·실행/수정0. helper5940F951/component7E58398C와 현재 취소·LATE 시험을 대조했다. 실제 DB/served/권한·모든주체/언마운트·완전비밀탐지·계획 의미 적합성은 미판정이며 Main의 한정시험을 전체수용으로 승격하지 않는다.
 
 - **2026-10-22 07:24 KST FN04/UI06 작업계획 초안 파일 입력 일부 / Main 어울**: 기존 저장 payload 5필드만 읽어 현재 문서 base/documentRef·designIndex/designRef·screenReviewRefs exact 결박을 확인하고 tasks/reason만 사용자 교체 확인 뒤 로컬 초안에 반영했다. 기존 카드 shape 검사를 export 별칭1줄로 재사용하며 기존 reader/서버 검사 기준은 불변이다. owner·parent pending/디자인index작성/proposal/import·미확인/sent/result/approval/decision/trace 잠금과 async exactbuffer CAS/읽기중 새입력·이탈폐기를 유지한다. 문서 원문·설계/검토/승인/확정·명령/저장 대상과 과거 서버본은 자동 변경하지 않는다. 새 API/SQL/권한/정식 서비스·Agent/전체 백업0.

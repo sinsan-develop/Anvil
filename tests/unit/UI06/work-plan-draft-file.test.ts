@@ -16,3 +16,8 @@ test('다른 기준·명령/승인 혼입·잠금·소유자·비밀·중복key�
   const before=structuredClone(b),raw=mode==='duplicate'?JSON.stringify(payload).replace('"reason":','"reason":"discarded","reason":'):JSON.stringify(payload);assert.throws(()=>run(b,raw),e=>e instanceof Error&&'code'in e&&String(e.code).startsWith('WORK_PLAN_DRAFT_FILE_'));assert.deepEqual(b,before);
  }
 });
+test('작업계획 내보내기도 같은 기준/형식/잠금 검사를 거치고 권한·명령/상태 없이 왕복한다',()=>{
+ assert.equal(typeof m.exportWorkPlanDraftFile,'function');const {b,input}=fixture(),before=structuredClone(b),raw=m.exportWorkPlanDraftFile(b,session),next=run(b,raw);
+ assert.deepEqual(JSON.parse(raw),input);assert.deepEqual(next.workPlanState.input,input);assert.deepEqual(b,before);
+ for(const mode of ['secret','pending','owner']){const {b}=fixture();if(mode==='secret')b.workPlanState.input.reason='password=synthetic-export-marker';if(mode==='pending')b.workPlanState.pending={};if(mode==='owner')b.ownerUserId='33333333-3333-4333-8333-333333333333';assert.throws(()=>m.exportWorkPlanDraftFile(b,session));}
+});

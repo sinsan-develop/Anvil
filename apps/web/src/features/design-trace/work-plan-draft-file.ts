@@ -3,6 +3,10 @@ import type {DocumentBuffer,DocumentSession} from './editor-api.ts';
 import {workPlanCardShape} from './work-plan-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 function fail(code='WORK_PLAN_DRAFT_FILE_INVALID'):never{throw new ApiError(code);}
+export function exportWorkPlanDraftFile(buffer:DocumentBuffer,session:DocumentSession):string{
+ if(!buffer.workPlanState)fail('WORK_PLAN_DRAFT_FILE_LOCKED');
+ const raw=JSON.stringify(buffer.workPlanState.input);importWorkPlanDraftFile(buffer,session,raw);return raw;
+}
 /** 현재 문서/설계/검토 참조를 그대로 둔 카드 입력이다. 저장/권한/확정/구조 검수 증거가 아니다. */
 export function importWorkPlanDraftFile(buffer:DocumentBuffer,session:DocumentSession,raw:string):DocumentBuffer{
  const s=buffer.workPlanState;
