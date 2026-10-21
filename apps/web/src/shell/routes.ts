@@ -1,7 +1,7 @@
 export type Screen = 'projects' | 'create' | 'methodologies' | 'workspace' | 'session' | 'documents' | 'changes' | 'approvals' | 'transfers' | 'knowledge' | 'connections' | 'control' | 'mobile' | 'settings' | 'not-found';
 export interface PlanTaskSelection{planRef:{id:string;version:number;contentHash:string};taskCode:string}
 export interface DocumentVersionSelection{id:string;version:number;contentHash:string}
-export interface Route { screen: Screen; projectId: string | null; assignmentRef?:{id:string;version:number;contentHash:string};approvalRequestId?:string;planTask?:PlanTaskSelection;documentRef?:DocumentVersionSelection }
+export interface Route { screen: Screen; projectId: string | null; assignmentRef?:{id:string;version:number;contentHash:string};approvalRequestId?:string;planTask?:PlanTaskSelection;documentRef?:DocumentVersionSelection;mobileScreen?:'approvals' }
 export const screenTitles: Record<Screen, string> = {
   projects: '프로젝트', create: '프로젝트 만들기', methodologies: '방법론', workspace: '프로젝트 작업', session: '단계책임자·실행',
   documents: '문서·설계 추적', changes: '설계 변경', approvals: '승인·중요 문제', transfers: '도구 이전', knowledge: '헌법·지식',
@@ -12,6 +12,8 @@ export function parseRoute(hash: string): Route {
   if (path === '/projects') return { screen: 'projects', projectId: null };
   if (path === '/projects/new') return { screen: 'create', projectId: null };
   if (path === '/methodologies' || path === '/settings') return { screen: path.slice(1) as Screen, projectId: null };
+  const mobile=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/mobile\/approvals$/.exec(path);
+  if(mobile)return{screen:'mobile',projectId:mobile[1]!,mobileScreen:'approvals'};
   const document=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/documents\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})$/.exec(path);
   if(document&&Number.isSafeInteger(Number(document[3])))return{screen:'documents',projectId:document[1]!,documentRef:{id:document[2]!,version:Number(document[3]),contentHash:document[4]!}};
   const task=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/workspace\/plans\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})\/tasks\/([A-Za-z][A-Za-z0-9_-]{0,63})$/.exec(path);
