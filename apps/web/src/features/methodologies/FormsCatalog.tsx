@@ -4,6 +4,7 @@ import { getForm, listForms, type FormsPage, type FormVersion } from './forms-ap
 import { CommonFormEditor } from './CommonFormEditor.tsx';
 import type { FormBuffer } from './form-editor-state.ts';
 import { FormReviewPanel } from './FormReviewPanel.tsx';
+import { FormVersionComparison } from './FormVersionComparison.tsx';
 
 export function FormsCatalog({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void }) {
   const selectId = useId();
@@ -38,7 +39,7 @@ export function FormsCatalog({ client, session, buffer, onChange, onAuthenticati
       {page?.items.map(item => <option value={item.ref.id} key={item.ref.id}>{item.formCode} {item.name}</option>)}
     </select><button disabled={pending} onClick={() => selected ? setDetailRetry(value => value + 1) : setListRetry(value => value + 1)}>양식 다시 조회</button></div>
     {pending ? <p role="status">양식을 조회하고 있습니다.</p> : null}
-    {error ? <p role="alert">{error.message}{detail ? ' 앞선 본문은 오래된 자료입니다.' : ''}</p> : null}
+    {error ? <p role="alert">{error.message} · {error.code}{detail ? ' 앞선 본문은 오래된 자료입니다.' : ''}</p> : null}
     {page && !page.items.length ? <p>조회 가능한 양식이 없습니다.</p> : null}
     {detail ? <article aria-label="선택 양식 원본">
       <h3>{detail.definition.formCode} {detail.definition.name}</h3>
@@ -53,6 +54,7 @@ export function FormsCatalog({ client, session, buffer, onChange, onAuthenticati
       <details><summary>문서 작성 공통 기준 원문</summary><p className="meta">버전 {detail.authoringStandard.ref.version} · {detail.authoringStandard.ref.contentHash}</p><pre className="document-plain" role="region" aria-label="작성 기준 원문">{detail.authoringStandard.content}</pre></details>
       {detail.definition.scope === 'SYSTEM' ? <p>문서 내용 검수·사용자 확정은 아직 수행하지 않았습니다.</p> : null}
     </article> : null}
+    {detail && !pending && !error && selected?.ref.id === detail.ref.id && selected.ref.version === detail.ref.version && selected.ref.contentHash === detail.ref.contentHash ? <FormVersionComparison key={[session.user.id,session.clientId,detail.ref.id,detail.ref.version,detail.ref.contentHash].join(':')} client={client} base={detail} onAccessLost={failure} /> : null}
     <CommonFormEditor client={client} session={session} source={!pending && !error ? detail : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={() => setListRetry(value => value + 1)} />
     {detail && !pending && !error ? <FormReviewPanel client={client} session={session} source={detail} buffer={buffer} onChange={onChange} onVerified={setDetail} onAuthenticationLost={onAuthenticationLost} /> : null}
     <p className="meta">양식 복사·항목 개정·초안 저장은 문서 작성·내용 검토·확정이나 Agent 실행이 아닙니다. 방법론 단계 연결과 산출물 편집·확정은 아직 연결 전입니다.</p>

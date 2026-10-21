@@ -45,7 +45,7 @@ export async function getPinnedForm(client: ApiClient, ref: VersionRef): Promise
   if (!data?.definition || !['SYSTEM','USER_COMMON'].includes(data.definition.scope) || typeof data.definition.name !== 'string' || !data.definition.name.trim() || typeof data.definition.formCode !== 'string' || !data.definition.formCode.trim()) throw new ApiError('RESPONSE_INVALID');
   return readFormVersion(data, { ref, name: data.definition.name, formCode: data.definition.formCode, scope: data.definition.scope as FormSummary['scope'] });
 }
-function readFormVersion(data: FormVersion, summary: FormSummary): FormVersion {
+export function readFormVersion(data: FormVersion, summary: FormSummary): FormVersion {
   const form = data?.definition;
   const draft = summary.scope === 'USER_COMMON';
   if (!data || !sameRef(data.ref, summary.ref) || !form || form.name !== summary.name || form.formCode !== summary.formCode || form.scope !== summary.scope

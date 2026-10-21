@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
+import { installWorkspaceBundle } from '../UI04/bundle.ts';
 
 const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url)));
 const unexpected = new WeakMap<object, string[]>();
 test.beforeEach(async ({ page }) => {
+  await installWorkspaceBundle(page);
   unexpected.set(page, []);
   await page.route('**/api/v1/**', route => { unexpected.get(page)!.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 503, json: { code: 'UNEXPECTED_QA_API' } }); });
   await page.route('**/api/v1/session', route => route.fulfill({ json: { user: { id: catalog.forms[0]!.ref.id, displayName: '양식 조회 QA' }, clientId: catalog.forms[0]!.ref.id, csrfToken: 'A'.repeat(43) } }));
