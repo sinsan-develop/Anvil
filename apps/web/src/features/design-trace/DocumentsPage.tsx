@@ -26,9 +26,12 @@ import {StoredDocumentAttachments} from './StoredDocumentAttachments.tsx';
 import {newSourceDetach,type SourceDetachBuffer,type SourceDetachChange} from './source-detach-api.ts';
 import {SourceDetachEditor} from './SourceDetachEditor.tsx';
 import type {SourceLinkView} from './source-links-api.ts';
+import {DocumentStageFilter} from './DocumentStageFilter.tsx';
+import type {StageNodeRef} from './stage-api.ts';
 
 export function DocumentsPage({ client, projectId, session, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; onAuthenticationLost: () => void }) {
   const [showPlans,setShowPlans]=useState(false);
+  const [stageFilter,setStageFilter]=useState<{ref:StageNodeRef;name:string}|null>(null);
   const [page, setPage] = useState<DocumentPage | null>(null), [cursor, setCursor] = useState<string | null>(null), [refresh, setRefresh] = useState(0);
   const [listError, setListError] = useState<ApiError | null>(null), [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<DocumentSummary | null>(null), [version, setVersion] = useState('');
@@ -49,15 +52,19 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
     if(sourceDetach||!onSourceDetachChange||!opened||item.projectId!==projectId||item.documentRef.id!==opened.document.id||item.documentRef.version!==opened.document.version||item.documentRef.contentHash!==opened.document.contentHash)return;
     try{const next=newSourceDetach(projectId,item,session);onSourceDetachChange(p=>p??next);}catch(cause){setEditingError(cause instanceof ApiError?cause:new ApiError('SOURCE_DETACH_INPUT_INVALID'));}
   }
+  function selectListStage(value:{ref:StageNodeRef;name:string}|null){
+    generation.current++;setReading(false);setSelected(null);setOpened(null);setVersion('');setRegisteredView(null);setAnchorSelection(null);setShowComparison(false);setShowDesignIndex(false);setShowSourceLinks(false);setReadError(null);
+    setPage(null);setCursor(null);setListError(null);setStageFilter(value);
+  }
   useEffect(() => () => { generation.current++; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setListError(null);
-    listDocuments(client, projectId, cursor).then(value => { if (current) setPage(previous => cursor && previous ? { ...value, items: [...new Map([...previous.items, ...value.items].map(item => [item.id, item])).values()] } : value); }).catch((cause: unknown) => {
+    listDocuments(client, projectId, cursor,stageFilter?.ref).then(value => { if (current) setPage(previous => cursor && previous ? { ...value, items: [...new Map([...previous.items, ...value.items].map(item => [item.id, item])).values()] } : value); }).catch((cause: unknown) => {
       if (!current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setListError(error);
       if ([401, 403, 404].includes(error.status)) { generation.current++; setReading(false); setPage(null); setSelected(null); setOpened(null); setRegisteredView(null); setAnchorSelection(null); if (error.status === 401) onAuthenticationLost(); }
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [client, projectId, cursor, refresh]);
+  }, [client, projectId, cursor, refresh,stageFilter]);
   async function open(item: DocumentSummary, requested: number) {
     setShowSourceLinks(false);
     const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
@@ -161,9 +168,11 @@ export function DocumentsPage({ client, projectId, session, buffer, onChange, re
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
     <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
+      {stageFilter?<><p>목록 조회 조건: {stageFilter.name}</p><p className="meta">적용본 {stageFilter.ref.applicationId} · 단계 {stageFilter.ref.nodeId} · 미연결/다른 단계 문서 제외</p><button type="button" disabled={starting} onClick={()=>selectListStage(null)}>전체 단계 문서로 돌아가기</button></>:null}
+      {opened&&!reading&&!readError&&!loading&&!listError?<DocumentStageFilter key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash,opened.document.formRef])} client={client} projectId={projectId} formRef={opened.document.formRef} disabled={starting} onSelect={selectListStage} onAuthenticationLost={onAuthenticationLost}/>:null}
       <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer?.proposalState || !!(buffer?.designIndexState||buffer?.workPlanState) || !!buffer?.importState || !!buffer?.importPreparationId || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
       {loading ? <p role="status">목록 조회 중</p> : null}{listError ? <p role="alert">{listError.message} · {listError.code}{page ? ' · 앞선 목록은 오래된 자료' : ''}</p> : null}
-      {page && !loading && !listError && !page.items.length ? <p>저장된 문서가 없습니다.</p> : null}
+      {page && !loading && !listError && !page.items.length ? <p>{stageFilter?'이 단계 조회 조건에 맞는 문서가 없습니다. 다른 단계/미연결 문서는 포함하지 않습니다.':'저장된 문서가 없습니다.'}</p> : null}
       <ul>{page?.items.map(item => <li key={item.id}><button disabled={reading || !!listError || loading} aria-label={item.title + ' 열기'} aria-pressed={selected?.id === item.id} onClick={() => { void open(item, item.headVersion); }}>{item.title}</button><p className="meta">최신 {item.headVersion} · {item.confirmedVersion === null ? '미확정' : '확정 ' + item.confirmedVersion}</p></li>)}</ul>
       {page?.hasMore ? <button disabled={loading || !!listError} onClick={() => setCursor(page.nextCursor)}>다음 문서 더 보기</button> : null}
       {page ? <p className="meta">관측 {new Date(page.observedAt).toLocaleString('ko-KR')}</p> : null}
