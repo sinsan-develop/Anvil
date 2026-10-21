@@ -1,5 +1,10 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-21 14:34 KST FN03 격리 QA 후속 관측
+
+- 신규 일회 FN03 Git exact2034a4d1/PG15·Node/internal net 검증은 WORKFLOW_DONE/exit0. 등록 QA 두 경로와 owner container/network/해당 Node process는 별도 SSH exit0으로 잔여0을 확인했다. 새 tmpfs DB/합성 원문·config는 폐기했고 정식 자원/기존 Secret 변경0이다. 상세 `04_test_reports/AV3/FN03_ISOLATED_DOCUMENT_RESULT.md`.
+- 정식PG metadata만 읽은 결과: fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba·현재 **exited**·StartedAt2026-10-20T11:21:54.792276193Z·restart0·image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f. ID/StartedAt/image는 아래10/20 기록과 같으나 과거running과현재상태는다르다. 이번시험시작전정식PG상태관측은없으므로중지시점/원인미확정이며자동재기동하지않는다. 이번QA명령의정식PG시작/중지/DB접속0. API/Web·현재정식schema/실화면은다시조회하지않았으므로아래기록을신규관측으로취급하지않는다.
+
 ## 2026-10-20 20:22~20:23 KST 정식 PG metadata 관측 — API/Web는 중단
 
 - 이후20:57:38~21:07:38KST의새단발범위에서source95086727 migrator READ ONLY metadata1회exit0/정상close:DB18505063bytes·다른접속각집계0·표81/소유불일치·SELECT불가·RLS집계각0을확인했다. source46manifest를다시읽지않았고dump/복원/DDL·서비스0이다. 등록일회두경로는정확회수/독립부재·PG같은StartedAt/running·3830=0/5546=1/backup경로부재확인,이번양성관측은미래writer0/덤프권한·복원인증아니다. 상세BACKUP_READINESS_METADATA_RESULT/WORK_STATUS를따른다.
