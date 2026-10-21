@@ -732,6 +732,8 @@ GET assignments/:id는 불변 임무/부모·자식·책임 역할/세션 bindin
 
 ### 13.2 FN10 자동/건별·분기·한도·queue
 
+- 2026-10-22 UI05 한정 소비: `readNextActionBasis`는 이미 명시선택한 결과·검수·확정임무의 hash/귀속을대조하고 기존 result-reviews GET 원문과 methodology-application GET의 현재 exact application/node를 재확인한다. 선택 REWORK는 해당단계의 보완검토, BLOCKED는 사람의 차단해제판단만 안내한다. 원결과 SYNTHETIC_ONLY는보존하며 실제 실행상태·총괄/사람의완료판정·AUTO/CASE/분기/합류provider가아니다. 현재적용변경/권한거절·이탈은이전값대체없이거절/폐기한다. sourceAssurance는보관검수+조회시점현재방법론에만한정하고 completionAccepted/runtimeStateVerified/automaticTransitionPerformed/executionAuthorized/dispatchPerformed=false다. 새서버API·DB·승인/명령·자동보완준비/dispatch는없으며 전체evaluateNext는후속미완료다.
+
 #### FN10 WAITING 요청의 첫 서버 소비 — 미적용 SQL/소스 부분 구현
 
 - 기존 project POST commands에 startStage/cancelQueuedRequest를 연결하고 GET `/api/v1/projects/:projectId/queue`는 HUMAN·same-host·query 없음으로 제공하는 소스다. DB 적용·화면/served·scheduler/Agent는 미검증이다. 신규 연산을 기존 사용자 정책에 자동 추가하지 않는다. 별도 명시 AUTO 정책만 허용하고 REQUIRE_APPROVAL/approvalRef는 STAGE_QUEUE_APPROVAL_NOT_CONNECTED로 거절한다.

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10/UI05 선택 검수의 다음 행동 근거 일부**: 기존고정결과/명시선택검수·임무와현재적용본을대조해선택단계보완검토/사람차단판단을조회연결했다. 신규4+인접3단위7/typebuild·최종DOM분리4+1·독립보강한정C0/I0/M0/QA잔여0범위다. 실제완료/총괄typed판정/실행상태·모드/분기/합류provider와전체evaluateNext/FN10은미완료이며SYNTHETIC_ONLY/실행false를유지한다. 새API/SQL/실DB/권한/Agent0, 원실패/지문/범위는WORK_STATUS를따른다.
+
 - **2026-10-22 FN10 대기 요청 실제 핵심 한정 확인**: exactd5028727 새60SQL격리PG에서Web공통명령→인증API→비관리자PG 저장/별도조회/replay·고유순번·정확미시작취소·DML/COMMIT/옛세대음성을확인했다. workflowDONE지만자동checkout회수실패로전체exit1이며 별도동일정리함수회수후독립잔여0이다. 정식DB/served·실Agent·물리경합·자동회수원인/전체FN10/Stage미완료유지, 원실패/지문·한계는WORK_STATUS/실PG결과서를따른다.
 
 - **FN10 격리 실제PG 검증 착수 (2026-10-22)**: 새빈60SQL/0036 후보에 Web공통command·Fastify·비관리자PG 저장/별도연결조회/replay·취소/순번·DML/역방향COMMIT·옛제어거절을 검증한다. 새QAguard7PASS/type/bash-n0·독립실행전I3/별도wrapperI2정적보정확인이다. 아직실DBPASS아니며 exact자원·수명·회수·wrapper/manifest는 STAGE_QUEUE_PG_QA_01.md에사전기록했다. 정식DB/served/전체FN10/Agent로승격하지않는다.
