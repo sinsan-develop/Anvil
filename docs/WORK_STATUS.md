@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 FN03 exact 실행 판정 전달 차단 / Main 어울 — actual0 유지**: 2034a4d15b22c72f4e613074538b487616bf6558의 준비5파일 게시·local/private동일·trackedclean/보호6/main불변을 확인해 PMO에 exact 실행 경계를 요청했다. PMO는 소스/문서와 근거를 검토해 위임 가능하다고 판단했으나, 해당 실제 실행 지시의 send_message_to_thread 도구가 failed로 끝났다(PMO turn01a15ce5-a9ec-7820-a34c-2847c9850541, call exec-4a80e9f9-c9f9-4aaa-a359-403ab552f348). PMO 최종보고는 앞선 승인이 FN09 범위라 이번 FN03 실제 실행까지 인정되지 않았다고 설명하고 신산님께 exact 한정 실행 승인을 요청했다. 이는 Main의 실제 Docker/DB 실행 실패가 아니며 자원생성/PG접속/--run0이다. 실패한 전달을 승인으로 사용하거나 다른 도구/이름/재시도로 우회하지 않는다. 같은 사용자 질문은 중복하지 않고 PMO의 직접답변 확인 전에는 이 actual만 진행하지 않는다. 준비 검사7PASS/typecheck와 실제 검증 미실행을 구분하고 FN03/계획 완료로 보고하지 않는다. PMO 배정대기가 아니라 특정 플랫폼 승인 경계이며 보호6·기존 자료/서비스 보존이다.
+
 - **2026-10-21 FN03 격리 자원 실행기 후속 준비 / Main 어울 — actual0**: PMO의 계속 지시에 따라 생성 없이 qa-fn03-document-resources.ts/fn03-resource-guard.ts·순수 시험을 작성했다. 기존 entry E5EF6282/51SQL manifest da6f6a91 불변, literal·캐시 image·최대30분 부모 timeout·15초 Docker 호출/120초 짧은 workflow 조회·Node go 검사·exact 소유권/RO mount·실패회수·보호 dev/ino/hash·새 checkout 정리/별도 SSH 잔여 확인 절차는 FN03_ISOLATED_QA_PREPARATION.md에 고정했다. 정식자원/Secret/서비스·실 Agent 접근0, 신규 자원 생성/DB접속/--run0이다.
   - 검증/한계: 직접 guard4+target3 총7PASS560.9487ms/typecheck0. 초기 독립 C0/I2/M0의 장기 동기 wait와 보호 identity 누락은 Main이 보완했으나 새 독립 C0/I0·실제 TERM/실패정리/PG저장/브라우저 PASS가 아니다. 첫 apply_patch 문맥 불일치1은 파일 변경 없이 실제 문맥으로 정정했다. PMO에 최종 후보 Git SHA/hash와 범위를 전달해 exact 실행 판정을 받는 것이 다음이며 다음업무 배정대기/일반 사용자 재승인 질문을 만들지 않는다. 보호6/main·기존 특정거절/새권한 미채택 경계 보존, 완료된 기존 기능/검사 재실행0이다.
 
