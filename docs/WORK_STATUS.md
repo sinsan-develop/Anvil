@@ -1,5 +1,8 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-21 FN03/IX01 실제 원문·문서 저장 검수 준비 / Main 어울 — 실제 실행0**: 기준3bb4cc46 tracked clean/보호6을 확인했다. 기존 document-storage 시험은 정식 development config/5546 강제이므로 실행·validator 완화0. PMO가 신규 격리 개발검증의 준비·정적검토를 위임범위로 판정해 새 `scripts/qa-fn03-document-isolated.ts`와 순수 guard 시험을 작성했다. 이름·경로·owner·수명/정리·PG/Node digest·고정51SQL/hash 및 exact 실행 선행은 `docs/04_test_reports/AV3/FN03_ISOLATED_QA_PREPARATION.md`에 기록했다. 지정 신규 두 WSL 경로/PG·Node/network는 읽기상 부재, 캐시 이미지/부모 uid1000·link출력0만 확인했으며 생성/DB접속/서비스변경0이다.
+  - 준비 검증: 순수 target/만료/비밀 오류3PASS545.7255ms, --plan exit0/actualExecuted=false, 최신 typecheck0. 첫 TS7022 한 건 보완. 독립 초기 C0/I3/M1의 만료·close누락·오류비밀출력·비회원marker는 Main이 보완했고 최종 독립 판정은 아직 없다. 실제저장/PG/served/전체기능은 PASS 아님. 오케스트레이터·exact 후보 Git게시/자원검증·강제수명/정리·PMO 실행판정이 아직 남아 있어 --execute0이다. 새API/SQL/권한/실정책·기존Secret/Agent0, 기존특정거절/VIEWER미채택·보호6/main보존이다. 조사중없는경로/literal wildcard/Node Config.User template 오류는 자료나권한변경없이정정했다. 완료검사불변재실행0이며계획완료책임Main/PMO다음배정대기0이다.
+
 - **2026-10-21 다음 실질 미완료/승인 선행 대조 — Main 어울 / 구현 진도 아님**: PMO가 '바로 가능한 독립 후보가 없으면 각 기능의 소비 지점과 정확 delta를 입증'하도록 지시해 FN01~05/FN11·연결UI/IX01을 실제 코드와 대조했다. 앞선 보완을 전체 완료로 승격하거나 동일 조회/거절복구를 새 진도로 반복하지 않는다. 이번 조사에서 새 계약/기존 특정 경계를 건드리지 않고 바로 착수할 다음 실질 누락을 확정하지 못했다. 이것은 전체 기능 완성·다른 누락의 부재 입증이 아니다.
   | 기능 | 현재 확인한 실제 처리·저장·조회 소비 | 남은 실제 누락/정확 delta |
   |---|---|---|
