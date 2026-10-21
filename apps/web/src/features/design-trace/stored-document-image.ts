@@ -49,6 +49,12 @@ export async function readStoredDocumentPng(client:ApiClient,projectId:string,do
  const value=await readDocument(client,projectId,pinned.id,pinned.version,{expectedContentHash:pinned.contentHash,active});check();
  const matches=value.document.content.attachments.filter(a=>a.artifactId===selected.artifactId);
  if(matches.length!==1||matches[0]!.bytes!==selected.bytes||matches[0]!.mediaType!==selected.mediaType||matches[0]!.contentHash!==selected.contentHash)throw new ApiError('DOCUMENT_ATTACHMENT_REFERENCE_CHANGED');
+ return readPngArtifact(client,projectId,selected,active);
+}
+/** 보호 원문 조회 전용. 호출자는 문서/가져오기 후보의 정확한 귀속을 먼저 재검사한다. */
+export async function readPngArtifact(client:ApiClient,projectId:string,attachment:Artifact,active:()=>boolean):Promise<StoredDocumentPng>{
+ const check=()=>{if(!active())throw new ApiError('DOCUMENT_ATTACHMENT_READ_PAUSED');};check();const selected=structuredClone(attachment);
+ if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(projectId)||!selected||selected.mediaType!=='image/png'||!Number.isSafeInteger(selected.bytes)||selected.bytes<57||selected.bytes>2097152||!/^[a-f0-9]{64}$/.test(selected.contentHash)||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(selected.artifactId))return unsupported();
  let r:Response;try{r=await client.transport.call(globalThis,`/api/v1/projects/${projectId}/files/${selected.artifactId}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'}});}catch{throw new ApiError('CONNECTION_LOST');}
  if(!active()){await r.body?.cancel().catch(()=>{});check();}if(!r.ok)throw new ApiError('ARTIFACT_READ_FAILED',r.status);
  if(!/^application\/octet-stream\b/i.test(r.headers.get('content-type')??'')||!r.body)throw new ApiError('RESPONSE_INVALID');

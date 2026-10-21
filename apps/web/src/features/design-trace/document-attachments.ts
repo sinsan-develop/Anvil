@@ -4,7 +4,7 @@ import {readStoredImport,type ImportSummary} from './materials-api.ts';
 type Artifact=DocumentContent['attachments'][number];
 export interface DocumentAttachmentSelection{projectId:string;artifact:Artifact}
 const equal=(a:Artifact,b:Artifact)=>a.artifactId===b.artifactId&&a.bytes===b.bytes&&a.contentHash===b.contentHash&&a.mediaType===b.mediaType;
-const valid=(a:Artifact)=>!!a&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(a.artifactId)&&Number.isSafeInteger(a.bytes)&&a.bytes>=0&&a.bytes<=2097152&&/^[0-9a-f]{64}$/.test(a.contentHash)&&['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(a.mediaType);
+const valid=(a:Artifact)=>!!a&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(a.artifactId)&&Number.isSafeInteger(a.bytes)&&a.bytes>=0&&a.bytes<=2097152&&/^[0-9a-f]{64}$/.test(a.contentHash)&&['text/plain;charset=utf-8','text/markdown;charset=utf-8','image/png'].includes(a.mediaType);
 export async function readDocumentAttachment(client:ApiClient,projectId:string,source:ImportSummary,active:()=>boolean=()=>true):Promise<DocumentAttachmentSelection&{body:string}>{
  if(!active())throw new ApiError('DOCUMENT_ATTACHMENT_READ_PAUSED');
  if(source.status!=='READY'||!valid(source.originalRef))throw new ApiError('DOCUMENT_ATTACHMENT_UNSUPPORTED');

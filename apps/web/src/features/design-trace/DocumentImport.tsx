@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
 import { adoptDocumentImport, continueDocumentImport, prepareDocumentImport, rejectedDocumentImport, type DocumentImportBuffer } from './import-api.ts';
+import {ImportedPngAttachment} from './ImportedPngAttachment.tsx';
 
 export function DocumentImport({ client, session, buffer, onChange, onAuthenticationLost, disabled = false }: { client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onAuthenticationLost: () => void; disabled?: boolean }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState<ApiError | null>(null), [acknowledged, setAcknowledged] = useState(false);
@@ -47,6 +48,7 @@ export function DocumentImport({ client, session, buffer, onChange, onAuthentica
         {state.candidate.issues.map((issue, i) => <p key={i}>{issue.code} · {issue.message}</p>)}
         <a href={`/api/v1/projects/${buffer.projectId}/files/${state.candidate.originalRef.artifactId}`} download>보관한 원본 다운로드</a>
         {preview !== null ? <><pre className="document-original" aria-label="가져오기 후보 원문">{preview}</pre><label><input type="checkbox" disabled={busy} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />원문을 확인했고 현재 편집 본문을 이 후보로 바꾸겠습니다</label><button disabled={busy || !acknowledged} onClick={() => { void adopt(); }}>이 후보로 초안 준비</button></> : <p>본문 반영 불가입니다. 원본 보존을 문서 추출 성공으로 취급하지 않습니다.</p>}
+        {state.candidate.status==='UNSUPPORTED'&&state.candidate.originalRef.mediaType==='image/png'?<ImportedPngAttachment key={state.upload.commandId+':'+state.candidate.id} client={client} session={session} buffer={buffer} disabled={disabled||busy} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
       </>}
       {rejectedDocumentImport(state) ? <p>서버가 현재 명령을 거절했습니다. 가져오기만 닫아 기존 편집 입력으로 돌아갈 수 있습니다. 이미 보관된 원본은 삭제하지 않으며 다음 작업은 현재 권한/제어를 다시 확인해야 합니다.</p> : null}
       {!state.attempted || state.candidate || rejectedDocumentImport(state) ? <button disabled={busy} onClick={() => onChange(b => b?.importState?.upload.commandId === state.upload.commandId ? { ...b, importState: null } : b)}>후보 선택 닫기</button> : null}
