@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN13 신규 QA 한정 검토**: 독립 정적 C0/I0/M1·실행/수정0이다. M1은 외부인/변조 거절 뒤6표불변의 직접 assertion 누락이며 Main이 gap-fill 이전 count를 after와 대조하도록 시험만 보완했다. 제품/59SQL/권한/정식서비스0. 가드5PASS179.8633ms/type0 및 plan지문 불변과 분리하며 actual PG/새 endpoint의 저장소비는 아직 미검증이다.
+
+- **FN13 관측페이지 실제 QA 사전등록**: WSL-server 새빈 /home/daon/deploy/anvil-v3-fn12-manual-report-qa-01(내부 .av3-data/fn12-raw 포함), PG anvil-v3-fn12-manual-report-pg-01/internal network anvil-v3-fn12-manual-report-net-01/DB anvil_v3_fn12_manual_report_qa_01, uid1000 daon·AV3_FN12_MANUAL_REPORT_QA/새random run label. PG15 digest6eb0add3/image594290e9·tmpfs512MiB·공개port/영구volume0, Node24.21 SHA7fde7b8a·기존59SQL. clone전trap·전체240초/TERM후50초·child90/외부110/회수25초·생성후최대10분. private Git exact게시SHA만 clone하고 readonly deps 링크 /home/daon/deploy/anvil-v3/node_modules와 lock동일만 허용한다. exact ID/label/image/mount/port·owner/nonlink/realpath/process/clean 확인 후 등록자원만 제거·별도잔여0. 실패시 자동반복/우회0·안전조건불충족source보존. 새SSH부재/uid/parent/daemon/image/lsof확인exit0, 정식3container fullID/image/StartedAt동일·runningfalse를 대조했고 정식서비스/DB명령0이다. 실제 실행은 독립검토/게시 후 OBSERVATION_PAGES1회만 한다.
+
+- **FN13 신규 단일 QA source 준비**: OBSERVATION_PAGES 가드 RED 뒤 5PASS179.8633ms/type0. 기존 합성 원실행/수기 제출 선행은 재사용하고 원 grant 결박 app-role 관측/ACK 저장으로41행(순번2~42/공백1)을 만든다. 새 endpoint의20/20/1·같은첫위치복귀/현재ACK43·원cap42/GET6표불변·외부인/변조서명/공백채움stale만 새로 검증하며 실제 Agent 관측으로 승격하지 않는다. 새SQL/정식서비스/DB0, 실행 전 독립 한정검토·exactSHA 게시·자원등록을 거친다.
+
+- **FN13 QA 파일 작성 오류**: 신규 tests/integration/FN13 디렉터리가 없어 apply_patch의 새 시험파일 생성이 거절됐다. 앞선 가드/분기 부분 적용은 보존·대조하고 정확 디렉터리만 생성해 누락 파일을 이어 작성한다. 테스트 실행/실DB/서비스0이며 성공으로 기록하지 않는다.
+
+- **FN13 페이지 실제 소비 준비 RED / Main 어울**: 6ba20732d6f0b2cb353aa0243f42f125d14e78ba local/private 동일·main f976ed5e 불변·보호6 보존을 확인했다. 신규 OBSERVATION_PAGES 격리 선택 가드 1FAIL142.261ms를 확인했으며 기존59SQL/동일 전용 자원 계약에서 새 페이지 정상 소비만 추가한다. 정식 DB/서비스·Agent0, source 검사 성공을 실제 저장조회로 승격하지 않는다. 초기 sandbox git status의 work tree 접근 오류1은 elevated 실제 상태 대조로 구분했고 권한/설정 변경0이다.
+
 - **FN13/UI05 이전 관측 페이지 핵심동작 확인 / Main 어울**: 기존 no-query GET을 보존하고 별도 observation-pages를 연결했다. 같은 인증 transaction의 member/원제출/실행/전체원장·ACK검사 뒤 현재조회와 고정 cap/ref-digest·20행/위치/원30초기한의 서명 page/next cursor를 반환한다. 이전/이후 왕복도 GET 재검사하며 새높은순번은 고정범위에서 제외, 공백채움은 stale로 거절한다. 화면은 현재ACK/건수와 고정페이지를 구분하고 선택 원문·pending/거절/변경/만료에서 옛원문을 숨긴다.
   - 검증: 최신 직접/인접14PASS1365.055ms(기존GET·HUMAN/host/입력경계, 실제Fastifyquery 정규화, 지연인증후처리기한, fullACK/행수·누락/상한/서명/세대·동시append/공백채움/terminal)/typebuild356/343ms. 첫 UI Edge5PASS8.1초, 리뷰보완후 새bundle의 영향 정상/기한2PASS5.5초를 분리한다. 독립정적 C0/I1/M1·실행0 뒤 Main이 I1 지연COMMIT200반례와 M1 terminal행누락반례를 RED→GREEN으로 보완했으며 독립clean으로 소급하지 않는다. 기존 chunk500k/NO_COLOR경고는 유지했다.
   - 등록QA exact resolve/owner SINSAN\\cyhuh/nonlink0/process0 확인 후 회수·별도 경로false/process0. 새SQL/schema/키/권한/DB/정식서비스/Agent0, 실제 PG의 새 endpoint·정식served/login·권한경합·전체FN13/UI05/Stage는 미검증/미완료다. rollback은 새읽기경로/consumer 일반revert이며 원관측/ACK 삭제0. 다음은 이 새경로의 실제 인증PG 소비공백을 기존격리선행만 재사용해 단일 신규분기로 확인하고, 이미된 source를 반복하지 않는다.
