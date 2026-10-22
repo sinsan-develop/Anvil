@@ -1,6 +1,6 @@
 import {ApiClient,ApiError} from '../../api/client.ts';
 
-export interface ProviderClaimHistoryQuery {projectId:string;agentSessionId:string;executionId:string;generation:number;commandId:string;kind:'THREAD';requestIdDigest:string;claimHash:string}
+export interface ProviderClaimHistoryQuery {projectId:string;agentSessionId:string;executionId:string;generation:number;commandId:string;kind:'THREAD'|'TURN';requestIdDigest:string;claimHash:string}
 export interface ProviderClaimHistoricalReceipt {
  claimRef:{id:string;version:1;contentHash:string};recordedAt:string;state:'PROVIDER_CLAIM_RECORDED';sourceVerification:'PROVIDER_CLAIM_ONLY';nonceConsumed:true;
  credentialIssued:false;executionAuthorized:false;dispatchPerformed:false;workAccepted:false;
@@ -15,7 +15,7 @@ const invalid=():never=>{throw new ApiError('PROVIDER_CLAIM_HISTORY_INVALID');};
 /** Exact historical receipt only. Does not renew an execution credential, verify current availability or authorize a new SEND. */
 export async function readProviderClaimReceiptHistory(client:ApiClient,input:ProviderClaimHistoryQuery,active:()=>boolean):Promise<ProviderClaimHistory|null>{
  if(!exact(input,['projectId','agentSessionId','executionId','generation','commandId','kind','requestIdDigest','claimHash'])||![input.projectId,input.agentSessionId,input.executionId,input.commandId].every(uuid)
-  ||!Number.isSafeInteger(input.generation)||input.generation<1||input.kind!=='THREAD'||!hash(input.requestIdDigest)||!hash(input.claimHash))return invalid();
+  ||!Number.isSafeInteger(input.generation)||input.generation<1||!['THREAD','TURN'].includes(input.kind)||!hash(input.requestIdDigest)||!hash(input.claimHash))return invalid();
  const q=structuredClone(input);if(!active())return null;
  const path='/api/v1/projects/'+q.projectId+'/agent-sessions/'+q.agentSessionId+'/provider-session-claim-receipt?'+new URLSearchParams({executionId:q.executionId,generation:String(q.generation),commandId:q.commandId,kind:q.kind,requestIdDigest:q.requestIdDigest,claimHash:q.claimHash});
  const v=await client.get<ProviderClaimHistory>(path);if(!active())return null;
@@ -41,7 +41,7 @@ export async function readProviderClaimPageHistory(client:ApiClient,projectId:st
  const ids=new Set<string>(),events=new Set<string>();let previous:ProviderClaimHistoricalReceipt|null=null;
  for(const item of v.items){
   if(!exact(item,['query','receipt']))return invalid();const q=item.query,r=item.receipt;
-  if(!exact(q,['projectId','agentSessionId','executionId','generation','commandId','kind','requestIdDigest','claimHash'])||q.projectId!==projectId||q.agentSessionId!==selected.id||![q.executionId,q.commandId].every(uuid)||!Number.isSafeInteger(q.generation)||q.generation<1||q.kind!=='THREAD'||!hash(q.requestIdDigest)||!hash(q.claimHash)
+  if(!exact(q,['projectId','agentSessionId','executionId','generation','commandId','kind','requestIdDigest','claimHash'])||q.projectId!==projectId||q.agentSessionId!==selected.id||![q.executionId,q.commandId].every(uuid)||!Number.isSafeInteger(q.generation)||q.generation<1||!['THREAD','TURN'].includes(q.kind)||!hash(q.requestIdDigest)||!hash(q.claimHash)
    ||!exact(r,['claimRef','recordedAt','state','sourceVerification','nonceConsumed','credentialIssued','executionAuthorized','dispatchPerformed','workAccepted'])||!exact(r.claimRef,['id','version','contentHash'])||!uuid(r.claimRef.id)||r.claimRef.version!==1||r.claimRef.contentHash!==q.claimHash||!utc(r.recordedAt)||Date.parse(r.recordedAt)>Date.parse(v.observedAt)
    ||r.state!=='PROVIDER_CLAIM_RECORDED'||r.sourceVerification!=='PROVIDER_CLAIM_ONLY'||r.nonceConsumed!==true||r.credentialIssued!==false||r.executionAuthorized!==false||r.dispatchPerformed!==false||r.workAccepted!==false||ids.has(r.claimRef.id))return invalid();
   const event=JSON.stringify([q.executionId,q.generation,q.commandId,q.kind,q.requestIdDigest]);if(events.has(event)||previous&&(r.recordedAt>previous.recordedAt||r.recordedAt===previous.recordedAt&&r.claimRef.id>=previous.claimRef.id))return invalid();ids.add(r.claimRef.id);events.add(event);previous=r;

@@ -1,5 +1,21 @@
 # Anvil 재설계 작업현황
 
+- **FN06 TURN 조회·UI 제한 재검토 종료**: 조회 source와 화면2파일 각각 독립 C0/I0·읽기전용/실행0을 수신했다. SSR 종류표시/명시 callback query 동일성은 확인했으나 실제 DOM/Network/PG/served는 미판정이다. 소유13경로만 기존 private Stage B checkpoint로 보존한다. 새 DB/SQL/권한·native·실Agent·자원 생성0·보호6 유지이며 전체계획 완료보고가 아니다.
+
+- **FN06 TURN 조회·화면 후속 source 검수**: 현재 OWNER의 THREAD/TURN 목록·원 receipt 조회 source30PASS1653.9868ms·type/diff0·한정독립C0/I0. 이어 실제 TSX의 THREAD 하드코딩/옛 TURN미구현 안내를 수정하고 원 행 컴포넌트의 종류 표시/명시 handler exact query 전달을 기존 Oxc 메모리 렌더4PASS399.6865ms로 확인했다. type0·최신Web351/build324ms, 기존 chunk크기 경고 보존·완화0이다. 실제 DOM/served/PG/Agent는 미검증이며 이전 DOM2를 새 증거로 재사용하지 않는다. callback 부작용을 AbortSignal로 강제 중단할 수 없고 실제 SEND/STOP current/native/caller는 미연결임을 유지한다. 다음은 기존 승인 C의 exact 소비 caller/현재 근거 연결·미구현 FN06을 계속하며 일반 작업배정/재승인 대기로 돌리지 않는다.
+
+- **FN06 TURN 화면 표기 보완 RED**: 실제 소비 TSX에 목록행 THREAD 하드코딩과 ‘TURN 미구현’ 안내가 남아 있음을 확인했다. 연결 reader만 수정한 상태를 화면 완료로 승격하지 않는다. 기존 TSX 메모리 렌더 방식에서 종류별 행 검증의1RED432.7033ms를 확보했고, 원 행 markup을 작은 검증 가능한 함수로 옮겨 query.kind를 표시·정확 query만 선택 callback에 전달하도록 보완한다. 실제 DOM 클릭/served는 미검증·기존 current/조회/쓰기 계약 변경0이다.
+
+- **FN06 HUMAN TURN 조회 GREEN**: 현재 OWNER의 exact TURN GET→부모 THREAD row/원 receipt/fullscope/hash→같은 인증 tx 조회→브라우저 reader와 THREAD/TURN 혼합 목록 source를 연결했다. 신규2/인접28 총30PASS1653.9868ms·type/diff0. 옛 TURN 무조건입력거절은 UNKNOWN kind 거절로 대체하고 정상 TURN·부모 부재/변조/타scope를 검증했다. cursor filter 변경으로 기존 THREAD-only cursor는 거절·명시 재조회가 필요하며 원 기한 연장0이다. 부모 metadata는 내부만·공개 응답 추가0·실제 DB/served/Agent0, 독립 scoped 검토 요청 뒤 UI 소비/build를 점검한다.
+
+- **FN06 HUMAN TURN source2GREEN·타입1**: 정상 원 receipt/혼합 목록과 부모 부재/변조/타scope2PASS1343.5113ms이나 route framework query.kind가 unknown인 TS2345 1건으로 타입검사가 실패했다. typeof string을 먼저 확인해 좁히며 형식/허가 완화0이다. 옛 THREAD-only 음성 기대는 승인된 TURN 정상 시험과 미지원 UNKNOWN kind 거절로 분리한다. 현재 증거는 Fastify.inject/fake PG이며 실DB/served/Agent0이다.
+
+- **FN06 HUMAN TURN 실제 RED**: Date 비교 보정 뒤 정상 TURN exact 조회가 브라우저 reader의 THREAD-only 입력 검사에서 PROVIDER_CLAIM_HISTORY_INVALID로1RED826.1552ms다. 승인된 THREAD|TURN kind를 getter/list/client에 연결하되 journal은 TURN의 원 THREAD row/receipt/scope/fullref까지 읽기 검증한다. 과거 receipt는 현재 전달 허가가 아니며 기존 OWNER/기한·회수/충돌 기준을 유지한다.
+
+- **FN06 HUMAN TURN 조회 반례 준비**: 기존 THREAD-only getter/list/브라우저 reader를 승인된 TURN metadata로 연결한다. 첫 주입시험931.0951ms는 DB row의 Date를 canonicalJson으로 저장전후 비교한 fixture 오류로 INPUT_INVALID이며 제품 RED가 아니다. Date를 보존하는 JSON 비교로 고친 뒤 실제 TURN 입력 거절을 확인한다. 이후 옛 TURN 미지원 음성 기대는 미지원 kind로 바꾸되 부모 부재/변조·현재권한 거절은 강화한다. 실제DB/리스너/Agent0이다.
+
+- **FN06 TURN/C 소유 checkpoint 게시·후속 조회**: 소유18경로 cc5b8eb06fd38adeeb8c09e730fa4712becf7a43를 기존 private Stage B에 게시·local/remote 일치와 main f976ed5e 불변을 확인했다. tracked clean이며 unrelated 비추적6은 보존한다. 후속 HUMAN TURN 조회 착수에서 잘못 추정한 apps/web/api 경로 읽기/rg가 실패했다(변경0). 더 추정하지 않고 rg --files 전체의 실제 provider 소비 파일만 선택한다. 이는 기능실패가 아닌 탐색오류이며 기존 검증 재실행0·실DB/Agent0이다.
+
 - **FN06 C 내부 reader 합성 확인**: 신규 정상/거절/정리3PASS760.2732ms·추가 timeout 늦은bytes/주체전환/부모thread불일치1PASS559.7558ms·type/diff0이다. callback 외 반환0·오류 원문0·가져온 byte 정리를 확인했다. 신뢰된 current port의 실제 저장 claim/새명령·현재 허가/permit/OS 대조와 native 보호 파일은 아직 미구현이며 기존 SEND/STOP transport caller도 미연결이다. 내부 reader4건을 실제 실행·사용 가능 기능으로 승격하지 않는다. 같은 reviewer에 제한 정적 검토를 요청했고 실제 DB/서비스/Agent·새자원0, 보호6은 비추적 원상 보존이다.
 
 - **FN06 C reader 첫2FAIL**: 신규3건 중 정상 소비와 부모 손상 반례가 실패(588.8514ms), 타입은 미실행이다. 정상 fixture의 current 기한이 THREAD 후보2분을 반환해 기존 current30초 계약과 맞지 않았고, 부모 변조 hash는 원 fixture의 e64와 같은 값임을 확인했다. 제품 기한/부모 검사를 완화하지 않고 fixture의 current 기한을 원 envelope25초로 고정·부모 hash를 다른 값으로 변경한다. 실제DB/native/Agent0이다.

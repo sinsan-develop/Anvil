@@ -39,9 +39,9 @@ export function registerProviderClaimHistoryRoutes(app:FastifyInstance,options:A
   if(request.headers.host!==origin.host||request.headers.authorization!==undefined)throw new AuthFailure('PROVIDER_SESSION_HISTORY_REJECTED',403);
   const p=frameworkFields(request.params),q=frameworkFields(request.query);
   if(!recordV1(p,['pid','sid'])||!uuidV1(p.pid)||!uuidV1(p.sid)||!recordV1(q,['executionId','generation','commandId','kind','requestIdDigest','claimHash'])||!uuidV1(q.executionId)||!uuidV1(q.commandId)
-   ||typeof q.generation!=='string'||!/^[1-9][0-9]{0,15}$/.test(q.generation)||!Number.isSafeInteger(Number(q.generation))||q.kind!=='THREAD'||!hashV1(q.requestIdDigest)||!hashV1(q.claimHash))return invalid();
+   ||typeof q.generation!=='string'||!/^[1-9][0-9]{0,15}$/.test(q.generation)||!Number.isSafeInteger(Number(q.generation))||typeof q.kind!=='string'||!['THREAD','TURN'].includes(q.kind)||!hashV1(q.requestIdDigest)||!hashV1(q.claimHash))return invalid();
   const token=cookie(request);if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new AuthFailure('AUTH_REQUIRED',401);
-  const query={projectId:p.pid,agentSessionId:p.sid,executionId:q.executionId,generation:Number(q.generation),commandId:q.commandId,kind:'THREAD' as const,requestIdDigest:q.requestIdDigest,claimHash:q.claimHash};
+  const query={projectId:p.pid,agentSessionId:p.sid,executionId:q.executionId,generation:Number(q.generation),commandId:q.commandId,kind:q.kind as 'THREAD'|'TURN',requestIdDigest:q.requestIdDigest,claimHash:q.claimHash};
   let store:BoundPgProviderClaimHistoryStore|undefined;
   const responseCurrent=()=>{if(!store||Date.now()>=Date.parse(store.responseValidUntil()))throw new AuthFailure('PROVIDER_SESSION_HISTORY_REJECTED',403);};
   try{

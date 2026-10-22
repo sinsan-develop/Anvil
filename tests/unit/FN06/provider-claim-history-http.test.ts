@@ -26,9 +26,9 @@ test('익명/중복cookie·connector/execution Bearer·다른host는 인증tx/DB
   assert.equal(s.auth.length,0);assert.equal(s.f.calls.length,0);
  }finally{await s.app.close();}
 });
-test('추가/중복query·비정규generation·TURN·타예약은 대체하지 않으며 nonOWNER는403이다',async t=>{
+test('추가/중복query·비정규generation·미지원kind·타예약은 대체하지 않으며 nonOWNER는403이다',async t=>{
  const s=setup(t);try{
-  for(const url of [s.url+'&actorId='+pid,s.url+'&generation=1',s.url.replace('generation=1','generation=01'),s.url.replace('kind=THREAD','kind=TURN')]){const r=await s.app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie}});assert.equal(r.statusCode,400,r.body);}
+  for(const url of [s.url+'&actorId='+pid,s.url+'&generation=1',s.url.replace('generation=1','generation=01'),s.url.replace('kind=THREAD','kind=UNKNOWN')]){const r=await s.app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie}});assert.equal(r.statusCode,400,r.body);}
   assert.equal(s.auth.length,0);s.f.member.participation='VIEWER';assert.equal((await s.app.inject({method:'GET',url:s.url,headers:{host:'localhost:3830',cookie}})).statusCode,403);assert.equal(s.f.calls.some(c=>c.sql.includes('FROM anvil.provider_session_claims')),false);
  }finally{await s.app.close();}
 });

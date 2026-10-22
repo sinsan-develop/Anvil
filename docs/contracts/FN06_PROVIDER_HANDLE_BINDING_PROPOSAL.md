@@ -143,6 +143,13 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 HUMAN TURN 원 결과·혼합 목록 소비 source
+
+- 현재 OWNER의 기존 인증 transaction에서 THREAD/TURN exact 원 receipt와 혼합 metadata 목록을 조회한다. TURN은 project/session 제한 부모 SELECT 후 THREAD kind·원 row/receipt/hash/fullscope/부모 ref를 검사한다. 손상 TURN→TURN 부모를 재귀 해석하지 않으며 부모 부재/변조/타scope는 거절한다. 내부 부모 metadata는 public receipt/page 응답에 추가하지 않는다. 과거 원 receipt를 조회하려고 만료된 실행 credential/permit을 재사용하거나 claim을 새로 생성하지 않는다.
+- cursor의 filter를 THREAD 단독에서 THREAD|TURN으로 바인딩해 옛 cursor를 재사용하지 않는다. 현재 HUMAN/예약/유한 정렬/최초 기한 검사는 유지하고 사용자는 명시 재조회로 새 목록을 읽는다. 브라우저는 두 종류만 채택하고 현재 사용 가능성·권한을 승격하지 않는다. 원 행의 THREAD 하드코딩을 query.kind 표시로 변경하고 exact query만 명시 원 결과 handler에 전달한다.
+- 첫 실제 입력1RED826.1552ms→source/Fastify.inject/fakePG/브라우저 reader 직접30PASS1653.9868ms/type/diff0·독립한정C0/I0. 실제행 메모리 렌더4PASS399.6865ms/type0·최신 Web351/build324ms이며 이전 DOM 시험을 신규 증거로 세지 않는다. 옛 TURN 무조건거절 음성은 UNKNOWN 종류 거절로 변경한 이유/전후를 WORK_STATUS에 기록했다. 실제 PG/경합/COMMIT·served DOM/login/Agent는 미검증이다.
+- native/보호 저장·실 current/정확 SEND/STOP caller·nonOWNER RESPONSIBLE·전체FN06은 여전히 미완료다. schema/manifest/DB·역할/권한/Secret·서비스/Agent 변경0. 본 소스는 일반 revert로 차단하며 원 claim/예약/이력은 보존한다.
+
 ### 2026-10-22 TURN 수신·C 보호 소비 내부 source (부분 구현)
 
 - PMO 상세 결정에 따라 TURN 기록은 새 SEND admission/permit.consume와 분리했다. 기존 IDLE/새 RESERVED·새 송신 허가 조건을 바꾸지 않는다. 저장된 SEND queue/원 예산 예약·소비 permit/localAttempt·원 서명 EXECUTION_REQUEST 소비 nonce/proof/target 및 최초 기한을 불변 대조한다. 별도 최신 fact의 주체/OS/등록/권한·현재 기한과 같은 grant의 정확 THREAD 부모를 함께 검증한다. BUSY라는 이유만으로 결과 기록을 막지는 않으나 새 송신 권한을 주지 않는다. turn/start만 연결했고 turn/steer는 거절한다.

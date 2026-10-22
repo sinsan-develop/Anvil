@@ -94,6 +94,10 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   </section>;
 }
 
+export function ProviderClaimHistoryRow({item,pending,onSelect}:{item:ProviderClaimPageHistory['items'][number];pending:boolean;onSelect:(query:ProviderClaimHistoryQuery)=>void}){
+ return <li>{item.query.kind} · 수신 기록 {item.receipt.claimRef.id} · v{item.receipt.claimRef.version} · {item.receipt.recordedAt}<button type="button" disabled={pending} onClick={()=>onSelect(item.query)}>이 기록의 원 결과 확인: {item.receipt.claimRef.id}</button></li>;
+}
+
 export function ProviderClaimHistoryPanel({client,projectId,sessionRef,subjectKey,onAuthenticationLost}:{client:ApiClient;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];subjectKey:string;onAuthenticationLost:()=>void}){
  const scope=ordered([projectId,sessionRef,subjectKey]),current=useRef(scope),sequence=useRef(0),alive=useRef(true);current.current=scope;
  const [view,setView]=useState<{scope:string;page:ProviderClaimPageHistory|null;receipt:ProviderClaimHistory|null;error:string|null;pending:boolean}|null>(null);
@@ -113,12 +117,12 @@ export function ProviderClaimHistoryPanel({client,projectId,sessionRef,subjectKe
  }
  return <section aria-label="공급자 세션 기록"><h6>공급자 세션 기록 · 과거 수신 사실</h6>
   <p>책임 세션 예약: RESERVED · 현재 사용 가능성: 미확인 · 실제 수행·업무 인수: 미확인</p>
-  <p>현재 THREAD 기록만 조회합니다. TURN 연결은 미구현이며 기록 없음은 미수행·안전 판정이 아닙니다.</p>
+  <p>THREAD·TURN의 과거 수신 기록만 조회합니다. 현재 연결·전달 가능성은 미확인이며 기록 없음은 미수행·안전 판정이 아닙니다.</p>
   <button type="button" disabled={shown?.pending} onClick={()=>void load()}>공급자 세션 기록 조회</button>
   {shown?.pending?<p role="status">조회 중 · 이전 원 결과 숨김</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 조회 미확인 · 처음부터 다시 조회하세요.</p>:null}
   {shown?.page?<><p>조회 시각 {shown.page.observedAt} · 현재 허가·Agent 가동 확인 아님</p>
-   {shown.page.items.length?<ul>{shown.page.items.map(item=><li key={item.receipt.claimRef.id}>THREAD · 수신 기록 {item.receipt.claimRef.id} · v{item.receipt.claimRef.version} · {item.receipt.recordedAt}<button type="button" disabled={shown.pending} onClick={()=>void original(item.query)}>이 기록의 원 결과 확인: {item.receipt.claimRef.id}</button></li>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
+   {shown.page.items.length?<ul>{shown.page.items.map(item=><ProviderClaimHistoryRow key={item.receipt.claimRef.id} item={item} pending={shown.pending} onSelect={query=>void original(query)}/>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
    {shown.page.hasMore&&shown.page.nextCursor?<button type="button" disabled={shown.pending} onClick={()=>void load(shown.page!.nextCursor)}>이전 공급자 기록 조회</button>:null}
   </>:null}
   {shown?.receipt?<article aria-label="공급자 기록 원 결과">{shown.receipt.found&&shown.receipt.receipt?<><p>PROVIDER_CLAIM_RECORDED · 공급자 주장만 보관 · 현재 사용 가능성 미확인</p><p>원 참조 {shown.receipt.receipt.claimRef.id} · v{shown.receipt.receipt.claimRef.version} · {shown.receipt.receipt.claimRef.contentHash}</p><p>원 기록 시각 {shown.receipt.receipt.recordedAt} · 조회 시각 {shown.receipt.observedAt}</p><p>새 실행 허가 없음 · 지시 전달 없음 · 업무 인수 아님</p></>:<p>정확 사건 원 결과 미발견 · 미저장·안전 판정 아님</p>}</article>:null}

@@ -17,7 +17,7 @@ test('exact HUMAN receipt는 same-origin GET으로 읽고 과거 claim/제한상
  assert.equal(f.init().method,'GET');assert.equal(f.init().credentials,'same-origin');assert.equal(f.init().cache,'no-store');assert.equal(f.init().body,undefined);
 });
 test('잘못된 사건/해시/추가 입력과 이미 이탈한 화면은 네트워크 조회0이다',async()=>{
- for(const q of [{...query(),projectId:'https://secret.invalid'},{...query(),generation:0},{...query(),kind:'TURN'},{...query(),claimHash:'x'},{...query(),rawHandle:'PRIVATE_RAW'}]){const f=fixture();await assert.rejects(reader()(f.client,q,()=>true));assert.equal(f.calls(),0);}
+ for(const q of [{...query(),projectId:'https://secret.invalid'},{...query(),generation:0},{...query(),kind:'UNKNOWN'},{...query(),claimHash:'x'},{...query(),rawHandle:'PRIVATE_RAW'}]){const f=fixture();await assert.rejects(reader()(f.client,q,()=>true));assert.equal(f.calls(),0);}
  const f=fixture();assert.equal(await reader()(f.client,query(),()=>false),null);assert.equal(f.calls(),0);
 });
 test('다른 hash/상태/권한승격·시각·원문 추가·미발견 불일치는 응답 채택을 막는다',async()=>{

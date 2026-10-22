@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 HUMAN TURN 목록·원 결과 화면 source 연결**: 승인된 C에서 현재 OWNER의 exact TURN receipt와 THREAD/TURN 혼합 목록을 실제 route→부모 원장/fullscope/ref 검증→브라우저 reader에 연결했다. 조회30PASS/type0·한정독립C0/I0, 실제행 종류/handler 메모리 렌더4PASS/typebuild0. 옛 THREAD 전용 cursor는 filter 변경으로 재사용 불가·명시 재조회가 필요하며 기한 연장/새권한0이다. 코드 연결과 실제 served 사용을 구분하며 실제DB/DOM/Agent·nonOWNER RESPONSIBLE·SEND/STOP current/native/caller·전체FN06/Stage/계획은 미완료다. 상세/오류/다음 작업은 WORK_STATUS/후보§7을 따른다.
+
 - **2026-10-22 FN06 TURN 기록·보호 소비 내부 source 일부**: 원 SEND queue/소비 permit/서명 nonce/예산 예약·같은 grant의 THREAD 부모와 현재 fact를 묶는 TURN 수신 source/PG adapter·미적용0037 분기를 연결했다. SEND admission의 IDLE/새 RESERVED·permit 소비는 그대로다. 참조 alias 반례1RED→직접 TURN/route/store10PASS1899.4597ms·type/diff0·한정 재검토C0/I0. 별도 내부 SEND THREAD/STOP TURN 보호 reader는 fake의 cipher/capsule/현재성·부모·finally byte정리4건만 확인했다(3PASS760.2732ms+추가1PASS559.7558ms). 실제 current 구현/transport caller·HUMAN TURN 목록/조회·native·DB 적용/실Agent/전체FN06은 미완료다. SQL/권한/manifest·서비스는 변경0, 최신 상세/오류/미검증은 WORK_STATUS 및 후보§7에 기록한다.
 
 - **2026-10-22 FN06 C2 metadata 목록→UI04 원 결과 조회 일부**: 현재OWNER의 정확예약 목록/서명cursor(기본20·최대50)와 원receipt GET을 책임세션 화면에 연결했다. 직접28PASS/type/diff0·build351·가로챈합성브라우저2PASS7.5초·QA정리0, 한정정적독립C0/I0 뒤Main cursor기한갱신1반례TDD보완을구분한다. 예약/기록수신/현재사용미확인/실수행미확인을별도표시하며raw handle·새실행권한0. 실제PG/서비스반영/Agent·nonOWNER RESPONSIBLE/TURN/SEND/STOP/native·전체FN06은 미완료다. 현재증거·오류·범위는WORK_STATUS/후보§7을따른다.

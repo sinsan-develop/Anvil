@@ -30,15 +30,15 @@ export async function readProviderClaimPage(store:BoundPgProviderClaimHistorySto
   const access=cloneV1(await tx.current()),now=await tx.clock();if(!recordV1(access,['transport','subject','projectId','agentSessionRef','participation','readPermission','responsibleBindingRef','checkedAt','expiresAt'])||!refV1(access.agentSessionRef)||access.participation!=='OWNER'||access.readPermission!=='VERIFIED_CURRENT'||!isoV1(now)||!isoV1(access.checkedAt)||!isoV1(access.expiresAt))return reject();
   // Login idle expiry may advance between authenticated reads. It is a live gate, not actor identity.
   // The signed cursor retains its own original immutable expiresAt and is never extended by this comparison.
-  const {checkedAt:_,expiresAt:__,...binding}=access,bindingHash=hash({purpose,access:binding,filter:{limit,kind:'THREAD'}}),after=q.cursor===null?null:decode(q.cursor as string,bindingHash,now,sign);
+  const {checkedAt:_,expiresAt:__,...binding}=access,bindingHash=hash({purpose,access:binding,filter:{limit,kinds:['THREAD','TURN']}}),after=q.cursor===null?null:decode(q.cursor as string,bindingHash,now,sign);
   const rows=(await db.query('SELECT claim_id,recorded_at,execution_id,generation,command_id,kind,request_id_digest,content_hash FROM anvil.provider_session_claims WHERE project_id=$1::uuid AND agent_session_id=$2::uuid AND ($3::timestamptz IS NULL OR (recorded_at,claim_id)<($3::timestamptz,$4::uuid)) ORDER BY recorded_at DESC,claim_id DESC LIMIT $5::integer',[scope.projectId,scope.agentSessionId,after?.at??null,after?.id??null,limit+1])).rows;
   if(!Array.isArray(rows)||rows.length>limit+1)return reject();
   const items:Array<{query:ProviderClaimReceiptQuery;receipt:NonNullable<Awaited<ReturnType<typeof tx.read>>>['receipt']}>=[];let previous=after,last:Position|null=null;
   for(const [i,row]of rows.entries()){
    const at=row.recorded_at instanceof Date&&Number.isFinite(row.recorded_at.getTime())?row.recorded_at.toISOString():null,current={at,id:row.claim_id};
-   if(!position(current)||Date.parse(current.at)>Date.parse(now)||previous&&!older(current,previous)||row.kind!=='THREAD'||!uuidV1(row.execution_id)||!Number.isSafeInteger(Number(row.generation))||Number(row.generation)<1||!uuidV1(row.command_id)||!hashV1(row.request_id_digest)||!hashV1(row.content_hash))return reject();previous=current;
+   if(!position(current)||Date.parse(current.at)>Date.parse(now)||previous&&!older(current,previous)||!['THREAD','TURN'].includes(row.kind)||!uuidV1(row.execution_id)||!Number.isSafeInteger(Number(row.generation))||Number(row.generation)<1||!uuidV1(row.command_id)||!hashV1(row.request_id_digest)||!hashV1(row.content_hash))return reject();previous=current;
    if(i===limit)continue;
-   const query:ProviderClaimReceiptQuery={...scope,executionId:row.execution_id,generation:Number(row.generation),commandId:row.command_id,kind:'THREAD',requestIdDigest:row.request_id_digest,claimHash:row.content_hash},entry=await tx.read(query);
+   const query:ProviderClaimReceiptQuery={...scope,executionId:row.execution_id,generation:Number(row.generation),commandId:row.command_id,kind:row.kind,requestIdDigest:row.request_id_digest,claimHash:row.content_hash},entry=await tx.read(query);
    if(!entry||!same(entry.claim.agentSessionRef,access.agentSessionRef)||entry.claim.claimId!==current.id||entry.receipt.recordedAt!==current.at||entry.receipt.claimRef.contentHash!==query.claimHash)return reject();
    items.push({query,receipt:cloneV1(entry.receipt)});last=current;
   }
