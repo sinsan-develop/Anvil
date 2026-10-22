@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 응답 목적 보호 THREAD 조회 일부 구현**: 기존 pre-send reader를 바꾸지 않고 별도 reader에서 응답용 서버 원기록/current·부모/시도permit/grant/hash를 전후 대조해 기존 store/capsule을 private callback에서만 소비한다. 직접10 및 protocol 연결1/type/diff는 합성 DB/store/RESOLVE 범위이며 실제 OS/native·DB/Agent·private snapshot 최종조립/연속 TURN·전체 FN06는 미구현·미검증이다. 원 RED와 검토·기한/취소·바이트 소거의 범위는 WORK_STATUS를 따른다.
+
 - **2026-10-23 FN06 응답 private-current 수신 자료 일부 연결**: 기존 receiver의 exact receipt/bytes/hash를 private 조회 전후 소비하고 받은 소유 배열만 소거한다. 원 보관 부분/새 SEND IDLE·보호 reader 목적은 유지하며 신규/직접 영향7/type/diff는 실제 receiver+합성 inbox 범위다. 실제 보호세션/private 현재 공급자·파일/OS/native·DB/Agent/연속 TURN 및 전체 FN06는 미구현·미검증으로 남긴다. 원 RED/타입진단·독립 검토는 WORK_STATUS에 보존한다.
 
 - **2026-10-23 FN06 서버/private 현재 조립 일부 구현**: 원 서버 기록을 private current 조회 전후 대조하고 원 grant/시도hash·부모·자료/이해·소유·BUSY/IN_PROGRESS 상태·기한을 연결했다. 신규/직접영향11/type/diff는 실제 Bound source를 합성 DB로 소비한 범위이며 private 현재 공급자 진위/실구현·OS/native/DB/Agent·전체 FN06/연속 TURN은 미구현·미검증이다. 기존 SEND/허가/기본등록은 불변이고 원 RED·타입진단/검토는 WORK_STATUS에 보존한다.

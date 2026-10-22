@@ -21,6 +21,14 @@
 
 ## 구현·검수 경계
 
+### 응답 목적 보호 THREAD 조회
+
+`SyntheticSentResponseHandleReader.use(selection,signal,callback)`는 기존 pre-send reader/current 포트를 구현하거나 목적을 바꾸지 않는다. selection은 exact envelope/원 부모 THREAD와 claimRef·원 시도/permit/grant·preSendBindingHash/instructionContentHash를 고정한다. 서버 응답 전용 purpose/false 권한과 원 기록·현재 fact/세션·역할/세대·기한을 보관 조회 전후 확인한다. TURN 또는 다른 부모/명령·새 SEND용 current 반환을 응답용으로 채택하지 않는다.
+
+기존 보호 store/엄격 capsule decoder의 결과는 내부 callback에만 전달한다. 배열은 정상·거절·callback 오류·취소/timeout 뒤 늦은 반환에도 소거한다. callback 반환값은 외부로 전달하지 않으며 callback에 새 wire/SEND/STOP 권한을 주지 않는다. JS 식별자 문자열을 callback이 보관하지 못하도록 강제하거나 GC 물리소거를 보장하지는 않는다.
+
+기존 protocol store의 합성 RESOLVE 연결은 native 호출이 아니다. 실제 store·OS/DPAPI·현재 권한 제공자 진위, private snapshot으로의 최종 조립과 연속 TURN·Agent/DB 서비스 검증은 미구현·미검증으로 구분한다. 원 보호 reader/새 SEND IDLE·UNKNOWN/재송신 금지와 실행 제외 범위는 유지한다.
+
 ### 응답용 private current의 수신 자료 소비
 
 `SyntheticSentTurnMaterialCurrent`는 기존 `SyntheticMaterialReceiver.instructionSource()`의 읽기를 private 현재 조회 전후 소비한다. 원 envelope/부분 refs·수신 receipt·바이트 길이/내용 hash·UTF-8/기존 알려진 비밀 표식을 검사하고, 현재 snapshot의 자료 receipt/hash가 같은지 대조한다. 기존 보관 부분을 다시 수신하거나 새 receipt/permit을 쓰지 않는다. 실패/취소/timeout/최종 기한 뒤 결과는 수용하지 않고 후속 자료 조회도 하지 않는다.
