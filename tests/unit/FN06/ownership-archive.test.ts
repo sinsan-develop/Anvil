@@ -48,6 +48,9 @@ test('COMMIT 뒤 응답 유실은 UNKNOWN이며 rollback으로 미저장을 단�
  const f=await ownershipArchiveFixture();f.fault('COMMIT_REPLY_LOST');await assert.rejects(()=>f.store.accept(f.scope,f.input,new AbortController().signal),{message:'OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN'});const saved=f.state();assert.equal(saved.observations.length,1);assert.equal(saved.head.head_generation,1);assert.equal(f.connection().destroyed,1);assert.equal(f.stats().commits,1);
  f.fault('');await assert.rejects(()=>f.store.accept(f.scope,f.input,new AbortController().signal));assert.deepEqual(f.state(),saved);
 });
+test('COMMIT 응답과 release가 함께 실패해도 저장 UNKNOWN을 덮거나 원문을 노출하지 않는다',async()=>{
+ const f=await ownershipArchiveFixture();f.fault('COMMIT_AND_RELEASE_LOST');await assert.rejects(()=>f.store.accept(f.scope,f.input,new AbortController().signal),{message:'OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN'});assert.equal(f.state().observations.length,1);assert.equal(f.stats().commits,1);assert.equal(f.connection().destroyed,1);
+});
 test('다른 project/세대·재해시 후보 anchor·정상 서명한 다른 nonce도 원 요청으로 채택하지 않는다',async()=>{
  for(const field of ['projectId','executionGeneration'] as const){const f=await ownershipArchiveFixture(),before=f.state(),scope={...f.scope,[field]:field==='projectId'?'30000000-0000-4000-8000-000000000099':2};await assert.rejects(()=>f.store.accept(scope,f.input,new AbortController().signal));assert.deepEqual(f.state(),before);}
  const f=await ownershipArchiveFixture(),before=f.state();f.fault('CANDIDATE');await assert.rejects(()=>f.store.accept(f.scope,f.input,new AbortController().signal));assert.deepEqual(f.state(),before);

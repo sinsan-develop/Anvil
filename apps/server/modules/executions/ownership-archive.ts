@@ -114,6 +114,6 @@ export class SyntheticPgOwnershipArchive {
    let rollbackFailed=false;if(db&&!committed)try{await db.query('ROLLBACK');}catch{rollbackFailed=true;}
    discardConnection=rollbackFailed||commitAttempted&&!committed;
    throw new AuthFailure(commitAttempted?'OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN':rollbackFailed?'OWNERSHIP_ARCHIVE_ROLLBACK_UNCONFIRMED':'OWNERSHIP_ARCHIVE_UNAVAILABLE',412);
-  }finally{if(db)try{db.release(discardConnection);}catch{throw new AuthFailure(committed?'OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN':'OWNERSHIP_ARCHIVE_RELEASE_UNCONFIRMED',412);}}
+  }finally{if(db)try{db.release(discardConnection);}catch{throw new AuthFailure(commitAttempted?'OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN':'OWNERSHIP_ARCHIVE_RELEASE_UNCONFIRMED',412);}}
  }
 }

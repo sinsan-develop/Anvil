@@ -26,4 +26,3 @@ export async function ownershipPreparationReceiptFixture(){
  const read=async()=>{assert.equal(typeof m.readOwnershipPreparationReceiptBasis,'function','원 준비 command/receipt/감사 조회 결박이 필요하다');return m.readOwnershipPreparationReceiptBasis(db,f.access,f.token,f.csrf,p.scope,f.prep.ref);};
  return{...f,db,read,command,audit,intent,intentRef,request,seal,queries,mode(v:string){mode=v;}};
 }
-
