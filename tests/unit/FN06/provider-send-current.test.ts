@@ -23,6 +23,11 @@ async function fixture(){
 test('SEND trusted current는 기존 IDLE/새예약 basis와 원 THREAD·소비 permit/nonce·시도ref만 읽어 결박한다',async()=>{
  const f=await fixture(),before=canonicalJson(f.f.state());const value=await f.bound(s=>s.current(f.e,f.claimRef));assert.deepEqual(value.key,receiptKeyV1(f.e));assert.deepEqual(value.claimRef,f.claimRef);assert.equal(value.parentThreadClaimRef,null);assert.equal(value.expiresAt,f.e.expiresAt);assert.equal(canonicalJson(f.f.state()),before);assert(!f.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));
 });
+
+test('SEND current는 실제 인증 Date actor를 보존하고 caller 변경을 현재 주체로 채택하지 않는다',async()=>{
+ const f=await fixture();f.actor.reauthUntil=new Date('2026-10-22T02:01:30.000Z');const expected=f.actor.actorId;
+ const value=await f.bound(async s=>{f.actor.actorId=crypto.randomUUID();f.actor.reauthUntil.setTime(0);return s.current(f.e,f.claimRef);});assert.deepEqual(value.claimRef,f.claimRef);assert.notEqual(f.actor.actorId,expected);assert(!f.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));
+});
 test('BUSY·원claim/permit 부재·시도 불일치·소비nonce 부재는 새 SEND current로 승격하지 않는다',async()=>{
  for(const fault of ['busy','missingClaim','missingPermit','attempt','nonce']){const f=await fixture();f.fault(fault);if(fault==='attempt')f.attempt.localAttemptRef={...f.attempt.localAttemptRef,version:2};if(fault==='nonce')f.f.state().challenges=[];await assert.rejects(f.bound(s=>s.current(f.e,f.claimRef)));assert(!f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)));}
 });

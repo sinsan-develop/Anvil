@@ -31,7 +31,7 @@ export class BoundSyntheticProviderSendCurrent{
  constructor(db:PoolClient,actor:AuthenticatedIdentity,scope:SyntheticChallengeScope,basis:SyntheticPgInstructionPermitBasis,challenges:SyntheticChallengeTransaction,selection:{claim:ProviderSessionClaim;claimRef:ProviderRef;attempt:ProviderWireAttempt}){
   if(typeof db?.query!=='function'||!(basis instanceof SyntheticPgInstructionPermitBasis)||!recordV1(scope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||scope.mode!=='EXECUTION'||![scope.projectId,scope.connectorId,scope.executionId].every(uuidV1)||!refV1(scope.grantRef)||![scope.executionGeneration,scope.credentialGeneration].every(v=>Number.isSafeInteger(v)&&v>0)||!recordV1(selection,['claim','claimRef','attempt']))fail();
   const c=validateProviderSessionClaim(selection.claim);if(c.claim.kind!=='THREAD'||!same(c.ref,selection.claimRef))fail();
-  this.#db=db;this.#actor=cloneV1(actor);this.#scope=cloneV1(scope);this.#basis=basis;this.#challenges=challenges;this.#claim=c.claim;this.#claimRef=c.ref;this.#attempt=cloneV1(selection.attempt);this.#ports();
+  this.#db=db;this.#actor=structuredClone(actor);this.#scope=cloneV1(scope);this.#basis=basis;this.#challenges=challenges;this.#claim=c.claim;this.#claimRef=c.ref;this.#attempt=cloneV1(selection.attempt);this.#ports();
  }
  #ports(){if(this.#basis.transport!=='SYNTHETIC_ONLY'||typeof this.#challenges?.clock!=='function'||typeof this.#challenges.current!=='function'||typeof this.#challenges.read!=='function')fail();}
  async #now(){this.#ports();const n=await this.#challenges.clock();if(!isoV1(n))return fail();return n;}

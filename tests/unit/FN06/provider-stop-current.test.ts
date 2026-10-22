@@ -25,10 +25,15 @@ async function fixture(){
   const store=new SyntheticPgStopCommandStore({transport:'SYNTHETIC_ONLY',current:async()=>({...structuredClone(binding),targetState:fault==='target'?'UNKNOWN':'VERIFIED_CURRENT',checkedAt:at,expiresAt:end})} as any),facts:any={transport:'SYNTHETIC_ONLY',current:async()=>{const v=structuredClone(fact);if(fault==='os')v.writerState='UNKNOWN';return v;}};
   return body(new m.BoundSyntheticProviderStopCurrent(db,actor,scope,store,facts,tx.challenges,{claim:x.claim,parent:x.parent,claimRef:f.state().entries[1].receipt.claimRef,commandRef:ref,attempt}));
  });}
- return{e,bound,calls,attempt,row,claimRows,claim:x.claim,parent:x.parent,at,claimRef:f.state().entries[1].receipt.claimRef,fault:(v:string)=>fault=v};
+ return{e,bound,calls,actor,attempt,row,claimRows,claim:x.claim,parent:x.parent,at,claimRef:f.state().entries[1].receipt.claimRef,fault:(v:string)=>fault=v};
 }
 test('STOP trusted current는 원 중지 허가/영수증·TURN/부모와 현재OS를 검사하고 SEND permit/IDLE을 요구하지 않는다',async()=>{
  const f=await fixture(),v=await f.bound(s=>s.current(f.e,f.claimRef));assert.deepEqual(v.key,receiptKeyV1(f.e));assert.deepEqual(v.claimRef,f.claimRef);assert.equal(v.expiresAt,f.e.expiresAt);assert(!f.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));assert(!f.calls.some(s=>s.includes('execution_instruction_permits')));
+});
+
+test('STOP current는 실제 인증 Date actor를 보존하고 caller 변경으로 원 중지 주체를 바꾸지 않는다',async()=>{
+ const f=await fixture();f.actor.reauthUntil=new Date('2026-10-22T02:01:30.000Z');const expected=f.actor.actorId;
+ const value=await f.bound(async s=>{f.actor.actorId=crypto.randomUUID();f.actor.reauthUntil.setTime(0);return s.current(f.e,f.claimRef);});assert.deepEqual(value.claimRef,f.claimRef);assert.notEqual(f.actor.actorId,expected);assert(!f.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));
 });
 test('STOP target/OS 미확인·타부모·원 중지 receipt 변조·SEND permit 혼입은 거절한다',async()=>{
  for(const fault of ['target','os','parent','receipt','permit']){const f=await fixture();f.fault(fault);if(fault==='parent')f.claimRows[0].content_hash='e'.repeat(64);if(fault==='receipt')f.row.audit_scope='e'.repeat(64);if(fault==='permit')(f.attempt as any).permitRef=f.claimRef;await assert.rejects(f.bound(s=>s.current(f.e,f.claimRef)));}

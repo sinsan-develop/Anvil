@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 SEND/STOP 실제 actor 진입 보완**: 정상Date반례2RED후내부identity복제2줄만보완해직접8PASS1410.6103ms/type/diff0. caller가원객체userId/reauthDate를바꿔도private복제/원current검사를유지하고SEND IDLE/permit/nonce/THREAD 및STOP TURN부모/원receipt·OS검사를보존한다. wire자료cloneV1은그대로이며새서명/허가/SQL/권한/Agent0. 기존wrapper/성공통합QA재실행0·실제PG/served/native/실Agent·전체FN06미완료. 다음pending0037의실PG구문·최소권한closure/COMMIT은정식적용0인일회lab가r2제외경계에포함되는지PMO에정확판정을요청했고source시험준비는계속한다.
+
+- **FN06 인증 Date 반례 RED2**: SEND/STOP current의신규실제actor Date 두건모두INPUT_INVALID로실패했다(2FAIL526.7922ms). 초기화cloneV1(actor) stack에서실제진입차단을확인했으며 wire JSON이아닌내부identity만structuredClone으로보존한다. caller변경으로현재주체/재인증Date가바뀌지않는반례도같이검사하고원scope/claim/permit/서명/권한정책은보존한다. 실제PC/DB/native/Agent호출0.
+
+- **FN06 실제 인증 actor Date 진입 진단 착수**: 2b46ab074a4048e25405c670aff2c05f772dd471 local/private동일·main f976ed5e/보호6보존. source조회에서승인r2 A~C의provider-send-current/provider-stop-current만cloneV1(actor)를사용하고원authenticated는PG Date reauthUntil을전달함을확인했다. 이는현FN13 실제실패와같은자료형경계의미확인기능오류후보이며정상actor반례로입증후서버내부clone만보정한다. 새wrapper/허가/SQL/DB/native/Agent·정식서비스0,예전정상/통합QA반복없이새Date반례와직접current거절만검사한다. 중지/재개실기능은현재SYNTHETIC_ONLY caller/미적용DB/실current·native선행부족으로실행하지않으며일반사용완료주장0. 추정responsible-sessions 폴더읽기부재1은변경0·inventory로좁혔다.
+
 - **FN13/UI05 체크포인트 변경 선언 비교 구현·핵심 확인**: 같은임무/실행/원파일·제출hash 및기존서버권한ACK조회아래현황파일의changedFiles 대제출changes를화면에연결했다. 현황단독/제출단독·유형/알려진hash/diff차이·양쪽필수hash미상/한쪽diff참조미상·중복경로를구분하고양쪽원문을보존한다. 소스root/현재디스크/currentFacts·writer·readyForResume는미확인/false로유지하며새API/SQL/DB/파일접근/native/Agent0. 신규정상/diff누락/리뷰역방향hash반례RED→최신직접7PASS425.3253ms/typebuild356/395ms·새bundle통제API Edge1PASS3.8초에서선택파일변경·실제지연JSON완료/후속렌더후옛패널재등장0·403/기존ACK·추가HTTP/write0을확인했다. 원6/초기UI1PASS3.9초/독립C0/I1/M1·실행0과Main보완을구분하며독립clean으로소급하지않는다. 등록임시QA exactowner/realpath/nonlink/process0회수후별도경로false/process0. 기존chunk500k/NO_COLOR경고유지·정식served/실OS변경/재개·전체FN13/UI05/계획미완료다.
 
 - **FN13 변경 대조 한정 검토 C0/I1/M1**: 독립실행/수정0. I1은현황쪽필수hash누락의양방향판정공백이며재결박선택기록반례1FAIL289.2543ms로DECLARED_FIELDS_EQUAL을확인했다. 정식파일준비계약은더엄격하나소비함수도미확인을일치로보이지않도록양쪽을검사한다. M1은지연응답JSON처리후패널부재assert누락이므로시험barrier/렌더후부재확인만추가한다. 원Edge1PASS3.9초/build356/393ms와분리,QA01정확owner/realpath/nonlink/process0회수후독립경로false를확인하고같은literal을10분한도로재등록해영향1건만확인한다. 권한/기준/실DB/서비스0.
