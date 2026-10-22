@@ -15,7 +15,7 @@ export function appendContextSourceSelection(input:ContextPreparationInput,code:
  const next=structuredClone(input);next.slots.find(value=>value.code===code)!.sources.push(structuredClone(selection));return next;
 }
 
-function editableContextBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession):current is ContextPreparationBuffer{
+export function editableContextBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession):current is ContextPreparationBuffer{
  if(!current||!rendered)return false;
  const locked=(b:ContextPreparationBuffer)=>!!b.pending||b.uncertain||!!b.resultRef||!!b.result;
  return !locked(current)&&!locked(rendered)&&current.bindingId===rendered.bindingId&&current.projectId===rendered.projectId&&current.ownerUserId===session.user.id&&rendered.ownerUserId===session.user.id&&current.ownerClientId===session.clientId&&rendered.ownerClientId===session.clientId&&current.controlGeneration===rendered.controlGeneration&&ordered(current.assignmentRef)===ordered(rendered.assignmentRef)&&ordered(current.input.assignmentRef)===ordered(current.assignmentRef);

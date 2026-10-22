@@ -9,6 +9,7 @@ import {newContextPreparation,prepareContextWrite} from '../../../apps/web/src/f
 import {readContextPreparationInput} from '../../../apps/server/modules/context/context-input.ts';
 import {planContextText} from '../../../apps/server/modules/context/context-text-plan.ts';
 import {contentHash} from '../../../contracts/canonical.ts';
+import {editContextPreparationBuffer} from '../../../apps/web/src/features/workspace/context-preparation-edit.ts';
 const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});after(async()=>{await compiler.close();});
 const module=existsSync(new URL('../../../apps/web/src/features/workspace/ContextDeliveryLimits.tsx',import.meta.url))?await compiler.ssrLoadModule('/src/features/workspace/ContextDeliveryLimits.tsx'):{};
 const workspace=await compiler.ssrLoadModule('/src/features/workspace/WorkspaceContextPreparation.tsx');
@@ -39,4 +40,12 @@ test('잠금은 handler도 변경하지않고 정적표시는 토큰/실행허�
  let changed=0;const props={limits:{maxPartBytes:32768,maxParts:200},disabled:true,onChange:()=>{changed++;}};
  input(props,'부분 최대 UTF8 바이트').onChange({target:{value:'6'}});assert.equal(changed,0);const html=renderToStaticMarkup(createElement(module.ContextDeliveryLimits,props));assert.ok(html.includes('fieldset disabled'));assert.ok(html.includes('토큰·비용 한도 아님'));assert.ok(html.includes('value="32768"'));
  const bad=renderToStaticMarkup(createElement(module.ContextDeliveryLimits,{...props,disabled:false,limits:{maxPartBytes:0,maxParts:201}}));assert.ok(bad.includes('role="alert"'));
+});
+test('같은 예전 렌더의 두 실제 숫자 handler는 변경 필드만 전달해 다른 현재값을 되돌리지 않는다',()=>{
+ const rendered=newContextPreparation(confirmed,session,1),original=structuredClone(rendered);let current=rendered;
+ const props={limits:rendered.input.limits,disabled:false,onChange:(limits:any,field:'maxPartBytes'|'maxParts')=>{current=editContextPreparationBuffer(current,rendered,session,{kind:'DELIVERY_LIMIT',field,value:limits[field]})!;}};
+ const bytes=input(props,'부분 최대 UTF8 바이트'),parts=input(props,'최대 부분 수');
+ bytes.onChange({target:{value:'64'}});parts.onChange({target:{value:'100'}});assert.deepEqual(current.input.limits,{maxPartBytes:64,maxParts:100});
+ bytes.onChange({target:{value:String(rendered.input.limits.maxPartBytes)}});assert.deepEqual(current.input.limits,{maxPartBytes:rendered.input.limits.maxPartBytes,maxParts:100});assert.deepEqual(rendered,original);
+ current={...current,uncertain:true};const locked=current;parts.onChange({target:{value:'50'}});assert.equal(current,locked);
 });

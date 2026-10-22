@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN05 맥락 준비 이유·분할 한도 편집 보완**: 원문선별과같은livebuffer조건을이유/한도편집에도연결하고숫자callback의명시field만현재값에반영한다. 저장프로토콜·서버상한검사·원문/기준은불변. 직접10과실제handler/편집8·type/build는각source범위/실DOM·DB·served미검증이며오류/검토는WORK_STATUS를따른다. FN06D1은미답변제안·실제권한/실행은미착수다.
+
 - **2026-10-23 FN05 원문 추가 현재 상태 보완**: 기존 append 한도/종류/원문 보존은유지하고선택해제와같은livebuffer장벽을추가했다. 직접11/type/Web·한정C0/I0/M0는source검증이며실여정미검증이다. FN06 D1패킷v3의최초준비/head없는상관관측순서명확화는아직제안이며v2결정질문을자동확대하지않는다. 제품권한/실행제외·미완료와원오류는WORK_STATUS를따른다.
 
 - **2026-10-23 Stage B FN05 독립 입력 보존 보완**: FN06 네공급자/정식환경 미결과무관하게 맥락원문 선택해제의stale-index를exact source/current buffer재검사로보정했다. 선택·한도/원문/저장명령불변·UNKNOWN잠금, 직접8+인접8/type/build/한정C0I0M0는소스범위이며 실제DB/served미검증이다. FN06 D1 정확패킷은source/미적용SQL/API·권한계약의제안만이며실제효과승인0이다. StageB13행대조/기존구현중복0·미완료/오류/다음경계는WORK_STATUS와FN06_AUTHORITY_PROVIDER_DELTA_PACKET.md를따른다.
