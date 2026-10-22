@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 C 잠긴 원장 직접 소비 추가**: 기존 exclusive transaction의 전체 journal을 원 validator로 재대조하고 최신 SEND 시도/소비permit 또는 STOP 시도만 factory로 연결했다. 전송 종료/abort 뒤 source 재사용 거절·불완전 원장/원 target 불일치/유실 재전송0을 포함한 직접인접29PASS2261.5834ms/type/diff0. 새 일반 wire/native/파일root/DB/Agent/서비스 실행은 없으며 실제연결·전체FN06/Stage 완료는 아니다. 세부 검토/원실패와 후속 작업은 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN06 C exact SEND/STOP 소비 source 일부**: 기존 transport의 원 시도/permit 뒤 내부 metadata·보호 wire guard를 연결하고, 잠긴 local row factory와 기존 SEND basis/claim·소비permit/nonce 및 STOP 원receipt/current/TURN부모·freshOS를 읽는 current source를 구현했다. 신규9PASS2301.8764ms/type/diff0·변경 인접transport25/STOP10 별도 확인·한정독립C0/I0(I1 직접보완 이력 유지). 실제등록/OS/native/파일fsync/서버DB/Agent·전체FN06은 미완료·미검증이다. 새로운 실제 wire/DB/권한/키/서비스는 실행하지 않았으며 source/fake와 실제연결을 구분한다. 상세/다음 source 조립은 WORK_STATUS 및 후보§7을 따른다.
 
 - **2026-10-22 FN06 HUMAN TURN 목록·원 결과 화면 source 연결**: 승인된 C에서 현재 OWNER의 exact TURN receipt와 THREAD/TURN 혼합 목록을 실제 route→부모 원장/fullscope/ref 검증→브라우저 reader에 연결했다. 조회30PASS/type0·한정독립C0/I0, 실제행 종류/handler 메모리 렌더4PASS/typebuild0. 옛 THREAD 전용 cursor는 filter 변경으로 재사용 불가·명시 재조회가 필요하며 기한 연장/새권한0이다. 코드 연결과 실제 served 사용을 구분하며 실제DB/DOM/Agent·nonOWNER RESPONSIBLE·SEND/STOP current/native/caller·전체FN06/Stage/계획은 미완료다. 상세/오류/다음 작업은 WORK_STATUS/후보§7을 따른다.

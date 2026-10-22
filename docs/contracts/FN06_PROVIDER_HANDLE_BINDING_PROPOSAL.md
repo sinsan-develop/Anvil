@@ -145,6 +145,8 @@ usableBefore:UTC
 
 ### 2026-10-22 C exact SEND/STOP source 소비 조립
 
+- 후속 잠금 source 연결: 기존 transport의 exclusive transaction 안에서 tx.read 전체 journal을 기존 validator와 방금 sync한 전체행에 재대조해 최신 시도/permit만 reader factory로 전달한다. 별도 중첩 잠금이나 새 파일 fallback은 없다. 종료/abort 뒤 source는 거절하고 실패는 원 UNKNOWN/STOP_UNCONFIRMED에 남긴다. 새 직접4+변경 인접25=29PASS2261.5834ms/type/diff0이며 실제 fsync/OS잠금·서버등록/리스너·PG/native/실Agent 증거가 아니다.
+
 - 기존 SEND/STOP transport는 기존 시도/permit sync·허가·원장 멱등을 그대로 유지하고 내부 wire.exchange에 exact key/envelope/localAttemptRef/permitRef/material hash/binding hash metadata를 추가 전달한다. 공개 HTTP/명령 계약을 확장하거나 기존 원장 schema를 바꾸지 않는다. 선택적으로 주입하는 SyntheticProviderBoundWire는 고정 RPC id/method/지시 hash·보호 capsule의 thread/turn을 대조한 뒤 SYNTHETIC_ONLY inner wire만1회 소비한다. default native/socket/Agent fallback은 없다.
 - SyntheticProviderReaderFactory는 기존 sender/stopper exclusive journal 잠금 안에서 제공한 최신 sync 시도/permit row의 self-hash/ref·state/순서/previousRef·key/envelope/material/binding/permit을 검증한 뒤 reader/current를 생성한다. source 자체가 최신행 선택·전체journal 검증·실제 exclusive/fsync를 증명하지 않으며 이는 기존 readLocked 제공자 계약이다. caller가 metadata만 조립해 허가를 얻는 일반 API가 아니다.
 - BoundSyntheticProviderSendCurrent는 같은 기존 인증 db/actor/challenge transaction 안에서 SyntheticPgInstructionPermitBasis.current의 IDLE/현재 정책·예약 checkDelivery를 재사용한다. 정확 원 THREAD journal, 소비 SEND permit과 원 서명 target/nonce·localAttempt ref·현재 등록/기한을 대조한다. 새 nonce/permit/예산을 만들지 않고 원 소비 ref가 다른 시도면 거절한다.

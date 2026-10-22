@@ -6,13 +6,14 @@ import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,type RuntimeRefV1} from '../
 import {Codex0161Codec,type CodecFact} from './codec.ts';
 import {SyntheticObservationSpool} from '../../runtime/execution-observation-spool.ts';
 import type {ProviderWireAttempt} from './provider-bound-wire.ts';
+import type {SyntheticLockedProviderAttemptSource} from './provider-reader-factory.ts';
 type Reason='NONE'|'PROVIDER_ACK_ONLY'|'RESPONSE_LOST'|'PROTOCOL_UNCERTAIN'|'ATTEMPT_UNCERTAIN';
 type ResponseFact={transport:'SYNTHETIC_ONLY';source:'CODEX_0161_PROVIDER_CLAIM';fact:CodecFact};
 type Entry={ref:RuntimeRefV1;snapshot:{sequence:number;state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED';key:ReceiptKeyV1;envelopeHash:string;bindingHash:string;at:string;responseRef:RuntimeRefV1|null;responseFact:ResponseFact|null;previousRef:RuntimeRefV1|null;reason:Reason}};
 export interface SyntheticStopTransaction{read():Promise<{complete:boolean;events:Entry[]}>;appendAndSync(entry:Entry):Promise<void>}
 export interface SyntheticStopStore{transport:'SYNTHETIC_ONLY';exclusive<T>(scope:{projectId:string;executionId:string;executionGeneration:number},body:(tx:SyntheticStopTransaction)=>Promise<T>):Promise<T>}
 export interface SyntheticStopVerifier{transport:'SYNTHETIC_ONLY';/** 현재 서버 지시·소유/정확 target을 저장소와 대조한다. caller 입력을 인증하지 않는다. */current(envelope:DispatchEnvelopeV1):Promise<unknown>}
-export interface SyntheticStopWire{transport:'SYNTHETIC_ONLY';exchange(bytes:Uint8Array,signal:AbortSignal,attempt?:ProviderWireAttempt):Promise<Uint8Array>}
+export interface SyntheticStopWire{transport:'SYNTHETIC_ONLY';exchange(bytes:Uint8Array,signal:AbortSignal,attempt?:ProviderWireAttempt,source?:SyntheticLockedProviderAttemptSource):Promise<Uint8Array>}
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 class StopFailure extends Error{}
 const fail=(code:string):never=>{throw new StopFailure(code);};
@@ -69,7 +70,11 @@ export class SyntheticPrimaryStopTransport{
     readDispatchEnvelopeV1(e,this.#now());const before=await this.#current(e,selectionEnd);await append('STOP_ATTEMPTED',before.bindingHash,'NONE',null);const current=await this.#current(e,selectionEnd);if(current.bindingHash!==before.bindingHash)fail('STOP_CURRENT_CHANGED');
     const requestId=hash({key:receiptKeyV1(e),envelopeHash:e.envelopeHash}),encoded=this.codec.encodeRequest('turn/interrupt',requestId,current.params);if(encoded.kind!=='ENCODED')return fail('STOP_CODEC_UNAVAILABLE');const final=await this.#current(e,selectionEnd);if(final.bindingHash!==current.bindingHash)fail('STOP_CURRENT_CHANGED');const deadline=Math.min(before.deadline,current.deadline,final.deadline);
     let reason:Reason='PROVIDER_ACK_ONLY',responseFact:ResponseFact|null=null;
-    try{const response=await this.#bounded(signal=>this.wire.exchange(new Uint8Array(encoded.wire),signal,{key:receiptKeyV1(e),envelopeHash:e.envelopeHash,localAttemptRef:cloneV1(events[0]!.ref),permitRef:null,instructionContentHash:null,bindingHash:before.bindingHash}),deadline);if(!(response instanceof Uint8Array)||response.byteLength>2*1024*1024||this.#now()>=deadline)throw Error('STOP_RESPONSE_UNCERTAIN');const facts=this.codec.push(new Uint8Array(response)),matched=facts.find(f=>f.kind==='INTERRUPT_RESPONSE'&&f.requestIdDigest===hash(requestId));if(facts.some(f=>['PROTOCOL_UNKNOWN','CONTEXT_UNVERIFIED','RPC_ERROR','TOOL_ERROR_FACT','TOOL_APPROVAL_REQUIRED'].includes(f.kind))||!matched){reason='PROTOCOL_UNCERTAIN';}else{responseFact={transport:'SYNTHETIC_ONLY',source:'CODEX_0161_PROVIDER_CLAIM',fact:cloneV1(matched)};}}catch{reason='RESPONSE_LOST';}
+    try{const response=await this.#bounded(async signal=>{
+     let active=true;const metadata:ProviderWireAttempt={key:receiptKeyV1(e),envelopeHash:e.envelopeHash,localAttemptRef:cloneV1(events[0]!.ref),permitRef:null,instructionContentHash:null,bindingHash:before.bindingHash};
+     const source:SyntheticLockedProviderAttemptSource={transport:'SYNTHETIC_ONLY',readLocked:async selected=>{if(!active||signal.aborted||!same(selected,metadata))fail('STOP_LOCKED_SOURCE_UNAVAILABLE');const fresh=this.#journal(await tx.read(),e);if(!active||signal.aborted||!same(fresh,events)||fresh.length!==1||fresh[0]!.snapshot.state!=='STOP_ATTEMPTED')fail('STOP_LOCKED_SOURCE_UNAVAILABLE');return{complete:true,attemptRecord:cloneV1(fresh[0]),permitRecord:null};}};
+     try{return await this.wire.exchange(new Uint8Array(encoded.wire),signal,cloneV1(metadata),source);}finally{active=false;}
+    },deadline);if(!(response instanceof Uint8Array)||response.byteLength>2*1024*1024||this.#now()>=deadline)throw Error('STOP_RESPONSE_UNCERTAIN');const facts=this.codec.push(new Uint8Array(response)),matched=facts.find(f=>f.kind==='INTERRUPT_RESPONSE'&&f.requestIdDigest===hash(requestId));if(facts.some(f=>['PROTOCOL_UNKNOWN','CONTEXT_UNVERIFIED','RPC_ERROR','TOOL_ERROR_FACT','TOOL_APPROVAL_REQUIRED'].includes(f.kind))||!matched){reason='PROTOCOL_UNCERTAIN';}else{responseFact={transport:'SYNTHETIC_ONLY',source:'CODEX_0161_PROVIDER_CLAIM',fact:cloneV1(matched)};}}catch{reason='RESPONSE_LOST';}
     await append('STOP_UNCONFIRMED',before.bindingHash,reason,responseFact);return this.#result(events);
    });
   }catch(error){if(error instanceof StopFailure)throw error;return fail('STOP_STORAGE_UNAVAILABLE');}

@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **FN06 C 잠금 source 한정 검토 종료·후속 선정**: 기존 독립 reviewer 정적 C0/I0/M0(실행0), 최신 Main 직접인접29PASS2261.5834ms/type/diff0이다. 변경 source3/시험1/계획·후보·현황3만 기존 branch에 보존하고 보호6/실자원은 변경하지 않는다. 다음 승인된 source 항목은 nonOWNER 지정책임자의 exact 이력조회로 선정했다. 현 resolver/page는 OWNER전용, 원 history 계약은 exact responsibleBindingRef 대조를 요구하므로 assignments/responsible-sessions.ts의 원예약·현정책과 연결해야 하며 일반프로젝트 조회자에게 권한을 자동확장하지 않는다. 실제 DB/역할/리스너/native/Agent/서비스 제외와 전체계획미완료는 유지한다.
+
+- **FN06 후속 조사 경로 오류2**: 책임예약 경로는 rg --files로 assignments/responsible-sessions.ts를 확인했으나 추가 rg 인자 apps/server/modules/agents가 없어 os error2/exit1이었다. 파일/권한 변경0이며 해당 가정 경로는 사용하지 않는다. 실제 history/page는 OWNER만 연결, exact history의 RESPONSIBLE 계약은 존재하므로 후속은 확인된 책임예약 모듈과 현재정책만 대조한다.
+
+- **FN06 후속 경로 검색 오류1**: 읽기 전용 rg에 provider-session*를 파일 인자로 전달해 Windows os error123이 발생했다. 조회 실패이며 파일/권한 변경은 없다. rg --files 목록에서 실제 경로를 선택하는 방식으로 정정하고 같은 명령을 반복하지 않는다.
+
+- **FN06 C 잠금 source 최종 직접·인접 확인**: 신규4와 직접영향 기존SEND15/STOP10을 함께29PASS2261.5834ms/type/diff0으로 확인했다. 전체원장 incomplete와 timeout 직후/늦은응답 전 source 재사용도 거절되며 원멱등/허가·budget/IDLE·STOP상태 판정은 유지한다. 이는 source/fake만의 증거이며 actualfsync·OS잠금/등록리스너·PG/권한/native/helper/실handle·Agent0·미검증이다. 한정독립delta 검토를 기존 reviewer에 요청했고 보호6는 그대로 보존했다.
+
+- **FN06 C 잠긴 원장 source 직접연결 GREEN**: 새정상 RED 뒤 직접4PASS2289.9802ms/type/diff0이다. 기존 SEND/STOP exclusive transaction을 재사용해 tx.read 전체 원장을 기존 validator와 현재 sync행에 대조하고 exact 시도/permit만 guard에 전달한다. 원 허가/예약/멱등·UNKNOWN/STOP_UNCONFIRMED 보존, source 종료/abort 뒤거절·늦은응답 wipe를 확인했다. 원장 incomplete 음성과 timeout source재사용 음성을 추가해최종검사·한정독립검토를진행하며실DB/native/실파일/Agent/서비스0·보호6보존이다.
+
+- **FN06 C 잠긴 원장 직접 연결 RED**: 기존 transport가 guard factory에 원장 source를 전달하지 않아 새 정상1FAIL539.301ms, 기대 RESPONSE_RECORDED 대신 UNKNOWN을 확인했다. 기존 exclusive 안에서 tx.read 전체 원장을 기존 검사로 재대조하고 마지막 SEND 시도+소비permit 또는 STOP 시도만 제공하며 전송 완료/abort 뒤 source는 거절하도록 좁힌다. 중첩잠금·실파일/root 생성·DB/권한/Agent/서비스 변경0, 완료한 앞선9검사와 별개 신규 delta다.
+
 - **FN06 C SEND/STOP current·guard·factory source 조립 확인**: 최신 신규9PASS2301.8764ms/type/diff0이다. 변경 직후 기존 transport 인접25와 새4=29PASS904.5516ms, 공유 STOP 검사 인접10PASS288.3049ms는 별도 실제 실행이며 중복 합산하지 않는다. 기존 송신/중지 허가·원장 멱등은 유지하고 exact 시도/permit/material/binding→잠긴 row factory→기존 SEND basis/소비nonce 또는 STOP 원receipt/현재target·TURN/부모/freshOS→보호 capsule→fake wire를 연결했다. I1 지연 raw 응답 미정리는 직접RED→GREEN 뒤 같은 reviewer가 source해소를 확인했다. 최신 factory 제한C0/I0·독립 실행0. readLocked 최신행/전체journal/exclusive/fsync와 OS/current 제공자 진위는 신뢰 전제이며 actual검증으로 승격하지 않는다. 실제 파일 adapter/서버리스너·DB/권한·native/키/실handle/Agent0·보호6 보존·전체FN06/Stage/계획 미완료. 다음은 정식 등록/실행 경계와 연결할 source 조립 및 나머지 계획 미구현 대조이며 실제 실행 제외는 유지한다.
 
 - **FN06 C 잠긴 시도 factory RED**: 원 시도/permit row 대조를 guard reader 생성 앞에 추가한 정상 transport1RED388.8117ms(새 factory 모듈 부재)다. caller가 기존 exclusive journal 잠금 안에서 검증한 최신 시도/permit row를 읽기 제공하는 port만 사용하고 중첩 잠금·파일 fallback은 만들지 않는다. self hash/원 ref·state/순서/이전ref·동일 key/envelope·material/binding/permit을 대조한 뒤에만 current reader를 만든다. 실제 fsync/OS 잠금은 합성 row로 증명하지 않는다.
