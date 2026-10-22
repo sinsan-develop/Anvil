@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 파일 보호 primitive source 부분 작성**: 고정 root/UUID파일·owner/ACL/handle정체성·유한용량/기한·배타생성/sync·기존cipher 재사용/불명보존의 내부 C# source와 미실행 반례 source를 추가했다. 첫 정적I1의 최종후처리 만료누락은 보완 후 scoped 추가C0/I0/M0이며 실제컴파일/Windows공유·ACL·DPAPI·경합/내구성은 미검증이다. 새 공개host/pipe/current caller·실파일 저장/실Agent는 아직 미구현/미확인으로 남긴다. source작성 승인을 실제 build/call/rootACL/파일키credential·DB/서비스 실행으로 확장하지 않는다.
+
 - **2026-10-22 FN06 native capsule의 현재 명령 소비 일부 연결**: 기존 SEND/STOP reader의 복호 형식 검사만 새 exact canonical 코덱으로 교체했다. 정상/음성·원 current/부모·기한/소거·bound transport 직접9PASS/type/diff·한정독립C0/I0/M0는 합성 source 증거다. native/실파일·ACL/현재성/Agent·전체 FN06 완료는 미판정이다. 후속 파일 primitive source는 작성·검토중이며 실제 생성·호출을 하지 않는다. 업무 범위/선행·기존 권한/검수 기준은 불변이다.
 
 - **2026-10-22 FN06 native source 채택·FN12/UI05 개별 명령 근거 일부 연결**: 신산님 직접 승인으로 고정 r2 native source 작성만 채택했다. 첫 암복호 코어/코덱 source는 부분 구현이며 실제 native 빌드/호출·파일보호/현재명령 연결은 미구현·미검증이다. 독립 UI05 명령/evidence→동일 제출 등록 원문 연결은 기존 GET 계약만 소비하고 근거 선언/bytes일치와 실제 수행·출처/exit/검수·완료를 구분한다. 새 공개API/SQL/DB/권한/서비스/Agent0, Node·reader 최소 확인 및 화면 build와 실제 클릭/정식served 검증을 분리한다. 전체 Stage/업무 완료로 승격하지 않으며 기존 선행·검수 기준은 유지한다. 구체 오류/검증·다음 작업은 WORK_STATUS를 따른다.
