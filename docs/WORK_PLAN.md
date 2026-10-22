@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN13/UI05 현황·제출 변경선언 대조 일부 연결**: 체크포인트파일의변경내역과같은실행제출의변경선언에서한쪽누락/내용차이·hash/diff미확인·중복경로를표시한다. 원파일/제출hash/권한GET/선택·지연회수아래연결했으며root/현재디스크/쓰기회수·재개는미확인으로유지한다. 직접7PASS/typebuild356/395ms·통제API Edge1PASS3.8초·QA독립잔여0,독립C0/I1/M1후Main반례보완과실제OS/정식served미검증을분리한다. 전체FN13 reconcile/중지·재개완료가아니며미실행/오류·남은계획은WORK_STATUS를따른다.
+
 - **2026-10-22 FN13/UI05 관측페이지 격리 저장·조회 핵심 확인**: c4fd1308 actual PG15/Node/59SQL 새빈 격리QA에서 관측41건 실제COMMIT·20/20/1/Back·현재ACK43과원cap42·외부인/변조/공백채움거절·조회6표불변을 확인했다. phaseDONE/exit0·정확자원/원문·관련프로세스 독립잔여0. 실제actor Date 오류1줄은 반례RED→직접/인접15PASS/type0으로보완했고이전실패를보존했다. 통제UI와격리실DB는각범위증거이며정식served/실Agent·전체FN13/UI05/계획완료가아니다. 정식서비스3은여전히exited/변경0, 상세오류와미충족선행은WORK_STATUS를따른다.
 
 - **2026-10-22 FN13/UI05 20건 이후 관측 페이지 일부 구현**: PMO 상세채택에 따라 기존관측GET보존·별도 observation-pages와same-origin reader/명시페이지·원문을연결했다. 전체원장/ACK 검증·현재member/기한 재검사·서명user/client/session/credential/result/execution/상한refdigest/원30초·왕복현재GET·append제외/공백채움stale·행누락거절을유지한다. 직접인접14PASS/typebuild356/343ms·첫DOM5PASS8.1초, 독립C0/I1/M1후Main TDD보완·새bundle 영향DOM2PASS5.5초·QA독립잔여0이다. 독립clean이나실PG/정식served·Agent/전체FN13/Stage완료로승격하지않으며상세오류·다음실제소비는 WORK_STATUS를따른다.

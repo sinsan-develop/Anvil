@@ -1,5 +1,23 @@
 # Anvil 재설계 작업현황
 
+- **FN13/UI05 체크포인트 변경 선언 비교 구현·핵심 확인**: 같은임무/실행/원파일·제출hash 및기존서버권한ACK조회아래현황파일의changedFiles 대제출changes를화면에연결했다. 현황단독/제출단독·유형/알려진hash/diff차이·양쪽필수hash미상/한쪽diff참조미상·중복경로를구분하고양쪽원문을보존한다. 소스root/현재디스크/currentFacts·writer·readyForResume는미확인/false로유지하며새API/SQL/DB/파일접근/native/Agent0. 신규정상/diff누락/리뷰역방향hash반례RED→최신직접7PASS425.3253ms/typebuild356/395ms·새bundle통제API Edge1PASS3.8초에서선택파일변경·실제지연JSON완료/후속렌더후옛패널재등장0·403/기존ACK·추가HTTP/write0을확인했다. 원6/초기UI1PASS3.9초/독립C0/I1/M1·실행0과Main보완을구분하며독립clean으로소급하지않는다. 등록임시QA exactowner/realpath/nonlink/process0회수후별도경로false/process0. 기존chunk500k/NO_COLOR경고유지·정식served/실OS변경/재개·전체FN13/UI05/계획미완료다.
+
+- **FN13 변경 대조 한정 검토 C0/I1/M1**: 독립실행/수정0. I1은현황쪽필수hash누락의양방향판정공백이며재결박선택기록반례1FAIL289.2543ms로DECLARED_FIELDS_EQUAL을확인했다. 정식파일준비계약은더엄격하나소비함수도미확인을일치로보이지않도록양쪽을검사한다. M1은지연응답JSON처리후패널부재assert누락이므로시험barrier/렌더후부재확인만추가한다. 원Edge1PASS3.9초/build356/393ms와분리,QA01정확owner/realpath/nonlink/process0회수후독립경로false를확인하고같은literal을10분한도로재등록해영향1건만확인한다. 권한/기준/실DB/서비스0.
+
+- **FN13 변경대조 UI 정상 RED**: 명시기존bundle선택후파일선택/준비POST·기존ACK대조에는도달했으나신규‘현황·제출 변경 선언 대조’패널부재로Edge1FAIL/expect5000ms. 진입ERR_FAILED와분리하고기존ACK/선택잠금/timeout/기준변경없이선언대조표시만연결한다. 실제DB/서버/Agent0.
+
+- **FN13 화면 QA 진입 오류**: 첫CHECKPOINT_COMPARE는새화면에못도달하고page.goto ERR_FAILED 1FAIL이다. installWorkspaceBundle은명시ANVIL_UI04_QA_DIST가없으면등록하지않는기존안전guard이며실제원인으로확인했다. 명시apps/web/dist 선택만보완해신규패널부재반례를확인한다. 새서비스기동/HTTPS우회/제품실패주장0·이진입실패는화면RED로계산하지않는다.
+
+- **FN13 변경대조 source GREEN·화면 QA 등록**: 직접6PASS321.7477ms후시험타입보정으로type0. 신규Main소유 D:\tmp\anvil-v3-stage-b\ui05-checkpoint-changes-01(temp/results)·owner SINSAN\cyhuh·생성전부재/상위비링크·최대10분/외부120초/시험15초. 기존bundle새패널부재RED1→연결새build에서기존CHECKPOINT_COMPARE흐름1만실행해표시/파일변경회수/403/기존ACK기능을확인한다. 실제PG/서버/Agent·권한/파일내용읽기0·종료exact소유/link/process확인후회수·독립잔여0. 기존20페이지/성공QA반복0이다.
+
+- **FN13 변경 비교型검사 보정**: diff누락보완뒤직접6PASS321.7477ms이나신규시험array[0]의undefined 추론TS2769 두건으로type실패를분리했다. 정상fixture가보장한선택행에non-null명시만보완하고제품/기준은변경하지않는다. 뒤shell최종exit0을typePASS로취급하지않는다.
+
+- **FN13 변경 비교 보완 RED**: 직접5PASS319.9385ms 뒤 신규fixture 결과변경의nullable 추론 TS2322 3건이 발생해 시험값 대입만 보정했다. 추가 한쪽diff 누락반례1FAIL313.2383ms에서 DECLARED_FIELDS_EQUAL로감춰짐을확인했고 REFERENCE_UNKNOWN으로구분한다. 제품권한/DB/원기준변경0·source단위PASS를화면/타입PASS로승격하지않는다.
+
+- **FN13 변경 대조 정상 RED**: 신규 현황단독/제출단독/같은필드 소비반례1FAIL371.8901ms에서 기존 비교결과의 changeComparison 부재를 확인했다. 기존 준비파일과 제출선언만 연결하며 서비스/DB/권한·원문/재개 정책변경0이다.
+
+- **FN13/UI05 변경 내역 대조 착수 / Main 어울**: 승인 FN13 reconcile/unrecorded_local_changes_visible_in_reconcile 및 UI05 현황/변경탭 안의 독립 상세화다. 기존 CheckpointJournalComparison/compareCheckpointJournal은 같은임무/실행·선택파일hash·보관ACK만비교하고 state.changedFiles와제출manifest.changes는무대조다. 현황파일에만있는변경/제출에만있는변경/유형·알려진hash·diff참조불일치/누락hash·중복경로를명시하고양쪽원문을유지한다. 결과보고서에sourceRoot가없으므로경로필드일치를root/실파일일치로승격하지않고CURRENT_FILES_AND_PROCESSES_NOT_COMPARED/readyForResumefalse를유지한다. 기존명시GET·서버권한/범위·만료·선택변경/늦은응답잠금아래연결하며새API/SQL/DB/권한/Agent·파일접근0. 요구/상세를brainstorming bounded로대조했고기존계획내재승인없이진행한다. 정상/누락·불일치/중복/미연결실행/원문변형·403·늦은응답의직접영향검사와화면1흐름만추가,원페이지QA반복0. 앞선예상경로recovery/stopping/추정result-submission-v1읽기부재3은변경0이며이후inventory실제경로만사용한다.
+
 - **FN13/UI05 신규 관측페이지 실제 격리 소비 확인 / Main 어울**: exact c4fd13081b7f1c9106328f9eaf1260c03d84ccb9·private Git 새빈 checkout/PG15·Node/기존59SQL(지문b6ef4ee7…)의 OBSERVATION_PAGES 신규실행 phaseDONE/exit0. 원실행 grant·합성challenge 선행을 보존한 app-role 관측41건/ACK 실제COMMIT 뒤 인증API→Webreader로20/20/1·왕복같은위치/원30초기한·추가43은현재ACK에만반영/원cap42분리를확인했다. 외부인404/서명변조412/공백1채움후stale412·조회전후6표불변을실제대조했다. marker9는시험9개라는뜻이아니다. 실제Agent/OS관측·정식served/login·전체FN13/UI05/계획완료는미검증·미완료이며합성주장/actualProviderObserved·completion/execution/dispatch false를유지한다.
   - PG d8195d3468818f6419d785d89b8d196ac40b05f15507f5fc0bdd9a2c955ee34a/net60dac312b65e7985fd340c9e5a05a1436a323a69a73b3f6bf8bafa82d97e9788/run a99921d931c6861279ad14745f5892de. 원문files2/dirs5·closeFailures0/rootCleanupFailedfalse·runner failurefalse/cleanupFailurefalse/bootstrap status0 safe1 path_exists0. 별도SSH exactID/runlabel/name/path/Node·Git cwd 잔여0·daemon동일·정식PG/API/Web fullID/image/StartedAt동일/runningfalse3확인exit0. 정식DB/서비스/Agent변경0이며앞선실행FAIL/진단/준비오류와원GET오류를소급PASS하지않는다.
   - 결과기록 patch의 계획서 표제 문맥불일치1은 실제표제 확인 후 보정했으며 그 실패에서 파일변경0이다.
