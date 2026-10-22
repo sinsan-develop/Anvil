@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 최초보관 protocol caller 일부 연결**: SYNTHETIC_ONLY 완전준비와 exact providerRPC사실/부모/kind를 결박해 기존 CREATE코덱을1회소비하고 metadata만반환한다. 실제codec완성응답→별도준비뒤메모리소비 포함 신규/인접8/type/diff를확인했다. 동기RECORDED 의미·기본등록/실권한불변이며 실제native/DPAPI·내구준비원장/OS·Agent/DB서비스/FN06전체/Stage는미완료·미검증이다. 새실행/컴파일/rootACL/키credential0·정확오류/원실패/검토는WORK_STATUS를따른다.
+
 - **2026-10-23 FN06 protocol의 기존reader 소비 일부 연결**: 신규 SYNTHETIC_ONLY metadata/bytepipe store가 기존 RESOLVE코덱·SEND/STOP reader로 exact claim/cipher/부모·취소/유한기한·소유frame을 연결한다. source-only 신규/인접15/type/diff·독립I1의microtask경계 Main RED→GREEN은 확인했으나 실제native/DPAPI·durable원장/OS/binary/current권한·Agent/전체FN06·Stage는 미완료·미검증이다. 새실행/등록·rootACL/키credential/DB/서비스/비용0, 상세원FAIL/I1/한계는WORK_STATUS를따른다.
 
 - **2026-10-23 FN05/UI10 정정 보관발언 근거 일부 연결**: 기존 허용 대화목록/발언/원문GET로 명시확인한 사용자발언·지시 참조를 새정정에 선택/해제하고 기존 entry/changeSources/같은명령에 고정한다. 이전원문/출처·지시kind 보존, 합산한도·ownerclient세대/pendingUNKNOWN·CAS/거절/이탈/await변조는 직접17·합성DOM1/typebuild/등록QA잔여0 범위에서 확인했다. 새공개API/SQL·DD166F조회/실DB/권한·Agent0, pagination/전체주체·정식served/실DB저장후조회·현재지시효력/전체FN05/UI10·Stage는미검증·미완료이며 원실패/검토는WORK_STATUS를따른다.
