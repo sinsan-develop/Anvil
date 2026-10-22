@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN08 명시 송신·로컬 회수 한정 검수 종료**: 기존 reviewer가 새 메서드와 scope 복제/원장멱등 의존만 읽기 대조해 C0/I0/M0·독립실행/수정0으로 판정했다. Main의 새4/영향53PASS·type/diff 증거와 분리한다. source2파일만 추가 연결이며 기존 sendInstruction 의미/응답은 불변, 새 public API/영속/권한/실Agent0다. 부분 회수는 page 유효 범위 내 명시 재호출만 확인했으며 기한 만료 후 재개·물리내구/동시경합은 미검증이다. 후속은 기존 지시 원장으로부터 송신과 분리된 읽기 전용 관측 회수 접점을 대조하되 새 명령 조회·허가/송신 없이 exact 원기록을 재사용하는 범위를 선정한다. rollback은 새 메서드 source 일반 revert이며 원 원장/spool/DB/Secret을 삭제하지 않는다. 전체계획/FN08 완료 아님.
+
+- **FN08 선택 지시·관측 회수 source 검증**: 새 내부 sendInstructionAndRecord는 명시 scope/선택ref를 복제하고 실제 합성spool 읽기/동일실행 대조 뒤 기존 sender의 page/current/자료/permit/멱등을 소비한다. 새4RED357.3723ms→4PASS423.8156ms/type0, admission+직접sender/spool 영향53PASS782.4579ms/diff0다. 정상3관측/동일호출중복0·부분append실패후나머지회수·다른project/불완전/가짜spool송신전거절·응답유실UNKNOWN/재송신0를 메모리에서 확인했다. 사전읽기는 용량예약/미래append성공 보장이 아니며 페이지 만료 뒤 재선택은 기존거절을 유지한다. 별도 자동sync/서버ACK감사·실제 파일내구/PG/served/OS/Agent·전체FN08/Stage는 미검증·미완료다. 기존 송신 메서드·공개계약/SQL/권한·정식환경0이며 기존 reviewer 한정 의존대조 중이다.
+
+- **FN08 선택 송신·관측 회수 미구현 RED**: 새 정상/부분기록실패/다른scope·불완전·가짜spool/응답유실 4반례는 내부 호출 부재로4FAIL357.3723ms였다. 환경 오류가 아닌 소비 미연결이며 기존 sender/spool 원장 검증·안정eventID·재전송금지를 재사용한다. 합성 메모리만이고 새 파일자원/원격/서비스/DB/Agent0이다.
+
+- **2026-10-22 FN08 선택 지시→관측 회수 연결 착수**: 담당 어울. FUNCTION_WORK FN06/FN08의 명시 지시/회수 계약 안에서 기존 admission.sendInstruction과 sender.recordObservations의 빠진 소비를 연결한다. 제한된 기존 흐름 보완이며 기존 송신/선택 API는 보존하고 새 내부 sendInstructionAndRecord 호출만 추가한다. 송신 전 실제 합성 spool 인스턴스/읽기·동일 project/execution/generation을 대조하고, 정확 page 선택→기존 sender의 자료/current/permit/멱등→원장 관측 스풀 기록만 수행한다. 부분 기록 실패는 원기록을 보존하고 명시 재시도도 wire/permit 재실행0·중복관측0이어야 한다. 자동 sync/polling/ACK/완료/실행권한 승격·새 공개 API/SQL/DB/OS/native/socket/Agent/비용0이다. 기존원격 실패/직접원인미확정·0038거절/보호7은 유지하며 메모리 합성 TDD·영향검증·기존 독립 reviewer로 검수한다. 재승인 없이 계획 내 구현을 계속하라는 최신 지시에 따라 일반 승인 대기를 만들지 않는다.
+
 - **2026-10-22 OPEN_FILES 고정 진단 source 한정 확인**: 신산님 최신 승인에 따라 기존 허용식·자기 PID·삭제/기한을 유지한 진단만 보완했다. 새9반례+기존 daemon 거절1 총10PASS818.445ms, typecheck/Bash-n/diff0·독립 한정 C0/I0/M0(실행/수정0)다. 출력은 고정 stage/detail만이며 원문/Secret/PID 출력0이다. 실제 lsof 직접 원인·회수 해결/전체실행 PASS는 미판정, 원FN10/새FN12 exit1·추가원격실행0을 유지한다. 부수 탐색의 없는 apps/runner·FN06 보고 폴더·FEATURE_WORK.md os2 읽기 오류3건은 제품 오류와 분리하고 실제 inventory로 전환한다. 새 자원/서비스/DB/Agent0·보호6/pending1 보존이다. 다음은 FN06~09의 실제 Agent 작업 지시 연결에서 현재 승인 안의 미구현 소비 경로를 정본 업무 카드와 대조해 구현한다. 전체 계획은 미완료이며 이번 진단을 사용자 기능 진도로 계산하지 않는다.
 
 - **OPEN_FILES 반례 전달 오류 분리**: 첫 구현 후 9PASS/1FAIL(1125.0865ms)의 복수 PID 사례는 로컬 읽기 probe에서 Windows→Git Bash 줄바꿈 인자가 argv2=OWN/argv3=다른PID로 갈라짐을 확인했다. 시험이 argv2만 읽어 거절 입력이 누락된 문제이며 제품 가드 원인으로 승격하지 않는다. 합성 출력만 환경변수로 전달해 줄바꿈을 보존하며 기대값/허용조건은 유지한다. 중간 node -e의 PowerShell quote 오류1은 stdin 전달로 정정한 진단 오류이고 파일/원격 변경0이다.

@@ -7,6 +7,7 @@ import {readClientOperation,readClientScope} from './execution-ledger.ts';
 import {SyntheticStartReceiver} from './execution-start-receiver.ts';
 import {SyntheticPrimaryInstructionTransport} from '../adapters/primary/instruction-transport.ts';
 import {SyntheticPrimaryStopTransport} from '../adapters/primary/session-transport.ts';
+import {SyntheticObservationSpool} from './execution-observation-spool.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 class CommandAdmissionFailure extends Error{}
 const fail=(code:string):never=>{throw new CommandAdmissionFailure(code);};
@@ -29,6 +30,21 @@ export class SyntheticExecutionCommandAdmission {
    const sent=await sender.send(selected.envelope,{grantRef:selected.grantRef,expiresAt:selected.expiresAt});
    return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,sent,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_SEND_UNAVAILABLE');}
+ }
+ /** 명시 선택 한 건의 송신과 로컬 관측 회수를 잇는다. 실제 송신/서버 ACK 증거는 아니다.
+  * 기록 실패 시 원 송신/부분 관측은 보존하며, 재호출은 기존 원장의 멱등 경계를 따른다.
+  * 사전 읽기는 scope/불완전 원장만 검사한다. 용량 예약·미래 기록 성공을 보장하지 않는다. */
+ async sendInstructionAndRecord(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,sender:SyntheticPrimaryInstructionTransport,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(sender instanceof SyntheticPrimaryInstructionTransport)||!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration})||facts.executionAuthorized!==false||facts.dispatchPerformed!==false)return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const selected=await this.readInstruction(scope,operation,commandRef);
+   const sent=await sender.send(selected.envelope,{grantRef:selected.grantRef,expiresAt:selected.expiresAt});this.#ports();
+   const observations=await sender.recordObservations(selected.envelope,spool);this.#ports();
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,sent,observations,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
  }
  /** 후속 지시 원봉투의 명시 선택 읽기만 한다. START 수신·지시전송/permit·자동 다음 page를 수행하지 않는다.
   * 반환값은 저장된 합성 page의 선택 사실이며 실제 서버/Agent 현재권한이나 전송 허가가 아니다. */

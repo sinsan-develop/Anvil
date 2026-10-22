@@ -6,6 +6,7 @@ import {SyntheticExecutionClient} from '../../../apps/connector/runtime/executio
 import {SyntheticStartReceiver} from '../../../apps/connector/runtime/execution-start-receiver.ts';
 import {SyntheticPrimaryInstructionTransport} from '../../../apps/connector/adapters/primary/instruction-transport.ts';
 import {SyntheticPrimaryStopTransport} from '../../../apps/connector/adapters/primary/session-transport.ts';
+import {SyntheticObservationSpool} from '../../../apps/connector/runtime/execution-observation-spool.ts';
 import {Codex0161Codec} from '../../../apps/connector/adapters/primary/codec.ts';
 const m:any=await import('../../../apps/connector/runtime/execution-command-admission.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),initial=Date.parse('2026-10-19T12:00:00.000Z');
@@ -111,6 +112,38 @@ function selectedSender(f:ReturnType<typeof instructionFixture>){
  const wire:any={transport:'SYNTHETIC_ONLY',exchange:async(raw:Uint8Array)=>{calls++;assert.equal(rows.at(-1).snapshot.state,'PERMIT_RECORDED');const r=JSON.parse(Buffer.from(raw).toString());assert.equal(r.method,'turn/start');assert.deepEqual(r.params,{threadId:'thread-selected',input:[{type:'text',text:'선택한 합성 지시'}]});return frame({id:r.id,result:{turn:{id:'turn-selected',items:[],status:'inProgress'}}});}},sender=new SyntheticPrimaryInstructionTransport(store,materials,authority,wire,codec,{context:e.context,envelopeExecutorRef:e.executorRegistrationRef},{clock:()=>clock,timeoutMs:1000});
  return{sender,rows,counts:()=>[calls,permits],wrongGrant:()=>grant={...ref,version:2},expireRead:()=>expireOnRead=true,advance:(n:number)=>clock+=n};
 }
+function selectedSpool(f:ReturnType<typeof instructionFixture>,foreign=false){
+ const rows:any[]=[],scope={projectId:foreign?randomUUID():f.scope.projectId,executionId:f.scope.executionId,executionGeneration:1};let failAt=0,incomplete=false;
+ const spool=new SyntheticObservationSpool({transport:'SYNTHETIC_ONLY',exclusive:async(s,body)=>{assert.deepEqual(s,scope);return body({read:async()=>({complete:!incomplete,events:structuredClone(rows)}),appendAndSync:async e=>{if(rows.length+1===failAt){failAt=0;throw Error('PRIVATE_QA_SPOOL_FAILURE');}rows.push(structuredClone(e));}});}},scope,{clock:()=>initial,maxEntries:10,maxBytes:1048576,maxBatchEntries:10,maxBatchBytes:1048576});
+ return{spool,rows,failSecond:()=>failAt=2,incomplete:()=>incomplete=true};
+}
+
+test('명시 선택 송신·관측 회수는 원장3행을 연결하고 재호출도 wire1·관측중복0이다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.sendInstructionAndRecord,'function');
+ const first=await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool);
+ assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.deepEqual(first.commandRef,f.commandRef);assert.equal(first.observations.recordedRefs.length,3);assert.equal(first.observations.ackAudited,false);assert.equal(first.observations.writerReleaseVerified,false);assert.equal(first.observations.workAccepted,false);assert.equal(first.executionAuthorized,false);assert.equal(first.dispatchPerformed,false);
+ assert.deepEqual(p.rows.map(r=>r.snapshot.event.localRecordRef),s.rows.map(r=>r.ref));assert.deepEqual(p.rows.map(r=>r.snapshot.event.type),['PREPARED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);assert(!JSON.stringify(p.rows).includes('선택한 합성 지시'));assert(!JSON.stringify(p.rows).includes('thread-selected'));
+ assert.deepEqual(await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),first);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.equal(p.rows.length,3);
+});
+
+test('선택 송신 후 관측 부분 실패는 원기록을 남기고 명시 재시도로 나머지만 회수한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.sendInstructionAndRecord,'function');p.failSecond();
+ await assert.rejects(a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),/COMMAND_ADMISSION_/);assert.deepEqual(s.counts(),[1,1]);assert.equal(s.rows.length,3);assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);
+ const retried=await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool);assert.equal(retried.observations.recordedRefs.length,3);assert.deepEqual(p.rows[0],original);assert.equal(p.rows.length,3);assert.deepEqual(s.counts(),[1,1]);
+});
+
+test('다른 실행 spool·불완전원장·가짜spool은 page조회와 송신 전에 거절한다',async()=>{
+ for(const bad of ['scope','incomplete','fake']){const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f,bad==='scope'),a=f.make();assert.equal(typeof a.sendInstructionAndRecord,'function');if(bad==='incomplete')p.incomplete();
+  await assert.rejects(a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,bad==='fake'?{getExecutionFacts:async()=>assert.fail('NO_FAKE_SPOOL')}:p.spool),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),[0,0,0]);assert.deepEqual(s.counts(),[0,0]);assert.equal(p.rows.length,0);
+ }
+});
+
+test('송신응답 유실도 UNKNOWN 관측만 회수하고 재호출로 지시를 다시 보내지 않는다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.sendInstructionAndRecord,'function');let calls=0;s.sender.wire.exchange=async()=>{calls++;throw Error('PRIVATE_RESPONSE_LOST');};
+ const first=await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool);assert.equal(first.sent.state,'UNKNOWN');assert.equal(p.rows.at(-1).snapshot.event.reasonCode,'PROVIDER_RESPONSE_LOST');assert.equal(first.observations.workAccepted,false);assert(!JSON.stringify(first).includes('PRIVATE'));
+ assert.deepEqual(await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),first);assert.equal(calls,1);assert.equal(s.counts()[1],1);assert.equal(p.rows.length,3);
+});
+
 test('선택전송은server page→동일grant·자료/permit→codec를명시연결하고동일명령wire1만유지한다',async()=>{
  const f=instructionFixture(),s=selectedSender(f),a=f.make();assert.equal(typeof a.sendInstruction,'function');const first=await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender);assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.equal(first.sent.executionAuthorized,false);assert.equal(first.sent.workAccepted,false);assert.deepEqual(first.commandRef,f.commandRef);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(s.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.deepEqual(await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender),first);assert.deepEqual(s.counts(),[1,1]);
 });
