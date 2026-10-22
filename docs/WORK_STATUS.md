@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **UI07 출처 소비 선행 대조**: 기존 document/artifact 출처의 선택·원문·보관 조회는 이미 연결돼 있어 중복 수정/시험하지 않았다. CONVERSATION/USER_INSTRUCTION은 화면에 미연결로 공개돼 있고 새로운 원문 조회는 기존 FN05 DD166F 특정 거절을 대체하는 우회가 되지 않도록 그대로 뒀다. 보관변경 원문·비교/영향 근거 조회도 이미 연결돼 있으며 이 읽기를 새 기능진도로 계산하지 않는다. 추정한 server design-changes 폴더 os2 읽기 오류1은 실제 inventory의 traceability/design-change-sources.ts로 정정했고 코드변경0이다. Native helper source 자체의 미채택 부분만 PMO가 신산님께 결정 요청중이고 actual/build/호출은 기존제외다. 전체계획은 미완료이며 보관 ACK/START의 합성소스 확인과 정식/Agent 실제사용을 구분한다.
+
 - **FN08 보관 ACK 소비 한정 검수 종료**: compareRecordedAck는 정확 OBSERVATIONS 원batch의 검증된 client 응답만 기존 prefix 내용대조로 연결한다. 새3RED195.3131ms→3PASS233.8928ms 뒤 nullable 타입오류2곳은 거절return으로 보완했다. 최신type0·spool/client 직접영향36PASS475.2394ms/diff0·독립한정 C0/I0/M0(실행/수정0)다. 만료뒤 무재요청·prefix2/local3 미전송꼬리·원ACK/clientref/관측보존·부재/UNKNOWN/다른scope·연산/불완전/변조거절을 합성메모리에서 확인했다. sourceAuthenticated/ackAudited/writer회수/실행false·현재허가승격0이고 실제파일내구/경합·PG/권한/OS/native/Agent/정식served/전체FN08은 미검증·미완료다. 기존 sync/compareAck/execute 의미불변·새 공개계약/SQL/DB/서비스0·보호7/원격실패·0038거절 보존, rollback은 새 내부대조만 일반revert·기록삭제0이다. Native source에 대한 정확 결정은 PMO가 신산님께 전달하며 다른 승인계획 source는 계속한다.
 
 - **FN08 ACK 소비 타입검사 보완**: 새3반례3PASS233.8928ms 뒤 typecheck가 부재 result의 nullable 대조2곳 TS18047로 exit2였다. 거절분기에 명시 return을 붙여 기존fail 동작/검수기준을 유지하고 타입흐름만 좁힌다. 검증 전체PASS로 숨기지 않으며 실제source/네트워크/DB효과0이다.
