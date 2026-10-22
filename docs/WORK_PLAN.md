@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN17/UI14 브라우저 알림 지원 조회 부분 구현**: 기존getPushSupport의5상태/근거를 명시조회·재조회로 연결하고 권한창/구독/워커등록·서버설정변경0을 유지했다. 신규3RED→단위3/typebuild0·통제API화면1PASS2.0초·실제Edge기본API/permissiondefault읽기1PASS1.8초·한정독립C0/I0/10:01:38QA독립잔여0. UI14뷰착수UI00/전체연결FN10·16·17분리이며 실제알림사건/수신자/channel원장·목록/푸시전달·전체FN17/UI14/Stage는미구현/미완료다. 상세원오류/지문·검증시점은WORK_STATUS를따른다.
+
 - **2026-10-22 FN01/FN11 성공 후 승인 거절 이력 보존 보완**: 업로드 성공에서 활성wrapper를 해제해도 최초 업로드거절·요청거절 기록은 기존 탭 이력에 남긴다. 성공까지 확장한 신규1RED→직접인접16PASS/typebuild0·최신bundle 정상DOM1PASS2.9초/QA09:50:36독립잔여0. 서버/영속API·SQL/권한·서비스·Agent변경0, 실제DB/served/전체Stage완료는아니다. 상세지문/실행·오류는WORK_STATUS에보존했다.
 
 - **2026-10-22 Stage B FN01/FN11 기준선 근거 파일 일회승인 연결 일부**: 기존 uploadArtifact 승인요청·UI08 별도사람결정·현재정책/주체/세대/기한/동일후보·binary/hash 확인 후 원명령결박·별도전송을 연결했다. AUTO/다른연산null·미확인보존/변조거절·부모잠금후POST차단·최초확실거절의원요청이력보관/수정을 유지한다. unit직접인접16PASS, 검토후이력누락RED→최종직접6PASS/typebuild0·delta독립C0/I0. DOM정상/잠금·거절수정은각각검증했고 마지막bundle정상1freshPASS2.9초이며 시점·원오류는WORK_STATUS에분리기록했다. QA09:26:26독립잔여0, 실제DB/정식served·전체FN01/FN11/Stage는미검증·미완료, 새API/SQL/권한서비스/Agent0이다.
@@ -509,7 +511,7 @@
 | UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보/환경·HUMAN 신뢰관리/별도승인(UI08)·명령보존, 기존 CAS/합성browser27 PASS 유지. e07312d3 native↔strict TLS/PG/동일UI11 정상·본문유실1 PASS/정리0. 단일독립 C0/I2/M0의 QA수명/초기종료는 Main 순수보완(unit190/type0)·actual 재실행0/PMO 수용 전. AuthForm클릭/사용자인수·영구host/Agent·정책생성·전체UI11 미완료 |
 | UI12 | 작업 사용자·클라이언트 인계 | E | UI00 | UI00,FN15 | 시작 전 |
 | UI13 | 모바일 대화·지시·승인 | E | UI00 | UI04,UI08,FN15,FN17 | 시작 전 |
-| UI14 | 백업·한도·알림·보조 조회 | E | UI00 | UI00,FN10,FN16,FN17 | 시작 전 |
+| UI14 | 백업·한도·알림·보조 조회 | E | UI00 | UI00,FN10,FN16,FN17 | 부분 구현·설정의 브라우저 알림 API/현재권한 명시 조회·재조회. 단위3·통제DOM1/실제Edge읽기1/typebuild·QA잔여0. 알림설정저장/목록·전달/백업복원·전체연결 미완료 |
 | FN01 | 프로젝트 원본·접근·기준선 | B | P03 | P03 | 작업 중 · 인증/소유/단일 기기·초안·원자 생성/격리·빈/기존 소스 사용자 선언·불변 버전/정확 귀속 same-client actual d8128157·forward38 확인. 실관측/VERIFIED 기준선·실제 사용자 UI DB 미완료 |
 | FN02 | 기본 내장/사용자 방법론·그래프·버전 | B | FN01 | FN01 | 작업 중·전용본 개정·METHOD5 검토/별도 확정·불변 과거 이력 same-client actual19ce2bb7/forward39 확인. 실행 상태·영향 근거 없는 적용 전환412, 실제 사용자 UI DB/전체 완료 미충족 |
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
@@ -526,7 +528,7 @@
 | FN14 | 총괄/책임자 최소 손실 이전 | D | FN05,FN07,FN12,FN13 | FN05,FN07,FN12,FN13 | 시작 전 |
 | FN15 | 사람·클라이언트 제어권 | E | FN01,FN11,FN13 | FN01,FN11,FN13 | 시작 전 |
 | FN16 | 백업·반출·검증 복원 | E | FN03,FN05,FN12,FN13,FN15 | FN03,FN05,FN12,FN13,FN15 | 시작 전 |
-| FN17 | 중요 알림·모바일 푸시 | E | FN10,FN11,FN12 | FN10,FN11,FN12 | 시작 전 |
+| FN17 | 중요 알림·모바일 푸시 | E | FN10,FN11,FN12 | FN10,FN11,FN12 | 부분 구현·getPushSupport의5상태/근거·권한요청/등록0. 현재Edge 읽기 확인은 실제전달/수신지원판정 아님. 사건/수신자/channel 영속·목록·설정·푸시전달·전체집행 미구현 |
 | FN18 | Windows 설치형 제품 산출물 | E | FN08,FN15,FN16 | FN08,FN15,FN16 | 시작 전 |
 | IX01 | 방법론→설계→계획→지식 연결 | B | UI01~03,UI06,UI10,FN01~05,FN11 | UI01~03,UI06,UI10,FN01~05,FN11 | 시작 전 |
 | IX02 | 화면→실제 Agent→파일·시험 | C | UI04,UI05,UI11,FN06,FN08,FN09,FN12 | UI04,UI05,UI11,FN06,FN08,FN09,FN12 | 시작 전 |

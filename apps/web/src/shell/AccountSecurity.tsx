@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../api/client.ts';
+import {BrowserPushSupportPanel} from '../notifications/BrowserPushSupportPanel.tsx';
 
 export function AccountSecurity({ client, csrfToken, onSession, onRevoked }: { client: ApiClient; csrfToken: string; onSession: (session: unknown) => void; onRevoked: () => void }) {
   const [reauthPassword, setReauthPassword] = useState('');
@@ -42,7 +43,7 @@ export function AccountSecurity({ client, csrfToken, onSession, onRevoked }: { c
       if (error.status === 412 || error.status === 401) setReady(false);
     } finally { setReauthPassword(''); setCurrentPassword(''); setNewPassword(''); setPending(false); }
   }
-  return <section className="status-card auth-form" aria-label="로그인 보안">
+  return <><BrowserPushSupportPanel/><section className="status-card auth-form" aria-label="로그인 보안">
     <h2>로그인 보안</h2>
     <p>민감한 변경 전 비밀번호를 다시 확인합니다. 비밀번호 변경은 모든 로그인 세션을 회수합니다.</p>
     {failure ? <p role="alert">{failure.message}</p> : null}
@@ -62,5 +63,5 @@ export function AccountSecurity({ client, csrfToken, onSession, onRevoked }: { c
       <button disabled={pending || !ready || !rotateConsent || !!recovery && !saved} onClick={() => { void run('recovery/rotate'); }}>새 복구 비밀 발급</button>
       {recovery ? <><label>새 일회 복구 비밀<input type={showRecovery ? 'text' : 'password'} value={recovery} readOnly autoComplete="off" /></label><button onClick={() => setShowRecovery(v => !v)}>{showRecovery ? '복구 비밀 숨기기' : '복구 비밀 보기'}</button><label className="check-label"><input type="checkbox" checked={saved} onChange={event => setSaved(event.target.checked)} />새 복구 비밀을 안전한 곳에 보관했습니다</label></> : null}
     </details>
-  </section>;
+  </section></>;
 }
