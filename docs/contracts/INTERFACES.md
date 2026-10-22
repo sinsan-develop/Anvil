@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 준비 원 intent 명령·receipt·audit staging — 2026-10-23
+
+`stageSyntheticOwnershipPreparationIntent(db,access,token,csrf,intent,serverIds,prerequisites=null,signal)`는 caller 소유 transaction의 내부 합성 source다. 기본 공급자 부재는 query0이며 현재 intent basis·AUTO/명시 정책·원 주체·최초 project 준비slot 부재·synthetic writer/candidate 선언을 확인한다. 기존 projectReplay/persistProjectReceipt를 소비하지만 범용 operation/route를 추가하지 않는다. 신규 결과는 SYNTHETIC_OWNERSHIP_PREPARATION_INTENT_STAGED_ONLY와 원 intent/command/receipt/audit fullref·기한·missingEvidence이며 준비/실행/dispatch 권한false다. 과거 결과는 반환 전 현재 보호를 재대조한 REPLAY_HISTORY_ONLY로만 반환하고 새 사건/준비 근거로 재사용하지 않는다. REQUIRE는 승인 소비 미연결로 거절한다.
+
+함수는 BEGIN/COMMIT/ROLLBACK/release·PREPARATION_GRANTED·프로세스/실제 writer/권한을 생성하지 않는다. caller는 실패 시 rollback/폐기와 preparation event/slot의 원자 저장·최종 현재성·COMMIT 확인을 별도로 소유해야 한다. 실제 prerequisites/DB·정책/SQLguard 활성화·키/native/Agent는 미구현/미검증이다.
+
 ## FN06 D1 준비 사건 이전 intent 현재근거 — 2026-10-23
 
 `readOwnershipPreparationIntentBasis(db,access,token,csrf,intent)`는 caller 소유 transaction에서 exact intent parser와 현재 HUMAN/OWNER·제어·명시 정책/등록·최종 DB기한을 대조한다. 기존 event reader의 검증 본문을 공유하지만 미래 preparationRef를 생성하지 않고 INTENT_BASIS_ONLY·intent/hash·scope/subject/policyRef/registrationRef/공개키/checkedAt/expiresAt·approvalRequired를 반환한다. 준비/관측요청/실행/dispatch 권한은 false이며 원 명령·허가·감사/필요 승인소비·writer 부재/실회수·provenance는 여전히 별도 근거다. 기존 generic operation allowlist·route·SQL/실키·서비스 활성화는 변경하지 않는다.
