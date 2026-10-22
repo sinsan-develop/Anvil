@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 retained image 바이트 조회 SOURCE — 2026-10-23
+
+미등록 ReadRetainedImageBytesSource는 내부 exact FileStream만 수용하고 read-only/seekable·disk/비directory/비reparse/links1·양의20MiB이하 보수적cap·전후 metadata를 검사한 뒤8KiB 버퍼로 길이/EOF/SHA256 후보를 만든다. 원position을 복원하고 버퍼clear/참조회수후 결과기한을 재검사한다. [파일 metadata 조회](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle), [구조/fileID 한계](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information), [FILE_TYPE_DISK 계약](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfiletype)을 SOURCE 대조에만 사용했다.
+
+결과 RETAINED_IMAGE_BYTES_CANDIDATE_ONLY/allfalse이며 actual hash정확성/복원/경합은 미검증이다. FILE_TYPE_DISK·64bit ID hint·stream lock은 로컬 승인root/독점/변경차단·process image 연결 증명이 아니다. root/binary/보유provenance/배타성·write-delete exclusion/인증/disposal·hard상한은 누락이며 실제 준비/소유권으로 자동 채택하지 않는다. 새path/open/Write/StreamDispose·키/채널등록0, compile/시험실행/실제파일읽기/PInvoke는 NOT_RUN/UNVERIFIED다.
+
 ## FN06 D1 retained thread 조회 SOURCE — 2026-10-23
 
 미등록 ReadRetainedThreadQuerySource는 내부 SafeHandle thread/process의 수명참조 아래 ownerPID=processPID·positive TID·process/thread 생성시각 순서·활성 및 전후 정체성 일치를 검사하는 읽기 SOURCE다. [ownerPID 조회](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocessidofthread), [TID 조회](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid), [thread FILETIME 계약](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadtimes)을 선언 대조에만 사용했다. thread를 재open/생성하거나 Suspend/Resume/Terminate하지 않는다.

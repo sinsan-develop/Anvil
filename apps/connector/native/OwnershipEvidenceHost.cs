@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -327,6 +328,88 @@ namespace Anvil.Native.OwnershipEvidence
                     candidate=new RetainedThreadQueryCandidate(last.Pid,last.Tid,last.ProcessStartTicks.ToString(CultureInfo.InvariantCulture),last.ThreadStartTicks.ToString(CultureInfo.InvariantCulture),from,at);
                 }
                 finally{try{if(processRef)process.DangerousRelease();}finally{if(threadRef)thread.DangerousRelease();}}
+                DateTime finished=DateTime.UtcNow;if(candidate==null||finished<candidate.ObservedAt||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                return candidate;
+            }
+            catch{throw Unavailable();}
+        }
+        [StructLayout(LayoutKind.Sequential)] private struct NativeImageInfo
+        {
+            internal uint Attributes;internal NativeFileTime Created,Accessed,Written;
+            internal uint Volume,SizeHigh,SizeLow,Links,IndexHigh,IndexLow;
+        }
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint GetFileType(IntPtr file);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool GetFileInformationByHandle(IntPtr file,out NativeImageInfo info);
+        private const long MaxImageBytes=20L*1024*1024; // 내부 보수적 cap. 승인된 실제 binary를 뜻하지 않는다.
+        private static long ImageSize(NativeImageInfo info){return checked((long)(((ulong)info.SizeHigh<<32)|info.SizeLow));}
+        private static NativeImageInfo ReadImageInfo(IntPtr file)
+        {
+            NativeImageInfo info;
+            if(GetFileType(file)!=1||!GetFileInformationByHandle(file,out info)||ImageSize(info)<1||ImageSize(info)>MaxImageBytes||(info.Attributes&(0x10|0x400))!=0||info.Links!=1||(info.IndexHigh==0&&info.IndexLow==0)||info.Created.Value<=0||info.Written.Value<=0)throw Unavailable();
+            DateTime.FromFileTimeUtc(info.Created.Value);DateTime.FromFileTimeUtc(info.Written.Value);return info;
+        }
+        private static bool SameImageInfo(NativeImageInfo a,NativeImageInfo b)
+        {return a.Attributes==b.Attributes&&a.Created.Value==b.Created.Value&&a.Written.Value==b.Written.Value&&a.Volume==b.Volume&&a.SizeHigh==b.SizeHigh&&a.SizeLow==b.SizeLow&&a.Links==b.Links&&a.IndexHigh==b.IndexHigh&&a.IndexLow==b.IndexLow;}
+        private static void ImageReadBudget(DateTime from,Stopwatch elapsed)
+        {if(DateTime.UtcNow<from||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();}
+        internal sealed class RetainedImageBytesCandidate
+        {
+            internal readonly string Purpose="RETAINED_IMAGE_BYTES_CANDIDATE_ONLY";
+            internal readonly string ContentHash,FileIdentityHint;
+            internal readonly long Length;
+            internal readonly DateTime ObservedFrom,ObservedAt;
+            internal bool ImageBytesVerified{get{return false;}}
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal string[] MissingEvidence{get{return new[]{"FACTORY_RETAINED_IMAGE_PROVENANCE","BORROWED_STREAM_EXCLUSIVITY","FILE_WRITE_DELETE_EXCLUSION","PROCESS_IMAGE_FILE_ASSOCIATION","APPROVED_ROOT_AND_BINARY_BINDING","FACTORY_SAFEHANDLE_DISPOSAL_POLICY","AUTHENTICATED_NATIVE_PREPARATION_BINDING","BOUNDED_NATIVE_CALL_TERMINATION"};}}
+            internal RetainedImageBytesCandidate(string hash,string fileHint,long length,DateTime from,DateTime at)
+            {ContentHash=hash;FileIdentityHint=fileHint;Length=length;ObservedFrom=from;ObservedAt=at;}
+        }
+        // 보유 stream의 바이트 후보만 읽는다. path/open/Write/Dispose는 없지만 position을
+        // 일시 변경·복원한다. 이 lock은 다른 handle/비협력 소비자의 변경을 막지 않는다.
+        internal static RetainedImageBytesCandidate ReadRetainedImageBytesSource(Stream stream)
+        {
+            try
+            {
+                if(stream==null||stream.GetType()!=typeof(FileStream)||Environment.OSVersion.Platform!=PlatformID.Win32NT)throw Unavailable();
+                var image=(FileStream)stream;var elapsed=Stopwatch.StartNew();DateTime from=DateTime.UtcNow;RetainedImageBytesCandidate candidate=null;
+                lock(image)
+                {
+                    ImageReadBudget(from,elapsed);
+                    if(!image.CanRead||!image.CanSeek||image.CanWrite)throw Unavailable();
+                    long original=image.Position;SafeHandle handle=null;bool held=false,restore=false;byte[] buffer=null;
+                    try
+                    {
+                        handle=image.SafeFileHandle;if(handle.IsClosed||handle.IsInvalid)throw Unavailable();handle.DangerousAddRef(ref held);
+                        IntPtr file=handle.DangerousGetHandle();if(file==IntPtr.Zero||file==new IntPtr(-1))throw Unavailable();
+                        ImageReadBudget(from,elapsed);var first=ReadImageInfo(file);long length=ImageSize(first);if(image.Length!=length||original<0)throw Unavailable();
+                        buffer=new byte[8192];ImageReadBudget(from,elapsed);restore=true;image.Position=0;long total=0;string digest;
+                        using(var sha=SHA256.Create())
+                        {
+                            while(total<length)
+                            {
+                                ImageReadBudget(from,elapsed);
+                                int wanted=(int)Math.Min(buffer.Length,length-total),count=image.Read(buffer,0,wanted);
+                                if(count<1||count>wanted)throw Unavailable();sha.TransformBlock(buffer,0,count,buffer,0);total+=count;
+                                if(DateTime.UtcNow<from||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                            }
+                            ImageReadBudget(from,elapsed);if(image.ReadByte()!=-1)throw Unavailable();sha.TransformFinalBlock(new byte[0],0,0);
+                            digest=BitConverter.ToString(sha.Hash).Replace("-","").ToLowerInvariant();
+                        }
+                        ImageReadBudget(from,elapsed);var last=ReadImageInfo(file);DateTime at=DateTime.UtcNow;
+                        if(handle.IsClosed||image.Length!=length||!SameImageInfo(first,last)||at<from||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                        // FILE_ID 64bit/volume는 비교 hint일 뿐 FS별/시간초월 고유성 증명이 아니다.
+                        string hint=last.Volume.ToString("x8",CultureInfo.InvariantCulture)+":"+last.IndexHigh.ToString("x8",CultureInfo.InvariantCulture)+last.IndexLow.ToString("x8",CultureInfo.InvariantCulture);
+                        candidate=new RetainedImageBytesCandidate(digest,hint,length,from,at);
+                    }
+                    finally
+                    {
+                        try{if(restore)image.Position=original;}
+                        finally{try{if(buffer!=null)Array.Clear(buffer,0,buffer.Length);}finally{if(held)handle.DangerousRelease();}}
+                    }
+                }
                 DateTime finished=DateTime.UtcNow;if(candidate==null||finished<candidate.ObservedAt||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
                 return candidate;
             }

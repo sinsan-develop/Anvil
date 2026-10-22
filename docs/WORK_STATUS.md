@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-23 D1 retained image 바이트 SOURCE 일부 작성**: ReadRetainedImageBytesSource는 내부 exact FileStream(read-only/seekable)만 수용하고 GetFileType/GetFileInformationByHandle로 disk·양의20MiB이하·비directory/비reparse/links1·전후 volume/fileID hint·size/creation/write metadata를 검사하도록 작성했다. 원position을 보존해0부터8KiB 고정버퍼로 길이/EOF·SHA256을 읽고 position복원/버퍼clear/SafeHandle 참조회수 및 cleanup뒤 결과기한을 검사한다. lock대기뒤/각read·EOF/메타데이터·position변경 전에 예산을 재검사한다. 새path/open/Write/StreamDispose·키/실제호출0이다.
+
+- **image 바이트 조회 검토·미검증**: 신규 source/미래 null/MemoryStream/Stream.Null 반례 한정 정적 C0/I0/M0·Main diff0·독립compile/실행/PInvoke/파일읽기/수정0이다. actual hash정확성/원position복원·경합/상호운용/실제local파일은 NOT_RUN/UNVERIFIED다. 결과 RETAINED_IMAGE_BYTES_CANDIDATE_ONLY/allfalse이며 stream lock은 비협력/다른handle 변경 차단이 아니고 factory provenance/배타적보유/write-delete exclusion/processimage association/승인root·binary·인증준비/disposal와 hard 종료상한을 누락으로 유지한다. FILE_TYPE_DISK는 로컬/승인root 증명이 아니며 64bit fileID hint도 FS별·시간초월고유성이 아니다. 20MiB는 내부보수적fail-closed cap일뿐 승인된binary대상/정책확장이 아니다.
+
+- **image SOURCE 동결·후속**: HostrawSHA14445D931618FE5132AA5C3D91BE9C6321A83A37D941AF01712916CC6499FBDC/test2134B50A11BF41BF0A98285A8BB4EB2FABBF97AE6C1FFA6E9A3123F28D28CB78. worker/oldhelper/고정패킷·보호8/기존거절/REQUIRE/SQLpendingM1 불변, TS17/type반복0이며 C#동작검증으로 쓰지 않는다. 다음은 실제factory의 승인root/image·thread 보유/생성출처와 안전참조회수·인증준비 SOURCE 선행이다. 실제파일검증·factory권위·D2~D4효과·전체FN06/작업계획 완료로 승격하지 않는다.
+
+- **2026-10-23 D1 retained image 바이트 SOURCE 착수**: 8c9ad0c4 뒤 다음 독립 단위는 factory가 향후 보유한 실제 FileStream의 디스크파일 metadata·유한 바이트 해시 SOURCE다. 입력은 내부 stream객체뿐/path없음·새파일open/키/실제호출0, MemoryStream 등 caller fake는 거절하고 결과는 unbound candidate/allfalse다. 내부보수적20MiB 상한/고정버퍼·원position복원·전후fileID/size/write metadata를 대조하되 배타적보유/원image·process결박·루트/provenance/OS종료상한은 미증명이다. stream position의 일시변경/참조회수 정책도 factory 선행으로 남긴다. 이 source작성은 실제파일읽기·C#compile/시험실행·서비스/DB/Agent/D2~D4 승인이 아니며 future invalid-memory 시험SOURCE부터 작성한다.
+
 - **thread 조회 최종 한정 검토**: 추가 thread SOURCE/invalid 입력 시험 SOURCE의 독립 정적 C0/I0/M0·독립compile/PInvoke/실행/수정0이다. 실제 상호운용·handle 생성출처/회수·종료상한·OS권위는 여전히 NOT_RUN/UNVERIFIED다.
 
 - **2026-10-23 D1 retained thread 조회 SOURCE 일부 작성**: 신규 ReadRetainedThreadQuerySource가 내부 보유 thread/process SafeHandle의 수명참조 아래 GetProcessIdOfThread/GetThreadId/GetThreadTimes 및 기존 process/time/Wait0을 사용하도록 source를 작성했다. positive TID·ownerPID=processPID·process≤thread 생성FILETIME와 활성·전후 PID/TID/시각 일치, UTC/10초결과수용·참조회수후 기한검사를 포함한다. 원 thread 재open/새생성·Suspend/Resume/Terminate/키·socket/파일/DB/서비스·Agent/API등록0, 실제 메서드 호출0이다.

@@ -97,6 +97,10 @@ internal static class OwnershipEvidenceHostSourceTests
         }
         using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
             RejectSource(()=>OwnershipEvidenceHost.ReadRetainedThreadQuerySource(closed,other));
+        RejectSource(()=>OwnershipEvidenceHost.ReadRetainedImageBytesSource(null));
+        using(var fake=new System.IO.MemoryStream(new byte[]{1,2,3}))
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedImageBytesSource(fake));
+        RejectSource(()=>OwnershipEvidenceHost.ReadRetainedImageBytesSource(System.IO.Stream.Null));
         RetainedSourceCases();
         var input=Input();var basis=new Basis();var gate=new OwnershipEvidenceHost(basis, ()=>Now, 1000);
         var plan=await gate.PlanAsync(input, CancellationToken.None);

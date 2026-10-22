@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 retained image 바이트 SOURCE**: 기존 FileStream의 bounded bytehash·file metadata 전후대조/원position복원 source를 작성했다. candidate/allfalse·독점성/root/binary/process결박·인증/provenance 미확인을 유지한다. 한정정적 C0/I0/M0·diff0만이며 compile/실제파일읽기/해시·복원/경합·Windows 검증은 NOT_RUN/UNVERIFIED다. 다음 factory/권위/안전참조회수 선행과 전체계획은 미완료다.
+
 - **2026-10-23 FN06 D1 retained thread 조회 SOURCE**: 보유 thread와 process의 ownerPID/TID·생성시각·활성 전후 조회 source를 추가했다. candidate/allfalse·factory 원 생성/미재개 이력/Job·이미지/인증/서명/writer 누락을 유지한다. 공식서명대조·미래반례SOURCE·diff0만 확인했으며 compile/PInvoke/실행/실제Windows·suspended/회수 판정은 NOT_RUN/UNVERIFIED다. 다음 factory/image/thread provenance·안전참조회수/인증준비 선행과 전체FN06/계획은 미완료다.
 
 - **2026-10-23 FN06 D1 native handle 조회 SOURCE**: 기존 보유 SafeHandle에 대한 Windows PID/생성시각/Job/member/이미지경로/활성 전후 조회 source를 추가했다. candidate/allfalse와 factory·image바이트/인증/neverResumed/서명/회수 미확인을 보존한다. 원 정적 C0/I0/M1의 시험masking 보정·diff0 범위이며 compile/PInvoke/실행/OS상호운용·강제종료상한은 NOT_RUN/UNVERIFIED다. 실제factory·인증/관측/취소 선행과 전체 FN06/계획은 미완료이며 D2~D4 실제효과는 실행하지 않는다.
