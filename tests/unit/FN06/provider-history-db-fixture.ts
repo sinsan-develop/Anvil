@@ -15,7 +15,9 @@ export function fixture(){
   if(sql.includes('FROM anvil.auth_sessions'))return{rows:[user]};
   if(sql.includes('FROM anvil.projects')){if(read&&fault==='revoke')return{rows:[]};return{rows:[member]};}
   if(sql.includes('FROM anvil.agent_sessions'))return{rows:[session]};
-  if(sql.includes('FROM anvil.provider_session_claims')){read=true;if(fault==='expire')now=end;return{rows:claimRows};}
+  if(sql.includes('FROM anvil.provider_session_claims')){read=true;if(fault==='expire')now=end;
+   if(sql.includes('ORDER BY recorded_at DESC,claim_id DESC'))return{rows:claimRows.filter(r=>!params[2]||r.recorded_at.getTime()<Date.parse(params[2])||r.recorded_at.getTime()===Date.parse(params[2])&&r.claim_id<params[3]).sort((a,b)=>b.recorded_at-a.recorded_at||b.claim_id.localeCompare(a.claim_id)).slice(0,params[4])};
+   return{rows:params?.length===3?claimRows.filter(r=>r.event_key===params[2]):claimRows};}
   throw Error('UNEXPECTED_SQL');
  }};
  const q={projectId:pid,agentSessionId:agentId,executionId:pid,generation:1,commandId:pid,kind:'THREAD',requestIdDigest:'b'.repeat(64),claimHash:'c'.repeat(64)};
@@ -27,5 +29,5 @@ export function fixture(){
   const scope={mode:'EXECUTION',projectId:pid,connectorId:uid,executionId:pid,executionGeneration:1,grantRef:ref,credentialGeneration:1},eventKey=contentHash(canonicalJson([pid,pid,1,pid,'THREAD',q.requestIdDigest]));
   const entry={scope,eventKey,claim,receipt};claimRows=[{project_id:pid,claim_id:claim.claimId,version:'1',execution_id:pid,generation:'1',command_id:pid,agent_session_id:agentId,agent_session_version:'1',grant_id:ref.id,grant_version:'1',permit_id:ref.id,permit_version:'1',kind:'THREAD',request_id_digest:q.requestIdDigest,event_key:eventKey,content_hash:claimRef.contentHash,snapshot_json:entry,recorded_at:new Date(at)}];return receipt;
  }
- return{actor,user,member,session,sessionRef,db,calls,q,make,provideClaim,fault:(v:string)=>fault=v};
+ return{actor,user,member,session,sessionRef,db,calls,q,make,provideClaim,rows:()=>claimRows,replaceRows:(rows:any[])=>claimRows=rows,clock:(v:string)=>now=v,fault:(v:string)=>fault=v};
 }

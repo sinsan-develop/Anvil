@@ -4,6 +4,7 @@ import {AuthFailure} from '../access/repository.ts';
 import type {AccessRoutesOptions} from '../access/routes.ts';
 import {SyntheticProviderClaimHistory} from './provider-session-claim-history.ts';
 import {BoundPgProviderClaimHistoryStore} from './provider-session-claim-history-store.ts';
+import {readProviderClaimPage} from './provider-session-claim-page.ts';
 function invalid():never{throw new AuthFailure('INPUT_INVALID',400);}
 function frameworkFields(raw:unknown):Record<string,unknown>{
  // Fastify uses a null-rooted intermediate prototype. Preserve every own data field before applying exact wire validation.
@@ -20,6 +21,20 @@ function cookie(request:FastifyRequest){
  * No execution credential reuse, claim creation, session renewal or raw provider handle response. */
 export function registerProviderClaimHistoryRoutes(app:FastifyInstance,options:AccessRoutesOptions){
  const origin=new URL(options.origin);if(origin.protocol!=='https:'||origin.origin!==options.origin)throw Error('AUTH_ORIGIN_INVALID');
+ app.get('/api/v1/projects/:pid/agent-sessions/:sid/provider-session-claims',async(request,reply)=>{
+  if(request.headers.host!==origin.host||request.headers.authorization!==undefined)throw new AuthFailure('PROVIDER_SESSION_HISTORY_REJECTED',403);
+  const p=frameworkFields(request.params),q=frameworkFields(request.query);
+  if(!recordV1(p,['pid','sid'])||!uuidV1(p.pid)||!uuidV1(p.sid)||Object.keys(q).some(k=>!['limit','cursor'].includes(k))
+   ||q.limit!==undefined&&(typeof q.limit!=='string'||!/^[1-9][0-9]?$/.test(q.limit)||Number(q.limit)>50)
+   ||q.cursor!==undefined&&(typeof q.cursor!=='string'||!q.cursor.length||q.cursor.length>4096))return invalid();
+  const token=cookie(request);if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new AuthFailure('AUTH_REQUIRED',401);
+  let store:BoundPgProviderClaimHistoryStore|undefined;
+  const page=await options.repository.authenticated(token,null,async(db,actor)=>{
+   store=new BoundPgProviderClaimHistoryStore(db,actor);return readProviderClaimPage(store,db,{projectId:p.pid,agentSessionId:p.sid,limit:q.limit===undefined?20:Number(q.limit),cursor:q.cursor??null},encoded=>options.repository.signProviderClaimCursor(encoded));
+  });
+  if(!store||Date.now()>=Date.parse(store.responseValidUntil()))throw new AuthFailure('PROVIDER_SESSION_HISTORY_REJECTED',403);
+  reply.header('cache-control','no-store');return page;
+ });
  app.get('/api/v1/projects/:pid/agent-sessions/:sid/provider-session-claim-receipt',async(request,reply)=>{
   if(request.headers.host!==origin.host||request.headers.authorization!==undefined)throw new AuthFailure('PROVIDER_SESSION_HISTORY_REJECTED',403);
   const p=frameworkFields(request.params),q=frameworkFields(request.query);

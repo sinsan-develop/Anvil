@@ -31,6 +31,7 @@ export class AccessRepository {
   #csrf(token: string) { return createHmac('sha256', this.#key).update('csrf:' + token).digest('base64url'); }
   signProjectCursor(encoded: string): string { return this.#hmac('project-list-cursor:v1:' + encoded); }
   signMethodCursor(encoded: string): string { return this.#hmac('method-list-cursor:v1:' + encoded); }
+  signProviderClaimCursor(encoded: string): string { return this.#hmac('provider-claim-history-page:v1:' + encoded); }
   async authenticated<T>(token: string, csrf: string | null, operation: (db: PoolClient, identity: AuthenticatedIdentity) => Promise<T>): Promise<T> {
     if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
     return this.#transaction<T>(async db => {

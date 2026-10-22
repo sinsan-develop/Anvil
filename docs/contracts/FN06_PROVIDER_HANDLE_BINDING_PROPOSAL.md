@@ -143,6 +143,13 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 C2 metadata 목록·화면 source 상세 (부분 구현)
+
+- 승인 §6.3 목록 GET을 현재 OWNER·동일 authenticated db/current 잠금에서 구현했다. 기본 limit20/최대50, `(recorded_at,claim_id)` 내림 keyset·정확 row/journal/예약 fullref·원 receipt를 대조한다. cursor는 기존 server signing key의 별도 provider-claim-history-page:v1 purpose와 현재 HUMAN user/client/session/credentialGeneration·project/예약/ref·filter에 결박하고 최초30초 이하 기한을 담는다. 로그인 idle 시각은 매 조회 현재성 gate로 재검사하되 cursor의 정체성 hash에서는 변동 checkedAt/expiresAt을 제외한다. 옛 cursor 기한을 늘리지 않고 만료는 거절한다. 신규key/권한/계정/로그인 계약 변경은 없다.
+- 목록 응답은 projectId/agentSessionId/agentSessionRef, items의 exact query+원 receipt, hasMore/nextCursor/observedAt, historyOnly:true/availability:UNVERIFIED/executionAuthorized:false/dispatchPerformed:false다. 현재THREAD만 지원하고 TURN row를 발견하면 빈 목록 성공으로 숨기지 않고 거절한다. TURN 및 현재 RESPONSIBLE nonOWNER 실제 resolver는 후속 미완료로 유지한다. cursor가 인증/허가를 대신하지 않으며 인증 tx COMMIT 대기 뒤 최초 응답기한도 대조한다.
+- UI04의 현재 책임 예약에 명시 목록 조회/선택 기록의 원 결과 확인 버튼을 연결했다. project/session fullref·현재 user/client와 조회 회차·unmount를 결박하고, 재조회/오류/이탈 때 기존 결과를 숨긴다. 원 handle 입력/노출·자동 polling·새 SEND/STOP/권한/작업완료 연산은 없다. RESERVED·공급자 주장 수신·현재 사용 가능성 미확인·실제 수행/업무 인수 미확인을 구분한다. 배포된 화면에서 사용 가능하다고 주장하지 않는다.
+- 최종 직접28PASS1484.9436ms/type/diff0·UI build351, 가로챈 합성 Edge2PASS7.5초는 제한 source/DOM 증거다. 독립 정적C0/I0 이후 Main이 인증 idle갱신 cursor1RED를 추가해보완했다. 실제PG 정렬/경합/권한/COMMIT·정식 served/login/Agent는 미검증이다. 등록 QA root fn06-provider-history-c2-01 전체5항목만 exact정리하고 부재확인·기존자료/서비스/DB/권한/키0을 유지한다. rollback은 해당 source의 일반 revert이며 원 예약/claim/DB자료 삭제나 forward down은 하지 않는다.
+
 ### 2026-10-22 B6~B8 저장·HUMAN 조회 source 상세 (부분 구현)
 
 - HUMAN 단일 receipt GET은 기존 Anvil 로그인 session/client/user와 project/member를 같은 authenticated transaction에서 다시 잠그고 현재 OWNER만 허용한다. serverOwner/createdBy/boundBy/reservedBy로 현재 책임자를 추정하지 않는다. 승인된 nonOWNER RESPONSIBLE 계약은 유지하되 현재 resolver 미구현으로 거절한다. 원 snapshot/hash/예약·명령을 대조하고, 현재 읽기 권한을 최종 확인한 후에만 hash 충돌409를 반환한다. 인증 transaction COMMIT/rollback 대기 뒤에도 최초 최소 응답기한을 검사한다. 전송 도중 회수와의 원자성 보장은 아니다.

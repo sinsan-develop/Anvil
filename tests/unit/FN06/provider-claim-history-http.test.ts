@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test,type TestContext} from 'node:test';
+import {createHmac} from 'node:crypto';
 import {buildApp} from '../../../apps/server/app.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {readProviderClaimReceiptHistory} from '../../../apps/web/src/features/workspace/provider-claim-receipt-api.ts';
@@ -8,7 +9,7 @@ const cookie='__Host-anvil.sid='+'a'.repeat(43);
 function setup(t:TestContext){
  t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});let after=()=>{};
  const f=fixture(),auth:any[]=[];
- const repository:any={signProjectCursor:()=>'',signMethodCursor:()=>'',authenticated:async(token:string,csrf:unknown,body:any)=>{auth.push({token,csrf});try{return await body(f.db,f.actor);}finally{after();}}};
+ const repository:any={signProjectCursor:()=>'',signMethodCursor:()=>'',signProviderClaimCursor:(v:string)=>createHmac('sha256',Buffer.alloc(32,7)).update('provider-claim-history-page:v1:'+v).digest('hex'),authenticated:async(token:string,csrf:unknown,body:any)=>{auth.push({token,csrf});try{return await body(f.db,f.actor);}finally{after();}}};
  const app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.q.projectId}/agent-sessions/${f.q.agentSessionId}/provider-session-claim-receipt?`+new URLSearchParams({executionId:f.q.executionId,generation:'1',commandId:f.q.commandId,kind:'THREAD',requestIdDigest:f.q.requestIdDigest,claimHash:f.q.claimHash});
  return{f,app,auth,url,afterAuth:(fn:()=>void)=>after=fn};
 }
@@ -48,5 +49,20 @@ test('충돌 뒤 인증 transaction 종료 대기에서 만료돼도409로 자�
  const s=setup(t);try{
   s.f.provideClaim();s.afterAuth(()=>t.mock.timers.tick(31000));
   const wrong=s.url.replace(/claimHash=[a-f0-9]{64}/,'claimHash='+'f'.repeat(64)),r=await s.app.inject({method:'GET',url:wrong,headers:{host:'localhost:3830',cookie}});assert.equal(r.statusCode,403,r.body);assert.equal(r.json().code,'PROVIDER_SESSION_HISTORY_REJECTED');
+ }finally{await s.app.close();}
+});
+
+test('예약 metadata 목록 GET은 원 receipt query를 제공하고 원 handle·실행허가를 내보내지 않는다',async t=>{
+ const s=setup(t);try{
+  const receipt=s.f.provideClaim(),url=s.url.split('/provider-session-claim-receipt')[0]+'/provider-session-claims?limit=20',r=await s.app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie}});
+  assert.equal(r.statusCode,200,r.body);assert.equal(r.headers['cache-control'],'no-store');const page=r.json();assert.equal(page.items.length,1);assert.deepEqual(page.items[0].receipt,receipt);assert.deepEqual(page.items[0].query,s.f.q);assert.equal(page.availability,'UNVERIFIED');assert.equal(page.dispatchPerformed,false);assert.equal(page.hasMore,false);assert.equal(page.nextCursor,null);assert.equal(Object.hasOwn(page.items[0],'threadId'),false);
+ }finally{await s.app.close();}
+});
+test('목록 GET의 추가/중복/범위밖 filter·Bearer는 인증 전 거절하고 COMMIT 만료도 차단한다',async t=>{
+ const s=setup(t);try{
+  const url=s.url.split('/provider-session-claim-receipt')[0]+'/provider-session-claims';
+  for(const suffix of ['?limit=51','?limit=01','?limit=2&limit=2','?actorId='+pid,'?cursor='])assert.equal((await s.app.inject({method:'GET',url:url+suffix,headers:{host:'localhost:3830',cookie}})).statusCode,400);
+  assert.equal((await s.app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie,authorization:'Bearer bad'}})).statusCode,403);assert.equal(s.auth.length,0);
+  s.afterAuth(()=>t.mock.timers.tick(31000));assert.equal((await s.app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie}})).statusCode,403);
  }finally{await s.app.close();}
 });

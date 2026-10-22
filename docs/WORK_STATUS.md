@@ -1,5 +1,25 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 FN06 C2 목록·원 receipt 화면 source 검수**: Main 단일 writer. 현재 OWNER/정확 예약의 GET 목록(기본20/최대50·서명cursor/내림keyset)→UI04 책임세션의 명시 원결과 조회를 연결했다. 독립 C0/I0는 source 정적 범위이며 뒤 Main 발견 cursor 인증 idle기한 갱신 반례1RED314.0731ms는 binding의 변동 기한만 분리해 보완했다. 원 cursor30초 기한·현재 권한 검사는 보존, 변경 직접28PASS1484.9436ms·type/diff0이다. UI build351(575ms)의 chunk 경고는 유지·완화/구조개편0. 가로챈 합성 Edge 클릭 DENY/LEAVE2PASS7.5초·새 조회/오류/이탈에서 이전 receipt숨김·추가 제품쓰기0을 확인했다. 이는 정식 DB/served/Agent 증거가 아니다. QA owner SINSAN\cyhuh/등록전용 Edge0 확인후 exact root와 하위4항목(전체5)만 제거·경로 부재를 확인했다. 상세3RED/HTTP2RED/reader화면4RED·fixture Date/alias오류와 보정은 아래 이력 보존. 현재 nonOWNER RESPONSIBLE·TURN·SEND/STOP/native/실Agent·전체FN06/Stage는 여전히 미완료다. DB/role/권한/Secret/서비스/Agent 변경0·보호6 보존·다음은 남은 정확 실행 소비다.
+
+- **FN06 C2 browser2PASS·최종 cursor 반례RED**: 가로챈합성브라우저DENY/LEAVE2PASS7.5초·추가쓰기0. QA owner SINSAN\\cyhuh·현재등록전용Edge잔류0/등록경로항목4를확인했다. source독립C0/I0(실행0)후Main은로그인idle기한갱신이cursor hash의expiresAt까지변경해동일주체다음페이지를403거절하는1RED314.0731ms를추가확인했다. 현재권한/최초cursor기한검사는유지하고변동checkedAt/expiresAt을actor/예약binding에서분리한다. 원cursor기한연장이나로그인/권한변경아님·실DB미검증이다.
+
+- **FN06 C2 화면 GREEN·브라우저 QA 사전등록**: fixture응답clone보정후직접11PASS425.4145ms·type/build351/diff전검사대기. 새일회성 Windows QA root D:\tmp\anvil-v3-stage-b\fn06-provider-history-c2-01 의 temp/results만현재사용자소유로최대20분생성한다. 기존parent실디렉터리/nonlink·target부재를확인했고생성직전다시대조한다. Playwright headless msedge의전용profile/process만사용·runner종료후등록경로exact정리/독립잔여조회한다. 기존로컬apps/web/dist를가로챈브라우저에서합성API만소비하며실listener/서비스/DB/Agent0이다. 실제사용자/DB연결검증으로승격하지않는다.
+
+- **FN06 C2 reader/화면 직접검사1실패**: 새reader/화면구현후직접11중10PASS/1FAIL481.5191ms로응답변조음성의거절누락을관측했다. 원인을응답fixture가선택기준sessionRef와같은객체를공유해변조시기준까지함께바뀌는시험alias로좁혔다. 응답fixture만독립clone으로분리해동일기대거절을유지한다. type/build는앞시험실패로미실행이다. 실제PG/서비스/Agent0.
+
+- **FN06 C2 HTTP GREEN·화면 reader RED**: 목록HTTP2RED→목록3+HTTP8 합계11PASS1512.0492ms/type0. 현재기존서버key의별도서명purpose만추가했고실제key/설정0이다. 목록브라우저reader3·예약패널1은미구현4RED/기존2PASS1276.0136ms로확인했다. 다음은현재예약목록/원receipt명시조회·이탈/새조회중이전결과숨김·상태구분의소비코드이며실DB/served화면PASS아니다.
+
+- **FN06 C2 목록 service GREEN·HTTP RED**: fixture보존비교보정후3RED380.873ms→유한keyset/서명cursor·scope/filter/현재성·손상/회수거절3건과직접조회11건합계14PASS1241.6322ms/type0. 다음실제등록경로시험2건은404 RED826.7717ms로확인했다. 원기준/기대값완화0·실DB/서비스/Agent0이며조회socket아닌Fastify.inject다. 다음은기존HUMAN인증과같은tx/COMMIT뒤최초기한검사를재사용한목록등록이다.
+
+- **FN06 C2 목록 source TDD 착수**: 현재 OWNER·정확예약의유한목록→원receipt조회소비를기존§6.3안에서구현한다. 신규3시험은2건함수부재RED·1건fixture Date를canonical로보존비교해INPUT_INVALID인잘못된실패253.5458ms다. Date는제품검증완화없이JSON직렬보존비교로수정후정상RED를재확인한다. 실제DB/키/권한/Agent생성0·새cursor는기존서명키의별도purpose만소비하며TURN/현재사용가능판정은아직미지원이다.
+
+- **FN06 목록 소비 조사 경로 오류3회 중단**: 세번째로signed-page* 리터럴파일경로검색이Windows구문오류123을반환했다. 같은추정/리터럴glob패턴을중단하고확인된 list-page.ts 및실제rg전체파일목록에서만선정한다. 제품기능오류나변경으로계산하지않으며서비스/권한/파일생성0이다.
+
+- **FN06 경로 조사 오류 보완**: 목록명령에존재하지않는 packages 를포함해rg exit1이추가발생했다(읽기전용·변경0). 출력에서확인된 apps/connector/adapters/primary 와 apps/connector/runtime 경로만후속정확읽기에사용한다. 잘못된경로의재시도/생성은하지않는다.
+
+- **2026-10-22 FN06 B6~B8 게시 확인·다음 소비 조사**: 정확12경로를2718c8623dcdbef6de41de3654a783915f6f2a0a로commit/private게시했고local/remote SHA동일·main f976ed5e불변·tracked clean·보호6만untracked를확인했다. 실제DB/역할/서비스/Agent0. 다음은C단위의미연결metadata조회/정확SEND·STOP소비를기존계약으로연결한다. 경로조사에서존재하지않는 apps/executor 추정읽기1회가실패(지정된파일을찾을수없음,변경0)했으므로추정재시도없이실제파일목록으로대조한다. 완료checkpoint가아니며전체FN06/계획은계속부분상태다.
+
 - **2026-10-22 FN06 B6~B8 현재 source checkpoint 준비**: Main 단일 writer. 현재 OWNER의 HUMAN GET을 기존 인증 transaction/잠금·정확 원 receipt journal과 연결하고, 수신 저장은 nonce 소비 이후 같은 DB transaction의 단일 보호 함수로 staging bundle을 넘기도록 구현했다. 직접15PASS1591.9886ms·type/diff0이며 함수 응답 변조·최종 현재성 변경/만료·flush/COMMIT 실패의 합성 rollback을 포함한다. 실제 PG/HTTP socket/served UI·Agent 증거가 아니다. 독립 B8 C0/I1의 queryHash[] 충돌은 {}로 보정했고 두 SQL 수정 scoped 확인에서 추가 C/I0이다. pending0037 SHA256 **7FA12D2AD47764A7EE3E7E3FEA46ECEE1286BEE15C6F1291B499B708F3018418**, SQL 실행/구문·권한효과·역할회수·실COMMIT은 미검증. B6/B7 독립 I2는 Main TDD 보완이지 독립 clean 판정이 아니다. 현재 담당 HUMAN(nonOWNER) resolver·TURN·목록/UI·SEND/STOP/native·실제 Agent와 전체 FN06은 미완료다. 실제 DB/role/권한/manifest/서비스 변경0, 보호6 보존, 다음은 이 source 안전 게시 후 다음 미구현 연결이다.
 
 - **FN06 B8 pending 보호함수 정적 검토 중**: SQL source 추가후 독립 I1은 빈query를배열[]로hash해기존executionTarget/매핑guard의객체{}와항상충돌하는문제였다. 실제순수executionTarget 호출의objecthash 일치/arrayhash 불일치를확인해함수한곳만{}로보완했다. 이는SQL실행RED/GREEN이아닌정적보완이다. Main은PUBLIC를실제role명으로조회하는postflight도발견해grantee0 ACL로대조하도록보완했다. NOLOGIN blank-role/migrator임시ADMIN회원만preflight·schema CREATE회수와migration membership회수·최종잔류검사를미적용source에고정했다. key열UPDATE는실제무결성위험이며잠금용무해권한이라고주장하지않는다. actualrole·SQL/함수/권한/DB실행0·구문/권한closure/거절동작은미검증이다.

@@ -13,7 +13,7 @@ const require=createRequire(import.meta.url);
 const sourceUrl=new URL('../../../apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx',import.meta.url);
 const compiled=(await transformWithOxc(await readFile(sourceUrl,'utf8'),fileURLToPath(sourceUrl),{lang:'tsx'})).code;
 const code=compiled.replace(/(from\s*['"])([^'"]+)(['"])/g,(_match,start,path,end)=>start+(path.startsWith('.')?new URL(path,sourceUrl).href:pathToFileURL(require.resolve(path)).href)+end);
-const {WorkspaceResponsibleSessions}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const {WorkspaceResponsibleSessions,ProviderClaimHistoryPanel}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const pid='11111111-1111-4111-8111-111111111111',ref={id:pid,version:1,contentHash:'a'.repeat(64)},session:any={user:{id:pid},clientId:pid,csrfToken:'a'.repeat(43)};
 const confirmed:any={projectId:pid,ref,snapshot:{contentConfirmed:true,executionAuthorized:false,dispatchPerformed:false}};
 function render(buffer:any,owner=true) {
@@ -27,4 +27,7 @@ test('원문 조회가 없어도 미확인 명령ID/불확실 상태를 숨기�
 test('다른주체 보관 입력은 경고만 표시하고 원 명령/내용을 노출하지 않는다',()=>{
   const b=newResponsibleSessionBuffer(confirmed,session,1);b.ownerClientId='22222222-2222-4222-8222-222222222222';b.reason='다른주체비공개입력';
   const text=render(b);assert(text.includes('다른 임무·주체'));assert(!text.includes(b.reason));assert(!text.includes('새 실행 준비 저장 완료'));
+});
+test('provider 이력 패널은 명시 조회 버튼·예약/사용불가 구분만 표시하고 자동 호출/쓰기0이다',()=>{
+ assert.equal(typeof ProviderClaimHistoryPanel,'function');let calls=0;const html=renderToStaticMarkup(createElement(ProviderClaimHistoryPanel,{client:new ApiClient(async()=>{calls++;throw Error('NO_FETCH');}),projectId:pid,sessionRef:ref,subjectKey:'human-current',onAuthenticationLost:()=>{calls++;}}));assert.equal(calls,0);assert.ok(html.includes('공급자 세션 기록 조회'));assert.ok(html.includes('현재 사용 가능성: 미확인'));assert.ok(html.includes('THREAD'));assert.ok(!html.includes('새 SEND'));assert.ok(!html.includes('READY'));
 });
