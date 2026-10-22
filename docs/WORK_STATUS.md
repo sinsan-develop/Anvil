@@ -1,5 +1,23 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 UI08 고정 임무 조건 조회 한정 검수**: 신규 reader/화면의 원 독립 C0/I0/M1은 지연응답시험 장벽 공백이었다. JSON 소비·정확 확정본 native SHA완료 각각2회/후속task 장벽을 보강해 불변bundle의 LEAVE1PASS2.8초/type/diff0, scoped C0/I0/M0(독립실행/수정0)로 확인했다. 새QA02도 exactowner/nonlink/process0 후 정리·별도부재0다. 총 신규unit3/인접4·신규DOM3/기존DOM3+보강1/type/build358은 실행한 통제범위만 증명한다. 실제DB/정식served·원인분류/실행·전체UI08/Stage/계획완료 아님. 소유8파일만 기존branch에 보존하며 보호6/pending1·정식DB서비스/Agent는 불변이다. 다음은 문제화면의 기존 보완/차단 검수 이력 소비 공백을 선정해 연결한다.
+
+- **UI08 독립 검토 M1 시험 장벽 보강**: 한정 C0/I0/M1·독립실행0이다. LEAVE 시험은 HTTP 응답만 기다려 JSON/확정본 SHA 검증 완료 뒤 폐기까지 입증하지 못했다. 제품의 await후 active 검사/원문회수는 정적으로 확인됐으며 제품 결함 확정은 아니다. JSON 소비·정확 confirmed hash완료·후속task 장벽을 보강하고 새 D:/tmp/anvil-v3-stage-b/ui08-issue-assignment-02(temp/results), 현재사용자소유/부재·nonlink/10분·시험뒤정확정리/별도잔여0에서 LEAVE1건만 재확인한다. 제품source/API/DB/서비스·Agent 변경0, 기존3+3시험 반복0이다.
+
+- **UI08 신규/인접 검증·자원 정리**: 신규 DOM3PASS4.1초와 기존 보고 원문 DENY/TAMPER/LEAVE3PASS4.4초, 재사용 confirmation reader4PASS174.2822ms·신규helper3PASS188.5979ms/type/build358모듈356ms/diff0를 확인했다. QA root의 현재사용자owner·nonlink·관련Node/Edge0을 검사해 합성 temp/results만 정리했고 별도조회 부재/process0다. 실제DB/정식served/원인분류/Agent·전체UI08/Stage 완료로 승격하지 않는다. 새 reader/화면 독립검토 결과를 대조한 뒤 소유파일만 checkpoint로 보존한다.
+
+- **UI08 고정 임무 조건 새 화면 검증**: 기존 초안/확정 reader를 재사용한 helper3PASS188.5979ms·type/build358모듈/356ms, 통제API Edge의 정상/권한거절/조회중선택닫기3PASS4.1초다. 선택 보고에서 명시조회로 당시목적/업무·단계/완료·검증조건을 읽고 현재성/실행허가 미확인·완료판정/쓰기0를 유지한다. 거절시 보고/조건회수·이탈뒤지연폐기는 새DOM으로 확인했다. 실제 DB/정식served/전체UI08/원인분류·Agent 미검증·미완료이고 한정독립검토중이다.
+
+- **UI08 고정 임무 조건 화면 RED 확인**: 환경 temp 보정 뒤 기존 원문 화면까지 정상 도달했지만 새 ‘보고에 고정된 임무 조건’ region이 없어 정상1건이 기대한 DOM 반례로 FAIL했다. 승인된 기존 API reader로 구현한 helper3PASS/type0와 분리하며 화면 미구현을 확인했다. 같은 설정/timeout을 유지해 component와 원문 화면 연결만 추가한다.
+
+- **UI08 새 화면 시험 환경 준비 오류**: build/typecheck는 통과했으나 첫 DOM 실행은 등록 temp 디렉터리가 아직 없어 Edge mkdtemp ENOENT로 시작하지 못했다(exit1). 제품/기능 RED가 아닌 환경 선행 오류로 보존하며 등록 경로의 temp만 생성해 같은 정상1건을 확인한다. build chunk-size 경고/NO_COLOR 경고는 별도이며 최적화·환경 설정 변경은 하지 않는다.
+
+- **UI08 새 화면 시험 자원 등록**: D:/tmp/anvil-v3-stage-b/ui08-issue-assignment-01의 temp/results만 사용한다. 생성 전 경로 부재·부모 실제 Directory/nonlink를 확인했고 현재 Windows 사용자 소유·최대10분·Edge headless/통제API/기존 로컬 bundle만 시험한다. 시험 종료 후 경로/owner/link/관련 process를 확인해 등록 전용 파일만 정리·별도 잔여0를 확인한다. 정식 HTTP/DB·서비스·Agent·인증서0이며 화면 정상/변조·거절/이탈만 확인한다. 기존 root Playwright timeout15000/retries0/단일worker 기준은 유지한다.
+
+- **UI08 고정 임무 reader 첫 검증**: 신규3 PASS206.6965ms였으나 typecheck가 fixture의 confirmed nullable3곳을 지적했다(TS18047). 실제 제품 가정을 바꾸지 않고 fixture가 가진 확정본을 assert로 좁혀 반환 타입을 바로잡는다. 원 reader hash/초안 결박·오류/이탈 폐기는 유지하며 실제 DB/화면 검증은 아직0이다.
+
+- **2026-10-22 UI08 보고의 고정 임무 조건 조회 착수**: FN10 한정 실제 결과 checkpoint6f93daaa 뒤 독립 다음 구현을 선정했다. 기존 문제 화면은 보고 원문만 보여 고정 임무의 완료/검증 조건 확인에 화면 이동이 필요하다. 이미 있는 초안·확정 임무 GET/hash validator를 재사용하고 선택 보고 ref/hash·동일 ID/version/초안ref 결박, 이탈·거절 시 이전내용 회수 아래 읽기만 연결한다. 정상/변조·다른초안/인증·이탈 반례3건이 미구현 RED(exit1,238.8334ms)다. 새 API/DB/권한·원인확정/Agent·승인 실행0. 자료 읽기의 잘못된 UI04 시험 경로 os2는 실제 FN09/UI05 fixture 목록으로 바로잡고 추정 경로 재사용은 하지 않는다.
+
 - **2026-10-22 FN10 실제 조회 후 독립 잔여 확인**: 별도 SSH exit0로 exact PG/net ID·이름·owner/instance label·전용root/관련cwd잔여0와 정식3 full ID/image/StartedAt/runningfalse불변을 확인했다. 실제 새 근거 조회/Webreader·거절3/6표행수는 한정 확인됐으나 wrapper 첫 회수 실패·전체exit1은 보존하고 원인 미확정/재실행0이다. 결과 FN10_NEXT_ACTION_BASIS_READ_RESULT.md에 원출력·정리·미검증을 분리했다. 실제 정식DB/served·scheduler·Agent/전체FN10 미완료를 유지하며 다음 독립 UI08 문제 원문/근거 탐색 공백을 확인한다. 읽기 중 Windows literal glob os123은 제품 오류와 분리하고 이후 rg -g 필터만 사용한다.
 
 - **2026-10-22 FN10 실제 조회 workflow DONE·전체 exit1**: exact b4bae296 새빈1회에서 schema61 COMMIT/비관리자 app, 정상 검수 저장 뒤 새 근거 GET→실 Web reader·타인404/익명401/query400 고정 비노출 DTO·6표 행수 불변을 phaseDONE safe3marker로 확인했다. PG21f37f00b53d5f1f2e8370415a2ae12222e8b382906f828cd9e7bdf20561b5ad/netc25f761a391b7c5eb27e4c4a446b96482f7955ada6a6881ca2a1e7eb982e4d18/instance4ed94c2f9872fadcced9b622914af60c. child files2/dirs5/close0/rootCleanupFailedfalse, runner failurefalse/cleanupFailurefalse. 그러나 wrapper CLEANUP_INCOMPLETE/exit2 뒤 outertrap CHECKOUT_REMOVED·bootstrap status2/cleanup_failed0/path_exists0로 전체 SSH exit1이다. wrapper 원인 미확정·같은 후보 재실행0이며 workflow 증거와 정리 실패를 분리 보존한다. 별도 SSH로 exact ID/name/label/root/process 잔여와 정식3metadata를 확인한 뒤 판정한다. 정식DB/Agent/서비스 변경0·전체FN10/Stage완료 아님.

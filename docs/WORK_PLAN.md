@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI08 고정 임무 조건 후속 검수**: 원M1(지연응답후미노출입증)을JSON/정확nativeSHA완료+후속task장벽으로보강한LEAVE1PASS2.8초/type/diff0·scopedC0/I0/M0로해소했다. QA01/02모두독립잔여0이다. 신규/인접통제검증만이며실제DB/정식served/전체UI08미완료를유지한다.
+
+- **2026-10-22 UI08 선택 보고의 고정 임무 조건 조회 일부 구현**: 기존 초안/확정 임무2GET·hash/초안ref검사를 재사용해 문제 원문 화면에서 당시목적/업무·단계/완료·검증조건을 명시조회한다. 현재기준/원인확정/완료·실행은미확인/false이고쓰기0이다. 신규helper3·인접reader4단위, 신규화면3·기존보고화면3/type/build358 PASS와등록QA별도잔여0를확인했다. 통제API UI범위이며실제DB/정식served·원인분류/조치실행·전체UI08/Stage는미완료다.
+
 - **2026-10-22 FN10 새 근거 조회 한정 실제 확인**: exact b4bae296의 새빈61SQL/비관리자PG 정상seed→인증GET→실Webreader·타인404/익명401/query400 비노출·6표행수불변을 workflowDONE으로 확인했다. wrapper 첫 checkout회수 실패로 전체exit1이며 outertrap회수 뒤 별도SSH잔여0/정식3불변을 확인했다. 전체성공소급·같은후보재실행0, 원인미확정/served·scheduler·전체FN10미완료를 유지한다. 상세 FN10_NEXT_ACTION_BASIS_READ_RESULT.md.
 
 - **2026-10-22 FN10 근거 조회 실제 저장 소비 준비**: 기존 정상 검수 seed 후 신규 조회만 소비하는 전용 opt-in·61개 기존 SQL의 disposable lab·유한 실행/회수 wrapper를 준비했다. helper/guard10PASS/type/diff/bash-n0·한정 독립 C0/I0/M0는 source 범위이고 실제 PG/run·회수/served/Agent 증거는 아직 없다. clone 전 trap bootstrap·exact 후보의 격리 실행 및 독립 잔여 확인이 다음 미완료이며 신규 bound 저장/0038은 제외한다.
@@ -575,7 +579,7 @@
 | UI05 | 단계책임자·실행 상세 | C | UI00 | UI00,FN09,FN12,FN13 | 부분 구현·정확 임무/책임·제출목록/원문·시험보고 상태/ID 탐색/부적합 미확인·변경diff/같은원실행 명령출력의 단일등록원문 직접조회. 보고탐색6PASS/DOM새1·인접1, diff5PASS/DOM새1·인접1, 명령출력5PASS/DOM새1·인접1·각type/build/scopedC0/I0/M0/QA0. 실제 파일·diff/명령출처·exit 일치/관측·증거진위/검수·중지회수/served·사용자인수 미완료 |
 | UI06 | 문서·설계·계획 추적 | B | UI00 | UI00,FN03,FN04 | 작업 중 — 후보/제안·충돌/고정 단계·계획 참조/직접선행후속 탐색. trace→정확plan/task원문·시험정의→현재설계줄/고정등록시안 원문 이동 후보 연결. 시안직접9PASS/type/build·새3+인접1 DOM4PASS/QA0·한정C0/I0/M0(앞문구M1 현재해소/과거판정보존). 실제 사용자 UI DB/served·실행/시험 증거 추적·소스드리프트 잔여 미완료 |
 | UI07 | 설계 변경·영향·이력 | D | UI00 | UI06,FN04,FN11 | 부분 구현·요청/영향이력·등록/사람영향검토·문서출처·저장요청 exact 전후원문/재구성diff 후보 연결. 교차준비 I1해소/원입력보존·helper12/합성UI14, 출처직접6/새UI2·인접6, 보관비교새2+같은부모3=5PASS/type/build/diff·각scopedC0I0 확인. 원읽기지연최종장벽M1 이월. 실제DB/정책/CAS/replay·served/주체교체지연·연속pagination/근거의미 미검증. 다른종류출처선택·승인/기준적용/계획개정/재개 미연결 |
-| UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 작업 중·FN11 요청/조회·3종 결정→정확 후보 재결박/별도 소비·원 명령 보존,36fa3e51 same-client actual1 PASS·QA잔여0. FN12 문제 분류·실제 사용자/Agent 인수 미연결/미확인 |
+| UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 작업 중·FN11 요청/조회·3종 결정→정확 후보 재결박/별도 소비·원 명령 보존,36fa3e51 same-client actual1 PASS·QA잔여0. 선택 보고의 고정 임무/완료·검증조건 조회 추가(기존2GET/hash·선택/거절회수/이탈), 신규unit3+인접4/새DOM3+기존3+장벽1/typebuild·scopedC0/I0/M0·QA01/02잔여0. 실제DB/정식served·FN12 원인 분류·실제 사용자/Agent 인수 미연결/미확인 |
 | UI09 | 새 세션·다른 도구 이전 | D | UI00 | UI04,FN14 | 시작 전 |
 | UI10 | 헌법·지식·결정 이유 | B | UI00 | UI00,FN05 | 작업 중·기존 원문/지식·대화/정정/제외·검토/확정·별도 헌법 적용 actual7cf8c005 유지. 정정 비교·문서 출처 조회/첨부·보관 대화→현재 지식 출처 추가에 이어 고정 ARTIFACT 텍스트 조회 후보를 연결(unit23·browser4+보정1·한정 독립C0/I0/M0). 이번 실제 DB/서비스 반영은 미검증. 공유·임무별 선별/전달·사용자 browser DB 미완료 |
 | UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보/환경·HUMAN 신뢰관리/별도승인(UI08)·명령보존, 기존 CAS/합성browser27 PASS 유지. e07312d3 native↔strict TLS/PG/동일UI11 정상·본문유실1 PASS/정리0. 단일독립 C0/I2/M0의 QA수명/초기종료는 Main 순수보완(unit190/type0)·actual 재실행0/PMO 수용 전. AuthForm클릭/사용자인수·영구host/Agent·정책생성·전체UI11 미완료 |
