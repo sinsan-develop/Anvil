@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {ProjectStageQueue,stageQueueOperations} from '../scheduling/stage-queue.ts';
+import {ProjectNextActionBasis} from '../scheduling/project-next-action-basis.ts';
+import {registerNextActionBasisRoute} from '../scheduling/next-action-basis-routes.ts';
 import { AuthFailure } from '../access/repository.ts';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { ProjectsRepository } from './repository.ts';
@@ -107,6 +109,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/execution-source',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultExecutionSource.read(db,actor,request.params.projectId,request.params.id));});
   const resultCriteria=new ProjectResultCriteria(assignmentConfirmations);
   const resultReviews=new ProjectResultReviews(results,resultCriteria);
+  registerNextActionBasisRoute(app,options,new ProjectNextActionBasis({reviews:resultReviews,sources:resultReviewSources,applications:projectMethods}));
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/reviews',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReviews.list(db,actor,request.params.projectId,request.params.id));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/result-reviews/:id',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReviews.read(db,actor,request.params.projectId,request.params.id));});
   const reportedCoverage=new ProjectReportedCoverage(results,resultCriteria);

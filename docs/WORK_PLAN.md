@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10 서버 원검수 근거 연결 진행**: PMO가 정확 readonly GET next-action-basis1개·기존UI소비전환 계약을채택했다. 기존검수/원제출/확정임무/현재방법론reader를같은인증tx에서대조하며회원잠금·적용본최종재조회·세션기한/COMMIT후검사·no-store를연결했다. 화면은정확선택/ref/hash·두action/falseflags검사뒤새GET만소비·무fallback이다. RED→GREEN 후 집중/인접27PASS1397.5709ms/typecheck/build/diff0. 실제PG/served화면/완료판정·실scheduler/queue진행은미검증또는미구현이며전체FN10완료아니다.
+
 - **2026-10-22 FN06 OWNER 조회 핵심 확인**: ad5cd1d2의새빈PG HISTORY_READ exit0에서정상seed→OWNER목록/정확receipt Webreader소비·타인/무인증거절비노출·GET6원장불변을확인했다. 불변예약원장잠금만제외/c잠금·현재권한/30초창유지·권한추가0이다. 독립잔여0·정식3불변,원b42/d079FAIL보존·schema/ATOMIC반복0. 실제served화면/nativeAgent/Provider/currentOS와전체FN06·Stage는미완료이며FN10독립구현공백을이어확인한다.
 
 - **2026-10-22 FN06 OWNER 조회 진단 진행**: 첫 실제 HISTORY_READ는 기존 목록 consumer 경계 FAIL·독립 잔여0·정식불변으로 기록했다. 원 pool/query 전달과42501 한정 진단·HTTP status 보존만 test-only 보완했다. 집중/인접17 PASS·typecheck/diff0, 제품/SQL/권한 변경0. 다음은 새 exact 후보의 한정 원인 확인이며 기존 schema/ATOMIC 재실행0·전체FN06 미완료다.

@@ -732,6 +732,18 @@ GET assignments/:id는 불변 임무/부모·자식·책임 역할/세션 bindin
 
 ### 13.2 FN10 자동/건별·분기·한도·queue
 
+#### 2026-10-22 선택 검수 다음 행동의 서버 근거 조회 — 최신 부분 구현 계약
+
+PMO 위임 결정으로 readonly `GET /api/v1/projects/:projectId/result-reviews/:id/next-action-basis` 1개를 추가한다. 입력은 두 UUID이며 query/body 확장은 없다. HUMAN 세션 쿠키·정확 host만 허용하고 Bearer/익명/중복 쿠키·추가 query는 거절한다. 같은 인증 transaction에서 기존 검수·원제출/확정임무·현재 적용 방법론 reader를 재사용한다. 현재 project/member를 전후 잠그고 선택 review의 정확 ref/hash→원 result→확정 assignment/task.application/node를 대조한다. 현재 방법론을 마지막에 다시 읽어 불일치면 거절하며 세션 기한은 DB에서 전후 확인하고 인증 COMMIT 이후에도 확인한다. 응답은 no-store다.
+
+응답 필드: projectId/resultRef/reviewRef/assignmentRef/applicationRef/nodeId/nodeName/action/reviewOutcome/sourceAssurance/resultTransport/reviewObservedAt/applicationObservedAt/reasonCodes/completionAccepted/runtimeStateVerified/automaticTransitionPerformed/executionAuthorized/dispatchPerformed.
+
+REWORK→REVIEW_REWORK_FOR_SELECTED_STAGE, BLOCKED→WAIT_HUMAN_UNBLOCK_DECISION 두 관계만 허용한다. sourceAssurance는 SERVER_STORED_REVIEW_WITH_CURRENT_METHODOLOGY이며 저장 검수와 현재 방법론 관계의 서버 대조만 뜻한다. reasonCodes는 COMPLETION_NOT_ACCEPTED/RUNTIME_STATE_NOT_VERIFIED/CURRENT_AUTHORITY_BUDGET_NOT_REVALIDATED, 마지막 5개 boolean은 모두 false다. 원 resultTransport를 유지하고 actual Provider/OS/완료 판정으로 승격하지 않는다.
+
+UI05 기존 다음행동 버튼은 이 GET 하나만 소비한다. 고정 원검수·제출·임무·적용본 ref/hash·node·판정/행동·관측시각·정확 필드·false flags를 검사하며 오류/이탈/선택변경 때 이전 결과나 옛 두 GET 조합으로 우회하지 않는다. 기존 원검수 GET/현재 방법론 GET의 개별 기능은 유지한다. 아래의 'UI05 한정 소비' 문단은 이전 client 조합 방식의 이력이고 현재 연결은 이 계약을 따른다.
+
+새 DB schema·쓰기/승인소비·권한 부여·완료수락·queue 저장·scheduler/dispatch·Agent 실행/비용·정식 서비스 변경은 없다. 전체 evaluateNext/현재 완료판정 제공자·실 scheduler는 계속 미완료다. 통제 DB ports HTTP→실Webreader와 실제 PG/served 화면을 구분한다.
+
 - 2026-10-22 UI05 한정 소비: `readNextActionBasis`는 이미 명시선택한 결과·검수·확정임무의 hash/귀속을대조하고 기존 result-reviews GET 원문과 methodology-application GET의 현재 exact application/node를 재확인한다. 선택 REWORK는 해당단계의 보완검토, BLOCKED는 사람의 차단해제판단만 안내한다. 원결과 SYNTHETIC_ONLY는보존하며 실제 실행상태·총괄/사람의완료판정·AUTO/CASE/분기/합류provider가아니다. 현재적용변경/권한거절·이탈은이전값대체없이거절/폐기한다. sourceAssurance는보관검수+조회시점현재방법론에만한정하고 completionAccepted/runtimeStateVerified/automaticTransitionPerformed/executionAuthorized/dispatchPerformed=false다. 새서버API·DB·승인/명령·자동보완준비/dispatch는없으며 전체evaluateNext는후속미완료다.
 
 #### FN10 WAITING 요청의 첫 서버 소비 — 미적용 SQL/소스 부분 구현
