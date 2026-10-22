@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-23 FN06 START 원응답 ref 소비 확인**: optional 장벽에 정확한 원응답 ref를 전달하고 보호 claim.source.responseRef와 기존 RESPONSE_RECORDED 원장에 같은 ref를 결박했다. 새 정상/다른ref 반례 RED exit1/488.017ms→신규·인접16PASS744.2855ms였다. 뒤 typecheck nullable callback1진단은 FAIL 이력이며 고정 const ref로만 보완한 후 typecheck0, 기준완화0이다. 기존 schema/digest-only 역사 의미·UNKNOWN/동일 START 재발행0을 유지하고 새 공개API/SQL/자원/실native·Agent/DB서비스0이다. 독립 한정 재검토는 진행 중이며 실제 준비원장 내구·capture caller와의 concrete 연결/보호저장·전체FN06/Stage는 미완료·미검증이다.
+
+- **2026-10-23 FN06 START 원응답 참조 결박 착수**: 앞선 장벽 delta 독립 재검토 C0/I0/M0(읽기 전용·실행0)을 수신했고 checkpoint514fcc82는 local/private 동일·main f976ed5e 불변이다. 다음 공백은 보호 claim의 source.responseRef가 실제 START 원장의 RESPONSE_RECORDED responseRef와 결박되지 않는 점이다. Main은 기존 optional 합성 barrier 입력에 미리 고정한 원응답 ref를 전달하고 동일 ref만 원장/claim에 소비하도록 좁힌다. 기존 원장 schema/동기 RECORDED/기본 digest-only 의미·UNKNOWN/재발행 금지는 유지한다. source-only 내부 port·시험만 변경하며 새 공개API/SQL·실제 준비원장/보호저장·native/Agent/정식DB서비스 실행0이다.
+
 - **2026-10-23 FN06 START 장벽 최종 유효기간 보완**: 독립 한정 정적검토 C0/I1/M0에서 마지막 current await 중 claim만 만료되는 틈을 확인했다. 새 반례는 Missing expected rejection RED exit1/419.1592ms(개별180.0688ms)였고, barrier 결과를 복제 고정하고 마지막 current 이후 exact claim/기한을 다시 검사하여 직접 신규·인접15PASS768.1774ms/typecheck0/diff0을 확인했다. 실패는 UNKNOWN으로 보존·동일 START 재발행0, 기존 digest-only 역사 응답 replay는 보호저장 성공으로 재해석하지 않는다. 원 I1/RED는 보존하며 독립 재리뷰 합격은 아직 주장하지 않는다. 실제 native/보호저장 내구·준비원장/응답 ref의 영속 소비 연결·Agent·정식 DB/서비스·전체 FN06/Stage는 미구현 또는 미검증이다. 탐색 rg의 Windows 경로 glob os123은 제품 오류와 분리하고 재실행하지 않았다. 신산님 최신 ‘네 의견대로 승인해’는 현재 제안한 작업 진행에 적용하며 실제 Agent/서비스·미특정 실행까지 확대하지 않는다.
 
 - **START 장벽 RED/GREEN·타입진단 분리**: 새2는장벽미소비로2RED410.8213ms(PROTECTION_BARRIER_SKIPPED/Missing rejection)→2PASS615.4538ms였다. 뒤type는unknown반환 metadata분기3진단과fixture enum문자열확장1진단으로FAIL이며 shell끝diff0을typePASS로취급하지않는다. 거절분기에명시returnfail과fixture FILE/READ/false literal만좁히고 계약/기준불변, 재해시한 다른project/permit/시도/RPCdigest/cipher 반례를추가해 exact결박을확인한다. actual서비스/Agent/native/DB0이다.

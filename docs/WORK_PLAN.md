@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 START 보호claim·원응답 ref 일부 연결**: optional 합성 장벽과 원장이 같은 응답 ref를 소비하고 다른 ref는 UNKNOWN으로 거절한다. 새 반례 RED→직접16/type0 확인, 실제 준비원장/보호저장·native·Agent/DB서비스/전체업무 완료는 아니며 WORK_STATUS에 타입진단과 미검증을 보존했다.
+
 - **2026-10-23 FN06 START 보호완료 장벽 일부 구현**: 기존 동기 codec·digest-only 기본값을 보존하고 명시적인 합성 barrier에서 exact 시도/permit/RPC·claim을 검사한 뒤 현재 권한과 claim 기한을 다시 확인한다. 신규·인접15/type/diff 확인 범위이며 실제 보호저장·native·준비원장과 영속 응답 ref 연결·실 Agent/정식 서비스/FN06 전체는 미완료다. UNKNOWN 재발행 금지와 기존 역사 응답 의미를 유지한다. 정확한 RED/검토·제한은 WORK_STATUS에 기록했다.
 
 - **2026-10-23 FN06 최초보관 protocol caller 일부 연결**: SYNTHETIC_ONLY 완전준비와 exact providerRPC사실/부모/kind를 결박해 기존 CREATE코덱을1회소비하고 metadata만반환한다. 실제codec완성응답→별도준비뒤메모리소비 포함 신규/인접8/type/diff를확인했다. 동기RECORDED 의미·기본등록/실권한불변이며 실제native/DPAPI·내구준비원장/OS·Agent/DB서비스/FN06전체/Stage는미완료·미검증이다. 새실행/컴파일/rootACL/키credential0·정확오류/원실패/검토는WORK_STATUS를따른다.
