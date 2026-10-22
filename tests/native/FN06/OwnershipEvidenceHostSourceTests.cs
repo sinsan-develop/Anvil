@@ -77,6 +77,17 @@ internal static class OwnershipEvidenceHostSourceTests
     }
     public static async Task RunAll()
     {
+        // 미래 SOURCE 시험: 유효 handle을 만들거나 실제 P/Invoke 성공을 모사하지 않는다.
+        RejectSource(()=>OwnershipEvidenceHost.ReadRetainedHandleQuerySource(null,null));
+        using(var invalid=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
+        using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(new IntPtr(-1),false))
+        {
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedHandleQuerySource(invalid,invalid));
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedHandleQuerySource(invalid,other));
+        }
+        var closed=new Microsoft.Win32.SafeHandles.SafeWaitHandle(new IntPtr(-1),false);closed.Dispose();
+        using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedHandleQuerySource(closed,other));
         RetainedSourceCases();
         var input=Input();var basis=new Basis();var gate=new OwnershipEvidenceHost(basis, ()=>Now, 1000);
         var plan=await gate.PlanAsync(input, CancellationToken.None);

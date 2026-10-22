@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 native retained-handle 조회 SOURCE — 2026-10-23
+
+미등록 ReadRetainedHandleQuerySource는 내부 후보 process/job SafeHandle의 수명참조 아래 PID·creation FILETIME·해당 Job membership/정확1member·Win32 이미지경로·활성을 전후 읽는 Windows API SOURCE다. 누락/실패·count/identity변경·기한초과는 고정 UNAVAILABLE로 정규화하고 raw경로/handle을 출력하지 않는다. [Job PID 구조](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_basic_process_id_list), [Job 조회](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-queryinformationjobobject), [이미지 경로 문자수 계약](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew)을 SOURCE 선언/배치 대조에만 사용했다.
+
+결과는 NATIVE_HANDLE_QUERY_CANDIDATE_ONLY/권한false다. 경로digest는 파일바이트hash가 아니며 factory handle·image/thread provenance/인증준비/서명/writer 및 SafeHandle disposal정책/실제close효과가 없으면 실제소유·PREPARED/회수로 승격하지 않는다. 참조해제 뒤 기한을 검사하지만 고정 호출 수/10초 결과수용 기준은 OS 호출 강제중단 상한이 아니다. handle 재open/Create/Resume/Terminate·파일/키·채널/API 등록은 없고 이 source의 compile/PInvoke/실행은 NOT_RUN/UNVERIFIED다.
+
 ## FN06 D1 retained 정체성 순수 비교 SOURCE — 2026-10-23
 
 Host 내부 ComparePreparedSource는 원 생성 정체성 후보와 관측 후보의 run/gen/job/pid/startTicks/image·profile의 run/gen/image, 원 준비 이후/관측 이전 생성시각·현재기한·관측나이 최대10초, active/inJob/neverResumed·단일 Job member를 비교한다. 후보 identity는 불변 scalar이고 member 배열은 복제한다. 반환은 OWNERSHIP_PREPARED_SOURCE_MATCHED_ONLY/OsOwnershipVerified·PreparationAuthorized·ExecutionAuthorized·DispatchPerformed=false다.

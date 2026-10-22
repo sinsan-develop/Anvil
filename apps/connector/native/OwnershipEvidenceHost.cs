@@ -6,6 +6,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 namespace Anvil.Native.OwnershipEvidence
@@ -195,6 +198,82 @@ namespace Anvil.Native.OwnershipEvidence
                 if(createdAt<Time(plan.Selection["issuedAt"])||createdAt>snapshot.ObservedAt)throw Unavailable();
                 var members=snapshot.Members;if(members.Length!=1||!SameIdentity(expected,members[0]))throw Unavailable();
                 return new PreparedSourceMatch(expected,snapshot.ObservedAt,plan.ExpiresAt);
+            }
+            catch{throw Unavailable();}
+        }
+        // 미등록 읽기 SOURCE다. 실제 P/Invoke 실행 승인이나 실행 결과를 의미하지 않는다.
+        [StructLayout(LayoutKind.Sequential)] private struct NativeFileTime{internal uint Low,High;internal long Value{get{return((long)High<<32)|Low;}}}
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint GetProcessId(IntPtr process);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool GetProcessTimes(IntPtr process,out NativeFileTime created,out NativeFileTime exited,out NativeFileTime kernel,out NativeFileTime user);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool IsProcessInJob(IntPtr process,IntPtr job,[MarshalAs(UnmanagedType.Bool)]out bool result);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool QueryInformationJobObject(IntPtr job,int kind,IntPtr buffer,uint size,out uint written);
+        [DllImport("kernel32.dll",ExactSpelling=true,CharSet=CharSet.Unicode,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool QueryFullProcessImageNameW(IntPtr process,uint flags,StringBuilder path,ref uint count);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint WaitForSingleObject(IntPtr handle,uint milliseconds);
+        private sealed class NativePoint
+        {
+            internal uint Pid;internal long StartTicks;internal string ImagePath;
+        }
+        internal sealed class RetainedHandleQueryCandidate
+        {
+            internal readonly string Purpose="NATIVE_HANDLE_QUERY_CANDIDATE_ONLY";
+            internal readonly uint Pid;
+            internal readonly string StartTicks,ObservedImagePathDigest;
+            internal readonly DateTime ObservedFrom,ObservedAt;
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool ImageBytesVerified{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal string[] MissingEvidence{get{return new[]{"FACTORY_RETAINED_HANDLE_PROVENANCE","FACTORY_SAFEHANDLE_DISPOSAL_POLICY","RETAINED_IMAGE_BYTES_AND_PROVENANCE","AUTHENTICATED_NATIVE_PREPARATION_BINDING","NEVER_RESUMED_THREAD_PROVENANCE","BOUNDED_NATIVE_CALL_TERMINATION","OBSERVATION_SIGNER","ACTUAL_WRITER_NONE_OR_RECLAIM"};}}
+            internal RetainedHandleQueryCandidate(uint pid,string startTicks,string imagePathDigest,DateTime from,DateTime at)
+            {Pid=pid;StartTicks=startTicks;ObservedImagePathDigest=imagePathDigest;ObservedFrom=from;ObservedAt=at;}
+        }
+        private static NativePoint ReadNativePoint(IntPtr process,IntPtr job,IntPtr buffer)
+        {
+            uint pid=GetProcessId(process);NativeFileTime created,exited,kernel,user;bool inJob;
+            if(pid==0||!GetProcessTimes(process,out created,out exited,out kernel,out user)||created.Value<=0||!IsProcessInJob(process,job,out inJob)||!inJob)throw Unavailable();
+            DateTime.FromFileTimeUtc(created.Value);
+            int size=8+IntPtr.Size;uint written;
+            for(int offset=0;offset<size;offset++)Marshal.WriteByte(buffer,offset,0);
+            if(!QueryInformationJobObject(job,3,buffer,(uint)size,out written)||written!=(uint)size||Marshal.ReadInt32(buffer,0)!=1||Marshal.ReadInt32(buffer,4)!=1)throw Unavailable();
+            ulong member=IntPtr.Size==8?unchecked((ulong)Marshal.ReadInt64(buffer,8)):unchecked((uint)Marshal.ReadInt32(buffer,8));
+            if(member!=pid)throw Unavailable();
+            var path=new StringBuilder(32768);uint count=32768;
+            if(!QueryFullProcessImageNameW(process,0,path,ref count)||count==0||count>=32768||path.Length!=(int)count||WaitForSingleObject(process,0)!=258)throw Unavailable();
+            return new NativePoint{Pid=pid,StartTicks=created.Value,ImagePath=path.ToString()};
+        }
+        // handle 생성·재open·명시 CloseHandle은 없다. 참조 해제 시 caller가 Dispose한
+        // SafeHandle의 실제 close가 일어날 수 있으므로 future factory의 disposal 정책은 미확인이다.
+        // 출처가 없는 SafeHandle도 OS 조회 후보일 뿐
+        // 소유권이 아니다. 미래 factory/인증 연결 없이 PreparedSnapshot으로 자동 변환하지 않는다.
+        internal static RetainedHandleQueryCandidate ReadRetainedHandleQuerySource(SafeHandle process,SafeHandle job)
+        {
+            try
+            {
+                if(process==null||job==null||ReferenceEquals(process,job)||process.IsClosed||process.IsInvalid||job.IsClosed||job.IsInvalid||Environment.OSVersion.Platform!=PlatformID.Win32NT)throw Unavailable();
+                bool processRef=false,jobRef=false;IntPtr buffer=IntPtr.Zero;
+                var elapsed=Stopwatch.StartNew();DateTime from=DateTime.UtcNow;RetainedHandleQueryCandidate candidate=null;
+                try
+                {
+                    process.DangerousAddRef(ref processRef);job.DangerousAddRef(ref jobRef);
+                    IntPtr p=process.DangerousGetHandle(),j=job.DangerousGetHandle();
+                    if(p==IntPtr.Zero||j==IntPtr.Zero||p==new IntPtr(-1)||j==new IntPtr(-1)||p==j)throw Unavailable();
+                    // 고정 호출 수/결과수용 기한일 뿐 OS 호출의 강제 중단·종료 상한은 아니다.
+                    buffer=Marshal.AllocHGlobal(8+IntPtr.Size);
+                    var first=ReadNativePoint(p,j,buffer);var last=ReadNativePoint(p,j,buffer);DateTime at=DateTime.UtcNow;
+                    if(process.IsClosed||job.IsClosed||first.Pid!=last.Pid||first.StartTicks!=last.StartTicks||!string.Equals(first.ImagePath,last.ImagePath,StringComparison.OrdinalIgnoreCase)||DateTime.FromFileTimeUtc(last.StartTicks)>at||at<from||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                    // 경로 문자열의 digest일 뿐 executable 바이트 hash/파일 고정의 증거가 아니다.
+                    byte[] pathBytes=new UTF8Encoding(false,true).GetBytes(last.ImagePath);string digest;
+                    try{using(var sha=SHA256.Create())digest=BitConverter.ToString(sha.ComputeHash(pathBytes)).Replace("-","").ToLowerInvariant();}finally{Array.Clear(pathBytes,0,pathBytes.Length);}
+                    candidate=new RetainedHandleQueryCandidate(last.Pid,last.StartTicks.ToString(CultureInfo.InvariantCulture),digest,from,at);
+                }
+                finally
+                {
+                    try{if(buffer!=IntPtr.Zero)Marshal.FreeHGlobal(buffer);}
+                    finally{try{if(jobRef)job.DangerousRelease();}finally{if(processRef)process.DangerousRelease();}}
+                }
+                DateTime finished=DateTime.UtcNow;if(candidate==null||finished<candidate.ObservedAt||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                return candidate;
             }
             catch{throw Unavailable();}
         }
