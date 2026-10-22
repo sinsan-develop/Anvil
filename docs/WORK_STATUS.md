@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN08 정상 STOP 역사 회수 독립 한정 검수 종료**: 기존 reviewer가 C0/I0/M0·독립실행/수정0으로 확인했다. 원 REQUEST_STOP/실행scope·spool과 원STOP행을 검증해 관측만 회수하고 새 interrupt/현재권한·writer회수승격0이다. Main의 신규2/직접영향37/type/diff와 분리하며 source/시험·계획/상태4파일만 보존한다. 다음 독립 단위는 이미 존재하는 SyntheticStartReceiver.observationBatch/recordObservations를 cached START exact 명령에서 회수하는 소비 경로다. 원 expiry/원장검증을 먼저 대조하며 START 재실행/새조회·원실패승격은 하지 않는다. 전체44업무/Stage는 여전히 미완료다.
+
+- **FN08 정상 STOP 역사 회수 source 검증**: 새 recordStopObservations는 기존 readRecorded/정확 REQUEST_STOP·spoolscope를 소비해 원 중지 관측만 기록한다. 새2RED270.3859ms→2PASS345.7654ms/type0, admission+기존sessiontransport 직접영향37PASS828.2385ms/diff0다. partial1행 보존 뒤page기한경과·추가interrupt/서명/query0·재호출중복0·원STOP부재/SEND/다른ref/spool/RECOVERY거절·writer회수false를 확인했다. 기존 requestStop 허가/기한/송신은 변경0이며 독립 한정 검토중이다. 메모리합성 증거이며 실제파일내구/DB/경합/OS회수/Agent·전체FN08/Stage완료는 아니다. 새 공개계약/SQL/권한/정식서비스/원격0·보호7 및 기존실패 보존, rollback은 새메서드 일반revert·기록삭제0다.
+
+- **FN08 보관 STOP 소비 미구현 RED**: 새 정상부분회수/음성묶음2건이 메서드 부재로2FAIL270.3859ms였다. 기존 중지원장/source reader는 보존하고 cached COMMANDS의 exact REQUEST_STOP만 내부 회수로 연결한다. 새 stop/current/허가/서명/query는 호출하지 않으며 원STOP행0도 거절한다. 원래 requestStop의 허가/기한·실제 중지 의미는 변경하지 않는다.
+
+- **FN08 보관 STOP 관측 회수 착수**: 정상 EXECUTION의 기존 REQUEST_STOP page/원중지원장→기존 stopper.recordObservations를 새 내부 recordStopObservations로 연결한다. cached source readRecorded만 사용하고 새page/서명/current/stop/interrupt0, 원장 부재·다른ref/종류/spool 거절·부분기록 명시재개·중복0/STOP_UNCONFIRMED·writerReleaseVerifiedfalse를 유지한다. RECOVERY stop 전달·현재허가·OS회수/실Agent·공개API/DB/권한/정식환경은 추가하지 않는다. 파일자원 생성 없는 메모리 TDD로 진행하며 원FN10/FN12 실패와 특정거절은 보존한다.
+
 - **FN08 기한 뒤 회수 독립 한정 검수**: 기존 reviewer가 최신 원송신행 부재 거절까지 포함해 C0/I0/M0·독립실행/수정0으로 확인했다. 실제 원장 당시 검증/fullscope·operation·보관exact선택만 소비하고 새송신/현재허가로 전환하는 경로는 발견되지 않았다. Main의 최신 직접4PASS529.0887ms/type/diff0·직접영향73(부재 한 줄 보완 전)과 구분한다. 소유 source2/시험2/계획·상태만 보존하며 보호6/pending1은 불변이다. 다음은 REQUEST_STOP의 이미 보관된 관측을 재중지/새조회 없이 회수하는 동일 계획 내 독립 소비 경로를 선정한다. actual 경계/기존 실패를 확대·승격하지 않는다.
 
 - **FN08 역사 원장 읽기·기한 뒤 회수 한정 검증**: readRecorded는 검증된 원장만 반환하고 빈 결과null/미완료PREPARED를 그대로 읽는다. 다른grant·변조·불완전은 거절하며 서명/current/challenge/perform/append0이다. 새 admission은 정확보관page/ref·당시봉투/실행·spool 대조 뒤 원송신 관측만 기록하고 만료를 현재허가로 사용하지 않는다. 새4RED304.8837ms→4PASS424.4201ms/type0·직접영향73PASS857.3475ms/diff0, 이후 원송신부재 음성1RED를 추가한 한 줄 보완 뒤 직접4PASS529.0887ms/type/diff0다. 페이지기한 뒤 partial회수·재송신/중복0은 메모리합성만 확인했다. 실제 파일내구/동시경합·실DB/served/OS/Agent/전체FN08·Stage는 미검증·미완료, 새 공개계약/SQL/권한/정식환경0이다. rollback은 새 readRecorded/회수메서드 source만 일반revert하며 과거 원장/스풀 삭제0이다. 기존 reviewer는 최신 부재반례 delta를 포함해 검토중이다.

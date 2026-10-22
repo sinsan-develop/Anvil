@@ -155,6 +155,18 @@ test('보관 회수는 없는page·잘못된ref·START/다른spool을 새조회/
  }
 });
 
+test('보관 중지 관측은 기한 뒤 부분 회수를 재interrupt 없이 끝내고 회수false를 유지한다',async()=>{
+ const f=stopFixture(),s=selectedStop(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordStopObservations,'function');await a.requestStop(f.scope,f.operation,f.commandRef,s.stop);const counts=s.counts();p.failSecond();
+ await assert.rejects(a.recordStopObservations(f.scope,f.operation,f.commandRef,s.stop,p.spool));assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);f.advance(120000);s.stop.stop=async()=>assert.fail('NO_INTERRUPT');a.client.transport.perform=async()=>assert.fail('NO_PAGE');a.client.signer.sign=async()=>assert.fail('NO_SIGN');
+ const out=await a.recordStopObservations(f.scope,f.operation,f.commandRef,s.stop,p.spool);assert.equal(out.observations.recordedRefs.length,2);assert.equal(out.writerReleaseVerified,false);assert.equal(out.observations.writerReleaseVerified,false);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.executionAuthorized,false);assert.equal(out.dispatchPerformed,false);assert.deepEqual(p.rows[0],original);assert.deepEqual(p.rows.map(r=>r.snapshot.event.type),['STOP_REQUESTED','STOP_UNCONFIRMED']);assert.deepEqual(s.counts(),counts);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(await a.recordStopObservations(f.scope,f.operation,f.commandRef,s.stop,p.spool),out);assert.equal(p.rows.length,2);
+});
+
+test('보관 중지 회수는 원중지 부재·SEND/ref/spool·회수scope를 새중지 없이 거절한다',async()=>{
+ for(const fault of ['absent','no-stop','send','ref','spool','recovery']){const f=fault==='send'?instructionFixture():stopFixture(),s=selectedStop(f),p=selectedSpool(f,fault==='spool'),a=f.make();assert.equal(typeof a.recordStopObservations,'function');if(fault!=='absent')await a.client.execute(f.scope,f.operation);const before=f.counts();s.stop.stop=async()=>assert.fail('NO_INTERRUPT');a.client.transport.perform=async()=>assert.fail('NO_PAGE');
+  await assert.rejects(a.recordStopObservations(fault==='recovery'?{...f.scope,mode:'RECOVERY'}:f.scope,f.operation,fault==='ref'?{...f.commandRef,version:2}:f.commandRef,s.stop,p.spool),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),before);assert.deepEqual(s.counts(),[0,0]);assert.equal(p.rows.length,0);
+ }
+});
+
 test('선택전송은server page→동일grant·자료/permit→codec를명시연결하고동일명령wire1만유지한다',async()=>{
  const f=instructionFixture(),s=selectedSender(f),a=f.make();assert.equal(typeof a.sendInstruction,'function');const first=await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender);assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.equal(first.sent.executionAuthorized,false);assert.equal(first.sent.workAccepted,false);assert.deepEqual(first.commandRef,f.commandRef);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(s.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.deepEqual(await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender),first);assert.deepEqual(s.counts(),[1,1]);
 });

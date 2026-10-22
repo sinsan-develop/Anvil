@@ -102,6 +102,25 @@ export class SyntheticExecutionCommandAdmission {
    return{transport:'SYNTHETIC_ONLY' as const,state:envelope?'SELECTED_NOT_DISPATCHED' as const:'NO_STOP_INSTRUCTION' as const,commandRef,envelope,resultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),expiresAt:response.expiresAt,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECOVERY_UNAVAILABLE');}
  }
+ /** 보관된 정상 중지 요청의 관측만 회수한다. 새 interrupt·RECOVERY 전달은 수행하지 않는다. */
+ async recordStopObservations(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,stopper:SyntheticPrimaryStopTransport,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(stopper instanceof SyntheticPrimaryStopTransport)||!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   if(scope.mode!=='EXECUTION'||!refV1(commandRef)||readClientOperation(scope,operation,this.#now()).operation.kind!=='COMMANDS')return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const saved=await this.client.readRecorded(scope,operation);this.#ports();
+   if(saved.readOnly!==true||saved.currentAuthorityVerified!==false||saved.result?.state!=='RESPONSE_RECORDED'||!isoV1(saved.recordedAt))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const page=saved.result.response;if(!arrayV1(page?.items,50))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const selected=page.items.filter((item:any)=>same(item?.commandRef,commandRef));if(selected.length!==1)return fail('COMMAND_ADMISSION_NOT_SELECTED');
+   const envelope=readDispatchEnvelopeV1(selected[0].envelope,Date.parse(saved.recordedAt));
+   if(envelope.operation!=='REQUEST_STOP'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||envelope.context.executionGeneration!==scope.executionGeneration)return fail('COMMAND_ADMISSION_OPERATION_UNSUPPORTED');
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}))return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const observations=await stopper.recordObservations(envelope,spool);this.#ports();
+   if(!observations.recordedRefs.length)return fail('COMMAND_ADMISSION_STOP_RECORD_REQUIRED');
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(commandRef),pageResultRef:cloneV1(saved.result.resultRef),envelopeHash:envelope.envelopeHash,observations,readOnlySource:true as const,currentAuthorityVerified:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
+ }
  /** 정확 page의 중지 요청을 명시 전달한다. 선택은 권한이 아니며 실제 target/소유 검사는 stop이 수행한다. */
  async requestStop(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,stopper:SyntheticPrimaryStopTransport){
   try{
