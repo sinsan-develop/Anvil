@@ -1,5 +1,31 @@
 # Anvil 재설계 작업현황
 
+- **FN13/UI05 이전 관측 페이지 핵심동작 확인 / Main 어울**: 기존 no-query GET을 보존하고 별도 observation-pages를 연결했다. 같은 인증 transaction의 member/원제출/실행/전체원장·ACK검사 뒤 현재조회와 고정 cap/ref-digest·20행/위치/원30초기한의 서명 page/next cursor를 반환한다. 이전/이후 왕복도 GET 재검사하며 새높은순번은 고정범위에서 제외, 공백채움은 stale로 거절한다. 화면은 현재ACK/건수와 고정페이지를 구분하고 선택 원문·pending/거절/변경/만료에서 옛원문을 숨긴다.
+  - 검증: 최신 직접/인접14PASS1365.055ms(기존GET·HUMAN/host/입력경계, 실제Fastifyquery 정규화, 지연인증후처리기한, fullACK/행수·누락/상한/서명/세대·동시append/공백채움/terminal)/typebuild356/343ms. 첫 UI Edge5PASS8.1초, 리뷰보완후 새bundle의 영향 정상/기한2PASS5.5초를 분리한다. 독립정적 C0/I1/M1·실행0 뒤 Main이 I1 지연COMMIT200반례와 M1 terminal행누락반례를 RED→GREEN으로 보완했으며 독립clean으로 소급하지 않는다. 기존 chunk500k/NO_COLOR경고는 유지했다.
+  - 등록QA exact resolve/owner SINSAN\\cyhuh/nonlink0/process0 확인 후 회수·별도 경로false/process0. 새SQL/schema/키/권한/DB/정식서비스/Agent0, 실제 PG의 새 endpoint·정식served/login·권한경합·전체FN13/UI05/Stage는 미검증/미완료다. rollback은 새읽기경로/consumer 일반revert이며 원관측/ACK 삭제0. 다음은 이 새경로의 실제 인증PG 소비공백을 기존격리선행만 재사용해 단일 신규분기로 확인하고, 이미된 source를 반복하지 않는다.
+
+- **FN13 지연 COMMIT I1 정상 RED**: query정규화후실제inject정상200에는도달했고30ms원기한/60ms인증후처리대기에서기대412대신200을확인했다(1FAIL/1PASS1309.5088ms). route시작단조시각과서버observedAt→expiresAt잔여를결박해authenticated 반환후원기한을재검사한다. 기존인증transaction/role정책변경없이새GET반환부만보완한다.
+
+- **FN13 페이지 독립 검토·실행 경계 RED**: Edge5PASS8.1초/typebuild356/343ms후독립정적C0/I1/M1(독립실행0)이다. I1은내부clock검사후authenticated COMMIT await가남아반환기한검사누락, M1은후속terminal행누락검사공백이다. 새inject/query+행누락2FAIL4614.9251ms·인접3PASS에서 Fastifyquery recordV1불일치400 및누락거절부재를확인했다. query정규화후지연COMMIT반례까지확인하고응답직전단조기한·ACK공백/위치기반정확행수/순번을보완한다. 새schema/권한/DB/서비스0·원실패/PASS시점분리.
+
+- **FN13 관측페이지 UI 정상 RED**: 기존bundle의원관측조회에는도달했지만‘관측페이지탐색’버튼부재로Edge1FAIL15000ms. 서버/reader9/type0와화면미연결을분리하고새읽기UI를연결한다. 탐색원기한/권한/기준/timeout변경0·실DB/서비스/Agent0.
+
+- **FN13 페이지 source GREEN·화면 QA 사전등록**: 서버/reader9PASS613.1103ms/type0. 첫페이지복귀용pageCursor도같은원상한/digest/기한에결박해매왕복GET현재권한을재검사한다. Main소유 D:\tmp\anvil-v3-stage-b\ui05-observation-pages-01 temp/결과·일회Edge만최대30분사용후exact회수·독립잔여0확인한다. 생성전부재/상위nonlink를확인하고기존bundle새버튼부재RED→새build정상20초과/왕복/append/terminal·403·늦은응답·기한UI를확인한다. 실제PG/서비스/키/권한/Agent0이며새endpoint실HTTP/DB는아직미검증이다.
+
+- **FN13 이전/다음 왕복의 현재권한 재조회 RED**: 서버/reader9PASS506.9298/type0후첫페이지복귀에도캐시권한을신뢰하지않도록동일고정페이지를다시읽는pageCursor를추가한다. 원30초기한/상한/digest를유지하며nextCursor와같은서명범위·새권한아님. 신규첫pageCursor부재1FAIL410.285ms를확인했다. UI는이후페이지복귀도이토큰으로GET재검사하며newestreset과분리한다.
+
+- **FN13 新reader 검사식 보완 RED**: first reader3PASS245.5234/type0후20행·유효nextCursor/상한밖before41반례를추가하자기대거절누락1FAIL176.0128ms. 메타데이터 OR와hasMore삼항의괄호누락이원인이며제품신규검사식괄호만보완한다. 기존기준/음성시험은유지하고실제DB/권한/서비스0이다.
+
+- **FN13 관측페이지 reader 착수 RED**: 서버6PASS732.0679ms후시험타입명시로type0이다. 새브라우저reader 함수부재1FAIL147.607ms를확인했다. 기존reader 검증/계약을보존하면서부분페이지의행hash/순서·현재ACK/고정범위·원기한을따로검증한다. 앞선존재inventory출력직후잘못client.test.ts로읽은부재1은보존하며실제observation-journal-api.test.ts만사용한다. schema/실DB/서비스/Agent0이다.
+
+- **FN13 ページ単位GREEN・型補正**: fixtureclock보정후6PASS732.0679ms이나신규시험sign callback v의타입누락TS7006로type1이다. 제품변경없이시험인자string만명시하고다시type검사한다. 단위PASS를typePASS로승격하지않는다.
+
+- **FN13 페이지 시간시험 fixture 오류**: 신규append/응답직전기한2건이FAIL·인접4PASS640.0245ms다. 원fixture의journal clock은rows.at인데별도clock SELECT는고정at0여서10초뒤역행거절/30초경과미거절이발생했다. 실제clock_query를가로채는새시험helper만rows.at로맞추고제품의역행/기한검사를완화하지않는다. source4PASS428.0882ms/type0은앞선시점증거로분리,actualDB/서비스0이다.
+
+- **FN13 페이지 상세 채택·정상 RED**: PMO가 observation-pages 별도GET/source/UI·영향검증을 기존계획범위로채택했다. 기존no-query GET/권한/10000/2MiB상한·전체ACK검증보존,서명별도purpose·user/client/session/credential/result/execution/최초상한·원30초기한/await후현재권한·기한재검사,append와고정페이지분리·실패/변경시stale숨김이조건이다. 신규41건페이지시험은page함수부재1FAIL428.0012ms로정상RED다. schema/SQL/키/실역할/DB/서비스/Agent0·rollback새source경로revert/원관측보존. 단순상한이하공백채움도섞이지않게최초범위ref목록digest를cursor에결박해변경시재조회거절한다.
+
+- **FN13/UI05 이전 관측 페이지 착수 / Main 어울**: 계획 UI05 paged_logs_keep_position 및 FN13 기록대조의 독립 미완료를 선정했다. 실제화면은20건이후hasMore에서이전페이지미완료를표시하고서버는전체검증뒤20건만반환한다. 기존GET보존/별도읽기page·최대20·원result/실행/사용자client세션credential/최초상한seq·30초원기한서명cursor·현재멤버재검사/claim-onlyflags보존안을PMO위임상세판단에전달하고내부TDD부터진행한다. schema/DB/Secret/서비스/Agent0·보호6접근0이다. 앞선읽기에서실inventory대조없이추정한project-result-rework-page.ts부재1은오류로보존하며실제project-result-reworks.ts의기존page참조를확인했다.
+
 - **FN06 후속 source 중복 여부 대조**: 실제 inventory의 provider-bound-transport.test.ts는 기존 SEND/STOP exclusive journal source→factory→reader/current→guard→fake wire 조립을 이미 포함한다. 이를새미구현으로재구현하거나편의wrapper추가를기능진도로보고하지않는다. 남은핵심은 실제보호저장/native/helper·current사용자의명시책임관계·DB/served·실Agent연결이며 기존 제외/정확실행경계로구분한다. FN12 이번4종입력/실저장부분만핵심동작확인, 전체계획완료아니다. 마지막안전게시759e9460 local/private동일·main불변/보호6보존이며 본기록만 추가했다.
 
 - **후속 읽기 경로 오류·범위 재정렬**: execution-issues의현재claim→관측승격금지경계는기존판정과동일하다. 추정 execution-preparation-state.ts 부재 읽기1회가발생했다. 이turn의추정파일/PowerShell literal 오류가반복돼추정경로읽기를중단하고 rg --files 목록으로존재가확인된파일만열도록정정한다. 실제분류/제품코드변경·자원생성0이다. FN06 다음은helper/native제외를유지하고기존locked journal factory→reader/current→guard의source caller조립공백만검토한다.

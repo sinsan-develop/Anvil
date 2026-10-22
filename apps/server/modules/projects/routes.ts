@@ -94,6 +94,11 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
   const resultExecutionSource=new ProjectResultExecutionSource(results);
   const observationJournal=new ProjectObservationJournal(resultExecutionSource);
+  app.get<{Params:{projectId:string;id:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/results/:id/observation-pages',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({cursor:{type:'string',minLength:1,maxLength:4096}},[])}},async request=>{
+   if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);const started=performance.now();let deadline=started;
+   const value=await options.repository.authenticated(token(request),null,async(db,actor)=>{const page=await observationJournal.page(db,actor,request.params.projectId,request.params.id,Object.fromEntries(Object.entries(request.query)),value=>options.repository.signProjectCursor('RESULT_OBSERVATION_PAGE:'+value));const remaining=Date.parse(page.cursorExpiresAt)-Date.parse(page.observedAt);if(!Number.isFinite(remaining)||remaining<=0||remaining>30000)throw new AuthFailure('RESULT_OBSERVATION_CURSOR_EXPIRED',412);deadline=started+remaining;return page;});
+   if(performance.now()>=deadline)throw new AuthFailure('RESULT_OBSERVATION_CURSOR_EXPIRED',412);return value;
+  });
   const stopRequestHistory=new ProjectStopRequestHistory(resultExecutionSource);
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/stop-requests',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>stopRequestHistory.read(db,actor,request.params.projectId,request.params.id));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/observation-journal',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>observationJournal.read(db,actor,request.params.projectId,request.params.id));});
