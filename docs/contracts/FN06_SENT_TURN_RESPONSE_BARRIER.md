@@ -23,6 +23,8 @@
 
 ### 동일 원잠금의 post 검증 자료
 
+서버 basis의 별도 `currentSentResponse(db,actor,scope,commandId)`는 기존 인증 tx에서 이미 저장된 명령·현재 HUMAN·소유/권한 fact·예산/자료를 다시 읽는다. 기존 `current()`의 IDLE 요구는 바꾸지 않는다. 응답용 읽기만 IDLE/BUSY 현재 상태를 허용하며 `purpose:'SENT_RESPONSE_ONLY',executionAuthorized:false,dispatchPerformed:false`를 반환한다. 이는 이미 전송한 사실·permit 소비·부모 claim의 증명이 아니므로 그 별도 대조 없이 runtime post current로 채택하지 않는다. 새 SEND/permit/reader 수용 형식과 혼용하지 않는다.
+
 postResponseAuthority.current의 세 번째 내부 인자는 `SyntheticLockedProviderAttemptSource`다. 같은 SEND exclusive 안에서만 원 시도/permit 두 행을 읽으며 전송용 source의 끝난 수명을 재활성화하거나 중첩 잠금을 획득하지 않는다. 입력 JSON·서명·원장 schema에 함수를 추가하지 않는다. post 검사가 끝나거나 취소되면 source를 폐쇄하고 늦은 접근을 거절한다. source를 소비하는 구현은 현재 snapshot 조회 전후 원장 두 행을 재대조하며, 일치가 실제 fsync/현재 OS 또는 서버 권한의 독립 증거는 아니다.
 
 정상, 보호완료 대기, 다른 사건/ref/부모·소유 회수·만료·포트 변경·불명/늦은 완료의 집중 반례와 독립 검토를 수행한다. 실제 post-response 공급자·TURN concrete capture bridge·실저장/현재 상태 관측·Agent 연결은 별도 미구현/미검증으로 구분한다. 공개 API/SQL/credential·실정책/서비스/컴파일 미결은 변경하지 않는다.

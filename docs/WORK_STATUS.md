@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 sent-response basis 한정 독립 검토**: source/계약/fixture·신규시험 scoped C0/I0/M0(독립실행/수정0)을수신했다. 기존SEND IDLE와응답전용BUSY읽기·동일HUMAN/fact/예산/예약대조·쓰기/permit소비0을확인한범위만수용한다. 실제이미송신됨/permit소비/부모claim·runtimepost조립·DB/권한/OS/Agent미판정은유지하며 소유6파일을기존branch checkpoint로보존한다.
+
+- **2026-10-23 FN06 응답전용 서버 basis 일부 연결 확인**: 기존 current()는같은private읽기의IDLE경로를유지하고 신규 currentSentResponse()만 기존allowBusy검증을소비한다. 이미저장명령/current HUMAN·소유fact/예산·자료를읽되 purpose SENT_RESPONSE_ONLY/false권한으로구분, permit/부모claim·실postsnapshot을증명하지않는다. 신규2RED543.0822→신규2/기존sendcurrent4 총6PASS903.0468ms/type0, 회수grant/다른주체·예산/소유불명·미지원상태 포함신규3PASS839.0979ms뒤assert overload타입1진단은원FAIL보존. exact오류검사정정중서버AuthFailure를ApiError.code와혼동한1FAIL510.4009ms도보존하고 실제정의(message/statusCode)를확인해정확message/412음성1PASS591.6629ms/type/diff0이다. 제품/검수기준완화0·모든실행합성DB/SELECT만이며 실제DB/정식서비스/권한·Agent/OS·실post권한verifier·연속TURN/전체FN06Stage는미구현·미검증, 독립scoped리뷰중이다.
+
+- **2026-10-23 FN06 서버 sent-response basis 선행 착수**: Main은 실제current verifier 연결을위해 기존 SyntheticPgInstructionPermitBasis의인증/HUMAN/current fact/예산·자료읽기 검증을 별도 currentSentResponse 읽기로소비하는 source선행을선정했다. 기존 current()/permit/queue의새SEND IDLE강제는유지하고, 이미존재하는 current parser의allowBusy를 별도응답용메서드에서만명시소비한다. 반환은 purpose SENT_RESPONSE_ONLY/false권한 표식을추가해기존새SEND/reader형식으로묵시채택하지않는다. 기존SQL읽기/기존인증tx만사용·실DB/서비스/권한·새publicAPI/SQL/실행0, 소비permit/부모DB검증과runtime postsnapshot 조립/실current구현전체는후속미구현으로구분한다. 추정 FN08 instruction-permit-basis 시험경로 os2는 실제 FN06 provider-send-current.test.ts fixture inventory로정정했다.
+
 - **FN06 post 원잠금 소비 한정 독립 검토**: source/계약/신규fixture·시험 scoped C0/I0/M0(독립 실행/수정0)을수신했다. 입력고정·원IDLE hash·현재조회전후 exact원행·종료/timeout수명과재송신0을확인한source범위만수용한다. 실제현재권한공급자/잠금내구/OS·native/DB·Agent미판정은유지하며 소유7파일을기존branch checkpoint로보존한다.
 
 - **2026-10-23 FN06 post 현재원장 소비 일부 연결 확인**: 신규 SyntheticSentTurnPostCurrent가 동일 SEND 잠금의 원시도/permit exact행을 현재snapshot 공급자조회 전후 재대조한다. 기존 pre-IDLE snapshot 전체의 bindingHash(상태포함)를원그대로검증하고 자료/grant/시도permit/응답/부모·기한을고정하며, post읽기source는종료/취소후폐쇄한다. 전송용source재활성/중첩잠금·공개JSON/API/schema변경0. 신규2RED288.2552ms→2PASS591.9726ms/type0, 포트전환/현재조회timeout·늦은완료의후속원장조회0/재송신0보강후 신규3+상위장벽5+TURN3 총11PASS835.5418ms/type/diff0이다. 단순snapshot일치를실제서버권한/OS·내구/Agent인증으로승격하지않고 실제current verifier/연속TURN수명·native/DB서비스·전체FN06Stage는미구현·미검증이다. 독립한정리뷰중·새자원/rootACL/credential/실행0·원M1/보호7/특정거절·원exit1유지다.

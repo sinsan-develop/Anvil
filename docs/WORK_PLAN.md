@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 sent-response 서버basis 읽기 일부 구현**: 새SEND current의IDLE요건은보존하고 별도응답용읽기에서현재BUSY/IDLE와동일인증·소유/자료/예산을대조한다. purpose/false권한으로새SEND/reader결과와혼용을막으며 실제permit/부모DBclaim·runtimepostsnapshot/연속TURN·실권한/DB·Agent/전체FN06는미연결/미검증이다. 집중/인접6·변경음성1/type/diff와원FAIL/검토는WORK_STATUS를따른다.
+
 - **2026-10-23 FN06 post current 원잠금 소비 일부 구현**: 이미송신한sameevent의시도/permit행을현재snapshot조회전후대조하고종료뒤읽기를거절한다. 기존pre-IDLE/hash/schema·실제권한비승격/UNKNOWN재송신0유지, 영향11/type/diff는합성source범위이며 실제current verifier/연속TURN/OS내구/native/Agent/DB·전체FN06는미완료다. 반례/검토범위는WORK_STATUS에누적했다.
 
 - **2026-10-23 FN06 concrete TURN capture 일부 연결**: 명시TURN wrapper와공유유한capture처리로 기존SEND→부모준비/CREATE/결과원장/postcurrent·동일응답참조를연결했다. 영향12/type/diff는합성포트범위이며 연속TURN/실postprovider·OS/내구/native/Agent/정식DB서비스/전체FN06는미구현·미검증이다. 원RED/타입진단/한정리뷰와한번capture의한계는WORK_STATUS에보존했다.

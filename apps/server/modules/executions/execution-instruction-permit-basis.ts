@@ -19,6 +19,16 @@ export class SyntheticPgInstructionPermitBasis{
  constructor(queue:Queue,budgets:Budgets){this.queue=queue;this.budgets=budgets;this.#ports();}
  #ports(){if(this.queue?.transport!=='SYNTHETIC_ONLY'||typeof this.queue.read!=='function'||typeof this.queue.current!=='function'||typeof this.budgets?.checkDelivery!=='function')reject();}
  async current(db:PoolClient,actor:AuthenticatedIdentity,rawScope:Scope,commandId:string){
+  return this.#read(db,actor,rawScope,commandId,false);
+ }
+ /** Existing authenticated transaction read only, for a separately verified
+  * already-sent event. Does not prove a consumed permit or parent claim and must
+  * not be passed to SEND admission/current/reader as new execution authority. */
+ async currentSentResponse(db:PoolClient,actor:AuthenticatedIdentity,rawScope:Scope,commandId:string){
+  const value=await this.#read(db,actor,rawScope,commandId,true);
+  return{...value,purpose:'SENT_RESPONSE_ONLY' as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+ }
+ async #read(db:PoolClient,actor:AuthenticatedIdentity,rawScope:Scope,commandId:string,allowBusy:boolean){
   try{
    this.#ports();if(!recordV1(rawScope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||rawScope.mode!=='EXECUTION'||![rawScope.projectId,rawScope.connectorId,rawScope.executionId,commandId].every(uuidV1)||!refV1(rawScope.grantRef)||![rawScope.executionGeneration,rawScope.credentialGeneration].every(v=>Number.isSafeInteger(v)&&Number(v)>0))return reject();
    const scope=cloneV1(rawScope),execution={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration};
@@ -29,7 +39,7 @@ export class SyntheticPgInstructionPermitBasis{
    if(rows.length!==1)return reject();const row=rows[0],ref={id:row.id,version:Number(row.version),contentHash:row.content_hash};if(!refV1(ref)||ref.version!==1)return reject();
    const record=readSyntheticInstructionQueueRecord(await this.queue.read(db,actor,cloneV1(execution),ref),execution),s=record.snapshot;
    if(!same(record.ref,ref)||s.request.commandId!==commandId||!same(s.currentBinding.grantRef,scope.grantRef)||s.currentBinding.fact.registration.connectorId!==scope.connectorId)return reject();
-   const read=async()=>{const value=await this.queue.current(db,actor,cloneV1(execution)),at=await clock();human(at);return readSyntheticInstructionCurrent(value,execution,s.request,actor,at);};
+   const read=async()=>{const value=await this.queue.current(db,actor,cloneV1(execution)),at=await clock();human(at);return readSyntheticInstructionCurrent(value,execution,s.request,actor,at,allowBusy);};
    const first=await read(),checked=cloneV1(await this.budgets.checkDelivery(db,actor,scope.projectId,cloneV1(s.reservationRef))),at=await clock();
    if(!recordV1(checked,['record','policyRef','checkedAt','persisted','executionAuthorized','dispatchPerformed'])||!same(checked.policyRef,s.currentBinding.fact.intent.budgetPolicyRef)||!isoV1(checked.checkedAt)||Date.parse(checked.checkedAt)>at||at-Date.parse(checked.checkedAt)>30000||checked.persisted!==false||checked.executionAuthorized!==false||checked.dispatchPerformed!==false)return reject();
    const reservation=readSyntheticInstructionReservation(checked.record,record),last=await read(),endAt=await clock();
