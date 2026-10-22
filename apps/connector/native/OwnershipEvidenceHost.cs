@@ -116,7 +116,8 @@ namespace Anvil.Native.OwnershipEvidence
                         DateTime before=Now();if(external.IsCancellationRequested||elapsed.Elapsed.TotalMilliseconds>=budget||before<start||before>=end)throw Unavailable();
                         var work=reader.ReadCurrentAsync(selected,cancel.Token);if(work==null)throw Unavailable();
                         // timeout 뒤 fault도 관측하되 예외 원문을 외부에 출력하지 않는다.
-                        work.ContinueWith(t=>{var observed=t.Exception;},CancellationToken.None,TaskContinuationOptions.OnlyOnFaulted|TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);
+                        // 의도적으로 await하지 않는다: 원 work는 아래에서 유한 대기하고 늦은 fault만 관측한다.
+                        Task faultObserver=work.ContinueWith(t=>{var observed=t.Exception;},CancellationToken.None,TaskContinuationOptions.OnlyOnFaulted|TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);
                         var stop=Task.Delay((int)Math.Max(1,Math.Ceiling(Math.Min(budget-elapsed.Elapsed.TotalMilliseconds,(end-Now()).TotalMilliseconds))),timer.Token);
                         if(await Task.WhenAny(work,stop,externalStop.Task).ConfigureAwait(false)!=work)throw Unavailable();
                         var current=await work.ConfigureAwait(false);DateTime now=Now();
