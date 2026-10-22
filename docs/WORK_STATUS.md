@@ -1,5 +1,19 @@
 # Anvil 재설계 작업현황
 
+- **FN12 REFERENCES 실제 QA 사전등록**: 새 미구현 참조4종이들어간 제출1건의실제저장만확인한다. WSL-server 새빈 /home/daon/deploy/anvil-v3-fn12-manual-report-qa-01 및 내부원문 .av3-data/fn12-raw, 전용PG anvil-v3-fn12-manual-report-pg-01/internal network anvil-v3-fn12-manual-report-net-01/DB anvil_v3_fn12_manual_report_qa_01, uid1000daon·AV3_FN12_MANUAL_REPORT_QA/새randomrunlabel. PG15 digest6eb0add3/image594290e9·tmpfs512MiB·공개port/영구volume0, Node24.21 SHA7fde7b8a·기존59SQL. 생성전부재/realpath/owner/link·기존자원metadata영향을대조한다. privateGit exact게시SHA에서clone/checkout, read-only의존성링크 /home/daon/deploy/anvil-v3/node_modules만허가/lock동일·원경로변경0. 생성후10분/전체bootstrap240초/TERM후50초·clone전EXIT/TERM/INT trap·child90/외부110/회수25초. 종료 exactID/label/image/network/mount/port·checkout owner/realpath/link/process 및trackedclean확인뒤등록자원만제거·후속독립잔여0. 잔류시source보존/자동반복0. 실제명령/Agent/정식DB/Secret/서비스변경0·실행전미검증.
+
+- **FN12 QA 준비 읽기 오류**: 보고경로를 PowerShell literal FN12*로 전달해 rg os123 1회가 발생했다. 재시도/우회하지 않고 실제 파일 inventory만 사용한다. actual자원/DB/서비스0,REFERENCES guard4PASS197.8477ms/type/diff0은source시험이며실제저장PASS아니다.
+
+- **FN12 새참조 실제저장 QA 준비 RED**: REFERENCES만선택할entry guard 신규1FAIL141.7657ms를확인했다. 기존59SQL/원REPORT·ARTIFACTS분기는유지하며 새출력/diff/양쪽evidence4종참조의제출1건만 COMMIT/별도원문/재조회·동일명령추가행0으로대조하는시험분기를추가한다. 현재actual실행/자원생성0이며그전exactSHA게시·리소스사전등록·부재/격리검사를거친다.
+
+- **FN12 명령증거 화면 핵심동작·한정검토 종료**: 새build355/321ms/type0·통제API Edge정상/유실같은명령/민감거절3PASS7.7초, 직접인접20PASS432.8102ms·diff check0. 원문재조회5필드/미인증·추가삭제·명령/출력/증거분리보존을대조했다. 독립정적C0/I0/M0·실행/수정0이며 이전시험evidence M1도정적해소확인했다. 등록QA exact소유/nonlink/process0확인후회수·별도경로false/process0. 실DB/served/실증거진위/Agent·전체FN12미검증/미완료. 다음은 새참조4종의실저장공백만 기존격리QA의단일REFERENCES분기로준비하며 원성공 REPORT/ARTIFACTS를반복하지않는다.
+
+- **FN12 명령증거 UI 정상RED**: 기존bundle의명령/출력입력뒤‘명령1증거추가’부재로Edge1FAIL15000ms. source20/type0와화면미연결을분리하고해당입력만기존잠금안에연결한다. timeout/기존기준·실행허가를변경하지않는다.
+
+- **FN12 명령증거 source GREEN·QA 등록**: 직접인접20PASS432.8102ms/type0이며 기존명령/시험 양쪽 evidence 변환만 공유해 규칙중복을 피했다. Main 소유 D:\tmp\anvil-v3-stage-b\ui05-command-evidence-01 temp/결과·일회Edge를 최대30분 사용하고 exact회수·독립잔여0확인한다. 생성전부재/상위비링크를 확인하고 기존bundle UI부재RED 후 새bundle정상/유실같은명령/민감거절을검증한다. 새API/DB/권한/서비스/명령실행/Agent0.
+
+- **FN12 명령증거 수기입력 정상 RED**: 시험증거74306a69는local/private동일·main f976ed5e불변·보호6보존을확인했다. 다음명령 evidence 정상1FAIL261.8869ms/MANUAL_RESULT_REPORT_INVALID를확인하고기존5필드/최대20/source선언동일변환을연결한다. 출력ref와증거는별도보고이며실제출처/명령실행·새API/SQL/DB/권한/서비스0이다.
+
 - **FN12 시험증거 보강 검증 종료**: 제품/기존bundle불변에서 재조회 전체원문의 evidence5필드·completion false 직접대조를 보강한 새 Edge 정상1PASS6.9초/type0다. 원3PASS6.6초 및 독립C0/I0/M1의 시험공백과 분리하며 M1의 Main 시험보완으로 기록한다. 재등록QA exact소유/nonlink/process0확인후제거·별도경로false/process0. 실파일/권한/DB/served/Agent는 미판정이다. 다음 명령 evidence 입력 연결을 계속한다.
 
 - **FN12 증거 원문 표시 보강 QA 재등록**: Main 소유 동일 literal D:\tmp\anvil-v3-stage-b\ui05-test-evidence-01을 새 빈 경로로 10분 이내 재생성해 시험-only 정상1건 수행 후 exact회수/독립잔여0 확인한다. 제품/source bundle불변·서버/DB/Agent0이며 생성전부재/상위nonlink를 다시 확인한다.

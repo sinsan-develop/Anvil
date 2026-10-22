@@ -16,7 +16,7 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
   catch(cause){if(active()){const e=cause instanceof ApiError?cause:new ApiError('MANUAL_RESULT_REPORT_INVALID');setError(e.code);if(e.status===401)onAuthenticationLost();}}
   finally{flight.current=false;if(live.current)setBusy(false);}
  }
- return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·diff 참조·명령·출력 참조·시험 결과/증거·산출물 참조도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 명령의 증거 참조는 기존 JSON 파일 등록을 사용하세요. 시험/완료 합격을 만들지 않습니다.</p>
+ return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·diff 참조·명령/출력/증거·시험 결과/증거·산출물 참조도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 시험/완료 합격을 만들지 않습니다.</p>
   {error?<p role="alert">{error} · 작성 입력은 보존합니다.</p>:null}
   {!draft?<button type="button" disabled={occupied||busy} onClick={()=>storage.onChange(key,old=>old??newManualResultReport(assignment,session))}>미완료 결과 직접 작성</button>:<>
    <fieldset disabled={busy||occupied}><legend>결과 주장 입력</legend>
@@ -33,6 +33,15 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
       {row.output?<fieldset><legend>명령 {i+1} 출력 보관 참조 보고</legend><p className="meta">기존 출력 보관파일의 고정 참조만 보고합니다. 실파일 존재·내용·명령 출처·exit는 여기서 확인하지 않습니다. 이후 원문 조회에는 같은 파일을 산출물 참조에도 명시 등록해야 합니다. 선택 해제는 이 작성 입력의 출력 참조만 미보고로 바꾸며 파일을 삭제하지 않습니다.</p>{([['id','ID'],['version','버전'],['contentHash','해시']]as const).map(([field,title])=><label key={field}>명령 {i+1} 출력 {title}<input maxLength={field==='version'?16:field==='id'?36:64} value={row.output![field]} onChange={e=>edit(d=>{const c=d.commands?.[i];if(c?.output)c.output[field]=e.target.value;})}/></label>)}</fieldset>:null}
       <label>명령 인수 {i+1}<textarea aria-label={'명령 인수 '+(i+1)} maxLength={400200} value={row.argv} onChange={e=>edit(d=>{const c=d.commands?.[i];if(c)c.argv=e.target.value;})}/></label>
       {([['startedAt','시작 UTC'],['finishedAt','종료 UTC'],['exitCode','종료 코드']]as const).map(([key,label])=><label key={key}>명령 {i+1} {label}<input maxLength={key==='exitCode'?16:24} placeholder={key==='exitCode'?'빈 값은 미보고':'YYYY-MM-DDTHH:mm:ss.sssZ · 빈 값은 미보고'} value={row[key]} onChange={e=>edit(d=>{const c=d.commands?.[i];if(c)c[key]=e.target.value;})}/></label>)}
+      <p className="meta">명령 증거의 출처는 입력자 선언입니다. 관측·시험 산출물·검수자 출처를 선택해도 실제 실행·출처 인증은 아닙니다. 출력 파일 참조와 증거 선언은 별개이며 비밀을 입력하지 마세요.</p>
+      {(row.evidence??[]).map((ev,j)=><fieldset key={j}><legend>명령 {i+1} 증거 {j+1} 선언</legend>
+       <label>명령 {i+1} 증거 {j+1} 출처 선언<select aria-label={'명령 '+(i+1)+' 증거 '+(j+1)+' 출처 선언'} value={ev.sourceKind} onChange={e=>edit(d=>{const v=d.commands?.[i]?.evidence?.[j];if(v)v.sourceKind=e.target.value as typeof v.sourceKind;})}>{['WORKER_CLAIM','CONNECTOR_OBSERVED','TEST_ARTIFACT','REVIEWER_CONFIRMED'].map(k=><option key={k}>{k}</option>)}</select></label>
+       {([['ref','파일'],['environmentRef','환경']]as const).map(([key,title])=><fieldset key={key}><legend>{title} 고정 참조</legend>{([['id','ID'],['version','버전'],['contentHash','해시']]as const).map(([field,label])=><label key={field}>명령 {i+1} 증거 {j+1} {title} {label}<input maxLength={field==='version'?16:field==='id'?36:64} value={ev[key][field]} onChange={e=>edit(d=>{const v=d.commands?.[i]?.evidence?.[j];if(v)v[key][field]=e.target.value;})}/></label>)}</fieldset>)}
+       <label>명령 {i+1} 증거 {j+1} 내용 해시<input maxLength={64} value={ev.contentHash} onChange={e=>edit(d=>{const v=d.commands?.[i]?.evidence?.[j];if(v)v.contentHash=e.target.value;})}/></label>
+       <label>명령 {i+1} 증거 {j+1} 기록 UTC<input maxLength={24} placeholder="YYYY-MM-DDTHH:mm:ss.sssZ" value={ev.recordedAt} onChange={e=>edit(d=>{const v=d.commands?.[i]?.evidence?.[j];if(v)v.recordedAt=e.target.value;})}/></label>
+       <button type="button" onClick={()=>edit(d=>{d.commands?.[i]?.evidence?.splice(j,1);})}>명령 {i+1} 증거 {j+1} 제거</button>
+      </fieldset>)}
+      <button type="button" disabled={(row.evidence?.length??0)>=20} onClick={()=>edit(d=>{const r=d.commands?.[i];if(r)(r.evidence??=[]).push({sourceKind:'WORKER_CLAIM',ref:{id:'',version:'',contentHash:''},contentHash:'',environmentRef:{id:'',version:'',contentHash:''},recordedAt:''});})}>명령 {i+1} 증거 추가</button>
       <button type="button" onClick={()=>edit(d=>{d.commands?.splice(i,1);})}>명령 결과 {i+1} 제거</button>
      </fieldset>)}
      <button type="button" disabled={(draft.commands?.length??0)>=200} onClick={()=>edit(d=>{(d.commands??=[]).push({profile:{id:'',version:'',contentHash:''},cwd:{id:'',version:'',contentHash:''},host:{id:'',version:'',contentHash:''},argv:'',startedAt:'',finishedAt:'',exitCode:''});})}>명령 결과 추가</button>
