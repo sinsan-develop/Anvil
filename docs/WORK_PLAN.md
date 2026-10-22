@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN05/UI10 보관 비교 출처 열기 일부 연결**: 비교한 두 불변 지식 버전의 기존 출처 GET를 각각 연결했다. 각 버전/hash·거절/불일치·비교닫기 지연반응은 신규 합성DOM RED→GREEN1 및 직접 단위6/typebuild로 확인, 일회성QA잔여0. 기존 원문/이력·권한/쓰기계약 불변·새API/SQL/Agent0이며 실제DB/정식served/모든주체·전체업무/Stage 완료로 승격하지 않는다. 원실패·검토와 상세증거는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN05/UI10 정정 문서근거 선택 일부 연결**: 기존 correctKnowledge 계약에 새 DOCUMENT_VERSION 선택/해제와 고정 entry/changeSources를 연결했다. 이전 출처/원target·같은명령 재확인/legacy pending 보존, owner/client/generation·UNKNOWN 잠금·200자리·CAS 반영 표시를 확인했다. 신규/기존정정7·직접인접12·합성DOM1/typebuild·한정독립M1 보정추가C0/I0/M0·등록QA독립잔여0 범위다. 실제DB/정식served/모든주체·전체FN05/UI10/Stage는 미검증·미완료이며 추가API/SQL/권한/Agent0, 상세 원RED/결과는 WORK_STATUS를 따른다.
 
 - **2026-10-22 UI05 개별 명령 근거의 합성 DOM 핵심 확인**: 기존 제품 컴포넌트를 isolated Edge/메모리 API에서 실제 클릭해 정확 근거 GET·안전표시·닫기 뒤 늦은JSON 폐기·403 부모회수를 확인했다. 최신1PASS2348.4557ms/type/diff0·한정정적M1 보정 확인이며 임시root/Edge 잔여0이다. 실제served/API Network·DB/현재권한/Agent 및 전체UI05·Stage 수용은 미검증·미완료로 유지한다. 제품소스/기존검수기준·timeout을 바꾸지 않았다.
