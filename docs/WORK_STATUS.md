@@ -1,5 +1,31 @@
 # Anvil 재설계 작업현황
 
+- **FN06 C SEND/STOP current·guard·factory source 조립 확인**: 최신 신규9PASS2301.8764ms/type/diff0이다. 변경 직후 기존 transport 인접25와 새4=29PASS904.5516ms, 공유 STOP 검사 인접10PASS288.3049ms는 별도 실제 실행이며 중복 합산하지 않는다. 기존 송신/중지 허가·원장 멱등은 유지하고 exact 시도/permit/material/binding→잠긴 row factory→기존 SEND basis/소비nonce 또는 STOP 원receipt/현재target·TURN/부모/freshOS→보호 capsule→fake wire를 연결했다. I1 지연 raw 응답 미정리는 직접RED→GREEN 뒤 같은 reviewer가 source해소를 확인했다. 최신 factory 제한C0/I0·독립 실행0. readLocked 최신행/전체journal/exclusive/fsync와 OS/current 제공자 진위는 신뢰 전제이며 actual검증으로 승격하지 않는다. 실제 파일 adapter/서버리스너·DB/권한·native/키/실handle/Agent0·보호6 보존·전체FN06/Stage/계획 미완료. 다음은 정식 등록/실행 경계와 연결할 source 조립 및 나머지 계획 미구현 대조이며 실제 실행 제외는 유지한다.
+
+- **FN06 C 잠긴 시도 factory RED**: 원 시도/permit row 대조를 guard reader 생성 앞에 추가한 정상 transport1RED388.8117ms(새 factory 모듈 부재)다. caller가 기존 exclusive journal 잠금 안에서 검증한 최신 시도/permit row를 읽기 제공하는 port만 사용하고 중첩 잠금·파일 fallback은 만들지 않는다. self hash/원 ref·state/순서/이전ref·동일 key/envelope·material/binding/permit을 대조한 뒤에만 current reader를 만든다. 실제 fsync/OS 잠금은 합성 row로 증명하지 않는다.
+
+- **FN06 C STOP current GREEN·소비 factory 마무리**: STOP2PASS941.8832ms/type0 뒤 원STOPcurrent→TURN/부모 capsule→guard 추가1PASS392.209ms, 기존 STOP/PG adapter10PASS288.3049ms/type/diff0이다. 제한 독립 C0/I0와 I1 source 보완 확인을 수신했다(실행0). 아직 reader factory가 transport 원 시도/permit 내구 row를 구조/해시로 독립 대조하는 조립이 남았으므로 일반 완료로 닫지 않고 기존 잠긴 local journal에서 제공한 exact row를 확인하는 source/fake를 이어간다. 실제 파일 내구성/native/DB/Agent는 미검증이다.
+
+- **FN06 C STOP 정상 fixture 선행 누락**: 첫 source 실행은 정상1FAIL/음성1PASS1086.6932ms다. STOP binder가 원 grant의 서버 fact를 읽는 기존 SELECT를 추가했으나 fake db의 허용 query 분기에 execution_grants가 없어 UNEXPECTED_STOP_QUERY를 던지는 누락을 확인했다. 원 grant binding 반환 분기를 fixture에 추가하며 제품 검사는 바꾸지 않는다. 음성만으로 합격 판정하지 않고 정상과 타입을 다시 확인한다.
+
+- **FN06 C STOP trusted current RED**: 원 TURN을 실제 기존 합성 수신기로 저장한 뒤 기존 StopCommandRecord 검증을 통과한 원 중지기록 fixture에서 새 STOP binder 부재1RED498.714ms다. 기존 중지 current 검사 함수를 의미 변경 없이 공유하고 같은 db의 원 영수증/outbox·TURN/THREAD 부모·현재grant·fresh OS fact를 읽는 source를 추가한다. SEND permit/IDLE/새 호출예약 검사를 중지에 도입하지 않는다. 실제DB/Agent0이다.
+
+- **FN06 C I1 GREEN·STOP current 착수**: deferred1RED1584.8679ms→미전달/지연 응답만0으로 지워 direct guard/SENDcurrent6PASS2026.4066ms·type/diff0이다. 기존 성공 codec 인계/불명·재전송금지는 유지한다. STOP current는 SEND IDLE/새 permit/새 예약을 요구하지 않고 기존 readStoredSyntheticStopCommand/StopCurrent 검사와 저장 TURN+THREAD 부모·현재 grant/OS/fact를 같은 tx에서 대조하도록 별도 source를 이어간다. 실제native/PG/wire/Agent0·완료 승격0이다.
+
+- **FN06 C I1 실제 RED**: guard timeout 뒤 deferred 응답이 도착한 직접1RED1584.8679ms에서 응답 Buffer가0이 아님을 확인했다. 성공적으로 상위 codec에 전달한 응답은 보존하고, 미전달/지연/거절 응답은 callback catch 및 외부 finally에서0으로 지우도록 최소 보완한다. 원 UNKNOWN/전송1회/재송신금지 기대는 그대로 유지한다.
+
+- **FN06 C 독립 I1 응답 정리 누락**: 신규 SEND current2/transport2·인접25=29PASS904.5516ms/type0 뒤 기존 basis→reader→guard 연결 추가1PASS489.2441ms/type0이다. 독립 검토 C0/I1에서 guard timeout 후 늦은 inner wire 응답의 raw ID byte를 거절만 하고 지우지 않는 누락을 확인했다. 성공적으로 codec에 인계한 응답과 미전달/지연 응답을 구분해 후자만0으로 지우는 직접 deferred 반례를 먼저 검증한다. 실제wire/PG/Agent0·STOP current/factory 실제 durable조립은 미완료다.
+
+- **FN06 C SEND current2GREEN·fixture 타입2**: 기존 basis/원THREAD·permit/nonce 대조 정상과 BUSY/부재/시도·nonce오류2PASS734.4685ms이나 fixture 봉투의 schemaVersion/operation literal 확장으로 TS2345 2건이 발생했다. fixture를 기존 readDispatchEnvelopeV1으로 판독해 정확 타입을 얻으며 제품 검사/기대값은 바꾸지 않는다. 실제 DB·원자성·OS/current 제공자 진위는 미검증이다.
+
+- **FN06 C SEND trusted current RED**: 같은 원THREAD·SEND queue/예약/소비permit·서명nonce fixture의 정상 source는 새 binder 부재로1RED370.1513ms다. SyntheticPgInstructionPermitBasis.current를 재사용해 실제 기존 IDLE/주체/예산 head 검사를 유지하고 같은 db·인증 actor·challenge tx의 claim/permit SELECT·원 소비 target/localAttempt를 대조한다. 새 nonce/permit/예산 생성·nested tx/SQL적용0·fake 제공자의 OS진위를 actual로 승격0이다.
+
+- **FN06 C transport seam 합성 GREEN**: 기존 SEND/STOP의 원 시도/permit sync 후 exact metadata→보호 capsule 대조→fake wire1회·회수/타target0·유실 불명/재전송0을 신규2PASS803.9101ms/type/diff0으로 확인했다. 추가 metadata는 내부 exchange만이며 기존 허가/IDLE/예산/원장 본문은 그대로다. 다음 trusted SEND current는 같은 기존 인증tx의 실제 source validator인 SyntheticPgInstructionPermitBasis와 claim/소비permit journal·원nonce 읽기를 재사용하고 원시도ref/hash와 결박한다. 기존 actual/native/DB/Agent0이며 아직 current결박 완료아니다.
+
+- **FN06 C transport 소비 seam RED**: 기존 SEND/STOP transport와 보호 reader를 합성 연결하는 신규 정상 시험은 보호 wire 모듈 부재로1RED446.071ms다. 기존 원장/permit sync 이후 exact 시도 metadata만 추가 전달하고 guard가 고정 envelope/RPC id/method·지시 hash와 보호 thread/turn을 확인한 뒤 기존 fake wire를1회 소비하도록 구현한다. 실패/유실은 원 transport의 UNKNOWN/STOP_UNCONFIRMED와 재전송금지를 유지한다. 실제 current/PG/native는 아직 구현확인 전이다.
+
+- **FN06 C SEND/STOP 소비 재개·선행 결박 결정**: PMO 관제② 지시로3e38d695 게시 후 설명만하고 끝내지 않고 기존 transport의 소비 경로를 이어간다. Main 단일 writer·보호6·기존30/SSR4증거 재사용이다. reader의 실제 current를 원 permit/localAttempt에 결박하려면 transport가 sync한 시도 ref와 permit ref를 내부 wire에 전달하는 선행 seam이 필요함을 확인했다. 먼저 기존 SEND/STOP 허가/원장 코드는 그대로 두고 내부 exchange의 추가 metadata로 exact key/envelope/시도/permit/지시 hash·binding hash를 전달하는 guard를 TDD하고, 이를 기존 current/원장 reader에 결박한다. 실제wire/native/키/root/Agent/DB/서비스0이며 공개 API 변경0이다.
+
 - **FN06 TURN 조회·UI 제한 재검토 종료**: 조회 source와 화면2파일 각각 독립 C0/I0·읽기전용/실행0을 수신했다. SSR 종류표시/명시 callback query 동일성은 확인했으나 실제 DOM/Network/PG/served는 미판정이다. 소유13경로만 기존 private Stage B checkpoint로 보존한다. 새 DB/SQL/권한·native·실Agent·자원 생성0·보호6 유지이며 전체계획 완료보고가 아니다.
 
 - **FN06 TURN 조회·화면 후속 source 검수**: 현재 OWNER의 THREAD/TURN 목록·원 receipt 조회 source30PASS1653.9868ms·type/diff0·한정독립C0/I0. 이어 실제 TSX의 THREAD 하드코딩/옛 TURN미구현 안내를 수정하고 원 행 컴포넌트의 종류 표시/명시 handler exact query 전달을 기존 Oxc 메모리 렌더4PASS399.6865ms로 확인했다. type0·최신Web351/build324ms, 기존 chunk크기 경고 보존·완화0이다. 실제 DOM/served/PG/Agent는 미검증이며 이전 DOM2를 새 증거로 재사용하지 않는다. callback 부작용을 AbortSignal로 강제 중단할 수 없고 실제 SEND/STOP current/native/caller는 미연결임을 유지한다. 다음은 기존 승인 C의 exact 소비 caller/현재 근거 연결·미구현 FN06을 계속하며 일반 작업배정/재승인 대기로 돌리지 않는다.

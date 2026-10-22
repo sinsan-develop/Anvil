@@ -143,6 +143,15 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 C exact SEND/STOP source 소비 조립
+
+- 기존 SEND/STOP transport는 기존 시도/permit sync·허가·원장 멱등을 그대로 유지하고 내부 wire.exchange에 exact key/envelope/localAttemptRef/permitRef/material hash/binding hash metadata를 추가 전달한다. 공개 HTTP/명령 계약을 확장하거나 기존 원장 schema를 바꾸지 않는다. 선택적으로 주입하는 SyntheticProviderBoundWire는 고정 RPC id/method/지시 hash·보호 capsule의 thread/turn을 대조한 뒤 SYNTHETIC_ONLY inner wire만1회 소비한다. default native/socket/Agent fallback은 없다.
+- SyntheticProviderReaderFactory는 기존 sender/stopper exclusive journal 잠금 안에서 제공한 최신 sync 시도/permit row의 self-hash/ref·state/순서/previousRef·key/envelope/material/binding/permit을 검증한 뒤 reader/current를 생성한다. source 자체가 최신행 선택·전체journal 검증·실제 exclusive/fsync를 증명하지 않으며 이는 기존 readLocked 제공자 계약이다. caller가 metadata만 조립해 허가를 얻는 일반 API가 아니다.
+- BoundSyntheticProviderSendCurrent는 같은 기존 인증 db/actor/challenge transaction 안에서 SyntheticPgInstructionPermitBasis.current의 IDLE/현재 정책·예약 checkDelivery를 재사용한다. 정확 원 THREAD journal, 소비 SEND permit과 원 서명 target/nonce·localAttempt ref·현재 등록/기한을 대조한다. 새 nonce/permit/예산을 만들지 않고 원 소비 ref가 다른 시도면 거절한다.
+- BoundSyntheticProviderStopCurrent는 기존 StopCommandStore.read의 원 명령/영수증/감사/outbox와 기존 StopCurrent 검사, TURN/THREAD journal 및 fresh OS/current fact·현재 grant를 대조한다. STOP에 SEND IDLE/새 permit/새 호출예약을 추가하지 않는다. 정상 EXECUTION만 지원하며 RECOVERY는 기존 별도 경로로 남긴다. 기존 STOP current 검사는 의미 변경 없이 export만 공유했다.
+- 실패/응답 유실은 기존 UNKNOWN/STOP_UNCONFIRMED·재전송금지를 유지한다. 독립 I1에서 timeout 후 늦은 raw 응답 byte 잔류를 확인해 직접1RED1584.8679ms→미전달/거절 응답만 zero하고 상위 codec 성공 인계는 보존했다. 동일 reviewer의 한정 재검토에서 source해소를 확인했으나 AbortSignal이 이미 시작한 외부 부작용을 강제 중단한다는 보장은 없다.
+- 최신 신규9PASS2301.8764ms/type/diff0, 변경된 기존 transport 인접25 및 STOP10은 별도 실행 증거다. factory·SEND/STOP current/guard 합성 조립·거절/늦은 응답 정리의 source 증거이며 실제 파일 fsync/잠금·PG/권한/경합·등록/리스너·native/helper/키/실handle·Agent/비용은 미검증·미실행이다. 이 변경을 실제 Agent 연결 완료·전체FN06/Stage 완료로 보고하지 않는다. source rollback은 일반 revert이며 기존 DB/원자료/Secret에는 변경이 없다.
+
 ### 2026-10-22 HUMAN TURN 원 결과·혼합 목록 소비 source
 
 - 현재 OWNER의 기존 인증 transaction에서 THREAD/TURN exact 원 receipt와 혼합 metadata 목록을 조회한다. TURN은 project/session 제한 부모 SELECT 후 THREAD kind·원 row/receipt/hash/fullscope/부모 ref를 검사한다. 손상 TURN→TURN 부모를 재귀 해석하지 않으며 부모 부재/변조/타scope는 거절한다. 내부 부모 metadata는 public receipt/page 응답에 추가하지 않는다. 과거 원 receipt를 조회하려고 만료된 실행 credential/permit을 재사용하거나 claim을 새로 생성하지 않는다.

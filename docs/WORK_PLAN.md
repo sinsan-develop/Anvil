@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 C exact SEND/STOP 소비 source 일부**: 기존 transport의 원 시도/permit 뒤 내부 metadata·보호 wire guard를 연결하고, 잠긴 local row factory와 기존 SEND basis/claim·소비permit/nonce 및 STOP 원receipt/current/TURN부모·freshOS를 읽는 current source를 구현했다. 신규9PASS2301.8764ms/type/diff0·변경 인접transport25/STOP10 별도 확인·한정독립C0/I0(I1 직접보완 이력 유지). 실제등록/OS/native/파일fsync/서버DB/Agent·전체FN06은 미완료·미검증이다. 새로운 실제 wire/DB/권한/키/서비스는 실행하지 않았으며 source/fake와 실제연결을 구분한다. 상세/다음 source 조립은 WORK_STATUS 및 후보§7을 따른다.
+
 - **2026-10-22 FN06 HUMAN TURN 목록·원 결과 화면 source 연결**: 승인된 C에서 현재 OWNER의 exact TURN receipt와 THREAD/TURN 혼합 목록을 실제 route→부모 원장/fullscope/ref 검증→브라우저 reader에 연결했다. 조회30PASS/type0·한정독립C0/I0, 실제행 종류/handler 메모리 렌더4PASS/typebuild0. 옛 THREAD 전용 cursor는 filter 변경으로 재사용 불가·명시 재조회가 필요하며 기한 연장/새권한0이다. 코드 연결과 실제 served 사용을 구분하며 실제DB/DOM/Agent·nonOWNER RESPONSIBLE·SEND/STOP current/native/caller·전체FN06/Stage/계획은 미완료다. 상세/오류/다음 작업은 WORK_STATUS/후보§7을 따른다.
 
 - **2026-10-22 FN06 TURN 기록·보호 소비 내부 source 일부**: 원 SEND queue/소비 permit/서명 nonce/예산 예약·같은 grant의 THREAD 부모와 현재 fact를 묶는 TURN 수신 source/PG adapter·미적용0037 분기를 연결했다. SEND admission의 IDLE/새 RESERVED·permit 소비는 그대로다. 참조 alias 반례1RED→직접 TURN/route/store10PASS1899.4597ms·type/diff0·한정 재검토C0/I0. 별도 내부 SEND THREAD/STOP TURN 보호 reader는 fake의 cipher/capsule/현재성·부모·finally byte정리4건만 확인했다(3PASS760.2732ms+추가1PASS559.7558ms). 실제 current 구현/transport caller·HUMAN TURN 목록/조회·native·DB 적용/실Agent/전체FN06은 미완료다. SQL/권한/manifest·서비스는 변경0, 최신 상세/오류/미검증은 WORK_STATUS 및 후보§7에 기록한다.

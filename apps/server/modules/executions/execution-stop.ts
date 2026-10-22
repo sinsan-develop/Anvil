@@ -30,6 +30,8 @@ function current(raw:unknown,scope:Scope,request:ProjectCommand,actor:Authentica
  const unsigned={schemaVersion:1,commandId:request.commandId,issuedAt:new Date(at).toISOString(),expiresAt:new Date(at+1).toISOString(),executorRegistrationRef:c.executorRegistrationRef,context:c.context,operation:'REQUEST_STOP',payload:{sessionBindingRef:c.sessionBindingRef,stopScopeRef:c.stopScopeRef}};readDispatchEnvelopeV1({...unsigned,envelopeHash:hash(unsigned)},at);const{checkedAt:_,expiresAt:__,...binding}=c;return{c,binding};
 }
 
+// Reuse the unchanged current STOP validation inside an already authenticated transaction.
+export {current as readSyntheticStopCurrent};
 /** 과거 중지 기록의 정확 결박 검사다. 현재 허가·OS 중지·writer 회수 판정이 아니다. */
 export function readSyntheticStopCommandRecord(raw:unknown,scope:Scope):SyntheticStopCommandRecord{
  if(!recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||!positive(scope.executionGeneration)||!recordV1(raw,['ref','snapshot'])||!refV1(raw.ref)||raw.ref.version!==1||!recordV1(raw.snapshot,['transport','state','scope','requestHash','requestedBy','currentBinding','reason','requestedAt','expiresAt','executionAuthorized','dispatchPerformed','writerReleaseVerified','request','envelope'])||Buffer.byteLength(canonicalJson(raw))>2097152)return fail('STOP_COMMAND_RECORD_INVALID',503);
