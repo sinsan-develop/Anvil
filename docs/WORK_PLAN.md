@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 원 SEND graph 후속**: 원 command의 HUMAN 허가/감사·예약/outbox 역사 graph를 기존 verifier 재사용으로 연결했다. 직접24합성/type/diff0·한정 독립 읽기 C0/I0/M0이며 실제 current SEND/서명/credential·attempt/parent/OS/writer/provenance·원 binding 발급/headCAS/SQLpendingM1은 미완료다. 다음 source 선행을 이어가며 전체 FN06/계획 완료로 보고하지 않는다.
+
 - **2026-10-23 FN06 D1 원 SEND 이력 일부**: 현재 AUTO 준비/HUMAN 전후·원 SEND/0024 permit·원 proof receipt/소비 challenge를 읽기 결박한 SOURCE를 추가했다. 직접57합성/type/diff0·최종 한정 정적 C0/I0/M0이며 실제 signature/credential 현재성·원 SEND 허가 graph·attempt/parent/OS/writer/provenance·binding/headCAS·SQLpendingM1/actual QA는 미완료다. 과거 두 리뷰 C0/I1/M1과 RED는 WORK_STATUS에 보존한다. 다음은 원 SEND 허가/감사/예약/outbox graph 연결이며 동일 승인 D1 구현을 계속한다.
 
 - **2026-10-23 FN06 D1 writer-history M1 후속**: 원 저장 이력 hash와 관측시각별 만료 표시를 분리해 같은 회수 이력의 시간 경과만으로 준비를 취소하던 문제를 Main 반례 RED→GREEN으로 보완했다. 직접40/type/diff는 WORK_STATUS를 따르며 독립 재리뷰/실제PG·권위 검증으로 승격하지 않는다. 실제 이력 변경/미회수 차단·UNKNOWN/false와 별개 SQLpendingM1은 유지한다.
