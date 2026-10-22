@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN06 고정위치 진단 source 준비**: 미작성위치추출반례1FAIL167.1212ms→직접5PASS189.501ms/type/diff0. 표준error종류/고정13sourceunitenum·행/열·최대5개만전달하고원문message/stack/path는반환0,부모도재검증한다. 신규delta독립C0/I0/M0·실행/수정0이며위치는참고값/원인확정아니다. helperFD06B41F…/fixture5ACF8603…/runner4E6A254C…/callerA66A…이고원권한·SQL·서명·기한·기준불변. 두번째actual의독립잔여0·정식3불변과최소trace새후보를분리해PMO에전달한다.
+
+- **FN06 새진단 실제 FAIL·상세수집 한계**: exact51efd29b 신규1회는 child phase FN06_CLAIM_DATA/messageCode·code·lastResponseCode·expected·actual모두null, closeFailures0/rootCleanupFailedfalse로exit1이다. 정상임무선행뒤새caller진입까지확인했으나내부실패지점/원인은미확정·claim양성0. PG5c05209fbb7e9ca91d86b1ff1510b09a8c6e9710c173d97e820dc471c44ed36b/net04cb10e5ec7402763da39b0a6b305ed1680c46176ca87ffc91a9324530e08152/run dc682bd985fd0c5758eb273669606e6b, runnerfailuretrue/cleanupFailurefalse/bootstrap1safe1path0. 같은후보재실행0. 고정목록에없는오류를본문출력으로바꾸지않고독립잔여확인뒤고정source위치·표준오류종류만좁힌다. 정식DB/서비스/Agent변경0.
+
+- **FN06 최소진단 새exact1회 위임 checkpoint**: PMO가51efd29b78e3ae24a1adb707568acb083b7891bc/helperD532/runner4E6A/callerA66A와고정allowlist를대조해새빈1회를채택했다. 같은data전용root/PG/net/DB/owner에새run·tmpfs512/noports·mount·volume·formalnet/고정imageNode·59+pendingEB4/등록0/clone전trap/10분·240+50·runner180·child110/test90/100초창·회수25·독립잔여0은동일하다. 이전후보실패는보존·새실행결과전양성0이며정식DB/서비스/실Agent변경0.
+
+- **FN06 진단 source 게시·실행 전 읽기 오류**: 최소진단51efd29b78e3ae24a1adb707568acb083b7891bc local/private동일·추적clean/보호6·main불변,한정독립C0/I0/M0·실행0을확인하고PMO에새exact1회판정을요청했다. 선행읽기에서실inventory와다른 connections/execution-preparation.ts 지정 os2 1건은변경0/실행0이며실목록의 executions/project-execution-preparations.ts로만좁힌다. 원실패의새원인추정/actual재실행0.
+
 - **FN06 진단 고정상수 보완 확인**: 임의uppercase 비밀반례 뒤 정확source상수목록·0..599/close0..3 수치로제한해직접4PASS183.5983ms/type/diff0. helperD532587E…/runner4E6A254C…/callerA66A…이며새actual0. 후보문서hash갱신의문맥없는patch1회거절은파일변경0/정확행으로보정했다. 원실패/정리표시ID는Main exec-88326c/exec-8a3dc8, PMO조회 exec-c24516c3/exec-f3d03350로서본문은동일하고차이를명시한다. 독립delta검토뒤새exact진단범위를분리한다.
 
 - **FN06 진단 표현형식 한계 반례**: PMO가 uppercase regex 자체는 비밀 안전성 증명이 아님을 지적했다. 동일형태 PRIVATE_TOKEN이 phase/code로 반환되는 반례1FAIL/3PASS167.6178ms로 확인했고 source에 실제 존재하는 고정 phase/코드 목록만 허용하도록 좁힌다. shell 뒤 조회 exit0을 시험PASS로계산하지않는다. 실제재실행0/제품·권한·서명·timeout불변이다.

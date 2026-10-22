@@ -2,7 +2,7 @@
 
 - 상태: 최초 exact4a1c4b03 실제 FAIL·정리 완료. 현재는 실패 진단 보완 source이며 새 실행은 미실행이다. 전체 FN06/Agent 연결 완료가 아니다.
 - 계획: Stage C / FN06. 실DB 원자성과 명시 합성 source/OS 전제를 구분한다.
-- 부모: ae466b4300985a5e47644adeb7232e06fa09c085. 게시 exact commit은 Git으로 별도 전달한다.
+- 최초 부모: ae466b4300985a5e47644adeb7232e06fa09c085. 현재 위치 진단 후보의 부모는51efd29b78e3ae24a1adb707568acb083b7891bc이며 게시 exact commit은 Git으로 별도 전달한다.
 
 ## 1. 이번에만 새로 확인할 내용
 
@@ -19,7 +19,8 @@
 |대상|SHA256|
 |---|---|
 |tests/integration/FN06/provider-claim-data-case-qa.ts|A66A308DBE2B39A903D2BDE349B623D359F5F39035662860F02DDDE2EB370767|
-|tests/integration/FN06/provider-claim-data-lab-qa.ts|D532587E1F2F40CA7C98B347E24655074B68E085BF06E80CA614C4156D8A7CDA|
+|tests/integration/FN06/provider-claim-data-lab-qa.ts|FD06B41F45F1236A36DB67FA1706486B1DEF0E6228764C439DFFAD48B01FCECC|
+|tests/integration/FN12/result-submission-isolated.test.ts|5ACF86039AC33E570666AF03F36C80355C60889188AD6129BBF0BA19266D8C69|
 |scripts/provider-claim-data-isolated-qa.ts|4E6A254C0626DECE44651FD59544A8FC8B14E242945C814F46129DA7D1015540|
 |0037_provider_session_claims.sql.pending|EB4CC66E8D682F08225823E39BAE5AD40F7AF62B529D3774291E855F34536097|
 
@@ -70,3 +71,11 @@ exact4a1c4b03983022f2bdc1bb19384255dd589eb18d(helper0C93/runner1774)는 신규 1
 최소 진단 차이는 child 실패의 stdout 전체를 출력하는 대신 원 fixture의 SAFE JSON에서 실제 source 고정 phase·message/code/lastResponseCode 목록·제한된 정수 expected/actual·정리 bool만 whitelist하고 실패 PG/net fullID/run을 보존하는 것이다. uppercase regex만으로 임의 비밀을 허용하지 않는다. 원문 stdout/stderr·키/credential은 반환하지 않는다. 최초 누락반례1FAIL176.9536ms→4PASS158.5485ms 뒤 정상형태 비밀 반례1FAIL167.6178ms→직접4PASS183.5983ms/type/diff0이다. caller·제품·SQL·권한·서명·timeout·성공조건은 불변이며 같은 실패를 맹목 반복하지 않는다. 새 exact 진단 1회는 별도 위임판정 전 미실행이다.
 
 원출력은 Main exec-88326c/독립 회수 exec-8a3dc8이며 PMO의 같은 내용 조회에서는 exec-c24516c3/exec-f3d03350로 표시됐다. 표시 ID 차이와 실제 본문 대조를 구분한다.
+
+## 7. 두 번째 실행과 고정 위치 진단 후보
+
+exact51efd29b 진단1회(exec-9b14ee)는 child phase FN06_CLAIM_DATA/messageCode·code·lastResponseCode·expected·actual null, closeFailures0/rootCleanupFailedfalse이며 exit1이다. 원인 미확정/claim 양성0이다. PG5c05209fbb7e9ca91d86b1ff1510b09a8c6e9710c173d97e820dc471c44ed36b/network04cb10e5ec7402763da39b0a6b305ed1680c46176ca87ffc91a9324530e08152/run dc682bd985fd0c5758eb273669606e6b, runner failuretrue/cleanupFailurefalse/bootstrap1safe1path0이다. 뒤 독립 SSH exec-968d9e는 등록 이름·ownerlabel·경로·관련cwd 잔여0/정식3불변이다.
+
+현재 추가 delta는 오류본문/code 허용목록 확대가 아니라 표준 오류 instanceof와 고정 root/13개 정확 source 파일을 읽어 고정 unit enum·행/열1..100000·최대5개 위치만 반환하는 것이다. 원문 message/stack/path는 반환하지 않고 부모도 enum/수치만 재검증한다. 기존 fixture catch의 새 claimDataQa에서만 연결하며 제품/SQL·권한·서명·기한·합격기준은 불변이다. 위치는 진단 참고값이지 실제 원인 확정 증거가 아니다.
+
+새 반례1FAIL167.1212ms→5PASS189.501ms/type/diff0·한정 독립 C0/I0/M0·실행/수정0이다. 같은 후보 맹목반복0. 다음 실제 실행은 위 고정 source의 새 exact1회 위치 진단으로 다시 구분한다. 새 자원/credential 종류·수명/회수·제외는§3~4와 동일하다.

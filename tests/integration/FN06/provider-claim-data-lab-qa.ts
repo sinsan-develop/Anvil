@@ -30,6 +30,45 @@ export function readClaimDataChildFailure(output:string):Record<string,unknown>{
   const states=['42501','23505','23503','23514','23502','40001','40P01','42601','42P01','42703','P0001','57014','ERR_ASSERTION'];
   const responses=['POLICY_DENIED','POLICY_REQUIRED','POLICY_NOT_FOUND','FORBIDDEN','AUTHENTICATION_REQUIRED','UNAUTHENTICATED','REAUTH_REQUIRED','PRECONDITION_FAILED','INPUT_INVALID','VALIDATION_FAILED','STORAGE_FAILED','VERSION_CONFLICT','NOT_FOUND'];
   const known=(s:unknown,allowed:string[])=>typeof s==='string'&&allowed.includes(s)?s:null,num=(n:unknown,max=599)=>typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=max?n:null;
-  return{phase:known(v?.phase,phases)??'SAFE_SUMMARY_UNAVAILABLE',messageCode:known(f?.messageCode,messages),code:known(f?.code,states),lastResponseCode:known(f?.lastResponseCode,responses),expected:num(f?.expected),actual:num(f?.actual),closeFailures:num(v?.closeFailures,3),rootCleanupFailed:typeof v?.rootCleanupFailed==='boolean'?v.rootCleanupFailed:null};
+  const diagnostic=safeLocation(f?.diagnostic);
+  return{phase:known(v?.phase,phases)??'SAFE_SUMMARY_UNAVAILABLE',messageCode:known(f?.messageCode,messages),code:known(f?.code,states),lastResponseCode:known(f?.lastResponseCode,responses),expected:num(f?.expected),actual:num(f?.actual),closeFailures:num(v?.closeFailures,3),rootCleanupFailed:typeof v?.rootCleanupFailed==='boolean'?v.rootCleanupFailed:null,...(diagnostic?{diagnostic}:{})};
  }catch{return{phase:'SAFE_SUMMARY_UNAVAILABLE'};}
+}
+
+const sourceUnits=[
+ ['tests/integration/FN06/provider-claim-data-case-qa.ts','QA_CALLER'],
+ ['tests/integration/FN06/provider-claim-fixture-qa.ts','QA_SESSION'],
+ ['tests/integration/FN06/provider-claim-trust-qa.ts','QA_TRUST'],
+ ['tests/integration/FN06/provider-claim-persistence-qa.ts','QA_PERSISTENCE'],
+ ['apps/server/modules/access/project-command.ts','PROJECT_POLICY'],
+ ['apps/server/modules/access/repository.ts','AUTH_REPOSITORY'],
+ ['apps/server/modules/executions/runtime-policy.ts','LIMIT_POLICY'],
+ ['apps/server/modules/executions/execution-commands.ts','EXECUTION_QUEUE'],
+ ['apps/server/modules/executions/execution-challenge-store.ts','CHALLENGE_STORE'],
+ ['apps/server/modules/executions/execution-permits.ts','START_PERMIT'],
+ ['apps/server/modules/executions/provider-session-claim-store.ts','CLAIM_STORE'],
+ ['contracts/canonical.ts','CANONICAL'],
+ ['contracts/runtime/validation-v1.ts','WIRE_VALIDATION']
+] as const;
+const kinds=['TYPE_ERROR','RANGE_ERROR','SYNTAX_ERROR','ASSERTION_ERROR','OTHER_ERROR'];
+function safeLocation(v:any){
+ if(!v||!kinds.includes(v.kind)||!Array.isArray(v.locations)||v.locations.length>5)return null;
+ if(!v.locations.every((p:any)=>p&&sourceUnits.some(([,unit])=>unit===p.unit)&&[p.line,p.column].every(n=>Number.isSafeInteger(n)&&n>0&&n<=100000)))return null;
+ return{kind:v.kind,locations:v.locations.map((p:any)=>({unit:p.unit,line:p.line,column:p.column}))};
+}
+/** 원 message/stack/path는 반환하지 않고 이 시험에 포함된 고정 source 위치만 추출한다. */
+export function readClaimDataQaFailureLocation(error:unknown){
+ const kind=error instanceof TypeError?'TYPE_ERROR':error instanceof RangeError?'RANGE_ERROR':error instanceof SyntaxError?'SYNTAX_ERROR':error instanceof assert.AssertionError?'ASSERTION_ERROR':'OTHER_ERROR',locations:Array<{unit:string;line:number;column:number}>=[];
+ if(error instanceof Error&&typeof error.stack==='string'){
+  for(const frame of error.stack.split(/\r?\n/).slice(1)){
+   for(const [file,unit] of sourceUnits){
+    const needle=providerClaimDataLab.root+'/'+file+':',index=frame.indexOf(needle);
+    if(index<0)continue;const match=/^(\d{1,6}):(\d{1,6})(?:\)|$)/.exec(frame.slice(index+needle.length));
+    if(match&&Number(match[1])>0&&Number(match[1])<=100000&&Number(match[2])>0&&Number(match[2])<=100000)locations.push({unit,line:Number(match[1]),column:Number(match[2])});
+    break;
+   }
+   if(locations.length===5)break;
+  }
+ }
+ return{kind,locations};
 }

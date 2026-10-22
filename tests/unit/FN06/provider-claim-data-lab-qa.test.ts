@@ -21,3 +21,9 @@ test('실패 child의 안전 phase/code만 보존하고 stderr/본문/credential
  const bad=m.readClaimDataChildFailure('FN12_ISOLATED_SAFE '+JSON.stringify({...summary,failure:{...failure,messageCode:'PRIVATE_TOKEN secret',expected:'PRIVATE_TOKEN'}}));assert.equal(bad.messageCode,null);assert.equal(bad.expected,null);assert.deepEqual(m.readClaimDataChildFailure('PRIVATE_TOKEN'),{phase:'SAFE_SUMMARY_UNAVAILABLE'});
  const shapedSecret=m.readClaimDataChildFailure('FN12_ISOLATED_SAFE '+JSON.stringify({...summary,phase:'PRIVATE_TOKEN',failure:{...failure,messageCode:'PRIVATE_TOKEN',code:'PRIVATE_TOKEN',lastResponseCode:'PRIVATE_TOKEN'}}));assert.equal(shapedSecret.phase,'SAFE_SUMMARY_UNAVAILABLE');assert.equal(shapedSecret.messageCode,null);assert.equal(shapedSecret.code,null);assert.equal(shapedSecret.lastResponseCode,null);
 });
+
+test('미분류 오류는 원문 대신 고정 source 단위·행번호와 표준 오류종류만 진단한다',()=>{
+ const e=new TypeError('PRIVATE_TOKEN');e.stack='TypeError: PRIVATE_TOKEN\n at fn (file:///home/daon/deploy/anvil-v3-fn06-claim-data-qa-01/tests/integration/FN06/provider-claim-data-case-qa.ts:66:12)\n at unknown (/secret/PRIVATE_TOKEN:2:3)';
+ assert.deepEqual(m.readClaimDataQaFailureLocation(e),{kind:'TYPE_ERROR',locations:[{unit:'QA_CALLER',line:66,column:12}]});
+ const result=m.readClaimDataQaFailureLocation({name:'PRIVATE_TOKEN',stack:'PRIVATE_TOKEN'});assert.deepEqual(result,{kind:'OTHER_ERROR',locations:[]});assert(!JSON.stringify(result).includes('PRIVATE_TOKEN'));
+});

@@ -63,6 +63,7 @@ import {readStoredBudgetUsage} from '../../../apps/web/src/features/session-deta
 import {manualReportQa as manualQaSpec} from './manual-report-qa.ts';
 import {verifyObservationPages} from '../FN13/observation-pages-qa.ts';
 import {runProviderClaimDataCase} from '../FN06/provider-claim-data-case-qa.ts';
+import {readClaimDataQaFailureLocation} from '../FN06/provider-claim-data-lab-qa.ts';
 import {newManualResultReport,prepareManualResultReport} from '../../../apps/web/src/features/session-detail/manual-result-report.ts';
 import {prepareResultSubmitCommand,sendResultSubmission} from '../../../apps/web/src/features/session-detail/result-submission-write-api.ts';
 const claimDataQa=process.env.ANVIL_FN06_CLAIM_DATA_QA==='1';
@@ -467,6 +468,6 @@ test(claimDataQa?'FN06실DB원자성+합성sourceOS전제·정상예약등록/�
   }
   phase='ISOLATION';const outside=await app.inject({method:'GET',url:'/api/v1/projects/'+project+'/results/'+submissionId,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+outsider.token}});assert.equal(outside.statusCode,404);cases.push('OTHER_USER_NO_ORIGINAL');
   assert.deepEqual((await admin.query("SELECT proname,md5(pg_get_functiondef(p.oid)) hash FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND proname=ANY($1::text[]) ORDER BY proname",[guarded])).rows,guardBefore);cases.push('ORIGINAL_FIVE_GUARDS_UNCHANGED');phase='DONE';
- }catch(e){const error=e as any;failure={phase,messageCode:typeof error.message==='string'&&/^[A-Z][A-Z0-9_]{0,95}$/.test(error.message)?error.message:null,code:typeof error.code==='string'&&/^[A-Z0-9_]{1,64}$/.test(error.code)?error.code:null,lastResponseCode,expected:typeof error.expected==='number'?error.expected:null,actual:typeof error.actual==='number'?error.actual:null};throw Error('FN12_ISOLATED_FLOW_FAILED');}
+ }catch(e){const error=e as any;failure={phase,...(claimDataQa?{diagnostic:readClaimDataQaFailureLocation(error)}:{}),messageCode:typeof error.message==='string'&&/^[A-Z][A-Z0-9_]{0,95}$/.test(error.message)?error.message:null,code:typeof error.code==='string'&&/^[A-Z0-9_]{1,64}$/.test(error.code)?error.code:null,lastResponseCode,expected:typeof error.expected==='number'?error.expected:null,actual:typeof error.actual==='number'?error.actual:null};throw Error('FN12_ISOLATED_FLOW_FAILED');}
  finally{const outcomes=await Promise.allSettled([app.close(),pool.end(),admin.end(),rootCreated?cleanRoot():Promise.resolve(null)]);console.log('FN12_ISOLATED_SAFE '+JSON.stringify({phase,cases,failure,rootCleanup:outcomes[3]?.status==='fulfilled'?outcomes[3].value:null,closeFailures:outcomes.slice(0,3).filter(r=>r.status==='rejected').length,rootCleanupFailed:outcomes[3]?.status==='rejected'}));if(outcomes.some(r=>r.status==='rejected'))throw Error('FN12_CLOSE_OR_ROOT_CLEANUP_FAILED');}
 });
