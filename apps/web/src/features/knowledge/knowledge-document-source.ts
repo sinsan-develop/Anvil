@@ -11,5 +11,5 @@ export async function readKnowledgeDocumentSource(client:ApiClient,selection:Kno
  const selected=structuredClone(selection),check=()=>{if(!active())throw new ApiError('KNOWLEDGE_SOURCE_PAUSED');};check();
  const knowledge=await readKnowledge(client,selected.projectId,selected.knowledgeRef);check();const source=selected.source;
  if(knowledge.entry.sourceRefs.filter(r=>r.kind==='DOCUMENT_VERSION'&&r.id===source.id&&r.version===source.version&&r.contentHash===source.contentHash).length!==1)throw new ApiError('KNOWLEDGE_SOURCE_CHANGED');
- const value=await readDocument(client,selected.projectId,source.id,source.version);check();if(value.document.contentHash!==source.contentHash)throw new ApiError('KNOWLEDGE_SOURCE_CHANGED');return value;
+ const value=await readDocument(client,selected.projectId,source.id,source.version,{active});check();if(value.document.contentHash!==source.contentHash)throw new ApiError('KNOWLEDGE_SOURCE_CHANGED');return value;
 }
