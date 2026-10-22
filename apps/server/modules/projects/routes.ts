@@ -81,7 +81,18 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>results.read(db,actor,request.params.projectId,request.params.id));});
   const workPlans=new ProjectWorkPlans(documents);
   const stageQueue=new ProjectStageQueue();
-  app.get<{Params:{projectId:string}}>('/api/v1/projects/:projectId/queue',{schema:{params:object({projectId:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>stageQueue.read(db,actor,request.params.projectId));});
+  app.get<{Params:{projectId:string}}>('/api/v1/projects/:projectId/queue',{schema:{params:object({projectId:idSchema}),querystring:object({})}},async(request,reply)=>{
+    if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);
+    const read=await options.repository.authenticated(token(request),null,async(db,actor)=>{
+      const session=actor.authSession,validUntil=session?Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt)):NaN;
+      if(!Number.isFinite(validUntil))throw new AuthFailure('AUTH_REQUIRED',401);
+      const value=await stageQueue.read(db,actor,request.params.projectId);
+      if(!Number.isFinite(Date.parse(value.observedAt))||Date.parse(value.observedAt)>=validUntil)throw new AuthFailure('AUTH_REQUIRED',401);
+      return{value,validUntil};
+    });
+    if(Date.now()>=read.validUntil)throw new AuthFailure('AUTH_REQUIRED',401);
+    reply.header('cache-control','no-store');return read.value;
+  });
   app.get<{Params:{projectId:string;id:string;version:string}}>('/api/v1/projects/:projectId/work-plans/:id/versions/:version/decision',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>workPlans.decision(db,actor,request.params.projectId,request.params.id,Number(request.params.version)));});
   const planCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('WORK_PLANS:'+value));
   const traces=new ProjectTraces(documents),traceCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('TRACES:'+value));

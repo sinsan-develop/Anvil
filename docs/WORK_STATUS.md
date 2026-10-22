@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN10 기존 queue 만료 경계 보완 검증**: 원200반례를수정해DB관측기한·COMMIT후만료를모두401/원items비노출로처리한다. 같은tx의project/member잠금전후유지·원DTO/동일읽기권한·legacy시작/취소/replay불변이다. route/service/Webreader13PASS939.583ms·typecheck/diff0·독립read-only C0/I0/M0/독립실행0. 실제PG경합/시계차·served는미검증. 신규bound계약/0038은여전히미승인·작성0이며소유반례pending1파일은로컬미게시로보존하고보호untracked6과구분한다.
+
+- **FN10 기존 대기열 조회 만료 결함 RED**: 신규bound계약과분리해기존queue GET를검사했다. DB 관측시각이세션기한에도달한통제반례에서기존route가200으로items를반환해1FAIL/1PASS(1197.3164ms)로재현했다. 현재publicDTO/DBschema/기능범위를바꾸지않고 DB관측시각과authenticated COMMIT후기한을모두검사하며원membership잠금을유지하는최소보안수정을진행한다. 실제DB/served침해증거는아니며신규migration/정책/Agent0이다.
+
+- **FN10 bound 저장 계약 승인 전달 거절**: PMO가assignmentRef새공개저장계약/0038pending채택전달을시도했으나플랫폼auto-review가별도직접승인을요구해거절됐다고통보했다. 전달성공/승인으로취급하지않으며신규migration/source연결은작성하지않는다. 현재작성한순수반례만2RED로보존하되미승인신규반례를 .test.ts.pending으로분리해기존suite의완료기준을변경하지않았다. private게시/우회0·기존공개계약불변. 이경계와무관한기존FN10조회기한/현재성결함대조를계속한다. 읽기중없는db/migrate.ts os2도분리기록하며실제import/inventory만따른다.
+
 - **FN10 근거 조회 한정 독립 검토**: 기존reviewer read-only C0/I0/M0. 같은인증tx·원reader결박·최종방법론/회원/기한재검사·COMMIT후만료/no-store·client고정원문/hash/ref/falseflags/무fallback을확인했다. 독립실행/수정0이고실제PG잠금/권한회수경합·배포HTTP/브라우저DOM은미판정이다. 집중/인접27PASS1397.5709ms·typecheck/build/diff0는통제DBports/HTTP→실Webreader범위만증명한다. 기능상태는부분구현이며전체FN10/실scheduler/완료판정미구현을보존한다.
 
 - **FN10 서버 근거→기존 화면 reader 연결**: 신규route404 RED2건과client전환 RED4건후정확GET·내부sourceprovider·기존버튼소비를연결했다. 세션기한 전후/COMMIT후거절·최종방법론교체/회수·변조/귀속·승격/추가필드·무fallback을확인하고집중/인접27PASS1397.5709ms/typecheck/vitebuild/diff0. 원검수순수검증을기존validator로재사용해기준을낮추지않았고sourceAssurance만서버대조범위로한정했다. 기존테스트파일의옛2GET기대는승인된1GET계약과동일거절/변조/이탈범위를유지해이관·음성추가했다. 첫patch동일파일delete/add결합거절1건은도구오류로분리후정상적용했다. 실제PG/servedDOM/Agent0·새DB/쓰기/권한변경0. 한정독립검토중이며Accepted완료판정/실scheduler는미완료다.

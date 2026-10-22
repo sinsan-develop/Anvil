@@ -63,9 +63,9 @@ export class ProjectStageQueue{
   await db.query('INSERT INTO anvil.queue_requests(project_id,request_id,version,sequence,content_hash,snapshot_json,command_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[r.projectId,ref.id,2,snapshot.sequence,ref.contentHash,JSON.stringify(snapshot),receipt.id]);return receipt.result;
  }
  async read(db:PoolClient,actor:AuthenticatedIdentity,projectId:string){
-  if(!uuidV1(projectId))fail('INPUT_INVALID',400);await projectMember(db,actor,projectId);
+  if(!uuidV1(projectId))fail('INPUT_INVALID',400);await projectMember(db,actor,projectId,true);
   const rows=(await db.query('SELECT head.* FROM (SELECT DISTINCT ON (q.request_id) q.*,c.result_ref FROM anvil.queue_requests q JOIN anvil.commands c ON c.project_id=q.project_id AND c.id=q.command_id WHERE q.project_id=$1 ORDER BY q.request_id,q.version DESC) head WHERE head.snapshot_json->>\'state\'=\'WAITING\' ORDER BY head.sequence LIMIT 201',[projectId])).rows;
   if(rows.length>200)fail('QUEUE_VIEW_LIMIT_EXCEEDED',413);const items=rows.map(r=>{const v=this.#view(r,projectId);return{requestRef:v.ref,state:v.snapshot.state,sequence:v.snapshot.sequence,reasonCodes:v.snapshot.readinessIssues,blockedBy:[],reservedBudgetRef:null};});if(new Set(items.map(i=>i.requestRef.id)).size!==items.length||new Set(items.map(i=>i.sequence)).size!==items.length)fail('STAGE_QUEUE_LEDGER_INVALID',503);
-  await projectMember(db,actor,projectId);return{projectId,items,selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:await this.#clock(db),writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false};
+  await projectMember(db,actor,projectId,true);return{projectId,items,selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:await this.#clock(db),writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false};
  }
 }
