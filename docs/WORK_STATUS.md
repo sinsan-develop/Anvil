@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 원잠금 post 합성 연결 한정 독립 검토**: 원시도/permit 요청·소비 proof/checksum 정합·원장 전후2회/incomplete 추가현재조회0·소유배열/쓰기0의 신규 시험 확장 범위에서 독립 C0/I0/M0(실행/수정0)을 수신했다. 합성 원장 준비와 실제 내구 저장을 구분하고 소유 test/PLAN/STATUS3경로만 기존 branch checkpoint로 보존한다. 실제 잠금/fsync·metadata 진위·wire/native/DB/Agent 및 전체 FN06/계획 미완료는 유지한다.
+
+- **2026-10-23 FN06 원잠금 post·현재 source 합성 소비 확인**: 제품코드 변경 없이 마지막 연결 시험을 확장했다. 실제 원 시도행 hash/ref를 합성 permit request에 결박해 기존 consumeOriginal 서명/nonce 검증기로 소비하고 proofRef/requestHash/permitRow를 정합하게 갱신한 뒤, 기존 SyntheticSentTurnPostCurrent가 현재 binding/material/protected/response-reader와 원 시도/permit 두 행을 전후 소비했다. 해당1PASS1098.0678ms/type/diff0이며 원기록/SQL쓰기0·incomplete 원장일 때 현재서버 추가조회0·소유bytes 소거/원blob 보존을 확인했다. 앞선648.2073ms 원 연결은 이전 snapshot 이력으로 보존한다. 원잠금 포트는 메모리 주장이지 실제 OS/fsync 잠금 인증이 아니며 wire/transport 실제송신·독립 metadata 진위·실파일/native/DB/Agent/연속 TURN·전체 FN06는 여전히 미구현·미검증이다. 다음 현재성 탐색에서 SyntheticInstructionClientVerifier의 concrete current/permitCurrent 소비 구현은 인터페이스/소비자 외 발견되지 않았고 pre를현재로복사하지 않는다. 독립 한정 검토 중이다.
+
+- **2026-10-23 FN06 원잠금 post·현재 source 합성 소비 연결 착수**: Main은 앞서 완료한 source의 회귀를 전수 반복하지 않고, 새 current source를 기존 SyntheticSentTurnPostCurrent 원잠금 읽기 검증에 결합하는 최소 연결 시험을 선정했다. 합성 fixture의 원 시도행/hash·서명/소비 nonce·permit row·수신 자료를 서로 정합하게 만들고 정상·원장불일치 거절과 쓰기/재발행0을 대조한다. 실제 OS/fsync 잠금·실 metadata/DB/native/Agent·실 transport 송신/서비스 기본등록은 범위가 아니며, 기존 source 판정을 실제 권한으로 승격하지 않는다.
+
 - **FN06 보호 THREAD·private snapshot 조립 한정 독립 검토**: 입력/고정 부모·보호 callback 전용 THREAD·metadata 식별자 거절·await 기한/취소/port 및 추가 합성 연결의 scoped C0/I0/M0(실행/수정0)을 수신했다. 앞선 제출 PASS를 독립 재실행으로 승격하지 않고 실제 metadata/OS/native/DB/Agent·원잠금 PostCurrent/transport 최종 조립·연속 TURN/전체 FN06 미판정을 유지하며 소유6파일만 기존 branch checkpoint로 보존한다.
 
 - **FN06 private snapshot 합성 연결 추가 확인**: source 변경 없이 신규 소비 시험1PASS648.2073ms/type/diff0을 보강했다. 원 actual Bound 응답용 서버→current binding→material current→protected current→별도 response reader/metadata에 실제 SyntheticMaterialReceiver 메모리 inbox를 함께 연결했다. exact 수신 receipt/bytes·context fact/pre 원 hash를 정합하게 결박하여 server current4·초기 수신write1회뿐·소유 반환배열 소거/원 blob·서버원장 불변/SQL쓰기0을 확인했다. 앞선 직접7PASS는 앞 snapshot의 범위이며 이를 새로운 전수8건 실행이라 하지 않는다. 원잠금 post/transport 최종 연결·metadata OS진위·실파일/native/DB/Agent/전체 FN06는 여전히 미구현·미검증이다.

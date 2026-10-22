@@ -61,4 +61,22 @@ test('원서버·실제 수신기·보호 reader·metadata 조립을 함께 소�
  assert.equal(v.threadId,'private-response-thread');assert.equal(v.turnState,'IN_PROGRESS');assert.equal(v.instructionContentHash,contentHash(bytes));assert.deepEqual(v.materialReceiptRef,events[0].ref);
  assert.equal(writes,1);assert.equal(owned.length,2);assert([...owned,...f.x.buffers].every(b=>b.every(v=>v===0)));assert.deepEqual(Buffer.from(blobs.get(events[0].ref.id)!),bytes);assert.equal(canonicalJson(a.f.state()),before);
  assert.equal(f.x.currents(),4);assert(!a.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));
+
+ // A real local attempt hash becomes the exact originally signed/consumed request
+ // in this in-memory fixture, not an unrelated fabricated permit response.
+ const base={key:receiptKeyV1(e),envelopeHash:e.envelopeHash,bindingHash:f.input.preSendBindingHash,materialReceiptRef:material.materialReceiptRef,instructionContentHash:material.contentHash,grantRef:f.input.preSendSnapshot.grantRef,responseFact:null,at,reason:'NONE'};
+ const attemptSnapshot={...base,sequence:1,state:'SEND_ATTEMPTED',permitRef:null,previousRef:null},attemptRecord={ref:{...a.attempt.localAttemptRef,contentHash:hash(attemptSnapshot)},snapshot:attemptSnapshot};
+ a.attempt.localAttemptRef=attemptRecord.ref;f.input.attemptRef=attemptRecord.ref;
+ const p=a.x.permit.snapshot;p.request.localAttemptRef=attemptRecord.ref;p.requestHash=hash(p.request);
+ const proof=await a.f.consumeOriginal(p.request,e.commandId);p.proofRef=proof.resultRef;a.x.rehash();
+ a.permitRow.content_hash=a.x.permit.ref.contentHash;a.permitRow.proof_result_id=p.proofRef.id;a.permitRow.proof_result_version=p.proofRef.version;
+ f.input.permitRef=structuredClone(a.x.permit.ref);
+ const permitSnapshot={...base,sequence:2,state:'PERMIT_RECORDED',permitRef:a.x.permit.ref,previousRef:attemptRecord.ref},permitRecord={ref:{id:crypto.randomUUID(),version:1,contentHash:hash(permitSnapshot)},snapshot:permitSnapshot};
+ const{SyntheticSentTurnPostCurrent}=await import('../../../apps/connector/runtime/sent-turn-post-current.ts');
+ const post=new SyntheticSentTurnPostCurrent(current,{clock:()=>Date.parse(at),timeoutMs:1000});let lockedReads=0,invalid=false;
+ const locked={transport:'SYNTHETIC_ONLY' as const,readLocked:async(selected:any)=>{lockedReads++;assert.deepEqual(selected.localAttemptRef,attemptRecord.ref);assert.deepEqual(selected.permitRef,a.x.permit.ref);return{complete:!invalid,attemptRecord:structuredClone(attemptRecord),permitRecord:structuredClone(permitRecord)};}};
+ const prior=canonicalJson(a.f.state()),result:any=await post.current(f.input,new AbortController().signal,locked);
+ assert.equal(result.currentSnapshot.threadId,'private-response-thread');assert.deepEqual(result.attemptRef,attemptRecord.ref);assert.deepEqual(result.permitRef,a.x.permit.ref);assert.equal(lockedReads,2);assert.equal(canonicalJson(a.f.state()),prior);
+ invalid=true;const beforeInvalid=f.x.currents();await assert.rejects(post.current(f.input,new AbortController().signal,locked),{message:'SENT_TURN_POST_CURRENT_UNAVAILABLE'});assert.equal(f.x.currents(),beforeInvalid);
+ assert.equal(writes,1);assert([...owned,...f.x.buffers].every(b=>b.every(v=>v===0)));assert(!a.calls.some(s=>/^(INSERT|UPDATE|DELETE|BEGIN|COMMIT)/.test(s)));
 });
