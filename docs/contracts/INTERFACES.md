@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## 2026-10-22 FN12/UI08 보관 원장 문제 근거 — 채택된 읽기 전용 추가
+
+- `GET /api/v1/projects/:projectId/results/:id/issue-basis`, query 없음, HUMAN 단일 유효 `__Host-anvil.sid`만. Bearer/중복 cookie/다른 host 거절. 같은 인증 tx에서 기존 원제출·원실행/전체 관측원장·ACK 검증 reader를 재사용하고 최종 회원 잠금·DB 시각의 세션 기한 및 COMMIT 후 기한을 검사한다. 성공/오류는 기존 no-store·비노출 DTO를 유지한다.
+- 응답: `purpose=STORED_ISSUE_BASIS_ONLY`, `projectId/resultRef/assignmentRef/executionRef`, `ackRef`, 해시 재대조용 보관 `ack` 원문(null 가능), ACK 자체의 `observationGaps[{from,to,evidenceRef}]`, `journalObservedAt/asOf`, `sourceAssurance=SERVER_STORED_SYNTHETIC_CLAIMS_ONLY`, `classification`, `causeUnestablished=true`. `actualProviderObserved/currentAuthorizationVerified/completionAccepted/formalFailureCounted/writerReleaseVerified/executionAuthorized/dispatchPerformed`는 모두 false다.
+- 내부 분류 입력은 `reports=[]`, `resultAssessment=null` 고정. 전체 ACK 검증을 마친 gaps만 소비하고 최근20개 표시 항목에서 다시 계산하지 않는다. 분류는 저장원장 `OBSERVATION_GAP` 또는 `UNVERIFIED_CAUSE`만 가능하다. ACK 없음/공백 없음도 정상 가동·관측 완전·미수행/원인 해소를 의미하지 않는다. asOf는 서버의 보관 범위 대조 시각이지 현재 OS/Agent·원인/실행권한 인증이 아니다.
+- 기존 원장10000건/2MiB 응답 한도와 분류100gap 상한을 유지한다. 상한 초과는 자르거나 일부 정상으로 표시하지 않고 거절한다. 클라이언트는 선택 보고/실행·ACK 원문 hash/계수·전체 분류 DTO와 true/false 상수를 exact 대조한다. 명시조회/재조회·이탈 세대를 구분하고 401/403/404는 부모 보고/임무/검수까지 회수하며 fallback GET는 없다.
+- 새 SQL·지속 issue 기록/정책·권한·Secret·실OS/Agent·서비스 변경/실행·재시도/kill·writer 회수는 없다. PMO의 해당 source delta 채택은 실제 PG/정식 served QA나 기능 전체 완료를 의미하지 않는다. rollback은 이 새 route/provider/reader/패널 소비만 일반 revert하고 기존 제출·관측/ACK·분류기·원 API는 유지한다.
+
 ## FN09 부모 연결 하위 초안 한정 A — 2026-10-21 직접 채택
 
 PMO가 전달한 신산님의 HUMAN_DIRECT_REPLY '승인해'로 FN09_PARENT_DRAFT_LINK_PROPOSAL.md의 SHA256 283E8601C8951574740630D7EA4F6A1EE59260E925B20FC2C5B9579E9D326B87 한정 A를 채택한다. 제안 파일의 PROPOSED 표기는 승인 전 원문 이력으로 보존하며 현재 채택 범위는 이 절을 따른다. 과거 제한 A/§13.1의 parent=null 문구는 아래 초안 범위에서만 대체한다.

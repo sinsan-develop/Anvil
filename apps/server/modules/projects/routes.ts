@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {ProjectStageQueue,stageQueueOperations} from '../scheduling/stage-queue.ts';
 import {ProjectNextActionBasis} from '../scheduling/project-next-action-basis.ts';
+import {ProjectStoredIssueBasis} from '../results/project-stored-issue-basis.ts';
+import {registerStoredIssueBasisRoute} from '../results/stored-issue-basis-routes.ts';
 import {registerNextActionBasisRoute} from '../scheduling/next-action-basis-routes.ts';
 import { AuthFailure } from '../access/repository.ts';
 import type { AccessRoutesOptions } from '../access/routes.ts';
@@ -107,6 +109,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const resultReviewSources=new ProjectResultReviewSources(assignmentConfirmations,results);
   const resultExecutionSource=new ProjectResultExecutionSource(results);
   const observationJournal=new ProjectObservationJournal(resultExecutionSource);
+  registerStoredIssueBasisRoute(app,options,new ProjectStoredIssueBasis({results,journal:observationJournal}));
   app.get<{Params:{projectId:string;id:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/results/:id/observation-pages',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({cursor:{type:'string',minLength:1,maxLength:4096}},[])}},async request=>{
    if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);const started=performance.now();let deadline=started;
    const value=await options.repository.authenticated(token(request),null,async(db,actor)=>{const page=await observationJournal.page(db,actor,request.params.projectId,request.params.id,Object.fromEntries(Object.entries(request.query)),value=>options.repository.signProjectCursor('RESULT_OBSERVATION_PAGE:'+value));const remaining=Date.parse(page.cursorExpiresAt)-Date.parse(page.observedAt);if(!Number.isFinite(remaining)||remaining<=0||remaining>30000)throw new AuthFailure('RESULT_OBSERVATION_CURSOR_EXPIRED',412);deadline=started+remaining;return page;});

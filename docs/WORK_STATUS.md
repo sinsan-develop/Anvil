@@ -1,5 +1,19 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 FN12/UI08 보관 원장 문제근거 source 연결 확인**: PMO 채택 readonly issue-basis GET1개·같은HUMANtx 기존 원결과/전체원장검증reader·최종member잠금/DB기한/commit뒤기한·strictcookie/noquery/no-store를 연결했다. reports[]/assessmentnull·ACK원문hash/ref/gaps만 소비하고 원인미확인true/7false·ACK없음/공백없음도 정상승격0를 유지한다. UI08명시조회/변조거절/403전체회수/이탈JSON+hash폐기 연결. 내부/HTTP→실Webreader/인접분류·관측22PASS954.9027ms/type/build361/351ms·신규DOM6PASS6.8초/부모권한인접1PASS2.7초/diff0. 원독립C0/I0/M1→정합100/101상한보완뒤 scoped C0/I0/M0(독립실행/수정0). 등록QA exactowner/nonlink/process0 정리 뒤 독립부재/process0다. 원시험import부재와타입지적은별도보존,NO_COLOR/chunk경고·검사기준불변. 실제PG잠금/권한/COMMIT경합·정식served/전체주체전환·실OS/Agent·현재원인/완료·전체FN12/UI08/Stage는 미검증/미완료다. source복구는새조회/소비만revert·기존원API/원장/분류기보존. 보호6/pending1·0038/정식복구거절/FN10exit1불변. 마지막 sandbox Git 읽기거절1은 환경문제로 분리하며 실행범위를 넓히지 않는다.
+
+- **FN12 근거 독립 M1 상한반례 보완**: 독립 C0/I0/M1·실행0에서 기존101gap 음성이 ACK max/count/표시items와 정합하지 않아 상한 경계를 독립입증하지 못함을 확인했다. 정합한 짝수순번20표시/총count·max/홀수gap·정확hash로 100정상/101거절을 보완해 직접4PASS338.6195ms/type/build361/351ms를 확인했다. 제품기준은 그대로이며 새 UI는 실제 region부재 RED뒤 공백/ACK없음/공백없음/변조/권한/이탈6건 검증중이다. 실제PG/served/OS/Agent·현재원인/권한/실행판정은 아니다.
+
+- **새 근거 화면 시험 선행 오류**: 시험 경로를 기계변환하면서 기존 observation-journal-fixture import까지 issue-basis-fixture로 바뀌어 모듈부재/No tests found exit1이었다. 제품 RED/PASS가 아니며 import만 실제 기존 파일로 정정해 동일 정상1건을 다시 확인한다. source/timeout/판정기준은 불변이다.
+
+- **FN12/UI08 새 근거 화면 QA 등록**: 새 D:/tmp/anvil-v3-stage-b/ui08-issue-basis-01(temp/results), 현재사용자owner·생성전부재/부모nonlink·수명10분·종료정확정리/별도잔여0다. 통제API Edge에서 공백/ACK없음/공백없음도원인미확인·승격변조거절·403전체회수·JSON/hash뒤이탈만확인하며 실제PG/Agent/정식served/서비스0다. 기존 원인분류기/검사timeout·합격기준불변, 실행 전 화면 source는 아직미연결이다.
+
+- **FN12 원장 문제근거 API/reader source 진행**: PMO 채택 후 원 service/route의미구현4RED924.7059ms→동일HUMANtx/최종member·DB기한/commit후기한/noquery·중복cookie/Bearer·host사전거절을 구현했다. 기존 전체원장 reader는 그대로이며 ACK원문/ref와 그 gaps를 공개해 client가 hash/범위·분류결과전체를 exact대조한다. 새client3RED225.1113ms→서버포함10PASS1002.6359ms/type0. 원인미확인true/7false·reports[]/assessmentnull/정상승격0이며 실제DB/화면은 아직0이다. 잘못 추정한 route 경로 os2는 inventory의 scheduling/next-action-basis-routes로 바로잡았다. schema/서비스/Agent·원기준변경0, 다음은 새명시조회 화면 반례다.
+
+- **FN12 문제근거 내부 TDD·타입 보완**: 준비함수 부재3RED136.9956ms→기존 분류기 reports[]/assessmentnull·ACK공백 결박3PASS227.2421ms. typecheck의unknown snapshot/Scope narrowing·callback any4지적은 입력record검사와 정확scope객체/명시callback타입으로 보완한다. 불필요한 외국어 주석1문구도 한국어로 정정했다. PMO가 readonly GET1개/UI source delta를 채택했고 causeUnestablished=true·7flagsfalse/전체ACK검증/현재멤버·session/commit기한·응답상한/noquery/오류비노출/지연회수 조건을 전달했다. API/DB/실제QA는 아직0이다.
+
+- **FN12 저장 원장 기반 문제근거 내부 준비**: Main은 수행자주장→실관측 허위승격을 막기 위해 내부분류 reports=[]/resultAssessment=null와 검증된 보관 ACK 공백만 묶는 한정 단위를 선정했다. 기존 HUMAN tx 원제출/관측 reader 재사용·정확ref/hash/현재권한·기한 재검사·2MiB/10000 유지, 공백은 저장원장 범위일 뿐 OS실행 공백/직접원인/검수·완료·실패횟수가 아니다. 별도 readonly issue-basis GET1개/sourceAssurance 정확delta만 PMO에 결정지원 요청했고 API/UI wire는 결정 전0이다. 내부 결박/음성 TDD만 먼저 진행하며 새SQL/영속/권한/실Agent/서비스/비용0·기존0038/FN10exit1/복구거절 보존이다.
+
 - **2026-10-22 UI08 선택 검수의 고정 기준·원조건 연결 확인**: 기존 ReviewCriteriaOriginal 1개를 exact 선택검수/확정임무와 조회세대key·부모권한회수 아래 재사용했다. 명시 열기 전GET0·최근목록exact없으면최신대체/원문추가GET0·원조건hash/환경·판정누락미확인·완료/출처/권한승격0를 유지한다. 미구현RED1→신규DOM5PASS6.8초·선택/근거인접1PASS3.0초·reader4PASS172.6485ms/type/build359/315ms/diff0·독립 C0/I0/M0(실행/수정0). 등록QA는 exactowner/nonlink/process0 확인 뒤 전용출력만정리·별도부재/process0다. 실제DB/served·전체주체/선택지연조합·실관측/원인분류/Agent·전체UI08/Stage미완료. 새API/SQL/권한/Secret/서비스0·보호6/pending1보존이며 다음은 관측분류 입력의 실제출처/고정범위를 좁혀 계약delta를 분리한다.
 
 - **UI08 검수 원조건 연결 RED**: 새 정상 DOM은 고정 임무/이력/검수 원문까지 도달했으나 원조건 region 부재로 exit1이었다. 기존 ReviewCriteriaOriginal을 정확 선택검수/조회세대key·부모권한회수 아래 재사용하는 import+소비만 추가한다. 시험 fixture에서 이전 원문변조 branch가 새 기준변조 case에 중복돼 실행 전 제거했고 기대값/기준은 유지했다. 새API/DB/권한/현재판정0이다.
