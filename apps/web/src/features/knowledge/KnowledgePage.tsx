@@ -9,7 +9,7 @@ import type{ConversationBuffer,ConversationView}from'./conversation-api.ts';
 import{KnowledgeExclusionForm}from'./KnowledgeExclusionForm.tsx';
 import{newKnowledgeExclusion,type KnowledgeExclusionBuffer}from'./exclusion-api.ts';
 import{KnowledgeCorrectionForm}from'./KnowledgeCorrectionForm.tsx';
-import{newKnowledgeCorrection,type KnowledgeCorrectionBuffer}from'./correction-api.ts';
+import{newKnowledgeCorrection,type KnowledgeCorrectionBuffer,type KnowledgeCorrectionChange}from'./correction-api.ts';
 import{newKnowledgeDecision,type KnowledgeDecisionBuffer}from'./decision-api.ts';
 import{KnowledgeDecisionForm}from'./KnowledgeDecisionForm.tsx';
 import{readProjectConstitution}from'./constitution-api.ts';
@@ -27,7 +27,7 @@ const stateLabels={PROPOSED:'제안 상태',CONFIRMED:'확정 이력 있음',SUP
 interface KnowledgeSearchFilter { query:string;kind:string;status:'ACTIVE'|'PROPOSED'|'CONFIRMED'|'EXCLUDED' }
 function sameKnowledgeFilter(current:KnowledgeSearchFilter,applied:KnowledgeSearchFilter){return current.query===applied.query&&current.kind===applied.kind&&current.status===applied.status;}
 export function canContinueKnowledgeSearch(current:KnowledgeSearchFilter,applied:KnowledgeSearchFilter|null,cursor:string|null,next:string|null){return !!applied&&!!cursor&&cursor===next&&sameKnowledgeFilter(current,applied);}
-export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,exclusion,onExclusionChange,correction,onCorrectionChange,decision,onDecisionChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;exclusion:KnowledgeExclusionBuffer|null;onExclusionChange:(b:KnowledgeExclusionBuffer|null)=>void;correction:KnowledgeCorrectionBuffer|null;onCorrectionChange:(b:KnowledgeCorrectionBuffer|null)=>void;decision:KnowledgeDecisionBuffer|null;onDecisionChange:(b:KnowledgeDecisionBuffer|null)=>void;onAuthenticationLost:()=>void}){
+export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,exclusion,onExclusionChange,correction,onCorrectionChange,decision,onDecisionChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;exclusion:KnowledgeExclusionBuffer|null;onExclusionChange:(b:KnowledgeExclusionBuffer|null)=>void;correction:KnowledgeCorrectionBuffer|null;onCorrectionChange:(change:KnowledgeCorrectionChange)=>void;decision:KnowledgeDecisionBuffer|null;onDecisionChange:(b:KnowledgeDecisionBuffer|null)=>void;onAuthenticationLost:()=>void}){
   const[query,setQuery]=useState(''),[kind,setKind]=useState(''),[items,setItems]=useState<KnowledgeHit[]>([]),[next,setNext]=useState<string|null>(null),[loading,setLoading]=useState(false),[working,setWorking]=useState(false),[error,setError]=useState<ApiError|null>(null),[view,setView]=useState<KnowledgeView|null>(null);
   const alive=useRef(true),locked=useRef(false),requestId=useRef(0);
   const[status,setStatus]=useState<'ACTIVE'|'PROPOSED'|'CONFIRMED'|'EXCLUDED'>('ACTIVE');

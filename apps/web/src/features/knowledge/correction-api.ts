@@ -2,33 +2,34 @@ import{ApiClient,ApiError}from'../../api/client.ts';
 import{postDocumentCommand,type DocumentSession,type DocumentWrite}from'../design-trace/editor-api.ts';
 import{validateKnowledgeView,type KnowledgeView}from'./api.ts';
 import type{KnowledgeEntry,TextArtifactRef}from'../../../../server/modules/knowledge/knowledge-entry.ts';
+import type{KnowledgeDocumentSource}from'./knowledge-document-source.ts';
+import{knowledgeCorrectionSourceRefs as sourceRefs}from'./knowledge-correction-sources.ts';
 type Ref=KnowledgeView['ref'];
-interface CorrectionInput{targetRef:Ref;title:string;body:string;reason:string;changeReason:string}
+interface CorrectionInput{targetRef:Ref;title:string;body:string;reason:string;changeReason:string;additionalDocumentSources?:KnowledgeDocumentSource[]}
 export interface KnowledgeCorrectionPending{upload:DocumentWrite;correct:DocumentWrite|null;commandId:string;input:CorrectionInput}
-export interface KnowledgeCorrectionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;target:KnowledgeView;title:string;body:string;reason:string;changeReason:string;pending:KnowledgeCorrectionPending|null;savedRef:Ref|null;failure:{code:string;status:number;quarantinedArtifactId?:string}|null;uncertain:boolean;dirty:boolean}
+export interface KnowledgeCorrectionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;target:KnowledgeView;title:string;body:string;reason:string;changeReason:string;additionalDocumentSources?:KnowledgeDocumentSource[];pending:KnowledgeCorrectionPending|null;savedRef:Ref|null;failure:{code:string;status:number;quarantinedArtifactId?:string}|null;uncertain:boolean;dirty:boolean}
+export type KnowledgeCorrectionChange=KnowledgeCorrectionBuffer|null|((current:KnowledgeCorrectionBuffer|null)=>KnowledgeCorrectionBuffer|null);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const normalize=(v:any):any=>Array.isArray(v)?v.map(normalize):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])])):v,canonical=(v:any)=>JSON.stringify(normalize(v));
 async function digest(bytes:Uint8Array<ArrayBuffer>){return[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
 function bound(b:KnowledgeCorrectionBuffer,s:DocumentSession){if(!uuid.test(b.projectId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid.test(s.user.id)||!uuid.test(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||b.target?.entry.scope.projectId!==b.projectId||!['PROPOSED','CONFIRMED'].includes(b.target.state)||b.target.headVersion!==b.target.ref.version||!Number.isSafeInteger(b.target.ref.version+1))throw new ApiError('KNOWLEDGE_CORRECTION_BINDING_INVALID');}
 export function newKnowledgeCorrection(pid:string,target:KnowledgeView,s:DocumentSession,generation:number):KnowledgeCorrectionBuffer{
- const b:KnowledgeCorrectionBuffer={projectId:pid,ownerUserId:s.user.id,ownerClientId:s.clientId,controlGeneration:generation,target:structuredClone(target),title:target.entry.title,body:target.body,reason:target.entry.reason,changeReason:'',pending:null,savedRef:null,failure:null,uncertain:false,dirty:false};bound(b,s);return b;
+ const b:KnowledgeCorrectionBuffer={projectId:pid,ownerUserId:s.user.id,ownerClientId:s.clientId,controlGeneration:generation,target:structuredClone(target),title:target.entry.title,body:target.body,reason:target.entry.reason,changeReason:'',additionalDocumentSources:[],pending:null,savedRef:null,failure:null,uncertain:false,dirty:false};bound(b,s);return b;
 }
-function sourceRefs(b:KnowledgeCorrectionBuffer,fresh?:TextArtifactRef){
- const old=b.target.entry.contentRef,refs:KnowledgeEntry['sourceRefs']=[...b.target.entry.sourceRefs,{kind:'ARTIFACT',id:old.artifactId,contentHash:old.contentHash},...(fresh?[{kind:'ARTIFACT' as const,id:fresh.artifactId,contentHash:fresh.contentHash}]:[])];
- return[...new Map(refs.map(r=>[canonical(r),r])).values()];
-}
-function capture(b:KnowledgeCorrectionBuffer):CorrectionInput{return{targetRef:{...b.target.ref},title:b.title,body:b.body,reason:b.reason,changeReason:b.changeReason};}
+function capture(b:KnowledgeCorrectionBuffer):CorrectionInput{return{targetRef:{...b.target.ref},title:b.title,body:b.body,reason:b.reason,changeReason:b.changeReason,...(b.additionalDocumentSources===undefined?{}:{additionalDocumentSources:structuredClone(b.additionalDocumentSources)})};}
 async function metadata(b:KnowledgeCorrectionBuffer,s:DocumentSession){
  bound(b,s);await validateKnowledgeView(b.target,b.projectId,b.target.ref);
  if(typeof b.title!=='string'||!b.title.trim()||b.title.length>200||!b.title.isWellFormed()||typeof b.body!=='string'||!b.body.isWellFormed()||typeof b.reason!=='string'||!b.reason.trim()||b.reason.length>20000||!b.reason.isWellFormed()||typeof b.changeReason!=='string'||!b.changeReason.trim()||b.changeReason.length>20000||!b.changeReason.isWellFormed())throw new ApiError('KNOWLEDGE_CORRECTION_INPUT_INVALID');
  const bytes=new TextEncoder().encode(b.body);if(bytes.length>2*1024*1024||sourceRefs(b).length>=200)throw new ApiError('KNOWLEDGE_CORRECTION_INPUT_TOO_LARGE');
  return{bytes,payload:{mediaType:b.target.entry.contentRef.mediaType,bytes:bytes.length,contentHash:await digest(bytes)}};
 }
-export async function prepareKnowledgeCorrection(b:KnowledgeCorrectionBuffer,s:DocumentSession):Promise<KnowledgeCorrectionPending>{
+export async function prepareKnowledgeCorrection(input:KnowledgeCorrectionBuffer,session:DocumentSession):Promise<KnowledgeCorrectionPending>{
+ const b=structuredClone(input),s=structuredClone(session);
  if(b.pending||b.savedRef)throw new ApiError('KNOWLEDGE_CORRECTION_PENDING');const m=await metadata(b,s);
  return{input:capture(b),upload:{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:b.controlGeneration,operation:'uploadArtifact',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:m.payload},correct:null,commandId:crypto.randomUUID()};
 }
-export async function sendKnowledgeCorrection(client:ApiClient,b:KnowledgeCorrectionBuffer,s:DocumentSession,checkpoint:(p:KnowledgeCorrectionPending)=>void,active:()=>boolean):Promise<Ref>{
+export async function sendKnowledgeCorrection(client:ApiClient,input:KnowledgeCorrectionBuffer,session:DocumentSession,checkpoint:(p:KnowledgeCorrectionPending)=>void,active:()=>boolean):Promise<Ref>{
+ const b=structuredClone(input),s=structuredClone(session);
  const m=await metadata(b,s);let p=b.pending;if(!p||!uuid.test(p.commandId)||canonical(p.input)!==canonical(capture(b)))throw new ApiError('KNOWLEDGE_CORRECTION_INPUT_INVALID');const u=p.upload;
  if(u.schemaVersion!==1||u.projectId!==b.projectId||!uuid.test(u.commandId)||u.clientId!==s.clientId||u.controlGeneration!==b.controlGeneration||u.operation!=='uploadArtifact'||u.targetId!==null||u.expectedVersion!==0||u.baselineRefs.length||u.approvalRef!==null||canonical(u.payload)!==canonical(m.payload))throw new ApiError('KNOWLEDGE_CORRECTION_INPUT_INVALID');
  if(!active())throw new ApiError('KNOWLEDGE_CORRECTION_PAUSED');
