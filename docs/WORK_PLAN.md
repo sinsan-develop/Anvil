@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 claim 영속 QA caller/runner source 연결**: 정상 예약/서명 등록·한도/정책·context/preparation·grant/서명START 소비를 원 claim 저장검증에 연결한 opt-in을 추가했다. 신규 source guard7PASS321.3289ms/type/diff0, caller 독립 C0/I0/M1 뒤 Main 거절상수 시험 보완·runner 검토 중이다. 실DB 원자성+합성 source/OS 전제를 명시하며 실제 PG/등록/claim/Agent 실행은 아직0이다. 전용 자원·키/credential 유한수명·정확회수 패킷은 FN06_PROVIDER_CLAIM_DATA_LAB_CANDIDATE.md에 두고 exact source 게시 후 한정 실행 판정을 진행한다. schema-only 완료 시험 반복0·정식DB/서비스0·전체 FN06/Stage 미완료다.
+
 - **2026-10-22 FN06 다음 claim 영속 QA source 준비 중**: 정상API예약/정상서명trust등록선행과원서비스의서명claim·protectedflush후rollback/동일·새proof멱등/별도읽기검증함수를작성했다. 신규단위9PASS/type0·독립각C0/I0M1·C0I0M0·C0I1M0뒤Main반례보완을구분한다. actualPG/정상예약·등록·claim양성0,fullcaller/runner·grant/START소비연결미완료/합성current방법판단요청이며Source준비를제품기능/실연결완료로계산하지않는다. 정식DB/Secret/native/Agent0·상세는WORK_STATUS를따른다.
 
 - **2026-10-22 FN06 미적용 SQL 실제 구문·권한 확인**: 원2CD2…/42601실패뒤CASE괄호2개후보의독립deltaC0/I0/M0·새위임exact62d36f75/pendingEB4…로새빈PG15 actual phaseDONE/exit0. schemaCOMMIT·최소권한closure/회수0을확인했으며기존59manifest/정식서비스불변·실Agent0이다. claim데이터/nonce·감사원자성/THREAD·TURN·정식적용준비는NOT_EXECUTED/false,전체FN06/계획미완료. 다음은원서명/permit선행의실claim저장·재조회공백이며상세는FN06_PROVIDER_CLAIM_SCHEMA_LAB_RESULT/WORK_STATUS를따른다.

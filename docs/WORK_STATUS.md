@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **FN06 새 데이터 lab source 게시 준비**: 신규 caller의 M1은 정확 거절 원인으로 시험을 보완했고 runner 한정 독립 C0/I0/M0·실행/수정0이다. 최신 guard7PASS321.3289ms/type/diff0·plan actualExecutedfalse/59/pending 고정 EB4…를 확인했다. 신규 source/기존 fixture opt-in·후보/계획/현황만 같은 branch에 보존하고 보호6·main은 변경하지 않는다. 다음은 게시 exact source에 대한 새 PG/합성 등록 credential 포함 한정 실행 패킷의 PMO 판정이며 실제 생성·실행0/전체FN06미완료를 유지한다.
+
+- **FN06 caller 독립 C0/I0/M1·새 runner 준비**: 신규 caller 한정 정적 검토에서 기존 HUMAN/session/grant회수·정책/예산 current 선행 유지·우회 미발견, M1은 환경거절시험의 다른 TypeError 통과 가능성이다. Main이 정확 거절 상수까지 검사하도록 보완했고 독립 clean으로 소급하지 않는다. 새 전용 runner는 같은 base59/pending 고정hash·전용 tmpfs PG만 준비 후 신규 opt-in child를 유한기한으로 실행/고정 safe summary만 반환하도록 작성했다. schema-only closure case 반복0·실실행0, 신규 guard7PASS448.3054ms/type/diff0. child 종료 뒤 원문parent가 비었을 때만 회수하고 남은 원문은 source 보존/cleanupFailure로 처리한다. 신규 runner 안전성 독립 검토·exact source/자원 패킷은 다음 단계다.
+
+- **FN06 caller source 연결·새 runner RED**: 원정상 후보/역할예약·서명trust등록·정책/한도·context/preparation·grant/queue·서명 START 소비→원 claim검증함수를 test-only로 조립했다. 기존 FN12 fixture에 새 opt-in만 두고 다른 성공 case를 반복하지 않으며 신규 READ 선언·STAGE_OWNER를 확정 임무에 먼저 보존한다. guard 4PASS358.2924ms/type/diff0, 실제 양성은 미실행이다. 새 runner 전용 root/회수/비밀없는 child summary 반례3FAIL138.6315ms를 확인했고 생성 전 source만 준비한다. 독립 검토는 신규 caller delta만 진행 중이다.
+
+- **FN06 실제 writer 재조회 port source 확인·caller RED**: 신규 3PASS167.6482ms/type0에서 정확 scope 쿼리/회수·기한조건/원범위 대조·DB시각·복제 보존과 부재/중복/불일치/조회오류 거절을 확인했다. 신규 전체 caller 환경 밖 I/O0 반례는 미작성 함수 1FAIL/3PASS119.0694ms다. 정상 API·한도·실grant/서명START 뒤 저장검증에 연결하되 실제 실행은 아직0이며 source 검사를 실제 저장 성공으로 취급하지 않는다.
+
+- **FN06 합성 전제 guard 확인·writer port RED**: premise 직접 1PASS139.1885ms 뒤 신규 실제 writer 재조회/부재·중복·범위·오류거절 두 반례가 미작성 함수로 2FAIL/1PASS131.5247ms다. 기존 C3의 정확 쿼리를 test-only port로 분리하고 같은 scope와 원 binding을 대조한다. 이 시험은 통제 DB 응답 단위이며 실제 PG/Provider 검증이 아니다. 새 자원/키·credential/정식서비스 실행0.
+
+- **FN06 claim-data 연결 재개 / Main 어울**: 최신 직접 승인을 기존 범위와 대조했다. ae466b4300985a5e47644adeb7232e06fa09c085와 보호 6경로를 보존하며 신규 premise 반례 1FAIL144.2831ms에서 미작성 함수를 확인했다. PMO A안은 기존 C3의 명시 합성 source/OS 전제만 허용하며 실제 writer 원장·현재 주체/정책·서명/START 검사를 대체하지 않는다. 신규 test-only caller를 이어 작성하고 실제 Provider/current OS로 승격하는 입력·writer 부재/회수/범위 불일치를 거절한다. 새 실제 PG/등록/키·credential/Agent/정식서비스 실행0이며 이미 완료한 schema lab 반복0. 후속 실제 실행은 정확 source/자원·수명·정리 패킷으로 구분한다.
+
 - **FN06 후속 영속 검증 source 3단위 준비**: 보호flush후오류/완전원장rollback·정상/동일proof/새proof·별도읽기함수,정상후보/역할/예약API선행,정상서명등록/확인/새nonce교환선행을추가했다. 원2+M1/범위I1반례를보존하고최신신규단위9PASS457.9752ms/type/diff0. 독립결과는persistence C0/I0/M1·예약C0/I0/M0·trust C0/I1/M0이며M1/I1은Main TDD보완/재리뷰clean소급0이다. SHA256순서persistence C3E23C9C271FDFC95A5741DDF9FA309E5ACF2AB03B87CC6F6EA34216ACD61AEB/예약279C812E9C78A97704FCED6D899F6093016530978BB90EB0FCAB38A0832E3608/trust4D42BFB052C77D3319121DB9CEFD18C07633810CAC9A6FA4DD5B0779732955BC. direct/mockHTTP·실서명단위만이며새실PG/예약·등록/claim양성0·정식서비스/역할/native/Agent0이다. fullcaller/유한runner·정상grant/START소비연결은아직미작성이다. 기존C3 합성source/OS전제의동일port재사용이PMO의fakecurrent금지와어떻게구분되는지정확판단을요청했으며원guard완화/역사VERIFIED자동승격0,전체계획중단주장0이다.
 
 - **FN06 정상등록 source 리뷰 I1·반례 RED**: 새등록helper2RED161.3672→2PASS163.5035/type0은mockHTTP와실서명단위만이다. 독립C0/I1/M0·실행0은register scope의installationId만대조/원문hash누락이다. Main이정상scope전체형식fixture로교체하고다른project원문/같은digest후속반례1FAIL151.468ms를확인했다. 기존실scope생성식그대로 user/client/credential/control·policy·키fp/label/기한/status-only·grants[]와전체hash를대조한다. 실제등록/credential/PG생성0·기존권한/프로토콜변경0이며그전양성을actual검증으로취급하지않는다.
