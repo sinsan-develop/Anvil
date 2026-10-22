@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 UI08 선택 검수의 고정 기준·원조건 연결 확인**: 기존 ReviewCriteriaOriginal 1개를 exact 선택검수/확정임무와 조회세대key·부모권한회수 아래 재사용했다. 명시 열기 전GET0·최근목록exact없으면최신대체/원문추가GET0·원조건hash/환경·판정누락미확인·완료/출처/권한승격0를 유지한다. 미구현RED1→신규DOM5PASS6.8초·선택/근거인접1PASS3.0초·reader4PASS172.6485ms/type/build359/315ms/diff0·독립 C0/I0/M0(실행/수정0). 등록QA는 exactowner/nonlink/process0 확인 뒤 전용출력만정리·별도부재/process0다. 실제DB/served·전체주체/선택지연조합·실관측/원인분류/Agent·전체UI08/Stage미완료. 새API/SQL/권한/Secret/서비스0·보호6/pending1보존이며 다음은 관측분류 입력의 실제출처/고정범위를 좁혀 계약delta를 분리한다.
+
+- **UI08 검수 원조건 연결 RED**: 새 정상 DOM은 고정 임무/이력/검수 원문까지 도달했으나 원조건 region 부재로 exit1이었다. 기존 ReviewCriteriaOriginal을 정확 선택검수/조회세대key·부모권한회수 아래 재사용하는 import+소비만 추가한다. 시험 fixture에서 이전 원문변조 branch가 새 기준변조 case에 중복돼 실행 전 제거했고 기대값/기준은 유지했다. 새API/DB/권한/현재판정0이다.
+
+- **UI08 보완·차단의 고정 원조건 연결 착수**: 검수이력에서 선택한 exact 검수는 사유/항목만 보이며 실제 고정 기준·원조건으로 이동하는 기존 ReviewCriteriaOriginal이 아직 없다. 기존 list+exact criteria reader/component를 재사용해 사용자 명시 열기/닫기만 연결하며 최근20밖 exactref는 미확인·최신대체0, hash/환경/원조건·거절부모회수/선택세대/지연폐기를 유지한다. 새API/SQL/권한/서비스/Agent0·실제판정/현재권한승격0. 새QA D:/tmp/anvil-v3-stage-b/ui08-issue-criteria-01(temp/results), 현재사용자owner/nonlink·생성전부재·10분·종료정확정리/별도잔여0에서 TDD한다.
+
+- **후속 선행 조회 오류 기록**: Main의 Windows rg 파일 인자에 wildcard literal을 두 차례 잘못 넣어 os123 읽기 오류가 발생했다. 제품/검증 실패·자료변경0이며 같은 방식은 중단하고 실제 디렉터리와 -g 필터만 사용한다. provider reader/factory는 source 합성 포트이고 실제 보호저장/native/Agent/정식복구의 기존 경계는 그대로다. 원인분류기 입력의 관측출처를 임의 변환하지 않으며 기존 보고조건 대조 조회 계약을 먼저 확인한다.
+
 - **2026-10-22 UI08 보관 관측·ACK 연결 한정 확인**: 원문 검증 뒤 기존 관측 component를 재사용해 명시 조회/선택 원문에서 commandID·공급자 주장 발생·서버 수신 시각·ACK/gap/local미확인을 확인하도록 연결했다. product는 import+부모회수callback/조회세대key 한정이며 새API/SQL/권한·현재관측/원인확정/실행/Agent0이다. 원 region부재 RED1뒤 신규DOM4PASS4.8초·부모인접3PASS4.2초·reader3PASS192.1291ms/type/build359/317ms/diff0, 독립 C0/I0/M0·독립실행/수정0. QA exactowner/nonlink/process0 정리 뒤 별도부재/process0를 확인했다. NO_COLOR/chunk 경고는 보존한다. 401·모든주체전환 조합/실제DB·served·실관측/분류어댑터·전체UI08/Stage 미완료다. 공급자주장을 CONNECTOR_OBSERVED로 만드는 경로가 없어 내부분류기를 임의연결하지 않는다. 다음은 FN06~08/09 실제 세션·명령 연결의 남은 선행을 source·승인delta로 구분해 이어간다.
 
 - **UI08 관측 연결 미구현 RED 확인**: 통제API의 정확 보고 원문까지 도달한 정상1건이 새 관측 region 부재로 exit1이었다. 환경 오류가 아닌 화면 미연결 반례이며 기존 관측 component 1개를 원문 바로 뒤에 연결하고 부모 조회세대key/거절callback을 전달한다. 현재 원인분류/실제Agent 관측으로 승격하지 않는다.
