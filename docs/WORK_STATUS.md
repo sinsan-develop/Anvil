@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 UI08 보관 검수 원문·근거 화면 연결 한정 확인**: 담당 어울. 기존 readonly list/exact 원문/hash validator·근거 GET를 재사용해 명시조회→자동선택0→사용자 선택 보완/차단 원문→별도 다음행동 근거를 연결했다. 조회/선택 세대·닫기 후 지연폐기·401/403/404 부모내용회수·최근20건 한정/과거자료·완료/출처인증/실행승격0를 유지한다. UI08은 존재하지 않는 아래 보완작성 안내 대신 원 임무 상세로 안내하며 기존 UI05 기본문구는 보존했다. 원 DOM RED1건 뒤 새4PASS6.2초·부모인접3PASS4.8초·재사용reader8PASS223.0768ms/type/build359모듈588ms/diff0, 독립 C0/I0/M0·독립실행/수정0이다. NO_COLOR/build chunk 경고는 별도 보존·최적화/기준변경0. 등록 QA01은 exactowner/nonlink/process0 검사 뒤 시험출력만 정리했고 별도부재/process0 확인했다. 실제DB/served·목록재조회/근거지연 전체경합·현재모든주체전환·Agent/원인분류/전체UI08/Stage/계획완료는 미검증·미완료다. 새 API/SQL/권한/Secret/정식서비스0·보호6/pending1 보존이며 다음은 문제 분류와 실제 실행/이전 선행 공백을 계획 기준으로 이어간다.
+
+- **UI08 검수 이력 화면 RED 뒤 연결 중**: 신규 정상 DOM1건은 기존 원문/고정 임무까지 도달했으나 검수 이력 region 부재로 exit1이었다. 기존 reader와 다음행동 근거 component를 재사용해 이력 명시조회·수동 원문선택·별도 근거조회만 연결한다. 미구현 RED를 보존하며 API/SQL/권한/서비스/Agent 변경0, 실제DB/served 미검증이다. 시작 Git sandbox 오류는 권한 환경 문제로 분리해 승인된 읽기로 소유 변경만 확인했다.
+
+- **2026-10-22 UI08 보관 검수 이력·근거 조회 착수**: 담당 어울. 기존 승인 UI08/FN12와 readonly API/validator를 재사용해 고정 임무 조회 뒤 이력 명시조회→자동선택0→정확 보완/차단 원문선택→다음행동근거 별도조회로 연결한다. 조회세대/ref/hash·현재사용자/클라이언트 부모key·거절시전체내용회수·이탈후지연폐기를 유지한다. 새 API/SQL/권한/Secret/서비스·실Agent/완료판정/쓰기0다. 범위한정 설계/TDD·기존reviewer로 검수하며 일반 재승인 요청은 하지 않는다. 새 일회성 화면QA D:/tmp/anvil-v3-stage-b/ui08-issue-reviews-01의 temp/results만 현재사용자owner·nonlink/최대10분·사전부재후생성/시험종료즉시정리·별도잔여0으로 등록한다. 실제DB/정식served 검증은 아니다.
+
 - **2026-10-22 UI08 고정 임무 조건 조회 한정 검수**: 신규 reader/화면의 원 독립 C0/I0/M1은 지연응답시험 장벽 공백이었다. JSON 소비·정확 확정본 native SHA완료 각각2회/후속task 장벽을 보강해 불변bundle의 LEAVE1PASS2.8초/type/diff0, scoped C0/I0/M0(독립실행/수정0)로 확인했다. 새QA02도 exactowner/nonlink/process0 후 정리·별도부재0다. 총 신규unit3/인접4·신규DOM3/기존DOM3+보강1/type/build358은 실행한 통제범위만 증명한다. 실제DB/정식served·원인분류/실행·전체UI08/Stage/계획완료 아님. 소유8파일만 기존branch에 보존하며 보호6/pending1·정식DB서비스/Agent는 불변이다. 다음은 문제화면의 기존 보완/차단 검수 이력 소비 공백을 선정해 연결한다.
 
 - **UI08 독립 검토 M1 시험 장벽 보강**: 한정 C0/I0/M1·독립실행0이다. LEAVE 시험은 HTTP 응답만 기다려 JSON/확정본 SHA 검증 완료 뒤 폐기까지 입증하지 못했다. 제품의 await후 active 검사/원문회수는 정적으로 확인됐으며 제품 결함 확정은 아니다. JSON 소비·정확 confirmed hash완료·후속task 장벽을 보강하고 새 D:/tmp/anvil-v3-stage-b/ui08-issue-assignment-02(temp/results), 현재사용자소유/부재·nonlink/10분·시험뒤정확정리/별도잔여0에서 LEAVE1건만 재확인한다. 제품source/API/DB/서비스·Agent 변경0, 기존3+3시험 반복0이다.
