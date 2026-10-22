@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN06 근거 누락 최소delta 독립 확인**: caller49F3FCCD…/서로다른두ref반례의한정독립C0/I0/M0·실행/수정0. 실제caller도같은helper를소비하고원validator 전체근거포함조건을유지함을확인했다. 실제PG후속성공은미판정이며이번정적보정을세원실패에소급하지않는다. 원인/영향·새exact후보를후보§8과계획에기록해게시한다.
+
+- **FN06 실제 거절 원인 로컬 재현·최소 보완**: queue85의원validator49행은checks.basis가모든basisRefs를포함하도록요구한다. 새caller의원계산을test-only함수로추출/실제사용하고서로다른임무·준비ref반례에서 SERVER_EXECUTION_FACT_INVALID 1FAIL/4PASS354.1864ms를재현했다. basis:[preparationRef]를basisRefs전체로연결하는한곳만보완한뒤5PASS368.6195ms/type/diff0/caller49F3FCCD…다. 제품validator·권한/SQL·서명·기한/합격조건은불변이며추가diagnostic actual0. 원세번FAIL/독립잔여0을보존하고이로새실행전체해소/claim양성을소급하지않는다. 독립최소delta검토후원인확인·영향/대안·새exact후보만PMO에제시한다.
+
+- **FN06 실제 위치의 정적 원인·최소 반례 착수**: 독립SSH exec-0afae3 exit0에서세번째등록자원/ownerlabel/cwd잔여0·정식3불변확인. queue85는원 readServerExecutionFactV1이며새caller basisRefs=[assignmentRef,preparationRef]인데checks.basis는preparationRef만넣는차이를확인했다. 원validator는모든basisRefs의evidence포함을요구한다. 서로다른두ref로actualsource계산을추출해누락반례를검사하며미작성함수1FAIL/4PASS450.8703ms를확인했다. validator조회의추정execution-currentness-v1.ts os2 1건은변경0/실제import server-execution-fact-v1.ts로대조했다. 제품기준완화/동일actual재실행0.
+
+- **FN06 위치진단 세번째 FAIL·Main 직접 원인검토 전환**: exact10b497b 신규1회는child FN06_CLAIM_DATA/OTHER_ERROR·EXECUTION_QUEUE85:20→AUTH_REPOSITORY40:23/47:45→EXECUTION_QUEUE63:14→QA_CALLER83:27을수집해exit1이다. claim양성0/원인확정전이며동일진단추가실행을중단한다. PGd7531a7474c379aa363b72e74c077758aad959f68f4d671b4b30e190145e7e4f/net8e508217f4b6c9a06490855b14ddd1e80c0d1d8de30c41885565e2bcbf7f8b7a/runfb5caef9d9d03584eb561568b14ed03a,runnerfailuretrue/cleanupFailurefalse/bootstrap1safe1path0. PMO는본인turn의모델capacity systemError·기존담당/모델유지를전달했으며Main이모델·세션을변경하지않는다. 먼저독립잔여/정식3불변을확인하고위실제위치의정적원인·반례/최소보완을직접검토한다. 정식DB/서비스/native/Agent/Secret변경0·전체계획동결아니다.
+
+- **FN06 고정위치 새exact1회 위임 checkpoint**: PMO가10b497b0c33a18a557f856a1fc1a86e1f71b6a26/helperFD06/fixture5ACF/callerA66A/runner4E6A를대조하고새빈1회위치진단을채택했다. 같은data전용root/PG/net/DB/owner에새run·고정daemon/image/Node/59+pendingEB4·tmpfs512/noports·mount·volume·formalnet/합성키code/status100초/10분·240+50/180/110test90/회수25·clone전trap·별도잔여0을유지한다. 원두FAIL/양성0보존,이번에도실패시동일방식추가진단실행없이얻은위치와정적source로원인/영향/대안을Main이직접재검토한다. 전체독립계획동결아님·정식DB/서비스·Agent변경0.
+
 - **FN06 고정위치 진단 source 준비**: 미작성위치추출반례1FAIL167.1212ms→직접5PASS189.501ms/type/diff0. 표준error종류/고정13sourceunitenum·행/열·최대5개만전달하고원문message/stack/path는반환0,부모도재검증한다. 신규delta독립C0/I0/M0·실행/수정0이며위치는참고값/원인확정아니다. helperFD06B41F…/fixture5ACF8603…/runner4E6A254C…/callerA66A…이고원권한·SQL·서명·기한·기준불변. 두번째actual의독립잔여0·정식3불변과최소trace새후보를분리해PMO에전달한다.
 
 - **FN06 새진단 실제 FAIL·상세수집 한계**: exact51efd29b 신규1회는 child phase FN06_CLAIM_DATA/messageCode·code·lastResponseCode·expected·actual모두null, closeFailures0/rootCleanupFailedfalse로exit1이다. 정상임무선행뒤새caller진입까지확인했으나내부실패지점/원인은미확정·claim양성0. PG5c05209fbb7e9ca91d86b1ff1510b09a8c6e9710c173d97e820dc471c44ed36b/net04cb10e5ec7402763da39b0a6b305ed1680c46176ca87ffc91a9324530e08152/run dc682bd985fd0c5758eb273669606e6b, runnerfailuretrue/cleanupFailurefalse/bootstrap1safe1path0. 같은후보재실행0. 고정목록에없는오류를본문출력으로바꾸지않고독립잔여확인뒤고정source위치·표준오류종류만좁힌다. 정식DB/서비스/Agent변경0.

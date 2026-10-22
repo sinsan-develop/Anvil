@@ -18,7 +18,7 @@
 
 |대상|SHA256|
 |---|---|
-|tests/integration/FN06/provider-claim-data-case-qa.ts|A66A308DBE2B39A903D2BDE349B623D359F5F39035662860F02DDDE2EB370767|
+|tests/integration/FN06/provider-claim-data-case-qa.ts|49F3FCCD3BA81109242237EE42F9819074DC250F157E2A0441D5EB100D075382|
 |tests/integration/FN06/provider-claim-data-lab-qa.ts|FD06B41F45F1236A36DB67FA1706486B1DEF0E6228764C439DFFAD48B01FCECC|
 |tests/integration/FN12/result-submission-isolated.test.ts|5ACF86039AC33E570666AF03F36C80355C60889188AD6129BBF0BA19266D8C69|
 |scripts/provider-claim-data-isolated-qa.ts|4E6A254C0626DECE44651FD59544A8FC8B14E242945C814F46129DA7D1015540|
@@ -79,3 +79,11 @@ exact51efd29b 진단1회(exec-9b14ee)는 child phase FN06_CLAIM_DATA/messageCode
 현재 추가 delta는 오류본문/code 허용목록 확대가 아니라 표준 오류 instanceof와 고정 root/13개 정확 source 파일을 읽어 고정 unit enum·행/열1..100000·최대5개 위치만 반환하는 것이다. 원문 message/stack/path는 반환하지 않고 부모도 enum/수치만 재검증한다. 기존 fixture catch의 새 claimDataQa에서만 연결하며 제품/SQL·권한·서명·기한·합격기준은 불변이다. 위치는 진단 참고값이지 실제 원인 확정 증거가 아니다.
 
 새 반례1FAIL167.1212ms→5PASS189.501ms/type/diff0·한정 독립 C0/I0/M0·실행/수정0이다. 같은 후보 맹목반복0. 다음 실제 실행은 위 고정 source의 새 exact1회 위치 진단으로 다시 구분한다. 새 자원/credential 종류·수명/회수·제외는§3~4와 동일하다.
+
+## 8. 세 번째 실패의 정적 원인과 QA 선행 보완 후보
+
+exact10b497b0 위치진단(exec-db149c)은 FN06_CLAIM_DATA/OTHER_ERROR·EXECUTION_QUEUE85:20→AUTH_REPOSITORY40:23/47:45→EXECUTION_QUEUE63:14→QA_CALLER83:27/exit1이다. PGd7531a7474c379aa363b72e74c077758aad959f68f4d671b4b30e190145e7e4f/network8e508217f4b6c9a06490855b14ddd1e80c0d1d8de30c41885565e2bcbf7f8b7a/runfb5caef9d9d03584eb561568b14ed03a,runner failuretrue/cleanupFailurefalse/bootstrap1safe1path0이다. 독립SSH exec-0afae3는 등록 이름/ownerlabel/root/관련cwd 잔여0·정식3fullID/image/StartedAt/runningfalse 불변이다. claim 양성0이며 같은 진단 실행은 더 하지 않는다.
+
+Main이 실제 queue85의 원 fact validator49를 따라 읽고 원인 후보를 로컬 반례로 확인했다. caller는 basisRefs에 확정 임무와 실행 준비를 넣었지만 checks.basis에는 준비만 넣어 전체 근거 포함 조건을 위반했다. 실제 계산을 test-only helper로 추출해 실제 caller도 그 함수를 소비하도록 하고, 서로 다른 두 ref에서 원누락 계산이 SERVER_EXECUTION_FACT_INVALID로 거절되는 1FAIL/4PASS354.1864ms를 재현했다. basis evidence를 basisRefs 전체에 연결하는 한곳을 보완한 뒤 직접5PASS368.6195ms/type/diff0이다.
+
+최소 delta 한정 독립 C0/I0/M0·실행/수정0이다. 원 validator·제품·SQL·권한·서명·기한·합격기준은 불변이고 시험 선행 입력의 누락을 고쳤다. 실제 PG의 후속 단계 성공이나 전체 실패 원인이 모두 해소되었다고 주장하지 않는다. 위 새 caller SHA의 새 exact 보완 후보 1회는 별도 위임판정 전 미실행이며, 자원·합성키/credential 수명·정리는§3~4와 동일하다.

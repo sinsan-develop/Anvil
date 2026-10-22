@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 QA 근거 누락 원인 보완**: 세번째위치진단도FAIL/claim양성0/독립잔여0·정식3불변이다. 같은actual진단은중단하고원queue validator49의전체근거포함조건과새QA basis evidence누락을로컬원계산반례 SERVER_EXECUTION_FACT_INVALID로재현했다. test-only 한곳보완→5PASS368.6195ms/type/diff0·한정독립C0/I0/M0/actual재실행0. 원제품/SQL/권한·검사기준은불변이며 새exact 보완후보의한정검증만PMO에분리제시한다. 전체FN06/Stage미완료·원세FAIL보존이다.
+
 - **2026-10-22 FN06 새 실제 data lab FAIL·진단 보완**: exact4a1c4b03 신규1회는 정상선행/claim 구간ERROR exit1·실원자성양성0이다. runner정리성공·별도SSH등록자원/cwd잔여0/정식3불변을확인했다. child safe summary 누락의진단코드만보완해새반례RED→4PASS/type/diff0, 제품/SQL/권한/서명/timeout/기준불변·새실행0이다. 원FAIL을보존하며후속exact진단패킷을PMO에분리전달한다. 미완료원인은아직미확정이며전체FN06/Stage완료아니다.
 
 - **2026-10-22 FN06 claim 영속 QA caller/runner source 연결**: 정상 예약/서명 등록·한도/정책·context/preparation·grant/서명START 소비를 원 claim 저장검증에 연결한 opt-in을 추가했다. 신규 source guard7PASS321.3289ms/type/diff0, caller 독립 C0/I0/M1 뒤 Main 거절상수 시험 보완·runner 검토 중이다. 실DB 원자성+합성 source/OS 전제를 명시하며 실제 PG/등록/claim/Agent 실행은 아직0이다. 전용 자원·키/credential 유한수명·정확회수 패킷은 FN06_PROVIDER_CLAIM_DATA_LAB_CANDIDATE.md에 두고 exact source 게시 후 한정 실행 판정을 진행한다. schema-only 완료 시험 반복0·정식DB/서비스0·전체 FN06/Stage 미완료다.

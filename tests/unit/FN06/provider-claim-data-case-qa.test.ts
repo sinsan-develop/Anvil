@@ -1,5 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+import {providerClaimFixture} from './provider-claim-fixture.ts';
+import {readServerExecutionFactV1} from '../../../contracts/runtime/server-execution-fact-v1.ts';
 const m:any=await import('../../integration/FN06/provider-claim-data-case-qa.ts').catch((e:any)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 test('실DB 원자성 시험도 합성 source/OS 전제를 명시해야 하며 실제 Provider/current 승격을 거절한다',()=>{const v={transport:'SYNTHETIC_ONLY',sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualProviderObserved:false};m.validateClaimDataQaPremise(v);for(const bad of[{}, {...v,transport:'REAL'},{...v,sourceOsMode:'VERIFIED_CURRENT_OS'},{...v,actualProviderObserved:true},{...v,currentFactsVerified:true}])assert.throws(()=>m.validateClaimDataQaPremise(bad));});
 
@@ -32,4 +34,12 @@ test('전체 caller는 합성 전제 누락 또는 폐기형 실행환경 밖에
  let touched=0;const input={premise:{transport:'SYNTHETIC_ONLY',sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualProviderObserved:false},pool:{query:async()=>{touched++;throw Error('UNEXPECTED_DB');}},app:{inject:async()=>{touched++;throw Error('UNEXPECTED_API');}}};
  await assert.rejects(()=>m.runProviderClaimDataCase({...input,premise:{}}),/CLAIM_DATA_QA_SYNTHETIC_PREMISE_REQUIRED/);
  await assert.rejects(()=>m.runProviderClaimDataCase(input),/CLAIM_DATA_QA_TARGET_REQUIRED/);assert.equal(touched,0);
+});
+
+test('새 QA current fact는 서로 다른 확정임무·준비 두 근거 모두 원 validator에 결박한다',()=>{
+ const base=structuredClone(providerClaimFixture().basis.fact),assignment={id:randomUUID(),version:1,contentHash:'d'.repeat(64)},preparation={id:randomUUID(),version:1,contentHash:'e'.repeat(64)};
+ base.osEvidenceRefs=base.checks.osFence.evidenceRefs;delete base.checks;base.agentSession.sessionRef={id:randomUUID(),version:1,contentHash:'f'.repeat(64)};base.intent.assignmentRef=assignment;base.preparationRef=preparation;base.basisRefs=[assignment,preparation];
+ const fact=m.buildClaimDataQaCurrentFact(base),checked=readServerExecutionFactV1(fact);
+ assert.deepEqual(checked.checks.basis.evidenceRefs,[assignment,preparation]);assert.deepEqual(checked.basisRefs,[assignment,preparation]);assert.equal(base.checks,undefined);
+ const missing=structuredClone(fact);missing.checks.basis.evidenceRefs=[preparation];assert.throws(()=>readServerExecutionFactV1(missing),/SERVER_EXECUTION_FACT_INVALID/);
 });
