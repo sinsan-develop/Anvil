@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN06 D1 준비 승인 보관 소비 읽기 — 2026-10-23
+
+기존 `apps/server/modules/approvals/project-approvals.ts`의 private 읽기 검증을 별도 HISTORY_ONLY method가 재사용하며 기본 operation 목록은 그대로다. 직접 `tests/unit/FN06/ownership-approval-history.test.ts`와 기존 FN11 분리/작업계획 소비 시험으로 변경 영향을 확인한다. 실제 일회 승인 발급/소비·원준비 receipt 연결·writer/후보 현재성·원자 요청 발급을 소유하지 않으며 기존 차단/route 미등록을 유지한다.
+
 ## FN06 D1 원 준비 AUTO receipt 읽기 source — 2026-10-23
 
 `apps/server/modules/executions/ownership-preparation-receipt.ts`는 원 준비 DB ref를 읽고 기존 current HUMAN/정책/등록 근거와 원 command/receipt/audit를 결박한다. `tests/unit/FN06/ownership-preparation-receipt.test.ts`의 가짜 DB 정상/변조/기한/최소권한 모델과 `ownership-human-basis-fixture.ts`를 재사용한다. REQUIRE_APPROVAL은 기본 거절이며 receipt 읽기 결과를 준비/OBSERVE 허가로 쓰지 않는다. 원 writer/실회수·provenance·원자 발급·COMMIT 뒤 전달/실 PG/creator는 소유하지 않는다. 새 표/SQL/정책·route·실행 효과0이다.

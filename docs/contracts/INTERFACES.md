@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 별도 준비 승인 보관 소비 조회 — 2026-10-23
+
+`ProjectApprovals.readOwnershipPreparationConsumption(db,actor,projectId,requestId)`는 새 HTTP route가 아닌 내부 HISTORY_ONLY 읽기다. 기존 request/decision/consumption 무결성 검사를 재사용하되 새 method에만 prepareOwnershipAnchor를 허용한다. 일반 read/request/authorize/consume의 원 allowlist는 유지되고 새 승인 발급/소비는 연결하지 않는다. OWNER·CONSUMED/version3·APPROVE·현재 policy/control ref·기한·원 소비 서버명령/요청 hash와 후보 ID·시각을 검사하고 반환 직전 DB clock으로 최종 기한을 재검사한다.
+
+반환은 requestRef/decisionRef/consumptionId/commandRef(id=원 소비 serverCommandId,version1,hash=requestHash)/candidateCommandId/scopeDigest/payloadHash/policyRef/controlGeneration/consumedAt/observedAt/expiresAt와 `OWNERSHIP_PREPARATION_APPROVAL_HISTORY_ONLY`다. 준비/관측/실행 권한과 dispatch는 모두 false이며 현재 인증·정확 준비 정책/등록·원 receipt 결박·writer/실회수·후보 provenance를 대신하지 않는다. 원준비 reader의 REQUIRE_APPROVAL 미연결 차단은 유지하며 이 DTO를 허가로 자동 변환하지 않는다. 실제 PG·발급·원자 소비·서비스/Agent는 미검증이다.
+
 ## FN06 D1 원 준비 명령/영수증의 비순환 source 계약 — 2026-10-23
 
 `readOwnershipPreparationReceiptBasis(db,access,token,csrf,scope,preparationRef)`는 DB 원 준비를 읽고 현재 HUMAN/정책/등록을 전후 검사하는 AUTO 읽기 source다. REQUIRE_APPROVAL은 소비 verifier 연결 전 UNAVAILABLE이며 기존 범용 승인/operation 등록부와 SQL은 변경하지 않는다. 결과는 RECEIPT_BASIS_ONLY/권한 false, writer NONE/실회수·후보 provenance와 실제 원자 발급/송신은 별도 미완료다.
