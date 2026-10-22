@@ -143,6 +143,16 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 B6~B8 저장·HUMAN 조회 source 상세 (부분 구현)
+
+- HUMAN 단일 receipt GET은 기존 Anvil 로그인 session/client/user와 project/member를 같은 authenticated transaction에서 다시 잠그고 현재 OWNER만 허용한다. serverOwner/createdBy/boundBy/reservedBy로 현재 책임자를 추정하지 않는다. 승인된 nonOWNER RESPONSIBLE 계약은 유지하되 현재 resolver 미구현으로 거절한다. 원 snapshot/hash/예약·명령을 대조하고, 현재 읽기 권한을 최종 확인한 후에만 hash 충돌409를 반환한다. 인증 transaction COMMIT/rollback 대기 뒤에도 최초 최소 응답기한을 검사한다. 전송 도중 회수와의 원자성 보장은 아니다.
+- PG 수신 adapter는 기존 SyntheticPgPermitStore의 단일 연결/transaction을 사용한다. claim/result/audit를 메모리에 stage하고 원 signed nonce v2 소비가 끝난 후 정확 보호 함수 anvil.record_provider_session_claim(jsonb,jsonb,jsonb,text,jsonb) 한 번으로 flush한다. 새 claim3표에 app 직접 DML을 부여하지 않는다. 기존 challenge/receipt INSERT 권한은 이번에 축소/확장하지 않는다. 함수 응답/ref/현재 근거·최초 기한을 다시 확인하지 못하면 outer transaction 실패로 돌린다. 실제 COMMIT/PG 원자성은 합성 시험으로 증명하지 않는다.
+- 미적용0037에 보호 함수 SECURITY DEFINER·고정 search_path=pg_catalog,anvil·PUBLIC EXECUTE 회수·app 정확 EXECUTE를 작성했다. 잠정 소유자 anvil_v3_provider_claim_writer는 실제 존재/준비 전제일 뿐 생성하지 않았다. NOLOGIN/NOINHERIT·관리/우회 속성0·신규 전용 역할·migrator 임시 ADMIN 회원1·다른 membership/소유/직접 ACL0 등을 preflight하고, 소유권 이전에 필요한 임시 schema CREATE와 membership을 같은 migration transaction에서 회수/후검사하도록 명시했다. 실제 준비와 효과는 미검증이며 migrator나 역할 전환으로 runtime 권한을 우회하지 않는다.
+- writer는 고정 의존표 SELECT·claim/mapping/audit INSERT 및 실제 행 잠금에 필요한 기존 auth/project/member/control의 최소 key열 UPDATE만 요구한다. **key열 UPDATE는 실제 키 변경 능력과 무결성 위험을 수반하며 잠금 전용 무해 권한이 아니다.** 임시 CREATE·SET ROLE/membership/inheritance/PUBLIC 잔류와 실제 최소 권한 closure는 적용 전 별도 PG 검증 대상이다. source 명세가 실제 권한 부여 승인은 아니다.
+- 신뢰경계: 서버 JS가 기존 ECDSA를 검증하고 DB에는 proofHash가 저장되는 application-owned DB 구조를 유지한다. 함수는 현재 grant/connector/registration/HUMAN/controller·원 START/permit/localAttempt·challenge/proof/nonce와 원 claim/receipt/감사를 대조하지만, 탈취한 app DB 자격으로 기존 증거 그래프 전체를 조작하는 공격에 대한 독립 DB 암호 검증을 주장하지 않는다. 새 key/crypto/extension은 없다.
+- 직접 저장4·HUMAN store5·HTTP6의15PASS1591.9886ms/type/diff0은 합성 DB/Fastify.inject source 증거다. 함수/COMMIT 실패·응답 변조·최종 현재성 변경/만료·409 대기 만료를 포함한다. 독립 B8 C0/I1의 queryHash[] 충돌은 {}로 고쳤으며 ACL의 PUBLIC은 grantee0으로 검사하도록 보완해 두 변경에서 추가 C/I를 찾지 못했다. SQL SHA256 7FA12D2AD47764A7EE3E7E3FEA46ECEE1286BEE15C6F1291B499B708F3018418, 실제 SQL 구문/권한/역할 회수/경합/COMMIT 미검증으로 적용 준비 PASS가 아니다. B6/B7 독립 I2는 Main TDD 보완이며 독립 clean 판정으로 소급하지 않는다.
+- 현재는 THREAD source만 연결했다. nonOWNER RESPONSIBLE·TURN·목록/UI caller·SEND/STOP 소비/native 보호·실Agent 및 전체 FN06은 미완료다. 실제 migration manifest 등록/DB/role/권한/서비스/Secret/Agent 변경0. 미적용 source의 rollback은 일반 revert이며 기존 DB/원자료에 DROP/down/자동삭제하지 않는다. 아래 최초 검토 요청/착수0 문구는 채택 전 이력이며 현재 source 상태는 본 절과 최신 WORK_STATUS를 따른다.
+
 ### 2026-10-22 채택 후 B 저장 상세 결정
 
 - 부모 승인 r2 SHA256 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027은 보존한다. PMO 위임 결정으로 claims/revocations 2표에 provider_session_claim_proof_results 보조표1개를 추가하는 source/시험/미적용 SQL 차이를 수용했다. 같은 사건의 새 유효 proofResultRef도 최초 claim/receipt로 결박해야 하므로 다대일 매핑이 필요하다. 기존 execution_receipts exact snapshot을 변경하거나 observation ACK 표를 오용하지 않는다.

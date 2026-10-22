@@ -1,5 +1,46 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 FN06 B6~B8 현재 source checkpoint 준비**: Main 단일 writer. 현재 OWNER의 HUMAN GET을 기존 인증 transaction/잠금·정확 원 receipt journal과 연결하고, 수신 저장은 nonce 소비 이후 같은 DB transaction의 단일 보호 함수로 staging bundle을 넘기도록 구현했다. 직접15PASS1591.9886ms·type/diff0이며 함수 응답 변조·최종 현재성 변경/만료·flush/COMMIT 실패의 합성 rollback을 포함한다. 실제 PG/HTTP socket/served UI·Agent 증거가 아니다. 독립 B8 C0/I1의 queryHash[] 충돌은 {}로 보정했고 두 SQL 수정 scoped 확인에서 추가 C/I0이다. pending0037 SHA256 **7FA12D2AD47764A7EE3E7E3FEA46ECEE1286BEE15C6F1291B499B708F3018418**, SQL 실행/구문·권한효과·역할회수·실COMMIT은 미검증. B6/B7 독립 I2는 Main TDD 보완이지 독립 clean 판정이 아니다. 현재 담당 HUMAN(nonOWNER) resolver·TURN·목록/UI·SEND/STOP/native·실제 Agent와 전체 FN06은 미완료다. 실제 DB/role/권한/manifest/서비스 변경0, 보호6 보존, 다음은 이 source 안전 게시 후 다음 미구현 연결이다.
+
+- **FN06 B8 pending 보호함수 정적 검토 중**: SQL source 추가후 독립 I1은 빈query를배열[]로hash해기존executionTarget/매핑guard의객체{}와항상충돌하는문제였다. 실제순수executionTarget 호출의objecthash 일치/arrayhash 불일치를확인해함수한곳만{}로보완했다. 이는SQL실행RED/GREEN이아닌정적보완이다. Main은PUBLIC를실제role명으로조회하는postflight도발견해grantee0 ACL로대조하도록보완했다. NOLOGIN blank-role/migrator임시ADMIN회원만preflight·schema CREATE회수와migration membership회수·최종잔류검사를미적용source에고정했다. key열UPDATE는실제무결성위험이며잠금용무해권한이라고주장하지않는다. actualrole·SQL/함수/권한/DB실행0·구문/권한closure/거절동작은미검증이다.
+
+
+- **FN06 B8 staged store source GREEN**: 수정된4RED197.0621ms→원서명서비스를통한staging/nonce완료후보호flush·같은/새proof원receipt멱등·flush/COMMIT rollback·fallback거절4PASS573.0819ms이다. 타입은ledger첫permit의undefined가능성TS18048 6건으로실패→길이대조외명시존재검사추가뒤type/diff0. 실제소유tx는기존SyntheticPgPermitStore에위임·새연결/nestedBEGIN/일반tableDML0이고기존DBgraph와current결박을보존한다. fake DB함수시험일뿐보호SQL/실PG/권한/원자COMMIT은미검증이다. 다음은승인된NOLOGIN고정소유자조건·최소권한/고정signature/search_path와pending보호함수작성이며실제생성/적용0이다. B7추가rollback-409만료반례포함HTTP6PASS1369.3641ms·type0은기존10건과중복합산하지않는다.
+
+
+- **FN06 B8 staging store RED·정확 신뢰경계 수용**: 신규4건 중3RED/1모듈부재음성거짓통과234.6007ms는rollback시험의존재assert를catch밖으로보정해4RED로확인했다. PMO는기존DB신뢰경계내직접함수의불완전/타scope/미소비nonce/만료/회수/불일치그래프거절을수용했고 app자격탈취전체/독립ECDSA방어와구별하라고확정했다. NOLOGIN writer 후보명은명세만수용·실제role존재/membership/owner최소권한은적용전미확인조건이다. 같은db callback에서nonce완료뒤stage bundle을flush하는source만작성하며actualrole/함수/권한/PG0이다.
+
+
+- **FN06 B8 원자 adapter 상세 수용·서명 경계 대조**: PMO가INSERT-only journal/고정search_path·nonlogin소유자·PUBLIC EXECUTE회수/app최소EXECUTE의pending0037source를승인했다(실제role/함수/권한/DB/manifest0). 기존0018은서명을JS에서검증하지만DB에는proofHash만보관·app은기존challenge/receipt INSERT가능하므로DB자격탈취자가전체기존증거를위조할때독립ECDSA방어는증명불가임을PMO에정확공유했다. 원장/nonce/current/permit대조의기존application-owned DB신뢰경계와독립DB서명검증을구분하고미채택crypto/키추가0이다. adapter는nonce v2소비전에claim INSERT를하지않고동일tx의claim/result/audit를staging해body최종확인후단일보호함수로flush하도록한다. 실제PG/원자COMMIT증거아님·다음sourceTDD이다.
+
+
+- **FN06 B6/B7 I2 최소 보완 확인**: 2RED1079.8622ms→store가최종현재권한확인뒤에만409를내고 내부최소응답기한을auth COMMIT await밖에서재검사해직접10PASS1173.8163ms·type/diff0이다. 원정상합성row의receipt·충돌409/회수403을직접확인, 실제PG/토큰/격리/served UI·전송중권한회수원자성은미검증이다. 최초독립I2를Main TDD로닫았으며독립C0/I0로소급하지않는다. 수신영속adapter는0037의app tableDML기본거절을확인했으므로migrator우회없이필수INSERT-only protected함수의미적용source 상세를PMO에판단요청했다. 실제함수생성/권한/DB적용은제외·기존source계속이다.
+
+
+- **FN06 B6/B7 독립 I2 재현**: C0/I2(정상 hash충돌409를store catch가403으로변경, authenticated COMMIT await중만료후200)를수신했다. 정상합성저장row/409·같은충돌중회수403 및 fake commit 지연 Date시계2건은2RED1079.8622ms로 각각403≠409·200≠403을확인했다. 최종권한확인뒤에만충돌을유지하고 내부최소응답기한을auth await밖까지보존해재검사한다. 실제PG COMMIT/경합·토큰/서비스는미실행,없는0018_runtime추정읽기1은변경0이며발견된0018_execution_observation외추정경로를사용하지않는다.
+
+
+- **FN06 B7 제품 이력 GET source 연결**: framework own data필드 정규화만 보완한 뒤 새HTTP3/OWNERresolver5·기존auth1=9PASS2044.17ms·type/diff0. buildApp→exact GET→기존authenticated callback→같은db OWNER current/store→journal SELECT→reader 제한응답까지 Fastify inject로 연결했다. 같은host/유일HUMANcookie·Bearer불수용·추가/중복query/비정규generation·TURN명시미지원·nonOWNER거절을 확인했다. 현재는 fake認証/DB와 미발견응답을 쓴 source 주입이며 실제HUMAN토큰·PG/리스너/served UI·참된원receipt의HTTP경로는 아직 미검증이다. 검증하지않은 실제 저장/Agent연결 완료로 승격하지않고 다음수신영속adapter를진행한다.
+
+
+- **FN06 B7 400 원인 분리**: route추가후8건 중resolver5PASS/HTTP3FAIL1124.9702ms·type0이며 정상도400이었다. same-origin 제품파라미터를순수JSON의recordV1으로검사한것이원인인지 Fastify실제주입에서params/query의ownkeys/data descriptor·원형을읽기대조했다. 기본params/query는null/Object.prototype직접이아닌null원형의중간prototype이므로recordV1거절임을확인하고 framework산출값의own data필드만복제해기존exact/값검사를그대로유지한다. 인증·범위·기대값/timeout 완화0이며 오류원문/실제DB0이다.
+
+
+- **FN06 B7 HTTP source RED**: buildApp에 제품 GET가 없어 주입3RED/6786.6832ms·원404이다. 정상시험의fetch내statusassert는ApiClient가CONNECTION_LOST로감싸원404를가리는시험문제여서응답관측assert를fetch밖으로옮긴다. 인증callback/동일db·OWNER resolver/journal의제품route를연결하고추가/중복query·TURN미지원·다른host/익명/중복cookie·Bearer를권한으로채택하지않는다. fixture만공유분리했고제품설치/리스너/DB/자원0이다.
+
+
+- **FN06 B6 OWNER resolver 최소 검증**: TS2564 보정 후 optional authSession TS2322 1건은 never arrow의 제어흐름 좁히기 문제로 확인해 명시 function reject():never 선언으로 보정했다. 최종 npm run typecheck·diff0/새5+직접history5=10PASS478.7379ms이다. 현재actor는 private 복제해caller변경을권한으로채택하지않고 최종await후user/session/client/project/member·예약을재검사한다. source/fakeDB 시험이며 실제PG/잠금경합/HTTP/서비스·Agent 증거는 아니다. 다음은 동일 인증 callback에서 OWNER 이력 GET의 실제 route source를 연결하고 영속수신adapter를 이어간다.
+
+
+- **FN06 B6 동작 GREEN/타입 보완**: corrected RED5/174.7551ms 뒤 동일auth db OWNER resolver는5PASS492.4772ms이다. user/session/client→project/member 잠금, 예약 원장/영수증·해시 대조, nonOWNER거절·조회후회수/만료를 확인했으나 typecheck는 constructor의 return reject 분기 때문에 db/identity definite assignment TS2564 2건으로 실패했다. 시험PASS와타입실패를 분리하며 constructor 흐름만 보정하고 새PG/권한/서비스/Agent는 실행하지 않는다.
+
+
+- **FN06 B6 OWNER resolver RED·PMO 순서 승인**: 첫5건 중4RED/1음성거짓통과218.1592ms는 모듈부재를 음성거절로받은 시험문제였으므로 기능존재assert를 음성밖에 두어5RED로 정정했다(기준완화0). PMO는 OWNER 부분경로의 동일auth tx·현재user/session/client/project/member/예약exactref/최종await재검사 구현순서를 수용했다. nonOWNER 명시거절·기존 RESPONSIBLE interface 보존이며 전체권한축소나 새정책부여가 아니다. 실제PG/서비스/Agent0이다.
+
+
+- **2026-10-22 FN06 B6 현재 HUMAN/PG 연결 착수 / Main 어울**: PMO 관제②의 기존 A~C source 계속 지시와45647b21·보호6 보존을 확인했다. 다음은 기존 AccessRepository.authenticated에서 잠근 동일 db/actor의 USER/session/client·project/member·예약을 재조회하는 OWNER history resolver/store와 원자 수신 adapter source/fake검증이다. 기존35/8 성공은 재사용한다. boundBy/reservedBy는 생성자일 뿐 현재 담당 HUMAN 조회허가로 추정할 수 없어 우선 OWNER만 연결·nonOWNER거절, RESPONSIBLE의 정확 별도 근거 필요를 PMO에 공유했다. 실제 정책부여/PG/SQL적용·native/key/credential/Agent·비용/서비스0. 탐색의 없는 책임예약/정책/결과 파일·literal glob os2/123은 읽기실패/변경0이며 동일추정탐색을 중단하고 rg --files로 확인된 기존 access/project-command·assignments/responsible-sessions 및0016을 기준으로 좁혔다. 기억검색 FN06/claim 최신일치0으로 현재 문서/Git만 사용한다.
+
+
 - **FN06 C1/journal 한정 검토 종료·보존 범위**: 두 추가 source 각각 독립 C0/I0·실행/수정0. reader caller의 실제 주체전환/active와 journal caller의 인증/잠금·PG 자료형/SQL/최종응답권한은 미판정으로 유지한다. 이번 소유6경로(새 reader/journal·각 시험·WORK_PLAN/WORK_STATUS)만 기존 Stage B branch checkpoint에 보존한다. 기존 SQL0037/manifest·DB·서비스·실Agent·새 QA 자원0. 다음 미완료는 실제 잠금·HUMAN 현재권한 resolver와 영속 수신 adapter, TURN의 SEND 원장/부모 및 UI 소비이며 FN06/계획 완료는 아니다. 기존 source 성공 검사는 반복하지 않는다.
 
 

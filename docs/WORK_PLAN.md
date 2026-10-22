@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 B6~B8 부분 source 연결**: 현재 HUMAN OWNER의 정확 원 receipt GET을 기존 인증/현재성 잠금·PG SELECT journal에 연결했고, 서명 수신 저장은 nonce 소비 후 같은 transaction의 보호 함수 1회로 claim/원 결과/감사를 staging한다. 직접15PASS1591.9886ms·type/diff0은 합성 DB/Fastify.inject 범위다. pending0037의 INSERT-only 보호 함수·고정 NOLOGIN 소유자/최소 권한은 source만 작성했고 실제 역할/권한/manifest/DB 적용0이다. 독립 B8 I1 source 보정과 제한 재확인, B6/B7 I2 Main TDD 보완을 구분한다. 실제 PG·served UI·RESPONSIBLE nonOWNER·TURN/SEND/STOP/native/Agent는 미완료·미검증이며 전체 FN06 완료가 아니다. 상세 신뢰/위험·롤백은 후보 §7과 WORK_STATUS를 따른다.
+
 - **FN06 C1/DB 조회 source 일부**: exact HUMAN 원 receipt의 브라우저 reader와 caller 잠금 transaction 내 parameterized PG SELECT journal을 작성했다. 신규 reader4RED→4PASS 뒤 서명수신/원장/실history서비스와 메모리연결1건, journal3RED→합계직접8PASS460.7174ms·type/diff0·각 한정 독립C0/I0이다. 과거receipt는 현재사용/허가를 뜻하지 않고 claimHash충돌은 현재읽기권한 뒤 판단한다. actual PG/HTTP 등록/HUMAN resolver·화면 caller/active·TURN/SEND/STOP/native·실Agent와 전체FN06은 미완료다. 제품 화면 사용 완료로 표시하지 않으며 원 SQL 미적용/보호6 보존을 유지한다.
 
 
