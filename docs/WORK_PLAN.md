@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN08 보관 ACK 소비 일부 연결**: exact 보관 OBSERVATIONS 응답을 현재 로컬prefix와 명시대조하고 미전송꼬리·부재/UNKNOWN을 보존한다. 새전송/서명/append/delete·인증/내구/회수/실행승격0이다. 신규3/직접영향36/type/diff·한정독립C0/I0/M0는 메모리합성 증거이며 실제DB/OS/Agent/전체FN08/Stage 완료가 아니다. 기존업무/선행·검수기준은 불변이며 오류/한계는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN08 cached START 관측 회수 일부 연결**: 보관 START page/ref와 원수신기 원장에 연결해 만료 뒤 부분관측 회수를 제공한다. 원장 부재/변조·다른종류/범위를 거절하고 새 START/permit/sign/query0, 수신만/UNKNOWN과 모든 권한false를 유지했다. 신규3/직접영향47/type/diff·한정독립C0/I0/M0는 메모리합성만이며 실제파일내구/DB/OS/Agent·전체FN08/Stage는 미완료다. 기존업무/선행/판정기준은 불변이다.
 
 - **2026-10-22 FN08 정상 STOP 역사 관측 일부 연결**: 정확 보관 REQUEST_STOP과 원중지원장의 관측을 새중지/서명/query 없이 회수한다. 부분회수후page만료재개·중복0/회수false·다른종류/실행 거절의 새2·직접영향37/type/diff는 메모리합성만 확인했다. 기존 실제 stop 권한/기한과 RECOVERY 경계는 불변이며 실제 OS회수/Agent/전체FN08은 미완료다. 상세 한계/독립검토는 WORK_STATUS를 따른다.

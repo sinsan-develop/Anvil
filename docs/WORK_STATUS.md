@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN08 보관 ACK 소비 한정 검수 종료**: compareRecordedAck는 정확 OBSERVATIONS 원batch의 검증된 client 응답만 기존 prefix 내용대조로 연결한다. 새3RED195.3131ms→3PASS233.8928ms 뒤 nullable 타입오류2곳은 거절return으로 보완했다. 최신type0·spool/client 직접영향36PASS475.2394ms/diff0·독립한정 C0/I0/M0(실행/수정0)다. 만료뒤 무재요청·prefix2/local3 미전송꼬리·원ACK/clientref/관측보존·부재/UNKNOWN/다른scope·연산/불완전/변조거절을 합성메모리에서 확인했다. sourceAuthenticated/ackAudited/writer회수/실행false·현재허가승격0이고 실제파일내구/경합·PG/권한/OS/native/Agent/정식served/전체FN08은 미검증·미완료다. 기존 sync/compareAck/execute 의미불변·새 공개계약/SQL/DB/서비스0·보호7/원격실패·0038거절 보존, rollback은 새 내부대조만 일반revert·기록삭제0이다. Native source에 대한 정확 결정은 PMO가 신산님께 전달하며 다른 승인계획 source는 계속한다.
+
+- **FN08 ACK 소비 타입검사 보완**: 새3반례3PASS233.8928ms 뒤 typecheck가 부재 result의 nullable 대조2곳 TS18047로 exit2였다. 거절분기에 명시 return을 붙여 기존fail 동작/검수기준을 유지하고 타입흐름만 좁힌다. 검증 전체PASS로 숨기지 않으며 실제source/네트워크/DB효과0이다.
+
+- **FN08 보관 ACK 미구현 RED**: 신규3반례가 연결메서드 부재로3FAIL195.3131ms였다. exact 보관batch/원응답/원prefix만 대조하고 만료뒤 재서명·전송0, 부재/UNKNOWN/다른scope·연산/불완전/변조원장을 거절하는 내부소비를 구현한다. 미전송꼬리와 원관측/원client기록은 그대로 두며 prefix일치≠전체수신·인증/내구/회수/실행이다. 실제DB/OS/Agent·자원0이다.
+
+- **FN08 보관 서버 ACK 소비 착수**: Main 선정 기존 관측 spool.sync와 compareAck 사이의 explicit 소비를 새 내부 compareRecordedAck로 연결한다. 정확 OBSERVATIONS scope/원 batch operation→client.readRecorded→검증된 ACK→기존 로컬prefix 내용대조만 수행하며 execute/sign/current/query·append/delete0, ACK없음/UNKNOWN/다른scope·원장변조를 성공으로 숨기지 않는다. sourceAuthenticated/ackAudited/writerReleaseVerified/실행권한은 false 유지·현재허가승격0이다. 메모리 TDD만이며 새공개API/SQL/실DB/OS/native/Agent/서비스/비용0. PMO는 native source 미채택 해제만 신산님께 정확 결정 요청하고 독립 구현 계속을 지시했으며 Main은 중복 질문/전체대기를 만들지 않는다. 기존실패/원격추가0/0038거절/보호7은 불변이다.
+
 - **FN08 cached START 관측 회수 한정 검수**: 내부 recordStartObservations를 기존 exact cached page/원START원장/스풀과 연결했다. 새3RED235.9119ms→3PASS333.1584ms/type0, admission+receiver 직접영향47PASS893.2779ms/diff0·독립한정 C0/I0/M0(실행/수정0)다. 부분행·원ref보존/만료뒤재수집중복0·수신만RECEIVED/응답유실UNKNOWN보존·기록부재/다른종류/ref/spool/grant/RECOVERY/변조거절·새start/consume/wire/sign/query0를 합성메모리에서 확인했다. 기존receive/start/기한·원장검증은 불변이며 실제파일내구/경합·PG/권한/OS/native/Agent·정식served/전체FN08은 미검증·미완료다. 새 API/SQL/권한/정식환경0·보호7/원격실패/0038거절 보존, rollback은 새 내부 회수 메서드만 일반revert·원기록삭제0이다. 다음은 스풀→기존 서버 관측 소비의 독립 공백을 대조한다. native 보호 helper의 구현 자체는 §6.3 명시 미채택이므로 고정계약 source작성만 채택하는 정확delta를 PMO에 요청했고 actual/build/root/ACL/키/Agent로 확대하지 않는다.
 
 - **FN08 cached START 미구현 RED**: 신규3반례가 메서드 부재로3FAIL235.9119ms였다. 정상 부분회수/만료 뒤재개·부재/미수신/SEND/STOP/ref/spool/옛grant/RECOVERY·RECEIVED만 보존/UNKNOWN/변조원장 거절을 확인한다. 원송신·기한·권한은 바꾸지 않고 기존 수신 원장을 소비하는 내부 연결만 추가한다. 새 자원/DB/OS/Agent/서비스0이다.

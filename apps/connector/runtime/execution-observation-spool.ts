@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {SyntheticExecutionClient} from './execution-client.ts';
-import {readClientScope} from './execution-ledger.ts';
+import {readClientOperation,readClientScope} from './execution-ledger.ts';
 type Scope={projectId:string;executionId:string;executionGeneration:number};
 type Input=Scope&{eventId:string;type:string;commandId:string;envelopeHash:string;localRecordRef:Ref;processRef:Ref|null;occurredAt:string;reasonCode:string};
 type Event=Input&{sequence:number};
@@ -85,6 +85,17 @@ export class SyntheticObservationSpool{
     return{...base,state:'PREFIX_CONTENT_MATCH' as const,ackRef:cloneV1(claim.ref),claimedHighestContiguous:s.highestContiguous,claimedMaxSequence:s.maxSequence,prefixDigest:digest,gaps:cloneV1(s.gaps)};
    });this.#port();return result;
   }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_ACK_UNAVAILABLE');}
+ }
+ /** 정확 보관 OBSERVATIONS 응답만 로컬 prefix와 대조한다. 재전송/서명·ACK 인증·삭제는 하지 않는다. */
+ async compareRecordedAck(client:SyntheticExecutionClient,rawScope:unknown,rawOperation:unknown){
+  try{
+   this.#port();if(!(client instanceof SyntheticExecutionClient))fail('OBSERVATION_SPOOL_CLIENT_INVALID');const scope=readClientScope(rawScope),operation=readClientOperation(scope,cloneV1(rawOperation),this.#now()).operation;
+   if(operation.kind!=='OBSERVATIONS'||!same({projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration},this.#scope))fail('OBSERVATION_SPOOL_CLIENT_SCOPE_INVALID');
+   const saved=await client.readRecorded(scope,operation);this.#port();const delivery=saved.result;
+   if(saved.readOnly!==true||saved.currentAuthorityVerified!==false||!delivery||delivery.transport!=='SYNTHETIC_ONLY'||delivery.state!=='RESPONSE_RECORDED'||!refV1(delivery.resultRef)||delivery.executionAuthorized!==false||delivery.dispatchPerformed!==false||delivery.writerReleaseVerified!==false||delivery.ackAudited!==false)return fail('OBSERVATION_SPOOL_ACK_RESULT_UNAVAILABLE');
+   const comparison=await this.compareAck(delivery.response.ack);this.#port();
+   return{...comparison,clientResultRef:cloneV1(delivery.resultRef),readOnlySource:true as const,currentAuthorityVerified:false as const};
+  }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_ACK_RESULT_UNAVAILABLE');}
  }
  async sync(client:SyntheticExecutionClient,rawScope:unknown,afterSequence:unknown){
   try{this.#port();if(!(client instanceof SyntheticExecutionClient))fail('OBSERVATION_SPOOL_CLIENT_INVALID');const scope=readClientScope(rawScope);if(!same({projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration},this.#scope))fail('OBSERVATION_SPOOL_CLIENT_SCOPE_INVALID');
