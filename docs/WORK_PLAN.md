@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 local attempt 선행 일부**: 기존 locked journal pair 검증을 handle 생성 없는 readHistory로 분리하고 resolve는 같은 검증을 재사용한다. 직접7합성/type/diff0·독립 한정 C0/I0/M0, 실제 FS/잠금/OS/현재parent/Agent와 binding/headCAS 미완료는 유지한다. 다음은 기존 현재 HUMAN 경계의 원 parent THREAD claim/receipt source 연결이며 실제 supplier 미구현을 완료로 승격하지 않는다.
+
 - **2026-10-23 FN06 D1 원 SEND graph 후속**: 원 command의 HUMAN 허가/감사·예약/outbox 역사 graph를 기존 verifier 재사용으로 연결했다. 직접24합성/type/diff0·한정 독립 읽기 C0/I0/M0이며 실제 current SEND/서명/credential·attempt/parent/OS/writer/provenance·원 binding 발급/headCAS/SQLpendingM1은 미완료다. 다음 source 선행을 이어가며 전체 FN06/계획 완료로 보고하지 않는다.
 
 - **2026-10-23 FN06 D1 원 SEND 이력 일부**: 현재 AUTO 준비/HUMAN 전후·원 SEND/0024 permit·원 proof receipt/소비 challenge를 읽기 결박한 SOURCE를 추가했다. 직접57합성/type/diff0·최종 한정 정적 C0/I0/M0이며 실제 signature/credential 현재성·원 SEND 허가 graph·attempt/parent/OS/writer/provenance·binding/headCAS·SQLpendingM1/actual QA는 미완료다. 과거 두 리뷰 C0/I1/M1과 RED는 WORK_STATUS에 보존한다. 다음은 원 SEND 허가/감사/예약/outbox graph 연결이며 동일 승인 D1 구현을 계속한다.

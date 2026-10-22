@@ -1,5 +1,9 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 잠긴 attempt 이력/handle 생성 분리 — 2026-10-23
+
+SyntheticProviderReaderFactory.readHistory는 기존 sender/stopper exclusive journal lock 안의 readLocked에서 원 SEND_ATTEMPTED→PERMIT_RECORDED(또는 STOP_ATTEMPTED) 구조/hash·선행·선택 binding을 읽어 복사한다. handle build를 호출하지 않는다. resolve는 동일 readHistory 검증 결과의 고정 selection으로 기존 build를 수행한다. 이력 조회는 원장 진위·fsync·현재 parent/OS/실행 권위가 아니며 반환의 해당 false/missingEvidence를 다른 source에서 실제 권위로 자동 채택하지 않는다. 실제 FS/OS 공급자나 신규 endpoint·실행을 등록하지 않는다.
+
 ## FN06 D1 원 SEND 역사 허가 graph 후속 — 2026-10-23
 
 readOwnershipInstructionHistory는 단순 execution_commands 조회 대신 기존 SyntheticPgInstructionQueueStore.read의 고정 graph 검증을 재사용한다. 같은 caller tx에서 authenticateInTransaction actor를 다시 얻고 원 HUMAN command/receipt/audit·예약/outbox를 대조한다. current/claim port는 무조건 거절하며 historical read에서 발급/예약/실전달로 전환하지 않는다. 반환 sendAuthorizationGraphRead=true와 CURRENT_SEND_AUTHORITY 미확인은 서로 다르다. 아래 앞선 원 SEND graph 미연결 기록은 a51d5ac8 시점 이력이며 이번 source 연결로만 갱신한다. proof 서명/실행 credential 현재성·실제 attempt/parent/OS/writer/provenance·원 binding 발급은 여전히 증명되지 않았고 모든 권한 false·실DB/서비스/Agent 실행0이다.
