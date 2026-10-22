@@ -1,5 +1,7 @@
 # FN06 실제 공급자 세션 식별 연결 — 최소 계약 변경 제안
 
+> 2026-10-22 추가 직접 승인: 신산님 ‘네 의견대로 승인해’를 직전 권장 A(native source·전용 source 계약/시험 작성만 채택)에 결박했다. §6.3의 ‘구현 미채택’은 이 source 범위에 한해 승인 전 이력으로 남긴다. 실제 빌드/호출·root/ACL/파일/키/credential 생성·실 handle/Agent/socket/비용/DB/서비스는 계속 제외한다. 첫 구현은 파일/pipe/Main 없는 ProviderHandleStore 암복호 코어와 순수 canonical capsule 코덱이며 실제 저장 host·CREATE/RESOLVE 등록·owner/ACL/정체성·lock/수량/수명·호출자 연결은 아직 미구현이다. C# source 반례는 빌드/실행하지 않았으므로 Node 코덱 시험을 DPAPI/보호 저장 검증으로 승격하지 않는다. 현재 HUMAN 답변에는 message/turn ID가 노출되지 않아 임의 생성하지 않았으며 PMO에는 원문과 정확 권장 A의 기존 trusted 대화 참조를 전달했다.
+
 > 2026-10-22 내부 인증 identity Date 보완: SEND/STOP current의cloneV1(actor)가실제PG reauthUntil Date를거절하는반례2RED를확인하고내부identity만structuredClone으로보존했다. 직접8PASS1410.6103ms/type/diff0에서caller변경/기존current거절을보존한다. wire JSON/허가/정식DB/역할/native/실Agent0·기존실제검증미완료유지,source일반revert가능.
 
 > 2026-10-22 후속 직접 승인: 신산님이 직전 권장 범위에 ‘네 의견대로 승인해’라고 답했다. 원 r2 SHA256 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027을 A~C 코드·테스트·미적용 SQL 작성 기준으로 채택한다. 아래 DRAFT/NOT_ADOPTED·착수0은 승인 전 이력이다. 실제 DB 적용·보호 root/ACL/native helper·실 handle/credential·실Agent/비용은 이번 source 채택에서 제외한다. 원예약·기본 privacy 계약은 보존한다. 후속 구현·검증은 WORK_STATUS/WORK_PLAN을 따른다.
