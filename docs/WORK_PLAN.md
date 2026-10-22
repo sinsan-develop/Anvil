@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 B2~B5 부분 구현**: 인증된 THREAD 수신의 원 START/current/permit 결박·불변 receipt/멱등·같은 transaction 감사·현재 HUMAN의 정확 이력 조회 및 선택적 합성 라우터 소비를 연결했다. 직접6파일35PASS/527.5688ms·type/diff0이며 저장 후 응답 경계 실패는 UNKNOWN503으로 원 기록을 보존한다. 원 r2의 2표에 proofResultRef→최초 claim/receipt의 다대일 보존용 보조표1개를 더하는 PMO 상세 결정을 미적용0037에 반영했다. 기존 SQL/manifest/실 DB 적용0이다. SQL 독립 I2는 신규 forward 내 경로 허용·START digest 대조로 보완·scoped 확인했으나 PG 구문/권한/COMMIT은 미검증이다. 실제 HTTP/HUMAN resolver/영속 adapter·TURN·UI/SEND/STOP 소비·native 보호·실 Agent는 미완료다. 전체 FN06/Stage 완료가 아니며 다음 미구현을 계속한다. 상세 승인·오류·분리 검증은 WORK_STATUS와 FN06 후보 후속 절을 따른다.
+
+
 - **FN06/FN08 B1 서명 대상 부분 연결**: SESSION_CLAIM의 정확 EXECUTION POST target·raw body16KiB와 RECOVERY/다른target재사용 거절을 추가했다. 신규2RED→직접14PASS/type0·독립C0/I0. 실제 수신handler·nonce소비/현재허가·불변 DB 저장/조회·실Agent·전체기능은 미완료이며 후속 구현으로 남는다.
 
 - **2026-10-22 FN06 실제 세션 연결 계약 source 채택·일부 구현**: 신산님 ‘네 의견대로 승인해’로 r2 원 후보 C9D972E7의 코드/시험/미적용SQL 기준을 채택했다. 순수 claim/보호ref 결박·정확 THREAD/TURN 부모/기한 및 기존 codec 기본 digest-only를 보존한 명시 capture port를 구현해32PASS/type0·직접 transport37PASS·독립C0/I0/M0를 확인했다. 실제 native 보호 저장·서버 claim 저장/조회·DB 적용·실Agent·전체FN06은 미완료다. 다음은 서버 수신·receipt/조회 소비이며 실제 부작용은 별도 정확 경계로 유지한다.

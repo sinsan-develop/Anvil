@@ -1,0 +1,260 @@
+-- FN06 r2 + 2026-10-22 PMO proof-result mapping decision. SOURCE ONLY / NOT APPLIED.
+-- THREAD storage first. TURN ingestion and actual host/DB authority are not enabled.
+-- No manifest registration or application DML grant. PG execution/atomicity tests remain required.
+-- Existing SQL/checksums/receipt shapes are unchanged. No DROP/down or automatic deletion.
+CREATE TABLE anvil.provider_session_claims (
+ project_id uuid NOT NULL,claim_id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ execution_id uuid NOT NULL,generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
+ command_id uuid NOT NULL,command_record_id uuid NOT NULL,command_record_version bigint NOT NULL CHECK(command_record_version=1),
+ agent_session_id uuid NOT NULL,agent_session_version bigint NOT NULL CHECK(agent_session_version=1),
+ grant_id uuid NOT NULL,grant_version bigint NOT NULL CHECK(grant_version=1),
+ original_proof_result_id uuid NOT NULL,original_proof_result_version bigint NOT NULL CHECK(original_proof_result_version=1),
+ permit_id uuid NOT NULL,permit_version bigint NOT NULL CHECK(permit_version=1),
+ kind text NOT NULL CHECK(kind='THREAD'),request_id_digest text NOT NULL CHECK(request_id_digest~'^[0-9a-f]{64}$'),
+ event_key text NOT NULL CHECK(event_key~'^[0-9a-f]{64}$'),content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),recorded_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,claim_id,version),UNIQUE(project_id,claim_id),UNIQUE(project_id,event_key),
+ UNIQUE(project_id,execution_id,generation,command_id,kind,request_id_digest),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(project_id,command_record_id,command_record_version) REFERENCES anvil.execution_commands(project_id,id,version),
+ FOREIGN KEY(project_id,agent_session_id,agent_session_version) REFERENCES anvil.agent_sessions(project_id,session_id,version),
+ FOREIGN KEY(project_id,grant_id,grant_version,execution_id,generation) REFERENCES anvil.execution_grants(project_id,id,version,execution_id,generation),
+ FOREIGN KEY(project_id,original_proof_result_id,original_proof_result_version) REFERENCES anvil.execution_receipts(project_id,id,version) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,execution_id,generation,permit_id,permit_version) REFERENCES anvil.execution_start_permits(project_id,execution_id,generation,id,version),
+ -- The adapter must assign the first claim audit event this claimId and write it in the same transaction.
+ FOREIGN KEY(project_id,claim_id) REFERENCES anvil.audit_events(project_id,event_id) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE anvil.provider_session_claim_proof_results (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
+ proof_result_id uuid NOT NULL,proof_result_version bigint NOT NULL CHECK(proof_result_version=1),
+ claim_id uuid NOT NULL,claim_version bigint NOT NULL CHECK(claim_version=1),
+ body_hash text NOT NULL CHECK(body_hash~'^[0-9a-f]{64}$'),receipt_json jsonb NOT NULL CHECK(jsonb_typeof(receipt_json)='object'),
+ PRIMARY KEY(project_id,proof_result_id,proof_result_version),
+ FOREIGN KEY(project_id,execution_id,generation) REFERENCES anvil.executions(project_id,id,generation),
+ FOREIGN KEY(project_id,claim_id,claim_version) REFERENCES anvil.provider_session_claims(project_id,claim_id,version) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,proof_result_id,proof_result_version) REFERENCES anvil.execution_receipts(project_id,id,version) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE anvil.provider_session_claim_revocations (
+ project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),claim_id uuid NOT NULL,claim_version bigint NOT NULL CHECK(claim_version=1),
+ grant_revocation_id uuid NOT NULL,grant_revocation_version bigint NOT NULL CHECK(grant_revocation_version=1),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),recorded_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,claim_id,grant_revocation_id),
+ FOREIGN KEY(project_id,claim_id,claim_version) REFERENCES anvil.provider_session_claims(project_id,claim_id,version),
+ FOREIGN KEY(project_id,grant_revocation_id,grant_revocation_version) REFERENCES anvil.execution_grant_revocations(project_id,id,version)
+);
+REVOKE ALL ON anvil.provider_session_claims,anvil.provider_session_claim_proof_results,anvil.provider_session_claim_revocations FROM PUBLIC;
+GRANT SELECT ON anvil.provider_session_claims,anvil.provider_session_claim_proof_results,anvil.provider_session_claim_revocations TO anvil_v3_app;
+REVOKE INSERT,UPDATE,DELETE ON anvil.provider_session_claims,anvil.provider_session_claim_proof_results,anvil.provider_session_claim_revocations FROM anvil_v3_app;
+
+CREATE FUNCTION anvil.guard_provider_session_claim() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb=NEW.snapshot_json;c jsonb;sc jsonb;r jsonb;field text;
+ g anvil.execution_grants%ROWTYPE;q anvil.execution_commands%ROWTYPE;p anvil.execution_start_permits%ROWTYPE;
+ a anvil.agent_sessions%ROWTYPE;b anvil.role_bindings%ROWTYPE;claim_ref jsonb;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_IMMUTABLE' USING ERRCODE='42501';END IF;
+ c=s->'claim';sc=s->'scope';r=s->'receipt';
+ IF NOT anvil.execution_json_shape(s,ARRAY['scope','eventKey','claim','receipt'])
+  OR NOT anvil.execution_json_shape(sc,ARRAY['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])
+  OR NOT anvil.execution_json_shape(c,ARRAY['schemaVersion','claimId','kind','projectId','assignmentRef','agentSessionRef','responsibleBindingRef','connectionRef','environmentRef','executorRegistrationRef','execution','commandId','envelopeHash','authorizationReceiptRef','permitRef','localAttemptRef','provider','parentThreadClaimRef','protectedHandleRef','source','capturedAt','usableBefore'])
+  OR NOT anvil.execution_json_shape(c->'execution',ARRAY['id','generation'])
+  OR NOT anvil.execution_json_shape(c->'provider',ARRAY['product','version'])
+  OR c->'provider' IS DISTINCT FROM '{"product":"CODEX_APP_SERVER","version":"0.161.0"}'::jsonb
+  OR NOT anvil.execution_json_shape(c->'source',ARRAY['method','requestIdDigest','responseRef','responsePayloadDigest'])
+  OR sc->>'mode' IS DISTINCT FROM 'EXECUTION' OR sc->>'projectId' IS DISTINCT FROM NEW.project_id::text
+  OR sc->>'executionId' IS DISTINCT FROM NEW.execution_id::text OR sc->'executionGeneration' IS DISTINCT FROM to_jsonb(NEW.generation)
+  OR c->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR c->>'kind' IS DISTINCT FROM NEW.kind OR c->>'kind' IS DISTINCT FROM 'THREAD'
+  OR c->>'claimId' IS DISTINCT FROM NEW.claim_id::text OR c->>'projectId' IS DISTINCT FROM NEW.project_id::text
+  OR c->'execution' IS DISTINCT FROM jsonb_build_object('id',NEW.execution_id,'generation',NEW.generation)
+  OR c->>'commandId' IS DISTINCT FROM NEW.command_id::text OR c->'parentThreadClaimRef' IS DISTINCT FROM 'null'::jsonb
+  OR c->'source'->>'method' IS DISTINCT FROM 'thread/start' OR c->'source'->>'requestIdDigest' IS DISTINCT FROM NEW.request_id_digest
+  OR COALESCE(c->'source'->>'responsePayloadDigest','')!~'^[0-9a-f]{64}$' OR COALESCE(c->>'envelopeHash','')!~'^[0-9a-f]{64}$'
+  OR c->'source'->'responseRef'->>'id' IS NOT DISTINCT FROM NEW.claim_id::text
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(c)
+  OR NEW.event_key IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_array(NEW.project_id::text,NEW.execution_id::text,NEW.generation,NEW.command_id::text,NEW.kind,NEW.request_id_digest))
+  OR s->>'eventKey' IS DISTINCT FROM NEW.event_key OR octet_length(anvil.execution_authority_canonical(c))>16384
+  OR NOT anvil.execution_iso_valid(c->'capturedAt') OR NOT anvil.execution_iso_valid(c->'usableBefore')
+  OR (c->>'capturedAt')::timestamptz>NEW.recorded_at OR (c->>'usableBefore')::timestamptz<=NEW.recorded_at
+  OR (c->>'usableBefore')::timestamptz>(c->>'capturedAt')::timestamptz+interval '24 hours' THEN
+  RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_INVALID' USING ERRCODE='42501';END IF;
+ FOREACH field IN ARRAY ARRAY['assignmentRef','agentSessionRef','responsibleBindingRef','connectionRef','environmentRef','executorRegistrationRef','authorizationReceiptRef','permitRef','localAttemptRef','protectedHandleRef'] LOOP
+  IF NOT anvil.execution_preparation_ref_valid(c->field) THEN RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_REF_INVALID' USING ERRCODE='42501';END IF;
+ END LOOP;
+ IF NOT anvil.execution_preparation_ref_valid(c->'source'->'responseRef') OR NOT anvil.execution_preparation_ref_valid(sc->'grantRef')
+  OR c->'protectedHandleRef'->>'id' IS DISTINCT FROM NEW.claim_id::text OR c->'protectedHandleRef'->'version' IS DISTINCT FROM '1'::jsonb
+  OR c->'agentSessionRef'->>'id' IS DISTINCT FROM NEW.agent_session_id::text OR c->'agentSessionRef'->'version' IS DISTINCT FROM to_jsonb(NEW.agent_session_version) THEN
+  RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_REF_INVALID' USING ERRCODE='42501';END IF;
+ claim_ref=jsonb_build_object('id',NEW.claim_id,'version',NEW.version,'contentHash',NEW.content_hash);
+ IF NOT anvil.execution_iso_valid(r->'recordedAt') OR (r->>'recordedAt')::timestamptz IS DISTINCT FROM NEW.recorded_at
+  OR r IS DISTINCT FROM jsonb_build_object('claimRef',claim_ref,'recordedAt',r->'recordedAt','state','PROVIDER_CLAIM_RECORDED','sourceVerification','PROVIDER_CLAIM_ONLY','nonceConsumed',true,'credentialIssued',false,'executionAuthorized',false,'dispatchPerformed',false,'workAccepted',false) THEN
+  RAISE EXCEPTION 'PROVIDER_SESSION_RECEIPT_INVALID' USING ERRCODE='42501';END IF;
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=NEW.grant_id AND version=NEW.grant_version;
+ SELECT * INTO q FROM anvil.execution_commands WHERE project_id=NEW.project_id AND id=NEW.command_record_id AND version=NEW.command_record_version;
+ SELECT * INTO p FROM anvil.execution_start_permits WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation AND id=NEW.permit_id AND version=NEW.permit_version;
+ SELECT * INTO a FROM anvil.agent_sessions WHERE project_id=NEW.project_id AND session_id=NEW.agent_session_id AND version=NEW.agent_session_version;
+ SELECT * INTO b FROM anvil.role_bindings WHERE project_id=NEW.project_id AND binding_id=(c->'responsibleBindingRef'->>'id')::uuid AND version=(c->'responsibleBindingRef'->>'version')::bigint;
+ IF g.id IS NULL OR q.id IS NULL OR p.id IS NULL OR a.session_id IS NULL OR b.binding_id IS NULL
+  OR sc->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash)
+  OR sc->>'connectorId' IS DISTINCT FROM g.snapshot_json->'binding'->'registration'->>'connectorId'
+  OR q.grant_id IS DISTINCT FROM g.id OR q.grant_version IS DISTINCT FROM g.version OR q.execution_id IS DISTINCT FROM NEW.execution_id OR q.generation IS DISTINCT FROM NEW.generation
+  OR q.snapshot_json->'envelope'->>'operation' IS DISTINCT FROM 'START_SESSION' OR q.snapshot_json->'envelope'->>'commandId' IS DISTINCT FROM NEW.command_id::text
+  OR q.envelope_hash IS DISTINCT FROM c->>'envelopeHash' OR q.snapshot_json->'envelope'->'context'->'authorizationReceiptRef' IS DISTINCT FROM c->'authorizationReceiptRef'
+  OR c->'source'->>'requestIdDigest' IS DISTINCT FROM anvil.execution_json_hash(to_jsonb(anvil.execution_json_hash(jsonb_build_object('key',jsonb_build_object('projectId',NEW.project_id,'executionId',NEW.execution_id,'executionGeneration',NEW.generation,'commandId',NEW.command_id),'envelopeHash',q.envelope_hash))))
+  OR q.snapshot_json->'envelope'->'executorRegistrationRef' IS DISTINCT FROM c->'executorRegistrationRef'
+  OR q.snapshot_json->'envelope'->'context'->'connectionRef' IS DISTINCT FROM c->'connectionRef' OR q.snapshot_json->'envelope'->'context'->'environmentRef' IS DISTINCT FROM c->'environmentRef'
+  OR p.content_hash IS DISTINCT FROM anvil.execution_json_hash(p.snapshot_json) OR c->'permitRef' IS DISTINCT FROM jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash)
+  OR p.snapshot_json->'scope' IS DISTINCT FROM sc OR p.snapshot_json->>'commandId' IS DISTINCT FROM NEW.command_id::text
+  OR p.snapshot_json->'request'->>'envelopeHash' IS DISTINCT FROM c->>'envelopeHash' OR p.snapshot_json->'request'->'localAttemptRef' IS DISTINCT FROM c->'localAttemptRef'
+  OR (c->>'capturedAt')::timestamptz<(p.snapshot_json->>'issuedAt')::timestamptz OR NEW.recorded_at>=(p.snapshot_json->>'expiresAt')::timestamptz
+  OR a.content_hash IS DISTINCT FROM c->'agentSessionRef'->>'contentHash' OR b.content_hash IS DISTINCT FROM c->'responsibleBindingRef'->>'contentHash'
+  OR b.session_id IS DISTINCT FROM a.session_id OR b.snapshot_json->'assignmentRef' IS DISTINCT FROM c->'assignmentRef'
+  OR anvil.synthetic_grant_deadline(NEW.project_id,g.id,g.version,g.content_hash) IS NULL THEN
+  RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_BINDING_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'PROVIDER_SESSION_CLAIM_BINDING_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+CREATE FUNCTION anvil.guard_provider_claim_proof_mapping() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.provider_session_claims%ROWTYPE;r anvil.execution_receipts%ROWTYPE;ch anvil.execution_challenges%ROWTYPE;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'PROVIDER_CLAIM_MAPPING_IMMUTABLE' USING ERRCODE='42501';END IF;
+ SELECT * INTO c FROM anvil.provider_session_claims WHERE project_id=NEW.project_id AND claim_id=NEW.claim_id AND version=NEW.claim_version;
+ SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=NEW.project_id AND id=NEW.proof_result_id AND version=NEW.proof_result_version;
+ SELECT * INTO ch FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=1;
+ IF c.claim_id IS NULL OR r.id IS NULL OR ch.id IS NULL OR c.execution_id IS DISTINCT FROM NEW.execution_id OR c.generation IS DISTINCT FROM NEW.generation
+  OR r.grant_id IS DISTINCT FROM c.grant_id OR r.grant_version IS DISTINCT FROM c.grant_version OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(r.snapshot_json)
+  OR NEW.receipt_json IS DISTINCT FROM c.snapshot_json->'receipt' OR NEW.body_hash IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('claim',c.snapshot_json->'claim'))
+  OR ch.snapshot_json->'request'->'target' IS DISTINCT FROM jsonb_build_object('method','POST','path','/api/v1/connectors/'||(c.snapshot_json->'scope'->>'connectorId')||'/executions/'||c.execution_id::text||'/provider-session-claims','queryHash',anvil.execution_json_hash('{}'::jsonb),'bodyHash',NEW.body_hash)
+ THEN RAISE EXCEPTION 'PROVIDER_CLAIM_PROOF_MAPPING_REQUIRED' USING ERRCODE='42501';END IF;RETURN NEW;
+END;
+$$;
+CREATE FUNCTION anvil.guard_provider_claim_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.provider_session_claims%ROWTYPE;m anvil.provider_session_claim_proof_results%ROWTYPE;
+ r anvil.execution_receipts%ROWTYPE;ch anvil.execution_challenges%ROWTYPE;target_path text;
+BEGIN
+ IF TG_TABLE_NAME='provider_session_claims' THEN
+  c=NEW;SELECT * INTO m FROM anvil.provider_session_claim_proof_results WHERE project_id=c.project_id AND proof_result_id=c.original_proof_result_id AND proof_result_version=c.original_proof_result_version;
+ ELSIF TG_TABLE_NAME='provider_session_claim_proof_results' THEN
+  m=NEW;SELECT * INTO c FROM anvil.provider_session_claims WHERE project_id=m.project_id AND claim_id=m.claim_id AND version=m.claim_version;
+ ELSE
+  IF TG_TABLE_NAME='execution_receipts' THEN r=NEW;SELECT * INTO ch FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+  ELSE IF NEW.version<>2 THEN RETURN NULL;END IF;ch=NEW;SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=ch.project_id AND challenge_id=ch.id AND grant_id=ch.grant_id AND grant_version=ch.grant_version;END IF;
+  target_path=COALESCE(ch.snapshot_json->'request'->'target'->>'path',(SELECT c0.snapshot_json->'request'->'target'->>'path' FROM anvil.execution_challenges c0 WHERE c0.project_id=r.project_id AND c0.id=r.challenge_id AND c0.version=1));
+  IF target_path IS NULL OR target_path!~'/provider-session-claims$' THEN RETURN NULL;END IF;
+  SELECT * INTO m FROM anvil.provider_session_claim_proof_results WHERE project_id=r.project_id AND proof_result_id=r.id AND proof_result_version=r.version;
+  SELECT * INTO c FROM anvil.provider_session_claims WHERE project_id=m.project_id AND claim_id=m.claim_id AND version=m.claim_version;
+ END IF;
+ IF c.claim_id IS NULL OR m.proof_result_id IS NULL OR c.claim_id IS DISTINCT FROM m.claim_id OR c.project_id IS DISTINCT FROM m.project_id THEN
+  RAISE EXCEPTION 'PROVIDER_CLAIM_REVERSE_ATOMIC_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO r FROM anvil.execution_receipts WHERE project_id=m.project_id AND id=m.proof_result_id AND version=m.proof_result_version;
+ SELECT * INTO ch FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+ IF r.id IS NULL OR ch.id IS NULL OR ch.grant_id IS DISTINCT FROM c.grant_id OR ch.grant_version IS DISTINCT FROM c.grant_version
+  OR ch.snapshot_json->'consumption'->'resultRef' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash)
+  OR NOT EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=c.project_id AND a.event_id=c.claim_id
+   AND a.target_ref=jsonb_build_object('id',c.claim_id,'version',c.version,'contentHash',c.content_hash)
+   AND a.scope_digest=c.event_key AND a.outcome='RECORDED' AND a.reason_code='PROVIDER_CLAIM_ONLY' AND a.source_kind='PROVIDER_SESSION_CLAIM'
+   AND a.actor_ref->'proofResultRef'=(SELECT jsonb_build_object('id',rr.id,'version',rr.version,'contentHash',rr.content_hash) FROM anvil.execution_receipts rr WHERE rr.project_id=c.project_id AND rr.id=c.original_proof_result_id AND rr.version=c.original_proof_result_version))
+  OR clock_timestamp()>=(c.snapshot_json->'claim'->>'usableBefore')::timestamptz
+  OR clock_timestamp()>=(SELECT (p.snapshot_json->>'expiresAt')::timestamptz FROM anvil.execution_start_permits p WHERE p.project_id=c.project_id AND p.execution_id=c.execution_id AND p.generation=c.generation AND p.id=c.permit_id AND p.version=c.permit_version)
+  OR anvil.synthetic_grant_deadline(c.project_id,c.grant_id,c.grant_version,c.snapshot_json->'scope'->'grantRef'->>'contentHash') IS NULL THEN
+  RAISE EXCEPTION 'PROVIDER_CLAIM_NONCE_AUDIT_ATOMIC_REQUIRED' USING ERRCODE='42501';END IF;RETURN NULL;
+END;
+$$;
+CREATE FUNCTION anvil.guard_provider_claim_revocation() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.provider_session_claims%ROWTYPE;r anvil.execution_grant_revocations%ROWTYPE;s jsonb=NEW.snapshot_json;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'PROVIDER_CLAIM_REVOCATION_IMMUTABLE' USING ERRCODE='42501';END IF;
+ SELECT * INTO c FROM anvil.provider_session_claims WHERE project_id=NEW.project_id AND claim_id=NEW.claim_id AND version=NEW.claim_version;
+ SELECT * INTO r FROM anvil.execution_grant_revocations WHERE project_id=NEW.project_id AND id=NEW.grant_revocation_id AND version=NEW.grant_revocation_version;
+ IF c.claim_id IS NULL OR r.id IS NULL OR r.grant_id IS DISTINCT FROM c.grant_id OR r.grant_version IS DISTINCT FROM c.grant_version
+  OR r.execution_id IS DISTINCT FROM c.execution_id OR r.generation IS DISTINCT FROM c.generation OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(r.snapshot_json)
+  OR NOT anvil.execution_iso_valid(s->'recordedAt') OR (s->>'recordedAt')::timestamptz IS DISTINCT FROM NEW.recorded_at
+  OR s IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'projectId',NEW.project_id,'claimRef',jsonb_build_object('id',c.claim_id,'version',c.version,'contentHash',c.content_hash),'revocationRef',jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash),'recordedAt',s->'recordedAt')
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) THEN RAISE EXCEPTION 'PROVIDER_CLAIM_REVOCATION_BINDING_REQUIRED' USING ERRCODE='42501';END IF;RETURN NEW;
+END;
+$$;
+CREATE TRIGGER provider_session_claim_immutable BEFORE INSERT OR UPDATE OR DELETE ON anvil.provider_session_claims FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_session_claim();
+CREATE TRIGGER provider_claim_mapping_immutable BEFORE INSERT OR UPDATE OR DELETE ON anvil.provider_session_claim_proof_results FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_proof_mapping();
+CREATE TRIGGER provider_claim_revocation_immutable BEFORE INSERT OR UPDATE OR DELETE ON anvil.provider_session_claim_revocations FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_revocation();
+CREATE CONSTRAINT TRIGGER provider_claim_complete AFTER INSERT ON anvil.provider_session_claims DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_complete();
+CREATE CONSTRAINT TRIGGER provider_claim_mapping_complete AFTER INSERT ON anvil.provider_session_claim_proof_results DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_complete();
+CREATE CONSTRAINT TRIGGER provider_claim_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_complete();
+CREATE CONSTRAINT TRIGGER provider_claim_challenge_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_provider_claim_complete();
+REVOKE ALL ON FUNCTION anvil.guard_provider_session_claim(),anvil.guard_provider_claim_proof_mapping(),anvil.guard_provider_claim_complete(),anvil.guard_provider_claim_revocation() FROM PUBLIC;
+
+-- Forward-only copy of 0018 guard: the sole behavioral delta is the exact EXECUTION POST suffix.
+-- Existing grant/current/history/rate/nonce/consumption checks and trigger wiring remain intact.
+CREATE OR REPLACE FUNCTION anvil.guard_execution_challenge() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;g anvil.execution_grants%ROWTYPE;p jsonb;r jsonb;b jsonb;previous anvil.execution_challenges%ROWTYPE;
+ at_time timestamptz=clock_timestamp();deadline timestamptz;event_time timestamptz;last_time timestamptz;prefix text;suffix text;target jsonb;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ s=NEW.snapshot_json;p=s->'publicChallenge';r=s->'request';b=s->'binding';
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=NEW.grant_id AND version=NEW.grant_version;
+ IF g.id IS NULL OR NOT anvil.synthetic_challenge_context(NEW.project_id,NEW.grant_id,NEW.grant_version,b->'grantRef') THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_CURRENT_GRANT_REQUIRED' USING ERRCODE='42501';END IF;
+ deadline=anvil.synthetic_grant_deadline(NEW.project_id,NEW.grant_id,NEW.grant_version,g.content_hash);
+ IF NOT anvil.execution_json_shape(s,ARRAY['sequence','binding','request','requestHash','publicChallenge','previousRef','consumption'])
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(s))>2097152
+  OR s->'sequence' IS DISTINCT FROM to_jsonb(NEW.server_sequence)
+  OR b IS DISTINCT FROM jsonb_build_object('transport','SYNTHETIC_ONLY','mode','EXECUTION','projectId',NEW.project_id,'connectorId',g.snapshot_json->'binding'->'registration'->'connectorId',
+    'executionId',g.execution_id,'executionGeneration',g.generation,'grantRef',jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash),
+    'scopeDigest',g.snapshot_json->'scopeDigest','credentialGeneration',1,'publicKeyFingerprint',g.snapshot_json->'binding'->'registration'->'hostPublicKeyFingerprint')
+  OR NOT EXISTS(SELECT 1 FROM anvil.execution_credentials c WHERE c.project_id=NEW.project_id AND c.grant_id=NEW.grant_id AND c.grant_version=NEW.grant_version AND c.credential_generation=1)
+  OR NOT anvil.execution_json_shape(p,ARRAY['id','requestId','purpose','grantRef','credentialGeneration','scopeDigest','serverNonce','clientNonce','issuedAt','expiresAt'])
+  OR p->>'id' IS DISTINCT FROM NEW.id::text OR p->'requestId' IS DISTINCT FROM r->'requestId' OR p->'purpose' IS DISTINCT FROM r->'purpose'
+  OR p->'grantRef' IS DISTINCT FROM b->'grantRef' OR p->'credentialGeneration' IS DISTINCT FROM '1'::jsonb OR p->'scopeDigest' IS DISTINCT FROM b->'scopeDigest'
+  OR NOT anvil.execution_nonce_valid(p->'serverNonce') OR NOT anvil.execution_nonce_valid(p->'clientNonce') OR p->'clientNonce' IS DISTINCT FROM r->'clientNonce'
+  OR NOT anvil.execution_iso_valid(p->'issuedAt') OR NOT anvil.execution_iso_valid(p->'expiresAt') OR (p->>'issuedAt')::timestamptz>at_time
+  OR (p->>'expiresAt')::timestamptz<=(p->>'issuedAt')::timestamptz
+  OR (p->>'expiresAt')::timestamptz>(p->>'issuedAt')::timestamptz+(CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN interval '2 minutes' ELSE interval '30 seconds' END)
+  OR NOT anvil.execution_json_shape(r,ARRAY['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt'])
+  OR jsonb_typeof(r->'requestId') IS DISTINCT FROM 'string' OR r->>'requestId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR r->'purpose' NOT IN('"CREDENTIAL_EXCHANGE"'::jsonb,'"EXECUTION_REQUEST"'::jsonb) OR r->'grantRef' IS DISTINCT FROM b->'grantRef'
+  OR r->'credentialGeneration' IS DISTINCT FROM '1'::jsonb OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(r) OR NOT anvil.execution_iso_valid(r->'issuedAt') THEN
+   RAISE EXCEPTION 'EXECUTION_CHALLENGE_INPUT_INVALID' USING ERRCODE='42501';END IF;
+ target=r->'target';prefix='/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||g.execution_id::text;
+ suffix=substr(target->>'path',length(prefix)+1);
+ IF NOT anvil.execution_json_shape(target,ARRAY['method','path','queryHash','bodyHash']) OR jsonb_typeof(target->'path') IS DISTINCT FROM 'string'
+  OR target->>'path' IS DISTINCT FROM prefix||suffix OR target->>'path' COLLATE "C" ~ '[[:cntrl:]]'
+  OR target->>'path' ~ '[  ]' OR jsonb_typeof(target->'queryHash') IS DISTINCT FROM 'string' OR target->>'queryHash' !~ '^[0-9a-f]{64}$'
+  OR jsonb_typeof(target->'bodyHash') IS DISTINCT FROM 'string' OR target->>'bodyHash' !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_TARGET_INVALID' USING ERRCODE='42501';END IF;
+ IF r->>'purpose'='CREDENTIAL_EXCHANGE' THEN
+  IF target->>'method' IS DISTINCT FROM 'POST' OR suffix IS DISTINCT FROM '/credential-exchange' THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_TARGET_INVALID' USING ERRCODE='42501';END IF;
+ ELSE
+  IF NOT COALESCE(target->>'method'='GET' AND (suffix='/commands' OR suffix~'^/commands/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/materials/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+    OR target->>'method'='POST' AND (suffix IN('/receipts','/observations','/heartbeat','/provider-session-claims') OR suffix~'^/commands/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/permit$'),false) THEN
+   RAISE EXCEPTION 'EXECUTION_CHALLENGE_TARGET_INVALID' USING ERRCODE='42501';END IF;
+ END IF;
+ IF NEW.server_sequence IS DISTINCT FROM (SELECT COALESCE(MAX(server_sequence),0)+1 FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND grant_id=NEW.grant_id AND grant_version=NEW.grant_version) THEN
+  RAISE EXCEPTION 'EXECUTION_CHALLENGE_SEQUENCE_INVALID' USING ERRCODE='42501';END IF;
+ SELECT * INTO previous FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND id=NEW.id ORDER BY version DESC LIMIT 1;
+ IF NEW.version=1 THEN
+  IF previous.id IS NOT NULL OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb OR s->'consumption' IS DISTINCT FROM 'null'::jsonb
+   OR (p->>'issuedAt')::timestamptz<at_time-interval '30 seconds' OR abs(extract(epoch FROM (r->>'issuedAt')::timestamptz-at_time))>30
+   OR (p->>'expiresAt')::timestamptz>deadline THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_ISSUE_INVALID' USING ERRCODE='42501';END IF;
+  IF (SELECT count(*) FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND grant_id=NEW.grant_id AND grant_version=NEW.grant_version AND version=1)>=10000 THEN
+   RAISE EXCEPTION 'EXECUTION_CHALLENGE_LIFETIME_LIMIT' USING ERRCODE='42501';END IF;
+  IF (SELECT count(*) FROM anvil.execution_challenges c WHERE c.project_id=NEW.project_id AND c.grant_id=NEW.grant_id AND c.grant_version=NEW.grant_version AND c.version=1
+    AND c.snapshot_json->'publicChallenge'->'purpose'=p->'purpose' AND (c.snapshot_json->'publicChallenge'->>'issuedAt')::timestamptz>at_time-interval '1 minute')>=(CASE WHEN p->>'purpose'='CREDENTIAL_EXCHANGE' THEN 5 ELSE 60 END) THEN
+   RAISE EXCEPTION 'EXECUTION_CHALLENGE_RATE_LIMIT' USING ERRCODE='42501';END IF;
+  IF r->>'purpose'='EXECUTION_REQUEST' AND EXISTS(SELECT 1 FROM anvil.execution_challenges c WHERE c.project_id=NEW.project_id AND c.grant_id=NEW.grant_id AND c.grant_version=NEW.grant_version AND c.version=1
+   AND c.snapshot_json->'publicChallenge'->>'purpose'='EXECUTION_REQUEST' AND (c.snapshot_json->'publicChallenge'->>'expiresAt')::timestamptz>at_time
+   AND NOT EXISTS(SELECT 1 FROM anvil.execution_challenges used WHERE used.project_id=c.project_id AND used.id=c.id AND used.version=2)) THEN
+    RAISE EXCEPTION 'EXECUTION_CHALLENGE_ACTIVE' USING ERRCODE='42501';END IF;
+  event_time=(p->>'issuedAt')::timestamptz;
+ ELSE
+  IF previous.version IS DISTINCT FROM 1 OR s->'previousRef' IS DISTINCT FROM jsonb_build_object('id',previous.id,'version',previous.version,'contentHash',previous.content_hash)
+   OR at_time>=(p->>'expiresAt')::timestamptz
+   OR s-ARRAY['sequence','previousRef','consumption'] IS DISTINCT FROM previous.snapshot_json-ARRAY['sequence','previousRef','consumption']
+   OR NOT anvil.execution_json_shape(s->'consumption',ARRAY['proofHash','resultRef','consumedAt']) OR NOT anvil.execution_preparation_ref_valid(s->'consumption'->'resultRef')
+   OR jsonb_typeof(s->'consumption'->'proofHash') IS DISTINCT FROM 'string' OR s->'consumption'->>'proofHash' !~ '^[0-9a-f]{64}$'
+   OR NOT anvil.execution_iso_valid(s->'consumption'->'consumedAt') OR (s->'consumption'->>'consumedAt')::timestamptz>=LEAST((p->>'expiresAt')::timestamptz,deadline)
+   OR (s->'consumption'->>'consumedAt')::timestamptz<(p->>'issuedAt')::timestamptz THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_CONSUMPTION_INVALID' USING ERRCODE='42501';END IF;
+  event_time=(s->'consumption'->>'consumedAt')::timestamptz;
+ END IF;
+ SELECT COALESCE((snapshot_json->'consumption'->>'consumedAt')::timestamptz,(snapshot_json->'publicChallenge'->>'issuedAt')::timestamptz) INTO last_time
+  FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND grant_id=NEW.grant_id AND grant_version=NEW.grant_version ORDER BY server_sequence DESC LIMIT 1;
+ IF event_time>at_time OR event_time<at_time-interval '30 seconds' OR (last_time IS NOT NULL AND event_time<last_time) THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_TIME_INVALID' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'EXECUTION_CHALLENGE_EXACT_CURRENT_HISTORY_REQUIRED' USING ERRCODE='42501';
+END;
+$$;

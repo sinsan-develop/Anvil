@@ -143,4 +143,13 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 채택 후 B 저장 상세 결정
+
+- 부모 승인 r2 SHA256 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027은 보존한다. PMO 위임 결정으로 claims/revocations 2표에 provider_session_claim_proof_results 보조표1개를 추가하는 source/시험/미적용 SQL 차이를 수용했다. 같은 사건의 새 유효 proofResultRef도 최초 claim/receipt로 결박해야 하므로 다대일 매핑이 필요하다. 기존 execution_receipts exact snapshot을 변경하거나 observation ACK 표를 오용하지 않는다.
+- 실제 순서 대조에서 기존 최대0036이므로 예시0030 대신 신규 db/migrations/0037_provider_session_claims.sql.pending만 작성했다. 기존 migration/checksum/manifest 등록·실제 적용은 하지 않았다.
+- 새 보조표는 project/execution/generation·proof/claim fullref·bodyHash/원 receipt를 결박하고 유일성·append-only·nonce/claim/감사 양방향 transaction 완결성을 요구한다. app/PUBLIC의 INSERT/UPDATE/DELETE를 기본 거절하며 새 사용자·실제 정책/권한 부여는 없다. 안전한 실제 adapter/보호 insert 연결과 PG 검증은 후속 미완료다.
+- 독립 정적 검토의 challenge exact POST 경로 및 원 START digest 누락은 신규 forward에서만 보완했다. 구문·실제 canonical hash 동일성·권한/COMMIT/경합 검증을 수행하지 않았으므로 이 파일을 적용 준비 완료라고 부르지 않는다. 실제 SQL 적용 제외는 유지한다.
+- rollback은 미적용 source의 일반 revert이며 실제 DROP/down/기존 SQL 수정은 없다. 이후 적용 승인은 별도 정확 대상·검증·복구 계획을 대조한다. 현재 서비스/Agent·native helper/보호 root/키·credential 생성0이다.
+
+
 검토 요청은 §6의 **상세 source/데이터 계약 후보 채택 여부**다. 채택하더라도 실제 신규 보호root/ACL·helper/key/credential·DB 적용·서비스 복구·실Agent/비용은 각각 기존 별도 실행 경계로 남는다. 현재는 상세설계만 진행했고 A~C 제품 구현/TDD 착수0이다. 공개 endpoint/SQL 파일을 미리 만들거나 미채택 contract를 live manifest에 등록하지 않는다.
