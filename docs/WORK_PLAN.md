@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 native source 채택·FN12/UI05 개별 명령 근거 일부 연결**: 신산님 직접 승인으로 고정 r2 native source 작성만 채택했다. 첫 암복호 코어/코덱 source는 부분 구현이며 실제 native 빌드/호출·파일보호/현재명령 연결은 미구현·미검증이다. 독립 UI05 명령/evidence→동일 제출 등록 원문 연결은 기존 GET 계약만 소비하고 근거 선언/bytes일치와 실제 수행·출처/exit/검수·완료를 구분한다. 새 공개API/SQL/DB/권한/서비스/Agent0, Node·reader 최소 확인 및 화면 build와 실제 클릭/정식served 검증을 분리한다. 전체 Stage/업무 완료로 승격하지 않으며 기존 선행·검수 기준은 유지한다. 구체 오류/검증·다음 작업은 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN08 보관 ACK 소비 일부 연결**: exact 보관 OBSERVATIONS 응답을 현재 로컬prefix와 명시대조하고 미전송꼬리·부재/UNKNOWN을 보존한다. 새전송/서명/append/delete·인증/내구/회수/실행승격0이다. 신규3/직접영향36/type/diff·한정독립C0/I0/M0는 메모리합성 증거이며 실제DB/OS/Agent/전체FN08/Stage 완료가 아니다. 기존업무/선행·검수기준은 불변이며 오류/한계는 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN08 cached START 관측 회수 일부 연결**: 보관 START page/ref와 원수신기 원장에 연결해 만료 뒤 부분관측 회수를 제공한다. 원장 부재/변조·다른종류/범위를 거절하고 새 START/permit/sign/query0, 수신만/UNKNOWN과 모든 권한false를 유지했다. 신규3/직접영향47/type/diff·한정독립C0/I0/M0는 메모리합성만이며 실제파일내구/DB/OS/Agent·전체FN08/Stage는 미완료다. 기존업무/선행/판정기준은 불변이다.
