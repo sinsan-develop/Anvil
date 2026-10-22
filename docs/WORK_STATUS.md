@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 concrete TURN 리뷰 M1 보강**: 독립 C0/I0/M1은 SESSION음성이 부모·자식 불일치에서먼저거절되어 새 envelope세션검사를단독입증하지못한다고지적했다. Main은 부모/자식 모두 같은 다른session으로정합하게재해시한 SESSION_PAIR를추가하여 원SEND세션과만불일치할때 CREATE0·UNKNOWN/재송신0임을 한정1PASS577.859ms/type/diff0으로확인했다. 제품수정/기준완화0·원M1보존, 독립재리뷰합격주장0이다. 기존12PASS는앞선snapshot 영향범위로유지하며 실provider/OS/내구/Agent/DB·연속TURN/전체FN06미판정은변경하지않는다.
+
+- **2026-10-23 FN06 concrete TURN capture 일부 소비 확인**: 기존 THREAD 기본동작을 유지하는 명시kind 내부구현과 TURN강제 wrapper로 SEND의 실제codec수신→정확부모검증/준비→CREATE→결과원장→post current→같은응답rowref를연결했다. 신규2RED294.1328→2PASS603.1216ms, 부모/세션/부모결과누락·pipe/부분receipt실패·post회수·늦은frame소거를보강한 TURN3/기존THREAD4/SEND장벽5 총12PASS843.8344ms. 뒤frame원소undefined 타입1진단은원FAIL보존·명시존재검사로시험만좁힌후type/diff0이다. rawhandle은privatecodec/유한메모리/bytepipe만, metadata원문0·UNKNOWN/permit/wire·capture재발행0을확인했다. 인스턴스는한번의명시capture용이며 연속TURN재사용·실postcurrent공급자/실제준비·결과store내구/OS/native/Agent/정식DB서비스·전체FN06Stage는미구현·미검증으로유지한다. 새공개API/SQL/rootACL/credential/실행/자원0·독립scoped리뷰중이며 기존보호7/거절/원exit1은불변이다.
+
+- **2026-10-23 FN06 concrete TURN capture 착수**: Main은 기존 SEND장벽의 정상RPC→실제codec메모리capture→준비/CREATE/결과원장 공백을선정했다. 기존 THREAD bridge 기본동작을유지하고 내부명시 TURN전용 wrapper로같은 유한capture/준비/결과sync를 재사용한다. TURN은 부모THREAD fullclaim/ref·session/role/execution scope·원response/시도permit/RPC를먼저검사하며 source계약·원장schema/공개API/SQL/권한변경0이다. 신규 TURN소스/한정fixture와시험, 기존bridge의명시kind부분만변경하며 실제post권한provider/내구OS/native/Agent/DB서비스는미구현·미검증으로남긴다.
+
 - **FN06 TURN 장벽 한정 재검토 완료**: source/계약/null·최종sync경계 보정 scoped C0/I0/M0(독립 실행/수정0), 기존M1 문구·시험 해소를확인했다. 전체18·변경직접4·최종sync1/type/diff는각snapshot 한정증거이며 합쳐서새전수실행이라하지않는다. 실제provider/내구/OS권한·DB/Agent미검증·전체FN06/계획미완료를유지하고 소유6파일을기존branch checkpoint로보존한다.
 
 - **FN06 TURN 장벽 구성/null 및 최종sync 역사경계 보완**: Main은 명시null 보호/post두port가 truthy검사에서 digest-only로우회되는 반례 RED412.133ms를확인, definedness/optional형식검사로보완하여 직접4PASS652.4607ms/type0을확인했다. 초기 Select-String 표시줄wrap을patch에사용한 invalidhunk1은 쓰기미적용·원문읽기정정으로분리한다. 독립 C0/I0/M1의 최종sync후기한 계약문구는 수용검사/최종sync진입전실패UNKNOWN 대 성공sync후이미기록된false/UNVERIFIED 과거RPCreceipt로명시구분했고 신규경계1PASS511.2263ms/type/diff0으로 원기록불변/권한승격0·wire/permit1회를확인했다. 실제 postprovider/내구/OS/Agent/정식DB서비스미판정은유지하며 재리뷰진행중이다. 원finding/RED는보존하고 계약/기준을몰래완화하거나성공기록소급삭제하지않는다.

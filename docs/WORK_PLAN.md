@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 concrete TURN capture 일부 연결**: 명시TURN wrapper와공유유한capture처리로 기존SEND→부모준비/CREATE/결과원장/postcurrent·동일응답참조를연결했다. 영향12/type/diff는합성포트범위이며 연속TURN/실postprovider·OS/내구/native/Agent/정식DB서비스/전체FN06는미구현·미검증이다. 원RED/타입진단/한정리뷰와한번capture의한계는WORK_STATUS에보존했다.
+
 - **2026-10-23 FN06 SEND 후 TURN 수용장벽 일부 구현**: PMO source-only 계약분리방향에따라 pre-send IDLE/hash/원장schema를 유지하고 이미전송한사건의보호결과·현재권한을별도검사한다. 신규/인접18/type/diff는합성범위이며 실제postprovider/TURNcapturebridge·OS/Agent/정식DB서비스/전체업무는미완료다. 계약·반례·원RED/검토한계는 WORK_STATUS를따른다.
 
 - **2026-10-23 FN06/UI04 보관 원결과 선택 결박 보완**: 현재목록에서선택한 receipt fullref/기록시각과 원GET결과를대조해다른결과표시를거절한다. 기존GET/schema/권한불변·직접9/type/Vite367/diff확인, 실제served/click/DB/권한/Agent·전체FN06는미검증/미완료이며원FAIL/미정의명령/검토는WORK_STATUS에보존했다.
