@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN05/UI10 정정 보관발언 근거 일부 연결**: 기존 허용 대화목록/발언/원문GET로 명시확인한 사용자발언·지시 참조를 새정정에 선택/해제하고 기존 entry/changeSources/같은명령에 고정한다. 이전원문/출처·지시kind 보존, 합산한도·ownerclient세대/pendingUNKNOWN·CAS/거절/이탈/await변조는 직접17·합성DOM1/typebuild/등록QA잔여0 범위에서 확인했다. 새공개API/SQL·DD166F조회/실DB/권한·Agent0, pagination/전체주체·정식served/실DB저장후조회·현재지시효력/전체FN05/UI10·Stage는미검증·미완료이며 원실패/검토는WORK_STATUS를따른다.
+
 - **2026-10-22 FN05/UI10 정정 보관파일 근거 일부 연결**: 기존 READY 보관 텍스트 원문 확인·명시 선택/해제·기존 정정 저장/유실 같은명령에 파일근거를 고정했다. 이전원문·출처 보존·문서합산200/새본문자리예약·owner/client/세대/pendingUNKNOWN·CAS/조회거절/닫기 후추가GET0을 신규/인접단위12·합성DOM1/typebuild로 확인했으며 등록QA독립잔여0이다. 새공개API/SQL/실DB/권한·Agent0·전체FN05/UI10/Stage미완료, 정식served/DB저장·전체주체는 미검증이고 정확RED/검토/한계는WORK_STATUS를따른다.
 
 - **2026-10-22 FN05/UI10 보관 비교 출처 열기 일부 연결**: 비교한 두 불변 지식 버전의 기존 출처 GET를 각각 연결했다. 각 버전/hash·거절/불일치·비교닫기 지연반응은 신규 합성DOM RED→GREEN1 및 직접 단위6/typebuild로 확인, 일회성QA잔여0. 기존 원문/이력·권한/쓰기계약 불변·새API/SQL/Agent0이며 실제DB/정식served/모든주체·전체업무/Stage 완료로 승격하지 않는다. 원실패·검토와 상세증거는 WORK_STATUS를 따른다.
