@@ -1,16 +1,21 @@
 /** 새 빈 격리 DB의 합성 주장만 저장한다. 실제 Provider/정식 DB 검증이 아니다. */
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,randomBytes,sign,type KeyObject} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {SyntheticExecutionObservations,type ObservationScope,type SyntheticObservationTransaction} from '../../../apps/server/modules/executions/execution-observations.ts';
 import {SyntheticPgObservationStore} from '../../../apps/server/modules/executions/execution-observation-store.ts';
+import {SyntheticPgChallengeStore} from '../../../apps/server/modules/executions/execution-challenge-store.ts';
+import {SyntheticExecutionChallenges} from '../../../apps/server/modules/executions/execution-challenges.ts';
+import {executionChallengeRequestBytes} from '../../../apps/server/modules/executions/execution-proof.ts';
 import {readStoredObservationPage} from '../../../apps/web/src/features/session-detail/observation-journal-api.ts';
 import type {ApiClient} from '../../../apps/web/src/api/client.ts';
 import type {Pool} from 'pg';
 
-export async function verifyObservationPages(v:{pool:Pool;app:any;client:ApiClient;result:any;headers:Record<string,string>;outsiderToken:string;spki:string;scope:ObservationScope;envelope:any;cases:string[]}){
+export async function verifyObservationPages(v:{pool:Pool;app:any;client:ApiClient;result:any;headers:Record<string,string>;outsiderToken:string;spki:string;privateKey:KeyObject;scope:ObservationScope;envelope:any;cases:string[]}){
  const {pool,scope}=v,store=new SyntheticPgObservationStore(pool,{transport:'SYNTHETIC_ONLY',key:async()=>v.spki});
  const service=new SyntheticExecutionObservations({transport:'SYNTHETIC_ONLY',transaction:async<T>(s:ObservationScope,body:(tx:SyntheticObservationTransaction)=>Promise<T>)=>{try{return await store.transaction(s,body);}catch(e:any){const code=typeof e?.code==='string'&&/^[A-Z0-9_]{1,64}$/.test(e.code)?e.code:'NONE',reason=typeof e?.message==='string'&&/^[A-Z][A-Z0-9_]{1,80}$/.test(e.message)?e.message:'REDACTED';v.cases.push('OBSERVATION_STORE_FAILURE_'+code+'_'+reason);throw e;}}});
+ const request={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:scope.grantRef,credentialGeneration:1,target:{method:'POST',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/observations',queryHash:'c'.repeat(64),bodyHash:'d'.repeat(64)},clientNonce:randomBytes(32).toString('base64url'),issuedAt:new Date().toISOString()};
+ const issued=await new SyntheticExecutionChallenges(new SyntheticPgChallengeStore(pool,{transport:'SYNTHETIC_ONLY',key:async()=>v.spki})).issue(scope,request,sign('sha256',executionChallengeRequestBytes('EXECUTION',request),{key:v.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url'));assert(issued.ref);v.cases.push('SYNTHETIC_CREDENTIAL_CHALLENGE_PRECONDITION_STORED_NO_EXECUTION_TOKEN');
  const event=(sequence:number)=>({projectId:scope.projectId,executionId:scope.executionId,executionGeneration:1,sequence,eventId:randomUUID(),type:'UNKNOWN',commandId:v.envelope.commandId,envelopeHash:v.envelope.envelopeHash,localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date().toISOString(),reasonCode:'PROVIDER_RESPONSE_LOST'});
  const ingest=async(events:ReturnType<typeof event>[])=>service.ingest(scope,{events,batchHash:contentHash(canonicalJson(events))});
  const count=async()=>{const out:Record<string,number>={};for(const table of ['execution_observations','execution_acknowledgements','result_submissions','commands','authorization_receipts','audit_events'])out[table]=(await pool.query('SELECT count(*)::int n FROM anvil.'+table)).rows[0].n;return out;};

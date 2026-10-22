@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **FN13 저장 실패 원인 확정·진단 종료**: exact46cd74bf 신규1회진단exit1에서 원 SQLSTATE42501/SYNTHETIC_CREDENTIAL_CHALLENGE_REQUIRED를 확인했다. 이는 새QA fixture가 기존 credential과 challenge의 동시보관 선행을 생략한 오류이며 제품 페이지 실패/권한완화 근거가 아니다. 기존0018 지연제약과 기존 observation-workflow prepare의 issue 선행을 대조한다. 원문files2/dirs5/closeFailures0/rootCleanupFailedfalse·runner cleanupFailurefalse/bootstrap status1 safe1 path_exists0, 별도SSH경로/PG/net잔여0확인. 기존 보호함수/SQL/역할은 유지하고 동일합성grant의 P256 challenge issue 선행만 새QA에 보완해 실패반례를 다시 확인한다. 실제Provider/정식DB/서비스0.
+
 - **FN13 저장 오류 경계 조사**: 별도SSH에서전용경로/PG/net잔여0확인exit0. 실제실패는SyntheticExecutionObservations가다른원인을일반StorageUnavailable로감싸므로새QA wrapper에원transaction의SQLSTATE/대문자상수코드만남기는진단을추가한다. SQL/값/키/DSN/오류본문출력0·제품저장/권한/timeout/기준변경0. 원인미확정에서수정하지않고새exactSHA의1회진단만수행하며같은실패맹목반복0이다.
 
 - **FN13 실제 관측페이지 첫 실행 FAIL**: exact c478967b 신규 빈 전용PG의59SQL/app 비관리자 선행은 통과했으나 OBSERVATION_PAGES_ACTUAL_PG에서 OBSERVATION_STORAGE_UNAVAILABLE로 exit1이다. 새관측 저장에 도달했으며 페이지양성0/원인미확정, 앞선 fixture/브라우저PASS로 대체하지 않는다. 원문 시험files2/dirs5·closeFailures0/rootCleanupFailedfalse, runner cleanupFailurefalse/최종bootstrap status1 safe1 path_exists0. 별도잔여확인 후 같은오류의 실제 원인을 secret-safe로 좁히며 자동 반복/SQL우회/정식DB·서비스변경0이다.
