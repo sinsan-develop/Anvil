@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10 근거 조회 실제 저장 소비 준비**: 기존 정상 검수 seed 후 신규 조회만 소비하는 전용 opt-in·61개 기존 SQL의 disposable lab·유한 실행/회수 wrapper를 준비했다. helper/guard10PASS/type/diff/bash-n0·한정 독립 C0/I0/M0는 source 범위이고 실제 PG/run·회수/served/Agent 증거는 아직 없다. clone 전 trap bootstrap·exact 후보의 격리 실행 및 독립 잔여 확인이 다음 미완료이며 신규 bound 저장/0038은 제외한다.
+
 - **2026-10-22 FN10 서버 원검수 근거 연결 진행**: PMO가 정확 readonly GET next-action-basis1개·기존UI소비전환 계약을채택했다. 기존검수/원제출/확정임무/현재방법론reader를같은인증tx에서대조하며회원잠금·적용본최종재조회·세션기한/COMMIT후검사·no-store를연결했다. 화면은정확선택/ref/hash·두action/falseflags검사뒤새GET만소비·무fallback이다. RED→GREEN 후 집중/인접27PASS1397.5709ms/typecheck/build/diff0. 실제PG/served화면/완료판정·실scheduler/queue진행은미검증또는미구현이며전체FN10완료아니다.
 
 - **2026-10-22 FN06 OWNER 조회 핵심 확인**: ad5cd1d2의새빈PG HISTORY_READ exit0에서정상seed→OWNER목록/정확receipt Webreader소비·타인/무인증거절비노출·GET6원장불변을확인했다. 불변예약원장잠금만제외/c잠금·현재권한/30초창유지·권한추가0이다. 독립잔여0·정식3불변,원b42/d079FAIL보존·schema/ATOMIC반복0. 실제served화면/nativeAgent/Provider/currentOS와전체FN06·Stage는미완료이며FN10독립구현공백을이어확인한다.

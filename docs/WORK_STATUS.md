@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 FN10 근거 조회 실제 소비 후보 source 보존**: 담당 어울. 기존 정상 검수 seed 직후 원 검수·확정 임무 GET→실 Web reader·타인404/익명401/query400 고정 DTO·6표 행수 불변만 수행하는 opt-in을 연결했다. 새 guard/schema는 실제 파일명0026_result_review_criteria/0027·기존59 합계61, manifest9fd3dab149805174bc81b0abab14272adcc235ecff0eb902f19043bc5b40eb73이다. 원 M1·runner I2를 반례로 보완해 최종 새 helper/guard10PASS277.7265ms/typecheck/diff0·wrapper bash-n0, 각 scoped 재검토 C0/I0/M0(실행0). pool 예산/close 예외를 격리하고 raw child/error 원문 대신 고정 출력만 재구성했다. 중간 문구 혼입은 한국어로 바로잡았고 원 실패 이력은 보존한다. 실제 PG/run·timeout/회수·served/Agent·전체 FN10은 미검증/미완료다. 실행 전 후보 문서 FN10_NEXT_ACTION_BASIS_READ_CANDIDATE.md에 자원/수명/정리를 등록했으며 clone 전 trap bootstrap·exact 게시 후보 실행 경계와 독립 잔여 확인을 다음 조치로 남긴다. 보호6/pending1·bound 저장/0038·정식 DB/서비스 변경0.
+
+- **FN10 실행 전 runner 중요 지적2건**: 기존 회수 패턴 재사용본의 pool 예산 계산 예외가 finally 후속 PG/net 회수를 건너뛰고, child SAFE 행·상위 오류 code/position의 원문 출력에 누출 가능성이 있다는 독립 C0/I2/M0(실행0)를 받았다. 실제 생성/실행 전에 차단했으며 개별 pool 정리 예외 격리·고정 출력 재구성을 반례로 보완한다. schema 실제 파일명 오기0026_result_criteria ENOENT는 inventory의0026_result_review_criteria로 정정해 guard3PASS248.8422ms·type0, --plan61/manifest9fd3dab149805174bc81b0abab14272adcc235ecff0eb902f19043bc5b40eb73/actualfalse다. 신규 wrapper bash-n0·helper/guard8PASS279.3622ms도 실제 회수 PASS는 아니다.
+
+- **FN10 읽기 QA 실행 경계 준비**: code M1은 반례 뒤 16 PASS(1136.4502ms)/typecheck/diff0·scoped 재검토 C0/I0/M0로 보완했다. 실제 저장 소비를 위한 고정 빈 경로/10분 기한·정확61 SQL·ID/owner/tmpfs 회수 guard 반례3건이 미구현 RED(exit1,120.3097ms)이며 해당 실행 경계만 작성한다. 생성/실행은 아직0이고 정식 DB/서비스·Agent 변경0이다.
+
+- **FN10 조회 QA 한정 검토 M1**: 독립 C0/I0/M1(실행0). 정확 오류 DTO 검사에서 상태만 맞으면 다른 대문자 code도 허용하는 시험 공백이며 실제 제품 누출 발견은 아니다. 원 구현의 타인 NOT_FOUND/익명 AUTH_REQUIRED/query INPUT_INVALID를 대조했고 code만 다른 반례가 기대 거절 없이 1 FAIL(exit1,161.6169ms)임을 확인했다. 해당 code 결박만 보완한다. 자료 탐색 중 존재하지 않는 FN12 보고 폴더 os2는 실제 inventory 조회로 보정했다. 실제 PG/Agent/서비스 변경0.
+
+- **FN10 조회 QA 연결 중 타입 보완**: helper 3 PASS 후 전용 flag/기존 검수 seed 연결 4 PASS(182.9772ms). 타입 검사에서 기존 확정 명령 응답은 ref/snapshot만 있어 화면 조회 타입의 projectId/observedAt이 없음을 발견했다(TS2739 1건). 임의 필드를 채우지 않고 기존 인증된 확정 임무 GET를 소비해 보완한다. apply_patch 부모 디렉터리 생성 실패1건은 신규 FN10 테스트 디렉터리만 생성해 해결했다. 실제 PG/Agent 실행0, 원장 검증 표시는 내용 전체가 아니라 행수 불변으로 정확히 한정한다.
+
+- **2026-10-22 FN10 저장 자료 조회 검증 준비 착수**: 담당 어울. 승인된 readonly 근거 GET의 기존 Web reader 소비·타인/익명/추가 query 거절 비노출·조회 전후 원장 불변을 분리 검증할 helper 반례3건이 미구현으로 RED(exit1,135.5036ms)다. 기존 정상 검수 seed 직후에만 연결해 옛 후속 검수/원자성 시험은 반복하지 않는다. 실제 PG/자원 생성은 아직0이며 exact 후보·수명·회수 패킷 전 실행하지 않는다. 잘못 추정한 FN06 조회 helper 경로 읽기 os2는 제품 오류와 분리하고 실제 import/inventory만 따른다. bound 저장/0038·정식 DB·서비스·Agent 변경0이다.
+
 - **2026-10-22 FN10 건별 종료 경계 최소 수정 검증**: 기존 END_BOUNDARY 조건을 일반 CASE 대기 앞에 이동했다(제품 1줄 순서 변경). 신규 반례 RED 뒤 직접 14 PASS(686.6487ms), 서버 근거/화면 reader 인접 포함 25 PASS(1021.0666ms), typecheck·diff 검사 exit0. 기존 reviewer 한정 C0/I0/M0, 독립 실행·수정0. 진행 중 유지·미검수 대기·일반 CASE 대기·AUTO와 실행 false는 보존했다. 실제 scheduler·DB·브라우저·Agent 검증은 아니며 전체 FN10/계획 미완료다. 새 저장 계약/0038은 미적용·미작성이고 보호 자료와 pending 반례는 제외한다.
 
 - **2026-10-22 FN10 건별 종료 경계 반례**: 담당 어울. 수락된 명시 종료/최종 노드가 CASE_BY_CASE에서 END_BOUNDARY 대신 WAIT_USER_NEXT_STAGE가 되는 기존 조건 순서 결함을 재현했다. 집중 검사 13 PASS/1 FAIL, exit1(268.3703ms). 진행 중 임무 유지·미검수 결과 대기는 보존하고, 기존 종료 경계 조건을 일반 건별 대기보다 먼저 평가하는 최소 수정만 수행한다. 합성 후보 계산 범위이며 실제 scheduler·DB·Agent 실행은 미검증이다. 별도 명령 읽기 심사의 시간 초과는 허용된 1회 재시도로 현재 HEAD fc8101c8와 소유 테스트 변경만 확인했으며 권한 변경은 없었다.
