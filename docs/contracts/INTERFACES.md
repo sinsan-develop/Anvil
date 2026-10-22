@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 기존 writer claim 이력 소비 — 2026-10-23
+
+`readOwnershipWriterClaimHistory(db,access,token,csrf,intent)`는 같은 caller transaction의 현재 intent HUMAN/OWNER·정책/등록 아래 기존0017 writer_claims를 최대200개 읽고 전후 기한/주체를 검사한다. HISTORY_ONLY·claims/historyHash·hasUnreclaimedClaim·writerState=UNKNOWN·writerReleaseVerified=false·준비/실행/dispatch=false와 실제 권위/OS·source WRITE 회수/출처 미확인 항목을 반환한다. 원 grant/command의 전체 승인 체인을 검증한 객체가 아니며 행이 없거나 recordedReclaimedAt이 있어도 실제 NONE/안전 회수로 승격하지 않는다.
+
+준비 staging의 신규 저장에서는 미회수 claim을 만료와 무관 차단하고 저장전후 이력 hash·기한을 대조한다. 기록된 회수 자료가 조회 사이 만료될 때 파생 recordedExpired로 hash가 달라 불필요 rollback할 수 있는 M1은 후속 원필드 hash/관측 표시 분리 대상으로 남긴다. 이것을 권한 허용으로 완화하지 않는다. DML/실회수·새 table/실행 정책·DB 적용은 하지 않는다.
+
 ## FN06 D1 최초 준비 원자 owner — 2026-10-23
 
 `SyntheticOwnershipPreparationStore(pool,access,prerequisites=null,{timeoutMs:10000}).prepare(token,csrf,intent,{intentId,commandId,eventId},signal)`는 기본 연결0의 합성 전용 owner다. 기존 staging·같은 current intent basis와 원 receipt reader를 소비해 AUTO 최초 준비의 원 command/receipt/audit→PREPARATION_GRANTED·project slot을 한 transaction으로 묶는다. 기존 준비 이력이 있는 project나 같은 세대 head를 자동 재사용하지 않으며 REQUIRE·actual writer/회수/출처 근거 부재를 허가로 바꾸지 않는다. 과거 command replay는 HISTORY_ONLY·새 event0이며 신규 결과는 SYNTHETIC_OWNERSHIP_PREPARATION_COMMIT_ONLY·모든 권한false다.

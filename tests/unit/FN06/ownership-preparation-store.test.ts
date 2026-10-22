@@ -16,6 +16,7 @@ async function fixture(){const f=await ownershipHumanBasisFixture(),p=f.prep.sna
   if(sql==='SELECT transaction_timestamp() AS at')return{rows:[{at:f.now}]};
   if(sql.includes('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:state.commands.filter((r:any)=>r.command_id===args[2])};
   if(sql.includes('FROM anvil.execution_ownership_heads'))return{rows:[]};
+  if(sql.includes('FROM anvil.writer_claims'))return{rows:[]};
   if(sql.includes('MAX(project_sequence)'))return{rows:[{next_sequence:state.events.length+1}]};
   if(sql.includes('FROM anvil.execution_ownership_events'))return{rows:sql.includes("kind='PREPARATION_GRANTED'")?state.events.slice(-1):state.events.filter((r:any)=>r.event_id===args[3])};
   if(sql.startsWith('INSERT INTO anvil.commands')){state.commands.push({id:args[0],scope_kind:'PROJECT',scope_id:args[1],project_id:args[1],draft_id:null,actor_id:args[2],client_id:args[3],operation:args[4],command_id:args[5],request_hash:args[6],operation_id:args[7],state:'APPLIED',authorization_receipt_id:args[8],approval_consumption_id:args[9],expected_version:args[10],control_generation:args[11],policy_ref:JSON.parse(args[12]),payload_ref:null,result_ref:JSON.parse(args[14]),received_at:f.now,completed_at:f.now});return{rows:[],rowCount:1};}

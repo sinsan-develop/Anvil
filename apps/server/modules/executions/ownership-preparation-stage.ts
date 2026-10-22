@@ -5,6 +5,7 @@ import {AccessRepository,AuthFailure} from '../access/repository.ts';
 import {persistProjectReceipt,projectReplay,type ProjectCommand} from '../access/project-command.ts';
 import {readOwnershipPreparationIntentBasis} from './ownership-human-basis.ts';
 import {planOwnershipPreparationIntent} from './ownership-preparation-intent.ts';
+import {readOwnershipWriterClaimHistory} from './ownership-writer-history.ts';
 
 const fail=():never=>{throw new AuthFailure('OWNERSHIP_PREPARATION_STAGE_UNAVAILABLE',412);};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
@@ -35,6 +36,7 @@ export async function stageSyntheticOwnershipPreparationIntent(db:PoolClient,acc
    return{purpose:'SYNTHETIC_OWNERSHIP_PREPARATION_REPLAY_HISTORY_ONLY' as const,result,preparationAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }
   if((await query("SELECT * FROM anvil.execution_ownership_events WHERE project_id=$1 AND kind='PREPARATION_GRANTED' ORDER BY project_sequence DESC LIMIT 1",[request.projectId])).rows.length)return fail();
+  const writerHistory=await readOwnershipWriterClaimHistory(db,access,token,csrf,intent);stable();if(writerHistory.hasUnreclaimedClaim)return fail();
   // 이 최초 슬롯 경로는 기존 준비/전임 writer의 회수를 가정하지 않는다.
   const getInputs=async(floor:number)=>{
    stable();const raw=cloneV1(await current!.call(port,db,cloneV1(intent)));stable();
@@ -56,6 +58,8 @@ export async function stageSyntheticOwnershipPreparationIntent(db:PoolClient,acc
   for(const k of ['scope','subject','policyRef','registrationRef','publicKeySpki','approvalRequired','intentHash'] as const)if(!same(first[k],last[k]))return fail();
   const final=await getInputs(Math.max(observed.now,Date.parse(last.checkedAt)));
   if(!same(observed.value.writer,final.value.writer)||!same(observed.value.candidate,final.value.candidate)||Date.parse(intent.expiresAt)>Date.parse(last.expiresAt)||final.now>=Date.parse(intent.expiresAt))return fail();
-  return{purpose:'SYNTHETIC_OWNERSHIP_PREPARATION_INTENT_STAGED_ONLY' as const,result,intentRef:cloneV1(plan.intentRef),commandRef:{id:stored.id,version:1,contentHash:plan.requestHash},authorizationReceiptRef:cloneV1(stored.authorizationReceiptRef),auditRef:{id:a.event_id,version:1,contentHash:hash(audit)},checkedAt:new Date(final.now).toISOString(),expiresAt:intent.expiresAt,missingEvidence:['VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE','ATOMIC_PREPARATION_EVENT_AND_SLOT_COMMIT'] as const,preparationAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  const finalHistory=await readOwnershipWriterClaimHistory(db,access,token,csrf,intent);stable();
+  if(finalHistory.hasUnreclaimedClaim||finalHistory.historyHash!==writerHistory.historyHash||Date.parse(finalHistory.checkedAt)<final.now||Date.parse(intent.expiresAt)>Date.parse(finalHistory.expiresAt))return fail();
+  return{purpose:'SYNTHETIC_OWNERSHIP_PREPARATION_INTENT_STAGED_ONLY' as const,result,intentRef:cloneV1(plan.intentRef),commandRef:{id:stored.id,version:1,contentHash:plan.requestHash},authorizationReceiptRef:cloneV1(stored.authorizationReceiptRef),auditRef:{id:a.event_id,version:1,contentHash:hash(audit)},checkedAt:finalHistory.checkedAt,expiresAt:intent.expiresAt,missingEvidence:['VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE','ATOMIC_PREPARATION_EVENT_AND_SLOT_COMMIT'] as const,preparationAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
  }catch{return fail();}
 }
