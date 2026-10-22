@@ -7,7 +7,7 @@
 ## 1. 코드와 선행
 
 - 기존 branch codex/av3-stage-b의 clean/private 동일 exact SHA만 새 빈 Git checkout으로 가져온다. 원격은 git@github-sinsan-develop:sinsan-develop/Anvil.git이다.
-- 실행기: scripts/next-action-basis-isolated-qa.ts, wrapper: scripts/next-action-basis-qa-launch.sh.
+- 실행기: scripts/next-action-basis-isolated-qa.ts, wrapper: scripts/next-action-basis-qa-launch.sh. 시작 절차 scripts/next-action-basis-qa-bootstrap.sh는 clone 전에 trap을 설치하고 exact SHA를 인자로 받는다. 부모는 parent cwd에 머물러 자식의 열린 process 검사를 방해하지 않는다.
 - child: 기존 tests/integration/FN12/result-submission-isolated.test.ts의 정상 검수 저장 seed 후 신규 NEXT_ACTION_BASIS_READ만 수행하고 즉시 종료한다. FN12_RESULT_REVIEW_QA=1과 FN10_NEXT_ACTION_BASIS_QA=1의 조합만 허용한다.
 - schema: 기존 59개 + 0026_result_review_criteria + 0027_result_reviews 정확61개, manifest SHA256 9fd3dab149805174bc81b0abab14272adcc235ecff0eb902f19043bc5b40eb73. 기존 SQL·정식 migration 등록은 변경하지 않는다. 0037/0038 제외.
 
