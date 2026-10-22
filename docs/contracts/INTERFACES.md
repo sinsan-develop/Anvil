@@ -10,7 +10,7 @@
 
 `readOwnershipWriterClaimHistory(db,access,token,csrf,intent)`는 같은 caller transaction의 현재 intent HUMAN/OWNER·정책/등록 아래 기존0017 writer_claims를 최대200개 읽고 전후 기한/주체를 검사한다. HISTORY_ONLY·claims/historyHash·hasUnreclaimedClaim·writerState=UNKNOWN·writerReleaseVerified=false·준비/실행/dispatch=false와 실제 권위/OS·source WRITE 회수/출처 미확인 항목을 반환한다. 원 grant/command의 전체 승인 체인을 검증한 객체가 아니며 행이 없거나 recordedReclaimedAt이 있어도 실제 NONE/안전 회수로 승격하지 않는다.
 
-준비 staging의 신규 저장에서는 미회수 claim을 만료와 무관 차단하고 저장전후 이력 hash·기한을 대조한다. 기록된 회수 자료가 조회 사이 만료될 때 파생 recordedExpired로 hash가 달라 불필요 rollback할 수 있는 M1은 후속 원필드 hash/관측 표시 분리 대상으로 남긴다. 이것을 권한 허용으로 완화하지 않는다. DML/실회수·새 table/실행 정책·DB 적용은 하지 않는다.
+준비 staging의 신규 저장에서는 미회수 claim을 만료와 무관 차단하고 저장전후 이력 hash·기한을 대조한다. historyHash는 원 저장 필드만 포함하며 관측시각 파생 recordedExpired는 응답 표시로 분리한다. 이미 회수된 동일 이력의 시간 경과만으로 hash를 바꾸지 않지만 실제 행/회수 필드가 변경되면 계속 거절한다. 이 분리를 실제 NONE/안전 회수 권한으로 승격하지 않는다. DML/실회수·새 table/실행 정책·DB 적용은 하지 않는다.
 
 ## FN06 D1 최초 준비 원자 owner — 2026-10-23
 

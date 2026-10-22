@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 writer-history M1 후속**: 원 저장 이력 hash와 관측시각별 만료 표시를 분리해 같은 회수 이력의 시간 경과만으로 준비를 취소하던 문제를 Main 반례 RED→GREEN으로 보완했다. 직접40/type/diff는 WORK_STATUS를 따르며 독립 재리뷰/실제PG·권위 검증으로 승격하지 않는다. 실제 이력 변경/미회수 차단·UNKNOWN/false와 별개 SQLpendingM1은 유지한다.
+
 - **2026-10-23 FN06 D1 0039 SOURCE 행 구조 일부**: 미적용 정확5표의 snapshot hash/row scope·ref/schema·false flag 모양 guard를 추가했으나 무조건 거절/RLS false/미등록은 유지한다. diff0·한정 읽기 C0/I0/M0는 source 대조뿐이며 실제 SQL syntax/PG 동작은 NOT_RUN/UNVERIFIED다. payload/currentauth/crypto/실제권위·deferred COMMIT M1 및 전체 D1/FN06는 미완료다.
 
 - **2026-10-23 FN06 D1 writer 원자료 일부**: 기존 SYNTHETIC_CLAIM 이력 reader와 새 준비의 미회수 claim 추가 차단을 연결했다. 빈 이력/회수 시각은 실제 NONE/OS 회수 증거가 아니며 UNKNOWN/권한false를 유지한다. 직접38/type/diff·독립 C0/I0/M1(시각 파생 hash의 보수적 rollback 이월)은 WORK_STATUS를 따른다. 실제 writer 권위·OS 회수/provenance·DB/키/native/Agent 연결과 전체 FN06/계획은 미완료다.
