@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN06 D1 서버 원 요청 계획 source — 2026-10-23
+
+`apps/server/modules/executions/ownership-request-event.ts`는 원 준비/tail과 SYNTHETIC_ONLY 후보 anchor 또는 채택 head의 구조/hash/phase/최소 기한을 대조하고 서버 nonce32·새 사건 UUID로 비순환 REQUESTED 계획을 만든다. `tests/unit/FN06/ownership-request-event.test.ts`가 기존 서명/인증 수용 source와 합성 연결한다. 후보 provenance·현재 정책/등록/writer·project slot/원자 발급 저장·COMMIT/송신은 아직 소유하지 않는다. 반환은 PLAN/false권한이며 route 미등록이다. 별도 인증 소비 source는 기존 access/repository.ts와 executions/ownership-archive.ts에 있고 실제 DB 동작 검증은 아니다.
+
 ## FN06 D1 관측 수용 저장 source — 2026-10-23
 
 `contracts/runtime/ownership-observation-v1.ts`·`ownership-ledger-v1.ts`와 server executions의 `ownership-observation-proof.ts`를 새 `ownership-archive.ts`가 소비한다. 원 요청/후보 anchor·준비/slot·head 조회, P256 서명, 수용 사건/초기 채택/head의 한 transaction 기록과 최종 current 재검사, CAS·rollback/연결 폐기·COMMIT UNKNOWN을 소유한다. 기본 authority는 없으며 route/서비스에 등록하지 않았다. 직접 합성 시험은 `tests/unit/FN06/ownership-archive.test.ts`, fixture는 `tests/unit/FN06/ownership-archive-fixture.ts`다. 실 PG/권한/OS 검증은 아니다.

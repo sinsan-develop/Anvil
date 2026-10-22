@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 원 관측 요청의 내부 계획 — 2026-10-23
+
+`planOwnershipObservationRequest({preparation,tail,anchor,head,authorityExpiresAt,nowMs})`는 인증된 project lock 아래 읽은 원 기록을 받아 조립할 내부 함수이며 nonce/phase/request ID를 caller가 지정하지 못한다. BOOTSTRAP_PREPARED는 head=null·tail=preparation, CURRENT는 ACTIVE head의 exact currentEvent/tail·anchor/preparation을 요구한다. 최대10초와 준비/tail/anchor/head/현재 권위 기한의 최솟값을 적용하고 사건 hash 후 requestRef를 붙인다.
+
+반환은 `OWNERSHIP_REQUEST_EVENT_PLAN`·executionAuthorized/dispatchPerformed=false다. 이는 준비 권위·후보 provenance·actual writer NONE 검증이나 DB 발급 확정/송신이 아니며 이 함수만으로 밖에 유효 요청을 노출하지 않는다. 원자 저장·COMMIT 후 전달과 현재 policy/registration/slot 공급자는 아직 연결되지 않았다. 합성 fixture 저장/서명/수용 연결을 실제 원 발급으로 보고하지 않는다.
+
 ## FN06 D1 내부 동일 transaction 인증 소비 — 2026-10-23
 
 `AccessRepository.authenticateInTransaction(db,token,csrf)`는 caller가 소유한 transaction에서 사용자/session/client 잠금 뒤 DB 시각·활성 xid·CSRF·회수·자격세대를 검사한다. 자체 연결/BEGIN/COMMIT/갱신은 없고 기존 authenticated/login 계약은 유지한다. 이 identity는 정책·단독제어·재인증·등록·writer/실행 권위가 아니다.
