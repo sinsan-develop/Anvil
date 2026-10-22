@@ -21,6 +21,12 @@
 
 ## 구현·검수 경계
 
+### 보호 THREAD와 식별자 없는 현재 metadata 조립
+
+`SyntheticSentTurnProtectedCurrent`는 생성 시 고정 부모 THREAD/fullref를 복제하고 별도 응답 reader의 private callback에서만 THREAD를 얻는다. 독립 현재 metadata에는 `threadId` 키 자체를 허용하지 않는다. pre snapshot의 식별자를 현재값으로 복사하지 않고 보호 조회의 값과 같은지 대조한 뒤 조립한다. 원 부모·명령/시도permit/hash/grant·세대, 현재 자료/소유/이해·기한·취소와 마지막 await 뒤 상태를 확인하며, 고정 부모/입력의 후속 caller 변경을 채택하지 않는다.
+
+현재 metadata의 진위/OS 현재성을 이 조립으로 인증하지 않는다. 서버 fact 대조·자료 소비와 원잠금 post 검사는 외부의 기존 조립에서 계속 필수다. 실제 metadata 제공자·서비스 전체 연결/연속 TURN·native/DB/Agent는 미구현·미검증이며 기본 등록·새 실제 실행은 없다.
+
 ### 응답 목적 보호 THREAD 조회
 
 `SyntheticSentResponseHandleReader.use(selection,signal,callback)`는 기존 pre-send reader/current 포트를 구현하거나 목적을 바꾸지 않는다. selection은 exact envelope/원 부모 THREAD와 claimRef·원 시도/permit/grant·preSendBindingHash/instructionContentHash를 고정한다. 서버 응답 전용 purpose/false 권한과 원 기록·현재 fact/세션·역할/세대·기한을 보관 조회 전후 확인한다. TURN 또는 다른 부모/명령·새 SEND용 current 반환을 응답용으로 채택하지 않는다.
