@@ -1,4 +1,4 @@
-# FN06 현재 권한 공급자 — 정확 delta 지원 패킷 v2
+# FN06 현재 권한 공급자 — 정확 delta 지원 패킷 v3
 
 ## 판정과 이번 요청
 - 작성: 2026-10-23 / 책임: Project Main 어울. 기준 branch codex/av3-stage-b, source checkpoint bcd41e622f6d144affe4319c8a18d387e5b005a6. main f976ed5e29e14b13e12729d5b1ccf98f050f2210은 비교 기준일 뿐 변경 대상이 아니다.
@@ -26,7 +26,7 @@
 - apps/connector/runtime/sent-process-metadata-gate.ts: F385EC63803C887DB11E97D2DB76CFCF1DE8537CB945C530822F2D0BFBBF105A
 
 
-## 1.1 D1 최종 단일 요청 묶음 (v2 규범)
+## 1.1 D1 최종 단일 요청 묶음 (v2 묶음 유지·v3 초기 순서 보완)
 **선택지는 'D1 source·미적용 forward SQL·API/권한 계약 구현만 승인' 또는 '현행 유지' 두 가지다.** D1 source와 DB/API를 별개 승인처럼 다시 나누지 않는다. 아래 구현을 한 묶음으로 검토받되 실제 환경에 적용/활성화하지 않는다.
 
 포함: 정확5표와 guard/RLS의 **새 미적용 SQL 파일**, 새 schema/서명 바이트·권한/route 계약 및 서버/실행기 source, 신규 OwnershipEvidenceHost/Worker의 **source 작성만**, 합성 단위/route/서명 반례(기존 합성 시험 키만, 실제 등록키/파일/등록0), 타입/Web build·독립 검토·문서·기존 branch commit/push.
@@ -66,6 +66,16 @@ RLS/app 효과: 기존 anvil_v3_app만 대상으로5표 SELECT와 anchors/bindin
 - registration-protocol.ts의 실제 registration scope는 HOST_TRUST_REGISTRATION / credentialScope=REGISTRATION_STATUS_ONLY / grants=[]를 재검사한다. 이 신뢰 등록은 prepare/observe/Agent 권한이 아니다.
 - D1 제안 observation signing bytes는 ASCII 'ANVIL_OWNERSHIP_OBSERVATION_V1' + NUL 1바이트(0x00) + canonical UTF-8 payload(installation/project/execution/gen/registration/observer/anchor/head/requestRef/nonce/factsHash/observedAt/expiresAt)다. 등록 proof·execution challenge와 교차 수용0의 반례를 포함한다. 원 키 등록 scope를 수정하지 않고 새 preparation receipt가 이 signing purpose의 권한을 정확히 한정한다.
 - 실행기에서 기존 실제 개인키를 꺼내 목적별 서명할 수 있는지, 보호 host가 purpose allowlist를 집행하는지, 실제 키 접근이 승인돼 있는지는 **미확인/미구현**이다. D1은 기존 합성 시험 키로 source 검증만 하며 실제 키 조회/사용·새키 생성/회전·등록 변경0이다. 재사용 불가면 새키를 자동 만들지 않고 exact 지원 요청으로 남긴다.
+
+
+### 최초 head가 없는 준비의 부트스트랩 순서 (v3 명확화)
+- 최초 관측 전에 current head가 이미 있어야 한다고 요구하면 '관측→채택→head'와 순환한다. 최초 요청은 기존 준비 receipt와 project lock 아래 고정한 **후보 anchor hash**만 대상으로 하고 expectedHeadRef=null을 명시한다. 이 후보/request 사건은 채택/실행 권한이 아니다.
+- BOOTSTRAP_PREPARED 요청: PREPARATION_GRANTED의 미소비 준비 slot·expected event sequence·head 부재를 같은 tx에서 확인하고 OBSERVATION_REQUESTED에 candidate anchor fullref/hash/processRef·preparationRef·phase/nonce/기한을 기록한다. caller 후보만 해시했다고 선택되지 않으며 서버가 고정한 이 원 request 사건과 답변을 대조한다.
+- 초기 OBSERVE는 retained handle의 PREPARED/미재개 정체성만 확인한다. 정확 서명/nonce/기한·head 여전히 없음/준비 slot 미회수/동일 generation을 재검사한 tx에서 anchor+ANCHOR_ADOPTED 사건+최초 head를 원자 생성한다. 과정 중 변경/중복/만료면 모두 fail-closed/추가 프로세스 생성0이다.
+- CURRENT 요청: 이미 채택된 anchor와 exact current head/event/generation을 대상으로 한다. source 후보 P2 서명 payload에는 phase=BOOTSTRAP_PREPARED 또는 CURRENT와 expectedHeadRef(null 또는 exact ref)를 반드시 포함해 두 용도를 교차 수용하지 않는다.
+- 준비 slot은 project row lock+events의 단조 sequence/최신 준비 상태로 직렬화하며 새 6번째 표를 암묵적으로 만들지 않는다. 취소/만료/UNKNOWN도 append 사건으로 남기고 재준비는 실 프로세스/전임 writer 안전 근거 없이는 허용하지 않는다.
+- 초기 PREPARED 관측·anchor 채택을 RUNNING·OWNED·VERIFIED_CURRENT로 올리지 않는다. 응답용 현재 evidence는 별도 CURRENT/RUNNING 관측 및 writer/source/HUMAN 등 독립 조건을 계속 요구한다. resume/Agent 실행은 D1/준비 receipt에 포함하지 않는다.
+- 이 보완은 v2 D1 묶음의 초기 순서/서명 구분을 구체화한 제안이며 새 실제 효과 승인이 아니다. 10526ebd의 v2 원문은 Git에 보존한다. 사용자 결정은 PMO가 정확 버전/범위를 대조해 결박하며 Main이 D1 승인으로 추정하지 않는다.
 
 ## 2. 네 공급자의 위치·권위·인증·수명
 아래는 권장 **새 계약**이며 지금 존재하는 저장 권위라고 주장하지 않는다.

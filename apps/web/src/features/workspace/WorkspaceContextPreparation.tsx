@@ -10,7 +10,7 @@ import { ContextDeliveryLimits, contextDeliveryLimitsValid } from './ContextDeli
 import { newContextPreparation, prepareContextWrite, sendContextPreparation, readContextPreparation, listContextPreparations, type ContextPreparationBuffer } from './context-api.ts';
 import { contextObservation } from './context-observation.ts';
 import { reuseContextPreparationInput } from './context-reuse.ts';
-import {appendContextSourceSelection,contextSourceSelectionState,removeContextSourceFromBuffer} from './context-source-selection.ts';
+import {appendContextSourceToBuffer,contextSourceSelectionState,removeContextSourceFromBuffer} from './context-source-selection.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
 
 const labels = { PURPOSE_REASON: '목적과 이유', RULES_SCOPE: '헌법과 범위', LATEST_INSTRUCTIONS: '최신 관련 지시', DECISIONS_REASON: '결정과 이유', CURRENT_POSITION: '현재 위치', ACTUAL_GAPS: '실제 공백', NEXT_ACTION: '다음 행동' };
@@ -62,7 +62,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
  }
  const locked = busy || !owner || !bound || !sameTarget || !!buffer?.pending || !!buffer?.uncertain || !!buffer?.resultRef;
  const selectionState=buffer?contextSourceSelectionState(buffer.input,selected):'SLOT_MISSING';
- function attach(selection: ContextSourceSelection) { if (locked) return; update(current => { if(current.pending||current.resultRef)return current;const input=appendContextSourceSelection(current.input,selected,selection);return input===current.input?current:{...current,input,dirty:true,result:null}; }); }
+ function attach(selection: ContextSourceSelection) {if(locked)return;onChange(current=>appendContextSourceToBuffer(current,buffer,session,selected,selection));}
  return <section aria-label="임무 맥락 준비"><h6>임무 맥락 준비</h6><p>Agent 전달·실행 허가 아님 · 예산·선정의 의미·최신 관련 지시 전체성은 미확인입니다.</p>
   <button disabled={busy || !owner || !bound || !!buffer?.pending || !!buffer?.uncertain} onClick={() => run(prepare)}>새 맥락 준비 입력</button><button disabled={busy || !bound || !sameTarget} onClick={() => run(list)}>확정 임무의 준비 후보 목록</button>
   {!bound ? <p>보관 입력의 사용자·기기가 다릅니다. 원 입력과 미확인 명령은 유지합니다.</p> : !sameTarget ? <p>보관 준비의 확정 임무가 다릅니다. 원 임무로 돌아가세요.</p> : buffer ? <>

@@ -15,12 +15,22 @@ export function appendContextSourceSelection(input:ContextPreparationInput,code:
  const next=structuredClone(input);next.slots.find(value=>value.code===code)!.sources.push(structuredClone(selection));return next;
 }
 
+function editableContextBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession):current is ContextPreparationBuffer{
+ if(!current||!rendered)return false;
+ const locked=(b:ContextPreparationBuffer)=>!!b.pending||b.uncertain||!!b.resultRef||!!b.result;
+ return !locked(current)&&!locked(rendered)&&current.bindingId===rendered.bindingId&&current.projectId===rendered.projectId&&current.ownerUserId===session.user.id&&rendered.ownerUserId===session.user.id&&current.ownerClientId===session.clientId&&rendered.ownerClientId===session.clientId&&current.controlGeneration===rendered.controlGeneration&&ordered(current.assignmentRef)===ordered(rendered.assignmentRef)&&ordered(current.input.assignmentRef)===ordered(current.assignmentRef);
+}
+/** Recheck the live buffer after source selection, not only the rendered button.
+ * Existing source-kind/count rules and immutable input ownership stay unchanged. */
+export function appendContextSourceToBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession,code:ContextSlotCode,selection:ContextSourceSelection):ContextPreparationBuffer|null{
+ if(!editableContextBuffer(current,rendered,session))return current;
+ const input=appendContextSourceSelection(current.input,code,selection);
+ return input===current.input?current:{...current,input,dirty:true,result:null};
+}
 /** Remove the clicked exact source, never a rendered index into a newer array.
  * Recheck the live buffer in the functional updater; no persistence/authority. */
 export function removeContextSourceFromBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession,code:ContextSlotCode,selection:ContextSourceSelection):ContextPreparationBuffer|null{
- if(!current||!rendered)return current;
- const locked=(b:ContextPreparationBuffer)=>!!b.pending||b.uncertain||!!b.resultRef||!!b.result;
- if(locked(current)||locked(rendered)||current.bindingId!==rendered.bindingId||current.projectId!==rendered.projectId||current.ownerUserId!==session.user.id||rendered.ownerUserId!==session.user.id||current.ownerClientId!==session.clientId||rendered.ownerClientId!==session.clientId||current.controlGeneration!==rendered.controlGeneration||ordered(current.assignmentRef)!==ordered(rendered.assignmentRef)||ordered(current.input.assignmentRef)!==ordered(current.assignmentRef))return current;
+ if(!editableContextBuffer(current,rendered,session))return current;
  const slots=current.input.slots.filter(slot=>slot.code===code);if(slots.length!==1)return current;
  const slot=slots[0]!,target=ordered(selection),matches=slot.sources.flatMap((source,index)=>ordered(source)===target?[index]:[]);
  // A stale/ambiguous selection is not permission to remove a neighbour.
