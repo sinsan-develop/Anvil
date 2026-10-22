@@ -63,10 +63,11 @@ import {readStoredBudgetUsage} from '../../../apps/web/src/features/session-deta
 import {manualReportQa as manualQaSpec} from './manual-report-qa.ts';
 import {verifyObservationPages} from '../FN13/observation-pages-qa.ts';
 import {runProviderClaimDataCase} from '../FN06/provider-claim-data-case-qa.ts';
-import {readClaimDataQaFailureLocation} from '../FN06/provider-claim-data-lab-qa.ts';
+import {readClaimDataQaFailureLocation,readClaimDataQaCase} from '../FN06/provider-claim-data-lab-qa.ts';
 import {newManualResultReport,prepareManualResultReport} from '../../../apps/web/src/features/session-detail/manual-result-report.ts';
 import {prepareResultSubmitCommand,sendResultSubmission} from '../../../apps/web/src/features/session-detail/result-submission-write-api.ts';
 const claimDataQa=process.env.ANVIL_FN06_CLAIM_DATA_QA==='1';
+const claimDataCase=readClaimDataQaCase(process.env.ANVIL_FN06_CLAIM_DATA_CASE);if(!claimDataQa&&claimDataCase!=='ATOMIC')throw Error('CLAIM_DATA_QA_CASE_INVALID');
 const manualReportQa=process.env.ANVIL_FN12_MANUAL_REPORT_QA==='1';
 const manualReportCase=process.env.ANVIL_FN12_MANUAL_REPORT_CASE??'REPORT';if(!['REPORT','ARTIFACTS','REFERENCES','OBSERVATION_PAGES'].includes(manualReportCase)||!manualReportQa&&manualReportCase!=='REPORT')throw Error('FN12_MANUAL_CASE_INVALID');
 const observationPagesQa=manualReportQa&&manualReportCase==='OBSERVATION_PAGES';
@@ -205,9 +206,11 @@ test(claimDataQa?'FN06실DB원자성+합성sourceOS전제·정상예약등록/�
   }
   if(claimDataQa){
    phase='FN06_CLAIM_DATA';
-   const result=await runProviderClaimDataCase({premise:{transport:'SYNTHETIC_ONLY',sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualProviderObserved:false},pool,app,access,login,headers,context,userId:users[0]!,assignmentRef,stageRef:{applicationRef,nodeId:snapshot.graph.nodes.find((n:any)=>n.role==='STAGE_OWNER')!.nodeId},sourceScopes:confirmed.snapshot.definition.allowedScopes,deadline,reviseRuntimePolicy:async rule=>{const revised=policy(1,policyId,true);revised.payload.rules.push(rule);const response=await send(revised);assert.equal(response.statusCode,200,'CLAIM_DATA_QA_POLICY_REFUSED');return response.json().data.ref;}});
-   assert(result.claimDataCommitted&&result.postProtectedFlushRollbackVerified&&result.readViaDistinctConnection&&result.actualProviderObserved===false&&result.actualCurrentOsVerified===false&&result.actualAgentCalls===0);
-   cases.push('FN06_NORMAL_REGISTRATION_RESERVATION_SIGNED_START','FN06_CLAIM_COMMIT_DISTINCT_READ_SAME_NEW_PROOF_ATOMIC_ROLLBACK','EXPLICIT_SYNTHETIC_SOURCE_OS_NO_ACTUAL_PROVIDER');
+   const result=await runProviderClaimDataCase({premise:{transport:'SYNTHETIC_ONLY',sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualProviderObserved:false},pool,app,access,login,headers,outsiderHeaders:{host:'localhost:3830',cookie:'__Host-anvil.sid='+outsider.token},context,userId:users[0]!,assignmentRef,stageRef:{applicationRef,nodeId:snapshot.graph.nodes.find((n:any)=>n.role==='STAGE_OWNER')!.nodeId},sourceScopes:confirmed.snapshot.definition.allowedScopes,deadline,reviseRuntimePolicy:async rule=>{const revised=policy(1,policyId,true);revised.payload.rules.push(rule);const response=await send(revised);assert.equal(response.statusCode,200,'CLAIM_DATA_QA_POLICY_REFUSED');return response.json().data.ref;}});
+   assert.equal(result.dataCase,claimDataCase);assert(result.actualProviderObserved===false&&result.actualCurrentOsVerified===false&&result.actualAgentCalls===0);
+   if(result.dataCase==='HISTORY_READ'){assert(result.ownerReceiptAndListConsumed&&result.outsiderDenied&&result.unauthenticatedDenied&&result.claimLedgersUnchanged);cases.push('FN06_OWNER_HISTORY_LIST_RECEIPT_SAME_ORIGIN','FN06_HISTORY_OUTSIDER_NOCOOKIE_DENIED','FN06_HISTORY_GET_NO_LEDGER_WRITE');}
+   else{assert(result.claimDataCommitted&&result.postProtectedFlushRollbackVerified&&result.readViaDistinctConnection);cases.push('FN06_CLAIM_COMMIT_DISTINCT_READ_SAME_NEW_PROOF_ATOMIC_ROLLBACK');}
+   cases.push('FN06_NORMAL_REGISTRATION_RESERVATION_SIGNED_START','EXPLICIT_SYNTHETIC_SOURCE_OS_NO_ACTUAL_PROVIDER');
    phase='DONE';return;
   }
   phase='ORIGINAL_EXECUTION';

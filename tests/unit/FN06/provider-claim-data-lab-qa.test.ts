@@ -1,5 +1,10 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 const m:any=await import('../../integration/FN06/provider-claim-data-lab-qa.ts').catch((e:any)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+test('조회전용 case를 정확 선택하고 다른 case·원자성 표식의 잘못된 대체를 거절한다',()=>{
+ assert.equal(m.readClaimDataQaCase(undefined),'ATOMIC');assert.equal(m.readClaimDataQaCase('HISTORY_READ'),'HISTORY_READ');assert.throws(()=>m.readClaimDataQaCase('ALL'));
+ const summary={phase:'DONE',cases:['FN06_NORMAL_REGISTRATION_RESERVATION_SIGNED_START','FN06_OWNER_HISTORY_LIST_RECEIPT_SAME_ORIGIN','FN06_HISTORY_OUTSIDER_NOCOOKIE_DENIED','FN06_HISTORY_GET_NO_LEDGER_WRITE','EXPLICIT_SYNTHETIC_SOURCE_OS_NO_ACTUAL_PROVIDER'],failure:null,rootCleanup:{files:2,dirs:5},closeFailures:0,rootCleanupFailed:false},line='FN12_ISOLATED_SAFE '+JSON.stringify(summary);
+ m.readClaimDataChildSummary(line,'HISTORY_READ');assert.throws(()=>m.readClaimDataChildSummary(line,'ATOMIC'));assert.throws(()=>m.readClaimDataChildSummary('FN12_ISOLATED_SAFE '+JSON.stringify({...summary,cases:summary.cases.filter(x=>x!=='FN06_HISTORY_GET_NO_LEDGER_WRITE')}),'HISTORY_READ'));
+});
 test('claim 데이터 runner는 전용 root·명시 유한 실행만 허용하고 schema모드/정식 PG 설정을 거절한다',()=>{
  const now=1000000,v={cwd:'/home/daon/deploy/anvil-v3-fn06-claim-data-qa-01',sha:'a'.repeat(40),now,expires:now+300000,env:{ANVIL_FN06_CLAIM_DATA_QA:'1'}};m.validateProviderClaimDataQa(v);
  for(const d of[{cwd:'/home/daon/deploy/anvil-v3'},{sha:'HEAD'},{expires:now+600001},{expires:now},{env:{}},{env:{...v.env,PGPASSWORD:'formal'}},{env:{...v.env,ANVIL_FN06_CLAIM_SCHEMA_QA:'1'}},{env:{...v.env,NODE_OPTIONS:'--require unsafe'}}])assert.throws(()=>m.validateProviderClaimDataQa({...v,...d}));

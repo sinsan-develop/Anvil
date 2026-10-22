@@ -1,5 +1,19 @@
 # Anvil 재설계 작업현황
 
+- **FN06 OWNER조회 게시 전 직접/인접 확인**: 변경된consumer·seed/case·caller의18PASS425.1312ms/type/diff0을확인했다. 실제PG/API/DOM양성0이며독립C0/I0/M1/Main누출음성보완으로구분한다. source/시험/후보/계획·현황의소유12경로만기존branch에보존하고보호6·main·정식서비스는유지한다. 다음은exact후보의HISTORY_READ한정1회범위를PMO에분리전달한다.
+
+- **FN06 OWNER조회 source 후보 준비**: 기존ApiClient/Webreader를소비하는HISTORY_READ를정상seed1회와연결하고ATOMIC경로·성공marker를분리했다. 통제HTTP/seed/case12PASS383.0107ms·M1보완뒤consumer/caller인접8PASS518.6976ms/type/diff0, planHISTORY_READ/actualfalse/base59를확인했다. M1은정상403/401DTO에receipt추가·details중첩음성으로보완했고실제누출발견/독립clean소급0이다. 실제조회/PG/DOM실행0·정식route/SQL/권한/서비스/Agent변경0. 한정실제후보/고정source6hash·동일자원/합성credential수명·정리는신규OWNER조회후보문서로분리한다.
+
+- **FN06 OWNER조회 한정 리뷰 M1 보완 착수**: 독립C0/I0/M1·실행0은타인/무인증403/401의상태만검사해보호receipt가붙어도거절성공으로기록할수있는시험공백이다. 신규403+receipt음성1FAIL/기존2PASS200.8776ms로확인했다. 실제제품누출발견은아니며기존app오류DTO의정확허용필드/고정문구·빈details/보호내용부재만검사하도록좁게보완한다. actual0·제품route/권한계약변경0이다.
+
+- **FN06 조회 case 연결 타입 보완**: 신규분기연결중typecheck에서정상저장receipt ref.version:number와Web정확1타입차이TS2322·기존fixture가ATOMIC전용필드를공통결과로읽는TS2339 3건이확인됐다. runtime version1검사는유지하고seed의실제receipt타입을입력으로받으며반환dataCase로원자성/조회검사를분리한다. 정상실행/합격기준을낮추지않고actual0을유지한다.
+
+- **FN06 조회전용 seed/case 반례 진행**: 새HISTORY_READ seed 환경차단1FAIL364.2617ms→consumer포함6PASS393.0694ms/type0. 기존서명요청계산만공유하고신규seed는정상ingest1회/옛fault·replay실행0이다. case선택/합격표식분리의새반례1FAIL/기존5PASS165.3031ms를확인했으며ATOMIC성공을HISTORY_READ로대체하지않도록연결한다. actual등록/DB/조회는아직0·정식서비스/Agent변경0.
+
+- **FN06 OWNER consumer source 확인**: 신규 읽기helper2RED166.4371ms 뒤 기존ApiClient/Webreader의정상GET만으로OWNER목록/원receipt·다른HUMAN403/무cookie401을소비해2PASS276.1217ms/type0이다. 통제HTTP단위이며actualAPI/DB/DOM아니다. 다음은새HISTORY_READ case에서정상claim을1회만seed하고consumer전후6원장불변을실DB에서검사하도록source를연결한다. 기존schema/원자성/replay검사반복0·actual0.
+
+- **FN06 OWNER 실제조회 다음 단위 착수 / Main 어울**: 최신PMO연속지시와c7c9bd98/보호6를대조했다. 기존receipt/list GET·Webreader를유지하고test-only 신규조회consumer와정상claim1회저장선행을준비한다. OWNER는기존reader로목록/정확receipt를소비하고다른HUMAN/무인증은거절·조회전후claim원장불변을검사할범위다. 완료한schema/원자성/replaycase는반복하지않으며READ 전용case에서단1회정상저장만선행으로쓴다. 새실제QA는exact후보/등록자원·수명회수로별도분리하고현재actual0·정식DB/서비스/Secret/Agent변경0이다.
+
 - **FN06 결과 checkpoint·다음 조회 경계 대조**: 실제결과3문서9b420d52fa4b6a0482799606c48bbd43eff94714 local/private동일·추적clean·main/보호6보존을확인했다. 기존OWNER용receipt/list route와Webreader·current USER/session/member재검사·30초반환창은source에이미존재하므로중복구현하지않는다. 다음공백은실저장원문이정상인증API/Webreader까지이어지는실소비이며기존원자성case를재시험진도로쓰지않는다. 경로읽기의추정 apps/server/routes os2 1건은변경0/실inventory의provider-session-claim-history-routes.ts로대조했고새서비스·DB·Agent실행0이다. 전체계획미완료·추가사용자재승인요청0.
 
 - **FN06 결과 문서 게시 전 형식 보정**: 새결과서EOF빈행1로staged diff check exit2가발생해commit/push가중단됐다. 빈행만보정하며실제시험결과/코드변경0·실행재검증0이다.

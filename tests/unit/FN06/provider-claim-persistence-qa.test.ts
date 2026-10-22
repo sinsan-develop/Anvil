@@ -1,6 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {providerClaimFixture} from './provider-claim-fixture.ts';
 const m:any=await import('../../integration/FN06/provider-claim-persistence-qa.ts').catch((e:any)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+
+test('조회전용 정상1회 seed도 폐기형 HISTORY_READ 환경 밖에서는 DB를 시작하지 않는다',async()=>{let calls=0;await assert.rejects(()=>m.storeProviderClaimHistorySeed({pool:{query:async()=>{calls++;throw Error('UNEXPECTED_DB');}}}),/CLAIM_HISTORY_SEED_TARGET_REQUIRED/);assert.equal(calls,0);});
 test('관측 정상 연결은 반환하고 snapshot·ROLLBACK 오류 연결은 폐기한다',async()=>{
  const released:any[]=[],db={query:async(sql:string)=>{if(sql==='ROLLBACK')throw Error('ROLLBACK_FAILED');throw Error('SNAPSHOT_FAILED');},release:(broken?:boolean)=>released.push(broken)},pool={connect:async()=>db};assert.equal(await m.withClaimQaObserver(pool,async()=>42),42);assert.deepEqual(released,[false]);
  await assert.rejects(m.withClaimQaObserver(pool,async(c:any)=>{try{await c.query('SELECT');}catch{await c.query('ROLLBACK');}}),/ROLLBACK_FAILED/);assert.deepEqual(released,[false,true]);

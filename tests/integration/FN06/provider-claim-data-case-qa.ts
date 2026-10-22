@@ -21,7 +21,9 @@ import {executionTarget,executionChallengeRequestBytes,executionProofBytes} from
 import {contextSlotCodes} from '../../../apps/server/modules/context/context-input.ts';
 import {reserveProviderClaimQaSession} from './provider-claim-fixture-qa.ts';
 import {prepareProviderClaimQaTrust} from './provider-claim-trust-qa.ts';
-import {verifyProviderClaimPersistence} from './provider-claim-persistence-qa.ts';
+import {verifyProviderClaimPersistence,storeProviderClaimHistorySeed} from './provider-claim-persistence-qa.ts';
+import {verifyOwnerStoredClaimRead} from './provider-claim-owner-read-qa.ts';
+import {readClaimDataQaCase} from './provider-claim-data-lab-qa.ts';
 import type {SyntheticPermitFacts} from '../../../apps/server/modules/executions/execution-permit-store.ts';
 
 export type ClaimDataQaPremise={transport:'SYNTHETIC_ONLY';sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE';actualProviderObserved:false};
@@ -45,7 +47,7 @@ export function createClaimDataQaFacts(rawPremise:unknown):SyntheticPermitFacts{
  }};
 }
 
-type Input={premise:unknown;pool:Pool;app:Pick<FastifyInstance,'inject'>;access:AccessRepository;login:{token:string;csrfToken:string;clientId:string};headers:Record<string,string>;context:{projectId:string;clientId:string;controlGeneration:number};userId:string;assignmentRef:RuntimeRefV1;stageRef:{applicationRef:RuntimeRefV1;nodeId:string};sourceScopes:any[];deadline:number;reviseRuntimePolicy:(rule:any)=>Promise<RuntimeRefV1>};
+type Input={premise:unknown;pool:Pool;app:Pick<FastifyInstance,'inject'>;access:AccessRepository;login:{token:string;csrfToken:string;clientId:string};headers:Record<string,string>;outsiderHeaders?:Record<string,string>;context:{projectId:string;clientId:string;controlGeneration:number};userId:string;assignmentRef:RuntimeRefV1;stageRef:{applicationRef:RuntimeRefV1;nodeId:string};sourceScopes:any[];deadline:number;reviseRuntimePolicy:(rule:any)=>Promise<RuntimeRefV1>};
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 /** 실제 caller와 단위 반례가 같은 계산을 소비한다. 현재 관측을 만들거나 원 validator를 바꾸지 않는다. */
 export function buildClaimDataQaCurrentFact(raw:any){
@@ -57,7 +59,7 @@ export function buildClaimDataQaCurrentFact(raw:any){
 export async function runProviderClaimDataCase(v:Input){
  validateClaimDataQaPremise(v.premise);
  assert(process.env.ANVIL_FN06_CLAIM_DATA_QA==='1'&&process.platform==='linux'&&process.getuid?.()===1000,'CLAIM_DATA_QA_TARGET_REQUIRED');
- assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-fn06-claim-data-qa-01');
+ assert.equal(await realpath(process.cwd()),'/home/daon/deploy/anvil-v3-fn06-claim-data-qa-01');const selectedCase=readClaimDataQaCase(process.env.ANVIL_FN06_CLAIM_DATA_CASE);
  assert(Number.isFinite(v.deadline)&&v.deadline>Date.now()&&v.deadline<=Date.now()+600000);
  const ctx=structuredClone(v.context),assignmentRef=structuredClone(v.assignmentRef),stageRef=structuredClone(v.stageRef),scopes=cloneV1(v.sourceScopes),headers={...v.headers},login={...v.login},userId=v.userId;
  assert(uuidV1(ctx.projectId)&&uuidV1(ctx.clientId)&&ctx.clientId===login.clientId&&ctx.controlGeneration===1&&uuidV1(userId)&&refV1(assignmentRef)&&refV1(stageRef.applicationRef));
@@ -95,6 +97,13 @@ export async function runProviderClaimDataCase(v:Input){
  const at=(await v.pool.query('SELECT clock_timestamp() AS at')).rows[0].at.toISOString();
  const binding:any={schemaVersion:1,claimId:randomUUID(),kind:'THREAD',projectId:ctx.projectId,assignmentRef,agentSessionRef:reserved.sessionRef,responsibleBindingRef:reserved.bindingRef,connectionRef:reserved.connectionRef,environmentRef:reserved.environmentRef,executorRegistrationRef:trust.registrationRef,execution:{id:executionId,generation:1},commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,authorizationReceiptRef:envelope.context.authorizationReceiptRef,permitRef:consumed.permit.permitRef,localAttemptRef,provider:{product:'CODEX_APP_SERVER',version:'0.161.0'},parentThreadClaimRef:null,source:{method:'thread/start',requestIdDigest:hash(hash({key:receiptKeyV1(envelope),envelopeHash:envelope.envelopeHash})),responseRef:synthetic(),responsePayloadDigest:hash('명시 합성 Provider 응답·실관측 아님')},capturedAt:at,usableBefore:consumed.permit.expiresAt};
  const claim=validateProviderSessionClaim({...binding,protectedHandleRef:providerProtectedHandleRef(binding,hash('명시 합성 암호문 metadata·실암호화 아님'))}).claim;
+ if(selectedCase==='HISTORY_READ'){
+  assert(v.outsiderHeaders,'CLAIM_OWNER_READ_IDENTITIES_REQUIRED');fresh();
+  const receipt=await storeProviderClaimHistorySeed({pool:v.pool,privateKey:key.privateKey,scope,claim,keys,facts});
+  const ledgers=async()=>{const out:Record<string,string[]>={};for(const table of ['execution_challenges','execution_receipts','provider_session_claims','provider_session_claim_proof_results','provider_session_claim_revocations','audit_events']){fresh();const rows=(await v.pool.query('SELECT to_jsonb(t) value FROM anvil.'+table+' t WHERE project_id=$1',[ctx.projectId])).rows;out[table]=rows.map(r=>canonicalJson(r.value)).sort();}return out;};
+  const before=await ledgers(),result=await verifyOwnerStoredClaimRead({app:v.app,claim,sessionRef:reserved.sessionRef,expectedReceipt:receipt,ownerHeaders:headers,outsiderHeaders:v.outsiderHeaders});assert.deepEqual(await ledgers(),before);fresh();
+  return{...result,dataCase:'HISTORY_READ' as const,claimLedgersUnchanged:true,normalRegistrationAndReservationStored:true,normalSignedStartPermitConsumed:true,sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',formalApplyReady:false};
+ }
  fresh();const result=await verifyProviderClaimPersistence({pool:v.pool,privateKey:key.privateKey,scope,claim,keys,facts});fresh();
- return{...result,sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualCurrentOsVerified:false,actualProviderObserved:false,nativeHandleProtected:false,normalRegistrationAndReservationStored:true,normalSignedStartPermitConsumed:true};
+ return{...result,dataCase:'ATOMIC' as const,sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',actualCurrentOsVerified:false,actualProviderObserved:false,nativeHandleProtected:false,normalRegistrationAndReservationStored:true,normalSignedStartPermitConsumed:true};
 }
