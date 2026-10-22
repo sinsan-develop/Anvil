@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12 신규 참조 실제 저장 일부 확인**: exact a9be5d01의 REFERENCES 단일 격리 PG15/Node 시험에서 output/diff/명령·시험 evidence의 실제 COMMIT·별도 app-role 원문/hash·유실 같은 명령 추가0·보호 파일 bytes/hash·타인404를 확인했다. phase DONE/exit0·동일59SQL·등록 QA exact ID/label/경로·관련 프로세스 독립잔여0, 정식3서비스 metadata 불변/변경0이다. 원 CRLF 진입 실패는 보존한다. 통제API 브라우저 시험과 실제 격리 저장은 별개 증거이고 정식 served browser→DB·실Agent/명령/증거 진위·전체FN12/Stage 완료는 아니다. 상세와 다음 FN06 source 조립은 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12/UI05 수기 명령 증거 입력 일부 구현**: 기존명령 evidence5필드/최대20/출처4종선언을별도입력·추가삭제→기존parser→명시등록/유실같은명령/원문재조회로연결했다. 시험과동일변환/없음호환·거절·잠금/미인증유지, source20PASS/typebuild355/321ms·Edge3PASS7.7초·한정독립C0/I0/M0·등록QA독립잔여0이다. 실제명령/출처/정식DB/served/Agent·전체FN12/Stage는미검증·미완료이며 다음은 새참조의 실제격리저장 확인이다.
 
 - **2026-10-22 FN12/UI05 수기 시험증거 입력 일부 구현**: 기존 evidence5필드·출처4종 선언·최대20 안에서 파일/환경ref·내용hash·기록시각을 입력/추가/제거→별도등록/유실동일명령/원문재조회에 연결했다. absent/빈배열호환·malformed/추가필드/unsafe/민감거절·잠금·미인증 유지. 직접18PASS308.1776ms/typebuild355/324ms·Edge3PASS6.6초, 독립C0/I0/M1의 원문표시 시험공백 보완 후 새정상1PASS6.9초/type0·등록QA독립잔여0. 실제증거/정식DB/served/Agent·전체FN12/Stage 미완료이며 상세와 후속명령증거는 WORK_STATUS를 따른다.
