@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 FN10 건별 종료 경계 최소 수정 검증**: 기존 END_BOUNDARY 조건을 일반 CASE 대기 앞에 이동했다(제품 1줄 순서 변경). 신규 반례 RED 뒤 직접 14 PASS(686.6487ms), 서버 근거/화면 reader 인접 포함 25 PASS(1021.0666ms), typecheck·diff 검사 exit0. 기존 reviewer 한정 C0/I0/M0, 독립 실행·수정0. 진행 중 유지·미검수 대기·일반 CASE 대기·AUTO와 실행 false는 보존했다. 실제 scheduler·DB·브라우저·Agent 검증은 아니며 전체 FN10/계획 미완료다. 새 저장 계약/0038은 미적용·미작성이고 보호 자료와 pending 반례는 제외한다.
+
+- **2026-10-22 FN10 건별 종료 경계 반례**: 담당 어울. 수락된 명시 종료/최종 노드가 CASE_BY_CASE에서 END_BOUNDARY 대신 WAIT_USER_NEXT_STAGE가 되는 기존 조건 순서 결함을 재현했다. 집중 검사 13 PASS/1 FAIL, exit1(268.3703ms). 진행 중 임무 유지·미검수 결과 대기는 보존하고, 기존 종료 경계 조건을 일반 건별 대기보다 먼저 평가하는 최소 수정만 수행한다. 합성 후보 계산 범위이며 실제 scheduler·DB·Agent 실행은 미검증이다. 별도 명령 읽기 심사의 시간 초과는 허용된 1회 재시도로 현재 HEAD fc8101c8와 소유 테스트 변경만 확인했으며 권한 변경은 없었다.
+
 - **FN10 기존 queue 만료 경계 보완 검증**: 원200반례를수정해DB관측기한·COMMIT후만료를모두401/원items비노출로처리한다. 같은tx의project/member잠금전후유지·원DTO/동일읽기권한·legacy시작/취소/replay불변이다. route/service/Webreader13PASS939.583ms·typecheck/diff0·독립read-only C0/I0/M0/독립실행0. 실제PG경합/시계차·served는미검증. 신규bound계약/0038은여전히미승인·작성0이며소유반례pending1파일은로컬미게시로보존하고보호untracked6과구분한다.
 
 - **FN10 기존 대기열 조회 만료 결함 RED**: 신규bound계약과분리해기존queue GET를검사했다. DB 관측시각이세션기한에도달한통제반례에서기존route가200으로items를반환해1FAIL/1PASS(1197.3164ms)로재현했다. 현재publicDTO/DBschema/기능범위를바꾸지않고 DB관측시각과authenticated COMMIT후기한을모두검사하며원membership잠금을유지하는최소보안수정을진행한다. 실제DB/served침해증거는아니며신규migration/정책/Agent0이다.

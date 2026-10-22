@@ -32,8 +32,8 @@ export function evaluateSyntheticNext(raw:unknown){
   const actions:Action[]=[],push=(nodeId:string,kind:Kind,edgeIds:string[]=[],reasonCodes:string[]=[],blockedBy:string[]=[])=>{const existing=actions.find(a=>a.nodeId===nodeId&&a.kind===kind&&same(a.reasonCodes,reasonCodes)&&same(a.blockedBy,blockedBy));if(existing){existing.edgeIds=[...new Set([...existing.edgeIds,...edgeIds])];return;}actions.push({nodeId,kind,edgeIds,reasonCodes,blockedBy,existingSessionRef:states.get(nodeId)?.responsibleSessionRef??null});};
   if(current.state==='IN_PROGRESS')push(f.currentNodeId,'KEEP_CURRENT_ASSIGNMENT',[],['NO_DUPLICATE_ASSIGNMENT']);
   else if(!accepted(current)&&(!graph.edges.some(e=>e.fromNodeId===f.currentNodeId&&e.kind==='REWORK')||f.mode==='CASE_BY_CASE'))push(f.currentNodeId,'WAIT_RESULT_REVIEW',[],['COMPLETION_CLAIM_NOT_ACCEPTED']);
-  else if(f.mode==='CASE_BY_CASE')push(f.currentNodeId,'WAIT_USER_NEXT_STAGE',[],['CASE_MODE_NO_AUTOMATIC_NEXT_STAGE']);
   else if(accepted(current)&&(f.endBoundaryNodeIds.includes(f.currentNodeId)||graph.terminalNodeIds.includes(f.currentNodeId)))push(f.currentNodeId,'END_BOUNDARY',[],['BOUNDARY_REACHED_NOT_PROJECT_COMPLETION']);
+  else if(f.mode==='CASE_BY_CASE')push(f.currentNodeId,'WAIT_USER_NEXT_STAGE',[],['CASE_MODE_NO_AUTOMATIC_NEXT_STAGE']);
   else for(const edge of graph.edges.filter(e=>e.fromNodeId===f.currentNodeId)){
    const target=nodes.get(edge.toNodeId)!,selected=edge.condition===null?true:condition(edge.condition,states),ids=[edge.edgeId];
    if(selected===null){push(target.nodeId,'CONDITION_UNRESOLVED',ids,['TYPED_DECISION_UNAVAILABLE']);continue;}if(!selected){push(target.nodeId,'CONDITION_NOT_SELECTED',ids);continue;}
