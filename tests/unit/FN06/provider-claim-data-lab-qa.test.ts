@@ -13,3 +13,11 @@ test('child summary 부재·중복·실패·미정리는 완료로 처리하지 
  assert.deepEqual(m.readClaimDataChildSummary('noise PRIVATE_TOKEN\nFN12_ISOLATED_SAFE '+JSON.stringify(safe)+'\n'),safe);
  for(const out of['PRIVATE_TOKEN','FN12_ISOLATED_SAFE '+JSON.stringify({...safe,failure:{code:'ERROR'}}),'FN12_ISOLATED_SAFE '+JSON.stringify({...safe,closeFailures:1}),'FN12_ISOLATED_SAFE '+JSON.stringify({...safe,cases:[]}),'FN12_ISOLATED_SAFE '+JSON.stringify(safe)+'\nFN12_ISOLATED_SAFE '+JSON.stringify(safe)])assert.throws(()=>m.readClaimDataChildSummary(out),e=>!String(e).includes('PRIVATE_TOKEN'));
 });
+
+test('실패 child의 안전 phase/code만 보존하고 stderr/본문/credential은 반환하지 않는다',()=>{
+ const failure={phase:'FN06_CLAIM_DATA',messageCode:'CLAIM_QA_TRUST_PREREQUISITE_REFUSED',code:null,lastResponseCode:'POLICY_DENIED',expected:200,actual:403,secret:'PRIVATE_TOKEN'},summary={phase:'FN06_CLAIM_DATA',failure,rootCleanup:{files:2,dirs:5},closeFailures:0,rootCleanupFailed:false};
+ const got=m.readClaimDataChildFailure('# FN12_ISOLATED_SAFE '+JSON.stringify(summary)+'\nPRIVATE_TOKEN');
+ assert.deepEqual(got,{phase:'FN06_CLAIM_DATA',messageCode:'CLAIM_QA_TRUST_PREREQUISITE_REFUSED',code:null,lastResponseCode:'POLICY_DENIED',expected:200,actual:403,closeFailures:0,rootCleanupFailed:false});assert(!JSON.stringify(got).includes('PRIVATE_TOKEN'));
+ const bad=m.readClaimDataChildFailure('FN12_ISOLATED_SAFE '+JSON.stringify({...summary,failure:{...failure,messageCode:'PRIVATE_TOKEN secret',expected:'PRIVATE_TOKEN'}}));assert.equal(bad.messageCode,null);assert.equal(bad.expected,null);assert.deepEqual(m.readClaimDataChildFailure('PRIVATE_TOKEN'),{phase:'SAFE_SUMMARY_UNAVAILABLE'});
+ const shapedSecret=m.readClaimDataChildFailure('FN12_ISOLATED_SAFE '+JSON.stringify({...summary,phase:'PRIVATE_TOKEN',failure:{...failure,messageCode:'PRIVATE_TOKEN',code:'PRIVATE_TOKEN',lastResponseCode:'PRIVATE_TOKEN'}}));assert.equal(shapedSecret.phase,'SAFE_SUMMARY_UNAVAILABLE');assert.equal(shapedSecret.messageCode,null);assert.equal(shapedSecret.code,null);assert.equal(shapedSecret.lastResponseCode,null);
+});

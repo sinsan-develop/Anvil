@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN06 진단 고정상수 보완 확인**: 임의uppercase 비밀반례 뒤 정확source상수목록·0..599/close0..3 수치로제한해직접4PASS183.5983ms/type/diff0. helperD532587E…/runner4E6A254C…/callerA66A…이며새actual0. 후보문서hash갱신의문맥없는patch1회거절은파일변경0/정확행으로보정했다. 원실패/정리표시ID는Main exec-88326c/exec-8a3dc8, PMO조회 exec-c24516c3/exec-f3d03350로서본문은동일하고차이를명시한다. 독립delta검토뒤새exact진단범위를분리한다.
+
+- **FN06 진단 표현형식 한계 반례**: PMO가 uppercase regex 자체는 비밀 안전성 증명이 아님을 지적했다. 동일형태 PRIVATE_TOKEN이 phase/code로 반환되는 반례1FAIL/3PASS167.6178ms로 확인했고 source에 실제 존재하는 고정 phase/코드 목록만 허용하도록 좁힌다. shell 뒤 조회 exit0을 시험PASS로계산하지않는다. 실제재실행0/제품·권한·서명·timeout불변이다.
+
+- **FN06 data 실패 독립 회수 확인·진단 RED**: 별도SSH exit0에서등록root/PG/net·ownerlabel/관련cwd잔여0, daemon/image/Node동일·정식3fullID/image/StartedAt/runningfalse불변을확인했다. 원실행실패는보존하며새진단의safe failure 추출1FAIL/기존3PASS176.9536ms를확인했다. child의비밀없는phase/상수code/수치만반환하고원문stdout/stderr·credential은출력하지않는후속source만보완한다. 새actual재실행0·원제품/서명/DB권한/timeout·합격조건변경0.
+
+- **FN06 data lab 첫 실행 실제 FAIL**: exact4a1c4b03983022f2bdc1bb19384255dd589eb18d의 신규1회는 NORMAL_PREREQUISITES_AND_CLAIM_DATA에서 codeERROR/positionnull·exit1이다. runner failuretrue/cleanupFailurefalse·bootstrap status1 safe1 path_exists0이며 실제 claim COMMIT/rollback 양성0·원인미확정이다. child 오류는 원문 비출력 원칙으로 숨겼으나 safe summary까지 전달하지 못해 상세 phase/code와 실패자원fullID/run이 이 출력에 없다. 이를성공/제품결함으로추정하지않고 별도SSH잔여·정식불변을먼저확인한다. 같은후보맹목재실행0/정식DB·서비스·Agent변경0,다음은safe summary·실패ID만보존하는최소diagnostic source보완과새exact범위분리다.
+
+- **FN06 새 data lab 1회 위임·생성 전 checkpoint**: PMO가 exact4a1c4b03983022f2bdc1bb19384255dd589eb18d와 callerA66A/helper0C93/runner1774를 직접 대조하고 신규 한정1회를 채택했다. 원schema허가 소급0. 새 WSL /home/daon/deploy/anvil-v3-fn06-claim-data-qa-01(+.av3-data/fn12-raw)/PG anvil-v3-fn06-claim-data-pg-01/net anvil-v3-fn06-claim-data-net-01/DB anvil_v3_fn06_claim_data_qa_01/uid1000·ownerAV3_FN06_CLAIM_DATA_QA·새run, 고정image594290/daemon e334…/Node7fde…/tmpfs512MiB·ports/volumes/mount/formalnet0. 합성P256/one-time/statuscredential는새cluster/child메모리만·최대100초창/실Agent0. 전체최대10분/bootstrap240+TERM50/runner180/child110·기존test90/회수25초,clone전trap/exact ownerIDlabel경로process확인·별도SSH잔여0을유지한다. 직전readonly SSH exit0에서부재/uid/root/image/Node동일·정식3metadata/runningfalse를확인했고생성직전재확인한다. 실행결과전PASS0·정식DB/서비스/native/Agent변경0.
+
 - **FN06 게시 전 문서 whitespace 오류 기록**: 정확9경로 commit380d3d8에서 새 후보 문서 EOF 빈행 경고1이 staged diff check에 나타났으나 이어진 shell commit은 실행됐다. source/type/기능오류와 분리하고 당시 staged diff를 PASS로 소급하지 않는다. 새 문서 빈행1만 제거하고 일반 후속 commit으로 보존하며 amend/reset/기준완화0. 실제PG/서비스 실행0.
 
 - **FN06 새 데이터 lab source 게시 준비**: 신규 caller의 M1은 정확 거절 원인으로 시험을 보완했고 runner 한정 독립 C0/I0/M0·실행/수정0이다. 최신 guard7PASS321.3289ms/type/diff0·plan actualExecutedfalse/59/pending 고정 EB4…를 확인했다. 신규 source/기존 fixture opt-in·후보/계획/현황만 같은 branch에 보존하고 보호6·main은 변경하지 않는다. 다음은 게시 exact source에 대한 새 PG/합성 등록 credential 포함 한정 실행 패킷의 PMO 판정이며 실제 생성·실행0/전체FN06미완료를 유지한다.

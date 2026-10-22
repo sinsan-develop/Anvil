@@ -18,3 +18,18 @@ export function readClaimDataChildSummary(output:string){
  assert(v&&v.phase==='DONE'&&v.failure===null&&v.closeFailures===0&&v.rootCleanupFailed===false&&Number.isSafeInteger(v.rootCleanup?.files)&&v.rootCleanup.files>=0&&Number.isSafeInteger(v.rootCleanup?.dirs)&&v.rootCleanup.dirs>=1&&Array.isArray(v.cases)&&['FN06_NORMAL_REGISTRATION_RESERVATION_SIGNED_START','FN06_CLAIM_COMMIT_DISTINCT_READ_SAME_NEW_PROOF_ATOMIC_ROLLBACK','EXPLICIT_SYNTHETIC_SOURCE_OS_NO_ACTUAL_PROVIDER'].every(c=>v.cases.includes(c)),'CLAIM_DATA_QA_CHILD_NOT_COMPLETE');
  return{phase:'DONE',cases:v.cases.filter((c:unknown)=>typeof c==='string'&&/^[A-Z0-9_]{1,96}$/.test(c)),failure:null,rootCleanup:{files:v.rootCleanup.files,dirs:v.rootCleanup.dirs},closeFailures:0,rootCleanupFailed:false};
 }
+
+/** 실패 원문은 전달하지 않는다. 원 fixture가 정리 때 남긴 상수 코드와 수치만 채택한다. */
+export function readClaimDataChildFailure(output:string):Record<string,unknown>{
+ try{
+  const lines=output.split(/\r?\n/).map(l=>l.startsWith('# ')?l.slice(2):l).filter(l=>l.startsWith('FN12_ISOLATED_SAFE '));
+  if(lines.length!==1)return{phase:'SAFE_SUMMARY_UNAVAILABLE'};
+  const v=JSON.parse(lines[0]!.slice('FN12_ISOLATED_SAFE '.length)),f=v?.failure;
+  const phases=['TARGET','CATALOG_SEED','SEED','AUTH','CONFIRMED_DOCUMENTS','CONFIRMED_PLAN','ASSIGNMENT_DRAFT','CONFIRMED_ASSIGNMENT','FN06_CLAIM_DATA','DONE'];
+  const messages=['CLAIM_QA_TRUST_PREREQUISITE_REFUSED','CLAIM_QA_TRUST_CREATED_INVALID','CLAIM_QA_TRUST_SCOPE_MISMATCH','CLAIM_QA_TRUST_CHALLENGE_MISMATCH','CLAIM_QA_TRUST_STATUS_REFUSED','CLAIM_QA_TRUST_EXPIRED','CLAIM_QA_SESSION_PREREQUISITE_REFUSED','CLAIM_QA_SESSION_BINDING_MISMATCH','CLAIM_QA_SESSION_PREREQUISITE_READ_REFUSED','CLAIM_DATA_QA_NORMAL_PREREQUISITE_REFUSED','CLAIM_DATA_QA_POLICY_REFUSED','CLAIM_DATA_QA_BINDING_MISMATCH','CLAIM_DATA_QA_CURRENT_WRITER_REQUIRED','CLAIM_DATA_QA_WRITER_SCOPE_MISMATCH','CLAIM_DATA_QA_DB_CLOCK_REQUIRED','CLAIM_DATA_QA_EXPLICIT_READ_SCOPE_REQUIRED','CLAIM_DATA_QA_EXPIRED','FN12_QA_EXPIRED','INPUT_INVALID','AUTHENTICATED_PERMIT_REJECTED','PROVIDER_SESSION_CLAIM_REJECTED','PROVIDER_SESSION_CLAIM_INVALID','PROVIDER_SESSION_CLAIM_STORAGE_UNAVAILABLE'];
+  const states=['42501','23505','23503','23514','23502','40001','40P01','42601','42P01','42703','P0001','57014','ERR_ASSERTION'];
+  const responses=['POLICY_DENIED','POLICY_REQUIRED','POLICY_NOT_FOUND','FORBIDDEN','AUTHENTICATION_REQUIRED','UNAUTHENTICATED','REAUTH_REQUIRED','PRECONDITION_FAILED','INPUT_INVALID','VALIDATION_FAILED','STORAGE_FAILED','VERSION_CONFLICT','NOT_FOUND'];
+  const known=(s:unknown,allowed:string[])=>typeof s==='string'&&allowed.includes(s)?s:null,num=(n:unknown,max=599)=>typeof n==='number'&&Number.isSafeInteger(n)&&n>=0&&n<=max?n:null;
+  return{phase:known(v?.phase,phases)??'SAFE_SUMMARY_UNAVAILABLE',messageCode:known(f?.messageCode,messages),code:known(f?.code,states),lastResponseCode:known(f?.lastResponseCode,responses),expected:num(f?.expected),actual:num(f?.actual),closeFailures:num(v?.closeFailures,3),rootCleanupFailed:typeof v?.rootCleanupFailed==='boolean'?v.rootCleanupFailed:null};
+ }catch{return{phase:'SAFE_SUMMARY_UNAVAILABLE'};}
+}
