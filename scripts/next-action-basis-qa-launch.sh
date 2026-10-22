@@ -21,6 +21,7 @@ readonly qa_case=${3:-NEXT_ACTION}
 command -v lsof >/dev/null
 cleanup_until=0
 cleanup_stage=ENTRY
+cleanup_detail=NONE
 qa_bounded() {
   local left=$((cleanup_until-$(date +%s)))
   (( left > 0 )) || return 1
@@ -28,6 +29,19 @@ qa_bounded() {
   /usr/bin/timeout --signal=TERM --kill-after=1s "${left}s" "$@"
 }
 docker_exact() { qa_bounded /usr/bin/docker --host unix:///var/run/docker.sock "$@"; }
+qa_open_files_guard() {
+  local code=$1 open=$2 pid
+  cleanup_detail=NONE
+  # 기존 성공/없음 판정과 자기 PID 제한을 유지하며 원문은 출력하지 않는다.
+  if ! [[ "$code" == 0 || ( "$code" == 1 && -z "$open" ) ]]; then
+    cleanup_detail=LSOF_STATUS
+    return 1
+  fi
+  for pid in $open; do
+    if ! [[ "$pid" =~ ^[0-9]+$ ]]; then cleanup_detail=LSOF_OUTPUT_INVALID; return 1; fi
+    if ! [[ "$pid" == "$$" ]]; then cleanup_detail=OPEN_PID_PRESENT; return 1; fi
+  done
+}
 cleanup_checkout() {
   cleanup_until=$(( $(date +%s)+45 ))
   cleanup_stage=CWD
@@ -63,8 +77,7 @@ cleanup_checkout() {
   open=$(qa_bounded /usr/bin/lsof -t +D "$root" 2>&1)
   code=$?
   set -e
-  [[ "$code" == 0 || ( "$code" == 1 && -z "$open" ) ]] || return 1
-  for pid in $open; do [[ "$pid" =~ ^[0-9]+$ && "$pid" == "$$" ]] || return 1; done
+  qa_open_files_guard "$code" "$open" || return 1
   # 공유 node_modules는 링크만 제거한다. 실경로를 삭제하지 않는다.
   cleanup_stage=REMOVE_LINK
   qa_bounded /usr/bin/rm -- "$root/node_modules" || return 1
@@ -87,5 +100,5 @@ set +e
 /usr/bin/timeout --signal=TERM --kill-after=30s 150s "$node" "$root/scripts/next-action-basis-isolated-qa.ts" --run
 status=$?
 set -e
-if ! cleanup_checkout; then printf 'FN10_BASIS_QA_CLEANUP_INCOMPLETE stage=%s\n' "$cleanup_stage"; exit 2; fi
+if ! cleanup_checkout; then printf 'FN10_BASIS_QA_CLEANUP_INCOMPLETE stage=%s detail=%s\n' "$cleanup_stage" "$cleanup_detail"; exit 2; fi
 exit "$status"
