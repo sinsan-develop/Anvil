@@ -15,5 +15,6 @@ export function startCaptureFixture(){
  }};
  function assertBound(input:any){if(canonicalJson(input.envelope)!==canonicalJson(envelope)||canonicalJson(input.attemptRef)!==canonicalJson(events[0]?.ref)||canonicalJson(input.permitRef)!==canonicalJson(ref)||input.fact.method!=='thread/start')throw Error('UNBOUND_QA_CONTEXT');}
  const make=()=>new SyntheticPrimaryStartTransport(store,materials,authority,wire,codec,{context,envelopeExecutorRef:ref,grantRef:ref},{clock:()=>clock,timeoutMs:80,responseBarrier:barrier});
- return{make,input:()=>({envelope,permitRef:ref}),barrier,authority,setClock:(value:number)=>clock=value,events:()=>events,calls:()=>calls,completes:()=>completes,checks:()=>checks,mode:(v:string)=>mode=v,started,release:()=>release()};
+ const withBarrier=(bridge:any)=>new SyntheticPrimaryStartTransport(store,materials,authority,wire,bridge.codec,{context,envelopeExecutorRef:ref,grantRef:ref},{clock:()=>clock,timeoutMs:80,responseBarrier:bridge});
+ return{make,withBarrier,input:()=>({envelope,permitRef:ref}),barrier,authority,setClock:(value:number)=>clock=value,events:()=>events,calls:()=>calls,completes:()=>completes,checks:()=>checks,mode:(v:string)=>mode=v,started,release:()=>release()};
 }
