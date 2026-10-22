@@ -1,59 +1,35 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import type {PoolClient} from 'pg';
-import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import {ownershipHumanBasisFixture} from './ownership-human-basis-fixture.ts';
-const m=await import(new URL('../../../apps/server/modules/executions/ownership-preparation-receipt.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
-const hash=(v:unknown)=>contentHash(canonicalJson(v)),id=(n:number)=>`40000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-async function fixture(){
- const f=await ownershipHumanBasisFixture(),p=f.prep.snapshot;
- f.policy.created_at=new Date(p.at);
- const intent={schemaVersion:1,purpose:'OWNERSHIP_PREPARATION_INTENT',scope:structuredClone(p.scope),subject:structuredClone(p.subject),registrationRef:structuredClone(p.registrationRef),details:structuredClone(p.payload),at:p.at,expiresAt:p.expiresAt,executionAuthorized:false,dispatchPerformed:false};
- const intentRef={id:id(1),version:1,contentHash:hash(intent)};
- const request={schemaVersion:1,projectId:p.scope.projectId,commandId:id(2),clientId:p.subject.clientId,controlGeneration:p.subject.controlGeneration,operation:'prepareOwnershipAnchor',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{intent}};
- const command:any={id:id(3),scope_kind:'PROJECT',scope_id:p.scope.projectId,project_id:p.scope.projectId,draft_id:null,actor_id:p.subject.userId,client_id:p.subject.clientId,operation:'prepareOwnershipAnchor',command_id:request.commandId,request_hash:hash(request),operation_id:id(4),state:'APPLIED',authorization_receipt_id:id(5),approval_consumption_id:null,expected_version:0,control_generation:p.subject.controlGeneration,policy_ref:p.payload.policyRef,payload_ref:null,received_at:new Date(p.at),completed_at:new Date(p.at),result_ref:{operationId:id(4),commandId:request.commandId,projectId:p.scope.projectId,status:'APPLIED',targetId:intentRef.id,version:1,data:{ref:structuredClone(intentRef),status:'OWNERSHIP_PREPARATION_INTENT_RECORDED',intent:structuredClone(intent),commandSnapshot:structuredClone(request)},evidenceRefs:[],warnings:[],serverReceivedAt:p.at}};
- const digest=hash({projectId:p.scope.projectId,actorId:p.subject.userId,clientId:p.subject.clientId,controlGeneration:p.subject.controlGeneration,requestHash:command.request_hash,policyRef:p.payload.policyRef,targetRef:intentRef});
- Object.assign(command,{receipt_id:id(5),receipt_scope_kind:'PROJECT',receipt_scope_id:p.scope.projectId,receipt_command_id:command.id,receipt_subject_ref:{kind:'HUMAN',userId:p.subject.userId,clientId:p.subject.clientId},receipt_policy_ref:p.payload.policyRef,receipt_scope_digest:digest,receipt_approval_decision_ref:null,receipt_authorized_at:new Date(p.at)});
- const audit:any={project_id:p.scope.projectId,server_sequence:1,event_id:id(6),actor_ref:{kind:'HUMAN',userId:p.subject.userId},client_ref:p.subject.clientId,command_id:command.id,operation_id:command.operation_id,target_ref:intentRef,policy_ref:p.payload.policyRef,approval_ref:null,outcome:'APPLIED',reason_code:'EXPLICIT_OWNERSHIP_PREPARATION_INTENT',scope_digest:digest,recorded_at:new Date(p.at),source_kind:'HUMAN_COMMAND',correction_of:null};
- const auditSnapshot=()=>({projectId:audit.project_id,serverSequence:Number(audit.server_sequence),eventId:audit.event_id,actorRef:audit.actor_ref,clientRef:audit.client_ref,commandId:audit.command_id,operationId:audit.operation_id,targetRef:audit.target_ref,policyRef:audit.policy_ref,approvalRef:audit.approval_ref,outcome:audit.outcome,reasonCode:audit.reason_code,scopeDigest:audit.scope_digest,recordedAt:audit.recorded_at.toISOString(),sourceKind:audit.source_kind,correctionOf:audit.correction_of});
- const seal=()=>{p.commandRef={id:command.id,version:1,contentHash:command.request_hash};p.authorizationReceiptRef={id:command.receipt_id,version:1,contentHash:command.receipt_scope_digest};p.auditRef={id:audit.event_id,version:1,contentHash:hash(auditSnapshot())};f.prep.ref.contentHash=hash(p);};seal();
- let mode='';const queries:string[]=[];
- const db={async query(sql:string,args:any[]=[]){queries.push(sql);if(mode==='READ')throw Error('synthetic private detail');
-  if(sql.includes('FROM anvil.execution_ownership_events')){assert.deepEqual(args,[p.scope.projectId,p.scope.executionId,p.scope.executionGeneration,f.prep.ref.id,1]);return{rows:[{project_id:p.scope.projectId,execution_id:p.scope.executionId,execution_generation:p.scope.executionGeneration,event_id:f.prep.ref.id,version:1,content_hash:f.prep.ref.contentHash,snapshot_json:p}]};}
-  if(sql.includes('FROM anvil.commands c JOIN anvil.authorization_receipts')){assert.deepEqual(args,[p.scope.projectId,p.commandRef.id,p.authorizationReceiptRef.id]);if(mode==='MINIMAL_APP_ROLE'&&/FOR SHARE OF c,r/.test(sql))throw Object.assign(Error('synthetic row-lock UPDATE privilege required'),{code:'42501'});return{rows:mode==='MISSING'?[]:[command]};}
-  if(sql.includes('FROM anvil.audit_events')){assert.deepEqual(args,[p.scope.projectId,p.auditRef.id]);if(mode==='MINIMAL_APP_ROLE'&&/FOR (SHARE|UPDATE)/.test(sql))throw Object.assign(Error('synthetic immutable audit row-lock denied'),{code:'42501'});if(mode==='FINAL_SESSION')Object.assign(f.row,{revoked_at:f.now});if(mode==='FINAL_POLICY')f.noPolicy();if(mode==='FINAL_CLOCK')f.late();return{rows:[audit]};}
-  return f.db.query(sql,args);
- },release(){throw Error('CALLER_OWNS_CONNECTION');}} as unknown as PoolClient;
- const read=async()=>{assert.equal(typeof m.readOwnershipPreparationReceiptBasis,'function','원 준비 command/receipt/감사 조회 결박이 필요하다');return m.readOwnershipPreparationReceiptBasis(db,f.access,f.token,f.csrf,p.scope,f.prep.ref);};
- return{...f,read,command,audit,intent,intentRef,request,seal,queries,mode(v:string){mode=v;}};
-}
+import {canonicalJson} from '../../../contracts/canonical.ts';
+import {ownershipPreparationReceiptFixture} from './ownership-preparation-receipt-fixture.ts';
+const id=(n:number)=>`40000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 
 test('원 준비 DB fullref·비순환 intent·명령/허가/감사 원기록을 대조하되 발급 권한을 만들지 않는다',async()=>{
- const f=await fixture(),v=await f.read();assert.equal(v.purpose,'OWNERSHIP_PREPARATION_RECEIPT_BASIS_ONLY');assert.equal(v.approvalState,'NOT_REQUIRED');assert.deepEqual(v.intentRef,f.intentRef);assert.deepEqual(v.preparationRef,f.prep.ref);assert.equal(v.preparationAuthorized,false);assert.equal(v.observationRequestAuthorized,false);assert.equal(v.executionAuthorized,false);assert.equal(v.dispatchPerformed,false);assert.deepEqual(v.missingEvidence,['VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE']);
+ const f=await ownershipPreparationReceiptFixture(),v=await f.read();assert.equal(v.purpose,'OWNERSHIP_PREPARATION_RECEIPT_BASIS_ONLY');assert.equal(v.approvalState,'NOT_REQUIRED');assert.deepEqual(v.intentRef,f.intentRef);assert.deepEqual(v.preparationRef,f.prep.ref);assert.equal(v.preparationAuthorized,false);assert.equal(v.observationRequestAuthorized,false);assert.equal(v.executionAuthorized,false);assert.equal(v.dispatchPerformed,false);assert.deepEqual(v.missingEvidence,['VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE']);
  assert(!canonicalJson(f.intent).includes(f.prep.ref.contentHash));assert(f.queries.every(sql=>! /^(BEGIN|COMMIT|ROLLBACK|INSERT|UPDATE|DELETE|SELECT set_config)/.test(sql)));
 });
 
 test('원 명령/receipt/감사·원 subject/정책/target/hash의 개별 불일치를 거절한다',async()=>{
  const changes=[(f:any)=>f.command.state='FAILED',(f:any)=>f.command.actor_id=id(99),(f:any)=>f.command.client_id=id(99),(f:any)=>f.command.receipt_scope_id=id(99),(f:any)=>f.command.receipt_scope_digest='f'.repeat(64),(f:any)=>f.command.receipt_command_id=id(99),(f:any)=>f.command.result_ref.data.intent.details.workerHash='a'.repeat(64),(f:any)=>f.command.result_ref.targetId=id(99),(f:any)=>f.audit.outcome='DENIED',(f:any)=>f.audit.target_ref={...f.intentRef,id:id(99)},(f:any)=>f.audit.scope_digest='a'.repeat(64),(f:any)=>f.audit.recorded_at=new Date('2026-10-24T00:00:00Z'),(f:any)=>f.command.receipt_authorized_at=new Date('2026-10-24T00:00:00Z')];
- for(const change of changes){const f=await fixture();change(f);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
+ for(const change of changes){const f=await ownershipPreparationReceiptFixture();change(f);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
 });
 
 test('정합 재해시해도 다른 범위/원 command·허가 대상으로 결박하지 못한다',async()=>{
- const f=await fixture();f.command.request_hash='a'.repeat(64);f.seal();await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
- const g=await fixture();g.audit.target_ref={...g.intentRef,id:id(99)};g.seal();await assert.rejects(g.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
+ const f=await ownershipPreparationReceiptFixture();f.command.request_hash='a'.repeat(64);f.seal();await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
+ const g=await ownershipPreparationReceiptFixture();g.audit.target_ref={...g.intentRef,id:id(99)};g.seal();await assert.rejects(g.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
 });
 
 test('REQUIRE_APPROVAL 미연결·AUTO의 불필요 승인 주입·누락/읽기 오류는 기본 UNAVAILABLE다',async()=>{
- const required=await fixture();required.rules[0]!.disposition='REQUIRE_APPROVAL';required.updatePolicy();required.registration.scope_json.policyRef=required.prep.snapshot.payload.policyRef;required.registration.policy_ref=required.prep.snapshot.payload.policyRef;required.updateRegistration();required.seal();await assert.rejects(required.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
+ const required=await ownershipPreparationReceiptFixture();required.rules[0]!.disposition='REQUIRE_APPROVAL';required.updatePolicy();required.registration.scope_json.policyRef=required.prep.snapshot.payload.policyRef;required.registration.policy_ref=required.prep.snapshot.payload.policyRef;required.updateRegistration();required.seal();await assert.rejects(required.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
  assert.equal(required.queries.filter(sql=>sql.includes('FROM anvil.commands c JOIN anvil.authorization_receipts')).length,0,'미연결 승인은 다른 원기록 불일치에 가려지기 전에 거절해야 한다');
- const extra=await fixture();extra.command.approval_consumption_id=id(99);await assert.rejects(extra.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
- for(const mode of ['READ','MISSING']){const f=await fixture();f.mode(mode);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
+ const extra=await ownershipPreparationReceiptFixture();extra.command.approval_consumption_id=id(99);await assert.rejects(extra.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});
+ for(const mode of ['READ','MISSING']){const f=await ownershipPreparationReceiptFixture();f.mode(mode);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
 });
 
 test('원 이력 검사 뒤에도 현재 세션/정책·기한을 재검사한다',async()=>{
- for(const mode of ['FINAL_SESSION','FINAL_POLICY','FINAL_CLOCK']){const f=await fixture();f.mode(mode);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
+ for(const mode of ['FINAL_SESSION','FINAL_POLICY','FINAL_CLOCK']){const f=await ownershipPreparationReceiptFixture();f.mode(mode);await assert.rejects(f.read(),{message:'OWNERSHIP_PREPARATION_RECEIPT_UNAVAILABLE'});}
 });
 
 test('읽기 전용 receipt/audit의 UPDATE 권한 없이 원 근거를 대조한다',async()=>{
- const f=await fixture();f.mode('MINIMAL_APP_ROLE');const v=await f.read();assert.equal(v.approvalState,'NOT_REQUIRED');assert.equal(v.executionAuthorized,false);
+ const f=await ownershipPreparationReceiptFixture();f.mode('MINIMAL_APP_ROLE');const v=await f.read();assert.equal(v.approvalState,'NOT_REQUIRED');assert.equal(v.executionAuthorized,false);
 });

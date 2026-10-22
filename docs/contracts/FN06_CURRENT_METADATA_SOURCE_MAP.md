@@ -1,5 +1,14 @@
 # FN06 현재 metadata 원자료·소유 관측 경계
 
+## 2026-10-23 D1 요청 발행 source — 합성/실권위 구분
+
+- `ownership-request-issuer.ts`의 `SyntheticPgOwnershipRequestIssuer`는 현재 AUTO 원준비 receipt reader를 같은 transaction에서 전후 소비하고 project 준비 slot·exact tail/head 및 서버 nonce/request 저장·COMMIT 후 반환을 조립한다. 기본 evidence 포트는 null이며 연결 전에 UNAVAILABLE다. 공개 route/operation/실제 공급자 등록은 없다.
+- 내부 포트 입력은 purpose `OWNERSHIP_SYNTHETIC_PREPARED_INPUTS`, transport `SYNTHETIC_ONLY`, exact scope/preparationRef, writer `{claim:SYNTHETIC_NONE,generation,evidenceRef,predecessorRef,reclaimRef}`, candidate `{anchor,sourceRef,rootId,hostHash,workerHash,runId,processGeneration}`, checkedAt/expiresAt·실행/송신 false다. predecessor/reclaim은 둘 다 null 또는 둘 다 fullref다. 이는 실제 lease NONE/회수·후보 출처 진위가 아니며 bare NONE/REAL·실권한 true를 거절한다.
+- 현재 근거는 provider await 뒤 DB clock으로 검사한다. 최초·최종 정확 writer/candidate와 원준비 정책/등록/원 기록이 같아야 하며 저장 요청 수명은 최종 근거 기한을 넘지 못한다. 최초/BINDING 뒤 CURRENT도 원 head/anchor를 유지한다.
+- 성공 purpose는 `SYNTHETIC_OWNERSHIP_REQUEST_COMMIT_ONLY`; `preparationAuthorized/observationRequestAuthorized/executionAuthorized/dispatchPerformed` 모두 false, missingEvidence는 `VERIFIED_WRITER_NONE_OR_RECLAIM,CANDIDATE_PROVENANCE`다. 실제 writer 권한·Agent 전달/실행이 아니다.
+- BEGIN 취소/포트 변경은 rollback, rollback 불명은 연결폐기/ROLLBACK_UNCONFIRMED, COMMIT 시도 후 오류·취소·응답 손실·release 실패는 COMMIT_UNKNOWN이며 자동 재발행0이다. COMMIT 지연 client elapsed 검사는 보수적 보조 검사이며 SQLpending M1의 서버 COMMIT 기한 보장을 해결하지 않는다.
+- 기존 REQUIRE_APPROVAL 미연결 차단과 범용 allowlist는 그대로다. 실제 승인 발급/소비·DB SQL/권한/키·native/OS·서비스·Agent 실행은 하지 않았다. 합성 시험·source 일부를 FN06 완료로 표시하지 않는다.
+
 ## 후속 source 보완 — 응답 예약 미생성
 
 아래 표는 조사 당시 구현의 기록이다. 후속 source에서 기존 current는 유지하고 명시 currentReadOnly를 분리했다. 응답용 Bound 조회는 이 포트를 필수로 요구하며 PG 분기는 같은 현재 검사를 공유하되 정확히 존재하는 credential 예약만 읽는다. 부재 때 생성하지 않고 거절하며, 기존 current()를 읽기 전용으로 위장 호출하지 않는다. 실제 DB/OS 검증은 아직 없다.

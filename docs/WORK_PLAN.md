@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 원자 요청 발행 source 일부**: 같은 transaction의 AUTO 원준비·현재 HUMAN/정책/등록·project slot/tail/head와 서버 nonce/request 저장·COMMIT 뒤 합성 반환을 연결했다. 실제 공급자는 미등록이며 실writer/회수·provenance·REQUIRE_APPROVAL 소비·준비 creator/SQL guard·current resolver/native/Agent 및 전체 FN06는 여전히 미완료다. 독립 C0/I3/M1와 Main 반례/검증의 범위는 WORK_STATUS를 따른다. 실제 DB/권한/서비스 실행 범위·기존 거절은 확대/해제하지 않는다.
+
 - **2026-10-23 FN06 D1 준비 승인 이력 source 일부**: 별도 준비 HISTORY_ONLY 읽기는 기존 일반 승인 목록/발급·소비·원준비 REQUIRE_APPROVAL 차단을 유지한다. 독립 I1 최종 기한과 M1 정합 만료 음성/직접19/type/diff의 정확 범위는 WORK_STATUS에 남겼다. 현재 인증/준비 receipt·writer/실회수·provenance와 원자 발급/COMMIT 뒤 전달의 실제 연결 및 D1 전체는 여전히 미완료다. 기존 SQL/정책/키·서비스/Agent 실행 범위는 확대하지 않는다.
 
 - **2026-10-23 FN06 D1 원 준비 AUTO receipt source 일부**: 원 events 준비와 현재근거·비순환 intent/명령/허가/감사 이력을 읽기 결박했다. 독립 I1 최소권한 잠금 보완 및 M1 시험 masking 구분·직접31/type/diff·선택 변이 NOT_EXECUTED는 WORK_STATUS에 보존한다. 필요한 일회 승인 소비·writer/실회수·후보 provenance·준비/요청 원자 발급과 COMMIT 후 전달은 여전히 미완료이며 실제 DB/권한·서비스/Agent 적용이나 FN06 완료가 아니다. 같은 승인 D1 안의 다음 source를 Main이 계속 선정한다.
