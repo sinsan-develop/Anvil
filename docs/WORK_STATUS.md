@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **FN06 결과 checkpoint·다음 조회 경계 대조**: 실제결과3문서9b420d52fa4b6a0482799606c48bbd43eff94714 local/private동일·추적clean·main/보호6보존을확인했다. 기존OWNER용receipt/list route와Webreader·current USER/session/member재검사·30초반환창은source에이미존재하므로중복구현하지않는다. 다음공백은실저장원문이정상인증API/Webreader까지이어지는실소비이며기존원자성case를재시험진도로쓰지않는다. 경로읽기의추정 apps/server/routes os2 1건은변경0/실inventory의provider-session-claim-history-routes.ts로대조했고새서비스·DB·Agent실행0이다. 전체계획미완료·추가사용자재승인요청0.
+
 - **FN06 결과 문서 게시 전 형식 보정**: 새결과서EOF빈행1로staged diff check exit2가발생해commit/push가중단됐다. 빈행만보정하며실제시험결과/코드변경0·실행재검증0이다.
 
 - **FN06 한정 성공의 독립 회수·다음 단위**: 뒤SSH exec-2ad07c exit0에서실PG733804…/netdc659… fullID·run79825…/ownerlabel·등록root/관련cwd잔여0과정식3fullID/image/StartedAt/runningfalse·daemon/image/Node불변을확인했다. 새합성DB/역할/등록credential은tmpfs/process와함께폐기·정식변경0이며JS완전메모리소거보장0이다. 한정결과/원3FAIL·미검증을FN06_PROVIDER_CLAIM_DATA_LAB_RESULT.md와계획에기록했다. 다음미완료는현재OWNER인증API/화면의실저장claim조회소비와실Agent/native연결이며이미완료한schema/원자성시험을반복하지않는다. 전체FN06/Stage/계획완료보고는아니다.
