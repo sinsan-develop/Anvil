@@ -137,5 +137,66 @@ namespace Anvil.Native.OwnershipEvidence
             }
             catch{throw Unavailable();}
         }
+        // 다음 retained factory/query가 소비할 순수 비교 SOURCE. 아래 scalar는 handle이 아니며
+        // caller가 양쪽을 같은 값으로 꾸미는 것을 진짜 OS 근거와 구별할 수 없다.
+        internal sealed class RetainedIdentity
+        {
+            internal readonly string RunId,JobId,ImageHash,StartTicks;
+            internal readonly long Generation;
+            internal readonly uint Pid;
+            internal RetainedIdentity(string runId,long generation,string jobId,uint pid,string startTicks,string imageHash)
+            {
+                try
+                {
+                    long ticks;
+                    if(!Uuid(runId)||generation<1||generation>9007199254740991L||!Uuid(jobId)||pid==0||!Hash(imageHash)||startTicks==null||!long.TryParse(startTicks,NumberStyles.None,CultureInfo.InvariantCulture,out ticks)||ticks<=0||ticks.ToString(CultureInfo.InvariantCulture)!=startTicks)throw Unavailable();
+                    DateTime.FromFileTimeUtc(ticks); // 범위 검사만이며 process/OS 조회가 아니다.
+                    RunId=runId;Generation=generation;JobId=jobId;Pid=pid;StartTicks=startTicks;ImageHash=imageHash;
+                }
+                catch{throw Unavailable();}
+            }
+        }
+        internal sealed class PreparedSnapshot
+        {
+            internal readonly RetainedIdentity Root;
+            private readonly RetainedIdentity[] members;
+            internal RetainedIdentity[] Members{get{return(RetainedIdentity[])members.Clone();}}
+            internal readonly bool RootActive,RootInJob,NeverResumed;
+            internal readonly DateTime ObservedAt;
+            internal PreparedSnapshot(RetainedIdentity root,RetainedIdentity[] members,bool rootActive,bool rootInJob,bool neverResumed,DateTime observedAt)
+            {
+                if(root==null||members==null||members.Length>2||members.Any(x=>x==null)||observedAt.Kind!=DateTimeKind.Utc)throw Unavailable();
+                Root=root;this.members=(RetainedIdentity[])members.Clone();RootActive=rootActive;RootInJob=rootInJob;NeverResumed=neverResumed;ObservedAt=observedAt;
+            }
+        }
+        internal sealed class PreparedSourceMatch
+        {
+            internal readonly string Purpose="OWNERSHIP_PREPARED_SOURCE_MATCHED_ONLY";
+            internal readonly RetainedIdentity Identity;
+            internal readonly DateTime ObservedAt,ExpiresAt;
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal string[] MissingEvidence{get{return new[]{"RETAINED_HANDLE_PROVENANCE","ACTUAL_NATIVE_HANDLE_QUERY","AUTHENTICATED_NATIVE_CHANNEL","OBSERVATION_SIGNER","ACTUAL_WRITER_NONE_OR_RECLAIM","CANDIDATE_PROVENANCE"};}}
+            internal PreparedSourceMatch(RetainedIdentity identity,DateTime observedAt,DateTime expiresAt){Identity=identity;ObservedAt=observedAt;ExpiresAt=expiresAt;}
+        }
+        private static bool SameIdentity(RetainedIdentity a,RetainedIdentity b)
+        {return a!=null&&b!=null&&a.RunId==b.RunId&&a.Generation==b.Generation&&a.JobId==b.JobId&&a.Pid==b.Pid&&a.StartTicks==b.StartTicks&&a.ImageHash==b.ImageHash;}
+        internal static PreparedSourceMatch ComparePreparedSource(OwnershipEvidencePreparationPlan plan,RetainedIdentity expected,PreparedSnapshot snapshot,DateTime now)
+        {
+            try
+            {
+                if(plan==null||expected==null||snapshot==null||now.Kind!=DateTimeKind.Utc)throw Unavailable();
+                Shape(plan.Selection,now);
+                if(plan.ExpiresAt.Kind!=DateTimeKind.Utc||plan.ExpiresAt>Time(plan.Selection["expiresAt"])||now>=plan.ExpiresAt||snapshot.ObservedAt<Time(plan.Selection["issuedAt"])||snapshot.ObservedAt>now||now-snapshot.ObservedAt>TimeSpan.FromMilliseconds(10000))throw Unavailable();
+                if(expected.RunId!=plan.Selection["runId"]||expected.Generation.ToString(CultureInfo.InvariantCulture)!=plan.Selection["processGeneration"]||expected.ImageHash!=plan.Selection["workerHash"]||!SameIdentity(expected,snapshot.Root)||!snapshot.RootActive||!snapshot.RootInJob||!snapshot.NeverResumed)throw Unavailable();
+                DateTime createdAt=DateTime.FromFileTimeUtc(long.Parse(expected.StartTicks,CultureInfo.InvariantCulture));
+                if(createdAt<Time(plan.Selection["issuedAt"])||createdAt>snapshot.ObservedAt)throw Unavailable();
+                var members=snapshot.Members;if(members.Length!=1||!SameIdentity(expected,members[0]))throw Unavailable();
+                return new PreparedSourceMatch(expected,snapshot.ObservedAt,plan.ExpiresAt);
+            }
+            catch{throw Unavailable();}
+        }
     }
 }

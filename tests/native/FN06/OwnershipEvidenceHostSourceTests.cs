@@ -41,8 +41,43 @@ internal static class OwnershipEvidenceHostSourceTests
         bool rejected=false;try { await action(); } catch (InvalidOperationException error) { if(error.Message!="OWNERSHIP_EVIDENCE_HOST_UNAVAILABLE"||error.InnerException!=null)throw;rejected=true; }
         if (!rejected) throw new InvalidOperationException("HOST_REJECTION_EXPECTED");
     }
+    private static void RejectSource(Action action)
+    {
+        bool rejected=false;try{action();}catch(InvalidOperationException error){if(error.Message!="OWNERSHIP_EVIDENCE_HOST_UNAVAILABLE"||error.InnerException!=null)throw;rejected=true;}
+        if(!rejected)throw new InvalidOperationException("RETAINED_SOURCE_REJECTION_EXPECTED");
+    }
+    private static OwnershipEvidenceHost.RetainedIdentity Identity(string run=Id,long generation=1,string job=Id,uint pid=1,string ticks=null,string image=Hash)
+    {return new OwnershipEvidenceHost.RetainedIdentity(run,generation,job,pid,ticks??Now.ToFileTimeUtc().ToString(System.Globalization.CultureInfo.InvariantCulture),image);}
+    private static void RetainedSourceCases()
+    {
+        var plan=new OwnershipEvidencePreparationPlan(Input(),Now.AddSeconds(10));var expected=Identity();
+        var members=new[]{expected};var snapshot=new OwnershipEvidenceHost.PreparedSnapshot(expected,members,true,true,true,Now);
+        members[0]=Identity(pid:2);
+        var value=OwnershipEvidenceHost.ComparePreparedSource(plan,expected,snapshot,Now);
+        if(value.Purpose!="OWNERSHIP_PREPARED_SOURCE_MATCHED_ONLY"||value.OsOwnershipVerified||value.PreparationAuthorized||value.ExecutionAuthorized||value.DispatchPerformed)throw new InvalidOperationException("RETAINED_SOURCE_ONLY_EXPECTED");
+        foreach(var wrong in new[]{Identity(pid:2),Identity(generation:2),Identity(job:"70000000-0000-4000-8000-000000000002"),Identity(run:"70000000-0000-4000-8000-000000000002"),Identity(ticks:(Now.ToFileTimeUtc()+1).ToString(System.Globalization.CultureInfo.InvariantCulture)),Identity(image:new string('b',64))})
+        {
+            RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,expected,new OwnershipEvidenceHost.PreparedSnapshot(wrong,new[]{wrong},true,true,true,Now),Now));
+        }
+        // 양쪽 scalar를 함께 꾸민 경우 순수 비교로 진위를 구분할 수 없다. 실제 권위는 계속 false다.
+        var echoed=OwnershipEvidenceHost.ComparePreparedSource(plan,Identity(pid:2),new OwnershipEvidenceHost.PreparedSnapshot(Identity(pid:2),new[]{Identity(pid:2)},true,true,true,Now),Now);
+        if(echoed.OsOwnershipVerified||!Array.Exists(echoed.MissingEvidence,x=>x=="RETAINED_HANDLE_PROVENANCE"))throw new InvalidOperationException("CALLER_ECHO_IS_NOT_AUTHORITY");
+        foreach(var badMembers in new[]{new OwnershipEvidenceHost.RetainedIdentity[0],new[]{expected,Identity(pid:2)},new[]{Identity(pid:2)}})
+            RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,expected,new OwnershipEvidenceHost.PreparedSnapshot(expected,badMembers,true,true,true,Now),Now));
+        foreach(var flags in new[]{new[]{false,true,true},new[]{true,false,true},new[]{true,true,false}})
+            RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,expected,new OwnershipEvidenceHost.PreparedSnapshot(expected,new[]{expected},flags[0],flags[1],flags[2],Now),Now));
+        RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,expected,snapshot,Now.AddSeconds(10)));
+        RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,expected,new OwnershipEvidenceHost.PreparedSnapshot(expected,new[]{expected},true,true,true,Now.AddMilliseconds(1)),Now));
+        foreach(var at in new[]{Now.AddTicks(-1),Now.AddTicks(1)})
+        {
+            var futureOrOld=Identity(ticks:at.ToFileTimeUtc().ToString(System.Globalization.CultureInfo.InvariantCulture));
+            RejectSource(()=>OwnershipEvidenceHost.ComparePreparedSource(plan,futureOrOld,new OwnershipEvidenceHost.PreparedSnapshot(futureOrOld,new[]{futureOrOld},true,true,true,Now),Now));
+        }
+        RejectSource(()=>Identity(pid:0));RejectSource(()=>Identity(ticks:"01"));RejectSource(()=>Identity(ticks:long.MaxValue.ToString()));
+    }
     public static async Task RunAll()
     {
+        RetainedSourceCases();
         var input=Input();var basis=new Basis();var gate=new OwnershipEvidenceHost(basis, ()=>Now, 1000);
         var plan=await gate.PlanAsync(input, CancellationToken.None);
         if (plan.Purpose!="OWNERSHIP_PREPARATION_SOURCE_PLAN_ONLY" || plan.ProcessCreationAuthorized || plan.PreparationAuthorized || plan.ExecutionAuthorized || plan.DispatchPerformed || basis.Reads!=2)

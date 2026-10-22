@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 retained 정체성 순수 비교 SOURCE — 2026-10-23
+
+Host 내부 ComparePreparedSource는 원 생성 정체성 후보와 관측 후보의 run/gen/job/pid/startTicks/image·profile의 run/gen/image, 원 준비 이후/관측 이전 생성시각·현재기한·관측나이 최대10초, active/inJob/neverResumed·단일 Job member를 비교한다. 후보 identity는 불변 scalar이고 member 배열은 복제한다. 반환은 OWNERSHIP_PREPARED_SOURCE_MATCHED_ONLY/OsOwnershipVerified·PreparationAuthorized·ExecutionAuthorized·DispatchPerformed=false다.
+
+이 scalar는 실제 retained handle이 아니다. 양쪽 값을 함께 위조하면 비교만으로 진위를 구별할 수 없고 RETAINED_HANDLE_PROVENANCE/ACTUAL_NATIVE_HANDLE_QUERY/인증채널/서명/writer/provenance는 누락이다. P/Invoke·실제 factory/조회/취소·서명·채널 등록을 추가하지 않는다. 미래 C# 시험 SOURCE·정적 검토만 있으며 compile/실행/OS/회수 PASS로 사용하지 않는다.
+
 ## FN06 D1 native 준비 입력의 원기록 투영 SOURCE — 2026-10-23
 
 readOwnershipNativePreparationProfile은 현재 인증된 caller transaction에서 원 준비 receipt/HUMAN을 전후 검증하고, 사이에 원 PREPARATION_GRANTED 유일행의 fullref/hash·scope/subject/policy/등록/receipt를 대조해 Host 내부32필드로 투영한다. caller는 scope/ref만 지정하며 자유 hostHash/workerHash/profile을 수용하지 않는다. 원 issuedAt/expiresAt는 metadata에 그대로 보존하고 현재 재인증/등록/정책의 더 짧은 기한은 별도 expiresAt로 반환한다. AUTO/status-only/grants0는 기존 원 검증의 결과이며 등록권한 확장이 아니다.

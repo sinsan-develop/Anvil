@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 retained 비교 SOURCE**: Host 내부 run/gen/job/pid/start/image·원profile·준비/생성/관측시각·유한기한·단일member 비교를 추가했다. 미래 C# 반례 SOURCE/한정 정적 C0/I0/M0·diff0만 확인했으며 compile/실행은 NOT_RUN이다. scalar 일치가 실제handle 진위·OS관측/회수 증명이 아님을 명시하고 allfalse/missingEvidence를 유지한다. 실제 factory/조회·인증채널/서명/취소와 전체 FN06/계획은 여전히 미완료다.
+
 - **2026-10-23 FN06 D1 native 입력 투영 SOURCE**: 기존 원준비/HUMAN/receipt 검증과 원 DB event를 재사용해 내부32필드를 투영했다. 직접/선행17합성PASS·type/diff0, 한정 정적 C0/I0/M0이며 BASIS_ONLY/allfalse다. 실제 native 인증채널·retained factory/서명/writer/provenance·SQLpendingM1/Agent 및 전체 계획은 미완료다. actual 효과를 실행하지 않고 다음 native 연결/retained 선행 SOURCE를 계속한다.
 
 - **2026-10-23 FN06 D1 신규 Host 사전검사 SOURCE**: 내부 준비 profile/current-basis 두 번 대조·단일사용·만료/취소 gate를 작성했다. 결과는 SOURCE_PLAN_ONLY/모든 권한false이고 실제 authenticated binding/retained factory/관측서명/writer/provenance는 누락이다. 원 정적 I2 및 한정 보정 C0/I0/M0·diff0만 확인했고 compile/시험실행/native OS/종료상한은 NOT_RUN/UNVERIFIED다. 다음은 실제 current native 연결·retained identity/관측/취소 SOURCE이며 기존 특정거절/SQLpendingM1/D2~D4 실제효과 제외와 전체 계획 미완료는 유지한다.
