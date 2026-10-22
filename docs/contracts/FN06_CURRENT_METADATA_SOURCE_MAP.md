@@ -1,5 +1,11 @@
 # FN06 현재 metadata 원자료·소유 관측 경계
 
+## 2026-10-23 D1 같은-client 합성 fresh producer
+
+- 새 `ownership-fresh-producer.ts`는 원 AUTO 준비 현재근거/선택·binding 사건을 먼저 읽고 서버 read window 안에 새 요청·서명 수용을 수행한다. `ownership-observation-staged.ts`는 caller의 제한 query facade만 받아 STAGED_ONLY를 반환하며 BEGIN/COMMIT/release를 소유하지 않는다. 기존 own-transaction issuer/archive의 공개 동작은 보존한다.
+- default observer/evidence는 null이며 실제 공급자 등록·RPC·OS·DB 적용0이다. 합성 writer 선언은 실제 NONE/회수/provenance 증거가 아니며 BASIS_ONLY와 권한 false·missingEvidence를 유지한다. REQUIRE_APPROVAL guard는 그대로다.
+- producer→current resolver→명시 7필드 adapter의 두 조회와 rollback/CAS/잘못된 nonce·서명·permit/무응답을 fake SQL journal 및 메모리 합성 서명으로 확인했다. 직접54/type/diff·독립 최종 delta 읽기 C0/I0/M0는 실제 PG 원자성/내구성·native·Agent·기능 완료 증거가 아니다. 실제 authority 활성화와 SQLpendingM1·준비 creator/승인소비는 여전히 남아 있다.
+
 ## 2026-10-23 D1 응답 목적의 명시 7필드 투영
 
 - `apps/connector/runtime/sent-process-current-archive.ts`의 `SyntheticSentProcessCurrentArchive`는 기존 `SyntheticSentProcessArchive`를 구현하지만 기본 resolve source는 null이다. 내부 source는 서버 current resolver의 합성 BASIS_ONLY를 반환하는 계약이며 실제 RPC/서버/producer는 아직 등록하지 않았다.

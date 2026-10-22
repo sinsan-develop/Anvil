@@ -38,7 +38,7 @@ export class SyntheticSentProcessCurrentArchive implements SyntheticSentProcessA
    if(Date.parse(b.recordedAt)<Date.parse(p.recordedAt)||this.#last&&(!same(a.anchor,this.#last.anchor)||!same(a.binding,this.#last.binding)||v.headRef.id!==this.#last.headRef.id||v.headRef.version<=this.#last.headRef.version))return fail();
    const expiresAt=Math.min(end,Date.parse(e.expiresAt),Date.parse(a.expiresAt),Date.parse(p.expiresAt),Date.parse(b.expiresAt));guard();if(this.#now()>=expiresAt)return fail();
    this.#requests.add(v.requestRef.id);this.#observations.add(v.observationRef.id);this.#last=cloneV1({anchor:a.anchor,binding:a.binding,headRef:v.headRef});
-   return cloneV1({...a,expiresAt:new Date(expiresAt).toISOString()});
+   return cloneV1({anchor:a.anchor,binding:a.binding,anchorHeadRef:a.anchorHeadRef,bindingHeadRef:a.bindingHeadRef,revoked:false as const,readAt:a.readAt,expiresAt:new Date(expiresAt).toISOString()});
   }catch{return fail();}finally{controller.abort();if(timer)clearTimeout(timer);signal instanceof AbortSignal&&signal.removeEventListener('abort',abort);}
  }
 }
