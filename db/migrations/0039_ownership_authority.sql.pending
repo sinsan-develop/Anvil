@@ -1,0 +1,194 @@
+-- FN06 D1 SOURCE-ONLY, NOT IN ANY EXECUTION MANIFEST. DO NOT APPLY.
+-- This is a NEW ownership journal/anchor/head schema, not a rename/retry of rejected 0038.
+-- Runtime authority/permission guards are INCOMPLETE. All application DML is denied below.
+-- Existing SQL, roles, policies and services are untouched. PostgreSQL execution/syntax is UNVERIFIED.
+CREATE TABLE anvil.execution_ownership_events (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),execution_id uuid NOT NULL,execution_generation bigint NOT NULL CHECK(execution_generation BETWEEN 1 AND 9007199254740991),
+ event_id uuid NOT NULL,version bigint NOT NULL DEFAULT 1 CHECK(version=1),sequence bigint NOT NULL CHECK(sequence BETWEEN 1 AND 9007199254740991),
+ project_sequence bigint NOT NULL CHECK(project_sequence BETWEEN 1 AND 9007199254740991),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ candidate_anchor_json jsonb,request_id uuid,
+ kind text GENERATED ALWAYS AS(snapshot_json->>'kind') STORED,
+ previous_event_id uuid GENERATED ALWAYS AS((snapshot_json->'previousRef'->>'id')::uuid) STORED,
+ previous_event_version bigint GENERATED ALWAYS AS((snapshot_json->'previousRef'->>'version')::bigint) STORED,
+ previous_event_hash text GENERATED ALWAYS AS(snapshot_json->'previousRef'->>'contentHash') STORED,
+ PRIMARY KEY(project_id,event_id,version),UNIQUE(project_id,execution_id,execution_generation,sequence),UNIQUE(project_id,project_sequence),
+ UNIQUE(project_id,execution_id,execution_generation,event_id,version,content_hash),
+ CHECK(kind IN('PREPARATION_GRANTED','OBSERVATION_REQUESTED','OBSERVATION_ACCEPTED','ANCHOR_ADOPTED','BINDING_RECORDED','REVOKED','EXPIRED','UNKNOWN')),
+ CHECK((sequence=1 AND snapshot_json->'previousRef'='null'::jsonb) OR (sequence>1 AND previous_event_id IS NOT NULL AND previous_event_version=1 AND previous_event_hash~'^[0-9a-f]{64}$')),
+ CHECK((kind='OBSERVATION_ACCEPTED' AND request_id IS NOT NULL AND request_id::text=snapshot_json->'payload'->'requestRef'->>'id') OR (kind<>'OBSERVATION_ACCEPTED' AND request_id IS NULL)),
+ CHECK(candidate_anchor_json IS NULL OR (kind='OBSERVATION_REQUESTED' AND jsonb_typeof(candidate_anchor_json)='object')),
+ FOREIGN KEY(project_id,execution_id,execution_generation,previous_event_id,previous_event_version,previous_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE UNIQUE INDEX ownership_accepted_request_once ON anvil.execution_ownership_events(project_id,request_id) WHERE kind='OBSERVATION_ACCEPTED';
+
+CREATE TABLE anvil.execution_ownership_observations (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,execution_generation bigint NOT NULL CHECK(execution_generation BETWEEN 1 AND 9007199254740991),
+ observation_id uuid NOT NULL,version bigint NOT NULL DEFAULT 1 CHECK(version=1),request_id uuid NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ accepted_event_ref jsonb NOT NULL CHECK(jsonb_typeof(accepted_event_ref)='object'),nonce_digest text NOT NULL CHECK(nonce_digest~'^[0-9a-f]{64}$'),
+ request_version bigint GENERATED ALWAYS AS((snapshot_json->'report'->'requestRef'->>'version')::bigint) STORED,
+ request_hash text GENERATED ALWAYS AS(snapshot_json->'report'->'requestRef'->>'contentHash') STORED,
+ accepted_event_id uuid GENERATED ALWAYS AS((accepted_event_ref->>'id')::uuid) STORED,
+ accepted_event_version bigint GENERATED ALWAYS AS((accepted_event_ref->>'version')::bigint) STORED,
+ accepted_event_hash text GENERATED ALWAYS AS(accepted_event_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,observation_id,version),UNIQUE(project_id,request_id),
+ UNIQUE(project_id,execution_id,execution_generation,observation_id,version,content_hash),
+ CHECK(request_id::text=snapshot_json->'report'->'requestRef'->>'id' AND request_version=1 AND request_hash~'^[0-9a-f]{64}$'),
+ FOREIGN KEY(project_id,execution_id,execution_generation,request_id,request_version,request_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,execution_id,execution_generation,accepted_event_id,accepted_event_version,accepted_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE anvil.execution_ownership_anchors (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,execution_generation bigint NOT NULL CHECK(execution_generation BETWEEN 1 AND 9007199254740991),
+ anchor_id uuid NOT NULL,version bigint NOT NULL DEFAULT 1 CHECK(version=1),content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),preparation_event_ref jsonb NOT NULL,adoption_event_ref jsonb NOT NULL,
+ preparation_event_id uuid GENERATED ALWAYS AS((preparation_event_ref->>'id')::uuid) STORED,
+ preparation_event_version bigint GENERATED ALWAYS AS((preparation_event_ref->>'version')::bigint) STORED,
+ preparation_event_hash text GENERATED ALWAYS AS(preparation_event_ref->>'contentHash') STORED,
+ adoption_event_id uuid GENERATED ALWAYS AS((adoption_event_ref->>'id')::uuid) STORED,
+ adoption_event_version bigint GENERATED ALWAYS AS((adoption_event_ref->>'version')::bigint) STORED,
+ adoption_event_hash text GENERATED ALWAYS AS(adoption_event_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,anchor_id,version),UNIQUE(project_id,execution_id,execution_generation,anchor_id),
+ UNIQUE(project_id,execution_id,execution_generation,anchor_id,version,content_hash),
+ FOREIGN KEY(project_id,execution_id,execution_generation,preparation_event_id,preparation_event_version,preparation_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,execution_id,execution_generation,adoption_event_id,adoption_event_version,adoption_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE anvil.execution_ownership_bindings (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,execution_generation bigint NOT NULL CHECK(execution_generation BETWEEN 1 AND 9007199254740991),
+ binding_id uuid NOT NULL,version bigint NOT NULL DEFAULT 1 CHECK(version=1),command_id uuid NOT NULL,anchor_ref jsonb NOT NULL,attempt_ref jsonb NOT NULL,permit_ref jsonb NOT NULL,binding_event_ref jsonb NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ anchor_id uuid GENERATED ALWAYS AS((anchor_ref->>'id')::uuid) STORED,anchor_version bigint GENERATED ALWAYS AS((anchor_ref->>'version')::bigint) STORED,anchor_hash text GENERATED ALWAYS AS(anchor_ref->>'contentHash') STORED,
+ attempt_id uuid GENERATED ALWAYS AS((attempt_ref->>'id')::uuid) STORED,attempt_version bigint GENERATED ALWAYS AS((attempt_ref->>'version')::bigint) STORED,
+ permit_id uuid GENERATED ALWAYS AS((permit_ref->>'id')::uuid) STORED,permit_version bigint GENERATED ALWAYS AS((permit_ref->>'version')::bigint) STORED,
+ binding_event_id uuid GENERATED ALWAYS AS((binding_event_ref->>'id')::uuid) STORED,binding_event_version bigint GENERATED ALWAYS AS((binding_event_ref->>'version')::bigint) STORED,binding_event_hash text GENERATED ALWAYS AS(binding_event_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,binding_id,version),UNIQUE(project_id,execution_id,execution_generation,command_id,attempt_id,attempt_version,permit_id,permit_version),
+ FOREIGN KEY(project_id,execution_id,execution_generation,anchor_id,anchor_version,anchor_hash)
+  REFERENCES anvil.execution_ownership_anchors(project_id,execution_id,execution_generation,anchor_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,execution_id,execution_generation,binding_event_id,binding_event_version,binding_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE anvil.execution_ownership_heads (
+ project_id uuid NOT NULL,execution_id uuid NOT NULL,execution_generation bigint NOT NULL CHECK(execution_generation BETWEEN 1 AND 9007199254740991),
+ id uuid NOT NULL,head_generation bigint NOT NULL CHECK(head_generation BETWEEN 1 AND 9007199254740991),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),
+ anchor_id uuid GENERATED ALWAYS AS((snapshot_json->'anchorRef'->>'id')::uuid) STORED,anchor_version bigint GENERATED ALWAYS AS((snapshot_json->'anchorRef'->>'version')::bigint) STORED,anchor_hash text GENERATED ALWAYS AS(snapshot_json->'anchorRef'->>'contentHash') STORED,
+ current_event_id uuid GENERATED ALWAYS AS((snapshot_json->'currentEventRef'->>'id')::uuid) STORED,current_event_version bigint GENERATED ALWAYS AS((snapshot_json->'currentEventRef'->>'version')::bigint) STORED,current_event_hash text GENERATED ALWAYS AS(snapshot_json->'currentEventRef'->>'contentHash') STORED,
+ PRIMARY KEY(project_id,execution_id,execution_generation),UNIQUE(project_id,id),
+ FOREIGN KEY(project_id,execution_id,execution_generation,anchor_id,anchor_version,anchor_hash)
+  REFERENCES anvil.execution_ownership_anchors(project_id,execution_id,execution_generation,anchor_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,execution_id,execution_generation,current_event_id,current_event_version,current_event_hash)
+  REFERENCES anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+
+ALTER TABLE anvil.execution_ownership_events
+ ADD COLUMN observation_id uuid GENERATED ALWAYS AS((snapshot_json->'payload'->'observationRef'->>'id')::uuid) STORED,
+ ADD COLUMN observation_version bigint GENERATED ALWAYS AS((snapshot_json->'payload'->'observationRef'->>'version')::bigint) STORED,
+ ADD COLUMN observation_hash text GENERATED ALWAYS AS(snapshot_json->'payload'->'observationRef'->>'contentHash') STORED,
+ ADD CONSTRAINT ownership_event_observation_fk FOREIGN KEY(project_id,execution_id,execution_generation,observation_id,observation_version,observation_hash)
+  REFERENCES anvil.execution_ownership_observations(project_id,execution_id,execution_generation,observation_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED;
+
+CREATE FUNCTION anvil.ownership_content_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$
+ SELECT encode(digest(convert_to(anvil.execution_authority_canonical(v),'UTF8'),'sha256'),'hex')
+$$;
+CREATE FUNCTION anvil.ownership_observation_links_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE accepted anvil.execution_ownership_events%ROWTYPE;requested anvil.execution_ownership_events%ROWTYPE;self_ref jsonb;request_ref jsonb;report jsonb;
+BEGIN
+ self_ref=jsonb_build_object('id',NEW.observation_id,'version',NEW.version,'contentHash',NEW.content_hash);
+ report=NEW.snapshot_json->'report';request_ref=report->'requestRef';
+ SELECT * INTO accepted FROM anvil.execution_ownership_events
+  WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+   AND event_id=NEW.accepted_event_id AND version=NEW.accepted_event_version AND content_hash=NEW.accepted_event_hash;
+ SELECT * INTO requested FROM anvil.execution_ownership_events
+  WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+   AND event_id=NEW.request_id AND version=NEW.request_version AND content_hash=NEW.request_hash;
+ IF accepted.event_id IS NULL OR requested.event_id IS NULL OR accepted.kind<>'OBSERVATION_ACCEPTED' OR requested.kind<>'OBSERVATION_REQUESTED'
+  OR accepted.snapshot_json->'payload'->'observationRef' IS DISTINCT FROM self_ref
+  OR accepted.snapshot_json->'payload'->'requestRef' IS DISTINCT FROM request_ref
+  OR report-'factsHash'-'observedAt' IS DISTINCT FROM (requested.snapshot_json->'payload'->'request')||jsonb_build_object('requestRef',request_ref)
+  OR report->'factsHash' IS DISTINCT FROM to_jsonb(anvil.ownership_content_hash(NEW.snapshot_json->'facts'))
+  OR NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(NEW.snapshot_json)
+  OR NEW.nonce_digest IS DISTINCT FROM encode(digest(decode(translate(report->>'nonce','-_','+/')||'=','base64'),'sha256'),'hex')
+  OR (report->>'expiresAt')::timestamptz<=clock_timestamp()
+  OR (report->>'observedAt')::timestamptz>(accepted.snapshot_json->>'at')::timestamptz
+  OR (accepted.snapshot_json->>'at')::timestamptz>=(report->>'expiresAt')::timestamptz
+ THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_EXACT_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;$$;
+CREATE CONSTRAINT TRIGGER ownership_observation_links AFTER INSERT ON anvil.execution_ownership_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.ownership_observation_links_guard();
+
+CREATE FUNCTION anvil.ownership_anchor_links_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE prep anvil.execution_ownership_events%ROWTYPE;adopt anvil.execution_ownership_events%ROWTYPE;accepted anvil.execution_ownership_events%ROWTYPE;requested anvil.execution_ownership_events%ROWTYPE;self_ref jsonb;accepted_ref jsonb;request_ref jsonb;
+BEGIN
+ self_ref=jsonb_build_object('id',NEW.anchor_id,'version',NEW.version,'contentHash',NEW.content_hash);
+ SELECT * INTO prep FROM anvil.execution_ownership_events WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+  AND event_id=NEW.preparation_event_id AND version=NEW.preparation_event_version AND content_hash=NEW.preparation_event_hash;
+ SELECT * INTO adopt FROM anvil.execution_ownership_events WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+  AND event_id=NEW.adoption_event_id AND version=NEW.adoption_event_version AND content_hash=NEW.adoption_event_hash;
+ accepted_ref=adopt.snapshot_json->'payload'->'observationEventRef';
+ SELECT * INTO accepted FROM anvil.execution_ownership_events WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+  AND event_id=(accepted_ref->>'id')::uuid AND version=(accepted_ref->>'version')::bigint AND content_hash=accepted_ref->>'contentHash';
+ request_ref=accepted.snapshot_json->'payload'->'requestRef';
+ SELECT * INTO requested FROM anvil.execution_ownership_events WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND execution_generation=NEW.execution_generation
+  AND event_id=(request_ref->>'id')::uuid AND version=(request_ref->>'version')::bigint AND content_hash=request_ref->>'contentHash';
+ IF prep.event_id IS NULL OR adopt.event_id IS NULL OR accepted.event_id IS NULL OR requested.event_id IS NULL
+  OR prep.kind<>'PREPARATION_GRANTED' OR adopt.kind<>'ANCHOR_ADOPTED' OR accepted.kind<>'OBSERVATION_ACCEPTED' OR requested.kind<>'OBSERVATION_REQUESTED'
+  OR accepted.snapshot_json->'payload'->>'phase' IS DISTINCT FROM 'BOOTSTRAP_PREPARED'
+  OR adopt.snapshot_json->'payload'->'anchorRef' IS DISTINCT FROM self_ref
+  OR adopt.snapshot_json->'payload'->'preparationRef' IS DISTINCT FROM NEW.preparation_event_ref
+  OR requested.candidate_anchor_json IS DISTINCT FROM jsonb_build_object('ref',self_ref,'snapshot',NEW.snapshot_json)
+  OR NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(NEW.snapshot_json)
+ THEN RAISE EXCEPTION 'OWNERSHIP_ANCHOR_EXACT_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;$$;
+CREATE CONSTRAINT TRIGGER ownership_anchor_links AFTER INSERT ON anvil.execution_ownership_anchors DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.ownership_anchor_links_guard();
+
+-- Both directions use auxiliary row references: neither event hash nor anchor/observation hash contains its future self.
+CREATE FUNCTION anvil.ownership_record_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'OWNERSHIP_APPEND_ONLY' USING ERRCODE='42501'; END;$$;
+CREATE FUNCTION anvil.ownership_head_cas_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='UPDATE' THEN
+  IF (NEW.project_id,NEW.execution_id,NEW.execution_generation,NEW.id) IS DISTINCT FROM (OLD.project_id,OLD.execution_id,OLD.execution_generation,OLD.id)
+   OR NEW.head_generation<>OLD.head_generation+1
+   OR NEW.snapshot_json->'previousHeadRef' IS DISTINCT FROM jsonb_build_object('id',OLD.id,'version',OLD.head_generation,'contentHash',OLD.content_hash)
+   OR NEW.snapshot_json->'anchorRef' IS DISTINCT FROM OLD.snapshot_json->'anchorRef'
+   OR (NEW.snapshot_json->>'expiresAt')::timestamptz>(OLD.snapshot_json->>'expiresAt')::timestamptz
+   OR (OLD.snapshot_json->>'state' IN('REVOKED','EXPIRED'))
+   OR (OLD.snapshot_json->>'state'='UNKNOWN' AND NEW.snapshot_json->>'state' NOT IN('REVOKED','EXPIRED'))
+  THEN RAISE EXCEPTION 'OWNERSHIP_HEAD_CAS_REQUIRED' USING ERRCODE='42501'; END IF;
+ ELSIF NEW.head_generation<>1 OR NEW.snapshot_json->'previousHeadRef' IS DISTINCT FROM 'null'::jsonb THEN
+  RAISE EXCEPTION 'OWNERSHIP_INITIAL_HEAD_REQUIRED' USING ERRCODE='42501';
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER ownership_head_cas BEFORE INSERT OR UPDATE ON anvil.execution_ownership_heads FOR EACH ROW EXECUTE FUNCTION anvil.ownership_head_cas_guard();
+
+-- Deliberately fail closed until a complete reviewed HUMAN/current-policy/receipt/registration guard exists.
+-- No role flag, set_config switch, SECURITY DEFINER escape hatch, grant or implicit activation is provided.
+CREATE FUNCTION anvil.ownership_authority_unavailable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'OWNERSHIP_AUTHORITY_NOT_ACTIVATED' USING ERRCODE='42501'; END;$$;
+DO $$DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['execution_ownership_events','execution_ownership_observations','execution_ownership_anchors','execution_ownership_bindings','execution_ownership_heads'] LOOP
+  EXECUTE format('ALTER TABLE anvil.%I ENABLE ROW LEVEL SECURITY',t);
+  EXECUTE format('ALTER TABLE anvil.%I FORCE ROW LEVEL SECURITY',t);
+  EXECUTE format('REVOKE ALL ON anvil.%I FROM PUBLIC,anvil_v3_app',t);
+  EXECUTE format('CREATE POLICY ownership_unavailable ON anvil.%I USING(false) WITH CHECK(false)',t);
+  EXECUTE format('CREATE TRIGGER ownership_unavailable BEFORE INSERT OR UPDATE OR DELETE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.ownership_authority_unavailable()',t);
+  EXECUTE format('CREATE TRIGGER ownership_no_truncate BEFORE TRUNCATE ON anvil.%I FOR EACH STATEMENT EXECUTE FUNCTION anvil.ownership_record_immutable()',t);
+  IF t<>'execution_ownership_heads' THEN
+   EXECUTE format('CREATE TRIGGER ownership_immutable BEFORE UPDATE OR DELETE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.ownership_record_immutable()',t);
+  ELSE
+   EXECUTE format('CREATE TRIGGER ownership_no_delete BEFORE DELETE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.ownership_record_immutable()',t);
+  END IF;
+ END LOOP;
+END;$$;
+-- Missing complete authenticated activation/row-shape/event/head/binding guards remain D1 work; the implemented reverse/deadline guards are NOT PG-verified.
+-- This candidate intentionally cannot be used as an operational permission provider or a successful PG verification.

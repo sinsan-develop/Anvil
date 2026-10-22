@@ -1,5 +1,11 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN06 D1 관측 수용 저장 source — 2026-10-23
+
+`contracts/runtime/ownership-observation-v1.ts`·`ownership-ledger-v1.ts`와 server executions의 `ownership-observation-proof.ts`를 새 `ownership-archive.ts`가 소비한다. 원 요청/후보 anchor·준비/slot·head 조회, P256 서명, 수용 사건/초기 채택/head의 한 transaction 기록과 최종 current 재검사, CAS·rollback/연결 폐기·COMMIT UNKNOWN을 소유한다. 기본 authority는 없으며 route/서비스에 등록하지 않았다. 직접 합성 시험은 `tests/unit/FN06/ownership-archive.test.ts`, fixture는 `tests/unit/FN06/ownership-archive-fixture.ts`다. 실 PG/권한/OS 검증은 아니다.
+
+`db/migrations/0039_ownership_authority.sql.pending`는 새5표·부모 fullref FK/역방향 일부 제약·지연 관측 기한 검사·불변/head CAS·FORCE RLS 후보다. 지연 제약을 IMMEDIATE로 앞당길 수 있어 최종 COMMIT 기한 보장이라고 하지 않는다. 실행 manifest 미등록·SQL 실행/문법 미검증이며 완전한 인증/row-shape/event/head/binding guard는 미완성이다. 모든 DML을 기본 차단하므로 기능 적용/DB 준비 완료로 취급하지 않는다. 기존0038·다른 SQL과 보호 자료는 변경하지 않는다.
+
 ## FN09 임무 초안 UI 후보 — 2026-10-18
 
 scripts/assignment-draft-sql-qa.ts·qa-assignment-draft-sql.ts는 새빈 격리47 SQL 경계검증만 소유한다. scripts/assignment-draft-development-guard.ts·apply-assignment-draft-development.ts는 별도 결정 후 정식46→47 schema-only의 exact binding/기존자료 보존·실패분리 준비 후보이며 현재 정식 적용0이다. 두 실행 경로와 실제 임무저장/served 기능을 혼동하지 않는다. 직접 준비시험은 tests/unit/FN09/assignment-{sql-qa,development}.test.ts, 실제SQL 결과는 docs/04_test_reports/AV3/FN09/ASSIGNMENT_DRAFT_SQL_BOUNDARY_RESULT.md이다.

@@ -1,5 +1,13 @@
 # P02 데이터 관계·보존 계약 초안
 
+## FN06 D1 새 권한 원장 후보 — 2026-10-23
+
+정적 검토 M1: deferred 관측 기한 trigger는 `SET CONSTRAINTS ... IMMEDIATE`로 검사를 앞당긴 뒤 만료 후 COMMIT하는 경우의 최종 기한을 보장하지 않는다. 현재는 모든 DML이 차단돼 실행 가능한 권한 우회는 아니지만, 활성화 전에 이 반례와 transaction 종료 경계를 해결·검증해야 한다. 현재 SQL 후보를 적용 가능한 완료본으로 승격하지 않는다.
+
+새 `execution_ownership_events/observations/anchors/bindings/heads` 정확5표만 `0039_ownership_authority.sql.pending`에 정의한다. 사건은 실행별 sequence와 프로젝트 전체 준비 slot 순서용 project_sequence를 구분하고 추가 slot 표는 만들지 않는다. 원 REQUESTED row의 후보 anchor 보조 JSON은 snapshot 안의 원 anchor fullref/hash로 대조한다. observation→원 request/accepted·anchor→prep/adopt·head→anchor/current event의 full scope/id/version/hash FK는 deferred이며 원 수용 사건→observation 역참조도 별도로 묶는다. 미래 자기 ref를 snapshot hash에 포함하지 않는다. observations의 project/request unique는 같은 원 요청의 소비를 1회로 제한하는 저장 계약 후보다.
+
+head는 동일 ID/실행 세대에서 +1 CAS 계획이며 기존 head를 갱신하기 전 fullref·anchor·기한/terminal 단조 조건을 확인한다. 이력 row는 수정/삭제하지 않는다. 실제 SQL 문법/경합·FK/trigger 동작·commit 시각·내구성은 미검증이고 완전한 인증 guard도 미완성이다. 기본 RLS/DML 전면 차단·실행 manifest 미등록을 유지한다. 새 schema 적용·GRANT/정책·backfill·원문/키 저장·실제 DB 변경은 하지 않았다.
+
 ## FN01 기능 분류 시작 기준선 후보 — 2026-10-18
 
 신산님 직접 승인 A안(부모 FN01_BASELINE_GAP_AND_PROPOSAL SHA256 C7C5B6D39C4889A156246B94C0073C1EBDFFE2680B7B9849B94B5F58D33E44E0)의 후보 구현이다. 상세 wire·허용 범위는 [FN01 카드](../work_packages/FN01_BASELINE_IMPLEMENTATION.md)를 따른다. 실제 적용/PG 시험/서비스·실사용자 정책/Agent 승인이 아니다.

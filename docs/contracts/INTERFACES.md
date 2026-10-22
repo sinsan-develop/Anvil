@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 관측 수용의 내부 source 경계 — 2026-10-23
+
+`SyntheticPgOwnershipArchive.accept(scope,input,signal)`은 새 HTTP endpoint가 아닌 내부 source adapter다. 기본 current-authority가 없으면 DB 연결 전에 UNAVAILABLE이며 주입한 합성 공급자의 정확 scope/subject·등록/preparation/key와 원 DB 사건을 대조한다. 입력의 report/서명/facts는 원 REQUESTED에서 재구성한 request와 최초 고정 process에만 수용한다. caller가 보내는 새 anchor JSON을 신뢰하지 않는다. 원 명령·preparation receipt가 현재 허가라는 실제 공급자는 아직 미구현이며 이 adapter 자체를 권한자로 쓰지 않는다.
+
+관측·수용 사건·초기 anchor/채택/head 또는 CURRENT CAS를 같은 connection/transaction에서 기록한 뒤 current/기한을 다시 확인한다. 성공 반환도 `OWNERSHIP_ARCHIVE_SYNTHETIC_COMMIT`, executionAuthorized/dispatchPerformed=false다. COMMIT 응답 실패는 `OWNERSHIP_ARCHIVE_COMMIT_UNKNOWN`으로 남기고 자동 재시도/미저장 단정하지 않는다. rollback 실패는 UNCONFIRMED와 연결 폐기, 나머지 source 읽기/쓰기/권한/기한/CAS 실패는 고정 오류를 반환한다. 실 PG/권한·OS/Agent 증거가 아니며 route/정책/서비스/실행 manifest·SQL 적용은 변경하지 않았다.
+
 ## 2026-10-22 FN12/UI08 보관 원장 문제 근거 — 채택된 읽기 전용 추가
 
 - `GET /api/v1/projects/:projectId/results/:id/issue-basis`, query 없음, HUMAN 단일 유효 `__Host-anvil.sid`만. Bearer/중복 cookie/다른 host 거절. 같은 인증 tx에서 기존 원제출·원실행/전체 관측원장·ACK 검증 reader를 재사용하고 최종 회원 잠금·DB 시각의 세션 기한 및 COMMIT 후 기한을 검사한다. 성공/오류는 기존 no-store·비노출 DTO를 유지한다.
