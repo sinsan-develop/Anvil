@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 Stage B FN01/FN11 기준선 근거 파일 일회승인 연결 일부**: 기존 uploadArtifact 승인요청·UI08 별도사람결정·현재정책/주체/세대/기한/동일후보·binary/hash 확인 후 원명령결박·별도전송을 연결했다. AUTO/다른연산null·미확인보존/변조거절·부모잠금후POST차단·최초확실거절의원요청이력보관/수정을 유지한다. unit직접인접16PASS, 검토후이력누락RED→최종직접6PASS/typebuild0·delta독립C0/I0. DOM정상/잠금·거절수정은각각검증했고 마지막bundle정상1freshPASS2.9초이며 시점·원오류는WORK_STATUS에분리기록했다. QA09:26:26독립잔여0, 실제DB/정식served·전체FN01/FN11/Stage는미검증·미완료, 새API/SQL/권한서비스/Agent0이다.
+
 - **2026-10-22 Stage B FN01/UI02 기준선 기능항목 설계 문서 연결 일부**: FN01 기준선 Task2/4의 저장필드 designRef를 새초안에서 선택할 수 없던 공백을 문서목록→명시버전·보호본문/문서hash·양식/작성표준hash·AF02→연결/해제→별도저장/유실같은명령/재조회로 연결했다. 신규4RED→인접포함14PASS, 검토I1 변조RED→해소후직접7PASS/typebuild0·최종새bundle DOM 정상/변조2PASS4.9초·scoped C0/I0/M0. QA08:58:14독립잔여0, 실제DB/정식served·모든주체/전체FN01/Stage는 미검증·미완료이며 새API/SQL/권한·서비스/Agent변경0. 상세이전실패/분리증거·지문·복구는WORK_STATUS를따른다.
 
 - **2026-10-22 FN02/UI03 조건의 없는 원 단계 표시·명시 보완 일부**: 미존재참조를 다른 단계처럼 표시하지 않고 exact 원ID를 보존해 보여주며 사용자의 명시 선택→기존별도저장/유실동일명령/재조회로 연결했다. 새현재bundle DOM1 RED→GREEN2.1초/typebuild0·독립C0/I0/M0/08:39:40등록QA잔여0. 실행규칙/서버검사/새API·SQL변경0, 실제DB/정식served·합류/중첩 개별화면/전체FN02·Stage 미검증·미완료. 상세 지문·오류·복구는 WORK_STATUS를 따른다.

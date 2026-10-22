@@ -1,4 +1,6 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
+import type {ApprovalRequestWork} from '../decisions/api.ts';
+export interface BaselineUploadApproval {request:ApprovalRequestWork|null;requestId:string;commandHash:string|null;rejectedRequests?:{command:NonNullable<ApprovalRequestWork['pending']>;failure:{code:string;status:number}}[]}
 import { postDocumentCommand, type DocumentSession, type DocumentWrite } from '../design-trace/editor-api.ts';
 import { documentFailure, documentMutationUncertain, isKnownDocumentRejection } from '../design-trace/mutation-result.ts';
 import { ordered } from '../knowledge/review-view.ts';
@@ -9,11 +11,11 @@ export interface BaselineDraftView {projectId:string;ref:Ref;snapshot:any;headVe
 export interface BaselineDecision {projectId:string;draftRef:Ref;reviews:{ref:Ref;snapshot:{input:BaselineContentReview;reviewedBy:{kind:'HUMAN';userId:string};reviewedAt:string;independence:'NOT_CLAIMED'};serverSequence:number}[];hasMoreReviews:boolean;latestReviewAccepted:boolean;adoptedRef:Ref|null;draftIsHead:boolean;currentCheck:{state:string;issues:string[]};contentConfirmed:boolean;observedAt:string}
 export interface BaselinePage {projectId:string;items:({ref:Ref;status:'DRAFT'|'STORED_ADOPTION_NOT_RECHECKED'}|{ref:null;legacyRef:Ref;status:'LEGACY_UNVERIFIED'})[];hasMore:boolean;nextCursor:string|null;metadataIntegrity:'NOT_RECHECKED'}
 type BaselineFailure={code:string;status:number;quarantinedArtifactId?:string};
-export interface BaselineBuffer {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;input:BaselineDraftInput;saved:BaselineDraftView|null;review:BaselineContentReview|null;confirmation:{reason:string;acknowledged:boolean};pending:DocumentWrite|null;upload:{itemId:string;bytes:Uint8Array<ArrayBuffer>;mediaType:string}|null;dirty:boolean;reviewDirty:boolean;uncertain:boolean;failure:BaselineFailure|null;rejectedCommands:{command:DocumentWrite;failure:BaselineFailure}[]}
+export interface BaselineBuffer {bindingId:string;projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;input:BaselineDraftInput;saved:BaselineDraftView|null;review:BaselineContentReview|null;confirmation:{reason:string;acknowledged:boolean};pending:DocumentWrite|null;upload:{itemId:string;bytes:Uint8Array<ArrayBuffer>;mediaType:string}|null;dirty:boolean;reviewDirty:boolean;uncertain:boolean;failure:BaselineFailure|null;uploadApproval?:BaselineUploadApproval;rejectedCommands:{command:DocumentWrite;failure:BaselineFailure;uploadApproval?:BaselineUploadApproval}[]}
 const fail=():never=>{throw new ApiError('RESPONSE_INVALID');};
 const base=(pid:string)=>{if(!uuid(pid))throw new ApiError('CLIENT_PATH_INVALID');return `/api/v1/projects/${pid}`;};
 function subject(b:BaselineBuffer,s:DocumentSession):void {if(!uuid(b.projectId)||!uuid(b.bindingId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid(s.user.id)||!uuid(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1)throw new ApiError('BASELINE_BINDING_INVALID');}
-function envelope(c:DocumentWrite,s:DocumentSession):void {base(c.projectId);if(!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!uuid(c.commandId)||c.clientId!==s.clientId||!uuid(s.user.id)||!uuid(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||c.approvalRef!==null||!Array.isArray(c.baselineRefs)||c.baselineRefs.length)throw new ApiError('BASELINE_BINDING_INVALID');}
+function envelope(c:DocumentWrite,s:DocumentSession):void {base(c.projectId);if(!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!uuid(c.commandId)||c.clientId!==s.clientId||!uuid(s.user.id)||!uuid(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||(c.approvalRef!==null&&(c.operation!=='uploadArtifact'||!exact(c.approvalRef,['requestId','decisionId','scopeDigest'])||!uuid(c.approvalRef.requestId)||!uuid(c.approvalRef.decisionId)||!/^[0-9a-f]{64}$/.test(c.approvalRef.scopeDigest)))||!Array.isArray(c.baselineRefs)||c.baselineRefs.length)throw new ApiError('BASELINE_BINDING_INVALID');}
 export function newBaselineBuffer(pid:string,s:DocumentSession,generation:number,declarationRef:Ref|null):BaselineBuffer {
  const b:BaselineBuffer={bindingId:crypto.randomUUID(),projectId:pid,ownerUserId:s.user.id,ownerClientId:s.clientId,controlGeneration:generation,input:{baseRef:null,source:{kind:declarationRef?'DECLARATION_ONLY':'NONE_SELECTED',declarationRef,sourceRootRef:null,snapshotRef:null,grantRef:null,unverifiedReason:''},items:[],coverageReason:'',reason:''},saved:null,review:null,confirmation:{reason:'',acknowledged:false},pending:null,upload:null,dirty:true,reviewDirty:false,uncertain:false,failure:null,rejectedCommands:[]};
  subject(b,s);if(declarationRef!==null&&!reference(declarationRef))throw new ApiError('BASELINE_BINDING_INVALID');return structuredClone(b);
@@ -26,8 +28,8 @@ export function baselineMutationFailed(b:BaselineBuffer,previouslyUncertain:bool
  return {...b,uncertain:documentMutationUncertain(previouslyUncertain,error),failure:documentFailure(error)};
 }
 export function releaseRejectedBaseline(b:BaselineBuffer,s:DocumentSession):BaselineBuffer {
- subject(b,s);if(!b.pending||b.uncertain||!b.failure||!isKnownDocumentRejection(b.failure))throw new ApiError('BASELINE_RECONCILIATION_REQUIRED');
- return {...b,rejectedCommands:[...b.rejectedCommands,{command:structuredClone(b.pending),failure:{...b.failure}}],pending:null,upload:null,uncertain:false,failure:null};
+ subject(b,s);if(b.uploadApproval?.request?.pending||b.uploadApproval?.request?.uncertain||!b.pending||b.uncertain||!b.failure||!isKnownDocumentRejection(b.failure))throw new ApiError('BASELINE_RECONCILIATION_REQUIRED');
+ return {...b,rejectedCommands:[...b.rejectedCommands,{command:structuredClone(b.pending),failure:{...b.failure},...(b.uploadApproval?{uploadApproval:structuredClone(b.uploadApproval)}:{})}],pending:null,upload:null,uploadApproval:undefined,uncertain:false,failure:null};
 }
 export function restartBaselineDraft(b:BaselineBuffer,s:DocumentSession,generation:number,declarationRef:Ref|null):BaselineBuffer {
  subject(b,s);if(b.pending||b.uncertain||b.upload)throw new ApiError('BASELINE_RECONCILIATION_REQUIRED');
@@ -122,10 +124,11 @@ export async function prepareBaselineUpload(b:BaselineBuffer,s:DocumentSession,i
 }
 export async function sendBaselineUpload(client:ApiClient,b:BaselineBuffer,s:DocumentSession):Promise<BaselineBuffer>{
  subject(b,s);const c=b.pending,u=b.upload;if(!c||!u)throw new ApiError('BASELINE_UPLOAD_INPUT_INVALID');envelope(c,s);
+ if(b.uploadApproval&&!b.uploadApproval.commandHash||c.approvalRef!==null&&(!b.uploadApproval||b.uploadApproval.requestId!==c.approvalRef.requestId||b.uploadApproval.commandHash!==await digestBytes(new TextEncoder().encode(ordered(c)))))throw new ApiError('BASELINE_UPLOAD_APPROVAL_MISMATCH');
  if(c.operation!=='uploadArtifact'||c.targetId!==null||c.expectedVersion!==0||c.controlGeneration!==b.controlGeneration||!same(c.payload,{bytes:u.bytes.length,contentHash:await digestBytes(u.bytes),mediaType:u.mediaType})||!u.itemId.trim()||b.input.items.filter(i=>i.itemId===u.itemId).length!==1)throw new ApiError('BASELINE_UPLOAD_INPUT_INVALID');
  const result=await postDocumentCommand(client,c,s.csrfToken,u.bytes),a=result.data?.artifactRef;
  if(result.data?.status!=='ARTIFACT_READY'||!artifact(a)||!same({bytes:a.bytes,contentHash:a.contentHash,mediaType:a.mediaType},c.payload)||result.targetId!==a.artifactId||result.version!==null)fail();
- return {...b,pending:null,upload:null,dirty:true,uncertain:false,failure:null,input:{...b.input,items:b.input.items.map(i=>i.itemId===u.itemId?{...i,evidenceRefs:[...i.evidenceRefs.filter(e=>e.artifactId!==a.artifactId),a]}:i)}};
+ return {...b,pending:null,upload:null,uploadApproval:undefined,dirty:true,uncertain:false,failure:null,input:{...b.input,items:b.input.items.map(i=>i.itemId===u.itemId?{...i,evidenceRefs:[...i.evidenceRefs.filter(e=>e.artifactId!==a.artifactId),a]}:i)}};
 }
 export async function readBaselineEvidence(client:ApiClient,pid:string,r:BaselineEvidenceRef):Promise<Uint8Array<ArrayBuffer>>{
  if(!artifact(r))throw new ApiError('CLIENT_PATH_INVALID');let response:Response;
