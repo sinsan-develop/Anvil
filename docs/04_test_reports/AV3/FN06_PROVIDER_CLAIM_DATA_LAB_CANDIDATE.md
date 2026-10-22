@@ -62,4 +62,3 @@ child가 새 P256 키·one-time code·status-only credential을 정상 protocol�
 - caller 독립 C0/I0/M1·실행0. M1은 Main이 정확 거절 상수 검사로 보완했으며 독립 clean으로 소급하지 않는다.
 - 신규 runner 한정 독립 C0/I0/M0·실행/수정0이다. timeout/SIGKILL 실제효력·PG/credential수명·정리/별도잔여는 실행 전 미판정이다.
 - PMO에 정확 게시 commit·위 source·새 자원/credential 수명을 제출해 이번 1회 실행 범위를 판정받는다. 원본 schema lab 허가나 단위 PASS를 실제 새 실행 허가·결과로 소급하지 않는다.
-

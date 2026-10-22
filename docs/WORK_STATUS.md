@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **FN06 게시 전 문서 whitespace 오류 기록**: 정확9경로 commit380d3d8에서 새 후보 문서 EOF 빈행 경고1이 staged diff check에 나타났으나 이어진 shell commit은 실행됐다. source/type/기능오류와 분리하고 당시 staged diff를 PASS로 소급하지 않는다. 새 문서 빈행1만 제거하고 일반 후속 commit으로 보존하며 amend/reset/기준완화0. 실제PG/서비스 실행0.
+
 - **FN06 새 데이터 lab source 게시 준비**: 신규 caller의 M1은 정확 거절 원인으로 시험을 보완했고 runner 한정 독립 C0/I0/M0·실행/수정0이다. 최신 guard7PASS321.3289ms/type/diff0·plan actualExecutedfalse/59/pending 고정 EB4…를 확인했다. 신규 source/기존 fixture opt-in·후보/계획/현황만 같은 branch에 보존하고 보호6·main은 변경하지 않는다. 다음은 게시 exact source에 대한 새 PG/합성 등록 credential 포함 한정 실행 패킷의 PMO 판정이며 실제 생성·실행0/전체FN06미완료를 유지한다.
 
 - **FN06 caller 독립 C0/I0/M1·새 runner 준비**: 신규 caller 한정 정적 검토에서 기존 HUMAN/session/grant회수·정책/예산 current 선행 유지·우회 미발견, M1은 환경거절시험의 다른 TypeError 통과 가능성이다. Main이 정확 거절 상수까지 검사하도록 보완했고 독립 clean으로 소급하지 않는다. 새 전용 runner는 같은 base59/pending 고정hash·전용 tmpfs PG만 준비 후 신규 opt-in child를 유한기한으로 실행/고정 safe summary만 반환하도록 작성했다. schema-only closure case 반복0·실실행0, 신규 guard7PASS448.3054ms/type/diff0. child 종료 뒤 원문parent가 비었을 때만 회수하고 남은 원문은 source 보존/cleanupFailure로 처리한다. 신규 runner 안전성 독립 검토·exact source/자원 패킷은 다음 단계다.
