@@ -16,7 +16,7 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
   catch(cause){if(active()){const e=cause instanceof ApiError?cause:new ApiError('MANUAL_RESULT_REPORT_INVALID');setError(e.code);if(e.status===401)onAuthenticationLost();}}
   finally{flight.current=false;if(live.current)setBusy(false);}
  }
- return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·diff 참조·명령·출력 참조·시험 결과·산출물 참조도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 시험 증거 참조는 기존 JSON 파일 등록을 사용하세요. 시험/완료 합격을 만들지 않습니다.</p>
+ return <section aria-label="미완료 결과 화면 작성"><h4>미완료·차단 결과 직접 작성</h4><p>수행자 주장만 입력합니다. 실행 참조는 서버가 등록 시 대조합니다. 변경 파일·diff 참조·명령·출력 참조·시험 결과/증거·산출물 참조도 주장으로만 등록하며 실제 실행·파일·증거 출처는 미검증입니다. 명령의 증거 참조는 기존 JSON 파일 등록을 사용하세요. 시험/완료 합격을 만들지 않습니다.</p>
   {error?<p role="alert">{error} · 작성 입력은 보존합니다.</p>:null}
   {!draft?<button type="button" disabled={occupied||busy} onClick={()=>storage.onChange(key,old=>old??newManualResultReport(assignment,session))}>미완료 결과 직접 작성</button>:<>
    <fieldset disabled={busy||occupied}><legend>결과 주장 입력</legend>
@@ -56,6 +56,15 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
       <label>시험 기대 결과 {i+1}<textarea aria-label={'시험 기대 결과 '+(i+1)} maxLength={20000} value={row.expected} onChange={e=>edit(d=>{const r=d.tests?.[i];if(r)r.expected=e.target.value;})}/></label>
       <label>시험 실제 결과 {i+1}<textarea aria-label={'시험 실제 결과 '+(i+1)} maxLength={20000} value={row.actual} onChange={e=>edit(d=>{const r=d.tests?.[i];if(r)r.actual=e.target.value;})}/></label>
       <label>시험 상태 주장 {i+1}<select aria-label={'시험 상태 주장 '+(i+1)} value={row.status} onChange={e=>edit(d=>{const r=d.tests?.[i];if(r)r.status=e.target.value as typeof r.status;})}>{['NOT_EXECUTED','FAIL','BLOCKED','PASS','NOT_APPLICABLE'].map(status=><option key={status}>{status}</option>)}</select></label>
+      <p className="meta">증거 출처는 입력자의 선언입니다. CONNECTOR_OBSERVED·TEST_ARTIFACT·REVIEWER_CONFIRMED를 선택해도 실제 관측·검토 확인이나 출처 인증이 되지 않습니다. 기존 파일·환경의 고정 참조와 기록 시각만 보고하며 비밀을 입력하지 마세요.</p>
+      {(row.evidence??[]).map((ev,j)=><fieldset key={j}><legend>시험 {i+1} 증거 {j+1} 선언</legend>
+       <label>시험 {i+1} 증거 {j+1} 출처 선언<select aria-label={'시험 '+(i+1)+' 증거 '+(j+1)+' 출처 선언'} value={ev.sourceKind} onChange={e=>edit(d=>{const v=d.tests?.[i]?.evidence?.[j];if(v)v.sourceKind=e.target.value as typeof v.sourceKind;})}>{['WORKER_CLAIM','CONNECTOR_OBSERVED','TEST_ARTIFACT','REVIEWER_CONFIRMED'].map(k=><option key={k}>{k}</option>)}</select></label>
+       {([['ref','파일'],['environmentRef','환경']]as const).map(([key,title])=><fieldset key={key}><legend>{title} 고정 참조</legend>{([['id','ID'],['version','버전'],['contentHash','해시']]as const).map(([field,label])=><label key={field}>시험 {i+1} 증거 {j+1} {title} {label}<input maxLength={field==='version'?16:field==='id'?36:64} value={ev[key][field]} onChange={e=>edit(d=>{const v=d.tests?.[i]?.evidence?.[j];if(v)v[key][field]=e.target.value;})}/></label>)}</fieldset>)}
+       <label>시험 {i+1} 증거 {j+1} 내용 해시<input maxLength={64} value={ev.contentHash} onChange={e=>edit(d=>{const v=d.tests?.[i]?.evidence?.[j];if(v)v.contentHash=e.target.value;})}/></label>
+       <label>시험 {i+1} 증거 {j+1} 기록 UTC<input maxLength={24} placeholder="YYYY-MM-DDTHH:mm:ss.sssZ" value={ev.recordedAt} onChange={e=>edit(d=>{const v=d.tests?.[i]?.evidence?.[j];if(v)v.recordedAt=e.target.value;})}/></label>
+       <button type="button" onClick={()=>edit(d=>{d.tests?.[i]?.evidence?.splice(j,1);})}>시험 {i+1} 증거 {j+1} 제거</button>
+      </fieldset>)}
+      <button type="button" disabled={(row.evidence?.length??0)>=20} onClick={()=>edit(d=>{const r=d.tests?.[i];if(r)(r.evidence??=[]).push({sourceKind:'WORKER_CLAIM',ref:{id:'',version:'',contentHash:''},contentHash:'',environmentRef:{id:'',version:'',contentHash:''},recordedAt:''});})}>시험 {i+1} 증거 추가</button>
       <button type="button" onClick={()=>edit(d=>{d.tests?.splice(i,1);})}>시험 결과 {i+1} 제거</button>
      </fieldset>)}
      <button type="button" disabled={(draft.tests?.length??0)>=200} onClick={()=>edit(d=>{(d.tests??=[]).push({criterionId:'',testId:'',expected:'',actual:'',status:'NOT_EXECUTED'});})}>시험 결과 추가</button>

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 수기 시험증거 입력 일부 구현**: 기존 evidence5필드·출처4종 선언·최대20 안에서 파일/환경ref·내용hash·기록시각을 입력/추가/제거→별도등록/유실동일명령/원문재조회에 연결했다. absent/빈배열호환·malformed/추가필드/unsafe/민감거절·잠금·미인증 유지. 직접18PASS308.1776ms/typebuild355/324ms·Edge3PASS6.6초, 독립C0/I0/M1의 원문표시 시험공백 보완 후 새정상1PASS6.9초/type0·등록QA독립잔여0. 실제증거/정식DB/served/Agent·전체FN12/Stage 미완료이며 상세와 후속명령증거는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12/UI05 수기 출력·diff 참조 입력 일부 구현**: 기존 optional outputRef/diffRef 계약의 JSON전용 입력을 선택 ID/버전/hash→기존 parser→별도등록·응답유실 동일명령·원문재조회로 연결했다. absent/null 호환·malformed/unsafe/추가필드 거절·준비후잠금·원미실행을 유지하며 실제 파일/출처/실행/합격으로 승격하지 않는다. 직접16PASS342.5687ms/typebuild355/368ms, 명령출력 Edge3PASS7.8초(이전 bundle), diff Edge3PASS6.9초·한정독립C0/I0/M0·등록QA 독립잔여0. 실DB/정식served/Agent·전체FN12/Stage는 미검증·미완료, 새API/SQL/권한/서비스 변경0이다. 후속은 시험 증거 수기 입력 공백이며 상세 오류·분리 증거는 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN12/UI05 미실행 보고 탐색 일부 구현**: 기존미실행JSON원문을보존하며조건/시험/사유검색·관련보고/PASS주장필터·exact조건시험쌍대조·중복위치·형식미확인/선택행상세를연결했다. 신규2RED→직접인접5PASS/type/diff0·새build355/327ms·통제API Edge1PASS3.0초·한정독립C0/I0/M0/등록QA독립잔여0. 보고상태를실수행·원인/허위확정·합격으로승격하지않으며실DB/정식served·전체FN12/Stage는미완료다. 새API/SQL/권한/Agent/서비스변경0,오류/범위/후속은WORK_STATUS를따른다.

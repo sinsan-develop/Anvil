@@ -1,5 +1,19 @@
 # Anvil 재설계 작업현황
 
+- **FN12 시험증거 보강 검증 종료**: 제품/기존bundle불변에서 재조회 전체원문의 evidence5필드·completion false 직접대조를 보강한 새 Edge 정상1PASS6.9초/type0다. 원3PASS6.6초 및 독립C0/I0/M1의 시험공백과 분리하며 M1의 Main 시험보완으로 기록한다. 재등록QA exact소유/nonlink/process0확인후제거·별도경로false/process0. 실파일/권한/DB/served/Agent는 미판정이다. 다음 명령 evidence 입력 연결을 계속한다.
+
+- **FN12 증거 원문 표시 보강 QA 재등록**: Main 소유 동일 literal D:\tmp\anvil-v3-stage-b\ui05-test-evidence-01을 새 빈 경로로 10분 이내 재생성해 시험-only 정상1건 수행 후 exact회수/독립잔여0 확인한다. 제품/source bundle불변·서버/DB/Agent0이며 생성전부재/상위nonlink를 다시 확인한다.
+
+- **FN12 시험증거 UI GREEN·검토 시험공백 보완**: 새bundle355/324ms/type0에서 정상/유실동일명령/민감거절3PASS6.6초다. 독립정적 C0/I0/M1(독립실행0)은 재조회후새 evidence의 DOM 직접대조 부족이며 제품결함으로 승격하지 않는다. Main이 기존 원문 펼침의 5필드와 completion false를 직접 assertion으로 보강해 정상1건만 새로 확인한다. 제품/bundle/기준은 불변이며 기존 정상3건을 재수행하지 않는다. 등록QA exact소유/비링크/프로세스0 제거 후 독립경로false/process0확인. 재확인은 별도 아래등록자원만 사용한다.
+
+- **FN12 試験 evidence UI正常RED**: 기존 bundle에서 시험행 입력 후 ‘시험1증거추가’ 부재로 Edge1FAIL15000ms. source18/type0와 화면미연결을 구분하고 timeout·기존검사기준을 변경하지 않는다. 다음은 해당UI를 기존 잠금 안에 연결한다.
+
+- **FN12 시험증거 source GREEN·QA 등록**: 직접인접18PASS308.1776ms/type0이며 기존 evidence5필드/최대20·명시source선언/미인증을 유지한다. Main 소유 D:\tmp\anvil-v3-stage-b\ui05-test-evidence-01의 temp/결과·일회Edge만 최대30분 생성하고 exact owner/nonlink/process 확인 후 정리·별도 잔여0을 확인한다. 생성전부재/상위비링크를 확인하고 기존 bundle UI부재 RED→새bundle 정상/유실같은명령/민감거절을 확인한다. 실파일/DB/권한/서비스/Agent0.
+
+- **FN12 시험 증거 입력 정상 RED**: 새 수기 evidence를 기존 공개5필드로 보존할 시험1FAIL320.261ms/MANUAL_RESULT_REPORT_INVALID를 확인했다. 기존 array 최대20·sourceKind4종 선언·파일/환경ref/시각 및 provenance false를 유지하며 실제 증거 인증·Agent실행은 추가하지 않는다. output/diff checkpoint 이후 독립 다음 구현이고 기존 검사/실제DB/권한/서비스 변경0이다.
+
+- **FN12 출력/diff checkpoint 및 후속**: 01573b19ffde58591cd12be69d20a3e9767352bb를 기존 private branch에 게시하고 local/private 동일·main f976ed5e 불변·tracked clean/보호6 그대로를 확인했다. 후속 읽기에서 추정 result-manifest.ts 경로 부재1이 발생했으므로 반복하지 않고 실제 result-submission.ts의 evidence5필드/최대20/선언source와 provenance false를 확인했다. 다음은 JSON전용 시험 evidence를 동일 계약의 수기 선언 입력으로 연결하며 새 증거 인증/실행을 만들지 않는다. sourceKind 선택도 수행자 선언으로만 보존한다.
+
 - **FN12 출력·diff 한정 검토 종료/게시 범위**: 기존 독립 reviewer를 재사용한 정적 delta C0/I0/M0·실행/수정0이다. 실제 파일/권한/DB/served/Agent는 미판정이며 Main의 직접16/typebuild와 통제API Edge 증거와 분리한다. PMO에 source2/unit1/browser spec1/config2/정본2의 정확8경로 private 기존branch 게시·Git이력보존/Secret·보호6·main제외를 전달했다. 이번 작업 rollback은 해당8경로 commit revert이며 기존 저장자료/SQL은 변경하지 않았다. 다음 시험증거 입력을 계속하며 전체완료로 보고하지 않는다.
 
 - **FN12 diff 화면 핵심동작 확인·QA 회수**: 신규 build355/368ms/type0 뒤 통제API를 사용한 실제 Edge 정상·응답유실 동일명령·상위경로거절3PASS6.9초다. malformed 버전 원입력/POST0·고정 diffRef/산출물 참조의 등록 payload와 원문 재조회 보존을 확인했다. source16PASS342.5687ms·diff check0. 등록 QA exact resolve/owner SINSAN\\cyhuh/nonlink0/process0 확인 후 제거했고 별도 조회 경로false/process0이다. 실제 diff 파일/명령출력 바이트·정식 DB/served·Agent·전체FN12는 미검증/미완료다. chunk500k/NO_COLOR 기존 경고를 유지하고 임의 최적화하지 않았다. 다음은 독립 검토·정확 변경 checkpoint 후 남은 시험 증거 입력 공백을 계속한다.
