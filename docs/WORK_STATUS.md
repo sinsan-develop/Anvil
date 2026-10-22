@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 post 원잠금 소비 한정 독립 검토**: source/계약/신규fixture·시험 scoped C0/I0/M0(독립 실행/수정0)을수신했다. 입력고정·원IDLE hash·현재조회전후 exact원행·종료/timeout수명과재송신0을확인한source범위만수용한다. 실제현재권한공급자/잠금내구/OS·native/DB·Agent미판정은유지하며 소유7파일을기존branch checkpoint로보존한다.
+
+- **2026-10-23 FN06 post 현재원장 소비 일부 연결 확인**: 신규 SyntheticSentTurnPostCurrent가 동일 SEND 잠금의 원시도/permit exact행을 현재snapshot 공급자조회 전후 재대조한다. 기존 pre-IDLE snapshot 전체의 bindingHash(상태포함)를원그대로검증하고 자료/grant/시도permit/응답/부모·기한을고정하며, post읽기source는종료/취소후폐쇄한다. 전송용source재활성/중첩잠금·공개JSON/API/schema변경0. 신규2RED288.2552ms→2PASS591.9726ms/type0, 포트전환/현재조회timeout·늦은완료의후속원장조회0/재송신0보강후 신규3+상위장벽5+TURN3 총11PASS835.5418ms/type/diff0이다. 단순snapshot일치를실제서버권한/OS·내구/Agent인증으로승격하지않고 실제current verifier/연속TURN수명·native/DB서비스·전체FN06Stage는미구현·미검증이다. 독립한정리뷰중·새자원/rootACL/credential/실행0·원M1/보호7/특정거절·원exit1유지다.
+
+- **2026-10-23 FN06 post current 고정원장 소비 착수**: Main은 일회capture 인스턴스를자동초기화하지않고, 현SEND exclusive 안의 원 SEND_ATTEMPTED/PERMIT_RECORDED를 post검사 전후 다시읽는 선행을선정했다. 기존wire readLocked의수명은송신종료때끝나므로 이를되살리지않고 같은원잠금의별도 유한post readLocked를내부3번째 인자로 전달한다(JSON/API인자아님). 신규 supplier는 원snapshot전체IDLE bindingHash·정확시도/permit/부모·현재snapshot/기한과원장불변을결박한다. 실제현재권한 공급자는여전히미구현/미검증이고 source포트 주장을실제권한으로승격하지않는다. 기존원장schema/IDLE/consume·공개API/SQL/실행/rootACL/Agent/DB변경0·자동새capture/SEND0이다.
+
 - **FN06 concrete TURN 리뷰 M1 보강**: 독립 C0/I0/M1은 SESSION음성이 부모·자식 불일치에서먼저거절되어 새 envelope세션검사를단독입증하지못한다고지적했다. Main은 부모/자식 모두 같은 다른session으로정합하게재해시한 SESSION_PAIR를추가하여 원SEND세션과만불일치할때 CREATE0·UNKNOWN/재송신0임을 한정1PASS577.859ms/type/diff0으로확인했다. 제품수정/기준완화0·원M1보존, 독립재리뷰합격주장0이다. 기존12PASS는앞선snapshot 영향범위로유지하며 실provider/OS/내구/Agent/DB·연속TURN/전체FN06미판정은변경하지않는다.
 
 - **2026-10-23 FN06 concrete TURN capture 일부 소비 확인**: 기존 THREAD 기본동작을 유지하는 명시kind 내부구현과 TURN강제 wrapper로 SEND의 실제codec수신→정확부모검증/준비→CREATE→결과원장→post current→같은응답rowref를연결했다. 신규2RED294.1328→2PASS603.1216ms, 부모/세션/부모결과누락·pipe/부분receipt실패·post회수·늦은frame소거를보강한 TURN3/기존THREAD4/SEND장벽5 총12PASS843.8344ms. 뒤frame원소undefined 타입1진단은원FAIL보존·명시존재검사로시험만좁힌후type/diff0이다. rawhandle은privatecodec/유한메모리/bytepipe만, metadata원문0·UNKNOWN/permit/wire·capture재발행0을확인했다. 인스턴스는한번의명시capture용이며 연속TURN재사용·실postcurrent공급자/실제준비·결과store내구/OS/native/Agent/정식DB서비스·전체FN06Stage는미구현·미검증으로유지한다. 새공개API/SQL/rootACL/credential/실행/자원0·독립scoped리뷰중이며 기존보호7/거절/원exit1은불변이다.
