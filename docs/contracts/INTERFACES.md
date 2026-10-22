@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 신규 Host 사전검사 SOURCE — 2026-10-23
+
+OwnershipEvidenceHost.PlanAsync는 외부 endpoint/CLI가 아닌 내부 미래 SOURCE다. 정확32개 metadata를 고정 복사하고 UUID·양의 안전 세대/초기ref version1·hash·UTC 및 최대120초 범위를 검사한다. 내부 current-basis reader는 default 미등록→UNAVAILABLE이며 AUTO/REGISTRATION_STATUS_ONLY/grants0·동일 선택/현재성 두 번 대조 후에도 반환은 OWNERSHIP_PREPARATION_SOURCE_PLAN_ONLY/ProcessCreationAuthorized·PreparationAuthorized·ExecutionAuthorized·DispatchPerformed=false다. caller echo는 실제 current 권위가 아니며 authenticated native binding/retained process·Job factory/관측서명/actual writer/provenance를 누락으로 명시한다.
+
+port token은 private timeout/external signal과 분리하고 취소 callback은 소유 cleanup에서만 정규화한다. cleanup 후 UTC/Stopwatch/외부취소를 다시 검사한다. reader와 callback은 비차단 read-only 계약이며 실제 공급자 동작/종료 상한은 미검증이다. 미래 시험 SOURCE·정적 한정 검토는 compile/실행/Windows/실제 OS 권위 PASS가 아니다. REQUIRE는 계속 거절하며 실제 root/ACL/키·프로세스·서비스·DB·Agent 효과나 정식 build/route 등록은 추가하지 않는다.
+
 ## FN06 D1 신규 합성 worker SOURCE — 2026-10-23
 
 OwnershipEvidenceWorker.cs는 신규 미래 Host용 합성 대상 SOURCE다. 정확 인자는 runId·generation·expiresAt뿐이며 runtime와 같은 UUID/안전정수/정규UTC를 검사한다. worker 진입시 UTC와 최대120초 고정 monotonic 예산을 함께 사용하고 외부명령/파일/키/통신/자식/Agent 기능을 제공하지 않는다. suspended 대상의 만료·취소/회수는 실행되지 않는 worker 루프로 보장하지 않으며 미래 retained-handle Host의 별도 책임이다.

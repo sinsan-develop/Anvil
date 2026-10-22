@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 신규 Host 사전검사 SOURCE**: 내부 준비 profile/current-basis 두 번 대조·단일사용·만료/취소 gate를 작성했다. 결과는 SOURCE_PLAN_ONLY/모든 권한false이고 실제 authenticated binding/retained factory/관측서명/writer/provenance는 누락이다. 원 정적 I2 및 한정 보정 C0/I0/M0·diff0만 확인했고 compile/시험실행/native OS/종료상한은 NOT_RUN/UNVERIFIED다. 다음은 실제 current native 연결·retained identity/관측/취소 SOURCE이며 기존 특정거절/SQLpendingM1/D2~D4 실제효과 제외와 전체 계획 미완료는 유지한다.
+
 - **2026-10-23 FN06 D1 신규 native worker SOURCE**: 승인된 신규 worker의 유한 입력/수명 source와 미래 profile 시험 source를 작성했다. diff0·한정 정적 C0/I0/M0만 확인했으며 compile/시험실행/Windows종료상한은 NOT_RUN/UNVERIFIED다. 기존 만료QA helper 불변·Host/retained handle/관측서명/실제 권위·binding/headCAS 미완료는 유지한다. 다음은 신규 Host SOURCE의 준비 전 검증 경계이며 actual compile/OS/DB/Agent는 실행하지 않는다.
 
 - **2026-10-23 FN06 D1 parent 선행 일부**: 현재 HUMAN/OWNER/예약 아래 원 THREAD claim/receipt를 기존 history verifier로 읽고 원 SEND scope 전체·fullref와 대조하는 SOURCE를 연결했다. 직접22합성/type/diff0·원 C0/I1/M0 보정 한정 C0/I0/M0를 기록한다. 실제 parent 현재권위/원장/FSYNC/OS/writer·anchor/binding/headCAS·SQLpendingM1/actual native/Agent는 미완료다. 후속은 원 anchor/binding 실제 선행과 미작성 신규 native SOURCE를 구분해 진행하며 실행 승인으로 확대하지 않는다.
