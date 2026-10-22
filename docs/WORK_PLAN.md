@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 미적용 SQL 실제 구문·권한 확인**: 원2CD2…/42601실패뒤CASE괄호2개후보의독립deltaC0/I0/M0·새위임exact62d36f75/pendingEB4…로새빈PG15 actual phaseDONE/exit0. schemaCOMMIT·최소권한closure/회수0을확인했으며기존59manifest/정식서비스불변·실Agent0이다. claim데이터/nonce·감사원자성/THREAD·TURN·정식적용준비는NOT_EXECUTED/false,전체FN06/계획미완료. 다음은원서명/permit선행의실claim저장·재조회공백이며상세는FN06_PROVIDER_CLAIM_SCHEMA_LAB_RESULT/WORK_STATUS를따른다.
+
 - **2026-10-22 FN06 pending0037 실제 lab 구문 실패 보완 중**: 새빈PG15 exact63e731a/원pending2CD2…는42601 position14220으로미적용transaction 실패·COMMIT/closure양성0. 임시자원독립잔여0·정식3불변. 128행 CASE 괄호2개만 보완한 새후보EB4CC66E…는독립delta검토/새exact한정lab판정전 actual미검증이며, 기존59SQL·manifest/정식역할·서비스·Agent변경0. 전체FN06/계획미완료, 상세원실패·회수·후속은WORK_STATUS와후보를따른다.
 
 - **2026-10-22 FN06 실제 인증 actor source 오류 보완**: 승인A~C SEND/STOP current의실제Date진입거절반례2RED→내부clone2줄보완·직접8PASS1410.6103ms/type/diff0. 현재주체private복제·기존권한/permit/OS검사를유지하고wire계약/정식DB/역할/native/Agent변경0. source검증이며실제연결완료가아니다. pending0037의일회격리PG시험경계지원과다음source준비를계속하며전체FN06/계획미완료다.
