@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 claim 영속 경로 한정 확인**: 원QA basis evidence누락을반례로보완한exactf55bb3b6의새빈PG15에서정상예약/서명등록·START소비→claim실COMMIT/별도app연결원문hash·동일proof추가0/새proof원receipt보존·보호flush후6원장rollback을phaseDONE/exit0으로확인했다. 독립SSH exact자원ID/run/ownerlabel/root/cwd잔여0·정식3불변이다. 실DB원자성+합성source/OS전제이며actualProvider/OS/DPAPI/Agent·정식ready/전체FN06·Stage미완료,원3FAIL보존. 다음은OWNER인증API/화면조회실소비와실Agent/native연결공백이며완료schema/원자성QA반복0. 상세FN06_PROVIDER_CLAIM_DATA_LAB_RESULT.md/WORK_STATUS를따른다.
+
 - **2026-10-22 FN06 QA 근거 누락 원인 보완**: 세번째위치진단도FAIL/claim양성0/독립잔여0·정식3불변이다. 같은actual진단은중단하고원queue validator49의전체근거포함조건과새QA basis evidence누락을로컬원계산반례 SERVER_EXECUTION_FACT_INVALID로재현했다. test-only 한곳보완→5PASS368.6195ms/type/diff0·한정독립C0/I0/M0/actual재실행0. 원제품/SQL/권한·검사기준은불변이며 새exact 보완후보의한정검증만PMO에분리제시한다. 전체FN06/Stage미완료·원세FAIL보존이다.
 
 - **2026-10-22 FN06 새 실제 data lab FAIL·진단 보완**: exact4a1c4b03 신규1회는 정상선행/claim 구간ERROR exit1·실원자성양성0이다. runner정리성공·별도SSH등록자원/cwd잔여0/정식3불변을확인했다. child safe summary 누락의진단코드만보완해새반례RED→4PASS/type/diff0, 제품/SQL/권한/서명/timeout/기준불변·새실행0이다. 원FAIL을보존하며후속exact진단패킷을PMO에분리전달한다. 미완료원인은아직미확정이며전체FN06/Stage완료아니다.

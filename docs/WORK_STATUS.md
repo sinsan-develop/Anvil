@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN06 결과 문서 게시 전 형식 보정**: 새결과서EOF빈행1로staged diff check exit2가발생해commit/push가중단됐다. 빈행만보정하며실제시험결과/코드변경0·실행재검증0이다.
+
+- **FN06 한정 성공의 독립 회수·다음 단위**: 뒤SSH exec-2ad07c exit0에서실PG733804…/netdc659… fullID·run79825…/ownerlabel·등록root/관련cwd잔여0과정식3fullID/image/StartedAt/runningfalse·daemon/image/Node불변을확인했다. 새합성DB/역할/등록credential은tmpfs/process와함께폐기·정식변경0이며JS완전메모리소거보장0이다. 한정결과/원3FAIL·미검증을FN06_PROVIDER_CLAIM_DATA_LAB_RESULT.md와계획에기록했다. 다음미완료는현재OWNER인증API/화면의실저장claim조회소비와실Agent/native연결이며이미완료한schema/원자성시험을반복하지않는다. 전체FN06/Stage/계획완료보고는아니다.
+
+- **FN06 실제 claim 영속 한정 검증 DONE**: exactf55bb3b6401153af6492d3a87afe1ea3dd754958/동일base59·pendingEB4미등록의새PG에서정상예약·서명등록/START소비→보호flush후원장rollback·정상COMMIT·동일proof추가0/새proof원receipt멱등·별도app연결원문hash조회가phaseDONE/exit0이다. 이는실DB원자성+명시합성source/OS전제이며실Provider/OS/DPAPI/Agent·정식적용ready/전체FN06완료아니다. PG733804a8c6e21f9184feb81943b847dff3eea4339f63b8bc62608042a4773215/netdc659667f50f798867ff98cdf96f7d3c92099b6fbfbfa0762716c0e75a46282e/run79825c4ee4d82abbba946d90371d1fee,child원문files2/dirs5·closeFailures0/rootCleanupFailedfalse/runnerfailurefalse·cleanupFailurefalse/bootstrap0safe1path0. 독립잔여·정식3불변은다음SSH로확인하며현재추정PASS0·원3FAIL소급0이다.
+
+- **FN06 QA원인 보완 새exact1회 위임 checkpoint**: PMO가f55bb3b6401153af6492d3a87afe1ea3dd754958/caller49F3와원validator전체근거조건을직접대조해새빈1회검증A를채택했다. 이전3FAIL은보존하며이번은동일진단반복이아닌로컬반례로확인한QA원인보완후보다. data전용root/PG/net/DB/owner에새run·동일고정daemonimageNode/59+pendingEB4등록0·tmpfs512/portsmountvolumeformalnet0/합성키code/status100초·10분/240+50·180·110test90·회수25·clone전trap·부재/정식3불변·독립잔여0유지. actual후속성공전양성0·정식DB서비스/Agent변경0이다.
+
 - **FN06 근거 누락 최소delta 독립 확인**: caller49F3FCCD…/서로다른두ref반례의한정독립C0/I0/M0·실행/수정0. 실제caller도같은helper를소비하고원validator 전체근거포함조건을유지함을확인했다. 실제PG후속성공은미판정이며이번정적보정을세원실패에소급하지않는다. 원인/영향·새exact후보를후보§8과계획에기록해게시한다.
 
 - **FN06 실제 거절 원인 로컬 재현·최소 보완**: queue85의원validator49행은checks.basis가모든basisRefs를포함하도록요구한다. 새caller의원계산을test-only함수로추출/실제사용하고서로다른임무·준비ref반례에서 SERVER_EXECUTION_FACT_INVALID 1FAIL/4PASS354.1864ms를재현했다. basis:[preparationRef]를basisRefs전체로연결하는한곳만보완한뒤5PASS368.6195ms/type/diff0/caller49F3FCCD…다. 제품validator·권한/SQL·서명·기한/합격조건은불변이며추가diagnostic actual0. 원세번FAIL/독립잔여0을보존하고이로새실행전체해소/claim양성을소급하지않는다. 독립최소delta검토후원인확인·영향/대안·새exact후보만PMO에제시한다.
