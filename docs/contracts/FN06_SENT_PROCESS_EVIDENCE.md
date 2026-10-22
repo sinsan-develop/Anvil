@@ -38,4 +38,3 @@
 - caller에 원문/Secret·OS 경로·프로세스 제어 handle을 반환하지 않는다. process identity metadata는 내부용이며 공개 HTTP 계약이 아니다.
 - 실패는 SENT_PROCESS_EVIDENCE_UNAVAILABLE. 원 시도 UNKNOWN 보존·재송신/회수완료/파일 WRITE 허가로 전환하지 않는다. process 소유 일치는 filesystem sandbox/source WRITE 허가가 아니다.
 - 최소 합성 검수: 정확 원 anchor/사건/별도 요청 일치, caller 재해시 미채택, scope·세대/역할/Job/PID 재사용·image·hash·parent/permit mismatch, 누락/중복/회수/head변경·stale/최종만료·취소/timeout/late/재사용 거절. 실제 DB·native/OS·Agent/전체 FN06 검수는 미완료다.
-
