@@ -21,6 +21,14 @@
 
 ## 구현·검수 경계
 
+### 응답용 private current의 수신 자료 소비
+
+`SyntheticSentTurnMaterialCurrent`는 기존 `SyntheticMaterialReceiver.instructionSource()`의 읽기를 private 현재 조회 전후 소비한다. 원 envelope/부분 refs·수신 receipt·바이트 길이/내용 hash·UTF-8/기존 알려진 비밀 표식을 검사하고, 현재 snapshot의 자료 receipt/hash가 같은지 대조한다. 기존 보관 부분을 다시 수신하거나 새 receipt/permit을 쓰지 않는다. 실패/취소/timeout/최종 기한 뒤 결과는 수용하지 않고 후속 자료 조회도 하지 않는다.
+
+이 소비자의 source는 기존 receiver처럼 독점 소유의 새 Uint8Array를 반환해야 한다. 그 배열은 정상·오류·취소·늦은 완료에도 소거하므로 공유 inbox/cache 배열을 직접 전달하지 않는다. 원 inbox/보관 바이트는 그대로 보존한다. JS 문자열/GC 물리소거를 보장하지 않는다.
+
+별도 private 현재 공급자와 기존 pre-send 보호 reader는 구분한다. 기존 `SyntheticInstructionClientAuthority.current`와 `SyntheticProviderHandleReader`를 BUSY 응답에 전용하거나 purpose를 제거하여 새 SEND 허가처럼 반환하지 않는다. 응답용 보호세션 조회의 실제 공급자·OS/native/파일 내구·DB/Agent 검증은 아직 미구현·미검증이다. 새 공개 API/SQL/권한·기본등록/실행은 없다.
+
 ### 서버 fact와 private 현재 snapshot의 내부 조립
 
 응답 전용 Bound 조회는 원 선택의 `attemptBinding:{instructionContentHash,bindingHash}` 및 응답용 basis의 `turnState,grantRef`를 전달한다. 기존 새 SEND 반환에는 추가하지 않는다. 이는 이미 대조한 metadata 전달이며 원 hash/상태 변경·새 허가가 아니다.
