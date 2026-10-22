@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 pending0037 실제 lab 구문 실패 보완 중**: 새빈PG15 exact63e731a/원pending2CD2…는42601 position14220으로미적용transaction 실패·COMMIT/closure양성0. 임시자원독립잔여0·정식3불변. 128행 CASE 괄호2개만 보완한 새후보EB4CC66E…는독립delta검토/새exact한정lab판정전 actual미검증이며, 기존59SQL·manifest/정식역할·서비스·Agent변경0. 전체FN06/계획미완료, 상세원실패·회수·후속은WORK_STATUS와후보를따른다.
+
 - **2026-10-22 FN06 실제 인증 actor source 오류 보완**: 승인A~C SEND/STOP current의실제Date진입거절반례2RED→내부clone2줄보완·직접8PASS1410.6103ms/type/diff0. 현재주체private복제·기존권한/permit/OS검사를유지하고wire계약/정식DB/역할/native/Agent변경0. source검증이며실제연결완료가아니다. pending0037의일회격리PG시험경계지원과다음source준비를계속하며전체FN06/계획미완료다.
 
 - **2026-10-22 FN13/UI05 현황·제출 변경선언 대조 일부 연결**: 체크포인트파일의변경내역과같은실행제출의변경선언에서한쪽누락/내용차이·hash/diff미확인·중복경로를표시한다. 원파일/제출hash/권한GET/선택·지연회수아래연결했으며root/현재디스크/쓰기회수·재개는미확인으로유지한다. 직접7PASS/typebuild356/395ms·통제API Edge1PASS3.8초·QA독립잔여0,독립C0/I1/M1후Main반례보완과실제OS/정식served미검증을분리한다. 전체FN13 reconcile/중지·재개완료가아니며미실행/오류·남은계획은WORK_STATUS를따른다.

@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 최소 구문 후보 독립 검토**: pending128행 괄호2개 delta C0/I0/M0·실행/수정0, 새전체SHA EB4CC66E8D682F08225823E39BAE5AD40F7AF62B529D3774291E855F34536097 일치. 원THREAD/기타연산 매핑·뒤OR·권한/비교기준불변이며 actual재검증전 오류해소/COMMIT은미확정이다. PMO에 새exact후보/runner D7B5…/helper BC2B…를전달했고기존allowhash2CD2…잠금유지·실제재실행0. 후속source inventory중미존재 apps/server/modules/agents·apps/runner 읽기2건은변경0이며 FUNCTION_WORK에명시된 connections/connector 실제목록으로만좁혔다.
+
+- **FN06 lab 실패 위치·회수 대조**: 별도SSH exit0에서 전용 경로/PG/net·owner label/관련cwd 잔여0 및 정식3 fullID/image/StartedAt/runningfalse 불변 확인. 실제42601 position14220은pending128행의 미괄호 CASE 안 첫 THEN이다. PL/pgSQL IF 조건의 CASE를 괄호로 묶는1곳 최소 구문 후보를 작성하고 실제 새PG에서 확인 전 원인해소/PASS를 주장하지 않는다. source읽기 중 PowerShell에서literal db/migrations/*.pending을 rg에 넘긴 os123은읽기실패/변경0이며 실제파일경로로다시좁혔다. 기존승인hash2CD2…는원실패이력으로보존하고 새후보hash는별도 위임판정대상이다.
+
+- **FN06 pending0037 실제 lab 첫 실행 FAIL**: exact63e731a141b593c821d61d49b8c4145ab4ab8341·승인pending2CD2…의 새빈PG15에서 BASE_SCHEMA/새lab역할 준비 뒤 PENDING_SCHEMA_TRANSACTION SQLSTATE42601 position14220로 exit1이다. 구문 실패이며 schema COMMIT·권한 closure/claim 양성0, 원인 위치는 다음 읽기 조사로 확정한다. runner cleanupFailurefalse·bootstrap status1/safe1/path_exists0, 실제Agent/정식DB·서비스변경0. 같은 실행 재시도/관리자 우회·직접DML·기준완화0, 독립 잔여 확인 후 최소 source 보완과 새exact후보의 위임 판정을 분리한다.
+
 - **FN06 lab 검토 보완 GREEN**: 회수 단계의 throw/false 뒤 후속 정리 호출과 전체 열 ACL의 추가열/grant option/중복 반례 2RED→최신4PASS158.4095ms/type/diff0. 새 lab helper만 보완했고 기존 pool helper/제품/고정pending/59manifest는 불변이다. 25초 회수 기한을 넘겨 성공으로 처리하지 않으며 각 실패를 누적해 최종 cleanupFailure/미확인 기록을 남긴다. 독립 C0/I1/M1과 Main 보완을 구분하고 독립 재검토 clean으로 소급하지 않는다. plan exact2CD2…/59/actualExecutedfalse, 실제 생성0. 다음 exact source 게시 후 사전등록 일회 lab만 실행한다.
 
 - **FN06 lab 독립 검토 보완 착수**: 읽기 전용 C0/I1/M1·실행0. I1은 pool 예산 throw가 뒤 PG/net 정리를 건너뛰는 경로, M1은 UPDATE 열 권한 표본 밖 추가 ACL 누락이다. 회수 단계를 개별 격리하되 기존 25초 기한을 유지하고 실패/미확인 기록을 보존하며, 전체 명시 열 ACL을 정확7과 대조한다. 신규 두 반례 2FAIL/기존2PASS179.336ms로 확인했다. 실제 자원 생성0·정식DB/서비스/역할0. 초기 PowerShell profile의 conda StandardOutputEncoding 오류는 읽기와 분리하며 이후 login:false만 사용·설정 변경0.

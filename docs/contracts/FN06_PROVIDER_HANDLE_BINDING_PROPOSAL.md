@@ -200,3 +200,9 @@ usableBefore:UTC
 
 
 검토 요청은 §6의 **상세 source/데이터 계약 후보 채택 여부**다. 채택하더라도 실제 신규 보호root/ACL·helper/key/credential·DB 적용·서비스 복구·실Agent/비용은 각각 기존 별도 실행 경계로 남는다. 현재는 상세설계만 진행했고 A~C 제품 구현/TDD 착수0이다. 공개 endpoint/SQL 파일을 미리 만들거나 미채택 contract를 live manifest에 등록하지 않는다.
+
+### 2026-10-22 pending0037 구문 lab 첫 실패·최소 후보
+
+- 새빈 PG15 lab source63e731a141b593c821d61d49b8c4145ab4ab8341, pending2CD2D7D6BA08C0EBA84A82FBCBC13DE6828F717BE85F90CC72F641FFF5CD671B는 SQLSTATE42601 position14220로 실패했다. 해당 위치는128행 IF 조건 안의 미괄호 CASE 첫 THEN이며, schema COMMIT·권한 closure 양성0이다. 회수/별도 잔여0·정식3 metadata 불변을 확인했다.
+- 최소 새후보는 `IS DISTINCT FROM CASE … END OR`를 `IS DISTINCT FROM (CASE … END) OR`로 감싼 한 줄이다. 조건·권한·테이블·원데이터 계약을 바꾸지 않고 기존59SQL/manifest는 보존한다. 후보 pending SHA256 EB4CC66E8D682F08225823E39BAE5AD40F7AF62B529D3774291E855F34536097. 원 hash의 실패를 삭제/소급 PASS하지 않는다.
+- 현 고정 runner SHA256 D7B5EBF0F25397C591257CD4B84487667A605CC3EB5CF3039C54C529BFEDE7C4, lab helper SHA256 BC2B947926DFF71970DBA107FD97B8B8A469436CB7FD609856241D3A157F3893. helper의 실행허용hash는 원2CD2…인 채로 유지하며 새후보 위임 판정 뒤에만 새hash로 결박한다. 새후보 실제구문/COMMIT·closure는 아직 미검증이다. 실제claim/nonce·THREAD/TURN·정식반영·Agent는 제외한다.

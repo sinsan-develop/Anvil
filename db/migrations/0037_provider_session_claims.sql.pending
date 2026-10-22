@@ -125,7 +125,7 @@ BEGIN
   OR sc->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash)
   OR sc->>'connectorId' IS DISTINCT FROM g.snapshot_json->'binding'->'registration'->>'connectorId'
   OR q.grant_id IS DISTINCT FROM g.id OR q.grant_version IS DISTINCT FROM g.version OR q.execution_id IS DISTINCT FROM NEW.execution_id OR q.generation IS DISTINCT FROM NEW.generation
-  OR q.snapshot_json->'envelope'->>'operation' IS DISTINCT FROM CASE NEW.kind WHEN 'THREAD' THEN 'START_SESSION' ELSE 'SEND_INSTRUCTION' END OR q.snapshot_json->'envelope'->>'commandId' IS DISTINCT FROM NEW.command_id::text
+  OR q.snapshot_json->'envelope'->>'operation' IS DISTINCT FROM (CASE NEW.kind WHEN 'THREAD' THEN 'START_SESSION' ELSE 'SEND_INSTRUCTION' END) OR q.snapshot_json->'envelope'->>'commandId' IS DISTINCT FROM NEW.command_id::text
   OR q.envelope_hash IS DISTINCT FROM c->>'envelopeHash' OR q.snapshot_json->'envelope'->'context'->'authorizationReceiptRef' IS DISTINCT FROM c->'authorizationReceiptRef'
   OR c->'source'->>'requestIdDigest' IS DISTINCT FROM anvil.execution_json_hash(to_jsonb(anvil.execution_json_hash(jsonb_build_object('key',jsonb_build_object('projectId',NEW.project_id,'executionId',NEW.execution_id,'executionGeneration',NEW.generation,'commandId',NEW.command_id),'envelopeHash',q.envelope_hash))))
   OR q.snapshot_json->'envelope'->'executorRegistrationRef' IS DISTINCT FROM c->'executorRegistrationRef'
