@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 원 parent THREAD 이력 source — 2026-10-23
+
+readOwnershipParentThreadHistory는 같은 caller 인증 transaction에서 원 SEND/준비 이력·실제 actor를 읽고 기존 BoundPgProviderClaimHistoryStore/SyntheticProviderClaimHistory 및 원 claim journal을 소비한다. 현재 HUMAN/OWNER·agent session 예약/명령과 원 THREAD receipt의 fullref를 대조하고 원 SEND의 session/role/assignment/연결/환경/등록·실행 scope 전체(원 grant fullref 포함)와 과거 시각을 확인한 뒤 준비를 재확인한다. 결과는 비밀 없는 역사 refs·false/UNKNOWN뿐이며 raw THREAD/protected handle/thread 식별자를 반환하지 않는다.
+
+현재 parent/실제 원장·FSYNC/OS/실제writer·서명/credential/SEND 권위와 binding/headCAS 발급은 증명하지 않는다. 선행 missingEvidence를 전파하며 HISTORY를 caller 또는 다른 source가 실제권위로 자동 승격하지 않는다. 신규 endpoint/권한/handle/실제 Agent·DB 실행은 등록하지 않는다.
+
 ## FN06 D1 잠긴 attempt 이력/handle 생성 분리 — 2026-10-23
 
 SyntheticProviderReaderFactory.readHistory는 기존 sender/stopper exclusive journal lock 안의 readLocked에서 원 SEND_ATTEMPTED→PERMIT_RECORDED(또는 STOP_ATTEMPTED) 구조/hash·선행·선택 binding을 읽어 복사한다. handle build를 호출하지 않는다. resolve는 동일 readHistory 검증 결과의 고정 selection으로 기존 build를 수행한다. 이력 조회는 원장 진위·fsync·현재 parent/OS/실행 권위가 아니며 반환의 해당 false/missingEvidence를 다른 source에서 실제 권위로 자동 채택하지 않는다. 실제 FS/OS 공급자나 신규 endpoint·실행을 등록하지 않는다.

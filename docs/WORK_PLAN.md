@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 parent 선행 일부**: 현재 HUMAN/OWNER/예약 아래 원 THREAD claim/receipt를 기존 history verifier로 읽고 원 SEND scope 전체·fullref와 대조하는 SOURCE를 연결했다. 직접22합성/type/diff0·원 C0/I1/M0 보정 한정 C0/I0/M0를 기록한다. 실제 parent 현재권위/원장/FSYNC/OS/writer·anchor/binding/headCAS·SQLpendingM1/actual native/Agent는 미완료다. 후속은 원 anchor/binding 실제 선행과 미작성 신규 native SOURCE를 구분해 진행하며 실행 승인으로 확대하지 않는다.
+
 - **2026-10-23 FN06 D1 local attempt 선행 일부**: 기존 locked journal pair 검증을 handle 생성 없는 readHistory로 분리하고 resolve는 같은 검증을 재사용한다. 직접7합성/type/diff0·독립 한정 C0/I0/M0, 실제 FS/잠금/OS/현재parent/Agent와 binding/headCAS 미완료는 유지한다. 다음은 기존 현재 HUMAN 경계의 원 parent THREAD claim/receipt source 연결이며 실제 supplier 미구현을 완료로 승격하지 않는다.
 
 - **2026-10-23 FN06 D1 원 SEND graph 후속**: 원 command의 HUMAN 허가/감사·예약/outbox 역사 graph를 기존 verifier 재사용으로 연결했다. 직접24합성/type/diff0·한정 독립 읽기 C0/I0/M0이며 실제 current SEND/서명/credential·attempt/parent/OS/writer/provenance·원 binding 발급/headCAS/SQLpendingM1은 미완료다. 다음 source 선행을 이어가며 전체 FN06/계획 완료로 보고하지 않는다.
