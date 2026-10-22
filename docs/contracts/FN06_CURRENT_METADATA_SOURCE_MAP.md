@@ -1,5 +1,14 @@
 # FN06 현재 metadata 원자료·소유 관측 경계
 
+## 2026-10-23 D1 current resolver — 새 관측 원자료의 합성 대조
+
+- 새 `ownership-current-resolver.ts`는 입력 scope와 `{preparationRef,selection}`을 소비하며 원 AUTO 준비/현재 HUMAN·정책/등록을 같은 transaction에서 읽는다. 기본 fresh 포트는 null/connect0다.
+- 서버가 DB clock의 `notBefore`, 유한 기한(최대10초), readId, exact selection/selectionHash를 만든다. 합성 `observeAndAccept` 포트는 query만 가능한 같은 transaction facade를 받는다. 자체 BEGIN/COMMIT/release는 허용하지 않는다. **실 producer는 아직 없으며 기존 own-transaction issuer/archive를 그대로 중첩 호출해 이 포트를 구현한 것이 아니다.**
+- 포트가 반환한 새 request/observation fullref를 DB 원본과 대조한다. CURRENT request/observation 시각은 server read 시작보다 엄격히 뒤여야 한다. 저장 chain 최대200과 head를 원 준비부터 재구성하고 회수/UNKNOWN·다른 세대·원 binding/nonce/등록키 서명·최종 현재 권한/slot/기한을 검사한다. 이전 관측에 새 readId만 붙이는 것은 거절한다.
+- 무응답/취소/pending query 뒤 producer 실패는 연결을 정상 재사용하지 않고 폐기를 요청한다. 닫힌 facade는 늦은 DB 호출을 차단한다. 실제 PG 폐기/잠금 해제 효과는 미검증이며 COMMIT 시도 후 불확정은 UNKNOWN이다.
+- 반환은 `SYNTHETIC_OWNERSHIP_CURRENT_BASIS_ONLY`이며 inner `archive`가 기존 anchor/binding 7필드 **후보**다. 최상위 BASIS_ONLY를 기존 `SyntheticSentProcessEvidence`에 넘기면 거절하는 소비 반례를 확인했다. 명시 assembler/실제 fresh producer·등록·현재 OS/실writer·회수/출처/source WRITE 공급자가 아직 없어 이 후보를 VERIFIED_CURRENT/OWNED로 승격하지 않는다.
+- 실제 DB/SQL 적용·native/helper/OS·키·서비스·Agent 실행0. REQUIRE_APPROVAL 미연결 차단/선택변이 NOT_EXECUTED·SQLpendingM1/원 QA 실패를 보존한다.
+
 ## 2026-10-23 D1 요청 발행 source — 합성/실권위 구분
 
 - `ownership-request-issuer.ts`의 `SyntheticPgOwnershipRequestIssuer`는 현재 AUTO 원준비 receipt reader를 같은 transaction에서 전후 소비하고 project 준비 slot·exact tail/head 및 서버 nonce/request 저장·COMMIT 후 반환을 조립한다. 기본 evidence 포트는 null이며 연결 전에 UNAVAILABLE다. 공개 route/operation/실제 공급자 등록은 없다.

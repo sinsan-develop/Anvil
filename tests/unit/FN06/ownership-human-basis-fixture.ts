@@ -25,5 +25,5 @@ export async function ownershipHumanBasisFixture(){
   throw Error('UNEXPECTED_QUERY');
  },release(){throw Error('CALLER_OWNS_CONNECTION');}} as unknown as PoolClient;
  const read=async()=>{prep.ref.contentHash=hash(prep.snapshot);return readOwnershipHumanPolicyRegistrationBasis(db,f.access,f.authToken,f.csrf,prep);};
- return{read,db,access:f.access,token:f.authToken,csrf:f.csrf,now,row,prep,policy,rules,scope,registration,control,member,calls,updatePolicy,updateRegistration,noPolicy(){missingPolicy=true;},noRegistration(){missingRegistration=true;},late(){late=true;}};
+ return{read,db,access:f.access,token:f.authToken,csrf:f.csrf,now,row,prep,policy,rules,scope,registration,control,member,calls,signObservation:f.signed,updatePolicy,updateRegistration,noPolicy(){missingPolicy=true;},noRegistration(){missingRegistration=true;},late(){late=true;}};
 }
