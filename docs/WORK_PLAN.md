@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 준비 intent 조립 일부**: 원 receipt 소비 구조에 맞는 비순환 PLAN_ONLY intent/request 조립 source와 반례를 추가했다. 직접10/type/diff·한정 읽기 C0/I0/M0는 WORK_STATUS를 따른다. 실제 인증/허가·원명령 저장/준비 사건 발급·일회 승인소비·writer/provenance 공급자는 미완료이며 기능 완료/실제 실행으로 승격하지 않는다.
+
 - **2026-10-23 FN06 D1 같은-client fresh producer 일부**: caller 소유 transaction에서 요청·서명 수용 core를 호출해 resolver→명시 archive 두 조회까지 합성 연결했다. 직접54/type/diff와 최종 delta 독립 C0/I0/M0는 WORK_STATUS 범위만 증명한다. 실제 observer/evidence·writer/회수/provenance/source WRITE·준비 creator/일회 승인소비·SQL guard/native 및 전체 D1/FN06는 미완료다. 기존 승인의 실제 효과 제외와 특정거절은 유지하며 작은 source 단위 재승인 없이 후속 선행 구현을 계속한다.
 
 - **2026-10-23 FN06 D1 응답 archive 명시 어댑터 일부**: current BASIS_ONLY를 exact 선택·새 요청/관측·단조 head/기한·false 표식으로 확인해 기존 응답 7필드로 투영하는 합성 source를 연결했다. 직접22/추가7·원 독립 M1과 한정 보정 C0/I0/M0는 WORK_STATUS 범위만 증명한다. 실제 RPC/fresh producer/OS observer·writer/source 권위·DB/native/Agent 및 전체 D1/FN06/Stage B는 여전히 미완료이며 기존 허가/거절은 변경하지 않는다.

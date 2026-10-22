@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 준비 intent 순수 조립 — 2026-10-23
+
+`planOwnershipPreparationIntent(intent,serverIds,nowMs)`는 `serverIds={intentId,commandId}`의 서로 다른 서버 내부 UUID와 exact intent 구조·scope/주체/fullref/기한/세 준비 행위·false 표식을 검사한다. 원 receipt reader의 비순환 intentRef와 AUTO commandSnapshot(approvalRef=null) 및 requestHash를 반환하며 목적은 OWNERSHIP_PREPARATION_INTENT_PLAN_ONLY다. 실제 인증/현재 정책/등록·writer NONE/회수·provenance·원 명령/receipt/audit 저장 근거를 제공하지 않고 준비/실행/dispatch 권한은 false다. 일반 operation allowlist·route 등록·DB 저장/실제 준비 실행은 변경하지 않는다. 사용자 입력 writerState=NONE은 구조적 선언일 뿐 실제 부재 증거가 아니다. 정확 키 외 미래 event/receipt/audit 참조·SEND/WRITE 및 120초 초과는 거절한다.
+
+생성물은 원 receipt 소비 계약과 합성 대조했으며 실제 creator/인증/저장·승인소비/서비스 검증은 별도 미완료다.
+
 ## FN06 D1 별도 준비 승인 보관 소비 조회 — 2026-10-23
 
 `ProjectApprovals.readOwnershipPreparationConsumption(db,actor,projectId,requestId)`는 새 HTTP route가 아닌 내부 HISTORY_ONLY 읽기다. 기존 request/decision/consumption 무결성 검사를 재사용하되 새 method에만 prepareOwnershipAnchor를 허용한다. 일반 read/request/authorize/consume의 원 allowlist는 유지되고 새 승인 발급/소비는 연결하지 않는다. OWNER·CONSUMED/version3·APPROVE·현재 policy/control ref·기한·원 소비 서버명령/요청 hash와 후보 ID·시각을 검사하고 반환 직전 DB clock으로 최종 기한을 재검사한다.
