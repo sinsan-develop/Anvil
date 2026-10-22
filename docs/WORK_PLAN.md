@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN10 새 근거 조회 한정 실제 확인**: exact b4bae296의 새빈61SQL/비관리자PG 정상seed→인증GET→실Webreader·타인404/익명401/query400 비노출·6표행수불변을 workflowDONE으로 확인했다. wrapper 첫 checkout회수 실패로 전체exit1이며 outertrap회수 뒤 별도SSH잔여0/정식3불변을 확인했다. 전체성공소급·같은후보재실행0, 원인미확정/served·scheduler·전체FN10미완료를 유지한다. 상세 FN10_NEXT_ACTION_BASIS_READ_RESULT.md.
+
 - **2026-10-22 FN10 근거 조회 실제 저장 소비 준비**: 기존 정상 검수 seed 후 신규 조회만 소비하는 전용 opt-in·61개 기존 SQL의 disposable lab·유한 실행/회수 wrapper를 준비했다. helper/guard10PASS/type/diff/bash-n0·한정 독립 C0/I0/M0는 source 범위이고 실제 PG/run·회수/served/Agent 증거는 아직 없다. clone 전 trap bootstrap·exact 후보의 격리 실행 및 독립 잔여 확인이 다음 미완료이며 신규 bound 저장/0038은 제외한다.
 
 - **2026-10-22 FN10 서버 원검수 근거 연결 진행**: PMO가 정확 readonly GET next-action-basis1개·기존UI소비전환 계약을채택했다. 기존검수/원제출/확정임무/현재방법론reader를같은인증tx에서대조하며회원잠금·적용본최종재조회·세션기한/COMMIT후검사·no-store를연결했다. 화면은정확선택/ref/hash·두action/falseflags검사뒤새GET만소비·무fallback이다. RED→GREEN 후 집중/인접27PASS1397.5709ms/typecheck/build/diff0. 실제PG/served화면/완료판정·실scheduler/queue진행은미검증또는미구현이며전체FN10완료아니다.
@@ -589,7 +591,7 @@
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 bbb239dd 합성 실제1 PASS/71523.4163ms·정리0/19960·relay 보존은 유지. 별도 내부precondition2파일 집중4 PASS/type0·항상실행불가이며 사용자기능진도 아님. sourceScopes/envelope/durable 결과형 미정·verifier/실제dispatch·ACK/spool/Agent 연결 미구현. 원QA-01 REWORK/40744미확정·잔여OS미검증·전체인수와 구분 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0·직접10/UI5·목록cursor2 확인. 목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·플랫폼실행전거절/적용0·실제저장/API/서비스·배정/Agent·전체완료 미확인 |
-| FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 부분 구현·기존 합성 후보계산과 WAITING 저장/조회 유지. 선택 원검수→원제출/확정임무/현재방법론 서버대조 GET·기존UI reader 연결 27PASS/type/build·한정C0/I0/M0. 기존queue DB관측/COMMIT후만료401 보완13PASS/type·한정C0/I0/M0. 실제PG/served·완료판정/실scheduler/슬롯/Agent 미완료. assignmentRef bound 새저장계약/0038은 플랫폼거절로 별도 직접승인 필요·미구현 |
+| FN10 | 자동/건별·분기·한도·대기열 | C | FN02,FN09,FN11 | FN02,FN09,FN11 | 부분 구현·기존 합성 후보계산과 WAITING 저장/조회 유지. 선택 원검수→원제출/확정임무/현재방법론 서버대조 GET·기존UI reader 연결 27PASS/type/build·한정C0/I0/M0. 기존queue DB관측/COMMIT후만료401 보완13PASS/type·한정C0/I0/M0. 신규근거조회는 b4bae296 격리PG→Webreader/거절3/6표행수 workflowDONE 확인·전체exit1(wrapper회수실패/outer회수후독립잔여0), 원인미확정·served/완료판정/실scheduler/슬롯/Agent 미완료. assignmentRef bound 새저장계약/0038은 플랫폼거절로 별도 직접승인 필요·미구현 |
 | FN11 | 권한·일회 승인·명령 통제 | B | FN01 | FN01 | 작업 중 · 명시 정책/감사·현재 주체/단독 제어, 업로드 후보 일회 요청/3종 결정/소비·멱등/만료/회수 actual eb4f1d97·forward36·유한 목록/필터/서명 페이지 actual835b9a50 확인. 다른 연산·환경/Agent·UI08/전체 집행 검수 미완료 |
 | FN12 | 결과·검증·이상 판정 | C | FN04,FN08,FN09 | FN04,FN08,FN09 | 부분 구현·증거/문제 분류·원문 PG 저장/조회·분리 COMMIT/재해시 음성, HTTP/UI05 source·새 목록 격리PG→Web소비 확인. 검수/보완·정식 DB/Agent·전체 선행은 미완료 |
 | FN13 | 체크포인트·중지·재개 | C | FN08,FN09,FN11 | FN08,FN09,FN11 | 부분 구현·현황 준비/API/UI05·다운로드/선택파일대조·상세입력·빈App입력 명시복원·보관ACK/중지이력 조회. 기존 직접25PASS/type/build·복원/비교browser2PASS. 중지후 새SEND·queued선택·직접START/SEND permit·SEND자료 current 차단을 기존59SQL 격리PG에서 확인(각1PASS/QA0), 직접경계7PASS/type0·한정정적C0/I0/M0. 불변서버checkpoint저장·양성상태대조/실제중지·쓰기회수/안전재개·served/인수는 미완료 |
