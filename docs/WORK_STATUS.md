@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN08 cached START 관측 회수 한정 검수**: 내부 recordStartObservations를 기존 exact cached page/원START원장/스풀과 연결했다. 새3RED235.9119ms→3PASS333.1584ms/type0, admission+receiver 직접영향47PASS893.2779ms/diff0·독립한정 C0/I0/M0(실행/수정0)다. 부분행·원ref보존/만료뒤재수집중복0·수신만RECEIVED/응답유실UNKNOWN보존·기록부재/다른종류/ref/spool/grant/RECOVERY/변조거절·새start/consume/wire/sign/query0를 합성메모리에서 확인했다. 기존receive/start/기한·원장검증은 불변이며 실제파일내구/경합·PG/권한/OS/native/Agent·정식served/전체FN08은 미검증·미완료다. 새 API/SQL/권한/정식환경0·보호7/원격실패/0038거절 보존, rollback은 새 내부 회수 메서드만 일반revert·원기록삭제0이다. 다음은 스풀→기존 서버 관측 소비의 독립 공백을 대조한다. native 보호 helper의 구현 자체는 §6.3 명시 미채택이므로 고정계약 source작성만 채택하는 정확delta를 PMO에 요청했고 actual/build/root/ACL/키/Agent로 확대하지 않는다.
+
+- **FN08 cached START 미구현 RED**: 신규3반례가 메서드 부재로3FAIL235.9119ms였다. 정상 부분회수/만료 뒤재개·부재/미수신/SEND/STOP/ref/spool/옛grant/RECOVERY·RECEIVED만 보존/UNKNOWN/변조원장 거절을 확인한다. 원송신·기한·권한은 바꾸지 않고 기존 수신 원장을 소비하는 내부 연결만 추가한다. 새 자원/DB/OS/Agent/서비스0이다.
+
+- **2026-10-22 FN08 cached START 관측 회수 착수**: revision460 이후 Main 선정 내부 recordStartObservations를 구현한다. 기존 receiver.observationBatch는 원 issuedAt으로 만료봉투를 역사 검증하고 key/envelopeHash/grant/expected context/등록·원장hash/순번/귀속을 검증한다. 이 원계약은 변경하지 않으며 기존 readRecorded의 exact cached START/ref·scope와 spoolscope를 연결한다. 수신기 receive/start/consume/wire·client.execute/current/sign/query0, 부재/다른종류/ref/scope·불완전/변조원장 거절·부분회수/원ID중복0를 반례로 확인한다. 합성메모리 source만이며 실제OS/Agent/DB/서비스/비용·새공개계약/SQL/권한0·기존원격실패/특정거절과 보호7 보존이다.
+
 - **FN08 정상 STOP 역사 회수 독립 한정 검수 종료**: 기존 reviewer가 C0/I0/M0·독립실행/수정0으로 확인했다. 원 REQUEST_STOP/실행scope·spool과 원STOP행을 검증해 관측만 회수하고 새 interrupt/현재권한·writer회수승격0이다. Main의 신규2/직접영향37/type/diff와 분리하며 source/시험·계획/상태4파일만 보존한다. 다음 독립 단위는 이미 존재하는 SyntheticStartReceiver.observationBatch/recordObservations를 cached START exact 명령에서 회수하는 소비 경로다. 원 expiry/원장검증을 먼저 대조하며 START 재실행/새조회·원실패승격은 하지 않는다. 전체44업무/Stage는 여전히 미완료다.
 
 - **FN08 정상 STOP 역사 회수 source 검증**: 새 recordStopObservations는 기존 readRecorded/정확 REQUEST_STOP·spoolscope를 소비해 원 중지 관측만 기록한다. 새2RED270.3859ms→2PASS345.7654ms/type0, admission+기존sessiontransport 직접영향37PASS828.2385ms/diff0다. partial1행 보존 뒤page기한경과·추가interrupt/서명/query0·재호출중복0·원STOP부재/SEND/다른ref/spool/RECOVERY거절·writer회수false를 확인했다. 기존 requestStop 허가/기한/송신은 변경0이며 독립 한정 검토중이다. 메모리합성 증거이며 실제파일내구/DB/경합/OS회수/Agent·전체FN08/Stage완료는 아니다. 새 공개계약/SQL/권한/정식서비스/원격0·보호7 및 기존실패 보존, rollback은 새메서드 일반revert·기록삭제0다.

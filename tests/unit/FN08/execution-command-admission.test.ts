@@ -167,6 +167,25 @@ test('보관 중지 회수는 원중지 부재·SEND/ref/spool·회수scope를 �
  }
 });
 
+test('보관 START는 기한 뒤 부분 관측 회수를 새 START/서명/조회 없이 재개한다',async()=>{
+ const f=fixture(),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordStartObservations,'function');await a.receive(f.scope,f.operation,f.commandRef);await f.receiver.start(f.envelope);p.failSecond();await assert.rejects(a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool));assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);f.advance(120000);
+ f.receiver.start=async()=>assert.fail('NO_START');f.receiver.receive=async()=>assert.fail('NO_RECEIVE');f.receiver.authority.consume=async()=>assert.fail('NO_PERMIT');f.receiver.wire.send=async()=>assert.fail('NO_WIRE');a.client.transport.perform=async()=>assert.fail('NO_QUERY');a.client.signer.sign=async()=>assert.fail('NO_SIGN');
+ const out=await a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool);assert.equal(out.readOnlySource,true);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.writerReleaseVerified,false);assert.equal(out.executionAuthorized,false);assert.equal(out.dispatchPerformed,false);assert.equal(out.observations.recordedRefs.length,4);assert.equal(out.observations.ackAudited,false);assert.deepEqual(p.rows[0],original);assert.deepEqual(p.rows.map(r=>r.snapshot.event.type),['RECEIVED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);assert.deepEqual(p.rows.map(r=>r.snapshot.event.localRecordRef),f.events.map(r=>r.ref));assert.deepEqual(await a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool),out);assert.equal(p.rows.length,4);assert.deepEqual(f.counts(),[1,1,1]);
+});
+
+test('보관 START 회수는 부재·미수신·SEND/STOP/ref/spool/옛grant·회수scope를 새실행 없이 거절한다',async()=>{
+ for(const fault of ['absent','no-receive','send','stop','ref','spool','grant','recovery']){const f=fault==='send'?instructionFixture():fault==='stop'?stopFixture():fixture(),p=selectedSpool(f,fault==='spool'),a=f.make();assert.equal(typeof a.recordStartObservations,'function');if(fault!=='absent')await a.client.execute(f.scope,f.operation);const counts=f.counts();a.client.transport.perform=async()=>assert.fail('NO_QUERY');f.receiver.start=async()=>assert.fail('NO_START');
+  const scope=fault==='grant'?{...f.scope,grantRef:{...f.scope.grantRef,version:2}}:fault==='recovery'?{...f.scope,mode:'RECOVERY'}:f.scope;
+  await assert.rejects(a.recordStartObservations(scope,f.operation,fault==='ref'?{...f.commandRef,version:2}:f.commandRef,p.spool),/COMMAND_ADMISSION_/);assert.equal(p.rows.length,0);assert.equal(f.events.length,0);assert.deepEqual(f.counts(),counts);
+ }
+});
+
+test('START 수신만 있는 기록·응답유실 UNKNOWN은 그대로 회수하고 손상원장은 거절한다',async()=>{
+ const f=fixture(),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordStartObservations,'function');await a.receive(f.scope,f.operation,f.commandRef);const received=await a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool);assert.equal(received.observations.recordedRefs.length,1);assert.equal(p.rows[0].snapshot.event.type,'RECEIVED');assert.deepEqual(f.counts(),[1,0,0]);
+ const g=fixture(),q=selectedSpool(g),b=g.make();await b.receive(g.scope,g.operation,g.commandRef);let wires=0;g.receiver.wire.send=async()=>{wires++;throw Error('PRIVATE_START_LOST');};await g.receiver.start(g.envelope);g.advance(120000);const unknown=await b.recordStartObservations(g.scope,g.operation,g.commandRef,q.spool);assert.equal(q.rows.at(-1).snapshot.event.type,'UNKNOWN');assert.equal(q.rows.at(-1).snapshot.event.reasonCode,'PROVIDER_RESPONSE_LOST');assert(!JSON.stringify(unknown).includes('PRIVATE'));assert.deepEqual(await b.recordStartObservations(g.scope,g.operation,g.commandRef,q.spool),unknown);assert.equal(wires,1);
+ f.events[0].snapshot.envelopeHash='f'.repeat(64);const before=structuredClone(p.rows);await assert.rejects(a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool),/COMMAND_ADMISSION_/);assert.deepEqual(p.rows,before);assert.deepEqual(f.counts(),[1,0,0]);
+});
+
 test('선택전송은server page→동일grant·자료/permit→codec를명시연결하고동일명령wire1만유지한다',async()=>{
  const f=instructionFixture(),s=selectedSender(f),a=f.make();assert.equal(typeof a.sendInstruction,'function');const first=await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender);assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.equal(first.sent.executionAuthorized,false);assert.equal(first.sent.workAccepted,false);assert.deepEqual(first.commandRef,f.commandRef);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(s.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.deepEqual(await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender),first);assert.deepEqual(s.counts(),[1,1]);
 });

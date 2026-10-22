@@ -147,6 +147,25 @@ export class SyntheticExecutionCommandAdmission {
    return{transport:'SYNTHETIC_ONLY' as const,state:'SELECTED_NOT_DISPATCHED' as const,commandRef,pageResultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),envelope:cloneV1(envelope),expiresAt:new Date(end).toISOString(),executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_UNAVAILABLE');}
  }
+ /** 보관 START의 수신/시도/미확인 관측만 회수한다. receive/start나 새 permit은 호출하지 않는다. */
+ async recordStartObservations(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   if(scope.mode!=='EXECUTION'||!refV1(commandRef)||readClientOperation(scope,operation,this.#now()).operation.kind!=='COMMANDS')return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const saved=await this.client.readRecorded(scope,operation);this.#ports();
+   if(saved.readOnly!==true||saved.currentAuthorityVerified!==false||saved.result?.state!=='RESPONSE_RECORDED'||!isoV1(saved.recordedAt))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const page=saved.result.response;if(!arrayV1(page?.items,50))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const selected=page.items.filter((item:any)=>same(item?.commandRef,commandRef));if(selected.length!==1)return fail('COMMAND_ADMISSION_NOT_SELECTED');
+   const envelope=readDispatchEnvelopeV1(selected[0].envelope,Date.parse(saved.recordedAt));
+   if(envelope.operation!=='START_SESSION'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||envelope.context.executionGeneration!==scope.executionGeneration)return fail('COMMAND_ADMISSION_OPERATION_UNSUPPORTED');
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}))return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const observations=await this.receiver.recordObservations(envelope,spool);this.#ports();
+   if(!observations.recordedRefs.length)return fail('COMMAND_ADMISSION_START_RECORD_REQUIRED');
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(commandRef),pageResultRef:cloneV1(saved.result.resultRef),envelopeHash:envelope.envelopeHash,observations,readOnlySource:true as const,currentAuthorityVerified:false as const,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
+ }
  async receive(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown){
   try{
    this.#ports();const scope=readClientScope(rawScope),operation=readClientOperation(scope,cloneV1(rawOperation),this.#now()).operation;
