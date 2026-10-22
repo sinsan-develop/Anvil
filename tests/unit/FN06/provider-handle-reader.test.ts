@@ -29,3 +29,18 @@ test('늦은 보호 응답은 callback 없이 bytes를 지우며 현재 주체 �
  const g=await fixture(),current=g.current.current;g.current.current=async()=>{const v=await current();if(g.currents()===2)v.fact.subject.credentialGeneration++;return v;};await assert.rejects((await reader(g)).use(g.selection(),async()=>{calls++;}));
  const h=await fixture(true),get=h.protectedStore.read;h.protectedStore.read=async(c:any)=>{const v=await get(c);if(c.kind==='THREAD'){const capsule=JSON.parse(new TextDecoder().decode(v.plaintext));capsule.threadId='other-QA-thread';const bytes=new TextEncoder().encode(canonicalJson(capsule));v.plaintext.fill(0);h.buffers.push(bytes);v.plaintext=bytes;}return v;};await assert.rejects((await reader(h)).use(h.selection(),async()=>{calls++;}));assert.equal(calls,0);assert(h.buffers.every(b=>b.every(v=>v===0)));
 });
+test('SEND 소비는 복호 capsule의 비canonical·중복키·BOM·escape alias를 거절한다',async()=>{
+ for(const mutate of [
+  (text:string)=>' '+text,
+  (text:string)=>text.replace('"schemaVersion":1','"schemaVersion":1,"schemaVersion":1'),
+  (text:string)=>'\uFEFF'+text,
+  (text:string)=>text.replace('QA-thread','QA-\\u0074hread'),
+ ]){
+  const f=await fixture(),read=f.protectedStore.read;f.protectedStore.read=async(c:any)=>{
+   const v=await read(c),text=new TextDecoder().decode(v.plaintext),bytes=new TextEncoder().encode(mutate(text));
+   v.plaintext.fill(0);f.buffers.push(bytes);return{...v,plaintext:bytes};
+  };
+  let calls=0;await assert.rejects((await reader(f)).use(f.selection(),async()=>{calls++;}),/^Error: PROVIDER_HANDLE_UNAVAILABLE$/);
+  assert.equal(calls,0);assert(f.buffers.every(b=>b.every(v=>v===0)));
+ }
+});

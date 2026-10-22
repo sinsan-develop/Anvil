@@ -1,5 +1,6 @@
-import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
-import {validateProviderSessionClaim,verifyProviderHandleBinding,providerBindingHash,type ProviderSessionClaim,type ProviderRef} from '../../../../contracts/runtime/provider-session-claim-v1.ts';
+import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {validateProviderSessionClaim,verifyProviderHandleBinding,type ProviderSessionClaim,type ProviderRef} from '../../../../contracts/runtime/provider-session-claim-v1.ts';
+import {decodeProviderHandleCapsule} from '../../runtime/provider-handle-capsule.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1} from '../../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {readServerExecutionFactV1,executionFactChecks} from '../../../../contracts/runtime/server-execution-fact-v1.ts';
@@ -22,7 +23,6 @@ type Selection={envelope:unknown;claimRef:ProviderRef;claim:ProviderSessionClaim
 type Handles={threadId:string;turnId:string|null};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 function fail():never{throw Error('PROVIDER_HANDLE_UNAVAILABLE');}
-const handle=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z0-9._:-]{1,512}$/.test(v);
 /** Internal synthetic consumption boundary, not a dispatcher, native helper or authority.
  * Raw identifiers only reach the trusted callback. JS strings/GC cannot guarantee full erasure. */
 export class SyntheticProviderHandleReader{
@@ -65,9 +65,8 @@ export class SyntheticProviderHandleReader{
     if(bytes instanceof Uint8Array){buffers.add(bytes);if(abort.signal.aborted){bytes.fill(0);fail();}}
     expired();if(!recordV1(value,['ciphertextHash','plaintext'])||!hashV1(value.ciphertextHash)||!(bytes instanceof Uint8Array)||bytes.byteLength<1||bytes.byteLength>4096)fail();
     verifyProviderHandleBinding(claim,value.ciphertextHash,parent);
-    const capsule=parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(bytes)),{protectedHandleRef:_,...input}=claim;
-    if(!recordV1(capsule,['schemaVersion','bindingHash','threadId','turnId'])||capsule.schemaVersion!==1||capsule.bindingHash!==providerBindingHash(input)||!handle(capsule.threadId)||(claim.kind==='THREAD'?capsule.turnId!==null:!handle(capsule.turnId)))fail();
-    return{threadId:capsule.threadId,turnId:capsule.turnId};
+    const{protectedHandleRef:_,...input}=claim;
+    return decodeProviderHandleCapsule(bytes,input);
    };
    const work=async()=>{const before=await guard(),h=await read(c,s.parent??undefined);if(s.parent){const p=await read(s.parent);if(p.threadId!==h.threadId)fail();}const after=await guard();if(after!==before)fail();expired();const result=await consume(Object.freeze(h),abort.signal);expired();if(result!==undefined)fail();};
    await Promise.race([work(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>{abort.abort();reject(Error('PROVIDER_HANDLE_UNAVAILABLE'));},Math.max(1,deadline-this.#now()));})]);
