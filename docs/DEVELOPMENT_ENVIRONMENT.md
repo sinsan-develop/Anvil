@@ -1,5 +1,11 @@
 # Anvil 재설계 개발환경
 
+## 2026-10-22 09:02 KST 정식 서비스 제한 metadata — 실제 사용 선행 미충족
+
+- 새 SSH 읽기1회에서 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f/StartedAt2026-10-20T11:21:54.792276193Z, API8bd8af7bfed0f98e02c0248f21dba62736c63dcd0ce8e7fdca2aa01f2726fc2c/image sha256:6c5edefa5fc3d4038e51aa7140b4b53a9294414875af73f9d9bcd5e3aa54ac17/StartedAt2026-10-14T12:39:20.431439158Z, Web677a9ceb499e92a728560e882942edfcb80a7a30aedec69d69ae25567c008a0c/image sha256:949aaeabd0daf44caa9341b1b2c8ddfb8409e4c2b3a8e1da0aeb3784bd0627fc/StartedAt2026-10-14T12:39:21.758759563Z 모두 exited다. fullID/image/StartedAt은 앞선 관측과 같다.
+- Windows3830/5546 LISTEN0. 이번 조회는 서비스 시작/중지·실DB접속/SQL·본문/Secret·새자원0이며 정지 원인/주체·현재schema는 확인하지 않았다. 과거46 migration metadata·이전격리QA PASS를 현재 정식환경 증거로 쓰지 않는다.
+- 기존0012실행 특정거절·N4복구 PATH_GUARD/소진 단발 범위와 FN06 providerhandle r2 구현미채택은 유지한다. 새우회 runner/경로를 만들지 않으며 PMO에 기존미결의정확지원/결정처리를 요청했다. 이는 기능진도가 아닌 IX01 실제사용선행의 현재사실 기록이다. 실제복구·스키마반영·served여정은 미실행이며 전체Stage B/계획완료를 선언하지 않는다.
+
 ## 2026-10-21 14:34 KST FN03 격리 QA 후속 관측
 
 - 신규 일회 FN03 Git exact2034a4d1/PG15·Node/internal net 검증은 WORKFLOW_DONE/exit0. 등록 QA 두 경로와 owner container/network/해당 Node process는 별도 SSH exit0으로 잔여0을 확인했다. 새 tmpfs DB/합성 원문·config는 폐기했고 정식 자원/기존 Secret 변경0이다. 상세 `04_test_reports/AV3/FN03_ISOLATED_DOCUMENT_RESULT.md`.
