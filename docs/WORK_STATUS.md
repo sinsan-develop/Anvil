@@ -1,5 +1,27 @@
 # Anvil 재설계 작업현황
 
+- **FN12 출력·diff 한정 검토 종료/게시 범위**: 기존 독립 reviewer를 재사용한 정적 delta C0/I0/M0·실행/수정0이다. 실제 파일/권한/DB/served/Agent는 미판정이며 Main의 직접16/typebuild와 통제API Edge 증거와 분리한다. PMO에 source2/unit1/browser spec1/config2/정본2의 정확8경로 private 기존branch 게시·Git이력보존/Secret·보호6·main제외를 전달했다. 이번 작업 rollback은 해당8경로 commit revert이며 기존 저장자료/SQL은 변경하지 않았다. 다음 시험증거 입력을 계속하며 전체완료로 보고하지 않는다.
+
+- **FN12 diff 화면 핵심동작 확인·QA 회수**: 신규 build355/368ms/type0 뒤 통제API를 사용한 실제 Edge 정상·응답유실 동일명령·상위경로거절3PASS6.9초다. malformed 버전 원입력/POST0·고정 diffRef/산출물 참조의 등록 payload와 원문 재조회 보존을 확인했다. source16PASS342.5687ms·diff check0. 등록 QA exact resolve/owner SINSAN\\cyhuh/nonlink0/process0 확인 후 제거했고 별도 조회 경로false/process0이다. 실제 diff 파일/명령출력 바이트·정식 DB/served·Agent·전체FN12는 미검증/미완료다. chunk500k/NO_COLOR 기존 경고를 유지하고 임의 최적화하지 않았다. 다음은 독립 검토·정확 변경 checkpoint 후 남은 시험 증거 입력 공백을 계속한다.
+
+- **FN12 diff UI 정상 RED**: 기존 bundle Edge1FAIL15000ms에서 기존 변경파일 입력 후 새 diff 체크박스 부재를 확인했다. source16/type0과 화면 미연결을 구분한다. 다음 UI만 연결하며 기존 timeout/잠금/기대 계약은 유지한다. 등록 QA 외 서비스/DB/실Agent0.
+
+- **FN12 diff source GREEN·QA 사전등록**: 신규 정상 RED 후 직접·인접 16PASS342.5687ms/type0. Main 소유 D:\tmp\anvil-v3-stage-b\ui05-change-diff-01의 temp/결과 및 일회 Edge만 최대30분 사용하고 exact owner/nonlink/process 확인 후 정리·독립 잔여0을 확인한다. 생성 전 부재/상위 경로 비링크를 대조한다. 기존 bundle에서 UI부재 RED 후 새 build의 정상·유실 같은명령·상위경로 거절만 검증하며 실파일/DB/권한/서비스/Agent는 변경·검증하지 않는다.
+
+- **FN12/UI05 변경 diff 참조 착수 RED**: 선택 diff를 기존 manifest.diffRef로 연결할 정상 시험 1FAIL317.5701ms/MANUAL_RESULT_REPORT_INVALID를 확인했다. 명령 출력 작업의 등록 QA는 exact 소유/비링크/프로세스0 확인 후 제거했고 별도 경로 false/프로세스0이다. 다음은 기존 optional diffRef 계약 안의 화면 입력·별도 등록·재조회 연결이며 새 API/SQL/DB/권한/Agent/서비스 변경은 없다. 원 미실행·수행자 주장/실제 출처 미검증을 보존하고 완료·실행 사실을 만들지 않는다.
+
+- **FN12 수기 명령출력 UI흐름GREEN**: 시험입력을공통준비앞으로이동후제품/bundle/잠금/timeout불변에서Edge정상·유실같은명령·민감거절3PASS7.8초/type0이다. outputRef/산출물선언이기존등록payload와재조회까지보존되고잘못된버전의원입력/POST0·same command동일성을확인했다. 직접수기14PASS/typebuild355/627ms·한정독립C0/I0/M0는해당시점증거로보존한다. 실제출력파일/DB/served/실Agent·전체FN12미완료이며등록QA회수후같은제출기능의변경diffRef화면입력공백을다음으로이어간다.
+
+- **FN12 명령출력 Edge시험 순서오류**: UI연결새build355/627ms/type0후3건중정상/유실2FAIL·민감거절1PASS36.8초다. 원DOM에체크박스존재/disabled·‘준비본있음’을확인하고시험line42가등록준비후line49에서출력을입력하는역순임을코드와대조했다. 기존준비후잠금은정상보존하며시험입력만공통준비앞으로이동한다. 제품잠금/기준/timeout을완화하지않고원실패와정적C0/I0/M0(독립실행0)를분리기록한다.
+
+- **FN12 명령출력 수기 UI정상RED**: 기존앱bundle의Edge1FAIL15000ms에서‘명령1출력참조입력’체크박스부재를확인했다. 기존실행/명령입력에는도달했고새출력입력UI만연결한다. source14/type0과화면부재를구분하며timeout/기존검사기준을변경하지않는다. 등록QA부재/상위nonlink확인·실서비스/DB/Agent0이다.
+
+- **FN12 명령출력참조 sourceGREEN·QA사전등록**: 신규정상RED후수기직접14PASS297.9621ms/type0이다. 신규Main소유D:\tmp\anvil-v3-stage-b\ui05-command-output-01 temp/결과·일회Edge를최대30분사용후정확정리한다. 생성전부재/상위nonlink를확인하고앱UI미변경직전bundle로버튼부재RED1만확인,연결후새build에서정상·유실같은명령·민감정보거절3건을실행한다. 실리스너/port/서비스·DB/권한/실파일·Agent0이며manifest public계약은그대로다.
+
+- **FN12/UI05 명령출력 수기참조 착수RED**: 원 manual-result-report는outputRef를항상null로만생성하고화면도JSON사용을안내한다. 기존 manifest의optional outputRef계약으로연결할정상1FAIL1491.9598ms/MANUAL_RESULT_REPORT_INVALID를확인했다(뒤rg가shell최종0을반환했지만시험은실패이며PASS아님). 선택참조의ID/버전/hash를명시입력하고미입력기존null호환·거절입력보존·같은명령재확인을유지한다. 초기추정result-submission-input.ts읽기부재1은기록하며실제result-submission.ts만대조했다. 새공개API/SQL/권한/DB/Agent/서비스0,원manifest소스는변경하지않는다.
+
+- **FN12 다음 오류분류 source 경계 대조**: execution-issues.classifyExecutionIssue는서버가권한/출처를대조한고정facts전용이며현재PROVIDER_CLAIM_ONLY를CONNECTOR_OBSERVED/SERVER_DECISION으로바꾸는adapter가없다고명시한다. ProjectObservationJournal/readStoredObservations는실Provider관측false·SERVER_STORED_SYNTHETIC_CLAIMS_ONLY만제공하고현재UI도원인자동분류를금지한다. 이보관기록을진짜오류/거부/쿼터사실로재명명해연결하지않는다. 이경로는미연결로유지하며새source/명령·원인검증과구분해기존남은계획을대조한다. 앞선55b0da52 source/정식서비스/DB/Agent변경0이다.
+
 - **FN12/UI05 미실행 보고 탐색 검수·회수 종료**: 최신직접인접5PASS157.7964ms/type/diff0·새build355/327ms·통제Edge1PASS3.0초,한정독립정적C0/I0/M0(실행0)다. 사유검색/동일조건·시험보고·PASS주장필터/중복원문위치·선택해제/형식미확인/XSS를확인했고실시험·허위·완료판정은하지않는다. 등록QA ui05-unexecuted-01은realpath/소유SINSAN\\cyhuh/link0/process0확인후제거,별도조회pathfalse/process0이다. 원미실행JSON보존·새API/SQL/정식DB/권한/서비스/Agent0·보호6보존. 최대입력브라우저성능/모든주체전환·실DB/정식served/실Agent·전체FN12/Stage/계획은미검증·미완료다. 다음FN12 source대조는오류분류/실제관측출처연결의남은계약이며서버보관합성주장만을실Provider/원인확정으로승격하지않는다. source복구는해당commit일반revert·원저장자료보존이다.
 
 - **FN12/UI05 미실행 탐색 source·실제통제화면GREEN**: 신규2+기존시험보고3=5PASS157.7964ms/type/diff0·새Web355/327ms·통제Edge TEST_REPORTS1PASS3.0초다. 기존미실행JSON과전체원문을보존한채사유/조건/시험검색·관련시험/PASS주장필터·중복원문위치·선택행상세를연결했다. 동일조건/시험PASS동시보고는별도검토필요로표시하며허위/실수행/합격을확정하지않는다. malformed보고/기여출처미확인·XSS텍스트/추가요청0도확인했다. 한정독립source검토요청/QA회수진행중,실DB/정식served/Agent·전체FN12/Stage/계획은미검증·미완료다.

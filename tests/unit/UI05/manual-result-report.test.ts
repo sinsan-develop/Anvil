@@ -6,6 +6,22 @@ const fn=(n:string)=>{assert.equal(typeof m[n],'function');return m[n];};
 function setup(){const f=criteriaFixture(),s={user:{id:f.assignment.snapshot.confirmedBy.userId},clientId:f.assignment.projectId,csrfToken:'A'.repeat(43)},d=fn('newManualResultReport')(f.assignment,s),e=criteriaRef(99);Object.assign(d,{executionId:e.id,executionVersion:'1',executionHash:e.contentHash,rows:[{criterionId:'save',testId:'SAVE-01',reason:'DB 접속 미확인'}],risks:'변경 검증 안 됨',rollback:'기존 자료 보존'});return{...f,s,d,e};}
 function reportedCommand(){const r=criteriaRef(88),ref={...r,version:'1'};return{profile:structuredClone(ref),cwd:structuredClone(ref),host:structuredClone(ref),argv:'node\n--version',startedAt:'2026-10-20T00:00:00.000Z',finishedAt:'2026-10-20T00:00:01.000Z',exitCode:'0'};}
 
+test('변경 파일의 선택 diff 참조를 보존하되 실제 변경·출처·완료 검증으로 승격하지 않는다',async()=>{
+ const f=setup(),r=criteriaRef(88),change={path:'apps/task.ts',kind:'MODIFIED',beforeHash:'',afterHash:'',diff:{...r,version:'1'}};f.d.changes=[change];f.d.artifacts=[{...r,version:'1'}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3),p=prepareSubmittedResult(b.scope,b.manifest);assert.deepEqual(p.manifest.changes,[{path:'apps/task.ts',kind:'MODIFIED',beforeHash:null,afterHash:null,diffRef:r}]);assert.equal(p.completionAccepted,false);assert.equal(p.evidenceProvenanceVerified,false);assert.equal(p.executionAuthorized,false);assert.equal(b.pending,null);change.diff.contentHash='f'.repeat(64);assert.equal(b.manifest.changes[0].diffRef.contentHash,r.contentHash);
+});
+test('선택 diff의 불완전·잘못된 참조와 추가 필드는 버리지 않고 거절하고 null은 기존 미보고다',async()=>{
+ for(const diff of [{id:'',version:'',contentHash:''},{...criteriaRef(88),version:'1.5'},{...criteriaRef(88),version:'9007199254740992'},{...criteriaRef(88),version:'1',contentHash:'bad'},{...criteriaRef(88),version:1},{...criteriaRef(88),version:'1',verified:true}]){const f=setup();f.d.changes=[{path:'apps/task.ts',kind:'MODIFIED',beforeHash:'',afterHash:'',diff}];await assert.rejects(fn('prepareManualResultReport')(f.d,f.assignment,f.s,3));}
+ const f=setup();f.d.changes=[{path:'apps/task.ts',kind:'MODIFIED',beforeHash:'',afterHash:'',diff:null}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3);assert.equal(b.manifest.changes[0].diffRef,null);
+});
+
+test('수기 명령의 선택 출력참조를 기존 manifest로 보존하고 출력검증·실행권한을 만들지 않는다',async()=>{
+ const f=setup(),r=criteriaRef(88),c={...reportedCommand(),output:{...r,version:'1'}};f.d.commands=[c];f.d.artifacts=[{...r,version:'1'}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3),p=prepareSubmittedResult(b.scope,b.manifest);assert.deepEqual(b.manifest.commandResults[0].outputRef,r);assert.deepEqual(p.manifest.commandResults[0].outputRef,r);assert.deepEqual(p.manifest.commandResults[0].evidence,[]);assert.equal(p.evidenceProvenanceVerified,false);assert.equal(p.executionAuthorized,false);assert.equal(b.pending,null);c.output.contentHash='f'.repeat(64);assert.equal(b.manifest.commandResults[0].outputRef.contentHash,r.contentHash);
+});
+test('선택한 출력참조의 불완전값·잘못된참조·숫자버전·추가필드는 누락으로 바꾸지 않는다',async()=>{
+ for(const output of [{id:'',version:'',contentHash:''},{...criteriaRef(88),version:'1.5'},{...criteriaRef(88),version:'9007199254740992'},{...criteriaRef(88),version:'1',contentHash:'bad'},{...criteriaRef(88),version:1},{...criteriaRef(88),version:'1',verified:true}]){const f=setup();f.d.commands=[{...reportedCommand(),output}];await assert.rejects(fn('prepareManualResultReport')(f.d,f.assignment,f.s,3));}
+ const f=setup();f.d.commands=[{...reportedCommand(),output:null}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3);assert.equal(b.manifest.commandResults[0].outputRef,null);
+});
+
 test('직접 입력한 산출물 참조는 기존 제출 주장으로 보존하고 파일 실존·검수 합격을 만들지 않는다',async()=>{
  const f=setup(),r=criteriaRef(88);f.d.artifacts=[{...r,version:'1'}];const b=await fn('prepareManualResultReport')(f.d,f.assignment,f.s,3),p=prepareSubmittedResult(b.scope,b.manifest);assert.deepEqual(b.manifest.artifactRefs,[r]);assert.deepEqual(p.manifest.artifactRefs,[r]);assert.deepEqual(b.manifest.unexecuted,f.d.rows);assert.equal(p.completionAccepted,false);assert.equal(p.evidenceProvenanceVerified,false);assert.equal(p.executionAuthorized,false);assert.equal(b.pending,null);f.d.artifacts[0].contentHash='0'.repeat(64);assert.equal(b.manifest.artifactRefs[0].contentHash,r.contentHash);
 });

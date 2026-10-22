@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 수기 출력·diff 참조 입력 일부 구현**: 기존 optional outputRef/diffRef 계약의 JSON전용 입력을 선택 ID/버전/hash→기존 parser→별도등록·응답유실 동일명령·원문재조회로 연결했다. absent/null 호환·malformed/unsafe/추가필드 거절·준비후잠금·원미실행을 유지하며 실제 파일/출처/실행/합격으로 승격하지 않는다. 직접16PASS342.5687ms/typebuild355/368ms, 명령출력 Edge3PASS7.8초(이전 bundle), diff Edge3PASS6.9초·한정독립C0/I0/M0·등록QA 독립잔여0. 실DB/정식served/Agent·전체FN12/Stage는 미검증·미완료, 새API/SQL/권한/서비스 변경0이다. 후속은 시험 증거 수기 입력 공백이며 상세 오류·분리 증거는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN12/UI05 미실행 보고 탐색 일부 구현**: 기존미실행JSON원문을보존하며조건/시험/사유검색·관련보고/PASS주장필터·exact조건시험쌍대조·중복위치·형식미확인/선택행상세를연결했다. 신규2RED→직접인접5PASS/type/diff0·새build355/327ms·통제API Edge1PASS3.0초·한정독립C0/I0/M0/등록QA독립잔여0. 보고상태를실수행·원인/허위확정·합격으로승격하지않으며실DB/정식served·전체FN12/Stage는미완료다. 새API/SQL/권한/Agent/서비스변경0,오류/범위/후속은WORK_STATUS를따른다.
 
 - **2026-10-22 FN12/UI05 보완 원검토 직접조회 연결**: 보관보완에서원검토열기→기존보호GET2개·고정ref/hash/기준·선택/잔여조건대조→이유/검토자/전체원문표시·닫기/선택전환숨김을연결했다. 최신단위11/type/diff0·새build353/307ms·통제API실제Edge1PASS2.9초·독립정적C0/I0/M0(초기M2/보완이력유지)/등록QA독립잔여0이다. 새API/SQL/DB/권한/Agent/서비스변경0,정식DB/served·전체FN12/Stage는미검증·미완료다. FN06 nonOWNER는현재지정HUMAN관계부재를예약생성자/예약연산정책으로추정하지않고별도미완료로남긴다. 상세/원실패/다음조치는WORK_STATUS를따른다.
