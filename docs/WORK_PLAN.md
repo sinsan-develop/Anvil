@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 A 내부 소유 증거 소비**: 원 osFence anchor와 원사건 binding을 분리하고 현재 head/회수·별도 일회 OBSERVE를 전후 검증하는 source를 추가했다. 신규/직접 영향14/type/diff 및 정합 미채택 반례1은 합성 포트 범위다. falseauthority 결과를 OWNED·실행/파일쓰기 허가로 주입하지 않으며 실제 보관/관측/서버 수용 resolver·Agent/DB/native/전체 FN06는 미구현·미검증이다. 원 RED/fixture 오류/독립 M1 및 보완은 WORK_STATUS에 보존한다.
+
 - **2026-10-23 FN06 응답 credential 예약 미생성 일부 보완**: 기존 current/발급 경로를 유지하고 응답 전용 명시 currentReadOnly를 필수로 분리했다. 기존 정확 예약만 SELECT하며 없으면 실패/legacy fallback0이다. 집중13·보강8·원잠금 연결1·Date 보강2/type/diff는 각 합성 source snapshot 범위이고 실제 PG/OS/Agent 현재성은 미검증이다. A 내부 소유 증거 계약 선택과 실제 실행 제외는 source map/WORK_STATUS에 구분했다.
 
 - **2026-10-23 FN06 실제 current metadata 선행 구분**: 서버의 HUMAN/정책/grant 재대조와 저장 OS binding·공급자 주장/만료 QA를 구분했다. concrete current/소유 evidence 매핑 미구현은 FN06_CURRENT_METADATA_SOURCE_MAP.md의 정확 source 계약 결정 대상으로 남기며 기존 부분 구현을 실제 OWNED/Agent 준비로 승격하지 않는다. 실제 실행·권한/공개계약은 확대하지 않고 독립 승인 업무는 계속 선정한다.
