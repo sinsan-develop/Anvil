@@ -38,3 +38,11 @@
 - caller에 원문/Secret·OS 경로·프로세스 제어 handle을 반환하지 않는다. process identity metadata는 내부용이며 공개 HTTP 계약이 아니다.
 - 실패는 SENT_PROCESS_EVIDENCE_UNAVAILABLE. 원 시도 UNKNOWN 보존·재송신/회수완료/파일 WRITE 허가로 전환하지 않는다. process 소유 일치는 filesystem sandbox/source WRITE 허가가 아니다.
 - 최소 합성 검수: 정확 원 anchor/사건/별도 요청 일치, caller 재해시 미채택, scope·세대/역할/Job/PID 재사용·image·hash·parent/permit mismatch, 누락/중복/회수/head변경·stale/최종만료·취소/timeout/late/재사용 거절. 실제 DB·native/OS·Agent/전체 FN06 검수는 미완료다.
+
+## 5. 응답 metadata 소비 경계 연결 (후속 A)
+- 별도 SyntheticSentProcessMetadataGate가 기존 SyntheticSentTurnCurrentMetadata를 감싼다. 기존 protected-current/새 SEND/서비스 기본 등록은 바꾸지 않는다.
+- 원 preSendSnapshot의 ownershipRef·자료 hash, 원 envelope·부모/시도/permit·preSendBindingHash를 복제고정하고 기존 IDLE binding hash를 대조한 뒤 SyntheticSentProcessEvidence.read를 정확 한 번 호출한다.
+- 이 결과는 추가적인 **응답 조회 조건**일 뿐이다. 반환 purpose/false flags·원 ownershipRef와 시각/기한을 검사한 뒤 별도로 주입된 독립 metadata를 읽는다. metadata 공급자 자체는 계속 미구현이며 pre를 복사하는 기본 구현은 없다.
+- metadata는 원 pre와 같은 키에서 threadId만 빠진 기존 형태다. 원 자료/ref/hash·소유와 IDLE/IN_PROGRESS 범위를 대조하되 checkedAt/expiresAt은 독립 metadata 값이다. 결과에는 evidence의 processRef/state/OWNED/VERIFIED_CURRENT·새 허가를 주입하지 않으며, 원 metadata의 만료만 전체 최소 기한으로 줄일 수 있다.
+- metadata 안에 threadId나 새 authority 필드가 있으면 거절한다. 모든 await 후·최종 반환 직전 취소/기한을 확인하고 metadata 실패 뒤 재시도·새 permit/관측을 만들지 않는다. gate도 일회 사용이다.
+- 관측 직후 OS 상태가 바뀌는 TOCTOU나 metadata 진위는 보장하지 않는다. 이 wrapper는 실행 권한·파일 WRITE·새 SEND로 소비할 수 없으며 protected reader/원잠금/서버현재 전후 검사는 그대로 필요하다.
