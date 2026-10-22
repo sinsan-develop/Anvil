@@ -25,7 +25,7 @@ function route(method:unknown,path:unknown){
  const command=/^\/commands\/([^/]+)\/(permit|materials\/([^/]+))$/.exec(suffix);
  const allowed=mode==='RECOVERY'
   ?method==='GET'&&suffix==='/stop-instruction'||method==='POST'&&['/credential-exchange','/observations','/stop-receipts','/heartbeat'].includes(suffix)
-  :method==='GET'&&suffix==='/commands'||method==='POST'&&['/credential-exchange','/receipts','/observations','/heartbeat'].includes(suffix)
+  :method==='GET'&&suffix==='/commands'||method==='POST'&&['/credential-exchange','/receipts','/observations','/heartbeat','/provider-session-claims'].includes(suffix)
    ||!!command&&uuidV1(command[1])&&(command[2]==='permit'?method==='POST':method==='GET'&&uuidV1(command[3]));
  if(!allowed)return invalid();
  return{mode,connectorId:p[1],executionId:p[2],suffix};
@@ -44,6 +44,7 @@ export function executionTarget(method:unknown,path:unknown,query:unknown,bodyRa
    else return invalid();
   }
   if(method==='GET'&&bodyRaw!==null||method==='POST'&&(typeof bodyRaw!=='string'||Buffer.byteLength(bodyRaw)>2*1024*1024))return invalid();
+  if(r.suffix==='/provider-session-claims'&&Buffer.byteLength(bodyRaw as string)>16384)return invalid();
   const body=method==='GET'?null:parseWireJson(bodyRaw as string);
   return{method,path,queryHash:contentHash(canonicalJson(q)),bodyHash:contentHash(canonicalJson(body))};
  }catch{return invalid();}

@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 B1 독립 검토 확정**: 정확 EXECUTION POST/원문 UTF-8 상한·기존 purpose/서명 결박에 대해 한정 독립C0/I0·검토자 실행/수정0이다. 실제 HTTPbody제한·nonce소비/현재권한·DB/credential·Agent는 미판정으로 남긴다. 제품1/시험1/현황·계획2 정확4경로만 기존 branch에 보존한다. 다음 미완료는 기존 인증 transaction과 claim의 정확 current/START 원장·permit/localAttempt를 대조하는 실제 수신 서비스 및 불변 저장/receipt/조회다. native/실DB적용을 선행했다고 가정하지 않는다.
+
+- **FN06 B1 SESSION_CLAIM 서명 대상 GREEN**: 정확 EXECUTION POST /provider-session-claims와 원 본문16KiB를 기존 서명 target에 추가했다. 새 target 미지원2RED/147.3417ms→원 proof/challenge-store/회수14PASS/325.725ms·type/diff0이다. 정확 경로/본문 서명·다른target서명재사용 거절, RECOVERY/GET/query 및16385bytes거절·16384bytes허용을 확인했다. 이는 서명 문법/범위뿐이며 실제 listener/수신handler·nonce소비/허가·DB저장·실행을 발급하지 않는다. 임시 crypto fixture는 메모리 시험용이고 실제 사용자 키/등록/보호root·서비스/Agent 생성0. 독립 제한 검토 중이다.
+
+- **FN06 B1 서버 서명 target 분리 착수**: A1/A2 소유7경로36db41c55c5c1b52c59b38f26d00a7da556187bb local/private일치·main불변·보호6만 untracked 확인. 다음은 기존 executionTarget/서명 codec에 정확 POST provider-session-claims 경로·본문16KiB를 분리하고 RECOVERY/GET/query·다른target재사용 거절을 TDD한다. 경로 hash 검사만으로 실제 endpoint/nonce소비·현재허가를 만들지 않는다. 실제 listener/DB/credential/Agent 변경0. 기존 challenge-store/proof 회귀를 직접 영향 범위로 선택한다.
+
 - **FN06 A1/A2 검토·직접 소비 회귀 확인**: 독립 source 검토 최종 C0/I0/M0·검토자 실행/수정0. 작성 중 responseRef 자기참조 음성/source 시차는 Main RED→GREEN 보정과 최종 source 재확인으로 닫았다. 새 claim·원 codec·canonical32PASS/586.9991ms·type/diff0 및 직접 소비 START/session/instruction37PASS/604.2997ms다. claim SHA AEC3AF22AD06E821E77905BB4E53479029E0D57E7121314A646A72009C93950D, codec SHA D6039E45E7A60D2C9CE2DE5817BE1AC0683FB3197A02FC6DBC1F2705BEE69AAE. 실제 DPAPI/ciphertext 생성·서버nonce/영속 수신·현재허가/OS소유·DB/Agent·화면 확인은 미검증이다. 등록/새 QA 자원 생성0·보호6 보존. 다음은 새 claim의 서버 수신/receipt·정확 조회 소비이며 기존 실제 실행 금지 경계를 바꾸지 않는다.
 
 - **FN06 A2 codec 명시 보호 capture 일부 연결**: 기존 constructor 옵션·기본 digest-only는 그대로 두고 선택적 내부 port만 추가했다. 초기화/알림/오류·미완성 프레임은 capture하지 않으며 정확 정상 thread/start·turn/start·turn/steer 응답의 최소 thread/turn만 전달한다. 동기 RECORDED 외 미확인/비동기/예외와 재진입은 원문 없는 PROTECTED_CAPTURE_FAILED·sticky UNKNOWN으로 닫는다. 실제 DPAPI/서버/영속성의 증거가 아닌 port 주장이고 기존 SYNTHETIC_ONLY transport에는 주입하지 않았다. 신규2 RED/815.7395ms(호출0·오류코드부재)→직접 인접31PASS/type0, 이후 TURN/steer·재진입 보강 및 claim 자기참조 음성1RED/129.7515ms→분리검사 GREEN으로 현재32PASS/586.9991ms·type/diff0이다. 코드 patch 첫1은 전체 type alias와 줄 불일치로 미적용·정확 hunk로 보정했다. 독립 검토 진행 중이며 source/시험 파일만 변경·실Agent/비용·서비스/DB/새QA0이다.

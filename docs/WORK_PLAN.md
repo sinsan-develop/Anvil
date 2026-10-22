@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **FN06/FN08 B1 서명 대상 부분 연결**: SESSION_CLAIM의 정확 EXECUTION POST target·raw body16KiB와 RECOVERY/다른target재사용 거절을 추가했다. 신규2RED→직접14PASS/type0·독립C0/I0. 실제 수신handler·nonce소비/현재허가·불변 DB 저장/조회·실Agent·전체기능은 미완료이며 후속 구현으로 남는다.
+
 - **2026-10-22 FN06 실제 세션 연결 계약 source 채택·일부 구현**: 신산님 ‘네 의견대로 승인해’로 r2 원 후보 C9D972E7의 코드/시험/미적용SQL 기준을 채택했다. 순수 claim/보호ref 결박·정확 THREAD/TURN 부모/기한 및 기존 codec 기본 digest-only를 보존한 명시 capture port를 구현해32PASS/type0·직접 transport37PASS·독립C0/I0/M0를 확인했다. 실제 native 보호 저장·서버 claim 저장/조회·DB 적용·실Agent·전체FN06은 미완료다. 다음은 서버 수신·receipt/조회 소비이며 실제 부작용은 별도 정확 경계로 유지한다.
 
 - **2026-10-22 UI14 프로젝트 대기 기록 소비 부분 구현**: 기존 FN10 readStageQueue의 WAITING_ONLY·정확 ref/순번·이유·관측 시각을 설정에서 명시 조회한다. 예약/취소/실행·새 계약 변경0. 합성 HTTP 현재 bundle DOM 정상/403/401·늦은 응답2건 및 소비 완료 장벽 NORMAL1건·type/build·한정 독립 C0/I0·QA 독립 잔여0. 전체 건수/슬롯·정식 UI→API→DB·전체 UI14/FN10은 미확인·미완료다.

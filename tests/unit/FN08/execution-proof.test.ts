@@ -25,6 +25,19 @@ test('기존 P256 키 codec으로 실행/회수 purpose의 정확 요청·교환
   assert.deepEqual(result,{signatureVerified:true,nonceConsumed:false,currentAuthorityVerified:false,executionAuthorized:false,dispatchPerformed:false});
  }}
 });
+
+test('SESSION_CLAIM 서명은 정확 신규 경로와 본문을 묶고 다른 target 서명을 재사용하지 않는다',()=>{
+ const f=fixture(),path=f.base+'/provider-session-claims',body=canonicalJson({claim:{claimId:'synthetic-only'}});
+ const target=m.executionTarget('POST',path,[],body),request={...f.request,...target},sig=f.signature(f.kind(),request);
+ const r=m.verifyExecutionProof(f.spki,sig,f.kind(),request,request,f.context,f.challenge,new Date(at));assert.equal(r.signatureVerified,true);assert.equal(r.nonceConsumed,false);assert.equal(r.executionAuthorized,false);
+ assert.equal(target.bodyHash,contentHash(body));
+ for(const patch of [{path:f.base+'/observations'},{path:f.base+'/receipts'},{bodyHash:'f'.repeat(64)}])assert.throws(()=>m.verifyExecutionProof(f.spki,sig,f.kind(),{...request,...patch},{...request,...patch},f.context,f.challenge,new Date(at)),/EXECUTION_PROOF_INVALID/);
+});
+test('SESSION_CLAIM은 RECOVERY·GET·query와 16KiB 초과 원 본문을 허용하지 않는다',()=>{
+ const f=fixture(),path=f.base+'/provider-session-claims';
+ assert.doesNotThrow(()=>m.executionTarget('POST',path,[],' '.repeat(16382)+'{}'));
+ for(const [method,p,query,body]of [['POST',f.base+'/recovery/provider-session-claims',[],'{}'],['GET',path,[],null],['POST',path,[['waitMs','0']],'{}'],['POST',path,[],' '.repeat(16383)+'{}']])assert.throws(()=>m.executionTarget(method,p,query,body),/EXECUTION_PROOF_INVALID/);
+});
 test('다른 key·DER·purpose·nonce/본문/세대/grant 변경을 유효 권한으로 승격하지 않는다',()=>{
  const f=fixture(),kind=f.kind(),sig=f.signature(kind,f.request),other=generateKeyPairSync('ec',{namedCurve:'prime256v1'});
  for(const [signature,payload,expected,context]of [
