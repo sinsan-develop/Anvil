@@ -1,5 +1,26 @@
 # Anvil 재설계 작업현황
 
+- **FN06 C1/journal 한정 검토 종료·보존 범위**: 두 추가 source 각각 독립 C0/I0·실행/수정0. reader caller의 실제 주체전환/active와 journal caller의 인증/잠금·PG 자료형/SQL/최종응답권한은 미판정으로 유지한다. 이번 소유6경로(새 reader/journal·각 시험·WORK_PLAN/WORK_STATUS)만 기존 Stage B branch checkpoint에 보존한다. 기존 SQL0037/manifest·DB·서비스·실Agent·새 QA 자원0. 다음 미완료는 실제 잠금·HUMAN 현재권한 resolver와 영속 수신 adapter, TURN의 SEND 원장/부모 및 UI 소비이며 FN06/계획 완료는 아니다. 기존 source 성공 검사는 반복하지 않는다.
+
+
+- **FN06 PG journal 읽기 GREEN**: 모듈부재3RED/243.4645ms→browser reader 포함 직접8PASS/460.7174ms·type/diff0이다. 잠긴 caller transaction의 parameterized SELECT만 수행하고 원 event/hash/scope/DB열/ref/기록시각을 대조한다. 다른 요청 claimHash로 WHERE 필터하지 않아 원 receipt를 숨기지 않고 상위 현재권한 검사 후409을 판단하게 했다. 중복/원문추가/열변조·DB오류는 비밀 없는503, 자체DML/BEGIN/COMMIT0이다. fake DB driver 시험이며 실제 PG/권한·HUMAN resolver/HTTP·화면/Agent0·미검증이다. 독립 한정 검토 후 소유 source만 보존하고 다음 TURN/영속 수신 미완료를 이어간다.
+
+
+- **FN06 PG 조회 adapter RED**: 모듈부재3RED/243.4645ms. exact 사건 SELECT 한 번·DML/tx제어0·다른 요청hash를 원기록으로 숨기지 않고 상위권한/충돌판정에 넘김·중복/열/원문/시각변조·DB오류보호가 아직 없다. C reader는 한정 독립 C0/I0·실행/수정0이며 실제 화면 active/주체전환·HTTP/PG/Agent는 미판정이다.
+
+
+- **FN06 조회 연결·미적용 DB 조회 adapter 착수**: 브라우저 reader의 원서명 수신→메모리 원장→현재 HUMAN history service→reader 실제 source 간 연결1건을 더해5PASS/223.0395ms·type/diff0. SQL0037이 THREAD-only인 점과 기존 SEND permit의 별도원장/예산/부모대조가 필요한 TURN 미완료를 확인했다. 다음은 먼저 불변 THREAD의 정확 사건을 같은 caller DB transaction에서 읽는 parameterized journal adapter를 구현한다. 자체 BEGIN/COMMIT/권한발급·DML/SQL적용 없이 현재 HUMAN 잠금·허가 검사는 상위 history transaction 책임을 유지한다. fake PoolClient 시험은 실제 PG/권한/atomicity 증거가 아니며 실제 endpoint/화면·전체FN06은 미완료다.
+
+
+- **FN06 C exact receipt reader GREEN**: 신규4RED/130.2986ms→4PASS/136.7482ms·type/diff0. same-origin GET/no-store/현재 cookie·원 query복제와 정확 제한 응답/ref/hash/시각·401 유지/이탈폐기를 확인했다. 이는 브라우저 helper와 통제 HTTP 응답 시험뿐이며 실제 화면 호출·서버 HTTP 등록·현재 HUMAN resolver/PG/사용가능·전체FN06은미완료다. 다음은 TURN 수신의 기존 SEND 원장/허가 근거 대조를 읽고 가능한 source를 이어간다.
+
+
+- **FN06 C exact receipt reader RED**: helper 부재로 신규4건 fail/130.2986ms를 확인했다. 입력 불일치·명시 이탈은 GET0, same-origin/인증cookie/no-store·원사건고정, 응답의 raw/READY/권한승격·다른hash/시각 불일치를 채택하지 않는 동작을 최소 구현한다. 실제 endpoint/화면/DB·Agent 검증은 아니다.
+
+
+- **FN06 B2~B5 checkpoint 보존·C 조회 소비 착수**: 소유11경로 2ed187431f6ee5134327319f275ef9a01b22f226 local/private exact·main f976ed5e 불변·보호6만 untracked를 확인했다. pending SQL LF→CRLF 예고 경고1은 실행/구문 검증이 아니다. 다음은 UI04/05 후속 소비에 필요한 브라우저의 exact HUMAN 원 receipt 조회 helper를 TDD한다. same-origin GET만·원사건/claimHash 입력과 응답의 정확ref/제한상태/기한·이탈중늦은응답폐기를 검사하고 과거수신을 READY/현재사용가능/새권한으로 표시하지 않는다. 실제 endpoint 등록/DB/화면 연결은 아직 없으며 이 단위를 실제 사용자 사용 완료로 보고하지 않는다. 새 서비스·Agent·자원 생성0이다.
+
+
 - **FN06 B5 한정 독립 검토·다음 소비 착수**: 새 C0/I0·검토자 실행/수정0을 수신했다. 실제 HTTP/credential resolver·PG 결과불명/원자성·native/Agent·송신시점 권한은 미판정이다. 현재11경로 source checkpoint만 보존한 뒤 현재 HUMAN exact receipt 조회의 클라이언트 입력/응답 검증과 제한 상태 소비를 이어간다. 탐색1명령에서 없는 agent-sessions/sessions·wildcard literal 경로는 os2/123, 변경0이며 실제 파일 목록으로 좁혀 정정한다. 보호6은 열지 않는다.
 
 

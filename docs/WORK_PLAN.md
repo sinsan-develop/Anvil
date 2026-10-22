@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **FN06 C1/DB 조회 source 일부**: exact HUMAN 원 receipt의 브라우저 reader와 caller 잠금 transaction 내 parameterized PG SELECT journal을 작성했다. 신규 reader4RED→4PASS 뒤 서명수신/원장/실history서비스와 메모리연결1건, journal3RED→합계직접8PASS460.7174ms·type/diff0·각 한정 독립C0/I0이다. 과거receipt는 현재사용/허가를 뜻하지 않고 claimHash충돌은 현재읽기권한 뒤 판단한다. actual PG/HTTP 등록/HUMAN resolver·화면 caller/active·TURN/SEND/STOP/native·실Agent와 전체FN06은 미완료다. 제품 화면 사용 완료로 표시하지 않으며 원 SQL 미적용/보호6 보존을 유지한다.
+
+
 - **2026-10-22 FN06 B2~B5 부분 구현**: 인증된 THREAD 수신의 원 START/current/permit 결박·불변 receipt/멱등·같은 transaction 감사·현재 HUMAN의 정확 이력 조회 및 선택적 합성 라우터 소비를 연결했다. 직접6파일35PASS/527.5688ms·type/diff0이며 저장 후 응답 경계 실패는 UNKNOWN503으로 원 기록을 보존한다. 원 r2의 2표에 proofResultRef→최초 claim/receipt의 다대일 보존용 보조표1개를 더하는 PMO 상세 결정을 미적용0037에 반영했다. 기존 SQL/manifest/실 DB 적용0이다. SQL 독립 I2는 신규 forward 내 경로 허용·START digest 대조로 보완·scoped 확인했으나 PG 구문/권한/COMMIT은 미검증이다. 실제 HTTP/HUMAN resolver/영속 adapter·TURN·UI/SEND/STOP 소비·native 보호·실 Agent는 미완료다. 전체 FN06/Stage 완료가 아니며 다음 미구현을 계속한다. 상세 승인·오류·분리 검증은 WORK_STATUS와 FN06 후보 후속 절을 따른다.
 
 
