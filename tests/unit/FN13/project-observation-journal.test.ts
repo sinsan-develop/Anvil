@@ -10,6 +10,10 @@ async function fixture(){const pg=pgExecutionFixture(),r=resultFixture(),pid=pg.
  return{pid,actor,result:r.entry,db,source,rows,calls,member:(v:boolean)=>member=v,afterJournal:(fn:()=>void)=>afterJournal=fn};}
 function service(f:Awaited<ReturnType<typeof fixture>>){assert.equal(typeof mod.ProjectObservationJournal,'function');return new mod.ProjectObservationJournal(f.source);}
 
+test('FN13 실제 인증 actor의 재인증 Date를 wire JSON으로 직렬화하지 않고 페이지를 읽는다',async()=>{
+ const f=await fixture();await many(f,21);const actor:any=f.actor;actor.reauthUntil=new Date('2026-10-20T00:02:00.000Z');const value=await service(f).page(f.db,actor,f.pid,f.result.ref.id,{},(v:string)=>hash('QA-PAGE:'+v));assert.equal(value.items.length,20);assert.equal(value.hasMore,true);assert(actor.reauthUntil instanceof Date);assert.equal(actor.reauthUntil.toISOString(),'2026-10-20T00:02:00.000Z');
+});
+
 async function many(f:Awaited<ReturnType<typeof fixture>>,count:number,skip=0){
  const row=f.rows.observation_rows[0],e=row.snapshot_json.event,g=row.snapshot_json.grantRef,scope={projectId:e.projectId,executionId:e.executionId,executionGeneration:e.executionGeneration,mode:'EXECUTION',connectorId:g.id,grantRef:g,credentialGeneration:1},journal:any={complete:true,events:[],ack:null};
  const store:any={transport:'SYNTHETIC_ONLY',transaction:async(_s:any,body:any)=>body({clock:async()=>e.occurredAt,current:async()=>({transport:'SYNTHETIC_ONLY',scope,operation:'SYNC_OBSERVATIONS',authorityRef:g,checkedAt:e.occurredAt,expiresAt:'2026-10-20T00:01:00.000Z'}),read:async()=>structuredClone(journal),append:async(v:any)=>journal.events.push(v),saveAck:async(v:any)=>journal.ack=v})};

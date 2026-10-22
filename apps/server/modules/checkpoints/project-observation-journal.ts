@@ -39,7 +39,7 @@ export class ProjectObservationJournal{
  }
  #limit(value:unknown){if(Buffer.byteLength(canonicalJson(value))>2*1024*1024)fail('RESULT_OBSERVATION_RESPONSE_LIMIT',412);}
  async page(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,resultId:string,query:Record<string,unknown>,sign:(encoded:string)=>string){
-  const actor=cloneV1(rawActor),session=actor.authSession;
+  const actor=structuredClone(rawActor),session=actor.authSession;
   if(!recordV1(query,query?.cursor===undefined?[]:['cursor'])||query.cursor!==undefined&&(typeof query.cursor!=='string'||!query.cursor.length||query.cursor.length>4096)||typeof sign!=='function')fail('RESULT_OBSERVATION_PAGE_INPUT_INVALID',400);
   if(!uuidV1(actor.actorId)||!uuidV1(actor.clientId)||!Number.isSafeInteger(actor.credentialGeneration)||actor.credentialGeneration<1||!session||!uuidV1(session.id)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt))fail('RESULT_OBSERVATION_PAGE_AUTH_REQUIRED',403);
   const full=await this.#load(db,actor,pid,resultId),now=full.observedAt,bindingHash=hash({purpose,actor:{userId:actor.actorId,clientId:actor.clientId,sessionId:session.id,credentialGeneration:actor.credentialGeneration},projectId:pid,resultRef:full.resultRef,executionRef:full.executionRef});
