@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 TURN 장벽 한정 재검토 완료**: source/계약/null·최종sync경계 보정 scoped C0/I0/M0(독립 실행/수정0), 기존M1 문구·시험 해소를확인했다. 전체18·변경직접4·최종sync1/type/diff는각snapshot 한정증거이며 합쳐서새전수실행이라하지않는다. 실제provider/내구/OS권한·DB/Agent미검증·전체FN06/계획미완료를유지하고 소유6파일을기존branch checkpoint로보존한다.
+
+- **FN06 TURN 장벽 구성/null 및 최종sync 역사경계 보완**: Main은 명시null 보호/post두port가 truthy검사에서 digest-only로우회되는 반례 RED412.133ms를확인, definedness/optional형식검사로보완하여 직접4PASS652.4607ms/type0을확인했다. 초기 Select-String 표시줄wrap을patch에사용한 invalidhunk1은 쓰기미적용·원문읽기정정으로분리한다. 독립 C0/I0/M1의 최종sync후기한 계약문구는 수용검사/최종sync진입전실패UNKNOWN 대 성공sync후이미기록된false/UNVERIFIED 과거RPCreceipt로명시구분했고 신규경계1PASS511.2263ms/type/diff0으로 원기록불변/권한승격0·wire/permit1회를확인했다. 실제 postprovider/내구/OS/Agent/정식DB서비스미판정은유지하며 재리뷰진행중이다. 원finding/RED는보존하고 계약/기준을몰래완화하거나성공기록소급삭제하지않는다.
+
+- **2026-10-23 FN06 SEND 후 TURN 보호장벽/post current 내부 구현**: PMO source-only 분리결정을 받아 FN06_SENT_TURN_RESPONSE_BARRIER.md에 exact입력/반환·IDLE→IN_PROGRESS 또는IDLE전이/후보응답ref·기한/UNKNOWN 의미를먼저고정했다. 기존pre-send IDLE/current/이해·grantconsume·bindingHash/원장schema/기본digest-only·역사replay는유지한다. optional두port를함께주입할때만 완성turn/start→정확TURN/부모/fullref/시도permit/RPC→현재snapshot동일요건·원hash고정→최종기한후동일후보row기록으로연결한다. 실패후후보는성공기록하지않고UNKNOWN·permit/wire재발행0. 새3+기존15 직접18PASS745.902ms/type/diff0(초기2RED497.0452→2PASS504.7934ms), post부모/다른session/thread/command/owner/claim-only만료·지연timeout/late반례포함이다. 원문thread는기존private current port범위뿐·원장/공개API추가0. 실제postprovider/TURN concretecapture·OS/store내구·Agent/정식DB서비스·전체FN06/Stage는미구현·미검증이며 독립한정검토중이다. 보호7/0038/DD166F/컴파일미결·기존실패/실행제외는유지한다.
+
 - **FN06/UI04 선택 원결과 한정 독립 검토**: source/client시험 scoped C0/I0/M0(독립 실행/수정0)을 수신했다. exact query/fullref/기록시각·await입력고정·기존 주체/요청세대/이탈 검사를 확인한 범위만 수용하며 실제 DOM선택·서버권한/DB/served는 미판정으로 유지한다. 기존 원FAIL/명령오류·chunk경고는 숨기지 않고 소유파일만 안전 checkpoint로 보존한다.
 
 - **2026-10-23 FN06/UI04 선택 원결과 exactref 보완 확인**: 기존3인자 getter호환·같은GET/schema를 유지하며 optional selectedReceipt를 즉시복제/검사하고 원결과의 fullref/recordedAt과 현재목록 선택을 결박했다. 원반례 Missing rejection ID RED402.2707ms→중간8PASS1FAIL528.8435ms(제품거절은발생했지만ApiError일반메시지regex기대오류)→시험을정확code검사로정정한 직접9PASS605.0047ms/type0/diff0. build:web미정의1은실패보존/성공주장0, 실제package정의의기존로컬 Vite만실행해367modules build0(447ms), 기존500kchunk경고유지·기준/구조변경0. 실served/브라우저click·DB/권한/Agent는미검증·미변경이고 독립정적리뷰중이다. SEND후current의IDLE강제와postresponse권한분리 exactdelta/대안은PMO에보냈으며 기존IDLE완화/추가실행0·다음독립업무선정은Main책임이다.
