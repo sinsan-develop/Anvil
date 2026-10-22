@@ -4,8 +4,8 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {ownershipHumanBasisFixture} from './ownership-human-basis-fixture.ts';
 const m=await import(new URL('../../../apps/server/modules/executions/ownership-preparation-receipt.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),id=(n:number)=>`40000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
-export async function ownershipPreparationReceiptFixture(){
- const f=await ownershipHumanBasisFixture(),p=f.prep.snapshot;
+export async function ownershipPreparationReceiptFixture(options:{humanCredentialGeneration?:number;disposition?:'AUTO'|'REQUIRE_APPROVAL'}={}){
+ const f=await ownershipHumanBasisFixture(options),p=f.prep.snapshot;
  f.policy.created_at=new Date(p.at);
  const intent={schemaVersion:1,purpose:'OWNERSHIP_PREPARATION_INTENT',scope:structuredClone(p.scope),subject:structuredClone(p.subject),registrationRef:structuredClone(p.registrationRef),details:structuredClone(p.payload),at:p.at,expiresAt:p.expiresAt,executionAuthorized:false,dispatchPerformed:false};
  const intentRef={id:id(1),version:1,contentHash:hash(intent)};

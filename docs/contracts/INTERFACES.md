@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 원 SEND/permit/proof 이력 읽기 — 2026-10-23
+
+readOwnershipInstructionHistory는 caller-owned 같은 인증 transaction에서 현재 AUTO 준비 원영수증/HUMAN·정책/등록을 전후 대조하고, 기존 permit journal의 exact fullref와 원 SEND command/envelope/예약 및 시도/OS 참조를 읽는다. 중간 readOwnershipInstructionProofHistory는 원 proof receipt/hash·challenge 원본/consumed2·정확 target와 기한을 대조한다. 저장된 CURRENT/CONSUMED나 caller selection은 실제 권위가 아니며 HUMAN 세대와 실행 credential 세대를 혼동하지 않는다.
+
+반환은 HISTORY_ONLY/UNKNOWN이며 proofConsumptionVerified/signatureVerified/currentAuthorityVerified/bindingAuthorized/executionAuthorized/dispatchPerformed는 false다. 원 proof 소비 이력을 조회했다고 서명·현재 실행 credential·원 SEND HUMAN 허가 graph·실제 local attempt/parent/OS/writer/회수/provenance를 증명하지 않는다. 해당 missingEvidence를 유지하고 authority port/route/START/allowlist에 등록하지 않는다. REQUIRE는 소비 verifier 전 기존 거절을 유지한다. actual DB/SQL/native/키/Agent 실행은 별도 경계이며 본 source 합성 시험으로 승격하지 않는다.
+
 ## FN06 D1 미적용0039 행 모양 layer — 2026-10-23
 
 0039_ownership_authority.sql.pending의 ownership_record_shape_guard는 정확5표 snapshot의 canonical hash·schema/행 scope와 일부 ref/시각/false 표식을 대조하는 SOURCE layer다. kind JSON null을 명시 거절하고 anchor/binding·관측 report 구조를 각 source 소비 필드와 대조한다. 기존 무조건 ownership_authority_unavailable·RLS false/REVOKE를 그대로 두며 새로운 역할/허가·escape flag를 추가하지 않는다. 실행 목록에도 등록하지 않는다.
