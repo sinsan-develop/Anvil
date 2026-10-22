@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **FN12/UI05 미실행 보고 탐색 검수·회수 종료**: 최신직접인접5PASS157.7964ms/type/diff0·새build355/327ms·통제Edge1PASS3.0초,한정독립정적C0/I0/M0(실행0)다. 사유검색/동일조건·시험보고·PASS주장필터/중복원문위치·선택해제/형식미확인/XSS를확인했고실시험·허위·완료판정은하지않는다. 등록QA ui05-unexecuted-01은realpath/소유SINSAN\\cyhuh/link0/process0확인후제거,별도조회pathfalse/process0이다. 원미실행JSON보존·새API/SQL/정식DB/권한/서비스/Agent0·보호6보존. 최대입력브라우저성능/모든주체전환·실DB/정식served/실Agent·전체FN12/Stage/계획은미검증·미완료다. 다음FN12 source대조는오류분류/실제관측출처연결의남은계약이며서버보관합성주장만을실Provider/원인확정으로승격하지않는다. source복구는해당commit일반revert·원저장자료보존이다.
+
+- **FN12/UI05 미실행 탐색 source·실제통제화면GREEN**: 신규2+기존시험보고3=5PASS157.7964ms/type/diff0·새Web355/327ms·통제Edge TEST_REPORTS1PASS3.0초다. 기존미실행JSON과전체원문을보존한채사유/조건/시험검색·관련시험/PASS주장필터·중복원문위치·선택행상세를연결했다. 동일조건/시험PASS동시보고는별도검토필요로표시하며허위/실수행/합격을확정하지않는다. malformed보고/기여출처미확인·XSS텍스트/추가요청0도확인했다. 한정독립source검토요청/QA회수진행중,실DB/정식served/Agent·전체FN12/Stage/계획은미검증·미완료다.
+
+- **FN12/UI05 미실행 탐색 UI RED**: 타입보완후type0·기존앱bundle의Edge1FAIL에서새‘제출 미실행 보고 탐색’region부재를기존5000ms기준으로확인했다. 이전시험보고필터/원문은도달했으며새컴포넌트를기존미실행원문앞에추가한다. 원문/전체제출보존·검사기준/timeout변경0,새build는연결후에만실행한다. 생성전QA부재/상위nonlink확인·실리스너/DB/Agent0이다.
+
+- **FN12/UI05 미실행 탐색 화면QA 사전등록**: 신규Main소유 D:\tmp\anvil-v3-stage-b\ui05-unexecuted-01의temp/결과·일회Edge만최대30분사용후정확정리한다. 실리스너/port/서버/DB/Agent0,생성전부재·상위링크확인후route-intercept TEST_REPORTS1건에미실행필터/동일시험PASS주장/형식미확인/XSS텍스트를추가한다. 앱source미변경의직전bundle을UI부재RED에만재사용하며새build검증으로주장하지않는다. 이후UIsource연결새build로GREEN을확인한다.
+
+- **FN12 미실행 검사GREEN·시험타입 보완**: 신규2+직접영향보고3=5PASS193.7504ms이나typecheck exit1 TS2532가새시험의u[0]에서발생했다. 배열원소존재를시험에서명시하고제품기준은그대로유지한다. 미실행검사기는원보고복사/고정쌍/invalid위치를보존했으며아직UI미연결이다. 검사통과를타입/화면통과로승격하지않는다.
+
+- **FN12/UI05 다음독립 미실행 보고 탐색 착수RED**: b5274e05 이후 보호6만남음을확인하고 FUNCTION_WORK FN12/SCREEN_WORK UI05의미실행·주장분리 요구를대조했다. 현 ResultContent는unexecuted를JSON으로만표시해사유/조건별탐색·같은시험보고대조가없다. 신규2FAIL158.3121ms(검사기부재)을확인했다. exact criterionId/testId쌍으로동일제출내보고만연결하고중복위치/형식미확인을보존하며PASS동시보고를실수행/합격이나거짓확정으로승격하지않는다. 기존기준/검사/원문보존·새API/SQL/DB/권한/native/Agent/서비스0,완료한원검토검증을반복하지않는다.
+
 - **FN12/UI05 보완의 원검토 열기 source·화면 연결 일부 완료**: 최신 신규4+기존보관검토3/보완4=11PASS483.7102ms/type/diff0, 새Web353/307ms와Edge핵심1PASS2.9초다. 보완원문재조회→exact 원검토/기준/원결과·hash→선택/잔여조건·이유/검토자/원문을 명시GET으로 열고 닫기·선택전환 숨김/권한거절부모회수를 연결했다. 초기C0/I0/M2는이력유지,정합재해시음성과제품계층보완후정적C0/I0/M0(독립실행0)확인. 등록QA ui05-rework-review-01은정확realpath/owner SINSAN\\cyhuh·링크0/process0확인후제거했고별도조회경로false/process0이다. 실제DB/정식served/시험진위/현재권한/실Agent·전체FN12/UI05/Stage/계획은미완료·미검증이다. 공개API/SQL/정식자원변경0·보호6보존. source rollback은해당commit 일반revert이며원저장자료는보존한다. FN06 nonOWNER현재담당관계는미해결로분리하고이완료를그권한/전체계획완료로승격하지않는다.
 
 - **FN12/UI05 원검토 실제클릭 GREEN·검토 보강**: UI연결계층수정후 새build353/307ms/type0·동일Edge1PASS2.9초다. 원검토선택/부족이유·잔여조건/닫기/다른보완선택중옛원문숨김/권한거절부모회수·POST0을확인했다. 한정독립C0/I0/M2(실행0) 중 DOM계층은 위제품이동으로해소했고, 음성의재해시ref불일치가뒤검사를가리는M1은새정합ref/보완hash까지갱신한 기준·조건집합 직접음성으로보강한다. 첫실패를PASS소급하지않고실DB/정식served/Agent미검증을유지한다.

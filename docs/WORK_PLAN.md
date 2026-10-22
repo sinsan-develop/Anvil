@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 미실행 보고 탐색 일부 구현**: 기존미실행JSON원문을보존하며조건/시험/사유검색·관련보고/PASS주장필터·exact조건시험쌍대조·중복위치·형식미확인/선택행상세를연결했다. 신규2RED→직접인접5PASS/type/diff0·새build355/327ms·통제API Edge1PASS3.0초·한정독립C0/I0/M0/등록QA독립잔여0. 보고상태를실수행·원인/허위확정·합격으로승격하지않으며실DB/정식served·전체FN12/Stage는미완료다. 새API/SQL/권한/Agent/서비스변경0,오류/범위/후속은WORK_STATUS를따른다.
+
 - **2026-10-22 FN12/UI05 보완 원검토 직접조회 연결**: 보관보완에서원검토열기→기존보호GET2개·고정ref/hash/기준·선택/잔여조건대조→이유/검토자/전체원문표시·닫기/선택전환숨김을연결했다. 최신단위11/type/diff0·새build353/307ms·통제API실제Edge1PASS2.9초·독립정적C0/I0/M0(초기M2/보완이력유지)/등록QA독립잔여0이다. 새API/SQL/DB/권한/Agent/서비스변경0,정식DB/served·전체FN12/Stage는미검증·미완료다. FN06 nonOWNER는현재지정HUMAN관계부재를예약생성자/예약연산정책으로추정하지않고별도미완료로남긴다. 상세/원실패/다음조치는WORK_STATUS를따른다.
 
 - **2026-10-22 FN06 C 잠긴 원장 직접 소비 추가**: 기존 exclusive transaction의 전체 journal을 원 validator로 재대조하고 최신 SEND 시도/소비permit 또는 STOP 시도만 factory로 연결했다. 전송 종료/abort 뒤 source 재사용 거절·불완전 원장/원 target 불일치/유실 재전송0을 포함한 직접인접29PASS2261.5834ms/type/diff0. 새 일반 wire/native/파일root/DB/Agent/서비스 실행은 없으며 실제연결·전체FN06/Stage 완료는 아니다. 세부 검토/원실패와 후속 작업은 WORK_STATUS를 따른다.

@@ -15,6 +15,7 @@ import {CheckpointFileReader} from './CheckpointFileReader.tsx';
 import {StoredObservationJournal} from './StoredObservationJournal.tsx';
 import {StoredStopRequests} from './StoredStopRequests.tsx';
 import {ReportedTestResults} from './ReportedTestResults.tsx';
+import {UnexecutedReports} from './UnexecutedReports.tsx';
 import {ReportedCommandResults} from './ReportedCommandResults.tsx';
 import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
 import {AssignmentEnvironmentOriginal} from './AssignmentEnvironmentOriginal.tsx';
@@ -90,6 +91,7 @@ export function ResultContent({value}:{value:SubmittedResultView}){
   <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
   <ReportedTestResults key={JSON.stringify([s.scope,value.ref])} tests={m.testResults}/>
   <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
+  <UnexecutedReports key={JSON.stringify([s.scope,value.ref])} unexecuted={m.unexecuted} tests={m.testResults}/>
   <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
   <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>
   <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>등록 산출물 텍스트·변경 diff/명령 출력 참조는 별도 명시 조회로 확인합니다. 보관 bytes/hash 일치는 실제 Git diff·명령/시험 출처의 증명이 아니며, 보완 초안 저장은 실제 재작업·검수 합격이 아닙니다. 실제 중지·쓰기 회수/이전 처리는 미확인입니다.</p>
