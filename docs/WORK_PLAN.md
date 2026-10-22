@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 사건·head source 일부**: 준비→원 요청→수용→채택과 CURRENT 후속 사건, head 갱신 계획의 비순환/정확 참조·단조성·회수/UNKNOWN·원 10초 요청 기한을 구현/집중 확인했다. 독립 I1과 Main 재현·보완 및 최종14/type/diff는 WORK_STATUS에 기록했다. 실제 저장/nonce 소비/PG CAS·권한·OS/Agent 완료가 아니며, 다음 저장 transaction·새 미적용5표/guard·resolver/native 등 D1 잔여를 유지한다.
+
 - **2026-10-23 FN06 D1 착수 / 관측·서명 source 일부**: 신산님 직접 승인 범위를 패킷 v3 §1.1 source·미적용 SQL/API·권한 계약으로 기록했다. 관측 phase/head·원 request/process·facts hash·domain 서명 검증 source와 합성 반례를 추가했다. 집중10/type/diff 결과는 WORK_STATUS 참조. 실제 DB/권한/키/OS/서비스·Agent는 승인에 포함하지 않았으며 archive/head/nonce 소비·resolver·미적용 SQL/native 등 D1 잔여를 계속 구현한다. 전체 FN06/Stage B 상태를 완료로 바꾸지 않는다.
 
 - **2026-10-23 FN05 맥락 준비 이유·분할 한도 편집 보완**: 원문선별과같은livebuffer조건을이유/한도편집에도연결하고숫자callback의명시field만현재값에반영한다. 저장프로토콜·서버상한검사·원문/기준은불변. 직접10과실제handler/편집8·type/build는각source범위/실DOM·DB·served미검증이며오류/검토는WORK_STATUS를따른다. FN06D1은미답변제안·실제권한/실행은미착수다.
