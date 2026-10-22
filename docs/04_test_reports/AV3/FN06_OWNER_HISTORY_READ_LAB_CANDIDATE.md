@@ -1,5 +1,16 @@
 # FN06 OWNER 인증 조회 — 한정 실행 후보
 
+## 원인 확인 후 최소 수정 후보
+
+exact d07916c3의 실제 한정 진단은 CLAIM_OWNER_SESSION_LEDGER_LOCK_FORBIDDEN/exit1이다. 이는 지정 session/commands FOR SHARE SELECT의42501 실측이며 어느 alias가 원 권한 오류인지 원문은 출력하지 않았다. source0016의 agent_sessions UPDATE/DELETE REVOKE 및 INSERT외불변guard와 함께 session 잠금의 최소권한 충돌을 특정했다. 독립SSH로 exact PG/net/owner/root/process 잔여0·정식3 불변을 확인했다.
+
+최종 제품 delta는 FOR SHARE OF s,c에서 s만 제외해 **FOR SHARE OF c**로 바꾼다. commands의 완전불변은 가정하지 않으며 명령행 변경 차단을 유지한다. 현재 user/session/client/project/member 잠금과 모든 hash/정확예약/APPLIED원명령/반복현재성·30초응답창은 그대로다. 권한/SQLmigration/공개계약/Secret/서비스 변경은 없다.
+
+- apps/server/modules/executions/provider-session-claim-history-store.ts SHA256 1143B8BF743AD864C9AE1CF3A5A5E4CB993F8CD500EB276931804B3A24971994
+- tests/unit/FN06/provider-claim-history-store.test.ts SHA256 1765EC5D4238E6B8EAE6F61EDA5228B443A53E1D1E17E6A43A23F2028C33E489
+- 최소권한과 command잠금유지 반례 RED→GREEN·집중인접26 PASS1313.3869ms/typecheck/diff0. 새 exact실행은 아직0이며 최초 b42 및 d079 실패를 보존한다.
+- 실제 한정 재검증은 새 exact후보/독립리뷰 뒤 §3 동일 자원·수명·회수와 HISTORY_READ만 사용한다. 원 schema/ATOMIC/replaycase와 정식서비스/DB·실Agent/native/비용은 실행하지 않는다.
+
 ## 최신 진단 delta — 이전 후보 실패 보존
 
 기존 exact b42aae6b의 실제 HISTORY_READ는 목록 Webreader 경계 exit1이며 API 양성0이다. 독립 잔여0·정식3 불변을 확인했다. 아래 최초 후보와 해시는 이력이고 동일 후보를 다시 실행하지 않는다.

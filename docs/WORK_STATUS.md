@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN06 최소 잠금 보완 독립검토**: 기존reviewer C0/I0/M0. 0016 session고유키·UPDATEDELETE회수/trigger불변과FOR SHARE OF c유지를대조해현재OWNER/auth잠금·hash/명령/30초재검사보존을확인했다. 독립실행/수정0·수정후실PG조회/실경합은미검증이다. 정확2source+후보/WORK_STATUS만게시하고새exact한정실측packet을전달한다.
+
+- **FN06 잠금 수정 최종 delta 축소**: PMO지적에따라 commands c의완전불변을가정하지않고 c SHARE를유지한다. 최종변경은 FOR SHARE OF s,c→FOR SHARE OF c 한곳이다. app의session UPDATE금지와0016 INSERT외guard는확인됐고command는일반변경가능원장으로보수취급한다. c잠금보존반례1FAIL후 최종26PASS1313.3869ms/typecheck/diff0·storeSHA1143B8BF743AD864C9AE1CF3A5A5E4CB993F8CD500EB276931804B3A24971994/testSHA1765EC5D4238E6B8EAE6F61EDA5228B443A53E1D1E17E6A43A23F2028C33E489. 직전전체SHARE제거안은미게시중간안으로폐기했다. 추가읽기glob os123은이미알려진경로표기오류1회재발로기록·-g만사용한다. 수정후실DB는미실행·독립리뷰진행중이다.
+
+- **FN06 최종 이력 SELECT 최소수정**: d079 실제42501과0016 INSERT외 IMMUTABLE guard/SELECT·INSERT만허용을대조했다. 원store로최소권한반례1FAIL/5PASS→불변이력SELECT의FOR SHARE만삭제→집중/인접26PASS1586.0885ms/typecheck/diff0. 사용자/session/client/project/member현재잠금·hash/정확원장/반복재검사·30초창/공개API·DB권한·SQLmigration불변이다. 독립SSH exit0로d079 exactID/ownerlabel/root/runner잔여0·정식3불변확인. 읽기조회에서Windows glob literal os123은제품오류와분리하며-g 필터로보정했다. 실DB수정후양성은아직미검증·원FAIL보존이다.
+
+- **FN06 d079 진단 실제 FAIL·원인 경계 확인**: 새빈 HISTORY_READ1회 exit1에서 CLAIM_OWNER_SESSION_LEDGER_LOCK_FORBIDDEN을실측했다. 지정 session/commands FOR SHARE SELECT가42501로거절된사실이며 제품데이터/Provider실패가아니다. PG ca7ff199545635ffefdf4a70c7884bbc694209a3a24d0d1aaeb23b6faac85196/net a6f8e6d0ee0e5efbf8deb56470841e849e29b5004cb35ebf92f2088d5cbe250a/run6de3b6b270050e985acb11afaafcc26a. childclose0/rootCleanupFailedfalse·runnerfailuretrue/cleanupFailurefalse/bootstrap1safe1path0。OWNER조회/거절/6원장불변양성0·동일후보추가0. 별도SSH잔여와정식불변확인후 권한추가없는최소수정의원행불변/인증잠금보존을검토한다.
+
+- **FN06 d079 조회 진단 새빈1회 실행 전**: PMO가 exact d07916c3bb01010abf49695d7e87cee2be150cf9/최신4hash·Proxy전달복구를직접대조해 HISTORY_READ1회를채택했다. 직전읽기전용 SSH exit0에서 UID/root부재/PGnet부재/고정daemonimageNode·정식3 fullID/image/StartedAt/runningfalse 불변을확인했다. 후보§3 literal root/PG/net/DB/owner·새run·tmpfs512/공개portvolumehostmountformalnet0·최대10분/clone전trap/원timeout·정확회수/독립잔여0를유지한다. 기존 b42 FAIL보존·schema/ATOMIC반복0·제품/SQL/권한/서비스변경0. 실제42501 전 원인확정0이다.
+
 - **FN06 진단 delta 독립 검토**: 기존 reviewer read-only C0/I0/M0·독립 실행/수정0. 원query/인자/this 전달·pool finally복구·원장42501만분류·HTTP본문비출력 확인범위다. 실제원인 미확정. Git 재대조에서 private main은 f976ed5e 불변이고 로컬 main ref는 과거04430432임을 확인했으며 둘을 동일하다고 보고하지 않는다. main/ref 변경0·보호 untracked6 보존이다.
 
 - **FN06 조회 진단 보완 검증**: 원 SQL/인자 전달·42501 제한 분류·원 pool 복구 2건과 기존 OWNER/거절비노출·HTTP status 포함 집중6 PASS(265.0639ms), typecheck/diff0. ApiClient가 transport 예외를 감추고 Node assert message에 수치를 추가해 안전 상수 추출을 잃는 진단 문제를 RED에서 확인하고 consumer 경계에서 고정 code+status만 보존하도록 보정했다(중간 실패3회 기록, 제품코드/권한/SQL 변경0). 실DB 원인 확인은 아직 미실행이며 기존 b42 FAIL을 PASS로 바꾸지 않는다.

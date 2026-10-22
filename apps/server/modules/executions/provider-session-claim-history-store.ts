@@ -33,7 +33,8 @@ export class BoundPgProviderClaimHistoryStore implements SyntheticProviderClaimH
   if(deadline<=Date.parse(await this.#clock()))return reject();
   const member=await projectMember(this.db,a as AuthenticatedIdentity,scope.projectId,true);
   if(member.id!==scope.projectId||member.participation!=='OWNER')return reject();
-  const records=(await this.db.query('SELECT s.*,c.operation,c.state,c.actor_id AS command_actor,c.client_id AS command_client,c.result_ref FROM anvil.agent_sessions s JOIN anvil.commands c ON c.project_id=s.project_id AND c.id=s.command_id WHERE s.project_id=$1::uuid AND s.session_id=$2::uuid LIMIT 2 FOR SHARE OF s,c',[scope.projectId,scope.agentSessionId])).rows;
+  // 예약 원장은 불변·UPDATE 금지다. 현재 인증/구성원 잠금과 변경 가능한 command의 SHARE 잠금은 유지한다.
+  const records=(await this.db.query('SELECT s.*,c.operation,c.state,c.actor_id AS command_actor,c.client_id AS command_client,c.result_ref FROM anvil.agent_sessions s JOIN anvil.commands c ON c.project_id=s.project_id AND c.id=s.command_id WHERE s.project_id=$1::uuid AND s.session_id=$2::uuid LIMIT 2 FOR SHARE OF c',[scope.projectId,scope.agentSessionId])).rows;
   if(records.length!==1)return reject();const r=records[0],v=cloneV1(r.snapshot_json),reference={id:r.session_id,version:Number(r.version),contentHash:r.content_hash};
   if(r.project_id!==scope.projectId||reference.id!==scope.agentSessionId||!refV1(reference)||reference.version!==1||contentHash(canonicalJson(v))!==reference.contentHash
    ||!recordV1(v,['roleRef','connectionRef','state','externalSessionHandleRef','reservedBy','reservedAt'])||!refV1(v.roleRef)||!refV1(v.connectionRef)||v.state!=='RESERVED'||v.externalSessionHandleRef!==null||!isoV1(v.reservedAt)||!uuidV1(r.created_by)||!uuidV1(r.client_id)||!uuidV1(r.command_id)

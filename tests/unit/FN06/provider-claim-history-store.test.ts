@@ -4,6 +4,18 @@ import {canonicalJson} from '../../../contracts/canonical.ts';
 import {SyntheticProviderClaimHistory} from '../../../apps/server/modules/executions/provider-session-claim-history.ts';
 import {BoundPgProviderClaimHistoryStore} from '../../../apps/server/modules/executions/provider-session-claim-history-store.ts';
 import {fixture,pid,uid,sid,clientId,at} from './provider-history-db-fixture.ts';
+test('불변 예약 원장에 UPDATE 권한이 없는 app도 현재 OWNER의 원 receipt를 읽는다',async()=>{
+ const f=fixture(),expected=f.provideClaim(),query=f.db.query;
+ f.db.query=async(sql:string,params:any[])=>{
+  if(sql.includes('FROM anvil.agent_sessions')&&/FOR (?:SHARE|UPDATE) OF (?:s\b|[^;]*,s\b)/.test(sql))throw Object.assign(Error('permission denied for table agent_sessions'),{code:'42501'});
+  return query(sql,params);
+ };
+ const out=await new SyntheticProviderClaimHistory(f.make()).read(f.q);
+ assert.equal(out.result.found,true);assert.deepEqual(out.result.receipt,expected);assert.equal(out.result.historyOnly,true);
+ assert(f.calls.some(c=>c.sql.includes('FROM anvil.agent_sessions')&&/FOR SHARE OF c$/.test(c.sql)));
+ assert(f.calls.some(c=>c.sql.includes('FROM anvil.auth_sessions')&&c.sql.includes('FOR UPDATE OF u,s,cl')));
+ assert(f.calls.some(c=>c.sql.includes('FROM anvil.projects')&&c.sql.includes('FOR UPDATE OF p,m')));
+});
 test('현재 OWNER는 기존 인증 db에서 user→project/member를 잠그고 원 결과만 읽는다',async()=>{
  const f=fixture(),before=canonicalJson({actor:f.actor,member:f.member,session:f.session}),out=await new SyntheticProviderClaimHistory(f.make()).read(f.q);
  assert.equal(out.result.found,false);assert.equal(out.result.receipt,null);assert.equal(out.result.historyOnly,true);
