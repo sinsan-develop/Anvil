@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI05 개별 명령 근거의 합성 DOM 핵심 확인**: 기존 제품 컴포넌트를 isolated Edge/메모리 API에서 실제 클릭해 정확 근거 GET·안전표시·닫기 뒤 늦은JSON 폐기·403 부모회수를 확인했다. 최신1PASS2348.4557ms/type/diff0·한정정적M1 보정 확인이며 임시root/Edge 잔여0이다. 실제served/API Network·DB/현재권한/Agent 및 전체UI05·Stage 수용은 미검증·미완료로 유지한다. 제품소스/기존검수기준·timeout을 바꾸지 않았다.
+
 - **2026-10-22 FN06 고정 native pipe source 일부 연결**: 정확 CREATE/RESOLVE 요청/응답 코덱과 파일 primitive를 소비하는 별도 host source를 작성했다. 실제 spawn/기본build·등록은 없고 Node 반례4/type 및 scoped 정적I1 보완 확인과 C# actual 검증을 분리한다. native binary진위/취소/timeout·durable prepared/current명령 caller는 미연결이며 현재권한·실Agent/파일 성공을 주장하지 않는다. 전체FN06/Stage 미완료·기존 source-only 승인/실제실행 제외 유지다.
 
 - **2026-10-22 FN06 파일 보호 primitive source 부분 작성**: 고정 root/UUID파일·owner/ACL/handle정체성·유한용량/기한·배타생성/sync·기존cipher 재사용/불명보존의 내부 C# source와 미실행 반례 source를 추가했다. 첫 정적I1의 최종후처리 만료누락은 보완 후 scoped 추가C0/I0/M0이며 실제컴파일/Windows공유·ACL·DPAPI·경합/내구성은 미검증이다. 새 공개host/pipe/current caller·실파일 저장/실Agent는 아직 미구현/미확인으로 남긴다. source작성 승인을 실제 build/call/rootACL/파일키credential·DB/서비스 실행으로 확장하지 않는다.
