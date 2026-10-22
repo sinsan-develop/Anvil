@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12 저장 원장 문제근거 한정 실저장 소비**: exact92443f43/STORED_ISSUE 새빈PG15/61SQL·app비관리자·새GET→실Webreader emptyACK/원인미확인·거절3/8표행수는childDONE. runner정리성공뒤launch OPEN_FILES거절/outer회수·전체SSHexit1이므로 전체PASS아니다. 별도SSH새자원/root/cwd잔여0·정식3metadata불변,원FN10실패보존. 실제gap ACK/경합·정식served/Agent·전체FN12/UI08/Stage미완료. 상세 FN12_STORED_ISSUE_BASIS_READ_RESULT.md/WORK_STATUS.
+
 - **2026-10-22 FN12 새 조회 실저장 소비 QA source 준비**: 기존 정상 seed 뒤 새 issue-basis/Webreader·ACK없음/원인미확인·거절3/8표행수만 확인하는 STORED_ISSUE opt-in을 분리했다. 기존FN10검수/반복검사0·61SQL/회수가드불변, 실패위치고정진단만추가. source11PASS/type/Bash-n2/한정독립M1보완뒤0·실제실행0이며 새 기능완료나 actual 진도로 계산하지 않는다. exact후보/자원패킷은 FN12_STORED_ISSUE_BASIS_READ_CANDIDATE.md, 실제PG/served·전체FN12/Stage미완료다.
 
 - **2026-10-22 FN12/UI08 저장 원장 문제근거 부분 구현**: PMO 채택된 readonly GET1개·명시조회 화면이 기존 원제출/전체 관측원장·ACK 검증을 소비한다. 저장원장 공백 또는 원인미확인만 제공하고 수행자주장→실관측/현재권한/완료승격0. source/HTTP→Webreader·직접인접22/DOM6+1/typebuild·독립한정 재검토0·QA잔여0, 실제PG/정식served·실원인/OS/Agent·전체FN12/UI08/Stage는 미완료다. 정확 계약/회귀·rollback은 INTERFACES/WORK_STATUS에 기록한다. 전체44업무/선행/판정기준불변이다.
