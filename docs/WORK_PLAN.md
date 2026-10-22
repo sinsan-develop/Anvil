@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 capture 준비원장 일부 구현**: 완전 bindingInput/부모와 동일사건 불변 준비 metadata를 기존 capture caller가 소비하도록 연결했다. 신규/인접8/type/diff는 합성 store 범위이며 실제 지속보관·잠금/native·START concrete bridge/Agent/전체FN06는 미완료다. 입력변조·최종만료·추가후quota 반례와 원검토 이력은 WORK_STATUS에 보존했다.
+
 - **2026-10-23 FN06 START 보호claim·원응답 ref 일부 연결**: optional 합성 장벽과 원장이 같은 응답 ref를 소비하고 다른 ref는 UNKNOWN으로 거절한다. 새 반례 RED→직접16/type0 확인, 실제 준비원장/보호저장·native·Agent/DB서비스/전체업무 완료는 아니며 WORK_STATUS에 타입진단과 미검증을 보존했다.
 
 - **2026-10-23 FN06 START 보호완료 장벽 일부 구현**: 기존 동기 codec·digest-only 기본값을 보존하고 명시적인 합성 barrier에서 exact 시도/permit/RPC·claim을 검사한 뒤 현재 권한과 claim 기한을 다시 확인한다. 신규·인접15/type/diff 확인 범위이며 실제 보호저장·native·준비원장과 영속 응답 ref 연결·실 Agent/정식 서비스/FN06 전체는 미완료다. UNKNOWN 재발행 금지와 기존 역사 응답 의미를 유지한다. 정확한 RED/검토·제한은 WORK_STATUS에 기록했다.
