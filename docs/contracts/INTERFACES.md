@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 native factory writer-basis SOURCE — 2026-10-23
+
+readOwnershipNativeFactoryBasis는 같은 caller 인증 transaction의 기존 native profile을 전후 읽고 원 PREPARATION_GRANTED/fullref/hash에서 비순환 intent를 복원해 기존 writer_claims history를 전후 대조한다. 미회수 SYNTHETIC_CLAIM은 이미 만료돼도 차단한다. 원historyHash 변화·현재인증/범위/기한 불일치는 UNAVAILABLE다.
+
+빈/회수 기록은 actual NONE·OS/WRITE 회수 증명이 아니다. 결과 OWNERSHIP_NATIVE_FACTORY_BASIS_ONLY/writerState UNKNOWN·actualWriterAbsenceVerified/factoryReady/생성·준비·실행·전달false·미확인권위를 보존한다. 원 claim 표/상태를 확장·재해석하거나 실제native 권위를 주입하지 않고 새endpoint/DB접속/DML·키/환경·Agent를 등록하지 않는다. 합성/타입·정적 검토는 실제PG경합/권위/사용가능factory PASS가 아니다.
+
 ## FN06 D1 retained image 바이트 조회 SOURCE — 2026-10-23
 
 미등록 ReadRetainedImageBytesSource는 내부 exact FileStream만 수용하고 read-only/seekable·disk/비directory/비reparse/links1·양의20MiB이하 보수적cap·전후 metadata를 검사한 뒤8KiB 버퍼로 길이/EOF/SHA256 후보를 만든다. 원position을 복원하고 버퍼clear/참조회수후 결과기한을 재검사한다. [파일 metadata 조회](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle), [구조/fileID 한계](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information), [FILE_TYPE_DISK 계약](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfiletype)을 SOURCE 대조에만 사용했다.

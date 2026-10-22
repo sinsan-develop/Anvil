@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 factory writer-basis SOURCE**: 기존 native profile/원prep·intent와 원 합성writer history를 연결해 알려진 미회수claim을 차단했다. 빈/회수이력은 여전히 UNKNOWN·factoryReady/권한false다. 직접/선행15합성PASS·최종type/diff0·한정정적 C0/I0/M0이며 실제PG경합/actual NONE·native권위는 미판정이다. C#4/D2후보를 동결한 채 별도source 선행을 진행했고 실제compile/ACL/환경효과는 없다. 전체계획 미완료다.
+
 - **2026-10-23 FN06 D2 중간 compile-only 후보**: D1 source 누적의 구문/참조를 확인할 exact4 source·시스템csc/참조hash·새보호root1·DLL compile1회/정리 후보를 별도 제안했다. D1 제외 실제효과이므로 결정 전 compile/root/ACL0이고 C#4파일은현재rawhash로동결한다. 실제helper/시험실행/OS/DB/서비스/Agent 및 D3/D4는 포함하지 않으며 전체작업계획 미완료다.
 
 - **2026-10-23 FN06 D1 retained image 바이트 SOURCE**: 기존 FileStream의 bounded bytehash·file metadata 전후대조/원position복원 source를 작성했다. candidate/allfalse·독점성/root/binary/process결박·인증/provenance 미확인을 유지한다. 한정정적 C0/I0/M0·diff0만이며 compile/실제파일읽기/해시·복원/경합·Windows 검증은 NOT_RUN/UNVERIFIED다. 다음 factory/권위/안전참조회수 선행과 전체계획은 미완료다.
