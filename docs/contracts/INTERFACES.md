@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 native 준비 입력의 원기록 투영 SOURCE — 2026-10-23
+
+readOwnershipNativePreparationProfile은 현재 인증된 caller transaction에서 원 준비 receipt/HUMAN을 전후 검증하고, 사이에 원 PREPARATION_GRANTED 유일행의 fullref/hash·scope/subject/policy/등록/receipt를 대조해 Host 내부32필드로 투영한다. caller는 scope/ref만 지정하며 자유 hostHash/workerHash/profile을 수용하지 않는다. 원 issuedAt/expiresAt는 metadata에 그대로 보존하고 현재 재인증/등록/정책의 더 짧은 기한은 별도 expiresAt로 반환한다. AUTO/status-only/grants0는 기존 원 검증의 결과이며 등록권한 확장이 아니다.
+
+결과는 OWNERSHIP_NATIVE_PREPARATION_PROFILE_BASIS_ONLY/모든권한false다. 인증된 native 채널·실제 writer/provenance·retained Job/process factory/관측서명은 누락이며 이 함수를 native port로 자동 등록하지 않는다. 새로운 endpoint/DB접속/키·OS·Agent 효과가 없고 합성/타입·정적 검토를 실제 채널/C# 상호운용 PASS로 승격하지 않는다.
+
 ## FN06 D1 신규 Host 사전검사 SOURCE — 2026-10-23
 
 OwnershipEvidenceHost.PlanAsync는 외부 endpoint/CLI가 아닌 내부 미래 SOURCE다. 정확32개 metadata를 고정 복사하고 UUID·양의 안전 세대/초기ref version1·hash·UTC 및 최대120초 범위를 검사한다. 내부 current-basis reader는 default 미등록→UNAVAILABLE이며 AUTO/REGISTRATION_STATUS_ONLY/grants0·동일 선택/현재성 두 번 대조 후에도 반환은 OWNERSHIP_PREPARATION_SOURCE_PLAN_ONLY/ProcessCreationAuthorized·PreparationAuthorized·ExecutionAuthorized·DispatchPerformed=false다. caller echo는 실제 current 권위가 아니며 authenticated native binding/retained process·Job factory/관측서명/actual writer/provenance를 누락으로 명시한다.
