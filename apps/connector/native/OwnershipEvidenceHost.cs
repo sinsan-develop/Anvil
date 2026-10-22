@@ -209,6 +209,9 @@ namespace Anvil.Native.OwnershipEvidence
         [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool QueryInformationJobObject(IntPtr job,int kind,IntPtr buffer,uint size,out uint written);
         [DllImport("kernel32.dll",ExactSpelling=true,CharSet=CharSet.Unicode,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool QueryFullProcessImageNameW(IntPtr process,uint flags,StringBuilder path,ref uint count);
         [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint WaitForSingleObject(IntPtr handle,uint milliseconds);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint GetProcessIdOfThread(IntPtr thread);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] private static extern uint GetThreadId(IntPtr thread);
+        [DllImport("kernel32.dll",ExactSpelling=true,SetLastError=true)] [return:MarshalAs(UnmanagedType.Bool)] private static extern bool GetThreadTimes(IntPtr thread,out NativeFileTime created,out NativeFileTime exited,out NativeFileTime kernel,out NativeFileTime user);
         private sealed class NativePoint
         {
             internal uint Pid;internal long StartTicks;internal string ImagePath;
@@ -272,6 +275,58 @@ namespace Anvil.Native.OwnershipEvidence
                     try{if(buffer!=IntPtr.Zero)Marshal.FreeHGlobal(buffer);}
                     finally{try{if(jobRef)job.DangerousRelease();}finally{if(processRef)process.DangerousRelease();}}
                 }
+                DateTime finished=DateTime.UtcNow;if(candidate==null||finished<candidate.ObservedAt||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                return candidate;
+            }
+            catch{throw Unavailable();}
+        }
+        private sealed class NativeThreadPoint
+        {
+            internal uint Pid,Tid;internal long ProcessStartTicks,ThreadStartTicks;
+        }
+        internal sealed class RetainedThreadQueryCandidate
+        {
+            internal readonly string Purpose="NATIVE_RETAINED_THREAD_QUERY_CANDIDATE_ONLY";
+            internal readonly uint ProcessId,ThreadId;
+            internal readonly string ProcessStartTicks,ThreadStartTicks;
+            internal readonly DateTime ObservedFrom,ObservedAt;
+            internal bool ThreadOwnershipVerified{get{return false;}}
+            internal bool NeverResumedVerified{get{return false;}}
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal string[] MissingEvidence{get{return new[]{"FACTORY_RETAINED_THREAD_HANDLE_PROVENANCE","FACTORY_NEVER_RESUMED_PROVENANCE","FACTORY_SAFEHANDLE_DISPOSAL_POLICY","EXACT_JOB_AND_IMAGE_ASSOCIATION","AUTHENTICATED_NATIVE_PREPARATION_BINDING","BOUNDED_NATIVE_CALL_TERMINATION","OBSERVATION_SIGNER","ACTUAL_WRITER_NONE_OR_RECLAIM"};}}
+            internal RetainedThreadQueryCandidate(uint pid,uint tid,string processTicks,string threadTicks,DateTime from,DateTime at)
+            {ProcessId=pid;ThreadId=tid;ProcessStartTicks=processTicks;ThreadStartTicks=threadTicks;ObservedFrom=from;ObservedAt=at;}
+        }
+        private static NativeThreadPoint ReadNativeThreadPoint(IntPtr thread,IntPtr process)
+        {
+            uint pid=GetProcessId(process),owner=GetProcessIdOfThread(thread),tid=GetThreadId(thread);
+            NativeFileTime pc,pe,pk,pu,tc,te,tk,tu;
+            if(pid==0||owner!=pid||tid==0||!GetProcessTimes(process,out pc,out pe,out pk,out pu)||!GetThreadTimes(thread,out tc,out te,out tk,out tu)||pc.Value<=0||tc.Value<pc.Value||WaitForSingleObject(process,0)!=258||WaitForSingleObject(thread,0)!=258)throw Unavailable();
+            DateTime.FromFileTimeUtc(pc.Value);DateTime.FromFileTimeUtc(tc.Value);
+            // active와 CPU 시간은 suspended/never-resumed를 증명하지 않는다.
+            return new NativeThreadPoint{Pid=pid,Tid=tid,ProcessStartTicks=pc.Value,ThreadStartTicks=tc.Value};
+        }
+        // SOURCE만 작성한다. 보유한 thread/process 쌍을 조회하되 handle을 열거나 thread의
+        // suspend count를 변경하지 않는다. 원 CREATE_SUSPENDED·미재개 이력은 별도 factory 근거다.
+        internal static RetainedThreadQueryCandidate ReadRetainedThreadQuerySource(SafeHandle thread,SafeHandle process)
+        {
+            try
+            {
+                if(thread==null||process==null||ReferenceEquals(thread,process)||thread.IsClosed||thread.IsInvalid||process.IsClosed||process.IsInvalid||Environment.OSVersion.Platform!=PlatformID.Win32NT)throw Unavailable();
+                bool threadRef=false,processRef=false;var elapsed=Stopwatch.StartNew();DateTime from=DateTime.UtcNow;RetainedThreadQueryCandidate candidate=null;
+                try
+                {
+                    thread.DangerousAddRef(ref threadRef);process.DangerousAddRef(ref processRef);
+                    IntPtr t=thread.DangerousGetHandle(),p=process.DangerousGetHandle();
+                    if(t==IntPtr.Zero||p==IntPtr.Zero||t==new IntPtr(-1)||p==new IntPtr(-1)||t==p)throw Unavailable();
+                    var first=ReadNativeThreadPoint(t,p);var last=ReadNativeThreadPoint(t,p);DateTime at=DateTime.UtcNow;
+                    if(thread.IsClosed||process.IsClosed||first.Pid!=last.Pid||first.Tid!=last.Tid||first.ProcessStartTicks!=last.ProcessStartTicks||first.ThreadStartTicks!=last.ThreadStartTicks||DateTime.FromFileTimeUtc(last.ThreadStartTicks)>at||at<from||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
+                    candidate=new RetainedThreadQueryCandidate(last.Pid,last.Tid,last.ProcessStartTicks.ToString(CultureInfo.InvariantCulture),last.ThreadStartTicks.ToString(CultureInfo.InvariantCulture),from,at);
+                }
+                finally{try{if(processRef)process.DangerousRelease();}finally{if(threadRef)thread.DangerousRelease();}}
                 DateTime finished=DateTime.UtcNow;if(candidate==null||finished<candidate.ObservedAt||elapsed.ElapsedMilliseconds>=10000)throw Unavailable();
                 return candidate;
             }

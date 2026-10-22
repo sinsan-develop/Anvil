@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 retained thread 조회 SOURCE — 2026-10-23
+
+미등록 ReadRetainedThreadQuerySource는 내부 SafeHandle thread/process의 수명참조 아래 ownerPID=processPID·positive TID·process/thread 생성시각 순서·활성 및 전후 정체성 일치를 검사하는 읽기 SOURCE다. [ownerPID 조회](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocessidofthread), [TID 조회](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadid), [thread FILETIME 계약](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreadtimes)을 선언 대조에만 사용했다. thread를 재open/생성하거나 Suspend/Resume/Terminate하지 않는다.
+
+결과는 NATIVE_RETAINED_THREAD_QUERY_CANDIDATE_ONLY/ThreadOwnershipVerified·NeverResumedVerified·OsOwnershipVerified·준비·실행·전달 false다. active/CPU시간은 suspended/never-resumed 증거가 아니다. 원 factory 생성·미재개 이력/실제 SafeHandle disposal/Job·이미지/인증준비·서명/writer 누락을 유지하며 scalar나 fixture로 대신하지 않는다. cleanup후 검사하는 10초는 결과수용기준일 뿐 OS호출 강제종료상한이 아니다. compile/시험실행/PInvoke/상호운용은 NOT_RUN/UNVERIFIED이며 원 준비·관측/허가에 자동 채택하지 않는다.
+
 ## FN06 D1 native retained-handle 조회 SOURCE — 2026-10-23
 
 미등록 ReadRetainedHandleQuerySource는 내부 후보 process/job SafeHandle의 수명참조 아래 PID·creation FILETIME·해당 Job membership/정확1member·Win32 이미지경로·활성을 전후 읽는 Windows API SOURCE다. 누락/실패·count/identity변경·기한초과는 고정 UNAVAILABLE로 정규화하고 raw경로/handle을 출력하지 않는다. [Job PID 구조](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_basic_process_id_list), [Job 조회](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-queryinformationjobobject), [이미지 경로 문자수 계약](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-queryfullprocessimagenamew)을 SOURCE 선언/배치 대조에만 사용했다.

@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **thread 조회 최종 한정 검토**: 추가 thread SOURCE/invalid 입력 시험 SOURCE의 독립 정적 C0/I0/M0·독립compile/PInvoke/실행/수정0이다. 실제 상호운용·handle 생성출처/회수·종료상한·OS권위는 여전히 NOT_RUN/UNVERIFIED다.
+
+- **2026-10-23 D1 retained thread 조회 SOURCE 일부 작성**: 신규 ReadRetainedThreadQuerySource가 내부 보유 thread/process SafeHandle의 수명참조 아래 GetProcessIdOfThread/GetThreadId/GetThreadTimes 및 기존 process/time/Wait0을 사용하도록 source를 작성했다. positive TID·ownerPID=processPID·process≤thread 생성FILETIME와 활성·전후 PID/TID/시각 일치, UTC/10초결과수용·참조회수후 기한검사를 포함한다. 원 thread 재open/새생성·Suspend/Resume/Terminate/키·socket/파일/DB/서비스·Agent/API등록0, 실제 메서드 호출0이다.
+
+- **thread 조회 미검증·권위 경계**: NATIVE_RETAINED_THREAD_QUERY_CANDIDATE_ONLY/ThreadOwnershipVerified·NeverResumedVerified·OS·준비·실행·전달 false다. active/CPU시간을 suspended/never-resumed로 해석하지 않고 factory 원 생성/미재개 이력·SafeHandle disposal정책/Job·이미지 결박·인증준비/서명/actual writer와 OS호출 종료상한을 누락으로 남긴다. Microsoft 공식 Thread API 서명 대조·미래 null/동일객체/서로다른invalid/closed 시험 SOURCE·diff0만 수행했으며 compile/시험실행/PInvoke/Windows상호운용·권위·회수는 NOT_RUN/UNVERIFIED다. 이전 TS17/type를 반복하거나 C#근거로 쓰지 않았고 fake성공supplier를 만들지 않았다. HostrawB1C45016A087107EDA7AA0EC4E0B7F53C62C253F7E01CDF5DF50F6A00D63B625/testFEC851BCB71C416127EDD194E1A475B456A61B3BB7CD4B054B62C1351D297FFF, worker/oldhelper/고정패킷·보호8/기존거절/REQUIRE/SQLpendingM1 유지. 다음은 실제factory의 보유 image/thread 원자료·안전참조회수/인증준비 SOURCE 선행이며 전체FN06/계획 미완료다.
+
+- **2026-10-23 D1 retained thread 조회 SOURCE 착수**: 226ab76b와 PMO 후속지시를 기준으로 다음 단위를 thread/process SafeHandle의 threadID/ownerPID·process/thread 생성FILETIME·활성 전후 조회 SOURCE로 좁힌다. GetProcessIdOfThread/GetThreadId/GetThreadTimes의 공식 서명은 문서로 대조하되 실행0이다. 살아있는 thread나 CPU시간을 suspended/never-resumed 증거로 쓰지 않고 candidate/allfalse·factory 생성/미재개 이력·안전참조회수/Job·이미지/인증준비·서명/writer 미확인을 유지한다. 실제 handle생성/OpenThread·Suspend/Resume/Terminate·키/rootACL/socket·DB/서비스/Agent·compile/PInvoke/시험실행0이며 미래 null/동일객체/invalid/closed SOURCE만 추가한다. 성공fixture/없는supplier대체0, 기존 gate/Query/SQLpendingM1/REQUIRE/보호8 보존이다.
+
 - **native 조회 최종 한정 재검토**: 원 M1 시험구조 보정에 한정 C0/I0/M0·독립compile/실행/수정0이다. 개별guard 제거 회귀나 native 성공 증거가 아니며 원 C0/I0/M1/미실행 이력은 보존한다.
 
 - **2026-10-23 D1 native retained 조회 SOURCE 일부 작성**: 신규 Host의 ReadRetainedHandleQuerySource에 Windows GetProcessId/GetProcessTimes/IsProcessInJob/QueryInformationJobObject(JobObjectBasicProcessIdList)/QueryFullProcessImageNameW/WaitForSingleObject(0) 읽기 코드를 작성했다. 향후 내부 process/job SafeHandle의 DangerousAddRef 수명참조와 전후 PID/생성시각/Job소속·정확1member/이미지경로·활성 비교, 고정버퍼/count·정확written/UTC/Stopwatch 결과수용기한과 cleanup뒤 재검사를 포함한다. handle/PID 재open·명시 CloseHandle·Create/Resume/Terminate·파일열기/키/socket/API등록0이며 실제 메서드 호출0이다.

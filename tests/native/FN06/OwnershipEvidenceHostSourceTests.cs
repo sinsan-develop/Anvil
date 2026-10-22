@@ -88,6 +88,15 @@ internal static class OwnershipEvidenceHostSourceTests
         var closed=new Microsoft.Win32.SafeHandles.SafeWaitHandle(new IntPtr(-1),false);closed.Dispose();
         using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
             RejectSource(()=>OwnershipEvidenceHost.ReadRetainedHandleQuerySource(closed,other));
+        RejectSource(()=>OwnershipEvidenceHost.ReadRetainedThreadQuerySource(null,null));
+        using(var invalid=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
+        using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(new IntPtr(-1),false))
+        {
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedThreadQuerySource(invalid,invalid));
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedThreadQuerySource(invalid,other));
+        }
+        using(var other=new Microsoft.Win32.SafeHandles.SafeWaitHandle(IntPtr.Zero,false))
+            RejectSource(()=>OwnershipEvidenceHost.ReadRetainedThreadQuerySource(closed,other));
         RetainedSourceCases();
         var input=Input();var basis=new Basis();var gate=new OwnershipEvidenceHost(basis, ()=>Now, 1000);
         var plan=await gate.PlanAsync(input, CancellationToken.None);
