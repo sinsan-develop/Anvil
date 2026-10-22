@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **FN13/UI05 신규 관측페이지 실제 격리 소비 확인 / Main 어울**: exact c4fd13081b7f1c9106328f9eaf1260c03d84ccb9·private Git 새빈 checkout/PG15·Node/기존59SQL(지문b6ef4ee7…)의 OBSERVATION_PAGES 신규실행 phaseDONE/exit0. 원실행 grant·합성challenge 선행을 보존한 app-role 관측41건/ACK 실제COMMIT 뒤 인증API→Webreader로20/20/1·왕복같은위치/원30초기한·추가43은현재ACK에만반영/원cap42분리를확인했다. 외부인404/서명변조412/공백1채움후stale412·조회전후6표불변을실제대조했다. marker9는시험9개라는뜻이아니다. 실제Agent/OS관측·정식served/login·전체FN13/UI05/계획완료는미검증·미완료이며합성주장/actualProviderObserved·completion/execution/dispatch false를유지한다.
+  - PG d8195d3468818f6419d785d89b8d196ac40b05f15507f5fc0bdd9a2c955ee34a/net60dac312b65e7985fd340c9e5a05a1436a323a69a73b3f6bf8bafa82d97e9788/run a99921d931c6861279ad14745f5892de. 원문files2/dirs5·closeFailures0/rootCleanupFailedfalse·runner failurefalse/cleanupFailurefalse/bootstrap status0 safe1 path_exists0. 별도SSH exactID/runlabel/name/path/Node·Git cwd 잔여0·daemon동일·정식PG/API/Web fullID/image/StartedAt동일/runningfalse3확인exit0. 정식DB/서비스/Agent변경0이며앞선실행FAIL/진단/준비오류와원GET오류를소급PASS하지않는다.
+  - 결과기록 patch의 계획서 표제 문맥불일치1은 실제표제 확인 후 보정했으며 그 실패에서 파일변경0이다.
+
 - **FN13 실제 actor 보완 GREEN**: 신규Date반례RED후서버내부actor한줄보완·직접/인접15PASS1385.7251ms/type/diff0. browser consumer/bundle은불변이므로기존UI검사를반복하지않고새exactSHA의실제인증PG새endpoint소비로확인한다. 변경은관측reader/반례/현황3경로이며권한·schema·서명·원기한/기존no-query동작불변이다. 전체FN13/정식served/Agent완료주장0.
 
 - **FN13 새 GET 실제 actor 반례 RED**: 실제 authenticated는 reauthUntil을PG Date로전달하는데 신규page가wire전용cloneV1(rawActor)를사용해INPUT_INVALID→STORAGE_FAILED가난다. 원no-query의#load는structuredClone이며같은차이를신규실제actor단위1FAIL334.6973ms/INPUT_INVALID로재현했다. 서버내부actor만structuredClone으로보존하는한줄보완을하고기존권한/session/서명·wire검사는유지한다. 원실패를소급PASS하지않으며정식DB/서비스0.
