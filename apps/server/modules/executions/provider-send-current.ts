@@ -47,7 +47,7 @@ export class BoundSyntheticProviderSendCurrent{
  /** Response-only metadata; never a new SEND/reader admission or proof of local wire completion. */
  async currentSentResponse(raw:DispatchEnvelopeV1,claimRef:ProviderRef){
   const basis=await this.#read(cloneV1(raw),cloneV1(claimRef),true);
-  return{purpose:'SENT_RESPONSE_ONLY' as const,executionAuthorized:false as const,dispatchPerformed:false as const,attemptRef:cloneV1(this.#attempt.localAttemptRef),permitRef:cloneV1(this.#attempt.permitRef),basis:{...basis,parentThreadClaimRef:cloneV1(this.#claimRef)}};
+  return{purpose:'SENT_RESPONSE_ONLY' as const,executionAuthorized:false as const,dispatchPerformed:false as const,attemptRef:cloneV1(this.#attempt.localAttemptRef),permitRef:cloneV1(this.#attempt.permitRef),attemptBinding:{instructionContentHash:this.#attempt.instructionContentHash,bindingHash:this.#attempt.bindingHash},basis:{...basis,parentThreadClaimRef:cloneV1(this.#claimRef)}};
  }
  async #read(raw:DispatchEnvelopeV1,claimRef:ProviderRef,responseOnly:boolean){
   try{
@@ -69,7 +69,7 @@ export class BoundSyntheticProviderSendCurrent{
    const deadline=Math.min(Date.parse(e.expiresAt),Date.parse(c.usableBefore),Date.parse(before.grantExpiresAt),Date.parse(last.grantExpiresAt),Date.parse(v.expiresAt),Date.parse(v.commandExpiresAt),Date.parse(v.proofExpiresAt),Date.parse(v.grantExpiresAt),Date.parse(f.checkedAt)+30000,Date.parse(after.fact.checkedAt)+30000,...Object.values(f.expires).map(Date.parse),...Object.values(after.fact.expires).map(Date.parse));
    const finalNow=await this.#now(),human=this.#actor.authSession;if(!human)return fail();
    const epoch=(v:unknown)=>v instanceof Date?v.getTime():typeof v==='string'?Date.parse(v):NaN,humanDeadline=Math.min(epoch(human.idleExpiresAt),epoch(human.absoluteExpiresAt));
-   if(!Number.isFinite(humanDeadline)||Math.min(deadline,humanDeadline)<=Date.parse(finalNow))fail();this.#ports();return{key:receiptKeyV1(e),envelopeHash:e.envelopeHash,claimRef:cloneV1(this.#claimRef),parentThreadClaimRef:null,fact:cloneV1(after.fact),expiresAt:new Date(Math.min(deadline,humanDeadline)).toISOString()};
+   if(!Number.isFinite(humanDeadline)||Math.min(deadline,humanDeadline)<=Date.parse(finalNow))fail();this.#ports();return{key:receiptKeyV1(e),envelopeHash:e.envelopeHash,claimRef:cloneV1(this.#claimRef),parentThreadClaimRef:null,fact:cloneV1(after.fact),expiresAt:new Date(Math.min(deadline,humanDeadline)).toISOString(),...(responseOnly?{turnState:after.turnState,grantRef:cloneV1(before.grantRef)}:{})};
   }catch{return fail();}
  }
 }

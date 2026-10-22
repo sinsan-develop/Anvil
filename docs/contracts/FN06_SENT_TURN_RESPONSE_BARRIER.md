@@ -21,6 +21,14 @@
 
 ## 구현·검수 경계
 
+### 서버 fact와 private 현재 snapshot의 내부 조립
+
+응답 전용 Bound 조회는 원 선택의 `attemptBinding:{instructionContentHash,bindingHash}` 및 응답용 basis의 `turnState,grantRef`를 전달한다. 기존 새 SEND 반환에는 추가하지 않는다. 이는 이미 대조한 metadata 전달이며 원 hash/상태 변경·새 허가가 아니다.
+
+`SyntheticSentTurnCurrentBinding`은 기존 `SyntheticSentTurnPostCurrent`의 readCurrent 포트를 공급한다. 원 서버 조회 → 별도 private readCurrent → 같은 서버 재조회 순서로 정확 시도·permit·부모·자료/hash·grant·현재 fact/이해/소유·세션·기한을 결박한다. 서버 BUSY는 같은 private IN_PROGRESS, IDLE은 IDLE일 때만 허용하며, pre snapshot을 현재 상태로 복사하여 사용하지 않는다. 취소/timeout·조회 중 회수·변경·불명·최종 await 후 만료는 거절하고 늦은 결과는 후속 조회/수용하지 않는다. 원 IDLE 전체 hash와 원 잠금 post 검사는 그대로 유지한다.
+
+private readCurrent 구현과 각 포트의 진위·실제 OS/DB·자료 내구 검증은 별도 미구현·미검증이다. 구조 대조를 실제 권한·실행으로 인증하지 않으며 기본 등록/HTTP/새 SQL·실제 Agent/native 호출은 없다. private thread는 내부 메모리만 통과하고 서버 metadata·공개 응답·원장에 추가하지 않는다.
+
 ### 서버 원 permit·부모 기록의 응답 전용 결박
 
 `BoundSyntheticProviderSendCurrent.currentSentResponse(envelope,parentClaimRef)`는 기존 인증 transaction에서 응답 전용 basis를 전후 조회하고, 정확한 원 THREAD/DB receipt·scope·command/permit/예약·소비된 nonce/서명 주체와 기한을 대조한다. 기존 새 SEND용 `current()`는 IDLE만 허용한다. 새 반환은 `{purpose:'SENT_RESPONSE_ONLY',executionAuthorized:false,dispatchPerformed:false,attemptRef,permitRef,basis}`이며 reader가 받는 key/fact 형식을 최상위에 제공하지 않는다. basis의 parentThreadClaimRef는 대조한 원 부모 ref다. 조회 중 새 permit/예약 발행이나 nonce 소비·SQL 쓰기는 없다.

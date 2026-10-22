@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 서버/private 현재 조립 일부 구현**: 원 서버 기록을 private current 조회 전후 대조하고 원 grant/시도hash·부모·자료/이해·소유·BUSY/IN_PROGRESS 상태·기한을 연결했다. 신규/직접영향11/type/diff는 실제 Bound source를 합성 DB로 소비한 범위이며 private 현재 공급자 진위/실구현·OS/native/DB/Agent·전체 FN06/연속 TURN은 미구현·미검증이다. 기존 SEND/허가/기본등록은 불변이고 원 RED·타입진단/검토는 WORK_STATUS에 보존한다.
+
 - **2026-10-23 FN06 응답 전용 current 원 기록 일부 연결**: 기존 인증 transaction의 부모 THREAD/receipt·원 permit/예약·소비 nonce/서명과 현재 basis를 결박한다. 기존 새 SEND IDLE 조건은 유지하고 결과는 응답 전용 중첩 metadata/false 권한으로 구분한다. 신규/직접 인접9 PASS·type/diff는 합성 DB만이며 실제 송신·runtime snapshot/연속 TURN·실 DB/OS/Agent·전체 FN06는 미구현·미검증이다. 원 RED·검토 범위는 WORK_STATUS를 따른다.
 
 - **2026-10-23 FN06 sent-response 서버basis 읽기 일부 구현**: 새SEND current의IDLE요건은보존하고 별도응답용읽기에서현재BUSY/IDLE와동일인증·소유/자료/예산을대조한다. purpose/false권한으로새SEND/reader결과와혼용을막으며 실제permit/부모DBclaim·runtimepostsnapshot/연속TURN·실권한/DB·Agent/전체FN06는미연결/미검증이다. 집중/인접6·변경음성1/type/diff와원FAIL/검토는WORK_STATUS를따른다.

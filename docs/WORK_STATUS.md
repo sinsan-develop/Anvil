@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06 server/private 조립 한정 독립 검토**: 원 시도hash/permit/부모/grant·서버 fact/private 현재 대조·재조회/상태/최종기한/취소의 source 범위에 독립 C0/I0/M0(실행/수정0)을 수신했다. 기존 SEND 반환과 실행 범위 불변, 독립 private current 공급자/실 DB·OS/native/Agent·전체 FN06 미판정을 유지하며 소유6파일만 기존 branch checkpoint로 보존한다.
+
+- **2026-10-23 FN06 서버 fact·private 현재 snapshot 일부 조립 확인**: 신규 SyntheticSentTurnCurrentBinding이 실제 기존 Bound 응답용 메서드(합성 DB)를 private current 조회 전후 소비해 원 시도/permit/부모·자료/hash·grant·fact/이해/소유·상태/기한을 결박한다. 기존 SEND의 반환/IDLE·원 hash·원잠금/UNKNOWN 재송신0 불변. 신규2 모듈부재 RED626.7526→2PASS1288.9924ms 뒤 SEND union 타입4진단은 원 FAIL 보존/명시 operation 검사로 type0. 첫 GRANT 음성은 미지필드 구조검사였으므로 별도 정합 pre grant/hash 재계산 반례를 추가해 Missing rejection RED660.4793ms를 확인했고 원 grant metadata 직접대조로 보완했다. 신규4+기존 응답3+기존 SEND4 직접11PASS3044.012ms/type/diff0이며 취소/timeout 뒤 늦은 완료의 추가 서버조회0·조회 중 회수/만료·private thread/소유/상태 불일치 거절을 확인했다. 포트 진위/독립 private 현재 공급자 실구현·원잠금 post와 실제 서비스 조립·OS/native/DB/Agent/연속 TURN·전체 FN06는 여전히 미구현·미검증이다. 새 public API/SQL·자원·권한/서비스 실행0, 독립 한정 검토 중이다.
+
+- **2026-10-23 FN06 서버 fact·private 현재 snapshot 조립 착수**: Main 단일 writer가 응답용 서버 원기록과 별도 private 현재 조회를 전후 대조하는 내부 source 조립을 선정했다. 서버 결과에는 이미 확인한 turnState 및 선택된 원 시도의 content/binding hash metadata만 응답용으로 명시 전달하며 기존 SEND 반환/IDLE·공개 API/SQL은 불변이다. local snapshot을 pre에서 복사해 현재로 인증하지 않고 독립 readCurrent port를 필수로 받아 같은 명령/세션·자료/소유/이해·부모·허용 IDLE/BUSY 전이/기한을 확인한다. port 진위·현재 실제 OS/DB/Agent 검증은 아직 미구현·미검증이고 새 기본등록·native/서비스 실행0이다. 탐색의 Windows 파일 glob os123은 디렉터리+--glob 읽기로 정정했고 원 오류를 보존한다.
+
 - **FN06 응답 current 한정 재검토**: 최종 await 기한/입력고정 보정의 독립 정적 C0/I0/M0(실행/수정0)을 수신했다. 원 I1·반례/타입·시험 입력 오류는 보존하며 source6 경로만 기존 branch checkpoint로 기록한다. 실제 송신·runtime post snapshot/연속 TURN·DB/OS/Agent와 전체 작업계획 완료는 판정하지 않는다.
 
 - **FN06 응답 current 독립 I1 최종 대기 기한 보완**: 독립 C0/I1/M0(실행/수정0)은 마지막 context await 뒤 이전 clock만 판정하는 경계를 발견했다. 신규 Missing expected rejection RED428.1304ms→최종 await 뒤 clock 및 HUMAN/원 permit·claim·fact 기한 교집합 재검사로 직접10PASS1179.7574ms. 뒤 optional authSession 타입2진단은 원 FAIL로 보존하고 명시존재 검사 후 type0이다. 추가 HUMAN 반례는 지원하지 않는 Date authSession을 넣어 기존 basis에서 조기거절되어 reads1≠2 FAIL588.0922ms였으며, 실제 ISO 계약으로 시험만 정정해 응답/기존 SEND×permit/HUMAN 최종지연4경계 1PASS711.1396ms/type/diff0이다. 원 오류·검수기준 보존, 신규 응답입력은 await 전 복제고정했다. 실제 DB/서비스·OS/Agent·runtime snapshot 조립/연속 TURN·전체 FN06 미판정은 유지하며 한정 재검토 중이다.
