@@ -7,8 +7,10 @@ readonly deps=/home/daon/deploy/anvil-v3/node_modules
 readonly pg=anvil-v3-fn10-next-basis-pg-01
 readonly net=anvil-v3-fn10-next-basis-net-01
 readonly sha=${1:?exact SHA required}
+readonly qa_case=${2:-NEXT_ACTION}
 readonly issued=$(date +%s%3N)
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+[[ "$qa_case" == NEXT_ACTION || "$qa_case" == STORED_ISSUE ]]
 cleanup_until=0
 qa_bounded() {
   local left=$((cleanup_until-$(date +%s)))
@@ -90,4 +92,4 @@ trap 'exit 130' INT
 cmp "$root/package-lock.json" /home/daon/deploy/anvil-v3/package-lock.json
 ln -s "$deps" "$root/node_modules"
 cd "$parent"
-/usr/bin/env -i PATH=/usr/bin:/bin HOME=/home/daon LANG=C.UTF-8 /usr/bin/timeout --signal=TERM --kill-after=30s 240s /usr/bin/bash "$root/scripts/next-action-basis-qa-launch.sh" "$sha" "$issued"
+/usr/bin/env -i PATH=/usr/bin:/bin HOME=/home/daon LANG=C.UTF-8 /usr/bin/timeout --signal=TERM --kill-after=30s 240s /usr/bin/bash "$root/scripts/next-action-basis-qa-launch.sh" "$sha" "$issued" "$qa_case"

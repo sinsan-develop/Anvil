@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN12 근거조회 실행 전 후보 고정**: 신규 source case STORED_ISSUE는 정상제출seed/새GET·실Webreader·거절3/8표행수 뒤 옛REVIEW_COMMIT 전에 종료한다. 기존61manifest9fd3…와고정자원/owner/수명/정리·원FN10exit1보존·diagnostic만추가를 FN12_STORED_ISSUE_BASIS_READ_CANDIDATE.md에기록했다. 실행없는--plan actualfalse·최신11PASS351.7704ms/type/Bash-n2/diff0·독립최초M1→보완뒤scopedC0/I0/M0/실행0. 최종6source Gitblob/file SHA256 일치확인. actualSSH/clone/PG/--run·정식변경0이며 exact게시SHA·패킷/재심사 전실행하지않는다.
+
+- **신규 QA source 마지막집계 기한 반례 보완**: Main이 실제생성 전 마지막counts await 중 active/기한이 끝나는 경우 성공표식을 반환하는 공백을 새1FAIL295.4767ms로 확인했다. 최종집계 이후 active 재검사1개만 추가하고 기존계수/성공기준은유지했다. 실제DB/WSL/원실패원인·회수해결은미확인, API제품수정0이며 독립reviewer에delta를추가전달한다.
+
+- **FN12 신규 근거조회 QA source 연결**: 새 helper3RED202.7196ms→실Webreader·ACK없음/원인미확인·타인404/익명401/query400 정확비노출·8표행수 전후대조를 구현하고 기존 정상 제출/기준 seed 직후/옛 검수저장 전 earlyreturn으로 연결했다. 새 STORED_ISSUE case는 기본 NEXT_ACTION과 환경flag/성공표식을 분리하며 옛 QA 반복0이다. runnercase반례1RED277.2865ms→진단포함집중/인접10PASS308.3019ms/type0/Bash-n2/diff0. launch실패는 기존guard/허용PID/timeout/삭제범위를 그대로두고 고정 단계코드만추가(daemon거절ENTRY→DAEMON_ID 반례RED→1PASS271.4481ms)했으며 원실패직접원인/실회수해결은미확정이다. 실제WSL/PG/clone/--run0·독립검토예정·원FN10exit1보존이다.
+
+- **FN12 신규 조회 실저장 QA source 착수**: 현재1123ab10 local/private/main불변 뒤 새 issue-basis 실저장소비 helper/정상seed분기를 준비한다. actual생성/접속/실행0. 기존 FN10 launch와 outer bootstrap의 guard는 daemon/대상부재·root정체/owner/Git/링크·lsof→정확정리 순서가 같고, 원출력은 launch첫실패/outer회수성공만 보여 실패단계·직접원인은 미확정이다. context/열린파일 등 일시차이는 가설이지 확정이 아니며 가드를 완화하거나 재실행하지 않는다. launch에 비밀없는 고정 guard 단계코드만 추가해 다음 허용실행의 위치를 구분하는 source진단을 먼저 반례로 준비한다. PMO revision442 source계속/actual별도패킷·원exit1보존·무sudo/무우회를 따른다.
+
 - **2026-10-22 FN12/UI08 보관 원장 문제근거 source 연결 확인**: PMO 채택 readonly issue-basis GET1개·같은HUMANtx 기존 원결과/전체원장검증reader·최종member잠금/DB기한/commit뒤기한·strictcookie/noquery/no-store를 연결했다. reports[]/assessmentnull·ACK원문hash/ref/gaps만 소비하고 원인미확인true/7false·ACK없음/공백없음도 정상승격0를 유지한다. UI08명시조회/변조거절/403전체회수/이탈JSON+hash폐기 연결. 내부/HTTP→실Webreader/인접분류·관측22PASS954.9027ms/type/build361/351ms·신규DOM6PASS6.8초/부모권한인접1PASS2.7초/diff0. 원독립C0/I0/M1→정합100/101상한보완뒤 scoped C0/I0/M0(독립실행/수정0). 등록QA exactowner/nonlink/process0 정리 뒤 독립부재/process0다. 원시험import부재와타입지적은별도보존,NO_COLOR/chunk경고·검사기준불변. 실제PG잠금/권한/COMMIT경합·정식served/전체주체전환·실OS/Agent·현재원인/완료·전체FN12/UI08/Stage는 미검증/미완료다. source복구는새조회/소비만revert·기존원API/원장/분류기보존. 보호6/pending1·0038/정식복구거절/FN10exit1불변. 마지막 sandbox Git 읽기거절1은 환경문제로 분리하며 실행범위를 넓히지 않는다.
 
 - **FN12 근거 독립 M1 상한반례 보완**: 독립 C0/I0/M1·실행0에서 기존101gap 음성이 ACK max/count/표시items와 정합하지 않아 상한 경계를 독립입증하지 못함을 확인했다. 정합한 짝수순번20표시/총count·max/홀수gap·정확hash로 100정상/101거절을 보완해 직접4PASS338.6195ms/type/build361/351ms를 확인했다. 제품기준은 그대로이며 새 UI는 실제 region부재 RED뒤 공백/ACK없음/공백없음/변조/권한/이탈6건 검증중이다. 실제PG/served/OS/Agent·현재원인/권한/실행판정은 아니다.
