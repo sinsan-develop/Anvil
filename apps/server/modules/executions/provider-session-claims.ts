@@ -7,6 +7,7 @@ import {cloneV1,recordV1,refV1,uuidV1,isoV1,hashV1} from '../../../../contracts/
 import {AuthFailure} from '../access/repository.ts';
 import {SyntheticExecutionChallenges,type SyntheticChallengeScope,type SyntheticChallengeTransaction} from './execution-challenges.ts';
 import {executionTarget} from './execution-proof.ts';
+import {readProviderTurnBasis} from './provider-session-turn-basis.ts';
 
 export interface ProviderClaimReceipt {
  claimRef:ProviderRef;recordedAt:string;state:'PROVIDER_CLAIM_RECORDED';sourceVerification:'PROVIDER_CLAIM_ONLY';nonceConsumed:true;
@@ -33,8 +34,8 @@ const positive=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>0;
 const eventKey=(c:ProviderSessionClaim)=>hash([c.projectId,c.execution.id,c.execution.generation,c.commandId,c.kind,c.source.requestIdDigest]);
 const queueKeys=['transport','executionId','executionGeneration','state','grantRef','reservationRef','executorRegistrationRef','operation','payload','humanSessionId','sourceScopes','budgetPolicyRef','queuedAt','executionAuthorized','dispatchPerformed'];
 const receiptKeys=['claimRef','recordedAt','state','sourceVerification','nonceConsumed','credentialIssued','executionAuthorized','dispatchPerformed','workAccepted'];
-export function readProviderClaimReceipt(raw:unknown,claim:ProviderSessionClaim,now:string):ProviderClaimReceipt{
- const expected=validateProviderSessionClaim(claim).ref;
+export function readProviderClaimReceipt(raw:unknown,claim:ProviderSessionClaim,now:string,parent?:ProviderSessionClaim):ProviderClaimReceipt{
+ const expected=validateProviderSessionClaim(claim,parent).ref;
  if(!recordV1(raw,receiptKeys)||!same(raw.claimRef,expected)||!isoV1(raw.recordedAt)||Date.parse(raw.recordedAt)<Date.parse(claim.capturedAt)||Date.parse(raw.recordedAt)>Date.parse(now)
   ||raw.state!=='PROVIDER_CLAIM_RECORDED'||raw.sourceVerification!=='PROVIDER_CLAIM_ONLY'||raw.nonceConsumed!==true||raw.credentialIssued!==false||raw.executionAuthorized!==false||raw.dispatchPerformed!==false||raw.workAccepted!==false)return reject();
  return cloneV1(raw) as unknown as ProviderClaimReceipt;
@@ -47,6 +48,10 @@ export class SyntheticProviderSessionClaims {
  #port(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.transaction!=='function')return reject();}
  async #basis(tx:SyntheticProviderClaimTransaction,scope:SyntheticChallengeScope,claim:ProviderSessionClaim){
   this.#port();const raw=cloneV1(await tx.current(claim.commandId)),now=await tx.challenges.clock();this.#port();
+  if(claim.kind==='TURN'){
+   const parent=await this.#parent(tx,scope,claim,now),current=cloneV1(await tx.challenges.current());
+   return readProviderTurnBasis(raw,scope,claim,parent,now,(current.context as any).publicKeyFingerprint,await tx.challenges.read());
+  }
   if(!isoV1(now)||!recordV1(raw,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','permit','localAttemptRef'])
    ||!same(raw.grantRef,scope.grantRef)||!isoV1(raw.grantExpiresAt)||!refV1(raw.commandRef)||!same(raw.authorizationReceiptRef,claim.authorizationReceiptRef)||!same(raw.localAttemptRef,claim.localAttemptRef)
    ||!recordV1(raw.commandSnapshot,[...queueKeys,'envelope']))return reject();
@@ -78,15 +83,21 @@ export class SyntheticProviderSessionClaims {
   if(Date.parse(claim.capturedAt)>Date.parse(now)||deadline<=Date.parse(now))return reject();
   return{now,deadline,bindingHash:hash({...raw,fact:factBinding})};
  }
- #entry(raw:unknown,scope:SyntheticChallengeScope,now:string):SyntheticProviderClaimEntry|null{
+ async #parent(tx:SyntheticProviderClaimTransaction,scope:SyntheticChallengeScope,claim:any,now:string):Promise<ProviderSessionClaim>{
+  if(!refV1(claim?.parentThreadClaimRef)||claim.parentThreadClaimRef.version!==1)return reject();const raw=cloneV1(await tx.claims.findId(claim.parentThreadClaimRef.id));
+  if(!recordV1(raw,['scope','eventKey','claim','receipt'])||!recordV1(raw.scope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||raw.scope.mode!=='EXECUTION'||!refV1(raw.scope.grantRef)
+   ||!['projectId','connectorId','executionId','executionGeneration','credentialGeneration'].every(k=>same((raw.scope as any)[k],(scope as any)[k]))||!raw.claim||raw.claim.kind!=='THREAD')return reject();
+  const parent=await this.#entry(tx,raw,raw.scope as unknown as SyntheticChallengeScope,now);if(!parent||!same(validateProviderSessionClaim(parent.claim).ref,claim.parentThreadClaimRef))return reject();return parent.claim;
+ }
+ async #entry(tx:SyntheticProviderClaimTransaction,raw:unknown,scope:SyntheticChallengeScope,now:string):Promise<SyntheticProviderClaimEntry|null>{
   if(raw===null)return null;
   if(!recordV1(raw,['scope','eventKey','claim','receipt'])||!same(raw.scope,scope))return reject();
-  const c=validateProviderSessionClaim(raw.claim).claim;
-  if(c.kind!=='THREAD'||c.projectId!==scope.projectId||c.execution.id!==scope.executionId||c.execution.generation!==scope.executionGeneration||raw.eventKey!==eventKey(c))return reject();
-  return{scope:cloneV1(scope),eventKey:raw.eventKey,claim:c,receipt:readProviderClaimReceipt(raw.receipt,c,now)};
+  const parent=(raw.claim as any)?.kind==='TURN'?await this.#parent(tx,scope,raw.claim,now):undefined,c=validateProviderSessionClaim(raw.claim,parent).claim;
+  if(c.projectId!==scope.projectId||c.execution.id!==scope.executionId||c.execution.generation!==scope.executionGeneration||raw.eventKey!==eventKey(c))return reject();
+  return{scope:cloneV1(scope),eventKey:raw.eventKey,claim:c,receipt:readProviderClaimReceipt(raw.receipt,c,now,parent)};
  }
  async #find(tx:SyntheticProviderClaimTransaction,scope:SyntheticChallengeScope,claim:ProviderSessionClaim,now:string){
-  const byEvent=this.#entry(await tx.claims.findEvent(eventKey(claim)),scope,now),byId=this.#entry(await tx.claims.findId(claim.claimId),scope,now);
+  const byEvent=await this.#entry(tx,await tx.claims.findEvent(eventKey(claim)),scope,now),byId=await this.#entry(tx,await tx.claims.findId(claim.claimId),scope,now);
   if(byEvent!==null&&byEvent.eventKey!==eventKey(claim)||byId!==null&&byId.claim.claimId!==claim.claimId)return reject();
   if(byEvent===null&&byId===null)return null;
   if(!byEvent||!byId||!same(byEvent,byId)||!same(byEvent.claim,claim))return conflict();
@@ -99,14 +110,15 @@ export class SyntheticProviderSessionClaims {
     ||![rawScope.projectId,rawScope.connectorId,rawScope.executionId].every(uuidV1)||!positive(rawScope.executionGeneration)||!positive(rawScope.credentialGeneration)||!refV1(rawScope.grantRef)||!refV1(challengeRef)||challengeRef.version!==1
     ||typeof signature!=='string'||signature.length>128||typeof bodyRaw!=='string'||Buffer.byteLength(bodyRaw)>16384)return reject();
    const scope=cloneV1(rawScope) as unknown as SyntheticChallengeScope,body=parseWireJson(bodyRaw);if(!recordV1(body,['claim']))return reject();
-   const claim=validateProviderSessionClaim(body.claim).claim;if(claim.kind!=='THREAD'||claim.projectId!==scope.projectId||claim.execution.id!==scope.executionId||claim.execution.generation!==scope.executionGeneration)return reject();
    const proof=cloneV1(rawProof),target=executionTarget('POST','/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/provider-session-claims',[],bodyRaw);
    if(!recordV1(proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||!same({method:proof.method,path:proof.path,queryHash:proof.queryHash,bodyHash:proof.bodyHash},target))return reject();
    return await this.store.transaction(cloneV1(scope),async tx=>{
+    const parent=(body.claim as any)?.kind==='TURN'?await this.#parent(tx,scope,body.claim,await tx.challenges.clock()):undefined,claim=validateProviderSessionClaim(body.claim,parent).claim;
+    if(claim.projectId!==scope.projectId||claim.execution.id!==scope.executionId||claim.execution.generation!==scope.executionGeneration)return reject();
     const challenges=new SyntheticExecutionChallenges({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{
      if(!same(s,scope))return reject();return fn({...tx.challenges,recordResult:async value=>{
       const before=await this.#basis(tx,scope,claim),existing=await this.#find(tx,scope,claim,before.now);
-      const r:ProviderClaimReceipt=existing?.receipt??{claimRef:validateProviderSessionClaim(claim).ref,recordedAt:before.now,state:'PROVIDER_CLAIM_RECORDED',sourceVerification:'PROVIDER_CLAIM_ONLY',nonceConsumed:true,credentialIssued:false,executionAuthorized:false,dispatchPerformed:false,workAccepted:false};
+      const r:ProviderClaimReceipt=existing?.receipt??{claimRef:validateProviderSessionClaim(claim,parent).ref,recordedAt:before.now,state:'PROVIDER_CLAIM_RECORDED',sourceVerification:'PROVIDER_CLAIM_ONLY',nonceConsumed:true,credentialIssued:false,executionAuthorized:false,dispatchPerformed:false,workAccepted:false};
       if(!existing)await tx.claims.append({scope:cloneV1(scope),eventKey:eventKey(claim),claim:cloneV1(claim),receipt:r});
       const resultRef=await tx.challenges.recordResult(value);if(!refV1(resultRef))return reject();
       await tx.results.bind(resultRef,{bodyHash:target.bodyHash,receipt:r});
@@ -117,10 +129,10 @@ export class SyntheticProviderSessionClaims {
     }});
     const before=await challenges.consume(scope,cloneV1(challengeRef),proof,signature),basis=await this.#basis(tx,scope,claim),stored=cloneV1(await tx.results.read(before.resultRef));
     if(!recordV1(stored,['bodyHash','receipt'])||stored.bodyHash!==target.bodyHash)return reject();
-    const selected=readProviderClaimReceipt(stored.receipt,claim,basis.now),entry=await this.#find(tx,scope,claim,basis.now);if(!entry||!same(entry.receipt,selected))return reject();
+    const selected=readProviderClaimReceipt(stored.receipt,claim,basis.now,parent),entry=await this.#find(tx,scope,claim,basis.now);if(!entry||!same(entry.receipt,selected))return reject();
     const final=await challenges.consume(scope,cloneV1(challengeRef),proof,signature),after=await this.#basis(tx,scope,claim);
     if(!same(before,final)||before.nonceConsumed!==true||before.credentialIssued!==false||before.executionAuthorized!==false||before.dispatchPerformed!==false||basis.bindingHash!==after.bindingHash||Date.parse(after.now)>=basis.deadline)return reject();
-    return{validUntil:new Date(Math.min(basis.deadline,after.deadline)).toISOString(),result:{transport:'SYNTHETIC_ONLY' as const,proofResultRef:cloneV1(before.resultRef),receipt:selected,nonceConsumed:true as const,executionAuthorized:false as const,dispatchPerformed:false as const}};
+    return{parentThreadClaim:parent?cloneV1(parent):null,validUntil:new Date(Math.min(basis.deadline,after.deadline)).toISOString(),result:{transport:'SYNTHETIC_ONLY' as const,proofResultRef:cloneV1(before.resultRef),receipt:selected,nonceConsumed:true as const,executionAuthorized:false as const,dispatchPerformed:false as const}};
    });
   }catch(error){if(error instanceof AuthFailure&&error.message==='PROVIDER_SESSION_CLAIM_CONFLICT')throw error;return reject();}
  }

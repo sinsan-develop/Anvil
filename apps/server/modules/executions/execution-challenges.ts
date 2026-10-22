@@ -72,6 +72,14 @@ function readJournal(value:unknown,scope:Scope,now:string){
  }
  return{events:cloneV1(value.events) as Entry[],heads,originals,nonces,last};
 }
+/** Read-only validation of an existing consumed request. Never issues/consumes another nonce or renews its deadline. */
+export function readConsumedExecutionRequest(raw:unknown,rawScope:Scope,resultRef:VersionRef,target:unknown,now:string,notAfter:string,fingerprint:string){
+ const scope=readScope(rawScope);if(scope.mode!=='EXECUTION'||!refV1(resultRef)||resultRef.version!==1||!isoV1(now)||!isoV1(notAfter)||!hashV1(fingerprint))return fail('EXECUTION_CONSUMED_PROOF_REQUIRED');
+ const journal=readJournal(raw,scope,now),matches=[...journal.heads.values()].filter(e=>e.snapshot.consumption&&same(e.snapshot.consumption.resultRef,resultRef));if(matches.length!==1)return fail('EXECUTION_CONSUMED_PROOF_REQUIRED');
+ const e=matches[0]!,s=e.snapshot,consumed=s.consumption!;
+ if(e.ref.version!==2||s.request.purpose!=='EXECUTION_REQUEST'||!same(s.request.target,target)||s.binding.credentialGeneration!==scope.credentialGeneration||s.binding.publicKeyFingerprint!==fingerprint||Date.parse(consumed.consumedAt)>Date.parse(notAfter)||Date.parse(s.publicChallenge.expiresAt)<=Date.parse(consumed.consumedAt))return fail('EXECUTION_CONSUMED_PROOF_REQUIRED');
+ return{proofHash:consumed.proofHash,consumedAt:consumed.consumedAt,expiresAt:s.publicChallenge.expiresAt};
+}
 /** 합성 저장 경계의 발급/소비 서비스. 운영 DB adapter/credential/실제 wire fallback은 없다. */
 export class SyntheticExecutionChallenges {
  readonly store:SyntheticChallengeStore;

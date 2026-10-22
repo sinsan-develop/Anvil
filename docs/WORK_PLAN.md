@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 TURN 기록·보호 소비 내부 source 일부**: 원 SEND queue/소비 permit/서명 nonce/예산 예약·같은 grant의 THREAD 부모와 현재 fact를 묶는 TURN 수신 source/PG adapter·미적용0037 분기를 연결했다. SEND admission의 IDLE/새 RESERVED·permit 소비는 그대로다. 참조 alias 반례1RED→직접 TURN/route/store10PASS1899.4597ms·type/diff0·한정 재검토C0/I0. 별도 내부 SEND THREAD/STOP TURN 보호 reader는 fake의 cipher/capsule/현재성·부모·finally byte정리4건만 확인했다(3PASS760.2732ms+추가1PASS559.7558ms). 실제 current 구현/transport caller·HUMAN TURN 목록/조회·native·DB 적용/실Agent/전체FN06은 미완료다. SQL/권한/manifest·서비스는 변경0, 최신 상세/오류/미검증은 WORK_STATUS 및 후보§7에 기록한다.
+
 - **2026-10-22 FN06 C2 metadata 목록→UI04 원 결과 조회 일부**: 현재OWNER의 정확예약 목록/서명cursor(기본20·최대50)와 원receipt GET을 책임세션 화면에 연결했다. 직접28PASS/type/diff0·build351·가로챈합성브라우저2PASS7.5초·QA정리0, 한정정적독립C0/I0 뒤Main cursor기한갱신1반례TDD보완을구분한다. 예약/기록수신/현재사용미확인/실수행미확인을별도표시하며raw handle·새실행권한0. 실제PG/서비스반영/Agent·nonOWNER RESPONSIBLE/TURN/SEND/STOP/native·전체FN06은 미완료다. 현재증거·오류·범위는WORK_STATUS/후보§7을따른다.
 
 - **2026-10-22 FN06 B6~B8 부분 source 연결**: 현재 HUMAN OWNER의 정확 원 receipt GET을 기존 인증/현재성 잠금·PG SELECT journal에 연결했고, 서명 수신 저장은 nonce 소비 후 같은 transaction의 보호 함수 1회로 claim/원 결과/감사를 staging한다. 직접15PASS1591.9886ms·type/diff0은 합성 DB/Fastify.inject 범위다. pending0037의 INSERT-only 보호 함수·고정 NOLOGIN 소유자/최소 권한은 source만 작성했고 실제 역할/권한/manifest/DB 적용0이다. 독립 B8 I1 source 보정과 제한 재확인, B6/B7 I2 Main TDD 보완을 구분한다. 실제 PG·served UI·RESPONSIBLE nonOWNER·TURN/SEND/STOP/native/Agent는 미완료·미검증이며 전체 FN06 완료가 아니다. 상세 신뢰/위험·롤백은 후보 §7과 WORK_STATUS를 따른다.

@@ -1,5 +1,5 @@
 import {canonicalJson,parseWireJson} from '../../../../contracts/canonical.ts';
-import {validateProviderSessionClaim} from '../../../../contracts/runtime/provider-session-claim-v1.ts';
+import {validateProviderSessionClaim,type ProviderSessionClaim} from '../../../../contracts/runtime/provider-session-claim-v1.ts';
 import {readProviderClaimReceipt,type SyntheticProviderSessionClaims} from './provider-session-claims.ts';
 import {cloneV1,isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
@@ -46,9 +46,9 @@ export class SyntheticExecutionRequestRouter{
     if(!isoV1(now)||!recordV1(c,['transport','scope','checkedAt','expiresAt','executionAuthorized','dispatchPerformed'])||c.transport!=='SYNTHETIC_ONLY'||c.executionAuthorized!==false||c.dispatchPerformed!==false||!isoV1(c.checkedAt)||!isoV1(c.expiresAt)||Date.parse(c.checkedAt)>Date.parse(now)||Date.parse(now)-Date.parse(c.checkedAt)>30000||Date.parse(c.expiresAt)<=Date.parse(now))return reject();
     const s=c.scope;if(!recordV1(s,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||s.mode!==mode||!uuidV1(s.projectId)||s.connectorId!==match[1]||s.executionId!==match[2]||!positive(s.executionGeneration)||!positive(s.credentialGeneration)||!refV1(s.grantRef)||!same(s.grantRef,proof.grantRef)||s.credentialGeneration!==proof.credentialGeneration)return reject();return c as typeof c&{scope:Scope};
    };
-   const before=await current(),scope=cloneV1(before.scope);let result:any,validUntil:unknown=null;
+   const before=await current(),scope=cloneV1(before.scope);let result:any,validUntil:unknown=null,parentThreadClaim:ProviderSessionClaim|undefined;
    if(kind==='observations')result=await this.ports.observations.ingest(scope,challengeRef,proof,raw.signature,raw.bodyRaw);
-   else if(kind==='providerClaims'){const selected=await this.ports.providerClaims!.ingestWithDeadline(scope,challengeRef,proof,raw.signature,raw.bodyRaw);claimMayBeRecorded=true;result=selected.result;validUntil=selected.validUntil;}
+   else if(kind==='providerClaims'){const selected=await this.ports.providerClaims!.ingestWithDeadline(scope,challengeRef,proof,raw.signature,raw.bodyRaw);claimMayBeRecorded=true;result=selected.result;validUntil=selected.validUntil;parentThreadClaim=selected.parentThreadClaim??undefined;}
    else if(kind==='commands')result=await this.ports.commands!.read(scope,query,challengeRef,proof,raw.signature);
    else if(kind==='permit')result=await this.ports.permits.consume(scope,command![1],challengeRef,proof,raw.signature,raw.bodyRaw);
    else if(kind==='material'){const selected=await this.ports.materials.readWithDeadline(scope,command![1],command![3],challengeRef,proof,raw.signature);result=selected.result;validUntil=selected.validUntil;}
@@ -58,7 +58,7 @@ export class SyntheticExecutionRequestRouter{
    if(kind==='providerClaims'){
     if(Date.parse(now)>=Date.parse(before.expiresAt)||!recordV1(result,['transport','proofResultRef','receipt','nonceConsumed','executionAuthorized','dispatchPerformed'])||!refV1(result.proofResultRef)||result.nonceConsumed!==true||typeof raw.bodyRaw!=='string')return reject();
     const body=parseWireJson(raw.bodyRaw);if(!recordV1(body,['claim']))return reject();
-    const claim=validateProviderSessionClaim(body.claim).claim;readProviderClaimReceipt(result.receipt,claim,now);
+    const claim=validateProviderSessionClaim(body.claim,parentThreadClaim).claim;readProviderClaimReceipt(result.receipt,claim,now,parentThreadClaim);
    }
    return{transport:'SYNTHETIC_ONLY' as const,data:result,cacheControl:'no-store' as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch{if(claimMayBeRecorded)throw new AuthFailure('EXECUTION_CLAIM_OUTCOME_UNKNOWN',503);return reject();}

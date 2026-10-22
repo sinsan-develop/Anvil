@@ -143,6 +143,14 @@ usableBefore:UTC
 
 ## 7. r1 결정 범위
 
+### 2026-10-22 TURN 수신·C 보호 소비 내부 source (부분 구현)
+
+- PMO 상세 결정에 따라 TURN 기록은 새 SEND admission/permit.consume와 분리했다. 기존 IDLE/새 RESERVED·새 송신 허가 조건을 바꾸지 않는다. 저장된 SEND queue/원 예산 예약·소비 permit/localAttempt·원 서명 EXECUTION_REQUEST 소비 nonce/proof/target 및 최초 기한을 불변 대조한다. 별도 최신 fact의 주체/OS/등록/권한·현재 기한과 같은 grant의 정확 THREAD 부모를 함께 검증한다. BUSY라는 이유만으로 결과 기록을 막지는 않으나 새 송신 권한을 주지 않는다. turn/start만 연결했고 turn/steer는 거절한다.
+- PG source는 기존 동일 transaction에서 SEND 전용 permit journal/원 reservation을 읽고 nonce 소비 뒤 보호 flush한다. 손상 TURN 부모는 재귀 처리 전에 THREAD 여부를 확인한다. pending0037의 nullable START/SEND permit FK·kind별 guard/보호 함수·THREAD 부모 FK·원 SEND proof/budget 대조를 추가했다. writer SELECT 의존에 기존 instruction permit 표가 추가되지만 실제 역할/권한/SQL/manifest 등록은0이다. SQL SHA256 2CD2D7D6BA08C0EBA84A82FBCBC13DE6828F717BE85F90CC72F641FFF5CD671B이며 PG 구문·권한 closure·trigger/COMMIT/경합은 미검증이다.
+- Main이 agentSessionRef와 responsibleBindingRef의 alias fixture가 숨긴 정상 TURN 거절을1RED460.0945ms로 발견했다. 기존 queue의 SEND envelope.sessionBindingRef는 agentSessionRef를 가리킨다. TS/미적용SQL을 바로잡아 직접10PASS1899.4597ms/type/diff0·동일 reviewer 제한C0/I0를 확인했다. 최초 독립 검토의 누락은 이력으로 남긴다. route는 검증한 부모를 내부 반환에서만 사용해 원 TURN receipt를 재검증하고 공개 응답에 부모 자료를 추가하지 않는다.
+- 내부 SyntheticProviderHandleReader는 SEND의 THREAD와 STOP의 TURN+THREAD 부모, 정확 envelope/claim/fullref·현재 fact와 cipher binding/capsule을 대조하고 원문을 내부 void callback에만 전달하는 합성 경계다. 부모 raw thread가 다르거나 현재 주체가 바뀌면 거절하고 원 bytes는 finally 또는 늦은 반환에서0으로 지운다. JS 문자열/GC 완전 소거는 보장하지 않는다. 신뢰된 current port가 기존 저장 claim/정확 명령·grant/permit/OS를 검증해야 하며 이 reader가 인증/허가를 만들지 않는다. 기존 transport caller·실제 current/native 보호 구현은 아직 연결하지 않았다.
+- reader 시험은 신규3PASS760.2732ms 및 timeout/현재 주체·부모 불일치 추가1PASS559.7558ms/type/diff0의 fake 증거다. 실제 handle/키/ACL/root/helper·Agent/wire/서비스·DB는0이다. TURN HUMAN 목록/원 receipt 조회, nonOWNER RESPONSIBLE, native/실Agent 및 전체FN06은 미완료다. 일반 revert로 새 source를 차단할 수 있고 원 예약/claim/기존 SQL·DB를 삭제하거나 down하지 않는다.
+
 ### 2026-10-22 C2 metadata 목록·화면 source 상세 (부분 구현)
 
 - 승인 §6.3 목록 GET을 현재 OWNER·동일 authenticated db/current 잠금에서 구현했다. 기본 limit20/최대50, `(recorded_at,claim_id)` 내림 keyset·정확 row/journal/예약 fullref·원 receipt를 대조한다. cursor는 기존 server signing key의 별도 provider-claim-history-page:v1 purpose와 현재 HUMAN user/client/session/credentialGeneration·project/예약/ref·filter에 결박하고 최초30초 이하 기한을 담는다. 로그인 idle 시각은 매 조회 현재성 gate로 재검사하되 cursor의 정체성 hash에서는 변동 checkedAt/expiresAt을 제외한다. 옛 cursor 기한을 늘리지 않고 만료는 거절한다. 신규key/권한/계정/로그인 계약 변경은 없다.

@@ -1,5 +1,41 @@
 # Anvil 재설계 작업현황
 
+- **FN06 C 내부 reader 합성 확인**: 신규 정상/거절/정리3PASS760.2732ms·추가 timeout 늦은bytes/주체전환/부모thread불일치1PASS559.7558ms·type/diff0이다. callback 외 반환0·오류 원문0·가져온 byte 정리를 확인했다. 신뢰된 current port의 실제 저장 claim/새명령·현재 허가/permit/OS 대조와 native 보호 파일은 아직 미구현이며 기존 SEND/STOP transport caller도 미연결이다. 내부 reader4건을 실제 실행·사용 가능 기능으로 승격하지 않는다. 같은 reviewer에 제한 정적 검토를 요청했고 실제 DB/서비스/Agent·새자원0, 보호6은 비추적 원상 보존이다.
+
+- **FN06 C reader 첫2FAIL**: 신규3건 중 정상 소비와 부모 손상 반례가 실패(588.8514ms), 타입은 미실행이다. 정상 fixture의 current 기한이 THREAD 후보2분을 반환해 기존 current30초 계약과 맞지 않았고, 부모 변조 hash는 원 fixture의 e64와 같은 값임을 확인했다. 제품 기한/부모 검사를 완화하지 않고 fixture의 current 기한을 원 envelope25초로 고정·부모 hash를 다른 값으로 변경한다. 실제DB/native/Agent0이다.
+
+- **FN06 C 보호 소비 RED**: 신규 내부 reader 정상 SEND/STOP 시험은 모듈 부재로1RED399.8905ms다. 음성 시험의 import/존재 확인은 rejects 밖에 두어 모듈 부재를 거절 성공으로 계산하지 않는다. current command를 기존 허가 port에서 대조·보호 capsule/hash/부모 재검사·callback void/원 bytes0만 구현하며 실제 transport/wire/PG/native는 연결하지 않는다.
+
+- **FN06 C 내부 보호 소비의 제한 설계**: SEND는 선택 THREAD, STOP은 선택 TURN과 exact THREAD 부모를 고정하고, 기존 current/permit 판단 port를 별도 호출한 뒤 현재 fact·주체/등록/세대·command/envelope·기한과 보호 binding을 대조하는 합성 reader만 추가한다. generic export/원문 반환0·callback void·원 bytes finally0이며 native/실wire/실DB0이다. 기존 transport의 current/admission/IDLE/STOP 정책은 변경하지 않는다. 이 interface/fake만으로 SEND/STOP 연결 완료라 하지 않는다. 없는 receipt runtime 파일명으로 읽기1실패는 변경0이며 실제 readProviderClaimReceipt 위치는 기존 server 모듈에서 확인했다.
+
+- **FN06 TURN 재검토·탐색 오류 기록**: 같은 reviewer가 참조 보정의 C0/I0를 읽기전용 확인했고 이전 누락·실PG 미검증은 유지한다. 후속 탐색에서 없는 apps/executor와 PowerShell literal glob 경로로 rg 오류2/123이 재발했다(변경0). 해당 추정 경로를 사용하지 않고 저장소 전체 rg --files 목록의 실제 FN06 후보·실행기 파일만 선택한다.
+
+- **FN06 TURN 서로 다른 참조 GREEN·다음 소비 착수**: session/책임 binding을 분리한 정상 TURN1RED460.0945ms→helper 및 pending0037의 SEND payload를 agentSessionRef로 대조해 TURN ingest/store/route10PASS1899.4597ms·type/diff0이다. SQL지문2CD2D7D6BA08C0EBA84A82FBCBC13DE6828F717BE85F90CC72F641FFF5CD671B·실행0, CRLF 예고 경고는 별도 보존한다. 기존 reviewer에 놓친 alias 반례의 scoped 재검토를 요청했다. 현재 구현은 같은 grant의 THREAD 부모와 원 SEND 소비 기록을 사용하는 source/fake 범위이며 실제 PG/권한/HTTP 서비스/Agent는 미검증이다. 다음은 승인된 C 범위의 SEND/STOP exact claim·보호 handle 내부 interface/fake이며 native handle/키/파일·실제 송신0으로 이어간다.
+
+- **FN06 TURN 참조 혼동 실제 RED**: checks.session 증거를 보정한 fixture는 THREAD 선행을 통과했고 서로 다른 sessionRef/roleBindingRef의 정상 TURN ingest에서 PROVIDER_SESSION_CLAIM_REJECTED412·1RED460.0945ms를 확인했다. SEND envelope 참조를 책임 binding 대신 agentSessionRef와 대조하도록 TS와 미적용0037만 수정한다. 기존 정적 C0/I0가 이 alias 반례를 발견하지 못했음을 남기며 실제 SQL/DB/Agent0이다.
+
+- **FN06 TURN 서로 다른 참조 반례 준비 오류**: Main이 SEND envelope.sessionBindingRef는 agentSessionRef이며 responsibleBindingRef가 아님을 기존 queue validator에서 확인했다. 둘을 alias로 사용한 fixture가 결함을 숨겼다. 별도 ref로 바꾼 첫 실행473.5381ms는 THREAD 선행의 checks.session.evidenceRefs가 이전 binding을 가리켜 setup에서 실패했으므로 TURN RED로 계산하지 않는다. evidenceRef까지 일관되게 보정해 실제 반례를 확인한다. 복구 읽기에서는 PowerShell profile conda 출력 인코딩 오류와 sandbox Git work-tree 인식 거절을 분리했고 login:false/승인된 Git 읽기로 HEAD707c8a63·소유 변경과 보호6 보존을 확인했다. 실제 DB/권한/서비스/Agent0이다.
+
+- **FN06 TURN 인접검사·router 응답 RED**: 변경된SEND ledger 읽기의직접43PASS4648.5426ms(기존BUSY/중지/회수·서명nonce/permit기준유지),TURN/THREAD직접12PASS1553.6447ms·type/diff0. pending0037에START/SEND nullable분리FK·THREAD부모FK/guard와원SEND소비증거분기를source추가했고SQL실행미검증·당시지문6EF0F74F…이다. 다음router는수신후부모없이TURN을재검증해저장후UNKNOWN503을내는1RED590.4471ms를확인했다. 검증된부모metadata는내부반환만하고공개응답에는추가하지않도록연결한다.
+
+- **FN06 TURN 손상부모 재귀 실제RED**: fixtureguard보정후정상case통과·손상TURN부모에서4회초과조회로명시반례1RED528.8814ms를확인했다. parent 조회는snapshot.kind=THREAD를재귀해석전에확인하도록보완하며임의depth확장/오류숨김0이다.
+
+- **FN06 TURN adapter GREEN·손상부모음성 준비**: SEND journal/원budget→같은tx보호flush·인접THREAD5PASS863.1797ms/type0. Main은TURN이TURN을부모로가리키는손상원장의재귀조회위험을확인해유한4회guard시험을추가했다. 첫426.2745ms실패는정상부모의반복현재검사에도guard를적용한fixture오류이므로손상case에만guard를둬정확반례를확인한다. 실DB/서비스/Agent0이다.
+
+- **FN06 TURN source 직접15GREEN·PG adapter RED**: 옛THREAD-only선행기대변경을명시한뒤TURN5/인접10 직접15PASS1900.4403ms·type/diff0. 다음adapter단일시험은기존START journal경로로TURN을읽지못해1RED415.1588ms다. SEND전용journal/원budget예약만읽는분기와부모snapshot대조를추가하며새permit/예약/nonce발급0·실PG/SQL실행0이다.
+
+- **FN06 TURN 직접회귀의옛선행충돌**: 신규TURN5+인접THREAD/store10중14PASS/1FAIL1735.0266ms. 실패는옛THREAD-only단계의모든TURN tx진입0 기대(before)이고현재부모저장을인증읽기로대조하면서2≠1이다. 승인된TURN기능에맞춰정확1회읽기(before+1)후저장부모부재거절·상태/nonce쓰기0 기대(after)로변경한다. 거절기준삭제나쓰기허용이아니며기존검사변경사유/전후를공개기록한다. type/diff는앞실패로미실행. 다음PG source/SQL에서도START와SEND permit을혼합하지않는다.
+
+- **FN06 TURN 소비증거GREEN·fixture타입1**: 정상/부모/permit/소비증거4PASS1581.6364ms. 원SEND의별도서명challenge를기존실제consumer로소비한시험ref를사용했고원소비head없는반례를거절한다. fixture randomUUID template literal에일반VersionRef를대입한TS2322 1건이남아ref반환타입만명시한다. 실제DB/서명key/Agent생성은없으며시험메모리키만사용한다. 다음은rollback/멱등인접확인과PG source/미적용SQL의TURN분기다.
+
+- **FN06 TURN 원소비증거 실제RED**: fixture의기존ACTIVE거절오류보정후정상원장형식에서원SEND proof/nonce쌍만없어도TURN을채택하는Missing expected rejection1RED430.3729ms를확인했다. 기존challenge원장validator를읽기전용으로재사용해permit.proofRef→원정확permit target/body·v2소비·소비시각/기한·현재등록fingerprint를대조하도록보완한다. 새nonce/허가소비발급0·실DB0이다.
+
+- **FN06 TURN 소비증거 반례 준비 오류1**: 원SEND nonce의v2만제거한fixture는서명challenge발급의기존ACTIVE거절409를먼저만나477.1379ms실패했다. 수신검증결함을재현한것이아니므로원v1/v2쌍을제거해정상원장형식에서permit proof만없도록반례를보정한다. 기존challenge거절기준은변경하지않고actualDB/Agent0을유지한다.
+
+- **FN06 TURN 수신1차GREEN·타입오류2**: 정상/부모/permit3PASS1010.7517ms이나EXECUTION|RECOVERY scope를SEND전용validator로전달한TS2345와fixture BudgetRecord literal확장TS2345로type실패했다. scope의EXECUTION명시좁힘·fixture의검증입력형식을보완한다. 기존SEND admission/current/consume본문은변경하지않고저장원장validator만static읽기로공개했다. 원소비permit의proof/nonce원기록까지대조하는추가음성검증을이어가며actualDB/Agent0·아직완료아니다.
+
+- **FN06 TURN 기록전용 source 착수**: PMO 관제②/최소차이 승인에 따라 기존SEND admission의IDLE/RESERVED·consume효과는수정하지않고별도읽기검증을추가한다. 기존reader로형식을검증한SEND queue/예약·소비permit/localAttempt fixture의첫정상TURN은1RED/음성2기존거절629.6679ms다. BUSY는새송신허가가아니고metadata기록에한해원소비증거/부모/현재fact로검사한다. turn/start만진행·turn/steer미지원거절,실native/DB/서비스/Agent0·보호6보존. 기존28/DOM2는재실행하지않는다.
+
 - **2026-10-22 FN06 C2 목록·원 receipt 화면 source 검수**: Main 단일 writer. 현재 OWNER/정확 예약의 GET 목록(기본20/최대50·서명cursor/내림keyset)→UI04 책임세션의 명시 원결과 조회를 연결했다. 독립 C0/I0는 source 정적 범위이며 뒤 Main 발견 cursor 인증 idle기한 갱신 반례1RED314.0731ms는 binding의 변동 기한만 분리해 보완했다. 원 cursor30초 기한·현재 권한 검사는 보존, 변경 직접28PASS1484.9436ms·type/diff0이다. UI build351(575ms)의 chunk 경고는 유지·완화/구조개편0. 가로챈 합성 Edge 클릭 DENY/LEAVE2PASS7.5초·새 조회/오류/이탈에서 이전 receipt숨김·추가 제품쓰기0을 확인했다. 이는 정식 DB/served/Agent 증거가 아니다. QA owner SINSAN\cyhuh/등록전용 Edge0 확인후 exact root와 하위4항목(전체5)만 제거·경로 부재를 확인했다. 상세3RED/HTTP2RED/reader화면4RED·fixture Date/alias오류와 보정은 아래 이력 보존. 현재 nonOWNER RESPONSIBLE·TURN·SEND/STOP/native/실Agent·전체FN06/Stage는 여전히 미완료다. DB/role/권한/Secret/서비스/Agent 변경0·보호6 보존·다음은 남은 정확 실행 소비다.
 
 - **FN06 C2 browser2PASS·최종 cursor 반례RED**: 가로챈합성브라우저DENY/LEAVE2PASS7.5초·추가쓰기0. QA owner SINSAN\\cyhuh·현재등록전용Edge잔류0/등록경로항목4를확인했다. source독립C0/I0(실행0)후Main은로그인idle기한갱신이cursor hash의expiresAt까지변경해동일주체다음페이지를403거절하는1RED314.0731ms를추가확인했다. 현재권한/최초cursor기한검사는유지하고변동checkedAt/expiresAt을actor/예약binding에서분리한다. 원cursor기한연장이나로그인/권한변경아님·실DB미검증이다.

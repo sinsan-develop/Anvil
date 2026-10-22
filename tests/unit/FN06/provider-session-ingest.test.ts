@@ -29,8 +29,8 @@ test('다른 route·서명·만료·TURN/원문 필드는 저장하지 않고 �
  for(const store of [{transport:'REAL',transaction:async()=>null},{transport:'SYNTHETIC_ONLY'}])assert.throws(()=>new m.SyntheticProviderSessionClaims(store));
  const h=providerClaimFixture(),r=await h.issue({...h.claim,threadId:'PRIVATE_RAW'});await assert.rejects(run(service(h),h,r));assert.equal(h.state().entries.length,0);
 });
-test('유효한 부모에 결박된 TURN도 현재 THREAD 전용 수신에서는 tx 진입과 쓰기0이다',async()=>{
+test('문법상 유효한 TURN도 저장된 THREAD 부모가 없으면 인증 읽기1회 뒤 거절·쓰기0이다',async()=>{
  const f=providerClaimFixture(),{protectedHandleRef:_,...base}=f.claim;
  const binding={...base,claimId:'33333333-3333-4333-8333-333333333333',kind:'TURN',parentThreadClaimRef:validateProviderSessionClaim(f.claim).ref,source:{...base.source,method:'turn/start'}},turn={...binding,protectedHandleRef:providerProtectedHandleRef(binding,'a'.repeat(64))};
- assert.equal(validateProviderSessionClaim(turn,f.claim).claim.kind,'TURN');const p=await f.issue(turn),before=f.connections(),state=canonicalJson(f.state());await assert.rejects(run(service(f),f,p));assert.equal(f.connections(),before);assert.equal(canonicalJson(f.state()),state);
+ assert.equal(validateProviderSessionClaim(turn,f.claim).claim.kind,'TURN');const p=await f.issue(turn),before=f.connections(),state=canonicalJson(f.state());await assert.rejects(run(service(f),f,p));assert.equal(f.connections(),before+1);assert.equal(canonicalJson(f.state()),state);
 });

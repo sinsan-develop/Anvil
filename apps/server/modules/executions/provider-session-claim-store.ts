@@ -5,6 +5,7 @@ import {validateProviderSessionClaim,type ProviderRef} from '../../../../contrac
 import {readServerExecutionFactV1} from '../../../../contracts/runtime/server-execution-fact-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {SyntheticPgPermitStore,type SyntheticPermitFacts} from './execution-permit-store.ts';
+import {SyntheticPgInstructionPermitJournal} from './execution-instruction-permit-journal.ts';
 import type {SyntheticHostKeys} from './execution-challenge-store.ts';
 import type {SyntheticAuthenticatedPermitStore} from './execution-authenticated-permits.ts';
 import type {SyntheticChallengeScope as Scope} from './execution-challenges.ts';
@@ -34,30 +35,36 @@ export class SyntheticPgProviderClaimStore implements SyntheticProviderClaimStor
   let staged:Entry|null=null,audit:Parameters<Tx['audit']['append']>[0]|null=null,finished=false,lastBasis:{hash:string;deadline:number}|null=null;
   const maps=new Map<string,{ref:ProviderRef;bodyHash:string;receipt:ProviderClaimReceipt}>();
   const open=()=>{if(finished)return reject();};
-  const entry=(raw:unknown,now:string):Entry=>{
-   if(!recordV1(raw,['scope','eventKey','claim','receipt'])||!same(raw.scope,scope))return reject();const c=validateProviderSessionClaim(raw.claim).claim;
-   if(c.kind!=='THREAD'||c.projectId!==scope.projectId||c.execution.id!==scope.executionId||c.execution.generation!==scope.executionGeneration||raw.eventKey!==hash([c.projectId,c.execution.id,c.execution.generation,c.commandId,c.kind,c.source.requestIdDigest]))return reject();
-   return{scope:cloneV1(scope),eventKey:raw.eventKey,claim:c,receipt:readProviderClaimReceipt(raw.receipt,c,now)};
+  const entry=async(raw:unknown,now:string):Promise<Entry>=>{
+   if(!recordV1(raw,['scope','eventKey','claim','receipt'])||!same(raw.scope,scope))return reject();
+   let parent:Entry|null=null;if((raw.claim as any)?.kind==='TURN'){if(!refV1((raw.claim as any).parentThreadClaimRef))return reject();parent=await find('claim_id',(raw.claim as any).parentThreadClaimRef.id,true);if(!parent||parent.claim.kind!=='THREAD')return reject();}
+   const c=validateProviderSessionClaim(raw.claim,parent?.claim).claim;
+   if(c.projectId!==scope.projectId||c.execution.id!==scope.executionId||c.execution.generation!==scope.executionGeneration||raw.eventKey!==hash([c.projectId,c.execution.id,c.execution.generation,c.commandId,c.kind,c.source.requestIdDigest]))return reject();
+   return{scope:cloneV1(scope),eventKey:raw.eventKey,claim:c,receipt:readProviderClaimReceipt(raw.receipt,c,now,parent?.claim)};
   };
   const current=async(commandId:string)=>{
-   if(!uuidV1(commandId))return reject();const value=cloneV1(await joint.permits.current(commandId)),ledger=await joint.permits.read();
-   if(!recordV1(value,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef'])||!ledger.complete||ledger.permits.length!==1)return reject();
-   const permit=cloneV1(ledger.permits[0]);if(!permit||permit.snapshot.commandId!==commandId||!same(permit.snapshot.scope,scope)||!same(permit.snapshot.commandRef,value.commandRef))return reject();
-   const result={...value,permit,localAttemptRef:cloneV1(permit.snapshot.request.localAttemptRef)},fact=readServerExecutionFactV1(value.fact),{checkedAt:_,...factBinding}=fact,now=await joint.challenges.clock();
+   if(!uuidV1(commandId))return reject();const value=cloneV1(await joint.permits.current(commandId));
+   if(!recordV1(value,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef']))return reject();
+   const send=value.commandSnapshot?.state==='SYNTHETIC_INSTRUCTION_QUEUED',ledger=send?await new SyntheticPgInstructionPermitJournal().read(db,scope):await joint.permits.read();
+   const selected=ledger.permits.filter(p=>p.snapshot.commandId===commandId);if(!ledger.complete||selected.length!==1||!send&&ledger.permits.length!==1)return reject();
+   const permit=cloneV1(selected[0]);if(!permit||!same(permit.snapshot.scope,scope)||!same(permit.snapshot.commandRef,value.commandRef))return reject();
+   let instructionReservation:unknown;
+   if(send){const r=value.commandSnapshot.reservationRef;if(!refV1(r))return reject();const rows=(await db.query('SELECT reservation_id,version,content_hash,snapshot_json FROM anvil.usage_reservations WHERE project_id=$1::uuid AND reservation_id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2',[scope.projectId,r.id,r.version,r.contentHash])).rows;if(rows.length!==1||rows[0].reservation_id!==r.id||Number(rows[0].version)!==r.version||rows[0].content_hash!==r.contentHash)return reject();instructionReservation={ref:cloneV1(r),snapshot:cloneV1(rows[0].snapshot_json)};}
+   const result={...value,permit,localAttemptRef:cloneV1(permit.snapshot.request.localAttemptRef),...(send?{instructionReservation}:{})},fact=readServerExecutionFactV1(value.fact),{checkedAt:_,...factBinding}=fact,now=await joint.challenges.clock();
    if(!isoV1(now)||!isoV1(value.grantExpiresAt)||!isoV1(permit.snapshot.expiresAt)||!isoV1(value.commandSnapshot.envelope?.expiresAt))return reject();
    const deadline=Math.min(Date.parse(value.grantExpiresAt),Date.parse(permit.snapshot.expiresAt),Date.parse(value.commandSnapshot.envelope.expiresAt),Date.parse(fact.checkedAt)+30000,...Object.values(fact.expires).map(Date.parse));
    if(deadline<=Date.parse(now))return reject();lastBasis={hash:hash({...result,fact:factBinding}),deadline};return result;
   };
-  const find=async(kind:'event_key'|'claim_id',value:string)=>{
+  const find=async(kind:'event_key'|'claim_id',value:string,threadOnly=false):Promise<Entry|null>=>{
    open();if(kind==='event_key'?!hashV1(value):!uuidV1(value))return reject();
-   if(staged&&(kind==='event_key'?staged.eventKey===value:staged.claim.claimId===value))return cloneV1(staged);
+   if(staged&&(kind==='event_key'?staged.eventKey===value:staged.claim.claimId===value)){if(threadOnly&&staged.claim.kind!=='THREAD')return reject();return cloneV1(staged);}
    const sql=kind==='event_key'?'SELECT snapshot_json,content_hash,claim_id,project_id,execution_id,generation FROM anvil.provider_session_claims WHERE project_id=$1::uuid AND execution_id=$2::uuid AND generation=$3::bigint AND event_key=$4::text LIMIT 2':'SELECT snapshot_json,content_hash,claim_id,project_id,execution_id,generation FROM anvil.provider_session_claims WHERE project_id=$1::uuid AND execution_id=$2::uuid AND generation=$3::bigint AND claim_id=$4::uuid LIMIT 2';
    const rows=(await db.query(sql,[scope.projectId,scope.executionId,scope.executionGeneration,value])).rows;if(rows.length>1)return reject();if(!rows.length)return null;
-   const row=rows[0],e=entry(cloneV1(row.snapshot_json),await joint.challenges.clock());
+   const row=rows[0];if(threadOnly&&row.snapshot_json?.claim?.kind!=='THREAD')return reject();const e=await entry(cloneV1(row.snapshot_json),await joint.challenges.clock());
    if(row.project_id!==scope.projectId||row.execution_id!==scope.executionId||Number(row.generation)!==scope.executionGeneration||row.claim_id!==e.claim.claimId||row.content_hash!==hash(e.claim)||(kind==='event_key'?e.eventKey!==value:e.claim.claimId!==value))return reject();return e;
   };
   const tx:Tx={challenges:joint.challenges,current:async id=>{open();return current(id);},claims:{findEvent:key=>find('event_key',key),findId:id=>find('claim_id',id),append:async raw=>{
-   open();if(staged)return reject();staged=entry(cloneV1(raw),await joint.challenges.clock());
+   open();if(staged)return reject();staged=await entry(cloneV1(raw),await joint.challenges.clock());
   }},results:{bind:async(ref,value)=>{
    open();if(!refV1(ref)||ref.version!==1||!recordV1(value,['bodyHash','receipt'])||!hashV1(value.bodyHash))return reject();
    const e=await find('claim_id',value.receipt?.claimRef?.id);if(!e||!same(e.receipt,value.receipt))return reject();
@@ -65,7 +72,7 @@ export class SyntheticPgProviderClaimStore implements SyntheticProviderClaimStor
   },read:async ref=>{
    open();if(!refV1(ref)||ref.version!==1)return reject();const stagedMap=maps.get(canonicalJson(ref));if(stagedMap)return{bodyHash:stagedMap.bodyHash,receipt:cloneV1(stagedMap.receipt)};
    const rows=(await db.query('SELECT m.*,c.snapshot_json AS entry_snapshot,p.content_hash AS proof_content_hash,p.snapshot_json AS proof_snapshot FROM anvil.provider_session_claim_proof_results m JOIN anvil.provider_session_claims c ON c.project_id=m.project_id AND c.claim_id=m.claim_id AND c.version=m.claim_version JOIN anvil.execution_receipts p ON p.project_id=m.project_id AND p.id=m.proof_result_id AND p.version=m.proof_result_version WHERE m.project_id=$1::uuid AND m.execution_id=$2::uuid AND m.generation=$3::bigint AND m.proof_result_id=$4::uuid AND m.proof_result_version=$5::bigint LIMIT 2',[scope.projectId,scope.executionId,scope.executionGeneration,ref.id,ref.version])).rows;
-   if(rows.length>1)return reject();if(!rows.length)return null;const row=rows[0],e=entry(row.entry_snapshot,await joint.challenges.clock()),p=row.proof_snapshot;
+   if(rows.length>1)return reject();if(!rows.length)return null;const row=rows[0],e=await entry(row.entry_snapshot,await joint.challenges.clock()),p=row.proof_snapshot;
    if(row.project_id!==scope.projectId||row.execution_id!==scope.executionId||Number(row.generation)!==scope.executionGeneration||row.proof_result_id!==ref.id||Number(row.proof_result_version)!==ref.version||row.proof_content_hash!==ref.contentHash||hash(p)!==ref.contentHash||!hashV1(row.body_hash)||!same(row.receipt_json,e.receipt)
     ||!recordV1(p,['kind','challengeRef','requestId','proofHash','recordedAt','credentialIssued','executionAuthorized','dispatchPerformed'])||p.kind!=='SYNTHETIC_PROOF_RESULT'||!refV1(p.challengeRef)||!uuidV1(p.requestId)||!hashV1(p.proofHash)||!isoV1(p.recordedAt)||p.credentialIssued!==false||p.executionAuthorized!==false||p.dispatchPerformed!==false)return reject();
    return{bodyHash:row.body_hash,receipt:cloneV1(e.receipt)};

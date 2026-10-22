@@ -34,8 +34,8 @@ export function providerClaimFixture(){
   }finally{unlock();}
  }};
  const challengeStore:any={transport:'SYNTHETIC_ONLY',transaction:(s:any,body:any)=>store.transaction(s,(tx:any)=>body(tx.challenges))};
- async function issue(selected:any=claim,overridePath=path){const raw=canonicalJson({claim:selected}),target=executionTarget('POST',overridePath,[],raw),p={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:ref,credentialGeneration:1,target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:clock};
+ async function issue(selected:any=claim,overridePath=path,bodyOnly=false){const raw=canonicalJson(bodyOnly?selected:{claim:selected}),target=executionTarget('POST',overridePath,[],raw),p={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:ref,credentialGeneration:1,target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:clock};
   const issued=await new SyntheticExecutionChallenges(challengeStore).issue(scope,p,sign('sha256',executionChallengeRequestBytes('EXECUTION',p),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url'));
   const proof={requestId:p.requestId,...target,grantRef:ref,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');return{issued,proof,signature,raw};}
- return{scope,claim,basis,path,store,issue,state:()=>state,fault:(v:string)=>fault=v,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString(),connections:()=>connections};
+ return{scope,claim,basis,path,store,issue,consumeOriginal:async(request:any,commandId:string)=>{const p=await issue(request,'/api/v1/connectors/'+scope.connectorId+'/executions/'+eid+'/commands/'+commandId+'/permit',true);return new SyntheticExecutionChallenges(challengeStore).consume(scope,p.issued.ref,p.proof,p.signature);},state:()=>state,fault:(v:string)=>fault=v,advance:(n:number)=>clock=new Date(Date.parse(clock)+n).toISOString(),connections:()=>connections};
 }
