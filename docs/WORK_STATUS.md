@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-22 UI08 보관 관측·ACK 연결 한정 확인**: 원문 검증 뒤 기존 관측 component를 재사용해 명시 조회/선택 원문에서 commandID·공급자 주장 발생·서버 수신 시각·ACK/gap/local미확인을 확인하도록 연결했다. product는 import+부모회수callback/조회세대key 한정이며 새API/SQL/권한·현재관측/원인확정/실행/Agent0이다. 원 region부재 RED1뒤 신규DOM4PASS4.8초·부모인접3PASS4.2초·reader3PASS192.1291ms/type/build359/317ms/diff0, 독립 C0/I0/M0·독립실행/수정0. QA exactowner/nonlink/process0 정리 뒤 별도부재/process0를 확인했다. NO_COLOR/chunk 경고는 보존한다. 401·모든주체전환 조합/실제DB·served·실관측/분류어댑터·전체UI08/Stage 미완료다. 공급자주장을 CONNECTOR_OBSERVED로 만드는 경로가 없어 내부분류기를 임의연결하지 않는다. 다음은 FN06~08/09 실제 세션·명령 연결의 남은 선행을 source·승인delta로 구분해 이어간다.
+
+- **UI08 관측 연결 미구현 RED 확인**: 통제API의 정확 보고 원문까지 도달한 정상1건이 새 관측 region 부재로 exit1이었다. 환경 오류가 아닌 화면 미연결 반례이며 기존 관측 component 1개를 원문 바로 뒤에 연결하고 부모 조회세대key/거절callback을 전달한다. 현재 원인분류/실제Agent 관측으로 승격하지 않는다.
+
+- **2026-10-22 UI08 문제 원문과 보관 관측 연결 착수**: 기존 FN13/08 보관 관측·ACK reader/component는 정확 원제출/hash/실행에 묶고 공급자주장/서버수신·미수신공백/현재local미확인을 구분한다. UI08은 아직 연결이 없어 기존 component를 명시조회로 재사용하고401/403/404 부모전체내용회수·이탈지연폐기를 유지한다. 분류계산기는 출처대조 facts의 실제 어댑터가 없어 provider주장을 CONNECTOR_OBSERVED로 승격하지 않으며 원인확정/현재권한/완료·실행0이다. 새API/SQL/권한/Secret/서비스/Agent0. 새QA D:/tmp/anvil-v3-stage-b/ui08-issue-observations-01(temp/results), 현재사용자owner/nonlink·생성전부재·최대10분·종료즉시정확정리/별도잔여0를 등록하고 TDD/인접검증/기존독립reviewer로 진행한다.
+
 - **2026-10-22 UI08 보관 검수 원문·근거 화면 연결 한정 확인**: 담당 어울. 기존 readonly list/exact 원문/hash validator·근거 GET를 재사용해 명시조회→자동선택0→사용자 선택 보완/차단 원문→별도 다음행동 근거를 연결했다. 조회/선택 세대·닫기 후 지연폐기·401/403/404 부모내용회수·최근20건 한정/과거자료·완료/출처인증/실행승격0를 유지한다. UI08은 존재하지 않는 아래 보완작성 안내 대신 원 임무 상세로 안내하며 기존 UI05 기본문구는 보존했다. 원 DOM RED1건 뒤 새4PASS6.2초·부모인접3PASS4.8초·재사용reader8PASS223.0768ms/type/build359모듈588ms/diff0, 독립 C0/I0/M0·독립실행/수정0이다. NO_COLOR/build chunk 경고는 별도 보존·최적화/기준변경0. 등록 QA01은 exactowner/nonlink/process0 검사 뒤 시험출력만 정리했고 별도부재/process0 확인했다. 실제DB/served·목록재조회/근거지연 전체경합·현재모든주체전환·Agent/원인분류/전체UI08/Stage/계획완료는 미검증·미완료다. 새 API/SQL/권한/Secret/정식서비스0·보호6/pending1 보존이며 다음은 문제 분류와 실제 실행/이전 선행 공백을 계획 기준으로 이어간다.
 
 - **UI08 검수 이력 화면 RED 뒤 연결 중**: 신규 정상 DOM1건은 기존 원문/고정 임무까지 도달했으나 검수 이력 region 부재로 exit1이었다. 기존 reader와 다음행동 근거 component를 재사용해 이력 명시조회·수동 원문선택·별도 근거조회만 연결한다. 미구현 RED를 보존하며 API/SQL/권한/서비스/Agent 변경0, 실제DB/served 미검증이다. 시작 Git sandbox 오류는 권한 환경 문제로 분리해 승인된 읽기로 소유 변경만 확인했다.

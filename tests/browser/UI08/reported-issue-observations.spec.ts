@@ -1,0 +1,38 @@
+import {test,expect} from '@playwright/test';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {contentCriteria} from '../../../apps/web/src/features/workspace/assignment-confirmation-api.ts';
+import {sessionDetailHref} from '../../../apps/web/src/shell/routes.ts';
+import {installWorkspaceBundle} from '../UI04/bundle.ts';
+import {resultFixture} from '../../unit/UI05/result-view-fixture.ts';
+const pid='11111111-1111-4111-8111-111111111111',aid='22222222-2222-4222-8222-222222222222',at='2026-10-19T10:00:00.000Z',ref={id:pid,version:1,contentHash:'a'.repeat(64)},hash=(v:unknown)=>contentHash(canonicalJson(v));
+const definition={taskRef:{planRef:ref,taskCode:'FN09',applicationRef:ref,nodeId:'개발'},baselineRefs:[],allowedScopes:[],environmentRef:null,budgetRef:null,parentAssignmentRef:null,recordingPolicyRef:null,purpose:'사용자가 개발 통제',goal:'정확 임무의 책임자 조회',ownerRole:'단계책임자',integrationResponsibility:'검수 연결',inputs:['설계'],outputs:['구현'],acceptanceCriteria:['핵심 동작 확인'],verificationRequirements:['중요 실패 확인'],included:['선택 임무'],excluded:['다른 프로젝트'],requiredCapabilities:[]};
+const snapshot={definition,reason:'고정 원문',previousRef:null,basis:{planRef:ref,applicationRef:ref,designRef:ref,taskCode:'FN09',nodeId:'개발',taskCardHash:'b'.repeat(64)},readinessIssues:[],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false},draftRef={id:aid,version:1,contentHash:hash(snapshot)},draft={projectId:pid,ref:draftRef,snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:at};
+const cs={draftRef,definition,reviewRefs:[ref],reason:'과거 내용 확정',confirmedBy:{kind:'HUMAN',userId:pid},confirmedAt:at,contentConfirmed:true,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false},cr={id:aid,version:1,contentHash:hash(cs)},confirmed={projectId:pid,ref:cr,snapshot:cs,observedAt:at},decision={projectId:pid,draftRef,criteriaVersion:1,criteria:contentCriteria,reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:'REVIEW_REQUIRED',confirmedRef:cr,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:at},state={projectId:pid,assignmentRef:cr,roles:[],bindings:[],preparations:[],hasMorePreparations:false,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+import {observationJournalFor} from '../../unit/UI05/observation-journal-fixture.ts';
+
+for(const mode of ['NORMAL','TAMPER','DENY','LEAVE'])test('ISSUE_OBSERVATIONS_'+mode,async({page})=>{
+ if(mode==='LEAVE')await page.addInitScript(()=>{const fetch=window.fetch;window.fetch=async(...args)=>{const response=await fetch(...args);if(String(args[0]).endsWith('/observation-journal')){const json=response.json.bind(response);response.json=async()=>{try{return await json();}finally{(window as any).ISSUE_OBSERVATION_JSON_DONE=true;}};}return response;};const digest=crypto.subtle.digest.bind(crypto.subtle);(crypto.subtle as any).digest=async(...args:any[])=>{(window as any).ISSUE_OBSERVATION_HASH_PENDING=((window as any).ISSUE_OBSERVATION_HASH_PENDING??0)+1;try{return await Reflect.apply(digest,crypto.subtle,args);}finally{(window as any).ISSUE_OBSERVATION_HASH_PENDING--;}};});
+ const f=resultFixture();f.entry.snapshot.scope.assignmentRef=cr;f.entry.snapshot.manifest.assignmentRef=cr;f.entry.snapshot.manifestHash=hash(f.entry.snapshot.manifest);f.entry.ref.contentHash=hash(f.entry.snapshot);f.item.ref=f.entry.ref;f.item.manifestRef.contentHash=f.entry.snapshot.manifestHash;f.page.assignmentRef=cr;
+ const journal=observationJournalFor(f.entry);let reads=0,release:()=>void=()=>{};const writes:string[]=[],unexpected:string[]=[],errors:string[]=[];
+ await page.route('**/*',r=>{unexpected.push(r.request().url());return r.abort();});await installWorkspaceBundle(page);
+ await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:pid,displayName:'합성 QA'},clientId:pid,csrfToken:'A'.repeat(43)}}));
+ await page.route('**/api/v1/projects/'+pid+'/**',async route=>{const p=new URL(route.request().url()).pathname,base='/api/v1/projects/'+pid+'/';let value:any;
+  if(p===base+'assignment-drafts/'+aid+'/versions/1')value=draft;
+  else if(p===base+'assignment-drafts/'+aid+'/versions/1/decision')value=decision;
+  else if(p===base+'assignments/'+aid+'/versions/1')value=confirmed;
+  else if(p===base+'assignments/'+aid+'/versions/1/execution-preparation-state')value=state;
+  else if(p===base+'assignments/'+aid+'/versions/1/result-pages')value={...f.page,nextCursor:null,selectionState:'NOT_SELECTED'};
+  else if(p===base+'results/'+f.entry.ref.id)value=f.entry;
+  else if(p===base+'results/'+f.entry.ref.id+'/observation-journal'){reads++;if(mode==='DENY'&&reads===2)return route.fulfill({status:403,json:{code:'ACCESS_DENIED'}});if(mode==='LEAVE')await new Promise<void>(resolve=>release=resolve);value=structuredClone(journal);if(mode==='TAMPER')value.items[0].snapshot.event.reasonCode='NONE';}
+  else if(p===base+'approvals')value={items:[],hasMore:false,nextCursor:null,observedAt:at};
+  else{unexpected.push(p);return route.abort();}return route.fulfill({json:value});
+ });
+ page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.url());if(new URL(r.url()).origin!=='https://localhost:3830')unexpected.push(r.url());});
+ await page.goto('https://localhost:3830/'+sessionDetailHref(pid,draftRef));await page.getByRole('button',{name:'제출 원문 '+f.entry.ref.id,exact:true}).click();await page.getByRole('link',{name:'승인·문제 화면에서 이 보고 확인',exact:true}).click();
+ const parent=page.getByRole('region',{name:'선택 보고의 문제 원문',exact:true});await parent.getByRole('button',{name:'선택 보고 원문 확인',exact:true}).click();
+ const panel=parent.getByRole('region',{name:'보관 실행 관측·ACK',exact:true});await expect(panel).toBeVisible();expect(reads).toBe(0);await panel.getByRole('button',{name:'보관 관측 조회',exact:true}).click();
+ if(mode==='TAMPER'){await expect(panel.getByRole('alert')).toContainText('RESULT_OBSERVATION_RESPONSE_INVALID');await expect(panel.getByRole('button',{name:'관측 기록 원문 2',exact:true})).toHaveCount(0);}
+ else if(mode==='LEAVE'){await expect.poll(()=>reads).toBe(1);const response=page.waitForResponse(r=>r.url().endsWith('/observation-journal'));await parent.getByRole('button',{name:'선택 보고 닫기',exact:true}).click();release();await response;await page.waitForFunction(()=>(window as any).ISSUE_OBSERVATION_JSON_DONE===true&&((window as any).ISSUE_OBSERVATION_HASH_PENDING??0)===0);await page.evaluate(()=>new Promise<void>(resolve=>setTimeout(resolve,0)));await expect(panel).toHaveCount(0);await expect(parent).toContainText('단계책임자·실행 상세에서');}
+ else{await expect(panel.getByText('서버 연속 수신 순번: 0',{exact:true})).toBeVisible();await expect(panel.getByText('보관 범위 미수신 구간: 1~1',{exact:true})).toBeVisible();await expect(panel.getByText('현재 로컬 순번: 미확인',{exact:true})).toBeVisible();const article=panel.getByRole('article',{name:'선택 관측 기록 원문',exact:true});await expect(article).toHaveCount(0);await panel.getByRole('button',{name:'관측 기록 원문 2',exact:true}).click();await expect(article).toContainText(journal.items[0]!.snapshot.event.commandId);await expect(article).toContainText('PROVIDER_CLAIM_ONLY');await expect(article).toContainText('실제 가동·중단 원인 미확인');await expect(article).toContainText('서버 수신 시각: 2026-10-20T00:00:00.000Z');if(mode==='DENY'){await panel.getByRole('button',{name:'보관 관측 다시 조회',exact:true}).click();await expect(parent.getByRole('alert')).toContainText('ACCESS_DENIED');await expect(panel).toHaveCount(0);await expect(parent.getByRole('article',{name:'선택 제출 원문'})).toHaveCount(0);}}
+ expect(writes).toEqual([]);expect(unexpected).toEqual([]);expect(errors).toEqual([]);
+});
