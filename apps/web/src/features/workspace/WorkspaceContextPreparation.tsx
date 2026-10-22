@@ -10,7 +10,7 @@ import { ContextDeliveryLimits, contextDeliveryLimitsValid } from './ContextDeli
 import { newContextPreparation, prepareContextWrite, sendContextPreparation, readContextPreparation, listContextPreparations, type ContextPreparationBuffer } from './context-api.ts';
 import { contextObservation } from './context-observation.ts';
 import { reuseContextPreparationInput } from './context-reuse.ts';
-import {appendContextSourceSelection,contextSourceSelectionState} from './context-source-selection.ts';
+import {appendContextSourceSelection,contextSourceSelectionState,removeContextSourceFromBuffer} from './context-source-selection.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
 
 const labels = { PURPOSE_REASON: '목적과 이유', RULES_SCOPE: '헌법과 범위', LATEST_INSTRUCTIONS: '최신 관련 지시', DECISIONS_REASON: '결정과 이유', CURRENT_POSITION: '현재 위치', ACTUAL_GAPS: '실제 공백', NEXT_ACTION: '다음 행동' };
@@ -60,7 +60,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
   const next=await reuseContextPreparationInput(client,confirmed,session,ref,()=>current(ticket));if(!next||!current(ticket))return;
   onChange(value=>value===previous&&!value?.pending&&!value?.uncertain?next:value);
  }
- const locked = busy || !owner || !bound || !sameTarget || !!buffer?.pending || !!buffer?.resultRef;
+ const locked = busy || !owner || !bound || !sameTarget || !!buffer?.pending || !!buffer?.uncertain || !!buffer?.resultRef;
  const selectionState=buffer?contextSourceSelectionState(buffer.input,selected):'SLOT_MISSING';
  function attach(selection: ContextSourceSelection) { if (locked) return; update(current => { if(current.pending||current.resultRef)return current;const input=appendContextSourceSelection(current.input,selected,selection);return input===current.input?current:{...current,input,dirty:true,result:null}; }); }
  return <section aria-label="임무 맥락 준비"><h6>임무 맥락 준비</h6><p>Agent 전달·실행 허가 아님 · 예산·선정의 의미·최신 관련 지시 전체성은 미확인입니다.</p>
@@ -68,7 +68,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
   {!bound ? <p>보관 입력의 사용자·기기가 다릅니다. 원 입력과 미확인 명령은 유지합니다.</p> : !sameTarget ? <p>보관 준비의 확정 임무가 다릅니다. 원 임무로 돌아가세요.</p> : buffer ? <>
    <p>고정 임무 {buffer.assignmentRef.id} · v{buffer.assignmentRef.version} · {buffer.assignmentRef.contentHash}</p><p>예산 참조 {buffer.budgetRef ? '있음 · 실제 예산 미검증' : '없음 · BUDGET_UNVERIFIED'}</p>
    <fieldset disabled={locked}><legend>필수 맥락과 선택 이유</legend>{buffer.input.slots.map(slot => <fieldset key={slot.code}><legend>{labels[slot.code]}</legend><p>{slot.sources.length ? '선택 원문 ' + slot.sources.length + '개 · 현재 권한/효력은 저장 시 재확인' : '원문 미선택 · 필수 누락'}</p>
-    <ul>{slot.sources.map((source, index) => <li key={ordered(source)}>{source.kind} · {source.kind === 'USER_INSTRUCTION' ? source.messageRef.id : source.versionRef.id} · {source.kind === 'USER_INSTRUCTION' ? '불변 발언' : 'v' + source.versionRef.version}<code>{source.kind === 'USER_INSTRUCTION' ? source.messageRef.contentHash : source.versionRef.contentHash}</code><button disabled={locked} onClick={() => update(current => { const input = structuredClone(current.input); input.slots.find(item => item.code === slot.code)!.sources.splice(index, 1); return { ...current, input, dirty: true }; })}>이 원문 선택 해제</button></li>)}</ul>
+    <ul>{slot.sources.map(source => <li key={ordered(source)}>{source.kind} · {source.kind === 'USER_INSTRUCTION' ? source.messageRef.id : source.versionRef.id} · {source.kind === 'USER_INSTRUCTION' ? '불변 발언' : 'v' + source.versionRef.version}<code>{source.kind === 'USER_INSTRUCTION' ? source.messageRef.contentHash : source.versionRef.contentHash}</code><button type="button" disabled={locked} onClick={() => {if(locked)return;onChange(current=>removeContextSourceFromBuffer(current,buffer,session,slot.code,source));}}>이 원문 선택 해제</button></li>)}</ul>
     <label>{labels[slot.code]} 선택/미선택 이유<textarea maxLength={20000} value={slot.reason} onChange={event => update(current => ({ ...current, input: { ...current.input, slots: current.input.slots.map(item => item.code === slot.code ? { ...item, reason: event.target.value } : item) }, dirty: true }))} /></label>
    </fieldset>)}<label>원문을 추가할 필수 슬롯<select value={selected} onChange={event => setSelected(event.target.value as keyof typeof labels)}>{Object.entries(labels).map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
     {selectionState==='SLOT_FULL'?<p role="status">이 슬롯은 원문 1개만 선택합니다. 조회는 가능하며, 다른 원문을 추가하려면 기존 선택을 먼저 해제하세요.</p>:selectionState==='TOTAL_FULL'?<p role="status">전체 원문 선택 200개에 도달했습니다. 조회는 가능하며, 추가하려면 기존 선택을 먼저 해제하세요.</p>:null}

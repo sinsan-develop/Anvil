@@ -1,5 +1,7 @@
 import type {ContextPreparationInput,ContextSlotCode,ContextSourceSelection} from '../../../../server/modules/context/context-input.ts';
 import {ordered} from '../knowledge/review-view.ts';
+import type {ContextPreparationBuffer} from './context-api.ts';
+import type {DocumentSession} from '../design-trace/editor-api.ts';
 export function contextSourceSelectionState(input:ContextPreparationInput,code:ContextSlotCode):'AVAILABLE'|'SLOT_FULL'|'TOTAL_FULL'|'SLOT_MISSING'{
  const slot=input.slots.find(value=>value.code===code);if(!slot)return'SLOT_MISSING';
  if((code==='PURPOSE_REASON'||code==='RULES_SCOPE')&&slot.sources.length>=1)return'SLOT_FULL';
@@ -11,4 +13,18 @@ export function appendContextSourceSelection(input:ContextPreparationInput,code:
  const allowed=selection.kind==='KNOWLEDGE_VERSION'&&code!=='LATEST_INSTRUCTIONS'||selection.kind==='DOCUMENT_VERSION'&&['CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].includes(code)||selection.kind==='USER_INSTRUCTION'&&code==='LATEST_INSTRUCTIONS';
  if(!allowed||contextSourceSelectionState(input,code)!=='AVAILABLE')return input;
  const next=structuredClone(input);next.slots.find(value=>value.code===code)!.sources.push(structuredClone(selection));return next;
+}
+
+/** Remove the clicked exact source, never a rendered index into a newer array.
+ * Recheck the live buffer in the functional updater; no persistence/authority. */
+export function removeContextSourceFromBuffer(current:ContextPreparationBuffer|null,rendered:ContextPreparationBuffer|null,session:DocumentSession,code:ContextSlotCode,selection:ContextSourceSelection):ContextPreparationBuffer|null{
+ if(!current||!rendered)return current;
+ const locked=(b:ContextPreparationBuffer)=>!!b.pending||b.uncertain||!!b.resultRef||!!b.result;
+ if(locked(current)||locked(rendered)||current.bindingId!==rendered.bindingId||current.projectId!==rendered.projectId||current.ownerUserId!==session.user.id||rendered.ownerUserId!==session.user.id||current.ownerClientId!==session.clientId||rendered.ownerClientId!==session.clientId||current.controlGeneration!==rendered.controlGeneration||ordered(current.assignmentRef)!==ordered(rendered.assignmentRef)||ordered(current.input.assignmentRef)!==ordered(current.assignmentRef))return current;
+ const slots=current.input.slots.filter(slot=>slot.code===code);if(slots.length!==1)return current;
+ const slot=slots[0]!,target=ordered(selection),matches=slot.sources.flatMap((source,index)=>ordered(source)===target?[index]:[]);
+ // A stale/ambiguous selection is not permission to remove a neighbour.
+ if(matches.length!==1)return current;
+ const input=structuredClone(current.input);input.slots.find(slot=>slot.code===code)!.sources.splice(matches[0]!,1);
+ return{...current,input,dirty:true,result:null};
 }
