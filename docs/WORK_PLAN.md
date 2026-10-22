@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 UI14 프로젝트 대기 기록 소비 부분 구현**: 기존 FN10 readStageQueue의 WAITING_ONLY·정확 ref/순번·이유·관측 시각을 설정에서 명시 조회한다. 예약/취소/실행·새 계약 변경0. 합성 HTTP 현재 bundle DOM 정상/403/401·늦은 응답2건 및 소비 완료 장벽 NORMAL1건·type/build·한정 독립 C0/I0·QA 독립 잔여0. 전체 건수/슬롯·정식 UI→API→DB·전체 UI14/FN10은 미확인·미완료다.
+
 - **2026-10-22 FN17/UI14 브라우저 알림 지원 조회 부분 구현**: 기존getPushSupport의5상태/근거를 명시조회·재조회로 연결하고 권한창/구독/워커등록·서버설정변경0을 유지했다. 신규3RED→단위3/typebuild0·통제API화면1PASS2.0초·실제Edge기본API/permissiondefault읽기1PASS1.8초·한정독립C0/I0/10:01:38QA독립잔여0. UI14뷰착수UI00/전체연결FN10·16·17분리이며 실제알림사건/수신자/channel원장·목록/푸시전달·전체FN17/UI14/Stage는미구현/미완료다. 상세원오류/지문·검증시점은WORK_STATUS를따른다.
 
 - **2026-10-22 FN01/FN11 성공 후 승인 거절 이력 보존 보완**: 업로드 성공에서 활성wrapper를 해제해도 최초 업로드거절·요청거절 기록은 기존 탭 이력에 남긴다. 성공까지 확장한 신규1RED→직접인접16PASS/typebuild0·최신bundle 정상DOM1PASS2.9초/QA09:50:36독립잔여0. 서버/영속API·SQL/권한·서비스·Agent변경0, 실제DB/served/전체Stage완료는아니다. 상세지문/실행·오류는WORK_STATUS에보존했다.

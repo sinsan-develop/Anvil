@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../api/client.ts';
 import {BrowserPushSupportPanel} from '../notifications/BrowserPushSupportPanel.tsx';
+import {ProjectWaitingQueue} from '../features/settings/ProjectWaitingQueue.tsx';
 
-export function AccountSecurity({ client, csrfToken, onSession, onRevoked }: { client: ApiClient; csrfToken: string; onSession: (session: unknown) => void; onRevoked: () => void }) {
+export function AccountSecurity({ client, csrfToken, onSession, onRevoked,projectId }: { client: ApiClient; csrfToken: string; onSession: (session: unknown) => void; onRevoked: () => void;projectId?:string|null }) {
   const [reauthPassword, setReauthPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -43,7 +44,7 @@ export function AccountSecurity({ client, csrfToken, onSession, onRevoked }: { c
       if (error.status === 412 || error.status === 401) setReady(false);
     } finally { setReauthPassword(''); setCurrentPassword(''); setNewPassword(''); setPending(false); }
   }
-  return <><BrowserPushSupportPanel/><section className="status-card auth-form" aria-label="로그인 보안">
+  return <><BrowserPushSupportPanel/>{projectId?<ProjectWaitingQueue key={projectId} client={client} projectId={projectId} onAuthenticationLost={onRevoked}/>:null}<section className="status-card auth-form" aria-label="로그인 보안">
     <h2>로그인 보안</h2>
     <p>민감한 변경 전 비밀번호를 다시 확인합니다. 비밀번호 변경은 모든 로그인 세션을 회수합니다.</p>
     {failure ? <p role="alert">{failure.message}</p> : null}
