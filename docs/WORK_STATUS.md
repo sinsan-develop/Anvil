@@ -1,5 +1,23 @@
 # Anvil 재설계 작업현황
 
+- **FN12/UI05 보완의 원검토 열기 source·화면 연결 일부 완료**: 최신 신규4+기존보관검토3/보완4=11PASS483.7102ms/type/diff0, 새Web353/307ms와Edge핵심1PASS2.9초다. 보완원문재조회→exact 원검토/기준/원결과·hash→선택/잔여조건·이유/검토자/원문을 명시GET으로 열고 닫기·선택전환 숨김/권한거절부모회수를 연결했다. 초기C0/I0/M2는이력유지,정합재해시음성과제품계층보완후정적C0/I0/M0(독립실행0)확인. 등록QA ui05-rework-review-01은정확realpath/owner SINSAN\\cyhuh·링크0/process0확인후제거했고별도조회경로false/process0이다. 실제DB/정식served/시험진위/현재권한/실Agent·전체FN12/UI05/Stage/계획은미완료·미검증이다. 공개API/SQL/정식자원변경0·보호6보존. source rollback은해당commit 일반revert이며원저장자료는보존한다. FN06 nonOWNER현재담당관계는미해결로분리하고이완료를그권한/전체계획완료로승격하지않는다.
+
+- **FN12/UI05 원검토 실제클릭 GREEN·검토 보강**: UI연결계층수정후 새build353/307ms/type0·동일Edge1PASS2.9초다. 원검토선택/부족이유·잔여조건/닫기/다른보완선택중옛원문숨김/권한거절부모회수·POST0을확인했다. 한정독립C0/I0/M2(실행0) 중 DOM계층은 위제품이동으로해소했고, 음성의재해시ref불일치가뒤검사를가리는M1은새정합ref/보완hash까지갱신한 기준·조건집합 직접음성으로보강한다. 첫실패를PASS소급하지않고실DB/정식served/Agent미검증을유지한다.
+
+- **FN12/UI05 UI 연결 계층 보완**: unit7PASS507.2936ms·build353/419ms/type0이나 Edge두번째1FAIL15000ms다. 실제DOM/error-context에서 새 버튼은 보완article의 형제region이고 시험은 선택article내부를 요구함을 코드와 대조했다. 선택보완과 원검토의 관계가 명확하도록 컴포넌트를 선택article 안으로 옮기며 시험selector/timeout/기준은바꾸지않는다. 첫버튼미구현RED와 이번계층오류를분리보존,실서비스/DB/Agent0이다.
+
+- **FN12/UI05 화면 정상 RED**: 새 build351/312ms/type0 후 Edge REWORK_HISTORY1FAIL(기존15000ms)에서 ‘이 보완의 원검토 열기’ 버튼 부재를 확인했다. 앞선 보완목록/원문 선택은 도달했으며 timeout연장/기준완화 없이 새 명시조회 UI를 연결한다. 생성전QA부재/상위D:\tmp·anvil-v3-stage-b nonlink 확인,실서비스/DB/Agent0·기존chunk경고보존이다.
+
+- **FN12/UI05 원검토 단위GREEN·화면QA 사전등록**: 신규3PASS379.0862ms/type0이며 실제기존보호GET을 통제응답으로 소비한 source 증거다. 화면QA는 Main소유 신규 D:\tmp\anvil-v3-stage-b\ui05-rework-review-01 아래 temp/결과만 생성하고 현재 apps/web/dist build를 route interception으로 Edge1건 클릭검사한다. 별도리스너/port/서버·DB/Agent0, 최대30분/종료즉시 exact경로와시험Edge잔류를확인정리한다. 기존서비스/계정/Secret/인증서/공유QA는 변경하지 않는다. 생성전부재/상위링크를 확인하며 정상 UI버튼 부재RED→연결후GREEN을 구분한다.
+
+- **FN12/UI05 보완 원검토 연결 RED**: 신규 정상1FAIL383.5324ms로 readReworkReviewOriginal 부재를 확인했다. 보완 고정원문 재조회→exact 원검토 보호GET→ref/criteria/원결과/hash·선택/잔여 부족조건 일치를 검증한 뒤 명시 화면조회로 연결한다. 기존 검토 검증기는 공통 재사용하고 새공개API/DB/권한/Agent/서비스0이다. 직전 존재하지 않는 result-rework-history.spec.ts 읽기 오류1은실행검증아니며 이후 inventory에있는 fixture/파일만 사용한다.
+
+- **FN06 nonOWNER 양성 추정 철회/범위 한정**: PMO가 원 reservedBy/boundBy와 bindResponsibleSession AUTO는 현재 지정 HUMAN 조회관계를 증명하지 않는다고 정정했다. 근거 타당성을 확인해 이 추정의 양성 source 구현은0으로 보류한다. 이번에 새로 쓴 미채택 양성 기대 테스트1파일만 제거했고 기존검사/제품/SQL/권한은 수정0이다. 정상RED371.01ms는 설계공백 탐지 이력이지 제품회귀/PASS가 아니다. 실제 담당자 관계를 새로 부여하지 않고 현 OWNER조회·일반뷰어403을 유지한다. 영향없는 FN12/UI05 ‘보관 보완의 원검토 조건 직접 열기’를 다음으로 선정해 기존 보호 GET/고정ref 연결 공백을 조사했다. 추가 읽기 경로 features/results 부재1도 확인했으며 이후 실제 features/session-detail inventory로만 진입한다.
+
+- **FN06 지정책임자 exact조회 정상 RED**: 신규 정상1FAIL371.01ms/403으로 기존 OWNER전용 resolver 공백을 확인했다. 기존 예약생성 HUMAN과 현재 명시 bindResponsibleSession 정책·최신 역할예약/원receipt·fullref를 함께 확인하는 좁은 read-only source를 추가한다. VIEWER/HANDOFF_ELIGIBLE만으로 허용하지 않으며 실제정책 부여/SQL/DB/native/Agent/서비스 변경0, 원 성공·실패 검사는 유지한다.
+
+- **FN06 RESPONSIBLE 조사 경로가정 반복 중단**: apps/server/migrations 부재 os error2를 확인했다. 직전 와일드카드/agents 조회와 같은 경로가정 근본오류3회로 임의 경로 추가 시도를 중단하고 저장소 rg --files 목록만 사용한다. 코드/권한/실자원 변경0. nonOWNER 조회는 기존 HUMAN 예약 reservedBy/boundBy·최신 역할예약·현재 명시정책을 대조하는 좁은 source를 검토하며 새 담당자/정책 부여는 하지 않는다.
+
 - **FN06 C 잠금 source 한정 검토 종료·후속 선정**: 기존 독립 reviewer 정적 C0/I0/M0(실행0), 최신 Main 직접인접29PASS2261.5834ms/type/diff0이다. 변경 source3/시험1/계획·후보·현황3만 기존 branch에 보존하고 보호6/실자원은 변경하지 않는다. 다음 승인된 source 항목은 nonOWNER 지정책임자의 exact 이력조회로 선정했다. 현 resolver/page는 OWNER전용, 원 history 계약은 exact responsibleBindingRef 대조를 요구하므로 assignments/responsible-sessions.ts의 원예약·현정책과 연결해야 하며 일반프로젝트 조회자에게 권한을 자동확장하지 않는다. 실제 DB/역할/리스너/native/Agent/서비스 제외와 전체계획미완료는 유지한다.
 
 - **FN06 후속 조사 경로 오류2**: 책임예약 경로는 rg --files로 assignments/responsible-sessions.ts를 확인했으나 추가 rg 인자 apps/server/modules/agents가 없어 os error2/exit1이었다. 파일/권한 변경0이며 해당 가정 경로는 사용하지 않는다. 실제 history/page는 OWNER만 연결, exact history의 RESPONSIBLE 계약은 존재하므로 후속은 확인된 책임예약 모듈과 현재정책만 대조한다.

@@ -18,6 +18,16 @@ export async function readStoredResultReviews(client:ApiClient,original:Submitte
 }
 export async function readStoredResultReview(client:ApiClient,original:SubmittedResultView,item:StoredReviewSummary,active:()=>boolean):Promise<RecordedResultReview|null>{
  const r=structuredClone(original),selected=structuredClone(item);await result(r);if(!summary(selected,r))fail();if(!active())return null;const v=await client.get<RecordedResultReview>(`/api/v1/projects/${r.snapshot.scope.projectId}/result-reviews/${selected.ref.id}`);if(!active())return null;
+ return verifyStoredReview(v,r,selected,active);
+}
+/** 보완 원문에 고정된 exact ref/criteria로 직접 읽는다. 목록의 최근20건 범위를 조회권한으로 대체하지 않는다. */
+export async function readStoredResultReviewReference(client:ApiClient,original:SubmittedResultView,reviewRef:StoredReviewSummary['ref'],criteriaRef:StoredReviewSummary['criteriaRef'],active:()=>boolean):Promise<RecordedResultReview|null>{
+ const r=structuredClone(original),expected=structuredClone(reviewRef),criteria=structuredClone(criteriaRef);await result(r);if(!ref(expected)||expected.version!==1||!ref(criteria))fail();if(!active())return null;
+ const v=await client.get<RecordedResultReview>(`/api/v1/projects/${r.snapshot.scope.projectId}/result-reviews/${expected.id}`);if(!active())return null;
+ const s=v?.snapshot,selected:StoredReviewSummary={ref:expected,criteriaRef:criteria,outcome:s?.input?.outcome,reviewedBy:s?.reviewedBy,sameAsSubmitter:s?.sameAsSubmitter,reviewedAt:s?.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+ if(!summary(selected,r))fail();return verifyStoredReview(v,r,selected,active);
+}
+async function verifyStoredReview(v:RecordedResultReview,r:SubmittedResultView,selected:StoredReviewSummary,active:()=>boolean):Promise<RecordedResultReview|null>{
  const s=v?.snapshot,input=s?.input;
  if(!exact(v,['projectId','ref','snapshot','reviewStored',...flagKeys,'observedAt'])||v.projectId!==r.snapshot.scope.projectId||!same(v.ref,selected.ref)||v.reviewStored!==true||!flags(v)||!date(v.observedAt)||Date.parse(v.observedAt)<Date.parse(selected.reviewedAt)||!exact(s,['scope','input','reviewedBy','sameAsSubmitter','reviewedAt',...flagKeys])||!same(s.scope,r.snapshot.scope)||!same(s.reviewedBy,selected.reviewedBy)||s.sameAsSubmitter!==selected.sameAsSubmitter||s.reviewedAt!==selected.reviewedAt||!flags(s)||await hash(s)!==selected.ref.contentHash||!exact(input,['resultRef','criteriaRef','outcome','items','reason'])||!same(input.resultRef,r.ref)||!same(input.criteriaRef,selected.criteriaRef)||input.outcome!==selected.outcome||!text(input.reason)||!Array.isArray(input.items)||!input.items.length||input.items.length>100||new Set(input.items.map(i=>i.criterionId)).size!==input.items.length||input.items.some(i=>!exact(i,['criterionId','outcome','evidenceRefs','reason'])||typeof i.criterionId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/.test(i.criterionId)||!['REWORK','BLOCKED'].includes(i.outcome)||!same(i.evidenceRefs,[])||!text(i.reason))||!input.items.some(i=>i.outcome===input.outcome))fail();return active()?structuredClone(v):null;
 }

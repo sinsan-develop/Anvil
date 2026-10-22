@@ -145,6 +145,8 @@ usableBefore:UTC
 
 ### 2026-10-22 C exact SEND/STOP source 소비 조립
 
+- nonOWNER HUMAN 조회 미완료 경계: reservedBy/boundBy와 원 bindResponsibleSession APPLIED receipt는 예약생성 이력이고, 현재 bindResponsibleSession AUTO는 예약연산 정책이다. 이것들만으로 현재 지정 담당 HUMAN의 조회 관계를 추정하지 않는다. PMO 대조에 따라 그 양성 연결안은 채택하지 않았고 제품 권한확장0/기존OWNER·일반뷰어거절을 유지했다. 기존 §6.3의 RESPONSIBLE 계약을 삭제하거나 PASS로 승격하지 않으며 독립적인 담당자 관계 근거·명시 계약이 필요하다.
+
 - 후속 잠금 source 연결: 기존 transport의 exclusive transaction 안에서 tx.read 전체 journal을 기존 validator와 방금 sync한 전체행에 재대조해 최신 시도/permit만 reader factory로 전달한다. 별도 중첩 잠금이나 새 파일 fallback은 없다. 종료/abort 뒤 source는 거절하고 실패는 원 UNKNOWN/STOP_UNCONFIRMED에 남긴다. 새 직접4+변경 인접25=29PASS2261.5834ms/type/diff0이며 실제 fsync/OS잠금·서버등록/리스너·PG/native/실Agent 증거가 아니다.
 
 - 기존 SEND/STOP transport는 기존 시도/permit sync·허가·원장 멱등을 그대로 유지하고 내부 wire.exchange에 exact key/envelope/localAttemptRef/permitRef/material hash/binding hash metadata를 추가 전달한다. 공개 HTTP/명령 계약을 확장하거나 기존 원장 schema를 바꾸지 않는다. 선택적으로 주입하는 SyntheticProviderBoundWire는 고정 RPC id/method/지시 hash·보호 capsule의 thread/turn을 대조한 뒤 SYNTHETIC_ONLY inner wire만1회 소비한다. default native/socket/Agent fallback은 없다.

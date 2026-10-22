@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN12/UI05 보완 원검토 직접조회 연결**: 보관보완에서원검토열기→기존보호GET2개·고정ref/hash/기준·선택/잔여조건대조→이유/검토자/전체원문표시·닫기/선택전환숨김을연결했다. 최신단위11/type/diff0·새build353/307ms·통제API실제Edge1PASS2.9초·독립정적C0/I0/M0(초기M2/보완이력유지)/등록QA독립잔여0이다. 새API/SQL/DB/권한/Agent/서비스변경0,정식DB/served·전체FN12/Stage는미검증·미완료다. FN06 nonOWNER는현재지정HUMAN관계부재를예약생성자/예약연산정책으로추정하지않고별도미완료로남긴다. 상세/원실패/다음조치는WORK_STATUS를따른다.
+
 - **2026-10-22 FN06 C 잠긴 원장 직접 소비 추가**: 기존 exclusive transaction의 전체 journal을 원 validator로 재대조하고 최신 SEND 시도/소비permit 또는 STOP 시도만 factory로 연결했다. 전송 종료/abort 뒤 source 재사용 거절·불완전 원장/원 target 불일치/유실 재전송0을 포함한 직접인접29PASS2261.5834ms/type/diff0. 새 일반 wire/native/파일root/DB/Agent/서비스 실행은 없으며 실제연결·전체FN06/Stage 완료는 아니다. 세부 검토/원실패와 후속 작업은 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN06 C exact SEND/STOP 소비 source 일부**: 기존 transport의 원 시도/permit 뒤 내부 metadata·보호 wire guard를 연결하고, 잠긴 local row factory와 기존 SEND basis/claim·소비permit/nonce 및 STOP 원receipt/current/TURN부모·freshOS를 읽는 current source를 구현했다. 신규9PASS2301.8764ms/type/diff0·변경 인접transport25/STOP10 별도 확인·한정독립C0/I0(I1 직접보완 이력 유지). 실제등록/OS/native/파일fsync/서버DB/Agent·전체FN06은 미완료·미검증이다. 새로운 실제 wire/DB/권한/키/서비스는 실행하지 않았으며 source/fake와 실제연결을 구분한다. 상세/다음 source 조립은 WORK_STATUS 및 후보§7을 따른다.
