@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 내부 동일 transaction 인증 소비 — 2026-10-23
+
+`AccessRepository.authenticateInTransaction(db,token,csrf)`는 caller가 소유한 transaction에서 사용자/session/client 잠금 뒤 DB 시각·활성 xid·CSRF·회수·자격세대를 검사한다. 자체 연결/BEGIN/COMMIT/갱신은 없고 기존 authenticated/login 계약은 유지한다. 이 identity는 정책·단독제어·재인증·등록·writer/실행 권위가 아니다.
+
+`SyntheticPgOwnershipArchive.acceptAuthenticated(access,token,csrf,scope,input,signal)`은 같은 connection에서 처음과 종료 직전 인증 결과를 원 preparation 주체/합성 current와 대조하고 세션/재인증 최소기한을 적용한다. 기존 accept는 합성 source 전용이며 실제 운영 인증 경로가 아니다. 나머지 current provider는 아직 합성·기본 null/route0이고 실제 policy/registration/writer 연결을 구현/검증하기 전 활성화하지 않는다. token/CSRF를 저장/로그/결과에 넣지 않는다. 가짜 Pg 단위 PASS는 실제 PG 잠금/xid/COMMIT 증거가 아니다.
+
 ## FN06 D1 관측 수용의 내부 source 경계 — 2026-10-23
 
 `SyntheticPgOwnershipArchive.accept(scope,input,signal)`은 새 HTTP endpoint가 아닌 내부 source adapter다. 기본 current-authority가 없으면 DB 연결 전에 UNAVAILABLE이며 주입한 합성 공급자의 정확 scope/subject·등록/preparation/key와 원 DB 사건을 대조한다. 입력의 report/서명/facts는 원 REQUESTED에서 재구성한 request와 최초 고정 process에만 수용한다. caller가 보내는 새 anchor JSON을 신뢰하지 않는다. 원 명령·preparation receipt가 현재 허가라는 실제 공급자는 아직 미구현이며 이 adapter 자체를 권한자로 쓰지 않는다.

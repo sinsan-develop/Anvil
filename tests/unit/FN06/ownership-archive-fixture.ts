@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import {generateKeyPairSync,sign} from 'node:crypto';
+import {createHash,generateKeyPairSync,sign} from 'node:crypto';
+import {AccessRepository} from '../../../apps/server/modules/access/repository.ts';
+import type {Pool} from 'pg';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {advanceOwnershipHeadV1} from '../../../contracts/runtime/ownership-ledger-v1.ts';
@@ -8,6 +10,8 @@ export async function ownershipArchiveFixture(current=false){
  const start=Date.parse('2026-10-23T00:00:00.000Z'),at=(ms:number)=>new Date(start+ms).toISOString(),time={now:start+10};
  const key=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=key.publicKey.export({format:'der',type:'spki'}).toString('base64url'),fingerprint=publicKeyFingerprint(spki);
  const scope={installationId:id(1),projectId:id(2),executionId:id(3),executionGeneration:1},subject={userId:id(4),clientId:id(5),humanSessionId:id(6),controlGeneration:1,credentialGeneration:1},registrationRef=ref(7);
+ const authToken='t'.repeat(43),csrf='c'.repeat(43),authRow={id:subject.humanSessionId,uid:subject.userId,client_id:subject.clientId,server_owner:true,user_status:'ACTIVE',credential_generation:1,current_generation:1,revoked_at:null,user_revoked_at:null,client_revoked_at:null,csrf_digest:createHash('sha256').update(csrf).digest('hex'),idle_expires_at:new Date(start+120000),absolute_expires_at:new Date(start+120000),reauth_until:new Date(start+120000)};
+ let sessionReads=0;
  const record=(n:number,snapshot:any)=>({ref:{id:id(n),version:1,contentHash:hash(snapshot)},snapshot});
  const event=(n:number,kind:string,payload:any,previous:any=null,ms=0)=>record(n,{schemaVersion:1,purpose:'OWNERSHIP_EVENT',scope,subject,registrationRef,commandRef:ref(8),authorizationReceiptRef:ref(9),auditRef:ref(10),sequence:previous?previous.snapshot.sequence+1:1,previousRef:previous?.ref??null,kind,payload,at:at(ms),expiresAt:at(120000)});
  const processRef={runId:id(20),generation:1,jobId:id(21),pid:100,startTicks:'638960000000000001',executableHash:'c'.repeat(64)};
@@ -23,6 +27,8 @@ export async function ownershipArchiveFixture(current=false){
   if(sql==='COMMIT'){if(mode==='COMMIT')throw Error('synthetic commit failure');live=working;working=null;commits++;if(mode==='COMMIT_REPLY_LOST')throw Error('synthetic reply lost after commit');return{rows:[],rowCount:0};}
   if(sql==='ROLLBACK'){rollbacks++;if(mode==='ROLLBACK')throw Error('synthetic rollback failure');working=null;return{rows:[],rowCount:0};}
   if(sql.startsWith('SET LOCAL'))return{rows:[],rowCount:0};
+  if(sql.includes('FROM anvil.auth_sessions')){sessionReads++;assert(working!==null,'동일 활성 transaction 안에서 인증해야 한다');assert.deepEqual(args,[createHash('sha256').update(authToken).digest('hex')]);return{rows:[{...authRow,...(mode==='SESSION_REVOKED'&&sessionReads>1?{revoked_at:new Date(time.now)}:{})}]};}
+  if(sql.includes('pg_current_xact_id_if_assigned()'))return{rows:[{at:new Date(time.now),transaction_id:working?'77':null}]};
   if(sql==='SELECT clock_timestamp() AS at')return{rows:[{at:new Date(time.now)}]};
   if(sql.startsWith('SELECT id FROM anvil.projects')){assert.deepEqual(args,[scope.projectId]);return{rows:[{id:scope.projectId}]};}
   if(sql.includes('FROM anvil.execution_ownership_events')){
@@ -51,5 +57,6 @@ export async function ownershipArchiveFixture(current=false){
  const m=await import(new URL('../../../apps/server/modules/executions/ownership-archive.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
  assert.equal(typeof m.SyntheticPgOwnershipArchive,'function','원 요청을 소비하는 저장 adapter가 필요하다');
  const signed=(value:unknown)=>sign('sha256',Buffer.concat([Buffer.from('ANVIL_OWNERSHIP_OBSERVATION_V1\0','ascii'),Buffer.from(canonicalJson(value))]),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
- return{scope,input,signed,store:new m.SyntheticPgOwnershipArchive({connect:async()=>db},authority),withoutAuthority:()=>new m.SyntheticPgOwnershipArchive({connect:async()=>{throw Error('must not connect');}}),state:()=>structuredClone(live),stats:()=>({released,commits,rollbacks,currentReads}),connection:()=>({destroyed,returnedDirty}),fault:(s:string)=>mode=s};
+ const store=new m.SyntheticPgOwnershipArchive({connect:async()=>db},authority),access=new AccessRepository({connect(){throw Error('NO_NESTED_AUTH_TRANSACTION');}} as unknown as Pool,{installationId:scope.installationId,key:Buffer.alloc(32,7)});
+ return{scope,input,signed,store,access,authToken,csrf,authRow,sessionReads:()=>sessionReads,withoutAuthority:()=>new m.SyntheticPgOwnershipArchive({connect:async()=>{throw Error('must not connect');}}),state:()=>structuredClone(live),stats:()=>({released,commits,rollbacks,currentReads}),connection:()=>({destroyed,returnedDirty}),fault:(s:string)=>mode=s};
 }

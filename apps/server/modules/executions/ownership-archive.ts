@@ -5,7 +5,7 @@ import {readOwnershipObservationV1} from '../../../../contracts/runtime/ownershi
 import {advanceOwnershipHeadV1,checkOwnershipEventAppendV1,ownershipRequestFromEventV1,readOwnershipEventV1,readOwnershipHeadV1,type OwnershipEventV1,type OwnershipScopeV1} from '../../../../contracts/runtime/ownership-ledger-v1.ts';
 import {verifyOwnershipObservationProofV1} from './ownership-observation-proof.ts';
 import {publicKeyFingerprint} from '../connections/registration-proof.ts';
-import {AuthFailure} from '../access/repository.ts';
+import {AccessRepository,AuthFailure} from '../access/repository.ts';
 
 /** Source-only dependency: real HUMAN/policy/registration/currentness provider is NOT implemented or registered.
  * Test injection is synthetic and never becomes execution/OS/writer/source authority. */
@@ -32,12 +32,21 @@ export class SyntheticPgOwnershipArchive {
  #pool:Pick<Pool,'connect'>;#authority:SyntheticOwnershipArchiveAuthority|null;
  constructor(pool:Pick<Pool,'connect'>,authority:SyntheticOwnershipArchiveAuthority|null=null){this.#pool=pool;this.#authority=authority;}
  async accept(scopeValue:unknown,inputValue:OwnershipObservationAcceptanceInput,signal:AbortSignal){
+  return this.#accept(scopeValue,inputValue,signal,null);
+ }
+ /** 인증 소비를 추가해도 나머지 권위 포트는 합성 전용이다. route/실행 허가를 활성화하지 않는다. */
+ async acceptAuthenticated(access:AccessRepository,token:string,csrf:string,scopeValue:unknown,inputValue:OwnershipObservationAcceptanceInput,signal:AbortSignal){
+  return this.#accept(scopeValue,inputValue,signal,{access,token,csrf});
+ }
+ async #accept(scopeValue:unknown,inputValue:OwnershipObservationAcceptanceInput,signal:AbortSignal,session:{access:AccessRepository;token:string;csrf:string}|null){
   let db:PoolClient|undefined,commitAttempted=false,committed=false,discardConnection=false;
   try{
    if(this.#authority?.transport!=='SYNTHETIC_ONLY'||typeof this.#authority.current!=='function'||!(signal instanceof AbortSignal)||signal.aborted)return fail();
    const authority=this.#authority,getCurrent=authority.current;
    const ports=()=>{if(this.#authority!==authority||authority.transport!=='SYNTHETIC_ONLY'||authority.current!==getCurrent||typeof getCurrent!=='function')fail();};
    const scope=readScope(scopeValue),i=cloneV1(inputValue);
+   if(session&&(!(session.access instanceof AccessRepository)||session.access.installationId!==scope.installationId))return fail();
+   const authenticate=session?.access.authenticateInTransaction;
    if(!recordV1(i,['requestRef','expectedTailRef','expectedHeadRef','report','facts','signature','observationId','acceptedEventId','adoptionEventId','headId'])||!refV1(i.requestRef)||!refV1(i.expectedTailRef)||i.expectedHeadRef!==null&&!refV1(i.expectedHeadRef)||!['observationId','acceptedEventId','headId'].every(k=>uuidV1(i[k as keyof typeof i]))||i.adoptionEventId!==null&&!uuidV1(i.adoptionEventId)||typeof i.signature!=='string')return fail();
    const report=readOwnershipObservationV1(i.report);let end=Date.parse(report.expiresAt);
    db=await this.#pool.connect();const client=db;
@@ -45,8 +54,15 @@ export class SyntheticPgOwnershipArchive {
    const clock=async()=>{const at=(await query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime())||at.getTime()>=end)return fail();return at.getTime();};
    await query('BEGIN');await query("SET LOCAL statement_timeout = '10000ms'");
    const current=async()=>{
+    if(session&&(session.access.installationId!==scope.installationId||session.access.authenticateInTransaction!==authenticate))return fail();
+    const identity=session?await authenticate!.call(session.access,client,session.token,session.csrf):null;
     ports();const raw=await getCurrent.call(authority,client,cloneV1(scope));ports();const value=cloneV1(raw),now=await clock();
     if(!recordV1(value,['scope','subject','registrationRef','preparationRef','publicKeySpki','checkedAt','expiresAt'])||!same(value.scope,scope)||!refV1(value.registrationRef)||!refV1(value.preparationRef)||typeof value.publicKeySpki!=='string'||!isoV1(value.checkedAt)||!isoV1(value.expiresAt)||Date.parse(value.checkedAt)>now||now-Date.parse(value.checkedAt)>1000||Date.parse(value.expiresAt)<=now)return fail();
+    if(session){
+     if(session.access.installationId!==scope.installationId||session.access.authenticateInTransaction!==authenticate||!identity?.authSession||!recordV1(value.subject,['userId','clientId','humanSessionId','controlGeneration','credentialGeneration'])||identity.actorId!==value.subject.userId||identity.clientId!==value.subject.clientId||identity.authSession.id!==value.subject.humanSessionId||identity.credentialGeneration!==value.subject.credentialGeneration||!(identity.reauthUntil instanceof Date)||!Number.isFinite(identity.reauthUntil.getTime()))return fail();
+     const sessionEnd=Math.min(Date.parse(identity.authSession.idleExpiresAt),Date.parse(identity.authSession.absoluteExpiresAt),identity.reauthUntil.getTime());
+     if(!Number.isFinite(sessionEnd)||sessionEnd<=now)return fail();end=Math.min(end,sessionEnd);
+    }
     end=Math.min(end,Date.parse(value.expiresAt));return value;
    };
    const first=await current();

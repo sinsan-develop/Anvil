@@ -32,6 +32,22 @@ export class AccessRepository {
   signProjectCursor(encoded: string): string { return this.#hmac('project-list-cursor:v1:' + encoded); }
   signMethodCursor(encoded: string): string { return this.#hmac('method-list-cursor:v1:' + encoded); }
   signProviderClaimCursor(encoded: string): string { return this.#hmac('provider-claim-history-page:v1:' + encoded); }
+  /** 호출자가 소유한 transaction에서만 사용한다. 연결/BEGIN/COMMIT/갱신을 하지 않는다.
+   * 반환값은 인증뿐이며 프로젝트 정책·제어·재인증·실행 허가를 대신하지 않는다. */
+  async authenticateInTransaction(db: PoolClient, token: string, csrf: string): Promise<AuthenticatedIdentity> {
+    if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
+    if (typeof csrf !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(csrf)) throw new AuthFailure('CSRF_INVALID', 403);
+    const row = await this.#lockedSession(db, token, async () => {
+      // 행 잠금을 기다린 뒤 DB 시각을 읽는다. autocommit 조회에는 활성 xid가 없다.
+      const current = (await db.query('SELECT clock_timestamp() AS at, pg_current_xact_id_if_assigned()::text AS transaction_id')).rows[0];
+      if (!(current?.at instanceof Date) || !Number.isFinite(current.at.getTime()) || typeof current.transaction_id !== 'string' || !/^[1-9][0-9]*$/.test(current.transaction_id)) throw new AuthFailure('AUTH_REQUIRED');
+      return new Date(current.at.getTime());
+    });
+    if (!same(row.csrf_digest, digest(csrf))) throw new AuthFailure('CSRF_INVALID', 403);
+    return Object.freeze({actorId:row.uid,clientId:row.client_id,serverOwner:row.server_owner,credentialGeneration:Number(row.current_generation),
+      reauthUntil:row.reauth_until === null ? null : new Date(row.reauth_until.getTime()),
+      authSession:Object.freeze({id:row.id,idleExpiresAt:row.idle_expires_at.toISOString(),absoluteExpiresAt:row.absolute_expires_at.toISOString()})});
+  }
   async authenticated<T>(token: string, csrf: string | null, operation: (db: PoolClient, identity: AuthenticatedIdentity) => Promise<T>): Promise<T> {
     if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) throw new AuthFailure('AUTH_REQUIRED');
     return this.#transaction<T>(async db => {
@@ -72,9 +88,9 @@ export class AccessRepository {
       await db.query('INSERT INTO anvil.auth_attempt_windows(bucket_kind,bucket_key,window_start,attempt_count,blocked_until) VALUES($1,$2,$3,$4,$5)', [bucket.kind, bucket.key, bucket.start, count, count >= 5 ? new Date(Date.now() + 15 * 60_000) : null]);
     }
   }
-  async #lockedSession(db: PoolClient, token: string) {
+  async #lockedSession(db: PoolClient, token: string, clock?: () => Promise<Date>) {
     const row = (await db.query('SELECT s.*,u.id AS uid,u.display_name,u.normalized_login_name,u.server_owner,u.status AS user_status,u.revoked_at AS user_revoked_at,u.credential_generation AS current_generation,c.revoked_at AS client_revoked_at FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients c ON c.id=s.client_id AND c.user_id=s.user_id WHERE token_digest=$1 FOR UPDATE OF u,s,c', [digest(token)])).rows[0];
-    if (!row || row.user_status !== 'ACTIVE' || !sessionIsActive({ idleExpiresAt: row.idle_expires_at, absoluteExpiresAt: row.absolute_expires_at, revokedAt: row.revoked_at, userRevokedAt: row.user_revoked_at, clientRevokedAt: row.client_revoked_at, credentialGeneration: Number(row.credential_generation), currentCredentialGeneration: Number(row.current_generation) }, new Date())) throw new AuthFailure('AUTH_REQUIRED');
+    if (!row || row.user_status !== 'ACTIVE' || !sessionIsActive({ idleExpiresAt: row.idle_expires_at, absoluteExpiresAt: row.absolute_expires_at, revokedAt: row.revoked_at, userRevokedAt: row.user_revoked_at, clientRevokedAt: row.client_revoked_at, credentialGeneration: Number(row.credential_generation), currentCredentialGeneration: Number(row.current_generation) }, clock ? await clock() : new Date())) throw new AuthFailure('AUTH_REQUIRED');
     return row;
   }
   async setup(): Promise<{ setupRequired: boolean; policyVersion: number }> {

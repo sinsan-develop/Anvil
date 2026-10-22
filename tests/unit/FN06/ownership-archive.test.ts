@@ -1,6 +1,24 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {ownershipArchiveFixture} from './ownership-archive-fixture.ts';
+test('인증된 소비 경로는 같은 transaction의 HUMAN session을 처음·종료 직전 검사한다',async()=>{
+ const f=await ownershipArchiveFixture(),result=await f.store.acceptAuthenticated(f.access,f.authToken,f.csrf,f.scope,f.input,new AbortController().signal);
+ assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);assert.equal(f.sessionReads(),2);assert.equal(f.stats().commits,1);
+ assert(!JSON.stringify(result).includes(f.authToken));assert(!JSON.stringify(result).includes(f.csrf));
+});
+test('최종 HUMAN session 회수·다른 주체·재인증 기한·CSRF 불일치는 수용을 rollback한다',async()=>{
+ for(const mode of ['SESSION_REVOKED','ACTOR','CLIENT','SESSION','GENERATION','REAUTH','CSRF','INSTALLATION']){const f=await ownershipArchiveFixture(),before=f.state();
+  if(mode==='SESSION_REVOKED')f.fault(mode);
+  if(mode==='ACTOR')f.authRow.uid='30000000-0000-4000-8000-000000000099';
+  if(mode==='CLIENT')f.authRow.client_id='30000000-0000-4000-8000-000000000099';
+  if(mode==='SESSION')f.authRow.id='30000000-0000-4000-8000-000000000099';
+  if(mode==='GENERATION')f.authRow.current_generation=f.authRow.credential_generation=2;
+  if(mode==='REAUTH')f.authRow.reauth_until=new Date('2026-10-23T00:00:00Z');
+  if(mode==='INSTALLATION')f.access.installationId='30000000-0000-4000-8000-000000000099';
+  await assert.rejects(()=>f.store.acceptAuthenticated(f.access,f.authToken,mode==='CSRF'?'x'.repeat(43):f.csrf,f.scope,f.input,new AbortController().signal),{message:'OWNERSHIP_ARCHIVE_UNAVAILABLE'});
+  assert.deepEqual(f.state(),before,mode);assert.equal(f.stats().commits,0,mode);
+ }
+});
 test('원 준비/요청과 서명 검증을 소비해 bootstrap의 관측·채택·head를 한 transaction으로 기록한다',async()=>{
  const f=await ownershipArchiveFixture(),before=f.state(),result=await f.store.accept(f.scope,f.input,new AbortController().signal),after=f.state();
  assert.equal(result.purpose,'OWNERSHIP_ARCHIVE_SYNTHETIC_COMMIT');assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);
