@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN06 D1 현재 HUMAN/정책/등록 근거 source — 2026-10-23
+
+`apps/server/modules/executions/ownership-human-basis.ts`와 `tests/unit/FN06/ownership-human-basis.test.ts`는 caller 소유 transaction에서 기존 인증·projectMember/currentPolicy와 원 등록/공개키를 조회·대조한다. 결과는 BASIS_ONLY/권한 false이며 원 준비 receipt/승인·writer/실회수·후보 provenance 검증이나 원자 발급 저장을 소유하지 않는다. 기본 route/일반 operation·정책 등록/DB 적용0, 현재 권한 공급자의 완성이 아니다.
+
 ## FN06 D1 서버 원 요청 계획 source — 2026-10-23
 
 `apps/server/modules/executions/ownership-request-event.ts`는 원 준비/tail과 SYNTHETIC_ONLY 후보 anchor 또는 채택 head의 구조/hash/phase/최소 기한을 대조하고 서버 nonce32·새 사건 UUID로 비순환 REQUESTED 계획을 만든다. `tests/unit/FN06/ownership-request-event.test.ts`가 기존 서명/인증 수용 source와 합성 연결한다. 후보 provenance·현재 정책/등록/writer·project slot/원자 발급 저장·COMMIT/송신은 아직 소유하지 않는다. 반환은 PLAN/false권한이며 route 미등록이다. 별도 인증 소비 source는 기존 access/repository.ts와 executions/ownership-archive.ts에 있고 실제 DB 동작 검증은 아니다.

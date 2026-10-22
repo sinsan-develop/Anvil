@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 현재 정책/등록 근거 일부**: 기존 인증/회원·정책 읽기와 등록 공개키 원자료를 소비하는 BASIS_ONLY source를 추가했다. 독립 I1의 키 지문 결박/fixture 오류를 Main 반례 RED→GREEN으로 보완하고 직접25/type/diff를 확인했다. 원 준비 receipt/승인·writer NONE/실회수/provenance 및 요청 원자 발급·COMMIT 후 전달은 여전히 미구현이며 허가/기능 완료로 승격하지 않는다. 실제 DB·정책/키·native/서비스/Agent 제외와 SQLpending/M1은 유지한다.
+
 - **2026-10-23 FN06 D1 인증 소비·원 요청 계획 일부**: 동일 transaction HUMAN 인증을 기존 원 관측 수용 source에 연결하고 원 준비/anchor/head에서 서버 nonce·비순환 REQUESTED를 조립했다. 직접37/type/diff 및 한정 검토·Main I1 반례/보완은 WORK_STATUS 범위만 증명한다. 실제 현재 정책/등록/writer 공급자·준비/요청 원자 발급 저장/송신·SQL 적용/guard·native/Agent는 여전히 미구현/미검증이며 완료 상태로 승격하지 않는다. 기존 plan 단위와 실행 제외/특정 거절을 유지하며 같은 D1의 남은 source를 Main이 계속 선정한다.
 
 - **2026-10-23 FN06 D1 저장 소비 source 일부**: 원 사건/서명/head 계약을 소비하는 새 PG adapter와 미적용5표 후보를 작성했다. 합성 저장8+인접14=22/type/diff는 WORK_STATUS 범위만 증명하며 실제 PG/권한/서비스 기능 완료가 아니다. adapter I2의 Main RED→GREEN, SQL M1의 deferred 기한 한계/기본 DML 차단·미등록 및 미완성 guard를 보존했다. 다음 준비/원 요청 발급·인증 guard·transaction 종료 경계를 같은 D1 범위에서 계속 구현한다. 전체 FN06/D1/Stage B 상태를 완료로 바꾸지 않는다.

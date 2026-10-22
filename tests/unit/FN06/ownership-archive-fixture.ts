@@ -58,7 +58,7 @@ export async function ownershipArchiveFixture(current=false){
  assert.equal(typeof m.SyntheticPgOwnershipArchive,'function','원 요청을 소비하는 저장 adapter가 필요하다');
  const signed=(value:unknown)=>sign('sha256',Buffer.concat([Buffer.from('ANVIL_OWNERSHIP_OBSERVATION_V1\0','ascii'),Buffer.from(canonicalJson(value))]),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
  const store=new m.SyntheticPgOwnershipArchive({connect:async()=>db},authority),access=new AccessRepository({connect(){throw Error('NO_NESTED_AUTH_TRANSACTION');}} as unknown as Pool,{installationId:scope.installationId,key:Buffer.alloc(32,7)});
- return{scope,input,signed,store,access,authToken,csrf,authRow,requestBasis:()=>({preparation:structuredClone(prep),tail:structuredClone(events.at(-2)??prep),anchor:structuredClone(anchor),head:structuredClone(head),authorityExpiresAt:at(120000),nowMs:time.now}),
+ return{scope,input,signed,store,access,authToken,csrf,authRow,publicKeySpki:spki,requestBasis:()=>({preparation:structuredClone(prep),tail:structuredClone(events.at(-2)??prep),anchor:structuredClone(anchor),head:structuredClone(head),authorityExpiresAt:at(120000),nowMs:time.now}),
  installRequestPlan(plan:any){const e=plan.event;live.events[live.events.length-1]=wrap(e,live.events.length-1);const report={...plan.request,factsHash:hash(facts),observedAt:new Date(time.now).toISOString()};return{...input,requestRef:e.ref,expectedTailRef:e.ref,report,signature:signed(report)};},
  sessionReads:()=>sessionReads,withoutAuthority:()=>new m.SyntheticPgOwnershipArchive({connect:async()=>{throw Error('must not connect');}}),state:()=>structuredClone(live),stats:()=>({released,commits,rollbacks,currentReads}),connection:()=>({destroyed,returnedDirty}),fault:(s:string)=>mode=s};
 }

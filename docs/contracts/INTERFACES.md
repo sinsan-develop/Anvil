@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 현재 정책/등록의 한정 근거 — 2026-10-23
+
+`readOwnershipHumanPolicyRegistrationBasis(db,access,token,csrf,preparation)`는 caller의 활성 transaction 안에서 현재 인증·OWNER/제어·원 준비 주체/정책 fullref와 prepareOwnershipAnchor 규칙·등록 원 scope/hash/ISSUED/TRUSTED·공개키 fingerprint·최소기한을 읽는다. 연결/transaction 종료/DML·키/credential 발급·정책 변경은 없다. 등록은 REGISTRATION_STATUS_ONLY/grants=[]를 유지한다.
+
+반환 `OWNERSHIP_HUMAN_POLICY_REGISTRATION_BASIS_ONLY`는 approvalRequired와 missingEvidence=[ORIGINAL_PREPARATION_RECEIPT_AND_APPROVAL,VERIFIED_WRITER_NONE_OR_RECLAIM,CANDIDATE_PROVENANCE]를 분리한다. preparationAuthorized/observationRequestAuthorized/executionAuthorized/dispatchPerformed=false이며 원 준비 event 저장 귀속/필요 승인 소비를 증명하지 않는다. 이 객체를 archive의 실제 current authority나 발급 허가로 자동 변환하지 않는다. proposed operation/일반 정책·route는 아직 미등록이고 실제 DB 검증도 없다.
+
 ## FN06 D1 원 관측 요청의 내부 계획 — 2026-10-23
 
 `planOwnershipObservationRequest({preparation,tail,anchor,head,authorityExpiresAt,nowMs})`는 인증된 project lock 아래 읽은 원 기록을 받아 조립할 내부 함수이며 nonce/phase/request ID를 caller가 지정하지 못한다. BOOTSTRAP_PREPARED는 head=null·tail=preparation, CURRENT는 ACTIVE head의 exact currentEvent/tail·anchor/preparation을 요구한다. 최대10초와 준비/tail/anchor/head/현재 권위 기한의 최솟값을 적용하고 사건 hash 후 requestRef를 붙인다.
