@@ -112,7 +112,7 @@ export function ProviderClaimHistoryPanel({client,projectId,sessionRef,subjectKe
  }
  async function original(query:ProviderClaimHistoryQuery){
   const ticket=++sequence.current,key=scope,page=shown?.page??null;setView({scope:key,page,receipt:null,error:null,pending:true});
-  try{const receipt=await readProviderClaimReceiptHistory(client,query,()=>active(ticket,key));if(active(ticket,key)&&receipt)setView({scope:key,page,receipt,error:null,pending:false});}
+  try{const selected=page?.items.find(item=>ordered(item.query)===ordered(query));if(!selected)throw new ApiError('PROVIDER_CLAIM_HISTORY_INVALID');const receipt=await readProviderClaimReceiptHistory(client,query,()=>active(ticket,key),selected.receipt);if(active(ticket,key)&&receipt)setView({scope:key,page,receipt,error:null,pending:false});}
   catch(cause){if(active(ticket,key)){setView({scope:key,page:null,receipt:null,error:failure(cause),pending:false});if(cause instanceof ApiError&&cause.status===401)onAuthenticationLost();}}
  }
  return <section aria-label="공급자 세션 기록"><h6>공급자 세션 기록 · 과거 수신 사실</h6>

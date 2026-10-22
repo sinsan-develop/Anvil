@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **FN06/UI04 선택 원결과 한정 독립 검토**: source/client시험 scoped C0/I0/M0(독립 실행/수정0)을 수신했다. exact query/fullref/기록시각·await입력고정·기존 주체/요청세대/이탈 검사를 확인한 범위만 수용하며 실제 DOM선택·서버권한/DB/served는 미판정으로 유지한다. 기존 원FAIL/명령오류·chunk경고는 숨기지 않고 소유파일만 안전 checkpoint로 보존한다.
+
+- **2026-10-23 FN06/UI04 선택 원결과 exactref 보완 확인**: 기존3인자 getter호환·같은GET/schema를 유지하며 optional selectedReceipt를 즉시복제/검사하고 원결과의 fullref/recordedAt과 현재목록 선택을 결박했다. 원반례 Missing rejection ID RED402.2707ms→중간8PASS1FAIL528.8435ms(제품거절은발생했지만ApiError일반메시지regex기대오류)→시험을정확code검사로정정한 직접9PASS605.0047ms/type0/diff0. build:web미정의1은실패보존/성공주장0, 실제package정의의기존로컬 Vite만실행해367modules build0(447ms), 기존500kchunk경고유지·기준/구조변경0. 실served/브라우저click·DB/권한/Agent는미검증·미변경이고 독립정적리뷰중이다. SEND후current의IDLE강제와postresponse권한분리 exactdelta/대안은PMO에보냈으며 기존IDLE완화/추가실행0·다음독립업무선정은Main책임이다.
+
+- **2026-10-23 FN06 원결과 선택 exactref 보완 착수**: Main은 현 WORK_PLAN/FN06·UI04 소비를 대조했다. SEND 후 TURN 장벽은 기존 current가 IDLE을 필수로검사하므로 전송후권한 재확인을 IDLE검사완화로 대신하지 않고 정확 source계약delta를 PMO에 전달한다. 독립 구현으로 현재 목록에서 선택한 공급자 수신기록의 원결과가 동일 fullref/recordedAt인지 UI reader에 결박한다. 기존 GET/응답schema/권한·DB불변, 잘못된 선택/지연/다른id 또는시각을 표시하지 않으며 기본 exact사건 getter호환은 유지한다. 추정 독립 ProviderClaimHistory/Receipts 파일 os2 두건은 실제 WorkspaceResponsibleSessions.tsx 내inline소비로 정정·제품오류와분리했다. 소유 reader/inline소비·집중시험만변경한다.
+
 - **FN06 결과원장 검토 M1 보강·checkpoint**: 독립 정적 C0/I0/M1은 제품 새 중요결함 없이 sameevent 다른claim·추가후512행/2MiB append0의 직접시험 공백을 지적했다. Main은 원판정을 보존하고 실제 유효 THREAD/TURN/부모 레코드로 세반례를 추가, 변경한정1PASS1915.3371ms(개별1470.2333)/type/diff0을 확인했다. 제품/상한/기준변경0이며 독립 재리뷰 합격주장은 하지 않는다. 기존9/bridge1검사 범위·실store/global lock/내구/native·현재권한/DB/Agent 전체미판정은 그대로다.
 
 - **2026-10-23 FN06 결과 metadata 원장 일부 연결 확인**: 신규 SyntheticProviderCaptureResults가 준비된 exact binding/부모·claim/fullref/cipher/false권한을 검증해 기존 bridge receipt 포트와 ProtocolStore.metadata 포트를 연결한다. same사건/claim 충돌·부모원장부재·미완전/취소/만료/다른ref·추가후2MiB/512행은 거절하며 sync불명은 원metadata만 재조회하고 보호성공/재capture허가로 승격하지 않는다. 신규2RED394.4093ms→2PASS945.7338ms, fixture envelope 타입1진단은 실제validator로 좁혀 type0; 입력/최종만료 포함 신규3+직접protocolstore6 총9PASS1266.6396ms, START concretebridge→새결과원장→exact조회 추가1PASS419.7192ms/type/diff0이다. 기존 reader의 current2회 사이 소비·frame소거도 확인했으나 실제store/global lock/내구/native/OS/현재권한·Agent/정식DB서비스·전체FN06/Stage는 미구현·미검증이다. 새raw/UUID/키발급/파일/실행/자원0, 독립정적리뷰중이며 기존특정거절·원exit1/보호7 유지다.

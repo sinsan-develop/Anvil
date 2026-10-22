@@ -13,10 +13,12 @@ const hash=(v:any)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const utc=(v:any)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v;
 const invalid=():never=>{throw new ApiError('PROVIDER_CLAIM_HISTORY_INVALID');};
 /** Exact historical receipt only. Does not renew an execution credential, verify current availability or authorize a new SEND. */
-export async function readProviderClaimReceiptHistory(client:ApiClient,input:ProviderClaimHistoryQuery,active:()=>boolean):Promise<ProviderClaimHistory|null>{
+export async function readProviderClaimReceiptHistory(client:ApiClient,input:ProviderClaimHistoryQuery,active:()=>boolean,selectedReceipt?:ProviderClaimHistoricalReceipt):Promise<ProviderClaimHistory|null>{
  if(!exact(input,['projectId','agentSessionId','executionId','generation','commandId','kind','requestIdDigest','claimHash'])||![input.projectId,input.agentSessionId,input.executionId,input.commandId].every(uuid)
   ||!Number.isSafeInteger(input.generation)||input.generation<1||!['THREAD','TURN'].includes(input.kind)||!hash(input.requestIdDigest)||!hash(input.claimHash))return invalid();
- const q=structuredClone(input);if(!active())return null;
+ const q=structuredClone(input),selected=selectedReceipt===undefined?undefined:structuredClone(selectedReceipt);
+ if(selected!==undefined&&(!exact(selected,['claimRef','recordedAt','state','sourceVerification','nonceConsumed','credentialIssued','executionAuthorized','dispatchPerformed','workAccepted'])||!exact(selected.claimRef,['id','version','contentHash'])||!uuid(selected.claimRef.id)||selected.claimRef.version!==1||selected.claimRef.contentHash!==q.claimHash||!utc(selected.recordedAt)||selected.state!=='PROVIDER_CLAIM_RECORDED'||selected.sourceVerification!=='PROVIDER_CLAIM_ONLY'||selected.nonceConsumed!==true||selected.credentialIssued!==false||selected.executionAuthorized!==false||selected.dispatchPerformed!==false||selected.workAccepted!==false))return invalid();
+ if(!active())return null;
  const path='/api/v1/projects/'+q.projectId+'/agent-sessions/'+q.agentSessionId+'/provider-session-claim-receipt?'+new URLSearchParams({executionId:q.executionId,generation:String(q.generation),commandId:q.commandId,kind:q.kind,requestIdDigest:q.requestIdDigest,claimHash:q.claimHash});
  const v=await client.get<ProviderClaimHistory>(path);if(!active())return null;
  if(!exact(v,['found','receipt','observedAt','historyOnly','executionAuthorized','dispatchPerformed'])||typeof v.found!=='boolean'||!utc(v.observedAt)||v.historyOnly!==true||v.executionAuthorized!==false||v.dispatchPerformed!==false)return invalid();
@@ -28,7 +30,8 @@ export async function readProviderClaimReceiptHistory(client:ApiClient,input:Pro
    ||!utc(r.recordedAt)||Date.parse(r.recordedAt)>Date.parse(v.observedAt)||r.state!=='PROVIDER_CLAIM_RECORDED'||r.sourceVerification!=='PROVIDER_CLAIM_ONLY'||r.nonceConsumed!==true
    ||r.credentialIssued!==false||r.executionAuthorized!==false||r.dispatchPerformed!==false||r.workAccepted!==false)return invalid();
  }
- return structuredClone(v);
+ if(selected&&(Date.parse(v.observedAt)<Date.parse(selected.recordedAt)||v.found&&(v.receipt!.claimRef.id!==selected.claimRef.id||v.receipt!.claimRef.version!==selected.claimRef.version||v.receipt!.claimRef.contentHash!==selected.claimRef.contentHash||v.receipt!.recordedAt!==selected.recordedAt)))return invalid();
+ return active()?structuredClone(v):null;
 }
 /** Current authenticated HUMAN history only. No automatic polling, SEND/STOP, write or provider-handle input. */
 export async function readProviderClaimPageHistory(client:ApiClient,projectId:string,sessionRef:ProviderClaimPageHistory['agentSessionRef'],cursor:string|null,active:()=>boolean):Promise<ProviderClaimPageHistory|null>{
