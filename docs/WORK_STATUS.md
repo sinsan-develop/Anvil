@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **FN06 OWNER 조회 한정 실측 완료**: exact ad5cd1d2의 새 빈 HISTORY_READ는 phase DONE/exit0이며 기존 OWNER 목록·정확 receipt 소비, 타인403·무쿠키401 비노출, GET6원장 불변을 확인했다. PG1e1ff7ceca16163be7cac4234dad6ddf327d4196b79eb040462fb625858ab05d/net0b5b2dc3c9c5b71b3c98e4e899f1264052b8ca0f191d8be1e126fde35a21c62f/run732681fcf4f8a1604ea4cd2c22d108b0. child rawfiles2/dirs5/close0/rootCleanupFailedfalse, runner failurefalse/cleanupFailurefalse, bootstrap0/safe1/path0이다. 독립 SSH exit0로 exactID·ownerlabel·root·runner 잔여0과 정식3 불변을 확인했다. 명시 합성 source/OS 전제이며 actualProvider/currentOSfalse·formalApplyReadyfalse·Agent0이다. served화면·정식DB·전체FN06/Stage는 미완료다. 원b42/d079 실패 보존·완료schema/ATOMIC 반복0. 상세 FN06_OWNER_HISTORY_READ_LAB_RESULT.md. 다음은 FN10 절차 진행·승인대기 연결의 source 공백 대조다. 기록 중 잘못 혼입된 외국어 문장은 저장 직후 한국어로 바로잡았다.
+
+- **FN06 ad5 최소수정 실측 전 checkpoint**: PMO가ad5cd1d2d909a50508331fad866dd0f685ccc579/sourcehash·c SHARE/current잠금·반복검사/30초창을직접대조하고 HISTORY_READ 새빈1회를채택했다. §3 동일 literal root/PG/net/DB/owner새run·고정daemonimageNode/tmpfs512/공개portvolumehostmountformalnet0·59+pendingEB4등록0·합성키credential100초원문0·최대10분/240+50/180/110test90/회수25·clone전trap·생성전부재/정식3불변·독립잔여0유지. 완료schema/ATOMIC반복0·원FAIL보존·정식DB서비스/actualAgent0·실측전PASS0이다.
+
 - **FN06 최소 잠금 보완 독립검토**: 기존reviewer C0/I0/M0. 0016 session고유키·UPDATEDELETE회수/trigger불변과FOR SHARE OF c유지를대조해현재OWNER/auth잠금·hash/명령/30초재검사보존을확인했다. 독립실행/수정0·수정후실PG조회/실경합은미검증이다. 정확2source+후보/WORK_STATUS만게시하고새exact한정실측packet을전달한다.
 
 - **FN06 잠금 수정 최종 delta 축소**: PMO지적에따라 commands c의완전불변을가정하지않고 c SHARE를유지한다. 최종변경은 FOR SHARE OF s,c→FOR SHARE OF c 한곳이다. app의session UPDATE금지와0016 INSERT외guard는확인됐고command는일반변경가능원장으로보수취급한다. c잠금보존반례1FAIL후 최종26PASS1313.3869ms/typecheck/diff0·storeSHA1143B8BF743AD864C9AE1CF3A5A5E4CB993F8CD500EB276931804B3A24971994/testSHA1765EC5D4238E6B8EAE6F61EDA5228B443A53E1D1E17E6A43A23F2028C33E489. 직전전체SHARE제거안은미게시중간안으로폐기했다. 추가읽기glob os123은이미알려진경로표기오류1회재발로기록·-g만사용한다. 수정후실DB는미실행·독립리뷰진행중이다.

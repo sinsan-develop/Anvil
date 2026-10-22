@@ -1,5 +1,7 @@
 # FN06 OWNER 인증 조회 — 한정 실행 후보
 
+> 최신 실제 결과: ad5cd1d2d909a50508331fad866dd0f685ccc579의 HISTORY_READ1회는 exit0/DONE이며 독립 잔여0·정식3 불변을 확인했다. 아래 후보의 미실행 문구는 실행 전 이력이다. 원 b42/d079 실패와 합성 전제·미검증은 FN06_OWNER_HISTORY_READ_LAB_RESULT.md를 따른다. 동일 한정 시험은 추가 반복하지 않는다.
+
 ## 원인 확인 후 최소 수정 후보
 
 exact d07916c3의 실제 한정 진단은 CLAIM_OWNER_SESSION_LEDGER_LOCK_FORBIDDEN/exit1이다. 이는 지정 session/commands FOR SHARE SELECT의42501 실측이며 어느 alias가 원 권한 오류인지 원문은 출력하지 않았다. source0016의 agent_sessions UPDATE/DELETE REVOKE 및 INSERT외불변guard와 함께 session 잠금의 최소권한 충돌을 특정했다. 독립SSH로 exact PG/net/owner/root/process 잔여0·정식3 불변을 확인했다.

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 OWNER 조회 핵심 확인**: ad5cd1d2의새빈PG HISTORY_READ exit0에서정상seed→OWNER목록/정확receipt Webreader소비·타인/무인증거절비노출·GET6원장불변을확인했다. 불변예약원장잠금만제외/c잠금·현재권한/30초창유지·권한추가0이다. 독립잔여0·정식3불변,원b42/d079FAIL보존·schema/ATOMIC반복0. 실제served화면/nativeAgent/Provider/currentOS와전체FN06·Stage는미완료이며FN10독립구현공백을이어확인한다.
+
 - **2026-10-22 FN06 OWNER 조회 진단 진행**: 첫 실제 HISTORY_READ는 기존 목록 consumer 경계 FAIL·독립 잔여0·정식불변으로 기록했다. 원 pool/query 전달과42501 한정 진단·HTTP status 보존만 test-only 보완했다. 집중/인접17 PASS·typecheck/diff0, 제품/SQL/권한 변경0. 다음은 새 exact 후보의 한정 원인 확인이며 기존 schema/ATOMIC 재실행0·전체FN06 미완료다.
 
 - **2026-10-22 FN06 OWNER 인증 조회 소비 source 준비**: 기존route/Webreader재구현없이HISTORY_READ case를분리했다. 정상claim1회저장선행→현재OWNER목록/정확receipt→타인403/무cookie401/오류DTO비노출→조회6원장불변만검사하며기존ATOMIC/schema/replaycase반복0이다. 통제HTTP·seed/case반례와타입을확인했고독립C0/I0/M1뒤Main이정상오류DTO+receipt누출음성을보완했다. 실제PG/API/DOM는아직미검증·정식DB/서비스/Agent0, exact후보·동일격리자원수명회수는FN06_OWNER_HISTORY_READ_LAB_CANDIDATE.md로분리한다. 전체FN06/Stage미완료다.
