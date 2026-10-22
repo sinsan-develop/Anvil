@@ -5,7 +5,7 @@ import type {CodexMethod,InboundMethod} from './schemas.ts';
 type Code='CODEC_UNUSABLE'|'INPUT_INVALID'|'UNSUPPORTED_METHOD'|'SCHEMA_INVALID'|'INITIALIZATION_WIRE_NOT_READY'|'INITIALIZE_RESPONSE_REQUIRED'|'INITIALIZE_ALREADY_PREPARED'|'INITIALIZED_ALREADY_PREPARED'|'DUPLICATE_REQUEST_ID'|'REQUEST_ID_BUDGET_EXHAUSTED'|'PENDING_LIMIT'|'FRAME_TOO_LARGE'|'CHUNK_TOO_LARGE'|'EMPTY_FRAME'|'MALFORMED_FRAME'|'UNMATCHED_RESPONSE'|'CONTEXT_MISMATCH'|'CONTEXT_PENDING'|'PARTIAL_FRAME_EOF'|'PENDING_RESPONSE_EOF'|'TRANSPORT_ERROR'|'REMOTE_RPC_ERROR'|'SERVER_DECISION_VERIFIER_NOT_CONNECTED';
 type FactKind='PROTOCOL_UNKNOWN'|'CONTEXT_UNVERIFIED'|'RPC_RESPONSE'|'RPC_ERROR'|'INTERRUPT_RESPONSE'|'TOOL_APPROVAL_REQUIRED'|'TURN_FACT'|'THREAD_FACT'|'ITEM_FACT'|'OUTPUT_FACT'|'TOOL_ERROR_FACT'|'STREAM_CLOSED';
 export interface CodecFact{
- readonly kind:FactKind;readonly code?:Code;readonly method?:CodexMethod|InboundMethod;
+ readonly kind:FactKind;readonly code?:Code|'PROTECTED_CAPTURE_FAILED';readonly method?:CodexMethod|InboundMethod;
  readonly requestIdDigest?:string;readonly requestDigest?:string;readonly contextDigest?:string;readonly payloadDigest?:string;
  readonly toolStatus?:'completed'|'interrupted'|'failed'|'inProgress';
  readonly automaticDecision?:false;
@@ -15,6 +15,11 @@ type Rejected={readonly kind:'REJECTED';readonly code:Code;readonly executionAut
 type Encoded={readonly kind:'ENCODED';readonly wire:Uint8Array;readonly executionAuthorized:false;readonly dispatched:false};
 interface Pending{method:CodexMethod;id:string|number;threadId?:string;turnId?:string}
 interface Context{threadId:string;turnId?:string}
+export interface ProtectedSessionCapture {
+ method:'thread/start'|'turn/start'|'turn/steer';requestIdDigest:string;payloadDigest:string;threadId:string;turnId:string|null;
+}
+/** Internal explicit port. RECORDED is the port's claim, not proof of OS protection or server acceptance. */
+export interface ProtectedSessionCapturePort {capture(value:Readonly<ProtectedSessionCapture>):unknown}
 function rejected(code:Code):Rejected{return {kind:'REJECTED',code,executionAuthorized:false,dispatched:false};}
 function fact(value:Omit<CodecFact,'executionAuthorized'|'workAccepted'|'ownership'>):CodecFact{return {...value,executionAuthorized:false,workAccepted:false,ownership:'UNVERIFIED'};}
 function object(v:unknown):v is Record<string,any>{return v!==null&&typeof v==='object'&&!Array.isArray(v);}
@@ -80,10 +85,13 @@ export class Codex0161Codec{
  readonly #threads=new Map<string,true>();
  readonly #provisional=new Map<string,Context>();
  readonly #usedIds=new Set<string>();
- constructor(options:{maxFrameBytes:number;maxPending:number}){
+ readonly #capture:((value:Readonly<ProtectedSessionCapture>)=>unknown)|undefined;
+ #capturing=false;
+ constructor(options:{maxFrameBytes:number;maxPending:number},protectedPort?:ProtectedSessionCapturePort){
   let value:any;try{value=JSON.parse(canonicalJson(options));}catch{throw Error('CODEC_OPTIONS_INVALID');}
   // 내부 인스턴스 메모리 상한. 서버/실제 stdio 정책이나 완료·권한 계약이 아니다.
   if(!object(value)||!onlyKeys(value,['maxFrameBytes','maxPending'])||!Number.isSafeInteger(value.maxFrameBytes)||value.maxFrameBytes<1||value.maxFrameBytes>2097152||!Number.isSafeInteger(value.maxPending)||value.maxPending<1||value.maxPending>1024)throw Error('CODEC_OPTIONS_INVALID');
+  if(protectedPort!==undefined){const descriptor=Object.getOwnPropertyDescriptor(protectedPort,'capture');if(!descriptor||!('value'in descriptor)||typeof descriptor.value!=='function')throw Error('CODEC_OPTIONS_INVALID');this.#capture=descriptor.value.bind(protectedPort);}
   this.#maxFrameBytes=value.maxFrameBytes;this.#maxPending=value.maxPending;this.#buffer=new Uint8Array(value.maxFrameBytes+1);
  }
  #remember(threadId:string,turnId:string):void{
@@ -107,7 +115,7 @@ export class Codex0161Codec{
   for(const [key,context] of this.#provisional){if(this.#bound(context))this.#provisional.delete(key);else if(!this.#canResolve(context))return false;}
   return true;
  }
- #unknown(code:Code,kind:'PROTOCOL_UNKNOWN'|'CONTEXT_UNVERIFIED'='PROTOCOL_UNKNOWN'):CodecFact{
+ #unknown(code:Code|'PROTECTED_CAPTURE_FAILED',kind:'PROTOCOL_UNKNOWN'|'CONTEXT_UNVERIFIED'='PROTOCOL_UNKNOWN'):CodecFact{
   this.#state='UNKNOWN';this.#buffer.fill(0);this.#length=0;this.#pending.clear();this.#contexts.clear();this.#threads.clear();this.#provisional.clear();
   return fact({kind,code});
  }
@@ -118,6 +126,7 @@ export class Codex0161Codec{
   return {kind:'ENCODED',wire,executionAuthorized:false,dispatched:false};
  }
  encodeRequest(method:unknown,requestId:unknown,params:unknown):Encoded|Rejected{
+  if(this.#capturing)return rejected('CODEC_UNUSABLE');
   if(this.#state!=='OPEN')return rejected('CODEC_UNUSABLE');
   if(this.#provisional.size)return rejected('CONTEXT_PENDING');
   if(typeof method!=='string'||!requestMethods.includes(method as CodexMethod))return rejected('UNSUPPORTED_METHOD');
@@ -157,6 +166,7 @@ export class Codex0161Codec{
   return {kind:'REJECTED' as const,code:'SERVER_DECISION_VERIFIER_NOT_CONNECTED' as const,state:'UNVERIFIED' as const,executionAuthorized:false as const,dispatched:false as const};
  }
  push(chunk:Uint8Array):CodecFact[]{
+  if(this.#capturing)return [this.#unknown('PROTECTED_CAPTURE_FAILED')];
   if(this.#state!=='OPEN')return [fact({kind:'PROTOCOL_UNKNOWN',code:'CODEC_UNUSABLE'})];
   if(!(chunk instanceof Uint8Array))return [this.#unknown('INPUT_INVALID')];
   if(chunk.byteLength>this.#maxFrameBytes+2)return [this.#unknown('CHUNK_TOO_LARGE')];
@@ -179,6 +189,7 @@ export class Codex0161Codec{
   return facts;
  }
  finish(reason:'EOF'|'TRANSPORT_ERROR'='EOF'):CodecFact[]{
+  if(this.#capturing)return [this.#unknown('PROTECTED_CAPTURE_FAILED')];
   if(this.#state!=='OPEN')return [fact({kind:'PROTOCOL_UNKNOWN',code:'CODEC_UNUSABLE'})];
   if(reason!=='EOF')return [this.#unknown('TRANSPORT_ERROR')];
   if(this.#length)return [this.#unknown('PARTIAL_FRAME_EOF')];
@@ -236,6 +247,19 @@ export class Codex0161Codec{
    for(const turn of result.thread.turns)this.#remember(result.thread.id,turn.id);
   }
   if(!this.#reconcile())return this.#unknown('CONTEXT_MISMATCH');
-  return fact({kind:pending.method==='turn/interrupt'?'INTERRUPT_RESPONSE':'RPC_RESPONSE',method:pending.method,requestIdDigest:hash(pending.id),payloadDigest:hash(result)});
+  const requestIdDigest=hash(pending.id),payloadDigest=hash(result);
+  if(this.#capture&&['thread/start','turn/start','turn/steer'].includes(pending.method)){
+   const threadId=pending.method==='thread/start'?result.thread.id:pending.threadId;
+   const turnId=pending.method==='thread/start'?null:pending.method==='turn/start'?result.turn.id:result.turnId;
+   const handle=(v:unknown)=>typeof v==='string'&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,511}$/.test(v);
+   if(!handle(threadId)||(turnId!==null&&!handle(turnId)))return this.#unknown('PROTECTED_CAPTURE_FAILED');
+   this.#capturing=true;
+   try{
+    const recorded=this.#capture(Object.freeze({method:pending.method as ProtectedSessionCapture['method'],requestIdDigest,payloadDigest,threadId,turnId}));
+    if(recorded instanceof Promise)void recorded.catch(()=>{});
+    if(recorded!=='RECORDED'||this.#state!=='OPEN')return this.#unknown('PROTECTED_CAPTURE_FAILED');
+   }catch{return this.#unknown('PROTECTED_CAPTURE_FAILED');}finally{this.#capturing=false;}
+  }
+  return fact({kind:pending.method==='turn/interrupt'?'INTERRUPT_RESPONSE':'RPC_RESPONSE',method:pending.method,requestIdDigest,payloadDigest});
  }
 }

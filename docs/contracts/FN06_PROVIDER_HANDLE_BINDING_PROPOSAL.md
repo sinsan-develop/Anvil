@@ -1,5 +1,7 @@
 # FN06 실제 공급자 세션 식별 연결 — 최소 계약 변경 제안
 
+> 2026-10-22 후속 직접 승인: 신산님이 직전 권장 범위에 ‘네 의견대로 승인해’라고 답했다. 원 r2 SHA256 C9D972E7083C64F86B0BE56DC8BF74CD23B20107D0E329F52C16D2432D16E027을 A~C 코드·테스트·미적용 SQL 작성 기준으로 채택한다. 아래 DRAFT/NOT_ADOPTED·착수0은 승인 전 이력이다. 실제 DB 적용·보호 root/ACL/native helper·실 handle/credential·실Agent/비용은 이번 source 채택에서 제외한다. 원예약·기본 privacy 계약은 보존한다. 후속 구현·검증은 WORK_STATUS/WORK_PLAN을 따른다.
+
 - 상태: `DRAFT / NOT_ADOPTED`. 기존 승인 계약·실제 허가를 대체하지 않는다.
 - 2026-10-20 PMO 위임 결정: 원예약 불변·별도 제한 claim·thread/turn/현재성/OS소유 분리를 상세 설계의 권장 방향으로 확정했다. **상세설계 작성 진행만 허용**됐으며 아래 자료형/보호 정책·API/SQL·제품 구현은 아직 미채택이다.
 - 일자/담당: 2026-10-20 / Project Main 어울.

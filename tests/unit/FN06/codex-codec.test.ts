@@ -18,7 +18,37 @@ function ready(options?:any):any{
 function sent(c:any,method:string,id:string|number,params:unknown){const out=c.encodeRequest(method,id,params);assert.equal(out.kind,'ENCODED');return out;}
 function refused(c:any,code:string){const next=c.encodeRequest('turn/interrupt','later',{threadId:'thread-a',turnId:'turn-a'});assert.equal(next.kind,'REJECTED');assert.equal(next.code,code);}
 
+function captureReady(capture:(v:any)=>unknown):any{
+ const c=new (subject as any).Codex0161Codec({maxFrameBytes:4096,maxPending:8},{capture});
+ sent(c,'initialize','init',{clientInfo:{name:'anvil',version:'0.1'}});c.push(frame({id:'init',result:initResult}));c.encodeInitialized();return c;
+}
+test('명시 보호 port만 정상·재조립·정확 결박된 응답의 최소 handle을 한 번 수신한다',()=>{
+ const captured:any[]=[],c=captureReady(v=>{captured.push(v);return 'RECORDED';});sent(c,'thread/start',100,{});
+ c.push(frame({method:'thread/started',params:{thread}}));assert.equal(captured.length,0);
+ const bytes=frame({id:100,result:threadResult}),cut=bytes.length-1;assert.deepEqual(c.push(bytes.subarray(0,cut)),[]);assert.equal(captured.length,0);
+ const facts=c.push(bytes.subarray(cut));assert.equal(facts[0].kind,'RPC_RESPONSE');assert.equal(captured.length,1);
+ assert.deepEqual(captured[0],{method:'thread/start',requestIdDigest:digest(100),payloadDigest:facts[0].payloadDigest,threadId:'thread-a',turnId:null});
+ assert.equal(JSON.stringify(facts).includes('thread-a'),false);assert.equal(JSON.stringify(captured).includes('session-a'),false);
+ c.push(frame({id:100,result:threadResult}));assert.equal(captured.length,1);
+});
+test('보호 port 오류·비동기/미확인 결과는 원문 없이 UNKNOWN으로 닫고 불일치에는 capture하지 않는다',()=>{
+ for(const callback of [()=>{throw Error('PRIVATE_HANDLE');},()=>undefined,()=>Promise.resolve('RECORDED')]){
+  const c=captureReady(callback);sent(c,'thread/start',1,{});const facts=c.push(frame({id:1,result:threadResult}));assert.equal(facts[0].code,'PROTECTED_CAPTURE_FAILED');assert.equal(JSON.stringify(facts).includes('PRIVATE_HANDLE'),false);refused(c,'CODEC_UNUSABLE');
+ }
+ let calls=0;const c=captureReady(()=>{calls++;return 'RECORDED';});sent(c,'thread/start',1,{});c.push(frame({method:'thread/started',params:{thread:{...thread,id:'other'}}}));assert.equal(c.push(frame({id:1,result:threadResult}))[0].code,'CONTEXT_MISMATCH');assert.equal(calls,0);
+});
+
 // 실제 고정 schema에 없는 필드를 만들거나 초기화 순서를 건너뛰면 실패한다.
+test('보호 capture는 TURN·steer의 원 요청 thread와 정확 turn만 전달하고 재진입은 닫는다',()=>{
+ const values:any[]=[],c=captureReady(v=>{values.push(v);return 'RECORDED';});
+ sent(c,'thread/start',1,{});c.push(frame({id:1,result:threadResult}));
+ sent(c,'turn/start',2,{threadId:'thread-a',input:[]});c.push(frame({method:'turn/started',params:{threadId:'thread-a',turn:{id:'turn-a',items:[],status:'inProgress'}}}));assert.equal(values.length,1);
+ c.push(frame({id:2,result:{turn:{id:'turn-a',items:[],status:'inProgress'}}}));
+ sent(c,'turn/steer',3,{threadId:'thread-a',expectedTurnId:'turn-a',input:[]});const facts=c.push(frame({id:3,result:{turnId:'turn-a'}}));
+ assert.deepEqual(values.map(v=>[v.method,v.threadId,v.turnId]),[['thread/start','thread-a',null],['turn/start','thread-a','turn-a'],['turn/steer','thread-a','turn-a']]);assert.equal(JSON.stringify(facts).includes('turn-a'),false);
+ let nested:any;const reentrant=captureReady(()=>{nested=reentrant.push(frame({id:999,result:{}}));return 'RECORDED';});sent(reentrant,'thread/start',1,{});assert.equal(reentrant.push(frame({id:1,result:threadResult}))[0].code,'PROTECTED_CAPTURE_FAILED');assert.equal(nested[0].code,'PROTECTED_CAPTURE_FAILED');refused(reentrant,'CODEC_UNUSABLE');
+});
+
 test('initialize 필수 필드·후속 initialized 준비를 확인하되 메모리 wire를 전송/허가로 보고하지 않는다',()=>{
  const c=codec();assert.equal(c.encodeRequest('thread/start',1,{}).code,'INITIALIZATION_WIRE_NOT_READY');
  assert.equal(c.encodeInitialized().code,'INITIALIZE_RESPONSE_REQUIRED');
