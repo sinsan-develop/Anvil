@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 응답 archive 명시 어댑터 일부**: current BASIS_ONLY를 exact 선택·새 요청/관측·단조 head/기한·false 표식으로 확인해 기존 응답 7필드로 투영하는 합성 source를 연결했다. 직접22/추가7·원 독립 M1과 한정 보정 C0/I0/M0는 WORK_STATUS 범위만 증명한다. 실제 RPC/fresh producer/OS observer·writer/source 권위·DB/native/Agent 및 전체 D1/FN06/Stage B는 여전히 미완료이며 기존 허가/거절은 변경하지 않는다.
+
 - **2026-10-23 FN06 D1 current resolver 일부**: 원준비 현재근거·server read window 이후 새 CURRENT 요청/서명 수용·원 head/회수 chain/binding을 읽는 합성 BASIS_ONLY source를 추가했다. 실제 fresh producer·응답7필드 명시 assembler/current OS/writer/source 권위는 미구현이며 기존 응답 source에 자동 채택하거나 전체 FN06 완료로 승격하지 않는다. 직접46/최종10·독립 원지적/보정 및 실제 미검증은 WORK_STATUS를 따른다. 기존 실제 실행/DB/키/서비스 경계와 특정거절은 유지한다.
 
 - **2026-10-23 FN06 D1 원자 요청 발행 source 일부**: 같은 transaction의 AUTO 원준비·현재 HUMAN/정책/등록·project slot/tail/head와 서버 nonce/request 저장·COMMIT 뒤 합성 반환을 연결했다. 실제 공급자는 미등록이며 실writer/회수·provenance·REQUIRE_APPROVAL 소비·준비 creator/SQL guard·current resolver/native/Agent 및 전체 FN06는 여전히 미완료다. 독립 C0/I3/M1와 Main 반례/검증의 범위는 WORK_STATUS를 따른다. 실제 DB/권한/서비스 실행 범위·기존 거절은 확대/해제하지 않는다.

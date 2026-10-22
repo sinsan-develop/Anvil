@@ -1,5 +1,12 @@
 # FN06 현재 metadata 원자료·소유 관측 경계
 
+## 2026-10-23 D1 응답 목적의 명시 7필드 투영
+
+- `apps/connector/runtime/sent-process-current-archive.ts`의 `SyntheticSentProcessCurrentArchive`는 기존 `SyntheticSentProcessArchive`를 구현하지만 기본 resolve source는 null이다. 내부 source는 서버 current resolver의 합성 BASIS_ONLY를 반환하는 계약이며 실제 RPC/서버/producer는 아직 등록하지 않았다.
+- 입력 선택의 envelope/원 시도·permit·부모/지시 hash와 anchor/binding을 고정하고 source 결과의 전 false 표식·실제 공급자 미확인 목록을 요구한다. 같은 응답의 전후 두 조회만 허용하며 request/관측 ID 재사용, head ID 교체/세대 회귀, 범위 변경, timeout/취소/late 응답을 거절한다.
+- 반환은 기존 7필드 `{anchor,binding,anchorHeadRef,bindingHeadRef,revoked,readAt,expiresAt}`만이다. 이 명시 투영은 사실의 osFence 상태나 writerState를 바꾸지 않는다. 기존 `SyntheticSentProcessEvidence`의 별도 서버 현재성/OS observer 대조가 그대로 필요하며 결과는 SYNTHETIC_MATCHED와 권한 false다. 최상위 BASIS_ONLY를 무조건 archive로 쓰는 경로는 여전히 거절된다.
+- 실제 current resolver 코드의 fake-DB 결과를 두 번 투영한 시험과 기존 응답 consumer/별도 합성 observer 시험은 구분한다. 둘을 실제 DB·OS·Agent 종단 검증으로 부르지 않는다. 실제 fresh producer/현재 권위·source WRITE 격리·키/서비스 활성화는 미완료다.
+
 ## 2026-10-23 D1 current resolver — 새 관측 원자료의 합성 대조
 
 - 새 `ownership-current-resolver.ts`는 입력 scope와 `{preparationRef,selection}`을 소비하며 원 AUTO 준비/현재 HUMAN·정책/등록을 같은 transaction에서 읽는다. 기본 fresh 포트는 null/connect0다.
