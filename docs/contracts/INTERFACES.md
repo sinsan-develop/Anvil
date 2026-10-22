@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 신규 합성 worker SOURCE — 2026-10-23
+
+OwnershipEvidenceWorker.cs는 신규 미래 Host용 합성 대상 SOURCE다. 정확 인자는 runId·generation·expiresAt뿐이며 runtime와 같은 UUID/안전정수/정규UTC를 검사한다. worker 진입시 UTC와 최대120초 고정 monotonic 예산을 함께 사용하고 외부명령/파일/키/통신/자식/Agent 기능을 제공하지 않는다. suspended 대상의 만료·취소/회수는 실행되지 않는 worker 루프로 보장하지 않으며 미래 retained-handle Host의 별도 책임이다.
+
+worker/test source hash와 정적 검토만 동결했다. 컴파일/실행/실제 종료상한은 NOT_RUN/UNVERIFIED이고 기존 만료 QA helper·실제 OS 권위·writer/source sandbox/Agent profile이나 D2~D4 실제 실행 승인으로 재사용하지 않는다. 정식 build/migration/route/실행 목록에는 등록하지 않는다.
+
 ## FN06 D1 원 parent THREAD 이력 source — 2026-10-23
 
 readOwnershipParentThreadHistory는 같은 caller 인증 transaction에서 원 SEND/준비 이력·실제 actor를 읽고 기존 BoundPgProviderClaimHistoryStore/SyntheticProviderClaimHistory 및 원 claim journal을 소비한다. 현재 HUMAN/OWNER·agent session 예약/명령과 원 THREAD receipt의 fullref를 대조하고 원 SEND의 session/role/assignment/연결/환경/등록·실행 scope 전체(원 grant fullref 포함)와 과거 시각을 확인한 뒤 준비를 재확인한다. 결과는 비밀 없는 역사 refs·false/UNKNOWN뿐이며 raw THREAD/protected handle/thread 식별자를 반환하지 않는다.
