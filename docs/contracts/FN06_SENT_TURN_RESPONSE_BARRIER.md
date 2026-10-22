@@ -21,6 +21,12 @@
 
 ## 구현·검수 경계
 
+### 서버 원 permit·부모 기록의 응답 전용 결박
+
+`BoundSyntheticProviderSendCurrent.currentSentResponse(envelope,parentClaimRef)`는 기존 인증 transaction에서 응답 전용 basis를 전후 조회하고, 정확한 원 THREAD/DB receipt·scope·command/permit/예약·소비된 nonce/서명 주체와 기한을 대조한다. 기존 새 SEND용 `current()`는 IDLE만 허용한다. 새 반환은 `{purpose:'SENT_RESPONSE_ONLY',executionAuthorized:false,dispatchPerformed:false,attemptRef,permitRef,basis}`이며 reader가 받는 key/fact 형식을 최상위에 제공하지 않는다. basis의 parentThreadClaimRef는 대조한 원 부모 ref다. 조회 중 새 permit/예약 발행이나 nonce 소비·SQL 쓰기는 없다.
+
+이 원 기록 일치는 실제 wire 송신·현재 로컬 잠금/OS 권한의 증명이 아니다. 현재 runtime snapshot의 private handle·자료/이해 refs 조립, 원 잠금 source와의 최종 결합, 실제 DB 실행과 Agent 검증은 아직 미구현·미검증이다. 이 결과만으로 SEND·response 수용을 활성화하지 않는다.
+
 ### 동일 원잠금의 post 검증 자료
 
 서버 basis의 별도 `currentSentResponse(db,actor,scope,commandId)`는 기존 인증 tx에서 이미 저장된 명령·현재 HUMAN·소유/권한 fact·예산/자료를 다시 읽는다. 기존 `current()`의 IDLE 요구는 바꾸지 않는다. 응답용 읽기만 IDLE/BUSY 현재 상태를 허용하며 `purpose:'SENT_RESPONSE_ONLY',executionAuthorized:false,dispatchPerformed:false`를 반환한다. 이는 이미 전송한 사실·permit 소비·부모 claim의 증명이 아니므로 그 별도 대조 없이 runtime post current로 채택하지 않는다. 새 SEND/permit/reader 수용 형식과 혼용하지 않는다.

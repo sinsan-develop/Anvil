@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **FN06 응답 current 한정 재검토**: 최종 await 기한/입력고정 보정의 독립 정적 C0/I0/M0(실행/수정0)을 수신했다. 원 I1·반례/타입·시험 입력 오류는 보존하며 source6 경로만 기존 branch checkpoint로 기록한다. 실제 송신·runtime post snapshot/연속 TURN·DB/OS/Agent와 전체 작업계획 완료는 판정하지 않는다.
+
+- **FN06 응답 current 독립 I1 최종 대기 기한 보완**: 독립 C0/I1/M0(실행/수정0)은 마지막 context await 뒤 이전 clock만 판정하는 경계를 발견했다. 신규 Missing expected rejection RED428.1304ms→최종 await 뒤 clock 및 HUMAN/원 permit·claim·fact 기한 교집합 재검사로 직접10PASS1179.7574ms. 뒤 optional authSession 타입2진단은 원 FAIL로 보존하고 명시존재 검사 후 type0이다. 추가 HUMAN 반례는 지원하지 않는 Date authSession을 넣어 기존 basis에서 조기거절되어 reads1≠2 FAIL588.0922ms였으며, 실제 ISO 계약으로 시험만 정정해 응답/기존 SEND×permit/HUMAN 최종지연4경계 1PASS711.1396ms/type/diff0이다. 원 오류·검수기준 보존, 신규 응답입력은 await 전 복제고정했다. 실제 DB/서비스·OS/Agent·runtime snapshot 조립/연속 TURN·전체 FN06 미판정은 유지하며 한정 재검토 중이다.
+
+- **2026-10-23 FN06 응답 전용 current 원 기록 일부 확인**: 신규 응답용 메서드가 원 THREAD/receipt·scope·정확 permit/예약·소비 nonce/서명·현재 HUMAN/fact/기한을 기존 인증 tx 읽기로 결박했다. 새 SEND current는 false 경로·IDLE 그대로이며 신규 결과는 purpose/false 권한·basis 중첩으로 reader 수용과 구분한다. 신규2 RED552.8469ms→신규2+기존 SEND4+basis3 총9PASS996.9964ms/type/diff0. 제품 변경 전후는 기존 current 본문을 private 읽기로 옮기고 두 basis 호출만 목적별 분기하는 최소 diff이며 공개 API/SQL/DB·서비스/권한·Agent/OS 실행0이다. 실제 송신·잠금·runtime post snapshot/연속 TURN·전체 기능은 여전히 미구현·미검증이고 독립 scoped 검토 중이다.
+
+- **2026-10-23 FN06 응답 전용 current 원 permit·부모 결박 착수**: Main 단일 writer가 기존 인증 transaction의 원 THREAD·정확 permit/소비 nonce·명령/시도 대조를 응답 전용 basis에 연결한다. 새 SEND current의 IDLE 강제는 그대로 두고 응답 전용 반환은 purpose/false 권한 및 별도 basis 안에 격리한다. 신규 메모리 시험2는 메서드 부재 RED exit1/552.8469ms이며 원 실패를 보존한다. 새 public API/SQL/실 DB·서비스/권한·native/Agent 실행0, 실제 송신·로컬 잠금 증명 및 runtime post snapshot 조립/연속 TURN은 아직 미구현·미검증이다. 앞선 추정 skill 경로 읽기 os2와 sandbox Git status work-tree 접근 실패는 실제 경로·승인된 읽기 실행으로 정정했으며 제품 오류로 분류하지 않는다.
+
 - **FN06 sent-response basis 한정 독립 검토**: source/계약/fixture·신규시험 scoped C0/I0/M0(독립실행/수정0)을수신했다. 기존SEND IDLE와응답전용BUSY읽기·동일HUMAN/fact/예산/예약대조·쓰기/permit소비0을확인한범위만수용한다. 실제이미송신됨/permit소비/부모claim·runtimepost조립·DB/권한/OS/Agent미판정은유지하며 소유6파일을기존branch checkpoint로보존한다.
 
 - **2026-10-23 FN06 응답전용 서버 basis 일부 연결 확인**: 기존 current()는같은private읽기의IDLE경로를유지하고 신규 currentSentResponse()만 기존allowBusy검증을소비한다. 이미저장명령/current HUMAN·소유fact/예산·자료를읽되 purpose SENT_RESPONSE_ONLY/false권한으로구분, permit/부모claim·실postsnapshot을증명하지않는다. 신규2RED543.0822→신규2/기존sendcurrent4 총6PASS903.0468ms/type0, 회수grant/다른주체·예산/소유불명·미지원상태 포함신규3PASS839.0979ms뒤assert overload타입1진단은원FAIL보존. exact오류검사정정중서버AuthFailure를ApiError.code와혼동한1FAIL510.4009ms도보존하고 실제정의(message/statusCode)를확인해정확message/412음성1PASS591.6629ms/type/diff0이다. 제품/검수기준완화0·모든실행합성DB/SELECT만이며 실제DB/정식서비스/권한·Agent/OS·실post권한verifier·연속TURN/전체FN06Stage는미구현·미검증, 독립scoped리뷰중이다.

@@ -38,12 +38,23 @@ export class BoundSyntheticProviderSendCurrent{
  async #context(now:string){
   return readProviderChallengeContext(await this.#challenges.current(),this.#scope,now);
  }
- async current(raw:DispatchEnvelopeV1,claimRef:ProviderRef){
+ async #readBasis(commandId:string,responseOnly:boolean){
+  if(!responseOnly)return this.#basis.current(this.#db,this.#actor,this.#scope,commandId);
+  const b=await this.#basis.currentSentResponse(this.#db,this.#actor,this.#scope,commandId);
+  if(b.purpose!=='SENT_RESPONSE_ONLY'||b.executionAuthorized!==false||b.dispatchPerformed!==false)fail();return b;
+ }
+ async current(raw:DispatchEnvelopeV1,claimRef:ProviderRef){return this.#read(raw,claimRef,false);}
+ /** Response-only metadata; never a new SEND/reader admission or proof of local wire completion. */
+ async currentSentResponse(raw:DispatchEnvelopeV1,claimRef:ProviderRef){
+  const basis=await this.#read(cloneV1(raw),cloneV1(claimRef),true);
+  return{purpose:'SENT_RESPONSE_ONLY' as const,executionAuthorized:false as const,dispatchPerformed:false as const,attemptRef:cloneV1(this.#attempt.localAttemptRef),permitRef:cloneV1(this.#attempt.permitRef),basis:{...basis,parentThreadClaimRef:cloneV1(this.#claimRef)}};
+ }
+ async #read(raw:DispatchEnvelopeV1,claimRef:ProviderRef,responseOnly:boolean){
   try{
    const now=await this.#now(),e=readDispatchEnvelopeV1(raw,Date.parse(now)),s=this.#scope,c=this.#claim,a=this.#attempt;
    if(e.operation!=='SEND_INSTRUCTION'||!same(claimRef,this.#claimRef)||!recordV1(a,['key','envelopeHash','localAttemptRef','permitRef','instructionContentHash','bindingHash'])||!same(a.key,receiptKeyV1(e))||a.envelopeHash!==e.envelopeHash||!refV1(a.localAttemptRef)||a.localAttemptRef.version!==1||!refV1(a.permitRef)||a.permitRef.version!==1||!hashV1(a.instructionContentHash)||!hashV1(a.bindingHash))fail();
-   const context=await this.#context(now),before=await this.#basis.current(this.#db,this.#actor,s,e.commandId),f=before.fact;
-   if(!same(before.record.snapshot.envelope,e)||before.turnState!=='IDLE'||!same(before.grantRef,s.grantRef)||c.projectId!==s.projectId||c.execution.id!==s.executionId||c.execution.generation!==s.executionGeneration||!same(c.agentSessionRef,e.payload.sessionBindingRef)||!same(c.assignmentRef,f.intent.assignmentRef)||!same(c.responsibleBindingRef,f.agentSession.roleBindingRef)||!same(c.executorRegistrationRef,f.registration.ref)||!same(c.connectionRef,e.context.connectionRef)||!same(c.environmentRef,e.context.environmentRef)||f.registration.hostPublicKeyFingerprint!==context.publicKeyFingerprint)fail();
+   const context=await this.#context(now),before=await this.#readBasis(e.commandId,responseOnly),f=before.fact;
+   if(!same(before.record.snapshot.envelope,e)||(!responseOnly&&before.turnState!=='IDLE')||!same(before.grantRef,s.grantRef)||c.projectId!==s.projectId||c.execution.id!==s.executionId||c.execution.generation!==s.executionGeneration||!same(c.agentSessionRef,e.payload.sessionBindingRef)||!same(c.assignmentRef,f.intent.assignmentRef)||!same(c.responsibleBindingRef,f.agentSession.roleBindingRef)||!same(c.executorRegistrationRef,f.registration.ref)||!same(c.connectionRef,e.context.connectionRef)||!same(c.environmentRef,e.context.environmentRef)||f.registration.hostPublicKeyFingerprint!==context.publicKeyFingerprint)fail();
    const entry=await new SyntheticPgProviderClaimJournal().read(this.#db,{projectId:c.projectId,agentSessionId:c.agentSessionRef.id,executionId:c.execution.id,generation:c.execution.generation,commandId:c.commandId,kind:'THREAD',requestIdDigest:c.source.requestIdDigest,claimHash:this.#claimRef.contentHash});
    if(!entry||!same(entry.claim,c)||!same(entry.receipt.claimRef,this.#claimRef)||!same(entry.scope,s))fail();
    if(s.mode!=='EXECUTION')return fail();
@@ -53,10 +64,12 @@ export class BoundSyntheticProviderSendCurrent{
    const sourceRefs=[...new Map(f.intent.sourceScopes.map(x=>[canonicalJson(x.observationRef),x.observationRef])).values()];if(!same(v.request.sourceObservationRefs,sourceRefs)||!f.checks.osFence.evidenceRefs.some(r=>same(r,v.request.osOwnershipRef)))fail();
    const original=readConsumedExecutionRequest(await this.#challenges.read(),s,v.proofRef,executionTarget('POST','/api/v1/connectors/'+s.connectorId+'/executions/'+s.executionId+'/commands/'+e.commandId+'/permit',[],canonicalJson(v.request)),now,v.issuedAt,context.publicKeyFingerprint);
    if(v.proofExpiresAt!==original.expiresAt)fail();
-   const after=await this.#basis.current(this.#db,this.#actor,s,e.commandId),ended=await this.#now(),last=await this.#context(ended);
+   const after=await this.#readBasis(e.commandId,responseOnly),ended=await this.#now(),last=await this.#context(ended);
    if(!same({...before,fact:factBinding(before.fact)},{...after,fact:factBinding(after.fact)})||!same(context,last))fail();
    const deadline=Math.min(Date.parse(e.expiresAt),Date.parse(c.usableBefore),Date.parse(before.grantExpiresAt),Date.parse(last.grantExpiresAt),Date.parse(v.expiresAt),Date.parse(v.commandExpiresAt),Date.parse(v.proofExpiresAt),Date.parse(v.grantExpiresAt),Date.parse(f.checkedAt)+30000,Date.parse(after.fact.checkedAt)+30000,...Object.values(f.expires).map(Date.parse),...Object.values(after.fact.expires).map(Date.parse));
-   if(deadline<=Date.parse(ended))fail();this.#ports();return{key:receiptKeyV1(e),envelopeHash:e.envelopeHash,claimRef:cloneV1(this.#claimRef),parentThreadClaimRef:null,fact:cloneV1(after.fact),expiresAt:new Date(deadline).toISOString()};
+   const finalNow=await this.#now(),human=this.#actor.authSession;if(!human)return fail();
+   const epoch=(v:unknown)=>v instanceof Date?v.getTime():typeof v==='string'?Date.parse(v):NaN,humanDeadline=Math.min(epoch(human.idleExpiresAt),epoch(human.absoluteExpiresAt));
+   if(!Number.isFinite(humanDeadline)||Math.min(deadline,humanDeadline)<=Date.parse(finalNow))fail();this.#ports();return{key:receiptKeyV1(e),envelopeHash:e.envelopeHash,claimRef:cloneV1(this.#claimRef),parentThreadClaimRef:null,fact:cloneV1(after.fact),expiresAt:new Date(Math.min(deadline,humanDeadline)).toISOString()};
   }catch{return fail();}
  }
 }
