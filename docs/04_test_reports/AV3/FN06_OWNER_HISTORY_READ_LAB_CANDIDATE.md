@@ -1,5 +1,20 @@
 # FN06 OWNER 인증 조회 — 한정 실행 후보
 
+## 최신 진단 delta — 이전 후보 실패 보존
+
+기존 exact b42aae6b의 실제 HISTORY_READ는 목록 Webreader 경계 exit1이며 API 양성0이다. 독립 잔여0·정식3 불변을 확인했다. 아래 최초 후보와 해시는 이력이고 동일 후보를 다시 실행하지 않는다.
+
+새 test-only delta는 GET 구간의 원 pool/query/인자/결과를 그대로 전달하고 session/commands FOR SHARE SELECT의 SQLSTATE42501만 고정 진단 코드로 구분한다. 원 pool은 finally 복구한다. HTTP 거절은 본문 대신 실제 status만 보존한다. 제품 route/store/Webreader·SQL·권한·30초창 변경0이다.
+
+|변경 source|SHA256|
+|---|---|
+|tests/integration/FN06/provider-claim-query-diagnostic-qa.ts|E05FA4A81E7D19A06BFBF6E34277C4744428A429341A142126C6D4B35DD8F8FC|
+|tests/integration/FN06/provider-claim-owner-read-qa.ts|171018D356473E3C8F9BA9647312779BD7E71EF2977F8B0175CD4BEF5CCA6D50|
+|tests/integration/FN06/provider-claim-data-case-qa.ts|28BE4432F5C291C07DD809D4C37AD14A72B42E2320474536AE5559821D58BB19|
+|tests/integration/FN06/provider-claim-data-lab-qa.ts|7D83D1A55F560DA06BC694C1270E17D0DAD5F90BB139DC4B75D93CFC580C1D39|
+
+집중/인접17 PASS 483.3321ms·typecheck/diff0. 새 실제 실행은 아직0이고 권한 충돌은 가설이다. 새 exact 후보에 한해 §3 동일 literal 자원을 새 빈 cluster/run으로 최대1회 사용하고, 완료된 schema/ATOMIC case는 실행하지 않는다. 기존 실패를 PASS로 소급하거나 실제 Agent/정식 변경으로 확장하지 않는다.
+
 - 상태: source 준비·실제 HISTORY_READ 실행 미실행. 기존 원자성 검증과 다른 조회 소비 공백만 다룬다.
 - 기준 부모: c7c9bd98642e14d3ddaab54d48069fc777ba5368. 게시 exact commit은 별도 Git 증거로 전달한다.
 

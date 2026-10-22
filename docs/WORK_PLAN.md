@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 OWNER 조회 진단 진행**: 첫 실제 HISTORY_READ는 기존 목록 consumer 경계 FAIL·독립 잔여0·정식불변으로 기록했다. 원 pool/query 전달과42501 한정 진단·HTTP status 보존만 test-only 보완했다. 집중/인접17 PASS·typecheck/diff0, 제품/SQL/권한 변경0. 다음은 새 exact 후보의 한정 원인 확인이며 기존 schema/ATOMIC 재실행0·전체FN06 미완료다.
+
 - **2026-10-22 FN06 OWNER 인증 조회 소비 source 준비**: 기존route/Webreader재구현없이HISTORY_READ case를분리했다. 정상claim1회저장선행→현재OWNER목록/정확receipt→타인403/무cookie401/오류DTO비노출→조회6원장불변만검사하며기존ATOMIC/schema/replaycase반복0이다. 통제HTTP·seed/case반례와타입을확인했고독립C0/I0/M1뒤Main이정상오류DTO+receipt누출음성을보완했다. 실제PG/API/DOM는아직미검증·정식DB/서비스/Agent0, exact후보·동일격리자원수명회수는FN06_OWNER_HISTORY_READ_LAB_CANDIDATE.md로분리한다. 전체FN06/Stage미완료다.
 
 - **2026-10-22 FN06 claim 영속 경로 한정 확인**: 원QA basis evidence누락을반례로보완한exactf55bb3b6의새빈PG15에서정상예약/서명등록·START소비→claim실COMMIT/별도app연결원문hash·동일proof추가0/새proof원receipt보존·보호flush후6원장rollback을phaseDONE/exit0으로확인했다. 독립SSH exact자원ID/run/ownerlabel/root/cwd잔여0·정식3불변이다. 실DB원자성+합성source/OS전제이며actualProvider/OS/DPAPI/Agent·정식ready/전체FN06·Stage미완료,원3FAIL보존. 다음은OWNER인증API/화면조회실소비와실Agent/native연결공백이며완료schema/원자성QA반복0. 상세FN06_PROVIDER_CLAIM_DATA_LAB_RESULT.md/WORK_STATUS를따른다.

@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN06 진단 delta 독립 검토**: 기존 reviewer read-only C0/I0/M0·독립 실행/수정0. 원query/인자/this 전달·pool finally복구·원장42501만분류·HTTP본문비출력 확인범위다. 실제원인 미확정. Git 재대조에서 private main은 f976ed5e 불변이고 로컬 main ref는 과거04430432임을 확인했으며 둘을 동일하다고 보고하지 않는다. main/ref 변경0·보호 untracked6 보존이다.
+
+- **FN06 조회 진단 보완 검증**: 원 SQL/인자 전달·42501 제한 분류·원 pool 복구 2건과 기존 OWNER/거절비노출·HTTP status 포함 집중6 PASS(265.0639ms), typecheck/diff0. ApiClient가 transport 예외를 감추고 Node assert message에 수치를 추가해 안전 상수 추출을 잃는 진단 문제를 RED에서 확인하고 consumer 경계에서 고정 code+status만 보존하도록 보정했다(중간 실패3회 기록, 제품코드/권한/SQL 변경0). 실DB 원인 확인은 아직 미실행이며 기존 b42 FAIL을 PASS로 바꾸지 않는다.
+
+- **FN06 조회 진단 보완 착수**: 신산님 승인으로 기존 HISTORY_READ 실패 원인만 좁힌다. 현재 source b42aae6b·기존 저장/원자성 성공은 재실행하지 않는다. 테스트 전용 원 query 전달·42501 제한 분류·pool 복구 2반례 RED(미구현, exit1)를 확인했다. 첫 읽기 도구의 PowerShell profile conda 경고와 잘못된 access-repository.ts 경로 조회는 제품 오류와 분리하며 이후 login:false·실제 import repository.ts로 확인했다. 실제 DB/권한/서비스 변경0, 새 실측 전 원인 미확정이다.
+
+- **FN06 HISTORY_READ 첫 실제 FAIL**: exactb42aae6b 조회전용1회는child FN06_CLAIM_DATA/OTHER_ERROR·WEB_CLAIM_READER37:167→QA_OWNER_READ20:13→QA_CALLER104:39/exit1이다. 정상seed이후목록consumer경계에실패했고OWNER조회/거절/6원장무변경양성0·원인미확정이다. PGc47e822f94254946096c985f9074982ce78b515ab4b1d45b3100b7be385a6000/netcb43bf1a1a84798dbe2cce1d5f0255e2566c79a21fa33e1f385facb6d2136aaa/runba5f536450ffdb930030a996908284a0,childclose0/rootCleanupFailedfalse·runnerfailuretrue/cleanupFailurefalse/bootstrap1safe1path0. 기존원자성PASS와구분·동일후보추가실행0/정식DB서비스·Agent0. 별도잔여/정식3불변확인뒤실제지점만직접검토한다.
+
+- **FN06 HISTORY_READ 새exact1회 위임 checkpoint**: PMO가b42aae6b902ae73fe1ac1f011f3504392c994d23/6fullSHA와정상seed1회·기존Webreader GET/거절DTO·6원장불변분기를직접대조해새빈1회를채택했다. 같은data전용root/PG/net/DB/owner에새run·고정daemonimageNode/tmpfs512/portsmountvolumeformalnet0/59+pendingEB4등록0·합성P256/code/status100초원문0·10분/240+50/180/110test90/회수25·clone전trap/부재·정식3불변/별도SSH exactIDlabelrootcwd잔여0유지. 직전readonlySSH exec-02fc47 exit0에서부재/고정대상·정식3metadata/runningfalse를확인했고생성직전재확인한다. caseHISTORY_READ만실행·옛ATOMIC/schema/replaycase호출0,actual결과전조회PASS0·정식DB서비스/Agent0이다.
+
 - **FN06 OWNER조회 게시 전 직접/인접 확인**: 변경된consumer·seed/case·caller의18PASS425.1312ms/type/diff0을확인했다. 실제PG/API/DOM양성0이며독립C0/I0/M1/Main누출음성보완으로구분한다. source/시험/후보/계획·현황의소유12경로만기존branch에보존하고보호6·main·정식서비스는유지한다. 다음은exact후보의HISTORY_READ한정1회범위를PMO에분리전달한다.
 
 - **FN06 OWNER조회 source 후보 준비**: 기존ApiClient/Webreader를소비하는HISTORY_READ를정상seed1회와연결하고ATOMIC경로·성공marker를분리했다. 통제HTTP/seed/case12PASS383.0107ms·M1보완뒤consumer/caller인접8PASS518.6976ms/type/diff0, planHISTORY_READ/actualfalse/base59를확인했다. M1은정상403/401DTO에receipt추가·details중첩음성으로보완했고실제누출발견/독립clean소급0이다. 실제조회/PG/DOM실행0·정식route/SQL/권한/서비스/Agent변경0. 한정실제후보/고정source6hash·동일자원/합성credential수명·정리는신규OWNER조회후보문서로분리한다.

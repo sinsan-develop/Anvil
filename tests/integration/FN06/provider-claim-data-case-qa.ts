@@ -23,6 +23,7 @@ import {reserveProviderClaimQaSession} from './provider-claim-fixture-qa.ts';
 import {prepareProviderClaimQaTrust} from './provider-claim-trust-qa.ts';
 import {verifyProviderClaimPersistence,storeProviderClaimHistorySeed} from './provider-claim-persistence-qa.ts';
 import {verifyOwnerStoredClaimRead} from './provider-claim-owner-read-qa.ts';
+import {withClaimOwnerReadDiagnostic} from './provider-claim-query-diagnostic-qa.ts';
 import {readClaimDataQaCase} from './provider-claim-data-lab-qa.ts';
 import type {SyntheticPermitFacts} from '../../../apps/server/modules/executions/execution-permit-store.ts';
 
@@ -101,7 +102,8 @@ export async function runProviderClaimDataCase(v:Input){
   assert(v.outsiderHeaders,'CLAIM_OWNER_READ_IDENTITIES_REQUIRED');fresh();
   const receipt=await storeProviderClaimHistorySeed({pool:v.pool,privateKey:key.privateKey,scope,claim,keys,facts});
   const ledgers=async()=>{const out:Record<string,string[]>={};for(const table of ['execution_challenges','execution_receipts','provider_session_claims','provider_session_claim_proof_results','provider_session_claim_revocations','audit_events']){fresh();const rows=(await v.pool.query('SELECT to_jsonb(t) value FROM anvil.'+table+' t WHERE project_id=$1',[ctx.projectId])).rows;out[table]=rows.map(r=>canonicalJson(r.value)).sort();}return out;};
-  const before=await ledgers(),result=await verifyOwnerStoredClaimRead({app:v.app,claim,sessionRef:reserved.sessionRef,expectedReceipt:receipt,ownerHeaders:headers,outsiderHeaders:v.outsiderHeaders});assert.deepEqual(await ledgers(),before);fresh();
+  const before=await ledgers();assert.equal(v.access.pool,v.pool,'CLAIM_OWNER_READ_POOL_MISMATCH');
+  const result=await withClaimOwnerReadDiagnostic(v.access,()=>verifyOwnerStoredClaimRead({app:v.app,claim,sessionRef:reserved.sessionRef,expectedReceipt:receipt,ownerHeaders:headers,outsiderHeaders:v.outsiderHeaders!}));assert.deepEqual(await ledgers(),before);fresh();
   return{...result,dataCase:'HISTORY_READ' as const,claimLedgersUnchanged:true,normalRegistrationAndReservationStored:true,normalSignedStartPermitConsumed:true,sourceOsMode:'EXPLICIT_SYNTHETIC_PREMISE',formalApplyReady:false};
  }
  fresh();const result=await verifyProviderClaimPersistence({pool:v.pool,privateKey:key.privateKey,scope,claim,keys,facts});fresh();

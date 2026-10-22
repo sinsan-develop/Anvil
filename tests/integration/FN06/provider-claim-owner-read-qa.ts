@@ -12,14 +12,16 @@ export async function verifyOwnerStoredClaimRead(v:Input){
  const c=validateProviderSessionClaim(v.claim).claim,session=cloneV1(v.sessionRef),expected=cloneV1(v.expectedReceipt),owner={...v.ownerHeaders},outsider={...v.outsiderHeaders},hash=contentHash(canonicalJson(c));
  assert(refV1(session)&&canonicalJson(session)===canonicalJson(c.agentSessionRef)&&refV1(expected?.claimRef)&&expected.claimRef.id===c.claimId&&expected.claimRef.version===1&&expected.claimRef.contentHash===hash,'CLAIM_OWNER_READ_SELECTION_MISMATCH');
  assert(typeof v.app?.inject==='function'&&owner.host==='localhost:3830'&&outsider.host===owner.host&&/^__Host-anvil.sid=[A-Za-z0-9_-]{43}$/.test(owner.cookie??'')&&/^__Host-anvil.sid=[A-Za-z0-9_-]{43}$/.test(outsider.cookie??'')&&owner.cookie!==outsider.cookie,'CLAIM_OWNER_READ_IDENTITIES_REQUIRED');
+ let lastStatus:number|null=null;
+ const checked=async<T>(read:()=>Promise<T>):Promise<T>=>{try{return await read();}catch(error){if(lastStatus!==null&&lastStatus!==200)throw Object.assign(Error('CLAIM_OWNER_READ_EXPECTED_SUCCESS'),{expected:200,actual:lastStatus});throw error;}};
  const paths:string[]=[],client=new ApiClient(async(url,init)=>{
   const path=String(url);assert(path.startsWith('/api/v1/projects/')&&init?.method==='GET'&&!init.body&&init.credentials==='same-origin'&&init.redirect==='error'&&init.cache==='no-store');paths.push(path);
-  const r=await v.app.inject({method:'GET',url:path,headers:owner});if(r.statusCode===200)assert.equal(r.headers['cache-control'],'no-store');
+  const r=await v.app.inject({method:'GET',url:path,headers:owner});lastStatus=r.statusCode;if(r.statusCode===200)assert.equal(r.headers['cache-control'],'no-store');
   return new Response(r.body,{status:r.statusCode,headers:{'content-type':String(r.headers['content-type']??'')}});
  });
- const page=await readProviderClaimPageHistory(client,c.projectId,session,null,()=>true);assert(page&&page.items.length===1&&page.hasMore===false&&page.nextCursor===null&&page.historyOnly===true&&page.availability==='UNVERIFIED');
+ const page=await checked(()=>readProviderClaimPageHistory(client,c.projectId,session,null,()=>true));assert(page&&page.items.length===1&&page.hasMore===false&&page.nextCursor===null&&page.historyOnly===true&&page.availability==='UNVERIFIED');
  const q={projectId:c.projectId,agentSessionId:session.id,executionId:c.execution.id,generation:c.execution.generation,commandId:c.commandId,kind:c.kind,requestIdDigest:c.source.requestIdDigest,claimHash:hash};assert.deepEqual(page.items[0]!.query,q);assert.deepEqual(page.items[0]!.receipt,expected);
- const receipt=await readProviderClaimReceiptHistory(client,q,()=>true);assert(receipt&&receipt.found&&receipt.historyOnly);assert.deepEqual(receipt.receipt,expected);assert.equal(paths.length,2);
+ const receipt=await checked(()=>readProviderClaimReceiptHistory(client,q,()=>true));assert(receipt&&receipt.found&&receipt.historyOnly);assert.deepEqual(receipt.receipt,expected);assert.equal(paths.length,2);
  for(const headers of [outsider,{host:owner.host!}])for(const path of paths){
   const r=await v.app.inject({method:'GET',url:path,headers});assert.equal(r.statusCode,headers.cookie?403:401,'CLAIM_OWNER_READ_ACCESS_BOUNDARY_FAILED');
   let error:any;try{error=JSON.parse(r.body);}catch{assert.fail('CLAIM_OWNER_READ_DENIAL_CONTENT_INVALID');}

@@ -11,6 +11,10 @@ test('기존 Webreader로 OWNER 목록·원receipt를 소비하고 타인/무인
  const f=fixture(),r=await m.verifyOwnerStoredClaimRead(f);assert.equal(r.ownerReceiptAndListConsumed,true);assert.equal(r.outsiderDenied,true);assert.equal(r.unauthenticatedDenied,true);assert.equal(r.actualProviderObserved,false);assert.equal(r.actualAgentCalls,0);
  assert.equal(f.seen.length,6);assert(f.seen.every(v=>v.method==='GET'&&v.url.startsWith('/api/v1/projects/')&&!v.payload));assert.equal(f.seen[0].url.includes('provider-session-claims?limit=20'),true);
 });
+test('OWNER 목록 HTTP 거절은 원문 없이 실제 status를 보존한다',async()=>{
+ const f=fixture();f.app.inject=async()=>({statusCode:403,body:'PRIVATE_TOKEN',headers:{'content-type':'application/json','cache-control':'no-store'}});
+ await assert.rejects(m.verifyOwnerStoredClaimRead(f),(e:any)=>e.message==='CLAIM_OWNER_READ_EXPECTED_SUCCESS'&&e.expected===200&&e.actual===403&&!JSON.stringify(e).includes('PRIVATE_TOKEN'));
+});
 test('다른 세션의 claim·다른 원receipt hash 입력은 조회 전에 거절한다',async()=>{
  for(const kind of['SESSION','HASH']){const f=fixture(),change=kind==='SESSION'?{sessionRef:{...f.sessionRef,id:'00000000-0000-4000-8000-000000000001'}}:{expectedReceipt:{...f.expectedReceipt,claimRef:{...f.expectedReceipt.claimRef,contentHash:'0'.repeat(64)}}};await assert.rejects(m.verifyOwnerStoredClaimRead({...f,...change}),/CLAIM_OWNER_READ_SELECTION_MISMATCH/);assert.equal(f.seen.length,0);}
 });
