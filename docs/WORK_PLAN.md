@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN06 다음 claim 영속 QA source 준비 중**: 정상API예약/정상서명trust등록선행과원서비스의서명claim·protectedflush후rollback/동일·새proof멱등/별도읽기검증함수를작성했다. 신규단위9PASS/type0·독립각C0/I0M1·C0I0M0·C0I1M0뒤Main반례보완을구분한다. actualPG/정상예약·등록·claim양성0,fullcaller/runner·grant/START소비연결미완료/합성current방법판단요청이며Source준비를제품기능/실연결완료로계산하지않는다. 정식DB/Secret/native/Agent0·상세는WORK_STATUS를따른다.
+
 - **2026-10-22 FN06 미적용 SQL 실제 구문·권한 확인**: 원2CD2…/42601실패뒤CASE괄호2개후보의독립deltaC0/I0/M0·새위임exact62d36f75/pendingEB4…로새빈PG15 actual phaseDONE/exit0. schemaCOMMIT·최소권한closure/회수0을확인했으며기존59manifest/정식서비스불변·실Agent0이다. claim데이터/nonce·감사원자성/THREAD·TURN·정식적용준비는NOT_EXECUTED/false,전체FN06/계획미완료. 다음은원서명/permit선행의실claim저장·재조회공백이며상세는FN06_PROVIDER_CLAIM_SCHEMA_LAB_RESULT/WORK_STATUS를따른다.
 
 - **2026-10-22 FN06 pending0037 실제 lab 구문 실패 보완 중**: 새빈PG15 exact63e731a/원pending2CD2…는42601 position14220으로미적용transaction 실패·COMMIT/closure양성0. 임시자원독립잔여0·정식3불변. 128행 CASE 괄호2개만 보완한 새후보EB4CC66E…는독립delta검토/새exact한정lab판정전 actual미검증이며, 기존59SQL·manifest/정식역할·서비스·Agent변경0. 전체FN06/계획미완료, 상세원실패·회수·후속은WORK_STATUS와후보를따른다.
