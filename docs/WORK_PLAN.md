@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 protocol의 기존reader 소비 일부 연결**: 신규 SYNTHETIC_ONLY metadata/bytepipe store가 기존 RESOLVE코덱·SEND/STOP reader로 exact claim/cipher/부모·취소/유한기한·소유frame을 연결한다. source-only 신규/인접15/type/diff·독립I1의microtask경계 Main RED→GREEN은 확인했으나 실제native/DPAPI·durable원장/OS/binary/current권한·Agent/전체FN06·Stage는 미완료·미검증이다. 새실행/등록·rootACL/키credential/DB/서비스/비용0, 상세원FAIL/I1/한계는WORK_STATUS를따른다.
+
 - **2026-10-23 FN05/UI10 정정 보관발언 근거 일부 연결**: 기존 허용 대화목록/발언/원문GET로 명시확인한 사용자발언·지시 참조를 새정정에 선택/해제하고 기존 entry/changeSources/같은명령에 고정한다. 이전원문/출처·지시kind 보존, 합산한도·ownerclient세대/pendingUNKNOWN·CAS/거절/이탈/await변조는 직접17·합성DOM1/typebuild/등록QA잔여0 범위에서 확인했다. 새공개API/SQL·DD166F조회/실DB/권한·Agent0, pagination/전체주체·정식served/실DB저장후조회·현재지시효력/전체FN05/UI10·Stage는미검증·미완료이며 원실패/검토는WORK_STATUS를따른다.
 
 - **2026-10-22 FN05/UI10 정정 보관파일 근거 일부 연결**: 기존 READY 보관 텍스트 원문 확인·명시 선택/해제·기존 정정 저장/유실 같은명령에 파일근거를 고정했다. 이전원문·출처 보존·문서합산200/새본문자리예약·owner/client/세대/pendingUNKNOWN·CAS/조회거절/닫기 후추가GET0을 신규/인접단위12·합성DOM1/typebuild로 확인했으며 등록QA독립잔여0이다. 새공개API/SQL/실DB/권한·Agent0·전체FN05/UI10/Stage미완료, 정식served/DB저장·전체주체는 미검증이고 정확RED/검토/한계는WORK_STATUS를따른다.
