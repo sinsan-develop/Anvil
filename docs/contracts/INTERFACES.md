@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 최초 준비 원자 owner — 2026-10-23
+
+`SyntheticOwnershipPreparationStore(pool,access,prerequisites=null,{timeoutMs:10000}).prepare(token,csrf,intent,{intentId,commandId,eventId},signal)`는 기본 연결0의 합성 전용 owner다. 기존 staging·같은 current intent basis와 원 receipt reader를 소비해 AUTO 최초 준비의 원 command/receipt/audit→PREPARATION_GRANTED·project slot을 한 transaction으로 묶는다. 기존 준비 이력이 있는 project나 같은 세대 head를 자동 재사용하지 않으며 REQUIRE·actual writer/회수/출처 근거 부재를 허가로 바꾸지 않는다. 과거 command replay는 HISTORY_ONLY·새 event0이며 신규 결과는 SYNTHETIC_OWNERSHIP_PREPARATION_COMMIT_ONLY·모든 권한false다.
+
+helper/port에는 단일 SELECT/INSERT/UPDATE query만 노출하고 transaction 제어/연결 종료를 주지 않는다. 유한 timeout·외부 취소·late query 차단과 pending 연결 폐기, 별도 유한 ROLLBACK cleanup/불명확 폐기를 사용한다. COMMIT 시도 후 응답/기한/release 불명확은 COMMIT_UNKNOWN이며 자동 재발급하거나 rollback으로 미저장을 단정하지 않는다. 실제 PG COMMIT 기한 guard/M1 해결이나 native/실권한 활성화를 뜻하지 않는다. 실제 공급자·SQL 실행 manifest·route·정책/키·서비스/Agent는 미등록/미적용이다.
+
 ## FN06 D1 준비 원 intent 명령·receipt·audit staging — 2026-10-23
 
 `stageSyntheticOwnershipPreparationIntent(db,access,token,csrf,intent,serverIds,prerequisites=null,signal)`는 caller 소유 transaction의 내부 합성 source다. 기본 공급자 부재는 query0이며 현재 intent basis·AUTO/명시 정책·원 주체·최초 project 준비slot 부재·synthetic writer/candidate 선언을 확인한다. 기존 projectReplay/persistProjectReceipt를 소비하지만 범용 operation/route를 추가하지 않는다. 신규 결과는 SYNTHETIC_OWNERSHIP_PREPARATION_INTENT_STAGED_ONLY와 원 intent/command/receipt/audit fullref·기한·missingEvidence이며 준비/실행/dispatch 권한false다. 과거 결과는 반환 전 현재 보호를 재대조한 REPLAY_HISTORY_ONLY로만 반환하고 새 사건/준비 근거로 재사용하지 않는다. REQUIRE는 승인 소비 미연결로 거절한다.

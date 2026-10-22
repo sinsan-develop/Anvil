@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 최초 AUTO 준비 owner source 일부**: 원 command/receipt/audit와 최초 준비 사건/slot·최종 원 receipt 검증·유한 종료/COMMIT_UNKNOWN을 같은 transaction으로 연결했다. 직접32/type/diff 및 원I2 보정 한정 독립 C0/I0/M0는 WORK_STATUS 범위만 증명한다. 실제 writer/회수/provenance·필요 승인소비/SQLguard/native·DB 적용·Agent 실행은 여전히 미구현/미검증이며 전체 계획 완료가 아니다.
+
 - **2026-10-23 FN06 D1 준비 원기록 staging 일부**: 현재 intent 근거와 기존 helper로 AUTO 명령/receipt/audit 저장 source·멱등 HISTORY_ONLY·최초 project slot 보호를 연결했다. 기본 실제 공급자 부재/권한false이며 preparation event/slot COMMIT은 별도 미완료다. 직접19/type/diff·독립 원I1/M1 보정 범위는 WORK_STATUS를 따르며 실제 PG/OS/Agent 및 전체 계획 완료가 아니다.
 
 - **2026-10-23 FN06 D1 준비 intent 현재근거 일부**: 미래 준비 사건 없이 같은 transaction의 현재 인증/OWNER·제어/정책/등록을 읽는 BASIS_ONLY source를 연결했다. 기존 event reader의 검증과 parser를 공유하되 권한false·승인필요 상태만 반환한다. 직접62/type/diff·한정 읽기 C0/I0/M0는 WORK_STATUS 범위만 증명하며 실제 준비 발급/저장·writer/회수/provenance·DB/OS/Agent 및 전체 FN06는 미완료다.
