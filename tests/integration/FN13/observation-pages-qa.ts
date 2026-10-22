@@ -2,14 +2,15 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import {SyntheticExecutionObservations,type ObservationScope} from '../../../apps/server/modules/executions/execution-observations.ts';
+import {SyntheticExecutionObservations,type ObservationScope,type SyntheticObservationTransaction} from '../../../apps/server/modules/executions/execution-observations.ts';
 import {SyntheticPgObservationStore} from '../../../apps/server/modules/executions/execution-observation-store.ts';
 import {readStoredObservationPage} from '../../../apps/web/src/features/session-detail/observation-journal-api.ts';
 import type {ApiClient} from '../../../apps/web/src/api/client.ts';
 import type {Pool} from 'pg';
 
 export async function verifyObservationPages(v:{pool:Pool;app:any;client:ApiClient;result:any;headers:Record<string,string>;outsiderToken:string;spki:string;scope:ObservationScope;envelope:any;cases:string[]}){
- const {pool,scope}=v,service=new SyntheticExecutionObservations(new SyntheticPgObservationStore(pool,{transport:'SYNTHETIC_ONLY',key:async()=>v.spki}));
+ const {pool,scope}=v,store=new SyntheticPgObservationStore(pool,{transport:'SYNTHETIC_ONLY',key:async()=>v.spki});
+ const service=new SyntheticExecutionObservations({transport:'SYNTHETIC_ONLY',transaction:async<T>(s:ObservationScope,body:(tx:SyntheticObservationTransaction)=>Promise<T>)=>{try{return await store.transaction(s,body);}catch(e:any){const code=typeof e?.code==='string'&&/^[A-Z0-9_]{1,64}$/.test(e.code)?e.code:'NONE',reason=typeof e?.message==='string'&&/^[A-Z][A-Z0-9_]{1,80}$/.test(e.message)?e.message:'REDACTED';v.cases.push('OBSERVATION_STORE_FAILURE_'+code+'_'+reason);throw e;}}});
  const event=(sequence:number)=>({projectId:scope.projectId,executionId:scope.executionId,executionGeneration:1,sequence,eventId:randomUUID(),type:'UNKNOWN',commandId:v.envelope.commandId,envelopeHash:v.envelope.envelopeHash,localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date().toISOString(),reasonCode:'PROVIDER_RESPONSE_LOST'});
  const ingest=async(events:ReturnType<typeof event>[])=>service.ingest(scope,{events,batchHash:contentHash(canonicalJson(events))});
  const count=async()=>{const out:Record<string,number>={};for(const table of ['execution_observations','execution_acknowledgements','result_submissions','commands','authorization_receipts','audit_events'])out[table]=(await pool.query('SELECT count(*)::int n FROM anvil.'+table)).rows[0].n;return out;};

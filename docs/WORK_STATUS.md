@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **FN13 저장 오류 경계 조사**: 별도SSH에서전용경로/PG/net잔여0확인exit0. 실제실패는SyntheticExecutionObservations가다른원인을일반StorageUnavailable로감싸므로새QA wrapper에원transaction의SQLSTATE/대문자상수코드만남기는진단을추가한다. SQL/값/키/DSN/오류본문출력0·제품저장/권한/timeout/기준변경0. 원인미확정에서수정하지않고새exactSHA의1회진단만수행하며같은실패맹목반복0이다.
+
+- **FN13 실제 관측페이지 첫 실행 FAIL**: exact c478967b 신규 빈 전용PG의59SQL/app 비관리자 선행은 통과했으나 OBSERVATION_PAGES_ACTUAL_PG에서 OBSERVATION_STORAGE_UNAVAILABLE로 exit1이다. 새관측 저장에 도달했으며 페이지양성0/원인미확정, 앞선 fixture/브라우저PASS로 대체하지 않는다. 원문 시험files2/dirs5·closeFailures0/rootCleanupFailedfalse, runner cleanupFailurefalse/최종bootstrap status1 safe1 path_exists0. 별도잔여확인 후 같은오류의 실제 원인을 secret-safe로 좁히며 자동 반복/SQL우회/정식DB·서비스변경0이다.
+
 - **FN13 신규 QA 한정 검토**: 독립 정적 C0/I0/M1·실행/수정0이다. M1은 외부인/변조 거절 뒤6표불변의 직접 assertion 누락이며 Main이 gap-fill 이전 count를 after와 대조하도록 시험만 보완했다. 제품/59SQL/권한/정식서비스0. 가드5PASS179.8633ms/type0 및 plan지문 불변과 분리하며 actual PG/새 endpoint의 저장소비는 아직 미검증이다.
 
 - **FN13 관측페이지 실제 QA 사전등록**: WSL-server 새빈 /home/daon/deploy/anvil-v3-fn12-manual-report-qa-01(내부 .av3-data/fn12-raw 포함), PG anvil-v3-fn12-manual-report-pg-01/internal network anvil-v3-fn12-manual-report-net-01/DB anvil_v3_fn12_manual_report_qa_01, uid1000 daon·AV3_FN12_MANUAL_REPORT_QA/새random run label. PG15 digest6eb0add3/image594290e9·tmpfs512MiB·공개port/영구volume0, Node24.21 SHA7fde7b8a·기존59SQL. clone전trap·전체240초/TERM후50초·child90/외부110/회수25초·생성후최대10분. private Git exact게시SHA만 clone하고 readonly deps 링크 /home/daon/deploy/anvil-v3/node_modules와 lock동일만 허용한다. exact ID/label/image/mount/port·owner/nonlink/realpath/process/clean 확인 후 등록자원만 제거·별도잔여0. 실패시 자동반복/우회0·안전조건불충족source보존. 새SSH부재/uid/parent/daemon/image/lsof확인exit0, 정식3container fullID/image/StartedAt동일·runningfalse를 대조했고 정식서비스/DB명령0이다. 실제 실행은 독립검토/게시 후 OBSERVATION_PAGES1회만 한다.
