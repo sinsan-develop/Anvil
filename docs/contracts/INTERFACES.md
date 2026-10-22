@@ -1,5 +1,9 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 준비 사건 이전 intent 현재근거 — 2026-10-23
+
+`readOwnershipPreparationIntentBasis(db,access,token,csrf,intent)`는 caller 소유 transaction에서 exact intent parser와 현재 HUMAN/OWNER·제어·명시 정책/등록·최종 DB기한을 대조한다. 기존 event reader의 검증 본문을 공유하지만 미래 preparationRef를 생성하지 않고 INTENT_BASIS_ONLY·intent/hash·scope/subject/policyRef/registrationRef/공개키/checkedAt/expiresAt·approvalRequired를 반환한다. 준비/관측요청/실행/dispatch 권한은 false이며 원 명령·허가·감사/필요 승인소비·writer 부재/실회수·provenance는 여전히 별도 근거다. 기존 generic operation allowlist·route·SQL/실키·서비스 활성화는 변경하지 않는다.
+
 ## FN06 D1 준비 intent 순수 조립 — 2026-10-23
 
 `planOwnershipPreparationIntent(intent,serverIds,nowMs)`는 `serverIds={intentId,commandId}`의 서로 다른 서버 내부 UUID와 exact intent 구조·scope/주체/fullref/기한/세 준비 행위·false 표식을 검사한다. 원 receipt reader의 비순환 intentRef와 AUTO commandSnapshot(approvalRef=null) 및 requestHash를 반환하며 목적은 OWNERSHIP_PREPARATION_INTENT_PLAN_ONLY다. 실제 인증/현재 정책/등록·writer NONE/회수·provenance·원 명령/receipt/audit 저장 근거를 제공하지 않고 준비/실행/dispatch 권한은 false다. 일반 operation allowlist·route 등록·DB 저장/실제 준비 실행은 변경하지 않는다. 사용자 입력 writerState=NONE은 구조적 선언일 뿐 실제 부재 증거가 아니다. 정확 키 외 미래 event/receipt/audit 참조·SEND/WRITE 및 120초 초과는 거절한다.

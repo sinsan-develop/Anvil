@@ -5,6 +5,7 @@ import {readOwnershipEventV1} from '../../../../contracts/runtime/ownership-ledg
 import {AccessRepository,AuthFailure} from '../access/repository.ts';
 import {currentPolicy,projectMember} from '../access/project-command.ts';
 import {publicKeyFingerprint} from '../connections/registration-proof.ts';
+import {readOwnershipPreparationIntent} from './ownership-preparation-intent.ts';
 
 const fail=():never=>{throw new AuthFailure('OWNERSHIP_HUMAN_BASIS_UNAVAILABLE',412);};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
@@ -16,7 +17,24 @@ const date=(v:unknown):v is Date=>v instanceof Date&&Number.isFinite(v.getTime()
 export async function readOwnershipHumanPolicyRegistrationBasis(db:PoolClient,access:AccessRepository,token:string,csrf:string,preparationValue:unknown){
  try{
   const prep=readOwnershipEventV1(preparationValue),p=prep.snapshot;
-  if(p.kind!=='PREPARATION_GRANTED'||!(access instanceof AccessRepository)||access.installationId!==p.scope.installationId)return fail();
+  if(p.kind!=='PREPARATION_GRANTED')return fail();
+  return{...await readCurrentBasis(db,access,token,csrf,p),purpose:'OWNERSHIP_HUMAN_POLICY_REGISTRATION_BASIS_ONLY' as const,preparationRef:cloneV1(prep.ref)};
+ }catch{return fail();}
+}
+/** 준비 사건을 꾸며 만들지 않는 intent 전용 읽기. 현재 근거이며 저장/준비/실행 허가는 아니다. */
+export async function readOwnershipPreparationIntentBasis(db:PoolClient,access:AccessRepository,token:string,csrf:string,intentValue:unknown){
+ try{
+  const raw=cloneV1(intentValue),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
+  if(!date(at))return fail();
+  const intent=readOwnershipPreparationIntent(raw,at.getTime());
+  const basis=await readCurrentBasis(db,access,token,csrf,{scope:intent.scope,subject:intent.subject,registrationRef:intent.registrationRef,payload:intent.details,at:intent.at,expiresAt:intent.expiresAt});
+  if(Date.parse(basis.checkedAt)<at.getTime())return fail();
+  return{...basis,purpose:'OWNERSHIP_PREPARATION_INTENT_BASIS_ONLY' as const,intent:cloneV1(intent),intentHash:hash(intent)};
+ }catch{return fail();}
+}
+async function readCurrentBasis(db:PoolClient,access:AccessRepository,token:string,csrf:string,p:any){
+ try{
+  if(!(access instanceof AccessRepository)||access.installationId!==p.scope.installationId)return fail();
   const actor=await access.authenticateInTransaction(db,token,csrf);
   if(!actor.authSession||!same({userId:actor.actorId,clientId:actor.clientId,humanSessionId:actor.authSession.id,controlGeneration:p.subject.controlGeneration,credentialGeneration:actor.credentialGeneration},p.subject)||!date(actor.reauthUntil))return fail();
   const member=await projectMember(db,actor,p.scope.projectId,true);
@@ -47,6 +65,6 @@ export async function readOwnershipHumanPolicyRegistrationBasis(db:PoolClient,ac
   const expires=Math.min(Date.parse(p.expiresAt),Date.parse(actor.authSession.idleExpiresAt),Date.parse(actor.authSession.absoluteExpiresAt),actor.reauthUntil.getTime(),registration.expires_at.getTime(),...matched.map(r=>Date.parse(r.expiresAt)));
   const last=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
   if(!date(last)||last.getTime()<at.getTime()||!Number.isFinite(expires)||last.getTime()>=expires||access.installationId!==p.scope.installationId)return fail();
-  return{purpose:'OWNERSHIP_HUMAN_POLICY_REGISTRATION_BASIS_ONLY' as const,scope:cloneV1(p.scope),subject:cloneV1(p.subject),preparationRef:cloneV1(prep.ref),policyRef:cloneV1(policy.ref),registrationRef,publicKeySpki:registration.public_key_spki as string,approvalRequired:matched.some(r=>r.disposition==='REQUIRE_APPROVAL'),checkedAt:last.toISOString(),expiresAt:new Date(expires).toISOString(),missingEvidence:['ORIGINAL_PREPARATION_RECEIPT_AND_APPROVAL','VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE'] as const,preparationAuthorized:false as const,observationRequestAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  return{scope:cloneV1(p.scope),subject:cloneV1(p.subject),policyRef:cloneV1(policy.ref),registrationRef,publicKeySpki:registration.public_key_spki as string,approvalRequired:matched.some(r=>r.disposition==='REQUIRE_APPROVAL'),checkedAt:last.toISOString(),expiresAt:new Date(expires).toISOString(),missingEvidence:['ORIGINAL_PREPARATION_RECEIPT_AND_APPROVAL','VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE'] as const,preparationAuthorized:false as const,observationRequestAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
  }catch{return fail();}
 }
