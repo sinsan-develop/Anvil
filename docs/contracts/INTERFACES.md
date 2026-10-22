@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 원 준비 명령/영수증의 비순환 source 계약 — 2026-10-23
+
+`readOwnershipPreparationReceiptBasis(db,access,token,csrf,scope,preparationRef)`는 DB 원 준비를 읽고 현재 HUMAN/정책/등록을 전후 검사하는 AUTO 읽기 source다. REQUIRE_APPROVAL은 소비 verifier 연결 전 UNAVAILABLE이며 기존 범용 승인/operation 등록부와 SQL은 변경하지 않는다. 결과는 RECEIPT_BASIS_ONLY/권한 false, writer NONE/실회수·후보 provenance와 실제 원자 발급/송신은 별도 미완료다.
+
+해시 순환 방지: 명령의 targetRef는 미래 event가 아닌 불변 intentRef다. intent snapshot의 정확 키는 `schemaVersion=1,purpose=OWNERSHIP_PREPARATION_INTENT,scope,subject,registrationRef,details(원 준비 payload),at,expiresAt,executionAuthorized=false,dispatchPerformed=false`이며 미래 event/command/receipt/audit ref를 넣지 않는다. intentRef는 UUID/version1/canonical snapshot hash다. `commands.result_ref.data`에는 `ref,status=OWNERSHIP_PREPARATION_INTENT_RECORDED,intent,commandSnapshot`을 보존하는 후보 계약이다. commandSnapshot은 기존 ProjectCommand의 prepareOwnershipAnchor/targetId=null/expectedVersion0/baselineRefs=[]/payload={intent}다. 현재 AUTO 경로는 approvalRef=null만 허용한다.
+
+준비 event의 commandRef는 commands.id/version1/request_hash, authorizationReceiptRef는 실제 receipt.id/version1/scope_digest다. scopeDigest는 기존 persistProjectReceipt의 project/actor/client/control/requestHash/policyRef/targetRef=intentRef 식을 그대로 따른다. auditRef는 원 row의 명시 snapshot `projectId,serverSequence,eventId,actorRef,clientRef,commandId,operationId,targetRef,policyRef,approvalRef,outcome,reasonCode,scopeDigest,recordedAt,sourceKind,correctionOf`의 canonical hash다. APPLIED/HUMAN_COMMAND/EXPLICIT_OWNERSHIP_PREPARATION_INTENT 및 원 명령·주체·intentRef·receipt digest를 대조한다. app에서 불변인 receipt/audit는 plain SELECT, 변경 가능한 commands c는 기존 권한 안에서만 잠근다. 이 source 계약의 실제 creator/SQL 검증·서비스 적용은 아직 없다.
+
 ## FN06 D1 현재 정책/등록의 한정 근거 — 2026-10-23
 
 `readOwnershipHumanPolicyRegistrationBasis(db,access,token,csrf,preparation)`는 caller의 활성 transaction 안에서 현재 인증·OWNER/제어·원 준비 주체/정책 fullref와 prepareOwnershipAnchor 규칙·등록 원 scope/hash/ISSUED/TRUSTED·공개키 fingerprint·최소기한을 읽는다. 연결/transaction 종료/DML·키/credential 발급·정책 변경은 없다. 등록은 REGISTRATION_STATUS_ONLY/grants=[]를 유지한다.

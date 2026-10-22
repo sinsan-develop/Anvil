@@ -1,5 +1,9 @@
 # P02 A안 파일 책임·검증 지도
 
+## FN06 D1 원 준비 AUTO receipt 읽기 source — 2026-10-23
+
+`apps/server/modules/executions/ownership-preparation-receipt.ts`는 원 준비 DB ref를 읽고 기존 current HUMAN/정책/등록 근거와 원 command/receipt/audit를 결박한다. `tests/unit/FN06/ownership-preparation-receipt.test.ts`의 가짜 DB 정상/변조/기한/최소권한 모델과 `ownership-human-basis-fixture.ts`를 재사용한다. REQUIRE_APPROVAL은 기본 거절이며 receipt 읽기 결과를 준비/OBSERVE 허가로 쓰지 않는다. 원 writer/실회수·provenance·원자 발급·COMMIT 뒤 전달/실 PG/creator는 소유하지 않는다. 새 표/SQL/정책·route·실행 효과0이다.
+
 ## FN06 D1 현재 HUMAN/정책/등록 근거 source — 2026-10-23
 
 `apps/server/modules/executions/ownership-human-basis.ts`와 `tests/unit/FN06/ownership-human-basis.test.ts`는 caller 소유 transaction에서 기존 인증·projectMember/currentPolicy와 원 등록/공개키를 조회·대조한다. 결과는 BASIS_ONLY/권한 false이며 원 준비 receipt/승인·writer/실회수·후보 provenance 검증이나 원자 발급 저장을 소유하지 않는다. 기본 route/일반 operation·정책 등록/DB 적용0, 현재 권한 공급자의 완성이 아니다.
