@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 응답 credential 예약 미생성 일부 보완**: 기존 current/발급 경로를 유지하고 응답 전용 명시 currentReadOnly를 필수로 분리했다. 기존 정확 예약만 SELECT하며 없으면 실패/legacy fallback0이다. 집중13·보강8·원잠금 연결1·Date 보강2/type/diff는 각 합성 source snapshot 범위이고 실제 PG/OS/Agent 현재성은 미검증이다. A 내부 소유 증거 계약 선택과 실제 실행 제외는 source map/WORK_STATUS에 구분했다.
+
+- **2026-10-23 FN06 실제 current metadata 선행 구분**: 서버의 HUMAN/정책/grant 재대조와 저장 OS binding·공급자 주장/만료 QA를 구분했다. concrete current/소유 evidence 매핑 미구현은 FN06_CURRENT_METADATA_SOURCE_MAP.md의 정확 source 계약 결정 대상으로 남기며 기존 부분 구현을 실제 OWNED/Agent 준비로 승격하지 않는다. 실제 실행·권한/공개계약은 확대하지 않고 독립 승인 업무는 계속 선정한다.
+
 - **2026-10-23 FN06 원잠금 post·현재 source 합성 소비**: 새 현재 조립을 기존 PostCurrent 원 시도/permit 두행 검사와 함께 소비하는 연결1/type/diff를 확인했다. 원 서명/nonce·permit·수신 자료를 합성으로 정합 결박했을 뿐 실제 잠금/내구·metadata OS현재성·wire/Agent/native/DB/전체 FN06 완료는 아니다. 제품/허가/검수기준 변경 없이 원 오류·이력과 미검증을 WORK_STATUS에 보존한다.
 
 - **2026-10-23 FN06 보호 THREAD·private metadata 일부 조립**: 고정 부모와 별도 응답 reader의 THREAD를 식별자 없는 독립 metadata에 결합하고 pre/thread·자료/소유/이해·기한/취소를 대조했다. 신규/직접 영향7/type/diff는 합성 DB/store/metadata 범위이며 독립 metadata 진위·OS/current 실제 공급자·서비스 최종 조립/연속 TURN·native/DB/Agent/전체 FN06는 미구현·미검증이다. 이전 SEND/reader/IDLE 목적과 승인 범위는 유지한다. 원 RED/검토는 WORK_STATUS에 기록한다.

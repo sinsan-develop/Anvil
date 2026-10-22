@@ -7,6 +7,7 @@ import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts
 import { publicKeyFingerprint } from '../connections/registration-proof.ts';
 import { authorizeRuntimePolicy } from './runtime-policy.ts';
 import { ProjectExecutionBudget } from './execution-budget.ts';
+import { readExistingSyntheticCredentialReservation } from './execution-credential-reservation-read.ts';
 import type { SyntheticChallengeEntry, SyntheticChallengeScope, SyntheticChallengeStore, SyntheticChallengeTransaction } from './execution-challenges.ts';
 
 export interface SyntheticHostKeys {transport:'SYNTHETIC_ONLY';key(db:PoolClient,registration:unknown):Promise<unknown>}
@@ -34,7 +35,7 @@ export class SyntheticPgChallengeStore implements SyntheticChallengeStore {
   const scope=readScope(raw),db=await this.pool.connect();
   try{
    await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='10s';SET LOCAL lock_timeout='2s'");
-   const current=async()=>{
+   const current=async(reserveCredential=true)=>{
     if(this.keys.transport!=='SYNTHETIC_ONLY')return bad('SYNTHETIC_HOST_KEYS_REQUIRED');
     const g=(await db.query('SELECT g.*,e.transport AS execution_transport,e.state AS execution_state FROM anvil.execution_grants g JOIN anvil.executions e ON e.project_id=g.project_id AND e.id=g.execution_id AND e.generation=g.generation WHERE g.project_id=$1 AND g.id=$2 AND g.version=$3',[scope.projectId,scope.grantRef.id,scope.grantRef.version])).rows[0];
     if(!g||g.content_hash!==scope.grantRef.contentHash||Number(g.generation)!==scope.executionGeneration||g.execution_id!==scope.executionId||hash(g.snapshot_json)!==g.content_hash
@@ -64,8 +65,9 @@ export class SyntheticPgChallengeStore implements SyntheticChallengeStore {
     const now=await clock(db),expiresAt=new Date(Math.min(Date.parse(g.snapshot_json.expiresAt),s.idle_expires_at.getTime(),s.absolute_expires_at.getTime(),a.validUntil,q.validUntil)).toISOString();
     if(Date.parse(expiresAt)<=Date.parse(now))return bad('EXECUTION_GRANT_EXPIRED');
     await db.query("SELECT set_config('anvil.synthetic_grant_id',$1,true),set_config('anvil.synthetic_grant_hash',$2,true),set_config('anvil.synthetic_project_id',$3,true)",[scope.grantRef.id,scope.grantRef.contentHash,scope.projectId]);
-    const reserved=(await db.query('SELECT * FROM anvil.execution_credentials WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND credential_generation=1',[scope.projectId,scope.grantRef.id,scope.grantRef.version])).rows[0];
+    const reserved=reserveCredential?(await db.query('SELECT * FROM anvil.execution_credentials WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND credential_generation=1',[scope.projectId,scope.grantRef.id,scope.grantRef.version])).rows[0]:await readExistingSyntheticCredentialReservation(db,scope,now);
     if(!reserved){
+     if(!reserveCredential)return bad('SYNTHETIC_CREDENTIAL_RESERVATION_UNAVAILABLE');
      const snapshot={transport:'SYNTHETIC_ONLY',state:'SYNTHETIC_RESERVED_NO_TOKEN',grantRef:scope.grantRef,credentialGeneration:1,reservedAt:now,credentialIssued:false,executionAuthorized:false,dispatchPerformed:false};
      await db.query('INSERT INTO anvil.execution_credentials(project_id,id,version,grant_id,grant_version,credential_generation,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,1,$5,$6)',[scope.projectId,randomUUID(),scope.grantRef.id,scope.grantRef.version,hash(snapshot),JSON.stringify(snapshot)]);
     }else if(reserved.content_hash!==hash(reserved.snapshot_json)||reserved.snapshot_json.state!=='SYNTHETIC_RESERVED_NO_TOKEN'||!same(reserved.snapshot_json.grantRef,scope.grantRef)
@@ -73,7 +75,7 @@ export class SyntheticPgChallengeStore implements SyntheticChallengeStore {
     return{context:{transport:'SYNTHETIC_ONLY',mode:'EXECUTION',projectId:scope.projectId,connectorId:scope.connectorId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,
      grantRef:scope.grantRef,scopeDigest:g.snapshot_json.scopeDigest,credentialGeneration:1,publicKeyFingerprint:f.registration.hostPublicKeyFingerprint,grantExpiresAt:expiresAt},spki,checkedAt:now};
    };
-   const tx:SyntheticChallengeTransaction={current,clock:()=>clock(db),read:async()=>{
+   const tx:SyntheticChallengeTransaction={current:()=>current(true),currentReadOnly:()=>current(false),clock:()=>clock(db),read:async()=>{
     const rows=(await db.query('SELECT * FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 ORDER BY server_sequence LIMIT 20001',[scope.projectId,scope.grantRef.id,scope.grantRef.version])).rows;
     const events=rows.map(r=>{if(r.snapshot_json?.sequence!==Number(r.server_sequence))return bad('EXECUTION_CHALLENGE_LEDGER_INVALID',503);return{ref:{id:r.id,version:Number(r.version),contentHash:r.content_hash},snapshot:r.snapshot_json};});
     return{complete:rows.length<=20000,events};

@@ -15,6 +15,9 @@ export type SyntheticChallengeEntry=Entry;
  */
 export interface SyntheticChallengeTransaction {
  current():Promise<{context:unknown;spki:unknown;checkedAt:string}>;
+ /** Explicit existing-reservation read. Response callers must not fall back to
+  * current(), which may create the legacy synthetic reservation. */
+ currentReadOnly?():Promise<{context:unknown;spki:unknown;checkedAt:string}>;
  clock():Promise<string>;
  read():Promise<{complete:boolean;events:Entry[]}>;
  append(value:Entry):Promise<void>;

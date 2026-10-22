@@ -35,8 +35,9 @@ export class BoundSyntheticProviderSendCurrent{
  }
  #ports(){if(this.#basis.transport!=='SYNTHETIC_ONLY'||typeof this.#challenges?.clock!=='function'||typeof this.#challenges.current!=='function'||typeof this.#challenges.read!=='function')fail();}
  async #now(){this.#ports();const n=await this.#challenges.clock();if(!isoV1(n))return fail();return n;}
- async #context(now:string){
-  return readProviderChallengeContext(await this.#challenges.current(),this.#scope,now);
+ async #context(now:string,responseOnly=false){
+  const read=responseOnly?this.#challenges.currentReadOnly:this.#challenges.current;if(typeof read!=='function')return fail();
+  return readProviderChallengeContext(await read.call(this.#challenges),this.#scope,now);
  }
  async #readBasis(commandId:string,responseOnly:boolean){
   if(!responseOnly)return this.#basis.current(this.#db,this.#actor,this.#scope,commandId);
@@ -53,7 +54,7 @@ export class BoundSyntheticProviderSendCurrent{
   try{
    const now=await this.#now(),e=readDispatchEnvelopeV1(raw,Date.parse(now)),s=this.#scope,c=this.#claim,a=this.#attempt;
    if(e.operation!=='SEND_INSTRUCTION'||!same(claimRef,this.#claimRef)||!recordV1(a,['key','envelopeHash','localAttemptRef','permitRef','instructionContentHash','bindingHash'])||!same(a.key,receiptKeyV1(e))||a.envelopeHash!==e.envelopeHash||!refV1(a.localAttemptRef)||a.localAttemptRef.version!==1||!refV1(a.permitRef)||a.permitRef.version!==1||!hashV1(a.instructionContentHash)||!hashV1(a.bindingHash))fail();
-   const context=await this.#context(now),before=await this.#readBasis(e.commandId,responseOnly),f=before.fact;
+   const context=await this.#context(now,responseOnly),before=await this.#readBasis(e.commandId,responseOnly),f=before.fact;
    if(!same(before.record.snapshot.envelope,e)||(!responseOnly&&before.turnState!=='IDLE')||!same(before.grantRef,s.grantRef)||c.projectId!==s.projectId||c.execution.id!==s.executionId||c.execution.generation!==s.executionGeneration||!same(c.agentSessionRef,e.payload.sessionBindingRef)||!same(c.assignmentRef,f.intent.assignmentRef)||!same(c.responsibleBindingRef,f.agentSession.roleBindingRef)||!same(c.executorRegistrationRef,f.registration.ref)||!same(c.connectionRef,e.context.connectionRef)||!same(c.environmentRef,e.context.environmentRef)||f.registration.hostPublicKeyFingerprint!==context.publicKeyFingerprint)fail();
    const entry=await new SyntheticPgProviderClaimJournal().read(this.#db,{projectId:c.projectId,agentSessionId:c.agentSessionRef.id,executionId:c.execution.id,generation:c.execution.generation,commandId:c.commandId,kind:'THREAD',requestIdDigest:c.source.requestIdDigest,claimHash:this.#claimRef.contentHash});
    if(!entry||!same(entry.claim,c)||!same(entry.receipt.claimRef,this.#claimRef)||!same(entry.scope,s))fail();
@@ -64,7 +65,7 @@ export class BoundSyntheticProviderSendCurrent{
    const sourceRefs=[...new Map(f.intent.sourceScopes.map(x=>[canonicalJson(x.observationRef),x.observationRef])).values()];if(!same(v.request.sourceObservationRefs,sourceRefs)||!f.checks.osFence.evidenceRefs.some(r=>same(r,v.request.osOwnershipRef)))fail();
    const original=readConsumedExecutionRequest(await this.#challenges.read(),s,v.proofRef,executionTarget('POST','/api/v1/connectors/'+s.connectorId+'/executions/'+s.executionId+'/commands/'+e.commandId+'/permit',[],canonicalJson(v.request)),now,v.issuedAt,context.publicKeyFingerprint);
    if(v.proofExpiresAt!==original.expiresAt)fail();
-   const after=await this.#readBasis(e.commandId,responseOnly),ended=await this.#now(),last=await this.#context(ended);
+   const after=await this.#readBasis(e.commandId,responseOnly),ended=await this.#now(),last=await this.#context(ended,responseOnly);
    if(!same({...before,fact:factBinding(before.fact)},{...after,fact:factBinding(after.fact)})||!same(context,last))fail();
    const deadline=Math.min(Date.parse(e.expiresAt),Date.parse(c.usableBefore),Date.parse(before.grantExpiresAt),Date.parse(last.grantExpiresAt),Date.parse(v.expiresAt),Date.parse(v.commandExpiresAt),Date.parse(v.proofExpiresAt),Date.parse(v.grantExpiresAt),Date.parse(f.checkedAt)+30000,Date.parse(after.fact.checkedAt)+30000,...Object.values(f.expires).map(Date.parse),...Object.values(after.fact.expires).map(Date.parse));
    const finalNow=await this.#now(),human=this.#actor.authSession;if(!human)return fail();

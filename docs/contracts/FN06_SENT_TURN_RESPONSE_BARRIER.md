@@ -21,6 +21,12 @@
 
 ## 구현·검수 경계
 
+### 응답 context의 credential 예약 미생성
+
+응답용 Bound 조회는 명시적인 내부 currentReadOnly 포트를 필수로 소비한다. 없으면 거절하며 기존 current()로 fallback하지 않는다. PG adapter는 같은 HUMAN/제어·정책/예산/grant·key 검증을 공유하되 읽기 전용 분기에서는 이미 존재하는 정확 credential 예약만 SELECT하고 없거나 불완전·변조·다른 scope/세대·미래 기록이면 거절한다. 기존 예약 생성/새 SEND 경로의 current는 변경하지 않는다.
+
+이는 신규 credential 발급·schema/SQL 계약·HTTP 변경이나 실제 DB 실행 승인이 아니다. 기존 transaction의 잠금/세션-local 설정은 그대로이며 currentReadOnly라는 이름만으로 주입 포트의 진위나 모든 DB 부작용을 인증하지 않는다. 정상 전체 PG 인증 경로는 실제 환경에서 미검증이다.
+
 ### 보호 THREAD와 식별자 없는 현재 metadata 조립
 
 `SyntheticSentTurnProtectedCurrent`는 생성 시 고정 부모 THREAD/fullref를 복제하고 별도 응답 reader의 private callback에서만 THREAD를 얻는다. 독립 현재 metadata에는 `threadId` 키 자체를 허용하지 않는다. pre snapshot의 식별자를 현재값으로 복사하지 않고 보호 조회의 값과 같은지 대조한 뒤 조립한다. 원 부모·명령/시도permit/hash/grant·세대, 현재 자료/소유/이해·기한·취소와 마지막 await 뒤 상태를 확인하며, 고정 부모/입력의 후속 caller 변경을 채택하지 않는다.
