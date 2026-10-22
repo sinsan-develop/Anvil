@@ -98,6 +98,138 @@ ALTER TABLE anvil.execution_ownership_events
 CREATE FUNCTION anvil.ownership_content_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$
  SELECT encode(digest(convert_to(anvil.execution_authority_canonical(v),'UTF8'),'sha256'),'hex')
 $$;
+
+-- SOURCE-ONLY shape checks, not authenticated authority or signature validation.
+-- Reuse existing 0017 JSON/canonical contracts; do not replace existing functions.
+CREATE FUNCTION anvil.ownership_uuid_valid(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='string' AND v#>>'{}' ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',false)
+$$;
+CREATE FUNCTION anvil.ownership_positive_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'number' THEN RETURN false;END IF;
+ RETURN (v#>>'{}')::numeric BETWEEN 1 AND 9007199254740991 AND trunc((v#>>'{}')::numeric)=(v#>>'{}')::numeric;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.ownership_ref_valid(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(anvil.execution_json_shape(v,ARRAY['id','version','contentHash']) AND anvil.ownership_uuid_valid(v->'id')
+  AND anvil.ownership_positive_valid(v->'version') AND jsonb_typeof(v->'contentHash')='string' AND v->>'contentHash' ~ '^[0-9a-f]{64}$',false)
+$$;
+CREATE FUNCTION anvil.ownership_process_shape(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(anvil.execution_json_shape(v,ARRAY['runId','generation','jobId','pid','startTicks','executableHash'])
+  AND anvil.ownership_uuid_valid(v->'runId') AND anvil.ownership_uuid_valid(v->'jobId')
+  AND anvil.ownership_positive_valid(v->'generation') AND anvil.ownership_positive_valid(v->'pid')
+  AND jsonb_typeof(v->'startTicks')='string' AND v->>'startTicks' ~ '^[1-9][0-9]{16,19}$'
+  AND jsonb_typeof(v->'executableHash')='string' AND v->>'executableHash' ~ '^[0-9a-f]{64}$',false)
+$$;
+CREATE FUNCTION anvil.ownership_record_shape_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE r jsonb=to_jsonb(NEW);s jsonb=NEW.snapshot_json;sc jsonb;p jsonb;q jsonb;k text;fields text[];
+BEGIN
+ IF jsonb_typeof(s) IS DISTINCT FROM 'object' OR octet_length(convert_to(anvil.execution_authority_canonical(s),'UTF8'))>262144
+  OR s->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(s)
+ THEN RAISE EXCEPTION 'OWNERSHIP_ROW_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+ CASE TG_TABLE_NAME
+ WHEN 'execution_ownership_events' THEN
+  IF NOT anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','scope','sequence','previousRef','kind','subject','registrationRef','commandRef','authorizationReceiptRef','auditRef','payload','at','expiresAt'])
+   OR s->>'purpose' IS DISTINCT FROM 'OWNERSHIP_EVENT' OR s->'sequence' IS DISTINCT FROM r->'sequence'
+   OR COALESCE(s->>'kind','') NOT IN('PREPARATION_GRANTED','OBSERVATION_REQUESTED','OBSERVATION_ACCEPTED','ANCHOR_ADOPTED','BINDING_RECORDED','REVOKED','EXPIRED','UNKNOWN')
+   OR NOT anvil.execution_json_shape(s->'subject',ARRAY['userId','clientId','humanSessionId','controlGeneration','credentialGeneration'])
+  THEN RAISE EXCEPTION 'OWNERSHIP_EVENT_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  FOREACH k IN ARRAY ARRAY['userId','clientId','humanSessionId'] LOOP
+   IF NOT anvil.ownership_uuid_valid(s->'subject'->k) THEN RAISE EXCEPTION 'OWNERSHIP_EVENT_SUBJECT_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  IF NOT anvil.ownership_positive_valid(s->'subject'->'controlGeneration') OR NOT anvil.ownership_positive_valid(s->'subject'->'credentialGeneration')
+   OR (NEW.sequence=1 AND s->'previousRef' IS DISTINCT FROM 'null'::jsonb)
+   OR (NEW.sequence>1 AND NOT anvil.ownership_ref_valid(s->'previousRef'))
+   OR s->'previousRef'->>'id'=NEW.event_id::text
+  THEN RAISE EXCEPTION 'OWNERSHIP_EVENT_CHAIN_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  FOREACH k IN ARRAY ARRAY['registrationRef','commandRef','authorizationReceiptRef','auditRef'] LOOP
+   IF NOT anvil.ownership_ref_valid(s->k) THEN RAISE EXCEPTION 'OWNERSHIP_EVENT_REF_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  IF NOT anvil.execution_iso_valid(s->'at') OR NOT anvil.execution_iso_valid(s->'expiresAt') OR jsonb_typeof(s->'payload') IS DISTINCT FROM 'object'
+   OR (s->>'kind' NOT IN('REVOKED','EXPIRED','UNKNOWN') AND (s->>'expiresAt')::timestamptz<=(s->>'at')::timestamptz)
+  THEN RAISE EXCEPTION 'OWNERSHIP_EVENT_TIME_REQUIRED' USING ERRCODE='42501';END IF;
+  sc=s->'scope';
+ WHEN 'execution_ownership_heads' THEN
+  IF NOT anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','scope','anchorRef','generation','previousHeadRef','currentEventRef','state','updatedAt','expiresAt'])
+   OR s->>'purpose' IS DISTINCT FROM 'OWNERSHIP_HEAD' OR s->'generation' IS DISTINCT FROM r->'head_generation'
+   OR COALESCE(s->>'state','') NOT IN('ACTIVE','REVOKED','EXPIRED','UNKNOWN')
+   OR NOT anvil.ownership_ref_valid(s->'anchorRef') OR NOT anvil.ownership_ref_valid(s->'currentEventRef')
+   OR (NEW.head_generation=1 AND s->'previousHeadRef' IS DISTINCT FROM 'null'::jsonb)
+   OR (NEW.head_generation>1 AND NOT anvil.ownership_ref_valid(s->'previousHeadRef'))
+   OR NOT anvil.execution_iso_valid(s->'updatedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+  THEN RAISE EXCEPTION 'OWNERSHIP_HEAD_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  sc=s->'scope';
+ WHEN 'execution_ownership_anchors' THEN
+  IF NOT anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','transport','scope','processRef','observerRef','recordedAt','expiresAt','state','fileSandboxVerified','executionAuthorized','dispatchPerformed'])
+   OR s->>'purpose' IS DISTINCT FROM 'PROCESS_OWNERSHIP_ANCHOR' OR s->>'state' IS DISTINCT FROM 'BOUND'
+   OR s->'fileSandboxVerified' IS DISTINCT FROM 'false'::jsonb OR NOT anvil.ownership_process_shape(s->'processRef') OR NOT anvil.ownership_ref_valid(s->'observerRef')
+   OR NOT anvil.ownership_ref_valid(NEW.preparation_event_ref) OR NOT anvil.ownership_ref_valid(NEW.adoption_event_ref)
+  THEN RAISE EXCEPTION 'OWNERSHIP_ANCHOR_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  sc=s->'scope';
+ WHEN 'execution_ownership_bindings' THEN
+  IF NOT anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','transport','ownershipEvidenceRef','scope','commandId','envelopeHash','parentThreadClaimRef','attemptRef','permitRef','instructionContentHash','preSendBindingHash','recordedAt','expiresAt'])
+   OR s->>'purpose' IS DISTINCT FROM 'SENT_PROCESS_BINDING' OR s->'commandId' IS DISTINCT FROM r->'command_id'
+   OR s->'ownershipEvidenceRef' IS DISTINCT FROM NEW.anchor_ref OR s->'attemptRef' IS DISTINCT FROM NEW.attempt_ref OR s->'permitRef' IS DISTINCT FROM NEW.permit_ref
+   OR NOT anvil.ownership_ref_valid(NEW.binding_event_ref)
+  THEN RAISE EXCEPTION 'OWNERSHIP_BINDING_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  FOREACH k IN ARRAY ARRAY['ownershipEvidenceRef','parentThreadClaimRef','attemptRef','permitRef'] LOOP
+   IF NOT anvil.ownership_ref_valid(s->k) THEN RAISE EXCEPTION 'OWNERSHIP_BINDING_REF_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  FOREACH k IN ARRAY ARRAY['envelopeHash','instructionContentHash','preSendBindingHash'] LOOP
+   IF (jsonb_typeof(s->k)='string' AND s->>k ~ '^[0-9a-f]{64}$') IS NOT TRUE THEN RAISE EXCEPTION 'OWNERSHIP_BINDING_HASH_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  sc=s->'scope';
+ WHEN 'execution_ownership_observations' THEN
+  IF NOT anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','report','signature','facts']) OR s->>'purpose' IS DISTINCT FROM 'OWNERSHIP_OBSERVATION_RECORD'
+   OR (jsonb_typeof(s->'signature')='string' AND s->>'signature' ~ '^[A-Za-z0-9_-]{85}[AQgw]$') IS NOT TRUE
+   OR NOT anvil.ownership_ref_valid(NEW.accepted_event_ref)
+  THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_SHAPE_REQUIRED' USING ERRCODE='42501';END IF;
+  q=s->'report';
+  IF NOT anvil.execution_json_shape(q,ARRAY['protocolVersion','purpose','installationId','projectId','executionId','executionGeneration','registrationRef','publicKeyFingerprint','observerRef','anchorRef','preparationRef','requestRef','phase','expectedHeadRef','nonce','requestedAt','expiresAt','factsHash','observedAt'])
+   OR q->'protocolVersion' IS DISTINCT FROM '1'::jsonb OR q->>'purpose' IS DISTINCT FROM 'OWNERSHIP_OBSERVATION' OR NOT anvil.execution_nonce_valid(q->'nonce')
+   OR NOT anvil.execution_iso_valid(q->'requestedAt') OR NOT anvil.execution_iso_valid(q->'observedAt') OR NOT anvil.execution_iso_valid(q->'expiresAt')
+   OR (q->>'observedAt')::timestamptz<(q->>'requestedAt')::timestamptz OR (q->>'observedAt')::timestamptz>=(q->>'expiresAt')::timestamptz
+   OR (q->>'expiresAt')::timestamptz>(q->>'requestedAt')::timestamptz+interval '10 seconds'
+   OR NOT anvil.ownership_process_shape(s->'facts'->'processRef')
+  THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_REPORT_REQUIRED' USING ERRCODE='42501';END IF;
+  FOREACH k IN ARRAY ARRAY['registrationRef','observerRef','anchorRef','preparationRef','requestRef'] LOOP
+   IF NOT anvil.ownership_ref_valid(q->k) THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_REF_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  FOREACH k IN ARRAY ARRAY['publicKeyFingerprint','factsHash'] LOOP
+   IF (jsonb_typeof(q->k)='string' AND q->>k ~ '^[0-9a-f]{64}$') IS NOT TRUE THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_HASH_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  IF (q->>'phase'='BOOTSTRAP_PREPARED' AND q->'expectedHeadRef'='null'::jsonb OR q->>'phase'='CURRENT' AND anvil.ownership_ref_valid(q->'expectedHeadRef')) IS NOT TRUE
+  THEN RAISE EXCEPTION 'OWNERSHIP_OBSERVATION_PHASE_REQUIRED' USING ERRCODE='42501';END IF;
+  sc=jsonb_build_object('installationId',q->'installationId','projectId',q->'projectId','executionId',q->'executionId','executionGeneration',q->'executionGeneration');
+ ELSE RAISE EXCEPTION 'OWNERSHIP_TABLE_NOT_SUPPORTED' USING ERRCODE='42501';
+ END CASE;
+ IF sc->'projectId' IS DISTINCT FROM r->'project_id' OR sc->'executionId' IS DISTINCT FROM r->'execution_id'
+  OR sc->'executionGeneration' IS DISTINCT FROM r->'execution_generation' OR NOT anvil.ownership_uuid_valid(sc->'projectId')
+  OR NOT anvil.ownership_uuid_valid(sc->'executionId') OR NOT anvil.ownership_positive_valid(sc->'executionGeneration')
+ THEN RAISE EXCEPTION 'OWNERSHIP_ROW_SCOPE_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME IN('execution_ownership_anchors','execution_ownership_bindings') THEN
+  IF NOT anvil.execution_json_shape(sc,ARRAY['projectId','executionId','executionGeneration','sessionBindingRef','roleBindingRef','executorRegistrationRef'])
+   OR s->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY' OR NOT anvil.execution_iso_valid(s->'recordedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+   OR (s->>'expiresAt')::timestamptz<=(s->>'recordedAt')::timestamptz
+  THEN RAISE EXCEPTION 'OWNERSHIP_RECORDED_SCOPE_REQUIRED' USING ERRCODE='42501';END IF;
+  FOREACH k IN ARRAY ARRAY['sessionBindingRef','roleBindingRef','executorRegistrationRef'] LOOP
+   IF NOT anvil.ownership_ref_valid(sc->k) THEN RAISE EXCEPTION 'OWNERSHIP_SCOPE_REF_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  IF TG_TABLE_NAME='execution_ownership_anchors' AND (s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb)
+  THEN RAISE EXCEPTION 'OWNERSHIP_FALSE_AUTHORITY_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSE
+  IF NOT anvil.execution_json_shape(sc,ARRAY['installationId','projectId','executionId','executionGeneration']) OR NOT anvil.ownership_uuid_valid(sc->'installationId')
+  THEN RAISE EXCEPTION 'OWNERSHIP_INSTALLATION_SCOPE_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'OWNERSHIP_ROW_SHAPE_REQUIRED' USING ERRCODE='42501';
+END;$$;
+DO $$DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['execution_ownership_events','execution_ownership_observations','execution_ownership_anchors','execution_ownership_bindings','execution_ownership_heads'] LOOP
+  EXECUTE format('CREATE TRIGGER ownership_row_shape BEFORE INSERT OR UPDATE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.ownership_record_shape_guard()',t);
+ END LOOP;
+END;$$;
+-- This partial shape layer does not validate every kind payload, current HUMAN/policy/registration,
+-- cryptographic signature or COMMIT-time authority. The unconditional denial below MUST remain.
 CREATE FUNCTION anvil.ownership_observation_links_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE accepted anvil.execution_ownership_events%ROWTYPE;requested anvil.execution_ownership_events%ROWTYPE;self_ref jsonb;request_ref jsonb;report jsonb;
 BEGIN

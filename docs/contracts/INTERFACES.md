@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 미적용0039 행 모양 layer — 2026-10-23
+
+0039_ownership_authority.sql.pending의 ownership_record_shape_guard는 정확5표 snapshot의 canonical hash·schema/행 scope와 일부 ref/시각/false 표식을 대조하는 SOURCE layer다. kind JSON null을 명시 거절하고 anchor/binding·관측 report 구조를 각 source 소비 필드와 대조한다. 기존 무조건 ownership_authority_unavailable·RLS false/REVOKE를 그대로 두며 새로운 역할/허가·escape flag를 추가하지 않는다. 실행 목록에도 등록하지 않는다.
+
+이는 모든 kind payload·현재 HUMAN/정책/등록·서명 crypto·COMMIT 시점 권위를 완성한 guard가 아니다. 실제 PostgreSQL 구문/트리거/제약 및 과거 M1의 COMMIT 기한 문제는 미검증/미해결이다. raw 후보 hash와 source 한정 검토는 WORK_STATUS를 따르며 이 변경만으로 정식 DB 적용 가능/실행 허가/PASS를 주장하지 않는다.
+
 ## FN06 D1 기존 writer claim 이력 소비 — 2026-10-23
 
 `readOwnershipWriterClaimHistory(db,access,token,csrf,intent)`는 같은 caller transaction의 현재 intent HUMAN/OWNER·정책/등록 아래 기존0017 writer_claims를 최대200개 읽고 전후 기한/주체를 검사한다. HISTORY_ONLY·claims/historyHash·hasUnreclaimedClaim·writerState=UNKNOWN·writerReleaseVerified=false·준비/실행/dispatch=false와 실제 권위/OS·source WRITE 회수/출처 미확인 항목을 반환한다. 원 grant/command의 전체 승인 체인을 검증한 객체가 아니며 행이 없거나 recordedReclaimedAt이 있어도 실제 NONE/안전 회수로 승격하지 않는다.

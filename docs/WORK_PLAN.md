@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 0039 SOURCE 행 구조 일부**: 미적용 정확5표의 snapshot hash/row scope·ref/schema·false flag 모양 guard를 추가했으나 무조건 거절/RLS false/미등록은 유지한다. diff0·한정 읽기 C0/I0/M0는 source 대조뿐이며 실제 SQL syntax/PG 동작은 NOT_RUN/UNVERIFIED다. payload/currentauth/crypto/실제권위·deferred COMMIT M1 및 전체 D1/FN06는 미완료다.
+
 - **2026-10-23 FN06 D1 writer 원자료 일부**: 기존 SYNTHETIC_CLAIM 이력 reader와 새 준비의 미회수 claim 추가 차단을 연결했다. 빈 이력/회수 시각은 실제 NONE/OS 회수 증거가 아니며 UNKNOWN/권한false를 유지한다. 직접38/type/diff·독립 C0/I0/M1(시각 파생 hash의 보수적 rollback 이월)은 WORK_STATUS를 따른다. 실제 writer 권위·OS 회수/provenance·DB/키/native/Agent 연결과 전체 FN06/계획은 미완료다.
 
 - **2026-10-23 FN06 D1 최초 AUTO 준비 owner source 일부**: 원 command/receipt/audit와 최초 준비 사건/slot·최종 원 receipt 검증·유한 종료/COMMIT_UNKNOWN을 같은 transaction으로 연결했다. 직접32/type/diff 및 원I2 보정 한정 독립 C0/I0/M0는 WORK_STATUS 범위만 증명한다. 실제 writer/회수/provenance·필요 승인소비/SQLguard/native·DB 적용·Agent 실행은 여전히 미구현/미검증이며 전체 계획 완료가 아니다.
