@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+- **FN08 기한 뒤 회수 독립 한정 검수**: 기존 reviewer가 최신 원송신행 부재 거절까지 포함해 C0/I0/M0·독립실행/수정0으로 확인했다. 실제 원장 당시 검증/fullscope·operation·보관exact선택만 소비하고 새송신/현재허가로 전환하는 경로는 발견되지 않았다. Main의 최신 직접4PASS529.0887ms/type/diff0·직접영향73(부재 한 줄 보완 전)과 구분한다. 소유 source2/시험2/계획·상태만 보존하며 보호6/pending1은 불변이다. 다음은 REQUEST_STOP의 이미 보관된 관측을 재중지/새조회 없이 회수하는 동일 계획 내 독립 소비 경로를 선정한다. actual 경계/기존 실패를 확대·승격하지 않는다.
+
+- **FN08 역사 원장 읽기·기한 뒤 회수 한정 검증**: readRecorded는 검증된 원장만 반환하고 빈 결과null/미완료PREPARED를 그대로 읽는다. 다른grant·변조·불완전은 거절하며 서명/current/challenge/perform/append0이다. 새 admission은 정확보관page/ref·당시봉투/실행·spool 대조 뒤 원송신 관측만 기록하고 만료를 현재허가로 사용하지 않는다. 새4RED304.8837ms→4PASS424.4201ms/type0·직접영향73PASS857.3475ms/diff0, 이후 원송신부재 음성1RED를 추가한 한 줄 보완 뒤 직접4PASS529.0887ms/type/diff0다. 페이지기한 뒤 partial회수·재송신/중복0은 메모리합성만 확인했다. 실제 파일내구/동시경합·실DB/served/OS/Agent/전체FN08·Stage는 미검증·미완료, 새 공개계약/SQL/권한/정식환경0이다. rollback은 새 readRecorded/회수메서드 source만 일반revert하며 과거 원장/스풀 삭제0이다. 기존 reviewer는 최신 부재반례 delta를 포함해 검토중이다.
+
+- **FN08 역사 회수의 원송신 부재 반례 보완**: Main이 독립 검토 중 page는 보관됐지만 실제 로컬 송신행은0인 경우를 추가해 Missing expected rejection 1FAIL331.9447ms를 확인했다. 기존 recordObservations가 빈 입력을 허용하는 원계약은 유지하고 새 admission 역사 회수만 recordedRefs0을 SEND_RECORD_REQUIRED로 거절한다. 원장/스풀 append나 새 송신을 만들지 않으며 원입력/과거기록은 보존한다. 새 연결은 전체 실제 Agent 성공이 아니다.
+
+- **FN08 역사 회수 미구현 RED**: readRecorded/recordInstructionObservations 부재로 새4반례4FAIL304.8837ms를 확인했다. 과거 원응답/미완료읽기·부재/변조/불완전/다른grant 거절과 page기한 뒤 부분스풀회수·다른ref/START/다른spool/새조회0을 검증한다. 새 내부읽기만 구현하며 기존 execute/현재송신 기한검사는 변경하지 않는다. 시험 제목의 외국어 혼입은 한국어로 정정했고 검수기준/실행범위는 불변이다.
+
+- **FN08 기한 뒤 보관 관측 회수 착수**: 기존 client.execute는 빈 원장을 만나면 새 조회/서명을 시도하므로 역사 회수에 재사용하지 않는다. readClientJournal은 원기록 당시 시각의 hash/연결/기한을 검증하므로 이를 소비하는 새 내부 readRecorded와 admission.recordInstructionObservations만 추가한다. 정확 보관 page/commandRef·원봉투/실행 scope→기존 sender.recordObservations로 연결하며 sender.send/current/permit·서명/transport/원장append·자동query0이어야 한다. 빈 기록은 부재, 미완료/UNKNOWN은 과거 상태 그대로 남기며 조회로 UNKNOWN 생성0/현재허가승격0다. 기존 실Agent/공개API/DB/native/OS·정식환경 경계는 불변이다.
+
 - **FN08 명시 송신·로컬 회수 한정 검수 종료**: 기존 reviewer가 새 메서드와 scope 복제/원장멱등 의존만 읽기 대조해 C0/I0/M0·독립실행/수정0으로 판정했다. Main의 새4/영향53PASS·type/diff 증거와 분리한다. source2파일만 추가 연결이며 기존 sendInstruction 의미/응답은 불변, 새 public API/영속/권한/실Agent0다. 부분 회수는 page 유효 범위 내 명시 재호출만 확인했으며 기한 만료 후 재개·물리내구/동시경합은 미검증이다. 후속은 기존 지시 원장으로부터 송신과 분리된 읽기 전용 관측 회수 접점을 대조하되 새 명령 조회·허가/송신 없이 exact 원기록을 재사용하는 범위를 선정한다. rollback은 새 메서드 source 일반 revert이며 원 원장/spool/DB/Secret을 삭제하지 않는다. 전체계획/FN08 완료 아님.
 
 - **FN08 선택 지시·관측 회수 source 검증**: 새 내부 sendInstructionAndRecord는 명시 scope/선택ref를 복제하고 실제 합성spool 읽기/동일실행 대조 뒤 기존 sender의 page/current/자료/permit/멱등을 소비한다. 새4RED357.3723ms→4PASS423.8156ms/type0, admission+직접sender/spool 영향53PASS782.4579ms/diff0다. 정상3관측/동일호출중복0·부분append실패후나머지회수·다른project/불완전/가짜spool송신전거절·응답유실UNKNOWN/재송신0를 메모리에서 확인했다. 사전읽기는 용량예약/미래append성공 보장이 아니며 페이지 만료 뒤 재선택은 기존거절을 유지한다. 별도 자동sync/서버ACK감사·실제 파일내구/PG/served/OS/Agent·전체FN08/Stage는 미검증·미완료다. 기존 송신 메서드·공개계약/SQL/권한·정식환경0이며 기존 reviewer 한정 의존대조 중이다.

@@ -33,6 +33,20 @@ function fixture(mode:'EXECUTION'|'RECOVERY'='EXECUTION'){
  return{scope,body,permit,observations,material:{kind:'MATERIAL',commandId:id,bodyRaw:canonicalJson({envelopeHash:'d'.repeat(64),materialRef:ref})},make,store,authority,signer,transport,streams,counts:()=>[challengeCalls,performCalls,signCalls],fault:(v:string)=>fault=v,advance:(ms:number)=>clock+=ms,releaseLate:()=>lateResolve?.(),incomplete:()=>incomplete=true};
 }
 
+test('보관 요청 읽기는 부재·만료된 원응답·미완료를 읽기만 하고 서명/전송/append하지 않는다',async()=>{
+ const f=fixture(),client=f.make();assert.equal(typeof client.readRecorded,'function');
+ const absent=await client.readRecorded(f.scope,f.permit);assert.equal(absent.result,null);assert.equal(absent.recordedAt,null);assert.equal(absent.readOnly,true);assert.equal(absent.currentAuthorityVerified,false);assert.deepEqual(f.counts(),[0,0,0]);assert.equal([...f.streams.values()].flat().length,0);
+ const sent=await client.execute(f.scope,f.permit);f.advance(120000);f.authority.current=async()=>assert.fail('NO_AUTHORITY');f.signer.sign=async()=>assert.fail('NO_SIGNER');f.transport.challenge=async()=>assert.fail('NO_CHALLENGE');f.transport.perform=async()=>assert.fail('NO_TRANSPORT');
+ const historic=await client.readRecorded(f.scope,f.permit);assert.deepEqual(historic.result,sent);assert.equal(historic.currentAuthorityVerified,false);assert.equal(historic.result.executionAuthorized,false);assert.equal(historic.result.ackAudited,false);historic.result.response.permit.permitRef.version=99;assert.deepEqual((await client.readRecorded(f.scope,f.permit)).result,sent);assert.deepEqual(f.counts(),[1,1,2]);
+ const rows=[...f.streams.values()][0]!;rows.splice(1);const before=structuredClone(rows),unfinished=await client.readRecorded(f.scope,f.permit);assert.equal(unfinished.result.state,'PREPARED');assert.deepEqual(rows,before);assert.deepEqual(f.counts(),[1,1,2]);
+});
+
+test('보관 요청 읽기는 원장 변조·불완전·다른 주체범위를 네트워크나 복구 append 없이 거절한다',async()=>{
+ for(const fault of ['tamper','incomplete','grant']){const f=fixture(),client=f.make();assert.equal(typeof client.readRecorded,'function');await client.execute(f.scope,f.permit);if(fault==='tamper')[...f.streams.values()][0]![0].snapshot.payload.signature='bad';if(fault==='incomplete')f.incomplete();const scope=fault==='grant'?{...f.scope,grantRef:{...f.scope.grantRef,version:2}}:f.scope,before=structuredClone([...f.streams.values()]);
+  await assert.rejects(client.readRecorded(scope,f.permit),/CLIENT_/);assert.deepEqual([...f.streams.values()],before);assert.deepEqual(f.counts(),[1,1,2]);
+ }
+});
+
 test('회수중지읽기는전용GET/null본문·별도purpose로서명해저장하고중지완료나writer회수로승격하지않는다',async()=>{
  const f=fixture('RECOVERY'),operation={kind:'STOP_INSTRUCTION',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID()})},out=await f.make().execute(f.scope,operation);assert.equal(out.state,'RESPONSE_RECORDED');assert.equal(out.response.instruction.envelope.operation,'REQUEST_STOP');assert.equal(out.response.writerReleaseVerified,false);assert.equal(out.executionAuthorized,false);assert.equal(out.dispatchPerformed,false);assert.deepEqual(f.counts(),[1,1,2]);f.advance(120000);assert.deepEqual(await f.make().execute(f.scope,operation),out);assert.deepEqual(f.counts(),[1,1,2]);
 });

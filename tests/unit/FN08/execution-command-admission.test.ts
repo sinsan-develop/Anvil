@@ -144,6 +144,17 @@ test('송신응답 유실도 UNKNOWN 관측만 회수하고 재호출로 지시�
  assert.deepEqual(await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),first);assert.equal(calls,1);assert.equal(s.counts()[1],1);assert.equal(p.rows.length,3);
 });
 
+test('page 기한 뒤 관측 회수는 정확 보관 명령만 읽고 부분 spool을 재송신 없이 완성한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordInstructionObservations,'function');p.failSecond();await assert.rejects(a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool));const original=structuredClone(p.rows[0]);f.advance(120000);s.advance(120000);s.sender.send=async()=>assert.fail('NO_SEND');a.client.transport.perform=async()=>assert.fail('NO_PAGE_QUERY');a.client.signer.sign=async()=>assert.fail('NO_SIGN');
+ const out=await a.recordInstructionObservations(f.scope,f.operation,f.commandRef,s.sender,p.spool);assert.equal(out.readOnlySource,true);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.executionAuthorized,false);assert.equal(out.observations.recordedRefs.length,3);assert.equal(out.observations.ackAudited,false);assert.deepEqual(p.rows[0],original);assert.equal(p.rows.length,3);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(await a.recordInstructionObservations(f.scope,f.operation,f.commandRef,s.sender,p.spool),out);
+});
+
+test('보관 회수는 없는page·잘못된ref·START/다른spool을 새조회/송신 없이 거절한다',async()=>{
+ for(const fault of ['absent','ref','start','spool','no-send']){const f=fault==='start'?fixture():instructionFixture(),s=selectedSender(f),p=selectedSpool(f,fault==='spool'),a=f.make();assert.equal(typeof a.recordInstructionObservations,'function');if(fault!=='absent')await a.client.execute(f.scope,f.operation);const before=f.counts();s.sender.send=async()=>assert.fail('NO_SEND');a.client.transport.perform=async()=>assert.fail('NO_PAGE_QUERY');
+  await assert.rejects(a.recordInstructionObservations(f.scope,f.operation,fault==='ref'?{...f.commandRef,version:2}:f.commandRef,s.sender,p.spool),/COMMAND_ADMISSION_/);assert.deepEqual(f.counts(),before);assert.deepEqual(s.counts(),[0,0]);assert.equal(p.rows.length,0);
+ }
+});
+
 test('선택전송은server page→동일grant·자료/permit→codec를명시연결하고동일명령wire1만유지한다',async()=>{
  const f=instructionFixture(),s=selectedSender(f),a=f.make();assert.equal(typeof a.sendInstruction,'function');const first=await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender);assert.equal(first.sent.state,'RESPONSE_RECORDED');assert.equal(first.sent.executionAuthorized,false);assert.equal(first.sent.workAccepted,false);assert.deepEqual(first.commandRef,f.commandRef);assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(f.counts(),[1,0,0]);assert.deepEqual(s.rows.map(r=>r.snapshot.state),['SEND_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED']);assert.deepEqual(await a.sendInstruction(f.scope,f.operation,f.commandRef,s.sender),first);assert.deepEqual(s.counts(),[1,1]);
 });

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-22 FN08 기한 뒤 보관 관측 회수 일부 연결**: 새 내부 원장 읽기는 부재/미완료를 그대로 보존하고 exact 과거 page/commandRef로 송신과 분리해 부분 관측을 회수한다. 현재허가/기한을 연장하거나 새query/sign/send/ACK를 만들지 않는다. 원송신행 부재는 거절한다. 직접4/영향73·원송신부재 보완후직접4/type/diff는 합성메모리 증거이며 실제파일/실DB/OS/Agent·전체업무 완료가 아니다. 기존44업무·선행·검수기준불변, 한계/독립검토는 WORK_STATUS를 따른다.
+
 - **2026-10-22 FN08 명시 지시 송신·관측 회수 일부 연결**: 기존 page 선택→자료/current/permit/송신 원장→기존 관측 spool의 소비를 내부 명시 호출로 연결했다. 원 송신 API/현재 권한·멱등은 보존하고 부분 관측 실패 후 원기록을 유지한다. 새4반례/직접영향53·type/diff 확인, 합성 메모리만이며 실제 Agent·파일 내구/서버 ACK/정식 served·전체FN08/Stage는 미완료다. 자동polling/sync·새공개API/SQL/실DB/권한/OS·비용은 추가하지 않았다. 상세 오류/한계/독립검토는 WORK_STATUS를 따른다.
 
 - **2026-10-22 FN12 저장 원장 문제근거 한정 실저장 소비**: exact92443f43/STORED_ISSUE 새빈PG15/61SQL·app비관리자·새GET→실Webreader emptyACK/원인미확인·거절3/8표행수는childDONE. runner정리성공뒤launch OPEN_FILES거절/outer회수·전체SSHexit1이므로 전체PASS아니다. 별도SSH새자원/root/cwd잔여0·정식3metadata불변,원FN10실패보존. 실제gap ACK/경합·정식served/Agent·전체FN12/UI08/Stage미완료. 상세 FN12_STORED_ISSUE_BASIS_READ_RESULT.md/WORK_STATUS.

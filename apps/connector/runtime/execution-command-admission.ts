@@ -46,6 +46,26 @@ export class SyntheticExecutionCommandAdmission {
    return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,sent,observations,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
  }
+ /** 만료된 page도 보관 원장으로만 대조해 이미 발생한 송신 관측을 회수한다.
+  * execute/readInstruction/send를 호출하지 않으며 현재 허가·송신/서버 ACK를 만들지 않는다. */
+ async recordInstructionObservations(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,sender:SyntheticPrimaryInstructionTransport,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(sender instanceof SyntheticPrimaryInstructionTransport)||!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   if(scope.mode!=='EXECUTION'||!refV1(commandRef)||readClientOperation(scope,operation,this.#now()).operation.kind!=='COMMANDS')return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const saved=await this.client.readRecorded(scope,operation);this.#ports();
+   if(saved.readOnly!==true||saved.currentAuthorityVerified!==false||saved.result?.state!=='RESPONSE_RECORDED'||!isoV1(saved.recordedAt))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const page=saved.result.response;if(!arrayV1(page?.items,50))return fail('COMMAND_ADMISSION_RECORDED_PAGE_REQUIRED');
+   const selected=page.items.filter((item:any)=>same(item?.commandRef,commandRef));if(selected.length!==1)return fail('COMMAND_ADMISSION_NOT_SELECTED');
+   const envelope=readDispatchEnvelopeV1(selected[0].envelope,Date.parse(saved.recordedAt));
+   if(envelope.operation!=='SEND_INSTRUCTION'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||envelope.context.executionGeneration!==scope.executionGeneration)return fail('COMMAND_ADMISSION_OPERATION_UNSUPPORTED');
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}))return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const observations=await sender.recordObservations(envelope,spool);this.#ports();
+   if(!observations.recordedRefs.length)return fail('COMMAND_ADMISSION_SEND_RECORD_REQUIRED');
+   return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(commandRef),pageResultRef:cloneV1(saved.result.resultRef),envelopeHash:envelope.envelopeHash,observations,readOnlySource:true as const,currentAuthorityVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
+ }
  /** 후속 지시 원봉투의 명시 선택 읽기만 한다. START 수신·지시전송/permit·자동 다음 page를 수행하지 않는다.
   * 반환값은 저장된 합성 page의 선택 사실이며 실제 서버/Agent 현재권한이나 전송 허가가 아니다. */
  async readInstruction(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown){

@@ -36,6 +36,18 @@ export class SyntheticExecutionClient{
   const signature=await this.#bounded(signal=>{this.#ports();return this.signer.sign(purpose,Buffer.from(bytes),signal);},deadline);if(!clientBase64(signature,64))clientReject('CLIENT_SIGNATURE_INVALID');this.#ports();return signature;
  }
  #result(events:ClientEntry[]){const first=events[0]!,last=events.at(-1)!;return{transport:'SYNTHETIC_ONLY' as const,state:last.snapshot.state,reason:last.snapshot.reason,requestKey:first.snapshot.requestKey,requestRef:cloneV1(first.ref),resultRef:cloneV1(last.ref),response:last.snapshot.state==='RESPONSE_RECORDED'?cloneV1(last.snapshot.payload):null,executionAuthorized:false,dispatchPerformed:false,writerReleaseVerified:false,ackAudited:false};}
+ /** 보관 원장만 읽는다. 빈/미완료 기록에 새 요청·서명·UNKNOWN을 만들지 않는다.
+  * 당시 응답은 현재 허가가 아니며 만료된 page를 새 송신에 쓸 수 없다. */
+ async readRecorded(rawScope:unknown,rawOperation:unknown){
+  try{
+   this.#ports();const scope=readClientScope(rawScope),operation=readClientOperation(scope,cloneV1(rawOperation),this.#now()),key:ClientJournalScope={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestKey:operation.requestKey};
+   const saved=await this.store.exclusive(cloneV1(key),async tx=>{
+    this.#ports();const journal=readClientJournal(await tx.read(),key,this.#now()),p=journal.prepared;
+    if(p&&(!clientSame(p.scope,scope)||!clientSame(p.operation,operation.operation)))return clientReject('CLIENT_REQUEST_CONFLICT');
+    return{result:journal.events.length?this.#result(journal.events):null,recordedAt:journal.events.at(-1)?.snapshot.at??null};
+   });this.#ports();return{transport:'SYNTHETIC_ONLY' as const,...saved,readOnly:true as const,currentAuthorityVerified:false as const};
+  }catch(error){if(error instanceof ClientFailure)throw error;return clientReject('CLIENT_HISTORY_UNAVAILABLE');}
+ }
  async execute(rawScope:unknown,rawOperation:unknown){
   try{
    this.#ports();const scope=readClientScope(rawScope),operation=readClientOperation(scope,cloneV1(rawOperation),this.#now()),key:ClientJournalScope={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestKey:operation.requestKey};
