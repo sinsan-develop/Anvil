@@ -1,0 +1,39 @@
+-- 정책 append 구조의 미래 시험 SOURCE. 실행하지 않았으며 실제 관리 허가/현재성/경합의 증거가 아니다.
+-- snapshot은 기존 최소 요약 6개만 결박한다. 완전한 정책·관리 영수증 양식을 새로 정의하지 않는다.
+BEGIN;
+DO $$
+DECLARE a anvil.source_content_policy_events;b anvil.source_content_policy_events;n anvil.source_content_policy_events;
+BEGIN
+ a.project_id='82000000-0000-4000-8000-000000000001';a.id='82000000-0000-4000-8000-000000000002';a.version=1;a.sequence=1;
+ a.subject_user_id='82000000-0000-4000-8000-000000000003';a.disposition='AUTO';a.previous_ref='null';
+ a.management_command_id='82000000-0000-4000-8000-000000000004';a.recorded_at='2026-10-23T22:00:00.000Z';a.expires_at=a.recorded_at+interval '1 hour';
+ a.snapshot_json=jsonb_build_object('projectId',a.project_id,'subjectUserId',a.subject_user_id,'sequence',a.sequence,'disposition',a.disposition,'recordedAt',anvil.source_read_iso(a.recorded_at),'expiresAt',anvil.source_read_iso(a.expires_at));a.content_hash=anvil.source_read_hash(a.snapshot_json);
+ ASSERT anvil.source_content_policy_row_shape(a) IS TRUE,'POLICY_ORIGINAL_EXPIRY_NOT_VERIFICATION_30S';
+ ASSERT anvil.source_content_policy_lineage_shape(NULL,a) IS TRUE,'POLICY_FIRST_SEQUENCE';
+ ASSERT anvil.source_content_policy_lineage_shape(a,a) IS FALSE,'POLICY_FIRST_REQUIRES_ABSENT_PREDECESSOR';
+ b=a;b.id='82000000-0000-4000-8000-000000000005';b.sequence=2;b.disposition='DENY';b.management_command_id='82000000-0000-4000-8000-000000000006';b.recorded_at=a.recorded_at+interval '1 second';
+ b.previous_ref=jsonb_build_object('id',a.id,'version',a.version,'contentHash',a.content_hash);
+ b.snapshot_json=b.snapshot_json||jsonb_build_object('sequence',b.sequence,'disposition',b.disposition,'recordedAt',anvil.source_read_iso(b.recorded_at));b.content_hash=anvil.source_read_hash(b.snapshot_json);
+ ASSERT anvil.source_content_policy_lineage_shape(a,b) IS TRUE,'POLICY_DENY_APPEND';
+ n=b;n.id='82000000-0000-4000-8000-000000000007';n.sequence=3;n.disposition='REVOKED';n.management_command_id='82000000-0000-4000-8000-000000000008';n.previous_ref=jsonb_build_object('id',b.id,'version',b.version,'contentHash',b.content_hash);
+ n.snapshot_json=n.snapshot_json||jsonb_build_object('sequence',n.sequence,'disposition',n.disposition);n.content_hash=anvil.source_read_hash(n.snapshot_json);
+ ASSERT anvil.source_content_policy_lineage_shape(b,n) IS TRUE,'POLICY_REVOKE_APPEND';
+ n=b;n.previous_ref=jsonb_set(n.previous_ref,'{contentHash}',to_jsonb(repeat('f',64)));ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_EXACT_PREDECESSOR_HASH';
+ n=b;n.previous_ref=jsonb_set(n.previous_ref,'{id}','"82000000-0000-4000-8000-000000000099"');ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_EXACT_PREDECESSOR_ID';
+ n=b;n.sequence=3;n.snapshot_json=jsonb_set(n.snapshot_json,'{sequence}','3');n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_NO_SEQUENCE_GAP';
+ n=b;n.project_id='82000000-0000-4000-8000-000000000099';n.snapshot_json=jsonb_set(n.snapshot_json,'{projectId}',to_jsonb(n.project_id));n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_SAME_PROJECT';
+ n=b;n.id=a.id;ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_NEW_EVENT_ID';
+ n=b;n.management_command_id=a.management_command_id;ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_NEW_MANAGEMENT_COMMAND';
+ n=b;n.recorded_at=a.recorded_at-interval '1 ms';n.snapshot_json=jsonb_set(n.snapshot_json,'{recordedAt}',to_jsonb(anvil.source_read_iso(n.recorded_at)));n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_lineage_shape(a,n) IS FALSE,'POLICY_TIME_NOT_REVERSED';
+ n=b;n.previous_ref='null';ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_LATER_REQUIRES_REFERENCE';
+ n=a;n.previous_ref=b.previous_ref;ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_FIRST_REQUIRES_JSON_NULL';
+ n=b;n.version=2;ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_EVENT_VERSION_ONE';
+ n=b;n.sequence=9007199254740992;ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_SAFE_SEQUENCE';
+ n=b;n.expires_at=n.recorded_at;n.snapshot_json=jsonb_set(n.snapshot_json,'{expiresAt}',to_jsonb(anvil.source_read_iso(n.expires_at)));n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_POSITIVE_ORIGINAL_LIFETIME';
+ n=b;n.recorded_at='infinity';ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_FINITE_TIME';
+ n=b;n.recorded_at=n.recorded_at+interval '1 microsecond';ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_MILLISECOND_TIME';
+ n=b;n.content_hash=repeat('f',64);ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_SNAPSHOT_HASH';
+ n=b;n.snapshot_json=jsonb_set(n.snapshot_json,'{sequence}','1');n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_MINIMAL_SUMMARY_BINDING';
+ n=b;n.disposition='REQUIRE_APPROVAL';n.snapshot_json=jsonb_set(n.snapshot_json,'{disposition}','"REQUIRE_APPROVAL"');n.content_hash=anvil.source_read_hash(n.snapshot_json);ASSERT anvil.source_content_policy_row_shape(n) IS FALSE,'POLICY_APPROVAL_NOT_OPENED';
+END;$$;
+ROLLBACK;

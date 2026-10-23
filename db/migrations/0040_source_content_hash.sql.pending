@@ -25,7 +25,7 @@ CREATE TABLE anvil.source_content_policy_events (
   AND recorded_at=date_trunc('milliseconds',recorded_at) AND expires_at=date_trunc('milliseconds',expires_at))
 );
 CREATE INDEX source_content_policy_latest ON anvil.source_content_policy_events(project_id,sequence DESC);
--- 최신 회수·만료를 제외해 과거 AUTO로 돌아가지 않는다. 현재 관리허가/이전 sequence+1/CAS는 후속 guard이며 지금은 전 DML 거절이다.
+-- 최신 회수·만료를 제외해 과거 AUTO로 돌아가지 않는다. 현재 관리허가/프로젝트 lock·CAS는 미구현이며 지금은 전 DML 거절이다.
 
 -- JavaScript trim의 공백 집합으로 비어 있는 문자열을 거절한다. locale별 SQL trim/공백 정의로 대체하지 않는다.
 CREATE FUNCTION anvil.source_content_nonblank(v text) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $$
@@ -148,6 +148,51 @@ CREATE TABLE anvil.source_content_requests (
 CREATE FUNCTION anvil.source_content_millisecond(t timestamptz) RETURNS boolean LANGUAGE sql STABLE AS $$
  SELECT t IS NOT NULL AND isfinite(t) AND t=date_trunc('milliseconds',t);
 $$;
+-- 기존 표의 최소 요약 6개와 원기한만 대조한다. 완전한 정책 snapshot/현재 관리 허가 검증이 아니다.
+CREATE FUNCTION anvil.source_content_policy_row_shape(p anvil.source_content_policy_events) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ RETURN COALESCE(p.project_id IS NOT NULL AND p.id IS NOT NULL AND p.version=1
+  AND p.sequence BETWEEN 1 AND 9007199254740991 AND p.subject_user_id IS NOT NULL AND p.management_command_id IS NOT NULL
+  AND p.disposition IN('AUTO','DENY','REVOKED')
+  AND anvil.source_content_millisecond(p.recorded_at) IS TRUE AND anvil.source_content_millisecond(p.expires_at) IS TRUE AND p.expires_at>p.recorded_at
+  AND ((p.sequence=1 AND p.previous_ref='null'::jsonb) OR (p.sequence>1 AND anvil.source_read_ref(p.previous_ref) IS TRUE))
+  AND jsonb_typeof(p.snapshot_json)='object' AND octet_length(anvil.source_read_canonical_json(p.snapshot_json))<=1048576
+  AND p.content_hash~'^[0-9a-f]{64}$' AND p.content_hash=anvil.source_read_hash(p.snapshot_json)
+  AND p.snapshot_json->>'projectId'=p.project_id::text AND p.snapshot_json->>'subjectUserId'=p.subject_user_id::text
+  AND p.snapshot_json->'sequence'=to_jsonb(p.sequence) AND p.snapshot_json->>'disposition'=p.disposition
+  AND p.snapshot_json->>'recordedAt'=anvil.source_read_iso(p.recorded_at) AND p.snapshot_json->>'expiresAt'=anvil.source_read_iso(p.expires_at),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- 새 정책 이벤트도 별도 관리 허가가 필요하다. 이 함수는 인접 append 구조일 뿐 재허가/회수 해제 권위가 아니다.
+CREATE FUNCTION anvil.source_content_policy_lineage_shape(b anvil.source_content_policy_events,n anvil.source_content_policy_events) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF anvil.source_content_policy_row_shape(n) IS NOT TRUE THEN RETURN false;END IF;
+ IF n.sequence=1 THEN RETURN b IS NULL AND n.previous_ref='null'::jsonb;END IF;
+ IF anvil.source_content_policy_row_shape(b) IS NOT TRUE THEN RETURN false;END IF;
+ RETURN COALESCE(n.project_id=b.project_id AND n.sequence=b.sequence+1 AND n.id<>b.id AND n.management_command_id<>b.management_command_id
+  AND n.previous_ref=jsonb_build_object('id',b.id,'version',b.version,'contentHash',b.content_hash) AND n.recorded_at>=b.recorded_at,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.check_source_content_policy_final() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n anvil.source_content_policy_events;b anvil.source_content_policy_events;
+BEGIN
+ IF TG_TABLE_SCHEMA<>'anvil' OR TG_TABLE_NAME<>'source_content_policy_events' OR TG_WHEN<>'AFTER' OR TG_LEVEL<>'ROW' OR TG_OP<>'INSERT' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_POLICY_TRIGGER_CONTEXT_INVALID' USING ERRCODE='42501';END IF;
+ SELECT p.* INTO n FROM anvil.source_content_policy_events p WHERE p.project_id=NEW.project_id AND p.id=NEW.id AND p.version=NEW.version;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_POLICY_FINAL_REQUIRED' USING ERRCODE='42501';END IF;
+ IF n.sequence>1 THEN
+  SELECT p.* INTO b FROM anvil.source_content_policy_events p WHERE p.project_id=n.project_id AND p.sequence=n.sequence-1;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_POLICY_PREDECESSOR_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ IF anvil.source_content_policy_lineage_shape(b,n) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_POLICY_LINEAGE_INVALID' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER source_content_policy_final AFTER INSERT ON anvil.source_content_policy_events
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_policy_final();
+-- RLSfalse/권한0/항상 거절 guard 유지. 실제 관리 명령·감사/receipt·최신 head 잠금/CAS는 연결하지 않는다.
+
 CREATE FUNCTION anvil.source_content_request_phase_shape(g anvil.source_content_requests) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 DECLARE ch boolean=g.challenge_json IS NOT NULL;cred boolean=g.credential_token_digest IS NOT NULL;
  consumed boolean=g.report_consumed_at IS NOT NULL;revoked boolean=g.revoked_at IS NOT NULL;
