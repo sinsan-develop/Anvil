@@ -147,6 +147,12 @@ B(격리형) 후보4표:
 
 ### 저장 SOURCE 중간 구현 기록 — 2026-10-23
 
+생성 증거의 순수 SOURCE inspector는 expected={scope,requestRef,createdCommandId}와 value={request,command,receipt,audit}를 복사·대조한다. request는 기존 ProjectCommand 11키의 requestSourceContentHash/targetId=null/expectedVersion=0/baselineRefs=[]/approvalRef=null/원8키payload이며 전체 canonical requestHash를 사용한다. commands projection20키는 기존 scope/주체/client·controlGeneration/basePolicy·요청ID/operationID·authorizationReceiptID·APPLIED 결과와 결박한다. 결과10키 data는 exact {ref,status:CONTENT_REQUEST_RECORDED,requestRef,scopeDigest,storedState:CREATED,scope,observationPermit:NOT_ISSUED,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false}이며 evidenceRefs/warnings는 빈 배열이다. 기존 helper의 transaction_timestamp/now 영수증시각은 completedAt와 같고 clock 기반 scope.requestedAt보다 늦을 수 없다.
+
+authorization_receipts projection8키는 같은 PROJECT/command·HUMAN user/client/basePolicy와 기존 scope digest 공식을 대조하고 approvalDecisionRef는null이다. audit projection14키는 동일 project/command/operation/target/basePolicy·actor/client·digest, 양의safe sequence/UUID event와 APPLIED/HUMAN_COMMAND/EXPLICIT_SOURCE_CONTENT_HASH_REQUEST만 수용한다. receipt 존재·hash 일치가 실제 현재 허가나 tamper-proof 서명을 뜻하지 않는다. inspector는 UNVERIFIED_CREATION_EVIDENCE_CANDIDATE/저장·실행·LINK false만 반환하며 reader의 실제 JOIN/원자 guard·route/DB에는 아직 연결하지 않았다. content-policy 실제 허용·현재 세션/등록·COMMIT/감사 진위는 별도 미구현이다.
+
+보고 소비의 report_command_id는 connector의 원보고 GUID이며 기존 사용자 commands.id와 동일 개념이 아니다. 생성 HUMAN 영수증을 보고수신 허가로 재사용하거나 보고 GUID만으로 사용자 명령 FK/권위를 만들지 않는다. 보고 소비는 별도 프로토콜 감사·원nonce/observation/원보고/현재 검증과 일회 CAS를 결박해야 하며 이번 생성 inspector의 검수 범위가 아니다.
+
 저장행 adapter source는 한 same-project SQL에서 request/최초 생성 command/관측을 LEFT JOIN하여 누락을 숨기지 않고 원20키 view로 투영한다. 실제 query/PG 상호운용은 미실행이다. 최초 명령의 요약·scope/주체/세대/원시각과 challenge/permit/보고 codec·관측 nonce 및 소비 command/time을 대조하지만 현재 인증/정책·서명/OS·전체 receipt/payload/audit·CAS는 대신하지 않는다. 반환은 UNVERIFIED_REQUEST_RECORD_CANDIDATE/저장·실행·LINK false뿐이며 route 미등록이다. 과거 만료 기록 조회가 현재 permit 사용 권위는 아니다.
 
 이전 checkpoint의 preflight_digest-only 누락은 후속 SOURCE에서 preflight_json 보존 열로 보완했다. challenge와 최초 원문의 NULL묶음·1MiB·canonical hash CHECK를 미적용0040에 추가하고 reader는 저장 원문/hash와 기존 exchange codec을 당시 발급시각으로 대조한다. challenge에서 원 preflight를 역으로 재구성하지 않는다. 이는 원문 구조·hash/결박 검증이지 등록 키 진위/서명 증명이 아니며 실제 SQL/PG 적용·검증은0이다. 원 receipt/관리권위·DB 원자 guard는 여전히 후속 미구현이다.
