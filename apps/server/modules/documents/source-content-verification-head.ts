@@ -29,6 +29,14 @@ function context(value:unknown):Context {
 }
 /** 최신 저장 head의 구조 후보만 읽는다. snapshot 내부 의미·실 predecessor·현재 verifier/서명/OS 검증은 없고 route 미등록이다. */
 export async function readLatestSourceContentVerificationCandidate(db:ReadClient,projectId:string,expected:unknown,nowMs:number):Promise<Candidate> {
+ return readHead(db,projectId,expected,nowMs,null);
+}
+/** 원관측 수신 이전의 양성만 별도 경로에서 닫는다. 수신시각의 출처·실제 verifier 권위는 증명하지 않는다. */
+export async function readLatestSourceContentVerificationAfterReceivedCandidate(db:ReadClient,projectId:string,expected:unknown,receivedAt:unknown,nowMs:number):Promise<Candidate> {
+ if(!isoV1(receivedAt)||!Number.isSafeInteger(nowMs)||Date.parse(receivedAt)>nowMs)return inputInvalid();
+ return readHead(db,projectId,expected,nowMs,Date.parse(receivedAt));
+}
+async function readHead(db:ReadClient,projectId:string,expected:unknown,nowMs:number,receivedAtMs:number|null):Promise<Candidate> {
  if(!uuidV1(projectId)||!Number.isSafeInteger(nowMs))return inputInvalid();
  const c=context(expected);
  // 유효/양성/기한/ref hash를 WHERE에서 미리 골라 과거 ACCEPTED로 fallback하지 않는다.
@@ -51,6 +59,7 @@ export async function readLatestSourceContentVerificationCandidate(db:ReadClient
   if(r.decision==='REVOKED')return result('DENIED','VERIFICATION_REVOKED',ref);
   if(r.decision==='INVALID')return result('DENIED','VERIFICATION_INVALID',ref);
   if(Date.parse(expires)<=nowMs)return result('DENIED','VERIFICATION_EXPIRED',ref);
+  if(receivedAtMs!==null&&Date.parse(verified)<receivedAtMs)return result('DENIED','VERIFICATION_BEFORE_OBSERVATION',ref);
   return result('UNVERIFIED','CURRENT_VERIFIER_UNAVAILABLE',ref);
  }catch{return malformed();}
 }

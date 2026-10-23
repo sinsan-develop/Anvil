@@ -7,7 +7,7 @@ import {readSourceContentDeclaredContextCandidate} from './source-content-reques
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
 import {readSourceContentRequestPolicyLineageCandidate} from './source-content-request-policy-lineage.ts';
 import {planSourceContentRevokeCandidate} from './source-content-revoke.ts';
-import {readLatestSourceContentVerificationCandidate} from './source-content-verification-head.ts';
+import {readLatestSourceContentVerificationCandidate,readLatestSourceContentVerificationAfterReceivedCandidate} from './source-content-verification-head.ts';
 import {inspectSourceContentPolicyScopeCandidate} from './source-content-policy-scope.ts';
 import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
@@ -128,6 +128,25 @@ export async function readSourceContentStoredVerificationForDeclaredContextCandi
   if(report.root.state!=='OBSERVED'||!report.localEvidence.completed||report.files.some(f=>f.state!=='HASHED'))return close('REPORT_NOT_COMPLETE');
   const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
   const head=await readLatestSourceContentVerificationCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},nowMs);
+  return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,targetIndex,...flags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
+/** 원관측의 내부 수신시각만 사용한다. 기존 공개 검증 소비는 변경하지 않고 실제 verifier/현재 권위를 추가하지 않는다. */
+export async function readSourceContentStoredVerificationAfterReceivedForDeclaredContextCandidate(db:ReadClient,value:unknown,targetIndex:number,nowMs:number){
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_STORED_VERIFICATION_INPUT_INVALID');
+ const flags={...proofFlags,bodyBytesVerified:false as const,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,observationRef:null,verificationRef:null,targetIndex:null,...flags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_VERIFICATION_CONTEXT_MISMATCH');
+  if(!observation||!record.view.reportRef)return close('OBSERVATION_ABSENT');
+  const report=observation.report;
+  if(report.root.state!=='OBSERVED'||!report.localEvidence.completed||report.files.some(f=>f.state!=='HASHED'))return close('REPORT_NOT_COMPLETE');
+  const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
+  const head=await readLatestSourceContentVerificationAfterReceivedCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},observation.receivedAt,nowMs);
   return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,targetIndex,...flags};
  });
  return result??close('REQUEST_ABSENT');
