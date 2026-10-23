@@ -8,7 +8,7 @@ const flags=['processCreationAuthorized','preparationAuthorized','executionAutho
 const requiredMissing=['AUTHENTICATED_NATIVE_CHANNEL','RETAINED_PROCESS_JOB_FACTORY','OBSERVATION_SIGNER'];
 const fail=():never=>{throw new Error('OWNERSHIP_PREPARATION_INPUT_SOURCE_UNAVAILABLE');};
 type SourceSelection=Readonly<Record<string,string>&{issuedAt:string;expiresAt:string}>;
-function selection(v:unknown):SourceSelection{
+export function readOwnershipPreparationSelectionSource(v:unknown):SourceSelection{
  if(!recordV1(v,keys)||!ids.every(k=>uuidV1(v[k]))||!hashes.every(k=>hashV1(v[k]))||
   !numbers.every(k=>typeof v[k]==='string'&&/^[1-9][0-9]{0,15}$/.test(v[k])&&Number.isSafeInteger(Number(v[k]))&&String(Number(v[k]))===v[k])||
   v.preparationVersion!=='1'||v.authorizationReceiptVersion!=='1'||!isoV1(v.issuedAt)||!isoV1(v.expiresAt))return fail();
@@ -29,11 +29,11 @@ function missingCodes(v:unknown):string[]{
  * 결과는 순간 snapshot이다. 이를 실제 native reader/허가/route에 등록하지 않는다. */
 export function readOwnershipPreparationInputSource(profile:unknown,expectedSelection:unknown){
  try{
-  const from=Date.now(),started=performance.now(),expected=selection(expectedSelection);
+  const from=Date.now(),started=performance.now(),expected=readOwnershipPreparationSelectionSource(expectedSelection);
   if(!recordV1(profile,['purpose','selection','policyDisposition','registrationScope','grants','checkedAt','expiresAt',...flags,'missingEvidence'])||
    profile.purpose!=='OWNERSHIP_NATIVE_PREPARATION_PROFILE_BASIS_ONLY'||profile.policyDisposition!=='AUTO'||profile.registrationScope!=='REGISTRATION_STATUS_ONLY'||
    !arrayV1(profile.grants,0)||!flags.every(k=>profile[k]===false)||!isoV1(profile.checkedAt)||!isoV1(profile.expiresAt))return fail();
-  const missing=missingCodes(profile.missingEvidence),selected=selection(profile.selection);
+  const missing=missingCodes(profile.missingEvidence),selected=readOwnershipPreparationSelectionSource(profile.selection);
   if(!keys.every(k=>selected[k]===expected[k]))return fail();
   const issued=Date.parse(selected.issuedAt),originalEnd=Date.parse(selected.expiresAt),checked=Date.parse(profile.checkedAt),end=Date.parse(profile.expiresAt);
   const now=Date.now();
