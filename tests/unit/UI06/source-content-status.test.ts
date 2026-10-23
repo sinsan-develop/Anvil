@@ -7,6 +7,29 @@ function fixture():any{return {schemaVersion:1,kind:'SOURCE_CONTENT_REQUEST_STAT
 const expected=()=>({projectId:id(1),requestRef:ref(2)});
 function read(v:unknown,e:unknown=expected()){assert.equal(typeof codec.readSourceContentStatusV1,'function','최소 표시 codec 미구현');return codec.readSourceContentStatusV1(v,e);}
 function render(v:unknown,e:unknown=expected()){assert.equal(typeof ui.SourceContentRequestStatus,'function','비활성 상태 표시 미구현');return renderToStaticMarkup(createElement(ui.SourceContentRequestStatus,{value:v,expected:e}));}
+function proofFixture():any{return {status:'UNVERIFIED',reason:'STORED_REPORT_PROOF_INPUT_ONLY',candidate:{requestRef:ref(2),reportRef:ref(4),proofDomain:'ANVIL_SOURCE_CONTENT_REPORT_V1',proofInputHash:'b'.repeat(64)},storedRequestAuthenticated:false,signatureVerified:false,currentAuthorityVerified:false,storageMutationPerformed:false,executionAuthorized:false,linkAuthorized:false};}
+function readProof(value:unknown,e:unknown=expected()){assert.equal(typeof codec.readSourceContentProofStatusV1,'function','proof 최소 표시 판독 미구현');return codec.readSourceContentProofStatusV1(value,e);}
+function renderProof(proof:unknown,value:unknown=fixture()){return renderToStaticMarkup(createElement(ui.SourceContentRequestStatus,{value,expected:expected(),proof}));}
+test('proof 최소 표시값은 원 request fullref/domain/digest를 결박하고 분리 복사한다',()=>{
+ const f=proofFixture(),out=readProof(f);assert.equal(out.projectId,id(1));assert.equal(out.status,'UNVERIFIED');assert.equal(out.candidate.proofDomain,'ANVIL_SOURCE_CONTENT_REPORT_V1');
+ f.candidate.reportRef.contentHash='c'.repeat(64);assert.equal(out.candidate.reportRef.contentHash,'a'.repeat(64));
+ for(const key of ['storedRequestAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+});
+test('proof의 추가 원자료·권위true·다른 요청/domain 및 getter는 표시 전에 거절한다',()=>{
+ for(const patch of [{permit:{}},{nonce:'PRIVATE_NONCE'},{signature:'PRIVATE_SIGNATURE'},{proofBytes:'PRIVATE_BYTES'},{signatureVerified:true},{storedRequestAuthenticated:true},{storageMutationPerformed:true},{executionAuthorized:true},{linkAuthorized:true},{currentAuthorityVerified:true}])assert.throws(()=>readProof({...proofFixture(),...patch}),/SOURCE_CONTENT_PROOF_STATUS_INVALID/);
+ for(const candidate of [{...proofFixture().candidate,requestRef:ref(99)},{...proofFixture().candidate,proofDomain:'ANVIL_V3_SOURCE_READ_RESULT'},{...proofFixture().candidate,proofInputHash:'bad'},{...proofFixture().candidate,relativePath:'private.txt'}])assert.throws(()=>readProof({...proofFixture(),candidate}),/SOURCE_CONTENT_PROOF_STATUS_INVALID/);
+ let gets=0;const f=proofFixture();Object.defineProperty(f,'candidate',{enumerable:true,get(){gets++;return proofFixture().candidate;}});assert.throws(()=>readProof(f),/SOURCE_CONTENT_PROOF_STATUS_INVALID/);assert.equal(gets,0);
+});
+test('proof 선택 표시는 refs/domain/digest와 미확인 경고뿐이며 과거 거절을 숨기지 않는다',()=>{
+ const f=fixture();f.requestState='REPORTED';f.policy={status:'DENIED',reason:'POLICY_REVOKED',ref:ref(3)};
+ const html=renderProof(proofFixture(),f);assert.match(html,/서명 검증 입력 후보/);assert.match(html,/ANVIL_SOURCE_CONTENT_REPORT_V1/);assert.ok(html.includes('b'.repeat(64)));assert.ok(html.includes(id(4)));
+ assert.match(html,/실제 서명·현재 권한은 미확인/);assert.match(html,/정책 회수 기록/);assert.match(html,/보고 기록 있음/);assert.doesNotMatch(html,/<button|<input|<form|검증 완료|PASS|실행 가능/);
+});
+test('proof 부재·불일치는 고정 경고로 표시하고 caller 원자료를 출력하지 않는다',()=>{
+ const flags=proofFixture();delete flags.candidate;delete flags.reason;delete flags.status;
+ for(const reason of ['REQUEST_ABSENT','OBSERVATION_ABSENT','STORED_PROOF_REQUEST_REF_MISMATCH']){const p={status:'UNAVAILABLE',reason,candidate:null,...flags};assert.equal(readProof(p).candidate,null);const html=renderProof(p);assert.match(html,/검증 입력 후보 없음/);assert.doesNotMatch(html,/서명 검증 입력 후보<|ANVIL_SOURCE_CONTENT_REPORT_V1/);}
+ const html=renderProof({...proofFixture(),nonce:'PRIVATE_NONCE_789'});assert.match(html,/서명 입력 표시 자료를 확인하지 못했습니다/);assert.doesNotMatch(html,/PRIVATE_NONCE_789|ANVIL_SOURCE_CONTENT_REPORT_V1/);
+});
 test('최소 표시값을 복사하고 원 저장 scope/경로·본문·credential 추가는 거절한다',()=>{const f=fixture(),out=read(f);f.policy.ref.contentHash='b'.repeat(64);assert.equal(out.policy.ref.contentHash,'a'.repeat(64));for(const patch of [{scope:{}},{relativePath:'private.txt'},{body:'private'},{credentialTokenDigest:'b'.repeat(64)}])assert.throws(()=>read({...fixture(),...patch}),/SOURCE_CONTENT_STATUS_INVALID/);});
 test('다른 project/fullref 및 권위 true·성공 상태를 표시 근거로 받지 않는다',()=>{for(const patch of [{projectId:id(99)},{requestRef:ref(99)},{requestRef:{...ref(2),contentHash:'b'.repeat(64)}},{executionAuthorized:true},{linkAuthorized:true},{currentAuthorityVerified:true},{storageMutationPerformed:true},{requestState:'COMPLETED'},{targetCount:201}])assert.throws(()=>read({...fixture(),...patch}),/SOURCE_CONTENT_STATUS_INVALID/);});
 test('정책 status/reason/ref 조합과 기록시각을 엄격히 구분한다',()=>{for(const policy of [{status:'UNVERIFIED',reason:'POLICY_DENIED',ref:ref(3)},{status:'UNAVAILABLE',reason:'POLICY_ABSENT',ref:ref(3)},{status:'DENIED',reason:'POLICY_REVOKED',ref:null},{status:'DENIED',reason:'<img src=x onerror=alert(1)>',ref:null}])assert.throws(()=>read({...fixture(),policy}),/SOURCE_CONTENT_STATUS_INVALID/);assert.throws(()=>read({...fixture(),stateRecordedAt:'not-a-time'}),/SOURCE_CONTENT_STATUS_INVALID/);});

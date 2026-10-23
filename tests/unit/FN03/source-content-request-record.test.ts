@@ -27,6 +27,20 @@ function fixture(issued=false,reported=false):any {
 function fn(){assert.equal(typeof m.readSourceContentRequestRecordCandidate,'function','저장행 adapter 미구현');return m.readSourceContentRequestRecordCandidate;}
 function storedProof(){assert.equal(typeof m.readSourceContentStoredReportProofCandidate,'function','저장 관측 내부 proof 소비 미구현');return m.readSourceContentStoredReportProofCandidate;}
 function proofBasis(row:any){return {installationId:id(1),projectId:id(2),requestRef:{id:row.id,version:1,contentHash:row.scope_digest}};}
+test('같은 저장 관측 후보는 브라우저 안전 판독과 실제 React SSR에서도 원자료를 노출하지 않는다',async()=>{
+ const r=fixture(true,true),policy=policyFixture('REVOKED').policy;let calls=0;
+ const proof=await storedProof()({async query(){calls++;return {rows:[r]};}},proofBasis(r),zero+5000);
+ const {readSourceContentRequestStatusCandidate}=await import('../../../apps/server/modules/documents/source-content-request-with-policy.ts');
+ let reads=0;const status=await readSourceContentRequestStatusCandidate({async query(){reads++;return {rows:[reads===1?r:policy]};}},id(1),id(2),id(13),zero+5000);
+ const expected={projectId:id(2),requestRef:proofBasis(r).requestRef};
+ const {readSourceContentProofStatusV1}=await import('../../../contracts/source-content-status-v1.ts');
+ assert.deepEqual(readSourceContentProofStatusV1(proof,expected).candidate,proof.candidate);
+ const {createElement}=await import('react'),{renderToStaticMarkup}=await import('react-dom/server'),{SourceContentRequestStatus}=await import('../../../apps/web/src/features/design-trace/SourceContentRequestStatus.ts');
+ const html=renderToStaticMarkup(createElement(SourceContentRequestStatus,{value:status,expected,proof}));
+ assert.equal(calls,1);assert.equal(reads,2);assert.match(html,/서명 검증 입력 후보/);assert.match(html,/실제 서명·현재 권한은 미확인/);assert.match(html,/정책 회수 기록/);
+ for(const raw of [r.permit_json.observationNonce,r.observation.signature,'src/a.ts','합성 저장행'])assert.equal(html.includes(raw),false);
+ assert.doesNotMatch(html,/<button|<input|<form|검증 완료|PASS/);
+});
 test('저장 보고의 내부 proof 소비는 원 refs/domain/digest만 반환하며 과거 자료도 미확인이다',async()=>{
  const r=fixture(true,true),report=r.observation.report;let calls=0;
  const out=await storedProof()({async query(q:string,args:unknown[]){calls++;assert.deepEqual(args,[id(2),id(13)]);return {rows:[r]};}},proofBasis(r),zero+700000);

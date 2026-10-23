@@ -42,3 +42,23 @@ export function readSourceContentStatusV1(value:unknown,context:unknown):SourceC
    readConsistency:'SEPARATE_READS_NOT_ATOMIC',currentAuthorityVerified:false,storageMutationPerformed:false,executionAuthorized:false,linkAuthorized:false};
  }catch{return invalid();}
 }
+
+/** 별도 비활성 proof 표시 계약. 기존 exact13 상태 계약과 실제 API 등록은 변경하지 않는다. */
+export function readSourceContentProofStatusV1(value:unknown,context:unknown) {
+ try {
+  const expected=object(context,['projectId','requestRef']),expectedRef=ref(expected.requestRef);
+  if(!uuid(expected.projectId))return invalid();
+  const flags=['storedRequestAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'];
+  const v=object(value,['status','reason','candidate',...flags]);
+  if(!flags.every(k=>v[k]===false))return invalid();
+  const common={projectId:expected.projectId,requestRef:expectedRef,storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+  if(v.status==='UNAVAILABLE'){
+   if(v.candidate!==null||!['REQUEST_ABSENT','OBSERVATION_ABSENT','STORED_PROOF_REQUEST_REF_MISMATCH'].includes(v.reason))return invalid();
+   return {...common,status:'UNAVAILABLE' as const,reason:v.reason as string,candidate:null};
+  }
+  if(v.status!=='UNVERIFIED'||v.reason!=='STORED_REPORT_PROOF_INPUT_ONLY')return invalid();
+  const c=object(v.candidate,['requestRef','reportRef','proofDomain','proofInputHash']),requestRef=ref(c.requestRef),reportRef=ref(c.reportRef);
+  if(!same(requestRef,expectedRef)||c.proofDomain!=='ANVIL_SOURCE_CONTENT_REPORT_V1'||typeof c.proofInputHash!=='string'||!/^[0-9a-f]{64}$/.test(c.proofInputHash))return invalid();
+  return {...common,status:'UNVERIFIED' as const,reason:'STORED_REPORT_PROOF_INPUT_ONLY' as const,candidate:{requestRef,reportRef,proofDomain:'ANVIL_SOURCE_CONTENT_REPORT_V1' as const,proofInputHash:c.proofInputHash}};
+ }catch{throw Error('SOURCE_CONTENT_PROOF_STATUS_INVALID');}
+}

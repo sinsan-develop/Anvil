@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 proof 최소 표시 SOURCE**: readSourceContentProofStatusV1은 기존 exact13 상태 계약과 분리된 비활성 판독이다. stored-proof exact9(status/reason/candidate+false6), 후보exact4(requestRef/reportRef/고정domain/proofInputHash)만 허용하고 expected request fullref를 대조한다. 부재/불일치는 고정 이유/candidate null만 표시하며 원문/permit/nonce/signature/proofbytes는 받지 않는다. UI06 기존 비활성 표시의 선택 입력일 뿐 실제 API/앱/route 등록이 아니고 서명/current 미확인·권위false를 유지한다. 새4 RED→직접75 합성/SSR PASS/type/diff0·한정정적C0/I0/M0·Minor10/실제제외 유지.
+
 - **2026-10-23 저장 proof 독립 검토 잔여**: C0/I0/M1·실행/수정0. 신규 nonce 음성은 reportHash/관측 contentHash/감사 targetRef hash 미갱신으로 후속 hash 거절에 가려지므로 nonce 결박 단독 증거가 아니다. 보강 보류·기존9와 총 Minor10 미해결·실제 SQL/PG/서명/current/nonce소비/served 미검증 유지.
 
 - **2026-10-23 저장 관측 내부 proof SOURCE**: readSourceContentStoredReportProofCandidate는 exact3 원요청 basis를 고정하고 기존 단일 SQL/생성·관측 감사 대조 뒤에만 내부 permit/report를 순수 proof 소비에 사용한다. 기존 readSourceContentRequestRecordCandidate 공개 반환은 변경하지 않는다. 신규 공개 결과는 최소 requestRef/reportRef/domain/proofInputHash와 저장인증/서명/current/저장실행LINK false6이며 raw 원문·permit·nonce·서명/proof bytes는 반환하지 않는다. 정상/과거 보고도 UNVERIFIED이고 실제 DB·현재 권위/등록키·nonce 소비·OS/route는 비활성이다. 새4 RED→직접186 합성/SSR PASS/type/diff0·실verifier412/Minor9/기존제외 유지.
