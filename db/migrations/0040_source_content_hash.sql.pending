@@ -634,6 +634,82 @@ CREATE TABLE anvil.source_content_verifications (
 CREATE UNIQUE INDEX source_content_positive_target_once ON anvil.source_content_verifications(project_id,observation_id,target_index) WHERE decision='ACCEPTED';
 -- target_index는 원 report.files의 0-based 순서다. 취소 후 같은 observation/target의 재양성 계보를 만들지 않는다.
 
+CREATE FUNCTION anvil.source_content_verification_row_shape(v anvil.source_content_verifications) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ RETURN COALESCE(v.project_id IS NOT NULL AND v.id IS NOT NULL AND v.version BETWEEN 1 AND 9007199254740991
+  AND v.observation_id IS NOT NULL AND v.observation_version=1 AND v.observation_hash~'^[0-9a-f]{64}$'
+  AND v.target_index BETWEEN 0 AND 199 AND anvil.source_read_relative_file(v.relative_path) IS TRUE
+  AND v.document_id IS NOT NULL AND v.document_version BETWEEN 1 AND 9007199254740991 AND v.document_hash~'^[0-9a-f]{64}$'
+  AND anvil.source_read_ref(v.observer_implementation_ref) IS TRUE AND v.decision IN('ACCEPTED','REVOKED','INVALID')
+  AND anvil.source_content_millisecond(v.verified_at) IS TRUE AND anvil.source_content_millisecond(v.expires_at) IS TRUE
+  AND v.expires_at>v.verified_at AND v.expires_at<=v.verified_at+interval '30 seconds'
+  AND ((v.version=1 AND v.decision='ACCEPTED' AND v.previous_ref='null'::jsonb)
+   OR (v.version>1 AND v.decision IN('REVOKED','INVALID') AND anvil.source_read_ref(v.previous_ref) IS TRUE
+    AND v.previous_ref->>'id'=v.id::text AND v.previous_ref->'version'=to_jsonb(v.version-1)))
+  AND jsonb_typeof(v.snapshot_json)='object'
+  AND octet_length(anvil.source_read_canonical_json(v.snapshot_json))<=1048576 AND v.content_hash=anvil.source_read_hash(v.snapshot_json),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- append의 identity 11열과 정확 predecessor만 대조한다. snapshot 의미/현재 verifier·발급 허가가 아니다.
+CREATE FUNCTION anvil.source_content_verification_lineage_shape(b anvil.source_content_verifications,n anvil.source_content_verifications) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF anvil.source_content_verification_row_shape(n) IS NOT TRUE THEN RETURN false;END IF;
+ IF n.version=1 THEN RETURN b IS NULL AND n.decision='ACCEPTED' AND n.previous_ref='null'::jsonb;END IF;
+ IF anvil.source_content_verification_row_shape(b) IS NOT TRUE THEN RETURN false;END IF;
+ RETURN COALESCE(n.version=b.version+1 AND n.decision IN('REVOKED','INVALID')
+  AND ((b.version=1 AND b.decision='ACCEPTED' AND b.previous_ref='null'::jsonb) OR (b.version>1 AND b.decision IN('REVOKED','INVALID')))
+  AND n.previous_ref=jsonb_build_object('id',b.id,'version',b.version,'contentHash',b.content_hash)
+  AND n.verified_at>=b.verified_at
+  AND ROW(n.project_id,n.id,n.observation_id,n.observation_version,n.observation_hash,n.target_index,n.relative_path,n.document_id,n.document_version,n.document_hash,n.observer_implementation_ref)
+   IS NOT DISTINCT FROM ROW(b.project_id,b.id,b.observation_id,b.observation_version,b.observation_hash,b.target_index,b.relative_path,b.document_id,b.document_version,b.document_hash,b.observer_implementation_ref),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- 원 보고 전체 성공과 target의 문서 ref 결박 후보. 실제 source/Artifact 바이트 동일성·OS/서명/current는 별도다.
+CREATE FUNCTION anvil.source_content_verification_target_shape(v anvil.source_content_verifications,o anvil.source_content_observations,g anvil.source_content_requests) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE item jsonb;target jsonb;
+BEGIN
+ IF anvil.source_content_verification_row_shape(v) IS NOT TRUE
+  OR anvil.source_content_report_payload_shape(g.scope_json,o.report_json->'root',o.report_json->'files',o.report_json->'localEvidence',g.observation_request_ref) IS NOT TRUE
+  OR o.report_json->'localEvidence'->'completed' IS DISTINCT FROM 'true'::jsonb OR v.target_index>=jsonb_array_length(o.report_json->'files') THEN RETURN false;END IF;
+ item=o.report_json->'files'->v.target_index;target=g.scope_json->'targets'->v.target_index;
+ RETURN COALESCE(v.project_id=o.project_id AND o.project_id=g.project_id AND o.request_id=g.id AND o.request_version=g.version
+  AND g.scope_digest=anvil.source_read_hash(g.scope_json) AND o.scope_digest=g.scope_digest
+  AND v.observation_id=o.id AND v.observation_version=o.version AND v.observation_hash=o.content_hash
+  AND o.content_hash=anvil.source_read_hash(o.report_json-ARRAY['signature','reportHash']) AND o.report_json->>'reportHash'=o.content_hash
+  AND o.evidence_class='CONNECTOR_REPORTED' AND o.os_verification='OS_UNVERIFIED'
+  AND v.relative_path=target->>'relativePath' AND item->'relativePath'=target->'relativePath'
+  AND target->'documentRef'=jsonb_build_object('id',v.document_id,'version',v.document_version,'contentHash',v.document_hash)
+  AND item->'documentRef'=target->'documentRef' AND item->>'state'='HASHED'
+  AND anvil.source_content_millisecond(o.received_at) IS TRUE AND v.verified_at>=o.received_at,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.check_source_content_verification_final() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n anvil.source_content_verifications;b anvil.source_content_verifications;o anvil.source_content_observations;g anvil.source_content_requests;
+BEGIN
+ IF TG_TABLE_SCHEMA<>'anvil' OR TG_TABLE_NAME<>'source_content_verifications' OR TG_WHEN<>'AFTER' OR TG_LEVEL<>'ROW' OR TG_OP<>'INSERT' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_TRIGGER_CONTEXT_INVALID' USING ERRCODE='42501';END IF;
+ SELECT v.* INTO n FROM anvil.source_content_verifications v WHERE v.project_id=NEW.project_id AND v.id=NEW.id AND v.version=NEW.version;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_FINAL_REQUIRED' USING ERRCODE='42501';END IF;
+ IF n.version>1 THEN
+  SELECT v.* INTO b FROM anvil.source_content_verifications v WHERE v.project_id=n.project_id AND v.id=n.id AND v.version=n.version-1;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_PREDECESSOR_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ IF anvil.source_content_verification_lineage_shape(b,n) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_LINEAGE_INVALID' USING ERRCODE='42501';END IF;
+ SELECT ob.* INTO o FROM anvil.source_content_observations ob WHERE ob.project_id=n.project_id AND ob.id=n.observation_id AND ob.version=n.observation_version;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_OBSERVATION_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT req.* INTO g FROM anvil.source_content_requests req WHERE req.project_id=o.project_id AND req.id=o.request_id;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_REQUEST_REQUIRED' USING ERRCODE='42501';END IF;
+ IF anvil.source_content_verification_target_shape(n,o,g) IS NOT TRUE OR anvil.source_content_request_final_bundle_shape(g.project_id,g.id) IS NOT TRUE THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_VERIFICATION_FINAL_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER source_content_verification_final AFTER INSERT ON anvil.source_content_verifications
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_verification_final();
+-- 기존 source_content_unavailable/RLSfalse/권한0을 제거하지 않는다. 이 callback은 실제 verifier 권위를 발급하지 않는다.
+
 ALTER TABLE anvil.document_source_links
  ADD COLUMN content_verification_ref jsonb,
  ADD COLUMN content_verification_id uuid,

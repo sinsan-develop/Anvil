@@ -2,7 +2,7 @@
 -- phase/보고 구조용 typed projection: 전체 교환/permit·명령/FK fixture나 실제 OS·서명 검증을 대신하지 않는다.
 BEGIN;
 DO $$
-DECLARE g anvil.source_content_requests;n anvil.source_content_requests;o anvil.source_content_observations;p anvil.source_content_observations;a anvil.audit_events;b anvil.audit_events;empty_o anvil.source_content_observations[]='{}';empty_a anvil.audit_events[]='{}';root_value jsonb;files_value jsonb;evidence_value jsonb;facts_value jsonb;identity_value jsonb;scope_value jsonb;second_target jsonb;
+DECLARE g anvil.source_content_requests;n anvil.source_content_requests;o anvil.source_content_observations;p anvil.source_content_observations;a anvil.audit_events;b anvil.audit_events;empty_o anvil.source_content_observations[]='{}';empty_a anvil.audit_events[]='{}';root_value jsonb;files_value jsonb;evidence_value jsonb;facts_value jsonb;identity_value jsonb;scope_value jsonb;second_target jsonb;verification anvil.source_content_verifications;changed_verification anvil.source_content_verifications;
 BEGIN
  g.project_id='78000000-0000-4000-8000-000000000001';g.id='78000000-0000-4000-8000-000000000002';g.version=1;
  g.connector_id='78000000-0000-4000-8000-000000000003';g.registration_id='78000000-0000-4000-8000-000000000004';g.client_id='78000000-0000-4000-8000-000000000005';
@@ -72,6 +72,16 @@ BEGIN
  ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,files_value,evidence_value,g.observation_request_ref) IS TRUE,'PAYLOAD_HASHED_EMPTY_BYTES_CLAIM_ONLY';
  p=o;p.report_json=p.report_json||jsonb_build_object('root',root_value,'files',files_value,'localEvidence',evidence_value);p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
  ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[b]) IS TRUE,'BUNDLE_HASHED_CLAIM_NOT_LINK_OR_OS_VERIFIED';
+ -- target 결박 true도 실제 verifier/receipt 의미/현재 권위/원문 byte 일치를 발급하지 않는다.
+ verification.project_id=g.project_id;verification.id='78000000-0000-4000-8000-000000000018';verification.version=1;verification.observation_id=p.id;verification.observation_version=p.version;verification.observation_hash=p.content_hash;verification.target_index=0;verification.relative_path='src/a.ts';
+ verification.document_id=(g.scope_json->'targets'->0->'documentRef'->>'id')::uuid;verification.document_version=1;verification.document_hash=g.scope_json->'targets'->0->'documentRef'->>'contentHash';verification.observer_implementation_ref=g.scope_json->'observerRef';verification.decision='ACCEPTED';verification.verified_at=p.received_at;verification.expires_at=verification.verified_at+interval '30 seconds';verification.previous_ref='null';verification.snapshot_json='{"uninterpretedTargetCandidate":true}';verification.content_hash=anvil.source_read_hash(verification.snapshot_json);
+ ASSERT anvil.source_content_verification_target_shape(verification,p,g) IS TRUE,'VERIFICATION_TARGET_CLAIM_NOT_AUTHORITY_OR_BYTE_EQUALITY';
+ changed_verification=verification;changed_verification.observation_hash=o.content_hash;ASSERT anvil.source_content_verification_target_shape(changed_verification,o,g) IS FALSE,'VERIFICATION_REQUIRES_WHOLE_REPORT_COMPLETED';
+ changed_verification=verification;changed_verification.observation_hash=repeat('f',64);ASSERT anvil.source_content_verification_target_shape(changed_verification,p,g) IS FALSE,'VERIFICATION_EXACT_OBSERVATION_HASH';
+ changed_verification=verification;changed_verification.target_index=1;ASSERT anvil.source_content_verification_target_shape(changed_verification,p,g) IS FALSE,'VERIFICATION_TARGET_INDEX_IN_REPORT';
+ changed_verification=verification;changed_verification.document_version=2;ASSERT anvil.source_content_verification_target_shape(changed_verification,p,g) IS FALSE,'VERIFICATION_EXACT_DOCUMENT_VERSION';
+ changed_verification=verification;changed_verification.relative_path='src/b.ts';ASSERT anvil.source_content_verification_target_shape(changed_verification,p,g) IS FALSE,'VERIFICATION_EXACT_TARGET_PATH';
+ changed_verification=verification;changed_verification.verified_at=p.received_at-interval '1 ms';changed_verification.expires_at=changed_verification.verified_at+interval '30 seconds';ASSERT anvil.source_content_verification_target_shape(changed_verification,p,g) IS FALSE,'VERIFICATION_NOT_BEFORE_REPORT_RECEIPT';
  ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value||'{"verified":true}',files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_ROOT_EXTRA_AUTHORITY';
  ASSERT anvil.source_content_report_payload_shape(g.scope_json,jsonb_set(root_value,'{facts,reparse}','true'),files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_ROOT_REPARSE';
  ASSERT anvil.source_content_report_payload_shape(g.scope_json,jsonb_set(root_value,'{facts,declaredRootRef}',g.observation_request_ref),files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_OTHER_DECLARED_ROOT';
