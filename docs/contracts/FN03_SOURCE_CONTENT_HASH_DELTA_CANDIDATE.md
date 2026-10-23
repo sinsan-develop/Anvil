@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 서버 관리 범위 소비**: 신규 readSourceContentManagementScopeFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버 후보 문맥과 원저장 관리 범위를 조합한다. 관리 묶음은 첫 문맥 await 전에 복사하고 과거 관리문맥/이후 요청문맥 구분·원fullref/요청 회수기한/고정음성·원오류·최소refs/false6·분리조회를 유지한다. 정상 서버1/보유2query·만료0/제어회수1, 새4 RED→직접132 합성 PASS/후속114·typecheck/diff0다. 기존 공개 경로/SQL/runner/route 무변경·실제 producer/auth/latest/current 권위는 제공하지 않는다.
+
 - **2026-10-23 원저장 관리 범위 소비**: 신규 readSourceContentStoredManagementScopeForDeclaredContextCandidate는 기존 exact8 선언과 별도 exact2 관리 묶음(evidence/expected)을 고정한 뒤 기존 저장 판독/원fullref·요청 문맥을 대조한다. 임의 caller scope를 입력받지 않고 저장scope만 순수 정책 범위 검사에 넘긴다. 과거 관리문맥과 이후 요청문맥을 혼동하지 않으며 회수·만료를 닫고 최소refs/false6/분리조회만 반환한다. 원query1회/추가query0·기존 공개/SQL/route 변경0, 새4 RED→직접128 합성 PASS/typecheck/diff0·실제 관리권위/latest·DB/current는 미검증이다.
 
 - **2026-10-23 관리 증거·scope 소비 접점**: 신규 inspectSourceContentPolicyScopeCandidate는 관리 원문 증거와 원scope를 순수 결합해 CM03의 네 refs/전체 target 동일집합(순서 차이 허용, 각 전체값 일치)·operation·한도를 대조한다. 관리 당시 문맥은 관리 증거 내부에서만 결박하며 이후 요청의 다른 client/세대/base정책을 현재 허가로 승인하지 않는다. 전달된 이벤트의 거절·회수/기한과 원요청 기한을 지키되 실제 최신 head 생산자가 없으므로 정상도 POLICY_SCOPE_SHAPE_ONLY/UNVERIFIED·false5다. 기존 공개 경로/최소head·SQL/runner/route 무변경·새5 RED→직접35 합성 PASS/typecheck/diff0.

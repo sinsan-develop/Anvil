@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN03 서버 관리 범위 SOURCE**: 기존 identity/control 후보와 저장 관리 범위를 연결하고 관리입력의 첫 문맥 await 전 고정을 추가했다. 새4 RED→직접132 합성 PASS, 새시험 타입표기 정정 후 해당114/typecheck/diff0다. 실제 인증·현재 관리권한/latest·DB/route/served는 미검증·미활성으로 유지하며 전체 계획 미완료다.
+
 - **2026-10-23 FN03 원저장 관리 범위 SOURCE**: 원fullref/선언 문맥을 먼저 대조한 뒤 저장scope만 관리 후보에 연결했다. 첫 await 전 입력 복사·원회수/기한/음성·최소refs/false6/분리조회·조회1회이며 새4 RED→직접128 합성 PASS/typecheck/diff0다. 실제 auth/latest/관리권위·DB/served는 미검증·미활성, 전체 계획 미완료다.
 
 - **2026-10-23 FN03 관리 범위 SOURCE 소비**: 원 content scope와 관리 증거의 정책ref/subject·네refs/전체target 동일집합·operation/한도·원기한 대조를 비활성 순수 함수로 연결했다. 새5 RED→직접3파일35 합성 PASS/typecheck/diff0·권위false5이며 실제 최신 정책/권한·DB/served는 미검증·미활성이다. 기존reader/SQL/route·Minor11/제외를 유지하며 전체 계획 미완료다.
