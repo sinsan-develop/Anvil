@@ -1,4 +1,4 @@
-import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {recordV1,arrayV1,uuidV1,hashV1,isoV1,refV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readSourceContentScopeV1,readSourceContentReportV1,type SourceContentReportV1} from '../../../../contracts/runtime/source-content-report-v1.ts';
 import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type SourceContentPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
@@ -153,6 +153,16 @@ export async function readSourceContentStoredRevokeForDeclaredContextCandidate(d
  return result??close('REQUEST_ABSENT');
 }
 const storedLineageFlags={storedRequestAuthenticated:false as const,managementEvidenceVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+/** 원문 파싱만 선행하고 기존 선언/저장 판독을 그대로 소비한다. 보호 원문 생산자나 실제 인증은 추가하지 않는다. */
+export async function readSourceContentStoredManagementScopeWireForDeclaredContextCandidate(db:ReadClient,value:unknown,raw:unknown,expected:unknown,operation:unknown,nowMs:number){
+ let evidence:unknown;
+ try{
+  if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>4194304)throw Error();
+  evidence=parseWireJson(raw);
+ }catch{throw Error('SOURCE_CONTENT_STORED_MANAGEMENT_WIRE_INVALID');}
+ // await/catch로 기존 비동기 DB·저장 증거 오류를 원문 파싱 오류로 바꾸지 않는다.
+ return readSourceContentStoredManagementScopeForDeclaredContextCandidate(db,value,{evidence,expected},operation,nowMs);
+}
 /** 원저장 scope만 관리 범위 후보에 전달한다. 제공된 관리 기록과 저장행은 현재 인증·원자 조회 증거가 아니다. */
 export async function readSourceContentStoredManagementScopeForDeclaredContextCandidate(db:ReadClient,value:unknown,managementValue:unknown,operation:unknown,nowMs:number){
  const c=readSourceContentDeclaredContextCandidate(value,nowMs);

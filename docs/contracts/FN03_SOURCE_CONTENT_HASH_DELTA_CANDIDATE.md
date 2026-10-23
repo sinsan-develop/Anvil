@@ -472,3 +472,39 @@ originalRequest는 CM05의 기존 명령 envelope 전체, payload는 CM04의 exa
 - **C — 원문 보존 없이 계속 입력받는 구조 후보 유지**: 신규 저장/권한 변경은 없지만 실제 provenance/관리 허가를 증명하지 못하므로 실제 요청/검증/LINK를 열 수 없다. 현재 SOURCE가 이 상태다.
 
 권장 A의 다음 결정은 **새 보호 원문 데이터/조회 계약 후보를 구체화할지**이며, 아직 정확 테이블/필드·권한 operation·SQL·endpoint를 확정하지 않는다. 채택되지 않은 안의 형식을 코드/SQL에 먼저 넣지 않는다. 이 결정과 무관하게 승인된 wire/범위 SOURCE는 계속한다. 실제 DB/키·권한/서비스·Agent 실행은 모든 안에서 이번 범위 밖이다.
+
+### 13.4 A 후속 상세 계약 — Main 단일 권장 후보
+
+> PMO가 채택한 것은 **이 상세 문서 후보 작성**뿐이다. 아래 정확 필드/ref·새 조회 operation은 신규 데이터/권한 계약 제안이며, 형식 확정·코드/SQL 반영·실제 자원 생성 승인이 아니다. §12.6 SOURCE 형식과 실제 producer를 구분한다.
+
+**저장·불변 ref 권장안.** 논리적 신규 보호 기록 이름은 anvil.source_content_policy_management_origins를 후보로 제시한다. 기존 개발 DB 안의 별도 metadata이며 새 파일 root/ArtifactStore 종류를 만들지 않는 안이다. 행 exact9 후보는 다음과 같다.
+
+| 필드 | 단일 권장 의미 |
+|---|---|
+| project_id | 현재 서버가 확인한 프로젝트 UUID. 일반 caller project 주장만으로 저장하지 않는다. |
+| id | 서버가 신규 발급하는 origin UUID. 기존 ID 덮기/재사용 금지. |
+| version | 1 고정. 정정은 원 기록 수정이 아닌 새 관리 명령/새 정책 이벤트다. |
+| management_command_id | 같은 PROJECT의 내부 commands.id. caller originalRequest.commandId와 구분한다. |
+| policy_event_ref | 같은 project의 새 정책 이벤트 RuntimeRefV1 exact3. event.management_command_id와 이 행의 내부 command가 같아야 한다. |
+| request_json | 수신 wire의 중복키 검사 후 보존한 원 ProjectCommand envelope 전체 JSON. snapshot 역생성이나 payload만 저장하는 것은 금지한다. |
+| request_hash | request_json의 기존 canonical UTF-8 SHA256. commands.request_hash와 같아야 한다. 원 바이트 공백/키순서 지문이 아니다. |
+| recorded_at | 서버의 유한 UTC ms시각. 정책 recordedAt<=origin recordedAt<=command.completedAt을 권장한다. |
+| content_hash | 아래 origin snapshot의 canonical SHA256. request_hash와 다른 목적의 hash다. |
+
+불변 snapshot exact10 후보는 schemaVersion=1, purpose=SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN, id, version=1, projectId, managementCommandId, policyEventRef, originalRequest, requestHash, recordedAt이다. originalRequest는 request_json 전체를 그대로 쓰고 나머지는 같은 행 값에서 매핑한다. originRef는 기존 RuntimeRefV1 {id,version:1,contentHash}로만 표현한다. 원 envelope<=1MiB, origin snapshot<=2MiB를 권장하며 이는 신규 보호 기록 상한 제안이다. 기존 관리 wire4MiB/공개 HTTP 본문 한도·CM06 결과 exact9는 변경하지 않는다.
+
+같은 project/내부 command당 origin은 1개이고 정확 policy event당 1개다. project+command 및 project+policy event fullref의 관계를 강제한다. 이전 snapshot·원문 hash를 갱신하거나 과거 원문 부재를 자동 역생성해 채우지 않는다. 출처가 없는 과거 정책은 ORIGIN_ABSENT로 닫고 관리 권위로 승격하지 않는다.
+
+**원자 저장·실패 복구 권장안.** 기존 서버 인증/현재 OWNER·단독 제어·재인증·별도 defineSourceContentPolicy AUTO 허가를 재사용하는 방향이지만, 아직 이 operation을 기존 허용 목록/실제 역할에 넣지 않는다. 프로젝트 최신 head를 잠그고 최신 DENY/REVOKED도 포함한 exact previous CAS 후 서버가 origin/event UUID·시각을 확정한다. 같은 transaction에 원 envelope 보호 기록·정책 이벤트·command/receipt/audit를 저장하며 불변 관계는 COMMIT까지 전부 맞아야 한다. 기존 감사에는 originRef 등 최소 ref만 남기고 원문을 복사하지 않는다. 순환 FK/지연 제약·직접 DML 차단·guard 접근 방식은 미적용 SQL 작성 전에 별도 대조해야 한다.
+
+하나라도 실패하면 전체 rollback이며 성공 receipt/부분 event를 게시하지 않는다. 연결 단절로 COMMIT 결과가 불명확하면 새 command를 만들지 않고, 동일 내부/caller command·request_hash·originRef/event fullref 관계를 재조회해 판정한다. 동일 caller command 재전송은 현재 인증/허가를 먼저 확인하고 정확 원 envelope hash와 기존 결박이 같을 때만 역사 ref를 반환한다. 다른 본문/기준 ref/주체·세대는 충돌로 닫고 기존 기록을 삭제·교체하지 않는다. 이를 actual COMMIT/경합/복구 시험 없이 원자성 PASS로 표시하지 않는다.
+
+**전용 조회 권한·일반 GET 격리 권장안.** 새 읽기 정책 operation 후보는 readSourceContentPolicyManagementOrigin이다. 공개 endpoint는 아직 정의하지 않는다. 미등록 조회 입력 후보 exact3은 originRef, policyEventRef, managementCommandId이며 프로젝트·actor/client/현재 제어세대는 서버가 보유한 로그인/경로 문맥에서 받는다. caller verified/OWNER/auth 플래그는 입력받지 않는다.
+
+현재 프로젝트 OWNER·재인증·동일 client의 단독 제어와 이 exact PROJECT 범위의 별도 명시 AUTO 조회 허가가 모두 있어야 한다는 안이다. 일반 projectMember 조회·uploadArtifact/일반 files GET 권한으로 대체하지 않는다. REQUIRE_APPROVAL은 조회용 일회승인 계약을 따로 정하기 전 닫는다. 해당 operation/권한은 신규 제안이며 기존 materialRules/documentOperations·DB grants에 지금 반영하지 않는다.
+
+보호 row의 request_json은 서버 내부의 기존 관리 증거 inspector 입력으로만 전달하는 안이다. 일반 화면/파일 다운로드/Agent 컨텍스트/검색·로그/감사에는 원문을 반환하지 않는다. 일반 응답 후보 exact5는 originRef, policyEventRef, managementCommandId, requestHash, authority=UNVERIFIED이며 원문 진위/현재 권한을 이 응답만으로 증명하지 않는다. DB 직접 SELECT로 이 경계를 우회할 수 없도록 전용 보호 접근 경계를 설계해야 하며, 그 정확 role/guard SQL은 현재 인증 producer와 함께 후속 검토 사항이다.
+
+**retention·민감 자료 권장안.** 자동 삭제 OFF·정책 만료와 독립 보존을 단일 안으로 제시한다. 실제 사용자 계정/프로젝트의 삭제·내보내기/백업 포함을 자동 허용하지 않으며 기존 원문은 덮기/정리하지 않는다. 새 입력은 기존 알려진 비밀 표식 검사를 적용해 의심 자료를 성공 origin으로 게시하지 않고 원문 없는 거절 감사만 남기는 방향이다. 보호 원문 조회 때도 다시 검사하고 의심되면 원문 반환/허가 소비를 닫아 검토 대상으로 남긴다. 검출이 완전하다고 하지 않으며 자동 마스킹 덮기·자동 파기·키 교체는 하지 않는다. 구체적인 수동 삭제/격리해제·암호화 키/백업 반출 정책은 이 후보로 생성하지 않는다.
+
+**기존과 신규의 구분.** 기존 재사용은 원command canonical hash, RuntimeRefV1, CM01~08·현재 로그인/제어/정책/감사 접근의 확인된 계약, 자동 삭제 OFF 원칙이다. 신규 제안은 origin exact9/10·불변 ref/1:1 관계/시각/상한, 원문 보호 metadata 저장·전용 조회 operation/입력/반환 및 그 허가 범위다. 이 새 계약을 일반 구현 세부로 간주하지 않는다. Main 권장안 전체를 SOURCE 상세 기준으로 채택할지 또는 수정할지가 다음 결정이며, 문서 작성 자체로 SQL/코드 구현이나 실제 DB/권한/서비스가 승인된 것은 아니다.
