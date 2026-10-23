@@ -33,7 +33,7 @@ export class SyntheticExecutionCommandAdmission {
  }
  /** 명시 선택 한 건의 송신과 로컬 관측 회수를 잇는다. 실제 송신/서버 ACK 증거는 아니다.
   * 기록 실패 시 원 송신/부분 관측은 보존하며, 재호출은 기존 원장의 멱등 경계를 따른다.
-  * 사전 읽기는 scope/불완전 원장만 검사한다. 용량 예약·미래 기록 성공을 보장하지 않는다. */
+  * 새 송신은 현재 엔트리 한도도 검사한다. 용량 예약·미래 기록 성공을 보장하지 않는다. */
  async sendInstructionAndRecord(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,sender:SyntheticPrimaryInstructionTransport,spool:SyntheticObservationSpool){
   try{
    this.#ports();if(!(sender instanceof SyntheticPrimaryInstructionTransport)||!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
@@ -41,6 +41,11 @@ export class SyntheticExecutionCommandAdmission {
    const facts=await spool.getExecutionFacts();this.#ports();
    if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration})||facts.executionAuthorized!==false||facts.dispatchPerformed!==false)return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
    const selected=await this.readInstruction(scope,operation,commandRef);
+   const prior=await sender.observations(selected.envelope);this.#ports();
+   if(!prior.inputs.length){
+    try{await spool.assertEntryCapacity();}catch(error){if(error instanceof Error&&error.message==='OBSERVATION_SPOOL_FULL')fail('COMMAND_ADMISSION_SPOOL_FULL');throw error;}
+    this.#ports();
+   }
    const sent=await sender.send(selected.envelope,{grantRef:selected.grantRef,expiresAt:selected.expiresAt});this.#ports();
    const observations=await sender.recordObservations(selected.envelope,spool);this.#ports();
    return{transport:'SYNTHETIC_ONLY' as const,commandRef:cloneV1(selected.commandRef),pageResultRef:cloneV1(selected.pageResultRef),envelopeHash:selected.envelope.envelopeHash,sent,observations,executionAuthorized:false as const,dispatchPerformed:false as const};

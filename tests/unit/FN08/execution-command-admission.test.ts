@@ -112,11 +112,26 @@ function selectedSender(f:ReturnType<typeof instructionFixture>){
  const wire:any={transport:'SYNTHETIC_ONLY',exchange:async(raw:Uint8Array)=>{calls++;assert.equal(rows.at(-1).snapshot.state,'PERMIT_RECORDED');const r=JSON.parse(Buffer.from(raw).toString());assert.equal(r.method,'turn/start');assert.deepEqual(r.params,{threadId:'thread-selected',input:[{type:'text',text:'선택한 합성 지시'}]});return frame({id:r.id,result:{turn:{id:'turn-selected',items:[],status:'inProgress'}}});}},sender=new SyntheticPrimaryInstructionTransport(store,materials,authority,wire,codec,{context:e.context,envelopeExecutorRef:e.executorRegistrationRef},{clock:()=>clock,timeoutMs:1000});
  return{sender,rows,counts:()=>[calls,permits],wrongGrant:()=>grant={...ref,version:2},expireRead:()=>expireOnRead=true,advance:(n:number)=>clock+=n};
 }
-function selectedSpool(f:ReturnType<typeof instructionFixture>,foreign=false){
+function selectedSpool(f:ReturnType<typeof instructionFixture>,foreign=false,maxEntries=10){
  const rows:any[]=[],scope={projectId:foreign?randomUUID():f.scope.projectId,executionId:f.scope.executionId,executionGeneration:1};let failAt=0,incomplete=false;
- const spool=new SyntheticObservationSpool({transport:'SYNTHETIC_ONLY',exclusive:async(s,body)=>{assert.deepEqual(s,scope);return body({read:async()=>({complete:!incomplete,events:structuredClone(rows)}),appendAndSync:async e=>{if(rows.length+1===failAt){failAt=0;throw Error('PRIVATE_QA_SPOOL_FAILURE');}rows.push(structuredClone(e));}});}},scope,{clock:()=>initial,maxEntries:10,maxBytes:1048576,maxBatchEntries:10,maxBatchBytes:1048576});
+ const spool=new SyntheticObservationSpool({transport:'SYNTHETIC_ONLY',exclusive:async(s,body)=>{assert.deepEqual(s,scope);return body({read:async()=>({complete:!incomplete,events:structuredClone(rows)}),appendAndSync:async e=>{if(rows.length+1===failAt){failAt=0;throw Error('PRIVATE_QA_SPOOL_FAILURE');}rows.push(structuredClone(e));}});}},scope,{clock:()=>initial,maxEntries,maxBytes:1048576,maxBatchEntries:10,maxBatchBytes:1048576});
  return{spool,rows,failSecond:()=>failAt=2,incomplete:()=>incomplete=true};
 }
+
+test('이미 찬 관측 원장은 새 지시의 permit·wire 이전에 거절하며 원기록을 보존한다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f,false,1),a=f.make();
+ await p.spool.append({projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration,eventId:randomUUID(),type:'HEARTBEAT',commandId:randomUUID(),envelopeHash:'d'.repeat(64),localRecordRef:f.commandRef,processRef:null,occurredAt:new Date(initial).toISOString(),reasonCode:'NONE'});
+ const before=structuredClone(p.rows);
+ await assert.rejects(a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),{message:'COMMAND_ADMISSION_SPOOL_FULL'});
+ assert.deepEqual(s.counts(),[0,0]);assert.equal(s.rows.length,0);assert.deepEqual(p.rows,before);
+});
+
+test('같은 명령 재조회는 관측 엔트리 한도에 도달해도 wire를 반복하지 않는다',async()=>{
+ const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f,false,3),a=f.make();
+ const first=await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),before=structuredClone(p.rows);
+ assert.equal(p.rows.length,3);assert.deepEqual(await a.sendInstructionAndRecord(f.scope,f.operation,f.commandRef,s.sender,p.spool),first);
+ assert.deepEqual(s.counts(),[1,1]);assert.deepEqual(p.rows,before);
+});
 
 test('명시 선택 송신·관측 회수는 원장3행을 연결하고 재호출도 wire1·관측중복0이다',async()=>{
  const f=instructionFixture(),s=selectedSender(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.sendInstructionAndRecord,'function');

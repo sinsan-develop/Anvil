@@ -72,6 +72,13 @@ export class SyntheticObservationSpool{
   });this.#port();return result;
   }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_FACTS_UNAVAILABLE');}
  }
+ /** 현재 엔트리 한도 도달만 거절한다. 용량 예약·실제 디스크 여유·향후 append 성공의 보장이 아니다. */
+ async assertEntryCapacity(){
+  try{this.#port();await this.store.exclusive(cloneV1(this.#scope),async tx=>{
+   this.#port();const stored=this.#journal(await tx.read());if(stored.length>=this.#options.maxEntries)fail('OBSERVATION_SPOOL_FULL');
+  });this.#port();
+  }catch(error){if(error instanceof SpoolFailure)throw error;return fail('OBSERVATION_SPOOL_CAPACITY_UNAVAILABLE');}
+ }
  /** ACK는 전달받은 주장이다. prefix 내용 일치만 대조하며 인증/서버 내구/삭제 허가를 증명하지 않는다. */
  async compareAck(raw:unknown){
   try{this.#port();const claim=raw===null?null:cloneAck(raw,this.#scope,this.#now());
