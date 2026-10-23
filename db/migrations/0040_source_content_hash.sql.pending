@@ -311,6 +311,38 @@ BEGIN
 EXCEPTION WHEN OTHERS THEN RETURN false;
 END;$$;
 
+-- 보관된 permit을 보관 당시 serverNow로 대조한다. 현재 시각의 허가/키 진위/OS 관측이 아니다.
+CREATE FUNCTION anvil.source_content_request_permit_shape(g anvil.source_content_requests) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE p jsonb;root jsonb;credential jsonb;path text;server_at timestamptz;permit_at timestamptz;observe_before timestamptz;
+BEGIN
+ IF anvil.source_content_request_exchange_shape(g) IS NOT TRUE THEN RETURN false;END IF;
+ IF g.credential_token_digest IS NULL THEN RETURN g.permit_json IS NULL;END IF;
+ p=g.permit_json;root=p->'root';credential=p->'credential';
+ IF anvil.source_read_exact(p,ARRAY['protocolVersion','purpose','scope','requestRef','scopeDigest','root','credential','observationRequestRef','observationNonce','issuedAt','observeBefore','serverNow','executionAuthorized','agentDispatchPerformed','baselineConfirmed','linkAuthorized']) IS NOT TRUE
+  OR anvil.source_read_exact(root,ARRAY['sourceRootRef','pathHint','pathHintHash']) IS NOT TRUE
+  OR anvil.source_read_exact(credential,ARRAY['scope','issuedAt','expiresAt']) IS NOT TRUE
+  OR octet_length(anvil.source_read_canonical_json(p))>1048576 OR jsonb_typeof(root->'pathHint') IS DISTINCT FROM 'string'
+  OR jsonb_typeof(p->'serverNow') IS DISTINCT FROM 'string' OR anvil.source_content_nonce32(p->'observationNonce') IS NOT TRUE THEN RETURN false;END IF;
+ path=root->>'pathHint';server_at=(p->>'serverNow')::timestamptz;permit_at=(p->>'issuedAt')::timestamptz;observe_before=(p->>'observeBefore')::timestamptz;
+ RETURN COALESCE(p->'protocolVersion'='1'::jsonb AND p->>'purpose'='SOURCE_CONTENT_PERMIT' AND p->'scope'=g.scope_json
+  AND p->'requestRef'=jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.scope_digest) AND p->>'scopeDigest'=g.scope_digest
+  AND anvil.source_read_ref(g.observation_request_ref) IS TRUE AND g.observation_request_ref->'version'='1'::jsonb
+  AND p->'observationRequestRef'=g.observation_request_ref
+  AND g.credential_token_digest~'^[0-9a-f]{64}$' AND g.credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY'
+  AND p->>'observationNonce'<>g.preflight_json->>'clientNonce' AND p->>'observationNonce'<>g.challenge_json->>'serverNonce'
+  AND g.observation_nonce_digest=encode(sha256(decode(translate(p->>'observationNonce','-_','+/')||'=','base64')),'hex')
+  AND root->'sourceRootRef'=g.scope_json->'sourceRootRef' AND root->>'pathHintHash'=g.scope_json->>'pathHintHash'
+  AND anvil.source_content_nonblank(path) IS TRUE AND anvil.source_read_utf16_length(path)<=4096 AND path COLLATE "C" !~ '[[:cntrl:]]'
+  AND encode(sha256(convert_to(path,'UTF8')),'hex')=g.scope_json->>'pathHintHash'
+  AND credential->>'scope'='SOURCE_DOCUMENT_CONTENT_HASH_ONLY' AND credential->>'issuedAt'=anvil.source_read_iso(g.credential_issued_at)
+  AND credential->>'expiresAt'=anvil.source_read_iso(g.credential_expires_at)
+  AND p->'executionAuthorized'='false'::jsonb AND p->'agentDispatchPerformed'='false'::jsonb
+  AND p->'baselineConfirmed'='false'::jsonb AND p->'linkAuthorized'='false'::jsonb
+  AND anvil.source_content_millisecond(server_at) IS TRUE AND p->>'serverNow'=anvil.source_read_iso(server_at)
+  AND server_at>=permit_at AND server_at<observe_before AND server_at<=g.updated_at,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 -- 생성 당시 최종 행 묶음의 구조 검사 후보. 조회 완전성/현재 허가/COMMIT를 보장하지 않으며 trigger 미연결이다.
 CREATE FUNCTION anvil.source_content_creation_bundle_shape(g anvil.source_content_requests,commands anvil.commands[],receipts anvil.authorization_receipts[],events anvil.audit_events[]) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 DECLARE c anvil.commands;r anvil.authorization_receipts;a anvil.audit_events;target jsonb;payload jsonb;original jsonb;request_hash text;receipt_digest text;data jsonb;result jsonb;
@@ -415,7 +447,7 @@ BEGIN
  IF project_arg IS NULL OR request_arg IS NULL THEN RETURN false;END IF;
  SELECT r.* INTO g FROM anvil.source_content_requests r WHERE r.project_id=project_arg AND r.id=request_arg;
  IF NOT FOUND THEN RETURN false;END IF;
- IF anvil.source_content_request_exchange_shape(g) IS NOT TRUE THEN RETURN false;END IF;
+ IF anvil.source_content_request_permit_shape(g) IS NOT TRUE THEN RETURN false;END IF;
  cs=ARRAY(SELECT cmd FROM anvil.commands cmd WHERE cmd.project_id=g.project_id AND cmd.id=g.created_command_id LIMIT 2);
  IF cardinality(cs)<>1 THEN RETURN false;END IF;c=cs[1];
  rs=ARRAY(SELECT ar FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id LIMIT 2);

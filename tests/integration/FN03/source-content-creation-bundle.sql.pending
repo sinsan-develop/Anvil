@@ -1,7 +1,7 @@
 -- 미실행 생성 최종행 묶음 반례 SOURCE. actual DB/FK/trigger/COMMIT·현재 권위/서명 검증이 아니다.
 BEGIN;
 DO $$
-DECLARE g anvil.source_content_requests;n anvil.source_content_requests;c anvil.commands;d anvil.commands;r anvil.authorization_receipts;s anvil.authorization_receipts;a anvil.audit_events;b anvil.audit_events;ref jsonb;target jsonb;payload jsonb;original jsonb;data jsonb;
+DECLARE g anvil.source_content_requests;n anvil.source_content_requests;issued anvil.source_content_requests;c anvil.commands;d anvil.commands;r anvil.authorization_receipts;s anvil.authorization_receipts;a anvil.audit_events;b anvil.audit_events;ref jsonb;target jsonb;payload jsonb;original jsonb;data jsonb;
 BEGIN
  ref=jsonb_build_object('id','79000000-0000-4000-8000-000000000001','version',1,'contentHash',repeat('a',64));
  g.project_id='79000000-0000-4000-8000-000000000002';g.id='79000000-0000-4000-8000-000000000003';g.version=1;g.created_command_id='79000000-0000-4000-8000-000000000004';g.requested_by='79000000-0000-4000-8000-000000000005';g.client_id='79000000-0000-4000-8000-000000000006';
@@ -63,5 +63,37 @@ BEGIN
  n.challenge_json=jsonb_set(n.challenge_json,'{publicKeyFingerprint}',to_jsonb(repeat('f',64)));ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_KEY_SWAP';n.challenge_json=jsonb_set(n.challenge_json,'{publicKeyFingerprint}',n.preflight_json->'publicKeyFingerprint');
  n.preflight_json=jsonb_set(n.preflight_json,'{projectId}','"79000000-0000-4000-8000-000000000099"');n.challenge_json=jsonb_set(n.challenge_json,'{projectId}',n.preflight_json->'projectId');n.preflight_digest=anvil.source_read_hash(n.preflight_json);
  ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_OTHER_PROJECT_WITH_MATCHING_HASH_AND_CHALLENGE';
+ -- 다음 permit projection은 원 생성 command/receipt 전체 fixture가 아니며 실제 발급/COMMIT를 뜻하지 않는다.
+ ASSERT anvil.source_content_request_permit_shape(g) IS TRUE,'PERMIT_CREATED_WITHOUT_CREDENTIAL';
+ n=g;n.scope_json=jsonb_set(n.scope_json,'{pathHintHash}',to_jsonb(encode(sha256(convert_to('D:'||chr(92)||'Synthetic','UTF8')),'hex')));n.scope_digest=anvil.source_read_hash(n.scope_json);
+ n.state='ISSUED';n.updated_at=g.created_at+interval '2 seconds';n.challenge_issued_at=g.created_at+interval '1 second';n.challenge_expires_at=g.created_at+interval '61 seconds';
+ n.preflight_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_CONTENT_PREFLIGHT','installationId',n.scope_json->'installationId','projectId',n.project_id,
+ 'connectorRef',ref,'registrationRef',ref,'observerRef',ref,'requestRef',jsonb_build_object('id',n.id,'version',1,'contentHash',n.scope_digest),'scopeDigest',n.scope_digest,'publicKeyFingerprint',repeat('e',64),'clientNonce',repeat('A',43),'expiresAt',anvil.source_read_iso(g.created_at+interval '90 seconds'));
+ n.preflight_digest=anvil.source_read_hash(n.preflight_json);n.challenge_json=(n.preflight_json-ARRAY['purpose','expiresAt'])||jsonb_build_object('purpose','SOURCE_CONTENT_EXCHANGE','serverNonce',repeat('A',42)||'E','issuedAt',anvil.source_read_iso(n.challenge_issued_at),'expiresAt',anvil.source_read_iso(n.challenge_expires_at));
+ n.proof_signature=repeat('A',86);n.credential_token_digest=repeat('2',64);n.credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY';n.credential_issued_at=n.updated_at;n.credential_expires_at=g.created_at+interval '62 seconds';
+ n.observation_request_ref=jsonb_build_object('id','79000000-0000-4000-8000-000000000013','version',1,'contentHash',repeat('3',64));n.observation_nonce_digest=encode(sha256(decode(repeat('A',42)||'I=','base64')),'hex');
+ n.permit_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_CONTENT_PERMIT','scope',n.scope_json,'requestRef',n.preflight_json->'requestRef','scopeDigest',n.scope_digest,
+ 'root',jsonb_build_object('sourceRootRef',ref,'pathHint','D:'||chr(92)||'Synthetic','pathHintHash',n.scope_json->'pathHintHash'),
+ 'credential',jsonb_build_object('scope','SOURCE_DOCUMENT_CONTENT_HASH_ONLY','issuedAt',anvil.source_read_iso(n.credential_issued_at),'expiresAt',anvil.source_read_iso(n.credential_expires_at)),
+ 'observationRequestRef',n.observation_request_ref,'observationNonce',repeat('A',42)||'I','issuedAt',anvil.source_read_iso(n.credential_issued_at),'observeBefore',anvil.source_read_iso(n.credential_expires_at),'serverNow',anvil.source_read_iso(n.updated_at),
+ 'executionAuthorized',false,'agentDispatchPerformed',false,'baselineConfirmed',false,'linkAuthorized',false);
+ issued=n;
+ ASSERT anvil.source_content_request_permit_shape(issued) IS TRUE,'PERMIT_EXACT_STORED_PROJECTION';
+ n=issued;n.updated_at=n.updated_at+interval '500 milliseconds';n.permit_json=jsonb_set(n.permit_json,'{serverNow}',to_jsonb(anvil.source_read_iso(n.updated_at)));ASSERT anvil.source_content_request_permit_shape(n) IS TRUE,'PERMIT_SERVER_AFTER_ISSUED_NOT_CURRENT_AUTHORITY';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{executionAuthorized}','true');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_NO_TRUE_AUTHORITY';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{root}',(n.permit_json->'root')||'{"verified":true}');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_NO_EXTRA_ROOT_KEYS';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{purpose}','"SOURCE_READ_PERMIT"');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_OLD_PURPOSE';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{credential,scope}','"SOURCE_OBSERVE_READ_ONLY"');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_OLD_CREDENTIAL_SCOPE';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{root,pathHint}','"other"');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_RAW_PATH_HASH';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{observationRequestRef}',ref);ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_OTHER_OBSERVATION_REF';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{observationNonce}',n.preflight_json->'clientNonce');n.observation_nonce_digest=encode(sha256(decode(translate(n.permit_json->>'observationNonce','-_','+/')||'=','base64')),'hex');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_CLIENT_NONCE_REUSE_WITH_MATCHING_DIGEST';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{observationNonce}',n.challenge_json->'serverNonce');n.observation_nonce_digest=encode(sha256(decode(translate(n.permit_json->>'observationNonce','-_','+/')||'=','base64')),'hex');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_SERVER_NONCE_REUSE_WITH_MATCHING_DIGEST';
+ n=issued;n.observation_nonce_digest=repeat('f',64);ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_NONCE_DIGEST';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{serverNow}',to_jsonb(anvil.source_read_iso(n.updated_at+interval '1 ms')));ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_SERVER_AFTER_ROW_UPDATE';
+ n=issued;n.updated_at=n.credential_expires_at;n.permit_json=jsonb_set(n.permit_json,'{serverNow}',to_jsonb(anvil.source_read_iso(n.updated_at)));ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_SERVER_AT_OBSERVE_BEFORE_WITH_MATCHING_UPDATE';
+ n=issued;n.state='UNKNOWN';n.updated_at=n.created_at+interval '5 minutes';ASSERT anvil.source_content_request_permit_shape(n) IS TRUE,'PERMIT_HISTORICAL_UNKNOWN_NOT_REISSUED';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{credential,expiresAt}',to_jsonb(anvil.source_read_iso(n.credential_expires_at+interval '1 ms')));ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_CREDENTIAL_TIME_ECHO';
+ n=issued;n.permit_json=n.permit_json||'{"token":"forbidden"}';ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_NO_RAW_TOKEN';
+ n=issued;n.permit_json=jsonb_set(n.permit_json,'{scope,controlGeneration}','4');ASSERT anvil.source_content_request_permit_shape(n) IS FALSE,'PERMIT_OTHER_SCOPE';
 END;$$;
 ROLLBACK;
