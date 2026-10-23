@@ -2,10 +2,11 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {recordV1,arrayV1,uuidV1,hashV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readSourceContentScopeV1,readSourceContentReportV1} from '../../../../contracts/runtime/source-content-report-v1.ts';
 import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
+import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
-const fields=['project_id','id','version','scope_json','scope_digest','created_command_id','requested_by','client_id','credential_generation','control_generation','source_root_id','source_root_version','connector_id','registration_id','created_at','expires_at','updated_at','state','preflight_digest','challenge_json','challenge_issued_at','challenge_expires_at','credential_token_digest','credential_scope','credential_issued_at','credential_expires_at','observation_request_ref','observation_nonce_digest','permit_json','report_consumed_at','report_consumed_command_id','revoked_at','revoke_command_id','exchange_failures'];
+const fields=['project_id','id','version','scope_json','scope_digest','created_command_id','requested_by','client_id','credential_generation','control_generation','source_root_id','source_root_version','connector_id','registration_id','created_at','expires_at','updated_at','state','preflight_json','preflight_digest','challenge_json','challenge_issued_at','challenge_expires_at','credential_token_digest','credential_scope','credential_issued_at','credential_expires_at','observation_request_ref','observation_nonce_digest','permit_json','report_consumed_at','report_consumed_command_id','revoked_at','revoke_command_id','exchange_failures'];
 const timeFields=['created_at','expires_at','updated_at','challenge_issued_at','challenge_expires_at','credential_issued_at','credential_expires_at','report_consumed_at','revoked_at'];
 const invalid=():never=>{throw Error('SOURCE_CONTENT_RECORD_INVALID');};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -27,7 +28,7 @@ const sql=`SELECT ${fields.map(k=>`r.${k}`).join(',')},
  LEFT JOIN anvil.source_content_observations o ON o.project_id=r.project_id AND o.request_id=r.id
  WHERE r.project_id=$1 AND r.id=$2`;
 
-/** 보호 저장행의 구조 후보 판독만 한다. 실제 SQL·현재 권위/원 preflight·receipt/audit·서명·OS 검증은 별도이며 route 미등록이다. */
+/** 보호 저장행의 구조 후보 판독만 한다. 실제 SQL·현재 권위/receipt/audit·서명·OS 검증은 별도이며 route 미등록이다. */
 export async function readSourceContentRequestRecordCandidate(db:ReadClient,installationId:string,projectId:string,requestId:string,nowMs:number) {
  if(![installationId,projectId,requestId].every(uuidV1)||!Number.isSafeInteger(nowMs))return invalid();
  // 한 statement snapshot에서 읽고 누락 command/관측을 INNER JOIN으로 숨기지 않는다. DB 오류는 그대로 전파한다.
@@ -46,7 +47,10 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
   const ch=v.challenge_json;
   if(ch!==null){
    if(!recordV1(ch,['protocolVersion','purpose','installationId','projectId','connectorRef','registrationRef','observerRef','requestRef','scopeDigest','publicKeyFingerprint','clientNonce','expiresAt','serverNonce','issuedAt'])||ch.protocolVersion!==1||ch.purpose!=='SOURCE_CONTENT_EXCHANGE'||ch.installationId!==installationId||ch.projectId!==projectId||!['connectorRef','registrationRef','observerRef'].every(k=>same(ch[k],s[k as 'connectorRef']))||!same(ch.requestRef,requestRef)||ch.scopeDigest!==v.scope_digest||!hashV1(ch.publicKeyFingerprint)||!nonce(ch.clientNonce)||!nonce(ch.serverNonce)||ch.clientNonce===ch.serverNonce||ch.issuedAt!==v.challenge_issued_at||ch.expiresAt!==v.challenge_expires_at)return invalid();
-  }
+   if(v.preflight_json===null||contentHash(canonicalJson(v.preflight_json))!==v.preflight_digest)return invalid();
+   // 저장된 최초 원문을 사용한다. challenge에서 원 preflight를 역으로 재구성하지 않는다.
+   readSourceContentChallengeV1(ch,v.preflight_json,{scope:s,requestRef,publicKeyFingerprint:ch.publicKeyFingerprint},Date.parse(ch.issuedAt));
+  }else if(v.preflight_json!==null)return invalid();
   const p=v.permit_json;
   let permit:ReturnType<typeof readSourceContentPermitV1>|null=null;
   if(p!==null){

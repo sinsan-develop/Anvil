@@ -39,7 +39,7 @@ CREATE TABLE anvil.source_content_requests (
  content_policy_version bigint GENERATED ALWAYS AS((scope_json->'contentPolicyRef'->>'version')::bigint) STORED,
  content_policy_hash text GENERATED ALWAYS AS(scope_json->'contentPolicyRef'->>'contentHash') STORED,
  state text NOT NULL DEFAULT 'CREATED' CHECK(state IN('CREATED','CHALLENGED','ISSUED','REPORTED','REVOKED','EXPIRED','UNKNOWN')),
- preflight_digest text CHECK(preflight_digest~'^[0-9a-f]{64}$'),challenge_json jsonb,challenge_issued_at timestamptz,challenge_expires_at timestamptz,
+ preflight_json jsonb,preflight_digest text CHECK(preflight_digest~'^[0-9a-f]{64}$'),challenge_json jsonb,challenge_issued_at timestamptz,challenge_expires_at timestamptz,
  proof_signature text CHECK(proof_signature~'^[A-Za-z0-9_-]{85}[AQgw]$'),exchange_failures integer NOT NULL DEFAULT 0 CHECK(exchange_failures BETWEEN 0 AND 5),
  credential_token_digest text UNIQUE CHECK(credential_token_digest~'^[0-9a-f]{64}$'),
  credential_scope text CHECK(credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY'),credential_issued_at timestamptz,credential_expires_at timestamptz,
@@ -64,8 +64,10 @@ CREATE TABLE anvil.source_content_requests (
  CHECK(isfinite(created_at) AND isfinite(expires_at) AND expires_at>created_at AND expires_at<=created_at+interval '10 minutes'
   AND created_at=date_trunc('milliseconds',created_at) AND expires_at=date_trunc('milliseconds',expires_at)),
  CHECK(isfinite(updated_at) AND updated_at>=created_at AND updated_at=date_trunc('milliseconds',updated_at)),
- CHECK((challenge_json IS NULL AND preflight_digest IS NULL AND challenge_issued_at IS NULL AND challenge_expires_at IS NULL)
-  OR (jsonb_typeof(challenge_json)='object' AND preflight_digest IS NOT NULL AND challenge_issued_at IS NOT NULL AND challenge_expires_at IS NOT NULL
+ CHECK((challenge_json IS NULL AND preflight_json IS NULL AND preflight_digest IS NULL AND challenge_issued_at IS NULL AND challenge_expires_at IS NULL)
+  OR (jsonb_typeof(challenge_json)='object' AND jsonb_typeof(preflight_json)='object'
+   AND octet_length(anvil.source_read_canonical_json(preflight_json))<=1048576 AND preflight_digest=anvil.source_read_hash(preflight_json)
+   AND preflight_digest IS NOT NULL AND challenge_issued_at IS NOT NULL AND challenge_expires_at IS NOT NULL
    AND isfinite(challenge_issued_at) AND isfinite(challenge_expires_at) AND challenge_issued_at>=created_at
    AND challenge_expires_at>challenge_issued_at AND challenge_expires_at<=challenge_issued_at+interval '60 seconds' AND challenge_expires_at<=expires_at) IS TRUE),
  CHECK((credential_token_digest IS NULL AND credential_scope IS NULL AND credential_issued_at IS NULL AND credential_expires_at IS NULL)
