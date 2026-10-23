@@ -145,6 +145,14 @@ B(격리형) 후보4표:
 
 ## 9. egress·목적·보존·노출
 
+### 저장 SOURCE 중간 구현 기록 — 2026-10-23
+
+신규 미적용 db/migrations/0040_source_content_hash.sql.pending에 위4표·same-project FK/target별 양성·소비 UNIQUE·append/강제거절을 작성했다. 기존4개 runner/manifest에는 등록하지 않았다. 새표는 RLS false/FORCE·권한0/모든 DML·TRUNCATE 거절, 최초 LINK INSERT도 거절이다. 실제 인증·정확 shape/상태전이·정책 predecessor/CAS·nonce/서명/verifier·명령/audit/COMMIT guard는 아직 미완성이며 이 닫힌 부분을 활성화 코드라고 부르지 않는다.
+
+content_verification_ref와 보조 id/version/hash는 모두 일반 열이다. 기존0033의 BEFORE 전체행 대조와 충돌하는 STORED 생성열안은 원 정적I1으로 보존하고 source에서 제거했다. CHECK는 legacy 전체NULL 또는 exact ref(version1 양성)·보조3열 일치를 IS TRUE로 강제하며 FK/UNIQUE·4열tuple 불변을 유지한다. 기존 적용0032/0033 원문과 기존행/권한은 변경하지 않았다. 생성열/일반열의 미래 PG 반례는 별도 .sql.pending source이며 실행/RED→GREEN/제품 실제 detach는 NOT_RUN이다.
+
+서버 최신정책 판독 source는 project_id만 선별한 뒤 sequence DESC LIMIT1로 한 건을 고정해 최소 요약/hash를 대조한다. 최신 회수/만료/DENY/다른subject면 거절하고 과거 AUTO 재조회0, 정상 AUTO도 현재 관리 권위가 없어 UNVERIFIED/실행·LINK false다. 이 판독은 full policy/targets/관리허가·이력 계보 검증이나 정책 쓰기 기능을 대신하지 않고 route에도 등록하지 않는다. 저장 SOURCE 부분 구현과 실제 사용 가능한 기능을 구분한다.
+
 로컬 지정 connector→같은 사용자 소유 Anvil API만. payload는 §6의 정확 root/file metadata·상대경로/문서 refs·바이트 길이/파일 SHA256·scope/nonce·observer/서명이다. **파일 본문·파생 텍스트·diff·Git/다른 프로젝트·Secret 원문 송신0**. hash도 짧은/알려진 내용 추측·파일 존재 fingerprint를 노출할 수 있음을 미리 알리고 대상/목적/수신 서버를 명시한다. 이후 원문 수집은 별도 기존 import 절차·허가·격리 검사를 거친다.
 
 scope의 예상 문서 hash를 알고 있다는 이유로 observer의 echo를 원관측이라 하지 않는다. protected native/provider 검증 gate가 필수다. 소스 변경 중 비밀을 새로 포함할 수 있고 hash-only는 완전 비밀 탐지가 아니다. QUARANTINED 서버 자료는 미리 거절하되 unknown secret 탐지 완료를 주장하지 않는다.

@@ -1,0 +1,168 @@
+-- FN03 B SOURCE 전용·미적용·실행 manifest 미등록. 적용하지 않는다.
+-- 실제 PG 구문/제약/경합/COMMIT 미검증. 새 인증/현재정책/verifier/명령·감사 guard는 미완성이므로 DML을 전부 닫는다.
+-- 기존 metadata SQL/정책/역할/서비스를 수정하지 않으며 이 파일은 활성화 migration이 아니다.
+
+CREATE TABLE anvil.source_content_policy_events (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),
+ sequence bigint NOT NULL CHECK(sequence BETWEEN 1 AND 9007199254740991),subject_user_id uuid NOT NULL,
+ disposition text NOT NULL CHECK(disposition IN('AUTO','DENY','REVOKED')),
+ snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ previous_ref jsonb NOT NULL,management_command_id uuid NOT NULL,recorded_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,
+ previous_id uuid GENERATED ALWAYS AS((previous_ref->>'id')::uuid) STORED,
+ previous_version bigint GENERATED ALWAYS AS((previous_ref->>'version')::bigint) STORED,
+ previous_hash text GENERATED ALWAYS AS(previous_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,sequence),UNIQUE(project_id,id,version,content_hash),UNIQUE(project_id,management_command_id),
+ FOREIGN KEY(project_id,subject_user_id) REFERENCES anvil.project_members(project_id,user_id),
+ FOREIGN KEY(project_id,management_command_id) REFERENCES anvil.commands(project_id,id),
+ FOREIGN KEY(project_id,previous_id,previous_version,previous_hash) REFERENCES anvil.source_content_policy_events(project_id,id,version,content_hash),
+ CHECK((jsonb_typeof(snapshot_json)='object' AND octet_length(anvil.source_read_canonical_json(snapshot_json))<=1048576
+  AND content_hash=anvil.source_read_hash(snapshot_json) AND snapshot_json->>'projectId'=project_id::text
+  AND snapshot_json->>'subjectUserId'=subject_user_id::text AND snapshot_json->'sequence'=to_jsonb(sequence)
+  AND snapshot_json->>'disposition'=disposition AND snapshot_json->>'recordedAt'=anvil.source_read_iso(recorded_at)
+  AND snapshot_json->>'expiresAt'=anvil.source_read_iso(expires_at)) IS TRUE),
+ CHECK((sequence=1 AND previous_ref='null'::jsonb) OR (sequence>1 AND anvil.source_read_ref(previous_ref) IS TRUE)),
+ CHECK(isfinite(recorded_at) AND isfinite(expires_at) AND expires_at>recorded_at
+  AND recorded_at=date_trunc('milliseconds',recorded_at) AND expires_at=date_trunc('milliseconds',expires_at))
+);
+CREATE INDEX source_content_policy_latest ON anvil.source_content_policy_events(project_id,sequence DESC);
+-- 최신 회수·만료를 제외해 과거 AUTO로 돌아가지 않는다. 현재 관리허가/이전 sequence+1/CAS는 후속 guard이며 지금은 전 DML 거절이다.
+
+CREATE TABLE anvil.source_content_requests (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),
+ scope_json jsonb NOT NULL,scope_digest text NOT NULL CHECK(scope_digest~'^[0-9a-f]{64}$'),
+ created_command_id uuid NOT NULL,requested_by uuid NOT NULL,client_id uuid NOT NULL,
+ credential_generation bigint NOT NULL CHECK(credential_generation BETWEEN 1 AND 9007199254740991),
+ control_generation bigint NOT NULL CHECK(control_generation BETWEEN 1 AND 9007199254740991),
+ source_root_id uuid NOT NULL,source_root_version bigint NOT NULL,connector_id uuid NOT NULL,registration_id uuid NOT NULL,
+ created_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,
+ content_policy_id uuid GENERATED ALWAYS AS((scope_json->'contentPolicyRef'->>'id')::uuid) STORED,
+ content_policy_version bigint GENERATED ALWAYS AS((scope_json->'contentPolicyRef'->>'version')::bigint) STORED,
+ content_policy_hash text GENERATED ALWAYS AS(scope_json->'contentPolicyRef'->>'contentHash') STORED,
+ state text NOT NULL DEFAULT 'CREATED' CHECK(state IN('CREATED','CHALLENGED','ISSUED','REPORTED','REVOKED','EXPIRED','UNKNOWN')),
+ preflight_digest text CHECK(preflight_digest~'^[0-9a-f]{64}$'),challenge_json jsonb,challenge_issued_at timestamptz,challenge_expires_at timestamptz,
+ proof_signature text CHECK(proof_signature~'^[A-Za-z0-9_-]{85}[AQgw]$'),exchange_failures integer NOT NULL DEFAULT 0 CHECK(exchange_failures BETWEEN 0 AND 5),
+ credential_token_digest text UNIQUE CHECK(credential_token_digest~'^[0-9a-f]{64}$'),
+ credential_scope text CHECK(credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY'),credential_issued_at timestamptz,credential_expires_at timestamptz,
+ observation_request_ref jsonb,observation_nonce_digest text UNIQUE CHECK(observation_nonce_digest~'^[0-9a-f]{64}$'),
+ permit_json jsonb,report_consumed_at timestamptz,report_consumed_command_id uuid,revoked_at timestamptz,revoke_command_id uuid,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,id,version,scope_digest),UNIQUE(project_id,created_command_id),UNIQUE(project_id,report_consumed_command_id),
+ FOREIGN KEY(project_id,created_command_id) REFERENCES anvil.commands(project_id,id),
+ FOREIGN KEY(project_id,revoke_command_id) REFERENCES anvil.commands(project_id,id),
+ FOREIGN KEY(project_id,requested_by) REFERENCES anvil.project_members(project_id,user_id),FOREIGN KEY(requested_by,client_id) REFERENCES anvil.clients(user_id,id),
+ FOREIGN KEY(project_id,source_root_id,source_root_version) REFERENCES anvil.source_root_versions(project_id,root_id,version),
+ FOREIGN KEY(project_id,connector_id) REFERENCES anvil.connectors(project_id,id),FOREIGN KEY(project_id,registration_id) REFERENCES anvil.connector_registrations(project_id,id),
+ FOREIGN KEY(project_id,content_policy_id,content_policy_version,content_policy_hash) REFERENCES anvil.source_content_policy_events(project_id,id,version,content_hash),
+ CHECK((jsonb_typeof(scope_json)='object' AND octet_length(anvil.source_read_canonical_json(scope_json))<=1048576
+  AND scope_digest=anvil.source_read_hash(scope_json) AND scope_json->'protocolVersion'='1'::jsonb
+  AND scope_json->>'purpose'='SOURCE_DOCUMENT_CONTENT_HASH' AND scope_json->>'projectId'=project_id::text
+  AND scope_json->>'userId'=requested_by::text AND scope_json->>'clientId'=client_id::text
+  AND scope_json->'credentialGeneration'=to_jsonb(credential_generation) AND scope_json->'controlGeneration'=to_jsonb(control_generation)
+  AND anvil.source_read_ref(scope_json->'contentPolicyRef') AND scope_json->'sourceRootRef'->>'id'=source_root_id::text
+  AND scope_json->'sourceRootRef'->'version'=to_jsonb(source_root_version) AND scope_json->'connectorRef'->>'id'=connector_id::text
+  AND scope_json->'registrationRef'->>'id'=registration_id::text
+  AND scope_json->>'requestedAt'=anvil.source_read_iso(created_at) AND scope_json->>'expiresAt'=anvil.source_read_iso(expires_at)) IS TRUE),
+ CHECK(isfinite(created_at) AND isfinite(expires_at) AND expires_at>created_at AND expires_at<=created_at+interval '10 minutes'
+  AND created_at=date_trunc('milliseconds',created_at) AND expires_at=date_trunc('milliseconds',expires_at)),
+ CHECK((challenge_json IS NULL AND preflight_digest IS NULL AND challenge_issued_at IS NULL AND challenge_expires_at IS NULL)
+  OR (jsonb_typeof(challenge_json)='object' AND preflight_digest IS NOT NULL AND challenge_issued_at IS NOT NULL AND challenge_expires_at IS NOT NULL
+   AND isfinite(challenge_issued_at) AND isfinite(challenge_expires_at) AND challenge_issued_at>=created_at
+   AND challenge_expires_at>challenge_issued_at AND challenge_expires_at<=challenge_issued_at+interval '60 seconds' AND challenge_expires_at<=expires_at) IS TRUE),
+ CHECK((credential_token_digest IS NULL AND credential_scope IS NULL AND credential_issued_at IS NULL AND credential_expires_at IS NULL)
+  OR (credential_token_digest IS NOT NULL AND credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY' AND credential_issued_at IS NOT NULL AND credential_expires_at IS NOT NULL
+   AND isfinite(credential_issued_at) AND isfinite(credential_expires_at) AND credential_issued_at>=created_at
+   AND credential_expires_at>credential_issued_at AND credential_expires_at<=credential_issued_at+interval '60 seconds' AND credential_expires_at<=expires_at) IS TRUE),
+ CHECK((observation_request_ref IS NULL AND observation_nonce_digest IS NULL AND permit_json IS NULL)
+  OR (anvil.source_read_ref(observation_request_ref) AND observation_nonce_digest IS NOT NULL AND jsonb_typeof(permit_json)='object') IS TRUE),
+ CHECK((report_consumed_at IS NULL)=(report_consumed_command_id IS NULL)),
+ CHECK(report_consumed_at IS NULL OR (isfinite(report_consumed_at) AND report_consumed_at>=created_at AND report_consumed_at<expires_at)),
+ CHECK((revoked_at IS NULL)=(revoke_command_id IS NULL)),CHECK(revoked_at IS NULL OR (isfinite(revoked_at) AND revoked_at>=created_at))
+);
+
+CREATE TABLE anvil.source_content_observations (
+ project_id uuid NOT NULL,id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),request_id uuid NOT NULL,
+ request_version smallint NOT NULL DEFAULT 1 CHECK(request_version=1),scope_digest text NOT NULL CHECK(scope_digest~'^[0-9a-f]{64}$'),
+ report_command_id uuid NOT NULL,report_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ signature text NOT NULL CHECK(signature~'^[A-Za-z0-9_-]{85}[AQgw]$'),observed_at timestamptz NOT NULL,finished_at timestamptz NOT NULL,received_at timestamptz NOT NULL,
+ evidence_class text NOT NULL CHECK(evidence_class='CONNECTOR_REPORTED'),os_verification text NOT NULL CHECK(os_verification='OS_UNVERIFIED'),
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,id,version,content_hash),UNIQUE(project_id,request_id),UNIQUE(project_id,report_command_id),
+ FOREIGN KEY(project_id,request_id,request_version,scope_digest) REFERENCES anvil.source_content_requests(project_id,id,version,scope_digest),
+ CHECK((jsonb_typeof(report_json)='object' AND octet_length(anvil.source_read_canonical_json(report_json))<=1048576
+  AND report_json->>'purpose'='SOURCE_CONTENT_REPORT' AND report_json->'protocolVersion'='1'::jsonb
+  AND report_json->>'projectId'=project_id::text AND report_json->>'commandId'=report_command_id::text
+  AND report_json->'requestRef'=jsonb_build_object('id',request_id,'version',request_version,'contentHash',scope_digest)
+  AND report_json->>'scopeDigest'=scope_digest AND report_json->>'signature'=signature AND report_json->>'reportHash'=content_hash
+  AND content_hash=anvil.source_read_hash(report_json-ARRAY['signature','reportHash'])
+  AND report_json->>'observedAt'=anvil.source_read_iso(observed_at) AND report_json->>'finishedAt'=anvil.source_read_iso(finished_at)) IS TRUE),
+ CHECK(isfinite(observed_at) AND isfinite(finished_at) AND isfinite(received_at)
+  AND finished_at>=observed_at AND finished_at-observed_at<=interval '30 seconds' AND finished_at<=received_at+interval '5 seconds')
+);
+
+CREATE TABLE anvil.source_content_verifications (
+ project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
+ observation_id uuid NOT NULL,observation_version smallint NOT NULL DEFAULT 1 CHECK(observation_version=1),observation_hash text NOT NULL CHECK(observation_hash~'^[0-9a-f]{64}$'),
+ target_index integer NOT NULL CHECK(target_index BETWEEN 0 AND 199),relative_path text NOT NULL CHECK(length(relative_path) BETWEEN 1 AND 1024),
+ document_id uuid NOT NULL,document_version bigint NOT NULL,document_hash text NOT NULL CHECK(document_hash~'^[0-9a-f]{64}$'),
+ observer_implementation_ref jsonb NOT NULL CHECK(anvil.source_read_ref(observer_implementation_ref) IS TRUE),
+ decision text NOT NULL CHECK(decision IN('ACCEPTED','REVOKED','INVALID')),verified_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,
+ previous_ref jsonb NOT NULL,snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ previous_id uuid GENERATED ALWAYS AS((previous_ref->>'id')::uuid) STORED,previous_version bigint GENERATED ALWAYS AS((previous_ref->>'version')::bigint) STORED,
+ previous_hash text GENERATED ALWAYS AS(previous_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,id,version,content_hash),UNIQUE(project_id,observation_id,target_index,version),
+ FOREIGN KEY(project_id,observation_id,observation_version,observation_hash) REFERENCES anvil.source_content_observations(project_id,id,version,content_hash),
+ FOREIGN KEY(project_id,document_id,document_version) REFERENCES anvil.document_versions(project_id,document_id,version),
+ FOREIGN KEY(project_id,previous_id,previous_version,previous_hash) REFERENCES anvil.source_content_verifications(project_id,id,version,content_hash),
+ CHECK((version=1 AND decision='ACCEPTED' AND previous_ref='null'::jsonb)
+  OR (version>1 AND decision IN('REVOKED','INVALID') AND anvil.source_read_ref(previous_ref) IS TRUE AND previous_id=id AND previous_version=version-1)),
+ CHECK(isfinite(verified_at) AND isfinite(expires_at) AND expires_at>verified_at AND expires_at<=verified_at+interval '30 seconds'),
+ CHECK((octet_length(anvil.source_read_canonical_json(snapshot_json))<=1048576 AND content_hash=anvil.source_read_hash(snapshot_json)) IS TRUE)
+);
+CREATE UNIQUE INDEX source_content_positive_target_once ON anvil.source_content_verifications(project_id,observation_id,target_index) WHERE decision='ACCEPTED';
+-- target_index는 원 report.files의 0-based 순서다. 취소 후 같은 observation/target의 재양성 계보를 만들지 않는다.
+
+ALTER TABLE anvil.document_source_links
+ ADD COLUMN content_verification_ref jsonb,
+ ADD COLUMN content_verification_id uuid,
+ ADD COLUMN content_verification_version bigint,
+ ADD COLUMN content_verification_hash text,
+ ADD CONSTRAINT source_content_link_ref_shape CHECK(((content_verification_ref IS NULL AND content_verification_id IS NULL AND content_verification_version IS NULL AND content_verification_hash IS NULL)
+  OR (content_verification_ref IS NOT NULL AND anvil.source_read_ref(content_verification_ref) IS TRUE
+   AND content_verification_id IS NOT NULL AND content_verification_version=1 AND content_verification_hash IS NOT NULL
+   AND content_verification_ref=jsonb_build_object('id',content_verification_id,'version',content_verification_version,'contentHash',content_verification_hash))) IS TRUE),
+ ADD CONSTRAINT source_content_link_verification_fk FOREIGN KEY(project_id,content_verification_id,content_verification_version,content_verification_hash)
+  REFERENCES anvil.source_content_verifications(project_id,id,version,content_hash);
+CREATE UNIQUE INDEX source_content_target_link_once ON anvil.document_source_links(project_id,content_verification_id,content_verification_version,content_verification_hash) WHERE content_verification_ref IS NOT NULL;
+
+CREATE FUNCTION anvil.source_content_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'SOURCE_CONTENT_APPEND_ONLY' USING ERRCODE='42501'; END;$$;
+CREATE FUNCTION anvil.source_content_unavailable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'SOURCE_CONTENT_AUTHORITY_NOT_ACTIVATED' USING ERRCODE='42501'; END;$$;
+CREATE FUNCTION anvil.source_content_link_provenance_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='UPDATE' AND (NEW.content_verification_ref,NEW.content_verification_id,NEW.content_verification_version,NEW.content_verification_hash)
+  IS DISTINCT FROM (OLD.content_verification_ref,OLD.content_verification_id,OLD.content_verification_version,OLD.content_verification_hash) THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_PROVENANCE_IMMUTABLE' USING ERRCODE='42501';
+ ELSIF TG_OP='DELETE' AND OLD.content_verification_ref IS NOT NULL THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_CONSUMPTION_IMMUTABLE' USING ERRCODE='42501';
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER source_content_no_link_insert BEFORE INSERT ON anvil.document_source_links FOR EACH ROW EXECUTE FUNCTION anvil.source_content_unavailable();
+CREATE TRIGGER source_content_link_provenance BEFORE UPDATE OR DELETE ON anvil.document_source_links FOR EACH ROW EXECUTE FUNCTION anvil.source_content_link_provenance_guard();
+CREATE TRIGGER source_content_no_link_truncate BEFORE TRUNCATE ON anvil.document_source_links FOR EACH STATEMENT EXECUTE FUNCTION anvil.source_content_append_only();
+
+DO $$DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['source_content_policy_events','source_content_requests','source_content_observations','source_content_verifications'] LOOP
+  EXECUTE format('ALTER TABLE anvil.%I ENABLE ROW LEVEL SECURITY',t);
+  EXECUTE format('ALTER TABLE anvil.%I FORCE ROW LEVEL SECURITY',t);
+  EXECUTE format('REVOKE ALL ON anvil.%I FROM PUBLIC,anvil_v3_app',t);
+  EXECUTE format('CREATE POLICY source_content_unavailable ON anvil.%I USING(false) WITH CHECK(false)',t);
+  EXECUTE format('CREATE TRIGGER source_content_unavailable BEFORE INSERT OR UPDATE OR DELETE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.source_content_unavailable()',t);
+  EXECUTE format('CREATE TRIGGER source_content_no_truncate BEFORE TRUNCATE ON anvil.%I FOR EACH STATEMENT EXECUTE FUNCTION anvil.source_content_append_only()',t);
+  IF t<>'source_content_requests' THEN
+   EXECUTE format('CREATE TRIGGER source_content_immutable BEFORE UPDATE OR DELETE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.source_content_append_only()',t);
+  END IF;
+ END LOOP;
+END;$$;
+-- 후속: 정확 scope/report/target·최신 정책/검증 계보·request 상태전이/nonce 소비·현재 사용자/제어/등록/서명·명령/감사 원자 guard.
+-- 이 미완성 활성화 경계는 session setting/role flag/SECURITY DEFINER·별칭으로 우회하지 않는다.
+-- 모든 새표 쓰기/조회 권한과 최초 LINK를 여전히 닫는다. 실제 PG 검증/적용/기능 완료 증거가 아니다.
