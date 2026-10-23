@@ -45,3 +45,17 @@ test('기존2단계에서 남은 동일 생성 명령은 새 생성과 구분해
 test('각 단계의 편집 영역은 해당 단계에만 나타나고 다른 단계의 필드는 숨긴다',()=>{
  for(const step of [1,2,3,4]){const html=render(fixture(step)),purpose=/<label[^>]*>프로젝트 이름<\/label>/.test(html),method=html.includes('aria-label="프로젝트 방법론 선택"');assert.equal(purpose,step===1,`목적 편집 ${step}`);assert.equal(method,step===2,`방법론 편집 ${step}`);if(step!==3)assert.doesNotMatch(html,/aria-label="총괄·환경 준비 상태"/);if(step!==4)assert.doesNotMatch(html,/aria-label="생성 전 입력 확인"/);}
 });
+
+test('환경 준비 단계는 작성 중 방법론의 단계별 요구를 원입력 그대로 조회한다',()=>{
+ const f=fixture(3);f.input.methodologySelection={kind:'NEW_PROJECT_DRAFT',name:'내 방법론',purpose:'준비 확인',graph:{nodes:[{nodeId:'N1',name:'구현',requirements:{capabilities:['로컬 CLI'],environment:['<script>Windows</script>']}},{nodeId:'N2',name:'검토'}],edges:[],entryNodeId:'N1',terminalNodeIds:['N2']},sourceRefs:[],reviewRefs:[]};
+ const before=structuredClone(f),html=render(f);
+ assert.match(html,/방법론 초안의 준비 요구/);assert.match(html,/N1 · 구현/);assert.match(html,/로컬 CLI/);assert.match(html,/&lt;script&gt;Windows&lt;\/script&gt;/);assert.doesNotMatch(html,/<script>/);
+ assert.match(html,/N2 · 검토/);assert.match(html,/요구 환경 미작성/);assert.match(html,/등록된 도구·환경이나 실행 허가를 확인한 결과가 아닙니다/);assert.deepEqual(f,before);
+});
+
+test('고정 참조·미선택 방법론의 준비 요구는 조회 없이 합성하지 않는다',()=>{
+ const selected=fixture(3),empty=fixture(3);empty.input.methodologySelection=null;
+ assert.match(render(selected),/고정 방법론의 요구 정의는 이 화면에서 아직 조회하지 않았습니다/);
+ assert.match(render(empty),/방법론 선택 전이므로 요구 정의 미확인/);
+ for(const f of [selected,empty]){const html=render(f);assert.doesNotMatch(html,/방법론 초안의 준비 요구/);assert.match(html,/선택 미구현/);}
+});
