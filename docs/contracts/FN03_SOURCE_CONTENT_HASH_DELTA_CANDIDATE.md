@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 FN03 stale 기대값 CAS SOURCE 결과: 고정 project/request/opaque digest 비교 조건을 작성하는 순수 planner와 같은 SELECT의 cas_digest 조회를 연결했다. digest는 불변16열·변경20키를 UTC/ms로 정규화한 SQL hash 후보이며 권한/서명/현재 상태 증명이 아니다. replay는 비교 조건도 반환하지 않는다. CAS5 RED(exit1 rawc255a9)→GREEN5/163.332ms, 조회 tag RED1/152.8811ms(raw0d47c7)→집중19PASS331.1001ms, 최종 직접인접104PASS1124.3931ms/typecheck/diff0(rawbe61db). 미적용0040 raw919BE038ADBD0957299DD235356D42250E427765E4B6D7C8DE8CB360495C793A 및 미래SQL9ASSERT(rawCDB8A6C442FC73597FB4520B855C3DF1832BC6BBACA905DD8CCBBEA203DD913E)는 미등록/미실행이다. 실제 SQL/UPDATE rowCount/동시경합/COMMIT 원자결박·현재 권위·OS·화면은 미구현/미검증이다. 기존3 M1·0039/보호8·원실패/Bv3/D2/특정거절·전DML/LINK거절·실verifier없음412를 보존한다. 다음은 생성·관측·감사/소비의 COMMIT 원자결박 SOURCE 선행이다. 전체계획 완료가 아니다.**
+
 상태: **SOURCE_IMPLEMENTATION_APPROVED / ACTUAL_EXECUTION_NOT_AUTHORIZED**
 
 2026-10-23 신산님 직접 ‘네 의견대로 승인해’를 §11 권장 B의 source/codec·미적용 SQL·기본 미등록 server/native/UI·합성 검증 범위로 기록한다. 관측 시점의 byte 일치를 채택하되 COMMIT 순간 파일 lease를 보장하지 않는다. 실제 파일 읽기·키/권한·DB 적용·서비스·Agent 실행은 포함하지 않는다. 아래 후보 표현과 원 검토 지적은 결정 전 이력이며 이 단락이 현재 승인 상태다.

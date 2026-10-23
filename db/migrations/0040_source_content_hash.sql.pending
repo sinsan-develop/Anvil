@@ -200,6 +200,20 @@ CREATE FUNCTION anvil.source_content_request_mutable(g anvil.source_content_requ
   'observation_nonce_digest',g.observation_nonce_digest,'permit_json',g.permit_json,'report_consumed_at',g.report_consumed_at,
   'report_consumed_command_id',g.report_consumed_command_id,'revoked_at',g.revoked_at,'revoke_command_id',g.revoke_command_id);
 $$;
+-- 비교 전용 opaque digest. 현재 권위를 부여하지 않으며 생성열을 읽지 않는다.
+CREATE FUNCTION anvil.source_content_request_cas_digest(g anvil.source_content_requests) RETURNS text LANGUAGE sql STABLE AS $$
+ SELECT anvil.source_read_hash(jsonb_build_object(
+  'immutable',jsonb_build_object('project_id',g.project_id,'id',g.id,'version',g.version,'scope_json',g.scope_json,
+   'scope_digest',g.scope_digest,'created_command_id',g.created_command_id,'requested_by',g.requested_by,'client_id',g.client_id,
+   'credential_generation',g.credential_generation,'control_generation',g.control_generation,'source_root_id',g.source_root_id,
+   'source_root_version',g.source_root_version,'connector_id',g.connector_id,'registration_id',g.registration_id,
+   'created_at',anvil.source_read_iso(g.created_at),'expires_at',anvil.source_read_iso(g.expires_at)),
+  'mutable',anvil.source_content_request_mutable(g)||jsonb_build_object(
+   'updated_at',anvil.source_read_iso(g.updated_at),'challenge_issued_at',anvil.source_read_iso(g.challenge_issued_at),
+   'challenge_expires_at',anvil.source_read_iso(g.challenge_expires_at),'credential_issued_at',anvil.source_read_iso(g.credential_issued_at),
+   'credential_expires_at',anvil.source_read_iso(g.credential_expires_at),'report_consumed_at',anvil.source_read_iso(g.report_consumed_at),
+   'revoked_at',anvil.source_read_iso(g.revoked_at))));
+$$;
 CREATE FUNCTION anvil.source_content_request_transition_shape(b anvil.source_content_requests,n anvil.source_content_requests,at_time timestamptz) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 DECLARE before_json jsonb;after_json jsonb;allowed text[]=ARRAY['state','updated_at'];deadline timestamptz;
 BEGIN
