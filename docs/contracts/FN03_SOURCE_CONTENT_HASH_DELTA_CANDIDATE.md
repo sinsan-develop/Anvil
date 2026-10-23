@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 CM05~08 구조 증거 소비**: 신규 inspectSourceContentPolicyManagementEvidenceCandidate는 §12.6.2 exact6/expected8 입력과 별도 originalRequest 원문 전체 hash를 소비한다. snapshot으로 원문을 역생성하지 않으며 기존 payloadRef는 AUTO 후보에서 null로 보존한다. 내부/caller 명령ID·주체/client/세대/base정책·receipt/audit/정확target·인접 계보/시각을 구조 대조하고 최소 refs/digest·false5만 반환한다. JSON 구조 입력 전용이며 보호 원문 생산자·현재 OWNER/재인증·별도 관리허가·DB 잠금/CAS/실제 저장을 제공하지 않는다. 새6 RED→직접35 합성 PASS, 후속8/typecheck/diff0다.
+
 - **2026-10-23 승인 형식의 첫 SOURCE 소비**: CM01~04의 payload/definition과 서버 후보값4키(projectId/actorId/sequence/recordedAt)를 신규 순수 builder에 대응했다. 기존 범위 codec만 재사용하고 정책 TTL에 요청10분 상한을 이월하지 않는다. 반환 snapshot/hash는 형식 후보이며 서버값 진위·최신 head/CAS·원명령/영수증/감사 증거를 확인하지 않아 false5를 유지한다. CM05~08 증거 inspector·실제 저장/허가는 미완료다. 새5 RED→직접/인접22 합성 PASS/typecheck/diff0, 기존 최소6/hash·공개 reader/SQL/runner/route 변경0.
 
 - **2026-10-23 직접 승인 적용 범위**: 신산님의 ‘네 의견대로 승인해’를 직전 Main 권장안인 §12.6~12.6.2 CM01~08의 미등록 SOURCE 구현·합성 검증 기준 채택으로 기록한다. 아래 미확정/DRAFT_ONLY 문구는 승인 전 제안 이력으로 보존하며, 실제 DB 적용·관리정책 생성/권한 부여·키/서명/OS 검증·route/서비스·Agent 실행은 이번 승인에서 제외한다. 기존 최소6/hash·공개 경로는 보존하고 새 완전 형식은 별도 후보로 구현한다.

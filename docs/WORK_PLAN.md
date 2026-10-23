@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 CM05~08 SOURCE 진행**: 원관리명령 전체 hash와 command20/receipt8/audit16·정책 이벤트/인접 이전참조의 순수 결박을 추가했다. 새6 RED→직접/인접35 합성 PASS, 시각·이전 DENY 계보/선언문맥 보강 후 해당8/typecheck/diff0다. 실제 관리허가·원문 생산자·현재 head 잠금/CAS·DB/권한/route/served는 여전히 미구현·미검증이며 전체 계획 미완료다.
+
 - **2026-10-23 CM01~04 SOURCE 진행**: 승인된 관리 형식의 순수 payload/definition·서버 후보값 snapshot 검사를 추가했다. 새5 RED→직접/인접22 합성 PASS/typecheck/diff0이며 실제 head/CAS/관리 원문·영수증/감사 결박 CM05~08과 DB/권한/served는 미구현·미검증이다. 전체 계획 미완료·기존 제외 유지.
 
 - **2026-10-23 FN03 승인·진행**: 신산님 직접 승인으로 계약 §12.6~12.6.2의 CM01~08 단일 권장안을 미등록 SOURCE 구현·합성 검증 기준으로 채택했다. 실제 DB/정책·권한/키/OS/서비스·Agent 실행은 제외한다. 서버문맥·원보고 검증 조합은 새4 RED→직접141 합성 PASS, 시험 타입 표기 수정 후 해당106/typecheck/diff0·한정 독립 C0/I0/M0다. 실제 인증/verifier/PG/current/원자성/route 미검증·Minor11/기존 제외 유지·전체 계획 미완료.
