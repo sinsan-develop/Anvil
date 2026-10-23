@@ -80,8 +80,8 @@ export async function prepareResultSubmitCommand(raw:ResultSubmissionBuffer,sess
  return command;
 }
 export async function sendResultSubmission(client:ApiClient,buffer:ResultSubmissionBuffer,session:DocumentSession,active:()=>boolean):Promise<ResultSubmissionReceipt>{
- if(!buffer.pending)fail('RESULT_SUBMISSION_PENDING_REQUIRED');const chosen=structuredClone(buffer),command=await prepareResultSubmitCommand(chosen,session,true);
- if(!active())fail('RESULT_SUBMISSION_PAUSED');const receipt=await postDocumentCommand(client,command,session.csrfToken);if(!active())fail('RESULT_SUBMISSION_PAUSED');
+ if(!buffer.pending)fail('RESULT_SUBMISSION_PENDING_REQUIRED');const chosen=structuredClone(buffer),selectedSession=structuredClone(session),command=await prepareResultSubmitCommand(chosen,selectedSession,true);
+ if(!active())fail('RESULT_SUBMISSION_PAUSED');const receipt=await postDocumentCommand(client,command,selectedSession.csrfToken);if(!active())fail('RESULT_SUBMISSION_PAUSED');
  const d=receipt.data;if(receipt.targetId!==chosen.submissionId||receipt.version!==1||d?.status!=='RESULT_SUBMITTED'||!same(d.manifest,chosen.manifest)||d.sourceKind!=='WORKER_CLAIM'||d.completionAccepted!==false||d.executionAuthorized!==false||d.dispatchPerformed!==false)fail('RESULT_SUBMISSION_RESPONSE_INVALID');
  const manifestRef={id:chosen.submissionId,version:1,contentHash:await digest(new TextEncoder().encode(ordered(chosen.manifest)))};if(!active())fail('RESULT_SUBMISSION_PAUSED');
  return {submissionId:chosen.submissionId,manifestRef,registeredAt:receipt.serverReceivedAt,sourceKind:'WORKER_CLAIM',completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
