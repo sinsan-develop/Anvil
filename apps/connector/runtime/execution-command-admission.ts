@@ -107,6 +107,21 @@ export class SyntheticExecutionCommandAdmission {
    return{transport:'SYNTHETIC_ONLY' as const,state:envelope?'SELECTED_NOT_DISPATCHED' as const:'NO_STOP_INSTRUCTION' as const,commandRef,envelope,resultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),expiresAt:response.expiresAt,writerReleaseVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECOVERY_UNAVAILABLE');}
  }
+ /** 명시 중지 한 건을 기존 전달·관측 경로로 연결한다. 관측 한도로 중지 전달을 막지는 않는다.
+  * 관측 실패는 중지 실패/성공 판정이 아니다. 원중지·부분 원장은 보존하며 기한 뒤에는 recordStopObservations만 명시 호출한다. */
+ async requestStopAndRecord(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,stopper:SyntheticPrimaryStopTransport,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(stopper instanceof SyntheticPrimaryStopTransport)||!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   if(scope.mode!=='EXECUTION')return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}))return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const stopped=await this.requestStop(scope,operation,commandRef,stopper);this.#ports();
+   const recorded=await this.recordStopObservations(scope,operation,commandRef,stopper,spool);this.#ports();
+   if(!same(stopped.commandRef,recorded.commandRef)||!same(stopped.pageResultRef,recorded.pageResultRef)||stopped.envelopeHash!==recorded.envelopeHash)return fail('COMMAND_ADMISSION_STOP_RECORD_MISMATCH');
+   return{...stopped,observations:recorded.observations};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
+ }
  /** 보관된 정상 중지 요청의 관측만 회수한다. 새 interrupt·RECOVERY 전달은 수행하지 않는다. */
  async recordStopObservations(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,stopper:SyntheticPrimaryStopTransport,spool:SyntheticObservationSpool){
   try{

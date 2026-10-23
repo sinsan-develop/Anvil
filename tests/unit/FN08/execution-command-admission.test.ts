@@ -170,6 +170,29 @@ test('보관 회수는 없는page·잘못된ref·START/다른spool을 새조회/
  }
 });
 
+test('명시 중지 전달·관측 연결은 같은 원장만 회수하고 재호출 interrupt는 한번이다',async()=>{
+ const f=stopFixture(),s=selectedStop(f),p=selectedSpool(f,false,2),a=f.make();assert.equal(typeof a.requestStopAndRecord,'function');
+ const first=await a.requestStopAndRecord(f.scope,f.operation,f.commandRef,s.stop,p.spool),before=structuredClone(p.rows);
+ assert.equal(first.stopped.state,'STOP_UNCONFIRMED');assert.equal(first.observations.recordedRefs.length,2);assert.equal(first.writerReleaseVerified,false);assert.equal(first.observations.writerReleaseVerified,false);assert.equal(first.executionAuthorized,false);assert.equal(first.dispatchPerformed,false);
+ assert.deepEqual(p.rows.map(row=>row.snapshot.event.type),['STOP_REQUESTED','STOP_UNCONFIRMED']);
+ assert.deepEqual(await a.requestStopAndRecord(f.scope,f.operation,f.commandRef,s.stop,p.spool),first);assert.deepEqual(s.counts(),[1,3]);assert.deepEqual(p.rows,before);
+});
+
+test('중지 관측 부분 실패 뒤 명시 재호출은 원중지와 부분관측을 보존한다',async()=>{
+ const f=stopFixture(),s=selectedStop(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.requestStopAndRecord,'function');p.failSecond();
+ await assert.rejects(a.requestStopAndRecord(f.scope,f.operation,f.commandRef,s.stop,p.spool),/COMMAND_ADMISSION_/);
+ assert.equal(s.rows.length,2);assert.equal(s.counts()[0],1);assert.equal(p.rows.length,1);const before=structuredClone(p.rows[0]);
+ const result=await a.requestStopAndRecord(f.scope,f.operation,f.commandRef,s.stop,p.spool);assert.equal(result.observations.recordedRefs.length,2);assert.equal(s.counts()[0],1);assert.deepEqual(p.rows[0],before);
+});
+
+test('가득찬 spool도 중지를 막지 않으며 잘못된 실행 spool은 중지 전달 전 거절한다',async()=>{
+ const f=stopFixture(),s=selectedStop(f),p=selectedSpool(f,false,1),a=f.make();assert.equal(typeof a.requestStopAndRecord,'function');
+ await p.spool.append({projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration,eventId:randomUUID(),type:'HEARTBEAT',commandId:randomUUID(),envelopeHash:'d'.repeat(64),localRecordRef:f.commandRef,processRef:null,occurredAt:new Date(initial).toISOString(),reasonCode:'NONE'});const before=structuredClone(p.rows);
+ await assert.rejects(a.requestStopAndRecord(f.scope,f.operation,f.commandRef,s.stop,p.spool),/COMMAND_ADMISSION_/);assert.equal(s.counts()[0],1);assert.equal(s.rows.length,2);assert.deepEqual(p.rows,before);
+ const other=stopFixture(),stop=selectedStop(other),foreign=selectedSpool(other,true);
+ await assert.rejects(other.make().requestStopAndRecord(other.scope,other.operation,other.commandRef,stop.stop,foreign.spool),/COMMAND_ADMISSION_SPOOL_SCOPE_INVALID/);assert.deepEqual(stop.counts(),[0,0]);assert.deepEqual(other.counts(),[0,0,0]);
+});
+
 test('보관 중지 관측은 기한 뒤 부분 회수를 재interrupt 없이 끝내고 회수false를 유지한다',async()=>{
  const f=stopFixture(),s=selectedStop(f),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordStopObservations,'function');await a.requestStop(f.scope,f.operation,f.commandRef,s.stop);const counts=s.counts();p.failSecond();
  await assert.rejects(a.recordStopObservations(f.scope,f.operation,f.commandRef,s.stop,p.spool));assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);f.advance(120000);s.stop.stop=async()=>assert.fail('NO_INTERRUPT');a.client.transport.perform=async()=>assert.fail('NO_PAGE');a.client.signer.sign=async()=>assert.fail('NO_SIGN');
