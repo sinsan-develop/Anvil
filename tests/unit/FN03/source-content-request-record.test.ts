@@ -254,6 +254,25 @@ function serverProof(){assert.equal(typeof serverModule.readSourceContentProofFr
 function heldProof(){assert.equal(typeof serverModule.readSourceContentProofFromHeldIdentityCandidate,'function','보유 identity proof 소비 미구현');return serverModule.readSourceContentProofFromHeldIdentityCandidate;}
 function serverProofPolicy(){assert.equal(typeof serverModule.readSourceContentProofWithPolicyFromServerContextCandidate,'function','서버 문맥의 proof·정책 조합 미구현');return serverModule.readSourceContentProofWithPolicyFromServerContextCandidate;}
 function heldProofPolicy(){assert.equal(typeof serverModule.readSourceContentProofWithPolicyFromHeldIdentityCandidate,'function','보유 identity의 proof·정책 조합 미구현');return serverModule.readSourceContentProofWithPolicyFromHeldIdentityCandidate;}
+function serverScreen(){assert.equal(typeof serverModule.readSourceContentScreenFromServerContextCandidate,'function','서버 후보 최소표시 소비 미구현');return serverModule.readSourceContentScreenFromServerContextCandidate;}
+function heldScreen(){assert.equal(typeof serverModule.readSourceContentScreenFromHeldIdentityCandidate,'function','보유identity 최소표시 소비 미구현');return serverModule.readSourceContentScreenFromHeldIdentityCandidate;}
+test('서버후보의 동일조회 표시자료는 원문 없이 회수정책/보고/proof를 SSR에 전달한다',async()=>{
+ const f=reportedPolicyFixture();f.policy.disposition='REVOKED';f.policy.snapshot_json.disposition='REVOKED';f.policy.content_hash=contentHash(canonicalJson(f.policy.snapshot_json));const s=preparationSources({row:f.row}),order:string[]=[];let calls=0;
+ const db={async query(){order.push(++calls===1?'record':'policy');return {rows:[calls===1?f.row:f.policy]};}};
+ const out=await serverScreen()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},proofBasis(f.row),zero+5000);
+ assert.deepEqual(order,['identity','control','record','policy']);assert.equal(calls,2);assert.equal(out.reason,'POLICY_REVOKED');assert.equal(out.status,'DENIED');assert.equal(Object.keys(out.summary).length,13);assert.equal(out.proof.status,'UNVERIFIED');assert.equal(out.signatureVerified,false);
+ const {createElement}=await import('react'),{renderToStaticMarkup}=await import('react-dom/server'),{SourceContentRequestStatus}=await import('../../../apps/web/src/features/design-trace/SourceContentRequestStatus.ts');const html=renderToStaticMarkup(createElement(SourceContentRequestStatus,{value:out.summary,proof:out.proof,expected:{projectId:id(2),requestRef:proofBasis(f.row).requestRef}}));assert.match(html,/정책 회수 기록/);assert.match(html,/보고 기록 있음/);assert.match(html,/실제 서명·현재 권한은 미확인/);for(const raw of [f.row.permit_json.observationNonce,f.row.observation.signature,'src/a.ts'])assert.equal(html.includes(raw),false);assert.doesNotMatch(html,/<button|<input|검증 완료|PASS/);
+});
+test('최소표시 서버후보의 문맥거절/판독부재는 빈자료로 닫고 정책 오류를 숨기지 않는다',async()=>{
+ const f=reportedPolicyFixture(),s=preparationSources({row:f.row});let calls=0;const db={async query(){calls++;return {rows:[f.row]};}};
+ const absent=await serverScreen()(db,{},proofBasis(f.row),zero+5000);assert.equal(calls,0);assert.equal(absent.summary,null);assert.equal(absent.proof,null);
+ const mismatch=await serverScreen()(db,{...s,async readIdentityCandidate(){return {...await s.readIdentityCandidate(),credentialGeneration:1};}},proofBasis(f.row),zero+5000);assert.equal(calls,1);assert.equal(mismatch.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');assert.equal(mismatch.summary,null);assert.equal(mismatch.proof,null);
+ calls=0;const error=Error('SYNTHETIC_SERVER_SCREEN_POLICY');await assert.rejects(serverScreen()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},s,proofBasis(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+});
+test('보유identity 최소표시는 control/record/policy3query·만료0query를 보존한다',async()=>{
+ const f=heldFixture(),rows=[f.control,f.row,f.policy];let calls=0;const out=await heldScreen()({async query(){return {rows:[rows[calls++]]};}},f.held,f.basis,zero+5000);assert.equal(calls,3);assert.equal(out.summary.requestState,'CREATED');assert.equal(out.proof.reason,'OBSERVATION_ABSENT');assert.equal(out.currentAuthorityVerified,false);assert.equal(out.linkAuthorized,false);
+ calls=0;const expired=await heldScreen()({async query(){calls++;return {rows:[]};}},f.held,f.basis,zero+60000);assert.equal(calls,0);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(expired.summary,null);assert.equal(expired.proof,null);assert.equal(expired.signatureVerified,false);
+});
 test('서버 후보에서 과거proof/최신정책은 같은db·정확순서/2query로 전달한다',async()=>{
  for(const denied of [false,true]){
   const f=reportedPolicyFixture(),order:string[]=[],s=preparationSources({row:f.row});if(denied){f.policy.disposition='DENY';f.policy.snapshot_json.disposition='DENY';f.policy.content_hash=contentHash(canonicalJson(f.policy.snapshot_json));}

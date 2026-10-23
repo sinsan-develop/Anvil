@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 서버 최소표시 SOURCE**: readSourceContentScreenFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버후보/보유값·구체control과 declared screen을 명시조합한다. 기존DTO/정확13·기본표시를변경하지않고 generic record/policy2query·concretecontrol포함3query/문맥선행닫힘·최신음성/과거이력분리·false6·분리조회를유지한다. 원문/nonce/서명/proofbytes 비노출이며 실제전송/route/served/auth/current/DB/키/OS는미활성이다. 새3RED→직접129합성/SSR PASS/type/diff0·Minor10/기존제외유지.
+
 - **2026-10-23 동일소비 표시자료 SOURCE**: readSourceContentScreenForDeclaredContextCandidate는 기존 declared proof/정책 조합의 record1/policy1 결과를 재사용해 exact13 summary와 별도 proof를 반환한다. 기존 조합 DTO는 유지하고 summary 투영은 기존 함수를 그대로 소비한다. 원자료/nonce/signature/proofbytes 비반환·중복SQL0·최신정책최상위/과거이력분리·false6/분리조회·문맥음성summary/proof null·오류원형을 유지한다. 새3RED→직접103합성/SSR PASS/type/diff0이며 실제송신/auth/current/DB/route/served는 미활성·Minor10/기존제외유지.
 
 - **2026-10-23 서버 proof정책 SOURCE**: readSourceContentProofWithPolicyFromServerContextCandidate/FromHeldIdentityCandidate는 기존 identity/control 후보 및 declared 과거proof/최신정책을 동일db에 전달한다. generic record/policy2query·구체control포함3query이며 문맥불일치/만료·회수는선행닫힘/후속조회0이다. 최신정책음성과과거proof를혼동하지않고 fixed음성/historicalProof·policy null/false6·분리조회를유지한다. 실제auth/current/DB/키/nonce/route는활성화하지않았고 새4RED→직접123합성/SSR PASS/type/diff0·Minor10/기존제외유지.
