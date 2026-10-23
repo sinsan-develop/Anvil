@@ -16,6 +16,7 @@ import {ordered} from '../knowledge/review-view.ts';
 import {prepareResultReworkDraft,type ResultReworkDraft} from './result-rework-api.ts';
 import {prepareResultReworkWrite,saveResultReworkWrite,ReworkReadbackUnconfirmed,type ResultReworkBuffer,type ResultReworkBuffers} from './result-rework-write-api.ts';
 import {StoredResultReworkHistory} from './StoredResultReworkHistory.tsx';
+import {resultReworkFormKey,type ResultReworkFormDraft} from './result-rework-form.ts';
 import {ReviewCriteriaOriginal} from './ReviewCriteriaOriginal.tsx';
 import {readResultExecutionSource,type ResultExecutionSourceView} from './result-execution-source-api.ts';
 import {readResultArtifactText,type ResultArtifactTextView} from './result-artifact-api.ts';
@@ -63,7 +64,10 @@ function ReportedEvidenceFiles({client,result,criteria,coverage,onAuthentication
  </section>;
 }
 function ResultReworkEditor({client,assignment,result,review,responsibleState,session,reworks,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;review:RecordedResultReview;responsibleState?:ResponsibleSessionState|null;session:DocumentSession;reworks?:ResultReworkBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
- const [selected,setSelected]=useState<string[]>([]),[files,setFiles]=useState<string[]>([]),[bindingId,setBindingId]=useState(''),[reason,setReason]=useState(''),[prepared,setPrepared]=useState<ResultReworkDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),attempt=useRef(0),live=useRef(true),working=useRef(false);
+ const [localForms,setLocalForms]=useState<Record<string,ResultReworkFormDraft|null>>({}),[prepared,setPrepared]=useState<ResultReworkDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),attempt=useRef(0),live=useRef(true),working=useRef(false);
+ const formKey=resultReworkFormKey({userId:session.user.id,clientId:session.clientId,projectId:assignment.projectId,assignmentRef:assignment.ref,resultRef:result.ref,reviewRef:review.ref}),emptyForm:ResultReworkFormDraft={selected:[],files:[],bindingId:'',reason:''},form=reworks?.form,values=(form?form.drafts[formKey]:localForms[formKey])??emptyForm,{selected,files,bindingId,reason}=values;
+ function setField<K extends keyof ResultReworkFormDraft>(field:K,value:ResultReworkFormDraft[K]|((previous:ResultReworkFormDraft[K])=>ResultReworkFormDraft[K])){const update=(current:ResultReworkFormDraft|null)=>{const previous=current??emptyForm;return{...previous,[field]:typeof value==='function'?value(previous[field]):value};};if(form)form.onChange(formKey,update);else setLocalForms(previous=>({...previous,[formKey]:update(previous[formKey]??null)}));}
+ const setSelected=(value:string[]|((previous:string[])=>string[]))=>setField('selected',value),setFiles=(value:string[]|((previous:string[])=>string[]))=>setField('files',value),setBindingId=(value:string)=>setField('bindingId',value),setReason=(value:string)=>setField('reason',value);
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  const task=assignment.snapshot.definition.taskRef,scopes=assignment.snapshot.definition.allowedScopes,bindings=(responsibleState?.bindings??[]).filter(b=>ordered(b.snapshot.assignmentRef)===ordered(assignment.ref)&&responsibleState?.roles.some(r=>ordered(r.ref)===ordered(b.snapshot.roleRef)&&r.snapshot.kind==='STAGE_OWNER'&&ordered(r.snapshot.stageRef)===ordered({applicationRef:task.applicationRef,nodeId:task.nodeId}))),binding=bindings.find(b=>b.ref.id===bindingId);
  const changed=()=>{attempt.current++;setPrepared(null);setBusy(false);setError(null);};
@@ -103,7 +107,7 @@ function ResultReworkEditor({client,assignment,result,review,responsibleState,se
   </>}
   {error||bound?.failure?<p role="alert">{error??bound?.failure?.code} · 보완 저장 완료로 표시하지 않습니다.</p>:null}{busy?<p role="status">보완 명령·고정 원문 확인 중</p>:null}<p className="meta">화면왕복 준비 명령/미확인 결과는 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.</p>
  </section>;
- return <section className="status-card" aria-label="보완 초안 준비"><h5>부족 조건만 같은 단계 세션에 연결</h5><p>아직 미저장·실제 배정·Agent 실행 없음 · 저장 명령 준비 전 입력은 화면 이탈 시 사라집니다. 현재 예약/권한·OS 경로를 확인한 실행 허가가 아닙니다.</p>
+ return <section className="status-card" aria-label="보완 초안 준비"><h5>부족 조건만 같은 단계 세션에 연결</h5><p>아직 미저장·실제 배정·Agent 실행 없음 · {form?'저장 명령 준비 전 입력도 같은 주체·정확 자료의 화면왕복 동안 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.':'저장 명령 준비 전 입력은 화면 이탈 시 사라집니다.'} 현재 예약/권한·OS 경로를 확인한 실행 허가가 아닙니다.</p>
   <fieldset><legend>보완할 부족 조건</legend>{review.snapshot.input.items.map(i=><label key={i.criterionId}><input type="checkbox" aria-label={'보완 조건 '+i.criterionId} checked={selected.includes(i.criterionId)} onChange={()=>{changed();setSelected(v=>toggle(v,i.criterionId));}}/>{i.criterionId} · {i.outcome==='REWORK'?'보완 필요':'차단'} · {i.reason}</label>)}</fieldset>
   <label>보완 대상 예약 세션<select aria-label="보완 대상 예약 세션" value={bindingId} onChange={e=>{changed();setBindingId(e.target.value);}}><option value="">명시 선택</option>{bindings.map(b=><option key={b.ref.id} value={b.ref.id}>{b.ref.id} v{b.ref.version} · Anvil 세션 {b.snapshot.sessionRef.id}</option>)}</select></label>{bindings.length?null:<p>같은 확정 임무·단계책임자의 확인된 예약 없음 · 다른 세션으로 대체하지 않습니다.</p>}
   <fieldset><legend>허용된 파일 중 보완 범위 선택</legend>{scopes.map((s,index)=><div key={s.sourceRootRef.id}><p>소스 {s.sourceRootRef.id}</p>{s.targets.map((t,n)=><label key={t.relativePath}><input type="checkbox" aria-label={'보완 파일 '+t.relativePath} checked={files.includes(index+':'+n)} onChange={()=>{changed();setFiles(v=>toggle(v,index+':'+n));}}/>{t.relativePath} · {t.access}</label>)}</div>)}</fieldset>
