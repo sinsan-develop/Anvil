@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 동일소비 표시자료 SOURCE**: readSourceContentScreenForDeclaredContextCandidate는 기존 declared proof/정책 조합의 record1/policy1 결과를 재사용해 exact13 summary와 별도 proof를 반환한다. 기존 조합 DTO는 유지하고 summary 투영은 기존 함수를 그대로 소비한다. 원자료/nonce/signature/proofbytes 비반환·중복SQL0·최신정책최상위/과거이력분리·false6/분리조회·문맥음성summary/proof null·오류원형을 유지한다. 새3RED→직접103합성/SSR PASS/type/diff0이며 실제송신/auth/current/DB/route/served는 미활성·Minor10/기존제외유지.
+
 - **2026-10-23 서버 proof정책 SOURCE**: readSourceContentProofWithPolicyFromServerContextCandidate/FromHeldIdentityCandidate는 기존 identity/control 후보 및 declared 과거proof/최신정책을 동일db에 전달한다. generic record/policy2query·구체control포함3query이며 문맥불일치/만료·회수는선행닫힘/후속조회0이다. 최신정책음성과과거proof를혼동하지않고 fixed음성/historicalProof·policy null/false6·분리조회를유지한다. 실제auth/current/DB/키/nonce/route는활성화하지않았고 새4RED→직접123합성/SSR PASS/type/diff0·Minor10/기존제외유지.
 
 - **2026-10-23 과거proof/정책 SOURCE**: readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate는 기존 exact8 문맥·동일 record/내부proof를 대조하고 최신정책helper 결과를 별도 결합한다. 신규 최상위 status/reason은 최신정책 결과를 보존하며 historicalProof는 과거 입력후보로만 남긴다. DENY/회수/만료/부재·ref변경/malformed를 과거양성으로 덮지 않고 문맥/ref불일치는 정책조회 전에 닫는다. 권위false6/SEPARATE_READS_NOT_ATOMIC·원문/nonce 비반환·정책오류 원형전파, 실제auth/키/DB/nonce/route 활성화0·새4RED→직접96 합성/SSR PASS/type/diff0·Minor10/기존제외 유지.

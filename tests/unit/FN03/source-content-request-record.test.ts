@@ -201,6 +201,21 @@ test('관측nonce의digest를함께바꿔도교환client/servernonce를재사용
 
 function declaredProof(){assert.equal(typeof m.readSourceContentStoredReportProofForDeclaredContextCandidate,'function','proof 선언 문맥 결박 미구현');return m.readSourceContentStoredReportProofForDeclaredContextCandidate;}
 function proofWithPolicy(){assert.equal(typeof m.readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,'function','과거 proof/최신 정책 소비 미구현');return m.readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate;}
+function screenCandidate(){assert.equal(typeof m.readSourceContentScreenForDeclaredContextCandidate,'function','동일소비 최소상태/proof 표시자료 미구현');return m.readSourceContentScreenForDeclaredContextCandidate;}
+test('같은 record/policy2query에서 exact13 상태와 과거proof를 분리하여 SSR에 전달한다',async()=>{
+ const f=reportedPolicyFixture();f.policy.disposition='REVOKED';f.policy.snapshot_json.disposition='REVOKED';f.policy.content_hash=contentHash(canonicalJson(f.policy.snapshot_json));let calls=0;
+ const out=await screenCandidate()({async query(){calls++;return {rows:[calls===1?f.row:f.policy]};}},context(f.row),zero+5000);assert.equal(calls,2);assert.equal(out.status,'DENIED');assert.equal(out.reason,'POLICY_REVOKED');assert.equal(Object.keys(out.summary).length,13);assert.equal(out.summary.policy.reason,'POLICY_REVOKED');assert.equal(out.proof.status,'UNVERIFIED');assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');
+ const expected={projectId:id(2),requestRef:proofBasis(f.row).requestRef};const {readSourceContentStatusV1,readSourceContentProofStatusV1}=await import('../../../contracts/source-content-status-v1.ts');assert.deepEqual(readSourceContentStatusV1(out.summary,expected),out.summary);assert.deepEqual(readSourceContentProofStatusV1(out.proof,expected).candidate,out.proof.candidate);
+ const {createElement}=await import('react'),{renderToStaticMarkup}=await import('react-dom/server'),{SourceContentRequestStatus}=await import('../../../apps/web/src/features/design-trace/SourceContentRequestStatus.ts');const html=renderToStaticMarkup(createElement(SourceContentRequestStatus,{value:out.summary,proof:out.proof,expected}));assert.match(html,/정책 회수 기록/);assert.match(html,/보고 기록 있음/);assert.match(html,/서명 검증 입력 후보/);assert.match(html,/실제 서명·현재 권한은 미확인/);for(const raw of [f.row.permit_json.observationNonce,f.row.observation.signature,'src/a.ts','합성 저장행'])assert.equal(html.includes(raw),false);assert.doesNotMatch(html,/<button|<input|<form|검증 완료|PASS/);
+});
+test('동일소비 표시자료의 정책부재·원요청 만료는 과거proof와 나란히 거절로 남긴다',async()=>{
+ for(const expired of [false,true]){const f=reportedPolicyFixture();let calls=0;const out=await screenCandidate()({async query(){calls++;return {rows:calls===1?[f.row]:[]};}},context(f.row),zero+(expired?700000:5000));assert.equal(calls,expired?1:2);assert.equal(out.reason,expired?'REQUEST_OUTSIDE_ORIGINAL_LIFETIME':'POLICY_ABSENT');assert.equal(out.summary.policy.reason,out.reason);assert.equal(out.proof.status,'UNVERIFIED');assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);}
+});
+test('표시자료의 원문맥 불일치/부재는 summary/proof가 없고 정책 오류는 원형 전파한다',async()=>{
+ const f=reportedPolicyFixture();let calls=0;const mismatch=await screenCandidate()({async query(){calls++;return {rows:[f.row]};}},{...context(f.row),credentialGeneration:1},zero+5000);assert.equal(calls,1);assert.equal(mismatch.summary,null);assert.equal(mismatch.proof,null);assert.equal(mismatch.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');
+ const absent=await screenCandidate()({async query(){return {rows:[]};}},context(f.row),zero+5000);assert.equal(absent.summary,null);assert.equal(absent.proof,null);
+ const error=Error('SYNTHETIC_SCREEN_POLICY_QUERY');calls=0;await assert.rejects(screenCandidate()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},context(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+});
 function reportedPolicyFixture(){
  const r=fixture(true,true),policy=policyFixture().policy,s=r.scope_json;
  s.contentPolicyRef={id:policy.id,version:1,contentHash:policy.content_hash};r.scope_digest=contentHash(canonicalJson(s));const requestRef={id:r.id,version:1,contentHash:r.scope_digest};

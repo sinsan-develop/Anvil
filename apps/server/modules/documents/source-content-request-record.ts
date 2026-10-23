@@ -5,6 +5,8 @@ import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type So
 import {readSourceContentReportProofFromPermitCandidate} from '../connections/source-content-report-proof-input.ts';
 import {readSourceContentDeclaredContextCandidate} from './source-content-request-context.ts';
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
+import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
+import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 import {inspectSourceContentCreationEvidenceV1} from './source-content-creation-evidence.ts';
@@ -143,12 +145,20 @@ function projectStoredProof(record:RecordCandidate,observation:InternalObservati
 const combinedProofClosed=(reason:string)=>({status:'UNAVAILABLE' as const,reason,historicalProof:null,policy:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags});
 /** 과거 proof와 별도 최신 정책을 병기한다. 최신 음성을 과거 후보로 덮거나 현재 허가로 승격하지 않는다. */
 export async function readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ return readProofWithPolicy(db,value,nowMs,(_record,historicalProof,policy)=>({status:policy.status,reason:policy.reason,historicalProof,policy:{status:policy.status,reason:policy.reason,ref:policy.policyRef},readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags}),combinedProofClosed);
+}
+/** 기존 exact13 상태와 별도 proof 표시값을 동일 판독 자료에서 만든다. 실제 전송/route는 없다. */
+export async function readSourceContentScreenForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,summary:null,proof:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags});
+ return readProofWithPolicy(db,value,nowMs,(record,proof,policy)=>({status:policy.status,reason:policy.reason,summary:sourceContentRequestStatusFromParts(record,policy),proof,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags}),close);
+}
+async function readProofWithPolicy<T,C>(db:ReadClient,value:unknown,nowMs:number,consume:(record:RecordCandidate,proof:ReturnType<typeof projectStoredProof>,policy:SourceContentPolicyCandidate)=>T,close:(reason:string)=>C) {
  const c=readSourceContentDeclaredContextCandidate(value,nowMs);
  const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
   const historicalProof=projectStoredProof(record,observation,c.requestRef,c);
-  if(historicalProof.reason==='STORED_PROOF_REQUEST_REF_MISMATCH'||historicalProof.reason==='DECLARED_PROOF_CONTEXT_MISMATCH')return combinedProofClosed(historicalProof.reason);
+  if(historicalProof.reason==='STORED_PROOF_REQUEST_REF_MISMATCH'||historicalProof.reason==='DECLARED_PROOF_CONTEXT_MISMATCH')return close(historicalProof.reason);
   const policy=await readSourceContentRequestPolicyCandidate(db,record.view.scope,nowMs);
-  return {status:policy.status,reason:policy.reason,historicalProof,policy:{status:policy.status,reason:policy.reason,ref:policy.policyRef},readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags};
+  return consume(record,historicalProof,policy);
  });
- return result??combinedProofClosed('REQUEST_ABSENT');
+ return result??close('REQUEST_ABSENT');
 }
