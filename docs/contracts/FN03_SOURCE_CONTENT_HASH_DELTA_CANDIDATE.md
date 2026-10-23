@@ -107,6 +107,16 @@ localEvidence={kind:NATIVE_CONTENT_HASH_REPORT,observerRef,ownedProcessRef,obser
 
 ## 7. 서버 문서 결박·LINK 원자성·옛 이력
 
+### 순수 codec 상세화 기록 — 2026-10-23 Main 비의미 보완
+
+승인 부모 raw SHA256 11AB746A30809096F22F52E73A8C3F15C2EA8793A635AA988B10335DC209066F의 범위/권한/한도는 유지한다. context는 정확 {scope,declaredPathHint,requestRef,observationRequestRef,observationNonce,issuedAt,observeBefore,receivedAt}이며 보호 permit의 원 선언 declaredPathHint UTF-8 hash만 scope.pathHintHash와 비교한다. handle에서 관측한 canonicalPath는 별도 주장이고 선언 문자열과 같다고 요구하지 않는다. 원 root ref/identity·실제 handle 귀속과 진위는 별도 current verifier 미연결 경계다. context는 한 번 복사한 값을 검증/서명 바이트 조립에 함께 사용한다.
+
+root 성공 state=OBSERVED, 파일 성공=HASHED, 실패 facts=null로 고정한다. identityBeforeHash/identityAfterHash는 정확 {kind,volumeSerialHex,fileIdHex,reparse,linkCountDecimal,sizeBytesDecimal,lastWriteFileTimeDecimal}의 canonical hash이며 전후 같고 보고 facts에도 맞아야 한다. EOF=true/bytesRead=size·uint64·단일 링크/같은 volume·파일/합계 한도를 대조한다. 성공 파일 hash/길이가 문서 Artifact와 다르더라도 관측 주장은 보관 가능하며 실제 LINK의 문서 raw 일치는 §7 서버 단계에서 별도로 거절한다.
+
+고정 실패 이유는 MISSING:PATH_NOT_FOUND, DENIED:ACCESS_DENIED/REPARSE_DENIED/OUTSIDE_ROOT/NOT_REGULAR_FILE/ROOT_KIND_INVALID/HARDLINK_DENIED, CHANGED:IDENTITY_CHANGED/LENGTH_CHANGED, TOO_LARGE:FILE_LIMIT_REACHED/TOTAL_LIMIT_REACHED, TIMEOUT:TIME_LIMIT_REACHED, CANCELLED:CANCEL_REQUESTED, UNVERIFIED:OBSERVER_UNAVAILABLE/UNSUPPORTED_FILESYSTEM/ROOT_UNAVAILABLE/NOT_ATTEMPTED다. root 실패 뒤 파일은 모두 UNVERIFIED/ROOT_UNAVAILABLE, 첫 파일 실패 뒤 남은 파일은 UNVERIFIED/NOT_ATTEMPTED만 허용한다. completed는 root/file 전체 성공 여부와 같아야 한다. raw 예외/본문은 받지 않는다.
+
+이 codec의 60초 관측 permit 기한/30초 주장 구간·서버 만료 검사는 실제 단조 I/O 예산·nonce 소비·서명 진위가 아니다. 서명 필드는 canonical 64byte P1363 모양만 검사하고 검증된 서명이라고 하지 않는다. root 경로/identity·native evidence도 주장 수용일 뿐이다. 모든 보고는 CONNECTOR_REPORTED/OS_UNVERIFIED로만 취급하고 current verifier 미구현 상태에서 LINK 412를 해제하지 않는다.
+
 최초 지원은 확정 문서 exact 버전의 content.body ArtifactRef와 소스 raw bytes의 일치다. 서버가 같은 project의 보호 Artifact 원본을 읽어 hash/길이를 재확인하고 QUARANTINED/누락/잘못된 저장키/다른 버전은 거절한다. 파싱·정규화된 파생 텍스트나 임의 import 후보를 원 raw 파일과 자동 동일시하지 않는다. 서버 본문과 다르면 최초 link는 CONTENT_MISMATCH로 거절한다. 차이 수집/제안·별도 분리는 기존 FN03/FN04의 후속이며 이번 hash-only 보고에 원문 송신 기능은 없다.
 
 linkDocumentSource는 한 서버 transaction에서 project 제어→현재 정책/등록/root/doc→원 content 요청/보고/검증 receipt를 고정 순서로 잠그고, exact ref/hash/경로/현재성·미소비/기한을 재검사한다. 원문 재해시 후 최종 주체/세대·기한을 다시 검사하며 늦은 성공0. 전체 보고가 성공한 경우에만 report의 target별 검증 계보를 발행한다. 각 계보는 (observationRef,targetIndex,relativePath,documentRef)를 고정하고 최초 양성 receipt는 한 번만 생성한다. 회수/무효는 predecessor를 둔 새 버전이며 최신 버전이 회수·만료되면 과거 양성으로 fallback하지 않는다. 같은 보고/target의 재양성 발행은 금지하고 새 관측을 요구한다. 해당 target의 양성 verification Ref 하나는 링크 head의 same-project UNIQUE provenance로 한 번만 소비한다. report는 최대200 target의 개별 LINK를 허용하되 요청 전체를 첫 LINK에서 소진하지 않는다. 동일 원 명령은 기존 receipt만 반환하고 다른 명령의 재소비는409다. 명령/authorization receipt/audit·LINKED v1/event/head와 이 target 소비를 원자 저장한다. 중간 실패 rollback·COMMIT 응답유실 UNKNOWN/동일 원명령 재조회만, 새 INSERT 자동 반복0.
