@@ -1,5 +1,6 @@
 import {readSourceContentRequestRecordCandidate} from './source-content-request-record.ts';
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
+import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {readSourceContentStatusV1} from '../../../../contracts/source-content-status-v1.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
@@ -18,10 +19,15 @@ export async function readSourceContentRequestWithPolicyCandidate(db:ReadClient,
 export async function readSourceContentRequestStatusCandidate(db:ReadClient,installationId:string,projectId:string,requestId:string,nowMs:number){
  const value=await readSourceContentRequestWithPolicyCandidate(db,installationId,projectId,requestId,nowMs);
  if(value===null)return null;
- const {view}=value.request;
+ return sourceContentRequestStatusFromParts(value.request,value.policy);
+}
+
+/** 기존13키 변환만 재사용한다. 입력은 위 저장/정책 reader의 후보이며 이 함수가 진위·권위를 추가하지 않는다. */
+export function sourceContentRequestStatusFromParts(request:NonNullable<Awaited<ReturnType<typeof readSourceContentRequestRecordCandidate>>>,policy:SourceContentPolicyCandidate){
+ const {view}=request,projectId=view.scope.projectId;
  return readSourceContentStatusV1({schemaVersion:1,kind:'SOURCE_CONTENT_REQUEST_STATUS_CANDIDATE',projectId,
   requestRef:view.requestRef,requestState:view.state,stateRecordedAt:view.updatedAt,targetCount:view.scope.targets.length,
-  policy:{status:value.policy.status,reason:value.policy.reason,ref:value.policy.policyRef},
+  policy:{status:policy.status,reason:policy.reason,ref:policy.policyRef},
   readConsistency:'SEPARATE_READS_NOT_ATOMIC',currentAuthorityVerified:false,storageMutationPerformed:false,executionAuthorized:false,linkAuthorized:false},
  {projectId,requestRef:view.requestRef});
 }
