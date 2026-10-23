@@ -390,6 +390,79 @@ BEGIN
  RETURN anvil.source_content_report_bundle_shape(g,observations,report_events) IS TRUE;
 END;$$;
 
+-- 감사 한 행의 역방향 대상 검사 후보. NULL context를 정상 content 감사로 승격하지 않는다.
+-- 무관한 감사의 true는 이 content 범위의 대상 아님만 뜻하며 일반 감사/권한 검수가 아니다.
+CREATE FUNCTION anvil.source_content_audit_target_shape(a anvil.audit_events,g anvil.source_content_requests,o anvil.source_content_observations,c anvil.commands,r anvil.authorization_receipts) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+ IF a.project_id IS NULL OR a.event_id IS NULL THEN RETURN false;END IF;
+ IF o.id IS NOT NULL THEN
+  IF g.id IS NULL THEN RETURN false;END IF;
+  RETURN anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[a]) IS TRUE;
+ END IF;
+ IF g.id IS NOT NULL THEN
+  IF c.id IS NULL OR r.id IS NULL THEN RETURN false;END IF;
+  RETURN anvil.source_content_creation_bundle_shape(g,ARRAY[c],ARRAY[r],ARRAY[a]) IS TRUE;
+ END IF;
+ RETURN a.source_kind IS DISTINCT FROM 'SOURCE_CONTENT_OBSERVATION_PROTOCOL'
+  AND a.reason_code IS DISTINCT FROM 'SOURCE_CONTENT_REPORT_STORED'
+  AND a.reason_code IS DISTINCT FROM 'EXPLICIT_SOURCE_CONTENT_HASH_REQUEST';
+END;$$;
+
+-- audit에서 target의 id만으로 후보를 찾은 다음 fullref/command/source를 대조한다.
+-- 처음부터 올바른 hash/version/source만 골라 잘못된 감사나 중복을 숨기지 않는다. trigger 미연결.
+CREATE FUNCTION anvil.source_content_audit_final_bundle_shape(project_arg uuid,event_arg uuid) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE a anvil.audit_events;g anvil.source_content_requests;o anvil.source_content_observations;c anvil.commands;r anvil.authorization_receipts;
+ gs anvil.source_content_requests[];os anvil.source_content_observations[];cs anvil.commands[];rs anvil.authorization_receipts[];
+BEGIN
+ IF project_arg IS NULL OR event_arg IS NULL THEN RETURN false;END IF;
+ SELECT ae.* INTO a FROM anvil.audit_events ae WHERE ae.project_id=project_arg AND ae.event_id=event_arg;
+ IF NOT FOUND THEN RETURN false;END IF;
+ os=ARRAY(SELECT ob FROM anvil.source_content_observations ob WHERE ob.project_id=project_arg AND ob.id::text=a.target_ref->>'id' LIMIT 2);
+ IF cardinality(os)>1 THEN RETURN false;END IF;
+ IF cardinality(os)=1 THEN o=os[1];END IF;
+ gs=ARRAY(SELECT req FROM anvil.source_content_requests req WHERE req.project_id=project_arg
+  AND (req.created_command_id=a.command_id OR req.id::text=a.target_ref->>'id' OR req.id=o.request_id) LIMIT 2);
+ IF cardinality(gs)>1 THEN RETURN false;END IF;
+ IF cardinality(gs)=0 THEN RETURN anvil.source_content_audit_target_shape(a,g,o,c,r) IS TRUE;END IF;
+ g=gs[1];
+ IF o.id IS NULL THEN
+  cs=ARRAY(SELECT cmd FROM anvil.commands cmd WHERE cmd.project_id=g.project_id AND cmd.id=g.created_command_id LIMIT 2);
+  IF cardinality(cs)<>1 THEN RETURN false;END IF;c=cs[1];
+  rs=ARRAY(SELECT ar FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id LIMIT 2);
+  IF cardinality(rs)<>1 THEN RETURN false;END IF;r=rs[1];
+ END IF;
+ IF anvil.source_content_audit_target_shape(a,g,o,c,r) IS NOT TRUE THEN RETURN false;END IF;
+ RETURN anvil.source_content_request_final_bundle_shape(g.project_id,g.id) IS TRUE;
+END;$$;
+
+-- 새 content 표의 deferred callback 후보. event NEW snapshot이 아니라 최종 행을 다시 읽는다.
+-- 기존 audit_events에는 연결하지 않는다. 감사 역방향 호출 권한/무관 감사 영향 경계는 별도이며 이를 완성된 원자 guard라 하지 않는다.
+CREATE FUNCTION anvil.check_source_content_final_bundle() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE valid boolean;
+BEGIN
+ IF TG_TABLE_SCHEMA<>'anvil' OR TG_WHEN<>'AFTER' OR TG_LEVEL<>'ROW' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_BUNDLE_TRIGGER_CONTEXT_INVALID' USING ERRCODE='42501';
+ END IF;
+ IF TG_TABLE_NAME='source_content_requests' AND TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_OP='UPDATE' THEN
+   IF (NEW.project_id,NEW.id) IS DISTINCT FROM (OLD.project_id,OLD.id) THEN
+    RAISE EXCEPTION 'SOURCE_CONTENT_BUNDLE_IDENTITY_IMMUTABLE' USING ERRCODE='42501';
+   END IF;
+  END IF;
+  valid=anvil.source_content_request_final_bundle_shape(NEW.project_id,NEW.id);
+ ELSIF TG_TABLE_NAME='source_content_observations' AND TG_OP='INSERT' THEN
+  valid=anvil.source_content_request_final_bundle_shape(NEW.project_id,NEW.request_id);
+ ELSE
+  RAISE EXCEPTION 'SOURCE_CONTENT_BUNDLE_TRIGGER_CONTEXT_INVALID' USING ERRCODE='42501';
+ END IF;
+ IF valid IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_FINAL_BUNDLE_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER source_content_request_bundle_final AFTER INSERT OR UPDATE ON anvil.source_content_requests
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_final_bundle();
+CREATE CONSTRAINT TRIGGER source_content_observation_bundle_final AFTER INSERT ON anvil.source_content_observations
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_final_bundle();
+
 CREATE TABLE anvil.source_content_verifications (
  project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
  observation_id uuid NOT NULL,observation_version smallint NOT NULL DEFAULT 1 CHECK(observation_version=1),observation_hash text NOT NULL CHECK(observation_hash~'^[0-9a-f]{64}$'),

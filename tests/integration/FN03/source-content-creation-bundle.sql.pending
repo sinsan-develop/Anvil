@@ -25,6 +25,10 @@ BEGIN
  a.project_id=g.project_id;a.server_sequence=1;a.event_id='79000000-0000-4000-8000-000000000012';a.actor_ref=jsonb_build_object('kind','HUMAN','userId',g.requested_by);a.client_ref=g.client_id;a.command_id=c.id;a.operation_id=c.operation_id;a.target_ref=target;a.policy_ref=ref;
  a.outcome='APPLIED';a.reason_code='EXPLICIT_SOURCE_CONTENT_HASH_REQUEST';a.scope_digest=r.scope_digest;a.source_kind='HUMAN_COMMAND';
  ASSERT anvil.source_content_creation_bundle_shape(g,ARRAY[c],ARRAY[r],ARRAY[a]) IS TRUE,'CREATION_EXACT_PROJECTION_MS_NORMALIZATION';
+ ASSERT anvil.source_content_audit_target_shape(a,g,NULL,c,r) IS TRUE,'REVERSE_CREATION_EXACT_TARGET';
+ ASSERT anvil.source_content_audit_target_shape(a,g,NULL,NULL,r) IS FALSE,'REVERSE_CREATION_MISSING_COMMAND';
+ ASSERT anvil.source_content_audit_target_shape(a,NULL,NULL,c,r) IS FALSE,'REVERSE_CREATION_ORPHAN';
+ b=a;b.project_id='79000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_audit_target_shape(b,g,NULL,c,r) IS FALSE,'REVERSE_CREATION_OTHER_PROJECT';
  ASSERT anvil.source_content_creation_bundle_shape(g,'{}'::anvil.commands[],ARRAY[r],ARRAY[a]) IS FALSE,'CREATION_MISSING_COMMAND';
  ASSERT anvil.source_content_creation_bundle_shape(g,ARRAY[c],ARRAY[r,r],ARRAY[a]) IS FALSE,'CREATION_DUPLICATE_RECEIPT';
  ASSERT anvil.source_content_creation_bundle_shape(g,ARRAY[c],ARRAY[r],ARRAY[a,a]) IS FALSE,'CREATION_DUPLICATE_AUDIT';

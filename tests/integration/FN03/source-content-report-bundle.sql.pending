@@ -27,6 +27,12 @@ BEGIN
  a.project_id=g.project_id;a.server_sequence=1;a.event_id='78000000-0000-4000-8000-000000000012';a.actor_ref=jsonb_build_object('kind','CONNECTOR','connectorId',g.connector_id,'registrationId',g.registration_id);a.client_ref=g.client_id;
  a.target_ref=jsonb_build_object('id',o.id,'version',1,'contentHash',o.content_hash);a.policy_ref=g.scope_json->'basePolicyRef';a.outcome='APPLIED';a.reason_code='SOURCE_CONTENT_REPORT_STORED';a.source_kind='SOURCE_CONTENT_OBSERVATION_PROTOCOL';a.scope_digest=g.scope_digest;a.recorded_at=g.created_at+interval '3000.123 milliseconds';
  ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[a]) IS TRUE,'BUNDLE_EXACT_PROJECTION_MICROSECOND_AUDIT';
+ ASSERT anvil.source_content_audit_target_shape(a,g,o,NULL,NULL) IS TRUE,'REVERSE_REPORT_EXACT_TARGET';
+ ASSERT anvil.source_content_audit_target_shape(a,NULL,o,NULL,NULL) IS FALSE,'REVERSE_REPORT_MISSING_REQUEST';
+ ASSERT anvil.source_content_audit_target_shape(a,g,NULL,NULL,NULL) IS FALSE,'REVERSE_REPORT_MISSING_OBSERVATION';
+ ASSERT anvil.source_content_audit_target_shape(a,NULL,NULL,NULL,NULL) IS FALSE,'REVERSE_PROTOCOL_ORPHAN';
+ b=a;b.target_ref=jsonb_set(b.target_ref,'{version}','2');ASSERT anvil.source_content_audit_target_shape(b,g,o,NULL,NULL) IS FALSE,'REVERSE_WRONG_VERSION_NOT_HIDDEN_BY_TARGET_LOOKUP';
+ b=a;b.source_kind='OTHER';b.reason_code='OTHER';b.target_ref='{}';ASSERT anvil.source_content_audit_target_shape(b,NULL,NULL,NULL,NULL) IS TRUE,'REVERSE_UNRELATED_IS_NOT_CONTENT_AUTHORITY';
  n=g;n.permit_json=jsonb_set(n.permit_json,'{issuedAt}','"2026-10-23T18:00:10.000Z"');n.updated_at=n.created_at+interval '11 seconds';n.report_consumed_at=n.updated_at;p=o;p.received_at=n.report_consumed_at;
  ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_LATE_PERMIT_EARLY_OBSERVATION';
  n=g;n.permit_json=jsonb_set(n.permit_json,'{observeBefore}','"2026-10-23T18:00:04.500Z"');p=o;p.finished_at=g.created_at+interval '5 seconds';p.report_json=jsonb_set(p.report_json,'{finishedAt}',to_jsonb(anvil.source_read_iso(p.finished_at)));p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
