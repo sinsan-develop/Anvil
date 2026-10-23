@@ -147,9 +147,11 @@ B(격리형) 후보4표:
 
 ### 저장 SOURCE 중간 구현 기록 — 2026-10-23
 
+저장행 adapter source는 한 same-project SQL에서 request/최초 생성 command/관측을 LEFT JOIN하여 누락을 숨기지 않고 원20키 view로 투영한다. 실제 query/PG 상호운용은 미실행이다. 최초 명령의 요약·scope/주체/세대/원시각과 challenge/permit/보고 codec·관측 nonce 및 소비 command/time을 대조하지만 현재 인증/정책·서명/OS·전체 receipt/payload/audit·CAS는 대신하지 않는다. 반환은 UNVERIFIED_REQUEST_RECORD_CANDIDATE/저장·실행·LINK false뿐이며 route 미등록이다. 과거 만료 기록 조회가 현재 permit 사용 권위는 아니다. 원 preflight_json을 보관하지 않는 현재 미적용 구조에서는 preflight_digest의 원문 대조가 불가능하므로 challenge로 원문을 임의 재구성하거나 완전검증으로 표시하지 않는다. 원문 보존·원 receipt/관리권위·DB 원자 guard는 후속 미구현이다.
+
 원요청 전이 source view는 정확 {scope,requestRef,state,preflightDigest,challengeDigest,challengeIssuedAt,challengeExpiresAt,credentialIssuedAt,credentialExpiresAt,observeBefore,credentialTokenDigest,observationRequestRef,observationNonceDigest,reportRef,reportCommandId,reportConsumedAt,revokedAt,revokeCommandId,exchangeFailures,updatedAt} 20키다. 원 scope/ref·최초 교환/credential/관측자료를 불변으로 두고 정해진 단계에서 null→값만 허용한다. 보고/회수는 기존 소비자료를 보존한다. 현재 단계의 기한은 원요청/아직 소비하지 않은 challenge 또는 발급된 credential/관측 최소값이며 새 기한을 만들지 않는다. 실패 count 후보는 한 번에1씩 최대5, UNKNOWN에서 재발급/재진입0·terminal replay는 저장0이다.
 
-전이 판정은 UNVERIFIED_TRANSITION_CANDIDATE/저장·실행·LINK false만 반환한다. signature/current·관리권위/nonce 실소비·명령/audit·DB row CAS는 별도 미구현이며 caller의 verified 플래그를 받지 않는다. state view와 실제 request/관측 JOIN의 adapter도 아직 미구현이다. 이를 위해 미적용 request 표에 유한·ms단위·created_at 이상인 updated_at 보존 열을 추가했지만 SQL의 비교/전이 guard는 여전히 미활성이다. 이 timestamp는 승인/허가 token이 아니고 actual UPDATE를 실행하지 않는다.
+전이 판정은 UNVERIFIED_TRANSITION_CANDIDATE/저장·실행·LINK false만 반환한다. signature/current·관리권위/nonce 실소비·명령/audit·DB row CAS는 별도 미구현이며 caller의 verified 플래그를 받지 않는다. 이전 전이 checkpoint에서 미구현이었던 state view/실제 request·관측 JOIN adapter는 위 source 후보로 추가했으나 실제 SQL/PG 실행은 미검증이다. 미적용 request 표의 updated_at은 유한·ms단위·created_at 이상을 보존하지만 SQL의 비교/전이 guard는 여전히 미활성이다. 이 timestamp는 승인/허가 token이 아니고 actual UPDATE를 실행하지 않는다.
 
 신규 미적용 db/migrations/0040_source_content_hash.sql.pending에 위4표·same-project FK/target별 양성·소비 UNIQUE·append/강제거절을 작성했다. 기존4개 runner/manifest에는 등록하지 않았다. 새표는 RLS false/FORCE·권한0/모든 DML·TRUNCATE 거절, 최초 LINK INSERT도 거절이다. 실제 인증·정확 shape/상태전이·정책 predecessor/CAS·nonce/서명/verifier·명령/audit/COMMIT guard는 아직 미완성이며 이 닫힌 부분을 활성화 코드라고 부르지 않는다.
 
