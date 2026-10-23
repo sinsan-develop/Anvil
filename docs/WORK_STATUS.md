@@ -1,5 +1,17 @@
 # Anvil 재설계 작업현황
 
+- **current/준비 cleanup I1 최종 한정 재대조**: 최소원근거기한closure/불변clock숫자와release후재검사 보정 범위 독립정적 C0/I0/M0·독립실행/수정0이다. 원I1/RED는보존하며실제DB시각/COMMIT순간·강제중단/native권위/전체완료로승격하지않는다.
+
+- **2026-10-23 D1 current/준비 owner 유한 대기·정리후 유효성 보완**: current resolver의 기존freshport-only race를 전체async connect/원인증·query/COMMIT 대기로넓혀기존caller상한(최대10초)을줄곧적용했다. 모든basis조회도같은queryfacade로추적하고기한/취소후latequery는실DB로다시보내지않으며 늦은connect는BEGIN없이폐기·미완료query는rollback대신폐기한다. rollback무응답은별도min(caller상한,1000ms)cleanup으로한정한다. 두owner는timer지연시에도첫단조시점·각query전후/최종응답과release후원참조/취소/기한을검사하고, COMMIT직전불변DBclock숫자+단조경과/최소원근거기한을release후에도대조한다. COMMIT시도후불명확/기한초과는UNKNOWN·자동재발급/rollback성공단정0·release이후재파괴/중복release0이다. 현재서명/원graph/head/receipt검사·미등록/권한false를유지했다.
+
+- **current 전체호출 반례·fixture 분리**: 처음6실패2841.4214ms중5는watchdog무응답, COMMIT사례1은fixture가짧은read-window를넘는request를만들어조기UNAVAILABLE였다. 해당CURRENT fixture의authorityExpiresAt만실제window.expiresAt로정합화(기준완화0)후정확6단계모두DID_NOT_SETTLE RED6/2921.9925ms를확인했다. 첫직접16PASS1386.7123ms·인접35PASS1364.7036ms/type/diff0뒤정적M1의단계미도달공백은각targetSQL reached=1로보완했다. Main추가반례는동기query timer지연의late성공 RED1/484.6111ms 및prep동일원인RED1/408.9686ms로확인해단조기한을추가했다. 중간36PASS1406.1766ms를실제PG/권위로승격하지않는다.
+
+- **정리후 I1 재현·최종 증거**: 독립정적 C0/I1/M0의release후caller기한/ABORT/auth함수변경은두owner6합성RED/759.7642ms→43PASS1593.8321ms로보완했으나, 이어최소원근거기한의정리후누락I1은별도2합성RED492.2438ms로확인했다. current는원request기한40ms전의측정DBclock/90ms cleanup, prep는원intent80ms/120ms cleanup에caller1000ms를분리해원기한만만료시켰고 COMMIT/정리1회/rollback0을확인한다. 불변clock숫자+단조mark·원최소end/deadline의정리후closure를추가한최종 `node --test tests/unit/FN06/ownership-current-resolver.test.ts tests/unit/FN06/ownership-fresh-producer.test.ts tests/unit/FN06/ownership-preparation-store.test.ts` 는current21+producer6+owner18=45PASS1608.1413ms·skip/cancel0, typecheck/diff0이다. 원M1/I1/실패와중간검사는보존·최종한정재대조중이다.
+
+- **동일 보완의 미검증/다음**: 합성테스트의유한대기/늦은결과거절만확인했으며 실제PG취소/잠금/동시성·원자성/DBclock동기화/COMMIT순간·실프로세스/키/native/Agent/served는NOT_RUN/UNVERIFIED다. async caller budget에별도최대1초cleanup이붙을수있고동기callback/driver를강제로시간내중단한것은아니다. 0039pendingSQL/defaultdeny/RLSfalse/manifest·SQLpendingM1·기존거절/보호8·D2동결4/미GREEN은유지했다. 새실제provider/권위로합성성공을대체하지않았고 nativefactory/인증된준비채널·actualwriter/소스격리 및전체계획은미완료다. 다음은factory 원생성·유일보유/처분과현재인증준비선행을이어가며 이source검증을사용가능Agent연결완료로표시하지않는다.
+
+- **2026-10-23 D1 current resolver 전체 유한성 착수**: 기존 readCurrent는 freshport 구간만race하고 connect/초기·원기록query/COMMIT/rollback의로컬무응답은유한하지않다. 같은초기caller cap(최대10초)을전체async호출에적용하고 늦은connect소유반환·늦은query차단/미완료폐기·유한rollback·COMMIT시도후UNKNOWN을유지하는기존범위보완을선정했다. first callbackport/현재인증·원 서명/chain/head/receipt 검사는유지하며실제DB/SQL시각보장·OS/키/native/Agent0, 합성반례부터작성한다. D2동결4/원거절/보호8/0039deny·SQLpendingM1불변이다.
+
 - **준비 owner 최종 한정 검토**: 의존성고정delta 독립정적 C0/I0/M0·독립실행/수정0. 실제PG원자성/COMMIT시각/권위/native·SQLpendingM1은해소됐다고하지않으며 원RED/type오류를이력보존한다.
 
 - **2026-10-23 D1 준비 owner 의존성 source 보완·합성검증**: 원port만확인하던 stable에 pool/connect/access/authenticate/options/timeout의원참조·값결박을추가하고 모든helper에캡처access·connect.call(pool)/timer·cleanup에캡처timeout을사용했다. 대기중교체는원동작과같아도거절·COMMIT시도후변경은UNKNOWN/폐기·자동재발급/성공rollback단정0이다. 기존정상저장/replay·미등록·기한·취소·latequery·rollback/release 경계와권한false는유지했다.

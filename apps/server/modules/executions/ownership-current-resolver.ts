@@ -28,17 +28,28 @@ export class SyntheticPgOwnershipCurrentResolver {
  constructor(pool:Pick<Pool,'connect'>,access:AccessRepository,token:string,csrf:string,fresh:SyntheticOwnershipFreshObservation|null=null,options:{timeoutMs:number}={timeoutMs:10000}){this.#pool=pool;this.#access=access;this.#token=token;this.#csrf=csrf;this.#fresh=fresh;this.#timeout=options.timeoutMs;if(!Number.isSafeInteger(this.#timeout)||this.#timeout<1||this.#timeout>10000)return fail();}
  async readCurrent(scopeValue:unknown,inputValue:unknown,signal:AbortSignal){
   let db:PoolClient|undefined,begun=false,commitAttempted=false,discard=false;
+  let closed=false,pendingQueries=0,overallTimer:ReturnType<typeof setTimeout>|undefined,overallAbort:()=>void=()=>{};
+  let finalCurrentCheck:()=>void=()=>{},finalDeadlineCheck:()=>void=()=>{};
+  const lifetime=new AbortController(),monotonicStart=performance.now();
   try{
    const port=this.#fresh,observe=port?.observeAndAccept,authenticate=this.#access.authenticateInTransaction,installation=this.#access.installationId;
-   if(!port||port.transport!=='SYNTHETIC_ONLY'||typeof observe!=='function'||!(signal instanceof AbortSignal)||signal.aborted)return fail();
-   const stable=()=>{if(signal.aborted||this.#fresh!==port||port.transport!=='SYNTHETIC_ONLY'||port.observeAndAccept!==observe||this.#access.authenticateInTransaction!==authenticate||this.#access.installationId!==installation)return fail();};
+   const connect:(()=>Promise<PoolClient>)|undefined=this.#pool?.connect;
+   if(!port||port.transport!=='SYNTHETIC_ONLY'||typeof observe!=='function'||typeof connect!=='function'||!(signal instanceof AbortSignal)||signal.aborted)return fail();
+   const currentInputs=()=>{if(signal.aborted||performance.now()-monotonicStart>=this.#timeout||this.#pool.connect!==connect||this.#fresh!==port||port.transport!=='SYNTHETIC_ONLY'||port.observeAndAccept!==observe||this.#access.authenticateInTransaction!==authenticate||this.#access.installationId!==installation)return fail();};
+   finalCurrentCheck=currentInputs;
+   const stable=()=>{if(closed||lifetime.signal.aborted)return fail();currentInputs();};
    const scope=cloneV1(scopeValue),input=cloneV1(inputValue);
    if(!recordV1(scope,['installationId','projectId','executionId','executionGeneration'])||!['installationId','projectId','executionId'].every(k=>uuidV1(scope[k]))||!Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1||scope.installationId!==this.#access.installationId||!recordV1(input,['preparationRef','selection'])||!refV1(input.preparationRef))return fail();
    const s=input.selection;
    if(!recordV1(s,['envelope','parentThreadClaimRef','attemptRef','permitRef','ownershipEvidenceRef','instructionContentHash','preSendBindingHash'])||!['parentThreadClaimRef','attemptRef','permitRef','ownershipEvidenceRef'].every(k=>refV1(s[k]))||!hashV1(s.instructionContentHash)||!hashV1(s.preSendBindingHash))return fail();
-   db=await this.#pool.connect();stable();const query=async(sql:string,args:any[]=[])=>{stable();const r=await db!.query(sql,args);stable();return r;};
+   const overallStopped=new Promise<never>((_,reject)=>{overallAbort=()=>{closed=true;lifetime.abort();reject(new AuthFailure('OWNERSHIP_CURRENT_UNAVAILABLE',412));};signal.addEventListener('abort',overallAbort,{once:true});overallTimer=setTimeout(overallAbort,Math.max(1,this.#timeout-(performance.now()-monotonicStart)));});
+   if(signal.aborted)overallAbort();
+   const work=async()=>{
+   stable();const connected=await connect.call(this.#pool);
+   if(closed||lifetime.signal.aborted||signal.aborted){connected.release(true);return fail();}
+   db=connected;stable();const query=async(sql:string,args:any[]=[])=>{stable();pendingQueries++;try{const r=await db!.query(sql,args);stable();return r;}finally{pendingQueries--;}};
    begun=true;await query('BEGIN');await query("SET LOCAL statement_timeout='10000ms'");await query("SET LOCAL lock_timeout='2000ms'");
-   const basis=async()=>{stable();const v=await readOwnershipPreparationReceiptBasis(db!,this.#access,this.#token,this.#csrf,scope,input.preparationRef);stable();return v;};
+   const basis=async()=>{stable();const v=await readOwnershipPreparationReceiptBasis({query} as PoolClient,this.#access,this.#token,this.#csrf,scope,input.preparationRef);stable();return v;};
    const first=await basis();
    let lastClock=Date.parse(first.checkedAt);
    const clock=async()=>{const at=(await query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime())||at.getTime()<lastClock)return fail();lastClock=at.getTime();return lastClock;};
@@ -50,10 +61,10 @@ export class SyntheticPgOwnershipCurrentResolver {
    const facade={query:async(sql:string,args:any[]=[])=>{if(!open||controller.signal.aborted||typeof sql!=='string'||!/^\s*(SELECT|INSERT|UPDATE)\b/i.test(sql)||/[;\x00]/.test(sql))return fail();pending++;try{return await query(sql,args);}finally{pending--;}}} as Pick<PoolClient,'query'>;
    let rawFresh:unknown;
    try{
-    const stopped=new Promise<never>((_,reject)=>{abort=()=>{open=false;discard=true;controller.abort();reject(new AuthFailure('OWNERSHIP_CURRENT_UNAVAILABLE',412));};signal.addEventListener('abort',abort,{once:true});timer=setTimeout(abort,Math.max(1,Date.parse(window.expiresAt)-started));});
+    const stopped=new Promise<never>((_,reject)=>{abort=()=>{open=false;discard=true;controller.abort();reject(new AuthFailure('OWNERSHIP_CURRENT_UNAVAILABLE',412));};lifetime.signal.addEventListener('abort',abort,{once:true});timer=setTimeout(abort,Math.max(1,Date.parse(window.expiresAt)-started));});
     stable();rawFresh=await Promise.race([Promise.resolve().then(()=>observe.call(port,facade,cloneV1(window),controller.signal)),stopped]);
     if(pending){discard=true;return fail();}
-   }finally{if(pending)discard=true;open=false;controller.abort();if(timer)clearTimeout(timer);signal.removeEventListener('abort',abort);}
+   }finally{if(pending)discard=true;open=false;controller.abort();if(timer)clearTimeout(timer);lifetime.signal.removeEventListener('abort',abort);}
    const fresh=cloneV1(rawFresh);stable();
    if(!recordV1(fresh,['purpose','readId','requestRef','observationRef','executionAuthorized','dispatchPerformed'])||fresh.purpose!=='SYNTHETIC_NEW_OBSERVATION'||fresh.readId!==window.readId||!refV1(fresh.requestRef)||!refV1(fresh.observationRef)||fresh.executionAuthorized!==false||fresh.dispatchPerformed!==false)return fail();
    const args=[scope.projectId,scope.executionId,scope.executionGeneration];
@@ -94,11 +105,24 @@ export class SyntheticPgOwnershipCurrentResolver {
    const last=await basis();for(const k of ['scope','subject','preparationRef','policyRef','registrationRef','publicKeySpki','commandRef','authorizationReceiptRef','auditRef'] as const)if(!same(first[k],last[k]))return fail();
    const end=Math.min(Date.parse(window.expiresAt),Date.parse(first.expiresAt),Date.parse(last.expiresAt),Date.parse(head.snapshot.expiresAt),Date.parse(as.expiresAt),Date.parse(t.expiresAt),Date.parse(request.expiresAt));
    const mark=performance.now(),readAt=await clock();if(readAt>=end||Date.parse(as.recordedAt)>readAt||Date.parse(t.recordedAt)>readAt)return fail();
+   finalDeadlineCheck=()=>{if(readAt+Math.ceil(performance.now()-mark)>=end)return fail();};
    commitAttempted=true;await query('COMMIT');begun=false;if(readAt+Math.ceil(performance.now()-mark)>=end){discard=true;throw Error();}
    return{purpose:'SYNTHETIC_OWNERSHIP_CURRENT_BASIS_ONLY' as const,transport:'SYNTHETIC_ONLY' as const,archive:{anchor:cloneV1(anchor),binding:cloneV1(binding),anchorHeadRef:cloneV1(anchor.ref),bindingHeadRef:cloneV1(binding.ref),revoked:false,readAt:new Date(readAt).toISOString(),expiresAt:new Date(end).toISOString()},requestRef:cloneV1(request.requestRef),observationRef:cloneV1(fresh.observationRef),headRef:cloneV1(head.ref),missingEvidence:['ACTUAL_CURRENT_AUTHORITY_PROVIDER','VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE','SOURCE_WRITE_SANDBOX'] as const,currentAuthorityVerified:false as const,writerReleaseVerified:false as const,fileSandboxVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+   };
+   const result=await Promise.race([work(),overallStopped]);stable();return result;
   }catch{
+   closed=true;lifetime.abort();if(pendingQueries>0)discard=true;
    if(commitAttempted){discard=true;throw new AuthFailure('OWNERSHIP_CURRENT_COMMIT_UNKNOWN',412);}
-   if(db&&begun&&!discard)try{await db.query('ROLLBACK');}catch{discard=true;throw new AuthFailure('OWNERSHIP_CURRENT_ROLLBACK_UNCONFIRMED',412);}return fail();
-  }finally{if(db)try{db.release(discard);}catch{throw new AuthFailure(commitAttempted?'OWNERSHIP_CURRENT_COMMIT_UNKNOWN':'OWNERSHIP_CURRENT_RELEASE_UNCONFIRMED',412);}}
+   if(db&&begun&&!discard){let cleanupTimer:ReturnType<typeof setTimeout>|undefined;
+    try{await Promise.race([db.query('ROLLBACK'),new Promise<never>((_,reject)=>{cleanupTimer=setTimeout(()=>reject(Error('ROLLBACK_UNCONFIRMED')),Math.min(this.#timeout,1000));})]);}
+    catch{discard=true;throw new AuthFailure('OWNERSHIP_CURRENT_ROLLBACK_UNCONFIRMED',412);}
+    finally{if(cleanupTimer)clearTimeout(cleanupTimer);}
+   }return fail();
+  }finally{
+   closed=true;lifetime.abort();if(overallTimer)clearTimeout(overallTimer);
+   if(signal instanceof AbortSignal)signal.removeEventListener('abort',overallAbort);
+   if(db)try{db.release(discard);}catch{throw new AuthFailure(commitAttempted?'OWNERSHIP_CURRENT_COMMIT_UNKNOWN':'OWNERSHIP_CURRENT_RELEASE_UNCONFIRMED',412);}
+   if(commitAttempted)try{finalCurrentCheck();finalDeadlineCheck();}catch{throw new AuthFailure('OWNERSHIP_CURRENT_COMMIT_UNKNOWN',412);}
+  }
  }
 }

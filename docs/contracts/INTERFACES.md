@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 현재 조회 전체 async 수명·정리후 결과검사 — 2026-10-23
+
+current resolver는 기존 caller timeout(최대10초)을 첫await 전부터 전체연결/원인증/DBquery/새관측/COMMIT에적용한다. 같은queryfacade가pending을추적하고close/abort·원함수변경/단조기한을전후검사한다. 늦은connect는BEGIN없이소유연결만폐기하고, pending query중실패는rollback을대기하지않고연결폐기모델로분리한다. rollback무응답에는별도min(caller timeout,1000ms)의유한cleanup을적용한다. 실제DB취소·강제중단/rollback완료를추정하지않는다.
+
+current/준비 owner 둘다정리전결과확인만으로성공을반환하지않는다. release후에도caller단조기한·외부취소·원함수/설정참조와 COMMIT직전DBclock불변숫자+그측정직전단조mark로추정한최소원근거기한을다시검사한다. COMMIT시도후기한경과/현재입력불일치·release오류는UNKNOWN이며자동재시도/재발급·rollback으로미저장단정0이다. 이미반환한pool연결을다시폐기하지않고release는1회다.
+
+이는동기callback/driver의강제종료·실제PG취소/clock동기화/COMMIT순간권위보장이아니다. eventloop/timer지연뒤늦은결과를거절하고async무응답을한정한source/합성검증이며, 정상값은여전히SYNTHETIC/BASIS_ONLY/실권한false다. 원SQL M1·미등록실제authority·native/키/Agent/운영미검증을유지한다. 테스트CURRENT fixture도실제caller read-window 내request기한을소비하며큰기한의가짜성공으로검사기준을완화하지않는다.
+
 ## FN06 D1 준비 transaction owner 의존성 고정 — 2026-10-23
 
 SyntheticOwnershipPreparationStore.prepare는 호출 시작의 pool/connect 함수·access/authenticateInTransaction 함수·prerequisite/current 함수·options 객체/timeout값을 고정한다. 원 연결/인증 기능을 같은 결과의 함수로 바꾸더라도 대기 전후 참조가 달라지면 fail-closed이며 timer와 rollback cleanup은 캡처한 유한 timeout을 사용한다. helper는 캡처한 access와 같은 transaction facade만 소비한다. COMMIT 시도 후 교체/확인 불명확은 COMMIT_UNKNOWN·연결폐기/자동재발급0이며 rollback으로 미저장을 단정하지 않는다. 초기 공급자 부재는 connect0·권한false를 유지한다.

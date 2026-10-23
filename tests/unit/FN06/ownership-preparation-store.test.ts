@@ -55,6 +55,32 @@ test('COMMIT 응답 대기 중 인증 의존성이 바뀌면 rollback 성공으�
  await assert.rejects(f.run(),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});
  assert.equal(f.stats().commits,1);assert.equal(f.state().events.length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);assert.equal(f.stats().destroyed,1);
 });
+
+test('준비 owner도 timer가 지연된 동기 query의 caller 기한 초과를 성공 처리하지 않는다',async()=>{
+ const f=await fixture(),query=f.db.query;let reached=0;
+ f.db.query=async(sql:string,args:any[]=[])=>{if(sql==='BEGIN'){reached++;const until=performance.now()+30;while(performance.now()<until){/* 고정 합성 CPU 지연 */}}return query.call(f.db,sql,args);};
+ await assert.rejects(f.run(false,10),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});
+ assert.equal(reached,1);assert.equal(f.stats().commits,0);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,1);assert.deepEqual(f.state(),{commands:[],receipts:[],audits:[],events:[]});
+});
+
+for(const change of ['DELAY','ABORT','AUTH'])test(`준비 owner release 정리 중 ${change} 뒤에는 COMMIT 성공 결과 대신 UNKNOWN을 보존한다`,async()=>{
+ const f=await fixture(),release=f.db.release,c=new AbortController();let reached=0;
+ f.db.release=(discard=false)=>{reached++;release.call(f.db,discard);
+  if(change==='DELAY'){const until=performance.now()+220;while(performance.now()<until){/* 고정 합성 cleanup 지연 */}}
+  if(change==='ABORT')c.abort();
+  if(change==='AUTH'){const original=f.access.authenticateInTransaction;f.access.authenticateInTransaction=(...args:Parameters<typeof original>)=>original.apply(f.access,args);}
+ };
+ const store=f.store(false,200);
+ await assert.rejects(store.prepare(f.token,f.csrf,f.intent,{intentId:id(1),commandId:id(2),eventId:id(3)},c.signal),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});
+ assert.equal(reached,1);assert.equal(f.stats().commits,1);assert.equal(f.state().events.length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);
+});
+
+test('caller 기한이 남아도 준비 원근거 최소기한이 release 중 지나면 UNKNOWN이다',async()=>{
+ const f=await fixture(),release=f.db.release;let reached=0;f.intent.expiresAt=new Date(f.now.getTime()+80).toISOString();
+ f.db.release=(discard=false)=>{reached++;release.call(f.db,discard);const until=performance.now()+120;while(performance.now()<until){/* 원근거 기한만 경과 */}};
+ await assert.rejects(f.run(false,1000),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});
+ assert.equal(reached,1);assert.equal(f.stats().commits,1);assert.equal(f.state().events.length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);
+});
 test('원 명령/receipt/audit→최초 준비 사건→최종 원 receipt reader를 한 transaction으로 연결한다',async()=>{const f=await fixture(),v=await f.run();assert.equal(v.purpose,'SYNTHETIC_OWNERSHIP_PREPARATION_COMMIT_ONLY');assert.equal(v.executionAuthorized,false);assert.equal(v.preparationAuthorized,false);assert.equal(f.state().commands.length,1);assert.equal(f.state().events.length,1);assert.equal(f.state().events[0].snapshot_json.kind,'PREPARATION_GRANTED');assert.equal(f.queries.filter(q=>q==='BEGIN').length,1);assert.equal(f.queries.filter(q=>q==='COMMIT').length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);assert(f.queries.some(q=>q.includes('FROM anvil.commands c JOIN anvil.authorization_receipts')));const again=await f.run();assert.equal(again.purpose,'SYNTHETIC_OWNERSHIP_PREPARATION_REPLAY_HISTORY_ONLY');assert.equal(f.state().events.length,1);});
 test('준비 사건 저장 실패·최종 세션 회수는 원기록까지 caller journal로 rollback한다',async()=>{for(const mode of ['INSERT_ZERO','FINAL_SESSION']){const f=await fixture();f.mode(mode);await assert.rejects(f.run(),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});assert.deepEqual(f.state(),{commands:[],receipts:[],audits:[],events:[]});assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,1);assert.equal(f.stats().commits,0);}});
 test('COMMIT 응답 유실은 UNKNOWN·자동 재발행0이고 무응답 공급자는 유한 종료한다',async()=>{const a=await fixture();a.mode('COMMIT_LOST');await assert.rejects(a.run(),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});assert.equal(a.state().events.length,1);assert.equal(a.stats().commits,1);assert.equal(a.queries.filter(q=>q==='ROLLBACK').length,0);const b=await fixture();b.mode('NEVER');await assert.rejects(b.run(false,20),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});assert.deepEqual(b.state(),{commands:[],receipts:[],audits:[],events:[]});});
