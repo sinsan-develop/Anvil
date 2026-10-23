@@ -147,6 +147,12 @@ B(격리형) 후보4표:
 
 ### 저장 SOURCE 중간 구현 기록 — 2026-10-23
 
+후속0040의 request phase helper/BEFORE wrapper는 상태별nullable그룹과finite/ms·원요청10분·교환/credential60초·관측최소기한·소비/회수pair·실패상한/조기EXPIRED를검사한다. 이는열조합검사이며중첩preflight/challenge/permit/report의전체exact shape/서명/current를대신하지않는다. 미래phase 반례20건은완전table fixture가아닌typedrow phase 투영으로작성했고실행하지않았다.
+
+별도전이helper는nongenerated 불변16열의ROW와변경20키의명시적projection을사용한다. BEFORE에서to_jsonb(NEW)로계산전생성열을읽지않는다. CREATED→CHALLENGED→ISSUED→REPORTED, 실패+1상한5·원challenge/credential/nonce/기한고정·보고1회·소비보존회수/만료·UNKNOWN재진입거절·동일원행replay를대조한다. wrapper는최초CREATED/updated=created와실제변경시각의transaction_timestamp~clock_timestamp ms창을요구한다. 미래전이18반례는같은ms소비ID교체와회수/UNKNOWN재진입·원자료변경을구분하되실행하지않았다.
+
+이SQL OLD/NEW 검사는클라이언트의stale 기대값 CAS나동시경합·실제nonce소비·원문/현재권위·receipt/observation/audit의COMMIT원자성을대신하지않는다. 해당guard는아직미구현/미검증이고초기fullnested/생성/보고COMMIT결박도별도다. 실제PG구문·제약/trigger동작·REDGREEN·경합/CAS·COMMIT는모두NOT_RUN이다. 현재모든새DML/LINK거절·RLSfalse·권한0·route/runner미등록·미적용을그대로유지하며helper형태true를허가/제품완료로사용하지않는다.
+
 후속 미적용0040에는 scope21키의 순수SQL 형태검사를 추가했다. 6개 fullref·UUID/hash/유한정수·5limits·원UTC/ms시각10분·targets/ArtifactRef·바이트상한/총량·문서/경로중복을 검사하고 request CHECK에연결한다. 기존metadata의 exact/ref/UTF16/Windows상대경로/고정NodeUnicode uppercase helper만재사용하며기존purpose·scope/정책허가는재사용하지않는다. JS trim공백집합을명시해비어있는 reason/mediaType를거절한다. 이는실행하지않은SQL source이며19미래ASSERT/실PG구문·제약·상호운용은NOT_RUN이다. 새정적M1은ECMAScript연도0000와PG BC/AD표현의차이이며기본isoV1계약을임의수정하지않고공통지원범위결정/검증미완료로보류한다. 기존생성시각분기·보고크기M1과별개이고동일형태완전호환/PASS를주장하지않는다.
 
 동일계약의 관측nonce는원challenge의client/servernonce와도달라야한다. 기존reader의digest대조만으로는이조건을보장하지못해같은nonce/digest를함께바꾸는반례후명시적비교를추가했다. 이는원계약누락보정이지새nonce발급/현재권위·DB원자소비활성화가아니다. 원실패와보정전결과를보존하고기존보고/permit·생성감사검사는유지한다.

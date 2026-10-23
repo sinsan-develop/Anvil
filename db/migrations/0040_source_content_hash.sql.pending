@@ -144,6 +144,118 @@ CREATE TABLE anvil.source_content_requests (
  CHECK((revoked_at IS NULL)=(revoke_command_id IS NULL)),CHECK(revoked_at IS NULL OR (isfinite(revoked_at) AND revoked_at>=created_at))
 );
 
+-- phase의 열 조합만 검사한다. 중첩 preflight/challenge/permit의 전체 exactshape·현재 서명/권위는 별도다.
+CREATE FUNCTION anvil.source_content_millisecond(t timestamptz) RETURNS boolean LANGUAGE sql STABLE AS $$
+ SELECT t IS NOT NULL AND isfinite(t) AND t=date_trunc('milliseconds',t);
+$$;
+CREATE FUNCTION anvil.source_content_request_phase_shape(g anvil.source_content_requests) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE ch boolean=g.challenge_json IS NOT NULL;cred boolean=g.credential_token_digest IS NOT NULL;
+ consumed boolean=g.report_consumed_at IS NOT NULL;revoked boolean=g.revoked_at IS NOT NULL;
+ permit_at timestamptz;observe_before timestamptz;deadline timestamptz;
+BEGIN
+ IF g.state IS NULL OR g.state NOT IN('CREATED','CHALLENGED','ISSUED','REPORTED','REVOKED','EXPIRED','UNKNOWN')
+  OR g.exchange_failures IS NULL OR g.exchange_failures NOT BETWEEN 0 AND 5
+  OR anvil.source_content_millisecond(g.created_at) IS NOT TRUE OR anvil.source_content_millisecond(g.expires_at) IS NOT TRUE
+  OR anvil.source_content_millisecond(g.updated_at) IS NOT TRUE OR g.updated_at<g.created_at OR g.expires_at<=g.created_at OR g.expires_at>g.created_at+interval '10 minutes' THEN RETURN false;END IF;
+ IF ch IS DISTINCT FROM (g.preflight_json IS NOT NULL) OR ch IS DISTINCT FROM (g.preflight_digest IS NOT NULL)
+  OR ch IS DISTINCT FROM (g.challenge_issued_at IS NOT NULL) OR ch IS DISTINCT FROM (g.challenge_expires_at IS NOT NULL)
+  OR (NOT ch AND (g.proof_signature IS NOT NULL OR g.exchange_failures<>0)) THEN RETURN false;END IF;
+ IF ch AND (anvil.source_content_millisecond(g.challenge_issued_at) IS NOT TRUE OR anvil.source_content_millisecond(g.challenge_expires_at) IS NOT TRUE
+  OR g.challenge_issued_at<g.created_at OR g.challenge_issued_at>g.updated_at OR g.challenge_expires_at<=g.challenge_issued_at
+  OR g.challenge_expires_at>g.challenge_issued_at+interval '60 seconds' OR g.challenge_expires_at>g.expires_at) THEN RETURN false;END IF;
+ IF cred IS DISTINCT FROM (g.credential_scope IS NOT NULL) OR cred IS DISTINCT FROM (g.credential_issued_at IS NOT NULL)
+  OR cred IS DISTINCT FROM (g.credential_expires_at IS NOT NULL) OR cred IS DISTINCT FROM (g.observation_request_ref IS NOT NULL)
+  OR cred IS DISTINCT FROM (g.observation_nonce_digest IS NOT NULL) OR cred IS DISTINCT FROM (g.permit_json IS NOT NULL) THEN RETURN false;END IF;
+ IF cred THEN
+  IF NOT ch OR g.proof_signature IS NULL OR g.credential_scope IS DISTINCT FROM 'SOURCE_DOCUMENT_CONTENT_HASH_ONLY' OR g.exchange_failures>=5
+   OR anvil.source_content_millisecond(g.credential_issued_at) IS NOT TRUE OR anvil.source_content_millisecond(g.credential_expires_at) IS NOT TRUE
+   OR g.credential_issued_at<g.challenge_issued_at OR g.credential_issued_at>=g.challenge_expires_at OR g.credential_issued_at>g.updated_at
+   OR g.credential_expires_at<=g.credential_issued_at OR g.credential_expires_at>g.credential_issued_at+interval '60 seconds' OR g.credential_expires_at>g.expires_at
+   OR jsonb_typeof(g.permit_json->'issuedAt') IS DISTINCT FROM 'string' OR jsonb_typeof(g.permit_json->'observeBefore') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+  permit_at=(g.permit_json->>'issuedAt')::timestamptz;observe_before=(g.permit_json->>'observeBefore')::timestamptz;
+  IF anvil.source_content_millisecond(permit_at) IS NOT TRUE OR anvil.source_content_millisecond(observe_before) IS NOT TRUE
+   OR anvil.source_read_iso(permit_at) IS DISTINCT FROM g.permit_json->>'issuedAt' OR anvil.source_read_iso(observe_before) IS DISTINCT FROM g.permit_json->>'observeBefore'
+   OR permit_at<g.credential_issued_at OR permit_at>=g.credential_expires_at OR permit_at>g.updated_at
+   OR observe_before<=permit_at OR observe_before>g.credential_expires_at THEN RETURN false;END IF;
+ END IF;
+ IF consumed IS DISTINCT FROM (g.report_consumed_command_id IS NOT NULL) OR (consumed AND NOT cred)
+  OR revoked IS DISTINCT FROM (g.revoke_command_id IS NOT NULL) OR (g.state='REVOKED') IS DISTINCT FROM revoked THEN RETURN false;END IF;
+ IF consumed AND (anvil.source_content_millisecond(g.report_consumed_at) IS NOT TRUE OR g.report_consumed_at<permit_at
+  OR g.report_consumed_at>=observe_before OR g.report_consumed_at>g.updated_at) THEN RETURN false;END IF;
+ IF revoked AND (anvil.source_content_millisecond(g.revoked_at) IS NOT TRUE OR g.revoked_at<g.created_at OR g.revoked_at>g.updated_at) THEN RETURN false;END IF;
+ IF (g.state='CREATED' AND (ch OR cred OR consumed OR g.exchange_failures<>0))
+  OR (g.state='CHALLENGED' AND (NOT ch OR cred OR consumed)) OR (g.state='ISSUED' AND (NOT cred OR consumed)) OR (g.state='REPORTED' AND NOT consumed) THEN RETURN false;END IF;
+ deadline=g.expires_at;
+ IF cred THEN deadline=LEAST(deadline,g.credential_expires_at,observe_before);ELSIF ch THEN deadline=LEAST(deadline,g.challenge_expires_at);END IF;
+ IF g.state='EXPIRED' AND g.updated_at<deadline THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+-- 생성열을 읽지 않는 명시적 변경열 projection. 같은 ms에서도 nonce/소비ID 등 전체 값으로 비교한다.
+CREATE FUNCTION anvil.source_content_request_mutable(g anvil.source_content_requests) RETURNS jsonb LANGUAGE sql STABLE AS $$
+ SELECT jsonb_build_object('state',g.state,'updated_at',g.updated_at,'preflight_json',g.preflight_json,'preflight_digest',g.preflight_digest,
+  'challenge_json',g.challenge_json,'challenge_issued_at',g.challenge_issued_at,'challenge_expires_at',g.challenge_expires_at,'proof_signature',g.proof_signature,
+  'exchange_failures',g.exchange_failures,'credential_token_digest',g.credential_token_digest,'credential_scope',g.credential_scope,
+  'credential_issued_at',g.credential_issued_at,'credential_expires_at',g.credential_expires_at,'observation_request_ref',g.observation_request_ref,
+  'observation_nonce_digest',g.observation_nonce_digest,'permit_json',g.permit_json,'report_consumed_at',g.report_consumed_at,
+  'report_consumed_command_id',g.report_consumed_command_id,'revoked_at',g.revoked_at,'revoke_command_id',g.revoke_command_id);
+$$;
+CREATE FUNCTION anvil.source_content_request_transition_shape(b anvil.source_content_requests,n anvil.source_content_requests,at_time timestamptz) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE before_json jsonb;after_json jsonb;allowed text[]=ARRAY['state','updated_at'];deadline timestamptz;
+BEGIN
+ IF anvil.source_content_request_phase_shape(b) IS NOT TRUE OR anvil.source_content_request_phase_shape(n) IS NOT TRUE
+  OR anvil.source_content_millisecond(at_time) IS NOT TRUE OR b.updated_at>at_time THEN RETURN false;END IF;
+ IF ROW(n.project_id,n.id,n.version,n.scope_json,n.scope_digest,n.created_command_id,n.requested_by,n.client_id,n.credential_generation,n.control_generation,n.source_root_id,n.source_root_version,n.connector_id,n.registration_id,n.created_at,n.expires_at)
+  IS DISTINCT FROM ROW(b.project_id,b.id,b.version,b.scope_json,b.scope_digest,b.created_command_id,b.requested_by,b.client_id,b.credential_generation,b.control_generation,b.source_root_id,b.source_root_version,b.connector_id,b.registration_id,b.created_at,b.expires_at) THEN RETURN false;END IF;
+ before_json=anvil.source_content_request_mutable(b);after_json=anvil.source_content_request_mutable(n);
+ IF before_json=after_json THEN RETURN true;END IF; -- 원행 replay는 현재 허가/새 발급/새 소비가 아니다.
+ IF n.updated_at<>at_time OR b.state IN('REVOKED','EXPIRED') THEN RETURN false;END IF;
+ deadline=b.expires_at;
+ IF b.credential_token_digest IS NOT NULL THEN deadline=LEAST(deadline,b.credential_expires_at,(b.permit_json->>'observeBefore')::timestamptz);
+ ELSIF b.challenge_json IS NOT NULL THEN deadline=LEAST(deadline,b.challenge_expires_at);END IF;
+ IF n.state='REVOKED' THEN
+  IF n.revoked_at<>at_time THEN RETURN false;END IF;allowed=allowed||ARRAY['revoked_at','revoke_command_id'];
+ ELSIF n.state='EXPIRED' THEN
+  IF at_time<deadline THEN RETURN false;END IF;
+ ELSE
+  IF at_time>=deadline OR b.state='UNKNOWN' THEN RETURN false;END IF;
+  IF n.state='UNKNOWN' THEN NULL;
+  ELSIF b.state='CREATED' AND n.state='CHALLENGED' THEN
+   IF n.challenge_issued_at<>at_time THEN RETURN false;END IF;
+   allowed=allowed||ARRAY['preflight_json','preflight_digest','challenge_json','challenge_issued_at','challenge_expires_at'];
+  ELSIF b.state='CHALLENGED' AND n.state='CHALLENGED' THEN
+   IF n.exchange_failures<>b.exchange_failures+1 THEN RETURN false;END IF;allowed=allowed||ARRAY['exchange_failures'];
+  ELSIF b.state='CHALLENGED' AND n.state='ISSUED' THEN
+   IF b.exchange_failures>=5 OR n.credential_issued_at<>at_time THEN RETURN false;END IF;
+   allowed=allowed||ARRAY['proof_signature','credential_token_digest','credential_scope','credential_issued_at','credential_expires_at','observation_request_ref','observation_nonce_digest','permit_json'];
+  ELSIF b.state='ISSUED' AND n.state='REPORTED' THEN
+   IF n.report_consumed_at<>at_time THEN RETURN false;END IF;allowed=allowed||ARRAY['report_consumed_at','report_consumed_command_id'];
+  ELSE RETURN false;
+  END IF;
+ END IF;
+ RETURN (before_json-allowed)=(after_json-allowed);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.guard_source_content_request_phase() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ -- NEW 전체를 JSON화하지 않는다. phase helper는 아직 계산되지 않은 생성열을 사용하지 않는다.
+ IF anvil.source_content_request_phase_shape(NEW) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_REQUEST_PHASE_INVALID' USING ERRCODE='42501';END IF;
+ IF TG_OP='INSERT' THEN
+  IF NEW.state<>'CREATED' OR NEW.updated_at<>NEW.created_at OR NEW.created_at<date_trunc('milliseconds',transaction_timestamp()) OR NEW.created_at>date_trunc('milliseconds',clock_timestamp())
+   THEN RAISE EXCEPTION 'SOURCE_CONTENT_REQUEST_INITIAL_STATE_INVALID' USING ERRCODE='42501';END IF;
+ ELSIF TG_OP='UPDATE' THEN
+  IF anvil.source_content_request_transition_shape(OLD,NEW,NEW.updated_at) IS NOT TRUE
+   THEN RAISE EXCEPTION 'SOURCE_CONTENT_REQUEST_TRANSITION_INVALID' USING ERRCODE='42501';END IF;
+  IF anvil.source_content_request_mutable(NEW) IS DISTINCT FROM anvil.source_content_request_mutable(OLD)
+   AND (NEW.updated_at<date_trunc('milliseconds',transaction_timestamp()) OR NEW.updated_at>date_trunc('milliseconds',clock_timestamp()))
+   THEN RAISE EXCEPTION 'SOURCE_CONTENT_REQUEST_TRANSITION_TIME_INVALID' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER source_content_request_phase BEFORE INSERT OR UPDATE ON anvil.source_content_requests FOR EACH ROW EXECUTE FUNCTION anvil.guard_source_content_request_phase();
+-- 이 guard를 추가해도 아래 source_content_unavailable의 전 DML 거절을 제거하거나 우회하지 않는다.
+-- OLD/NEW 전이는 stale caller의 기대값 CAS나 observation/명령/감사의 COMMIT 원자성을 대신하지 않는다.
+
 CREATE TABLE anvil.source_content_observations (
  project_id uuid NOT NULL,id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),request_id uuid NOT NULL,
  request_version smallint NOT NULL DEFAULT 1 CHECK(request_version=1),scope_digest text NOT NULL CHECK(scope_digest~'^[0-9a-f]{64}$'),
