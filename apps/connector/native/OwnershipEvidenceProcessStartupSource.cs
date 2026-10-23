@@ -86,7 +86,7 @@ namespace Anvil.Native.OwnershipEvidence
                         throw Unavailable();
                     }
                 }
-                private sealed class ProcessStartup:ISuspendedStartupCandidate
+                private sealed partial class ProcessStartup:ISuspendedStartupCandidate
                 {
                     private readonly JobAssignment parent;
                     private StartupInfoEx info;
@@ -167,6 +167,7 @@ namespace Anvil.Native.OwnershipEvidence
                             if(!cleaned)throw new InvalidOperationException("OWNERSHIP_STARTUP_CLEANUP_UNKNOWN");
                             return;
                         }
+                        DisposeCreatedProcessSource();
                         closed=true;
                         if(environment!=IntPtr.Zero){Marshal.FreeHGlobal(environment);environment=IntPtr.Zero;}
                         info=default(StartupInfoEx);workerInput=null;cleaned=true;

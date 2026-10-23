@@ -117,8 +117,9 @@ namespace Anvil.Native.OwnershipEvidence
                         if(!cleaned)throw new InvalidOperationException("OWNERSHIP_JOB_ATTRIBUTE_CLEANUP_UNKNOWN");
                         return;
                     }
-                    closed=true;
                     DisposeStartup();
+                    // 하위 원process 종료가 UNKNOWN이면 원 list/value를 보유하고 다음 Dispose에서 재시도한다.
+                    closed=true;
                     // value는 list를 삭제하기 전 해제하지 않는다. 실패시 이미 해제됐다고 선언하지 않는다.
                     if(initialized){DeleteProcThreadAttributeList(list);initialized=false;}
                     if(value!=IntPtr.Zero){Marshal.FreeHGlobal(value);value=IntPtr.Zero;}

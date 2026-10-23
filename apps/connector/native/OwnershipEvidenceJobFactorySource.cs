@@ -116,12 +116,10 @@ namespace Anvil.Native.OwnershipEvidence
             {
                 lock(gate)
                 {
-                    if(!disposed)
-                    {
-                        disposed=true;
-                        try{DisposeAssignment();}
-                        finally{job.Dispose();}
-                    }
+                    // 정상 연산은 즉시 막되 하위 정리 UNKNOWN을 영구 latch로 만들지 않는다.
+                    disposed=true;
+                    DisposeAssignment(); // 실패하면 원 Job도 닫지 않고 다음 명시 Dispose를 허용한다.
+                    job.Dispose();
                     if(!AssignmentCleanupConfirmed()||!job.CloseAttempted||!job.CloseSucceeded)
                         throw new InvalidOperationException("OWNERSHIP_EMPTY_JOB_DISPOSAL_UNKNOWN");
                 }

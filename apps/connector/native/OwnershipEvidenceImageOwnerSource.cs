@@ -37,6 +37,13 @@ namespace Anvil.Native.OwnershipEvidence
             if(original==null)throw Unavailable();
             return original.ReadSource(input);
         }
+        // 같은 assembly의 생성 source만 사용한다. 원 path는 wire/API/반환 관측으로 내보내지 않는다.
+        internal static T WithOriginalLaunchSource<T>(IImageOwnerCandidate candidate,
+            OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input,Func<string,string,T> launch)
+        {
+            var original=candidate as ImageOwner;if(original==null||launch==null)throw Unavailable();
+            return original.WithLaunch(input,launch);
+        }
         private sealed class ImageOwner:IImageOwnerCandidate
         {
             private readonly object gate=new object();
@@ -44,14 +51,23 @@ namespace Anvil.Native.OwnershipEvidence
             private readonly FileStream image;
             private readonly DateTime created;
             private readonly Stopwatch age;
+            private readonly string rootPath,imagePath;
             private bool disposed;
-            internal ImageOwner(SafeFileHandle root,SafeFileHandle imageHandle,FileStream image,DateTime created,Stopwatch age)
-            {this.root=root;this.imageHandle=imageHandle;this.image=image;this.created=created;this.age=age;}
+            internal ImageOwner(SafeFileHandle root,SafeFileHandle imageHandle,FileStream image,DateTime created,Stopwatch age,string rootPath,string imagePath)
+            {this.root=root;this.imageHandle=imageHandle;this.image=image;this.created=created;this.age=age;this.rootPath=rootPath;this.imagePath=imagePath;}
             // SafeFileHandle.Dispose/IsClosed만으로 실제 CloseHandle 성공을 증명하지 않는다.
             public bool NativeCloseVerified{get{return false;}}
             private void Current()
             {
                 if(disposed||root.IsClosed||root.IsInvalid||imageHandle.IsClosed||imageHandle.IsInvalid||DateTime.UtcNow<created||age.ElapsedMilliseconds>=120000)throw Unavailable();
+            }
+            internal T WithLaunch<T>(OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input,Func<string,string,T> launch)
+            {
+                lock(gate)
+                {
+                    Current();ReadSource(input);input.EnsureCurrentSource();
+                    return launch(rootPath,imagePath);
+                }
             }
             public OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadSource(OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input)
             {
@@ -97,7 +113,7 @@ namespace Anvil.Native.OwnershipEvidence
                 image=new FileStream(imageHandle,FileAccess.Read,8192,false);
                 OwnershipEvidenceRootSource.ReadRetainedImageLocationSource(root,imageHandle);
                 if(DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();
-                owned=new ImageOwner(root,imageHandle,image,created,age);
+                owned=new ImageOwner(root,imageHandle,image,created,age,rootPath,imagePath);
                 root=null;imageHandle=null;image=null;return owned;
             }
             catch{throw Unavailable();}
