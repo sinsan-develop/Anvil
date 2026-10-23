@@ -5,6 +5,7 @@ import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1} from '
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 import {inspectSourceContentCreationEvidenceV1} from './source-content-creation-evidence.ts';
+import {inspectSourceContentReportConsumptionV1} from './source-content-report-consumption.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 const fields=['project_id','id','version','scope_json','scope_digest','created_command_id','requested_by','client_id','credential_generation','control_generation','source_root_id','source_root_version','connector_id','registration_id','created_at','expires_at','updated_at','state','preflight_json','preflight_digest','challenge_json','challenge_issued_at','challenge_expires_at','credential_token_digest','credential_scope','credential_issued_at','credential_expires_at','observation_request_ref','observation_nonce_digest','permit_json','report_consumed_at','report_consumed_command_id','revoked_at','revoke_command_id','exchange_failures'];
@@ -25,6 +26,7 @@ const sql=`SELECT ${fields.map(k=>`r.${k}`).join(',')},
  CASE WHEN c.id IS NULL THEN NULL ELSE jsonb_build_object('id',c.id,'scopeKind',c.scope_kind,'scopeId',c.scope_id,'projectId',c.project_id,'actorId',c.actor_id,'clientId',c.client_id,'operation',c.operation,'commandId',c.command_id,'requestHash',c.request_hash,'operationId',c.operation_id,'state',c.state,'authorizationReceiptId',c.authorization_receipt_id,'approvalConsumptionId',c.approval_consumption_id,'expectedVersion',c.expected_version,'controlGeneration',c.control_generation,'policyRef',c.policy_ref,'payloadRef',c.payload_ref,'resultRef',c.result_ref,'completedAt',anvil.source_read_iso(c.completed_at)) END created_command,
  CASE WHEN ar.id IS NULL THEN NULL ELSE jsonb_build_object('id',ar.id,'scopeKind',ar.scope_kind,'scopeId',ar.scope_id,'commandId',ar.command_id,'subjectRef',ar.subject_ref,'policyRef',ar.policy_ref,'scopeDigest',ar.scope_digest,'approvalDecisionRef',ar.approval_decision_ref) END authorization_receipt,
  COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',a.project_id,'serverSequence',a.server_sequence,'eventId',a.event_id,'actorRef',a.actor_ref,'clientRef',a.client_ref,'commandId',a.command_id,'operationId',a.operation_id,'targetRef',a.target_ref,'policyRef',a.policy_ref,'approvalRef',a.approval_ref,'outcome',a.outcome,'reasonCode',a.reason_code,'scopeDigest',a.scope_digest,'sourceKind',a.source_kind,'correctionOf',a.correction_of)) FROM (SELECT * FROM anvil.audit_events ae WHERE ae.project_id=r.project_id AND ae.command_id=c.id LIMIT 2) a),'[]'::jsonb) creation_audits,
+ COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',a.project_id,'serverSequence',a.server_sequence,'eventId',a.event_id,'actorRef',a.actor_ref,'clientRef',a.client_ref,'commandId',a.command_id,'operationId',a.operation_id,'targetRef',a.target_ref,'policyRef',a.policy_ref,'approvalRef',a.approval_ref,'outcome',a.outcome,'reasonCode',a.reason_code,'scopeDigest',a.scope_digest,'sourceKind',a.source_kind,'correctionOf',a.correction_of,'recordedAt',anvil.source_read_iso(a.recorded_at))) FROM (SELECT * FROM anvil.audit_events ae WHERE ae.project_id=r.project_id AND o.id IS NOT NULL AND ae.target_ref=jsonb_build_object('id',o.id,'version',o.version,'contentHash',o.content_hash) LIMIT 2) a),'[]'::jsonb) report_audits,
  CASE WHEN o.id IS NULL THEN NULL ELSE jsonb_build_object('projectId',o.project_id,'id',o.id,'version',o.version,'requestId',o.request_id,'requestVersion',o.request_version,'scopeDigest',o.scope_digest,'reportCommandId',o.report_command_id,'report',o.report_json,'contentHash',o.content_hash,'signature',o.signature,'observedAt',anvil.source_read_iso(o.observed_at),'finishedAt',anvil.source_read_iso(o.finished_at),'receivedAt',anvil.source_read_iso(o.received_at),'evidenceClass',o.evidence_class,'osVerification',o.os_verification) END observation
  FROM anvil.source_content_requests r
  LEFT JOIN anvil.commands c ON c.project_id=r.project_id AND c.id=r.created_command_id
@@ -39,7 +41,7 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
  const {rows}=await db.query(sql,[projectId,requestId]);
  try {
   if(!arrayV1(rows,1))return invalid();if(rows.length===0)return null;
-  if(!recordV1(rows[0],[...fields,'created_command','authorization_receipt','creation_audits','observation']))return invalid();
+  if(!recordV1(rows[0],[...fields,'created_command','authorization_receipt','creation_audits','report_audits','observation']))return invalid();
   const raw=rows[0],r:Record<string,any>={...raw};
   for(const k of timeFields)r[k]=instant(r[k]);
   const encoded=canonicalJson(r);if(Buffer.byteLength(encoded,'utf8')>4*1048576)return invalid();
@@ -81,6 +83,8 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
   }
   const view:SourceContentRequestStateV1={scope:s,requestRef,state:v.state,preflightDigest:v.preflight_digest,challengeDigest:ch===null?null:contentHash(canonicalJson(ch)),challengeIssuedAt:v.challenge_issued_at,challengeExpiresAt:v.challenge_expires_at,credentialIssuedAt:v.credential_issued_at,credentialExpiresAt:v.credential_expires_at,observeBefore:permit?.observeBefore??null,credentialTokenDigest:v.credential_token_digest,observationRequestRef:v.observation_request_ref,observationNonceDigest:v.observation_nonce_digest,reportRef,reportCommandId:v.report_consumed_command_id,reportConsumedAt:v.report_consumed_at,revokedAt:v.revoked_at,revokeCommandId:v.revoke_command_id,exchangeFailures:integer(v.exchange_failures),updatedAt:v.updated_at};
   planSourceContentRequestTransitionV1(view,view,nowMs);
-  return {status:'UNVERIFIED_REQUEST_RECORD_CANDIDATE' as const,view,creationEvidence,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+  if(!arrayV1(v.report_audits,1)||v.report_audits.length!==(reportRef===null?0:1))return invalid();
+  const reportConsumptionEvidence=reportRef===null?null:inspectSourceContentReportConsumptionV1(view,v.report_audits[0]);
+  return {status:'UNVERIFIED_REQUEST_RECORD_CANDIDATE' as const,view,creationEvidence,reportConsumptionEvidence,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
  }catch{return invalid();}
 }

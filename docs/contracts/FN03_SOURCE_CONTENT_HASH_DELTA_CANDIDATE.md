@@ -155,6 +155,10 @@ authorization_receipts projection8키는 같은 PROJECT/command·HUMAN user/clie
 
 보고 소비의 report_command_id는 connector의 원보고 GUID이며 기존 사용자 commands.id와 동일 개념이 아니다. 생성 HUMAN 영수증을 보고수신 허가로 재사용하거나 보고 GUID만으로 사용자 명령 FK/권위를 만들지 않는다. 보고 소비는 별도 프로토콜 감사·원nonce/observation/원보고/현재 검증과 일회 CAS를 결박해야 하며 이번 생성 inspector의 검수 범위가 아니다.
 
+후속 SOURCE의 보고 소비 inspector는 정확20키 저장 view와 protocol audit16키를 대조한다. 감사는 원project/CONNECTOR connectorId·registrationId/client/basePolicy/request scopeDigest 및 원reportRef target, APPLIED/SOURCE_CONTENT_REPORT_STORED/SOURCE_CONTENT_OBSERVATION_PROTOCOL이어야 한다. HUMAN commandId/operationId/approvalRef와 correctionOf는null, sequence는양의safe정수·eventUUID, 기록시각은 원요청시각이상·보고소비시각이하이다(기존 transaction_timestamp가 clock 기반수신시각보다이를수있음). 보고GUID는원view에서보존하고실제current/서명·nonce/CAS검증으로승격하지않는다. 회수후에도원소비사실은보존한다. 반환은UNVERIFIED_REPORT_CONSUMPTION_CANDIDATE/저장·실행·LINK false다.
+
+reader SOURCE는같은SQL에서관측exact fullref target/project에해당하는감사최대2건을읽는다. 정상/허용source를WHERE에서먼저골라과거적합1건을살리지않고정확1건을요구하며관측이없으면감사도0건이어야한다. 기존report codec·permit/nonce·소비GUID/time 대조후이검사를연결한다. 실제PG/driver·COMMIT/경합/CAS·현재등록/정책/서명/OS의확인은미구현/미검증이며SQL실행·쓰기권한/route활성화는0이다.
+
 저장행 adapter source는 한 same-project SQL에서 request/최초 생성 command/관측을 LEFT JOIN하여 누락을 숨기지 않고 원20키 view로 투영한다. 실제 query/PG 상호운용은 미실행이다. 최초 명령의 요약·scope/주체/세대/원시각과 challenge/permit/보고 codec·관측 nonce 및 소비 command/time을 대조하지만 현재 인증/정책·서명/OS·전체 receipt/payload/audit·CAS는 대신하지 않는다. 반환은 UNVERIFIED_REQUEST_RECORD_CANDIDATE/저장·실행·LINK false뿐이며 route 미등록이다. 과거 만료 기록 조회가 현재 permit 사용 권위는 아니다.
 
 이전 checkpoint의 preflight_digest-only 누락은 후속 SOURCE에서 preflight_json 보존 열로 보완했다. challenge와 최초 원문의 NULL묶음·1MiB·canonical hash CHECK를 미적용0040에 추가하고 reader는 저장 원문/hash와 기존 exchange codec을 당시 발급시각으로 대조한다. challenge에서 원 preflight를 역으로 재구성하지 않는다. 이는 원문 구조·hash/결박 검증이지 등록 키 진위/서명 증명이 아니며 실제 SQL/PG 적용·검증은0이다. 원 receipt/관리권위·DB 원자 guard는 여전히 후속 미구현이다.
