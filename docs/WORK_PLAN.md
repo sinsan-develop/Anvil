@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 저장 proof 검토 잔여**: C0/I0/M1. 새 nonce 음성의 report/관측/감사 hash 미갱신으로 독립 반례가 가려지는 시험 공백1을 보류했다. 기존 Minor9와 합10 미해결이며 실제 SQL/권한/서명·nonce 소비/served 검증으로 승격하지 않는다.
+
+- **2026-10-23 FN03 저장 관측 proof SOURCE**: 기존 원요청 판독의 공개 반환을 유지하고 내부 원자료→관측 proof 소비 접점만 추가했다. 신규 결과는 원 refs/domain/digest·권위false이고 raw permit/nonce/signature/proof bytes를 노출하지 않는다. 새4 RED→직접영향12파일186 합성/SSR PASS·type/diff0은 실제 DB/키/current/served 증거가 아니다. 새실사용기능0·Minor9/기존제외·거절 유지·전체계획미완료.
+
 - **2026-10-23 FN03 요청·관측 proof 소비 SOURCE**: 원 permit/expected basis→보고 context→비활성 서명 입력 순서로 연결했다. ref/scope/nonce/기한 불일치의 보고 소비 전 거절과 정상 권위/저장 false를 새3 RED→직접40 합성 PASS/type/diff0으로 확인했다. 실제 저장권위·키/서명·DB/OS/route는 연결하지 않았고 새실사용기능0/Minor9·기존제외 유지·전체계획미완료.
 
 - **2026-10-23 FN03 서명 입력 준비 SOURCE**: content 전용 preflight/challenge/관측 보고의 canonical proof bytes·64바이트 서명 입력 준비를 추가했다. 실제 검증기·등록키·DB/OS/route를 활성화하지 않았고 모든 권위 false/UNVERIFIED다. 새7 RED→직접29 합성 PASS/type/diff0은 실제 서명/현재권한·served 증거가 아니다. 실사용 기능 추가0·Minor9/기존 제외와 거절 유지·전체계획 미완료.

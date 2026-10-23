@@ -1,13 +1,21 @@
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {recordV1,arrayV1,uuidV1,hashV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
-import {readSourceContentScopeV1,readSourceContentReportV1} from '../../../../contracts/runtime/source-content-report-v1.ts';
-import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
+import {recordV1,arrayV1,uuidV1,hashV1,isoV1,refV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {readSourceContentScopeV1,readSourceContentReportV1,type SourceContentReportV1} from '../../../../contracts/runtime/source-content-report-v1.ts';
+import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type SourceContentPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
+import {readSourceContentReportProofFromPermitCandidate} from '../connections/source-content-report-proof-input.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 import {inspectSourceContentCreationEvidenceV1} from './source-content-creation-evidence.ts';
 import {inspectSourceContentReportConsumptionV1} from './source-content-report-consumption.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
+interface RecordCandidate {
+ status:'UNVERIFIED_REQUEST_RECORD_CANDIDATE';view:SourceContentRequestStateV1;casDigest:string;
+ creationEvidence:ReturnType<typeof inspectSourceContentCreationEvidenceV1>;
+ reportConsumptionEvidence:ReturnType<typeof inspectSourceContentReportConsumptionV1>|null;
+ storageMutationPerformed:false;executionAuthorized:false;linkAuthorized:false;
+}
+interface InternalObservation {permit:SourceContentPermitV1;report:SourceContentReportV1;receivedAt:string}
 const fields=['project_id','id','version','scope_json','scope_digest','created_command_id','requested_by','client_id','credential_generation','control_generation','source_root_id','source_root_version','connector_id','registration_id','created_at','expires_at','updated_at','state','preflight_json','preflight_digest','challenge_json','challenge_issued_at','challenge_expires_at','credential_token_digest','credential_scope','credential_issued_at','credential_expires_at','observation_request_ref','observation_nonce_digest','permit_json','report_consumed_at','report_consumed_command_id','revoked_at','revoke_command_id','exchange_failures'];
 const timeFields=['created_at','expires_at','updated_at','challenge_issued_at','challenge_expires_at','credential_issued_at','credential_expires_at','report_consumed_at','revoked_at'];
 const invalid=():never=>{throw Error('SOURCE_CONTENT_RECORD_INVALID');};
@@ -35,7 +43,7 @@ const sql=`SELECT ${fields.map(k=>`r.${k}`).join(',')},anvil.source_content_requ
  WHERE r.project_id=$1 AND r.id=$2`;
 
 /** 보호 저장행·생성 영수증/감사의 구조 후보만 판독한다. 실제 SQL/현재 권위·서명·OS·원자 저장은 별도이며 route 미등록이다. */
-export async function readSourceContentRequestRecordCandidate(db:ReadClient,installationId:string,projectId:string,requestId:string,nowMs:number) {
+async function readRecord<T>(db:ReadClient,installationId:string,projectId:string,requestId:string,nowMs:number,consume:(record:RecordCandidate,observation:InternalObservation|null)=>T):Promise<T|null> {
  if(![installationId,projectId,requestId].every(uuidV1)||!Number.isSafeInteger(nowMs))return invalid();
  // 한 statement snapshot에서 읽고 누락 command/관측을 INNER JOIN으로 숨기지 않는다. DB 오류는 그대로 전파한다.
  const {rows}=await db.query(sql,[projectId,requestId]);
@@ -74,18 +82,46 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
    if(Date.parse(permit.issuedAt)>Date.parse(v.updated_at))return invalid();
   }else if(v.credential_scope!==null)return invalid();
   const o=v.observation;
-  let reportRef=null;
+  let reportRef=null,observationInput:InternalObservation|null=null;
   if(o!==null){
    if(!permit||!recordV1(o,['projectId','id','version','requestId','requestVersion','scopeDigest','reportCommandId','report','contentHash','signature','observedAt','finishedAt','receivedAt','evidenceClass','osVerification'])||o.projectId!==projectId||!uuidV1(o.id)||integer(o.version)!==1||o.requestId!==requestId||integer(o.requestVersion)!==1||o.scopeDigest!==v.scope_digest||o.reportCommandId!==v.report_consumed_command_id||o.receivedAt!==v.report_consumed_at||o.evidenceClass!=='CONNECTOR_REPORTED'||o.osVerification!=='OS_UNVERIFIED')return invalid();
    const basis={scope:s,requestRef,observationRequestRef:permit.observationRequestRef,observationNonce:permit.observationNonce,credentialIssuedAt:permit.credential.issuedAt,credentialExpiresAt:permit.credential.expiresAt,issuedAt:permit.issuedAt,observeBefore:permit.observeBefore};
    const report=readSourceContentReportV1(o.report,sourceContentReportContextFromPermitV1(permit,basis,o.receivedAt));
    if(report.commandId!==o.reportCommandId||report.reportHash!==o.contentHash||report.signature!==o.signature||report.observedAt!==o.observedAt||report.finishedAt!==o.finishedAt)return invalid();
    reportRef={id:o.id,version:1,contentHash:o.contentHash};
+   observationInput={permit,report,receivedAt:o.receivedAt};
   }
   const view:SourceContentRequestStateV1={scope:s,requestRef,state:v.state,preflightDigest:v.preflight_digest,challengeDigest:ch===null?null:contentHash(canonicalJson(ch)),challengeIssuedAt:v.challenge_issued_at,challengeExpiresAt:v.challenge_expires_at,credentialIssuedAt:v.credential_issued_at,credentialExpiresAt:v.credential_expires_at,observeBefore:permit?.observeBefore??null,credentialTokenDigest:v.credential_token_digest,observationRequestRef:v.observation_request_ref,observationNonceDigest:v.observation_nonce_digest,reportRef,reportCommandId:v.report_consumed_command_id,reportConsumedAt:v.report_consumed_at,revokedAt:v.revoked_at,revokeCommandId:v.revoke_command_id,exchangeFailures:integer(v.exchange_failures),updatedAt:v.updated_at};
   planSourceContentRequestTransitionV1(view,view,nowMs);
   if(!arrayV1(v.report_audits,1)||v.report_audits.length!==(reportRef===null?0:1))return invalid();
   const reportConsumptionEvidence=reportRef===null?null:inspectSourceContentReportConsumptionV1(view,v.report_audits[0]);
-  return {status:'UNVERIFIED_REQUEST_RECORD_CANDIDATE' as const,view,casDigest:v.cas_digest,creationEvidence,reportConsumptionEvidence,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+  return consume({status:'UNVERIFIED_REQUEST_RECORD_CANDIDATE',view,casDigest:v.cas_digest,creationEvidence,reportConsumptionEvidence,storageMutationPerformed:false,executionAuthorized:false,linkAuthorized:false},observationInput);
  }catch{return invalid();}
+}
+
+/** 기존 공개 반환을 보존하며 관측 원자료는 비공개 소비 접점 밖으로 보내지 않는다. */
+export async function readSourceContentRequestRecordCandidate(db:ReadClient,installationId:string,projectId:string,requestId:string,nowMs:number) {
+ return readRecord(db,installationId,projectId,requestId,nowMs,record=>record);
+}
+
+const proofFlags={storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+const proofClosed=(reason:string)=>({status:'UNAVAILABLE' as const,reason,candidate:null,...proofFlags});
+/** 저장 자료의 과거 결박만 소비한다. 실제 DB·서명/current 권위가 아니며 기본 route 미등록이다. */
+export async function readSourceContentStoredReportProofCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ let basis:{installationId:string;projectId:string;requestRef:RuntimeRefV1};
+ try {
+  const raw=canonicalJson(value);if(Buffer.byteLength(raw,'utf8')>4096)throw Error();
+  const v:unknown=JSON.parse(raw);
+  if(!recordV1(v,['installationId','projectId','requestRef'])||!uuidV1(v.installationId)||!uuidV1(v.projectId)||!refV1(v.requestRef)||v.requestRef.version!==1||!Number.isSafeInteger(nowMs))throw Error();
+  basis=v as unknown as typeof basis;
+ }catch{throw Error('SOURCE_CONTENT_PROOF_BASIS_INVALID');}
+ const result=await readRecord(db,basis.installationId,basis.projectId,basis.requestRef.id,nowMs,(record,observation)=>{
+  if(!same(record.view.requestRef,basis.requestRef))return proofClosed('STORED_PROOF_REQUEST_REF_MISMATCH');
+  if(!observation)return proofClosed('OBSERVATION_ABSENT');
+  const p=observation.permit;
+  const expected={scope:record.view.scope,requestRef:record.view.requestRef,observationRequestRef:record.view.observationRequestRef,observationNonce:p.observationNonce,credentialIssuedAt:record.view.credentialIssuedAt,credentialExpiresAt:record.view.credentialExpiresAt,issuedAt:p.issuedAt,observeBefore:record.view.observeBefore};
+  const input=readSourceContentReportProofFromPermitCandidate(observation.report,p,expected,observation.receivedAt);
+  return {status:'UNVERIFIED' as const,reason:'STORED_REPORT_PROOF_INPUT_ONLY',candidate:{requestRef:record.view.requestRef,reportRef:record.view.reportRef,proofDomain:'ANVIL_SOURCE_CONTENT_REPORT_V1',proofInputHash:contentHash(input.candidate.proofBytes)},...proofFlags};
+ });
+ return result??proofClosed('REQUEST_ABSENT');
 }

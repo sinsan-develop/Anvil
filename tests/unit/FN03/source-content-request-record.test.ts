@@ -25,6 +25,37 @@ function fixture(issued=false,reported=false):any {
  observation:reported?{projectId:id(2),id:id(15),version:1,requestId:id(13),requestVersion:1,scopeDigest:requestRef.contentHash,reportCommandId:id(20),report,contentHash:report.reportHash,signature:report.signature,observedAt:at(2500),finishedAt:at(3000),receivedAt:at(4000),evidenceClass:'CONNECTOR_REPORTED',osVerification:'OS_UNVERIFIED'}:null};
 }
 function fn(){assert.equal(typeof m.readSourceContentRequestRecordCandidate,'function','저장행 adapter 미구현');return m.readSourceContentRequestRecordCandidate;}
+function storedProof(){assert.equal(typeof m.readSourceContentStoredReportProofCandidate,'function','저장 관측 내부 proof 소비 미구현');return m.readSourceContentStoredReportProofCandidate;}
+function proofBasis(row:any){return {installationId:id(1),projectId:id(2),requestRef:{id:row.id,version:1,contentHash:row.scope_digest}};}
+test('저장 보고의 내부 proof 소비는 원 refs/domain/digest만 반환하며 과거 자료도 미확인이다',async()=>{
+ const r=fixture(true,true),report=r.observation.report;let calls=0;
+ const out=await storedProof()({async query(q:string,args:unknown[]){calls++;assert.deepEqual(args,[id(2),id(13)]);return {rows:[r]};}},proofBasis(r),zero+700000);
+ assert.equal(calls,1);assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'STORED_REPORT_PROOF_INPUT_ONLY');
+ const proof={protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT_PROOF',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:proofBasis(r).requestRef,scopeDigest:r.scope_digest,observationRequestRef:ref(14),observationNonce:r.permit_json.observationNonce,reportHash:report.reportHash};
+ assert.deepEqual(out.candidate,{requestRef:proofBasis(r).requestRef,reportRef:{id:id(15),version:1,contentHash:report.reportHash},proofDomain:'ANVIL_SOURCE_CONTENT_REPORT_V1',proofInputHash:contentHash(Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_REPORT_V1\0'),Buffer.from(canonicalJson(proof))]))});
+ for(const key of ['storedRequestAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ const serialized=JSON.stringify(out);for(const raw of [r.permit_json.observationNonce,report.signature,'D:\\\\Synthetic','src/a.ts',r.credential_token_digest,'합성 저장행'])assert.equal(serialized.includes(raw),false);
+ const original=await fn()({async query(){return {rows:[r]};}},id(1),id(2),id(13),zero+700000);
+ assert.deepEqual(Object.keys(original).sort(),['status','view','casDigest','creationEvidence','reportConsumptionEvidence','storageMutationPerformed','executionAuthorized','linkAuthorized'].sort());
+});
+test('저장 proof의 원 fullref 불일치·자료 부재는 후보 없이 닫고 입력 getter는 query 전에 거절한다',async()=>{
+ const r=fixture(true,true);let calls=0,gets=0;const db={async query(){calls++;return {rows:[r]};}};
+ const mismatch=await storedProof()(db,{...proofBasis(r),requestRef:{...proofBasis(r).requestRef,contentHash:'f'.repeat(64)}},zero+5000);
+ assert.equal(calls,1);assert.equal(mismatch.reason,'STORED_PROOF_REQUEST_REF_MISMATCH');assert.equal(mismatch.candidate,null);
+ const getter={...proofBasis(r)};Object.defineProperty(getter,'projectId',{enumerable:true,get(){gets++;return id(2);}});
+ await assert.rejects(storedProof()(db,getter,zero+5000),/SOURCE_CONTENT_PROOF_BASIS_INVALID/);assert.equal(calls,1);assert.equal(gets,0);
+ const absent=await storedProof()({async query(){return {rows:[]};}},proofBasis(r),zero+5000);assert.equal(absent.reason,'REQUEST_ABSENT');assert.equal(absent.candidate,null);
+ const unreported=fixture(true),noReport=await storedProof()({async query(){return {rows:[unreported]};}},proofBasis(unreported),zero+5000);assert.equal(noReport.reason,'OBSERVATION_ABSENT');assert.equal(noReport.candidate,null);
+});
+test('저장 proof 소비도 기존 감사·관측 위조와 DB 오류를 숨기지 않는다',async()=>{
+ for(const mutate of [(r:any)=>r.report_audits=[],(r:any)=>r.observation.report.observationNonce=Buffer.alloc(32,9).toString('base64url'),(r:any)=>r.observation.osVerification='VERIFIED']){const r=fixture(true,true);mutate(r);await assert.rejects(storedProof()({async query(){return {rows:[r]};}},proofBasis(r),zero+5000),/SOURCE_CONTENT_RECORD_INVALID/);}
+ const error=Error('SYNTHETIC_STORED_PROOF_QUERY');await assert.rejects(storedProof()({async query(){throw error;}},proofBasis(fixture()),zero+5000),e=>e===error);
+});
+test('저장 proof basis는 첫 await 전에 고정하고 추가 권위는 수용하지 않는다',async()=>{
+ const r=fixture(true,true),basis=proofBasis(r),expected=structuredClone(basis.requestRef);let calls=0;
+ const out=await storedProof()({async query(){calls++;basis.requestRef.contentHash='f'.repeat(64);return {rows:[r]};}},basis,zero+5000);assert.equal(calls,1);assert.deepEqual(out.candidate.requestRef,expected);
+ await assert.rejects(storedProof()({async query(){calls++;return {rows:[r]};}},{...proofBasis(r),authenticated:true},zero+5000),/SOURCE_CONTENT_PROOF_BASIS_INVALID/);assert.equal(calls,1);
+});
 const withPolicyModule=await import(new URL('../../../apps/server/modules/documents/source-content-request-with-policy.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 function withPolicy(){assert.equal(typeof withPolicyModule.readSourceContentRequestWithPolicyCandidate,'function','저장 원요청의 별도 정책 소비 SOURCE 미구현');return withPolicyModule.readSourceContentRequestWithPolicyCandidate;}
 function summary(){assert.equal(typeof withPolicyModule.readSourceContentRequestStatusCandidate,'function','최소 표시 projection SOURCE 미구현');return withPolicyModule.readSourceContentRequestStatusCandidate;}
