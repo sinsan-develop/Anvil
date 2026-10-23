@@ -64,7 +64,7 @@ namespace Anvil.Native.OwnershipEvidence
             }
             private void DisposeAssignment(){if(assignment!=null)assignment.Dispose();}
             private bool AssignmentCleanupConfirmed(){return assignment==null||assignment.LocalBuffersReleased;}
-            private sealed class JobAssignment:IAtomicJobAssignmentCandidate
+            private sealed partial class JobAssignment:IAtomicJobAssignmentCandidate
             {
                 private readonly OwnedEmptyJob owner;
                 private IntPtr list,value;
@@ -118,6 +118,7 @@ namespace Anvil.Native.OwnershipEvidence
                         return;
                     }
                     closed=true;
+                    DisposeStartup();
                     // value는 list를 삭제하기 전 해제하지 않는다. 실패시 이미 해제됐다고 선언하지 않는다.
                     if(initialized){DeleteProcThreadAttributeList(list);initialized=false;}
                     if(value!=IntPtr.Zero){Marshal.FreeHGlobal(value);value=IntPtr.Zero;}

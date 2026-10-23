@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-23 D1 suspended 생성입력 SOURCE 일부 연결**: ProcessStartupSource는 원 private JobAssignment형만 받고 STARTUPINFO/EX의 필드·포인터 크기별68/72·104/112 모양, cb=EX전체·고정0x08080404 flags·상속false/표준핸들0·빈Unicode환경4바이트를private에보관한다. 외부path/환경값/handle/pointer입력·반환과CreateProcess선언/호출은없다. owner gate 아래 현재빈Job/부모수명·유한결과수용·중복시attempted분리·초기실패/명시Dispose/최종자·부모정리의환경→attribute/value/list→Job 순서를연결했고미확인정리는terminalUNKNOWN이다. 토큰/desktop정책·승인image/worker인자·현재인증준비/실writer와실process/thread생성은미완료/권한false로명시한다.
+
+- **동일 SOURCE 검토·검증 한계**: 미래순수layout/null/foreign/budget반례SOURCE 및 별도승인후원Job/list/startup·중복거절후current·부모Dispose연쇄/재Dispose SOURCE를먼저작성했으나compile/RunAll/RED-GREEN/Marshal/PInvoke/버퍼/Job/process실행전부NOT_RUN이다. 공식STARTUPINFOEX/STARTUPINFO/CreateProcess환경·flags 대조와한정독립정적C0/I0/M0·Main diff0만확인했다. 실제레이아웃/할당실패/경합/finalizer/빈환경.NET기동·강제상한/권위는미검증이다. 빈환경/NoWindow/상속false는OS/source격리나Agent환경정책이아니다. TS불변으로과거45/type검사를반복·native검증으로대체하지않았다. 새source/test2+JobAssignment정리delta1+상태/계획/계약3의정확6경로만기존branch에보존하며D2고정4자동포함0·소진FAIL/거절/5표/SQLpendingM1·actualwriter후보v3미승인을유지한다. 다음은원image/worker인자와현재준비권위결박선행이며전체계획완료가아니다.
+
+- **2026-10-23 D1 suspended 생성입력/빈환경 SOURCE 착수**: PMO의기존D1독립진행지시에따라원JobAssignment만받는STARTUPINFOEX/고정suspended·extended·unicode·no-window flags/상속핸들0·빈Unicode환경4바이트의private수명·부모정리연계를작성한다. 실제CreateProcess/스레드/환경조회·키/권한·nativecompile/호출0이며 actualwriter후보v3/신규SQL은미승인상태그대로다. 미래반례SOURCE먼저작성하되명시D1실행제외에따라RED/GREEN은NOT_RUN이다. 빈환경은신규합성worker용입력선행일뿐.NET실기동지원/Agent환경정책이나source쓰기격리검증이아니다. 원D24/소진FAIL·5표/SQLpendingM1·보호8/거절보존.
+
 - **writer v3 잔여I1 한정 독립확인**: rawBF19670DAF44B01D2EAA12CB4CB8661AB573A77CF6133A5B3EC4FBAD8885533D의이번보정범위C0/I0/M0·독립수정/실행0. 옛epoch/원chain·복원provenance/과거성립·lease와head부재거절·최초ID/gen1재생성금지, epoch조건≠복구허가·UNSUPPORTED/UNKNOWN·시작/최종재검사/거절사례/미지원명시가문서상일치한다. 원v1C0/I1/M1·v2C0/I1/M0이력과v2raw/Git원본은보존한다. 실제이력완전성·원자성/복구·DB/키/OS/권위는미검증이고후보구현승인아니다. 정확개정문서/상태/계획3경로를기존branch에보존후PMO에결정지원전달한다.
 
 - **writer 후보 v2 한정재검토 C0/I1/M0·v3 보완**: 원bootstrap/null·headfullref 두지적은문서상보완으로확인됐으나 과거성립/lease이력과head행유실을최초로오인할공백I1을확인했다. v2raw6AD2909B...와원지적보존, v3에서모든옛epoch/완전chain·원시작/복원provenance를대조하고 과거BOUNDARY_ESTABLISHED/RESERVED/이후lease상태·이력불완전이면UNKNOWN/최초요청·채택·headid/generation1재생성거절을명시했다. 기존head재등록·환경교체/새epoch채택·유실복구는별도전이전UNSUPPORTED/UNKNOWN이며단조조건을실행허가로오해하지않는다. 현재후보범위는진짜최초boundary/동일유효등록·현존head의lease생명주기이고재등록/복구성공기능은미구현으로공개했다. 실제모델/DB/OS실행0·해당I1보정의한정독립확인전합격주장0이다.

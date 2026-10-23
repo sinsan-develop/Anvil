@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 suspended worker 생성입력 SOURCE — 2026-10-23
+
+새 ProcessStartup partial은 원 private JobAssignment만 수용한다. 외부 interface/null·budget은 부적합이면 콜백/상태읽기/Dispose 없이 거절한다. 원Job/부모list·value·120초 소유수명을 owner gate 아래 대조하고 private STARTUPINFOEX를 만든다. STARTUPINFO의 cb는 EX전체크기이며 ptr4에서는기본68/EX72,ptr8에서는기본104/EX112를 요구한다. 고정flags는 CREATE_SUSPENDED|CREATE_UNICODE_ENVIRONMENT|EXTENDED_STARTUPINFO_PRESENT|CREATE_NO_WINDOW(0x08080404)이며 상속false/표준handle0이다. 외부실행명령·이미지경로/환경문자열/포인터를받거나반환하지않고CreateProcess를선언/호출하지않는다.
+
+환경포인터는NULL로두어부모환경을상속하는것이아니라private4바이트에Unicode NUL2개를작성한다. 이는미래합성worker용입력후보일뿐.NET기동호환·실제Agent구성/환경정책을입증하지않는다. 토큰/desktop/파일쓰기권한격리도제공하지않으며해당누락·현재인증준비/승인image·인자/actualwriter와원process/thread/Job membership 미확인을유지한다. 모든생성/준비/실행/전달권한과실제생성표식은false다.
+
+중복준비실패는기존token을변경하지않으며환경은명시Dispose/부모정리에서회수한다. 부모list삭제전에환경을먼저회수하고부모value는list삭제까지유지한뒤원Job을닫는다. 실패는terminalUNKNOWN이며최종자시도는확인된정리증거가아니다. 최대10초/생성120초는결과수용한도·동기/lock강제상한이나자동정리보장이아니다. 새partial source셋은기존D2요청4에자동포함하지않으며compile/RunAll/실제Marshal/OS는미실행이다.
+
+공식계약: [STARTUPINFOEXW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-startupinfoexw), [STARTUPINFOW](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfow), [CreateProcessW 환경](https://learn.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-createprocessw), [flags](https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags). 정적서명대조만수행했으며실제interop/기동PASS가아니다.
+
 ## FN06 D1 원 Job의 생성시 할당 입력 SOURCE — 2026-10-23
 
 새 JobAssignment partial은 원 private OwnedEmptyJob에만 Init/UpdateProcThreadAttribute의 JOB_LIST 입력을 보관한다. 외부 IEmptyJobCandidate 구현/null은 메서드/Dispose 호출 없이 거절하고, 외부 rawhandle/이름/path/포인터/콜백 입력은 없다. 원Job이 아직 빈지 조회한 뒤 count1의 list와 IntPtr.Size value를 owner gate에서 준비한다. size probe는 expected122·1..64KiB로 제한하며 JOB_LIST=0x2000d/flags0/previousNULL/returnsizeNULL이다. value는 list 삭제까지 유지하고 원Job은 ownerDispose의 list/value회수 후 닫는다. 중복준비 거절은 기존token에 영향을 주지 않는다. 정리실패는 terminal UNKNOWN이며 버퍼가 해제됐다고 선언하거나 같은 native cleanup을 재시도하지 않는다. 최종자는 비상시도일 뿐 확인된정리 증거가 아니다.
