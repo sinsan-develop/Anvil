@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 보유identity 준비 SOURCE**: readSourceContentPreparationFromHeldIdentityCandidate는기존identity순수포트/구체control포트만신규서버문맥준비에연결한다. 실제authenticate/session·키/DB/서명/observer/OS를호출하거나인증/준비권위를만들지않고모든권위false/분리조회다. 새5RED→직접142합성/SSR PASS/type/diff0·한정독립C0/I0/M0,Minor9/SQL145NOT_RUN·실verifier412·실제실행제외/거절유지.
+
 - **2026-10-23 문맥 준비 SOURCE**: readSourceContentStoredPreparationForDeclaredContextCandidate는기존exact8 선언문맥parser를소비하고저장scope의user/client·credential/control세대/basePolicyRef를정책조회전에대조한다. readSourceContentPreparationFromServerContextCandidate는기존identity/control후보판독을한정재사용하며고정음성은현재권위/준비false·candidate null로닫는다. 기존상태조회·기본저장준비의입력/거절/반환동작은변경하지않고새경로역시선언인증/저장인증/준비/byte/current/저장실행LINKfalse·분리조회뿐이다. 새6RED→직접137합성/ReactSSR PASS/type/diff0,실제authproducer/DB/키/OS/route/served와분리하고Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절을유지한다.
 
 - **2026-10-23 저장요청 준비 SOURCE**: readSourceContentStoredPreparationCandidate는basis exact3의requestv1fullref를고정해기존저장reader의복사scope를소비한다. requestfullref/open상태를정책조회전에대조하고최신정책음성은후속준비조회없이닫으며정상도STORED_PREPARATION_FRAMES_ONLY/UNVERIFIED·분리조회·storedRequestAuthenticated/준비/byte/current/저장실행LINKfalse다. 이력reader의terminal보존은유지하되신규준비후보만CREATED/CHALLENGED/ISSUED에서진행한다. 실제인증/current정책·등록키/observer·원문/OS/verifier·DB/route권위는아니다. 새7RED→직접100합성PASS/type/diff0,Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절유지.

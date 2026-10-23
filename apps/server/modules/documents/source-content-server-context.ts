@@ -14,6 +14,13 @@ export function readSourceContentRequestStatusFromHeldIdentityCandidate(db:ReadC
   readControlCandidate:readSourceContentProjectControlPortCandidate
  },basis,nowMs);
 }
+/** 보유 값 투영/구체 control 판독을 준비에 연결한 비활성 SOURCE. 실제 인증 함수를 호출하지 않는다. */
+export function readSourceContentPreparationFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
+ return readSourceContentPreparationFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,nowMs);
+}
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
 const closed=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,summary:null,
  declaredContextAuthenticated:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
