@@ -4,6 +4,7 @@ import {readSourceContentScopeV1,readSourceContentReportV1,type SourceContentRep
 import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type SourceContentPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
 import {readSourceContentReportProofFromPermitCandidate} from '../connections/source-content-report-proof-input.ts';
 import {readSourceContentDeclaredContextCandidate} from './source-content-request-context.ts';
+import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 import {inspectSourceContentCreationEvidenceV1} from './source-content-creation-evidence.ts';
@@ -125,8 +126,11 @@ async function readStoredProof(db:ReadClient,value:unknown,nowMs:number,binding:
   if(!recordV1(v,['installationId','projectId','requestRef'])||!uuidV1(v.installationId)||!uuidV1(v.projectId)||!refV1(v.requestRef)||v.requestRef.version!==1||!Number.isSafeInteger(nowMs))throw Error();
   basis=v as unknown as typeof basis;
  }catch{throw Error('SOURCE_CONTENT_PROOF_BASIS_INVALID');}
- const result=await readRecord(db,basis.installationId,basis.projectId,basis.requestRef.id,nowMs,(record,observation)=>{
-  if(!same(record.view.requestRef,basis.requestRef))return proofClosed('STORED_PROOF_REQUEST_REF_MISMATCH');
+ const result=await readRecord(db,basis.installationId,basis.projectId,basis.requestRef.id,nowMs,(record,observation)=>projectStoredProof(record,observation,basis.requestRef,binding));
+ return result??proofClosed('REQUEST_ABSENT');
+}
+function projectStoredProof(record:RecordCandidate,observation:InternalObservation|null,requestRef:RuntimeRefV1,binding:ProofBinding|null) {
+  if(!same(record.view.requestRef,requestRef))return proofClosed('STORED_PROOF_REQUEST_REF_MISMATCH');
   const s=record.view.scope;
   if(binding&&(s.userId!==binding.userId||s.clientId!==binding.clientId||s.credentialGeneration!==binding.credentialGeneration||s.controlGeneration!==binding.controlGeneration||!same(s.basePolicyRef,binding.basePolicyRef)))return proofClosed('DECLARED_PROOF_CONTEXT_MISMATCH');
   if(!observation)return proofClosed('OBSERVATION_ABSENT');
@@ -134,6 +138,17 @@ async function readStoredProof(db:ReadClient,value:unknown,nowMs:number,binding:
   const expected={scope:record.view.scope,requestRef:record.view.requestRef,observationRequestRef:record.view.observationRequestRef,observationNonce:p.observationNonce,credentialIssuedAt:record.view.credentialIssuedAt,credentialExpiresAt:record.view.credentialExpiresAt,issuedAt:p.issuedAt,observeBefore:record.view.observeBefore};
   const input=readSourceContentReportProofFromPermitCandidate(observation.report,p,expected,observation.receivedAt);
   return {status:'UNVERIFIED' as const,reason:'STORED_REPORT_PROOF_INPUT_ONLY',candidate:{requestRef:record.view.requestRef,reportRef:record.view.reportRef,proofDomain:'ANVIL_SOURCE_CONTENT_REPORT_V1',proofInputHash:contentHash(input.candidate.proofBytes)},...proofFlags};
+}
+
+const combinedProofClosed=(reason:string)=>({status:'UNAVAILABLE' as const,reason,historicalProof:null,policy:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags});
+/** 과거 proof와 별도 최신 정책을 병기한다. 최신 음성을 과거 후보로 덮거나 현재 허가로 승격하지 않는다. */
+export async function readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
+  const historicalProof=projectStoredProof(record,observation,c.requestRef,c);
+  if(historicalProof.reason==='STORED_PROOF_REQUEST_REF_MISMATCH'||historicalProof.reason==='DECLARED_PROOF_CONTEXT_MISMATCH')return combinedProofClosed(historicalProof.reason);
+  const policy=await readSourceContentRequestPolicyCandidate(db,record.view.scope,nowMs);
+  return {status:policy.status,reason:policy.reason,historicalProof,policy:{status:policy.status,reason:policy.reason,ref:policy.policyRef},readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...proofFlags};
  });
- return result??proofClosed('REQUEST_ABSENT');
+ return result??combinedProofClosed('REQUEST_ABSENT');
 }

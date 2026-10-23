@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 과거proof/정책 SOURCE**: readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate는 기존 exact8 문맥·동일 record/내부proof를 대조하고 최신정책helper 결과를 별도 결합한다. 신규 최상위 status/reason은 최신정책 결과를 보존하며 historicalProof는 과거 입력후보로만 남긴다. DENY/회수/만료/부재·ref변경/malformed를 과거양성으로 덮지 않고 문맥/ref불일치는 정책조회 전에 닫는다. 권위false6/SEPARATE_READS_NOT_ATOMIC·원문/nonce 비반환·정책오류 원형전파, 실제auth/키/DB/nonce/route 활성화0·새4RED→직접96 합성/SSR PASS/type/diff0·Minor10/기존제외 유지.
+
 - **2026-10-23 proof 문맥 SOURCE**: 신규 readSourceContentStoredReportProofForDeclaredContextCandidate는 기존 exact8 parser가 복사한 user/client·credential/control세대/basePolicyRef를 같은 저장scope와 내부proof 소비 전에 대조한다. 기존 exact3 proof는 binding null로 동일 동작을 보존한다. readSourceContentProofFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버후보/보유값 투영·구체control 포트만 소비하고 실제 인증 producer나 등록권위를 제공하지 않는다. 정상도false6/UNVERIFIED·최소후보, 불일치/만료는 후보null이며 actualauth/키/서명/DB/nonce/route0이다. 새5RED→직접196합성/SSR PASS/type/diff0·Minor10/실verifier412/기존제외 유지.
 
 - **2026-10-23 proof 최소 표시 SOURCE**: readSourceContentProofStatusV1은 기존 exact13 상태 계약과 분리된 비활성 판독이다. stored-proof exact9(status/reason/candidate+false6), 후보exact4(requestRef/reportRef/고정domain/proofInputHash)만 허용하고 expected request fullref를 대조한다. 부재/불일치는 고정 이유/candidate null만 표시하며 원문/permit/nonce/signature/proofbytes는 받지 않는다. UI06 기존 비활성 표시의 선택 입력일 뿐 실제 API/앱/route 등록이 아니고 서명/current 미확인·권위false를 유지한다. 새4 RED→직접75 합성/SSR PASS/type/diff0·한정정적C0/I0/M0·Minor10/실제제외 유지.

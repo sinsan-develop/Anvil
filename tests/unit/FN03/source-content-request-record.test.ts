@@ -200,6 +200,41 @@ test('보고감사는원보고ref에정확1건이며미소비요청·HUMAN명령
 test('관측nonce의digest를함께바꿔도교환client/servernonce를재사용하지못한다',async()=>{for(const name of ['clientNonce','serverNonce']){const r=fixture(true);r.permit_json.observationNonce=r.challenge_json[name];r.observation_nonce_digest=contentHash(Buffer.from(r.challenge_json[name],'base64url'));await bad(r);}});
 
 function declaredProof(){assert.equal(typeof m.readSourceContentStoredReportProofForDeclaredContextCandidate,'function','proof 선언 문맥 결박 미구현');return m.readSourceContentStoredReportProofForDeclaredContextCandidate;}
+function proofWithPolicy(){assert.equal(typeof m.readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,'function','과거 proof/최신 정책 소비 미구현');return m.readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate;}
+function reportedPolicyFixture(){
+ const r=fixture(true,true),policy=policyFixture().policy,s=r.scope_json;
+ s.contentPolicyRef={id:policy.id,version:1,contentHash:policy.content_hash};r.scope_digest=contentHash(canonicalJson(s));const requestRef={id:r.id,version:1,contentHash:r.scope_digest};
+ const data=r.created_command.resultRef.data;data.scope=s;data.ref=requestRef;data.requestRef=requestRef;data.scopeDigest=r.scope_digest;
+ const digest=contentHash(canonicalJson({projectId:id(2),actorId:id(7),clientId:id(8),controlGeneration:3,requestHash:r.created_command.requestHash,policyRef:s.basePolicyRef,targetRef:requestRef}));r.authorization_receipt.scopeDigest=digest;r.creation_audits[0].targetRef=requestRef;r.creation_audits[0].scopeDigest=digest;
+ for(const value of [r.preflight_json,r.challenge_json,r.permit_json,r.observation.report]){value.requestRef=requestRef;value.scopeDigest=r.scope_digest;}
+ r.preflight_digest=contentHash(canonicalJson(r.preflight_json));r.permit_json.scope=s;r.observation.scopeDigest=r.scope_digest;
+ const {signature,reportHash,...unsigned}=r.observation.report;const reportDigest=contentHash(canonicalJson(unsigned));r.observation.report.reportHash=reportDigest;r.observation.contentHash=reportDigest;r.report_audits[0].targetRef.contentHash=reportDigest;r.report_audits[0].scopeDigest=r.scope_digest;
+ return {row:r,policy};
+}
+test('과거 proof와 원 ref에 맞는 최신 정책도 분리조회·권위 미확인으로만 조합한다',async()=>{
+ const f=reportedPolicyFixture(),queries:string[]=[];const out=await proofWithPolicy()({async query(q:string){queries.push(q);return {rows:[queries.length===1?f.row:f.policy]};}},context(f.row),zero+5000);
+ assert.equal(queries.length,2);assert.match(queries[1]!,/ORDER BY sequence DESC LIMIT 1/);assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'CURRENT_AUTHORITY_UNAVAILABLE');assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');assert.equal(out.historicalProof.candidate.reportRef.id,id(15));assert.equal(out.policy.ref.id,f.policy.id);
+ for(const key of ['storedRequestAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ const raw=JSON.stringify(out);for(const secret of [f.row.permit_json.observationNonce,f.row.observation.signature,'src/a.ts','합성 저장행'])assert.equal(raw.includes(secret),false);
+});
+test('최신 거절·회수·만료·부재는 과거 proof가 있어도 최상위에 보존하며 fallback하지 않는다',async()=>{
+ for(const kind of ['DENY','REVOKED','EXPIRED','ABSENT','CHANGED','MALFORMED']){
+  const f=reportedPolicyFixture();if(kind==='DENY'||kind==='REVOKED'){f.policy.disposition=kind;f.policy.snapshot_json.disposition=kind;}if(kind==='EXPIRED'){f.policy.expires_at=at(4000);f.policy.snapshot_json.expiresAt=at(4000);}if(kind==='CHANGED'){f.policy.sequence=3;f.policy.snapshot_json.sequence=3;}f.policy.content_hash=contentHash(canonicalJson(f.policy.snapshot_json));if(kind==='MALFORMED')f.policy.content_hash='f'.repeat(64);
+  let calls=0;const out=await proofWithPolicy()({async query(){calls++;return {rows:calls===1?[f.row]:kind==='ABSENT'?[]:[f.policy]};}},context(f.row),zero+5000);
+  const reasons:any={DENY:'POLICY_DENIED',REVOKED:'POLICY_REVOKED',EXPIRED:'POLICY_EXPIRED',ABSENT:'POLICY_ABSENT',CHANGED:'CONTENT_POLICY_REF_CHANGED',MALFORMED:'MALFORMED_HEAD'};assert.equal(calls,2);assert.equal(out.reason,reasons[kind]);assert.equal(out.status,kind==='ABSENT'?'UNAVAILABLE':'DENIED');assert.equal(out.historicalProof.status,'UNVERIFIED');assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);
+ }
+});
+test('proof 문맥 불일치와 요청부재는 정책조회 전에 닫고 과거 만료는 현재허가가 아니다',async()=>{
+ const f=reportedPolicyFixture();let calls=0;const db={async query(){calls++;return {rows:[f.row]};}};
+ const mismatch=await proofWithPolicy()(db,{...context(f.row),controlGeneration:2},zero+5000);assert.equal(calls,1);assert.equal(mismatch.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');assert.equal(mismatch.historicalProof,null);assert.equal(mismatch.policy,null);
+ const expired=await proofWithPolicy()(db,context(f.row),zero+700000);assert.equal(calls,2);assert.equal(expired.reason,'REQUEST_OUTSIDE_ORIGINAL_LIFETIME');assert.equal(expired.status,'DENIED');assert.equal(expired.historicalProof.status,'UNVERIFIED');
+ const absent=await proofWithPolicy()({async query(){return {rows:[]};}},context(f.row),zero+5000);assert.equal(absent.reason,'REQUEST_ABSENT');assert.equal(absent.historicalProof,null);
+});
+test('과거 proof 단독값으로 정책 오류를 숨기지 않고 조회 사이 원행 변이를 차단한다',async()=>{
+ const f=reportedPolicyFixture(),error=Error('SYNTHETIC_PROOF_POLICY_FAILURE');let calls=0;
+ await assert.rejects(proofWithPolicy()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},context(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+ calls=0;const expected=structuredClone(proofBasis(f.row).requestRef);const out=await proofWithPolicy()({async query(){calls++;if(calls===1)return {rows:[f.row]};f.row.scope_json.reason='변경된 외부 원행';return {rows:[f.policy]};}},context(f.row),zero+5000);assert.deepEqual(out.historicalProof.candidate.requestRef,expected);assert.equal(out.currentAuthorityVerified,false);
+});
 function serverProof(){assert.equal(typeof serverModule.readSourceContentProofFromServerContextCandidate,'function','서버 후보 문맥 proof 소비 미구현');return serverModule.readSourceContentProofFromServerContextCandidate;}
 function heldProof(){assert.equal(typeof serverModule.readSourceContentProofFromHeldIdentityCandidate,'function','보유 identity proof 소비 미구현');return serverModule.readSourceContentProofFromHeldIdentityCandidate;}
 test('proof 선언 주체·두 세대·기준정책 불일치는 같은 조회 뒤 후보 없이 닫는다',async()=>{

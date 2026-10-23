@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 과거proof/정책 조합 SOURCE**: 동일 저장행의 문맥/ref 확인 뒤 별도 최신정책 판독을 연결했다. 최신거절/회수/만료/부재·ref변경을 최상위에 보존하고 과거proof는 이력으로만 남긴다. 새4RED→직접96 합성/SSR PASS/type/diff0·분리조회/권위false6, 실제auth/DB/route/served0·Minor10/기존제외 유지·전체계획미완료.
+
 - **2026-10-23 FN03 proof 문맥 SOURCE**: 기존 exact8 선언 parser와 서버 identity/control 후보 접점을 proof 내부 소비에 결박했다. 주체/client·두세대/base정책 불일치·판독부재·만료/control회수는 닫고 기존exact3/상태/준비 동작은 유지한다. 새5RED→직접196 합성/SSR PASS/type/diff0·실제auth/current/키/DB/route/served는 미활성/미검증·권위false6/Minor10유지·전체계획미완료.
 
 - **2026-10-23 FN03/UI06 proof 표시 SOURCE**: 기존 상태 exact13/기본 표시 무변경, 별도 최소proof 판독·선택 표시를 연결했다. refs/domain/digest만 출력하며 과거 보고·정책 회수 이력/미확인·false6를 유지한다. 새4 RED→12PASS 및 저장후보 연계 포함 직접75 합성/SSR PASS/type/diff0·한정정적C0/I0/M0, 실제 앱/route/served는 미연결·미검증이다. Minor10·기존제외/거절 유지·새실사용기능0/전체계획미완료.
