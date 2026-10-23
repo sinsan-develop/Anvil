@@ -6,6 +6,7 @@ import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {emptyDraft} from '../../../apps/web/src/features/project-create/api.ts';
+import {parseRoute} from '../../../apps/web/src/shell/routes.ts';
 const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});after(async()=>{await compiler.close();});
 const m=await compiler.ssrLoadModule('/src/features/project-create/ProjectCreatePage.tsx');
 const previous=Object.getOwnPropertyDescriptor(globalThis,'location');Object.defineProperty(globalThis,'location',{configurable:true,value:new URL('https://anvil.invalid/#/projects/new')});after(()=>{if(previous)Object.defineProperty(globalThis,'location',previous);else Reflect.deleteProperty(globalThis,'location');});
@@ -13,6 +14,19 @@ const uid='98000000-0000-4000-8000-000000000001',did='98000000-0000-4000-8000-00
 function fixture(step:number):any{return{...emptyDraft(),ownerUserId:uid,draftId:did,version:2,wizardStep:step,input:{...emptyDraft().input,name:'프로젝트',purpose:'<script>원목적</script>',desiredOutcome:'기대 결과',methodologySelection:{kind:'CONFIRMED_REFERENCE',versionRef:{id:did,version:2,contentHash:'a'.repeat(64)}}}};}
 function render(buffer:any){let calls=0;const client=new ApiClient(async()=>{calls++;throw Error('NO_REQUEST_ALLOWED');});const html=renderToStaticMarkup(createElement(m.ProjectCreatePage,{client,session:{user:{id:uid},clientId:did,csrfToken:'C'.repeat(43)},buffer,onChange:()=>{throw Error('NO_MUTATION_DURING_RENDER');},onAuthenticationLost:()=>{}}));assert.equal(calls,0);return html;}
 const createButton=(html:string)=>{const button=html.match(/<button([^>]*)>저장 초안으로 프로젝트 생성<\/button>/);assert.ok(button);return button[1]!;};
+
+test('생성 결과의 실제 프로젝트 ID로 기존 문서·작업 화면을 열되 자동 실행하지 않는다',()=>{
+ const f=fixture(4),pid='98000000-0000-4000-8000-000000000003';
+ f.createdProject={id:pid,name:'생성 원본',purpose:'기존 문서 연결',desiredOutcome:'원문 관리',version:1,participation:'OWNER',currentMethodologyRef:{id:did,version:1,contentHash:'a'.repeat(64)},baselineRef:null,readinessIssues:[{code:'ENVIRONMENT_UNVERIFIED'}],controlState:{actorId:uid,clientId:did,generation:1,status:'HELD'}};
+ const before=structuredClone(f),html=render(f);
+ for(const screen of ['documents','workspace']){const path=`#/projects/${pid}/${screen}`;assert.ok(html.includes(`href="${path}"`));assert.deepEqual(parseRoute(path),{screen,projectId:pid});}
+ assert.match(html,/문서 화면에서 가져오기 준비/);assert.match(html,/이동만으로 문서를 가져오거나 작업을 실행하지 않습니다/);assert.match(html,/ENVIRONMENT_UNVERIFIED/);assert.match(html,/Agent는 실행하지 않았습니다/);assert.deepEqual(f,before);
+});
+
+test('생성 전·결과 미확인과 다른 사용자 초안에는 생성 후 문서 이동을 노출하지 않는다',()=>{
+ const f=fixture(4);f.pendingAction={kind:'create',draftId:did,body:{schemaVersion:1,commandId:did,clientId:did,draftId:did,draftVersion:2}};
+ for(const b of [fixture(4),f,{...f,ownerUserId:did,createdProject:{id:did}}]){const html=render(b);assert.doesNotMatch(html,/문서 화면에서 가져오기 준비/);assert.doesNotMatch(html,new RegExp(`href="#/projects/${did}/documents"`));}
+});
 test('3단계는 실제 환경·총괄을 만들지 않고 준비 필요·선택 미구현을 표시한다',()=>{
  const html=render(fixture(3));assert.match(html,/<li aria-current="step">총괄·환경/);assert.match(html,/총괄·환경 준비 상태/);assert.match(html,/선택 미구현/);assert.match(html,/준비 필요 상태로 저장/);assert.match(html,/disabled/);assert.ok(createButton(html).includes('disabled'));assert.match(html,/생성 전 확인으로 다음/);
 });
