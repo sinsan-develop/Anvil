@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 서버 준비 wire 소비**: readSourceContentPreparedVerificationWireFromServerContextCandidate/FromHeldIdentityCandidate는 관리 JSON raw4MiB/중복키를 먼저 검사하고 기존 준비 서버소비를 재사용한다. 파싱 고정오류와 후속async 원오류를 분리하며 첫await전expected/basis고정·단일target 정상6조회/문서격리5/원문오류0·최소refs/false10·분리조회를 유지한다. 새3 RED→직접207 합성 PASS/typecheck/diff0·held만료0/회수1만 확인했으며 실제원문producer/auth/currentverifier/DB/권한/route·held전체성공이나 §13.4 활성화 증거는 아니다. 기존 body/SQL/route를 보존한다.
+
 - **2026-10-24 서버 준비 프레임 소비**: readSourceContentPreparedVerificationFromServerContextCandidate/FromHeldIdentityCandidate는 기존 문맥과 위치/등록·전체문서 metadata 선행 저장소비를 연결한다. 관리/index/op/basis 첫await전 고정·단일target 정상6조회·경계음성 검증조회0·최소refs/false10·분리조회를 유지한다. 새3 RED→직접204 합성 PASS/typecheck/diff0·held만료0/회수1만 확인했으며 실제producer/auth/currentverifier/DB/권한/OS/바이트/route·held전체성공/다중target 새통합이나 §13.4 활성화 증거는 아니다. 기존 body/SQL/route를 보존한다.
 
 - **2026-10-24 위치·등록·문서 선행 소비**: readSourceContentStoredPreparedVerificationForDeclaredContextCandidate는 원scope의 기존 preparation frame을 latest정책 이후 검증계보 전에 소비한다. LOCATION→DOCUMENTS 음성이면 검증계를 읽지 않고 최소refs/false10(preparationAuthorized 포함)·분리조회를 유지한다. 새4 RED→직접201 합성 PASS, 시험 key타입만 보정 후 해당160/typecheck/diff0이며 새정상fixture는 단일target6조회다. metadata 형식의 후보일 뿐 실제등록키/현재권위·문서원문 bytes/OS/verifier/준비허가·DB 실행은 아니며 기존 함수 body/SQL/route·§13.4 미확정 경계를 보존한다.

@@ -48,6 +48,22 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 관리 원문 선검사를 기존 보유 문맥/준비 소비에 연결하며 실제 보호 원문 생산자는 만들지 않는다. */
+export function readSourceContentPreparedVerificationWireFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ return readSourceContentPreparedVerificationWireFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,raw,expected,operation,targetIndex,nowMs);
+}
+/** 파싱 오류만 고정 오류로 닫는다. 기존 비동기 문맥·정책·준비 조회 오류는 바꾸지 않는다. */
+export async function readSourceContentPreparedVerificationWireFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ let evidence:unknown;
+ try{
+  if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>4194304)throw Error();
+  evidence=parseWireJson(raw);
+ }catch{throw Error('SOURCE_CONTENT_SERVER_MANAGEMENT_WIRE_INVALID');}
+ return readSourceContentPreparedVerificationFromServerContextCandidate(db,sources,basis,{evidence,expected},operation,targetIndex,nowMs);
+}
 /** 기존 보유 문맥/구체 control만 재사용하며 실제 인증·준비 허가는 만들지 않는다. */
 export function readSourceContentPreparedVerificationFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
  return readSourceContentPreparedVerificationFromServerContextCandidate(db,{
