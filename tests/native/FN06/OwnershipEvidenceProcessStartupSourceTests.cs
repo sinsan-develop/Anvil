@@ -65,4 +65,27 @@ internal static class OwnershipEvidenceProcessStartupSourceTests
             job.ReadEmpty(); // 입력버퍼회수는원Job까지닫는것이아니다.
         }
     }
+    // 원 image 파일과 hash에 맞는 plan·Job의 별도 실제시험 승인 전 호출하지 않는다.
+    internal static void RunImageConsumerCasesAfterSeparateApproval(string exactRoot,OwnershipEvidencePreparationPlan plan)
+    {
+        using(var image=OwnershipEvidenceImageOwnerSource.OpenSourceOnly(exactRoot))
+        using(var job=OwnershipEvidenceJobFactorySource.CreateEmptyJobSource())
+        {
+            var assignment=OwnershipEvidenceJobFactorySource.PrepareAtomicJobAssignmentSource(job);
+            var startup=OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment);
+            try
+            {
+                Reject(()=>startup.ReadImageSource(image)); // worker 미결박 상태 거절.
+                startup.BindWorkerPlanSource(plan);
+                var foreign=new OwnershipEvidenceImageOwnerSourceTests.ForeignImage();
+                Reject(()=>startup.ReadImageSource(foreign));
+                if(foreign.Calls!=0)throw new InvalidOperationException("STARTUP_CONSUMED_FOREIGN_IMAGE");
+                var report=startup.ReadImageSource(image);
+                if(report.ContentHash!=plan.Selection["workerHash"]||report.RootId!=plan.Selection["rootId"]||report.ProcessCreationAuthorized||report.ApprovedRootVerified||report.ExecutionAuthorized||report.PreparationAuthorized||report.DispatchPerformed)throw new InvalidOperationException("STARTUP_IMAGE_NOT_SOURCE_ONLY");
+                image.Dispose();Reject(()=>startup.ReadImageSource(image));
+                startup.ReadCurrent(); // 실패/외부 owner 처분이 기존 startup 입력을 바꾸지 않는다.
+            }
+            finally{assignment.Dispose();}
+        }
+    }
 }

@@ -3,6 +3,14 @@ using System;
 using Anvil.Native.OwnershipEvidence;
 internal static class OwnershipEvidenceImageOwnerSourceTests
 {
+    internal sealed class ForeignImage:OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate
+    {
+        internal int Calls;
+        public OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadSource(OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input)
+        {Calls++;throw new InvalidOperationException("FOREIGN_IMAGE_CALLED");}
+        public bool NativeCloseVerified{get{Calls++;return true;}}
+        public void Dispose(){Calls++;}
+    }
     private static void Reject(Action action)
     {
         bool rejected=false;try{action();}catch(InvalidOperationException e)
@@ -16,6 +24,10 @@ internal static class OwnershipEvidenceImageOwnerSourceTests
             Reject(()=>OwnershipEvidenceImageOwnerSource.ImagePathSource(invalid));
         // 형식 실패는 OS 열기 전에 거절해야 한다. 유효경로 factory 실행은 별도 승인시험이다.
         Reject(()=>OwnershipEvidenceImageOwnerSource.OpenSourceOnly(null));
+        var foreign=new ForeignImage();
+        Reject(()=>OwnershipEvidenceImageOwnerSource.ReadOriginalSource(foreign,null));
+        Reject(()=>OwnershipEvidenceImageOwnerSource.ReadOriginalSource(null,null));
+        if(foreign.Calls!=0)throw new InvalidOperationException("FOREIGN_IMAGE_MUST_NOT_BE_CONSUMED");
     }
     // 별도 exact 경로/파일 실행 승인을 받은 caller가 호출·정리를 소유하는 미래 시험 SOURCE.
     internal static void RunOwnedCaseAfterSeparateApproval(string exactRoot,OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input)

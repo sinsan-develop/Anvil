@@ -27,6 +27,7 @@ namespace Anvil.Native.OwnershipEvidence
         {
             SuspendedStartupObservation ReadCurrent(int timeoutMs=10000);
             void BindWorkerPlanSource(OwnershipEvidencePreparationPlan plan,int timeoutMs=10000);
+            OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadImageSource(OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs=10000);
             bool LocalEnvironmentReleased{get;}
         }
         internal sealed class SuspendedStartupObservation
@@ -138,6 +139,23 @@ namespace Anvil.Native.OwnershipEvidence
                                 ReadCurrent(timeoutMs);candidate.EnsureCurrentSource();
                                 Budget(from,watch,timeoutMs);
                                 workerInput=candidate; // 최종검사 전에는 기존 입력을 변경하지 않는다.
+                            }
+                        }
+                        catch{throw Unavailable();}
+                    }
+                    // 원 image owner의 현재 관측만 소비한다. 소유권 이전/영구결박/실행허가는 아니다.
+                    public OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadImageSource(OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs=10000)
+                    {
+                        try
+                        {
+                            Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                            lock(parent.owner.gate)
+                            {
+                                if(workerInput==null)throw Unavailable();
+                                ReadCurrent(timeoutMs);Budget(from,watch,timeoutMs);
+                                var result=OwnershipEvidenceImageOwnerSource.ReadOriginalSource(image,workerInput);
+                                ReadCurrent(timeoutMs);workerInput.EnsureCurrentSource();
+                                Budget(from,watch,timeoutMs);return result;
                             }
                         }
                         catch{throw Unavailable();}

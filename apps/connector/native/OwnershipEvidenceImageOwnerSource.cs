@@ -29,6 +29,14 @@ namespace Anvil.Native.OwnershipEvidence
             OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadSource(OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input);
             bool NativeCloseVerified{get;}
         }
+        // 외부 interface 구현의 callback/속성/Dispose는 전혀 소비하지 않는다.
+        internal static OwnershipEvidenceImageBindingSource.ImageBindingCandidate ReadOriginalSource(IImageOwnerCandidate candidate,
+            OwnershipEvidenceWorkerInputSource.WorkerInputCandidate input)
+        {
+            var original=candidate as ImageOwner;
+            if(original==null)throw Unavailable();
+            return original.ReadSource(input);
+        }
         private sealed class ImageOwner:IImageOwnerCandidate
         {
             private readonly object gate=new object();
