@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { emptyDraft, readProjectDraft, writeProjectDraft, runDraftAction, type DraftAction, type DraftEditorState, type PendingDraftCommand } from './api.ts';
 import { MethodologySelection } from './MethodologySelection.tsx';
@@ -6,12 +6,16 @@ import { DraftReviewPanel } from './DraftReviewPanel.tsx';
 import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 import {draftWizardStep,moveDraftWizardStep} from './draft-wizard.ts';
 import {DraftWizardReview} from './DraftWizardReview.ts';
+import {createDraftMutationGate} from './draft-mutation-gate.ts';
 
 const nextLabels:Record<number,string>={1:'방법론·자료로 다음',2:'총괄·환경으로 다음',3:'생성 전 확인으로 다음'};
 const previousLabels:Record<number,string>={2:'목적·소스로 이전',3:'방법론·자료로 이전',4:'총괄·환경으로 이전'};
 
 export function ProjectCreatePage({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: DraftEditorState; onChange: Dispatch<SetStateAction<DraftEditorState>>; onAuthenticationLost: () => void }) {
   const fieldId = useId();
+  const mutationRef = useRef<ReturnType<typeof createDraftMutationGate> | null>(null);
+  if (!mutationRef.current) mutationRef.current = createDraftMutationGate();
+  const mutation = mutationRef.current;
   const [requestedId, setRequestedId] = useState(() => new URLSearchParams(location.search).get('draftId'));
   const [reload, setReload] = useState(0);
   const step = draftWizardStep(buffer);
@@ -34,6 +38,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   }, [client, session.clientId, session.user.id, requestedId, reload, wrongOwner]);
   async function save() {
     if (pending || selectionBusy || !editable || wrongOwner || buffer.pendingAction) return;
+    await mutation.run(async () => {
     const previouslyPending=!!buffer.pendingCommand;
     const fingerprint = JSON.stringify({ draftId: buffer.draftId, version: buffer.version, input: buffer.input, step });
     if (buffer.pendingCommand && buffer.pendingCommand.fingerprint !== fingerprint) { setError(new ApiError('DRAFT_RECONCILIATION_REQUIRED')); return; }
@@ -58,12 +63,13 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       if (!previouslyPending && isKnownDocumentRejection(failure) && failure.status === 403) setEditable(false);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
+    });
   }
   function change(field: 'name' | 'purpose' | 'desiredOutcome', value: string) { if (!wrongOwner) onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, [field]: value }, dirty: true })); }
   function sourceMode(value:'EMPTY'|'EXISTING'){if(locked||wrongOwner)return;if(value==='EMPTY'&&buffer.input.sourceDeclaration&&Object.values(buffer.input.sourceDeclaration).some(Boolean)&&!confirm('이 탭의 기존 소스 선언 입력만 비울까요? 서버에 저장한 이전 선언 이력은 보존합니다.'))return;onChange(previous=>{const{sourceDeclaration,...input}=previous.input;return{...previous,ownerUserId:session.user.id,dirty:true,input:{...input,sourceMode:value,...(value==='EXISTING'?{sourceDeclaration:sourceDeclaration??{hostLabel:'',displayName:'',pathHint:'',reason:''}}:{})}};});}
   function changeSource(field:'hostLabel'|'displayName'|'pathHint'|'reason',value:string){if(locked||wrongOwner)return;onChange(previous=>({...previous,ownerUserId:session.user.id,dirty:true,input:{...previous.input,sourceDeclaration:{hostLabel:'',displayName:'',pathHint:'',reason:'',...previous.input.sourceDeclaration,[field]:value}}}));}
   function restore() {
-    if (!buffer.draftId || pending || selectionBusy || wrongOwner || buffer.pendingAction || buffer.pendingCommand) return;
+    if (!buffer.draftId || pending || mutation.isBusy() || selectionBusy || wrongOwner || buffer.pendingAction || buffer.pendingCommand) return;
     if (buffer.dirty && !confirm('현재 미저장 입력을 서버 저장본으로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, dirty: false, pendingCommand: null }));
     setRequestedId(buffer.draftId); setReload(value => value + 1); setError(null);
@@ -71,6 +77,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   async function action(command: DraftAction) {
     if (pending || selectionBusy || wrongOwner || command.body.clientId !== session.clientId || command.draftId !== buffer.draftId) return;
     if (!buffer.pendingAction && (!editable || buffer.dirty || buffer.pendingCommand)) return;
+    await mutation.run(async () => {
     const previouslyPending=!!buffer.pendingAction;
     const dispatchId=crypto.randomUUID();
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingAction: {...command,dispatchId} }));
@@ -86,12 +93,13 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       if (!applied && !previouslyPending && isKnownDocumentRejection(failure)) onChange(previous => previous.ownerUserId===session.user.id&&previous.pendingAction?.body.commandId===command.body.commandId&&previous.pendingAction?.dispatchId===dispatchId?({ ...previous, pendingAction: null }):previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
+    });
   }
   if (wrongOwner) return <section className="status-card"><p role="alert">이 탭의 초안은 다른 로그인 사용자의 자료입니다. 내용을 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭에 남은 이전 사용자 초안만 닫을까요? 서버 자료는 유지합니다.')) { onChange(emptyDraft()); setRequestedId(null); setError(null); const url = new URL(location.href); url.searchParams.delete('draftId'); history.replaceState(history.state, '', url); } }}>탭의 이전 사용자 초안 닫기</button></section>;
   if (buffer.createdProject) return <section className="status-card" aria-label="생성된 프로젝트 원본"><h2>프로젝트 원본 생성 확인</h2><h3>{buffer.createdProject.name}</h3><p>{buffer.createdProject.purpose}</p><p>프로젝트 ID {buffer.createdProject.id}</p><p>소유 참여 · 현재 기기 제어 세대 {buffer.createdProject.controlState.generation} · 방법론 고정 버전 {buffer.createdProject.currentMethodologyRef.version}</p>{buffer.createdProject.sourceDeclaration?<><p>기존 소스 사용자 선언 · 미확인</p><p>{buffer.createdProject.sourceDeclaration.declaration.hostLabel} · {buffer.createdProject.sourceDeclaration.declaration.displayName}</p><pre>{buffer.createdProject.sourceDeclaration.declaration.pathHint}</pre><p>{buffer.createdProject.sourceDeclaration.declaration.reason}</p></>:null}<p>Agent는 실행하지 않았습니다.</p><p>추가 준비가 필요한 항목</p><ul>{buffer.createdProject.readinessIssues.map(issue => <li key={issue.code}>{issue.code}</li>)}</ul><a href="#/projects">프로젝트 목록에서 확인</a></section>;
   const locked = pending || selectionBusy || !editable || !!buffer.pendingAction || !!buffer.pendingCommand;
   const confirmedSelection = buffer.input.methodologySelection?.kind === 'CONFIRMED_REFERENCE' || !!buffer.methodologyState?.confirmation && buffer.methodologyState.ref.version === buffer.version && !buffer.review?.dirty;
-  const move=(target:number)=>onChange(previous=>moveDraftWizardStep(previous,session.user.id,target,pending||selectionBusy,editable)??previous);
+  const move=(target:number)=>onChange(previous=>moveDraftWizardStep(previous,session.user.id,target,pending||selectionBusy||mutation.isBusy(),editable)??previous);
   const canNext=step<4&&!!moveDraftWizardStep(buffer,session.user.id,step+1,pending||selectionBusy,editable),canPrevious=step>1&&!!moveDraftWizardStep(buffer,session.user.id,step-1,pending||selectionBusy,editable);
   return <section className="status-card auth-form create-draft-form" aria-label="프로젝트 생성 중간본">
     <ol className="wizard-steps"><li aria-current={step === 1 ? 'step' : undefined}>목적·소스</li><li aria-current={step === 2 ? 'step' : undefined}>방법론·자료</li><li aria-current={step === 3 ? 'step' : undefined}>총괄·환경 — 준비 필요</li><li aria-current={step === 4 ? 'step' : undefined}>생성 전 확인</li></ol>
