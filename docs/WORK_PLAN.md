@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 원scope 정책계보 SOURCE**: 첫await전scope복사·원기한→최신인접계보→exactcontentPolicyRef대조를별도소비한다. 다른project/subject·기한/ref불일치닫힘·최신음성보존/옛positive0·false5, 새4RED+직접음성1→정책29합성PASS/type/diff0다. 기존요청정책/허가와actualDB/route/served무변경·Minor11/기존제외유지·전체계획미완료.
+
 - **2026-10-23 FN03 최신head/계보 SOURCE**: 기존head 최소검사를순수분리하고 최신head고정→인접predecessor LEFT JOIN→inspector 비활성reader를추가했다. 최신음성은prev검사전보존/AUTO만계보대조·옛positive fallback0·최소반환/false5, 새6RED→직접공유118합성/SSR PASS/type/diff0·한정정적C0/I0/M0다. 실제SQL/PG/관리근거·current/정책권한/route0·Minor11/기존제외유지·전체계획미완료.
 
 - **2026-10-23 정책계보 검토 잔여**: C0/I0/M1. 안전정수 상한음성의 snapshot/predecessor 미갱신으로 독립 반례가 가려지는 시험공백1을 보류했다. 기존10과 총 Minor11 미해결·실제SQL/PG/관리권위미검증 유지.

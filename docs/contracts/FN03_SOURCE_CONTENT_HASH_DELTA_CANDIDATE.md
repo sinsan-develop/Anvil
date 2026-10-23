@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 원scope 정책계보 SOURCE**: readSourceContentRequestPolicyLineageCandidate는 원scope를복사하고원수명내에서만최신계보판독을소비하며 exactcontentPolicyRef를대조한다. 기한밖은query0, 최신음성은그대로, 정상계보라도원정책id/version/hash불일치는refs/lineage null로닫는다. 다른project/subject·getter/변이·오류음성을확인하며최소반환/false5·옛positive0다. 기존요청정책reader/허가를바꾸지않고 fullscope/targets/관리근거/current진위·실제DB/키/route는미검증/미활성이다. 새4RED+직접음성1→29합성PASS/type/diff0·Minor11/기존제외유지.
+
 - **2026-10-23 최신head 인접계보 SOURCE**: readLatestSourceContentPolicyLineageCandidate는 기존순수head 판독을 재사용한다. project 최신head를 CTE로먼저고정하고 sameproject sequence-1만LEFT JOIN하며 최신음성은이전행검사전그대로반환한다. AUTO후보에만 인접계보inspector를소비하고 손상/부재prev는닫으며 과거positive 재조회0이다. 최소refs/계보·UNVERIFIED/false5·fullscope/targets/관리근거/current진위미검증이며 기존reader/허가·실제SQL/PG/route미활성이다. 새6RED→직접118합성/SSR PASS/type/diff0·한정정적C0/I0/M0·Minor11/SQL145NOT_RUN/기존제외유지.
 
 - **2026-10-23 정책계보 검토 잔여**: 정적C0/I0/M1·실행수정0. 상한 sequence 음성이 snapshot/predecessor 미갱신으로 가려지는 시험공백은보류·기존10과총 Minor11 미해결이다. 독립 상한guard 증거로주장하지않고 실제SQL/PG/관리근거/current권위는미검증으로유지한다.
