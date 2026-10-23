@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 target 문서 metadata 판독 SOURCE**: readSourceContentTargetDocumentCandidate는원scope targetIndex의exact확정버전/원metadatahash와content.body ArtifactRef·같은project READY Artifact/격리metadata·보호storagekey/BODY정확1건을대조한다. 4MiB이하row projection만지원하며저장/API한도변경0이다. 정상도DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·bodyBytesVerified/current/저장실행LINKfalse다. 원문/파일읽기·재해시/완전secret탐지·확정receipt/양식/단계진위·현재권위/실DB/route는별도미검증이며새로활성화하지않는다. 합성7RED→GREEN/type/diff0만확인했고Minor9/미래SQL145NOT_RUN·실verifier412/실제제외·거절유지.
+
 - **2026-10-23 위치 frame 조합 SOURCE**: readSourceContentLocationFrameCandidate는 복사된 원scope를 최신root 선언→상태전용등록 판독에 순서 전달한다. 선행음성이면 후속조회 없이 고정status/reason·candidate null, 정상도 LOCATION_FRAMES_ONLY/UNVERIFIED·ref3개/분리조회·권위/저장/실행/LINK false다. 현재등록키/서명/observer·인증/current정책/DBtransaction/OS 진위는 별도이며 실제route/DB에 미연결이다. 새6RED→직접22합성PASS/type/diff0만 확인, 기존Minor9/미래SQL145NOT_RUN·실verifier412·실제실행제외/거절 유지.
 
 - **2026-10-23 등록 frame 판독 SOURCE**: readSourceContentRegistrationFrameCandidate는 기존 상태전용 connector의 현재 registration_id만 LEFT JOIN하고 exact28행·원scope10/subject5/hash·user/client/세대/host·기준policy·원기한과 content의 정확 registrationRef/connectorRef를 대조한다. 기존 ref 공식은 재사용하되 기존 credentialScope=REGISTRATION_STATUS_ONLY/grants=[]를 content허가로 쓰지 않는다. 정상도 REGISTRATION_FRAME_ONLY/UNVERIFIED·false4·최소ref2개이며 실제 키/서명/observer·세션/current정책·OS/등록권위를 증명하지 않는다. 실제DB/route 미연결·publickey/token조회/발급0, 합성7PASS/type/diff0만 확인했다. 기존Minor8/미래SQL145NOT_RUN/실verifier412·실제 제외/거절을 유지한다.

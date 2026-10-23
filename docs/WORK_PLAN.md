@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 문서·Artifact 선행 SOURCE**: targetIndex 한건의 exact확정버전/원문서metadatahash·content.body ArtifactRef·격리/보호저장key/BODY연결을 대조하는비활성reader와합성7건을추가했다(RED→GREEN7/type/diff0). 원문bytes·실DB/문서확정권위·양식/단계현재성/served는미검증이고반환bodyBytesVerified/current/저장실행LINKfalse다. 새실사용기능0·Minor9/기존실제제외·거절유지·전체FN03완료아니다.
+
 - **2026-10-23 FN03 위치 frame 조합 SOURCE**: 동일 원scope의 root→등록 판독 순서·첫음성후후속조회0/오류보존·ref3개 최소후보를 비활성 조합했다. 새6RED→직접22PASS/type/diff0은 합성 판독 검증이며 현재권위/DB·실등록/OS·served 완료가 아니다. 실제사용가능기능0·Minor9와 기존실제제외·거절 유지.
 
 - **2026-10-23 FN03 등록 참조 SOURCE**: 원 상태전용 connector/등록의 최신 포인터·scope/ref/주체/세대·회수·기한과 content 원요청을 결박하는 비활성 판독 및 합성7건을 추가했다. RED→GREEN7/type/diff0은 실제 등록키/observer·인증/current정책·DB/OS·served의 증거가 아니다. 최소ref 후보와 권위false4만 반환하며 route/실행연결0·새사용가능기능0, 기존Minor8/미래SQL145NOT_RUN 및 실행제외는 유지한다.
