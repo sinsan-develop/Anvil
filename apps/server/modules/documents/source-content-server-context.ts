@@ -4,7 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
-import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate} from './source-content-request-record.ts';
+import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate} from './source-content-request-record.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 /** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
@@ -44,6 +44,24 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 실제 인증·현재 회수허가가 아닌 기존 보유문맥/구체 control의 SOURCE 조합이다. */
+export function readSourceContentRevokeFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,payload:unknown,commandId:unknown,nowMs:number){
+ return readSourceContentRevokeFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,payload,commandId,nowMs);
+}
+/** 첫 문맥 await 전 회수 입력을 고정한다. 기존 상태/proof 경로·정책/실제 쓰기는 변경하지 않는다. */
+export async function readSourceContentRevokeFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,payloadValue:unknown,commandId:unknown,nowMs:number){
+ let payload:Record<string,any>;
+ try {
+  const raw=canonicalJson(payloadValue);if(Buffer.byteLength(raw,'utf8')>1048576||!uuidV1(commandId))throw Error();
+  const p:unknown=JSON.parse(raw);if(!recordV1(p,['requestRef','reason'])||!refV1(p.requestRef)||p.requestRef.version!==1)throw Error();payload=p;
+ }catch{throw Error('SOURCE_CONTENT_SERVER_REVOKE_INPUT_INVALID');}
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,candidate:null,
+  storedRequestAuthenticated:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredRevokeForDeclaredContextCandidate(db,c,payload,commandId,nowMs),close);
+}
 /** 보유 값/구체 control의 비활성 조합이며 실제 인증 생산자나 관리 권위를 연결하지 않는다. */
 export function readSourceContentPolicyLineageFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
  return readSourceContentPolicyLineageFromServerContextCandidate(db,{

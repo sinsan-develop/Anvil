@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 서버 회수 SOURCE 소비**: 신규 서버/보유identity 조합은 첫 문맥 await 전에 기존 exact2 회수 입력을 고정하고 기존 identity/control→저장 회수 순서를 재사용한다. 기본1/구체control포함2query·고정 음성/candidate null·false5·원자료 비노출이며 실제 인증/현재정책·회수/DB/route는 제공하지 않는다. 새4RED→직접116 합성PASS, 새시험 존재 확인 보강 후 해당98/type/diff0·정적 C0/I0/M0다. PMO가 §12.6의 형식 제안을 실질 계약 delta로 판단했으므로 사용자 결정 전 문서 제안만 유지하고 이 기존 회수 SOURCE에 새 관리 형식을 적용하지 않는다.
+
 - **2026-10-23 저장 회수 SOURCE 소비**: 별도 readSourceContentStoredRevokeForDeclaredContextCandidate가 exact8 선언문맥·payload 복사와 기존 저장 증거/원 fullref·주체/세대/base정책 대조 뒤 서버 casDigest를 순수 회수 후보에 전달한다. caller의 digest/verified 값을 입력으로 받지 않으며 원payload/보고/nonce를 반환하지 않는다. 정상도 저장인증/current/저장실행LINK false5이고 현재 정책 허가·실제 회수·원자성/DB/route는 미검증/미활성이다. 새4RED→직접112 합성PASS/type/diff0·기존 공개 경로/관리 형식 무변경·Minor11/기존 제외 유지.
 
 - **2026-10-23 회수 SOURCE 소비**: 기존 §3 exact2 payload를 원request fullref/회수명령 UUID에 결박하고 기존 전이/CAS를 재사용한다. reason은 기존 content 요청과 같은 비공백/제어문자/20000자 규칙이며 원scope는 변경하지 않는다. 반환의 reasonDigest는 내부 후보의 canonical {reason} SHA256이지 관리 영수증·서명·현재 허가 증명이 아니다. 기존 소비자료/원기한 보존·터미널 새회수 거절·실제 회수/nonce/DB·route 미등록/권위false다. 새4RED→직접25 합성PASS/type/diff0·Minor11/기존 제외 유지.

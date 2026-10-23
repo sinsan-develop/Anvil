@@ -7,6 +7,31 @@ const id=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref
 const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
 function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
 function storedRevoke(){assert.equal(typeof m.readSourceContentStoredRevokeForDeclaredContextCandidate,'function','저장 원요청의 회수 후보 소비 미구현');return m.readSourceContentStoredRevokeForDeclaredContextCandidate;}
+function serverRevoke(){assert.equal(typeof lineageServerModule.readSourceContentRevokeFromServerContextCandidate,'function','서버 후보 문맥의 회수 소비 미구현');return lineageServerModule.readSourceContentRevokeFromServerContextCandidate;}
+function heldRevoke(){assert.equal(typeof lineageServerModule.readSourceContentRevokeFromHeldIdentityCandidate,'function','보유identity 회수 소비 미구현');return lineageServerModule.readSourceContentRevokeFromHeldIdentityCandidate;}
+test('서버 회수 후보는 첫identity await 전에 payload를 복사하고 동일db/순서·저장1query를 유지한다',async()=>{
+ const r=fixture(true,true),s=preparationSources({row:r}),basis=proofBasis(r),payload={requestRef:structuredClone(basis.requestRef),reason:'서버 합성 회수'},order:string[]=[];let calls=0;const db={async query(){calls++;order.push('record');return {rows:[r]};}};
+ const out=await serverRevoke()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');payload.reason='외부 변경';payload.requestRef.contentHash='f'.repeat(64);basis.requestRef.contentHash='f'.repeat(64);return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},basis,payload,id(90),zero+5000);
+ assert.deepEqual(order,['identity','control','record']);assert.equal(calls,1);assert.equal(out.reason,'STORED_REVOKE_TRANSITION_ONLY');assert.ok(out.candidate);assert.equal(out.candidate.from,'REPORTED');assert.equal(out.candidate.reasonDigest,contentHash(canonicalJson({reason:'서버 합성 회수'})));assert.equal(out.currentAuthorityVerified,false);assert.equal(out.storageMutationPerformed,false);assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);
+});
+test('서버 회수 문맥 부재/미지음성·payload ref 불일치는query0이고 옛세대는record1뒤 닫힌다',async()=>{
+ const r=fixture(),s=preparationSources({row:r}),basis=proofBasis(r),payload={requestRef:basis.requestRef,reason:'회수'};let calls=0;const db={async query(){calls++;return {rows:[r]};}};
+ const absent=await serverRevoke()(db,{},basis,payload,id(90),zero+5000);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');assert.equal(absent.candidate,null);
+ const unknown=await serverRevoke()(db,{...s,async readControlCandidate(){return {status:'DENIED',reason:'PRIVATE_REVOKE_REASON'};}},basis,payload,id(90),zero+5000);assert.equal(unknown.reason,'PROJECT_CONTROL_CANDIDATE_INVALID');assert.equal(JSON.stringify(unknown).includes('PRIVATE_REVOKE_REASON'),false);
+ const mismatch=await serverRevoke()(db,s,basis,{...payload,requestRef:ref(99)},id(90),zero+5000);assert.equal(mismatch.reason,'REVOKE_PAYLOAD_REQUEST_REF_MISMATCH');assert.equal(calls,0);
+ const stale=await serverRevoke()(db,{...s,async readIdentityCandidate(){return {...await s.readIdentityCandidate(),credentialGeneration:1};}},basis,payload,id(90),zero+5000);assert.equal(calls,1);assert.equal(stale.reason,'DECLARED_REVOKE_CONTEXT_MISMATCH');assert.equal(stale.candidate,null);
+});
+test('보유identity 회수는control/record2query·만료0/회수1query 경계를 보존한다',async()=>{
+ const f=heldFixture(),payload={requestRef:f.basis.requestRef,reason:'보유문맥 회수'};let calls=0;const rows=[f.control,f.row];const out=await heldRevoke()({async query(){return {rows:[rows[calls++]]};}},f.held,f.basis,payload,id(90),zero+5000);assert.equal(calls,2);assert.ok(out.candidate);assert.equal(out.candidate.to,'REVOKED');assert.equal(out.storedRequestAuthenticated,false);
+ calls=0;const expired=await heldRevoke()({async query(){calls++;return {rows:[]};}},f.held,f.basis,payload,id(90),zero+60000);assert.equal(calls,0);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(expired.candidate,null);
+ f.control.control_revoked_at=at(1000);const revoked=await heldRevoke()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,payload,id(90),zero+5000);assert.equal(calls,1);assert.equal(revoked.reason,'PROJECT_CONTROL_UNAVAILABLE');assert.equal(revoked.candidate,null);
+});
+test('서버 회수의 getter/명령위조는 identity 판독0이며 query 오류를 보존한다',async()=>{
+ const r=fixture(),basis=proofBasis(r),payload={requestRef:basis.requestRef,reason:'회수'},s=preparationSources({row:r});let identities=0,gets=0;const sources={...s,async readIdentityCandidate(){identities++;return s.readIdentityCandidate();}};
+ const getter={...payload};Object.defineProperty(getter,'reason',{enumerable:true,get(){gets++;return '회수';}});await assert.rejects(serverRevoke()({async query(){throw Error('호출 금지');}},sources,basis,getter,id(90),zero+5000),/SOURCE_CONTENT_SERVER_REVOKE_INPUT_INVALID/);assert.equal(gets,0);assert.equal(identities,0);
+ await assert.rejects(serverRevoke()({async query(){throw Error('호출 금지');}},sources,basis,payload,'bad-command',zero+5000),/SOURCE_CONTENT_SERVER_REVOKE_INPUT_INVALID/);assert.equal(identities,0);
+ const error=Error('SYNTHETIC_SERVER_REVOKE_QUERY');await assert.rejects(serverRevoke()({async query(){throw error;}},s,basis,payload,id(90),zero+5000),e=>e===error);
+});
 test('저장 회수 후보는 복사문맥/원ref와 서버digest를1query 뒤 순수 CAS에만 전달한다',async()=>{
  const r=fixture(),c=context(r),payload={requestRef:structuredClone(c.requestRef),reason:'합성 저장회수'};let calls=0;
  const out=await storedRevoke()({async query(){calls++;c.userId=id(99);payload.reason='외부변이';return {rows:[r]};}},c,payload,id(90),zero+5000);
