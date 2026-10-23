@@ -8,7 +8,7 @@ import { TraceMissingLinks } from './TraceMissingLinks.tsx';
 import {TracePlanTaskOriginal} from './TracePlanTaskOriginal.tsx';
 import type {ScreenRegion} from './design-index-api.ts';
 import {TraceScreenLink} from './TraceScreenLink.tsx';
-const key=(r:TraceRef)=>[r.kind,r.id,r.versionRef.version,r.versionRef.contentHash,r.localCode??'',r.anchor??''].join(':');
+import {traceReferenceKey as key} from './trace-reference-key.ts';
 export function TraceViewer({client,projectId,designRef,bodyHash,onAnchorSelect,onScreenOpen,onAuthenticationLost}:{client:ApiClient;projectId:string;designRef:PlanRef;bodyHash?:string;onAnchorSelect?:(selection:DesignAnchorSelection|null)=>void;onScreenOpen?:(source:PlanRef,region:ScreenRegion)=>void;onAuthenticationLost:()=>void}){
  const[value,setValue]=useState<TraceView|null>(null),[direction,setDirection]=useState<'FORWARD'|'REVERSE'>('FORWARD'),[cursor,setCursor]=useState<string|null>(null),[reload,setReload]=useState(0),[error,setError]=useState<ApiError|null>(null),[loading,setLoading]=useState(true);
  const[planTarget,setPlanTarget]=useState<TraceRef|null>(null);
