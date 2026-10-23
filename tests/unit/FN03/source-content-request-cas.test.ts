@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';import {test} from 'node:test';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 const m=await import(new URL('../../../apps/server/modules/documents/source-content-request-cas.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+const revokeModule=await import(new URL('../../../apps/server/modules/documents/source-content-revoke.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 const id=(n:number)=>`76000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),zero=Date.parse('2026-10-23T17:00:00.000Z'),at=(n:number)=>new Date(zero+n).toISOString();
 function fixture():any {
  const scope={protocolVersion:1,purpose:'SOURCE_DOCUMENT_CONTENT_HASH',installationId:id(1),projectId:id(2),sourceRootRef:ref(3),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),hostFingerprint:'c'.repeat(64),pathHintHash:'d'.repeat(64),userId:id(7),clientId:id(8),credentialGeneration:2,controlGeneration:3,basePolicyRef:ref(9),contentPolicyRef:ref(10),targets:[{relativePath:'src/a.ts',documentRef:ref(11),documentBlobRef:{artifactId:id(12),bytes:0,contentHash:'b'.repeat(64),mediaType:'text/plain'}}],limits:{maxFiles:200,maxFileBytes:2097152,maxTotalBytes:20971520,maxObservationMs:30000,maxReportBytes:1048576},requestedAt:at(0),expiresAt:at(600000),reason:'합성CAS후보'};
@@ -9,6 +10,29 @@ function fixture():any {
  return {before,after};
 }
 function fn(){assert.equal(typeof m.planSourceContentRequestCasV1,'function','CAS 조건 후보 미구현');return m.planSourceContentRequestCasV1;}
+function revoke(){assert.equal(typeof revokeModule.planSourceContentRevokeCandidate,'function','정확 회수 payload의 전이/CAS 소비 미구현');return revokeModule.planSourceContentRevokeCandidate;}
+test('정확 회수 payload는 원요청/명령/이유를 후보에 결박하고 실제 쓰기·권위를 만들지 않는다',()=>{
+ const {before}=fixture(),payload={requestRef:structuredClone(before.requestRef),reason:'사용자의 합성 회수 요청'},original=structuredClone(before);
+ const out=revoke()(before,payload,id(90),'e'.repeat(64),zero+4000);assert.equal(out.status,'UNVERIFIED_REVOKE_CANDIDATE');assert.equal(out.from,'CREATED');assert.equal(out.to,'REVOKED');assert.equal(out.replay,false);assert.equal(out.revokeCommandId,id(90));assert.equal(out.reasonDigest,contentHash(canonicalJson({reason:'사용자의 합성 회수 요청'})));assert.deepEqual(out.comparison.parameters,[id(2),id(13),'e'.repeat(64)]);assert.equal(out.storageMutationPerformed,false);assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);assert.deepEqual(before,original);before.requestRef.id=id(99);payload.reason='외부변이';assert.equal(out.requestRef.id,id(13));assert.equal(JSON.stringify(out).includes('외부변이'),false);
+});
+test('회수는 정합한 보고·credential·nonce 소비사실을 지우지 않고 기존 전이 검사를 재사용한다',()=>{
+ const f=fixture(),reported={...f.after,state:'REPORTED',credentialTokenDigest:'3'.repeat(64),observationRequestRef:ref(14),observationNonceDigest:'4'.repeat(64),credentialIssuedAt:at(2000),credentialExpiresAt:at(62000),observeBefore:at(62000),reportRef:ref(15),reportCommandId:id(16),reportConsumedAt:at(3000),updatedAt:at(3000)};const out=revoke()(reported,{requestRef:reported.requestRef,reason:'보고 후 회수'},id(90),'e'.repeat(64),zero+4000);assert.equal(out.from,'REPORTED');assert.equal(out.to,'REVOKED');assert.deepEqual(reported.reportRef,ref(15));assert.equal(reported.observationNonceDigest,'4'.repeat(64));
+ assert.throws(()=>revoke()({...reported,reportConsumedAt:null},{requestRef:reported.requestRef,reason:'회수'},id(90),'e'.repeat(64),zero+4000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+});
+test('회수 payload의 다른ref/추가권위·이유/명령/digest 위조와 getter는 후보도 만들지 않는다',()=>{
+ const {before}=fixture(),good={requestRef:before.requestRef,reason:'합성 회수'};
+ for(const payload of [{...good,requestRef:ref(99)},{...good,requestRef:{...before.requestRef,version:2}},{...good,requestRef:{...before.requestRef,contentHash:'f'.repeat(64)}},{...good,verified:true},{...good,reason:''},{...good,reason:'\u0000'},{...good,reason:'가'.repeat(20001)}])assert.throws(()=>revoke()(before,payload,id(90),'e'.repeat(64),zero+4000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+ for(const command of [null,'not-a-command'])assert.throws(()=>revoke()(before,good,command,'e'.repeat(64),zero+4000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+ assert.throws(()=>revoke()(before,good,id(90),'e'.repeat(63),zero+4000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+ let gets=0;const payload={...good};Object.defineProperty(payload,'reason',{enumerable:true,get(){gets++;return '회수';}});assert.throws(()=>revoke()(before,payload,id(90),'e'.repeat(64),zero+4000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);assert.equal(gets,0);
+});
+test('회수/만료된 기록에서 새 회수를 만들지 않고 과거·미래·비정수 시각을 거절한다',()=>{
+ const {before}=fixture(),payload={requestRef:before.requestRef,reason:'합성 회수'};
+ for(const now of [NaN,zero+4000.1,zero-1,8640000000000001])assert.throws(()=>revoke()(before,payload,id(90),'e'.repeat(64),now),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+ const revoked={...before,state:'REVOKED',revokedAt:at(3000),revokeCommandId:id(89),updatedAt:at(3000)},expired={...before,state:'EXPIRED',updatedAt:at(600000)};
+ for(const v of [revoked,expired])assert.throws(()=>revoke()(v,payload,id(90),'e'.repeat(64),zero+700000),/^Error: SOURCE_CONTENT_REVOKE_INPUT_INVALID$/);
+ const out=revoke()(before,payload,id(90),'e'.repeat(64),zero+700000);assert.equal(out.to,'REVOKED');assert.equal(out.executionAuthorized,false);
+});
 test('전이후보와서버opaque digest를고정선택조건에묶고실제UPDATE/권위를만들지않는다',()=>{const f=fixture(),out=fn()(f.before,f.after,'e'.repeat(64),zero+1000);assert.equal(out.status,'UNVERIFIED_CAS_PREDICATE_CANDIDATE');assert.equal(out.from,'CREATED');assert.equal(out.to,'CHALLENGED');assert.equal(out.comparison.sql,'r.project_id=$1 AND r.id=$2 AND anvil.source_content_request_cas_digest(r)=$3');assert.deepEqual(out.comparison.parameters,[id(2),id(13),'e'.repeat(64)]);assert.equal(out.storageMutationPerformed,false);assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);f.before.requestRef.id=id(99);assert.equal(out.requestRef.id,id(13));});
 test('replay는과거기록확인일뿐CAS조건/쓰기/새발급을반환하지않는다',()=>{const f=fixture(),out=fn()(f.before,structuredClone(f.before),'e'.repeat(64),zero+700000);assert.equal(out.replay,true);assert.equal(out.comparison,null);assert.equal(out.storageMutationPerformed,false);});
 test('digest누락/추가권위/SQL삽입문자열은DB조건으로전달하지않는다',()=>{const f=fixture();for(const digest of [null,'','E'.repeat(64),'e'.repeat(63),"'; UPDATE anvil.source_content_requests SET state='ISSUED'; --",{digest:'e'.repeat(64),verified:true}])assert.throws(()=>fn()(f.before,f.after,digest,zero+1000),/^Error: SOURCE_CONTENT_CAS_INVALID$/);});

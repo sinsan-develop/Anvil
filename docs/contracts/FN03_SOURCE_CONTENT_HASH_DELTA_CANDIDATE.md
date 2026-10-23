@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 회수 SOURCE 소비**: 기존 §3 exact2 payload를 원request fullref/회수명령 UUID에 결박하고 기존 전이/CAS를 재사용한다. reason은 기존 content 요청과 같은 비공백/제어문자/20000자 규칙이며 원scope는 변경하지 않는다. 반환의 reasonDigest는 내부 후보의 canonical {reason} SHA256이지 관리 영수증·서명·현재 허가 증명이 아니다. 기존 소비자료/원기한 보존·터미널 새회수 거절·실제 회수/nonce/DB·route 미등록/권위false다. 새4RED→직접25 합성PASS/type/diff0·Minor11/기존 제외 유지.
+
 - **2026-10-23 서버문맥 계보 SOURCE**: 신규 readSourceContentPolicyLineageFromServerContextCandidate/FromHeldIdentityCandidate는 기존 후보 문맥 판독과 저장계보를 조합한다. 새 권위 producer·관리정책을 정의하지 않고 기존 고정음성/원요청 대조와 최신 회수/null·false6·분리조회를 유지한다. 같은 db 전달은 transaction·현재성 증명이 아니다. 실제 인증·키/nonce·SQL/DB·OS/route/served는 미검증/미활성이고 기존 상태/proof/정책 기준은 변경하지 않는다. 새4 유효RED→직접119 합성PASS, 신규 null 확인 추가 후 해당90/type/diff0·Minor11/기존 제외 유지.
 
 - **2026-10-23 저장요청 문맥·계보 SOURCE**: 별도 readSourceContentStoredPolicyLineageForDeclaredContextCandidate가 exact8 선언 문맥 복사→기존 저장 증거 판독→정확 requestRef/주체·client/두 세대/basePolicyRef 대조→복사 scope의 최신 정책계보를 순서대로 소비한다. 불일치는 정책 조회 전에 닫으며 기존 공개 reader와 실제 허가 기준은 유지한다. 최소 refs/계보·권위 false6/분리조회이고 실제 저장 인증·관리근거/current·SQL/DB·route는 미검증/미활성이다. 새4 RED→직접115 합성 PASS, fixture 타입 정정 후86 PASS/type/diff0·Minor11/기존 제외 유지.
@@ -313,3 +315,62 @@ OWNER만 경로/개별hash/원보고를 보호 조회, VIEWER는 refs/상태/집
 채택한 의미는 §5의 관측 시점 일치·사후변경 재관측 경계다. COMMIT 순간까지의 강한 파일 lease는 미지원이며 필요하면 별도 분산 lease 계약을 보완한다. 이 선택도 actual verifier/등록 권위·QA를 생략하는 승인이 아니다.
 
 전체계획 완료/전체 대기 전환이 아니며 Main은 영향 없는 승인 작업을 계속 선정한다. 기존 Bv3와 D2·플랫폼 특정 거절을 이 후보로 우회하지 않는다.
+
+## 12. 정책 관리 SOURCE 상세화 검토 초안 — 형식 미확정
+
+상태: **DRAFT_ONLY / NOT_AN_IMPLEMENTATION_BASELINE**. 2026-10-23 PMO는 후보 문서 작성만 채택했다. 아래 제안은 승인된 형식·관리권한·구현 지시가 아니며 코드/SQL/기존 reader에 반영하지 않는다. 기존 §3/§8/§11의 B SOURCE 경계와 실제 실행 제외는 유지한다.
+
+### 12.1 목적과 기존 근거
+
+정책 이벤트의 management_command_id가 같은 프로젝트의 commands.id를 참조한다는 사실과, 원 HUMAN 관리 명령·영수증·감사가 정확한 정책 개정을 뒷받침한다는 사실을 분리한다. FK/append/hash만으로 OWNER·재인증·별도 관리허가 또는 현재 권위를 인정하지 않는다.
+
+| 기존 정의·실제 SOURCE | 재사용 가능한 부분 | 그대로 재사용하면 안 되는 부분 |
+|---|---|---|
+| §3 defineSourceContentPolicy | 개정/회수 기록, HUMAN·프로젝트, 현재 로그인/OWNER/단독 제어/재인증/별도 관리허가 원칙 | 정확 payload·정책 snapshot·결과 data·관리 audit reasonCode는 미정의 |
+| 0040 source_content_policy_events | project/id/version1/sequence/subject/disposition/시각, snapshot hash, previous_ref·관리명령 FK | 관리 명령의 operation/원payload·영수증·감사 진위 검증, 최신 head lock/CAS |
+| source-content-policy-lineage.ts / reader | 최소6요약·인접 predecessor fullref/sequence·최신 음성 우선·원문 비노출 | 완전한 정책 targets/허용범위, 관리근거 또는 현재 허가 |
+| source-content-creation-evidence.ts | commands20 / receipt8 / audit14의 기존 projection 모양, canonical 원요청 hash와 결박 방식 | requestSourceContentHash operation·payload8·CONTENT_REQUEST_RECORDED 결과·AUTO/null 승인·EXPLICIT_SOURCE_CONTENT_HASH_REQUEST를 관리 명령에 복사 |
+| §8 기록/노출 원칙 | 원문 보호·정확 참조·집계/고정 이유 중심 보고 | 일반 로그/Git에 원payload·경로·원문/Secret을 추가 |
+
+commands20의 id는 서버 저장 명령 ID이고 commandId는 caller의 중복 명령 UUID다. receipt.commandId와 이벤트 management_command_id는 서버 저장 ID에 결박한다. 보고 프로토콜의 reportCommandId를 이 관리명령 ID로 대신하지 않는다.
+
+### 12.2 기존 불변조건과 새 형식 제안의 분리
+
+이미 있는 최소 snapshot6은 projectId, subjectUserId, sequence, disposition, recordedAt, expiresAt이며 기존 행과 canonical hash를 대조한다. AUTO/DENY/REVOKED·same-project·유한 원기한·인접 append/fullref·불변 과거 이력은 그대로다.
+
+다음은 **제안일 뿐 미확정**이다.
+
+| 결정 ID | 제안 | 기존 승인 대비 정확 차이 / 미확정 사항 |
+|---|---|---|
+| CM01 | 최소6에 형식 버전·고정 content namespace를 명시하는 병렬 완전 snapshot | 기존6에는 없는 키/버전 분기와 canonical hash 형식이 생김. 정확 키와 버전값은 확정 필요 |
+| CM02 | allowedOperations는 §3의 requestSourceContentHash / revokeSourceContentHash / linkDocumentSource만 열거 | 열거 표현·중복/빈 목록·DENY/REVOKED snapshot 표현은 새 형식. 관리 operation의 자기 허가·임의 operation·범용 READ/WRITE는 금지 |
+| CM03 | 유한 targets는 기존 documentRef/documentBlobRef/relativePath와 한도 규칙을 활용 | 정책에 root/connector/registration/observer exact refs를 함께 고정할지 결정 필요. wildcard·재귀·새 파일 자동 포함은 제안하지 않음 |
+| CM04 | 관리 payload 후보는 previousPolicyRef(null 또는 exact fullref), snapshot, reason | 기존에는 정확 payload 키가 없었음. snapshot 이유 중복 여부·이유 일치 규칙, HUMAN subject와 관리 actor 분리를 확정해야 함 |
+| CM05 | 새 불변 이벤트를 create(targetId=null/expectedVersion=0)하고 별도 이전 head fullref CAS로 경쟁 차단하는 안 권장 | 기존 이벤트 version은 항상1이라 그것만으로 최신성 CAS 불가. 기존 이벤트를 target으로 삼는 대안과 command/result 계약 차이가 있으므로 아직 구현하지 않음 |
+| CM06 | 관리 결과의 정확 새 policy fullref를 command.resultRef 및 audit.targetRef에 결박 | resultRef.data의 정확 모양/고정 상태 코드·관리 audit reasonCode가 새 계약. 기존 생성 결과 문자열을 재사용하지 않음 |
+| CM07 | 관리 당시 정확 actor/client/제어세대·기준정책·별도 관리허가·재인증을 원 명령에 연결 | 영수증/감사 projection의 모양과 현재 관리권위는 별개. 승인 필요 여부·관리 근거 참조·각 기록시각 관계는 확정 필요 |
+| CM08 | 원 관리 request 전체의 canonical hash를 commands.requestHash와 비교 | 원payload의 보호 보존/참조와 복원 기준이 필요. snapshot만으로 원request를 임의 재조립하거나 hash가 맞는 새 payload를 만들어 원명령이라고 하지 않음 |
+
+CM03의 기존 target 타입은 저장 문서 바이트의 참조이며 실제 파일 관측·OS 귀속·현재 등록/키/정책 진위를 보장하지 않는다. CM07의 관리 actor와 정책 subjectUserId가 같아야 하는지도 임의 결정하지 않는다. 현재 계보 후보의 부가 snapshot 키를 이 제안 형식으로 소급 해석하지 않는다.
+
+### 12.3 projection 재사용 시 필요한 결박 — 구현 전 검토 목록
+
+- commands20: id/프로젝트·scope, actorId/clientId/controlGeneration, operation/commandId/requestHash/operationId/state, authorizationReceiptId/approvalConsumptionId, expectedVersion/policyRef/payloadRef/resultRef/completedAt의 기존 모양을 보존한다. 관리 operation 일치와 정확 원payload·결과·이전 head 결박은 별도 구현 대상이다.
+- receipt8: id/scopeKind/scopeId/commandId/subjectRef/policyRef/scopeDigest/approvalDecisionRef의 기존 모양을 보존한다. subjectRef는 관리 HUMAN actor/client와 결박할 제안이며 정책의 수혜 subject를 관리 actor로 바꿔치기하지 않는다. 기존 AUTO 생성처럼 approvalDecisionRef=null을 관리에 강제하지 않는다.
+- 기존 digest 방식은 {projectId,actorId,clientId,controlGeneration,requestHash,policyRef,targetRef}의 canonical hash다. 여기서 policyRef는 관리허가의 기준정책이고 targetRef는 새 정책 이벤트 fullref가 될 제안이다. 새 content-policy 자체가 스스로의 관리허가가 되지 않는다.
+- audit14의 projectId/serverSequence/eventId/actorRef/clientRef/commandId/operationId/targetRef/policyRef/approvalRef/outcome/reasonCode/scopeDigest/sourceKind를 원명령·영수증과 대조할 제안이다. 저장 조회 시 correctionOf 및 기록시각을 별도로 보존하고 정정/중복/누락을 과거 적합 이력으로 숨기지 않는다.
+- 원request hash·receipt/digest·audit의 구조가 모두 일치해도 실제 관리허가·서명·현재권위·COMMIT/원자성이 자동으로 증명되지 않는다. 검증기/권위 생산자가 없으면 managementEvidenceVerified/currentAuthorityVerified와 저장·실행·LINK는 계속 false다.
+
+### 12.4 호환성·이력·영향
+
+확정 전 영향은 이 문서와 작업현황 기록뿐이다. 0040·기존 commands/receipt/audit 표·적용 SQL·reader/route·역할·정책은 변경하지 않는다.
+
+추후 형식이 채택되더라도 기존6 snapshot을 덮거나 hash를 재계산하지 않는다. 새 완전 형식은 새 이벤트/새 fullref로만 취급하고 이전 ref/hash는 그대로 보존하는 안을 권장한다. 이전 최소 요약 행은 구조 이력으로 조회하되 관리 권위를 확인한 완전 정책으로 승격하지 않는다. 기존 head/계보 reader의 음성 우선·원기한·exact request/context binding·원문 비노출과 기존 공개 DTO/기본 경로를 바꾸려면 그 delta를 별도로 대조해야 한다.
+
+0039·Bv3/D2·원실패/특정 거절·보호8·Minor11 및 SQL145 NOT_RUN은 변동 없다. 이 초안으로 실제 정책 생성·권한 부여·DB/키/nonce/OS/route/served/서비스·Agent/비용·main을 열지 않는다.
+
+### 12.5 대안·권장안·다음 판단
+
+- A: 위 CM01~08의 정확 후보 형식과 결박을 검토·확정한 뒤 병렬 미등록 순수 codec/inspector와 합성 시험부터 구현한다. 미구현 관리근거를 명확히 채울 수 있지만 canonical hash/관리 데이터 형식이라는 새 계약이 생긴다.
+- B: 기존 최소6·계보 구조 판독만 유지한다. 현재 구현 변경은 없지만 관리근거/full policy가 계속 미확인이라 실제 요청/검증/LINK를 열 수 없다.
+- 권장 A는 **상세화 방향에 대한 Main 제안**이다. PMO가 CM01~08을 기존 승인 구체화와 새 실질 계약 변경으로 구분한 다음 정확한 확정/보완 범위를 결정한다. 초안 작성 채택을 형식 확정·구현/SQL 반영 승인으로 해석하지 않는다. 그동안 기존에 정의된 독립 SOURCE는 계속 진행한다.

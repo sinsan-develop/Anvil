@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 관리 상세 계약 초안**: PMO 채택은 후보 문서 작성뿐이다. 기존 SOURCE 계약 §12에 CM01~08의 정확 새 결정과 기존 근거·관리projection/원payload hash·호환성·대안을 분리했다. DRAFT_ONLY이며 새 관리 형식의 구현/SQL/실제 권한에는 적용하지 않는다. 독립인 기존 exact2 회수 소비는25 합성PASS/type/diff0·정적 C0/I0/M0로 별도 진행했고 Minor11/실제 제외는 유지한다.
+
+- **2026-10-23 FN03 회수 전이 SOURCE**: 기존 exact2 회수 payload의 순수 소비를 기존 전이/CAS에 연결했다. 원ref/명령/이유·터미널/시각/추가키·getter를 검사하고 원scope/보고 소비자료는 보존하며 최소 후보/digest·권위false만 반환한다. 새4RED→직접25 합성PASS/type/diff0·실제 회수/DB/정책/route0·Minor11/기존 제외 유지·전체 계획 미완료.
+
 - **2026-10-23 FN03 서버문맥 계보 SOURCE**: 기존 서버 identity/control 후보와 저장계보를 명시 조합했다. 기존 상태/proof/정책 경로 무변경·정확 문맥/원기한 대조·최신음성/null 보존·추가조회/원문노출0·분리조회/false6다. 시험 초기화 오류를 유효 RED와 구분한 후 새4 미구현 RED→직접119 합성PASS, 신규 null 확인 추가 후 해당90/type/diff0. 실제 인증/DB·route/served 미활성·Minor11/기존 제외 유지·전체 계획 미완료.
 
 - **2026-10-23 FN03 저장요청 정책계보 SOURCE**: 복사된 exact8 선언 문맥·원 request fullref 대조 뒤 저장 scope를 새 정책계보 소비에 전달했다. 원요청/계보 각1조회·음성 보존·원문 비노출·권위 false6/분리조회이며 기존 공개 상태/proof/정책 경로는 유지한다. 새4 RED→직접115 합성 PASS, fixture 타입 표기 정정 후 해당86 PASS/type/diff0. 실제 DB/키/인증/route/served 미활성·Minor11/기존 제외 유지·전체 계획 미완료.
