@@ -16,6 +16,8 @@ export function parseRoute(hash: string): Route {
   if(transfer&&Number.isSafeInteger(Number(transfer[3])))return{screen:'transfers',projectId:transfer[1]!,assignmentRef:{id:transfer[2]!,version:Number(transfer[3]),contentHash:transfer[4]!}};
   const mobile=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/mobile\/approvals$/.exec(path);
   if(mobile)return{screen:'mobile',projectId:mobile[1]!,mobileScreen:'approvals'};
+  const mobileRequest=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/mobile\/approvals\/requests\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/.exec(path);
+  if(mobileRequest)return{screen:'mobile',projectId:mobileRequest[1]!,mobileScreen:'approvals',approvalRequestId:mobileRequest[2]!};
   const document=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/documents\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})$/.exec(path);
   if(document&&Number.isSafeInteger(Number(document[3])))return{screen:'documents',projectId:document[1]!,documentRef:{id:document[2]!,version:Number(document[3]),contentHash:document[4]!}};
   const task=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/workspace\/plans\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})\/tasks\/([A-Za-z][A-Za-z0-9_-]{0,63})$/.exec(path);
@@ -43,6 +45,10 @@ export function approvalRequestHref(projectId:string,requestId:string):string{
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
  if(!uuid.test(projectId)||!uuid.test(requestId))throw Error('CLIENT_PATH_INVALID');
  return '#/projects/'+projectId+'/approvals/requests/'+requestId;
+}
+/** 같은 원 요청의 모바일 조회 선택일 뿐 결정·소비 허가가 아니다. */
+export function mobileApprovalRequestHref(projectId:string,requestId:string):string{
+ return approvalRequestHref(projectId,requestId).replace('/approvals/requests/','/mobile/approvals/requests/');
 }
 /** 고정 업무의 조회·명시 초안 준비 진입점. 시작/저장 허가가 아니다. */
 export function workspaceTaskHref(projectId:string,planRef:PlanTaskSelection['planRef'],taskCode:string):string{
