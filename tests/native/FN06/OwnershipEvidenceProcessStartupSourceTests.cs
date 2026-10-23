@@ -47,6 +47,13 @@ internal static class OwnershipEvidenceProcessStartupSourceTests
             var report=startup.ReadCurrent();
             if(report.CreationFlags!=0x08080404||report.InheritHandles||!report.EmptyUnicodeEnvironment||report.ProcessCreated||report.ThreadCreated||report.ProcessCreationAuthorized||report.ExecutionAuthorized||report.DispatchPerformed)
                 throw new InvalidOperationException("STARTUP_INPUT_MUST_NOT_AUTHORIZE_PROCESS");
+            if(report.WorkerInputBound)throw new InvalidOperationException("UNBOUND_STARTUP_REPORTED_BOUND");
+            DateTime now=DateTime.UtcNow;
+            var plan=OwnershipEvidenceWorkerInputSourceTests.PlanSource(now.AddSeconds(-1),now.AddSeconds(60),now.AddSeconds(30));
+            startup.BindWorkerPlanSource(plan);
+            if(!startup.ReadCurrent().WorkerInputBound)throw new InvalidOperationException("WORKER_PLAN_NOT_BOUND");
+            Reject(()=>startup.BindWorkerPlanSource(plan));
+            startup.ReadCurrent();
             Reject(()=>OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment));
             startup.ReadCurrent();
             assignment.Dispose();

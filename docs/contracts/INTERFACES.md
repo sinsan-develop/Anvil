@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 source plan의 worker 인자 결박 — 2026-10-23
+
+새 WorkerInputSource.BuildSource(plan)은기존OwnershipEvidencePreparationPlan의SOURCE_PLAN_ONLY/권한false와Host동일32키·표기/120초를검사해고정복사한다. 정확worker3인자 run/processGeneration/expires를만들되기존originalEnd보다짧은plan.ExpiresAt를ms내림하고원기한으로늘리지않는다. 배열은복사반환하며Arguments읽기에도최소UTC기한/역행·생성후단조최대10초를확인한다. 이것은current서버인증/서명/승인root/image·actualwriter가아니고SOURCE_ONLY/실행false다.
+
+ISuspendedStartupCandidate.BindWorkerPlanSource는원private startup의gate/부모현재성아래1회만저장하며최종기한검사전에는원입력을바꾸지않는다. 중복결박은거절하고이미저장된값을유지한다. ReadCurrent는결박이있으면worker입력기한도대조하며WorkerInputBound는로컬입력존재표식일뿐준비·실행권한이아니다. cleanup은해당입력참조를제거한다. 실제CreateProcess/image/명령행·worker호출은여전히없다.
+
+미래시험SOURCE·정적대조만수행했고C#compile/RunAll/OS0이다. 한정검토M1인정상생성·결박후기한경과에대한Arguments/ReadCurrent거절시험은아직없으며새native소비검수전에보완해야한다. source의기한검사연결을실제경계/권위/기동PASS로보고하지않는다. 기존D24/원실패·actualwriter후보v3/5표·SQL/키/DB/서비스/Agent권한은변경하지않는다.
+
 ## FN06 D1 suspended worker 생성입력 SOURCE — 2026-10-23
 
 새 ProcessStartup partial은 원 private JobAssignment만 수용한다. 외부 interface/null·budget은 부적합이면 콜백/상태읽기/Dispose 없이 거절한다. 원Job/부모list·value·120초 소유수명을 owner gate 아래 대조하고 private STARTUPINFOEX를 만든다. STARTUPINFO의 cb는 EX전체크기이며 ptr4에서는기본68/EX72,ptr8에서는기본104/EX112를 요구한다. 고정flags는 CREATE_SUSPENDED|CREATE_UNICODE_ENVIRONMENT|EXTENDED_STARTUPINFO_PRESENT|CREATE_NO_WINDOW(0x08080404)이며 상속false/표준handle0이다. 외부실행명령·이미지경로/환경문자열/포인터를받거나반환하지않고CreateProcess를선언/호출하지않는다.

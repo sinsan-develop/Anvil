@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-23 D1 worker 입력 SOURCE 연결**: WorkerInputSource는기존Host의SOURCE_PLAN_ONLY/false·정확32키/UUID·안전양수·소문자hash·UTC/초기version/최대120초를대조하고원selection을고정복사한다. 원expires보다짧은plan.ExpiresAt를ms내림해runId/processGeneration/expiresAt정확3인자를만들며외부배열변경은반영하지않는다. Arguments읽기와startup현재조회는로컬UTC역행/최소기한·생성후단조최대10초를검사한다. startup gate 아래유효plan을1회결박하고최종검사뒤에만workerInput을저장·중복/실패시기존입력유지·cleanup시참조제거한다. 실제서버current인증/승인image/root·원process/thread/actualwriter권위로승격하지않는다.
+
+- **같은 SOURCE 정적결과·M1 이월**: 미래입력/배열불변·짧은기한/형식/초과/이미만료거절과별도OS승인후startup결박·중복거절SOURCE를먼저작성했지만compile/RunAll/RED-GREEN/실Marshal/OS·Agent0이다. 한정독립정적C0/I0/M1의M1은정상생성·결박후만료시Arguments/startup ReadCurrent의거절을직접보는미래시험누락이다. 현재source에EnsureCurrent연결은있으나그호출이빠지는변이를현시험이잡는다고주장하지않는다. 이M1은해결/합격으로삭제하지않고새native소비검수전에필수후속시험조건으로남긴다. 실제기한경계/동시성/Interop/인증·image/root귀속은미검증이다. Main diff0·기존D2source4불변/후보v3미승인/보호8보존이며TS불변으로기존45/type반복0이다. 정확code4+기록3=7경로를기존branch에보존한다.
+
+- **2026-10-23 D1 worker3인자 결박 SOURCE 착수**: 기존Host의32필드SOURCE_PLAN_ONLY를고정복사해worker의run/processGeneration/최솟값expires3인자를생성하고private startup에1회결박한다. 원plan보다짧은기한/단조경과·불변배열·중복/만료입력거절을작성하되 sourceplan은current인증/승인image/root·actualwriter권위가아니며모든실행권한false를유지한다. 미래반례SOURCE먼저작성·compile/RunAll/실제OS/Agent0, 기존Host/Worker4파일수정0·D2별도미결/원거절·writer후보v3미승인유지다.
+
 - **2026-10-23 D1 suspended 생성입력 SOURCE 일부 연결**: ProcessStartupSource는 원 private JobAssignment형만 받고 STARTUPINFO/EX의 필드·포인터 크기별68/72·104/112 모양, cb=EX전체·고정0x08080404 flags·상속false/표준핸들0·빈Unicode환경4바이트를private에보관한다. 외부path/환경값/handle/pointer입력·반환과CreateProcess선언/호출은없다. owner gate 아래 현재빈Job/부모수명·유한결과수용·중복시attempted분리·초기실패/명시Dispose/최종자·부모정리의환경→attribute/value/list→Job 순서를연결했고미확인정리는terminalUNKNOWN이다. 토큰/desktop정책·승인image/worker인자·현재인증준비/실writer와실process/thread생성은미완료/권한false로명시한다.
 
 - **동일 SOURCE 검토·검증 한계**: 미래순수layout/null/foreign/budget반례SOURCE 및 별도승인후원Job/list/startup·중복거절후current·부모Dispose연쇄/재Dispose SOURCE를먼저작성했으나compile/RunAll/RED-GREEN/Marshal/PInvoke/버퍼/Job/process실행전부NOT_RUN이다. 공식STARTUPINFOEX/STARTUPINFO/CreateProcess환경·flags 대조와한정독립정적C0/I0/M0·Main diff0만확인했다. 실제레이아웃/할당실패/경합/finalizer/빈환경.NET기동·강제상한/권위는미검증이다. 빈환경/NoWindow/상속false는OS/source격리나Agent환경정책이아니다. TS불변으로과거45/type검사를반복·native검증으로대체하지않았다. 새source/test2+JobAssignment정리delta1+상태/계획/계약3의정확6경로만기존branch에보존하며D2고정4자동포함0·소진FAIL/거절/5표/SQLpendingM1·actualwriter후보v3미승인을유지한다. 다음은원image/worker인자와현재준비권위결박선행이며전체계획완료가아니다.

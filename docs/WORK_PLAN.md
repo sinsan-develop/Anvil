@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 worker 입력결박 SOURCE**: 원32필드sourceplan을정확3인자/짧은기한으로고정하고startup1회결박·현재조회/Arguments기한검사를연결했다. 한정정적C0/I0/M1·diff0이며M1(정상생성·결박후만료거절미래시험누락)은native소비검수전필수후속으로남긴다. compile/RunAll/OS/Agent/현재인증·image/root권위는미검증/권한false, 전체계획미완료다.
+
 - **2026-10-23 FN06 D1 suspended 생성입력 SOURCE**: 원JobAssignment만소비하는STARTUPINFOEX/빈환경·고정flags와환경버퍼→부모목록/Job정리연계를작성했다. 미래반례SOURCE/공식서명/한정정적C0/I0/M0·diff0범위이며compile/실process·thread/현재인증준비/키·DB/Agent는미실행/미구현이다. 레이아웃·빈환경호환·토큰/desktop/source격리·실writer·강제상한은미검증, 기존D24/원실패/거절과별도writer후보v3미승인은불변이다.
 
 - **writer 후보 v3 보정검토 범위**: 최초성립/lease과거이력+head유실은UNKNOWN·최초재생성거절이며기존head재등록/환경교체/복구성공전이는미지원·미구현으로분리했다. v1/v2지적보존후v3잔여I1한정정적C0/I0/M0일뿐새schema/권한구현승인·실DB/OS/전체FN06완료가아니다. PMO결정후보rawBF19670DAF44B01D2EAA12CB4CB8661AB573A77CF6133A5B3EC4FBAD8885533D.
