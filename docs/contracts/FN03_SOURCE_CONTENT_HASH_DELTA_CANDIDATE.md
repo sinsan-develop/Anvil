@@ -1,5 +1,9 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 root 후보 검토 보정**: 초기128KiB는 기존 허용 한글 선언을 거절해 내부 행 projection 상한을256KiB로 보정했다. 기존 parser/저장/API 한도 변경0, 재현 RED1→새9PASS/type/diff0이다. 아래128KiB 항목은 초기 후보 이력이며 현행 지원 상한은 이 항목을 따른다. 신규 Minor1(원scope hash 비교 반례의 선행 hash 무결성 가림)은 보류하여 기존7건과 합8건 미해결, 실제SQL/DB·등록/OS/현재권위·served 미검증/기존 실행 제외는 그대로다.
+
+- **2026-10-23 root 선언 판독 SOURCE**: readSourceContentRootHeadCandidate는 원 scope의 root ID로 기존 source_roots 최신head만 LEFT JOIN하고 정확ref/원선언snapshot hash·connectorId/pathHintHash를 대조한다. 회수·누락·변경에서 과거head fallback0이며 정상도 SOURCE_ROOT_DECLARATION_ONLY/UNVERIFIED·false4다. canonical128KiB 이하의 지원 projection만 받으며 기존 저장/API한도 변경0이다. 실제등록키/observer·OS실경로/원문·현재권위·인증/잠금/PG진위는 별도이며 경로원문을 반환하지 않는다. route·실DB 미연결, 합성8RED→GREEN/type/diff0만 확인했고 기존Minor7/미래SQL145NOT_RUN·실verifier412/실제 제외는 유지한다.
+
 - **2026-10-23 보유 identity 조합 SOURCE**: readSourceContentRequestStatusFromHeldIdentityCandidate는 기존 순수 identity 최소 투영/구체 control 포트를 같은 caller db에 조합하고 원요청·최신 정책의 분리 조회와 최소13키 요약을 재사용한다. 입력 identity 모양/주어진 시각·같은 db 객체는 실제 인증/현재 권위/transaction의 증명이 아니다. 실제 auth producer/route/DB·권한은 미연결이며 정상도 UNVERIFIED/모든 권위·저장·실행·LINK false다. 새5 RED→직접83PASS/type/diff0은 합성 자료에 한정한다. Minor7/SQL145 NOT_RUN·기존 fail-closed와 실제 실행 제외 유지.
 
 - **2026-10-23 identity 최소 투영 독립 검토**: 신규2코드파일 delta C0/I0/M0·실행/수정0이다. 현재서버타입/authSession지원범위·exact키/만료/재인증Date상한·사용자Date메서드미호출,session/시각·owner/reauth비반환·최소UNVERIFIED/고정거절과getter/반환분리반례를정적으로대조했다. 실제인증생산자·DB시각·현재세션/권한은미구현/미검증이며Minor7을유지한다. 다음Main SOURCE대상은서버보유identity값의최소투영과프로젝트control포트·원요청/정책·최소요약을같은caller연결에서명시적으로조합하는비활성함수와합성여정이다. 실제authproducer/route연결·DB/권한·새Agent실행을열지않고기존제외/원실패/거절을유지하며전체계획완료로승격하지않는다.

@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 root 선행 SOURCE**: 원 content 요청의 rootRef를 기존 최신 선언head·snapshot/hash/connector/pathHintHash에 결박하는 비활성 판독과8합성 반례를 추가했다(RED→GREEN8/type/diff0). 과거선언 fallback0·정상도 선언 일치/현재권위false이며 실제 등록·OS/파일/SQL/DB·route/served는 미구현·미검증이다. 새사용가능기능0·기존Minor7/SQL145NOT_RUN 및 실제 실행 제외 유지, 전체FN03/StageB완료가 아니다.
+
 - **2026-10-23 FN03 SOURCE 후속**: 서버 보유 identity 최소 포트와 구체 control 판독을 원요청/정책·13키 요약에 명시 조합했다. 새5 RED→직접83PASS/type/diff0은 합성 caller 여정이며 실제 인증/DB/route·현재 권위·served 완료가 아니다. Minor7과 미래 SQL145 NOT_RUN/실verifier412·기존 실행 제외 유지. 실제 사용자 기능 추가0, 계획상 FN03/Stage B 전체 완료로 처리하지 않는다.
 
 - **2026-10-23 identity 최소 투영 독립 검토**: 신규2코드파일 delta C0/I0/M0·실행/수정0이다. 현재서버타입/authSession지원범위·exact키/만료/재인증Date상한·사용자Date메서드미호출,session/시각·owner/reauth비반환·최소UNVERIFIED/고정거절과getter/반환분리반례를정적으로대조했다. 실제인증생산자·DB시각·현재세션/권한은미구현/미검증이며Minor7을유지한다. 다음Main SOURCE대상은서버보유identity값의최소투영과프로젝트control포트·원요청/정책·최소요약을같은caller연결에서명시적으로조합하는비활성함수와합성여정이다. 실제authproducer/route연결·DB/권한·새Agent실행을열지않고기존제외/원실패/거절을유지하며전체계획완료로승격하지않는다.
