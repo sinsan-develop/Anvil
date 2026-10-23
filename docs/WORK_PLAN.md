@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 준비profile 실행기 입력 해석**: 기존 server32필드SOURCE의형식/원선택·기한·false권한·미확인목록을대조하는순수consumer를구현했다. 독립C0/I1/M0의배열prototype문제는합성RED→own descriptor복사로보완, 최종신규7+인접10=17합성PASS/type/diff0이다. 실제채널/native reader/서명·실DB/OS/Agent는미연결/미검증이고기존native지적·권위false를유지한다. 원fixture/타입실패는STATUS보존, source입력의native소비선행을계속한다.
+
 - **2026-10-23 FN06 D1 startup 원 image 소비**: worker결박 startup→private 원image owner 소비·Job/입력/기한 전후검사 SOURCE 연결, 한정정적C0/I0/M1이다. M1(순수fake시험의null입력가림)은 유효입력조합 미래시험조건으로 이월하며 compile/실파일/OS/Agent는NOT_RUN이다. 이전지적과승인mapping/현재인증·실제process 미완료를 유지하고 소스관측을실행권한으로등록하지않는다.
 
 - **2026-10-23 FN06 D1 원 image/root 보유**: private 원 handle/read-only stream·기존관측소비·직렬화/역순처분 SOURCE를 작성했고 한정독립정적C0/I0/M0·Main diff0만 확인했다. 경로힌트≠승인mapping이며 실제compile/RunAll/파일/OS·권한/Agent/정리확인은NOT_RUN, 기존image/worker지적 해소판정0이다. 다음은 startup 원owner형 소비연결 SOURCE다.
