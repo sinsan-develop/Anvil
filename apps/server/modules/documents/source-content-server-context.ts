@@ -4,6 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
+import {readSourceContentStoredVerificationLineageWithManagementForDeclaredContextCandidate} from './source-content-request-record.ts';
 import {readSourceContentStoredVerificationWithManagementForDeclaredContextCandidate} from './source-content-request-record.ts';
 import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate,readSourceContentStoredVerificationForDeclaredContextCandidate,readSourceContentStoredVerificationAfterReceivedForDeclaredContextCandidate,readSourceContentStoredManagementScopeForDeclaredContextCandidate} from './source-content-request-record.ts';
 
@@ -45,6 +46,26 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 보유 문맥과 구체 control 후보만 연결하며 실제 인증·현재 권위를 추가하지 않는다. */
+export function readSourceContentVerificationLineageWithManagementFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ return readSourceContentVerificationLineageWithManagementFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,managementValue,operation,targetIndex,nowMs);
+}
+/** 원저장 관리·계보 소비에 기존 서버 문맥을 전달하고 입력을 첫 문맥 await 전에 고정한다. */
+export async function readSourceContentVerificationLineageWithManagementFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_SERVER_VERIFICATION_INPUT_INVALID');
+ let management:Record<string,any>;
+ try{
+  const raw=canonicalJson(managementValue);if(Buffer.byteLength(raw,'utf8')>4198400||typeof operation!=='string'||!['linkDocumentSource','requestSourceContentHash','revokeSourceContentHash'].includes(operation))throw Error();
+  const v:unknown=JSON.parse(raw);if(!recordV1(v,['evidence','expected']))throw Error();management=v;
+ }catch{throw Error('SOURCE_CONTENT_SERVER_MANAGEMENT_INPUT_INVALID');}
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,requestRef:null,observationRef:null,policyRef:null,verificationRef:null,targetIndex:null,lineage:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,
+  storedRequestAuthenticated:false as const,managementEvidenceVerified:false as const,signatureVerified:false as const,bodyBytesVerified:false as const,verifierEvidenceVerified:false as const,currentAuthorityVerified:false as const,
+  storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredVerificationLineageWithManagementForDeclaredContextCandidate(db,c,management,operation,targetIndex,nowMs),close);
+}
 /** 기존 보유 문맥과 구체 control만 조합하며 실제 인증·관리 원문 생산자는 연결하지 않는다. */
 export function readSourceContentVerificationWithManagementFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
  return readSourceContentVerificationWithManagementFromServerContextCandidate(db,{
