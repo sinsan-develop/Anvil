@@ -1,0 +1,50 @@
+-- 미실행 최종 행 묶음 반례 SOURCE. 실제 테이블/trigger/COMMIT·권한·서명 검증이 아니다.
+-- phase/결박 helper용 typed projection: 전체 scope/report codec·FK fixture를 대신하지 않는다.
+BEGIN;
+DO $$
+DECLARE g anvil.source_content_requests;n anvil.source_content_requests;o anvil.source_content_observations;p anvil.source_content_observations;a anvil.audit_events;b anvil.audit_events;empty_o anvil.source_content_observations[]='{}';empty_a anvil.audit_events[]='{}';
+BEGIN
+ g.project_id='78000000-0000-4000-8000-000000000001';g.id='78000000-0000-4000-8000-000000000002';g.version=1;
+ g.connector_id='78000000-0000-4000-8000-000000000003';g.registration_id='78000000-0000-4000-8000-000000000004';g.client_id='78000000-0000-4000-8000-000000000005';
+ g.scope_digest=repeat('a',64);g.created_at='2026-10-23T18:00:00.000Z';g.updated_at=g.created_at;g.expires_at=g.created_at+interval '10 minutes';g.state='CREATED';g.exchange_failures=0;
+ ASSERT anvil.source_content_report_bundle_shape(g,empty_o,empty_a) IS TRUE,'BUNDLE_UNCONSUMED_EMPTY';
+ ASSERT anvil.source_content_report_bundle_shape(g,NULL,empty_a) IS FALSE,'BUNDLE_NULL_ARRAY_NOT_EMPTY';
+ g.scope_json=jsonb_build_object('installationId','78000000-0000-4000-8000-000000000006','connectorRef',jsonb_build_object('id',g.connector_id,'version',1,'contentHash',repeat('b',64)),
+ 'registrationRef',jsonb_build_object('id',g.registration_id,'version',1,'contentHash',repeat('c',64)),'observerRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000007','version',1,'contentHash',repeat('d',64)),
+ 'basePolicyRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000008','version',1,'contentHash',repeat('e',64)),'hostFingerprint',repeat('f',64));
+ g.state='REPORTED';g.updated_at=g.created_at+interval '4 seconds';g.preflight_json='{}';g.preflight_digest=repeat('1',64);g.challenge_json='{}';g.challenge_issued_at=g.created_at+interval '1 second';g.challenge_expires_at=g.created_at+interval '61 seconds';
+ g.proof_signature=repeat('A',86);g.credential_token_digest=repeat('2',64);g.credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY';g.credential_issued_at=g.created_at+interval '2 seconds';g.credential_expires_at=g.created_at+interval '62 seconds';
+ g.observation_request_ref=jsonb_build_object('id','78000000-0000-4000-8000-000000000009','version',1,'contentHash',repeat('3',64));g.observation_nonce_digest=repeat('4',64);
+ g.permit_json=jsonb_build_object('issuedAt','2026-10-23T18:00:02.000Z','observeBefore','2026-10-23T18:01:02.000Z','observationNonce','projection-only-nonce');
+ g.report_consumed_at=g.updated_at;g.report_consumed_command_id='78000000-0000-4000-8000-000000000010';
+ o.project_id=g.project_id;o.id='78000000-0000-4000-8000-000000000011';o.version=1;o.request_id=g.id;o.request_version=1;o.scope_digest=g.scope_digest;o.report_command_id=g.report_consumed_command_id;
+ o.observed_at=g.created_at+interval '2500 milliseconds';o.finished_at=g.created_at+interval '3 seconds';o.received_at=g.report_consumed_at;o.evidence_class='CONNECTOR_REPORTED';o.os_verification='OS_UNVERIFIED';o.signature=repeat('A',86);
+ o.report_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_CONTENT_REPORT','projectId',g.project_id,'installationId',g.scope_json->>'installationId','commandId',o.report_command_id,
+ 'requestRef',jsonb_build_object('id',g.id,'version',1,'contentHash',g.scope_digest),'scopeDigest',g.scope_digest,'observationRequestRef',g.observation_request_ref,'observationNonce',g.permit_json->>'observationNonce',
+ 'connectorRef',g.scope_json->'connectorRef','registrationRef',g.scope_json->'registrationRef','observerRef',g.scope_json->'observerRef','hostFingerprint',g.scope_json->>'hostFingerprint',
+ 'observedAt',anvil.source_read_iso(o.observed_at),'finishedAt',anvil.source_read_iso(o.finished_at));
+ o.content_hash=anvil.source_read_hash(o.report_json);o.report_json=o.report_json||jsonb_build_object('signature',o.signature,'reportHash',o.content_hash);
+ a.project_id=g.project_id;a.server_sequence=1;a.event_id='78000000-0000-4000-8000-000000000012';a.actor_ref=jsonb_build_object('kind','CONNECTOR','connectorId',g.connector_id,'registrationId',g.registration_id);a.client_ref=g.client_id;
+ a.target_ref=jsonb_build_object('id',o.id,'version',1,'contentHash',o.content_hash);a.policy_ref=g.scope_json->'basePolicyRef';a.outcome='APPLIED';a.reason_code='SOURCE_CONTENT_REPORT_STORED';a.source_kind='SOURCE_CONTENT_OBSERVATION_PROTOCOL';a.scope_digest=g.scope_digest;a.recorded_at=g.created_at+interval '3000.123 milliseconds';
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[a]) IS TRUE,'BUNDLE_EXACT_PROJECTION_MICROSECOND_AUDIT';
+ n=g;n.permit_json=jsonb_set(n.permit_json,'{issuedAt}','"2026-10-23T18:00:10.000Z"');n.updated_at=n.created_at+interval '11 seconds';n.report_consumed_at=n.updated_at;p=o;p.received_at=n.report_consumed_at;
+ ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_LATE_PERMIT_EARLY_OBSERVATION';
+ n=g;n.permit_json=jsonb_set(n.permit_json,'{observeBefore}','"2026-10-23T18:00:04.500Z"');p=o;p.finished_at=g.created_at+interval '5 seconds';p.report_json=jsonb_set(p.report_json,'{finishedAt}',to_jsonb(anvil.source_read_iso(p.finished_at)));p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[p],ARRAY[b]) IS FALSE,'BUNDLE_FINISHED_AFTER_OBSERVE_BEFORE_WITH_MATCHING_HASH_AUDIT';
+ ASSERT anvil.source_content_report_bundle_shape(g,empty_o,ARRAY[a]) IS FALSE,'BUNDLE_MISSING_OBSERVATION';
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],empty_a) IS FALSE,'BUNDLE_MISSING_AUDIT';
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o,o],ARRAY[a]) IS FALSE,'BUNDLE_DUPLICATE_OBSERVATION';
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[a,a]) IS FALSE,'BUNDLE_DUPLICATE_AUDIT';
+ p=o;p.project_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_OTHER_PROJECT';
+ p=o;p.report_command_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_OTHER_REPORT_GUID';
+ p=o;p.received_at=o.received_at+interval '1 ms';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_CONSUMPTION_TIME';
+ p=o;p.report_json=jsonb_set(p.report_json,'{observationNonce}','"different"');p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[b]) IS FALSE,'BUNDLE_RAW_NONCE_WITH_MATCHING_HASH_AND_AUDIT';
+ b=a;b.command_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_NOT_HUMAN_COMMAND';
+ b=a;b.source_kind='HUMAN_COMMAND';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_WRONG_AUDIT_SOURCE';
+ b=a;b.target_ref='{}';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_WRONG_AUDIT_TARGET';
+ b=a;b.recorded_at=g.report_consumed_at+interval '1 microsecond';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_AUDIT_AFTER_CONSUMPTION';
+ n=g;n.state='REVOKED';n.updated_at=g.updated_at+interval '1 second';n.revoked_at=n.updated_at;n.revoke_command_id='78000000-0000-4000-8000-000000000013';ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[o],ARRAY[a]) IS TRUE,'BUNDLE_REVOKED_PRESERVES_REPORT';
+ n=g;n.report_consumed_at=NULL;n.report_consumed_command_id=NULL;n.state='ISSUED';ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[o],ARRAY[a]) IS FALSE,'BUNDLE_ORPHAN_REPORT';
+END;$$;
+ROLLBACK;

@@ -289,6 +289,43 @@ CREATE TABLE anvil.source_content_observations (
   AND finished_at>=observed_at AND finished_at-observed_at<=interval '30 seconds' AND finished_at<=received_at+interval '5 seconds')
 );
 
+-- 최종 행 묶음의 구조 조건만 검사한다. 배열은 신뢰된 같은 snapshot 조회가 별도로 구성해야 한다.
+-- trigger/쓰기/권한에는 연결하지 않는다. 전달 배열이 DB의 전체 결과라는 증명이나 COMMIT 보장이 아니다.
+CREATE FUNCTION anvil.source_content_report_bundle_shape(g anvil.source_content_requests,observations anvil.source_content_observations[],events anvil.audit_events[]) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE o anvil.source_content_observations;a anvil.audit_events;target jsonb;
+BEGIN
+ IF anvil.source_content_request_phase_shape(g) IS NOT TRUE OR observations IS NULL OR events IS NULL THEN RETURN false;END IF;
+ IF g.report_consumed_at IS NULL THEN RETURN cardinality(observations)=0 AND cardinality(events)=0;END IF;
+ IF cardinality(observations)<>1 OR cardinality(events)<>1 OR array_lower(observations,1)<>1 OR array_lower(events,1)<>1 THEN RETURN false;END IF;
+ o=observations[1];a=events[1];target=jsonb_build_object('id',o.id,'version',o.version,'contentHash',o.content_hash);
+ RETURN COALESCE(
+  o.id IS NOT NULL AND o.project_id=g.project_id AND o.version=1 AND o.request_id=g.id AND o.request_version=g.version
+  AND o.scope_digest=g.scope_digest AND o.report_command_id=g.report_consumed_command_id AND o.received_at=g.report_consumed_at
+  AND o.evidence_class='CONNECTOR_REPORTED' AND o.os_verification='OS_UNVERIFIED'
+  AND anvil.source_content_millisecond(o.observed_at) AND anvil.source_content_millisecond(o.finished_at) AND anvil.source_content_millisecond(o.received_at)
+  AND o.observed_at>=(g.permit_json->>'issuedAt')::timestamptz-interval '5 seconds' AND o.finished_at>=o.observed_at
+  AND o.finished_at-o.observed_at<=interval '30 seconds' AND o.finished_at<=o.received_at+interval '5 seconds'
+  AND o.finished_at<(g.permit_json->>'observeBefore')::timestamptz
+  AND o.report_json->>'purpose'='SOURCE_CONTENT_REPORT' AND o.report_json->'protocolVersion'='1'::jsonb
+  AND o.report_json->>'projectId'=g.project_id::text AND o.report_json->>'installationId'=g.scope_json->>'installationId'
+  AND o.report_json->>'commandId'=g.report_consumed_command_id::text
+  AND o.report_json->'requestRef'=jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.scope_digest)
+  AND o.report_json->>'scopeDigest'=g.scope_digest AND o.report_json->'observationRequestRef'=g.observation_request_ref
+  AND o.report_json->>'observationNonce'=g.permit_json->>'observationNonce'
+  AND o.report_json->'connectorRef'=g.scope_json->'connectorRef' AND o.report_json->'registrationRef'=g.scope_json->'registrationRef'
+  AND o.report_json->'observerRef'=g.scope_json->'observerRef' AND o.report_json->>'hostFingerprint'=g.scope_json->>'hostFingerprint'
+  AND o.report_json->>'observedAt'=anvil.source_read_iso(o.observed_at) AND o.report_json->>'finishedAt'=anvil.source_read_iso(o.finished_at)
+  AND o.report_json->>'signature'=o.signature AND o.report_json->>'reportHash'=o.content_hash
+  AND o.content_hash=anvil.source_read_hash(o.report_json-ARRAY['signature','reportHash'])
+  AND a.project_id=g.project_id AND a.server_sequence BETWEEN 1 AND 9007199254740991 AND a.event_id IS NOT NULL
+  AND a.actor_ref=jsonb_build_object('kind','CONNECTOR','connectorId',g.connector_id,'registrationId',g.registration_id)
+  AND a.client_ref=g.client_id AND a.command_id IS NULL AND a.operation_id IS NULL AND a.approval_ref IS NULL AND a.correction_of IS NULL
+  AND a.target_ref=target AND a.policy_ref=g.scope_json->'basePolicyRef' AND a.scope_digest=g.scope_digest
+  AND a.outcome='APPLIED' AND a.reason_code='SOURCE_CONTENT_REPORT_STORED' AND a.source_kind='SOURCE_CONTENT_OBSERVATION_PROTOCOL'
+  AND a.recorded_at IS NOT NULL AND isfinite(a.recorded_at) AND a.recorded_at>=g.created_at AND a.recorded_at<=g.report_consumed_at,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 CREATE TABLE anvil.source_content_verifications (
  project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
  observation_id uuid NOT NULL,observation_version smallint NOT NULL DEFAULT 1 CHECK(observation_version=1),observation_hash text NOT NULL CHECK(observation_hash~'^[0-9a-f]{64}$'),
