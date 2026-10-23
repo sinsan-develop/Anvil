@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 서버 wire 소비**: 신규 readSourceContentManagementScopeWireFromServerContextCandidate/FromHeldIdentityCandidate는 첫 문맥 await 전 중복키·raw크기 검사를 수행해 기존 서버 관리 범위 조합에 전달한다. 기존 구조 함수/공개/SQL/route는 변경하지 않고 원fullref·저장scope/문맥/회수·기한과 원오류/최소refs/false6·분리조회를 보존한다. 새4 RED→직접142 합성 PASS/typecheck/diff0이며 실제 원문producer/current관리권한·DB/서비스를 제공하지 않는다.
+
 - **2026-10-24 CM08 wire 입력 소비**: 신규 inspectSourceContentPolicyManagementWireCandidate는 4MiB 이내 JSON 문자열을 기존 중복키 파서로 판독한 뒤 기존 관리 증거 inspector에 전달한다. 공백·키순서가 아닌 원envelope canonical hash를 유지하고 오류는 원문 없는 고정 오류로 닫는다. 기존 구조 입력/공개 DTO·SQL/runner/route는 변경하지 않는다. 새4 RED→직접22 합성 PASS/typecheck/diff0이며 보호 원문 producer/DB·현재 권위는 제공하지 않는다.
 
 - **2026-10-24 서버 관리 범위 소비**: 신규 readSourceContentManagementScopeFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버 후보 문맥과 원저장 관리 범위를 조합한다. 관리 묶음은 첫 문맥 await 전에 복사하고 과거 관리문맥/이후 요청문맥 구분·원fullref/요청 회수기한/고정음성·원오류·최소refs/false6·분리조회를 유지한다. 정상 서버1/보유2query·만료0/제어회수1, 새4 RED→직접132 합성 PASS/후속114·typecheck/diff0다. 기존 공개 경로/SQL/runner/route 무변경·실제 producer/auth/latest/current 권위는 제공하지 않는다.

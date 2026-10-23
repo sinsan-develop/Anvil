@@ -1,4 +1,4 @@
-import {canonicalJson} from '../../../../contracts/canonical.ts';
+import {canonicalJson,parseWireJson} from '../../../../contracts/canonical.ts';
 import {recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readSourceContentRequestStatusForDeclaredContextCandidate} from './source-content-request-context.ts';
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
@@ -44,6 +44,22 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 원문 파싱은 첫 문맥 판독 전에 수행하며 실제 인증·보호 원문 조회를 추가하지 않는다. */
+export function readSourceContentManagementScopeWireFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,nowMs:number){
+ return readSourceContentManagementScopeWireFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,raw,expected,operation,nowMs);
+}
+/** parse 오류와 이후 비동기 문맥/저장 오류를 분리하고 기존 서버 관리 조합만 재사용한다. */
+export async function readSourceContentManagementScopeWireFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,nowMs:number){
+ let evidence:unknown;
+ try{
+  if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>4194304)throw Error();
+  evidence=parseWireJson(raw);
+ }catch{throw Error('SOURCE_CONTENT_SERVER_MANAGEMENT_WIRE_INVALID');}
+ return readSourceContentManagementScopeFromServerContextCandidate(db,sources,basis,{evidence,expected},operation,nowMs);
+}
 /** 보유 값과 구체 control을 재사용하며 실제 인증·관리 권위 생산자를 추가하지 않는다. */
 export function readSourceContentManagementScopeFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,managementValue:unknown,operation:unknown,nowMs:number){
  return readSourceContentManagementScopeFromServerContextCandidate(db,{
