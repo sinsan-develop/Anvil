@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+- **Stage B FN03 최초 연결 저장의 정확한 계약 차이**: INTERFACES의 linkDocumentSource는 현재 원문 blobHash 대조를 요구하지만 SourceReadReportV1.files.facts에는 파일 ID/크기/수정시각만 있고 본문 SHA256이 없다. report.contentHash는 보고서 hash이며 파일 내용 hash로 전용할 수 없다. SourceReadRecords.readSnapshot은 CONNECTOR_REPORTED/UNVERIFIED, ProjectDocumentSourceLinks는 detach만 구현됐고 기존 operation/정책 반례는 link를 거절한다. 기존 코드/정책을 몰래 완화하거나 새 저장·현재 관측을 PASS로 승격하지 않았다.
+
+- **동일 FN03 지원 요청·계속 책임**: PMO에 별도 content-hash-only source 계약을 권장 요청했다. 기존 v1 metadata/purpose/SQL/기대값을 보존하고 별도 버전/scope에서 정확 root/target/fullref/current·기한/전후 identity와 유한 내용 SHA256·본문 송신0·미등록/미확인 거절을 정의하는 source/미적용 SQL·합성 범위다. 실제 파일읽기/키·서명·권한·DB/서비스는 제외하며 사용자 업로드 비교는 UNVERIFIED 후보일 뿐 대체 권위가 아니다. 이는 기능 추가 요청이 아니라 metadata 허가를 내용 읽기/새 서명자료/operation으로 확장하는 실제 계약 차이로, 기존 FN06 Bv3/D2 요청과 중복되지 않는다. 전체44업무 blocked/완료 판정이나 PMO 업무배정 대기 전환은 하지 않는다. 추가 읽기 오류1: rg에 Windows literal docs/contracts/APPROVAL* 경로를 넘겨 os error123; 동일 재시도/권한 변경0, 실제 source/계약의 읽힌 부분과 구분했다.
+
 - **FN06 원보유 관측→PREPARED 후보 SOURCE 연결 결과**: ProcessOwner.ReadPreparedFactsSource는 원 ReadSource 관측 PID/생성ticks와 원 WorkerInput의run/세대/hash·기한, 원 Job owner의 고정 내부 UUID로 RetainedIdentity/PreparedSnapshot을 조립하고 기존 PreparedFactsSource를 소비한다. 호출자에게 PID/job/hash 입력이나 rawhandle/path를 반환하지 않는다. 임의 OS Job ID를 조회했다는 뜻이 아니며 NeverResumed는 외부 Resume 배제를 증명하지 않는 로컬 source 이력 후보다. 반환은 unsigned SOURCE/인증·실관측검증·서명·실행권위false다.
 
 - **동일 신규 delta 정적 C0/I0/M1·미검증**: M1은 미래 facts 시험이 runId/active/false만 확인하고 실제 원 PID/ticks·worker generation/hash 및 반복 jobId를 정확 대조하지 않는 시험 가림이다. 정책대로 미해결 이월하고 원 정리 I1 SOURCE 보완 미검증·foreign image M1/이전 native지적도 별도로 유지한다. C#compile/RunAll/RED-GREEN/실제OS·상호운용은 NOT_RUN·Main diff0만이며 type/TS20은 source불변으로 반복0이다. 실제 sourceRoot→승인 OS경로 매핑/현재인증 reader·writer·signer와 서비스/Agent는 미완료·미등록이다. D2소진FAIL/동결4·Bv3별도결정·거절/보호8·전체계획미완료 유지, 이 source chain 자체를 실제 사용자 기능 진도로 승격하지 않는다.

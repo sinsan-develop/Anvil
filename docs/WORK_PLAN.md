@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 Stage B FN03 최초 연결 저장 선정·계약 차이**: linkDocumentSource의 본문 blobHash 근거는 기존 metadata-only SourceReadReportV1에 없어 현재 미구현이다. 기존 report hash/UNVERIFIED를 실제 파일 hash로 승격하지 않고 별도 content-hash-only source 계약의 exact delta를 PMO에 결정 요청했다. 기존 link정책거절/v1보고/기대값은 유지하며 실제 읽기·DB·권한·서비스를 실행하지 않는다. 독립업무 선정/완료 책임은 Main에 유지, 전체계획 완료 또는 전체대기 아님.
+
 - **2026-10-23 FN06 원보유 PREPARED 후보 연결 SOURCE**: 원 process/thread 관측·고정 Job상관값·원worker입력/기한을 기존 facts serializer로 연결, 신규delta 한정정적C0/I0/M1·diff0만 확인했다. M1은 원PID/ticks/worker/반복jobId 미래시험 누락으로 이월, 이전정리I1 보완미검증/foreignimageM1도 유지한다. nativecompile/RunAll/실OS/서명·실Agent 미실행·권위false이며 실제인증/승인root/writer·사용자기능과 전체계획은 미완료다.
 
 - **2026-10-23 FN06 D1 원 suspended process/thread SOURCE**: 원 private startup/image·Job-list/고정worker3인자에서 반환PI를 보유·조회하고 명시 원process 회수/부모 정리에 연결하는 소스를 작성했다. 한정정적 C0/I1/M1의 상위 정리 latch I1은 source 보완하되 실제 transient 재시도 검증/재검토0, fakeimage시험가림M1은 이월이다. compile/RunAll/OS/실Agent NOT_RUN·권위false·미등록, diff0와 source 작성만의 범위다. 실제 orphan 방지·승인root/인증/writer/서명·전체FN06 및 계획은 미완료이며 기존D2/새계약 결정 경계는 유지한다.
