@@ -3,6 +3,7 @@ import {recordV1,arrayV1,uuidV1,hashV1,isoV1,refV1,type RuntimeRefV1} from '../.
 import {readSourceContentScopeV1,readSourceContentReportV1,type SourceContentReportV1} from '../../../../contracts/runtime/source-content-report-v1.ts';
 import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type SourceContentPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
 import {readSourceContentReportProofFromPermitCandidate} from '../connections/source-content-report-proof-input.ts';
+import {readSourceContentDeclaredContextCandidate} from './source-content-request-context.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
 import {planSourceContentRequestTransitionV1,type SourceContentRequestStateV1} from './source-content-request-transition.ts';
 import {inspectSourceContentCreationEvidenceV1} from './source-content-creation-evidence.ts';
@@ -108,6 +109,15 @@ const proofFlags={storedRequestAuthenticated:false as const,signatureVerified:fa
 const proofClosed=(reason:string)=>({status:'UNAVAILABLE' as const,reason,candidate:null,...proofFlags});
 /** 저장 자료의 과거 결박만 소비한다. 실제 DB·서명/current 권위가 아니며 기본 route 미등록이다. */
 export async function readSourceContentStoredReportProofCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ return readStoredProof(db,value,nowMs,null);
+}
+/** 선언 문맥 대조일 뿐 인증이 아니다. 기존 exact3 경로의 반환·거절은 변경하지 않는다. */
+export async function readSourceContentStoredReportProofForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ return readStoredProof(db,{installationId:c.installationId,projectId:c.projectId,requestRef:c.requestRef},nowMs,c);
+}
+interface ProofBinding {userId:string;clientId:string;credentialGeneration:number;controlGeneration:number;basePolicyRef:RuntimeRefV1}
+async function readStoredProof(db:ReadClient,value:unknown,nowMs:number,binding:ProofBinding|null) {
  let basis:{installationId:string;projectId:string;requestRef:RuntimeRefV1};
  try {
   const raw=canonicalJson(value);if(Buffer.byteLength(raw,'utf8')>4096)throw Error();
@@ -117,6 +127,8 @@ export async function readSourceContentStoredReportProofCandidate(db:ReadClient,
  }catch{throw Error('SOURCE_CONTENT_PROOF_BASIS_INVALID');}
  const result=await readRecord(db,basis.installationId,basis.projectId,basis.requestRef.id,nowMs,(record,observation)=>{
   if(!same(record.view.requestRef,basis.requestRef))return proofClosed('STORED_PROOF_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(binding&&(s.userId!==binding.userId||s.clientId!==binding.clientId||s.credentialGeneration!==binding.credentialGeneration||s.controlGeneration!==binding.controlGeneration||!same(s.basePolicyRef,binding.basePolicyRef)))return proofClosed('DECLARED_PROOF_CONTEXT_MISMATCH');
   if(!observation)return proofClosed('OBSERVATION_ABSENT');
   const p=observation.permit;
   const expected={scope:record.view.scope,requestRef:record.view.requestRef,observationRequestRef:record.view.observationRequestRef,observationNonce:p.observationNonce,credentialIssuedAt:record.view.credentialIssuedAt,credentialExpiresAt:record.view.credentialExpiresAt,issuedAt:p.issuedAt,observeBefore:record.view.observeBefore};

@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 proof 문맥 SOURCE**: 신규 readSourceContentStoredReportProofForDeclaredContextCandidate는 기존 exact8 parser가 복사한 user/client·credential/control세대/basePolicyRef를 같은 저장scope와 내부proof 소비 전에 대조한다. 기존 exact3 proof는 binding null로 동일 동작을 보존한다. readSourceContentProofFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버후보/보유값 투영·구체control 포트만 소비하고 실제 인증 producer나 등록권위를 제공하지 않는다. 정상도false6/UNVERIFIED·최소후보, 불일치/만료는 후보null이며 actualauth/키/서명/DB/nonce/route0이다. 새5RED→직접196합성/SSR PASS/type/diff0·Minor10/실verifier412/기존제외 유지.
+
 - **2026-10-23 proof 최소 표시 SOURCE**: readSourceContentProofStatusV1은 기존 exact13 상태 계약과 분리된 비활성 판독이다. stored-proof exact9(status/reason/candidate+false6), 후보exact4(requestRef/reportRef/고정domain/proofInputHash)만 허용하고 expected request fullref를 대조한다. 부재/불일치는 고정 이유/candidate null만 표시하며 원문/permit/nonce/signature/proofbytes는 받지 않는다. UI06 기존 비활성 표시의 선택 입력일 뿐 실제 API/앱/route 등록이 아니고 서명/current 미확인·권위false를 유지한다. 새4 RED→직접75 합성/SSR PASS/type/diff0·한정정적C0/I0/M0·Minor10/실제제외 유지.
 
 - **2026-10-23 저장 proof 독립 검토 잔여**: C0/I0/M1·실행/수정0. 신규 nonce 음성은 reportHash/관측 contentHash/감사 targetRef hash 미갱신으로 후속 hash 거절에 가려지므로 nonce 결박 단독 증거가 아니다. 보강 보류·기존9와 총 Minor10 미해결·실제 SQL/PG/서명/current/nonce소비/served 미검증 유지.

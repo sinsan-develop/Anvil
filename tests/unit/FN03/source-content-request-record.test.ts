@@ -198,3 +198,31 @@ test('보관한 최초 preflight 원문/hash와 challenge를 대조하고 원문
 test('생성 영수증·감사 누락/중복·다른주체/target·정정·거짓결과/요청hash를허가로수용하지않는다',async()=>{const r=fixture(true,true);assert.equal((await load(r)).creationEvidence.receiptRef.id,id(32));await bad({...r,authorization_receipt:null});await bad({...r,creation_audits:[]});await bad({...r,creation_audits:[r.creation_audits[0],r.creation_audits[0]]});await bad({...r,authorization_receipt:{...r.authorization_receipt,subjectRef:{kind:'HUMAN',userId:id(99),clientId:id(8)}}});await bad({...r,creation_audits:[{...r.creation_audits[0],targetRef:ref(99)}]});await bad({...r,creation_audits:[{...r.creation_audits[0],correctionOf:id(99)}]});await bad({...r,created_command:{...r.created_command,requestHash:'f'.repeat(64)}});const changed=fixture();changed.created_command.resultRef.data.linkAuthorized=true;await bad(changed);});
 test('보고감사는원보고ref에정확1건이며미소비요청·HUMAN명령·누락/중복/다른nonce를감추지않는다',async()=>{const r=fixture(true,true),out=await load(r);assert.equal(out.reportConsumptionEvidence.reportCommandId,id(20));assert.equal(out.reportConsumptionEvidence.linkAuthorized,false);assert.equal((await load(fixture())).reportConsumptionEvidence,null);await bad({...r,report_audits:[]});await bad({...r,report_audits:[r.report_audits[0],r.report_audits[0]]});await bad({...fixture(true),report_audits:r.report_audits});await bad({...r,report_audits:[{...r.report_audits[0],commandId:id(20)}]});await bad({...r,report_audits:[{...r.report_audits[0],targetRef:ref(99)}]});await bad({...r,observation_nonce_digest:'f'.repeat(64)});});
 test('관측nonce의digest를함께바꿔도교환client/servernonce를재사용하지못한다',async()=>{for(const name of ['clientNonce','serverNonce']){const r=fixture(true);r.permit_json.observationNonce=r.challenge_json[name];r.observation_nonce_digest=contentHash(Buffer.from(r.challenge_json[name],'base64url'));await bad(r);}});
+
+function declaredProof(){assert.equal(typeof m.readSourceContentStoredReportProofForDeclaredContextCandidate,'function','proof 선언 문맥 결박 미구현');return m.readSourceContentStoredReportProofForDeclaredContextCandidate;}
+function serverProof(){assert.equal(typeof serverModule.readSourceContentProofFromServerContextCandidate,'function','서버 후보 문맥 proof 소비 미구현');return serverModule.readSourceContentProofFromServerContextCandidate;}
+function heldProof(){assert.equal(typeof serverModule.readSourceContentProofFromHeldIdentityCandidate,'function','보유 identity proof 소비 미구현');return serverModule.readSourceContentProofFromHeldIdentityCandidate;}
+test('proof 선언 주체·두 세대·기준정책 불일치는 같은 조회 뒤 후보 없이 닫는다',async()=>{
+ for(const patch of [{userId:id(99)},{clientId:id(99)},{credentialGeneration:1},{controlGeneration:2},{basePolicyRef:{...ref(9),contentHash:'f'.repeat(64)}}]){const r=fixture(true,true);let calls=0;const out=await declaredProof()({async query(){calls++;return {rows:[r]};}},{...context(r),...patch},zero+5000);assert.equal(calls,1);assert.equal(out.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');assert.equal(out.candidate,null);assert.equal(out.signatureVerified,false);assert.equal(out.linkAuthorized,false);}
+ const r=fixture(true,true);const out=await declaredProof()({async query(){return {rows:[r]};}},context(r),zero+5000);assert.equal(out.status,'UNVERIFIED');assert.equal(out.storedRequestAuthenticated,false);assert.deepEqual(out.candidate.requestRef,proofBasis(r).requestRef);
+});
+test('서버 identity→control→원요청 proof의 순서와 같은db 사용을 보존한다',async()=>{
+ const r=fixture(true,true),s=preparationSources({row:r}),order:string[]=[];const db={async query(){order.push('request');return {rows:[r]};}};
+ const out=await serverProof()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},proofBasis(r),zero+5000);
+ assert.deepEqual(order,['identity','control','request']);assert.equal(out.reason,'STORED_REPORT_PROOF_INPUT_ONLY');assert.equal(out.signatureVerified,false);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.storageMutationPerformed,false);
+});
+test('proof 서버 판독기 부재·다른 control client는 원요청 query 전에 닫는다',async()=>{
+ const r=fixture(true,true),s=preparationSources({row:r});let calls=0;const db={async query(){calls++;return {rows:[r]};}};
+ const absent=await serverProof()(db,{},proofBasis(r),zero+5000);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');assert.equal(absent.candidate,null);
+ const mismatch=await serverProof()(db,{...s,async readControlCandidate(){return {...await s.readControlCandidate(),clientId:id(99)};}},proofBasis(r),zero+5000);assert.equal(mismatch.reason,'PROJECT_CONTROL_CANDIDATE_INVALID');assert.equal(mismatch.candidate,null);assert.equal(calls,0);
+});
+test('proof 문맥 getter는 query 전에 거절하고 callback/DB 오류는 보존한다',async()=>{
+ const r=fixture(true,true),c=context(r);let calls=0,gets=0;Object.defineProperty(c,'userId',{enumerable:true,get(){gets++;return id(7);}});
+ await assert.rejects(declaredProof()({async query(){calls++;return {rows:[r]};}},c,zero+5000),/SOURCE_CONTENT_CONTEXT_INVALID/);assert.equal(calls,0);assert.equal(gets,0);
+ const error=Error('SYNTHETIC_PROOF_CONTEXT_READER');await assert.rejects(serverProof()({async query(){throw error;}},{async readIdentityCandidate(){throw error;},async readControlCandidate(){throw error;}},proofBasis(r),zero+5000),e=>e===error);
+ await assert.rejects(declaredProof()({async query(){throw error;}},context(r),zero+5000),e=>e===error);
+});
+test('보유identity proof는 만료시0query·회수control1query 뒤 닫는다',async()=>{
+ const f=heldFixture();let calls=0;const expired=await heldProof()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,zero+60000);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(calls,0);assert.equal(expired.candidate,null);
+ f.control.control_revoked_at=at(1000);const revoked=await heldProof()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,zero+5000);assert.equal(calls,1);assert.equal(revoked.candidate,null);assert.equal(revoked.signatureVerified,false);assert.equal(revoked.linkAuthorized,false);
+});
