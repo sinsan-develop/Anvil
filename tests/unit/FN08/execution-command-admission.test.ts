@@ -205,6 +205,33 @@ test('보관 중지 회수는 원중지 부재·SEND/ref/spool·회수scope를 �
  }
 });
 
+test('명시 START 수신·관측 연결은 수신만 기록하고 반복해도 permit과 wire는 없다',async()=>{
+ const f=fixture(),p=selectedSpool(f,false,1),a=f.make();assert.equal(typeof a.receiveAndRecord,'function');
+ const first=await a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool),before=structuredClone(p.rows);
+ assert.equal(first.state,'RECEIVED');assert.equal(first.observations.recordedRefs.length,1);assert.equal(first.observations.ackAudited,false);assert.equal(first.observations.writerReleaseVerified,false);assert.equal(first.executionAuthorized,false);assert.equal(first.dispatchPerformed,false);
+ assert.deepEqual(p.rows.map(r=>r.snapshot.event.type),['RECEIVED']);assert.deepEqual(p.rows.map(r=>r.snapshot.event.localRecordRef),f.events.map(r=>r.ref));
+ assert.deepEqual(await a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool),first);assert.deepEqual(p.rows,before);assert.equal(f.events.length,1);assert.deepEqual(f.counts(),[1,0,0]);
+});
+
+test('명시 START 수신·관측의 부분 실패는 기존 시작을 반복하지 않고 원관측을 보존한다',async()=>{
+ const f=fixture(),p=selectedSpool(f),a=f.make();assert.equal(typeof a.receiveAndRecord,'function');
+ await a.receive(f.scope,f.operation,f.commandRef);await f.receiver.start(f.envelope);const received=structuredClone(f.events);p.failSecond();
+ await assert.rejects(a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool),/COMMAND_ADMISSION_/);assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);
+ const result=await a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool);assert.equal(result.state,'RESPONSE_RECORDED');assert.equal(result.observations.recordedRefs.length,4);assert.deepEqual(p.rows[0],original);assert.deepEqual(f.events,received);assert.deepEqual(f.counts(),[1,1,1]);
+});
+
+test('명시 START 연결은 다른 실행과 UNKNOWN page에서 수신·새 시작을 만들지 않는다',async()=>{
+ const f=fixture(),p=selectedSpool(f,true),a=f.make();assert.equal(typeof a.receiveAndRecord,'function');
+ await assert.rejects(a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool),/COMMAND_ADMISSION_SPOOL_SCOPE_INVALID/);assert.deepEqual(f.counts(),[0,0,0]);assert.equal(f.events.length,0);assert.equal(p.rows.length,0);
+ const g=fixture(),q=selectedSpool(g),b=g.make();g.lose();for(let i=0;i<2;i++)await assert.rejects(b.receiveAndRecord(g.scope,g.operation,g.commandRef,q.spool),/COMMAND_ADMISSION_/);assert.deepEqual(g.counts(),[1,0,0]);assert.equal(g.events.length,0);assert.equal(q.rows.length,0);
+});
+
+test('명시 START 관측 한도 실패는 원수신만 보존하고 새 시작을 수행하지 않는다',async()=>{
+ const f=fixture(),p=selectedSpool(f,false,1),a=f.make();assert.equal(typeof a.receiveAndRecord,'function');
+ await p.spool.append({projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration,eventId:randomUUID(),type:'HEARTBEAT',commandId:randomUUID(),envelopeHash:'d'.repeat(64),localRecordRef:f.commandRef,processRef:null,occurredAt:new Date(initial).toISOString(),reasonCode:'NONE'});const before=structuredClone(p.rows);
+ for(let i=0;i<2;i++)await assert.rejects(a.receiveAndRecord(f.scope,f.operation,f.commandRef,p.spool),/COMMAND_ADMISSION_/);assert.equal(f.events.length,1);assert.equal(f.events[0].snapshot.state,'RECEIVED');assert.deepEqual(p.rows,before);assert.deepEqual(f.counts(),[1,0,0]);
+});
+
 test('보관 START는 기한 뒤 부분 관측 회수를 새 START/서명/조회 없이 재개한다',async()=>{
  const f=fixture(),p=selectedSpool(f),a=f.make();assert.equal(typeof a.recordStartObservations,'function');await a.receive(f.scope,f.operation,f.commandRef);await f.receiver.start(f.envelope);p.failSecond();await assert.rejects(a.recordStartObservations(f.scope,f.operation,f.commandRef,p.spool));assert.equal(p.rows.length,1);const original=structuredClone(p.rows[0]);f.advance(120000);
  f.receiver.start=async()=>assert.fail('NO_START');f.receiver.receive=async()=>assert.fail('NO_RECEIVE');f.receiver.authority.consume=async()=>assert.fail('NO_PERMIT');f.receiver.wire.send=async()=>assert.fail('NO_WIRE');a.client.transport.perform=async()=>assert.fail('NO_QUERY');a.client.signer.sign=async()=>assert.fail('NO_SIGN');

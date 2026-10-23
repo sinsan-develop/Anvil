@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN08 START 내구 수신→관측 회수 일부 연결**: 기존 수신·읽기 회수를 명시 helper로 연결했다. 새 start/permit/wire0·정확 scope/ref·부분 관측 보존·UNKNOWN 재전송 금지 유지. 신규4 RED→직접/인접74 PASS·타입/diff0, 독립 정적 C0/I0/M0. 제품 caller 연결·실제 App/HTTP/FS/DB/Agent/동시성은 미검증·미연결이며 전체 FN08/계획 미완료·기존 M1 유지다. 다음은 실행기 진입점과 기존 command client/admission의 제품 소비 공백 및 승인된 연결 경계 대조다.
+
 - **2026-10-24 FN08 명시 중지 전달→관측 회수 일부 연결**: 기존 requestStop/recordStopObservations를 재사용하는 명시 helper를 추가했다. 정상·반복/부분 실패·full spool·다른 실행 거절 신규3 RED→직접/인접68 PASS·타입/diff0, 독립 C0/I0/M0. 관측 실패에도 원중지 보존·중복 interrupt 금지이며 ACK/미확인을 실제 중지·회수로 승격하지 않는다. 실제 App/HTTP/FS/DB/Agent NOT_RUN·전체 미완료/기존 M1 유지. 다음은 START 수신·관측 회수의 기존 소비와 재호출 중복 경계 대조다.
 
 - **2026-10-24 FN08 새 지시 송신의 관측 엔트리 한도 차단**: 이미찬spool에서도permit/wire가진행하던 실제합성반례를 확인하고 새송신원장0일때만 현재엔트리한도검사를연결했다. 같은명령terminal/부분회수는 보존하고 정확 SPOOL_FULL고정원인을 구분한다. 논리RED1·정확오류RED1→직접/인접65PASS/type/diff0·독립 C0/I0/M0 및 오류코드 scoped C0/I0/M0. 실제FS/byte/경합/DB/Agent·향후쓰기성공NOT_RUN/보장아님, 기존M1·전체미완료유지. 새계약/권한0. 다음은 FN08 중지수신·관측회수/중복방지 기존소비 대조다.

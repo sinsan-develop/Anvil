@@ -167,6 +167,21 @@ export class SyntheticExecutionCommandAdmission {
    return{transport:'SYNTHETIC_ONLY' as const,state:'SELECTED_NOT_DISPATCHED' as const,commandRef,pageResultRef:cloneV1(result.resultRef),grantRef:cloneV1(scope.grantRef),envelope:cloneV1(envelope),expiresAt:new Date(end).toISOString(),executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_UNAVAILABLE');}
  }
+ /** 정확 START 한 건의 내구 수신과 관측 회수만 연결한다. start/permit/wire는 호출하지 않는다.
+  * 관측 실패에도 원수신·부분 관측은 보존한다. 기한 뒤에는 recordStartObservations만 명시 호출한다. */
+ async receiveAndRecord(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,spool:SyntheticObservationSpool){
+  try{
+   this.#ports();if(!(spool instanceof SyntheticObservationSpool))return fail('COMMAND_ADMISSION_RECORD_PORTS_REQUIRED');
+   const scope=readClientScope(rawScope),operation=cloneV1(rawOperation),commandRef=cloneV1(rawCommandRef);
+   if(scope.mode!=='EXECUTION')return fail('COMMAND_ADMISSION_SELECTION_INVALID');
+   const facts=await spool.getExecutionFacts();this.#ports();
+   if(facts.transport!=='SYNTHETIC_ONLY'||!same(facts.execution,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}))return fail('COMMAND_ADMISSION_SPOOL_SCOPE_INVALID');
+   const received=await this.receive(scope,operation,commandRef);this.#ports();
+   const recorded=await this.recordStartObservations(scope,operation,commandRef,spool);this.#ports();
+   if(!same(received.commandRef,recorded.commandRef)||!same(received.pageResultRef,recorded.pageResultRef)||received.envelopeHash!==recorded.envelopeHash)return fail('COMMAND_ADMISSION_START_RECORD_MISMATCH');
+   return{...received,observations:recorded.observations};
+  }catch(error){if(error instanceof CommandAdmissionFailure)throw error;return fail('COMMAND_ADMISSION_RECORD_UNAVAILABLE');}
+ }
  /** 보관 START의 수신/시도/미확인 관측만 회수한다. receive/start나 새 permit은 호출하지 않는다. */
  async recordStartObservations(rawScope:unknown,rawOperation:unknown,rawCommandRef:unknown,spool:SyntheticObservationSpool){
   try{
