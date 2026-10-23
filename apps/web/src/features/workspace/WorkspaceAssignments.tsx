@@ -94,6 +94,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
   const locked = busy || !!buffer?.pending || !!buffer?.result || !owner || !sameStage;
   // undefined는 새 저장영수증 보기, null은 명시 재조회/오류로 이전 원문을 감춘 상태다.
   const shown = opened === undefined ? (bound ? buffer?.result : null) ?? null : opened;
+  const shownMatchesStage = !!shown && !!stage && ordered(shown.snapshot.definition.taskRef.applicationRef) === ordered(project.currentMethodologyRef) && shown.snapshot.definition.taskRef.applicationRef.id === stage.applicationId && shown.snapshot.definition.taskRef.nodeId === stage.nodeId;
   const contentChange: Dispatch<SetStateAction<AssignmentDecisionBuffer|null>> = action => {
     if (!shown || !bound) return;
     onChange(current => {
@@ -123,6 +124,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
   };
   return <section aria-label="임무 초안"><h4>임무 초안</h4><p className="meta">할 일·목적·검수 조건을 Anvil에 보관합니다. 저장은 확정·배정·Agent 실행이 아닙니다. 현재 확정계획·설계·단계는 저장 시 서버가 다시 검사합니다.</p>
     {!stage ? <p>먼저 적용 절차를 조회하고 단계를 선택하세요.</p> : <p>선택 정의: {stage.nodeName} · 실제 수행 단계 아님</p>}
+    {shown ? <p role="status" aria-label="보관 임무 단계 대조">{!stage ? '선택 단계 없음 · 보관 임무의 현재 단계 연계 미확인' : shownMatchesStage ? '보관 임무는 현재 선택 단계와 참조가 일치합니다.' : '보관 임무는 현재 선택 단계 또는 적용본과 다릅니다.'} 표시 대조일 뿐 현재 권한·실행 상태 확인이 아닙니다.</p> : null}
     {!owner ? <p>초안 변경은 현재 제어권을 가진 소유자만 가능합니다. 조회는 가능합니다.</p> : null}
     {error ? <p role="alert">{error.code} · 원입력·미확인 명령은 자동 재발행하지 않습니다.</p> : null}
     {requestedTask?<section aria-label="설계에서 연결한 계획 업무"><h5>고정 업무 {requestedTask.taskCode}</h5><p>계획 {requestedTask.planRef.id} · v{requestedTask.planRef.version} · {requestedTask.planRef.contentHash}</p><p>먼저 단계를 선택한 뒤 해당 버전·업무를 확인하세요. 조회는 기존 초안·명령을 바꾸지 않으며 새 준비는 별도 선택입니다.</p><button type="button" disabled={busy||!stage||!!buffer?.pending} onClick={()=>void perform(async()=>{setPlan(null);setTaskCode('');const target=structuredClone(requestedTask),value=await readWorkPlan(client,project.id,target.planRef);if(value.relationalProjection!=='STORED'||value.tasks.filter(t=>t.taskCode===target.taskCode).length!==1)throw new ApiError('LINKED_PLAN_TASK_UNVERIFIED',422);if(alive.current){setPlan(value);setTaskCode(target.taskCode);}})}>연결된 계획 업무 확인</button></section>:null}
