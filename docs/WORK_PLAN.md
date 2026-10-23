@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN04/UI06 상태축 내부 표시 후보**: 공식 진행/기능/검증을 독립 표시하는 WorkStatusAxes를 추가했다. 새5 RED→직접SSR17 PASS, 새타입/브라우저의존 보정 후 직접17/typecheck/diff0·독립 C0/I0/M0다. 범위/환경/근거/미확인·project/plan/task 결박·근거없는성공/잘못된입력 거절을 확인했으나 실제상태생산/자동판정/API/DB/route/served browser·빌드는 NOT_RUN/미연결이다. 기존baseline·표시는 보존하며 전체계획미완료다.
+
+- **2026-10-24 FN04/UI06 내부 표시 단위 착수**: INTERFACES §7의 진행/기능/검증 축을 분리하는 읽기전용 WorkStatusAxes 후보를 구현한다. 신규 화면 내부 props는 project/고정plan/task·세축·범위/환경/근거/미확인만 받으며 공개DTO/저장/자동판정/권한·route변경0이다. 신규 SSR 실패반례→구현→직접SSR/타입·독립검토로 검수하고 실제상태 producer/served/DB·기존 특정거절은 별도 유지한다. 기존 baseline enum·표시는 변경하지 않으며 전체계획 완료가 아니다.
+
 - **2026-10-24 FN03 서버 준비 wire SOURCE**: 관리 JSON 크기/중복키 선검사를 준비 서버소비에 연결했다. 새3 RED→직접207 합성 PASS/typecheck/diff0·단일target 정상6조회/문서격리5/원문오류0·false10/분리조회다. 실제DB/인증/현재권위·held전체성공/화면은 미검증·미활성이고 기존 body/SQL/route를 보존하며 전체계획미완료다.
 
 - **2026-10-24 FN03 서버 준비 프레임 SOURCE**: 기존 서버 문맥에 위치/등록·문서 선행 저장소비를 연결했다. 새3 RED→직접204 합성 PASS/typecheck/diff0·단일target 정상6조회/경계음성 검증조회0·held만료0/회수1·false10/분리조회다. 실제DB/권한/바이트/OS/현재권위·held전체성공/화면은 미검증·미활성이고 기존 body/SQL/route를 보존하며 전체계획미완료다.
