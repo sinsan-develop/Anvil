@@ -4,7 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
-import {readSourceContentStoredReportProofForDeclaredContextCandidate} from './source-content-request-record.ts';
+import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate} from './source-content-request-record.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 /** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
@@ -25,6 +25,13 @@ export function readSourceContentPreparationFromHeldIdentityCandidate(db:ReadCli
 /** 보유 값/구체 control을 proof 후보에 결박하지만 실제 인증 producer는 연결하지 않는다. */
 export function readSourceContentProofFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
  return readSourceContentProofFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,nowMs);
+}
+/** 보유 값과 구체 control의 후보를 기존 과거 proof/최신 정책 조합에만 전달한다. */
+export function readSourceContentProofWithPolicyFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
+ return readSourceContentProofWithPolicyFromServerContextCandidate(db,{
   readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
   readControlCandidate:readSourceContentProjectControlPortCandidate
  },basis,nowMs);
@@ -53,6 +60,13 @@ export function readSourceContentProofFromServerContextCandidate(db:ReadClient,s
   storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,
   storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
  return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredReportProofForDeclaredContextCandidate(db,c,nowMs),close);
+}
+/** 동일 서버 후보 문맥을 재사용한다. 분리 정책 조회를 현재 권한·원자성·공개 전송으로 승격하지 않는다. */
+export function readSourceContentProofWithPolicyFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,nowMs:number){
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,historicalProof:null,policy:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,
+  storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,
+  storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate(db,c,nowMs),close);
 }
 async function readServerContext<T,C>(db:ReadClient,sources:unknown,basis:unknown,nowMs:number,consume:(context:Record<string,any>)=>Promise<T>,close:(status:'UNAVAILABLE'|'DENIED',reason:string)=>C){
  const b=copy(basis,['installationId','projectId','requestRef']);

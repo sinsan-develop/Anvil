@@ -237,6 +237,33 @@ test('과거 proof 단독값으로 정책 오류를 숨기지 않고 조회 사�
 });
 function serverProof(){assert.equal(typeof serverModule.readSourceContentProofFromServerContextCandidate,'function','서버 후보 문맥 proof 소비 미구현');return serverModule.readSourceContentProofFromServerContextCandidate;}
 function heldProof(){assert.equal(typeof serverModule.readSourceContentProofFromHeldIdentityCandidate,'function','보유 identity proof 소비 미구현');return serverModule.readSourceContentProofFromHeldIdentityCandidate;}
+function serverProofPolicy(){assert.equal(typeof serverModule.readSourceContentProofWithPolicyFromServerContextCandidate,'function','서버 문맥의 proof·정책 조합 미구현');return serverModule.readSourceContentProofWithPolicyFromServerContextCandidate;}
+function heldProofPolicy(){assert.equal(typeof serverModule.readSourceContentProofWithPolicyFromHeldIdentityCandidate,'function','보유 identity의 proof·정책 조합 미구현');return serverModule.readSourceContentProofWithPolicyFromHeldIdentityCandidate;}
+test('서버 후보에서 과거proof/최신정책은 같은db·정확순서/2query로 전달한다',async()=>{
+ for(const denied of [false,true]){
+  const f=reportedPolicyFixture(),order:string[]=[],s=preparationSources({row:f.row});if(denied){f.policy.disposition='DENY';f.policy.snapshot_json.disposition='DENY';f.policy.content_hash=contentHash(canonicalJson(f.policy.snapshot_json));}
+  let calls=0;const db={async query(){order.push(++calls===1?'record':'policy');return {rows:[calls===1?f.row:f.policy]};}};
+  const out=await serverProofPolicy()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},proofBasis(f.row),zero+5000);
+  assert.deepEqual(order,['identity','control','record','policy']);assert.equal(calls,2);assert.equal(out.status,denied?'DENIED':'UNVERIFIED');assert.equal(out.reason,denied?'POLICY_DENIED':'CURRENT_AUTHORITY_UNAVAILABLE');assert.equal(out.historicalProof.status,'UNVERIFIED');assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');assert.equal(out.currentAuthorityVerified,false);assert.equal(out.linkAuthorized,false);
+ }
+});
+test('서버 proof정책의 옛credential/control/base정책 문맥은 record1query 뒤 정책 전에 닫힌다',async()=>{
+ for(const kind of ['credential','control','base']){const f=reportedPolicyFixture(),s=preparationSources({row:f.row}),identity=await s.readIdentityCandidate(),control=await s.readControlCandidate();if(kind==='credential')identity.credentialGeneration=1;if(kind==='control')control.controlGeneration=2;if(kind==='base')control.basePolicyRef.contentHash='f'.repeat(64);let calls=0;
+  const out=await serverProofPolicy()({async query(){calls++;return {rows:[f.row]};}},{async readIdentityCandidate(){return identity;},async readControlCandidate(){return control;}},proofBasis(f.row),zero+5000);
+  assert.equal(calls,1);assert.equal(out.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');assert.equal(out.historicalProof,null);assert.equal(out.policy,null);assert.equal(out.executionAuthorized,false);
+ }
+});
+test('서버 proof정책의 판독부재/미지음성은 query0이며 정책query 오류는 그대로 전파한다',async()=>{
+ const f=reportedPolicyFixture(),s=preparationSources({row:f.row});let calls=0;const db={async query(){calls++;return {rows:[]};}};
+ const absent=await serverProofPolicy()(db,{},proofBasis(f.row),zero+5000);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');assert.equal(absent.historicalProof,null);
+ const unknown=await serverProofPolicy()(db,{...s,async readControlCandidate(){return {status:'DENIED',reason:'PRIVATE_UNEXPECTED_REASON'};}},proofBasis(f.row),zero+5000);assert.equal(unknown.reason,'PROJECT_CONTROL_CANDIDATE_INVALID');assert.equal(unknown.policy,null);assert.equal(calls,0);assert.equal(JSON.stringify(unknown).includes('PRIVATE_UNEXPECTED_REASON'),false);
+ const error=Error('SYNTHETIC_SERVER_PROOF_POLICY_QUERY');await assert.rejects(serverProofPolicy()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},s,proofBasis(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+});
+test('보유identity의 proof정책은 control/record/policy3query이며 만료·회수는 조기종료한다',async()=>{
+ const f=heldFixture(),rows=[f.control,f.row,f.policy];let calls=0;const normal=await heldProofPolicy()({async query(){return {rows:[rows[calls++]]};}},f.held,f.basis,zero+5000);assert.equal(calls,3);assert.equal(normal.reason,'CURRENT_AUTHORITY_UNAVAILABLE');assert.equal(normal.historicalProof.reason,'OBSERVATION_ABSENT');assert.equal(normal.currentAuthorityVerified,false);
+ calls=0;const expired=await heldProofPolicy()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,zero+60000);assert.equal(calls,0);assert.equal(expired.historicalProof,null);assert.equal(expired.policy,null);assert.equal(expired.signatureVerified,false);
+ f.control.control_revoked_at=at(1000);const revoked=await heldProofPolicy()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,zero+5000);assert.equal(calls,1);assert.equal(revoked.historicalProof,null);assert.equal(revoked.linkAuthorized,false);
+});
 test('proof 선언 주체·두 세대·기준정책 불일치는 같은 조회 뒤 후보 없이 닫는다',async()=>{
  for(const patch of [{userId:id(99)},{clientId:id(99)},{credentialGeneration:1},{controlGeneration:2},{basePolicyRef:{...ref(9),contentHash:'f'.repeat(64)}}]){const r=fixture(true,true);let calls=0;const out=await declaredProof()({async query(){calls++;return {rows:[r]};}},{...context(r),...patch},zero+5000);assert.equal(calls,1);assert.equal(out.reason,'DECLARED_PROOF_CONTEXT_MISMATCH');assert.equal(out.candidate,null);assert.equal(out.signatureVerified,false);assert.equal(out.linkAuthorized,false);}
  const r=fixture(true,true);const out=await declaredProof()({async query(){return {rows:[r]};}},context(r),zero+5000);assert.equal(out.status,'UNVERIFIED');assert.equal(out.storedRequestAuthenticated,false);assert.deepEqual(out.candidate.requestRef,proofBasis(r).requestRef);
