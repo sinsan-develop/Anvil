@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 위치 frame 조합 SOURCE**: readSourceContentLocationFrameCandidate는 복사된 원scope를 최신root 선언→상태전용등록 판독에 순서 전달한다. 선행음성이면 후속조회 없이 고정status/reason·candidate null, 정상도 LOCATION_FRAMES_ONLY/UNVERIFIED·ref3개/분리조회·권위/저장/실행/LINK false다. 현재등록키/서명/observer·인증/current정책/DBtransaction/OS 진위는 별도이며 실제route/DB에 미연결이다. 새6RED→직접22합성PASS/type/diff0만 확인, 기존Minor9/미래SQL145NOT_RUN·실verifier412·실제실행제외/거절 유지.
+
 - **2026-10-23 등록 frame 판독 SOURCE**: readSourceContentRegistrationFrameCandidate는 기존 상태전용 connector의 현재 registration_id만 LEFT JOIN하고 exact28행·원scope10/subject5/hash·user/client/세대/host·기준policy·원기한과 content의 정확 registrationRef/connectorRef를 대조한다. 기존 ref 공식은 재사용하되 기존 credentialScope=REGISTRATION_STATUS_ONLY/grants=[]를 content허가로 쓰지 않는다. 정상도 REGISTRATION_FRAME_ONLY/UNVERIFIED·false4·최소ref2개이며 실제 키/서명/observer·세션/current정책·OS/등록권위를 증명하지 않는다. 실제DB/route 미연결·publickey/token조회/발급0, 합성7PASS/type/diff0만 확인했다. 기존Minor8/미래SQL145NOT_RUN/실verifier412·실제 제외/거절을 유지한다.
 
 - **2026-10-23 root 후보 검토 보정**: 초기128KiB는 기존 허용 한글 선언을 거절해 내부 행 projection 상한을256KiB로 보정했다. 기존 parser/저장/API 한도 변경0, 재현 RED1→새9PASS/type/diff0이다. 아래128KiB 항목은 초기 후보 이력이며 현행 지원 상한은 이 항목을 따른다. 신규 Minor1(원scope hash 비교 반례의 선행 hash 무결성 가림)은 보류하여 기존7건과 합8건 미해결, 실제SQL/DB·등록/OS/현재권위·served 미검증/기존 실행 제외는 그대로다.

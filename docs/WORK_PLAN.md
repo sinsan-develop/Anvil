@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 위치 frame 조합 SOURCE**: 동일 원scope의 root→등록 판독 순서·첫음성후후속조회0/오류보존·ref3개 최소후보를 비활성 조합했다. 새6RED→직접22PASS/type/diff0은 합성 판독 검증이며 현재권위/DB·실등록/OS·served 완료가 아니다. 실제사용가능기능0·Minor9와 기존실제제외·거절 유지.
+
 - **2026-10-23 FN03 등록 참조 SOURCE**: 원 상태전용 connector/등록의 최신 포인터·scope/ref/주체/세대·회수·기한과 content 원요청을 결박하는 비활성 판독 및 합성7건을 추가했다. RED→GREEN7/type/diff0은 실제 등록키/observer·인증/current정책·DB/OS·served의 증거가 아니다. 최소ref 후보와 권위false4만 반환하며 route/실행연결0·새사용가능기능0, 기존Minor8/미래SQL145NOT_RUN 및 실행제외는 유지한다.
 
 - **2026-10-23 FN03 root 선행 SOURCE**: 원 content 요청의 rootRef를 기존 최신 선언head·snapshot/hash/connector/pathHintHash에 결박하는 비활성 판독과8합성 반례를 추가했다(RED→GREEN8/type/diff0). 과거선언 fallback0·정상도 선언 일치/현재권위false이며 실제 등록·OS/파일/SQL/DB·route/served는 미구현·미검증이다. 새사용가능기능0·기존Minor7/SQL145NOT_RUN 및 실제 실행 제외 유지, 전체FN03/StageB완료가 아니다.
