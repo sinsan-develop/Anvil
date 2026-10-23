@@ -27,3 +27,18 @@ test('참조를 정합하게 재해시해도 다른 기준과 선택/잔여 조�
   await assert.rejects(mod.readReworkReviewOriginal(new ApiClient(async()=>{n++;return Response.json(n===1?f.stored:review);}),f.sources.assignment,f.sources.result,f.stored,()=>true),(e:any)=>e.code===(mode==='CRITERIA'?'RESULT_REVIEW_HISTORY_RESPONSE_INVALID':'REWORK_REVIEW_ORIGINAL_MISMATCH'));assert.equal(n,2);
  }
 });
+
+test('첫 보완 GET 중 원입력이 정합하게 바뀌어도 후속 원검토는 최초 프로젝트와 원결과에 고정된다',async()=>{
+ const f=fixture(),stored=structuredClone(f.stored),review=structuredClone(f.sources.review),calls:string[]=[],pid=stored.projectId;
+ let out:any,failure:unknown;try{out=await mod.readReworkReviewOriginal(new ApiClient(async url=>{
+  calls.push(String(url));
+  if(calls.length===1){
+   f.sources.result.snapshot.scope.projectId=id(99);f.sources.result.ref.contentHash=hash(f.sources.result.snapshot);
+   f.sources.assignment.projectId=id(99);f.stored.snapshot.input.reviewRef.id=id(98);
+   return Response.json(stored);
+  }
+  return Response.json(review);
+ }),f.sources.assignment,f.sources.result,f.stored,()=>true);}catch(cause){failure=cause;}
+ assert.deepEqual(calls,[`/api/v1/projects/${pid}/result-reworks/${stored.ref.id}`,`/api/v1/projects/${pid}/result-reviews/${review.ref.id}`],'후속 조회가 변경된 caller 프로젝트를 사용함');if(failure)throw failure;
+ assert.deepEqual(out.rework,stored);assert.deepEqual(out.review,review);assert.deepEqual(out.selectedItems.map((item:any)=>item.criterionId),['save']);
+});

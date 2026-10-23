@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN12 보완 원검토의 후속 GET 귀속 고정**: 첫 GET 중 caller 원결과 project/hash 변경으로 다음 조회 프로젝트가 바뀌는 반례를 재현했다. original만 복사하던 기존 helper에서 assignment/result도 첫 await 전에 고정해 두 기존 reader에 전달하는3줄 보완이다. 직접1 RED→보완 준비/쓰기/보관 조회 인접18PASS/type/diff0·독립 정적 C0/I0/M0. 실제 브라우저/DB/자료 유출은 미검증·새 API/DTO/권한/저장0·전체 미완료/기존 M1 유지. 다음은 보완 초안→후속 배정·제출의 기존 연결과 계약 경계 대조다.
+
 - **2026-10-24 UI08/FN12 기존 문제 근거의 후속 확인 안내**: 기존 검증 응답의 unknowns/nextChoices를 읽기 화면에 연결해 보관 공백과 직접 원인 미확인·다음 조사 방향을 구분했다. 새 원인/명령·API/DTO/저장0, 원 JSON/조회·인증 유지. 신규2 RED 후 직접/인접17PASS·fixture 타입2회 보정 후 최종17PASS/type/diff/build0·독립 C0/I0/M0. 실제 부모 DOM/DB/배포 미검증·전체 미완료/기존 M1 유지다. FN08 실제 caller는 signer/current/OS/source 계약이 필요하고 Bv3 BF19670D 기존 미결을 재상신/새 채택하지 않는다. 다음은 FN12 원결과→보완 준비/저장·조회 소비 공백 대조다.
 
 - **2026-10-24 FN08 START 내구 수신→관측 회수 일부 연결**: 기존 수신·읽기 회수를 명시 helper로 연결했다. 새 start/permit/wire0·정확 scope/ref·부분 관측 보존·UNKNOWN 재전송 금지 유지. 신규4 RED→직접/인접74 PASS·타입/diff0, 독립 정적 C0/I0/M0. 제품 caller 연결·실제 App/HTTP/FS/DB/Agent/동시성은 미검증·미연결이며 전체 FN08/계획 미완료·기존 M1 유지다. 다음은 실행기 진입점과 기존 command client/admission의 제품 소비 공백 및 승인된 연결 경계 대조다.
