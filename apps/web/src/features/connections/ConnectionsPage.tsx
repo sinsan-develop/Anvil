@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {CandidateProfile} from './CandidateProfile.ts';
 import './connections.css';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
@@ -67,6 +68,7 @@ export function ConnectionsPage({client,projectId,session,buffer,onChange,onAuth
   <label>후보 종류 필터<select aria-label="후보 종류 필터" value={kind} onChange={e=>setKind(e.target.value as CandidateKind|'')}><option value="">전체 후보</option><option value="CONNECTION_CANDIDATE">도구 후보</option><option value="ENVIRONMENT_CANDIDATE">환경 후보</option></select></label><button disabled={loading} onClick={()=>void list()}>후보 목록 새로고침</button>
   {loading?<p aria-live="polite">후보 확인 중</p>:null}<ul>{items.map(i=><li key={i.ref.id}>{i.label} · {i.kind==='CONNECTION_CANDIDATE'?'도구':'환경'} · v{i.ref.version} · NOT_READY · 무결성 미재확인 · 만료 {i.expiresAt}<button disabled={loading} onClick={()=>void inspect(i.ref)}>정확 후보 버전 보기</button></li>)}</ul>{!loading&&!error&&!items.length?<p>조회된 후보가 없습니다.</p>:null}{cursor?<button disabled={loading} onClick={()=>void list(cursor)}>후보 다음 목록</button>:null}
   {view?<section aria-label="보관 후보"><h3>{view.candidate.input.candidate.label} · v{view.ref.version}</h3><p>NOT_READY · {view.expired?'기한 경과':'조회 시 기한 이내'} · 실행 허가 없음</p><p>기한 {view.candidate.input.expiresAt} · 이유 {view.candidate.input.reason}</p><details><summary>정확 버전·정책 참조·보관 입력</summary><pre>{JSON.stringify({ref:view.ref,input:view.candidate.input},null,2)}</pre></details><ul>{view.candidate.readiness.missingRequirements.map((r,i)=><li key={i}>{r.field}: {r.reason}</li>)}</ul><table aria-label="능력 확인"><thead><tr><th>필수 능력</th><th>문서 출처</th><th>실측·통제</th></tr></thead><tbody>{view.candidate.capabilities.map(c=><tr key={c.code}><td>{capabilityNames[c.code]}</td><td><CandidateDocumentationFact documentation={(view.candidate.input.candidate.documentation as CandidateDocumentation[]|undefined)?.find(d=>d.code===c.code)}/></td><td>미확인 · UNVERIFIED · 역할 배정 불가</td></tr>)}</tbody></table><button disabled={!!work||working} onClick={()=>void start(view.candidate.kind,view)}>이 버전에서 후보 개정</button></section>:null}
+  {view?<CandidateProfile view={view}/>:null}
   {view?.candidate.input.candidateRef?<button type="button" disabled={loading} onClick={()=>void inspect(view.candidate.input.candidateRef!,view)}>이전 후보 버전 보기</button>:null}
 <section aria-label="미구현 연결 기능"><p>후보 저장은 진행 중 실행의 허가 범위를 확대하지 않습니다.</p><button disabled>실제 Agent 시험</button><button disabled>역할 배정</button><button disabled>영구 PC·Agent 연결</button><p>위 신뢰 관리는 등록 상태조회 전용입니다. 실제 Windows↔WSL 연결·영구 PC·Agent 검사는 아직 미완료이며, 정책 생성·일회 승인 결정을 후보 저장으로 대체하거나 우회하지 않습니다. 재인증은 설정 화면의 기존 기능을 사용하고 입력은 이 화면에 보존합니다.</p></section>
  </section>;
