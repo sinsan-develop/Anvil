@@ -6,7 +6,7 @@ import {sourceContentRequestStatusFromParts} from './source-content-request-with
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 const invalid=():never=>{throw Error('SOURCE_CONTENT_CONTEXT_INVALID');};
-function context(value:unknown,nowMs:number){
+export function readSourceContentDeclaredContextCandidate(value:unknown,nowMs:number){
  try{
   if(!Number.isSafeInteger(nowMs)||!recordV1(value,['installationId','projectId','requestRef','userId','clientId','credentialGeneration','controlGeneration','basePolicyRef']))return invalid();
   const raw=canonicalJson(value);if(Buffer.byteLength(raw,'utf8')>4096)return invalid();
@@ -21,7 +21,7 @@ const result=(status:'UNAVAILABLE'|'DENIED'|'UNVERIFIED',reason:string,summary:S
  declaredContextAuthenticated:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
 /** 선언 값 대조 SOURCE일 뿐 실제 session/등록·정책의 현재성을 인증하지 않는다. route·브라우저 입력에는 연결하지 않는다. */
 export async function readSourceContentRequestStatusForDeclaredContextCandidate(db:ReadClient,declaredContext:unknown,nowMs:number){
- const c=context(declaredContext,nowMs);
+ const c=readSourceContentDeclaredContextCandidate(declaredContext,nowMs);
  const request=await readSourceContentRequestRecordCandidate(db,c.installationId,c.projectId,c.requestRef.id,nowMs);
  if(request===null)return result('UNAVAILABLE','REQUEST_ABSENT');
  const {scope,requestRef}=request.view;

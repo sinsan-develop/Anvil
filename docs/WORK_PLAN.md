@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 서버문맥 준비 SOURCE**: 기존문맥parser/서버후보판독을한정재사용해저장scope의주체/client·credential/control세대/base정책ref를준비소비전결박했다. 기존상태/기본준비동작은유지,새6RED→직접137PASS/type/diff0은합성·ReactSSR한정이다. 실제auth/current/DB·키/원문/OS/served·사용기능추가0,Minor9/기존실제제외·거절유지·전체계획미완료.
+
 - **2026-10-23 FN03 저장요청 기반 준비 SOURCE**: exact저장requestRef/open상태→최신content정책→닫힌준비frame을원reader의복사scope로결박했다. 새7RED→직접100PASS/type/diff0은합성검증이며기존이력조회/요약은무변경,저장요청인증/준비/byte/current/저장실행LINKfalse다. 실제DB/현재권위/원문/OS/served·사용기능추가0/Minor9·기존실제제외/거절유지,전체계획완료아니다.
 
 - **2026-10-23 FN03 닫힌 준비 frame SOURCE**: 같은고정scope로location(root→등록)→전체target문서metadata를순서소비하고첫음성뒤전체후보비반환·후속조회0·오류보존을연결했다. 새7RED→직접41PASS/type/diff0은합성frame검증이며준비/byte/current/저장실행LINKfalse·분리조회다. 실제권한/원문/OS/DB/served·사용기능추가0,Minor9/기존실제제외·거절유지·전체계획미완료.
