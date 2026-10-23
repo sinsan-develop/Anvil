@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-23 저장요청·계보 독립 검토 종료**: 신규 함수/새4시험의 정적 delta C0/I0/M0·독립 실행/수정0이다. 첫 await 전 복사·정확ref/주체·세대/base정책의 계보조회 전 차단, 최신 음성/계보 null 보존·최소반환/false6·async 오류 동일성을 확인했다. source raw E83F31F32426EF6C46B149F2DEA4EFCAACDD249F3B7E1B33322ECB837D927D8C/test55C7F48AA9B7AA9A5E55F85BD4CE62D8EE59CE5C19AEDC418327ACD3E2F0ED53(raw1b6e70). 앞선 ‘검토 중’은 제출 당시 이력이며 검토는 종료됐다. SOURCE checkpoint dca0d08be20fa6b5b3a06156ee73112cc647e3f1·보호8 보존, Minor11/실제 SQL·인증/current·원자성/served 미검증·전체 계획 미완료다. 다음은 기존 서버 identity/control 문맥 소비와 이 저장계보 결과의 연결 가능성을 읽기 대조하며 실제 권위나 관리 정책을 임의 정의하지 않는다.
+
 - **2026-10-23 FN03 저장요청·정책계보 연결 SOURCE**: 기존 저장 reader의 비공개 접점을 재사용했다. 신규 exact8 선언 문맥을 첫 await 전에 복사하고 원 request fullref·주체/client·두 세대·basePolicyRef를 정책 조회 전에 대조한다. 원 요청 1회와 계보 1회만 조회하며 최소 request/policy refs·계보·분리조회/권위 false6를 반환한다. 최신 회수/DENY/만료/부재/손상·정확 정책ref 변경은 보존하고 원 기한 밖에서는 정책을 조회하지 않는다. 기존 공개 상태/proof/정책 경로는 변경하지 않았다. 새4시험 RED(exit1/raw7b45f7)→직접4파일115 PASS 1024.3285ms, 첫 타입검사는 새 fixture 추가 속성 표기 오류로 exit1(raw81119e)였다. Object.assign으로 타입 표기만 정정 후 해당86 PASS 864.2024ms/type/diff0(rawd19ffe). 독립 검토 중이며 실제 DB/SQL·키/서명/현재권한·route/served는 미실행/미검증이다. 새 실사용 기능0·Minor11/기존 제외·보호8 유지·전체 계획 미완료.
 
 - **2026-10-23 저장요청·선언문맥·정책계보 SOURCE 착수**: e3c33bcd/private 일치·main 불변·추적 clean/보호8 보존을 확인했다. 기존 저장 판독의 비공개 소비 접점에서 exact8 문맥/원 request fullref를 먼저 확인하고 복사 scope만 새 계보 소비에 전달한다. 기존 공개 상태/proof/정책 경로는 변경하지 않는다. 원문 비노출·중복조회0·분리조회/권위false·실제 DB/키/권한/route/served0·Minor11/기존제외 유지다.
