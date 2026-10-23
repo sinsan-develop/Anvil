@@ -6,6 +6,28 @@ const lineageServerModule=await import('../../../apps/server/modules/documents/s
 const id=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
 function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
+function storedRevoke(){assert.equal(typeof m.readSourceContentStoredRevokeForDeclaredContextCandidate,'function','저장 원요청의 회수 후보 소비 미구현');return m.readSourceContentStoredRevokeForDeclaredContextCandidate;}
+test('저장 회수 후보는 복사문맥/원ref와 서버digest를1query 뒤 순수 CAS에만 전달한다',async()=>{
+ const r=fixture(),c=context(r),payload={requestRef:structuredClone(c.requestRef),reason:'합성 저장회수'};let calls=0;
+ const out=await storedRevoke()({async query(){calls++;c.userId=id(99);payload.reason='외부변이';return {rows:[r]};}},c,payload,id(90),zero+5000);
+ assert.equal(calls,1);assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'STORED_REVOKE_TRANSITION_ONLY');assert.equal(out.candidate.to,'REVOKED');assert.deepEqual(out.candidate.comparison.parameters,[id(2),id(13),'e'.repeat(64)]);assert.equal(out.candidate.reasonDigest,contentHash(canonicalJson({reason:'합성 저장회수'})));assert.equal(out.storedRequestAuthenticated,false);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.storageMutationPerformed,false);assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);assert.equal(r.state,'CREATED');for(const text of ['src/a.ts','외부변이','scope_json','credentialTokenDigest'])assert.equal(JSON.stringify(out).includes(text),false);
+});
+test('저장 회수는 옛주체/client·세대/base정책·원fullref를 후보 소비 전에 닫는다',async()=>{
+ for(const patch of [{userId:id(99)},{clientId:id(99)},{credentialGeneration:1},{controlGeneration:2},{basePolicyRef:{...ref(9),contentHash:'f'.repeat(64)}},{requestRef:{...ref(13),contentHash:'f'.repeat(64)}}]){const r=fixture(),c={...context(r),...patch};let calls=0;const out=await storedRevoke()({async query(){calls++;return {rows:[r]};}},c,{requestRef:c.requestRef,reason:'회수'},id(90),zero+5000);assert.equal(calls,1);assert.equal(out.status,'UNAVAILABLE');assert.equal(out.candidate,null);assert.equal(out.reason,'requestRef' in patch?'STORED_REQUEST_REF_MISMATCH':'DECLARED_REVOKE_CONTEXT_MISMATCH');assert.equal(out.linkAuthorized,false);}
+});
+test('저장 회수의 payload 불일치/getter/명령 위조는 query0이고 부재·DB 오류를 보존한다',async()=>{
+ const r=fixture(),c=context(r);let calls=0,gets=0;const db={async query(){calls++;return {rows:[]};}};
+ const mismatch=await storedRevoke()(db,c,{requestRef:ref(99),reason:'회수'},id(90),zero+5000);assert.equal(calls,0);assert.equal(mismatch.reason,'REVOKE_PAYLOAD_REQUEST_REF_MISMATCH');assert.equal(mismatch.candidate,null);
+ const payload={requestRef:c.requestRef,reason:'회수'};Object.defineProperty(payload,'reason',{enumerable:true,get(){gets++;return '회수';}});await assert.rejects(storedRevoke()(db,c,payload,id(90),zero+5000),/SOURCE_CONTENT_STORED_REVOKE_INPUT_INVALID/);assert.equal(gets,0);assert.equal(calls,0);
+ await assert.rejects(storedRevoke()(db,c,{requestRef:c.requestRef,reason:'회수'},'not-a-command',zero+5000),/SOURCE_CONTENT_STORED_REVOKE_INPUT_INVALID/);assert.equal(calls,0);
+ const absent=await storedRevoke()(db,c,{requestRef:c.requestRef,reason:'회수'},id(90),zero+5000);assert.equal(calls,1);assert.equal(absent.reason,'REQUEST_ABSENT');assert.equal(absent.candidate,null);
+ const error=Error('SYNTHETIC_STORED_REVOKE_QUERY');await assert.rejects(storedRevoke()({async query(){throw error;}},c,{requestRef:c.requestRef,reason:'회수'},id(90),zero+5000),e=>e===error);
+});
+test('저장 회수는 보고감사를 보존하고 terminal/손상기록을 새 회수로 바꾸지 않는다',async()=>{
+ const r=fixture(true,true),c=context(r),out=await storedRevoke()({async query(){return {rows:[r]};}},c,{requestRef:c.requestRef,reason:'보고 후 회수'},id(90),zero+5000);assert.equal(out.candidate.from,'REPORTED');assert.equal(out.candidate.to,'REVOKED');assert.equal(r.observation.reportCommandId,id(20));assert.equal(r.state,'REPORTED');
+ const broken=structuredClone(r);broken.report_audits=[];await assert.rejects(storedRevoke()({async query(){return {rows:[broken]};}},c,{requestRef:c.requestRef,reason:'회수'},id(90),zero+5000),/SOURCE_CONTENT_RECORD_INVALID/);
+ const terminal=fixture();terminal.state='REVOKED';terminal.revoked_at=at(3000);terminal.revoke_command_id=id(89);terminal.updated_at=at(3000);await assert.rejects(storedRevoke()({async query(){return {rows:[terminal]};}},context(terminal),{requestRef:context(terminal).requestRef,reason:'회수'},id(90),zero+5000),/SOURCE_CONTENT_REVOKE_INPUT_INVALID/);
+});
 function serverLineage(){assert.equal(typeof lineageServerModule.readSourceContentPolicyLineageFromServerContextCandidate,'function','서버 문맥 정책계보 소비 미구현');return lineageServerModule.readSourceContentPolicyLineageFromServerContextCandidate;}
 function heldLineage(){assert.equal(typeof lineageServerModule.readSourceContentPolicyLineageFromHeldIdentityCandidate,'function','보유identity 정책계보 소비 미구현');return lineageServerModule.readSourceContentPolicyLineageFromHeldIdentityCandidate;}
 test('서버 후보 문맥의 저장계보는 동일db·identity/control/record/계보 순서와 최신회수를 보존한다',async()=>{
