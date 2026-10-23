@@ -21,7 +21,15 @@ export async function readSourceContentRequestStatusFromServerContextCandidate(d
  if(!identity||identity.status!=='UNVERIFIED'||!uuidV1(identity.actorId)||!uuidV1(identity.clientId)
   ||!Number.isSafeInteger(identity.credentialGeneration)||identity.credentialGeneration<1)return closed('DENIED','SERVER_IDENTITY_CANDIDATE_INVALID');
  // 판독 callback에는 복사본만 준다. callback이 바꾼 identity를 이후 권위/대조 값으로 다시 읽지 않는다.
- const control=copy(await readControl(db,b.projectId,{...identity}),['status','projectId','actorId','clientId','controlGeneration','basePolicyRef']);
+ const rawControl=await readControl(db,b.projectId,{...identity});
+ const negative=copy(rawControl,['status','reason']);
+ if(negative){
+  // 허용된 음성 코드만 보존한다. 자유문자열·불일치 조합은 밖으로 내보내지 않는다.
+  if(negative.status==='UNAVAILABLE'&&['PROJECT_ABSENT','BASE_POLICY_ABSENT'].includes(negative.reason))return closed('UNAVAILABLE',negative.reason);
+  if(negative.status==='DENIED'&&['PROJECT_ARCHIVED','OWNER_CONTROL_UNAVAILABLE','PROJECT_CONTROL_UNAVAILABLE','BASE_POLICY_HEAD_UNAVAILABLE','BASE_POLICY_SHAPE_UNAVAILABLE','MALFORMED_CONTROL_PROJECTION'].includes(negative.reason))return closed('DENIED',negative.reason);
+  return closed('DENIED','PROJECT_CONTROL_CANDIDATE_INVALID');
+ }
+ const control=copy(rawControl,['status','projectId','actorId','clientId','controlGeneration','basePolicyRef']);
  if(!control||control.status!=='UNVERIFIED'||control.projectId!==b.projectId||control.actorId!==identity.actorId||control.clientId!==identity.clientId
   ||!Number.isSafeInteger(control.controlGeneration)||control.controlGeneration<1||!refV1(control.basePolicyRef))return closed('DENIED','PROJECT_CONTROL_CANDIDATE_INVALID');
  return readSourceContentRequestStatusForDeclaredContextCandidate(db,{installationId:b.installationId,projectId:b.projectId,requestRef:b.requestRef,

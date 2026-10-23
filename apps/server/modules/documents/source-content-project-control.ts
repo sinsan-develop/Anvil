@@ -62,3 +62,11 @@ export async function readSourceContentProjectControlCandidate(db:ReadClient,pro
   return result('UNVERIFIED','PROJECT_CONTROL_FRAME_ONLY',{status:'UNVERIFIED',projectId,actorId:actor.actorId,clientId:actor.clientId,controlGeneration:generation,basePolicyRef:{id:r.policy_id,version,contentHash:r.policy_hash}});
  }catch{return result('DENIED','MALFORMED_CONTROL_PROJECTION');}
 }
+
+/** 비활성 서버 포트 형식으로만 투영한다. UNVERIFIED 자료는 인증·허가가 아니며 부재/거절도 원요청 읽기를 허용하지 않는다. */
+export async function readSourceContentProjectControlPortCandidate(db:ReadClient,projectId:string,identity:unknown){
+ const value=await readSourceContentProjectControlCandidate(db,projectId,identity);
+ if(value.status==='UNVERIFIED'&&value.candidate!==null)return value.candidate;
+ return {status:value.status==='UNAVAILABLE'?'UNAVAILABLE' as const:'DENIED' as const,
+  reason:value.status==='UNVERIFIED'?'MALFORMED_CONTROL_PROJECTION':value.reason};
+}
