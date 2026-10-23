@@ -7,6 +7,7 @@ import {readSourceContentDeclaredContextCandidate} from './source-content-reques
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
 import {readSourceContentRequestPolicyLineageCandidate} from './source-content-request-policy-lineage.ts';
 import {planSourceContentRevokeCandidate} from './source-content-revoke.ts';
+import {readLatestSourceContentVerificationCandidate} from './source-content-verification-head.ts';
 import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
@@ -111,6 +112,25 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
 }
 
 const proofFlags={storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+/** 원보고 전체 성공/원target에서 조회 문맥만 도출한다. 보고의 주장과 저장head를 실제 verifier 권위로 승격하지 않는다. */
+export async function readSourceContentStoredVerificationForDeclaredContextCandidate(db:ReadClient,value:unknown,targetIndex:number,nowMs:number){
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_STORED_VERIFICATION_INPUT_INVALID');
+ const flags={...proofFlags,bodyBytesVerified:false as const,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,observationRef:null,verificationRef:null,targetIndex:null,...flags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_VERIFICATION_CONTEXT_MISMATCH');
+  if(!observation||!record.view.reportRef)return close('OBSERVATION_ABSENT');
+  const report=observation.report;
+  if(report.root.state!=='OBSERVED'||!report.localEvidence.completed||report.files.some(f=>f.state!=='HASHED'))return close('REPORT_NOT_COMPLETE');
+  const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
+  const head=await readLatestSourceContentVerificationCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},nowMs);
+  return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,targetIndex,...flags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
 /** 저장 증거/선언 문맥의 과거 결박만 소비한다. 현재 회수 허가·실제 UPDATE/route를 만들지 않는다. */
 export async function readSourceContentStoredRevokeForDeclaredContextCandidate(db:ReadClient,value:unknown,payloadValue:unknown,commandId:unknown,nowMs:number){
  const c=readSourceContentDeclaredContextCandidate(value,nowMs);
