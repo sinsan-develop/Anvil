@@ -1,8 +1,18 @@
 import {canonicalJson} from '../../../../contracts/canonical.ts';
 import {recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readSourceContentRequestStatusForDeclaredContextCandidate} from './source-content-request-context.ts';
+import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
+import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
+/** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
+ * 모든 조회는 caller가 준 db를 사용하지만 실제 transaction/현재 권위의 증명은 아니다. */
+export function readSourceContentRequestStatusFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
+ return readSourceContentRequestStatusFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,nowMs);
+}
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
 const closed=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,summary:null,
  declaredContextAuthenticated:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
