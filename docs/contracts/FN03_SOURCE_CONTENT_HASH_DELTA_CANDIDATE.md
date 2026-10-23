@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 최신정책 서버 wire 소비**: 새 readSourceContentVerificationLineageWithLatestPolicyWireFromServerContextCandidate/FromHeldIdentityCandidate는 raw관리 JSON의 UTF-8 4MiB/중복키를 먼저 검사한 뒤 기존 latest정책 서버 소비를 재사용한다. parse 고정오류와 후속 async 원오류를 분리하고 정상3조회/정책음성2/원문오류0·최소refs/false9·분리조회를 유지한다. 새3 RED→직접161 합성 PASS/typecheck/diff0이며 held만료0/회수1만 확인했다. 실제보호원문producer/auth/currentverifier/DB/권한/route·held전체성공이나 §13.4 채택/활성화는 아니며 기존 body/SQL/route를 보존한다.
+
 - **2026-10-24 서버 최신정책 소비**: 신규 readSourceContentVerificationLineageWithLatestPolicyFromServerContextCandidate/FromHeldIdentityCandidate는 기존 문맥에서 원저장 최신정책 선행 소비로 연결한다. 관리/index/op 검사·basis/관리 첫await전고정·정상3조회/정책음성2·held만료0/회수1·최소refs/false9·분리조회를 유지한다. 새3 RED→직접158 합성 PASS/typecheck/diff0이며 실제producer/auth/currentverifier/DB/권한/route·held전체성공이나 §13.4 채택/활성화 증거는 아니다. 기존 함수 body/SQL/route를 보존한다.
 
 - **2026-10-24 최신정책 선행 소비**: 신규 readSourceContentStoredVerificationLineageWithLatestPolicyForDeclaredContextCandidate는 제시된 관리근거 범위와 별도 최신정책이력을 구분한다. 기존 request-policy-lineage가 최신회수/DENY/만료/원정책ref변경·부재를 반환하면 원검증계보를 조회하지 않는다. 정상record1/정책1/계보1·정책음성2/관리음성1·최소refs/false9·분리조회를 유지한다. 새4 RED→직접155 합성 PASS/typecheck/diff0이며 실제 DB최신성/잠금·현재관리허가/인증producer/verifier/LINK 허가를 증명하지 않는다. 기존 함수 body/SQL/route·§13.4 미확정 경계를 보존한다.

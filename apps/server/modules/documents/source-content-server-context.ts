@@ -47,6 +47,22 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 관리 원문 검사를 기존 보유 문맥 소비 앞에 연결하며 실제 원문 생산자/인증은 추가하지 않는다. */
+export function readSourceContentVerificationLineageWithLatestPolicyWireFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ return readSourceContentVerificationLineageWithLatestPolicyWireFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,raw,expected,operation,targetIndex,nowMs);
+}
+/** 파싱만 별도 catch로 닫고 기존 비동기 문맥·저장 오류는 그대로 전파한다. */
+export async function readSourceContentVerificationLineageWithLatestPolicyWireFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,raw:unknown,expected:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ let evidence:unknown;
+ try{
+  if(typeof raw!=='string'||Buffer.byteLength(raw,'utf8')>4194304)throw Error();
+  evidence=parseWireJson(raw);
+ }catch{throw Error('SOURCE_CONTENT_SERVER_MANAGEMENT_WIRE_INVALID');}
+ return readSourceContentVerificationLineageWithLatestPolicyFromServerContextCandidate(db,sources,basis,{evidence,expected},operation,targetIndex,nowMs);
+}
 /** 보유 값/구체 control 후보를 재사용한다. 실제 인증·현재 권위나 정책 생산자는 연결하지 않는다. */
 export function readSourceContentVerificationLineageWithLatestPolicyFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
  return readSourceContentVerificationLineageWithLatestPolicyFromServerContextCandidate(db,{
