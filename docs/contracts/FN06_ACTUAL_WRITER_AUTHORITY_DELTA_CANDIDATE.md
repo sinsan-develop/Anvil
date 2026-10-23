@@ -1,4 +1,4 @@
-# FN06/FN08 실제 writer 권위 — 최소 delta 결정 후보 v2
+# FN06/FN08 실제 writer 권위 — 최소 delta 결정 후보 v3
 
 ## 0. 판정·요청 범위
 
@@ -9,6 +9,7 @@
 - 이 후보 작성은 원 D2 단발 실패/소진 및 새 raw4 재compile 미결을 해소하지 않는다. 기존 보호8·0038/FN05/ProviderHandle 특정 거절을 우회하지 않는다.
 - **새 원자료 저장소만 추가해도 실제 NONE/격리가 생기지 않는다.** 실제 공급자·강제 수단·현재 보고 진위가 없으면 UNKNOWN/미등록·실행 거절을 유지한다.
 - v1 독립정적 C0/I1/M1의 최초보고 부트스트랩 누락과 head fullref 불명확을 Main이 v2에서 보완했다. 후자는 서명/CAS 구현 불가 영향으로 Important로 재분류했다. 원 지적은 보존하며 보정후 독립재검토/actual시험 PASS를 주장하지 않는다.
+- v2(rawSHA6AD2909B32C2990E9A297F155D3FFDBF120073602DDAC1C21E3FBD50AC5070FD)의 보정 한정재검토 C0/I1/M0에서 원두지적은 문서상 보완됐으나 head 유실을 최초로 오인할 공백을 확인했다. v3는 최초조건/과거이력 거절 및 재등록·복구 미지원 경계를 추가한다. 이것은 기존 head를 재생성/초기화하는 승인이나 새 복구 프로토콜이 아니다.
 
 ## 1. 정본과 실제 소비 대조
 
@@ -65,6 +66,7 @@
 - UPDATE/DELETE/TRUNCATE 금지. previous_ref의 동일 project/epoch·직전 sequence/hash를 검사하며 자체 contentHash·서명 해시 순환을 만들지 않는다.
 - 최초 BOUNDARY_ESTABLISHED는 current HUMAN/OWNER·별도 정책/필요 승인·최근 재인증 + 실제 fresh boundary 보고가 있어야 한다. 단순 새 행/사용자 선언으로 생성하지 않는다.
 - head가 없어도 project row lock 아래 예상 authority_epoch를 서버가 고정하고 events의 최신 complete chain/sequence를 읽어 REQUESTED를 먼저 append한다(처음 previous_ref=null). 최초 HUMAN 원명령/receipt/audit·현재subject/등록/정책·scopeHash·purpose·서버nonceDigest/기한을 그 원 REQUESTED에 보관한다. accepted는 이 requestRef를 1회 소비하며 임의 nonce/가짜 lease/head를 만들지 않는다. WRITER_BOUNDARY와 SOURCE_WRITE_BOUNDARY의 requestRef는 서로 다르고 각각 1회만 소비한다.
+- **최초는 head 행 부재만으로 판단하지 않는다.** 같은 project의 모든 과거 epoch/완전 원chain·원 시작/복구 provenance를 대조한다. 과거 BOUNDARY_ESTABLISHED, RESERVED 또는 그 뒤 lease/실행 상태 사건이 하나라도 있으면 head 부재는 UNKNOWN/HEAD_HISTORY_CONFLICT이며 최초 REQUESTED/채택/ID·generation1 재생성을 전부 거절한다. 이력 누락·절단·미확인 복원/완전성 미확인도 동일하게 거절한다. 과거 최초준비 요청/보고만 남은 경우에도 원 lease/성립이 없음을 완전하게 확인하고 fresh 두 보고/현재성 검사를 다시 해야 한다. 이력 조회가 빈 것만으로 이 완전성을 주장하지 않는다.
 - 한쪽 보고만 도착했으면 그 수용 이력만 보존하고 head/EMPTY_AT를 만들지 않는다. 최초 BOUNDARY_ESTABLISHED는 같은 epoch/등록/범위의 두 accepted fullref를 결박하고 두 보고의 fresh 기한과 현재 주체/정책을 모두 재검사한다. 먼저 받은 보고가 그 사이 만료되면 새 authority를 만들지 않는다.
 
 ### project_writer_authority_heads (current/CAS)
@@ -76,6 +78,7 @@
 - project row lock → current writer head → 기존 preparation slot/원 command/approval/budget 순서. 신규 head도 project lock 아래만 초기화해 row 부재 race를 막는다. expected head_generation/tip fullref로 CAS +1.
 - 최초 상태 head는 BOUNDARY_ESTABLISHED 뒤 generation1로 만든다. 상태전환 event에는 전이전 expectedHeadRef(null 또는 정확 기존head fullref)만 결박하고 결과headRef를 넣지 않아 해시순환을 피한다. 요청/보고 append는 같은 project lock의 event chain만 증가시키고 그 자체로 state head를 바꾸지 않는다. request가 고정한 expectedHeadRef와 현재 head fullref가 수용/상태전환 직전 달라지면 거절한다. 비상태 event 최신sequence와 상태 head.currentEventRef를 혼동하지 않는다.
 - authority_epoch는 강제 복구/환경 재등록 시 단조 증가. 옛 epoch/lease/run/등록 ref로 새 실행 불가. expiry는 EXPIRED/UNKNOWN으로 차단할 뿐 EMPTY/RECLAIMED로 전환하지 않는다.
+- 위 epoch 증가는 향후 재등록/복구 전이의 **필수 단조 조건**이지 이 후보에서 실행 가능한 전이가 아니다. 기존 head가 있는 재등록/환경교체·head 유실 복구·새 epoch 채택은 별도 전이/원회수 증거/정확 승인이 정의되기 전 UNSUPPORTED/UNKNOWN이다. 본 후보의 establish 경로를 재사용하거나 ID/세대를 초기화하지 않는다. 같은 유효 등록/현존 head 아래 정상 lease의 예약·회수 흐름과 이 미지원 범위를 구분한다.
 - 기존 source root/물리 겹침은 host enforcement의 별도 global 현재 검사도 필요. SQL row lock의 보장 범위 밖임을 남긴다.
 
 ### RLS/SQL 경계
@@ -110,6 +113,7 @@
 ## 6. 부트스트랩·수명·실패 순서
 
 1. 현재 HUMAN 원 명령/receipt와 project lock 아래 최초 head 부재를 확인하고 phase=BOUNDARY_BOOTSTRAP/lease·execution·head=null의 purpose별 원 REQUESTED/nonceDigest를 먼저 저장한다. 실체/source 강제 경계 보고를 exact request/서명에 각각 1회 수용하고 현재 head 부재/epoch/주체/정책/기한을 재검사한 뒤에만 BOUNDARY_ESTABLISHED와 최초 head를 생성한다. 검증 불가/기존 writer 미확인/겹침이면 UNKNOWN·새 factory0.
+   시작 및 최종채택 시 §4의 과거 모든 epoch/성립·lease 부재와 원이력 완전성을 함께 재확인한다. 과거 성립/lease+head 유실·미확인 복원은 최초 경로로 진입할 수 없고 복구 미지원/UNKNOWN으로 남는다.
 2. 현재 subject/등록/정책/기한과 EMPTY_AT 또는 원 RECLAIMED_AT 증거를 같은 tx 재검사 → writer epoch/lease RESERVED + prepare 원 receipt/slot. 최솟값 기한은 기존 준비120초·등록/HUMAN/정책/증거의 최소.
 3. 아직 anchor 없음은 정상. lease reservation은 preparationRef와 비순환 결박하고, 최초 OS 요청은 D1 BOOTSTRAP_PREPARED의 expectedHeadRef=null만 사용한다. writer reservation을 anchor/실제 process 존재로 표시하지 않는다.
 4. 인증된 native current consume 뒤 원 Job/process/thread·root/image를 생성/보유한다. source-only 단계에는 이 실제 효과가 없다. 원자 Job-list 설정만으로 원process/미재개·권한/정리 완료가 되지 않는다.
@@ -127,6 +131,7 @@
 - 빈/만료/회수표식만으로 NONE 거절, source 없는 WRITE/같은process 다른source fence 거절, 등록 proof/OS 보고/다른purpose 재사용 거절.
 - bootstrap 두 요청 경쟁/expected head CAS·원 command 재확인/다른 명령 재사용·한 request 중복 소비의 모델 반례.
 - bootstrap의 명시 null/생략/CURRENT 가짜ID·head·다른purpose/report 거절, head가 생긴 뒤 pending bootstrap 거절, RESERVED 이후 새nonce 강제·bootstrap 관측 재사용 거절. head hash exact snapshot/자기참조 부재·currentEventRef와headRef 혼동/옛 hash CAS 거절·비상태 event chain과state head 분리도 대조한다.
+- 과거 BOUNDARY_ESTABLISHED/RESERVED 이력이 있는데 head만 없음, 옛epoch에만 lease 있음, history 절단/복원 미확인, 기존head 재등록을 최초요청으로 위장한 경우는 모두 거절한다. 새headid/generation1 또는 자동epoch채택이 발생하지 않음을 확인한다. 실제 복구·재등록 성공 검수는 별도 미정이며 이 거절 검사로 완료를 대신하지 않는다.
 - source/tip/HUMAN/등록이 await 중 변경되거나 최솟값 기한이 소진되면 거절·UNKNOWN. 합성 journal의 성공을 실제 PG 원자성으로 보고하지 않음.
 - 기본 미등록/권한 없음·REGISTRATION_STATUS_ONLY의 새 API 거절, 기존 합성 grant/회수/5표 계약 인접 회귀.
 - mock/fixture/type/static과 actual 증거를 분리. 새 정책을 실제 사용자에게 부여하거나 실제키/DB/native를 시험하지 않음.
@@ -145,3 +150,4 @@
 - 미래 실제 적용 후에는 append 회수/새 forward 보완으로 복구한다. table/이력 삭제·합성행 승격/역migration·잔류 프로세스 무단kill은 복구안이 아니다.
 - 사용자/PMO 결정 요청은 하나의 source 계약 묶음: **B안 새2표·위 operation/API/purpose/현재조회·기본 미등록 source/미적용 SQL·합성 검증을 승인할지**, 또는 A/C 대조/현행 유지로 돌릴지다. 이 답변을 actual 효과 승인으로 전용하지 않는다.
 - 별도 미확정 actual 경계: source 강제 수단과 위협 범위, 실제 signer/host credential scope·서버 current 채널, 정확 runtime/OS/DB 자원과 회수 허가. 이를 지금 승인된 것으로 표시하지 않는다.
+- B안 source 계약의 이번 후보는 검증 가능한 최초 boundary와 같은 유효 등록/현존 head의 lease 생명주기에 한정한다. head 유실 복구/환경 재등록의 성공 전이는 미포함·미지원이며 전체 FN06/13·도구이전 완료가 아니다. 이 기능을 나중 테스트로 숨기지 않고 별도 미구현으로 남긴다.
