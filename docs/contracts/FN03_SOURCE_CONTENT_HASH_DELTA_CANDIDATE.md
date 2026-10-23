@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 관리 증거·scope 소비 접점**: 신규 inspectSourceContentPolicyScopeCandidate는 관리 원문 증거와 원scope를 순수 결합해 CM03의 네 refs/전체 target 동일집합(순서 차이 허용, 각 전체값 일치)·operation·한도를 대조한다. 관리 당시 문맥은 관리 증거 내부에서만 결박하며 이후 요청의 다른 client/세대/base정책을 현재 허가로 승인하지 않는다. 전달된 이벤트의 거절·회수/기한과 원요청 기한을 지키되 실제 최신 head 생산자가 없으므로 정상도 POLICY_SCOPE_SHAPE_ONLY/UNVERIFIED·false5다. 기존 공개 경로/최소head·SQL/runner/route 무변경·새5 RED→직접35 합성 PASS/typecheck/diff0.
+
 - **2026-10-23 CM05~08 구조 증거 소비**: 신규 inspectSourceContentPolicyManagementEvidenceCandidate는 §12.6.2 exact6/expected8 입력과 별도 originalRequest 원문 전체 hash를 소비한다. snapshot으로 원문을 역생성하지 않으며 기존 payloadRef는 AUTO 후보에서 null로 보존한다. 내부/caller 명령ID·주체/client/세대/base정책·receipt/audit/정확target·인접 계보/시각을 구조 대조하고 최소 refs/digest·false5만 반환한다. JSON 구조 입력 전용이며 보호 원문 생산자·현재 OWNER/재인증·별도 관리허가·DB 잠금/CAS/실제 저장을 제공하지 않는다. 새6 RED→직접35 합성 PASS, 후속8/typecheck/diff0다.
 
 - **2026-10-23 승인 형식의 첫 SOURCE 소비**: CM01~04의 payload/definition과 서버 후보값4키(projectId/actorId/sequence/recordedAt)를 신규 순수 builder에 대응했다. 기존 범위 codec만 재사용하고 정책 TTL에 요청10분 상한을 이월하지 않는다. 반환 snapshot/hash는 형식 후보이며 서버값 진위·최신 head/CAS·원명령/영수증/감사 증거를 확인하지 않아 false5를 유지한다. CM05~08 증거 inspector·실제 저장/허가는 미완료다. 새5 RED→직접/인접22 합성 PASS/typecheck/diff0, 기존 최소6/hash·공개 reader/SQL/runner/route 변경0.
