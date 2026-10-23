@@ -4,9 +4,11 @@ import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation
 import type {RecordedResultReview} from './result-review-write-api.ts';
 import type {RegisteredCriteria} from './result-criteria-api.ts';
 import {readReviewCriteriaOriginal} from './review-criteria-original.ts';
+import type {SubmittedResultView} from './result-api.ts';
+import {ReviewReportedCoverage} from './ReviewReportedCoverage.tsx';
 
 /** 보관 판정에서 고정 원조건으로 이동하는 읽기 전용 소비자. 현재 합격·실제 시험 판정은 하지 않는다. */
-export function ReviewCriteriaOriginal({client,assignment,review,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+export function ReviewCriteriaOriginal({client,assignment,review,result,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;result?:SubmittedResultView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  const [open,setOpen]=useState(false),[attempt,setAttempt]=useState(0),[loaded,setLoaded]=useState<{attempt:number;value:RegisteredCriteria|null;error:string|null}|null>(null),epoch=useRef(0),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
  const shown=open&&loaded?.attempt===attempt?loaded:null;
  useEffect(()=>{if(!open)return;let active=true;const generation=epoch.current,valid=()=>active&&epoch.current===generation;
@@ -23,5 +25,6 @@ export function ReviewCriteriaOriginal({client,assignment,review,onAuthenticatio
     <p>보관 판정: {decision?decision.outcome==='REWORK'?'보완 필요':'차단':'해당 조건 기록 없음 · 미확인'}</p>{decision?<p>{decision.reason}</p>:null}</li>;})}</ul>
    <p>원조건 연결과 보관 판정을 조회한 것입니다. 현재 기준 적용·실제 시험·업무 완료·실행 허가를 확인하지 않습니다.</p><details><summary>기준·원조건 hash·환경 전체</summary><pre>{JSON.stringify(shown.value,null,2)}</pre></details>
   </article>:null}
+  {shown?.value&&result?<ReviewReportedCoverage key={JSON.stringify([result.ref,shown.value.ref,attempt])} client={client} result={result} criteria={shown.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
  </section>;
 }
