@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 retained root/image 직접자식 귀속 SOURCE — 2026-10-23
+
+같은 RootSource의 `ReadRetainedImageLocationSource(root,image)`는 두 내부 보유 SafeFileHandle을 수명참조해 directory/file 구분·비reparse·전후metadata/정규 GUID path·같은 volume hint/서로다른 fileIDhint·image links1/1..20MiB·직접자식 경계를 검사하도록 작성했다. 디렉터리 case-sensitive 설정에서도 다른 경로를 같다고 수용하지 않도록 Ordinal 비교를 사용하고 sibling prefix·하위폴더·ADS를 거절한다. 공유 metadata 읽기에서 directory 기본값을 유지하고 path digest/identity hint 로직만 같은 파일 내부 재사용했다.
+
+path/digest/전후일치는 실제 승인root/승인binary·바이트hash·원processimage/생성보유/배타적귀속 증명이 아니다. 결과는 RETAINED_ROOT_IMAGE_LOCATION_CANDIDATE_ONLY이며 승인root/binary/factory/준비/실행/전달false·해당누락/선조/로컬/쓰기삭제배제/처분/인증/actualwriter/OS강제종료 미확인을 유지한다. stream읽기/위치변경·새open·명시Close/Create/키/DB/API·등록0이며 실제PInvoke/컴파일/RunAll은 실행하지 않았다. C# 미래 반례에는 순수 직접자식 경계와 null/same/invalid/closed를 포함하지만 실제PASS로 계산하지 않는다.
+
 ## FN06 D1 retained directory root 조회 SOURCE — 2026-10-23
 
 별도 `OwnershipEvidenceRootSource.ReadRetainedDirectorySource(SafeFileHandle)`는 향후 factory가 보유할 directory handle만 입력받고 새 경로/open/ACL/쓰기 없이 수명참조 안에서 GetFileType·GetFileInformationByHandle·GetFinalPathNameByHandleW(normalized/GUID flag1)를 전후 조회하도록 작성했다. directory/비reparse·양의시간/fileID hint·유효 GUID path·고정32768버퍼/반환길이·전후 metadata/path·참조회수 후10초 결과수용을 대조하며 rawpath/handle은 반환하지 않는다.

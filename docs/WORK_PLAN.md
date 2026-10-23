@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 root/image 귀속 SOURCE**: 내부보유directory/file쌍의 전후metadata/path·직접자식·image한도를 대조하는 미등록SOURCE를 연결했다. 새open/실제파일읽기/OS·compiler0, 원생성보유/승인root·binary·원processimage/배타성·인증/actualwriter는미확인/권한false를유지한다. 미래반례SOURCE·Main diff0범위이며 actual factory/실행·전체FN06/계획완료가아니다. 기존compile4hash/원후보불변이다.
+
 - **2026-10-23 FN06 D1 retained root SOURCE**: D2재compile와독립적으로 별도root조회/미래반례2source를 작성했다. directory handle의metadata/path전후대조·참조회수·유한결과수용 후보이며 권위false/미확인유지다. 공식서명·한정정적C0/I0/M0·diff0만 확인했고 compile/RunAll/실제OS·파일·factory권위는NOT_RUN/UNVERIFIED다. 기존D2 source4동결/후보자동확대0·전체계획미완료이며 다음은원factory보유/생성출처·인증준비선행이다.
 
 - **2026-10-23 FN06 신규 Ownership D2 단발 compile FAIL**: 신산님 직접승인으로 고정4source/csc/참조를1회 DLL compile했으나 CS4014/exit1·212ms/DLL생성0이다. 원인은 의도적 fault관측 continuation 반환작업 미보관으로 확인해 최소SOURCE를 보완했다. 새HostrawC21CC141·재compile NOT_RUN/단발허가소진, 원실패/판정 보존이다. 소유복사4/빈root 회수·독립부재확인; DLL/시험/helper/PInvoke/DB/Agent0. 상세 FN06_OWNERSHIP_NATIVE_LIBRARY_COMPILE_RESULT.md이며 전체계획 미완료다.
