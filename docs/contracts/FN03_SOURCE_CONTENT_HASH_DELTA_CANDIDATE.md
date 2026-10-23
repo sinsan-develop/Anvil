@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 서버문맥 계보 SOURCE**: 신규 readSourceContentPolicyLineageFromServerContextCandidate/FromHeldIdentityCandidate는 기존 후보 문맥 판독과 저장계보를 조합한다. 새 권위 producer·관리정책을 정의하지 않고 기존 고정음성/원요청 대조와 최신 회수/null·false6·분리조회를 유지한다. 같은 db 전달은 transaction·현재성 증명이 아니다. 실제 인증·키/nonce·SQL/DB·OS/route/served는 미검증/미활성이고 기존 상태/proof/정책 기준은 변경하지 않는다. 새4 유효RED→직접119 합성PASS, 신규 null 확인 추가 후 해당90/type/diff0·Minor11/기존 제외 유지.
+
 - **2026-10-23 저장요청 문맥·계보 SOURCE**: 별도 readSourceContentStoredPolicyLineageForDeclaredContextCandidate가 exact8 선언 문맥 복사→기존 저장 증거 판독→정확 requestRef/주체·client/두 세대/basePolicyRef 대조→복사 scope의 최신 정책계보를 순서대로 소비한다. 불일치는 정책 조회 전에 닫으며 기존 공개 reader와 실제 허가 기준은 유지한다. 최소 refs/계보·권위 false6/분리조회이고 실제 저장 인증·관리근거/current·SQL/DB·route는 미검증/미활성이다. 새4 RED→직접115 합성 PASS, fixture 타입 정정 후86 PASS/type/diff0·Minor11/기존 제외 유지.
 
 - **2026-10-23 원scope 정책계보 SOURCE**: readSourceContentRequestPolicyLineageCandidate는 원scope를복사하고원수명내에서만최신계보판독을소비하며 exactcontentPolicyRef를대조한다. 기한밖은query0, 최신음성은그대로, 정상계보라도원정책id/version/hash불일치는refs/lineage null로닫는다. 다른project/subject·getter/변이·오류음성을확인하며최소반환/false5·옛positive0다. 기존요청정책reader/허가를바꾸지않고 fullscope/targets/관리근거/current진위·실제DB/키/route는미검증/미활성이다. 새4RED+직접음성1→29합성PASS/type/diff0·Minor11/기존제외유지.

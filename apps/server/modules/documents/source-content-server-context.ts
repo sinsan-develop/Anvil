@@ -4,7 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
-import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate} from './source-content-request-record.ts';
+import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate} from './source-content-request-record.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 /** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
@@ -44,6 +44,20 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 보유 값/구체 control의 비활성 조합이며 실제 인증 생산자나 관리 권위를 연결하지 않는다. */
+export function readSourceContentPolicyLineageFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,nowMs:number){
+ return readSourceContentPolicyLineageFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,nowMs);
+}
+/** 기존 서버 문맥을 저장계보 소비에만 결박한다. 최신 음성·분리조회·권위 false를 보존한다. */
+export function readSourceContentPolicyLineageFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,nowMs:number){
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,requestRef:null,policyRef:null,lineage:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,
+  storedRequestAuthenticated:false as const,managementEvidenceVerified:false as const,currentAuthorityVerified:false as const,
+  storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredPolicyLineageForDeclaredContextCandidate(db,c,nowMs),close);
+}
 const closed=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,summary:null,
  declaredContextAuthenticated:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
 function copy(value:unknown,keys:string[]):Record<string,any>|null{

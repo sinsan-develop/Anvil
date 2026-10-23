@@ -2,9 +2,37 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 const m=await import(new URL('../../../apps/server/modules/documents/source-content-request-record.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+const lineageServerModule=await import('../../../apps/server/modules/documents/source-content-server-context.ts');
 const id=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
 function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
+function serverLineage(){assert.equal(typeof lineageServerModule.readSourceContentPolicyLineageFromServerContextCandidate,'function','서버 문맥 정책계보 소비 미구현');return lineageServerModule.readSourceContentPolicyLineageFromServerContextCandidate;}
+function heldLineage(){assert.equal(typeof lineageServerModule.readSourceContentPolicyLineageFromHeldIdentityCandidate,'function','보유identity 정책계보 소비 미구현');return lineageServerModule.readSourceContentPolicyLineageFromHeldIdentityCandidate;}
+test('서버 후보 문맥의 저장계보는 동일db·identity/control/record/계보 순서와 최신회수를 보존한다',async()=>{
+ for(const revoked of [false,true]){const f=storedLineageFixture(),s=preparationSources(f),order:string[]=[];if(revoked){f.current.disposition='REVOKED';f.current.snapshot_json.disposition='REVOKED';f.current.content_hash=contentHash(canonicalJson(f.current.snapshot_json));}let calls=0;
+ const db={async query(_sql:string,args:unknown[]){order.push(++calls===1?'record':'lineage');assert.deepEqual(args,calls===1?[id(2),id(13)]:[id(2)]);return {rows:[calls===1?f.row:{current:f.current,previous:f.previous}]};}};
+ const out=await serverLineage()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},proofBasis(f.row),zero+5000);
+ assert.deepEqual(order,['identity','control','record','lineage']);assert.equal(calls,2);assert.equal(out.reason,revoked?'POLICY_REVOKED':'POLICY_LINEAGE_SHAPE_ONLY');assert.equal(out.status,revoked?'DENIED':'UNVERIFIED');assert.equal(out.lineage===null,revoked);assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');assert.equal(out.managementEvidenceVerified,false);assert.equal(out.storedRequestAuthenticated,false);assert.equal(out.currentAuthorityVerified,false);assert.equal(out.storageMutationPerformed,false);assert.equal(out.executionAuthorized,false);assert.equal(out.linkAuthorized,false);
+ }
+});
+test('서버계보 판독부재/미지음성은0query이며 옛세대/base정책/원ref와 원기한은 추가조회 없이 닫힌다',async()=>{
+ const f=storedLineageFixture(),s=preparationSources(f);let calls=0;const db={async query(){calls++;return {rows:[f.row]};}};
+ const absent=await serverLineage()(db,{},proofBasis(f.row),zero+5000);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');assert.equal(absent.requestRef,null);assert.equal(absent.lineage,null);
+ const unknown=await serverLineage()(db,{...s,async readControlCandidate(){return {status:'DENIED',reason:'PRIVATE_LINEAGE_REASON'};}},proofBasis(f.row),zero+5000);assert.equal(unknown.reason,'PROJECT_CONTROL_CANDIDATE_INVALID');assert.equal(JSON.stringify(unknown).includes('PRIVATE_LINEAGE_REASON'),false);assert.equal(calls,0);
+ for(const kind of ['credential','control','base','request','expired']){calls=0;const i=await s.readIdentityCandidate(),c=await s.readControlCandidate(),basis=proofBasis(f.row);if(kind==='credential')i.credentialGeneration=1;if(kind==='control')c.controlGeneration=2;if(kind==='base')c.basePolicyRef.contentHash='f'.repeat(64);if(kind==='request')basis.requestRef.contentHash='f'.repeat(64);
+ const out=await serverLineage()(db,{async readIdentityCandidate(){return i;},async readControlCandidate(){return c;}},basis,zero+(kind==='expired'?600000:5000));assert.equal(calls,1);assert.equal(out.reason,kind==='expired'?'REQUEST_OUTSIDE_ORIGINAL_LIFETIME':kind==='request'?'STORED_REQUEST_REF_MISMATCH':'DECLARED_POLICY_CONTEXT_MISMATCH');assert.equal(out.lineage,null);assert.equal(out.executionAuthorized,false);}
+});
+test('서버계보의 getter/identity 오류와 후속query 오류는 원문 없이 보존한다',async()=>{
+ const f=storedLineageFixture(),s=preparationSources(f);let calls=0,gets=0;const basis=proofBasis(f.row);Object.defineProperty(basis,'projectId',{enumerable:true,get(){gets++;return id(2);}});const db={async query(){calls++;return {rows:[]};}};
+ await assert.rejects(serverLineage()(db,s,basis,zero+5000),/SOURCE_CONTENT_SERVER_CONTEXT_INVALID/);assert.equal(calls,0);assert.equal(gets,0);
+ const error=Error('SYNTHETIC_SERVER_LINEAGE_ERROR');await assert.rejects(serverLineage()(db,{...s,async readIdentityCandidate(){throw error;}},proofBasis(f.row),zero+5000),e=>e===error);assert.equal(calls,0);
+ await assert.rejects(serverLineage()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},s,proofBasis(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+});
+test('보유identity 계보는 구체control/저장/계보3query·만료0/회수1query로 닫힌다',async()=>{
+ const f=heldFixture(),p=storedLineageFixture();let calls=0;const rows=[f.control,f.row,{current:p.current,previous:p.previous}];const out=await heldLineage()({async query(){return {rows:[rows[calls++]]};}},f.held,f.basis,zero+5000);assert.equal(calls,3);assert.equal(out.reason,'POLICY_LINEAGE_SHAPE_ONLY');assert.ok(out.lineage);assert.equal(out.lineage.sequence,2);assert.equal(out.currentAuthorityVerified,false);
+ calls=0;const expired=await heldLineage()({async query(){calls++;return {rows:[]};}},f.held,f.basis,zero+60000);assert.equal(calls,0);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(expired.lineage,null);
+ f.control.control_revoked_at=at(1000);const revoked=await heldLineage()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,zero+5000);assert.equal(calls,1);assert.equal(revoked.reason,'PROJECT_CONTROL_UNAVAILABLE');assert.equal(revoked.lineage,null);assert.equal(revoked.linkAuthorized,false);
+});
 function storedLineageFixture(){
  const f=policyFixture();const p=structuredClone(f.policy);p.id=id(51);p.sequence=1;p.recorded_at=at(-2000);p.snapshot_json={...p.snapshot_json,sequence:1,recordedAt:p.recorded_at};p.content_hash=contentHash(canonicalJson(p.snapshot_json));
  const previous={...p,previous_ref:null,management_command_id:id(61)};
