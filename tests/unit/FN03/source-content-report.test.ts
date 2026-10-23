@@ -18,6 +18,29 @@ function fixture(){
 }
 function fn(name:string){assert.equal(typeof m[name],'function','새 목적 codec 미구현');return m[name];}
 function badReport(v:unknown,c:unknown){assert.throws(()=>fn('readSourceContentReportV1')(v,c),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);}
+
+const proofConsumer=await import(new URL('../../../apps/server/modules/connections/source-content-report-proof-input.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+function reportInput(){assert.equal(typeof proofConsumer.readSourceContentReportProofInputCandidate,'function','보고 서명 입력 소비 미구현');return proofConsumer.readSourceContentReportProofInputCandidate;}
+test('보고 서명 입력은 검증된 보고 hash와 새 domain만 전달하고 진위는 미확인이다',()=>{
+ const f=fixture(),out=reportInput()(f.report,f.context);
+ const proof={protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT_PROOF',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:f.context.requestRef,scopeDigest:f.context.requestRef.contentHash,observationRequestRef:ref(14),observationNonce:Buffer.alloc(32,7).toString('base64url'),reportHash:f.report.reportHash};
+ assert.deepEqual(out.candidate.proofBytes,Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_REPORT_V1\0','ascii'),Buffer.from(canonicalJson(proof),'utf8')]));
+ assert.deepEqual(out.candidate.signatureBytes,Buffer.alloc(64,5));assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'SIGNATURE_VERIFIER_UNAVAILABLE');
+ for(const key of ['signatureVerified','currentAuthorityVerified','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ assert.equal(out.candidate.proofBytes.includes(Buffer.from('canonicalPath')),false);
+});
+test('보고 서명 입력은 재해시한 다른 nonce·metadata 목적·잘못된 서명을 거절한다',()=>{
+ const f=fixture(),read=reportInput();
+ for(const patch of [{observationNonce:Buffer.alloc(32,8).toString('base64url')},{purpose:'SOURCE_READ_REPORT'},{signature:Buffer.alloc(64,5).toString('base64')}])assert.throws(()=>read(rehash({...f.report,...patch}),f.context));
+ assert.throws(()=>read({...f.report,reportHash:'f'.repeat(64)},f.context));
+});
+test('보고 서명 입력은 context를 한 번 복사하고 getter를 실행하지 않는다',()=>{
+ const f=fixture(),read=reportInput();let reads=0;
+ const changing=new Proxy(f.context,{getOwnPropertyDescriptor(target,key){const d=Reflect.getOwnPropertyDescriptor(target,key);if(key==='scope'&&d){reads++;return {...d,value:reads===1?f.scope:{...f.scope,projectId:id(99)}};}return d;}});
+ const out=read(f.report,changing);assert.equal(reads,1);assert.equal(out.signatureVerified,false);
+ let calls=0;const report={...f.report};Object.defineProperty(report,'signature',{enumerable:true,get(){calls++;return f.report.signature;}});
+ assert.throws(()=>read(report,f.context));assert.equal(calls,0);
+});
 test('scope는 정확 목적·원 요청과 불변 복사·10분을 유지한다',()=>{const f=fixture(),out=fn('readSourceContentScopeV1')(f.scope);f.scope.targets[0]!.relativePath='changed';assert.equal(out.targets[0].relativePath,'src/main.ts');assert.equal(out.purpose,'SOURCE_DOCUMENT_CONTENT_HASH');});
 test('scope는 metadata 목적·권위 필드·누락/잘못된 세대·10분 초과를 거절한다',()=>{const read=fn('readSourceContentScopeV1'),f=fixture();for(const patch of [{purpose:'SOURCE_READ_OBSERVATION'},{executionAuthorized:true},{controlGeneration:0},{credentialGeneration:1.1},{basePolicyRef:null},{expiresAt:at(600001)}])assert.throws(()=>read({...f.scope,...patch}),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);});
 test('보고 구조·원 scope/fullref/hash를 보존하되 권위나 현재검증 필드는 만들지 않는다',()=>{const f=fixture(),out=fn('readSourceContentReportV1')(f.report,f.context);f.report.files[0].facts.blobHash='f'.repeat(64);assert.equal(out.files[0].facts.blobHash,createHash('sha256').update(Buffer.from([13,10])).digest('hex'));assert.equal(Object.hasOwn(out,'verified'),false);assert.equal(Object.hasOwn(out,'executionAuthorized'),false);});

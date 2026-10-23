@@ -4,6 +4,39 @@ const m=await import(new URL('../../../contracts/runtime/source-content-exchange
 const id=(n:number)=>`30000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),zero=Date.parse('2026-10-23T06:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
 function fixture(){const scope={protocolVersion:1,purpose:'SOURCE_DOCUMENT_CONTENT_HASH',installationId:id(1),projectId:id(2),sourceRootRef:ref(3),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),hostFingerprint:'c'.repeat(64),pathHintHash:'d'.repeat(64),userId:id(7),clientId:id(8),credentialGeneration:2,controlGeneration:3,basePolicyRef:ref(9),contentPolicyRef:ref(10),targets:[{relativePath:'src/a.ts',documentRef:ref(11),documentBlobRef:{artifactId:id(12),bytes:0,contentHash:'b'.repeat(64),mediaType:'text/plain'}}],limits:{maxFiles:200,maxFileBytes:2097152,maxTotalBytes:20971520,maxObservationMs:30000,maxReportBytes:1048576},requestedAt:at(0),expiresAt:at(600000),reason:'합성 교환'};const context={scope,requestRef:{id:id(13),version:1,contentHash:contentHash(canonicalJson(scope))},publicKeyFingerprint:'e'.repeat(64)};const preflight={protocolVersion:1,purpose:'SOURCE_CONTENT_PREFLIGHT',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:context.requestRef,scopeDigest:context.requestRef.contentHash,publicKeyFingerprint:context.publicKeyFingerprint,clientNonce:Buffer.alloc(32,7).toString('base64url'),expiresAt:at(120000)};const challenge={...preflight,purpose:'SOURCE_CONTENT_EXCHANGE',serverNonce:Buffer.alloc(32,8).toString('base64url'),issuedAt:at(1000),expiresAt:at(61000)};return {scope,context,preflight,challenge};}
 function fn(name:string){assert.equal(typeof m[name],'function','교환 순수 codec 미구현');return m[name];}
+
+const consumer=await import(new URL('../../../apps/server/modules/connections/source-content-exchange-proof-input.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+function consume(name:string){assert.equal(typeof consumer[name],'function','content 서명 입력 소비 미구현');return consumer[name];}
+const syntheticSignature=()=>Buffer.alloc(64,5).toString('base64url');
+test('preflight 서명 입력은 content NUL domain을 보존하지만 서명 진위를 주장하지 않는다',()=>{
+ const f=fixture(),out=consume('readSourceContentPreflightProofInputCandidate')({payload:f.preflight,signature:syntheticSignature()},f.context,zero+1000);
+ assert.deepEqual(out.candidate.proofBytes,Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_PREFLIGHT_V1\0','ascii'),Buffer.from(canonicalJson(f.preflight),'utf8')]));
+ assert.deepEqual(out.candidate.signatureBytes,Buffer.alloc(64,5));assert.equal(out.candidate.publicKeyFingerprint,f.context.publicKeyFingerprint);
+ assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'SIGNATURE_VERIFIER_UNAVAILABLE');
+ for(const key of ['signatureVerified','currentAuthorityVerified','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ f.preflight.requestRef.version=2;assert.ok(out.candidate.proofBytes.includes(Buffer.from('ANVIL_SOURCE_CONTENT_PREFLIGHT_V1\0')));
+});
+test('challenge 서명 입력은 원 preflight와 다른 고유 domain을 소비한다',()=>{
+ const f=fixture(),out=consume('readSourceContentChallengeProofInputCandidate')({payload:f.challenge,signature:syntheticSignature()},f.preflight,f.context,zero+1000);
+ assert.deepEqual(out.candidate.proofBytes,Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_EXCHANGE_V1\0','ascii'),Buffer.from(canonicalJson(f.challenge),'utf8')]));
+ assert.equal(out.signatureVerified,false);assert.equal(out.linkAuthorized,false);
+ assert.throws(()=>consume('readSourceContentPreflightProofInputCandidate')({payload:f.challenge,signature:syntheticSignature()},f.context,zero+1000));
+ assert.throws(()=>consume('readSourceContentChallengeProofInputCandidate')({payload:f.challenge,signature:syntheticSignature()},{...f.preflight,clientNonce:Buffer.alloc(32,9).toString('base64url')},f.context,zero+1000));
+});
+test('서명 입력의 잘못된 길이·비정규 인코딩·추가 권위와 metadata 목적은 거절한다',()=>{
+ const f=fixture(),read=consume('readSourceContentPreflightProofInputCandidate');
+ for(const signature of ['',Buffer.alloc(63).toString('base64url'),Buffer.alloc(65).toString('base64url'),Buffer.alloc(64).toString('base64'),syntheticSignature()+'='])assert.throws(()=>read({payload:f.preflight,signature},f.context,zero+1000),/^Error: SOURCE_CONTENT_PROOF_INPUT_INVALID$/);
+ for(const patch of [{verified:true},{verify:()=>true},{signatureVerified:true}])assert.throws(()=>read({payload:f.preflight,signature:syntheticSignature(),...patch},f.context,zero+1000),/^Error: SOURCE_CONTENT_PROOF_INPUT_INVALID$/);
+ assert.throws(()=>read({payload:{...f.preflight,purpose:'SOURCE_READ_PREFLIGHT'},signature:syntheticSignature()},f.context,zero+1000));
+ assert.throws(()=>read({payload:f.preflight,signature:syntheticSignature()},f.context,zero+120000));
+});
+test('서명 입력 getter를 실행하지 않고 반환 buffer는 서로 공유하지 않는다',()=>{
+ const f=fixture(),read=consume('readSourceContentPreflightProofInputCandidate');let calls=0;
+ const input={payload:f.preflight};Object.defineProperty(input,'signature',{enumerable:true,get(){calls++;return syntheticSignature();}});
+ assert.throws(()=>read(input,f.context,zero+1000));assert.equal(calls,0);
+ const a=read({payload:f.preflight,signature:syntheticSignature()},f.context,zero+1000),b=read({payload:f.preflight,signature:syntheticSignature()},f.context,zero+1000);
+ a.candidate.proofBytes.fill(0);a.candidate.signatureBytes.fill(0);assert.notEqual(b.candidate.proofBytes[0],0);assert.equal(b.candidate.signatureBytes[0],5);
+});
 test('preflight는 원 scope/ref/key와 exact 목적을 결박하고 detached 복사한다',()=>{const f=fixture(),out=fn('readSourceContentPreflightV1')(f.preflight,f.context,zero+1000);f.preflight.observerRef.version=2;assert.equal(out.observerRef.version,1);assert.equal(Object.hasOwn(out,'credential'),false);});
 test('다른 목적·project/ref/hash/key·실행권한·추가키는 거절한다',()=>{const f=fixture(),read=fn('readSourceContentPreflightV1');for(const patch of [{purpose:'SOURCE_READ_PREFLIGHT'},{projectId:id(99)},{requestRef:ref(99)},{observerRef:ref(99)},{scopeDigest:'f'.repeat(64)},{publicKeyFingerprint:'f'.repeat(64)},{executionAuthorized:true},{signature:'not allowed'}])assert.throws(()=>read({...f.preflight,...patch},f.context,zero+1000),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);assert.throws(()=>read(f.preflight,{...f.context,scope:{...f.scope,controlGeneration:4}},zero+1000),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);});
 test('nonce는 canonical32바이트이고 원 요청기한/현재시각을 넘어갈 수 없다',()=>{const f=fixture(),read=fn('readSourceContentPreflightV1');for(const patch of [{clientNonce:'AA'},{clientNonce:Buffer.alloc(32).toString('base64')},{expiresAt:at(600001)},{expiresAt:at(1000)}])assert.throws(()=>read({...f.preflight,...patch},f.context,zero+1000),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);for(const now of [zero-1,NaN,zero+0.1,zero+120000])assert.throws(()=>read(f.preflight,f.context,now),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);});

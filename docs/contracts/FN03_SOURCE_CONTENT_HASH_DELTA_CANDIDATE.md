@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 서명 입력 준비 SOURCE**: readSourceContentPreflightProofInputCandidate/readSourceContentChallengeProofInputCandidate는 exact2 envelope를 복사하고 canonical 64바이트 서명 형태와 기존 content 교환 codec을 소비한다. readSourceContentReportProofInputCandidate는 context를 고정하고 원 보고 codec/hash 대조 후 새 보고 domain bytes를 소비한다. 반환은 비활성 입력 후보뿐이며 SIGNATURE_VERIFIER_UNAVAILABLE/UNVERIFIED·signature/current/실행/LINK false다. 키 조회/사용·서명 진위·nonce 소비·권한/route 활성화0, 새7 RED→직접29 합성 PASS/type/diff0. 기존 metadata 서명 목적/검증을 재사용하지 않으며 실 verifier 부재412와 Minor9/실제제외 유지.
+
 - **2026-10-23 보유identity 준비 SOURCE**: readSourceContentPreparationFromHeldIdentityCandidate는기존identity순수포트/구체control포트만신규서버문맥준비에연결한다. 실제authenticate/session·키/DB/서명/observer/OS를호출하거나인증/준비권위를만들지않고모든권위false/분리조회다. 새5RED→직접142합성/SSR PASS/type/diff0·한정독립C0/I0/M0,Minor9/SQL145NOT_RUN·실verifier412·실제실행제외/거절유지.
 
 - **2026-10-23 문맥 준비 SOURCE**: readSourceContentStoredPreparationForDeclaredContextCandidate는기존exact8 선언문맥parser를소비하고저장scope의user/client·credential/control세대/basePolicyRef를정책조회전에대조한다. readSourceContentPreparationFromServerContextCandidate는기존identity/control후보판독을한정재사용하며고정음성은현재권위/준비false·candidate null로닫는다. 기존상태조회·기본저장준비의입력/거절/반환동작은변경하지않고새경로역시선언인증/저장인증/준비/byte/current/저장실행LINKfalse·분리조회뿐이다. 새6RED→직접137합성/ReactSSR PASS/type/diff0,실제authproducer/DB/키/OS/route/served와분리하고Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절을유지한다.
