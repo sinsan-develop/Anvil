@@ -16,6 +16,7 @@ import {CheckpointFileReader} from './CheckpointFileReader.tsx';
 import {StoredObservationJournal} from './StoredObservationJournal.tsx';
 import {StoredStopRequests} from './StoredStopRequests.tsx';
 import {ReportedTestResults} from './ReportedTestResults.tsx';
+import {ReportedFileChanges} from './ReportedFileChanges.ts';
 import {UnexecutedReports} from './UnexecutedReports.tsx';
 import {ReportedCommandResults} from './ReportedCommandResults.tsx';
 import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
@@ -89,6 +90,7 @@ function SessionResults({client,projectId,confirmed,onAuthenticationLost,criteri
 export function ResultContent({value}:{value:SubmittedResultView}){
  const s=value.snapshot,m=s.manifest;
  return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
+  <ReportedFileChanges key={JSON.stringify([s.scope,value.ref])} changes={m.changes} artifacts={m.artifactRefs}/>
   <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
   <ReportedCommandResults key={JSON.stringify([s.scope,value.ref])} commands={m.commandResults} executionRef={s.scope.executionRef}/>
   <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
