@@ -22,16 +22,16 @@ export function WorkspaceDocuments({ client, projectId, selectedStage, onAuthent
       if (failure.status === 401) onAuthenticationLost();
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
-  }, [client, projectId, cursor, revision]);
+  }, [client, projectId, cursor, revision, selectedStage?.applicationId, selectedStage?.nodeId]);
   useEffect(() => {
     if (!selection) return;
     let current = true;
-    readDocument(client, projectId, selection.id, selection.version).then(value => { if (current) { if (selectedStage && !sameStageRef(value.document.stageNodeRef, { applicationId: selectedStage.applicationId, nodeId: selectedStage.nodeId })) throw new ApiError('DOCUMENT_STAGE_CHANGED'); setOpened(value); } }).catch((cause: unknown) => {
+    readDocument(client, projectId, selection.id, selection.version, {active:()=>current,...(selectedStage?{expectedStage:{applicationId:selectedStage.applicationId,nodeId:selectedStage.nodeId}}:{})}).then(value => { if (current) { if (selectedStage && !sameStageRef(value.document.stageNodeRef, { applicationId: selectedStage.applicationId, nodeId: selectedStage.nodeId })) throw new ApiError('DOCUMENT_STAGE_CHANGED'); setOpened(value); } }).catch((cause: unknown) => {
       if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(failure);
       if (failure.status === 401) onAuthenticationLost();
     }).finally(() => { if (current) setReading(false); });
     return () => { current = false; };
-  }, [client, projectId, selection]);
+  }, [client, projectId, selection, selectedStage?.applicationId, selectedStage?.nodeId]);
   function load(cursor: string | null) {
     setPage(null); setListError(null); setOpened(null); setReadError(null); setSelection(null); setReading(false); setLoading(true);
     setRequest(previous => ({ cursor, revision: (previous?.revision ?? 0) + 1 }));

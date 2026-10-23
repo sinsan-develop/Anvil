@@ -1,5 +1,5 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { stageRef, validStageBinding, type StageBinding, type StageNodeRef } from './stage-api.ts';
+import { stageRef, sameStageRef, validStageBinding, type StageBinding, type StageNodeRef } from './stage-api.ts';
 import {documentDraftHash,type DocumentContent} from './editor-api.ts';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
@@ -29,12 +29,15 @@ export async function listDocuments(client: ApiClient, projectId: string, cursor
   if (!value || !Array.isArray(value.items) || value.items.length > 50 || typeof value.hasMore !== 'boolean' || value.hasMore !== (typeof value.nextCursor === 'string' && value.nextCursor.length > 0 && value.nextCursor.length <= 4096) || !value.hasMore && value.nextCursor !== null || !Number.isFinite(Date.parse(value.observedAt)) || new Set(value.items.map(item => item?.id)).size !== value.items.length || value.items.some(item => !item || !uuid.test(item.id) || typeof item.title !== 'string' || !integer(item.headVersion) || item.confirmedVersion !== null && (!integer(item.confirmedVersion) || item.confirmedVersion > item.headVersion) || !Number.isFinite(Date.parse(item.updatedAt)))) throw new ApiError('RESPONSE_INVALID');
   return value;
 }
-export async function readDocument(client: ApiClient, projectId: string, id: string, version: number, options?: {expectedContentHash?:string;active?:()=>boolean}): Promise<{ document: DocumentVersion; body: string }> {
+export async function readDocument(client: ApiClient, projectId: string, id: string, version: number, options?: {expectedContentHash?:string;expectedStage?:StageNodeRef;active?:()=>boolean}): Promise<{ document: DocumentVersion; body: string }> {
   const check=()=>{if(options?.active&&!options.active())throw new ApiError('DOCUMENT_READ_PAUSED');};check();
   if(options?.expectedContentHash!==undefined&&!hash.test(options.expectedContentHash))throw new ApiError('CLIENT_PATH_INVALID');
+  if(options?.expectedStage!==undefined&&!stageRef(options.expectedStage))throw new ApiError('CLIENT_PATH_INVALID');
+  const expectedStage=options?.expectedStage?{...options.expectedStage}:undefined;
   if (!uuid.test(id) || !integer(version)) throw new ApiError('CLIENT_PATH_INVALID');
   const base = projectPath(projectId), value = await client.get<DocumentVersion>(`${base}/documents/${id}/versions/${version}`), ref = value?.content?.body;
   check();if(options?.expectedContentHash!==undefined&&value?.contentHash!==options.expectedContentHash)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');
+  if(expectedStage&&!sameStageRef(value?.stageNodeRef,expectedStage))throw new ApiError('DOCUMENT_STAGE_CHANGED');
   if (!value || value.id !== id || value.version !== version || typeof value.title !== 'string' || typeof value.confirmed !== 'boolean' || !hash.test(value.contentHash) || !value.formRef || !uuid.test(value.formRef.id) || !integer(value.formRef.version) || !hash.test(value.formRef.contentHash)
     || !ref || !uuid.test(ref.artifactId) || !Number.isSafeInteger(ref.bytes) || ref.bytes < 0 || ref.bytes > 2 * 1024 * 1024 || !hash.test(ref.contentHash) || !['text/plain;charset=utf-8', 'text/markdown;charset=utf-8'].includes(ref.mediaType)
     || !value.validation || typeof value.validation.validForConfirmation !== 'boolean' || !Array.isArray(value.validation.issues) || value.validation.issues.length > 200 || value.validation.issues.some(issue => !issue || typeof issue.code !== 'string' || typeof issue.location !== 'string' || typeof issue.message !== 'string' || typeof issue.severity !== 'string')
