@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 승인 형식의 첫 SOURCE 소비**: CM01~04의 payload/definition과 서버 후보값4키(projectId/actorId/sequence/recordedAt)를 신규 순수 builder에 대응했다. 기존 범위 codec만 재사용하고 정책 TTL에 요청10분 상한을 이월하지 않는다. 반환 snapshot/hash는 형식 후보이며 서버값 진위·최신 head/CAS·원명령/영수증/감사 증거를 확인하지 않아 false5를 유지한다. CM05~08 증거 inspector·실제 저장/허가는 미완료다. 새5 RED→직접/인접22 합성 PASS/typecheck/diff0, 기존 최소6/hash·공개 reader/SQL/runner/route 변경0.
+
 - **2026-10-23 직접 승인 적용 범위**: 신산님의 ‘네 의견대로 승인해’를 직전 Main 권장안인 §12.6~12.6.2 CM01~08의 미등록 SOURCE 구현·합성 검증 기준 채택으로 기록한다. 아래 미확정/DRAFT_ONLY 문구는 승인 전 제안 이력으로 보존하며, 실제 DB 적용·관리정책 생성/권한 부여·키/서명/OS 검증·route/서비스·Agent 실행은 이번 승인에서 제외한다. 기존 최소6/hash·공개 경로는 보존하고 새 완전 형식은 별도 후보로 구현한다.
 
 - **2026-10-23 서버문맥 검증 소비**: 기존 identity/control 후보를 원보고 검증 문맥에 한정 연결했다. 원입력 고정·전체보고/target·최신 음성·원오류·권위 false7/분리조회를 유지한다. 새4 RED→직접141 합성 PASS, 시험 타입 표기 정정 후 해당106/typecheck/diff0·독립 정적 C0/I0/M0이며 실제 인증/verifier/PG/current/원자성/served 증거가 아니다. 기존 head·정책·SQL/runner·공개 경로는 변경하지 않았다.
