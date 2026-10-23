@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 검증계보 SOURCE**: 기존 §8/미적용0040의 검증행18키·인접predecessor/불변identity11·재양성금지를 순수 TS에 대응했다. 새6RED→직접14 합성PASS/type/diff0·권위false5이며 기존head·정책/route/SQL은 변경하지 않았다. 실제 verifier·PG/current 미검증·Minor11/기존 제외/관리 새형식 미확정·전체 계획 미완료다.
+
 - **2026-10-23 FN03 서버 회수 SOURCE**: 기존 identity/control 판독과 저장 회수 후보를 연결하고 첫 await 전 payload 복사를 보강했다. 새4RED→직접116 합성PASS, 새시험 nullable 확인 추가 후 해당98/type/diff0·독립 정적 C0/I0/M0다. 실제 회수/인증·정책/DB/route·Minor11은 미해결/미검증이며 관리 §12.6 새 형식은 PMO가 실질 계약 delta로 분리해 사용자 결정 요청 대상·문서 제안만 유지한다.
 
 - **2026-10-23 FN03 관리 단일 후보/저장 회수 검토**: 관리 초안 §12.6에서 CM01~08의 Main 권장안을 항목별 하나로 구체화했으며 기존 근거와 새 데이터계약 제안을 표시했다. DRAFT_ONLY/코드·SQL 반영0·PMO 판단 대상이다. 별도 기존 정의의 저장 회수 후보는112 합성PASS/type/diff0·한정 정적 C0/I0/M0이고 실제 권한·회수/DB/route·Minor11은 미해결/미검증으로 유지한다.

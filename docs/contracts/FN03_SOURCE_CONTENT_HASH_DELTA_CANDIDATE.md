@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 검증 인접계보 TS SOURCE**: inspectSourceContentVerificationLineageCandidate는 기존0040의 row18와 인접 identity11/predecessor fullref·버전+1·비역행시각·첫 양성1회/후속회수·무효만 허용하는 구조를 대응한다. snapshot 의미/실제 verifier/현재 권위·관측/원문 진위는 확인하지 않고 최소 refs·UNVERIFIED/false5만 반환한다. 기존head/정책/route/SQL·관리 미확정형식은 변경하지 않는다. 새6RED→직접14 합성PASS/type/diff0·실PG/권위 미검증·Minor11/기존 제외 유지.
+
 - **2026-10-23 서버 회수 SOURCE 소비**: 신규 서버/보유identity 조합은 첫 문맥 await 전에 기존 exact2 회수 입력을 고정하고 기존 identity/control→저장 회수 순서를 재사용한다. 기본1/구체control포함2query·고정 음성/candidate null·false5·원자료 비노출이며 실제 인증/현재정책·회수/DB/route는 제공하지 않는다. 새4RED→직접116 합성PASS, 새시험 존재 확인 보강 후 해당98/type/diff0·정적 C0/I0/M0다. PMO가 §12.6의 형식 제안을 실질 계약 delta로 판단했으므로 사용자 결정 전 문서 제안만 유지하고 이 기존 회수 SOURCE에 새 관리 형식을 적용하지 않는다.
 
 - **2026-10-23 저장 회수 SOURCE 소비**: 별도 readSourceContentStoredRevokeForDeclaredContextCandidate가 exact8 선언문맥·payload 복사와 기존 저장 증거/원 fullref·주체/세대/base정책 대조 뒤 서버 casDigest를 순수 회수 후보에 전달한다. caller의 digest/verified 값을 입력으로 받지 않으며 원payload/보고/nonce를 반환하지 않는다. 정상도 저장인증/current/저장실행LINK false5이고 현재 정책 허가·실제 회수·원자성/DB/route는 미검증/미활성이다. 새4RED→직접112 합성PASS/type/diff0·기존 공개 경로/관리 형식 무변경·Minor11/기존 제외 유지.
