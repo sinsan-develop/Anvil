@@ -1,28 +1,39 @@
 -- 미실행 최종 행 묶음 반례 SOURCE. 실제 테이블/trigger/COMMIT·권한·서명 검증이 아니다.
--- phase/결박 helper용 typed projection: 전체 scope/report codec·FK fixture를 대신하지 않는다.
+-- phase/보고 구조용 typed projection: 전체 교환/permit·명령/FK fixture나 실제 OS·서명 검증을 대신하지 않는다.
 BEGIN;
 DO $$
-DECLARE g anvil.source_content_requests;n anvil.source_content_requests;o anvil.source_content_observations;p anvil.source_content_observations;a anvil.audit_events;b anvil.audit_events;empty_o anvil.source_content_observations[]='{}';empty_a anvil.audit_events[]='{}';
+DECLARE g anvil.source_content_requests;n anvil.source_content_requests;o anvil.source_content_observations;p anvil.source_content_observations;a anvil.audit_events;b anvil.audit_events;empty_o anvil.source_content_observations[]='{}';empty_a anvil.audit_events[]='{}';root_value jsonb;files_value jsonb;evidence_value jsonb;facts_value jsonb;identity_value jsonb;scope_value jsonb;second_target jsonb;
 BEGIN
  g.project_id='78000000-0000-4000-8000-000000000001';g.id='78000000-0000-4000-8000-000000000002';g.version=1;
  g.connector_id='78000000-0000-4000-8000-000000000003';g.registration_id='78000000-0000-4000-8000-000000000004';g.client_id='78000000-0000-4000-8000-000000000005';
  g.scope_digest=repeat('a',64);g.created_at='2026-10-23T18:00:00.000Z';g.updated_at=g.created_at;g.expires_at=g.created_at+interval '10 minutes';g.state='CREATED';g.exchange_failures=0;
  ASSERT anvil.source_content_report_bundle_shape(g,empty_o,empty_a) IS TRUE,'BUNDLE_UNCONSUMED_EMPTY';
  ASSERT anvil.source_content_report_bundle_shape(g,NULL,empty_a) IS FALSE,'BUNDLE_NULL_ARRAY_NOT_EMPTY';
- g.scope_json=jsonb_build_object('installationId','78000000-0000-4000-8000-000000000006','connectorRef',jsonb_build_object('id',g.connector_id,'version',1,'contentHash',repeat('b',64)),
+ g.scope_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_DOCUMENT_CONTENT_HASH','installationId','78000000-0000-4000-8000-000000000006','projectId',g.project_id,
+ 'sourceRootRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000013','version',1,'contentHash',repeat('a',64)),
+ 'connectorRef',jsonb_build_object('id',g.connector_id,'version',1,'contentHash',repeat('b',64)),
  'registrationRef',jsonb_build_object('id',g.registration_id,'version',1,'contentHash',repeat('c',64)),'observerRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000007','version',1,'contentHash',repeat('d',64)),
- 'basePolicyRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000008','version',1,'contentHash',repeat('e',64)),'hostFingerprint',repeat('f',64));
+ 'basePolicyRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000008','version',1,'contentHash',repeat('e',64)),
+ 'contentPolicyRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000014','version',1,'contentHash',repeat('e',64)),'hostFingerprint',repeat('f',64),'pathHintHash',repeat('d',64),
+ 'userId','78000000-0000-4000-8000-000000000017','clientId',g.client_id,'credentialGeneration',2,'controlGeneration',3,
+ 'targets',jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',jsonb_build_object('id','78000000-0000-4000-8000-000000000015','version',1,'contentHash',repeat('b',64)),
+ 'documentBlobRef',jsonb_build_object('artifactId','78000000-0000-4000-8000-000000000016','bytes',0,'contentHash',repeat('b',64),'mediaType','text/plain'))),
+ 'limits','{"maxFiles":200,"maxFileBytes":2097152,"maxTotalBytes":20971520,"maxObservationMs":30000,"maxReportBytes":1048576}'::jsonb,'requestedAt',anvil.source_read_iso(g.created_at),'expiresAt',anvil.source_read_iso(g.expires_at),'reason','미실행 보고 구조');
+ g.scope_digest=anvil.source_read_hash(g.scope_json);
  g.state='REPORTED';g.updated_at=g.created_at+interval '4 seconds';g.preflight_json='{}';g.preflight_digest=repeat('1',64);g.challenge_json='{}';g.challenge_issued_at=g.created_at+interval '1 second';g.challenge_expires_at=g.created_at+interval '61 seconds';
  g.proof_signature=repeat('A',86);g.credential_token_digest=repeat('2',64);g.credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY';g.credential_issued_at=g.created_at+interval '2 seconds';g.credential_expires_at=g.created_at+interval '62 seconds';
- g.observation_request_ref=jsonb_build_object('id','78000000-0000-4000-8000-000000000009','version',1,'contentHash',repeat('3',64));g.observation_nonce_digest=repeat('4',64);
- g.permit_json=jsonb_build_object('issuedAt','2026-10-23T18:00:02.000Z','observeBefore','2026-10-23T18:01:02.000Z','observationNonce','projection-only-nonce');
+ g.observation_request_ref=jsonb_build_object('id','78000000-0000-4000-8000-000000000009','version',1,'contentHash',repeat('3',64));g.observation_nonce_digest=encode(sha256(decode(repeat('A',42)||'I=','base64')),'hex');
+ g.permit_json=jsonb_build_object('issuedAt','2026-10-23T18:00:02.000Z','observeBefore','2026-10-23T18:01:02.000Z','observationNonce',repeat('A',42)||'I');
  g.report_consumed_at=g.updated_at;g.report_consumed_command_id='78000000-0000-4000-8000-000000000010';
  o.project_id=g.project_id;o.id='78000000-0000-4000-8000-000000000011';o.version=1;o.request_id=g.id;o.request_version=1;o.scope_digest=g.scope_digest;o.report_command_id=g.report_consumed_command_id;
  o.observed_at=g.created_at+interval '2500 milliseconds';o.finished_at=g.created_at+interval '3 seconds';o.received_at=g.report_consumed_at;o.evidence_class='CONNECTOR_REPORTED';o.os_verification='OS_UNVERIFIED';o.signature=repeat('A',86);
  o.report_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_CONTENT_REPORT','projectId',g.project_id,'installationId',g.scope_json->>'installationId','commandId',o.report_command_id,
  'requestRef',jsonb_build_object('id',g.id,'version',1,'contentHash',g.scope_digest),'scopeDigest',g.scope_digest,'observationRequestRef',g.observation_request_ref,'observationNonce',g.permit_json->>'observationNonce',
  'connectorRef',g.scope_json->'connectorRef','registrationRef',g.scope_json->'registrationRef','observerRef',g.scope_json->'observerRef','hostFingerprint',g.scope_json->>'hostFingerprint',
- 'observedAt',anvil.source_read_iso(o.observed_at),'finishedAt',anvil.source_read_iso(o.finished_at));
+ 'observedAt',anvil.source_read_iso(o.observed_at),'finishedAt',anvil.source_read_iso(o.finished_at),
+ 'root',jsonb_build_object('state','UNVERIFIED','facts',NULL,'reasonCode','OBSERVER_UNAVAILABLE'),
+ 'files',jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',g.scope_json->'targets'->0->'documentRef','state','UNVERIFIED','facts',NULL,'reasonCode','ROOT_UNAVAILABLE')),
+ 'localEvidence',jsonb_build_object('kind','NATIVE_CONTENT_HASH_REPORT','observerRef',g.scope_json->'observerRef','ownedProcessRef',g.scope_json->'observerRef','observationRequestRef',g.observation_request_ref,'completed',false));
  o.content_hash=anvil.source_read_hash(o.report_json);o.report_json=o.report_json||jsonb_build_object('signature',o.signature,'reportHash',o.content_hash);
  a.project_id=g.project_id;a.server_sequence=1;a.event_id='78000000-0000-4000-8000-000000000012';a.actor_ref=jsonb_build_object('kind','CONNECTOR','connectorId',g.connector_id,'registrationId',g.registration_id);a.client_ref=g.client_id;
  a.target_ref=jsonb_build_object('id',o.id,'version',1,'contentHash',o.content_hash);a.policy_ref=g.scope_json->'basePolicyRef';a.outcome='APPLIED';a.reason_code='SOURCE_CONTENT_REPORT_STORED';a.source_kind='SOURCE_CONTENT_OBSERVATION_PROTOCOL';a.scope_digest=g.scope_digest;a.recorded_at=g.created_at+interval '3000.123 milliseconds';
@@ -44,7 +55,7 @@ BEGIN
  p=o;p.project_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_OTHER_PROJECT';
  p=o;p.report_command_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_OTHER_REPORT_GUID';
  p=o;p.received_at=o.received_at+interval '1 ms';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[a]) IS FALSE,'BUNDLE_CONSUMPTION_TIME';
- p=o;p.report_json=jsonb_set(p.report_json,'{observationNonce}','"different"');p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ p=o;p.report_json=jsonb_set(p.report_json,'{observationNonce}',to_jsonb(repeat('A',42)||'M'));p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
  ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[b]) IS FALSE,'BUNDLE_RAW_NONCE_WITH_MATCHING_HASH_AND_AUDIT';
  b=a;b.command_id='78000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_NOT_HUMAN_COMMAND';
  b=a;b.source_kind='HUMAN_COMMAND';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_WRONG_AUDIT_SOURCE';
@@ -52,5 +63,41 @@ BEGIN
  b=a;b.recorded_at=g.report_consumed_at+interval '1 microsecond';ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[o],ARRAY[b]) IS FALSE,'BUNDLE_AUDIT_AFTER_CONSUMPTION';
  n=g;n.state='REVOKED';n.updated_at=g.updated_at+interval '1 second';n.revoked_at=n.updated_at;n.revoke_command_id='78000000-0000-4000-8000-000000000013';ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[o],ARRAY[a]) IS TRUE,'BUNDLE_REVOKED_PRESERVES_REPORT';
  n=g;n.report_consumed_at=NULL;n.report_consumed_command_id=NULL;n.state='ISSUED';ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[o],ARRAY[a]) IS FALSE,'BUNDLE_ORPHAN_REPORT';
+ -- 다음은 root/files/evidence 구조 반례다. HASHED도 실제 파일·OS·서명·LINK 검증이 아니다.
+ root_value=jsonb_build_object('state','OBSERVED','reasonCode',NULL,'facts',jsonb_build_object('declaredRootRef',g.scope_json->'sourceRootRef','kind','DIRECTORY','canonicalPath','claimed-canonical-path','volumeSerialHex','0000000000000001','fileIdHex',repeat('b',32),'reparse',false));
+ identity_value=jsonb_build_object('kind','REGULAR_FILE','volumeSerialHex','0000000000000001','fileIdHex',repeat('a',32),'reparse',false,'linkCountDecimal','1','sizeBytesDecimal','0','lastWriteFileTimeDecimal','0');
+ facts_value=identity_value||jsonb_build_object('blobHash',encode(sha256(''::bytea),'hex'),'bytesReadDecimal','0','eof',true,'identityBeforeHash',anvil.source_read_hash(identity_value),'identityAfterHash',anvil.source_read_hash(identity_value));
+ files_value=jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',g.scope_json->'targets'->0->'documentRef','state','HASHED','facts',facts_value,'reasonCode',NULL));
+ evidence_value=(o.report_json->'localEvidence')||'{"completed":true}';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,files_value,evidence_value,g.observation_request_ref) IS TRUE,'PAYLOAD_HASHED_EMPTY_BYTES_CLAIM_ONLY';
+ p=o;p.report_json=p.report_json||jsonb_build_object('root',root_value,'files',files_value,'localEvidence',evidence_value);p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ ASSERT anvil.source_content_report_bundle_shape(g,ARRAY[p],ARRAY[b]) IS TRUE,'BUNDLE_HASHED_CLAIM_NOT_LINK_OR_OS_VERIFIED';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value||'{"verified":true}',files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_ROOT_EXTRA_AUTHORITY';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,jsonb_set(root_value,'{facts,reparse}','true'),files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_ROOT_REPARSE';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,jsonb_set(root_value,'{facts,declaredRootRef}',g.observation_request_ref),files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_OTHER_DECLARED_ROOT';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,jsonb_set(files_value,'{0,documentRef}',g.observation_request_ref),evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_OTHER_DOCUMENT_TARGET';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,jsonb_set(files_value,'{0,facts,linkCountDecimal}','"2"'),evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_HARDLINK_CLAIM';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,jsonb_set(files_value,'{0,facts,eof}','false'),evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_NOT_EOF';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,jsonb_set(files_value,'{0,facts,identityAfterHash}',to_jsonb(repeat('f',64))),evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_IDENTITY_CHANGED';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,files_value,evidence_value||'{"completed":false}',g.observation_request_ref) IS FALSE,'PAYLOAD_FALSE_INCOMPLETE_SUMMARY';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,root_value,files_value,evidence_value||'{"token":"forbidden"}',g.observation_request_ref) IS FALSE,'PAYLOAD_EVIDENCE_EXTRA_TOKEN';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,o.report_json->'root',o.report_json->'files',o.report_json->'localEvidence',g.observation_request_ref) IS TRUE,'PAYLOAD_ROOT_FAILURE_WITH_UNAVAILABLE_SUFFIX';
+ ASSERT anvil.source_content_report_payload_shape(g.scope_json,o.report_json->'root',jsonb_set(o.report_json->'files','{0,reasonCode}','"NOT_ATTEMPTED"'),o.report_json->'localEvidence',g.observation_request_ref) IS FALSE,'PAYLOAD_ROOT_FAILURE_NOT_FILE_STOP';
+ scope_value=g.scope_json;second_target=jsonb_set(scope_value->'targets'->0,'{relativePath}','"src/b.ts"');second_target=jsonb_set(second_target,'{documentRef,id}','"78000000-0000-4000-8000-000000000099"');scope_value=jsonb_set(scope_value,'{targets}',(scope_value->'targets')||jsonb_build_array(second_target));
+ files_value=jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',scope_value->'targets'->0->'documentRef','state','TIMEOUT','facts',NULL,'reasonCode','TIME_LIMIT_REACHED'),
+ jsonb_build_object('relativePath','src/b.ts','documentRef',scope_value->'targets'->1->'documentRef','state','UNVERIFIED','facts',NULL,'reasonCode','NOT_ATTEMPTED'));
+ ASSERT anvil.source_content_report_payload_shape(scope_value,root_value,files_value,evidence_value||'{"completed":false}',g.observation_request_ref) IS TRUE,'PAYLOAD_FIRST_FAILURE_THEN_NOT_ATTEMPTED';
+ ASSERT anvil.source_content_report_payload_shape(scope_value,root_value,jsonb_set(files_value,'{1}',jsonb_build_object('relativePath','src/b.ts','documentRef',scope_value->'targets'->1->'documentRef','state','HASHED','facts',facts_value,'reasonCode',NULL)),evidence_value||'{"completed":false}',g.observation_request_ref) IS FALSE,'PAYLOAD_HASH_AFTER_STOP';
+ ASSERT anvil.source_content_report_payload_shape(scope_value,root_value,jsonb_set(files_value,'{0,state}','"UNVERIFIED"'),evidence_value||'{"completed":false}',g.observation_request_ref) IS FALSE,'PAYLOAD_OLD_METADATA_TIMEOUT_REASON';
+ identity_value=jsonb_set(identity_value,'{sizeBytesDecimal}','"2"');facts_value=facts_value||identity_value||jsonb_build_object('bytesReadDecimal','2','identityBeforeHash',anvil.source_read_hash(identity_value),'identityAfterHash',anvil.source_read_hash(identity_value));
+ files_value=jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',g.scope_json->'targets'->0->'documentRef','state','HASHED','facts',facts_value,'reasonCode',NULL));
+ ASSERT anvil.source_content_report_payload_shape(jsonb_set(g.scope_json,'{limits,maxFileBytes}','1'),root_value,files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_FILE_CAP_WITH_MATCHING_IDENTITY_HASH';
+ identity_value=jsonb_set(identity_value,'{sizeBytesDecimal}','"1"');facts_value=facts_value||identity_value||jsonb_build_object('bytesReadDecimal','1','identityBeforeHash',anvil.source_read_hash(identity_value),'identityAfterHash',anvil.source_read_hash(identity_value));
+ files_value=jsonb_build_array(jsonb_build_object('relativePath','src/a.ts','documentRef',scope_value->'targets'->0->'documentRef','state','HASHED','facts',facts_value,'reasonCode',NULL),jsonb_build_object('relativePath','src/b.ts','documentRef',scope_value->'targets'->1->'documentRef','state','HASHED','facts',facts_value,'reasonCode',NULL));
+ ASSERT anvil.source_content_report_payload_shape(jsonb_set(scope_value,'{limits,maxTotalBytes}','1'),root_value,files_value,evidence_value,g.observation_request_ref) IS FALSE,'PAYLOAD_TOTAL_CAP_WITH_MATCHING_IDENTITY_HASH';
+ n=g;n.scope_json=jsonb_set(n.scope_json,'{limits,maxObservationMs}','499');n.scope_digest=anvil.source_read_hash(n.scope_json);p=o;p.scope_digest=n.scope_digest;p.report_json=jsonb_set(jsonb_set(p.report_json,'{scopeDigest}',to_jsonb(n.scope_digest)),'{requestRef,contentHash}',to_jsonb(n.scope_digest));p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.scope_digest=n.scope_digest;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[p],ARRAY[b]) IS FALSE,'BUNDLE_REQUEST_OBSERVATION_CAP_WITH_REBOUND_SCOPE_HASH_AUDIT';
+ n=g;n.scope_json=jsonb_set(n.scope_json,'{limits,maxReportBytes}','1');n.scope_digest=anvil.source_read_hash(n.scope_json);p=o;p.scope_digest=n.scope_digest;p.report_json=jsonb_set(jsonb_set(p.report_json,'{scopeDigest}',to_jsonb(n.scope_digest)),'{requestRef,contentHash}',to_jsonb(n.scope_digest));p.content_hash=anvil.source_read_hash(p.report_json-ARRAY['signature','reportHash']);p.report_json=jsonb_set(p.report_json,'{reportHash}',to_jsonb(p.content_hash));b=a;b.scope_digest=n.scope_digest;b.target_ref=jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash);
+ ASSERT anvil.source_content_report_bundle_shape(n,ARRAY[p],ARRAY[b]) IS FALSE,'BUNDLE_REQUEST_REPORT_CAP_WITH_REBOUND_SCOPE_HASH_AUDIT';
 END;$$;
 ROLLBACK;

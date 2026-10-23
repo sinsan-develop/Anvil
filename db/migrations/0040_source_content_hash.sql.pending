@@ -400,6 +400,63 @@ CREATE TABLE anvil.source_content_observations (
   AND finished_at>=observed_at AND finished_at-observed_at<=interval '30 seconds' AND finished_at<=received_at+interval '5 seconds')
 );
 
+CREATE FUNCTION anvil.source_content_failure_shape(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE allowed text[];
+BEGIN
+ IF jsonb_typeof(v->'state') IS DISTINCT FROM 'string' OR v->'facts' IS DISTINCT FROM 'null'::jsonb OR jsonb_typeof(v->'reasonCode') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+ allowed=CASE v->>'state' WHEN 'MISSING' THEN ARRAY['PATH_NOT_FOUND']
+  WHEN 'DENIED' THEN ARRAY['ACCESS_DENIED','REPARSE_DENIED','OUTSIDE_ROOT','NOT_REGULAR_FILE','ROOT_KIND_INVALID','HARDLINK_DENIED']
+  WHEN 'CHANGED' THEN ARRAY['IDENTITY_CHANGED','LENGTH_CHANGED'] WHEN 'TOO_LARGE' THEN ARRAY['FILE_LIMIT_REACHED','TOTAL_LIMIT_REACHED']
+  WHEN 'TIMEOUT' THEN ARRAY['TIME_LIMIT_REACHED'] WHEN 'CANCELLED' THEN ARRAY['CANCEL_REQUESTED']
+  WHEN 'UNVERIFIED' THEN ARRAY['OBSERVER_UNAVAILABLE','UNSUPPORTED_FILESYSTEM','ROOT_UNAVAILABLE','NOT_ATTEMPTED'] ELSE ARRAY[]::text[] END;
+ RETURN COALESCE((v->>'reasonCode')=ANY(allowed),false);
+END;$$;
+
+-- 보고에 적힌 root/file 사실의 구조만 대조한다. 실제 handle/파일/Artifact 동일성·서명은 별도다.
+CREATE FUNCTION anvil.source_content_report_payload_shape(scope_arg jsonb,root_arg jsonb,files_arg jsonb,evidence_arg jsonb,observation_arg jsonb) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE f jsonb;item jsonb;target jsonb;identity_json jsonb;i integer;total numeric=0;size_value numeric;complete boolean;stopped boolean=false;
+BEGIN
+ IF anvil.source_content_scope_shape(scope_arg) IS NOT TRUE OR anvil.source_read_ref(observation_arg) IS NOT TRUE OR observation_arg->'version' IS DISTINCT FROM '1'::jsonb
+  OR anvil.source_read_exact(root_arg,ARRAY['state','facts','reasonCode']) IS NOT TRUE OR jsonb_typeof(files_arg) IS DISTINCT FROM 'array'
+  OR jsonb_array_length(files_arg)<>jsonb_array_length(scope_arg->'targets') THEN RETURN false;END IF;
+ IF root_arg->>'state'='OBSERVED' THEN
+  f=root_arg->'facts';
+  IF root_arg->'reasonCode' IS DISTINCT FROM 'null'::jsonb OR anvil.source_read_exact(f,ARRAY['declaredRootRef','kind','canonicalPath','volumeSerialHex','fileIdHex','reparse']) IS NOT TRUE
+   OR f->'declaredRootRef' IS DISTINCT FROM scope_arg->'sourceRootRef' OR f->>'kind' IS DISTINCT FROM 'DIRECTORY'
+   OR anvil.source_read_identity(f) IS NOT TRUE OR jsonb_typeof(f->'canonicalPath') IS DISTINCT FROM 'string'
+   OR anvil.source_read_utf16_length(f->>'canonicalPath') NOT BETWEEN 1 AND 4096 OR (f->>'canonicalPath') COLLATE "C" ~ '[[:cntrl:]]' THEN RETURN false;END IF;
+ ELSIF anvil.source_content_failure_shape(root_arg) IS NOT TRUE THEN RETURN false;END IF;
+ complete=root_arg->>'state'='OBSERVED';
+ FOR i IN 0..jsonb_array_length(files_arg)-1 LOOP
+  item=files_arg->i;target=scope_arg->'targets'->i;
+  IF anvil.source_read_exact(item,ARRAY['relativePath','documentRef','state','facts','reasonCode']) IS NOT TRUE
+   OR item->'relativePath' IS DISTINCT FROM target->'relativePath' OR item->'documentRef' IS DISTINCT FROM target->'documentRef' THEN RETURN false;END IF;
+  IF root_arg->>'state'<>'OBSERVED' AND (item->>'state' IS DISTINCT FROM 'UNVERIFIED' OR item->>'reasonCode' IS DISTINCT FROM 'ROOT_UNAVAILABLE') THEN RETURN false;END IF;
+  IF root_arg->>'state'='OBSERVED' AND stopped AND (item->>'state' IS DISTINCT FROM 'UNVERIFIED' OR item->>'reasonCode' IS DISTINCT FROM 'NOT_ATTEMPTED') THEN RETURN false;END IF;
+  IF item->>'state'='HASHED' THEN
+   f=item->'facts';
+   IF item->'reasonCode' IS DISTINCT FROM 'null'::jsonb OR anvil.source_read_exact(f,ARRAY['kind','volumeSerialHex','fileIdHex','reparse','linkCountDecimal','sizeBytesDecimal','lastWriteFileTimeDecimal','blobHash','bytesReadDecimal','eof','identityBeforeHash','identityAfterHash']) IS NOT TRUE
+    OR f->>'kind' IS DISTINCT FROM 'REGULAR_FILE' OR anvil.source_read_identity(f) IS NOT TRUE OR f->'volumeSerialHex' IS DISTINCT FROM root_arg->'facts'->'volumeSerialHex'
+    OR f->>'linkCountDecimal' IS DISTINCT FROM '1' OR anvil.source_read_uint64(f->'sizeBytesDecimal') IS NOT TRUE OR anvil.source_read_uint64(f->'lastWriteFileTimeDecimal') IS NOT TRUE
+    OR f->'bytesReadDecimal' IS DISTINCT FROM f->'sizeBytesDecimal' OR f->'eof' IS DISTINCT FROM 'true'::jsonb
+    OR jsonb_typeof(f->'blobHash') IS DISTINCT FROM 'string' OR (f->>'blobHash')!~'^[0-9a-f]{64}$'
+    OR jsonb_typeof(f->'identityBeforeHash') IS DISTINCT FROM 'string' OR (f->>'identityBeforeHash')!~'^[0-9a-f]{64}$'
+    OR f->'identityBeforeHash' IS DISTINCT FROM f->'identityAfterHash' THEN RETURN false;END IF;
+   identity_json=f-ARRAY['blobHash','bytesReadDecimal','eof','identityBeforeHash','identityAfterHash'];
+   size_value=(f->>'sizeBytesDecimal')::numeric;total=total+size_value;
+   IF anvil.source_read_hash(identity_json) IS DISTINCT FROM f->>'identityBeforeHash' OR size_value>(scope_arg->'limits'->>'maxFileBytes')::numeric
+    OR total>(scope_arg->'limits'->>'maxTotalBytes')::numeric THEN RETURN false;END IF;
+  ELSE
+   IF anvil.source_content_failure_shape(item) IS NOT TRUE THEN RETURN false;END IF;complete=false;stopped=true;
+  END IF;
+ END LOOP;
+ RETURN COALESCE(anvil.source_read_exact(evidence_arg,ARRAY['kind','observerRef','ownedProcessRef','observationRequestRef','completed']) IS TRUE
+  AND evidence_arg->>'kind'='NATIVE_CONTENT_HASH_REPORT' AND evidence_arg->'observerRef'=scope_arg->'observerRef'
+  AND anvil.source_read_ref(evidence_arg->'ownedProcessRef') IS TRUE AND evidence_arg->'observationRequestRef'=observation_arg
+  AND evidence_arg->'completed'=to_jsonb(complete),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 -- 최종 행 묶음의 구조 조건만 검사한다. 배열은 신뢰된 같은 snapshot 조회가 별도로 구성해야 한다.
 -- trigger/쓰기/권한에는 연결하지 않는다. 전달 배열이 DB의 전체 결과라는 증명이나 COMMIT 보장이 아니다.
 CREATE FUNCTION anvil.source_content_report_bundle_shape(g anvil.source_content_requests,observations anvil.source_content_observations[],events anvil.audit_events[]) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
@@ -413,9 +470,14 @@ BEGIN
   o.id IS NOT NULL AND o.project_id=g.project_id AND o.version=1 AND o.request_id=g.id AND o.request_version=g.version
   AND o.scope_digest=g.scope_digest AND o.report_command_id=g.report_consumed_command_id AND o.received_at=g.report_consumed_at
   AND o.evidence_class='CONNECTOR_REPORTED' AND o.os_verification='OS_UNVERIFIED'
+  AND g.scope_digest=anvil.source_read_hash(g.scope_json)
+  AND anvil.source_read_exact(o.report_json,ARRAY['protocolVersion','purpose','commandId','installationId','projectId','requestRef','scopeDigest','observationRequestRef','observationNonce','connectorRef','registrationRef','observerRef','hostFingerprint','observedAt','finishedAt','root','files','localEvidence','reportHash','signature']) IS TRUE
+  AND octet_length(anvil.source_read_canonical_json(o.report_json))<=(g.scope_json->'limits'->>'maxReportBytes')::integer
+  AND anvil.source_content_report_payload_shape(g.scope_json,o.report_json->'root',o.report_json->'files',o.report_json->'localEvidence',g.observation_request_ref) IS TRUE
+  AND anvil.source_content_nonce32(o.report_json->'observationNonce') IS TRUE AND o.signature~'^[A-Za-z0-9_-]{85}[AQgw]$'
   AND anvil.source_content_millisecond(o.observed_at) AND anvil.source_content_millisecond(o.finished_at) AND anvil.source_content_millisecond(o.received_at)
   AND o.observed_at>=(g.permit_json->>'issuedAt')::timestamptz-interval '5 seconds' AND o.finished_at>=o.observed_at
-  AND o.finished_at-o.observed_at<=interval '30 seconds' AND o.finished_at<=o.received_at+interval '5 seconds'
+  AND o.finished_at-o.observed_at<=(g.scope_json->'limits'->>'maxObservationMs')::integer*interval '1 millisecond' AND o.finished_at<=o.received_at+interval '5 seconds'
   AND o.finished_at<(g.permit_json->>'observeBefore')::timestamptz
   AND o.report_json->>'purpose'='SOURCE_CONTENT_REPORT' AND o.report_json->'protocolVersion'='1'::jsonb
   AND o.report_json->>'projectId'=g.project_id::text AND o.report_json->>'installationId'=g.scope_json->>'installationId'
