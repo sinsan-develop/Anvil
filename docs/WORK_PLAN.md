@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 retained root SOURCE**: D2재compile와독립적으로 별도root조회/미래반례2source를 작성했다. directory handle의metadata/path전후대조·참조회수·유한결과수용 후보이며 권위false/미확인유지다. 공식서명·한정정적C0/I0/M0·diff0만 확인했고 compile/RunAll/실제OS·파일·factory권위는NOT_RUN/UNVERIFIED다. 기존D2 source4동결/후보자동확대0·전체계획미완료이며 다음은원factory보유/생성출처·인증준비선행이다.
+
 - **2026-10-23 FN06 신규 Ownership D2 단발 compile FAIL**: 신산님 직접승인으로 고정4source/csc/참조를1회 DLL compile했으나 CS4014/exit1·212ms/DLL생성0이다. 원인은 의도적 fault관측 continuation 반환작업 미보관으로 확인해 최소SOURCE를 보완했다. 새HostrawC21CC141·재compile NOT_RUN/단발허가소진, 원실패/판정 보존이다. 소유복사4/빈root 회수·독립부재확인; DLL/시험/helper/PInvoke/DB/Agent0. 상세 FN06_OWNERSHIP_NATIVE_LIBRARY_COMPILE_RESULT.md이며 전체계획 미완료다.
 
 - **2026-10-23 FN06 D1 factory writer-basis SOURCE**: 기존 native profile/원prep·intent와 원 합성writer history를 연결해 알려진 미회수claim을 차단했다. 빈/회수이력은 여전히 UNKNOWN·factoryReady/권한false다. 직접/선행15합성PASS·최종type/diff0·한정정적 C0/I0/M0이며 실제PG경합/actual NONE·native권위는 미판정이다. C#4/D2후보를 동결한 채 별도source 선행을 진행했고 실제compile/ACL/환경효과는 없다. 전체계획 미완료다.

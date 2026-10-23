@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 retained directory root 조회 SOURCE — 2026-10-23
+
+별도 `OwnershipEvidenceRootSource.ReadRetainedDirectorySource(SafeFileHandle)`는 향후 factory가 보유할 directory handle만 입력받고 새 경로/open/ACL/쓰기 없이 수명참조 안에서 GetFileType·GetFileInformationByHandle·GetFinalPathNameByHandleW(normalized/GUID flag1)를 전후 조회하도록 작성했다. directory/비reparse·양의시간/fileID hint·유효 GUID path·고정32768버퍼/반환길이·전후 metadata/path·참조회수 후10초 결과수용을 대조하며 rawpath/handle은 반환하지 않는다.
+
+반환 `RETAINED_ROOT_DIRECTORY_CANDIDATE_ONLY`의 경로문자열digest/volume+64bitfileID hint는 **승인root/로컬성/선조nonlink/배타보유/이미지하위귀속/생성출처** 증명이 아니다. 승인root/factory/준비/실행/전달false와 누락목록을 보존한다. SafeHandle의 외부 Dispose와 경합한 마지막 Release가 close를 유발할 수 있고 synchronous OS 호출의 강제종료는 보장하지 않는다. 실제 factory 소유·처분/인증·actual writer는 별도 미구현 선행이다.
+
+미래 null/invalid/closed C# 반례 SOURCE·한정정적 C0/I0/M0·diff0만 확인했으며 컴파일/RunAll/PInvoke·실제Windows상호운용/파일조회·근거진위·회수는 NOT_RUN/UNVERIFIED다. 새source2는 기존 재compile 후보4에 자동포함하지 않는다. 공식 계약 대조: [directory handle 허용 조회](https://learn.microsoft.com/en-us/windows/win32/fileio/obtaining-a-handle-to-a-directory), [GetFinalPathNameByHandleW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfinalpathnamebyhandlew), [BY_HANDLE_FILE_INFORMATION](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/ns-fileapi-by_handle_file_information), [GetFileInformationByHandle](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle), [GetFileType](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfiletype).
+
 ## FN06 D1 native factory writer-basis SOURCE — 2026-10-23
 
 readOwnershipNativeFactoryBasis는 같은 caller 인증 transaction의 기존 native profile을 전후 읽고 원 PREPARATION_GRANTED/fullref/hash에서 비순환 intent를 복원해 기존 writer_claims history를 전후 대조한다. 미회수 SYNTHETIC_CLAIM은 이미 만료돼도 차단한다. 원historyHash 변화·현재인증/범위/기한 불일치는 UNAVAILABLE다.
