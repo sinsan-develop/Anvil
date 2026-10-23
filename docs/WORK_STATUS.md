@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+- **준비 owner 최종 한정 검토**: 의존성고정delta 독립정적 C0/I0/M0·독립실행/수정0. 실제PG원자성/COMMIT시각/권위/native·SQLpendingM1은해소됐다고하지않으며 원RED/type오류를이력보존한다.
+
+- **2026-10-23 D1 준비 owner 의존성 source 보완·합성검증**: 원port만확인하던 stable에 pool/connect/access/authenticate/options/timeout의원참조·값결박을추가하고 모든helper에캡처access·connect.call(pool)/timer·cleanup에캡처timeout을사용했다. 대기중교체는원동작과같아도거절·COMMIT시도후변경은UNKNOWN/폐기·자동재발급/성공rollback단정0이다. 기존정상저장/replay·미등록·기한·취소·latequery·rollback/release 경계와권한false는유지했다.
+
+- **같은 owner 반례·오류·최종증거**: 합친신규반례는 CONNECT/COMMIT후auth변경 RED2/635.7852ms, 각사례를분리해 CONNECT/TIMEOUT/OPTIONS/COMMIT후auth의RED4/612.4274ms를확인했다(AUTHENTICATE 중간변경은선행검사로이미거절됨). 첫보완27합성PASS774.2948ms뒤typecheck가 pg.connect의callback overload `.call` 선택에따른3진단(void/호출인자/dbundefined)을보여promise signature를정확히명시했다. `node --test tests/unit/FN06/ownership-preparation-store.test.ts tests/unit/FN06/ownership-preparation-stage.test.ts tests/unit/FN06/ownership-preparation-receipt.test.ts` 최종직접13+stage8+receipt6=27PASS687.7643ms·skip/cancel0, typecheck/diff0이다. 실제PG/행잠금/동시성/COMMIT시각/권위/served·키/native/Agent는미판정이고SQLpendingM1·0039deny·REQUIRE·거절·보호8/compile4동결을유지한다. 초기다른경로 SQL검색실패는 rg --files로찾은정확db/migrations/0039_ownership_authority.sql.pending읽기로구별했으며SQL수정/실행/manifest변경0이다. 한정독립검토중이며전체계획완료아니다.
+
+- **2026-10-23 D1 준비 owner 의존성 결박 착수**: 미적용0039의deferred trigger와 Postgres15공식 SET CONSTRAINTS 의미를대조했으며 IMMEDIATE로조기평가될수있어현재source만으로 COMMIT시점권위/M1해소를주장하지않는다. default DMLdeny/RLSfalse/미등록·실DB0그대로다. 독립source보완은 기존 SyntheticOwnershipPreparationStore의 await중 pool.connect/access.authenticateInTransaction/options 의존성교체를 감지하지않는구간으로선정했다. 같은store행위/기존auth와합성journal을소비하는 반례→최소snapshot/stable검사→직접/인접·type/diff이며 새API/schema/권한·native/실제DB/Agent0이다. 원pendingSQL/compile4동결·보호8보존, 실제COMMIT/권위보장으로승격0이다.
+
 - **root/image M1 최종 한정 재대조**: closed 상대 wrapper 보정 범위 C0/I0/M0·독립compile/RunAll/PInvoke/수정0. 원M1은이력보존하며 실제native동작/경합·Interop/생성출처/권위·회수는여전히NOT_RUN/UNVERIFIED다. 다음은factory 원생성·유일보유/처분·인증된준비연결SOURCE 선행이며 계획전체완료아니다.
 
 - **root/image 미래시험 M1 보완**: 독립한정검토 C0/I0/M1은 closed쌍의반대쪽 -1이root.IsInvalid에서먼저거절돼 image.IsClosed를가리는 시험구조였다. 제품SOURCE를바꾸지않고 별도IntPtr2/ownsHandle=false wrapper를상대로 closed양방향을분리했다. 실제OShandle생성/채택·close/RunAll/compile/PInvoke0이며 guard회귀검출/실동작GREEN은미판정이다. test최종raw9092D1568018B14719189E8C6A9CE5F9416355A4B620B929EC08AB2B3ABCBC90, RootC1213018불변; 원M1/중간testhash이력보존·최종한정재대조진행이다.

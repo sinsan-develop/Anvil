@@ -30,8 +30,31 @@ async function fixture(){const f=await ownershipHumanBasisFixture(),p=f.prep.sna
  const pool:any={async connect(){connected++;return db;}};
  const store=(absent=false,timeoutMs=1000)=>{assert.equal(typeof m.SyntheticOwnershipPreparationStore,'function','원기록·최초 준비 사건의 원자 owner가 필요하다');return new m.SyntheticOwnershipPreparationStore(pool,f.access,absent?null:port,{timeoutMs});};
  const run=(absent=false,timeoutMs=1000)=>{if(mode==='ROLLBACK_NEVER')port.current=async()=>new Promise(()=>{});return store(absent,timeoutMs).prepare(f.token,f.csrf,intent,{intentId:id(1),commandId:id(2),eventId:id(3)});};
- return{...f,intent,queries,run,pool,db,port,state:()=>state,mode(v:string){mode=v;},stats:()=>({connected,destroyed,commits})};}
+ return{...f,intent,queries,run,store,pool,db,port,state:()=>state,mode(v:string){mode=v;},stats:()=>({connected,destroyed,commits})};}
 test('공급자 부재는 connect0이며 실제 권위로 대체하지 않는다',async()=>{const f=await fixture();await assert.rejects(f.run(true),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});assert.equal(f.stats().connected,0);});
+
+for(const changed of ['AUTHENTICATE','CONNECT','TIMEOUT','OPTIONS'])test(`준비 대기 중 ${changed} 의존성이 바뀌면 동일 결과라도 저장 완료로 수용하지 않는다`,async()=>{
+  const f=await fixture(),store=f.store(),current=f.port.current;let replaced=false;
+  f.port.current=async(...args:any[])=>{
+   const value=await current.apply(f.port,args);
+   if(!replaced){replaced=true;
+    if(changed==='AUTHENTICATE'){const original=f.access.authenticateInTransaction;f.access.authenticateInTransaction=(...values:Parameters<typeof original>)=>original.apply(f.access,values);}
+    if(changed==='CONNECT'){const original=f.pool.connect;f.pool.connect=(...values:any[])=>original.apply(f.pool,values);}
+    if(changed==='TIMEOUT')store.options.timeoutMs=999;
+    if(changed==='OPTIONS')Object.assign(store,{options:{timeoutMs:1000}});
+   }
+   return value;
+  };
+  await assert.rejects(store.prepare(f.token,f.csrf,f.intent,{intentId:id(1),commandId:id(2),eventId:id(3)}),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'},changed);
+  assert.equal(replaced,true);assert.equal(f.stats().commits,0);assert.deepEqual(f.state(),{commands:[],receipts:[],audits:[],events:[]});
+});
+
+test('COMMIT 응답 대기 중 인증 의존성이 바뀌면 rollback 성공으로 오인하지 않고 UNKNOWN을 보존한다',async()=>{
+ const f=await fixture(),query=f.db.query;
+ f.db.query=async(sql:string,args:any[]=[])=>{const result=await query.call(f.db,sql,args);if(sql==='COMMIT'){const original=f.access.authenticateInTransaction;f.access.authenticateInTransaction=(...values:Parameters<typeof original>)=>original.apply(f.access,values);}return result;};
+ await assert.rejects(f.run(),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});
+ assert.equal(f.stats().commits,1);assert.equal(f.state().events.length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);assert.equal(f.stats().destroyed,1);
+});
 test('원 명령/receipt/audit→최초 준비 사건→최종 원 receipt reader를 한 transaction으로 연결한다',async()=>{const f=await fixture(),v=await f.run();assert.equal(v.purpose,'SYNTHETIC_OWNERSHIP_PREPARATION_COMMIT_ONLY');assert.equal(v.executionAuthorized,false);assert.equal(v.preparationAuthorized,false);assert.equal(f.state().commands.length,1);assert.equal(f.state().events.length,1);assert.equal(f.state().events[0].snapshot_json.kind,'PREPARATION_GRANTED');assert.equal(f.queries.filter(q=>q==='BEGIN').length,1);assert.equal(f.queries.filter(q=>q==='COMMIT').length,1);assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,0);assert(f.queries.some(q=>q.includes('FROM anvil.commands c JOIN anvil.authorization_receipts')));const again=await f.run();assert.equal(again.purpose,'SYNTHETIC_OWNERSHIP_PREPARATION_REPLAY_HISTORY_ONLY');assert.equal(f.state().events.length,1);});
 test('준비 사건 저장 실패·최종 세션 회수는 원기록까지 caller journal로 rollback한다',async()=>{for(const mode of ['INSERT_ZERO','FINAL_SESSION']){const f=await fixture();f.mode(mode);await assert.rejects(f.run(),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});assert.deepEqual(f.state(),{commands:[],receipts:[],audits:[],events:[]});assert.equal(f.queries.filter(q=>q==='ROLLBACK').length,1);assert.equal(f.stats().commits,0);}});
 test('COMMIT 응답 유실은 UNKNOWN·자동 재발행0이고 무응답 공급자는 유한 종료한다',async()=>{const a=await fixture();a.mode('COMMIT_LOST');await assert.rejects(a.run(),{message:'OWNERSHIP_PREPARATION_COMMIT_UNKNOWN'});assert.equal(a.state().events.length,1);assert.equal(a.stats().commits,1);assert.equal(a.queries.filter(q=>q==='ROLLBACK').length,0);const b=await fixture();b.mode('NEVER');await assert.rejects(b.run(false,20),{message:'OWNERSHIP_PREPARATION_UNAVAILABLE'});assert.deepEqual(b.state(),{commands:[],receipts:[],audits:[],events:[]});});

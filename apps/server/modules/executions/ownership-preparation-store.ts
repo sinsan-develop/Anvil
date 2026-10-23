@@ -16,21 +16,23 @@ export class SyntheticOwnershipPreparationStore {
  constructor(pool:Pool,access:AccessRepository,prerequisites:SyntheticPreparationPrerequisites|null=null,options:{timeoutMs:number}={timeoutMs:10000}){this.pool=pool;this.access=access;this.prerequisites=prerequisites;this.options={...options};}
  async prepare(token:string,csrf:string,intentValue:unknown,serverIds:unknown,signal?:AbortSignal){
   const port=this.prerequisites,current=port?.current,controller=new AbortController();
+  const pool=this.pool,access=this.access,authenticate=access?.authenticateInTransaction,options=this.options,timeoutMs=options?.timeoutMs;
+  const connect:(()=>Promise<PoolClient>)|undefined=pool?.connect;
   let db:PoolClient|undefined,begun=false,commitAttempted=false,discard=false,closed=false,pending=0,timer:ReturnType<typeof setTimeout>|undefined,abort=()=>{};
-  const stable=()=>{if(closed||controller.signal.aborted||signal?.aborted||this.prerequisites!==port||port?.transport!=='SYNTHETIC_ONLY'||port.current!==current)return fail();};
+  const stable=()=>{if(closed||controller.signal.aborted||signal?.aborted||this.prerequisites!==port||port?.transport!=='SYNTHETIC_ONLY'||port.current!==current||this.pool!==pool||pool.connect!==connect||this.access!==access||access.authenticateInTransaction!==authenticate||this.options!==options||options.timeoutMs!==timeoutMs)return fail();};
   try{
-   if(!port||typeof current!=='function'||!Number.isSafeInteger(this.options.timeoutMs)||this.options.timeoutMs<1||this.options.timeoutMs>10000)return fail();stable();
+   if(!port||typeof current!=='function'||typeof connect!=='function'||typeof authenticate!=='function'||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10000)return fail();stable();
    const intent=cloneV1(intentValue),ids=cloneV1(serverIds);
    if(!recordV1(ids,['intentId','commandId','eventId'])||!['intentId','commandId','eventId'].every(k=>uuidV1(ids[k]))||new Set(Object.values(ids)).size!==3)return fail();
-   const stopped=new Promise<never>((_,reject)=>{abort=()=>{controller.abort();reject(new AuthFailure('OWNERSHIP_PREPARATION_UNAVAILABLE',412));};signal?.addEventListener('abort',abort,{once:true});timer=setTimeout(abort,this.options.timeoutMs);});
+   const stopped=new Promise<never>((_,reject)=>{abort=()=>{controller.abort();reject(new AuthFailure('OWNERSHIP_PREPARATION_UNAVAILABLE',412));};signal?.addEventListener('abort',abort,{once:true});timer=setTimeout(abort,timeoutMs);});
    const query=async(sql:string,args:any[]=[])=>{stable();pending++;try{const r=await db!.query(sql,args);stable();return r;}finally{pending--;}};
    // 기존 helper/port는 같은 query 연결을 소비하고 연결 종료 API를 받지 않는다.
    const tx={query:async(sql:string,args:any[]=[])=>{if(typeof sql!=='string'||!/^(SELECT|INSERT|UPDATE)\b/i.test(sql.trim())||/[;\0]/.test(sql))return fail();return query(sql,args);}} as unknown as PoolClient;
    const work=async()=>{
-    db=await this.pool.connect();if(closed){db.release(true);return fail();}stable();
+    db=await connect.call(pool);if(closed){db.release(true);return fail();}stable();
     begun=true;await query('BEGIN');await query("SET LOCAL statement_timeout='10000ms'");await query("SET LOCAL lock_timeout='2000ms'");
-    const staged=await stageSyntheticOwnershipPreparationIntent(tx,this.access,token,csrf,intent,{intentId:ids.intentId,commandId:ids.commandId},port,controller.signal);stable();
-    const basis=await readOwnershipPreparationIntentBasis(tx,this.access,token,csrf,intent);stable();if(basis.approvalRequired)return fail();
+    const staged=await stageSyntheticOwnershipPreparationIntent(tx,access,token,csrf,intent,{intentId:ids.intentId,commandId:ids.commandId},port,controller.signal);stable();
+    const basis=await readOwnershipPreparationIntentBasis(tx,access,token,csrf,intent);stable();if(basis.approvalRequired)return fail();
     const v=basis.intent,args=[v.scope.projectId,v.scope.executionId,v.scope.executionGeneration];
     let event:ReturnType<typeof readOwnershipEventV1>|undefined;
     if(staged.purpose==='SYNTHETIC_OWNERSHIP_PREPARATION_INTENT_STAGED_ONLY'){
@@ -41,12 +43,12 @@ export class SyntheticOwnershipPreparationStore {
      if(!Number.isSafeInteger(sequence)||sequence<1)return fail();
      const inserted=await query('INSERT INTO anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,version,sequence,project_sequence,content_hash,snapshot_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)',[...args,event.ref.id,1,1,sequence,event.ref.contentHash,canonicalJson(event.snapshot)]);
      if(inserted.rowCount!==1)return fail();
-     const final=await readOwnershipPreparationReceiptBasis(tx,this.access,token,csrf,v.scope,event.ref);stable();
+     const final=await readOwnershipPreparationReceiptBasis(tx,access,token,csrf,v.scope,event.ref);stable();
      if(!same(final.intentRef,staged.intentRef)||!same(final.commandRef,staged.commandRef)||!same(final.authorizationReceiptRef,staged.authorizationReceiptRef)||!same(final.auditRef,staged.auditRef))return fail();
      const slot=(await query("SELECT * FROM anvil.execution_ownership_events WHERE project_id=$1 AND kind='PREPARATION_GRANTED' ORDER BY project_sequence DESC LIMIT 1",[v.scope.projectId])).rows[0];
      if(!slot||!same({id:slot.event_id,version:Number(slot.version),contentHash:slot.content_hash},event.ref))return fail();
     }
-    const last=await readOwnershipPreparationIntentBasis(tx,this.access,token,csrf,intent);stable();
+    const last=await readOwnershipPreparationIntentBasis(tx,access,token,csrf,intent);stable();
     if(last.approvalRequired||!same(last.subject,basis.subject)||!same(last.policyRef,basis.policyRef)||!same(last.registrationRef,basis.registrationRef)||!same(last.publicKeySpki,basis.publicKeySpki)||last.intentHash!==basis.intentHash||Date.parse(last.checkedAt)<Date.parse(basis.checkedAt))return fail();
     const deadline=Math.min(Date.parse(v.expiresAt),Date.parse(basis.expiresAt),Date.parse(last.expiresAt)),mark=performance.now(),clock=(await query('SELECT clock_timestamp() AS at')).rows[0]?.at;
     if(!(clock instanceof Date)||!Number.isFinite(clock.getTime())||clock.getTime()<Date.parse(last.checkedAt)||clock.getTime()>=deadline)return fail();
@@ -61,7 +63,7 @@ export class SyntheticOwnershipPreparationStore {
    if(pending>0)discard=true;
    else if(db&&begun){
     let cleanupTimer:ReturnType<typeof setTimeout>|undefined;
-    try{await Promise.race([db.query('ROLLBACK'),new Promise<never>((_,reject)=>{cleanupTimer=setTimeout(()=>reject(Error('ROLLBACK_UNCONFIRMED')),Math.min(this.options.timeoutMs,1000));})]);}
+    try{await Promise.race([db.query('ROLLBACK'),new Promise<never>((_,reject)=>{cleanupTimer=setTimeout(()=>reject(Error('ROLLBACK_UNCONFIRMED')),Math.min(timeoutMs,1000));})]);}
     catch{discard=true;throw new AuthFailure('OWNERSHIP_PREPARATION_ROLLBACK_UNCONFIRMED',412);}
     finally{if(cleanupTimer)clearTimeout(cleanupTimer);}
    }

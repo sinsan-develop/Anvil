@@ -1,5 +1,11 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 준비 transaction owner 의존성 고정 — 2026-10-23
+
+SyntheticOwnershipPreparationStore.prepare는 호출 시작의 pool/connect 함수·access/authenticateInTransaction 함수·prerequisite/current 함수·options 객체/timeout값을 고정한다. 원 연결/인증 기능을 같은 결과의 함수로 바꾸더라도 대기 전후 참조가 달라지면 fail-closed이며 timer와 rollback cleanup은 캡처한 유한 timeout을 사용한다. helper는 캡처한 access와 같은 transaction facade만 소비한다. COMMIT 시도 후 교체/확인 불명확은 COMMIT_UNKNOWN·연결폐기/자동재발급0이며 rollback으로 미저장을 단정하지 않는다. 초기 공급자 부재는 connect0·권한false를 유지한다.
+
+이 보완의 27합성/type/diff는 실제 PG COMMIT시각·SQLguard·실행권한/OS/Agent 활성화 증거가 아니다. 미적용0039 default deny/RLSfalse·SQLpendingM1은 유지한다. [PostgreSQL15 SET CONSTRAINTS](https://www.postgresql.org/docs/15/sql-set-constraints.html)는 deferred constraint trigger를 IMMEDIATE에서 조기 평가할 수 있음을 명시하므로, constraint clock 검사 하나를 실제 COMMIT 순간 보장으로 승격하지 않는다. 실제PG/시계경과·강제IMMEDIATE/경합 시험과 허용된 실제권위 활성화는 별도 미완료다.
+
 ## FN06 D1 retained root/image 직접자식 귀속 SOURCE — 2026-10-23
 
 같은 RootSource의 `ReadRetainedImageLocationSource(root,image)`는 두 내부 보유 SafeFileHandle을 수명참조해 directory/file 구분·비reparse·전후metadata/정규 GUID path·같은 volume hint/서로다른 fileIDhint·image links1/1..20MiB·직접자식 경계를 검사하도록 작성했다. 디렉터리 case-sensitive 설정에서도 다른 경로를 같다고 수용하지 않도록 Ordinal 비교를 사용하고 sibling prefix·하위폴더·ADS를 거절한다. 공유 metadata 읽기에서 directory 기본값을 유지하고 path digest/identity hint 로직만 같은 파일 내부 재사용했다.
