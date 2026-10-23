@@ -1,6 +1,7 @@
 // D1 미등록 SOURCE. 실제 compile/호출/OS/Agent 실행 금지. 준비권위 공급자가 아니다.
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -29,6 +30,7 @@ namespace Anvil.Native.OwnershipEvidence
         internal interface IOriginalSuspendedProcessCandidate:IDisposable
         {
             ProcessOwnerObservation ReadSource(int timeoutMs=10000);
+            OwnershipEvidencePreparedFactsSource.NativePreparedFactsSourceCandidate ReadPreparedFactsSource(int timeoutMs=10000);
             bool LocalHandlesClosed{get;}
             bool OriginalProcessExitConfirmed{get;}
         }
@@ -47,6 +49,8 @@ namespace Anvil.Native.OwnershipEvidence
         }
         private sealed partial class OwnedEmptyJob
         {
+            // 이 source owner 안에서만 고정하는 상관 후보다. 인증된 OS Job ID가 아니다.
+            private readonly string sourceJobId=Guid.NewGuid().ToString("D");
             internal static IOriginalSuspendedProcessCandidate CreateFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs)
             {
                 return JobAssignment.CreateFromStartup(candidate,image,timeoutMs);
@@ -121,6 +125,26 @@ namespace Anvil.Native.OwnershipEvidence
                                     if(first.Pid!=original.Pid||last.Pid!=original.Pid||current.ProcessId!=original.Pid||current.ThreadId!=original.Tid||first.StartTicks!=last.StartTicks||last.StartTicks!=current.ProcessStartTicks||first.ObservedImagePathDigest!=expectedPathDigest||last.ObservedImagePathDigest!=expectedPathDigest)throw Unavailable();
                                     OwnershipEvidenceImageOwnerSource.ReadOriginalSource(image,startup.workerInput);
                                     startup.workerInput.EnsureCurrentSource();Budget(from,watch,timeoutMs);return new ProcessOwnerObservation(current);
+                                }
+                            }
+                            catch{throw Unavailable();}
+                        }
+                        public OwnershipEvidencePreparedFactsSource.NativePreparedFactsSourceCandidate ReadPreparedFactsSource(int timeoutMs=10000)
+                        {
+                            try
+                            {
+                                Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                                lock(startup.parent.owner.gate)
+                                {
+                                    var observed=ReadSource(timeoutMs);var input=startup.workerInput;input.EnsureCurrentSource();
+                                    var plan=new OwnershipEvidencePreparationPlan(input.Selection,input.ExpiresAt);
+                                    var identity=new OwnershipEvidenceHost.RetainedIdentity(input.Selection["runId"],long.Parse(input.Selection["processGeneration"],CultureInfo.InvariantCulture),
+                                        startup.parent.owner.sourceJobId,observed.ProcessId,observed.ProcessStartTicks,input.Selection["workerHash"]);
+                                    // true는 이 source가 Resume을 제공하지 않은 로컬 이력 후보만 뜻한다.
+                                    // 외부 Resume/handle 복제 배제·실제 suspended 상태를 증명하지 않는다.
+                                    var snapshot=new OwnershipEvidenceHost.PreparedSnapshot(identity,new[]{identity},true,true,true,observed.ObservedAt);
+                                    var result=OwnershipEvidencePreparedFactsSource.BuildSource(plan,identity,snapshot);
+                                    input.EnsureCurrentSource();Budget(from,watch,timeoutMs);return result;
                                 }
                             }
                             catch{throw Unavailable();}

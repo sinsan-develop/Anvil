@@ -47,11 +47,14 @@ internal static class OwnershipEvidenceProcessOwnerSourceTests
                 var first=process.ReadSource();var second=process.ReadSource();
                 if(first.ProcessId==0||first.ThreadId==0||first.ProcessId!=second.ProcessId||first.ProcessStartTicks!=second.ProcessStartTicks||first.OsOwnershipVerified||first.ExecutionAuthorized||first.DispatchPerformed)
                     throw new InvalidOperationException("PROCESS_OWNER_NOT_SOURCE_ONLY");
+                var facts=process.ReadPreparedFactsSource();
+                if(facts.NativeFactsVerified||facts.SigningAuthorized||facts.PreparationAuthorized||facts.ExecutionAuthorized||facts.DispatchPerformed||!facts.ProcessRefJson.Contains("\"runId\":\""+plan.Selection["runId"]+"\"")||!facts.FactsJson.Contains("\"active\":1"))
+                    throw new InvalidOperationException("PROCESS_PREPARED_FACTS_NOT_SOURCE_ONLY");
                 Reject(()=>OwnershipEvidenceJobFactorySource.CreateSuspendedProcessSource(startup,image));
             }
             finally{process.Dispose();}
             if(!process.LocalHandlesClosed||!process.OriginalProcessExitConfirmed)throw new InvalidOperationException("PROCESS_OWNER_CLEANUP_UNKNOWN");
-            Reject(()=>process.ReadSource());process.Dispose();
+            Reject(()=>process.ReadSource());Reject(()=>process.ReadPreparedFactsSource());process.Dispose();
         }
     }
     internal static void RunParentCleanupAfterSeparateApproval(string rootPath,OwnershipEvidencePreparationPlan plan)

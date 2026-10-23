@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 원보유 PREPARED 후보 연결 SOURCE**: 원 process/thread 관측·고정 Job상관값·원worker입력/기한을 기존 facts serializer로 연결, 신규delta 한정정적C0/I0/M1·diff0만 확인했다. M1은 원PID/ticks/worker/반복jobId 미래시험 누락으로 이월, 이전정리I1 보완미검증/foreignimageM1도 유지한다. nativecompile/RunAll/실OS/서명·실Agent 미실행·권위false이며 실제인증/승인root/writer·사용자기능과 전체계획은 미완료다.
+
 - **2026-10-23 FN06 D1 원 suspended process/thread SOURCE**: 원 private startup/image·Job-list/고정worker3인자에서 반환PI를 보유·조회하고 명시 원process 회수/부모 정리에 연결하는 소스를 작성했다. 한정정적 C0/I1/M1의 상위 정리 latch I1은 source 보완하되 실제 transient 재시도 검증/재검토0, fakeimage시험가림M1은 이월이다. compile/RunAll/OS/실Agent NOT_RUN·권위false·미등록, diff0와 source 작성만의 범위다. 실제 orphan 방지·승인root/인증/writer/서명·전체FN06 및 계획은 미완료이며 기존D2/새계약 결정 경계는 유지한다.
 
 - **2026-10-23 FN06 D1 native PREPARED 자료 소비**: C# 후보 직렬화→TS 원선택/request/process·기한 대조→기존 unsigned 조립 source를 추가했다. 독립 정적 C0/I2/M0의 FILETIME·단일 member/uint PID 누락은 합성 반례 RED→GREEN으로 보완, 최종 신규8+인접12=20PASS/type/diff0. C# compile/RunAll·실 상호운용/서명/인증/OS/Agent는 NOT_RUN이며 source 후보를 실제 권위로 등록하지 않는다. 원실패/이월지적·Bv3/D2 경계 유지, 전체계획과 실제 Agent 연결은 미완료다.
