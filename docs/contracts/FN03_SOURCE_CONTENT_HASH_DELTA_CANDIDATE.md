@@ -1,5 +1,9 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 정책계보 검토 잔여**: 정적C0/I0/M1·실행수정0. 상한 sequence 음성이 snapshot/predecessor 미갱신으로 가려지는 시험공백은보류·기존10과총 Minor11 미해결이다. 독립 상한guard 증거로주장하지않고 실제SQL/PG/관리근거/current권위는미검증으로유지한다.
+
+- **2026-10-23 정책 인접계보 TS SOURCE**: inspectSourceContentPolicyLineageCandidate는 기존미적용0040의 exact12 row·snapshot최소6/hash/최초null·후속sameproject/seq+1/previousfullref·다른event/관리command·시각비감소를순수대조한다. 별도 정책양식·관리operation/권한은정의하지않고 추가snapshot자료는원hash에포함만한다. 최소refs/sequence·UNVERIFIED/POLICY_LINEAGE_SHAPE_ONLY·관리근거/current/저장실행LINKfalse5로만반환하며fullscope/targets/관리receipt/현재권위와PG상호운용미검증이다. 새6RED→직접18합성PASS/type/diff0·actualSQL/DB/route0·Minor10/기존제외유지.
+
 - **2026-10-23 서버 최소표시 SOURCE**: readSourceContentScreenFromServerContextCandidate/FromHeldIdentityCandidate는 기존 서버후보/보유값·구체control과 declared screen을 명시조합한다. 기존DTO/정확13·기본표시를변경하지않고 generic record/policy2query·concretecontrol포함3query/문맥선행닫힘·최신음성/과거이력분리·false6·분리조회를유지한다. 원문/nonce/서명/proofbytes 비노출이며 실제전송/route/served/auth/current/DB/키/OS는미활성이다. 새3RED→직접129합성/SSR PASS/type/diff0·Minor10/기존제외유지.
 
 - **2026-10-23 동일소비 표시자료 SOURCE**: readSourceContentScreenForDeclaredContextCandidate는 기존 declared proof/정책 조합의 record1/policy1 결과를 재사용해 exact13 summary와 별도 proof를 반환한다. 기존 조합 DTO는 유지하고 summary 투영은 기존 함수를 그대로 소비한다. 원자료/nonce/signature/proofbytes 비반환·중복SQL0·최신정책최상위/과거이력분리·false6/분리조회·문맥음성summary/proof null·오류원형을 유지한다. 새3RED→직접103합성/SSR PASS/type/diff0이며 실제송신/auth/current/DB/route/served는 미활성·Minor10/기존제외유지.

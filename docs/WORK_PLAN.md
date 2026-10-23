@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 정책계보 검토 잔여**: C0/I0/M1. 안전정수 상한음성의 snapshot/predecessor 미갱신으로 독립 반례가 가려지는 시험공백1을 보류했다. 기존10과 총 Minor11 미해결·실제SQL/PG/관리권위미검증 유지.
+
+- **2026-10-23 FN03 정책 계보 SOURCE**: 기존미적용SQL의 인접row/predecessor 계약을 순수TS inspector로대응했다. 최소snapshot/hash·인접seq/fullref·event/command재사용/역시각을대조하되fullscope/targets/관리근거진위/current권위는미검증·false5다. 새6RED→직접18합성PASS/type/diff0·SQL/DB/권한/route0·Minor10/기존제외유지·전체계획미완료.
+
 - **2026-10-23 FN03/UI06 서버 최소표시 SOURCE**: 기존 서버후보/heldidentity·구체control에서 동일조회 최소표시자료를소비한다. 기존DTO/exact13·기본표시보존·중복조회/원자료노출0·최신정책거절/과거이력분리/false6·분리조회, 새3RED→직접129합성/SSR PASS/type/diff0이다. 실제전송/auth/DB/route/served0·새실사용기능0·Minor10/기존제외유지·전체계획미완료.
 
 - **2026-10-23 FN03/UI06 동일조회 표시자료 SOURCE**: 같은record1/policy1에서 기존exact13 상태와별도proof 입력을준비한다. 최신정책거절/과거이력분리·원자료비노출/중복조회0·false6/분리조회를유지하며 새3RED→직접103합성/SSR PASS/type/diff0이다. 실제전송/route/served 미활성·Minor10/기존제외유지·새실사용기능0/전체계획미완료.
