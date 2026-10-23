@@ -7,7 +7,7 @@ import {readSourceContentDeclaredContextCandidate} from './source-content-reques
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
 import {readSourceContentRequestPolicyLineageCandidate} from './source-content-request-policy-lineage.ts';
 import {planSourceContentRevokeCandidate} from './source-content-revoke.ts';
-import {readLatestSourceContentVerificationCandidate,readLatestSourceContentVerificationAfterReceivedCandidate} from './source-content-verification-head.ts';
+import {readLatestSourceContentVerificationCandidate,readLatestSourceContentVerificationAfterReceivedCandidate,readLatestSourceContentVerificationLineageCandidate} from './source-content-verification-head.ts';
 import {inspectSourceContentPolicyScopeCandidate} from './source-content-policy-scope.ts';
 import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
@@ -148,6 +148,34 @@ export async function readSourceContentStoredVerificationAfterReceivedForDeclare
   const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
   const head=await readLatestSourceContentVerificationAfterReceivedCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},observation.receivedAt,nowMs);
   return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,targetIndex,...flags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
+/** 원저장 관리범위·원수신시각을 최신 검증계보에 전달한다. 기존 head-only 경로와 실제 허가는 유지한다. */
+export async function readSourceContentStoredVerificationLineageWithManagementForDeclaredContextCandidate(db:ReadClient,value:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_STORED_VERIFICATION_INPUT_INVALID');
+ let management:Record<string,any>;
+ try{
+  const raw=canonicalJson(managementValue);if(Buffer.byteLength(raw,'utf8')>4198400||typeof operation!=='string'||!['linkDocumentSource','requestSourceContentHash','revokeSourceContentHash'].includes(operation))throw Error();
+  const v:unknown=JSON.parse(raw);if(!recordV1(v,['evidence','expected']))throw Error();management=v;
+ }catch{throw Error('SOURCE_CONTENT_STORED_MANAGEMENT_INPUT_INVALID');}
+ const flags={...proofFlags,managementEvidenceVerified:false as const,bodyBytesVerified:false as const,verifierEvidenceVerified:false as const,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,observationRef:null,policyRef:null,verificationRef:null,targetIndex:null,lineage:null,...flags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_VERIFICATION_CONTEXT_MISMATCH');
+  if(record.view.state==='REVOKED')return close('REQUEST_REVOKED');
+  if(record.view.state==='EXPIRED')return close('REQUEST_EXPIRED');
+  if(!observation||!record.view.reportRef)return close('OBSERVATION_ABSENT');
+  const report=observation.report;
+  if(report.root.state!=='OBSERVED'||!report.localEvidence.completed||report.files.some(f=>f.state!=='HASHED'))return close('REPORT_NOT_COMPLETE');
+  const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
+  const policy=inspectSourceContentPolicyScopeCandidate(management.evidence,management.expected,s,operation,nowMs);
+  if(policy.status!=='UNVERIFIED')return {...close(policy.reason),status:policy.status};
+  const head=await readLatestSourceContentVerificationLineageCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},observation.receivedAt,nowMs);
+  return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,policyRef:policy.policyRef,targetIndex,...flags};
  });
  return result??close('REQUEST_ABSENT');
 }
