@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06/FN08 실제 writer 후속 계약 후보**: [최소delta 후보](contracts/FN06_ACTUAL_WRITER_AUTHORITY_DELTA_CANDIDATE.md)는 기존5표확장/별도2표/합성표확장 대안을비교한미승인설계다. 권장B도새표필수확정/구현승인이아니며현재44업무·D1승인/SQL·기존false권위를바꾸지않는다. PMO결정지원과원process/thread선행SOURCE를분리해진행한다.
+
 - **2026-10-23 FN06 D1 원Job 원자할당 입력 SOURCE**: 원 factory owner만 사용하는 Job-list attribute준비·value/list수명·ownerDispose연계 소스를 추가한다. 실제 CreateProcess/스레드/Job할당·키/인증준비/actualwriter는미구현이고 nativecompile/호출NOT_RUN이다. 미래반례SOURCE·한정정적대조만 구분하며 기존D2요청4자동확대0·기존실패/거절보존이다.
 
 - **2026-10-23 FN06 D1 factory 원 Job 보유 SOURCE**: 새 unnamed Job 반환값을 private SafeHandle/owner에만 보유하고 빈 accounting/flags·동시 조회/Dispose·실제 close결과를 분리한 미등록 SOURCE를 작성했다. 현재 인증준비·원 suspended process/thread 생성/할당·root/image·actualwriter는 미완료/권한false다. 미래반례 SOURCE와 정적대조만 수행하며 native compile/호출은NOT_RUN, D2고정4/단발소진과 기존거절은유지한다.
