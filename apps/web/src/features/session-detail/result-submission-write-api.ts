@@ -64,9 +64,10 @@ function decode(raw:Uint8Array,pid:string,assignment:PlanRef){
 export const resultSubmissionKey=(session:DocumentSession,pid:string,assignment:PlanRef)=>[session.user.id,session.clientId,pid,assignment.id,assignment.version,assignment.contentHash].join(':');
 export async function prepareResultSubmissionFile(raw:Uint8Array<ArrayBuffer>,pid:string,assignment:PlanRef,session:DocumentSession,generation:number):Promise<ResultSubmissionBuffer>{
  if(!(raw instanceof Uint8Array)||raw.byteLength<1||raw.byteLength>2*1024*1024)fail();
- if(!uuid(session.user.id)||!uuid(session.clientId)||!Number.isSafeInteger(generation)||generation<1)fail();
- const bytes=new Uint8Array(raw),v=decode(bytes,pid,assignment),fileHash=await digest(bytes);
- return {bindingId:crypto.randomUUID(),submissionId:crypto.randomUUID(),projectId:pid,ownerUserId:session.user.id,ownerClientId:session.clientId,controlGeneration:generation,assignmentRef:structuredClone(assignment),scope:v.scope,manifest:v.manifest,fileText:v.text,fileHash,pending:null,result:null,uncertain:false,dirty:true,failure:null,executionAuthorized:false};
+ const selectedAssignment=structuredClone(assignment),selectedSession=structuredClone(session);
+ if(!uuid(selectedSession.user.id)||!uuid(selectedSession.clientId)||!Number.isSafeInteger(generation)||generation<1)fail();
+ const bytes=new Uint8Array(raw),v=decode(bytes,pid,selectedAssignment),fileHash=await digest(bytes);
+ return {bindingId:crypto.randomUUID(),submissionId:crypto.randomUUID(),projectId:pid,ownerUserId:selectedSession.user.id,ownerClientId:selectedSession.clientId,controlGeneration:generation,assignmentRef:selectedAssignment,scope:v.scope,manifest:v.manifest,fileText:v.text,fileHash,pending:null,result:null,uncertain:false,dirty:true,failure:null,executionAuthorized:false};
 }
 export async function prepareResultSubmitCommand(raw:ResultSubmissionBuffer,session:DocumentSession,acknowledged:boolean):Promise<DocumentWrite>{
  if(acknowledged!==true)fail('RESULT_SUBMISSION_CONFIRM_REQUIRED');
