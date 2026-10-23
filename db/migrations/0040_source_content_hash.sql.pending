@@ -270,6 +270,47 @@ CREATE TRIGGER source_content_request_phase BEFORE INSERT OR UPDATE ON anvil.sou
 -- 이 guard를 추가해도 아래 source_content_unavailable의 전 DML 거절을 제거하거나 우회하지 않는다.
 -- OLD/NEW 전이는 stale caller의 기대값 CAS나 observation/명령/감사의 COMMIT 원자성을 대신하지 않는다.
 
+-- canonical 32byte base64url 형식만 검사한다. nonce 발급/중복소비/키 신뢰의 증거가 아니다.
+CREATE FUNCTION anvil.source_content_nonce32(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE n text;raw bytea;
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'string' THEN RETURN false;END IF;n=v#>>'{}';
+ IF n!~'^[A-Za-z0-9_-]{43}$' THEN RETURN false;END IF;
+ raw=decode(translate(n,'-_','+/')||'=','base64');
+ RETURN octet_length(raw)=32 AND rtrim(translate(encode(raw,'base64'),'+/','-_'),'=')=n;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.source_content_request_exchange_shape(g anvil.source_content_requests) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE p jsonb;c jsonb;preflight_before timestamptz;
+BEGIN
+ IF anvil.source_content_scope_shape(g.scope_json) IS NOT TRUE OR anvil.source_content_request_phase_shape(g) IS NOT TRUE
+  OR g.version IS DISTINCT FROM 1 OR g.scope_digest IS DISTINCT FROM anvil.source_read_hash(g.scope_json)
+  OR g.scope_json->>'projectId' IS DISTINCT FROM g.project_id::text
+  OR g.scope_json->>'requestedAt' IS DISTINCT FROM anvil.source_read_iso(g.created_at)
+  OR g.scope_json->>'expiresAt' IS DISTINCT FROM anvil.source_read_iso(g.expires_at) THEN RETURN false;END IF;
+ IF g.preflight_json IS NULL THEN RETURN g.challenge_json IS NULL;END IF;
+ p=g.preflight_json;c=g.challenge_json;
+ IF anvil.source_read_exact(p,ARRAY['protocolVersion','purpose','installationId','projectId','connectorRef','registrationRef','observerRef','requestRef','scopeDigest','publicKeyFingerprint','clientNonce','expiresAt']) IS NOT TRUE
+  OR anvil.source_read_exact(c,ARRAY['protocolVersion','purpose','installationId','projectId','connectorRef','registrationRef','observerRef','requestRef','scopeDigest','publicKeyFingerprint','clientNonce','expiresAt','serverNonce','issuedAt']) IS NOT TRUE
+  OR octet_length(anvil.source_read_canonical_json(p))>1048576 OR octet_length(anvil.source_read_canonical_json(c))>1048576
+  OR jsonb_typeof(p->'expiresAt') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+ preflight_before=(p->>'expiresAt')::timestamptz;
+ RETURN COALESCE(g.scope_digest=anvil.source_read_hash(g.scope_json) AND g.preflight_digest=anvil.source_read_hash(p)
+  AND p->'protocolVersion'='1'::jsonb AND p->>'purpose'='SOURCE_CONTENT_PREFLIGHT'
+  AND p->>'installationId'=g.scope_json->>'installationId' AND p->>'projectId'=g.project_id::text
+  AND p->'connectorRef'=g.scope_json->'connectorRef' AND p->'registrationRef'=g.scope_json->'registrationRef' AND p->'observerRef'=g.scope_json->'observerRef'
+  AND p->'requestRef'=jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.scope_digest) AND p->>'scopeDigest'=g.scope_digest
+  AND jsonb_typeof(p->'publicKeyFingerprint')='string' AND (p->>'publicKeyFingerprint')~'^[0-9a-f]{64}$'
+  AND anvil.source_content_nonce32(p->'clientNonce') IS TRUE AND anvil.source_content_nonce32(c->'serverNonce') IS TRUE
+  AND c->>'serverNonce'<>p->>'clientNonce' AND c->>'purpose'='SOURCE_CONTENT_EXCHANGE'
+  AND (c-ARRAY['purpose','expiresAt','serverNonce','issuedAt'])=(p-ARRAY['purpose','expiresAt'])
+  AND c->>'issuedAt'=anvil.source_read_iso(g.challenge_issued_at) AND c->>'expiresAt'=anvil.source_read_iso(g.challenge_expires_at)
+  AND anvil.source_content_millisecond(preflight_before) IS TRUE AND p->>'expiresAt'=anvil.source_read_iso(preflight_before)
+  AND preflight_before>g.challenge_issued_at AND preflight_before<=g.expires_at AND g.challenge_expires_at<=preflight_before,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 -- 생성 당시 최종 행 묶음의 구조 검사 후보. 조회 완전성/현재 허가/COMMIT를 보장하지 않으며 trigger 미연결이다.
 CREATE FUNCTION anvil.source_content_creation_bundle_shape(g anvil.source_content_requests,commands anvil.commands[],receipts anvil.authorization_receipts[],events anvil.audit_events[]) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 DECLARE c anvil.commands;r anvil.authorization_receipts;a anvil.audit_events;target jsonb;payload jsonb;original jsonb;request_hash text;receipt_digest text;data jsonb;result jsonb;
@@ -374,6 +415,7 @@ BEGIN
  IF project_arg IS NULL OR request_arg IS NULL THEN RETURN false;END IF;
  SELECT r.* INTO g FROM anvil.source_content_requests r WHERE r.project_id=project_arg AND r.id=request_arg;
  IF NOT FOUND THEN RETURN false;END IF;
+ IF anvil.source_content_request_exchange_shape(g) IS NOT TRUE THEN RETURN false;END IF;
  cs=ARRAY(SELECT cmd FROM anvil.commands cmd WHERE cmd.project_id=g.project_id AND cmd.id=g.created_command_id LIMIT 2);
  IF cardinality(cs)<>1 THEN RETURN false;END IF;c=cs[1];
  rs=ARRAY(SELECT ar FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id LIMIT 2);
@@ -462,6 +504,19 @@ CREATE CONSTRAINT TRIGGER source_content_request_bundle_final AFTER INSERT OR UP
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_final_bundle();
 CREATE CONSTRAINT TRIGGER source_content_observation_bundle_final AFTER INSERT ON anvil.source_content_observations
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.check_source_content_final_bundle();
+
+-- 기존 audit_events용 callback SOURCE만 분리한다. CREATE TRIGGER/GRANT 없이 미연결이다.
+-- 자동 역검사 활성화에는 현재 권한·기존 감사 영향·잠금/경합과 별도 실제 검증이 남아 있다.
+CREATE FUNCTION anvil.check_source_content_audit_final_bundle() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_TABLE_SCHEMA<>'anvil' OR TG_TABLE_NAME<>'audit_events' OR TG_WHEN<>'AFTER' OR TG_LEVEL<>'ROW' OR TG_OP<>'INSERT' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_AUDIT_TRIGGER_CONTEXT_INVALID' USING ERRCODE='42501';
+ END IF;
+ IF anvil.source_content_audit_final_bundle_shape(NEW.project_id,NEW.event_id) IS NOT TRUE THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_AUDIT_FINAL_BUNDLE_REQUIRED' USING ERRCODE='42501';
+ END IF;
+ RETURN NULL;
+END;$$;
 
 CREATE TABLE anvil.source_content_verifications (
  project_id uuid NOT NULL,id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),

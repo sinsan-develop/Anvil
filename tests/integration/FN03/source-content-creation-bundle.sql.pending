@@ -46,5 +46,22 @@ BEGIN
  b=a;b.correction_of=a.event_id;ASSERT anvil.source_content_creation_bundle_shape(g,ARRAY[c],ARRAY[r],ARRAY[b]) IS FALSE,'CREATION_CORRECTION_NOT_ORIGINAL';
  n=g;n.scope_json=n.scope_json||'{"executionAuthorized":true}';ASSERT anvil.source_content_creation_bundle_shape(n,ARRAY[c],ARRAY[r],ARRAY[a]) IS FALSE,'CREATION_EXTRA_SCOPE_AUTHORITY';
  n=g;n.state='UNKNOWN';n.updated_at=n.created_at+interval '1 second';ASSERT anvil.source_content_creation_bundle_shape(n,ARRAY[c],ARRAY[r],ARRAY[a]) IS TRUE,'CREATION_HISTORICAL_NOT_CURRENT_PERMISSION';
+ -- 다음은 같은 원 scope의 교환 중첩 구조만 검사하며 실제 challenge/키/credential을 발급하지 않는다.
+ ASSERT anvil.source_content_request_exchange_shape(g) IS TRUE,'EXCHANGE_CREATED_WITHOUT_MATERIAL';
+ n=g;n.version=2;ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_CREATED_VERSION_NOT_ONE';
+ n=g;n.project_id='79000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_CREATED_OTHER_ROW_PROJECT';
+ n=g;n.state='CHALLENGED';n.updated_at=g.created_at+interval '1 second';n.challenge_issued_at=n.updated_at;n.challenge_expires_at=n.updated_at+interval '60 seconds';
+ n.preflight_json=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_CONTENT_PREFLIGHT','installationId',g.scope_json->'installationId','projectId',g.project_id,
+ 'connectorRef',ref,'registrationRef',ref,'observerRef',ref,'requestRef',target,'scopeDigest',g.scope_digest,'publicKeyFingerprint',repeat('e',64),'clientNonce',repeat('A',43),'expiresAt',anvil.source_read_iso(g.created_at+interval '90 seconds'));
+ n.preflight_digest=anvil.source_read_hash(n.preflight_json);n.challenge_json=(n.preflight_json-ARRAY['purpose','expiresAt'])||jsonb_build_object('purpose','SOURCE_CONTENT_EXCHANGE','serverNonce',repeat('A',42)||'E','issuedAt',anvil.source_read_iso(n.challenge_issued_at),'expiresAt',anvil.source_read_iso(n.challenge_expires_at));
+ ASSERT anvil.source_content_request_exchange_shape(n) IS TRUE,'EXCHANGE_EXACT_STORED_PROJECTION';
+ ASSERT anvil.source_content_nonce32(to_jsonb(repeat('A',43))) IS TRUE,'EXCHANGE_NONCE32_CANONICAL';
+ ASSERT anvil.source_content_nonce32(to_jsonb(repeat('A',42)||'B')) IS FALSE,'EXCHANGE_NONCE32_NONZERO_PAD_BITS';
+ n.challenge_json=jsonb_set(n.challenge_json,'{serverNonce}',n.preflight_json->'clientNonce');ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_DISTINCT_NONCES';
+ n.challenge_json=jsonb_set(n.challenge_json,'{serverNonce}',to_jsonb(repeat('A',42)||'E'));
+ n.challenge_json=n.challenge_json||'{"verified":true}';ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_EXTRA_AUTHORITY';n.challenge_json=n.challenge_json-'verified';
+ n.challenge_json=jsonb_set(n.challenge_json,'{publicKeyFingerprint}',to_jsonb(repeat('f',64)));ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_KEY_SWAP';n.challenge_json=jsonb_set(n.challenge_json,'{publicKeyFingerprint}',n.preflight_json->'publicKeyFingerprint');
+ n.preflight_json=jsonb_set(n.preflight_json,'{projectId}','"79000000-0000-4000-8000-000000000099"');n.challenge_json=jsonb_set(n.challenge_json,'{projectId}',n.preflight_json->'projectId');n.preflight_digest=anvil.source_read_hash(n.preflight_json);
+ ASSERT anvil.source_content_request_exchange_shape(n) IS FALSE,'EXCHANGE_OTHER_PROJECT_WITH_MATCHING_HASH_AND_CHALLENGE';
 END;$$;
 ROLLBACK;
