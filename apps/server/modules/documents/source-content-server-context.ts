@@ -4,7 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
-import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate} from './source-content-request-record.ts';
+import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate,readSourceContentStoredVerificationForDeclaredContextCandidate} from './source-content-request-record.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 /** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
@@ -44,6 +44,21 @@ export function readSourceContentScreenFromHeldIdentityCandidate(db:ReadClient,h
  },basis,nowMs);
 }
 const invalid=():never=>{throw Error('SOURCE_CONTENT_SERVER_CONTEXT_INVALID');};
+/** 기존 보유 문맥/구체 control만 조합하며 actual 인증·verifier·현재 권위를 추가하지 않는다. */
+export function readSourceContentVerificationFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,targetIndex:number,nowMs:number){
+ return readSourceContentVerificationFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,targetIndex,nowMs);
+}
+/** 원보고의 조회 문맥만 전달한다. 같은 db의 분리 조회를 현재 허가·원자성으로 승격하지 않는다. */
+export async function readSourceContentVerificationFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,targetIndex:number,nowMs:number){
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_SERVER_VERIFICATION_INPUT_INVALID');
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,requestRef:null,observationRef:null,verificationRef:null,targetIndex:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,
+  storedRequestAuthenticated:false as const,signatureVerified:false as const,bodyBytesVerified:false as const,currentAuthorityVerified:false as const,
+  storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredVerificationForDeclaredContextCandidate(db,c,targetIndex,nowMs),close);
+}
 /** 실제 인증·현재 회수허가가 아닌 기존 보유문맥/구체 control의 SOURCE 조합이다. */
 export function readSourceContentRevokeFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,payload:unknown,commandId:unknown,nowMs:number){
  return readSourceContentRevokeFromServerContextCandidate(db,{

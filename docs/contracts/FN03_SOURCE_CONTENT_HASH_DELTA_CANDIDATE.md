@@ -1,5 +1,9 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 직접 승인 적용 범위**: 신산님의 ‘네 의견대로 승인해’를 직전 Main 권장안인 §12.6~12.6.2 CM01~08의 미등록 SOURCE 구현·합성 검증 기준 채택으로 기록한다. 아래 미확정/DRAFT_ONLY 문구는 승인 전 제안 이력으로 보존하며, 실제 DB 적용·관리정책 생성/권한 부여·키/서명/OS 검증·route/서비스·Agent 실행은 이번 승인에서 제외한다. 기존 최소6/hash·공개 경로는 보존하고 새 완전 형식은 별도 후보로 구현한다.
+
+- **2026-10-23 서버문맥 검증 소비**: 기존 identity/control 후보를 원보고 검증 문맥에 한정 연결했다. 원입력 고정·전체보고/target·최신 음성·원오류·권위 false7/분리조회를 유지한다. 새4 RED→직접141 합성 PASS, 시험 타입 표기 정정 후 해당106/typecheck/diff0·독립 정적 C0/I0/M0이며 실제 인증/verifier/PG/current/원자성/served 증거가 아니다. 기존 head·정책·SQL/runner·공개 경로는 변경하지 않았다.
+
 - **2026-10-23 저장보고 target 문맥 SOURCE**: 신규 readSourceContentStoredVerificationForDeclaredContextCandidate는 선언 문맥/원요청과 보고 전체 성공을 대조한 뒤 원scope의 target/doc/path/observer·저장 reportRef만으로 기존 head 판독 문맥을 만든다. caller 임의 refs/path·verified 입력은 받지 않고 최소 refs/index·최신 음성·분리조회/false7만 반환한다. 성공 보고의 형태/저장 head는 실제 원문 일치/OS·서명·current verifier 증거가 아니다. 새4RED→직접137 합성PASS, 후속102/type/diff0·기존head/SQL/route/관리미정형식 변경0·Minor11/기존제외 유지.
 
 - **2026-10-23 검증 인접계보 TS SOURCE**: inspectSourceContentVerificationLineageCandidate는 기존0040의 row18와 인접 identity11/predecessor fullref·버전+1·비역행시각·첫 양성1회/후속회수·무효만 허용하는 구조를 대응한다. snapshot 의미/실제 verifier/현재 권위·관측/원문 진위는 확인하지 않고 최소 refs·UNVERIFIED/false5만 반환한다. 기존head/정책/route/SQL·관리 미확정형식은 변경하지 않는다. 새6RED→직접14 합성PASS/type/diff0·실PG/권위 미검증·Minor11/기존 제외 유지.

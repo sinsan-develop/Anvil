@@ -8,6 +8,33 @@ const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+
 function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
 function storedRevoke(){assert.equal(typeof m.readSourceContentStoredRevokeForDeclaredContextCandidate,'function','저장 원요청의 회수 후보 소비 미구현');return m.readSourceContentStoredRevokeForDeclaredContextCandidate;}
 function storedVerification(){assert.equal(typeof m.readSourceContentStoredVerificationForDeclaredContextCandidate,'function','원 저장보고의 검증 조회문맥 소비 미구현');return m.readSourceContentStoredVerificationForDeclaredContextCandidate;}
+function serverVerification(){assert.equal(typeof lineageServerModule.readSourceContentVerificationFromServerContextCandidate,'function','서버 문맥의 원보고 검증 소비 미구현');return lineageServerModule.readSourceContentVerificationFromServerContextCandidate;}
+function heldVerification(){assert.equal(typeof lineageServerModule.readSourceContentVerificationFromHeldIdentityCandidate,'function','보유identity 원보고 검증 소비 미구현');return lineageServerModule.readSourceContentVerificationFromHeldIdentityCandidate;}
+test('서버 문맥의 검증소비는 동일db/identity-control-record-head 순서·원basis 복사와 최신회수를 보존한다',async()=>{
+ for(const revoked of [false,true]){const f=successfulRecordVerification(),s=preparationSources({row:f.r}),basis=proofBasis(f.r),order:string[]=[];if(revoked){f.verification.version=2;f.verification.decision='REVOKED';f.verification.previous_ref={id:id(91),version:1,contentHash:'c'.repeat(64)};}let calls=0;
+ const db={async query(){order.push(++calls===1?'record':'head');return {rows:[calls===1?f.r:f.verification]};}};
+ const out=await serverVerification()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');basis.requestRef.contentHash='f'.repeat(64);return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},basis,0,zero+5000);
+ assert.deepEqual(order,['identity','control','record','head']);assert.equal(calls,2);assert.equal(out.reason,revoked?'VERIFICATION_REVOKED':'CURRENT_VERIFIER_UNAVAILABLE');assert.equal(out.status,revoked?'DENIED':'UNVERIFIED');assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');assert.equal(out.targetIndex,0);for(const k of ['storedRequestAuthenticated','signatureVerified','bodyBytesVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'] as const)assert.equal(out[k],false);assert.equal(JSON.stringify(out).includes('src/a.ts'),false);
+ }
+});
+test('서버 검증문맥 부재/미지음성은query0이며 옛세대·부분보고는record뒤 head조회 없이 닫힌다',async()=>{
+ const f=successfulRecordVerification(),s=preparationSources({row:f.r}),basis=proofBasis(f.r);let calls=0;const db={async query(){calls++;return {rows:[f.r]};}};
+ const absent=await serverVerification()(db,{},basis,0,zero+5000);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');assert.equal(absent.verificationRef,null);assert.equal(absent.observationRef,null);assert.equal(absent.readConsistency,'SEPARATE_READS_NOT_ATOMIC');assert.equal(absent.bodyBytesVerified,false);
+ const unknown=await serverVerification()(db,{...s,async readControlCandidate(){return {status:'DENIED',reason:'PRIVATE_VERIFICATION_REASON'};}},basis,0,zero+5000);assert.equal(unknown.reason,'PROJECT_CONTROL_CANDIDATE_INVALID');assert.equal(JSON.stringify(unknown).includes('PRIVATE_VERIFICATION_REASON'),false);assert.equal(calls,0);
+ const stale=await serverVerification()(db,{...s,async readIdentityCandidate(){return {...await s.readIdentityCandidate(),credentialGeneration:1};}},basis,0,zero+5000);assert.equal(calls,1);assert.equal(stale.reason,'DECLARED_VERIFICATION_CONTEXT_MISMATCH');assert.equal(stale.verificationRef,null);
+ const partial=fixture(true,true);calls=0;const out=await serverVerification()({async query(){calls++;return {rows:[partial]};}},preparationSources({row:partial}),proofBasis(partial),0,zero+5000);assert.equal(calls,1);assert.equal(out.reason,'REPORT_NOT_COMPLETE');assert.equal(out.linkAuthorized,false);
+});
+test('보유identity 검증소비의 미보고는2query·만료0/회수1query로 닫힌다',async()=>{
+ const f=heldFixture();let calls=0;const rows=[f.control,f.row];const out=await heldVerification()({async query(){return {rows:[rows[calls++]]};}},f.held,f.basis,0,zero+5000);assert.equal(calls,2);assert.equal(out.reason,'OBSERVATION_ABSENT');assert.equal(out.verificationRef,null);assert.equal(out.currentAuthorityVerified,false);
+ calls=0;const expired=await heldVerification()({async query(){calls++;return {rows:[]};}},f.held,f.basis,0,zero+60000);assert.equal(calls,0);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(expired.verificationRef,null);
+ f.control.control_revoked_at=at(1000);const revoked=await heldVerification()({async query(){calls++;return {rows:[f.control]};}},f.held,f.basis,0,zero+5000);assert.equal(calls,1);assert.equal(revoked.reason,'PROJECT_CONTROL_UNAVAILABLE');assert.equal(revoked.verificationRef,null);
+});
+test('서버 검증의 index/getter 오류는 문맥판독 전에 닫히고 후속query 오류는 그대로 전파한다',async()=>{
+ const f=successfulRecordVerification(),s=preparationSources({row:f.r});let reads=0,calls=0,gets=0;const db={async query(){calls++;return {rows:[]};}},sources={...s,async readIdentityCandidate(){reads++;return s.readIdentityCandidate();}};
+ for(const index of [-1,200,NaN,0.1])await assert.rejects(serverVerification()(db,sources,proofBasis(f.r),index,zero+5000),/SOURCE_CONTENT_SERVER_VERIFICATION_INPUT_INVALID/);assert.equal(reads,0);assert.equal(calls,0);
+ const b=proofBasis(f.r);Object.defineProperty(b,'projectId',{enumerable:true,get(){gets++;return id(2);}});await assert.rejects(serverVerification()(db,sources,b,0,zero+5000),/SOURCE_CONTENT_SERVER_CONTEXT_INVALID/);assert.equal(gets,0);assert.equal(reads,0);
+ const error=Error('SYNTHETIC_SERVER_VERIFICATION_QUERY');await assert.rejects(serverVerification()({async query(){calls++;if(calls===1)return {rows:[f.r]};throw error;}},s,proofBasis(f.r),0,zero+5000),e=>e===error);assert.equal(calls,2);
+});
 function successfulRecordVerification(){
  const r=fixture(true,true),report=r.observation.report,identity={kind:'REGULAR_FILE',volumeSerialHex:'0000000000000001',fileIdHex:'1'.repeat(32),reparse:false,linkCountDecimal:'1',sizeBytesDecimal:'0',lastWriteFileTimeDecimal:'134056692030000000'};
  report.root={state:'OBSERVED',facts:{declaredRootRef:r.scope_json.sourceRootRef,kind:'DIRECTORY',canonicalPath:'D:\\Synthetic',volumeSerialHex:identity.volumeSerialHex,fileIdHex:'2'.repeat(32),reparse:false},reasonCode:null};
