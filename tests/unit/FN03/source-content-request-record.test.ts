@@ -5,6 +5,37 @@ const m=await import(new URL('../../../apps/server/modules/documents/source-cont
 const lineageServerModule=await import('../../../apps/server/modules/documents/source-content-server-context.ts');
 const id=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
+function serverManagedVerification(){const v:any=lineageServerModule;assert.equal(typeof v.readSourceContentVerificationWithManagementFromServerContextCandidate,'function','서버 관리·시각 결합 미구현');return v.readSourceContentVerificationWithManagementFromServerContextCandidate;}
+function heldManagedVerification(){const v:any=lineageServerModule;assert.equal(typeof v.readSourceContentVerificationWithManagementFromHeldIdentityCandidate,'function','보유 문맥 관리·시각 결합 미구현');return v.readSourceContentVerificationWithManagementFromHeldIdentityCandidate;}
+test('서버 결합은 identity 전 입력을 고정하고 같은 db의 record/head2회만 소비한다',async()=>{
+ for(const time of [3999,4000]){
+  const f=managedVerificationFixture(),s=preparationSources({row:f.r}),basis=proofBasis(f.r),wanted=structuredClone(basis.requestRef),order:string[]=[];f.verification.verified_at=at(time);let calls=0;
+  const db={async query(){order.push(++calls===1?'record':'head');return {rows:[calls===1?f.r:f.verification]};}};
+  const out=await serverManagedVerification()(db,{async readIdentityCandidate(d:unknown){assert.equal(d,db);order.push('identity');basis.requestRef.contentHash='f'.repeat(64);f.bundle.expected.actorId=id(99);return s.readIdentityCandidate();},async readControlCandidate(d:unknown){assert.equal(d,db);order.push('control');return s.readControlCandidate();}},basis,f.bundle,'requestSourceContentHash',0,zero+5000);
+  assert.deepEqual(order,['identity','control','record','head']);assert.equal(calls,2);assert.deepEqual(out.requestRef,wanted);assert.equal(out.reason,time<4000?'VERIFICATION_BEFORE_OBSERVATION':'CURRENT_VERIFIER_UNAVAILABLE');assert.ok(out.policyRef);assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');
+  for(const k of ['storedRequestAuthenticated','managementEvidenceVerified','signatureVerified','bodyBytesVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'] as const)assert.equal(out[k],false);
+  assert.equal(JSON.stringify(out).includes('src/a.ts'),false);
+ }
+});
+test('서버 결합의 판독부재·문맥 불일치·관리회수는 head 전에 닫힌다',async()=>{
+ const f=managedVerificationFixture(),s=preparationSources({row:f.r});let calls=0;const db={async query(){calls++;return {rows:[f.r]};}};
+ const absent=await serverManagedVerification()(db,{},proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+5000);assert.equal(calls,0);assert.equal(absent.reason,'SERVER_CONTEXT_READERS_UNAVAILABLE');for(const k of ['requestRef','observationRef','policyRef','verificationRef','targetIndex'])assert.equal(absent[k],null);
+ const mismatch=await serverManagedVerification()(db,{...s,async readIdentityCandidate(){return {...await s.readIdentityCandidate(),credentialGeneration:1};}},proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+5000);assert.equal(calls,1);assert.equal(mismatch.reason,'DECLARED_VERIFICATION_CONTEXT_MISMATCH');
+ const r=managedVerificationFixture('REVOKED');calls=0;const revoked=await serverManagedVerification()({async query(){calls++;return {rows:[r.r]};}},preparationSources({row:r.r}),proofBasis(r.r),r.bundle,'requestSourceContentHash',0,zero+5000);assert.equal(calls,1);assert.equal(revoked.reason,'POLICY_REVOKED');assert.equal(revoked.verificationRef,null);
+});
+test('서버 결합 index/관리 getter/operation은 identity 전에 거절하고 비동기 오류를 보존한다',async()=>{
+ const f=managedVerificationFixture(),s=preparationSources({row:f.r});let identities=0,calls=0,gets=0;const sources={...s,async readIdentityCandidate(){identities++;return s.readIdentityCandidate();}},db={async query(){calls++;return {rows:[f.r]};}},g={...f.bundle};Object.defineProperty(g,'expected',{enumerable:true,get(){gets++;return f.bundle.expected;}});
+ for(const index of [-1,200,NaN])await assert.rejects(serverManagedVerification()(db,sources,proofBasis(f.r),f.bundle,'requestSourceContentHash',index,zero+5000),/SOURCE_CONTENT_SERVER_VERIFICATION_INPUT_INVALID/);
+ await assert.rejects(serverManagedVerification()(db,sources,proofBasis(f.r),g,'requestSourceContentHash',0,zero+5000),/SOURCE_CONTENT_SERVER_MANAGEMENT_INPUT_INVALID/);
+ await assert.rejects(serverManagedVerification()(db,sources,proofBasis(f.r),f.bundle,'unknown',0,zero+5000),/SOURCE_CONTENT_SERVER_MANAGEMENT_INPUT_INVALID/);assert.equal(identities,0);assert.equal(calls,0);assert.equal(gets,0);
+ const error=Error('SYNTHETIC_SERVER_MANAGED_VERIFICATION');await assert.rejects(serverManagedVerification()(db,{...s,async readIdentityCandidate(){throw error;}},proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+5000),e=>e===error);
+ await assert.rejects(serverManagedVerification()({async query(){calls++;if(calls===1)return {rows:[f.r]};throw error;}},s,proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+5000),e=>e===error);assert.equal(calls,2);
+});
+test('보유 문맥 결합은 세션만료0·제어회수1조회로 닫는다',async()=>{
+ const h=heldFixture(),f=managedVerificationFixture();let calls=0;const db={async query(){calls++;return {rows:[h.control]};}};
+ const expired=await heldManagedVerification()(db,h.held,proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+60000);assert.equal(calls,0);assert.equal(expired.reason,'SERVER_IDENTITY_CANDIDATE_INVALID');assert.equal(expired.policyRef,null);assert.equal(expired.managementEvidenceVerified,false);
+ h.control.control_revoked_at=at(1000);const revoked=await heldManagedVerification()(db,h.held,proofBasis(f.r),f.bundle,'requestSourceContentHash',0,zero+5000);assert.equal(calls,1);assert.equal(revoked.reason,'PROJECT_CONTROL_UNAVAILABLE');assert.equal(revoked.verificationRef,null);assert.equal(revoked.linkAuthorized,false);
+});
 function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
 function storedRevoke(){assert.equal(typeof m.readSourceContentStoredRevokeForDeclaredContextCandidate,'function','저장 원요청의 회수 후보 소비 미구현');return m.readSourceContentStoredRevokeForDeclaredContextCandidate;}
 function storedVerification(){assert.equal(typeof m.readSourceContentStoredVerificationForDeclaredContextCandidate,'function','원 저장보고의 검증 조회문맥 소비 미구현');return m.readSourceContentStoredVerificationForDeclaredContextCandidate;}
