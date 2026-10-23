@@ -34,7 +34,7 @@ CREATE TABLE anvil.source_content_requests (
  credential_generation bigint NOT NULL CHECK(credential_generation BETWEEN 1 AND 9007199254740991),
  control_generation bigint NOT NULL CHECK(control_generation BETWEEN 1 AND 9007199254740991),
  source_root_id uuid NOT NULL,source_root_version bigint NOT NULL,connector_id uuid NOT NULL,registration_id uuid NOT NULL,
- created_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,
+ created_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,updated_at timestamptz NOT NULL,
  content_policy_id uuid GENERATED ALWAYS AS((scope_json->'contentPolicyRef'->>'id')::uuid) STORED,
  content_policy_version bigint GENERATED ALWAYS AS((scope_json->'contentPolicyRef'->>'version')::bigint) STORED,
  content_policy_hash text GENERATED ALWAYS AS(scope_json->'contentPolicyRef'->>'contentHash') STORED,
@@ -63,6 +63,7 @@ CREATE TABLE anvil.source_content_requests (
   AND scope_json->>'requestedAt'=anvil.source_read_iso(created_at) AND scope_json->>'expiresAt'=anvil.source_read_iso(expires_at)) IS TRUE),
  CHECK(isfinite(created_at) AND isfinite(expires_at) AND expires_at>created_at AND expires_at<=created_at+interval '10 minutes'
   AND created_at=date_trunc('milliseconds',created_at) AND expires_at=date_trunc('milliseconds',expires_at)),
+ CHECK(isfinite(updated_at) AND updated_at>=created_at AND updated_at=date_trunc('milliseconds',updated_at)),
  CHECK((challenge_json IS NULL AND preflight_digest IS NULL AND challenge_issued_at IS NULL AND challenge_expires_at IS NULL)
   OR (jsonb_typeof(challenge_json)='object' AND preflight_digest IS NOT NULL AND challenge_issued_at IS NOT NULL AND challenge_expires_at IS NOT NULL
    AND isfinite(challenge_issued_at) AND isfinite(challenge_expires_at) AND challenge_issued_at>=created_at
