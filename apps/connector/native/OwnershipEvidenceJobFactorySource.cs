@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 namespace Anvil.Native.OwnershipEvidence
 {
-    internal static class OwnershipEvidenceJobFactorySource
+    internal static partial class OwnershipEvidenceJobFactorySource
     {
         [StructLayout(LayoutKind.Sequential)]
         private struct Accounting
@@ -84,7 +84,7 @@ namespace Anvil.Native.OwnershipEvidence
             RequireEmptyAccountingSource(value.User,value.Kernel,value.PeriodUser,value.PeriodKernel,value.Faults,value.Total,value.Active,value.Terminated);
             Budget(from,watch,timeoutMs);
         }
-        private sealed class OwnedEmptyJob:IEmptyJobCandidate
+        private sealed partial class OwnedEmptyJob:IEmptyJobCandidate
         {
             private readonly object gate=new object();
             private readonly SafeJob job;
@@ -116,8 +116,14 @@ namespace Anvil.Native.OwnershipEvidence
             {
                 lock(gate)
                 {
-                    if(!disposed){disposed=true;job.Dispose();}
-                    if(!job.CloseAttempted||!job.CloseSucceeded)throw new InvalidOperationException("OWNERSHIP_EMPTY_JOB_DISPOSAL_UNKNOWN");
+                    if(!disposed)
+                    {
+                        disposed=true;
+                        try{DisposeAssignment();}
+                        finally{job.Dispose();}
+                    }
+                    if(!AssignmentCleanupConfirmed()||!job.CloseAttempted||!job.CloseSucceeded)
+                        throw new InvalidOperationException("OWNERSHIP_EMPTY_JOB_DISPOSAL_UNKNOWN");
                 }
             }
         }

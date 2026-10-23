@@ -1,5 +1,13 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 원 Job의 생성시 할당 입력 SOURCE — 2026-10-23
+
+새 JobAssignment partial은 원 private OwnedEmptyJob에만 Init/UpdateProcThreadAttribute의 JOB_LIST 입력을 보관한다. 외부 IEmptyJobCandidate 구현/null은 메서드/Dispose 호출 없이 거절하고, 외부 rawhandle/이름/path/포인터/콜백 입력은 없다. 원Job이 아직 빈지 조회한 뒤 count1의 list와 IntPtr.Size value를 owner gate에서 준비한다. size probe는 expected122·1..64KiB로 제한하며 JOB_LIST=0x2000d/flags0/previousNULL/returnsizeNULL이다. value는 list 삭제까지 유지하고 원Job은 ownerDispose의 list/value회수 후 닫는다. 중복준비 거절은 기존token에 영향을 주지 않는다. 정리실패는 terminal UNKNOWN이며 버퍼가 해제됐다고 선언하거나 같은 native cleanup을 재시도하지 않는다. 최종자는 비상시도일 뿐 확인된정리 증거가 아니다.
+
+현재 interface는 미등록SOURCE·명시Dispose·현재빈Job/버퍼상태의 권위false 관측뿐이다. 실제 STARTUPINFOEX/CreateProcess/스레드 생성/할당/준비채널·프로세스회수는 없다. 미래CreateProcess가 이 private list를 사용하기 전 승인root/image/현재인증준비/actualwriter·생성실패/취소/회수 경계를 완성해야 한다. 최대10초/생성120초는 결과수용한도이며 동기kernel/lock의강제상한·자동정리보장이아니다. OS시험 미래SOURCE는별도승인전호출하지않고 기존D2요청4에도추가하지않는다.
+
+공식 계약: [InitializeProcThreadAttributeList](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-initializeprocthreadattributelist), [UpdateProcThreadAttribute](https://learn.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute). list의 value수명과 size-probe 의미를 SOURCE로 대조했을 뿐 실제 상호운용·컴파일 검증은 아니다.
+
 ## FN06 D1 factory 원 unnamed Job 보유 SOURCE — 2026-10-23
 
 `OwnershipEvidenceJobFactorySource.CreateEmptyJobSource`는 신규 미등록 native SOURCE다. 실제 호출 승인은 포함하지 않는다. 이름/빌린 rawhandle/외부 callback을 받지 않고 `CreateJobObjectW(NULL,NULL)`가 돌려준 private SafeHandle만 소유한다. Owner interface에는 빈 Job 조회/Dispose/local handle close 결과뿐이며 rawhandle 전달·Duplication·프로세스 생성/할당/종료·limit/ACL 변경은 없다. CloseHandle 성공만 local close 확인으로 두며 전역 Job 소멸/전임 writer 회수/새 실행 권한은 아니다. 다른 고권한 프로세스의 handle복제/변조까지 배제한 유일보유 증명으로 쓰지 않는다.
