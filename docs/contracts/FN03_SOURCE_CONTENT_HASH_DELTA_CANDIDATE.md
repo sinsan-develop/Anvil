@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 준비 frame SOURCE**: readSourceContentPreparationFrameCandidate는원scope/digest를고정하고locationframe→전체문서metadata순서로소비한다. 첫음성/오류뒤후속조회·부분후보반환0이며정상도PREPARATION_FRAMES_ONLY/UNVERIFIED·최소ref/분리조회·preparationAuthorized/bodyBytesVerified/current/저장실행LINKfalse다. 이는실제인증/정책·등록키/observer/원문byte·verifier/실행준비권위가아니며route/실DB미연결이다. 새7RED→직접41합성PASS/type/diff0만확인했고Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절은유지한다.
+
 - **2026-10-23 전체targets metadata SOURCE**: readSourceContentTargetDocumentsCandidate는원scope를복사하고각target을원순서판독한다. 첫음성/오류뒤후속조회0·부분후보반환0이며실패index와고정거절상태만보존한다. 전체metadata일치도ALL_DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·분리조회·bodyBytesVerified/current/저장실행LINKfalse로서전체보고/실바이트/OS/권위를대신하지않는다. 새5RED→직접12합성PASS/type/diff0,실제route/DB미연결·기존Minor9/SQL145NOT_RUN/실verifier412·실제제외/거절유지.
 
 - **2026-10-23 target 문서 metadata 판독 SOURCE**: readSourceContentTargetDocumentCandidate는원scope targetIndex의exact확정버전/원metadatahash와content.body ArtifactRef·같은project READY Artifact/격리metadata·보호storagekey/BODY정확1건을대조한다. 4MiB이하row projection만지원하며저장/API한도변경0이다. 정상도DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·bodyBytesVerified/current/저장실행LINKfalse다. 원문/파일읽기·재해시/완전secret탐지·확정receipt/양식/단계진위·현재권위/실DB/route는별도미검증이며새로활성화하지않는다. 합성7RED→GREEN/type/diff0만확인했고Minor9/미래SQL145NOT_RUN·실verifier412/실제제외·거절유지.

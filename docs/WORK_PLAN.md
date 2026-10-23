@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 닫힌 준비 frame SOURCE**: 같은고정scope로location(root→등록)→전체target문서metadata를순서소비하고첫음성뒤전체후보비반환·후속조회0·오류보존을연결했다. 새7RED→직접41PASS/type/diff0은합성frame검증이며준비/byte/current/저장실행LINKfalse·분리조회다. 실제권한/원문/OS/DB/served·사용기능추가0,Minor9/기존실제제외·거절유지·전체계획미완료.
+
 - **2026-10-23 FN03 전체targets metadata SOURCE**: 원target순서소비·첫음성후조회0/부분후보비반환·오류전파를추가했다. 새5RED→직접12PASS/type/diff0이며정상도metadata후보·byte/current/저장실행LINKfalse/분리조회다. 실제DB/원문·관측/served증거0·Minor9와기존실제제외/거절유지,전체계획완료아니다.
 
 - **2026-10-23 FN03 문서·Artifact 선행 SOURCE**: targetIndex 한건의 exact확정버전/원문서metadatahash·content.body ArtifactRef·격리/보호저장key/BODY연결을 대조하는비활성reader와합성7건을추가했다(RED→GREEN7/type/diff0). 원문bytes·실DB/문서확정권위·양식/단계현재성/served는미검증이고반환bodyBytesVerified/current/저장실행LINKfalse다. 새실사용기능0·Minor9/기존실제제외·거절유지·전체FN03완료아니다.
