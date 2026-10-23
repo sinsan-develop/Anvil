@@ -4,7 +4,7 @@ import {readSourceContentRequestStatusForDeclaredContextCandidate} from './sourc
 import {sourceContentServerIdentityPortCandidate} from './source-content-server-identity.ts';
 import {readSourceContentProjectControlPortCandidate} from './source-content-project-control.ts';
 import {readSourceContentStoredPreparationForDeclaredContextCandidate} from './source-content-stored-preparation.ts';
-import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate,readSourceContentStoredVerificationForDeclaredContextCandidate,readSourceContentStoredManagementScopeForDeclaredContextCandidate} from './source-content-request-record.ts';
+import {readSourceContentStoredReportProofForDeclaredContextCandidate,readSourceContentStoredReportProofWithPolicyForDeclaredContextCandidate,readSourceContentScreenForDeclaredContextCandidate,readSourceContentStoredPolicyLineageForDeclaredContextCandidate,readSourceContentStoredRevokeForDeclaredContextCandidate,readSourceContentStoredVerificationForDeclaredContextCandidate,readSourceContentStoredVerificationAfterReceivedForDeclaredContextCandidate,readSourceContentStoredManagementScopeForDeclaredContextCandidate} from './source-content-request-record.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 /** 서버 보유 값 모양과 구체 판독 후보의 비활성 조합. 실제 인증 생산자/route/DB 실행은 연결하지 않는다.
@@ -93,6 +93,21 @@ export async function readSourceContentVerificationFromServerContextCandidate(db
   storedRequestAuthenticated:false as const,signatureVerified:false as const,bodyBytesVerified:false as const,currentAuthorityVerified:false as const,
   storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
  return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredVerificationForDeclaredContextCandidate(db,c,targetIndex,nowMs),close);
+}
+/** 보유 문맥을 별도 원관측 시각 소비에 조합한다. 실제 인증/서명/current 권위는 추가하지 않는다. */
+export function readSourceContentVerificationAfterReceivedFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,targetIndex:number,nowMs:number){
+ return readSourceContentVerificationAfterReceivedFromServerContextCandidate(db,{
+  readIdentityCandidate:()=>sourceContentServerIdentityPortCandidate(heldIdentity,nowMs),
+  readControlCandidate:readSourceContentProjectControlPortCandidate
+ },basis,targetIndex,nowMs);
+}
+/** 수신시각은 저장 내부에서만 도출하며 caller의 임의 시각을 받지 않는다. */
+export async function readSourceContentVerificationAfterReceivedFromServerContextCandidate(db:ReadClient,sources:unknown,basis:unknown,targetIndex:number,nowMs:number){
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_SERVER_VERIFICATION_INPUT_INVALID');
+ const close=(status:'UNAVAILABLE'|'DENIED',reason:string)=>({status,reason,requestRef:null,observationRef:null,verificationRef:null,targetIndex:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,
+  storedRequestAuthenticated:false as const,signatureVerified:false as const,bodyBytesVerified:false as const,currentAuthorityVerified:false as const,
+  storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const});
+ return readServerContext(db,sources,basis,nowMs,c=>readSourceContentStoredVerificationAfterReceivedForDeclaredContextCandidate(db,c,targetIndex,nowMs),close);
 }
 /** 실제 인증·현재 회수허가가 아닌 기존 보유문맥/구체 control의 SOURCE 조합이다. */
 export function readSourceContentRevokeFromHeldIdentityCandidate(db:ReadClient,heldIdentity:unknown,basis:unknown,payload:unknown,commandId:unknown,nowMs:number){

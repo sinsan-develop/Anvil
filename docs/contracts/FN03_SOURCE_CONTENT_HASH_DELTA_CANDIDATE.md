@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 서버 원관측 시각 소비**: 신규 readSourceContentVerificationAfterReceivedFromServerContextCandidate/FromHeldIdentityCandidate는 caller시각 없이 기존문맥과 저장내부 관측시각 경로를 조합한다. index 선행검사·basis 첫await전복사·fullref/전체보고/target·최신음성/원오류·최소refs/false7·분리조회를 유지한다. 새4 RED→직접146 합성 PASS/typecheck/diff0, 실제auth/verifier/current/DB·held전체성공은 이번 증거가 아니며 기존 공개/head/저장/SQL/route는 변경하지 않았다.
+
 - **2026-10-24 검증 시각 소비**: readLatestSourceContentVerificationAfterReceivedCandidate와 별도 저장 AfterReceived 소비는 기존0040의 verified_at>=원관측received_at에 대응한다. 저장소비는 caller수신시각을 입력받지 않고 기존 원관측에서 도출한다. 동시각은 구조 후보일 뿐 실제 verifier/바이트/current 권위가 아니며 false7를 유지한다. 기존 public head/저장 동작·SQL/route는 보존하고 새경로만 이전양성을 닫으며 최신음성은 보존한다. 새6 RED→직접142 합성 PASS/typecheck/diff0·실제SQL/PG/권위는 미검증이다.
 
 - **2026-10-24 서버 wire 소비**: 신규 readSourceContentManagementScopeWireFromServerContextCandidate/FromHeldIdentityCandidate는 첫 문맥 await 전 중복키·raw크기 검사를 수행해 기존 서버 관리 범위 조합에 전달한다. 기존 구조 함수/공개/SQL/route는 변경하지 않고 원fullref·저장scope/문맥/회수·기한과 원오류/최소refs/false6·분리조회를 보존한다. 새4 RED→직접142 합성 PASS/typecheck/diff0이며 실제 원문producer/current관리권한·DB/서비스를 제공하지 않는다.
