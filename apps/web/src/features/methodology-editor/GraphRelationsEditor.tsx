@@ -17,13 +17,16 @@ export function GraphRelationsEditor({ graph, onChange }: { graph: MethodologyGr
     else delete next.retryPolicy;
     onChange({ ...graph, edges: graph.edges.map(item => item.edgeId === edge.edgeId ? next : item) });
   }
+  function missingNode(value: string) {
+    return value && !graph.nodes.some(node => node.nodeId === value) ? <option value={value} disabled>없는 단계: {value}</option> : null;
+  }
   return <details open><summary>단계 연결·시작/종료·재작업</summary>
-    <label htmlFor={id + '-entry'}>시작 단계</label><select id={id + '-entry'} value={graph.entryNodeId} onChange={event => onChange({ ...graph, entryNodeId: event.target.value })}><option value="">미지정</option>{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
+    <label htmlFor={id + '-entry'}>시작 단계</label><select id={id + '-entry'} value={graph.entryNodeId} onChange={event => onChange({ ...graph, entryNodeId: event.target.value })}><option value="">미지정</option>{missingNode(graph.entryNodeId)}{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
     <div>{graph.nodes.map(node => <label key={node.nodeId}><input type="checkbox" checked={graph.terminalNodeIds.includes(node.nodeId)} onChange={event => onChange({ ...graph, terminalNodeIds: event.target.checked ? [...graph.terminalNodeIds, node.nodeId] : graph.terminalNodeIds.filter(value => value !== node.nodeId) })} />{node.name || node.nodeId} 종료 단계</label>)}</div>
     <button disabled={!graph.nodes.length} onClick={add}>단계 연결 추가</button>
     {graph.edges.length ? <><label htmlFor={id + '-edge'}>편집할 연결</label><select id={id + '-edge'} value={edge?.edgeId ?? ''} onChange={event => setSelectedId(event.target.value)}>{graph.edges.map(value => <option key={value.edgeId} value={value.edgeId}>{value.edgeId}: {value.fromNodeId} → {value.toNodeId}</option>)}</select></> : <p>연결이 없습니다. 단계가 여러 개면 필요한 순서·조건을 연결하세요.</p>}
-    {edge ? <div className="graph-fields"><label htmlFor={id + '-from'}>연결 출발 단계</label><select id={id + '-from'} value={edge.fromNodeId} onChange={event => patchEdge({ fromNodeId: event.target.value })}>{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
-      <label htmlFor={id + '-to'}>연결 도착 단계</label><select id={id + '-to'} value={edge.toNodeId} onChange={event => patchEdge({ toNodeId: event.target.value })}>{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
+    {edge ? <div className="graph-fields"><label htmlFor={id + '-from'}>연결 출발 단계</label><select id={id + '-from'} value={edge.fromNodeId} onChange={event => patchEdge({ fromNodeId: event.target.value })}><option value="">미지정</option>{missingNode(edge.fromNodeId)}{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
+      <label htmlFor={id + '-to'}>연결 도착 단계</label><select id={id + '-to'} value={edge.toNodeId} onChange={event => patchEdge({ toNodeId: event.target.value })}><option value="">미지정</option>{missingNode(edge.toNodeId)}{graph.nodes.map(node => <option key={node.nodeId} value={node.nodeId}>{node.name || node.nodeId}</option>)}</select>
       <label htmlFor={id + '-kind'}>연결 유형</label><select id={id + '-kind'} value={edge.kind} onChange={event => kind(event.target.value as MethodologyEdge['kind'])}><option value="SEQUENCE">순서</option><option value="BRANCH">조건 분기</option><option value="JOIN">합류 연결</option><option value="REWORK">재작업·반복</option></select>
       <label htmlFor={id + '-reason'}>연결 이유</label><textarea id={id + '-reason'} value={edge.reason} onChange={event => patchEdge({ reason: event.target.value })} />
       <ConditionEditor nodes={graph.nodes} value={edge.condition} label="연결 조건" onChange={condition => patchEdge({ condition })} />
