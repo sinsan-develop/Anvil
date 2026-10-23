@@ -1,0 +1,37 @@
+-- 실행하지 않은 미래 PG15 반례 SOURCE. 실제 승인/격리 QA 준비 전 실행하지 않는다.
+-- 0040 pending 적용·아래 ASSERT 실행·RED/GREEN/PG 호환성은 모두 NOT_RUN이다.
+-- pure SQL helper만 호출하며 사용자/프로젝트/서비스 데이터를 생성하지 않는다. 미래 실행은 transaction ROLLBACK.
+BEGIN;
+DO $$
+DECLARE s jsonb;r jsonb;t jsonb;other jsonb;l jsonb;
+BEGIN
+ r=jsonb_build_object('id','73000000-0000-4000-8000-000000000001','version',1,'contentHash',repeat('a',64));
+ t=jsonb_build_object('relativePath','src/a.ts','documentRef',r,'documentBlobRef',jsonb_build_object('artifactId','73000000-0000-4000-8000-000000000005','bytes',0,'contentHash',repeat('b',64),'mediaType','text/plain'));
+ l='{"maxFiles":200,"maxFileBytes":2097152,"maxTotalBytes":20971520,"maxObservationMs":30000,"maxReportBytes":1048576}'::jsonb;
+ s=jsonb_build_object('protocolVersion',1,'purpose','SOURCE_DOCUMENT_CONTENT_HASH','installationId','73000000-0000-4000-8000-000000000002',
+  'projectId','73000000-0000-4000-8000-000000000003','sourceRootRef',r,'connectorRef',r,'registrationRef',r,'observerRef',r,
+  'hostFingerprint',repeat('c',64),'pathHintHash',repeat('d',64),'userId','73000000-0000-4000-8000-000000000004','clientId','73000000-0000-4000-8000-000000000005',
+  'credentialGeneration',2,'controlGeneration',3,'basePolicyRef',r,'contentPolicyRef',r,'targets',jsonb_build_array(t),'limits',l,
+  'requestedAt','2026-10-23T14:00:00.000Z','expiresAt','2026-10-23T14:10:00.000Z','reason','미실행 합성 SQL');
+ ASSERT anvil.source_content_scope_shape(s) IS TRUE,'SOURCE_SCOPE_VALID_EMPTY_BYTES';
+ ASSERT anvil.source_content_scope_shape(s||'{"verified":true}') IS FALSE,'SOURCE_SCOPE_EXTRA_AUTHORITY';
+ ASSERT anvil.source_content_scope_shape(s-'basePolicyRef') IS FALSE,'SOURCE_SCOPE_MISSING_KEY';
+ ASSERT anvil.source_content_scope_shape(s||'{"purpose":"SOURCE_READ_OBSERVATION"}') IS FALSE,'SOURCE_SCOPE_OLD_PURPOSE';
+ ASSERT anvil.source_content_scope_shape(s||'{"credentialGeneration":1.1}') IS FALSE,'SOURCE_SCOPE_FRACTION';
+ ASSERT anvil.source_content_scope_shape(s||'{"controlGeneration":9007199254740992}') IS FALSE,'SOURCE_SCOPE_UNSAFE_INTEGER';
+ ASSERT anvil.source_content_scope_shape(s||'{"expiresAt":"2026-10-23T14:10:00.001Z"}') IS FALSE,'SOURCE_SCOPE_TTL';
+ ASSERT anvil.source_content_scope_shape(s||'{"requestedAt":"2026-02-30T14:00:00.000Z"}') IS FALSE,'SOURCE_SCOPE_INVALID_DATE';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('reason',chr(160)||chr(65279))) IS FALSE,'SOURCE_SCOPE_JS_BLANK';
+ ASSERT anvil.source_content_scope_shape(s||'{"targets":[]}') IS FALSE,'SOURCE_SCOPE_EMPTY_TARGETS';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('limits',l||'{"maxReportBytes":1048577}')) IS FALSE,'SOURCE_SCOPE_LIMIT_CAP';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('limits',l||'{"maxFiles":true}')) IS FALSE,'SOURCE_SCOPE_LIMIT_TYPE';
+ other=jsonb_set(t,'{documentRef,id}','"73000000-0000-4000-8000-000000000006"');
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(t,jsonb_set(other,'{relativePath}','"SRC/A.TS"')))) IS FALSE,'SOURCE_SCOPE_CASE_ALIAS';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(t,jsonb_set(t,'{relativePath}','"src/b.ts"')))) IS FALSE,'SOURCE_SCOPE_DOCUMENT_DUPLICATE';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(jsonb_set(t,'{relativePath}','"../a.ts"')))) IS FALSE,'SOURCE_SCOPE_ESCAPE';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(jsonb_set(t,'{documentBlobRef,bytes}','-1')))) IS FALSE,'SOURCE_SCOPE_NEGATIVE_BYTES';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(jsonb_set(t,'{documentBlobRef,bytes}','2097153')))) IS FALSE,'SOURCE_SCOPE_FILE_BYTES';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(jsonb_set(t,'{documentBlobRef,bytes}','2')),'limits',l||'{"maxTotalBytes":1}')) IS FALSE,'SOURCE_SCOPE_TOTAL_BYTES';
+ ASSERT anvil.source_content_scope_shape(s||jsonb_build_object('targets',jsonb_build_array(jsonb_set(t,'{documentBlobRef,mediaType}',to_jsonb(chr(160)))))) IS FALSE,'SOURCE_SCOPE_MEDIA_BLANK';
+END;$$;
+ROLLBACK;

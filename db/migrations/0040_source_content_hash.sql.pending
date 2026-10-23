@@ -27,6 +27,68 @@ CREATE TABLE anvil.source_content_policy_events (
 CREATE INDEX source_content_policy_latest ON anvil.source_content_policy_events(project_id,sequence DESC);
 -- 최신 회수·만료를 제외해 과거 AUTO로 돌아가지 않는다. 현재 관리허가/이전 sequence+1/CAS는 후속 guard이며 지금은 전 DML 거절이다.
 
+-- JavaScript trim의 공백 집합으로 비어 있는 문자열을 거절한다. locale별 SQL trim/공백 정의로 대체하지 않는다.
+CREATE FUNCTION anvil.source_content_nonblank(v text) RETURNS boolean LANGUAGE sql IMMUTABLE STRICT AS $$
+ SELECT length(translate(v,E' \t\n\r\f'||chr(11)||chr(160)||chr(5760)
+  ||chr(8192)||chr(8193)||chr(8194)||chr(8195)||chr(8196)||chr(8197)||chr(8198)||chr(8199)||chr(8200)||chr(8201)||chr(8202)
+  ||chr(8232)||chr(8233)||chr(8239)||chr(8287)||chr(12288)||chr(65279),''))>0;
+$$;
+-- 기존 v1/A3의 순수 문법 helper만 사용한다. 기존 observation scope/목적/정책/권한은 사용하지 않는다.
+CREATE FUNCTION anvil.source_content_scope_shape(v jsonb) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE k text;item jsonb;b jsonb;l jsonb;bytes numeric;total numeric=0;path text;folded text;
+ seen_paths text[]='{}';seen_documents text[]='{}';start_at timestamptz;end_at timestamptz;
+ caps jsonb='{"maxFiles":200,"maxFileBytes":2097152,"maxTotalBytes":20971520,"maxObservationMs":30000,"maxReportBytes":1048576}'::jsonb;
+BEGIN
+ IF anvil.source_read_exact(v,ARRAY['protocolVersion','purpose','installationId','projectId','sourceRootRef','connectorRef','registrationRef','observerRef','hostFingerprint','pathHintHash','userId','clientId','credentialGeneration','controlGeneration','basePolicyRef','contentPolicyRef','targets','limits','requestedAt','expiresAt','reason']) IS NOT TRUE
+  OR octet_length(anvil.source_read_canonical_json(v))>1048576 OR v->'protocolVersion' IS DISTINCT FROM '1'::jsonb
+  OR v->'purpose' IS DISTINCT FROM '"SOURCE_DOCUMENT_CONTENT_HASH"'::jsonb THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['installationId','projectId','userId','clientId'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string' OR (v->>k)!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RETURN false;END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['sourceRootRef','connectorRef','registrationRef','observerRef','basePolicyRef','contentPolicyRef'] LOOP
+  IF anvil.source_read_ref(v->k) IS NOT TRUE THEN RETURN false;END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['hostFingerprint','pathHintHash'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string' OR (v->>k)!~'^[0-9a-f]{64}$' THEN RETURN false;END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['credentialGeneration','controlGeneration'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'number' OR (v->>k)::numeric NOT BETWEEN 1 AND 9007199254740991
+   OR (v->>k)::numeric<>trunc((v->>k)::numeric) THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(v->'reason') IS DISTINCT FROM 'string' OR anvil.source_content_nonblank(v->>'reason') IS NOT TRUE
+  OR anvil.source_read_utf16_length(v->>'reason')>20000 OR regexp_replace(v->>'reason',E'[\t\n\r]','','g') COLLATE "C" ~ '[[:cntrl:]]' THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['requestedAt','expiresAt'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string' OR (v->>k)!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$'
+   OR anvil.source_read_iso((v->>k)::timestamptz) IS DISTINCT FROM v->>k THEN RETURN false;END IF;
+ END LOOP;
+ start_at=(v->>'requestedAt')::timestamptz;end_at=(v->>'expiresAt')::timestamptz;
+ IF NOT isfinite(start_at) OR NOT isfinite(end_at) OR end_at<=start_at OR end_at>start_at+interval '10 minutes' THEN RETURN false;END IF;
+ l=v->'limits';
+ IF anvil.source_read_exact(l,ARRAY['maxFiles','maxFileBytes','maxTotalBytes','maxObservationMs','maxReportBytes']) IS NOT TRUE THEN RETURN false;END IF;
+ FOR k IN SELECT jsonb_object_keys(caps) LOOP
+  IF jsonb_typeof(l->k) IS DISTINCT FROM 'number' OR (l->>k)::numeric<=0 OR (l->>k)::numeric>(caps->>k)::numeric
+   OR (l->>k)::numeric<>trunc((l->>k)::numeric) THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(v->'targets') IS DISTINCT FROM 'array' OR jsonb_array_length(v->'targets') NOT BETWEEN 1 AND 200
+  OR jsonb_array_length(v->'targets')>(l->>'maxFiles')::integer THEN RETURN false;END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(v->'targets') LOOP
+  IF anvil.source_read_exact(item,ARRAY['relativePath','documentRef','documentBlobRef']) IS NOT TRUE OR jsonb_typeof(item->'relativePath') IS DISTINCT FROM 'string'
+   OR anvil.source_read_ref(item->'documentRef') IS NOT TRUE THEN RETURN false;END IF;
+  path=item->>'relativePath';folded=anvil.source_read_uppercase_v1(path);
+  IF anvil.source_read_relative_file(path) IS NOT TRUE OR folded COLLATE "C"=ANY(seen_paths) OR item->'documentRef'->>'id'=ANY(seen_documents) THEN RETURN false;END IF;
+  seen_paths=array_append(seen_paths,folded);seen_documents=array_append(seen_documents,item->'documentRef'->>'id');b=item->'documentBlobRef';
+  IF anvil.source_read_exact(b,ARRAY['artifactId','bytes','contentHash','mediaType']) IS NOT TRUE OR jsonb_typeof(b->'artifactId') IS DISTINCT FROM 'string'
+   OR (b->>'artifactId')!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+   OR jsonb_typeof(b->'bytes') IS DISTINCT FROM 'number' OR jsonb_typeof(b->'contentHash') IS DISTINCT FROM 'string' OR (b->>'contentHash')!~'^[0-9a-f]{64}$'
+   OR jsonb_typeof(b->'mediaType') IS DISTINCT FROM 'string' OR anvil.source_content_nonblank(b->>'mediaType') IS NOT TRUE
+   OR anvil.source_read_utf16_length(b->>'mediaType')>200 OR (b->>'mediaType') COLLATE "C" ~ '[[:cntrl:]]' THEN RETURN false;END IF;
+  bytes=(b->>'bytes')::numeric;total=total+bytes;
+  IF bytes<0 OR bytes<>trunc(bytes) OR bytes>(l->>'maxFileBytes')::numeric OR total>(l->>'maxTotalBytes')::numeric THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 CREATE TABLE anvil.source_content_requests (
  project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),
  scope_json jsonb NOT NULL,scope_digest text NOT NULL CHECK(scope_digest~'^[0-9a-f]{64}$'),
@@ -52,6 +114,7 @@ CREATE TABLE anvil.source_content_requests (
  FOREIGN KEY(project_id,source_root_id,source_root_version) REFERENCES anvil.source_root_versions(project_id,root_id,version),
  FOREIGN KEY(project_id,connector_id) REFERENCES anvil.connectors(project_id,id),FOREIGN KEY(project_id,registration_id) REFERENCES anvil.connector_registrations(project_id,id),
  FOREIGN KEY(project_id,content_policy_id,content_policy_version,content_policy_hash) REFERENCES anvil.source_content_policy_events(project_id,id,version,content_hash),
+ CONSTRAINT source_content_request_scope_shape CHECK(anvil.source_content_scope_shape(scope_json) IS TRUE),
  CHECK((jsonb_typeof(scope_json)='object' AND octet_length(anvil.source_read_canonical_json(scope_json))<=1048576
   AND scope_digest=anvil.source_read_hash(scope_json) AND scope_json->'protocolVersion'='1'::jsonb
   AND scope_json->>'purpose'='SOURCE_DOCUMENT_CONTENT_HASH' AND scope_json->>'projectId'=project_id::text

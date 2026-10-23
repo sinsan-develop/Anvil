@@ -147,6 +147,10 @@ B(격리형) 후보4표:
 
 ### 저장 SOURCE 중간 구현 기록 — 2026-10-23
 
+후속 미적용0040에는 scope21키의 순수SQL 형태검사를 추가했다. 6개 fullref·UUID/hash/유한정수·5limits·원UTC/ms시각10분·targets/ArtifactRef·바이트상한/총량·문서/경로중복을 검사하고 request CHECK에연결한다. 기존metadata의 exact/ref/UTF16/Windows상대경로/고정NodeUnicode uppercase helper만재사용하며기존purpose·scope/정책허가는재사용하지않는다. JS trim공백집합을명시해비어있는 reason/mediaType를거절한다. 이는실행하지않은SQL source이며19미래ASSERT/실PG구문·제약·상호운용은NOT_RUN이다. 새정적M1은ECMAScript연도0000와PG BC/AD표현의차이이며기본isoV1계약을임의수정하지않고공통지원범위결정/검증미완료로보류한다. 기존생성시각분기·보고크기M1과별개이고동일형태완전호환/PASS를주장하지않는다.
+
+동일계약의 관측nonce는원challenge의client/servernonce와도달라야한다. 기존reader의digest대조만으로는이조건을보장하지못해같은nonce/digest를함께바꾸는반례후명시적비교를추가했다. 이는원계약누락보정이지새nonce발급/현재권위·DB원자소비활성화가아니다. 원실패와보정전결과를보존하고기존보고/permit·생성감사검사는유지한다.
+
 생성 증거의 순수 SOURCE inspector는 expected={scope,requestRef,createdCommandId}와 value={request,command,receipt,audit}를 복사·대조한다. request는 기존 ProjectCommand 11키의 requestSourceContentHash/targetId=null/expectedVersion=0/baselineRefs=[]/approvalRef=null/원8키payload이며 전체 canonical requestHash를 사용한다. commands projection20키는 기존 scope/주체/client·controlGeneration/basePolicy·요청ID/operationID·authorizationReceiptID·APPLIED 결과와 결박한다. 결과10키 data는 exact {ref,status:CONTENT_REQUEST_RECORDED,requestRef,scopeDigest,storedState:CREATED,scope,observationPermit:NOT_ISSUED,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false}이며 evidenceRefs/warnings는 빈 배열이다. 기존 helper의 transaction_timestamp/now 영수증시각은 completedAt와 같고 clock 기반 scope.requestedAt보다 늦을 수 없다.
 
 authorization_receipts projection8키는 같은 PROJECT/command·HUMAN user/client/basePolicy와 기존 scope digest 공식을 대조하고 approvalDecisionRef는null이다. audit projection14키는 동일 project/command/operation/target/basePolicy·actor/client·digest, 양의safe sequence/UUID event와 APPLIED/HUMAN_COMMAND/EXPLICIT_SOURCE_CONTENT_HASH_REQUEST만 수용한다. receipt 존재·hash 일치가 실제 현재 허가나 tamper-proof 서명을 뜻하지 않는다. inspector는 UNVERIFIED_CREATION_EVIDENCE_CANDIDATE/저장·실행·LINK false만 반환한다. content-policy 실제 허용·현재 세션/등록·COMMIT/감사 진위는 별도 미구현이다.

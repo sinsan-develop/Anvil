@@ -70,6 +70,7 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
    const basis={scope:s,requestRef,observationRequestRef:v.observation_request_ref,observationNonce:p.observationNonce,credentialIssuedAt:v.credential_issued_at,credentialExpiresAt:v.credential_expires_at,issuedAt:p.issuedAt,observeBefore:p.observeBefore};
    // 관측 당시 고정 자료만 검사한다. 과거 행 조회를 현재 permit 유효 판정으로 사용하지 않는다.
    permit=readSourceContentPermitV1(p,basis,Date.parse(p.serverNow));
+   if(ch===null||permit.observationNonce===ch.clientNonce||permit.observationNonce===ch.serverNonce)return invalid();
    if(Date.parse(permit.issuedAt)>Date.parse(v.updated_at))return invalid();
   }else if(v.credential_scope!==null)return invalid();
   const o=v.observation;
