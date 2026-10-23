@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN03 최신정책 선행 SOURCE**: 원저장 관리근거와 별도 최신정책계보를 구분해 검증계보 전에 소비한다. 새4 RED→직접155 합성 PASS/typecheck/diff0·정상3조회/정책음성2/관리음성1·false9/분리조회다. 실제DB/현재권위/실화면은 미검증·미활성이고 기존 body/SQL/route를 보존하며 전체계획미완료다.
+
 - **2026-10-24 FN03 서버 관리·계보 연결 SOURCE**: 기존 서버 문맥과 원저장 관리·계보 소비를 별도 연결했다. 새4 RED→직접151 합성 PASS/typecheck/diff0·false9/분리조회다. 정상record1/계보1·held만료0/회수1만 확인했으며 실제 DB/auth/현재권위·전체held성공/화면은 미검증·미활성이다. 기존body/SQL/route를 보존하며 전체계획미완료다.
 
 - **2026-10-24 FN03 원저장 관리·검증계보 SOURCE**: 원저장 내부scope/수신시각과 관리범위를 latest계보 reader에 연결했다. 새4 RED→직접147 합성 PASS/typecheck/diff0·정상record1/계보1·관리음성1·최소refs/false9/분리조회다. 기존head-only 경로·SQL/route를 보존했고 실제DB/현재권위/실화면은 미검증·미활성이며 전체계획미완료다.
