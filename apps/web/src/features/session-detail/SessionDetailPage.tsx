@@ -121,12 +121,16 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
    <details><summary>허용 의도·제외 범위·입출력 원문</summary><h4>포함 범위</h4><ul>{d.included.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>제외 범위</h4><ul>{d.excluded.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>입력</h4><ul>{d.inputs.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>산출물</h4><ul>{d.outputs.map((v,i)=><li key={i}>{v}</li>)}</ul><pre>{JSON.stringify(d.allowedScopes,null,2)}</pre><p>저장된 의도이며 현재 파일 접근·실행 권한은 미확인입니다.</p></details>
   </section>
   <section className="status-card" aria-label="책임 도구와 세션"><h3>책임 역할·예약 세션</h3>
+   {s===null?<><p>책임 역할 미조회 · 역할이 없다는 판정이 아닙니다.</p><p>세션 예약 미조회 · 실제 외부 세션 유무는 미확인입니다.</p></>:<>
    {s?.roles.length?<ul>{s.roles.map(r=><li key={r.ref.id}>{r.snapshot.kind==='COORDINATOR'?'총괄':'단계책임자'} · {r.ref.id} · v{r.ref.version}</li>)}</ul>:<p>확인된 책임 역할 없음</p>}
    {s?.bindings.length?<ul>{s.bindings.map(b=><li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label="도구 연결 후보" value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><Tool detail={detail} reference={b.snapshot.connectionRef}/><p>세대 {b.snapshot.generation} · 후보 연결이며 실제 가동 상태가 아닙니다.</p></li>)}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
+   </>}
    <p>현재 권한·OS 소유·외부 도구 상태 미재검사</p>
   </section>
   <section className="status-card" aria-label="실행 준비 이력"><h3>저장된 실행 준비 이력</h3>
+   {s===null?<p>실행 준비 이력 미조회 · 준비 기록이 없다는 판정이 아닙니다.</p>:<>
    {s?.preparations.length?<ul>{s.preparations.map(p=><li key={p.ref.id}><dl><Reference label="준비 원본" value={p.ref}/></dl><p>{p.snapshot.intent.mode==='WORK'?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p><p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p></li>)}</ul>:<p>확인된 실행 준비 기록 없음</p>}
+   </>}
    {s?.hasMorePreparations?<p>최근 20건만 조회했습니다. 이전 준비 이력은 이 화면에서 미연결입니다.</p>:null}
   </section>
   <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>보관 조회·보고 검토와 미확인 범위</h3><p>제출 변경·명령·시험 보고와 현황 파일 대조·보관 관측/중지 요청 이력은 별도로 명시 조회합니다. 제출자 주장·합성 실행 기록·초안/요청 저장과 실제 수행은 구분합니다. 실제 Agent 수행·증거 출처·쓰기 회수·안전 재개/이전은 미확인입니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>보완 초안/중지 요청 이력이 실제 재작업·중지 확인은 아닙니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>

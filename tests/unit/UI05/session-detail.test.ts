@@ -56,3 +56,16 @@ test('상세화면은고정임무·완료조건과누락증거를표시하고미
  const denied=fixture(true);denied.fault('TOOL_DENIED');const deniedHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:await mod.readSessionDetail(denied.client,pid,denied.draft.ref)}));assert(deniedHtml.includes('도구 후보 원문 미확인'));assert(deniedHtml.includes('ACCESS_DENIED'));assert(!deniedHtml.includes('저장된 도구 후보'));
  }finally{await compiler.close();}
 });
+
+test('내용 미확정의 역할·예약·준비 미조회는 조회한 빈 이력과 구분한다',async()=>{
+ const f=fixture();Object.assign(f.decision,{confirmedRef:null});
+ const detail=await mod.readSessionDetail(f.client,pid,f.draft.ref);assert.equal(detail.state,null);assert.equal(detail.confirmed,null);assert.equal(f.calls.length,2);
+ const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});
+ try{const screen=await compiler.ssrLoadModule('/src/features/session-detail/SessionDetailPage.tsx'),before=structuredClone(detail),html=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));
+  for(const text of ['책임 역할 미조회','세션 예약 미조회','실행 준비 이력 미조회'])assert.ok(html.includes(text),text);
+  for(const text of ['확인된 책임 역할 없음','확인된 세션 예약 없음','확인된 실행 준비 기록 없음'])assert.ok(!html.includes(text),text);
+  assert.deepEqual(detail,before);assert.equal(f.calls.length,2);
+  const observed=fixture(),empty=await mod.readSessionDetail(observed.client,pid,observed.draft.ref),emptyHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:empty}));
+  for(const text of ['확인된 책임 역할 없음','확인된 세션 예약 없음','확인된 실행 준비 기록 없음'])assert.ok(emptyHtml.includes(text),text);
+ }finally{await compiler.close();}
+});
