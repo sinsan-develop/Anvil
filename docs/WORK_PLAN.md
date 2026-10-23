@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 unsigned 관측 SOURCE**: 기존request/report/facts와domain/NUL bytes를재사용해서명없는JSON/base64를조립하는source를구현했다. 신규/인접12합성PASS/type/diff0·한정정적C0/I0/M0이며signature/auth/nativeverified/권한/전송false다. 실제키/nonce소비·관측원출처/OS/Agent연결은미완료, 원native후보의소비선행을이어간다.
+
 - **2026-10-23 FN06 D1 native basis 입력 SOURCE**: 기존server12/32필드를C#기존Basis로검사/복사하는decoder를작성·한정정적C0/I0/M0/diff0만확인했다. 미래반례SOURCE만있고C#compile/RunAll은NOT_RUN이다. decoder는실reader/인증전송이아니며실서버진위/peer·재사용/취소계약과root mapping/원process는여전히미완료다. 기존status-only권한이나등록proof를확장하지않고전체계획미완료/원실패를유지한다.
 
 - **2026-10-23 FN06 D1 준비client 읽기 SOURCE**: 기본미등록/port없음거절·원선택불변·2회profile검사·최소기한/전체budget/취소·늦은결과거절을구현했다. 합성12PASS/type/diff0·한정정적C0/I0/M0이며실제전송/인증·키/DB/native/Agent는없다. port강제중단/실권위로승격하지않고원native입력소비와실인증계약차이를다음선행으로구분한다. 전체기능완료아님.
