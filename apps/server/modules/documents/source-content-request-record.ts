@@ -5,6 +5,7 @@ import {readSourceContentPermitV1,sourceContentReportContextFromPermitV1,type So
 import {readSourceContentReportProofFromPermitCandidate} from '../connections/source-content-report-proof-input.ts';
 import {readSourceContentDeclaredContextCandidate} from './source-content-request-context.ts';
 import {readSourceContentRequestPolicyCandidate} from './source-content-request-policy.ts';
+import {readSourceContentRequestPolicyLineageCandidate} from './source-content-request-policy-lineage.ts';
 import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
@@ -109,6 +110,20 @@ export async function readSourceContentRequestRecordCandidate(db:ReadClient,inst
 }
 
 const proofFlags={storedRequestAuthenticated:false as const,signatureVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+const storedLineageFlags={storedRequestAuthenticated:false as const,managementEvidenceVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+/** 원요청의 선언 문맥과 인접 정책계보만 결박한다. 기존 정책/표시/proof 경로와 실제 권한은 변경하지 않는다. */
+export async function readSourceContentStoredPolicyLineageForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,policyRef:null,lineage:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...storedLineageFlags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async record=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_POLICY_CONTEXT_MISMATCH');
+  const policy=await readSourceContentRequestPolicyLineageCandidate(db,s,nowMs);
+  return {status:policy.status,reason:policy.reason,requestRef:record.view.requestRef,policyRef:policy.policyRef,lineage:policy.lineage,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...storedLineageFlags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
 const proofClosed=(reason:string)=>({status:'UNAVAILABLE' as const,reason,candidate:null,...proofFlags});
 /** 저장 자료의 과거 결박만 소비한다. 실제 DB·서명/current 권위가 아니며 기본 route 미등록이다. */
 export async function readSourceContentStoredReportProofCandidate(db:ReadClient,value:unknown,nowMs:number) {

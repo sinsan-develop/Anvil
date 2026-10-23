@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 저장요청 정책계보 SOURCE**: 복사된 exact8 선언 문맥·원 request fullref 대조 뒤 저장 scope를 새 정책계보 소비에 전달했다. 원요청/계보 각1조회·음성 보존·원문 비노출·권위 false6/분리조회이며 기존 공개 상태/proof/정책 경로는 유지한다. 새4 RED→직접115 합성 PASS, fixture 타입 표기 정정 후 해당86 PASS/type/diff0. 실제 DB/키/인증/route/served 미활성·Minor11/기존 제외 유지·전체 계획 미완료.
+
 - **2026-10-23 FN03 원scope 정책계보 SOURCE**: 첫await전scope복사·원기한→최신인접계보→exactcontentPolicyRef대조를별도소비한다. 다른project/subject·기한/ref불일치닫힘·최신음성보존/옛positive0·false5, 새4RED+직접음성1→정책29합성PASS/type/diff0다. 기존요청정책/허가와actualDB/route/served무변경·Minor11/기존제외유지·전체계획미완료.
 
 - **2026-10-23 FN03 최신head/계보 SOURCE**: 기존head 최소검사를순수분리하고 최신head고정→인접predecessor LEFT JOIN→inspector 비활성reader를추가했다. 최신음성은prev검사전보존/AUTO만계보대조·옛positive fallback0·최소반환/false5, 새6RED→직접공유118합성/SSR PASS/type/diff0·한정정적C0/I0/M0다. 실제SQL/PG/관리근거·current/정책권한/route0·Minor11/기존제외유지·전체계획미완료.

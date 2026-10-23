@@ -4,6 +4,32 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 const m=await import(new URL('../../../apps/server/modules/documents/source-content-request-record.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 const id=(n:number)=>`70000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const zero=Date.parse('2026-10-23T10:00:00.000Z'),at=(ms:number)=>new Date(zero+ms).toISOString();
+function storedLineage(){assert.equal(typeof m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate,'function','저장 원요청 정책계보 소비 미구현');return m.readSourceContentStoredPolicyLineageForDeclaredContextCandidate;}
+function storedLineageFixture(){
+ const f=policyFixture();const p=structuredClone(f.policy);p.id=id(51);p.sequence=1;p.recorded_at=at(-2000);p.snapshot_json={...p.snapshot_json,sequence:1,recordedAt:p.recorded_at};p.content_hash=contentHash(canonicalJson(p.snapshot_json));
+ const previous={...p,previous_ref:null,management_command_id:id(61)};
+ const current={...f.policy,previous_ref:{id:p.id,version:1,contentHash:p.content_hash},management_command_id:id(62)};
+ return {row:f.row,current,previous};
+}
+test('저장요청 계보는 같은 문맥/복사scope로 record와 최신계보를 각1회 소비하고 원자료를 노출하지 않는다',async()=>{
+ const f=storedLineageFixture(),c=context(f.row);let calls=0;const expected=structuredClone(c.requestRef);
+ const out=await storedLineage()({async query(_sql:string,args:unknown[]){calls++;if(calls===1){c.userId=id(99);return {rows:[f.row]};}assert.deepEqual(args,[id(2)]);f.row.scope_json.reason='외부 원행 변이';return {rows:[{current:f.current,previous:f.previous}]};}},c,zero+5000);
+ assert.equal(calls,2);assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'POLICY_LINEAGE_SHAPE_ONLY');assert.deepEqual(out.requestRef,expected);assert.equal(out.lineage.sequence,2);assert.equal(out.readConsistency,'SEPARATE_READS_NOT_ATOMIC');for(const k of ['storedRequestAuthenticated','managementEvidenceVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[k],false);
+ for(const raw of ['src/a.ts','외부 원행 변이','scope_json','management_command_id','snapshot_json'])assert.equal(JSON.stringify(out).includes(raw),false);
+});
+test('저장요청 계보의 정확ref/주체·세대·base정책 불일치는 정책query 전에 닫힌다',async()=>{
+ for(const patch of [{requestRef:{...ref(13),contentHash:'f'.repeat(64)}},{userId:id(99)},{clientId:id(99)},{credentialGeneration:1},{controlGeneration:2},{basePolicyRef:{...ref(9),contentHash:'f'.repeat(64)}}]){const f=storedLineageFixture();let calls=0;const out=await storedLineage()({async query(){calls++;return {rows:[f.row]};}},{...context(f.row),...patch},zero+5000);assert.equal(calls,1);assert.equal(out.status,'UNAVAILABLE');assert.equal(out.requestRef,null);assert.equal(out.lineage,null);assert.equal(out.linkAuthorized,false);}
+});
+test('저장요청 계보는 최신회수/거절/부재/손상을 보존하고 원기한밖 정책query0을 유지한다',async()=>{
+ for(const kind of ['REVOKED','DENY','ABSENT','BROKEN','EXPIRED','REF_CHANGED']){const f=storedLineageFixture();if(kind==='REVOKED'||kind==='DENY'||kind==='EXPIRED'||kind==='REF_CHANGED'){if(kind==='EXPIRED'){f.current.expires_at=at(4000);f.current.snapshot_json.expiresAt=at(4000);}else if(kind==='REF_CHANGED'){Object.assign(f.current.snapshot_json,{note:'다른 정합 정책'});}else {f.current.disposition=kind;f.current.snapshot_json.disposition=kind;}f.current.content_hash=contentHash(canonicalJson(f.current.snapshot_json));}let calls=0;const out=await storedLineage()({async query(){calls++;return {rows:calls===1?[f.row]:kind==='ABSENT'?[]:[{current:f.current,previous:kind==='BROKEN'?null:f.previous}]};}},context(f.row),zero+5000);assert.equal(calls,2);assert.equal(out.reason,({REVOKED:'POLICY_REVOKED',DENY:'POLICY_DENIED',ABSENT:'POLICY_ABSENT',BROKEN:'POLICY_LINEAGE_UNAVAILABLE',EXPIRED:'POLICY_EXPIRED',REF_CHANGED:'CONTENT_POLICY_REF_CHANGED'} as any)[kind]);assert.equal(out.lineage,null);assert.equal(out.executionAuthorized,false);}
+ const f=storedLineageFixture();let calls=0;const out=await storedLineage()({async query(){calls++;return {rows:[f.row]};}},context(f.row),zero+600000);assert.equal(calls,1);assert.equal(out.reason,'REQUEST_OUTSIDE_ORIGINAL_LIFETIME');
+});
+test('저장요청 계보는 부재/getter와 정책 오류를 숨기지 않는다',async()=>{
+ const f=storedLineageFixture();let calls=0,gets=0;const c=context(f.row);Object.defineProperty(c,'userId',{enumerable:true,get(){gets++;return id(7);}});
+ await assert.rejects(storedLineage()({async query(){calls++;return {rows:[]};}},c,zero+5000),/SOURCE_CONTENT_CONTEXT_INVALID/);assert.equal(calls,0);assert.equal(gets,0);
+ const absent=await storedLineage()({async query(){calls++;return {rows:[]};}},context(f.row),zero+5000);assert.equal(absent.reason,'REQUEST_ABSENT');assert.equal(absent.requestRef,null);assert.equal(calls,1);
+ calls=0;const error=Error('SYNTHETIC_STORED_LINEAGE_QUERY');await assert.rejects(storedLineage()({async query(){calls++;if(calls===1)return {rows:[f.row]};throw error;}},context(f.row),zero+5000),e=>e===error);assert.equal(calls,2);
+});
 function fixture(issued=false,reported=false):any {
  const scope={protocolVersion:1,purpose:'SOURCE_DOCUMENT_CONTENT_HASH',installationId:id(1),projectId:id(2),sourceRootRef:ref(3),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),hostFingerprint:'c'.repeat(64),pathHintHash:contentHash('D:\\Synthetic'),userId:id(7),clientId:id(8),credentialGeneration:2,controlGeneration:3,basePolicyRef:ref(9),contentPolicyRef:ref(10),targets:[{relativePath:'src/a.ts',documentRef:ref(11),documentBlobRef:{artifactId:id(12),bytes:0,contentHash:'b'.repeat(64),mediaType:'text/plain'}}],limits:{maxFiles:200,maxFileBytes:2097152,maxTotalBytes:20971520,maxObservationMs:30000,maxReportBytes:1048576},requestedAt:at(0),expiresAt:at(600000),reason:'합성 저장행'};
  const requestRef={id:id(13),version:1,contentHash:contentHash(canonicalJson(scope))},nonce=Buffer.alloc(32,7).toString('base64url');
