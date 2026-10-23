@@ -83,7 +83,29 @@ origin 요청 시각과 link 기록 시각은 서버 transaction_timestamp를 �
 
 원보완/원임무 head·현재 방법론 적용·역할의 최신 binding을 트랜잭션 시작과 저장 전 다시 확인한다. 이전 Agent/OS writer 종료가 미확인, 같은 단계 실행이 진행 중/UNKNOWN, 또는 안전 회수 근거가 없으면 초안 읽기/보관과 **예약/새 실행 가능 여부를 분리**하고 새 예약/실행을 열지 않는다. 타임아웃은 종료/회수 증명이 아니다. 실제 회수/실행 권위는 FN08/FN13 및 기존 Bv3 미결과 별도다.
 
-한 원보완 fullref에는 최초 후속 초안 한 개만 연결한다. 같은 commandId+정확 body는 같은 영수증을 반환하고 body 변경/다른 ID의 중복 생성을 거절한다. revision/후속 시도는 원연결을 덮지 않으며 이 후보의 자동 개정 범위에 포함하지 않는다. 후속 결과마다 고유 결과/명령을 사용하고 같은 결과 fullref는 한 origin에만 연결한다. command receipt·정책·감사와 연결 원장을 같은 트랜잭션에서 보관하고, 참조/현재성 변경·감사 실패면 전체 rollback한다.
+한 원보완 fullref에는 최초 후속 초안 한 개만 연결한다. 같은 commandId+정확 body의 재확인은 §4.1의 현재 인증/허가 선검사 뒤 원영수증만 반환하고 body 변경/다른 ID의 중복 생성을 거절한다. revision/후속 시도는 원연결을 덮지 않으며 §4.2대로 연결 초안 개정은 미지원이다. 후속 결과마다 고유 결과/명령을 사용하고 같은 결과 fullref는 한 origin에만 연결한다. command receipt·정책·감사와 연결 원장을 같은 트랜잭션에서 보관하고, 참조/현재성 변경·감사 실패면 전체 rollback한다.
+
+### 4.1 공유 잠금·경쟁 변경·replay의 후보 순서
+
+시작/저장 전 두 번 읽기만 해서는 경쟁을 막지 못한다. 채택 시 같은 DB transaction/connection에서 다음 순서를 따르고 COMMIT/ROLLBACK까지 잠금을 유지해야 한다. 한 프로젝트만 처리하며 여러 기존 임무 ID를 잠글 때는 UUID 오름차순이다.
+
+1. 기존 AccessRepository의 현재 인증 u/s/c 잠금을 재사용해 사용자·auth_sessions·client의 활성/credential 세대/만료를 확인한다. 인증을 거치지 않는 store 직접 호출로 우회하지 않는다.
+2. `anvil.projects`의 해당 project row FOR UPDATE → 현재 `project_members` row FOR UPDATE → `project_control` row FOR UPDATE → `permission_policies` head FOR SHARE 순서로 획득한다. 현 projectMember(lock=true)/currentProjectController/currentPolicy의 구조를 재사용하되 **모든 참여 경로가 project 먼저**임을 확인해야 한다.
+3. 원임무/후속 임무의 `assignment_drafts` head를 ID순 FOR UPDATE하고, connection_candidates의 해당 head를 FOR SHARE한다. 새 임무 head가 아직 없을 때는 먼저 잡은 project row가 동일 프로젝트의 삽입/중복 연결을 직렬화한다. current methodology 적용/role binding의 append 및 새 origin/link 중복도 같은 project 잠금에 참여해야 한다.
+4. 현재 actor/client·제어세대·해당 operation의 정책/유효기한을 확인한 **뒤** command replay를 확인한다. 같은 주체·project·commandId/requestHash와 원영수증/원장 정합이 맞으면 원 APPLIED 응답만 반환하고 새 INSERT·예약·실행은 하지 않는다. 이미 저장한 응답을 재확인할 때 과거 원문을 최신 head로 치환하거나 새 현재성/허가 인증을 덧붙이지 않는다. body 다름은 409, 현재 인증/멤버/정책 만료·회수는 원 성공을 반환하지 않고 현재 401/403/412로 거절한다.
+5. 새 명령이면 잠금 안에서 원보완/원임무 head·확정/기준·현재 방법론·역할/최신 binding 및 scope를 읽는다. 저장 직전 같은 잠금 아래 값과 DB clock 기준 인증/정책 기한을 다시 검사하고 정확 삽입·허가영수증·감사 검증을 완료한다. 바뀌거나 읽지 못하면 전체 rollback한다.
+
+참여해야 할 관련 mutation은 프로젝트 보관/멤버·제어권 변경, 정책 개정/회수, 방법론 적용 전환, 원/후속 임무 초안 개정·내용검토/확정, 책임 역할/예약 변경, execution/queue/grant·stop/recovery의 상태 변경, 결과/검수/보완/새 계보 쓰기다. 인증 회수는 기존 u/s/c 잠금을 존중해야 한다. 직접 DML·구버전 서버·관리 script가 이 프로토콜을 우회할 수 있다면 선검사/후검사만으로 안전하다고 하지 않는다.
+
+현재 전체 참여/실제 경쟁은 **미검증**이다. 채택 후 source 경로 목록과 lock 획득 순서·동일 tx 여부를 대조하고 경쟁 반례로 확인하기 전 새 계보 변경 기능은 `REWORK_COORDINATION_UNAVAILABLE`(503/default deny)로 유지한다. 인접 mutation의 참여를 보장하지 못하면 새 계보 생성·확정/예약·제출만 차단하며 일반 개발 전체를 동결하지 않는다. 잠금은 실제 OS writer 종료나 외부 Agent 단절의 증거가 아니다.
+
+### 4.2 고정 초안 개정·검토·확정의 후보 제한
+
+최소 B안에서 origin.successorDraftRef는 새 root 초안 v1에 고정된다. 그 ID로 기존 prepareAssignment를 재호출해 정의·이유·버전 중 하나라도 바꾸는 **모든 개정은** origin 대조 성공 여부와 무관하게 `REWORK_LINEAGE_REVISION_UNSUPPORTED`(412)로 거절한다. origin만 옛 버전에 남긴 채 새 head를 정상 후속으로 소비할 수 없다.
+
+같은 고정 v1의 내용 검토 기록·별도 확정은 허용 후보다. reader/확정 경계는 정확 origin·고정 draftRef/definitionHash·원자료 관계와 현재 정책/방법론을 대조하고, 동일 고정 ref에 대한 **최신 적합 검토가 ACCEPTED일 때만** 별도 확정한다. REWORK/BLOCKED/원자료 변경·접근불가는 확정 거절이며 자동 수정·승인하지 않는다. 확정 snapshot.draftRef는 고정 draftRef와 전체 일치해야 한다. 역할 재예약은 이 확정본에만 별도 명령으로 한다.
+
+수정이 필요한 경우 기존 계보/초안을 보존하고 새로운 원보완 저장본(fullref)에서 별도 후속을 작성한다. 이 최소 후보에는 원보완을 같은 채로 교체·취소/해제·자동 재연결하거나 초안 v2로 승격하는 기능이 없다. UI에는 '이 계보의 후속 초안 수정 미지원 · 기존 기록 보존, 새 보완 요청 필요'를 표시한다. 이는 불편을 숨긴 정상 완료가 아니라 선택 가능한 최소 범위의 명시적 제한이다. 일반 임무의 기존 개정 동작은 유지한다.
 
 ## 5. 현행 소비 delta — 채택 시 필요한 변경점
 
@@ -92,13 +114,42 @@ origin 요청 시각과 link 기록 시각은 서버 transaction_timestamp를 �
 | requestRework/기존 목록·원문 | RESULT_REWORK_DRAFT_STORED·권위false·현재 GET와 기존 hash 불변 | 선택 원보완에서 후속 계보를 **별도** 조회. 초안 저장 영수증은 배정/실행으로 승격 금지 |
 | AssignmentDefinition/child | 현행 정의 hash·parentAssignmentRef·CHILD_DRAFT_ONLY 유지 | 별도 후속 root와 origin 관계를 명시. 일반 child 허용으로 변경하지 않음 |
 | prepareAssignment/확정 reader | 일반 임무의 payload/원문·기존 정상 흐름 유지 | 연결 임무는 생성 명령/영수증과 origin의 정확 draftRef/definitionHash를 함께 읽도록 strict reader 보완. 새 명령을 기존 prepareAssignment로 가장해 기록하지 않음 |
-| 내용 검토·확정 | 검토/별도 확정·정확 버전·최신 적합 검토 유지 | origin 검증 없는 연결 임무의 개정·확정 거절. 기존 명령 경로 모두에서 검사해야 함 |
+| 내용 검토·확정 | 일반 임무의 개정/검토/별도 확정·정확 버전·최신 적합 검토 유지 | 연결 임무 개정은 항상 미지원/거절, 고정 v1의 검토·별도 확정만 §4.2대로 허용 후보. 기존 명령 경로 모두에서 검사 |
 | bindResponsibleSession | 현재 HUMAN 명령, 같은 Anvil 세션 참조/새 세대, RESERVED/CANDIDATE_ONLY 유지 | 연결 임무면 origin·같은 단계/connection/session·현재 세대·안전 조건 재대조. 외부 handle/실 Agent 세션은 여전히 미확인 |
 | submitResult/새 submitReworkResult | 일반 제출의 v1 scope/manifest·원문/기존 조회·출처false 유지 | 연결 임무의 일반 submitResult는 명시 거절. 새 명령에서 origin과 새 결과/link를 원자 저장; reader는 새 명령 영수증도 정확 검증 |
 | UI05/UI08 | 기존 검수/보완·조건 부족·bytes 조회 불변 | 명시 선택·현재성 미확인·계보만 저장/내용확정/예약/제출·검수 상태 분리. 준비/저장/거절/동일명령 재확인 및 이전 기록 보존 |
 | API/허가·감사 | 기존 operation/GET·정책 자료·감사 이력 불변 | 새 두 operation과 별도 계보 조회 제안. 명령의 정책 목적·target/fullref/세대/기한·감사 계약을 채택하고서만 구현 |
 
 후속 초안에 origin을 숨긴 채 일반 root로 반환하거나, reader가 새 command operation을 무시하고 기존 APPLIED로 받아들이는 구현은 금지한다. 조회는 현재 멤버/프로젝트 격리를 재검사하며, 과거 계보의 보존과 **현재 실행 가능** 판정을 분리한다. 원문 불일치/누락은 빈 계보/정상으로 바꾸지 않는다.
+
+### 5.1 후보 API exact 계약 — 현행 API로 제공되지 않음
+
+공통 Ref는 exact `{id,version,contentHash}`(UUID, 양의 safe integer, 소문자 SHA256 64자리)다. origin/link 자체 version과 이 후보의 protocol/schemaVersion은 1이다. 알 수 없는 필드·중복 JSON key·다른 버전은 거절한다. UTF-8 전체 요청/응답은 각각 2MiB 이내, reason은 기존 안전문자 검사/공백제외 1~20000자, 선택/잔여 조건은 각각 최대100개·중복0, definition은 기존 AssignmentDefinition 전체 exact 형식/배열 제한을 그대로 적용한다.
+
+**두 변경 명령:** 기존 same-origin `POST /api/v1/projects/:projectId/commands`의 새 operation 변형이다. 최상위 exact keys는 `schemaVersion,projectId,commandId,clientId,controlGeneration,operation,targetId,expectedVersion,baselineRefs,approvalRef,payload`. schemaVersion=1, expectedVersion=0, baselineRefs=[], approvalRef=null, 현재 clientId/제어세대이며 자동 승인 소비는 없다. policy가 REQUIRE_APPROVAL이면 `REWORK_APPROVAL_NOT_CONNECTED`(412)로 거절한다. 새 operation의 명시 정책이 없으면 default deny다.
+
+| operation | targetId / payload exact keys | 새 변형 data exact keys·고정 상태 |
+| --- | --- | --- |
+| prepareReworkAssignment | targetId=새 draft UUID. payload=`{sourceReworkRef,definition,reason}`. parentAssignmentRef=null/baseRef 입력 없음·v1 신규만. 기존 저장 보완에서 도출한 조건·범위/같은 stage 관계와 definition을 서버가 대조 | `{ref,status,snapshot,originRef}`. ref=새 draftRef, status=REWORK_ASSIGNMENT_DRAFT_STORED, snapshot=기존 exact draft snapshot(ready/executionAuthorized/dispatchPerformed=false), originRef=새 origin fullref |
+| submitReworkResult | targetId=submissionId. payload=`{originRef,successorBindingRef,scope,submissionId,manifest}`. scope exact=`{projectId,assignmentRef,executionRef}`; 새 확정 임무/예약 전체 ref와 현재 세대를 대조. manifest는 기존 결과 제출 exact 형식 | `{ref,status,manifest,originRef,sourceKind,completionAccepted,executionAuthorized,dispatchPerformed}`. ref=manifestRef, status=REWORK_RESULT_SUBMITTED, sourceKind=WORKER_CLAIM, 세 flag=false. 결과/link fullref는 후속 GET에서 검증 |
+
+두 영수증 최상위 exact keys는 기존 persistProjectReceipt의 `operationId,commandId,projectId,status,targetId,version,data,evidenceRefs,warnings,serverReceivedAt`, status=APPLIED/version=1/evidenceRefs=[]/warnings=[]다. targetId/version/data.ref는 §3.3의 draftRef 또는 manifestRef와 일치한다. 새 resultRef/linkRef를 응답 data에 소급 추가하지 않는다. 이번 origin/link를 기록한 command row·authorizationReceiptRef·policyRef·감사는 비노출 관계 metadata로 검증한다. 생성 허가는 현재 actor/client+project+`prepareReworkAssignment`+sourceReworkRef/후속 definition digest, 제출 허가는 별도 `submitReworkResult`+originRef/successorBindingRef/scope 전체를 selector로 대조한다. 현 MaterialRule의 project scope만으로 이 추가 resource 결박이 이미 구현됐다고 하지 않는다.
+
+**두 읽기 경로:** 원문 본문/파일을 새로 수집하지 않는 계보 metadata 조회만 제안한다. 새 command 또는 영수증을 만들지 않는다.
+
+| route | exact 입력 | exact 응답 |
+| --- | --- | --- |
+| `GET /api/v1/projects/:projectId/result-reworks/:reworkId/successor-lineage` | path UUID 두 개, query exact=`{version,contentHash}`; version 문자열 '1', contentHash=선택 원보완의 소문자 hash. 그 외 query/cursor 금지 | `{schemaVersion,projectId,sourceReworkRef,state,origin,observedAt,sourceAssurance,currentExecutionAuthorizationVerified,completionAccepted,formalFailureCounted,executionAuthorized,dispatchPerformed}` |
+| `GET /api/v1/projects/:projectId/results/:resultId/rework-lineage` | 같은 query로 선택한 새 result fullref. 최신/다른 결과로 치환하지 않음 | `{schemaVersion,projectId,followupResultRef,state,link,observedAt,sourceAssurance,currentExecutionAuthorizationVerified,completionAccepted,formalFailureCounted,executionAuthorized,dispatchPerformed}` |
+
+읽기 응답 schemaVersion=1, state=FOUND 또는 NOT_LINKED, sourceAssurance=SERVER_STORED_LINEAGE_ONLY, 마지막 다섯 검증/권위 flag=false, observedAt=서버 UTC ISO 시각이다. FOUND일 때 origin/link는 exact `{ref,snapshot}`이며 snapshot의 exact fields는 §3.1/§3.2의 **ref를 제외한 모든 명시 필드**다. projectId/kind도 snapshot에 들어가고 이번 명령/정책/영수증/감사 metadata는 들어가지 않는다. NOT_LINKED일 때 해당 값은 null이며, 먼저 같은 project·선택 fullref의 원보완/결과가 정상 원문으로 읽혔고 실제 연결이 없을 때만 반환한다. 불완전/변조 원장을 NOT_LINKED로 숨기지 않는다.
+
+- OriginSnapshot의 exact keys는 `kind,projectId,sourceReworkRef,sourceResultRef,sourceReviewRef,sourceCriteriaRef,sourceAssignmentRef,sourceExecutionRef,sourceRoleRef,sourceBindingRef,stageSessionRef,connectionRef,stageRef,sourceTaskRef,selectedCriteriaIds,remainingCriteriaIds,preservedCriteriaIds,sourceScopes,successorDraftRef,definitionHash,requestedBy,requestedAt,linkageStored,contentConfirmed,currentReservationVerified,executionAuthorized,dispatchPerformed,completionAccepted,formalFailureCounted`다. 요청 주체는 exact `{userId,clientId}`이며 kind/flag는 §3.1 고정값이다.
+- LinkSnapshot의 exact keys는 `kind,projectId,originRef,successorConfirmedAssignmentRef,successorBindingRef,bindingGeneration,stageSessionRef,successorExecutionRef,followupResultRef,selectedCriteriaIds,remainingCriteriaIds,recordedBy,recordedAt,sourceKind,transport,evidenceProvenanceVerified,actualTestExecutionVerified,completionAccepted,formalFailureCounted,executionAuthorized,dispatchPerformed`다. 기록 주체는 exact `{userId,clientId}`, sourceKind/transport/flag는 §3.2 고정값이다.
+
+GET의 허가 selector는 현재 인증 actor/client와 해당 project, 첫 경로의 sourceReworkRef 또는 두 번째 경로의 followupResultRef다. 기존 projectMember와 원보완/결과 reader의 현재 접근 검사·RLS를 재사용하고 연결 대상이 모두 같은 project임을 검사한다. 조회용 ProjectCommand를 위조하거나 쓰기 정책/과거 영수증으로 읽기 권한을 대신하지 않는다. 조회에는 write controller 세대를 요구하지 않아 기존 조회 가능한 참여자도 같은 읽기 범위만 볼 수 있다. 인증/멤버·원자료 접근과 관계 검사는 반환 전 다시 확인하며 개인정보·Secret/외부 파일 경로/실행 handle은 추가하지 않는다.
+
+GET는 두 단일 기록만 반환하고 무제한 결과 배열·페이지/cursor를 만들지 않는다. 후속 결과 선택은 origin.successorDraftRef로 기존 임무/결과 목록을 열어 사용자가 원결과를 선택하는 흐름을 재사용한다. 따라서 전체 후속 제출 이력을 한 번에 조회했다고 표시하지 않는다. 입력 형식/unknown key는400, 미인증401, 권한거절403(기존 비노출 원자료는404 유지), 다른project/없는원문/선택hash불일치404, 원장무결성/조정불가503, 크기초과413이다. 오류는 exact `{code}`이며 비밀 없는 대문자 코드만 반환하고 성공/빈 링크로 fallback하지 않는다.
 
 ## 6. 필요한 forward SQL 범위 — SQL 파일 작성/적용 아님
 
@@ -128,7 +179,7 @@ origin 요청 시각과 link 기록 시각은 서버 transaction_timestamp를 �
 
 ## 8. 필요한 정확 결정과 제외
 
-- PMO 검토 대상: A의 기능 부족을 남길지, **B의 두 새 operation·불변 계보/별도 조회·연결 임무의 기존 경로 guard와 위 SQL 범위를 소스/미적용 SQL/합성 검증 후보로 채택할지**. 현재는 문서만이며 B 채택 결정 없음.
+- PMO 검토 대상: A의 기능 부족을 남길지, **B의 두 새 operation·두 단일 계보 GET·불변 계보/연결 임무 guard·공유 잠금 참여·고정 초안 개정 미지원 및 위 SQL 범위를 소스/미적용 SQL/합성 검증 후보로 채택할지**. 현재는 문서만이며 B 채택 결정 없음.
 - B의 후보 이름/계보·원자성 중 수정할 항목은 이 단일 문서에 통합한다. 기존 설계 본문·INTERFACES·WORK_PLAN 승인 범위를 몰래 변경하지 않는다.
 - 실제 DB 적용/권한·정책 부여/현재 서비스 복구·OS writer 회수/외부 Agent 실행·계정/키·비용/Oracle/운영은 제외. 일반 child 확정/실행·자동 기준 변경·합격/실패 집계도 제외한다.
 - 이 미결은 보완 후속 임무/제출 연결에만 적용한다. 이미 승인된 독립 기능을 중단시키는 전체 개발 gate로 사용하지 않는다.
