@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 native basis 입력 SOURCE**: 기존server12/32필드를C#기존Basis로검사/복사하는decoder를작성·한정정적C0/I0/M0/diff0만확인했다. 미래반례SOURCE만있고C#compile/RunAll은NOT_RUN이다. decoder는실reader/인증전송이아니며실서버진위/peer·재사용/취소계약과root mapping/원process는여전히미완료다. 기존status-only권한이나등록proof를확장하지않고전체계획미완료/원실패를유지한다.
+
 - **2026-10-23 FN06 D1 준비client 읽기 SOURCE**: 기본미등록/port없음거절·원선택불변·2회profile검사·최소기한/전체budget/취소·늦은결과거절을구현했다. 합성12PASS/type/diff0·한정정적C0/I0/M0이며실제전송/인증·키/DB/native/Agent는없다. port강제중단/실권위로승격하지않고원native입력소비와실인증계약차이를다음선행으로구분한다. 전체기능완료아님.
 
 - **2026-10-23 FN06 D1 준비profile 실행기 입력 해석**: 기존 server32필드SOURCE의형식/원선택·기한·false권한·미확인목록을대조하는순수consumer를구현했다. 독립C0/I1/M0의배열prototype문제는합성RED→own descriptor복사로보완, 최종신규7+인접10=17합성PASS/type/diff0이다. 실제채널/native reader/서명·실DB/OS/Agent는미연결/미검증이고기존native지적·권위false를유지한다. 원fixture/타입실패는STATUS보존, source입력의native소비선행을계속한다.
