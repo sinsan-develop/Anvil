@@ -22,6 +22,11 @@ export async function readLatestSourceContentPolicyCandidate(db:ReadClient,proje
  if(!uuidV1(projectId)||!uuidV1(subjectUserId)||!Number.isSafeInteger(nowMs))throw Error('SOURCE_CONTENT_POLICY_INPUT_INVALID');
  // 최신 회수·만료·다른 subject를 제외하여 과거 AUTO로 fallback하지 않는다.
  const {rows}=await db.query('SELECT project_id,id,version,sequence,subject_user_id,disposition,recorded_at,expires_at,snapshot_json,content_hash FROM anvil.source_content_policy_events WHERE project_id=$1 ORDER BY sequence DESC LIMIT 1',[projectId]);
+ return inspectSourceContentPolicyHeadCandidate(rows,projectId,subjectUserId,nowMs);
+}
+/** 기존 head의 최소 구조/음성 대조만 재사용한다. 현재 관리권위·전체 정책 검증이 아니다. */
+export function inspectSourceContentPolicyHeadCandidate(rows:unknown,projectId:string,subjectUserId:string,nowMs:number):SourceContentPolicyCandidate {
+ if(!uuidV1(projectId)||!uuidV1(subjectUserId)||!Number.isSafeInteger(nowMs))throw Error('SOURCE_CONTENT_POLICY_INPUT_INVALID');
  if(!arrayV1(rows,1))return result('DENIED','MALFORMED_HEAD');
  if(rows.length===0)return result('UNAVAILABLE','POLICY_ABSENT');
  try {
