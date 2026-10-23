@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 전체targets metadata SOURCE**: readSourceContentTargetDocumentsCandidate는원scope를복사하고각target을원순서판독한다. 첫음성/오류뒤후속조회0·부분후보반환0이며실패index와고정거절상태만보존한다. 전체metadata일치도ALL_DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·분리조회·bodyBytesVerified/current/저장실행LINKfalse로서전체보고/실바이트/OS/권위를대신하지않는다. 새5RED→직접12합성PASS/type/diff0,실제route/DB미연결·기존Minor9/SQL145NOT_RUN/실verifier412·실제제외/거절유지.
+
 - **2026-10-23 target 문서 metadata 판독 SOURCE**: readSourceContentTargetDocumentCandidate는원scope targetIndex의exact확정버전/원metadatahash와content.body ArtifactRef·같은project READY Artifact/격리metadata·보호storagekey/BODY정확1건을대조한다. 4MiB이하row projection만지원하며저장/API한도변경0이다. 정상도DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·bodyBytesVerified/current/저장실행LINKfalse다. 원문/파일읽기·재해시/완전secret탐지·확정receipt/양식/단계진위·현재권위/실DB/route는별도미검증이며새로활성화하지않는다. 합성7RED→GREEN/type/diff0만확인했고Minor9/미래SQL145NOT_RUN·실verifier412/실제제외·거절유지.
 
 - **2026-10-23 위치 frame 조합 SOURCE**: readSourceContentLocationFrameCandidate는 복사된 원scope를 최신root 선언→상태전용등록 판독에 순서 전달한다. 선행음성이면 후속조회 없이 고정status/reason·candidate null, 정상도 LOCATION_FRAMES_ONLY/UNVERIFIED·ref3개/분리조회·권위/저장/실행/LINK false다. 현재등록키/서명/observer·인증/current정책/DBtransaction/OS 진위는 별도이며 실제route/DB에 미연결이다. 새6RED→직접22합성PASS/type/diff0만 확인, 기존Minor9/미래SQL145NOT_RUN·실verifier412·실제실행제외/거절 유지.

@@ -4,6 +4,18 @@ import {readSourceContentScopeV1} from '../../../../contracts/runtime/source-con
 import {readStageNodeRef} from './document-stage.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
+/** 전체 target의 metadata 준비 후보만 묶는다. 하나라도 닫히면 앞선 후보를 폐기하고 후속 조회를 하지 않는다.
+ * 분리 SELECT들의 조합이며 원문 byte 검증·원자 snapshot이나 실행/LINK 허가가 아니다. */
+export async function readSourceContentTargetDocumentsCandidate(db:ReadClient,value:unknown,nowMs:number){
+ if(!Number.isSafeInteger(nowMs))throw Error('SOURCE_CONTENT_DOCUMENT_INPUT_INVALID');
+ const scope=readSourceContentScopeV1(value),targets=[];
+ for(let i=0;i<scope.targets.length;i++){
+  const current=await readSourceContentTargetDocumentCandidate(db,scope,i,nowMs);
+  if(current.status!=='UNVERIFIED')return {...current,failedTargetIndex:i,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+  const t=scope.targets[i]!;targets.push({targetIndex:i,documentRef:{...t.documentRef},documentBlobRef:{...t.documentBlobRef}});
+ }
+ return {...result('UNVERIFIED','ALL_DOCUMENT_ARTIFACT_METADATA_ONLY',{targets}),failedTargetIndex:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+}
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const integer=(v:unknown,min=1):number|null=>{if(typeof v==='string'&&/^(0|[1-9][0-9]*)$/.test(v))v=Number(v);return typeof v==='number'&&Number.isSafeInteger(v)&&v>=min?v:null;};
 const result=(status:'UNVERIFIED'|'UNAVAILABLE'|'DENIED',reason:string,candidate:unknown=null)=>({status,reason,candidate,
