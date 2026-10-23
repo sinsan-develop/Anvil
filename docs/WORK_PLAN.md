@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 원 image/root 보유**: private 원 handle/read-only stream·기존관측소비·직렬화/역순처분 SOURCE를 작성했고 한정독립정적C0/I0/M0·Main diff0만 확인했다. 경로힌트≠승인mapping이며 실제compile/RunAll/파일/OS·권한/Agent/정리확인은NOT_RUN, 기존image/worker지적 해소판정0이다. 다음은 startup 원owner형 소비연결 SOURCE다.
+
 - **2026-10-23 FN06 D1 image/root·worker 후보 대조**: 보유 image의 전후 위치와 바이트 후보를 동일 stream handle에 묶어 workerHash/identity/path/관측순서·기한을 비교하는 미등록 source를 추가했다. 원보유 factory·승인 root mapping·현재 인증/actual writer는 미완료이며 소스 후보를 실제 실행권한으로 쓰지 않는다. 미래 반례 SOURCE만 작성·compile/RunAll/OS/Agent NOT_RUN, 기존 worker 결박후 만료 M1·D2 단발실패/소진과 보호자료는 유지한다.
 
 - **2026-10-23 FN06 D1 worker 입력결박 SOURCE**: 원32필드sourceplan을정확3인자/짧은기한으로고정하고startup1회결박·현재조회/Arguments기한검사를연결했다. 한정정적C0/I0/M1·diff0이며M1(정상생성·결박후만료거절미래시험누락)은native소비검수전필수후속으로남긴다. compile/RunAll/OS/Agent/현재인증·image/root권위는미검증/권한false, 전체계획미완료다.
