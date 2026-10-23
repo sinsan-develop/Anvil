@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 저장요청 준비 SOURCE**: readSourceContentStoredPreparationCandidate는basis exact3의requestv1fullref를고정해기존저장reader의복사scope를소비한다. requestfullref/open상태를정책조회전에대조하고최신정책음성은후속준비조회없이닫으며정상도STORED_PREPARATION_FRAMES_ONLY/UNVERIFIED·분리조회·storedRequestAuthenticated/준비/byte/current/저장실행LINKfalse다. 이력reader의terminal보존은유지하되신규준비후보만CREATED/CHALLENGED/ISSUED에서진행한다. 실제인증/current정책·등록키/observer·원문/OS/verifier·DB/route권위는아니다. 새7RED→직접100합성PASS/type/diff0,Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절유지.
+
 - **2026-10-23 준비 frame SOURCE**: readSourceContentPreparationFrameCandidate는원scope/digest를고정하고locationframe→전체문서metadata순서로소비한다. 첫음성/오류뒤후속조회·부분후보반환0이며정상도PREPARATION_FRAMES_ONLY/UNVERIFIED·최소ref/분리조회·preparationAuthorized/bodyBytesVerified/current/저장실행LINKfalse다. 이는실제인증/정책·등록키/observer/원문byte·verifier/실행준비권위가아니며route/실DB미연결이다. 새7RED→직접41합성PASS/type/diff0만확인했고Minor9/SQL145NOT_RUN·실verifier412·실제제외/거절은유지한다.
 
 - **2026-10-23 전체targets metadata SOURCE**: readSourceContentTargetDocumentsCandidate는원scope를복사하고각target을원순서판독한다. 첫음성/오류뒤후속조회0·부분후보반환0이며실패index와고정거절상태만보존한다. 전체metadata일치도ALL_DOCUMENT_ARTIFACT_METADATA_ONLY/UNVERIFIED·분리조회·bodyBytesVerified/current/저장실행LINKfalse로서전체보고/실바이트/OS/권위를대신하지않는다. 새5RED→직접12합성PASS/type/diff0,실제route/DB미연결·기존Minor9/SQL145NOT_RUN/실verifier412·실제제외/거절유지.
