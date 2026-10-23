@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 원 permit proof 소비 SOURCE**: readSourceContentReportProofFromPermitCandidate는 기존 sourceContentReportContextFromPermitV1의 원 요청/scope/관측 ref·nonce/기한 대조를 먼저 소비하고 그 결과만 비활성 보고 서명 입력에 전달한다. 신규 연결은 임의 report context를 받지 않고 불일치 때 보고 소비0으로 닫는다. 선언 permit 인증/실서명/current/저장/실행/LINK false이며 원 저장행 진위·nonce소비·키/DB/OS/route 활성화는 포함하지 않는다. 새3 RED→직접40 합성 PASS/type/diff0·실verifier412/Minor9/기존제외 유지.
+
 - **2026-10-23 서명 입력 준비 SOURCE**: readSourceContentPreflightProofInputCandidate/readSourceContentChallengeProofInputCandidate는 exact2 envelope를 복사하고 canonical 64바이트 서명 형태와 기존 content 교환 codec을 소비한다. readSourceContentReportProofInputCandidate는 context를 고정하고 원 보고 codec/hash 대조 후 새 보고 domain bytes를 소비한다. 반환은 비활성 입력 후보뿐이며 SIGNATURE_VERIFIER_UNAVAILABLE/UNVERIFIED·signature/current/실행/LINK false다. 키 조회/사용·서명 진위·nonce 소비·권한/route 활성화0, 새7 RED→직접29 합성 PASS/type/diff0. 기존 metadata 서명 목적/검증을 재사용하지 않으며 실 verifier 부재412와 Minor9/실제제외 유지.
 
 - **2026-10-23 보유identity 준비 SOURCE**: readSourceContentPreparationFromHeldIdentityCandidate는기존identity순수포트/구체control포트만신규서버문맥준비에연결한다. 실제authenticate/session·키/DB/서명/observer/OS를호출하거나인증/준비권위를만들지않고모든권위false/분리조회다. 새5RED→직접142합성/SSR PASS/type/diff0·한정독립C0/I0/M0,Minor9/SQL145NOT_RUN·실verifier412·실제실행제외/거절유지.

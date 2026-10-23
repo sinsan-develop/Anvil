@@ -1,4 +1,5 @@
 import {canonicalJson} from '../../../../contracts/canonical.ts';
+import {sourceContentReportContextFromPermitV1} from '../../../../contracts/runtime/source-content-permit-v1.ts';
 import {
  readSourceContentReportV1,sourceContentReportProofBytesV1,type SourceContentReportContextV1
 } from '../../../../contracts/runtime/source-content-report-v1.ts';
@@ -15,4 +16,10 @@ export function readSourceContentReportProofInputCandidate(value:unknown,context
   signatureVerified:false as const,currentAuthorityVerified:false as const,
   executionAuthorized:false as const,linkAuthorized:false as const
  };
+}
+
+/** 원자료 선언의 결박만 소비한다. 실제 저장 permit 인증·nonce 소비·서명 검증은 하지 않는다. */
+export function readSourceContentReportProofFromPermitCandidate(value:unknown,permit:unknown,expected:unknown,receivedAt:string) {
+ const context=sourceContentReportContextFromPermitV1(permit,expected,receivedAt);
+ return {...readSourceContentReportProofInputCandidate(value,context),permitAuthenticated:false as const,storageMutationPerformed:false as const};
 }

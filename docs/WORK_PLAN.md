@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN03 요청·관측 proof 소비 SOURCE**: 원 permit/expected basis→보고 context→비활성 서명 입력 순서로 연결했다. ref/scope/nonce/기한 불일치의 보고 소비 전 거절과 정상 권위/저장 false를 새3 RED→직접40 합성 PASS/type/diff0으로 확인했다. 실제 저장권위·키/서명·DB/OS/route는 연결하지 않았고 새실사용기능0/Minor9·기존제외 유지·전체계획미완료.
+
 - **2026-10-23 FN03 서명 입력 준비 SOURCE**: content 전용 preflight/challenge/관측 보고의 canonical proof bytes·64바이트 서명 입력 준비를 추가했다. 실제 검증기·등록키·DB/OS/route를 활성화하지 않았고 모든 권위 false/UNVERIFIED다. 새7 RED→직접29 합성 PASS/type/diff0은 실제 서명/현재권한·served 증거가 아니다. 실사용 기능 추가0·Minor9/기존 제외와 거절 유지·전체계획 미완료.
 
 - **2026-10-23 FN03 보유값/구체control 준비 SOURCE**: 기존identity순수투영·구체control포트를신규문맥준비에명시조합했다. 새5RED→직접142PASS/type/diff0·독립C0/I0/M0이며정상6조회·만료/회수/옛세대·다른기준정책거절을합성확인했다. 실제인증/DB/current/키/원문/OS/served와구분·권위false/분리조회·Minor9·기존실제제외/거절유지·전체계획미완료.

@@ -21,6 +21,31 @@ function badReport(v:unknown,c:unknown){assert.throws(()=>fn('readSourceContentR
 
 const proofConsumer=await import(new URL('../../../apps/server/modules/connections/source-content-report-proof-input.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 function reportInput(){assert.equal(typeof proofConsumer.readSourceContentReportProofInputCandidate,'function','보고 서명 입력 소비 미구현');return proofConsumer.readSourceContentReportProofInputCandidate;}
+function fromPermit(){assert.equal(typeof proofConsumer.readSourceContentReportProofFromPermitCandidate,'function','원 요청/관측 ref의 proof 소비 연결 미구현');return proofConsumer.readSourceContentReportProofFromPermitCandidate;}
+function permitFixture(){
+ const f=fixture(),c=f.context;
+ const expected={scope:f.scope,requestRef:c.requestRef,observationRequestRef:c.observationRequestRef,observationNonce:c.observationNonce,credentialIssuedAt:c.issuedAt,credentialExpiresAt:c.observeBefore,issuedAt:c.issuedAt,observeBefore:c.observeBefore};
+ const permit={protocolVersion:1,purpose:'SOURCE_CONTENT_PERMIT',scope:f.scope,requestRef:c.requestRef,scopeDigest:c.requestRef.contentHash,root:{sourceRootRef:f.scope.sourceRootRef,pathHint:c.declaredPathHint,pathHintHash:f.scope.pathHintHash},credential:{scope:'SOURCE_DOCUMENT_CONTENT_HASH_ONLY',issuedAt:c.issuedAt,expiresAt:c.observeBefore},observationRequestRef:c.observationRequestRef,observationNonce:c.observationNonce,issuedAt:c.issuedAt,observeBefore:c.observeBefore,serverNow:c.issuedAt,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false};
+ return {...f,expected,permit};
+}
+test('원 permit basis의 요청·관측 ref를 proof 입력까지 보존하지만 저장·권위를 열지 않는다',()=>{
+ const f=permitFixture(),out=fromPermit()(f.report,f.permit,f.expected,f.context.receivedAt);
+ const bytes=out.candidate.proofBytes;assert.equal(bytes.subarray(0,Buffer.byteLength('ANVIL_SOURCE_CONTENT_REPORT_V1\0')).toString(),'ANVIL_SOURCE_CONTENT_REPORT_V1\0');
+ const proof=JSON.parse(bytes.subarray(Buffer.byteLength('ANVIL_SOURCE_CONTENT_REPORT_V1\0')).toString());
+ assert.deepEqual(proof.requestRef,f.context.requestRef);assert.deepEqual(proof.observationRequestRef,ref(14));assert.equal(proof.observationNonce,f.context.observationNonce);assert.equal(proof.reportHash,f.report.reportHash);
+ for(const key of ['permitAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'SIGNATURE_VERIFIER_UNAVAILABLE');assert.equal(Object.hasOwn(out,'credential'),false);
+});
+test('원 basis 불일치·만료·추가 권위는 보고를 소비하기 전에 거절한다',()=>{
+ const f=permitFixture(),read=fromPermit();let reportReads=0;
+ const report=new Proxy({},{ownKeys(){reportReads++;throw Error('보고를 먼저 읽으면 안 됨');}});
+ for(const expected of [{...f.expected,requestRef:ref(99)},{...f.expected,observationRequestRef:ref(99)},{...f.expected,observationNonce:Buffer.alloc(32,9).toString('base64url')},{...f.expected,authenticated:true}])assert.throws(()=>read(report,f.permit,expected,f.context.receivedAt),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);
+ assert.throws(()=>read(report,f.permit,f.expected,f.context.observeBefore),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);assert.equal(reportReads,0);
+});
+test('permit과 일치하지 않는 재해시 보고는 서명 입력으로 반환하지 않는다',()=>{
+ const f=permitFixture(),read=fromPermit();
+ for(const patch of [{requestRef:ref(99)},{observationRequestRef:ref(99)},{observationNonce:Buffer.alloc(32,8).toString('base64url')},{scopeDigest:'f'.repeat(64)}])assert.throws(()=>read(rehash({...f.report,...patch}),f.permit,f.expected,f.context.receivedAt),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);
+});
 test('보고 서명 입력은 검증된 보고 hash와 새 domain만 전달하고 진위는 미확인이다',()=>{
  const f=fixture(),out=reportInput()(f.report,f.context);
  const proof={protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT_PROOF',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:f.context.requestRef,scopeDigest:f.context.requestRef.contentHash,observationRequestRef:ref(14),observationNonce:Buffer.alloc(32,7).toString('base64url'),reportHash:f.report.reportHash};
