@@ -3,6 +3,7 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import type {ContextPreparationView} from '../workspace/context-api.ts';
 import {readTransferOriginal} from './transfer-original.ts';
+import {TransferSourceRows} from './TransferSourceRows.ts';
 type Original=NonNullable<Awaited<ReturnType<typeof readTransferOriginal>>>;
 /** 사용자 선택 한 건만 조회하며 metadata와 실제 표시 본문을 구분한다. */
 export function TransferContextOriginals({client,projectId,assignmentRef,context,onUnavailable}:{client:ApiClient;projectId:string;assignmentRef:PlanRef;context:ContextPreparationView;onUnavailable:(error:ApiError)=>void}){
@@ -16,7 +17,7 @@ export function TransferContextOriginals({client,projectId,assignmentRef,context
   finally{if(active()){flight.current=false;setPending(false);}}
  }
  return <section aria-label="인계 맥락 원문 선택"><h3>선택 항목의 실제 원문</h3><p>선택한 항목 한 건만 기존 Anvil 조회로 읽습니다. 새 인계본 저장·외부 전달·현재 지시 효력·안전 재개를 확인하지 않습니다.</p>
-  <ul>{context.manifest.items.map(item=><li key={item.itemId}>{item.category} · {item.includedState}<button type="button" disabled={pending||item.includedState!=='INCLUDED'} onClick={()=>void read(item.itemId)}>인계 항목 원문 {item.itemId}</button></li>)}</ul>
+  <TransferSourceRows items={context.manifest.items} pending={pending} onRead={itemId=>void read(itemId)}/>
   <button type="button" disabled={!pending&&!value&&!error} onClick={clear}>선택 인계 원문 닫기</button>
   {pending?<p role="status">선택 원문 대조 중 · 이전 본문 숨김</p>:null}
   {error?<p role="alert">{error} · 원문 미확인. 다른 버전/자료로 대체하지 않습니다.</p>:null}
