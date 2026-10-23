@@ -109,6 +109,10 @@ localEvidence={kind:NATIVE_CONTENT_HASH_REPORT,observerRef,ownedProcessRef,obser
 
 ### 순수 codec 상세화 기록 — 2026-10-23 Main 비의미 보완
 
+permit source의 exact16키는 {protocolVersion:1,purpose:SOURCE_CONTENT_PERMIT,scope,requestRef,scopeDigest,root,credential,observationRequestRef,observationNonce,issuedAt,observeBefore,serverNow,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false}다. root={sourceRootRef,pathHint,pathHintHash}, credential={scope:SOURCE_DOCUMENT_CONTENT_HASH_ONLY,issuedAt,expiresAt}이며 token/key/rawSecret은 없고 추가키를 거절한다. 신뢰된 서버 원자료 basis는 정확 {scope,requestRef,observationRequestRef,observationNonce,credentialIssuedAt,credentialExpiresAt,issuedAt,observeBefore}다. 원자료 자체의 인증/현재 권한은 이 순수 consumer가 만들지 않는다.
+
+credential 원수명≤60초/요청 기한 이내, permit issuedAt은 credential 안, observeBefore는 permit 발급 후·credential 종료 이하이며 serverNow/수신 now는 원 관측기한 안이어야 한다. 순수 report context 변환은 아래8키만 반환하고 credential/권위 필드는 버린다. preflight/challenge의 신뢰 basis는 {scope,requestRef,publicKeyFingerprint}이며 fingerprint의 실제 현재 등록 귀속은 서버 후속의 책임이다. preflight는 원 요청 기한 안, challenge는 원 binding/서로 다른 canonical32byte client/server nonce·원 preflight 기한 이내60초만 허용한다. 이 상세화를 실제 교환·발급·서명·권한 활성화로 쓰지 않는다.
+
 승인 부모 raw SHA256 11AB746A30809096F22F52E73A8C3F15C2EA8793A635AA988B10335DC209066F의 범위/권한/한도는 유지한다. context는 정확 {scope,declaredPathHint,requestRef,observationRequestRef,observationNonce,issuedAt,observeBefore,receivedAt}이며 보호 permit의 원 선언 declaredPathHint UTF-8 hash만 scope.pathHintHash와 비교한다. handle에서 관측한 canonicalPath는 별도 주장이고 선언 문자열과 같다고 요구하지 않는다. 원 root ref/identity·실제 handle 귀속과 진위는 별도 current verifier 미연결 경계다. context는 한 번 복사한 값을 검증/서명 바이트 조립에 함께 사용한다.
 
 root 성공 state=OBSERVED, 파일 성공=HASHED, 실패 facts=null로 고정한다. identityBeforeHash/identityAfterHash는 정확 {kind,volumeSerialHex,fileIdHex,reparse,linkCountDecimal,sizeBytesDecimal,lastWriteFileTimeDecimal}의 canonical hash이며 전후 같고 보고 facts에도 맞아야 한다. EOF=true/bytesRead=size·uint64·단일 링크/같은 volume·파일/합계 한도를 대조한다. 성공 파일 hash/길이가 문서 Artifact와 다르더라도 관측 주장은 보관 가능하며 실제 LINK의 문서 raw 일치는 §7 서버 단계에서 별도로 거절한다.
