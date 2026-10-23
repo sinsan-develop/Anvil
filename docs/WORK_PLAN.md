@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN03 관리 wire·범위 SOURCE**: JSON 원문 파싱과 기존 원scope 범위검사를 직접 연결했다. 새3 RED→직접25 합성 PASS/typecheck/diff0·권위false5다. 별도 보호 원문producer는 기존 저장 재사용 한계/대안을 계약 §13 미확정 문서 후보로만 기록했으며 실제 저장/권한·DB/서비스는 변경하지 않았다. 전체 계획 미완료.
+
 - **2026-10-24 FN03 CM08 wire SOURCE**: JSON 원문 크기/중복키·형식 검사와 기존 관리 증거 소비를 별도 연결했다. 새4 RED→직접22 합성 PASS/typecheck/diff0·최소반환/false5이며 실제 원문producer/DB/권한은 미구현·미검증으로 구분한다. 전체 계획 미완료.
 
 - **2026-10-24 FN03 서버 관리 범위 SOURCE**: 기존 identity/control 후보와 저장 관리 범위를 연결하고 관리입력의 첫 문맥 await 전 고정을 추가했다. 새4 RED→직접132 합성 PASS, 새시험 타입표기 정정 후 해당114/typecheck/diff0다. 실제 인증·현재 관리권한/latest·DB/route/served는 미검증·미활성으로 유지하며 전체 계획 미완료다.

@@ -441,3 +441,34 @@ receipt는 기존 exact8 모양이며 id=command.authorizationReceiptId, command
 originalRequest는 CM05의 기존 명령 envelope 전체, payload는 CM04의 exact3/definition exact12다. 서버가 정한 projectId/sequence/recordedAt과 definition/reason을 합친 exact16 snapshot이 policyEvent.snapshot_json과 같아야 한다. 단순 snapshot 재조립을 원request 보존으로 간주하지 않는다. 관리 내부 id=policyEvent.management_command_id=command.id이며 caller command UUID=originalRequest.commandId=command.commandId=resultRef.commandId로 따로 대조한다. 전체 inspector 입력 canonical bytes<=4MiB, 원request<=1MiB, snapshot<=1MiB와 기존 getter/추가키/중복키 거절을 권장한다. 상한은 기존 SOURCE 보호 입력 방식을 재사용하지만 이 관리용 입력 묶음에 적용하는 정확 형식은 신규다.
 
 이 후보가 모두 구조적으로 맞아도 반환은 UNVERIFIED 관리근거 후보·최소 refs/digest와 managementEvidenceVerified/currentAuthorityVerified/storageMutationPerformed/executionAuthorized/linkAuthorized=false만을 권장한다. 실제 관리허가·재인증/원문 생산자·DB/COMMIT·현재성은 다른 실제 검증이 필요하다. 이 반환 계약까지 포함해 PMO 판단 전에는 코드/SQL·실제 정책 생성에 반영하지 않는다.
+
+## 13. 관리 원명령 보호 생산자 — 재사용 조사와 결정 후보
+
+> 2026-10-24 PMO 요청에 따른 DRAFT_ONLY / NOT_AN_IMPLEMENTATION_BASELINE. §12.6의 SOURCE 형식 채택과 구분한다. 이 절은 새 저장 형식·권한·실제 자원의 승인이나 구현이 아니다.
+
+### 13.1 확인한 기존 수단과 한계
+
+| 기존 수단 | 재사용 가능한 부분 | 그대로 쓸 수 없는 이유 |
+|---|---|---|
+| db/migrations/0011_authorization.sql의 commands 및 project-command.ts persistProjectReceipt | 내부 command ID/caller UUID·request_hash·주체/client/세대/base정책·영수증/감사 결박 | 원 envelope 전체 저장 필드가 없다. payload_ref는 일회 승인 scope 의미이고 result_ref.data는 CM06 exact9다. 여기에 원문을 끼워 넣으면 승인 형식/기존 소비 계약이 바뀐다. |
+| 미적용0040 source_content_policy_events | 새 이벤트 fullref·management_command_id·인접 계보/sequence·snapshot/hash | policy snapshot은 서버 생성 값이며 원 envelope 자체가 아니다. snapshot에서 원request를 역생성해 보존 원문으로 대신할 수 없다. 전 DML 거절/미등록 상태다. |
+| 0014 context_bundles.request_payload | 원 payload와 정규화 manifest를 분리해 hash를 대조하는 방식 | buildTaskContext·assignment·7개 slots 전용 제약이다. 관리 원문을 넣으면 다른 도메인의 계약/검사를 우회한다. |
+| ArtifactStore | 보호 경로·비링크/소유/단일링크·0600/0700·바이트/hash·크기/사용량 검사 | 파일 보관 자체가 관리 명령 출처/관리 권한을 증명하지 않는다. 현재 project-files 일반 GET은 projectMember를 검사하므로 관리 원문을 일반 artifact로 올리면 열람 범위가 달라질 수 있다. 현재 grant를 관리 원문 grant로 재사용하지 않는다. |
+
+이 조사는 소스·미적용 SQL만 읽었다. 실제 DB schema/원문 존재·경로/소유/ACL·현재 인증·권한은 확인하지 않았으며 조회/생성하지 않았다. 일반 감사에는 보호 ref만 남기는 기존 원칙을 유지한다(INTERFACES 감사 계약).
+
+### 13.2 부족한 계약과 정확 차이
+
+1. **위치/참조**: 프로젝트와 내부 관리 command ID에 귀속한 원 envelope 전체의 보호 보존·불변 참조가 없다. command.request_hash와 연결할 수 있어야 하며 snapshot 대체는 금지한다. canonical 원 envelope JSON 전체의 내용 보존과 요청 바이트의 공백/키순서까지 보존하는 것은 다르다. 기존 SOURCE 계약은 전자의 hash를 소비하며 후자의 forensic 보존까지 구현됐다고 하지 않는다.
+2. **접근 권한**: 관리 생성 시 현재 OWNER·재인증·별도 명시 AUTO 허가가 필요하다. 과거 증거 조회에도 현재 로그인/프로젝트 격리·전용 원문 조회 허가가 필요하며 일반 프로젝트 참가자·일반 files GET·Agent 전달로 자동 공개하지 않는다. 기존 SOURCE 입력 expected는 이 실제 producer를 대신하지 못한다. 정확 조회 operation/허가 scope·읽기 정책은 아직 미확정이다.
+3. **retention/격리**: 권장안은 기존 자동 삭제 OFF 원칙을 유지해 신규 원문도 자동 만료/삭제하지 않고, 삭제·외부 반출은 별도 결정으로 둔다. 알려진 비밀 표식 발견 자료는 일반 소비를 닫고 기존 격리 검사의 한계를 명시한다. 검사 통과를 완전한 비밀 탐지로 주장하지 않는다. raw payload/인증정보를 대화·일반 로그/감사 본문에 넣지 않는다. 새 보존 기한·암호화/키나 정리 작업은 이 후보에서 생성하지 않는다.
+4. **최신 head와 원자성**: 프로젝트 최신 sequence를 먼저 고정하고 최신 거절·회수/만료를 건너뛰지 않아야 한다. 같은 프로젝트 잠금·정확 previous fullref CAS·event/command/원문/receipt/audit 동시 저장과 rollback·COMMIT은 별도 실제 검증이 필요하다. 같은 DB 객체나 하나의 SQL 모양만으로 현재 허가/원자성 PASS라 하지 않는다.
+5. **현재 관리 근거**: 서버 보유 로그인/재인증·OWNER/단독 제어·현재 정책과 별도 관리 허가 producer가 필요하다. 과거 receipt/hash·caller의 verified/OWNER 플래그·새 관리 snapshot만으로 대체하지 않는다. REQUIRE_APPROVAL은 여전히 별도 계약 전 닫는다.
+
+### 13.3 대안과 Main 권장안
+
+- **A 권장 — 기존 개발 DB 안의 별도 보호 관리 원문 metadata 계약**: 전체 원 envelope와 canonical hash를 프로젝트/내부 command·새 event에 결박하는 불변 기록을 별도 설계한다. 일반 command payload_ref/result DTO·일반 파일 열람을 바꾸지 않고 향후 같은 transaction의 원자 저장을 검증하기 쉽다. 다만 새 데이터 계약·보호 조회/권한·미적용 forward SQL이 필요하므로 이번 SOURCE 승인만으로 작성 형식 확정/구현하지 않는다. 실제 DB 적용은 더 별도다.
+- **B — 기존 ArtifactStore 물리 보관을 재사용하는 비공개 관리 원문 종류와 전용 결박**: 경로/바이트 보호를 재사용할 수 있지만 새 종류/관리 권한·일반 files GET 차단·DB 참조·게시/실패 시 복구가 추가로 필요하다. 기존 일반 업로드·다운로드 권한만 쓰는 안은 채택하지 않는다.
+- **C — 원문 보존 없이 계속 입력받는 구조 후보 유지**: 신규 저장/권한 변경은 없지만 실제 provenance/관리 허가를 증명하지 못하므로 실제 요청/검증/LINK를 열 수 없다. 현재 SOURCE가 이 상태다.
+
+권장 A의 다음 결정은 **새 보호 원문 데이터/조회 계약 후보를 구체화할지**이며, 아직 정확 테이블/필드·권한 operation·SQL·endpoint를 확정하지 않는다. 채택되지 않은 안의 형식을 코드/SQL에 먼저 넣지 않는다. 이 결정과 무관하게 승인된 wire/범위 SOURCE는 계속한다. 실제 DB/키·권한/서비스·Agent 실행은 모든 안에서 이번 범위 밖이다.
