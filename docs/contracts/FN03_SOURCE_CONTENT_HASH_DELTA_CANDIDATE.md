@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-24 검증 최신 계보 SOURCE 소비**: §8의 append 계보를 신규 readLatestSourceContentVerificationLineageCandidate에서 한 CTE 최신head+같은project/id 인접version으로 조회한다. 기존 head 행검사를 private inspectRows로 공유하고 기존 순수 계보 검사를 적용한다. 최신회수/무효/만료는 계보누락에도 최상위 음성으로 남기고 lineage:null을 반환하며, 양성 형태의 계보 불일치는 닫는다. hash·양성·유효기한을 SQL에서 먼저 골라 과거양성을 살리지 않는다. 새5 RED→직접159 합성 PASS/typecheck/diff0이며 최소refs/false5·원오류/getter0을 보존한다. 실제 DB/SQL·동일 transaction/현재verifier/서명/OS·LINK 허가가 아니며 기존 public 함수 동작과 SQL/route/runner·§13.4 미확정 경계는 유지한다.
+
 - **2026-10-24 서버 관리·시각 결합 소비**: readSourceContentVerificationWithManagementFromServerContextCandidate/FromHeldIdentityCandidate는 기존 문맥 생산 후보와 같은 private 원저장 판독의 관리범위·원receivedAt 검증을 조합한다. 관리 입력/index/operation은 identity await 전에 고정/검사하며 기존 basis 복사를 재사용한다. 새4 RED→직접148 합성 PASS/typecheck/diff0, 최소refs/false8·분리조회·원오류를 보존한다. held만료0/회수1만 확인했으며 전체성공/actualauth·producer/verifier/DB/route는 증명하지 않는다. 기존 공개 소비 body/SQL/route와 미확정 §13.4 경계는 보존한다.
 
 - **2026-10-24 원저장 관리·시각 결합 소비**: readSourceContentStoredVerificationWithManagementForDeclaredContextCandidate는 원저장 판독을 중복하지 않고 관리 범위 후보와 원관측 수신시각 기반 검증 head를 함께 소비한다. 선언/관리 입력 첫await 전 고정·원fullref/문맥·회수기한·전체보고/target 선행거절·관리음성 head0·최소refs/false8·분리조회를 유지한다. 과거 관리 client/세대/base와 이후 요청 문맥을 강제 동일시하지 않으며 operation 일치는 구조 범위일 뿐 실제 재관측/LINK 허가가 아니다. 새4 RED→직접144 합성 PASS/typecheck/diff0·독립 C0/I0/M0이며 실제 관리 원문producer/현재 권위/verifier/DB/route는 만들지 않았다. 기존 공개 소비 body/SQL/route와 미확정 §13.4 경계를 보존한다.

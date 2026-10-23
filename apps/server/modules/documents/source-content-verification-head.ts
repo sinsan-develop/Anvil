@@ -1,6 +1,7 @@
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {recordV1,arrayV1,uuidV1,refV1,hashV1,isoV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {isRelativeSourceFileV1} from '../../../../contracts/runtime/source-scope-v1.ts';
+import {inspectSourceContentVerificationLineageCandidate} from './source-content-verification-lineage.ts';
 
 interface ReadClient {query(sql:string,args:unknown[]):Promise<{rows:unknown[]}>}
 interface Context {observationRef:RuntimeRefV1;targetIndex:number;relativePath:string;documentRef:RuntimeRefV1;observerImplementationRef:RuntimeRefV1}
@@ -41,6 +42,10 @@ async function readHead(db:ReadClient,projectId:string,expected:unknown,nowMs:nu
  const c=context(expected);
  // 유효/양성/기한/ref hash를 WHERE에서 미리 골라 과거 ACCEPTED로 fallback하지 않는다.
  const {rows}=await db.query(`SELECT ${keys.join(',')} FROM anvil.source_content_verifications WHERE project_id=$1 AND observation_id=$2 AND target_index=$3 ORDER BY version DESC LIMIT 1`,[projectId,c.observationRef.id,c.targetIndex]);
+ return inspectRows(rows,projectId,c,nowMs,receivedAtMs);
+}
+/** 동일 head 행검사를 기존 단독 판독과 새 계보 판독이 공유한다. 외부 접점/허가는 추가하지 않는다. */
+function inspectRows(rows:unknown,projectId:string,c:Context,nowMs:number,receivedAtMs:number|null):Candidate {
  if(!arrayV1(rows,1))return malformed();if(rows.length===0)return result('UNAVAILABLE','VERIFICATION_ABSENT');
  try {
   const row=rows[0];if(!recordV1(row,keys))return malformed();
@@ -62,4 +67,29 @@ async function readHead(db:ReadClient,projectId:string,expected:unknown,nowMs:nu
   if(receivedAtMs!==null&&Date.parse(verified)<receivedAtMs)return result('DENIED','VERIFICATION_BEFORE_OBSERVATION',ref);
   return result('UNVERIFIED','CURRENT_VERIFIER_UNAVAILABLE',ref);
  }catch{return malformed();}
+}
+
+const jsonRow=(alias:string)=>`jsonb_build_object(${keys.map(k=>`'${k}',${k==='verified_at'||k==='expires_at'?`anvil.source_read_iso(${alias}.${k})`:`${alias}.${k}`}`).join(',')})`;
+const lineageSql=`WITH head AS (SELECT ${keys.join(',')} FROM anvil.source_content_verifications WHERE project_id=$1 AND observation_id=$2 AND target_index=$3 ORDER BY version DESC LIMIT 1)
+ SELECT ${jsonRow('h')} AS "current",CASE WHEN p.id IS NULL THEN NULL ELSE ${jsonRow('p')} END AS "previous"
+ FROM head h LEFT JOIN anvil.source_content_verifications p ON p.project_id=h.project_id AND p.id=h.id AND p.version=h.version-1`;
+/** 최신 head와 인접 이전 버전의 구조만 읽는 미등록 SOURCE. 실제 DB/current verifier·원자성을 증명하지 않는다. */
+export async function readLatestSourceContentVerificationLineageCandidate(db:ReadClient,projectId:string,expected:unknown,receivedAt:unknown,nowMs:number){
+ if(!uuidV1(projectId)||!Number.isSafeInteger(nowMs)||!isoV1(receivedAt)||Date.parse(receivedAt)>nowMs)return inputInvalid();
+ const c=context(expected),receivedAtMs=Date.parse(receivedAt);
+ const {rows}=await db.query(lineageSql,[projectId,c.observationRef.id,c.targetIndex]);
+ const resultWithLineage=(head:Candidate,lineage:ReturnType<typeof inspectSourceContentVerificationLineageCandidate>|null=null)=>({...head,lineage,verifierEvidenceVerified:false as const,currentAuthorityVerified:false as const});
+ if(!arrayV1(rows,1))return resultWithLineage(malformed());
+ if(rows.length===0)return resultWithLineage(result('UNAVAILABLE','VERIFICATION_ABSENT'));
+ if(!recordV1(rows[0],['current','previous']))return resultWithLineage(malformed());
+ const d=Object.getOwnPropertyDescriptors(rows[0]),current=d.current!.value,previous=d.previous!.value;
+ const head=inspectRows([current],projectId,c,nowMs,receivedAtMs);
+ if(head.verificationRef===null)return resultWithLineage(head);
+ try{
+  const lineage=inspectSourceContentVerificationLineageCandidate(previous,current);
+  return resultWithLineage(head,lineage);
+ }catch{
+  // 최신 회수/무효/만료는 보존하고 누락·변조된 이전행을 과거 양성으로 대체하지 않는다.
+  return resultWithLineage(head.status==='UNVERIFIED'?result('DENIED','VERIFICATION_LINEAGE_UNAVAILABLE',head.verificationRef):head);
+ }
 }

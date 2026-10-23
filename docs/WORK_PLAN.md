@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN03 검증 최신 계보 판독 SOURCE**: 계약 §8의 최신 version/인접 predecessor 누락 판독을 별도 미등록 함수로 구현했다. 기존 head 행검사와 순수계보를 재사용해 최신음성/과거fallback금지·최소refs/false5를 보존한다. 새5 RED→직접159 합성 PASS/typecheck/diff0이며 실제 SQL/PG/current verifier·화면 연결은 미검증·미활성이다. 전체 계획 미완료.
+
 - **2026-10-24 FN03 서버 관리·시각 결합 SOURCE**: 기존 서버 문맥과 단일 원저장 관리범위/수신시각 head 소비를 별도로 연결했다. 새4 RED→직접148 합성 PASS/typecheck/diff0·권위false8/분리조회다. 정상 record/head2회·held만료0/회수1을 확인했고 held전체성공·실제 auth/producer/verifier/PG/화면 사용은 미검증·미활성이다. 전체 계획 미완료.
 
 - **2026-10-24 FN03 원저장 관리·시각 결합 SOURCE**: 같은 record1회에서 원문맥/전체보고·관리 범위와 원수신시각 기반 head를 결합했다. 새4 RED→직접144 합성 PASS/typecheck/diff0·독립 C0/I0/M0다. 정상 총2조회/관리음성1·권위false8/분리조회이며 실제 DB/auth/관리producer/verifier/바이트·화면 사용은 미검증·미활성이다. 기존 경로/SQL/route를 보존하며 전체 계획 미완료다.
