@@ -270,6 +270,44 @@ CREATE TRIGGER source_content_request_phase BEFORE INSERT OR UPDATE ON anvil.sou
 -- 이 guard를 추가해도 아래 source_content_unavailable의 전 DML 거절을 제거하거나 우회하지 않는다.
 -- OLD/NEW 전이는 stale caller의 기대값 CAS나 observation/명령/감사의 COMMIT 원자성을 대신하지 않는다.
 
+-- 생성 당시 최종 행 묶음의 구조 검사 후보. 조회 완전성/현재 허가/COMMIT를 보장하지 않으며 trigger 미연결이다.
+CREATE FUNCTION anvil.source_content_creation_bundle_shape(g anvil.source_content_requests,commands anvil.commands[],receipts anvil.authorization_receipts[],events anvil.audit_events[]) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE c anvil.commands;r anvil.authorization_receipts;a anvil.audit_events;target jsonb;payload jsonb;original jsonb;request_hash text;receipt_digest text;data jsonb;result jsonb;
+BEGIN
+ IF anvil.source_content_scope_shape(g.scope_json) IS NOT TRUE OR anvil.source_content_request_phase_shape(g) IS NOT TRUE
+  OR commands IS NULL OR receipts IS NULL OR events IS NULL OR cardinality(commands)<>1 OR cardinality(receipts)<>1 OR cardinality(events)<>1
+  OR array_lower(commands,1)<>1 OR array_lower(receipts,1)<>1 OR array_lower(events,1)<>1 THEN RETURN false;END IF;
+ c=commands[1];r=receipts[1];a=events[1];
+ target=jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.scope_digest);
+ payload=g.scope_json-ARRAY['protocolVersion','purpose','installationId','projectId','hostFingerprint','pathHintHash','userId','clientId','credentialGeneration','controlGeneration','basePolicyRef','contentPolicyRef','requestedAt'];
+ original=jsonb_build_object('schemaVersion',1,'projectId',g.project_id,'commandId',c.command_id,'clientId',g.client_id,'controlGeneration',g.control_generation,
+  'operation','requestSourceContentHash','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',payload);
+ request_hash=anvil.source_read_hash(original);
+ receipt_digest=anvil.source_read_hash(jsonb_build_object('projectId',g.project_id,'actorId',g.requested_by,'clientId',g.client_id,'controlGeneration',g.control_generation,'requestHash',request_hash,'policyRef',g.scope_json->'basePolicyRef','targetRef',target));
+ data=jsonb_build_object('ref',target,'status','CONTENT_REQUEST_RECORDED','requestRef',target,'scopeDigest',g.scope_digest,'storedState','CREATED','scope',g.scope_json,
+  'observationPermit','NOT_ISSUED','executionAuthorized',false,'agentDispatchPerformed',false,'baselineConfirmed',false,'linkAuthorized',false);
+ result=jsonb_build_object('operationId',c.operation_id,'commandId',c.command_id,'projectId',g.project_id,'status','APPLIED','targetId',g.id,'version',1,'data',data,'evidenceRefs','[]'::jsonb,'warnings','[]'::jsonb,'serverReceivedAt',anvil.source_read_iso(c.completed_at));
+ RETURN COALESCE(g.version=1 AND g.scope_digest=anvil.source_read_hash(g.scope_json)
+  AND g.scope_json->>'projectId'=g.project_id::text AND g.scope_json->>'userId'=g.requested_by::text AND g.scope_json->>'clientId'=g.client_id::text
+  AND g.scope_json->'credentialGeneration'=to_jsonb(g.credential_generation) AND g.scope_json->'controlGeneration'=to_jsonb(g.control_generation)
+  AND g.scope_json->'sourceRootRef'->>'id'=g.source_root_id::text AND g.scope_json->'sourceRootRef'->'version'=to_jsonb(g.source_root_version)
+  AND g.scope_json->'connectorRef'->>'id'=g.connector_id::text AND g.scope_json->'registrationRef'->>'id'=g.registration_id::text
+  AND g.scope_json->>'requestedAt'=anvil.source_read_iso(g.created_at) AND g.scope_json->>'expiresAt'=anvil.source_read_iso(g.expires_at)
+  AND c.id=g.created_command_id AND c.scope_kind='PROJECT' AND c.scope_id=g.project_id AND c.project_id=g.project_id
+  AND c.actor_id=g.requested_by AND c.client_id=g.client_id AND c.operation='requestSourceContentHash' AND c.command_id IS NOT NULL AND c.operation_id IS NOT NULL
+  AND c.request_hash=request_hash AND c.state='APPLIED' AND c.authorization_receipt_id IS NOT NULL AND c.approval_consumption_id IS NULL
+  AND c.expected_version=0 AND c.control_generation=g.control_generation AND c.policy_ref=g.scope_json->'basePolicyRef' AND c.payload_ref IS NULL
+  AND c.result_ref=result AND c.completed_at IS NOT NULL AND isfinite(c.completed_at) AND date_trunc('milliseconds',c.completed_at)<=g.created_at
+  AND r.id=c.authorization_receipt_id AND r.scope_kind='PROJECT' AND r.scope_id=g.project_id AND r.command_id=c.id
+  AND r.subject_ref=jsonb_build_object('kind','HUMAN','userId',g.requested_by,'clientId',g.client_id)
+  AND r.policy_ref=g.scope_json->'basePolicyRef' AND r.scope_digest=receipt_digest AND r.approval_decision_ref IS NULL
+  AND a.project_id=g.project_id AND a.server_sequence BETWEEN 1 AND 9007199254740991 AND a.event_id IS NOT NULL
+  AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',g.requested_by) AND a.client_ref=g.client_id
+  AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.target_ref=target AND a.policy_ref=g.scope_json->'basePolicyRef' AND a.approval_ref IS NULL
+  AND a.outcome='APPLIED' AND a.reason_code='EXPLICIT_SOURCE_CONTENT_HASH_REQUEST' AND a.scope_digest=receipt_digest AND a.source_kind='HUMAN_COMMAND' AND a.correction_of IS NULL,false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
 CREATE TABLE anvil.source_content_observations (
  project_id uuid NOT NULL,id uuid NOT NULL,version smallint NOT NULL DEFAULT 1 CHECK(version=1),request_id uuid NOT NULL,
  request_version smallint NOT NULL DEFAULT 1 CHECK(request_version=1),scope_digest text NOT NULL CHECK(scope_digest~'^[0-9a-f]{64}$'),
@@ -324,6 +362,32 @@ BEGIN
   AND a.outcome='APPLIED' AND a.reason_code='SOURCE_CONTENT_REPORT_STORED' AND a.source_kind='SOURCE_CONTENT_OBSERVATION_PROTOCOL'
   AND a.recorded_at IS NOT NULL AND isfinite(a.recorded_at) AND a.recorded_at>=g.created_at AND a.recorded_at<=g.report_consumed_at,false);
 EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- 고정 project/request 조회의 구조 후보. STABLE 읽기만 하며 권한·trigger·쓰기에는 연결하지 않는다.
+-- 감사의 별도 신규 삽입·고아 감사에 대한 역방향 검사/잠금·실제 COMMIT 원자 guard는 후속이다.
+CREATE FUNCTION anvil.source_content_request_final_bundle_shape(project_arg uuid,request_arg uuid) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE g anvil.source_content_requests;c anvil.commands;o anvil.source_content_observations;
+ cs anvil.commands[];rs anvil.authorization_receipts[];created_events anvil.audit_events[];
+ observations anvil.source_content_observations[];report_events anvil.audit_events[];
+BEGIN
+ IF project_arg IS NULL OR request_arg IS NULL THEN RETURN false;END IF;
+ SELECT r.* INTO g FROM anvil.source_content_requests r WHERE r.project_id=project_arg AND r.id=request_arg;
+ IF NOT FOUND THEN RETURN false;END IF;
+ cs=ARRAY(SELECT cmd FROM anvil.commands cmd WHERE cmd.project_id=g.project_id AND cmd.id=g.created_command_id LIMIT 2);
+ IF cardinality(cs)<>1 THEN RETURN false;END IF;c=cs[1];
+ rs=ARRAY(SELECT ar FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id LIMIT 2);
+ created_events=ARRAY(SELECT ae FROM anvil.audit_events ae WHERE ae.project_id=g.project_id AND ae.command_id=c.id LIMIT 2);
+ IF anvil.source_content_creation_bundle_shape(g,cs,rs,created_events) IS NOT TRUE THEN RETURN false;END IF;
+ observations=ARRAY(SELECT ob FROM anvil.source_content_observations ob WHERE ob.project_id=g.project_id AND ob.request_id=g.id LIMIT 2);
+ IF cardinality(observations)>1 THEN RETURN false;END IF;
+ report_events=ARRAY[]::anvil.audit_events[];
+ IF cardinality(observations)=1 THEN
+  o=observations[1];
+  report_events=ARRAY(SELECT ae FROM anvil.audit_events ae WHERE ae.project_id=g.project_id
+   AND ae.target_ref=jsonb_build_object('id',o.id,'version',o.version,'contentHash',o.content_hash) LIMIT 2);
+ END IF;
+ RETURN anvil.source_content_report_bundle_shape(g,observations,report_events) IS TRUE;
 END;$$;
 
 CREATE TABLE anvil.source_content_verifications (
