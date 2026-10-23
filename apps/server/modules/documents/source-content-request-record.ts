@@ -8,6 +8,7 @@ import {readSourceContentRequestPolicyCandidate} from './source-content-request-
 import {readSourceContentRequestPolicyLineageCandidate} from './source-content-request-policy-lineage.ts';
 import {planSourceContentRevokeCandidate} from './source-content-revoke.ts';
 import {readLatestSourceContentVerificationCandidate} from './source-content-verification-head.ts';
+import {inspectSourceContentPolicyScopeCandidate} from './source-content-policy-scope.ts';
 import type {SourceContentPolicyCandidate} from './source-content-policy-head.ts';
 import {sourceContentRequestStatusFromParts} from './source-content-request-with-policy.ts';
 import {readSourceContentChallengeV1} from '../../../../contracts/runtime/source-content-exchange-v1.ts';
@@ -152,6 +153,26 @@ export async function readSourceContentStoredRevokeForDeclaredContextCandidate(d
  return result??close('REQUEST_ABSENT');
 }
 const storedLineageFlags={storedRequestAuthenticated:false as const,managementEvidenceVerified:false as const,currentAuthorityVerified:false as const,storageMutationPerformed:false as const,executionAuthorized:false as const,linkAuthorized:false as const};
+/** 원저장 scope만 관리 범위 후보에 전달한다. 제공된 관리 기록과 저장행은 현재 인증·원자 조회 증거가 아니다. */
+export async function readSourceContentStoredManagementScopeForDeclaredContextCandidate(db:ReadClient,value:unknown,managementValue:unknown,operation:unknown,nowMs:number){
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ let management:Record<string,any>;
+ try{
+  const raw=canonicalJson(managementValue);if(Buffer.byteLength(raw,'utf8')>4198400||typeof operation!=='string'||!['linkDocumentSource','requestSourceContentHash','revokeSourceContentHash'].includes(operation))throw Error();
+  const v:unknown=JSON.parse(raw);if(!recordV1(v,['evidence','expected']))throw Error();management=v;
+ }catch{throw Error('SOURCE_CONTENT_STORED_MANAGEMENT_INPUT_INVALID');}
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,policyRef:null,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...storedLineageFlags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async record=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_MANAGEMENT_CONTEXT_MISMATCH');
+  if(record.view.state==='REVOKED')return close('REQUEST_REVOKED');
+  if(record.view.state==='EXPIRED')return close('REQUEST_EXPIRED');
+  const policy=inspectSourceContentPolicyScopeCandidate(management.evidence,management.expected,s,operation,nowMs);
+  return {status:policy.status,reason:policy.reason,requestRef:record.view.requestRef,policyRef:policy.policyRef,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const,...storedLineageFlags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
 /** 원요청의 선언 문맥과 인접 정책계보만 결박한다. 기존 정책/표시/proof 경로와 실제 권한은 변경하지 않는다. */
 export async function readSourceContentStoredPolicyLineageForDeclaredContextCandidate(db:ReadClient,value:unknown,nowMs:number) {
  const c=readSourceContentDeclaredContextCandidate(value,nowMs);

@@ -1,5 +1,7 @@
 # FN03 최초 소스 연결 — 내용 hash 관측 delta 결정 후보 v1
 
+- **2026-10-23 원저장 관리 범위 소비**: 신규 readSourceContentStoredManagementScopeForDeclaredContextCandidate는 기존 exact8 선언과 별도 exact2 관리 묶음(evidence/expected)을 고정한 뒤 기존 저장 판독/원fullref·요청 문맥을 대조한다. 임의 caller scope를 입력받지 않고 저장scope만 순수 정책 범위 검사에 넘긴다. 과거 관리문맥과 이후 요청문맥을 혼동하지 않으며 회수·만료를 닫고 최소refs/false6/분리조회만 반환한다. 원query1회/추가query0·기존 공개/SQL/route 변경0, 새4 RED→직접128 합성 PASS/typecheck/diff0·실제 관리권위/latest·DB/current는 미검증이다.
+
 - **2026-10-23 관리 증거·scope 소비 접점**: 신규 inspectSourceContentPolicyScopeCandidate는 관리 원문 증거와 원scope를 순수 결합해 CM03의 네 refs/전체 target 동일집합(순서 차이 허용, 각 전체값 일치)·operation·한도를 대조한다. 관리 당시 문맥은 관리 증거 내부에서만 결박하며 이후 요청의 다른 client/세대/base정책을 현재 허가로 승인하지 않는다. 전달된 이벤트의 거절·회수/기한과 원요청 기한을 지키되 실제 최신 head 생산자가 없으므로 정상도 POLICY_SCOPE_SHAPE_ONLY/UNVERIFIED·false5다. 기존 공개 경로/최소head·SQL/runner/route 무변경·새5 RED→직접35 합성 PASS/typecheck/diff0.
 
 - **2026-10-23 CM05~08 구조 증거 소비**: 신규 inspectSourceContentPolicyManagementEvidenceCandidate는 §12.6.2 exact6/expected8 입력과 별도 originalRequest 원문 전체 hash를 소비한다. snapshot으로 원문을 역생성하지 않으며 기존 payloadRef는 AUTO 후보에서 null로 보존한다. 내부/caller 명령ID·주체/client/세대/base정책·receipt/audit/정확target·인접 계보/시각을 구조 대조하고 최소 refs/digest·false5만 반환한다. JSON 구조 입력 전용이며 보호 원문 생산자·현재 OWNER/재인증·별도 관리허가·DB 잠금/CAS/실제 저장을 제공하지 않는다. 새6 RED→직접35 합성 PASS, 후속8/typecheck/diff0다.
