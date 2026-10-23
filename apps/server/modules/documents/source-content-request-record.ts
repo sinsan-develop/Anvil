@@ -151,6 +151,34 @@ export async function readSourceContentStoredVerificationAfterReceivedForDeclare
  });
  return result??close('REQUEST_ABSENT');
 }
+/** 한 원저장 판독에서 관리 범위와 원관측 수신시각을 결박한다. 현재 권위나 원자 조회를 증명하지 않는다. */
+export async function readSourceContentStoredVerificationWithManagementForDeclaredContextCandidate(db:ReadClient,value:unknown,managementValue:unknown,operation:unknown,targetIndex:number,nowMs:number){
+ const c=readSourceContentDeclaredContextCandidate(value,nowMs);
+ if(!Number.isSafeInteger(targetIndex)||targetIndex<0||targetIndex>199)throw Error('SOURCE_CONTENT_STORED_VERIFICATION_INPUT_INVALID');
+ let management:Record<string,any>;
+ try{
+  const raw=canonicalJson(managementValue);if(Buffer.byteLength(raw,'utf8')>4198400||typeof operation!=='string'||!['linkDocumentSource','requestSourceContentHash','revokeSourceContentHash'].includes(operation))throw Error();
+  const v:unknown=JSON.parse(raw);if(!recordV1(v,['evidence','expected']))throw Error();management=v;
+ }catch{throw Error('SOURCE_CONTENT_STORED_MANAGEMENT_INPUT_INVALID');}
+ const flags={...proofFlags,managementEvidenceVerified:false as const,bodyBytesVerified:false as const,readConsistency:'SEPARATE_READS_NOT_ATOMIC' as const};
+ const close=(reason:string)=>({status:'UNAVAILABLE' as const,reason,requestRef:null,observationRef:null,policyRef:null,verificationRef:null,targetIndex:null,...flags});
+ const result=await readRecord(db,c.installationId,c.projectId,c.requestRef.id,nowMs,async(record,observation)=>{
+  if(!same(record.view.requestRef,c.requestRef))return close('STORED_REQUEST_REF_MISMATCH');
+  const s=record.view.scope;
+  if(s.userId!==c.userId||s.clientId!==c.clientId||s.credentialGeneration!==c.credentialGeneration||s.controlGeneration!==c.controlGeneration||!same(s.basePolicyRef,c.basePolicyRef))return close('DECLARED_VERIFICATION_CONTEXT_MISMATCH');
+  if(record.view.state==='REVOKED')return close('REQUEST_REVOKED');
+  if(record.view.state==='EXPIRED')return close('REQUEST_EXPIRED');
+  if(!observation||!record.view.reportRef)return close('OBSERVATION_ABSENT');
+  const report=observation.report;
+  if(report.root.state!=='OBSERVED'||!report.localEvidence.completed||report.files.some(f=>f.state!=='HASHED'))return close('REPORT_NOT_COMPLETE');
+  const target=s.targets[targetIndex];if(!target)return close('TARGET_INDEX_UNAVAILABLE');
+  const policy=inspectSourceContentPolicyScopeCandidate(management.evidence,management.expected,s,operation,nowMs);
+  if(policy.status!=='UNVERIFIED')return {...close(policy.reason),status:policy.status};
+  const head=await readLatestSourceContentVerificationAfterReceivedCandidate(db,c.projectId,{observationRef:record.view.reportRef,targetIndex,relativePath:target.relativePath,documentRef:target.documentRef,observerImplementationRef:s.observerRef},observation.receivedAt,nowMs);
+  return {...head,requestRef:record.view.requestRef,observationRef:record.view.reportRef,policyRef:policy.policyRef,targetIndex,...flags};
+ });
+ return result??close('REQUEST_ABSENT');
+}
 /** 저장 증거/선언 문맥의 과거 결박만 소비한다. 현재 회수 허가·실제 UPDATE/route를 만들지 않는다. */
 export async function readSourceContentStoredRevokeForDeclaredContextCandidate(db:ReadClient,value:unknown,payloadValue:unknown,commandId:unknown,nowMs:number){
  const c=readSourceContentDeclaredContextCandidate(value,nowMs);

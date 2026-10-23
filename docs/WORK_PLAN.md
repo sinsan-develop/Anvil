@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-24 FN03 원저장 관리·시각 결합 SOURCE**: 같은 record1회에서 원문맥/전체보고·관리 범위와 원수신시각 기반 head를 결합했다. 새4 RED→직접144 합성 PASS/typecheck/diff0·독립 C0/I0/M0다. 정상 총2조회/관리음성1·권위false8/분리조회이며 실제 DB/auth/관리producer/verifier/바이트·화면 사용은 미검증·미활성이다. 기존 경로/SQL/route를 보존하며 전체 계획 미완료다.
+
 - **2026-10-24 FN03 서버 원관측 시각 SOURCE**: 기존identity/control 후보에서 새저장 시각경로를 별도로 소비한다. 새4 RED→직접146 합성 PASS/typecheck/diff0·서버정상2조회/held미보고2·만료0·제어회수1·권위false7다. 실제auth/verifier/PG/current·held전체성공은 미검증으로 유지하며 전체계획미완료다.
 
 - **2026-10-24 FN03 원관측 시각 SOURCE**: 기존0040 verified_at>=원received_at 구조를 별도 TS head/저장 소비에 대응했다. 원관측 시각만 사용·동시각 허용/이전양성거절·원음성/오류/기존경로 유지, 새6 RED→직접142 합성 PASS/typecheck/diff0다. 실제verifier/PG/현재권위는 미검증이며 전체계획미완료다.
