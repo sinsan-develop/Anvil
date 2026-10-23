@@ -1,5 +1,15 @@
 # P02 공통 명령·관측 계약 초안
 
+## FN06 D1 factory 원 unnamed Job 보유 SOURCE — 2026-10-23
+
+`OwnershipEvidenceJobFactorySource.CreateEmptyJobSource`는 신규 미등록 native SOURCE다. 실제 호출 승인은 포함하지 않는다. 이름/빌린 rawhandle/외부 callback을 받지 않고 `CreateJobObjectW(NULL,NULL)`가 돌려준 private SafeHandle만 소유한다. Owner interface에는 빈 Job 조회/Dispose/local handle close 결과뿐이며 rawhandle 전달·Duplication·프로세스 생성/할당/종료·limit/ACL 변경은 없다. CloseHandle 성공만 local close 확인으로 두며 전역 Job 소멸/전임 writer 회수/새 실행 권한은 아니다. 다른 고권한 프로세스의 handle복제/변조까지 배제한 유일보유 증명으로 쓰지 않는다.
+
+조회는 비상속/close보호 없음(flags0), 고정 accounting 구조와 반환길이·Total/Active/Terminated/CPU/fault 전부0을 검사한다. 같은 owner lock 아래 조회/Dispose를 직렬화하고 마지막 결과에도 최초 단조기한을 적용한다. 호출수용<=10초·생성시작후조회<=120초이며 동기kernel호출/lock의 강제종료나 자동자원회수는 제공하지 않는다. 향후 승인 factory가 finally Dispose해야 한다. 실패시 본인 원handle만 닫고 close불명확은 별도 UNKNOWN이다.
+
+이 source만으로 `ProcessCreationAuthorized/PreparationAuthorized/ExecutionAuthorized/DispatchPerformed/ActualWriterAbsenceVerified`는 모두false다. current 인증준비·승인root/image·원process/thread 생성/Job귀속·actualwriter·실제Windows검증이 없으며 기존 Host/CLI/route에 등록하지 않는다. 새2 source는 기존 D2 재compile 요청4에 자동 포함하지 않는다. 미래시험SOURCE는 순수 accounting/budget 거절뿐으로 실제생성/조회/정리검증을 대신하지 않는다.
+
+공식계약: [CreateJobObjectW](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-createjobobjectw), [Job accounting](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_basic_accounting_information), [QueryInformationJobObject](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-queryinformationjobobject), [GetHandleInformation](https://learn.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-gethandleinformation). 서명/구조 대조만 했으며 실제 OS 실행·컴파일은 미검증이다.
+
 ## FN06 D1 현재 조회 전체 async 수명·정리후 결과검사 — 2026-10-23
 
 current resolver는 기존 caller timeout(최대10초)을 첫await 전부터 전체연결/원인증/DBquery/새관측/COMMIT에적용한다. 같은queryfacade가pending을추적하고close/abort·원함수변경/단조기한을전후검사한다. 늦은connect는BEGIN없이소유연결만폐기하고, pending query중실패는rollback을대기하지않고연결폐기모델로분리한다. rollback무응답에는별도min(caller timeout,1000ms)의유한cleanup을적용한다. 실제DB취소·강제중단/rollback완료를추정하지않는다.

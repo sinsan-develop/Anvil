@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-23 FN06 D1 factory 원 Job 보유 SOURCE**: 새 unnamed Job 반환값을 private SafeHandle/owner에만 보유하고 빈 accounting/flags·동시 조회/Dispose·실제 close결과를 분리한 미등록 SOURCE를 작성했다. 현재 인증준비·원 suspended process/thread 생성/할당·root/image·actualwriter는 미완료/권한false다. 미래반례 SOURCE와 정적대조만 수행하며 native compile/호출은NOT_RUN, D2고정4/단발소진과 기존거절은유지한다.
+
 - **2026-10-23 FN06 D1 current/준비 수명**: current의전체connect/query/COMMIT async무응답을caller예산+유한cleanup으로한정하고두owner는단조기한/원참조/취소·최소원근거기한을정리후에도재검사한다. 원M1/I1과반례RED를보존해최종45합성PASS/type/diff0범위로보완했다. 실제PG취소/원자성/COMMIT시각·동기강제중단/native/Agent·전체계획완료증거는아니며 SQLpendingM1/D2동결4/기존거절/권위false를유지한다.
 
 - **2026-10-23 FN06 D1 준비 owner 의존성 고정**: 기존 준비저장/조회transaction의 await중연결함수/인증함수/timeout교체를원참조대조로거절하고 COMMIT시도후변경은UNKNOWN을보존했다. 반례RED4→직접13+stage8+receipt6=27합성PASS·최종type/diff0이며실제PG COMMIT시각/SQLpendingM1/native권위/Agent와전체계획은미완료다. SQL/manifest/권한·키/서비스/compile4변경0이다.

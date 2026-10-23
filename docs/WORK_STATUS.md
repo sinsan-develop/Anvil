@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+- **새 Job SOURCE 한정 독립정적 결과**: C0/I0/M0·독립compile/RunAll/PInvoke/Job 생성/수정0. 반환값의 private 이전·이전전실패정리·Read/Dispose gate·local CloseHandle 성공분리와 공식 accounting 구조/NULL/class1을 대조했다. 실제 close성공/경합·Interop/생성출처의권위·전역유일보유/전체FN06완료는미검증이다. Main diff --check exit0과 새SOURCE rawhash를 기록하고 기존branch에 source2+상태/계획/계약의정확5경로만보존한다. D2요청4와보호8은변경하지않는다.
+
+- **2026-10-23 D1 새 Job 원보유 SOURCE 작성**: `OwnershipEvidenceJobFactorySource.cs`는 CreateJobObjectW(NULL,NULL)의 원 반환값만 private SafeHandle에 보관하고 rawhandle·이름·외부 handle/callback 입력 및 외부반환을 두지 않는다. 원 Job의 flags0·고정 accounting size/returnLength·전체 accounting0을 검사하고 private owner가 조회/Dispose를 같은 lock으로 직렬화한다. 단일 SafeHandle close 결과와 IsClosed를 분리해 close 실패는 UNKNOWN, 수명120초/호출별<=10초는 결과수용일 뿐 자동정리·강제종료/외부중복배제 보장이 아니다. 프로세스 생성/할당/kill-on-close·정책/키/인증준비는 추가하지 않고 결과권한false·미확인목록 유지다. 미래 순수 accounting/잘못된 budget 반례 SOURCE를 먼저 작성했으나 compile/RED-GREEN/RunAll/실제Job/CloseHandle은 NOT_RUN이다. 관련 TS/DB 불변으로 이전45검사를 반복하지 않았고 native 근거로 쓰지 않는다. 한정 독립정적 검토 중이며 D2요청4는불변·기존단발허가 재사용0·원실패보존이다.
+
+- **2026-10-23 D1 factory 원 Job 보유 SOURCE 착수**: 다음 독립 단위는 새 이름없는 Job의 원 생성 반환값만 private SafeHandle에 보유하고, 외부 raw handle/이름/빌린 handle 입력 없이 빈 Job 조회·유한 결과수용·단일 Dispose를 제공하는 미등록 SOURCE다. 프로세스 생성/할당/종료·실제 factory 권위·현재인증 준비/키/actual writer는 연결하지 않는다. D1의 native SOURCE만 적용하므로 compile/RunAll/PInvoke/Job 생성은 실행하지 않으며 미래 반례 SOURCE→구현→정적 대조 순서다. TDD skill의 실제 RED/GREEN 실행은 명시적 D1 제외가 우선해 NOT_RUN이며 통과로 보고하지 않는다. 기존 D2 요청4/원단발소진·보호8/거절·SQLpendingM1은 유지한다. Ruling: 원Job 보유/정리의 독립 선행만 분리 — 실제 authority 없는 process 생성으로 확대하지 않음 — 잘못되면 미검증 native 소스가 남지만 활성화되지 않는다.
+
 - **current/준비 cleanup I1 최종 한정 재대조**: 최소원근거기한closure/불변clock숫자와release후재검사 보정 범위 독립정적 C0/I0/M0·독립실행/수정0이다. 원I1/RED는보존하며실제DB시각/COMMIT순간·강제중단/native권위/전체완료로승격하지않는다.
 
 - **2026-10-23 D1 current/준비 owner 유한 대기·정리후 유효성 보완**: current resolver의 기존freshport-only race를 전체async connect/원인증·query/COMMIT 대기로넓혀기존caller상한(최대10초)을줄곧적용했다. 모든basis조회도같은queryfacade로추적하고기한/취소후latequery는실DB로다시보내지않으며 늦은connect는BEGIN없이폐기·미완료query는rollback대신폐기한다. rollback무응답은별도min(caller상한,1000ms)cleanup으로한정한다. 두owner는timer지연시에도첫단조시점·각query전후/최종응답과release후원참조/취소/기한을검사하고, COMMIT직전불변DBclock숫자+단조경과/최소원근거기한을release후에도대조한다. COMMIT시도후불명확/기한초과는UNKNOWN·자동재발급/rollback성공단정0·release이후재파괴/중복release0이다. 현재서명/원graph/head/receipt검사·미등록/권한false를유지했다.
