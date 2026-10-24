@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 P03/IX01 복구 source 준비**: PMO 위임의 세 기존 스크립트 고정 TLS/runtime binding을 source-only로 보완하고 신규7·기존runtime1 검사/type/구문/diff를 통과했다. 새 복구 선택은 보호 선행 미충족으로 실제 I/O 전에 항상 거절하므로 TLS생성·신뢰·서비스복구 완료가 아니다. 실제 P1 DB읽기와 P2~P4 실행은 미완료이며 세부 diff/hash·오류·다음 조치는 WORK_STATUS와 기존 N4 패킷에 기록했다.
+
 - **2026-10-25 IX01 실제 연동 선행 재개**: P0 새 직접승인으로 기존 개발 PG를 단1회 기동·이번 StartedAt 이후 ready marker1 관측 후 running 유지했다. DB접속/SQL·앱/TLS/Agent0, 기능 검수·IX01/Stage 완료가 아니다. 다음 P1 기존 read-only schema probe의 source/20분 binding을 PMO 결정에 연결하며 P2~P4는 분리한다. 실제 증거·오류·허가 소진과 경계는 WORK_STATUS 및 기존 N4 패킷 상단에 기록했다. 완료된 코드·불변 시험은 반복하지 않았다.
 
 - **2026-10-25 FN12/UI08 보고 원 업무 checkpoint**: 기존 보고의 exact 원초안/확정 쌍으로 고정 계획 업무·카드hash 조회/펼침을 연결했다. 직접/원업무·설계 인접unit10·신규정상/403 DOM2 및 임무지연닫기1·typebuild/diff0/QA정리0. 새 계획 GET 지연닫기·설계 GET/독립리뷰/실제DB/WSL/전체Stage·계획 미완료를 구분해 WORK_STATUS에 기록했다.

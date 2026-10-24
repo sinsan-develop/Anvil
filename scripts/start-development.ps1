@@ -1,21 +1,33 @@
-param([switch]$UseVerifiedWslRelay,[switch]$Fn08Runtime)
+param([switch]$UseVerifiedWslRelay,[switch]$Fn08Runtime,[switch]$RecoveryTls)
 $ErrorActionPreference = 'Stop'
-function Get-DevelopmentRuntimePath([bool]$Fn08,[bool]$UseRelay) {
+function Get-DevelopmentTlsDirectory([string]$Root,[bool]$Recovery) {
+  if ([IO.Path]::GetFullPath($Root) -ne 'D:\Project\Anvil\.av3-data') { throw 'DEVELOPMENT_TLS_ROOT_INVALID' }
+  return Join-Path 'D:\Project\Anvil\.av3-data' $(if($Recovery){'dev-tls-20261025-01'}else{'dev-tls'})
+}
+function Assert-DevelopmentTlsExecution([bool]$Recovery) {
+  if ($Recovery) { throw 'DEVELOPMENT_TLS_RECOVERY_PROTECTION_UNVERIFIED' }
+}
+function Get-DevelopmentRuntimePath([bool]$Fn08,[bool]$UseRelay,[bool]$Recovery=$false) {
+  if ($Recovery -and ($Fn08 -or $UseRelay)) { throw 'DEVELOPMENT_RECOVERY_MODE_CONFLICT' }
+  if ($Recovery) { return 'D:\Project\Anvil\.av3-data\n4-recovery-01\runtime' }
   if ($Fn08 -and !$UseRelay) { throw 'FN08_VERIFIED_RELAY_REQUIRED' }
   return Join-Path 'D:\Project\Anvil\.av3-data' $(if($Fn08){'runtime-fn08-20261017'}else{'runtime'})
 }
 $dataRoot = 'D:\Project\Anvil\.av3-data'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$runtime = Get-DevelopmentRuntimePath ([bool]$Fn08Runtime) ([bool]$UseVerifiedWslRelay)
+$runtime = Get-DevelopmentRuntimePath ([bool]$Fn08Runtime) ([bool]$UseVerifiedWslRelay) ([bool]$RecoveryTls)
+$tlsDirectory = Get-DevelopmentTlsDirectory $dataRoot ([bool]$RecoveryTls)
+# cold-start 후보는 보호 선행 검증 전 파일·신뢰·port·process 획득을 하지 않는다.
+Assert-DevelopmentTlsExecution ([bool]$RecoveryTls)
 if ($Fn08Runtime) {
-  foreach ($path in @($dataRoot,(Join-Path $dataRoot 'dev-tls'),(Join-Path $dataRoot 'auth.json'),(Join-Path $dataRoot 'db-app.json'),(Join-Path $dataRoot 'dev-tls/server.key.pem'),(Join-Path $dataRoot 'dev-tls/server.cert.pem'))) {
+  foreach ($path in @($dataRoot,$tlsDirectory,(Join-Path $dataRoot 'auth.json'),(Join-Path $dataRoot 'db-app.json'),(Join-Path $tlsDirectory 'server.key.pem'),(Join-Path $tlsDirectory 'server.cert.pem'))) {
     if ((Get-Item -LiteralPath $path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'FN08_PROTECTED_REFERENCE_LINK' }
   }
   if ((& git -C $projectRoot branch --show-current).Trim() -ne 'codex/av3-stage-b' -or @(& git -C $projectRoot status --porcelain --untracked-files=all).Count) { throw 'FN08_COMMITTED_SOURCE_REQUIRED' }
 }
 if (!(Test-Path -LiteralPath (Join-Path $dataRoot 'db-app.json')) -or (Test-Path -LiteralPath $runtime)) { throw 'DEVELOPMENT_RUNTIME_NOT_NEW_OR_DB_MISSING' }
-$ca = [Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $dataRoot 'dev-tls/ca.cer'))
-$caReceipt = Get-Content -LiteralPath (Join-Path $dataRoot 'dev-tls/receipt.json') -Raw | ConvertFrom-Json
+$ca = [Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $tlsDirectory 'ca.cer'))
+$caReceipt = Get-Content -LiteralPath (Join-Path $tlsDirectory 'receipt.json') -Raw | ConvertFrom-Json
 if ($ca.Thumbprint -ne $caReceipt.thumbprint -or $ca.NotAfter.ToUniversalTime() -le [DateTime]::UtcNow) { throw 'DEVELOPMENT_CA_INVALID' }
 $store = [Security.Cryptography.X509Certificates.X509Store]::new('Root','CurrentUser')
 $store.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadOnly)
@@ -59,7 +71,7 @@ try {
     $tunnel = Start-Process -FilePath $ssh -ArgumentList @('-N','-L','127.0.0.1:5546:127.0.0.1:5546','-o','ExitOnForwardFailure=yes','-o','BatchMode=yes','-o','ControlMaster=no','-o','ControlPath=none','WSL-server') -WindowStyle Hidden -PassThru -RedirectStandardError (Join-Path $runtime 'tunnel.err.log')
   }
   $authRef = Join-Path $dataRoot 'auth.json'
-  $childEnvironment = @{ANVIL_TLS_KEY=(Join-Path $dataRoot 'dev-tls/server.key.pem');ANVIL_TLS_CERT=(Join-Path $dataRoot 'dev-tls/server.cert.pem');ANVIL_DB_CONFIG=(Join-Path $dataRoot 'db-app.json');ANVIL_AUTH_CONFIG=$(if(Test-Path -LiteralPath $authRef){$authRef}else{$null});ANVIL_HOST='127.0.0.1';ANVIL_PORT='3830'}
+  $childEnvironment = @{ANVIL_TLS_KEY=(Join-Path $tlsDirectory 'server.key.pem');ANVIL_TLS_CERT=(Join-Path $tlsDirectory 'server.cert.pem');ANVIL_DB_CONFIG=(Join-Path $dataRoot 'db-app.json');ANVIL_AUTH_CONFIG=$(if(Test-Path -LiteralPath $authRef){$authRef}else{$null});ANVIL_HOST='127.0.0.1';ANVIL_PORT='3830'}
   if (!$Fn08Runtime) {
     $env:ANVIL_TLS_KEY = $childEnvironment.ANVIL_TLS_KEY
     $env:ANVIL_TLS_CERT = $childEnvironment.ANVIL_TLS_CERT
@@ -73,7 +85,9 @@ try {
   $healthy = $false
   for ($attempt = 0; $attempt -lt 20; $attempt++) {
     if (($null -ne $tunnel -and $tunnel.HasExited) -or $server.HasExited) { throw 'OWNED_DEVELOPMENT_PROCESS_EXITED' }
-    $probe = & $node (Join-Path $PSScriptRoot 'check-development-https.ts')
+    $probeArguments = @((Join-Path $PSScriptRoot 'check-development-https.ts'))
+    if ($RecoveryTls) { $probeArguments += '--recovery-tls' }
+    $probe = & $node @probeArguments
     if ($LASTEXITCODE -eq 0) { $healthy = $true; break }
     if ($LASTEXITCODE -ne 2) { throw 'DEVELOPMENT_TLS_OR_HEALTH_VALIDATION_FAILED' }
     Start-Sleep -Milliseconds 250

@@ -31,6 +31,8 @@ PG running 이후의 별도 읽기 결정이다. 기존 `scripts/development-sch
 
 ### P2 — 새 TLS와 현재 사용자 신뢰 한 개
 
+- 2026-10-25 source-only 보완: PMO 위임으로 prepare/start의 `-RecoveryTls`와 probe의 `--recovery-tls` 고정 경로 선택만 준비했다. 새 모드의 실제 생성/신뢰/기동/조회는 **DEVELOPMENT_TLS_RECOVERY_PROTECTION_UNVERIFIED**로 I/O 이전 항상 거절한다. 옛 Fn08Runtime/UseVerifiedWslRelay와 새 모드는 결합 불가이며 보호 선행 구현·실행 승인은 여전히 없다. 신규7+기존runtime1 합성/AST 검사와 type/구문/diff만 확인했다. 현재 source SHA256: prepare `0923B6B6F282A804F4BBE81A794129964858FB190E0E5EC7C3AB12BED94DC8D9`, start `C53A3EC3B1216171CF459F5DEB95F158D39BE1AAD25341AEE1C36455C2CB7850`, probe `74476730DDDE1573EC97701A3AC66F5CF1D67AE3A2E98B6D9535C3624796D870`. 아래 예전 hash는 변경 전 대조 근거이며 새 실행 대상으로 사용하지 않는다.
+
 - 새 대상은 `D:\Project\Anvil\.av3-data\dev-tls-20261025-01`이며 현재 부재다. 기존 dev-tls 파일·키·인증서·기존 신뢰/계정은 보존한다.
 - 기존 `scripts/prepare-dev-https.ps1` SHA256 3572488721B0C3452802FADE225A1B0EE9B29DC2D982C855663F7156CE2B6BA2는 DataRoot 전체가 새 .av3-data여야 하므로 그대로 재실행 불가다.
 - 필요한 최소 source delta는 최초 생성 모드를 유지한 채 승인된 새 TLS child만 생성하는 분기다. 그 leaf에만 현재 사용자+SYSTEM ACL/키 보호, CA RSA3072/leaf2048·SHA256/서버 EKU/7일·SAN localhost/127.0.0.1/172.27.253.53을 기존 방식대로 생성·검사한다. 현재 WSL 주소에 172.27.253.53이 있음을 확인했고 다른 Docker 주소를 SAN에 추가하지 않는다.
