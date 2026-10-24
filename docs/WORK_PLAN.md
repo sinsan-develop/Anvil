@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN05/UI10 관련 고정 원문보기 checkpoint**: 보관scope exact재검사→기존단계/업무GET원문보기·거절숨김/이탈수거를연결했다. 과거단계현재치환/새endpoint·권한/검색wire/명령/실행0. 신규4RED→직접/인접23/합성DOM3/typebuild/diff0·QA0, 독립C0/I0/M1의보강범위/남은부모교체·단계이탈DOM공백은WORK_STATUS에분리했다. 실제PG/서비스·전체FN05/UI10/Stage미완료·검색/TLS직접승인경계를유지하고기존계획독립소비대조를계속한다.
+
 - **2026-10-25 FN05 맥락 지식 관련성 소비 checkpoint**: 기존exact지식조회scope를선택전·보관원문에표시하고검색wire/원선택·manifest·명령·권한불변을유지했다. 신규reader2RED→직접/인접14및서비스합성연결1=15PASS·공통보기DOM1/typebuild/diff0·한정독립C0/I0/M0·QA0이며미검증범위는WORK_STATUS에분리한다. 검색§2.1직접승인경계·실DB/서비스선행·전체FN05/UI10/Stage미완료는유지한다. 후속은기존허용GET안의관련원문보기소비대조다.
 
 - **2026-10-25 FN05/UI10 저장·정확조회 source 검증 checkpoint**: 고정 단계/업무 관련성의 실제참조검사·작성/정정/정확읽기를 연결하고 모호한 중복업무만차단했다. 직접/인접36·합성DOM5·typebuild/diff0·한정독립I1보정후C0/I0/M0·QA두경로0, 원실패/오류·실DB/서비스/정정DOM전체 미검증은WORK_STATUS에보존한다. 검색§2.1미채택/실제환경미충족·전체FN05/UI10/Stage/계획미완료를유지하고 다음exact검색상세화판정은PMO에요청했다.
