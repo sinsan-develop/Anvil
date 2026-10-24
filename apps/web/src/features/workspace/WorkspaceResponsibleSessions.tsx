@@ -5,6 +5,7 @@ import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import { listCandidates, readCandidate, type CandidateHit } from '../connections/api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
+import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
 import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput, prepareResponsibleSessionInput, prepareResponsibleSessionAction, readResponsibleSessionState, sendResponsibleSessionAction, type ResponsibleSessionAction, type ResponsibleSessionBuffer, type ResponsibleSessionState } from './responsible-session-api.ts';
 
 export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,onChange,owner,busy,run}:{client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
@@ -94,23 +95,26 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   </section>;
 }
 
-export function ProviderClaimHistoryRow({item,pending,onSelect}:{item:ProviderClaimPageHistory['items'][number];pending:boolean;onSelect:(query:ProviderClaimHistoryQuery)=>void}){
- return <li>{item.query.kind} · 수신 기록 {item.receipt.claimRef.id} · v{item.receipt.claimRef.version} · {item.receipt.recordedAt}<button type="button" disabled={pending} onClick={()=>onSelect(item.query)}>이 기록의 원 결과 확인: {item.receipt.claimRef.id}</button></li>;
+export function ProviderClaimHistoryRow({item,pending,onSelect,onUnderstanding}:{item:ProviderClaimPageHistory['items'][number];pending:boolean;onSelect:(query:ProviderClaimHistoryQuery)=>void;onUnderstanding?:(item:ProviderClaimPageHistory['items'][number])=>void}){
+ return <li>{item.query.kind} · 수신 기록 {item.receipt.claimRef.id} · v{item.receipt.claimRef.version} · {item.receipt.recordedAt}<button type="button" disabled={pending} onClick={()=>onSelect(item.query)}>이 기록의 원 결과 확인: {item.receipt.claimRef.id}</button>{onUnderstanding?<button type="button" disabled={pending} onClick={()=>onUnderstanding(item)}>이 실행의 이해 검토 이력: {item.receipt.claimRef.id}</button>:null}</li>;
 }
 
 export function ProviderClaimHistoryPanel({client,projectId,sessionRef,subjectKey,onAuthenticationLost}:{client:ApiClient;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];subjectKey:string;onAuthenticationLost:()=>void}){
  const scope=ordered([projectId,sessionRef,subjectKey]),current=useRef(scope),sequence=useRef(0),alive=useRef(true);current.current=scope;
  const [view,setView]=useState<{scope:string;page:ProviderClaimPageHistory|null;receipt:ProviderClaimHistory|null;error:string|null;pending:boolean}|null>(null);
+ const [understanding,setUnderstanding]=useState<{scope:string;item:ProviderClaimPageHistory['items'][number]}|null>(null);
  const shown=view?.scope===scope?view:null;
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
  const active=(ticket:number,key:string)=>alive.current&&sequence.current===ticket&&current.current===key;
  const failure=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z0-9_]{1,100}$/.test(cause.code)?cause.code:'PROVIDER_CLAIM_HISTORY_INVALID';
  async function load(cursor:string|null=null){
+  setUnderstanding(null);
   const ticket=++sequence.current,key=scope;setView({scope:key,page:null,receipt:null,error:null,pending:true});
   try{const page=await readProviderClaimPageHistory(client,projectId,sessionRef,cursor,()=>active(ticket,key));if(active(ticket,key)&&page)setView({scope:key,page,receipt:null,error:null,pending:false});}
   catch(cause){if(active(ticket,key)){setView({scope:key,page:null,receipt:null,error:failure(cause),pending:false});if(cause instanceof ApiError&&cause.status===401)onAuthenticationLost();}}
  }
  async function original(query:ProviderClaimHistoryQuery){
+  setUnderstanding(null);
   const ticket=++sequence.current,key=scope,page=shown?.page??null;setView({scope:key,page,receipt:null,error:null,pending:true});
   try{const selected=page?.items.find(item=>ordered(item.query)===ordered(query));if(!selected)throw new ApiError('PROVIDER_CLAIM_HISTORY_INVALID');const receipt=await readProviderClaimReceiptHistory(client,query,()=>active(ticket,key),selected.receipt);if(active(ticket,key)&&receipt)setView({scope:key,page,receipt,error:null,pending:false});}
   catch(cause){if(active(ticket,key)){setView({scope:key,page:null,receipt:null,error:failure(cause),pending:false});if(cause instanceof ApiError&&cause.status===401)onAuthenticationLost();}}
@@ -122,9 +126,10 @@ export function ProviderClaimHistoryPanel({client,projectId,sessionRef,subjectKe
   {shown?.pending?<p role="status">조회 중 · 이전 원 결과 숨김</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 조회 미확인 · 처음부터 다시 조회하세요.</p>:null}
   {shown?.page?<><p>조회 시각 {shown.page.observedAt} · 현재 허가·Agent 가동 확인 아님</p>
-   {shown.page.items.length?<ul>{shown.page.items.map(item=><ProviderClaimHistoryRow key={item.receipt.claimRef.id} item={item} pending={shown.pending} onSelect={query=>void original(query)}/>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
+   {shown.page.items.length?<ul>{shown.page.items.map(item=><ProviderClaimHistoryRow key={item.receipt.claimRef.id} item={item} pending={shown.pending} onSelect={query=>void original(query)} onUnderstanding={selected=>setUnderstanding({scope,item:structuredClone(selected)})}/>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
    {shown.page.hasMore&&shown.page.nextCursor?<button type="button" disabled={shown.pending} onClick={()=>void load(shown.page!.nextCursor)}>이전 공급자 기록 조회</button>:null}
   </>:null}
   {shown?.receipt?<article aria-label="공급자 기록 원 결과">{shown.receipt.found&&shown.receipt.receipt?<><p>PROVIDER_CLAIM_RECORDED · 공급자 주장만 보관 · 현재 사용 가능성 미확인</p><p>원 참조 {shown.receipt.receipt.claimRef.id} · v{shown.receipt.receipt.claimRef.version} · {shown.receipt.receipt.claimRef.contentHash}</p><p>원 기록 시각 {shown.receipt.receipt.recordedAt} · 조회 시각 {shown.receipt.observedAt}</p><p>새 실행 허가 없음 · 지시 전달 없음 · 업무 인수 아님</p></>:<p>정확 사건 원 결과 미발견 · 미저장·안전 판정 아님</p>}</article>:null}
+ {understanding?.scope===scope&&!shown?.pending&&shown?.page?.items.some(item=>ordered(item)===ordered(understanding.item))?<ClaimUnderstandingHistory key={ordered(understanding)} client={client} projectId={projectId} sessionRef={sessionRef} item={understanding.item} onClose={()=>setUnderstanding(null)} onAuthenticationLost={onAuthenticationLost}/>:null}
  </section>;
 }
