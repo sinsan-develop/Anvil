@@ -3,6 +3,18 @@ import {existsSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {test} from 'node:test';
 
+function simulationFixture(){
+ const start=Date.parse('2026-10-25T00:00:00Z'),events:string[]=[];
+ const clock={wall:start,mono:0};
+ const request={mode:'P2',commit:'b'.repeat(40),runId:'source-bridge-01',issuedAt:start,expiresAt:start+600000,manifest:null};
+ const reply=(context:any,state:string)=>({kind:'SOURCE_SIMULATION',state,runId:context.runId,commit:context.commit,mode:context.mode,manifestHash:context.manifestHash,leaseId:'source-lease-01',nativeVerified:false});
+ const io={kind:'SOURCE_SIMULATION',wallNow:()=>clock.wall,monotonicNow:()=>clock.mono,
+  async simulateAcquire(context:any){events.push('acquire');assert.ok(Object.isFrozen(context));return reply(context,'ACQUIRED_SIMULATION');},
+  async simulateStep(context:any){events.push('step');return reply(context,'STEP_RECORDED_SIMULATION');},
+  async simulateRelease(context:any){events.push('release');return reply(context,'RELEASE_RECORDED_SIMULATION');}};
+ return{start,clock,request,events,reply,io};
+}
+
 test('복구 entry는 현재 OS 미검증 상태에서 main·timer를 실행하지 않는다',async()=>{
  const path='../../../scripts/development-recovery-entry.ts';
  assert.ok(existsSync(new URL(path,import.meta.url)),'복구 entry 준비 소스 부재');
@@ -87,4 +99,50 @@ test('OS 시험 준비는 고정14 case의 source 모의 연결만 기록하며 
 test('모의 시험 일부 성공 뒤 오류나 case 재사용은 다음 항목을 실행하거나 전체성공으로 처리하지 않는다',{skip:process.platform!=='win32'},()=>{
  const command=`$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-os-qa.ps1'),[ref]$tokens,[ref]$errors);foreach($name in @('Get-DevelopmentRecoveryOsQaPlan','Invoke-DevelopmentRecoveryOsQaSourceCases')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);. ([scriptblock]::Create($f.Extent.Text))};$script:count=0;$failed=$false;try{Invoke-DevelopmentRecoveryOsQaSourceCases {param($case)$script:count++;if($script:count -eq 3){throw 'FAKE_UNAVAILABLE'};@{caseId=$case.caseId;outcome='DENIED';kind='SOURCE_SIMULATION';nativeVerified=$false}}|Out-Null}catch{$failed=$_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_QA_SIMULATION_INVALID'};$replay=$false;try{Invoke-DevelopmentRecoveryOsQaSourceCases {param($case)@{caseId='PARENT_REPLACEMENT';outcome='DENIED';kind='SOURCE_SIMULATION';nativeVerified=$false}}|Out-Null}catch{$replay=$_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_QA_SIMULATION_INVALID'};@{failed=$failed;calls=$script:count;replay=$replay}|ConvertTo-Json -Compress`;
  assert.deepEqual(JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{failed:true,calls:3,replay:true});
+});
+
+test('source 주입 경계는 모의단계와 정리만 연결하고 실제 실행 권위를 만들지 않는다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts');assert.equal(typeof m.simulateRecoverySourceBridge,'function','source 주입 경계 부재');
+ const f=simulationFixture(),r=await m.simulateRecoverySourceBridge(f.request,f.io);
+ assert.deepEqual(f.events,['acquire','step','release']);
+ assert.equal(r.status,'SOURCE_SIMULATION_RECORDED_NOT_OS_VALIDATED');assert.equal(r.executionAuthorized,false);assert.equal(r.osVerified,false);assert.equal(r.cleanup,'RELEASE_RECORDED_SIMULATION');
+ const g=simulationFixture();await assert.rejects(m.simulateRecoverySourceBridge({...g.request,approvalRef:'claimed'},g.io),/DEVELOPMENT_RECOVERY_SOURCE_BRIDGE_INVALID/);assert.deepEqual(g.events,[]);
+});
+
+test('다른 run·native true 응답과 획득 ACK 유실은 정리 소유권을 추정하지 않는다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts');assert.equal(typeof m.simulateRecoverySourceBridge,'function');
+ for(const mode of ['other-run','native-claim','lost']){
+  const f=simulationFixture();f.io.simulateAcquire=async c=>{f.events.push('acquire');if(mode==='lost')throw Error('FAKE_LOST');return{...f.reply(c,'ACQUIRED_SIMULATION'),...(mode==='other-run'?{runId:'another-run'}:{nativeVerified:true})};};
+  const r=await m.simulateRecoverySourceBridge(f.request,f.io);assert.deepEqual(f.events,['acquire']);assert.equal(r.status,mode==='lost'?'ACQUISITION_UNCONFIRMED':'OWNERSHIP_UNVERIFIED');assert.equal(r.executionAuthorized,false);
+ }
+});
+
+test('획득 뒤 만료는 새 단계 없이 같은 source 상관관계의 정리만 허용하고 불명 결과를 보존한다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts');assert.equal(typeof m.simulateRecoverySourceBridge,'function');
+ const f=simulationFixture();f.io.simulateAcquire=async c=>{f.events.push('acquire');f.clock.wall=f.request.expiresAt;f.clock.mono=600000;return f.reply(c,'ACQUIRED_SIMULATION');};
+ f.io.simulateRelease=async c=>{f.events.push('release');return f.reply(c,'RELEASE_UNCONFIRMED_SIMULATION');};
+ const r=await m.simulateRecoverySourceBridge(f.request,f.io);assert.deepEqual(f.events,['acquire','release']);assert.equal(r.step,'WINDOW_UNVERIFIED');assert.equal(r.cleanup,'RELEASE_UNCONFIRMED_SIMULATION');assert.notEqual(r.status,'SOURCE_SIMULATION_RECORDED_NOT_OS_VALIDATED');
+});
+
+test('await 중 원 요청 변조는 source lease 상관관계를 바꾸지 않는다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts');assert.equal(typeof m.simulateRecoverySourceBridge,'function');
+ const f=simulationFixture();let complete:(value:any)=>void=()=>{};let acquired:any;
+ f.io.simulateAcquire=async c=>{f.events.push('acquire');acquired=c;return await new Promise(resolve=>{complete=resolve;});};
+ const promise=m.simulateRecoverySourceBridge(f.request,f.io);f.request.commit='c'.repeat(40);complete(f.reply(acquired,'ACQUIRED_SIMULATION'));
+ const r=await promise;assert.equal(r.commit,'b'.repeat(40));assert.deepEqual(f.events,['acquire','step','release']);
+});
+
+test('P3 주입은 같은 commit의 필수4파일 선언을 요구하되 실제 runtime 완전성을 주장하지 않는다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts'),f=simulationFixture();
+ const manifest={schemaVersion:1,commit:f.request.commit,files:['apps/server/main.ts','apps/web/dist/index.html','package.json','scripts/development-recovery-entry.ts'].map(relativePath=>({relativePath,contentHash:'a'.repeat(64),sizeBytes:1}))};
+ const input={...f.request,mode:'P3',expiresAt:f.start+1800000,manifest};
+ const r=await m.simulateRecoverySourceBridge(input,f.io);assert.deepEqual(f.events,['acquire','step','release']);assert.equal(r.mode,'P3');assert.equal(r.runtimeCoverage,'DECLARED_NOT_VERIFIED');assert.equal(r.executionAuthorized,false);
+ const g=simulationFixture();await assert.rejects(m.simulateRecoverySourceBridge({...input,manifest:{...manifest,files:manifest.files.slice(1)}},g.io),/DEVELOPMENT_RECOVERY_SOURCE_BRIDGE_INVALID/);assert.deepEqual(g.events,[]);
+ const h=simulationFixture();h.io.simulateRelease=async()=>{h.events.push('release');throw Error('FAKE_ACK_LOST');};
+ const lost=await m.simulateRecoverySourceBridge(input,h.io);assert.equal(lost.step,'STEP_RECORDED_SIMULATION');assert.equal(lost.cleanup,'RELEASE_UNCONFIRMED_SIMULATION');assert.equal(lost.status,'SOURCE_SIMULATION_UNCONFIRMED');assert.deepEqual(h.events,['acquire','step','release']);
+});
+
+test('host의 고정 binding 키 별칭도 canonical 필드로 가장하지 못한다',{skip:process.platform!=='win32'},()=>{
+ const command=`$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-host.ps1'),[ref]$tokens,[ref]$errors);foreach($name in @('Get-DevelopmentRecoverySourcePlan','Read-DevelopmentRecoverySourceBinding')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);. ([scriptblock]::Create($f.Extent.Text))};$now=[datetimeoffset]'2026-10-25T00:00:00Z';$inputCopy=@{mode='P2';Commit=('a'*40);runId='source-01';issuedAt=$now.ToString('o');expiresAt=$now.AddMinutes(10).ToString('o')};$denied=$false;try{Read-DevelopmentRecoverySourceBinding $inputCopy $now|Out-Null}catch{$denied=$_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_BINDING_INVALID'};@{denied=$denied}|ConvertTo-Json -Compress`;
+ assert.deepEqual(JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{denied:true});
 });

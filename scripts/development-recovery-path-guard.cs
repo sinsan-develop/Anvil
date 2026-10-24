@@ -16,8 +16,9 @@ internal static class DevelopmentRecoveryPathGuard {
  const uint ReadControl=0x20000,ReadAttributes=0x80,ReadData=1,Synchronize=0x100000;
  const uint DirectoryOption=1,SyncOption=0x20,OpenReparse=0x200000,BackupSemantics=0x2000000;
  const uint ShareRead=1,ShareWrite=2,FileOpen=1,FileCreate=2;
- // source-only: 외부 bool/CLI/직렬화된 결과로 이 상태를 바꾸는 entry는 없다.
- static readonly bool ActualOsValidated=false;
+ // 플랫폼 승인은 이 helper 밖의 실행 선행이다. 이 미등록 latch는 승인/OS안전 인증 토큰이 아니다.
+ // 외부 bool/CLI/manifest/직렬화 결과로 production adapter를 연결하는 entry는 없다.
+ static readonly bool ProductionAdapterConnected=false;
  internal const int MaxPinnedFiles=4096;
  internal const int MaxRetainedHandles=4096;
  internal const long MaxInventoryBytes=2147483648L;
@@ -122,7 +123,7 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly Dictionary<string,string> pinnedSources=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
   DateTime lastWall;TimeSpan lastElapsed;bool disposed,closeUnconfirmed,resourceFaulted,tlsCreated,manifestSealed,manifestFaulted;long bytes;int files;Pin parent;
   internal PathLease(string mode,DateTime issuedAt,DateTime expiresAt){
-   Require(ActualOsValidated); // 최초 bootstrap/실OS·host 수명 계약이 채택되기 전에는 아래에 도달하지 않는다.
+   Require(ProductionAdapterConnected); // 실제 adapter 등록·플랫폼별 실행 선행은 이번 source-only 범위 밖이다.
    Require(mode=="P2"||mode=="P3");phase=mode;
    from=issuedAt;until=expiresAt;acquired=DateTime.UtcNow;lastWall=acquired;remainingAtAcquire=until-acquired;clock.Restart();
    Require(from.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&until>from&&(until-from).TotalMinutes<=(phase=="P2"?10:30)&&acquired>=from&&acquired<until);
@@ -243,7 +244,7 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly int ownerThread=Environment.CurrentManagedThreadId;
   readonly List<KernelHandle> imagePins=new List<KernelHandle>();bool disposed,cleanupUnknown,terminationRequested,faulted;int started;
   internal OwnedRuntime(PathLease lease){
-   Require(ActualOsValidated);Require(lease!=null);paths=lease;paths.RequirePinnedManifest();
+   Require(ProductionAdapterConnected);Require(lease!=null);paths=lease;paths.RequirePinnedManifest();
    job=CreateJobObjectW(IntPtr.Zero,null);Require(job!=null&&!job.IsInvalid);
    try{uint flags;Require(GetHandleInformation(job,out flags)&&flags==0);var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000|0x8,ActiveProcesses=2}};uint size=(uint)Marshal.SizeOf(typeof(ExtendedLimits));Require(SetInformationJobObject(job,9,ref limits,size));IntPtr buffer=Marshal.AllocHGlobal((int)size);try{uint returned;Require(QueryInformationJobObject(job,9,buffer,size,out returned)&&returned==size);var actual=(ExtendedLimits)Marshal.PtrToStructure(buffer,typeof(ExtendedLimits));Require(actual.Basic.Flags==(0x2000|0x8)&&actual.Basic.ActiveProcesses==2);}finally{Marshal.FreeHGlobal(buffer);}Require(ActiveCount()==0);}
    catch{job.Dispose();if(!job.IsInvalid&&!job.CloseSucceeded)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");throw;}
@@ -316,7 +317,7 @@ internal static class DevelopmentRecoveryPathGuard {
    throw new InvalidOperationException("DEVELOPMENT_RECOVERY_FORCE_NOT_AUTHORIZED");
   }
   bool TerminateOwnedJobCore(){
-   Require(ActualOsValidated&&!disposed&&!terminationRequested);terminationRequested=true;
+   Require(ProductionAdapterConnected&&!disposed&&!terminationRequested);terminationRequested=true;
    Require(TerminateJobObject(job,124));var clock=Stopwatch.StartNew();
    foreach(var child in children){long remaining=15000-clock.ElapsedMilliseconds;if(remaining<=0||WaitForSingleObject(child.Process,(uint)remaining)!=0)return false;}
    return ActiveCount()==0;
@@ -333,5 +334,5 @@ internal static class DevelopmentRecoveryPathGuard {
   }
  }
  // 미구현 OS 계약을 가능한 것으로 반환하지 않는다. 기존 provider Job 소스는 수정·등록하지 않는다.
- internal static string[] MissingLifetimeEvidence(){return new[]{"ATOMIC_ORIGINAL_PROCESS_FACTORY_OS_VALIDATION","EXACT_IMAGE_OWNER_BINDING_OS_VALIDATION","SELECTED_PIN_CHILD_INHERITANCE_OS_VALIDATION","GUARDIAN_LOSS_OS_QA","OWNED_JOB_EXIT_AND_CLEANUP_OS_VALIDATION","BOOTSTRAP_EXCEPTION_ACCEPTED","EXACT_RUNTIME_FILE_MANIFEST","PIN_CAPACITY_AND_STARTUP_TIME","AUTHENTICATED_GUARD_LIFETIME_ADAPTER"};}
+ internal static string[] MissingLifetimeEvidence(){return new[]{"ATOMIC_ORIGINAL_PROCESS_FACTORY_OS_VALIDATION","EXACT_IMAGE_OWNER_BINDING_OS_VALIDATION","SELECTED_PIN_CHILD_INHERITANCE_OS_VALIDATION","GUARDIAN_LOSS_OS_QA","OWNED_JOB_EXIT_AND_CLEANUP_OS_VALIDATION","BOOTSTRAP_EXCEPTION_ACCEPTED","EXACT_RUNTIME_FILE_MANIFEST","PIN_CAPACITY_AND_STARTUP_TIME","EXTERNAL_APPROVED_INVOCATION_LIFETIME_ADAPTER"};}
 }

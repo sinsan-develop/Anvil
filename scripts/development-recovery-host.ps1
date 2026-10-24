@@ -18,12 +18,15 @@ function Get-DevelopmentRecoverySourcePlan([string]$Mode) {
   # 소스 후보의 탐색 상한일 뿐 실제 OS 능력·용량 검증을 의미하지 않는다.
   nativeVerified=$false;bootstrapExceptionAccepted=$false;executionAuthorized=$false
   sourcePreparationStatus='PARTIAL_NOT_EXECUTABLE'
-  missing=@('EXACT_SOURCE_REVIEW','BOOTSTRAP_EXCEPTION_DECISION','NATIVE_COMPILE_DECISION','ACTUAL_OS_NEGATIVE_QA','AUTHENTICATED_GUARD_LIFETIME','EXACT_RUNTIME_FILE_MANIFEST','PIN_CAPACITY_AND_STARTUP_TIME')
+  authorityBoundary='EXTERNAL_EXECUTION_PLATFORM'
+  bindingPurpose='TARGET_AND_LIFETIME_AUDIT_ONLY'
+  injectionBoundary='SOURCE_SIMULATION_ONLY'
+  missing=@('EXACT_SOURCE_REVIEW','BOOTSTRAP_EXCEPTION_DECISION','NATIVE_COMPILE_DECISION','ACTUAL_OS_NEGATIVE_QA','EXTERNAL_APPROVED_INVOCATION_LIFETIME_ADAPTER','EXACT_RUNTIME_FILE_MANIFEST','PIN_CAPACITY_AND_STARTUP_TIME')
  }
 }
 function Read-DevelopmentRecoverySourceBinding([hashtable]$Value,[datetimeoffset]$Now) {
  $keys=@('mode','commit','runId','issuedAt','expiresAt')
- if (!$Value -or $Value.Count -ne $keys.Count -or @($Value.Keys|Where-Object{$_ -notin $keys}).Count) { throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID' }
+ if (!$Value -or $Value.Count -ne $keys.Count -or @($Value.Keys|Where-Object{$_ -cnotin $keys}).Count) { throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID' }
  foreach($key in $keys){if($Value[$key] -isnot [string]){throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID'}}
  $p=Get-DevelopmentRecoverySourcePlan $Value.mode
  $issued=[datetimeoffset]::MinValue;$until=[datetimeoffset]::MinValue

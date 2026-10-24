@@ -45,6 +45,52 @@ export function checkRecoveryLifetime(previous:Readonly<RecoveryLifetime>,wallNo
  if(![p.issuedAt,p.expiresAt,p.acquiredWall,p.remainingAtAcquireMs,p.lastWall,p.lastElapsedMs,wallNow,elapsedMs].every(Number.isSafeInteger)||p.executionAuthorized!==false||p.expiresAt<=p.issuedAt||p.expiresAt-p.issuedAt>1800000||p.acquiredWall<p.issuedAt||p.remainingAtAcquireMs!==p.expiresAt-p.acquiredWall||p.lastWall<p.acquiredWall||p.lastElapsedMs<0||wallNow<p.lastWall||wallNow>=p.expiresAt||elapsedMs<p.lastElapsedMs||elapsedMs>=p.remainingAtAcquireMs)throw Error('DEVELOPMENT_RECOVERY_WINDOW_INVALID');
  return Object.freeze({...p,lastWall:wallNow,lastElapsedMs:elapsedMs,executionAuthorized:false});
 }
+export interface RecoverySimulationContext {
+ kind:'SOURCE_SIMULATION';mode:'P2'|'P3';commit:string;runId:string;issuedAt:number;expiresAt:number;
+ manifestHash:string|null;manifest:ReturnType<typeof prepareRecoveryManifest>|null;
+}
+export interface RecoverySourceSimulationIo {
+ kind:string;wallNow:()=>number;monotonicNow:()=>number;
+ simulateAcquire:(context:Readonly<RecoverySimulationContext>)=>Promise<unknown>;
+ simulateStep:(context:Readonly<RecoverySimulationContext>&{readonly leaseId:string})=>Promise<unknown>;
+ simulateRelease:(context:Readonly<RecoverySimulationContext>&{readonly leaseId:string})=>Promise<unknown>;
+}
+/** 가짜 시험 주입 경계다. callback의 주장은 native/플랫폼 승인 증거가 아니며 실제 entry에 연결하지 않는다. */
+export async function simulateRecoverySourceBridge(input:unknown,io:RecoverySourceSimulationIo){
+ let context:Readonly<RecoverySimulationContext>,lifetime:Readonly<RecoveryLifetime>,monoStart:number;
+ try{
+  const r=dataFields(input,['mode','commit','runId','issuedAt','expiresAt','manifest']);
+  if(!['P2','P3'].includes(r.mode as string)||typeof r.commit!=='string'||!/^[a-f0-9]{40}$/.test(r.commit)||typeof r.runId!=='string'||!/^[a-z0-9][a-z0-9-]{0,63}$/.test(r.runId)||io.kind!=='SOURCE_SIMULATION')throw Error();
+  const mode=r.mode as 'P2'|'P3',issuedAt=r.issuedAt as number,expiresAt=r.expiresAt as number;
+  if(![issuedAt,expiresAt].every(Number.isSafeInteger)||expiresAt-issuedAt>(mode==='P2'?600000:1800000))throw Error();
+  const manifest=mode==='P3'?prepareRecoveryManifest(r.manifest):null;
+  if(mode==='P2'&&r.manifest!==null)throw Error();
+  if(manifest&&(manifest.commit!==r.commit||['apps/server/main.ts','apps/web/dist/index.html','package.json','scripts/development-recovery-entry.ts'].some(path=>!manifest.files.some(file=>file.relativePath===path))))throw Error();
+  context=Object.freeze({kind:'SOURCE_SIMULATION',mode,commit:r.commit,runId:r.runId,issuedAt,expiresAt,manifestHash:manifest?.manifestHash??null,manifest});
+  const wall=io.wallNow();monoStart=io.monotonicNow();if(!Number.isSafeInteger(monoStart)||monoStart<0)throw Error();
+  lifetime=prepareRecoveryLifetime(issuedAt,expiresAt,wall);
+ }catch{throw Error('DEVELOPMENT_RECOVERY_SOURCE_BRIDGE_INVALID');}
+ const fresh=()=>{lifetime=checkRecoveryLifetime(lifetime,io.wallNow(),io.monotonicNow()-monoStart);};
+ const result=(status:string,step:string,cleanup:string,stepAttempted=false)=>Object.freeze({kind:'SOURCE_SIMULATION_RESULT',status,runId:context.runId,commit:context.commit,mode:context.mode,step,cleanup,stepAttempted,runtimeCoverage:'DECLARED_NOT_VERIFIED',authorityBoundary:'EXTERNAL_PLATFORM_NOT_AUTHENTICATED_HERE',executionAuthorized:false,osVerified:false});
+ const readReply=(value:unknown,states:string[],leaseId?:string)=>{
+  const r=dataFields(value,['kind','state','runId','commit','mode','manifestHash','leaseId','nativeVerified']);
+  if(r.kind!=='SOURCE_SIMULATION'||typeof r.state!=='string'||!states.includes(r.state)||r.runId!==context.runId||r.commit!==context.commit||r.mode!==context.mode||r.manifestHash!==context.manifestHash||r.nativeVerified!==false||typeof r.leaseId!=='string'||!/^[a-z0-9][a-z0-9-]{0,63}$/.test(r.leaseId)||(leaseId!==undefined&&r.leaseId!==leaseId))throw Error('DEVELOPMENT_RECOVERY_SOURCE_CORRELATION_INVALID');
+  return {state:r.state,leaseId:r.leaseId};
+ };
+ let raw:unknown;
+ try{fresh();raw=await io.simulateAcquire(context);}catch{return result('ACQUISITION_UNCONFIRMED','NOT_STARTED','OWNERSHIP_UNVERIFIED');}
+ let leaseId:string;
+ // 만료 뒤 ACK도 상관관계가 정확할 때 정리 대상으로만 보존한다. 새 동작 권한은 아니다.
+ try{leaseId=readReply(raw,['ACQUIRED_SIMULATION']).leaseId;}catch{return result('OWNERSHIP_UNVERIFIED','NOT_STARTED','OWNERSHIP_UNVERIFIED');}
+ const owned=Object.freeze({...context,leaseId});let step='NOT_STARTED',stepAttempted=false;
+ try{fresh();stepAttempted=true;const reply=await io.simulateStep(owned);fresh();readReply(reply,['STEP_RECORDED_SIMULATION'],leaseId);step='STEP_RECORDED_SIMULATION';}
+ catch(error){step=error instanceof Error&&error.message==='DEVELOPMENT_RECOVERY_WINDOW_INVALID'?'WINDOW_UNVERIFIED':'SOURCE_STEP_UNCONFIRMED';}
+ let cleanup='RELEASE_UNCONFIRMED_SIMULATION';
+ // 정리는 같은 원 source 상관관계만 사용한다. 기한 만료를 핑계로 정리까지 생략하지 않는다.
+ try{cleanup=readReply(await io.simulateRelease(owned),['RELEASE_RECORDED_SIMULATION','RELEASE_UNCONFIRMED_SIMULATION'],leaseId).state;}catch{}
+ const status=step==='STEP_RECORDED_SIMULATION'&&cleanup==='RELEASE_RECORDED_SIMULATION'?'SOURCE_SIMULATION_RECORDED_NOT_OS_VALIDATED':'SOURCE_SIMULATION_UNCONFIRMED';
+ return result(status,step,cleanup,stepAttempted);
+}
 
 export interface RecoveryDeadline {
  closeAt:number;observeUntil:number;expiresAt:number;remainingMs:number;executionAuthorized:false;

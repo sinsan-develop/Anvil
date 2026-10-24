@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 최신 source 주입 경계는 SOURCE_SIMULATION 전용이다. 플랫폼의 개별 정확 실행 승인은 helper 밖에 있으며 commit/run/기한/hash는 권위가 아닌 대상·수명 감사 정보다. 원 응답의 정확한 상관관계로만 모의 정리를 연결하고 획득/정리 유실·만료·입력 변조를 구분한다. 직접17건/type/Node/PS AST/diff exit0(dc5485→49cf0e), entry raw246DBC425CF4041482C129AE01093B415864471F95B5605E305BD25AA560F0CD/host E81430512F55FF18911A5D1B185109AAEDC86BF19144F6316F62BDF1A32925FE/native 6E1FE7A2A337DF8FE8B2F2B04474A2850F7CD32A9D5D4ACB84E817919CF30461. ProductionAdapterConnected=false는 미등록 상태일 뿐 승인·OS 안전 인증이 아니다. 실제 entry/launcher 차단 유지, 실 fixture 행동/adapter·runtime 집합/용량·독립 검토는 미완료다. 이 검사는 실컴파일·OS 음성·R0/P2/P3 실행을 허가하거나 입증하지 않는다.
+
 - OS시험source 모의연결raw908FCA7C8BC29F2EEC63E48230EC1EEF0A807C21501C1F9884D0438B211BA591: 고정14case 순서/중간오류/재사용·오인권위거절은direct11/type/PS AST/diff로확인했다. actualOsCases0/osVerifiedfalse/executionAuthorizedfalse이며실OS행동/실권위adapter는미연결이다. 실제컴파일/OS·R0/P2P3허가를요청하거나사용하지않았다. source모의orchestration과실OS음성검수를혼동하지않는다.
 
 - 후속source 검토: 선언파일목록의불변/canonical hash와획득기준기한·case alias/보호자료거절을직접9+기존TLS8/type/구문으로확인했다. native는P2/P3행위·기한분리,실size/hash pin→seal전start금지,중복parent재사용/4096상한,부분실패/Job멤버/기한전후검사/unknownclose재시도거절·caller bool강제종료입력제거로보정했지만컴파일/OS미검증이다. 새raw native8FB122D5308ACFC8D982D3ADF21B1FDCB47B41319247B764014F11D94AA85892/entry278F03AB02B131CD351E1C27583BE821E5D7922D63CE25684591A8A3DBBE0DE2/host88ADA14CEA7B86DE7BF71AC6C0E6C7D741AC3E87BFB8A70E3F96EDC3C41EF98F. 아래이전rawhash는이력이다. 실권위/OSrunner case연결·완성runtime파일관측·자원/시동·독립리뷰가남아있어source전체완료/R0실행준비PASS가아니다.
