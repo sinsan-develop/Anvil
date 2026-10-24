@@ -5,6 +5,7 @@ import {ProjectAccessSummary} from './ProjectAccessSummary.tsx';
 import {routeHref} from '../../shell/routes.ts';
 import {ProjectPendingApprovals} from './ProjectPendingApprovals.tsx';
 import {ProjectAssignmentDrafts} from './ProjectAssignmentDrafts.tsx';
+import {ProjectMethodologyOriginal} from './ProjectMethodologyOriginal.tsx';
 import {mergeProjectListSnapshot,selectProjectListSnapshot,type ProjectListSnapshot,type ProjectListVisible} from './project-list-snapshot.ts';
 
 export function ProjectListResults({client,snapshot,pending,error,onAuthenticationLost}:{client:ApiClient;snapshot:ProjectListVisible|null;pending:boolean;error:ApiError|null;onAuthenticationLost:()=>void}){
@@ -24,6 +25,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
       <ProjectAccessSummary key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectPendingApprovals key={'decisions:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectAssignmentDrafts key={'drafts:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
+      <ProjectMethodologyOriginal key={'method:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
     </li>)}</ul>
   </>;
 }
