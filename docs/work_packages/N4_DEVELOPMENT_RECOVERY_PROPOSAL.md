@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 후속source 검토: 선언파일목록의불변/canonical hash와획득기준기한·case alias/보호자료거절을직접9+기존TLS8/type/구문으로확인했다. native는P2/P3행위·기한분리,실size/hash pin→seal전start금지,중복parent재사용/4096상한,부분실패/Job멤버/기한전후검사/unknownclose재시도거절·caller bool강제종료입력제거로보정했지만컴파일/OS미검증이다. 새raw native8FB122D5308ACFC8D982D3ADF21B1FDCB47B41319247B764014F11D94AA85892/entry278F03AB02B131CD351E1C27583BE821E5D7922D63CE25684591A8A3DBBE0DE2/host88ADA14CEA7B86DE7BF71AC6C0E6C7D741AC3E87BFB8A70E3F96EDC3C41EF98F. 아래이전rawhash는이력이다. 실권위/OSrunner case연결·완성runtime파일관측·자원/시동·독립리뷰가남아있어source전체완료/R0실행준비PASS가아니다.
+
 - 원문01a17002-c88d-7213-8c28-ad45238d1d84의두가지승인중P1은정식DB READ ONLY1회a02537로완료·허가소진했다. exactf8fe81e5/probeE03478D4·PG150018/app/migration46·후속7미적용·고정8객체중project_methodologies1행이다. 사용자자료/DDL/DML0, 신규전용root/cache는정확정리·별도SSH부재확인했다. 기존P1미승인문구는과거이력이며추가DB읽기허가는아니다.
 - 신규보호source3/adapter·시험작성승인에따라후보를준비했다. 순수host/entry·기존TLS13/타입/PS AST/Node구문통과와C#정적대조만이며native NOT_COMPILED/NOT_OS_VERIFIED·실권위/기한환경/manifest/OSdispatch연결은미완료다. source-only구현은R0bootstrap예외/R1/실P2P3·cert/trust·Job실행승인이아니다. 기존prepare/start차단을해제하지않는다.
 - 현재native SHA256 7DDF3588FA28999A0E7A594F6DBF2844F968F08BFE15F6FD3933023B91914C35, host E6BEC2E97ABA5368B45770C48D53F45594D4A1ABEA1A93DFCACC55AC76F6B39C, entry 3242E7164BA1373AB0FBA130DF5C21BBB8717FC0FE6CBDAF85DB3E20E60537B4, OS시험계획1348C7D72A70648DE24286B94EB357FD0C51BCBE25288C5C2F2AB87D58595607. native4096 retained handle후보한도는100000파일탐색가능성이나기동시간을보장하지않으며실제사용파일집합미확정/초과거절이다.

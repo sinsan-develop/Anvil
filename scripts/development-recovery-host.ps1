@@ -2,7 +2,7 @@ param([switch]$Plan)
 $ErrorActionPreference='Stop'
 # source-only 계획/검증. Add-Type·assembly load·handle·process·cert/trust 연산은 없다.
 function Get-DevelopmentRecoverySourcePlan([string]$Mode) {
- if ($Mode -notin @('P2','P3')) { throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID' }
+ if ($Mode -cnotin @('P2','P3')) { throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID' }
  return @{
   mode=$Mode;tlsRoot='D:\Project\Anvil\.av3-data\dev-tls-20261025-01'
   bootstrapRoot='D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01'
@@ -12,10 +12,12 @@ function Get-DevelopmentRecoverySourcePlan([string]$Mode) {
   compilerHash='46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00'
   assemblyName='DevelopmentRecoveryPathGuard.dll'
   maxWindowMs=$(if($Mode -eq 'P2'){600000}else{1800000})
+  nativeOperationPhase=$(if($Mode -ceq 'P2'){'TLS_ONLY'}else{'RUNTIME_ONLY'})
   maxInventoryFiles=100000;maxInventoryBytes=2147483648
   maxRetainedHandleCandidate=4096;nativePinCapacityVerified=$false
   # 소스 후보의 탐색 상한일 뿐 실제 OS 능력·용량 검증을 의미하지 않는다.
   nativeVerified=$false;bootstrapExceptionAccepted=$false;executionAuthorized=$false
+  sourcePreparationStatus='PARTIAL_NOT_EXECUTABLE'
   missing=@('EXACT_SOURCE_REVIEW','BOOTSTRAP_EXCEPTION_DECISION','NATIVE_COMPILE_DECISION','ACTUAL_OS_NEGATIVE_QA','AUTHENTICATED_GUARD_LIFETIME','EXACT_RUNTIME_FILE_MANIFEST','PIN_CAPACITY_AND_STARTUP_TIME')
  }
 }

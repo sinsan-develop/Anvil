@@ -35,6 +35,9 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern uint GetFinalPathNameByHandleW(KernelHandle handle,StringBuilder path,uint capacity,uint flags);
  [DllImport("advapi32.dll",SetLastError=true)]static extern bool GetKernelObjectSecurity(KernelHandle handle,uint information,byte[] descriptor,uint size,out uint needed);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool CloseHandle(IntPtr handle);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern uint GetFileType(KernelHandle handle);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern bool GetVolumeInformationByHandleW(KernelHandle handle,StringBuilder volume,uint capacity,out uint serial,out uint maximum,out uint flags,StringBuilder filesystem,uint filesystemCapacity);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetHandleInformation(KernelHandle handle,out uint flags);
  [DllImport("kernel32.dll")]static extern IntPtr GetCurrentProcess();
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool DuplicateHandle(IntPtr sourceProcess,KernelHandle source,IntPtr targetProcess,out SafeFileHandle target,uint access,bool inherit,uint options);
 
@@ -56,6 +59,7 @@ internal static class DevelopmentRecoveryPathGuard {
  }
  static Fact Read(KernelHandle handle,string expected,bool directory){
   Require(handle!=null&&!handle.IsInvalid&&!handle.IsClosed);
+  Require(GetFileType(handle)==1);
   var basic=Info<BasicInfo>(handle,0);var standard=Info<StandardInfo>(handle,1);var id=Info<IdInfo>(handle,18);
   Require((basic.Attributes&0x400)==0&&standard.DeletePending==0&&(standard.Directory!=0)==directory&&((basic.Attributes&0x10)!=0)==directory);
   Require(directory||standard.Links==1);Require(standard.EndOfFile>=0&&id.Id!=null&&id.Id.Length==16);
@@ -65,11 +69,19 @@ internal static class DevelopmentRecoveryPathGuard {
  }
  // 새 child 생성으로 부모 directory mtime/size가 바뀔 수 있다. 고정 ID/종류/권한은 계속 대조한다.
  static bool Same(Fact a,Fact b){return a.Volume==b.Volume&&a.Id==b.Id&&a.Path==b.Path&&(a.Directory||(a.Size==b.Size&&a.Written==b.Written))&&a.Attributes==b.Attributes&&a.Links==b.Links&&a.Directory==b.Directory;}
+ static void RequireNtfs(KernelHandle anchor){uint serial,maximum,flags;var fs=new StringBuilder(64);Require(GetVolumeInformationByHandleW(anchor,null,0,out serial,out maximum,out flags,fs,64)&&fs.ToString()=="NTFS");}
  static void Segment(string name){
-  Require(!String.IsNullOrEmpty(name)&&name.Length<=255&&name!="."&&name!=".."&&!name.EndsWith(".")&&!name.EndsWith(" "));
+  Require(!String.IsNullOrEmpty(name)&&name.Length<=255&&name!="."&&name!=".."&&!name.EndsWith(".")&&!name.EndsWith(" ")&&name.IsNormalized(NormalizationForm.FormC));
   Require(name.IndexOfAny(new[]{'\\','/',':','\0','"','*','?','<','>','|'})<0);
   foreach(char character in name)Require(character>=32&&character!=127);
-  string stem=name.Split('.')[0].ToUpperInvariant();Require(stem!="CON"&&stem!="PRN"&&stem!="AUX"&&stem!="NUL"&&!System.Text.RegularExpressions.Regex.IsMatch(stem,@"^(COM|LPT)[1-9]$"));
+  string stem=name.Split('.')[0].ToUpperInvariant();Require(stem!="CON"&&stem!="PRN"&&stem!="AUX"&&stem!="NUL"&&!System.Text.RegularExpressions.Regex.IsMatch(stem,@"^(COM|LPT)[1-9¹²³]$"));
+ }
+ static void SourcePath(string value){
+  Require(value!=null&&value.Length<=4096&&value.IndexOf('\\')<0);
+  string[] parts=value.Split('/');Require(parts.Length>0&&parts.Length<=64);
+  foreach(string part in parts){Segment(part);Require(!System.Text.RegularExpressions.Regex.IsMatch(part,@"^\.env(?:\.|$)",System.Text.RegularExpressions.RegexOptions.IgnoreCase|System.Text.RegularExpressions.RegexOptions.CultureInvariant));}
+  string leaf=parts[parts.Length-1].ToLowerInvariant();Require(leaf!="auth.json"&&leaf!="db-app.json"&&leaf!="bootstrap.json"&&!System.Text.RegularExpressions.Regex.IsMatch(leaf,@"\.(pem|key|p12|pfx)$",System.Text.RegularExpressions.RegexOptions.CultureInvariant));
+  Require(value.StartsWith("apps/server/",StringComparison.Ordinal)||value.StartsWith("contracts/",StringComparison.Ordinal)||value.StartsWith("apps/web/dist/",StringComparison.Ordinal)||value.StartsWith("node_modules/",StringComparison.Ordinal)||value=="package.json"||value=="scripts/development-recovery-entry.ts");
  }
  static byte[] NewDirectoryDescriptor(SecurityIdentifier user){
   var acl=new RawAcl(2,2);int flags=(int)(AceFlags.ContainerInherit|AceFlags.ObjectInherit);
@@ -103,48 +115,85 @@ internal static class DevelopmentRecoveryPathGuard {
   }finally{if(result!=null)result.Dispose();if(security!=IntPtr.Zero)Marshal.FreeHGlobal(security);if(unicode!=IntPtr.Zero)Marshal.FreeHGlobal(unicode);Marshal.FreeHGlobal(chars);}
  }
  internal sealed class PathLease:IDisposable {
-  readonly List<Pin> pins=new List<Pin>();readonly SecurityIdentifier user;readonly DateTime from,until;readonly Stopwatch clock=Stopwatch.StartNew();
-  bool disposed;long bytes;int files;Pin parent;
-  internal PathLease(DateTime issuedAt,DateTime expiresAt){
+  readonly List<Pin> pins=new List<Pin>();readonly SecurityIdentifier user;readonly DateTime from,until,acquired;readonly TimeSpan remainingAtAcquire;readonly Stopwatch clock=Stopwatch.StartNew();
+  readonly string phase;
+  readonly Dictionary<string,Pin> pathIndex=new Dictionary<string,Pin>(StringComparer.OrdinalIgnoreCase);
+  readonly int ownerThread=Environment.CurrentManagedThreadId;
+  readonly Dictionary<string,string> pinnedSources=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+  DateTime lastWall;TimeSpan lastElapsed;bool disposed,closeUnconfirmed,resourceFaulted,tlsCreated,manifestSealed,manifestFaulted;long bytes;int files;Pin parent;
+  internal PathLease(string mode,DateTime issuedAt,DateTime expiresAt){
    Require(ActualOsValidated); // 최초 bootstrap/실OS·host 수명 계약이 채택되기 전에는 아래에 도달하지 않는다.
-   from=issuedAt;until=expiresAt;Require(from.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&until>from&&(until-from).TotalMinutes<=30&&DateTime.UtcNow>=from&&DateTime.UtcNow<until);
+   Require(mode=="P2"||mode=="P3");phase=mode;
+   from=issuedAt;until=expiresAt;acquired=DateTime.UtcNow;lastWall=acquired;remainingAtAcquire=until-acquired;clock.Restart();
+   Require(from.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&until>from&&(until-from).TotalMinutes<=(phase=="P2"?10:30)&&acquired>=from&&acquired<until);
    using(var identity=WindowsIdentity.GetCurrent())user=identity.User;Require(user!=null);
    try{
+    Fresh();
     KernelHandle anchor=CreateFileW(@"\\?\D:\",ReadControl|ReadAttributes|Synchronize|0x20,ShareRead|ShareWrite,IntPtr.Zero,3,BackupSemantics|OpenReparse,IntPtr.Zero);
     parent=Retain(anchor,@"D:\",true);
-    foreach(string name in new[]{"Project","Anvil",".av3-data"})parent=Retain(Relative(parent.Handle,name,true,false,user),Path.Combine(parent.Before.Path,name),true);
+    RequireNtfs(anchor);
+    foreach(string name in new[]{"Project","Anvil",".av3-data"})parent=Child(parent,name,true);
     Require(parent.Before.Path==DataRoot);Security(parent.Handle,user,true);Check();
    }catch{Dispose();throw;}
   }
   Pin Retain(KernelHandle handle,string expected,bool directory){
-   if(pins.Count>=MaxRetainedHandles){if(handle!=null)handle.Dispose();throw Denied();}
-   var pin=new Pin{Handle=handle};pins.Add(pin);pin.Before=Read(handle,expected,directory);
-   Require(pins.Count==1||pin.Before.Volume==pins[0].Before.Volume);return pin;
+   // 먼저 원 handle을 소유 목록에 넣는다. 기한/identity 검사 실패도 원 handle을 버리지 않는다.
+   var pin=new Pin{Handle=handle};pins.Add(pin);Fresh();Require(pins.Count<=MaxRetainedHandles);pin.Before=Read(handle,expected,directory);Fresh();
+   Require((pins.Count==1||pin.Before.Volume==pins[0].Before.Volume)&&!pathIndex.ContainsKey(expected));pathIndex.Add(expected,pin);return pin;
   }
+  Pin Child(Pin at,string segment,bool directory){
+   Fresh();Segment(segment);string expected=Path.Combine(at.Before.Path,segment);Pin retained;
+   if(pathIndex.TryGetValue(expected,out retained)){Require(retained.Before.Directory==directory&&Same(retained.Before,Read(retained.Handle,expected,directory)));Fresh();return retained;}
+   Require(pins.Count<MaxRetainedHandles);
+   return Retain(Relative(at.Handle,segment,directory,false,user),expected,directory);
+  }
+  void Fresh(){
+   DateTime now=DateTime.UtcNow;TimeSpan elapsed=clock.Elapsed;
+   Require(!disposed&&!resourceFaulted&&Environment.CurrentManagedThreadId==ownerThread&&now>=lastWall&&now<until&&elapsed>=lastElapsed&&elapsed<remainingAtAcquire);
+   lastWall=now;lastElapsed=elapsed;
+  }
+  internal void AssertCurrentWindow(){Fresh();}
   internal void Check(){
-   Require(!disposed&&DateTime.UtcNow>=from&&DateTime.UtcNow<until&&clock.Elapsed<until-from);
-   foreach(var pin in pins)Require(Same(pin.Before,Read(pin.Handle,pin.Before.Path,pin.Before.Directory)));
-   Security(parent.Handle,user,true);
+   Fresh();foreach(var pin in pins){Fresh();Require(Same(pin.Before,Read(pin.Handle,pin.Before.Path,pin.Before.Directory)));Fresh();}
+   Security(parent.Handle,user,true);Fresh();
   }
   internal void CreateTlsChild(){
-   Check();var child=Retain(Relative(parent.Handle,"dev-tls-20261025-01",true,true,user),DataRoot+@"\dev-tls-20261025-01",true);
-   Security(child.Handle,user,true);Check();
+   Check();Require(phase=="P2"&&!tlsCreated);
+   try{Require(pins.Count<MaxRetainedHandles);Fresh();var handle=Relative(parent.Handle,"dev-tls-20261025-01",true,true,user);tlsCreated=true;var child=Retain(handle,DataRoot+@"\dev-tls-20261025-01",true);Security(child.Handle,user,true);Check();}
+   catch{resourceFaulted=true;throw;}
   }
-  internal void PinSourceFile(string relativePath,string expectedHash){
-   Check();Require(relativePath!=null&&!relativePath.StartsWith("/")&&!relativePath.Contains("\\")&&System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"^[a-f0-9]{64}$"));
-   Require(relativePath.StartsWith("apps/server/",StringComparison.Ordinal)||relativePath.StartsWith("contracts/",StringComparison.Ordinal)||relativePath.StartsWith("apps/web/dist/",StringComparison.Ordinal)||relativePath.StartsWith("node_modules/",StringComparison.Ordinal)||relativePath=="package.json"||relativePath=="scripts/development-recovery-entry.ts");
-   string[] segments=relativePath.Split('/');Require(segments.Length<=64&&segments.Length>0&&++files<=MaxPinnedFiles);
+  void PinSourceFile(string relativePath,string expectedHash,long declaredSize){
+   Check();SourcePath(relativePath);Require(System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"^[a-f0-9]{64}$"));
+   string[] segments=relativePath.Split('/');Require(!pinnedSources.ContainsKey(relativePath)&&segments.Length<=64&&segments.Length>0&&++files<=MaxPinnedFiles);
    // 전체 source/build/node_modules root 선택·manifest는 host 계약이 연결되기 전에는 실행 불가다.
-   Pin at=parent;string expected=DataRoot;
-   foreach(string name in new[]{"n4-recovery-01","artifacts"}){expected=Path.Combine(expected,name);at=Retain(Relative(at.Handle,name,true,false,user),expected,true);Security(at.Handle,user,false);}
-   for(int i=0;i<segments.Length;i++){expected=Path.Combine(expected,segments[i]);at=Retain(Relative(at.Handle,segments[i],i<segments.Length-1,false,user),expected,i<segments.Length-1);Security(at.Handle,user,false);}
-   bytes=checked(bytes+at.Before.Size);Require(bytes<=MaxInventoryBytes);
+   Pin at=parent;
+   foreach(string name in new[]{"n4-recovery-01","artifacts"}){at=Child(at,name,true);Security(at.Handle,user,false);}
+   for(int i=0;i<segments.Length;i++){at=Child(at,segments[i],i<segments.Length-1);Security(at.Handle,user,false);}
+   Require(at.Before.Size==declaredSize);bytes=checked(bytes+at.Before.Size);Require(bytes<=MaxInventoryBytes);
    SafeFileHandle copy;Require(DuplicateHandle(GetCurrentProcess(),at.Handle,GetCurrentProcess(),out copy,0,false,2));
    using(copy)using(var stream=new FileStream(copy,FileAccess.Read))using(var hash=SHA256.Create()){
     string actual=BitConverter.ToString(hash.ComputeHash(stream)).Replace("-","").ToLowerInvariant();Require(actual==expectedHash);
    }
-   Check();
+   Check();pinnedSources.Add(relativePath,expectedHash);
   }
+  internal void PinDeclaredManifest(string commit,IList<ManifestEntry> input,string expectedManifestHash){
+   Check();Require(phase=="P3"&&!manifestFaulted&&!manifestSealed&&files==0&&input!=null&&input.Count>0&&input.Count<=MaxPinnedFiles&&System.Text.RegularExpressions.Regex.IsMatch(commit??"",@"^[a-f0-9]{40}$")&&System.Text.RegularExpressions.Regex.IsMatch(expectedManifestHash??"",@"^[a-f0-9]{64}$"));
+   // 호출자 선언의 완전성을 OS가 증명한 것은 아니다. host 권위 연결 전에는 이 단계도 실제 실행 불가다.
+   var rows=new List<ManifestEntry>();var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);long total=0;
+   try{
+    foreach(var item in input){Require(item!=null&&item.Path!=null&&names.Add(item.Path)&&item.Size>=0&&System.Text.RegularExpressions.Regex.IsMatch(item.Hash??"",@"^[a-f0-9]{64}$"));total=checked(total+item.Size);Require(total<=MaxInventoryBytes);rows.Add(new ManifestEntry(item.Path,item.Hash,item.Size));}
+    rows.Sort((a,b)=>StringComparer.Ordinal.Compare(a.Path,b.Path));var json=new StringBuilder("{\"schemaVersion\":1,\"commit\":\""+commit+"\",\"files\":[");
+    for(int i=0;i<rows.Count;i++){
+     var row=rows[i];SourcePath(row.Path);
+     if(i!=0)json.Append(',');json.Append("{\"relativePath\":\"").Append(row.Path).Append("\",\"contentHash\":\"").Append(row.Hash).Append("\",\"sizeBytes\":").Append(row.Size.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('}');
+    }
+    json.Append("]}");using(var sha=SHA256.Create())Require(BitConverter.ToString(sha.ComputeHash(new UTF8Encoding(false,true).GetBytes(json.ToString()))).Replace("-","").ToLowerInvariant()==expectedManifestHash);
+    foreach(var row in rows)PinSourceFile(row.Path,row.Hash,row.Size);
+    foreach(string required in new[]{"apps/server/main.ts","package.json","apps/web/dist/index.html","scripts/development-recovery-entry.ts"})Require(pinnedSources.ContainsKey(required));
+    Require(pinnedSources.Count==rows.Count&&files==rows.Count&&bytes==total);Check();manifestSealed=true;
+   }catch{manifestFaulted=true;resourceFaulted=true;throw;}
+  }
+  internal void RequirePinnedManifest(){Check();Require(phase=="P3"&&manifestSealed&&!manifestFaulted&&pinnedSources.Count==files&&files>0);}
   internal SafeFileHandle[] DuplicateSelectedPins(){
    Check();var copies=new List<SafeFileHandle>();
    try{foreach(var pin in pins){SafeFileHandle copy;Require(DuplicateHandle(GetCurrentProcess(),pin.Handle,GetCurrentProcess(),out copy,0,true,2));copies.Add(copy);}return copies.ToArray();}
@@ -152,10 +201,15 @@ internal static class DevelopmentRecoveryPathGuard {
   }
   internal SecurityIdentifier Owner{get{return user;}}
   public void Dispose(){
-   if(disposed)return;disposed=true;bool unknown=false;
+   Require(Environment.CurrentManagedThreadId==ownerThread);
+   if(disposed){if(closeUnconfirmed)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");return;}disposed=true;bool unknown=false;
    for(int i=pins.Count-1;i>=0;i--){var h=pins[i].Handle;h.Dispose();if(!h.IsInvalid&&(!h.CloseAttempted||!h.CloseSucceeded))unknown=true;}
-   pins.Clear();if(unknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");
+   closeUnconfirmed=unknown;if(!unknown){pins.Clear();pathIndex.Clear();}if(unknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");
   }
+ }
+ internal sealed class ManifestEntry {
+  internal readonly string Path,Hash;internal readonly long Size;
+  internal ManifestEntry(string path,string hash,long size){Path=path;Hash=hash;Size=size;}
  }
  [StructLayout(LayoutKind.Sequential)]struct IoCounters {internal ulong ReadOps,WriteOps,OtherOps,ReadBytes,WriteBytes,OtherBytes;}
  [StructLayout(LayoutKind.Sequential)]struct BasicLimits {internal long ProcessTime,JobTime;internal uint Flags;internal UIntPtr MinimumWorkingSet,MaximumWorkingSet;internal uint ActiveProcesses;internal UIntPtr Affinity;internal uint Priority,Scheduling;}
@@ -186,34 +240,38 @@ internal static class DevelopmentRecoveryPathGuard {
  internal sealed class OwnedRuntime:IDisposable {
   readonly PathLease paths;readonly KernelHandle job;readonly List<ProcessInformation> children=new List<ProcessInformation>();
   readonly HashSet<string> roles=new HashSet<string>(StringComparer.Ordinal);
-  readonly List<KernelHandle> imagePins=new List<KernelHandle>();bool disposed,terminationRequested;int started;
+  readonly int ownerThread=Environment.CurrentManagedThreadId;
+  readonly List<KernelHandle> imagePins=new List<KernelHandle>();bool disposed,cleanupUnknown,terminationRequested,faulted;int started;
   internal OwnedRuntime(PathLease lease){
-   Require(ActualOsValidated);Require(lease!=null);paths=lease;paths.Check();
+   Require(ActualOsValidated);Require(lease!=null);paths=lease;paths.RequirePinnedManifest();
    job=CreateJobObjectW(IntPtr.Zero,null);Require(job!=null&&!job.IsInvalid);
-   try{var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000|0x8,ActiveProcesses=2}};Require(SetInformationJobObject(job,9,ref limits,(uint)Marshal.SizeOf(typeof(ExtendedLimits))));Require(ActiveCount()==0);}
-   catch{job.Dispose();throw;}
+   try{uint flags;Require(GetHandleInformation(job,out flags)&&flags==0);var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000|0x8,ActiveProcesses=2}};uint size=(uint)Marshal.SizeOf(typeof(ExtendedLimits));Require(SetInformationJobObject(job,9,ref limits,size));IntPtr buffer=Marshal.AllocHGlobal((int)size);try{uint returned;Require(QueryInformationJobObject(job,9,buffer,size,out returned)&&returned==size);var actual=(ExtendedLimits)Marshal.PtrToStructure(buffer,typeof(ExtendedLimits));Require(actual.Basic.Flags==(0x2000|0x8)&&actual.Basic.ActiveProcesses==2);}finally{Marshal.FreeHGlobal(buffer);}Require(ActiveCount()==0);}
+   catch{job.Dispose();if(!job.IsInvalid&&!job.CloseSucceeded)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");throw;}
   }
   int ActiveCount(){
    IntPtr data=Marshal.AllocHGlobal(8+IntPtr.Size*2);
-   try{uint returned;Require(QueryInformationJobObject(job,3,data,(uint)(8+IntPtr.Size*2),out returned));int total=Marshal.ReadInt32(data),listed=Marshal.ReadInt32(data,4);Require(total>=0&&total<=2&&listed==total);return total;}
+   try{uint returned;Require(QueryInformationJobObject(job,3,data,(uint)(8+IntPtr.Size*2),out returned)&&returned>=8&&returned<=8+IntPtr.Size*2);int total=Marshal.ReadInt32(data),listed=Marshal.ReadInt32(data,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long value=Marshal.ReadIntPtr(data,8+IntPtr.Size*i).ToInt64();Require(value>0&&value<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)value));}return total;}
    finally{Marshal.FreeHGlobal(data);}
   }
-  void Check(){Require(!disposed&&!terminationRequested);paths.Check();Require(ActiveCount()<=children.Count);}
+  void Check(){Require(!disposed&&!terminationRequested&&!faulted);paths.Check();int active=ActiveCount();paths.Check();Require(active<=children.Count);}
   static void CheckOwner(KernelHandle process,SecurityIdentifier owner){
    KernelHandle token;Require(OpenProcessToken(process,8,out token));
    using(token){uint length;GetTokenInformation(token,1,IntPtr.Zero,0,out length);Require(length>0&&length<=65536);IntPtr data=Marshal.AllocHGlobal((int)length);try{Require(GetTokenInformation(token,1,data,length,out length));Require(owner.Equals(new SecurityIdentifier(Marshal.ReadIntPtr(data))));}finally{Marshal.FreeHGlobal(data);}}
   }
   void PinImage(string path,string hash){
    // 두 고정 설치 image도 parent 경로부터 원 handle로 pin한다. 새 프로그램/임의경로0.
-   KernelHandle drive=CreateFileW(@"\\?\C:\",ReadControl|ReadAttributes|Synchronize|0x20,ShareRead|ShareWrite,IntPtr.Zero,3,BackupSemantics|OpenReparse,IntPtr.Zero);
-   imagePins.Add(drive);Read(drive,@"C:\",true);KernelHandle at=drive;string expected=@"C:\";
+   paths.AssertCurrentWindow();KernelHandle drive=CreateFileW(@"\\?\C:\",ReadControl|ReadAttributes|Synchronize|0x20,ShareRead|ShareWrite,IntPtr.Zero,3,BackupSemantics|OpenReparse,IntPtr.Zero);
+   imagePins.Add(drive);Read(drive,@"C:\",true);RequireNtfs(drive);KernelHandle at=drive;string expected=@"C:\";
    string[] segments=path.Substring(3).Split('\\');
-   for(int i=0;i<segments.Length;i++){expected=Path.Combine(expected,segments[i]);at=Relative(at,segments[i],i<segments.Length-1,false,paths.Owner);imagePins.Add(at);Read(at,expected,i<segments.Length-1);}
+   for(int i=0;i<segments.Length;i++){paths.AssertCurrentWindow();expected=Path.Combine(expected,segments[i]);at=Relative(at,segments[i],i<segments.Length-1,false,paths.Owner);imagePins.Add(at);Read(at,expected,i<segments.Length-1);paths.AssertCurrentWindow();}
    SafeFileHandle copy;Require(DuplicateHandle(GetCurrentProcess(),at,GetCurrentProcess(),out copy,0,false,2));
    using(copy)using(var file=new FileStream(copy,FileAccess.Read))using(var sha=SHA256.Create())Require(BitConverter.ToString(sha.ComputeHash(file)).Replace("-","").ToLowerInvariant()==hash);
   }
   internal void StartFixed(string role){
-   Check();Require(started<2&&(role=="NODE"||role=="TUNNEL")&&!roles.Contains(role));
+   try{StartFixedCore(role);}catch{faulted=true;throw;}
+  }
+  void StartFixedCore(string role){
+   Check();paths.RequirePinnedManifest();Require(started<2&&(role=="NODE"||role=="TUNNEL")&&!roles.Contains(role));
    string image=role=="NODE"?@"C:\Program Files\nodejs\node.exe":@"C:\Windows\System32\OpenSSH\ssh.exe";
    string imageHash=role=="NODE"?"9a4eb5f1c29c6a2e93852ead46b999e284a6a5ca8bab4d4e241d587d025a52de":"98d447730047f5df91373e852d057928a921c3d1e89938700ab656ba84b19dc8";
    PinImage(image,imageHash);Check();
@@ -250,23 +308,28 @@ internal static class DevelopmentRecoveryPathGuard {
    }
   }
   internal bool ObserveExit(){
-   Require(!disposed);bool exited=true;foreach(var child in children)exited&=WaitForSingleObject(child.Process,0)==0;
+   Require(!disposed&&Environment.CurrentManagedThreadId==ownerThread);bool exited=true;foreach(var child in children)exited&=WaitForSingleObject(child.Process,0)==0;
    return exited&&ActiveCount()==0;
   }
-  internal bool RequestOwnedForceAndObserve(bool exactForceDecision){
-   Require(ActualOsValidated&&exactForceDecision&&!disposed&&!terminationRequested);terminationRequested=true;
+  internal bool RequestOwnedForceAndObserve(){
+   // caller의 bool/metadata를 강제 종료 허가로 받아들이지 않는다. 실제 결정 adapter는 아직 없다.
+   throw new InvalidOperationException("DEVELOPMENT_RECOVERY_FORCE_NOT_AUTHORIZED");
+  }
+  bool TerminateOwnedJobCore(){
+   Require(ActualOsValidated&&!disposed&&!terminationRequested);terminationRequested=true;
    Require(TerminateJobObject(job,124));var clock=Stopwatch.StartNew();
    foreach(var child in children){long remaining=15000-clock.ElapsedMilliseconds;if(remaining<=0||WaitForSingleObject(child.Process,(uint)remaining)!=0)return false;}
    return ActiveCount()==0;
   }
   public void Dispose(){
-   if(disposed)return;
+   Require(Environment.CurrentManagedThreadId==ownerThread);
+   if(disposed){if(cleanupUnknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");return;}
    if(!ObserveExit())throw new InvalidOperationException("DEVELOPMENT_RECOVERY_TERMINATION_UNCONFIRMED");
    disposed=true;bool unknown=false;
    foreach(var child in children){child.Thread.Dispose();child.Process.Dispose();unknown|=!child.Thread.CloseSucceeded||!child.Process.CloseSucceeded;}
    for(int i=imagePins.Count-1;i>=0;i--){imagePins[i].Dispose();unknown|=!imagePins[i].CloseSucceeded;}
    job.Dispose();unknown|=!job.CloseSucceeded;
-   if(unknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");
+   cleanupUnknown=unknown;if(unknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");
   }
  }
  // 미구현 OS 계약을 가능한 것으로 반환하지 않는다. 기존 provider Job 소스는 수정·등록하지 않는다.

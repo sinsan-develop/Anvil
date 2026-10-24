@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 보호 source 후속**: 파일별선언목록/해시·불변성과획득기준기한·오인권위거절의순수소비를보완해직접9+TLS인접8/type/구문/diff를확인했다. native의단계/manifest pin/부분실패보정은정적후보이고실권위adapter·OS시험case연결/독립리뷰는미완료다. source전체/R0/실제복구완료가아니며같은승인②범위의source/test보완을Main주도로계속한다. 실제OS·DB·인증서·서비스변경0·P1재실행0.
+
 - **2026-10-25 새 직접승인 두 범위**: P1 exact기존probe의정식DB READ ONLY1회로PG15/app역할·migration46/후속7미적용과고정객체를실측하고전용Git/cache정리·독립부재확인했다. 보호native/host/entry3와시험/adapter는source후보로준비중이며순수·기존TLS13/타입·구문검사와실native/OS지원은구분한다. 실제guardian/guard권위·기한환경/완성manifest/OS실행연결은미완료·R0/실P2P3미승인이다. 정확원문/ref·sourcehash/오류/미검증은WORK_STATUS와N4패킷에기록하며전체Stage/계획완료아니다.
 
 - **2026-10-25 P03/IX01 복구 source 준비**: PMO 위임의 세 기존 스크립트 고정 TLS/runtime binding을 source-only로 보완하고 신규7·기존runtime1 검사/type/구문/diff를 통과했다. 새 복구 선택은 보호 선행 미충족으로 실제 I/O 전에 항상 거절하므로 TLS생성·신뢰·서비스복구 완료가 아니다. 실제 P1 DB읽기와 P2~P4 실행은 미완료이며 세부 diff/hash·오류·다음 조치는 WORK_STATUS와 기존 N4 패킷에 기록했다.
