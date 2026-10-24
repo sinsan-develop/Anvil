@@ -13,6 +13,7 @@ import { registerConnectorRegistrationRoutes } from './modules/connections/regis
 import { registerSourceReadRoutes } from './modules/connections/source-read-routes.ts';
 import type {SyntheticHumanExecutionPorts} from './modules/executions/project-runtime-commands.ts';
 import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-session-claim-history-routes.ts';
+import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 
 export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
@@ -25,6 +26,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   });
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
   if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if (webRoot) {
     app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(await readFile(new URL('index.html', webRoot))));
     app.get<{ Params: { name: string } }>('/assets/:name', async (request, reply) => {

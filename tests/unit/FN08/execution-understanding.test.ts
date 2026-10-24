@@ -7,9 +7,19 @@ const mod:any=await import('../../../apps/server/modules/executions/execution-un
 const pid='11111111-1111-4111-8111-111111111111',eid='22222222-2222-4222-8222-222222222222',cid='33333333-3333-4333-8333-333333333333',sid='44444444-4444-4444-8444-444444444444';
 const ref=(n=1)=>({id:pid,version:n,contentHash:String(n).repeat(64)}),scope={projectId:pid,executionId:eid,executionGeneration:1};
 const codes=['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'];
-function fixture(){
+for(const mode of ['port','expiry'])test('이해 검토 이력은 읽는 동안 '+mode+' 변경 시 성공을 반환하지 않는다',async()=>{
+ const f=fixture(),read=f.store.list;f.store.list=async(...args:any[])=>{const result=await read(...args);if(mode==='port')f.store.transport='REAL';else f.advance();return result;};await assert.rejects(f.list());assert.deepEqual(f.entries(),[]);assert.deepEqual(f.commands(),[]);
+});
+test('앱 시계가 DB보다 느려도 COMMIT 뒤 DB 세션 유효시간을 넘긴 이력은 반환하지 않는다',async t=>{
+ let elapsed=1000;t.mock.method(performance,'now',()=>elapsed);
+ const f=fixture(10000),query=f.db.query,read=f.store.list;f.clock(new Date(Date.parse(f.until)-50).toISOString());
+ f.store.list=async(...args:any[])=>{const result=await read(...args);f.clock(new Date(Date.parse(f.until)-10).toISOString());return result;};
+ f.db.query=async(sql:string,p?:any[])=>{const result=await query(sql,p);if(sql==='COMMIT')elapsed+=100;return result;};
+ await assert.rejects(f.list(),/AUTH_REQUIRED/);assert.deepEqual(f.entries(),[]);assert.deepEqual(f.commands(),[]);
+});
+function fixture(sessionWindowMs=3600000){
  assert.equal(typeof mod.ProjectUnderstandingReviews,'function');
- const token='t'.repeat(43),csrf='c'.repeat(43),at=new Date().toISOString(),until=new Date(Date.now()+3600000).toISOString();
+ const token='t'.repeat(43),csrf='c'.repeat(43),at=new Date().toISOString(),until=new Date(Date.now()+sessionWindowMs).toISOString();
  let entries:any[]=[],commands:any[]=[],checkpoint:any,control=2,revoked=false,clock=at,failed=false,changeOnSecond=false,currentCalls=0;
  const rules=[{ruleId:'understanding',subjectRef:{kind:'HUMAN',userId:pid},operations:['reviewUnderstanding'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:until}];
  const policy=()=>({rules,reason:'합성 검토 정책',reviewRefs:[]});
@@ -29,7 +39,7 @@ function fixture(){
  const store:any={transport:'SYNTHETIC_ONLY',current:async(tx:any,_actor:any,s:any)=>{assert.equal(tx,db);assert.deepEqual(s,scope);currentCalls++;if(changeOnSecond&&currentCalls%2===0)current.basisRefs=[ref(7)];return structuredClone(current);},list:async(tx:any,s:any)=>{assert.equal(tx,db);assert.deepEqual(s,scope);return structuredClone(entries);},append:async(tx:any,s:any,entry:any)=>{assert.equal(tx,db);assert.deepEqual(s,scope);entries.push(structuredClone(entry));if(failed)throw Error('STORAGE_FAILURE');}};
  const access=new AccessRepository({connect:async()=>db} as any,{installationId:pid,key:randomBytes(32)}),service=new mod.ProjectUnderstandingReviews(access,store);
  const request=()=>({schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:cid,controlGeneration:2,operation:'reviewUnderstanding',targetId:eid,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{bundleRef:ref(),responseRef:ref(2),subjectBindingRef:ref(3),criteriaVersion:1,items:codes.map(code=>({code,sourceRefs:[ref(4)],responsePartRefs:[ref(6)],judgement:'MATCH',reason:'원문과 응답 부분을 직접 대조'})),reason:'사람의 별도 이해 검토'}});
- return{service,store,current,request,rules,run:(r=request())=>service.command(token,csrf,r),list:()=>service.list(token,scope),accepted:(r:any)=>access.authenticated(token,null,(tx,actor)=>service.requireAccepted(tx,actor,scope,r)),entries:()=>entries,commands:()=>commands,stale:()=>{control=3;},revoke:()=>{revoked=true;},fail:()=>{failed=true;},change:()=>{changeOnSecond=true;},advance:()=>{clock=until;},token,csrf};
+ return{service,store,current,request,rules,db,until,clock:(v:string)=>{clock=v;},run:(r=request())=>service.command(token,csrf,r),list:()=>service.list(token,scope),accepted:(r:any)=>access.authenticated(token,null,(tx,actor)=>service.requireAccepted(tx,actor,scope,r)),entries:()=>entries,commands:()=>commands,stale:()=>{control=3;},revoke:()=>{revoked=true;},fail:()=>{failed=true;},change:()=>{changeOnSecond=true;},advance:()=>{clock=until;},token,csrf};
 }
 test('HUMAN 6항목은 불변 순번·원 요청·현재 근거·영수증과 저장하고 실행 성공으로 승격하지 않는다',async()=>{
  const f=fixture(),request=f.request(),result=await f.run(request);assert.equal(result.status,'APPLIED');assert.equal(result.data.snapshot.outcome,'ACCEPTED');assert.equal(result.data.snapshot.executionAuthorized,false);assert.equal(result.data.snapshot.dispatchPerformed,false);

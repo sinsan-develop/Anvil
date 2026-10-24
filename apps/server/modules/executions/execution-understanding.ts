@@ -83,7 +83,20 @@ export class ProjectUnderstandingReviews{
    await this.store.append(db,cloneV1(scope),cloneV1(record),receipt.id);return receipt.result;
   });}catch(error){await recordProjectDenial(this.access,token,request.projectId,error);throw error;}
  }
- async list(token:string,rawScope:unknown){const scope=scopeOf(rawScope);return this.access.authenticated(token,null,async(db,actor)=>{this.#port();await projectMember(db,actor,scope.projectId);return{transport:'SYNTHETIC_ONLY',scope,items:readUnderstandingHistory(await this.store.list(db,cloneV1(scope)),scope),currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};});}
+ async list(token:string,rawScope:unknown){
+  const scope=scopeOf(rawScope);let deadline=0,monotonicDeadline=0;
+  const result=await this.access.authenticated(token,null,async(db,actor)=>{
+   this.#port();const session=actor.authSession;if(!session||!uuidV1(session.id))return bad('UNDERSTANDING_HUMAN_REQUIRED');
+   const now=async()=>{const mark=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))return bad('UNDERSTANDING_CLOCK_INVALID',503);return{at:at.getTime(),mark};};
+   const start=await now();deadline=Math.min(start.at+30000,Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt));
+   if(!Number.isFinite(deadline)||start.at>=deadline)bad('AUTH_REQUIRED',401);monotonicDeadline=start.mark+deadline-start.at;
+   await projectMember(db,actor,scope.projectId,true);const items=readUnderstandingHistory(await this.store.list(db,cloneV1(scope)),scope);this.#port();
+   const final=await now();if(final.at>=deadline)bad('AUTH_REQUIRED',401);monotonicDeadline=Math.min(monotonicDeadline,final.mark+deadline-final.at);
+   return{transport:'SYNTHETIC_ONLY',scope,items,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+  });
+  // authenticated의 COMMIT·connection release도 반환 전 유한 조회 창 안이어야 한다.
+  this.#port();if(performance.now()>=monotonicDeadline)bad('AUTH_REQUIRED',401);return result;
+ }
  /** 상위 서버 현재 사실 resolver의 동일 transaction용 선행 대조. 이 결과만으로 WORK 허가를 만들지 않는다. */
  async requireAccepted(db:PoolClient,actor:AuthenticatedIdentity,rawScope:unknown,expectedRef:unknown){
   const scope=scopeOf(rawScope);if(!refV1(expectedRef))bad('UNDERSTANDING_LATEST_ACCEPTANCE_REQUIRED');this.#port();await projectMember(db,actor,scope.projectId,true);

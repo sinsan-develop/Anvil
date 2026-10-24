@@ -7,8 +7,10 @@ import type {ProjectExecutionRecovery} from './execution-recovery.ts';
 import type {ProjectUnderstandingReviews} from './execution-understanding.ts';
 import type {ProjectExecutionGrantRevocations} from './execution-grant-revocation.ts';
 import type {ProjectExecutionInstructionQueue} from './execution-instruction-queue.ts';
+import type {UnderstandingHistoryPort} from './understanding-history-routes.ts';
 export const syntheticHumanExecutionOperations=['queueExecutionCommand','requestExecutionStop','authorizeExecutionRecovery','reviewUnderstanding','revokeExecutionGrant'] as const;
 export interface SyntheticHumanExecutionPorts{
+ understandingHistory?:UnderstandingHistoryPort;
  readonly transport:'SYNTHETIC_ONLY';queue:Pick<ProjectInitialExecutionQueue,'command'>;stop:Pick<ProjectExecutionStops,'command'>;recovery:Pick<ProjectExecutionRecovery,'command'>;understanding:Pick<ProjectUnderstandingReviews,'command'>;
  revocations?:Pick<ProjectExecutionGrantRevocations,'command'>;
  instructions?:Pick<ProjectExecutionInstructionQueue,'command'|'transport'>;

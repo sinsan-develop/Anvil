@@ -19,6 +19,7 @@ import {StoredResultReworkHistory} from './StoredResultReworkHistory.tsx';
 import {resultReworkFormKey,type ResultReworkFormDraft} from './result-rework-form.ts';
 import {ReviewCriteriaOriginal} from './ReviewCriteriaOriginal.tsx';
 import {readResultExecutionSource,type ResultExecutionSourceView} from './result-execution-source-api.ts';
+import {StoredUnderstandingHistory} from './StoredUnderstandingHistory.tsx';
 import {readResultArtifactText,type ResultArtifactTextView} from './result-artifact-api.ts';
 import {resolveReportedChangeDiff} from './reported-change-diff.ts';
 import {resolveReportedCommandOutput} from './reported-command-output.ts';
@@ -136,6 +137,7 @@ export function ResultReviewSources({client,projectId,result,assignment,onAuthen
   {shown?.error?<p role="alert">{shown.error} · 검수 기준 원문 미확인. 다른 자료로 대체하지 않습니다.</p>:null}
   {shown?.value&&d?<div><p>확정 임무: {shown.value.assignment.ref.id} · v{shown.value.assignment.ref.version} · {shown.value.assignment.ref.contentHash}</p><h5>완료 조건 원문</h5><ul>{d.acceptanceCriteria.map((v,i)=><li key={i}>{v}</li>)}</ul><h5>검증 조건 원문</h5><ul>{d.verificationRequirements.map((v,i)=><li key={i}>{v}</li>)}</ul><h5>아직 확인되지 않은 항목</h5><ul>{shown.value.issues.map(code=><li key={code}>{labels[code]}</li>)}</ul><details><summary>확정 기준·환경 참조 원문</summary><pre>{JSON.stringify({baselineRefs:d.baselineRefs,environmentRef:d.environmentRef},null,2)}</pre></details><p>보완·차단 검수 기록 연결 / 합격 판정·보완 배정 미연결 · 원 제출의 실패/미실행은 유지됩니다.</p></div>:null}
   <HistoricalExecutionSource key={'execution:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <StoredUnderstandingHistory key={'understanding:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
   <ResultArtifactTexts key={'artifacts:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
   <ReportedCommandEvidenceFiles key={'command-evidence:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
   <StoredResultReviewHistory key={result.ref.id+':'+result.ref.contentHash} client={client} result={result} assignment={assignment} session={criteria.session} responsibleState={responsibleState} reworks={criteria.reworks} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
