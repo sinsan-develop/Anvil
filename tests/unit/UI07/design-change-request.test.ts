@@ -16,8 +16,8 @@ test('선택한 문서 출처의 정확 버전과 hash는 명령·영수증에 �
 test('기존 ARTIFACT 출처는 원문hash 그대로 별도 명령에 결박하고 같은 명령 재확인에 보존한다',async()=>{
  const b=buffer(),source={kind:'ARTIFACT',id:'88888888-8888-4888-8888-888888888888',contentHash:'d'.repeat(64)};b.sourceRefs=[source];b.pending=fn('prepareDesignChangeRequest')(b,session,true);assert.deepEqual(b.pending.payload.sourceRefs,[source]);const view=await fn('sendDesignChangeRequest')(new ApiClient(async()=>Response.json(response(b.pending))),b,session);assert.deepEqual(view.change.sourceRefs,[source]);assert.deepEqual(fn('prepareDesignChangeRequest')(b,session,true),b.pending);
 });
-test('ARTIFACT의 위장version/중복/다른 미연결 종류는 작성 계약을 통과하지 않는다',()=>{
- const b=buffer(),source={kind:'ARTIFACT',id:projectId,contentHash:'d'.repeat(64)};for(const refs of[[source,source],[{...source,version:1}],[{...source,kind:'CONVERSATION'}]]){b.sourceRefs=refs;assert.throws(()=>fn('prepareDesignChangeRequest')(b,session,true),e=>e instanceof ApiError&&e.code==='DESIGN_CHANGE_SOURCE_INVALID');}
+test('ARTIFACT의 위장version/중복/미지원 종류는 작성 계약을 통과하지 않는다',()=>{
+ const b=buffer(),source={kind:'ARTIFACT',id:projectId,contentHash:'d'.repeat(64)};for(const refs of[[source,source],[{...source,version:1}],[{...source,kind:'EXECUTION'}]]){b.sourceRefs=refs;assert.throws(()=>fn('prepareDesignChangeRequest')(b,session,true),e=>e instanceof ApiError&&e.code==='DESIGN_CHANGE_SOURCE_INVALID');}
 });
 test('변경 요청 문서 출처는 중복·위장키·과다 목록과 영수증의 출처 누락을 거절한다',async()=>{
  const b=buffer(),source={kind:'DOCUMENT_VERSION',...b.beforeRef};

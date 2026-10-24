@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN04/UI07 요청 작성의 대화 출처 checkpoint**: 기존4종SourceRef/기존목록·원문GET을소비해발언/지시명시확인·첨부·별도요청저장/유실복구를연결했다. 직접인접13·합성DOM3/typebuild/diff0·한정독립C0/I0/M1이며이탈최종소비DOM공백은미검증으로WORK_STATUS에보존한다. 신규CID발견API/서버·권한변경0, 실제DB/WSL/사용자인수·전체FN04/Stage미완료를유지한다.
+
 - **2026-10-25 FN04/UI07 보관 변경 대화 출처 원문 checkpoint**: 기존요청귀속exactGET와수동대화방선택/기존메시지GET로고정발언·지시원문보기를연결했다. 신규reader/뷰RED→직접·문서파일인접14/typebuild/diff0·합성DOM2/QA정리0, 독립M1종류불일치음성은정합hash반례로보강했다. 자동전수검색/최신대체/쓰기/권위승격0이며실제DB·WSL/사용자인수·전체FN04/Stage미완료는유지한다.
 
 - **2026-10-25 FN04/UI06 업무 의존 저장 checkpoint**: 기존같은고정계획의고유업무간DEPENDS_ON 추적저장/이유/동일명령확인을연결했다. 실제선행배열/실행권한은불변, 원IMPLEMENTS호환유지. 독립I1상위진입차단은DOM RED→보정후신규/인접DOM2·unit8/typebuild/diff0이며실제DB·원서버·사용자인수/전체FN04/Stage미완료는유지한다. 증거와미검증은WORK_STATUS에기록했다.

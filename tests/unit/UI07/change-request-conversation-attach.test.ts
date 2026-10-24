@@ -1,0 +1,8 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {newDesignChangeRequest,prepareDesignChangeRequest} from '../../../apps/web/src/features/design-change/request-api.ts';
+import {designChangeFixture,projectId} from './design-change-fixture.ts';
+import {fixtureData} from '../FN05/knowledge-conversation-source-fixture.ts';
+const session={user:{id:projectId},clientId:projectId,csrfToken:'C'.repeat(43)};
+test('확인한 발언 종류를 그대로 출처에 붙이고 기존 명령에 고정한다',async()=>{
+ const m:any=await import('../../../apps/web/src/features/design-change/change-request-conversation-source.ts').catch(()=>null);assert.ok(m,'대화 출처 첨부 소비자가 필요하다');for(const instruction of [false,true]){const c=designChangeFixture().change,b=newDesignChangeRequest(projectId,session,3,c.beforeRef,c.afterProposalRef);b.reason='원문을 확인한 변경';const view=fixtureData(instruction).conversation,next=m.attachChangeRequestConversationSource(b,structuredClone(b),session,view);assert.equal(next.sourceRefs[0].kind,instruction?'USER_INSTRUCTION':'CONVERSATION');assert.equal(b.sourceRefs.length,0);const command=prepareDesignChangeRequest(next,session,true);assert.deepEqual(command.payload.sourceRefs,next.sourceRefs);const locked={...next,pending:command};assert.equal(m.attachChangeRequestConversationSource(locked,next,session,view),locked);assert.equal(m.attachChangeRequestConversationSource(next,next,session,view),next);assert.equal(m.attachChangeRequestConversationSource(b,b,{...session,clientId:c.ref.id},view),b);assert.equal(m.attachChangeRequestConversationSource(b,b,session,{...view,message:{...view.message,effectiveScope:{...view.message.effectiveScope,projectId:c.ref.id}}}),b);}
+});
