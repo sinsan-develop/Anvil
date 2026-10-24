@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN12/UI08 보고 원 업무 checkpoint**: 기존 보고의 exact 원초안/확정 쌍으로 고정 계획 업무·카드hash 조회/펼침을 연결했다. 직접/원업무·설계 인접unit10·신규정상/403 DOM2 및 임무지연닫기1·typebuild/diff0/QA정리0. 새 계획 GET 지연닫기·설계 GET/독립리뷰/실제DB/WSL/전체Stage·계획 미완료를 구분해 WORK_STATUS에 기록했다.
+
 - **2026-10-25 FN12/UI08 보고 범위 checkpoint**: 기존 고정 임무 정의의 포함/제외·입출력·책임·소스 범위/환경/예산 등을 보고 검토 화면에 표시했다. unit직접/인접4·합성DOM3/typebuild/diff0/QA정리0이며 현재 권한·원인·실행을 판단하지 않는다. 자체 검토/독립리뷰 미실시·실제DB/WSL·전체FN12/Stage/계획 미완료는 WORK_STATUS에 구분한다.
 
 - **2026-10-25 FN04/UI06 추적 문서 원문 checkpoint**: 저장 trace의 문서 endpoint에서 정확 버전/hash 원문을 명시 조회·닫기/403숨김에 연결했다. unit직접/인접7·DOM1/typebuild/diff0·QA정리0, 자체 정적 검토/독립리뷰 미실시·실제DB/WSL/전체FN04/Stage/계획 미완료를 구분한다. 새 서버 의존 번들 경고 제거와 미검증은 WORK_STATUS에 기록했다.

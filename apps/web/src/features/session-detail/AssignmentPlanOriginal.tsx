@@ -5,7 +5,7 @@ import {WorkPlanTaskOriginal} from '../workspace/work-plan-task-original.ts';
 import {readAssignmentPlanOriginal} from './assignment-plan-original.ts';
 import type {SessionDetail} from './api.ts';
 import {AssignmentDesignOriginal} from './AssignmentDesignOriginal.tsx';
-export function AssignmentPlanOriginal({client,detail,onAuthenticationLost}:{client:ApiClient;detail:SessionDetail;onAuthenticationLost:()=>void}){
+export function AssignmentPlanOriginal({client,detail,onAuthenticationLost}:{client:ApiClient;detail:Pick<SessionDetail,'projectId'|'draft'|'confirmed'>;onAuthenticationLost:()=>void}){
  const [request,setRequest]=useState<object|null>(null),[loaded,setLoaded]=useState<{request:object;value:WorkPlanView|null;error:ApiError|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const shown=loaded?.request===request?loaded:null;
  useEffect(()=>{

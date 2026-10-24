@@ -3,7 +3,7 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {readAssignmentDesignOriginal} from './assignment-design-original.ts';
 import type {SessionDetail} from './api.ts';
 type Original=Awaited<ReturnType<typeof readAssignmentDesignOriginal>>;
-export function AssignmentDesignOriginal({client,detail,onAuthenticationLost}:{client:ApiClient;detail:SessionDetail;onAuthenticationLost:()=>void}){
+export function AssignmentDesignOriginal({client,detail,onAuthenticationLost}:{client:ApiClient;detail:Pick<SessionDetail,'projectId'|'draft'|'confirmed'>;onAuthenticationLost:()=>void}){
  const [request,setRequest]=useState<object|null>(null),[loaded,setLoaded]=useState<{request:object;value:Original|null;error:ApiError|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const shown=loaded?.request===request?loaded:null;
  useEffect(()=>{

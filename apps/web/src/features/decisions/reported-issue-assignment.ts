@@ -14,5 +14,5 @@ export async function readReportedIssueAssignment(client:ApiClient,original:Subm
  const bytes=new TextEncoder().encode(ordered(s));if(bytes.length>2*1024*1024)fail();const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');if(digest!==r.ref.contentHash)fail();if(!active())return null;
  const draft=await readAssignmentDraft(client,pid,draftRef);if(!active())return null;
  const assignment=await readConfirmedAssignment(client,pid,a,draft);if(!active())return null;
- return{assignment,sourceCurrentness:'NOT_RECHECKED' as const,completionAccepted:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+ return{assignment,detail:{projectId:pid,draft,confirmed:assignment},sourceCurrentness:'NOT_RECHECKED' as const,completionAccepted:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
 }
