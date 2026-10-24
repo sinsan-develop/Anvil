@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN05 맥락 지식 관련성 소비 checkpoint**: 기존exact지식조회scope를선택전·보관원문에표시하고검색wire/원선택·manifest·명령·권한불변을유지했다. 신규reader2RED→직접/인접14및서비스합성연결1=15PASS·공통보기DOM1/typebuild/diff0·한정독립C0/I0/M0·QA0이며미검증범위는WORK_STATUS에분리한다. 검색§2.1직접승인경계·실DB/서비스선행·전체FN05/UI10/Stage미완료는유지한다. 후속은기존허용GET안의관련원문보기소비대조다.
+
 - **2026-10-25 FN05/UI10 저장·정확조회 source 검증 checkpoint**: 고정 단계/업무 관련성의 실제참조검사·작성/정정/정확읽기를 연결하고 모호한 중복업무만차단했다. 직접/인접36·합성DOM5·typebuild/diff0·한정독립I1보정후C0/I0/M0·QA두경로0, 원실패/오류·실DB/서비스/정정DOM전체 미검증은WORK_STATUS에보존한다. 검색§2.1미채택/실제환경미충족·전체FN05/UI10/Stage/계획미완료를유지하고 다음exact검색상세화판정은PMO에요청했다.
 
 - **2026-10-25 Stage B FN05/UI10 지식 관련성 저장·정확 조회 진행 중**: 기존 미완료 stageRefs/taskRefs를 같은 프로젝트 고정 적용본/계획의 정확 버전/hash·노드/업무로 상세화했다. Main 단일 writer·TDD로 서버와 기존 작성/정정/조회 화면을 연결하며 목적·헌법 공통/관련성≠권한/과거 원문·hash 보존을 검수한다. PMO 채택은 원 후보0FFE97E의 저장/정확조회만이고 검색 wire는 NOT_ADOPTED다. 새SQL/실DB/정책/서비스/Agent/비용0, 실제 환경과 전체 FN05/Stage 완료는 별도 미충족이다. 원 RED/검증·오류·QA 정리는 WORK_STATUS에 누적한다.
