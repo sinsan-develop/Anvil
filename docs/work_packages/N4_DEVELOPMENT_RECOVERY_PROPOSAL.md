@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- OS시험source 모의연결raw908FCA7C8BC29F2EEC63E48230EC1EEF0A807C21501C1F9884D0438B211BA591: 고정14case 순서/중간오류/재사용·오인권위거절은direct11/type/PS AST/diff로확인했다. actualOsCases0/osVerifiedfalse/executionAuthorizedfalse이며실OS행동/실권위adapter는미연결이다. 실제컴파일/OS·R0/P2P3허가를요청하거나사용하지않았다. source모의orchestration과실OS음성검수를혼동하지않는다.
+
 - 후속source 검토: 선언파일목록의불변/canonical hash와획득기준기한·case alias/보호자료거절을직접9+기존TLS8/type/구문으로확인했다. native는P2/P3행위·기한분리,실size/hash pin→seal전start금지,중복parent재사용/4096상한,부분실패/Job멤버/기한전후검사/unknownclose재시도거절·caller bool강제종료입력제거로보정했지만컴파일/OS미검증이다. 새raw native8FB122D5308ACFC8D982D3ADF21B1FDCB47B41319247B764014F11D94AA85892/entry278F03AB02B131CD351E1C27583BE821E5D7922D63CE25684591A8A3DBBE0DE2/host88ADA14CEA7B86DE7BF71AC6C0E6C7D741AC3E87BFB8A70E3F96EDC3C41EF98F. 아래이전rawhash는이력이다. 실권위/OSrunner case연결·완성runtime파일관측·자원/시동·독립리뷰가남아있어source전체완료/R0실행준비PASS가아니다.
 
 - 원문01a17002-c88d-7213-8c28-ad45238d1d84의두가지승인중P1은정식DB READ ONLY1회a02537로완료·허가소진했다. exactf8fe81e5/probeE03478D4·PG150018/app/migration46·후속7미적용·고정8객체중project_methodologies1행이다. 사용자자료/DDL/DML0, 신규전용root/cache는정확정리·별도SSH부재확인했다. 기존P1미승인문구는과거이력이며추가DB읽기허가는아니다.

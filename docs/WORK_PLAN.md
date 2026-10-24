@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 OS 시험 코드 source 모의 연결**: 고정14 case의순서·중간오류/재사용·오인권위거절을source모의observer로연결해직접11/type/PS구문/diff를확인했다. 실제OS검수/권위발급은항상false이며실fixture행동/권위adapter·독립source검토가남아source전체완료가아니다. native컴파일/OS/P1재실행·실제개발환경변경0, Main은같은승인②의후속을계속한다.
+
 - **2026-10-25 보호 source 후속**: 파일별선언목록/해시·불변성과획득기준기한·오인권위거절의순수소비를보완해직접9+TLS인접8/type/구문/diff를확인했다. native의단계/manifest pin/부분실패보정은정적후보이고실권위adapter·OS시험case연결/독립리뷰는미완료다. source전체/R0/실제복구완료가아니며같은승인②범위의source/test보완을Main주도로계속한다. 실제OS·DB·인증서·서비스변경0·P1재실행0.
 
 - **2026-10-25 새 직접승인 두 범위**: P1 exact기존probe의정식DB READ ONLY1회로PG15/app역할·migration46/후속7미적용과고정객체를실측하고전용Git/cache정리·독립부재확인했다. 보호native/host/entry3와시험/adapter는source후보로준비중이며순수·기존TLS13/타입·구문검사와실native/OS지원은구분한다. 실제guardian/guard권위·기한환경/완성manifest/OS실행연결은미완료·R0/실P2P3미승인이다. 정확원문/ref·sourcehash/오류/미검증은WORK_STATUS와N4패킷에기록하며전체Stage/계획완료아니다.
