@@ -41,3 +41,11 @@ export function removeDocumentAttachment(b:DocumentBuffer,s:DocumentSession,arti
  if(!b.content.attachments.some(a=>equal(a,artifact)))throw new ApiError('DOCUMENT_ATTACHMENT_SELECTION_CHANGED');
  return{...b,content:{...b.content,attachments:b.content.attachments.filter(a=>!equal(a,artifact))},dirty:true,savedRef:null,failure:null};
 }
+/** 고정 첨부 참조의 순서만 바꾼다. 보존 원본을 빼거나 파일을 다시 전송하지 않는다. */
+export function moveDocumentAttachment(b:DocumentBuffer,s:DocumentSession,index:number,direction:-1|1):DocumentBuffer{
+ editable(b,s);
+ if(!Number.isSafeInteger(index)||index<0||index>=b.content.attachments.length||(direction!==-1&&direction!==1))throw new ApiError('DOCUMENT_ATTACHMENT_SELECTION_CHANGED');
+ const target=index+direction;if(target<0||target>=b.content.attachments.length)return b;
+ const attachments=b.content.attachments.slice();[attachments[index],attachments[target]]=[attachments[target]!,attachments[index]!];
+ return{...b,content:{...b.content,attachments},dirty:true,savedRef:null,failure:null};
+}

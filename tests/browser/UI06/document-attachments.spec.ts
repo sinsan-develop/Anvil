@@ -5,7 +5,7 @@ const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-22
 const at='2026-10-21T04:00:00Z',body='기존 문서 본문',attachmentText='보관한 첨부 원문',csrf='C'.repeat(43),formRef={id:did,version:1,contentHash:'a'.repeat(64)};
 const artifact=(id:string,text:string)=>({artifactId:id,bytes:Buffer.byteLength(text),contentHash:contentHash(Buffer.from(text)),mediaType:'text/plain;charset=utf-8'});
 const original=artifact(bid,body),attachment=artifact(aid,attachmentText),prior=artifact(uid,'기존 첨부');
-async function fixture(page:Page,mode='NORMAL'){
+async function fixture(page:Page,mode='NORMAL',expectedAttachments=[prior,attachment]){
  const unknown:string[]=[],errors:string[]=[],writes:any[]=[],uploads:any[]=[],reads:number[]=[];let saved:any=null,uploaded:any=null;
  await page.route('**/*',r=>{unknown.push(r.request().method()+' '+r.request().url());return r.abort();});await installWorkspaceBundle(page);
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')unknown.push(r.url());});
@@ -24,7 +24,7 @@ async function fixture(page:Page,mode='NORMAL'){
   else if(p===b+'files'&&req.method()==='POST'){
    const c=JSON.parse(req.headers()['x-anvil-command']!);uploads.push(c);expect(req.headers()['x-anvil-csrf']).toBe(csrf);expect(req.postDataBuffer()!.toString('utf8')).toBe(body);uploaded={artifactId:iid,...c.payload};json=receipt(c,{status:'ARTIFACT_READY',artifactRef:uploaded},null,iid);
   }else if(p===b+'commands'&&req.method()==='POST'){
-   const c=req.postDataJSON();writes.push(c);expect(c.operation).toBe('saveDocumentDraft');expect(c.expectedVersion).toBe(1);expect(c.payload.content.attachments).toEqual([prior,attachment]);expect(c.payload.formRef).toEqual(formRef);saved=c;
+   const c=req.postDataJSON();writes.push(c);expect(c.operation).toBe('saveDocumentDraft');expect(c.expectedVersion).toBe(1);expect(c.payload.content.attachments).toEqual(expectedAttachments);expect(c.payload.formRef).toEqual(formRef);saved=c;
    if(mode==='LOST'&&writes.length===1)return r.abort('connectionreset');
    json=receipt(c,{status:'DRAFT',ref:{id:did,version:2,contentHash:contentHash(canonicalJson({title:c.payload.title,formRef,stageNodeRef:null,content:c.payload.content}))}},2,did);
   }else if(p.startsWith(b+'files/'))return r.fulfill({contentType:'application/octet-stream',body:Buffer.from(p.endsWith(aid)?mode==='HASH'?'変造':attachmentText:p.endsWith(uid)?'기존 첨부':body)});
@@ -57,4 +57,25 @@ test('고정 저장첨부 원문은 확인 후 열고 재조회 거절 때 앞�
 });
 test('저장첨부 원문 변조는 hash 오류로 숨기고 쓰기를 만들지 않는다',async({page})=>{
  const f=await fixture(page);await page.route('**/api/v1/projects/'+pid+'/files/'+uid,r=>r.fulfill({contentType:'application/octet-stream',body:Buffer.from('바뀐원문')}));await page.getByRole('button',{name:'저장 첨부 1 원문 열기',exact:true}).click();await expect(page.getByRole('alert')).toContainText('ARTIFACT_INTEGRITY_FAILED');await expect(page.getByRole('region',{name:'고정 저장첨부 원문',exact:true})).toHaveCount(0);expect(f.writes).toEqual([]);expect(f.uploads).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+for(const mode of ['NORMAL','LOST'])test('ATTACHMENT_ORDER_'+mode+' 문서 첨부 순서를 저장·재조회하고 과거 버전과 미확인 명령을 보존한다',async({page})=>{
+ const f=await fixture(page,mode,[attachment,prior]);await select(page);await page.getByRole('button',{name:'이 원본을 문서에 첨부',exact:true}).click();
+ const editor=page.getByRole('region',{name:'문서 첨부 작성',exact:true});
+ await expect(editor.getByRole('button',{name:'첨부 1 위로',exact:true})).toBeDisabled();await expect(editor.getByRole('button',{name:'첨부 2 아래로',exact:true})).toBeDisabled();
+ await editor.getByRole('button',{name:'첨부 2 위로',exact:true}).click();
+ await expect(editor.getByRole('listitem').nth(0)).toContainText(attachment.artifactId);await expect(editor.getByRole('listitem').nth(1)).toContainText(prior.artifactId);
+ expect(f.writes).toEqual([]);expect(f.uploads).toEqual([]);
+ await page.getByLabel('문서 변경 이유',{exact:true}).fill('시안 읽는 순서 변경');await page.getByRole('button',{name:'새 초안 버전 저장',exact:true}).click();
+ if(mode==='LOST'){
+  await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await expect(editor.getByRole('button',{name:'첨부 1 아래로',exact:true})).toBeDisabled();
+  await page.getByRole('button',{name:'같은 저장 명령 결과 확인',exact:true}).click();
+ }
+ await expect(page.getByText('초안 버전 2 저장 확인',{exact:true})).toBeVisible();expect(f.getSaved().payload.content.attachments).toEqual([attachment,prior]);expect(f.reads).toContain(2);
+ if(mode==='LOST'){expect(f.writes).toHaveLength(2);expect(f.writes[1]).toEqual(f.writes[0]);}else expect(f.writes).toHaveLength(1);
+ await page.reload();await page.getByRole('button',{name:'원본 문서 열기',exact:true}).click();
+ const stored=page.getByRole('region',{name:'저장된 문서 첨부',exact:true});await expect(stored.getByRole('listitem').nth(0)).toContainText(attachment.artifactId);await expect(stored.getByRole('listitem').nth(1)).toContainText(prior.artifactId);
+ await page.getByRole('button',{name:'이 버전에서 편집',exact:true}).click();await expect(editor.getByRole('listitem').nth(0)).toContainText(attachment.artifactId);await expect(page.getByLabel('문서 본문 편집',{exact:true})).toHaveValue(body);
+ const old=await page.evaluate(async path=>{const r=await fetch(path);return r.json();},'/api/v1/projects/'+pid+'/documents/'+did+'/versions/1');expect(old.content.attachments).toEqual([prior]);
+ expect(f.uploads).toHaveLength(1);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
 });

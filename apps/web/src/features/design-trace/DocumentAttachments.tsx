@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentBuffer,DocumentSession} from './editor-api.ts';
 import {listDocumentMaterials,type MaterialPage,type ImportSummary} from './materials-api.ts';
-import {readDocumentAttachment,readDocumentPngAttachment,attachDocumentOriginal,removeDocumentAttachment,type DocumentAttachmentSelection} from './document-attachments.ts';
+import {readDocumentAttachment,readDocumentPngAttachment,attachDocumentOriginal,removeDocumentAttachment,moveDocumentAttachment,type DocumentAttachmentSelection} from './document-attachments.ts';
 import type {StoredDocumentPng} from './stored-document-image.ts';
 export function DocumentAttachments({client,session,buffer,locked,onChange,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:DocumentBuffer;locked:boolean;onChange:Dispatch<SetStateAction<DocumentBuffer|null>>;onAuthenticationLost:()=>void}){
  const live=useRef(true),flight=useRef(false),attempt=useRef(0),latest=useRef(buffer);latest.current=buffer;
@@ -23,11 +23,13 @@ export function DocumentAttachments({client,session,buffer,locked,onChange,onAut
  }
  function attach(){if(disabled||!shown?.decoded)return;try{const captured=buffer,next=attachDocumentOriginal(captured,session,shown.value);onChange(current=>current===captured?next:current);setPreview(null);setList(null);setError(null);}catch(cause){setError(cause instanceof ApiError?cause.code:'RESPONSE_INVALID');}}
  function remove(index:number){if(disabled)return;try{const captured=buffer,next=removeDocumentAttachment(captured,session,captured.content.attachments[index]!);onChange(current=>current===captured?next:current);setError(null);}catch(cause){setError(cause instanceof ApiError?cause.code:'RESPONSE_INVALID');}}
+ function move(index:number,direction:-1|1){if(disabled)return;try{const captured=buffer,next=moveDocumentAttachment(captured,session,index,direction);onChange(current=>current===captured?next:current);setError(null);}catch(cause){setError(cause instanceof ApiError?cause.code:'RESPONSE_INVALID');}}
  function close(){attempt.current++;setPreview(null);setError(null);setLoading(false);}
  function imageFailed(id:number){if(live.current&&attempt.current===id){setPreview(null);setError('DOCUMENT_PNG_DECODE_FAILED');}}
  function supported(source:ImportSummary){const a=source.originalRef;return a.bytes<=2097152&&(status==='UNSUPPORTED'?source.status==='UNSUPPORTED'&&a.mediaType==='image/png'&&a.bytes>=57:source.status==='READY'&&['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(a.mediaType));}
  return <section aria-label="문서 첨부 작성"><h3>문서 첨부</h3><p>이 프로젝트의 보관 텍스트 또는 제한 PNG를 확인해 별도 첨부로 선택합니다. 원문 바이트·해시 확인은 내용 검토·권한 허가가 아니며 별도 저장 전에는 편집 입력뿐입니다. PNG 본문 추출은 미지원이며 PDF/SVG/HTML 등은 선택하지 않습니다.</p><p className="meta">PNG는 기존 시안 조회와 같은 2MiB·8비트 RGB/RGBA·비인터레이스·비애니메이션·각변4096/총4194304픽셀/청크 제한을 사용합니다. 새 파일 업로드가 아닌 보관 원본 선택입니다.</p>
- <ul>{buffer.content.attachments.map((a,i)=><li key={a.artifactId}><code>{a.artifactId}</code> · {a.bytes}바이트 · {a.contentHash}<button type="button" disabled={disabled||!!buffer.importCandidateRef} onClick={()=>remove(i)}>첨부 {i+1} 제외</button></li>)}</ul>
+ <ul>{buffer.content.attachments.map((a,i)=><li key={a.artifactId}><code>{a.artifactId}</code> · {a.bytes}바이트 · {a.contentHash}<button type="button" disabled={disabled||i===0} onClick={()=>move(i,-1)}>첨부 {i+1} 위로</button><button type="button" disabled={disabled||i===buffer.content.attachments.length-1} onClick={()=>move(i,1)}>첨부 {i+1} 아래로</button><button type="button" disabled={disabled||!!buffer.importCandidateRef} onClick={()=>remove(i)}>첨부 {i+1} 제외</button></li>)}</ul>
+ <p className="meta">첨부 순서는 별도 초안 저장 뒤 반영됩니다. 파일·본문·과거 버전은 바꾸지 않습니다.</p>
  {buffer.importCandidateRef?<p>가져오기 원본 보존 첨부는 이 화면에서 제외하지 않습니다.</p>:null}
  <button type="button" disabled={disabled} onClick={()=>void read()}>첨부할 보관 원본 조회</button>
  <button type="button" disabled={disabled} onClick={()=>void read(undefined,null,'UNSUPPORTED')}>첨부할 보관 PNG 조회</button>

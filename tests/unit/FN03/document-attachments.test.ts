@@ -30,3 +30,22 @@ test('다른project/중복·기존명령/가져오기·제안/다른사용자와
  const attached=m!.attachDocumentOriginal(b,session,choice);assert.throws(()=>m!.attachDocumentOriginal(attached,session,choice));
  assert.throws(()=>m!.removeDocumentAttachment({...attached,importCandidateRef:id},session,artifact));
 });
+
+test('첨부 순서만 바꿔 저장 입력에 보존하고 가져오기 원본·본문·과거 버전을 변경하지 않는다',()=>{
+ assert.equal(typeof m?.moveDocumentAttachment,'function');
+ const b=buffer(),second={...artifact,artifactId:id};b.content.attachments=[artifact,second];b.importCandidateRef=id;b.savedRef={id,version:1,contentHash:'a'.repeat(64)};
+ const before=structuredClone(b),next=m!.moveDocumentAttachment(b,session,1,-1);
+ assert.deepEqual(next.content.attachments,[second,artifact]);assert.deepEqual(b,before);
+ assert.equal(next.importCandidateRef,id);assert.equal(next.body,b.body);assert.deepEqual(next.formRef,b.formRef);assert.equal(next.baseVersion,1);assert.equal(next.dirty,true);assert.equal(next.savedRef,null);assert.equal(next.pending,null);
+ const back=m!.moveDocumentAttachment(next,session,0,1);assert.deepEqual(back.content.attachments,[artifact,second]);assert.deepEqual(next.content.attachments,[second,artifact]);
+});
+test('첨부 이동의 양끝은 no-op이며 잘못된 선택·다른 주체·미확인 작업은 보존하며 거절한다',()=>{
+ assert.equal(typeof m?.moveDocumentAttachment,'function');
+ const b=buffer();b.content.attachments=[artifact,{...artifact,artifactId:id}];
+ assert.equal(m!.moveDocumentAttachment(b,session,0,-1),b);assert.equal(m!.moveDocumentAttachment(b,session,1,1),b);
+ // 런타임의 잘못된 방향도 거절하는지 확인한다.
+ for(const [index,direction] of [[-1,1],[2,-1],[0.5,1],[NaN,1],[0,0],[0,2]] as const)assert.throws(()=>m!.moveDocumentAttachment(b,session,index,direction as -1|1));
+ for(const patch of [{pending:{}},{importState:{}},{importPreparationId:'busy'},{proposalState:{}},{workPlanState:{}},{designIndexState:{}},{ownerUserId:pid},{controlGeneration:0}]){
+  const changed={...b,...patch} as any,before=structuredClone(changed);assert.throws(()=>m!.moveDocumentAttachment(changed,session,0,1));assert.deepEqual(changed,before);
+ }
+});
