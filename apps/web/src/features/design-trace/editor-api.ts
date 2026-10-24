@@ -14,6 +14,7 @@ export interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]
 export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'reviewUnderstanding' | 'startStage' | 'cancelQueuedRequest' | 'submitResult' | 'defineProjectRole' | 'bindResponsibleSession' | 'prepareExecution' | 'saveBaselineDraft' | 'reviewBaselineContent' | 'confirmBaseline' | 'uploadArtifact' | 'saveDocumentDraft' | 'detachDocumentSource' | 'importDocument' | 'proposeDocumentChange' | 'proposeDesignChange' | 'reviewChangeImpact' | 'indexDesignDocument' | 'saveWorkPlanDraft' | 'prepareAssignment' | 'reviewAssignmentContent' | 'confirmAssignment' | 'buildTaskContext' | 'linkTrace' | 'saveKnowledge' | 'appendConversation' | 'excludeKnowledge' | 'correctKnowledge' | 'recordContentReview' | 'confirmKnowledge' | 'confirmWorkPlan' | 'applyConstitution'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null | {requestId:string;decisionId:string;scopeDigest:string}; payload: Record<string, unknown> }
 export interface PendingDocumentSave { body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
 export interface DocumentBuffer {
+  designDependencyState?:import('./design-dependency.ts').DesignDependency|null;
   formEntry?:FormContentEntry;
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
   title: string; body: string; mediaType: string; content: Omit<DocumentContent, 'body'>; criteria: DocumentVersion['contentReviewCriteria']['items'];
@@ -56,7 +57,7 @@ export function newDocument(projectId: string, form: FormVersion, ownerUserId: s
 }
 export async function prepareDocumentSave(buffer: DocumentBuffer, session: DocumentSession): Promise<PendingDocumentSave> {
   if (!nullableStageRef(buffer.stageNodeRef ?? null)) throw new ApiError('DOCUMENT_STAGE_INPUT_INVALID');
-  if(buffer.designIndexState||buffer.workPlanState) throw new ApiError('DOCUMENT_PENDING_RESULT');
+  if(buffer.designIndexState||buffer.workPlanState||buffer.designDependencyState) throw new ApiError('DOCUMENT_PENDING_RESULT');
   if (buffer.proposalState) throw new ApiError('PROPOSAL_PENDING_RESULT');
   if (buffer.importPreparationId || buffer.importState || buffer.importCandidateRef != null && !uuid.test(buffer.importCandidateRef)) throw new ApiError('IMPORT_SELECTION_REQUIRED');
   if (buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || buffer.documentId !== null && !uuid.test(buffer.documentId) || buffer.documentId === null && buffer.baseVersion !== 0 || buffer.documentId !== null && buffer.baseVersion < 1 || !uuid.test(session.clientId) || !versionRef(buffer.formRef) || !Number.isSafeInteger(buffer.baseVersion) || !Number.isSafeInteger(buffer.baseVersion + 1) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1) throw new ApiError('CLIENT_PATH_INVALID');

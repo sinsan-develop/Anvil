@@ -1,3 +1,4 @@
+import type {DocumentPreparationGate} from './document-preparation-gate.ts';
 import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
 import{isConfirmedArtifactQuarantine,documentFailure}from'./mutation-result.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
@@ -12,7 +13,7 @@ import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentAttachments} from './DocumentAttachments.tsx';
 import {DocumentFormEntry} from './DocumentFormEntry.tsx';
 
-export function DocumentEditor({ client, session, buffer, onChange, onSaved, onAuthenticationLost }: { client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
+export function DocumentEditor({ preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
   const [comparison, setComparison] = useState<DocumentConflictComparison | null>(null), [acknowledged, setAcknowledged] = useState(false), [comparisonError, setComparisonError] = useState<ApiError | null>(null);
   const [manualAcknowledged, setManualAcknowledged] = useState(false);
@@ -22,19 +23,20 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
   function change(patch: Partial<DocumentBuffer>) { if (!locked) onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, ...patch, dirty: true, savedRef: null, failure: null } : previous); }
   async function save() {
     if (running.current || buffer.proposalState || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id) return;
+    const release=preparationGate?.acquire();if(preparationGate&&!release)return;
     running.current = true; setBusy(true);
     let pending = buffer.pending;
     try {
-      if (!pending) { pending = await prepareDocumentSave(buffer, session); const prepared = pending; onChange(previous => previous?.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
+      if (!pending) { pending = await prepareDocumentSave(buffer, session); if (!mounted.current) return; const prepared = pending; onChange(previous => previous === buffer && !previous.designDependencyState && previous.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
       const command = pending.upload.commandId;
       const ref = await continueDocumentSave(client, pending, session, value => onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), () => mounted.current);
       onChange(previous => previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null } : previous);
       if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-      onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, failure: documentFailure(error) } : previous);
+      onChange(previous => !previous?.designDependencyState && previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, failure: documentFailure(error) } : previous);
       if (mounted.current && error.status === 401) onAuthenticationLost();
-    } finally { running.current = false; if (mounted.current) setBusy(false); }
+    } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
   }
   async function compare() {
     if (running.current) return; running.current = true; setBusy(true); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); setComparisonError(null);
@@ -55,13 +57,14 @@ export function DocumentEditor({ client, session, buffer, onChange, onSaved, onA
   }
   async function propose() {
     if (running.current || buffer.pending || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id || buffer.proposalState?.proposal) return;
+    const release=preparationGate?.acquire();if(preparationGate&&!release)return;
     running.current = true; setBusy(true); setProposalAcknowledged(false);
     try {
       let state = buffer.proposalState;
       if (!state) { state = await prepareDocumentProposal(buffer, session); const prepared = state; onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId && b.baseVersion === buffer.baseVersion && !b.pending && !b.importState && !b.importPreparationId && !b.proposalState ? { ...b, proposalState: prepared } : b); }
       state = { ...state, failure: null }; proposalCheckpoint(state);
       proposalCheckpoint(await continueDocumentProposal(client, state, session, proposalCheckpoint, () => mounted.current));
-    } catch (cause) { proposalFailure(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
+    } catch (cause) { proposalFailure(cause); } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
   }
   async function compareProposal() {
     const state = buffer.proposalState; if (!state?.proposal || running.current) return;
