@@ -27,7 +27,7 @@ export function WorkspaceForm({ client, title, formRef, onAuthenticationLost }: 
       <ol>{value.definition.items.map(item => <li key={item.itemId}>
         <h6>{item.title}</h6><p>{item.itemId} · {item.required ? '필수' : '선택'} · {item.repeated ? '반복 항목' : '단일 항목'}</p>
         <ul>{item.authoringRules.map((text, index) => <li key={index}>{text}</li>)}</ul>
-        {item.fields.length ? <ul>{item.fields.map(field => <li key={field.fieldId}>{field.title} · {field.required ? '필수' : '선택'}</li>)}</ul> : null}
+        {item.fields.length ? <ul>{item.fields.map(field => <li key={field.fieldId}><span>{field.title}</span> · <span className="meta">{field.fieldId} · {field.required ? '필수' : '선택'} · {field.valueType}</span></li>)}</ul> : null}
         <p>검수 기준</p><ul>{item.reviewCriteria.map((text, index) => <li key={index}>{text}</li>)}</ul>
       </li>)}</ol>
       <details><summary>작성 역할·선행 자료</summary><p>작성 {value.definition.authorRole} / 검토 {value.definition.reviewerRole} / 확정 {value.definition.confirmerRole}</p><ul>{value.definition.requiredInputs.map((text, index) => <li key={index}>{text}</li>)}</ul></details>

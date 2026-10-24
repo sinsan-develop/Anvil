@@ -32,6 +32,7 @@ async function setup(page: Page) {
 
 async function applicationSetup(page: Page) {
   const facts = await setup(page);
+  await page.route(`**/api/v1/projects/${pid}/conversations?limit=50`,route=>{expect(route.request().method()).toBe('GET');return route.fulfill({json:{items:[],hasMore:false,nextCursor:null,observedAt:'2026-10-17T01:02:03Z'}});});
   await page.route('**/api/v1/projects/' + pid, route => route.fulfill({ json: { ...data(), currentMethodologyRef: application.applicationRef } }));
   await page.route(`**/api/v1/projects/${pid}/methodology-application`, route => route.fulfill({ json: application }));
   await page.goto(`/#/projects/${pid}/workspace`);
@@ -50,6 +51,7 @@ test('단계 양식의 고정 버전 항목·작성·검수 기준을 읽고 단
   await page.getByRole('button', { name: '양식 원본: 요구사항 정의서', exact: true }).click();
   const form = page.getByRole('region', { name: '단계 양식 원본: 요구사항 정의서', exact: true });
   await expect(form.getByRole('heading', { name: 'AF01 고정 요구사항 양식', exact: true })).toBeVisible();
+  await expect(form.getByText('R-ID · 필수 · TEXT', {exact:true})).toBeVisible();
   for (const text of ['요구 목록', '요구 ID', '근거와 이유를 기록', '누락 요구 확인', '현재 원문 조회는 단계 수행 준비·문서 확정을 뜻하지 않습니다.']) await expect(form).toContainText(text);
   await form.getByText('문서 작성 공통 기준', { exact: true }).click(); await expect(form.getByLabel('단계 양식 작성 기준', { exact: true })).toHaveText(pinnedForm.authoringStandard.content);
   expect(await page.evaluate(() => (window as any).WORKSPACE_FORM_EXECUTED)).toBeUndefined();

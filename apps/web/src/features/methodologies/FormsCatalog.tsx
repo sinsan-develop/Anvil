@@ -47,7 +47,7 @@ export function FormsCatalog({ client, session, buffer, onChange, onAuthenticati
       <ol className="form-items">{detail.definition.items.map(item => <li key={item.itemId}>
         <h4>{item.title}</h4><p className="meta">{item.itemId} · {item.required ? '필수' : '선택'}{item.repeated ? ' · 반복 행' : ''}</p>
         {item.authoringRules.map((text, index) => <p key={index}>{text}</p>)}
-        {item.fields.length ? <ul>{item.fields.map(field => <li key={field.fieldId}>{field.title}</li>)}</ul> : null}
+        {item.fields.length ? <ul>{item.fields.map(field => <li key={field.fieldId}><span>{field.title}</span> · <span className="meta">{field.fieldId} · {field.required ? '필수' : '선택'} · {field.valueType}</span></li>)}</ul> : null}
         <details><summary>내용 검수 기준</summary><ul>{item.reviewCriteria.map((text, index) => <li key={index}>{text}</li>)}</ul></details>
       </li>)}</ol>
       <details><summary>작성 역할·입력 자료</summary><p>작성 {detail.definition.authorRole} / 검토 {detail.definition.reviewerRole} / 확정 {detail.definition.confirmerRole}</p><ul>{detail.definition.requiredInputs.map((text, index) => <li key={index}>{text}</li>)}</ul></details>

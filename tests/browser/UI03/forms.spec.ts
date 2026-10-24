@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
 import { installWorkspaceBundle } from '../UI04/bundle.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
 const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url)));
 const unexpected = new WeakMap<object, string[]>();
@@ -14,6 +15,23 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/api/v1/forms', route => route.fulfill({ json: { items: catalog.forms.map(form => ({ ref: form.ref, formCode: form.definition.formCode, name: form.definition.name, scope: 'SYSTEM' })), observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } }));
 });
 test.afterEach(async ({ page }) => { expect(unexpected.get(page)).toEqual([]); });
+
+test('FORM_FIELD_DETAILS 같은 제목의 필수·선택 필드를 ID/형식으로 구분하고 HTML을 실행하지 않는다',async({page})=>{
+ const definition=structuredClone(catalog.forms[0]!.definition);definition.scope='USER_COMMON';definition.name='필드 상세 QA';
+ const row=definition.items.find(item=>item.fields.length>1)!;
+ row.fields[0]!.title='<img src=x onerror="window.FORM_FIELD_EXECUTED=1">';row.fields[1]!.title=row.fields[0]!.title;row.fields[1]!.required=false;
+ const ref={id:'a6f30000-0000-4000-8000-000000000095',version:1,contentHash:contentHash(canonicalJson(definition))};
+ const writes:string[]=[],offOrigin:string[]=[],errors:string[]=[];
+ page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method());if(new URL(r.url()).origin!=='https://localhost:3830')offOrigin.push(r.url());});page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/api/v1/forms',r=>r.fulfill({json:{items:[{ref,formCode:definition.formCode,name:definition.name,scope:definition.scope}],observedAt:new Date().toISOString(),hasMore:false,nextCursor:null,baselineVersion:null}}));
+ await page.route(`**/api/v1/forms/${ref.id}/versions/1`,r=>r.fulfill({json:{ref,definition,authoringStandard:{ref:catalog.standard.ref,content:catalog.standard.body.toString('utf8')},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}}}));
+ await page.goto('/#/methodologies');const original=page.getByRole('article',{name:'선택 양식 원본',exact:true});
+ await expect(original.getByRole('heading',{name:'AF01 필드 상세 QA',exact:true})).toBeVisible();
+ await expect(original.getByText(`${row.fields[0]!.fieldId} · 필수 · TEXT`,{exact:true})).toBeVisible();
+ await expect(original.getByText(`${row.fields[1]!.fieldId} · 선택 · TEXT`,{exact:true})).toBeVisible();
+ await expect(original.getByText(row.fields[0]!.title,{exact:true})).toHaveCount(2);await expect(original.locator('img')).toHaveCount(0);
+ expect(await page.evaluate(()=>(window as any).FORM_FIELD_EXECUTED)).toBeUndefined();expect(writes).toEqual([]);expect(offOrigin).toEqual([]);expect(errors).toEqual([]);
+});
 
 test('양식 화면 계약: 공식8종의 정확 버전·목차·반복필드·작성 기준을 읽으며 작성/승인 완료로 오인하지 않는다', async ({ page }) => {
   const writes: string[] = [];
