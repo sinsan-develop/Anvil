@@ -1,5 +1,65 @@
 # 마지막 검증 개발 서비스 복구 — 실행 전 제안
 
+## 2026-10-25 재개 실행 패킷 — 현재 차이만 / 실행 승인 아님
+
+신산님의 재개 지원 지시에 따라 기존 절차를 현재 소스와 대조했다. P1~P4 상태는 **PREPARED_NOT_AUTHORIZED**다. P0는 새 직접승인 ref `01a16fa9-a125-78b3-9ef4-8b32f4aa546c`로 단1회 수행·소진했다: StartedAt `2026-10-24T20:47:32.321123587Z`, 관측 `2026-10-24T20:47:46.405713Z`, running/readyMarkerCount1/restart0, **RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED**, start1/stop0·성공 개발용 보존. 아래 P0 표의 정지 state는 실행 직전 증거이며 현재 state가 아니다. P0~P4는 독립 결정이며 하나의 승인으로 다른 단계를 열지 않는다. 아래 예전 N4의 source/PID/유효 CA/FinishedAt은 과거 이력으로 보존하고 현재 실행 값으로 재사용하지 않는다.
+
+### 현재 고정 증거와 즉시 재사용할 것
+
+- 코드 후보는 private 기존 branch의 commit `f16a878ca45c799d36f89771cda94f871b10ec4b`다. 마지막 제품 변경 c1b4c680 이후 이 commit까지 diff는 WORK_STATUS뿐이다. 현재 WSL 정식 checkout은 ff0fcd13695ae0affa2fd773dc96667e1d7c88f8/tracked clean이며 아직 후보가 아니다.
+- 정본 폴더는 기존 codex/anvil-public-ui-preview와 미커밋/비추적 1057항목을 보존한다. 정본 checkout·기존 자료를 덮거나 정리해서 source guard를 통과시키지 않는다.
+- Node `C:\Program Files\nodejs\node.exe` v24.18.0 / SHA256 `9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE`, package-lock `CA586E2DD02C11C41DA55A64AA4F07D3848936FE44DCA1897F8586AC4FB0F1D6`를 현물 대조했다. 기존 lock·공개 registry·설치 script 비활성 계약은 유지한다.
+- 기존 `node scripts/fn02-development-adoption-plan.ts --plan`와 `node scripts/development-schema-probe.ts --plan`만 실행했다. 둘 다 exit0이고 DB접속·config본문 읽기·기동·SQL·새 자원0이다. 저장된 과거 관측을 소비한 첫 결과는 NOT_RECHECKED이며 현재 schema 관측이 아니다.
+
+### P0 — 기존 PG 한 개 cold-start 단독 결정
+
+| 항목 | 현재 exact 범위 |
+|---|---|
+| 주체·endpoint | WSL-server/daon, uid1000 확인, Docker unix:///var/run/docker.sock / daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e |
+| 대상 | 이름 anvil-v3-development-pg / fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba / image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f |
+| 현재 state | exited / Running=false / ExitCode255 / OOMKilled=false / RestartCount0 / StartedAt2026-10-20T11:21:54.792276193Z / FinishedAt2026-10-21T00:50:48.509394436Z. 아래 옛 FinishedAt10/18은 사용하지 않는다. |
+| 정의 | network anvil-v3-development / ID d3253166eb1adc16fad8a22948b99321238860a74233e3e6318be027f248504e; volume anvil-v3-development-pgdata → /var/lib/postgresql/data RW; 기존 bootstrap-password → /run/secrets/bootstrap-password RO; 127.0.0.1:5546→5432/tcp. 본문/환경변수/비밀값 출력0. |
+| 직전 검사 | 조회 성공·위 신원/정의/상태 일치와 Windows3830/5546 listener 부재를 새로 확인. 이미 running/다른 실행의 변경/권한오류면 시작0·보존. |
+| 기동 | 직접 승인 게시시각 issuedAt/runId/ref를 고정한 30분 한 창, 마지막180초 새 start 금지. `docker --host unix:///var/run/docker.sock start <위 fullID>` 최대1회·자동 재시도0. WAL/데이터 디스크 쓰기는 발생할 수 있다. |
+| 관측·성공 | 최대2분, 같은 신원과 이번 StartedAt 이후 ready 고정 marker를 원격에서 boolean/count로만 축약. 로그 원문·DB접속·SQL/pg_isready0. 성공은 RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED이며 PG를 running으로 보존한다. |
+| 실패·복귀 | 이번 run의 성공한 start/새 StartedAt과 동일 신원·정의가 확인될 때만 정상 SIGTERM stop 최대1회: `docker --host unix:///var/run/docker.sock container stop --signal=SIGTERM --timeout=-1 <위 fullID>`. 관측15초, 종료 미확인이면 STOP_UNCONFIRMED·보고, SIGKILL/kill/rm/재생성0. 소유 불명·start ACK 유실·다른 run 변경이면 추측 stop0. |
+| 제외 | schema/seed/role/권한·DB본문 접속·Secret·TLS/신뢰·Windows API/Web/relay·Agent·Oracle/운영0. 소진 PG_ONLY_START_ONCE를 재사용하지 않는다. |
+
+### P1 — 기존 schema 메타데이터 probe 단독 범위
+
+PG running 이후의 별도 읽기 결정이다. 기존 `scripts/development-schema-probe.ts` (SHA256 E03478D44C99E98EC768889865D17262C6C4989EA63A14D391BB374F5FAADF2B)를 재사용한다. 고정 신규 Git source 경로 /home/daon/deploy/anvil-v3-schema-read-probe-01은 현재 부재다. 생성·Git exact 후보/의존성 준비·보호 app.json 참조 읽기·anvil_v3_app의 BEGIN READ ONLY/기한20분 이하·migration(id,checksum)/고정8객체·identity SELECT만 별도 범위로 대조한다. 본문·credential 출력/DDL/DML/role 변경0, 현재52/53개라고 추정하지 않는다. 이 P1의 단1회 명령은 별도 issuedAt/expiresAt/source SHA binding 뒤에만 준비한다.
+
+### P2 — 새 TLS와 현재 사용자 신뢰 한 개
+
+- 새 대상은 `D:\Project\Anvil\.av3-data\dev-tls-20261025-01`이며 현재 부재다. 기존 dev-tls 파일·키·인증서·기존 신뢰/계정은 보존한다.
+- 기존 `scripts/prepare-dev-https.ps1` SHA256 3572488721B0C3452802FADE225A1B0EE9B29DC2D982C855663F7156CE2B6BA2는 DataRoot 전체가 새 .av3-data여야 하므로 그대로 재실행 불가다.
+- 필요한 최소 source delta는 최초 생성 모드를 유지한 채 승인된 새 TLS child만 생성하는 분기다. 그 leaf에만 현재 사용자+SYSTEM ACL/키 보호, CA RSA3072/leaf2048·SHA256/서버 EKU/7일·SAN localhost/127.0.0.1/172.27.253.53을 기존 방식대로 생성·검사한다. 현재 WSL 주소에 172.27.253.53이 있음을 확인했고 다른 Docker 주소를 SAN에 추가하지 않는다.
+- 생성된 공개 subject/SAN/새 thumbprint를 대조한 **새 CA 하나만 CurrentUser/Root**에 추가·정확1 확인한다. LocalMachine·다른 trust·기존키 변경0, 키/비밀 Git·대화·로그0. 검증 종료/만료의 회수는 그 새 thumbprint만 별도 확인한다.
+- 기존 N4의 ancestor 교체 방지 PATH_GUARD는 그대로다. 새 leaf 경로만 승인됐다고 parent 교체 안전·guard가 해결됐다고 주장하지 않으며 실제 생성 전 보호 선행도 대조한다. 아직 code delta 적용/인증서 생성·신뢰 변경0이다.
+
+### P3 — exact source/build와 cold launcher 차이
+
+- 기존 보호 후보 `D:\Project\Anvil\.av3-data\n4-recovery-01\artifacts`와 `...\runtime` 제안을 재사용한다. 아래 철회된 Dtmp source/artifact 경로를 새 이름으로 우회하지 않는다. 이번 조사에서 Dtmp 새 경로는 부재 확인만 했고 생성·추천0이다.
+- source는 private Git exact f16a878c에서 실행 전용으로 가져오고 새 개발 branch/정본·자료 복사/서버 archive 배포0이다. 허용된 보호 source·의존성/cache·empty npm config·build·실행 수명/정리를 기존 N4 방식으로 고정해야 한다. 정본과 기존 미커밋은 보존한다.
+- **미해결 선행:** 기존 문서의 ancestor OTHER 변경권한과 교체 방지 handle·source 불변 보호는 여전히 미구현/미허가다. leaf ACL만 보고 안전 판정하지 않는다. 정확 guard 구현·검수/사용 범위 결정을 먼저 받으며 기존 guard를 지우거나 옛 native compile 허가를 재사용하지 않는다.
+- `start-development.ps1` SHA256 0CFDA44744520A6CE2F41EFCF10199E9FB0BF11A57668DFED1C1DFB39C43B1AC와 `check-development-https.ts` SHA256 9E61136053F703CC7935540DAD0E875D3842FC2187EC1FAF239C8710DB5DB4EA는 old dev-tls 경로 고정이다. 기본 runtime도 이미 존재한다.
+- cold-start는 과거 프로세스 교체가 아니다. transition-ui11-development.ps1의 PID23836/relay26052·과거 source/build/hash/기동시각 전제를 사용하지 않는다. FN08Runtime/UseVerifiedWslRelay 예외로 과거 PID guard를 무력화하지 않는다.
+- 최소 launcher delta는 승인된 새 TLS·신규 runtime의 고정 binding과 strict HTTPS probe의 같은 CA 참조다. 현재3830/5546 부재 조건에서 기본 launcher의 **본 run 소유 SSH loopback 터널+Node** 흐름을 재사용할 수 있는지 guard 검수 후 확정한다. 기존 auth.json/db-app.json 참조·origin/계정/권한/Secret은 변경하지 않는다.
+- 후보 build는 exact source/lock/Node로 새 검증 후 index/JS/CSS hash와 Node/소유 PID·시각·3830 receipt를 실제 기록한다. 과거 ignored dist나 source-only build PASS를 실행 증거로 쓰지 않는다. 실제 기동 전 code/구문·보호/복구 검수와 명령·자원 범위 승인이 필요하다. 아직 source/경로 생성·새 build/기동0이다.
+
+### P4 — 46→53 schema 적용은 기동과 별도
+
+기존 adoption plan이 현재 source에서 산출한 순서는 0012_assignment_drafts→0013_assignment_confirmation→0014_context_preparation→0015_project_baselines→0016_execution_preparation→0017_execution_authority→0031_empty_project_methodology_application이다. 저장 관측46 manifest hash da9a9e45107a822d2c56fff2f54878be6ba6dab6ff0f44dec58212c6eb8d7091, target53 hash 9b8962f66829d90fc8eb08cc918773566c94cd2ba62ae0bfed7e86549db6e4e1. 각 SQL checksum/중간 hash는 기존 --plan 결과로 재현한다.
+
+**실제 실행기 공백:** `applyFn02MethodApplicationSchemaOnly`는 정확52 선행을 요구하고 **0031 한 개만** 적용한다. `ANVIL_MIGRATION_MODE=FN02_METHOD_APPLICATION_ONLY`를 46→53 전체 runner로 제시하지 않는다. 일반 migrate-development 모드는 forms/methodology/QA seed까지 하므로 이번 schema-only 재개 명령으로 사용하지 않는다.
+
+현재 P1 관측·정확 백업/복원 검증/81표·비표 객체·기존 row/권한·기준 지문 보존과 7개 명시 실행/원자성·실패 rollback 범위를 별도 결정받는다. 기존0012 특정거절은 미해결이며 새 runner/이름으로 우회하지 않는다. 실제DDL/DML·정책·계정·승인/자료 전환0이다.
+
+### 바로 진행한 결과와 결정 책임
+
+Main은 위 source 추적·실제 PG 정의/WSL Git·Node/lock·신규 대상 부재·기존 두 plan-only 실행을 완료했다. 이는 서비스 복구/기능 수용 PASS가 아니다. PMO는 우선 **P0 한 개**의 정확 직접 결정을 처리하고 P1~P4를 묶지 않는다. Main은 결정·지원 도착 시 그 exact 범위를 직접 실행/검증하고, 다음 작업 배정을 기다리며 멈추거나 미승인 범위를 자동 실행하지 않는다.
+
+
 ## 2026-10-19 PG 단독 최소 복구 한정안 — 별도 결정 필요
 
 이 절만 새 결정 대상이다. 기존 광범위 N4 source/build/경로 예외를 승인·재사용하거나 PATH_GUARD 거절을 해소하지 않는다. 상태는 **PROPOSED_NOT_AUTHORIZED**이며 runner 작성·start/stop 실행0이다.
