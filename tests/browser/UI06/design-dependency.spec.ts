@@ -11,7 +11,7 @@ async function fixture(page:Page,denied:boolean|'AFTER_UNKNOWN'=false) {
     const artifactId=crypto.randomUUID(),bytes=Buffer.from(body),content={body:{artifactId,bytes:bytes.length,contentHash:createHash('sha256').update(bytes).digest('hex'),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]};bodies.set(artifactId,body);
     documents.set(id,{id,version:1,title,formRef:form.ref,stageNodeRef:null,content,contentHash:contentHash(canonicalJson({title,formRef:form.ref,stageNodeRef:null,content})),confirmed:false,validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:{criteriaVersion:1,formRef:form.ref,items:form.definition.items.map(i=>({criterionId:i.itemId,title:i.title,reviewCriteria:i.reviewCriteria}))},contentReviews:[]});
   }
-  const writes:any[]=[],unknown:string[]=[];
+  const writes:any[]=[],unknown:string[]=[];let savedEdge:any=null;
   await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
   // 개별 양식 route를 catch-all 뒤에 등록해 모든 실제 API 유출을 막는다.
   for(const form of [catalog.forms[1]!,catalog.forms[2]!])await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`,r=>r.fulfill({json:{...form,authoringStandard:{ref:catalog.standard.ref,content:catalog.standard.body.toString('utf8')},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}}}));
@@ -22,12 +22,14 @@ async function fixture(page:Page,denied:boolean|'AFTER_UNKNOWN'=false) {
   await page.route(`**/api/v1/projects/${project}/files/*`,r=>r.fulfill({contentType:'application/octet-stream',body:bodies.get(new URL(r.request().url()).pathname.split('/').pop()!)!}));
 
   const d=documents.get(designId),ref={id:designId,version:1,contentHash:d.contentHash},items=[1,2].map(n=>{const data={documentRef:ref,localCode:'D0'+n,title:'설계 항목 '+n,anchor:'line:'+n};return{id:n===1?itemId:regionId,...data,itemHash:contentHash(canonicalJson(data))};});
-  await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>r.fulfill({json:{documentRef:ref,items,screenRegions:[],status:'INDEXED',observedAt:at}}));
+  const screen=documents.get(screenId),regionData={designItemId:itemId,screenCode:'S01',documentRef:{id:screenId,version:1,contentHash:screen.contentHash},artifactRef:screen.content.body,anchor:'line:1'},region={id:'a6f30000-0000-4000-8000-000000000094',...regionData,regionHash:contentHash(canonicalJson(regionData))};
+  await page.route(`**/api/v1/projects/${project}/traces?*`,r=>{const direction=new URL(r.request().url()).searchParams.get('direction'),e=savedEdge;return r.fulfill({json:{designRef:ref,direction,nodes:e?[{ref:e.from,title:e.from.kind==='SCREEN_REGION'?'S01':'설계 항목 1',designRefs:[ref]},{ref:e.to,title:'설계 항목 2',designRefs:[ref]}]:[],edges:e?[e]:[],traversal:e?[{edgeId:e.id,from:direction==='REVERSE'?e.to:e.from,to:direction==='REVERSE'?e.from:e.to}]:[],missingLinks:[],unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,hasMore:false,nextCursor:null,observedAt:at}});});
+  await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>r.fulfill({json:{documentRef:ref,items,screenRegions:[region],status:'INDEXED',observedAt:at}}));
   await page.route(`**/api/v1/projects/${project}/commands`,r=>{
-    const c=r.request().postDataJSON();writes.push(c);expect(c.operation).toBe('linkTrace');expect(c.payload.relation).toBe('DEPENDS_ON');
+    const c=r.request().postDataJSON();writes.push(c);expect(c.operation).toBe('linkTrace');expect(['DEPENDS_ON','REFINES']).toContain(c.payload.relation);
     if(denied)return r.fulfill({status:403,json:{code:'PROJECT_OPERATION_DENIED'}});
     if(writes.length===1)return r.abort('connectionreset');
-    const data={...c.payload,designRefs:[ref]},edgeHash=contentHash(canonicalJson(data)),edge={id:screenId,...data,edgeHash,createdAt:at};
+    const data={...c.payload,designRefs:[ref]},edgeHash=contentHash(canonicalJson(data)),edge={id:screenId,...data,edgeHash,createdAt:at};savedEdge=edge;
     return r.fulfill({json:{commandId:c.commandId,projectId:project,operationId:itemId,status:'APPLIED',targetId:edge.id,version:1,serverReceivedAt:at,data:{status:'TRACE_LINKED',ref:{id:edge.id,version:1,contentHash:edgeHash},edge}}});
   });
   return {writes,unknown};
@@ -55,4 +57,9 @@ for(const denied of [false,true])test('설계 의존 관계 명시 저장·동�
  await expect(page.getByRole('button',{name:'새 문서 작성',exact:true})).toBeDisabled();await page.getByRole('button',{name:'설계 의존 관계 저장',exact:true}).click();
  if(denied){await expect(page.getByRole('alert')).toContainText('PROJECT_OPERATION_DENIED');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'설계 의존 편집 닫기',exact:true}).click();await expect(page.getByRole('button',{name:'새 문서 작성',exact:true})).toBeEnabled();expect(f.writes).toHaveLength(1);}
  else{await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await expect(page.getByRole('button',{name:'설계 의존 편집 닫기',exact:true})).toBeDisabled();await page.evaluate(()=>{location.hash='#/runs';});await page.getByRole('heading',{name:'아직 연결되지 않은 화면',exact:true}).waitFor();await page.evaluate(p=>{location.hash='#/projects/'+p+'/documents';},project);await page.getByRole('button',{name:'같은 설계 의존 명령 결과 확인',exact:true}).click();await expect(page.getByText('설계 의존 관계 저장 확인 · 실행/완료 판정 아님',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'설계 의존 편집 닫기',exact:true})).toBeEnabled();expect(f.writes).toHaveLength(2);expect(f.writes[0]).toEqual(f.writes[1]);}expect(f.unknown).toEqual([]);
+});
+
+test('등록 화면의 상세화 관계를 저장하고 같은 edge를 역방향으로 조회한다',async({page})=>{
+ const f=await fixture(page);await page.goto('/#/projects/'+project+'/documents');await page.getByRole('button',{name:'설계 원문 열기',exact:true}).click();await page.getByRole('button',{name:'이 버전 화면 상세화 관계 작성',exact:true}).click();await page.getByLabel('상세화하는 화면 위치',{exact:true}).selectOption('a6f30000-0000-4000-8000-000000000094');await page.getByLabel('상세화 대상 설계 항목',{exact:true}).selectOption(regionId);await page.getByLabel('화면 상세화 관계 이유',{exact:true}).fill('등록 화면의 설계 상세화');await page.getByRole('button',{name:'화면 상세화 관계 저장',exact:true}).click();await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await page.getByRole('button',{name:'같은 화면 상세화 명령 결과 확인',exact:true}).click();await expect(page.getByText('화면 상세화 관계 저장 확인 · 실행/완료 판정 아님',{exact:true})).toBeVisible();expect(f.writes[0]).toEqual(f.writes[1]);expect(f.writes[1].payload.from.kind).toBe('SCREEN_REGION');expect(f.writes[1].payload.from.versionRef.id).toBe(screenId);
+ await page.getByRole('button',{name:'저장 관계 양방향 조회',exact:true}).click();await expect(page.getByText('S01 → 설계 항목 2',{exact:true})).toBeVisible();await page.getByLabel('추적 방향',{exact:true}).selectOption('REVERSE');await expect(page.getByText('설계 항목 2 → S01',{exact:true})).toBeVisible();expect(f.unknown).toEqual([]);expect(f.writes).toHaveLength(2);
 });

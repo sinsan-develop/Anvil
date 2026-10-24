@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN04/UI06 화면 상세화 저장 checkpoint**: 기존고정설계index의SCREEN_REGION→DESIGN_ITEM/REFINES 명시저장·유실동일명령확인·같은edge정/역조회를연결했다. 신규단위/DOM RED→직접인접9·합성DOM1/typebuild/diff0,독립M1접근성이름은실패재현후보정했다. 실제DB/WSL·사용자인수/전체FN04/Stage미완료는유지하며새API/SQL/권한/실환경0이다. 상세증거/오류/정확자원정리는WORK_STATUS를따른다.
+
 - **2026-10-25 FN04/UI06 설계 의존 관계 저장 checkpoint**: 기존동일설계index의DESIGN_ITEM DEPENDS_ON 명시저장·동일명령복구·기존양방향조회진입을연결했다. 준비경쟁/늦은실패를보정하여직접인접8·합성DOM4/typebuild/diff0·한정독립C0/I0/M0, QA정확정리0이다. 새API/SQL/정책/실DB/서비스/Agent0이며실제DB·서버수락/사용자인수·전체FN04/Stage완료는아니다. 원RED/오류/검토·미검증은WORK_STATUS에보존한다.
 
 - **2026-10-25 FN05/UI10 관련 고정 원문보기 checkpoint**: 보관scope exact재검사→기존단계/업무GET원문보기·거절숨김/이탈수거를연결했다. 과거단계현재치환/새endpoint·권한/검색wire/명령/실행0. 신규4RED→직접/인접23/합성DOM3/typebuild/diff0·QA0, 독립C0/I0/M1의보강범위/남은부모교체·단계이탈DOM공백은WORK_STATUS에분리했다. 실제PG/서비스·전체FN05/UI10/Stage미완료·검색/TLS직접승인경계를유지하고기존계획독립소비대조를계속한다.
