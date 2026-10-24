@@ -7,8 +7,9 @@ import {readDesignIndex} from './design-index-api.ts';
 import {blankPlanTask,prepareWorkPlan,sendWorkPlan,readWorkPlan,type WorkPlanBuffer} from './work-plan-api.ts';
 import {documentMutationUncertain,isKnownDocumentRejection} from './mutation-result.ts';
 import type {TaskCard,PlanTraceRef} from '../../../../server/modules/traceability/work-plan-card.ts';
-import{newTaskTrace}from'./trace-api.ts';
+import{newTaskTrace,newPlanDocumentTrace}from'./trace-api.ts';
 import{TaskTraceEditor}from'./TaskTraceEditor.tsx';
+import{PlanDocumentTraceEditor}from'./PlanDocumentTraceEditor.tsx';
 import{readWorkPlanScreenReviews,selectWorkPlanScreenReview,type ScreenReviewChoice}from'./work-plan-screen-reviews.ts';
 import{readWorkPlanDecision,newWorkPlanDecision}from'./work-plan-decision-api.ts';
 import{WorkPlanDecisionEditor}from'./WorkPlanDecisionEditor.tsx';
@@ -95,6 +96,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
     {s.result?<section aria-label="저장한 작업계획"><p role="status">작업계획 초안 저장 확인 · 실행/완료 아님</p><p>계획 {s.result.ref.id} v{s.result.ref.version} · SHA256 {s.result.ref.contentHash}</p><button disabled={busy} onClick={()=>{void reload();}}>저장한 작업계획 재조회</button>{reread?<p>저장한 버전 재조회 확인</p>:null}<ul>{s.result.issues.map((i,n)=>{const target=issueTasksMatch?planIssueTaskTarget(s.result!.tasks,i.location):null;return <li key={n}>{i.message} · {i.code} · {i.location}{target!==null?<button type="button" disabled={busy} onClick={()=>{const element=taskLocations.current[target];if(element){element.scrollIntoView({block:'center'});element.focus();}}}>오류 업무 {target+1} 보기: {i.location}</button>:<span> · 연결할 업무 위치 미확인</span>}</li>;})}</ul><p>실제 실행/시험 증거: 미연결</p>{!s.decision&&!s.traceLink&&s.result.relationalProjection==='STORED'?s.result.tasks.map(t=><button key={t.taskCode} disabled={busy||s.result!.tasks.filter(v=>v.taskCode===t.taskCode).length!==1||!t.designRefs.length&&!t.screenRefs.length&&!s.result!.tasks.some(v=>v.taskCode!==t.taskCode&&s.result!.tasks.filter(w=>w.taskCode===v.taskCode).length===1)} onClick={()=>{try{const traceLink=newTaskTrace(buffer,t.taskCode);update(v=>({...v,traceLink}));}catch(e){failure(e);}}}>업무 {t.taskCode} 추적 연결 준비</button>):null}</section>:null}
     {s.result&&!s.decision?<div className="project-toolbar"><button disabled={busy||!!s.traceLink} onClick={()=>void prepareDecision('REVIEW')}>작업계획 내용검토 작성</button><button disabled={busy||!!s.traceLink} onClick={()=>void prepareDecision('CONFIRM')}>작업계획 별도 확정 준비</button></div>:null}
     {s.decision?<WorkPlanDecisionEditor key={s.bindingId+':'+s.decision.kind} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
-    {s.traceLink?<TaskTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
+    {s.result&&!s.decision&&!s.traceLink&&['STORED','ISSUES_ONLY'].includes(s.result.relationalProjection)?<button disabled={busy} onClick={()=>{try{const traceLink=newPlanDocumentTrace(buffer);update(v=>({...v,traceLink}));}catch(e){failure(e);}}}>계획 원문 상세화 연결 준비</button>:null}
+    {s.traceLink?s.traceLink.input.from.kind==='DOCUMENT_VERSION'?<PlanDocumentTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:<TaskTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
   </section>;
 }
