@@ -4,6 +4,7 @@ import type { DraftMethodSelection } from '../../../../../contracts/project-draf
 import type { MethodologyGraph, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import { MethodGraphCanvas } from '../methodology-editor/MethodGraphCanvas.tsx';
 import { NodeDefinitionFields } from '../methodology-editor/NodeDefinitionFields.tsx';
+import { applyNodeDefinitionPatch } from '../methodology-editor/node-definition-patch.ts';
 import { NodeDocumentFields } from '../methodology-editor/NodeDocumentFields.tsx';
 import { GraphRelationsEditor } from '../methodology-editor/GraphRelationsEditor.tsx';
 import {NodeDeletionPanel} from '../methodology-editor/NodeDeletionPanel.tsx';
@@ -22,7 +23,7 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
     return () => { current = false; };
   }, [client]);
   function graph(next: MethodologyGraph) { if (!disabled) onChange({ ...value, graph: next, reviewRefs: [] }); }
-  function patchNode(patch: Partial<MethodologyNode>) { if (node) graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === node.nodeId ? { ...item, ...patch } : item) }); }
+  function patchNode(patch: Partial<MethodologyNode>) { if (node) graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === node.nodeId ? applyNodeDefinitionPatch(item, patch) : item) }); }
   function move(nodeId: string, dx: number, dy: number) { graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === nodeId ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) }); }
   function removeNode(current:MethodologyGraph,nodeId:string){
     if(disabled||value.graph!==current||node?.nodeId!==nodeId)return;

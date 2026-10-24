@@ -5,6 +5,7 @@ import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, 
 import type { MethodologyGraph, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import { NodeDefinitionFields } from './NodeDefinitionFields.tsx';
+import { applyNodeDefinitionPatch } from './node-definition-patch.ts';
 import { GraphRelationsEditor } from './GraphRelationsEditor.tsx';
 import { NodeDocumentFields } from './NodeDocumentFields.tsx';
 import { NodeDeletionPanel } from './NodeDeletionPanel.tsx';
@@ -50,7 +51,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   }
   function replaceAllowed() { return !locked && (!(buffer.dirty || buffer.review?.dirty || buffer.application?.reason) || confirm('저장하지 않은 편집·내용 검토·적용 입력을 바꿀까요?')); }
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
-  function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? { ...item, ...patch } : item) } })); setSavedVersion(null); }
+  function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? applyNodeDefinitionPatch(item, patch) : item) } })); setSavedVersion(null); }
   function changeGraph(graph: MethodologyGraph) { onChange(previous => ({ ...previous, graph, dirty: true, validation: null })); setSavedVersion(null); }
   function removeNode(graph: MethodologyGraph, nodeId: string) {
     if (locked) return;
