@@ -67,6 +67,25 @@ PG running 이후의 별도 읽기 결정이다. 기존 `scripts/development-sch
 
 **PMO에 필요한 결정:** 위 개발 전용 guard/guardian의 신규 source·수명/종료·OS 검증 계약을 별도로 구체화·채택할지, 아니면 현재 fail-closed 보존할지다. 기존 N4 PATH_GUARD 거절 해제·실행 승인으로 간주하지 않는다. 읽기 요청인 이번 단계에서는 새 native source/컴파일/handle·child·ACL·TLS/trust/서비스0이며 기존 불변 시험도 반복하지 않았다.
 
+### 한정 권장안 1 — R0/R1→P2→P3(미채택·실행0)
+
+**순서·독립성:** 최초 compile-only R0 → 격리 OS 음성 R1 → 단기 TLS 생성 P2 → 30분 앱 검수 P3다. P2는 P3 없이 독립 진행할 수 있지만 R0/R1·새 cert/trust 승인이 필요하다. P3는 P2의 유효 CA와 별도 DB/source 선행이 필요하다. P1 읽기는 전부와 독립이다. 아래 시간·한도는 새 제안이며 과거 허가의 연장/영구 서비스 복구가 아니다.
+
+| 항목 | 한정 권장안 / 검수 조건 |
+|---|---|
+| 신규 source 후보 | scripts/development-recovery-path-guard.cs(고정 path·same-handle identity/DACL·원자 Job/선택 handle 수명), scripts/development-recovery-host.ps1(정확 run/기한·단계·증거/정리), scripts/development-recovery-entry.ts(기존 main과 own 만료 종료 요청) 3개. 기존 prepare/start/check adapter3개·P03 순수 시험1/OS runner1만 연결. 기존 main.ts의 SIGINT/SIGTERM→app.close/pool.end는 재사용한다. 신규 파일 작성0. |
+| host/compiler | 기존 C:\Program Files\PowerShell\7\pwsh.exe 7.6.6/hash BFB46AF89433268872DDB43D1CA7A3F433452EE91ED356A9786940F90118E285. compiler=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe 4.8.9221.0/hash46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00. /noconfig /nostdlib+ /target:library /debug- /optimize+와 같은 폴더 mscorlib.dll/System.dll/System.Core.dll 절대 참조3개만. 해시는 각각11AC114C43ECF6996BEF58BA3C99FBA3693A4560A84EEADDE54D193060DC626C / 2B3C17C6208A0B4B6BEB94E1A066F99BA06CDB2EA919479E99D47E8C6D96DC71 / 8B898BED54AE8CC61F9C58CC3EB062724F8357D2BDDA338B5D363654ECFF333D(9a8409 읽기). 새 설치/Add-Type/자동 참조 검색0. |
+| R0 bootstrap 대상 | 신규 D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01 하나/30분·총16MiB·16파일. exact 승인 commit의 위 source·host/시험 입력만 Git 객체 대조 후 create-new, output은 같은 root DevelopmentRecoveryPathGuard.dll 하나. 부재/owner/nonlink/부모 보호상속·입출력SHA·컴파일exit를 대조하고 정확 DLL 바이트만 메모리 로드, provider/helper 등록0·다른 output 재시도0. |
+| **R0 미해결 위험/결정** | guard 자체가 없는 최초 입력/출력 준비와 compiler의 pathname 열기에는 상위 교체 경쟁이 남는다. 열린 source 파일·hash·leaf ACL만으로 이를 제거했다고 하지 않는다. **이 bounded bootstrap 예외의 허용 여부 자체가 별도 사용자 결정점**이다. 미승인이면 R0=0, 기존 PATH_GUARD 허가/다른 폴더·ACL수리로 우회0. 이 위험을 감수한 compile 승인이 실제 TLS/앱 실행 승인도 아니다. |
+| R1 OS 음성 | bootstrap 아래 os-qa 합성 directory/file/manifest만/30분·64파일·8MiB. reparse·부모교체·외부쓰기·ID/hash/링크/DACL변조·기한/clock역행·부분획득·guardian유실을 검사한다. child 수명은 기존 pwsh의 고정 종료/대기 동작 최대2프로세스/60초·새 unnamed Job 원자결박만. Secret/cert/DB·실Node/SSH0. 원 반환·자식exit/Job0·잔여0 실측 전 지원PASS0. |
+| P2 범위 | 별도10분 창/CA·leaf각1/7일·기존SAN3개, 신규 dev-tls-20261025-01의 ca.cer/ca.cert.pem/ca.key.pem/server.cert.pem/server.key.pem/receipt.json 6파일·128KiB만. host의 원 native lease가 parent/child pins를 전체 발급·새 CurrentUserRoot1 확인까지 보유한다. 임의 CLI/직렬화 boolean을 lease로 인정0. 기존 auth/db/old TLS 읽기·수정0, 기존 Root/LocalMachine0. 실패 시 exact 새 CA thumbprint1만 회수·소유 새child 수습, 소유/신뢰 불명이면 자동삭제0. |
+| P3 사용 파일 | 신규 n4-recovery-01/artifacts의 exact Git·lock 기반 apps/server/**, contracts/**, apps/web/dist/**, entry·node_modules/**·해석용 package.json을 **실제 파일별 ID/hash manifest**로 고정한다. 최대100000파일·2GiB. glob은 탐색 한도일 뿐 완성 목록이 아니며 현재 실제 파일집합은 미확정이다. 누락/추가동적읽기면 보완 전 실행0. 기존 auth.json/db-app.json·새TLS의 필요한 읽기만 별도 허가·본문출력0. 새 runtime receipt/log는16파일·8MiB. |
+| P3 원 process/기한 | 별도30분 한 창·첫25분 안에 start1, Node24.18.0/hash9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE 1개·own SSH loopback5546 tunnel1개만. native 원 process/thread를 Job에 원자 할당한 상태로 만들고 owner/image/기한·선택 path pins를 대조한 뒤 resume. 외부 PID/옛relay인수0. entry는 만료30초 전 기존 SIGTERM callback으로 정상닫기를 요청, 15초 안에 원 process handle exit·Job active0을 확인한다. 요청만으로 완료/COMMIT확정0. |
+| 유실/종료 경쟁 | Job handle은 host만, 필요한 path-pin 복제본만 원 자식의 제한 handle list로 보존·다른 상속/breakaway0. host가 사라져도 자식 종료까지 pins가 남고 kill-on-close가 작동하는지 **실제 OS 음성 검수 필수**, 미확인이면 P3 start0. 정상종료 미확인/만료/guard위반 시 그 새Job 자기소유 자식만 강제종료하는 위험을 별도 승인받고 15초 exit/Job0 관측. 실패는 TERMINATION_UNCONFIRMED, PG/다른process kill0. 강제종료로 진행 중 요청/COMMIT 결과가 불명일 수 있어 무손실 보장0. |
+| 정리/rollback | R0/R1 완료 때 exactroot owner/link·생존 compile/시험process0 후 그 신규root만 정리·독립부재확인. P2 성공 자료는 개발용 보호보존·종료/만료 때 새CA1만 회수. P3는 ownNode/tunnel 종료·Job0 확인 뒤 pins 역순close, exact 새source/runtime만 기록된 정책으로 보존/정리한다. 신원·종료불명은 삭제/추정kill0. 기존CA/runtime·계정/정책·PG·상위ACL 보존. |
+
+**결정 순서:** source/adapter/시험 계약 → 원 source/hash 검토 → R0 bootstrap 예외·compile-only → R1 OS QA → P2 cert/trust → P3 source/build·Job 강제종료 위험 포함 앱 검수의 각각 별도 실행 결정을 권장한다. 현재 신규 source hash/완성 manifest·host 실제 lease/Job 수명은 구현·검수 뒤 고정해야 한다. 현재 차단은 유지하고 이 문서만으로 새 native source/컴파일/handle/child/ACL/cert/trust/서비스를 실행하지 않는다.
+
 ### P4 — 46→53 schema 적용은 기동과 별도
 
 기존 adoption plan이 현재 source에서 산출한 순서는 0012_assignment_drafts→0013_assignment_confirmation→0014_context_preparation→0015_project_baselines→0016_execution_preparation→0017_execution_authority→0031_empty_project_methodology_application이다. 저장 관측46 manifest hash da9a9e45107a822d2c56fff2f54878be6ba6dab6ff0f44dec58212c6eb8d7091, target53 hash 9b8962f66829d90fc8eb08cc918773566c94cd2ba62ae0bfed7e86549db6e4e1. 각 SQL checksum/중간 hash는 기존 --plan 결과로 재현한다.
