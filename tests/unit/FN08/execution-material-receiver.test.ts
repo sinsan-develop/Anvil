@@ -81,6 +81,16 @@ test('SEND source는 blob 변조·부분/본문 불명·읽기 도중 만료에�
 test('동일 부분의 재조회 중 기한/합성 port가 바뀌면 기존 수신 결과라도 반환하지 않고 재저장0이다',async()=>{
  for(const mode of ['expiry','port']){const f=fixture(),receiver=f.make();await receiver.record(f.envelope,f.response(0));const before=structuredClone(f.events),base=f.store.exclusive;f.store.exclusive=(s:any,fn:any)=>base(s,(tx:any)=>fn({...tx,readPart:async(r:any)=>{const bytes=await tx.readPart(r);if(mode==='expiry')f.advance(60000);else f.store.transport='REAL';return bytes;}}));await assert.rejects(receiver.record(f.envelope,f.response(0)));assert.equal(f.syncs(),1);assert.deepEqual(f.events,before);}
 });
+for(const duplicate of [false,true])for(const fault of ['expiry','port'] as const)test(`부분 수신 ${duplicate?'중복':'신규'} 저장 잠금 종료 중 ${fault}는 성공 반환 없이 보관 원자료를 유지한다`,async()=>{
+ const f=fixture(),receiver=f.make();if(duplicate)await receiver.record(f.envelope,f.response(0));
+ const exclusive=f.store.exclusive;
+ f.store.exclusive=async(s:any,body:any)=>{const out=await exclusive(s,body);if(fault==='expiry')f.advance(60000);else f.store.transport='REAL';return out;};
+ await assert.rejects(receiver.record(f.envelope,f.response(0)),(error:Error)=>error.message===(fault==='expiry'?'MATERIAL_RECEIVE_UNAVAILABLE':'SYNTHETIC_MATERIAL_INBOX_REQUIRED'));
+ assert.equal(f.syncs(),1);assert.equal(f.events.length,1);assert.deepEqual(f.blobs.get(f.events[0].ref.id),f.bodies[0]);
+ f.store.exclusive=exclusive;f.store.transport='SYNTHETIC_ONLY';
+ const history=await f.make().readStatus(f.envelope);assert.equal(history.state,'PARTIAL');assert.equal(history.readOnly,true);assert.equal(history.envelopeTimeState,fault==='expiry'?'EXPIRED':'WITHIN_ENVELOPE_WINDOW');assert.equal(history.executionAuthorized,false);assert.equal(history.dispatchPerformed,false);assert.equal(f.syncs(),1);
+});
+
 test('SEND inbox종료대기후port/기한변경도지시문반환을거절하고추가sync0이다',async()=>{
  for(const mode of ['port','expiry']){const f=fixture(true);await f.make().record(f.envelope,f.response(0));await f.make().record(f.envelope,f.response(1));const base=f.store.exclusive;f.store.exclusive=async(s:any,body:any)=>{const out=await base(s,body);if(mode==='port')f.store.transport='REAL';else f.advance(60000);return out;};await assert.rejects(f.make().instruction(f.envelope));assert.equal(f.syncs(),2);}
 });

@@ -102,10 +102,12 @@ export class SyntheticMaterialReceiver{
    const payloadRefs=envelope.operation==='START_SESSION'?[envelope.payload.contextBundleRef,envelope.payload.optionsRef]:[envelope.payload.instructionRef,envelope.payload.partsRef];for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||!payloadRefs.some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
    if(!recordV1(response,['transport','materialId','materialRef','sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType','bytes','cacheControl','completeContextVerified','executionAuthorized','dispatchPerformed'])||response.transport!=='SYNTHETIC_ONLY'||response.cacheControl!=='no-store'||response.completeContextVerified!==false||response.executionAuthorized!==false||response.dispatchPerformed!==false) return fail('MATERIAL_RESPONSE_INVALID');
    const material=this.#materials.find(m=>m.ref.id===response.materialId);if(!material||!same(material.ref,response.materialRef)||!['sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType'].every(k=>same((material.snapshot as any)[k],response[k])))fail('MATERIAL_RESPONSE_INVALID');const bytes=this.#bytes(response.bytes,material!);
-   return await this.store.exclusive(cloneV1(scope),async tx=>{
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
     readDispatchEnvelopeV1(envelope,this.#now());this.#port();const events=await this.#journal(tx,scope,envelope.envelopeHash);this.#port();readDispatchEnvelopeV1(envelope,this.#now());if(events.some(e=>same(e.snapshot.materialRef,material!.ref)))return this.#result(events);
     readDispatchEnvelopeV1(envelope,this.#now());const snapshot={sequence:events.length+1,scope:cloneV1(scope),envelopeHash:envelope.envelopeHash,manifestHash:this.#manifestHash,materialRef:cloneV1(material!.ref),recordedAt:new Date(this.#now()).toISOString(),previousRef:events.at(-1)?.ref??null},entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(cloneV1(entry),new Uint8Array(bytes));this.#port();const saved=await this.#journal(tx,scope,envelope.envelopeHash);if(!same(saved,[...events,entry]))fail('MATERIAL_INBOX_INCOMPLETE');readDispatchEnvelopeV1(envelope,this.#now());return this.#result(saved);
    });
+   // 잠금 종료도 비동기 경계다. 이미 sync된 부분은 보존하되 늦은 성공은 반환하지 않는다.
+   this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
   }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_RECEIVE_UNAVAILABLE');}
  }
 }
