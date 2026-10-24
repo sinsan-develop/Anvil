@@ -1,0 +1,32 @@
+import {useEffect,useRef,useState} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
+import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
+import type {SubmittedResultView} from './result-api.ts';
+import {understandingLabels,type UnderstandingHistoryView} from './understanding-history-api.ts';
+import {beginUnderstandingReview,prepareUnderstandingReview,saveUnderstandingReview,understandingReviewKey,UnderstandingReadbackUnconfirmed,type UnderstandingReviewStorage} from './understanding-review-write.ts';
+export function UnderstandingReviewEditor({client,result,history,session,storage,onAuthenticationLost}:{client:ApiClient;result:SubmittedResultView;history:UnderstandingHistoryView|null;session:DocumentSession;storage:UnderstandingReviewStorage;onAuthenticationLost:()=>void}){
+ const key=understandingReviewKey(session,result),b=storage.buffers[key]??null,[selected,setSelected]=useState(''),[busy,setBusy]=useState(false),[ack,setAck]=useState(false),[error,setError]=useState<string|null>(null),alive=useRef(true),working=useRef(false);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ const update=(change:(value:NonNullable<typeof b>)=>NonNullable<typeof b>)=>{if(!b)return;storage.onChange(key,current=>current?.bindingId===b.bindingId?change(current):current);};
+ async function run(mode:'BEGIN'|'PREPARE'|'SAVE'){
+  if(working.current)return;working.current=true;setBusy(true);setError(null);const wasUncertain=!!b?.uncertain;
+  try{
+   if(mode==='BEGIN'){const ref=history?.items.find(row=>row.ref.contentHash===selected)?.ref;if(b||!history||!ref)return;const next=await beginUnderstandingReview(result,history,ref,session);if(alive.current)storage.onChange(key,current=>current??next);return;}
+   if(!b||b.stored)return;
+   if(mode==='PREPARE'){if(b.pending||b.uncertain)return;const generation=await documentControl(client,result.snapshot.scope.projectId,session);if(!alive.current)return;const pending=await prepareUnderstandingReview(b,session,generation);if(alive.current){update(value=>({...value,pending,failure:null}));setAck(false);}return;}
+   if(!b.pending||!b.uncertain&&!ack)return;
+   update(value=>({...value,uncertain:true,failure:null}));
+   const generation=await documentControl(client,result.snapshot.scope.projectId,session);if(!alive.current)return;if(generation!==b.pending.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+   const stored=await saveUnderstandingReview(client,b,session,()=>alive.current);if(alive.current&&stored)update(value=>({...value,stored,uncertain:false,failure:null}));
+  }catch(cause){if(!alive.current)return;const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'UNDERSTANDING_REVIEW_RESPONSE_INVALID';setError(code);if(b)update(value=>({...value,failure:{code,status:e.status},uncertain:mode==='SAVE'&&(wasUncertain||e instanceof UnderstandingReadbackUnconfirmed||!isKnownDocumentRejection(e))}));if(e.status===401)onAuthenticationLost();}
+  finally{working.current=false;if(alive.current)setBusy(false);}
+ }
+ return <section aria-label="이해 재검토 작성"><h5>같은 맥락의 새 사람 판단</h5><p>보관된 근거 참조만 참고합니다. 원문·응답을 별도로 대조하고 새 판단을 작성하세요. 현재성이 바뀌면 서버가 거절합니다. 최초 응답 선택·Agent 호출·WORK 허가는 지원하지 않습니다.</p>
+ {!b?<><label>참고할 보관 검토<select aria-label="재검토 참고 버전" value={selected} disabled={busy} onChange={e=>setSelected(e.target.value)}><option value="">선택</option>{history?.items.map(row=><option key={row.ref.contentHash} value={row.ref.contentHash}>보관 검토 {row.ref.version}</option>)}</select></label><button type="button" disabled={busy||!history||!selected} onClick={()=>void run('BEGIN')}>새 재검토 입력 준비</button></>:null}
+ {error?<p role="alert">{error} · 원입력·미확인 명령을 보존합니다.</p>:null}
+ {b?<><p>참고 검토 v{b.base.ref.version} · 현재 내용 대조 완료를 뜻하지 않습니다.</p><fieldset disabled={busy||!!b.pending||b.uncertain||!!b.stored}><legend>새 이해 판단 6항목</legend>{b.form.items.map((item,index)=><div key={item.code}><label>{understandingLabels[item.code]} 판단<select aria-label={'이해 판단 '+(index+1)} value={item.judgement} onChange={e=>{const judgement=e.target.value as typeof item.judgement;update(v=>({...v,form:{...v.form,items:v.form.items.map((row,i)=>i===index?{...row,judgement}:row)},failure:null}));}}><option value="">미선택</option><option value="MATCH">일치</option><option value="MISMATCH">불일치</option><option value="INSUFFICIENT">부족</option></select></label><label>판단 이유<textarea aria-label={'이해 판단 이유 '+(index+1)} maxLength={20000} value={item.reason} onChange={e=>{const reason=e.target.value;update(v=>({...v,form:{...v.form,items:v.form.items.map((row,i)=>i===index?{...row,reason}:row)},failure:null}));}}/></label></div>)}<label>새 이해 검토 이유<textarea aria-label="새 이해 검토 이유" maxLength={20000} value={b.form.reason} onChange={e=>{const reason=e.target.value;update(v=>({...v,form:{...v.form,reason},failure:null}));}}/></label></fieldset>
+ {!b.pending&&!b.stored?<><button type="button" disabled={busy} onClick={()=>void run('PREPARE')}>이해 검토 명령 준비</button><button type="button" disabled={busy||b.uncertain} onClick={()=>{if(confirm('이 미저장 재검토 입력만 폐기할까요? 보관 이력은 유지합니다.'))storage.onChange(key,current=>current===b?null:current);}}>재검토 입력 폐기</button></>:null}
+ {b.pending&&!b.stored?<><p>고정 명령 {b.pending.commandId}</p>{b.uncertain?<p>저장 결과 미확인 · 입력/새 명령을 바꾸지 않고 같은 명령만 재확인합니다.</p>:<label><input type="checkbox" aria-label="이해 검토 저장 확인" checked={ack} disabled={busy} onChange={e=>setAck(e.target.checked)}/>6항목을 별도로 대조했으며 저장이 실행 허가가 아님을 확인합니다</label>}<button type="button" disabled={busy||!b.uncertain&&!ack||!!b.failure&&!b.uncertain} onClick={()=>void run('SAVE')}>{b.uncertain?'같은 이해 검토 명령 재확인':'새 이해 검토 저장'}</button>{b.failure&&!b.uncertain&&isKnownDocumentRejection(b.failure)?<button type="button" disabled={busy} onClick={()=>{update(v=>({...v,pending:null,failure:null}));setAck(false);setError(null);}}>거절 확인 후 재검토 입력 수정</button>:null}</>:null}
+ {b.stored?<><p role="status">새 이해 검토 보관 확인 · v{b.stored.ref.version} · {b.stored.snapshot.outcome==='ACCEPTED'?'보관 당시 적합':'보관 당시 미수용'} · 현재 WORK 허가가 아닙니다.</p><button type="button" disabled={busy} onClick={()=>{storage.onChange(key,current=>current===b&&current.stored?null:current);setSelected('');setAck(false);setError(null);}}>보관 확인한 입력 닫기</button></>:null}</>:null}
+ </section>;
+}

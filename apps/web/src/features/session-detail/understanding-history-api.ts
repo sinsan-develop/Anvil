@@ -13,6 +13,10 @@ export async function readStoredUnderstandingHistory(client:ApiClient,result:Sub
  const source=await readResultExecutionSource(client,result,active);if(!source||!active())return null;
  const e=source.execution.snapshot,scope={projectId:e.projectId,executionId:e.executionId,executionGeneration:e.executionGeneration};
  const v:any=await client.get(`/api/v1/projects/${scope.projectId}/executions/${scope.executionId}/understanding-reviews?generation=${scope.executionGeneration}`);if(!active())return null;
+ return validateUnderstandingHistory(v,scope,active);
+}
+/** 이미 읽은 이력도 작성/영수증 결박 전에 같은 구조·hash·체인을 다시 대조한다. */
+export async function validateUnderstandingHistory(v:any,scope:UnderstandingHistoryView['scope'],active:()=>boolean=()=>true):Promise<UnderstandingHistoryView|null>{
  if(!exact(v,['transport','scope','items','currentness','executionAuthorized','dispatchPerformed'])||v.transport!=='SYNTHETIC_ONLY'||!same(v.scope,scope)||v.currentness!=='NOT_RECHECKED'||v.executionAuthorized!==false||v.dispatchPerformed!==false||!Array.isArray(v.items)||v.items.length>1000)fail();await hash(v);
  let previous:any=null;const commands=new Set<string>();
  for(const row of v.items){
