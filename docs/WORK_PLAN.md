@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 새 직접승인 두 범위**: P1 exact기존probe의정식DB READ ONLY1회로PG15/app역할·migration46/후속7미적용과고정객체를실측하고전용Git/cache정리·독립부재확인했다. 보호native/host/entry3와시험/adapter는source후보로준비중이며순수·기존TLS13/타입·구문검사와실native/OS지원은구분한다. 실제guardian/guard권위·기한환경/완성manifest/OS실행연결은미완료·R0/실P2P3미승인이다. 정확원문/ref·sourcehash/오류/미검증은WORK_STATUS와N4패킷에기록하며전체Stage/계획완료아니다.
+
 - **2026-10-25 P03/IX01 복구 source 준비**: PMO 위임의 세 기존 스크립트 고정 TLS/runtime binding을 source-only로 보완하고 신규7·기존runtime1 검사/type/구문/diff를 통과했다. 새 복구 선택은 보호 선행 미충족으로 실제 I/O 전에 항상 거절하므로 TLS생성·신뢰·서비스복구 완료가 아니다. 실제 P1 DB읽기와 P2~P4 실행은 미완료이며 세부 diff/hash·오류·다음 조치는 WORK_STATUS와 기존 N4 패킷에 기록했다.
 
 - **2026-10-25 IX01 실제 연동 선행 재개**: P0 새 직접승인으로 기존 개발 PG를 단1회 기동·이번 StartedAt 이후 ready marker1 관측 후 running 유지했다. DB접속/SQL·앱/TLS/Agent0, 기능 검수·IX01/Stage 완료가 아니다. 다음 P1 기존 read-only schema probe의 source/20분 binding을 PMO 결정에 연결하며 P2~P4는 분리한다. 실제 증거·오류·허가 소진과 경계는 WORK_STATUS 및 기존 N4 패킷 상단에 기록했다. 완료된 코드·불변 시험은 반복하지 않았다.

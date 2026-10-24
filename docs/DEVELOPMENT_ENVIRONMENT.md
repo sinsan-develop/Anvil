@@ -1,5 +1,7 @@
 # Anvil 재설계 개발환경
 
+- 2026-10-25 07:25 KST 새 직접승인P1: exactf8fe81e5/기존probe의정식anvil_v3_development/anvil_v3_app READ ONLY1회a02537 exit0, PG150018·migration46·0012~0017/0031미적용·고정8객체중project_methodologies만/r/application_command_columnfalse를확인했다. 스키마/제품자료/계정·Secret/TLS/서비스변경0, 전용신규Git/npm102/cache는fe1ced정리/4e9a6a별도SSH부재확인. PG는유지한다. 이는현재metadata관측만이고웹/기능복구증거가아니다. 보호source후보는준비중·native NOT_COMPILED/NOT_OS_VERIFIED이며실행차단을유지한다.
+
 - 2026-10-25 05:47 KST P0 새 직접승인 단독 기동: 기존 PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f를 1회 시작했다. StartedAt2026-10-24T20:47:32.321123587Z, 20:47:46.405713Z 관측 running/RestartCount0/OOMfalse·이후 ready marker1로 개발용 유지한다. 판정 RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED이며 DB접속/SQL·TLS·API/Web/relay 변경0이다. 아래 과거 exited 기록은 이력이며 현재 PG 상태가 아니다. 원출력 d8381e/b02f1e/d9d468·단발 허가 소진은 WORK_STATUS에 기록했다. 다음 P1 metadata/새TLS/source/launcher/schema는 별도 범위로 남는다.
 
 - 2026-10-25 보충: CurrentUser Root의 기존지문 Matches0은 해당 실행문맥의 읽기 결과만 의미한다. sandbox/실사용자 차이를 확인하지 않았으므로 호스트 신뢰 삭제·실사용자 신뢰 부재로 단정하지 않는다. FN05 관련성 시험의 등록 QA 두 경로는 각각 exact 정리·독립부재 확인했고 실제 DB/서비스/인증서·신뢰 변경은 없다.

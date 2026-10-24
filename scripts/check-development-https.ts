@@ -2,12 +2,13 @@ import { get } from 'node:https';
 import { readFileSync } from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {assertRecoveryNativeExecution} from './development-recovery-entry.ts';
 
 export function getDevelopmentTlsCaPath(recoveryTls=false):string {
   return recoveryTls?'D:/Project/Anvil/.av3-data/dev-tls-20261025-01/ca.cert.pem':'D:/Project/Anvil/.av3-data/dev-tls/ca.cert.pem';
 }
 export function assertDevelopmentTlsExecution(recoveryTls:boolean):void {
-  if(recoveryTls)throw Error('DEVELOPMENT_TLS_RECOVERY_PROTECTION_UNVERIFIED');
+  if(recoveryTls)assertRecoveryNativeExecution();
 }
 export async function checkDevelopmentHttps(args:string[]){
 if(args.length>1||(args.length===1&&args[0]!=='--recovery-tls'))throw Error('DEVELOPMENT_HTTPS_ARGUMENT_INVALID');

@@ -1,5 +1,11 @@
 # FN02 정식 개발 PG metadata 관측 결과
 
+## 2026-10-25 새 직접승인 관측 — 이전 기록과 별도
+
+- 승인 원문01a17002-c88d-7213-8c28-ad45238d1d84, P1-20261025-072312-01. source f8fe81e57998263425efa66211ae2c3908e4d5b7의 기존 probe 단1회 a02537 exit0/OBSERVED_METADATA_ONLY. DB anvil_v3_development, app 역할 anvil_v3_app, server_version_num150018, readOnly=true, productRowsRead=0. UNTIL2026-10-24T22:35:51.113572Z. configHash56af96763702f0afeaf0e8aec29f58fb06ad911d8b98483333bfed51b4c17299·Secret/DSN/본문출력0.
+- 실제 마이그레이션46행, 0012_assignment_drafts·0013_assignment_confirmation·0014_context_preparation·0015_project_baselines·0016_execution_preparation·0017_execution_authority·0031_empty_project_methodology_application은 기록에 없다. 고정8객체 중 project_methodologies/r/application_command_column=false만 관측됐고 나머지7객체는 결과에 없다. 아래 10/20 checksum표는 과거 관측으로 유지하며 이번 결과와 전체46 checksum을 독립 자동 비교했다고 주장하지 않는다. metadata 일치/부재는 전체객체·데이터/권한·기능 검수증거가 아니다.
+- 등록 신규 Git root/uid1000/0700/clean e00b66, 공개lock npm ci(ignore-scripts/noaudit/nofund)102packages exit0 5116da. 실제1회 읽기 후 fe1ced owner1000·내부의존성링크13/외부0/관련process0 확인하고 exact 신규root 제거·PG보존. WORK_STATUS의 별도SSH 부재확인과 연결한다. DB변경·migration/seed·계정/정책/Secret·cert/trust/APIWeb/Agent0. source/시험 준비 승인과 실제schema적용은 구분한다.
+
 ## 판정
 
 2026-10-20 / Main 어울 / source `a66829686dba7d218ca78821951ada5f550413b7` / 기존 branch `codex/av3-stage-b`.

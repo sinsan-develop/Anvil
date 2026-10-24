@@ -1,5 +1,11 @@
 # 마지막 검증 개발 서비스 복구 — 실행 전 제안
 
+## 2026-10-25 두 가지 새 직접승인 반영
+
+- 원문01a17002-c88d-7213-8c28-ad45238d1d84의두가지승인중P1은정식DB READ ONLY1회a02537로완료·허가소진했다. exactf8fe81e5/probeE03478D4·PG150018/app/migration46·후속7미적용·고정8객체중project_methodologies1행이다. 사용자자료/DDL/DML0, 신규전용root/cache는정확정리·별도SSH부재확인했다. 기존P1미승인문구는과거이력이며추가DB읽기허가는아니다.
+- 신규보호source3/adapter·시험작성승인에따라후보를준비했다. 순수host/entry·기존TLS13/타입/PS AST/Node구문통과와C#정적대조만이며native NOT_COMPILED/NOT_OS_VERIFIED·실권위/기한환경/manifest/OSdispatch연결은미완료다. source-only구현은R0bootstrap예외/R1/실P2P3·cert/trust·Job실행승인이아니다. 기존prepare/start차단을해제하지않는다.
+- 현재native SHA256 7DDF3588FA28999A0E7A594F6DBF2844F968F08BFE15F6FD3933023B91914C35, host E6BEC2E97ABA5368B45770C48D53F45594D4A1ABEA1A93DFCACC55AC76F6B39C, entry 3242E7164BA1373AB0FBA130DF5C21BBB8717FC0FE6CBDAF85DB3E20E60537B4, OS시험계획1348C7D72A70648DE24286B94EB357FD0C51BCBE25288C5C2F2AB87D58595607. native4096 retained handle후보한도는100000파일탐색가능성이나기동시간을보장하지않으며실제사용파일집합미확정/초과거절이다.
+
 ## 2026-10-25 재개 실행 패킷 — 현재 차이만 / 실행 승인 아님
 
 신산님의 재개 지원 지시에 따라 기존 절차를 현재 소스와 대조했다. P1~P4 상태는 **PREPARED_NOT_AUTHORIZED**다. P0는 새 직접승인 ref `01a16fa9-a125-78b3-9ef4-8b32f4aa546c`로 단1회 수행·소진했다: StartedAt `2026-10-24T20:47:32.321123587Z`, 관측 `2026-10-24T20:47:46.405713Z`, running/readyMarkerCount1/restart0, **RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED**, start1/stop0·성공 개발용 보존. 아래 P0 표의 정지 state는 실행 직전 증거이며 현재 state가 아니다. P0~P4는 독립 결정이며 하나의 승인으로 다른 단계를 열지 않는다. 아래 예전 N4의 source/PID/유효 CA/FinishedAt은 과거 이력으로 보존하고 현재 실행 값으로 재사용하지 않는다.
