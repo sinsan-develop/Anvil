@@ -219,6 +219,9 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool ReadFile(KernelHandle file,byte[] data,uint length,out uint read,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFilePointerEx(KernelHandle file,long distance,out long position,uint origin);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFileInformationByHandle(KernelHandle file,int kind,IntPtr information,uint length);
+ [DllImport("ntdll.dll")]static extern int NtSetInformationFile(KernelHandle file,out IoStatus status,IntPtr information,uint length,int kind);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool DeviceIoControl(KernelHandle file,uint code,byte[] input,uint inputLength,IntPtr output,uint outputLength,out uint returned,IntPtr overlapped);
+ [DllImport("advapi32.dll",SetLastError=true)]static extern bool SetKernelObjectSecurity(KernelHandle handle,uint information,byte[] descriptor);
  sealed class QaEntry {
   internal Pin Pin;internal bool Owned,DeleteRequested,Closed;internal byte[] Expected;
  }
@@ -230,7 +233,7 @@ internal static class DevelopmentRecoveryPathGuard {
    if(create){byte[] descriptor=NewDirectoryDescriptor(owner);security=Marshal.AllocHGlobal(descriptor.Length);Marshal.Copy(descriptor,0,security,descriptor.Length);}
    var oa=new ObjectAttributes{Length=(uint)Marshal.SizeOf(typeof(ObjectAttributes)),RootDirectory=parent.DangerousGetHandle(),ObjectName=text,Attributes=0x40|0x1000,SecurityDescriptor=security};IoStatus status;
    // 생성 대상은 create-new·DELETE 원 handle만 사용한다. 고정 base만 별도 open하며 교체 fallback은 없다.
-   uint access=ReadControl|ReadAttributes|Synchronize|(create?0x10000u:0u)|(directory?0x27u:3u);
+   uint access=ReadControl|ReadAttributes|Synchronize|(create?0x10000u|0x40000u:0u)|(directory?0x27u:3u);
    int code=NtCreateFile(out opened,access,ref oa,out status,IntPtr.Zero,0,ShareRead|ShareWrite,create?FileCreate:FileOpen,SyncOption|OpenReparse|(directory?DirectoryOption:0x40u),IntPtr.Zero,0);
    Require(code==0&&opened!=null&&!opened.IsInvalid);KernelHandle result=opened;opened=null;return result;
   }finally{if(opened!=null)opened.Dispose();if(security!=IntPtr.Zero)Marshal.FreeHGlobal(security);if(text!=IntPtr.Zero)Marshal.FreeHGlobal(text);if(chars!=IntPtr.Zero)Marshal.FreeHGlobal(chars);}
@@ -247,9 +250,10 @@ internal static class DevelopmentRecoveryPathGuard {
  }
  internal sealed class QaFixtureLease {
   readonly List<QaEntry> entries=new List<QaEntry>();readonly Dictionary<string,QaEntry> cases=new Dictionary<string,QaEntry>(StringComparer.Ordinal);
+  readonly Dictionary<string,QaEntry> caseChildren=new Dictionary<string,QaEntry>(StringComparer.Ordinal);
   readonly HashSet<string> childNames=new HashSet<string>(StringComparer.Ordinal);readonly Stopwatch clock=Stopwatch.StartNew();
   readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
-  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted;
+  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;
   internal string AcquisitionStatus{get;private set;}
   internal string CleanupStatus{get;private set;}
   QaFixtureLease(string id,string sha,DateTime from,DateTime to){runId=id;commit=sha;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";}
@@ -310,7 +314,7 @@ internal static class DevelopmentRecoveryPathGuard {
   internal void CreateCaseChild(string id,string name,bool directory,byte[] content){
    try{
     Fresh();CheckAll();Require(!filesystemSealed&&FilesystemChild(id,name,directory));QaEntry at;Require(cases.TryGetValue(id,out at));Require(childNames.Add(id+"/"+name));
-    Create(at.Pin,name,directory,content);CheckAll();
+    caseChildren.Add(id+"/"+name,Create(at.Pin,name,directory,content));CheckAll();
    }catch{faulted=true;throw;}
   }
   internal void SealFilesystemCases(){
@@ -334,6 +338,51 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string ObserveOwned(){
    try{Fresh();Require(AcquisitionStatus=="ORIGINAL_HANDLES_ACQUIRED_NOT_OS_VALIDATED"&&basePin!=null&&run!=null&&entries.Count>=8&&filesystemSealed);CheckAll();return "ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED";}
    catch{faulted=true;return "ORIGINAL_OBSERVATION_UNCONFIRMED";}
+  }
+  static int QaRelativeNameChange(KernelHandle source,KernelHandle parent,string name,int kind){
+   Segment(name);Require(kind==10||kind==11);byte[] text=Encoding.Unicode.GetBytes(name);int rootOffset=IntPtr.Size==8?8:4,lengthOffset=rootOffset+IntPtr.Size,nameOffset=lengthOffset+4;
+   IntPtr buffer=Marshal.AllocHGlobal(nameOffset+text.Length+2);
+   try{for(int i=0;i<nameOffset+text.Length+2;i++)Marshal.WriteByte(buffer,i,0);Marshal.WriteIntPtr(buffer,rootOffset,parent.DangerousGetHandle());Marshal.WriteInt32(buffer,lengthOffset,text.Length);Marshal.Copy(text,0,IntPtr.Add(buffer,nameOffset),text.Length);IoStatus status;return NtSetInformationFile(source,out status,buffer,(uint)(nameOffset+text.Length),kind);}
+   finally{Marshal.FreeHGlobal(buffer);}
+  }
+  static byte[] QaRelativeSymlink(){
+   byte[] path=Encoding.Unicode.GetBytes("target\0target\0"),buffer=new byte[20+path.Length];
+   Buffer.BlockCopy(BitConverter.GetBytes(0xa000000cu),0,buffer,0,4);Buffer.BlockCopy(BitConverter.GetBytes((ushort)(12+path.Length)),0,buffer,4,2);
+   Buffer.BlockCopy(BitConverter.GetBytes((ushort)12),0,buffer,10,2);Buffer.BlockCopy(BitConverter.GetBytes((ushort)14),0,buffer,12,2);Buffer.BlockCopy(BitConverter.GetBytes((ushort)12),0,buffer,14,2);Buffer.BlockCopy(BitConverter.GetBytes(1u),0,buffer,16,4);Buffer.BlockCopy(path,0,buffer,20,path.Length);return buffer;
+  }
+  void RecordOwnedRename(QaEntry entry,QaEntry parent,string name){
+   Fact before=entry.Pin.Before,after=Read(entry.Pin.Handle,Path.Combine(parent.Pin.Before.Path,name),before.Directory);
+   Require(before.Volume==after.Volume&&before.Id==after.Id);entry.Pin.Before=after;
+  }
+  // 성공 표기는 변경 시도일 뿐 guard 효과/권한/OS 합격이 아니다. 실 bridge 등록 전에는 호출 불가다.
+  public string[] AttemptFilesystemMutation(string id){
+   Fresh();Require(filesystemSealed&&!mutationAttempted&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
+   QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;
+   try{
+    QaEntry entry;int code;uint count;long position;
+    switch(id){
+     case "PARENT_REPLACEMENT":
+      operation="RENAME_AND_CREATE_NEW_PARENT";entry=caseChildren[id+"/parent"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"parent-retained",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"parent-retained");Create(parent.Pin,"parent",true,null);break;
+     case "FILE_ID_CHANGED":
+      operation="RENAME_AND_CREATE_NEW_LEAF";entry=caseChildren[id+"/leaf.txt"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"leaf-retained.txt",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"leaf-retained.txt");Create(parent.Pin,"leaf.txt",false,new byte[]{88});break;
+     case "OUTSIDE_WRITE":
+      operation="WRITE_OWN_UNSELECTED_SENTINEL";entry=caseChildren[id+"/unselected.txt"];Require(entry.Expected!=null&&entry.Expected.Length<=16);Require(SetFilePointerEx(entry.Pin.Handle,0,out position,0)&&position==0);
+      if(!WriteFile(entry.Pin.Handle,new byte[]{88},1,out count,IntPtr.Zero)||count!=1){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}
+      byte[] changed=entry.Expected.Length==0?new byte[1]:(byte[])entry.Expected.Clone();changed[0]=88;entry.Expected=changed;entry.Pin.Before=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);status="00000000";break;
+     case "HARD_LINK":
+      operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);break;
+     case "REPARSE_CHILD":
+      operation="SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY";entry=caseChildren[id+"/selected"];CheckEntry(caseChildren[id+"/target"]);byte[] data=QaRelativeSymlink();
+      if(!DeviceIoControl(entry.Pin.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+     case "DACL_CHANGED":
+      operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];uint size;GetKernelObjectSecurity(entry.Pin.Handle,5,null,0,out size);Require(size>0&&size<=65536);byte[] original=new byte[size];Require(GetKernelObjectSecurity(entry.Pin.Handle,5,original,size,out size));
+      var sd=new RawSecurityDescriptor(original,0);Require(sd.DiscretionaryAcl!=null);sd.DiscretionaryAcl.InsertAce(sd.DiscretionaryAcl.Count,new CommonAce(AceFlags.None,AceQualifier.AccessAllowed,(int)FileSystemRights.WriteData,new SecurityIdentifier("S-1-1-0"),false,null));byte[] modified=new byte[sd.BinaryLength];sd.GetBinaryForm(modified,0);
+      if(!SetKernelObjectSecurity(entry.Pin.Handle,4,modified)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+     default:throw Denied();
+    }
+    return new[]{id,operation,"MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT",status};
+   }catch{return new[]{id,operation,"MUTATION_UNCONFIRMED",status};}
+   finally{faulted=true;} // 부분 변경 이후에는 다른 case를 이어 실행하거나 전체성공으로 처리하지 않는다.
   }
   internal string ReleaseHandlesWithoutDelete(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
@@ -408,7 +457,7 @@ internal static class DevelopmentRecoveryPathGuard {
    finally{Marshal.FreeHGlobal(data);}
   }
   void Check(){Require(!disposed&&!terminationRequested&&!faulted);paths.Check();int active=ActiveCount();paths.Check();Require(active<=children.Count);}
-  static void CheckOwner(KernelHandle process,SecurityIdentifier owner){
+  internal static void CheckOwner(KernelHandle process,SecurityIdentifier owner){
    KernelHandle token;Require(OpenProcessToken(process,8,out token));
    using(token){uint length;GetTokenInformation(token,1,IntPtr.Zero,0,out length);Require(length>0&&length<=65536);IntPtr data=Marshal.AllocHGlobal((int)length);try{Require(GetTokenInformation(token,1,data,length,out length));Require(owner.Equals(new SecurityIdentifier(Marshal.ReadIntPtr(data))));}finally{Marshal.FreeHGlobal(data);}}
   }
@@ -484,6 +533,91 @@ internal static class DevelopmentRecoveryPathGuard {
    for(int i=imagePins.Count-1;i>=0;i--){imagePins[i].Dispose();unknown|=!imagePins[i].CloseSucceeded;}
    job.Dispose();unknown|=!job.CloseSucceeded;
    cleanupUnknown=unknown;if(unknown)throw new InvalidOperationException("DEVELOPMENT_RECOVERY_HANDLE_CLOSE_UNCONFIRMED");
+  }
+ }
+ // R1의 고정 sleep probe 전용이다. 앱·터널·Agent 실행 API나 외부 PID/Job 입력은 없다.
+ internal sealed class QaProcessProbe {
+  const string Image=@"C:\Program Files\PowerShell\7\pwsh.exe";
+  const string ImageHash="bfb46af89433268872ddb43d1ca7a3f433452ee91ed356a9786940f90118e285";
+  readonly List<KernelHandle> imagePins=new List<KernelHandle>();readonly List<ProcessInformation> children=new List<ProcessInformation>();
+  readonly Stopwatch clock=Stopwatch.StartNew();readonly int ownerThread=Environment.CurrentManagedThreadId;
+  readonly DateTime from,until,acquired;DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;KernelHandle job;
+  bool faulted,terminationRequested,closed,closeUnknown;internal string AcquisitionStatus{get;private set;}
+  QaProcessProbe(DateTime start,DateTime end){from=start;until=end;acquired=DateTime.UtcNow;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";}
+  internal static QaProcessProbe Begin(DateTime start,DateTime end){
+   Require(QaAdapterConnected);Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30);
+   var probe=new QaProcessProbe(start,end);
+   try{probe.Acquire();probe.AcquisitionStatus="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED";}catch{probe.faulted=true;probe.AcquisitionStatus="QA_PARTIAL_ACQUISITION_PRESERVED_UNCONFIRMED";}
+   return probe;
+  }
+  void Fresh(bool starting){
+   DateTime wall=DateTime.UtcNow;TimeSpan elapsed=clock.Elapsed;
+   Require(Environment.CurrentManagedThreadId==ownerThread&&!closed&&!faulted&&!terminationRequested&&acquired>=from&&(until-acquired).TotalMilliseconds>=75000&&wall>=lastWall&&wall<until&&elapsed>=lastElapsed&&elapsed.TotalMilliseconds<60000);
+   if(starting)Require(elapsed.TotalMilliseconds<5000&&(until-wall).TotalMilliseconds>=70000);
+   lastWall=wall;lastElapsed=elapsed;
+  }
+  void Acquire(){
+   Fresh(false);using(var identity=WindowsIdentity.GetCurrent())owner=identity.User;Require(owner!=null);
+   KernelHandle at=CreateFileW(@"\\?\C:\",ReadControl|ReadAttributes|Synchronize|0x20u,ShareRead|ShareWrite,IntPtr.Zero,3,BackupSemantics|OpenReparse,IntPtr.Zero);
+   imagePins.Add(at);Read(at,@"C:\",true);RequireNtfs(at);string expected=@"C:\";
+   foreach(string name in new[]{"Program Files","PowerShell","7","pwsh.exe"}){Fresh(false);expected=Path.Combine(expected,name);at=Relative(at,name,name!="pwsh.exe",false,owner);imagePins.Add(at);Read(at,expected,name!="pwsh.exe");}
+   SafeFileHandle copy;Require(DuplicateHandle(GetCurrentProcess(),at,GetCurrentProcess(),out copy,0,false,2));
+   using(copy)using(var file=new FileStream(copy,FileAccess.Read))using(var hash=SHA256.Create())Require(BitConverter.ToString(hash.ComputeHash(file)).Replace("-","").ToLowerInvariant()==ImageHash);
+   Fresh(false);job=CreateJobObjectW(IntPtr.Zero,null);Require(job!=null&&!job.IsInvalid);uint flags;Require(GetHandleInformation(job,out flags)&&flags==0);
+   var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000u|0x8u,ActiveProcesses=2}};uint size=(uint)Marshal.SizeOf(typeof(ExtendedLimits));Require(SetInformationJobObject(job,9,ref limits,size));
+   IntPtr buffer=Marshal.AllocHGlobal((int)size);
+   try{uint returned;Require(QueryInformationJobObject(job,9,buffer,size,out returned)&&returned==size);var actual=(ExtendedLimits)Marshal.PtrToStructure(buffer,typeof(ExtendedLimits));Require(actual.Basic.Flags==limits.Basic.Flags&&actual.Basic.ActiveProcesses==2);}finally{Marshal.FreeHGlobal(buffer);}
+   Require(ActiveCount()==0);Fresh(false);
+  }
+  int ActiveCount(){
+   Require(job!=null&&!job.IsInvalid&&!job.IsClosed);IntPtr buffer=Marshal.AllocHGlobal(8+2*IntPtr.Size);
+   try{uint returned;Require(QueryInformationJobObject(job,3,buffer,(uint)(8+2*IntPtr.Size),out returned)&&returned>=8&&returned<=8+2*IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long pid=Marshal.ReadIntPtr(buffer,8+i*IntPtr.Size).ToInt64();Require(pid>0&&pid<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)pid));}return total;}
+   finally{Marshal.FreeHGlobal(buffer);}
+  }
+  internal void StartFixedSleepProbe(){
+   try{
+    Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2);
+    IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero;bool initialized=false;
+    try{
+     UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
+     list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,1,0,ref size));initialized=true;
+     value=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(value,job.DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x2000d),value,new UIntPtr((uint)IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
+     // 부모 환경/Secret/profile을 전달하지 않는다. 고정 .NET sleep만 실행하며 사용자 문자열은 없다.
+     environment=Marshal.StringToHGlobalUni("DOTNET_EnableDiagnostics=0\0POWERSHELL_TELEMETRY_OPTOUT=1\0SystemRoot=C:\\Windows\0WINDIR=C:\\Windows\0\0");
+     var startup=new StartupEx{Startup=new StartupInfo{Size=(uint)Marshal.SizeOf(typeof(StartupEx))},Attributes=list};NativeProcessInformation raw;
+     DateTime requested=DateTime.UtcNow;Fresh(true);
+     Require(CreateProcessW(Image,new StringBuilder("\""+Image+"\" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\""),IntPtr.Zero,IntPtr.Zero,false,0x4u|0x80000u|0x8000000u|0x400u,environment,@"C:\Program Files\PowerShell\7",ref startup,out raw));
+     var child=new ProcessInformation{Process=new KernelHandle(raw.Process),Thread=new KernelHandle(raw.Thread),Pid=raw.Pid};children.Add(child);
+     Require(!child.Process.IsInvalid&&!child.Thread.IsInvalid);bool member;Require(IsProcessInJob(child.Process,job,out member)&&member&&GetProcessId(child.Process)==child.Pid);
+     var actual=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(child.Process,0,actual,ref capacity)&&actual.ToString()==Image);OwnedRuntime.CheckOwner(child.Process,owner);
+     FileTime begun,ended,kernel,user;Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());
+     Require(ActiveCount()<=children.Count);Fresh(true);Require(ResumeThread(child.Thread)==1);
+    }finally{if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);}
+   }catch{faulted=true;throw;}
+  }
+  internal string ObserveOriginalExit(){
+   try{Require(Environment.CurrentManagedThreadId==ownerThread&&!closed&&job!=null&&children.Count>0);foreach(var child in children)if(WaitForSingleObject(child.Process,0)!=0)return "QA_EXIT_UNCONFIRMED";Require(ActiveCount()==0);return "QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED";}catch{return "QA_EXIT_UNCONFIRMED";}
+  }
+  internal string StopOwnedQaAndObserve(){
+   Require(Environment.CurrentManagedThreadId==ownerThread&&!closed);
+   if(terminationRequested)return children.Count==0?"QA_NO_ORIGINAL_PROCESS_TO_STOP":ObserveOriginalExit();terminationRequested=true;
+   if(children.Count==0)return "QA_NO_ORIGINAL_PROCESS_TO_STOP";
+   if(AcquisitionStatus!="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED")return "QA_EXIT_UNCONFIRMED";
+   try{Require(QaAdapterConnected&&job!=null&&!job.IsInvalid);Require(TerminateJobObject(job,124));var observe=Stopwatch.StartNew();foreach(var child in children){long remaining=15000-observe.ElapsedMilliseconds;Require(remaining>0&&WaitForSingleObject(child.Process,(uint)remaining)==0);}Require(ActiveCount()==0);return "QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED";}catch{faulted=true;return "QA_EXIT_UNCONFIRMED";}
+  }
+  internal string PollOwnedQa(){
+   Require(Environment.CurrentManagedThreadId==ownerThread&&!closed);
+   // 호출 host의 watchdog이 필요하다. 동기 kernel 호출을 물리적으로 60초 안에 취소한다는 보장은 아니다.
+   try{Fresh(false);}catch{return StopOwnedQaAndObserve();}return ObserveOriginalExit();
+  }
+  internal string CloseAfterObservedExit(){
+   Require(Environment.CurrentManagedThreadId==ownerThread);if(closed)return closeUnknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
+   if(job!=null&&!job.IsInvalid){if(children.Count>0&&ObserveOriginalExit()!="QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED")return "QA_EXIT_UNCONFIRMED";try{Require(ActiveCount()==0);}catch{return "QA_EXIT_UNCONFIRMED";}}
+   closed=true;closeUnknown=true;bool unknown=false;
+   foreach(var child in children){try{child.Thread.Dispose();unknown|=!child.Thread.CloseSucceeded;}catch{unknown=true;}try{child.Process.Dispose();unknown|=!child.Process.CloseSucceeded;}catch{unknown=true;}}
+   for(int i=imagePins.Count-1;i>=0;i--){var pin=imagePins[i];try{if(pin!=null){pin.Dispose();unknown|=!pin.IsInvalid&&!pin.CloseSucceeded;}}catch{unknown=true;}}
+   try{if(job!=null){job.Dispose();unknown|=!job.IsInvalid&&!job.CloseSucceeded;}}catch{unknown=true;}
+   closeUnknown=unknown;return unknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
   }
  }
  // 미구현 OS 계약을 가능한 것으로 반환하지 않는다. 기존 provider Job 소스는 수정·등록하지 않는다.

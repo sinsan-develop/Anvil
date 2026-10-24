@@ -25,80 +25,31 @@ function Read-DevelopmentRecoveryQaSourceBinding([hashtable]$Value,[datetimeoffs
  # 입력은 대상/기한 선언일 뿐 원 handle 소유권·외부 실행 승인을 증명하지 않는다.
  return @{mode='R1';commit=$Value.commit;runId=$Value.runId;issuedAt=$from.ToString('o');expiresAt=$until.ToString('o');ownership='NOT_ACQUIRED';executionAuthorized=$false}
 }
-function New-DevelopmentRecoveryOsQaFilesystemAdapter {
- # 생성자는 메모리 객체만 만든다. 아래 실제 OS 행동 코드는 이번 승인에서 호출하지 않는다.
- $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';nativeVerified=$false;executionAuthorized=$false}
+function Read-DevelopmentRecoveryQaMutationReceipt([string]$CaseId,[object]$Value) {
+ $operations=@{
+  PARENT_REPLACEMENT='RENAME_AND_CREATE_NEW_PARENT';FILE_ID_CHANGED='RENAME_AND_CREATE_NEW_LEAF'
+  OUTSIDE_WRITE='WRITE_OWN_UNSELECTED_SENTINEL';HARD_LINK='LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT'
+  REPARSE_CHILD='SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY';DACL_CHANGED='CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL'
+ }
+ if($CaseId -cnotin $operations.Keys -or $Value -isnot [array] -or $Value.Rank -ne 1 -or $Value.GetLowerBound(0) -ne 0 -or $Value.Length -ne 4){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
+ foreach($field in $Value){if($field -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}}
+ if($Value[0] -cne $CaseId -or $Value[1] -cne $operations[$CaseId] -or $Value[2] -cnotin @('MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT','MUTATION_UNCONFIRMED') -or $Value[3] -cnotmatch '^(?:[a-f0-9]{8}|NOT_OBSERVED)$'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
+ return @{caseId=$CaseId;operation=$Value[1];mutation=$Value[2];nativeStatus=$Value[3];cleanupRequired=$true;osVerified=$false;guardVerdict='NOT_EVALUATED';fixtureInterference='UNRESOLVED'}
+}
+function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
+ # 생성자는 메모리 객체만 만든다. 실제 assembly 출처/run 결박은 아직 host에 등록되지 않았다.
+ $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';OwnedLease=$OwnedLease;nativeVerified=$false;executionAuthorized=$false}
  $adapter|Add-Member -MemberType ScriptMethod -Name Mutate -Value {
   param([string]$CaseId)
   # 함수 이름 재정의로 우회할 수 있는 실행 gate를 사용하지 않는다. 이 본문은 아직 미등록이다.
   throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
   $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED')
   if($CaseId -cnotin $cases){throw 'DEVELOPMENT_RECOVERY_QA_CASE_INVALID'}
-  # 외부 경로/작업폴더 입력은 받지 않는다. outside는 선택 pin 밖이지만 격리 case 안의 합성 파일이다.
-  $base='D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\os-qa'
-  $root=Join-Path $base $CaseId
-  # pathname 사전 대조는 same-handle 안전성을 증명하지 않는다. 실제 runner/pin 결박은 아직 미구현이다.
-  foreach($path in @('D:\','D:\Project','D:\Project\Anvil','D:\Project\Anvil\.av3-data','D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01',$base,$root)){
-   $attributes=[IO.File]::GetAttributes($path)
-   if(($attributes -band [IO.FileAttributes]::ReparsePoint) -or !($attributes -band [IO.FileAttributes]::Directory)){throw 'DEVELOPMENT_RECOVERY_QA_FIXTURE_INVALID'}
-  }
-  $leaf=Join-Path $root 'leaf.txt'
-  $target=Join-Path $root 'target'
-  $parent=Join-Path $root 'parent'
-  $outside=Join-Path $root 'unselected.txt'
-  $required=if($CaseId -ceq 'PARENT_REPLACEMENT'){$parent}elseif($CaseId -ceq 'REPARSE_CHILD'){$target}elseif($CaseId -ceq 'OUTSIDE_WRITE'){$outside}else{$leaf}
-  $attributes=[IO.File]::GetAttributes($required)
-  $directoryCase=$CaseId -cin @('PARENT_REPLACEMENT','REPARSE_CHILD')
-  if(($attributes -band [IO.FileAttributes]::ReparsePoint) -or ([bool]($attributes -band [IO.FileAttributes]::Directory) -ne $directoryCase)){throw 'DEVELOPMENT_RECOVERY_QA_FIXTURE_INVALID'}
-  # 성공은 변경 시도 기록일 뿐 guard 합격이 아니다. 거절 예외도 guard 효과로 자동 판정하지 않는다.
-  $operation='NOT_ATTEMPTED'
-  try{
-   switch -CaseSensitive ($CaseId){
-    'PARENT_REPLACEMENT' {
-     $operation='RENAME_PARENT_AND_RECREATE_SELECTED_PATH'
-     [IO.Directory]::Move($parent,(Join-Path $root 'parent-retained'))
-     [IO.Directory]::CreateDirectory($parent)|Out-Null
-    }
-    'REPARSE_CHILD' {
-     $operation='REPLACE_SELECTED_DIRECTORY_WITH_SYMBOLIC_LINK'
-     $selected=Join-Path $root 'selected'
-     $attributes=[IO.File]::GetAttributes($selected)
-     if(($attributes -band [IO.FileAttributes]::ReparsePoint) -or !($attributes -band [IO.FileAttributes]::Directory)){throw 'DEVELOPMENT_RECOVERY_QA_FIXTURE_INVALID'}
-     [IO.Directory]::Move($selected,(Join-Path $root 'selected-retained'))
-     [IO.Directory]::CreateSymbolicLink($selected,$target)|Out-Null
-    }
-    'OUTSIDE_WRITE' {
-     $operation='WRITE_UNSELECTED_SENTINEL'
-     $stream=[IO.FileStream]::new($outside,[IO.FileMode]::Open,[IO.FileAccess]::Write,[IO.FileShare]::Read)
-     try{if($stream.Length -gt 16){throw 'DEVELOPMENT_RECOVERY_QA_SENTINEL_INVALID'};$stream.WriteByte(88);$stream.Flush($true)}finally{$stream.Dispose()}
-    }
-    'FILE_ID_CHANGED' {
-     $operation='RENAME_AND_CREATE_NEW_LEAF'
-     [IO.File]::Move($leaf,(Join-Path $root 'leaf-retained.txt'))
-     $stream=[IO.FileStream]::new($leaf,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
-     try{$stream.WriteByte(88);$stream.Flush($true)}finally{$stream.Dispose()}
-    }
-    'HARD_LINK' {
-     $operation='CREATE_FILE_HARD_LINK'
-     New-Item -ItemType HardLink -Path (Join-Path $root 'linked.txt') -Target $leaf -ErrorAction Stop|Out-Null
-    }
-    'DACL_CHANGED' {
-     $operation='ADD_FIXTURE_EVERYONE_WRITE'
-     $file=[IO.FileInfo]::new($leaf)
-     $security=[IO.FileSystemAclExtensions]::GetAccessControl($file)
-     $before=$security.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::All)
-     $sid=[Security.Principal.SecurityIdentifier]::new('S-1-1-0')
-     $rule=[Security.AccessControl.FileSystemAccessRule]::new($sid,[Security.AccessControl.FileSystemRights]::WriteData,[Security.AccessControl.AccessControlType]::Allow)
-     $security.AddAccessRule($rule)
-     if($before -ceq $security.GetSecurityDescriptorSddlForm([Security.AccessControl.AccessControlSections]::All)){throw 'DEVELOPMENT_RECOVERY_QA_DACL_UNCHANGED'}
-     [IO.FileSystemAclExtensions]::SetAccessControl($file,$security)
-    }
-   }
-   return @{caseId=$CaseId;operation=$operation;mutation='ATTEMPT_RECORDED_NOT_GUARD_RESULT';cleanupRequired=$true;osVerified=$false}
-  }catch{
-   # 변경 일부 성공/권한 부족/guard 거절을 구분할 실제 원 handle 관측 없이는 모두 미확인이다.
-   return @{caseId=$CaseId;operation=$operation;mutation='MUTATION_UNCONFIRMED';errorHResult=$_.Exception.HResult;cleanupRequired=$true;osVerified=$false}
-  }
+  # pathname 연산을 하지 않는다. 타입 이름만으로 출처/승인/소유를 인증하지 않으며 실제 host bridge는 미등록이다.
+  $lease=$this.OwnedLease
+  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
+  $result=$lease.AttemptFilesystemMutation($CaseId)
+  return Read-DevelopmentRecoveryQaMutationReceipt $CaseId $result
  }
  return $adapter
 }
