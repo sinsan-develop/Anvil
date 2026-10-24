@@ -4,11 +4,11 @@ import type {DesignItem,ScreenRegion} from './design-index-api.ts';
 import type {TraceEdge} from './trace-api.ts';
 import {documentMutationUncertain} from './mutation-result.ts';
 export interface DependencyContext {ownerUserId:string;projectId:string;documentId:string|null;baseVersion:number;baseHash?:string;controlGeneration:number;items:DesignItem[];screenRegions?:ScreenRegion[]}
-export interface DesignDependency {bindingId:string;context:DependencyContext;relation?:'DEPENDS_ON'|'REFINES';fromId:string;toId:string;reason:string;pending:DocumentWrite|null;result:TraceEdge|null;failure:{code:string;status:number}|null;uncertain:boolean}
+export interface DesignDependency {bindingId:string;context:DependencyContext;relation?:'DEPENDS_ON'|'REFINES';targetKind?:'DOCUMENT_VERSION';fromId:string;toId:string;reason:string;pending:DocumentWrite|null;result:TraceEdge|null;failure:{code:string;status:number}|null;uncertain:boolean}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const normalized=(v:any):any=>Array.isArray(v)?v.map(normalized):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalized(v[k])])):v;
 const same=(a:unknown,b:unknown)=>JSON.stringify(normalized(a))===JSON.stringify(normalized(b));
-export function newDesignDependency(context:DependencyContext,relation:'DEPENDS_ON'|'REFINES'='DEPENDS_ON'):DesignDependency{return {bindingId:crypto.randomUUID(),context:structuredClone(context),relation,fromId:'',toId:'',reason:'',pending:null,result:null,failure:null,uncertain:false};}
+export function newDesignDependency(context:DependencyContext,relation:'DEPENDS_ON'|'REFINES'='DEPENDS_ON',targetKind?:'DOCUMENT_VERSION'):DesignDependency{return {bindingId:crypto.randomUUID(),context:structuredClone(context),relation,...(targetKind?{targetKind}:{}),fromId:'',toId:targetKind?context.documentId??'':'',reason:'',pending:null,result:null,failure:null,uncertain:false};}
 export function keepDependencyFailure(state:DesignDependency,commandId:string|undefined,error:{code:string;status:number}):DesignDependency{
  if(state.result||state.pending?.commandId!==commandId)return state;
  return {...state,failure:{code:error.code,status:error.status},uncertain:commandId?documentMutationUncertain(state.uncertain,new ApiError(error.code,error.status)):state.uncertain};
@@ -18,6 +18,7 @@ function payload(b:DependencyContext,s:DesignDependency,session:DocumentSession)
  const select=(id:string)=>{const items=b.items.filter(i=>i.id===id);if(items.length!==1)throw new ApiError('TRACE_INPUT_INVALID');const i=items[0]!;if(!uuid.test(i.id)||!same(i.documentRef,{id:b.documentId,version:b.baseVersion,contentHash:b.baseHash})||!/^line:[1-9][0-9]{0,7}$/.test(i.anchor)||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(i.localCode))throw new ApiError('TRACE_INPUT_INVALID');return {kind:'DESIGN_ITEM' as const,id:i.id,versionRef:{...i.documentRef},localCode:i.localCode,anchor:i.anchor};};
  const relation=s.relation??'DEPENDS_ON';if(!['DEPENDS_ON','REFINES'].includes(relation))throw new ApiError('TRACE_INPUT_INVALID');
  const screen=()=>{const matches=(b.screenRegions??[]).filter(i=>i.id===s.fromId);if(matches.length!==1)throw new ApiError('TRACE_INPUT_INVALID');const i=matches[0]!;select(i.designItemId);if(!uuid.test(i.id)||!uuid.test(i.documentRef.id)||!Number.isSafeInteger(i.documentRef.version)||i.documentRef.version<1||!/^[a-f0-9]{64}$/.test(i.documentRef.contentHash)||!/^line:[1-9][0-9]{0,7}$/.test(i.anchor)||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(i.screenCode))throw new ApiError('TRACE_INPUT_INVALID');return {kind:'SCREEN_REGION' as const,id:i.id,versionRef:{...i.documentRef},localCode:i.screenCode,anchor:i.anchor};};
+ if(s.targetKind!==undefined){if(s.targetKind!=='DOCUMENT_VERSION'||relation!=='REFINES'||s.toId!==b.documentId)throw new ApiError('TRACE_INPUT_INVALID');return {from:select(s.fromId),to:{kind:'DOCUMENT_VERSION' as const,id:b.documentId!,versionRef:{id:b.documentId!,version:b.baseVersion,contentHash:b.baseHash!}},relation,reason:s.reason};}
  return {from:relation==='REFINES'?screen():select(s.fromId),to:select(s.toId),relation,reason:s.reason};
 }
 export function prepareDesignDependency(b:DependencyContext,s:DesignDependency,session:DocumentSession):DocumentWrite{
