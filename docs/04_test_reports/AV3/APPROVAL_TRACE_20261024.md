@@ -36,3 +36,22 @@
 PMO에 원문 ID·시점·대상/제외 범위를 전달했다. FN12-C3에 대한 별도 직접 승인 연결이 없다면 기존 차단을 유지한다. FN06 추가 source 승인 주장도 그 자체를 새 직접 승인으로 사용하지 않는다. 신산님에게 같은 질문을 반복하거나, 이 원문을 다른 후보의 답변으로 추정하지 않는다.
 
 실제 미완료는 보완 계보 저장·후속 임무/제출 연결(FN12), 실제 Agent 연결/통제(FN06/FN08), 정식 DB·서비스 수락과 계획의 후속 기능이다. 원문 추적 정정을 그 기능들의 개발 진도로 계산하지 않는다.
+
+## 원 r2와 추가 native source A의 읽기 대조
+
+- 사용자 질문 직전 안전 commit `f322f77f`의 FN06 제안서 §6.3은 `CREATE_PROVIDER_HANDLE`/`RESOLVE_PROVIDER_HANDLE` 보호 helper를 **새 미채택 부분**으로 적었고, 구현·빌드·호출·키/credential/ACL/root 생성을 이번 설계 승인으로 실행하지 않는다고 명시했다(`035f23`). 원 r2 A~C 채택만으로 그 명시 예외가 자동 해소되는 것은 아니다.
+- 이후 `843f3d01`(2026-10-22 22:41:07+09:00)은 source-only DPAPI core/capsule codec, `bc286e58`(22:52:16)은 source-only 파일 primitive를 추가했다. 이 두 source 범위와 별도 보호 host/후속 caller 전체를 같은 범위로 합치지 않는다.
+- 현재 `ProviderHandleHost.cs`에는 CREATE/RESOLVE 분기와 ProviderHandleFiles 호출이 있고, 파일 primitive는 ProviderHandleStore를 소비한다(`c51e4e`). 이는 **정적 연결 확인**이며 이번에 컴파일·호출·복호·root/ACL/키 조작을 했다는 뜻이 아니다. source 전체의 당시 권한 적합성과 후속 실제 실행 승인은 이번 읽기 대조만으로 판정하지 않는다.
+- 이 정확한 차이를 PMO에 전달했다. 별도 직접 native-source A의 질문·답변이나 다른 정당한 위임 결정 근거가 확인되지 않은 상태에서 이 기록을 추가 구현/실행 허가로 쓰지 않는다.
+
+## 선정한 후속 구현과 필요한 결정
+
+후보는 **FN14 인계 준비 기록 저장·정확 재조회**다. 기존 조회·후보 비교를 다시 꾸미는 작업이 아니라, 보관한 준비본을 다시 열 수 없는 공백을 해결하는 구현 단위다. 그러나 다음 차이가 있어 지금 구현하지 않았다.
+
+- 기준 후보: `docs/contracts/FN14_TRANSFER_PREPARATION_RECORD_PROPOSAL.md`, raw SHA256 `834CEDB7E70EDC3F5204206C98F7237E95B37C755B6C63C70F74A2AA09DF21B6`, DRAFT/NOT_ADOPTED.
+- 기존 제공: caller 없는 preparation-analysis 계산과 기존 임무/맥락/후보의 읽기 화면이다. 실제 준비기록 저장 연산은 없다.
+- 필요한 새 계약: `createTransferPreparationRecord` 명령1, exact GET1, 준비기록2표, 새 명시 read/write 정책, 원자 영수증·감사·출처 잠금 참여다. 현재 승인된 API에 이름만 추가해 우회할 수 없다.
+- Main 권장 요청: 후보의 코드·시험·미적용 forward SQL 범위 채택 여부를 PMO의 위임 권한 안에서 판정한다. 실제 DB 적용·정책 부여·서비스·OS/Agent/비용·정식 manifest/동결/이전/재개는 제외한다. 권장 요청 자체는 채택이나 구현 지시가 아니다.
+- WORK_PLAN의 FN14 선행 FN05/FN07/FN12/FN13은 여전히 미완료다. 계약 결정과 구현 착수 선행을 구분하며, 결정이 오더라도 선행·허용 구현 범위를 다시 대조한다. 기존 FN12-C3 차단을 다른 임무로 옮겨 구현하지 않는다.
+
+지식 공유의 미등록 operation/NOT_ADOPTED 후보(FN05), 제어 전환 연산 없는 조회 화면(FN15), 실제 영속 알림 계약 없는 브라우저 지원 조회(FN17), 선행 미완료인 설치형(FN18)을 임의 새 계약으로 구현하지 않았다. 이것은 전체 독립 업무를 소진했다는 판정이 아니다. 현재 확인된 구체적 기능 공백과 필요한 결정을 분리한 기록이며 제품 진도는 0이다.
