@@ -1,0 +1,6 @@
+import {useEffect,useState} from 'react';import {ApiClient,ApiError} from '../../api/client.ts';import type {TraceRef} from './trace-api.ts';import {readTraceDocumentOriginal} from './trace-document-original.ts';
+export function TraceDocumentOriginal({client,projectId,target,onClose,onUnavailable}:{client:ApiClient;projectId:string;target:TraceRef;onClose:()=>void;onUnavailable:(error:ApiError)=>void}){
+ const[result,setResult]=useState<Awaited<ReturnType<typeof readTraceDocumentOriginal>>|null>(null);
+ useEffect(()=>{let active=true;readTraceDocumentOriginal(client,projectId,target,()=>active).then(value=>{if(active)setResult(value);}).catch(cause=>{if(active)onUnavailable(cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID'));});return()=>{active=false;};},[client,projectId,target]);
+ return <section aria-label="연결 문서 고정 원문"><button type="button" onClick={onClose}>연결 문서 원문 닫기</button><p className="meta">추적에 저장된 버전·해시의 원문입니다. 최신 문서·확정·실행 상태로 대체하지 않으며 편집·명령 전송은 없습니다.</p>{result?<><h4>{result.document.title}</h4><p className="meta">v{result.document.version} · {result.document.contentHash}</p><pre className="document-plain" aria-label="연결 문서 보관 본문">{result.body}</pre></>:<p role="status">고정 문서 원문 확인 중</p>}</section>;
+}

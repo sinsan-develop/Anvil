@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN04/UI06 추적 문서 원문 checkpoint**: 저장 trace의 문서 endpoint에서 정확 버전/hash 원문을 명시 조회·닫기/403숨김에 연결했다. unit직접/인접7·DOM1/typebuild/diff0·QA정리0, 자체 정적 검토/독립리뷰 미실시·실제DB/WSL/전체FN04/Stage/계획 미완료를 구분한다. 새 서버 의존 번들 경고 제거와 미검증은 WORK_STATUS에 기록했다.
+
 - **2026-10-25 FN04/UI06 설계 항목 원문 연결 checkpoint**: 기존 DESIGN_ITEM→DOCUMENT_VERSION/REFINES 계약의 현재 원문 고정 작성·명시 저장/같은 명령 결과 확인을 연결했다. 단위/인접11·합성DOM새1/화면인접1·typebuild/diff0, 자체 정적 검토/독립리뷰 미실시·실제DB/WSL/전체FN04/Stage/계획 미완료를 구분한다. WORK_STATUS에 RED→GREEN·정리·미검증 기록.
 
 - **2026-10-25 FN04/UI06 원문 상세화 checkpoint**: 기존 문서 REFINES 저장 소비를 고정 AF04→AF02에 연결했다. 단위5/typebuild/diff0·합성 문서DOM2/직접 업무회귀1·QA정리0. 정적 I1의 문서/업무 투영 혼동은 RED→GREEN 보완했고 실제DB/WSL·전체FN04/Stage/계획은 미완료다. 근거·오류·미검증은 WORK_STATUS에 기록한다.
