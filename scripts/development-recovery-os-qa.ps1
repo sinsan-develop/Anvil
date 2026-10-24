@@ -13,6 +13,18 @@ function Assert-DevelopmentRecoveryOsQaExecution {
  # 외부 실행 승인을 읽거나 발급하지 않는다. 실 adapter 등록/OS 검수 전에는 항상 거절한다.
  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
 }
+function Read-DevelopmentRecoveryQaSourceBinding([hashtable]$Value,[datetimeoffset]$Now) {
+ $keys=@('mode','commit','runId','issuedAt','expiresAt')
+ if(!$Value -or $Value.Count -ne 5 -or @($Value.Keys|Where-Object{$_ -cnotin $keys}).Count){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
+ foreach($key in $keys){if($Value[$key] -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}}
+ $from=[datetimeoffset]::MinValue;$until=[datetimeoffset]::MinValue
+ if($Value.mode -cne 'R1' -or $Value.commit -cnotmatch '^[a-f0-9]{40}$' -or $Value.runId -cnotmatch '^r1-[a-z0-9][a-z0-9-]{0,47}$' -or
+  ![datetimeoffset]::TryParseExact($Value.issuedAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$from) -or
+  ![datetimeoffset]::TryParseExact($Value.expiresAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$until) -or
+  $until -le $from -or ($until-$from).TotalMilliseconds -gt 1800000 -or $Now -lt $from -or $Now -ge $until){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
+ # 입력은 대상/기한 선언일 뿐 원 handle 소유권·외부 실행 승인을 증명하지 않는다.
+ return @{mode='R1';commit=$Value.commit;runId=$Value.runId;issuedAt=$from.ToString('o');expiresAt=$until.ToString('o');ownership='NOT_ACQUIRED';executionAuthorized=$false}
+}
 function New-DevelopmentRecoveryOsQaFilesystemAdapter {
  # 생성자는 메모리 객체만 만든다. 아래 실제 OS 행동 코드는 이번 승인에서 호출하지 않는다.
  $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';nativeVerified=$false;executionAuthorized=$false}

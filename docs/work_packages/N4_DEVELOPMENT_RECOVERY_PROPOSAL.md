@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- R1 전용 QaFixtureLease source 후보를 production과 분리했다. 기존 고정 base 원 부모 nofollow/owner·DACL→create-new run/marker→원 handle 목록·관측·보수적 delete/close-only 보존이며 외부 경로/owner/handle/PID 채택0이다. 입력은 R1/run/commit/30분 선언만 허용한다. 신규 정적 finding3건은 빈 부분획득 성공 금지·정확6case/7child seal·삭제 없이 닫기와 unknown latch로 보정했고 한정 재검토 C0/I0이다. 순수/기존source21/type/PS AST/diff0과 native 미컴파일/OS 미검증은 구분한다. PS mutation 연결·나머지8/실 host·OS/정리 증거가 없어 원 I1/I3 전체해결이 아니며 QaAdapterConnected=false/PS literal throw를 유지한다. native raw2A46B67A55E4F6FE12348EB5E5E64DEB7BCA21A0012938457272FEC040B45B03/OS source490DE7A0C5D6A75B7E1D10348F7E060F83F6B89B83F4326D8B871F2672E577FC. source $Now는 권위가 아니고 실행 선행이나 OS 관측 결과로 재사용하지 않는다.
+
 - 독립 source 검토 C0/I5/M1: callback OS 효과를 0으로 단정하는 projection과 동적 함수 gate는 두 반례 RED→GREEN 보정했다. 현재 actualOsCases=null/osEffects=NOT_OBSERVED이며 본문 고정 throw로 실행을 차단한다. parent 원 경로 재생성·선택 경로의 symlink 교체·DACL 무변화 검출도 source 후보에 반영했으나 실제 NOT_RUN이다. owner/run/원 handle·TOCTOU와 부분 변경 정리 I2건은 미해결, 실제 branch/API/효과 M1은 미검증이다. adapter 전체 REWORK_REQUIRED이며 이 후보를 개방하지 않는다. 기존 native는 P2/P3·NODE/TUNNEL 전용이라 R1 QA fixture/원 process/clock seam은 아직 연결되지 않았다.
 
 - OS filesystem adapter의 실제 변경 행동6종을 기존 시험 파일에 작성했다. factory는 I/O 없이 생성하고 모든 호출을 고정 미승인 오류로 차단한다. 고정 격리 root 안의 합성 대상만 기술했으며 원 handle 관측 없이 OS 거절을 guard PASS로 판정하지 않는다. 행동 본문/효과·setup/정리 NOT_RUN, 시간·프로세스·Job8종 행동/실 runner는 미구현이다. 직접18/type/PS AST/diff exit0은 source 차단/기존 모의검사 범위이고 실제 OS 증거가 아니다. source raw6F1B2DB01ACAEFA618CF0BDCA437E7128B95FBB9C5021913E6540502804A801C, 독립 source 검토 요청 중이다.

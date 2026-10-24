@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 fixture/run 원 handle 후보**: 별도 QA lease의 create-new/원 목록·같은 handle 관측·delete-by-handle/close-only 보존 경로를 source에 작성했다. 독립 C0/I3에서 신규3건을 정적 보정·한정 재검토 잔여 C0/I0, 관련21건/타입·PS 구문 PASS와 native NOT_COMPILED/NOT_OS_VERIFIED를 분리했다. exact6case/7child seal은 전체14 완료가 아니다. PS mutation 원 handle 연결·시간/원process8종·실 host/OS 검증이 남아 원 I1/I3·adapter/계획 미완료다. 실환경 변경·P1 반복0이며 Main이 같은 승인②의 다음 소스를 계속 선정한다.
+
 - **2026-10-25 OS 행동 후보 검토 보완**: 독립 C0/I5/M1 중 callback 외부효과 오판·동적 gate를 두 반례 RED→GREEN 보정하고 관련20건을 확인했다. case2종 구성은 source 보정/실제 NOT_RUN이며 owner/run/원 handle 결박·정리의 I2건은 미해결이다. OS adapter 전체 REWORK_REQUIRED를 유지하고 R1 전용 fixture/원 process factory와 원 관측을 다음 소스 작업으로 선정했다. 실제 실행·P1 재조회0.
 
 - **2026-10-25 OS fixture 행동 후보6종**: 부모 교체/링크/선택 밖 쓰기/leaf 교체/DACL의 실제 변경 코드를 기존 시험 adapter에 준비했으나 모든 호출은 실행 전 차단한다. 직접18건·타입·구문 검사는 차단과 기존 source 모의 동작의 증거이며 실제 OS 행동은 NOT_RUN이다. 안전한 setup/원 handle 관측·정리 및 나머지8종은 미구현, 독립 source 검토를 요청했고 전체 완료로 표시하지 않는다.
