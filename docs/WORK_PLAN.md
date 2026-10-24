@@ -1,5 +1,9 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 OS 행동 후보 검토 보완**: 독립 C0/I5/M1 중 callback 외부효과 오판·동적 gate를 두 반례 RED→GREEN 보정하고 관련20건을 확인했다. case2종 구성은 source 보정/실제 NOT_RUN이며 owner/run/원 handle 결박·정리의 I2건은 미해결이다. OS adapter 전체 REWORK_REQUIRED를 유지하고 R1 전용 fixture/원 process factory와 원 관측을 다음 소스 작업으로 선정했다. 실제 실행·P1 재조회0.
+
+- **2026-10-25 OS fixture 행동 후보6종**: 부모 교체/링크/선택 밖 쓰기/leaf 교체/DACL의 실제 변경 코드를 기존 시험 adapter에 준비했으나 모든 호출은 실행 전 차단한다. 직접18건·타입·구문 검사는 차단과 기존 source 모의 동작의 증거이며 실제 OS 행동은 NOT_RUN이다. 안전한 setup/원 handle 관측·정리 및 나머지8종은 미구현, 독립 source 검토를 요청했고 전체 완료로 표시하지 않는다.
+
 - **2026-10-25 복구 소스 주입 경계**: 승인② 안에서 모의 획득·단계·정리의 불변 입력/정확 상관관계·유실/만료/별칭 거절을 직접17건과 타입·문법 검사로 확인했다. 플랫폼 승인은 외부 선행이며 helper 메타데이터가 권위를 만들지 않는다. 실제 entry 차단·native 미컴파일/OS 미검증을 유지한다. P1 재실행/실환경 변경0, 실제 OS 행동/adapter·runtime 관측·독립 검토는 미완료이고 상세 증거는 WORK_STATUS에 누적했다.
 
 - **2026-10-25 OS 시험 코드 source 모의 연결**: 고정14 case의순서·중간오류/재사용·오인권위거절을source모의observer로연결해직접11/type/PS구문/diff를확인했다. 실제OS검수/권위발급은항상false이며실fixture행동/권위adapter·독립source검토가남아source전체완료가아니다. native컴파일/OS/P1재실행·실제개발환경변경0, Main은같은승인②의후속을계속한다.

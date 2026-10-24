@@ -2,6 +2,10 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 독립 source 검토 C0/I5/M1: callback OS 효과를 0으로 단정하는 projection과 동적 함수 gate는 두 반례 RED→GREEN 보정했다. 현재 actualOsCases=null/osEffects=NOT_OBSERVED이며 본문 고정 throw로 실행을 차단한다. parent 원 경로 재생성·선택 경로의 symlink 교체·DACL 무변화 검출도 source 후보에 반영했으나 실제 NOT_RUN이다. owner/run/원 handle·TOCTOU와 부분 변경 정리 I2건은 미해결, 실제 branch/API/효과 M1은 미검증이다. adapter 전체 REWORK_REQUIRED이며 이 후보를 개방하지 않는다. 기존 native는 P2/P3·NODE/TUNNEL 전용이라 R1 QA fixture/원 process/clock seam은 아직 연결되지 않았다.
+
+- OS filesystem adapter의 실제 변경 행동6종을 기존 시험 파일에 작성했다. factory는 I/O 없이 생성하고 모든 호출을 고정 미승인 오류로 차단한다. 고정 격리 root 안의 합성 대상만 기술했으며 원 handle 관측 없이 OS 거절을 guard PASS로 판정하지 않는다. 행동 본문/효과·setup/정리 NOT_RUN, 시간·프로세스·Job8종 행동/실 runner는 미구현이다. 직접18/type/PS AST/diff exit0은 source 차단/기존 모의검사 범위이고 실제 OS 증거가 아니다. source raw6F1B2DB01ACAEFA618CF0BDCA437E7128B95FBB9C5021913E6540502804A801C, 독립 source 검토 요청 중이다.
+
 - 최신 source 주입 경계는 SOURCE_SIMULATION 전용이다. 플랫폼의 개별 정확 실행 승인은 helper 밖에 있으며 commit/run/기한/hash는 권위가 아닌 대상·수명 감사 정보다. 원 응답의 정확한 상관관계로만 모의 정리를 연결하고 획득/정리 유실·만료·입력 변조를 구분한다. 직접17건/type/Node/PS AST/diff exit0(dc5485→49cf0e), entry raw246DBC425CF4041482C129AE01093B415864471F95B5605E305BD25AA560F0CD/host E81430512F55FF18911A5D1B185109AAEDC86BF19144F6316F62BDF1A32925FE/native 6E1FE7A2A337DF8FE8B2F2B04474A2850F7CD32A9D5D4ACB84E817919CF30461. ProductionAdapterConnected=false는 미등록 상태일 뿐 승인·OS 안전 인증이 아니다. 실제 entry/launcher 차단 유지, 실 fixture 행동/adapter·runtime 집합/용량·독립 검토는 미완료다. 이 검사는 실컴파일·OS 음성·R0/P2/P3 실행을 허가하거나 입증하지 않는다.
 
 - OS시험source 모의연결raw908FCA7C8BC29F2EEC63E48230EC1EEF0A807C21501C1F9884D0438B211BA591: 고정14case 순서/중간오류/재사용·오인권위거절은direct11/type/PS AST/diff로확인했다. actualOsCases0/osVerifiedfalse/executionAuthorizedfalse이며실OS행동/실권위adapter는미연결이다. 실제컴파일/OS·R0/P2P3허가를요청하거나사용하지않았다. source모의orchestration과실OS음성검수를혼동하지않는다.

@@ -15,6 +15,22 @@ function simulationFixture(){
  return{start,clock,request,events,reply,io};
 }
 
+test('실파일 변경 adapter 후보는 생성 시 I/O 없이 실제 호출 6종을 모두 실행 선행에서 차단한다',{skip:process.platform!=='win32'},()=>{
+ const command=`$tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-os-qa.ps1'),[ref]$tokens,[ref]$errors);foreach($name in @('Assert-DevelopmentRecoveryOsQaExecution','New-DevelopmentRecoveryOsQaFilesystemAdapter')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);if(!$f){throw 'FILESYSTEM_ADAPTER_MISSING'};. ([scriptblock]::Create($f.Extent.Text))};$adapter=New-DevelopmentRecoveryOsQaFilesystemAdapter;$blocked=0;foreach($case in @('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED')){try{$adapter.Mutate($case)|Out-Null;throw 'UNEXPECTED_EXECUTION'}catch{if($_.Exception.ToString() -notmatch 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'){throw};$blocked++}};@{blocked=$blocked;nativeVerified=$adapter.nativeVerified;executionAuthorized=$adapter.executionAuthorized}|ConvertTo-Json -Compress`;
+ const output=execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']});
+ assert.deepEqual(JSON.parse(output),{blocked:6,nativeVerified:false,executionAuthorized:false});
+});
+
+test('동적 gate 함수 재정의로 실제 mutation 본문에 도달하지 않는다',{skip:process.platform!=='win32'},()=>{
+ const command=`$t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-os-qa.ps1'),[ref]$t,[ref]$e);foreach($name in @('Assert-DevelopmentRecoveryOsQaExecution','New-DevelopmentRecoveryOsQaFilesystemAdapter')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);. ([scriptblock]::Create($f.Extent.Text))};$adapter=New-DevelopmentRecoveryOsQaFilesystemAdapter;function Assert-DevelopmentRecoveryOsQaExecution {throw 'FAKE_REDEFINED_GATE'};$blocked=$false;try{$adapter.Mutate('DACL_CHANGED')|Out-Null}catch{$blocked=$_.Exception.ToString().Contains('DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED')};@{blocked=$blocked}|ConvertTo-Json -Compress`;
+ assert.deepEqual(JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{blocked:true});
+});
+
+test('모의 callback의 외부 효과는 관측하지 않았으므로 실제 OS 건수를 0으로 단정하지 않는다',{skip:process.platform!=='win32'},()=>{
+ const command=`$t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-os-qa.ps1'),[ref]$t,[ref]$e);foreach($name in @('Get-DevelopmentRecoveryOsQaPlan','Invoke-DevelopmentRecoveryOsQaSourceCases')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);. ([scriptblock]::Create($f.Extent.Text))};$r=Invoke-DevelopmentRecoveryOsQaSourceCases {param($case)$id=$case.caseId;$outcome=if($id -cin @('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED')){'DENIED'}elseif($id -cin @('WINDOW_EXPIRED','CLOCK_REVERSED','PARTIAL_PIN_FAILURE')){'UNVERIFIED'}elseif($id -ceq 'CLEANUP_UNKNOWN'){'PRESERVED_UNCONFIRMED'}else{'OBSERVATION_REQUIRED'};@{caseId=$id;outcome=$outcome;kind='SOURCE_SIMULATION';nativeVerified=$false}};@{unknown=($null -eq $r.actualOsCases);effects=$r.osEffects}|ConvertTo-Json -Compress`;
+ assert.deepEqual(JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{unknown:true,effects:'NOT_OBSERVED'});
+});
+
 test('복구 entry는 현재 OS 미검증 상태에서 main·timer를 실행하지 않는다',async()=>{
  const path='../../../scripts/development-recovery-entry.ts';
  assert.ok(existsSync(new URL(path,import.meta.url)),'복구 entry 준비 소스 부재');
