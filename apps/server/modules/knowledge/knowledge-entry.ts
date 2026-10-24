@@ -1,10 +1,14 @@
 import {AuthFailure} from '../access/repository.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson} from '../../../../contracts/canonical.ts';
+import type {VersionRef} from '../../../../contracts/generated-types.ts';
 
 export interface TextArtifactRef{artifactId:string;bytes:number;contentHash:string;mediaType:string}
 export type SourceRef={kind:'ARTIFACT'|'CONVERSATION'|'USER_INSTRUCTION';id:string;contentHash:string}|{kind:'DOCUMENT_VERSION';id:string;version:number;contentHash:string};
-export interface KnowledgeEntry{kind:'PURPOSE'|'CONSTITUTION'|'DECISION'|'FACT'|'HYPOTHESIS'|'FAILURE_SOLUTION'|'CAUTION';title:string;contentRef:TextArtifactRef;sourceRefs:SourceRef[];reason:string;scope:{projectId:string;stageRefs:never[];taskRefs:never[]};relatedRefs:never[]}
+export interface KnowledgeStageRef{applicationRef:VersionRef;nodeId:string}
+export interface KnowledgeTaskRef{planRef:VersionRef;taskCode:string}
+export interface KnowledgeScope{projectId:string;stageRefs:KnowledgeStageRef[];taskRefs:KnowledgeTaskRef[]}
+export interface KnowledgeEntry{kind:'PURPOSE'|'CONSTITUTION'|'DECISION'|'FACT'|'HYPOTHESIS'|'FAILURE_SOLUTION'|'CAUTION';title:string;contentRef:TextArtifactRef;sourceRefs:SourceRef[];reason:string;scope:KnowledgeScope;relatedRefs:never[]}
 export function exact(value:unknown,keys:string[]):value is Record<string,unknown>{return!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===[...keys].sort().join(',');}
 export function uuid(value:unknown):value is string{return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);}
 export function textArtifact(value:unknown):value is TextArtifactRef{return exact(value,['artifactId','bytes','contentHash','mediaType'])&&uuid(value.artifactId)&&Number.isSafeInteger(value.bytes)&&Number(value.bytes)>=0&&Number(value.bytes)<=2*1024*1024&&typeof value.contentHash==='string'&&/^[0-9a-f]{64}$/.test(value.contentHash)&&['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(String(value.mediaType));}
@@ -14,7 +18,15 @@ export function assertKnowledgeTextSafe(text:string){
 }
 export function readKnowledgeEntry(value:unknown,pid:string):KnowledgeEntry{
   if(!exact(value,['kind','title','contentRef','sourceRefs','reason','scope','relatedRefs'])||!['PURPOSE','CONSTITUTION','DECISION','FACT','HYPOTHESIS','FAILURE_SOLUTION','CAUTION'].includes(String(value.kind))||typeof value.title!=='string'||!value.title.trim()||value.title.length>200||typeof value.reason!=='string'||!value.reason.trim()||value.reason.length>20000||!textArtifact(value.contentRef)||!Array.isArray(value.sourceRefs)||value.sourceRefs.length>200||!exact(value.scope,['projectId','stageRefs','taskRefs'])||value.scope.projectId!==pid||!Array.isArray(value.scope.stageRefs)||!Array.isArray(value.scope.taskRefs)||!Array.isArray(value.relatedRefs))throw new AuthFailure('KNOWLEDGE_INPUT_INVALID',422);
-  if(value.scope.stageRefs.length||value.scope.taskRefs.length||value.relatedRefs.length)throw new AuthFailure('KNOWLEDGE_REFERENCE_NOT_READY',412);
+  if(value.relatedRefs.length)throw new AuthFailure('KNOWLEDGE_REFERENCE_NOT_READY',412);
+  const scope=value.scope as {projectId:string;stageRefs:unknown[];taskRefs:unknown[]};
+  if(scope.stageRefs.length+scope.taskRefs.length>200||['PURPOSE','CONSTITUTION'].includes(String(value.kind))&&(scope.stageRefs.length||scope.taskRefs.length))throw new AuthFailure('KNOWLEDGE_SCOPE_INVALID',422);
+  const scopeKeys=new Set<string>();
+  for(const [kind,refs] of [['STAGE',scope.stageRefs],['TASK',scope.taskRefs]] as const){for(const ref of refs){
+    const stage=kind==='STAGE',key=stage?'applicationRef':'planRef',label=stage?'nodeId':'taskCode';
+    if(!exact(ref,[key,label])||!isVersionRef(ref[key])||typeof ref[label]!=='string'||!ref[label].trim()||ref[label].length>200||!ref[label].isWellFormed())throw new AuthFailure('KNOWLEDGE_SCOPE_INVALID',422);
+    const fingerprint=kind+canonicalJson(ref);if(scopeKeys.has(fingerprint))throw new AuthFailure('KNOWLEDGE_SCOPE_DUPLICATED',422);scopeKeys.add(fingerprint);
+  }}
   const seen=new Set<string>();for(const r of value.sourceRefs){
     if(!r||typeof r!=='object'||Array.isArray(r))throw new AuthFailure('KNOWLEDGE_SOURCE_INVALID',422);
     if(!(['ARTIFACT','CONVERSATION','USER_INSTRUCTION'].includes(r.kind)&&exact(r,['kind','id','contentHash'])&&uuid(r.id)&&typeof r.contentHash==='string'&&/^[0-9a-f]{64}$/.test(r.contentHash)||r.kind==='DOCUMENT_VERSION'&&exact(r,['kind','id','version','contentHash'])&&isVersionRef({id:r.id,version:r.version,contentHash:r.contentHash})))throw new AuthFailure('KNOWLEDGE_SOURCE_INVALID',422);

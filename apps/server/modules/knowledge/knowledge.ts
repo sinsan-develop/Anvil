@@ -12,11 +12,14 @@ import{knowledgeState,assertKnowledgeHistory}from'./knowledge-state.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 import{knowledgeReviewCriteria,knowledgeReviews,writeKnowledgeReview,acceptedKnowledgeReviews}from'./knowledge-reviews.ts';
 import{currentConstitutionRecord}from'./constitution-records.ts';
+import {verifyKnowledgeScope} from './knowledge-scope.ts';
+import {ProjectWorkPlans} from '../traceability/work-plans.ts';
 
 export class ProjectKnowledge{
   #documents:ProjectDocuments;
   constructor(documents:ProjectDocuments){this.#documents=documents;}
   async #verify(db:PoolClient,actor:AuthenticatedIdentity,pid:string,entry:KnowledgeEntry){
+    await verifyKnowledgeScope(db,pid,entry.scope,ref=>new ProjectWorkPlans(this.#documents).read(db,actor,pid,ref.id,ref.version));
     const body=await this.#documents.originalText(db,pid,entry.contentRef);
     assertKnowledgeTextSafe(entry.title);assertKnowledgeTextSafe(entry.reason);assertKnowledgeTextSafe(body);
     for(const r of entry.sourceRefs){

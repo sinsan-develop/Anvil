@@ -1,5 +1,14 @@
 # Anvil 재설계 개발환경
 
+- 2026-10-25 보충: CurrentUser Root의 기존지문 Matches0은 해당 실행문맥의 읽기 결과만 의미한다. sandbox/실사용자 차이를 확인하지 않았으므로 호스트 신뢰 삭제·실사용자 신뢰 부재로 단정하지 않는다. FN05 관련성 시험의 등록 QA 두 경로는 각각 exact 정리·독립부재 확인했고 실제 DB/서비스/인증서·신뢰 변경은 없다.
+
+## 2026-10-25 02:39 KST 실제 사용 선행 재확인 — 서비스 중지·개발 인증서 만료
+
+- 기존 fullID PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba / API8bd8af7bfed0f98e02c0248f21dba62736c63dcd0ce8e7fdca2aa01f2726fc2c / Web677a9ceb499e92a728560e882942edfcb80a7a30aedec69d69ae25567c008a0c 모두 exited. image·StartedAt은 기존10/22 metadata와 같고 시작/중지명령0이다. Windows3830/5546 LISTEN0, WSL Gitff0fcd13695ae0affa2fd773dc96667e1d7c88f8 tracked clean을 새 읽기 확인했다. DB본문/현재schema는 조회하지 않았다.
+- 공개파일의 기존 CA thumbprint498348218A4015B341A90B10FF4FE176987D4424는2026-10-22T18:29:02Z(10/23 03:29:02KST), leaf047CD961EB4B376350A1119C46185FB6D8721F14는18:29:01Z 만료다. 개인키/Secret·현재사용자/LocalMachine신뢰 변경0. TLS우회/옛허가 재사용/자동갱신0, 정확 신규개발CA/leaf·CurrentUser신뢰 갱신 결정은 PMO에 요청했다.
+- 증거2909e9/d1bf14/940774는 현재 읽기 관측이며 서비스복구·인증/스키마·사용가능PASS가 아니다. 서비스/정식DB의 기존 특정거절과 소진 단발 범위는 유지한다.
+
+
 ## 2026-10-22 09:02 KST 정식 서비스 제한 metadata — 실제 사용 선행 미충족
 
 - 새 SSH 읽기1회에서 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f/StartedAt2026-10-20T11:21:54.792276193Z, API8bd8af7bfed0f98e02c0248f21dba62736c63dcd0ce8e7fdca2aa01f2726fc2c/image sha256:6c5edefa5fc3d4038e51aa7140b4b53a9294414875af73f9d9bcd5e3aa54ac17/StartedAt2026-10-14T12:39:20.431439158Z, Web677a9ceb499e92a728560e882942edfcb80a7a30aedec69d69ae25567c008a0c/image sha256:949aaeabd0daf44caa9341b1b2c8ddfb8409e4c2b3a8e1da0aeb3784bd0627fc/StartedAt2026-10-14T12:39:21.758759563Z 모두 exited다. fullID/image/StartedAt은 앞선 관측과 같다.
