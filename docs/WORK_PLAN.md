@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN04/UI06 업무 의존 저장 checkpoint**: 기존같은고정계획의고유업무간DEPENDS_ON 추적저장/이유/동일명령확인을연결했다. 실제선행배열/실행권한은불변, 원IMPLEMENTS호환유지. 독립I1상위진입차단은DOM RED→보정후신규/인접DOM2·unit8/typebuild/diff0이며실제DB·원서버·사용자인수/전체FN04/Stage미완료는유지한다. 증거와미검증은WORK_STATUS에기록했다.
+
 - **2026-10-25 FN04/UI06 화면 상세화 저장 checkpoint**: 기존고정설계index의SCREEN_REGION→DESIGN_ITEM/REFINES 명시저장·유실동일명령확인·같은edge정/역조회를연결했다. 신규단위/DOM RED→직접인접9·합성DOM1/typebuild/diff0,독립M1접근성이름은실패재현후보정했다. 실제DB/WSL·사용자인수/전체FN04/Stage미완료는유지하며새API/SQL/권한/실환경0이다. 상세증거/오류/정확자원정리는WORK_STATUS를따른다.
 
 - **2026-10-25 FN04/UI06 설계 의존 관계 저장 checkpoint**: 기존동일설계index의DESIGN_ITEM DEPENDS_ON 명시저장·동일명령복구·기존양방향조회진입을연결했다. 준비경쟁/늦은실패를보정하여직접인접8·합성DOM4/typebuild/diff0·한정독립C0/I0/M0, QA정확정리0이다. 새API/SQL/정책/실DB/서비스/Agent0이며실제DB·서버수락/사용자인수·전체FN04/Stage완료는아니다. 원RED/오류/검토·미검증은WORK_STATUS에보존한다.
