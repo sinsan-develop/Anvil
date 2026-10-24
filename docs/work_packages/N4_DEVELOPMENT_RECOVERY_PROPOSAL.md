@@ -49,6 +49,24 @@ PG running 이후의 별도 읽기 결정이다. 기존 `scripts/development-sch
 - 최소 launcher delta는 승인된 새 TLS·신규 runtime의 고정 binding과 strict HTTPS probe의 같은 CA 참조다. 현재3830/5546 부재 조건에서 기본 launcher의 **본 run 소유 SSH loopback 터널+Node** 흐름을 재사용할 수 있는지 guard 검수 후 확정한다. 기존 auth.json/db-app.json 참조·origin/계정/권한/Secret은 변경하지 않는다.
 - 후보 build는 exact source/lock/Node로 새 검증 후 index/JS/CSS hash와 Node/소유 PID·시각·3830 receipt를 실제 기록한다. 과거 ignored dist나 source-only build PASS를 실행 증거로 쓰지 않는다. 실제 기동 전 code/구문·보호/복구 검수와 명령·자원 범위 승인이 필요하다. 아직 source/경로 생성·새 build/기동0이다.
 
+### P2/P3 보호 선행 exact 차이 — 2026-10-25 읽기 대조 / 새 계약 미채택
+
+**현재 사실(71a262/6864e4, 조회 exit0):** 경로 D:\ → D:\Project → D:\Project\Anvil → .av3-data는 directory/reparse=false였다. 앞 세 경로에는 Authenticated Users 등의 Modify 또는 다른 주체의 변경 ACE가 있고, .av3-data는 SINSAN\cyhuh 소유·상속 차단·현재 사용자/SYSTEM FullControl(자식 상속 포함)이다. 두 신규 child는 부재다. 이는 ACL·이름 snapshot일 뿐 handle/file-ID 결박·사용 중 안전 증거가 아니다. 기존 ACL을 수정할 필요가 있다고 단정하지 않는다.
+
+| 필요한 조건 | 기존 primitive / 재사용 판정 | 정확한 추가 차이 |
+|---|---|---|
+| 신규 child 생성 전 drive부터 .av3-data까지 같은 실체 고정 | ProviderHandleFiles.cs:58~78의 PinnedRoot는 ancestor handles에 FILE_SHARE_DELETE를 주지 않고 identity/final path를 대조한다. 그러나 provider-handles-v1 고정 root·현재 사용자만 허용(기존 SYSTEM ACE도 거절)·연산 한 번 수명으로 **직접 호출/권한 완화 재사용 불가** | 기존 계약 변경 대신 개발 복구 전용 고정 root와 수명의 별도 guard 계약 필요. 각 구성요소를 no-follow로 열고 volume/file-ID/final-path·reparse/종류·현재 parent handle과 자식의 결박을 검증하며, 실패/부분 획득은 역순 close. 단순 문자열 Contains/전체경로 재검사로 대체 불가 |
+| parent-relative 열기와 동일 실체 재검사 | SourceReadObserver.cs:46~70의 Relative/NtCreateFile·GetFinalPathName/ID 패턴은 참고 가능. 하지만 Observe:79는 30초·200대상 상한이며 :109에서 모두 dispose한다. ACL 보장·새 child 생성·서비스 수명 보장은 없음 | 새 child 생성 전 부재를 pinned parent 기준으로 확인하고 새 child를 create-new로만 만들되 기존 current-user/SYSTEM 보호 상속 또는 생성 시 동일 제한 DACL을 **실제 대조**해야 한다. 기존 leaf/상위 ACL 수리·기존 파일 교체·오류를 부재로 간주0 |
+| 원문/key/config의 read와 source/build 무결성 | ProtectedStore.cs:84 및 transition-ui11-development.ps1:30의 ancestor reparse/hash 검사는 순간 pathname 검사다. PinnedRoot의 file exclusive-open/identity 패턴은 provider 파일 전용이다 | 필요한 파일을 same-handle로 읽고 링크 수·ID·최종경로·권한·정확 manifest/hash를 검사한다. 새 TLS/명시 source/build 경로만 대상이며 기존 Secret 읽기는 승인된 런처의 필요 참조로만 별도 허가. Secret 본문/키 hash 보고0. source와 node_modules의 실제 사용 집합·추가 파일 주입 통제는 아직 규정되지 않았으므로 고정 source hash만으로 실행 승인 불가 |
+| 보호 수명 | 기존 start-development는 ready receipt 이후 반환한다. using/finally에서 handle을 닫는 단순 함수 삽입으로는 Node가 남은 동안 경로를 보호하지 못함 | P2 생성·발급·trust 확인 전 구간과 P3 exact Node/자기 소유 tunnel의 전체 수명을 각각 덮는 guardian 소유권/종료 계약 필요. 부모 guard 유실 시 자식이 안전하게 종료되는지/정상 종료 순서·권한·관측을 검수해야 하며 부모 생존 polling만으로 안전을 주장하지 않음 |
+| 권한과 실패 | ProviderHandleFiles는 provider credential/DPAPI 계약, SourceReadObserver는 별도 source-read 허가 계약으로 실제 복구 실행기를 대신하지 않음 | 새 개발 guard의 호출 권한·exact commit/hash·시각/수명·대상·잔여0 계약과 OS 부정 시험이 추가 결정 대상. 기존 helper/호스트 등록·서명/credential·옛 컴파일 허가 재사용0 |
+
+**최소 추가 source 후보(작성/컴파일/호출0):** 개발 전용 `scripts/development-recovery-path-guard.cs` 1개와 기존 prepare/start/probe의 명시 adapter 연결, 해당 파일의 handle identity/수명/부분 실패 순수 시험 및 별도 허가된 OS 음성 QA. provider root/ACL 또는 기존 source-read 30초 상한을 바꾸는 공통화는 하지 않는다. 실제 컴파일 도구·assembly/output·호출 host·source 파일 전체 목록/한도·guardian 기간/종료 방식은 아직 exact 결정되지 않았으므로 지금 실행 명령이나 포괄 native 권한을 요청하지 않는다. 현재 source-only RecoveryTls 차단은 유지한다.
+
+**실행/정리/복귀를 결정할 최소 범위:** 기존 D:\~.av3-data는 권한/내용 변경 없이 guard-only; 신규 dev-tls-20261025-01 및 n4-recovery-01의 지정 source/runtime만 create-new·소유 기록, 임의 경로 없음. P2 끝나면 해당 생성 guard를 닫고, P3는 자기 소유 Node/tunnel 종료가 확인된 뒤 역순 close한다. handle이 D:\ 또는 Project의 정상 rename/delete를 막을 수 있고, guardian 유실·정상 종료 지연은 서비스 영향이므로 실제 검수 전 무중단/안전 보장0. 실패 시 새 source/build를 현재본으로 승격하지 않고 소유 process/새 child만 정확 수습한다. 새 trust의 rollback은 새 CA thumbprint1 회수만, 기존 cert/root/key·DB·다른 process/상위 ACL 보존. 종료·소유가 불명하면 삭제/강제 kill0으로 남겨 보고한다.
+
+**PMO에 필요한 결정:** 위 개발 전용 guard/guardian의 신규 source·수명/종료·OS 검증 계약을 별도로 구체화·채택할지, 아니면 현재 fail-closed 보존할지다. 기존 N4 PATH_GUARD 거절 해제·실행 승인으로 간주하지 않는다. 읽기 요청인 이번 단계에서는 새 native source/컴파일/handle·child·ACL·TLS/trust/서비스0이며 기존 불변 시험도 반복하지 않았다.
+
 ### P4 — 46→53 schema 적용은 기동과 별도
 
 기존 adoption plan이 현재 source에서 산출한 순서는 0012_assignment_drafts→0013_assignment_confirmation→0014_context_preparation→0015_project_baselines→0016_execution_preparation→0017_execution_authority→0031_empty_project_methodology_application이다. 저장 관측46 manifest hash da9a9e45107a822d2c56fff2f54878be6ba6dab6ff0f44dec58212c6eb8d7091, target53 hash 9b8962f66829d90fc8eb08cc918773566c94cd2ba62ae0bfed7e86549db6e4e1. 각 SQL checksum/중간 hash는 기존 --plan 결과로 재현한다.
