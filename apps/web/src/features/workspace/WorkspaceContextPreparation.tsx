@@ -7,6 +7,7 @@ import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import { ContextKnowledgeOriginal } from './ContextKnowledgeOriginal.tsx';
 import { ContextSourcePicker } from './ContextSourcePicker.tsx';
 import { ContextDeliveryLimits, contextDeliveryLimitsValid } from './ContextDeliveryLimits.tsx';
+import { ContextDeliveryParts } from './ContextDeliveryParts.tsx';
 import { newContextPreparation, prepareContextWrite, sendContextPreparation, readContextPreparation, listContextPreparations, type ContextPreparationBuffer } from './context-api.ts';
 import { contextObservation } from './context-observation.ts';
 import { reuseContextPreparationInput } from './context-reuse.ts';
@@ -82,6 +83,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
    {buffer.pending && buffer.failure && !buffer.uncertain ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 보존한 입력을 수정할까요?')) update(current => ({ ...current, pending: null, failure: null })); }}>거절 확인 후 입력 수정</button> : null}
   </> : <p>확정 임무의 준비 입력은 아직 없습니다.</p>}
   {opened && bound && sameTarget ? <section aria-label="저장 맥락 metadata"><p>이번 조회 원문 대조: {opened.currentCheck.state} · {opened.observedAt} · 실행 준비 판정 아님</p><p>필수 누락: {opened.manifest.missingRequired.join(', ') || '당시 metadata상 없음 · 의미/예산 미검증'}</p><ul>{opened.manifest.items.map(item => <li key={item.itemId}>{labels[item.category as keyof typeof labels]} · 당시 {item.includedState} · {item.reason}{item.includedState==='INCLUDED'&&opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?<button type="button" disabled={busy} onClick={()=>setOriginal(o=>({itemId:item.itemId,contextId:opened.ref.id,kind:opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)!.selection!.kind,nonce:(o?.nonce??0)+1}))}>선택 {opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?.kind==='KNOWLEDGE_VERSION'?'지식':opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?.kind==='DOCUMENT_VERSION'?'문서':'지시'} 원문 보기: {item.itemId}</button>:null}</li>)}</ul><p>계획 부분 {opened.manifest.deliveryPlan.parts.length}개 · 실제 전달0</p><ul>{opened.manifest.unverified.map(issue => <li key={issue}>{issue}</li>)}</ul>
+   <ContextDeliveryParts parts={opened.manifest.deliveryPlan.parts} />
    {original?.contextId===opened.ref.id?<ContextKnowledgeOriginal key={opened.ref.contentHash+':'+original.nonce} client={client} projectId={confirmed.projectId} contextRef={opened.ref} assignmentRef={confirmed.ref} itemId={original.itemId} kind={original.kind} onClose={()=>setOriginal(null)} onFailure={error=>run(async()=>{throw error;})}/>:null}
    <button disabled={busy||!owner||!!buffer?.pending||!!buffer?.uncertain} onClick={()=>run(()=>reuse(opened.ref))}>이 후보의 선택·한도로 새 입력</button><p className="meta">원 저장본은 유지하며 새 준비 이유를 입력해 별도로 저장합니다. 현재 원문 효력·예산·실행 준비가 확인되는 것은 아닙니다.</p>
   </section> : null}
