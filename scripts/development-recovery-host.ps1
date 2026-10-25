@@ -44,7 +44,8 @@ function Complete-DevelopmentRecoveryR0DiagnosticLine([hashtable]$State,[string]
  if($s.lineOversize){$s.oversizeLines++}
  $text=[Text.Encoding]::ASCII.GetString($s.lineBuffer,0,$s.lineLength)
  # 원문·파일명·임의 exception 본문을 저장하지 않고 고정 ID와 줄번호만 추출한다.
- $id=[regex]::Match($text,'\b(?:error|warning)\s+(CS[0-9]{4,5})\b',[Text.RegularExpressions.RegexOptions]::CultureInvariant)
+ # 지역화된 오류/경고 단어 대신 고정 CS ID와 뒤의 진단 구분자만 대조한다.
+ $id=[regex]::Match($text,'\b(CS[0-9]{4,5})\b(?=\s*:)',[Text.RegularExpressions.RegexOptions]::CultureInvariant)
  if($id.Success){
   $lineMatch=[regex]::Match($text,'\(([0-9]{1,9})(?:,[0-9]{1,9})?\)',[Text.RegularExpressions.RegexOptions]::CultureInvariant)
   $line=$null;if($lineMatch.Success){$line=[int]$lineMatch.Groups[1].Value}
