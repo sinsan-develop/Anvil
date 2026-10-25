@@ -21,7 +21,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
       <p>{item.purpose}</p><p className="meta">버전 {item.version} · 원본 정의 변경 {new Date(item.updatedAt).toLocaleString('ko-KR')} · 최근 실행 시각 아님</p>
       <p className="meta">목록 항목 관측: <time dateTime={snapshot.itemObservedAt[item.id]}>{new Date(snapshot.itemObservedAt[item.id]!).toLocaleString('ko-KR')}</time> · 관측 뒤 상태·권한 변경 가능</p>
       <p className="meta">현재 실행 단계·다음 행동: 미확인 · 조회 응답에 없음</p>
-      {!locked?<a href={routeHref('approvals',item.id)} aria-label={item.name+' 승인 요청 보기'}>승인 요청 화면 열기 · 건수는 별도 조회</a>:null}
+      {!locked?<><a href={routeHref('approvals',item.id)} aria-label={item.name+' 승인 요청 보기'}>승인 요청 화면 열기 · 건수는 별도 조회</a>{' · '}<a href={routeHref('control',item.id)} aria-label={item.name+' 작업 권한 인계 화면 열기'}>작업 권한 인계 화면 열기</a></>:null}
       <ProjectAccessSummary key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectPendingApprovals key={'decisions:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectAssignmentDrafts key={'drafts:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>

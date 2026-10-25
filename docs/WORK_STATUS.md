@@ -1,4 +1,30 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI01 한정 소스 검수 종료
+
+- 독립 ui01_control_entry_review는 SPEC/QUALITY PASS, C0/I0/M0로 판정했다. 기존 잠금 아래 정확 프로젝트 링크만 추가했으며 인계 필요/권한 획득을 합성하지 않는다. patch hash를 다시 대조했고 실제 클릭/DB 증거로 승격하지 않았다.
+- 소유 checkpoint는 ProjectsPage·project-list-results 시험·WORK_PLAN·WORK_STATUS 4경로만 포함한다. 보호 untracked 8개는 계속 제외한다. UI01/FN15 전체 완료·served 사용·인수 가능은 아직 아니다.
+### 2026-10-26 UI01 인계 진입 연결 — 집중 검증
+
+- 단일 writer ui01_control_entry의 TESTONLY 4DCA2308을 적용해 Main153588 신규1건 RED(링크 없음, 0PASS/1FAIL·1478.2489ms/skip0)를 확인한 뒤 제품3C632130을 통합했다. 변경은 ProjectsPage 기존 !locked 안의 프로젝트별 control 링크와 기존 목록 시험의 긍정1/기존 차단식 강화뿐이다. 실제 수락·제어 이전·API/권한 변경은 없다.
+- Main beebae 목록/route/인계화면 17/17PASS·747.124ms/skip0, type exit0이다. 마지막 diff check는 Main이 새 현황 prefix에 CR을 중복 삽입한 문제로 exit1이었다. 소유 신규 두 블록의 줄바꿈만 정정한27881e에서 diff check exit0을 확인했다. 제품 결함이나 시험 실패로 바꾸지 않고 기록 오류1로 보존한다.
+- Main efa829 Web build exit0·429 modules/666ms. 기존 chunk 500kB 경고는 유지했고 임계값 변경·임의 최적화는 하지 않았다. 작성자 detector []/exit0. 독립 ui01_control_entry_review 검수 중이며 실제 브라우저 클릭/DOM/served·로그인/DB·인수 사용은 미검증이다.
+- FN15 후보 독립검수 C0/I1/M0: caller가 반환한 고정 실패 code가 Python 결과/최종 실패에서 유실된다. 같은 원 작성자에게 round1/5로 정확 허용목록·handlerCode 보존만 배정했다. 원 예외/SQL/비밀 출력·실제 실행0을 유지한다.
+### 2026-10-26 FN15 실행 후보 동결·UI01 독립 동선 착수
+
+- candidate.sh B8DCF4CF32ABE3B8FC198F496FE78EE434837BF5B6629B1215D940834805F709 / manifest.json 2771BB78FE593B8828740FC5BB66B751DE21D14DF047BD994D851EFC27BCD7F3를 Main 82a33e에서 재대조했다. 작성자 로컬 Python AST·내장 Node caller 구문 검사는 통과했지만 실제 Bash/원격/PG·정리 결과는 미검증이다. 작성자는 종료했고 독립 읽기 검수 fn15_execution_candidate_review에 넘겼다.
+- 다음 기능 선정: 읽기 조사와 Main 3e7e67은 SCREEN_WORK UI01의 인수→S12 요구와 ProjectsPage의 진입 링크 누락을 확인했다. 기존 control route·ControlAccessPage를 소비하므로 새 API/DB/권한 계약 없이 진행 가능하다. ui01_control_entry 단일 writer에게 현재 목록일 때만 각 프로젝트의 인계 화면 링크를 연결하도록 배정했다. 오래된 목록·pending·오류·다른 client/접근거절 차단을 유지하고 인수 허가/제어 이전으로 표시하지 않는다.
+- 소유 변경 예정은 ProjectsPage 1개와 기존 project-list-results 시험 1개다. Main RED 선행 후 제품 patch를 통합·집중 검증한다. 기존 통과 검증은 반복하지 않으며 실제 served/로그인·인수는 계속 미검증이다.
+### 2026-10-26 FN15 실행 후보 인수 재개
+
+- 현재 live agent 조회에서 이전 실행 후보 작성 handle은 없었다. 따라서 중복 실행 대신 fn15_execution_candidate_recovery 단일 writer가 기존 candidate.sh 초안을 인수했다. 실제 원격 실행·PG·역할·SQL·자원 생성은 하지 않는다.
+- 실제 Git 2e4864: HEAD 918712e5, codex/av3-stage-b 유지. tracked 변경은 기존 WORK_STATUS 1개이며 보호 untracked 8개를 보존했다. sandbox status의 not-worktree 오류는 읽기 전용 elevated 상태 조회로 구분했고 ACL·Git 설정 변경은 없다. 다른 기존 worktree는 목록만 확인하고 수정·정리하지 않았다.
+- Main은 완성 후보의 정확 hash/argv, 신규 자원 식별, 보호 입력, 실패·신호·부분 생성 정리를 독립 검수한다. 이전 검증은 코드 불변으로 반복하지 않는다. 실제 실행은 고정 후보에 대한 PMO/플랫폼 판단 후 진행하며 제품 사용·전체 계획 완료는 아직 미검증이다.
+### 2026-10-26 FN15 정확 실행 후보 작성
+
+- 게시: bounded source6경로918712e5c8407a7e8eb40fd078979500d36c42a6는 a8e555 일반push 후 local/development exact·main f976ed5e 불변·trackedclean/보호8이었다. 실제PG/자원/역할/SQL실행은여전히0이다.
+- 담당: 같은 fn15_qa_pg_handler에제품소스추가수정없이 `.av3-data/fn15-pg-execution-candidate/`의실행후보shell/manifest artifact만작성하도록배정했다. 이는Main검수·PMO/플랫폼의최종exact실행범위대조를위한자료이며실행허가가아니다. writer의SSH/WSL/프로세스/컨테이너·Secret/role/SQL실행0을유지한다.
+- 고정후보: 새 literal root/container/internalnetwork와30분수명·tmpfs512MiB/hostpublish0/volume0/pull0, image594290e9/RepoDigest6eb0add3/daemon e3349f1d, source918712e5·NativeNode24.22.1와같은lockfile/deps읽기만을사용한다. bootstrap시작부터성공/실패trap·실fullID/ownerlabel/instance/source/expiry/mount/network/port대조·공유depslink자체해제·전용root경계/owner/process확인·독립잔여확인을후보에포함한다. 불일치대상삭제·정식DB/서비스·OShelper·Agent/운영변경0이다.
+- 다음: 고정artifact hash/명령/비밀없는marker·실패/정리계약을독립읽기검수하고PMO에정확실행delta를전달한다. 일부source guard합성PASS를실제SQL/저장·UI사용/전계획완료로바꾸지않는다.
 ### 2026-10-26 bounded PG handler — 한정 소스 검수
 
 - Round1보완: DF8564FC는launch/qa 두제품을보정했다. 정확metadata11열·기본namespace4/extensionplpgsql만·public class/function/type0·고정role0을쓰기전대조한다. admin준비Tx의실행별randomnonce+instance/sourceSHA를기존QAfixture에기록하고runtime이정확조회한뒤에만app/source를생성한다. fixtureSELECT만추가한후보grant와rolePlan이일치하며새schema/제품계약은없다.
