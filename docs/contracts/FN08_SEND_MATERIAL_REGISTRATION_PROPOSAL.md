@@ -42,3 +42,25 @@ P1 §6.2의 실제 원문 제외는 유지한다. 연결을 별도 결정받은 
 - 기존 connector GET/응답은 유지하는 안이다. 실제 migration/대상 DB·권한·보존/rollback, 실제 원문 읽기 시험/서비스 연결과 실제 Agent 전달은 각각 정확 실행 범위가 정해진 뒤 수행한다.
 
 검토 요청 대상은 위 저장 결박 계약 및 허용 source 종류다. 현재 source-only 구현을 이 결정 대기로 멈추지 않으며, 이 문서 존재를 schema/API/실제 원문 연결 승인으로 취급하지 않는다.
+
+## 5. 실제 키·transaction 대조 — 저장계약 채택 전 검토
+
+2026-10-25 읽기 대조 결과이며 SQL/DB 적용 증거가 아니다. 제안 표의 FK에는 다음 기존 키만 사용할 수 있다.
+
+| 참조 대상 | 기존 키 | 후보 적용 |
+|---|---|---|
+| executions | project_id/id/generation | 실행 세대3열 FK |
+| execution_grants | project_id/id/version/execution_id/generation UNIQUE | grant와 실행 세대5열 FK |
+| commands | id PK, project_id/id UNIQUE | created_command_id의 내부 명령 행 |
+| execution_commands | project_id/id/version PK | command_record_id/version3열 FK |
+| execution_receipts | project_id/id/version PK | proof_result_id/version3열 FK |
+| execution_challenges | project_id/id/version PK | receipt가 참조하는 challenge v1 및 후속 consumption v2 |
+
+- envelope의 commandId는 commands.command_id이며 내부 id와 다르다. commands의 실제 중복 키는 scope_kind/scope_id/actor_id/operation/command_id이므로 project_id/command_id FK를 만들 수 없다.
+- execution_commands의 실행/grant 결합 UNIQUE와 execution_receipts의 grant 결합 UNIQUE는 현재 없다. 기존 FK를 각각 사용하고 새 guard가 같은 행의 실행/grant/명령 및 full-ref hash를 조인 대조하는 최소안을 권장한다. 부모 표 UNIQUE를 새로 추가하는 안은 별도 제약 변경 후보이며 기존 제약으로 가장하지 않는다.
+- ProjectInstructionQueue.command의 같은 authenticated transaction에서 현재 권한/기한·replay·중지/IDLE·예약을 확인한다. persistProjectReceipt가 내부 commands/허가/감사를 저장한 뒤 발급 receipt로 envelope hash를 계산하고 기존 store가 예약/명령/outbox를 저장한다. descriptor는 이전에 메모리로만 계산하며 manifest/material의 저장도 이 동일 PoolClient 안에서 수행한다. COMMIT 시 deferred complete guard가 명령·예약·outbox·부분목록·등록 전체 결박을 검사해야 한다.
+- material transaction은 기존 challenge transaction을 공유한다. proof receipt INSERT → material 검증/results.bind → challenge consumption v2 INSERT → 결박/현재성/bytes 재검사 → COMMIT 순서다. 따라서 material proof의 역방향 완전성은 DEFERRABLE INITIALLY DEFERRED여야 한다. 소비 결과마다 binding 정확1개·receipt/challenge/grant/target/material 일치와 다른 material 재사용 거절을 검사하며, 이미 소비됐는데 binding이 없는 자료를 사후 생성하지 않는다.
+- 기존0018의 challenge/receipt 완전성과0024 permit guard는 새 material binding 완전성을 대신하지 않는다. 신규 표는 별도 row/deferred guard·제한 INSERT 검토, UPDATE/DELETE 차단을 기본으로 하며 기존 표 권한을 확대하지 않는다. 등록 오류는 명령/예약/outbox, 소비 오류는 receipt/binding/consumption과 함께 rollback한다. 별도 COMMIT·부분성공·오류를 숨긴 재실행은 없다.
+- 근거는0011/0017/0018/0024의 키·guard 및 기존 queue/store 코드다. 0023_execution_instruction.sql.pending은 pending source다. 정본의 마지막 정식DB 기록은 migration46개·0012~0017/0031 미적용이며 이번 조사에서 실제DB를 다시 조회하지 않았다.
+
+필요한 결정은 위 저장/guard source 계약 후보의 채택 여부다. 실제 migration 실행·기존 데이터/권한·보호 원문/서비스/Agent 연결은 포함하지 않는다. §1의 합성 source 연결은 이 결정과 독립적으로 진행한다.

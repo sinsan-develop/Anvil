@@ -359,3 +359,558 @@ Main은 위 source 추적·실제 PG 정의/WSL Git·Node/lock·신규 대상 �
 - 기존 `C:\Users\cyhuh\AppData\Local\npm-cache/_cacache`는 metadata상65개만 존재, 단순 OS/CPU 적합102개 중65개다. cache 바이트 integrity는 실행하지 않았고 offline 설치 가능이라고 주장하지 않는다. 기존 cache를 쓰거나 통째로 복사하지 않는다. install script 표식은 macOS용 fsevents1개였고 **모든 install/lifecycle script를 비활성**으로 제안한다.
 - 허가를 구할 명령은 새 보호 artifact/source cwd의 `npm ci --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org --cache=<허가된 artifact>/npm-cache --userconfig=<허가된 artifact>/empty-user.npmrc --globalconfig=<허가된 artifact>/empty-global.npmrc`다. 빈 config2개·cache도 신규 대상이며 미생성이다. parent NPM_CONFIG_*·proxy/credential·NODE_OPTIONS/NODE_PATH/비표준 TLS override는 child에 승계하지 않고 고정 Node/npm만 사용하도록 정확 runner 계약을 검수한다.
 - 전송은 lock에 있는 공개 패키지 이름/버전·정확 tarball/필요 registry metadata 요청과 기본 도구/OS 식별 정보만이며 프로젝트 원문/소스·실제 계정/Secret·audit POST는 제외한다. 응답 integrity는 npm lock 검사·정확 build/hash gate로 검증한다. registry의 접속로그 보관은 외부 운영정책이며 Anvil이 삭제한다고 보장하지 않는다. 설치 후 root script는 읽어 확인한 `build`(typecheck+고정 Vite)만 실행한다. lock 개정·upgrade/fund/audit fix·postinstall·유료 서비스·새 trust는 없다.
+
+## 2026-10-25 R0 정확 호출 후보 — 미적용 delta·원 exec·보존 조건
+
+**판정: 검토용 후보 구체화 / ACTUAL_NOT_AUTHORIZED / NOT_RUN.** 아래는 기존 R0 단일 컴파일 한 건의 추가 결정 자료다. 기존 이력·제품 source·첫 고정 throw·네 gate=false·실제 QA maxProcesses=2·역사 d71/F81 원문은 변경하지 않았다. 이 문서의 명령 예시는 실행하지 않았다. 실제 compiler/native/DLL load·파일 생성·보호 원문·DB/TLS/서비스/Agent·새 실행 host/QA/권한 변경은 0이다. 이전 표의 ‘생성한 세 파일 정리’는 현재 body가 성공 DLL까지 자동 회수한다는 뜻으로 재사용하지 않는다.
+
+### 1. 읽기로 고정한 대상과 권장 진입
+
+- 최초 검토 host는 `scripts/development-recovery-host.ps1`, raw **36,315 bytes / SHA256 D204FF0CA70ED57D2CEFA5DFF2909055E9B423D50E1A6BE961AD0C4DC408DF98 / LF / CR 0**였다. **D204/D28은 M1 보완 전의 역사 후보이며 최종 현재 실행값으로 재고정하지 않는다.** 현재 새 원/미적용 후보는 다음 표에 별도로 고정한다. `Invoke-DevelopmentRecoveryR0CompileSource` 첫 I/O 전의 `DEVELOPMENT_RECOVERY_R0_NOT_AUTHORIZED`는 유지한다. 직접 파일 실행은 마지막 top-level gate도 거절하므로, `-Plan`이나 새 CLI 옵션을 실제 실행 진입점으로 제시하지 않는다.
+- 권장은 **정확 외부 실행 결정 → 같은 원 PowerShell exec에서 loose Git object를 메모리 복원 → 승인된 한 줄 delta의 host도 같은 원 FileStream에서 private byte[]로 취득·정확 hash 확인 → 엄격 UTF-8 decode한 고정 ScriptBlock을 dot-source → raw byte[]를 기존 함수에 정확 1회 전달**이다. `GetFileHash(path)` 뒤 같은 pathname을 다시 읽어 실행하지 않는다. runner 안에서 git.exe·별도 pwsh·cmd·shell wrapper를 만들지 않는다. DLL load/Add-Type/facade/현재 native로 교체도 없다. dot-source 자체는 실행 권위를 발급하지 않는다.
+- 원 exec는 native가 아닌 PowerShell 부모이며 compiler의 직접 child만 1회다. 외부 실행 승인과 플랫폼 승인은 별도다. 승인 거절·권한 오류·경로/지문 불일치는 그대로 중단·보고하며 다른 host/위치/권한/명령으로 바꾸지 않는다. bool/JSON/nonce/digest를 새 승인 권위로 만들거나 상시 gate 우회 함수를 추가하지 않는다.
+
+| M1 보완 제출 뒤 현재 검토 tuple | 원 exec 읽기 결과(d0aad0 exit0) |
+|---|---|
+| 현재 source raw | **36,404 bytes / LF·CR0 / B1B72F61F79906F816FB005322B600F66772D05A5C3D88CFE313516DB373A1A7**. 고정 source throw 유지. locale 단어 대신 고정 CS ID+진단 구분자 정규식/설명만 보완한 제출본이며 독립 scoped 검수 중 |
+| 미적용 단1줄 delta | 동일 LF throw48 bytes 한 번만 삭제한 메모리 후보 **36,356 bytes / 8D03365E9A97A9A56BF320233D95010A07D4F3340EFD5362D3195ECCDB99DFAC**. 원 파일 변경0, 후보 PS AST 오류0, 실제 dot-source/Invoke0 |
+| 별도 집중시험 | Main 인계 지문 **3F24630511989113BC9E490109E85596405C89E3819C095D79EAAFCF8028A1BC**. 이 작성자는 시험 실행/해당 파일 지문 확인을 수행하지 않았으며 Main 검수 근거와 구분 |
+
+위 tuple을 exact 실행권위로 사용하지 않는다. 독립 검수 결과/외부 결정/원 exec 수명·전체 창/정리 계약은 여전히 선행이며 실제 실행 준비 PASS가 아니다.
+
+**raw 취득 읽기 증거:** 현재 common Git root는 `D:\Project\Anvil\.git`이고 loose object `objects\8d\38a21bf18f5b6bed95c8582b87d12e090d95f3`가 실제 존재한다. 압축 30,236 bytes를 원 exec의 `ZLibStream`으로 메모리에서만 복원했다. 비압축 96,964 bytes의 앞 11 bytes는 정확 ASCII `blob 96953<NUL>`, body 96,953 bytes, 추가 비압축 byte EOF=true, 압축 stream Position=Length=30,236이었다. 비압축 header+body의 SHA1은 **8d38a21bf18f5b6bed95c8582b87d12e090d95f3**, body SHA256은 **F81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49**였다. 별도 read-only `git ls-tree d71eb50870b088f57e1648ee4a1eba36aa058557 scripts/development-recovery-path-guard.cs`도 같은 blob의 commit 결박을 확인했다. raw source 본문 출력·실파일 생성·현재 native 읽어 대체는 0이다.
+
+다음은 **새 8D0336 후보를 사용한 원 exec 취득·호출 검토 예시**다. 새 M1 독립 검수와 외부 exact 결정 전에는 실행하지 않는다. 새 제품 함수/스크립트 파일로 등록하지 않는다. 압축 object는 무제한 ReadAllBytes 대신 같은 원 FileStream에서 Length30236 확인→고정 배열 읽기→EOF/길이 재확인 후 메모리 복원한다. Git raw source는 문자열 변환/개행 재작성0이며 host만 hash 확인한 같은 private bytes를 엄격 UTF-8로 decode한다.
+
+```powershell
+$ErrorActionPreference='Stop'
+$r0Object='D:\Project\Anvil\.git\objects\8d\38a21bf18f5b6bed95c8582b87d12e090d95f3'
+$r0Compressed=[byte[]]::new(30236)
+$r0ObjectStream=[IO.FileStream]::new($r0Object,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+try {
+ if($r0ObjectStream.Length -ne 30236){throw 'R0_OBJECT_CHANGED'}
+ $r0Offset=0
+ while($r0Offset -lt $r0Compressed.Length){
+  $r0Read=$r0ObjectStream.Read($r0Compressed,$r0Offset,$r0Compressed.Length-$r0Offset)
+  if($r0Read -le 0){throw 'R0_OBJECT_SHORT'}
+  $r0Offset+=$r0Read
+ }
+ if($r0ObjectStream.ReadByte() -ne -1 -or $r0ObjectStream.Length -ne 30236){throw 'R0_OBJECT_EXTRA'}
+} finally {$r0ObjectStream.Dispose()}
+$r0Memory=[IO.MemoryStream]::new($r0Compressed,$false)
+$r0Zlib=[IO.Compression.ZLibStream]::new($r0Memory,[IO.Compression.CompressionMode]::Decompress,$true)
+$r0Expanded=[byte[]]::new(96964)
+$r0Raw=[byte[]]::new(96953)
+$r0Sha1=[Security.Cryptography.SHA1]::Create()
+$r0Sha256=[Security.Cryptography.SHA256]::Create()
+try {
+ $r0Offset=0
+ while($r0Offset -lt $r0Expanded.Length){
+  $r0Read=$r0Zlib.Read($r0Expanded,$r0Offset,$r0Expanded.Length-$r0Offset)
+  if($r0Read -le 0){throw 'R0_OBJECT_SHORT'}
+  $r0Offset+=$r0Read
+ }
+ if($r0Zlib.ReadByte() -ne -1){throw 'R0_OBJECT_EXTRA'}
+ $r0Zlib.Dispose()
+ if($r0Memory.Position -ne $r0Memory.Length -or
+    [Text.Encoding]::ASCII.GetString($r0Expanded,0,11) -cne "blob 96953`0") {throw 'R0_OBJECT_HEADER'}
+ [Array]::Copy($r0Expanded,11,$r0Raw,0,96953)
+ $r0Blob=[BitConverter]::ToString($r0Sha1.ComputeHash($r0Expanded)).Replace('-','').ToLowerInvariant()
+ $r0Digest=[BitConverter]::ToString($r0Sha256.ComputeHash($r0Raw)).Replace('-','')
+ if($r0Blob -cne '8d38a21bf18f5b6bed95c8582b87d12e090d95f3' -or
+    $r0Digest -cne 'F81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49'){throw 'R0_OBJECT_DIGEST'}
+ # 새 8D0336 후보 예시. 독립 검수와 외부 exact 결정 전 호출 금지.
+ $r0Host=Join-Path (Get-Location).ProviderPath 'scripts\development-recovery-host.ps1'
+ $r0HostBytes=[byte[]]::new(36356)
+ $r0HostStream=[IO.FileStream]::new($r0Host,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+ try {
+  if($r0HostStream.Length -ne 36356){throw 'R0_HOST_CHANGED'}
+  $r0Offset=0
+  while($r0Offset -lt $r0HostBytes.Length){
+   $r0Read=$r0HostStream.Read($r0HostBytes,$r0Offset,$r0HostBytes.Length-$r0Offset)
+   if($r0Read -le 0){throw 'R0_HOST_SHORT'}
+   $r0Offset+=$r0Read
+  }
+  if($r0HostStream.ReadByte() -ne -1 -or $r0HostStream.Length -ne 36356){throw 'R0_HOST_EXTRA'}
+ } finally {$r0HostStream.Dispose()}
+ $r0HostDigest=[BitConverter]::ToString($r0Sha256.ComputeHash($r0HostBytes)).Replace('-','')
+ if($r0HostDigest -cne '8D03365E9A97A9A56BF320233D95010A07D4F3340EFD5362D3195ECCDB99DFAC'){throw 'R0_HOST_CHANGED'}
+ $r0HostText=[Text.UTF8Encoding]::new($false,$true).GetString($r0HostBytes)
+ $r0HostScript=[scriptblock]::Create($r0HostText)
+ if($null -ne (Get-Variable -Name DevelopmentRecoveryR0Retain -Scope Script -ErrorAction Ignore)){throw 'R0_CLOSURE_ALREADY_PRESENT'}
+ . $r0HostScript
+ $r0RetainOriginal=(Get-Variable -Name DevelopmentRecoveryR0Retain -Scope Script).Value
+ $r0ModuleOriginal=$r0RetainOriginal.Module
+ $r0LifetimeOriginal=$r0ModuleOriginal.SessionState.PSVariable.GetValue('lifetime')
+ if($r0LifetimeOriginal -isnot [hashtable] -or $r0LifetimeOriginal.Count -ne 2 -or
+    !$r0LifetimeOriginal.ContainsKey('started') -or !$r0LifetimeOriginal.ContainsKey('retained') -or
+    $r0LifetimeOriginal.started -isnot [bool] -or $r0LifetimeOriginal.started -or
+    $null -ne $r0LifetimeOriginal.retained){throw 'R0_CLOSURE_SHAPE_UNKNOWN'}
+ $r0SynchronousCallFinished=$false
+ try {$r0Result=Invoke-DevelopmentRecoveryR0CompileSource -GitSourceBytes $r0Raw}
+ finally {$r0SynchronousCallFinished=$true}
+ # 결과는 §4의 축약 항목만 회수한다. 보존 결과면 §5의 원 host 수명 조건을 적용한다.
+} finally {
+ $r0Zlib.Dispose()
+ $r0Memory.Dispose()
+ $r0Sha1.Dispose()
+ $r0Sha256.Dispose()
+ [Array]::Clear($r0Raw,0,$r0Raw.Length)
+ [Array]::Clear($r0Expanded,0,$r0Expanded.Length)
+ [Array]::Clear($r0Compressed,0,$r0Compressed.Length)
+ if($r0HostBytes){[Array]::Clear($r0HostBytes,0,$r0HostBytes.Length)}
+}
+```
+
+위 PowerShell fence 내부를 UTF-8/no BOM/LF/마지막 개행 없음으로 고정한 **역사 부분 호출 프레임은 4,198 bytes / SHA256 10ECE1476C5C2D61BDCF073C3C46E24C426B4CD3D5AC50C345705A0C1E81B74A**이며 PS AST 오류0(12f1b3 exit0)이다. 이전3,419/6DED5B…은 원 closure 고정·동기 unwind 표식 추가 전 역사 프레임이다. fence·설명·별도 host 후속관측/보존/해제 계약은 프레임 hash에 포함하지 않았다. §6의 별도 완결 fence가 전체후보이며 이 부분 프레임만 실제 호출하지 않는다.
+
+기존 ReadAllBytes 복원에 이어 고정 FileStream/Length30236/배열/EOF 읽기도 별도 read-only로 확인했다(3bdc78 exit0: compressed30236/expanded96964/양쪽EOF/같은blob SHA1). 고정 throw가 있는 B1 source의 strict decode/ScriptBlock dot-source는 §4.1의 cold closure 순수 probe로만 확인했으며 **throw 제거8D 후보의 실제 dot-source/R0 함수 호출 구간은 NOT_RUN**이다. 같은 private bytes의 hash→decode→ScriptBlock 고정은 host hash 확인 뒤 pathname을 다시 실행하는 경합을 없애지만 부모/leaf 신원·원 compiler 실행 경합을 해결하지 않는다. SHA/EOF 검사는 blob 원문을 고정하며 commit 작성자의 실행 권한, filesystem 고정, compiler 안전을 대신하지 않는다. objects가 pack으로 바뀌거나 경로/크기가 달라지면 git child·새 fetch·자동 다른 취득으로 대체하지 않고 패킷을 재고정한다.
+
+### 2. 첫 throw와 외부 exact 결정의 연결 — 제안만 / 실제 적용 0
+
+새 command·상시 helper·caller 권위 없이 현재 body를 시험하려면 다음 **단1줄 48 bytes 삭제**가 최소 delta다. 원 LF bytes 전체는 메모리 보관·독립 hash 확인하고 다른 줄/주석/기존 gate/QA tail을 바꾸지 않는다. 다음 patch는 제품에 적용하지 않았다.
+
+```diff
+ function Invoke-DevelopmentRecoveryR0CompileSource([byte[]]$GitSourceBytes) {
+  # 이 고정 throw는 첫 I/O와 내부 I/O 함수 정의보다 앞선다. caller bool/JSON/digest는 제거 권위가 아니다.
+- throw 'DEVELOPMENT_RECOVERY_R0_NOT_AUTHORIZED'
+  # 아래는 검수할 실제 runner 본문이며 현재 실행 불가다. raw 취득/호출/종료 요청까지 별도 exact 실행 경계다.
+```
+
+- 역사 원 host raw **D204FF0C… / 36,315 bytes**에서 이 LF 한 줄만 뺀 역사 메모리 후보는 **D28D02297CB220E4C3C63615E19903AD028249F6D7454B5F3418CADD3C1424B0 / 36,267 bytes**였다. 이후 M1 제출본 B1B72F…/36,404와 미적용 후보8D0336…/36,356은 §1 표/호출 예시에 별도로 갱신했다. 후보 hash는 적용·컴파일·실행 검증이 아니며 새 독립 검수 전 최종 실행 패킷이 아니다.
+- 실제 적용 여부는 PMO/신산님이 **d71/F81 raw 한 파일 + 이 host exact delta/hash + compiler 직접1회 + 원 compiler 종료 요청 최대1회 + 아래 잔여/보존·정리 조건**을 외부 직접 결정한 뒤 Main이 원 승인과 플랫폼 승인을 대조한다. 승인문에 null인 실행시각/기한을 Agent가 임의 발급해 권위로 삼지 않는다. 같은 결정을 R1/P2/P3·후속 native·새 process/QA에 이월하지 않는다.
+- 실행 전 Main/독립 검수자는 M1 뒤 새 원 raw hash→단1줄 diff→후보 hash·기존 gates/tail 동일을 확인한다. 실행 1회 뒤 성공/실패/불명 모두 **다음 invocation 전에 원 throw를 같은 자리로 복원**하고 그 새 원 raw hash 일치를 확인한다. 역사 D204로 현재 M1 보완분을 덮어 복원하지 않는다. 복원 전 새 작업/재시도/commit·push 금지다. source 복원은 새 자원 정리 또는 원 process 종료를 뜻하지 않는다.
+- 원 문서/source의 별도 변경이 끼면 전체 원본 덮기/무조건 restore하지 않는다. 원 hash 불일치로 중단하고 소유 writer와 exact diff를 대조한다. 원 바이트/원 branch commit은 보존한다. 메모리에 이미 정의된 함수는 디스크 복원만으로 차단되지 않으므로 원 closure의 `BEGIN` 1회 latch와 실행 host 소유를 유지하고, source 재정의·다른 runspace·새 host를 통한 재호출은 하지 않는다.
+- **검수 M1 현지화 진단ID 누락**(`오류 CS1002` 등)은 별도 source 담당자가 지역화 단어 대신 `CS[0-9]{4,5}`+뒤 진단 구분자를 대조하도록 정규식/설명1줄씩 보완해 B1B72F…로 제출했다. 이 문서 작성자는 제품 수정/집중시험0이며 실제 compiler 출력은 미검증이다. 새 독립 검수 전 M1 해소 PASS를 대신 선언하지 않고 진단 entries=0을 오류 없음으로 해석하지 않는다. D204/D28은 역사값으로 보존한다.
+
+### 3. 현재 body와 정확 실행 범위의 대조
+
+| 항목 | 현재 body의 실제 행동 / 한계 |
+|---|---|
+| compiler·참조 | 기존 `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe` 1개와 mscorlib.dll/System.dll/System.Core.dll 3개만 고정 지문 대조·read pin. 앞 R0 표의 4지문 그대로. 다른 도구/다운로드/현재 native 자동치환 없음. 실제 CLR/OS/도구 추가 read는 미확인 |
+| 인자 | 앞 R0 표의 정확 인자와 body가 일치: `/noconfig /nologo /nostdlib+ /target:library /platform:x64 /optimize- /debug- /warn:4 /errorreport:none`, 고정 `/out:...\DevelopmentRecoveryPathGuard.dll`, 절대 참조3, 역사 source 한 파일. 과거 `/optimize+` 또는 exe/R1 후보를 섞지 않음 |
+| 원 process | `UseShellExecute=false`, hidden/no window, 새 compiler 직접 `Process.Start` 한 번. 반환한 Process/SafeHandle 확보 뒤만 원 handle 관측/종료 요청. 부분 시작·반환/SafeHandle 불명은 PID 재탐색/재open/추정 kill 없이 보존. compiler가 추가 child를 만들지 않는 OS 증거는 없음 |
+| 최소 환경 | child 환경 Clear 후 `SystemRoot=C:\Windows`, `windir=C:\Windows`, `TEMP=TMP=...\compile` 네 항목만. PATH/CLR/COR/COMPLUS/부모 임의 환경 승계0. 이 설정은 compiler 외부 I/O·TEMP 추가 파일·OS 암묵 동작 배제 증명이 아님 |
+| 창 | 원 함수 진입부터 UTC/monotonic 더 큰 소비값, compiler480,000ms·전체600,000ms. timeout 또는 원 process 확보 뒤 실패 시 같은 latch/최초 기한의 종료 요청 총1회·관측 최대15,000ms(남은 전체예산 이내). 새15초창·자동반복0. 취득/외부 delta·후검수 시간을 함수 예산에 포함했다고 주장하지 않음. 600초 외부벽과 충분한 선행 여유도 실행 직전 고정 필요 |
+| drain·진단 | stdout/stderr 각각4096-byte 원 ReadAsync, 동시 관측. 각 stream EOF·exit·pending은 독립. raw 전체 hash/bytes/lines는 drain한 범위, 저장은 고정 ID/줄번호 최대200 entries·line buffer1024·초과 표기. 최종 JSON≤65,536 UTF-8 bytes/256행. EOF 불명 hash는 `NOT_FINAL_EOF_UNCONFIRMED`; raw source/파일명/exception/환경 로그0. M1 locale중립 source 제출·독립 검수 중, 실제 compiler 진단 미검증 |
+| 경로·파일 | 신규 bootstrap/compile와 source/diagnostics는 자기 생성 목록·CreateNew 원 stream. source 정확96,953/F81 확인. compiler 전 DLL 부재, 뒤 목록은 세 고정 pathname 외 첫 항목/네번째에서 중단·보존. DLL0<크기≤4MiB는 후관측 조건, 세 파일 상한도 quota/sandbox가 아님 |
+| 출력 귀속 | DLL은 compiler 후 생겼다는 사실/경로/hash로 원 생성 신원을 증명하지 않음. 원 body는 그 DLL을 owned로 채택하거나 자동 삭제하지 않고 `PRESERVED_UNCONFIRMED`. exit0/DLL존재 경로는 `OUTPUT_OWNERSHIP_UNCONFIRMED`로 catch되며 최종 status가 `RUN_UNCONFIRMED`일 수 있음. 성공 compile을 OS PASS/ready로 승격0 |
+| 정리 | 종료+두 EOF+pending0 확인, 예상 밖 항목0, **DLL 부재·exit≠0인 실패**만 source/diagnostics hash/경로를 다시 대조한 뒤 자기 stream close→LiteralPath 삭제, 빈 compile/bootstrap 비재귀 삭제. 이조차 metadata 기반이며 native FileId 없음. 성공·불명·추가 항목·identity mismatch는 보존. 별도 재귀 삭제/unknown DLL 자동삭제0 |
+
+body의 compiler exe 문자열 + ASCII 공백1 + 정확 `Arguments` 문자열을 개행/BOM 없이 UTF-8로 연결한 검토용 command는 **605 bytes / SHA256 AF7B14F2A7023266D74C0BD682DFA4303AE732C6F978D0D72E325BCCFACEE483**다. 이는 shell command를 실행한 hash가 아니라 고정 `ProcessStartInfo.FileName/Arguments`의 읽기 지문이다. 실제 Windows argv 분해/참조 read/컴파일 성공은 미검증이다.
+
+### 4. 사람이 결정할 bootstrap 예외와 source 내부 미진
+
+**bootstrap 예외로 명시해 결정할 사실:** stock PowerShell 부모/생성/정리 pathname 경합, 상위 경로 교체 위험, native FileId/원 DLL 귀속 미검증, compiler implicit I/O/TEMP/공유 호환 미확인, 동기 FileStream/ACL/열거/삭제의 호출 안 hard deadline 미입증이다. 현재 stopwatch 검사는 동기 I/O가 반환할 때만 갱신되므로 ‘600초면 모든 I/O가 반드시 끝난다’고 약속하지 않는다. 기존 ACL·상위 경로 수리/새 quota/sandbox/Job·native helper로 예외를 감추지 않는다. 이를 허용하지 않으면 이 후보를 실행하지 않고 동일 보호 범위 안 별도 source 보완안을 검토한다.
+
+**사람 승인으로 해결됐다고 볼 수 없는 source/도구 선행:** (a) M1 현지화 진단ID 보완·검수와 exact 새 hash, (b) 아래 원 exec 보존/조건부 해제 계약, (c) 외부 전체600초/남은15초 관측이 실제 도구 호출 시간제한과 양립하는지, (d) 원상태 source 복원과 실행 1회 증거의 정확 소유/순서다. 이들은 실행 여부를 묻기 전에 Main이 검토 가능한 수준으로 확정해야 한다. 오류가 나면 명령을 바꾸어 즉시 반복하지 않는다.
+
+**원 exec 수명:** 현재 불명 보존은 script closure가 Process/SafeHandle·원 ReadAsync·buffer·stream을 참조해 finalizer로 넘기지 않는 방식이다. 호출을 끝내고 원 PowerShell host가 사라지면 이 참조 보존은 유지되지 않는다. 따라서 미종료·pending·EOF 불명에 단발 `exec` 종료, 별도 pwsh child 추가, 600초 뒤 원 host 강제종료를 정상 정리로 제시하지 않는다. 권장 진입은 같은 원 PTY PowerShell host를 보존·후속관측할 수 있는 문맥이다. 아래 순수 hold probe는 이 도구의 짧은 입력대기만 확인했으며 실제 R0 수명 계약·원 process/read-task 보존 검증을 대신하지 않는다. 위 호출 예시 전체는 실행 준비 PASS가 아니다. host를 대기시키는 임의 무기한 loop/추가 process를 이번에 제품에 넣지 않는다.
+
+Main의 초기 metadata(0f9d52/d41cdb/d23bb8)는 CommandLine.IndexOf가 검사문 본문 속 문자열까지 스스로 일치해 `-NonInteractive/Encoded`를 잘못 true로 판정한 검사 오류였다. **whole-argument GetCommandLineArgs 대조5e1d59가 이를 정정했다: argCount4 / NonInteractive=false / Encoded=false / Command=true. 15e84a는 NoProfile=true / NoLogo=false**다. ConsoleHost와 inputRedirected 일반 true/PTY false 관측을 이 잘못된 flag 판정과 섞지 않는다. 현재 도구의 원 host는 NoProfile/current tool -Command 호출이며 별도 pwsh child를 추가하는 예시가 아니다. 이 flag만으로 RootHost 안전·Read-Host/EnterNestedPrompt 지원을 추론하지 않는다.
+
+Main 순수 probe 9ffe0d에서 **같은 원 PTY PowerShell host의 `Console.ReadLine` 입력대기**가 원 session을 유지했고 고정 `EXIT_R0_PURE_PROBE` 입력을 보낸 42e43c는 exit0/retained=true/targetResources=0이었다. 이 실제 hold/입력 증거는 위 검사 오류 정정 뒤에도 유효하며 실제 R0/native/Process/ReadAsync/파일 보존 검증과 구분한다. 입력 EOF/유실·도구 중단은 안전 종료 증거로 취급하지 않고 별도 지원 결정까지 원 host를 보존한다. Console loop/상시 helper는 **제품 source·실제 host에 미적용**이며, 연결한 loop는 **§6 문서의 비적용 후보에만** 있다.
+
+**권장 외부 결정에 넣을 조건부 host 해제:** 성공 compiler의 DLL도 원 귀속은 불명이라 파일은 보존한다. 다만 R0 함수/finally의 모든 동기 I/O가 반환한 뒤 **원 compiler 확보 증거 + exitObserved=true + stdoutEof=true + stderrEof=true + stdoutPending=false + stderrPending=false**가 모두 확인된 경우에 한해, 파일을 그대로 두고 원 host/참조를 해제하는 행동을 외부 exact 결정에 포함할 수 있는 후보로 제시한다. 반환한 status/exit code/파일 귀속이 합격으로 바뀌는 조건이 아니고 actual 해제는 미승인·미검증이다. source 파일의 원 stream은 `FileMode.CreateNew/FileAccess.ReadWrite/FileShare.Read` 4인자, tool/DLL pin은 `Open/Read/Read` 4인자이며 **DeleteOnClose/FileOptions를 지정하지 않았다**. host 종료로 이 원 stream이 닫히는 것 자체가 파일 삭제 명령은 아니며 성공 DLL/진단/source가 자동 정리된다고 쓰지 않는다. 모든 동기 쓰기/Flush가 반환했는지와 원 결과 회수가 필요하고, OS handle close·실제 파일잔존/추가 compiler I/O는 별도 actual 후검수 대상이다. compiler 추가 child 부재를 이 조건으로 증명하지도 않는다.
+
+위 조건 하나라도 미확인(부분 시작·원 compiler 종료 불명·EOF 불명·pending 포함)이면 **원 host의 Console.ReadLine 고정 입력 대기** 후보로 참조를 유지하고 새 eval/새 pwsh/추가 kill/600초 뒤 host 강제종료0으로 둔다. 입력만으로 종료를 허가하지 않으며 해제 조건을 충족하지 않은 고정 EXIT는 받아도 해제하지 않는 계약이 필요하다. 별도 지원 결정 전 재실행 금지다. 보존 기간의 상한/환경 강제 회수 가능성은 미확인으로 보고하고 유한 host 종료·잔여0를 약속하지 않는다. 이 분기와 위 조건부 해제는 기존 제품 body를 바꾸지 않는 원 exec 수명 패킷 제안이며 아직 실제 구현/실행하지 않았다.
+
+### 4.1 원 host에서 뒤늦은 상태를 다시 관측하는 후보 — private 구조 결박 / 제품 적용0
+
+고정 입력 대기만으로는 최초 pending/EOF 불명 뒤의 실제 상태를 갱신할 수 없다. 최소 후보는 **같은 원 host의 현재 exact Retain ScriptBlock.Module.SessionState에서 private `lifetime.retained`를 읽기만 하여 원 run/Process/SafeHandle/ReadAsync Task 포인터를 그대로 관측**하는 것이다. 새 공개 getter/권위·별도 process/새 owner·caller PID/handle/JSON은 받지 않는다. 임의 모듈/변수/명령 선택 입력도 없다. 위 프레임은 dot-source 전 같은 이름의 closure 부재와 exact candidate8D0336 bytes/hash를 확인하고, 직후 원 Retain/Module/lifetime을 참조로 고정한다. 없는 구조/형식·원 참조 변경/재정의는 `UNKNOWN`이며 새 closure/다른 경로/새 process로 대체하지 않는다. 이 결합은 source 내부 구조에 의존하므로 source hash/구조가 바뀌면 패킷 검수도 다시 필요하다.
+
+**순수 가능성 probe 6a0eaf exit0:** source throw가 있는 현재 B1B72F…36,404 bytes를 같은 원 FileStream에서 bounded 읽기/hash→엄격 UTF8→메모리 ScriptBlock dot-source했다. 실제 R0 Invoke는0이다. cold Retain에 이 probe만의 `BEGIN/RETAIN`으로 합성 fakeRun/TaskCompletionSource sentinel을 놓은 뒤 `Module.SessionState.PSVariable.GetValue('lifetime')`가 hashtable/정확 keys started·retained이고 같은 lifetime/retained run/두 Task 참조임을 확인했다. pending/completed/faulted/canceled sentinel의 IsCompleted/IsFaulted/IsCanceled 구분과 EOF=false 불변을 확인했고 fake process를 실제 captured Process로 수용하지 않았다. 실제 child/target 파일/원문·ReadAsync/GetResult/Kill/Dispose0이며 **closure 접근의 기술적 가능성만** 확인했다. 실제 native pipe I/O/Task 종료·원 process의 후속 상태 보존은 미검증이다. probe의 fakeRun setter는 실제 실행 패킷에 넣지 않는다.
+
+후속 순수 probe 990a00 exit0에서는 같은 B1 source AST의 원 run keys가 정확21개임을 확인하고 그 key 집합의 fakeRun을 사용했다. 첫 관측에서 미완료였던 같은 Task sentinel을 합성 producer만 완료시킨 뒤 같은 private retained run/Task 포인터로 다시 읽어 IsCompleted false→true를 확인했다. observer는 새 Read/GetResult를 하지 않았고 EOF는 false 그대로였다. null Task+EOFfalse는 UNKNOWN, 미확보 fake Process는 거절했다. 이는 고정 OBSERVE가 원 객체의 뒤늦은 managed 상태를 다시 읽을 수 있다는 순수 증거이며 실제 compiler·native I/O 종료 검증은0이다.
+
+| 후속 관측 대상 | 읽기만 허용할 정확 조건 / 해석 |
+|---|---|
+| private 원 run | 고정한 Retain ScriptBlock·Module·lifetime이 모두 같은 참조, lifetime hashtable keys 정확 started/retained·started=true. `retained`는 원 run hashtable이고 첫 회수 뒤 같은 객체 참조여야 한다. 현재 run keys 정확21개: process/processHandle/originalProcessCaptured/startAttempted/exitObserved/exitCode/killAttempted/terminationDeadlineMono/reads/diagnostics/pins/owned/directories/source/status/cleanup/output/outputOwnership/extraItems/elapsedMs/diagnosticsWriteAttempted. 없거나 추가/형식 불일치는 UNKNOWN. 외부 객체를 이 원 자리로 채택하지 않음 |
+| 원 compiler | private run의 originalProcessCaptured=true, process는 실제 Diagnostics.Process, processHandle은 실제 SafeProcessHandle·열려있음/유효함, 최초 고정한 같은 두 참조일 때만 **그 Process의 HasExited**를 읽는다. PID 검색/새 handle/재open/ExitCode 요청/Kill/Dispose0. stored exitObserved와 새 HasExited 결과는 별도 관측이며 run 필드에 쓰지 않음. 예외/미확보/닫힌 handle은 UNKNOWN |
+| 원 read Task | reads가 정확 stdout/stderr 두 entry, entry는 stream/buffer/pending/eof 원 shape이며 원 stream·4096-byte 배열·Task 참조를 고정한다. pending이 Task면 그 같은 Task의 IsCompleted/IsFaulted/IsCanceled만 읽음. 새 Read/ReadAsync/GetResult/cancel/Dispose/버퍼출력0. pending=null은 해당 원 entry.eof=true와 diagnostics의 eof=true가 모두 확인된 경우만 이미 소비한 terminal로 인정. pending=null/eof=false 또는 구조/참조불명은 UNKNOWN |
+| EOF와 terminal | completed/faulted/canceled는 **원 managed Task의 terminal metadata**이며 EOF·성공 read·진단 데이터 완전성·최종 hash를 뜻하지 않는다. Task완료 뒤 GetResult를 다시 하지 않으므로 EOF=false/미완성hash는 그대로 남는다. native I/O가 실제로 어떤 경로로 끝났는지의 OS 검증은0이며 `nativeIoCompletionVerified=true`로 승격하지 않음 |
+| 원 함수 수명 | 원 Invoke가 반환하거나 stack unwind되어 wrapper finally에 도달한 사실만 `$r0SynchronousCallFinished=true`로 기록. 불러낸 helper·동기 I/O가 진행 중인 동안 입력대기/해제 판단에 진입하지 않음. 이 값은 시간 만료/EOF를 만들어내는 권위가 아님 |
+
+§4의 첫 보수적 ‘두 EOF+pending0’ 해제 조건은 이 후속 관측 후보에서는 다음처럼 **정확 외부 결정의 조건부 대안**으로 세분한다. **원 synchronous call finished + 같은 원 compiler의 HasExited=true + 두 원 read가 각각 terminal**인 때만, 진단/EOF 불명과 파일 귀속불명을 그대로 기록한 채 **파일 보존·원 host 해제**를 제안할 수 있다. 여기서 terminal은 위 표의 ‘같은 원 Task.IsCompleted’ 또는 이미 소비된 EOF/null 조합만이며, task fault/cancel은 정상 EOF가 아니다. 실제 native I/O 수명 증거는 미실행이므로 이 조건의 허용 여부도 외부 exact 결정·독립 source 검수가 선행한다. 원 child 미종료/부분시작·Task미완료·Task미등록/null+EOFfalse·구조불명은 해제 불가로 원 host 참조를 유지한다. compiler 추가 child 부재·전체 시스템 잔여0·컴파일 데이터 합격을 이 대안으로 증명하지 않는다.
+
+원 PTY 입력 후보는 고정 **`OBSERVE_R0_ORIGINAL` / `RELEASE_R0_ORIGINAL`** 두 token뿐이다. OBSERVE는 위 원 참조 metadata를 축약 출력하고 대기로 복귀한다. RELEASE도 먼저 같은 원 구조/참조/HasExited/Task metadata를 다시 읽고, 별도 exact 결정이 허용한 모든 해제 조건을 충족할 때만 원 host를 종료할 수 있는 후보이며 입력 자체는 권위가 아니다. 다른 입력/EOF/도구 입력 유실은 실행·해제하지 않고 UNKNOWN 보존/지원 요청으로 남긴다. 임의 eval·새 command/새 Invoke/재compile·추가 Read/GetResult/Kill/Dispose0, 파일 삭제0이다. 이 고정 token loop·read-only private 관측은 **문서 후보만**이며 제품/원 실행 프레임에 아직 적용하거나 실제 R0에서 시험하지 않았다.
+
+### 5. 실제 실행 후 확인·정리·재차단 계획 — 아직 미실행
+
+1. 원 호출의 `status/exitCode/exitObserved/killAttempted`, stdout/stderr의 EOF/pending, `cleanup`, output bytes/hash/ownership만 회수한다. `executionAuthorized=false/osVerified=false/implicitCompilerIoVerified=false/synchronousFileIoHardDeadlineVerified=false/realCompilerValidation=NOT_RUN`은 기존 source의 정직한 미검증 표식이며 실행 승인/결과 receipt로 임의 덮어쓰지 않는다. 실제 실행 여부/시각·원 compiler PID/원 handle 확보·exit/수집 범위는 별도 WORK_STATUS 증거로 남긴다. Process 객체나 원문을 JSON으로 통째로 출력하지 않는다.
+2. 별도 read-only 후검수에서 bootstrap/compile·세 pathname의 부재/잔존, owner/nonlink/경로 관측, 추가 항목 유무, 원 handle의 exit와 양쪽 EOF/pending을 구분한다. compiler PID 검색 결과를 새 소유권으로 채택하지 않는다. 예상 밖 파일/새 DLL/부분시작/종료·EOF 불명은 `PRESERVED_UNCONFIRMED`; 새 실행/추가 kill/추정 close·delete/전체 tree 정리0으로 보고한다. 원 compiler 종료·양쪽 EOF/pending0까지 확인된 경우만 §4의 외부 exact 결정에 포함된 host 해제 후보를 대조하며, 파일 보존과 host 참조 보존을 같은 상태로 뭉뚱그리지 않는다.
+3. body가 실패 자기 파일을 회수한 경우에도 잔여0은 독립 read-only 부재로만 판정한다. body가 성공 DLL 또는 미확인 참조를 보존한 경우 이를 잔여0로 쓰지 않는다. DLL의 신원·원 parent/파일 경합이 해결되지 않았는데 ‘이번 경로니까’ 삭제하지 않는다. 새로운 정리 허가는 대상·실체·소유·원 compiler 종료·원 스트림 상태를 확정한 뒤 별도 exact 결정이다.
+4. §2의 원 throw/host raw 복원을 검수하고 원 source·기존 native/gates/QAmax2·보호8 불변을 확인한다. 현재 bootstrap 부재라는 원상태 복귀는 **자기 파일 정리가 검증된 분기에 한정**한다. 보존 분기는 디스크/host 잔류와 그 이유·소유·안전 관측·재개 조건을 기록하며 성공 복구로 표시하지 않는다. R0 library는 실행/승격하지 않는다.
+5. 이후 실제 실행은 자동재시도하지 않는다. R1 OS fixture·loader/새 native·DB/TLS/P2/P3는 각각 별도 source/정확 결정과 gate로 남긴다. 플랫폼이 특정 실행을 거절하면 원 거절 이유를 보고하고 우회 설계를 적용하지 않는다.
+
+**이번 검토 검증과 오류:** loose-object 원 exec 메모리 복원/EOF/SHA1/SHA256·host raw/단1줄 메모리 후보 hash는 읽기 검증 exit0이다. 첫 후보 산출은 CRLF를 가정해 정확 match0으로 중단1회했고 실제 LF를 확인해 메모리 계산만 수정했다(원문 수정0). 현재 Git 명령의 status는 세 번 `must be run in a work tree`로 실패해 같은 시도를 중단했다. branch ref `codex/av3-stage-b`/HEAD `2eb581db25b3ccad197c60ebf0b949896b8bebd1`과 d71 tree→blob은 읽었지만 현재 dirty 전체를 검증했다고 하지 않는다. 이 문서 append 외 변경·WORK_STATUS 수정·commit/push/branch 생성0이며 Main이 최종 dirty/문서 diff를 검수한다.
+
+### 6. 원 observer·고정 token dispatcher를 연결한 완결 fence — 미적용 / 실제 Invoke0
+
+앞 4,198-byte 프레임은 observer/dispatcher를 포함하지 않는 **역사 부분후보**로 보존한다. 아래는 원 입력 취득부터 원 Invoke 한 번, private 원 참조 최초 고정, 뒤늦은 원 Task 관측, 고정 Console 입력, 조건부 원 host 해제까지 연결한 별도 전체 후보다. 제품 파일/새 스크립트로 등록하거나 적용하지 않았다. local 함수는 이 원 host 안에서만 사용할 검토 대상이며 제품 공개 API·승인 권위가 아니다. 입력은 두 고정 token뿐이고 caller bool/PID/handle/JSON/명령/객체 입력은 없다.
+
+**현재 전체 fence 지문:** 아래 PowerShell fence 내부 전체를 UTF-8/no BOM/LF/마지막 개행 없음으로 고정한 **20,474 bytes / SHA256 1E3F86B57AD57E6D11C9890BF8A1201C4DAABE574F2B50BD21D4BE7797B7E845**. 원 observer·dispatcher·결과 one-shot receipt·수명 출력·Console loop·원 Invoke 접속부가 모두 포함된다. PS AST 오류0, 같은 fence의 함수11개를 메모리 로드한 결과 receipt 집중30검사/실패0(51bf4e exit0)이다. 이전15,790/062CC3…·9함수/31검사는 결과 receipt가 빠진 독립검수 전 이력으로 보존한다. 지문·검사는 실행 권위/actual R0 PASS가 아니다.
+
+**외부 선행:** 현재 B1 source와 아래 8D 한 줄 delta·전체 fence/hash·R0 scope·종료 요청·파일 보존·조건부 원 host 해제/UNKNOWN 유지에 대한 exact 외부 실행 결정과 플랫폼 승인이 모두 선행한다. 이 코드는 승인 parser/권위 발급기가 아니다. 외부 단1줄 source delta 적용·재차단은 §2대로 별도 소유자가 수행하며 아래 fence는 source를 쓰거나 throw를 제거하지 않는다. source가 아직 B1이면 크기/hash 불일치로 Invoke 전에 중단한다. 임의 실행 승인 bool을 넣어 활성화하지 않는다.
+
+```powershell
+$ErrorActionPreference='Stop'
+function Test-R0FrameKeys($Value,[string[]]$Keys) {
+ if($Value -isnot [hashtable] -or $Value.Count -ne $Keys.Count){return $false}
+ foreach($key in $Keys){if(!$Value.ContainsKey($key)){return $false}}
+ return $true
+}
+function Read-R0FrameFixed([string]$Path,[int]$Size) {
+ $bytes=[byte[]]::new($Size)
+ $stream=[IO.FileStream]::new($Path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+ try {
+  if($stream.Length -ne $Size){throw 'R0_FRAME_FIXED_SIZE'}
+  $offset=0
+  while($offset -lt $Size){
+   $count=$stream.Read($bytes,$offset,$Size-$offset)
+   if($count -le 0){throw 'R0_FRAME_FIXED_SHORT'}
+   $offset+=$count
+  }
+  if($stream.ReadByte() -ne -1 -or $stream.Length -ne $Size){throw 'R0_FRAME_FIXED_EXTRA'}
+  return ,$bytes
+ } finally {$stream.Dispose()}
+}
+function Get-R0FrameLifetime($Context) {
+ if($Context.retain -isnot [scriptblock] -or $null -eq $Context.module -or
+    ![object]::ReferenceEquals($Context.retain.Module,$Context.module)){throw 'R0_FRAME_ORIGIN_UNKNOWN'}
+ $life=$Context.module.SessionState.PSVariable.GetValue('lifetime')
+ if(![object]::ReferenceEquals($life,$Context.lifetime) -or
+    !(Test-R0FrameKeys $life @('started','retained')) -or
+    $life.started -isnot [bool] -or !$life.started){throw 'R0_FRAME_ORIGIN_UNKNOWN'}
+ return ,$life
+}
+function Test-R0FrameDirectShape($Value) {
+ if($Value -isnot [pscustomobject]){return $false}
+ $keys=@('status','exitCode','exitObserved','killAttempted','stdoutEof','stderrEof','stdoutPending',
+  'stderrPending','cleanup','output','outputOwnership','executionAuthorized','osVerified',
+  'implicitCompilerIoVerified','bootstrapRace','synchronousFileIoHardDeadlineVerified','realCompilerValidation')
+ $properties=@($Value.PSObject.Properties)
+ if($properties.Count -ne $keys.Count){return $false}
+ foreach($property in $properties){
+  if($property.MemberType -ne [Management.Automation.PSMemberTypes]::NoteProperty -or $property.Name -cnotin $keys){return $false}
+ }
+ foreach($key in @('exitObserved','killAttempted','stdoutEof','stderrEof','stdoutPending','stderrPending',
+   'executionAuthorized','osVerified','implicitCompilerIoVerified','synchronousFileIoHardDeadlineVerified')){
+  if($Value.$key -isnot [bool]){return $false}
+ }
+ return $true
+}
+function New-R0FrameAnchor($Context) {
+ $anchor=@{context=$Context;valid=$false;kind='UNKNOWN';run=$null;process=$null;handle=$null;
+  captured=$false;startAttempted=$false;reads=@{};runKeys=@();direct=$null;directSnapshot=@{}}
+ try {
+  if(!$Context.finished){throw 'R0_FRAME_CALL_NOT_FINISHED'}
+  $life=Get-R0FrameLifetime $Context
+  if($null -eq $life.retained){
+   # 이 분기는 동일 Invoke의 정상 직접 반환만 사용한다. 입력/JSON/재구성 객체 수용0.
+   if(!$Context.normalReturn -or !(Test-R0FrameDirectShape $Context.direct)){throw 'R0_FRAME_DIRECT_UNKNOWN'}
+   $d=$Context.direct
+   if($d.cleanup -cne 'OWNED_FILES_REMOVED_NOT_OS_VALIDATED' -or !$d.exitObserved -or
+      !$d.stdoutEof -or !$d.stderrEof -or $d.stdoutPending -or $d.stderrPending -or
+      $null -ne $d.output -or $d.exitCode -isnot [int] -or $d.exitCode -eq 0 -or
+      $d.status -cnotin @('COMPILE_FAILED','TIMEOUT') -or $d.executionAuthorized -or $d.osVerified -or
+      $d.implicitCompilerIoVerified -or $d.synchronousFileIoHardDeadlineVerified){throw 'R0_FRAME_DIRECT_CONTRADICTION'}
+   $anchor.direct=$d
+   foreach($p in $d.PSObject.Properties){$anchor.directSnapshot[$p.Name]=$p.Value}
+   $anchor.kind='SOURCE_ALREADY_DISPOSED';$anchor.valid=$true
+   return ,$anchor
+  }
+  $run=$life.retained
+  $keys=@('process','processHandle','originalProcessCaptured','startAttempted','exitObserved','exitCode',
+   'killAttempted','terminationDeadlineMono','reads','diagnostics','pins','owned','directories','source',
+   'status','cleanup','output','outputOwnership','extraItems','elapsedMs','diagnosticsWriteAttempted')
+  if(!(Test-R0FrameKeys $run $keys) -or $run.originalProcessCaptured -isnot [bool] -or
+     $run.startAttempted -isnot [bool] -or !(Test-R0FrameKeys $run.reads @('stdout','stderr')) -or
+     $run.diagnostics -isnot [hashtable]){throw 'R0_FRAME_RUN_SHAPE_UNKNOWN'}
+  $anchor.run=$run;$anchor.process=$run.process;$anchor.handle=$run.processHandle
+  $anchor.runKeys=$keys
+  $anchor.captured=$run.originalProcessCaptured;$anchor.startAttempted=$run.startAttempted
+  foreach($name in @('stdout','stderr')){
+   $r=$run.reads[$name];$d=$run.diagnostics[$name]
+   if(!(Test-R0FrameKeys $r @('stream','buffer','pending','eof')) -or $r.stream -isnot [IO.Stream] -or
+      $r.buffer -isnot [byte[]] -or $r.buffer.Length -ne 4096 -or $r.eof -isnot [bool] -or
+      ($null -ne $r.pending -and $r.pending -isnot [Threading.Tasks.Task]) -or
+      $d -isnot [hashtable] -or !$d.ContainsKey('eof') -or $d.eof -isnot [bool]){throw 'R0_FRAME_READ_SHAPE_UNKNOWN'}
+   $anchor.reads[$name]=@{entry=$r;stream=$r.stream;buffer=$r.buffer;task=$r.pending;
+    eof=$r.eof;diagnostic=$d;diagnosticEof=$d.eof}
+  }
+  $anchor.kind='RETAINED_ORIGINAL';$anchor.valid=$true
+ } catch {$anchor.valid=$false;$anchor.kind='UNKNOWN'}
+ return ,$anchor
+}
+function Get-R0FrameTaskMetadata($ReadAnchor) {
+ $value=@{state='UNKNOWN';terminal=$false;faulted=$false;canceled=$false;eof=$ReadAnchor.eof;
+  diagnosticEof=$ReadAnchor.diagnosticEof}
+ $task=$ReadAnchor.task
+ if($null -eq $task){
+  if($ReadAnchor.eof -and $ReadAnchor.diagnosticEof){$value.state='CONSUMED_EOF';$value.terminal=$true}
+  return ,$value
+ }
+ if($task -isnot [Threading.Tasks.Task]){return ,$value}
+ $value.terminal=$task.IsCompleted;$value.faulted=$task.IsFaulted;$value.canceled=$task.IsCanceled
+ if(!$value.terminal){$value.state='PENDING'}
+ elseif($value.faulted){$value.state='FAULTED'}
+ elseif($value.canceled){$value.state='CANCELED'}
+ else{$value.state='COMPLETED_NOT_CONSUMED'}
+ return ,$value
+}
+function Get-R0FrameObservation($Anchor) {
+ $s=[pscustomobject]@{schemaVersion=1;state='UNKNOWN';originMatched=$false;sourceCallFinished=$false;
+  provenance='UNKNOWN';originalCaptured=$false;childExitNow=$false;stdoutTask='UNKNOWN';stderrTask='UNKNOWN';
+  stdoutTerminal=$false;stderrTerminal=$false;stdoutEof=$false;stderrEof=$false;
+  stdoutDiagnosticEof=$false;stderrDiagnosticEof=$false;releaseEligible=$false;
+  nativeIoVerified=$false;dataCompleteness='NOT_REEVALUATED';files='PRESERVED_OR_SOURCE_CLEANUP_UNRECHECKED'}
+ try {
+  if(!$Anchor.valid -or !$Anchor.context.finished){return $s}
+  $c=$Anchor.context;$life=Get-R0FrameLifetime $c
+  $s.sourceCallFinished=$true
+  if($Anchor.kind -ceq 'SOURCE_ALREADY_DISPOSED'){
+   if($null -ne $life.retained -or !$c.normalReturn -or
+      ![object]::ReferenceEquals($c.direct,$Anchor.direct) -or !(Test-R0FrameDirectShape $c.direct)){return $s}
+   foreach($key in $Anchor.directSnapshot.Keys){
+    if($c.direct.$key -cne $Anchor.directSnapshot[$key]){return $s}
+   }
+   $s.originMatched=$true;$s.provenance='SAME_NORMAL_DIRECT_RETURN'
+   $s.childExitNow=$true;$s.stdoutTask='SOURCE_EOF_DISPOSED';$s.stderrTask='SOURCE_EOF_DISPOSED'
+   $s.stdoutTerminal=$true;$s.stderrTerminal=$true;$s.stdoutEof=$true;$s.stderrEof=$true
+   $s.stdoutDiagnosticEof=$true;$s.stderrDiagnosticEof=$true
+   $s.state='SOURCE_ALREADY_DISPOSED';$s.releaseEligible=$true
+   return $s
+  }
+  $run=$life.retained
+  if($Anchor.kind -cne 'RETAINED_ORIGINAL' -or ![object]::ReferenceEquals($run,$Anchor.run) -or
+     !(Test-R0FrameKeys $run $Anchor.runKeys) -or
+     ![object]::ReferenceEquals($run.process,$Anchor.process) -or
+     ![object]::ReferenceEquals($run.processHandle,$Anchor.handle) -or
+     $run.originalProcessCaptured -isnot [bool] -or $run.startAttempted -isnot [bool] -or
+     $run.originalProcessCaptured -cne $Anchor.captured -or $run.startAttempted -cne $Anchor.startAttempted -or
+     !(Test-R0FrameKeys $run.reads @('stdout','stderr'))){return $s}
+  foreach($name in @('stdout','stderr')){
+   $a=$Anchor.reads[$name];$r=$run.reads[$name];$d=$run.diagnostics[$name]
+   if(!(Test-R0FrameKeys $r @('stream','buffer','pending','eof')) -or
+      $r.eof -isnot [bool] -or $d -isnot [hashtable] -or !$d.ContainsKey('eof') -or $d.eof -isnot [bool] -or
+      ![object]::ReferenceEquals($r,$a.entry) -or ![object]::ReferenceEquals($r.stream,$a.stream) -or
+      ![object]::ReferenceEquals($r.buffer,$a.buffer) -or ![object]::ReferenceEquals($r.pending,$a.task) -or
+      ![object]::ReferenceEquals($d,$a.diagnostic) -or $r.eof -cne $a.eof -or $d.eof -cne $a.diagnosticEof){return $s}
+  }
+  $out=Get-R0FrameTaskMetadata $Anchor.reads.stdout
+  $err=Get-R0FrameTaskMetadata $Anchor.reads.stderr
+  $s.originMatched=$true;$s.provenance='SAME_PRIVATE_RETAINED_REFERENCES'
+  $s.stdoutTask=$out.state;$s.stderrTask=$err.state;$s.stdoutTerminal=$out.terminal;$s.stderrTerminal=$err.terminal
+  $s.stdoutEof=$out.eof;$s.stderrEof=$err.eof;$s.stdoutDiagnosticEof=$out.diagnosticEof;$s.stderrDiagnosticEof=$err.diagnosticEof
+  if(!$Anchor.captured -or !$Anchor.startAttempted -or $Anchor.process -isnot [Diagnostics.Process] -or
+     $Anchor.handle -isnot [Microsoft.Win32.SafeHandles.SafeProcessHandle] -or
+     $Anchor.handle.IsClosed -or $Anchor.handle.IsInvalid){return $s}
+  $s.originalCaptured=$true
+  # 원 Process/SafeHandle 확보 뒤 같은 Process에만 묻는다. 새 handle/PID/ExitCode 질의0.
+  $s.childExitNow=$Anchor.process.HasExited
+  $s.state='RETAINED_ORIGINAL_OBSERVED'
+  $s.releaseEligible=$s.childExitNow -and $out.terminal -and $err.terminal
+ } catch {$s.state='UNKNOWN';$s.releaseEligible=$false}
+ return $s
+}
+function Invoke-R0FrameDispatch($Anchor,$Token) {
+ $kind='INVALID'
+ if($null -eq $Token){$kind='INPUT_UNAVAILABLE'}
+ elseif($Token -is [string] -and $Token -ceq 'OBSERVE_R0_ORIGINAL'){$kind='OBSERVE'}
+ elseif($Token -is [string] -and $Token -ceq 'RELEASE_R0_ORIGINAL'){$kind='RELEASE'}
+ $summary=Get-R0FrameObservation $Anchor
+ $action='HOLD'
+ if($kind -ceq 'RELEASE' -and $summary.releaseEligible){$action='RELEASE_ORIGINAL_HOST_ONLY'}
+ return [pscustomobject]@{inputKind=$kind;action=$action;summary=$summary}
+}
+function Write-R0FrameDecision($Decision) {
+ $s=$Decision.summary
+ $value=[ordered]@{schemaVersion=1;inputKind=$Decision.inputKind;action=$Decision.action;state=$s.state;
+  originMatched=$s.originMatched;sourceCallFinished=$s.sourceCallFinished;provenance=$s.provenance;
+  originalCaptured=$s.originalCaptured;childExitNow=$s.childExitNow;
+  stdoutTask=$s.stdoutTask;stderrTask=$s.stderrTask;stdoutTerminal=$s.stdoutTerminal;stderrTerminal=$s.stderrTerminal;
+  stdoutEof=$s.stdoutEof;stderrEof=$s.stderrEof;stdoutDiagnosticEof=$s.stdoutDiagnosticEof;stderrDiagnosticEof=$s.stderrDiagnosticEof;
+  releaseEligible=$s.releaseEligible;nativeIoVerified=$false;dataCompleteness='NOT_REEVALUATED';
+  files='PRESERVED_OR_SOURCE_CLEANUP_UNRECHECKED'}
+ $json=ConvertTo-Json -InputObject $value -Compress -Depth 3
+ if([Text.Encoding]::UTF8.GetByteCount($json) -gt 4096){throw 'R0_FRAME_SUMMARY_LIMIT'}
+ Write-Output $json
+}
+function New-R0FrameResultOrigin($Context) {
+ $origin=@{kind='NOT_OBSERVED';context=$Context;original=$null;retained=$null;runKeys=@()}
+ try {
+  if(!$Context.finished){return ,$origin}
+  $life=Get-R0FrameLifetime $Context
+  $origin.retained=$life.retained
+  if($Context.normalReturn -and $null -ne $Context.direct){
+   if(!(Test-R0FrameDirectShape $Context.direct)){return ,$origin}
+   $origin.original=$Context.direct;$origin.kind='SAME_NORMAL_DIRECT_RETURN'
+  } elseif($null -eq $Context.direct){
+   $keys=@('process','processHandle','originalProcessCaptured','startAttempted','exitObserved','exitCode',
+    'killAttempted','terminationDeadlineMono','reads','diagnostics','pins','owned','directories','source',
+    'status','cleanup','output','outputOwnership','extraItems','elapsedMs','diagnosticsWriteAttempted')
+   if(!(Test-R0FrameKeys $life.retained $keys)){return ,$origin}
+   $origin.original=$life.retained;$origin.runKeys=$keys;$origin.kind='SAME_PRIVATE_RETAINED_RUN'
+  }
+ } catch {$origin.kind='NOT_OBSERVED';$origin.original=$null}
+ return ,$origin
+}
+function Write-R0FrameResultOnce($State,$Origin) {
+ if(!(Test-R0FrameKeys $State @('attempted')) -or $State.attempted -isnot [bool]){throw 'R0_FRAME_RESULT_STATE_INVALID'}
+ if($State.attempted){throw 'R0_FRAME_RESULT_ALREADY_ATTEMPTED'}
+ # 부분 출력/오류에도 같은 결과를 자동 재출력하지 않는다. 실행/해제 권위가 아닌 출력 latch다.
+ $State.attempted=$true
+ $v=[ordered]@{schemaVersion=1;recordType='R0_RESULT';provenance='NOT_OBSERVED';observation='NOT_OBSERVED';
+  status='NOT_OBSERVED';exitCode=$null;killAttempted=$null;cleanup='NOT_OBSERVED';
+  output=[ordered]@{bytes=$null;sha256=$null};outputOwnership='NOT_OBSERVED';
+  compilerPid=$null;pidObservation='NOT_OBSERVED';redactedFields=0}
+ $original=$null
+ try {
+  $c=$Origin.context;$life=Get-R0FrameLifetime $c
+  if(![object]::ReferenceEquals($life.retained,$Origin.retained)){throw 'R0_FRAME_RESULT_ORIGIN_CHANGED'}
+  if($Origin.kind -ceq 'SAME_NORMAL_DIRECT_RETURN' -and $c.normalReturn -and
+     [object]::ReferenceEquals($c.direct,$Origin.original) -and (Test-R0FrameDirectShape $c.direct)){
+   $original=$Origin.original;$v.provenance='SAME_NORMAL_DIRECT_RETURN'
+  } elseif($Origin.kind -ceq 'SAME_PRIVATE_RETAINED_RUN' -and $null -eq $c.direct -and
+     [object]::ReferenceEquals($life.retained,$Origin.original) -and (Test-R0FrameKeys $life.retained $Origin.runKeys)){
+   $original=$Origin.original;$v.provenance='SAME_PRIVATE_RETAINED_RUN'
+  }
+ } catch {$original=$null}
+ if($null -ne $original){
+  $v.observation='OBSERVED_SCALARS'
+  if($original.status -is [string] -and $original.status -cin @('COMPILE_FAILED','COMPILE_RETURNED_NOT_OS_VALIDATED','TIMEOUT','RUN_UNCONFIRMED')){
+   $v.status=$original.status
+  } else {$v.redactedFields++}
+  if($null -eq $original.exitCode){$v.exitCode=$null}
+  elseif(($original.exitCode -is [int] -or $original.exitCode -is [long]) -and
+         $original.exitCode -ge [int]::MinValue -and $original.exitCode -le [int]::MaxValue){$v.exitCode=[int]$original.exitCode}
+  else {$v.redactedFields++}
+  if($original.killAttempted -is [bool]){$v.killAttempted=$original.killAttempted}else{$v.redactedFields++}
+  if($original.cleanup -is [string] -and $original.cleanup -cin @('PRESERVED_UNCONFIRMED','OWNED_FILES_REMOVED_NOT_OS_VALIDATED')){
+   $v.cleanup=$original.cleanup
+  } else {$v.redactedFields++}
+  if($original.outputOwnership -is [string] -and $original.outputOwnership -cin @('NOT_PROVEN_BY_PATHNAME','PRESERVED_UNCONFIRMED')){
+   $v.outputOwnership=$original.outputOwnership
+  } else {$v.redactedFields++}
+  if($null -ne $original.output){
+   if(Test-R0FrameKeys $original.output @('bytes','sha256')){
+    $o=$original.output
+    if(($o.bytes -is [int] -or $o.bytes -is [long]) -and $o.bytes -ge 0 -and $o.bytes -le 4194304){$v.output.bytes=[long]$o.bytes}
+    else {$v.redactedFields++}
+    if($o.sha256 -is [string] -and $o.sha256.Length -eq 64 -and $o.sha256 -cmatch '\A[A-F0-9]{64}\z'){$v.output.sha256=$o.sha256}
+    else {$v.redactedFields++}
+   } else {$v.redactedFields++}
+  }
+  if($v.redactedFields -gt 0){$v.observation='PARTIAL_REDACTED'}
+ }
+ # 원 객체/Process/Module/환경/source/diagnostic 본문은 직렬화하지 않는다.
+ $json=ConvertTo-Json -InputObject $v -Compress -Depth 3
+ if([Text.Encoding]::UTF8.GetByteCount($json) -gt 4096){throw 'R0_FRAME_RESULT_SUMMARY_LIMIT'}
+ Write-Output $json
+}
+$r0Compressed=$null;$r0Expanded=$null;$r0Raw=$null;$r0HostBytes=$null
+$r0Memory=$null;$r0Zlib=$null;$r0Sha1=$null;$r0Sha256=$null;$r0Context=$null;$r0Anchor=$null
+$r0ResultOrigin=$null;$r0ResultWriteState=@{attempted=$false}
+$r0CallAttempted=$false;$r0AuxCleanupFault=$false
+try {
+ if($null -ne (Get-Variable -Name DevelopmentRecoveryR0Retain -Scope Script -ErrorAction Ignore)){throw 'R0_FRAME_EXISTING_CLOSURE'}
+ $r0Compressed=Read-R0FrameFixed 'D:\Project\Anvil\.git\objects\8d\38a21bf18f5b6bed95c8582b87d12e090d95f3' 30236
+ $r0Memory=[IO.MemoryStream]::new($r0Compressed,$false)
+ $r0Zlib=[IO.Compression.ZLibStream]::new($r0Memory,[IO.Compression.CompressionMode]::Decompress,$true)
+ $r0Expanded=[byte[]]::new(96964);$r0Offset=0
+ while($r0Offset -lt $r0Expanded.Length){
+  $r0Count=$r0Zlib.Read($r0Expanded,$r0Offset,$r0Expanded.Length-$r0Offset)
+  if($r0Count -le 0){throw 'R0_FRAME_OBJECT_SHORT'};$r0Offset+=$r0Count
+ }
+ if($r0Zlib.ReadByte() -ne -1){throw 'R0_FRAME_OBJECT_EXTRA'}
+ $r0Zlib.Dispose()
+ if($r0Memory.Position -ne $r0Memory.Length -or
+    [Text.Encoding]::ASCII.GetString($r0Expanded,0,11) -cne ('blob 96953'+[char]0)){throw 'R0_FRAME_OBJECT_HEADER'}
+ $r0Raw=[byte[]]::new(96953);[Array]::Copy($r0Expanded,11,$r0Raw,0,96953)
+ $r0Sha1=[Security.Cryptography.SHA1]::Create();$r0Sha256=[Security.Cryptography.SHA256]::Create()
+ $r0Blob=[BitConverter]::ToString($r0Sha1.ComputeHash($r0Expanded)).Replace('-','').ToLowerInvariant()
+ $r0RawDigest=[BitConverter]::ToString($r0Sha256.ComputeHash($r0Raw)).Replace('-','')
+ if($r0Blob -cne '8d38a21bf18f5b6bed95c8582b87d12e090d95f3' -or
+    $r0RawDigest -cne 'F81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49'){throw 'R0_FRAME_OBJECT_HASH'}
+ $r0HostPath=Join-Path (Get-Location).ProviderPath 'scripts\development-recovery-host.ps1'
+ $r0HostBytes=Read-R0FrameFixed $r0HostPath 36356
+ $r0HostDigest=[BitConverter]::ToString($r0Sha256.ComputeHash($r0HostBytes)).Replace('-','')
+ if($r0HostDigest -cne '8D03365E9A97A9A56BF320233D95010A07D4F3340EFD5362D3195ECCDB99DFAC'){throw 'R0_FRAME_HOST_HASH'}
+ $r0HostScript=[scriptblock]::Create([Text.UTF8Encoding]::new($false,$true).GetString($r0HostBytes))
+ . $r0HostScript
+ $r0Retain=(Get-Variable -Name DevelopmentRecoveryR0Retain -Scope Script).Value
+ $r0Module=$r0Retain.Module
+ $r0Lifetime=$r0Module.SessionState.PSVariable.GetValue('lifetime')
+ if(!(Test-R0FrameKeys $r0Lifetime @('started','retained')) -or
+    $r0Lifetime.started -isnot [bool] -or $r0Lifetime.started -or $null -ne $r0Lifetime.retained){throw 'R0_FRAME_COLD_SHAPE'}
+ $r0Context=@{retain=$r0Retain;module=$r0Module;lifetime=$r0Lifetime;finished=$false;normalReturn=$false;direct=$null}
+ $r0CallAttempted=$true
+ try {
+  # 입력/JSON이 아니라 이 동일 exact Invoke가 정상 반환한 객체만 그 자리에서 고정한다.
+  $r0Context.direct=Invoke-DevelopmentRecoveryR0CompileSource -GitSourceBytes $r0Raw
+  $r0Context.normalReturn=$true
+ } catch {$r0Context.normalReturn=$false}
+ finally {$r0Context.finished=$true}
+ $r0ResultOrigin=New-R0FrameResultOrigin $r0Context
+ $r0Anchor=New-R0FrameAnchor $r0Context
+} catch {
+ if(!$r0CallAttempted){Write-Output '{"schemaVersion":1,"state":"PREFLIGHT_FAILED_NO_INVOKE","action":"ABORT_NO_TARGET_STARTED"}';return}
+ # Invoke 뒤 예외에는 host를 끝내지 않는다. 원 closure/context는 그대로 보존한다.
+ $r0Anchor=@{context=$r0Context;valid=$false;kind='UNKNOWN'}
+} finally {
+ foreach($r0Aux in @($r0Zlib,$r0Memory,$r0Sha1,$r0Sha256)){
+  if($null -ne $r0Aux){try{$r0Aux.Dispose()}catch{$r0AuxCleanupFault=$true}}
+ }
+ foreach($r0Bytes in @($r0Compressed,$r0Expanded,$r0Raw,$r0HostBytes)){
+  if($null -ne $r0Bytes){
+   try{if($r0Bytes -isnot [byte[]]){throw 'R0_FRAME_BUFFER_SHAPE'};[Array]::Clear($r0Bytes,0,$r0Bytes.Length)}
+   catch{$r0AuxCleanupFault=$true}
+  }
+ }
+}
+if($r0AuxCleanupFault){$r0Anchor.valid=$false;$r0Anchor.kind='UNKNOWN'}
+try{Write-R0FrameResultOnce $r0ResultWriteState $r0ResultOrigin}catch{<# 결과 출력은 총1회. 권위/RELEASE 입력으로 쓰지 않음 #>}
+try{Write-R0FrameDecision (Invoke-R0FrameDispatch $r0Anchor 'OBSERVE_R0_ORIGINAL')}catch{<# 출력 실패도 원 host 보존 #>}
+$r0InputUnavailableReported=$false
+while($true){
+ $r0Token=$null
+ try {$r0Token=[Console]::ReadLine()} catch {$r0Token=$null}
+ if($null -eq $r0Token){
+  if(!$r0InputUnavailableReported){
+   try{Write-R0FrameDecision (Invoke-R0FrameDispatch $r0Anchor $null)}catch{<# 출력 실패 보존 #>}
+   $r0InputUnavailableReported=$true
+  }
+  # EOF/입력유실은 해제 권위가 아니다. 원 참조를 유지하며 busy spin/로그 누적0.
+  [Threading.Thread]::Sleep(250)
+  continue
+ }
+ $r0InputUnavailableReported=$false
+ $r0Decision=Invoke-R0FrameDispatch $r0Anchor $r0Token
+ $r0SummaryWritten=$false
+ try{Write-R0FrameDecision $r0Decision;$r0SummaryWritten=$true}catch{<# 출력 실패에 해제하지 않음 #>}
+ if($r0SummaryWritten -and $r0Decision.action -ceq 'RELEASE_ORIGINAL_HOST_ONLY'){break}
+}
+# 외부 exact 결정에 포함된 조건이 직전 재검증된 경우만 원 host를 반환한다.
+# 파일 삭제/원 Process.Kill/새 Dispose/GetResult/재Invoke/다른 process 실행0.
+```
+
+이 fence의 정상 직접 반환 provenance는 원 source가 자기 파일 정리·finally Dispose를 모두 정상 반환한 경우에만 사용하는 메모리 수명 판단이다. exception·caller JSON·나중에 재구성한 객체·조합 모순·retained가 뒤에 바뀐 경우는 UNKNOWN/HOLD다. 정상 직접 반환/retained=null case는 새 중단점으로 무조건 HOLD하지 않지만 **파일 잔여0/OS PASS로 승격하지 않는다**. retained case는 최초 원 run/Process/SafeHandle/stream/buffer/Task를 고정한 뒤만 관측하며 다른 객체를 뒤늦게 채택하지 않는다. 입력 token은 실행·해제 권위가 아니고 외부 exact 결정이 위 조건부 원 host 종료를 포함해야 한다.
+
+원 native read가 완료됐는지에 대한 OS 증거, 실제 Process.HasExited와 SafeHandle·원 pipe Task 동작, 실제 PTY 입력 유실 뒤 host 보존은 NOT_RUN이다. source/bootstrap의 이미 명시한 경합·암묵 I/O·hard deadline 잔여와 구분한다. 아래 순수 검사는 문서 후보 함수/dispatcher의 제어흐름만 검증하며 actual R0 실행 준비 PASS를 의미하지 않는다.
+
+**순수 fixture 결과 6bc48f:** gated B1 cold closure와 fakeRun/MemoryStream/TaskCompletionSource sentinel만 사용했다. 같은 원 run/Task 고정과 늦은 terminal·EOFfalse 구분, fault/cancel terminal·null+EOFfalse UNKNOWN, Task/entry/run shape 교체 거절, fake Process의 HasExited getter 미호출을 확인했다. 고정 OBSERVE는 해제하지 않고 RELEASE도 원 조건 미충족이면 HOLD, 대소문자/임의 명령 문자열/기존 probe token/EOF는 고정 INVALID 또는 INPUT_UNAVAILABLE/HOLD다. 축약 summary1개·4KiB 이하·Process/Module 객체 비직렬화를 확인했다.
+
+정상 직접 반환 분기는 fixture의 명시 합성 producer가 준 same object로 조건 분기만 시험했다. 정상 반환 fact가 없는 fakeDirectReturn, 나중에 JSON으로 재구성한 객체, pending 모순·필드 변조, 정상반환 fact 취소, 뒤늦은 retained 변경은 모두 해제 거절했다. 합성 정상 tuple의 조건부 RELEASE **결정값만** 확인했고 실제 host를 종료하지 않았다. 실제 source의 정상 cleanup/finally Dispose와 직접 반환 provenance는 현재 source의 연결 경로로 검토하며 실R0 증거로 승격하지 않는다.
+
+실제 Invoke/csc/Process.HasExited/원 native read·Console dispatcher loop/원 host 해제/target process·file 생성은0이다. source main body와 Console loop는 순수 fixture에서 실행하지 않았고, 같은 fence에서 추출한 함수만 실행했다. source/도구 내부의 observer 연결 누락은 이 전체후보에서 해소했으며, 실제 런타임의 입력 유실/원 process·task/host 해제와 기존 source의 동기 I/O hard deadline은 여전히 미검증이다. 오류나 새로운 내부 미진을 bootstrap 예외로 간주해 승인에 넘기지 않고 독립 source 검수를 먼저 받는다.
+
+#### 완결 fence 독립검수 뒤 재작업1 — 결과 회수 I1·문구 M1 보완
+
+- Main이 전달한 독립 첫 판정은 C0/I1/M1이다. 583-byte 수명 summary에 status/exitCode/killAttempted/cleanup/output/outputOwnership 여섯 결과 필드가 없었고, source 정상 실패 정리에서 diagnostics.json까지 삭제하면 그 결과를 사후 회수할 수 없었다. 이를 bootstrap 예외로 넘기지 않고 실제 fence에 결과 receipt를 연결했다.
+- Invoke의 동기 unwind 직후 **같은 정상 direct 원객체**를 New-R0FrameResultOrigin에 고정한다. direct가 없을 때만 같은 Retain/Module/lifetime의 원 retained run을 최초 고정한다. 나중에 바뀐 direct/run/구조는 수용하지 않는다. Write-R0FrameResultOnce가 표준 status/cleanup/ownership enum, int32 exitCode, bool killAttempted, output의 bytes0..4MiB·대문자64hex SHA256만 새 작은 JSON에 투영한다. original 객체/source/환경/Process/Module/exception/diagnostic 본문을 통째로 직렬화하지 않는다.
+- 원 결과가 없으면 NOT_OBSERVED/null, 손상되거나 허용 형식 밖이면 PARTIAL_REDACTED/count로 표시한다. output에는 bytes/sha256 두 값만 있고 compilerPid=null/pidObservation=NOT_OBSERVED다. 현재 source가 반환하지 않는 PID를 다른 process 검색이나 역사값으로 만들지 않는다.
+- one-shot latch는 첫 출력 시도 전에 기록한다. 부분 출력/직렬화/출력 오류 뒤 재시도0, 같은 state의 재호출은 고정 R0_FRAME_RESULT_ALREADY_ATTEMPTED로 거절한다. receipt는 최초 수명 summary 앞에서 한 번만 출력하며 OBSERVE/RELEASE token으로 다시 출력하지 않는다. receipt JSON/정정 count/결과 status는 원 host 해제·권한 판단 입력이 아니다. 기존 private 원 객체 observer·직접 정상 반환 provenance와 두 고정 token 기준은 그대로 유지했다.
+- **51bf4e exit0 / 변경범위30검사·AST0:** 정상 실패 정리 direct 결과379 bytes, same retained 결과417 bytes, 120,000자 secret canary가 섞인 손상값도 원문비노출345 bytes였다. 여섯 필드·실제 허용 bytes/hash·4MiB 경계, 음수/초과/문자 크기 거절, hash 형식, output 추가 key/ScriptProperty getter 미평가, metadata 부재, 동일 원객체/shape 변경, 출력 중복 거절, 결과 JSON 변조가 RELEASE 판단을 바꾸지 않는 반례를 확인했다. 기존31 수명 검사는 코드 불변이라 다시 실행하지 않았다.
+- 문구 M1은 “loop 없음”을 제품 source/실제 host 미적용·§6 문서 후보에만 존재로 정정했다. 별도 host metadata의 IndexOf 자기일치 오류와 whole-argument 정정5e1d59/15e84a도 위에 이력으로 남겼다. 이 정정은 RootHost 안전 판정이나 실제 R0 실행 증거가 아니다.
+- 제품 source/고정 throw/QAmax2/gate·실행 token·동기 I/O/정리 계약 변경0. 실제 Invoke/csc/native·Console loop/원 host 해제/target process·file 생성0이며 새 독립 scoped 재검수가 필요하다.
