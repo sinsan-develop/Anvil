@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 FN08 합성 등록자료 공급 adapter**: 명시 합성 repository/source를 기존 current/readPart에 연결하고 exact 등록/현재성·부분 bytes/UTF-8/hash와 읽기 직전 원 command 최단기한을 검사한다. 신규9/선행 직접인접115통과·type0·scoped C0/I0/M0. 기존 소비자 변경0, 실제 지속등록/보호원문/app/Agent 연결은 미완료로 유지한다.
+
 - **2026-10-25 R0 실행기 source 준비**: 역사 d71/F81 raw 검증·원 compiler 수명·bounded 진단/시간예산·불명 보존 source를 연결했다. 첫 실행 거절 유지, scoped C0/I0/M1(현지화진단 이월), 순수/차단43·변경6통과. 실제 compiler/OS·실행 예외·출력귀속/경합 검증은 미완료이며 P03/IX01 실행 준비 완료가 아니다.
 
 - **2026-10-25 UI02 고정 참조 준비 요구 조회**: 생성3단계에 기존 GET·exact ref/graph hash를 소비하는 명시 조회·닫기를 연결했다. 신규8/인접포함21통과·type/build0·scoped C0/I0/M0, 입력/저장/생성 변경0. 실제 React 전환/ABA·served/DB는 미확인이며 총괄/환경 선택·실제 준비 판정과 전체 UI02 완료를 의미하지 않는다.
