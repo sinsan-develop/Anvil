@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 합성 쓰기 관측 source**: 원 writer 종료 후 ID/바이트 재관측과 no-op 거절을 준비하고 독립 delta C0/I0/M0를 확인했다. native 컴파일/OS/실정리 NOT_RUN·전체 source/계획 미완료, 다음은 변경후 원 관측·정리/host·8case 연결이며 같은 승인②를 유지한다.
+
 - **2026-10-25 R1 공유간섭 source 보완**: seal의 최소 read/full-share 소유 handle과 일시 action/부모 보호 handle을 분리했다. 종료 실패 선반영 정적 I1은 성공 확인 뒤 Closed=true로 보정·한정 재검토 C0/I0/M0. native NOT_COMPILED/OS NOT_RUN·비간섭 UNRESOLVED이며 원 I1/I3/전체 source·계획 완료는 아니다. 불변22검사/P1 재실행0, 같은 승인②의 변경후 원 관측·정리/host 경계를 다음으로 계속한다.
 
 - **2026-10-25 원 lease mutation·R1 process/time source**: PS pathname 본문을 원 lease 고정6행동 호출로 대체하고 영수증 대조·R1 fixed sleep Job/원process/시간 후보를 작성했다. source delta 독립 C0/I0/M0·PS 소비22/type/구문과 native/OS NOT_RUN을 분리했다. 실행 차단 유지, fixture 공유간섭/변경후 정리·실 host/binder/watchdog·나머지8/pin상속 미완료다. 같은 승인②에서 다음 소유/보호 handle 비간섭 보완을 이어가며 전체 source/계획 완료로 표시하지 않는다.

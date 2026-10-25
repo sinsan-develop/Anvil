@@ -408,9 +408,13 @@ internal static class DevelopmentRecoveryPathGuard {
      case "FILE_ID_CHANGED":
       operation="RENAME_AND_CREATE_NEW_LEAF";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x10000u);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"leaf-retained.txt",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"leaf-retained.txt");Create(parent.Pin,"leaf.txt",false,new byte[]{88});break;
      case "OUTSIDE_WRITE":
-      operation="WRITE_OWN_UNSELECTED_SENTINEL";entry=caseChildren[id+"/unselected.txt"];Require(entry.Expected!=null&&entry.Expected.Length<=16);action=OpenAction(entry,2u);Fresh();Require(SetFilePointerEx(action.Handle,0,out position,0)&&position==0);
+      operation="WRITE_OWN_UNSELECTED_SENTINEL";entry=caseChildren[id+"/unselected.txt"];Require(entry.Expected!=null&&entry.Expected.Length<=16&&(entry.Expected.Length==0||entry.Expected[0]!=88));action=OpenAction(entry,2u);Fresh();Require(SetFilePointerEx(action.Handle,0,out position,0)&&position==0);
       if(!WriteFile(action.Handle,new byte[]{88},1,out count,IntPtr.Zero)||count!=1){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}
-      byte[] changed=entry.Expected.Length==0?new byte[1]:(byte[])entry.Expected.Clone();changed[0]=88;entry.Expected=changed;entry.Pin.Before=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);status="00000000";break;
+      byte[] changed=entry.Expected.Length==0?new byte[1]:(byte[])entry.Expected.Clone();changed[0]=88;
+      // writer 종료 뒤 확정 시각을 읽는다. 원 부모 임시 pin은 바이트 대조가 끝날 때까지 유지한다.
+      action.Handle.Dispose();Require(action.Handle.CloseAttempted&&action.Handle.CloseSucceeded);Fresh();
+      Fact prior=entry.Pin.Before,settled=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);Require(prior.Volume==settled.Volume&&prior.Id==settled.Id&&prior.Path==settled.Path&&!settled.Directory&&prior.Attributes==settled.Attributes&&prior.Links==settled.Links&&settled.Size==changed.Length);
+      entry.Expected=changed;entry.Pin.Before=settled;CheckEntry(entry);Fresh();status="00000000";break;
      case "HARD_LINK":
       operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,ReadData);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);break;
      case "REPARSE_CHILD":

@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- OUTSIDE_WRITE writer 종료 확인 뒤 원 ID/예상바이트 재관측·no-op 거절 소스 보완은 한정 정적 C0/I0/M0다. native raw0AD7C807B297E85B79B96D3CD8C9B91DF912A7F37A8A8D317949F2BFCBFC31EA, 컴파일/OS/실정리 NOT_RUN·전체 source 준비완료가 아니다. 원 I1/I3/나머지8case·실 host 미완료를 유지한다.
+
 - **2026-10-25 R1 공유간섭 source 보완**: seal의 최소 read/full-share 소유 handle과 일시 action/부모 보호 handle을 분리했다. 종료 실패 선반영 정적 I1은 성공 확인 뒤 Closed=true로 보정·한정 재검토 C0/I0/M0. native NOT_COMPILED/OS NOT_RUN·비간섭 UNRESOLVED이며 원 I1/I3/전체 source·계획 완료는 아니다. 불변22검사/P1 재실행0, 같은 승인②의 변경후 원 관측·정리/host 경계를 다음으로 계속한다. 현재 native raw8540379976E5F24220C35F5A1291545DD721FA2BDA6115952159418CE44C9B1D. 실제 컴파일·OS·서비스 변경 허가로 확대하지 않는다.
 
 - PS pathname 본문은 제거했고 원 QaFixtureLease의 고정6행동을 호출하는 source로 대체했다. 결과는 원 case/행동/4문자열·상태만 대조하며 native/os false·guard NOT_EVALUATED·fixtureInterference UNRESOLVED·cleanupRequiredtrue다. R1 QaProcessProbe는 production과 분리한 fixed pwsh/.NET45초 sleep·최대2/atomic Job·원 process/시간/own-QA 종료 후보이고 host watchdog/물리시간한계·fixture pin상속/8case를 증명하지 않는다. 빈 Job 종료 오판은 no-process 결과와 정상획득 요구로 보정, delta 한정 독립 C0/I0/M0·PS 소비22/type/구문 exit0이다. native raw15634A98538F6C3F1564DA9123206E710662DCAF76B0D0CF7EFBC6A27478C92F/OS source4CAD835F0F14EA2034DA3D0CE5F02BA85114B5C334547CF07F88DC8FCAF55D7A. 실행 차단 유지·실컴파일/OS/권한0, fixture 공유간섭·변경후 readback/정리·실 assembly/binder 등 source/실증 잔여 때문에 전체 source 준비완료나 I1/I3 해결이 아니다.
