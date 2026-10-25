@@ -688,6 +688,47 @@ internal static class DevelopmentRecoveryPathGuard {
   internal void AssertSource(string commit){Require(commit==sourceCommit&&workerDigest.Length==32);}
   internal string WorkerDigestHex(){return BitConverter.ToString(workerDigest).Replace("-","").ToLowerInvariant();}
  }
+ // 기존 private 보고 bytes의 순수 정보 대조다. peer/origin/OS 소유/ACK/완료 권위를 발급하지 않는다.
+ // 원 Capture의 retainedRows와만 self-check하며 payload/decoded row를 반환하거나 내보내지 않는다.
+ internal static class QaStandaloneReportPayload {
+  const int MaxBytes=16384,RowCount=9,MaxFields=8,MaxCodeUnits=256;
+  sealed class Reader {
+   readonly byte[] payload;int offset;
+   internal Reader(byte[] bytes){Require(bytes!=null&&bytes.Length<=MaxBytes);payload=bytes;}
+   void Remaining(int count){Require(count>=0&&offset>=0&&offset<=payload.Length&&count<=payload.Length-offset);}
+   internal uint UInt32(){
+    Remaining(4);uint value=0;for(int index=0;index<4;index++)value|=((uint)payload[offset+index])<<(index*8);
+    offset=checked(offset+4);return value;
+   }
+   internal long Int64(){
+    Remaining(8);ulong value=0;for(int index=0;index<8;index++)value|=((ulong)payload[offset+index])<<(index*8);
+    offset=checked(offset+8);return unchecked((long)value);
+   }
+   internal string Text(){
+    uint length=UInt32();Require(length<=MaxCodeUnits);int count=checked((int)length),byteCount=checked(count*2);Remaining(byteCount);
+    // 한도와 remaining 대조 이후에만 유한 char 배열을 만든다. 고립 surrogate도 치환하지 않는다.
+    char[] value=new char[count];for(int index=0;index<count;index++)value[index]=(char)(payload[offset+index*2]|(payload[offset+index*2+1]<<8));
+    offset=checked(offset+byteCount);return new string(value);
+   }
+   internal void End(){Require(offset==payload.Length);}
+  }
+  internal static void ValidateOriginal(byte[] payload,string run,string commit,DateTime issued,DateTime until,string reportId,string[][] rows){
+   Require(run!=null&&run.Length<=MaxCodeUnits&&commit!=null&&commit.Length<=MaxCodeUnits&&reportId!=null&&reportId.Length<=MaxCodeUnits);
+   Require(issued.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&issued.Ticks>0&&until>issued);
+   Require(rows!=null&&rows.Length==RowCount);
+   foreach(string[] row in rows){Require(row!=null&&row.Length<=MaxFields);foreach(string value in row)Require(value!=null&&value.Length<=MaxCodeUnits);}
+   var reader=new Reader(payload);Require(String.Equals(reader.Text(),"ANVIL.QA.C_REPORT.V1",StringComparison.Ordinal)&&reader.UInt32()==1);
+   Require(String.Equals(reader.Text(),run,StringComparison.Ordinal)&&String.Equals(reader.Text(),commit,StringComparison.Ordinal));
+   long issuedTicks=reader.Int64(),untilTicks=reader.Int64();
+   Require(issuedTicks>0&&issuedTicks<=DateTime.MaxValue.Ticks&&untilTicks>issuedTicks&&untilTicks<=DateTime.MaxValue.Ticks&&issuedTicks==issued.Ticks&&untilTicks==until.Ticks);
+   Require(String.Equals(reader.Text(),reportId,StringComparison.Ordinal)&&reader.UInt32()==RowCount);
+   foreach(string[] row in rows){
+    uint count=reader.UInt32();Require(count<=MaxFields&&count==(uint)row.Length);
+    foreach(string value in row)Require(String.Equals(reader.Text(),value,StringComparison.Ordinal));
+   }
+   reader.End();
+  }
+ }
  // 실제 Main의 원 실행 소유만 연결한다. 이 latch는 다른 코드의 spawn을 배제하거나 실행을 허가하지 않는다.
  // 원 실행은 실패/정리 뒤에도 같은 프로세스에서 재발급하지 않는다. 실제 독점 검증 gate는 계속 false다.
  internal sealed class QaStandalonePinRun {
@@ -737,6 +778,7 @@ internal static class DevelopmentRecoveryPathGuard {
      Text(bytes,originalRun.RunId);Text(bytes,originalRun.Commit);Int64(bytes,originalRun.Issued.Ticks);Int64(bytes,originalRun.Until.Ticks);Text(bytes,reportId);UInt32(bytes,RowCount);
      foreach(string[] row in retainedRows){UInt32(bytes,(uint)row.Length);foreach(string value in row)Text(bytes,value);}
      retainedPayload=bytes.ToArray();
+     QaStandaloneReportPayload.ValidateOriginal(retainedPayload,originalRun.RunId,originalRun.Commit,originalRun.Issued,originalRun.Until,reportId,retainedRows);
      // 이 payload는 pipe frame/ACK/원 peer 증거가 아니다. 전송 미연결은 영구 불완전으로 남긴다.
      unknown=true;state="REPORT_RETAINED_TRANSPORT_UNCONNECTED";
     }catch{unknown=true;state="FINAL_REPORT_ENCODING_UNCONFIRMED";throw;}

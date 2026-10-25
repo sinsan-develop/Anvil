@@ -21,6 +21,13 @@
 - 원 thread/run/retainedHost·Capture1회·원 run/commit/UTC 상관을 보존한다. 중복·잘못된 shape·null·크기 초과·직렬화 실패는 미확인이다. 절단해 정상으로 만들거나 exit-code로 상세9행을 대체하지 않는다.
 - rows/payload는 private 원 소유로 유지하며 getter/ACK/완료·OS PASS 권위를 발급하지 않는다. 이후 pipe frame/END/ACK·원 peer/외부 exact trust·수집 검수는 별도 미완료다.
 
+## 2026-10-25 후속 내부 payload 검증 source
+
+- 기존 형식·cap은 바꾸지 않고 같은 native 파일의 `QaStandaloneReportPayload.ValidateOriginal`과 Capture self-check 한 호출만 추가했다. private 원 run/commit/UTC 창/reportId/retainedRows를 순차 대조하며 값·getter·전송/ACK·새 권위를 반환하지 않는다.
+- 제품 raw SHA256 `45B81D0E35765B1A49909123B8B262B5CC9A50B90859285E80DB22BBDFB71A45`. 추가 클래스41행·호출1행을 뺀 재구성 raw는 직전 `159FD4F6B6CA756786E2C4F878488C24473A05A83DD14AC6517DB6829A3D37E6`와 같아 나머지 native 본문은 불변이다.
+- 미래 C# 시험 source는 `tests/native/FN06/StandaloneReportPayloadSourceTests.cs`, raw `87D1FB4EE70D38D008C5D1B77C69F2FDA585B3662BCC3338EB7388161704BD97`다. 정상·모든 prefix 절단·후행 bytes·identity/ticks/count·256/257 및16384 경계·고립 surrogate 대조 사례를 작성했다. 미래 실행은 제품과 같은 assembly에 함께 컴파일한 뒤 RunAll을 호출해야 한다.
+- 독립 정적 검수 C0/I0/M0이며 실제 compiler/parser/C# TDD·RunAll/native/OS·전송 검증은 **NOT_RUN**이다. 고정 R0 d71/F81 컴파일 후보·host B1B throw는 변경하지 않았고 그 향후 결과를 이 source 검증으로 승격하지 않는다. 사용자 기능 완료·R1 전체 완료가 아니다.
+
 ## 보존과 검수 한계
 
 기존 Snapshot 본문·GUARDIAN/worker 동작·4false gate·기존 시간/프로세스 cap·R0 d71/F81·host/QA ps1과 보호자료는 변경하지 않는다. 원 C의 새 분기 no-console은 전체 C/다른 legacy 경로의 no-console 완료와 다르다.
