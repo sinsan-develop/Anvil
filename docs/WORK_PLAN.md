@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 C측 G/JG capture source**: 원 G peer·W/JG 제한복제·JC선행확인/JG대조·pin/RESUME/ACK·JGquery close·ARMED·양쪽 STOP/JC0/회수를 원 흐름에 연결했다. 보정본 정적 C0/I0/M0·native/OS/TDD NOT_RUN이며 G 본문7argv가 아직 없어 전체flow는 실행 불가다. G/JG/W body·유실/보고/trust는 후속 미완료다.
+
 - **2026-10-25 A image/factory 중간 source**: C/GW 고정 역할/source resource·원 image pin·같은 원 channel id의 고정 W 생성/검증 소비를 연결했다. general factory도 GW role을 거절하고 library role3을 구분한다. 현재 direct C→W 중간연결이며 G/JG·외부 artifact trust·C 유한보고 수집 미연결·실 build/native/OS NOT_RUN·전체A/N4미완료다.
 
 - **2026-10-25 원 child-pin 전후 control source**: 보호 전 정상 DELETE-access open→ACK/임시copy close→C strong close→W 생존 전후 공유거절→정상STOP82/Job0 뒤 정상open을 원 소유/한 번 순서로 연결했다. 삭제·쓰기0, 정적 C0/I0/M0·native/OS/TDD NOT_RUN·현재factory ACK미도달·전체지원 미완료다.

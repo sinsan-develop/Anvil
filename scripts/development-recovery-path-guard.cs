@@ -717,7 +717,7 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly QaStandalonePinRun pinRun;
   QaFixtureOwner owner;QaProcessProbe process;bool started,cleaning;string phase="NOT_STARTED",preparation="NOT_STARTED";
   string membership="NOT_OBSERVED",processExit="NOT_OBSERVED",processClose="NOT_OBSERVED",pinTransfer="NOT_OBSERVED",lifetimeEvidence="CHILD_PIN_LIFETIME_NOT_VERIFIED";
-  string[] mutation,cleanup,failure,processStop=new[]{"STOP_NOT_REQUESTED","FALLBACK_NOT_REQUESTED","NOT_OBSERVED","NOT_OBSERVED"},imageEvidence=new[]{"FIXED_QA_IMAGES_NOT_CONNECTED","NOT_OBSERVED","NOT_OBSERVED","EXTERNAL_ARTIFACT_TRUST_NOT_CONNECTED"};
+  string[] mutation,cleanup,failure,processStop=new[]{"STOP_NOT_REQUESTED","FALLBACK_NOT_REQUESTED","NOT_OBSERVED","NOT_OBSERVED"},imageEvidence=new[]{"FIXED_QA_IMAGES_NOT_CONNECTED","NOT_OBSERVED","NOT_OBSERVED","EXTERNAL_ARTIFACT_TRUST_NOT_CONNECTED"},guardianEvidence=new[]{"G_NOT_CREATED","G_BODY_NOT_CONNECTED","NOT_OS_VALIDATED"};
   QaOwnedRunHost(string id,string run,string sha,DateTime start,DateTime end,QaStandalonePinRun originalPinRun=null){selected=id;runId=run;commit=sha;issued=start;until=end;pinRun=originalPinRun;}
   static bool FailureCase(string id){return Array.IndexOf(new[]{"WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","CLEANUP_UNKNOWN"},id)>=0;}
   public static QaOwnedRunHost Create(string selected,string runId,string commit,DateTime issued,DateTime until){
@@ -779,6 +779,7 @@ internal static class DevelopmentRecoveryPathGuard {
     }
     processStop=process.StopSnapshot();
     imageEvidence=process.ImageSnapshot();
+    guardianEvidence=process.GuardianSnapshot();
     if(owner==null)return;
     if(processClose!="QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED"){
      cleanup=new[]{"NOT_ATTEMPTED","DEPENDENT_QA_PROCESS_UNCONFIRMED_PRESERVED","NOT_APPLICABLE"};return;
@@ -791,7 +792,7 @@ internal static class DevelopmentRecoveryPathGuard {
   public string[][] Cleanup(){OwnerThread();CleanupOriginalOwner();return Snapshot();}
   static string[] Copy(string[] value){return value==null?new string[0]:(string[])value.Clone();}
   public string[][] Snapshot(){
-   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure),new[]{membership,processExit,processClose},new[]{pinTransfer,lifetimeEvidence},Copy(processStop),Copy(imageEvidence)};
+   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure),new[]{membership,processExit,processClose},new[]{pinTransfer,lifetimeEvidence},Copy(processStop),Copy(imageEvidence),Copy(guardianEvidence)};
   }
  }
  [StructLayout(LayoutKind.Sequential)]struct IoCounters {internal ulong ReadOps,WriteOps,OtherOps,ReadBytes,WriteBytes,OtherBytes;}
@@ -800,7 +801,7 @@ internal static class DevelopmentRecoveryPathGuard {
  [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)]struct StartupInfo {internal uint Size;internal string Reserved,Desktop,Title;internal uint X,Y,Width,Height,CharsX,CharsY,Fill,Flags;internal ushort Show,ReservedSize;internal IntPtr ReservedPtr,Input,Output,Error;}
  [StructLayout(LayoutKind.Sequential)]struct StartupEx {internal StartupInfo Startup;internal IntPtr Attributes;}
  [StructLayout(LayoutKind.Sequential)]struct NativeProcessInformation {internal IntPtr Process,Thread;internal uint Pid,Tid;}
- sealed class ProcessInformation {internal KernelHandle Process,Thread;internal uint Pid;}
+ sealed class ProcessInformation {internal KernelHandle Process,Thread;internal uint Pid;internal long Created;internal bool ObserverOnly;internal ProcessInformation Guardian;}
  [StructLayout(LayoutKind.Sequential)]struct FileTime {internal uint Low,High;internal long Ticks{get{return((long)High<<32)|Low;}}}
  [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]static extern KernelHandle CreateJobObjectW(IntPtr attributes,string name);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetInformationJobObject(KernelHandle job,int kind,ref ExtendedLimits value,uint size);
@@ -931,7 +932,7 @@ internal static class DevelopmentRecoveryPathGuard {
   using(var hash=SHA256.Create())return hash.ComputeHash(Encoding.ASCII.GetBytes("CHILD_PIN_LIFETIME|"+run+"|"+commit+"|"+from.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+"|"+until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)));
  }
  static byte[] QaFixedFrame(byte role,byte op,uint sequence,byte[] binding,byte[] payload){
-  Require(IntPtr.Size==8&&BitConverter.IsLittleEndian&&binding!=null&&binding.Length==32&&payload!=null&&payload.Length<=4048&&sequence>=1&&sequence<=4);
+  Require(IntPtr.Size==8&&BitConverter.IsLittleEndian&&binding!=null&&binding.Length==32&&payload!=null&&payload.Length<=4048&&sequence>=1&&sequence<=8);
   byte[] frame=new byte[48+payload.Length];frame[0]=65;frame[1]=86;frame[2]=51;frame[3]=81;frame[4]=1;frame[5]=role;frame[6]=1;frame[7]=op;
   Buffer.BlockCopy(BitConverter.GetBytes(sequence),0,frame,8,4);Buffer.BlockCopy(BitConverter.GetBytes((uint)payload.Length),0,frame,12,4);
   Buffer.BlockCopy(binding,0,frame,16,32);Buffer.BlockCopy(payload,0,frame,48,payload.Length);return frame;
@@ -947,7 +948,8 @@ internal static class DevelopmentRecoveryPathGuard {
   const string ImageHash="bfb46af89433268872ddb43d1ca7a3f433452ee91ed356a9786940f90118e285";
   readonly List<KernelHandle> imagePins=new List<KernelHandle>();readonly List<ProcessInformation> children=new List<ProcessInformation>();
   readonly List<Tuple<ProcessInformation,IntPtr,bool,Fact>> remotePinSlots=new List<Tuple<ProcessInformation,IntPtr,bool,Fact>>();readonly List<KernelHandle> transferChecks=new List<KernelHandle>();
-  ProcessInformation stagingChild;QaStandalonePinRun stagingRun;bool transferCloseUnknown,lifetimeAttempted;QaOriginalWorkerChannel workerChannel;QaFixtureLease.QaChildPin originalPins;
+  ProcessInformation stagingChild,originalGuardian,originalWorker;QaStandalonePinRun stagingRun;bool transferCloseUnknown,lifetimeAttempted,guardianCaptureConfirmed,guardianQueryCloseUnknown;QaOriginalWorkerChannel workerChannel,guardianChannel;QaFixtureLease.QaChildPin originalPins;
+  KernelHandle guardianQuery;readonly List<KernelHandle> guardianCopies=new List<KernelHandle>();internal string GuardianStatus{get;private set;}
   readonly Stopwatch cleanupClock=new Stopwatch();
   readonly Stopwatch clock=Stopwatch.StartNew();readonly int ownerThread=Environment.CurrentManagedThreadId;
   readonly DateTime from,until,acquired;readonly string runId,commit;DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;KernelHandle job;QaFixedImageSpec imageSpec;
@@ -956,14 +958,15 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string ChildPinTransferStatus{get;private set;}
   string stopStatus="STOP_NOT_REQUESTED";bool jobFallbackRequested;readonly string[] originalExitCodes={"NOT_OBSERVED","NOT_OBSERVED"};
   QaProcessProbe(string id,string sha,DateTime start,DateTime end){runId=id;commit=sha;from=start;until=end;acquired=DateTime.UtcNow;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";}
-  // 원 probe가 만든 단일 W 채널만 소비한다. 일반 원격 handle 입력/재접속/재전송 API는 없다.
+  // 원 probe의 G/W별 원 채널만 소비한다. 일반 원격 handle 입력/재접속/재전송 API는 없다.
   sealed class QaOriginalWorkerChannel {
    static readonly List<QaOriginalWorkerChannel> preservedUnknown=new List<QaOriginalWorkerChannel>();
-   readonly QaProcessProbe original;readonly byte[] binding;readonly string pipeName,pipeId;
+   readonly QaProcessProbe original;readonly byte[] binding;readonly string pipeName,pipeId;readonly byte peerRole;
    KernelHandle pipe,ioEvent;IntPtr ioData,ioOverlapped;bool pending,failed,closed,closeUnknown,preserved,started;int bytesUsed,step;
    long deadline;ProcessInformation peer;long peerCreated;
-   internal QaOriginalWorkerChannel(QaProcessProbe source){
-    source.Fresh(true);Require(QaExclusiveSpawnHostConnected&&IntPtr.Size==8&&BitConverter.IsLittleEndian);original=source;
+   byte[] guardianCreated;
+   internal QaOriginalWorkerChannel(QaProcessProbe source,byte role=3){
+    source.Fresh(true);Require(QaExclusiveSpawnHostConnected&&IntPtr.Size==8&&BitConverter.IsLittleEndian&&(role==2||role==3));original=source;peerRole=role;
     pipeId=Guid.NewGuid().ToString("N");pipeName=@"\\.\pipe\anvil-v3-qa-"+pipeId;
     binding=QaRunBinding(source.runId,source.commit,source.from,source.until);
    }
@@ -980,7 +983,7 @@ internal static class DevelopmentRecoveryPathGuard {
      Require(pipe!=null&&!pipe.IsInvalid&&GetFileType(pipe)==3);uint flags;Require(GetHandleInformation(pipe,out flags)&&flags==0);original.Fresh(true);
     }catch{failed=true;throw;}finally{Marshal.FreeHGlobal(security);Array.Clear(bytes,0,bytes.Length);}
    }
-   internal string OriginalPipeId(){original.Fresh(true);Require(Object.ReferenceEquals(original.workerChannel,this)&&pipe!=null&&!pipe.IsInvalid&&!started&&!closed&&!failed);return pipeId;}
+   internal string OriginalPipeId(){original.Fresh(true);Require((Object.ReferenceEquals(original.workerChannel,this)||Object.ReferenceEquals(original.guardianChannel,this))&&pipe!=null&&!pipe.IsInvalid&&!started&&!closed&&!failed);return pipeId;}
    void Check(){original.Fresh(false);Require(!closed&&!failed&&original.clock.ElapsedMilliseconds<45000&&original.clock.ElapsedMilliseconds<deadline);}
    void CheckPeer(){
     Check();Require(peer!=null&&original.children.Contains(peer)&&GetProcessId(peer.Process)==peer.Pid&&WaitForSingleObject(peer.Process,0)==258);
@@ -1020,14 +1023,14 @@ internal static class DevelopmentRecoveryPathGuard {
    }
    void Receive(byte op,byte[] payload){
     CheckPeer();byte[] received;Io(1,null,out received);Require(bytesUsed<=32768-received.Length);bytesUsed+=received.Length;
-    byte[] expected=Frame(3,op,payload);Require(QaEqualBytes(received,expected));step++;CheckPeer();
+    byte[] expected=Frame(peerRole,op,payload);Require(QaEqualBytes(received,expected));step++;CheckPeer();
    }
    void SendPins(byte[] payload){
     CheckPeer();Require(step==1);byte[] frame=Frame(1,3,payload);Require(bytesUsed<=32768-frame.Length);bytesUsed+=frame.Length;
     byte[] unused;Io(2,frame,out unused);step++;CheckPeer();
    }
    internal void ReadOriginalPinAck(ProcessInformation child){
-    original.Fresh(false);Require(!started&&!failed&&!closed&&pipe!=null&&!pipe.IsInvalid&&original.children.Contains(child));started=true;peer=child;
+    original.Fresh(false);Require(peerRole==3&&!started&&!failed&&!closed&&pipe!=null&&!pipe.IsInvalid&&original.children.Contains(child));started=true;peer=child;
     deadline=Math.Min(45000,original.clock.ElapsedMilliseconds+10000);Check();FileTime begun,ended,kernel,user;
     Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user));peerCreated=begun.Ticks;
     try{
@@ -1078,6 +1081,50 @@ internal static class DevelopmentRecoveryPathGuard {
     return false;
    }
    internal void AssertOriginalAcknowledged(){Require(started&&step==3&&!failed&&!closed&&!pending&&!closeUnknown);CheckPeer();}
+   KernelHandle DuplicateGuardianSlot(long value,uint access){
+    CheckPeer();Require(peerRole==2&&Object.ReferenceEquals(peer,original.originalGuardian)&&value>0);IntPtr copy;
+    bool copied=DuplicateQaFromChild(peer.Process,new IntPtr(value),GetCurrentProcess(),out copy,access,false,0);
+    if(!copied||copy==IntPtr.Zero||copy==new IntPtr(-1)||copy==new IntPtr(-2)){if(copy!=IntPtr.Zero)original.transferCloseUnknown=true;throw Denied();}
+    var owned=new KernelHandle(copy);original.guardianCopies.Add(owned);uint flags;Require(GetHandleInformation(owned,out flags)&&flags==0);original.RequireExactAccess(owned,access);CheckPeer();return owned;
+   }
+   internal ProcessInformation CaptureOriginalWorker(ProcessInformation guardian){
+    original.Fresh(true);Require(peerRole==2&&!started&&!failed&&!closed&&Object.ReferenceEquals(original.originalGuardian,guardian)&&original.children.Contains(guardian));started=true;peer=guardian;
+    deadline=Math.Min(45000,original.clock.ElapsedMilliseconds+5000);Check();peerCreated=guardian.Created;Require(peerCreated>0);
+    try{
+     byte[] unused;Io(0,null,out unused);CheckPeer();Receive(1,new byte[0]);byte[] frame;Io(1,null,out frame);Require(bytesUsed<=32768-frame.Length);bytesUsed+=frame.Length;
+     guardianCreated=QaFixedPayload(frame,2,2,2,binding);Require(guardianCreated.Length==28&&step==1);step=2;CheckPeer();
+     long workerSlot=BitConverter.ToInt64(guardianCreated,0),jobSlot=BitConverter.ToInt64(guardianCreated,8),created=BitConverter.ToInt64(guardianCreated,20);uint pid=BitConverter.ToUInt32(guardianCreated,16);
+     Require(workerSlot>0&&jobSlot>0&&workerSlot!=jobSlot&&pid>0&&pid!=guardian.Pid&&created>=guardian.Created&&created<original.until.ToFileTimeUtc());
+     KernelHandle process=DuplicateGuardianSlot(workerSlot,0x101040u);Require(GetProcessId(process)==pid&&WaitForSingleObject(process,0)==258);OwnedRuntime.CheckOwner(process,original.owner);
+     var image=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(process,0,image,ref capacity)&&image.ToString()==QaFixedImageSpec.WorkerImage);
+     FileTime begun,ended,kernel,user;Require(GetProcessTimes(process,out begun,out ended,out kernel,out user)&&begun.Ticks==created);
+     // JC 소속을 먼저 확인한다. JC 밖 W에 대해 JG 관측 복제를 보유해 G 유실 뒤 살려 두지 않는다.
+     bool member;Require(IsProcessInJob(process,original.job,out member)&&member);original.guardianQuery=DuplicateGuardianSlot(jobSlot,4);Require(IsProcessInJob(process,original.guardianQuery,out member)&&member);
+     original.CheckOriginalGuardianJob(pid);var child=new ProcessInformation{Process=process,Thread=null,Pid=pid,Created=created,ObserverOnly=true,Guardian=guardian};
+     original.children.Add(child);original.originalWorker=child;original.guardianCaptureConfirmed=true;original.GuardianStatus="ORIGINAL_G_W_JG_CAPTURED_NOT_OS_VALIDATED";original.Fresh(true);return child;
+    }catch{failed=true;original.GuardianStatus="G_W_JG_CAPTURE_UNCONFIRMED_PRESERVED";throw;}
+   }
+   internal void ResumeOriginalWorker(){
+    Require(peerRole==2&&step==2&&guardianCreated!=null&&original.guardianCaptureConfirmed&&original.originalWorker!=null&&original.remotePinSlots.Count==3);CheckPeer();
+    byte[] data=new byte[36];Buffer.BlockCopy(BitConverter.GetBytes(3u),0,data,0,4);using(var hash=SHA256.Create())Buffer.BlockCopy(hash.ComputeHash(guardianCreated),0,data,4,32);
+    byte[] frame=QaFixedFrame(1,5,3,binding,data),unused;Require(bytesUsed<=32768-frame.Length);bytesUsed+=frame.Length;Io(2,frame,out unused);step=3;CheckPeer();
+    byte[] received;Io(1,null,out received);Require(bytesUsed<=32768-received.Length);bytesUsed+=received.Length;
+    Require(QaEqualBytes(received,QaFixedFrame(2,7,4,binding,BitConverter.GetBytes(original.originalWorker.Pid))));step=4;CheckPeer();deadline=Math.Min(45000,original.clock.ElapsedMilliseconds+10000);original.GuardianStatus="ORIGINAL_G_RESUME_ACK_NOT_OS_VALIDATED";
+   }
+   internal void ArmOriginalGuardian(){
+    Require(peerRole==2&&step==4&&original.guardianQuery!=null&&original.guardianQuery.IsClosed&&original.guardianQuery.CloseSucceeded&&!original.guardianQueryCloseUnknown);deadline=Math.Min(45000,original.clock.ElapsedMilliseconds+5000);CheckPeer();
+    byte[] frame=QaFixedFrame(1,8,5,binding,new byte[0]),unused;Require(bytesUsed<=32768-frame.Length);bytesUsed+=frame.Length;Io(2,frame,out unused);step=5;
+    byte[] received;Io(1,null,out received);Require(bytesUsed<=32768-received.Length);bytesUsed+=received.Length;Require(QaEqualBytes(received,QaFixedFrame(2,8,6,binding,new byte[0])));step=6;CheckPeer();original.GuardianStatus="ORIGINAL_G_ARMED_NOT_OS_VALIDATED";
+   }
+   internal void AssertOriginalCaptured(){Require(peerRole==2&&(step==4||step==6)&&original.guardianCaptureConfirmed);CheckPeer();}
+   internal bool RequestGuardianStop(){
+    if(peerRole!=2||step!=6||failed||closed||pending||closeUnknown)return false;
+    try{
+     long remaining=15000-original.cleanupClock.ElapsedMilliseconds;Require(remaining>0);deadline=Math.Min(45000,original.clock.ElapsedMilliseconds+Math.Min(5000,remaining));CheckPeer();
+     byte[] frame=QaFixedFrame(1,6,7,binding,new byte[0]),unused;Require(bytesUsed<=32768-frame.Length);bytesUsed+=frame.Length;Io(2,frame,out unused);step=7;
+     while(original.clock.ElapsedMilliseconds<deadline&&original.cleanupClock.ElapsedMilliseconds<15000){uint wait=WaitForSingleObject(peer.Process,25);Require(wait==0||wait==258);if(wait==0){uint code;Require(GetExitCodeProcess(peer.Process,out code)&&code==82);return true;}Check();}
+    }catch{failed=true;}return false;
+   }
   }
   internal static QaProcessProbe Begin(string id,string sha,DateTime start,DateTime end,QaStandalonePinRun originalRun=null){
    Require(QaAdapterConnected);Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30);
@@ -1120,6 +1167,19 @@ internal static class DevelopmentRecoveryPathGuard {
    Require(Same(before,Read(at,path,false)));Fresh(false);return digest;
   }
   internal string[] ImageSnapshot(){Require(Environment.CurrentManagedThreadId==ownerThread);return new[]{imageSpec==null?"LEGACY_FIXED_SLEEP_IMAGE_NOT_ACCEPTANCE":"FIXED_C_GW_IMAGE_INTEGRITY_NOT_ACCEPTANCE",observedControllerDigest,observedWorkerDigest,"EXTERNAL_ARTIFACT_TRUST_NOT_CONNECTED"};}
+  internal string[] GuardianSnapshot(){Require(Environment.CurrentManagedThreadId==ownerThread);return new[]{GuardianStatus??"G_NOT_CREATED",guardianCaptureConfirmed?"ORIGINAL_G_W_CAPTURED":"G_W_CAPTURE_NOT_CONFIRMED",guardianQuery!=null&&guardianQuery.IsClosed&&guardianQuery.CloseSucceeded&&!guardianQueryCloseUnknown?"ORIGINAL_JG_QUERY_COPY_CLOSED":"JG_QUERY_COPY_CLOSE_NOT_CONFIRMED","G_BODY_NOT_CONNECTED","NOT_OS_VALIDATED"};}
+  void RequireExactAccess(KernelHandle handle,uint expected){
+   IntPtr buffer=Marshal.AllocHGlobal(1024);try{uint returned;Require(NtQueryObject(handle,0,buffer,1024,out returned)==0&&returned>=8&&returned<=1024&&unchecked((uint)Marshal.ReadInt32(buffer,4))==expected);}finally{Marshal.FreeHGlobal(buffer);}
+  }
+  void CheckOriginalGuardianJob(uint workerPid){
+   Require(guardianQuery!=null&&!guardianQuery.IsInvalid&&!guardianQuery.IsClosed);uint size=(uint)Marshal.SizeOf(typeof(ExtendedLimits));IntPtr buffer=Marshal.AllocHGlobal((int)size);
+   try{uint returned;Require(QueryInformationJobObject(guardianQuery,9,buffer,size,out returned)&&returned==size);var limits=(ExtendedLimits)Marshal.PtrToStructure(buffer,typeof(ExtendedLimits));Require(limits.Basic.Flags==(0x2000u|0x8u)&&limits.Basic.ActiveProcesses==1);}finally{Marshal.FreeHGlobal(buffer);}
+   buffer=Marshal.AllocHGlobal(8+IntPtr.Size);try{uint returned;Require(QueryInformationJobObject(guardianQuery,3,buffer,(uint)(8+IntPtr.Size),out returned)&&returned>=8&&returned<=8+IntPtr.Size&&Marshal.ReadInt32(buffer)==1&&Marshal.ReadInt32(buffer,4)==1&&Marshal.ReadIntPtr(buffer,8).ToInt64()==workerPid);}finally{Marshal.FreeHGlobal(buffer);}
+  }
+  void CloseOriginalGuardianQuery(){
+   Require(Environment.CurrentManagedThreadId==ownerThread&&guardianCaptureConfirmed&&guardianQuery!=null&&!guardianQueryCloseUnknown);
+   guardianQuery.Dispose();guardianQueryCloseUnknown=!guardianQuery.CloseAttempted||!guardianQuery.CloseSucceeded;Require(!guardianQueryCloseUnknown);GuardianStatus="ORIGINAL_JG_QUERY_COPY_CLOSED_NOT_OS_VALIDATED";
+  }
   int ActiveCount(){
    Require(job!=null&&!job.IsInvalid&&!job.IsClosed);IntPtr buffer=Marshal.AllocHGlobal(8+2*IntPtr.Size);
    try{uint returned;Require(QueryInformationJobObject(job,3,buffer,(uint)(8+2*IntPtr.Size),out returned)&&returned>=8&&returned<=8+2*IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long pid=Marshal.ReadIntPtr(buffer,8+i*IntPtr.Size).ToInt64();Require(pid>0&&pid<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)pid));}return total;}
@@ -1154,7 +1214,7 @@ internal static class DevelopmentRecoveryPathGuard {
     Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2&&(pins==null)==(pinRun==null));
     IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero;bool initialized=false;
     try{
-     if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected&&pinRun!=null&&workerChannel==null&&originalPins==null);pinRun.AssertOriginal(runId,commit,from,until);originalPins=pins;workerChannel=new QaOriginalWorkerChannel(this);workerChannel.Open();}
+     if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected&&pinRun!=null&&workerChannel==null&&guardianChannel==null&&originalPins==null);pinRun.AssertOriginal(runId,commit,from,until);originalPins=pins;workerChannel=new QaOriginalWorkerChannel(this);workerChannel.Open();guardianChannel=new QaOriginalWorkerChannel(this,2);guardianChannel.Open();}
      uint attributeCount=1u;
      UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,attributeCount,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
      list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,attributeCount,0,ref size));initialized=true;
@@ -1163,19 +1223,20 @@ internal static class DevelopmentRecoveryPathGuard {
      environment=Marshal.StringToHGlobalUni("DOTNET_EnableDiagnostics=0\0POWERSHELL_TELEMETRY_OPTOUT=1\0SystemRoot=C:\\Windows\0WINDIR=C:\\Windows\0\0");
      var startup=new StartupEx{Startup=new StartupInfo{Size=(uint)Marshal.SizeOf(typeof(StartupEx))},Attributes=list};NativeProcessInformation raw;
      string fixedImage=Image,arguments=" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\"",workingDirectory=@"C:\Program Files\PowerShell\7";
-     if(pins!=null){Require(imageSpec!=null&&observedWorkerDigest==imageSpec.WorkerDigestHex());fixedImage=QaFixedImageSpec.WorkerImage;workingDirectory=QaFixedImageSpec.ArtifactRoot;arguments=" PIN_WORKER "+runId+" "+commit+" "+from.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+workerChannel.OriginalPipeId();}
+     if(pins!=null){Require(imageSpec!=null&&observedWorkerDigest==imageSpec.WorkerDigestHex());fixedImage=QaFixedImageSpec.WorkerImage;workingDirectory=QaFixedImageSpec.ArtifactRoot;arguments=" GUARDIAN "+runId+" "+commit+" "+from.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+guardianChannel.OriginalPipeId()+" "+workerChannel.OriginalPipeId();}
      DateTime requested=DateTime.UtcNow;Fresh(true);
      Require(CreateProcessW(fixedImage,new StringBuilder("\""+fixedImage+"\""+arguments),IntPtr.Zero,IntPtr.Zero,false,0x4u|0x80000u|0x8000000u|0x400u,environment,workingDirectory,ref startup,out raw));
      var child=new ProcessInformation{Process=new KernelHandle(raw.Process),Thread=new KernelHandle(raw.Thread),Pid=raw.Pid};children.Add(child);
-     Require(!child.Process.IsInvalid&&!child.Thread.IsInvalid);bool member;Require(IsProcessInJob(child.Process,job,out member)&&member&&GetProcessId(child.Process)==child.Pid);
+     Require(!child.Process.IsInvalid&&!child.Thread.IsInvalid);uint processFlags,threadFlags;Require(GetHandleInformation(child.Process,out processFlags)&&processFlags==0&&GetHandleInformation(child.Thread,out threadFlags)&&threadFlags==0);bool member;Require(IsProcessInJob(child.Process,job,out member)&&member&&GetProcessId(child.Process)==child.Pid);
      var actual=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(child.Process,0,actual,ref capacity)&&actual.ToString()==fixedImage);OwnedRuntime.CheckOwner(child.Process,owner);
-     FileTime begun,ended,kernel,user;Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());
+     FileTime begun,ended,kernel,user;Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());child.Created=begun.Ticks;
      Require(ActiveCount()<=children.Count);Fresh(true);
-     if(pins!=null){stagingChild=child;stagingRun=pinRun;try{Require(pins.StageIntoOriginalChild(this,runId,commit,from,until,owner,pinRun)>0);}finally{stagingChild=null;stagingRun=null;}ChildPinTransferStatus="QA_DIRECT_PIN_STAGED_WORKER_ACK_MISSING";}
      Fresh(true);Require(ResumeThread(child.Thread)==1);
-     // pin 경로만 별도 고정 GW image/원 channel을 소비한다. 현재 C 직접 W 연결은 중간 source다.
-     // G/JG와 외부 artifact 신뢰/실행 adapter가 완성되기 전 실행 가능/전체 지원으로 올리지 않는다.
-     if(pins!=null){Fresh(false);Require(WaitForSingleObject(child.Process,0)==258);workerChannel.ReadOriginalPinAck(child);}
+     if(pins!=null){
+      originalGuardian=child;GuardianStatus="ORIGINAL_G_CAPTURED_NOT_OS_VALIDATED";ProcessInformation worker=guardianChannel.CaptureOriginalWorker(child);
+      stagingChild=worker;stagingRun=pinRun;try{Require(pins.StageIntoOriginalChild(this,runId,commit,from,until,owner,pinRun)==3);}finally{stagingChild=null;stagingRun=null;}ChildPinTransferStatus="QA_DIRECT_PIN_STAGED_WORKER_ACK_MISSING";
+      guardianChannel.ResumeOriginalWorker();workerChannel.ReadOriginalPinAck(worker);CloseOriginalGuardianQuery();
+     }
     }finally{stagingChild=null;stagingRun=null;if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);}
    }catch{faulted=true;throw;}
   }
@@ -1187,18 +1248,18 @@ internal static class DevelopmentRecoveryPathGuard {
    }catch{faulted=true;return "QA_JOB_MEMBERSHIP_UNCONFIRMED";}
   }
   internal void AssertOriginalWorkerAck(QaFixtureLease.QaChildPin pins){
-   Fresh(false);Require(Object.ReferenceEquals(originalPins,pins)&&children.Count==1&&remotePinSlots.Count==3&&transferChecks.Count==3&&workerChannel!=null&&!transferCloseUnknown&&ChildPinTransferStatus=="QA_ORIGINAL_PIN_ACK_RECEIVED_NOT_LIFETIME_VALIDATED");
-   Require(CloseTransferChecks());workerChannel.AssertOriginalAcknowledged();Fresh(false);
+   Fresh(false);Require(Object.ReferenceEquals(originalPins,pins)&&children.Count==2&&originalWorker!=null&&originalGuardian!=null&&guardianCaptureConfirmed&&guardianQuery!=null&&guardianQuery.IsClosed&&guardianQuery.CloseSucceeded&&!guardianQueryCloseUnknown&&remotePinSlots.Count==3&&transferChecks.Count==3&&workerChannel!=null&&!transferCloseUnknown&&ChildPinTransferStatus=="QA_ORIGINAL_PIN_ACK_RECEIVED_NOT_LIFETIME_VALIDATED");
+   Require(CloseTransferChecks());guardianChannel.AssertOriginalCaptured();workerChannel.AssertOriginalAcknowledged();Fresh(false);
   }
   internal void AssertOriginalWorkerStopped(QaFixtureLease.QaChildPin pins){
-   Require(Environment.CurrentManagedThreadId==ownerThread&&!closed&&terminationRequested&&Object.ReferenceEquals(originalPins,pins)&&children.Count==1&&stopStatus=="ORIGINAL_STOP_EXIT82_OBSERVED"&&!jobFallbackRequested&&!transferCloseUnknown);
+   Require(Environment.CurrentManagedThreadId==ownerThread&&!closed&&terminationRequested&&Object.ReferenceEquals(originalPins,pins)&&children.Count==2&&originalWorker!=null&&guardianCaptureConfirmed&&!guardianQueryCloseUnknown&&stopStatus=="ORIGINAL_STOP_EXIT82_OBSERVED"&&!jobFallbackRequested&&!transferCloseUnknown);
    DateTime wall=DateTime.UtcNow;TimeSpan elapsed=clock.Elapsed;Require(wall>=lastWall&&wall<until&&elapsed>=lastElapsed&&elapsed.TotalMilliseconds<45000);lastWall=wall;lastElapsed=elapsed;
-   uint code;Require(WaitForSingleObject(children[0].Process,0)==0&&GetExitCodeProcess(children[0].Process,out code)&&code==82&&ActiveCount()==0);
+   foreach(var child in children){uint code;Require(WaitForSingleObject(child.Process,0)==0&&GetExitCodeProcess(child.Process,out code)&&code==82);}Require(ActiveCount()==0);
   }
   internal string ObserveOriginalPinLifetime(QaFixtureLease.QaChildPin pins){
    Fresh(false);Require(!lifetimeAttempted&&Object.ReferenceEquals(originalPins,pins));lifetimeAttempted=true;
    try{
-    AssertOriginalWorkerAck(pins);pins.ReleaseStrongForOriginalWorker(this);pins.ObserveOriginalWorkerDenial(this);
+    AssertOriginalWorkerAck(pins);pins.ReleaseStrongForOriginalWorker(this);guardianChannel.ArmOriginalGuardian();pins.ObserveOriginalWorkerDenial(this);
     Require(StopOwnedQaAndObserve()=="QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED");AssertOriginalWorkerStopped(pins);pins.ObserveControlAfterOriginalWorkerExit(this);
     return "QA_CHILD_PIN_CONTROL_SEQUENCE_RECORDED_NOT_OS_VALIDATED";
    }catch{faulted=true;return "QA_CHILD_PIN_CONTROL_SEQUENCE_INCONCLUSIVE_PRESERVED";}
@@ -1211,9 +1272,9 @@ internal static class DevelopmentRecoveryPathGuard {
    if(!cleanupClock.IsRunning)cleanupClock.Start();
    if(terminationRequested)return children.Count==0?"QA_NO_ORIGINAL_PROCESS_TO_STOP":ObserveOriginalExit();
    // 고정 STOP은 ACK 뒤 한 번뿐이며 현재 15초 회수 예산 안이다. 응답 자체를 exit/Job0으로 대신하지 않는다.
-   stopStatus="STOP_OR_TERMINATION_UNCONFIRMED";bool stopped=workerChannel!=null&&workerChannel.RequestOriginalStop();terminationRequested=true;
+   stopStatus="STOP_OR_TERMINATION_UNCONFIRMED";bool stopped=workerChannel!=null&&workerChannel.RequestOriginalStop();if(stopped&&guardianChannel!=null)stopped=guardianChannel.RequestGuardianStop();terminationRequested=true;
    if(stopped&&ObserveOriginalExit()=="QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED"){
-    try{RecordOriginalExitCodes();Require(children.Count==1&&originalExitCodes[0]=="00000052");stopStatus="ORIGINAL_STOP_EXIT82_OBSERVED";return "QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED";}catch{faulted=true;return "QA_EXIT_UNCONFIRMED";}
+    try{RecordOriginalExitCodes();Require(children.Count==2&&originalExitCodes[0]=="00000052"&&originalExitCodes[1]=="00000052");stopStatus="ORIGINAL_STOP_EXIT82_OBSERVED";return "QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED";}catch{faulted=true;return "QA_EXIT_UNCONFIRMED";}
    }
    if(children.Count==0){stopStatus="NO_ORIGINAL_PROCESS_TO_STOP";return "QA_NO_ORIGINAL_PROCESS_TO_STOP";}
    if(AcquisitionStatus!="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED")return "QA_EXIT_UNCONFIRMED";
@@ -1232,10 +1293,14 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string CloseAfterObservedExit(){
    Require(Environment.CurrentManagedThreadId==ownerThread);if(closed)return closeUnknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
    if(job!=null&&!job.IsInvalid){if(children.Count>0&&ObserveOriginalExit()!="QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED")return "QA_EXIT_UNCONFIRMED";try{Require(ActiveCount()==0);}catch{return "QA_EXIT_UNCONFIRMED";}}
+   if(guardianChannel!=null&&!guardianCaptureConfirmed)return "QA_CLOSE_UNCONFIRMED";
    if(!cleanupClock.IsRunning)cleanupClock.Start();
    if(workerChannel!=null&&!workerChannel.CloseOriginalAfterExit())return "QA_CLOSE_UNCONFIRMED";
+   if(guardianChannel!=null&&!guardianChannel.CloseOriginalAfterExit())return "QA_CLOSE_UNCONFIRMED";
    closed=true;closeUnknown=true;bool unknown=!CloseTransferChecks();
-   foreach(var child in children){try{child.Thread.Dispose();unknown|=!child.Thread.CloseSucceeded;}catch{unknown=true;}try{child.Process.Dispose();unknown|=!child.Process.CloseSucceeded;}catch{unknown=true;}}
+   foreach(var child in children){try{if(child.Thread!=null){child.Thread.Dispose();unknown|=!child.Thread.CloseSucceeded;}else Require(child.ObserverOnly&&Object.ReferenceEquals(child.Guardian,originalGuardian)&&Object.ReferenceEquals(child,originalWorker));}catch{unknown=true;}try{child.Process.Dispose();unknown|=!child.Process.CloseSucceeded;}catch{unknown=true;}}
+   foreach(var copy in guardianCopies)try{copy.Dispose();unknown|=!copy.CloseAttempted||!copy.CloseSucceeded;}catch{unknown=true;}
+   unknown|=guardianQueryCloseUnknown;
    for(int i=imagePins.Count-1;i>=0;i--){var pin=imagePins[i];try{if(pin!=null){pin.Dispose();unknown|=!pin.IsInvalid&&!pin.CloseSucceeded;}}catch{unknown=true;}}
    try{if(job!=null){job.Dispose();unknown|=!job.IsInvalid&&!job.CloseSucceeded;}}catch{unknown=true;}
    closeUnknown=unknown;return unknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
