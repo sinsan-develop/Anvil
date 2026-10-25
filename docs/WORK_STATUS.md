@@ -1,4 +1,23 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 단위 2C — 불변 미확인 안전 요약 검수 범위
+
+- 담당/변경: fn15_handoff_summary 단일 구현, Main patch통합·직접검증·기록, fn15_summary_review 독립 정적검수다. 신규 summary/summary-store2제품·fixture/시험3, 기존 read 내부4함수 export만 변경했고 기존 조회 로직·app/route·일반 권한·DB는 불변이다.
+- 동작/한계: 정확 현재 controller+reauth·원 요청4묶음/PENDING/ref/hash/expiry/base를 수집 전후 확인하며 불변 요약/command/receipt/audit를 결박한다. 동일명령은 현재권한 재확인 후 수집/쓰기/기한연장0, 새 명령은 새 version이다. own/controller 보호읽기는 과거 원문을 보존한다. current.expired는 원 요청 만료이고 summary 관측기한 body.validUntil은 별도다. sourceMode=SYNTHETIC_ONLY/defaultNOT_CONNECTED·실수집미연결/대상자격unknown gap·acceptance/execution/controlTransferred=false다.
+- I1 round1: 혼합 한도 반례291C8A Main987ed5에서3/3 RED·211.4182ms(미결소실/2MissingException)를 실제 재현했다. D8E19D의 각범주 독립검증 후 AS줄바꿈구문오류 b8136c/TS1434는38B7F6으로 정정했다. Mainfa84d2 fresh27/27·291.2676ms이나 신규시험타입3진단이 남아 전체PASS로 처리하지 않았다. 37DEF4의 입력 object spread 타입표현만 보완한 뒤50f72d 최신 summary10/10·skip0·217.5358ms/type/diff0, 불변 store17은 fa84d2 증거를 보존하고 반복하지 않았다. 독립 scoped C0/I0/M0, 실DB/SQL동시성/권한/collector/API/Agent·제어전환·사용자인수는 미검증이다.
+- 최종 지문: summary2EB18821739CB5A837FEF546C285F9EF49EF5CCAA2E76100CF51E6186F561B92, storeB2F879B1EB118097180F33F6F6EA0F18E9F22A7D3AD183199BAD87E9FCA85413, read0DD15ADC535EBAAAA9527F3D537C841D6D329ACF8D582D6D1CF1D0600B844202, fixture7ADD5FE694D32A1E66337DCC56C992F7B56C6D0FDD8693A88AF1AE44329DF33A, summary시험C23D3D166E537AABDDE7E26607D7131F99058B49BFB5AE80419DC9E1E36D0EC6, store시험0A238C9DEE857B5B7A4FFEA43293314A8221779918FCADB17A3BC21E8A70DBC7.
+- 다음: 소유 경로만 checkpoint/push·원격대조 후 task보조 patch/draft정확정리. 이어 새 writer에 미적용 SQL후보 단위3을 배정하며 새 실제SQL/정책/권한/서비스 실행0을 유지한다. rollback은 소유commit 일반revert이며 실제자료·제어권 삭제가 아니다. 전체계획/FN15/UI12는 미완료다.
+
+### 2026-10-26 FN15 단위 2C — 미확인 안전 요약 착수
+
+- 기준/담당: d7ec1323bdccc6eed19915f5d4e76ae1c1ad8995 local/development exact·main f976ed5e 불변·tracked clean/보호8 확인, 단위2B patch6개 owner/hash/nonlink 검사 후 정확 회수·각 부재다. 새 단일 writer fn15_handoff_summary에 신규 summary/summary-store2제품·직접시험2/필요fixture1과 기존 read 내부 검사4함수 export만 배정했다.
+- 지시: WI3.3을 원본61086BD에서 기존 문자 보존 삽입으로 반영, 최종 EBE804957AE831E82E14A60C80BF53FD106A438E12DECF0E6AB628A7F4BD769E/diff13삽입0삭제. 첫 apply는 실제 문맥과 다른 부가 문장으로 적용 전 거절·변경0이었고, 실제 원문을 읽어 고유 heading 앞 삽입으로 정정했다. 기존 지시/승인 범위·일반 권한은 불변이다.
+- 내부 계약: 현재 OWNER controller·actor/client/세대/version·유효reauth와 원 요청 기준을 수집 전후 같은 transaction에서 검사한다. 요청별 불변 요약/command/receipt/audit·버전/동일명령·보호 읽기를 검증하며 실제 수락/제어 이전0이다. 실제 collector/키/인증 생산자·API·DB·OS·Agent는 연결하지 않고 TEST_FAKE/defaultNOT_CONNECTED만 사용한다.
+- 관측 표시: 그룹 상태 SYNTHETIC_OBSERVED/EMPTY_SYNTHETIC/UNVERIFIED, 부분 근거는 COLLECTION_PARTIAL로 남긴다. WAITING은 첫3범주(activeExecutions/pendingCommands/pendingApprovals)의 refs가 있을 때만, checkpoint참조 단독은 UNVERIFIED다. sourceSYNTHETIC_ONLY/실수집미연결·대상현재자격미확인 gap, acceptance/execution/controlTransferred=false를 고정한다. 오류·누락·한도는 빈 안전 결과로 감추지 않는다.
+- 다음/한계: test-only 동결→Main RED→제품 patch→직접/타입 검증·독립 검수 순서. 기존 완료 시험·실행은 반복하지 않는다. 실제 원자성/데이터 진위·회수 안전/실사용·전체계획은 미검증이며 goal active를 유지한다.
+
+- 2C RED 실제 증거: test-only7AE3D81D7FAE193D83C8D40A1FEFD800353DE406D804470F45A229FA3C1C8E7B의 신규 fixture/시험3경로만 strict apply했다. Main e0f1db Node 직접24/24 RED·pass0/skip0·188.5047ms/exit1, 모두 미구현 export의 명시 assertion이며 음성 false-PASS0이다. 제품 작성 전 단일 writer에 결과를 전달했다. 실DB/권한/서비스/Agent 변경0.
+- 2C 보완/검수: 제품 첫 patch는 read hunk 문맥0으로 strict check에서 거절(dcc400/적용0), writer가 앞뒤3행을 붙인0450FFAA로 적용했다. a79f4b24/24·skip0이나 타입9진단/exit1이었다. FBCE0C 타입 명시·fixture4키/unknown인자 보완 뒤 Main f601d8 fresh24/24·308.172ms/type/diff0이다. Main 소유 RED기록의 CRLF 공백도 원문/기대값 변경 없이 바로잡았다. 독립 fn15_summary_review C0/I1/M0: 한 범주 과대에서 다른 범주 미결 근거/foreign 검증까지 사라지는 결함을 확인해 동일 writer에 혼합 반례 RED→GREEN을 배정했다(수정 round1). current.expired는 원 요청 만료이며 요약 관측기한은 body.validUntil로 별도다. source-only이므로 실제 안전/권한/DB PASS가 아니다.
+
 ### 2026-10-26 FN15 단위 2B — 보호 조회·cursor 검수 완료 범위
 
 - 담당: 구현 fn15_request_read, Main 관리·patch 통합·직접 검증, fn15_read_review 독립 정적 검수. 소유 제품은 read/cursor2개와 store verifier export1단어, 시험2개다. 기존 저장·공유 권한·route·정책·DB는 변경하지 않았다.

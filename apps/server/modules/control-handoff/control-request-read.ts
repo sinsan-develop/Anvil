@@ -89,7 +89,7 @@ function currentBasis(value: unknown, projectId: string): ControlRequestCursorBa
   return { actorId: value.actorId, clientId: value.clientId,
     generation: value.generation, version: value.version };
 }
-function currentAccess(observation: unknown, projectId: string): Access {
+export function currentAccess(observation: unknown, projectId: string): Access {
   const seen = copy(observation);
   if (!recordV1(seen, ['project', 'access'])
     || !recordV1(seen.project, ['id', 'archivedAt'])
@@ -122,7 +122,7 @@ function currentAccess(observation: unknown, projectId: string): Access {
   return { observedAt: access.now, identity, member,
     control: access.control, basis: currentBasis(access.control, projectId) };
 }
-function canController(access: Access): boolean {
+export function canController(access: Access): boolean {
   return access.member.participation === 'OWNER' && access.basis !== null
     && access.basis.actorId === access.identity.actorId
     && access.basis.clientId === access.identity.clientId;
@@ -130,7 +130,7 @@ function canController(access: Access): boolean {
 function checkView(access: Access, view: View): void {
   if (view === 'CONTROLLER' && !canController(access)) fail('CONTROL_REQUEST_READ_DENIED');
 }
-function checkStable(before: Access, after: Access, view: View): void {
+export function checkStable(before: Access, after: Access, view: View): void {
   checkView(after, view);
   if (!same(before.identity, after.identity) || !same(before.member, after.member)
     || (view === 'CONTROLLER' && !same(before.basis, after.basis)))
@@ -143,7 +143,7 @@ function readState(snapshot: ControlRequestSnapshot, access: Access): ControlReq
 }
 
 /** 저장 당시의 네 종류 원문을 기존 2A 검증기로 대조한다. 현재 기한/재인증을 새 작성처럼 검사하지 않는다. */
-function verifiedBundle(value: unknown, expectedRef: RequestRef, projectId: string):
+export function verifiedBundle(value: unknown, expectedRef: RequestRef, projectId: string):
   { requestRef: RequestRef; snapshot: ControlRequestSnapshot } {
   const bundle = copy(value);
   if (!recordV1(bundle, ['request', 'command', 'receipts', 'audits'])

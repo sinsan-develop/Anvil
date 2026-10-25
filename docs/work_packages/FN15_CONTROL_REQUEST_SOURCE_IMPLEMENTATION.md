@@ -57,6 +57,19 @@ FN15 전체를 SELF 요청으로 축소하지 않는다. 다른 사람 인계·�
 - 요약 생성은 현재 제어자의 정확 actor/client/generation 및 유효 reauthUntil을 같은 transaction에서 확인한 경우만 허용한다. SELF 요청자라는 이유로 생성 권한을 얻지 않는다. 수집 전후 현재 세션/회원/client/control과 요청의 baseControl을 다시 대조하고 변경·불명은 거절하거나 미확인으로 보존한다. 조회 권한과 생성 권한을 혼동하지 않는다.
 - 안전 요약의 실수집 미연결을 빈 안전 배열로 숨기지 않는다. 불변 WAITING/UNVERIFIED와 gap·acceptanceEnabled=false를 보존한다. 요약 수명 30초는 내부 후보 시험값이다. 과거 요약을 현재 안전·실수락 허가로 승격하지 않는다.
 
+### 3.3 단위 2C — 현재 제어자의 불변 미확인 안전 요약
+
+단위 2B checkpoint `d7ec1323bdccc6eed19915f5d4e76ae1c1ad8995` 다음이다. 신규 제품 `control-handoff-summary.ts`, `control-handoff-summary-store.ts`, FN15의 각 직접 시험·필요 fixture를 허용한다. 기존 read 모듈은 내부 `currentAccess/canController/checkStable/verifiedBundle`의 export만 허용하고 조회 로직·일반 권한·route는 수정하지 않는다.
+
+- 내부 명령은 schemaVersion=1/operation=prepareControlHandoff/commandId/projectId/clientId/payload:{requestRef}만 받는다. 현재 활성 OWNER·정확 현재 control actor/client·generation/version과 유효 reauthUntil을 같은 transaction에서 소비한다. SELF 요청자나 HANDOFF_ELIGIBLE이라는 이유만으로 생성하지 않는다. 원 요청의 project/ref/hash/4종 자료·PENDING·현재 요청 기한·baseControl을 수집 전후 다시 대조한다.
+- 포트의 현재 인증·요청 검증·요청별 버전 잠금·관측 수집·재관측·summary/command/receipt/audit 저장·전체 bundle 확인은 한 transaction 안에서 수행한다. 수집 중 회원/client 회수·reauth/요청 만료·제어 기준/원문 변동은 전체 rollback이다. 기존 grant/control/세대 변경 메서드를 제공하지 않는다. 기본 NOT_CONNECTED/TEST_FAKE만이며 실제 수집자·키·DB·OS·Agent는 연결하지 않는다.
+- 수집 자료는 같은 project의 activeExecutions/pendingCommands/pendingApprovals/sourceCheckpointRefs와 각 범주의 상태·관측시각·안전한 이유 코드다. 참조에는 project와 정확 version/hash를 결박하고 범주당 최대200·전체2MiB로 제한한다. 타 프로젝트·잘못된 ref/형식은 거절한다. 미연결·누락·수집 예외·한도 초과는 명시적 UNVERIFIED/gap으로 남기며 빈 안전 결과로 감추지 않는다. raw 예외·Secret·명령 본문은 저장/로그에 싣지 않는다.
+- body는 고정 requestRef/요청별 version/controller·baseControl/observedAt/validUntil/네 범주/각 확인 상태/gaps/safetyState를 가진다. sourceMode=SYNTHETIC_ONLY·realCollectorsConnected=false·acceptanceEnabled=false·executionAuthorized=false·controlTransferred=false를 항상 보존한다. 알려진 미결 작업이 있으면 WAITING, 그 외도 UNVERIFIED이며 SAFE를 생성하지 않는다. 실수집 미연결과 대상 현재 자격 미확인은 항상 gap으로 공개한다.
+- validUntil은 관측 후 최대30초이며 원 요청 만료를 넘기지 않는다. 이는 내부 관측 갱신 기한이고 실행·재인증 허가 기간이 아니다. summaryRef의 id는 requestRef.id, version은 요청별 양의 순번, hash는 자기 참조 없는 body canonical hash다. 새 버전은 이전 summary 원문을 덮지 않는다. source validator/verifier는 중복 metadata·명령/영수증/감사·request/summary ref의 양방향 완전성을 검사한다.
+- 동일 명령의 정확 재확인은 새 version/수집/쓰기 없이 현재 controller·재인증·원 요청 기준을 다시 검사해 원 보관 결과를 반환한다. 과거 validUntil을 연장하지 않는다. 다른 내용/주체/client/기준 재사용·부분/고아 저장·확정 commit 실패는 거절/rollback, commit 결과 불명은 원 commandId를 보존하고 자동 재실행하지 않는다.
+- 고정 summary 읽기는 현재 활성 본인 요청자 또는 현재 controller의 일반 읽기 권한으로만 가능하다. 만료 원문을 새 생성처럼 거절하지 않고 현재 expired/base 상태를 분리한다. 원 요청/요약/4종 ref/hash·version을 다시 대조하고, 조회 전후 권한 회수·scope 변경 시 결과 전체를 숨긴다. 조회만으로 summary 생성/수락·새 writer를 허가하지 않는다.
+- 시험은 requester 생성 거절/currentcontroller+reauth 정상, unknown/부분/한도·예외 공개, 알려진 미결 WAITING/빈 합성자료 UNVERIFIED, SAFE/true flag·교차/미래/잘못 ref 거절, 전후 회수·만료·base 변경 rollback, 새 version/구버전 불변·동일 명령 부작용0, 4종 누락/변조·고아·응답 유실, 일반 읽기·expired/권한 변경을 직접 확인한다. 실제 PG·실수집·회수/제어 안전성은 이 fake 검증으로 증명하지 않는다.
+
 ## 4. 단위 3 — 미적용 SQL 후보와 합성 통합
 
 정확 번호의 충돌·기존 migration 집합·loader를 확인한 뒤 새 `*.sql.pending` 파일만 추가한다. 기존 SQL·적용 manifest·실 DB는 수정하지 않는다. 요청·원문/버전·요약·명령/receipt/audit의 FK·불변 guard·중복 방지·완전성 요구를 소스 검수하고 fake/in-process로 검증한다. SQL/실 DB 동시성은 실행하지 않았으면 미검증이다.
