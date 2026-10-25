@@ -294,19 +294,21 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly Dictionary<string,QaEntry> caseChildren=new Dictionary<string,QaEntry>(StringComparer.Ordinal);
   readonly List<KernelHandle> transitions=new List<KernelHandle>();readonly List<QaAction> actions=new List<QaAction>();
   readonly HashSet<string> childNames=new HashSet<string>(StringComparer.Ordinal);readonly Stopwatch clock=Stopwatch.StartNew();
-  readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
+  readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit,failureCase;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
   DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;string mutationCase;QaChildPin childPin;
   internal string AcquisitionStatus{get;private set;}
   internal string CleanupStatus{get;private set;}
   internal string DaclRestorationStatus{get;private set;}
   internal string HardlinkObservationStatus{get;private set;}
   internal string ReparseObservationStatus{get;private set;}
-  QaFixtureLease(string id,string sha,DateTime from,DateTime to){runId=id;commit=sha;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";}
-  internal static QaFixtureLease Begin(string id,string sha,DateTime from,DateTime to){
+  bool failureInjected;internal string FailureObservationStatus{get;private set;}
+  QaFixtureLease(string id,string sha,DateTime from,DateTime to,string fault){runId=id;commit=sha;failureCase=fault;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";FailureObservationStatus="NOT_INJECTED";}
+  internal static QaFixtureLease Begin(string id,string sha,DateTime from,DateTime to,string failureCase=null){
    Require(QaAdapterConnected);
    Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"^r1-[a-z0-9][a-z0-9-]{0,47}$")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"^[a-f0-9]{40}$"));
    Require(from.Kind==DateTimeKind.Utc&&to.Kind==DateTimeKind.Utc&&to>from&&(to-from).TotalMinutes<=30);
-   var lease=new QaFixtureLease(id,sha,from,to);
+   Require(failureCase==null||failureCase=="WINDOW_EXPIRED"||failureCase=="CLOCK_REVERSED"||failureCase=="PARTIAL_PIN_FAILURE");
+   var lease=new QaFixtureLease(id,sha,from,to,failureCase);
    // 부분 획득도 원 소유 객체를 반환한다. 예외 때문에 원 handle 목록을 caller가 잃지 않는다.
    try{lease.Acquire();lease.AcquisitionStatus="ORIGINAL_HANDLES_ACQUIRED_NOT_OS_VALIDATED";}
    catch{lease.faulted=true;lease.AcquisitionStatus="PARTIAL_ACQUISITION_PRESERVED_UNCONFIRMED";}
@@ -314,13 +316,19 @@ internal static class DevelopmentRecoveryPathGuard {
   }
   void Fresh(){
    DateTime wall=DateTime.UtcNow;TimeSpan elapsed=clock.Elapsed;
+   // QA의 local 관측 sample만 한 번 바꾼다. OS 시계·production 경로·외부 delegate를 변경하지 않는다.
+   if(!failureInjected&&entries.Count==1&&entries[0].Pin.Before!=null&&(failureCase=="WINDOW_EXPIRED"||failureCase=="CLOCK_REVERSED")){
+    failureInjected=true;wall=failureCase=="WINDOW_EXPIRED"?until:lastWall.AddTicks(-1);FailureObservationStatus="QA_INJECTED_"+failureCase+"_NOT_OS_VALIDATED";
+   }
    Require(Environment.CurrentManagedThreadId==ownerThread&&!faulted&&!cleanupStarted&&acquired>=issued&&wall>=lastWall&&wall<until&&elapsed>=lastElapsed&&elapsed<remaining);
    lastWall=wall;lastElapsed=elapsed;
   }
   QaEntry Retain(KernelHandle handle,string path,bool directory,bool owned){
    var entry=new QaEntry{Pin=new Pin{Handle=handle},Owned=owned};entries.Add(entry);
    // 등록을 먼저 하므로 이후 identity/기한/권한 실패에서도 원 handle이 목록에 남는다.
-   Fresh();entry.Pin.Before=Read(handle,path,directory);Fresh();Require(entries.Count<=80);
+   Fresh();entry.Pin.Before=Read(handle,path,directory);
+   if(!failureInjected&&entries.Count==1&&failureCase=="PARTIAL_PIN_FAILURE"){failureInjected=true;FailureObservationStatus="QA_INJECTED_PARTIAL_PIN_FAILURE_NOT_OS_VALIDATED";throw Denied();}
+   Fresh();Require(entries.Count<=80);
    if(entries.Count>1)Require(entry.Pin.Before.Volume==entries[0].Pin.Before.Volume);
    return entry;
   }
@@ -748,6 +756,13 @@ internal static class DevelopmentRecoveryPathGuard {
      if(pins!=null){Require(WaitForSingleObject(child.Process,0)==258&&pins.CloseParentCopies());Fresh(false);Require(WaitForSingleObject(child.Process,0)==258);ChildPinTransferStatus="QA_CHILD_PIN_TRANSFER_RECORDED_NOT_OS_VALIDATED";}
     }finally{if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(handleList!=IntPtr.Zero)Marshal.FreeHGlobal(handleList);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);if(pins!=null)Require(pins.CloseParentCopies());}
    }catch{faulted=true;throw;}
+  }
+  internal string ObserveOriginalJobMembership(){
+   try{
+    Fresh(false);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count>0&&ActiveCount()==children.Count);
+    foreach(var child in children){bool member;Require(child.Process!=null&&!child.Process.IsInvalid&&!child.Process.IsClosed&&GetProcessId(child.Process)==child.Pid&&WaitForSingleObject(child.Process,0)==258&&IsProcessInJob(child.Process,job,out member)&&member);}
+    Fresh(false);return "QA_ORIGINAL_JOB_MEMBERSHIP_OBSERVED_NOT_OS_VALIDATED";
+   }catch{faulted=true;return "QA_JOB_MEMBERSHIP_UNCONFIRMED";}
   }
   internal string ObserveOriginalExit(){
    try{Require(Environment.CurrentManagedThreadId==ownerThread&&!closed&&job!=null&&children.Count>0);foreach(var child in children)if(WaitForSingleObject(child.Process,0)!=0)return "QA_EXIT_UNCONFIRMED";Require(ActiveCount()==0);return "QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED";}catch{return "QA_EXIT_UNCONFIRMED";}

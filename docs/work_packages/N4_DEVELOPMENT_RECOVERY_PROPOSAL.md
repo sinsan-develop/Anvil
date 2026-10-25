@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 고정 QA 실패3 local 주입·원 Job membership 후보는 각 한정 정적 C0/I0/M0, nativeA5F592ADD89B13F09BCE0625868D175428020F7A041C0CC37195888970844271·compile/OS/실정리 NOT_RUN이다. 최초 R0 compile-only 추가 실행 결정 후보는 기존 C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe(385903 읽기 hash46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00), 새 D:\\Project\\Anvil\\.av3-data\\development-recovery-bootstrap-20261025-01\\compile 아래 DLL/PDB/비밀 없는 진단만·최대10분/로딩·native호출0이다. root는 현재 부재이고 생성/컴파일은 실행하지 않았다. source 승인②는 이 bootstrap 예외를 포함하지 않으며 원 parser Minor1·원자복구/실 host/잔여 행동과 전체 source/계획 미완료를 유지한다.
+
 - child-pin 소유/명시 상속 후보는 run/commit/창/SID·원 ID/read/traverse-only·부분복제/close latch를 결박했지만 process-wide spawn 통제는 없다. 이에 inheritable 복제 전에 readonly false에서 차단하며 원 action만 회수한다. 한정 정적 C0/I0/M0는 이 차단 조치의 증거일 뿐 child상속/keeper/guardian-loss 지원 PASS가 아니다. native6C1CED59DCF005D8C66BFC2CD9ACFECFCE49E76EE11C087DB8019D91647C1A41·컴파일/OS/실프로세스 NOT_RUN, 전체 source/계획 미완료·새 broker/실행권위 생성0을 유지한다.
 
 - hardlink/reparse 원관측 후보는 각 독립 C0/I0/M0 source-only다. 공통 links1/reparse 거절은 유지하며 고정 원 leaf 링크수2/ID/바이트 또는 selected 원directory ID/상대 reparse payload만 별도 대조한다. native72104DE12864D3995472783820C3C1DC11D5D040A26070C4691F028724D65A57·compile/OS/실정리 NOT_RUN, alias삭제/원자 reparse제거 증거0·close-only 보존, DACL 원자복구 차단/기존Minor1·I1/I3/host8case 미완료를 유지한다.
