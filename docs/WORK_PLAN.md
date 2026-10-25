@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 child-pin 후보/복제 전 차단**: 원 fixture pin→QA child 명시 HANDLE_LIST와 원 Job/run/commit/창/SID·원 목록/close latch 후보를 연결했다. process-wide 일반 상속 spawn I1은 복제 전 readonly false에서 차단·한정 재검토 C0/I0/M0이며 근본 host 통제/실 child 상속 지원은 미완료다. native NOT_COMPILED/OS NOT_RUN·실프로세스0, 기존6 소비검사는 불변이라 반복0이다. 전체 source/계획 미완료이며 같은 승인②의 R1 고정 실패/host 관측·정리 선행을 이어간다.
+
 - **2026-10-25 R1 hardlink/reparse 원관측 source**: 두 고정 원 객체의 ID·내용/링크수2 또는 상대 reparse raw bytes를 별도 대조하고 공통 Read 보호는 유지했다. 각 delta 정적 C0/I0/M0·native compile/OS/실정리 NOT_RUN, alias삭제·원자 reparse제거/전체 I1·I3 미완료·close-only 보존이다. 다음 소스는 기존 inherit=false R1 process에 원 fixture pin의 명시 child 상속/수명을 결박할 선행이며 실제 실행 승인이 아니다.
 
 - **2026-10-25 R1 DACL 관측·정리 소비 source**: 원 descriptor/ID·바이트 대조와 파일용 API 후보, 원 lease→정리 receipt 소비를 준비했다. 비원자 ACL 복구 I1은 쓰기 전 고정 차단으로 보존하며 원자복구 지원 완료가 아니다. 한정 정적 C0/I0/M1(일부 불가능 상태조합 허용), 신규3/인접3 순수 소비·차단 시험/type/PS구문0·native/OS/실정리 NOT_RUN. 전체 source/계획 미완료이며 다음 hardlink 원관측·정리 연결을 같은 승인②로 계속한다.

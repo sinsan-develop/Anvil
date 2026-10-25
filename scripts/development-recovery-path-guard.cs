@@ -41,6 +41,7 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetHandleInformation(KernelHandle handle,out uint flags);
  [DllImport("kernel32.dll")]static extern IntPtr GetCurrentProcess();
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool DuplicateHandle(IntPtr sourceProcess,KernelHandle source,IntPtr targetProcess,out SafeFileHandle target,uint access,bool inherit,uint options);
+ [DllImport("kernel32.dll",EntryPoint="DuplicateHandle",SetLastError=true)]static extern bool DuplicateQaHandle(IntPtr sourceProcess,KernelHandle source,IntPtr targetProcess,out KernelHandle target,uint access,bool inherit,uint options);
 
  internal sealed class KernelHandle:SafeHandleZeroOrMinusOneIsInvalid {
   public KernelHandle():base(true){}
@@ -217,6 +218,9 @@ internal static class DevelopmentRecoveryPathGuard {
  static readonly bool QaAdapterConnected=false;
  // 원 handle은 WRITE_DAC 경합의 원자 compare-and-restore를 제공하지 않는다. 복구 writer는 미등록이다.
  static readonly bool QaDaclCompareAndRestoreConnected=false;
+ // thread 소유/명시 HANDLE_LIST만으로 다른 thread의 일반 상속 spawn을 배제하지 못한다.
+ // process-wide 생성 통제 host는 미등록이며 외부 bool/metadata를 그 증거로 받지 않는다.
+ static readonly bool QaExclusiveSpawnHostConnected=false;
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool WriteFile(KernelHandle file,byte[] data,uint length,out uint written,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool ReadFile(KernelHandle file,byte[] data,uint length,out uint read,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFilePointerEx(KernelHandle file,long distance,out long position,uint origin);
@@ -291,7 +295,7 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly List<KernelHandle> transitions=new List<KernelHandle>();readonly List<QaAction> actions=new List<QaAction>();
   readonly HashSet<string> childNames=new HashSet<string>(StringComparer.Ordinal);readonly Stopwatch clock=Stopwatch.StartNew();
   readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
-  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;string mutationCase;
+  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;string mutationCase;QaChildPin childPin;
   internal string AcquisitionStatus{get;private set;}
   internal string CleanupStatus{get;private set;}
   internal string DaclRestorationStatus{get;private set;}
@@ -443,9 +447,35 @@ internal static class DevelopmentRecoveryPathGuard {
    try{uint returned;Require(DeviceIoControl(handle,0x900a8u,null,0,data,16384,out returned,IntPtr.Zero));byte[] expected=QaRelativeSymlink();Require(returned==expected.Length);byte[] actual=new byte[returned];Marshal.Copy(data,actual,0,actual.Length);Require(BitConverter.ToString(actual)==BitConverter.ToString(expected));CheckEntry(target);}
    finally{Marshal.FreeHGlobal(data);}
   }
+  internal QaChildPin PrepareChildLifetimePin(){
+   try{Fresh();Require(filesystemSealed&&!mutationAttempted&&childPin==null&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");return new QaChildPin(this);}
+   catch{faulted=true;throw;}
+  }
+  // 원 fixture 객체만 받는다. 외부 handle/PID/path나 직렬화된 소유권은 입력받지 않는다.
+  internal sealed class QaChildPin {
+   readonly QaFixtureLease fixture;readonly List<KernelHandle> copies=new List<KernelHandle>();QaEntry entry;QaAction action;bool copiesAttempted,closed,closeUnknown;
+   internal QaChildPin(QaFixtureLease value){
+    Require(QaAdapterConnected&&value!=null);fixture=value;fixture.Fresh();Require(fixture.childPin==null&&fixture.filesystemSealed&&!fixture.mutationAttempted);fixture.childPin=this;
+    Require(fixture.caseChildren.TryGetValue("OUTSIDE_WRITE/unselected.txt",out entry));fixture.CheckEntry(entry);action=fixture.OpenAction(entry,ReadData);fixture.Fresh();
+   }
+   internal KernelHandle[] CopyForOriginalChild(string runId,string commit,DateTime from,DateTime until,SecurityIdentifier owner){
+    Require(QaExclusiveSpawnHostConnected);fixture.Fresh();Require(!closed&&!copiesAttempted&&Object.ReferenceEquals(fixture.childPin,this)&&runId==fixture.runId&&commit==fixture.commit&&from==fixture.issued&&until==fixture.until&&fixture.owner.Equals(owner));copiesAttempted=true;fixture.CheckEntry(entry);Require(action!=null&&!action.CloseAttempted);
+    var pins=new List<Pin>(action.Parents);pins.Add(new Pin{Handle=action.Handle,Before=entry.Pin.Before});Require(pins.Count>0&&pins.Count<=16);
+    foreach(var pin in pins){
+     fixture.Fresh();KernelHandle copy;bool duplicated=DuplicateQaHandle(GetCurrentProcess(),pin.Handle,GetCurrentProcess(),out copy,0,true,2);copies.Add(copy);
+     Require(duplicated&&copy!=null&&!copy.IsInvalid);uint flags;Require(GetHandleInformation(copy,out flags)&&flags==1);QaRequireReadOwnership(copy);Require(Same(pin.Before,Read(copy,pin.Before.Path,pin.Before.Directory)));fixture.Fresh();
+    }
+    return copies.ToArray();
+   }
+   internal bool CloseParentCopies(){
+    Require(Environment.CurrentManagedThreadId==fixture.ownerThread);if(closed)return !closeUnknown;closed=true;closeUnknown=true;bool unknown=false;
+    for(int i=copies.Count-1;i>=0;i--){var copy=copies[i];try{if(copy!=null){copy.Dispose();unknown|=!copy.IsInvalid&&(!copy.CloseAttempted||!copy.CloseSucceeded);}}catch{unknown=true;}}
+    if(action!=null)unknown|=!fixture.CloseAction(action);closeUnknown=unknown;return !unknown;
+   }
+  }
   // 성공 표기는 변경 시도일 뿐 guard 효과/권한/OS 합격이 아니다. 실 bridge 등록 전에는 호출 불가다.
   public string[] AttemptFilesystemMutation(string id){
-   Fresh();Require(filesystemSealed&&!mutationAttempted&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
+   Fresh();Require(filesystemSealed&&!mutationAttempted&&childPin==null&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
    QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;mutationCase=id;int actionStart=actions.Count;
    try{
     QaEntry entry;QaAction action;int code;uint count;long position;
@@ -490,6 +520,7 @@ internal static class DevelopmentRecoveryPathGuard {
    closeOnlyAttempted=true;cleanupStarted=true;faulted=true;CleanupStatus="HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED";
    foreach(var entry in entries)if(entry.DeleteRequested&&!entry.Closed){CleanupStatus="PENDING_DELETE_CLOSE_EFFECT_UNCONFIRMED_PRESERVED";return CleanupStatus;}
    bool unknown=false;
+   if(childPin!=null)unknown|=!childPin.CloseParentCopies();
    foreach(var action in actions)unknown|=!CloseAction(action);
    for(int i=transitions.Count-1;i>=0;i--){var handle=transitions[i];try{if(handle!=null){handle.Dispose();unknown|=!handle.IsInvalid&&(!handle.CloseAttempted||!handle.CloseSucceeded);}}catch{unknown=true;}}
    for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(entry.Closed)continue;
@@ -517,7 +548,7 @@ internal static class DevelopmentRecoveryPathGuard {
    if(cleanupStarted)return CleanupStatus;cleanupStarted=true;CleanupStatus="CLEANUP_UNCONFIRMED_PRESERVED";
    try{
     // cleanup는 만료 뒤에도 가능하지만 원 identity/내용/권한이 불명하면 삭제하지 않는다.
-    RestoreKnownDaclMutation();foreach(var entry in entries)CheckEntry(entry);
+    Require(childPin==null||childPin.CloseParentCopies());RestoreKnownDaclMutation();foreach(var entry in entries)CheckEntry(entry);
     for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(!entry.Owned)continue;
      CheckEntry(entry);QaAction action=entry.OwnershipOnly?OpenAction(entry,0x10000u):null;KernelHandle target=action==null?entry.Pin.Handle:action.Handle;IntPtr disposition=Marshal.AllocHGlobal(4);
      try{Marshal.WriteInt32(disposition,1);entry.DeleteRequested=true;Require(SetFileInformationByHandle(target,4,disposition,4));}finally{Marshal.FreeHGlobal(disposition);}
@@ -658,12 +689,14 @@ internal static class DevelopmentRecoveryPathGuard {
   const string ImageHash="bfb46af89433268872ddb43d1ca7a3f433452ee91ed356a9786940f90118e285";
   readonly List<KernelHandle> imagePins=new List<KernelHandle>();readonly List<ProcessInformation> children=new List<ProcessInformation>();
   readonly Stopwatch clock=Stopwatch.StartNew();readonly int ownerThread=Environment.CurrentManagedThreadId;
-  readonly DateTime from,until,acquired;DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;KernelHandle job;
+  readonly DateTime from,until,acquired;readonly string runId,commit;DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;KernelHandle job;
   bool faulted,terminationRequested,closed,closeUnknown;internal string AcquisitionStatus{get;private set;}
-  QaProcessProbe(DateTime start,DateTime end){from=start;until=end;acquired=DateTime.UtcNow;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";}
-  internal static QaProcessProbe Begin(DateTime start,DateTime end){
+  internal string ChildPinTransferStatus{get;private set;}
+  QaProcessProbe(string id,string sha,DateTime start,DateTime end){runId=id;commit=sha;from=start;until=end;acquired=DateTime.UtcNow;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";}
+  internal static QaProcessProbe Begin(string id,string sha,DateTime start,DateTime end){
    Require(QaAdapterConnected);Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30);
-   var probe=new QaProcessProbe(start,end);
+   Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"^r1-[a-z0-9][a-z0-9-]{0,47}$")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"^[a-f0-9]{40}$"));
+   var probe=new QaProcessProbe(id,sha,start,end);
    try{probe.Acquire();probe.AcquisitionStatus="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED";}catch{probe.faulted=true;probe.AcquisitionStatus="QA_PARTIAL_ACQUISITION_PRESERVED_UNCONFIRMED";}
    return probe;
   }
@@ -691,25 +724,29 @@ internal static class DevelopmentRecoveryPathGuard {
    try{uint returned;Require(QueryInformationJobObject(job,3,buffer,(uint)(8+2*IntPtr.Size),out returned)&&returned>=8&&returned<=8+2*IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long pid=Marshal.ReadIntPtr(buffer,8+i*IntPtr.Size).ToInt64();Require(pid>0&&pid<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)pid));}return total;}
    finally{Marshal.FreeHGlobal(buffer);}
   }
-  internal void StartFixedSleepProbe(){
+  internal void StartFixedSleepProbe(QaFixtureLease.QaChildPin pins=null){
    try{
     Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2);
-    IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero;bool initialized=false;
+    IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero,handleList=IntPtr.Zero;bool initialized=false;
     try{
-     UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
-     list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,1,0,ref size));initialized=true;
+     if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected);}
+     KernelHandle[] inherited=pins==null?new KernelHandle[0]:pins.CopyForOriginalChild(runId,commit,from,until,owner);uint attributeCount=pins==null?1u:2u;
+     UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,attributeCount,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
+     list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,attributeCount,0,ref size));initialized=true;
      value=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(value,job.DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x2000d),value,new UIntPtr((uint)IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
+     if(pins!=null){Require(inherited.Length>0&&inherited.Length<=16);handleList=Marshal.AllocHGlobal(checked(inherited.Length*IntPtr.Size));for(int i=0;i<inherited.Length;i++)Marshal.WriteIntPtr(handleList,i*IntPtr.Size,inherited[i].DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x20002),handleList,new UIntPtr((uint)(inherited.Length*IntPtr.Size)),IntPtr.Zero,IntPtr.Zero));}
      // 부모 환경/Secret/profile을 전달하지 않는다. 고정 .NET sleep만 실행하며 사용자 문자열은 없다.
      environment=Marshal.StringToHGlobalUni("DOTNET_EnableDiagnostics=0\0POWERSHELL_TELEMETRY_OPTOUT=1\0SystemRoot=C:\\Windows\0WINDIR=C:\\Windows\0\0");
      var startup=new StartupEx{Startup=new StartupInfo{Size=(uint)Marshal.SizeOf(typeof(StartupEx))},Attributes=list};NativeProcessInformation raw;
      DateTime requested=DateTime.UtcNow;Fresh(true);
-     Require(CreateProcessW(Image,new StringBuilder("\""+Image+"\" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\""),IntPtr.Zero,IntPtr.Zero,false,0x4u|0x80000u|0x8000000u|0x400u,environment,@"C:\Program Files\PowerShell\7",ref startup,out raw));
+     Require(CreateProcessW(Image,new StringBuilder("\""+Image+"\" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\""),IntPtr.Zero,IntPtr.Zero,pins!=null,0x4u|0x80000u|0x8000000u|0x400u,environment,@"C:\Program Files\PowerShell\7",ref startup,out raw));
      var child=new ProcessInformation{Process=new KernelHandle(raw.Process),Thread=new KernelHandle(raw.Thread),Pid=raw.Pid};children.Add(child);
      Require(!child.Process.IsInvalid&&!child.Thread.IsInvalid);bool member;Require(IsProcessInJob(child.Process,job,out member)&&member&&GetProcessId(child.Process)==child.Pid);
      var actual=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(child.Process,0,actual,ref capacity)&&actual.ToString()==Image);OwnedRuntime.CheckOwner(child.Process,owner);
      FileTime begun,ended,kernel,user;Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());
      Require(ActiveCount()<=children.Count);Fresh(true);Require(ResumeThread(child.Thread)==1);
-    }finally{if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);}
+     if(pins!=null){Require(WaitForSingleObject(child.Process,0)==258&&pins.CloseParentCopies());Fresh(false);Require(WaitForSingleObject(child.Process,0)==258);ChildPinTransferStatus="QA_CHILD_PIN_TRANSFER_RECORDED_NOT_OS_VALIDATED";}
+    }finally{if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(handleList!=IntPtr.Zero)Marshal.FreeHGlobal(handleList);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);if(pins!=null)Require(pins.CloseParentCopies());}
    }catch{faulted=true;throw;}
   }
   internal string ObserveOriginalExit(){

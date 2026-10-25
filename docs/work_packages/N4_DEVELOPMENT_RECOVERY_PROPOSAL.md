@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- child-pin 소유/명시 상속 후보는 run/commit/창/SID·원 ID/read/traverse-only·부분복제/close latch를 결박했지만 process-wide spawn 통제는 없다. 이에 inheritable 복제 전에 readonly false에서 차단하며 원 action만 회수한다. 한정 정적 C0/I0/M0는 이 차단 조치의 증거일 뿐 child상속/keeper/guardian-loss 지원 PASS가 아니다. native6C1CED59DCF005D8C66BFC2CD9ACFECFCE49E76EE11C087DB8019D91647C1A41·컴파일/OS/실프로세스 NOT_RUN, 전체 source/계획 미완료·새 broker/실행권위 생성0을 유지한다.
+
 - hardlink/reparse 원관측 후보는 각 독립 C0/I0/M0 source-only다. 공통 links1/reparse 거절은 유지하며 고정 원 leaf 링크수2/ID/바이트 또는 selected 원directory ID/상대 reparse payload만 별도 대조한다. native72104DE12864D3995472783820C3C1DC11D5D040A26070C4691F028724D65A57·compile/OS/실정리 NOT_RUN, alias삭제/원자 reparse제거 증거0·close-only 보존, DACL 원자복구 차단/기존Minor1·I1/I3/host8case 미완료를 유지한다.
 
 - DACL 원/의도 descriptor 관측과 파일용 SetSecurityInfo 후보·원 lease 정리 receipt 소비를 준비했다. readonly false에서 비원자 복구 write를 차단하므로 원자복구 지원 미완료·실 권한변경0이다. 독립 C0/I0/M1(불가능 일부 조합 parser 허용, 권위/합격 상승0), 순수 신규3/인접3·type/PS AST/diff0은 C# 검증이 아니다. native9884917631CD69124D5C36631B4C0E034293C6549D966708EEE36795A5266D13/PS8239FA36AD4D5CC2289AD6173191907E1AEB0C3FAD180F0A1B02635783FE7BF2·컴파일/OS/실정리 NOT_RUN, 원 I1/I3 전체·hardlink/reparse/host8case 미완료 유지다.
