@@ -14,12 +14,12 @@ function condition(value: unknown): boolean {
   if (object(value, ['all'])) return Array.isArray(value.all) && value.all.length > 0 && value.all.every(condition);
   if (object(value, ['any'])) return Array.isArray(value.any) && value.any.length > 0 && value.any.every(condition);
   if (object(value, ['not'])) return condition(value.not);
-  if (!object(value, ['fieldRef', 'operator', 'value']) || !object(value.fieldRef, ['nodeId', 'field']) || typeof value.fieldRef.nodeId !== 'string' || !['REVIEW_OUTCOME', 'USER_DECISION'].includes(String(value.fieldRef.field))) return false;
+  if (!object(value, ['fieldRef', 'operator', 'value']) || !object(value.fieldRef, ['nodeId', 'field']) || typeof value.fieldRef.nodeId !== 'string' || typeof value.fieldRef.field !== 'string' || !['REVIEW_OUTCOME', 'USER_DECISION'].includes(value.fieldRef.field) || typeof value.operator !== 'string') return false;
   const validValue = (item: unknown) => typeof item === 'string' && nonempty(item) && (value.fieldRef as RecordValue).field === 'USER_DECISION'
     || typeof item === 'string' && ['ACCEPTED', 'REWORK', 'BLOCKED'].includes(item);
   return value.operator === 'IS_PRESENT' ? value.value === null
     : value.operator === 'IN' ? Array.isArray(value.value) && value.value.length > 0 && value.value.every(validValue)
-    : ['EQ', 'NE'].includes(String(value.operator)) && validValue(value.value);
+    : ['EQ', 'NE'].includes(value.operator) && validValue(value.value);
 }
 function shape(input: unknown): input is MethodologyGraph {
   if (!object(input, ['nodes', 'edges', 'entryNodeId', 'terminalNodeIds']) || typeof input.entryNodeId !== 'string' || !texts(input.terminalNodeIds) || !Array.isArray(input.nodes) || !Array.isArray(input.edges)) return false;

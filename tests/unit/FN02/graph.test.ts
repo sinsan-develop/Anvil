@@ -80,3 +80,36 @@ test('종료 뒤 정상 작업이 남으면 완료 경계로 확정하지 않고
   joined.edges.push({ edgeId: 'explicit-join', fromNodeId: 'ST04', toNodeId: 'ST06', kind: 'JOIN', condition: { fieldRef: { nodeId: 'ST04', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'ACCEPTED' }, reason: '계획과 구현 결과가 모두 있어야 검수로 합류' });
   assert.equal(validateMethodologyGraph(joined, refs).validForConfirmation, true);
 });
+
+for (const location of ['연결', '합류'] as const) {
+  const conditionGraph = (condition: unknown) => {
+    const value = graph();
+    if (location === '연결') Object.assign(value.edges[0]!, { condition });
+    else {
+      Object.assign(value.nodes[5]!, { kind: 'JOIN', joinRule: { mode: 'DECLARED_CONDITION', condition } });
+      value.edges.push({ edgeId: 'conditional-join', fromNodeId: 'ST04', toNodeId: 'ST06', kind: 'JOIN', condition: null, reason: '두 선행 단계의 명시 조건 합류' });
+    }
+    return value;
+  };
+
+  test(`${location} 조건의 정상 문자열 필드와 연산자는 유효하다`, () => {
+    const value = conditionGraph({ fieldRef: { nodeId: 'ST01', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'ACCEPTED' });
+    const result = validateMethodologyGraph(value, refs);
+    assert.equal(result.validForConfirmation, true);
+    assert.equal(result.issues.some(issue => issue.code === 'INPUT_INVALID'), false);
+  });
+
+  test(`${location} 조건의 배열 연산자는 문자열로 변환하지 않고 입력 오류로 거절한다`, () => {
+    const value = conditionGraph({ fieldRef: { nodeId: 'ST01', field: 'REVIEW_OUTCOME' }, operator: ['EQ'], value: 'ACCEPTED' });
+    const result = validateMethodologyGraph(value, refs);
+    assert.equal(result.validForConfirmation, false);
+    assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+  });
+
+  test(`${location} 조건의 배열 필드는 문자열로 변환하지 않고 입력 오류로 거절한다`, () => {
+    const value = conditionGraph({ fieldRef: { nodeId: 'ST01', field: ['USER_DECISION'] }, operator: 'EQ', value: 'ACCEPTED' });
+    const result = validateMethodologyGraph(value, refs);
+    assert.equal(result.validForConfirmation, false);
+    assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+  });
+}
