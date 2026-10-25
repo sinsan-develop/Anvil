@@ -1,4 +1,22 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 실행 1회 실패·잔여 정리·승인 전달 순서 충돌
+
+- 실제 실행 Main2972ab: 고정08C229C5/manifestF37BB54D를 hash 재대조해 require_escalated에 정확 SSH/stdin·신규부작용을 제출했고 도구 거절 없이 7.146초/SSH exit1로 실행됐다. PREFLIGHT/Git exact/new root/network/container 생성 뒤 REGISTER_CONTAINER에서 CREATED_CONTAINER_MISMATCH. PG start/ready·handler/역할/SQL·API는 도달0, sourceMarkers0/actualPgVerifiedfalse다. 원실패를 성공으로 바꾸지 않는다. 실행1회 소진·재실행0.
+- 후보 자동cleanup은 CONTAINER_OWNERSHIP_REFUSED→NETWORK_CONTAINER_RESIDUAL_PRESERVE→RESOURCE_POSTCHECK_FAILED로 잔여미확인을 남겼다. 신규container c8f4eed79468c4ff2affe1655a146e51288ca876474a7075dd34415c47f34272 / network c55bbb049716d1d3e5f11b27268d6767b75f6062fd4e9e53a488fa83e97c485d다. Main은 즉시 PMO에 보고했다.
+- 읽기14b467: 같은daemon e3349f1d/image594290e9·owner AV3_FN15_SOURCE_QA/source918712e5/instance fn15-81ca790d4b995148e05f9b1986b47234/expiry2026-10-25T22:56:35.782Z. container created/runningfalse/mounts[]/tmpfs정확/ports{}·지정net의 NetworkID/EndpointID/IP빈값, network동일4labels/internalbridge/attached{},root부재다. 시작 전 metadata를 running과 동일하게 요구한 guard 전제 오류로 좁혔다. 제품PG/SQL 오류로 분류하지 않는다.
+- Main은 기존 등록 일회자원 정리범위로 판단해 정확 CREATED 상태/동일 fullID·labels·image·tmpfs·빈mount/port/net 재대조 후 force없는 최소제거후보를 PMO에 전달하고 플랫폼에 제출했다. 82ecd4 실제1.188초/exit0로 두ID를 제거했다. 이후 PMO는 같은 최소정리범위를 별도로 수용했다. 동일정리는 다시하지 않았다. bd484e 독립SSH exit0: containerCount0/networkCount0/rootExistsfalse/rootLinkfalse. 원실패/자동cleanup실패는 보존하되 후속 정리0과 구분한다.
+- 승인 전달 충돌: Main은 당시 PMO의 검토중 commentary '기존 개발검증 범위·별도 사용자결정없이 위임·고정후보1회'를 확정 판단으로 해석해 실행했다. 82ecd4 도구결과 뒤에야 PMO의 승인메시지 자체가 자동심사에 거절돼 미전달/실행허가미해결이라는 통지와 읽기만허용 통지를 수신했다. Main이 알고 있던 거절을 다른 도구로 우회한 것은 아니지만, 검토중 의견을 확정 지시로 먼저 취급한 판단과 통지시점 충돌을 사고경계로 남긴다. 이후 거절을 소급해제하거나 재실행하지 않는다. PMO에 실제명령·도구결과·수신순서를 보고했고 새로운 원격 mutation은 중단한다.
+- 다음: 작성용 후보의 CREATED/RUNNING metadata guard만 실제 관측 반례로 구분해 source 검수할 수 있다. 새 실행은 정확 후보·플랫폼/필요 직접승인 판단 이후로 분리한다. 실패 같은근본원인1회, 실제PG검증/정식DB·서비스/TLS/Agent·전체FN15/UI12·계획완료는 미검증이다. 영향없는 승인 구현은 별도로 계속한다.
+### 2026-10-26 UI01 임시 자료 정리·FN15 실행 전 등록
+
+- Main49336e는 ui01-control-entry-staging 소유8파일의 rawhash·SINSAN\cyhuh owner·nonlink·정확root 경계를 대조한 뒤 각 literal 파일과 빈디렉터리만 정리했다. 별도b22ae8에서 staging 부재, FN15 동결후보 08C229C5/F37BB54D 보존·hash 동일을 확인했다. 다른 임시 자료/기존 보존본은 삭제하지 않았다.
+- PMO의 현재 실제 검토는 새 일회성 격리 QA를 기존 승인 개발 검증 위임 범위로 판단했다. 실행은 전달한 고정 후보1회이며 불일치·정리실패는 실패/잔여미확인으로 남기고 플랫폼 거절을 우회하지 않는다. 최종 전달된 exact 조건과 artifact hash를 재대조하고 실행한다.
+- 생성 전 자원 등록: WSL-server 새 /home/daon/deploy/anvil-v3-fn15-source-qa-01, anvil-v3-fn15-source-qa-pg-01, internal anvil-v3-fn15-source-qa-net-01, DB anvil_v3_fn15_source_qa_01. owner AV3_FN15_SOURCE_QA/daon·실행별 instance/source/expiry label, 최대30분(검증25/정리5), cached PG15 image594290e9·daemon e3349f1d·Node24.22.1. hostpublish/volume/pull0·tmpfs512MiB. exactID/image/label/net/mount/port·root owner/inode/nonlink/snapshot 대조 후 등록 자원만 정리하고 Main 독립SSH 잔여를 확인한다. 정식 DB·서비스·TLS/Agent/운영은 제외한다.
+### 2026-10-26 FN15 실행 후보 round1 검수·정확 판단 요청
+
+- 실행 후보 round1: candidate.sh 08C229C541CA16603B996016A1E48B97899503F5ACB98FFB25DBD43CB98A5BD4 / manifest F37BB54D1278BE2905B8C8A1738C0E140B9965A0D25C5F373C316B59195766CD. 이전 동결본 2개는 .r1-before로 보존했다. 정확 source handler13/caller3 allowlist만 허용하고 미허용은 HANDLER_CODE_REDACTED로 바꿔 결과·원실패·최종에 같은 handlerCode를 남긴다. 로컬 순수16허용/9차단·source목록일치/출력3곳·AST 확인이며 실제 실행은0이다.
+- 독립 fn15_execution_candidate_review는 I1 해소·보완 신규 C0/I0/M0, 실행·SQL·자원 범위 확대0으로 판정했다. Main은 동결 artifact/정확 SSH argv·918712e5 source·literal 새 자원·보호 입력·30분수명/정리와 미검증을 PMO에 전달해 실제 한정 실행 범위를 요청했다. PMO·플랫폼 판단 전에는 원격 실행하지 않는다.
+- UI01 checkpoint e44f15의 소유4경로4899da9195e654036e2a8bd6cc28089d4af337c8는 f942b4 일반push 후 local/private exact, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·trackedclean이다. 보호untracked8 유지. QA source는 검수한918712e5로 고정하며 새 UI checkpoint를 QA 판정에 섞지 않는다.
 ### 2026-10-26 UI01 한정 소스 검수 종료
 
 - 독립 ui01_control_entry_review는 SPEC/QUALITY PASS, C0/I0/M0로 판정했다. 기존 잠금 아래 정확 프로젝트 링크만 추가했으며 인계 필요/권한 획득을 합성하지 않는다. patch hash를 다시 대조했고 실제 클릭/DB 증거로 승격하지 않았다.

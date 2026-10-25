@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN15 실제 source QA 1회 SETUP_FAILED**: 생성 직후 container metadata guard에서 PG start 전 실패했다. 실제 SQL/API 미실행·재실행0, 등록 신규 자원은 후속 소유 정리/독립 잔여0 확인. 승인 전달 시점 충돌과 원 실패는 docs/04_test_reports/AV3/FN15/SOURCE_QA_20261026_RESULT.md에 보존한다. 새 실행은 미해결이며 전체 FN15/UI12는 미완료다.
+
 - **2026-10-26 FN15 bounded PG handler 소스 준비**: 기본미연결/명세변조거절,새DB정확metadata·admin/runtime nonce결박을두고고정최소SQL/역할·seed와실API의유한검증함수source를추가했다. 직접guard11/type/diff0·독립I2해소C0/I0/M0. 실제PG/권한/SQL/API실행·정리·화면·인수는미검증이며source준비를기능완료로표시하지않는다.
 
 - **2026-10-26 FN15 검증 명세 보완**: 앞선M1 전달manifest 재검증/불변snapshot 공백은 고정fullSQL/ledger/helper·전체shape 대조/깊은동결과새3반례로해소했다. 영향9/type/diff0·독립C0/I0/M0. 제한NOLOGINcompat/schema bootstrap은후보이며실제role/grant/PG·실행handler/전체계획은미검증·미완료다.
