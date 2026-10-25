@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 정리 영수증의 중간 DACL 상태와 삭제 전 복구실패/삭제결과 모순을 거절했다. 독립 source C0/I0/M0·반례11거절/보존4·인접3PASS는 parser 한정이다. PS4873940E7356DAF3E78CF5DBD30B646E83D6B4C7FFEEB5C6F34F59776B4C8323, native불변/compile·OS NOT_RUN. 실제 child 상속 배제·guardian-loss/keeper/breakaway 행동·loader/host/watchdog와 원자 정리는 미완료다. 실행 필요 항목을 source PASS로 숨기지 않는다.
+
 - 원 factory owner는 외부 lease/handle 없이 같은 원 객체·불변 case/run/commit/창을 보관한다. 정리 전후에는 새 준비·시도를 막고 원 lease NOT_ATTEMPTED를 보존한다. PS 네 동작 literal throw는 유지하며 타입이름/BindingFacts는 실제 assembly 출처 증거가 아니다. native B95EA9519AA7B87A850A5D9870B04405C49993CD992CD50A4BB5F6E0A433BC03·PS DE6CA873BC675095893C571156613D9E425FE8D0D9ED6FE1A1CBF5CAAAB67EEF는 R0 미결3d0ad83a/A5와 다른 소스다. source 한정 정적 검토/소비시험을 실제 compile/OS/정리 합격으로 승격하지 않는다. 새 두 가지 승인 답변의 질문 연결 미확인으로 R0 이월/P1 재실행0이다.
 
 - cleanup-unknown은 실제 close 사실을 바꾸지 않고 삭제 전 close-only의 QA aggregate만 불명으로 1회 주입한다. 원 실패4 receipt와 고정6case/7child 준비 소비를 연결하되 PS literal throw/모든 os/residue/execution false 유지다. 신규 source delta 정적 C0/I0/M0·최종 순수 소비4/type/PS AST/diff0은 native/OS 검증이 아니다. 현재 nativeE68F74957136F0065D8CD41BCBA98923DB2108D32995991339662EAFC678B8C5/PS59495DFC1301D7794AFF38C4D49A1CBA3ED572BC3F1D85720509768A96FF996C는 R0 미결 exact3d0ad83a/A5 후보와 구분하며 답변을 새 후보로 자동 이월하지 않는다. 실제compile/OS/정리·assembly provenance/원 factory·실host 등과 전체계획 미완료를 유지한다.

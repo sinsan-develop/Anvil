@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 정리 조합 보완**: 기존 parser Minor의 모순 조합을 실제 native 정리 순서에 맞게 거절했다. 반례 RED→GREEN·변경/인접3검사·정적 C0/I0/M0는 소비 코드 한정, native/OS/host·guardian 지원은 미완료다. 검증용 메타데이터를 실행권위나 기능완료로 대체하지 않는다.
+
 - **2026-10-25 R1 원 factory 소유 연결**: 원 객체 private 보관·일회 lifecycle·미시도 영수증 보존과 PS 차단 연결을 보완했다. 정적 재검토 C0/I0/M0·새 소비/인접 차단 검사와 native compile/OS NOT_RUN을 구분한다. 실제 host/provenance와 전체계획 미완료이며 기존 승인② 소스 보완을 계속한다.
 
 - **2026-10-25 R1 cleanup-unknown/고정6 setup 소비 source**: 삭제 전 close-only QA 불명 주입과 원 실패4 receipt, 정확6case/7child 준비→seal/원관측→PS 차단 소비를 연결했다. 각 delta 정적 C0/I0/M0·새소비4/type/PS AST/diff0은 native 검증이 아니며 C# NOT_COMPILED/OS NOT_RUN이다. 현재 nativeE68F7495...는 R0미결3d0ad83a/A5 후보와 달라 허가 이월0. 전체source/계획 미완료이며 다음 실assembly/원 factory·host provenance/원 소유 지속·정리 상관관계를 같은 승인②에서 좁힌다.
