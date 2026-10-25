@@ -1,5 +1,14 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-25 UI02 입력보호 독립검수 최종판정 / Main 어울**: 한정C0/I0/M0·필수수정없음. 실제App함수형updater·baseline-api송신과Panel의지역준비/두번째control/실제prop반영/현재fingerprint/transport직전guard·exact미전송rollback/권한관측무효화·동일명령/승인보존을대조했다. 독립정적검수와Main18396e실제합성DOM/unit16/typebuild실행을구분하고실DB/served/전체인수는미확인. UI02계획row에한정증거를연결하고제품1/시험2·소유문서만통합한다.
+
+- **2026-10-25 UI02 전송 전 입력보호 최종 실행 / Main 어울**: 제품A12682E7DA93BC6D8790825B7A8D74BF60A1E94280287BC07F51A9C551EB972A/시험99194151/harness9B6CD230동결에서Main18396e 실제합성DOM1/1·skip0·exit0(3752ms),writer집중unit16·skip0/type0(691bd0/f3284d),Mainb300e1 type/Webbuild421/diffcheckexit0을확인했다. 두번째control실패POST0/원입력보존·권한상실잠금/명시재조회·7문맥지연·부모updater지연미고정/늦은재삽입차단·전송뒤유실/손상/권한거절재확인·승인필요/동일binding보존을검증했다. 원pending해제는이시도미전송exactowncheckpoint만,dispatch뒤rollback0·API/DB/일회승인불변이다. QA244항목정확정리/별도rootfalse/process0,500kB경고는분리보존/한도완화0. 독립코드검수중·실DB/served/사용자인수와전체UI02/FN01완료는미확인. Main읽기표시에서rg문자열을MatchInfo로오인한오류1은문자열로정정했고제품/시험오류와구분한다.
+
+- **2026-10-25 FN14 지원 완료·실제 사용자 결정 분리 / Main 어울**: PMO가E096C897 canonical과3표/정확파일/source-only범위를직접읽기확인하고문서추가반복불필요로판단했다. 새transfer_preparation_records/versions2표·create/readTransferPreparationRecord/정확GET의신규데이터·명시권한채택은별도사용자결정1건으로PMO가제시하며아직답변없다. 코드4/시험2/pendingSQL1·기본NOT_CONNECTED/합성만권장이고actualapp/route/공유operation/DB/정책/원문/서비스/Agent0으로분리한다. 같은질문/추상문서재보완/R0·SEND반복0,UI02독립구현계속. 신규미승인계약을구현착수로읽지않는다.
+
+- **2026-10-25 UI02 늦은 부모갱신 반례 보강 / Main 어울**: writer가단순set→send로는실제parentupdater가거절/지연돼도POST가될수있음을확인했다. 제품전첫RED부분불변으로deferredupdater·prop미반영POST0·취소후늦은pending재삽입0시나리오를추가,새시험99194151C19C62DB0306C309218D9D90E1C9CD896746CFF7897030E4E7E0714C/harness9B6CD23028452C07C7D812FAB1DAEF3BC9C6CED301AEDC2D80A71221A7FD7FB1로동결했다. exactowncheckpoint만사용하며이미전송된pending해제는금지,제품1파일범위유지로구현중이다.
+
+
 - **2026-10-25 FN14 3개 계약표 보완 재검토 / Main 어울**: PMO 요청의verifier/잠금회수/원자저장3표를기존후보에추가했다. context/document/knowledge기존reader의본문접근과metadata전용검증미연결·예약role와실이전차이·실제0011키와새양방향guard후보·모든회수잠금미입증시미연결을명확히한다. 독립첫C0/I0/M1에서USER_INSTRUCTION readMessage의저장snapshot보호와소비자의선택CID/ref/hash/kind검사책임혼재1건을해당행만정정,최종E096C897761A71D980F19B98E7BB47623DF8933C4F456BD1592621751DB1EB9D·한정재검토C0/I0/M0. 기존45B310정본문서지문일치확인후소유delta만반영했다. 코드4/시험2/pendingSQL1이름은미존재후보·실제app연결/정책/DB/원문/Agent0이며DRAFT/NOT_ADOPTED유지. 이기록은계약채택/제품사용가능PASS가아니다.
 
 - **2026-10-25 UI02 전송 전 준비 실패 실제 RED / Main 어울**: 동결시험332DD0851E5F5C81B76CCDEEC4455C855F0153098097E78537FE74727D8FCB58/harness50E1F69023AD1E46EA5AA6D04C3332868A40DB17335F40440168AD6D386F48A2·원제품88CF0EF6에서Main5cc53e 실제DOMexit1(6897ms). 첫제어조회성공/두번째연결실패·POST0인데pending/upload가붙어원buffer전체보존assert가실패해누락을확인했다. 전용QA241항목정확정리·별도rootfalse/process0후writer에게제품1파일구현을인계했다. 권한거절/세대불일치에서낡은OWNER관측을무효화해명시재조회전잠금을유지하고새세대자동채택0,전송후원명령/bytes/uncertain/승인은보존한다. 실DB/원문/서비스변경0·시험의사전읽기경로오류4건은실제경로로정정/제품실패와분리한다.

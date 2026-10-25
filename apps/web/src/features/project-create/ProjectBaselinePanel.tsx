@@ -11,6 +11,8 @@ import { featureLabels, same, type BaselineCoreEvidence, type BaselineFeatureSta
 const outcomes={NOT_EXECUTED:'미검토',ACCEPTED:'기록 내용 적합',REWORK:'보완 필요',BLOCKED:'판단 불가'} as const;
 const failure=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
 const modified=(b:BaselineBuffer|null)=>!!b&&(b.dirty||b.reviewDirty||b.confirmation.acknowledged||!!b.confirmation.reason);
+type UploadCheckpoint={pending:BaselineBuffer;resolve:(installed:boolean)=>void};
+function sameUploadBuffer(left:BaselineBuffer,right:BaselineBuffer){const a=left.upload,b=right.upload;if(!!a!==!!b||a&&b&&(a.bytes.length!==b.bytes.length||a.bytes.some((value,index)=>value!==b.bytes[index])))return false;return same({...left,upload:a?{...a,bytes:null}:a},{...right,upload:b?{...b,bytes:null}:b});}
 function RefLabel({value}:{value:Ref}) { return <span className="meta">{value.id} · v{value.version}<br/>{value.contentHash}</span>; }
 export function ProjectBaselinePanel({client,projectId,session,buffer,onChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:BaselineBuffer|null;onChange:Dispatch<SetStateAction<BaselineBuffer|null>>;onAuthenticationLost:()=>void}) {
  const [project,setProject]=useState<WorkspaceProject|null>(null),[error,setError]=useState<ApiError|null>(null),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
@@ -18,9 +20,12 @@ export function ProjectBaselinePanel({client,projectId,session,buffer,onChange,o
  const [selected,setSelected]=useState<BaselineDraftView|null>(null),[decision,setDecision]=useState<BaselineDecision|null>(null);
  const [reports,setReports]=useState<Awaited<ReturnType<typeof listSourceReadGrants>>|null>(null),[report,setReport]=useState<SourceReadSnapshotView|null>(null),[original,setOriginal]=useState<{ref:BaselineEvidenceRef;bytes:Uint8Array<ArrayBuffer>;text:string|null}|null>(null);
  const mounted=useRef(false),epoch=useRef(0),working=useRef(false);
+ const [uploadCheckpoint,setUploadCheckpoint]=useState<UploadCheckpoint|null>(null),uploadCommit=useRef<UploadCheckpoint|null>(null),latestUpload=useRef({client,buffer});latestUpload.current={client,buffer};
  const authority=[projectId,session.user.id,session.clientId,project?.controlState.status,project?.controlState.actorId,project?.controlState.clientId,project?.controlState.generation].join(':');
  const latestAuthority=useRef(authority);latestAuthority.current=authority;
- useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;epoch.current++;};},[]);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;epoch.current++;const checkpoint=uploadCommit.current;uploadCommit.current=null;checkpoint?.resolve(false);};},[]);
+ // 부모 updater가 지연·거절될 수 있으므로 실제 반영된 prop만 전송을 허용한다.
+ useEffect(()=>{if(!uploadCheckpoint)return;if(uploadCommit.current===uploadCheckpoint){uploadCommit.current=null;uploadCheckpoint.resolve(buffer===uploadCheckpoint.pending);}setUploadCheckpoint(null);},[buffer,uploadCheckpoint]);
  useEffect(()=>{
   let active=true;const ticket=++epoch.current;setProject(null);setError(null);setCurrent(null);setHistorical(null);setSelected(null);setDecision(null);setReport(null);setOriginal(null);setDrafts(null);setHistory(null);setReports(null);
   readWorkspaceProject(client,projectId).then(p=>{if(active&&ticket===epoch.current)setProject(p);}).catch(e=>{if(active&&ticket===epoch.current){const f=failure(e);setError(f);if(f.status===401)onAuthenticationLost();}});
@@ -63,15 +68,29 @@ export function ProjectBaselinePanel({client,projectId,session,buffer,onChange,o
   }catch(e){const f=failure(e);if(active())update(pending,p=>baselineMutationFailed(p,!!expected.pending&&expected.uncertain,f));throw e;}
  }
  function write(operation:BaselineOperation|'recheck'){const b=buffer;if(!b||!bound)return;void action(active=>persist(b,operation,active),true);}
- function upload(index:number,file:File|null){if(!file||!buffer||!editable)return;const b=buffer,item=b.input.items[index];if(!item)return;
+ async function uploadControl(b:BaselineBuffer,active:()=>boolean){
+  try{await control(b);return active();}catch(e){if(active()){const f=failure(e);setError(f);hideReads();setProject(null);if(f.status===401)onAuthenticationLost();}return false;}
+ }
+ function upload(index:number,file:File|null){if(!file||!buffer||!editable)return;const b=buffer,item=b.input.items[index];if(!item)return;const frozen=structuredClone(b);
   void action(async active=>{
-   await control(b);if(!active())return;if(file.size>20*1024*1024)throw new ApiError('BASELINE_UPLOAD_INPUT_INVALID');
-   const bytes=new Uint8Array(await file.arrayBuffer());if(!active())return;const next=await prepareBaselineUpload(b,session,item.itemId,bytes,file.type||'application/octet-stream');if(!active())return;
-   update(b,()=>next);await uploadPending(next,active);
+   const current=()=>active()&&latestUpload.current.client===client&&latestUpload.current.buffer===b&&sameUploadBuffer(b,frozen);
+   if(!current()||!await uploadControl(b,current))return;if(file.size>20*1024*1024)throw new ApiError('BASELINE_UPLOAD_INPUT_INVALID');
+   const bytes=new Uint8Array(await file.arrayBuffer());if(!current())return;const next=await prepareBaselineUpload(b,session,item.itemId,bytes,file.type||'application/octet-stream');if(!current())return;
+   await uploadPending(next,active,b,frozen);
   },true);
  }
- async function uploadPending(b:BaselineBuffer,active:()=>boolean){
-  await control(b);if(!active())return;const previouslyUncertain=b.uncertain;update(b,p=>({...p,uncertain:true}));try{const result=await sendBaselineUpload(client,b,session);if(active())update(b,()=>result);}catch(e){const f=failure(e);if(active())update(b,p=>baselineMutationFailed(p,previouslyUncertain,f));throw e;}
+ async function uploadPending(b:BaselineBuffer,active:()=>boolean,expected=b,frozen=structuredClone(expected)){
+  const current=()=>active()&&latestUpload.current.client===client&&latestUpload.current.buffer===expected&&sameUploadBuffer(expected,frozen);
+  if(!current()||!await uploadControl(b,current)||!current())return;
+  const previouslyUncertain=b.uncertain,pending={...b,uncertain:true},pinned=structuredClone(pending);
+  const currentPending=()=>active()&&latestUpload.current.client===client&&latestUpload.current.buffer===pending&&sameUploadBuffer(pending,pinned);
+  // 아직 전송하지 않은 이 시도의 정확 checkpoint만 원입력으로 복구한다.
+  const rollback=()=>onChange(previous=>previous===pending&&sameUploadBuffer(previous,pinned)?expected:previous);
+  const installed=await new Promise<boolean>(resolve=>{const checkpoint={pending,resolve};uploadCommit.current=checkpoint;setUploadCheckpoint(checkpoint);onChange(previous=>uploadCommit.current===checkpoint&&current()&&previous===expected&&sameUploadBuffer(previous,frozen)?pending:previous);});
+  if(!installed||!currentPending()){rollback();return;}
+  let dispatched=false,cancelled=false;
+  const transport=new ApiClient(async(input,init)=>{if(!currentPending()){cancelled=true;throw new ApiError('BASELINE_UPLOAD_PAUSED');}dispatched=true;return client.transport.call(globalThis,input,init);});
+  try{const result=await sendBaselineUpload(transport,pending,session);if(active())update(pending,()=>result);}catch(e){if(cancelled&&!dispatched){rollback();return;}const f=failure(e);if(active())update(pending,p=>baselineMutationFailed(p,previouslyUncertain,f));throw e;}
  }
  function reviewChange(fn:(r:BaselineContentReview)=>BaselineContentReview){if(!buffer?.review||locked)return;const b=buffer;update(b,p=>({...p,review:fn(p.review!),reviewDirty:true,confirmation:{reason:'',acknowledged:false},failure:null}));setDecision(null);}
  function coreChange(index:number,patch:Partial<BaselineCoreEvidence>){reviewChange(r=>({...r,items:r.items.map((i,n)=>n===index?{...i,coreEvidence:{basis:'UNKNOWN',environment:'',checkedAt:'',normalFlow:[],storageRead:[],importantFailure:[],...i.coreEvidence,...patch}}:i)}));}
