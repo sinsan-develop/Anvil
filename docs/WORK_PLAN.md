@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 PIN_WORKER 제한 응답 source**: 원207-byte pin facts→worker의 실제 non-owning 검증/고정 sentinel 읽기→ACK→STOP/자연wait/원 close body와 제한 Main 진입을 작성했다. 정상 STOP과 Job fallback·실제 exit code를 별도 snapshot으로 구분한다. 정적 재검토 C0/I0/M0이며 native TDD/compile/OS NOT_RUN·전체 G/W factory/실제 사용 가능 상태는 미완료다.
+
 - **2026-10-25 원 W 고정 채널·ACK source**: 원 child peer 재검증과 실제 overlapped I/O·고정 3단계 frame 소비·exact 취소/미완료 보존을 기존 시작·회수에 연결했다. 정적 scoped C0/I0/M0·native/compile/OS NOT_RUN이며 현재 sleep은 응답하지 않아 유한 실패다. 고정 G/W worker/factory와 실제 수명 증거는 미완료·실 QAmax2/gatesfalse 유지다.
 
 - **2026-10-25 원 target 비상속 전달 source**: 기존 QA의 inheritable 복제/HANDLE_LIST를 원 suspended 자식의 직접 비상속 전달·duplicate-back·검증 copy close로 대체했다. 원 자식 회수 전 fixture/action을 유지하며 실제 W ACK는 미연결이다. 정적 C0/I0/M0·compile/native/OS NOT_RUN, 전체 G/W·controller 지원/계획 완료가 아니다.
