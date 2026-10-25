@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 원 W 고정 채널·ACK source**: 원 child peer 재검증과 실제 overlapped I/O·고정 3단계 frame 소비·exact 취소/미완료 보존을 기존 시작·회수에 연결했다. 정적 scoped C0/I0/M0·native/compile/OS NOT_RUN이며 현재 sleep은 응답하지 않아 유한 실패다. 고정 G/W worker/factory와 실제 수명 증거는 미완료·실 QAmax2/gatesfalse 유지다.
+
 - **2026-10-25 원 target 비상속 전달 source**: 기존 QA의 inheritable 복제/HANDLE_LIST를 원 suspended 자식의 직접 비상속 전달·duplicate-back·검증 copy close로 대체했다. 원 자식 회수 전 fixture/action을 유지하며 실제 W ACK는 미연결이다. 정적 C0/I0/M0·compile/native/OS NOT_RUN, 전체 G/W·controller 지원/계획 완료가 아니다.
 
 - **2026-10-25 고립 host 원 진입 선행 소스**: Main의 일회 원 객체를 host→pin 복제까지 결박하고 public factory의 child-pin 직접 호출을 거절했다. 원 객체는 실행권위/다른 코드의 spawn 배제 증명이 아니며 false gate 유지·native 동작 검증 미실행이다. keeper/guardian-loss/breakaway의 원 프로세스·핸들 인계와 실제 시험은 별도 미완료로 유지한다.
