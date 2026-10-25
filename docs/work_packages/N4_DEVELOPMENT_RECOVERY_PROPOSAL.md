@@ -14,13 +14,13 @@
 
 | 항목 | 고정 내용 |
 |---|---|
-| 권장 Git 기준 | 6093f21c07d65e9371de97d762e80241b094e96a의 scripts/development-recovery-path-guard.cs 하나. 이전 b6/1589 권장본은 이번 정확 입력 보완으로 대체했으며 선택지는 한 개다. 이후 문서 commit은 소스 교체가 아니다 |
-| Git blob / 원문 SHA256 / 크기 | fa8813f9e44c030ea3ec27331a98745e36ef8941 / 376F43B5CD549BED2A5610C190179910CE3B6FA6354F7651E87212CDFFB452D6 / 95480 bytes. 커밋된 Git stdout 원문 stream으로 계산하고 개행 재작성하지 않음 |
-| 옛 후보 대비 실질 diff | native +149/-7줄. CLEANUP_UNKNOWN 보존·고정6 준비/실패4·원 owner/실제host finally 회수·Job 관측·공개 QA facade에 더해 standalone Main/실EntryAssembly 대조와 전체문자열 절대끝검사를 추가했다. Main은 /target:library에서 일반 메서드일 뿐 exe 생성/진입 실행0이고 기존 production/QA/원자DACL/상속배제 false gate는 열지 않음 |
+| 권장 Git 기준 | d71eb50870b088f57e1648ee4a1eba36aa058557의 scripts/development-recovery-path-guard.cs 하나. 이전 b6/1589·6093/376 권장본은 원 pin-child 정리 의존 연결로 대체했으며 선택지는 한 개다. 이후 문서 commit은 소스 교체가 아니다 |
+| Git blob / 원문 SHA256 / 크기 | 8d38a21bf18f5b6bed95c8582b87d12e090d95f3 / F81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49 / 96953 bytes. 커밋된 Git stdout 원문 stream으로 계산하고 개행 재작성하지 않음 |
+| 옛 후보 대비 실질 diff | native +167/-7줄. CLEANUP_UNKNOWN 보존·고정6 준비/실패4·원 owner/실제host finally 회수·Job 관측·공개 QA facade·standalone Main/실EntryAssembly·절대끝검사와 원pin→child→종료/회수확정뒤fixture정리 의존을 추가했다. Main은 /target:library에서 일반 메서드일 뿐 exe 생성/진입 실행0이고 기존 production/QA/원자DACL/상속배제 false gate는 열지 않음 |
 | compiler | 기존 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe, 앞선 읽기 지문46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00. 실행 직전 동일 파일·지문을 다시 대조, 다른 compiler/다운로드0 |
 | 참조 | 같은 Framework64 v4.0.30319의 mscorlib.dll=11AC114C43ECF6996BEF58BA3C99FBA3693A4560A84EEADDE54D193060DC626C, System.dll=2B3C17C6208A0B4B6BEB94E1A066F99BA06CDB2EA919479E99D47E8C6D96DC71, System.Core.dll=8B898BED54AE8CC61F9C58CC3EB062724F8357D2BDDA338B5D363654ECFF333D. 62e422 읽기확인, 기존 파일 수정/복사0 |
 | 신규 경로 | D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\compile. 실행 전 부재·기존 부모 realpath/link/소유·보호를 확인하고 기존 경로면 채택/덮기0 |
-| 신규 파일 한도 | 위 경로의 development-recovery-path-guard.cs(정확95480 bytes), DevelopmentRecoveryPathGuard.dll, diagnostics.json 세 파일만. PDB/XML/package/cache/추가 소스0. DLL4MiB 초과면 실패·승격0이며 이 상한은 후검사 기준이고 파일시스템 quota를 생성하지 않음 |
+| 신규 파일 한도 | 위 경로의 development-recovery-path-guard.cs(정확96953 bytes), DevelopmentRecoveryPathGuard.dll, diagnostics.json 세 파일만. PDB/XML/package/cache/추가 소스0. DLL4MiB 초과면 실패·승격0이며 이 상한은 후검사 기준이고 파일시스템 quota를 생성하지 않음 |
 | 결과 수집 | compiler exit code·경과·입출력 해시/크기·오류 ID/줄번호만, diagnostics 최대64KiB/256행. stream은 끝까지 drain하되 보관 초과는 잘림/초과 건수로 기록하고 임의 대형 원문 로그를 남기지 않음 |
 | 창과 timeout | 전체600초 이하, compiler 관측 최대480초·나머지120초는 동일 compiler 원 process handle의 종료/진단/정리용. timeout이면 같은 compiler만 종료 요청하고 최대15초 exit 관측. 이 compiler 중단 효과도 **향후 정확 실행 결정에 포함할 항목**이며 현재 미실행. 종료 불명에는 파일 삭제/추가 kill·재시도0, 보존/보고 |
 | 정확 정리 | compiler 종료 확인 뒤 생성 때 기록한 위3개 파일만 LiteralPath로 삭제하고 이번 생성 compile directory가 비었을 때만 비재귀 제거. 예상 밖 항목/identity·owner·realpath 불일치면 재귀 삭제0·보존/보고. bootstrap 부모도 이번 생성·비어있음이 확인된 경우에만 비재귀 회수. 기존 파일·보호8·DB·TLS·서비스 변경0 |
