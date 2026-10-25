@@ -307,7 +307,7 @@ internal static class DevelopmentRecoveryPathGuard {
    Require(QaAdapterConnected);
    Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"^r1-[a-z0-9][a-z0-9-]{0,47}$")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"^[a-f0-9]{40}$"));
    Require(from.Kind==DateTimeKind.Utc&&to.Kind==DateTimeKind.Utc&&to>from&&(to-from).TotalMinutes<=30);
-   Require(failureCase==null||failureCase=="WINDOW_EXPIRED"||failureCase=="CLOCK_REVERSED"||failureCase=="PARTIAL_PIN_FAILURE");
+   Require(failureCase==null||failureCase=="WINDOW_EXPIRED"||failureCase=="CLOCK_REVERSED"||failureCase=="PARTIAL_PIN_FAILURE"||failureCase=="CLEANUP_UNKNOWN");
    var lease=new QaFixtureLease(id,sha,from,to,failureCase);
    // 부분 획득도 원 소유 객체를 반환한다. 예외 때문에 원 handle 목록을 caller가 잃지 않는다.
    try{lease.Acquire();lease.AcquisitionStatus="ORIGINAL_HANDLES_ACQUIRED_NOT_OS_VALIDATED";}
@@ -368,6 +368,16 @@ internal static class DevelopmentRecoveryPathGuard {
    try{
     Fresh();CheckAll();Require(!filesystemSealed&&FilesystemChild(id,name,directory));QaEntry at;Require(cases.TryGetValue(id,out at));Require(childNames.Add(id+"/"+name));
     caseChildren.Add(id+"/"+name,Create(at.Pin,name,directory,content));CheckAll();
+   }catch{faulted=true;throw;}
+  }
+  public string PrepareFilesystemCases(){
+   try{
+    Fresh();Require(AcquisitionStatus=="ORIGINAL_HANDLES_ACQUIRED_NOT_OS_VALIDATED"&&run!=null&&!filesystemSealed&&!mutationAttempted&&childPin==null&&cases.Count==0&&childNames.Count==0);
+    foreach(string id in new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"})CreateCase(id);
+    CreateCaseChild("PARENT_REPLACEMENT","parent",true,null);CreateCaseChild("REPARSE_CHILD","target",true,null);CreateCaseChild("REPARSE_CHILD","selected",true,null);
+    CreateCaseChild("OUTSIDE_WRITE","unselected.txt",false,new byte[]{65,66});
+    foreach(string id in new[]{"FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"})CreateCaseChild(id,"leaf.txt",false,new byte[]{65,66});
+    SealFilesystemCases();return ObserveOwned();
    }catch{faulted=true;throw;}
   }
   internal void SealFilesystemCases(){
@@ -518,9 +528,18 @@ internal static class DevelopmentRecoveryPathGuard {
    }catch{return new[]{id,operation,"MUTATION_UNCONFIRMED",status};}
    finally{faulted=true;for(int i=actionStart;i<actions.Count;i++)CloseAction(actions[i]);} // 원 handle 불명 close 결과는 latch로 보존한다.
   }
+  public string[] CloseAndObserveInjectedFailure(){
+   Require(Environment.CurrentManagedThreadId==ownerThread&&failureCase!=null);string cleanup=CleanupOwned();
+   return new[]{failureCase,FailureObservationStatus,AcquisitionStatus,cleanup};
+  }
   public string[] CleanupFilesystemMutation(){
    Require(Environment.CurrentManagedThreadId==ownerThread);string status=CleanupOwned();
    return new[]{mutationCase??"NOT_ATTEMPTED",status,DaclRestorationStatus??"NOT_APPLICABLE"};
+  }
+  bool InjectUnknownCloseObservation(KernelHandle handle){
+   // 실제 CloseSucceeded는 보존한다. QA의 별도 aggregate만 불명으로 만들어 latch 소비를 검사한다.
+   if(failureCase!="CLEANUP_UNKNOWN"||failureInjected||handle==null||!handle.CloseAttempted||!handle.CloseSucceeded)return false;
+   failureInjected=true;FailureObservationStatus="QA_INJECTED_CLEANUP_UNKNOWN_NOT_OS_VALIDATED";return true;
   }
   internal string ReleaseHandlesWithoutDelete(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
@@ -533,7 +552,7 @@ internal static class DevelopmentRecoveryPathGuard {
    for(int i=transitions.Count-1;i>=0;i--){var handle=transitions[i];try{if(handle!=null){handle.Dispose();unknown|=!handle.IsInvalid&&(!handle.CloseAttempted||!handle.CloseSucceeded);}}catch{unknown=true;}}
    for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(entry.Closed)continue;
     // 직접 획득한 원 handle만 닫는다. 이름 탐색·삭제·권한 복구는 하지 않는다.
-    try{if(entry.Pin.Handle!=null){entry.Pin.Handle.Dispose();unknown|=!entry.Pin.Handle.IsInvalid&&(!entry.Pin.Handle.CloseAttempted||!entry.Pin.Handle.CloseSucceeded);}}catch{unknown=true;}
+    try{if(entry.Pin.Handle!=null){entry.Pin.Handle.Dispose();unknown|=!entry.Pin.Handle.IsInvalid&&(!entry.Pin.Handle.CloseAttempted||!entry.Pin.Handle.CloseSucceeded);if(entry.Owned)unknown|=InjectUnknownCloseObservation(entry.Pin.Handle);}}catch{unknown=true;}
     entry.Closed=true;
    }
    CleanupStatus=unknown?"HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED":"HANDLES_CLOSED_FIXTURE_PRESERVED_NOT_OS_VALIDATED";return CleanupStatus;
@@ -554,6 +573,7 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string CleanupOwned(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
    if(cleanupStarted)return CleanupStatus;cleanupStarted=true;CleanupStatus="CLEANUP_UNCONFIRMED_PRESERVED";
+   if(failureCase=="CLEANUP_UNKNOWN")return ReleaseHandlesWithoutDelete(); // 시험 원문은 삭제하지 않는다.
    try{
     // cleanup는 만료 뒤에도 가능하지만 원 identity/내용/권한이 불명하면 삭제하지 않는다.
     Require(childPin==null||childPin.CloseParentCopies());RestoreKnownDaclMutation();foreach(var entry in entries)CheckEntry(entry);

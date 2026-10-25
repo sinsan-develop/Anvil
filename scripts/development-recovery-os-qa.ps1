@@ -46,9 +46,29 @@ function Read-DevelopmentRecoveryQaCleanupReceipt([string]$CaseId,[object]$Value
  if($Value[1] -ceq 'OWNED_RUN_ABSENT_BY_ORIGINAL_PARENT_NOT_OS_VALIDATED' -and $Value[2] -cin @('DACL_CHANGE_ATTEMPTED_RESTORE_NOT_OBSERVED','DACL_RESTORE_UNCONFIRMED_PRESERVED','DACL_RESTORE_BLOCKED_NO_ATOMIC_COMPARE')){throw 'DEVELOPMENT_RECOVERY_QA_CLEANUP_UNCONFIRMED'}
  return @{caseId=$CaseId;cleanupObservation=$Value[1];daclObservation=$Value[2];osVerified=$false;residueVerified=$false;executionAuthorized=$false;guardVerdict='NOT_EVALUATED'}
 }
+function Read-DevelopmentRecoveryQaFailureReceipt([string]$CaseId,[object]$Value) {
+ $cases=@('WINDOW_EXPIRED','CLOCK_REVERSED','PARTIAL_PIN_FAILURE','CLEANUP_UNKNOWN')
+ if($CaseId -cnotin $cases -or $Value -isnot [array] -or $Value.Rank -ne 1 -or $Value.GetLowerBound(0) -ne 0 -or $Value.Length -ne 4){throw 'DEVELOPMENT_RECOVERY_QA_FAILURE_UNCONFIRMED'}
+ foreach($field in $Value){if($field -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_FAILURE_UNCONFIRMED'}}
+ if($Value[0] -cne $CaseId -or $Value[1] -cne ('QA_INJECTED_'+$CaseId+'_NOT_OS_VALIDATED')){throw 'DEVELOPMENT_RECOVERY_QA_FAILURE_UNCONFIRMED'}
+ if($CaseId -ceq 'CLEANUP_UNKNOWN'){
+  if($Value[2] -cne 'ORIGINAL_HANDLES_ACQUIRED_NOT_OS_VALIDATED' -or $Value[3] -cne 'HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED'){throw 'DEVELOPMENT_RECOVERY_QA_FAILURE_UNCONFIRMED'}
+ }elseif($Value[2] -cne 'PARTIAL_ACQUISITION_PRESERVED_UNCONFIRMED' -or $Value[3] -cnotin @('HANDLES_CLOSED_FIXTURE_PRESERVED_NOT_OS_VALIDATED','HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED')){throw 'DEVELOPMENT_RECOVERY_QA_FAILURE_UNCONFIRMED'}
+ # 원 assembly/lease provenance는 실 host의 미완료 선행이다. 이 parser는 주장 형식만 대조한다.
+ return @{caseId=$CaseId;injectionClaim=$Value[1];acquisitionClaim=$Value[2];cleanupClaim=$Value[3];osVerified=$false;residueVerified=$false;executionAuthorized=$false;guardVerdict='NOT_EVALUATED'}
+}
 function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
  # 생성자는 메모리 객체만 만든다. 실제 assembly 출처/run 결박은 아직 host에 등록되지 않았다.
  $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';OwnedLease=$OwnedLease;nativeVerified=$false;executionAuthorized=$false}
+ $adapter|Add-Member -MemberType ScriptMethod -Name Prepare -Value {
+  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
+  # 이 wrapper도 assembly/실 소유 provenance를 타입 이름만으로 인증하지 않는다.
+  $lease=$this.OwnedLease
+  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
+  $claim=$lease.PrepareFilesystemCases()
+  if($claim -isnot [string] -or $claim -cne 'ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED'){throw 'DEVELOPMENT_RECOVERY_QA_PREPARATION_UNCONFIRMED'}
+  return @{preparationClaim=$claim;osVerified=$false;executionAuthorized=$false;fixtureInterference='UNRESOLVED'}
+ }
  $adapter|Add-Member -MemberType ScriptMethod -Name Mutate -Value {
   param([string]$CaseId)
   # 함수 이름 재정의로 우회할 수 있는 실행 gate를 사용하지 않는다. 이 본문은 아직 미등록이다.
@@ -68,6 +88,13 @@ function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
   $lease=$this.OwnedLease
   if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
   return Read-DevelopmentRecoveryQaCleanupReceipt $CaseId ($lease.CleanupFilesystemMutation())
+ }
+ $adapter|Add-Member -MemberType ScriptMethod -Name ObserveFailure -Value {
+  param([string]$CaseId)
+  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
+  $lease=$this.OwnedLease
+  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
+  return Read-DevelopmentRecoveryQaFailureReceipt $CaseId ($lease.CloseAndObserveInjectedFailure())
  }
  return $adapter
 }
