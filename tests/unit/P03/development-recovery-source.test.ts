@@ -15,6 +15,19 @@ function simulationFixture(){
  return{start,clock,request,events,reply,io};
 }
 
+test('PS 요청 대조는 마지막 LF가 붙은 run·commit 별칭을 거절한다',{skip:process.platform!=='win32'},()=>{
+ const command=`$now=[datetimeoffset]'2026-10-25T00:00:00Z';foreach($file in @('scripts/development-recovery-host.ps1','scripts/development-recovery-os-qa.ps1')){$t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) $file),[ref]$t,[ref]$e);foreach($name in @('Get-DevelopmentRecoverySourcePlan','Read-DevelopmentRecoverySourceBinding','Read-DevelopmentRecoveryQaSourceBinding')){$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $name},$true);if($f){. ([scriptblock]::Create($f.Extent.Text))}}};$bad=0;foreach($mode in @('P2','R1')){$value=@{mode=$mode;commit=('b'*40);runId=$(if($mode -eq 'P2'){'source-01'}else{'r1-source-01'});issuedAt=$now.ToString('o');expiresAt=$now.AddMinutes(10).ToString('o')};foreach($field in @('commit','runId')){$copy=$value.Clone();$copy[$field]+=[char]10;try{if($mode -eq 'P2'){Read-DevelopmentRecoverySourceBinding $copy $now|Out-Null}else{Read-DevelopmentRecoveryQaSourceBinding $copy $now|Out-Null}}catch{$bad++}}};@{bad=$bad}|ConvertTo-Json -Compress`;
+ assert.deepEqual(JSON.parse(execFileSync('C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{bad:4});
+});
+
+test('TS 요청·선언 digest도 마지막 줄바꿈 별칭을 거절한다',async()=>{
+ const m=await import('../../../scripts/development-recovery-entry.ts');
+ const value={schemaVersion:1,commit:'b'.repeat(40),files:[{relativePath:'apps/server/main.ts',contentHash:'a'.repeat(64),sizeBytes:1}]};
+ assert.throws(()=>m.prepareRecoveryManifest({...value,commit:value.commit+'\n'}),/DEVELOPMENT_RECOVERY_MANIFEST_INVALID/);
+ assert.throws(()=>m.prepareRecoveryManifest({...value,files:[{...value.files[0]!,contentHash:value.files[0]!.contentHash+'\n'}]}),/DEVELOPMENT_RECOVERY_MANIFEST_INVALID/);
+ for(const field of ['runId','commit'] as const){const f=simulationFixture();await assert.rejects(m.simulateRecoverySourceBridge({...f.request,[field]:f.request[field]+'\n'},f.io));assert.deepEqual(f.events,[]);}
+});
+
 test('assembly loader 진입은 digest 주장만으로 파일 접근이나 타입 로딩을 시작하지 않는다',{skip:process.platform!=='win32'},()=>{
  const command=`$t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-host.ps1'),[ref]$t,[ref]$e);$f=$ast.Find({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'New-DevelopmentRecoveryQaHostFromAssembly'},$true);if(!$f){throw 'OWNED_ASSEMBLY_LOADER_MISSING'};. ([scriptblock]::Create($f.Extent.Text));$blocked=0;foreach($hash in @('',('A'*64),'claimed')){try{New-DevelopmentRecoveryQaHostFromAssembly 'OUTSIDE_WRITE' 'r1-loader-source' ('b'*40) ([datetime]'2026-10-25T00:00:00Z') ([datetime]'2026-10-25T00:30:00Z') $hash|Out-Null}catch{if(!$_.Exception.ToString().Contains('DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED')){throw};$blocked++}};@{blocked=$blocked;nativeTypeLoaded=$null -ne ('DevelopmentRecoveryQaHost' -as [type])}|ConvertTo-Json -Compress`;
  assert.deepEqual(JSON.parse(execFileSync('C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{blocked:3,nativeTypeLoaded:false});

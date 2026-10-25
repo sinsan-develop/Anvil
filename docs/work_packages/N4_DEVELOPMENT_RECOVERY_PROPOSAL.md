@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 고립host Main 최소진입은실EntryAssembly/EntryPoint·고정argv/UTC·동일원hostfinally정리·NOT_ACCEPTANCE/exit2로작성했다. DLL/PS에서Main호출하면entry대조전QaAdapterfalse에서차단한다. finalLF 별칭은C#/PS경계의절대끝대조로보완했으며TS코드는이미거절하여수정0. native376F43B5CD549BED2A5610C190179910CE3B6FA6354F7651E87212CDFFB452D6는이전권장b6/1589와다른source이고R0정확후보를아래표에별도로갱신한다. 전용exe컴파일/실행·process-wide상속배제/guardian시험은여전히미승인·미검증이다.
+
 - 실제loader source도 같은FileStream/private바이트의SHA→같은바이트Load→같은Assembly/publicsealedType/정확Create signature·return/instance에결박했다. hostraw0DCB746D1FC6FD0E6A5A51755E6E638DA03D1FD645ECD1E7631B4D66546D1646·현재literal차단/정적C0/I0/M0, actualload/OS NOT_RUN. caller와별개인정확외부실행결정/출처결박이없으면expectedSHA만으로차단해제불가이며새registry를구현하지않았다. R0는b6c41545/native1589한파일로유지, R0정리후R1에서재사용할DLL은없으므로actualR1artifact생성/등록은별도선행이다.
 
 ### 2026-10-25 R0 단일 컴파일 권장 패킷 — 실행 전 결정 자료

@@ -30,7 +30,7 @@ function Read-DevelopmentRecoverySourceBinding([hashtable]$Value,[datetimeoffset
  foreach($key in $keys){if($Value[$key] -isnot [string]){throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID'}}
  $p=Get-DevelopmentRecoverySourcePlan $Value.mode
  $issued=[datetimeoffset]::MinValue;$until=[datetimeoffset]::MinValue
- if ($Value.commit -cnotmatch '^[0-9a-f]{40}$' -or $Value.runId -cnotmatch '^[a-z0-9][a-z0-9-]{0,63}$' -or
+ if ($Value.commit -cnotmatch '\A[0-9a-f]{40}\z' -or $Value.runId -cnotmatch '\A[a-z0-9][a-z0-9-]{0,63}\z' -or
   ![datetimeoffset]::TryParseExact($Value.issuedAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$issued) -or
   ![datetimeoffset]::TryParseExact($Value.expiresAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$until) -or
   $until -le $issued -or ($until-$issued).TotalMilliseconds -gt $p.maxWindowMs -or $Now -lt $issued -or $Now -ge $until) { throw 'DEVELOPMENT_RECOVERY_BINDING_INVALID' }
@@ -42,7 +42,7 @@ function New-DevelopmentRecoveryQaHostFromAssembly([string]$CaseId,[string]$RunI
  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
  $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED','WINDOW_EXPIRED','CLOCK_REVERSED','PARTIAL_PIN_FAILURE','CLEANUP_UNKNOWN','JOB_MEMBERSHIP')
  $now=[datetime]::UtcNow
- if($CaseId -cnotin $cases -or $RunId -cnotmatch '^r1-[a-z0-9][a-z0-9-]{0,47}$' -or $Commit -cnotmatch '^[a-f0-9]{40}$' -or $ExpectedAssemblySha256 -cnotmatch '^[A-F0-9]{64}$' -or
+ if($CaseId -cnotin $cases -or $RunId -cnotmatch '\Ar1-[a-z0-9][a-z0-9-]{0,47}\z' -or $Commit -cnotmatch '\A[a-f0-9]{40}\z' -or $ExpectedAssemblySha256 -cnotmatch '\A[A-F0-9]{64}\z' -or
   $IssuedAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt -le $IssuedAt -or ($ExpiresAt-$IssuedAt).TotalMinutes -gt 30 -or $now -lt $IssuedAt -or $now -ge $ExpiresAt){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
  $path='D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\compile\DevelopmentRecoveryPathGuard.dll'
  $file=$null;$bytes=$null;$digest=$null

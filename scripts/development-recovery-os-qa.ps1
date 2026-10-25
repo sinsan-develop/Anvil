@@ -18,7 +18,7 @@ function Read-DevelopmentRecoveryQaSourceBinding([hashtable]$Value,[datetimeoffs
  if(!$Value -or $Value.Count -ne 5 -or @($Value.Keys|Where-Object{$_ -cnotin $keys}).Count){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
  foreach($key in $keys){if($Value[$key] -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}}
  $from=[datetimeoffset]::MinValue;$until=[datetimeoffset]::MinValue
- if($Value.mode -cne 'R1' -or $Value.commit -cnotmatch '^[a-f0-9]{40}$' -or $Value.runId -cnotmatch '^r1-[a-z0-9][a-z0-9-]{0,47}$' -or
+ if($Value.mode -cne 'R1' -or $Value.commit -cnotmatch '\A[a-f0-9]{40}\z' -or $Value.runId -cnotmatch '\Ar1-[a-z0-9][a-z0-9-]{0,47}\z' -or
   ![datetimeoffset]::TryParseExact($Value.issuedAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$from) -or
   ![datetimeoffset]::TryParseExact($Value.expiresAt,'o',[cultureinfo]::InvariantCulture,[Globalization.DateTimeStyles]::None,[ref]$until) -or
   $until -le $from -or ($until-$from).TotalMilliseconds -gt 1800000 -or $Now -lt $from -or $Now -ge $until){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
@@ -33,7 +33,7 @@ function Read-DevelopmentRecoveryQaMutationReceipt([string]$CaseId,[object]$Valu
  }
  if($CaseId -cnotin $operations.Keys -or $Value -isnot [array] -or $Value.Rank -ne 1 -or $Value.GetLowerBound(0) -ne 0 -or $Value.Length -ne 4){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  foreach($field in $Value){if($field -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}}
- if($Value[0] -cne $CaseId -or $Value[1] -cne $operations[$CaseId] -or $Value[2] -cnotin @('MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT','MUTATION_UNCONFIRMED') -or $Value[3] -cnotmatch '^(?:[a-f0-9]{8}|NOT_OBSERVED)$'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
+ if($Value[0] -cne $CaseId -or $Value[1] -cne $operations[$CaseId] -or $Value[2] -cnotin @('MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT','MUTATION_UNCONFIRMED') -or $Value[3] -cnotmatch '\A(?:[a-f0-9]{8}|NOT_OBSERVED)\z'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  # native 호출 성공 뒤에도 원 identity/close 검증이 실패할 수 있으므로 역방향 승격은 하지 않는다.
  if($Value[2] -ceq 'MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT' -and $Value[3] -cne '00000000'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  return @{caseId=$CaseId;operation=$Value[1];mutation=$Value[2];nativeStatus=$Value[3];cleanupRequired=$true;osVerified=$false;guardVerdict='NOT_EVALUATED';fixtureInterference='UNRESOLVED'}

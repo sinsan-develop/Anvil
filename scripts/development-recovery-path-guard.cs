@@ -165,7 +165,7 @@ internal static class DevelopmentRecoveryPathGuard {
    catch{resourceFaulted=true;throw;}
   }
   void PinSourceFile(string relativePath,string expectedHash,long declaredSize){
-   Check();SourcePath(relativePath);Require(System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"^[a-f0-9]{64}$"));
+   Check();SourcePath(relativePath);Require(System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"\A[a-f0-9]{64}\z"));
    string[] segments=relativePath.Split('/');Require(!pinnedSources.ContainsKey(relativePath)&&segments.Length<=64&&segments.Length>0&&++files<=MaxPinnedFiles);
    // 전체 source/build/node_modules root 선택·manifest는 host 계약이 연결되기 전에는 실행 불가다.
    Pin at=parent;
@@ -179,11 +179,11 @@ internal static class DevelopmentRecoveryPathGuard {
    Check();pinnedSources.Add(relativePath,expectedHash);
   }
   internal void PinDeclaredManifest(string commit,IList<ManifestEntry> input,string expectedManifestHash){
-   Check();Require(phase=="P3"&&!manifestFaulted&&!manifestSealed&&files==0&&input!=null&&input.Count>0&&input.Count<=MaxPinnedFiles&&System.Text.RegularExpressions.Regex.IsMatch(commit??"",@"^[a-f0-9]{40}$")&&System.Text.RegularExpressions.Regex.IsMatch(expectedManifestHash??"",@"^[a-f0-9]{64}$"));
+   Check();Require(phase=="P3"&&!manifestFaulted&&!manifestSealed&&files==0&&input!=null&&input.Count>0&&input.Count<=MaxPinnedFiles&&System.Text.RegularExpressions.Regex.IsMatch(commit??"",@"\A[a-f0-9]{40}\z")&&System.Text.RegularExpressions.Regex.IsMatch(expectedManifestHash??"",@"\A[a-f0-9]{64}\z"));
    // 호출자 선언의 완전성을 OS가 증명한 것은 아니다. host 권위 연결 전에는 이 단계도 실제 실행 불가다.
    var rows=new List<ManifestEntry>();var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);long total=0;
    try{
-    foreach(var item in input){Require(item!=null&&item.Path!=null&&names.Add(item.Path)&&item.Size>=0&&System.Text.RegularExpressions.Regex.IsMatch(item.Hash??"",@"^[a-f0-9]{64}$"));total=checked(total+item.Size);Require(total<=MaxInventoryBytes);rows.Add(new ManifestEntry(item.Path,item.Hash,item.Size));}
+    foreach(var item in input){Require(item!=null&&item.Path!=null&&names.Add(item.Path)&&item.Size>=0&&System.Text.RegularExpressions.Regex.IsMatch(item.Hash??"",@"\A[a-f0-9]{64}\z"));total=checked(total+item.Size);Require(total<=MaxInventoryBytes);rows.Add(new ManifestEntry(item.Path,item.Hash,item.Size));}
     rows.Sort((a,b)=>StringComparer.Ordinal.Compare(a.Path,b.Path));var json=new StringBuilder("{\"schemaVersion\":1,\"commit\":\""+commit+"\",\"files\":[");
     for(int i=0;i<rows.Count;i++){
      var row=rows[i];SourcePath(row.Path);
@@ -305,7 +305,7 @@ internal static class DevelopmentRecoveryPathGuard {
   QaFixtureLease(string id,string sha,DateTime from,DateTime to,string fault){runId=id;commit=sha;failureCase=fault;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";FailureObservationStatus="NOT_INJECTED";}
   internal static QaFixtureLease Begin(string id,string sha,DateTime from,DateTime to,string failureCase=null){
    Require(QaAdapterConnected);
-   Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"^r1-[a-z0-9][a-z0-9-]{0,47}$")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"^[a-f0-9]{40}$"));
+   Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"\A[a-f0-9]{40}\z"));
    Require(from.Kind==DateTimeKind.Utc&&to.Kind==DateTimeKind.Utc&&to>from&&(to-from).TotalMinutes<=30);
    Require(failureCase==null||failureCase=="WINDOW_EXPIRED"||failureCase=="CLOCK_REVERSED"||failureCase=="PARTIAL_PIN_FAILURE"||failureCase=="CLEANUP_UNKNOWN");
    var lease=new QaFixtureLease(id,sha,from,to,failureCase);
@@ -811,7 +811,7 @@ internal static class DevelopmentRecoveryPathGuard {
   QaProcessProbe(string id,string sha,DateTime start,DateTime end){runId=id;commit=sha;from=start;until=end;acquired=DateTime.UtcNow;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";}
   internal static QaProcessProbe Begin(string id,string sha,DateTime start,DateTime end){
    Require(QaAdapterConnected);Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30);
-   Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"^r1-[a-z0-9][a-z0-9-]{0,47}$")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"^[a-f0-9]{40}$"));
+   Require(System.Text.RegularExpressions.Regex.IsMatch(id??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"\A[a-f0-9]{40}\z"));
    var probe=new QaProcessProbe(id,sha,start,end);
    try{probe.Acquire();probe.AcquisitionStatus="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED";}catch{probe.faulted=true;probe.AcquisitionStatus="QA_PARTIAL_ACQUISITION_PRESERVED_UNCONFIRMED";}
    return probe;
@@ -897,6 +897,11 @@ internal static class DevelopmentRecoveryPathGuard {
    closeUnknown=unknown;return unknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
   }
  }
+ internal static void RequireStandaloneQaEntry(){
+  Require(QaAdapterConnected);
+  System.Reflection.Assembly own=typeof(DevelopmentRecoveryQaHost).Assembly,entry=System.Reflection.Assembly.GetEntryAssembly();
+  Require(Object.ReferenceEquals(own,entry)&&entry.EntryPoint!=null&&entry.EntryPoint.DeclaringType==typeof(DevelopmentRecoveryQaHost)&&entry.EntryPoint.Name=="Main");
+ }
  // 미구현 OS 계약을 가능한 것으로 반환하지 않는다. 기존 provider Job 소스는 수정·등록하지 않는다.
  internal static string[] MissingLifetimeEvidence(){return new[]{"ATOMIC_ORIGINAL_PROCESS_FACTORY_OS_VALIDATION","EXACT_IMAGE_OWNER_BINDING_OS_VALIDATION","SELECTED_PIN_CHILD_INHERITANCE_OS_VALIDATION","GUARDIAN_LOSS_OS_QA","OWNED_JOB_EXIT_AND_CLEANUP_OS_VALIDATION","BOOTSTRAP_EXCEPTION_ACCEPTED","EXACT_RUNTIME_FILE_MANIFEST","PIN_CAPACITY_AND_STARTUP_TIME","EXTERNAL_APPROVED_INVOCATION_LIFETIME_ADAPTER"};}
 }
@@ -910,4 +915,22 @@ public sealed class DevelopmentRecoveryQaHost {
  }
  public string[][] Execute(){return owned.Execute();}
  public string[][] Cleanup(){return owned.Cleanup();}
+ // 별도 exe로 검증할 때의 고정 진입이다. DLL/PS caller는 실제 entry assembly 대조에서 거절한다.
+ // 이 메서드는 현재 /target:library 컴파일 제안에 exe 생성·실행 권한을 추가하지 않는다.
+ public static int Main(string[] args){
+  DevelopmentRecoveryQaHost host=null;string[][] report=null;bool unconfirmed=false;
+  try{
+   DevelopmentRecoveryPathGuard.RequireStandaloneQaEntry();
+   if(args==null||args.Length!=5||!System.Text.RegularExpressions.Regex.IsMatch(args[1]??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")||!System.Text.RegularExpressions.Regex.IsMatch(args[2]??"",@"\A[a-f0-9]{40}\z"))throw new InvalidOperationException();
+   DateTime issued,until;
+   if(!DateTime.TryParseExact(args[3],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out issued)||
+    !DateTime.TryParseExact(args[4],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out until)||
+    issued.Kind!=DateTimeKind.Utc||until.Kind!=DateTimeKind.Utc||until<=issued||(until-issued).TotalMinutes>30||DateTime.UtcNow<issued||DateTime.UtcNow>=until)throw new InvalidOperationException();
+   host=Create(args[0],args[1],args[2],issued,until);host.Execute();
+  }catch{unconfirmed=true;}
+  finally{if(host!=null)try{report=host.Cleanup();}catch{unconfirmed=true;}}
+  Console.WriteLine(unconfirmed?"QA_STANDALONE_HOST_UNCONFIRMED":"QA_STANDALONE_HOST_NOT_OS_VALIDATED");
+  if(report!=null)foreach(string[] row in report)Console.WriteLine(String.Join("|",row));
+  Console.WriteLine("QA_STANDALONE_HOST_NOT_ACCEPTANCE");return 2;
+ }
 }
