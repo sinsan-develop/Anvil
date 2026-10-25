@@ -694,12 +694,60 @@ internal static class DevelopmentRecoveryPathGuard {
   static QaStandalonePinRun original;
   internal readonly string RunId,Commit;internal readonly DateTime Issued,Until;
   readonly int ownerThread=Environment.CurrentManagedThreadId;bool hostClaimed,copiesClaimed;QaOwnedRunHost retainedHost;readonly QaFixedImageSpec imageSpec;
-  QaStandalonePinRun(string run,string sha,DateTime start,DateTime end,QaFixedImageSpec images){RunId=run;Commit=sha;Issued=start;Until=end;imageSpec=images;}
-  internal static QaStandalonePinRun Begin(string run,string sha,DateTime start,DateTime end){
+  readonly QaPendingStandaloneReport pendingReport;
+  // 원 C의 producer만 보유한다. 원 launcher/observer 검증과 report pipe는 아직 연결하지 않았다.
+  // 숫자 argv는 correlation metadata일 뿐이며 이 객체는 handle 채택/close 또는 I/O를 하지 않는다.
+  sealed class QaPendingStandaloneReport {
+   const int MaxBytes=16384,RowCount=9,MaxFields=8,MaxCodeUnits=256;
+   readonly QaStandalonePinRun originalRun;readonly string reportId;
+   string[][] retainedRows;byte[] retainedPayload;bool captured,unknown;
+   string state="ORIGINAL_LAUNCHER_TRUST_NOT_CONNECTED";
+   internal QaPendingStandaloneReport(QaStandalonePinRun source,string id,string observerSlot,string launcherTicks){
+    Require(source!=null&&System.Text.RegularExpressions.Regex.IsMatch(id??"",@"\A[a-f0-9]{32}\z")&&System.Text.RegularExpressions.Regex.IsMatch(observerSlot??"",@"\A[a-f0-9]{16}\z"));
+    ulong slot;long ticks;
+    Require(ulong.TryParse(observerSlot,System.Globalization.NumberStyles.AllowHexSpecifier,System.Globalization.CultureInfo.InvariantCulture,out slot)&&slot!=0&&
+     long.TryParse(launcherTicks,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out ticks)&&ticks>0&&ticks<=DateTime.MaxValue.Ticks);
+    originalRun=source;reportId=id; // slot/ticks는 원 OS view가 없으므로 보관·권위 채택하지 않는다.
+   }
+   internal void RequireOriginalLauncher(){
+    // 외부 exact C/launcher trust, 원 suspended C에 복제된 최소 observer와 peer 대조가 미연결이다.
+    // 원 handle을 얻은 것처럼 꾸미거나 raw slot을 SafeHandle로 감싸지 않고 fixture 획득 전에 거절한다.
+    unknown=true;state="ORIGINAL_LAUNCHER_TRUST_NOT_CONNECTED";throw Denied();
+   }
+   static void Byte(List<byte> bytes,byte value){Require(bytes.Count<MaxBytes);bytes.Add(value);}
+   static void UInt32(List<byte> bytes,uint value){for(int index=0;index<4;index++)Byte(bytes,(byte)(value>>(index*8)));}
+   static void Int64(List<byte> bytes,long value){for(int index=0;index<8;index++)Byte(bytes,(byte)((ulong)value>>(index*8)));}
+   static void Text(List<byte> bytes,string value){
+    Require(value!=null&&value.Length<=MaxCodeUnits);UInt32(bytes,(uint)value.Length);
+    // Encoding.Unicode의 invalid-surrogate 치환을 피하고 UTF-16 code unit을 그대로 보존한다.
+    foreach(char codeUnit in value){Byte(bytes,(byte)codeUnit);Byte(bytes,(byte)(codeUnit>>8));}
+   }
+   internal void Capture(QaOwnedRunHost source,string[][] snapshot){
+    Require(Environment.CurrentManagedThreadId==originalRun.ownerThread&&Object.ReferenceEquals(original,originalRun)&&Object.ReferenceEquals(originalRun.retainedHost,source));
+    if(captured){unknown=true;state="DUPLICATE_FINAL_REPORT_UNCONFIRMED";throw Denied();}
+    captured=true;
+    try{
+     Require(snapshot!=null&&snapshot.Length==RowCount);var rows=new string[RowCount][];
+     for(int row=0;row<RowCount;row++){
+      Require(snapshot[row]!=null&&snapshot[row].Length<=MaxFields);rows[row]=new string[snapshot[row].Length];
+      for(int field=0;field<rows[row].Length;field++){string value=snapshot[row][field];Require(value!=null&&value.Length<=MaxCodeUnits);rows[row][field]=value;}
+     }
+     // 실제 원 Snapshot 9행(빈 행 포함)을 먼저 소유한다. 이후 직렬화 실패에도 행을 지우지 않는다.
+     retainedRows=rows;var bytes=new List<byte>();Text(bytes,"ANVIL.QA.C_REPORT.V1");UInt32(bytes,1);
+     Text(bytes,originalRun.RunId);Text(bytes,originalRun.Commit);Int64(bytes,originalRun.Issued.Ticks);Int64(bytes,originalRun.Until.Ticks);Text(bytes,reportId);UInt32(bytes,RowCount);
+     foreach(string[] row in retainedRows){UInt32(bytes,(uint)row.Length);foreach(string value in row)Text(bytes,value);}
+     retainedPayload=bytes.ToArray();
+     // 이 payload는 pipe frame/ACK/원 peer 증거가 아니다. 전송 미연결은 영구 불완전으로 남긴다.
+     unknown=true;state="REPORT_RETAINED_TRANSPORT_UNCONNECTED";
+    }catch{unknown=true;state="FINAL_REPORT_ENCODING_UNCONFIRMED";throw;}
+   }
+  }
+  QaStandalonePinRun(string run,string sha,DateTime start,DateTime end,QaFixedImageSpec images,string reportId,string observerSlot,string launcherTicks){RunId=run;Commit=sha;Issued=start;Until=end;imageSpec=images;pendingReport=new QaPendingStandaloneReport(this,reportId,observerSlot,launcherTicks);}
+  internal static QaStandalonePinRun Begin(string run,string sha,DateTime start,DateTime end,string reportId,string observerSlot,string launcherTicks){
    Require(QaExclusiveSpawnHostConnected);RequireStandaloneQaEntry();
    Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30&&DateTime.UtcNow>=start&&DateTime.UtcNow<end);
    Require(System.Text.RegularExpressions.Regex.IsMatch(run??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"\A[a-f0-9]{40}\z"));
-   var images=QaFixedImageSpec.ReadController(sha);var value=new QaStandalonePinRun(run,sha,start,end,images);
+   var images=QaFixedImageSpec.ReadController(sha);var value=new QaStandalonePinRun(run,sha,start,end,images,reportId,observerSlot,launcherTicks);
    Require(System.Threading.Interlocked.CompareExchange(ref original,value,null)==null);return value;
   }
   internal void AssertOriginal(string run,string sha,DateTime start,DateTime end){
@@ -707,6 +755,8 @@ internal static class DevelopmentRecoveryPathGuard {
    RequireStandaloneQaEntry();
   }
   internal void ClaimHost(){AssertOriginal(RunId,Commit,Issued,Until);Require(!hostClaimed&&!copiesClaimed);hostClaimed=true;}
+  internal void RequireOriginalReportChannel(){AssertOriginal(RunId,Commit,Issued,Until);Require(hostClaimed&&retainedHost!=null);pendingReport.RequireOriginalLauncher();}
+  internal void RetainFinalReport(QaOwnedRunHost source,string[][] snapshot){pendingReport.Capture(source,snapshot);}
   internal void RetainOriginalHost(QaOwnedRunHost host){AssertOriginal(RunId,Commit,Issued,Until);Require(hostClaimed&&!copiesClaimed&&retainedHost==null&&host!=null);retainedHost=host;}
   internal QaFixedImageSpec OriginalImageSpec(){AssertOriginal(RunId,Commit,Issued,Until);Require(hostClaimed&&retainedHost!=null&&imageSpec!=null);imageSpec.AssertSource(Commit);return imageSpec;}
   internal void ClaimCopies(string run,string sha,DateTime start,DateTime end){AssertOriginal(run,sha,start,end);Require(hostClaimed&&!copiesClaimed);copiesClaimed=true;}
@@ -737,6 +787,8 @@ internal static class DevelopmentRecoveryPathGuard {
    try{
     if(selected=="CHILD_PIN_LIFETIME"){
      Require(pinRun!=null);pinRun.AssertOriginal(runId,commit,issued,until);
+     // C 상세 결과를 유실한 채 OS 행동만 진행하지 않는다. 미연결 launcher/report 경계는 여기서 중단한다.
+     phase="QA_C_REPORT_TRANSPORT_UNCONNECTED";pinRun.RequireOriginalReportChannel();
      phase="ACQUIRING_ORIGINAL_OWNER";owner=QaFixtureOwner.Begin(selected,runId,commit,issued,until);
      phase="PREPARING_ORIGINAL_FIXTURE";preparation=owner.Prepare();
      QaFixtureLease.QaChildPin pins=owner.PrepareChildPin();
@@ -764,7 +816,7 @@ internal static class DevelopmentRecoveryPathGuard {
       phase=mutation[2]=="MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT"?"QA_ACTION_RECORDED_NOT_OS_VALIDATED":"QA_ACTION_UNCONFIRMED";
      }
     }
-   }catch{phase="QA_HOST_FLOW_UNCONFIRMED";}
+   }catch{if(phase!="QA_C_REPORT_TRANSPORT_UNCONNECTED")phase="QA_HOST_FLOW_UNCONFIRMED";}
    finally{CleanupOriginalOwner();}
    return Snapshot();
   }
@@ -1491,10 +1543,13 @@ public sealed class DevelopmentRecoveryQaHost {
  // 이 메서드는 현재 /target:library 컴파일 제안에 exe 생성·실행 권한을 추가하지 않는다.
  public static int Main(string[] args){
   DevelopmentRecoveryQaHost host=null;string[][] report=null;bool unconfirmed=false;
+  DevelopmentRecoveryPathGuard.QaStandalonePinRun original=null;
+  bool controllerRequested=args!=null&&args.Length>0&&args[0]=="CHILD_PIN_LIFETIME";
   try{
    DevelopmentRecoveryPathGuard.RequireStandaloneQaEntry();
    bool pinWorker=args!=null&&args.Length==6&&args[0]=="PIN_WORKER",guardian=args!=null&&args.Length==7&&args[0]=="GUARDIAN";
-   if(args==null||args.Length!=5&&!pinWorker&&!guardian||!System.Text.RegularExpressions.Regex.IsMatch(args[1]??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")||!System.Text.RegularExpressions.Regex.IsMatch(args[2]??"",@"\A[a-f0-9]{40}\z"))throw new InvalidOperationException();
+   bool reportController=controllerRequested&&args.Length==8;
+   if(args==null||args.Length!=5&&!pinWorker&&!guardian&&!reportController||controllerRequested&&!reportController||!System.Text.RegularExpressions.Regex.IsMatch(args[1]??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")||!System.Text.RegularExpressions.Regex.IsMatch(args[2]??"",@"\A[a-f0-9]{40}\z"))throw new InvalidOperationException();
    DateTime issued,until;
    if(!DateTime.TryParseExact(args[3],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out issued)||
     !DateTime.TryParseExact(args[4],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out until)||
@@ -1502,12 +1557,18 @@ public sealed class DevelopmentRecoveryQaHost {
    if(pinWorker)return DevelopmentRecoveryPathGuard.RunFixedPinWorker(args[1],args[2],issued,until,args[5]);
    if(guardian)return DevelopmentRecoveryPathGuard.RunFixedGuardian(args[1],args[2],issued,until,args[5],args[6]);
    if(args[0]=="CHILD_PIN_LIFETIME"){
-    var original=DevelopmentRecoveryPathGuard.QaStandalonePinRun.Begin(args[1],args[2],issued,until);
+    original=DevelopmentRecoveryPathGuard.QaStandalonePinRun.Begin(args[1],args[2],issued,until,args[5],args[6],args[7]);
     host=new DevelopmentRecoveryQaHost(DevelopmentRecoveryPathGuard.QaOwnedRunHost.CreateForStandalonePinRun(original));
    }else host=Create(args[0],args[1],args[2],issued,until);
    host.Execute();
   }catch{unconfirmed=true;}
-  finally{if(host!=null)try{report=host.Cleanup();}catch{unconfirmed=true;}}
+  finally{
+   if(host!=null)try{report=host.Cleanup();}catch{unconfirmed=true;}
+   if(original!=null&&host!=null&&report!=null)try{original.RetainFinalReport(host.owned,report);}catch{unconfirmed=true;}
+  }
+  // C의 원 9행은 원 run의 pending producer가 보유한다. console/exit-code 요약은 수집 대체물이 아니다.
+  // 외부 수집/원 launcher trust/유한 protocol은 미연결이므로 이 분기의 exit2는 완료 증거가 아니다.
+  if(controllerRequested)return 2;
   Console.WriteLine(unconfirmed?"QA_STANDALONE_HOST_UNCONFIRMED":"QA_STANDALONE_HOST_NOT_OS_VALIDATED");
   if(report!=null)foreach(string[] row in report)Console.WriteLine(String.Join("|",row));
   Console.WriteLine("QA_STANDALONE_HOST_NOT_ACCEPTANCE");return 2;
