@@ -44,7 +44,7 @@ export interface ControlRequestTransaction {
   readBundle(commandId: string): Promise<ControlRequestBundle>;
 }
 export interface ControlRequestStorePort {
-  readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE';
+  readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE' | 'POSTGRES_SOURCE';
   transaction<T>(work: (tx: ControlRequestTransaction) => Promise<T>): Promise<T>;
 }
 export interface ControlRequestStoreResult {
@@ -161,7 +161,8 @@ export const defaultControlRequestStorePort: ControlRequestStorePort = {
 export async function requestControl(value: unknown,
   port: ControlRequestStorePort = defaultControlRequestStorePort): Promise<ControlRequestStoreResult> {
   const command = readCommand(value);
-  if (port?.sourceMode !== 'TEST_FAKE') return fail('CONTROL_REQUEST_NOT_CONNECTED', command.commandId);
+  if (port?.sourceMode !== 'TEST_FAKE' && port?.sourceMode !== 'POSTGRES_SOURCE')
+    return fail('CONTROL_REQUEST_NOT_CONNECTED', command.commandId);
   try {
     return await port.transaction(async tx => {
       const first = currentInput(command, await tx.observe());
@@ -203,6 +204,12 @@ export async function requestControl(value: unknown,
     });
   } catch (error) {
     if (error instanceof ControlRequestStoreFailure) throw error;
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && error.message === 'CONTROL_REQUEST_NOT_CONNECTED' && error.statusCode === 503)
+      return fail('CONTROL_REQUEST_NOT_CONNECTED', command.commandId);
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && ((error.message === 'AUTH_REQUIRED' && error.statusCode === 401)
+        || (error.message === 'CSRF_INVALID' && error.statusCode === 403))) throw error;
     // 인증·저장 구현의 원 예외와 요청 이유를 전달하거나 기록하지 않는다.
     throw new ControlRequestStoreFailure('CONTROL_REQUEST_STORE_FAILED', command.commandId);
   }

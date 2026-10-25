@@ -1,4 +1,5 @@
 import { canonicalJson } from '../../../../contracts/canonical.ts';
+import { AuthFailure } from '../access/repository.ts';
 import { arrayV1, isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
 import { readControlRequestInput, type ControlRequestInput,
   type ControlRequestObservation } from './control-request-input.ts';
@@ -24,7 +25,7 @@ export interface ControlRequestReadTransaction {
   listRows(query: ListQuery): Promise<ReadRow[]>;
 }
 export interface ControlRequestReadPort {
-  readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE';
+  readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE' | 'POSTGRES_SOURCE';
   readonly signer?: ControlRequestCursorSigner;
   transaction<T>(work: (tx: ControlRequestReadTransaction) => Promise<T>): Promise<T>;
 }
@@ -189,10 +190,17 @@ function older(row: ReadRow, last: ControlRequestCursorLast): boolean {
     || (row.createdAt === last.createdAt && row.requestRef.id < last.requestRef.id);
 }
 function runRead<T>(port: ControlRequestReadPort, work: (tx: ControlRequestReadTransaction) => Promise<T>): Promise<T> {
-  if (port?.sourceMode !== 'TEST_FAKE') return Promise.reject(new ControlRequestReadFailure('CONTROL_REQUEST_NOT_CONNECTED'));
+  if (port?.sourceMode !== 'TEST_FAKE' && port?.sourceMode !== 'POSTGRES_SOURCE')
+    return Promise.reject(new ControlRequestReadFailure('CONTROL_REQUEST_NOT_CONNECTED'));
   try {
     return port.transaction(work).catch(error => {
       if (error instanceof ControlRequestReadFailure) throw error;
+      if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+        && error.message === 'CONTROL_REQUEST_NOT_CONNECTED' && error.statusCode === 503)
+        throw new ControlRequestReadFailure('CONTROL_REQUEST_NOT_CONNECTED');
+      if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+        && ((error.message === 'AUTH_REQUIRED' && error.statusCode === 401)
+          || (error.message === 'CSRF_INVALID' && error.statusCode === 403))) throw error;
       throw new ControlRequestReadFailure('CONTROL_REQUEST_READ_FAILED');
     });
   } catch { return Promise.reject(new ControlRequestReadFailure('CONTROL_REQUEST_READ_FAILED')); }

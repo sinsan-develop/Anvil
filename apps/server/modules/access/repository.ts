@@ -32,6 +32,15 @@ export class AccessRepository {
   signProjectCursor(encoded: string): string { return this.#hmac('project-list-cursor:v1:' + encoded); }
   signMethodCursor(encoded: string): string { return this.#hmac('method-list-cursor:v1:' + encoded); }
   signProviderClaimCursor(encoded: string): string { return this.#hmac('provider-claim-history-page:v1:' + encoded); }
+  /** FN15 cursor의 고정 도메인만 기존 키로 서명한다. 키 원문은 노출하지 않는다. */
+  signControlRequestCursor(message: string): string {
+    if (!message.startsWith('anvil:fn15-control-request-cursor:v1:')) throw new AuthFailure('INPUT_INVALID', 400);
+    return this.#hmac('fn15-control-request-cursor:v1:' + message);
+  }
+  verifyControlRequestCursor(message: string, signature: string): boolean {
+    if (!message.startsWith('anvil:fn15-control-request-cursor:v1:')) return false;
+    return same(this.signControlRequestCursor(message), signature);
+  }
   /** 호출자가 소유한 transaction에서만 사용한다. 연결/BEGIN/COMMIT/갱신을 하지 않는다.
    * 반환값은 인증뿐이며 프로젝트 정책·제어·재인증·실행 허가를 대신하지 않는다. */
   async authenticateInTransaction(db: PoolClient, token: string, csrf: string): Promise<AuthenticatedIdentity> {

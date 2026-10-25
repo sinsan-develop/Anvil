@@ -1,5 +1,6 @@
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
+import { AuthFailure } from '../access/repository.ts';
 import { canController, checkStable, currentAccess, verifiedBundle } from './control-request-read.ts';
 import type { ControlRequestStoreObservation, ControlRequestBundle } from './control-request-store.ts';
 import type { ControlRequestRecord, ControlRequestSnapshot } from './control-request-snapshot.ts';
@@ -36,7 +37,7 @@ export interface HandoffSummaryTransaction {
   readSummaryBundle(commandId: string): Promise<HandoffSummaryBundle>;
   readSummaryBundleByRef(summaryRef: SummaryRef): Promise<HandoffSummaryBundle>;
 }
-export interface HandoffSummaryPort { readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE';
+export interface HandoffSummaryPort { readonly sourceMode: 'NOT_CONNECTED' | 'TEST_FAKE' | 'POSTGRES_SOURCE';
   transaction<T>(work: (tx: HandoffSummaryTransaction) => Promise<T>): Promise<T> }
 export interface HandoffSummaryResult { summaryRef: SummaryRef; body: HandoffSummaryBody; receipt: HandoffReceipt }
 export interface HandoffSummaryReadResult { projectId: string; requestRef: RequestRef;
@@ -182,7 +183,8 @@ export const defaultHandoffSummaryPort: HandoffSummaryPort = {
 export async function prepareControlHandoff(value: unknown,
   port: HandoffSummaryPort = defaultHandoffSummaryPort): Promise<HandoffSummaryResult> {
   const command = commandInput(value);
-  if (port?.sourceMode !== 'TEST_FAKE') return fail('HANDOFF_NOT_CONNECTED', command.commandId);
+  if (port?.sourceMode !== 'TEST_FAKE' && port?.sourceMode !== 'POSTGRES_SOURCE')
+    return fail('HANDOFF_NOT_CONNECTED', command.commandId);
   try {
     return await port.transaction(async tx => {
       const first = await current(tx, command);
@@ -234,6 +236,12 @@ export async function prepareControlHandoff(value: unknown,
     });
   } catch (error) {
     if (error instanceof HandoffSummaryStoreFailure) throw error;
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && error.message === 'CONTROL_REQUEST_NOT_CONNECTED' && error.statusCode === 503)
+      return fail('HANDOFF_NOT_CONNECTED', command.commandId);
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && ((error.message === 'AUTH_REQUIRED' && error.statusCode === 401)
+        || (error.message === 'CSRF_INVALID' && error.statusCode === 403))) throw error;
     throw new HandoffSummaryStoreFailure('HANDOFF_STORE_FAILED', command.commandId);
   }
 }
@@ -250,7 +258,8 @@ function readInput(value: unknown): { projectId: string; requestRef: RequestRef;
 export async function readControlHandoffSummary(value: unknown,
   port: HandoffSummaryPort = defaultHandoffSummaryPort): Promise<HandoffSummaryReadResult> {
   const input = readInput(value);
-  if (port?.sourceMode !== 'TEST_FAKE') return fail('HANDOFF_NOT_CONNECTED', null);
+  if (port?.sourceMode !== 'TEST_FAKE' && port?.sourceMode !== 'POSTGRES_SOURCE')
+    return fail('HANDOFF_NOT_CONNECTED', null);
   try {
     return await port.transaction(async tx => {
       const before = currentAccess(await tx.observe(), input.projectId);
@@ -283,6 +292,12 @@ export async function readControlHandoffSummary(value: unknown,
     });
   } catch (error) {
     if (error instanceof HandoffSummaryStoreFailure) throw error;
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && error.message === 'CONTROL_REQUEST_NOT_CONNECTED' && error.statusCode === 503)
+      return fail('HANDOFF_NOT_CONNECTED', null);
+    if (port.sourceMode === 'POSTGRES_SOURCE' && error instanceof AuthFailure
+      && ((error.message === 'AUTH_REQUIRED' && error.statusCode === 401)
+        || (error.message === 'CSRF_INVALID' && error.statusCode === 403))) throw error;
     throw new HandoffSummaryStoreFailure('HANDOFF_READ_FAILED', null);
   }
 }

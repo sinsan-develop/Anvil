@@ -1,4 +1,24 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 후속 연결 — 기본 OFF API·PG 소스 검수 범위
+
+- 담당/범위: fn15_pg_api_wiring 단일 구현, Main 통합·직접 검증·기록, fn15_pg_wiring_review 독립 정적 검수다. 신규 PG adapter/routes2, 기존 source mode·안전 오류 결합3·AccessRepository 고정 cursor wrapper·buildApp 선택 다섯째 인수와 신규시험3만 변경했다. 기존4인수/일반OWNER·ProjectCommand/정책·로그인·재인증기간·키/SQL·manifest·runtime/env는 불변이다.
+- 구현: 기본 생성/등록 OFF·pool.connect/query0, 명시 시험 선택 시 정확5경로와 한 PoolClient/정확0041 id·checksum 준비 확인·기존 인증·회원/제어/DB시각·5표/refhash/원문·lockCommand의단일ID 결박·rollback/replay·COMMIT불명 단발을 연결했다. SELF요청/본인 또는현재controller읽기/현재controller+reauth요약만이며 수락·제어/grant전환0, 실제collector없는요약의unknown gap·false flags를 유지한다.
+- round1: 독립I4/M1의 읽기/미연결/JSON 오류 분류·OWN/keyset fake 공백·ID반례를 보완했다. scope/keyset보강23659A8A 뒤daf7c2는lock1PASS/기존wrongView5031FAIL이었다. 오류보완9B0BF0E5 뒤8c921c는16건중15PASS/1FAIL·type/diff0이고, 정확요청행부재만HANDOFF_REQUEST_INVALID로구분한AEB5AD8C 뒤a7d817의남은1건PASS·836.1082ms/type/diff0이다. 직접영향 기존소비회귀4d2cfa44/44·skip0·359.3438ms/exit0이다. 기존mode음성시험은명시된unknown/누락값의검사이며 새POSTGRES_SOURCE허용은별도신규시험으로대조했다.
+- round2/최종: 본문한도413 오분류의새반례05c596는503≠413 RED1·800.8168ms/exit1. AB3ECCA6가정확FST_ERR_CTP_BODY_TOO_LARGE/status413만고정413으로바꿨고81c8f8 최신관련5/5·skip0·1148.9677ms/type/diff0이다. 신규고유17사례증거는현재off5/불변source11(최신1+직전10)/불변cursor1로구분하며fresh17동시실행으로보고하지않는다. 독립round2 C0/I0/M0·기존I4/M1해소, Main16c835 소유10파일최종hash일치다. 전체Web/불변기능전수검사는반복하지않았다.
+- 한계/다음: 이는Fastify.inject+fakePoolClient source후보검증이다. 실제PG/0041적용·GRANT/권한·SQL구문/동시성/COMMIT·TS/DB canonical동등성·socket HTTP/TLS·실사용자화면/인수·실제등록/서비스/Agent는NOT_RUN/미연결이다. 실제공개계약/수치·활성화와전체FN15/UI12/Stage/계획완료는미채택/미완료다. 소유checkpoint/push·보조물정확정리후 실제연결에필요한정확지원범위와독립미완료작업을이어간다. rollback은기본OFF/소유commit일반revert이며실원문/DB/제어삭제0이다.
+
+### 2026-10-26 FN15 후속 연결 — 기본 OFF API·PG 소스 착수
+
+- 기준/담당: 단위3 소유5경로는985ae9896a1329c6bf9ef01a25b0c4c250ffa61e로 게시해 local/development exact·main f976ed5e 불변·tracked clean/보호8을 확인했다. 종료 writer의 소유 보조8파일은 literal경로·소유자·nonlink·현재hash 확인 후 정확 제거했고 별도조회 잔여0이다. 실제 SQL/DB 실행0이다.
+- 범위: WI4.1 및 PMO 한정 source 수용의 최신 SHA8A9E121D8097B3B7568C3AE62DF1A0A26A30051A84DAB95F2689B601A85120D9를 새 단일 writer fn15_pg_api_wiring에 전달했다. 신규 PG port/routes2와 기존 source mode3·AccessRepository cursor wrapper·buildApp 선택등록만 허용, 직접시험 최대3파일이다. 일반 OWNER/ProjectCommand/정책·로그인/재인증기간/키 의미와 기존 SQL/manifest는 불변이다.
+- 검증/한계: 기본 OFF는 pool.connect/query0, 명시 선택한 in-process HTTP/fake PoolClient에서 다섯 경로·현재인증/회원/제어·CSRF/origin/ref/hash·회수/옛세대·rollback/replay/COMMIT불명·cursor도메인을 확인한다. 실제 공개계약/수치·enabled=true runtime등록·실DB/격리QA/migration/정책/계정/키/서비스/Agent/accept·control전환은 미채택/제외다. 테스트 먼저 동결→Main RED→제품→직접영향 검증/독립검수로 진행하며 이미 완료한 검증은 반복하지 않는다.
+
+- 후속 첫 RED: E642FAA57EFFE58633104234736532B3298DC3538F1000F5323EFB6975A63C87 신규 시험3파일을 strict 적용하고 Main881523에서8/8 RED·pass0/skip0·2705.9277ms를 확인했다. 새export7·기존POSTGRES_SOURCE거절1이며 실제접속0이다. 현재 8건은 기본OFF·CSRF·transaction뼈대·cursor만 증명하므로, 제품 작성 전에 동일 writer에게 같은3파일 안의 다섯경로 정상 저장/조회와 경로/hash·타주체/프로젝트·회수/세대·replay/orphan 직접사례 추가를 지시했다. 이를 전체 wiring 완료기준으로 축소하지 않는다.
+
+- 후속 추가 기준/증거: 같은 시험3파일 안에서 실제 다섯 경로의 합성 저장/재조회·위조/회수 음성2건을 보강해 Mainb9c4ec에서2/2 RED·728.3924ms를 확인했다. 정확0041 metadata/checksum 누락·불일치1건은 a6dca9 RED·886.3614ms, 오류 원문 비노출1건은 f40a72 RED·710.1556ms다. 그 전5b4a8b의 이름필터 불일치는 사례 미실행이며 PASS로 계산하지 않는다. forSession에 경로 projectId를 닫힌 문맥으로 전달하는 내부 인수4곳만 ce3df5 보정했다. source_command_id는 기존 lockCommand에서 얻은 한 ID를 재사용해 신규PG파일 안에서 첫 INSERT부터 결박하고 insertCommand와 재대조한다. 공통 transaction 인수 확장은 채택하지 않았으며 기존 인터페이스/권한은 보존한다. 실제 DB/서비스 실행0이다.
+
+- 후속 제품 최초 검증/검수: 800C5905의 허용7제품만 지문 확인 후 적용했다. Main9e9c24에서 cursor1PASS이나 생성자 parameter property가 Node strip-only/erasableSyntaxOnly와 맞지 않아2파일로드실패·타입9진단이었다. F950954E/05F15745 형식·literal 타입 보완 후aaa1c7은13건중10PASS/3FAIL·타입1진단이었다. query 경계의 특수 prototype과 DTO를 FD036662/E2F19A68로 정규화하고 DB fixture 역할 기대를 정확히 맞춘 뒤028b73은 직접3건중1PASS/2FAIL·type/diff0이다. 독립 검수 C0/I4/M1: 조회실패·미연결·JSON입력오류의 저장실패 오분류, fake OWN/keyset 검증 누락, 일관된 ID 결박 반례 부족을 확인했다. 오류3반례는2b925c에서3/3 RED·773.7204ms/exit1로 재현했고 동일 writer의 round1 보완 중이다. 실제 정상5경로의 source 소비 진행과 전체 최종PASS를 구분하며 DB/TLS/서비스·실사용은 미검증이다.
+
 ### 2026-10-26 FN15 단위 3 — 미적용 저장 후보·합성 소비 검수 범위
 
 - 담당/소유: fn15_source_storage 구현, Main 통합·직접 시험·문서, fn15_storage_review 독립 정적 검수다. 신규 control-source-integration.test.ts와 0041_control_handoff_source.sql.pending만 추가, 기존 제품/SQL/manifest·role/GRANT·제어 변경0이다. 적용 대상 .sql68은 불변이고 pending 후보가 하나 늘었다.
