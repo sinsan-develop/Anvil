@@ -2,6 +2,20 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 변경 영수증 recorded는 nativeStatus00000000만 허용하되 MUTATION_UNCONFIRMED+00000000을 성공으로 바꾸지 않는다. 반례 RED→GREEN/인접2검사·정적 C0/I0/M0, PS96A390B810CBA14E53D392B201D942874713C63215F4940CDDE5A1C0163EA8C1·native compile/OS NOT_RUN.
+
+### 2026-10-25 남은 보호 흐름의 구체적 경계
+
+| 미완료 | 실제 코드 근거 | 현재 판정·다음 선행 |
+|---|---|---|
+| native 컴파일 | development-recovery-path-guard.cs 전체 | 실제 C# 진단0회. 미결 R0는 exact3d0ad83a/A5 하나이며 새 source로 자동치환하지 않는다. 타입검사는 C# 컴파일 증거가 아니다 |
+| 실제 loader/host·지속소유 | path-guard.cs ProductionAdapterConnected/QaAdapterConnected=false, os-qa.ps1 네 method literal throw | 원 owner 소스만 있다. 실제 assembly 출처·수명·외부 실행 계약은 미연결이며 타입이름이나 hash 입력을 권위로 바꾸지 않는다 |
+| child pin·guardian-loss·keeper·breakaway | path-guard.cs QaExclusiveSpawnHostConnected=false, QaProcessProbe 및 MissingLifetimeEvidence | membership 관측 후보와 고정 sleep 소스만 있다. 프로세스 전체 상속 배제·guardian 유실 행동/관측은 미구현·실시험 NOT_RUN. 임의 host/새 실행 허가를 만들지 않는다 |
+| DACL 원자복구·link/reparse 정리 | path-guard.cs QaDaclCompareAndRestoreConnected=false/RestoreKnownDaclMutation 및 원 관측 | 자동 원자복구·alias 삭제/reparse 제거는 미지원. 불명 보존을 정리0로 바꾸지 않는다. 기존 권한 수리·production 효과 변경0 |
+| 실제 공유간섭·종료·잔여 | path-guard.cs MissingLifetimeEvidence/원 handle 정리 | source receipt·모의검사는 실 NTFS/Job·잔여 증거가 아니다. 별도 정확 실행 경계와 OS 관측이 필요하며 아직 수행하지 않는다 |
+
+이 표는 보호 소스 전체 완료나 프로젝트 전체 중단 선언이 아니다. 확인된 독립 source 누락은 기존 승인②로 보완하되 컴파일·실 host/OS 검증을 추가 모의 helper·선언·문서로 대체하지 않는다. 새 지원 결정은 PMO에 정확 대상과 현재 후보 차이를 전달하며 사용자에게 기존 질문을 반복하지 않는다.
+
 - 정리 영수증의 중간 DACL 상태와 삭제 전 복구실패/삭제결과 모순을 거절했다. 독립 source C0/I0/M0·반례11거절/보존4·인접3PASS는 parser 한정이다. PS4873940E7356DAF3E78CF5DBD30B646E83D6B4C7FFEEB5C6F34F59776B4C8323, native불변/compile·OS NOT_RUN. 실제 child 상속 배제·guardian-loss/keeper/breakaway 행동·loader/host/watchdog와 원자 정리는 미완료다. 실행 필요 항목을 source PASS로 숨기지 않는다.
 
 - 원 factory owner는 외부 lease/handle 없이 같은 원 객체·불변 case/run/commit/창을 보관한다. 정리 전후에는 새 준비·시도를 막고 원 lease NOT_ATTEMPTED를 보존한다. PS 네 동작 literal throw는 유지하며 타입이름/BindingFacts는 실제 assembly 출처 증거가 아니다. native B95EA9519AA7B87A850A5D9870B04405C49993CD992CD50A4BB5F6E0A433BC03·PS DE6CA873BC675095893C571156613D9E425FE8D0D9ED6FE1A1CBF5CAAAB67EEF는 R0 미결3d0ad83a/A5와 다른 소스다. source 한정 정적 검토/소비시험을 실제 compile/OS/정리 합격으로 승격하지 않는다. 새 두 가지 승인 답변의 질문 연결 미확인으로 R0 이월/P1 재실행0이다.

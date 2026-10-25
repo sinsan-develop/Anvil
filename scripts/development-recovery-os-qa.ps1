@@ -34,6 +34,8 @@ function Read-DevelopmentRecoveryQaMutationReceipt([string]$CaseId,[object]$Valu
  if($CaseId -cnotin $operations.Keys -or $Value -isnot [array] -or $Value.Rank -ne 1 -or $Value.GetLowerBound(0) -ne 0 -or $Value.Length -ne 4){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  foreach($field in $Value){if($field -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}}
  if($Value[0] -cne $CaseId -or $Value[1] -cne $operations[$CaseId] -or $Value[2] -cnotin @('MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT','MUTATION_UNCONFIRMED') -or $Value[3] -cnotmatch '^(?:[a-f0-9]{8}|NOT_OBSERVED)$'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
+ # native 호출 성공 뒤에도 원 identity/close 검증이 실패할 수 있으므로 역방향 승격은 하지 않는다.
+ if($Value[2] -ceq 'MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT' -and $Value[3] -cne '00000000'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  return @{caseId=$CaseId;operation=$Value[1];mutation=$Value[2];nativeStatus=$Value[3];cleanupRequired=$true;osVerified=$false;guardVerdict='NOT_EVALUATED';fixtureInterference='UNRESOLVED'}
 }
 function Read-DevelopmentRecoveryQaCleanupReceipt([string]$CaseId,[object]$Value) {
