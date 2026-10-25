@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 고립 host의 내부 원 진입 객체를 추가했다. 실제 Main·기존 false gate 뒤 프로세스당 일회 원 객체를 만들고 같은 스레드/run/commit/창·host1회·복제1회에만 사용한다. 공개 factory는 child-pin case를 받지 않으며 내부 원 객체를 외부 입력으로 채택하지 않는다. 이 소스는 다른 코드의 일반 spawn을 차단하는 장치나 새 실행권위가 아니다. 독립 현재 소스 정적 C0/I0/M0·실제 컴파일/native 동작/OS NOT_RUN, exclusive false 유지다. 아래 R0 단일 권장 d71/F81는 고정 snapshot이며 이 추가 소스를 자동 편입하거나 옛 답변의 적용 대상으로 바꾸지 않는다. 그 컴파일 결과도 후속 소스의 검증이 될 수 없다.
+
 - child-pin 원소유 제어도owner→원pin→원probe→fixedchild→finally process회수확정뒤fixture정리로연결했다. exclusiveSpawn false/실standalone entry가현재factory생성전차단하며lifetime NOT_VERIFIED·정적C0/I0/M0만이다. 종료/close불명은fixture/원owner·pin보존, actualcompile/OS0. nativeF81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49는직전6093/376과다른source여서아래단일컴파일후보를이코드checkpoint로현행화한다.
 
 - 고립host Main 최소진입은실EntryAssembly/EntryPoint·고정argv/UTC·동일원hostfinally정리·NOT_ACCEPTANCE/exit2로작성했다. DLL/PS에서Main호출하면entry대조전QaAdapterfalse에서차단한다. finalLF 별칭은C#/PS경계의절대끝대조로보완했으며TS코드는이미거절하여수정0. native376F43B5CD549BED2A5610C190179910CE3B6FA6354F7651E87212CDFFB452D6는이전권장b6/1589와다른source이고R0정확후보를아래표에별도로갱신한다. 전용exe컴파일/실행·process-wide상속배제/guardian시험은여전히미승인·미검증이다.

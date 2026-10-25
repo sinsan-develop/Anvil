@@ -476,8 +476,8 @@ internal static class DevelopmentRecoveryPathGuard {
     Require(QaAdapterConnected&&value!=null);fixture=value;fixture.Fresh();Require(fixture.childPin==null&&fixture.filesystemSealed&&!fixture.mutationAttempted);fixture.childPin=this;
     Require(fixture.caseChildren.TryGetValue("OUTSIDE_WRITE/unselected.txt",out entry));fixture.CheckEntry(entry);action=fixture.OpenAction(entry,ReadData);fixture.Fresh();
    }
-   internal KernelHandle[] CopyForOriginalChild(string runId,string commit,DateTime from,DateTime until,SecurityIdentifier owner){
-    Require(QaExclusiveSpawnHostConnected);fixture.Fresh();Require(!closed&&!copiesAttempted&&Object.ReferenceEquals(fixture.childPin,this)&&runId==fixture.runId&&commit==fixture.commit&&from==fixture.issued&&until==fixture.until&&fixture.owner.Equals(owner));copiesAttempted=true;fixture.CheckEntry(entry);Require(action!=null&&!action.CloseAttempted);
+   internal KernelHandle[] CopyForOriginalChild(string runId,string commit,DateTime from,DateTime until,SecurityIdentifier owner,QaStandalonePinRun pinRun){
+    Require(QaExclusiveSpawnHostConnected&&pinRun!=null);pinRun.ClaimCopies(runId,commit,from,until);fixture.Fresh();Require(!closed&&!copiesAttempted&&Object.ReferenceEquals(fixture.childPin,this)&&runId==fixture.runId&&commit==fixture.commit&&from==fixture.issued&&until==fixture.until&&fixture.owner.Equals(owner));copiesAttempted=true;fixture.CheckEntry(entry);Require(action!=null&&!action.CloseAttempted);
     var pins=new List<Pin>(action.Parents);pins.Add(new Pin{Handle=action.Handle,Before=entry.Pin.Before});Require(pins.Count>0&&pins.Count<=16);
     foreach(var pin in pins){
      fixture.Fresh();KernelHandle copy;bool duplicated=DuplicateQaHandle(GetCurrentProcess(),pin.Handle,GetCurrentProcess(),out copy,0,true,2);copies.Add(copy);
@@ -624,30 +624,57 @@ internal static class DevelopmentRecoveryPathGuard {
    OwnerThread();cleanupStarted=true;return lease.CleanupFilesystemMutation();
   }
  }
+ // 실제 Main의 원 실행 소유만 연결한다. 이 latch는 다른 코드의 spawn을 배제하거나 실행을 허가하지 않는다.
+ // 원 실행은 실패/정리 뒤에도 같은 프로세스에서 재발급하지 않는다. 실제 독점 검증 gate는 계속 false다.
+ internal sealed class QaStandalonePinRun {
+  static QaStandalonePinRun original;
+  internal readonly string RunId,Commit;internal readonly DateTime Issued,Until;
+  readonly int ownerThread=Environment.CurrentManagedThreadId;bool hostClaimed,copiesClaimed;
+  QaStandalonePinRun(string run,string sha,DateTime start,DateTime end){RunId=run;Commit=sha;Issued=start;Until=end;}
+  internal static QaStandalonePinRun Begin(string run,string sha,DateTime start,DateTime end){
+   Require(QaExclusiveSpawnHostConnected);RequireStandaloneQaEntry();
+   Require(start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30&&DateTime.UtcNow>=start&&DateTime.UtcNow<end);
+   Require(System.Text.RegularExpressions.Regex.IsMatch(run??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(sha??"",@"\A[a-f0-9]{40}\z"));
+   var value=new QaStandalonePinRun(run,sha,start,end);
+   Require(System.Threading.Interlocked.CompareExchange(ref original,value,null)==null);return value;
+  }
+  internal void AssertOriginal(string run,string sha,DateTime start,DateTime end){
+   Require(QaExclusiveSpawnHostConnected&&Object.ReferenceEquals(original,this)&&Environment.CurrentManagedThreadId==ownerThread&&run==RunId&&sha==Commit&&start==Issued&&end==Until&&DateTime.UtcNow>=Issued&&DateTime.UtcNow<Until);
+   RequireStandaloneQaEntry();
+  }
+  internal void ClaimHost(){AssertOriginal(RunId,Commit,Issued,Until);Require(!hostClaimed&&!copiesClaimed);hostClaimed=true;}
+  internal void ClaimCopies(string run,string sha,DateTime start,DateTime end){AssertOriginal(run,sha,start,end);Require(hostClaimed&&!copiesClaimed);copiesClaimed=true;}
+ }
  // 실행 흐름과 회수 소유를 같은 객체에 둔다. 외부 callback/lease/handle/PID는 받지 않는다.
  internal sealed class QaOwnedRunHost {
   readonly string selected,runId,commit;readonly DateTime issued,until;readonly int ownerThread=Environment.CurrentManagedThreadId;
+  readonly QaStandalonePinRun pinRun;
   QaFixtureOwner owner;QaProcessProbe process;bool started,cleaning;string phase="NOT_STARTED",preparation="NOT_STARTED";
   string membership="NOT_OBSERVED",processExit="NOT_OBSERVED",processClose="NOT_OBSERVED",pinTransfer="NOT_OBSERVED";
   string[] mutation,cleanup,failure;
-  QaOwnedRunHost(string id,string run,string sha,DateTime start,DateTime end){selected=id;runId=run;commit=sha;issued=start;until=end;}
+  QaOwnedRunHost(string id,string run,string sha,DateTime start,DateTime end,QaStandalonePinRun originalPinRun=null){selected=id;runId=run;commit=sha;issued=start;until=end;pinRun=originalPinRun;}
   static bool FailureCase(string id){return Array.IndexOf(new[]{"WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","CLEANUP_UNKNOWN"},id)>=0;}
   public static QaOwnedRunHost Create(string selected,string runId,string commit,DateTime issued,DateTime until){
    Require(QaAdapterConnected);
-   if(selected=="CHILD_PIN_LIFETIME"){Require(QaExclusiveSpawnHostConnected);RequireStandaloneQaEntry();}
-   Require(selected=="JOB_MEMBERSHIP"||selected=="CHILD_PIN_LIFETIME"||FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
+   Require(selected!="CHILD_PIN_LIFETIME"); // 공개 factory에는 원 standalone 실행을 주입하거나 채택하는 입력이 없다.
+   Require(selected=="JOB_MEMBERSHIP"||FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
    return new QaOwnedRunHost(selected,runId,commit,issued,until);
+  }
+  internal static QaOwnedRunHost CreateForStandalonePinRun(QaStandalonePinRun original){
+   Require(QaAdapterConnected&&original!=null);original.ClaimHost();
+   return new QaOwnedRunHost("CHILD_PIN_LIFETIME",original.RunId,original.Commit,original.Issued,original.Until,original);
   }
   void OwnerThread(){Require(Environment.CurrentManagedThreadId==ownerThread);}
   public string[][] Execute(){
    OwnerThread();Require(!started&&!cleaning);started=true;
    try{
     if(selected=="CHILD_PIN_LIFETIME"){
+     Require(pinRun!=null);pinRun.AssertOriginal(runId,commit,issued,until);
      phase="ACQUIRING_ORIGINAL_OWNER";owner=QaFixtureOwner.Begin(selected,runId,commit,issued,until);
      phase="PREPARING_ORIGINAL_FIXTURE";preparation=owner.Prepare();
      QaFixtureLease.QaChildPin pins=owner.PrepareChildPin();
      phase="ACQUIRING_ORIGINAL_QA_JOB";process=QaProcessProbe.Begin(runId,commit,issued,until);
-     phase="STARTING_FIXED_QA_CHILD_WITH_PINS";process.StartFixedSleepProbe(pins);
+     phase="STARTING_FIXED_QA_CHILD_WITH_PINS";process.StartFixedSleepProbe(pins,pinRun);
      membership=process.ObserveOriginalJobMembership();
      phase=membership=="QA_ORIGINAL_JOB_MEMBERSHIP_OBSERVED_NOT_OS_VALIDATED"?"QA_CHILD_PIN_FLOW_RECORDED_LIFETIME_UNVERIFIED":"QA_CHILD_PIN_MEMBERSHIP_UNCONFIRMED";
     }else if(selected=="JOB_MEMBERSHIP"){
@@ -858,13 +885,13 @@ internal static class DevelopmentRecoveryPathGuard {
    try{uint returned;Require(QueryInformationJobObject(job,3,buffer,(uint)(8+2*IntPtr.Size),out returned)&&returned>=8&&returned<=8+2*IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long pid=Marshal.ReadIntPtr(buffer,8+i*IntPtr.Size).ToInt64();Require(pid>0&&pid<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)pid));}return total;}
    finally{Marshal.FreeHGlobal(buffer);}
   }
-  internal void StartFixedSleepProbe(QaFixtureLease.QaChildPin pins=null){
+  internal void StartFixedSleepProbe(QaFixtureLease.QaChildPin pins=null,QaStandalonePinRun pinRun=null){
    try{
-    Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2);
+    Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2&&(pins==null)==(pinRun==null));
     IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero,handleList=IntPtr.Zero;bool initialized=false;
     try{
-     if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected);}
-     KernelHandle[] inherited=pins==null?new KernelHandle[0]:pins.CopyForOriginalChild(runId,commit,from,until,owner);uint attributeCount=pins==null?1u:2u;
+     if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected&&pinRun!=null);pinRun.AssertOriginal(runId,commit,from,until);}
+     KernelHandle[] inherited=pins==null?new KernelHandle[0]:pins.CopyForOriginalChild(runId,commit,from,until,owner,pinRun);uint attributeCount=pins==null?1u:2u;
      UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,attributeCount,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
      list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,attributeCount,0,ref size));initialized=true;
      value=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(value,job.DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x2000d),value,new UIntPtr((uint)IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
@@ -944,7 +971,11 @@ public sealed class DevelopmentRecoveryQaHost {
    if(!DateTime.TryParseExact(args[3],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out issued)||
     !DateTime.TryParseExact(args[4],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out until)||
     issued.Kind!=DateTimeKind.Utc||until.Kind!=DateTimeKind.Utc||until<=issued||(until-issued).TotalMinutes>30||DateTime.UtcNow<issued||DateTime.UtcNow>=until)throw new InvalidOperationException();
-   host=Create(args[0],args[1],args[2],issued,until);host.Execute();
+   if(args[0]=="CHILD_PIN_LIFETIME"){
+    var original=DevelopmentRecoveryPathGuard.QaStandalonePinRun.Begin(args[1],args[2],issued,until);
+    host=new DevelopmentRecoveryQaHost(DevelopmentRecoveryPathGuard.QaOwnedRunHost.CreateForStandalonePinRun(original));
+   }else host=Create(args[0],args[1],args[2],issued,until);
+   host.Execute();
   }catch{unconfirmed=true;}
   finally{if(host!=null)try{report=host.Cleanup();}catch{unconfirmed=true;}}
   Console.WriteLine(unconfirmed?"QA_STANDALONE_HOST_UNCONFIRMED":"QA_STANDALONE_HOST_NOT_OS_VALIDATED");

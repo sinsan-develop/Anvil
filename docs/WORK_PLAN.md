@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 고립 host 원 진입 선행 소스**: Main의 일회 원 객체를 host→pin 복제까지 결박하고 public factory의 child-pin 직접 호출을 거절했다. 원 객체는 실행권위/다른 코드의 spawn 배제 증명이 아니며 false gate 유지·native 동작 검증 미실행이다. keeper/guardian-loss/breakaway의 원 프로세스·핸들 인계와 실제 시험은 별도 미완료로 유지한다.
+
 - **2026-10-25 child-pin 교차소유 source**: 원fixture/pin→원probe/child→finally child종료·handle회수뒤fixture정리를연결하고불명이면모두보존한다. 정적C0/I0/M0·차단/standalone선행유지, actualcompile·child/pin/OS NOT_RUN·lifetime NOT_VERIFIED이며 keeper/guardian-loss/breakaway·전체계획미완료다.
 
 - **2026-10-25 R1 고립host 진입 source**: same-entry-assembly/EntryPoint·고정argv→기존11case host→finally정리·유한보고를작성했다. finalLF 입력 별칭을 .NET경계에서근본보완하고 기존TS동작은유지했다. 실제전용exe·process-wide배제/guardianloss는미완료이며 compile/load/OS NOT_RUN·R0target:library권한확대0다.
