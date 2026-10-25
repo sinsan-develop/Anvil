@@ -113,3 +113,56 @@ for (const location of ['연결', '합류'] as const) {
     assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
   });
 }
+
+for (const field of ['kind', 'role', 'mode'] as const) {
+  test(`Agent 단계의 배열 ${field}는 문자열로 변환하지 않고 입력 오류로 거절한다`, () => {
+    const value = graph(), node = value.nodes.find(item => item.kind === 'AGENT')!;
+    assert.equal(validateMethodologyGraph(value, refs).validForConfirmation, true);
+    Object.assign(node, { [field]: [node[field]] });
+    const result = validateMethodologyGraph(value, refs);
+    assert.equal(result.validForConfirmation, false);
+    assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+  });
+}
+
+const allJoinGraph = () => {
+  const value = graph();
+  value.nodes[5]!.kind = 'JOIN'; value.nodes[5]!.joinRule = { mode: 'ALL' };
+  value.edges.push({ edgeId: 'explicit-join', fromNodeId: 'ST04', toNodeId: 'ST06', kind: 'JOIN', condition: { fieldRef: { nodeId: 'ST04', field: 'REVIEW_OUTCOME' }, operator: 'EQ', value: 'ACCEPTED' }, reason: '계획과 구현 결과가 모두 있어야 검수로 합류' });
+  return value;
+};
+
+test('유효한 ALL 합류의 배열 모드는 입력 오류로 거절한다', () => {
+  const value = allJoinGraph();
+  assert.equal(validateMethodologyGraph(value, refs).validForConfirmation, true);
+  Object.assign(value.nodes[5]!.joinRule!, { mode: ['ALL'] });
+  const result = validateMethodologyGraph(value, refs);
+  assert.equal(result.validForConfirmation, false);
+  assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+});
+
+test('정상 순차 연결의 배열 종류는 입력 오류로 거절한다', () => {
+  const value = graph(), edge = value.edges.find(item => item.kind === 'SEQUENCE')!;
+  assert.equal(validateMethodologyGraph(value, refs).validForConfirmation, true);
+  Object.assign(edge, { kind: ['SEQUENCE'] });
+  const result = validateMethodologyGraph(value, refs);
+  assert.equal(result.validForConfirmation, false);
+  assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+});
+
+test('명시 조건 합류의 문자열 모드에서 조건 누락은 기존 의미 오류를 유지한다', () => {
+  const value = allJoinGraph();
+  value.nodes[5]!.joinRule = { mode: 'DECLARED_CONDITION' };
+  const result = validateMethodologyGraph(value, refs);
+  assert.equal(result.validForConfirmation, false);
+  assert(result.issues.some(issue => issue.code === 'JOIN_RULE_REQUIRED'));
+  assert.equal(result.issues.some(issue => issue.code === 'INPUT_INVALID'), false);
+});
+
+test('명시 조건 합류의 배열 모드는 조건 누락 검사를 우회하지 않고 입력 오류로 거절한다', () => {
+  const value = allJoinGraph();
+  Object.assign(value.nodes[5]!.joinRule!, { mode: ['DECLARED_CONDITION'] });
+  const result = validateMethodologyGraph(value, refs);
+  assert.equal(result.validForConfirmation, false);
+  assert(result.issues.some(issue => issue.code === 'INPUT_INVALID'));
+});

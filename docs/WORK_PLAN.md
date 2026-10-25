@@ -1225,7 +1225,7 @@
 | UI13 | 모바일 대화·지시·승인 | E | UI00 | UI04,UI08,FN15,FN17 | 시작 전 |
 | UI14 | 백업·한도·알림·보조 조회 | E | UI00 | UI00,FN10,FN16,FN17 | 부분 구현·설정의 브라우저 알림 API/현재권한 명시 조회·재조회. 단위3·통제DOM1/실제Edge읽기1/typebuild·QA잔여0. 알림설정저장/목록·전달/백업복원·전체연결 미완료 |
 | FN01 | 프로젝트 원본·접근·기준선 | B | P03 | P03 | 작업 중 · 인증/소유/단일 기기·초안·원자 생성/격리·빈/기존 소스 사용자 선언·불변 버전/정확 귀속 same-client actual d8128157·forward38 확인. 실관측/VERIFIED 기준선·실제 사용자 UI DB 미완료 |
-| FN02 | 기본 내장/사용자 방법론·그래프·버전 | B | FN01 | FN01 | 작업 중·전용본 개정·METHOD5 검토/별도 확정·불변 과거 이력 same-client actual19ce2bb7/forward39 확인. 실행 상태·영향 근거 없는 적용 전환412, 실제 사용자 UI DB/전체 완료 미충족  2026-10-25 조건 field/operator 배열 강제변환 제거·문자열 enum 계약 일치 보완, 연결/JOIN 반례4 RED→집중14 GREEN·Main인접포함19/type0·scopedC0/I0/M0. 실제 DB/HTTP 저장·전체 인수는미확인. |
+| FN02 | 기본 내장/사용자 방법론·그래프·버전 | B | FN01 | FN01 | 작업 중·전용본 개정·METHOD5 검토/별도 확정·불변 과거 이력 same-client actual19ce2bb7/forward39 확인. 실행 상태·영향 근거 없는 적용 전환412, 실제 사용자 UI DB/전체 완료 미충족  2026-10-25 조건 field/operator 배열 강제변환 제거·문자열 enum 계약 일치 보완, 연결/JOIN 반례4 RED→집중14 GREEN·Main인접포함19/type0·scopedC0/I0/M0. 실제 DB/HTTP 저장·전체 인수는미확인.  2026-10-25 단계 kind/role/mode·JOIN mode·edge kind 5곳도 raw문자열 계약 복원, 배열6반례RED→Main21/21/type0·인접pure5·C0/I0/M0. 실제DB/HTTP미관측/기존의미초안정책불변. |
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료 |

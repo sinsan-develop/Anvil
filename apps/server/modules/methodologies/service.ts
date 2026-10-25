@@ -26,7 +26,7 @@ function shape(input: unknown): input is MethodologyGraph {
   for (const node of input.nodes) {
     const required = ['nodeId', 'name', 'purpose', 'kind', 'position', 'role', 'inputs', 'outputs', 'taskScope', 'completionCriteria', 'approvalBoundary', 'mode', 'limitPolicyRef', 'recordRequirements'];
     if (!object(node, [...required, 'requirements', 'joinRule'], required) || typeof node.nodeId !== 'string' || typeof node.name !== 'string' || typeof node.purpose !== 'string'
-      || !['HUMAN', 'AGENT', 'DECISION', 'JOIN'].includes(String(node.kind)) || !['USER', 'COORDINATOR', 'STAGE_OWNER'].includes(String(node.role)) || !['AUTO', 'CASE_BY_CASE'].includes(String(node.mode))
+      || typeof node.kind !== 'string' || !['HUMAN', 'AGENT', 'DECISION', 'JOIN'].includes(node.kind) || typeof node.role !== 'string' || !['USER', 'COORDINATOR', 'STAGE_OWNER'].includes(node.role) || typeof node.mode !== 'string' || !['AUTO', 'CASE_BY_CASE'].includes(node.mode)
       || !object(node.position, ['x', 'y']) || typeof node.position.x !== 'number' || !Number.isFinite(node.position.x) || typeof node.position.y !== 'number' || !Number.isFinite(node.position.y)
       || !object(node.taskScope, ['included', 'excluded']) || !texts(node.taskScope.included) || !texts(node.taskScope.excluded)
       || !texts(node.completionCriteria) || !texts(node.approvalBoundary) || !texts(node.recordRequirements) || node.limitPolicyRef !== null && !isVersionRef(node.limitPolicyRef)
@@ -35,10 +35,10 @@ function shape(input: unknown): input is MethodologyGraph {
       if (!object(item, ['itemId', 'formRef', 'required', 'sourceNodeId', 'reviewCriteria'], ['itemId', 'formRef', 'required', 'reviewCriteria']) || typeof item.itemId !== 'string' || !isVersionRef(item.formRef) || typeof item.required !== 'boolean' || !texts(item.reviewCriteria) || item.sourceNodeId !== undefined && typeof item.sourceNodeId !== 'string') return false;
     }
     if (node.requirements !== undefined && (!object(node.requirements, ['capabilities', 'environment']) || !texts(node.requirements.capabilities) || !texts(node.requirements.environment))) return false;
-    if (node.joinRule !== undefined && (!object(node.joinRule, ['mode', 'condition'], ['mode']) || !['ALL', 'DECLARED_CONDITION'].includes(String(node.joinRule.mode)) || node.joinRule.condition !== undefined && !condition(node.joinRule.condition))) return false;
+    if (node.joinRule !== undefined && (!object(node.joinRule, ['mode', 'condition'], ['mode']) || typeof node.joinRule.mode !== 'string' || !['ALL', 'DECLARED_CONDITION'].includes(node.joinRule.mode) || node.joinRule.condition !== undefined && !condition(node.joinRule.condition))) return false;
   }
   for (const edge of input.edges) {
-    if (!object(edge, ['edgeId', 'fromNodeId', 'toNodeId', 'kind', 'condition', 'reason', 'retryPolicy'], ['edgeId', 'fromNodeId', 'toNodeId', 'kind', 'condition', 'reason']) || typeof edge.edgeId !== 'string' || typeof edge.fromNodeId !== 'string' || typeof edge.toNodeId !== 'string' || typeof edge.reason !== 'string' || !['SEQUENCE', 'BRANCH', 'JOIN', 'REWORK'].includes(String(edge.kind)) || edge.condition !== null && !condition(edge.condition)) return false;
+    if (!object(edge, ['edgeId', 'fromNodeId', 'toNodeId', 'kind', 'condition', 'reason', 'retryPolicy'], ['edgeId', 'fromNodeId', 'toNodeId', 'kind', 'condition', 'reason']) || typeof edge.edgeId !== 'string' || typeof edge.fromNodeId !== 'string' || typeof edge.toNodeId !== 'string' || typeof edge.reason !== 'string' || typeof edge.kind !== 'string' || !['SEQUENCE', 'BRANCH', 'JOIN', 'REWORK'].includes(edge.kind) || edge.condition !== null && !condition(edge.condition)) return false;
     if (edge.retryPolicy !== undefined && (!object(edge.retryPolicy, ['maxAttempts', 'onExhausted', 'counting']) || typeof edge.retryPolicy.maxAttempts !== 'number' || edge.retryPolicy.onExhausted !== 'USER_DECISION' || edge.retryPolicy.counting !== 'SAME_FAILURE_FINGERPRINT')) return false;
   }
   return true;
