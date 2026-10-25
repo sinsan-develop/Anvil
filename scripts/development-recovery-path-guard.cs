@@ -590,6 +590,36 @@ internal static class DevelopmentRecoveryPathGuard {
    }catch{faulted=true;bool pending=false;foreach(var entry in entries)pending|=entry.DeleteRequested&&!entry.Closed;if(!pending)ReleaseHandlesWithoutDelete();}return CleanupStatus;
   }
  }
+ // 동일 assembly의 factory가 만든 원 lease만 보관한다. 이 객체도 외부 실행 승인을 발급하지 않는다.
+ internal sealed class QaFixtureOwner {
+  readonly QaFixtureLease lease;readonly string caseId,runId,commit;readonly DateTime issued,until;readonly int ownerThread=Environment.CurrentManagedThreadId;
+  bool prepared,attempted,faulted,cleanupStarted;
+  static bool FilesystemCase(string id){return Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},id)>=0;}
+  static bool FailureCase(string id){return Array.IndexOf(new[]{"WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","CLEANUP_UNKNOWN"},id)>=0;}
+  QaFixtureOwner(string selected,string id,string sha,DateTime start,DateTime end){
+   caseId=selected;runId=id;commit=sha;issued=start;until=end;lease=QaFixtureLease.Begin(id,sha,start,end,FailureCase(selected)?selected:null);
+  }
+  internal static QaFixtureOwner Begin(string selected,string id,string sha,DateTime start,DateTime end){
+   Require(QaAdapterConnected&&(FilesystemCase(selected)||FailureCase(selected)));return new QaFixtureOwner(selected,id,sha,start,end);
+  }
+  void OwnerThread(){Require(Environment.CurrentManagedThreadId==ownerThread);}
+  public string[] BindingFacts(){OwnerThread();return new[]{caseId,runId,commit,issued.ToString("o",System.Globalization.CultureInfo.InvariantCulture),until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)};}
+  public string Prepare(){
+   OwnerThread();Require(!cleanupStarted&&!faulted&&!prepared&&!attempted&&FilesystemCase(caseId));
+   try{string claim=lease.PrepareFilesystemCases();Require(claim=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");prepared=true;return claim;}catch{faulted=true;throw;}
+  }
+  public string[] Mutate(){
+   OwnerThread();Require(!cleanupStarted&&!faulted&&prepared&&!attempted&&FilesystemCase(caseId));attempted=true;
+   try{return lease.AttemptFilesystemMutation(caseId);}catch{faulted=true;throw;}
+  }
+  public string[] ObserveFailure(){
+   OwnerThread();Require(!cleanupStarted&&!faulted&&!prepared&&!attempted&&FailureCase(caseId));attempted=true;cleanupStarted=true;
+   try{return lease.CloseAndObserveInjectedFailure();}catch{faulted=true;throw;}
+  }
+  public string[] Cleanup(){
+   OwnerThread();cleanupStarted=true;return lease.CleanupFilesystemMutation();
+  }
+ }
  [StructLayout(LayoutKind.Sequential)]struct IoCounters {internal ulong ReadOps,WriteOps,OtherOps,ReadBytes,WriteBytes,OtherBytes;}
  [StructLayout(LayoutKind.Sequential)]struct BasicLimits {internal long ProcessTime,JobTime;internal uint Flags;internal UIntPtr MinimumWorkingSet,MaximumWorkingSet;internal uint ActiveProcesses;internal UIntPtr Affinity;internal uint Priority,Scheduling;}
  [StructLayout(LayoutKind.Sequential)]struct ExtendedLimits {internal BasicLimits Basic;internal IoCounters Io;internal UIntPtr ProcessMemory,JobMemory,PeakProcessMemory,PeakJobMemory;}

@@ -57,15 +57,15 @@ function Read-DevelopmentRecoveryQaFailureReceipt([string]$CaseId,[object]$Value
  # 원 assembly/lease provenance는 실 host의 미완료 선행이다. 이 parser는 주장 형식만 대조한다.
  return @{caseId=$CaseId;injectionClaim=$Value[1];acquisitionClaim=$Value[2];cleanupClaim=$Value[3];osVerified=$false;residueVerified=$false;executionAuthorized=$false;guardVerdict='NOT_EVALUATED'}
 }
-function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
+function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedOwner) {
  # 생성자는 메모리 객체만 만든다. 실제 assembly 출처/run 결박은 아직 host에 등록되지 않았다.
- $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';OwnedLease=$OwnedLease;nativeVerified=$false;executionAuthorized=$false}
+ $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';OwnedOwner=$OwnedOwner;nativeVerified=$false;executionAuthorized=$false}
  $adapter|Add-Member -MemberType ScriptMethod -Name Prepare -Value {
   throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
   # 이 wrapper도 assembly/실 소유 provenance를 타입 이름만으로 인증하지 않는다.
-  $lease=$this.OwnedLease
-  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
-  $claim=$lease.PrepareFilesystemCases()
+  $owner=$this.OwnedOwner
+  if(!$owner -or $owner.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureOwner'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_OWNER_REQUIRED'}
+  $claim=$owner.Prepare()
   if($claim -isnot [string] -or $claim -cne 'ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED'){throw 'DEVELOPMENT_RECOVERY_QA_PREPARATION_UNCONFIRMED'}
   return @{preparationClaim=$claim;osVerified=$false;executionAuthorized=$false;fixtureInterference='UNRESOLVED'}
  }
@@ -76,25 +76,28 @@ function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
   $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED')
   if($CaseId -cnotin $cases){throw 'DEVELOPMENT_RECOVERY_QA_CASE_INVALID'}
   # pathname 연산을 하지 않는다. 타입 이름만으로 출처/승인/소유를 인증하지 않으며 실제 host bridge는 미등록이다.
-  $lease=$this.OwnedLease
-  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
-  $result=$lease.AttemptFilesystemMutation($CaseId)
+  $owner=$this.OwnedOwner
+  if(!$owner -or $owner.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureOwner'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_OWNER_REQUIRED'}
+  if(@($owner.BindingFacts())[0] -cne $CaseId){throw 'DEVELOPMENT_RECOVERY_QA_CASE_INVALID'}
+  $result=$owner.Mutate()
   return Read-DevelopmentRecoveryQaMutationReceipt $CaseId $result
  }
  $adapter|Add-Member -MemberType ScriptMethod -Name Cleanup -Value {
   param([string]$CaseId)
   throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
   # 타입 이름은 실제 출처·권위 인증이 아니다. 원 lease/host 결박 전에는 위에서 항상 거절한다.
-  $lease=$this.OwnedLease
-  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
-  return Read-DevelopmentRecoveryQaCleanupReceipt $CaseId ($lease.CleanupFilesystemMutation())
+  $owner=$this.OwnedOwner
+  if(!$owner -or $owner.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureOwner'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_OWNER_REQUIRED'}
+  if(@($owner.BindingFacts())[0] -cne $CaseId){throw 'DEVELOPMENT_RECOVERY_QA_CASE_INVALID'}
+  return Read-DevelopmentRecoveryQaCleanupReceipt $CaseId ($owner.Cleanup())
  }
  $adapter|Add-Member -MemberType ScriptMethod -Name ObserveFailure -Value {
   param([string]$CaseId)
   throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
-  $lease=$this.OwnedLease
-  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
-  return Read-DevelopmentRecoveryQaFailureReceipt $CaseId ($lease.CloseAndObserveInjectedFailure())
+  $owner=$this.OwnedOwner
+  if(!$owner -or $owner.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureOwner'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_OWNER_REQUIRED'}
+  if(@($owner.BindingFacts())[0] -cne $CaseId){throw 'DEVELOPMENT_RECOVERY_QA_CASE_INVALID'}
+  return Read-DevelopmentRecoveryQaFailureReceipt $CaseId ($owner.ObserveFailure())
  }
  return $adapter
 }

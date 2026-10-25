@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 원 factory 소유 연결**: 원 객체 private 보관·일회 lifecycle·미시도 영수증 보존과 PS 차단 연결을 보완했다. 정적 재검토 C0/I0/M0·새 소비/인접 차단 검사와 native compile/OS NOT_RUN을 구분한다. 실제 host/provenance와 전체계획 미완료이며 기존 승인② 소스 보완을 계속한다.
+
 - **2026-10-25 R1 cleanup-unknown/고정6 setup 소비 source**: 삭제 전 close-only QA 불명 주입과 원 실패4 receipt, 정확6case/7child 준비→seal/원관측→PS 차단 소비를 연결했다. 각 delta 정적 C0/I0/M0·새소비4/type/PS AST/diff0은 native 검증이 아니며 C# NOT_COMPILED/OS NOT_RUN이다. 현재 nativeE68F7495...는 R0미결3d0ad83a/A5 후보와 달라 허가 이월0. 전체source/계획 미완료이며 다음 실assembly/원 factory·host provenance/원 소유 지속·정리 상관관계를 같은 승인②에서 좁힌다.
 
 - **2026-10-25 R1 고정 실패3·Job 관측 source**: 원 anchor 보관 뒤 QA local sample/부분실패 주입, 원children/Job/PID/생존 관측을 준비했다. 각 delta 정적 C0/I0/M0·native NOT_COMPILED/OS NOT_RUN·불변검사 반복0이다. keeper/guardian-loss/breakaway/cleanup-unknown/실 host·정리 등 미완료와 원래 차단을 보존한다. 최초 R0 compile-only는 별도 실행 경계로 PMO 지원 요청하며, 전체 source/계획 완료·일괄 동결로 바꾸지 않는다.
