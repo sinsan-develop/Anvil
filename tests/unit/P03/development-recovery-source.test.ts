@@ -3,6 +3,61 @@ import {existsSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {test} from 'node:test';
 
+function r0PowerShell(body:string){
+ const load=`$ErrorActionPreference='Stop';$t=$null;$e=$null;$ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path (Get-Location) 'scripts/development-recovery-host.ps1'),[ref]$t,[ref]$e);if($e.Count){throw 'PS_PARSE_FAILED'};foreach($f in $ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -like '*DevelopmentRecoveryR0*'},$true)){. ([scriptblock]::Create($f.Extent.Text))};`;
+ return JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',load+body],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']}));
+}
+
+test('R0 진입은 raw source나 caller 자료로 첫 I/O 전 고정 차단을 해제하지 않는다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$script:io=0;function Get-Item {$script:io++;throw 'IO_MUST_NOT_RUN'};$blocked=$false;try{Invoke-DevelopmentRecoveryR0CompileSource -GitSourceBytes ([byte[]]@(1,2,3))|Out-Null}catch{$blocked=$_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_R0_NOT_AUTHORIZED'};@{blocked=$blocked;io=$script:io;loaded=$null -ne ('DevelopmentRecoveryQaHost' -as [type])}|ConvertTo-Json -Compress`);
+ assert.deepEqual(actual,{blocked:true,io:0,loaded:false});
+});
+
+test('R0 예산은 compiler 480초·전체600초와 UTC/단조 역행을 실제 소비한다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$start=[datetimeoffset]'2026-10-25T00:00:00Z';$s=New-DevelopmentRecoveryR0Budget $start 100;$a=Get-DevelopmentRecoveryR0Budget $s $start.AddMilliseconds(479999) 480099;$b=Get-DevelopmentRecoveryR0Budget $s $start.AddMilliseconds(480000) 480100;$c=Get-DevelopmentRecoveryR0Budget $s $start.AddMilliseconds(600000) 600100;$bad=0;foreach($pair in @(@($start.AddMilliseconds(599999),600101),@($start.AddMilliseconds(600001),600099))){try{Get-DevelopmentRecoveryR0Budget $s $pair[0] $pair[1]|Out-Null}catch{$bad++}};@{before=$a.compilerRemainingMs;compiler=$b.compilerRemainingMs;cleanup=$b.totalRemainingMs;end=$c.totalRemainingMs;bad=$bad}|ConvertTo-Json -Compress`);
+ assert.deepEqual(actual,{before:1,compiler:0,cleanup:120000,end:0,bad:2});
+});
+
+test('R0 read fault 회수는 원 확보·기존 요청·종료 관측을 소비하고 EOF와 보존을 섞지 않는다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$results=@();foreach($case in @(@{name='captured';captured=$true;requested=$false;exited=$false;deadline=$null},@{name='startUnknown';captured=$false;requested=$false;exited=$false;deadline=$null},@{name='alreadyRequested';captured=$true;requested=$true;exited=$false;deadline=16000L},@{name='exitObserved';captured=$true;requested=$false;exited=$true;deadline=$null})){$s=@{killAttempted=$case.requested;exitObserved=$case.exited;terminationDeadlineMono=$case.deadline;cleanup='PRESERVED_UNCONFIRMED';stdoutEof=$false;stderrEof=$false;readFault=$true};$requests=0;$a=Get-DevelopmentRecoveryR0FailureAction $s $case.captured 1000 120000;if($a.requestTermination){$requests++};$results+=@{name=$case.name;requests=$requests;observe=$a.observe;preserve=$a.preserve;stdout=$s.stdoutEof;stderr=$s.stderrEof;deadline=$s.terminationDeadlineMono;cleanup=$s.cleanup}};$results|ConvertTo-Json -Depth 4 -Compress`);
+ assert.deepEqual(actual,[
+  {name:'captured',requests:1,observe:true,preserve:true,stdout:false,stderr:false,deadline:16000,cleanup:'PRESERVED_UNCONFIRMED'},
+  {name:'startUnknown',requests:0,observe:false,preserve:true,stdout:false,stderr:false,deadline:null,cleanup:'PRESERVED_UNCONFIRMED'},
+  {name:'alreadyRequested',requests:0,observe:true,preserve:true,stdout:false,stderr:false,deadline:16000,cleanup:'PRESERVED_UNCONFIRMED'},
+  {name:'exitObserved',requests:0,observe:false,preserve:true,stdout:false,stderr:false,deadline:null,cleanup:'PRESERVED_UNCONFIRMED'},
+ ]);
+});
+
+test('R0 read fault 회수는 최대15초·남은 전체예산을 연장하지 않고 중복 종료를 요청하지 않는다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$s=@{killAttempted=$false;exitObserved=$false;terminationDeadlineMono=$null;cleanup='PRESERVED_UNCONFIRMED';stdoutEof=$false;stderrEof=$false};$requests=0;$seen=@();foreach($now in @(1000L,1001L,15999L,16000L,17000L)){$a=Get-DevelopmentRecoveryR0FailureAction $s $true $now 100000;if($a.requestTermination){$requests++};$seen+=@{observe=$a.observe;wait=$a.waitMs}};$short=@{killAttempted=$false;exitObserved=$false;terminationDeadlineMono=$null;cleanup='PRESERVED_UNCONFIRMED';stdoutEof=$false;stderrEof=$false};$first=Get-DevelopmentRecoveryR0FailureAction $short $true 1000 3000;$end=Get-DevelopmentRecoveryR0FailureAction $short $true 4000 0;@{requests=$requests;deadline=$s.terminationDeadlineMono;seen=$seen;shortDeadline=$short.terminationDeadlineMono;shortRequest=$first.requestTermination;expiredRequest=$end.requestTermination;expiredObserve=$end.observe;stdout=$s.stdoutEof;stderr=$s.stderrEof;preserve=$end.preserve}|ConvertTo-Json -Depth 4 -Compress`);
+ assert.deepEqual(actual,{requests:1,deadline:16000,seen:[{observe:true,wait:10},{observe:true,wait:10},{observe:true,wait:1},{observe:false,wait:0},{observe:false,wait:0}],shortDeadline:4000,shortRequest:true,expiredRequest:false,expiredObserve:false,stdout:false,stderr:false,preserve:true});
+});
+
+test('R0 진단은 분할 stream의 ID/줄번호만 남기고 긴 비밀본문도 유한 메모리로 drain한다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$s=New-DevelopmentRecoveryR0DiagnosticState;$a=[Text.Encoding]::UTF8.GetBytes('source.cs(12,4): error CS1002: PRIVATE_SECRET');Add-DevelopmentRecoveryR0DiagnosticBytes $s 'stdout' $a 0 17;Add-DevelopmentRecoveryR0DiagnosticBytes $s 'stdout' $a 17 ($a.Length-17);$tail=[Text.Encoding]::UTF8.GetBytes(([string][char]10)+('PRIVATE_SECRET'*800)+([string][char]10));Add-DevelopmentRecoveryR0DiagnosticBytes $s 'stdout' $tail 0 $tail.Length;Complete-DevelopmentRecoveryR0DiagnosticStream $s 'stdout';Complete-DevelopmentRecoveryR0DiagnosticStream $s 'stderr';$r=ConvertTo-DevelopmentRecoveryR0Diagnostics $s 1 20 'COMPILE_FAILED' 'PRESERVED_UNCONFIRMED';$json=$r.json;@{id=$r.value.entries[0].errorId;line=$r.value.entries[0].line;secret=$json.Contains('PRIVATE_SECRET');bytes=$r.value.stdout.bytes;lines=$r.value.stdout.lines;oversize=$r.value.stdout.oversizeLines;size=[Text.Encoding]::UTF8.GetByteCount($json);hash=$r.value.stdout.sha256;stderr=$r.value.stderr.sha256}|ConvertTo-Json -Compress`);
+ assert.equal(actual.id,'CS1002');assert.equal(actual.line,12);assert.equal(actual.secret,false);assert.equal(actual.lines,2);assert.equal(actual.oversize,1);assert.ok(actual.size<=65536);assert.match(actual.hash,/^[A-F0-9]{64}$/);assert.equal(actual.stderr,'E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855');assert.ok(actual.bytes>1024);
+});
+
+test('R0 제한 초과 뒤에도 두 stream byte/hash를 보존하고 원문과 초과행을 저장하지 않는다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$s=New-DevelopmentRecoveryR0DiagnosticState;$a=[Text.Encoding]::UTF8.GetBytes('x.cs(2): warning CS0168: SECRET'+([string][char]10));for($i=0;$i -lt 300;$i++){Add-DevelopmentRecoveryR0DiagnosticBytes $s 'stderr' $a 0 $a.Length};Complete-DevelopmentRecoveryR0DiagnosticStream $s 'stdout';Complete-DevelopmentRecoveryR0DiagnosticStream $s 'stderr';$r=ConvertTo-DevelopmentRecoveryR0Diagnostics $s 0 50 'COMPILE_RETURNED_NOT_OS_VALIDATED' 'PRESERVED_UNCONFIRMED';@{count=$r.value.entries.Count;omitted=$r.value.omittedRecords;bytes=$r.value.stderr.bytes;lines=$r.value.stderr.lines;secret=$r.json.Contains('SECRET');size=[Text.Encoding]::UTF8.GetByteCount($r.json);newline=($r.json.Split([char]10).Length)}|ConvertTo-Json -Compress`);
+ assert.equal(actual.count,200);assert.equal(actual.omitted,100);assert.equal(actual.lines,300);assert.equal(actual.secret,false);assert.ok(actual.bytes>9000);assert.ok(actual.size<=65536);assert.ok(actual.newline<=256);
+});
+
+test('R0 불명 보관함은 재 dot-source 후에도 원 one-shot을 다시 열지 않는다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`. ./scripts/development-recovery-host.ps1;$original=$script:DevelopmentRecoveryR0Retain;& $script:DevelopmentRecoveryR0Retain 'BEGIN' $null;& $script:DevelopmentRecoveryR0Retain 'RETAIN' ([pscustomobject]@{kind='PURE_RETENTION_TEST'});. ./scripts/development-recovery-host.ps1;$blocked=$false;try{& $script:DevelopmentRecoveryR0Retain 'BEGIN' $null}catch{$blocked=$_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_R0_ALREADY_ATTEMPTED'};@{same=[object]::ReferenceEquals($original,$script:DevelopmentRecoveryR0Retain);blocked=$blocked}|ConvertTo-Json -Compress`);
+ assert.deepEqual(actual,{same:true,blocked:true});
+});
+
+test('R0 raw 바이트는 고정 크기라도 SHA256/Gitblob 불일치면 원문 출력 없이 거절한다',{skip:process.platform!=='win32'},()=>{
+ const actual=r0PowerShell(`$bad=0;foreach($bytes in @(([byte[]]::new(3)),([byte[]]::new(96953)))){try{Copy-DevelopmentRecoveryR0Source $bytes|Out-Null}catch{if($_.Exception.Message -eq 'DEVELOPMENT_RECOVERY_R0_SOURCE_INVALID'){$bad++}}};@{bad=$bad}|ConvertTo-Json -Compress`);
+ assert.deepEqual(actual,{bad:2});
+});
+
+test('R0 실제 I/O helper는 고정 차단 앞에서 독립 write 진입으로 노출되지 않는다',{skip:process.platform!=='win32'},()=>{
+ const command=`$ErrorActionPreference='Stop';. ./scripts/development-recovery-host.ps1;$names=@('Get-DevelopmentRecoveryR0PathObservation','Assert-DevelopmentRecoveryR0PathObservation','Get-DevelopmentRecoveryR0StreamDigest','Write-DevelopmentRecoveryR0OwnedDiagnostics');$exposed=0;foreach($name in $names){if(Get-Command $name -CommandType Function -ErrorAction Ignore){$exposed++}};@{exposed=$exposed}|ConvertTo-Json -Compress`;
+ assert.deepEqual(JSON.parse(execFileSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoProfile','-Command',command],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']})),{exposed:0});
+});
+
 function simulationFixture(){
  const start=Date.parse('2026-10-25T00:00:00Z'),events:string[]=[];
  const clock={wall:start,mono:0};
