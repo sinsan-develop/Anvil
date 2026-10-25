@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 후속 PMO 대조로 아래 상세안을 **기존 승인② 세 파일의 source/test 작성 기준**으로 사용할 수 있음이 확인됐다. 실제 실행 계약·breakaway 총수3 제안은 미채택이며 기존 실제 maxProcesses2/실행 차단은 유지한다. 첫 단계로 기존 원 probe의 suspended 자식에 비상속 직접 pin 복제→원 target에서 검증 duplicate-back→검증 copy 실 close를 작성하고 inheritable QA 경로를 제거했다. 원 target/slot/성공을 원 목록에 남기며 remote 숫자를 C 핸들로 닫지 않는다. 실제 W ACK·고정 G/W/pipe/controller 전체는 아직 없으므로 source primitive 한정 정적 C0/I0/M0·native/OS NOT_RUN이다. 아래 '미채택'은 실제 실행 계약 구분이며 source 작성 기준 확인과 혼동하지 않는다. R0 d71/F81 고정은 그대로다.
+
 - 고립 host의 내부 원 진입 객체를 추가했다. 실제 Main·기존 false gate 뒤 프로세스당 일회 원 객체를 만들고 같은 스레드/run/commit/창·host1회·복제1회에만 사용한다. 공개 factory는 child-pin case를 받지 않으며 내부 원 객체를 외부 입력으로 채택하지 않는다. 이 소스는 다른 코드의 일반 spawn을 차단하는 장치나 새 실행권위가 아니다. 독립 현재 소스 정적 C0/I0/M0·실제 컴파일/native 동작/OS NOT_RUN, exclusive false 유지다. 아래 R0 단일 권장 d71/F81는 고정 snapshot이며 이 추가 소스를 자동 편입하거나 옛 답변의 적용 대상으로 바꾸지 않는다. 그 컴파일 결과도 후속 소스의 검증이 될 수 없다.
 
 - child-pin 원소유 제어도owner→원pin→원probe→fixedchild→finally process회수확정뒤fixture정리로연결했다. exclusiveSpawn false/실standalone entry가현재factory생성전차단하며lifetime NOT_VERIFIED·정적C0/I0/M0만이다. 종료/close불명은fixture/원owner·pin보존, actualcompile/OS0. nativeF81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49는직전6093/376과다른source여서아래단일컴파일후보를이코드checkpoint로현행화한다.

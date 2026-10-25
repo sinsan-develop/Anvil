@@ -41,7 +41,8 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetHandleInformation(KernelHandle handle,out uint flags);
  [DllImport("kernel32.dll")]static extern IntPtr GetCurrentProcess();
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool DuplicateHandle(IntPtr sourceProcess,KernelHandle source,IntPtr targetProcess,out SafeFileHandle target,uint access,bool inherit,uint options);
- [DllImport("kernel32.dll",EntryPoint="DuplicateHandle",SetLastError=true)]static extern bool DuplicateQaHandle(IntPtr sourceProcess,KernelHandle source,IntPtr targetProcess,out KernelHandle target,uint access,bool inherit,uint options);
+ [DllImport("kernel32.dll",EntryPoint="DuplicateHandle",SetLastError=true)]static extern bool DuplicateQaIntoChild(IntPtr sourceProcess,KernelHandle source,KernelHandle targetProcess,out IntPtr target,uint access,bool inherit,uint options);
+ [DllImport("kernel32.dll",EntryPoint="DuplicateHandle",SetLastError=true)]static extern bool DuplicateQaFromChild(KernelHandle sourceProcess,IntPtr source,IntPtr targetProcess,out IntPtr target,uint access,bool inherit,uint options);
 
  internal sealed class KernelHandle:SafeHandleZeroOrMinusOneIsInvalid {
   public KernelHandle():base(true){}
@@ -471,23 +472,22 @@ internal static class DevelopmentRecoveryPathGuard {
   }
   // 원 fixture 객체만 받는다. 외부 handle/PID/path나 직렬화된 소유권은 입력받지 않는다.
   internal sealed class QaChildPin {
-   readonly QaFixtureLease fixture;readonly List<KernelHandle> copies=new List<KernelHandle>();QaEntry entry;QaAction action;bool copiesAttempted,closed,closeUnknown;
+   readonly QaFixtureLease fixture;QaEntry entry;QaAction action;bool copiesAttempted,closed,closeUnknown;
    internal QaChildPin(QaFixtureLease value){
     Require(QaAdapterConnected&&value!=null);fixture=value;fixture.Fresh();Require(fixture.childPin==null&&fixture.filesystemSealed&&!fixture.mutationAttempted);fixture.childPin=this;
     Require(fixture.caseChildren.TryGetValue("OUTSIDE_WRITE/unselected.txt",out entry));fixture.CheckEntry(entry);action=fixture.OpenAction(entry,ReadData);fixture.Fresh();
    }
-   internal KernelHandle[] CopyForOriginalChild(string runId,string commit,DateTime from,DateTime until,SecurityIdentifier owner,QaStandalonePinRun pinRun){
-    Require(QaExclusiveSpawnHostConnected&&pinRun!=null);pinRun.ClaimCopies(runId,commit,from,until);fixture.Fresh();Require(!closed&&!copiesAttempted&&Object.ReferenceEquals(fixture.childPin,this)&&runId==fixture.runId&&commit==fixture.commit&&from==fixture.issued&&until==fixture.until&&fixture.owner.Equals(owner));copiesAttempted=true;fixture.CheckEntry(entry);Require(action!=null&&!action.CloseAttempted);
+   internal int StageIntoOriginalChild(QaProcessProbe target,string runId,string commit,DateTime from,DateTime until,SecurityIdentifier owner,QaStandalonePinRun pinRun){
+    Require(QaExclusiveSpawnHostConnected&&pinRun!=null&&target!=null);pinRun.ClaimCopies(runId,commit,from,until);fixture.Fresh();Require(!closed&&!copiesAttempted&&Object.ReferenceEquals(fixture.childPin,this)&&runId==fixture.runId&&commit==fixture.commit&&from==fixture.issued&&until==fixture.until&&fixture.owner.Equals(owner));copiesAttempted=true;fixture.CheckEntry(entry);Require(action!=null&&!action.CloseAttempted);
     var pins=new List<Pin>(action.Parents);pins.Add(new Pin{Handle=action.Handle,Before=entry.Pin.Before});Require(pins.Count>0&&pins.Count<=16);
     foreach(var pin in pins){
-     fixture.Fresh();KernelHandle copy;bool duplicated=DuplicateQaHandle(GetCurrentProcess(),pin.Handle,GetCurrentProcess(),out copy,0,true,2);copies.Add(copy);
-     Require(duplicated&&copy!=null&&!copy.IsInvalid);uint flags;Require(GetHandleInformation(copy,out flags)&&flags==1);QaRequireReadOwnership(copy);Require(Same(pin.Before,Read(copy,pin.Before.Path,pin.Before.Directory)));fixture.Fresh();
+     fixture.Fresh();uint flags;Require(GetHandleInformation(pin.Handle,out flags)&&flags==0);QaRequireReadOwnership(pin.Handle);Require(Same(pin.Before,Read(pin.Handle,pin.Before.Path,pin.Before.Directory)));
+     target.StageOriginalReadPin(pin.Handle,pin.Before.Path,pin.Before.Directory);fixture.Fresh();Require(Same(pin.Before,Read(pin.Handle,pin.Before.Path,pin.Before.Directory)));
     }
-    return copies.ToArray();
+    return pins.Count;
    }
    internal bool CloseParentCopies(){
     Require(Environment.CurrentManagedThreadId==fixture.ownerThread);if(closed)return !closeUnknown;closed=true;closeUnknown=true;bool unknown=false;
-    for(int i=copies.Count-1;i>=0;i--){var copy=copies[i];try{if(copy!=null){copy.Dispose();unknown|=!copy.IsInvalid&&(!copy.CloseAttempted||!copy.CloseSucceeded);}}catch{unknown=true;}}
     if(action!=null)unknown|=!fixture.CloseAction(action);closeUnknown=unknown;return !unknown;
    }
   }
@@ -849,6 +849,8 @@ internal static class DevelopmentRecoveryPathGuard {
   const string Image=@"C:\Program Files\PowerShell\7\pwsh.exe";
   const string ImageHash="bfb46af89433268872ddb43d1ca7a3f433452ee91ed356a9786940f90118e285";
   readonly List<KernelHandle> imagePins=new List<KernelHandle>();readonly List<ProcessInformation> children=new List<ProcessInformation>();
+  readonly List<Tuple<ProcessInformation,IntPtr,bool>> remotePinSlots=new List<Tuple<ProcessInformation,IntPtr,bool>>();readonly List<KernelHandle> transferChecks=new List<KernelHandle>();
+  ProcessInformation stagingChild;QaStandalonePinRun stagingRun;bool transferCloseUnknown;
   readonly Stopwatch clock=Stopwatch.StartNew();readonly int ownerThread=Environment.CurrentManagedThreadId;
   readonly DateTime from,until,acquired;readonly string runId,commit;DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;KernelHandle job;
   bool faulted,terminationRequested,closed,closeUnknown;internal string AcquisitionStatus{get;private set;}
@@ -885,29 +887,55 @@ internal static class DevelopmentRecoveryPathGuard {
    try{uint returned;Require(QueryInformationJobObject(job,3,buffer,(uint)(8+2*IntPtr.Size),out returned)&&returned>=8&&returned<=8+2*IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=2&&listed==total);for(int i=0;i<listed;i++){long pid=Marshal.ReadIntPtr(buffer,8+i*IntPtr.Size).ToInt64();Require(pid>0&&pid<=UInt32.MaxValue&&children.Exists(child=>child.Pid==(uint)pid));}return total;}
    finally{Marshal.FreeHGlobal(buffer);}
   }
+  bool CloseTransferChecks(){
+   Require(Environment.CurrentManagedThreadId==ownerThread);bool unknown=transferCloseUnknown;
+   for(int i=transferChecks.Count-1;i>=0;i--){var check=transferChecks[i];try{check.Dispose();unknown|=!check.CloseAttempted||!check.CloseSucceeded;}catch{unknown=true;}}
+   transferCloseUnknown=unknown;return !unknown;
+  }
+  // 원 factory가 아직 resume하지 않은 자기 자식만 target이다. 외부 PID/handle/직렬화된 슬롯을 받지 않는다.
+  internal void StageOriginalReadPin(KernelHandle source,string path,bool directory){
+   Fresh(true);Require(QaExclusiveSpawnHostConnected&&stagingChild!=null&&stagingRun!=null&&children.Contains(stagingChild)&&remotePinSlots.Count<16);
+   stagingRun.AssertOriginal(runId,commit,from,until);uint flags;Require(GetHandleInformation(source,out flags)&&flags==0);QaRequireReadOwnership(source);Fact before=Read(source,path,directory);
+   Require(WaitForSingleObject(stagingChild.Process,0)==258);IntPtr remote;
+   ChildPinTransferStatus="QA_DIRECT_PIN_TRANSFER_UNCONFIRMED";
+   bool copied=DuplicateQaIntoChild(GetCurrentProcess(),source,stagingChild.Process,out remote,0,false,2);remotePinSlots.Add(Tuple.Create(stagingChild,remote,copied));
+   // target의 숫자는 C의 SafeHandle로 감싸거나 C에서 CloseHandle하지 않는다. target 종료까지 원 목록에 남긴다.
+   Require(copied&&remote!=IntPtr.Zero&&remote!=new IntPtr(-1)&&remote!=new IntPtr(-2));
+   try{
+    IntPtr raw;bool observed=DuplicateQaFromChild(stagingChild.Process,remote,GetCurrentProcess(),out raw,0,false,2);
+    if(!observed||raw==IntPtr.Zero||raw==new IntPtr(-1)||raw==new IntPtr(-2)){
+     // 실패 출력의 숫자는 소유권이 아니다. 불명 local 슬롯을 추정 close하지 않는다.
+     if(raw!=IntPtr.Zero)transferCloseUnknown=true;throw Denied();
+    }
+    var check=new KernelHandle(raw);transferChecks.Add(check);
+    Require(GetHandleInformation(check,out flags)&&flags==0);QaRequireReadOwnership(check);Require(Same(before,Read(check,path,directory)));Fresh(true);
+   }finally{Require(CloseTransferChecks());}
+  }
   internal void StartFixedSleepProbe(QaFixtureLease.QaChildPin pins=null,QaStandalonePinRun pinRun=null){
    try{
     Fresh(true);Require(AcquisitionStatus=="QA_ORIGINAL_JOB_ACQUIRED_NOT_OS_VALIDATED"&&children.Count<2&&(pins==null)==(pinRun==null));
-    IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero,handleList=IntPtr.Zero;bool initialized=false;
+    IntPtr list=IntPtr.Zero,value=IntPtr.Zero,environment=IntPtr.Zero;bool initialized=false;
     try{
      if(pins!=null){ChildPinTransferStatus="QA_CHILD_PIN_BLOCKED_PROCESS_WIDE_INHERITANCE_UNVERIFIED";Require(QaExclusiveSpawnHostConnected&&pinRun!=null);pinRun.AssertOriginal(runId,commit,from,until);}
-     KernelHandle[] inherited=pins==null?new KernelHandle[0]:pins.CopyForOriginalChild(runId,commit,from,until,owner,pinRun);uint attributeCount=pins==null?1u:2u;
+     uint attributeCount=1u;
      UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,attributeCount,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
      list=Marshal.AllocHGlobal(checked((int)size.ToUInt64()));Require(InitializeProcThreadAttributeList(list,attributeCount,0,ref size));initialized=true;
      value=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(value,job.DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x2000d),value,new UIntPtr((uint)IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
-     if(pins!=null){Require(inherited.Length>0&&inherited.Length<=16);handleList=Marshal.AllocHGlobal(checked(inherited.Length*IntPtr.Size));for(int i=0;i<inherited.Length;i++)Marshal.WriteIntPtr(handleList,i*IntPtr.Size,inherited[i].DangerousGetHandle());Require(UpdateProcThreadAttribute(list,0,new UIntPtr(0x20002),handleList,new UIntPtr((uint)(inherited.Length*IntPtr.Size)),IntPtr.Zero,IntPtr.Zero));}
      // 부모 환경/Secret/profile을 전달하지 않는다. 고정 .NET sleep만 실행하며 사용자 문자열은 없다.
      environment=Marshal.StringToHGlobalUni("DOTNET_EnableDiagnostics=0\0POWERSHELL_TELEMETRY_OPTOUT=1\0SystemRoot=C:\\Windows\0WINDIR=C:\\Windows\0\0");
      var startup=new StartupEx{Startup=new StartupInfo{Size=(uint)Marshal.SizeOf(typeof(StartupEx))},Attributes=list};NativeProcessInformation raw;
      DateTime requested=DateTime.UtcNow;Fresh(true);
-     Require(CreateProcessW(Image,new StringBuilder("\""+Image+"\" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\""),IntPtr.Zero,IntPtr.Zero,pins!=null,0x4u|0x80000u|0x8000000u|0x400u,environment,@"C:\Program Files\PowerShell\7",ref startup,out raw));
+     Require(CreateProcessW(Image,new StringBuilder("\""+Image+"\" -NoLogo -NoProfile -NonInteractive -Command \"[System.Threading.Thread]::Sleep(45000)\""),IntPtr.Zero,IntPtr.Zero,false,0x4u|0x80000u|0x8000000u|0x400u,environment,@"C:\Program Files\PowerShell\7",ref startup,out raw));
      var child=new ProcessInformation{Process=new KernelHandle(raw.Process),Thread=new KernelHandle(raw.Thread),Pid=raw.Pid};children.Add(child);
      Require(!child.Process.IsInvalid&&!child.Thread.IsInvalid);bool member;Require(IsProcessInJob(child.Process,job,out member)&&member&&GetProcessId(child.Process)==child.Pid);
      var actual=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(child.Process,0,actual,ref capacity)&&actual.ToString()==Image);OwnedRuntime.CheckOwner(child.Process,owner);
      FileTime begun,ended,kernel,user;Require(GetProcessTimes(child.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());
-     Require(ActiveCount()<=children.Count);Fresh(true);Require(ResumeThread(child.Thread)==1);
-     if(pins!=null){Require(WaitForSingleObject(child.Process,0)==258&&pins.CloseParentCopies());Fresh(false);Require(WaitForSingleObject(child.Process,0)==258);ChildPinTransferStatus="QA_CHILD_PIN_TRANSFER_RECORDED_NOT_OS_VALIDATED";}
-    }finally{if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(handleList!=IntPtr.Zero)Marshal.FreeHGlobal(handleList);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);if(pins!=null)Require(pins.CloseParentCopies());}
+     Require(ActiveCount()<=children.Count);Fresh(true);
+     if(pins!=null){stagingChild=child;stagingRun=pinRun;try{Require(pins.StageIntoOriginalChild(this,runId,commit,from,until,owner,pinRun)>0);}finally{stagingChild=null;stagingRun=null;}ChildPinTransferStatus="QA_DIRECT_PIN_STAGED_WORKER_ACK_MISSING";}
+     Fresh(true);Require(ResumeThread(child.Thread)==1);
+     // 고정 sleep에는 실제 pin ACK가 없다. C의 강한 action은 원 자식 종료/회수 뒤 fixture 정리까지 보존한다.
+     if(pins!=null){Fresh(false);Require(WaitForSingleObject(child.Process,0)==258);}
+    }finally{stagingChild=null;stagingRun=null;if(initialized)DeleteProcThreadAttributeList(list);if(list!=IntPtr.Zero)Marshal.FreeHGlobal(list);if(value!=IntPtr.Zero)Marshal.FreeHGlobal(value);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);}
    }catch{faulted=true;throw;}
   }
   internal string ObserveOriginalJobMembership(){
@@ -935,7 +963,7 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string CloseAfterObservedExit(){
    Require(Environment.CurrentManagedThreadId==ownerThread);if(closed)return closeUnknown?"QA_CLOSE_UNCONFIRMED":"QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED";
    if(job!=null&&!job.IsInvalid){if(children.Count>0&&ObserveOriginalExit()!="QA_ORIGINAL_EXIT_OBSERVED_NOT_OS_VALIDATED")return "QA_EXIT_UNCONFIRMED";try{Require(ActiveCount()==0);}catch{return "QA_EXIT_UNCONFIRMED";}}
-   closed=true;closeUnknown=true;bool unknown=false;
+   closed=true;closeUnknown=true;bool unknown=!CloseTransferChecks();
    foreach(var child in children){try{child.Thread.Dispose();unknown|=!child.Thread.CloseSucceeded;}catch{unknown=true;}try{child.Process.Dispose();unknown|=!child.Process.CloseSucceeded;}catch{unknown=true;}}
    for(int i=imagePins.Count-1;i>=0;i--){var pin=imagePins[i];try{if(pin!=null){pin.Dispose();unknown|=!pin.IsInvalid&&!pin.CloseSucceeded;}}catch{unknown=true;}}
    try{if(job!=null){job.Dispose();unknown|=!job.IsInvalid&&!job.CloseSucceeded;}}catch{unknown=true;}
