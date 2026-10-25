@@ -1,4 +1,31 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI10 저장 고정 원문 한정 검수 종료
+
+- 독립 ui10_saved_original_review는 제품 patch/신규 시험 전체·정본 카드/설계를 직접 읽고 C0/I0/M0로 판정했다. client/buffer/주체/프로젝트/fullref 세대와 ABA·지연 body/error/401, generic list/inspect 전환의 requestId/effect를 대조했다. 새 GET/DB/권한·거절 역조회·자동 실행은 없다.
+- 정상 DOM1/음성DOM4·기존 reader/이력8/type/build/diff의 실제 Main 결과와 제품A2E8511E/시험F1682E59를 최종 소유4경로에 결박한다. 원 RED/타입·patch·textarea 준비 오류는 그대로 보존한다. 실제 served App/정식DB/login/TLS·전체 UI10/FN05·Stage·계획 완료는 아니다.
+- 다음 미완료 업무는 별도 읽기 조사 후 Main이 선정하며 PMO의 작업배정을 기다리지 않는다. FN15 C44 신규 실행의 직접 답변/성공 전달은 아직 확인되지 않아 재실행하지 않는다.
+### 2026-10-26 UI10 저장 원문 — 현재 집중 검증
+
+- 작성자 TEST_CRLF_DELTA CBB0E12C는 textarea 기대만 표준 LF 표시로 대조하고 raw buffer.body는 원래 CRLF와 정확히 대조한다. fixture·본문 bytes/hash·GET 검증은 유지했다. Main65f2ba 적용 후 정상 저장→빈검색결과→명시 고정 원문 조회1 PASS·2.7초다.
+- Main59e03e→6fff91 거절/변조·owner/client/project/buffer/ref/ABA·pending/미확인·기존 다른 선택 보존 DOM4 PASS·9.9초/skip0, ba19e9 기존 reader/이력8 PASS·226.1353ms·type/diff0이다. 실제 React/Page와 합성 transport의 한정 증거이며 전체 App/served/실DB·인수는 아니다.
+- Main5bc25b Webbuild exit0·429modules/676ms·기존chunk경고, 제품A2E8511E/시험F1682E59 일치다. 제품1/신규시험1·소유plan/status만 통합 대상으로 독립 ui10_saved_original_review를 배정했다. 새 API/DB/권한·거절된 역조회·Agent 실행0, 전체UI10/FN05·Stage/계획은 미완료다.
+### 2026-10-26 UI10 고정 원문 — 타입/시험 준비 보정
+
+- Main a18883의 타입 검사는 새 시험110줄 배열 접근 TS2532에서 중단돼 DOM을 실행하지 않았다. 작성자의 optional chain1곳 delta는 기대값을 유지했다. 첫 delta BD5882는 zero-context여서99b629의 기본 apply-check에서 실패·미적용했고, 전후3줄 R2 5635A7EB를 bbfecc에서 검증/적용해 시험92ADA593·type exit0이다.
+- bbfecc/b09d24 정상 DOM1건은 textarea가 CRLF를 LF로 노출하는데 raw body와 비교한 보존 assertion에서 실패했다. 실제 저장까지 도달했으나 이번 결과는 제품 원문 조회 판정이 아니다. 같은 작성자에게 DOM 표준화 기대와 raw buffer CRLF 보존을 분리해 시험만 보정하도록 지시했다. 원 fixture·hash·합격 기준은 유지하며 max-failures=1로 중단했다.
+- 시작 읽기에서 추정한 업무 카드 하위경로/정본 root의 tests 검색·PowerShell rg glob은 경로 오류였다. 실제 카드 SCREEN_WORK.md를 확인하며 실제 소스/기존 변경은 보존했다. 환경·ACL·서비스 변경0이다.
+### 2026-10-26 UI10 저장 고정 원문 — 정상 저장 뒤 RED
+
+- 단일 writer TESTONLY A2D977728B5CF8698AA7DF5404D39C098492F8A27DFDCD7921558BDF1E0CB365는 신규 knowledge-saved-original.spec.ts 154줄이며 LF/EOF/parser를 확인했다. 작성자는 제품 원본22B98CE9와HEAD25bed0 일치를 확인했고 제품 작성 전에 동결했다. Main의 인계문서 경로 읽기1회는 그 파일이 아직 없어 실패했지만, 실제 제출 patch를 읽고 검증했으며 파일 변경은 없었다.
+- Main d0014b 첫 정상 사례1건을 --max-failures=1로 실행했다. 현재 KnowledgePage에서 CONFIRMED+CAUTION/query 유지→명시 uploadArtifact/saveKnowledge→저장확인v1·빈검색결과·version GET0까지 도달한 뒤, '저장한 지식 고정 원문 보기' 버튼 부재로 1 FAIL/9.831초/exit1이다. 준비 오류가 아닌 실제 누락 RED이며 기준을 완화하지 않는다.
+- 같은 writer에게 Page/필요 guard만 구현하도록 배정했다. 기존 reader/hash 검사와 검색행/history 경로·저장 후 list는 보존한다. saved-ref 소유/현재성 대조로 늦은 본문·오류를 숨기되, 기존 requestId의 finally와 구분해 busy가 남거나 새 조회를 옛 finally가 풀지 않도록 검수한다. 원입력/원명령·검색조건·API/DB/권한·DD166F 역조회·Agent 변경은 없다. 실제 served/DB 검증과 전체 FN05 완료는 아직 아니다.
+### 2026-10-26 UI02 게시·UI10 저장 원문 조회 착수
+
+- Main dc4354 소유5경로25bed0cbbc70130e65855518e0cf341feb66c078 commit/private exact, main f976ed5e 불변·trackedclean·보호untracked8 유지다. UI02 복구 동선의 한정 검수만 게시했고 served/실DB·전체 Stage 완료는 아니다.
+- 다음 StageB 누락을 읽기 조사와 Main583297/bcb1fd로 대조했다. KnowledgePage는 저장 resultRef를 보존한 뒤 현재 검색조건 list만 호출한다. CONFIRMED/다른 종류 검색에서 새 PROPOSED 지식이 숨겨지면 저장 직후 원문을 열 수 없다. 기존 inspect/readKnowledge의 고정 fullref·entry/원문 hash 검증을 그대로 소비하는 명시 조회 버튼을 ui10_saved_knowledge_read 단일 writer에 배정했다.
+- 기존 경로는 /api/v1/projects/:pid/knowledge/:id/versions/:version이다. DD166F의 별도 /sources/:messageId 역조회 제안과 다르며 그 거절된 경로·대화 원문은 호출/구현하지 않는다. 저장 후 기존 list는 유지하지만 고정 원문 자동 조회·필터 변경·입력/원명령 초기화·새 API/DB/권한·Agent는 0이다. saved-ref 요청의 owner/project/client 객체·정확 ref를 현재 props와 결박해 늦은 본문·오류가 덮어쓰지 않도록 한정 guard를 검수한다.
+- TESTONLY RED 선행 후 Page1·신규 직접 DOM시험1·필요 시 현재성 guard1(최대3)만 통합한다. 실제 React/기존 nativeOxc 메모리 bundle을 사용하며 새 도구/dep/helper·옛 고정 dist 재사용은 하지 않는다. 기존 FN05 reader/이력 시험은 직접 영향 범위만 확인한다. 아직 미완료다.
+- cache는 de4947의 실제21파일 목록으로 다시 대조했다. db43d2는 각 rawhash·현재 사용자 owner·상위/하위 nonlink·정확root를 확인한 뒤 양식21파일/빈하위dir39와 UI02소유9파일/root만 정리했다. 51fcb2 별도 조회에서 양 cache 부재·FN15 실행후보 보존·기존 보호2파일 hash 불변을 확인했다. 앞선22개 집계/삭제 전 중단 이력은 지우지 않는다. Dtmp 검증 결과와 현재 새 작업은 보존한다.
 ### 2026-10-26 UI02 소비 초안 재진입 한정 검수 종료
 
 - 독립 ui02_consumed_draft_review는 명세 적합·C0/I0/M0로 판정했다. GET 한정 검증과 미제공/null 구분, 서버 산식상 false+null 허용, client/사용자/기기/요청/회차 결박과 updater의 다른 초안·dirty·원명령 보존을 직접 읽어 대조했다. 새 두 링크 외 자동 이동·재생성·현재 권한 판정은 없다.
