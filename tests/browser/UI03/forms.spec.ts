@@ -132,3 +132,81 @@ test('내용 검토와 사용자 확정은 각각 직접 조작하고 같은 버
   expect(writes).toHaveLength(2); expect(writes[1].payload.reviewRefs).toEqual([reviewRef]); expect(writes[1].expectedVersion).toBe(1);
   if (process.env.ANVIL_CAPTURE_UI === '1') await page.screenshot({ path: test.info().outputPath('form-review-final.png'), fullPage: true });
 });
+test('저장 확정 상세 토글은 통신하지 않고 새 버전·조회 거절에서 이전 기록을 숨긴다', async ({ page }) => {
+  const id = 'a6f30000-0000-4000-8000-000000000099';
+  const altId = 'a6f30000-0000-4000-8000-000000000098';
+  const ref1 = { id, version: 1, contentHash: 'c'.repeat(64) };
+  const ref2 = { id, version: 2, contentHash: 'd'.repeat(64) };
+  const altRef = { id: altId, version: 1, contentHash: 'e'.repeat(64) };
+  let version = 1, restoreOriginal = false;
+  let definition = { ...structuredClone(catalog.forms[0]!.definition), name: '확정 이력 QA', scope: 'USER_COMMON' as const };
+  const oldReview = { id: 'a6f30000-0000-4000-8000-000000000081', criteriaVersion: 1, targetRef: ref1, outcome: 'ACCEPTED' as const };
+  const latestReview = { id: 'a6f30000-0000-4000-8000-000000000082', criteriaVersion: 2, targetRef: ref1, outcome: 'ACCEPTED' as const };
+  const communications: string[] = [], writes: string[] = [], operations: string[] = [];
+  page.on('request', request => { communications.push(`${request.method()} ${new URL(request.url()).pathname}`); if (request.method() !== 'GET') writes.push(request.method()); });
+  await page.route('**/api/v1/forms', route => {
+    const primary = { ref: version === 1 ? ref1 : ref2, formCode: definition.formCode, name: definition.name, scope: 'USER_COMMON' };
+    const items = restoreOriginal ? [primary] : [primary, { ref: altRef, formCode: definition.formCode, name: '접근 거절 양식', scope: 'USER_COMMON' }];
+    return route.fulfill({ json: { items, observedAt: new Date().toISOString(), nextCursor: null, hasMore: false, baselineVersion: null } });
+  });
+  await page.route(new RegExp(`/api/v1/forms/${id}/versions/[12]$`), route => {
+    const requestedVersion = Number(new URL(route.request().url()).pathname.split('/').at(-1));
+    const ref = requestedVersion === 1 ? ref1 : ref2;
+    const confirmation = requestedVersion === 1 ? { id: 'a6f30000-0000-4000-8000-000000000083', decidedBy: catalog.forms[0]!.ref.id,
+      decidedAt: '2026-10-20T01:02:03.123456Z', reviewRefs: [oldReview] } : null;
+    const reviews = requestedVersion === 1 ? [{ ref: latestReview, items: [{ criterionId: 'FORM-01', outcome: 'ACCEPTED', evidenceRefs: [], reason: '새 검토' }],
+      reviewer: { kind: 'HUMAN', userId: catalog.forms[0]!.ref.id, sameAsTargetRecorder: false }, sourceKind: 'HUMAN_REVIEW', reason: '최신 검토', reviewedAt: '2026-10-21T01:02:03Z', serverSequence: 2 }] : [];
+    return route.fulfill({ json: { ref, definition, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') },
+      contentReviewCriteria: { criteriaVersion: 2, items: [{ criterionId: 'FORM-01', title: '기준' }] }, contentReviews: reviews, confirmation,
+      validation: { formatOnly: true, contentReview: reviews.length ? 'RECORDED' : 'NOT_PERFORMED', userAcceptance: confirmation ? 'CONFIRMED' : 'NOT_PERFORMED' } } });
+  });
+  await page.route(`**/api/v1/forms/${altId}/versions/1`, route => route.fulfill({ status: 403, json: { code: 'FORBIDDEN' } }));
+  await page.route('**/api/v1/user-common/commands', async route => {
+    const body = route.request().postDataJSON(); operations.push(body.operation);
+    if (body.operation !== 'saveFormDraft') return route.fulfill({ status: 400, json: { code: 'UNEXPECTED_COMMAND' } });
+    definition = body.payload.definition; version = 2;
+    return route.fulfill({ json: { scopeKind: 'USER_COMMON', ownerUserId: catalog.forms[0]!.ref.id, operationId: 'a6f30000-0000-4000-8000-000000000084',
+      commandId: body.commandId, status: 'APPLIED', targetId: id, version, data: { ref: ref2, status: 'DRAFT' }, serverReceivedAt: new Date().toISOString() } });
+  });
+  await page.goto('/#/methodologies');
+  await expect(page.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toBeVisible({ timeout: 1000 });
+  const confirmation = page.locator('details[aria-label="저장된 사용자 확정 기록"]');
+  await expect(confirmation).toBeVisible();
+  const beforeToggle = communications.length;
+  await confirmation.locator('summary').click();
+  await expect(confirmation).toContainText('a6f30000-0000-4000-8000-000000000083');
+  await expect(confirmation).toContainText(catalog.forms[0]!.ref.id);
+  await expect(confirmation).toContainText('2026-10-20T01:02:03.123456Z');
+  await expect(confirmation).toContainText(`${ref1.id} · v1 · ${ref1.contentHash}`);
+  await expect(confirmation).toContainText(`${oldReview.targetRef.id} · v${oldReview.targetRef.version} · ${oldReview.targetRef.contentHash}`);
+  await expect(confirmation).toContainText('확정 당시 기준 버전 1'); await expect(confirmation).toContainText('확정 당시 판정: 적합');
+  await expect(confirmation).toContainText(oldReview.id); await expect(confirmation).not.toContainText(latestReview.id);
+  await confirmation.locator('summary').click();
+  await expect(confirmation.getByText(oldReview.id)).toBeHidden();
+  expect(communications.length).toBe(beforeToggle);
+
+  await page.getByLabel('공식 산출물 양식', { exact: true }).selectOption(altId);
+  await expect(page.getByRole('alert')).toContainText('이 작업에 대한 권한이 없습니다.');
+  await expect(page.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toHaveCount(0);
+  await expect(page.locator('details[aria-label="저장된 사용자 확정 기록"]')).toHaveCount(0);
+
+  restoreOriginal = true;
+  await page.getByRole('button', { name: '양식 다시 조회', exact: true }).click();
+  const restoredConfirmation = page.locator('details[aria-label="저장된 사용자 확정 기록"]');
+  await expect(page.getByText('현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('공식 산출물 양식', { exact: true })).toHaveValue(id);
+  await expect(restoredConfirmation).toBeVisible();
+  await restoredConfirmation.locator('summary').click();
+  await expect(restoredConfirmation).toContainText(oldReview.id);
+  await restoredConfirmation.locator('summary').click();
+
+  await page.getByRole('button', { name: '이 공통 양식 편집', exact: true }).click();
+  await page.getByLabel('양식 이름', { exact: true }).fill('확정 이력 QA v2');
+  await page.getByLabel('양식 개정 이유', { exact: true }).fill('새 양식 버전 저장');
+  await page.getByRole('button', { name: '공통 양식 새 버전 저장', exact: true }).click();
+  await expect(page.getByText('양식 서버 저장·재조회 확인 · 버전 2', { exact: true })).toBeVisible();
+  await expect(page.getByText('이 버전의 사용자 확정 이력 없음', { exact: true })).toBeVisible();
+  await expect(page.locator('details[aria-label="저장된 사용자 확정 기록"]')).toHaveCount(0);
+  expect(writes).toEqual(['POST']); expect(operations).toEqual(['saveFormDraft']);
+
+});

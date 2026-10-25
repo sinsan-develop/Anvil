@@ -89,3 +89,38 @@ for (const kind of ['method', 'project', 'form'] as const) {
     const html = render([mixed]); assert.ok(html.includes(valid.reason)); assert.ok(html.includes('저장된 항목 정보 확인 불가'));
   });
 }
+test('form: 확정 상세는 저장 당시 참조와 원 결정을 보이고 미확정이면 숨긴다', () => {
+  const source = sources([]).form;
+  const older = { id: '66666666-6666-4666-8666-666666666666', criteriaVersion: 1, targetRef: { ...ref }, outcome: 'ACCEPTED' as const };
+  const newest = { id: '77777777-7777-4777-8777-777777777777', criteriaVersion: 2, targetRef: { ...ref }, outcome: 'ACCEPTED' as const };
+  source.contentReviews = [review(newest.id)]; source.contentReviews[0]!.ref = newest;
+  const savedConfirmation = { id: '88888888-8888-4888-8888-888888888888', decidedBy: userId, decidedAt: '2026-10-20T01:02:03.123456Z', reviewRefs: [older] };
+  source.confirmation = savedConfirmation;
+  source.validation.userAcceptance = 'CONFIRMED';
+  const buffer = emptyFormBuffer(); let calls = 0;
+  const props = { client: new ApiClient(async () => { calls++; throw Error('SSR 렌더 중 API 호출 금지'); }),
+    session: { user: { id: userId }, clientId: '44444444-4444-4444-8444-444444444444', csrfToken: 'c'.repeat(43) }, buffer,
+    onChange: () => { calls++; }, onVerified: () => { calls++; }, onAuthenticationLost: () => { calls++; } };
+  const html = renderToStaticMarkup(createElement(FormReviewPanel, { ...props, source }));
+  assert.equal(calls, 0, 'SSR 렌더 중 API 호출 없음');
+  const details = [...html.matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)];
+  const confirmation = details.find(entry => entry[1]!.includes('aria-label="저장된 사용자 확정 기록"'));
+  assert.ok(confirmation, '저장된 확정 기록 상세가 표시됨');
+  assert.doesNotMatch(confirmation[1]!, /\bopen(?:=|\s|$)/);
+  const fullRef = `${ref.id} · v${ref.version} · ${ref.contentHash}`;
+  for (const value of [savedConfirmation.id, userId, savedConfirmation.decidedAt, fullRef,
+    older.id, fullRef, '기준 버전 1', '적합']) assert.ok(confirmation[2]!.includes(value), value);
+  assert.equal(confirmation[2]!.includes(newest.id), false, '확정 근거를 최신 검토에서 다시 만들지 않음');
+  assert.equal(confirmation[2]!.includes('현재 기준 제목을 과거에 붙이지 말 것'), false);
+  assert.ok(html.includes('이 확정 이력은 현재 실행 권한이나 Agent 허가를 부여하지 않습니다'));
+
+  const unsafe = sources([]).form; unsafe.confirmation = { ...savedConfirmation, decidedBy: '<img src=x onerror=window.CONFIRMATION_XSS=1>' };
+  unsafe.validation.userAcceptance = 'CONFIRMED';
+  const escaped = renderToStaticMarkup(createElement(FormReviewPanel, { ...props, source: unsafe }));
+  assert.ok(escaped.includes('&lt;img src=x onerror=window.CONFIRMATION_XSS=1&gt;'));
+  assert.doesNotMatch(escaped, /<img\b/);
+
+  const unconfirmed = sources([]).form;
+  const unconfirmedHtml = renderToStaticMarkup(createElement(FormReviewPanel, { ...props, source: unconfirmed }));
+  assert.doesNotMatch(unconfirmedHtml, /aria-label="저장된 사용자 확정 기록"/);
+});

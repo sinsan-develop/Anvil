@@ -11,7 +11,7 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
 }) {
   const fieldId = useId();
   const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState(false);
-  const work = buffer.review, criteria = source.contentReviewCriteria;
+  const work = buffer.review, criteria = source.contentReviewCriteria, confirmation = source.confirmation;
   const matches = !!work && work.ref.id === source.ref.id && work.ref.version === source.ref.version && work.ref.contentHash === source.ref.contentHash && work.criteriaVersion === criteria?.criteriaVersion;
   const locked = pending || !!work?.pending || !!buffer.pending;
   const latest = source.contentReviews?.[0];
@@ -75,7 +75,23 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
       </details>
     </div>)}
     <button disabled={locked || !matches || !!work?.dirty || latest?.ref.outcome !== 'ACCEPTED' || !!source.confirmation} onClick={confirmVersion}>이 양식 버전 확정</button>
-    {source.confirmation ? <p>현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도</p> : <p>이 버전의 사용자 확정 이력 없음</p>}
+    {confirmation ? <>
+      <p>현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도</p>
+      <details aria-label="저장된 사용자 확정 기록" style={{ overflowWrap: 'anywhere' }}>
+        <summary>저장된 사용자 확정 기록 상세 보기</summary>
+        <p>확정 기록 ID: {confirmation.id}</p>
+        <p>결정 사용자 ID: {confirmation.decidedBy}</p>
+        <p>원 결정 시각: {confirmation.decidedAt}</p>
+        <p>확정 대상 양식: {source.ref.id} · v{source.ref.version} · {source.ref.contentHash}</p>
+        <ul>{confirmation.reviewRefs.map(reviewRef => <li key={reviewRef.id}>
+          <p>확정 당시 검토 참조 ID: {reviewRef.id}</p>
+          <p>확정 당시 검토 대상 양식: {reviewRef.targetRef.id} · v{reviewRef.targetRef.version} · {reviewRef.targetRef.contentHash}</p>
+          <p>확정 당시 기준 버전 {reviewRef.criteriaVersion}</p>
+          <p>확정 당시 판정: {Object.hasOwn(labels, reviewRef.outcome) ? labels[reviewRef.outcome] : '알 수 없는 판정'}</p>
+        </li>)}</ul>
+      </details>
+      <p className="meta">이 확정 이력은 현재 실행 권한이나 Agent 허가를 부여하지 않습니다.</p>
+    </> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
     {work?.pending && !pending ? <><p role="alert">검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.</p><button disabled={!matches || work.pending.clientId !== session.clientId} onClick={() => { void execute(work.pending!); }}>같은 검토·확정 명령 결과 확인</button></> : null}
     {error ? <p role="alert">{error.message} 검토 입력과 미확인 명령은 유지했습니다.</p> : null}

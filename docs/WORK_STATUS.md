@@ -1,4 +1,33 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI03 공통 양식 확정 상세 한정 검수 종료
+
+- 시험 ED0B6897은 확정v1표시→다른양식403/상태·details제거→원양식재조회/정확과거검토ref재등장→기존v2저장/미확정숨김을연결한다. Main5f77ac 해당직접DOM1PASS·2.8초·최신type0/diff0이다. 제품불변이므로앞선SSR16/인접기존확정DOM1/build는불필요반복하지않았다.
+- 독립 ui03_form_confirmation_review는기존Minor해소·명세/품질PASS·C0/I0/M0로판정했다. 실제DB/served·로그인/TLS·전체FN03/UI03/계획완료로확대하지않는다. 소유제품1/기존SSR시험1/기존DOM시험1·WORK_PLAN/WORK_STATUS 5경로만 checkpoint한다.
+- 다음StageB누락은UI02소비된생성초안GET재진입이다. 서버가이미내보내는consumedProjectId를화면이무시해생성프로젝트로이어서갈수없다. 기존생성직후POST성공링크와다른복구흐름이며새쓰기/재생성/createdProject합성/미확인명령해제없이현재GET문맥에결박된정확workspace/documents링크만준비한다. 새 API/DB/권한/Agent 범위는없다.
+### 2026-10-26 UI03 확정 상세 — DOM 확인·독립 경미 보완 판정
+
+- 정상 DOM r4 B89DDD71은 parser66추가/0삭제와Mainapplycheck를통과해적용했다. Main15a580 신규직접DOM1PASS·2.2초,3c7c90 기존내용검토→사용자확정workflow1PASS·2.4초,직전type0/diff0이다. 토글추가통신0/명시합성새버전저장POST1과원문재조회·미확정숨김을확인했으며실DB/served증거는아니다.
+- 독립 ui03_form_confirmation_review C0/I0/M1, 제품명세적합·scope변경0. Minor는403시험이이미v2미확정후여서'보이는확정상세→403'전이를직접입증하지못한다는증거공백이다.
+- Main판정: 해당전이는이번명세의직접검증조건이므로기능누락처럼표현하지않되현재조건을미검증으로미루고완료하지않는다. 동일DOM시험순서를확정v1상세→다른양식403/숨김→원양식재선택/확정복귀→기존v2저장/미확정으로좁혀보완한다. 같은writer에시험1파일delta만배정했고제품/기존시험/API·명령/DB는변경0이다. Minor는실패3회인수나제품재작업finding으로세지않는다.
+### 2026-10-26 UI03 양식 확정 상세 — 한정 소스 검증
+
+- 적용 전 Main0802e9/0ffd76은 신규 SSR 기준 버전 라벨과 제품/DOM 라벨의 colon 차이, DOM 403 기대 문자열과 기존 한국어 ApiError 문구 차이를 대조했다. 새 표시 문구만 원반례와 기존 오류계약에 맞춰 동결했고 필드·값·참조/거절 조건은 완화하지 않았다. 신규SSR 설명4개만한국어로정리, 기존시험기준불변이다.
+- 포장 오류2: Main3b07e6 묶음applycheck가corruptline108로거절됐다. 개별a70997에서제품r2/SSR메시지patch는PASS, DOMr3만corruptline72임을확인했고제품/기존DOM원본hash불변·실적용0을확인했다. 작성자는DOM candidate 마지막LF누락원인으로보고했고정상r4를준비한다. 원r3/실패는보존하며우회flag를사용하지않는다.
+- 정상제품DB546810/SSR메시지4B1F783A만Mainb2e9b4에서통합, 기존검토표시/새확정상세16/16PASS·499.0281ms/skip0·전체type0·diff0이다. Webbuild exit0·429modules/517ms,기존chunk경고유지. 직접DOM은아직미실행으로분리한다. 제품은기존confirmation/reviewRefs의native details표시뿐이며새API/DB·명령/버퍼·권한/Agent0이다.
+### 2026-10-26 UI03 양식 확정 상세 — SSR RED 선행
+
+- 포장 오류1: 작성자 첫 TESTONLY.patch는 1byte LF(01BA4719)뿐임을 Mainec894a에서 확인해 적용·시험하지 않았다. 작성자가 staging cwd의 상대 Git diff 오류를 누락한 원인으로 보고했고 빈본을 보존했다. Main의 사본 경로 직접읽기1회도 존재하지 않아 원본 변경 없이 실제inventory로 좁혔다. 파일/권한 변경으로 우회하지 않았다.
+- 정상 r2 EB761833C0B694ED85A0C4795469862BFC0B9E321F8B0F088076AB4A7151BAB5는 3203bytes/추가35줄·원본C857D235와본문을대조했다. Main736975의정확신규SSR1건은 저장확정details 부재로0PASS/1FAIL·494.9849ms/skip0·exit1이다. 확정 당시근거와최신검토차이·원결정/ref·미확정미노출·escapedtext를고정하며기대값완화0이다.
+- 같은단일writer에제품FormReviewPanel1파일·직접browser시험1을이어배정했다. 원제품71F385B7보존, 실제source제품직접쓰기/DB/서비스/Agent·명령 실행0. 정식source/Dom 검증 전에는기능완료로표시하지않는다.
+### 2026-10-26 UI03 목록 임시 patch 정리
+
+- 작성자의 소유 inventory18파일/하위dir0을 기준으로 Main0f72cf가 rawhash·SINSAN\cyhuh owner·nonlink·literalroot/정확파일집합을 대조한 뒤 각 파일과 빈root만 정리했다. 별도bd1ef8에서 목록staging 부재·FN15 실행후보 보존을확인했다. 신규DOM 시험Dtmp 결과·기존보호본·현재양식확정작업자료는삭제하지않았다.
+- 현재 단일 writer는 공통 양식 확정 상세 TESTONLY를준비중이다. 확정당시reviewRefs와최신contentReviews가서로다른반례·미확정미노출·정확fullref/원시각·escapedtext를고정하며기존완료내용검토상세는불변이다. 실제로수행한검증전에는통과/완료로표시하지않는다.
+### 2026-10-26 UI03 게시·공통 양식 확정 상세 착수
+
+- Main1d879f 소유4경로846661e7b14208e4ae27a981e1ee61b8cf376408 commit/private push 후 local/remote exact, main f976ed5e 불변·trackedclean·보호untracked8이다. 검수한 목록 탐색·저장 경합 단위만 게시했고 실제 DB/served·전체Stage완료는아니다.
+- 다음StageB누락: FormReviewPanel은확정존재만표시하지만기존 forms-api의보호 GET에확정ID·결정사용자·원시각·정확검토ref/대상fullref·criteria/outcome이있다. 읽기조사와Main9ee9c9로대조해기존공식기록조회범위의내부보완으로선정했다. ui03_form_confirmation_details 단일 writer에제품1/SSR기존시험/직접browser시험최대3을배정했다.
+- native details에서확정당시 confirmation.reviewRefs를그대로보이고최신검토로재구성하지않는다. 미확정상세합성0·escapedtext·원시각/긴ref보존·양식/버전/거절변경시이전상세숨김·details추가통신/명령0을확인한다. 기존항목별내용검토상세·편집/미확인명령buffer·API/DB/권한/스타일·Agent는변경0. TESTONLY/SSR RED를먼저받고제품patch통합·직접DOM/type/build검수한다. 아직완료아니다.
 ### 2026-10-26 UI03 목록 복귀 한정 검수 종료
 
 - 독립 ui03_project_pagination_review는 I1 해소·round1 보완 C0/I0/M0로 판정했다. 최신 함수형 상태와 지연 저장 POST 보류→원본3 유지→2/1 복귀 반례가 일치하며 첫 import 진입 실패는 대상RED에서 제외한다. Main과 제품/시험 최종hash 일치, 범위초과0이다.
