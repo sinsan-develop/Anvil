@@ -927,6 +927,7 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool CancelIoEx(KernelHandle pipe,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetOverlappedResult(KernelHandle pipe,IntPtr overlapped,out uint transferred,bool wait);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetExitCodeProcess(KernelHandle process,out uint exitCode);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool TerminateProcess(KernelHandle process,uint exitCode);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetNamedPipeHandleState(KernelHandle pipe,ref uint mode,IntPtr maximum,IntPtr timeout);
  static byte[] QaRunBinding(string run,string commit,DateTime from,DateTime until){
   using(var hash=SHA256.Create())return hash.ComputeHash(Encoding.ASCII.GetBytes("CHILD_PIN_LIFETIME|"+run+"|"+commit+"|"+from.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+"|"+until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)));
@@ -1167,7 +1168,7 @@ internal static class DevelopmentRecoveryPathGuard {
    Require(Same(before,Read(at,path,false)));Fresh(false);return digest;
   }
   internal string[] ImageSnapshot(){Require(Environment.CurrentManagedThreadId==ownerThread);return new[]{imageSpec==null?"LEGACY_FIXED_SLEEP_IMAGE_NOT_ACCEPTANCE":"FIXED_C_GW_IMAGE_INTEGRITY_NOT_ACCEPTANCE",observedControllerDigest,observedWorkerDigest,"EXTERNAL_ARTIFACT_TRUST_NOT_CONNECTED"};}
-  internal string[] GuardianSnapshot(){Require(Environment.CurrentManagedThreadId==ownerThread);return new[]{GuardianStatus??"G_NOT_CREATED",guardianCaptureConfirmed?"ORIGINAL_G_W_CAPTURED":"G_W_CAPTURE_NOT_CONFIRMED",guardianQuery!=null&&guardianQuery.IsClosed&&guardianQuery.CloseSucceeded&&!guardianQueryCloseUnknown?"ORIGINAL_JG_QUERY_COPY_CLOSED":"JG_QUERY_COPY_CLOSE_NOT_CONFIRMED","G_BODY_NOT_CONNECTED","NOT_OS_VALIDATED"};}
+  internal string[] GuardianSnapshot(){Require(Environment.CurrentManagedThreadId==ownerThread);return new[]{GuardianStatus??"G_NOT_CREATED",guardianCaptureConfirmed?"ORIGINAL_G_W_CAPTURED":"G_W_CAPTURE_NOT_CONFIRMED",guardianQuery!=null&&guardianQuery.IsClosed&&guardianQuery.CloseSucceeded&&!guardianQueryCloseUnknown?"ORIGINAL_JG_QUERY_COPY_CLOSED":"JG_QUERY_COPY_CLOSE_NOT_CONFIRMED","G_BODY_SOURCE_LINKED_NOT_OS_VALIDATED","NOT_OS_VALIDATED"};}
   void RequireExactAccess(KernelHandle handle,uint expected){
    IntPtr buffer=Marshal.AllocHGlobal(1024);try{uint returned;Require(NtQueryObject(handle,0,buffer,1024,out returned)==0&&returned>=8&&returned<=1024&&unchecked((uint)Marshal.ReadInt32(buffer,4))==expected);}finally{Marshal.FreeHGlobal(buffer);}
   }
@@ -1310,15 +1311,18 @@ internal static class DevelopmentRecoveryPathGuard {
  sealed class QaFixedPinWorker {
   static QaFixedPinWorker originalWorker;
   readonly int ownerThread=Environment.CurrentManagedThreadId;readonly Stopwatch clock=Stopwatch.StartNew();
-  readonly DateTime issued,until;readonly string runId,pipeId;readonly byte[] binding;readonly List<KernelHandle> pins=new List<KernelHandle>();
+  readonly DateTime issued,until;readonly string runId,pipeId,sourceCommit,workerPipeId;readonly byte[] binding;readonly List<KernelHandle> pins=new List<KernelHandle>(),ownImagePins=new List<KernelHandle>();readonly bool guardianMode;
+  KernelHandle innerJob;ProcessInformation ownedWorker;bool workerAttempted,unknownCreateOutput;uint? observedWorkerExit;
+  readonly Stopwatch cleanupClock=new Stopwatch();
   KernelHandle pipe,ioEvent;IntPtr ioData,ioOverlapped;bool pending,closeUnknown;long deadline;DateTime lastWall;int bytesUsed;
-  QaFixedPinWorker(string run,string commit,DateTime start,DateTime end,string name){
-   runId=run;issued=start;until=end;pipeId=name;lastWall=DateTime.UtcNow;binding=QaRunBinding(run,commit,start,end);
+  QaFixedPinWorker(string run,string commit,DateTime start,DateTime end,string name,string workerName){
+   runId=run;sourceCommit=commit;issued=start;until=end;pipeId=name;workerPipeId=workerName;guardianMode=workerName!=null;lastWall=DateTime.UtcNow;binding=QaRunBinding(run,commit,start,end);
   }
-  internal static int RunOnce(string run,string commit,DateTime start,DateTime end,string name){
+  internal static int RunOnce(string run,string commit,DateTime start,DateTime end,string name,string workerName=null){
    RequireStandaloneQaEntry();Require(QaExclusiveSpawnHostConnected&&IntPtr.Size==8&&BitConverter.IsLittleEndian);
    Require(System.Text.RegularExpressions.Regex.IsMatch(name??"",@"\A[a-f0-9]{32}\z")&&System.Text.RegularExpressions.Regex.IsMatch(run??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(commit??"",@"\A[a-f0-9]{40}\z")&&start.Kind==DateTimeKind.Utc&&end.Kind==DateTimeKind.Utc&&end>start&&(end-start).TotalMinutes<=30&&DateTime.UtcNow>=start&&(end-DateTime.UtcNow).TotalSeconds>=75);
-   QaFixedImageSpec.RequireWorker(commit);var value=new QaFixedPinWorker(run,commit,start,end,name);Require(System.Threading.Interlocked.CompareExchange(ref originalWorker,value,null)==null);return value.Run();
+   Require(workerName==null||System.Text.RegularExpressions.Regex.IsMatch(workerName,@"\A[a-f0-9]{32}\z")&&workerName!=name);
+   QaFixedImageSpec.RequireWorker(commit);var value=new QaFixedPinWorker(run,commit,start,end,name,workerName);Require(System.Threading.Interlocked.CompareExchange(ref originalWorker,value,null)==null);return value.Run();
   }
   void Fresh(){
    DateTime now=DateTime.UtcNow;Require(Environment.CurrentManagedThreadId==ownerThread&&now>=lastWall&&now>=issued&&now<until&&clock.ElapsedMilliseconds<45000);lastWall=now;
@@ -1364,8 +1368,8 @@ internal static class DevelopmentRecoveryPathGuard {
    }
   }
   bool CloseOriginal(){
-   var cleanup=Stopwatch.StartNew();
-   if(pending){CancelIoEx(pipe,ioOverlapped);while(pending&&cleanup.ElapsedMilliseconds<15000){
+   if(!cleanupClock.IsRunning)cleanupClock.Start();
+   if(pending){CancelIoEx(pipe,ioOverlapped);while(pending&&cleanupClock.ElapsedMilliseconds<15000){
     uint count;bool done=GetOverlappedResult(pipe,ioOverlapped,out count,false);int error=done?0:Marshal.GetLastWin32Error();
     if(done||error==995||error==109||error==232||error==234){pending=false;break;}if(error!=996)break;uint wait=WaitForSingleObject(ioEvent,25);if(wait!=0&&wait!=258)break;
    }}
@@ -1376,11 +1380,82 @@ internal static class DevelopmentRecoveryPathGuard {
    try{if(pipe!=null){pipe.Dispose();closeUnknown|=!pipe.IsInvalid&&(!pipe.CloseAttempted||!pipe.CloseSucceeded);}}catch{closeUnknown=true;}
    return !closeUnknown;
   }
+  uint InnerActiveCount(){
+   Require(innerJob!=null&&!innerJob.IsInvalid&&!innerJob.IsClosed);IntPtr buffer=Marshal.AllocHGlobal(8+IntPtr.Size);
+   try{uint returned;Require(QueryInformationJobObject(innerJob,3,buffer,(uint)(8+IntPtr.Size),out returned)&&returned>=8&&returned<=8+IntPtr.Size);int total=Marshal.ReadInt32(buffer),listed=Marshal.ReadInt32(buffer,4);Require(total>=0&&total<=1&&listed==total);if(total==1)Require(ownedWorker!=null&&Marshal.ReadIntPtr(buffer,8).ToInt64()==ownedWorker.Pid);return(uint)total;}finally{Marshal.FreeHGlobal(buffer);}
+  }
+  void PinOwnWorkerImage(SecurityIdentifier owner){
+   Fresh();KernelHandle at=CreateFileW(@"\\?\D:\",ReadControl|ReadAttributes|Synchronize|0x20u,ShareRead|ShareWrite,IntPtr.Zero,3,BackupSemantics|OpenReparse,IntPtr.Zero);ownImagePins.Add(at);Read(at,@"D:\",true);RequireNtfs(at);string path=@"D:\";
+   string[] names=QaFixedImageSpec.WorkerImage.Substring(3).Split('\\');for(int i=0;i<names.Length;i++){Fresh();path=Path.Combine(path,names[i]);at=Relative(at,names[i],i<names.Length-1,false,owner);ownImagePins.Add(at);Read(at,path,i<names.Length-1);if(path.StartsWith(DataRoot,StringComparison.Ordinal))Security(at,owner,true);}Fresh();
+  }
+  void CreateOwnedWorker(){
+   Fresh();Require(guardianMode&&!workerAttempted&&ownedWorker==null&&innerJob==null);workerAttempted=true;
+   SecurityIdentifier owner;using(var identity=WindowsIdentity.GetCurrent())owner=identity.User;Require(owner!=null);PinOwnWorkerImage(owner);
+   innerJob=CreateJobObjectW(IntPtr.Zero,null);Require(innerJob!=null&&!innerJob.IsInvalid);uint flags;Require(GetHandleInformation(innerJob,out flags)&&flags==0);
+   var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000u|0x8u,ActiveProcesses=1}};uint length=(uint)Marshal.SizeOf(typeof(ExtendedLimits));Require(SetInformationJobObject(innerJob,9,ref limits,length));
+   IntPtr check=Marshal.AllocHGlobal((int)length);try{uint returned;Require(QueryInformationJobObject(innerJob,9,check,length,out returned)&&returned==length);var observed=(ExtendedLimits)Marshal.PtrToStructure(check,typeof(ExtendedLimits));Require(observed.Basic.Flags==limits.Basic.Flags&&observed.Basic.ActiveProcesses==1);}finally{Marshal.FreeHGlobal(check);}Require(InnerActiveCount()==0);
+   IntPtr attributes=IntPtr.Zero,jobValue=IntPtr.Zero,environment=IntPtr.Zero;bool initialized=false;
+   try{
+    UIntPtr size=UIntPtr.Zero;bool first=InitializeProcThreadAttributeList(IntPtr.Zero,1,0,ref size);int error=Marshal.GetLastWin32Error();Require(!first&&error==122&&size.ToUInt64()>0&&size.ToUInt64()<=1048576);
+    attributes=Marshal.AllocHGlobal((int)size.ToUInt64());Require(InitializeProcThreadAttributeList(attributes,1,0,ref size));initialized=true;jobValue=Marshal.AllocHGlobal(IntPtr.Size);Marshal.WriteIntPtr(jobValue,innerJob.DangerousGetHandle());Require(UpdateProcThreadAttribute(attributes,0,new UIntPtr(0x2000d),jobValue,new UIntPtr((uint)IntPtr.Size),IntPtr.Zero,IntPtr.Zero));
+    environment=Marshal.StringToHGlobalUni("DOTNET_EnableDiagnostics=0\0SystemRoot=C:\\Windows\0WINDIR=C:\\Windows\0\0");
+    var startup=new StartupEx{Startup=new StartupInfo{Size=(uint)Marshal.SizeOf(typeof(StartupEx))},Attributes=attributes};NativeProcessInformation raw;DateTime requested=DateTime.UtcNow;Fresh();
+    string arguments="\""+QaFixedImageSpec.WorkerImage+"\" PIN_WORKER "+runId+" "+sourceCommit+" "+issued.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)+" "+workerPipeId;
+    bool created=CreateProcessW(QaFixedImageSpec.WorkerImage,new StringBuilder(arguments),IntPtr.Zero,IntPtr.Zero,false,0x4u|0x80000u|0x8000000u|0x400u,environment,QaFixedImageSpec.ArtifactRoot,ref startup,out raw);
+    if(!created){unknownCreateOutput=raw.Process!=IntPtr.Zero||raw.Thread!=IntPtr.Zero;throw Denied();}
+    ownedWorker=new ProcessInformation{Process=new KernelHandle(raw.Process),Thread=new KernelHandle(raw.Thread),Pid=raw.Pid};Require(!ownedWorker.Process.IsInvalid&&!ownedWorker.Thread.IsInvalid);
+    uint processFlags,threadFlags;Require(GetHandleInformation(ownedWorker.Process,out processFlags)&&processFlags==0&&GetHandleInformation(ownedWorker.Thread,out threadFlags)&&threadFlags==0);
+    Require(GetProcessId(ownedWorker.Process)==ownedWorker.Pid&&WaitForSingleObject(ownedWorker.Process,0)==258);bool member;Require(IsProcessInJob(ownedWorker.Process,innerJob,out member)&&member);OwnedRuntime.CheckOwner(ownedWorker.Process,owner);
+    var image=new StringBuilder(8192);uint capacity=8192;Require(QueryFullProcessImageNameW(ownedWorker.Process,0,image,ref capacity)&&image.ToString()==QaFixedImageSpec.WorkerImage);FileTime begun,ended,kernel,user;Require(GetProcessTimes(ownedWorker.Process,out begun,out ended,out kernel,out user)&&begun.Ticks>=requested.ToFileTimeUtc()&&begun.Ticks<until.ToFileTimeUtc());ownedWorker.Created=begun.Ticks;Require(InnerActiveCount()==1);Fresh();
+   }finally{if(initialized)DeleteProcThreadAttributeList(attributes);if(attributes!=IntPtr.Zero)Marshal.FreeHGlobal(attributes);if(jobValue!=IntPtr.Zero)Marshal.FreeHGlobal(jobValue);if(environment!=IntPtr.Zero)Marshal.FreeHGlobal(environment);}
+  }
+  bool CloseGuardianOwned(){
+   if(!cleanupClock.IsRunning)cleanupClock.Start();bool unknown=unknownCreateOutput;
+   if(ownedWorker!=null){
+    try{
+     uint wait=WaitForSingleObject(ownedWorker.Process,0);Require(wait==0||wait==258);
+     if(wait==258){Require(TerminateProcess(ownedWorker.Process,0xa6710002u));long remaining=15000-cleanupClock.ElapsedMilliseconds;Require(remaining>0&&WaitForSingleObject(ownedWorker.Process,(uint)remaining)==0);}
+     RecordWorkerExit();
+    }catch{unknown=true;}
+   }
+   if(innerJob!=null&&!innerJob.IsInvalid){try{if(InnerActiveCount()!=0){Require(TerminateJobObject(innerJob,124));while(InnerActiveCount()!=0&&cleanupClock.ElapsedMilliseconds<15000)System.Threading.Thread.Sleep(25);Require(InnerActiveCount()==0);}}catch{unknown=true;}}
+   // 살아 있는 원 W 또는 Job 잔여를 닫힘으로 꾸미지 않는다. G 자기 종료의 원 Job close도 실행 delta다.
+   if(unknown){closeUnknown=true;return false;}
+   if(ownedWorker!=null){try{ownedWorker.Thread.Dispose();ownedWorker.Process.Dispose();unknown|=!ownedWorker.Thread.CloseSucceeded||!ownedWorker.Process.CloseSucceeded;}catch{unknown=true;}}
+   for(int i=ownImagePins.Count-1;i>=0;i--)try{ownImagePins[i].Dispose();unknown|=!ownImagePins[i].IsInvalid&&!ownImagePins[i].CloseSucceeded;}catch{unknown=true;}
+   try{if(innerJob!=null){innerJob.Dispose();unknown|=!innerJob.IsInvalid&&!innerJob.CloseSucceeded;}}catch{unknown=true;}
+   closeUnknown|=unknown;return !unknown;
+  }
+  void OpenOriginalPipe(){
+   Fresh();pipe=CreateFileW(@"\\.\pipe\anvil-v3-qa-"+pipeId,0xc0000000u,0,IntPtr.Zero,3,0x40000000u|0x100000u|0x10000u,IntPtr.Zero);Require(pipe!=null&&!pipe.IsInvalid&&GetFileType(pipe)==3);uint flags;Require(GetHandleInformation(pipe,out flags)&&flags==0);uint mode=2;Require(SetNamedPipeHandleState(pipe,ref mode,IntPtr.Zero,IntPtr.Zero));
+  }
+  int RecordWorkerExit(){
+   Require(Environment.CurrentManagedThreadId==ownerThread&&ownedWorker!=null&&WaitForSingleObject(ownedWorker.Process,0)==0);uint code;Require(GetExitCodeProcess(ownedWorker.Process,out code)&&(!observedWorkerExit.HasValue||observedWorkerExit.Value==code));observedWorkerExit=code;
+   return code==81?81:code==82?82:code==83?83:84;
+  }
+  int DeadlineWorkerResult(){
+   try{if(ownedWorker==null||WaitForSingleObject(ownedWorker.Process,0)!=0)return 83;int actual=RecordWorkerExit();return actual==82?83:actual;}catch{return 84;}
+  }
+  int RunGuardian(){
+   int result=84;bool deadlineExpired=false,stopReceived=false;
+   try{
+    deadline=10000;OpenOriginalPipe();Io(QaFixedFrame(2,1,1,binding,new byte[0]));CreateOwnedWorker();byte[] created=new byte[28];
+    Buffer.BlockCopy(BitConverter.GetBytes(ownedWorker.Process.DangerousGetHandle().ToInt64()),0,created,0,8);Buffer.BlockCopy(BitConverter.GetBytes(innerJob.DangerousGetHandle().ToInt64()),0,created,8,8);Buffer.BlockCopy(BitConverter.GetBytes(ownedWorker.Pid),0,created,16,4);Buffer.BlockCopy(BitConverter.GetBytes(ownedWorker.Created),0,created,20,8);
+    Io(QaFixedFrame(2,2,2,binding,created));byte[] expected=new byte[36];Buffer.BlockCopy(BitConverter.GetBytes(3u),0,expected,0,4);using(var hash=SHA256.Create())Buffer.BlockCopy(hash.ComputeHash(created),0,expected,4,32);Require(QaEqualBytes(QaFixedPayload(Io(null),1,5,3,binding),expected));
+    Require(WaitForSingleObject(ownedWorker.Process,0)==258&&ResumeThread(ownedWorker.Thread)==1);Io(QaFixedFrame(2,7,4,binding,BitConverter.GetBytes(ownedWorker.Pid)));
+    deadline=Math.Min(45000,clock.ElapsedMilliseconds+10000);Require(QaFixedPayload(Io(null),1,8,5,binding).Length==0);Require(WaitForSingleObject(ownedWorker.Process,0)==258&&InnerActiveCount()==1);Io(QaFixedFrame(2,8,6,binding,new byte[0]));
+    deadline=Math.Min(45000,clock.ElapsedMilliseconds+25000);Require(QaFixedPayload(Io(null),1,6,7,binding).Length==0);stopReceived=true;deadline=Math.Min(45000,clock.ElapsedMilliseconds+5000);
+    while(WaitForSingleObject(ownedWorker.Process,0)==258){Fresh();System.Threading.Thread.Sleep(25);}result=RecordWorkerExit();Require(InnerActiveCount()==0);
+   }catch(TimeoutException){deadlineExpired=true;result=DeadlineWorkerResult();}
+   catch(InvalidOperationException){result=83;}catch{result=84;}
+   finally{bool workerClosed=CloseGuardianOwned();bool pipeClosed=CloseOriginal();if((deadlineExpired||stopReceived)&&observedWorkerExit==81)result=81;if(observedWorkerExit==84||!workerClosed||!pipeClosed)result=84;}
+   return result;
+  }
   int Run(){
+   if(guardianMode)return RunGuardian();
    int result=84;bool acknowledged=false;
    try{
-    deadline=10000;Fresh();pipe=CreateFileW(@"\\.\pipe\anvil-v3-qa-"+pipeId,0xc0000000u,0,IntPtr.Zero,3,0x40000000u|0x100000u|0x10000u,IntPtr.Zero);
-    Require(pipe!=null&&!pipe.IsInvalid&&GetFileType(pipe)==3);uint flags;Require(GetHandleInformation(pipe,out flags)&&flags==0);uint mode=2;Require(SetNamedPipeHandleState(pipe,ref mode,IntPtr.Zero,IntPtr.Zero));
+    deadline=10000;OpenOriginalPipe();
     Io(QaFixedFrame(3,1,1,binding,new byte[0]));byte[] staged=QaFixedPayload(Io(null),1,3,2,binding);CaptureOriginalPins(staged);
     byte[] ack=new byte[36];Buffer.BlockCopy(BitConverter.GetBytes(3u),0,ack,0,4);using(var hash=SHA256.Create())Buffer.BlockCopy(hash.ComputeHash(staged),0,ack,4,32);
     Io(QaFixedFrame(3,4,3,binding,ack));acknowledged=true;deadline=clock.ElapsedMilliseconds+25000;
@@ -1393,6 +1468,7 @@ internal static class DevelopmentRecoveryPathGuard {
   }
  }
  internal static int RunFixedPinWorker(string run,string commit,DateTime issued,DateTime until,string pipeId){return QaFixedPinWorker.RunOnce(run,commit,issued,until,pipeId);}
+ internal static int RunFixedGuardian(string run,string commit,DateTime issued,DateTime until,string pipeId,string workerPipeId){return QaFixedPinWorker.RunOnce(run,commit,issued,until,pipeId,workerPipeId);}
  internal static void RequireStandaloneQaEntry(){
   Require(QaAdapterConnected);
   System.Reflection.Assembly own=typeof(DevelopmentRecoveryQaHost).Assembly,entry=System.Reflection.Assembly.GetEntryAssembly();
@@ -1417,13 +1493,14 @@ public sealed class DevelopmentRecoveryQaHost {
   DevelopmentRecoveryQaHost host=null;string[][] report=null;bool unconfirmed=false;
   try{
    DevelopmentRecoveryPathGuard.RequireStandaloneQaEntry();
-   bool pinWorker=args!=null&&args.Length==6&&args[0]=="PIN_WORKER";
-   if(args==null||args.Length!=5&&!pinWorker||!System.Text.RegularExpressions.Regex.IsMatch(args[1]??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")||!System.Text.RegularExpressions.Regex.IsMatch(args[2]??"",@"\A[a-f0-9]{40}\z"))throw new InvalidOperationException();
+   bool pinWorker=args!=null&&args.Length==6&&args[0]=="PIN_WORKER",guardian=args!=null&&args.Length==7&&args[0]=="GUARDIAN";
+   if(args==null||args.Length!=5&&!pinWorker&&!guardian||!System.Text.RegularExpressions.Regex.IsMatch(args[1]??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")||!System.Text.RegularExpressions.Regex.IsMatch(args[2]??"",@"\A[a-f0-9]{40}\z"))throw new InvalidOperationException();
    DateTime issued,until;
    if(!DateTime.TryParseExact(args[3],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out issued)||
     !DateTime.TryParseExact(args[4],"o",System.Globalization.CultureInfo.InvariantCulture,System.Globalization.DateTimeStyles.RoundtripKind,out until)||
     issued.Kind!=DateTimeKind.Utc||until.Kind!=DateTimeKind.Utc||until<=issued||(until-issued).TotalMinutes>30||DateTime.UtcNow<issued||DateTime.UtcNow>=until)throw new InvalidOperationException();
    if(pinWorker)return DevelopmentRecoveryPathGuard.RunFixedPinWorker(args[1],args[2],issued,until,args[5]);
+   if(guardian)return DevelopmentRecoveryPathGuard.RunFixedGuardian(args[1],args[2],issued,until,args[5],args[6]);
    if(args[0]=="CHILD_PIN_LIFETIME"){
     var original=DevelopmentRecoveryPathGuard.QaStandalonePinRun.Begin(args[1],args[2],issued,until);
     host=new DevelopmentRecoveryQaHost(DevelopmentRecoveryPathGuard.QaOwnedRunHost.CreateForStandalonePinRun(original));
