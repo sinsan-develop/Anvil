@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 UI02 고정 참조 준비 요구 조회**: 생성3단계에 기존 GET·exact ref/graph hash를 소비하는 명시 조회·닫기를 연결했다. 신규8/인접포함21통과·type/build0·scoped C0/I0/M0, 입력/저장/생성 변경0. 실제 React 전환/ABA·served/DB는 미확인이며 총괄/환경 선택·실제 준비 판정과 전체 UI02 완료를 의미하지 않는다.
+
 - **2026-10-25 UI03/FN02·UI06/FN03 저장 검토 상세보기**: 공통/프로젝트 방법론·양식의 기존 contentReviews.items를 기본 접힘으로 표시하며 과거 기준/판정·이유·빈/손상 정보를 구분한다. 손상응답 렌더 오류 보완 후 scoped C0/I0/M0·집중15통과(type/build 및 인접17의 선행증거는 WORK_STATUS). 새 API/SQL·확정/권한 변경0, 실제 DB/served/사용자 인수 미확인·전체 업무는 부분 구현 상태를 유지한다.
 
 - **2026-10-25 C측 G/JG capture source**: 원 G peer·W/JG 제한복제·JC선행확인/JG대조·pin/RESUME/ACK·JGquery close·ARMED·양쪽 STOP/JC0/회수를 원 흐름에 연결했다. 보정본 정적 C0/I0/M0·native/OS/TDD NOT_RUN이며 G 본문7argv가 아직 없어 전체flow는 실행 불가다. G/JG/W body·유실/보고/trust는 후속 미완료다.

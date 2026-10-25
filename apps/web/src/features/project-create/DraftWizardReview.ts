@@ -1,8 +1,8 @@
-import {createElement as h} from 'react';
+import {createElement as h,type ReactNode} from 'react';
 import type {DraftEditorState} from './api.ts';
 
 /** 이 탭의 입력·저장 기록만 표시한다. 총괄·환경 선택이나 실제 준비/권한 판정은 하지 않는다. */
-export function DraftWizardReview({buffer,step}:{buffer:DraftEditorState;step:3|4}){
+export function DraftWizardReview({buffer,step,pinnedRequirements}:{buffer:DraftEditorState;step:3|4;pinnedRequirements?:ReactNode}){
  if(step===3)return h('section',{'aria-label':'총괄·환경 준비 상태'},h('h3',null,'총괄·환경 준비 상태'),
   h('dl',null,h('dt',null,'총괄 세션'),h('dd',null,'이 생성 화면의 선택 미구현 · 준비 필요'),h('dt',null,'코딩 Agent·개발환경'),h('dd',null,'이 생성 화면의 선택 미구현 · 실제 연결 미확인'),h('dt',null,'실행 권한'),h('dd',null,'미확인 · 이 화면에서 부여하지 않음')),
   buffer.input.methodologySelection?.kind==='NEW_PROJECT_DRAFT'?h('details',null,h('summary',null,'방법론 초안의 준비 요구'),
@@ -10,7 +10,7 @@ export function DraftWizardReview({buffer,step}:{buffer:DraftEditorState;step:3|
    buffer.input.methodologySelection.graph.nodes.length?buffer.input.methodologySelection.graph.nodes.map((node,index)=>h('section',{key:index},h('h4',null,`${node.nodeId} · ${node.name}`),
     h('h5',null,'요구 능력'),node.requirements?.capabilities.length?h('ul',null,node.requirements.capabilities.map((value,item)=>h('li',{key:item},value))):h('p',null,'요구 능력 미작성'),
     h('h5',null,'요구 환경'),node.requirements?.environment.length?h('ul',null,node.requirements.environment.map((value,item)=>h('li',{key:item},value))):h('p',null,'요구 환경 미작성'))):h('p',null,'방법론 단계 미작성')):
-   h('p',null,buffer.input.methodologySelection?'고정 방법론의 요구 정의는 이 화면에서 아직 조회하지 않았습니다.':'방법론 선택 전이므로 요구 정의 미확인'),
+   buffer.input.methodologySelection&&pinnedRequirements?pinnedRequirements:h('p',null,buffer.input.methodologySelection?'고정 방법론의 요구 정의는 이 화면에서 아직 조회하지 않았습니다.':'방법론 선택 전이므로 요구 정의 미확인'),
   h('p',null,'미연결 항목을 준비 필요 상태로 저장할 수 있습니다. 환경이나 Agent가 준비됐다고 판정하지 않습니다.'),
   h('p',null,'현재 입력은 이전/다음 이동으로 지우지 않습니다. 생성은 Agent 실행이 아닙니다.'));
  const input=buffer.input,method=input.methodologySelection;

@@ -6,6 +6,7 @@ import { DraftReviewPanel } from './DraftReviewPanel.tsx';
 import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 import {draftWizardStep,moveDraftWizardStep} from './draft-wizard.ts';
 import {DraftWizardReview} from './DraftWizardReview.ts';
+import {PinnedMethodRequirements} from './PinnedMethodRequirements.tsx';
 import {createDraftMutationGate} from './draft-mutation-gate.ts';
 
 const nextLabels:Record<number,string>={1:'방법론·자료로 다음',2:'총괄·환경으로 다음',3:'생성 전 확인으로 다음'};
@@ -123,7 +124,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     </form>
     {step === 2 ? <MethodologySelection client={client} previewContext={JSON.stringify([session.user.id, session.clientId, buffer.draftId])} value={buffer.input.methodologySelection} confirmed={!buffer.dirty && !!buffer.methodologyState?.confirmation} disabled={locked} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
     {step === 2 ? <DraftReviewPanel buffer={buffer} session={session} disabled={locked} onChange={onChange} onExecute={command => { void action(command); }} /> : null}
-    {step===3||step===4?<DraftWizardReview buffer={buffer} step={step}/>:null}
+    {step===3||step===4?<DraftWizardReview buffer={buffer} step={step} pinnedRequirements={step===3&&buffer.input.methodologySelection?.kind==='CONFIRMED_REFERENCE'?<PinnedMethodRequirements client={client} userId={session.user.id} clientId={session.clientId} draftId={buffer.draftId} reference={buffer.input.methodologySelection.versionRef} onAuthenticationLost={onAuthenticationLost}/>:null}/>:null}
     {buffer.draftId ? <p role="status">초안 버전 {buffer.version} · {buffer.draftId}{buffer.dirty ? ' · 미저장 입력 있음' : ''}</p> : null}
     <p className="meta">입력은 화면 이동·로그인 만료 중 이 탭에 보존됩니다. 서버 저장 전 탭 종료/새로고침에는 확인이 필요합니다.</p>
     {step>1?<button disabled={!canPrevious} onClick={()=>move(step-1)}>{previousLabels[step]}</button>:null}
