@@ -1,0 +1,304 @@
+-- FN15 source-only 후보. 파일 확장자는 .sql.pending이며 자동 migration 목록에 포함하지 않는다.
+-- 실제 PostgreSQL 구문·동시성·권한·COMMIT은 실행하지 않았다. 실제 adapter/GRANT/제어 변경은 없다.
+-- 기존 공용 commands/authorization_receipts/audit_events 및 project_control은 수정하지 않는다.
+-- execution_json_hash의 TypeScript canonicalJson/contentHash 동등성은 실제 PG에서 검증하지 않았다.
+
+CREATE FUNCTION anvil.fn15_source_ref_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+ IF anvil.execution_json_shape(v,ARRAY['id','version','contentHash']) IS NOT TRUE
+  OR jsonb_typeof(v->'id') IS DISTINCT FROM 'string'
+  OR v->>'id' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR jsonb_typeof(v->'version') IS DISTINCT FROM 'number'
+  OR v->>'version' !~ '^[1-9][0-9]{0,15}$'
+  OR (v->>'version')::numeric>9007199254740991
+  OR jsonb_typeof(v->'contentHash') IS DISTINCT FROM 'string'
+  OR v->>'contentHash' !~ '^[0-9a-f]{64}$' THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.fn15_source_basis_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE k text;
+BEGIN
+ IF anvil.execution_json_shape(v,ARRAY['actorId','clientId','generation','version']) IS NOT TRUE THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['actorId','clientId'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string'
+   OR v->>k !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RETURN false;END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['generation','version'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'number' OR v->>k !~ '^[1-9][0-9]{0,15}$'
+   OR (v->>k)::numeric>9007199254740991 THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.fn15_source_collection_valid(v jsonb,pid uuid,observed timestamptz)
+RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE item jsonb;state text;reason text;
+BEGIN
+ IF anvil.execution_json_shape(v,ARRAY['status','observedAt','reasonCode','refs']) IS NOT TRUE
+  OR anvil.execution_iso_valid(v->'observedAt') IS NOT TRUE
+  OR jsonb_typeof(v->'status') IS DISTINCT FROM 'string'
+  OR jsonb_typeof(v->'reasonCode') IS DISTINCT FROM 'string'
+  OR (v->>'observedAt')::timestamptz>observed OR jsonb_typeof(v->'refs') IS DISTINCT FROM 'array'
+  OR jsonb_array_length(v->'refs')>200 THEN RETURN false;END IF;
+ state=v->>'status';reason=v->>'reasonCode';
+ IF (state='SYNTHETIC_OBSERVED' AND (reason<>'SYNTHETIC_REFS' OR jsonb_array_length(v->'refs')=0))
+  OR (state='EMPTY_SYNTHETIC' AND (reason<>'SYNTHETIC_EMPTY' OR jsonb_array_length(v->'refs')<>0))
+  OR (state='UNVERIFIED' AND (reason NOT IN('COLLECTOR_NOT_CONNECTED','COLLECTOR_MISSING','COLLECTOR_ERROR','COLLECTION_LIMIT_EXCEEDED','COLLECTION_PARTIAL')
+    OR (jsonb_array_length(v->'refs')>0 AND reason<>'COLLECTION_PARTIAL')))
+  OR state NOT IN('SYNTHETIC_OBSERVED','EMPTY_SYNTHETIC','UNVERIFIED') THEN RETURN false;END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(v->'refs') LOOP
+  IF anvil.execution_json_shape(item,ARRAY['projectId','ref']) IS NOT TRUE
+   OR item->>'projectId' IS DISTINCT FROM pid::text
+   OR anvil.fn15_source_ref_valid(item->'ref') IS NOT TRUE THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE TABLE anvil.control_handoff_source_requests (
+ project_id uuid NOT NULL REFERENCES anvil.projects(id), id uuid NOT NULL,
+ version bigint NOT NULL DEFAULT 1 CHECK(version=1),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ snapshot_json jsonb NOT NULL, metadata_json jsonb NOT NULL,
+ requested_by uuid NOT NULL, client_id uuid NOT NULL,
+ source_command_id uuid NOT NULL, created_at timestamptz NOT NULL, expires_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id,version), UNIQUE(project_id,id,version,content_hash),
+ UNIQUE(project_id,source_command_id),
+ FOREIGN KEY(project_id,requested_by) REFERENCES anvil.project_members(project_id,user_id),
+ FOREIGN KEY(requested_by,client_id) REFERENCES anvil.clients(user_id,id),
+ CHECK(expires_at>created_at AND expires_at<=created_at+interval '30 minutes'
+  AND created_at=date_trunc('milliseconds',created_at)
+  AND expires_at=date_trunc('milliseconds',expires_at)),
+ CHECK(anvil.execution_json_shape(snapshot_json,ARRAY['id','version','projectId','requestedBy',
+  'targetActorRef','targetClientRef','baseControl','reason','createdAt','expiresAt',
+  'storedState','executionAuthorized','controlTransferred']) IS TRUE),
+ CHECK(content_hash=anvil.execution_json_hash(snapshot_json)),
+ CHECK(octet_length(anvil.execution_authority_canonical(snapshot_json))<=2097152)
+);
+CREATE INDEX control_handoff_source_requests_own ON anvil.control_handoff_source_requests
+ (project_id,requested_by,created_at DESC,id DESC);
+CREATE INDEX control_handoff_source_requests_all ON anvil.control_handoff_source_requests
+ (project_id,created_at DESC,id DESC);
+
+CREATE TABLE anvil.control_handoff_source_summaries (
+ project_id uuid NOT NULL,request_id uuid NOT NULL,request_version bigint NOT NULL DEFAULT 1 CHECK(request_version=1),
+ request_hash text NOT NULL CHECK(request_hash~'^[0-9a-f]{64}$'),
+ version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ body_json jsonb NOT NULL,metadata_json jsonb NOT NULL,source_command_id uuid NOT NULL,
+ observed_at timestamptz NOT NULL,valid_until timestamptz NOT NULL,
+ PRIMARY KEY(project_id,request_id,version),
+ UNIQUE(project_id,request_id,version,content_hash),UNIQUE(project_id,source_command_id),
+ FOREIGN KEY(project_id,request_id,request_version,request_hash)
+  REFERENCES anvil.control_handoff_source_requests(project_id,id,version,content_hash)
+  DEFERRABLE INITIALLY DEFERRED,
+ CHECK(valid_until>observed_at AND valid_until<=observed_at+interval '30 seconds'
+  AND observed_at=date_trunc('milliseconds',observed_at)
+  AND valid_until=date_trunc('milliseconds',valid_until)),
+ CHECK(anvil.execution_json_shape(body_json,ARRAY['projectId','requestRef','version','controller',
+  'baseControl','observedAt','validUntil','activeExecutions','pendingCommands','pendingApprovals',
+  'sourceCheckpointRefs','gaps','safetyState','sourceMode','realCollectorsConnected',
+  'acceptanceEnabled','executionAuthorized','controlTransferred']) IS TRUE),
+ CHECK(content_hash=anvil.execution_json_hash(body_json)),
+ CHECK(octet_length(anvil.execution_authority_canonical(body_json))<=2097152)
+);
+
+CREATE TABLE anvil.control_handoff_source_commands (
+ command_id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES anvil.projects(id),
+ operation text NOT NULL CHECK(operation IN('requestControl','prepareControlHandoff')),
+ actor_id uuid NOT NULL,client_id uuid NOT NULL,
+ request_id uuid NOT NULL,request_version bigint NOT NULL DEFAULT 1 CHECK(request_version=1),
+ request_hash text NOT NULL CHECK(request_hash~'^[0-9a-f]{64}$'),
+ summary_version bigint,summary_hash text,
+ base_control_json jsonb NOT NULL,command_json jsonb NOT NULL,
+ command_hash text NOT NULL CHECK(command_hash~'^[0-9a-f]{64}$'),
+ payload_hash text NOT NULL CHECK(payload_hash~'^[0-9a-f]{64}$'),created_at timestamptz NOT NULL,
+ UNIQUE(project_id,command_id),
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id),
+ FOREIGN KEY(project_id,request_id,request_version,request_hash)
+  REFERENCES anvil.control_handoff_source_requests(project_id,id,version,content_hash)
+  DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,request_id,summary_version,summary_hash)
+  REFERENCES anvil.control_handoff_source_summaries(project_id,request_id,version,content_hash)
+  DEFERRABLE INITIALLY DEFERRED,
+ CHECK((operation='requestControl' AND summary_version IS NULL AND summary_hash IS NULL)
+  OR (operation='prepareControlHandoff' AND summary_version BETWEEN 1 AND 9007199254740991
+   AND summary_hash~'^[0-9a-f]{64}$')),
+ CHECK(anvil.fn15_source_basis_valid(base_control_json) IS TRUE),
+ CHECK(command_hash=anvil.execution_json_hash(command_json)
+  AND payload_hash=anvil.execution_json_hash(command_json->'payload'))
+);
+CREATE UNIQUE INDEX control_handoff_source_request_command_once
+ ON anvil.control_handoff_source_commands(project_id,request_id,request_version)
+ WHERE operation='requestControl';
+CREATE UNIQUE INDEX control_handoff_source_summary_command_once
+ ON anvil.control_handoff_source_commands(project_id,request_id,summary_version)
+ WHERE operation='prepareControlHandoff';
+
+CREATE TABLE anvil.control_handoff_source_receipts (
+ command_id uuid PRIMARY KEY,project_id uuid NOT NULL,body_json jsonb NOT NULL,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.control_handoff_source_commands(project_id,command_id)
+  DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE anvil.control_handoff_source_audits (
+ command_id uuid PRIMARY KEY,project_id uuid NOT NULL,body_json jsonb NOT NULL,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.control_handoff_source_commands(project_id,command_id)
+  DEFERRABLE INITIALLY DEFERRED
+);
+ALTER TABLE anvil.control_handoff_source_requests ADD CONSTRAINT control_handoff_source_request_command_fk
+ FOREIGN KEY(project_id,source_command_id)
+ REFERENCES anvil.control_handoff_source_commands(project_id,command_id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE anvil.control_handoff_source_summaries ADD CONSTRAINT control_handoff_source_summary_command_fk
+ FOREIGN KEY(project_id,source_command_id)
+ REFERENCES anvil.control_handoff_source_commands(project_id,command_id) DEFERRABLE INITIALLY DEFERRED;
+
+CREATE FUNCTION anvil.fn15_source_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'FN15_SOURCE_IMMUTABLE' USING ERRCODE='42501';END;$$;
+CREATE TRIGGER control_handoff_source_requests_immutable BEFORE UPDATE OR DELETE ON anvil.control_handoff_source_requests
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_immutable();
+CREATE TRIGGER control_handoff_source_summaries_immutable BEFORE UPDATE OR DELETE ON anvil.control_handoff_source_summaries
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_immutable();
+CREATE TRIGGER control_handoff_source_commands_immutable BEFORE UPDATE OR DELETE ON anvil.control_handoff_source_commands
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_immutable();
+CREATE TRIGGER control_handoff_source_receipts_immutable BEFORE UPDATE OR DELETE ON anvil.control_handoff_source_receipts
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_immutable();
+CREATE TRIGGER control_handoff_source_audits_immutable BEFORE UPDATE OR DELETE ON anvil.control_handoff_source_audits
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_immutable();
+
+-- 양방향 deferred 검사: 원문 한 행만 넣거나 command/receipt/audit만 넣어도 COMMIT 거절한다.
+CREATE FUNCTION anvil.fn15_source_assert_bundle(pid uuid,cid uuid) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE c anvil.control_handoff_source_commands%ROWTYPE;
+ r anvil.control_handoff_source_requests%ROWTYPE;
+ s anvil.control_handoff_source_summaries%ROWTYPE;
+ receipt anvil.control_handoff_source_receipts%ROWTYPE;
+ audit anvil.control_handoff_source_audits%ROWTYPE;
+ request_ref jsonb;summary_ref jsonb;payload jsonb;expected_gaps jsonb;category text;part jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.control_handoff_source_commands WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO receipt FROM anvil.control_handoff_source_receipts WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO audit FROM anvil.control_handoff_source_audits WHERE project_id=pid AND command_id=cid;
+ IF c.command_id IS NULL OR receipt.command_id IS NULL OR audit.command_id IS NULL
+  THEN RAISE EXCEPTION 'FN15_SOURCE_BUNDLE_INCOMPLETE' USING ERRCODE='42501';END IF;
+ SELECT * INTO r FROM anvil.control_handoff_source_requests
+  WHERE project_id=pid AND id=c.request_id AND version=c.request_version AND content_hash=c.request_hash;
+ IF r.id IS NULL THEN RAISE EXCEPTION 'FN15_SOURCE_REQUEST_MISSING' USING ERRCODE='42501';END IF;
+ request_ref=jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash);
+ IF anvil.fn15_source_ref_valid(request_ref) IS NOT TRUE
+  OR anvil.execution_iso_valid(r.snapshot_json->'createdAt') IS NOT TRUE
+  OR anvil.execution_iso_valid(r.snapshot_json->'expiresAt') IS NOT TRUE
+  OR anvil.fn15_source_basis_valid(r.snapshot_json->'baseControl') IS NOT TRUE
+  OR r.snapshot_json->'id' IS DISTINCT FROM to_jsonb(r.id)
+  OR r.snapshot_json->'version' IS DISTINCT FROM to_jsonb(r.version)
+  OR r.snapshot_json->'projectId' IS DISTINCT FROM to_jsonb(pid)
+  OR r.snapshot_json->'requestedBy' IS DISTINCT FROM jsonb_build_object('actorId',r.requested_by,'clientId',r.client_id)
+  OR r.snapshot_json->'targetActorRef' IS DISTINCT FROM jsonb_build_object('userId',r.requested_by)
+  OR r.snapshot_json->'targetClientRef' IS DISTINCT FROM jsonb_build_object('userId',r.requested_by,'clientId',r.client_id)
+  OR r.snapshot_json->>'createdAt' IS DISTINCT FROM to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+  OR r.snapshot_json->>'expiresAt' IS DISTINCT FROM to_char(r.expires_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+  OR r.snapshot_json->>'storedState' IS DISTINCT FROM 'PENDING'
+  OR r.snapshot_json->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb
+  OR r.snapshot_json->'controlTransferred' IS DISTINCT FROM 'false'::jsonb
+  OR r.metadata_json IS DISTINCT FROM r.snapshot_json-ARRAY['storedState','executionAuthorized','controlTransferred']
+  OR anvil.result_text_valid(r.snapshot_json->'reason',20000) IS NOT TRUE
+  OR length(btrim(coalesce(r.snapshot_json->>'reason',''),
+   U&'\0009\000A\000B\000C\000D\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000\FEFF'))=0
+  OR anvil.result_texts_safe(r.snapshot_json) IS NOT TRUE
+  THEN RAISE EXCEPTION 'FN15_SOURCE_REQUEST_INVALID' USING ERRCODE='42501';END IF;
+ IF receipt.body_json IS NULL OR audit.body_json IS NULL
+  OR receipt.body_json->'commandHash' IS DISTINCT FROM to_jsonb(c.command_hash)
+  OR audit.body_json->'commandHash' IS DISTINCT FROM to_jsonb(c.command_hash)
+  THEN RAISE EXCEPTION 'FN15_SOURCE_HISTORY_INVALID' USING ERRCODE='42501';END IF;
+ IF c.operation='requestControl' THEN
+  payload=r.snapshot_json-ARRAY['id','version','projectId','requestedBy','createdAt',
+   'storedState','executionAuthorized','controlTransferred'];
+  IF r.source_command_id IS DISTINCT FROM cid OR c.actor_id IS DISTINCT FROM r.requested_by
+   OR c.client_id IS DISTINCT FROM r.client_id OR c.created_at IS DISTINCT FROM r.created_at
+   OR c.base_control_json IS DISTINCT FROM r.snapshot_json->'baseControl'
+   OR c.command_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'operation','requestControl',
+    'commandId',cid,'projectId',pid,'clientId',c.client_id,'payload',payload)
+   OR receipt.body_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',cid,
+    'commandHash',c.command_hash,'projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+    'requestRef',request_ref,'outcome','REQUEST_STORED')
+   OR audit.body_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',cid,
+    'commandHash',c.command_hash,'projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+    'requestRef',request_ref,'event','CONTROL_REQUEST_STORED')
+   THEN RAISE EXCEPTION 'FN15_SOURCE_REQUEST_COMMAND_INVALID' USING ERRCODE='42501';END IF;
+ ELSE
+  SELECT * INTO s FROM anvil.control_handoff_source_summaries
+   WHERE project_id=pid AND request_id=c.request_id AND version=c.summary_version AND content_hash=c.summary_hash;
+  IF s.request_id IS NULL OR s.source_command_id IS DISTINCT FROM cid
+   OR s.request_version IS DISTINCT FROM r.version OR s.request_hash IS DISTINCT FROM r.content_hash
+   THEN RAISE EXCEPTION 'FN15_SOURCE_SUMMARY_MISSING' USING ERRCODE='42501';END IF;
+  summary_ref=jsonb_build_object('id',s.request_id,'version',s.version,'contentHash',s.content_hash);
+  IF anvil.fn15_source_ref_valid(summary_ref) IS NOT TRUE
+   OR (s.version>1 AND NOT EXISTS(SELECT 1 FROM anvil.control_handoff_source_summaries prior
+    WHERE prior.project_id=pid AND prior.request_id=s.request_id AND prior.version=s.version-1))
+   OR anvil.execution_iso_valid(s.body_json->'observedAt') IS NOT TRUE
+   OR anvil.execution_iso_valid(s.body_json->'validUntil') IS NOT TRUE
+   OR s.observed_at>=r.expires_at
+   OR s.valid_until IS DISTINCT FROM LEAST(s.observed_at+interval '30 seconds',r.expires_at)
+   OR s.body_json->'projectId' IS DISTINCT FROM to_jsonb(pid)
+   OR s.body_json->'requestRef' IS DISTINCT FROM request_ref
+   OR s.body_json->'version' IS DISTINCT FROM to_jsonb(s.version)
+   OR s.body_json->'controller' IS DISTINCT FROM r.snapshot_json->'baseControl'
+   OR s.body_json->'baseControl' IS DISTINCT FROM r.snapshot_json->'baseControl'
+   OR s.body_json->>'observedAt' IS DISTINCT FROM to_char(s.observed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+   OR s.body_json->>'validUntil' IS DISTINCT FROM to_char(s.valid_until AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+   OR s.body_json->>'sourceMode' IS DISTINCT FROM 'SYNTHETIC_ONLY'
+   OR s.body_json->'realCollectorsConnected' IS DISTINCT FROM 'false'::jsonb
+   OR s.body_json->'acceptanceEnabled' IS DISTINCT FROM 'false'::jsonb
+   OR s.body_json->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb
+   OR s.body_json->'controlTransferred' IS DISTINCT FROM 'false'::jsonb
+   OR s.metadata_json IS DISTINCT FROM jsonb_build_object('projectId',pid,'requestRef',request_ref,
+    'version',s.version,'controller',s.body_json->'controller','baseControl',s.body_json->'baseControl',
+    'observedAt',s.body_json->'observedAt','validUntil',s.body_json->'validUntil',
+    'safetyState',s.body_json->'safetyState')
+   THEN RAISE EXCEPTION 'FN15_SOURCE_SUMMARY_INVALID' USING ERRCODE='42501';END IF;
+  expected_gaps=jsonb_build_array('REAL_COLLECTOR_NOT_CONNECTED','TARGET_ELIGIBILITY_UNVERIFIED');
+  FOREACH category IN ARRAY ARRAY['activeExecutions','pendingCommands','pendingApprovals','sourceCheckpointRefs'] LOOP
+   part=s.body_json->category;
+   IF anvil.fn15_source_collection_valid(part,pid,s.observed_at) IS NOT TRUE
+    THEN RAISE EXCEPTION 'FN15_SOURCE_COLLECTION_INVALID' USING ERRCODE='42501';END IF;
+   IF part->>'status'='UNVERIFIED' THEN expected_gaps=expected_gaps||jsonb_build_array(part->>'reasonCode');END IF;
+  END LOOP;
+  IF s.body_json->'gaps' IS DISTINCT FROM expected_gaps
+   OR s.body_json->>'safetyState' IS DISTINCT FROM
+    CASE WHEN jsonb_array_length(s.body_json->'activeExecutions'->'refs')>0
+      OR jsonb_array_length(s.body_json->'pendingCommands'->'refs')>0
+      OR jsonb_array_length(s.body_json->'pendingApprovals'->'refs')>0 THEN 'WAITING' ELSE 'UNVERIFIED' END
+   OR c.actor_id::text IS DISTINCT FROM c.base_control_json->>'actorId'
+   OR c.client_id::text IS DISTINCT FROM c.base_control_json->>'clientId'
+   OR c.base_control_json IS DISTINCT FROM r.snapshot_json->'baseControl'
+   OR c.created_at IS DISTINCT FROM s.observed_at
+   OR c.command_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'operation','prepareControlHandoff',
+    'commandId',cid,'projectId',pid,'clientId',c.client_id,'payload',jsonb_build_object('requestRef',request_ref))
+   OR receipt.body_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',cid,
+    'commandHash',c.command_hash,'projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+    'requestRef',request_ref,'summaryRef',summary_ref,'outcome','SUMMARY_STORED')
+   OR audit.body_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',cid,
+    'commandHash',c.command_hash,'projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+    'requestRef',request_ref,'summaryRef',summary_ref,'event','CONTROL_HANDOFF_SUMMARY_STORED')
+   THEN RAISE EXCEPTION 'FN15_SOURCE_SUMMARY_COMMAND_INVALID' USING ERRCODE='42501';END IF;
+ END IF;
+END;$$;
+
+CREATE FUNCTION anvil.fn15_source_reverse_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_TABLE_NAME='control_handoff_source_requests' OR TG_TABLE_NAME='control_handoff_source_summaries'
+  THEN PERFORM anvil.fn15_source_assert_bundle(NEW.project_id,NEW.source_command_id);
+ ELSE PERFORM anvil.fn15_source_assert_bundle(NEW.project_id,NEW.command_id);END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER control_handoff_source_request_complete AFTER INSERT ON anvil.control_handoff_source_requests
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_reverse_complete();
+CREATE CONSTRAINT TRIGGER control_handoff_source_summary_complete AFTER INSERT ON anvil.control_handoff_source_summaries
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_reverse_complete();
+CREATE CONSTRAINT TRIGGER control_handoff_source_command_complete AFTER INSERT ON anvil.control_handoff_source_commands
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_reverse_complete();
+CREATE CONSTRAINT TRIGGER control_handoff_source_receipt_complete AFTER INSERT ON anvil.control_handoff_source_receipts
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_reverse_complete();
+CREATE CONSTRAINT TRIGGER control_handoff_source_audit_complete AFTER INSERT ON anvil.control_handoff_source_audits
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_source_reverse_complete();

@@ -1,4 +1,23 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 단위 3 — 미적용 저장 후보·합성 소비 검수 범위
+
+- 담당/소유: fn15_source_storage 구현, Main 통합·직접 시험·문서, fn15_storage_review 독립 정적 검수다. 신규 control-source-integration.test.ts와 0041_control_handoff_source.sql.pending만 추가, 기존 제품/SQL/manifest·role/GRANT·제어 변경0이다. 적용 대상 .sql68은 불변이고 pending 후보가 하나 늘었다.
+- 검증: Main6c26db source 소비3/3·skip0·191.5456ms/type/diff0. 생성→보호read/list→미확인요약→보호read·4묶음/hash·현재제어 불변·회수/타인 거절·중간 rollback·COMMIT불명 단발/replay를 합성 repository에서 확인했다. 초기4f1812의3실패/type1은 fixture 중복 access 오류이고 제품 RED로 분류하지 않는다. 최종 시험 SHA2F8843C466F5F33A8197F4F3B6253E00B8D9AEC4ED41AF7A0A18462225612B3E다.
+- SQL/검수: 신규 전용5표와 요청/요약·command/receipt/audit의 fullref/hash/metadata/operation·양방향 deferred FK/완전성·불변/중복 후보다. 독립 C0/I0/M1의 공백 사유 누락을 명시 trim 공백 집합의 비공백 조건2줄로 보완했다. 첫 patch는 추가 prefix 누락으로 a3de89 strict 적용 전 거절·변경0, D4E4A4D9를 c6a170 적용해 source SHA C6BD081FC7A70F8EAA68AC673CCE6F8E41549D98F2C3E5BB3C22833874B0E522/diff0이다. scoped CLOSED_STATIC·추가 C0/I0/M0이나 SQL/실PG 구문·Unicode 동등성·경합/FK/권한/COMMIT·TS/DB canonical 동등성은 NOT_RUN이다. 이 후보의 보관이 실제 DB 적용/서비스·사용자 기능 완료가 아니다.
+- 후속 결정: PMO는 WI4.1의 정확 다섯 경로/행렬·POSTGRES_SOURCE adapter/cursor의 기본 OFF 소스·합성 검증만 기존 승인 범위로 수용했다. 공개계약/수치·실제 활성화는 미채택, 실제 DB/키/서비스/Agent/제어전환은 제외다. Main이 다음 단일 writer를 배정하고 PMO 다음 배정을 기다리지 않는다. 전체계획/FN15/UI12는 미완료다.
+
+### 2026-10-26 FN15 단위 3 — 미적용 저장 후보·합성 통합 착수
+
+- 기준: 22662d91cbe66db736209dc5f3a404f3f565eb3a local/development exact, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean/보호8. 단위2C는 소유9경로로 게시됐고 전체FN15/실연결은 미완료다.
+- 담당/범위: 새 단일 writer fn15_source_storage에 신규 0041_control_handoff_source.sql.pending 후보와 직접 소비하는 inprocess 합성 통합시험 최대2경로만 배정했다. 기존SQL/적용manifest/일반 ProjectCommand/route/role/control은 변경0이다. 읽기전용 조사에서 .sql68/pending4·0041부재와 loader의 고정 *.sql만 소비를 확인했고 작성 직전 재확인한다. 과거baseControl을 가변현재control행FK에 묶지 않는다.
+- 검증: actual requestControl→보호read/list→미확인summary→보호read를 같은 fake repository에서 소비해 lineage/ref/hash·현재권한/회수·rollback/replay·실제falseflags를 대조한다. 이미 가능한 흐름의 시험이 처음부터 GREEN이면 RED를 꾸미거나 불필요adapter를 추가하지 않는다. pending SQL 구문/PG·동시성·실FK/권한/수집자/API/화면·Agent는 NOT_RUN이며 다음 실제실행을 승인한 것이 아니다.
+
+- 단위3 통합 첫결과: FECB965E 신규시험1파일3사례를 적용했다. Main4f1812의3실패/형식1진단은 fixture observation이 이미 project/access인데 다시 access에 넣은 시험자료 구조 오류였다. 제품·권한검사는 수정하지 않고 CA3257B2 한 줄 정정 후6c26db 실제 source 생성→보호조회/목록→미확인요약→보호조회3/3·skip0·191.5456ms/type/diff0이다. 이를 제품 신규 RED→GREEN으로 주장하지 않으며 기존제품이 서로 연결 가능한 한정 증거다. 동일 writer가 충돌 재확인 후 미적용0041후보만 작성 중이다.
+
+- 후속 연결 후보: PMO의 정확 상세화 요청에 따라 기존 WI4.1 한 절에 다섯 경로/DTO·오류·접근행렬·동일PoolClient/잠금·기존재인증소비·일반OWNER/정책불변·POSTGRES_SOURCE기본OFF·5표대응·합성HTTP/PoolClient와실PG NOT_RUN·rollback 후보를 삽입했다. WI SHA7AC890EEB49D7D7563EBBA45DD8A7300ECDABF01DE1F1C930A466DC9B441F6F2를PMO에전달했다. 미채택이며 mode/route/DB/서비스실행0, 신규계약채택·기존특정거절해소로해석하지않는다. 단위3은계속중이다.
+
+- 2C 게시후 정리: 소유9경로 commit22662d91/local·development exact와 main불변·tracked clean/보호8을 확인했다. 종료 writer의 cache generator가 고정출력 typefix.patch를 재사용해 마지막37DEF4로 덮은 사실을 확인했다(적용시 FBCE0C guard/실출력·최종소스지문은 정상). 현재 소유자/nonlink/정확hash·draft파일8 확인 후 task보조patch7+draft8파일15개만 literal정리, 별도조회 patch0/draft부재다. 두 문서 보존본449F7613/D79EA76B는 그대로다.
+
 ### 2026-10-26 FN15 단위 2C — 불변 미확인 안전 요약 검수 범위
 
 - 담당/변경: fn15_handoff_summary 단일 구현, Main patch통합·직접검증·기록, fn15_summary_review 독립 정적검수다. 신규 summary/summary-store2제품·fixture/시험3, 기존 read 내부4함수 export만 변경했고 기존 조회 로직·app/route·일반 권한·DB는 불변이다.

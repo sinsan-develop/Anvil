@@ -74,6 +74,50 @@ FN15 전체를 SELF 요청으로 축소하지 않는다. 다른 사람 인계·�
 
 정확 번호의 충돌·기존 migration 집합·loader를 확인한 뒤 새 `*.sql.pending` 파일만 추가한다. 기존 SQL·적용 manifest·실 DB는 수정하지 않는다. 요청·원문/버전·요약·명령/receipt/audit의 FK·불변 guard·중복 방지·완전성 요구를 소스 검수하고 fake/in-process로 검증한다. SQL/실 DB 동시성은 실행하지 않았으면 미검증이다.
 
+### 4.1 후속 연결 후보 — 정확 경로·인증·PG source 포트 (미채택)
+
+2026-10-26 PMO의 후속 상세화 요청에 따른 검토 후보다. 단위3은 계속하며 이 절만으로 route 등록·POSTGRES_SOURCE 허용·공개 DTO·DB/서비스 활성화를 승인하지 않는다. 기능의 부모는 INTERFACES §13.6/설계 §9.3/FN15 카드이며 acceptControl과 사람·기기 실제 제어 전환은 제외한다. 결정 대상은 아래 정확 wiring delta이고 전체 FN15 재승인이 아니다.
+
+**2026-10-26 PMO 한정 source 수용:** 부모 후보 SHA256 7AC890EEB49D7D7563EBBA45DD8A7300ECDABF01DE1F1C930A466DC9B441F6F2를 대조한 PMO가 정확 다섯 경로/FN15 전용 행렬/동일 PoolClient POSTGRES_SOURCE adapter/cursor wrapper의 기본 미등록·비활성 **소스 구현과 합성 검증**을 기존 승인 계획 안으로 판단했다. 전체 공개 계약·수치와 실제 활성화의 채택은 아니다. 일반 OWNER/ProjectCommand/정책·로그인/재인증 기간/키는 불변이며, 기본 OFF에서는 pool.connect/query도 0이어야 한다. 실제 등록/설정 활성화·DB/격리QA·migration/GRANT/정책·실계정/키·서비스/Agent/비용·accept/control/grant/generation 변경 및 기존 특정 거절은 해제하지 않는다. 이후 구현은 이 절의 소유파일/검증·rollback 경계만 따른다.
+**경로·입출력 후보** — 기존 `/api/v1/projects/:projectId/commands`를 사용하지 않는 FN15 별도 리소스다. 모든 UUID/ref/hash/version·정확 키·경로/본문 동일성을 검사하고 타 actor/filter 입력을 받지 않는다. 프로젝트 ID는 경로와 본문이 같아야 한다.
+
+| 메서드·정확 경로 | 입력·결과·접근 |
+|---|---|
+| POST `/api/v1/projects/:projectId/control-requests` | 기존 내부 `{schemaVersion:1,operation:'requestControl',commandId,projectId,clientId,payload:{targetActorRef,targetClientRef,baseControl,reason,expiresAt}}`와 동일한 정확 DTO. 현재 인증 client와 body clientId·targetClientRef가 같고 targetActorRef는 현재 사용자다. 원 source request result/ref/snapshot/receipt·false flags를 반환하며 실제 제어 변경0 |
+| GET `/api/v1/projects/:projectId/control-requests` | query는 view=OWN 또는 CONTROLLER, 선택 limit/cursor만. 결과는 기존 유한 목록 DTO 그대로이며 reason/body 제외, actor/client/기준은 서버 인증으로 고정 |
+| GET `/api/v1/projects/:projectId/control-requests/:requestId/versions/:requestVersion` | query contentHash 필수, requestVersion=1. 정확 원문/ref/현재 만료·기준 상태를 반환하며 본인 요청자 또는 정확 현재 controller만 가능 |
+| POST `/api/v1/projects/:projectId/control-requests/:requestId/versions/:requestVersion/handoff-summaries` | 내부 prepareControlHandoff 명령 DTO 그대로이고 payload.requestRef와 경로가 같아야 함. 현재 OWNER controller+재인증만 생성. 요약/정확 ref/receipt·WAITING 또는 UNVERIFIED·기존 false flags를 반환 |
+| GET `/api/v1/projects/:projectId/control-requests/:requestId/versions/:requestVersion/handoff-summaries/:summaryVersion` | query requestHash/summaryHash 필수. 원 requestRef와 summaryRef를 모두 고정, summaryRef.id=requestId. 기존 보호 읽기 결과 그대로, current.expired는 원 요청 만료·body.validUntil은 요약 관측기한. 본인/현재 controller만 조회 |
+
+reason 최대20,000자·본문2MiB, 요청 최대30분, 목록 기본50/최대200·cursor30분/4KiB는 내부 시험 조건을 공개 계약으로 **채택할지 이번 절에서 명시 판단받는 후보**다. 재인증 5분/절대만료, 로그인 미사용/최대수명은 변경하지 않는다. 원문/요약의 현재 미확인·실수집 미연결/대상 현재자격 미확인 gap·acceptanceEnabled/executionAuthorized/controlTransferred=false를 유지하고 SAFE/실인수 허가를 추가하지 않는다. 실제 저장소 연결과 실제 관측자의 근거 검증은 다르다.
+
+**동일 PoolClient 인증·잠금 후보**
+
+- 새 PG port가 PoolClient 한 개를 BEGIN부터 COMMIT/ROLLBACK까지 소유한다. `AccessRepository.authenticateInTransaction(db,token,csrf)`(access/repository.ts:37~49)로 기존 cookie의 actor/client/session·credentialGeneration/reauthUntil을 얻는다. HTTP의 actor/role/serverOwner/now를 신뢰하지 않고 token/CSRF/이유/DSN을 로그에 넣지 않는다. 자체 transaction을 여는 `authenticated()`를 이 내부에 중첩하지 않는다.
+- source observe는 기존 helper가 잠그는 user/session/client 뒤 project→현재 actor의 project_members→project_control 순서로 잠근다. 요청별 변경은 이어서 commandId 중복 잠금→request행→요청별 요약 version 잠금 순서다. 여러 request를 한 연산에서 묶지 않는다. source 최초/마지막 관측은 같은 행 순서를 다시 읽고 잠금 대기 후 DB clock_timestamp를 사용한다. 명령 ID 경합은 유일 제약+현재 접근 재확인 뒤 정확 replay, 충돌·기한/세대 변경은 전체 rollback이다. 기존 다른 연산과의 실제 경합/교착은 실PG 검증 전 미확인으로 남긴다.
+- helper의 인증 결과는 active 세션을 증명하는 입력일 뿐 FN15 권한이 아니다. 세션의 idle/absolute/revocation/credential, 사용자·client 상태와 회원/제어 원자료를 같은 transaction에서 source observation에 정확 투영한다. 종료 직전에도 현재 사실/DB시각을 재검사한다. 접근 회수/요청 원문·기준 변경은 부분 응답 없이 거절한다.
+- 기존 `POST /api/v1/auth/reauthenticate` 및 `reauth_until`을 소비한다(access/routes.ts:47~51, repository.ts:159~179). 새 비밀번호 검증/재인증 endpoint/키/기간을 만들지 않는다.
+
+| 행위 | 허용 후보 | 거절/불변 |
+|---|---|---|
+| SELF 요청 | 현재 활성 OWNER의 다른 client 또는 HANDOFF_ELIGIBLE, 정확 본인·현재 client·baseControl·유효 재인증 | VIEWER/타인·다른 client 위조/현재와 같은 actor+client/만료·회수·옛 기준 거절. 요청으로 OWNER/grant 발급0 |
+| OWN 읽기·목록 | 활성 OWNER/HANDOFF_ELIGIBLE의 본인 요청 | 타인의 원문/이유/민감 목록0. 과거 요청 만료만으로 원문 삭제0, 새 작성 재인증 요구0 |
+| CONTROLLER 읽기·목록 | 활성 OWNER이면서 현재 actor/client·세대/version 일치 | 현재 제어 불명·다른 client/세대 거절, VIEWER0 |
+| 요약 생성 | 정확 현재 OWNER controller+reauth, 원 요청/PENDING/ref/hash/기한/base 동일 | 요청자라는 이유만의 생성0, HANDOFF_ELIGIBLE 승격0, 미수락 제어 이전0 |
+
+**일반 권한·route·저장 delta 후보**
+
+- FN15 전용 행렬을 적용하며 일반 `currentProjectController`/ProjectPolicyRepository.command/ProjectCommand operation·현재 permission policy 목록은 변경하지 않는다. 기존 정책을 우회하는 일반 명령 예외를 추가하지 않는다. 이 FN15 전용 요청/읽기·요약의 권한 행렬이 기존 부모의 구현에 해당하는지는 이번 후보의 PMO 판단 대상이다. 서버 OWNER라는 사실만으로 프로젝트 회원·제어를 대신하지 않는다.
+- 허용 변경 후보: 신규 `apps/server/modules/control-handoff/control-handoff-pg.ts`, `routes.ts`; 기존 `control-request-store.ts`, `control-request-read.ts`, `control-handoff-summary-store.ts`의 mode/port 결합만; `apps/server/modules/access/repository.ts`의 cursor 전용 고정도메인 sign/verify wrapper만(원 키 반환0·새 키0·기존 로그인/세션 의미 변경0); `apps/server/app.ts`의 명시적 선택 등록만. 관련 신규 in-process HTTP/fake PoolClient 시험 최대3파일. 단위3 pending 및 소유 문서 외 기존SQL/manifest·projects/routes.ts·project-command.ts·정책·서비스 설정은 변경0이다.
+- 후보 PG sourceMode는 `'POSTGRES_SOURCE'`로 TEST_FAKE와 분리하고 가짜 PG를 TEST_FAKE로 포장하지 않는다. 새 생성자는 pool/auth와 명시 `enabled:false`를 기본으로 받으며 enabled가 없거나 schema준비 확인 실패면 NOT_CONNECTED/503이다. 앱은 후속 명시 옵션 없으면 등록하지 않는다. 실제 enabled=true 등록·migration적용·runtime교체·DB접속은 이 source 구현 결정과 별도이며 이번 후보에 포함하지 않는다. 테스트 fake PoolClient는 in-process 합성 시험이라는 표시를 보존한다.
+- 요청·요약·전용 command/receipt/audit는 단위3 0041 pending의 5표에 대응한다. 일반 commands/authorization_receipts/audit_events에 같은 명령을 이중 저장하거나 기존 command를 변조하지 않는다. 각 operation의 ref/hash·actor/client·base/요약 version·원문/metadata·정확 명령/영수증/감사 연결과 commit 역방향 완전성을 재검사한다. COMMIT 결과 불명은 commandId와 reconcile-first만 남겨 자동 재실행0이다. SQL 실행/TS canonical과 execution_json_hash 동등성·실FK/동시성·권한 적용은 NOT_RUN이면 통과라 하지 않는다.
+- 기존 프로젝트 route와 같은 host/origin·정확 JSON·cookie parsing/same-origin을 적용하고 다섯 endpoint 모두 x-anvil-csrf를 검사하는 후보다. 기존 GET 계약을 전역 변경하지 않는다. 새 cursor는 기존 인증 키의 비공개 wrapper와 FN15 고정 도메인에만 결박하며 타 기능 서명 domain을 재사용하지 않는다. 오류는 원문 없는 기존 envelope(code/message/requestId/targetId/retryDisposition/details)를 사용한다. INPUT_INVALID400, AUTH_REQUIRED401, CSRF_INVALID/권한거절403 또는 타자료NOT_FOUND404, command/ref/base충돌409, 재인증/요청기한412, 한도413, NOT_CONNECTED/저장실패/commit불명503을 구분하고 commandId만 reconcile에 남긴다. token/비밀번호/Secret/SQL원예외/요청이유는 응답·로그에 넣지 않는다.
+
+**검증·rollback 후보**
+
+- in-process Fastify.inject와 fake PoolClient로 정확 다섯 경로·DTO/경로불일치/위조actor·client·원문hash/cursor scope·쿠키/CSRF/origin/content-type·만료/회수/옛 세대·타 프로젝트/주체·정확controller·전후 재검사·부분쓰기 rollback/고아/중복·응답유실/replay·등록기본OFF를 검증한다. 이 합성 PASS를 실제 HTTP/TLS·PostgreSQL/정식schema·로그인/화면/Agent 검증으로 승격하지 않는다.
+- Main의 source 타입·직접 영향 검사/독립 검수·소유 commit 이후 기본 미등록 상태를 보존한다. rollback은 소유 commit의 일반 revert 또는 등록 옵션 비활성이다. 원문/DB/기존 권한 삭제·현재 제어 grant/세대 되돌림을 실행하지 않는다. 실DB·격리QA·정식migration·실계정/키·서비스/Agent/비용·acceptControl·control전환은 제외 그대로다.
+
 ## 5. 검수·증거·복구
 
 각 단위는 writer의 RED→GREEN, Main 집중/직접 영향 타입 검사, 독립 spec·quality 검수 후 소유 경로만 같은 branch에 checkpoint한다. 서버-only이면 Web 전체 빌드는 반복하지 않는다. 완료 시험은 코드가 바뀌지 않으면 다시 하지 않는다. 기록은 기존 WORK_STATUS·WORK_PLAN의 한정 상태로 유지한다. 제품 사용 가능·FN15 전체 완료·Stage 완료로 보고하지 않는다. rollback은 소유 commit의 일반 revert이며 실제 저장 원문/제어를 삭제하거나 되돌리는 명령이 아니다.
