@@ -10,6 +10,95 @@
 
 - 실제loader source도 같은FileStream/private바이트의SHA→같은바이트Load→같은Assembly/publicsealedType/정확Create signature·return/instance에결박했다. hostraw0DCB746D1FC6FD0E6A5A51755E6E638DA03D1FD645ECD1E7631B4D66546D1646·현재literal차단/정적C0/I0/M0, actualload/OS NOT_RUN. caller와별개인정확외부실행결정/출처결박이없으면expectedSHA만으로차단해제불가이며새registry를구현하지않았다. R0는b6c41545/native1589한파일로유지, R0정리후R1에서재사용할DLL은없으므로actualR1artifact생성/등록은별도선행이다.
 
+### 2026-10-25 R1 원 controller·고정 worker 상세안 — PMO 대조용, 미채택
+
+이 절은 2d24e3e3 뒤의 **설계 구체화**다. 아래 타입·진입·메시지는 아직 구현되지 않았다. 새 원문/서비스/registry/broker/키/Agent 권위를 만들지 않는다. 기존 세 소스 파일 안에서만 구현할 권장안 한 개이며, PMO의 구체 delta 대조 전 프로토콜 채택·exe 산출·실행을 의미하지 않는다. R0 d71/F81 library snapshot은 그대로이고 새 exe의 컴파일·배포·실행 허가는 추가되지 않는다.
+
+#### 1. 권장 구성과 중요한 차이
+
+임시 inheritable 핸들을 만든 뒤 다른 thread의 spawn을 막으려 하지 않는다. **모든 QA process를 inherit=false로 suspended 생성하고, 이미 직접 생성한 원 자식 Process 핸들에 DuplicateHandle(inherit=false)로 선택 핸들을 직접 복제한다.** 각 복제 결과는 해당 target process에서만 유효하며, 고정 worker가 그 원 핸들을 직접 검증한 뒤 ACK한다. 이는 후보 방식이며 실제 효과는 OS 시험 전 미확인이다. HANDLE_LIST는 inheritable 핸들과 CreateProcess의 inherit=true를 요구하므로 이 새 경로에서는 쓰지 않는다. 근거: [UpdateProcThreadAttribute](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute), [DuplicateHandle](https://learn.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-duplicatehandle).
+
+원소유 그래프는 기존 호출자 C → 새 guardian G → 새 고정 worker W다. C는 새 상시 서비스가 아니라 현재 한정 QA 호출 안의 native controller이며 fixture의 유일한 생성/정리 소유자이자 필요할 때의 keeper다. G/W는 같은 고정 exe의 서로 다른 내부 mode만 사용한다. C#·명령·PowerShell·스크립트 문자열/사용자 코드의 전달·컴파일·평가, 원격 메모리 쓰기·thread/APC 주입, 기존 process/외부 PID 인수는 없다.
+
+| 원 객체 | 최초 생성·보관 | 전달·회수와 금지 |
+|---|---|---|
+| fixture와 생성 목록 | C의 기존 QaFixtureOwner/QaFixtureLease | 생성 사실·원 ID/hash/권한·상대 위치는 C 안에 유지. G에서 fixture를 새로 만들거나 직렬화 lease를 C가 채택하지 않음 |
+| 선택 보호 핸들 | C의 원 QaChildPin/action | 원 source는 OpenAction이 만든 action.Parents와 action.Handle이다. ShareRead인 leaf action/ShareRead·ShareWrite인 parent action을 W에 최소 read/traverse·비상속 복제한다. share7인 정리용 entry.Pin.Handle을 보호 source로 쓰지 않음. C의 강한 pin 보존 여부는 case별 고정 |
+| G Process/Thread | C가 CreateProcess의 원 반환을 즉시 원 목록에 선등록 | 원 image/SID/생성시간·Job·flags 검증 뒤 resume. 외부 PID로 다시 열지 않음 |
+| W Process/Thread | G의 고정 factory 원 반환 | C는 원 G Process와 그 private channel의 고정 W 슬롯에서만 observer/transfer용 최소권한 복제를 얻음. G는 C의 소유 ACK 전 원 W를 닫거나 resume하지 않음 |
+| 바깥 Job JC | C, G와 W를 수용하는 원 containment Job | kill-on-close·breakaway 불허, 두 active process 상한. G/W에 JC 핸들을 넘기지 않음. C의 종료·잔여 검수와 실패 회수에만 사용 |
+| 안쪽 Job JG | G, W만 수용하는 원 Job | kill-on-close·breakaway 불허·active 1. C는 ARMED 전 QUERY-only 임시 복제본으로 원 W membership/설정을 검증한 뒤 close 성공을 확인하며 유실 시험 중에는 보관0. W에는 전달0. G가 유일한 JG 핸들을 가진 상태에서만 유실 행동 |
+| G/W의 제한 channel | C가 case별 신규 로컬 named pipe 두 개를 최초 인스턴스로 생성 | 각 한 peer·비상속·원 Process와 peer PID 대조. 이름/nonce/메시지/handle 숫자는 그 자체로 소유나 허가가 아님 |
+
+중첩 Job은 **JC에 G를 먼저 원자 결박하고 W를 JC/JG의 유효한 순서에 결박**한다. 실제 Windows의 nesting/기존 상위 Job 제약으로 생성이 실패하면 미확인 실패이며 기존 Job을 바꾸거나 suspended 뒤 사후 무방비 할당으로 우회하지 않는다. C는 JC를 계속 보유하므로 G 유실 뒤에도 그 원 바깥 Job의 active=0을 관측할 수 있다. JG의 마지막 핸들 종료와 JC의 active=0은 다른 사실이다. 파괴된 JG의 최종 count를 읽었다고 보고하지 않는다. 근거: [Nested Jobs](https://learn.microsoft.com/en-us/windows/win32/procthread/nested-jobs), [Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects).
+
+#### 2. 고정 worker·동적 주입 금지
+
+- 향후 artifact는 같은 exact Git source·고정 compiler/참조에서 나온 전용 DevelopmentRecoveryQaWorker.exe 한 개와 controller용 library다. worker는 /target:winexe·x64의 GUI subsystem2·고정 Main으로 생성하는 안이며 창/console/표준입출력·shell을 만들지 않고 고정 pipe만 쓴다. 암묵 console helper가 있다고 PID를 추가 채택하거나 process 한도를 늘리지 않는다. 생성 경로는 향후 R1 실행 패킷에서 신규 os-qa 전용 하위 경로로 exact 고정한다. 현재 경로 생성·exe build/등록0, 다른 실행 파일 탐색/다운로드/대체0이다.
+- G/W 시작 전에 controller가 원 image 파일의 보호 pin·정확 해시/크기·정확 source artifact 관계를 검증한다. argv로 임의 exe/path/hash를 수용하지 않는다. mode는 GUARDIAN 또는 PIN_WORKER, protocolVersion=1만이며 고정된 run 결박과 channel 이름만 전달한다. 그 값들은 실행 권위가 아니다.
+- W는 검증된 고정 핸들 목록의 종류·수·비상속 flags·GrantedAccess·원 ID/path/hash를 확인하고 최대25초의 고정 wait/ACK/close 또는 고정 STOP frame의 종료만 수행한다. 정상 wait 종료81·고정 STOP 종료82·protocol 거절83·내부 오류84를 구분하는 안이다. G의 강제종료 표식은0xA6710001, 예상 밖 test-W 강제종료 표식은0xA6710002로 제안한다. 이는 last-Job-close의 OS 종료 상태를 정한 것이 아니다. 프로세스 생성·shell·파일 수정/삭제·권한 변경·Job 핸들 수신·외부 DLL/모듈/사용자 스크립트 로딩 API는 없다.
+- controller와 G도 새 QA 경로에서는 inherit=true 또는 임시 inheritable 복제를 사용하지 않는다. 기존 QA CopyForOriginalChild의 inherit=true 경로는 새 경로 채택 시 삭제하거나 무조건 차단하며 함께 활성화하지 않는다. production 경로는 별도 미등록 상태로 유지한다.
+- 따라서 권장안의 process-wide 배제 방법은 '다른 thread가 없다고 믿기'가 아니라 **보호/통신/Job/원 Process 핸들 전부의 비상속 생성·복제와 모든 생성 경로의 inherit=false**다. 이를 적용한 코드·전체 호출부·실 OS 유출 음성을 대조하기 전 현재 exclusive gate는 false 그대로다. 같은 사용자 권한의 임의 코드 주입까지 막는 OS sandbox라고 주장하지 않는다.
+
+#### 3. 제한 통신과 원 핸들 이전
+
+C가 만드는 두 pipe는 case별 새 이름, FIRST_PIPE_INSTANCE·REJECT_REMOTE_CLIENTS·OVERLAPPED, 한 인스턴스, 현 사용자/SYSTEM만 접근하는 신규 객체 DACL로 한정한다. 기존 ACL/계정 변경은 없지만 실제 named IPC·신규 객체 DACL 생성은 실행 delta다. C는 연결 peer를 원 G/W Process 핸들의 GetProcessId·현재 생존·시각/SID와 대조한다. 다른 PID의 접속은 연결 종료/그 case 실패이며 process를 열거나 인수하지 않는다. first-instance 실패도 다른 이름 재시도로 바꾸지 않는다. [CreateNamedPipe](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createnamedpipea), [GetNamedPipeClientProcessId](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getnamedpipeclientprocessid).
+
+고정 frame은 version·role·case·run 결박 digest·순번·정확 op·제한 payload만 가진다. 한 frame 최대4096 bytes/한 channel 총32768 bytes, pin 최대16개, 추가/중복 필드·알 수 없는 op·역순·재전송·역할 불일치·길이 초과는 실패다. 로그에는 handle 숫자/원문/환경값/Secret을 남기지 않고 고정 phase·수·상태만 남긴다. IPC nonce는 상관관계 표식이며 소유/승인 토큰이 아니다.
+
+1. C가 JC·G channel·W channel과 원 G를 생성/선등록/검증한다. G는 비상속으로 시작하며 JC에 이미 들어 있어야 한다.
+2. G의 HELLO를 C가 원 G peer로 대조한 뒤, G가 원 JG 및 원 W를 suspended/비상속으로 생성·선등록·JC/JG 소속과 원 image/SID/시각을 확인한다. JG는 생성 직후부터 kill-on-close가 설정돼야 하고 W 생성의 JOB_LIST에 원자 결박된다. 이 생성 방식의 성공·membership가 미확인되면 resume0이다.
+3. G는 W_CREATED에 **자기 원 목록의 고정 W 슬롯과 JG query 슬롯**만 싣는다. C는 원 G process의 그 슬롯에서 최소 QUERY/SYNCHRONIZE/필요한 DUP_HANDLE 권한의 W 복제본과 QUERY-only JG 임시 복제본을 얻는다. 원 W ID/image/시각/SID·JC/JG membership, JG의 active 목록이 원 W 한 개·kill-on-close/breakaway 불허인지 직접 재검증한다. 원 반환과 다른 PID·재사용 슬롯/조회불명은 ACK0·실패다. 이는 일반 handle 숫자 입력 parser가 아니다.
+4. C가 자기 원 pin에서 원 suspended W로 inherit=false·최소 read/traverse 복제를 수행하고 각 성공/실패/target 소유 슬롯을 즉시 원 목록에 기록한다. C의 W_CAPTURED/PINS_STAGED ACK 뒤에만 G가 **자기 원 W Thread**를 resume한다.
+5. W가 자기 고정 channel에 연결하면 C가 원 W peer를 대조하고, C가 그 W에 직접 넣은 제한 pin 슬롯만 전달한다. W는 실제 핸들 검증 결과로 PIN_ACK를 돌려준다. ACK 유실·검증불명에는 phase를 되돌려 재복제하거나 다른 W를 만들지 않는다.
+6. C는 자기 임시 JG query 복제본의 실제 close 성공·추가 JG 복제0, case가 정한 keeper/원 pin 닫기 동작을 확정한 다음에만 ARMED를 G에 보낸다. close unknown이면 guardian 유실 행동0이며 기존 JC 원소유 실패 회수로만 이동한다. 정상·실패 모두 같은 C/G/W 원 목록만 쓴다.
+
+DuplicateHandle 실패 때 target 슬롯 획득 여부 불명·원 G 유실로 미확인된 원 W가 있을 수 있다. 임의 handle을 CloseHandle로 추정 회수하거나 DUPLICATE_CLOSE_SOURCE로 원 소유를 없애지 않는다. C는 자기 원 JC만 정지/관측하고, W/JC 종료가 확인되기 전 fixture/pin을 해제하거나 삭제하지 않는다. G가 소유한 W Thread는 C가 PID로 복원하지 않는다.
+
+#### 4. case별 행동과 판정
+
+| case | 실제 고정 행동 | 그 결과만으로 할 수 없는 주장 |
+|---|---|---|
+| CHILD_PIN_LIFETIME | 고정 unselected.txt의 원 ID에 대해 강한 pin 생성 전 DELETE-access open의 정상 control을 먼저 확인한다. W의 실제 pin ACK 뒤 C의 강한 action/복제본을 닫고, W가 실제 생존한 구간의 같은 open이 STATUS_SHARING_VIOLATION으로 거절되는지 확인한다. W 종료 뒤 같은 open 정상 control·원 ID/바이트 불변을 다시 확인하고 기존 C fixture 정리 | open 시험만 하며 rename/delete/write를 수행하지 않는다. C keeper pin이나 다른 원 handle이 같은 거절을 만든 경우 W 단독 증거가 아님. W 생존 전후 유효 표본·정상 control이 없거나 다른 오류면 INCONCLUSIVE |
+| GUARDIAN_LOST | 이 case만 C가 원 보호 pin keeper로 남는다. 원 JG/W 독립 검증·C query 복제 close·W ACK 뒤, 자연 종료 시각까지 충분한 여유가 있는 원 G/W의 생존을 다시 확인하고 **원 G process만** 고정 종료 표식으로 강제 종료한다. 원 G의 표식/exit와 자연 종료 전 원 W exit·JC active0을 각각 관측한다. C는 W 종료 확인까지 keeper pin 유지 | G의 정상 Job close·자연 만료·worker crash를 guardian 유실 인과로 대체하지 않음. expected kill-on-close 종료 상태의 OS 기준이 미확정이면 INCONCLUSIVE. C 동시 유실/W 단독 생존/전체 P3 보호 합격은 아님 |
+| BREAKAWAY_DENIED | JC 안의 G에서 정상 생성 control W를 먼저 원 JG에 결박·실행·종료/JC 상태 확인한 뒤, 같은 고정 실행 인자/Job 설정으로 CREATE_BREAKAWAY_FROM_JOB 한 flag만 다른 suspended 생성을 시도한다. 원 G의 JC membership·JC/JG breakaway 금지 설정을 보존 | 일반 access-denied 하나는 합격이 아님. control 실패/중간 설정 변경/다른 오류는 INCONCLUSIVE. 예상 밖 생성 성공은 즉시 FAIL·resume0이며 원 process/thread로 아래 별도 회수 |
+
+guardian-loss에서 C keeper가 살아 있다는 전제와 W 단독 수명 case를 합쳐 '모든 host 유실에 안전'이라고 하지 않는다. 현재 P3의 host 의미와 keeper 배치에 대한 최종 대응은 별도 검토 대상이며 이 절이 기존 완료조건을 완화하지 않는다. 안쪽 JG의 마지막 핸들이 닫히면 해당 process 종료와 Job 소멸이 발생하므로, 관측용 JG 복제를 남기는 시험은 목적과 다르다. C가 보유한 **별개 JC**의 최종0·원 W exit와 각 pin 회수를 명시적으로 따로 보고한다.
+
+GUARDIAN_LOST의 인과 판정은 추가로 다음을 모두 요구한다. C가 원 G에 TerminateProcess로 요청한 고정 종료 표식과 실제 GetExitCodeProcess가 일치하고, 요청 직전 원 G/W가 모두 살아 있으며, W의 고정 자연 종료 시각까지 최소10초가 남아 있어야 한다. 자연 종료의 보수적 하한은 C가 RESUME ACK를 보낸 원 monotonic 시각+25초이며 G/W가 보고한 시각으로 앞당기거나 창을 늘리지 않는다. 요청 전 W의 정상 STOP/종료 ACK가 있거나 요청 뒤 자연 만료를 넘겨 W exit를 관측하면 INCONCLUSIVE다. 원 W exit code·시각·G 표식을 원 handle에서 수집하되 exit0 하나로 인과/정상 정리를 주장하지 않는다. **last-Job-close의 기대 종료 상태는 현재 OS에서 미측정·공식 보장값 미확인**이므로 임의로0/124를 넣지 않는다. 별도 허가된 대조 시험/근거로 고정한 expected status와 시간 oracle이 없거나 crash와 구분할 근거가 부족하면 KILL_ON_CLOSE_STATUS_UNCHARACTERIZED/INCONCLUSIVE다. 이 미결을 기존 PASS 조건 삭제로 해소하지 않는다.
+
+BREAKAWAY 예상 밖 생성 성공은 G가 그 원 CreateProcess 반환 Process/Thread를 즉시 자기 목록에 보존하고 **ResumeThread를 한 번도 호출하지 않은 상태**에서 처리한다. C의 원 G channel이 살아 있으면 C가 같은 고정 슬롯의 관측 복제를 확인하되 실패해도 G의 원 반환을 버리지 않는다. JC/JG membership와 무관하게 G는 그 **원 test-W Process 핸들 하나만** 고정 실패 종료 표식으로 TerminateProcess하고, 남은 종료 예산 안에서 원 process exit→원 Thread/Process close를 확인한다. 그 다음에만 원 JG/JC 종료/회수를 확인한다. 이 개별 원 자식 강제종료 효과도 향후 실제 실행 delta에 포함한다. G 유실·핸들/exit/close 불명에는 외부 PID를 열거나 JC 밖 프로세스를 이름으로 찾지 않고 PRESERVED_UNCONFIRMED·fixture 보존이다. JC active0만으로 JC 밖 test-W 회수를 대체하지 않는다.
+
+원 코드의 SealFilesystemCases→TransitionOwnership은 생성 항목을 read/traverse·share READ/WRITE/DELETE로 전환하지만, QaChildPin 생성자는 별도로 OpenAction(entry,ReadData)을 만들고 기존 CopyForOriginalChild도 **action.Parents와 action.Handle**을 선택한다. 새 비상속 이전도 그 강한 원 source를 사용한다. entry.Pin.Handle/share7 복제로 대신하면 source 불일치·INCONCLUSIVE다. 새 CHILD_PIN_LIFETIME는 이 생성 사실만 믿지 않고 **같은 원 대상의 pin 없는 전후 정상 open control**을 요구한다. W 생존 확인은 denial 바로 전/후 원 W Process 핸들에서 수행하고, 사이에 종료가 걸리면 유효 표본으로 세지 않는다. open 성공 시 그 원 대상 ID를 확인하고 이번 open 핸들만 닫는다. 통과를 만들기 위해 기존 fixture의 DACL/공유/완료 기준을 바꾸지 않는다.
+
+W의 실제 target slot도 직접 대조한다. C가 스스로 기록한 원 W target-slot 목록만 원 W Process에서 C로 제한 duplicate-back(inherit=false)하고 원 ID/volume/path·read/traverse 접근·flags0을 검증한다. 이 C의 임시 복제는 같은 보호 효과를 가질 수 있으므로 **실제 close 성공을 확인한 뒤에만** C의 강한 source 닫기·생존 중 open 시험·W 종료 뒤 control로 넘어간다. close unknown은 시험 중단/보존이다. W가 보내 준 임의 slot이나 새 PID는 수용하지 않는다. 이 검사는 동일 원 W target의 핸들 보유를 직접 확인하며 sharing oracle만으로 target liveness를 대신하지 않는다.
+
+#### 5. 상태·실패·정리
+
+| 고정 상태 | 다음 허용 동작과 실패 처리 |
+|---|---|
+| NOT_STARTED | 미등록 gate/새 실행 결정·정확 image/부재/한도 미충족이면 OS 획득0 |
+| G_CAPTURED | C의 원 G/JC 목록만. channel peer/생성/시간 불명이면 ARMED0, 원 JC 회수 시도·관측 |
+| W_CAPTURED_SUSPENDED | C의 원 W 복제·pin staging만. 부분 복제는 재시도/추가 W0, 원 JC/JG 종료 확인 전 fixture 보존 |
+| PIN_ACKNOWLEDGED | 선택 case의 원 pin/keeper 정책과 close 확인. close unknown이면 ARMED0·영구 불명 latch |
+| ARMED | 고정 case 행동1회만. 사용자 입력/다른 명령/기한 연장/전송 재발급0 |
+| STOPPING | 새 생성/복제/시험 동작0. 정상 종료 요청은 결과가 아니며 원 process exit와 JC count를 실제 관측 |
+| CLOSED 또는 PRESERVED_UNCONFIRMED | 성공한 원 handle close만 닫힘으로 기록. 후자는 원 목록·소유·미확인을 보존하고 PASS·잔여0·재시도 권한으로 바꾸지 않음 |
+
+기존 UTC+monotonic·소유 thread·기준 run/commit/window를 유지한다. R1 전체30분 안에서 case당 준비/행동45초+종료 관측15초를 최대 예산으로 삼고, 시작 때 잔여75초 미만이면 생성0이다. G 생성5초·W ACK10초·W 고정 wait25초 한도는 이 예산 안에 포함한다. OVERLAPPED pipe는 기한에 같은 원 I/O만 취소/완료 관측하고, blocking kernel 호출의 물리적60초 종료를 보장하지 않는다. 기한/시계 역행·channel 유실 시 새 작업 없이 원 Job 회수/15초 관측, 미종료/미확인은 보존·보고한다.
+
+BREAKAWAY control W는 readiness 확인 뒤 고정 STOP frame으로 종료를 요청하고 같은 원 process의 exit/Job 상태를 최대5초 안에 확인한 경우에만 다음 flag 시도를 한다. 이5초도45초 예산 안에 포함하며 control W의25초 자동 만료를 기다린 뒤 시험 창을 연장하지 않는다. 고정 STOP도 임의 명령이나 완료 ACK가 아니고, 시간 부족/종료 불명은 다음 W 생성0·INCONCLUSIVE다.
+
+C는 원 G/W exit와 JC active0을 확인한 후 W에 전달한 pin의 원 source/action 목록, fixture 원 identity/DACL/hash, 고정 자원 목록을 재검증하고 기존 역순 정리를 수행한다. 열린 원 process/Job/handle·delete-pending·close unknown 또는 대상 불일치가 있으면 삭제0이다. 삭제는 기존 고정 fixture만, 재귀 sweep·외부 프로세스 kill·상위 ACL 수리0이다. G/W는 fixture 정리 권한이나 기존 DB/Secret/인증서/서비스 접근 권한을 받지 않는다.
+
+#### 6. 기존 실행안 대비 정확 delta와 최소 구현 순서
+
+- 기존 고정 pwsh sleep 대신 고정 exe의 G/W 두 role, C 내부 controller, 신규 두 로컬 named pipe·신규 IPC 객체 DACL, 직접 target-process 비상속 복제, 바깥/안쪽 unnamed Job 두 개가 추가된다. 실제 exe 산출/로드·pipe/Job/process 생성·원 G 강제종료·실제 정리 모두 **아직 별도 실행 결정 대상**이다.
+- CHILD_PIN_LIFETIME/GUARDIAN_LOST는 G1+W1, 최대2 active/성공 생성2개를 제안한다. BREAKAWAY_DENIED는 유효한 동일환경 control과 예상 밖 성공의 안전 회수를 위해 **G1+control W1+시험 W 최대1, 성공 생성 최대3개·동시 active 최대2개**를 제안한다. 기존 '최대2'를 성공 생성 총수와 동시 수로 혼용하지 않으며, 이 한 case의 총수 변경도 미채택 delta다. 채택하지 않으면 control 없는 denial을 합격시키지 않고 해당 case를 INCONCLUSIVE/미지원으로 둔다.
+- 구현 허용 경로 후보는 기존 scripts/development-recovery-path-guard.cs(원 controller/G/W·비상속 이전·상태·기한/정리), scripts/development-recovery-host.ps1(고정 artifact 검증/원 controller 호출), scripts/development-recovery-os-qa.ps1(고정 case·원 결과 소비) **세 파일뿐**이다. 새 public 실행 API/일반 원격 handle parser·임의 argv/환경 전달·권위 저장소/등록·기존 product/DB/TLS 수정은 없다.
+- 소스 구체 순서는 ① 비상속 직접 복제와 원 target 수명 ② 고정 frame의 순서/길이/역할/원 peer 검증 ③ G/W 실제 제어와 ACK 유실·부분 획득 수습 ④ case 행동/control·정리 ⑤ exact 코드 정적 검토와 허가된 native 컴파일/OS 증거다. 각 단계는 같은 원 객체를 소비하며 검증 모의/선언만 추가해 실제 controller 구현으로 세지 않는다.
+- 지금 가능한 검토는 원소유 그래프·실제 코드 delta 위치·메시지/실패 계약의 정적 대조다. 소스 작성 시 순수 입력 시험은 실제 parser/상태 소비를 시험하고, 미허가 native 동작을 문자열 테스트나 가짜 callback PASS로 대신하지 않는다. OS 증거가 없는 경계는 계속 NOT_RUN이다. 이 문서의 상태는 SOURCE_DESIGN_PROPOSED_NOT_ADOPTED이며 코드 구현/컴파일/OS 준비완료/전체 계획 완료가 아니다.
+
 ### 2026-10-25 R0 단일 컴파일 권장 패킷 — 실행 전 결정 자료
 
 이전 미결 질문은 3d0ad83ab46e6ae544cd0b1a051e228ef5e8f7c7/native A5F592ADD89B13F09BCE0625868D175428020F7A041C0CC37195888970844271 한 건이다. 현재 권장 대상은 아래 **한 파일만**이며 옛 답변을 자동 이월하지 않는다. 사용자에게 질문을 반복하지 않고 PMO에 대상 차이와 결정 자료로 전달한다.
