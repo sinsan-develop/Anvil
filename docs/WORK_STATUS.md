@@ -1,4 +1,29 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 단위 2B — 보호 조회·cursor 검수 완료 범위
+
+- 담당: 구현 fn15_request_read, Main 관리·patch 통합·직접 검증, fn15_read_review 독립 정적 검수. 소유 제품은 read/cursor2개와 store verifier export1단어, 시험2개다. 기존 저장·공유 권한·route·정책·DB는 변경하지 않았다.
+- 동작: 현재 OWN 또는 정확 CONTROLLER의 고정 요청 원문·목록만 반환한다. 만료된 원문은 생성시점에 검증하고 현재 만료/기준 상태와 구분한다. 목록은 기본50/최대200+1·createdAt/id 안정 keyset·이유/본문 제외·권한 회수 시 전체 폐기다. cursor는 domain·주체/client/자격세대/project/view/limit/controller기준·기한·마지막 ref/시각에 결박하며 실제 signer 키는 없다.
+- 검증: bd12b9 최초16 RED 뒤 추가 tie1은 b037a2 한정 RED로 확인했다. 원 후보69c6c0은17/17이나 타입10진단으로 exit1이었고, writer305DC8의 guard/순회·테스트 타입 표현 보완 후38b5b8 fresh17/17·skip0·238.1529ms/type/diff exit0이었다.
+- 독립 I1/보완: 저장 commandId의 intrinsic UUID 검사 누락으로 hash/receipt/audit까지 일관 변조하면 수용되는 결함을 확인했다. 추가 시험1DD8EA16에서 Main6765f5의 Missing expected rejection RED1·191.1725ms를 재현했다. writerB16A9440의 uuidV1(commandId)1조건만 적용해 a1b494 fresh 조회12/12·skip0·233.8144ms/type/diff exit0, 동일 reviewer scoped C0/I0/M0으로 해소했다. cursor코드 A0E14AF5는 불변이므로 선행6PASS 증거를 보존하고 반복하지 않았다. 최종 고유18사례의 증거는 조회12 최신/불변cursor6 선행으로 구분한다.
+- 최종 지문: read37C0C4F45A2E6FE55D1F8A4A4AA64278F2A6C00E7DE8B6D161605898526C174A/read시험D7409108023168577DDB3F8ADD160CA2DC8747418F977B7088F9C47BABEA860D, cursorA0E14AF5D5E1DCD44763441204D676D3F2B75717A6E6091CCAFFF934A443CD59/cursor시험9AD3ACBC9C7B1A3FCE81A76FEC70F28E73713FA17054C6CCAFA749ACF4E509A0.
+- 한계/다음: source-only TEST_FAKE/defaultNOT_CONNECTED, 실제 인증·권한·HTTP·DB/원자성·Agent·UI12/사용자 인수는 미연결/미검증이다. 형식·대조/hash는 실제 데이터의 진위/권한을 독립 증명하지 않는다. 서버-only라 Web build·불변 unit1/2A 전수검사를 반복하지 않았다. 기존 보호8·문서 보존본 유지, 다음은 새 단일 writer의 2C 불변 WAITING/UNVERIFIED 요약·현재 제어자/reauth·수집 전후 대조다. 실제 수락/제어 전환은 실행하지 않는다.
+### 2026-10-26 FN15 단위 2B 재개 — 타입 보완·독립 검수
+
+- 이전 goal turn은 d7738384 source 저장 checkpoint와 2B 실제 제품/시험 변경·검증으로 진도였다. Main 용량 오류 뒤 단일 writer는 typefix를 보존하고 종료했다. 재개 시 실제 HEAD d7738384·소유 dirty·보호8과 미적용305DC8E7F5FD5620BCB4DB4003C29E49FA2536C98ECBAA0146DF98EB56EDF1DF를 대조해 중복 구현·RED 재실행 없이 이어갔다.
+- 선행69c6c0은17/17·skip0·214.8856ms이나 noUncheckedIndexedAccess 타입10진단으로 최종 exit1이었다. writer의 split guard/순차 previous/at(-1) guard·시험의 비어있음 assertion만 보완한 patch3경로를 검사 적용했다. Main38b5b8 fresh17/17·skip0·238.1529ms/type/diff exit0을 확인했다. 기존 테스트 기대값/사례는 불변이며 새로운 실제 자원은 없다.
+- 현재 read/cursor2제품·store verifier export1단어/신규시험2를 독립 fn15_read_review에 검수 배정했다. DB 명령 필드의 intrinsic 형식·권한/스코프/부분 노출·keyset/cursor와 4종 무결성을 대조한다. 코드 작성자는 아직 종료 상태이며 Main은 patch 통합만 했다. 실제 인증 생산자·서명 키·HTTP·DB·권한·제어 전환·Agent·전체계획은 미연결/미검증이고 목표는 active다.
+### 2026-10-25 FN15 단위 2B — 보호 조회 최초 RED
+
+- Main은 제품 전 test draft에서 음성 matcher가 함수 부재 assertion을 삼키는 문제를 보완하도록 했고, 모든 callback의 export 존재를 독립 검사하도록 고정했다. 목록 port에 넘기는 project/actor/client/view/controllerBasis/limit/after를 직접 대조하며, 다른 주체 입력 추가 키와 foreign 반환 거절을 유지한다.
+- cursor의 비정규 JSON 음성은 잘못된 서명 때문만에 거절되는 오인 증거를 피하도록 고정 도메인 `anvil:fn15-control-request-cursor:v1:`의 올바른 서명을 붙인 비정규 본문으로 보강했다. 최종 patch AD14E13938B657B949E866D67594EA4AB59F0399237D6B056833AE49D8B8A187의 신규 시험2경로만 적용했다.
+- Main bd12b9 최초 actual16/16 실패·pass0/skip0·213.3969ms/exit1. 모두 명시한 미구현 export에서 실패해 음성 오인 PASS0이다. read시험4F6EE5C43C4703F8D685E7BE5530942B79718C14F7A63869EFBF132D3EA016BB/cursor시험C385818CF8D98238A10D6A18B0A3124E4642CD08022F2E2B6A4401A663B73203·기존store2DBAB1C6 지문을 동결했다. 단일 writer에 신규 read/cursor2제품과 store 내부 verifier export 연결만 인계했다.
+- 같은 createdAt의 id tie-break는 별도1case 추가 대상으로 분리했다. 기존16 RED를 반복하지 않고, 제품 통합 전 추가 case만 한정 RED를 확인한다. 실제 키/서명 서비스·API·DB·Agent·정책 변경과 새로운 일회 QA 자원은 없다. source-only 검증은 실제 인수/제어 전환을 증명하지 않는다.
+### 2026-10-25 FN15 단위 2B — 요청 원문·유한 목록 조회 착수
+
+- 기준: d7738384d13ea558227c1f531d11b2e39da354e7 local/development exact, main f976ed5e 불변·tracked clean/보호8 확인. 단위2A patch4개는 owner/hash/nonlink 검사 뒤 정확 회수·각 부재 확인했다. 기존 문서 보존본2개는 유지한다.
+- 담당/범위: fresh 단일 writer fn15_request_read. 신규 read/cursor 제품2, store 내부 verifier export 연결만, 직접 시험2·필요 fixture1. 현재 WI61086BDAD1DCC3F03E1171D3AF273C34A0A5AAB32BEA278F8C181043C6A88018의 3.2는 기존 9B4 본문에 삽입한 구간을 제거하면 원문 전체가 같음을 guard해 8a622c에서12삽입0삭제로 반영했다. 전체 복사·기존 내용 삭제는 없다.
+- 구현 기준: 현재 활성 회원의 본인 요청 또는 정확 현재 controller만 읽고, 일반 조회에 새 작성용 재인증/미래 기한을 억지 적용하지 않는다. 과거 만료 원문은 생성시점 검증하고 현재 만료·기준 상태와 구분한다. 유한50/200·안정 keyset·주체/client/자격세대/project/view/한도/기한/기준에 묶인 cursor, 지연 중 권한 회수 때 전체 미노출을 직접 검증한다. 목록에는 reason/body가 없다.
+- 경계/다음: 기본 NOT_CONNECTED·TEST_FAKE만, 실제 signer 키·계정·DB·네트워크·app/route/정책·제어 전환/Agent0. writer Git 읽기1회 제한은 반복/ACL 변경 없이 실제 source 파일 직접 읽기로 분리했다. 테스트 먼저 작성→Main RED→제품 최소 구현→직접 검증/독립 검수 순서이며 기존 단위1/2A 완료 시험은 불변이면 반복하지 않는다. 실제 UI12·HTTP·DB·전체 FN15 인수는 미완료다.
 ### 2026-10-25 FN15 단위 2A — 내부 요청 저장 후보 검수
 
 - 담당/상태: 구현 `fn15_request_store`, 관리·검수·통합 Main 어울. 단위 2A의 source/fake-port 검증 통과이며 실제 DB·API 사용 가능 판정은 아니다.

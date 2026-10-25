@@ -39,6 +39,18 @@ FN15 전체를 SELF 요청으로 축소하지 않는다. 다른 사람 인계·�
 
 단위 2B의 유한 보호 조회·cursor와 단위 2C의 미확인 요약은 2A 검수 후 정확 인터페이스를 고정한다. 2A만으로 조회·요약·UI12 또는 FN15 전체를 완료하지 않는다.
 
+### 3.2 단위 2B — 고정 요청 원문·유한 목록의 보호 조회
+
+단위 2A checkpoint `d7738384d13ea558227c1f531d11b2e39da354e7` 뒤에 진행한다. 신규 제품 `control-request-read.ts`, `control-request-cursor.ts`와 FN15의 각 직접 시험·필요한 읽기 fixture만 추가한다. 기존 `control-request-store.ts`는 내부 bundle verifier의 export/호출 이름 연결만 허용하며 저장 로직·일반 권한·route는 변경하지 않는다.
+
+- 내부 상세 입력은 projectId/정확 requestRef, 목록은 projectId/view(OWN 또는 CONTROLLER)/limit/cursor다. 사용자·client·현재 권한은 입력이 아니라 미연결 read transaction port의 현재 관측에서 얻는다. 기본 NOT_CONNECTED·TEST_FAKE 명시 모드만 허용하고 실제 adapter/키·계정·DB·네트워크를 만들지 않는다.
+- OWN은 현재 활성 OWNER/HANDOFF_ELIGIBLE 회원의 본인 actor가 작성한 요청만 읽는다. CONTROLLER는 현재 활성 OWNER와 제어 actor/client가 정확히 일치할 때만 같은 프로젝트의 요청을 조회한다. VIEWER·타 프로젝트·회수·만료 세션/client는 원문/부분 상태를 받지 않는다. 다른 client에서 본인 원문을 읽을 때도 현재 client 소유·세션을 검사하며 cursor는 새 client로 재사용하지 않는다.
+- 일반 읽기는 새 요청 작성처럼 재인증·요청 기한을 강요하지 않는다. 만료된 과거 요청은 생성시점 verifier로 보존 검증하고, 현재 만료/기준 변경/불명은 원 storedState=PENDING과 분리해 표시한다. OWN 조회는 현재 제어 불명만으로 과거 원문을 삭제하지 않으며 CONTROLLER는 현재 제어 불명이면 거절한다. 요청자와 현재 제어자의 조회권이 summary 생성권이나 제어 전환권이 되지 않는다.
+- 정확 ref/hash·원문/metadata·command/receipt/audit 4종을 기존 verifier로 대조한다. 입력에 없는 새 요청이나 command를 합성·저장하지 않는다. 조회 전후 현재 인증/회원/client·선택 view를 재검사하며, CONTROLLER의 제어 세대/버전 변경 또는 원문 권한 회수 시 전체 결과를 폐기한다. 늦은 부분 결과를 반환하지 않는다.
+- 목록 기본50/최대200, 최신 createdAt/id 내림차순 keyset이며 최대 limit+1만 읽는다. port 반환의 중복/순서/다른 프로젝트·주체·변조/과다 항목을 조용히 필터링하지 않고 거절한다. 목록에는 reason/원문 body 없이 최소 참조·시각·당시 상태와 현재 확인 상태만 보인다.
+- cursor는 canonical payload와 port 제공 서명으로 actor/client/credentialGeneration/project/view/limit/CONTROLLER 기준·마지막 정확 ref/createdAt·발급/만료를 결박한다. 고정 도메인 분리와 유한 30분·4KiB token은 내부 후보 시험 조건이며 인증 기간/최종 공개 API 정책을 변경하지 않는다. 변조·재인코딩 불일치·타 주체/기기/프로젝트/view/limit·만료/미래 발급·옛 controller 기준을 거절한다. 실제 서명 키는 생성하지 않고 시험용 signer만 사용한다.
+- RED/GREEN: 본인·현재 controller·과거 만료 원문 정상, 타인/VIEWER·회수/만료·교차 프로젝트·hash/4종 변조, 권한/제어 변경 중 지연 조회의 전체 미노출, 목록 유한성·안정 순서·다음 페이지/빈 끝, cursor 모든 결박 음성을 직접 확인한다. 쓰기/ID 할당/제어 변경·실제 HTTP/DB는 0이며 단위 2C 요약·실제 인수는 미완료다.
+
 - 같은 transaction에서 현재 인증/회원/client/제어를 재관측한 다음 요청 전용 명령·snapshot·receipt·audit를 모두 저장한다. 동일 commandId·payload만 replay하고, replay 전에도 현재 접근을 검사한다.
 - 기본 실제 adapter는 거절하며 fake transaction만으로 원자성·rollback·COMMIT 양방향 완전성·현재 권한 회수·기준 변경을 시험한다. 기존 일반 OWNER 검사에 예외를 덧붙이지 않는다.
 - 조회는 본인 요청 또는 현재 controller만 최소 원문을 얻는다. actor/project/filter/limit/기한 결박 cursor, 정확 version/hash, 누락/변조·다른 주체의 원문/민감 상태 일부 노출 0을 검사한다. 목록의 최대 200 등 수치는 내부 후보 조건이며 공개 조회권을 새로 확정하지 않는다.

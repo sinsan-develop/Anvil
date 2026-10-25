@@ -129,7 +129,7 @@ function expectedAudit(row: StoredControlRequestCommand): ControlRequestAudit {
 }
 
 /** transaction 내부의 4종 원문과 양방향 참조만 검증한다. 실제 DB 제약의 증거는 아니다. */
-function verifyBundle(value: unknown, command: ControlRequestCommand, input: ControlRequestInput,
+export function verifyBundle(value: unknown, command: ControlRequestCommand, input: ControlRequestInput,
   actorId: string, requestRef: ControlRequestRecord['requestRef'], createdAt: string): ControlRequestStoreResult {
   const bundle = clone(value, command.commandId);
   if (!recordV1(bundle, ['request', 'command', 'receipts', 'audits'])
