@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 원 QaOwnedRunHost는 고정6filesystem 또는 고정4failure의 실제 메서드를 원 factory/owner에서 호출하고 finally 같은 객체를 정리한다. PS는 공개 QAfacade만 사용·오류뒤 같은host참조를 반환한다. 접근성I1 보정·소유/실패분기 정적C0/I0/M0, host차단 반례검사만 수행했으며 actualloader/OS는 NOT_RUN이다. native367B930CD8098C498DF9E15F5279C0F1CF89F7DBF7F1AF4CC4D39C1652D3CBB1/hostF799EAAF01BFC4C446245EF4BC301F14BF07D005CCC85023AC258E797B6A30D2는 옛R0후보와 다른 source다. 공개facade는 출처/승인 증명이 아니고 production내부타입·gate는 그대로다.
+
 - 변경 영수증 recorded는 nativeStatus00000000만 허용하되 MUTATION_UNCONFIRMED+00000000을 성공으로 바꾸지 않는다. 반례 RED→GREEN/인접2검사·정적 C0/I0/M0, PS96A390B810CBA14E53D392B201D942874713C63215F4940CDDE5A1C0163EA8C1·native compile/OS NOT_RUN.
 
 ### 2026-10-25 남은 보호 흐름의 구체적 경계

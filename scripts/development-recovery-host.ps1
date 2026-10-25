@@ -37,6 +37,20 @@ function Read-DevelopmentRecoverySourceBinding([hashtable]$Value,[datetimeoffset
  $p.commit=$Value.commit;$p.runId=$Value.runId;$p.issuedAt=$issued.ToString('o');$p.expiresAt=$until.ToString('o')
  return $p
 }
+function Invoke-DevelopmentRecoveryQaOwnedHost([string]$CaseId,[string]$RunId,[string]$Commit,[datetime]$IssuedAt,[datetime]$ExpiresAt) {
+ # 실제 assembly 출처와 실행 승인이 연결되기 전에는 타입 조회·factory 호출보다 먼저 거절한다.
+ throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
+ $ownedHost=[DevelopmentRecoveryQaHost]::Create($CaseId,$RunId,$Commit,$IssuedAt,$ExpiresAt)
+ $observation=$null;$cleanup=$null;$hostState='QA_HOST_FLOW_UNCONFIRMED'
+ try{$observation=$ownedHost.Execute();$hostState='QA_HOST_RETURNED_NOT_OS_VALIDATED'}
+ catch{$hostState='QA_HOST_FLOW_UNCONFIRMED'}
+ finally{
+  # Execute의 finally와 동일 원 객체 정리다. 오류 뒤 외부 경로나 새 owner를 탐색하지 않는다.
+  try{$cleanup=$ownedHost.Cleanup()}catch{$hostState='QA_HOST_CLEANUP_UNCONFIRMED'}
+ }
+ # 오류/정리 불명도 원 host를 반환해 동일 원목록 참조를 잃지 않는다. 이 객체는 실행 허가가 아니다.
+ return [pscustomobject]@{ownedHost=$ownedHost;observation=$observation;cleanup=$cleanup;state=$hostState;osVerified=$false;executionAuthorized=$false}
+}
 if($MyInvocation.InvocationName -ne '.'){
  if($Plan){Get-DevelopmentRecoverySourcePlan 'P2'|ConvertTo-Json -Depth 3 -Compress}
  else{throw 'DEVELOPMENT_RECOVERY_OS_NOT_VALIDATED'}
