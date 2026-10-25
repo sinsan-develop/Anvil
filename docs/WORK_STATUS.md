@@ -1,4 +1,27 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI12 요청·요약 소비 — 한정 소스 검수
+
+- Round1 RED: BF263737 시험의 Main5f36ea는 새 요약 표시 export 부재1·동일 세션 객체 주체 변경 true≠false1로 0PASS/2FAIL·813.8244ms/skip0·exit1이었다. 앞선 잘못된 SELF 송신 반례 def2db와 구분한다. 제품DA99B880은 api 입력 shape·Page 요약 표시·state ticket의 주체 문자열 snapshot만 보정했다.
+- 결과: Main031d0a 신규 API7/state4와 기존SSR3 총14/14PASS·526.848ms/skip0·전체type0/diff0이다. 요약 validUntil과 조회 서버 observedAt으로 요약 만료를 계산하고 current.expired의 원요청 만료를 별도로 표시한다. 동일 명령 재확인에 현재 시각 TTL이나 새 commandId를 주입하지 않는다. fdb614 기존 Vite Web build exit0/429modules, 큰 chunk 경고는 보존하고 한도·구조를 바꾸지 않았다. 11f60f 화면 detector []/exit0은 기계적 검사일 뿐 시각·접근성 전체 PASS가 아니다.
+- 독립 검수: ui12_fn15_review는 I1 addressed, 새 보정 C0/I0/M0로 판정했다. 실제 UI 이벤트·DOM/브라우저 Network·served 로그인/재인증·PG/SQL·현재권한·인수 수락은 NOT_RUN이다. 순수 전송/state와 SSR 결과를 실제 화면 사용 가능으로 승격하지 않는다. Main3cd1a4는 제출최종7파일지문6919F968의 actual 일치를 확인했다.
+- 연결한 소스: App 소유 버퍼/현재 세션·주체·project·ticket/binding 대조, SELF 이유·만료 입력, 정확 control-state version 기반 고정 명령, GET/POST의 feature 전용 CSRF/same-origin, 목록→고정 요청/최신ref→고정 요약·4범주/미확인gap/false 표시다. 기본OFF/오류는 자료 숨김·쓰기 비활성, 미전송/UNKNOWN 명령은 유지하고 자동 POST0이다. 다른 사람 선택·수락·제어 전환/실수집은 미구현이다.
+- 다음: 소유 checkpoint/push와 보조물 정확 정리 후 실제 검증의 필요한 지원·선행 보완을 이어간다. 전체FN15/UI12/Stage/작업계획 미완료이며 Oracle/운영·서비스/DB/Secret/권한·Agent 변경0이다. rollback은 이 소유 checkpoint의 일반 revert이며 기존 보호자료와 서버 자료를 삭제하지 않는다.
+### 2026-10-26 UI12 요청·요약 소비 소스 — 첫 통합과 보완
+
+- 담당: ui12_fn15_connection 단일 제품 writer, Main 통합/직접시험, ui12_fn15_review 독립 정적 검수다. 제품4경로(App Control 추가/Page/신규 api·state)만 작성한다. r1 2A487537 뒤 Main778cf6은 신규8/8PASS·203.2147ms/skip0·diff0, 타입은 api DTO 직접cast TS2352 9건 및 state시험 null/union 2진단으로 exit1이었다.
+- 타입/SSR: 제품96424B26은 실제 필드 검증 assertion/typed DTO 구성으로 보정하고 unknown 이중cast·any/tsignore를 쓰지 않았다. 시험F054BC58은 union을 좁히고 기존SSR 기대를 늘어난 명시 버튼/이유·만료입력과 수락disabled로 갱신했다. 최초전송0·기존제어조회/같은프로젝트링크 기준을 유지했다. Main24eb7b 신규API/state8+기존SSR2=10/10PASS·1291.0454ms/skip0·type0/diff0이다. 실제DOM/served/DB는 NOT_RUN이다.
+- 보완 round1/5: 작성자 자체 송신 입력 공백의 시험BCB26BE6을 추가했다. Main def2db 신규2 중 정상 list/head/prepare1PASS, 잘못된SELF payload 전송3≠0 반례1FAIL·190.0584ms였다. 독립검수 C0/I1/M0는 요약 current.expired(원요청 만료)를 요약 유효기간으로 오표시하는 문제다. 요약 validUntil30초와 요청 expiresAt을 분리할 반례 시험부터 같은 writer에 지시했다. 실제권한/서버/SQL변경0이다.
+- 보조물 정리: 준비 소스 checkpoint7d8e86d5의 소유 cache18파일·빈디렉터리5는 Main이 rawhash/owner SINSAN\cyhuh·nonlink/root경계 대조 후 literal정리(e4aed4)했다. 별도401c3f에서 두patch/staging부재, 749437에서 기존 보존2지문 불변을 확인했다. UI현재staging/비소유/보호8은 유지한다.
+- 다음: 송신 guard/요약기간 표시의 필요한 보정과 영향 검증·web build·재검수 후 checkpoint한다. 일반 정책·계정/키·실DB/서비스·Agent·수락/제어 이전은 제외하며 전체계획 미완료다.
+### 2026-10-26 FN15 WSL 읽기 준비 관측과 UI12 RED
+
+- Git: 7d8e86d5d189c2a27aecaba84868c98010fba261 소유8경로 checkpoint를 development 지정 branch에 일반 push했다(ae74ca). 전후 main f976ed5e 불변·local/remote exact·tracked clean/보호 비추적8이었다. 이후 UI12 시험과 소유현황만 새변경이다.
+- 원격 읽기 오류: 첫 probe 5b94b4/9376f5는 `docker image ls --no-trunc --filter reference=postgres:15* --format {{.ID}}`가 15초 TimeoutExpired로 exit1이었다. 말미 JSON 이전에 중단돼 앞서 수집하던 container/network/daemon 값도 회수되지 않았다. 해당 상태를 정상/부재로 주장하지 않고 Docker 재조회·재시작·설정변경0으로 남긴다.
+- 부분 관측: Docker 명령 없이 파일/Node만 단계별 출력한 982403 SSH exit0. 신규 QA root는 부재·정확 realpath다. parent /home/daon/deploy와 기존 deps /home/daon/deploy/anvil-v3/node_modules는 UID/GID1000·775·nonlink/nonmount였다. Node /usr/local/bin/node의 realpath /opt/node-v24.22.1-linux-x64/bin/node·v24.22.1, 원격 lockfile SHA CA586E2DD02C11C41DA55A64AA4F07D3848936FE44DCA1897F8586AC4FB0F1D6는 local과 같았다. deps 내용/설치완전성·cached image/fullID/RepoDigest/daemon·새 container/network 부재는 미검증이다. 실제 자원·DB/SQL/역할/Secret/서비스·원격 파일 변경0. PMO에 근거·미확인을 전달했다.
+- UI12: TESTONLY7613A0B1의 신규 API/state 시험2파일을 적용했다. Main b47ee9는 실제 api.ts/state.ts 모듈 부재 RED2·pass0/fail2/skip0·150.2363ms/exit1이다. 이후 단일 ui12_fn15_connection이 허용4제품 경로를 작성한다. 신규 DOM용도구나 합성 DOM host를 만들지 않고 SSR/전송·DTO/순수 상태 검증으로 제한하며 실제 DOM/served/DB는 NOT_RUN으로 구분한다.
+- 다음: UI12 제품 통합·직접 영향 type/build/검수 후 다음 미완료 기능을 잇는다. 실제 PG 검증은 이미지/daemon/자원 부재·M1 manifest불변/최종 실행범위 미충족이며 그 이유로 무관한 화면 소스 작업을 중단하지 않는다.
+
+- PMO 후속 지원: 고정 새 QA literal의 부재/상위 실경로·소유/링크, cached PG15 image/daemon, Node24와 동일 lockfile/deps 경로 metadata의 한정 read-only WSL preflight만 기존 준비 범위로 확인했다. DB 접속·정식 PG metadata·제품자료/Secret 조회, clone/fetch/install/mkdir/image pull·자원 변경은 제외한다. compatibility anvil_v3_app는 신규 격리 인스턴스의 NOLOGIN/NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOINHERIT/NOBYPASSRLS·membership/SET ROLE0 후보이며 실제 role/SQL 실행은 미승인이다. 먼저 기존 SSH 연결의 이 metadata만 관측한다.
 ### 2026-10-26 FN15 준비 소스 검수와 UI12 다음 작성
 
 - Main Git 사전검사 오류: a83a10은 PowerShell -join 비교 괄호 누락으로 staged set mismatch를 보고해 commit 전 중단했다. de7dee 실제 stage 목록은 소유8경로와 일치하고 보호8은 비추적 그대로였다. 사용자 자료 변경·커밋0 상태에서 비교식을 괄호로 보정해 계속한다.
