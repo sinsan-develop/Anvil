@@ -1,4 +1,23 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 검증 명세 봉인 — 한정 소스 검수
+
+- 단일 작성 fn15_qa_manifest_seal, Main 통합/직접시험, fn15_qa_prep_review 독립검수다. 제품61F0A045는 기존 manifest/qa 2파일, TESTONLY79437F98은 기존 plan시험의 새3반례만 추가했다. Main4ec91e 영향9/9PASS·266.474ms/skip0·type0/diff0이다. 독립검수 C0/I0/M0로 기존 deferred M1을 이 범위에서 해소했다.
+- 전달manifest의 descriptor·비표준prototype/symbol/accessor/cycle·unknown shape를 거절하고 getter호출0, 원본5메타·fullSQL3 원문bytes/hash·ledger3·helper7개별/합본4250을재검증한다. 원입력을고치지않은분리된깊은불변snapshot과plan을보관한다. 제한NOLOGINcompat역할·schema bootstrap후보를명시했으나실제역할/GRANT·실행결정미검증거절은유지했다.
+- 읽기 전용 의존대조: ui12_connection_preflight가 0001의인증/재인증·project/control열과 현재AccessRepository/PG adapter SQL,0041 FK/트리거·7helper를대조해 최소원본에후속migration을더할정적근거가없음을확인했다. 후속ALTER/함수교체도발견되지않았으나실제SQL/권한·FK/COMMIT·canonical동등성은미검증이다. 실제경로/참여/row-lock·seed는후속bounded handler 검증이필요하다.
+- PMO 후속대조: M1/compat/schema bootstrap/bounded handler 소스 작성은 기존WI4.3수용범위이며추가소스결정은불필요하다. 실제효과는완성된exactSHA/argv/자원후보의별도실행판단까지미실행한다. 따라서다음소스는기존기본미연결을보존한유한PG검증handler이며정식DB/서비스/Secret·Agent/인수·운영영향0을유지한다.
+### 2026-10-26 FN15 검증 명세 봉인 — RED 선행
+
+- 담당/소유: fn15_qa_manifest_seal 단일 writer가 기존 manifest/qa 두 제품과 직접 plan시험의 좁은 보완을 진행한다. 실제 transport/역할/DB/자원/서비스 실행0·실행 기본미연결을유지한다.
+- Main cc2b41: TESTONLY79437F98 적용 뒤 신규3건만실행,0PASS/3FAIL·174.5376ms/skip0·exit1이다. 전달후20종 변조 중예외누락, 입력과plan.manifest참조동일, compatibility후보부재를확인했다. 이는실제권한우회나PG실패가아닌기존M1·준비명세의구현전RED다. 원SQL/정식migration/다른제품은불변이다.
+- 다음: 전체manifest내용·순서/SQLbyte/hash·ledger/helper부분표시를재검증하고입력을수정하지않은분리깊은불변snapshot,신규격리NOLOGINcompat/새schema bootstrap후보를보완한다. 실제handler의최소SQL의존은별도읽기agent가대조중이며실행범위는PMO와분리대조한다.
+### 2026-10-26 UI12 게시·QA 준비의 다음 선행
+
+- 게시/정리: UI12 소유9경로96a9c34ef87d721a736643f91220acd23bfb1082는 20f128 일반push 후 local/development exact·main f976ed5e 불변·tracked clean/보호8이었다. 작성자의 최종 소유 cache18파일과 하위9+root 빈디렉터리는 Main이 rawhash/owner/nonlink/root경계 대조 후 literal정리(a8873b)했고 별도f74c58에서staging부재를확인했다. 비소유/기존보존본은유지했다.
+- 좁힌 metadata: 이전 image 전체목록 timeout은 반복하지 않고 정본의 cached image fullID 한 개로 좁혔다. e94a29 SSH exit0의 image ID sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f, tag postgres:15.18, RepoDigest postgres@sha256:6eb0add3b77c081df18aa518ce43df58fdcc40f2e6d868a6fd08038dc7acd425, linux/amd64다. 새QA container literal은 No such container(exit1), 새net literal은 not found(exit1)로 현재부재를확인했다. daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e다. image tag관측은 실행된 PG binary/DB version 검증이 아니다. 생성 직전 부재를다시확인해야하며현재QA실행/정리성공증거가아니다.
+- 실제 정식 PG container/DB·env/Secret·서비스 조회/변경은0이고 앞선목록timeout을소급PASS로바꾸지않는다. PMO에정확관측·최종실행미충족을전달했다.
+- 다음 단일 writer: fn15_qa_manifest_seal에 기존 준비3scripts/시험2 범위의 M1 전달manifest 전체재검증·깊은불변snapshot/변조반례 및 PMO수용된NOLOGINcompat역할·새schema bootstrap계획만배정했다. WI SHA1FF8445D75B1A1DC158081DDFEE4AE8054FFA51B244231B29F5AE0FE33CB30BA. 실제CREATE ROLE/GRANT/seed/SQL/transport·자원·Agent0, 기본PLAN_ONLY/NOT_CONNECTED·UNVERIFIED를유지한다. 실제handler/최종격리실행delta는후속대조중이며기존0012/TLS/OShelper/서비스거절을우회하지않는다.
+
+- 제한 준비 관측 보완 계획: 이미지 전체 목록 timeout을 반복하지 않고 DEVELOPMENT_ENVIRONMENT에 이미 기록된 cached image fullID sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f 한 개의 ID/RepoTags/RepoDigest/OS/architecture만 읽는다. 같은 범위의 신규 QA literal container/network metadata·daemon ID는 단계별 출력으로 회수한다. 각 명령 timeout은 결과로 보존하고 실패 시 자원/설정 변경 없이 미확인으로 남긴다. 정식 PG container metadata·DB/Secret 접근은 없다.
 ### 2026-10-26 UI12 요청·요약 소비 — 한정 소스 검수
 
 - Round1 RED: BF263737 시험의 Main5f36ea는 새 요약 표시 export 부재1·동일 세션 객체 주체 변경 true≠false1로 0PASS/2FAIL·813.8244ms/skip0·exit1이었다. 앞선 잘못된 SELF 송신 반례 def2db와 구분한다. 제품DA99B880은 api 입력 shape·Page 요약 표시·state ticket의 주체 문자열 snapshot만 보정했다.

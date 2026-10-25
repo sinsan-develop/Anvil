@@ -177,6 +177,7 @@ reason 최대20,000자·본문2MiB, 요청 최대30분, 목록 기본50/최대20
 - 실제 socket HTTP/TLS/브라우저·UI/정식 DB46/전체 migration/실제 로그인/재인증·Agent/수락·제어 전환/운영·Oracle는 제외다. 새 조회 source가 준비되면 최종 exact SHA에서 그 읽기 연결까지 실제 PG 범위를 대조하되 이번 후보만으로 범위를 자동 늘리지 않는다.
 - 준비할 소스 후보는 신규 `scripts/fn15-isolated-qa.ts`·고정 launch/manifest 모듈·직접 계획/guard 시험 최대2파일이며, 실행 기본은 거절/plan-only다. 실제 실행 handler·resource/role/SQL 조작의 작성 범위 자체를 PMO에 대조하고, 완성된 exact commit/resource manifest를 갖춘 뒤 실행 판단을 따로 받는다. 현재 source·정식 설정·DB·권한을 변경하는 실행은0이다.
 
+**2026-10-26 후속 실행 준비 선행:** PMO가 수용한 후보 상세화에 따라 신규 격리 인스턴스의 `anvil_v3_app` compatibility 역할은 NOLOGIN/NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOINHERIT/NOBYPASSRLS, 다른 역할 membership·상속/SET ROLE 부여0으로만 계획한다. 기존 정식 역할 연결·실제 CREATE ROLE/GRANT/seed/SQL은 미승인이다. 원본0000은 schema를 생성하지 않으므로 새 격리 `anvil`/`anvil_qa` bootstrap 단계를 별도로 명시한다. 실제 transport 작성·연결 전에 전달 manifest의 원본5/정확full SQL3·ledger3/블록7·합본을 전부 다시 검증하고 깊은 불변 snapshot과 변조 반례로 M1을 해소한다. 기존3 scripts와 직접시험2 범위만 사용하고 실행 기본 PLAN_ONLY/NOT_CONNECTED는 유지한다.
 ### 4.4 UI12의 기존 FN15 소스 소비 연결
 
 승인된 UI12/S12와 위 4.1·4.2의 기본 OFF 후보를 화면에서 소비하는 내부 구현 단위다. 공개 계약 채택·실제 등록/활성화·DB·서비스·수락/제어 전환을 대신하지 않는다. 다른 사람 선택과 인수 수락은 미구현으로 유지한다.

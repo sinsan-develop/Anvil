@@ -1,4 +1,4 @@
-import type { Fn15QaManifest } from './fn15-isolated-qa-manifest.ts';
+import { snapshotFn15QaManifest, type Fn15QaManifest } from './fn15-isolated-qa-manifest.ts';
 
 const ROOT = '/home/daon/deploy/anvil-v3-fn15-source-qa-01';
 const CONTAINER = 'anvil-v3-fn15-source-qa-pg-01';
@@ -54,7 +54,20 @@ export interface Fn15QaPlan {
     readonly updateForRowLocksCandidate: readonly string[];
     readonly delete: false;
     readonly publicGrant: false;
-    readonly unresolvedSourceRole: 'anvil_v3_app';
+    readonly bootstrapSchemas: readonly ['anvil', 'anvil_qa'];
+    readonly bootstrapBeforeSql: true;
+    readonly compatibility: {
+      readonly name: 'anvil_v3_app';
+      readonly login: false;
+      readonly superuser: false;
+      readonly createDb: false;
+      readonly createRole: false;
+      readonly inherit: false;
+      readonly bypassRls: false;
+      readonly memberships: readonly [];
+      readonly setRoleGrants: readonly [];
+      readonly verification: 'UNVERIFIED';
+    };
   };
   readonly seedPlan: {
     readonly projects: 1;
@@ -75,14 +88,11 @@ const fn15Tables = ['anvil.control_handoff_source_requests', 'anvil.control_hand
   'anvil.control_handoff_source_audits'] as const;
 
 export function createFn15QaPlan(manifest: Fn15QaManifest, binding: Fn15QaBinding = {}): Fn15QaPlan {
-  if (manifest.helpers.status !== 'PARTIAL_HELPERS_ONLY' || manifest.helpers.byteLength !== 4250 ||
-      manifest.helpers.blocks.length !== 7 || manifest.ledger.length !== 3) {
-    throw new Error('FN15_QA_MANIFEST_NOT_VERIFIED');
-  }
-  return {
+  const manifestSnapshot = snapshotFn15QaManifest(manifest);
+  const plan: Fn15QaPlan = {
     status: 'UNVERIFIED', effectPort: 'NOT_CONNECTED', executionAuthorized: false,
     sourceSha: binding.sourceSha ?? 'UNVERIFIED', instanceId: binding.instanceId ?? 'UNVERIFIED',
-    expiresAt: binding.expiresAt ?? 'UNVERIFIED', manifest,
+    expiresAt: binding.expiresAt ?? 'UNVERIFIED', manifest: manifestSnapshot,
     resources: {
       wslRoot: ROOT, container: CONTAINER, network: NETWORK, database: 'anvil_v3_fn15_source_qa_01',
       ownerRole: 'anvil_fn15_qa_owner', runtimeRole: 'anvil_fn15_qa_app', ownerLabel: OWNER_LABEL,
@@ -95,7 +105,8 @@ export function createFn15QaPlan(manifest: Fn15QaManifest, binding: Fn15QaBindin
       'READ_ONLY_PREFLIGHT: root/name absence, realpath, daon owner, mount/link, final exact Git SHA, clean tree',
       'READ_ONLY_PREFLIGHT: existing local PG15 full image ID/RepoDigest, daemon ID, Node24 version/realpath, lockfile and deps realpath/owner',
       'ISOLATED_RESOURCE_PROPOSAL: one internal network, one PG15 tmpfs container, no host port, no volume, no image pull',
-      'ISOLATED_DB_PROPOSAL: create anvil/anvil_qa schemas, NOLOGIN owner and LOGIN runtime role only after source role dependency resolution',
+      'BOOTSTRAP_BEFORE_SQL_PROPOSAL: new empty isolated PG only; create anvil/anvil_qa schemas before exact 0000 (0000 does not create schemas)',
+      'ISOLATED_ROLE_PROPOSAL: NOLOGIN owner and LOGIN runtime with candidate minimal grants; separate anvil_v3_app compatibility NOLOGIN/NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOINHERIT/NOBYPASSRLS, no memberships or SET ROLE grants; actual roles/grants UNVERIFIED',
       'SQL_ORDER: exact full 0000, exact full 0001, seven exact helper blocks, exact full 0041',
       'LEDGER: full 0000/0001/0041 only; helper provenance PARTIAL_HELPERS_ONLY in separate QA manifest',
       'GRANT_PROPOSAL: schema USAGE, source/ledger/five tables SELECT, five tables INSERT, minimal row-lock UPDATE candidate; no DELETE/PUBLIC',
@@ -113,7 +124,12 @@ export function createFn15QaPlan(manifest: Fn15QaManifest, binding: Fn15QaBindin
       select: [...sourceTables, ...fn15Tables], insert: [...fn15Tables],
       updateForRowLocksCandidate: ['anvil.users', 'anvil.clients', 'anvil.auth_sessions',
         'anvil.projects', 'anvil.project_members', 'anvil.project_control', ...fn15Tables],
-      delete: false, publicGrant: false, unresolvedSourceRole: 'anvil_v3_app',
+      delete: false, publicGrant: false,
+      bootstrapSchemas: ['anvil', 'anvil_qa'], bootstrapBeforeSql: true,
+      compatibility: {
+        name: 'anvil_v3_app', login: false, superuser: false, createDb: false, createRole: false,
+        inherit: false, bypassRls: false, memberships: [], setRoleGrants: [], verification: 'UNVERIFIED',
+      },
     },
     seedPlan: {
       projects: 1, users: 2, clients: 3, sessions: 3, controlGeneration: 1, controlVersion: 1,
@@ -123,6 +139,15 @@ export function createFn15QaPlan(manifest: Fn15QaManifest, binding: Fn15QaBindin
       'socket HTTP/TLS/browser/UI', 'real login/reauth and Agent/control acceptance or transfer',
       'OS helper, service, Oracle, scheduler, registry'],
   };
+  return freezeFn15QaPlanValue(plan);
+}
+
+function freezeFn15QaPlanValue<T>(value: T): T {
+  if (value !== null && typeof value === 'object') {
+    for (const child of Object.values(value)) freezeFn15QaPlanValue(child);
+    Object.freeze(value);
+  }
+  return value;
 }
 
 export interface Fn15QaObservation {
@@ -159,7 +184,7 @@ export function evaluateFn15QaReadiness(plan: Fn15QaPlan, observed: Fn15QaObserv
       !/^[a-f0-9]{64}$/i.test(observed.deps.lockfileSha)) {
     refusals.push('NODE_DEPS_LOCKFILE_UNVERIFIED');
   }
-  refusals.push('SOURCE_ROLE_ANVIL_V3_APP_DEPENDENCY_UNRESOLVED');
+  refusals.push('SOURCE_ROLE_ANVIL_V3_APP_ACTUAL_ROLE_AND_GRANTS_UNVERIFIED');
   refusals.push('EXTERNAL_EFFECT_PORT_NOT_CONNECTED');
   refusals.push('SEPARATE_EXECUTION_DECISION_NOT_PRESENT');
   return { state: 'UNVERIFIED' as const, executionAuthorized: false as const, actualPgVerified: false as const, refusals };

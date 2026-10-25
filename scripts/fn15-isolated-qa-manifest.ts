@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { isDeepStrictEqual } from 'node:util';
 
 const sources = [
-  { name: '0000_environment.sql', sha256: '6EBBB9C580D54A50E0431806EE982244CBE134613354F8C3A8CD4F547E30178D', ledgerId: '0000_environment' },
-  { name: '0001_projects_access.sql', sha256: '353D28D657794D47B84DB0C8A4D9481C8EBC9BF73278614578C6CF5CFD4C3643', ledgerId: '0001_projects_access' },
-  { name: '0017_execution_authority.sql', sha256: '40C8666FE6FB8F9D1D027D9F15D03E8A71F2B608887343E9A92B49C72220B1F3' },
-  { name: '0025_result_submissions.sql', sha256: '426EC20615003F0FEF5F87F175A7E11F425DA51DBC952F1530C292821932325A' },
-  { name: '0041_control_handoff_source.sql.pending', sha256: 'C6BD081FC7A70F8EAA68AC673CCE6F8E41549D98F2C3E5BB3C22833874B0E522', ledgerId: '0041_control_handoff_source' },
+  { name: '0000_environment.sql', byteLength: 343, sha256: '6EBBB9C580D54A50E0431806EE982244CBE134613354F8C3A8CD4F547E30178D', ledgerId: '0000_environment' },
+  { name: '0001_projects_access.sql', byteLength: 7372, sha256: '353D28D657794D47B84DB0C8A4D9481C8EBC9BF73278614578C6CF5CFD4C3643', ledgerId: '0001_projects_access' },
+  { name: '0017_execution_authority.sql', byteLength: 54901, sha256: '40C8666FE6FB8F9D1D027D9F15D03E8A71F2B608887343E9A92B49C72220B1F3' },
+  { name: '0025_result_submissions.sql', byteLength: 21367, sha256: '426EC20615003F0FEF5F87F175A7E11F425DA51DBC952F1530C292821932325A' },
+  { name: '0041_control_handoff_source.sql.pending', byteLength: 21780, sha256: 'C6BD081FC7A70F8EAA68AC673CCE6F8E41549D98F2C3E5BB3C22833874B0E522', ledgerId: '0041_control_handoff_source' },
 ] as const;
 
 const helpers = [
@@ -86,6 +87,81 @@ export function buildFn15QaManifest(input: Readonly<Record<string, Uint8Array>>)
     ledger: fullSql.map(({ id, sha256: checksum }) => ({ id, checksum: checksum.toLowerCase() })),
     helpers: { status: 'PARTIAL_HELPERS_ONLY', blocks, byteLength: 4250, sha256: joinedHash, sql: joined.toString('utf8') },
   };
+}
+
+
+// Inspect descriptors before consuming any values: getters, symbols, cycles and
+// non-plain input are rejected without invoking a getter or reading source files.
+function assertManifestData(value: unknown, ancestors = new Set<object>()): void {
+  if (value === null || typeof value === 'string' || typeof value === 'number') return;
+  if (typeof value !== 'object' || ancestors.has(value)) throw new Error('INVALID_MANIFEST_DATA');
+  const array = Array.isArray(value);
+  if (Object.getPrototypeOf(value) !== (array ? Array.prototype : Object.prototype)) {
+    throw new Error('INVALID_MANIFEST_PROTOTYPE');
+  }
+  ancestors.add(value);
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== 'string') throw new Error('INVALID_MANIFEST_KEY');
+    const descriptor = Object.getOwnPropertyDescriptor(value, key);
+    if (!descriptor || !('value' in descriptor)) throw new Error('INVALID_MANIFEST_ACCESSOR');
+    if (array && key === 'length') continue;
+    if (!descriptor.enumerable || (array && !/^(0|[1-9][0-9]*)$/.test(key))) {
+      throw new Error('INVALID_MANIFEST_KEY');
+    }
+    assertManifestData(descriptor.value, ancestors);
+  }
+  ancestors.delete(value);
+}
+
+// This boundary accepts only the exact pinned preparation contract. It copies
+// strings and metadata into fresh records, then freezes every retained record.
+export function snapshotFn15QaManifest(input: Fn15QaManifest): Fn15QaManifest {
+  try {
+    assertManifestData(input);
+    if (!Array.isArray(input.fullSql) || typeof input.helpers.sql !== 'string') {
+      throw new Error('INVALID_MANIFEST_SHAPE');
+    }
+    let fullIndex = 0;
+    const fullSql = sources.flatMap((source) => {
+      if (!('ledgerId' in source)) return [];
+      const entry = input.fullSql[fullIndex++];
+      if (!entry || typeof entry.sql !== 'string') throw new Error('INVALID_MANIFEST_SQL');
+      const bytes = Buffer.from(entry.sql, 'utf8');
+      if (bytes.length !== source.byteLength || sha256(bytes) !== source.sha256) {
+        throw new Error('INVALID_MANIFEST_SQL');
+      }
+      return [Object.freeze({ id: source.ledgerId, source: source.name, sql: entry.sql, sha256: source.sha256 })];
+    });
+    const helperBytes = Buffer.from(input.helpers.sql, 'utf8');
+    const combinedHash = '282F65A34BEDE0D3A086307BBBC66A6C43C69AFA8CDDCDF1EF9AE8D8C9D71D0F';
+    if (helperBytes.length !== 4250 || sha256(helperBytes) !== combinedHash) throw new Error('INVALID_MANIFEST_HELPERS');
+    let offset = 0;
+    for (const [index, helper] of helpers.entries()) {
+      if (index > 0) {
+        if (helperBytes[offset] !== 10) throw new Error('INVALID_MANIFEST_SEPARATOR');
+        offset++;
+      }
+      if (sha256(helperBytes.subarray(offset, offset + helper.byteLength)) !== helper.sha256) {
+        throw new Error('INVALID_MANIFEST_HELPER_BLOCK');
+      }
+      offset += helper.byteLength;
+    }
+    if (offset !== helperBytes.length) throw new Error('INVALID_MANIFEST_HELPER_LENGTH');
+    const snapshot: Fn15QaManifest = {
+      sourceFiles: Object.freeze(sources.map(({ name, byteLength, sha256 }) => Object.freeze({ name, byteLength, sha256 }))),
+      fullSql: Object.freeze(fullSql),
+      ledger: Object.freeze(fullSql.map(({ id, sha256: checksum }) => Object.freeze({ id, checksum: checksum.toLowerCase() }))),
+      helpers: Object.freeze({ status: 'PARTIAL_HELPERS_ONLY',
+        blocks: Object.freeze(helpers.map((helper) => Object.freeze({ ...helper }))),
+        byteLength: 4250, sha256: combinedHash, sql: input.helpers.sql }),
+    };
+    // Comparing the whole data shape also rejects unknown keys, wrong counts,
+    // fabricated ledger entries, reordered metadata and partial/full relabeling.
+    if (!isDeepStrictEqual(input, snapshot)) throw new Error('INVALID_MANIFEST_CONTENT');
+    return Object.freeze(snapshot);
+  } catch {
+    throw new Error('FN15_QA_MANIFEST_NOT_VERIFIED');
+  }
 }
 
 // The only filesystem read is this explicit call. Imports never read source files or invoke external effects.

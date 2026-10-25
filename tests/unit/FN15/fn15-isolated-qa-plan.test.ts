@@ -115,3 +115,80 @@ test('fake 오류 코드와 예외의 비밀처럼 보이는 원문은 이력에
     'SYNTHETIC_PHASE_THROW');
   assert.equal(JSON.stringify(result).includes(secret), false);
 });
+
+
+test('plan은 전달 후 변조된 원본 지문·SQL·ledger·helper를 전부 거절한다', () => {
+  const mutations: readonly ((value: import('../../../scripts/fn15-isolated-qa-manifest.ts').Fn15QaManifest) => void)[] = [
+    (value) => { Reflect.set(value.sourceFiles[0]!, 'sha256', '0'.repeat(64)); },
+    (value) => { Reflect.set(value.sourceFiles[1]!, 'byteLength', 1); },
+    (value) => { Reflect.set(value.sourceFiles[2]!, 'name', '0025_result_submissions.sql'); },
+    (value) => { Reflect.set(value.fullSql[0]!, 'sql', value.fullSql[0]!.sql + '\n'); },
+    (value) => { Reflect.set(value.fullSql[1]!, 'sha256', '0'.repeat(64)); },
+    (value) => { Reflect.set(value.fullSql[2]!, 'id', '0017_execution_authority'); },
+    (value) => { Reflect.set(value.ledger[0]!, 'checksum', '0'.repeat(64)); },
+    (value) => { Reflect.set(value.ledger[1]!, 'id', '0017_execution_authority'); },
+    (value) => { Reflect.set(value.helpers, 'sql', value.helpers.sql + '\n'); },
+    (value) => { Reflect.set(value.helpers, 'sha256', '0'.repeat(64)); },
+    (value) => { Reflect.set(value.helpers.blocks[0]!, 'byteLength', 1); },
+    (value) => { Reflect.set(value.helpers.blocks[1]!, 'name', 'execution_json_hash'); },
+    (value) => { Reflect.set(value.helpers, 'status', 'FULL_0017_APPLIED'); },
+    (value) => { Reflect.set(value.fullSql, '0', value.fullSql[1]); },
+    (value) => { Reflect.set(value.helpers.blocks, '0', value.helpers.blocks[1]); },
+    (value) => { Reflect.set(value, 'unknown', true); },
+    (value) => { Reflect.set(value.helpers.blocks[0]!, 'unknown', true); },
+    (value) => { Reflect.set(value.ledger, 'unknown', true); },
+    (value) => { Reflect.set(value, 'cycle', value); },
+    (value) => { Reflect.set(value.helpers, 'blocks', { length: 7 }); },
+  ];
+  for (const mutate of mutations) {
+    const input = structuredClone(manifest.readFn15QaManifest());
+    mutate(input);
+    assert.throws(() => qa.createFn15QaPlan(input), /FN15_QA_MANIFEST_NOT_VERIFIED/);
+  }
+  let getterCalls = 0;
+  const accessor = structuredClone(manifest.readFn15QaManifest());
+  Object.defineProperty(accessor.helpers, 'sql', { get() { getterCalls++; return ''; } });
+  assert.throws(() => qa.createFn15QaPlan(accessor), /FN15_QA_MANIFEST_NOT_VERIFIED/);
+  assert.equal(getterCalls, 0);
+  const inherited = structuredClone(manifest.readFn15QaManifest());
+  Object.setPrototypeOf(inherited.ledger[0], { hostile: true });
+  assert.throws(() => qa.createFn15QaPlan(inherited), /FN15_QA_MANIFEST_NOT_VERIFIED/);
+});
+
+test('plan은 입력을 동결하지 않고 분리된 깊은 불변 manifest snapshot을 보관한다', () => {
+  const input = structuredClone(manifest.readFn15QaManifest());
+  const snapshotPlan = qa.createFn15QaPlan(input);
+  const before = JSON.stringify(snapshotPlan);
+  assert.notEqual(snapshotPlan.manifest, input);
+  assert.equal(Object.isFrozen(input), false);
+  assert.equal(Object.isFrozen(snapshotPlan), true);
+  for (const item of [snapshotPlan.manifest, snapshotPlan.manifest.sourceFiles,
+    ...snapshotPlan.manifest.sourceFiles, snapshotPlan.manifest.fullSql, ...snapshotPlan.manifest.fullSql,
+    snapshotPlan.manifest.ledger, ...snapshotPlan.manifest.ledger, snapshotPlan.manifest.helpers,
+    snapshotPlan.manifest.helpers.blocks, ...snapshotPlan.manifest.helpers.blocks]) assert.equal(Object.isFrozen(item), true);
+  Reflect.set(input.fullSql[0], 'sql', 'changed');
+  Reflect.set(input.ledger[0], 'id', 'changed');
+  Reflect.set(input.helpers, 'sql', 'changed');
+  Reflect.set(input.sourceFiles[0], 'sha256', 'changed');
+  assert.equal(JSON.stringify(snapshotPlan), before);
+  assert.equal(Reflect.set(snapshotPlan.manifest.helpers, 'sql', 'changed'), false);
+});
+
+test('compatibility 역할과 schema bootstrap은 새 빈 격리 PG 후보이며 실제 역할 검증을 뜻하지 않는다', () => {
+  assert.deepEqual(plan.rolePlan.compatibility, {
+    name: 'anvil_v3_app', login: false, superuser: false, createDb: false, createRole: false,
+    inherit: false, bypassRls: false, memberships: [], setRoleGrants: [], verification: 'UNVERIFIED',
+  });
+  assert.deepEqual(plan.rolePlan.bootstrapSchemas, ['anvil', 'anvil_qa']);
+  assert.equal(plan.rolePlan.bootstrapBeforeSql, true);
+  assert.equal(plan.rolePlan.owner, 'NOLOGIN');
+  assert.equal(plan.rolePlan.runtime, 'LOGIN');
+  assert.equal(plan.rolePlan.publicGrant, false);
+  const ready = qa.evaluateFn15QaReadiness(plan);
+  assert.equal(ready.state, 'UNVERIFIED');
+  assert.equal(ready.executionAuthorized, false);
+  assert.equal(ready.actualPgVerified, false);
+  assert.ok(ready.refusals.includes('SOURCE_ROLE_ANVIL_V3_APP_ACTUAL_ROLE_AND_GRANTS_UNVERIFIED'));
+  assert.ok(ready.refusals.includes('EXTERNAL_EFFECT_PORT_NOT_CONNECTED'));
+  assert.ok(ready.refusals.includes('SEPARATE_EXECUTION_DECISION_NOT_PRESENT'));
+});
