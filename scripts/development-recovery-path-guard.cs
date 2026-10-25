@@ -623,29 +623,37 @@ internal static class DevelopmentRecoveryPathGuard {
  // 실행 흐름과 회수 소유를 같은 객체에 둔다. 외부 callback/lease/handle/PID는 받지 않는다.
  internal sealed class QaOwnedRunHost {
   readonly string selected,runId,commit;readonly DateTime issued,until;readonly int ownerThread=Environment.CurrentManagedThreadId;
-  QaFixtureOwner owner;bool started,cleaning;string phase="NOT_STARTED",preparation="NOT_STARTED";
+  QaFixtureOwner owner;QaProcessProbe process;bool started,cleaning;string phase="NOT_STARTED",preparation="NOT_STARTED";
+  string membership="NOT_OBSERVED",processExit="NOT_OBSERVED",processClose="NOT_OBSERVED";
   string[] mutation,cleanup,failure;
   QaOwnedRunHost(string id,string run,string sha,DateTime start,DateTime end){selected=id;runId=run;commit=sha;issued=start;until=end;}
   static bool FailureCase(string id){return Array.IndexOf(new[]{"WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","CLEANUP_UNKNOWN"},id)>=0;}
   public static QaOwnedRunHost Create(string selected,string runId,string commit,DateTime issued,DateTime until){
    Require(QaAdapterConnected);
-   Require(FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
+   Require(selected=="JOB_MEMBERSHIP"||FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
    return new QaOwnedRunHost(selected,runId,commit,issued,until);
   }
   void OwnerThread(){Require(Environment.CurrentManagedThreadId==ownerThread);}
   public string[][] Execute(){
    OwnerThread();Require(!started&&!cleaning);started=true;
    try{
-    phase="ACQUIRING_ORIGINAL_OWNER";owner=QaFixtureOwner.Begin(selected,runId,commit,issued,until);
-    if(FailureCase(selected)){
-     phase="OBSERVING_ORIGINAL_FAILURE";failure=owner.ObserveFailure();
-     Require(failure!=null&&failure.Length==4&&failure[0]==selected);
-     phase="QA_FAILURE_RECEIPT_RECORDED_NOT_OS_VALIDATED";
+    if(selected=="JOB_MEMBERSHIP"){
+     phase="ACQUIRING_ORIGINAL_QA_JOB";process=QaProcessProbe.Begin(runId,commit,issued,until);
+     phase="STARTING_FIXED_QA_SLEEP";process.StartFixedSleepProbe();
+     phase="OBSERVING_ORIGINAL_JOB";membership=process.ObserveOriginalJobMembership();
+     phase=membership=="QA_ORIGINAL_JOB_MEMBERSHIP_OBSERVED_NOT_OS_VALIDATED"?"QA_MEMBERSHIP_RECORDED_NOT_OS_VALIDATED":"QA_MEMBERSHIP_UNCONFIRMED";
     }else{
-     phase="PREPARING_ORIGINAL_FIXTURE";preparation=owner.Prepare();
-     phase="MUTATING_ORIGINAL_FIXTURE";mutation=owner.Mutate();
-     Require(mutation!=null&&mutation.Length==4&&mutation[0]==selected);
-     phase=mutation[2]=="MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT"?"QA_ACTION_RECORDED_NOT_OS_VALIDATED":"QA_ACTION_UNCONFIRMED";
+     phase="ACQUIRING_ORIGINAL_OWNER";owner=QaFixtureOwner.Begin(selected,runId,commit,issued,until);
+     if(FailureCase(selected)){
+      phase="OBSERVING_ORIGINAL_FAILURE";failure=owner.ObserveFailure();
+      Require(failure!=null&&failure.Length==4&&failure[0]==selected);
+      phase="QA_FAILURE_RECEIPT_RECORDED_NOT_OS_VALIDATED";
+     }else{
+      phase="PREPARING_ORIGINAL_FIXTURE";preparation=owner.Prepare();
+      phase="MUTATING_ORIGINAL_FIXTURE";mutation=owner.Mutate();
+      Require(mutation!=null&&mutation.Length==4&&mutation[0]==selected);
+      phase=mutation[2]=="MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT"?"QA_ACTION_RECORDED_NOT_OS_VALIDATED":"QA_ACTION_UNCONFIRMED";
+     }
     }
    }catch{phase="QA_HOST_FLOW_UNCONFIRMED";}
    finally{CleanupOriginalOwner();}
@@ -653,6 +661,13 @@ internal static class DevelopmentRecoveryPathGuard {
   }
   void CleanupOriginalOwner(){
    OwnerThread();cleaning=true;
+   if(process!=null){
+    if(processClose=="QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED"||processClose=="QA_CLOSE_UNCONFIRMED")return;
+    try{processExit=process.StopOwnedQaAndObserve();}catch{processExit="QA_EXIT_UNCONFIRMED";}
+    // 종료 관측이 불명하면 이 메서드도 원 process/Job을 다시 확인하고 살아있는 handle을 보존한다.
+    try{processClose=process.CloseAfterObservedExit();}catch{processClose="QA_CLOSE_UNCONFIRMED";}
+    return;
+   }
    if(owner==null){cleanup=new[]{"NOT_ATTEMPTED","ORIGINAL_OWNER_UNAVAILABLE_PRESERVED","NOT_APPLICABLE"};return;}
    try{cleanup=owner.Cleanup();}
    catch{cleanup=new[]{"CASE_UNCONFIRMED","CLEANUP_RECEIPT_UNCONFIRMED_PRESERVED","NOT_APPLICABLE"};}
@@ -660,7 +675,7 @@ internal static class DevelopmentRecoveryPathGuard {
   public string[][] Cleanup(){OwnerThread();CleanupOriginalOwner();return Snapshot();}
   static string[] Copy(string[] value){return value==null?new string[0]:(string[])value.Clone();}
   public string[][] Snapshot(){
-   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure)};
+   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure),new[]{membership,processExit,processClose}};
   }
  }
  [StructLayout(LayoutKind.Sequential)]struct IoCounters {internal ulong ReadOps,WriteOps,OtherOps,ReadBytes,WriteBytes,OtherBytes;}
