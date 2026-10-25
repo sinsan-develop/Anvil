@@ -1,4 +1,26 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 bounded PG handler — 한정 소스 검수
+
+- Round1보완: DF8564FC는launch/qa 두제품을보정했다. 정확metadata11열·기본namespace4/extensionplpgsql만·public class/function/type0·고정role0을쓰기전대조한다. admin준비Tx의실행별randomnonce+instance/sourceSHA를기존QAfixture에기록하고runtime이정확조회한뒤에만app/source를생성한다. fixtureSELECT만추가한후보grant와rolePlan이일치하며새schema/제품계약은없다.
+- Main7f05f3 plan시험11/11PASS·200.982ms/skip0·전체type0/diff0. 독립 fn15_pg_handler_review는I1/I2해소·보정범위신규C0/I0/M0로판정했다. 이는기본미연결/fake SQL0·manifest변조/순수DBmetadata와binding의합성증거이며실SQL/role/grant/nonce저장/서버흐름을실행한것은0이다.
+- 함수후보: caller가별도로준비·식별한전용Pool만명시주입하고Pool생성/end0,획득client반환·트랜잭션rollback·Fastifyclose실패는FAILED로남긴다. 기본launch/CLI미연결·자기승인0/actualPgVerifiedfalse를유지한다. 실제실행시에만핵심7경로·요청replay/독립저장hash/canonical·4묶음counts/타주체·타project거절의한정marker를수집한다.
+- 미실행: row-lock최소권한차등·실경합·응답유실·불변/부분COMMIT·회수/만료/옛세대반증,실collector·socket/TLS/browser/정식schema/실login/Agent·인수/전계획완료는NOT_RUN이다. 후속실제실행은exactsource/argv/고정신규자원·보호입력/수명·정리후보를PMO/실행플랫폼에서대조한뒤에만진행한다. 이소스checkpoint로실행허가를만들지않는다.
+### 2026-10-26 bounded PG handler — 소스 검수 보완 round 1
+
+- 최초 통합: 제품r3 4D31606A의 기존launch 1파일 후 Main7b1102 plan시험9/9PASS·207.1451ms/skip0·type0/diff0. 신규2는기본미연결/fake SQL0·manifest변조guard만확인했으며실제PG긍정·권한·정리실행은NOT_RUN이다.
+- 독립 fn15_pg_handler_review C0/I2/M0: I1의새DB판정은 NOT LIKE pg_%와public pg_class만검사해namespace/함수/타입을놓친다. I2는admin/runtimePool의DB명·역할만같으면다른cluster의동명DB에POST할수있어같은준비인스턴스결박이필요하다. 동일writer에게최소source보완을배정했다. 정식동일원인FAILURE_REPORT0·review round1/5다.
+- Main결정: 기존0000 anvil_qa.fixtures에실행별비출력고유nonce와instance/sourceSHA를admin준비Tx에서기록하고runtime은그표SELECT만받아API쓰기전정확대조한다. 신규schema/제품계약은추가하지않으며qa.rolePlan의해당SELECT후보와실grant를일치시킨다. 실제nonce/역할/SQL생성은0이고source만작성한다.
+- RED: r6 30664114의Main0fc76d 순수metadata guard1건은export부재RED1·152.0364ms이다. r8 5834D366 적용뒤Main8211bc는필터이름불일치로실제반례0의파일로드PASS였으므로증거에서제외한다. 원제목확인후4cf734 exact runtime 준비 binding은export부재RED1·185.9296ms/skip0·exit1이다. 기대값을낮추지않고I1/I2제품보완을진행한다.
+### 2026-10-26 FN15 bounded handler 시험 선행
+
+- 포장 오류1: r1-test AF3D7A93은 Main7691de의 git apply --check에서 corrupt patch at line40으로 적용 전 거절됐다. 파일 변경/시험 실행0이며 정식 기능 실패와 분리한다. 동결원본은보존하고작성자가새r2-test E4B6FEEC를제출했다.
+- Main614a1b: r2의신규2시험만실행,각runFn15QaPreparedDatabase export부재로0PASS/2FAIL·152.9543ms/skip0·exit1이다. 기본미연결/TEST_FAKE SQL0·변조manifest SQL전거절의RED이며그뒤허용source작성을배정했다. 실제connection/SQL/role/자원/프로세스·서비스호출0이다.
+- 다음: handler는caller Pool자체생성/end를하지않고새QA대조후획득client만반환하는한정함수로준비한다. 실제핵심7경로/저장hash·중복/중요거절만source marker로계획하고동시성·실응답유실·세부최소권한반증은미검증으로명시한다. source와실제PG검증·전계획완료를구분한다.
+### 2026-10-26 FN15 bounded PG handler 소스 착수
+
+- 기준/정리: 명세봉인 소유6경로ee5c73d2b2c7b619e2ceffa934a7aa71c6086e64는 b81093 development push 후local/remoteexact·main불변·trackedclean/보호8이었다. 소유staging14파일·빈dir11은 exact rawhash/owner/nonlink/root경계 대조 후literal정리4d507d,별도23d8a2staging부재다. 기존보존본/다른staging/비소유자료는불변이다.
+- 다음 담당: fn15_qa_pg_handler 단일 writer, Main관리·검수·통합. WI27B1474FF9660002EC3C23F4C7608B2867D2678A69A98DCC20FBA18C2284ED1A의기존3scripts/직접시험2 안에서명시주입된신규격리PG연결의bounded검증source만준비한다. 기본CLI/launchPLAN_ONLY·NOT_CONNECTED,외부명령transport/자동connection/DSN/실제role·SQL/resource실행0을유지한다.
+- 목적/경계: 명명DB/freshnamespace·현재역할기준을쓰기전대조하고원본SQL/helper/ledger·제한role/grant/seed후보와기존AccessRepository/buildApp/PGsource의유한핵심요청·저장/조회·미확인요약검증을연결할source다. 작성자가함수/반례범위를먼저제출하고MainRED→제품→검수한다. 실제PG/권한/SQL/COMMIT·canonical/정리·socket/TLS/browser/정식DB/Agent/수락/계획완료는아직미검증이다. 실제실행은최종exactSHA/argv/자원·보호입력/정리의별도판단뒤에만한다.
 ### 2026-10-26 FN15 검증 명세 봉인 — 한정 소스 검수
 
 - 단일 작성 fn15_qa_manifest_seal, Main 통합/직접시험, fn15_qa_prep_review 독립검수다. 제품61F0A045는 기존 manifest/qa 2파일, TESTONLY79437F98은 기존 plan시험의 새3반례만 추가했다. Main4ec91e 영향9/9PASS·266.474ms/skip0·type0/diff0이다. 독립검수 C0/I0/M0로 기존 deferred M1을 이 범위에서 해소했다.

@@ -81,7 +81,7 @@ export interface Fn15QaPlan {
   readonly excluded: readonly string[];
 }
 
-const sourceTables = ['anvil.schema_migrations', 'anvil.users', 'anvil.clients', 'anvil.auth_sessions',
+const sourceTables = ['anvil_qa.fixtures', 'anvil.schema_migrations', 'anvil.users', 'anvil.clients', 'anvil.auth_sessions',
   'anvil.projects', 'anvil.project_members', 'anvil.project_control'] as const;
 const fn15Tables = ['anvil.control_handoff_source_requests', 'anvil.control_handoff_source_summaries',
   'anvil.control_handoff_source_commands', 'anvil.control_handoff_source_receipts',

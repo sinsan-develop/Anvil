@@ -192,3 +192,75 @@ test('compatibility 역할과 schema bootstrap은 새 빈 격리 PG 후보이며
   assert.ok(ready.refusals.includes('EXTERNAL_EFFECT_PORT_NOT_CONNECTED'));
   assert.ok(ready.refusals.includes('SEPARATE_EXECUTION_DECISION_NOT_PRESENT'));
 });
+
+test('bounded PG handler는 기본 미연결과 TEST_FAKE에서 SQL 없이 거절한다', async () => {
+  assert.equal(typeof launch.runFn15QaPreparedDatabase, 'function');
+  const absent = await launch.runFn15QaPreparedDatabase(plan);
+  assert.equal(absent.status, 'NOT_CONNECTED');
+  assert.equal(absent.actualPgVerified, false);
+  assert.equal(absent.executionAuthorized, false);
+  let calls = 0;
+  const fake = await launch.runFn15QaPreparedDatabase(plan, {
+    sourceMode: 'TEST_FAKE',
+    admin: { query() { calls++; throw Error('QA_SECRET_MUST_NOT_ESCAPE'); } },
+  });
+  assert.equal(calls, 0);
+  assert.equal(fake.status, 'REFUSED');
+  assert.equal(fake.actualPgVerified, false);
+  assert.equal(fake.sourceMode, 'TEST_FAKE');
+  assert.equal(JSON.stringify(fake).includes('QA_SECRET_MUST_NOT_ESCAPE'), false);
+});
+
+test('bounded PG handler는 전달된 manifest를 SQL 전에 재검증한다', async () => {
+  assert.equal(typeof launch.runFn15QaPreparedDatabase, 'function');
+  const forged = { ...plan, manifest: structuredClone(plan.manifest) };
+  Reflect.set(forged.manifest.fullSql[0]!, 'sql', 'SELECT 1');
+  let calls = 0;
+  const result = await launch.runFn15QaPreparedDatabase(forged, {
+    sourceMode: 'POSTGRES_SOURCE',
+    admin: { query() { calls++; throw Error('QA_SECRET_MUST_NOT_ESCAPE'); } },
+  });
+  assert.equal(calls, 0);
+  assert.equal(result.status, 'REFUSED');
+  assert.equal(result.code, 'FN15_QA_MANIFEST_NOT_VERIFIED');
+  assert.equal(result.actualPgVerified, false);
+});
+
+test('신규 PG metadata 순수 guard는 정확 namespace·extension·public 객체 부재를 대조한다', () => {
+  assert.equal(typeof launch.checkFn15QaFreshDatabase, 'function');
+  const baseline = { db: 'anvil_v3_fn15_source_qa_01', role: 'postgres', session_role: 'postgres',
+    version: 150000, superuser: true,
+    namespace_names: ['public','pg_catalog','information_schema','pg_toast'],
+    extension_names: ['plpgsql'], public_class_count: 0, public_function_count: 0,
+    public_type_count: 0, fixed_roles_count: 0 };
+  assert.equal(launch.checkFn15QaFreshDatabase(baseline, 'postgres'), true);
+  const cases: readonly object[] = [
+    { db: 'existing_formal_database' }, { role: 'unexpected_role' }, { session_role: 'another_role' },
+    { version: 180000 }, { superuser: false }, { fixed_roles_count: 1 },
+    { namespace_names: [...baseline.namespace_names, 'pg_like_unrelated_schema'] },
+    { namespace_names: [...baseline.namespace_names, 'anvil'] },
+    { namespace_names: ['public','pg_catalog','information_schema'] },
+    { namespace_names: ['public','pg_catalog','information_schema','public'] },
+    { public_class_count: 1 }, { public_function_count: 1 }, { public_type_count: 1 },
+    { public_function_count: '0' }, { extension_names: ['plpgsql','pgcrypto'] },
+    { extension_names: [] }, { extension_names: ['plpgsql','plpgsql'] },
+  ];
+  for (const delta of cases) assert.equal(launch.checkFn15QaFreshDatabase({ ...baseline, ...delta }, 'postgres'), false);
+  for (const value of [null, undefined, [], 'metadata', {}])
+    assert.equal(launch.checkFn15QaFreshDatabase(value, 'postgres'), false);
+  assert.equal(launch.checkFn15QaFreshDatabase(baseline, 'anvil_fn15_qa_owner'), false);
+});
+
+test('runtime 준비 binding은 실행별 nonce·instance·source가 정확히 같아야 한다', () => {
+  assert.equal(typeof launch.checkFn15QaDatabaseBinding, 'function');
+  const expected = { nonce: 'a'.repeat(64), instanceId: 'fn15-binding-01', sourceSha: 'f'.repeat(40) };
+  const payload = { schemaVersion: 1, ...expected };
+  assert.equal(launch.checkFn15QaDatabaseBinding(payload, expected), true);
+  for (const delta of [{ nonce: 'b'.repeat(64) }, { instanceId: 'fn15-another-run' },
+    { sourceSha: 'e'.repeat(40) }, { schemaVersion: 2 }, { nonce: '' }, { nonce: undefined },
+    { instanceId: undefined }, { sourceSha: undefined }])
+    assert.equal(launch.checkFn15QaDatabaseBinding({ ...payload, ...delta }, expected), false);
+  for (const value of [null, undefined, [], {}, 'binding'])
+    assert.equal(launch.checkFn15QaDatabaseBinding(value, expected), false);
+  assert.equal(launch.checkFn15QaDatabaseBinding({ ...payload, extra: true }, expected), false);
+});

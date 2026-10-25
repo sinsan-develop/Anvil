@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN15 bounded PG handler 소스 준비**: 기본미연결/명세변조거절,새DB정확metadata·admin/runtime nonce결박을두고고정최소SQL/역할·seed와실API의유한검증함수source를추가했다. 직접guard11/type/diff0·독립I2해소C0/I0/M0. 실제PG/권한/SQL/API실행·정리·화면·인수는미검증이며source준비를기능완료로표시하지않는다.
+
 - **2026-10-26 FN15 검증 명세 보완**: 앞선M1 전달manifest 재검증/불변snapshot 공백은 고정fullSQL/ledger/helper·전체shape 대조/깊은동결과새3반례로해소했다. 영향9/type/diff0·독립C0/I0/M0. 제한NOLOGINcompat/schema bootstrap은후보이며실제role/grant/PG·실행handler/전체계획은미검증·미완료다.
 
 - **2026-10-26 FN15 실제 검증 준비 일부**: 고정5원본/7helper·4250bytes manifest와 full ledger3/partial 분리, 기본PLAN_ONLY·NOT_CONNECTED, 자원별소유정리후보/고정오류code의소스를추가했다. 독립I2건보정·최신영향4/직전불변manifest2·type/diff0이며 M1manifest참조무결성은 deferred다. 실제QA transport/원격관측/PG·SQL/권한/자원실행은0·미검증, 역할의존미해결·전체FN15/UI12/계획미완료. 다음UI12기존API소비source를단일writer에배정했다.
