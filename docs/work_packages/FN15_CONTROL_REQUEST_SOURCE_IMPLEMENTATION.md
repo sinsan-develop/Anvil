@@ -177,6 +177,18 @@ reason 최대20,000자·본문2MiB, 요청 최대30분, 목록 기본50/최대20
 - 실제 socket HTTP/TLS/브라우저·UI/정식 DB46/전체 migration/실제 로그인/재인증·Agent/수락·제어 전환/운영·Oracle는 제외다. 새 조회 source가 준비되면 최종 exact SHA에서 그 읽기 연결까지 실제 PG 범위를 대조하되 이번 후보만으로 범위를 자동 늘리지 않는다.
 - 준비할 소스 후보는 신규 `scripts/fn15-isolated-qa.ts`·고정 launch/manifest 모듈·직접 계획/guard 시험 최대2파일이며, 실행 기본은 거절/plan-only다. 실제 실행 handler·resource/role/SQL 조작의 작성 범위 자체를 PMO에 대조하고, 완성된 exact commit/resource manifest를 갖춘 뒤 실행 판단을 따로 받는다. 현재 source·정식 설정·DB·권한을 변경하는 실행은0이다.
 
+### 4.4 UI12의 기존 FN15 소스 소비 연결
+
+승인된 UI12/S12와 위 4.1·4.2의 기본 OFF 후보를 화면에서 소비하는 내부 구현 단위다. 공개 계약 채택·실제 등록/활성화·DB·서비스·수락/제어 전환을 대신하지 않는다. 다른 사람 선택과 인수 수락은 미구현으로 유지한다.
+
+- 소유: `apps/web/src/App.tsx`, 기존 `apps/web/src/features/control-handoff/ControlAccessPage.tsx`, 신규 같은 폴더 `api.ts`, 필요 시 같은 폴더의 순수 상태/검사 모듈 하나와 신규 직접 시험 최대 3파일, 기존 UI12 직접 SSR 시험이다. 전역 ApiClient·인증 계약·스타일 체계·server/SQL은 변경하지 않는다. 단일 writer만 배정한다.
+- 사용자 흐름: 기존 프로젝트 참여 조회는 유지한다. 명시 현재 제어 조회 → 내 다른 기기의 SELF 요청 사유 입력 → 정확 현재 basis로 요청 → 본인 요청 목록/선택 원문 → 현재 제어자의 미확인 요약 준비 → 요청자의 최신 ref 탐색/고정 요약 조회를 연결한다. 원 ID/hash를 사용자에게 JSON 입력시키지 않는다. 현재 제어자와 동일 client의 SELF 요청, 미확인 basis·미연결·기한 경과는 제출하지 않는다. 클라이언트 판정은 서버 권한 검사를 대체하지 않는다.
+- 요청/전송: feature 전용 same-origin 상대경로 GET/POST에 현재 CSRF를 전달한다. POST는 생성한 commandId와 Idempotency-Key를 고정한다. 전송 전 App 소유 버퍼에 원문/명령을 보존하고 네트워크·응답 불명에는 자동 재전송·새 commandId 생성·성공 판정이 없다. 사용자가 같은 명령 재확인을 명시할 때만 동일 payload를 보낸다. 새 작성은 그 후 별도다. auth 소실·라우트/프로젝트 변경에도 미전송/불명 자료를 삭제하지 않는다.
+- 응답 결박: 프로젝트·현재 user/client·세션 객체 revision·조회 ticket과 명령 binding을 대조한다. 같은 user/client 재로그인 ABA·뒤늦은 응답은 현재 화면이나 새 버퍼를 덮어쓰지 않는다. 401은 기존 인증 소실 처리, 403/404/409/412/503과 손상 DTO는 이전 결과 숨김·작성 비활성으로 처리하고 임의 재인증 사유/정상 NONE으로 바꾸지 않는다.
+- DTO: `control-state`의 정확 version만 baseControl로 쓴다. 목록 ref → 고정 요청, head ref → 고정 요약의 project/request/version/hash와 브라우저 Web Crypto 해시를 대조한다. Node crypto 경유 모듈의 런타임 import는 금지한다. 서버 observedAt·요청 만료·현재 basis 차이·요약 validUntil과 WAITING/UNVERIFIED·4범주/gap·미연결 collector·권한 false를 구분한다. 수신시각을 서버 관측시각으로 만들지 않는다.
+- 화면: 승인 S12의 현재 사용자/기기, 요청 이유와 본인 목록, 미결/요약 확인 순서를 기존 요소·타이포로 보여준다. UNVERIFIED/부분 자료를 안전/인수 가능으로 표현하지 않는다. 기본 OFF라 조회 불가일 때 실제 사용 가능하다고 표시하지 않는다. 실제 수락/제어 이전 버튼은 활성화하지 않는다.
+- 최소 검증: 전용 전송·DTO/해시·위조/타 프로젝트·OFF·CSRF/동일 명령 시험, SSR 및 직접 DOM의 지연 응답/ABA·응답유실 원명령 보존/자동 POST0을 변경 범위에서 확인하고 type/build를 수행한다. 합성 DOM을 실제 로그인·served·DB·브라우저 Network/인수 증거로 보고하지 않는다. 기존 관련 시험의 기대값은 기능이 늘어난 정확 이유와 diff를 남겨 바꾸고 합격 기준을 낮추지 않는다.
+**2026-10-26 PMO 범위 대조:** 선행 조회 게시본 2e75a25b 보고 뒤 PMO는 위 UI12 소비 흐름에 새 승인 경계가 없음을 확인했다. 기본 비활성·원명령 보존·자동 POST 금지로 기존 승인 범위에서 진행하며 실제 사용 가능 상태로 판정하지 않는다. anvil_v3_app 의존성은 실제 QA의 미해결 선행으로 유지한다. 이번 대조는 실제 활성화·DB/권한·QA 실행 승인이 아니다.
 ## 5. 검수·증거·복구
 
 각 단위는 writer의 RED→GREEN, Main 집중/직접 영향 타입 검사, 독립 spec·quality 검수 후 소유 경로만 같은 branch에 checkpoint한다. 서버-only이면 Web 전체 빌드는 반복하지 않는다. 완료 시험은 코드가 바뀌지 않으면 다시 하지 않는다. 기록은 기존 WORK_STATUS·WORK_PLAN의 한정 상태로 유지한다. 제품 사용 가능·FN15 전체 완료·Stage 완료로 보고하지 않는다. rollback은 소유 commit의 일반 revert이며 실제 저장 원문/제어를 삭제하거나 되돌리는 명령이 아니다.

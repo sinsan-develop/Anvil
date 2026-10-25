@@ -1,4 +1,25 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15 준비 소스 검수와 UI12 다음 작성
+
+- Main Git 사전검사 오류: a83a10은 PowerShell -join 비교 괄호 누락으로 staged set mismatch를 보고해 commit 전 중단했다. de7dee 실제 stage 목록은 소유8경로와 일치하고 보호8은 비추적 그대로였다. 사용자 자료 변경·커밋0 상태에서 비교식을 괄호로 보정해 계속한다.
+
+- 구현/검수: fn15_qa_preparation 작성, Main 직접 통합·시험, fn15_qa_prep_review 독립 정적 검수다. Round1 시험06D88BF4의 e42285는 plan4건 중2PASS/2FAIL·185.7775ms로 부분 정리/임의 code 노출 반례를 확인했다. 제품C4724184 후 c96cc6 영향4/4PASS·194.4265ms/skip0·전체type0/diff0이다. manifest 시험은 직전 d1a7c7의2/2 증거를 유지하고 새동시6실행으로 주장하지 않는다.
+- 독립 재검수는 I1/I2 addressed·보정범위 신규C0/I0/M0다. 전체 준비의 M1 manifest 참조 무결성 deferred는 유지한다. 실제 외부 transport 연결 전에 전달 manifest 재검증/불변 snapshot이 필요하다. callback의 elapsedMinutes는 합성 시간일 뿐 실제 timeout 증거가 아니다.
+- 범위: scripts3/직접시험2만 추가했고 고정 원본5·helper7/4250bytes·full ledger3/partial 분리와 plan/refuse를 준비했다. 실제 PG·role/grant/seed/SQL·원격 조회·자원/정리 실행·로그인/TLS/UI·Agent/수락은 NOT_RUN이다. anvil_v3_app 선행 의존/실제 image·daemon·부재 관측·실행 결정은 미확인이다. 이 소스는 실제 QA handler 완성이나 실행 허가가 아니다.
+- 다음 단일 writer: UI12 fn15_connection 담당에게 WI4.4(6F2DEE081755AF8668725D491BB562A5C8D5F0C7B65AACC2D888FD966AAF0C8E)의 기존 기본OFF API 소비만 배정했다. Main은 기존 준비스크립트 검수·기록·게시만 수행하며 UI제품 동시 작성0이다. 화면에서 SELF 사유/요청·목록/원문·미확인 요약을 연결하고 수락/전환은 미구현으로 남긴다. 전체 계획 완료 아님.
+### 2026-10-26 FN15 준비 소스 — 독립 보완 round 1
+
+- Main 통합 ee340e: 제품 patch207E0409와 시험 증분0146F7C6 뒤 직접 5/5 PASS·152.8704ms/skip0·diff0. 전체 타입은 시험 Buffer 첫 byte 접근 TS2532 두 진단으로 exit1이었다. 시험 한정109069E5가 부재 guard를 추가했고 d1a7c7 영향2/2 PASS·209.2608ms·type0/diff0이다. 기존 거절 기대값은 유지했다.
+- 독립 검수: fn15_qa_prep_review C0/I2/M1. I1은 network/path 정리 후보가 앞 자원의 존재에 종속돼 부분 생성 실패·순차 정리 뒤 잔여 후보를 놓치는 모델이다. I2는 callback 오류 code를 형식만 검사해 대문자 비밀 유사 원문이 합성 history에 남을 수 있는 공백이다. 실제 외부 효과/정리 실행은0이다. 동일 writer에게 정확 음성 RED 선행 후 보정을 배정했다(round1/5).
+- Minor deferred: createFn15QaPlan은 전달 manifest의 일부 구조만 검사하고 같은 참조를 보관한다. 정상 launcher는 고정 byte 검증 builder를 사용하고 모든 실행 허가 false여서 실행 우회는 아니다. 실제 transport를 연결하기 전에 전달 manifest 재검증/불변 snapshot과 변조 시험이 필요하며 최종 통합 검수에서 재대조한다. 이번 준비 완료를 실제 실행 가능으로 표시하지 않는다.
+- 다음 화면: PMO는 제시한 UI12 소비 흐름에 새 승인 경계가 없음을 대조했다. WI4.4의 기본 비활성·원명령 보존·자동POST0 범위로 다음 단일 writer를 배정한다. QA 보정 중 UI 제품 동시 작성은 없다. 실제 PG/DB/권한·서비스/브라우저/Agent/수락/전체계획은 미완료다.
+### 2026-10-26 FN15 격리 검증 준비 소스 — 시험 선행
+
+- 기준: 2e75a25bae5022e678851b951f6827fd1772d392 게시본 이후이며 기존 보호 비추적 8경로는 보존했다. 선행 조회의 소유 보조물 14개는 정확 지문·소유자·비링크 확인 후 제거했고 별도 부재 조회를 마쳤다.
+- 담당: fn15_qa_preparation 단일 구현, Main 검수·통합. WI 4.3의 고정 3 scripts와 신규 직접 시험 최대 2파일만 소유한다. UI12 다음 연결은 읽기 전용 접점 조사만 완료했으며 동시 제품 writer는 없다.
+- 시험: 최신 test-only patch SHA256 7C36654970B57037250992E97A67EC472F595DF85651674905EECE31188FFBED를 적용했다. Main Node v24.22.1 직접 실행 7597f6은 구현 export 부재로 두 시험 파일 실패, pass0/fail2/skip0·129.3689ms·exit1이다. 구현 전 RED이며 제품 실패나 실제 PG 결과가 아니다.
+- 미확인/경계: 원본 SQL이 anvil_v3_app 역할에 의존하므로 지정 QA 역할 둘만으로 실행 가능하다고 주장하지 않는다. 이번 소스에서는 선행 의존을 거절 사유로 기록한다. 실제 자원·원격 조회·프로세스·DB/역할·비밀번호 생성과 SQL 적용은 0이다. 기본 PLAN_ONLY/NOT_CONNECTED와 TEST_FAKE 결과의 SYNTHETIC_ONLY를 분리한다.
+- 다음: 고정 원본/7 helper 지문·부분 적용 ledger·literal 정리 관측 guard를 구현 후 독립 검수한다. 정확 실행 후보를 PMO에 전달하고, 별도로 UI12의 기존 세션·CSRF·불명 명령 보존 패턴을 소비하는 화면 소스 연결을 이어간다. 전체 계획·FN15/UI12는 미완료다.
 ### 2026-10-26 FN15/UI12 선행 조회 — source 검수 범위
 
 - 담당/변경: fn15_discovery_reads 구현, Main 통합·직접검증·기록, fn15_discovery_review 독립 정적검수다. 신규 control-discovery-read.ts, 기존 PG/routes readonly결합과 신규시험2만 변경했다. 현재control-state의정확version·상태/관측과 request summary head의최신ref/NONE탐색을 같은PoolClient/전후scope에서검사한다. 본인/현재controller·원request4묶음·fixedGET재검증을 유지하고 과거base차이를새쓰기거절처럼취급하지않는다. 모든행위는권한발급/수락이아니고falseflags/defaultOFF/조회쓰기0이다.

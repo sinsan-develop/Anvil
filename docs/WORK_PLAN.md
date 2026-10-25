@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN15 실제 검증 준비 일부**: 고정5원본/7helper·4250bytes manifest와 full ledger3/partial 분리, 기본PLAN_ONLY·NOT_CONNECTED, 자원별소유정리후보/고정오류code의소스를추가했다. 독립I2건보정·최신영향4/직전불변manifest2·type/diff0이며 M1manifest참조무결성은 deferred다. 실제QA transport/원격관측/PG·SQL/권한/자원실행은0·미검증, 역할의존미해결·전체FN15/UI12/계획미완료. 다음UI12기존API소비source를단일writer에배정했다.
+
 - **2026-10-25 UI02 고정 요구 조회 실제 합성 DOM**: 새 빈 전용 Edge profile의 실제 React에서 조회/닫기·5문맥 ABA·늦은 JSON/hash·3↔4·401/403/404·미저장/미확인명령 보존9/9통과. 합성GET/page fixture 한정, 원context종료·전용root/process 잔여0. 실제 서버/DB·Agent/환경 준비·전체UI02/Stage 인수는 미확인이다.
 
 - **2026-10-25 FN08 합성 등록자료 공급 adapter**: 명시 합성 repository/source를 기존 current/readPart에 연결하고 exact 등록/현재성·부분 bytes/UTF-8/hash와 읽기 직전 원 command 최단기한을 검사한다. 신규9/선행 직접인접115통과·type0·scoped C0/I0/M0. 기존 소비자 변경0, 실제 지속등록/보호원문/app/Agent 연결은 미완료로 유지한다.
