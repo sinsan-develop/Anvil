@@ -600,12 +600,12 @@ internal static class DevelopmentRecoveryPathGuard {
    caseId=selected;runId=id;commit=sha;issued=start;until=end;lease=QaFixtureLease.Begin(id,sha,start,end,FailureCase(selected)?selected:null);
   }
   internal static QaFixtureOwner Begin(string selected,string id,string sha,DateTime start,DateTime end){
-   Require(QaAdapterConnected&&(FilesystemCase(selected)||FailureCase(selected)));return new QaFixtureOwner(selected,id,sha,start,end);
+   Require(QaAdapterConnected&&(FilesystemCase(selected)||FailureCase(selected)||selected=="CHILD_PIN_LIFETIME"));return new QaFixtureOwner(selected,id,sha,start,end);
   }
   void OwnerThread(){Require(Environment.CurrentManagedThreadId==ownerThread);}
   public string[] BindingFacts(){OwnerThread();return new[]{caseId,runId,commit,issued.ToString("o",System.Globalization.CultureInfo.InvariantCulture),until.ToString("o",System.Globalization.CultureInfo.InvariantCulture)};}
   public string Prepare(){
-   OwnerThread();Require(!cleanupStarted&&!faulted&&!prepared&&!attempted&&FilesystemCase(caseId));
+   OwnerThread();Require(!cleanupStarted&&!faulted&&!prepared&&!attempted&&(FilesystemCase(caseId)||caseId=="CHILD_PIN_LIFETIME"));
    try{string claim=lease.PrepareFilesystemCases();Require(claim=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");prepared=true;return claim;}catch{faulted=true;throw;}
   }
   public string[] Mutate(){
@@ -616,6 +616,10 @@ internal static class DevelopmentRecoveryPathGuard {
    OwnerThread();Require(!cleanupStarted&&!faulted&&!prepared&&!attempted&&FailureCase(caseId));attempted=true;cleanupStarted=true;
    try{return lease.CloseAndObserveInjectedFailure();}catch{faulted=true;throw;}
   }
+  internal QaFixtureLease.QaChildPin PrepareChildPin(){
+   OwnerThread();Require(!cleanupStarted&&!faulted&&prepared&&!attempted&&caseId=="CHILD_PIN_LIFETIME");attempted=true;
+   try{return lease.PrepareChildLifetimePin();}catch{faulted=true;throw;}
+  }
   public string[] Cleanup(){
    OwnerThread();cleanupStarted=true;return lease.CleanupFilesystemMutation();
   }
@@ -624,20 +628,29 @@ internal static class DevelopmentRecoveryPathGuard {
  internal sealed class QaOwnedRunHost {
   readonly string selected,runId,commit;readonly DateTime issued,until;readonly int ownerThread=Environment.CurrentManagedThreadId;
   QaFixtureOwner owner;QaProcessProbe process;bool started,cleaning;string phase="NOT_STARTED",preparation="NOT_STARTED";
-  string membership="NOT_OBSERVED",processExit="NOT_OBSERVED",processClose="NOT_OBSERVED";
+  string membership="NOT_OBSERVED",processExit="NOT_OBSERVED",processClose="NOT_OBSERVED",pinTransfer="NOT_OBSERVED";
   string[] mutation,cleanup,failure;
   QaOwnedRunHost(string id,string run,string sha,DateTime start,DateTime end){selected=id;runId=run;commit=sha;issued=start;until=end;}
   static bool FailureCase(string id){return Array.IndexOf(new[]{"WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","CLEANUP_UNKNOWN"},id)>=0;}
   public static QaOwnedRunHost Create(string selected,string runId,string commit,DateTime issued,DateTime until){
    Require(QaAdapterConnected);
-   Require(selected=="JOB_MEMBERSHIP"||FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
+   if(selected=="CHILD_PIN_LIFETIME"){Require(QaExclusiveSpawnHostConnected);RequireStandaloneQaEntry();}
+   Require(selected=="JOB_MEMBERSHIP"||selected=="CHILD_PIN_LIFETIME"||FailureCase(selected)||Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"},selected)>=0);
    return new QaOwnedRunHost(selected,runId,commit,issued,until);
   }
   void OwnerThread(){Require(Environment.CurrentManagedThreadId==ownerThread);}
   public string[][] Execute(){
    OwnerThread();Require(!started&&!cleaning);started=true;
    try{
-    if(selected=="JOB_MEMBERSHIP"){
+    if(selected=="CHILD_PIN_LIFETIME"){
+     phase="ACQUIRING_ORIGINAL_OWNER";owner=QaFixtureOwner.Begin(selected,runId,commit,issued,until);
+     phase="PREPARING_ORIGINAL_FIXTURE";preparation=owner.Prepare();
+     QaFixtureLease.QaChildPin pins=owner.PrepareChildPin();
+     phase="ACQUIRING_ORIGINAL_QA_JOB";process=QaProcessProbe.Begin(runId,commit,issued,until);
+     phase="STARTING_FIXED_QA_CHILD_WITH_PINS";process.StartFixedSleepProbe(pins);
+     membership=process.ObserveOriginalJobMembership();
+     phase=membership=="QA_ORIGINAL_JOB_MEMBERSHIP_OBSERVED_NOT_OS_VALIDATED"?"QA_CHILD_PIN_FLOW_RECORDED_LIFETIME_UNVERIFIED":"QA_CHILD_PIN_MEMBERSHIP_UNCONFIRMED";
+    }else if(selected=="JOB_MEMBERSHIP"){
      phase="ACQUIRING_ORIGINAL_QA_JOB";process=QaProcessProbe.Begin(runId,commit,issued,until);
      phase="STARTING_FIXED_QA_SLEEP";process.StartFixedSleepProbe();
      phase="OBSERVING_ORIGINAL_JOB";membership=process.ObserveOriginalJobMembership();
@@ -662,11 +675,16 @@ internal static class DevelopmentRecoveryPathGuard {
   void CleanupOriginalOwner(){
    OwnerThread();cleaning=true;
    if(process!=null){
-    if(processClose=="QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED"||processClose=="QA_CLOSE_UNCONFIRMED")return;
-    try{processExit=process.StopOwnedQaAndObserve();}catch{processExit="QA_EXIT_UNCONFIRMED";}
-    // 종료 관측이 불명하면 이 메서드도 원 process/Job을 다시 확인하고 살아있는 handle을 보존한다.
-    try{processClose=process.CloseAfterObservedExit();}catch{processClose="QA_CLOSE_UNCONFIRMED";}
-    return;
+    pinTransfer=process.ChildPinTransferStatus??"NOT_OBSERVED";
+    if(processClose!="QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED"&&processClose!="QA_CLOSE_UNCONFIRMED"){
+     try{processExit=process.StopOwnedQaAndObserve();}catch{processExit="QA_EXIT_UNCONFIRMED";}
+     // 종료 관측이 불명하면 이 메서드도 원 process/Job을 다시 확인하고 살아있는 handle을 보존한다.
+     try{processClose=process.CloseAfterObservedExit();}catch{processClose="QA_CLOSE_UNCONFIRMED";}
+    }
+    if(owner==null)return;
+    if(processClose!="QA_OWN_HANDLES_CLOSED_NOT_OS_VALIDATED"){
+     cleanup=new[]{"NOT_ATTEMPTED","DEPENDENT_QA_PROCESS_UNCONFIRMED_PRESERVED","NOT_APPLICABLE"};return;
+    }
    }
    if(owner==null){cleanup=new[]{"NOT_ATTEMPTED","ORIGINAL_OWNER_UNAVAILABLE_PRESERVED","NOT_APPLICABLE"};return;}
    try{cleanup=owner.Cleanup();}
@@ -675,7 +693,7 @@ internal static class DevelopmentRecoveryPathGuard {
   public string[][] Cleanup(){OwnerThread();CleanupOriginalOwner();return Snapshot();}
   static string[] Copy(string[] value){return value==null?new string[0]:(string[])value.Clone();}
   public string[][] Snapshot(){
-   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure),new[]{membership,processExit,processClose}};
+   OwnerThread();return new[]{new[]{selected,runId,commit,phase,preparation,"NOT_OS_VALIDATED","NOT_ACCEPTANCE"},Copy(mutation),Copy(cleanup),Copy(failure),new[]{membership,processExit,processClose},new[]{pinTransfer,"CHILD_PIN_LIFETIME_NOT_VERIFIED"}};
   }
  }
  [StructLayout(LayoutKind.Sequential)]struct IoCounters {internal ulong ReadOps,WriteOps,OtherOps,ReadBytes,WriteBytes,OtherBytes;}

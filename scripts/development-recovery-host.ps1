@@ -40,7 +40,7 @@ function Read-DevelopmentRecoverySourceBinding([hashtable]$Value,[datetimeoffset
 function New-DevelopmentRecoveryQaHostFromAssembly([string]$CaseId,[string]$RunId,[string]$Commit,[datetime]$IssuedAt,[datetime]$ExpiresAt,[string]$ExpectedAssemblySha256) {
  # digest는 외부 exact 실행 결정의 대조값일 뿐 허가가 아니다. 실제 등록 전 I/O보다 먼저 거절한다.
  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
- $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED','WINDOW_EXPIRED','CLOCK_REVERSED','PARTIAL_PIN_FAILURE','CLEANUP_UNKNOWN','JOB_MEMBERSHIP')
+ $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED','WINDOW_EXPIRED','CLOCK_REVERSED','PARTIAL_PIN_FAILURE','CLEANUP_UNKNOWN','JOB_MEMBERSHIP','CHILD_PIN_LIFETIME')
  $now=[datetime]::UtcNow
  if($CaseId -cnotin $cases -or $RunId -cnotmatch '\Ar1-[a-z0-9][a-z0-9-]{0,47}\z' -or $Commit -cnotmatch '\A[a-f0-9]{40}\z' -or $ExpectedAssemblySha256 -cnotmatch '\A[A-F0-9]{64}\z' -or
   $IssuedAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt -le $IssuedAt -or ($ExpiresAt-$IssuedAt).TotalMinutes -gt 30 -or $now -lt $IssuedAt -or $now -ge $ExpiresAt){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}

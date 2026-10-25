@@ -1,5 +1,7 @@
 # Anvil 재설계 작업현황
 
+- **2026-10-25 R1 child-pin 교차소유 제어 source checkpoint**: 6093f21c 뒤 같은 승인②로 원 owner의 fixed6준비→원lease내부childPin1회→동일run/commit/window/SID의 원probe→고정pinned child→membership→finally 원probe종료/회수→원fixture정리의 실제 호출경로를 연결했다. 이case의 factory는 기존 QaExclusiveSpawnHostConnected=false와 실standalone entry를 객체생성 전에 요구하므로 실제지원/권한을열지 않는다. child 종료/handle회수가 확인된 QA_OWN_HANDLES_CLOSED일때만fixture정리, 종료불명/closeunknown이면원owner/pin과fixture를보존하고새probe/재생성0이다. 부분복제/partialchild·중복cleanup은기존원목록/latch를유지한다. 별도snapshot6행은transfer상태와 CHILD_PIN_LIFETIME_NOT_VERIFIED를표시하고membership불명도독립UNCONFIRMED다. 독립정적C0/I0/M0·양소스diff/PS문법0(512ed5/aa90f0), nativeF81A77B40B55F0FBEAE58C62649007377FAA7D38BF78946F8F48684930D65F49/hostC6960A60B2BC961E008E18E4A2E46FA6A3FA9BDF4BA74DB7BF913644BD6F367D. C#컴파일/actualchild·pin/OS NOT_RUN이고불변PS차단검사를native증거로반복하지않았다. process-wide상속배제의실효·keeper/guardian-loss/breakaway 행동·watchdog와전체보호/계획은미완료, R0/exe/로드·실OS·DB/TLS/서비스/P1재실행0다. R0단일권장파일은이코드checkpoint의최종native로대체하고이전질문답변을자동이월하지않는다.
+
 - **2026-10-25 R0 단일 권장본 현행화**: native standalone 진입·.NET finalLF 보완으로 b6/1589 권장을6093f21c의native1파일로대체했다. Gitblobfa8813f9e44c030ea3ec27331a98745e36ef8941/SHA376F43B5CD549BED2A5610C190179910CE3B6FA6354F7651E87212CDFFB452D6/95480bytes·old3d대비149추가/7삭제다. 기존N4정확명령/target:library·3출력·진단상한/600초창/불명보존은유지하며exe생성/로드/실OS실행0이다. 옛질문답변이새후보허가가되지는않고사용자질문반복0, PMO에는대체된단일권장안의근거로전달한다.
 
 - **2026-10-25 고립host 입력 재검토**: 앞선 standalone argv I1의 절대끝대조 보정을 기존독립검토자가 C0/I0/M0로확인했다. 정상ASCII 문자집합/길이/대소문자정책은불변이고 native/PS형식검사한정이다. 실제compile/load/OS 합격이아니며R0/exe허가확대0.

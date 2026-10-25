@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 child-pin 교차소유 source**: 원fixture/pin→원probe/child→finally child종료·handle회수뒤fixture정리를연결하고불명이면모두보존한다. 정적C0/I0/M0·차단/standalone선행유지, actualcompile·child/pin/OS NOT_RUN·lifetime NOT_VERIFIED이며 keeper/guardian-loss/breakaway·전체계획미완료다.
+
 - **2026-10-25 R1 고립host 진입 source**: same-entry-assembly/EntryPoint·고정argv→기존11case host→finally정리·유한보고를작성했다. finalLF 입력 별칭을 .NET경계에서근본보완하고 기존TS동작은유지했다. 실제전용exe·process-wide배제/guardianloss는미완료이며 compile/load/OS NOT_RUN·R0target:library권한확대0다.
 
 - **2026-10-25 R1 실제loader source**: 같은파일stream/private바이트의digest→Assembly.Load→같은Assembly의정확publicfactory/반환type을실제host준비본문에연결했다. 두진입literal차단/정적C0/I0/M0·소비검사와 실제compile/load/OS NOT_RUN을 구분한다. expectedSHA는실행권위아니며 R0단일native후보는b6c41545로유지한다.
