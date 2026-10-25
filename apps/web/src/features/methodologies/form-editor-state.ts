@@ -1,4 +1,4 @@
-import type { FormDefinition } from '../../../../server/modules/documents/forms.ts';
+import type { FormDefinition, FormField } from '../../../../server/modules/documents/forms.ts';
 import type { MethodCommand } from '../methodology-editor/common-api.ts';
 import type { FormVersion } from './forms-api.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
@@ -46,4 +46,14 @@ export function removeFormRepeatField(buffer:FormBuffer,ownerUserId:string,itemI
  const items=buffer.definition?.items.filter(item=>item.itemId===itemId),item=items?.[0];
  if(!ownerUserId||buffer.ownerUserId!==ownerUserId||buffer.pending||buffer.review?.pending||buffer.itemId!==itemId||buffer.definition?.scope!=='USER_COMMON'||items?.length!==1||!item||item.valueType!=='RECORDS'||!item.repeated||item.fields.filter(field=>field.fieldId===fieldId).length!==1)throw new ApiError('FORM_REPEAT_FIELD_REMOVAL_INVALID');
  return {...buffer,dirty:true,definition:{...buffer.definition,items:buffer.definition.items.map(value=>value===item?{...value,fields:value.fields.filter(field=>field.fieldId!==fieldId)}:value)}};
+}
+
+export interface DuplicateFormFieldSelection {
+ buffer:FormBuffer; itemId:string; fields:FormField[]; index:number; field:FormField; fingerprint:string; contextFingerprint:string;
+}
+/** 중복 ID의 확인된 배열 정의 하나만 제거한다. 같은 ID의 마지막 정의는 이 복구로 제거하지 않는다. */
+export function removeDuplicateFormRepeatField(buffer:FormBuffer,ownerUserId:string,selection:DuplicateFormFieldSelection):FormBuffer{
+ const definition=buffer.definition,items=definition?.items.filter(item=>item.itemId===selection.itemId),item=items?.[0];
+ if(!ownerUserId||buffer.ownerUserId!==ownerUserId||buffer.pending||buffer.review?.pending||buffer!==selection.buffer||JSON.stringify(buffer)!==selection.contextFingerprint||buffer.itemId!==selection.itemId||definition?.scope!=='USER_COMMON'||items?.length!==1||!item||item.valueType!=='RECORDS'||!item.repeated||item.fields!==selection.fields||!Number.isSafeInteger(selection.index)||selection.index<0||item.fields[selection.index]!==selection.field||JSON.stringify(selection.field)!==selection.fingerprint||item.fields.filter(field=>field.fieldId===selection.field.fieldId).length<2)throw new ApiError('FORM_DUPLICATE_FIELD_REMOVAL_INVALID');
+ return {...buffer,dirty:true,definition:{...definition,items:definition.items.map(value=>value===item?{...value,fields:value.fields.filter((_,index)=>index!==selection.index)}:value)}};
 }

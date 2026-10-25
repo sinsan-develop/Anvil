@@ -1,8 +1,8 @@
-import { useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonMethod as writeCommonFormDraft, type MethodCommand } from '../methodology-editor/common-api.ts';
 import { getForm, type FormVersion } from './forms-api.ts';
-import { emptyFormBuffer, formBuffer, removeFormRepeatField, changeFormItemType, moveFormEntry, type FormBuffer } from './form-editor-state.ts';
+import { emptyFormBuffer, formBuffer, removeFormRepeatField, removeDuplicateFormRepeatField, changeFormItemType, moveFormEntry, type FormBuffer, type DuplicateFormFieldSelection } from './form-editor-state.ts';
 import type { FormDefinition, FormItem } from '../../../../server/modules/documents/forms.ts';
 
 export function CommonFormEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved }: {
@@ -12,6 +12,24 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   const fieldId = useId();
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [saved, setSaved] = useState<number | null>(null);
   const definition = buffer.definition, item = definition?.items.find(value => value.itemId === buffer.itemId), locked = pending || !!buffer.pending || !!buffer.review?.pending;
+  const [duplicateSelection,setDuplicateSelection]=useState<DuplicateFormFieldSelection|null>(null),alive=useRef(true);
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  const latest=useRef({buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange});
+  latest.current={buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange};
+  const duplicateFields=item?.fields.flatMap((field,index)=>item.fields.filter(value=>value.fieldId===field.fieldId).length>1?[{field,index}]:[])??[];
+  const selectedDuplicate=duplicateSelection?.buffer===buffer&&duplicateSelection.fields===item?.fields&&duplicateSelection.contextFingerprint===JSON.stringify(buffer)?duplicateFields.find(value=>value.index===duplicateSelection.index&&value.field===duplicateSelection.field&&JSON.stringify(value.field)===duplicateSelection.fingerprint):undefined;
+  function removeDuplicateField(){
+    if(!alive.current||locked||!selectedDuplicate||!duplicateSelection)return;
+    const selected=duplicateSelection,captured=latest.current;
+    function current(){const now=latest.current;return alive.current&&!now.locked&&now.buffer===selected.buffer&&now.client===captured.client&&now.userId===captured.userId&&now.clientId===captured.clientId&&now.csrfToken===captured.csrfToken&&now.source===captured.source&&now.onChange===captured.onChange;}
+    try{
+      if(!current())return;removeDuplicateFormRepeatField(captured.buffer,captured.userId,selected);
+      if(!confirm(`현재 초안의 ${selected.index+1}번째 반복 필드 정의 ${selected.field.title||'제목 미작성'} (${selected.field.fieldId}, ${selected.field.required?'필수':'선택'}) 하나만 제거할까요? 같은 ID의 다른 정의·항목 규칙·저장 원본은 유지하며 저장은 별도입니다.`))return;
+      if(!current())return;removeDuplicateFormRepeatField(latest.current.buffer,latest.current.userId,selected);
+      latest.current.onChange(previous=>{if(!current())return previous;try{return removeDuplicateFormRepeatField(previous,latest.current.userId,selected);}catch{return previous;}});
+      setDuplicateSelection(null);setSaved(null);setError(null);
+    }catch(cause){if(alive.current)setError(cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID'));}
+  }
   function replaceAllowed() { return !buffer.pending && !buffer.review?.pending && (!(buffer.dirty || buffer.review?.dirty) || confirm('미저장 양식 편집·내용 검토 입력을 바꿀까요?')); }
   function change(patch: Partial<FormDefinition>) { onChange(previous => previous.definition ? { ...previous, dirty: true, definition: { ...previous.definition, ...patch } } : previous); setSaved(null); }
   function changeItem(patch: Partial<FormItem>) { if (definition) change({ items: definition.items.map(value => value.itemId === buffer.itemId ? { ...value, ...patch } : value) }); }
@@ -82,7 +100,13 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
         {item.valueType==='RECORDS'&&!item.fields.length?<p role="status">반복 항목의 필드를 추가해야 합니다. 초안 저장과 내용 확정은 다릅니다.</p>:null}
         <label htmlFor={fieldId + '-rules'}>항목 작성 규칙</label><textarea id={fieldId + '-rules'} value={item.authoringRules.join('\n')} onChange={event => changeItem({ authoringRules: event.target.value.split('\n') })} />
         <label htmlFor={fieldId + '-review'}>항목 검토 기준</label><textarea id={fieldId + '-review'} value={item.reviewCriteria.join('\n')} onChange={event => changeItem({ reviewCriteria: event.target.value.split('\n') })} />
-        {item.fields.map(field => <div key={field.fieldId}><label>반복 필드 {field.fieldId}<input value={field.title} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, title: event.target.value } : value) })} /></label><label><input type="checkbox" aria-label={'반복 필드 '+field.fieldId+' 필수'} checked={field.required} onChange={event => changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, required: event.target.checked } : value) })} />필수 필드</label><button type="button" disabled={item.fields[0]===field} aria-label={'반복 필드 '+field.fieldId+' 왼쪽 이동'} onClick={()=>moveEntry(field.fieldId,-1)}>이 열 왼쪽</button><button type="button" disabled={item.fields.at(-1)===field} aria-label={'반복 필드 '+field.fieldId+' 오른쪽 이동'} onClick={()=>moveEntry(field.fieldId,1)}>이 열 오른쪽</button><button type="button" aria-label={'반복 필드 '+field.fieldId+' 제거'} onClick={()=>removeField(item.itemId,field.fieldId)}>이 반복 필드 제거</button></div>)}
+        {duplicateFields.length&&item.valueType==='RECORDS'&&item.repeated?<section aria-label="중복 반복 필드 복구"><h4>중복 반복 필드 정의 확인</h4>
+          <p role="alert">같은 필드 ID가 여러 번 정의되어 해당 필드의 일반 수정·이동·제거를 중단했습니다. 각 정의의 위치·제목·필수 여부를 확인하고 불필요한 정의 하나씩 제거하세요.</p>
+          <label htmlFor={fieldId+'-duplicate-field'}>제거할 중복 반복 필드 정의</label><select id={fieldId+'-duplicate-field'} value={selectedDuplicate?.index??''} onChange={event=>{const index=Number(event.target.value),field=item.fields[index];setDuplicateSelection(event.target.value===''||!field?null:{buffer,itemId:item.itemId,fields:item.fields,index,field,fingerprint:JSON.stringify(field),contextFingerprint:JSON.stringify(buffer)});}}><option value="">제거할 정의를 선택하세요</option>{duplicateFields.map(({field,index})=><option key={index} value={index}>{index+1}번째 · {field.fieldId} · {field.title||'제목 미작성'} · {field.required?'필수':'선택'}</option>)}</select>
+          {selectedDuplicate?<pre aria-label="선택한 중복 반복 필드 정의" style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify(selectedDuplicate.field,null,2)}</pre>:null}
+          <button type="button" disabled={!selectedDuplicate||locked} onClick={removeDuplicateField}>확인한 중복 필드 정의 하나만 제거</button><p className="meta">같은 ID의 다른 정의와 다른 필드·항목 규칙은 유지합니다. 이 초안의 선택 정의만 제거하며 서버 저장·내용 검토·확정은 별도입니다.</p>
+        </section>:null}
+        {item.fields.map((field,index) => {const duplicate=duplicateFields.some(value=>value.index===index);return <div key={index}><label>반복 필드 {field.fieldId}<input disabled={duplicate} value={field.title} onChange={event => {if(!duplicate)changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, title: event.target.value } : value) });}} /></label><label><input type="checkbox" disabled={duplicate} aria-label={'반복 필드 '+field.fieldId+' 필수'} checked={field.required} onChange={event => {if(!duplicate)changeItem({ fields: item.fields.map(value => value.fieldId === field.fieldId ? { ...value, required: event.target.checked } : value) });}} />필수 필드</label><button type="button" disabled={!!duplicateFields.length||item.fields[0]===field} aria-label={'반복 필드 '+field.fieldId+' 왼쪽 이동'} onClick={()=>moveEntry(field.fieldId,-1)}>이 열 왼쪽</button><button type="button" disabled={!!duplicateFields.length||item.fields.at(-1)===field} aria-label={'반복 필드 '+field.fieldId+' 오른쪽 이동'} onClick={()=>moveEntry(field.fieldId,1)}>이 열 오른쪽</button><button type="button" disabled={duplicate} aria-label={'반복 필드 '+field.fieldId+' 제거'} onClick={()=>removeField(item.itemId,field.fieldId)}>이 반복 필드 제거</button></div>;})}
         <button disabled={item.fields.length >= 200} onClick={() => changeItem({ valueType: 'RECORDS', repeated: true, fields: [...item.fields, { fieldId: 'FIELD-' + crypto.randomUUID().slice(0, 8), title: '', required: true, valueType: 'TEXT' }] })}>반복 필드 추가</button>
         <button onClick={() => { if (confirm('이 초안에서 선택 항목을 뺄까요? 기존 저장 버전은 유지됩니다.')) { change({ items: definition.items.filter(value => value.itemId !== item.itemId) }); onChange(previous => ({ ...previous, itemId: '' })); } }}>이 초안의 항목 제거</button>
       </div> : null}
