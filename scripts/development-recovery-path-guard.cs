@@ -223,7 +223,21 @@ internal static class DevelopmentRecoveryPathGuard {
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool DeviceIoControl(KernelHandle file,uint code,byte[] input,uint inputLength,IntPtr output,uint outputLength,out uint returned,IntPtr overlapped);
  [DllImport("advapi32.dll",SetLastError=true)]static extern bool SetKernelObjectSecurity(KernelHandle handle,uint information,byte[] descriptor);
  sealed class QaEntry {
-  internal Pin Pin;internal bool Owned,DeleteRequested,Closed;internal byte[] Expected;
+  internal Pin Pin;internal QaEntry Parent;internal string Name;internal bool Owned,DeleteRequested,Closed,OwnershipOnly;internal byte[] Expected;
+ }
+ sealed class QaAction {
+  internal KernelHandle Handle;internal readonly List<Pin> Parents=new List<Pin>();internal bool CloseAttempted,CloseUnknown;
+ }
+ static KernelHandle QaOpenRelative(KernelHandle parent,string name,bool directory,uint access,uint share,out int code){
+  Segment(name);IntPtr chars=Marshal.StringToHGlobalUni(name),text=IntPtr.Zero;
+  try{var unicode=new UnicodeString{Length=checked((ushort)(name.Length*2)),MaximumLength=checked((ushort)(name.Length*2+2)),Buffer=chars};text=Marshal.AllocHGlobal(Marshal.SizeOf(typeof(UnicodeString)));Marshal.StructureToPtr(unicode,text,false);var oa=new ObjectAttributes{Length=(uint)Marshal.SizeOf(typeof(ObjectAttributes)),RootDirectory=parent.DangerousGetHandle(),ObjectName=text,Attributes=0x40|0x1000};IoStatus status;KernelHandle handle;code=NtCreateFile(out handle,access,ref oa,out status,IntPtr.Zero,0,share,FileOpen,SyncOption|OpenReparse|(directory?DirectoryOption:0x40u),IntPtr.Zero,0);return handle;}
+  finally{if(text!=IntPtr.Zero)Marshal.FreeHGlobal(text);Marshal.FreeHGlobal(chars);}
+ }
+ [DllImport("ntdll.dll")]static extern int NtQueryObject(KernelHandle handle,int kind,IntPtr information,uint length,out uint returned);
+ static void QaRequireReadOwnership(KernelHandle handle){
+  IntPtr buffer=Marshal.AllocHGlobal(1024);
+  try{uint returned;Require(NtQueryObject(handle,0,buffer,1024,out returned)==0&&returned>=8&&returned<=1024);uint access=unchecked((uint)Marshal.ReadInt32(buffer,4));uint allowed=ReadControl|ReadAttributes|Synchronize|ReadData|0x20u;Require((access&~allowed)==0&&(access&(ReadControl|ReadAttributes|Synchronize))==(ReadControl|ReadAttributes|Synchronize));}
+  finally{Marshal.FreeHGlobal(buffer);}
  }
  static KernelHandle QaRelative(KernelHandle parent,string name,bool directory,bool create,SecurityIdentifier owner){
   Segment(name);IntPtr chars=IntPtr.Zero,text=IntPtr.Zero,security=IntPtr.Zero;KernelHandle opened=null;
@@ -251,6 +265,7 @@ internal static class DevelopmentRecoveryPathGuard {
  internal sealed class QaFixtureLease {
   readonly List<QaEntry> entries=new List<QaEntry>();readonly Dictionary<string,QaEntry> cases=new Dictionary<string,QaEntry>(StringComparer.Ordinal);
   readonly Dictionary<string,QaEntry> caseChildren=new Dictionary<string,QaEntry>(StringComparer.Ordinal);
+  readonly List<KernelHandle> transitions=new List<KernelHandle>();readonly List<QaAction> actions=new List<QaAction>();
   readonly HashSet<string> childNames=new HashSet<string>(StringComparer.Ordinal);readonly Stopwatch clock=Stopwatch.StartNew();
   readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
   DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;
@@ -295,10 +310,10 @@ internal static class DevelopmentRecoveryPathGuard {
    Fresh();Segment(name);Require(createdCount<64);int length=input==null?0:input.Length;
    Require(directory?length==0:length<=8388608);Require(bytes+length<=8388608);
    byte[] content=input==null?new byte[0]:(byte[])input.Clone();
-   var entry=Retain(QaRelative(parent.Handle,name,directory,true,owner),Path.Combine(parent.Before.Path,name),directory,true);createdCount++;bytes+=content.Length;
+   var entry=Retain(QaRelative(parent.Handle,name,directory,true,owner),Path.Combine(parent.Before.Path,name),directory,true);entry.Parent=entries.Find(value=>Object.ReferenceEquals(value.Pin,parent));entry.Name=name;Require(entry.Parent!=null);createdCount++;bytes+=content.Length;
    Security(entry.Pin.Handle,owner,true);
    if(!directory){uint written;Require(WriteFile(entry.Pin.Handle,content,(uint)content.Length,out written,IntPtr.Zero)&&written==content.Length);entry.Expected=content;entry.Pin.Before=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);}
-   Fresh();return entry;
+   Fresh();if(filesystemSealed)TransitionOwnership(entry);return entry;
   }
   static bool AllowedCase(string id){return Array.IndexOf(new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED","WINDOW_EXPIRED","CLOCK_REVERSED","PARTIAL_PIN_FAILURE","GUARDIAN_LOST","CHILD_PIN_LIFETIME","JOB_MEMBERSHIP","BREAKAWAY_DENIED","CLEANUP_UNKNOWN"},id)>=0;}
   internal void CreateCase(string id){
@@ -322,8 +337,35 @@ internal static class DevelopmentRecoveryPathGuard {
     Fresh();Require(!filesystemSealed&&cases.Count==6&&childNames.Count==7);
     foreach(string id in new[]{"PARENT_REPLACEMENT","REPARSE_CHILD","OUTSIDE_WRITE","FILE_ID_CHANGED","HARD_LINK","DACL_CHANGED"})Require(cases.ContainsKey(id));
     foreach(string child in new[]{"PARENT_REPLACEMENT/parent","REPARSE_CHILD/target","REPARSE_CHILD/selected","OUTSIDE_WRITE/unselected.txt","FILE_ID_CHANGED/leaf.txt","HARD_LINK/leaf.txt","DACL_CHANGED/leaf.txt"})Require(childNames.Contains(child));
-    CheckAll();filesystemSealed=true;
+    CheckAll();foreach(var entry in entries)if(entry.Owned)TransitionOwnership(entry);CheckAll();filesystemSealed=true;
    }catch{faulted=true;throw;}
+  }
+  void TransitionOwnership(QaEntry entry){
+   Fresh();CheckEntry(entry);Require(entry.Owned&&!entry.OwnershipOnly&&entry.Parent!=null);int code;
+   uint access=ReadControl|ReadAttributes|Synchronize|(entry.Pin.Before.Directory?0x20u:ReadData);
+   KernelHandle next=QaOpenRelative(entry.Parent.Pin.Handle,entry.Name,entry.Pin.Before.Directory,access,ShareRead|ShareWrite|4u,out code);transitions.Add(next);
+   Require(code==0&&next!=null&&!next.IsInvalid);Fact observed=Read(next,entry.Pin.Before.Path,entry.Pin.Before.Directory);Require(Same(entry.Pin.Before,observed));Security(next,owner,true);QaRequireReadOwnership(next);Fresh();
+   // 원 creator와 새 읽기 handle이 겹쳐 있는 동안 ID를 대조한다. 소유권 공백 없이 쓰기/삭제 접근을 끝낸다.
+   var old=entry.Pin.Handle;Fact before=entry.Pin.Before;old.Dispose();Require(old.CloseAttempted&&old.CloseSucceeded);entry.Pin.Handle=next;entry.OwnershipOnly=true;transitions.Remove(next);
+   // 마지막 creator writer가 닫힐 때 갱신되는 시각은 새 초기 기준으로 관측하되 ID·크기·원 바이트는 다시 검사한다.
+   Fact settled=Read(next,before.Path,before.Directory);Require(before.Id==settled.Id&&before.Volume==settled.Volume&&before.Path==settled.Path&&before.Directory==settled.Directory&&before.Attributes==settled.Attributes&&before.Links==settled.Links&&(before.Directory||before.Size==settled.Size));entry.Pin.Before=settled;CheckEntry(entry);Fresh();
+  }
+  QaAction OpenAction(QaEntry entry,uint extraAccess){
+   Require(entry.Owned&&entry.Parent!=null&&!entry.Closed);var action=new QaAction();actions.Add(action);
+   var chain=new List<QaEntry>();QaEntry at=entry.Parent;while(at!=null&&at.Owned){chain.Add(at);at=at.Parent;}
+   Require(at!=null&&Object.ReferenceEquals(at.Pin,basePin));chain.Reverse();Pin parent=basePin;
+   foreach(var ancestor in chain){
+    int parentCode;var handle=QaOpenRelative(parent.Handle,ancestor.Name,true,ReadControl|ReadAttributes|Synchronize|0x20u,ShareRead|ShareWrite,out parentCode);var pin=new Pin{Handle=handle};action.Parents.Add(pin);
+    Require(parentCode==0&&handle!=null&&!handle.IsInvalid);pin.Before=Read(handle,ancestor.Pin.Before.Path,true);Require(Same(ancestor.Pin.Before,pin.Before));Security(handle,owner,true);parent=pin;
+   }
+   CheckEntry(entry);int code;action.Handle=QaOpenRelative(parent.Handle,entry.Name,entry.Pin.Before.Directory,ReadControl|ReadAttributes|Synchronize|extraAccess,ShareRead,out code);
+   Require(code==0&&action.Handle!=null&&!action.Handle.IsInvalid);Require(Same(entry.Pin.Before,Read(action.Handle,entry.Pin.Before.Path,entry.Pin.Before.Directory)));Security(action.Handle,owner,true);return action;
+  }
+  bool CloseAction(QaAction action){
+   if(action.CloseAttempted)return !action.CloseUnknown;action.CloseAttempted=true;action.CloseUnknown=true;bool unknown=false;
+   try{if(action.Handle!=null){action.Handle.Dispose();unknown|=!action.Handle.IsInvalid&&(!action.Handle.CloseAttempted||!action.Handle.CloseSucceeded);}}catch{unknown=true;}
+   for(int i=action.Parents.Count-1;i>=0;i--){var handle=action.Parents[i].Handle;try{if(handle!=null){handle.Dispose();unknown|=!handle.IsInvalid&&(!handle.CloseAttempted||!handle.CloseSucceeded);}}catch{unknown=true;}}
+   action.CloseUnknown=unknown;return !unknown;
   }
   void CheckEntry(QaEntry entry){
    Require(entry.Pin.Before!=null&&!entry.Closed&&Same(entry.Pin.Before,Read(entry.Pin.Handle,entry.Pin.Before.Path,entry.Pin.Before.Directory)));
@@ -352,37 +394,37 @@ internal static class DevelopmentRecoveryPathGuard {
   }
   void RecordOwnedRename(QaEntry entry,QaEntry parent,string name){
    Fact before=entry.Pin.Before,after=Read(entry.Pin.Handle,Path.Combine(parent.Pin.Before.Path,name),before.Directory);
-   Require(before.Volume==after.Volume&&before.Id==after.Id);entry.Pin.Before=after;
+   Require(before.Volume==after.Volume&&before.Id==after.Id);entry.Pin.Before=after;entry.Name=name;
   }
   // 성공 표기는 변경 시도일 뿐 guard 효과/권한/OS 합격이 아니다. 실 bridge 등록 전에는 호출 불가다.
   public string[] AttemptFilesystemMutation(string id){
    Fresh();Require(filesystemSealed&&!mutationAttempted&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
-   QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;
+   QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;int actionStart=actions.Count;
    try{
-    QaEntry entry;int code;uint count;long position;
+    QaEntry entry;QaAction action;int code;uint count;long position;
     switch(id){
      case "PARENT_REPLACEMENT":
-      operation="RENAME_AND_CREATE_NEW_PARENT";entry=caseChildren[id+"/parent"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"parent-retained",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"parent-retained");Create(parent.Pin,"parent",true,null);break;
+      operation="RENAME_AND_CREATE_NEW_PARENT";entry=caseChildren[id+"/parent"];action=OpenAction(entry,0x10000u|0x20u);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"parent-retained",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"parent-retained");Create(parent.Pin,"parent",true,null);break;
      case "FILE_ID_CHANGED":
-      operation="RENAME_AND_CREATE_NEW_LEAF";entry=caseChildren[id+"/leaf.txt"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"leaf-retained.txt",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"leaf-retained.txt");Create(parent.Pin,"leaf.txt",false,new byte[]{88});break;
+      operation="RENAME_AND_CREATE_NEW_LEAF";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x10000u);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"leaf-retained.txt",10);status=unchecked((uint)code).ToString("x8");Require(code==0);RecordOwnedRename(entry,parent,"leaf-retained.txt");Create(parent.Pin,"leaf.txt",false,new byte[]{88});break;
      case "OUTSIDE_WRITE":
-      operation="WRITE_OWN_UNSELECTED_SENTINEL";entry=caseChildren[id+"/unselected.txt"];Require(entry.Expected!=null&&entry.Expected.Length<=16);Require(SetFilePointerEx(entry.Pin.Handle,0,out position,0)&&position==0);
-      if(!WriteFile(entry.Pin.Handle,new byte[]{88},1,out count,IntPtr.Zero)||count!=1){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}
+      operation="WRITE_OWN_UNSELECTED_SENTINEL";entry=caseChildren[id+"/unselected.txt"];Require(entry.Expected!=null&&entry.Expected.Length<=16);action=OpenAction(entry,2u);Fresh();Require(SetFilePointerEx(action.Handle,0,out position,0)&&position==0);
+      if(!WriteFile(action.Handle,new byte[]{88},1,out count,IntPtr.Zero)||count!=1){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}
       byte[] changed=entry.Expected.Length==0?new byte[1]:(byte[])entry.Expected.Clone();changed[0]=88;entry.Expected=changed;entry.Pin.Before=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);status="00000000";break;
      case "HARD_LINK":
-      operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];code=QaRelativeNameChange(entry.Pin.Handle,parent.Pin.Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);break;
+      operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,ReadData);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);break;
      case "REPARSE_CHILD":
-      operation="SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY";entry=caseChildren[id+"/selected"];CheckEntry(caseChildren[id+"/target"]);byte[] data=QaRelativeSymlink();
-      if(!DeviceIoControl(entry.Pin.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+      operation="SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY";entry=caseChildren[id+"/selected"];action=OpenAction(entry,2u|0x20u);Fresh();CheckEntry(caseChildren[id+"/target"]);byte[] data=QaRelativeSymlink();
+      if(!DeviceIoControl(action.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
      case "DACL_CHANGED":
-      operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];uint size;GetKernelObjectSecurity(entry.Pin.Handle,5,null,0,out size);Require(size>0&&size<=65536);byte[] original=new byte[size];Require(GetKernelObjectSecurity(entry.Pin.Handle,5,original,size,out size));
+      operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x40000u);Fresh();uint size;GetKernelObjectSecurity(action.Handle,5,null,0,out size);Require(size>0&&size<=65536);byte[] original=new byte[size];Require(GetKernelObjectSecurity(action.Handle,5,original,size,out size));
       var sd=new RawSecurityDescriptor(original,0);Require(sd.DiscretionaryAcl!=null);sd.DiscretionaryAcl.InsertAce(sd.DiscretionaryAcl.Count,new CommonAce(AceFlags.None,AceQualifier.AccessAllowed,(int)FileSystemRights.WriteData,new SecurityIdentifier("S-1-1-0"),false,null));byte[] modified=new byte[sd.BinaryLength];sd.GetBinaryForm(modified,0);
-      if(!SetKernelObjectSecurity(entry.Pin.Handle,4,modified)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+      if(!SetKernelObjectSecurity(action.Handle,4,modified)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
      default:throw Denied();
     }
-    return new[]{id,operation,"MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT",status};
+    Fresh();for(int i=actionStart;i<actions.Count;i++)Require(CloseAction(actions[i]));return new[]{id,operation,"MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT",status};
    }catch{return new[]{id,operation,"MUTATION_UNCONFIRMED",status};}
-   finally{faulted=true;} // 부분 변경 이후에는 다른 case를 이어 실행하거나 전체성공으로 처리하지 않는다.
+   finally{faulted=true;for(int i=actionStart;i<actions.Count;i++)CloseAction(actions[i]);} // 원 handle 불명 close 결과는 latch로 보존한다.
   }
   internal string ReleaseHandlesWithoutDelete(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
@@ -390,6 +432,8 @@ internal static class DevelopmentRecoveryPathGuard {
    closeOnlyAttempted=true;cleanupStarted=true;faulted=true;CleanupStatus="HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED";
    foreach(var entry in entries)if(entry.DeleteRequested&&!entry.Closed){CleanupStatus="PENDING_DELETE_CLOSE_EFFECT_UNCONFIRMED_PRESERVED";return CleanupStatus;}
    bool unknown=false;
+   foreach(var action in actions)unknown|=!CloseAction(action);
+   for(int i=transitions.Count-1;i>=0;i--){var handle=transitions[i];try{if(handle!=null){handle.Dispose();unknown|=!handle.IsInvalid&&(!handle.CloseAttempted||!handle.CloseSucceeded);}}catch{unknown=true;}}
    for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(entry.Closed)continue;
     // 직접 획득한 원 handle만 닫는다. 이름 탐색·삭제·권한 복구는 하지 않는다.
     try{if(entry.Pin.Handle!=null){entry.Pin.Handle.Dispose();unknown|=!entry.Pin.Handle.IsInvalid&&(!entry.Pin.Handle.CloseAttempted||!entry.Pin.Handle.CloseSucceeded);}}catch{unknown=true;}
@@ -404,12 +448,14 @@ internal static class DevelopmentRecoveryPathGuard {
     // cleanup는 만료 뒤에도 가능하지만 원 identity/내용/권한이 불명하면 삭제하지 않는다.
     foreach(var entry in entries)CheckEntry(entry);
     for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(!entry.Owned)continue;
-     CheckEntry(entry);IntPtr disposition=Marshal.AllocHGlobal(4);
-     try{Marshal.WriteInt32(disposition,1);entry.DeleteRequested=true;Require(SetFileInformationByHandle(entry.Pin.Handle,4,disposition,4));}finally{Marshal.FreeHGlobal(disposition);}
-     entry.Pin.Handle.Dispose();entry.Closed=true;Require(entry.Pin.Handle.CloseAttempted&&entry.Pin.Handle.CloseSucceeded);
+     CheckEntry(entry);QaAction action=entry.OwnershipOnly?OpenAction(entry,0x10000u):null;KernelHandle target=action==null?entry.Pin.Handle:action.Handle;IntPtr disposition=Marshal.AllocHGlobal(4);
+     try{Marshal.WriteInt32(disposition,1);entry.DeleteRequested=true;Require(SetFileInformationByHandle(target,4,disposition,4));}finally{Marshal.FreeHGlobal(disposition);}
+     if(action!=null){action.Handle.Dispose();Require(action.Handle.CloseAttempted&&action.Handle.CloseSucceeded);}
+     entry.Pin.Handle.Dispose();Require(entry.Pin.Handle.CloseAttempted&&entry.Pin.Handle.CloseSucceeded);entry.Closed=true;
+     if(action!=null)Require(CloseAction(action)); // 원 소유 handle 종료가 확인될 때까지 부모 임시 pin을 유지한다.
     }
     Require(basePin!=null&&run!=null&&QaNameAbsent(basePin.Handle,runId));
-    for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(entry.Owned)continue;entry.Pin.Handle.Dispose();entry.Closed=true;Require(entry.Pin.Handle.CloseAttempted&&entry.Pin.Handle.CloseSucceeded);}
+    for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(entry.Owned)continue;entry.Pin.Handle.Dispose();Require(entry.Pin.Handle.CloseAttempted&&entry.Pin.Handle.CloseSucceeded);entry.Closed=true;}
     CleanupStatus="OWNED_RUN_ABSENT_BY_ORIGINAL_PARENT_NOT_OS_VALIDATED";
    }catch{faulted=true;bool pending=false;foreach(var entry in entries)pending|=entry.DeleteRequested&&!entry.Closed;if(!pending)ReleaseHandlesWithoutDelete();}return CleanupStatus;
   }
