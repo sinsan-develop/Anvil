@@ -3,7 +3,9 @@ import{postDocumentCommand,type DocumentSession,type DocumentWrite}from'../desig
 import{validateKnowledgeView,type KnowledgeView}from'./api.ts';
 import{ordered,knowledgeReason,knowledgeOutcomes,type KnowledgeOutcome,type KnowledgeStoredReview,type KnowledgeReviewRef}from'./review-view.ts';
 import{constitutionHash,constitutionRef}from'./constitution-proof.ts';
-export interface KnowledgeDecisionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:'REVIEW'|'CONFIRM'|'APPLY';applicationBaseRef?:KnowledgeView['ref']|null;target:KnowledgeView;items:KnowledgeStoredReview['items'];outcome:KnowledgeOutcome;reason:string;acknowledged:boolean;pending:DocumentWrite|null;savedId:string|null;failure:{code:string;status:number}|null;dirty:boolean;uncertain:boolean}
+import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';
+export interface KnowledgeDecisionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:'REVIEW'|'CONFIRM'|'APPLY';applicationBaseRef?:KnowledgeView['ref']|null;target:KnowledgeView;items:KnowledgeStoredReview['items'];outcome:KnowledgeOutcome;reason:string;acknowledged:boolean;pending:DocumentWrite|null;savedId:string|null;failure:{code:string;status:number}|null;dirty:boolean;uncertain:boolean;rejectedAttempts?:{title:string;command:DocumentWrite;failure:{code:string;status:number}}[]}
+export type KnowledgeDecisionChange=KnowledgeDecisionBuffer|null|((current:KnowledgeDecisionBuffer|null)=>KnowledgeDecisionBuffer|null);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 function bound(b:KnowledgeDecisionBuffer,s:DocumentSession){if(!uuid.test(b.projectId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid.test(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||b.target?.entry.scope.projectId!==b.projectId||!['PROPOSED','CONFIRMED'].includes(b.target.state)||b.target.ref.version!==b.target.headVersion||!['REVIEW','CONFIRM','APPLY'].includes(b.kind))throw new ApiError('KNOWLEDGE_DECISION_BINDING_INVALID');}
 export function newKnowledgeDecision(pid:string,target:KnowledgeView,s:DocumentSession,generation:number,kind:'REVIEW'|'CONFIRM'|'APPLY'):KnowledgeDecisionBuffer{
@@ -24,6 +26,14 @@ async function payload(b:KnowledgeDecisionBuffer,s:DocumentSession){
  return{targetKind:'KNOWLEDGE',targetRef:{...b.target.ref},criteriaVersion:1,items:structuredClone(b.items),outcome:b.outcome,reason:b.reason};
 }
 function command(b:KnowledgeDecisionBuffer,s:DocumentSession,p:Record<string,unknown>,id:string):DocumentWrite{return{schemaVersion:1,projectId:b.projectId,commandId:id,clientId:s.clientId,controlGeneration:b.controlGeneration,operation:b.kind==='REVIEW'?'recordContentReview':b.kind==='APPLY'?'applyConstitution':'confirmKnowledge',targetId:b.kind==='APPLY'?b.projectId:b.target.ref.id,expectedVersion:b.kind==='APPLY'?(b.applicationBaseRef?.version??0):b.target.ref.version,baselineRefs:[],approvalRef:null,payload:p};}
+export async function retireRejectedKnowledgeReview(input:KnowledgeDecisionBuffer,session:DocumentSession):Promise<KnowledgeDecisionBuffer>{
+ const fingerprint=ordered(input),sessionFingerprint=ordered(session),b=structuredClone(input),s=structuredClone(session),c=b.pending;
+ const reject=()=>{throw new ApiError('KNOWLEDGE_REVIEW_REJECTION_NOT_CONFIRMED');};
+ if(b.kind!=='REVIEW'||b.uncertain||b.savedId||!c||!uuid.test(s.user.id)||!isKnownDocumentRejection(b.failure))reject();
+ const p=await payload(b,s);
+ if(!c||!uuid.test(c.commandId)||ordered(c)!==ordered(command(b,s,p,c.commandId))||ordered(input)!==fingerprint||ordered(session)!==sessionFingerprint)reject();
+ return{...b,pending:null,failure:null,dirty:true,rejectedAttempts:[...(b.rejectedAttempts??[]),{title:b.target.entry.title,command:structuredClone(c!),failure:{...b.failure!}}]};
+}
 export async function prepareKnowledgeDecision(b:KnowledgeDecisionBuffer,s:DocumentSession){if(b.pending||b.savedId)throw new ApiError('KNOWLEDGE_DECISION_PENDING');return command(b,s,await payload(b,s),crypto.randomUUID());}
 export async function sendKnowledgeDecision(client:ApiClient,b:KnowledgeDecisionBuffer,s:DocumentSession,active:()=>boolean){
  const p=await payload(b,s),c=b.pending;if(!c||!uuid.test(c.commandId)||ordered(c)!==ordered(command(b,s,p,c.commandId)))throw new ApiError('KNOWLEDGE_DECISION_INPUT_INVALID');if(!active())throw new ApiError('KNOWLEDGE_DECISION_PAUSED');
