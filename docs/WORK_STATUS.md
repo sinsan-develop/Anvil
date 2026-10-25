@@ -1,4 +1,18 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN15/UI12 선행 조회 — source 검수 범위
+
+- 담당/변경: fn15_discovery_reads 구현, Main 통합·직접검증·기록, fn15_discovery_review 독립 정적검수다. 신규 control-discovery-read.ts, 기존 PG/routes readonly결합과 신규시험2만 변경했다. 현재control-state의정확version·상태/관측과 request summary head의최신ref/NONE탐색을 같은PoolClient/전후scope에서검사한다. 본인/현재controller·원request4묶음·fixedGET재검증을 유지하고 과거base차이를새쓰기거절처럼취급하지않는다. 모든행위는권한발급/수락이아니고falseflags/defaultOFF/조회쓰기0이다.
+- 최초 증거/시험 보완: 교정 test-only56215D4E의 b5ac64는10건중9FAIL/1오인PASS였다. 미등록404를not200으로통과시키던회수음성을17D203CA로정상200선행·PG관측조건으로고쳐d5f7971RED·1194.992ms/exit1을확인했고오인PASS는제외했다. 제품3B9FEF0B 적용후a79462는8PASS/2FAIL·type/diff0. HTTP시험의FOR UPDATE를DML로세는regex와회수hook이member조회후clock에서실행되는시점을42BCC480으로정정해b0e3d4해당2/2PASS·1415.2848ms/type/diff0이다. 행잠금·403/부분비노출 기대값과제품은불변이다.
+- 독립/최종: 제품C0/I0·M1은fake가SQL정렬/한도를무시해latest시험을통과시키는공백이었다. 9020C56E가ORDER BY version DESC LIMIT1을확인한뒤fake결과를만들도록보완했고ba9f2a정상HTTP1PASS·975.8394ms/type/diff0이다. 고유10증거는최신정상1/직전회수1/불변순수7+OFF1로구분한다. PG/routes의기존5경로직접영향회귀5a131e17/17·skip0·1362.7648ms/exit0, scoped C0/I0/M0, Main67483f최종소유5hash일치다. 실제PG/SQL/FK/경합/TLS/UI사용·DB/서비스·Agent/제어전환은NOT_RUN/미연결이다.
+- 계획 정합/다음: 기존UI12의ControlAccessPage는프로젝트참여/제어기록조회source만있고요청/요약/수락화면은아직미연결이므로계획표의시작전을부분구현·실사용미검증으로정정한다. backend선행조회가준비됐다는이유로UI12나전체FN15완료로승격하지않는다. 별도QA준비후보4.3은PMO가source/manifest/guard시험준비만수용했고정확3보조경로를WI에고정했다(최신9D5171596287F3DBA46B93AB1547FD37E1195223D3D2D422E8DB425E8E65A9DF). 실제QA실행/원격조회·자원/계정/비밀번호/DB생성은미승인이다. 다음단일writer에게준비소스를배정하고실행후보를완성해판단받는다.
+
+### 2026-10-26 FN15/UI12 선행 조회 — 기본 OFF source 착수
+
+- 기준/정리: e3f26d9964991463a8d79efbf004ba2b504a678c 소유12경로를 development에 게시해 local/remote exact·main f976ed5e 불변·tracked clean/보호8을 확인했다. 소유 patch18+draft10파일28개는 정확hash/owner/nonlink·root경계 확인 후 literal정리했고 별도조회 patch0/두draft부재다. 기존 보존본·비소유 자료는 유지했다.
+- 다음 공백/판단: 기존 프로젝트 GET은 control.version이 없고 요청자가 최신summaryRef를 찾는 조회도 없어 UI12를 projectVersion 추정/수동hash 입력으로 우회할 수 없다. WI4.2 후보8B79DE46을 PMO가 기존FN15/UI12의 읽기 상세화·기본OFF source로 수용했다. 새 binding 뒤 WI SHA740F2DD738B9ADE1F0E6EC977FA749B766B55239F42B105D6D8F5CD30DCA8C74다. 실제 공개/활성화·격리QA/DB/서비스는 미승인이다.
+- 담당/범위: 새 단일 writer fn15_discovery_reads에 신규 control-discovery-read.ts와 기존 PG/routes readonly결합·정확2GET, 신규직접시험최대2만 배정했다. 현재control-state와고정요청의summary head 참조탐색, 본인/현재controller·원요청4묶음·전후인증/회원/client/basis 검사·NONE/미확인구분·fixedGET재검증을 따른다. 재인증기간/기존5응답/일반정책/SQL/키·앱새활성화경로·실DB/Agent/제어전환0이다.
+- 병행 준비: 실제PG+in-process API 검증은 별도 새격리자원/QA helper 발췌·ledger/전용grant·seed가 필요한 것으로 정적 확인했다. 해당 exact 실행후보를 Main이 준비하고 있으며 현재 원격/Docker/DB접속/생성0이다. 읽기준비를 실제QA 승인으로 해석하거나 기존특정거절을 우회하지 않는다. 전체계획/FN15/UI12는 미완료다.
+
 ### 2026-10-26 FN15 후속 연결 — 기본 OFF API·PG 소스 검수 범위
 
 - 담당/범위: fn15_pg_api_wiring 단일 구현, Main 통합·직접 검증·기록, fn15_pg_wiring_review 독립 정적 검수다. 신규 PG adapter/routes2, 기존 source mode·안전 오류 결합3·AccessRepository 고정 cursor wrapper·buildApp 선택 다섯째 인수와 신규시험3만 변경했다. 기존4인수/일반OWNER·ProjectCommand/정책·로그인·재인증기간·키/SQL·manifest·runtime/env는 불변이다.

@@ -6,6 +6,8 @@ import { requestControl, ControlRequestStoreFailure } from './control-request-st
 import { readControlRequest, listControlRequests, ControlRequestReadFailure } from './control-request-read.ts';
 import { prepareControlHandoff, readControlHandoffSummary,
   HandoffSummaryStoreFailure } from './control-handoff-summary-store.ts';
+import { readControlState, readHandoffSummaryHead,
+  ControlDiscoveryFailure } from './control-discovery-read.ts';
 import type { ControlHandoffPgSource } from './control-handoff-pg.ts';
 
 export interface ControlHandoffRoutesOptions {
@@ -92,7 +94,7 @@ const errorShape = (error: unknown): { code: string; status: number; commandId: 
       || (error.message === 'INPUT_INVALID' && error.statusCode === 400)))
     return { code: error.message, status: error.statusCode, commandId: null };
   if (error instanceof ControlRequestStoreFailure || error instanceof ControlRequestReadFailure
-    || error instanceof HandoffSummaryStoreFailure) {
+    || error instanceof HandoffSummaryStoreFailure || error instanceof ControlDiscoveryFailure) {
     const code = error.code;
     const commandId = 'commandId' in error && typeof error.commandId === 'string' ? error.commandId : null;
     if (code.endsWith('_NOT_CONNECTED')) return { code: 'NOT_CONNECTED', status: 503, commandId };
@@ -140,6 +142,12 @@ export function registerControlHandoffRoutes(app: FastifyInstance, options: Cont
     });
     const base = '/api/v1/projects/:projectId/control-requests';
     const version = `${base}/:requestId/versions/:requestVersion`;
+    scoped.get<{ Params: ProjectParams }>(
+      '/api/v1/projects/:projectId/control-state', async request => {
+        const projectId = validProject(request.params.projectId);
+        const ports = options.source.forSession(sessionToken(request), csrfToken(request), projectId);
+        return readControlState({ projectId }, ports.discoveryPort);
+      });
     scoped.post<{ Params: ProjectParams; Body: unknown }>(base, async (request, reply) => {
       const projectId = validProject(request.params.projectId);
       exactBody(request.body, 'requestControl', projectId);
@@ -170,6 +178,14 @@ export function registerControlHandoffRoutes(app: FastifyInstance, options: Cont
       const ports = options.source.forSession(sessionToken(request), csrfToken(request), projectId);
       return reply.code(201).send(await prepareControlHandoff(request.body, ports.summaryPort));
     });
+    scoped.get<{ Params: RequestParams; Querystring: unknown }>(
+      `${version}/handoff-summaries/head`, async request => {
+        const projectId = validProject(request.params.projectId);
+        const fields = query(request.query, ['requestHash']);
+        const ref = requestRef(request.params, fields.requestHash);
+        const ports = options.source.forSession(sessionToken(request), csrfToken(request), projectId);
+        return readHandoffSummaryHead({ projectId, requestRef: ref }, ports.discoveryPort);
+      });
     scoped.get<{ Params: SummaryParams; Querystring: unknown }>(`${version}/handoff-summaries/:summaryVersion`, async request => {
       const projectId = validProject(request.params.projectId);
       const fields = query(request.query, ['requestHash', 'summaryHash']);

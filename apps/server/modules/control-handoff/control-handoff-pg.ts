@@ -13,6 +13,8 @@ import type { HandoffSummaryPort, HandoffSummaryTransaction, HandoffSummaryBundl
 import { HandoffSummaryStoreFailure } from './control-handoff-summary-store.ts';
 import type { ControlRequestRecord } from './control-request-snapshot.ts';
 import type { HandoffSummaryRecord } from './control-handoff-summary.ts';
+import type { ControlDiscoveryReadPort, ControlDiscoveryReadTransaction } from './control-discovery-read.ts';
+import { ControlDiscoveryFailure } from './control-discovery-read.ts';
 
 type Row = Record<string, unknown>;
 type RequestRef = ControlRequestRecord['requestRef'];
@@ -89,6 +91,7 @@ export interface ControlHandoffPgSession {
   requestPort: ControlRequestStorePort;
   readPort: ControlRequestReadPort;
   summaryPort: HandoffSummaryPort;
+  discoveryPort: ControlDiscoveryReadPort;
 }
 export interface ControlHandoffPgSource {
   forSession(token: string, csrf: string, projectId: string): ControlHandoffPgSession;
@@ -103,7 +106,8 @@ export function createControlHandoffPgSource(options: ControlHandoffPgOptions): 
       const transaction = async <T>(): Promise<T> => noConnection();
       return { requestPort: { sourceMode: 'NOT_CONNECTED', transaction },
         readPort: { sourceMode: 'NOT_CONNECTED', transaction },
-        summaryPort: { sourceMode: 'NOT_CONNECTED', transaction } };
+        summaryPort: { sourceMode: 'NOT_CONNECTED', transaction },
+        discoveryPort: { sourceMode: 'NOT_CONNECTED', transaction } };
     }
     const signer = { sign: (message: string) => options.access.signControlRequestCursor(message),
       verify: (message: string, signature: string) => options.access.verifyControlRequestCursor(message, signature) };
@@ -130,7 +134,7 @@ export function createControlHandoffPgSource(options: ControlHandoffPgOptions): 
           && ((error.message === 'AUTH_REQUIRED' && error.statusCode === 401)
             || (error.message === 'CSRF_INVALID' && error.statusCode === 403))) throw error;
         if (error instanceof ControlRequestStoreFailure || error instanceof ControlRequestReadFailure
-          || error instanceof HandoffSummaryStoreFailure
+          || error instanceof HandoffSummaryStoreFailure || error instanceof ControlDiscoveryFailure
           || error instanceof ControlHandoffPgFailure) throw error;
         throw new ControlHandoffPgFailure('FN15_SOURCE_FAILED');
       } finally { db.release(); }
@@ -142,7 +146,9 @@ export function createControlHandoffPgSource(options: ControlHandoffPgOptions): 
         transaction: async <T>(work: (tx: ControlRequestReadTransaction) => Promise<T>) =>
           run(context => work(context.readTransaction())) },
       summaryPort: { sourceMode: 'POSTGRES_SOURCE', transaction: async <T>(work: (tx: HandoffSummaryTransaction) => Promise<T>) =>
-        run(context => work(context.summaryTransaction())) }
+        run(context => work(context.summaryTransaction())) },
+      discoveryPort: { sourceMode: 'POSTGRES_SOURCE', transaction: async <T>(work: (tx: ControlDiscoveryReadTransaction) => Promise<T>) =>
+        run(context => work(context.discoveryTransaction())) }
     };
   } };
 }
@@ -323,6 +329,27 @@ class PgContext {
             projectId: text(row.project_id), requestedBy: { actorId: text(row.requested_by),
               clientId: text(row.client_id) } };
         });
+      } };
+  }
+
+  discoveryTransaction(): ControlDiscoveryReadTransaction {
+    return { observe: () => this.observe(),
+      readRequestBundleByRef: async ref => {
+        const bundle = await this.requestBundleByRef(ref);
+        if (!bundle) throw new ControlRequestReadFailure('CONTROL_REQUEST_NOT_FOUND');
+        return bundle;
+      },
+      readHeadSummaryRef: async ref => {
+        const row = first(await this.db.query(`SELECT project_id,request_id,request_version,request_hash,version,content_hash
+          FROM anvil.control_handoff_source_summaries
+          WHERE project_id=$1 AND request_id=$2 AND request_version=$3 AND request_hash=$4
+          ORDER BY version DESC LIMIT 1`,
+        [this.projectId, ref.id, ref.version, ref.contentHash]));
+        return row ? { projectId: text(row.project_id),
+          requestRef: { id: text(row.request_id), version: integer(row.request_version),
+            contentHash: text(row.request_hash) },
+          summaryRef: { id: text(row.request_id), version: integer(row.version),
+            contentHash: text(row.content_hash) } } : null;
       } };
   }
 
