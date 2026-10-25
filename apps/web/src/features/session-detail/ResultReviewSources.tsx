@@ -176,6 +176,7 @@ export function StoredCriteria({client,assignment,result,session,reviews,onAuthe
 function ResultReviewEditor({client,result,criteria,session,reviews,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;criteria:RegisteredCriteria;session:DocumentSession;reviews:ResultReviewBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  const key=resultReviewBufferKey(session,result,criteria),buffer=reviews.buffers[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),live=useRef(true),working=useRef(false);useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  const bound=buffer&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&JSON.stringify(buffer.resultRef)===JSON.stringify(result.ref)&&JSON.stringify(buffer.criteriaRef)===JSON.stringify(criteria.ref)?buffer:null;
+ const latest=useRef({key,buffer,bound,busy,session,result,criteria});latest.current={key,buffer,bound,busy,session,result,criteria};
  const change=(v:ResultReviewBuffer)=>reviews.onChange(key,current=>current?.bindingId===v.bindingId?v:current);
  const edit=(v:ResultReviewBuffer)=>{if(!bound||bound.pending||bound.stored||working.current)return;setError(null);change({...v,dirty:true,failure:null});};
  async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'){
@@ -190,6 +191,19 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
   finally{working.current=false;if(live.current)setBusy(false);}
  }
  const frozen=busy||!!bound?.pending||!!bound?.stored;
+ function releaseUnsentPreparation(){
+  if(!bound?.pending||bound.uncertain||bound.stored||bound.failure||busy||working.current||!live.current)return;
+  const chosen=bound,pending=bound.pending,command=pending.command,fingerprint=ordered(chosen),owner=session.user.id,clientId=session.clientId,projectId=result.snapshot.scope.projectId,resultRef=ordered(result.ref),criteriaRef=ordered(criteria.ref);
+  const currentUnsent=(value:ResultReviewBuffer|null)=>{
+   const now=latest.current;
+   return live.current&&!working.current&&!now.busy&&now.key===key&&now.buffer===chosen&&now.bound===chosen&&value===chosen&&value.pending===pending&&pending.command===command&&ordered(value)===fingerprint
+    &&now.session.user.id===owner&&now.session.clientId===clientId&&now.result.snapshot.scope.projectId===projectId&&now.criteria.projectId===projectId&&ordered(now.result.ref)===resultRef&&ordered(now.criteria.ref)===criteriaRef
+    &&value.ownerUserId===owner&&value.ownerClientId===clientId&&ordered(value.resultRef)===resultRef&&ordered(value.criteriaRef)===criteriaRef&&!value.uncertain&&!value.stored&&!value.failure
+    &&pending.ownerUserId===owner&&command.clientId===clientId&&command.projectId===projectId&&command.controlGeneration===value.controlGeneration&&pending.result.snapshot.scope.projectId===projectId&&pending.criteria.projectId===projectId&&ordered(pending.result.ref)===resultRef&&ordered(pending.criteria.ref)===criteriaRef&&ordered(command.payload)===ordered({resultRef:value.resultRef,criteriaRef:value.criteriaRef,outcome:value.outcome,items:value.rows.map(i=>({...i,evidenceRefs:[]})),reason:value.reason});
+  };
+  if(!currentUnsent(chosen)||!confirm('미전송 검수 저장 준비만 해제하고 입력 수정으로 돌아갈까요? 서버 저장 취소나 승인 회수가 아니며, 전송한 명령은 취소하지 않습니다.')||!currentUnsent(chosen))return;
+  reviews.onChange(key,current=>currentUnsent(current)?{...current!,pending:null,dirty:true}:current);
+ }
  return <section className="status-card" aria-label="결과 검수 기록"><h5>보완·차단 검수 기록</h5><p>실제 증거 검증/합격은 미연결입니다. 보완/차단 이유만 기록하며 원제출을 변경하거나 업무 완료·실패 집계·보완 실행을 하지 않습니다.</p>
   {!bound?<button type="button" disabled={busy||!!buffer} onClick={()=>void run('CREATE')}>검수 판정 작성</button>:<>
    <label>검수 총판정<select aria-label="검수 총판정" disabled={frozen} value={bound.outcome} onChange={e=>edit({...bound,outcome:e.target.value as ReviewOutcome|''})}><option value="">직접 선택</option><option value="REWORK">보완 필요</option><option value="BLOCKED">차단</option></select></label>
@@ -197,6 +211,7 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
    <label>검수 총판정 이유<textarea disabled={frozen} maxLength={20000} value={bound.reason} onChange={e=>edit({...bound,reason:e.target.value})}/></label>
    {!bound.pending&&!bound.stored?<><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('PREPARE')}>검수 기록 저장 준비</button><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('REBIND')}>현재 제어로 미전송 검수 입력 재결박</button></>:null}
    {bound.pending&&!bound.stored?<><details><summary>검수 기록 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void run('SAVE')}>{bound.uncertain||bound.failure?'같은 검수 기록 명령 재확인':'검수 기록 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={()=>change({...bound,pending:null,dirty:true,failure:null})}>확인된 거절 이후 검수 입력 수정</button>:null}</>:null}
+   {bound.pending&&!bound.stored&&!bound.uncertain&&!bound.failure?<button type="button" disabled={busy} onClick={releaseUnsentPreparation}>미전송 검수 저장 준비 해제</button>:null}
    {bound.uncertain?<p role="status">검수 기록 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
    {bound.stored?<article aria-label="검수 기록 원문"><h5>검수 기록 원문 확인 완료 · 업무 완료/실행 허가 아님</h5><p>검수자와 제출자: {bound.stored.snapshot.sameAsSubmitter?'동일 주체 · 독립 검수 아님':'다른 주체 · 독립성 인증은 아님'}</p><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 검수 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
   </>}
