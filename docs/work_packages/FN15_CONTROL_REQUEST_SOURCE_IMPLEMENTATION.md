@@ -26,6 +26,19 @@ FN15 전체를 SELF 요청으로 축소하지 않는다. 다른 사람 인계·�
 
 후속 신규 제품은 `control-request-store.ts`, `control-request-summary.ts`; 시험은 각각 FN15 전용 단위로 둔다. 단위 1 검수 후 상세 인터페이스와 정확 파일을 고정한다.
 
+### 3.1 단위 2A — 요청 보관·동일 명령·저장 완전성
+
+단위 1의 `3e2e804aaeecbf91671c8e3d53e4d47394703515` 검수 후 진행한다. 신규 제품 `apps/server/modules/control-handoff/control-request-store.ts`, 신규 시험 `tests/unit/FN15/control-request-store.test.ts`와 필요시 같은 폴더의 `control-request-store-fixture.ts`만 허용한다. 기존 단위 1·일반 권한 코드·route는 수정하지 않는다.
+
+- 내부 command는 schemaVersion=1/operation=requestControl/commandId/projectId/clientId/payload만 받는다. 인증자는 command가 아니라 아직 미연결인 transaction port의 현재 observation에서 얻는다. 기존 입력·관측·snapshot verifier를 그대로 소비한다.
+- 기본 port는 NOT_CONNECTED로 실패한다. 연결 가능한 실제 adapter를 추가하지 않는다. fake port는 같은 transaction의 인증/회원/client/control/현재 시각 관측, 명령 키 잠금/조회, ID 할당, 요청·명령·receipt·audit 삽입, 전체 bundle 재조회만 제공한다. 제어를 갱신하는 메서드는 만들지 않는다.
+- 새 요청은 현재 facts와 SELF를 먼저 검사하고, 입력·명령 hash/고정 requestRef와 현재 주체·client·기준을 결박한 네 종류의 저장을 모두 성공시킨다. 저장 전후 facts 재검사와 bundle의 원문/hash/중복 metadata/연결 참조/단일 명령·receipt·audit 양방향 완전성을 확인한 후에만 transaction 결과를 반환한다.
+- 동일 commandId/정확 payload는 현재 인증·역할·client·기준과 요청 기한을 다시 검사한 후 같은 보관 결과만 반환한다. 다른 payload·주체·client·기준의 재사용은 거절한다. 기한이 지난 command 재전송은 새 성공으로 만들지 않고, 과거 원문의 보호 조회는 단위 2B에서 별도로 구현한다. 만료를 이유로 원문/영수증을 삭제하지 않는다.
+- 어떤 저장 단계 실패·최종 검증 실패·확정된 commit 실패도 fake transaction에서 부분 저장을 남기지 않는다. commit 결과가 불명인 실패는 자동 재실행하지 않고 명령 식별자를 유지한 오류로 남긴다. fake가 보장한 rollback과 실제 DB rollback을 혼동하지 않는다.
+- 시험은 기본 미연결, 정상 OWNER 다른 client/적격 참여자, 제어 원본 불변, 같은 command 동시 모사·재확인 부작용 0, payload/metadata/원문·receipt·audit 변조, 중간 실패·최종 재관측 회수/만료·기준 변경, 고아/부분 bundle 거절을 먼저 RED로 확인한다. 가짜 port의 직렬화는 실제 PG 경합 검증이 아니다.
+
+단위 2B의 유한 보호 조회·cursor와 단위 2C의 미확인 요약은 2A 검수 후 정확 인터페이스를 고정한다. 2A만으로 조회·요약·UI12 또는 FN15 전체를 완료하지 않는다.
+
 - 같은 transaction에서 현재 인증/회원/client/제어를 재관측한 다음 요청 전용 명령·snapshot·receipt·audit를 모두 저장한다. 동일 commandId·payload만 replay하고, replay 전에도 현재 접근을 검사한다.
 - 기본 실제 adapter는 거절하며 fake transaction만으로 원자성·rollback·COMMIT 양방향 완전성·현재 권한 회수·기준 변경을 시험한다. 기존 일반 OWNER 검사에 예외를 덧붙이지 않는다.
 - 조회는 본인 요청 또는 현재 controller만 최소 원문을 얻는다. actor/project/filter/limit/기한 결박 cursor, 정확 version/hash, 누락/변조·다른 주체의 원문/민감 상태 일부 노출 0을 검사한다. 목록의 최대 200 등 수치는 내부 후보 조건이며 공개 조회권을 새로 확정하지 않는다.
