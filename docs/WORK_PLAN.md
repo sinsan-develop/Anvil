@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 실제loader source**: 같은파일stream/private바이트의digest→Assembly.Load→같은Assembly의정확publicfactory/반환type을실제host준비본문에연결했다. 두진입literal차단/정적C0/I0/M0·소비검사와 실제compile/load/OS NOT_RUN을 구분한다. expectedSHA는실행권위아니며 R0단일native후보는b6c41545로유지한다.
+
 - **2026-10-25 R1 원 Job 제어 source**: 기존probe를 실제 원factory·fixed sleep·membership·finally 원Job종료/handle회수로 연결하고 반복정리 cache/종료불명보존을 결박했다. 정적C0/I0/M0는 실제compile/OS증거가 아니며 guardian-loss/childpin/breakaway·실loader와 전체계획은 미완료다.
 
 - **2026-10-25 R1 실제 host 소스 연결**: 원 factory/owner의 고정6 준비·변경과 고정4 실패관측을 실제 메서드 호출·finally 정리로 연결하고 오류뒤 원host를 보존한다. PS용 QA 공개facade는 gate를 열지 않는다. 접근성I1 보정·정적 재검토C0/I0/M0/진입차단시험과 실제compile/load/OS NOT_RUN을 구분하며 전체14/보호실행·계획완료가 아니다.

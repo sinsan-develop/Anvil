@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- 실제loader source도 같은FileStream/private바이트의SHA→같은바이트Load→같은Assembly/publicsealedType/정확Create signature·return/instance에결박했다. hostraw0DCB746D1FC6FD0E6A5A51755E6E638DA03D1FD645ECD1E7631B4D66546D1646·현재literal차단/정적C0/I0/M0, actualload/OS NOT_RUN. caller와별개인정확외부실행결정/출처결박이없으면expectedSHA만으로차단해제불가이며새registry를구현하지않았다. R0는b6c41545/native1589한파일로유지, R0정리후R1에서재사용할DLL은없으므로actualR1artifact생성/등록은별도선행이다.
+
 ### 2026-10-25 R0 단일 컴파일 권장 패킷 — 실행 전 결정 자료
 
 이전 미결 질문은 3d0ad83ab46e6ae544cd0b1a051e228ef5e8f7c7/native A5F592ADD89B13F09BCE0625868D175428020F7A041C0CC37195888970844271 한 건이다. 현재 권장 대상은 아래 **한 파일만**이며 옛 답변을 자동 이월하지 않는다. 사용자에게 질문을 반복하지 않고 PMO에 대상 차이와 결정 자료로 전달한다.
