@@ -245,6 +245,8 @@ internal static class DevelopmentRecoveryPathGuard {
  sealed class QaEntry {
   internal Pin Pin;internal QaEntry Parent;internal string Name;internal bool Owned,DeleteRequested,Closed,OwnershipOnly;internal byte[] Expected;
   internal byte[] OriginalDacl,AttemptedDacl;internal bool DaclChangeAttempted,DaclRestoreAttempted;
+  internal bool LinkChangeAttempted,LinkCreateConfirmed;
+  internal bool ReparseChangeAttempted,ReparseSetConfirmed;
  }
  sealed class QaAction {
   internal KernelHandle Handle;internal readonly List<Pin> Parents=new List<Pin>();internal bool CloseAttempted,CloseUnknown;
@@ -293,6 +295,8 @@ internal static class DevelopmentRecoveryPathGuard {
   internal string AcquisitionStatus{get;private set;}
   internal string CleanupStatus{get;private set;}
   internal string DaclRestorationStatus{get;private set;}
+  internal string HardlinkObservationStatus{get;private set;}
+  internal string ReparseObservationStatus{get;private set;}
   QaFixtureLease(string id,string sha,DateTime from,DateTime to){runId=id;commit=sha;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";}
   internal static QaFixtureLease Begin(string id,string sha,DateTime from,DateTime to){
    Require(QaAdapterConnected);
@@ -420,6 +424,25 @@ internal static class DevelopmentRecoveryPathGuard {
    Fact before=entry.Pin.Before,after=Read(entry.Pin.Handle,Path.Combine(parent.Pin.Before.Path,name),before.Directory);
    Require(before.Volume==after.Volume&&before.Id==after.Id);entry.Pin.Before=after;entry.Name=name;
   }
+  void ObserveKnownHardlinkedLeaf(QaEntry entry){
+   // 공통 Read의 링크 수1 규칙을 완화하지 않는다. 방금 고정 alias를 생성한 원 leaf만 별도 관측한다.
+   QaEntry declared;Require(entry.Owned&&entry.OwnershipOnly&&!entry.Closed&&entry.LinkChangeAttempted&&entry.LinkCreateConfirmed&&entry.Expected!=null&&entry.Expected.Length<=8388608&&caseChildren.TryGetValue("HARD_LINK/leaf.txt",out declared)&&Object.ReferenceEquals(entry,declared));
+   KernelHandle handle=entry.Pin.Handle;Require(handle!=null&&!handle.IsInvalid&&!handle.IsClosed&&GetFileType(handle)==1);
+   var basic=Info<BasicInfo>(handle,0);var standard=Info<StandardInfo>(handle,1);var id=Info<IdInfo>(handle,18);Fact before=entry.Pin.Before;
+   Require(!before.Directory&&before.Links==1&&standard.Directory==0&&standard.DeletePending==0&&standard.Links==2&&standard.EndOfFile==before.Size&&standard.EndOfFile==entry.Expected.Length&&basic.Attributes==before.Attributes&&(basic.Attributes&0x410)==0&&basic.Written==before.Written&&id.Id!=null&&id.Id.Length==16&&id.Volume==before.Volume&&BitConverter.ToString(id.Id)==before.Id);
+   var path=new StringBuilder(8192);uint count=GetFinalPathNameByHandleW(handle,path,8192,0);Require(count>0&&count<8192&&String.Equals(path.ToString(),@"\\?\"+before.Path,StringComparison.OrdinalIgnoreCase));Security(handle,owner,true);
+   byte[] bytes=new byte[entry.Expected.Length];long position;uint read;Require(SetFilePointerEx(handle,0,out position,0)&&position==0&&ReadFile(handle,bytes,(uint)bytes.Length,out read,IntPtr.Zero)&&read==bytes.Length&&BitConverter.ToString(bytes)==BitConverter.ToString(entry.Expected));
+  }
+  void ObserveKnownRelativeReparse(QaEntry entry){
+   QaEntry declared=null,target=null;Require(entry.Owned&&entry.OwnershipOnly&&!entry.Closed&&entry.ReparseChangeAttempted&&entry.ReparseSetConfirmed&&caseChildren.TryGetValue("REPARSE_CHILD/selected",out declared)&&Object.ReferenceEquals(entry,declared)&&caseChildren.TryGetValue("REPARSE_CHILD/target",out target));CheckEntry(target);
+   KernelHandle handle=entry.Pin.Handle;Require(handle!=null&&!handle.IsInvalid&&!handle.IsClosed&&GetFileType(handle)==1);
+   var basic=Info<BasicInfo>(handle,0);var standard=Info<StandardInfo>(handle,1);var id=Info<IdInfo>(handle,18);Fact before=entry.Pin.Before;
+   Require(before.Directory&&(before.Attributes&0x400)==0&&standard.Directory!=0&&standard.DeletePending==0&&standard.Links==before.Links&&basic.Attributes==(before.Attributes|0x400u)&&id.Id!=null&&id.Id.Length==16&&id.Volume==before.Volume&&BitConverter.ToString(id.Id)==before.Id);
+   var path=new StringBuilder(8192);uint count=GetFinalPathNameByHandleW(handle,path,8192,0);Require(count>0&&count<8192&&String.Equals(path.ToString(),@"\\?\"+before.Path,StringComparison.OrdinalIgnoreCase));Security(handle,owner,true);
+   IntPtr data=Marshal.AllocHGlobal(16384);
+   try{uint returned;Require(DeviceIoControl(handle,0x900a8u,null,0,data,16384,out returned,IntPtr.Zero));byte[] expected=QaRelativeSymlink();Require(returned==expected.Length);byte[] actual=new byte[returned];Marshal.Copy(data,actual,0,actual.Length);Require(BitConverter.ToString(actual)==BitConverter.ToString(expected));CheckEntry(target);}
+   finally{Marshal.FreeHGlobal(data);}
+  }
   // 성공 표기는 변경 시도일 뿐 guard 효과/권한/OS 합격이 아니다. 실 bridge 등록 전에는 호출 불가다.
   public string[] AttemptFilesystemMutation(string id){
    Fresh();Require(filesystemSealed&&!mutationAttempted&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
@@ -440,10 +463,12 @@ internal static class DevelopmentRecoveryPathGuard {
       Fact prior=entry.Pin.Before,settled=Read(entry.Pin.Handle,entry.Pin.Before.Path,false);Require(prior.Volume==settled.Volume&&prior.Id==settled.Id&&prior.Path==settled.Path&&!settled.Directory&&prior.Attributes==settled.Attributes&&prior.Links==settled.Links&&settled.Size==changed.Length);
       entry.Expected=changed;entry.Pin.Before=settled;CheckEntry(entry);Fresh();status="00000000";break;
      case "HARD_LINK":
-      operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,ReadData);Fresh();code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);break;
+      operation="LINK_ORIGINAL_LEAF_IN_ORIGINAL_PARENT";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,ReadData);Fresh();entry.LinkChangeAttempted=true;HardlinkObservationStatus="LINK_CREATE_UNCONFIRMED_PRESERVED";
+      code=QaRelativeNameChange(action.Handle,action.Parents[action.Parents.Count-1].Handle,"linked.txt",11);status=unchecked((uint)code).ToString("x8");Require(code==0);entry.LinkCreateConfirmed=true;ObserveKnownHardlinkedLeaf(entry);Fresh();HardlinkObservationStatus="ORIGINAL_LEAF_LINK_COUNT_TWO_NOT_OS_VALIDATED";break;
      case "REPARSE_CHILD":
       operation="SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY";entry=caseChildren[id+"/selected"];action=OpenAction(entry,2u|0x20u);Fresh();CheckEntry(caseChildren[id+"/target"]);byte[] data=QaRelativeSymlink();
-      if(!DeviceIoControl(action.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+      entry.ReparseChangeAttempted=true;ReparseObservationStatus="REPARSE_SET_UNCONFIRMED_PRESERVED";
+      if(!DeviceIoControl(action.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}entry.ReparseSetConfirmed=true;ObserveKnownRelativeReparse(entry);Fresh();ReparseObservationStatus="ORIGINAL_DIRECTORY_RELATIVE_REPARSE_MATCH_NOT_OS_VALIDATED";status="00000000";break;
      case "DACL_CHANGED":
       operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x40000u);Fresh();byte[] original=QaReadDescriptor(action.Handle);
       var sd=new RawSecurityDescriptor(original,0);Require(sd.DiscretionaryAcl!=null);sd.DiscretionaryAcl.InsertAce(sd.DiscretionaryAcl.Count,new CommonAce(AceFlags.None,AceQualifier.AccessAllowed,(int)FileSystemRights.WriteData,new SecurityIdentifier("S-1-1-0"),false,null));byte[] modified=new byte[sd.BinaryLength];sd.GetBinaryForm(modified,0);

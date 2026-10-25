@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- hardlink/reparse 원관측 후보는 각 독립 C0/I0/M0 source-only다. 공통 links1/reparse 거절은 유지하며 고정 원 leaf 링크수2/ID/바이트 또는 selected 원directory ID/상대 reparse payload만 별도 대조한다. native72104DE12864D3995472783820C3C1DC11D5D040A26070C4691F028724D65A57·compile/OS/실정리 NOT_RUN, alias삭제/원자 reparse제거 증거0·close-only 보존, DACL 원자복구 차단/기존Minor1·I1/I3/host8case 미완료를 유지한다.
+
 - DACL 원/의도 descriptor 관측과 파일용 SetSecurityInfo 후보·원 lease 정리 receipt 소비를 준비했다. readonly false에서 비원자 복구 write를 차단하므로 원자복구 지원 미완료·실 권한변경0이다. 독립 C0/I0/M1(불가능 일부 조합 parser 허용, 권위/합격 상승0), 순수 신규3/인접3·type/PS AST/diff0은 C# 검증이 아니다. native9884917631CD69124D5C36631B4C0E034293C6549D966708EEE36795A5266D13/PS8239FA36AD4D5CC2289AD6173191907E1AEB0C3FAD180F0A1B02635783FE7BF2·컴파일/OS/실정리 NOT_RUN, 원 I1/I3 전체·hardlink/reparse/host8case 미완료 유지다.
 
 - OUTSIDE_WRITE writer 종료 확인 뒤 원 ID/예상바이트 재관측·no-op 거절 소스 보완은 한정 정적 C0/I0/M0다. native raw0AD7C807B297E85B79B96D3CD8C9B91DF912A7F37A8A8D317949F2BFCBFC31EA, 컴파일/OS/실정리 NOT_RUN·전체 source 준비완료가 아니다. 원 I1/I3/나머지8case·실 host 미완료를 유지한다.
