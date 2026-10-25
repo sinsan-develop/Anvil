@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { emptyDraft, readProjectDraft, writeProjectDraft, runDraftAction, type DraftAction, type DraftEditorState, type PendingDraftCommand } from './api.ts';
 import { MethodologySelection } from './MethodologySelection.tsx';
@@ -11,6 +11,8 @@ import {createDraftMutationGate} from './draft-mutation-gate.ts';
 
 const nextLabels:Record<number,string>={1:'방법론·자료로 다음',2:'총괄·환경으로 다음',3:'생성 전 확인으로 다음'};
 const previousLabels:Record<number,string>={2:'목적·소스로 이전',3:'방법론·자료로 이전',4:'총괄·환경으로 이전'};
+type DraftReadIdentity = { client: ApiClient; key: string; attempt: number; mounted: boolean };
+type DraftConsumption = { identity: DraftReadIdentity; attempt: number; projectId: string | null | undefined };
 
 export function ProjectCreatePage({ client, session, buffer, onChange, onAuthenticationLost }: { client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: DraftEditorState; onChange: Dispatch<SetStateAction<DraftEditorState>>; onAuthenticationLost: () => void }) {
   const fieldId = useId();
@@ -25,18 +27,29 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   const [editable, setEditable] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
   const wrongOwner = !!buffer.ownerUserId && buffer.ownerUserId !== session.user.id;
+  const differentDraft = !!buffer.draftId && buffer.draftId !== requestedId;
+  // 조회한 동일 초안의 hydrate는 문맥을 바꾸지 않는다. 다른 초안으로 바뀐 렌더는 즉시 폐기한다.
+  const readKey = JSON.stringify([session.user.id, session.clientId, requestedId, reload, wrongOwner, differentDraft ? buffer.draftId : null]);
+  const liveRead = useRef<DraftReadIdentity>({ client, key: readKey, attempt: 0, mounted: true });
+  if (liveRead.current.client !== client || liveRead.current.key !== readKey) liveRead.current = { client, key: readKey, attempt: 0, mounted: true };
+  const readIdentity = liveRead.current;
+  const [consumption, setConsumption] = useState<DraftConsumption | null>(null);
+  useLayoutEffect(() => { readIdentity.mounted = true; return () => { readIdentity.mounted = false; readIdentity.attempt++; }; }, [readIdentity]);
+  const consumedProjectId = !differentDraft && consumption?.identity === readIdentity && consumption.attempt === readIdentity.attempt ? consumption.projectId : undefined;
   useEffect(() => {
     if (!requestedId || wrongOwner) return;
-    let current = true;
-    setPending(true);
+    const attempt = ++readIdentity.attempt;
+    const current = () => liveRead.current === readIdentity && readIdentity.mounted && readIdentity.attempt === attempt;
+    setPending(true); setError(null);
     readProjectDraft(client, requestedId).then(result => {
-      if (!current) return;
+      if (!current()) return;
       setEditable(result.editable === true);
-      onChange(previous => previous.dirty || previous.pendingCommand || previous.pendingAction ? previous : { ...previous, ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, wizardStep: result.step, dirty: false, pendingCommand: null, methodologyState: result.methodologyState });
-    }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); setEditable(false); } })
-      .finally(() => { if (current) setPending(false); });
-    return () => { current = false; };
-  }, [client, session.clientId, session.user.id, requestedId, reload, wrongOwner]);
+      setConsumption({ identity: readIdentity, attempt, projectId: result.consumedProjectId });
+      onChange(previous => !current() || previous.dirty || previous.pendingCommand || previous.pendingAction || previous.ownerUserId && previous.ownerUserId !== session.user.id || previous.draftId && previous.draftId !== requestedId ? previous : { ...previous, ownerUserId: session.user.id, input: result.input, draftId: result.draftId, version: result.version, wizardStep: result.step, dirty: false, pendingCommand: null, methodologyState: result.methodologyState });
+    }).catch((cause: unknown) => { if (current()) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); setEditable(false); } })
+      .finally(() => { if (current()) setPending(false); });
+    return () => { readIdentity.attempt++; };
+  }, [readIdentity]);
   async function save() {
     if (pending || selectionBusy || !editable || wrongOwner || buffer.pendingAction) return;
     await mutation.run(async () => {
@@ -110,6 +123,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     <h2>프로젝트 생성 중간본</h2>
     <p>중간 저장은 프로젝트 생성이나 Agent 실행이 아닙니다. 기존 소스의 위치 설명도 미확인 사용자 선언으로만 저장합니다.</p>
     {error ? <p role="alert">{error.message}{buffer.pendingCommand ? ' 자동으로 새 명령을 발행하지 않습니다. 같은 저장 요청의 결과를 다시 확인하세요.' : ''}</p> : null}
+    {consumedProjectId ? <section aria-label="저장 초안의 생성 프로젝트"><h3>이 초안으로 생성된 프로젝트</h3><p>프로젝트 ID {consumedProjectId}</p><nav aria-label="저장 초안에서 이어가기"><a href={`#/projects/${consumedProjectId}/workspace`}>프로젝트 작업 화면 열기</a><a href={`#/projects/${consumedProjectId}/documents`}>문서 화면에서 가져오기 준비</a></nav><p>대상 화면에서 현재 권한과 준비 상태를 다시 확인합니다. 이동만으로 작업을 실행하거나 문서를 가져오지 않습니다.</p></section> : null}
     {!editable ? <p role="alert">이 초안의 현재 작업 기기/로그인 소유를 확인할 수 없어 변경할 수 없습니다. 입력은 유지합니다.</p> : null}
     <form onSubmit={event => { event.preventDefault(); void save(); }}>
       {step===1?<fieldset disabled={locked}><legend>목적·소스</legend>

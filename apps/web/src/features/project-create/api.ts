@@ -48,6 +48,8 @@ export async function readProjectDraft(client: ApiClient, draftId: string): Prom
   if (!uuid.test(draftId)) throw new ApiError('CLIENT_PATH_INVALID');
   const result = await draftResult(await client.get('/api/v1/project-drafts/' + draftId));
   if (result.draftId !== draftId || typeof result.editable !== 'boolean') throw new ApiError('RESPONSE_INVALID');
+  const consumed = result.consumedProjectId;
+  if (Object.hasOwn(result, 'consumedProjectId') && (consumed !== null && (typeof consumed !== 'string' || !uuid.test(consumed)) || typeof consumed === 'string' && result.editable !== false)) throw new ApiError('RESPONSE_INVALID');
   return result;
 }
 export async function writeProjectDraft(client: ApiClient, draftId: string | null, request: unknown, csrf: string): Promise<DraftResult> {

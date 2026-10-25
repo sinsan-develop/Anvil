@@ -1,4 +1,28 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI02 소비 초안 재진입 한정 검수 종료
+
+- 독립 ui02_consumed_draft_review는 명세 적합·C0/I0/M0로 판정했다. GET 한정 검증과 미제공/null 구분, 서버 산식상 false+null 허용, client/사용자/기기/요청/회차 결박과 updater의 다른 초안·dirty·원명령 보존을 직접 읽어 대조했다. 새 두 링크 외 자동 이동·재생성·현재 권한 판정은 없다.
+- 제품 API7C6B3A29/PageA1C313BF와 최종 시험08048F16은 제출 hash와 일치한다. 소유 제품2/신규 시험1·WORK_PLAN/WORK_STATUS 5경로만 checkpoint하며 보호 untracked8은 제외한다. 실제 Page 합성 DOM5·직접client2·인접12·type/build/diff의 한정 증거다. served App·실DB·로그인/TLS·전체 UI02/FN01·Stage/계획 완료는 아직 아니다.
+### 2026-10-26 UI02 소비 초안 — 현재 핵심 검사 결과
+
+- Main431bb5는 entry 연결 후 첫 DOM 1건만 --max-failures=1로 실행해 별도 준비 오류에서 멈췄다. 설치되지 않은 esbuild를 deprecated transformWithEsbuild가 요구한 것으로, DOM/제품 동작은 아직 시작하지 않았다. 패키지를 설치하거나 합격 기준을 바꾸지 않았다.
+- Mainfff7a6와 작성자가 설치된 Vite export/구현·rolldown 타입을 대조한 뒤 시험의 import와 변환 호출 2줄만 내장 transformWithOxc로 맞췄다. patch8B7EEA8C 적용 뒤 Mainb22256 정상 재진입 DOM1 PASS·2.6초다. 실제 생성 project ID의 workspace/documents 두 링크·재생성 POST0을 확인했다.
+- Maindbe36b 남은 DOM4 PASS·5.3초: 미소비/미제공·위조/거절 시 링크 없음, 사용자·기기·client 객체·다른 초안/ABA와 지연 응답, 명시 다른 초안의 정확 프로젝트, 미저장 입력·원 저장/생성 명령 보존. 같은 코드의 직접 GET/쓰기호환2 PASS는 aa0335 결과를 보존하고 불필요하게 반복하지 않았다.
+- 최신 type exit0, 기존 인접 UI02 시험12/12 PASS·708.4ms/skip0. 932ec6에서 실행 session60504의 terminal exit0을 확인했고 Webbuild exit0·429modules/354ms·기존chunk경고/diff0이다. 실제 React/Page 전용 메모리 bundle과 합성 transport의 증거이며 App전체·정식 서버/DB·로그인/TLS는 미검증이다.
+- 제품2/시험1은 독립 ui02_consumed_draft_review 검수 중이다. 전체 UI02/FN01·Stage·작업계획 완료로 표시하지 않는다. 원 준비 실패5/별도변환기 실패1·중단/진단 이력은 보존한다.
+### 2026-10-26 UI02 소비 초안 재진입 — 준비 오류 예외
+
+- Main dfd797에서 새 GET 직접 반례 1건이 구현 전 실패했다. javascript:alert(1) 소비 ID를 기존 parser가 수용해 거절 기대에 실패했으며, 1 FAIL/1.586초/exit1이다. 이는 새 소비 경계의 선행 검증이며 기존 화면의 실제 XSS로 단정하지 않는다. 서버 3f503d 대조에서 editable은 동일 client이면서 미소비일 때만 true이므로, 다른 client의 false+null은 정상이며 그대로 허용한다.
+- 제품 C22BCF66의 API 2줄과 Page 읽기 문맥·별도 생성 프로젝트 링크, 시험 보강 494A2F42를 통합했다. Main aa0335 전체 type exit0, GET/POST·PATCH 호환 직접 시험 2건 PASS. DOM 5건은 화면 시작 전 메모리 bundle의 UNRESOLVED_ENTRY(virtual:ui02-consumed)로 실패했다.
+- 한 명령이 기본 계속 실행 정책으로 같은 준비 오류를 5개 사례에서 반복했다. session43972 반환 후 즉시 Ctrl-C를 요청했으나 1e67da에서 이미 terminal(5 FAIL/2 PASS·11.1초/exit1)이었다. 추가 동일 실행은 중단하고 PMO에 예외 보고했다. DOM을 제품 동작 FAIL/PASS로 바꾸지 않고 미검증으로 둔다. 다음 실행은 --max-failures=1로 첫 준비 오류에서 멈추되 합격 기준은 유지한다.
+- Main 0d88f5가 기존 UI02 정상 harness와 설치된 Vite의 lib.entry 처리(34580~34583)를 직접 대조했다. 문자열 entry는 절대경로로 정규화돼 새 plugin의 virtual id와 불일치하며, rolldownOptions.input은 우선 적용된다. 같은 writer에게 이 확인된 입력 연결만 고치는 시험 1파일 최소 patch를 맡겼다. 제품·API·새 도구/의존성·실제 서비스/DB/Agent는 추가 변경하지 않는다.
+- 양식 cache 정리는 Main72a657의 사전 집합 검사에서 22개 기대와 실제 수가 달라 삭제 전에 중단됐다. de4947 직접 inventory는 21개이며 최초 1byte TESTONLY.patch는 현재 없다. 이전 작성자의 22개 집계와 차이를 보존하고, 원 빈 patch가 지금도 파일로 보존됐다고 주장하지 않는다. 해당 오류·hash·도구 원출력은 현황에 남아 있다. cache 전체는 아직 보존 중이며 새 UI02 작업과 FN15 후보는 건드리지 않았다.
+### 2026-10-26 UI03 확정 상세 게시·UI02 소비초안 재진입 착수
+
+- Main838b59 소유5경로7051d1aa21ce38d004abf7564da33cceafb926b3 commit/private exact, main f976ed5e 불변·trackedclean·보호untracked8 유지다. native확정기록표시의한정검수만게시했고실DB/served·전체Stage/계획완료는아니다.
+- UI02 다음누락을 server getDraft/기존DTO·화면과대조했다. 소비초안은GET에서consumedProjectId가오지만재진입화면이무시해POST성공buffer가없는새탭에서프로젝트로갈수없다. 기존생성직후링크와구분되는복구흐름이다. ui02_consumed_draft_resume 단일writer에기존api/Page2파일·신규직접client/DOM시험1을배정했다.
+- 기존DTO필드미제공은미확인/링크없음,명시null은미소비로구분한다. 제공ID는UUID/null·editable와일치검사하며모순/위조를거절하고POST/PATCH에새필수키를요구하지않는다. 새GET소비상태만client객체/사용자/기기/초안ID/요청회차에결박해렌더때도대조한다. App key없는현행을추측하지않는다.
+- 정상현재GET에서정확생성project의workspace/documents진입만제공하고자동이동·createdProject응답합성·미확인명령해제/재생성0이다. 다른초안의미저장자료/원명령은보존하며거절/주체변경/지연응답에옛링크를남기지않는다. 기존승인계약/DB/권한/Secret·Agent·서비스변경0,TESTONLY RED선행·직접DOM/인접검수예정이며아직미완료다.
 ### 2026-10-26 UI03 공통 양식 확정 상세 한정 검수 종료
 
 - 시험 ED0B6897은 확정v1표시→다른양식403/상태·details제거→원양식재조회/정확과거검토ref재등장→기존v2저장/미확정숨김을연결한다. Main5f77ac 해당직접DOM1PASS·2.8초·최신type0/diff0이다. 제품불변이므로앞선SSR16/인접기존확정DOM1/build는불필요반복하지않았다.
