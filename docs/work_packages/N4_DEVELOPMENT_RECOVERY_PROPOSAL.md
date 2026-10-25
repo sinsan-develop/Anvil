@@ -2,6 +2,35 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+### 2026-10-25 R0 단일 컴파일 권장 패킷 — 실행 전 결정 자료
+
+이전 미결 질문은 3d0ad83ab46e6ae544cd0b1a051e228ef5e8f7c7/native A5F592ADD89B13F09BCE0625868D175428020F7A041C0CC37195888970844271 한 건이다. 현재 권장 대상은 아래 **한 파일만**이며 옛 답변을 자동 이월하지 않는다. 사용자에게 질문을 반복하지 않고 PMO에 대상 차이와 결정 자료로 전달한다.
+
+| 항목 | 고정 내용 |
+|---|---|
+| 권장 Git 기준 | b6c41545112adb386eae4ef6fbc7f26412a76435의 scripts/development-recovery-path-guard.cs 하나. 이후 문서 commit은 이 소스의 교체가 아니다 |
+| Git blob / 원문 SHA256 / 크기 | 4f7c98a24d0ad183d3d1d8055f8254d29ca81ea6 / 1589ACD63CC91840E217F2D38105A55D4324D97BF165A5F5C83707659FC4AB87 / 93434 bytes. Git stdout 원문 stream으로 계산한 62e422, 개행 재작성하지 않음 |
+| 옛 후보 대비 실질 diff | native +121/-2줄. CLEANUP_UNKNOWN의 삭제 전 보존·별도 불명 주입, 고정6 준비·실패4 원관측, private 원 owner, 실제 원 host의 준비/변경/실패/Job 관측→finally 회수, PS용 공개 QA facade가 추가됨. 기존 production/QA/원자DACL/상속배제 false gate는 열지 않음 |
+| compiler | 기존 C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe, 앞선 읽기 지문46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00. 실행 직전 동일 파일·지문을 다시 대조, 다른 compiler/다운로드0 |
+| 참조 | 같은 Framework64 v4.0.30319의 mscorlib.dll=11AC114C43ECF6996BEF58BA3C99FBA3693A4560A84EEADDE54D193060DC626C, System.dll=2B3C17C6208A0B4B6BEB94E1A066F99BA06CDB2EA919479E99D47E8C6D96DC71, System.Core.dll=8B898BED54AE8CC61F9C58CC3EB062724F8357D2BDDA338B5D363654ECFF333D. 62e422 읽기확인, 기존 파일 수정/복사0 |
+| 신규 경로 | D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\compile. 실행 전 부재·기존 부모 realpath/link/소유·보호를 확인하고 기존 경로면 채택/덮기0 |
+| 신규 파일 한도 | 위 경로의 development-recovery-path-guard.cs(정확93434 bytes), DevelopmentRecoveryPathGuard.dll, diagnostics.json 세 파일만. PDB/XML/package/cache/추가 소스0. DLL4MiB 초과면 실패·승격0이며 이 상한은 후검사 기준이고 파일시스템 quota를 생성하지 않음 |
+| 결과 수집 | compiler exit code·경과·입출력 해시/크기·오류 ID/줄번호만, diagnostics 최대64KiB/256행. stream은 끝까지 drain하되 보관 초과는 잘림/초과 건수로 기록하고 임의 대형 원문 로그를 남기지 않음 |
+| 창과 timeout | 전체600초 이하, compiler 관측 최대480초·나머지120초는 동일 compiler 원 process handle의 종료/진단/정리용. timeout이면 같은 compiler만 종료 요청하고 최대15초 exit 관측. 이 compiler 중단 효과도 **향후 정확 실행 결정에 포함할 항목**이며 현재 미실행. 종료 불명에는 파일 삭제/추가 kill·재시도0, 보존/보고 |
+| 정확 정리 | compiler 종료 확인 뒤 생성 때 기록한 위3개 파일만 LiteralPath로 삭제하고 이번 생성 compile directory가 비었을 때만 비재귀 제거. 예상 밖 항목/identity·owner·realpath 불일치면 재귀 삭제0·보존/보고. bootstrap 부모도 이번 생성·비어있음이 확인된 경우에만 비재귀 회수. 기존 파일·보호8·DB·TLS·서비스 변경0 |
+| 실제 제외 | 대상 DLL load/Add-Type·public facade 호출·OS 음성 fixture·native handle/Job/process 시험·Agent·네트워크·DB·권한수리·인증서/신뢰·서비스 시작0. compiler 자신의 CLR 실행·참조 metadata 읽기는 컴파일에 포함하되 대상 DLL 실행과 구분 |
+
+예정 compiler 인자(기존 compiler의 프로세스1회·위 신규 compile cwd, 아직 실행하지 않은 명령):
+
+```text
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /noconfig /nologo /nostdlib+ /target:library /platform:x64 /optimize- /debug- /warn:4 /errorreport:none /out:D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\compile\DevelopmentRecoveryPathGuard.dll /reference:C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorlib.dll /reference:C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.dll /reference:C:\Windows\Microsoft.NET\Framework64\v4.0.30319\System.Core.dll D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\compile\development-recovery-path-guard.cs
+```
+
+입력은 정본 Git의 위 exact blob을 새 파일에 CreateNew로 기록하고 원문 해시를 대조한다. source 내용을 로그로 출력하거나 다른 source·RSP·프로젝트 build를 컴파일하지 않는다. /noconfig·/nostdlib+로 자동 응답파일·암묵 참조를 배제한다. 진단/timeout/정리 runner도 실제 실행 전 source 검수를 받으며 이 표가 이미 구현·승인된 실행기를 뜻하지 않는다.
+
+**잔여 bootstrap 위험:** 첫 컴파일에는 아직 검증된 native 보호기를 사용할 수 없으므로 부모 경로의 교체 경합을 원자적으로 막았다고 주장하지 않는다. 신규 leaf 보호/실행 전후 검사는 경합을 완전히 제거하지 않으며 생성·출력·정리에도 같은 잔여가 있다. 10분 안에 종료/identity를 확인하지 못하면 정리0를 보장하지 않고 실패·보존으로 보고한다. 기존 ACL 수리/다른 root 우회·R0 자동 재시도는 하지 않는다. 권장안은 옛 파일 대신 이 한 후보를 **컴파일 진단만** 대조하는 것이고 actual loader/OS 실행 결정은 분리한다.
+
+
 - JOB_MEMBERSHIP host도 원 probe 생성→고정sleep→원Job관측→finally 같은probe종료/회수에 연결했다. 종료불명은 원handles보존/동일probe재관측, close최종성공·불명은 cache로재호출뒤집기0이다. source정적C0/I0/M0·native1589ACD63CC91840E217F2D38105A55D4324D97BF165A5F5C83707659FC4AB87/실compile·process·OS NOT_RUN. 보호host의 현재case는6filesystem+4failure+1Job이고 나머지3processcase는미지원이다. actualGate/loader·provenance와 OS검증은별도미완료로유지한다.
 
 - 원 QaOwnedRunHost는 고정6filesystem 또는 고정4failure의 실제 메서드를 원 factory/owner에서 호출하고 finally 같은 객체를 정리한다. PS는 공개 QAfacade만 사용·오류뒤 같은host참조를 반환한다. 접근성I1 보정·소유/실패분기 정적C0/I0/M0, host차단 반례검사만 수행했으며 actualloader/OS는 NOT_RUN이다. native367B930CD8098C498DF9E15F5279C0F1CF89F7DBF7F1AF4CC4D39C1652D3CBB1/hostF799EAAF01BFC4C446245EF4BC301F14BF07D005CCC85023AC258E797B6A30D2는 옛R0후보와 다른 source다. 공개facade는 출처/승인 증명이 아니고 production내부타입·gate는 그대로다.
