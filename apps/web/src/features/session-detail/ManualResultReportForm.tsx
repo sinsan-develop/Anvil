@@ -6,9 +6,17 @@ import {newManualResultReport,prepareManualResultReport,type ManualResultReport,
 import {resultSubmissionKey,type ResultSubmissionBuffer} from './result-submission-write-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 export function ManualResultReportForm({client,assignment,session,storage,occupied,onPrepared,onAuthenticationLost}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:ManualResultReportStorage;occupied:boolean;onPrepared:(b:ResultSubmissionBuffer)=>void;onAuthenticationLost:()=>void}){
- const key=resultSubmissionKey(session,assignment.projectId,assignment.ref),draft=storage.drafts[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),live=useRef(true),flight=useRef(false),latest=useRef({draft,occupied});latest.current={draft,occupied};
+ const key=resultSubmissionKey(session,assignment.projectId,assignment.ref),draft=storage.drafts[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),live=useRef(true),flight=useRef(false),latest=useRef({key,draft,occupied});latest.current={key,draft,occupied};
+ const currentDraft=!!draft&&draft.projectId===assignment.projectId&&draft.ownerUserId===session.user.id&&draft.ownerClientId===session.clientId&&ordered(draft.assignmentRef)===ordered(assignment.ref)&&ordered(draft.baselineRefs)===ordered(assignment.snapshot.definition.baselineRefs);
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  function edit(change:(d:ManualResultReport)=>void){if(!draft||busy||occupied)return;storage.onChange(key,old=>{if(!old||old.bindingId!==draft.bindingId)return old;const next=structuredClone(old);change(next);return next;});}
+ function cancelDraft(){
+  if(!draft||!currentDraft||busy||occupied||flight.current)return;
+  const bindingId=draft.bindingId,fingerprint=ordered(draft);
+  if(!window.confirm('현재 임무의 미저장 결과 작성 입력을 모두 지울까요? 입력한 명령·증거·시험·diff·산출물 참조가 사라집니다. 저장된 결과나 파일은 변경하지 않습니다.'))return;
+  storage.onChange(key,old=>!live.current||flight.current||latest.current.key!==key||latest.current.occupied||!old||old.bindingId!==bindingId||ordered(old)!==fingerprint||ordered(latest.current.draft)!==fingerprint?old:null);
+  setError(null);
+ }
  async function prepare(){
   if(!draft||occupied||flight.current)return;const chosen=structuredClone(draft),fingerprint=ordered(chosen);flight.current=true;setBusy(true);setError(null);
   const active=()=>live.current&&!latest.current.occupied&&ordered(latest.current.draft)===fingerprint;
@@ -90,6 +98,7 @@ export function ManualResultReportForm({client,assignment,session,storage,occupi
     <label>보고 위험<textarea aria-label="보고 위험" maxLength={20000} value={draft.risks} onChange={e=>edit(d=>{d.risks=e.target.value;})}/></label><label>보고 복구 방법<textarea aria-label="보고 복구 방법" maxLength={20000} value={draft.rollback} onChange={e=>edit(d=>{d.rollback=e.target.value;})}/></label>
    </fieldset>
    <button type="button" disabled={busy||occupied} onClick={()=>void prepare()}>작성 보고 검사·등록 준비</button>
+   <button type="button" disabled={busy||occupied||!currentDraft} onClick={cancelDraft}>미저장 결과 작성 취소</button>
    {busy?<p role="status">작성 보고 검사 중 · 아직 저장하지 않음</p>:null}
    {occupied?<p>준비본이 있습니다. 원래 작성 입력을 보존하고 등록/미확인 명령을 덮지 않습니다.</p>:null}
   </>}
