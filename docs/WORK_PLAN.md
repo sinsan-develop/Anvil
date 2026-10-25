@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 R1 DACL 관측·정리 소비 source**: 원 descriptor/ID·바이트 대조와 파일용 API 후보, 원 lease→정리 receipt 소비를 준비했다. 비원자 ACL 복구 I1은 쓰기 전 고정 차단으로 보존하며 원자복구 지원 완료가 아니다. 한정 정적 C0/I0/M1(일부 불가능 상태조합 허용), 신규3/인접3 순수 소비·차단 시험/type/PS구문0·native/OS/실정리 NOT_RUN. 전체 source/계획 미완료이며 다음 hardlink 원관측·정리 연결을 같은 승인②로 계속한다.
+
 - **2026-10-25 R1 합성 쓰기 관측 source**: 원 writer 종료 후 ID/바이트 재관측과 no-op 거절을 준비하고 독립 delta C0/I0/M0를 확인했다. native 컴파일/OS/실정리 NOT_RUN·전체 source/계획 미완료, 다음은 변경후 원 관측·정리/host·8case 연결이며 같은 승인②를 유지한다.
 
 - **2026-10-25 R1 공유간섭 source 보완**: seal의 최소 read/full-share 소유 handle과 일시 action/부모 보호 handle을 분리했다. 종료 실패 선반영 정적 I1은 성공 확인 뒤 Closed=true로 보정·한정 재검토 C0/I0/M0. native NOT_COMPILED/OS NOT_RUN·비간섭 UNRESOLVED이며 원 I1/I3/전체 source·계획 완료는 아니다. 불변22검사/P1 재실행0, 같은 승인②의 변경후 원 관측·정리/host 경계를 다음으로 계속한다.

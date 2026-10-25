@@ -2,6 +2,8 @@
 
 ## 2026-10-25 두 가지 새 직접승인 반영
 
+- DACL 원/의도 descriptor 관측과 파일용 SetSecurityInfo 후보·원 lease 정리 receipt 소비를 준비했다. readonly false에서 비원자 복구 write를 차단하므로 원자복구 지원 미완료·실 권한변경0이다. 독립 C0/I0/M1(불가능 일부 조합 parser 허용, 권위/합격 상승0), 순수 신규3/인접3·type/PS AST/diff0은 C# 검증이 아니다. native9884917631CD69124D5C36631B4C0E034293C6549D966708EEE36795A5266D13/PS8239FA36AD4D5CC2289AD6173191907E1AEB0C3FAD180F0A1B02635783FE7BF2·컴파일/OS/실정리 NOT_RUN, 원 I1/I3 전체·hardlink/reparse/host8case 미완료 유지다.
+
 - OUTSIDE_WRITE writer 종료 확인 뒤 원 ID/예상바이트 재관측·no-op 거절 소스 보완은 한정 정적 C0/I0/M0다. native raw0AD7C807B297E85B79B96D3CD8C9B91DF912A7F37A8A8D317949F2BFCBFC31EA, 컴파일/OS/실정리 NOT_RUN·전체 source 준비완료가 아니다. 원 I1/I3/나머지8case·실 host 미완료를 유지한다.
 
 - **2026-10-25 R1 공유간섭 source 보완**: seal의 최소 read/full-share 소유 handle과 일시 action/부모 보호 handle을 분리했다. 종료 실패 선반영 정적 I1은 성공 확인 뒤 Closed=true로 보정·한정 재검토 C0/I0/M0. native NOT_COMPILED/OS NOT_RUN·비간섭 UNRESOLVED이며 원 I1/I3/전체 source·계획 완료는 아니다. 불변22검사/P1 재실행0, 같은 승인②의 변경후 원 관측·정리/host 경계를 다음으로 계속한다. 현재 native raw8540379976E5F24220C35F5A1291545DD721FA2BDA6115952159418CE44C9B1D. 실제 컴파일·OS·서비스 변경 허가로 확대하지 않는다.

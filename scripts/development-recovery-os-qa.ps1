@@ -36,6 +36,16 @@ function Read-DevelopmentRecoveryQaMutationReceipt([string]$CaseId,[object]$Valu
  if($Value[0] -cne $CaseId -or $Value[1] -cne $operations[$CaseId] -or $Value[2] -cnotin @('MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT','MUTATION_UNCONFIRMED') -or $Value[3] -cnotmatch '^(?:[a-f0-9]{8}|NOT_OBSERVED)$'){throw 'DEVELOPMENT_RECOVERY_QA_RESULT_UNCONFIRMED'}
  return @{caseId=$CaseId;operation=$Value[1];mutation=$Value[2];nativeStatus=$Value[3];cleanupRequired=$true;osVerified=$false;guardVerdict='NOT_EVALUATED';fixtureInterference='UNRESOLVED'}
 }
+function Read-DevelopmentRecoveryQaCleanupReceipt([string]$CaseId,[object]$Value) {
+ $cases=@('PARENT_REPLACEMENT','REPARSE_CHILD','OUTSIDE_WRITE','FILE_ID_CHANGED','HARD_LINK','DACL_CHANGED')
+ $cleanup=@('CLEANUP_UNCONFIRMED_PRESERVED','PENDING_DELETE_CLOSE_EFFECT_UNCONFIRMED_PRESERVED','HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED','HANDLES_CLOSED_FIXTURE_PRESERVED_NOT_OS_VALIDATED','OWNED_RUN_ABSENT_BY_ORIGINAL_PARENT_NOT_OS_VALIDATED')
+ $dacl=@('NOT_APPLICABLE','DACL_CHANGE_ATTEMPTED_RESTORE_NOT_OBSERVED','DACL_RESTORE_UNCONFIRMED_PRESERVED','DACL_RESTORE_BLOCKED_NO_ATOMIC_COMPARE','ORIGINAL_DACL_ALREADY_MATCHED_NOT_OS_VALIDATED','ORIGINAL_DACL_RESTORED_NOT_OS_VALIDATED')
+ if($CaseId -cnotin $cases -or $Value -isnot [array] -or $Value.Rank -ne 1 -or $Value.GetLowerBound(0) -ne 0 -or $Value.Length -ne 3){throw 'DEVELOPMENT_RECOVERY_QA_CLEANUP_UNCONFIRMED'}
+ foreach($field in $Value){if($field -isnot [string]){throw 'DEVELOPMENT_RECOVERY_QA_CLEANUP_UNCONFIRMED'}}
+ if($Value[0] -cne $CaseId -or $Value[1] -cnotin $cleanup -or $Value[2] -cnotin $dacl -or ($CaseId -cne 'DACL_CHANGED' -and $Value[2] -cne 'NOT_APPLICABLE')){throw 'DEVELOPMENT_RECOVERY_QA_CLEANUP_UNCONFIRMED'}
+ if($Value[1] -ceq 'OWNED_RUN_ABSENT_BY_ORIGINAL_PARENT_NOT_OS_VALIDATED' -and $Value[2] -cin @('DACL_CHANGE_ATTEMPTED_RESTORE_NOT_OBSERVED','DACL_RESTORE_UNCONFIRMED_PRESERVED','DACL_RESTORE_BLOCKED_NO_ATOMIC_COMPARE')){throw 'DEVELOPMENT_RECOVERY_QA_CLEANUP_UNCONFIRMED'}
+ return @{caseId=$CaseId;cleanupObservation=$Value[1];daclObservation=$Value[2];osVerified=$false;residueVerified=$false;executionAuthorized=$false;guardVerdict='NOT_EVALUATED'}
+}
 function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
  # 생성자는 메모리 객체만 만든다. 실제 assembly 출처/run 결박은 아직 host에 등록되지 않았다.
  $adapter=[pscustomobject]@{kind='OS_FIXTURE_SOURCE_CANDIDATE';OwnedLease=$OwnedLease;nativeVerified=$false;executionAuthorized=$false}
@@ -50,6 +60,14 @@ function New-DevelopmentRecoveryOsQaFilesystemAdapter([object]$OwnedLease) {
   if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
   $result=$lease.AttemptFilesystemMutation($CaseId)
   return Read-DevelopmentRecoveryQaMutationReceipt $CaseId $result
+ }
+ $adapter|Add-Member -MemberType ScriptMethod -Name Cleanup -Value {
+  param([string]$CaseId)
+  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
+  # 타입 이름은 실제 출처·권위 인증이 아니다. 원 lease/host 결박 전에는 위에서 항상 거절한다.
+  $lease=$this.OwnedLease
+  if(!$lease -or $lease.GetType().FullName -cne 'DevelopmentRecoveryPathGuard+QaFixtureLease'){throw 'DEVELOPMENT_RECOVERY_QA_ORIGINAL_LEASE_REQUIRED'}
+  return Read-DevelopmentRecoveryQaCleanupReceipt $CaseId ($lease.CleanupFilesystemMutation())
  }
  return $adapter
 }

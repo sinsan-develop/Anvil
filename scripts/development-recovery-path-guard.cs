@@ -215,15 +215,36 @@ internal static class DevelopmentRecoveryPathGuard {
  // R1 전용 후보: production PathLease/OwnedRuntime 및 외부 경로·PID·handle을 채택하지 않는다.
  // 최초 컴파일/OS 실행·실 adapter 등록은 여전히 별도 미승인이다.
  static readonly bool QaAdapterConnected=false;
+ // 원 handle은 WRITE_DAC 경합의 원자 compare-and-restore를 제공하지 않는다. 복구 writer는 미등록이다.
+ static readonly bool QaDaclCompareAndRestoreConnected=false;
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool WriteFile(KernelHandle file,byte[] data,uint length,out uint written,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool ReadFile(KernelHandle file,byte[] data,uint length,out uint read,IntPtr overlapped);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFilePointerEx(KernelHandle file,long distance,out long position,uint origin);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFileInformationByHandle(KernelHandle file,int kind,IntPtr information,uint length);
  [DllImport("ntdll.dll")]static extern int NtSetInformationFile(KernelHandle file,out IoStatus status,IntPtr information,uint length,int kind);
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool DeviceIoControl(KernelHandle file,uint code,byte[] input,uint inputLength,IntPtr output,uint outputLength,out uint returned,IntPtr overlapped);
- [DllImport("advapi32.dll",SetLastError=true)]static extern bool SetKernelObjectSecurity(KernelHandle handle,uint information,byte[] descriptor);
+ [DllImport("advapi32.dll")]static extern uint SetSecurityInfo(KernelHandle handle,int objectType,uint information,IntPtr owner,IntPtr group,IntPtr dacl,IntPtr sacl);
+ [DllImport("advapi32.dll",SetLastError=true)]static extern bool GetSecurityDescriptorDacl(IntPtr descriptor,out bool present,out IntPtr dacl,out bool defaulted);
+ static byte[] QaReadDescriptor(KernelHandle handle){
+  uint size;bool initial=GetKernelObjectSecurity(handle,5,null,0,out size);int error=Marshal.GetLastWin32Error();Require(!initial&&error==122&&size>0&&size<=65536);
+  byte[] data=new byte[size];Require(GetKernelObjectSecurity(handle,5,data,size,out size)&&size>0&&size<=data.Length);return data;
+ }
+ static bool QaSameDescriptor(byte[] left,byte[] right){
+  Require(left!=null&&right!=null);var a=new RawSecurityDescriptor(left,0);var b=new RawSecurityDescriptor(right,0);
+  Require(a.Owner!=null&&b.Owner!=null&&a.DiscretionaryAcl!=null&&b.DiscretionaryAcl!=null&&a.DiscretionaryAcl.Count>0&&b.DiscretionaryAcl.Count>0);
+  return String.Equals(a.GetSddlForm(AccessControlSections.Owner|AccessControlSections.Access),b.GetSddlForm(AccessControlSections.Owner|AccessControlSections.Access),StringComparison.Ordinal);
+ }
+ static uint QaSetProtectedLeafDacl(KernelHandle handle,byte[] descriptor){
+  var sd=new RawSecurityDescriptor(descriptor,0);Require(sd.DiscretionaryAcl!=null&&sd.DiscretionaryAcl.Count>0&&(sd.ControlFlags&ControlFlags.DiscretionaryAclProtected)!=0);
+  IntPtr data=Marshal.AllocHGlobal(descriptor.Length);
+  try{Marshal.Copy(descriptor,0,data,descriptor.Length);bool present,defaulted;IntPtr dacl;Require(GetSecurityDescriptorDacl(data,out present,out dacl,out defaulted)&&present&&dacl!=IntPtr.Zero);
+   // SE_FILE_OBJECT, 원 leaf handle의 DACL/protected만 설정한다. owner/group/SACL 및 privilege는 변경하지 않는다.
+   return SetSecurityInfo(handle,1,0x80000004u,IntPtr.Zero,IntPtr.Zero,dacl,IntPtr.Zero);
+  }finally{Marshal.FreeHGlobal(data);}
+ }
  sealed class QaEntry {
   internal Pin Pin;internal QaEntry Parent;internal string Name;internal bool Owned,DeleteRequested,Closed,OwnershipOnly;internal byte[] Expected;
+  internal byte[] OriginalDacl,AttemptedDacl;internal bool DaclChangeAttempted,DaclRestoreAttempted;
  }
  sealed class QaAction {
   internal KernelHandle Handle;internal readonly List<Pin> Parents=new List<Pin>();internal bool CloseAttempted,CloseUnknown;
@@ -268,9 +289,10 @@ internal static class DevelopmentRecoveryPathGuard {
   readonly List<KernelHandle> transitions=new List<KernelHandle>();readonly List<QaAction> actions=new List<QaAction>();
   readonly HashSet<string> childNames=new HashSet<string>(StringComparer.Ordinal);readonly Stopwatch clock=Stopwatch.StartNew();
   readonly int ownerThread=Environment.CurrentManagedThreadId;readonly string runId,commit;readonly DateTime issued,until,acquired;readonly TimeSpan remaining;
-  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;
+  DateTime lastWall;TimeSpan lastElapsed;SecurityIdentifier owner;QaEntry run;Pin basePin;int createdCount;long bytes;bool faulted,cleanupStarted,filesystemSealed,closeOnlyAttempted,mutationAttempted;string mutationCase;
   internal string AcquisitionStatus{get;private set;}
   internal string CleanupStatus{get;private set;}
+  internal string DaclRestorationStatus{get;private set;}
   QaFixtureLease(string id,string sha,DateTime from,DateTime to){runId=id;commit=sha;issued=from;until=to;acquired=DateTime.UtcNow;remaining=until-acquired;lastWall=acquired;AcquisitionStatus="NOT_ACQUIRED";CleanupStatus="NOT_REQUESTED";}
   internal static QaFixtureLease Begin(string id,string sha,DateTime from,DateTime to){
    Require(QaAdapterConnected);
@@ -350,7 +372,7 @@ internal static class DevelopmentRecoveryPathGuard {
    // 마지막 creator writer가 닫힐 때 갱신되는 시각은 새 초기 기준으로 관측하되 ID·크기·원 바이트는 다시 검사한다.
    Fact settled=Read(next,before.Path,before.Directory);Require(before.Id==settled.Id&&before.Volume==settled.Volume&&before.Path==settled.Path&&before.Directory==settled.Directory&&before.Attributes==settled.Attributes&&before.Links==settled.Links&&(before.Directory||before.Size==settled.Size));entry.Pin.Before=settled;CheckEntry(entry);Fresh();
   }
-  QaAction OpenAction(QaEntry entry,uint extraAccess){
+  QaAction OpenAction(QaEntry entry,uint extraAccess,byte[] expectedDacl=null){
    Require(entry.Owned&&entry.Parent!=null&&!entry.Closed);var action=new QaAction();actions.Add(action);
    var chain=new List<QaEntry>();QaEntry at=entry.Parent;while(at!=null&&at.Owned){chain.Add(at);at=at.Parent;}
    Require(at!=null&&Object.ReferenceEquals(at.Pin,basePin));chain.Reverse();Pin parent=basePin;
@@ -358,8 +380,9 @@ internal static class DevelopmentRecoveryPathGuard {
     int parentCode;var handle=QaOpenRelative(parent.Handle,ancestor.Name,true,ReadControl|ReadAttributes|Synchronize|0x20u,ShareRead|ShareWrite,out parentCode);var pin=new Pin{Handle=handle};action.Parents.Add(pin);
     Require(parentCode==0&&handle!=null&&!handle.IsInvalid);pin.Before=Read(handle,ancestor.Pin.Before.Path,true);Require(Same(ancestor.Pin.Before,pin.Before));Security(handle,owner,true);parent=pin;
    }
-   CheckEntry(entry);int code;action.Handle=QaOpenRelative(parent.Handle,entry.Name,entry.Pin.Before.Directory,ReadControl|ReadAttributes|Synchronize|extraAccess,ShareRead,out code);
-   Require(code==0&&action.Handle!=null&&!action.Handle.IsInvalid);Require(Same(entry.Pin.Before,Read(action.Handle,entry.Pin.Before.Path,entry.Pin.Before.Directory)));Security(action.Handle,owner,true);return action;
+   CheckEntry(entry,expectedDacl);int code;action.Handle=QaOpenRelative(parent.Handle,entry.Name,entry.Pin.Before.Directory,ReadControl|ReadAttributes|Synchronize|extraAccess,ShareRead,out code);
+   Require(code==0&&action.Handle!=null&&!action.Handle.IsInvalid);Require(Same(entry.Pin.Before,Read(action.Handle,entry.Pin.Before.Path,entry.Pin.Before.Directory)));
+   if(expectedDacl==null)Security(action.Handle,owner,true);else Require(QaSameDescriptor(QaReadDescriptor(action.Handle),expectedDacl));return action;
   }
   bool CloseAction(QaAction action){
    if(action.CloseAttempted)return !action.CloseUnknown;action.CloseAttempted=true;action.CloseUnknown=true;bool unknown=false;
@@ -367,9 +390,10 @@ internal static class DevelopmentRecoveryPathGuard {
    for(int i=action.Parents.Count-1;i>=0;i--){var handle=action.Parents[i].Handle;try{if(handle!=null){handle.Dispose();unknown|=!handle.IsInvalid&&(!handle.CloseAttempted||!handle.CloseSucceeded);}}catch{unknown=true;}}
    action.CloseUnknown=unknown;return !unknown;
   }
-  void CheckEntry(QaEntry entry){
+  void CheckEntry(QaEntry entry,byte[] expectedDacl=null){
    Require(entry.Pin.Before!=null&&!entry.Closed&&Same(entry.Pin.Before,Read(entry.Pin.Handle,entry.Pin.Before.Path,entry.Pin.Before.Directory)));
-   if(entry.Owned)Security(entry.Pin.Handle,owner,true);
+   if(expectedDacl!=null){QaEntry declared;Require(entry.Owned&&!entry.Pin.Before.Directory&&entry.DaclChangeAttempted&&Object.ReferenceEquals(expectedDacl,entry.AttemptedDacl)&&caseChildren.TryGetValue("DACL_CHANGED/leaf.txt",out declared)&&Object.ReferenceEquals(entry,declared));Require(QaSameDescriptor(QaReadDescriptor(entry.Pin.Handle),expectedDacl));}
+   else if(entry.Owned)Security(entry.Pin.Handle,owner,true);
    if(entry.Expected!=null){
     long position;uint read;byte[] data=new byte[entry.Expected.Length];Require(SetFilePointerEx(entry.Pin.Handle,0,out position,0)&&position==0);
     Require(ReadFile(entry.Pin.Handle,data,(uint)data.Length,out read,IntPtr.Zero)&&read==data.Length);
@@ -399,7 +423,7 @@ internal static class DevelopmentRecoveryPathGuard {
   // 성공 표기는 변경 시도일 뿐 guard 효과/권한/OS 합격이 아니다. 실 bridge 등록 전에는 호출 불가다.
   public string[] AttemptFilesystemMutation(string id){
    Fresh();Require(filesystemSealed&&!mutationAttempted&&ObserveOwned()=="ORIGINAL_FILESYSTEM_SIX_MATCH_NOT_OS_VALIDATED");
-   QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;int actionStart=actions.Count;
+   QaEntry parent;Require(cases.TryGetValue(id,out parent));string operation="NOT_ATTEMPTED",status="NOT_OBSERVED";mutationAttempted=true;mutationCase=id;int actionStart=actions.Count;
    try{
     QaEntry entry;QaAction action;int code;uint count;long position;
     switch(id){
@@ -421,14 +445,19 @@ internal static class DevelopmentRecoveryPathGuard {
       operation="SET_RELATIVE_REPARSE_ON_ORIGINAL_SELECTED_DIRECTORY";entry=caseChildren[id+"/selected"];action=OpenAction(entry,2u|0x20u);Fresh();CheckEntry(caseChildren[id+"/target"]);byte[] data=QaRelativeSymlink();
       if(!DeviceIoControl(action.Handle,0x900a4u,data,(uint)data.Length,IntPtr.Zero,0,out count,IntPtr.Zero)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
      case "DACL_CHANGED":
-      operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x40000u);Fresh();uint size;GetKernelObjectSecurity(action.Handle,5,null,0,out size);Require(size>0&&size<=65536);byte[] original=new byte[size];Require(GetKernelObjectSecurity(action.Handle,5,original,size,out size));
+      operation="CHANGE_ORIGINAL_SYNTHETIC_LEAF_DACL";entry=caseChildren[id+"/leaf.txt"];action=OpenAction(entry,0x40000u);Fresh();byte[] original=QaReadDescriptor(action.Handle);
       var sd=new RawSecurityDescriptor(original,0);Require(sd.DiscretionaryAcl!=null);sd.DiscretionaryAcl.InsertAce(sd.DiscretionaryAcl.Count,new CommonAce(AceFlags.None,AceQualifier.AccessAllowed,(int)FileSystemRights.WriteData,new SecurityIdentifier("S-1-1-0"),false,null));byte[] modified=new byte[sd.BinaryLength];sd.GetBinaryForm(modified,0);
-      if(!SetKernelObjectSecurity(action.Handle,4,modified)){status=Marshal.GetLastWin32Error().ToString("x8");throw Denied();}status="00000000";break;
+      entry.OriginalDacl=(byte[])original.Clone();entry.AttemptedDacl=(byte[])modified.Clone();entry.DaclChangeAttempted=true;DaclRestorationStatus="DACL_CHANGE_ATTEMPTED_RESTORE_NOT_OBSERVED";
+      uint daclResult=QaSetProtectedLeafDacl(action.Handle,modified);status=daclResult.ToString("x8");Require(daclResult==0);CheckEntry(entry,entry.AttemptedDacl);break;
      default:throw Denied();
     }
     Fresh();for(int i=actionStart;i<actions.Count;i++)Require(CloseAction(actions[i]));return new[]{id,operation,"MUTATION_ATTEMPT_RECORDED_NOT_GUARD_RESULT",status};
    }catch{return new[]{id,operation,"MUTATION_UNCONFIRMED",status};}
    finally{faulted=true;for(int i=actionStart;i<actions.Count;i++)CloseAction(actions[i]);} // 원 handle 불명 close 결과는 latch로 보존한다.
+  }
+  public string[] CleanupFilesystemMutation(){
+   Require(Environment.CurrentManagedThreadId==ownerThread);string status=CleanupOwned();
+   return new[]{mutationCase??"NOT_ATTEMPTED",status,DaclRestorationStatus??"NOT_APPLICABLE"};
   }
   internal string ReleaseHandlesWithoutDelete(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
@@ -445,12 +474,25 @@ internal static class DevelopmentRecoveryPathGuard {
    }
    CleanupStatus=unknown?"HANDLE_CLOSE_UNCONFIRMED_FIXTURE_PRESERVED":"HANDLES_CLOSED_FIXTURE_PRESERVED_NOT_OS_VALIDATED";return CleanupStatus;
   }
+  void RestoreKnownDaclMutation(){
+   QaEntry entry;if(!caseChildren.TryGetValue("DACL_CHANGED/leaf.txt",out entry)||!entry.DaclChangeAttempted)return;
+   Require(!entry.DaclRestoreAttempted);entry.DaclRestoreAttempted=true;DaclRestorationStatus="DACL_RESTORE_UNCONFIRMED_PRESERVED";
+   Require(entry.OriginalDacl!=null&&entry.AttemptedDacl!=null&&!entry.Pin.Before.Directory);
+   foreach(var other in entries)if(!Object.ReferenceEquals(other,entry))CheckEntry(other);
+   byte[] current=QaReadDescriptor(entry.Pin.Handle);
+   if(QaSameDescriptor(current,entry.OriginalDacl)){CheckEntry(entry);DaclRestorationStatus="ORIGINAL_DACL_ALREADY_MATCHED_NOT_OS_VALIDATED";return;}
+   Require(QaSameDescriptor(current,entry.AttemptedDacl));CheckEntry(entry,entry.AttemptedDacl);
+   DaclRestorationStatus="DACL_RESTORE_BLOCKED_NO_ATOMIC_COMPARE";Require(QaDaclCompareAndRestoreConnected);
+   QaAction action=OpenAction(entry,0x40000u,entry.AttemptedDacl);
+   try{Require(QaSetProtectedLeafDacl(action.Handle,entry.OriginalDacl)==0);Require(QaSameDescriptor(QaReadDescriptor(action.Handle),entry.OriginalDacl)&&QaSameDescriptor(QaReadDescriptor(entry.Pin.Handle),entry.OriginalDacl));CheckEntry(entry);Require(CloseAction(action));DaclRestorationStatus="ORIGINAL_DACL_RESTORED_NOT_OS_VALIDATED";}
+   finally{CloseAction(action);}
+  }
   internal string CleanupOwned(){
    Require(Environment.CurrentManagedThreadId==ownerThread);
    if(cleanupStarted)return CleanupStatus;cleanupStarted=true;CleanupStatus="CLEANUP_UNCONFIRMED_PRESERVED";
    try{
     // cleanup는 만료 뒤에도 가능하지만 원 identity/내용/권한이 불명하면 삭제하지 않는다.
-    foreach(var entry in entries)CheckEntry(entry);
+    RestoreKnownDaclMutation();foreach(var entry in entries)CheckEntry(entry);
     for(int i=entries.Count-1;i>=0;i--){var entry=entries[i];if(!entry.Owned)continue;
      CheckEntry(entry);QaAction action=entry.OwnershipOnly?OpenAction(entry,0x10000u):null;KernelHandle target=action==null?entry.Pin.Handle:action.Handle;IntPtr disposition=Marshal.AllocHGlobal(4);
      try{Marshal.WriteInt32(disposition,1);entry.DeleteRequested=true;Require(SetFileInformationByHandle(target,4,disposition,4));}finally{Marshal.FreeHGlobal(disposition);}
