@@ -62,7 +62,18 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
       <label htmlFor={fieldId + '-reason'}>내용 검토 종합 이유</label><textarea id={fieldId + '-reason'} maxLength={20000} value={work.reason} onChange={event => update({ reason: event.target.value })} />
       <button disabled={!work.reason.trim() || work.items.some(item => !item.reason.trim()) || work.outcome === 'ACCEPTED' && work.items.some(item => item.outcome !== 'ACCEPTED')} onClick={record}>내용 검토 기록</button>
     </fieldset> : null}
-    {source.contentReviews?.map(review => <div key={review.ref.id}><p>검토 {labels[review.ref.outcome]} · {review.reason}</p><p className="meta"><span>{review.reviewer.sameAsTargetRecorder ? '작성 기록자와 같은 사용자 · 독립 검수 아님' : '작성 기록자와 다른 사용자'}</span> · 사람 직접 검토 · {review.reviewedAt}</p></div>)}
+    {source.contentReviews?.map(review => <div key={review.ref.id} style={{ overflowWrap: 'anywhere' }}>
+      <p style={{ whiteSpace: 'pre-wrap' }}>검토 {labels[review.ref.outcome]} · {review.reason}</p>
+      <p className="meta"><span>{review.reviewer.sameAsTargetRecorder ? '작성 기록자와 같은 사용자 · 독립 검수 아님' : '작성 기록자와 다른 사용자'}</span> · 사람 직접 검토 · {review.reviewedAt}</p>
+      <details aria-label={'검토 ' + review.ref.id + ' 항목별 판정과 이유'}>
+        <summary>항목별 판정·이유 보기 · 기준 v{review.ref.criteriaVersion} · 검토 {review.ref.id}</summary>
+        {!Array.isArray(review.items) ? <p>저장된 항목 정보 확인 불가</p> : review.items.length ? <ul>{review.items.map((item, index) => !item || typeof item !== 'object' || Array.isArray(item) || typeof item.criterionId !== 'string' || typeof item.reason !== 'string' || typeof item.outcome !== 'string' || !Array.isArray(item.evidenceRefs) ? <li key={index}>저장된 항목 정보 확인 불가</li> : <li key={index}>
+          <p>항목 {item.criterionId.trim() ? item.criterionId : '항목 ID 없음'} · 판정 {Object.hasOwn(labels, item.outcome) ? labels[item.outcome] : '알 수 없는 판정'}</p>
+          <p style={{ whiteSpace: 'pre-wrap' }}>이유: {item.reason.trim() ? item.reason : '저장된 이유 없음'}</p>
+          <p className="meta">증거 참조: {item.evidenceRefs.length ? JSON.stringify(item.evidenceRefs) : '등록된 증거 참조 없음'}</p>
+        </li>)}</ul> : <p>저장된 항목별 검토 정보 없음</p>}
+      </details>
+    </div>)}
     <button disabled={locked || !matches || !!work?.dirty || latest?.ref.outcome !== 'ACCEPTED' || !!source.confirmation} onClick={confirmVersion}>이 양식 버전 확정</button>
     {source.confirmation ? <p>현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도</p> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
