@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-25 A image/factory 중간 source**: C/GW 고정 역할/source resource·원 image pin·같은 원 channel id의 고정 W 생성/검증 소비를 연결했다. general factory도 GW role을 거절하고 library role3을 구분한다. 현재 direct C→W 중간연결이며 G/JG·외부 artifact trust·C 유한보고 수집 미연결·실 build/native/OS NOT_RUN·전체A/N4미완료다.
+
 - **2026-10-25 원 child-pin 전후 control source**: 보호 전 정상 DELETE-access open→ACK/임시copy close→C strong close→W 생존 전후 공유거절→정상STOP82/Job0 뒤 정상open을 원 소유/한 번 순서로 연결했다. 삭제·쓰기0, 정적 C0/I0/M0·native/OS/TDD NOT_RUN·현재factory ACK미도달·전체지원 미완료다.
 
 - **2026-10-25 PIN_WORKER 제한 응답 source**: 원207-byte pin facts→worker의 실제 non-owning 검증/고정 sentinel 읽기→ACK→STOP/자연wait/원 close body와 제한 Main 진입을 작성했다. 정상 STOP과 Job fallback·실제 exit code를 별도 snapshot으로 구분한다. 정적 재검토 C0/I0/M0이며 native TDD/compile/OS NOT_RUN·전체 G/W factory/실제 사용 가능 상태는 미완료다.
