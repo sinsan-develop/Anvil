@@ -1,10 +1,18 @@
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
+import type {DocumentSession} from './editor-api.ts';
 import {readWorkPlanAtVersion,type WorkPlanView} from './work-plan-api.ts';
 import {StoredPlanTasks} from './StoredPlanTasks.tsx';
 import {StoredPlanTaskRelations} from './StoredPlanTaskRelations.tsx';
 import {WorkPlanVersionComparison} from './WorkPlanVersionComparison.ts';
-export function WorkPlanVersionHistory({client,projectId,observedPlan,onAuthenticationLost}:{client:ApiClient;projectId:string;observedPlan:WorkPlanView;onAuthenticationLost:()=>void}){
+import {PlanDocumentOriginal} from './PlanDocumentOriginal.tsx';
+type HistoryProps={client:ApiClient;projectId:string;session:DocumentSession;observedPlan:WorkPlanView;onAuthenticationLost:()=>void};
+export function WorkPlanVersionHistory(props:HistoryProps){
+ const [owner,setOwner]=useState({client:props.client,generation:0});
+ if(owner.client!==props.client){setOwner({client:props.client,generation:owner.generation+1});return null;}
+ return <History key={JSON.stringify([owner.generation,props.projectId,props.session.user.id,props.session.clientId,props.observedPlan.ref,props.observedPlan.documentRef])} {...props}/>;
+}
+function History({client,projectId,session,observedPlan,onAuthenticationLost}:HistoryProps){
  const observedRef=observedPlan.ref;
  const [version,setVersion]=useState(String(Math.max(1,observedRef.version-1))),[request,setRequest]=useState<{version:number}|null>(null);
  const [loaded,setLoaded]=useState<{request:typeof request;value:WorkPlanView|null;error:ApiError|null}|null>(null);
@@ -26,6 +34,7 @@ export function WorkPlanVersionHistory({client,projectId,observedPlan,onAuthenti
   {value?<section aria-label="조회한 보관 계획 버전"><h4>계획 v{value.ref.version}</h4><p>저장 당시 초안 · 별도 확정/현재 적용·실행은 미확인</p><p>{value.reason}</p><p className="meta">{value.ref.id} · SHA256 {value.ref.contentHash}</p>
    <WorkPlanVersionComparison before={value} after={observedPlan}/>
    <StoredPlanTasks key={JSON.stringify(value.ref)} tasks={value.tasks}/><StoredPlanTaskRelations key={'history:'+JSON.stringify(value.ref)} view={value}/>
+   <PlanDocumentOriginal key={JSON.stringify([projectId,session.user.id,session.clientId,value.ref,value.documentRef])} client={client} projectId={projectId} session={session} view={value} onAuthenticationLost={onAuthenticationLost}/>
    <details><summary>원문·검토 참조와 저장된 구조 문제</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({documentRef:value.documentRef,designRef:value.designRef,screenReviewRefs:value.screenReviewRefs,issues:value.issues,relationalProjection:value.relationalProjection},null,2)}</pre></details>
   </section>:null}
  </section>;
