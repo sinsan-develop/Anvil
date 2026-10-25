@@ -14,6 +14,7 @@ import {NodeBudgetSelection} from './NodeBudgetSelection.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 import {readMethodDraftFile,importMethodDraft} from './method-draft-import.ts';
 import {MethodDraftExport} from './MethodDraftExport.tsx';
+import {DuplicateNodeRepair} from './DuplicateNodeRepair.tsx';
 
 export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
@@ -26,7 +27,8 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
   useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [savedVersion, setSavedVersion] = useState<number | null>(null);
-  const node = buffer.graph.nodes.find(item => item.nodeId === buffer.nodeId), editing = !!buffer.targetId || buffer.dirty;
+  const selectedNodes = buffer.graph.nodes.filter(item => item.nodeId === buffer.nodeId);
+  const node = selectedNodes.length === 1 ? selectedNodes[0] : undefined, editing = !!buffer.targetId || buffer.dirty;
   const [forms, setForms] = useState<FormSummary[]>([]), [formError, setFormError] = useState<ApiError | null>(null);
   useEffect(() => {
     if (!editing) return;
@@ -35,6 +37,8 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     return () => { current = false; };
   }, [client, session.user.id, editing]);
   const locked = importing || pending || !!buffer.preparationId || !!buffer.pending || !!buffer.review?.pending || !!buffer.application?.pending || !!buffer.application?.preparationId;
+  const latestEditor=useRef({locked,userId:session.user.id,clientId:session.clientId});latestEditor.current={locked,userId:session.user.id,clientId:session.clientId};
+  function nodeMutationLocked(previous:MethodBuffer){return latestEditor.current.locked||latestEditor.current.userId!==session.user.id||latestEditor.current.clientId!==session.clientId||previous.ownerUserId!==session.user.id||!!previous.preparationId||!!previous.pending||!!previous.review?.pending||!!previous.application?.pending||!!previous.application?.preparationId;}
   async function importFile(file:File){
     if(locked||importingNow.current||buffer.review||buffer.application)return;
     const captured=buffer;importingNow.current=true;setImporting(true);setImportError(null);
@@ -51,14 +55,28 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   }
   function replaceAllowed() { return !locked && (!(buffer.dirty || buffer.review?.dirty || buffer.application?.reason) || confirm('저장하지 않은 편집·내용 검토·적용 입력을 바꿀까요?')); }
   function change(field: 'name' | 'purpose' | 'reason', value: string) { onChange(previous => ({ ...previous, [field]: value, dirty: true, validation: null })); setSavedVersion(null); }
-  function patchNode(patch: Partial<MethodologyNode>) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === previous.nodeId ? applyNodeDefinitionPatch(item, patch) : item) } })); setSavedVersion(null); }
+  function patchNode(patch: Partial<MethodologyNode>) {
+    if(locked||!node)return;
+    onChange(previous => nodeMutationLocked(previous)||previous.graph!==buffer.graph||previous.nodeId!==node.nodeId||previous.graph.nodes.filter(item=>item.nodeId===node.nodeId).length!==1?previous:({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === node.nodeId ? applyNodeDefinitionPatch(item, patch) : item) } }));setSavedVersion(null);
+  }
   function changeGraph(graph: MethodologyGraph) { onChange(previous => ({ ...previous, graph, dirty: true, validation: null })); setSavedVersion(null); }
   function removeNode(graph: MethodologyGraph, nodeId: string) {
     if (locked) return;
-    onChange(previous => previous.graph !== graph || previous.nodeId !== nodeId || previous.pending || previous.review?.pending ? previous : ({ ...previous, dirty: true, validation: null, nodeId: '', graph: { ...graph, nodes: graph.nodes.filter(item => item.nodeId !== nodeId), edges: graph.edges.filter(edge => edge.fromNodeId !== nodeId && edge.toNodeId !== nodeId), entryNodeId: graph.entryNodeId === nodeId ? '' : graph.entryNodeId, terminalNodeIds: graph.terminalNodeIds.filter(id => id !== nodeId) } }));
+    onChange(previous => nodeMutationLocked(previous)||previous.graph !== graph || previous.nodeId !== nodeId || graph.nodes.filter(item=>item.nodeId===nodeId).length!==1 ? previous : ({ ...previous, dirty: true, validation: null, nodeId: '', graph: { ...graph, nodes: graph.nodes.filter(item => item.nodeId !== nodeId), edges: graph.edges.filter(edge => edge.fromNodeId !== nodeId && edge.toNodeId !== nodeId), entryNodeId: graph.entryNodeId === nodeId ? '' : graph.entryNodeId, terminalNodeIds: graph.terminalNodeIds.filter(id => id !== nodeId) } }));
     setSavedVersion(null);
   }
-  function moveNode(id: string, dx: number, dy: number) { onChange(previous => ({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === id ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) } })); setSavedVersion(null); }
+  function moveNode(id: string, dx: number, dy: number) {
+    if(locked)return;
+    onChange(previous => nodeMutationLocked(previous)||previous.graph!==buffer.graph||previous.graph.nodes.filter(item=>item.nodeId===id).length!==1?previous:({ ...previous, dirty: true, validation: null, graph: { ...previous.graph, nodes: previous.graph.nodes.map(item => item.nodeId === id ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) } }));setSavedVersion(null);
+  }
+  function removeDuplicateNode(graph:MethodologyGraph,index:number){
+    if(locked)return;
+    onChange(previous=>{
+      const target=graph.nodes[index];
+      if(nodeMutationLocked(previous)||previous.graph!==graph||!Number.isInteger(index)||!target||graph.nodes.filter(item=>item.nodeId===target.nodeId).length<2)return previous;
+      return {...previous,dirty:true,validation:null,graph:{...graph,nodes:graph.nodes.filter((_,position)=>position!==index)}};
+    });setSavedVersion(null);
+  }
   async function submit(command: MethodCommand, name: string, purpose: string) {
     if (pending || command.clientId !== session.clientId) return;
     setPending(true); setError(null); setSavedVersion(null);
@@ -113,8 +131,9 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
       <fieldset disabled={locked}><label>방법론 이름<input value={buffer.name} onChange={event => change('name', event.target.value)} maxLength={200} /></label>
         <label htmlFor={fieldId + '-purpose'}>방법론 목적</label><textarea id={fieldId + '-purpose'} value={buffer.purpose} onChange={event => change('purpose', event.target.value)} maxLength={20000} />
         <MethodGraphCanvas graph={buffer.graph} selectedId={buffer.nodeId} onSelect={nodeId => onChange(previous => ({ ...previous, nodeId }))} onMove={locked ? undefined : moveNode} />
-        <div className="methodology-flow">{buffer.graph.nodes.map(item => <button key={item.nodeId} aria-pressed={buffer.nodeId === item.nodeId} onClick={() => onChange(previous => ({ ...previous, nodeId: item.nodeId }))}>{item.name} 편집</button>)}</div>
+        <div className="methodology-flow">{buffer.graph.nodes.map((item,index) => <button key={index} aria-pressed={buffer.nodeId === item.nodeId} onClick={() => onChange(previous => ({ ...previous, nodeId: item.nodeId }))}>{item.name} 편집</button>)}</div>
         <button onClick={addNode}>단계 추가</button>
+        <DuplicateNodeRepair graph={buffer.graph} locked={locked} onRemove={removeDuplicateNode}/>
         {node ? <div><label>단계 이름 편집<input value={node.name} onChange={event => patchNode({ name: event.target.value })} /></label><label htmlFor={fieldId + '-node-purpose'}>단계 목적 편집</label><textarea id={fieldId + '-node-purpose'} value={node.purpose} onChange={event => patchNode({ purpose: event.target.value })} />
           <label>단계 X 위치<input type="number" value={node.position.x} onChange={event => { if (event.target.value !== '' && Number.isFinite(event.target.valueAsNumber)) patchNode({ position: { ...node.position, x: event.target.valueAsNumber } }); }} /></label>
           <label>단계 Y 위치<input type="number" value={node.position.y} onChange={event => { if (event.target.value !== '' && Number.isFinite(event.target.valueAsNumber)) patchNode({ position: { ...node.position, y: event.target.valueAsNumber } }); }} /></label>
@@ -125,7 +144,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
           {formError ? <p role="alert">{formError.message} 기존 문서 참조는 유지했습니다. 새 양식 선택만 제한됩니다.</p> : null}
           <NodeDocumentFields node={node} nodes={buffer.graph.nodes} forms={forms} onChange={patchNode} formAccess={!locked?{client,onAuthenticationLost,contextKey:JSON.stringify([session.user.id,session.clientId,projectId??null,buffer.targetId,buffer.version])}:undefined}/>
           <NodeDeletionPanel graph={buffer.graph} nodeId={node.nodeId} locked={locked} onRemove={removeNode} />
-        </div> : <p>단계를 추가해 절차를 작성하세요. 빈 초안도 저장할 수 있지만 확정할 수 없습니다.</p>}
+        </div> : selectedNodes.length>1?<p>선택한 단계 ID가 중복되어 상세 편집을 표시하지 않습니다. 중복 단계 정의를 확인해 복구하세요.</p>:<p>단계를 추가해 절차를 작성하세요. 빈 초안도 저장할 수 있지만 확정할 수 없습니다.</p>}
         <GraphRelationsEditor graph={buffer.graph} onChange={changeGraph} />
         <label htmlFor={fieldId + '-reason'}>개정 이유</label><textarea id={fieldId + '-reason'} value={buffer.reason} onChange={event => change('reason', event.target.value)} maxLength={20000} />
         <button disabled={!buffer.dirty || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()} onClick={save}>{gateway ? '전용본 새 버전 저장' : '공통본 새 버전 저장'}</button>

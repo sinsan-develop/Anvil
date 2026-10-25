@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { DraftMethodSelection } from '../../../../../contracts/project-drafts.ts';
 import type { MethodologyGraph, MethodologyNode } from '../../../../../contracts/methodologies.ts';
@@ -9,6 +9,7 @@ import { NodeDocumentFields } from '../methodology-editor/NodeDocumentFields.tsx
 import { GraphRelationsEditor } from '../methodology-editor/GraphRelationsEditor.tsx';
 import {NodeDeletionPanel} from '../methodology-editor/NodeDeletionPanel.tsx';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
+import {DuplicateNodeRepair} from '../methodology-editor/DuplicateNodeRepair.tsx';
 
 type Authored = Extract<DraftMethodSelection, { kind: 'NEW_PROJECT_DRAFT' }>;
 export function DraftMethodEditor({ client, value, disabled, onChange, onAuthenticationLost }: {
@@ -16,18 +17,26 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
 }) {
   const id = useId(), [selectedId, setSelectedId] = useState(value.graph.entryNodeId);
   const [forms, setForms] = useState<FormSummary[]>([]), [error, setError] = useState<ApiError | null>(null);
-  const node = value.graph.nodes.find(item => item.nodeId === selectedId) ?? value.graph.nodes[0];
+  const latest=useRef({value,disabled});latest.current={value,disabled};
+  const selected=value.graph.nodes.find(item=>item.nodeId===selectedId)??value.graph.nodes[0];
+  const duplicateSelected=!!selected&&value.graph.nodes.filter(item=>item.nodeId===selected.nodeId).length>1;
+  const node=duplicateSelected?undefined:selected;
   useEffect(() => {
     let current = true;
     listForms(client).then(page => { if (current) { setForms(page.items); setError(null); } }).catch((cause: unknown) => { if (current) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setForms([]); setError(failure); if (failure.status === 401) onAuthenticationLost(); } });
     return () => { current = false; };
   }, [client]);
   function graph(next: MethodologyGraph) { if (!disabled) onChange({ ...value, graph: next, reviewRefs: [] }); }
-  function patchNode(patch: Partial<MethodologyNode>) { if (node) graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === node.nodeId ? applyNodeDefinitionPatch(item, patch) : item) }); }
-  function move(nodeId: string, dx: number, dy: number) { graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === nodeId ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) }); }
+  function patchNode(patch: Partial<MethodologyNode>) { if (node&&!latest.current.disabled&&latest.current.value===value&&value.graph.nodes.filter(item=>item.nodeId===node.nodeId).length===1) graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === node.nodeId ? applyNodeDefinitionPatch(item, patch) : item) }); }
+  function move(nodeId: string, dx: number, dy: number) { if(latest.current.disabled||latest.current.value!==value||value.graph.nodes.filter(item=>item.nodeId===nodeId).length!==1)return;graph({ ...value.graph, nodes: value.graph.nodes.map(item => item.nodeId === nodeId ? { ...item, position: { x: item.position.x + dx, y: item.position.y + dy } } : item) }); }
   function removeNode(current:MethodologyGraph,nodeId:string){
-    if(disabled||value.graph!==current||node?.nodeId!==nodeId)return;
+    if(disabled||latest.current.disabled||latest.current.value!==value||value.graph!==current||node?.nodeId!==nodeId||current.nodes.filter(item=>item.nodeId===nodeId).length!==1)return;
     graph({...current,nodes:current.nodes.filter(item=>item.nodeId!==nodeId),edges:current.edges.filter(edge=>edge.fromNodeId!==nodeId&&edge.toNodeId!==nodeId),entryNodeId:current.entryNodeId===nodeId?'':current.entryNodeId,terminalNodeIds:current.terminalNodeIds.filter(id=>id!==nodeId)});setSelectedId('');
+  }
+  function removeDuplicateNode(current:MethodologyGraph,index:number){
+    const target=current.nodes[index];
+    if(disabled||latest.current.disabled||latest.current.value!==value||value.graph!==current||!Number.isInteger(index)||!target||current.nodes.filter(item=>item.nodeId===target.nodeId).length<2)return;
+    graph({...current,nodes:current.nodes.filter((_,position)=>position!==index)});
   }
   function add() {
     const nodeId = 'N-' + crypto.randomUUID().slice(0, 8);
@@ -40,9 +49,10 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
     <fieldset disabled={disabled}>
       <label htmlFor={id + '-name'}>전용 방법론 이름</label><input id={id + '-name'} maxLength={200} value={value.name} onChange={event => onChange({ ...value, name: event.target.value, reviewRefs: [] })} />
       <label htmlFor={id + '-purpose'}>전용 방법론 목적</label><textarea id={id + '-purpose'} maxLength={20000} value={value.purpose} onChange={event => onChange({ ...value, purpose: event.target.value, reviewRefs: [] })} />
-      <MethodGraphCanvas graph={value.graph} selectedId={node?.nodeId ?? ''} onSelect={setSelectedId} onMove={disabled ? undefined : move} label="프로젝트 전용 방법론 공간형 흐름도" />
-      <div className="methodology-flow">{value.graph.nodes.map(item => <button type="button" key={item.nodeId} aria-pressed={item.nodeId === node?.nodeId} onClick={() => setSelectedId(item.nodeId)}>{item.name || item.nodeId} 편집</button>)}</div>
+      <MethodGraphCanvas graph={value.graph} selectedId={selected?.nodeId ?? ''} onSelect={setSelectedId} onMove={disabled ? undefined : move} label="프로젝트 전용 방법론 공간형 흐름도" />
+      <div className="methodology-flow">{value.graph.nodes.map((item,index) => <button type="button" key={index} aria-pressed={item.nodeId === selected?.nodeId} onClick={() => setSelectedId(item.nodeId)}>{item.name || item.nodeId} 편집</button>)}</div>
       <button type="button" onClick={add}>단계 추가</button>
+      <DuplicateNodeRepair graph={value.graph} locked={disabled} onRemove={removeDuplicateNode}/>
       {node ? <div>
         <label htmlFor={id + '-node-name'}>단계 이름 편집</label><input id={id + '-node-name'} value={node.name} onChange={event => patchNode({ name: event.target.value })} />
         <label htmlFor={id + '-node-purpose'}>단계 목적 편집</label><textarea id={id + '-node-purpose'} value={node.purpose} onChange={event => patchNode({ purpose: event.target.value })} />
@@ -54,7 +64,7 @@ export function DraftMethodEditor({ client, value, disabled, onChange, onAuthent
         {error ? <p role="alert">{error.message} 기존 문서 참조는 유지하고 새 양식 선택만 제한합니다.</p> : null}
         <NodeDocumentFields node={node} nodes={value.graph.nodes} forms={forms} onChange={patchNode} />
         <NodeDeletionPanel key={node.nodeId} graph={value.graph} nodeId={node.nodeId} locked={disabled} onRemove={removeNode}/>
-      </div> : <p>단계를 추가해 절차를 작성하세요. 비어 있는 초안은 확정·실행할 수 없습니다.</p>}
+      </div> : duplicateSelected?<p>선택한 단계 ID가 중복되어 상세 편집을 표시하지 않습니다. 중복 단계 정의를 확인해 복구하세요.</p>:<p>단계를 추가해 절차를 작성하세요. 비어 있는 초안은 확정·실행할 수 없습니다.</p>}
       <GraphRelationsEditor graph={value.graph} onChange={graph} />
     </fieldset>
     <details><summary>복사 출처의 고정 버전</summary>{value.sourceRefs.length ? <ul>{value.sourceRefs.map((ref, index) => <li key={index}>{ref.id} · v{ref.version} · {ref.contentHash}</li>)}</ul> : <p>직접 작성 · 복사 원본 없음</p>}</details>
