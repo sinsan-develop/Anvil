@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 UI03 전용 목록 탐색 보완 착수**: 전용 방법론·복사 원본 목록의 이전 페이지 복귀 누락을 기존 GET/cursor 범위로 연결한다. 두 목록 독립 이력·오류/pending/주체 변경 보호를 유지하며 실제 DB·적용/Agent 실행은 제외한다. 단일 writer RED 선행 후 직접 DOM5/5·인접2/type/build/diff 확인·저장 경합I1해소/독립C0/I0/M0. 이 탐색 단위 소스는 검수됐으며 실제 DB/전체UI03는 미완료다.
+
 - **2026-10-26 FN15 실제 source QA 1회 SETUP_FAILED**: 생성 직후 container metadata guard에서 PG start 전 실패했다. 실제 SQL/API 미실행·재실행0, 등록 신규 자원은 후속 소유 정리/독립 잔여0 확인. 승인 전달 시점 충돌과 원 실패는 docs/04_test_reports/AV3/FN15/SOURCE_QA_20261026_RESULT.md에 보존한다. 새 실행은 미해결이며 전체 FN15/UI12는 미완료다.
 
 - **2026-10-26 FN15 bounded PG handler 소스 준비**: 기본미연결/명세변조거절,새DB정확metadata·admin/runtime nonce결박을두고고정최소SQL/역할·seed와실API의유한검증함수source를추가했다. 직접guard11/type/diff0·독립I2해소C0/I0/M0. 실제PG/권한/SQL/API실행·정리·화면·인수는미검증이며source준비를기능완료로표시하지않는다.

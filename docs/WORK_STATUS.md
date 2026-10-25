@@ -1,4 +1,33 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI03 목록 복귀 한정 검수 종료
+
+- 독립 ui03_project_pagination_review는 I1 해소·round1 보완 C0/I0/M0로 판정했다. 최신 함수형 상태와 지연 저장 POST 보류→원본3 유지→2/1 복귀 반례가 일치하며 첫 import 진입 실패는 대상RED에서 제외한다. Main과 제품/시험 최종hash 일치, 범위초과0이다.
+- 소유 checkpoint는 ProjectMethodologyPage.tsx·신규 project-list-pagination.spec.ts·WORK_PLAN·WORK_STATUS 4경로다. UI03의 두 목록 탐색 보완 범위만 검수됐으며 실제 DB/served·전체 FN02/UI03/Stage·계획완료는 미검증이다. 다음 독립 후보는 이미 보호 GET에 있는 내 공통 양식의 확정자·시각·확정 당시 검토 ref 상세를 기존화면에 표시하는 누락 보완이다.
+### 2026-10-26 UI03 저장 경합 보완 — 실제 반례와 재검증
+
+- 첫 지연저장 반례 Main778988은 JSON 가져오기 뒤 편집 필드 진입 전 실패(1FAIL·8.823초)여서 대상 I1 RED로 세지 않았다. 현재 화면의 새 방법론 작성→명시 교체 확인→공식 JSON 가져오기 절차로 시험만 보정했다. Mainf10360은 저장POST보류→원본3으로이동성공→저장완료 뒤 원본3 사라짐/원본2 복귀를 실제 DOM에서 재현(1FAIL·8.547초)했다.
+- 같은 writer의 A0DE3956 제품1줄은 resetLists(false)의 setNavigation 함수형 갱신으로 완료 시점 최신 catalog를 보존했다. 기대값은 낮추지 않았다. 새 반례 fixture의 명시any3개는 365F2704로 unknown만 사용하도록 정리했고 동작/기준은 불변이다.
+- Main0f4ccd 최신 Webbuild exit0·429modules/355ms, 기존chunk 경고 유지. Main6110c7 전체type exit0·신규/관련 직접DOM5/5PASS·6.0초·diffcheck0이다. race의 명시 합성저장POST1/정확hash원문GET1, 다른조회4건POST0·오류/unknown/offorigin0을 확인했다. 실제DB/served/로그인/인수 증거는 아니다. round1/5 독립 scoped재검수 중이며 전체UI03/계획완료는 아니다.
+### 2026-10-26 UI03 독립 검수 보완 round1
+
+- 독립 ui03_project_pagination_review C0/I1/M0: resetLists(false)의 navigation.catalog closure가 저장 시작 시점을 캡처한다. 저장(A)→복사 원본 B 이동 성공→옛 저장완료 onSaved 순서에서 B cursor/history가 A로 돌아가며, 기존 전용 목록만 초기화 계약의 회귀다. Mainc837a6가 CommonMethodEditor.submit의 비동기 prepare/write/read 뒤 옛 callback 호출과 직접 대조했다.
+- 같은 writer에 round1/5로 최신 navigation을 함수형 갱신으로 보존하는 최소 보완과 지연 저장 DOM 반례를 배정했다. 기존 조회4건의 POST0은 유지하고 새 반례의 명시 저장에 한해 합성 command/원문GET fixture만 사용한다. 실제 DB·원격·Agent0, 기존 편집/버퍼·권한/전체화면 구조는 변경하지 않는다. 독립 재검수 전 완료로 표시하지 않는다.
+- 과거 FN15 함수 소유 cache21파일은 receipt13/연속patch·byte계보8 및 기존Main hash증거를 대조한 뒤 Main340ce3에서 literal rawhash/owner/nonlink/root검사 후 정리했다. 하위빈dir26/root만제거했고 별도a15b53에서staging부재·현재candidate/UI03작업보존·기존보호2파일hash동일을확인했다. 실패후보08C와보완본C44의실행후보보존본은삭제0이다.
+### 2026-10-26 UI03 두 목록 이전 복귀 — 직접 DOM 검증
+
+- TESTONLY6AEE2030은 신규 browser시험1개/4사례만 추가했다. Main08471f 현재검증Webdist의 첫사례1건이 실제 초기목록 뒤 이전버튼부재로 RED(1FAIL/expect5초·명령9.737초/exit1)였다. NO_COLOR/FORCE_COLOR 충돌 경고는 도구 환경 경고로 보존하며 제품 실패와 구분한다.
+- 제품A4DE2968은 ProjectMethodologyPage 1개만 변경했다. 요청 cursor와 성공위치/이력(cursor만)을 분리해 기존3GET Promise.all+current가 성공할때만 이력을확정한다. 두목록독립 이전/다음·조회중잠금·오류samecursor명시재조회·기존전체갱신/저장후이력초기화다. 기존편집/적용buffer·Appkey·권한/API/스타일은변경0이다.
+- Main aada08 전체type exit0, Webbuild exit0·429modules/320ms, 기존chunk>500kB 경고 유지. 신규직접DOM4/4PASS·4.5초: 3페이지독립왕복/GET재조회, 이전·다음503/이력보존과재시도, pending잠금/갱신/미저장입력보존, project변경/늦은응답폐기. headlessmsedge와 route.fulfill 합성GET이며 unknownAPI/POST/offorigin/pageerror0을 시험했다. 실제서버/DB/로그인/TLS 검증은아니다.
+- Main9c0067 기존 FN02 project-method-web 2/2PASS·173.4725ms/skip0·diffcheck0으로 기존명령고정/유실재확인·적용ref경계를확인했다. 제품33411A3CC1E242EF91C5CEB7DD14B3E2D1B2145315372E0EFC1F6EADC7A35594, 시험8FAB46E4FFF2CBA1771B4C3B028DBFBF98656751912D8B83605D037D91DB5570. writer종료·독립ui03_project_pagination_review 검수중이다. 전체FN02/UI03/계획완료는아니다.
+### 2026-10-26 FN15 관측 guard 보완 검수 종료 — 실행은 미해결
+
+- 독립 fn15_execution_candidate_review는 관측된 CREATED 오판 원인 해소·보완 diff 신규 C0/I0/M0로 판정했다. 기동 전 created/false·빈endpoint, 기동 후 running/true·정확 NetworkID/Endpoint/IPv4를 분리한다. 둘 다 fullID/image/4label/exactTmpfs/Mounts[]/ports{} 유지, CREATED 비강제 회수·RUNNING 정확 CID 부착 확인 후 기존회수·불명상태보존이다.
+- 이는 candidate C44B3E55/manifestBC0AD00E의 소스 검수이며 실제 RUNNING/새 실행은 미검증이다. 원08C실패/자동정리실패·후속정리0과 승인전달거절 기록은 치환하지 않았다. PMO에도 변경된 후보의 새 판단이 필요함을 전달했고 재실행0을 유지한다.
+### 2026-10-26 FN15 source guard 보완·UI03 목록 복귀 착수
+
+- 후보의 생성 직후/기동 후 상태 보완은 C44B3E558EE4E907FDD83EE5FE5F88D0C7F81CA6A59B6D5B5F6F61B5BC1C043B / manifest BC0AD00E8FD5E3C4BB13B29E0D88112B86067B28C26212CC5E03D584E259CEC8로 동결했다. 원 .r2-before 보존. 관측 CREATED를 옛 순수guard에서 RED→새guard GREEN, RUNNING 합성/음성67·network2/AST 확인이다. 실제RUNNING/WSL·PG/SQL 재실행은0이며 원2972ab는 FAIL로 보존한다. 독립 scoped검수 중이다.
+- 다음 계획 구현: 읽기 조사와 Main c03d1c는 UI03 전용 방법론/복사 원본 목록의 다음 페이지만 있고 이전 페이지 선택이 없는 상태를 대조했다. 승인된 목록 탐색의 내부 보완으로 선정했고 ui03_project_pagination 단일 writer에 배정했다. 기존GET/cursor·권한·원문·편집/확정/적용buffer는 보존하고 두 목록의 cursor이력/이전 재조회만 연결한다. 불명/오류·pending/늦은응답·주체변경 보호와 조회전체POST0을 직접DOM범위에서 확인한다.
+- 소유예정: ProjectMethodologyPage.tsx·필요시 작은순수이력모듈1·신규직접browser시험1(최대3). 먼저TESTONLY/정확RED 후제품patch를통합한다. 실제DB·원격·서비스/Agent변경0이고기존완료공통화면은다시수정하지않는다. 현재HEAD fecc760bc3bf80b0d8adcc4e10148e30018ceeea는실제실패보고3문서게시본이며private동일/main불변이다.
 ### 2026-10-26 FN15 실행 1회 실패·잔여 정리·승인 전달 순서 충돌
 
 - 실제 실행 Main2972ab: 고정08C229C5/manifestF37BB54D를 hash 재대조해 require_escalated에 정확 SSH/stdin·신규부작용을 제출했고 도구 거절 없이 7.146초/SSH exit1로 실행됐다. PREFLIGHT/Git exact/new root/network/container 생성 뒤 REGISTER_CONTAINER에서 CREATED_CONTAINER_MISMATCH. PG start/ready·handler/역할/SQL·API는 도달0, sourceMarkers0/actualPgVerifiedfalse다. 원실패를 성공으로 바꾸지 않는다. 실행1회 소진·재실행0.
