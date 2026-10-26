@@ -22,3 +22,12 @@ test('보존 자료명령은 프로필 변조시 전송0이며 같은 명령 유
 
 
 test('승인 요청/결정에 별도승인을 다시 요구하는 재귀는 서버와 같이 준비 GET/POST0으로 거절한다',async()=>{for(const op of ['requestApproval','decideApproval']){const b=buffer(),calls:any[]=[];b.draft.operations=[op];assert.throws(()=>materialRules([rule('RECURSION',[op])].map(v=>({...v,disposition:'REQUIRE_APPROVAL'})),p,u),/APPROVAL_POLICY_RECURSION_INVALID/);await assert.rejects(m.prepareCandidatePolicy(api(null,calls),b,s));assert.equal(calls.length,0);}});
+
+test('알림 읽음은 자료 프로필 명시 선택만 준비하고 새 버퍼와 후보 기본을 보존한다',async()=>{
+ const initial=m.newCandidatePolicyBuffer(p,s,2,null,'PROJECT_MATERIAL');assert.deepEqual(initial.draft.operations,[]);assert.equal(initial.draft.disposition,'DENY');
+ for(const disposition of ['AUTO','DENY','REQUIRE_APPROVAL']as const){const b=buffer(),calls:any[]=[];b.draft={...b.draft,operations:['markNotificationRead'],disposition};const client=api(null,calls),frozen=await m.prepareCandidatePolicy(client,b,s);assert.equal(calls.filter(v=>v[1]?.method==='POST').length,0);assert.deepEqual((frozen.pending!.payload as any).rules,[{...rule(b.draft.ruleId,['markNotificationRead']),disposition}]);await m.sendCandidatePolicy(client,frozen,s,()=>true);const posts=calls.filter(v=>v[1]?.method==='POST');assert.equal(posts.length,1);assert.equal(JSON.parse(posts[0][1].body).operation,'savePermissionPolicy');}
+ const candidate=m.newCandidatePolicyBuffer(p,s,2,null),calls:any[]=[];candidate.draft={...buffer().draft,operations:['markNotificationRead']};await assert.rejects(m.prepareCandidatePolicy(api(null,calls),candidate,s));assert.equal(calls.length,0);
+});
+test('읽음 단독과 자료 혼합 규칙을 재편집하고 다른 후보·혼합 규칙은 그대로 보존한다',async()=>{
+ for(const operations of [['markNotificationRead'],['saveDocumentDraft','markNotificationRead']]){const prior=base([rule('OTHER',['saveDocumentDraft']),rule('READ',operations),rule('CANDIDATE',['registerConnection']),rule('MIXED',['markNotificationRead','registerConnection'])]);assert.equal(m.editablePermissionRule(prior.rules[1],p,u,'PROJECT_MATERIAL'),true);assert.equal(m.editablePermissionRule(prior.rules[3],p,u,'PROJECT_MATERIAL'),false);const b=buffer(prior);b.draft={...b.draft,ruleId:'READ',replaceRuleId:'READ',operations,disposition:'AUTO'};const calls:any[]=[],frozen=await m.prepareCandidatePolicy(api(prior,calls),b,s);assert.deepEqual((frozen.pending!.payload as any).rules,[prior.rules[0],prior.rules[2],prior.rules[3],{...prior.rules[1],disposition:'AUTO'}]);assert.equal(calls.filter(v=>v[1]?.method==='POST').length,0);}
+});

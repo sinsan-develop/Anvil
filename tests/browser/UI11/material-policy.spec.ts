@@ -1,11 +1,27 @@
 import {test,expect,type Page} from '@playwright/test';
-import {installWorkspaceBundle} from '../UI04/bundle.ts';
+import {installWorkspaceBundle as installLegacyWorkspaceBundle} from '../UI04/bundle.ts';
+import {readFile,readdir} from 'node:fs/promises';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+async function installWorkspaceBundle(page:Page){
+ const root=process.env.ANVIL_UI11_NOTIFICATION_POLICY_QA_DIST;
+ if(!root)return installLegacyWorkspaceBundle(page);
+ if(root!=='D:/tmp/anvil-v3-stage-b/ui11-notification-policy-20261027-01/bundle')throw Error('UI11_NOTIFICATION_POLICY_QA_ROOT_INVALID');
+ const files=new Map<string,{body:Buffer;contentType:string}>();
+ files.set('/',{body:await readFile(root+'/index.html'),contentType:'text/html'});
+ for(const name of await readdir(root+'/assets')){
+  if(!/^index-[A-Za-z0-9_-]+\.(js|css)$/.test(name))throw Error('UI11_NOTIFICATION_POLICY_QA_ASSET_UNEXPECTED');
+  files.set('/assets/'+name,{body:await readFile(root+'/assets/'+name),contentType:name.endsWith('.js')?'text/javascript':'text/css'});
+ }
+ await page.route(/^https:\/\/localhost:3830\/(?:$|assets\/)/,route=>{
+  const url=new URL(route.request().url()),file=files.get(url.pathname);
+  return route.request().method()==='GET'&&!url.search&&file?route.fulfill({status:200,...file}):route.abort();
+ });
+}
 const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',id='33333333-3333-4333-8333-333333333333',at='2026-10-20T00:00:00.000Z';
 const rule=(ruleId:string,operations:string[])=>({ruleId,subjectRef:{kind:'HUMAN',userId:uid},operations,targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'DENY',limitPolicyRef:null,expiresAt:new Date(Date.now()+3600000).toISOString()});
 function base(){const value={rules:[rule('DOC',['saveDocumentDraft']),rule('CANDIDATE',['registerConnection'])],reason:'다른 규칙 보존',reviewRefs:[]};return{ref:{id,version:1,contentHash:contentHash(canonicalJson(value))},...value,createdAt:at};}
-async function fixture(page:Page,mode:string){
- const unknown:string[]=[],errors:string[]=[],writes:any[]=[],receipts=new Map<string,any>();let policy:any=mode==='EDIT'?base():null;
+async function fixture(page:Page,mode:string,initialPolicy?:ReturnType<typeof base>){
+ const unknown:string[]=[],errors:string[]=[],writes:any[]=[],receipts=new Map<string,any>();let policy:any=initialPolicy??(mode==='EDIT'?base():null);
  await installWorkspaceBundle(page);await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_API'}});});
  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(new URL(r.url()).origin!=='https://localhost:3830')unknown.push(r.url());});
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'정책 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
@@ -55,4 +71,24 @@ test('MATERIAL_POLICY_APPROVAL_RECURSION',async({page})=>{
  await expect(panel.getByRole('combobox',{name:'자료 정책 처리',exact:true})).toHaveValue('DENY');
  await expect(panel.getByLabel('자료 정책 행동: 도구 후보 저장',{exact:true})).toHaveCount(0);
  expect(f.writes).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
+});
+
+for(const mode of ['AUTO','DENY','REQUIRE_APPROVAL','READ_EDIT','READ_MIXED_EDIT'])test('MATERIAL_NOTIFICATION_READ_POLICY_'+mode,async({page})=>{
+ const editing=mode==='READ_EDIT'||mode==='READ_MIXED_EDIT',prior=base();
+ if(editing){prior.rules.push(rule('READ',mode==='READ_EDIT'?['markNotificationRead']:['saveDocumentDraft','markNotificationRead']));prior.ref.contentHash=contentHash(canonicalJson({rules:prior.rules,reason:prior.reason,reviewRefs:prior.reviewRefs}));}
+ const f=await fixture(page,'EDIT',prior),panel=page.getByRole('region',{name:'문서·방법론 권한 정책 편집',exact:true}),candidate=page.getByRole('region',{name:'후보 저장 권한 정책 편집',exact:true});
+ await candidate.getByRole('button',{name:'후보 정책 작성 준비',exact:true}).click();await expect(candidate.getByLabel('후보 정책 행동: 알림 읽음 표시',{exact:true})).toHaveCount(0);
+ await panel.getByRole('button',{name:'자료 정책 작성 준비',exact:true}).click();
+ const action=panel.getByLabel('자료 정책 행동: 알림 읽음 표시',{exact:true}),notice=panel.getByText(/알림 읽음 표시는 승인 결정이 아닙니다/);
+ await expect(action).not.toBeChecked();await expect(panel.getByRole('combobox',{name:'자료 정책 처리',exact:true})).toHaveValue('DENY');await expect(notice).toHaveCount(0);expect(f.writes).toEqual([]);
+ if(editing){await panel.getByRole('combobox',{name:'편집할 자료 전용 규칙',exact:true}).selectOption('READ');await expect(action).toBeChecked();await expect(panel.getByLabel('자료 정책 행동: 문서 초안 저장',{exact:true})).toHaveJSProperty('checked',mode==='READ_MIXED_EDIT');}else await action.check();
+ await expect(notice).toContainText('현재 제어·서버 정책을 다시 검사');
+ const disposition=editing?'AUTO':mode;await panel.getByRole('combobox',{name:'자료 정책 처리',exact:true}).selectOption(disposition);
+ if(disposition==='REQUIRE_APPROVAL')await expect(notice).toContainText('412 NOTIFICATION_READ_APPROVAL_NOT_CONNECTED');else await expect(notice).not.toContainText('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED');
+ await panel.getByLabel('자료 정책 만료 UTC',{exact:true}).fill(new Date(Date.now()+600000).toISOString());await panel.getByLabel('자료 정책 변경 이유',{exact:true}).fill('읽음 정책만 명시 편집');await panel.getByLabel('자료 정책 범위와 기존 규칙 보존 확인',{exact:true}).check();
+ await panel.getByRole('button',{name:'자료 정책 명령 준비',exact:true}).click();await expect(panel.getByRole('button',{name:'보존 자료 정책 명령 전송',exact:true})).toBeVisible();expect(f.writes).toEqual([]);
+ await panel.getByRole('button',{name:'보존 자료 정책 명령 전송',exact:true}).click();await expect(panel.getByRole('status')).toContainText('자료 정책 저장 확인');expect(f.writes).toHaveLength(1);
+ const command=f.writes[0];expect(command.operation).toBe('savePermissionPolicy');expect(command.targetId).toBe(id);expect(command.expectedVersion).toBe(1);expect(command.payload.rules.slice(0,2)).toEqual(prior.rules.slice(0,2));expect(command.payload.rules).toHaveLength(3);
+ expect(command.payload.rules[2]).toMatchObject({ruleId:editing?'READ':command.payload.rules[2].ruleId,subjectRef:{kind:'HUMAN',userId:uid},operations:mode==='READ_MIXED_EDIT'?['saveDocumentDraft','markNotificationRead']:['markNotificationRead'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition});
+ expect(f.writes.filter(c=>c.operation==='markNotificationRead')).toEqual([]);expect(f.unknown).toEqual([]);expect(f.errors).toEqual([]);
 });

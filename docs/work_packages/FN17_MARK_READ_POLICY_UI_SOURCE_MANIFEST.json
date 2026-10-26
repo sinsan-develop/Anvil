@@ -1,0 +1,47 @@
+{
+  "scope": "기존 표준 markNotificationRead의 PROJECT_MATERIAL 편집기 연결",
+  "base": "a89f204f8a683967da1dc64b931f27fe8ff554af",
+  "wiSha256": "1A10CB0CBC8BA42A430B7F565702BBCD97A7F70570BB4445022862D2F881C086",
+  "files": [
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "workingSha256": "B9CC9C5DEBDB8E75BC354E91AD1C6D0338DD41E832EFD47DF395A700EF55C7C0",
+      "indexSha256": "B9CC9C5DEBDB8E75BC354E91AD1C6D0338DD41E832EFD47DF395A700EF55C7C0",
+      "indexObjectId": "66f8dfb6a07da42640e258c71e497fc4ce97baa6",
+      "byteRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "apps/web/src/features/connections/CandidatePolicyPanel.tsx",
+      "workingSha256": "62F4EB8D4F8CBED54D5888AE03E3850C2390EBCC5EE5D62736E3BED71B8AE195",
+      "indexSha256": "62F4EB8D4F8CBED54D5888AE03E3850C2390EBCC5EE5D62736E3BED71B8AE195",
+      "indexObjectId": "cbdf9345d1649a562f127aa8749a800fb30332c2",
+      "byteRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "tests/unit/UI11/material-policy.test.ts",
+      "workingSha256": "4A9BF7C9E5E97467D3E6E6C5A398FA1F00A0D80136B72950D939C17081F6243E",
+      "indexSha256": "4BA1E6C58BE537C7CB42A63B7893181697FA4F8B3BEAB315EA15437C84FB076E",
+      "indexObjectId": "f84d7e37e3e3ad24418c5c1a6f3cd9a4ba16735c",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/browser/UI11/material-policy.spec.ts",
+      "workingSha256": "F73E0E9264AB171C618124AB9A5E282254C3DCB86AE343A91BA05555E8BAC92D",
+      "indexSha256": "4AF399522D65199FB02A2612018B53A1CD1ED6BEC0A7AAFBF795CD7CCE263ADC",
+      "indexObjectId": "0cccc348f1a0a58b78f17ac4ebf7cbc36dd5633e",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    }
+  ],
+  "review": "독립 C0/I0/M0",
+  "evidence": {
+    "developerUnit": 16,
+    "mainUnit": 9,
+    "mainBrowser": 5,
+    "qa": "CLEANED_PASS_INDEPENDENT"
+  },
+  "notRun": [
+    "실제 정책 저장/DB/서비스/사용자인수",
+    "푸시/다른 FN17 사건 생산"
+  ],
+  "productMainEdits": 0
+}
