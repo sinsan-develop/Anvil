@@ -1,4 +1,8 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 checkpoint 게시 ref 오기·실행 전 거절
+
+- Main이감사checkpoint595f74b0의push명령에서승인된codex/av3-stage-b대신과거codex/u01-dashboard-r2를잘못지정했다. auto-review가대상/범위권한없음으로CreateProcess이전에거절해실제push실행/원격변경0이다. 거절대상재시도/우회/새권한요청0이다.
+- 현재정확branch/HEAD·development URL·승인된remote av3/main을읽기로다시대조한뒤명시refs/heads/codex/av3-stage-b만으로정상보존한다. 이는거절된다른branch에같은효과를내는우회가아니며원래승인된별개대상으로의정정이다. 사용자에게오기/거절사유를간결히알렸고Main제품수정0·기존R2채택대기/감사3회기준은그대로다.
 ### 2026-10-26 재개된 goal — 새 차단 감사 3회 충족
 
 - 직전turn도상태관찰/기록만인no progress다. 이번645171은실제branch/HEAD6ed91f20·Main현황1dirty·staging0/보호8/후보65468084불변,PMO cursor35 idle/terminal을확인했다. 추가로PMO최근5turn의원사용자메시지를필터대조해새채택답변없음을확인했다. live job의verified wait로분류하지않는다.
