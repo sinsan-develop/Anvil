@@ -8120,3 +8120,13 @@
 - **FN03 본문 UI GREEN 첫 결과/다운로드 경계 분리**: 최종제품44185254/spec81D4E4AD·1c0a4a 새GREEN은 c2bc3f 신규6중5PASS/1FAIL(실제download event후 failure=canceled)이다. 원문byte/saveAs/PNG는미도달·제품click/합성전달 원인미확정, 기준완화/소급PASS0. 동일담당은읽기원인분리만진행하고Main은원report/context지문을resource에보존했다. 기존5성공은반복하지않으며다운로드1만필요근거로후속검수한다. 실제TLS/인증서/DB/서비스변경0.
 
 - **2026-10-27 FN03 본문 다운로드 source 검수 인수/미확인 분리**: 제품44185254/spec81D4E4AD 독립C0/I0/M0·Main c2bc3f 신규6중5PASS/1FAIL·byte/PNG미도달. 제품없는최소page/context probe b95523/43c715도download canceled/fileGET미도달이므로합성전달경계로분리하되원FAIL/실제서버미검증보존. 최초최소HTML charset누락1은판정제외·정정했다. RED/GREEN자원각회수·독립잔류0, 실제TLS/DB/권한/서비스/Agent변경0. 결과서에2지문·명령·미검증·재검수조건보존, UI06/FN03부분상태만갱신. 다음은이미승인된FN16실제파일manifest내부엔진이며구체공적형식/영속API와분리한다.
+
+- **2026-10-27 본문 checkpoint/핵심 FN16 다음 구현 선정**: 04ded287dda0094f80817bf2e9b7e136e4da9c27는부분본문2+문서5·a72e67 private exact/main f976불변·보호8유지. 실제다운로드byte미확인/원FAIL보존이며이경계를전체대기로확대하지않는다. 승인P02/계획대조로FN16수동포함제외/실bytes/hash/재검증의구현의미는이미승인됨을확인, 전체재승인요청0. 새4경로내부엔진 WI를발행하고독립preflight뒤단일writer로진행한다. 공적형식/영속API·실제자료접근·DBsnapshot/복원은별도미확인으로남긴다. 신규 QA exact D:\tmp\anvil-v3-stage-b\fn16-file-manifest-20261027-01·fixtures/, owner SINSAN\cyhuh, 매생성최대30분·종료즉시exact회수/독립0·현재생성0을사전등록했다.
+
+- **FN16 엔진 preflight 보완**: 독립C0/I0/M1의원선택/기대hash 독립비교기준 누락을 Main이WI에명시했다. 원검토667443B0→상세화AB9894B6FAB8714CC72ED08D7EA13407926E7C4EB3F4BD9BEE23847056F1DB58이며외부계약/권한확대아니다. 자체hash일치만으로진위·현재권한을주장하지않는다. 새4경로/QAroot부재·부모owner/nonlink 확인17dc96, 제품/QA생성0.
+
+- **FN16 실제 파일 엔진 착수**: 최종WI AB9894B6의독립M1해소 C0/I0/M0 뒤 fn16_file_manifest_engine 단일writer4신규경로에배정했다. Main제품수정0·다른codewriter0, 계획FN16을실제착수로갱신하되실제사용가능/전체백업완료로올리지않는다. 미구현baseline RED cce3aa는기능반례와분리하고Node strip-only 문법/legacyPS ACL선행각1회는정정중·제품기능실패아니다. 실제fs 기능반례/기준유지·정확pwsh/합성QA만지시했으며기존ACL·DB/서비스·Secret변경0.
+
+- **FN16 Main 독립검수/fixround1**: Main37946d 신규10PASS/2359.6222ms·실QA3회정리로그를확인했다. 그러나 b3a306 actual excluded.dat에서통제clock 최초3회0/다음200·limit100일때complete=true/clockCalls3가나와새반례exit1, QA19:39:26.535~.544Z정리·잔류false. 독립리뷰는최종기한누락I1과verify await전후mutable manifest기준역행I2후보를발견했다. 동일writer에게기존10PASS/실패보존·새반례RED→기한/초기snapshot최소보정GREEN을지시했다. 기준완화/실제자료/DB/서비스0, Main제품수정0. 무기한중지나PMO배정대기로전환하지않는다.
+
+- **2026-10-27 FN16 내부 파일 엔진 검수 인수**: 최종제품input37851A43/engine301558A8·testC005F38B/fixture0BFF4C5E, 실제파일handle지연/전체제외·최종hash기한/manifest·baseline변경반례를보존하고같은writer fixround1해소·독립C0/I0/M0. Main82f6ed fresh14PASS3446.1123ms/FAIL·SKIP0, 개발자14PASS/type0. 사전등록합성root만각즉시회수·별도부재확인, 실제자료/DB/Secret/서비스/권한/Agent변경0. 결과서에정확증거·원실패·4지문·한계기록, FN16은내부엔진부분구현이며백업UI/공적반출/DBsnapshot·archive/복원미구현을유지한다. 다음같은계획의소비기능으로이어가며PMO배정대기0·Main제품수정0.
