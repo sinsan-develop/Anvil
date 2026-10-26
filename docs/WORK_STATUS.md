@@ -1,4 +1,10 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 goal 계속 turn — 동일 결정 경계 감사 3회·blocked 전환 기준 충족
+
+- 직전goal turn은상태재확인·현황보존뿐인no progress이며verified wait가아니다. 이번실제goal계속turn에서다시PMO cursor32·idle/terminal·새채택답변없음을확인했다. 2f69bd 실제branch codex/av3-stage-b·HEAD0563dcdfdd887e976724dcff45b976a4f1c9f19d·staging0·보호미추적8만·후보65468084/DRAFT_NOT_ADOPTED불변이다. 새구현/검증실행0이다.
+- 동일실질차단은CapabilityReport HUMAN r2의새operation/고정GET·영구2표/접근·서버판정/한도계약명시채택이다. PMO가새인간결정경계로확인했고기존질문은이미제시돼있다. 일반goal계속지시·문서존재·PMO의관찰출력은그계약채택이아니다. 다른미완료업무도이미조사한정확계약/권한/실행선행을우회하지않으면즉시발행할구현단위를확정하지못했다. 새질문복제·부분목표완료로전체성공을치환하지않는다.
+- 원turn/이후계속turn을포함해같은차단감사3회가연속충족됐다. 이인수기록을보존하고PMO에근거를전달한뒤goal을complete/paused가아닌blocked로변경해실제반환상태를확인한다. 이는계획완료나사용자중지지시가아니며새정확결정/외부상태변화뒤재개할수있는차단이다.
+- 목표범위는전체작업계획그대로다. 재개조건은정확r2 SHA6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8의명시채택또는새승인범위/정당한독립구현선행확인이다. 새재개시차단감사는다시처음부터세며,조건부A/B preflight54B87069에따라새단일subagent구현→독립검수→Main통합을이어간다. 실제DB/권한/서비스/Agent/native/비용은별도제외를유지한다. codewriter0/등록QA0·기존원문/보호8/이력유지·자동화변경0이다.
 ### 2026-10-26 goal 계속 turn — 동일 결정 경계 감사 2회
 
 - 이전 goal turn은 FN01/후속UI02·UI10·UI06 실제소스와검수/결정용상세후보를변경한 progress였다. 이번 turn은새기능진전없음(no progress)으로분류한다. PMO는cursor31/changed=false·idle/terminal로확인됐으며실행중process/job의verified wait로표현하지않는다.
