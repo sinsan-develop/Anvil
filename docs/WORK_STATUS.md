@@ -1,4 +1,11 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 게시와 UI13 기존 연결 정정
+
+- Main52e78d/a690cb는 검수4경로만129ff58f7495f1e3753b202987a77c693ed05a6b로 commit/private push하고 local/private exact·원격mainf976ed5e불변·tracked clean/보호8을 확인했다. 실제 서비스/DB/Agent/PR/merge0이다. 이후 문서 기록은 별도 Main 소유 상태다.
+- 다음 UI13 읽기에서는 모바일 route/하단탭/44px·입력16px·기존 WorkspacePage/ApprovalsPage 공유를 확인했다. 읽기 담당이 WorkspacePage45~47의 작성 Panel gate만 보고 '조회기기 기본home 조회 누락'을 제안했으나, Main e7871b/f9a377는 같은 파일67의 무조건 WorkspaceConversationSources와 실제 목록→발언→정확 원문→정정 전 원문 GET 소비를 직접 확인해 반증했다. 담당도 finding/2파일canWrite확장 제안을 철회했다. 새writer배정/중복Panel·props/권한변경0이다. 현재보관원문 조회와 실제Agent대화/지시전달은다르다.
+- Main f8dd3e는 mobile route·같은 세션/공유 화면·탐색/지원미확인 문구와 실제 routes를 대조했다. 계획표UI13 '시작 전'은 source에이미있는부분연결과맞지않아 '부분 구현·source 연결'로만 정정한다. 실제430x844/모바일기기·served/DB·원격사용을 이번조사로PASS로표시하지않으며 Agent지시·중지/재개·FN15인수·FN17전달/전체UI13미완료를남긴다. 기존기능검사/새브라우저QA재실행0이다.
+- FN01 direct 확인1회 pending·CapabilityReport미채택과FN04/FN10/FN13/FN15등기존특정경계는유지한다. 이번turn의진전은기존UI06 M1실보완/직접검수·FN06원finding2정적검수해소다. UI13사실정정은중복개발방지이며새기능구현진도로계산하지않는다.
+
 ### 2026-10-26 UI06 오래된 업로드 승인 표시 보완 검수 종료
 
 - 단일 writer ui06_upload_stale_display_fix는 Component의 import·early-null guard 두 줄에서 기존 matchesDocumentSaveInput만 소비했다. 제품 SHA256 DFD1B83FC5AAACF2A945D599DB064B24F6E3262A642FC5181E21D35D45AC8DA3, 직접 spec7F574FCBF7E4D31E50FF933BD9271DA1C9AE0E6712799280544176983E93642A다. 기존 helper/정책/업로드·저장/원명령·이력 삭제·자동 실행 변경0이며 old시험94행 불변/신규2건만 추가했다.
