@@ -1,4 +1,11 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN01 승인 구현 private checkpoint·N4 source 재개
+
+- Main62a252는 제품/시험23 working SHA를 manifest와 재대조하고 exact39경로만 재stage하여 엄격 cached diffcheck exit0/지적0을 확인했다. d61f4f commit e2848e9f3d6125dac7eb3e4217799be4df31edec를 기존 codex/av3-stage-b에 비강제 private push했고 실제 원격 SHA가 일치했다. remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean·보호 untracked8 유지다. 실제DB/서비스/Agent 변경0, SourceManifest의 작업원문/게시blob 구분과 checkout runtime NOT_RUN은 유지한다.
+- 승인된 FN01 source/UI/pending SQL/합성 QA 범위만 인수했다. 실제 PG 적용·정식 서비스 사용/사용자 인수와 전체 FN01/UI02·Stage·전체 계획 완료가 아니다. 완료된48회귀/type/build/DOM2/실파일3을 불필요하게 반복하지 않는다.
+- 보존 N4 r2 E09C9923의 원 전송/수집 source를 단일 n4_transport_resume subagent에 재인계했다. 부분 cs6D33BBB3/transport시험81BAD535·host PS B1B72F61/payload시험87D1FB4E를 확인했다. Main은 같은코드 수정0이며 최초 실제서명/diff계획을 받은 뒤 GO한다. 실제compiler/parser/RunAll/assembly/native/pipe/process/ACL/cert/trust/DB/서비스/Agent는 계속 제외하고 기존 gate4false·최초throw·QAmax2를 보존한다.
+- Main0af471의 파일읽기 중 존재하지 않는 development-recovery-path-guard.ps1을 추측해 읽어 PathNotFound1이 발생했다. 실제 WI의 development-recovery-host.ps1을 f94265에서 읽어 확인했다. 재실행/권한변경이 아닌 경로수정이며 같은 추측오류를 반복하지 않는다. 이후 rg --files 확인을 선행한다.
+
 ### 2026-10-26 FN01 게시 전 기록 포맷 오류 교정·Git 원문 구분
 
 - f399aa에서정확39소유경로stage를검증했으나cached diffcheck는2였다. 신규Main JSON의ConvertTo-Json CRLF가기존*.json -text정책에서trailing whitespace로판정된것이며제품실패가아니다. 전체출력은크므로같은진단의원문반복출력은중단했다. db53d4에서기존속성/설정만읽었고어떤Git설정·whitespace합격기준도변경하지않았다.
