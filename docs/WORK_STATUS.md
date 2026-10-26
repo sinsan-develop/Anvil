@@ -1,4 +1,18 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 재개된 goal — 새 차단 감사 3회 충족
+
+- 직전turn도상태관찰/기록만인no progress다. 이번645171은실제branch/HEAD6ed91f20·Main현황1dirty·staging0/보호8/후보65468084불변,PMO cursor35 idle/terminal을확인했다. 추가로PMO최근5turn의원사용자메시지를필터대조해새채택답변없음을확인했다. live job의verified wait로분류하지않는다.
+- 이재개run에서새로센동일정확계약결정경계가3회연속충족됐다. 기존R2질문추가·일반goal계속지시를채택으로간주·동일구현/검증재실행0이다. 인수현황보존후goal blocked를다시호출해반환을확인하며complete/paused나전체성공으로치환하지않는다.
+- 전체목표/미완료/제외·재개조건은그대로다. r2 SHA6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8의명시채택또는실질선행변화뒤A/B조건부카드로단일subagent구현/독립검수/Main통합을재개한다. 현재writer0/등록QA0·기존자료/권한/DB·서비스/Agent·자동화변경0이다.
+### 2026-10-26 재개된 goal — 동일 결정 경계 새 감사 2회
+
+- 직전재개turn은상태관찰/기록만인no progress다. 이번PMO cursor34도새채택답변없음·idle/terminal이며live검증작업의verified wait가아니다. b0d154 실제HEAD6ed91f20·Main소유WORK_STATUS만dirty/staging0·보호8·후보65468084불변을확인했다.
+- 현재재개run의동일계약결정차단2회다. 새질문/기능/완료검사/제품·SQL·DB·권한·Agent·자원변경0·목표active유지,전체계획미완료다. 다음실제계속turn에서도동일조건이면새run감사3회후blocked로전환한다. 정확명시채택이나정당한독립선행변화가있으면그범위에서구현을재개한다.
+### 2026-10-26 blocked 이후 새 goal 재개 — 새 차단 감사 1회
+
+- 앞선차단감사3회뒤goal도구실제반환은blocked였다. 이번새계속지시후get_goal은active를반환했으므로재개된run의차단감사는처음부터센다. 직전turn은소스진전없는no progress였고새구현완료로분류하지않는다.
+- 4cc797 실제HEAD6ed91f202330cb0b6e6e9d2001553bf945123516/동일branch·staging0/보호미추적8만·후보65468084불변,PMO cursor33도새계약채택답변없음/idle/terminal이다. 이반복관찰을live process/job의verified wait라고표현하지않는다.
+- 일반goal재개는CapabilityReport HUMAN r2의새API/영구자료·접근계약채택이아니다. 동일정확경계의새감사1회이며이run에서는아직3회가아니므로blocked를다시설정하지않는다. 기존질문추가/완료검사재실행/제품·SQL·권한·DB·서비스·Agent·새QA/자동화변경0,전체목표미완료그대로다. 실제새답변또는정당한독립선행이생기면사전준비A/B로이어간다.
 ### 2026-10-26 goal 계속 turn — 동일 결정 경계 감사 3회·blocked 전환 기준 충족
 
 - 직전goal turn은상태재확인·현황보존뿐인no progress이며verified wait가아니다. 이번실제goal계속turn에서다시PMO cursor32·idle/terminal·새채택답변없음을확인했다. 2f69bd 실제branch codex/av3-stage-b·HEAD0563dcdfdd887e976724dcff45b976a4f1c9f19d·staging0·보호미추적8만·후보65468084/DRAFT_NOT_ADOPTED불변이다. 새구현/검증실행0이다.
