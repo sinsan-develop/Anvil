@@ -1,4 +1,14 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN04 관계 반례 M1 한정 해소
+
+- 같은writer TESTQUALITY71C265EA는기존unit D7923FBB→B51D49A3에title/form/stage 정합hash반례3개만추가했다. Maina84ff7 patch/preimage/candidate대조뒤직접관계24 PASS226.5249ms/skip0·type/diff0,제품4587227A불변을확인했다. 직접의존입력11·무관한browser/build는변경없이반복하지않았다.
+- 독립scoped재검수는M1 ADDRESSED·보완범위C0/I0/M0로판정했다. canonicalhash·approved/planref·reviewtarget을정합갱신해앞hash/fullref검사가관계조건을가리지않고,관계검사제거시각assert.rejects가실패하는구조를읽기확인했다. actualmutant/독립시험실행은0으로구분한다. 최초M1deferred기록은당시이력으로보존하고현재는이한정M1이해소됐다.
+- PMO지원회신은FN04플랫폼특정거절미확인·r1의공개API/데이터/권한delta가별도결정대상임을재확인했다. 10/21질문1회미답변·새답변미확인,신산님의정확r1§3~5/7 source·화면/미적용SQL/합성구현채택답변이필요하다고전달했다. 직접질문우회/중복·전체FN04재승인/새전체동결은하지않는다. 현재private source는실기준적용/사용가능완료가아니다.
+### 2026-10-26 FN04 관계 검사 게시·검사 반례 한정 보완
+
+- Main7d23f9 소유4경로1919d8594c0b4d3d8b1129849b7e5541007e9d5a local/privateexact·trackedclean/보호8·원격main불변이다. 소유staging5파일/dir8는writer fullinventory와Mainba5f64의 exactset/rawhash·현재owner/nonlink·경로대조뒤정리했고별도부재조회로확인한다. 보호후보/실행결과는보존한다.
+- 실제처리/저장연결의r1미채택delta는PMO에위임판단가능/직접필수근거구분을구체요청했고기존pending질문우회/중복질문은요청하지않았다. 이와독립적으로방금기록한M1 관계반례격리만같은writer에한정보완배정했다. 코드기능진도로세지않고기존unit1에title/form/stage의정합hash·입력/planref동시갱신반례만추가한다. 제품모듈/범위/정책/기대값/기존판정변경0이며독립재검수전M1해소로표시하지않는다.
+- .av3-data/fn04-relations-hash-cases-staging은해당시험patch/snapshot수명으로등록·통합뒤exactset/owner/link/hash정리한다. actualDB/원격/서비스·Agent·새route/SQL·승인소비/실적용0이다.
 ### 2026-10-26 FN04 보관 관계 검사 source 한정 검수 종료
 
 - Mainf77dfa는신규79줄PRODUCT7D67DBA5/시험전체를읽었고62a828 원파일부재/patch/후보4587227A 검증·적용뒤전체type0·신규관계21+직접의존입력11 총32 PASS282.4477ms/skip0·diff0이다. 제출첫수동22개는등록/실행21개로정정했다. 보호reader는fakeadapter이며실SQL/DB/원문저장소/실권한·동시성실험0이다.

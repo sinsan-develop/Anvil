@@ -1,6 +1,6 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
-- **2026-10-26 FN04 보관 참조 관계 검사 착수**: 기존보호reader/plan decision으로변경·최신영향·제안선택결과/설계·확정계획관계를대조하는private source다. gap보존·문서head/현재pointer·승인/writer/동시성미확인,새route/SQL/권한/실적용0·모듈부재RED→직접관계21+입력11/type/diff0·독립C0/I0/M1(test관계반례격리 deferred)로source한정검수. 실제적용/사용가능완료아니다.
+- **2026-10-26 FN04 보관 참조 관계 검사 착수**: 기존보호reader/plan decision으로변경·최신영향·제안선택결과/설계·확정계획관계를대조하는private source다. gap보존·문서head/현재pointer·승인/writer/동시성미확인,새route/SQL/권한/실적용0·모듈부재RED→직접관계21+입력11 선행/type/diff0·독립M1의정합hash반례3개추가후관계24/type/diff0·scoped C0/I0/M0로source한정검수. 실제적용/사용가능완료아니다.
 
 - **2026-10-26 FN04 기존 기준 적용 입력/대상 검사 착수**: 승인P02 payload5개/봉투위치를그대로privateparser로구현한다. 새route/operation·승인후보보관/CAS/SQL·실적용0, 미채택delta와분리·모듈부재RED→직접11/type/diff0·독립C0/I0/M0로source단위검수. 실제기준적용/사용가능완료아니다.
 

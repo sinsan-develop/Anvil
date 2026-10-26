@@ -129,3 +129,37 @@ test('FN04 빈 영향·gap도 승인·동시성·writer 안전 확인으로 승�
   assert.deepEqual(result.impact.items,[]);assert.deepEqual(result.impact.coverageGaps,[]);
   assert.equal(result.unverified.writerSafety,true);assert.equal(result.unverified.approval,true);assert.equal(result.unverified.concurrency,true);
 });
+
+for(const variant of ['title','form','stage'] as const){
+  test(`FN04 ${variant} 관계는 결과 canonical hash·입력·계획 참조가 모두 정합이어도 원기준과 다르면 거절한다`,async()=>{
+    const f=fixture();
+    // 기존 보호 reader 반환의 형식·관계 반례이며 실제 저장·권한/현재 head 증거가 아니다.
+    const changed={...f.approved,
+      title:variant==='title'?'다른 제목':f.approved.title,
+      formRef:variant==='form'?ref(99):f.approved.formRef,
+      stageNodeRef:variant==='stage'?{applicationId:ref(99).id,nodeId:'다른단계'}:f.approved.stageNodeRef};
+    const hash=contentHash(canonicalJson({title:changed.title,formRef:changed.formRef,stageNodeRef:changed.stageNodeRef,content:changed.content}));
+    const approvedRef={id:changed.id,version:changed.version,contentHash:hash};
+    const approved={...changed,contentHash:hash,
+      contentReviews:changed.contentReviews.map(review=>({...review,ref:{...review.ref,targetRef:approvedRef}}))};
+    f.input.approvedDesignRef=approvedRef;f.plan.designRef=approvedRef;
+    const readers={...f.readers,document:async(id:string,version:number)=>{
+      const original=await f.readers.document(id,version);
+      return id===approved.id&&version===approved.version?approved:original;
+    }};
+    // 앞 fullref·hash·selection·본문 조건을 충족시키고 해당 관계 하나만 다르게 둔다.
+    assert.deepEqual({id:approved.id,version:approved.version,contentHash:approved.contentHash},f.input.approvedDesignRef);
+    assert.equal(contentHash(canonicalJson({title:approved.title,formRef:approved.formRef,stageNodeRef:approved.stageNodeRef,content:approved.content})),approved.contentHash);
+    assert.deepEqual(f.plan.designRef,approvedRef);assert.deepEqual(f.proposal.proposedContent,approved.content);
+    assert.deepEqual(f.change.beforeRef,f.proposal.baseRef);
+    assert.equal(f.proposal.selections.length,1);assert.equal(f.proposal.selections[0]!.documentId,approved.id);
+    assert.equal(f.proposal.selections[0]!.version,approved.version);assert.equal(approved.version,f.before.version+1);
+    assert.equal(approved.title!==f.before.title,variant==='title');
+    assert.equal(canonicalJson(approved.formRef)!==canonicalJson(f.before.formRef),variant==='form');
+    assert.equal(canonicalJson(approved.stageNodeRef)!==canonicalJson(f.before.stageNodeRef),variant==='stage');
+    assert.equal(approved.confirmed,true);assert.equal(approved.validation.validForConfirmation,true);
+    assert.equal(approved.contentReviews[0]!.ref.outcome,'ACCEPTED');
+    await conflict(()=>readStoredDesignActivationRelations(f.input,readers));
+    assert.equal(f.calls.length,4);assert.equal(f.calls.some(call=>call.startsWith('plan:')||call.startsWith('decision:')),false);
+  });
+}
