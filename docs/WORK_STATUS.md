@@ -1,4 +1,10 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 결정 전 source preflight·기존 질문 보존
+
+- 7c5d27 정확후보/검토/현황3경로 ce7855bfa5df413286b8c74b5c41cf830475d4ff commit,4ecffc private exact·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변/staging0·보호미추적8만을확인했다. 제품checkpoint는f12f8764이며그뒤는문서뿐이다.
+- PMO compact snapshot cursor26/27은R2한정채택질문을이미제시했으며중복요청하지않는다고밝혔다. 새로운채택답변은확인하지못했다. Main은이를승인/다음배정지시로치환하지않는다.
+- StageD~G/FN12~18 읽기조사에서도FN12계보/FN14인계준비/FN17알림새저장계약미채택,FN13보호원문/0029·FN15acceptControl제외·FN16Bv3특정경계/FN18선행을재개발허가로쓰지않았다. 조사범위내즉시구현후보를확정하지못한것이며전체잠재작업소진·계획완료가아니다.
+- 결정후즉시주도배정할조건부preflight54B87069를작성했다. A의HUMAN parser/저장·고정GET/미적용SQL/직접합성시험→B의UI11 buffer/명시저장·고정조회순차구분과실제경로/최소회귀만정리했다. 0043은현재빈번호후보일뿐미예약·착수전재대조,기존0042/pending·정식manifest수정0이다. NOT_ISSUED·계약채택전제품/SQL파일/새테스트실행0·codewriter0/QA0을유지한다.
 ### 2026-10-26 CapabilityReport r2 한정 검수·정확 결정용 제출
 
 - 후보796E4A26 독립C0/I1/M0는JSONB불가U+0000을입력에서거절하도록문자규칙이빠졌다는지적이다. Main84f8f6 실제기존text/instant검사를확인하고모든자유문자열의동일제어문자422·원주장무변환·허용TAB/LF/CR·정확ISO밀리초Z를문서에만보완했다. 최종6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8·부모3AE불변·한정재검수원I1해소C0/I0/M0다.
