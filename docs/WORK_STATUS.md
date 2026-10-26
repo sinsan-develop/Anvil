@@ -1,4 +1,35 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI10 대화 원문 업로드 승인 연결 — 소스 한정 검수 종료
+
+- 동일 writer DOM_TEMPLATE_DELTA04253325는 template 밖 normalBody(BOM/CRLF)·redBody(원 ‘합성 대화 원문\n’)를 JSON.stringify로 주입하고 원 RED 모드를 분리한2곳만 보정했다. Main98c387의 preimage/결과 A3DB2ADA 대조·type0 뒤6ac802에서 신규 실제 Panel DOM21 PASS20.8초/skip0이다. 원 RED 제목/본문·bytes/upload/pending/append:null·uncertain:false·명령0·412/assert는 별도 마지막 시험에 그대로 보존했다. 앞선 준비 실패1·20 NOT_RUN은 당시 이력으로 유지한다.
+- 신규 직접 unit은 최종7 PASS235.9829ms, 변경 전부터의 conversation/reply6은22fc7b에서 PASS298.7661ms 총12 중 실행된 불변 회귀 증거다. 이를 최종13건 동시실행으로 합산하지 않는다. 제품 불변의 Web build433/345ms와 현재 App 인접4 PASS5.8초를 재실행하지 않았다. 기존 chunk/NO_COLOR 경고는 유지한다.
+- 독립 ui10_conversation_upload_review는 최종 제품4/unit498C916D/DOM A3DB2ADA·기존 회귀 진입 delta를 직접 대조해 C0/I0/M0로 판정했다. bindingId/appendId·본문/원command·현재 주체/client/세대·policy/control·기한/회수·exact consumed replay를 결박하고 요청/결박자동전송0·명시재개만 연결한다. appendConversation은 approvalRef:null·별도정책/거절을 유지한다. 외부buffer 입력 불일치에는 이전 승인 설명도 닫히며 기존AUTO/격리/UNKNOWN/답글/지시·원문 조회를 보존한다.
+- 독립 실행0과 Main 실제 실행을 구분한다. 실제 서버 승인 소비·실DB·served 로그인/권한/제어·실Agent와 전체 UI10/FN05/FN11·Stage/계획은 미검증/미완료다. 새 API/operation/SQL·권한/정책/Secret/TLS·서비스 변경0이며 소유9경로만 checkpoint한다. rollback은 소유 commit revert, 원본문/원명령·보호자료삭제0이다. 전용 QA/cache는 소유 inventory/hash/nonlink 대조 후 수명 안에 정리한다.
+### 2026-10-26 UI10 기존 회귀 확인·시험 문자열 준비 오류
+
+- Maina4dea9 최종 제품 Web build433 modules/345ms/exit0·기존 chunk 경고, 현재 App bundle의 conversation/reply 직접4 PASS5.8초다. 실제 served/DB는 아니며 기존 지시 저장/원문조회·답글 정상/거절/이탈 흐름을 대조했다.
+- Main75e1e3 DOM-v1418D61C0과 unitdelta9BF192A0를 지문 대조해 적용하고 type0·신규unit7 PASS235.9829ms를 확인했다. unit 추가1은 같은commandId/다른consumed requestHash를 전송0으로 거절한다. 기존6unit은 제품 불변이므로 반복하지 않았다.
+- DOM21은 첫 Vite transform의 harness 본문 이스케이프 부족으로 Unterminated string에서1 FAIL/20 NOT_RUN, Component 미도달이다. 초기 실제 RED와 구분하고 제품 실패/검수 통과로 표시하지 않는다. 독립 검수는 확장 harness 본문과 마지막 원 RED 기대본문의 불일치도 확인했으며 동일 writer에 원 RED 명칭/본문/바이트·pending assertions를 보존하고 문자열 주입만 정합 보정하도록 지시했다. 제품/기준/timeout 변경0이다.
+- Main의 무관 apps/runner 추정 읽기1회는 부재/출력0·변경0으로 중단하고 dff5c4의 실제 rg --files 목록에서 apps/connector/runtime 경로를 확정했다. 권한/ACL·환경 변경0이며 같은 추정 경로는 재시도하지 않는다.
+### 2026-10-26 UI10 대화 승인 — 제품·직접 unit 1차 통합
+
+- Main29ede4/22fc7b는 제품4·직접 unit1의 product-unit-v1 F3EC9F5A와 원본/후보 지문을 대조해 적용했다. conversation-api230C1DA6·PanelC2139A01·helperC15A8B11·Component4894EB85·unit9E56CCA2다. typeexit0·신규6+기존conversation/reply6 총12 PASS298.7661ms/skip0이며 실DB/서버 소비는 아니다. 독립 검토는 진행 중이다.
+- 기존 conversation.spec.ts는 현재 App bundle helper가 없어 served 환경에 의존함을 Main246477에서 확인했다. 직접 인접 검수에 필요한 한정 시험 범위로 해당파일을 추가하고 installWorkspaceBundle import/첫 await만 넣은 REGRESSION_ENTRY_DELTA2130C46D(16E05E64→7073D0CA)를 적용했다. fixture/expectation/기본served동작·새dependency/API불변이며 실제 App DOM 실행은 아직 전이다. 내부 검수 파일 선택 보완을 기능/계약 범위 변경으로 보지 않는다.
+- FN10 사람 판단 저장 후보4DC5269C는 PMO가 기존 질문1회 미답변/NOT_ADOPTED와 새 명령·원장/보호조회·권한/CAS delta를 다시 대조했다. 특정 플랫폼 거절이나 FN10 전체 금지로 표현하지 않으며 채택 없이 그 추가 계약을 구현하지 않는다. 독립 핵심 구현의 다음 단위는 Main이 조사 중이고 UI10은 계속 진행한다.
+### 2026-10-26 UI10 대화 원문 승인 연결 — 실제 RED
+
+- Maina5fa08은 TESTONLY8DC0B10B/result86C04AB4의 신규1파일 범위·원파일 부재·hash를 확인해 적용했고 전체 type0이다. 252b7b 실제 ConversationPanel+ApiClient에서 원 업로드1→APPROVAL_REQUIRED412·원 pending/append:null·uncertain:false·명령0을 확인한 뒤 ‘대화 원문 승인 요청 준비’ 버튼 부재로1 FAIL/exit1이다. Vite 준비 실패가 아닌 목표 기능 누락 RED다.
+- 동일 writer에게 제품최대4/직접 unit1·신규 DOM1 구현을 지시했다. 요청/결박 자동전송0·원 binding/본문·명령/주체·세대 결박, 후속 append 승인전파0·별도 정책/거절을 유지한다. 기존 UI06의 표시 M1을 반복하지 않도록 현재 원입력/pending 불일치 때 승인 표시도 닫도록 검수한다.
+- 등록 QA root는 2026-10-26T01:39:46Z 시작, 수명상한02:09:46Z다. 현재 red-r1 결과만 있으며 실DB/서버/서비스/권한·Agent 변경0이다. 원 오류와 이 RED는 성공 시에도 이력으로 남긴다.
+### 2026-10-26 UI10 대화 승인 시험 자원 사전 등록
+
+- 전용 결과 root D:\tmp\anvil-ui10-conversation-upload-approval는 실행 전 부재를 확인했다. 현재 Windows 사용자 소유·Node24.22.1/기설치 Playwright/Edge의 이번 UI10 검수 전용이며 서버 listener/port·container/DB0이다. 시작부터 최대30분 수명으로 red/green/negative/regression 하위 결과만 사용하고 종료/실패 뒤 exact file/hash·owner·상위/하위 nonlink를 대조해 해당 파일/빈dir만 정리한다. 공유 TEMP/사용자 browser/다른자료는 건드리지 않는다.
+- UI06 staging은 Main54192e에서 인계된20파일/20dir exact hash·owner/nonlink 확인 후 정리했고142a28의 별도 조회에서 QA/staging 양 root 부재를 확인했다. 원 실패/검수 기록은 위 현황과 도구출력에 남긴다.
+### 2026-10-26 UI06 게시·UI10 대화 원문 승인 연결 착수
+
+- Main48767b/794386은 검수 소유8경로 edb452915998e1f56d4c9c8cffe0c406439bf85b를 기존 branch에 commit/push하고 local/private exact·tracked clean·보호 untracked8·원격mainf976ed5e 불변을 확인했다. UI06 QA root는 별도 부재 확인했고 staging은 인계 inventory20파일/20하위dir의 정확 소유·hash 대조 후 정리한다. M1 표시 한계와 실DB/served 미확인은 유지한다.
+- 다음 단위는 읽기 담당과 Main348ff1이 확인한 UI10/FN05 ConversationPanel·conversation-api의 uploadArtifact 승인 누락이다. 기존 서버 지원 연산의 412→원 발언/명령 보존→승인 요청/기존ID 결박→별도 같은 업로드 재개→발언 저장/원문 조회를 연결한다. 후속 appendConversation은 approvalRef:null과 별도 정책/거절을 유지한다. 사용자 발언/지시·답글/정정 및 UNKNOWN/격리·같은 명령 재확인을 보존한다.
+- ui10_conversation_upload_approval 단일 writer의 소유는 기존 Panel/API·신규 helper/component 제품최대4와 신규 직접 unit/DOM최대2다. .av3-data/ui10-conversation-upload-approval-staging은 동결 patch/snapshot 전용·해당 검수 수명·통합 후 exactset/hash/owner/nonlink로 정리한다. 아직 브라우저 QA 결과 root/실행 자원은 만들지 않았다. 새 operation/API·SQL·정책/권한·정식DB·Secret/TLS·서비스/Agent0이다. 기존 UI06 파일은 다시 수정/공통화하지 않는다.
 ### 2026-10-26 UI06 검수 후 한정 M1·일회 QA 정리
 
 - 인계 후 독립 scoped 검토는 C0/I0/M1(표시 정합성)로 최종 보완했다. 외부 buffer가 pending을 유지한 채 본문만 바꾸면 Component의 이전 승인 설명/결박 문구가 남을 수 있다. helper 준비/결박과 저장 active는 입력 불일치를 전송 전에 거절하므로 확인된 코드상 권한 확대/잘못된 원문 전송 C/I는 아니다. 중간 표시의 직접 DOM은 미실행이며 후속 동일 화면 변경/전체 Stage 검수에 표시 guard를 흡수할 항목으로 남긴다. 앞선 C0/I0/M0는 이 추가 검토 전 판정이다.

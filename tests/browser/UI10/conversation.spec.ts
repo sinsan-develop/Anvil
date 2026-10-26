@@ -1,6 +1,8 @@
+import{installWorkspaceBundle}from'../UI04/bundle.ts';
 import{test,expect}from'@playwright/test';import{contentHash,canonicalJson}from'../../../contracts/canonical.ts';
 const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',aid='33333333-3333-4333-8333-333333333333',cid='44444444-4444-4444-8444-444444444444',mid='55555555-5555-4555-8555-555555555555',at='2026-10-16T05:00:00Z';
 test('사용자 지시 원문은 단절/이동 뒤 같은 명령으로 보존되고 저장과 Agent 전달을 구별한다',async({page})=>{
+ await installWorkspaceBundle(page);
  const writes:any[]=[],unknown:string[]=[];let snapshot:any=null,sourceRef:any=null,body='';
  await page.route('**/api/v1/**',r=>{unknown.push(r.request().method()+' '+new URL(r.request().url()).pathname);return r.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:uid,displayName:'원문 QA'},clientId:uid,csrfToken:'C'.repeat(43)}}));
