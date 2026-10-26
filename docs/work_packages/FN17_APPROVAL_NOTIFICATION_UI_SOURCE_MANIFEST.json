@@ -1,0 +1,98 @@
+{
+  "scope": "FN17/UI14 본인 승인 알림 UI source·합성 브라우저 검수",
+  "base": "1e61743a1fed1ffb8e3c083568499610812e9410",
+  "branch": "codex/av3-stage-b",
+  "wiSha256": "4FD02BF50E30A3B3CB8A428CC72A7B42161BECA75F187EF91E47BE923EA3D45A",
+  "files": [
+    {
+      "path": "apps/web/src/notifications/project-notifications-api.ts",
+      "workingSha256": "EF03C326E8A42D9BF7AE8AC9B4B393DA8524D41E827DB5B86176CBC6D0903808",
+      "indexSha256": "E5775F938E8E6800A95A6C5D6DF4F72FCDC1CC5C579D792C75AA5C5B1BE712BE",
+      "indexObjectId": "c0177fbe2138a532de87c188f57f85c6bca30d68",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/notifications/ProjectNotificationsPanel.tsx",
+      "workingSha256": "CEC388E435586F50C206F376848051E3C4E6845E5A82DBB0B88C6FD665CBA34F",
+      "indexSha256": "B320A42822642CB0254DFA4461DE24D34C57CCC7D7A4FD402C898DBBD289FE98",
+      "indexObjectId": "def36ac91ecf8058f84ff10dc8393ef5eadad7cb",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "workingSha256": "7B57FC262A8EEFFAAFE4A3E7DB4D6E37C27D1AB4889CF1C00901FC762AE3909F",
+      "indexSha256": "BAB246F92DA7DB04736861FB0216BE3B251E21C53CAE34CF87FF7186AC0149C8",
+      "indexObjectId": "b6a86dc66c0b52540c7c91b2de6b4d8ae0b22306",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/shell/AccountSecurity.tsx",
+      "workingSha256": "96320260EAC05F77DE935D9C1FE8CDF8CB723C56D3A9F24EAACD08A1C89491EA",
+      "indexSha256": "54F9BD1F3FD4CDD5B01828B53F2A29B5E23C03E17915EDB6551E606AD71E8E77",
+      "indexObjectId": "87dde389fc71e5061bc2313bca108f0caf14020a",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/notifications/BrowserPushSupportPanel.tsx",
+      "workingSha256": "5DEF7F258BA1783556FE83ABB19E97DD44446EC708321F89D14E93393021F5EE",
+      "indexSha256": "735866E2431B0A217155AD613D4B67169CC20155506EE9370415B05931B649E4",
+      "indexObjectId": "43ac4dc8013e987c4582f81675b515693878a2dc",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/UI14/project-notifications-api.test.ts",
+      "workingSha256": "38F9505393A7FFEAFD30B3FF27F790BE5400E0B578A348985C4BBB6813D9D377",
+      "indexSha256": "6E1768F2FB557A8923736BE4B08924D52E50524A0AB43DBBFE1014705D7A4A99",
+      "indexObjectId": "eda78f5d4bee8362f495f47b204676013207ccdb",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/browser/UI14/project-notifications.spec.ts",
+      "workingSha256": "D78D9BAD0298F446AD6EDD10DB3560E766E141C82A67DC2BA913F110A1C86227",
+      "indexSha256": "E67F233D48A0EAC429AE8FF5392A84240C07F138546CA9005B8511EC6AE0F15D",
+      "indexObjectId": "44b3a59ce0c272f19454605d100b36c7e4b32174",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/browser/UI14/project-notifications-harness.tsx",
+      "workingSha256": "98AFF0A8112025518CFF82B7519E877BF78D9C8EFB3256B9D1CBB177668944EC",
+      "indexSha256": "55264C79430876FEB9478B2506AD2B21C72AFCBB2ED056EE657694BA72194B7E",
+      "indexObjectId": "5a294779a044e9ee92545ee6991845d167acc026",
+      "byteRelation": "CRLF_TO_LF_ONLY"
+    }
+  ],
+  "review": "초기 C0/I2/M0 → 동일 writer fix1 → scoped C0/I0/M0",
+  "evidence": {
+    "developerUnit": 31,
+    "mainUnit": 15,
+    "browserRegistered": 9,
+    "browserRuns": [
+      {
+        "tool": "772da6",
+        "passed": 8,
+        "failed": 1,
+        "classification": "I2 404 root-query fixture 미연결; 403 검수 통과"
+      },
+      {
+        "tool": "bf465d",
+        "passed": 1,
+        "failed": 0,
+        "classification": "정확 404 fixture 보완 뒤 I2 403/404 둘 다 확인"
+      }
+    ],
+    "singleRunNinePass": false,
+    "qa": "CLEANED_GREEN_INDEPENDENT"
+  },
+  "notRun": [
+    "실제 DB/SQL/정책",
+    "알림 생산자",
+    "정식 서비스",
+    "실제 모바일/푸시/SMTP",
+    "사용자 인수",
+    "전체 FN17"
+  ],
+  "limitations": [
+    "전체 앱 reload/장애 후 영속 원명령 복구 미지원",
+    "CSRF/API/transport 교체 후 원명령 보존·전송 차단; 자동 재결박 없음"
+  ]
+}

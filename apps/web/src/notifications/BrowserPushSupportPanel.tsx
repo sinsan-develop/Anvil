@@ -6,6 +6,6 @@ export function BrowserPushSupportPanel(){
  const [result,setResult]=useState<BrowserPushSupport|null>(null);
  return<section className="status-card" aria-label="브라우저 알림 지원"><h2>브라우저 알림 지원</h2><button type="button" onClick={()=>setResult(getPushSupport())}>이 브라우저 알림 지원 확인</button>
   {result?<><p role="status">{labels[result.state]} · {result.state}</p><p>{reasons[result.reason]}</p></>:<p role="status">미확인 · 아직 조회하지 않았습니다.</p>}
-  <p>현재 브라우저의 API·권한 조회만 제공합니다. 권한 요청·구독 등록·알림 설정 저장은 하지 않습니다. 서버 알림 연결·실제 전달은 미검증이며, 앱 내 중요 알림 목록은 아직 미구현입니다.</p>
+  <p>현재 브라우저의 API·권한 조회만 제공합니다. 권한 요청·구독 등록·알림 설정 저장은 하지 않습니다. 서버 알림 연결·실제 전달은 미검증이며, 앱 내 본인 승인 알림은 별도 명시 조회로 확인하며, 알림 저장소 상태는 조회 결과에서 안내합니다.</p>
  </section>;
 }

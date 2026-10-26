@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "task": "FN17_APPROVAL_NOTIFICATION_UI",
+  "status": "CLEANED_GREEN_INDEPENDENT",
+  "registeredDate": "2026-10-27",
+  "root": "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01",
+  "paths": [
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01",
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01\\bundle",
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01\\results",
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01\\temp",
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01\\screenshots",
+    "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01\\playwright.config.mjs"
+  ],
+  "owner": "SINSAN\\cyhuh",
+  "environment": "Windows Main 전용 일회 QA",
+  "purpose": "현재 source memory bundle·명시 합성API·실제 Edge DOM·same-origin/권한/명령복구/보안입력/좁은화면 확인",
+  "lifetimeMinutes": 30,
+  "createdAtUtc": "2026-10-26T18:38:04.8553068Z",
+  "expiresAtUtc": "2026-10-26T19:08:04.8553068Z",
+  "resources": [
+    "기존 Node/Vite 의존 재사용",
+    "별도 Edge 임시 profile·TEMP/TMP는 root/temp",
+    "workers1/retries0/test30초/expect5초/global10분",
+    "1920x1080 및 같은브라우저 좁은390px",
+    "trace/video OFF·검토용 본인 합성화면 PNG만 root/screenshots"
+  ],
+  "excluded": [
+    "실제DB/SQL/PG",
+    "실제 HTTP listener/기존 서비스",
+    "현재사용자브라우저/기존 프로필",
+    "Agent/Secret/권한/인증서/실제push",
+    "새설치/다운로드"
+  ],
+  "cleanup": "실행종료/실패/중단 시 실제 생성목록·절대realpath·owner·모든link0·관련process0를 대조한 이 root만 exact 제거 후 별도 부재/process0 재조회. 미확인 소유/잔류는 삭제하지 않고 예외 기록.",
+  "parentObservation": [
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b",
+      "owner": "SINSAN\\cyhuh",
+      "link": false
+    },
+    {
+      "path": "D:\\tmp",
+      "owner": "SINSAN\\cyhuh",
+      "link": false
+    }
+  ],
+  "instances": [
+    {
+      "phase": "RED",
+      "id": "5c4b77a7-87fa-4299-b384-40f36f7b539f",
+      "createdAtUtc": "2026-10-26T18:08:58.4758961Z",
+      "expiresAtUtc": "2026-10-26T18:38:58.4758961Z",
+      "sourceHead": "1e61743a1fed1ffb8e3c083568499610812e9410",
+      "sourceHashes": {
+        "apps/web/src/notifications/BrowserPushSupportPanel.tsx": "4754B3999C32BF30CE71A9867257B0EE46C8725693D1270BE2DC16CDB904B695",
+        "apps/web/src/notifications/project-notifications-api.ts": "6E77A14D9F385ED2BDFF7D0C37F00F1337DB9558EF73435935628792B91EF378",
+        "apps/web/src/App.tsx": "591DFBD1C67E6DF268D45E0C32853F2256A05420FBCC58DE9BC2971AF279B5B6",
+        "apps/web/src/shell/AccountSecurity.tsx": "C416BCAB7EB055AC77B46F231EA65E781D09CAC5AD7F74A5023523B3380171BE",
+        "tests/browser/UI14/project-notifications.spec.ts": "CFE3F070F3EDCA48FFCCE45F66C27ABD8C765A96A9D494A96AF0E87CF9056383",
+        "tests/unit/UI14/project-notifications-api.test.ts": "B4035A2BA698B2916D36152C3E9E4A3912EC1E551B08D5C8064105BE76BDE73B",
+        "tests/browser/UI14/project-notifications-harness.tsx": "98AFF0A8112025518CFF82B7519E877BF78D9C8EFB3256B9D1CBB177668944EC"
+      },
+      "panel": "ABSENT",
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T18:12:40.0550035Z",
+        "owner": "SINSAN\\cyhuh",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01",
+        "links": 0,
+        "processesBefore": 0,
+        "fileCount": 14,
+        "directoryCount": 11,
+        "bytes": 2083719.0,
+        "red": {
+          "tool": "1b7c61",
+          "exit": 1,
+          "selected": 1,
+          "failed": 1,
+          "passed": 0,
+          "skipped": 0,
+          "otherCases": "NOT_SELECTED_NOT_RUN",
+          "durationMs": 7223.551000000001,
+          "bootstrap": "로그인보안/브라우저지원/재인증입력 존재·새패널 없음",
+          "contextSha256": "B134D7317DF65EDA787FA70C593B4604FBEB55A2BB1E86A10BD0CC736746B2E6",
+          "buildTool": "c77dfd",
+          "assets": [
+            {
+              "path": "bundle\\index.html",
+              "bytes": 354,
+              "sha256": "AB6EDF358162411E0E03FEA826938B1D712B4713DDC2CA9A886D9223863A77F9"
+            },
+            {
+              "path": "bundle\\assets\\index-BHDH6qmX.css",
+              "bytes": 10984,
+              "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+            },
+            {
+              "path": "bundle\\assets\\index-u7UOmp4Y.js",
+              "bytes": 1969962,
+              "sha256": "805703748268EF299F145178D827E3FE6D616F6A418725762DA1F80FD5AD42D6"
+            }
+          ],
+          "notSelectedCount": 6
+        },
+        "removedAtUtc": "2026-10-26T18:12:40.0974527Z",
+        "rootRemaining": false,
+        "independent": {
+          "atUtc": "2026-10-26T18:13:08.0896985Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      }
+    },
+    {
+      "phase": "REVIEW_RED",
+      "id": "dc03613e-b5fa-4845-a4a5-7f92d62a3798",
+      "createdAtUtc": "2026-10-26T18:25:31.7784744Z",
+      "expiresAtUtc": "2026-10-26T18:55:31.7784744Z",
+      "sourceHead": "1e61743a1fed1ffb8e3c083568499610812e9410",
+      "sourceHashes": {
+        "apps/web/src/notifications/BrowserPushSupportPanel.tsx": "5DEF7F258BA1783556FE83ABB19E97DD44446EC708321F89D14E93393021F5EE",
+        "tests/browser/UI14/project-notifications.spec.ts": "F5A57BB66D60C3B64FA92E4881E6E1F103C51F779C7472BB87B8B83F7C82CF9D",
+        "apps/web/src/notifications/project-notifications-api.ts": "6A56A73F8EECC0F3439431974E742368A65890E5724D29F06AD88894A96023F0",
+        "tests/browser/UI14/project-notifications-harness.tsx": "98AFF0A8112025518CFF82B7519E877BF78D9C8EFB3256B9D1CBB177668944EC",
+        "apps/web/src/shell/AccountSecurity.tsx": "96320260EAC05F77DE935D9C1FE8CDF8CB723C56D3A9F24EAACD08A1C89491EA",
+        "apps/web/src/App.tsx": "8F14CC4CAAC385D630CC92BCC2B840ED9F81BDCAC33845BECD04D94A98CB27E7",
+        "tests/unit/UI14/project-notifications-api.test.ts": "679911A10AF1890DFBC13943C9973D26EE1754C269190F9D0B8E7783115935D6",
+        "apps/web/src/notifications/ProjectNotificationsPanel.tsx": "28770696A54715BE0156A1291D3B1D018820B54722BC9735F615F9D0A8B69651"
+      },
+      "finding": "I1/I2 before product fix",
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T18:33:57.6940589Z",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01",
+        "owner": "SINSAN\\cyhuh",
+        "links": 0,
+        "processesBefore": 0,
+        "fileCount": 18,
+        "directoryCount": 14,
+        "bytes": 2207641.0,
+        "assets": [
+          {
+            "path": "bundle\\index.html",
+            "bytes": 354,
+            "sha256": "A0C2876BA1C9127EB59B1FA82E1A803032EAD136593A75050E49449A3D208F4E"
+          },
+          {
+            "path": "bundle\\assets\\index-BHDH6qmX.css",
+            "bytes": 10984,
+            "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+          },
+          {
+            "path": "bundle\\assets\\index-BQtVnZHr.js",
+            "bytes": 1986723,
+            "sha256": "718DB65E103A37FFE82370D8DC5F50852CB21414A3ACDF6CE6F19DF63B2C28FF"
+          }
+        ],
+        "removedAtUtc": "2026-10-26T18:33:57.7328588Z",
+        "rootRemaining": false,
+        "independent": {
+          "atUtc": "2026-10-26T18:34:23.2310584Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      },
+      "attempts": [
+        {
+          "name": "INITIAL_I1_I2",
+          "tools": [
+            "0e2d34",
+            "334dd8"
+          ],
+          "exit": 1,
+          "stats": {
+            "startTime": "2026-10-26T18:25:48.803Z",
+            "duration": 9300.299,
+            "expected": 0,
+            "skipped": 0,
+            "unexpected": 2,
+            "flaky": 0
+          },
+          "reportSha256": "1B6891AD2AB6D006ED5BAF2116BCBA2EE316837F17FC715F619B861B93FD771C",
+          "contexts": [
+            {
+              "path": "results\\project-notifications-교차경로-66ad0--회복해도-미확인-원명령의-재확인은-계속-가능하다\\error-context.md",
+              "sha256": "F71F566208D6099822B8A2962E292FB9C355153B3E25D78EC3E8C74617C2A1DC"
+            },
+            {
+              "path": "results\\project-notifications-교차경로-ddbc9--확정-receipt를-미확인으로-되돌리지-않는다\\error-context.md",
+              "sha256": "A0A9CD6B1110A929EF5AF7D72E5EE289ACEE6790EBE1C73E7891F7C13001EFC4"
+            }
+          ],
+          "I1": "선행 POST count1 기대/0 실제·목표경로 미도달/미판정",
+          "I2": "실제 App fast POST1/후속403 GET1 확인 후 receipt 역행 RED",
+          "I2_404": "첫403 실패로 미실행",
+          "productBundleSha256": "718DB65E103A37FFE82370D8DC5F50852CB21414A3ACDF6CE6F19DF63B2C28FF"
+        },
+        {
+          "name": "I1_TIMING_BARRIER",
+          "status": "FAILED_TARGET",
+          "startedAtUtc": "2026-10-26T18:30:47.4401013Z",
+          "specSha256": "E03109287F74D4F81311F5C7EA31A9D5B62D305A1493A2C40A47A95730C4F080",
+          "product": "unchanged",
+          "bundleSha256": "718DB65E103A37FFE82370D8DC5F50852CB21414A3ACDF6CE6F19DF63B2C28FF",
+          "output": "results/attempt2",
+          "tool": "73bdc7",
+          "result": {
+            "exit": 1,
+            "stats": {
+              "startTime": "2026-10-26T18:30:47.979Z",
+              "duration": 7935.634999999999,
+              "expected": 0,
+              "skipped": 0,
+              "unexpected": 1,
+              "flaky": 0
+            },
+            "classification": "POST1/2·접근GET/readAt 선행통과 뒤 같은명령버튼 disabled 실제 I1 RED",
+            "contextSha256": "47B7B145925C39A7F2A7D8FD63D92DCE2E9F1E566190D1B163E968EA57854113",
+            "reportSha256": "CDF36DD6656CA5EA25056DB3479A5B6CCD6488065450B64E870CC52B646BAD14"
+          }
+        }
+      ]
+    },
+    {
+      "phase": "GREEN",
+      "id": "0b3809b6-f57b-4c48-8b63-18bf9f777cf4",
+      "createdAtUtc": "2026-10-26T18:38:04.8553068Z",
+      "expiresAtUtc": "2026-10-26T19:08:04.8553068Z",
+      "sourceHead": "1e61743a1fed1ffb8e3c083568499610812e9410",
+      "sourceHashes": {
+        "tests/browser/UI14/project-notifications.spec.ts": "E03109287F74D4F81311F5C7EA31A9D5B62D305A1493A2C40A47A95730C4F080",
+        "apps/web/src/shell/AccountSecurity.tsx": "96320260EAC05F77DE935D9C1FE8CDF8CB723C56D3A9F24EAACD08A1C89491EA",
+        "apps/web/src/notifications/project-notifications-api.ts": "EF03C326E8A42D9BF7AE8AC9B4B393DA8524D41E827DB5B86176CBC6D0903808",
+        "tests/unit/UI14/project-notifications-api.test.ts": "38F9505393A7FFEAFD30B3FF27F790BE5400E0B578A348985C4BBB6813D9D377",
+        "apps/web/src/notifications/BrowserPushSupportPanel.tsx": "5DEF7F258BA1783556FE83ABB19E97DD44446EC708321F89D14E93393021F5EE",
+        "apps/web/src/notifications/ProjectNotificationsPanel.tsx": "CEC388E435586F50C206F376848051E3C4E6845E5A82DBB0B88C6FD665CBA34F",
+        "tests/browser/UI14/project-notifications-harness.tsx": "98AFF0A8112025518CFF82B7519E877BF78D9C8EFB3256B9D1CBB177668944EC",
+        "apps/web/src/App.tsx": "7B57FC262A8EEFFAAFE4A3E7DB4D6E37C27D1AB4889CF1C00901FC762AE3909F"
+      },
+      "review": "I1/I2 ADDRESSED·fix C0/I0/M0",
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T18:45:51.0348036Z",
+        "owner": "SINSAN\\cyhuh",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui14-in-app-notifications-20261027-01",
+        "links": 0,
+        "processesBefore": 0,
+        "fileCount": 17,
+        "directoryCount": 12,
+        "bytes": 2237114.0,
+        "assets": [
+          {
+            "path": "bundle\\index.html",
+            "bytes": 354,
+            "sha256": "B3970C06063593468142DED64EC3C47F139E2FE98DE65A31D94493D10EC57153"
+          },
+          {
+            "path": "bundle\\assets\\index-BHDH6qmX.css",
+            "bytes": 10984,
+            "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+          },
+          {
+            "path": "bundle\\assets\\index-D77TXsxu.js",
+            "bytes": 1987384,
+            "sha256": "5D1E0006ECDFC349541D4F22AB0B8A105A3CACAA87604A961F2FEDBB19D965E6"
+          }
+        ],
+        "removedAtUtc": "2026-10-26T18:45:51.0794875Z",
+        "rootRemaining": false,
+        "coverage": "동일제품 원7+I1 PASS8(772da6), exact-query fixture만보정후I2 PASS1(bf465d); 9건단일run PASS로표현하지않음",
+        "independent": {
+          "atUtc": "2026-10-26T18:52:21.5489356Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      },
+      "attempts": [
+        {
+          "name": "FULL_REGISTERED_9",
+          "tool": "772da6",
+          "exit": 1,
+          "specSha256": "E03109287F74D4F81311F5C7EA31A9D5B62D305A1493A2C40A47A95730C4F080",
+          "stats": {
+            "startTime": "2026-10-26T18:38:19.293Z",
+            "duration": 8740.251,
+            "expected": 8,
+            "skipped": 0,
+            "unexpected": 1,
+            "flaky": 0
+          },
+          "reportSha256": "BE1E27F02A06F8E1A5F9159F09E82BD79C57E0A8C7FAED356FE6455DDC6D770E",
+          "classification": "원7+I1 PASS8; I2의403분기 PASS·404 새문서 query 번들 미연결/connection refused로기반오류",
+          "I2_404": "NOT_REACHED",
+          "countCorrection": "원7+회귀2=등록9, 이전원8/전체10은Main집계오류"
+        },
+        {
+          "name": "I2_EXACT_QUERY_FIXTURE",
+          "status": "PASS",
+          "startedAtUtc": "2026-10-26T18:43:26.1552686Z",
+          "specSha256": "D78D9BAD0298F446AD6EDD10DB3560E766E141C82A67DC2BA913F110A1C86227",
+          "product": "unchanged",
+          "output": "results/attempt2",
+          "scope": "I2 only·403/404 both·PNG1",
+          "result": {
+            "tool": "bf465d",
+            "exit": 0,
+            "stats": {
+              "startTime": "2026-10-26T18:43:27.965Z",
+              "duration": 3185.008,
+              "expected": 1,
+              "skipped": 0,
+              "unexpected": 0,
+              "flaky": 0
+            },
+            "bothStatuses": [
+              403,
+              404
+            ],
+            "reportSha256": "F0920C79AC4F9C90BBDB7063DFD0E08C417C53E283F49B2E66A951E9B83BDC8C",
+            "png": {
+              "path": "screenshots/i2-final-1920.png",
+              "width": 1920,
+              "height": 1080,
+              "bytes": 80680,
+              "sha256": "1195B74929F2DF719B52A5144B0A0D01F7B90D887AD98CA3E2AF8CBE3649081A",
+              "visual": "Main view_image: 확정 읽음 결과 보존/접근 상실 상세 숨김·기존설정 스타일1920 확인",
+              "realService": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
