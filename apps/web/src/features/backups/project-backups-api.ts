@@ -1,3 +1,4 @@
+import type {ApprovalRequestWork} from '../decisions/api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {exact,iso,wireHash,browserCanonical} from '../control-handoff/api.ts';
 import {documentControl,documentDraftHash,type DocumentSession,type DocumentContent} from '../design-trace/editor-api.ts';
@@ -7,7 +8,7 @@ import type {ProjectCommand} from '../../../../server/modules/access/project-com
 import type {VersionRef} from '../../../../../contracts/generated-types.ts';
 export {NotificationScope as ExportScope};
 export type {ExportJob,ExportSelection};
-export interface ExportPending {bindingId:string;ownerUserId:string;ownerClientId:string;projectId:string;csrfToken:string;api:ApiClient;transport:typeof fetch;command:ProjectCommand;body:string;receipt:VersionRef|null;accessLost?:boolean}
+export interface ExportPending {bindingId:string;ownerUserId:string;ownerClientId:string;projectId:string;csrfToken:string;api:ApiClient;transport:typeof fetch;command:ProjectCommand;body:string;receipt:VersionRef|null;accessLost?:boolean;dispatchState?:'UNKNOWN'|'REQUIRED'|'BOUND';approvalRequest?:ApprovalRequestWork|null;approvalEligible?:boolean}
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const hash=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const ref=(v:unknown):v is VersionRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&Number(v.version)>0&&hash(v.contentHash);
@@ -40,7 +41,7 @@ export async function prepareExport(api:ApiClient,projectId:string,s:DocumentSes
 }
 export async function sendExport(api:ApiClient,p:ExportPending,s:DocumentSession,current:()=>boolean):Promise<VersionRef>{
  const active=()=>current()&&exportPendingMatches(p,api,s,p.projectId),c=p.command;
- if(!active()||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||!uuid(c.commandId)||c.operation!=='exportProject'||c.projectId!==p.projectId||c.clientId!==p.ownerClientId||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null||c.baselineRefs.length||!exact(c.payload,['includeSource','selection','reason'])||c.payload.includeSource!==false||!selectionValid(c.payload.selection)||browserCanonical(c)!==p.body)throw new ApiError('EXPORT_CONTEXT_CHANGED');
+ if(!active()||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||!uuid(c.commandId)||c.operation!=='exportProject'||c.projectId!==p.projectId||c.clientId!==p.ownerClientId||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null&&!approvalRefValid(c.approvalRef)||c.baselineRefs.length||!exact(c.payload,['includeSource','selection','reason'])||c.payload.includeSource!==false||!selectionValid(c.payload.selection)||browserCanonical(c)!==p.body)throw new ApiError('EXPORT_CONTEXT_CHANGED');
  const generation=await documentControl(api,p.projectId,s);if(!active()||generation!==c.controlGeneration)throw new ApiError('EXPORT_CONTEXT_CHANGED');
  let response:Response;try{response=await p.transport.call(globalThis,pid(p.projectId)+'/commands',{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':p.csrfToken,'Idempotency-Key':c.commandId},body:p.body});}catch{throw new ApiError('CONNECTION_LOST');}
  if(!active())throw new ApiError('EXPORT_CONTEXT_CHANGED');let v:unknown;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}catch{throw new ApiError('RESPONSE_INVALID',response.status);}if(!active())throw new ApiError('EXPORT_CONTEXT_CHANGED');
@@ -49,7 +50,19 @@ export async function sendExport(api:ApiClient,p:ExportPending,s:DocumentSession
 }
 export function mergeExportPending(old:ExportPending|null,expected:string|null,next:ExportPending|null):ExportPending|null{
  if((old?.bindingId??null)!==expected||old&&!old.receipt&&next===null)return old;
- if(old&&next&&(old.bindingId!==next.bindingId||old.ownerUserId!==next.ownerUserId||old.ownerClientId!==next.ownerClientId||old.projectId!==next.projectId||old.csrfToken!==next.csrfToken||old.api!==next.api||old.transport!==next.transport||old.command!==next.command||old.body!==next.body))return old;
+ if(old&&next&&(old.bindingId!==next.bindingId||old.ownerUserId!==next.ownerUserId||old.ownerClientId!==next.ownerClientId||old.projectId!==next.projectId||old.csrfToken!==next.csrfToken||old.api!==next.api||old.transport!==next.transport||(old.command!==next.command||old.body!==next.body)&&exportTransitions.get(next)!==old))return old;
+ if(old?.dispatchState==='UNKNOWN'&&next&&next.dispatchState!=='UNKNOWN'&&exportTransitions.get(next)!==old)return old;
+ if(old?.dispatchState==='BOUND'&&next&&next.dispatchState==='REQUIRED')return old;
  if(next?.receipt&&(!ref(next.receipt)||next.receipt.version!==1))return old;
  if(old?.receipt&&next){if(next.receipt&&!same(old.receipt,next.receipt))return old;return{...next,receipt:old.receipt};}return next;
+}
+
+function approvalRefValid(v:unknown):boolean{return exact(v,['requestId','decisionId','scopeDigest'])&&uuid(v.requestId)&&uuid(v.decisionId)&&hash(v.scopeDigest);}
+const exportTransitions=new WeakMap<ExportPending,ExportPending>();
+/** 불명 상태는 명확한 이번 응답 또는 검증한 일회 결박으로만 전이한다. */
+export function markExportDispatch(p:ExportPending):ExportPending{const next={...p,dispatchState:'UNKNOWN' as const,approvalEligible:p.dispatchState!=='UNKNOWN'&&p.command.approvalRef===null};exportTransitions.set(next,p);return next;}
+export function markExportApprovalRequired(p:ExportPending):ExportPending{if(p.receipt||p.accessLost||p.command.approvalRef!==null||(p.dispatchState!=='UNKNOWN'||p.approvalEligible!==true))throw new ApiError('EXPORT_CONTEXT_CHANGED');const next={...p,dispatchState:'REQUIRED' as const,approvalEligible:false};exportTransitions.set(next,p);return next;}
+export function bindExportApprovalCommand(p:ExportPending,approvalRef:unknown):ExportPending{
+ if(p.receipt||p.accessLost||p.dispatchState!=='REQUIRED'||p.command.approvalRef!==null||!approvalRefValid(approvalRef))throw new ApiError('APPROVAL_CANDIDATE_MISMATCH',409);
+ const command=freeze({...p.command,approvalRef:structuredClone(approvalRef)}),next={...p,command,body:browserCanonical(command),dispatchState:'BOUND' as const};exportTransitions.set(next,p);return next;
 }

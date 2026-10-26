@@ -11,7 +11,7 @@ import { candidateOperations } from '../connections/candidate-input.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
 import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-const consumableOperations = ['uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
+const consumableOperations = ['exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};

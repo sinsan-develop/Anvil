@@ -83,7 +83,6 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   if (['defineProjectRole','bindResponsibleSession','prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if ((baselineOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);
   if ((contextPreparationOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('CONTEXT_APPROVAL_NOT_CONNECTED', 412);
-  if(request.operation==='exportProject'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('EXPORT_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}
@@ -151,7 +150,7 @@ export class ProjectPolicyRepository {
           if (previous !== undefined) return previous;
           if (request.baselineRefs.length) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
-          if(request.operation==='exportProject')exportStarted=true;
+          if(request.operation==='exportProject'){exportStarted=true;await db.query("SELECT set_config('anvil.export_payload',$1,true)",[canonicalJson(request.payload)]);}
           const applied=await material(db, actor, policy.ref,request.operation==='exportProject'?exportDeadline:undefined);
           await checkExportDeadline();
           await checkNotificationDeadline();return applied;

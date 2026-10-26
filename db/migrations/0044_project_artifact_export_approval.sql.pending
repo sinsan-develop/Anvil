@@ -1,0 +1,139 @@
+-- FN11/FN16 forward 후보. 미적용: 실제 PG 컴파일/COMMIT/RLS/경합 NOT_RUN.
+-- 0035 wrapper chain과 0043 manifest/권한은 불변. 새 표/role/GRANT/원문 영구 보관 없음.
+-- 원 payload는 현재 command transaction의 LOCAL 설정에서만 읽고 저장하지 않는다.
+CREATE FUNCTION anvil.fn16_export_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(anvil.execution_json_shape(s,ARRAY['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])
+ AND s->>'operation'='exportProject' AND s->'targetRef'='null'::jsonb AND s->'expectedVersion'='0'::jsonb
+ AND s->>'payloadHash' ~ '^[a-f0-9]{64}$' AND s->'baselineRefs'='[]'::jsonb AND s->'sourceScopes'='[]'::jsonb
+ AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb,false);
+$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_export;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation'='exportProject' THEN anvil.fn16_export_approval_target_valid(pid,s)
+ ELSE anvil.connection_candidate_approval_target_before_export(pid,s) END;
+$$;
+CREATE FUNCTION anvil.fn16_export_approval_execution_valid(pid uuid,cid uuid,did uuid,consumed boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE payload jsonb;
+BEGIN
+ -- 없는 설정/손상 JSON은 허용으로 바뀌지 않는다. LOCAL 설정은 같은 connection/transaction에서만 존재한다.
+ BEGIN payload=nullif(current_setting('anvil.export_payload',true),'')::jsonb;EXCEPTION WHEN OTHERS THEN RETURN false;END;
+ IF payload IS NULL OR NOT anvil.execution_json_shape(payload,ARRAY['includeSource','selection','reason'])
+ OR payload->'includeSource' IS DISTINCT FROM 'false'::jsonb OR NOT anvil.result_text_valid(payload->'reason',20000)
+ THEN RETURN false;END IF;
+ RETURN EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=did
+ JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=did AND d.decision='APPROVE' AND d.request_version=1
+ JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id AND r.scope_digest=d.scope_digest AND r.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=pid AND p.archived_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=pid AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=pid AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.project_id=pid AND c.id=cid AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation='exportProject' AND c.state='APPLIED'
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND anvil.fn16_export_approval_target_valid(pid,r.action_scope_json)
+ AND r.status=CASE WHEN consumed THEN 'CONSUMED' ELSE 'APPROVED' END AND r.version=CASE WHEN consumed THEN 3 ELSE 2 END
+ AND r.expires_at>clock_timestamp() AND c.approval_consumption_id IS NOT NULL AND c.expected_version=0
+ AND c.command_id=r.candidate_command_id AND c.actor_id=r.created_by AND c.client_id=r.client_id
+ AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND r.request_json->>'controlGeneration'=c.control_generation::text AND r.action_scope_json->>'controlGeneration'=c.control_generation::text
+ AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND r.scope_digest=anvil.execution_json_hash(r.action_scope_json)
+ AND r.action_scope_json->>'payloadHash'=anvil.execution_json_hash(payload)
+ AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation
+ AND d.decision_json->'policyRef'=c.policy_ref
+ AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.execution_json_hash(payload),'scopeDigest',r.scope_digest)
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'operation','exportProject','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,
+ 'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',payload))
+ AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'projectId'=pid::text
+ AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'version'='1'
+ AND anvil.execution_json_shape(c.result_ref->'data',ARRAY['status','ref']) AND c.result_ref->'data'->>'status'='EXPORT_STORED'
+ AND c.result_ref->'data'->'ref'->>'id'=c.result_ref->>'targetId' AND c.result_ref->'data'->'ref'->>'version'='1'
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id
+ AND a.outcome='APPLIED' AND a.scope_digest=ar.scope_digest AND a.policy_ref=c.policy_ref AND a.target_ref=c.result_ref->'data'->'ref'
+ AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.source_kind='HUMAN_COMMAND'
+ AND a.approval_ref=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest))
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+ WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+ AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? 'exportProject'
+ AND rule->>'disposition'='REQUIRE_APPROVAL' AND rule->'limitPolicyRef'='null'::jsonb AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? 'exportProject'
+ AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (NOT consumed OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac
+ JOIN anvil.project_artifact_exports j ON j.project_id=pid AND j.command_id=c.id
+ WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.decision_id=did
+ AND ac.scope_digest=r.scope_digest AND ac.policy_id=pp.id AND ac.policy_version=pp.head_version
+ AND j.actor_id=c.actor_id AND j.client_id=c.client_id
+ AND c.result_ref->'data'->'ref'=jsonb_build_object('id',j.id,'version',1,'contentHash',j.content_hash)
+ AND j.content_hash=anvil.execution_json_hash(j.manifest_json) AND anvil.fn16_export_manifest_shape(j.manifest_json)
+ AND j.manifest_json->'selection'=payload->'selection' AND j.manifest_json->'includeSource'='false'::jsonb
+ AND j.manifest_json->>'projectId'=pid::text AND j.manifest_json->'createdBy'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND j.manifest_json->'selection'->'documentRef'=jsonb_build_object('id',j.document_id,'version',j.document_version,'contentHash',j.document_content_hash)
+ AND j.manifest_json->'selection'->'artifactRef'->>'artifactId'=j.artifact_id::text
+ AND j.manifest_json->'selection'->'artifactRef'->>'contentHash'=j.artifact_content_hash)));
+END;
+$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_export;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=did
+ JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE c.project_id=pid AND c.id=cid
+ AND (c.operation='exportProject' OR r.action_scope_json->>'operation'='exportProject'))
+ THEN anvil.fn16_export_approval_execution_valid(pid,cid,did,false)
+ ELSE anvil.one_time_consumption_command_before_export(pid,cid,did) END;
+$$;
+-- 승인 소비/command만 쓰고 0043 job을 빠뜨리는 직접 DML은 COMMIT 전 거절한다.
+CREATE FUNCTION anvil.fn16_export_approval_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;did uuid;c anvil.commands;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_TABLE_NAME='commands' THEN
+  IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;pid=NEW.project_id;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+  IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;pid=NEW.scope_id;cid=NEW.command_id;
+ ELSE pid=NEW.project_id;cid=NEW.command_id;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.operation='exportProject' AND c.approval_consumption_id IS NOT NULL THEN
+  SELECT decision_id INTO did FROM anvil.approval_consumptions WHERE project_id=pid AND id=c.approval_consumption_id AND command_id=cid;
+  IF did IS NULL OR anvil.fn16_export_approval_execution_valid(pid,cid,did,true) IS DISTINCT FROM true
+  THEN RAISE EXCEPTION 'EXPORT_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER fn16_export_command_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_complete();
+CREATE CONSTRAINT TRIGGER fn16_export_receipt_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_complete();
+CREATE CONSTRAINT TRIGGER fn16_export_consumption_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_complete();
+CREATE CONSTRAINT TRIGGER fn16_export_audit_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_complete();
+CREATE CONSTRAINT TRIGGER fn16_export_job_complete AFTER INSERT ON anvil.project_artifact_exports DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_complete();
+
+-- 승인 반출 command INSERT는 그대로다. 이후 수정/삭제로 final 검사의 기준을 지우지 못한다.
+CREATE FUNCTION anvil.fn16_export_approval_command_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE protected_old boolean;protected_new boolean=false;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN
+  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+ END IF;
+ protected_old=OLD.operation='exportProject' AND (
+  OLD.approval_consumption_id IS NOT NULL OR OLD.payload_ref IS NOT NULL
+  OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=OLD.id AND ar.approval_decision_ref IS NOT NULL)
+  OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.command_id=OLD.id));
+ IF TG_OP='UPDATE' THEN
+  protected_new=NEW.operation='exportProject' AND (
+   NEW.approval_consumption_id IS NOT NULL OR NEW.payload_ref IS NOT NULL
+   OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=NEW.id AND ar.approval_decision_ref IS NOT NULL)
+   OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.command_id=NEW.id));
+ END IF;
+ IF COALESCE(protected_old,false) OR COALESCE(protected_new,false)
+ THEN RAISE EXCEPTION 'EXPORT_APPROVAL_COMMAND_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn16_export_approval_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_approval_command_immutable();

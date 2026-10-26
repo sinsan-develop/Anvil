@@ -29,7 +29,7 @@ export class ProjectBackups {
   return r;
  }
  async create(db:PoolClient,a:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef,deadline:number){return storage(async()=>{
-  const p=readExportPayload(c.payload);if(c.operation!=='exportProject'||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null||c.baselineRefs.length)throw new AuthFailure('EXPORT_INPUT_INVALID',422);
+  const p=readExportPayload(c.payload);if(c.operation!=='exportProject'||c.targetId!==null||c.expectedVersion!==0||c.baselineRefs.length)throw new AuthFailure('EXPORT_INPUT_INVALID',422);
   await this.ready(db);this.target!.check(deadline);
   const row=await this.sourceRow(db,c.projectId,p.selection),bytes=await this.source!.read(c.projectId,p.selection.artifactRef.artifactId,p.selection.artifactRef);assertStoredArtifactReadable(row,bytes);this.target!.check(deadline);
   const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date))throw new AuthFailure('EXPORT_STORAGE_FAILED',503);
