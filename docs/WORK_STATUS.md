@@ -8136,3 +8136,11 @@
 - **FN16 보관본 builder 실제 구현 진행**: WI7E45B392 독립preflightC0/I0/M0 뒤 fn16_file_bundle_builder 단일writer4경로착수·Main제품수정0. 실제원bytes보관성공assertion RED→첫GREEN과기존목적지/독립기준/민감미접근·취소/변경/변조·unknown보존11범위검수중이다. 최종unknown유입을성공처리한새반례를발견해소유inventory/identity종료검사를보강중이며최종합격아니다. nullable타입진단7건은한수정묶음/수정후type0, 시험mock.restore오기반례6FAIL은한공통fixture오류로정정·제품기능실패와분리한다. 매등록QA fresh소유/nonlink→파일별회수로그residualfalse(19:55:02.010Z),별도최종잔류확인예정. 실제원본/DB/권한/서비스·Secret변경0·기술차단0.
 
 - **2026-10-27 FN16 실제보관본 builder 검수 인수**: inputD2993810/builder973DD9B4/test91A112BF/fixture2074671C exact4확인,Main846b09 동일session96541/e0fe95 exit0·fresh21PASS25116.2602ms/FAIL·SKIP0. 독립C0/I0/M0·소유정리/기한/unknown보존/실bytes검수,각등록QA즉시회수·별도root부재/단위process0. 실제자료/권한/DB/서비스/Secret·Agent변경0. 기본권한CIM거절1은승격읽기1891bf와구분해0주장하지않았다. 결과/계획부분상태에반영했고전체FN16/화면·공적API/DBsnapshot·복원은미완료다. Main제품수정0·다음소비기능진행·PMO배정대기0.
+
+- **FN16 보관본 checkpoint/검증복원 후속 선정**: 5b17f3d1e0a41c344ef74b07108f816d9c92a5fa는정확builder4+문서4·887539 private exact/main f976불변·보호8유지. 다음은원source없이보관metadata/payload독립검사→새빈위치파일검증복원으로이어지는기존FN16부분업무4경로다. 공적형식/API/DB/원위치복원·업무재개0. 신규 QA exact D:\tmp\anvil-v3-stage-b\fn16-file-restore-validation-20261027-01·fixtures/source/backup-parent/validation-parent, owner SINSAN\cyhuh·각30분/소유명시회수/별도0·현재생성0을사전등록하고WI독립preflight뒤단일writer로진행한다.
+
+- **FN16 검수 플랫폼 한계 대조**: 독립읽기조사는npm test가전체unit glob임을확인했고repo CI workflow/OS정의는찾지못했다. 신규FS fixture의Windows D:/tmp/pwsh7/owner한정을Linux/WSL PASS로올리지않으며전체npm test·Linux실행은미실행이다. 기존FN06/FN08에도동일Windows전제가있어새builder만이CI를깨뜨렸다고가정하지않는다. 결과2건/개발환경에한계만추가·코드/skip/Gate/CI설정변경0,현재별도검증복원writer4경로진행은계속한다.
+
+- **Main 읽기 경로 추정 재발 정정**: 20fedf의 artifact-store 추정모듈경로 읽기1은경로부재였다. 이전동일패턴3건중단기록뒤재발했으므로수동경로조합방식을중단하고이번부터rg실제반환목록에서유일경로를검사한변수만읽는다. 제품/권한/ACL/설정변경0·기능판정영향0이며PMO에예외근거/교정방식을보고한다. 현재복원writer와독립반례보정은영향없이계속한다.
+
+- **2026-10-27 FN16 파일 검증복원 검수 인수**: Main583597/동일session19749/54ecdb에서 신규28PASS20367.7833ms를 확인했다. 독립 I1 목적지 metadata 손상 반례를 같은 writer fixround1로 재현·보정하고 최종 Mainf70de9 정상/새반례2PASS1596.0912ms, scoped C0/I0/M0를 확인했다. input1C382401/implA6145CB6/testE0DB09BE/fixtureC4422DAA 지문 보존. 현재29등록을 단일29PASS로 올리지 않는다. 누락 사유 기대 정정은 독립 검수에서 기준 완화 아님을 확인했다. 등록 합성 QA 각 즉시 명시회수·별도 root부재/단위process0. 사용자자료·DB/권한/Secret·서비스/Agent 변경0. 결과서·계획에 부분 구현과 Windows 한정/실제 API·화면·전체 복원 미완료를 유지하고 다음 선택 문서 반출 수직 연결로 이어간다. Main 제품수정0·PMO 배정 대기0.

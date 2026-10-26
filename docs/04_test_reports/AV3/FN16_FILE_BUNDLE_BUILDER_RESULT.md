@@ -19,3 +19,5 @@ complete는내부선택파일보관본검수이며프로젝트전체완료·Secr
 - apps/server/modules/backups/file-bundle.ts — 973DD9B44BFF47196E05205530C9C40865362D34F6085073A93582C11042DB5B
 - tests/unit/FN16/file-bundle.test.ts — 91A112BF85C7BE5149ADD76ADA7BB0F936F595250461A9234662F689B77B3D02
 - tests/unit/FN16/file-bundle-fixture.ts — 2074671C03940CFBBC4DC4A42BC868E73DE08A86736F15DAFB69F04B6C38E2E8
+
+검수 환경 보충(2026-10-27): 이 집중 검수는 등록된 Windows/PowerShell7 QA에서 실행했다. 전체 npm test와 Linux/WSL 실행은 이번 미실행이다. package.json의 전체 unit glob에는 해당 시험도 포함되나 저장소에 CI workflow/실행 OS 정의는 확인되지 않았다. 기존 FN06/FN08에도 Windows 전용 시험 전제가 있으며 새 builder만의 Linux CI 실패를 주장하지 않는다. 향후 Linux/WSL 전체 Gate 지정 시 실행 대상/QA 프로파일을 명시해야 하며 자동 skip이나 교차 OS PASS로 숨기지 않는다.

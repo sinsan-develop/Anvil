@@ -375,3 +375,7 @@ CurrentUser Root 신뢰 저장소에 새 CA의 정확 thumbprint1개를 넣는 �
 - 전환 시 `.av3-data/runtime/receipt.json`의 kind·commit·PID/start/exe·3830을 다시 대조해 해당 소유 Node만 중지한다. 다른 Node나 wslrelay를 일괄 종료하지 않는다. 인증서는 후속 HTTPS 개발 검수 동안만 유지하고 2026-10-23 03:29:02 KST 또는 검수 종료 때 지문498348218A4015B341A90B10FF4FE176987D4424의 CurrentUser Root1개만 회수한다.
 - 임시 Windows npm-cache/P03-browser·WSL 등록 npm-cache 정리/부재 확인0, QA Edge0·DB probe0. 새 개발 DB/volume/보호 설정·CA·현재 소유 개발 Node는 보존 대상이다. 기존 .pytest_cache ACL 문제는 별도 보존하며 재실행/권한 변경0이다.
 - 불변 소스의 기존 DB/브라우저 증거는 재사용한다. Stage A 통합 전 unit13·typecheck·Web14·schema 생성 일치·diff check를 fresh exit0 확인했다. 실제 Agent/제품 기능/Oracle·전체 회귀는 미실행이며 해당 UI/FN/IX에서 검증한다.
+
+## 2026-10-27 FN16 집중 검수 환경 범위
+
+실제 파일 manifest/bundle 검수는 Windows의 등록 D:/tmp QA·PowerShell7 owner 확인 전용이다. 전체 npm test 및 Linux/WSL 실행은 이번 미실행이며 교차 OS PASS가 아니다. 저장소 CI workflow는 현재 조사에서 없고, 기존 FN06/FN08도 Windows 전용 조건이 있다. 환경별 실행 대상은 향후 실제 Gate에 맞춰 명시하며 이 기록으로 skip/기준 완화를 채택하지 않는다. 제품 Node 모듈의 Linux 동작·정식 WSL 서비스/DB 상태는 이 집중 검수로 새 확인하지 않았다.

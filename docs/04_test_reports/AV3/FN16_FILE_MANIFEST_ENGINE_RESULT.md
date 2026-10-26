@@ -32,3 +32,5 @@ OS 타프로세스TOCTOU/hardlink출처·특수reparse/FS·권한sandbox·진행
 - apps/server/modules/backups/file-manifest.ts — 301558A84F57D3011488FA165BD11479726C9BB4D98BD14A764C69AB9409E379
 - tests/unit/FN16/file-manifest.test.ts — C005F38B7024BD1409BBCABF4F89D20249EC0EE8B263BDAEA26BC78783B21C9B
 - tests/unit/FN16/file-manifest-fixture.ts — 0BFF4C5EA1B930042CEF483D452955C18A1C66D62F0E22A10D0156A458E658E6
+
+검수 환경 보충(2026-10-27): 이 집중 검수는 등록된 Windows/PowerShell7 QA에서 실행했다. 전체 npm test와 Linux/WSL 실행은 이번 미실행이다. package.json의 전체 unit glob에는 해당 시험도 포함되나 저장소에 CI workflow/실행 OS 정의는 확인되지 않았다. 기존 FN06/FN08에도 Windows 전용 시험 전제가 있으며 새 builder만의 Linux CI 실패를 주장하지 않는다. 향후 Linux/WSL 전체 Gate 지정 시 실행 대상/QA 프로파일을 명시해야 하며 자동 skip이나 교차 OS PASS로 숨기지 않는다.
