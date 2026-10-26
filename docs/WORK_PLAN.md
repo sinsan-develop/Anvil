@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 N4 R1 원 C 보고 전송·수집 source 착수**: 새 직접승인② 안에서 원 launcher/observer·READY/peer·Snapshot9 전송/strict 수집/ACK·원 exit/회수 호출선을 한 업무로 고정했다. r2 spec E09C9923 독립 C0/I0/M0·구현 preflight 완료이며 단일 subagent가 native/PS source와 미래 C# 시험을 작성한다. 4false/QAmax2·외부 exact trust 미연결·실 compiler/OS/Agent NOT_RUN 유지, 실제 기능/전체 계획 완료가 아니다.
+
+
 - **2026-10-26 UI06 원문 승인 표시 정합성**: 편집 buffer와 frozen pending이 다르면 이전 승인 설명을 숨기고 원입력 복귀 시 원상태를 보존한다. 새 DOM2 RED→직접21 PASS/type/diff0·독립 scoped C0/I0/M0, 등록 QA7파일/5dir·설정1 수명 내 정리/별도 부재 확인. 기존 권한·명령·원문·일회승인 의미 불변이며 실제 DB/served·전체 UI06 미완료다.
 
 

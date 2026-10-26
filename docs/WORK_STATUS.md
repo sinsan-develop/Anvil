@@ -1,4 +1,21 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 N4 원 C 보고 전송·수집 소스 업무 고정
+
+- Main은 기존 승인② 안에서 N4_R1_REPORT_TRANSPORT_IMPLEMENTATION.md를 작성하고 설계/구현 담당의 독립 읽기와 preflight를 대조했다. 초기 r1 7BC2CB1C는 scoped C0/I2/M0였다. I1 ACK 전 EOF는 payload Reader.End() 소진으로 고정하고 pipe EOF는 실패/정상 exit 단계와 분리했다. I2는 원 pinRun budget을 fixture/probe/C I/O·cleanup poll의 실제 메서드까지 전달해 기존값과 min 결합하도록 고정했다. 동기 kernel/worker의 물리완료 상한 보장0·만료/불명 소유 보존이다.
+- r2 canonical/source SHA256 E09C9923DEFD249BF4E241B3837736459EC7154B1D45C13611F8815B6B077A0F는 독립 scoped spec C0/I0/M0다. 보고 전용 role4/5·op1~6은 기존48byte frame 형식만 재사용하고 G/W 계약은 보존한다. parent-local observer 상관값은 고정8argv에, 생성후 C-local slot/원 peer/FILETIME·UTC·남은예산은 READY48로 전달한다. BOOTSTRAP_ACK 포함 DATA최대5/seq최대8/channel최대17024<32768, 원16KiB/9행/rawUTF16과 동일 parent60초·UTC단축만 유지한다.
+- 구현 preflight는 실제 QaFixtureLease/Probe/Fresh/StopOwnedQaAndObserve/CloseAfterObservedExit와 C channel I/O·cleanup poll의 상위예산 소비 및 별도 role1 standalone facade/PS loader가 가능함을 보고했다. Main은 고정 binding literal·FILETIME 범위·parent/C-local slot 구분·별도 facade Create signature를 r2에 확정했다. 외부 exacttrust·4false·최초PSthrow·R0/entry·QAmax2와 C/G/W3 차이 미채택을 유지한다. source/manifest/hash를 실행권위로 만들지 않는다.
+- 단일 writer n4_report_transport_implementation의 허용은 native/host PS2경로와 기존 payload/신규 transport 미래 native시험2경로뿐이다. Main이 문서/현황/통합을 맡고 다른 writer0이다. Main의 GO 뒤 미래시험 source를 먼저 준비하고 원 launcher→peer/READY→fixture→기존Cleanup/Snapshot/Capture→DATA/END/collector private보존/ACK→원exit/회수를 한 업무로 연결한다. getter/미사용helper/주석 추가만으로 완료하지 않는다. 기존G/JG/W body·frame/argv·상한 완화0, C측상위예산검사만 최소 연결한다.
+- 실제compiler/C#parser/RunAll/Assemblyload/native·pipe/process/fixture/ACL·cert/trust·DB/서비스/Agent는0이다. 미래시험의 RED/GREEN을 주장하거나 다른언어모사·소스문자열assertPASS로 대체하지 않는다. PS AST/diff는 실행없는 source 검사로만 분리한다. 독립 source 검수와 허용소스의 전후hash/diff·미실행/rollback 뒤 기존branch에 보존한다. 현재 제품2의 원hash45B81D0E/B1B72F61·기존시험87D1FB4E·entry246DBC42를 대조했으며 source 작성 전 checkpoint를 먼저 보존한다.
+
+### 2026-10-26 남은 실행 경계 감사와 승인② source 계속 선정
+
+- 직전 goal turn은 UI06 M1 실보완/직접21 PASS·FN06 원 I1/I2 scoped 정적 검수 해소의 진전으로 분류한다. 이번9fd55a는 HEAD38f8746c458177cc5549c482ea71ecb6f8b3ce79·tracked clean/보호8·diff0·FN01후보F4E734B3·이전QAroot/config부재를 실제 확인했다. PMO snapshot도 FN01 직접확인 pending/실패한전달 재시도0·새결정없음을 유지한다. 라이브 실행잡이 없는 상태를 검증 대기로 가장하지 않는다.
+- 독립 remaining_action_boundary_audit는 현재 승인만으로 새 사용자 화면→실처리/저장/조회 완결 업무는 확인하지 못했지만, 모든 source 작업 불가 판정은 부정확하다고 지적했다. FN01/04/CapabilityReport·FN09/10/12/13/14/15의 현재 미채택/특정거절·정식환경/실Agent 경계와 FN16~18/IX 선행 미충족을 실제 route/source와 구분했다. UI03/UI06/UI13 기존 소비 재개발은 후보에서 제외했다. 전체 잠재결함/모든 독립작업 소진이나 전체 계획 완료를 주장하지 않는다.
+- 실질 허용 잔여는 N4 R1 원 pending 보고의 launcher/observer·pipe 전송/수집이다. Main75a545는 native RequireOriginalLauncher의 고정거절·REPORT_RETAINED_TRANSPORT_UNCONNECTED를 실제 읽고, 이미있는 G/JG/W body를 미작성으로 다시 선정하지 않았다. 기존 Snapshot9/Capture/내부payload 검증은 이미 있고 이를 중복 구현하지 않는다.
+- Main890a80은 별도의 N4 새직접승인②를 확인했다. userMessage01a17002-c88d-7213-8c28-ad45238d1d84/turn01a17002-c814-7721-b496-af58f3d6f8d9·UTC2026-10-24T22:23:12Z '두 가지 승인'에서 ②는 신규 보호 source3/adapter/시험작성만이다. ①P1 읽기1회 시간창은 소진/만료이며 이월하지 않는다. ②는 실제 native compile/OS·cert/trust/service·R0위험수락/R1OS/P2P3 허가가 아니며10/22FN06nativeA출처미확인과 다른 근거다. raw native45B81D0E35765B1A49909123B8B262B5CC9A50B90859285E80DB22BBDFB71A45·N4_R1_PENDING_REPORT_SOURCE4C209B66B0E319B02D195DCC531DE00DA6667F1194D51C55309C20D1452C01F2·N4 proposalD6228FE2951D23C6511517635FAF4880DA61231812F3C5D17075CDC17CF9D7CF를 확인했다.
+- Main은 목표 blocked로 전환하지 않고 같은 승인②의 원 producer→Cleanup/Snapshot/Capture→HELLO/DATA/END/ACK·원 peer/유한수집·회수의 기존 타입/메서드/PS 소비를 읽기담당에게 매핑하도록 맡겼다. 외부 exact trust를 source로 발급하거나 4false/QAmax2·기존60초/UTC/16KiB·9행·invalidsurrogate 보존을 풀지 않는다. 새권위/실자원cap결정과내부상세를분리해Main판정후한writer로진행한다. 현재소스/시험/환경·Agent 변경0이며 보고 metadata/helper만추가해전체기능완성으로대체하지않는다.
+- 조사 중 Main의 PowerShell match집계 표현식 괄호 오류1은 실행전 ParserError/파일변경0이다. 단순 rg -F 및 실제 파일 읽기로정정했으며제품오류/ACL오류로분류하지않는다. 이 기록·읽기 준비는 실제 native 동작 검증이나 사용자기능 진도가 아니다.
+
 ### 2026-10-26 UI06 게시와 UI13 기존 연결 정정
 
 - Main52e78d/a690cb는 검수4경로만129ff58f7495f1e3753b202987a77c693ed05a6b로 commit/private push하고 local/private exact·원격mainf976ed5e불변·tracked clean/보호8을 확인했다. 실제 서비스/DB/Agent/PR/merge0이다. 이후 문서 기록은 별도 Main 소유 상태다.
