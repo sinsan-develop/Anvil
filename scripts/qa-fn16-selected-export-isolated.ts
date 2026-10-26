@@ -15,7 +15,37 @@ const target=Object.freeze({source:'/qa-source',config:'/qa-config/run.json',dat
 class Fn16QaFailure extends Error{readonly safeCode:string;constructor(code:string){super('FN16_QA_REFUSED');this.safeCode=code;}}
 let currentPhase='ENTRY';
 const fail=(code='FN16_QA_INPUT_REFUSED'):never=>{throw new Fn16QaFailure(code);};
-export function fn16QaDiagnostic(error:unknown){const e=error as {code?:unknown;severity?:unknown};return{kind:'FN16_SELECTED_EXPORT_ISOLATED_FAILURE',phase:currentPhase,code:error instanceof Fn16QaFailure?error.safeCode:'FN16_QA_UNCLASSIFIED_FAILURE',pgCode:typeof e?.severity==='string'&&['ERROR','FATAL','PANIC'].includes(e.severity)&&typeof e.code==='string'&&/^[0-9A-Z]{5}$/.test(e.code)?e.code:null,exitCode:1};}
+class Fn16BootstrapCleanupFailure extends Error{readonly primary:unknown;readonly cleanup:unknown;readonly failurePhase:string;constructor(primary:unknown,phase:string,cleanup:unknown){super('FN16_QA_BOOTSTRAP_AND_CLEANUP_FAILED');this.primary=primary;this.cleanup=cleanup;this.failurePhase=phase;}}
+const bootstrapPhases=new Set(['BOOTSTRAP','BOOTSTRAP_IDENTITY','BOOTSTRAP_LOGGING','BOOTSTRAP_EMPTY_CHECK','BOOTSTRAP_SCHEMA_BUILD','BOOTSTRAP_ROLE_CREATE','BOOTSTRAP_MIGRATOR_IDENTITY','BOOTSTRAP_BASELINE_APPLY','BOOTSTRAP_CANDIDATE_APPLY','BOOTSTRAP_CLEANUP']);
+export function preserveFn16BootstrapFailure(primary:unknown,phase:string,cleanup:unknown){return new Fn16BootstrapCleanupFailure(primary,bootstrapPhases.has(phase)?phase:'BOOTSTRAP',cleanup);}
+/** bootstrap의 실제 finally 소비선. 정리는 원 실패와 분리한다. */
+export async function finishFn16BootstrapCleanup(state:{failed:boolean;primaryError:unknown;failurePhase:string},cleanup:()=>Promise<unknown>){
+ currentPhase='BOOTSTRAP_CLEANUP';try{await cleanup();}catch(cleanupError){if(state.failed)throw preserveFn16BootstrapFailure(state.primaryError,state.failurePhase,cleanupError);throw cleanupError;}
+ if(state.failed)currentPhase=bootstrapPhases.has(state.failurePhase)?state.failurePhase:'BOOTSTRAP';
+}
+const diagnosticNames=new Set(['Error','TypeError','RangeError','ReferenceError','SyntaxError','AssertionError','AggregateError','DatabaseError','TimeoutError','AbortError','error']);
+const diagnosticNodeCodes=new Set(['ENOTFOUND','EAI_AGAIN','ECONNREFUSED','ECONNRESET','ETIMEDOUT','EHOSTUNREACH','ENETUNREACH','EPIPE','ENOENT','EACCES','EPERM','EEXIST','ERR_INVALID_ARG_TYPE','ERR_INVALID_ARG_VALUE','ERR_OUT_OF_RANGE','ERR_MODULE_NOT_FOUND','ERR_PACKAGE_PATH_NOT_EXPORTED']);
+const diagnosticMessages=new Map([
+ ['Query read timeout','FN16_QA_QUERY_READ_TIMEOUT'],
+ ['Connection terminated due to connection timeout','FN16_QA_CONNECTION_TIMEOUT'],
+ ['timeout exceeded when trying to connect','FN16_QA_POOL_CONNECT_TIMEOUT'],
+ ['Connection terminated unexpectedly','FN16_QA_CONNECTION_TERMINATED'],
+ ['Connection terminated','FN16_QA_CONNECTION_TERMINATED'],
+ ['C1_QA_MIGRATION_SET_INVALID','C1_QA_MIGRATION_SET_INVALID'],
+ ['C1_QA_SQL_LINK_REJECTED','C1_QA_SQL_LINK_REJECTED'],
+ ['FN16_QA_CONNECTION_CLEANUP_TIMEOUT','FN16_QA_CONNECTION_CLEANUP_TIMEOUT'],
+]);
+function safeClassification(error:unknown){const e=error as {name?:unknown;code?:unknown;severity?:unknown;message?:unknown};return{code:error instanceof Fn16QaFailure?error.safeCode:typeof e?.message==='string'?diagnosticMessages.get(e.message)??'FN16_QA_UNCLASSIFIED_FAILURE':'FN16_QA_UNCLASSIFIED_FAILURE',pgCode:typeof e?.severity==='string'&&['ERROR','FATAL','PANIC'].includes(e.severity)&&typeof e.code==='string'&&/^[0-9A-Z]{5}$/.test(e.code)?e.code:null,errorName:typeof e?.name==='string'&&diagnosticNames.has(e.name)?e.name:null,nodeCode:typeof e?.code==='string'&&diagnosticNodeCodes.has(e.code)?e.code:null};}
+export function fn16QaDiagnostic(error:unknown){
+ const contextual=error instanceof Fn16BootstrapCleanupFailure,errorValue=contextual?error.primary:error,e=errorValue as {name?:unknown;code?:unknown;severity?:unknown;stack?:unknown};
+ const frames:{file:string;line:number;column:number}[]=[];
+ if(typeof e?.stack==='string'&&e.stack.length<=65536)for(const line of e.stack.split('\n')){
+  if(!/^\s+at\s/.test(line))continue;
+  const match=/(?:[/\\])(qa-fn16-selected-export-isolated\.ts|execution-preparation-qa\.ts|project-artifact-export-pg\.ts):([1-9][0-9]{0,5}):([1-9][0-9]{0,5})\)?\s*$/.exec(line);if(!match)continue;
+  const frame={file:match[1]!,line:Number(match[2]),column:Number(match[3])};if(!frames.some(f=>f.file===frame.file&&f.line===frame.line&&f.column===frame.column))frames.push(frame);if(frames.length===8)break;
+ }
+ return{kind:'FN16_SELECTED_EXPORT_ISOLATED_FAILURE',phase:contextual?error.failurePhase:currentPhase,...safeClassification(errorValue),frames,cleanupFailed:contextual,cleanup:contextual?safeClassification(error.cleanup):null,exitCode:1};
+}
 const exact=(v:unknown,keys:string[]):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 export type Fn16QaMode='WORKFLOW'|'BOOTSTRAP'|'SCHEMA_ONLY';
 interface Config{kind:'FN16_SELECTED_EXPORT_ISOLATED_RUN';sha:string;issuedAt:string;expiresAt:string;bootstrapPassword:string;appPassword:string;migratorPassword:string;sourceManifestHash:string}
@@ -55,18 +85,18 @@ function database(c:Config,role:'anvil_v3_bootstrap'|'anvil_v3_migrator'|'anvil_
  return executionPreparationQaDatabase(new Pool(options),before);
 }
 async function identity(pool:Pool,role:string,superuser:boolean){const r=(await pool.query("SELECT current_database() db,current_user role,current_setting('server_version_num')::int version,current_setting('is_superuser') super,(SELECT rolbypassrls FROM pg_roles WHERE rolname=current_user) bypass")).rows[0];if(r.db!==target.database||r.role!==role||r.version<150000||r.version>=160000||r.super!==(superuser?'on':'off')||!superuser&&r.bypass)return fail('FN16_QA_DB_IDENTITY_REFUSED');}
-async function closeAll(items:(()=>Promise<unknown>)[],expires:number){let timer:ReturnType<typeof setTimeout>|undefined;const ms=Math.min(10000,expires-Date.now());if(ms<=0)return fail('FN16_QA_CLEANUP_EXPIRED');try{const results=await Promise.race([Promise.allSettled(items.map(f=>Promise.resolve().then(f))),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('FN16_QA_CLEANUP_TIMEOUT')),ms);})]);if(results.some(r=>r.status==='rejected'))fail('FN16_QA_CLEANUP_FAILED');}finally{if(timer)clearTimeout(timer);}}
+async function closeAll(items:(()=>Promise<unknown>)[],expires:number){let timer:ReturnType<typeof setTimeout>|undefined;const ms=Math.min(10000,expires-Date.now());if(ms<=0)return fail('FN16_QA_CLEANUP_EXPIRED');try{const results=await Promise.race([Promise.allSettled(items.map(f=>Promise.resolve().then(f))),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Fn16QaFailure('FN16_QA_CLEANUP_TIMEOUT')),ms);})]);if(results.some(r=>r.status==='rejected'))fail('FN16_QA_CLEANUP_FAILED');}finally{if(timer)clearTimeout(timer);}}
 async function bootstrap(c:Config,before:()=>void,expires:number){
- const admin=database(c,'anvil_v3_bootstrap',before);let migrator:Pool|undefined;
- try{await identity(admin,'anvil_v3_bootstrap',true);const logger=(await admin.query("SELECT current_setting('log_statement') statement,current_setting('log_min_error_statement') errors")).rows[0];if(logger.statement!=='none'||logger.errors!=='fatal')fail('FN16_QA_SECRET_LOGGING_REFUSED');
-  const other=(await admin.query("SELECT datname FROM pg_database WHERE NOT datistemplate AND datname NOT IN('postgres',$1)",[target.database])).rows;if(other.length)fail('FN16_QA_INSTANCE_NOT_EMPTY');
+ currentPhase='BOOTSTRAP_IDENTITY';const admin=database(c,'anvil_v3_bootstrap',before);let migrator:Pool|undefined,primaryError:unknown,failed=false;
+ try{await identity(admin,'anvil_v3_bootstrap',true);currentPhase='BOOTSTRAP_LOGGING';const logger=(await admin.query("SELECT current_setting('log_statement') statement,current_setting('log_min_error_statement') errors")).rows[0];if(logger.statement!=='none'||logger.errors!=='fatal')fail('FN16_QA_SECRET_LOGGING_REFUSED');
+  currentPhase='BOOTSTRAP_EMPTY_CHECK';const other=(await admin.query("SELECT datname FROM pg_database WHERE NOT datistemplate AND datname NOT IN('postgres',$1)",[target.database])).rows;if(other.length)fail('FN16_QA_INSTANCE_NOT_EMPTY');
   const roles=(await admin.query("SELECT rolname FROM pg_roles WHERE rolname NOT LIKE 'pg_%' AND rolname<>'anvil_v3_bootstrap'")).rows;if(roles.length)fail('FN16_QA_ROLES_NOT_EMPTY');
   const objects=(await admin.query("SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname NOT IN('information_schema','public') UNION ALL SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows;if(objects.length)fail('FN16_QA_INSTANCE_NOT_EMPTY');
-  const built=await schema(before);before();
-  await admin.query(`BEGIN;CREATE ROLE anvil_v3_migrator LOGIN PASSWORD '${c.migratorPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;CREATE ROLE anvil_v3_app LOGIN PASSWORD '${c.appPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;REVOKE ALL ON DATABASE ${target.database} FROM PUBLIC;GRANT CONNECT ON DATABASE ${target.database} TO anvil_v3_migrator,anvil_v3_app;GRANT TEMPORARY ON DATABASE ${target.database} TO anvil_v3_app;REVOKE CREATE ON SCHEMA public FROM PUBLIC;CREATE SCHEMA anvil AUTHORIZATION anvil_v3_migrator;CREATE SCHEMA anvil_qa AUTHORIZATION anvil_v3_migrator;GRANT USAGE ON SCHEMA anvil,anvil_qa TO anvil_v3_app;ALTER DEFAULT PRIVILEGES FOR ROLE anvil_v3_migrator IN SCHEMA anvil,anvil_qa GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO anvil_v3_app;COMMIT;`);
-  migrator=database(c,'anvil_v3_migrator',before);await identity(migrator,'anvil_v3_migrator',false);await migrator.query(built.baseSql);before();await migrator.query("BEGIN;"+built.pendingSql+";INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+target.candidate+"','"+target.candidateHash+"');COMMIT;");
+  currentPhase='BOOTSTRAP_SCHEMA_BUILD';const built=await schema(before);before();
+  currentPhase='BOOTSTRAP_ROLE_CREATE';await admin.query(`BEGIN;CREATE ROLE anvil_v3_migrator LOGIN PASSWORD '${c.migratorPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;CREATE ROLE anvil_v3_app LOGIN PASSWORD '${c.appPassword}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;REVOKE ALL ON DATABASE ${target.database} FROM PUBLIC;GRANT CONNECT ON DATABASE ${target.database} TO anvil_v3_migrator,anvil_v3_app;GRANT TEMPORARY ON DATABASE ${target.database} TO anvil_v3_app;REVOKE CREATE ON SCHEMA public FROM PUBLIC;CREATE SCHEMA anvil AUTHORIZATION anvil_v3_migrator;CREATE SCHEMA anvil_qa AUTHORIZATION anvil_v3_migrator;GRANT USAGE ON SCHEMA anvil,anvil_qa TO anvil_v3_app;ALTER DEFAULT PRIVILEGES FOR ROLE anvil_v3_migrator IN SCHEMA anvil,anvil_qa GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO anvil_v3_app;COMMIT;`);
+  currentPhase='BOOTSTRAP_MIGRATOR_IDENTITY';migrator=database(c,'anvil_v3_migrator',before);await identity(migrator,'anvil_v3_migrator',false);currentPhase='BOOTSTRAP_BASELINE_APPLY';await migrator.query(built.baseSql);before();currentPhase='BOOTSTRAP_CANDIDATE_APPLY';await migrator.query("BEGIN;"+built.pendingSql+";INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+target.candidate+"','"+target.candidateHash+"');COMMIT;");
   return{kind:'FN16_ISOLATED_BOOTSTRAP_RESULT',sha:c.sha,migrationCount:52,baselineCount:51,candidate:target.candidate,actualExecuted:true,formalDbChanges:0,cleanupVerified:false};
- }finally{await closeAll([()=>admin.end(),()=>migrator?.end()??Promise.resolve()],expires);}
+ }catch(error){failed=true;primaryError=error;throw error;}finally{await finishFn16BootstrapCleanup({failed,primaryError,failurePhase:currentPhase},()=>closeAll([()=>admin.end(),()=>migrator?.end()??Promise.resolve()],expires));}
 }
 
 const requireOk=(v:unknown,code:string)=>{if(!v)fail(code);};

@@ -2,11 +2,11 @@
   "files": [
     {
       "path": "scripts/qa-fn16-selected-export-isolated.ts",
-      "sha256": "E17BB5C483A2FAEDAF000C5EB4137F47D19FCD805CB8568F54F81AA613EEFECE"
+      "sha256": "E3C7CDA4F8C2FBECFF5C1F1D909AF881FB56A7248CD57A9C87DC694E9890410E"
     },
     {
       "path": "tests/unit/FN16/isolated-export-workflow-input.test.ts",
-      "sha256": "F29ECC24671C581E0A3209257B42D325C1D7408FCFACF37DE8077554DEBAB4F5"
+      "sha256": "786F260CEEB4AAF66456F90832042DD100D305415648D8B52DCD5C21D98AF32E"
     },
     {
       "path": "tests/integration/FN16/project-artifact-export-pg.ts",
@@ -23,5 +23,13 @@
   "parent": "92cef0472f58b7a2c8656f70ac29c210316350f8",
   "kind": "FN16_ISOLATED_PG_PREPARATION_SOURCE",
   "workInstructionSha256": "250E355E33F70F8F9D3CEDA3BF0552207188113AB55A97825B55962CD7E31373",
-  "independentReview": "C0/I0/M0 source only"
+  "independentReview": "C0/I0/M0 source only",
+  "diagnosticRevision": {
+    "mainFinalScoped": 3,
+    "nextActualRun": "NOT_RUN",
+    "parent": "226e77016b84bd93d1eae4b43e3b6e760634d89e",
+    "mainInitialDiagnostic": 10,
+    "review": "C0/I0/M0",
+    "actualFirstRun": "SETUP_FAILED"
+  }
 }
