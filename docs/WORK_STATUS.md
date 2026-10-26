@@ -1,4 +1,14 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 CapabilityReport r2 한정 검수·정확 결정용 제출
+
+- 후보796E4A26 독립C0/I1/M0는JSONB불가U+0000을입력에서거절하도록문자규칙이빠졌다는지적이다. Main84f8f6 실제기존text/instant검사를확인하고모든자유문자열의동일제어문자422·원주장무변환·허용TAB/LF/CR·정확ISO밀리초Z를문서에만보완했다. 최종6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8·부모3AE불변·한정재검수원I1해소C0/I0/M0다.
+- 최종정확후보§10 source/화면·미적용SQL·fakeDB/합성만의채택판정을PMO에제출했고메시지전달성공을확인했다. 신규operation/GET·2표/guard/역할권한명세·숫자/UI가새delta임을명시했다. 기존A질문복제·침묵승인·채택전제품/SQL/정식계약개정0이다. 실제DB/rolegrant/정책·credential/실측/native/Agent/서비스·실PG는제외다.
+- 현재UI06소스는f12f8764 private exact로안전보존·codewriter0/등록QA0이며다음실제기능의필수생산계약을구체화했다. 제안작성/검수만을기능완성으로계산하지않고전체작업계획미완료를유지한다.
+### 2026-10-26 UI06 checkpoint 게시·CapabilityReport r2 결정용 보완
+
+- 6c965f 정확14경로 staging/diff0,d884d7 실제7working/index대조6raw동일/unit1 EOL차이만확인했다. 57aeb5 f12f8764447ab37b707cd32e810bf4ab2faf09a1 commit,d190be private exact·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변/staging0·잔여보호미추적8만을확인했다. 기존원문/Git속성/서버변경0이다.
+- PMO의구체화요청을반영해 별도 FN06_CAPABILITY_REPORT_HUMAN_STORAGE_CANDIDATE_R2.md SHA796E4A26896C992993E73CB968A4612680E158DB2A8997AC7F92C2F0A419CBD7를 DRAFT_NOT_ADOPTED로작성했다. 원제안3AE12355는해시불변·기존질문보존이다. HUMAN원주장과서버UNVERIFIED/CANDIDATE_ONLY분리·정확쓰기/고정GET/재인증replay·현재성·새2표/guard/기존역할권한source명세·신규제안한도·UI11·실PG/실DB/정책/Agent실행제외를구체화했다.
+- 57bacb/c08fe5/27c434/f0dd42 실제파일목록·후보/Artifact FK·기존app역할/anvil.assignment_draft_canonical/내장sha256·재인증코드/기존5분을대조했다. 새숫자·DTO·DDL이기존승인이라고표현하지않는다. capability_r2_contract_review 읽기검수중이며채택전제품/SQL파일·실행0,기존정본계약·계획범위변경0이다. 현재codewriter0·QA자원0이다.
 ### 2026-10-26 UI06 업로드 승인 재개 소스 한정 인수
 
 - 원담당round1 DocDCC953A5/24697bytes·spec75D4E6A9/21892bytes 고정·writer해제다. 직접인접38PASS/0skip·369.2079ms/type/메모리build/nodecheck/diff0이며 이전19846prefix33A090D2/원15539prefixF4937EF9·나머지5·CREATED_ORIGINAL 본문불변이다. 독립재검수원I1해소·C0/I0/M0,Main제품수정0이다.
