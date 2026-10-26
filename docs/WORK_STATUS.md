@@ -1,4 +1,9 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 PMO 자동 점검 모델 용량 오류·기존 계약 차단 유지
+
+- PMO cursor38은systemError/terminal이며turn01a17863-4a74-7e43-b3b4-b407d9b53fd7의원오류는 Selected model is at capacity. Please try a different model. 이다. 최근원turn읽기로해당입력이heartbeat자동점검이고새사람승인답변이아님을확인했다.
+- 이는Anvil제품/WSL·DB오류나R2채택결정이아니며기존CapabilityReport계약차단을해제/새로초기화하지않는다. live작업wait나기능진전으로표시하지않고모델/계정/config/자동화변경·PMO재시작/새질문0이다. 중요외부오류만신산님께간결히알렸다.
+- 현재추가변경은Main소유의이현황기록뿐이며제품/검증/SQL·DB·권한·Agent/자원변경0이다. 원계획미완료·이미충족한차단감사/기존R2질문/정확재개조건을유지하고goal blocked로보고한다.
 ### 2026-10-26 checkpoint 게시 ref 오기·실행 전 거절
 
 - Main이감사checkpoint595f74b0의push명령에서승인된codex/av3-stage-b대신과거codex/u01-dashboard-r2를잘못지정했다. auto-review가대상/범위권한없음으로CreateProcess이전에거절해실제push실행/원격변경0이다. 거절대상재시도/우회/새권한요청0이다.
@@ -8064,3 +8069,10 @@
 | UI06 문서·설계·계획 추적 | [2] | Main 어울. 문서/후보/제안·검토/확정·충돌·D/S·계획·고정 단계 선택/보존·조회 일부 연결. same-client 단계 actual6cdb21cb와 합성 화면 구별 | 소스/추적 잔여·변경 적용/UI07·실제 사용자 화면 DB 여정 |
 | FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. 정확 AF02/AF03 원문 위치 등록·조회 actual 확인, 선행 분석 일부 구현 | AF04 작업계획/업무/선행·trace edge·3상태축·영향/계획개정 |
 | FN08 Windows 실행·회수·중복방지 | [2] | P1 C3 START/SEND 선택·서명nonce/현재검사·전용permit/자료 연결 source·합성 후보, 현재 false 효과 유지 | original5 공용SQL guard 거절/pending·물리 provider/actual DB·OS/Agent 실행 미완료 |
+
+## 2026-10-27 대기 지시 오적용 정정·N4 잔여 시험 재개
+
+담당 Main 어울. 신산님은 이 작업에 대기 지시를 내리지 않았다고 직접 정정했다. PMO 대화의 혼잡 대기를 프로젝트 전체 정지로 확대한 Main 판단을 철회한다. 이전 paused/반복 대기 응답은 완료나 신규 승인 근거가 아니다. 현재 branch codex/av3-stage-b HEAD aa88fa114b9cf0fed05a3f00387ccd2569209819, Main 현황 dirty와 보호 untracked8은 보존한다. 계약 R2 NOT_ADOPTED와 실제 실행 제외는 별도 유지하되 전체 개발 중단으로 일반화하지 않는다.
+
+다음 승인 범위 업무는 N4 r2의 남은 M1 실제 CloseOriginal→Dispose/channel event 호출선 미래 시험 보완이다. 단일 subagent n4_close_path_test만 기존 허용 시험2 파일을 수정하고 Main은 소스 검수·통합을 맡는다. 제품 변경이 필요하면 근거를 먼저 대조한다. C# parser/compiler/Assembly/RunAll/native/OS/프로세스/DB/권한/Secret/서비스/Agent 실행은 하지 않는다. 실행하지 않은 미래 시험은 NOT_RUN이며 소스 보완을 실제 동작 PASS로 표시하지 않는다. 기존 완료 검증 재실행0, 현재 신규 임시 QA 자원0. 오류는 대기 대상 오적용 판단1건이며 동일 추정 반복을 중단하고 최신 직접 지시를 우선한다.
+- **2026-10-27 N4 직접 close 호출선 미래 시험 보완**: 단일 subagent의 transport 시험1 변경·제품native/PS/payload 불변. 기존receipt주입시험 보존+실제 CloseOriginal→Dispose/QaReportIo.Close→ReleaseTerminal 호출을 미래 시험에 연결했다. 최초 독립 C0/I1/M1의 이중해제/부분할당누수는 동일writer round1 소유권보정→scoped ADDRESSED/C0/I0/M0. 최종시험11FCFE343876648BE71C61694AE8BA7D2D13D4DF4F8EDDB4A3E14D8AA8EE9FD9, Main2bde52 diffcheck0. C# compiler/parser/RunAll/native/OS 실행0·NOT_RUN이며 실제 실패/예외·IOterminal·GW/STOP미검증은유지. 새QA0/보호8·main유지, 전체계획미완료. 상세 N4_R1_REPORT_TRANSPORT_REVIEW의2026-10-27추가이력. Main의 skill참조경로1오기는 rg실제목록으로수정·ACL변경0. 다음은 기존 미채택 CapabilityReport R2와 actual 실행 경계를 별도로 대조하며 이 source-only 보완을 기능 사용가능 진도로 올리지 않는다.

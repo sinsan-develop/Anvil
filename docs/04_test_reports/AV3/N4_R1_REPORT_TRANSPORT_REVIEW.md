@@ -50,3 +50,14 @@ I1실패raw비소유기록,I2 UNKNOWN메모리Snapshot9→private Capture뒤전�
 M1은tests/native/FN06/StandaloneReportTransportSourceTests.cs:134–149의미래close시험이다. CompleteCloseObservation에결과를직접주입하여실제CloseOriginal→Dispose→receipt/channel event호출선이빠져도잡지못한다. 예산시험은실제budget객체상태전이를다루지만STOP/fallback자체를호출하지않는다. 해당연결은소스대조범위이며실행증거가아니다.
 
 Main판정: 소스수정분의기존Important4는해소로인수하고M1은열린미래검증보완으로보존한다. 현재제품의추가C/I는없다. 현재계약의실행제외를그대로유지하며커널mock/구조개편을추가해사용자기능구현을지연시키지않는다. 미래직접호출선시험보완과실제native/OS 검증은아직미완료이며향후해당검수에반드시대조한다. 이판정은전체N4/FN06/FN08/Stage/계획완료가아니다.
+## 2026-10-27 직접 close 호출선 미래 시험 보완
+
+Main 어울 / 구현 n4_close_path_test / 독립 검수 n4_close_path_review. 기존 r2 범위에서 transport 시험1만 보완했다. 제품 native D3235B380633E005ABD475A5730B42C982AE64F4AB162F48538C6B77B4DD79F0, PS1EA9445DDC3309E67B201231D214968B70D82DA6EE6624BBAE59E1C2E951D2E6, payload2AED0B860A39F55604DE55BC435239AC8895B85341DFB148A0313878BB4C963E는 불변이다.
+
+기존 receipt 직접주입 시험을 보존하고 실제 budget.CloseOriginal→Dispose와 reflection QaReportIo.Close→ReleaseTerminal을 호출하는 미래 시험3개를 추가했다. 정상 소유 event close, owns=false view의 close 미시도 거절/latch·후속 pipe close0, 성공 후 event 참조 제거·메모리0·event→pipe 순서를 검사한다. reflection의 pending/private field 배치는 합성 상태이며 실제 OVERLAPPED terminal 관측이 아니다. stale raw handle을 재닫는 방식은 재사용 위험 때문에 채택하지 않았다.
+
+최초 후보 B72EB7C5E6AF5909521D515BDCB0198BE4AB1F0E9A1C343EBBA09E5793A7888D의 독립 spec C0/I0/M0·quality C0/I1/M1: 제품 회귀로 먼저 free+zero한 pointer를 finally에서 이중 해제할 위험(I1), 부분 할당 후 local 포인터를 field0으로 덮어 누수할 위험(M1)을 발견했다. 동일 writer round1에서 allocation별 local→io 소유권을 구분해 보정했다. 최초 중간 메시지의 Important2 표현은 잠정 분류이며 최종 정식 판정은 I1/M1이다. ReleaseTestAllocation은 미양도 local 또는 양도 후 현재 field만 회수한다. 기존 assertions/시험을 삭제·완화하지 않았다.
+
+최종 transport SHA256 11FCFE343876648BE71C61694AE8BA7D2D13D4DF4F8EDDB4A3E14D8AA8EE9FD9. 독립 scoped 재검수 I1/M1 ADDRESSED·fix C0/I0/M0, Main2bde52와 검수자의 diffcheck exit0다. 기존 Git LF→CRLF 경고는 보존하며 checkout 원문과 Git blob byte동일을 추정하지 않는다.
+
+판정은 직접 호출선 시험 소스 보완이며 실행 NOT_RUN이다. compiler/parser/Assembly/RunAll/native/OS/실제 process·event·pipe·DB/서비스/Agent 실행0, 신규 QA 자원0이다. 실제 CloseHandle=false/내부 예외·pending I/O terminal·G/W·STOP/fallback 직접 검증은 여전히 미검증이다. 전체 N4/FN06/FN08/Stage/작업계획 완료가 아니다. 되돌리기는 이 소유 checkpoint의 일반 revert이며 제품/DB/권한 변경0이다.
