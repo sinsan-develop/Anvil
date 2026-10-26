@@ -1,3 +1,4 @@
+import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from './repository.ts';
@@ -17,7 +18,7 @@ import { readSourceScopesV1, type SourceScopeV1 } from '../../../../contracts/ru
 import { cloneV1, refV1, uuidV1, isoV1 } from '../../../../contracts/runtime/validation-v1.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework'] as const;
+export const documentOperations = ['uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework','markNotificationRead'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 export const runtimeOperations = ['authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery'] as const;
 export interface ExecutionRule extends Omit<MaterialRule, 'targetScopes' | 'limitPolicyRef'> {
@@ -82,6 +83,7 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   if (['defineProjectRole','bindResponsibleSession','prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if ((baselineOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);
   if ((contextPreparationOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('CONTEXT_APPROVAL_NOT_CONNECTED', 412);
+  if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}
     else if(request.approvalRef!==null)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
@@ -121,15 +123,32 @@ export class ProjectPolicyRepository {
     return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
   }
   async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef) => Promise<unknown>) {
+    let notificationDeadline=Infinity,notificationPolicyDeadline=Infinity;
     try {
-      return await this.#access.authenticated(token, csrf, async (db, actor) => {
+      const result=await this.#access.authenticated(token, csrf, async (db, actor) => {
         await currentProjectController(db, actor, request);
         if (request.operation !== 'savePermissionPolicy') {
           const policy = await authorizeMaterial(db, actor, request);
-          const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
+          const previous = await projectReplay(db, actor, request);
+          const checkNotificationDeadline=async()=>{
+            if(request.operation!=='markNotificationRead')return;
+            const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
+            notificationDeadline=Math.min(notificationDeadline,notificationSessionDeadline(actor,at,before));
+            // 최종 DB 시각에도 같은 주체/operation/project의 현재 규칙만 대조한다.
+            // 복수 AUTO 중 하나의 만료가 다른 유효 AUTO까지 회수하지 않는다.
+            const matched=policy.rules.filter(rule=>rule.subjectRef.kind==='HUMAN'&&rule.subjectRef.userId===actor.actorId&&rule.targetScopes.some(scope=>scope.kind==='PROJECT'&&scope.projectId===request.projectId)&&rule.operations.includes(request.operation)&&Date.parse(rule.expiresAt)>at.getTime());
+            if(!matched.length||matched.some(rule=>rule.disposition==='DENY'))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+            if(matched.some(rule=>rule.disposition==='REQUIRE_APPROVAL'))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
+            const validUntil=Math.max(...matched.map(rule=>Date.parse(rule.expiresAt)));
+            notificationPolicyDeadline=Math.min(notificationPolicyDeadline,before+validUntil-at.getTime());
+            if(!Number.isFinite(notificationPolicyDeadline)||performance.now()>=notificationPolicyDeadline)throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+          };
+          await checkNotificationDeadline();
+          if (previous !== undefined) return previous;
           if (request.baselineRefs.length) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
-          return material(db, actor, policy.ref);
+          const applied=await material(db, actor, policy.ref);
+          await checkNotificationDeadline();return applied;
         }
         if (!actor.reauthUntil || actor.reauthUntil.getTime() <= Date.now()) throw new AuthFailure('REAUTHENTICATION_REQUIRED', 412);
         const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;
@@ -157,6 +176,9 @@ export class ProjectPolicyRepository {
         await db.query('INSERT INTO anvil.permission_policy_versions(project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)', [request.projectId, id, version, JSON.stringify(rules), ref.contentHash, p.reason, '[]', actor.actorId, actor.clientId, receipt.id]);
         return receipt.result;
       });
+      // COMMIT 뒤 기한 초과는 이미 반영됐을 수 있다. 새 명령 대신 재인증 후 원 commandId로 조정한다.
+      if(request.operation==='markNotificationRead'&&(performance.now()>=notificationDeadline||performance.now()>=notificationPolicyDeadline))throw new AuthFailure('NOTIFICATION_READ_RESULT_UNCERTAIN',503);
+      return result;
     } catch (error) {
       // 보이는 프로젝트의 거절만 별도 transaction에 남긴다. 도메인 rollback과 분리한다.
       await recordProjectDenial(this.#access, token, request.projectId, error);
