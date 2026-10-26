@@ -1,4 +1,12 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN01 정확 직접 승인 수신·N4 보존 중지
+
+- 신산님이 request_user_input_async call_3619cd1844684a80876b59ff3cbcaecb의 FN01 원문 첨부 계약 r3 질문에 '위 범위 구현 승인'으로 직접 답했다. 정확 대상은 r3 SHA256 F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0의 UI02 업로드→초안 저장→생성 귀속→보호 조회 코드·화면·미적용 SQL·합성 검증이다. 실제 DB 적용·사용자 권한·Secret·서비스·Agent 실행은 제외한다. 실패한 PMO 메시지 전송을 재해석한 것이 아니라 새 직접 답변으로 해당 source 착수 경계를 해소했다. 기존 r3 원문 hash는 보존하고 이 기록을 승인 binding으로 둔다.
+- Main은 계획 순서와 사용자 기능 우선에 따라 N4 단위의 새 쓰기를 중지시켰다. 담당 n4_report_transport_implementation은 진행중 mutation0·쓰기 소유권 해제를 보고했다. decoder 마지막 apply_patch는 dispatch 전 취소로 미반영이다. 실제 변경은 native 새 protocol/state/budget 순수 helper41행과 새 미래 C# 시험 source2파일뿐이며 원 호출선은 미연결이다. 전체 source 업무/실제 기능 완료나 native TDD PASS가 아니다.
+- Main b8125e 실제 읽기에서 native6D33BBB33489D729EA65A075F9F465B4A99127C9BB63B47E1766AA9EC0B8388F·새시험81BAD5357B062F26976A404919E7B8639326F4814624F90066A455897AD1F562, PS B1B72F61/기존시험87D1FB4E/FN01후보F4E734B3 불변을 대조했다. git diff --check0·LF→CRLF 경고 보존/설정변경0이다. 담당 sandbox diff context 실패를 PASS로 바꾸지 않으며 Main 실제 검사와 구분한다. 기존 4false·고정거절/PS최초throw·R0·QAmax2 유지, compiler/parser/RunAll/native/환경/DB/Agent0이다.
+- N4는 작업단위 PAUSED로 Main이 소유·보존한다. 미완료는 shared decoder·원 launcher/client/collector·실제 budget 소비·PS facade/loader·미래시험 보완/독립 검수다. 재개 시 r2 E09C9923와 현재 source2 hash를 대조해 이미 작성한 부분을 이어간다. 보호8/부분파일을 삭제/reset하지 않고 정확 소유 변경만 WIP checkpoint로 보존하며 인수 전까지 새 writer는 같은 파일을 쓰지 않는다. goal 전체를 paused로 바꾸지 않는다.
+- 다음은 승인된 FN01 단일 writer에게 기존 schema/명령/파일 저장·UI 소비를 실제 source로 매핑하고 TDD·source 구현·합성 검수를 맡기는 것이다. Main은 관리·검수·통합, 실제 DB·정식 보관소/권한·서비스 반영은 실행하지 않는다. 다른 기존 특정 거절/미채택을 이번 승인으로 해제하지 않는다.
+
 ### 2026-10-26 N4 원 C 보고 전송·수집 소스 업무 고정
 
 - Main은 기존 승인② 안에서 N4_R1_REPORT_TRANSPORT_IMPLEMENTATION.md를 작성하고 설계/구현 담당의 독립 읽기와 preflight를 대조했다. 초기 r1 7BC2CB1C는 scoped C0/I2/M0였다. I1 ACK 전 EOF는 payload Reader.End() 소진으로 고정하고 pipe EOF는 실패/정상 exit 단계와 분리했다. I2는 원 pinRun budget을 fixture/probe/C I/O·cleanup poll의 실제 메서드까지 전달해 기존값과 min 결합하도록 고정했다. 동기 kernel/worker의 물리완료 상한 보장0·만료/불명 소유 보존이다.

@@ -1,5 +1,8 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN01 원문 첨부·귀속 정확 직접 승인**: r3 F4E734B3의 코드·화면·미적용 SQL·합성 검증을 직접 승인받아 계획 순서로 우선한다. 실제 DB·권한·Secret·서비스·Agent 실행은 제외한다. 진행중 N4는 원 호출선 미연결/미검수 부분 source2를 보존·writer 해제한 작업단위 PAUSED이며 완료가 아니다. FN01 단일 writer의 구현·검수·통합을 이어간다.
+
+
 - **2026-10-26 N4 R1 원 C 보고 전송·수집 source 착수**: 새 직접승인② 안에서 원 launcher/observer·READY/peer·Snapshot9 전송/strict 수집/ACK·원 exit/회수 호출선을 한 업무로 고정했다. r2 spec E09C9923 독립 C0/I0/M0·구현 preflight 완료이며 단일 subagent가 native/PS source와 미래 C# 시험을 작성한다. 4false/QAmax2·외부 exact trust 미연결·실 compiler/OS/Agent NOT_RUN 유지, 실제 기능/전체 계획 완료가 아니다.
 
 

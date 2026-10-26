@@ -688,6 +688,47 @@ internal static class DevelopmentRecoveryPathGuard {
   internal void AssertSource(string commit){Require(commit==sourceCommit&&workerDigest.Length==32);}
   internal string WorkerDigestHex(){return BitConverter.ToString(workerDigest).Replace("-","").ToLowerInvariant();}
  }
+ // 보고 전용 순수 wire 검사. 기존 G/W 형식 helper와 역할/step은 변경하지 않는다.
+ internal static class QaReportProtocol {
+  internal static void Slot(ulong value){Require(IntPtr.Size==8&&value>0&&value<=Int64.MaxValue);}
+  internal static void FileTimeValue(long value){Require(value>0);try{DateTime.FromFileTimeUtc(value);}catch(ArgumentOutOfRangeException){throw Denied();}}
+  internal static byte[] Hash(byte[] value){Require(value!=null);using(var hash=SHA256.Create())return hash.ComputeHash(value);}
+  internal static byte[] Binding(string run,string commit,DateTime issued,DateTime until,string report,ulong slot,long fileTime){
+   Require(System.Text.RegularExpressions.Regex.IsMatch(run??"",@"\Ar1-[a-z0-9][a-z0-9-]{0,47}\z")&&System.Text.RegularExpressions.Regex.IsMatch(commit??"",@"\A[a-f0-9]{40}\z")&&System.Text.RegularExpressions.Regex.IsMatch(report??"",@"\A[a-f0-9]{32}\z"));
+   Require(issued.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&issued.Ticks>0&&until>issued&&(until-issued).TotalMinutes<=30);Slot(slot);FileTimeValue(fileTime);
+   var invariant=System.Globalization.CultureInfo.InvariantCulture;
+   return Hash(Encoding.ASCII.GetBytes("ANVIL.QA.C_REPORT.CHANNEL.V1|"+run+"|"+commit+"|"+issued.ToString("o",invariant)+"|"+until.ToString("o",invariant)+"|"+report+"|"+slot.ToString("x16",invariant)+"|"+fileTime.ToString(invariant)));
+  }
+  internal static void ValidateReady(byte[] ready,ulong parentSlot,long fileTime,DateTime issued,DateTime until){
+   Require(ready!=null&&ready.Length==48&&BitConverter.IsLittleEndian);Slot(parentSlot);FileTimeValue(fileTime);
+   Slot(BitConverter.ToUInt64(ready,0));Require(BitConverter.ToUInt32(ready,8)>0&&BitConverter.ToInt64(ready,12)==fileTime&&BitConverter.ToUInt64(ready,20)==parentSlot);
+   long start=BitConverter.ToInt64(ready,28),end=BitConverter.ToInt64(ready,36);uint left=BitConverter.ToUInt32(ready,44);
+   Require(issued.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&start>=issued.Ticks&&start<until.Ticks&&start<=DateTime.MaxValue.Ticks-600000000L&&end==Math.Min(until.Ticks,start+600000000L)&&left>0&&left<=60000&&left<=(end-start)/10000);
+  }
+  internal static long Remaining(DateTime started,DateTime deadline,DateTime lastWall,DateTime wall,long lastElapsed,long elapsed,long ceiling){
+   Require(started.Kind==DateTimeKind.Utc&&deadline.Kind==DateTimeKind.Utc&&lastWall.Kind==DateTimeKind.Utc&&wall.Kind==DateTimeKind.Utc&&deadline>started&&(deadline-started).TotalMilliseconds<=60000&&wall>=started&&wall>=lastWall&&elapsed>=0&&lastElapsed>=0&&elapsed>=lastElapsed&&ceiling>0&&ceiling<=60000);
+   long left=Math.Min(ceiling,Math.Min(60000-elapsed,(deadline.Ticks-wall.Ticks)/10000));Require(left>0);return left;
+  }
+  internal static byte[] End(byte[] payload,int count){
+   Require(payload!=null&&payload.Length>0&&payload.Length<=16384&&count==(payload.Length+4047)/4048&&count>=1&&count<=5);
+   byte[] end=new byte[40];Buffer.BlockCopy(BitConverter.GetBytes((uint)payload.Length),0,end,0,4);Buffer.BlockCopy(BitConverter.GetBytes((uint)count),0,end,4,4);Buffer.BlockCopy(Hash(payload),0,end,8,32);return end;
+  }
+ }
+ internal sealed class QaReportCollectorState {
+  readonly byte[] binding,ready;readonly List<byte> bytes=new List<byte>();int step,chunks,lastSize;bool ended,failed;
+  internal QaReportCollectorState(byte[] correlation,byte[] bootstrap){Require(correlation!=null&&correlation.Length==32&&bootstrap!=null&&bootstrap.Length==48);binding=(byte[])correlation.Clone();ready=(byte[])bootstrap.Clone();}
+  internal void Hello(byte[] frame){try{Require(!failed&&step==0&&QaFixedPayload(frame,4,1,1,binding).Length==0);step=1;}catch{failed=true;throw;}}
+  internal void Bootstrap(byte[] frame){try{Require(!failed&&step==1&&QaEqualBytes(QaFixedPayload(frame,4,6,2,binding),QaReportProtocol.Hash(ready)));step=2;}catch{failed=true;throw;}}
+  internal void Data(byte[] frame){try{Require(!failed&&!ended&&step==2&&chunks<5&&(chunks==0||lastSize==4048));byte[] data=QaFixedPayload(frame,4,3,(uint)(chunks+3),binding);Require(data.Length>0&&data.Length<=4048&&bytes.Count<=16384-data.Length);bytes.AddRange(data);lastSize=data.Length;chunks++;}catch{failed=true;throw;}}
+  internal byte[] End(byte[] frame){try{Require(!failed&&!ended&&step==2&&chunks>0);byte[] data=bytes.ToArray(),end=QaFixedPayload(frame,4,4,(uint)(chunks+3),binding);Require(QaEqualBytes(end,QaReportProtocol.End(data,chunks)));ended=true;return data;}catch{failed=true;throw;}}
+ }
+ sealed class QaStandaloneBudget {
+  readonly Stopwatch clock=Stopwatch.StartNew();readonly int ownerThread=Environment.CurrentManagedThreadId;DateTime started,deadline,lastWall;long lastElapsed,totalLimit=60000,lastRemaining=60000;bool adopted;
+  internal QaStandaloneBudget(DateTime issued,DateTime until,bool parent){DateTime now=DateTime.UtcNow;Require(issued.Kind==DateTimeKind.Utc&&until.Kind==DateTimeKind.Utc&&now>=issued&&now<until&&now.Ticks<=DateTime.MaxValue.Ticks-600000000L);started=now;deadline=new DateTime(Math.Min(until.Ticks,now.Ticks+600000000L),DateTimeKind.Utc);lastWall=now;adopted=parent;}
+  internal DateTime Started{get{return started;}}internal DateTime Deadline{get{return deadline;}}
+  internal long Remaining(){Require(Environment.CurrentManagedThreadId==ownerThread);DateTime now=DateTime.UtcNow;long elapsed=clock.ElapsedMilliseconds;long left=QaReportProtocol.Remaining(started,deadline,lastWall,now,lastElapsed,elapsed,Math.Min(lastRemaining,totalLimit-elapsed));lastWall=now;lastElapsed=elapsed;lastRemaining=left;return left;}
+  internal void Adopt(byte[] ready){Require(!adopted);long before=Remaining(),elapsed=clock.ElapsedMilliseconds;DateTime now=DateTime.UtcNow;DateTime parentStart=new DateTime(BitConverter.ToInt64(ready,28),DateTimeKind.Utc),parentEnd=new DateTime(BitConverter.ToInt64(ready,36),DateTimeKind.Utc);Require(parentStart<=started&&now>=lastWall&&parentEnd>now);long available=Math.Min(before,Math.Min((long)BitConverter.ToUInt32(ready,44)-elapsed,(parentEnd.Ticks-now.Ticks)/10000));Require(available>0);totalLimit=elapsed+available;deadline=parentEnd;started=parentStart;lastWall=now;lastElapsed=elapsed;lastRemaining=available;adopted=true;Remaining();}
+ }
  // 기존 private 보고 bytes의 순수 정보 대조다. peer/origin/OS 소유/ACK/완료 권위를 발급하지 않는다.
  // 원 Capture의 retainedRows와만 self-check하며 payload/decoded row를 반환하거나 내보내지 않는다.
  internal static class QaStandaloneReportPayload {
