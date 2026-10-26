@@ -1,7 +1,8 @@
 export type Screen = 'projects' | 'create' | 'methodologies' | 'workspace' | 'session' | 'documents' | 'changes' | 'approvals' | 'transfers' | 'knowledge' | 'connections' | 'control' | 'mobile' | 'settings' | 'not-found';
 export interface PlanTaskSelection{planRef:{id:string;version:number;contentHash:string};taskCode:string}
 export interface DocumentVersionSelection{id:string;version:number;contentHash:string}
-export interface Route { screen: Screen; projectId: string | null; assignmentRef?:{id:string;version:number;contentHash:string};approvalRequestId?:string;planTask?:PlanTaskSelection;documentRef?:DocumentVersionSelection;mobileScreen?:'approvals' }
+export interface CreatedOriginalSelection{draftId:string;artifactId:string}
+export interface Route { screen: Screen; projectId: string | null; assignmentRef?:{id:string;version:number;contentHash:string};approvalRequestId?:string;planTask?:PlanTaskSelection;documentRef?:DocumentVersionSelection;createdOriginal?:CreatedOriginalSelection;mobileScreen?:'approvals' }
 export const screenTitles: Record<Screen, string> = {
   projects: '프로젝트', create: '프로젝트 만들기', methodologies: '방법론', workspace: '프로젝트 작업', session: '단계책임자·실행',
   documents: '문서·설계 추적', changes: '설계 변경', approvals: '승인·중요 문제', transfers: '도구 이전', knowledge: '헌법·지식',
@@ -12,6 +13,8 @@ export function parseRoute(hash: string): Route {
   if (path === '/projects') return { screen: 'projects', projectId: null };
   if (path === '/projects/new') return { screen: 'create', projectId: null };
   if (path === '/methodologies' || path === '/settings') return { screen: path.slice(1) as Screen, projectId: null };
+  const original=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/documents\/from-draft\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/artifacts\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/.exec(path);
+  if(original)return{screen:'documents',projectId:original[1]!,createdOriginal:{draftId:original[2]!,artifactId:original[3]!}};
   const transfer=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/transfers\/assignments\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/versions\/([1-9][0-9]{0,15})\/([0-9a-f]{64})$/.exec(path);
   if(transfer&&Number.isSafeInteger(Number(transfer[3])))return{screen:'transfers',projectId:transfer[1]!,assignmentRef:{id:transfer[2]!,version:Number(transfer[3]),contentHash:transfer[4]!}};
   const mobile=/^\/projects\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/mobile\/approvals$/.exec(path);
@@ -60,6 +63,12 @@ export function routeHref(screen: Screen, projectId: string | null): string {
   if (screen === 'projects') return '#/projects';
   if (screen === 'create') return '#/projects/new';
   return projectId ? `#/projects/${encodeURIComponent(projectId)}/${screen}` : `#/${screen}`;
+}
+/** 생성 귀속 원문 조회 hint. URL 자체는 원문·후보 생성 권한이 아니다. */
+export function createdOriginalImportHref(projectId:string,hint:CreatedOriginalSelection):string{
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+ if(!uuid.test(projectId)||!hint||Object.keys(hint).sort().join(',')!=='artifactId,draftId'||!uuid.test(hint.draftId)||!uuid.test(hint.artifactId))throw Error('CLIENT_PATH_INVALID');
+ return '#/projects/'+projectId+'/documents/from-draft/'+hint.draftId+'/artifacts/'+hint.artifactId;
 }
 /** 고정 문서의 조회 진입점. URL만으로 편집·저장·권한을 만들지 않는다. */
 export function documentVersionHref(projectId:string,ref:DocumentVersionSelection):string{

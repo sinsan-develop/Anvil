@@ -1,4 +1,57 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI 검증·정리 완료와 전역 설정 오류 인수 보존
+
+- Mainfb80e9 직접38PASS/0skip(565.7399ms),3d00a0타입exit0,aebe7f해당추적UI diffcheck0. baef21에서등록root/temp를08:32:22.1768691Z/만료09:02:22.1768691Z·owner SINSAN\cyhuh/nonlink/빈파일0으로생성했다. e7da75 실제Edge+제품컴포넌트/nativefetch+합성API DOM1PASS/0skip(4995.7739ms),첫DOM후보이며RED로소급하지않는다.
+- d8b613 소유/link/관련process0 inventory216파일·72폴더/15665175bytes후정확개별정리08:50:41.6512034Z. 4d2f61sandbox CIM거부는process UNKNOWN이며0증거가아니다. e75460별도정확elevated조회08:51:39.5538157Z에root부재/관련process0·CIM성공을확인했다. 상세QA_RESOURCE.json/result.md에범위구분을보존했다. 실제DB/원문파일저장·서비스/계정/Secret/Agent변경0이다.
+- 약08:48UTC N4보완담당과UI독립검수담당이모두 config.toml:291:15 invalid configuration으로terminal종료했다. Main1e3ed0읽기에서해당행key command/길이44·수정시각08:48:14.1411050Z만확인,전역설정수정0/원인주체미확정이다. N4보완적용0은f64663의4hash불변으로확인했다. 현재codewriter0·독립UI검수미완료/N4 I4미해소이며제품FAIL/PASS로대신분류하지않는다. PMO에정확환경지원요청전달완료,같은config로반복재시도하지않는다.
+- f9dd5a는이번UI13/N44/Main기록7 정확24경로stage/엄격cached diffcheck0,privateStageB d938c00e/main f976ed5e불변을확인했다. 137beb는17소유source중UI Panel1/N4native1만기존CRLF→LF로게시blob이다름을증명했다. 코드/설정변경0이며working SHA와Gitblob을분리기록,checkout runtimeNOT_RUN이다. 이는미완료원문을보존할WIP checkpoint준비이지검수합격/병합승인이아니다.
+### 2026-10-26 귀속 원문 UI 후보 고정·N4 보완 1회차 전환
+
+- UI담당이 제품9/시험4 소스고정·writer해제를 제출했다. 담당38PASS/타입0/메모리제품build437modules0, DOM/실파일/실DB·서비스·Agent0이다. 담당git diff검사는실행문맥오류로미확인이라고제출했고Main이별도확인한다. Main441665에서13현재working hash/bytes를수집했다. 주요import12C46317/API22AC9C56/helperFAAC769D/DOMspecEF3FDBC0/harnessB77607A5다. 인수/served완료는아니다.
+- Main은UI독립리뷰·직접unit/타입·사전등록합성DOM을진행하며고정13파일을수정하지않는다. N4최초review후4finding최소보완을원담당n4_transport_resume에게1회차로전환한다. 현재UIwriter해제확인으로동시writer0에서N4한명으로전환하며UI재수정은N4해제후에만지시한다.
+- N4보완은r2계약그대로·허용4파일한정이다. I1raw반환정보보존/I2예산실패시native효과0·메모리SnapshotCapture보존/I3예산실패영구고정/I4close불명뒤후속회수0·원참조보존을최소수정하고관련미래반례source를보강한다. 명시제외인C#parser/compiler/RunAll/OS는실행하지않는다. 소스검수/PS구문을실동작PASS로대신하지않는다.
+### 2026-10-26 귀속 원문 UI 직접 인접 검증 담당 결과
+
+- 담당은 잘못된 양식/다른 preparation 잠금에서 보호GET가 시작되는 추가 반례 RED1을 확인하고 보완했다. 후속 신규포함 직접인접38PASS/0skip·exit0(624.2558ms), 실제제품 진입의 Vite 메모리 build437modules/exit0(641ms)을 제출했다. 앞선13에38을 더해중복합산하지 않는다. Main 독립실행/DOM검수전이며 아직freeze가아니다.
+- 같은ID다른buffer의늦은응답은 불변state observation·작업별WeakSet으로차단했다는담당보고이며원pending/명령보존·metadata비노출은실제DOM미실행이다. 최종guard이후타입확인/hash·자체diff검수를마친뒤제출예정이다. source9/test4 범위·새계약/자원생성0,현재QA등록root는부재다.
+- UI고정·writer해제후 Main은독립검수/합성DOM을맡고,codewriter는원N4담당에게I1~I4 최소보완으로순차전환한다. 동시에두writer를두지않으며이미통과한무관시험은반복하지않는다.
+### 2026-10-26 UI02 귀속 원문 DOM 검증 자원 사전 등록
+
+- 생성 전 literal root: D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01. owner는 현재 Windows 사용자 SINSAN\cyhuh이며 source 고정 뒤 부재·부모/전체조상 realpath·link/소유를 다시 확인한다. 최초 빈 root/temp만 만들고 시험은 root/browser의 전용 Edge 프로필을 추가한다. 기존 사용자 브라우저·서비스·인증서/Secret·DB/컨테이너/리스너는 변경하지 않는다.
+- 환경: ANVIL_UI02_CREATED_ORIGINAL_QA=1, ANVIL_UI02_CREATED_ORIGINAL_QA_ROOT=위 root, 해당 명령의 TEMP/TMP=root/temp. Vite write:false, 합성 원문/후보/API는 메모리다. 제품 App의 실제 UI02링크→DocumentsPage/Editor→기본 ApiClient nativefetch를 사용하지만 응답은 합성이며 실제DB/원문파일저장 증거가 아니다.
+- 수명: 최초 생성부터30분, 시험90초1건·예상15초, 정리5분여유. source/spec/harness hash 고정 뒤 Main이 실행하며 생성 전이므로 시작/만료시각은 아직 없다. DOM 첫후보 실행은 unit RED를 DOM RED로 소급하지 않는다.
+- 성공/실패 모두 시험소유 context 종료→관련 node/전용msedge 프로세스0 확인→정확 root의 소유/link·파일/디렉터리 inventory 확인→등록 전용 파일과 빈디렉터리만 정리→별도 명령으로 root부재/관련프로세스0을 확인한다. 불명소유·link·활성process면 삭제하지 않고 기록한다. 사용자브라우저 강제종료/광범위삭제·ACL변경0이다. 실제파일QA가 아니다.
+### 2026-10-26 귀속 원문 가져오기 unit RED→GREEN 담당 보고
+
+- 단일 UI담당은 신규unit4+route1 기능부재 RED5/기존8PASS(254.6931ms) 뒤 같은13PASS/0skip·exit0(263.4465ms)을 제출했다. Main의 독립실행/검수 전 담당 결과이며 전체기능 PASS가 아니다.
+- 화면 연결 작성 뒤 첫 타입 검사에서 기존 integration의 UPLOAD 반환추론과 새 내부 union 충돌 TS2322가2곳 발생했다. 기존시험/기대변경없이 continueDocumentImport 제네릭 반환·체크포인트로 기존subtype계약을 보존해 후속타입 exit0을 제출했다. 같은오류반복3회/정식 FAILURE_REPORT는 아니다.
+- 담당 source 편집 셸 권한거절1묶음은 저장0이었고 표준 apply_patch로 허용경로만 편집했다. 현재freeze전이며 직접인접회귀/제품build/DOM준비가 남았다. 실제browser/fileQA·새자원/DB/서비스/Agent생성0, N4동결4/보호8보존·Main제품수정0이다.
+### 2026-10-26 N4 독립 검수 종료·귀속 원문 UI 구현 진행
+
+- 전체 호출선 검수 C0/I2/M0·예산/소유 한정 검수 C0/I2/M0로 종료했다. 통합 Important4는 실패 CreateProcess raw 보존, 예산 실패시 Snapshot9/Capture 보존, UTC 모순 이후 예산 실패 고정, close false/예외 이후 후속 회수 중단·원 참조 보존이다. 상세 N4_R1_REPORT_TRANSPORT_REVIEW.md에 정확 후보4hash·위치/조건·최소보완/미래반례·검수범위를 기록했다. 실제C#·native·OS실행0이며 원후보를 합격으로 게시하지 않는다.
+- Main317241/3a2770의 변경경로 관측에서 N4허용4와 UI허용경로·Main문서만 변경중이고 보호untracked8은 그대로다. N4는동결·재쓰기GO0, UI담당1명만구현중이다. 실제QA자원 생성0이며 후속DOM등록은spec/harness고정후수행한다.
+- 최초검수문서 초안에잘못섞인외국어문구는Mainf9d8e2에서한국어로바로잡아양문서에같이저장했다. 제품/검수지적·검사기준변경0이다. UI업무후 같은N4담당에게4보완을순차전달하고각검수판정을보존한다.
+### 2026-10-26 N4 독립 정적 검수 중 확인된 보존 경계
+
+- 독립 전체 검수는 Main의 I1 생성실패 raw소실을 재확인했다. 추가 I후보는 CleanupOriginalOwner 첫상위예산검사 만료/역행시 throw→Execute finally/host.Cleanup 모두 throw→report null→Capture 미호출로 실제효과는멈추지만원 Snapshot9/보고자료보존도끊기는경로다. Mainbd292b에서실호출선을읽어대조했다. 아직전체리뷰종료전이며인수/PASS가아니다.
+- 별도예산/소유리뷰는 close실패bool 누적후다음자원close 및 Remaining실패상태의비영속성을추적중이다. 리뷰어git동일문맥오류3회후같은방식재시도를중단했고Main은정확elevated읽기만안내했다. ACL/config/실행권한변경0이다.
+- N4 source4는8BAF/1EA9/4C37/11AA고정·수정0,후속UI담당만codewriter다. 검수finding은유실없이기록하고UI담당자연단위종료후같은N4담당에게순차보완시킨다. 일부source검수보완때문에독립승인UI구현을멈추지않는다. native/OS실행·실DB/서비스/Agent0이다.
+### 2026-10-26 N4 source 고정 검수·UI02 귀속 원문 가져오기 착수
+
+- N4 담당이 허용4파일 source 후보/쓰기해제를 제출했고 Main1b8c1c에서 정확4hash·strict diffcheck0·실행없는 PS AST errors0을 독립 확인했다. native8BAFA840/host1EA9445D/transport4C376725/payload11AA0104다. C# parser/compile/RunAll/native·OS실행0은 그대로다. Main발견 CreateProcessW 실패시nonzero raw출력보존누락은 담당동의/미수정이며 독립 전체wire 및 예산/소유 한정 검수2개가 진행중이다. 후보를PASS로게시하지 않았다.
+- 현재 code writer0에서 다음 단일 ui02_existing_original_import 담당으로 전환한다. N4는검수전용/코드동결이며 Main은제품수정0이다. 기존승인 StageB UI02/FN03와r3의 생성후명시가져오기 소비를 작업카드 UI02_CREATED_ORIGINAL_IMPORT_IMPLEMENTATION.md SHA DBADEC7D26F25BF4940BD152E8915EDC8F6821EBBB1736996AD221F2736F1181로 고정했다. 새API/SQL/권한 없이현재보호조회→기존importDocument후보→별도명시채택을잇는다.
+- 구현전 preflight에서 가짜upload receipt 금지·기존File/PNG frozen명령불변·조회hint권위아님·metadata현재성/ABA보호·전체reload의미확인명령영속복구미지원 한계를 고정했다. 담당이 unit RED→GREEN/직접인접·타입/build를 수행하고 실제DOM/파일자원은Main사전등록후실행한다. 현재새QA생성0·실DB/서비스/Agent변경0이다. 새기능/전체계획완료는아니다.
+### 2026-10-26 N4 연결 구현 중·후속 UI 기능 조사
+
+- 단일담당 중간보고: 원 run→fixture owner/lease→probe·C I/O/STOP/close의 상위 예산 전달과 원launcher/client/collector source를 작성했다. strict Decode.End 뒤 private deep 보존→ACK→원C exit→후행EOF/회수 순서이며 pending producer/facade·PS소비·미래시험 보완이 남았다. source freeze/독립검수 전, compiler/parser/OS실행0이다. 이 중간보고는 인수/PASS가 아니다.
+- UI02→FN03 후속 read-only 담당은 생성귀속원문의 재업로드 없는 기존 importDocument 명시선택 연결 공백을 확인했으나 최종 정리 중 모델 capacity 오류로 종료했다. 수정/실행0이며 미완성보고를 인수하지 않았다. Main이 실제 DocumentImport/import-api/project-imports·UI02 카드/r3 부모를 좁혀 읽어 기존 서버가 READY fileRef의 후보생성을 지원하고 화면이 새 File 업로드만 제공함을 대조했다. 새 데이터계약·자동가져오기·실DB적용은 채택하지 않았다.
+- Main8df4a6에서 Windows rg의 wildcard 경로인자 사용이 os error123을 냈다(조회실패1). ff5c84에서 rg --files로 실제 shell/routes.ts를 발견해 읽었다. 파일/권한 변경0이며 pathglob을 위치인자로 전달하지 않는다. 후속업무는 N4 writer 해제 뒤 기존 승인/최소검수 범위로 확정한다.
+### 2026-10-26 N4 source 인수 GO·진행 중 오류 구분
+
+- n4_transport_resume가 실제 r2/4파일 hash·원 서명을 확인했고 Main GO 후 남은 연결을 구현 중이다. 현재 strict Decoder 공통화와 raw surrogate/deep 반환 미래시험 source가 작성됐으며 실행0이다. Source freeze/독립 검수 전이므로 중간 hash를 완료 증거로 쓰지 않는다.
+- 담당 편집 준비에서 PowerShell 예약 별칭 R 충돌1·CRLF 앵커 불일치1이 발생했으나 각각 저장 전 중단되어 해당 편집 적용0이다. 고유 함수명·줄바꿈 독립 앵커로 정정 중이며 동일 근본원인3회·정식 제품 FAILURE_REPORT가 아니다. Main은 제품을 수정하지 않는다.
+- Main99e54c의 후속 상태기록 stage 검사 exit1은 새 머리글의 단일 CRLF trailing whitespace1이었다. 기존본문/합격기준을 바꾸지 않고 새 머리글 개행1개만 원 LF로 복구해9089a5 strict check0·기록 commit d938c00e5c18e55810c74cbb1eb11c6fda2f8b85/private exact 동일·main f976ed5e 불변을 확인했다. FN01 제품/시험 재실행0이다.
+- 별도 read-only 검토는 UI02 생성귀속원문의 기존 FN03 importDocument 명시선택 연결 공백을 좁히고 있다. source writer는 현재 N4 한 명뿐이며 새 기능 적용/추가 계약 채택은 하지 않았다.
 ### 2026-10-26 FN01 승인 구현 private checkpoint·N4 source 재개
 
 - Main62a252는 제품/시험23 working SHA를 manifest와 재대조하고 exact39경로만 재stage하여 엄격 cached diffcheck exit0/지적0을 확인했다. d61f4f commit e2848e9f3d6125dac7eb3e4217799be4df31edec를 기존 codex/av3-stage-b에 비강제 private push했고 실제 원격 SHA가 일치했다. remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean·보호 untracked8 유지다. 실제DB/서비스/Agent 변경0, SourceManifest의 작업원문/게시blob 구분과 checkout runtime NOT_RUN은 유지한다.

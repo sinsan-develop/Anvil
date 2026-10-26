@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI02_CREATED_ORIGINAL_IMPORT_SOURCE_ONLY",
+  "baseCommit": "d938c00e5c18e55810c74cbb1eb11c6fda2f8b85",
+  "workInstructionSha256": "DBADEC7D26F25BF4940BD152E8915EDC8F6821EBBB1736996AD221F2736F1181",
+  "sourceFrozen": true,
+  "mainAcceptance": "SYNTHETIC_VERIFIED_INDEPENDENT_SOURCE_REVIEW_PENDING",
+  "actualDbServicesAgentExecuted": false,
+  "entries": [
+    {
+      "path": "apps/web/src/shell/routes.ts",
+      "bytes": 9137,
+      "sha256": "C0ABC61A9864F18E9CC0296B14DA648633034D5FA88F8DF981E217656C920806",
+      "gitBlobSha256": "C0ABC61A9864F18E9CC0296B14DA648633034D5FA88F8DF981E217656C920806",
+      "gitBlobObjectId": "cda5a0e7fdba3b36552a4e80b4dc20022f8c0d68",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "bytes": 36418,
+      "sha256": "591DFBD1C67E6DF268D45E0C32853F2256A05420FBCC58DE9BC2971AF279B5B6",
+      "gitBlobSha256": "591DFBD1C67E6DF268D45E0C32853F2256A05420FBCC58DE9BC2971AF279B5B6",
+      "gitBlobObjectId": "0bde07354bb3b6226bb13616710ffd08124d63e1",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/DraftArtifactsPanel.tsx",
+      "bytes": 13588,
+      "sha256": "5DF1AAB9EB4EC5CB43E022E2D072EE93C47DD704A2D5A790EFA2616C90DF3E44",
+      "gitBlobSha256": "47A37B01F7F2942ABB56ADE75B3307794F31896F1B19551C8C83FA248538452B",
+      "gitBlobObjectId": "ac035fd7e82810c9d4dc70ae8f3136b099f1b48a",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentsPage.tsx",
+      "bytes": 41734,
+      "sha256": "E06D55B99A1EE03E8BA8DA7033D375A7FFD317A1C42E28025A881908655BE23A",
+      "gitBlobSha256": "E06D55B99A1EE03E8BA8DA7033D375A7FFD317A1C42E28025A881908655BE23A",
+      "gitBlobObjectId": "a1c4107165b753d0b6e560fca796ca265aac0906",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentEditor.tsx",
+      "bytes": 23587,
+      "sha256": "D9DD666E8E599AB2014F758E2A17B651AE9FECACD74F4E22AA69ABA437B43513",
+      "gitBlobSha256": "D9DD666E8E599AB2014F758E2A17B651AE9FECACD74F4E22AA69ABA437B43513",
+      "gitBlobObjectId": "35cdfb7e931cf4abfc671479a3b4cc8930231b74",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentImport.tsx",
+      "bytes": 19241,
+      "sha256": "12C463176123CF13C96D724D0F5ED6AC0AB356A8DDBF4E21B1CF16452A40B512",
+      "gitBlobSha256": "12C463176123CF13C96D724D0F5ED6AC0AB356A8DDBF4E21B1CF16452A40B512",
+      "gitBlobObjectId": "ffb3ae26a534d8184e7bbcaa0a5ef662c97017c3",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/import-api.ts",
+      "bytes": 16308,
+      "sha256": "22AC9C5638457914BC80DF7FC56AAD74370B0D3D2ACA1745EA26D605CEC421D6",
+      "gitBlobSha256": "22AC9C5638457914BC80DF7FC56AAD74370B0D3D2ACA1745EA26D605CEC421D6",
+      "gitBlobObjectId": "c9a6ac97b2f2c6de783bff85f817f6e650b862a6",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/imported-png-attachment.ts",
+      "bytes": 3867,
+      "sha256": "687C78C492CFA263A3AF4EB1D2653CC7B9BCDDDDCEDDBCA15057BDA7B574DB88",
+      "gitBlobSha256": "687C78C492CFA263A3AF4EB1D2653CC7B9BCDDDDCEDDBCA15057BDA7B574DB88",
+      "gitBlobObjectId": "26c126c0379e48941ed44320d7238404948e999c",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/created-original-import.ts",
+      "bytes": 2002,
+      "sha256": "FAAC769DCF1A191B2D238FAEDFBFDDC2C9427580893EBF87369C9C2C196D3CE5",
+      "gitBlobSha256": "FAAC769DCF1A191B2D238FAEDFBFDDC2C9427580893EBF87369C9C2C196D3CE5",
+      "gitBlobObjectId": "41dbebd7a8f777329b8678e2d17cb1ea6c0f31f4",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/unit/UI06/created-original-import.test.ts",
+      "bytes": 7331,
+      "sha256": "CE7CD3EDDEAF2B02E8A994F7580F8DC35A8DBA2A06FA3B1C4870D623C85F12A4",
+      "gitBlobSha256": "CE7CD3EDDEAF2B02E8A994F7580F8DC35A8DBA2A06FA3B1C4870D623C85F12A4",
+      "gitBlobObjectId": "a473cb73ef82977f45fd969b47ac60106a4c8954",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/browser/UI06/created-original-import.spec.ts",
+      "bytes": 11063,
+      "sha256": "EF3FDBC0D924484AEC12EB03C3CBCC2BD258081DA4B93F73A413F175D1114235",
+      "gitBlobSha256": "EF3FDBC0D924484AEC12EB03C3CBCC2BD258081DA4B93F73A413F175D1114235",
+      "gitBlobObjectId": "f616035f17bfd7b95d7d380115de6cecf1a77625",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/browser/UI06/created-original-import-harness.tsx",
+      "bytes": 2411,
+      "sha256": "B77607A53B6AEEAB70FEE6F65DBD32DED4B093ED566B66865C92C6A4290FBB3C",
+      "gitBlobSha256": "B77607A53B6AEEAB70FEE6F65DBD32DED4B093ED566B66865C92C6A4290FBB3C",
+      "gitBlobObjectId": "565fea8731231eadc784f86c3c68b97cbf1ca516",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/unit/UI00/routes.test.ts",
+      "bytes": 6643,
+      "sha256": "A84FA88CCFF52C10BC2A2E3369734BAEE385881A8BEF9886DB6F03BACA34AEF8",
+      "gitBlobSha256": "A84FA88CCFF52C10BC2A2E3369734BAEE385881A8BEF9886DB6F03BACA34AEF8",
+      "gitBlobObjectId": "49055e03796b6874763a0cae822332b98dbc8cd3",
+      "gitBlobDiffersOnlyByCrLf": false
+    }
+  ],
+  "runtimeEvidence": {
+    "unit": {
+      "toolChunk": "fb80e9",
+      "passed": 38,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 565.7399
+    },
+    "typecheck": {
+      "toolChunk": "3d00a0",
+      "exitCode": 0
+    },
+    "dom": {
+      "toolChunk": "e7da75",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "testDurationMs": 4995.7739,
+      "scope": "REAL_EDGE_PRODUCT_COMPONENTS_SYNTHETIC_API_ONLY"
+    },
+    "cleanup": {
+      "toolChunk": "d8b613",
+      "independentToolChunk": "e75460",
+      "rootAbsent": true,
+      "relatedProcesses": 0
+    }
+  },
+  "review": {
+    "status": "NOT_COMPLETED",
+    "reason": "SUBAGENT_GLOBAL_CONFIG_LOAD_ERROR",
+    "errorLocation": "config.toml:291:15",
+    "noProductFailureClaim": true
+  },
+  "excluded": [
+    "ACTUAL_DB",
+    "ACTUAL_ARTIFACT_FILE_STORAGE",
+    "SERVED_DEPLOYMENT",
+    "REAL_LOGIN_TLS",
+    "USER_ACCEPTANCE",
+    "REAL_AGENT_EXECUTION"
+  ],
+  "publication": {
+    "toolChunk": "137beb",
+    "gitAttributesChanged": false,
+    "workingSourceChanged": false,
+    "gitStoredDifferenceCount": 1,
+    "allowedDifference": "EXISTING_CRLF_TO_LF_ONLY",
+    "gitCheckoutRuntime": "NOT_RUN"
+  }
+}

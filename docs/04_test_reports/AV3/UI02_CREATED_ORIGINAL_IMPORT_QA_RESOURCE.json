@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "scope": "SYNTHETIC_DOM_ONLY",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T08:32:22.1768691Z",
+    "expiresAtUtc": "2026-10-26T09:02:22.1768691Z",
+    "phase": "EMPTY_ROOT_WITH_TEMP",
+    "fileCount": 0
+  },
+  "execution": {
+    "toolChunk": "e7da75",
+    "command": "node --test tests/browser/UI06/created-original-import.spec.ts",
+    "exitCode": 0,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "testDurationMs": 4995.7739,
+    "totalDurationMs": 5580.9216,
+    "actualApiDbFileStorage": false
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "inventoryAtUtc": "2026-10-26T08:50:41.1298367Z",
+    "files": 216,
+    "directories": 72,
+    "bytes": 15665175,
+    "links": 0,
+    "relatedProcesses": 0,
+    "cleanupCompletedAtUtc": "2026-10-26T08:50:41.6512034Z",
+    "rootStillExists": false
+  },
+  "independentObservation": {
+    "toolChunk": "e75460",
+    "atUtc": "2026-10-26T08:51:39.5538157Z",
+    "rootExists": false,
+    "relatedProcesses": 0,
+    "cimReadSucceeded": true
+  },
+  "failedObservation": {
+    "toolChunk": "4d2f61",
+    "rootExists": false,
+    "processObservation": "UNKNOWN_SANDBOX_CIM_DENIED",
+    "notEvidenceOfZero": true
+  }
+}

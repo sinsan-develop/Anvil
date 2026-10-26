@@ -469,10 +469,55 @@ function New-DevelopmentRecoveryQaHostFromAssembly([string]$CaseId,[string]$RunI
   if($digest){$digest.Dispose()};if($file){$file.Dispose()};if($bytes){[Array]::Clear($bytes,0,$bytes.Length)}
  }
 }
+function New-DevelopmentRecoveryQaStandaloneLauncherFromAssembly([string]$RunId,[string]$Commit,[datetime]$IssuedAt,[datetime]$ExpiresAt,[string]$ExpectedControllerSha256) {
+ # digest는 외부 exact 실행 결정의 대조값일 뿐 허가가 아니다. 실제 등록 전 I/O보다 먼저 거절한다.
+ throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
+ $now=[datetime]::UtcNow
+ if($RunId -cnotmatch '\Ar1-[a-z0-9][a-z0-9-]{0,47}\z' -or $Commit -cnotmatch '\A[a-f0-9]{40}\z' -or $ExpectedControllerSha256 -cnotmatch '\A[A-F0-9]{64}\z' -or
+  $IssuedAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt.Kind -ne [DateTimeKind]::Utc -or $ExpiresAt -le $IssuedAt -or ($ExpiresAt-$IssuedAt).TotalMinutes -gt 30 -or $now -lt $IssuedAt -or $now -ge $ExpiresAt){throw 'DEVELOPMENT_RECOVERY_QA_BINDING_INVALID'}
+ $path='D:\Project\Anvil\.av3-data\development-recovery-bootstrap-20261025-01\r1-artifacts\DevelopmentRecoveryQaController.exe'
+ $file=$null;$bytes=$null;$digest=$null
+ try{
+  $file=[IO.FileStream]::new($path,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
+  $length=$file.Length
+  if($length -le 0 -or $length -gt 4194304){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  $bytes=[byte[]]::new([int]$length);$offset=0
+  while($offset -lt $length){$read=$file.Read($bytes,$offset,[int]($length-$offset));if($read -le 0){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'};$offset+=$read}
+  if($file.Length -ne $length -or $file.ReadByte() -ne -1){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  $digest=[Security.Cryptography.SHA256]::Create()
+  $actual=[BitConverter]::ToString($digest.ComputeHash($bytes)).Replace('-','')
+  if($actual -cne $ExpectedControllerSha256){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  # hash한 동일 메모리 바이트만 로드한다. 파일명을 다시 열어 LoadFrom하지 않는다.
+  $assembly=[Reflection.Assembly]::Load($bytes)
+  # role1 metadata는 무결성 대조이며 외부 exact 실행 신뢰가 아니다.
+  $resource=$assembly.GetManifestResourceStream('Anvil.Qa.Build.V1')
+  if(!$resource){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  try{
+   $build=[byte[]]::new(73);$at=0
+   while($at -lt 73){$read=$resource.Read($build,$at,73-$at);if($read -le 0){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'};$at+=$read}
+   if($resource.ReadByte() -ne -1 -or $build[0] -ne 1 -or [Text.Encoding]::ASCII.GetString($build,1,40) -cne $Commit){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+   $any=0;for($i=41;$i -lt 73;$i++){$any=$any -bor $build[$i]};if($any -eq 0){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  }finally{$resource.Dispose()}
+  $type=$assembly.GetType('DevelopmentRecoveryQaStandaloneLauncher',$true,$false)
+  if(!$type.IsPublic -or !$type.IsSealed -or $type.IsAbstract -or ![object]::ReferenceEquals($type.Assembly,$assembly)){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  $signature=[type[]]@([string],[string],[datetime],[datetime],[string])
+  $factory=$type.GetMethod('Create',([Reflection.BindingFlags]'Public,Static,DeclaredOnly'),$null,$signature,$null)
+  if(!$factory -or $factory.ReturnType -ne $type){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  $owned=$factory.Invoke($null,[object[]]@($RunId,$Commit,$IssuedAt,$ExpiresAt,$ExpectedControllerSha256))
+  if(!$owned -or ![object]::ReferenceEquals($owned.GetType(),$type)){throw 'DEVELOPMENT_RECOVERY_QA_ASSEMBLY_INVALID'}
+  return $owned
+ }finally{
+  if($digest){$digest.Dispose()};if($file){$file.Dispose()};if($bytes){[Array]::Clear($bytes,0,$bytes.Length)}
+ }
+}
 function Invoke-DevelopmentRecoveryQaOwnedHost([string]$CaseId,[string]$RunId,[string]$Commit,[datetime]$IssuedAt,[datetime]$ExpiresAt,[string]$ExpectedAssemblySha256) {
  # 실제 assembly 출처와 실행 승인이 연결되기 전에는 타입 조회·factory 호출보다 먼저 거절한다.
  throw 'DEVELOPMENT_RECOVERY_OS_QA_NOT_AUTHORIZED'
- $ownedHost=New-DevelopmentRecoveryQaHostFromAssembly $CaseId $RunId $Commit $IssuedAt $ExpiresAt $ExpectedAssemblySha256
+ if($CaseId -ceq 'CHILD_PIN_LIFETIME'){
+  $ownedHost=New-DevelopmentRecoveryQaStandaloneLauncherFromAssembly $RunId $Commit $IssuedAt $ExpiresAt $ExpectedAssemblySha256
+ }else{
+  $ownedHost=New-DevelopmentRecoveryQaHostFromAssembly $CaseId $RunId $Commit $IssuedAt $ExpiresAt $ExpectedAssemblySha256
+ }
  $observation=$null;$cleanup=$null;$hostState='QA_HOST_FLOW_UNCONFIRMED'
  try{$observation=$ownedHost.Execute();$hostState='QA_HOST_RETURNED_NOT_OS_VALIDATED'}
  catch{$hostState='QA_HOST_FLOW_UNCONFIRMED'}

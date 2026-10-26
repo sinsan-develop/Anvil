@@ -4,6 +4,7 @@ import { readProjectDraft, type DraftEditorState } from './api.ts';
 import { prepareDraftUpload, uploadDraftArtifact, readDraftArtifactBytes, type DraftUploadBuffer } from './draft-artifact-api.ts';
 import type { DraftStoredArtifact } from '../../../../../contracts/draft-artifacts.ts';
 import { isKnownDocumentRejection } from '../design-trace/mutation-result.ts';
+import {createdOriginalImportHref} from '../../shell/routes.ts';
 export function DraftArtifactsPanel({ protectedRecords, onMetadata, client, session, buffer, onChange, disabled, readonly = false, projectId = null, run, onBusy, onAuthenticationLost }: {
   protectedRecords: DraftStoredArtifact[] | null; onMetadata: (draftId: string, records: DraftStoredArtifact[] | null, editable?: boolean) => void;
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: DraftEditorState; onChange: Dispatch<SetStateAction<DraftEditorState>>;
@@ -96,6 +97,7 @@ export function DraftArtifactsPanel({ protectedRecords, onMetadata, client, sess
       <p>{record.ref.artifactId} · {record.ref.bytes} bytes · {record.ref.mediaType} · SHA256 {record.ref.contentHash}</p><p>{record.artifactState === 'QUARANTINED' ? '격리 보관 · 읽기/첨부 불가' : record.state === 'FINALIZED' ? '원문 보관 완료' : `${record.state} · 복구 확인 필요`}</p>
       {!readonly && !pending && record.state !== 'REJECTED' ? <label>원 명령에 같은 원문 다시 결박<input type="file" disabled={writesBlocked} onChange={e => { const file=e.target.files?.[0];e.target.value='';if(file)void select(file,record); }} /></label> : null}
       <button type="button" disabled={disabled || record.artifactState !== 'READY'} onClick={() => { void view(record); }}>보호 원문 확인</button>
+      {buffer.draftId&&record.state==='FINALIZED'&&record.artifactState==='READY'&&record.projectId&&(!projectId||record.projectId===projectId)&&buffer.input.artifactRefs.some(ref=>ref.artifactId===record.ref.artifactId&&ref.bytes===record.ref.bytes&&ref.contentHash===record.ref.contentHash&&ref.mediaType===record.ref.mediaType)?<a aria-disabled={disabled} onClick={event=>{if(disabled)event.preventDefault();}} href={createdOriginalImportHref(record.projectId,{draftId:buffer.draftId,artifactId:record.ref.artifactId})}>이 원문으로 문서 가져오기 준비</a>:null}
       {!readonly && !pending && buffer.uploadHistory?.find(x => x.command.commandId === record.commandId && x.receipt) ? <button type="button" disabled={disabled} onClick={() => { const original = buffer.uploadHistory?.find(x => x.command.commandId === record.commandId); if (original) void send(original); }}>같은 완료 업로드 재확인</button> : null}
     </li>)}</ul> : metadataAllowed ? <p>조회한 보관 자료가 없습니다.</p> : null}
     {error ? <p role="alert">원문 처리 거절 또는 미확인: {error.code}</p> : null}

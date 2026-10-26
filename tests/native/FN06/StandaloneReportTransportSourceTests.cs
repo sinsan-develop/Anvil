@@ -60,5 +60,52 @@ internal static class StandaloneReportTransportSourceTests
         Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.Remaining(Issued,Issued.AddSeconds(60),Issued,Issued.AddSeconds(60),0,60000,60000));
         Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.Remaining(Issued,Issued.AddSeconds(61),Issued,Issued,0,0,60000));
     }
-    internal static void RunAll(){BindingIsCanonicalAndNamespaced();ReadyHasExactLayoutAndUnits();OrderedChunksAndEndAreExact();WrongFramesAndIncompleteReportsAreRejected();BudgetOnlyShortens();}
+
+    static void InheritedBudgetKeepsTheFirstChildClock(){
+        DateTime child=Issued.AddSeconds(10),sample=Issued.AddSeconds(12),end=Issued.AddSeconds(60);
+        long available=DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,end,58000,2000,49000);
+        Require(available==47000);
+        // 최초 elapsed=2000을 유지한다. 채택 후 1초에는 46000이며 clock 재시작으로 늘리지 않는다.
+        long totalLimit=2000+available,nextElapsed=3000;
+        Require(DevelopmentRecoveryPathGuard.QaReportProtocol.Remaining(Issued,end,sample,Issued.AddSeconds(13),2000,nextElapsed,Math.Min(available,totalLimit-nextElapsed))==46000);
+        Require(DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,end,1000,2000,49000)==1000);
+        Require(DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,Issued.AddSeconds(13),58000,2000,3000)==1000);
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,child.AddTicks(1),end,58000,2000,49000));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample.AddTicks(-1),Issued,end,58000,2000,49000));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,end,58000,2000,2000));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,end,Issued,end,58000,2000,49000));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,Issued.AddSeconds(61),58000,2000,49000));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaReportProtocol.AdoptRemaining(child,sample,sample,Issued,end,58000,-1,49000));
+    }
+    static byte[] StrictRowsPayload(){
+        using(var memory=new MemoryStream())using(var writer=new BinaryWriter(memory)){
+            Action<string> text=value=>{writer.Write((uint)value.Length);foreach(char unit in value)writer.Write((ushort)unit);};
+            text("ANVIL.QA.C_REPORT.V1");writer.Write((uint)1);text(Run);text(Commit);writer.Write(Issued.Ticks);writer.Write(Until.Ticks);text(Report);writer.Write((uint)9);
+            writer.Write((uint)1);text("\uD800\0\uDC00");for(int i=1;i<9;i++)writer.Write((uint)0);writer.Flush();return memory.ToArray();
+        }
+    }
+    static void StrictEndDoesNotRequirePipeEof(){
+        byte[] payload=StrictRowsPayload();var state=Started();state.Data(Frame(4,3,3,payload));
+        byte[] collected=state.End(Frame(4,4,4,End(payload,1)));
+        string[][] rows=DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(collected,Run,Commit,Issued,Until,Report);
+        Require(rows.Length==9&&rows[0][0]=="\uD800\0\uDC00"&&rows[8].Length==0);
+        // 원문 정확 소진은 payload 끝이다. 전송 pipe EOF는 FINAL_ACK 뒤의 별도 OS 검증이다.
+        byte[] trailing=new byte[payload.Length+1];Array.Copy(payload,trailing,payload.Length);
+        var extra=Started();extra.Data(Frame(4,3,3,trailing));byte[] bytes=extra.End(Frame(4,4,4,End(trailing,1)));
+        Reject(()=>DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(bytes,Run,Commit,Issued,Until,Report));
+        for(int length=0;length<payload.Length;length++){byte[] prefix=new byte[length];Array.Copy(payload,prefix,length);Reject(()=>DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(prefix,Run,Commit,Issued,Until,Report));}
+        rows[0][0]="changed";Require(DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(collected,Run,Commit,Issued,Until,Report)[0][0]=="\uD800\0\uDC00");
+    }
+    static void BadFramePoisonsTheOriginalCollector(){
+        byte[] valid=Frame(4,3,3,new byte[]{1});
+        for(int length=0;length<valid.Length;length++){var state=Started();byte[] shortFrame=new byte[length];Array.Copy(valid,shortFrame,length);Reject(()=>state.Data(shortFrame));Reject(()=>state.Data(valid));}
+        var trailing=Started();byte[] extra=new byte[valid.Length+1];Array.Copy(valid,extra,valid.Length);Reject(()=>trailing.Data(extra));Reject(()=>trailing.Data(valid));
+        foreach(int size in new[]{4048,8096,12144,16192,16384}){
+            byte[] bytes=new byte[size];var state=Started();int offset=0,count=0;
+            while(offset<size){int length=Math.Min(4048,size-offset);byte[] chunk=new byte[length];state.Data(Frame(4,3,(uint)(3+count),chunk));offset+=length;count++;}
+            Require(state.End(Frame(4,4,(uint)(3+count),End(bytes,(uint)count))).Length==size);
+        }
+    }
+
+    internal static void RunAll(){BindingIsCanonicalAndNamespaced();ReadyHasExactLayoutAndUnits();OrderedChunksAndEndAreExact();WrongFramesAndIncompleteReportsAreRejected();BudgetOnlyShortens();InheritedBudgetKeepsTheFirstChildClock();StrictEndDoesNotRequirePipeEof();BadFramePoisonsTheOriginalCollector();}
 }

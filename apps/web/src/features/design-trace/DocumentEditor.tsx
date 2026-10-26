@@ -15,7 +15,7 @@ import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentAttachments} from './DocumentAttachments.tsx';
 import {DocumentFormEntry} from './DocumentFormEntry.tsx';
 
-export function DocumentEditor({ preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
+export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
   const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
   const prior=context.current;
@@ -99,7 +99,7 @@ export function DocumentEditor({ preparationGate, client, session, buffer, onCha
     <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
     {buffer.ownerUserId === session.user.id ? <section aria-label="문서 작성 고정 양식"><p className="meta" style={{ overflowWrap: 'anywhere' }}>양식 {buffer.formRef.id} · v{buffer.formRef.version} · {buffer.formRef.contentHash}</p><PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, buffer.projectId, buffer.documentId, buffer.baseVersion, buffer.formRef])} client={client} formRef={buffer.formRef} onAuthenticationLost={onAuthenticationLost} /></section> : null}
     <DocumentStageSelector key={buffer.projectId + ':' + buffer.formRef.id + ':' + buffer.formRef.version + ':' + buffer.formRef.contentHash} client={client} projectId={buffer.projectId} formRef={buffer.formRef} value={buffer.stageNodeRef ?? null} disabled={locked} onChange={value => change({ stageNodeRef: value })} onAuthenticationLost={onAuthenticationLost} />
-    {!buffer.importCandidateRef ? <DocumentImport client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}
+    {!buffer.importCandidateRef ? <DocumentImport createdOriginal={createdOriginal} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}
     {buffer.importCandidateRef ? <p className="meta">가져오기 후보 {buffer.importCandidateRef} · 원본을 첨부로 보존합니다. 아직 별도 저장/확정 전이면 다음 동작을 직접 선택하세요.</p> : null}
     {buffer.savedRef ? <p role="status">초안 버전 {buffer.savedRef.version} 저장 확인</p> : null}
     <QuarantinedOriginalNotice failure={buffer.failure}/>{buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}

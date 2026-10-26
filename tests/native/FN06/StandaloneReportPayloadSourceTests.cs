@@ -52,6 +52,11 @@ internal static class StandaloneReportPayloadSourceTests
         if(bytes.Length!=306||bytes[0]!=20||bytes[4]!=65||bytes[5]!=0||bytes[VersionOffset]!=1||bytes[RowCountOffset]!=9||bytes[FirstRowCountOffset]!=0)
             throw new InvalidOperationException("REPORT_TEST_LITERAL_LAYOUT_INVALID");
         Validate(bytes,rows);
+        string[][] decoded=DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(bytes,Run,Commit,Issued,Until,Report);
+        if(decoded.Length!=9||decoded[0].Length!=0||decoded[1][1]!=rows[1][1])throw new InvalidOperationException("STRICT_DECODE_RAW_ROWS_EXPECTED");
+        decoded[1][1]="changed";
+        string[][] again=DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.Decode(bytes,Run,Commit,Issued,Until,Report);
+        if(again[1][1]!=rows[1][1])throw new InvalidOperationException("STRICT_DECODE_PRIVATE_ROWS_EXPECTED");
         string[][] changed=Rows();changed[1][1]="\0\uFFFD|\r\n\uFFFD";Reject(()=>Validate(bytes,changed));
         changed=Rows();changed[0]=new[]{""};Reject(()=>Validate(bytes,changed));
         changed=Rows();changed[2][0]="OK";Reject(()=>Validate(bytes,changed));
