@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN06/FN08 캡처 metadata 파일 저장 연결 착수**: 기존 결과 저장 포트에 제한 파일 adapter를 공급해 저장·원장 재생성·정확 ref 재조회를 연결한다. 합성metadata/SYNTHETIC_ONLY·기본미등록·rawhandle/키/본문/실Agent0. 선행module부재RED 뒤 실제 파일9·인접메모리11/type/diff0·독립C0/I0/M0로한정검수,정리931파일/22dir잔여0·기록상한6.86초초과예외보존. 실제보호/Agent·전체FN06/FN08는미완료다.
+
 - **2026-10-26 UI10/FN05 대화 원문 업로드 일회 승인 연결 착수**: 기존 uploadArtifact 승인 요청·결박·명시 재개를 발언/지시 저장에 연결한다. 원문/원명령 보존·후속 append 승인 전파0·새 API/SQL/권한/실DB/Agent0. 실제 RED 뒤 신규 unit7·선행 불변 회귀6·신규 DOM21/현재 App 인접4·type/build/diff0·독립 C0/I0/M0로 소스 단위 검수했다. 실제 서버/DB·served·전체 UI10/FN05/FN11는 미완료다.
 
 - **2026-10-26 UI06/FN11 문서 원문 업로드 일회 승인 연결 착수**: 서버가이미지원하는uploadArtifact의명확412후원명령/bytes/hash결박·요청/기존ID조회/명시재개를문서작성에연결한다. 후속 문서 저장 승인 확대/새op·SQL·정책변경0. 실제 RED 뒤 직접 unit10·신규 DOM19·현재 App 인접18·type/build/diff0·독립 C0/I0/M1(불일치 입력의 이전 승인 설명 표시, 전송 전 차단·deferred)로 소스 단위 검수했다. 실제 서버/DB·served와 전체 UI06/FN03/FN11는 미완료다.

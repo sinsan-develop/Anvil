@@ -1,4 +1,27 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN06/FN08 캡처 metadata 파일 adapter — 한정 검수 종료
+
+- Maina07e49/C2652404는 시험 overload1곳을 BFEEF915→C7558DE7로 보정했고 거절 기대값을 유지했다. cc10c4/133a8a에서 제품38010AAC·시험 결과 hash 대조/전체type0 뒤 실제 파일 저장·원장 새 instance THREAD/TURN exactread/중복0·sync뒤callback실패보존·손상/부분/UTF8·lock/abort/닫힌tx/동일tx경합/읽기전쓰기·write실패·직접row변조·512행/2MiB·충돌/부모없음의 부모1+하위8 총9 PASS10009.2139ms/skip0이다. 전체 stdout/inventory log raw4485C42FAB0F67C2E7E6BE9EE6C814FDA7C790B8A579427B633C64358E609182로 보존했다.
+- Main48b796의 직접 인접 결과원장/START/TURN bridge 메모리 시험11 PASS1654.2919ms·diff0이다. 제품은 신규adapter1만이며 기존 ledger/bridge/기본실행기/원조건변경0, Web영향없어 build/browser는 반복하지 않았다. SYNTHETIC_ONLY/명시 주입이며 실제Provider·키/암호문본문·권한/DB/서비스/Agent변경0이다.
+- Maine5c5a7/668904는 로그 지문에 결박된 전체inventory와 actual root/상위·하위nonlink·현재owner·931파일 bytes/hash·정확하위21+고장시험빈dir1을 모두 대조해 해당파일/빈22dir와root만 정리했다. 별도09e693 root부재/원log불변을 확인했다. 완료시각2026-10-26T02:27:58.8609947Z는 기록상한02:27:52Z보다6.86초 늦었다. Main이 시각 확인 후 남은 시간에 검사·정리를 끝낼 예산을 충분히 남기지 않은 절차 오류이며 PMO에 예외공유한다. 실제 root 생성은02:26시험 때여서30분 미만이지만 기존 상한을 소급변경/준수 주장하지 않는다. 다음 파일QA는 실행 직전 시각과 예상검사/정리 여유를 확인해 상한내완료가 어려우면 생성전에 새예산을 등록한다.
+- 독립 provider_capture_results_store_review는 최종source/두delta·시험/log 실제9PASS·현재root부재를 직접 확인하고 C0/I0/M0 한정 수용으로 판정했다. 독립시험0·type/인접11·931파일대조는 Main근거와 구분한다. file.sync실패/중도부분write 주입·상위/root/파일교체/links 실제 재현·OS owner/ACL·악성 동일사용자/전원손실·실Provider/Agent는 미검증이다.
+- 신규module/test·plan/status 정확4경로만checkpoint한다. 저장·재생성은 실제 파일 QA로 확인했지만 기본실행기 미등록·native/실Provider 보호 선행과 전체FN06/FN08·Stage/계획은 미완료다. rollback은소유commit revert이며 손상/불명파일을자동복구·삭제하는제품동작은추가하지않았다. sourcecache는인계inventory/hash·owner/link대조후정리하며다음미완료선정은Main소유다.
+### 2026-10-26 캡처 파일 저장 — 동결 지문과 타입 오류 구분
+
+- Main499746 최초 읽기 후보2DBF58CA 뒤 writer가 guard 마지막 await 후 취소 재검사1줄을 추가하면서 동결 PRODUCT/manifest를38010AAC로 갱신했다. Main818644는 실행 시 최신 manifest/결과 hash를 대조해 실제38010AAC를 적용했으나, 이후 Main이 재조회 없이 처음 읽은2DBF를 적용했다고 잘못 설명했다. 5038c0 실제 source38010AAC·시험BFEEF915를 확인해 정정했다. 향후 동결 산출물 덮어쓰기 금지·별도 delta만 제출하도록 명시했고 guard delta는 이력 검수용이며 중복 적용하지 않는다.
+- 최초 전체type는 신규시험64 assert.rejects의 undefined AssertPredicate TS2345로exit1이었다. 실파일QA/MAIN_GREEN_OUTPUT.log는 아직 생성0·root부재다. 같은 writer에 거절 기대값을 유지하는 overload 한정보정만 요청했다. 제품실패/저장성공/실Owner·보호 검증으로 세지 않는다.
+- 독립 정적 검수의 현재제품38010AAC 한정 C0/I0/M0는 실제sync 실패/중도부분쓰기·root/상위·파일교체/links 실재현을 증명하지 않는다. 해당 음성은 미검증으로 남기고 실제 실행·정리 결과 뒤 최종판정한다.
+### 2026-10-26 FN06/FN08 캡처 metadata 파일 저장 — 선행 RED
+
+- Main1de617은 TESTONLY08A0E80B/신규시험 BFEEF915의 원파일 부재·단일 경로·후보/적용 raw hash를 확인했다. ENV ANVIL_CAPTURE_STORE_QA_ROOT를 등록 root로만 지정한 node --test는 신규 module 부재 ERR_MODULE_NOT_FOUND로1FAIL/0PASS257.3325ms이다. import가 root 생성보다 앞서 실패했으므로 실제파일 저장이나 사용자 기능 오류를 증명하지 않는다.
+- 같은 writer에게 신규 file-store1(필요 시 기존 Row type 공유만1) 제품 구현을 지시했다. TESTONLY manifest 고정 하위22개 중 missing은 부재 시험이며 실제 생성예정21개다. 초기 작성자의23/22 수량 오기는 manifest 실제목록으로 정정했고 제품 오류와 분리한다. 기본 실행기/실Provider·키/native허가0·기존 SYNTHETIC_ONLY/원장 기준은 유지한다.
+- 첫 시도2026-10-26T01:57:52Z/수명상한02:27:52Z로 관리하며 실제 root는 import 시점까지 부재다. 많은 한도 시험의 stdout 전체 inventory는 staging의 Main 소유 MAIN_GREEN_OUTPUT.log로만 보존하고 터미널에는 검사 요약을 보여준다. 이 파일은 writer 수정 대상이 아니며 종료 뒤 exact QA/root·cache 정리에 포함한다. 다음은 동결 제품을 검수·적용한 뒤 실제 저장/재생성·손상/부분/한도·lock/abort 조건을 한 번 실행하는 것이다.
+### 2026-10-26 UI10 게시·정리와 FN06/FN08 다음 저장 단위
+
+- Mainab0aa8/4712ad 소유9경로 a6b06a11c6a095552492849ac9ae9c5ebbd17be3 local/private exact·tracked clean·보호 untracked8·원격mainf976ed5e 불변을 확인했다. QA8파일은5a0838에서 exact 소유/hash·nonlink 대조 후 수명 내 정리했다.
+- staging 첫 정리는 제출 수량24와 실제 상세25의 차이로03cd89 FILESET_MISMATCH에서 삭제0이었다. f1dc2d 실제 목록25/dir22를 확인했다. 두번째925a8a는 Main이 singular delta manifest를 files 배열로 가정해 예상집합이 부족하여 삭제 전 중단했다. 0dc508에서 실제 schema를 읽어 확정한 뒤 a8814c는25개 전체 raw hash·현재owner·상/하위nonlink·현재 제품/시험 결과 지문까지 검증하고 exact 파일/빈22dir만 정리했다. 초기75e1e3/98c387의 singular delta에 대한 반복문 hash 대조가 생략됐던 점도 이 최종 직접 지문 대조로 확인했으며, 그 전후 실제 시험 결과와 구분한다. 원 오류/집계/판정 이력은 보존한다. 별도 부재 확인으로 양 root 잔여0을 확인한다.
+- 다음 업무는 읽기 담당과 Main1f3d75가 확인한 FN06/FN08 Provider 캡처 결과 metadata 저장 포트의 구체 파일 adapter다. 현재 START/TURN bridge→SyntheticProviderCaptureResults는 배열 메모리 store만 시험하며 재생성 가능한 로컬 store가 없다. 기존 Row claim/claimRef/ciphertextHash/parent만 소유 확인한 전용 root에 제한 저장·sync하고 원장/bridge 객체 재생성 후 exact ref를 읽는 구현을 맡긴다. rawhandle/개인키/암호문 본문·실Provider/OS보호 진위를 생성하지 않으며 SYNTHETIC_ONLY와 기본 미등록을 유지한다.
+- .av3-data/provider-capture-results-file-store-staging은 해당 writer patch/snapshot 검수 수명으로 등록한다. 실제 파일 QA는 부재 확인한 D:\tmp\anvil-provider-capture-results-store root의 고정 시험 하위만 사용·현재 사용자 소유·최초 실행부터30분 이내 exact 파일/hash/owner/nonlink 정리한다. 생성 시각은 실행 직전 다시 기록한다. listener/port/DB·권한/키·실Agent/서비스0이며 동일 OS 악성변조 내성·전원손실 복구·실보호 저장소로 승격하지 않는다.
 ### 2026-10-26 UI10 대화 원문 업로드 승인 연결 — 소스 한정 검수 종료
 
 - 동일 writer DOM_TEMPLATE_DELTA04253325는 template 밖 normalBody(BOM/CRLF)·redBody(원 ‘합성 대화 원문\n’)를 JSON.stringify로 주입하고 원 RED 모드를 분리한2곳만 보정했다. Main98c387의 preimage/결과 A3DB2ADA 대조·type0 뒤6ac802에서 신규 실제 Panel DOM21 PASS20.8초/skip0이다. 원 RED 제목/본문·bytes/upload/pending/append:null·uncertain:false·명령0·412/assert는 별도 마지막 시험에 그대로 보존했다. 앞선 준비 실패1·20 NOT_RUN은 당시 이력으로 유지한다.
