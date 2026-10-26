@@ -1,4 +1,25 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 가져오기 이력 조회 한정 검수 종료
+
+- 독립 ui06_import_usage_review는 제품2/신규시험전체·원패치·서버저장관계를 직접 읽고 C0/I0/M0로 판정했다. 정확tuple/후보불변부·역참조/원본/양식/snapshot, 표시scope/ABA/현재401·별도읽기상태와기존제안보존을확인했다. Git권한실패로HEAD/dirty는독립확인하지못했으며 Main의실제출력과구분했다.
+- Main2dd49e로신규6번째시험을다시읽었다. 최초open의검증완료후owner전환/ABA와 지연된결과조회중다른후보/이력을확인한것이며, 최초open 요청자체의지연/원streamchunk지연은직접실행하지않았다. 앞선'최초open문맥'은이한정범위이고미실행을PASS로승격하지않는다. 초기open 무한pending잠금은baseline동일로이번신규회귀근거가없다.
+- 소유제품 C986BE27/F8C84420·신규시험3E26516E와plan/status 정확5경로만 checkpoint한다. 직접DOM6·기존/직전영향DOM10·unit3/type/build/diff·수집16의실행범위만검수됐다. 실제DB/served/login/TLS·전체UI06/FN03·Stage/계획완료는아니다. 원RED/타입오류·보정이력은보존하며 rollback은소유커밋revert다.
+### 2026-10-26 UI06 가져오기 이력 조회 — 현재 집중 검증
+
+- Mainfc73ae는 제품 PRODUCT DCDCB7FD의 기존GET/reader 연결·unknown refs와원본/양식/snapshot 검사를 읽어 대조했다. TESTLOCATOR39C45497은 region/pre 같은aria-label 중복을 피한선택자1줄이며 기대값은불변이다. fe4397 적용/후보hash 대조 뒤 타입검사에서 content.sourceRefs never[]/빈tuple[] TS2345가 발생해 DOM미실행이었다. 같은writer가 기존DocumentContent type import·변수타입2줄 TYPE_DELTA52FF2276만 보정했다.
+- Main204604 최신type0·정상DOM1 PASS2.5초: 두사용이력의정확다른문서v3/v7·편집본문·명시조회/쓰기0이다. ba3a00→c99565 나머지5 DOM PASS16.8초/skip0: 정확tuple재검증·역참조/원본/양식/snapshot/body변조·비JSON/403404·주체/후보/선택/ABA/late401·최초open문맥을확인했다.
+- bfc2d8 인접unit3 PASS191.357ms/skip0·Webbuild0/429modules343ms·기존chunk경고·diff0. 3943b2→73ba5a 같은MaterialLibrary의기존App합성5+직전제안결과직접5 총10PASS14.1초다. 1d8431 신규6/인접10 함께 --list16건/3파일exit0·diff0·제품C986BE27/F8C84420/시험3E26516E일치다.
+- 독립 ui06_import_usage_review를 배정했다. Main 결과는 실제React/ApiClient+합성transport 또는현재App빌드+합성API 한정이며 served/실DB/login/TLS·인수/전체UI06/FN03·Stage/계획완료가아니다. 단일writer 제품/시험동결·정본두파일만Main소유, 새API/DB/권한·Secret·Agent/원격실행0이다.
+### 2026-10-26 UI06 가져오기 사용 이력 — 실제 누락 RED
+
+- TESTONLY685EBA05·신규 import-usage-original.spec.ts F1D9D745/130줄을 Main93a176에서 원파일부재·patch/hash/LF 대조 후 적용했다. type exit0 뒤 정확제목1건·max-failures1로 실행했다. 871382에서 READY후보 원문열기까지 도달한 뒤 두사용이력의 정확문서v3 버튼이 없어1FAIL/exit1이다. 원문과다른 편집본문/다른문서v7 fixture를 사용하며 준비오류를 제품누락으로 바꾸지 않는다.
+- Main9232a1은 실제HEADfb40·기존server import-selection/metadata와materials reader 계약을 직접 확인했다. 같은writer에게 이제 제품2만 구현하도록 지시했다. 문서snapshot산식은 sourceRefs를 비우므로 비어있지 않은경우먼저거절해야하며 해당음성을유지한다. 신규API/일반reader/DB/권한·서비스/Agent0, 실제DB/served미검증이다.
+### 2026-10-26 UI06 수집 보정 게시·가져오기 사용 이력 조회 착수
+
+- Main5fad7e 소유3경로 fb40ba60a201ddcfd2874de42797217ab90a1db5를 새커밋/privateexact로 게시했다. 원제품92778fd4·수집오류/보정이력 보존·trackedclean/보호8/원격main불변이다.
+- 완료staging 최신20파일/dir2의 rawhash·exactset·현재owner·상위/하위nonlink를 Main4d4f0b가 확인해 해당파일/빈dir만 정리했다. 작성자의 첫 빈inventory는 closure배열출력오류여서 증거에서 제외했고 이후실제20지문을 사용했다. FN15 후보와 보호자료는 보존한다.
+- Main은 ui06_import_usage_original 새 단일 writer에 materials-api/MaterialLibrary/신규직접DOM 최대3만 배정했다. 기존imports GET의 사용 이력 한 건을 사용자가 선택해 실제 저장 문서의 정확 버전을 재조회한다. 후보는 여러문서/버전에 사용되고 편집될 수 있어 원본본문동일·version1/base+1을 요구하지 않는다. 문서의 기존importCandidateRefs·원본artifact/body/attachments·지정양식과 snapshot/본문hash를 대조한다. 새API/DTO/일반reader·DB/권한·Agent·자동저장0이다.
+- TESTONLY RED선행 뒤 제품을 붙이고 기존 미저장입력/보관제안조회/새문서준비를 보존한다. 현재문맥/ABA·후보/선택tuple/latebody/error/401을 검수한다. 로컬 patch/snapshot용 .av3-data/ui06-import-usage-staging은 해당작업수명으로 등록하며 통합뒤 exactowner/link/hash로만 정리한다. 실제서비스/원격QA/port생성0·served/실DB·전체UI06/FN03미완료다.
 ### 2026-10-26 UI06 수집 오류 보정 검수 종료
 
 - 같은 writer의 COLLECTION_FIX2D780255는 원본 material-library.spec.ts에 bundle helper import와 명시env현재build공급2줄을 추가하고 새wrapper9줄을 삭제했다. 제품2/신규직접시험·기존5기대값/서버모드는 그대로다. Main7a6c7e apply/hash대조 뒤 원본+신규직접시험 --list10건/2파일 exit0·기존5DOM PASS5.9초, 281c0b terminal type/diff exit0이다. 3217de 원본시험D56B37FA·wrapper부재를 확인했다.

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
-import { listDocumentMaterials, prepareStoredImport, readStoredImport, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
+import { listDocumentMaterials, prepareStoredImport, readImportUsageDocument, storedImportSelections, readStoredImport, type ImportUsageSelection, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
 import { readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
 
 export function MaterialLibrary({ client, projectId, session, canPrepare, onPrepared, onBusy, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; canPrepare: boolean; onPrepared: (buffer: DocumentBuffer) => void; onBusy: (busy: boolean) => void; onAuthenticationLost: () => void }) {
@@ -15,14 +15,21 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const scopeRef = useRef<Scope>({ client, projectId, userId: session.user.id, clientId: session.clientId });
   if (scopeRef.current.client !== client || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId) scopeRef.current = { client, projectId, userId: session.user.id, clientId: session.clientId };
   const scope = scopeRef.current;
+  const [importScope, setImportScope] = useState<Scope | null>(null);
+  const shownImport = importScope === scope ? importView : null;
+  const importSignature = shownImport ? JSON.stringify(shownImport.candidate) : '';
   const [proposalScope, setProposalScope] = useState<Scope | null>(null);
   const shownProposal = proposalScope === scope ? proposalView : null;
   const signature = shownProposal ? JSON.stringify({ proposal: shownProposal.proposal, base: { id: shownProposal.base.document.id, version: shownProposal.base.document.version, contentHash: shownProposal.base.document.contentHash, title: shownProposal.base.document.title, formRef: shownProposal.base.document.formRef, stageNodeRef: shownProposal.base.document.stageNodeRef } }) : '';
-  const latest = useRef({ scope, view: shownProposal, signature, onAuthenticationLost }); latest.current = { scope, view: shownProposal, signature, onAuthenticationLost };
+  const latest = useRef({ scope, view: shownProposal, signature, importView: shownImport, importSignature, onAuthenticationLost }); latest.current = { scope, view: shownProposal, signature, importView: shownImport, importSignature, onAuthenticationLost };
   const selectionGeneration = useRef(0), resultGeneration = useRef(0);
   type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
   const [result, setResult] = useState<ResultBinding | null>(null);
   const visibleResult = result?.scope === scope && result.view === shownProposal && result.signature === signature ? result : null;
+  const usageGeneration = useRef(0);
+  type UsageBinding = { scope: Scope; view: StoredImportView; signature: string; selection: ImportUsageSelection; value: Awaited<ReturnType<typeof readImportUsageDocument>> | null; loading: boolean; error: ApiError | null };
+  const [usage, setUsage] = useState<UsageBinding | null>(null);
+  const visibleUsage = usage?.scope === scope && usage.view === shownImport && usage.signature === importSignature ? usage : null;
   const selectedVersion = shownProposal ? selectedProposalVersion(shownProposal) : null;
   const mounted = useRef(true), running = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -41,10 +48,10 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     if (running.current) return;
     const generation = ++selectionGeneration.current, openedScope = scope;
     const active = () => mounted.current && scopeRef.current === openedScope && selectionGeneration.current === generation;
-    resultGeneration.current++; setResult(null); setProposalScope(null);
+    resultGeneration.current++; setResult(null); setProposalScope(null); usageGeneration.current++; setUsage(null); setImportScope(null);
     running.current = true; setBusy(true); setError(null); setAcknowledged(false); setImportView(null); setProposalView(null); setForms([]); setSelectedForm('');
     try {
-      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id); const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setForms(options); } }
+      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id,{active}); const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setImportScope(openedScope); setForms(options); } }
       else { const view = await readStoredProposal(client,projectId,id); if (active()) { setProposalView(view); setProposalScope(openedScope); } }
     } catch (e) { if (active()) failed(e); } finally { if (selectionGeneration.current === generation) { running.current = false; if (mounted.current) setBusy(false); } }
   }
@@ -64,12 +71,28 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       if (error.status === 401) latest.current.onAuthenticationLost();
     }
   }
+  async function readUsage(selection: ImportUsageSelection) {
+    const view = shownImport;
+    if (!view) return;
+    const binding = { scope, view, signature: importSignature, selection }, generation = ++usageGeneration.current;
+    const active = () => mounted.current && scopeRef.current === binding.scope && usageGeneration.current === generation && latest.current.importView === binding.view && latest.current.importSignature === binding.signature;
+    setUsage({ ...binding, value: null, loading: true, error: null });
+    try {
+      const value = await readImportUsageDocument(client, projectId, view, selection, active);
+      if (active()) setUsage({ ...binding, value, loading: false, error: null });
+    } catch (cause) {
+      if (!active()) return;
+      const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      setUsage({ ...binding, value: null, loading: false, error });
+      if (error.status === 401) latest.current.onAuthenticationLost();
+    }
+  }
   async function prepare(kind: 'IMPORT' | 'PROPOSAL') {
     if (!canPrepare || !acknowledged || running.current) return;
     running.current = true; setBusy(true); onBusy(true); setError(null);
     try {
       let value: DocumentBuffer;
-      if (kind === 'IMPORT' && importView) value = await prepareStoredImport(client,projectId,importView,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
+      if (kind === 'IMPORT' && shownImport) value = await prepareStoredImport(client,projectId,shownImport,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
       else if (kind === 'PROPOSAL' && shownProposal && !shownProposal.proposal.selections.length) value = await resumeStoredProposal(client,projectId,shownProposal.proposal.id,session);
       else throw new ApiError('MATERIAL_SELECTION_REQUIRED');
       if (mounted.current) onPrepared(value);
@@ -83,8 +106,13 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     <label htmlFor="stored-proposal-status">보관 제안 상태</label><select id="stored-proposal-status" disabled={busy} value={proposalStatus} onChange={e => { setProposals(null); setProposalCursor(null); setProposalStatus(e.target.value); }}><option value="">모두</option><option value="PENDING">미반영</option><option value="SELECTED">반영됨</option></select>
     {proposalLoading ? <p role="status">제안 조회 중</p> : null}<ul>{proposals?.items.map(v => <li key={v.id}><button disabled={busy} aria-label={`보관 제안 ${v.id} 열기`} onClick={() => { void open('PROPOSAL',v.id); }}>{v.title} · 기준 {v.baseRef.version} · {v.status === 'SELECTED' ? '반영됨' : '미반영'}</button></li>)}</ul>{proposals && !proposalLoading && !proposals.items.length ? <p>보관한 제안이 없습니다.</p> : null}{proposals?.hasMore ? <button disabled={busy || proposalLoading} onClick={() => setProposalCursor(proposals.nextCursor)}>다음 제안 더 보기</button> : null}
     {!canPrepare ? <p>기존 편집·검토·확정 작업을 먼저 닫으면 이 자료로 새 작업을 준비할 수 있습니다. 조회는 계속 가능합니다.</p> : null}
-    {importView ? <section aria-label="보관 후보 원문 확인"><h3>가져오기 후보 {importView.candidate.status}</h3><p>원본 SHA256 {importView.candidate.originalRef.contentHash}</p><a href={`/api/v1/projects/${projectId}/files/${importView.candidate.originalRef.artifactId}`} download>보관한 원본 다운로드</a>{importView.candidate.issues.map((i,n) => <p key={n}>{i.code} · {i.message}</p>)}
-      {importView.body !== null ? <><pre className="document-original" aria-label="보관 후보 원문">{importView.body}</pre>{!importView.candidate.intendedFormRef ? <><label htmlFor="stored-import-form">보관 후보 적용 양식</label><select id="stored-import-form" disabled={busy} value={selectedForm} onChange={e => setSelectedForm(e.target.value)}><option value="">양식 선택</option>{forms.map(f => <option value={f.ref.id} key={f.ref.id}>{f.name} · v{f.ref.version}</option>)}</select></> : <p>가져올 때 지정한 양식 v{importView.candidate.intendedFormRef.version}을 유지합니다.</p>}<label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 원문을 확인했고 새 문서 초안으로 준비하겠습니다</label><button disabled={busy || !canPrepare || !acknowledged || !importView.candidate.intendedFormRef && !selectedForm} onClick={() => { void prepare('IMPORT'); }}>보관 후보로 새 문서 준비</button></> : <p>미지원/확인 실패 원본은 보존하지만 본문으로 반영하지 않습니다.</p>}
+    {shownImport ? <section aria-label="보관 후보 원문 확인"><h3>가져오기 후보 {shownImport.candidate.status}</h3><p>원본 SHA256 {shownImport.candidate.originalRef.contentHash}</p><a href={`/api/v1/projects/${projectId}/files/${shownImport.candidate.originalRef.artifactId}`} download>보관한 원본 다운로드</a>{shownImport.candidate.issues.map((i,n) => <p key={n}>{i.code} · {i.message}</p>)}
+      <h4>사용 이력</h4><ul>{storedImportSelections(shownImport).map(s => <li key={`${s.documentId}:${s.version}`}><p>문서 {s.documentId} · 버전 {s.version} · 저장자 {s.selectedBy} · {new Date(s.at).toLocaleString('ko-KR')}</p><button aria-label={`사용 문서 ${s.documentId} 버전 ${s.version} 원문 보기`} disabled={visibleUsage?.loading === true && visibleUsage.selection.documentId === s.documentId && visibleUsage.selection.version === s.version} onClick={() => { void readUsage(s); }}>사용 문서 원문 보기</button></li>)}</ul>
+      {!storedImportSelections(shownImport).length ? <p>확인 가능한 사용 이력이 없습니다.</p> : null}
+      {visibleUsage?.loading ? <p role="status">사용 문서 원문 조회 중</p> : null}
+      {visibleUsage?.error ? <p role="alert">{visibleUsage.error.message} · {visibleUsage.error.code}</p> : null}
+      {visibleUsage?.value ? <section aria-label="가져오기 사용 문서 원문"><h4>사용 문서 · 버전 {visibleUsage.value.document.version}</h4><p>읽기 전용 · 문서 {visibleUsage.value.document.id} · SHA256 {visibleUsage.value.document.contentHash}</p><pre className="document-original" aria-label="가져오기 사용 문서 원문">{visibleUsage.value.body}</pre></section> : null}
+      {shownImport.body !== null ? <><pre className="document-original" aria-label="보관 후보 원문">{shownImport.body}</pre>{!shownImport.candidate.intendedFormRef ? <><label htmlFor="stored-import-form">보관 후보 적용 양식</label><select id="stored-import-form" disabled={busy} value={selectedForm} onChange={e => setSelectedForm(e.target.value)}><option value="">양식 선택</option>{forms.map(f => <option value={f.ref.id} key={f.ref.id}>{f.name} · v{f.ref.version}</option>)}</select></> : <p>가져올 때 지정한 양식 v{shownImport.candidate.intendedFormRef.version}을 유지합니다.</p>}<label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 원문을 확인했고 새 문서 초안으로 준비하겠습니다</label><button disabled={busy || !canPrepare || !acknowledged || !shownImport.candidate.intendedFormRef && !selectedForm} onClick={() => { void prepare('IMPORT'); }}>보관 후보로 새 문서 준비</button></> : <p>미지원/확인 실패 원본은 보존하지만 본문으로 반영하지 않습니다.</p>}
     </section> : null}
     {shownProposal ? <section aria-label="보관 제안 원문 비교"><h3>{shownProposal.base.document.title} · 기준 {shownProposal.proposal.baseRef.version}</h3><pre className="document-original" aria-label="보관 제안 기준 원문">{shownProposal.base.body}</pre><pre className="document-original" aria-label="보관 제안 새 원문">{shownProposal.proposedBody}</pre><pre aria-label="보관 제안 변경 구간">{JSON.stringify(shownProposal.diff,null,2)}</pre><p>{shownProposal.proposal.selections.length ? `이미 반영한 버전 ${shownProposal.proposal.selections[0]!.version}` : '아직 반영하지 않은 제안입니다. 실제 반영 시 현재 기준을 다시 검사합니다.'}</p>
       {selectedVersion ? <button disabled={visibleResult?.loading === true} onClick={() => { void readSelected(); }}>반영 결과 원문 보기</button> : null}

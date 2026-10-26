@@ -1,5 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { documentControl, newDocument, type DocumentSession, type DocumentBuffer } from './editor-api.ts';
+import { documentControl, documentDraftHash, newDocument, type DocumentSession, type DocumentBuffer, type DocumentContent } from './editor-api.ts';
+import { readDocument } from './api.ts';
+import { stageRef } from './stage-api.ts';
 import { getPinnedForm } from '../methodologies/forms-api.ts';
 import { readPreservedDocumentText, type Proposal } from './proposal-api.ts';
 import type { ImportCandidate } from '../../../../server/modules/documents/project-imports.ts';
@@ -8,6 +10,7 @@ export interface ImportSummary extends ImportCandidate { createdAt: string; inte
 export interface ProposalSummary extends Omit<Proposal, 'status'> { status: 'PENDING' | 'SELECTED'; title: string; createdAt: string; integrity: 'NOT_RECHECKED' }
 export interface MaterialPage<T> { items: T[]; hasMore: boolean; nextCursor: string | null; observedAt: string }
 export interface StoredImportView { candidate: ImportCandidate & { createdAt: string; selections: { documentId: string; version: number; selectedBy: string; at: string }[] }; body: string | null }
+export type ImportUsageSelection = StoredImportView['candidate']['selections'][number];
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
 const validRef = (r: Ref) => r && uuid.test(r.id) && Number.isSafeInteger(r.version) && r.version > 0 && hash.test(r.contentHash);
 const sameRef = (a: Ref, b: Ref) => a.id === b.id && a.version === b.version && a.contentHash === b.contentHash;
@@ -32,6 +35,30 @@ export async function readStoredImport(client: ApiClient, projectId: string, id:
   check();if(options?.expectedOriginalRef!==undefined&&!sameArtifact(c?.originalRef,options.expectedOriginalRef))throw new ApiError('IMPORT_SOURCE_CHANGED');
   if (!validImport(c) || c.id !== id || !Number.isFinite(Date.parse(c.createdAt)) || !Array.isArray(c.selections) || c.selections.length > 2000 || c.selections.some(s => !uuid.test(s.documentId) || !Number.isSafeInteger(s.version) || s.version < 1 || !uuid.test(s.selectedBy) || !Number.isFinite(Date.parse(s.at)))) throw new ApiError('RESPONSE_INVALID');
   const body=c.status==='READY'?await readPreservedDocumentText(client, projectId, c.originalRef):null;check();return { candidate: c, body };
+}
+function validSelections(selections: ImportUsageSelection[]) {
+  return Array.isArray(selections) && selections.length <= 2000 && selections.every(s => s && uuid.test(s.documentId) && Number.isSafeInteger(s.version) && s.version > 0 && uuid.test(s.selectedBy) && Number.isFinite(Date.parse(s.at))) && new Set(selections.map(s => `${s.documentId}:${s.version}`)).size === selections.length;
+}
+export function storedImportSelections(view: StoredImportView): ImportUsageSelection[] {
+  return validImport(view.candidate) && view.candidate.status === 'READY' && validSelections(view.candidate.selections) ? view.candidate.selections : [];
+}
+const sameSelection = (a: ImportUsageSelection, b: ImportUsageSelection) => a.documentId === b.documentId && a.version === b.version && a.selectedBy === b.selectedBy && a.at === b.at;
+function importSignature(view: StoredImportView) { const { selections: _selections, ...candidate } = view.candidate; return JSON.stringify(candidate); }
+export async function readImportUsageDocument(client: ApiClient, projectId: string, view: StoredImportView, selection: ImportUsageSelection, active: () => boolean): Promise<Awaited<ReturnType<typeof readDocument>>> {
+  const check = () => { if (!active()) throw new ApiError('IMPORT_USAGE_READ_PAUSED'); }; check();
+  const before = storedImportSelections(view), signature = importSignature(view), selected = { ...selection };
+  if (!before.some(s => sameSelection(s, selected))) throw new ApiError('IMPORT_USAGE_CHANGED');
+  const original = { ...view.candidate.originalRef }, candidateId = view.candidate.id;
+  const current = await readStoredImport(client, projectId, candidateId, { expectedOriginalRef: original, active }); check();
+  if (importSignature(current) !== signature || !storedImportSelections(current).some(s => sameSelection(s, selected))) throw new ApiError('IMPORT_USAGE_CHANGED');
+  const value = await readDocument(client, projectId, selected.documentId, selected.version, { active }); check();
+  const metadata: unknown = value.document, doc = value.document;
+  if (!metadata || typeof metadata !== 'object' || !('importCandidateRefs' in metadata) || !Array.isArray(metadata.importCandidateRefs) || metadata.importCandidateRefs.length > 2000 || metadata.importCandidateRefs.some((ref: unknown) => typeof ref !== 'string' || !uuid.test(ref)) || new Set(metadata.importCandidateRefs).size !== metadata.importCandidateRefs.length || !metadata.importCandidateRefs.includes(candidateId)
+    || current.candidate.intendedFormRef && !sameRef(current.candidate.intendedFormRef, doc.formRef) || ![doc.content.body, ...doc.content.attachments].some(ref => sameArtifact(original, ref)) || doc.content.sourceRefs.length !== 0 || doc.stageNodeRef !== null && doc.stageNodeRef !== undefined && !stageRef(doc.stageNodeRef)) throw new ApiError('IMPORT_USAGE_INTEGRITY_FAILED');
+  const content: DocumentContent = { body: doc.content.body, attachments: doc.content.attachments, sections: doc.content.sections, sourceRefs: [] };
+  const snapshot = await documentDraftHash(doc.title, doc.formRef, content, stageRef(doc.stageNodeRef) ? doc.stageNodeRef : null); check();
+  if (snapshot !== doc.contentHash) throw new ApiError('IMPORT_USAGE_INTEGRITY_FAILED');
+  return value;
 }
 export async function prepareStoredImport(client: ApiClient, projectId: string, value: StoredImportView, session: DocumentSession, selectedForm: Ref | null): Promise<DocumentBuffer> {
   const c = value.candidate, ref = c.intendedFormRef ?? selectedForm;
