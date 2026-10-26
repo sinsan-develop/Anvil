@@ -1,4 +1,32 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 검수 후 한정 M1·일회 QA 정리
+
+- 인계 후 독립 scoped 검토는 C0/I0/M1(표시 정합성)로 최종 보완했다. 외부 buffer가 pending을 유지한 채 본문만 바꾸면 Component의 이전 승인 설명/결박 문구가 남을 수 있다. helper 준비/결박과 저장 active는 입력 불일치를 전송 전에 거절하므로 확인된 코드상 권한 확대/잘못된 원문 전송 C/I는 아니다. 중간 표시의 직접 DOM은 미실행이며 후속 동일 화면 변경/전체 Stage 검수에 표시 guard를 흡수할 항목으로 남긴다. 앞선 C0/I0/M0는 이 추가 검토 전 판정이다.
+- 등록 결과 root D:\tmp\anvil-ui06-document-upload-approval의9파일/상위·하위nonlink/현재소유/전체rawhash를 Main50e5e1에서 확인하고1f59f8에서 exact 파일과 빈 디렉터리만 정리했다. 01:50:16UTC 수명 전 회수이며 공유TEMP/사용자 브라우저/다른 자료 변경0이다. 원 오류/RED와 최종 결과는 위 현황/원 도구출력에 보존한다. 별도 부재 조회로 정리를 확인한다.
+### 2026-10-26 UI06 문서 원문 일회 승인 연결 — 소스 한정 검수 종료
+
+- 동일 writer PRODUCT_UNIT746188F3의 제품4/직접 unit1을 Main6e36fd가 원본·후보 hash와 exact 경로로 대조해 적용했다. 최초 타입검사 TS2322/TS18047은 신규 Component의 pending/approval narrowing 오류였고 이때 unit/DOM은 미실행이다. TYPE_DELTA49E83135의 한 updater 명시 guard만 보정한 뒤 Main9e7d73 전체 type0·신규6+기존 editor4 총10 PASS239.2157ms/skip0이다.
+- DOM_FULL_FLOW E7FF6AA0은 EOF 추가 빈줄1로 apply --check --whitespace=error-all에서 거절돼 실제 파일 변경0이었다. 같은 writer R2 patch511A4697은 끝1byte만 제거했고 최종시험 BA15D1C1/제품9AA2EFE6·8F9B4E31·8D645960·854243B6를 적용 대조했다. Mainf12c2b 첫 정상 DOM1 PASS2.6초, e8f598/4a48c3 나머지18 PASS19.6초로 명시 요청/기존ID·결박만 전송0·같은명령/bytes 재개·만료/회수/타소비·UNKNOWN/유실·AUTO/격리·후속save 별도거절·6문맥 ABA/늦은401/hash/업로드성공을 확인했다.
+- Mainb8877f/416360의 최종 Web build는431 modules/345ms/exit0·기존 chunk 경고를 보존한다. ANVIL_UI04_QA_DIST=apps/web/dist로 기존 document-edit13+stage-document-draft5 총18 PASS22.3초이며 git diff --check0이다. sandbox Git 조회의 work tree 오류는 실행문맥 제약으로 분리하고 elevated 읽기에서 확인했으며 ACL/권한을 변경하지 않았다.
+- 독립 ui06_document_upload_review는 최종 제품4/unit1/DOM1과 기존 서버 소비 계약을 직접 대조해 C0/I0/M0로 판정했다. 독립 시험 실행0과 Main 실제 결과를 구분한다. 동일 commandId+다른 consumed requestHash 음성은 직접 시험하지 않았으며 제품의 별도 검사 정적 근거와 구분한다. 실제 서버 승인 소비/실DB·served 로그인/권한/제어 여정은 미확인이다.
+- 요청·결박은 자동 업로드하지 않고 명시 재개에만 원 업로드 승인/hash를 붙인다. 후속 saveDocumentDraft는 approvalRef:null과 별도 정책/거절을 유지한다. 원 pending·본문과 이전 실패는 보존하며 새 API/SQL·정책/권한·Secret/TLS/서비스·Agent 변경0이다. 이 소스 단위 검수는 전체 UI06/FN03/FN11·Stage/계획 완료가 아니며 rollback은 소유 commit revert다. Main이 정확8경로만 checkpoint 후 전용 QA/cache 정리와 다음 대화 원문 저장 승인 연결로 이어간다.
+### 2026-10-26 UI06 업로드 승인 — 실제 RED 확인·구현 계속
+
+- Main1374e1은 시험 진입점 보정 TEST_ENTRY_DELTA644C7EF9를 적용하고 신규 DOM F484E488을 확인했다. 실제 DocumentEditor가 업로드 1회 후 APPROVAL_REQUIRED/412를 받아 원 pending을 보존했으나 ‘문서 원문 승인 요청 준비’ 버튼이 없어 1 FAIL/8.2188초/exit1이었다. 앞선 Vite 진입점 오류와 구별되는 기능 누락 RED다.
+- 동일 ui06_document_upload_approval writer에 제품 최대4·직접 시험 최대2 구현을 맡겼다. Main은 같은 제품 파일을 수정하지 않으며 동결 patch를 검수·통합한다. 원 요청·본문·주체/세대 결박, 요청/결박만으로 전송하지 않음, 명시 재개와 소비 영수증, 후속 saveDocumentDraft의 approvalRef:null 및 별도 거절을 우선 확인한다.
+- 재개 시 실제 HEAD72ca6ec0·기존 branch·문서2/신규 시험1 dirty와 보호 untracked8을 대조했다. 제품 수정은 아직 적용 전이다. 전용 결과 root 수명 상한 2026-10-26T01:50:16Z를 유지하며 정식 DB·서비스·권한·Agent 변경은 없다.
+### 2026-10-26 UI06 업로드 승인 — 시험 준비 오류 분리
+
+- Mainc98eee 실제파일목록에서관련editor/approvalhelper·unit/기존DOM경로를확정했다. writer의추정spec2/rg glob1읽기오류는변경0이며같은방식중단·목록확인후읽기로전환하도록명시했다. 제품실패/정식FAILURE_REPORT로세지않고PMO에예외공유한다.
+- Maina56fb6 TESTONLY47874D57/신규DOM DD210415 검증·적용후typeexit0이지만Vite UNRESOLVED_ENTRY virtual:ui06-document-upload에서실제Component/412경로에미도달했다. 따라서이1FAIL을목표기능RED로세지않는다. 같은writer에기존검증harness의rolldownOptions.input 명시한곳만보정하도록지시했다. 제품원본변경0·새의존성/도구0·기대값불변이다.
+- 전용결과root는부재확인후UTC2026-10-26T01:20:16에시작했고현재red-r1실패PNG/문맥/상태만있다. 등록수명상한01:50:16UTC 전에정확소유/링크/파일지문대조후회수한다. 공유TEMP/사용자브라우저/다른자료변경0, 원오류텍스트는이현황/도구출력에보존한다.
+### 2026-10-26 UI06 문서 원문 업로드 일회 승인 연결 착수
+
+- FN04 M1보완은Main22d32c 소유3경로72ca6ec073b7dda985b3e62900a88eeaf30fb5bd local/privateexact·trackedclean/보호8·원격main불변으로게시했다. 완료staging4파일/dir4는writerfullinventory·Main445efe exactset/hash·owner/nonlink/경로대조뒤정리·별도부재를확인한다. FN04 실제처리/저장연결r1은PMO가별도공개API/데이터/권한delta·직접답변필수로재확인했으며전체기능금지/플랫폼거절로과장하지않는다.
+- 다음실제업무는읽기담당과Main719192/f3d8ea가소비중uploadArtifact경로에서확인했다. 서버consumableOperations/project-files/0011은기존정확업로드승인소비를지원하지만 UI06 editor-api는nonnullapprovalRef를거절하고DocumentEditor는412/원pending만보존한다. 이기존지원연산의정확승인요청/기존ID결박/명시같은업로드재개를ui06_document_upload_approval 단일writer에배정했다.
+- 제품최대4(editor-api/DocumentEditor/승인helper/component)·신규직접unit/DOM최대2만소유한다. 기존genericupload승인계약을소비하고명확APPROVAL_REQUIRED412에만노출,원commandId/bytes/hash·현재주체/세대/기한결박·명시재개·응답유실같은명령보존을검수한다. 요청/결정/결박만으로자동전송0,후속saveDocumentDraft에는upload승인전달/권한확대0·그연산별정책/거절은유지한다. 새operation/후보보관API/SQL·권한/정책/Secret/실DB/Agent/서비스0이다.
+- 등록source cache .av3-data/ui06-document-upload-approval-staging은동결patch/snapshot전용이다. 실제로부재확인한 D:\tmp\anvil-ui06-document-upload-approval 결과root는이번로컬검수전용·현재Windows사용자소유·Node24.22.1/Playwright/Edge ephemeral시험·hostlistener/port/컨테이너/DB0·수명검수후최대30분단위회수로등록한다. 각실행red-r1/green/negative출력하위만사용하고원에러/검사텍스트는WORK_STATUS/도구출력에보존한다. 공유TEMP/사용자브라우저/다른폴더는삭제하지않으며종료후exactowner/link/file집합을대조해전용root만정리한다.
+- TESTONLY47874D57/신규DOM DD210415가제출됐고제품전실제RED를확인할차례다. fixture/합성API·실제Component증거와실DB/served사용을구분하며전체UI06/FN03/FN11/Stage·계획완료아니다.
 ### 2026-10-26 FN04 관계 반례 M1 한정 해소
 
 - 같은writer TESTQUALITY71C265EA는기존unit D7923FBB→B51D49A3에title/form/stage 정합hash반례3개만추가했다. Maina84ff7 patch/preimage/candidate대조뒤직접관계24 PASS226.5249ms/skip0·type/diff0,제품4587227A불변을확인했다. 직접의존입력11·무관한browser/build는변경없이반복하지않았다.

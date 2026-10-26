@@ -7,13 +7,15 @@ import type { DocumentProposalBuffer } from './proposal-api.ts';
 import type { DesignIndexBuffer } from './design-index-api.ts';
 import type { WorkPlanBuffer } from './work-plan-api.ts';
 import { nullableStageRef, sameStageRef, validStageBinding, type StageNodeRef } from './stage-api.ts';
+import {validateDocumentUploadApproval,validateDocumentUploadBinding,type DocumentUploadApproval} from './document-upload-approval.ts';
 
 type VersionRef = { id: string; version: number; contentHash: string };
 type ArtifactRef = { artifactId: string; bytes: number; contentHash: string; mediaType: string };
 export interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
 export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'reviewUnderstanding' | 'startStage' | 'cancelQueuedRequest' | 'submitResult' | 'defineProjectRole' | 'bindResponsibleSession' | 'prepareExecution' | 'saveBaselineDraft' | 'reviewBaselineContent' | 'confirmBaseline' | 'uploadArtifact' | 'saveDocumentDraft' | 'detachDocumentSource' | 'importDocument' | 'proposeDocumentChange' | 'proposeDesignChange' | 'reviewChangeImpact' | 'indexDesignDocument' | 'saveWorkPlanDraft' | 'prepareAssignment' | 'reviewAssignmentContent' | 'confirmAssignment' | 'buildTaskContext' | 'linkTrace' | 'saveKnowledge' | 'appendConversation' | 'excludeKnowledge' | 'correctKnowledge' | 'recordContentReview' | 'confirmKnowledge' | 'confirmWorkPlan' | 'applyConstitution'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null | {requestId:string;decisionId:string;scopeDigest:string}; payload: Record<string, unknown> }
-export interface PendingDocumentSave { body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
+export interface PendingDocumentSave { uploadApproval?:DocumentUploadApproval; body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
 export interface DocumentBuffer {
+  saveUncertain?:boolean;
   designDependencyState?:import('./design-dependency.ts').DesignDependency|null;
   formEntry?:FormContentEntry;
   ownerUserId: string; projectId: string; documentId: string | null; baseVersion: number; formRef: VersionRef;
@@ -84,15 +86,19 @@ export async function postDocumentCommand(client: ApiClient, command: DocumentWr
 export async function continueDocumentSave(client: ApiClient, pending: PendingDocumentSave, session: DocumentSession, checkpoint: (value: PendingDocumentSave) => void, active: () => boolean): Promise<VersionRef> {
   const u = pending.upload;
   if (!nullableStageRef(pending.stageNodeRef ?? null)) throw new ApiError('DOCUMENT_STAGE_INPUT_INVALID');
-  if (!exact(u, ['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) || u.schemaVersion !== 1 || !uuid.test(u.projectId) || !uuid.test(u.commandId) || u.clientId !== session.clientId || !uuid.test(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || !Number.isSafeInteger(u.controlGeneration) || u.controlGeneration < 1 || u.operation !== 'uploadArtifact' || u.targetId !== null || u.expectedVersion !== 0 || !Array.isArray(u.baselineRefs) || u.baselineRefs.length || u.approvalRef !== null || pending.documentId !== null && !uuid.test(pending.documentId) || pending.documentId === null && pending.baseVersion !== 0 || pending.documentId !== null && (!Number.isSafeInteger(pending.baseVersion) || pending.baseVersion < 1) || !uuid.test(pending.saveCommandId) || !versionRef(pending.formRef)) throw new ApiError('CLIENT_PATH_INVALID');
+  if (!exact(u, ['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) || u.schemaVersion !== 1 || !uuid.test(u.projectId) || !uuid.test(u.commandId) || u.clientId !== session.clientId || !uuid.test(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || !Number.isSafeInteger(u.controlGeneration) || u.controlGeneration < 1 || u.operation !== 'uploadArtifact' || u.targetId !== null || u.expectedVersion !== 0 || !Array.isArray(u.baselineRefs) || u.baselineRefs.length || u.approvalRef !== null && !pending.uploadApproval?.commandHash || u.approvalRef === null && !!pending.uploadApproval || pending.documentId !== null && !uuid.test(pending.documentId) || pending.documentId === null && pending.baseVersion !== 0 || pending.documentId !== null && (!Number.isSafeInteger(pending.baseVersion) || pending.baseVersion < 1) || !uuid.test(pending.saveCommandId) || !versionRef(pending.formRef)) throw new ApiError('CLIENT_PATH_INVALID');
   const bytes = new TextEncoder().encode(pending.body);
   if (!pending.body.isWellFormed() || bytes.length > 2 * 1024 * 1024 || !exact(u.payload, ['bytes','contentHash','mediaType']) || u.payload.bytes !== bytes.length || u.payload.contentHash !== await digest(bytes) || !['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(String(u.payload.mediaType))) throw new ApiError('DOCUMENT_INPUT_INVALID');
   let next = pending;
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
+  if(u.approvalRef!==null)await validateDocumentUploadBinding(pending,session,active);
   if (!next.save) {
+    if(u.approvalRef!==null)await validateDocumentUploadApproval(client,pending,session,active);
+    if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
     const response = await postDocumentCommand(client, u, session.csrfToken, bytes), ref = response.data?.artifactRef as ArtifactRef;
+    if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
     if (!artifact(ref) || ref.bytes !== u.payload.bytes || ref.contentHash !== u.payload.contentHash || ref.mediaType !== u.payload.mediaType || response.targetId !== ref.artifactId || response.version !== null || response.data.status !== 'ARTIFACT_READY') throw new ApiError('RESPONSE_INVALID');
-    const save: DocumentWrite = { ...u, commandId: pending.saveCommandId, operation: 'saveDocumentDraft', targetId: pending.documentId, expectedVersion: pending.baseVersion, payload: { title: pending.title, formRef: pending.formRef, stageNodeRef: pending.stageNodeRef ?? null, content: { body: ref, ...pending.content }, importCandidateRef: pending.importCandidateRef ?? null, reason: pending.reason } };
+    const save: DocumentWrite = { ...u, approvalRef:null, commandId: pending.saveCommandId, operation: 'saveDocumentDraft', targetId: pending.documentId, expectedVersion: pending.baseVersion, payload: { title: pending.title, formRef: pending.formRef, stageNodeRef: pending.stageNodeRef ?? null, content: { body: ref, ...pending.content }, importCandidateRef: pending.importCandidateRef ?? null, reason: pending.reason } };
     next = { ...pending, save }; checkpoint(next);
   }
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
@@ -102,5 +108,6 @@ export async function continueDocumentSave(client: ApiClient, pending: PendingDo
   if (!artifact(content?.body) || content.body.contentHash !== u.payload.contentHash || content.body.bytes !== bytes.length || content.body.mediaType !== u.payload.mediaType || JSON.stringify({ attachments: content.attachments, sections: content.sections, sourceRefs: content.sourceRefs }) !== JSON.stringify(pending.content)) throw new ApiError('DOCUMENT_INPUT_INVALID');
   const response = await postDocumentCommand(client, s, session.csrfToken), ref = response.data?.ref;
   if (!versionRef(ref) || pending.documentId !== null && ref.id !== pending.documentId || ref.version !== pending.baseVersion + 1 || ref.contentHash !== await documentDraftHash(pending.title, pending.formRef, content, pending.stageNodeRef ?? null) || response.targetId !== ref.id || response.version !== ref.version || response.data.status !== 'DRAFT') throw new ApiError('RESPONSE_INVALID');
+  if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return ref;
 }
