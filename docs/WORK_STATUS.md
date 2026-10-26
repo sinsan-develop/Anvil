@@ -1,4 +1,31 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI02 readonly 왕복 한정 검수 종료
+
+- 같은writer TEST_CONSUMED_DELTA17607FD9를Mainf0e692 적용/검증후 정상consumedreadonlystep4 첫previousdisabled 1FAIL8.7424초로I1을실재현했다. FIX41947A3C는소비제외조건29bytes 한곳만제거했다. Main68b609 Page6F3CC802/시험287568DE 검증·적용뒤추가소비왕복DOM1PASS3.1초·type/diff0이다.
+- Main0d6f85 최종코드원readonly4+기존consumedDOM5 직접영향9PASS9.2초,97a6a6 최종Webbuild0/429modules436ms·기존chunk경고·수집12건/2파일·diff0이다. 기존편집helper/SSR12PASS는a03c3e의보정전증거로구분하며해당helper기준/코드변경0이라반복하지않았다.
+- 독립 scoped재리뷰는I1 ADDRESSED·보정범위C0/I0/M0로판정했다. 성공한소비GET도같은exactsnapshot만읽으며소비링크/쓰기잠금을유지한다. 원제품/시험EOF불일치·초기회귀/I1과RED이력은삭제하지않는다.
+- 소유Page/신규직접시험/plan/status 정확4경로만checkpoint한다. 실제Page+ApiClient 합성transport한정·onChange0은분기정적근거/버퍼불변은DOM증거다. 고정참조방법론/EXISTING소스·실DB/served/login/TLS·전체UI02/FN01/Stage·작업계획완료는미충족이다. rollback은소유커밋revert,기존자료/원명령삭제0이다.
+### 2026-10-26 UI02 독립 검토 I1·동일 writer 보정
+
+- ui02_readonly_draft_review 최종C0/I1/M0: 성공한consumed readonly step4 GET을 snapshot대상에서제외한조건때문에fallback !editable/ canPrevious editable&&가예전허용된이전내용조회4→1을막는다. 기존소비7PASS는step1중심이라이회귀의반증이아니다. 검수통과로처리하지않는다.
+- Main판정: 소비여부와관계없이성공한readonlyGET에동일exactsnapshot gate를적용해기존읽기동작을보존한다. 이는조회사본대상보완이며새권한/생성·실행승인아니다. 상위버퍼를수정하는oldfallback복원은하지않는다. 이전Main의미소비중심범위설정이소비조회보존검수를놓친점도기록한다.
+- 같은writer round1에 소비readonlystep4→1→4·원버퍼/프로젝트2링크불변·쓰기0 직접DOM추가를먼저동결하도록지시했다. Main실RED뒤Page snapshot조건1곳만보정/독립scoped재검수한다. Page9A80FD37/test765B409D·원patch/EOF오류는보존, 새API/DB/권한·Agent/실환경변경0이다.
+### 2026-10-26 UI02 조회 전용 왕복 — 집중 검증·독립 검토 중
+
+- Main253eb5는Page PRODUCT6063FCED의 freshGET사본/원editor분리·identity/attempt/버퍼결박과기존편집기준보존을읽었다. 60d725 원본/patch/후보9A80FD37 hash대조후적용, 최신type0·정상DOM1 PASS3.4초다. 0a69f6 실패GET/editable복귀·changedbuffer/원명령보존·문맥ABA/late401 나머지3 PASS4.5초/skip0이다.
+- a03c3e 기존편집wizard/화면unit12 PASS604.7879ms·type/build/diff0, Web429modules331ms·기존chunk경고다. 002d26 기존consumed파일은DOM5뿐아니라직접GET/쓰기호환2를포함해실제7 PASS7.7초이며 combined--list는11건/2파일exit0이다. 실제실행범위를9건으로축소/오보고하지않는다.
+- 신규DOM은NEW_PROJECT_DRAFT/빈graph fixture이고 CONFIRMED_REFERENCE/EXISTING소스·실DB/served는직접범위밖이다. 버퍼deepEqual은실제불변증거이고 onChange0은분기정적근거와구분한다. 독립 ui02_readonly_draft_review 검수중이며 consumedreadonly이전탐색의기존허용을새fallback이막는지I후보를추가대조중이다. 기존7PASS가해당이전이동을검사하지않으므로finding반증으로쓰지않는다.
+### 2026-10-26 UI02 조회 전용 왕복 — 제출 지문·실제 RED
+
+- Main3bce2d는 TESTONLY ECEE6121을 검증/적용했으나 제출candidate42442632와 적용결과765B409D 차이로 실제검사전에멈췄다. e83ef4/512268 바이트대조는snapshot14234끝세미콜론/actual14235끝LF이며 마지막LF1byte제외exact동일이다. 작성자는patch생성시LF부착·snapshotEOF누락을확인하고정확후보765B409D로동결을재확정했다. 원snapshot/오보고이력·기대값은보존·제품변경0이었다.
+- Main2db65e typeexit0 뒤 정확첫제목1건/max-failures1을실행했고5d5644에서 저장readonlystep4로드→4/3/2/1까지도달한뒤next disabled 1FAIL/exit1을확인했다. 이는목표누락RED이며새viewer문구가없어서실패한것이아니다.
+- 같은writer에게Page1만구현하도록지시했다. 성공GET의readonlysnapshot과원editorbuffer를분리하고 현재identity/attempt·exactinput/version/저장step·변경/명령상태를대조한다. 기존편집helper/권한·정상동작/기대값은변경하지않는다. actualsource쓰기/환경·API/DB/Agent실행0, Main검수전미완료다.
+### 2026-10-26 UI06 사용 이력 게시·UI02 조회 전용 왕복 착수
+
+- Mainc02570 소유5경로578e2fbb4742901af3f7a0d363861822f091f88a local/privateexact·trackedclean/보호8·원격main불변을확인했다. 완료staging은writer inventory11파일/dir18과 Main13e78d의 rawhash/exactset·owner·ancestor/descendant nonlink·경로대조뒤해당파일/빈dir만정리했다. Dtmp실행결과·보호FN15후보/원문은보존한다.
+- 읽기담당은UI02의동일사용자다른client readonly초안 GET과기존편집용helper의readonly이전허용/전진거절을대조했다. 저장step4를열어4→3→2→1을본뒤2/3/4내용으로복귀하지못한다. 기존편집helper/unit기준을낮추지않고 성공GET의freshreadonly snapshot에만Page-local 조회step을분리하는단위로선정했다.
+- ui02_readonly_draft_navigation 단일writer 소유는ProjectCreatePage/신규직접DOM 최대2다. readIdentity/client/user/clientId/requestedId/GET회차/draft/version/input과현재문맥을결박하고 onChange/서버step/상위buffer/input/review/pending/원명령·편집/저장/확정/생성권한을바꾸지않는다. 읽기단계는업무진도와구분하며 dirty/pending/불확실/GET거절·ABA/늦은응답은탐색허가가아니다. 기존consumed→project동선과편집모드를보존한다.
+- TESTONLY RED선행, .av3-data/ui02-readonly-draft-staging은소유patch/snapshot용등록cache로통합뒤exactset/owner/link/hash로정리한다. 새API/DB/권한/Secret/Agent·서비스/원격/port생성0·전체UI02/FN01/Stage·계획완료아니다.
 ### 2026-10-26 UI06 가져오기 이력 조회 한정 검수 종료
 
 - 독립 ui06_import_usage_review는 제품2/신규시험전체·원패치·서버저장관계를 직접 읽고 C0/I0/M0로 판정했다. 정확tuple/후보불변부·역참조/원본/양식/snapshot, 표시scope/ABA/현재401·별도읽기상태와기존제안보존을확인했다. Git권한실패로HEAD/dirty는독립확인하지못했으며 Main의실제출력과구분했다.
