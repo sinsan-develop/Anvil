@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installWorkspaceBundle } from '../UI04/bundle.ts';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
@@ -6,6 +7,7 @@ import { buildOfficialForms } from '../../../apps/server/modules/documents/forms
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', user = '32b5f276-13e6-4d8a-b93f-27a15d21c788', candidateId = 'a6f30000-0000-4000-8000-000000000090', proposalId = 'a6f30000-0000-4000-8000-000000000091', documentId = 'a6f30000-0000-4000-8000-000000000092';
 const at = '2026-10-16T05:00:00.000Z', importedText = '\uFEFF# 보관 원문\r\n<script>window.STORED_EXECUTED=1</script>  \r\n', baseText = '# 기존 문서\n기존 원문', proposedText = '# 보관 제안\n명시 선택 후 반영';
 async function fixture(page: Page, viewer = false) {
+  if (process.env.ANVIL_UI04_QA_DIST === 'apps/web/dist') await installWorkspaceBundle(page);
   const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url))), form = catalog.forms[0]!;
   const files = new Map<string, Buffer>();
   const file = (text: string, mediaType = 'text/markdown;charset=utf-8') => { const artifactId = crypto.randomUUID(), bytes = Buffer.from(text); files.set(artifactId,bytes); return { artifactId, bytes: bytes.length, contentHash: createHash('sha256').update(bytes).digest('hex'), mediaType }; };

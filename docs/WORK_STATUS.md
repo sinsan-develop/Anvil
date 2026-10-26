@@ -1,4 +1,14 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 수집 오류 보정 검수 종료
+
+- 같은 writer의 COLLECTION_FIX2D780255는 원본 material-library.spec.ts에 bundle helper import와 명시env현재build공급2줄을 추가하고 새wrapper9줄을 삭제했다. 제품2/신규직접시험·기존5기대값/서버모드는 그대로다. Main7a6c7e apply/hash대조 뒤 원본+신규직접시험 --list10건/2파일 exit0·기존5DOM PASS5.9초, 281c0b terminal type/diff exit0이다. 3217de 원본시험D56B37FA·wrapper부재를 확인했다.
+- 독립 reviewer는 원wrapperC0판정을 이 실제오류에 대해 철회하고 I1 ADDRESSED·수정범위C0/I0/M0로 판정했다. 기존게시92778fd4는 보존하며 별도 시험보정 커밋으로 진행한다. 원오류963158/단독검수한계는 삭제하지 않는다. 같은 제품의직접DOM5와unit2/build는 변경되지 않아 반복하지 않았다.
+- 다음 미완료는 보관 가져오기 후보 사용 이력에서 실제 저장 문서 원문을 여는 기존GET 소비다. 후보는 여러 문서/버전에 쓰이고 본문이 편집될 수 있으므로 제안의same본문/base+1 규칙을 재사용하지 않는다. 서버 import refs/원본 artifact·지정양식·문서snapshot/본문hash를 검증하는 읽기 단위로 설계하며 실제DB/권한·자동저장0이다.
+### 2026-10-26 UI06 게시 후 시험 수집 오류 — Main 보정
+
+- Mainfe1399 소유6경로92778fd40c8e2a511a5fbd73eb190bdcf346f623을 기록했고8b726e local/private exact·trackedclean·보호8·원격main f976ed5e/localmain04430432 불변을 확인했다. 제품 한정 검수는 보존한다.
+- 후속 Main40c43d가 설치 Playwright의 test-file-import 금지 구현을 확인한 뒤963158에서 original+wrapper 두파일 --list만 수행했다. 'test file UI06/selected-proposal-existing-regression.spec.ts should not import test file UI06/material-library.spec.ts' exit1/0tests다. 단독5PASS를 두파일/전체suite 수집호환으로 승격한 것은 아니지만 게시된 wrapper는 수집을 깨므로 즉시 보정한다. 원인은 Main이 지시한 wrapper 방식이며 Developer의 기능 실패 횟수로 계산하지 않는다.
+- 같은 writer에게 신규wrapper삭제와 기존 material-library의 env명시 현재빌드 공급만 추가하는 최소 시험보정을 배정했다. 제품/신규직접시험·기대값·기존서버모드 변경0이다. 기존게시커밋은 보존·historyrewrite0, --list→직접영향5시험/type/diff·독립scoped검수 후 후속커밋한다. 일반Stage/전체기능 완료는 아니다.
 ### 2026-10-26 UI06 반영 결과 원문 — 한정 검수 종료
 
 - TESTTYPE_DELTA D0AD5DDB는 payload의 satisfies Plan 한 곳만 추가했다. Main15a63c 적용 후 type exit0·정상 반영 결과 정확v2 원문 DOM1 PASS·2.3초, 43f246 selection관계/복수·metadata/hash/body변조·403/404·주체/client/project/이탈·ABA·지연401 DOM4 PASS·9.0초/skip0이다.
