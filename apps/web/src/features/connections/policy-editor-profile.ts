@@ -2,7 +2,7 @@ export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARAT
 export const policyEditorOperations={
  CANDIDATE:[['registerConnection','도구 후보 저장'],['saveEnvironment','환경 후보 저장']],
  PROJECT_MATERIAL:[
-  ['uploadArtifact','원문 파일 보관'],['saveDocumentDraft','문서 초안 저장'],['recordContentReview','내용 검토 기록'],['confirmDocument','문서 확정'],
+  ['exportProject','선택 문서 원본 1개 반출'],['uploadArtifact','원문 파일 보관'],['saveDocumentDraft','문서 초안 저장'],['recordContentReview','내용 검토 기록'],['confirmDocument','문서 확정'],
   ['proposeDocumentChange','문서 수정 제안'],['importDocument','문서 가져오기'],['detachDocumentSource','문서 소스 연결 해제'],['indexDesignDocument','설계 항목 연결'],['saveWorkPlanDraft','작업계획 초안 저장'],
   ['confirmWorkPlan','작업계획 확정'],['proposeDesignChange','설계 변경 요청'],['reviewChangeImpact','변경 영향 검토'],['linkTrace','추적 연결'],
   ['saveKnowledge','헌법·지식 초안 저장'],['appendConversation','대화 원문 보관'],['correctKnowledge','지식 정정'],['excludeKnowledge','지식 제외'],

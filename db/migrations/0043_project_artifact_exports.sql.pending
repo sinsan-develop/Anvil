@@ -1,0 +1,86 @@
+-- FN16 선택 문서 원본 1개 반출. SOURCE ONLY: 일반 runner에 등록하지 않는다.
+-- 실제 PostgreSQL syntax/RLS/FK/경합은 격리 PG 검수 전 NOT_RUN.
+-- NULL/missing/type/extra-key 모두 false로 닫는다. CHECK의 UNKNOWN 허용에 의존하지 않는다.
+CREATE FUNCTION anvil.fn16_export_manifest_shape(m jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE selection jsonb; document_ref jsonb; artifact_ref jsonb; file_entry jsonb;
+BEGIN
+ IF jsonb_typeof(m) IS DISTINCT FROM 'object' THEN RETURN false;END IF;
+ IF ARRAY(SELECT jsonb_object_keys(m) ORDER BY 1) IS DISTINCT FROM ARRAY['createdAt','createdBy','files','includeSource','kind','omitted','projectId','schemaVersion','selection']::text[] THEN RETURN false;END IF;
+ selection:=m->'selection';document_ref:=selection->'documentRef';artifact_ref:=selection->'artifactRef';
+ IF jsonb_typeof(selection) IS DISTINCT FROM 'object' OR jsonb_typeof(document_ref) IS DISTINCT FROM 'object' OR jsonb_typeof(artifact_ref) IS DISTINCT FROM 'object' OR jsonb_typeof(m->'createdBy') IS DISTINCT FROM 'object' OR jsonb_typeof(m->'files') IS DISTINCT FROM 'array' OR jsonb_typeof(m->'omitted') IS DISTINCT FROM 'array' THEN RETURN false;END IF;
+ IF ARRAY(SELECT jsonb_object_keys(selection) ORDER BY 1) IS DISTINCT FROM ARRAY['artifactRef','documentRef','kind']::text[]
+ OR ARRAY(SELECT jsonb_object_keys(document_ref) ORDER BY 1) IS DISTINCT FROM ARRAY['contentHash','id','version']::text[]
+ OR ARRAY(SELECT jsonb_object_keys(artifact_ref) ORDER BY 1) IS DISTINCT FROM ARRAY['artifactId','bytes','contentHash','mediaType']::text[]
+ OR ARRAY(SELECT jsonb_object_keys(m->'createdBy') ORDER BY 1) IS DISTINCT FROM ARRAY['kind','userId']::text[] THEN RETURN false;END IF;
+ IF jsonb_array_length(m->'files')<>1 THEN RETURN false;END IF;file_entry:=m->'files'->0;
+ IF jsonb_typeof(file_entry) IS DISTINCT FROM 'object' THEN RETURN false;END IF;
+ IF ARRAY(SELECT jsonb_object_keys(file_entry) ORDER BY 1) IS DISTINCT FROM ARRAY['artifactRef','downloadName']::text[] OR file_entry->'artifactRef' IS DISTINCT FROM artifact_ref THEN RETURN false;END IF;
+ RETURN (jsonb_typeof(m->'createdAt')='string' AND jsonb_typeof(m->'projectId')='string' AND jsonb_typeof(m->'kind')='string'
+ AND jsonb_typeof(selection->'kind')='string' AND jsonb_typeof(document_ref->'id')='string' AND jsonb_typeof(document_ref->'contentHash')='string' AND jsonb_typeof(document_ref->'version')='number'
+ AND jsonb_typeof(artifact_ref->'artifactId')='string' AND jsonb_typeof(artifact_ref->'contentHash')='string' AND jsonb_typeof(artifact_ref->'mediaType')='string' AND jsonb_typeof(artifact_ref->'bytes')='number'
+ AND jsonb_typeof(file_entry->'downloadName')='string' AND jsonb_typeof(m->'createdBy'->'kind')='string' AND jsonb_typeof(m->'createdBy'->'userId')='string'
+ AND document_ref->>'version' ~ '^[1-9][0-9]{0,15}$' AND artifact_ref->>'bytes' ~ '^(0|[1-9][0-9]{0,7})$'
+ AND (document_ref->>'version')::numeric<=9007199254740991 AND (artifact_ref->>'bytes')::numeric<=20971520
+ AND length(artifact_ref->>'mediaType') BETWEEN 1 AND 200) IS TRUE;
+END;$$;
+CREATE TABLE anvil.project_artifact_exports (
+ id uuid PRIMARY KEY, project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ document_id uuid NOT NULL, document_version bigint NOT NULL CHECK(document_version>0), document_content_hash text NOT NULL,
+ artifact_id uuid NOT NULL, artifact_content_hash text NOT NULL CHECK(artifact_content_hash~'^[a-f0-9]{64}$'),
+ actor_id uuid NOT NULL REFERENCES anvil.users(id) ON DELETE RESTRICT, client_id uuid NOT NULL,
+ command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ manifest_json jsonb NOT NULL CHECK(anvil.fn16_export_manifest_shape(manifest_json) IS TRUE), content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),
+ created_at timestamptz NOT NULL, UNIQUE(project_id,id),
+ FOREIGN KEY(project_id,document_id,document_version,document_content_hash) REFERENCES anvil.document_versions(project_id,document_id,version,content_hash) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,artifact_id) REFERENCES anvil.artifacts(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ CHECK((manifest_json->>'kind'='SELECTED_DOCUMENT_ARTIFACT_EXPORT' AND manifest_json->'schemaVersion'='1'::jsonb AND manifest_json->'includeSource'='false'::jsonb) IS TRUE),
+ CHECK((manifest_json->>'projectId'=project_id::text AND manifest_json->'selection'->>'kind'='DOCUMENT_ARTIFACT') IS TRUE),
+ CHECK((manifest_json->'selection'->'documentRef'=jsonb_build_object('id',document_id,'version',document_version,'contentHash',document_content_hash)) IS TRUE),
+ CHECK((manifest_json->'selection'->'artifactRef'->>'artifactId'=artifact_id::text AND manifest_json->'selection'->'artifactRef'->>'contentHash'=artifact_content_hash) IS TRUE),
+ CHECK((manifest_json->'createdBy'=jsonb_build_object('kind','HUMAN','userId',actor_id)) IS TRUE),
+ CHECK((manifest_json->'omitted'='["PROJECT_DB_SNAPSHOT","PROJECT_SOURCE","OTHER_PROJECT_MATERIALS","EXECUTION_STATE_RESTORE"]'::jsonb) IS TRUE),
+ CHECK((jsonb_array_length(manifest_json->'files')=1 AND manifest_json->'files'->0=jsonb_build_object('artifactRef',manifest_json->'selection'->'artifactRef','downloadName',artifact_id::text||'.bin')) IS TRUE)
+);
+CREATE INDEX project_artifact_exports_page ON anvil.project_artifact_exports(project_id,created_at DESC,id DESC);
+CREATE FUNCTION anvil.fn16_export_provenance() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands; f anvil.artifacts; d anvil.document_versions;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXPORT_IMMUTABLE' USING ERRCODE='23514';END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=NEW.command_id;
+ SELECT * INTO f FROM anvil.artifacts WHERE project_id=NEW.project_id AND id=NEW.artifact_id;
+ SELECT * INTO d FROM anvil.document_versions WHERE project_id=NEW.project_id AND document_id=NEW.document_id AND version=NEW.document_version AND content_hash=NEW.document_content_hash;
+ IF (c.id IS NULL OR f.id IS NULL OR d.document_id IS NULL OR c.scope_kind<>'PROJECT' OR c.project_id<>NEW.project_id OR c.actor_id<>NEW.actor_id OR c.client_id<>NEW.client_id OR c.operation<>'exportProject' OR c.state<>'APPLIED' OR c.expected_version<>0
+ OR NEW.content_hash<>anvil.source_read_hash(NEW.manifest_json) OR ARRAY(SELECT jsonb_object_keys(NEW.manifest_json) ORDER BY 1)<>ARRAY['createdAt','createdBy','files','includeSource','kind','omitted','projectId','schemaVersion','selection']::text[]
+ OR f.state<>'READY' OR f.content_hash<>NEW.artifact_content_hash
+ OR NOT(d.content_json->'body'=NEW.manifest_json->'selection'->'artifactRef' OR d.content_json->'attachments' @> jsonb_build_array(NEW.manifest_json->'selection'->'artifactRef'))
+ OR NEW.manifest_json->'selection'->'artifactRef'<>jsonb_build_object('artifactId',f.id,'bytes',f.bytes,'contentHash',f.content_hash,'mediaType',f.media_type)
+ OR c.result_ref->>'status'<>'APPLIED' OR c.result_ref->'data'<>jsonb_build_object('status','EXPORT_STORED','ref',jsonb_build_object('id',NEW.id,'version',1,'contentHash',NEW.content_hash))
+ OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts r WHERE r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='PROJECT' AND r.scope_id=NEW.project_id AND r.subject_ref=jsonb_build_object('kind','HUMAN','userId',NEW.actor_id,'clientId',NEW.client_id))
+ OR NOT EXISTS(SELECT 1 FROM anvil.audit_events e WHERE e.command_id=c.id AND e.project_id=NEW.project_id AND e.outcome='APPLIED' AND e.target_ref=jsonb_build_object('id',NEW.id,'version',1,'contentHash',NEW.content_hash))
+ ) IS DISTINCT FROM FALSE THEN RAISE EXCEPTION 'EXPORT_PROVENANCE_INVALID' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn16_export_provenance BEFORE INSERT OR UPDATE OR DELETE ON anvil.project_artifact_exports FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_provenance();
+ALTER TABLE anvil.project_artifact_exports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.project_artifact_exports FORCE ROW LEVEL SECURITY;
+CREATE POLICY fn16_export_read ON anvil.project_artifact_exports FOR SELECT TO anvil_v3_app USING(EXISTS(SELECT 1 FROM anvil.project_members m WHERE m.project_id=project_artifact_exports.project_id AND m.user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND m.revoked_at IS NULL));
+CREATE POLICY fn16_export_insert ON anvil.project_artifact_exports FOR INSERT TO anvil_v3_app WITH CHECK(actor_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND client_id=nullif(current_setting('anvil.client_id',true),'')::uuid AND command_id=nullif(current_setting('anvil.command_id',true),'')::uuid);
+REVOKE ALL ON anvil.project_artifact_exports FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.project_artifact_exports TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn16_export_provenance() FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn16_export_dependency_immutable() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE protected boolean;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN SELECT EXISTS(SELECT 1 FROM anvil.project_artifact_exports WHERE command_id=OLD.id) INTO protected;
+ ELSE SELECT EXISTS(SELECT 1 FROM anvil.project_artifact_exports WHERE command_id=OLD.command_id) INTO protected;END IF;
+ IF protected THEN RAISE EXCEPTION 'EXPORT_DEPENDENCY_IMMUTABLE' USING ERRCODE='23514';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn16_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_dependency_immutable();
+CREATE TRIGGER fn16_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_dependency_immutable();
+CREATE TRIGGER fn16_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn16_export_dependency_immutable();
+REVOKE ALL ON FUNCTION anvil.fn16_export_dependency_immutable() FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn16_export_manifest_shape(jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn16_export_manifest_shape(jsonb) TO anvil_v3_app;

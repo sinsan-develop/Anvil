@@ -6,5 +6,5 @@ export function SettingsSourceLinks({projectId}:{projectId:string|null}){
   projectId?h('nav',{'aria-label':'같은 프로젝트 원화면'},h('ul',null,...sources.map(([screen,label])=>h('li',{key:screen},h('a',{href:routeHref(screen,projectId)},label))))):
    h('p',null,'프로젝트를 선택하면 같은 프로젝트의 원화면으로 이동할 수 있습니다. ',h('a',{href:routeHref('projects',null)},'프로젝트 선택')),
   h('p',{className:'meta'},'이동은 설정 저장·백업·복원·승인·실행이 아닙니다. 실제 상태는 각 원화면에서 조회하며 여기서 건수나 성공 상태를 합성하지 않습니다.'),
-  h('p',null,'백업·복원 설정·실행은 미구현입니다. 설정 저장이나 검증 기록을 실제 백업·복원 성공으로 표시하지 않습니다.'));
+  h('p',null,'선택 문서 원본 1개의 수동 반출은 아래 패널에서 별도로 준비·전송합니다. 전체 프로젝트 백업·복원 설정·실행은 아직 연결되지 않았습니다.'));
 }
