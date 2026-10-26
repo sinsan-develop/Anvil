@@ -11,6 +11,7 @@ import {readExportPayload,exact} from '../../../apps/server/modules/backups/proj
 import {ProjectListCodec} from '../../../apps/server/modules/projects/service.ts';
 import type {ProjectCommand} from '../../../apps/server/modules/access/project-command.ts';
 import {createHash} from 'node:crypto';
+import {executionPreparationQaDatabase} from '../../../scripts/execution-preparation-qa.ts';
 const reject=():never=>{throw Error('FN16_EXPLICIT_ISOLATED_QA_CONFIG_REQUIRED');};
 export async function validateConfig(v:unknown){
  if(!exact(v,['kind','qaRoot','artifactRoot','exportRoot','connection','installationId','authKeyHex','sessionToken','csrfToken','command','expectedBytesHex'])||v.kind!=='FN16_ISOLATED_PG_QA'||!exact(v.connection,['host','port','database','user','password','ssl'])||typeof v.connection.database!=='string'||!/^anvil_fn16_qa_[a-z0-9_]+$/.test(v.connection.database)||typeof v.connection.host!=='string'||!v.connection.host||!Number.isSafeInteger(v.connection.port)||Number(v.connection.port)<1||Number(v.connection.port)>65535||typeof v.connection.user!=='string'||!v.connection.user||typeof v.connection.password!=='string'||!v.connection.password||v.connection.ssl!==false||typeof v.authKeyHex!=='string'||!/^[a-f0-9]{64}$/.test(v.authKeyHex)||typeof v.sessionToken!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(v.sessionToken)||typeof v.csrfToken!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(v.csrfToken)||typeof v.installationId!=='string'||typeof v.expectedBytesHex!=='string'||!/^(?:[a-f0-9]{2})*$/.test(v.expectedBytesHex))return reject();
@@ -19,10 +20,9 @@ export async function validateConfig(v:unknown){
  if(v.artifactRoot===v.exportRoot)return reject();
  const c=v.command as ProjectCommand;if(!c||c.operation!=='exportProject'||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null||!Array.isArray(c.baselineRefs)||c.baselineRefs.length)return reject();const payload=readExportPayload(c.payload);if(Buffer.from(v.expectedBytesHex,'hex').length!==payload.selection.artifactRef.bytes||createHash('sha256').update(Buffer.from(v.expectedBytesHex,'hex')).digest('hex')!==payload.selection.artifactRef.contentHash)return reject();return v as any;
 }
-async function run(){
- if(process.argv.length!==4||process.argv[2]!=='--config'||!path.isAbsolute(process.argv[3]!))return reject();
- const configPath=process.argv[3]!,stat=await fs.lstat(configPath);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>2*1024*1024)return reject();
- const c=await validateConfig(JSON.parse(await fs.readFile(configPath,'utf8'))),pool=new Pool({...c.connection,max:2,connectionTimeoutMillis:5000,statement_timeout:30000});
+export async function runProjectArtifactExportPg(input:unknown,options:{before:()=>void;queryMs:number;expires:number}={before:()=>{},queryMs:30000,expires:Infinity}){
+ options.before();if(!Number.isSafeInteger(options.queryMs)||options.queryMs<1||options.queryMs>30000)throw Error('FN16_QA_QUERY_BUDGET_INVALID');
+ const c=await validateConfig(input);options.before();const pool=executionPreparationQaDatabase(new Pool({...c.connection,max:2,connectionTimeoutMillis:Math.min(5000,options.queryMs),query_timeout:options.queryMs,statement_timeout:options.queryMs}),options.before);
  try{
   const identity=(await pool.query('SELECT current_database() name,current_user role,(SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname=current_user) bypass')).rows[0];assert.equal(identity.name,c.connection.database);assert.equal(identity.role,'anvil_v3_app');assert.equal(identity.bypass,false);
   const schema=(await pool.query("SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid=to_regclass('anvil.project_artifact_exports')")).rows[0];assert.ok(schema?.relrowsecurity&&schema?.relforcerowsecurity,'0043 must be explicitly applied by the isolated QA owner before running');
@@ -44,7 +44,8 @@ async function run(){
    }
   });
   const db=await pool.connect();try{await db.query('BEGIN');const hidden=await db.query('SELECT id FROM anvil.project_artifact_exports');assert.equal(hidden.rowCount,0,'RLS without trusted actor context must hide jobs');await assert.rejects(()=>db.query('DELETE FROM anvil.project_artifact_exports WHERE id=$1',[first.data.ref.id]));await db.query('ROLLBACK');}finally{db.release();}
-  console.log(JSON.stringify({kind:'FN16_ISOLATED_PG_QA_RESULT',database:identity.name,ref:first.data.ref,bytes:file.bytes.length,checks:['STANDARD_AUTH_POLICY_COMMAND','REAL_COMMIT_REPLAY','JOB_FK_PROVENANCE','RLS_APP_ROLE','ACTUAL_COPY_BYTES','LIST_READ','APP_DELETE_DENIED','NULL_SELECTION_CHECK_DENIED','NULL_ARTIFACT_REF_CHECK_DENIED'],scope:'selected artifact only; no production or user acceptance'}));
- }finally{await pool.end();}
+  return {kind:'FN16_ISOLATED_PG_QA_RESULT',database:identity.name,ref:first.data.ref,bytes:file.bytes.length,checks:['STANDARD_AUTH_POLICY_COMMAND','REAL_COMMIT_REPLAY','JOB_FK_PROVENANCE','RLS_APP_ROLE','ACTUAL_COPY_BYTES','LIST_READ','APP_DELETE_DENIED','NULL_SELECTION_CHECK_DENIED','NULL_ARTIFACT_REF_CHECK_DENIED'],scope:'selected artifact only; no production or user acceptance'};
+ }finally{let timer:ReturnType<typeof setTimeout>|undefined;try{await Promise.race([pool.end(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('FN16_QA_CONNECTION_CLEANUP_TIMEOUT')),Math.max(1,Math.min(10000,options.expires-Date.now())));})]);}finally{if(timer)clearTimeout(timer);}}
 }
+async function run(){if(process.argv.length!==4||process.argv[2]!=='--config'||!path.isAbsolute(process.argv[3]!))return reject();const configPath=process.argv[3]!,stat=await fs.lstat(configPath);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>2*1024*1024)return reject();console.log(JSON.stringify(await runProjectArtifactExportPg(JSON.parse(await fs.readFile(configPath,'utf8')))));}
 if(process.argv[1]&&path.resolve(process.argv[1])===path.resolve(fileURLToPath(import.meta.url)))run().catch(e=>{console.error(e instanceof Error?e.name:'FN16_QA_FAILED');process.exitCode=1;});

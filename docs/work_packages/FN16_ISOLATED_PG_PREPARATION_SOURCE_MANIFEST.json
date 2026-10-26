@@ -1,0 +1,27 @@
+{
+  "files": [
+    {
+      "path": "scripts/qa-fn16-selected-export-isolated.ts",
+      "sha256": "E17BB5C483A2FAEDAF000C5EB4137F47D19FCD805CB8568F54F81AA613EEFECE"
+    },
+    {
+      "path": "tests/unit/FN16/isolated-export-workflow-input.test.ts",
+      "sha256": "F29ECC24671C581E0A3209257B42D325C1D7408FCFACF37DE8077554DEBAB4F5"
+    },
+    {
+      "path": "tests/integration/FN16/project-artifact-export-pg.ts",
+      "sha256": "A868531E9DA40FDA91B6D742C232AF769E6DF738C60929AE462F87823D1CAE0A"
+    }
+  ],
+  "mainValidation": {
+    "existingCliGuard": 1,
+    "inputTests": 6,
+    "actualPg": "NOT_RUN",
+    "typecheck": 0,
+    "diffcheck": 0
+  },
+  "parent": "92cef0472f58b7a2c8656f70ac29c210316350f8",
+  "kind": "FN16_ISOLATED_PG_PREPARATION_SOURCE",
+  "workInstructionSha256": "250E355E33F70F8F9D3CEDA3BF0552207188113AB55A97825B55962CD7E31373",
+  "independentReview": "C0/I0/M0 source only"
+}
