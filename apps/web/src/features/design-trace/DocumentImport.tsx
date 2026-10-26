@@ -71,14 +71,20 @@ function CreatedOriginalDocumentImport({client,session,buffer,onChange,onAuthent
  const sameHint=!!hint&&(!state||state.original.draftId===hint.draftId&&state.original.artifactId===hint.artifactId);
  // 시도 객체를 바꿔 A→B→A에서도 이전 async 결과를 표시하지 않는다.
  const key=JSON.stringify([session.user.id,session.clientId,session.csrfToken,buffer.ownerUserId,buffer.projectId,buffer.documentId,buffer.baseVersion,buffer.baseHash,buffer.controlGeneration,buffer.formRef,buffer.stageNodeRef,buffer.title,buffer.body,buffer.reason,buffer.content,hint,disabled]);
- type Scope={client:ApiClient;key:string;generation:number;mounted:boolean};
- const scopeRef=useRef<Scope>({client,key,generation:0,mounted:true});
- if(scopeRef.current.client!==client||scopeRef.current.key!==key)scopeRef.current={client,key,generation:0,mounted:true};
+ type Scope={client:ApiClient;key:string;generation:number;mounted:boolean;issued:WeakMap<DocumentBuffer,number>;sequence:number;observedSequence:number;observed:DocumentBuffer};
+ const newScope=():Scope=>({client,key,generation:0,mounted:true,issued:new WeakMap([[buffer,0]]),sequence:0,observedSequence:0,observed:buffer});
+ const scopeRef=useRef<Scope>(newScope());
+ const previous=scopeRef.current,issuedSequence=previous.issued.get(buffer);
+ // 내부 updater가 발급한 새 객체만 이어 받는다. 외부 교체/과거 객체 복귀는 같은 값이어도 이전 scope를 폐기한다.
+ if(previous.client!==client||previous.key!==key||previous.observed!==buffer&&(issuedSequence===undefined||issuedSequence<=previous.observedSequence)){
+  previous.mounted=false;previous.generation++;scopeRef.current=newScope();
+ }else if(previous.observed!==buffer){previous.observed=buffer;previous.observedSequence=issuedSequence!;}
  const scope=scopeRef.current,latest=useRef(buffer);latest.current=buffer;
  const[observation,setObservation]=useState<{scope:Scope;generation:number;state:CreatedOriginalImportBuffer}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<ApiError|null>(null),[ack,setAck]=useState(false);
  const flight=useRef(false);
  useEffect(()=>{scope.mounted=true;setAck(false);setError(null);return()=>{scope.mounted=false;scope.generation++;};},[scope]);
  const current=(generation:number)=>scope.mounted&&scopeRef.current===scope&&scope.generation===generation;
+ function issue(next:DocumentBuffer){scope.issued.set(next,++scope.sequence);return next;}
  const owned=buffer.ownerUserId===session.user.id&&buffer.documentId===null&&buffer.baseVersion===0&&!buffer.pending&&!buffer.proposalState&&!buffer.designIndexState&&!buffer.workPlanState&&!buffer.designDependencyState&&!buffer.formEntry;
  const bound=owned&&sameHint&&(!state||state.ownerUserId===session.user.id&&state.record.clientId===session.clientId&&state.record.projectId===buffer.projectId&&state.record.controlGeneration===buffer.controlGeneration&&JSON.stringify(state.record.payload.intendedFormRef)===JSON.stringify(buffer.formRef));
  const shown=bound&&state&&observation?.scope===scope&&observation.generation===scope.generation&&observation.state===state?state:null;
@@ -89,24 +95,25 @@ function CreatedOriginalDocumentImport({client,session,buffer,onChange,onAuthent
   flight.current=true;setBusy(true);setObservation(null);setError(null);setAck(false);const generation=++scope.generation,captured=buffer,id=crypto.randomUUID();
   const accepted=new WeakSet<DocumentBuffer>([captured]);
   const active=()=>current(generation)&&accepted.has(latest.current)&&sameBuffer(latest.current)&&(!state?latest.current.importPreparationId===id||latest.current===captured:latest.current.importState===state);
-  if(!state)onChange(b=>{if(!current(generation)||b!==captured||b.importState||b.importPreparationId)return b;const next={...b,importPreparationId:id,dirty:true};accepted.add(next);return next;});
+  if(!state)onChange(b=>{if(!current(generation)||b!==captured||b.importState||b.importPreparationId)return b;const next=issue({...b,importPreparationId:id,dirty:true});accepted.add(next);return next;});
   try{
    if(state){await refreshCreatedOriginalImport(client,state,buffer.formRef,session,active);if(active())setObservation({scope,generation,state});}
-   else{const next=await prepareCreatedOriginalImport(client,buffer,session,hint,active);if(!active())return;onChange(b=>active()&&sameBuffer(b)&&b&&accepted.has(b)&&b.importPreparationId===id&&!b.importState?{...b,importPreparationId:null,importState:next,dirty:true}:b);setObservation({scope,generation,state:next});}
+   else{const next=await prepareCreatedOriginalImport(client,buffer,session,hint,active);if(!active())return;onChange(b=>active()&&sameBuffer(b)&&b&&accepted.has(b)&&b.importPreparationId===id&&!b.importState?issue({...b,importPreparationId:null,importState:next,dirty:true}):b);setObservation({scope,generation,state:next});}
   }catch(cause){if(current(generation))invalidate(cause);}
-  finally{if(!state)onChange(b=>b?.importPreparationId===id?{...b,importPreparationId:null}:b);flight.current=false;setBusy(false);}
+  // 표시 권한이 폐기돼도 같은 편집 대상에 남은 자기 준비 잠금만 정리한다. 새 작업 ID/다른 대상은 보존한다.
+  finally{if(!state)onChange(b=>b&&b.importPreparationId===id&&b.ownerUserId===captured.ownerUserId&&b.projectId===captured.projectId&&b.documentId===captured.documentId&&b.baseVersion===captured.baseVersion&&b.baseHash===captured.baseHash?issue({...b,importPreparationId:null}):b);flight.current=false;setBusy(false);}
  }
  async function create(){
   if(disabled||flight.current||!shown||shown.candidate)return;
   flight.current=true;setBusy(true);setError(null);setAck(false);const generation=++scope.generation,commandId=shown.recordCommandId,attemptId=crypto.randomUUID(),pending={...shown,attempted:true,attemptId},priorUncertain=shown.uncertain;
   const accepted=new WeakSet<DocumentBuffer>([buffer]);
   const active=()=>current(generation)&&accepted.has(latest.current)&&sameBuffer(latest.current)&&latest.current.importState?.recordCommandId===commandId;
-  const checkpoint=(value:CreatedOriginalImportBuffer)=>{onChange(b=>{if(!active()||!sameBuffer(b)||!b||!accepted.has(b)||b.importState?.recordCommandId!==commandId)return b;const next={...b,importState:value,dirty:true};accepted.add(next);return next;});setObservation({scope,generation,state:value});};
+  const checkpoint=(value:CreatedOriginalImportBuffer)=>{onChange(b=>{if(!active()||!sameBuffer(b)||!b||!accepted.has(b)||b.importState?.recordCommandId!==commandId)return b;const next=issue({...b,importState:value,dirty:true});accepted.add(next);return next;});setObservation({scope,generation,state:value});};
   checkpoint(pending);
   try{const result=await continueDocumentImport(client,pending,buffer.formRef,session,checkpoint,active);if(active())checkpoint(result);}
   catch(cause){if(current(generation)){
    const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID'),failure=documentFailure(e);
-   onChange(b=>sameBuffer(b)&&b&&accepted.has(b)&&b.importState?.recordCommandId===commandId?{...b,importState:{...b.importState,failure,uncertain:priorUncertain||b.importState.uncertain||!rejectedDocumentImport({...pending,uncertain:false,failure})}}:b);
+   onChange(b=>scopeRef.current===scope&&scope.mounted&&sameBuffer(b)&&b&&accepted.has(b)&&b.importState?.recordCommandId===commandId&&b.importState.attemptId===attemptId?issue({...b,importState:{...b.importState,failure,uncertain:priorUncertain||!rejectedDocumentImport({...pending,uncertain:false,failure})}}):b);
    invalidate(e);
   }}finally{flight.current=false;setBusy(false);}
  }
@@ -114,7 +121,7 @@ function CreatedOriginalDocumentImport({client,session,buffer,onChange,onAuthent
   if(disabled||flight.current||!shown||shown.candidate?.status!=='READY'||!ack)return;
   flight.current=true;setBusy(true);setError(null);const captured=buffer,generation=++scope.generation;setObservation(null);setAck(false);
   const active=()=>current(generation)&&latest.current===captured&&sameBuffer(latest.current);
-  try{const next=await adoptDocumentImport(client,captured,session,active);if(active())onChange(b=>active()&&b===captured?next:b);}
+  try{const next=await adoptDocumentImport(client,captured,session,active);if(active())onChange(b=>active()&&b===captured?issue(next):b);}
   catch(cause){if(current(generation))invalidate(cause);}finally{flight.current=false;setBusy(false);}
  }
  let preview:string|null=null;if(shown?.candidate?.status==='READY'){try{preview=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(shown.bytes);}catch{/* 손실 변환하지 않는다. */}}
@@ -124,7 +131,7 @@ function CreatedOriginalDocumentImport({client,session,buffer,onChange,onAuthent
   {busy?<p role="status">현재 원문과 권한 확인 중</p>:null}
   {shown?<><p>프로젝트 생성 자료 · {shown.bytes.length} bytes · {String(shown.record.payload.fileRef&&(shown.record.payload.fileRef as {mediaType:string}).mediaType)}</p><p>원문 SHA256 {(shown.record.payload.fileRef as {contentHash:string}).contentHash}</p>
    {!shown.candidate?<><button type="button" disabled={disabled||busy} onClick={()=>void create()}>{shown.attempted?'같은 가져오기 명령 결과 확인':'기존 원문으로 후보 만들기'}</button>{shown.attempted?<p>결과 확인 전에는 원 명령을 유지하며 새 후보 명령을 만들지 않습니다.</p>:null}</>:<><p role="status">가져오기 후보 {shown.candidate.status} · {shown.candidate.id}</p>{shown.candidate.issues.map((issue,i)=><p key={i}>{issue.code} · {issue.message}</p>)}{preview!==null?<><pre className="document-original" aria-label="생성 자료 후보 원문">{preview}</pre><label><input type="checkbox" disabled={disabled||busy} checked={ack} onChange={e=>setAck(e.target.checked)}/>원문을 확인했고 현재 편집 본문을 이 후보로 바꾸겠습니다</label><button type="button" disabled={disabled||busy||!ack} onClick={()=>void adopt()}>이 후보로 초안 준비</button></>:<p>본문 반영 불가입니다. 원문 보존을 문서 추출 성공으로 취급하지 않습니다.</p>}</>}
-   {!shown.attempted||shown.candidate||rejectedDocumentImport(shown)?<button type="button" disabled={disabled||busy} onClick={()=>{const generation=++scope.generation;onChange(b=>current(generation)&&sameBuffer(b)&&b?.importState?.recordCommandId===shown.recordCommandId?{...b,importState:null}:b);setObservation(null);setAck(false);}}>후보 선택 닫기</button>:null}
+   {!shown.attempted||shown.candidate||rejectedDocumentImport(shown)?<button type="button" disabled={disabled||busy} onClick={()=>{const generation=++scope.generation;onChange(b=>current(generation)&&sameBuffer(b)&&b?.importState?.recordCommandId===shown.recordCommandId?issue({...b,importState:null}):b);setObservation(null);setAck(false);}}>후보 선택 닫기</button>:null}
   </>:null}
   {error?<p role="alert">{error.code} · 기존 입력과 원 명령은 보존했습니다.</p>:null}
   <p className="meta">브라우저 전체 새로고침은 미확인 명령을 복원하지 않습니다. 보관한 후보·제안에서 저장된 후보를 먼저 확인하세요.</p>

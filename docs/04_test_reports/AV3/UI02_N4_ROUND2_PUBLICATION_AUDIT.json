@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "816f34f117845c9522a61bc2b1a01e91a4f244f3",
+  "kind": "SOURCE_CHECKPOINT_NOT_STAGE_ACCEPTANCE",
+  "entries": [
+    {
+      "path": "apps/web/src/shell/routes.ts",
+      "workingSha256": "C0ABC61A9864F18E9CC0296B14DA648633034D5FA88F8DF981E217656C920806",
+      "gitBlobSha256": "C0ABC61A9864F18E9CC0296B14DA648633034D5FA88F8DF981E217656C920806",
+      "gitBlobObjectId": "cda5a0e7fdba3b36552a4e80b4dc20022f8c0d68",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "workingSha256": "591DFBD1C67E6DF268D45E0C32853F2256A05420FBCC58DE9BC2971AF279B5B6",
+      "gitBlobSha256": "591DFBD1C67E6DF268D45E0C32853F2256A05420FBCC58DE9BC2971AF279B5B6",
+      "gitBlobObjectId": "0bde07354bb3b6226bb13616710ffd08124d63e1",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/DraftArtifactsPanel.tsx",
+      "workingSha256": "5DF1AAB9EB4EC5CB43E022E2D072EE93C47DD704A2D5A790EFA2616C90DF3E44",
+      "gitBlobSha256": "47A37B01F7F2942ABB56ADE75B3307794F31896F1B19551C8C83FA248538452B",
+      "gitBlobObjectId": "ac035fd7e82810c9d4dc70ae8f3136b099f1b48a",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentsPage.tsx",
+      "workingSha256": "E06D55B99A1EE03E8BA8DA7033D375A7FFD317A1C42E28025A881908655BE23A",
+      "gitBlobSha256": "E06D55B99A1EE03E8BA8DA7033D375A7FFD317A1C42E28025A881908655BE23A",
+      "gitBlobObjectId": "a1c4107165b753d0b6e560fca796ca265aac0906",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentEditor.tsx",
+      "workingSha256": "D9DD666E8E599AB2014F758E2A17B651AE9FECACD74F4E22AA69ABA437B43513",
+      "gitBlobSha256": "D9DD666E8E599AB2014F758E2A17B651AE9FECACD74F4E22AA69ABA437B43513",
+      "gitBlobObjectId": "35cdfb7e931cf4abfc671479a3b4cc8930231b74",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/DocumentImport.tsx",
+      "workingSha256": "6D0B9AED0B743CA843AB4A1DD4D7773299BEC9D25435474244F076C768E9E4FA",
+      "gitBlobSha256": "6D0B9AED0B743CA843AB4A1DD4D7773299BEC9D25435474244F076C768E9E4FA",
+      "gitBlobObjectId": "89a8f100e9f4fd0b2d2436fbda20b42ab01ad9ca",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/import-api.ts",
+      "workingSha256": "22AC9C5638457914BC80DF7FC56AAD74370B0D3D2ACA1745EA26D605CEC421D6",
+      "gitBlobSha256": "22AC9C5638457914BC80DF7FC56AAD74370B0D3D2ACA1745EA26D605CEC421D6",
+      "gitBlobObjectId": "c9a6ac97b2f2c6de783bff85f817f6e650b862a6",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/imported-png-attachment.ts",
+      "workingSha256": "687C78C492CFA263A3AF4EB1D2653CC7B9BCDDDDCEDDBCA15057BDA7B574DB88",
+      "gitBlobSha256": "687C78C492CFA263A3AF4EB1D2653CC7B9BCDDDDCEDDBCA15057BDA7B574DB88",
+      "gitBlobObjectId": "26c126c0379e48941ed44320d7238404948e999c",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/design-trace/created-original-import.ts",
+      "workingSha256": "FAAC769DCF1A191B2D238FAEDFBFDDC2C9427580893EBF87369C9C2C196D3CE5",
+      "gitBlobSha256": "FAAC769DCF1A191B2D238FAEDFBFDDC2C9427580893EBF87369C9C2C196D3CE5",
+      "gitBlobObjectId": "41dbebd7a8f777329b8678e2d17cb1ea6c0f31f4",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/unit/UI06/created-original-import.test.ts",
+      "workingSha256": "CE7CD3EDDEAF2B02E8A994F7580F8DC35A8DBA2A06FA3B1C4870D623C85F12A4",
+      "gitBlobSha256": "CE7CD3EDDEAF2B02E8A994F7580F8DC35A8DBA2A06FA3B1C4870D623C85F12A4",
+      "gitBlobObjectId": "a473cb73ef82977f45fd969b47ac60106a4c8954",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/browser/UI06/created-original-import.spec.ts",
+      "workingSha256": "6ED058975689514BFC3EBBCDD04DB482057F7FC7B7B4D93B4E1DE7D8DEFAE6F8",
+      "gitBlobSha256": "6ED058975689514BFC3EBBCDD04DB482057F7FC7B7B4D93B4E1DE7D8DEFAE6F8",
+      "gitBlobObjectId": "924cf8856add9c965ac600fe1e94ac534fb9b372",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/browser/UI06/created-original-import-harness.tsx",
+      "workingSha256": "B77607A53B6AEEAB70FEE6F65DBD32DED4B093ED566B66865C92C6A4290FBB3C",
+      "gitBlobSha256": "B77607A53B6AEEAB70FEE6F65DBD32DED4B093ED566B66865C92C6A4290FBB3C",
+      "gitBlobObjectId": "565fea8731231eadc784f86c3c68b97cbf1ca516",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/unit/UI00/routes.test.ts",
+      "workingSha256": "A84FA88CCFF52C10BC2A2E3369734BAEE385881A8BEF9886DB6F03BACA34AEF8",
+      "gitBlobSha256": "A84FA88CCFF52C10BC2A2E3369734BAEE385881A8BEF9886DB6F03BACA34AEF8",
+      "gitBlobObjectId": "49055e03796b6874763a0cae822332b98dbc8cd3",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "scripts/development-recovery-path-guard.cs",
+      "workingSha256": "D3235B380633E005ABD475A5730B42C982AE64F4AB162F48538C6B77B4DD79F0",
+      "gitBlobSha256": "05A95646A6D538DB0EEE8DA4078F844BB952A19414C77ACE03F1ADED4F94B4FE",
+      "gitBlobObjectId": "91a00935df63cc416b781a8c354eea9aa0180410",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "scripts/development-recovery-host.ps1",
+      "workingSha256": "1EA9445DDC3309E67B201231D214968B70D82DA6EE6624BBAE59E1C2E951D2E6",
+      "gitBlobSha256": "1EA9445DDC3309E67B201231D214968B70D82DA6EE6624BBAE59E1C2E951D2E6",
+      "gitBlobObjectId": "2e75a0f70843c350125155d1dc43a6cece53f90f",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/native/FN06/StandaloneReportPayloadSourceTests.cs",
+      "workingSha256": "2AED0B860A39F55604DE55BC435239AC8895B85341DFB148A0313878BB4C963E",
+      "gitBlobSha256": "2AED0B860A39F55604DE55BC435239AC8895B85341DFB148A0313878BB4C963E",
+      "gitBlobObjectId": "28b51bdaf985d559578ac44b77591a038656c1d1",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/native/FN06/StandaloneReportTransportSourceTests.cs",
+      "workingSha256": "1B8D86FAFA3B970E0EA984759C384EF27098563512CE5992825AE24EEB0E9B53",
+      "gitBlobSha256": "1B8D86FAFA3B970E0EA984759C384EF27098563512CE5992825AE24EEB0E9B53",
+      "gitBlobObjectId": "5884fe28f205bc04a22d5da440abf074f0fcfe5b",
+      "gitBlobDiffersOnlyByCrLf": false
+    }
+  ],
+  "actualNativeExecution": "NOT_RUN",
+  "actualDbServedAgent": "NOT_RUN",
+  "attributesChanged": false
+}

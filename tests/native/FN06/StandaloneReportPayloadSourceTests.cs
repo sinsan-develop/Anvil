@@ -123,8 +123,42 @@ internal static class StandaloneReportPayloadSourceTests
         if(boundary.Length!=16384)throw new InvalidOperationException("REPORT_TEST_CAP_LAYOUT_INVALID");
         Validate(boundary,rows);rows[4][0]+= "z";Reject(()=>Validate(Payload(rows),rows));
     }
+
+    static void ExpiredOriginalCleanupStillRetainsPrivateSnapshot(){
+        // 미래 격리 source 시험만. false gate는 바꾸지 않고 native 효과 전 실패한 메모리 객체를 구성한다.
+        var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+        var runType=typeof(DevelopmentRecoveryPathGuard.QaStandalonePinRun);
+        var originalField=runType.GetField("original",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic);
+        if(originalField.GetValue(null)!=null)throw new InvalidOperationException("ISOLATED_REPORT_TEST_REQUIRED");
+        DateTime now=DateTime.UtcNow,until=now.AddMinutes(2);
+        var runConstructor=runType.GetConstructor(flags,null,new[]{typeof(string),typeof(string),typeof(DateTime),typeof(DateTime),typeof(DevelopmentRecoveryPathGuard.QaFixedImageSpec),typeof(string),typeof(string),typeof(string)},null);
+        var run=(DevelopmentRecoveryPathGuard.QaStandalonePinRun)runConstructor.Invoke(new object[]{Run,Commit,now,until,null,Report,"0000000000000020",now.ToFileTimeUtc().ToString(System.Globalization.CultureInfo.InvariantCulture)});
+        var hostType=typeof(DevelopmentRecoveryPathGuard.QaOwnedRunHost);
+        var hostConstructor=hostType.GetConstructor(flags,null,new[]{typeof(string),typeof(string),typeof(string),typeof(DateTime),typeof(DateTime),runType},null);
+        var host=(DevelopmentRecoveryPathGuard.QaOwnedRunHost)hostConstructor.Invoke(new object[]{"CHILD_PIN_LIFETIME",Run,Commit,now,until,run});
+        runType.GetField("retainedHost",flags).SetValue(run,host);
+        try{
+            originalField.SetValue(null,run);
+            Reject(()=>run.budget.ObserveSample(run.budget.Deadline,60000));
+            string[][] rows=host.Cleanup();
+            if(rows.Length!=9||rows[2].Length!=3||rows[2][1]!="ORIGINAL_BUDGET_OR_CLOSE_UNKNOWN_PRESERVED")throw new InvalidOperationException("UNKNOWN_SNAPSHOT9_REQUIRED");
+            object pending=runType.GetField("pendingReport",flags).GetValue(run);
+            object client=pending.GetType().GetField("client",flags).GetValue(pending);
+            client.GetType().GetField("ready",flags).SetValue(client,true);
+            // ready 분기여도 Peer의 첫 budget 검사에서 차단되어 native handle 조회/전송0이다.
+            Reject(()=>run.RetainFinalReport(host,rows));
+            var retained=(string[][])pending.GetType().GetField("retainedRows",flags).GetValue(pending);
+            var payload=(byte[])pending.GetType().GetField("retainedPayload",flags).GetValue(pending);
+            if(retained==null||retained.Length!=9||payload==null)throw new InvalidOperationException("PRIVATE_REPORT_PRESERVED_REQUIRED");
+            DevelopmentRecoveryPathGuard.QaStandaloneReportPayload.ValidateOriginal(payload,Run,Commit,now,until,Report,retained);
+            rows[2][1]="changed";if(retained[2][1]!="ORIGINAL_BUDGET_OR_CLOSE_UNKNOWN_PRESERVED")throw new InvalidOperationException("PRIVATE_REPORT_DEEP_COPY_REQUIRED");
+            Reject(()=>run.RequireCurrentBudget());
+        }finally{originalField.SetValue(null,null);}
+    }
+
     internal static void RunAll()
     {
+        ExpiredOriginalCleanupStillRetainsPrivateSnapshot();
         ExactRowsAndRawCodeUnitsArePreserved();EveryTruncationAndTrailingByteAreRejected();HeaderAndOriginalIdentityAreMatched();
         InvalidTicksAndUntrustedCountsAreRejectedBeforeAllocation();FieldAndTotalByteLimitsAreExact();
     }

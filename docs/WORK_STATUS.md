@@ -1,4 +1,74 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI02 소스 검수·DOM12 인수 / 다음 UI10 단일 writer
+
+- 원 담당 round2 제품6D0B9AED/20426bytes, 직전대비 주석+finally1줄(+2/-1) 고정·writer해제다. 직접38PASS/type0/제품437modules 메모리build0, Main5a11c3 정확제품/spec6ED·diff0, 독립 재검수 I3 ADDRESSED·C0/I0/M0다.
+- 5a11c3 새 빈 GREEN 생성10:59:54.3303264Z/만료11:29:54.3303264Z, d05d1c/session91997→fc015d 실제 전체12PASS/0FAIL/0skip·13119.6472ms다. 949058 정확 owner/link/process0 뒤600파일/193폴더·45412974bytes를11:00:45.7539913Z 정리,74dce9 별도11:00:58.0099029Z root/process0 확인. source manifest revision2는 원 revision/RED 이력을 보존하고 실제 DB/served/Agent NOT_RUN을 구분한다.
+- 다음 Stage B FN05/UI10 저장 검토 상세 조회의 카드 C33D2229를 선행 읽기 검수 Important0으로 확정했다. ui10_stored_review_details에게 허용 Page/새 표시컴포넌트·직접시험만 단일 writer로 배정했고 Main 제품 수정0이다. 기존 응답/고정v1 저장 기준을 소비·새 API/SQL/권한0. 제품 전 SSR RED→GREEN/인접/타입/메모리build, Main 별도 DOM·한정검수 순서다.
+- manifest 새 revision 작성의 메모리 참조 복사 때문에 이전 snapshot 필드가 같이 갱신된 것을 즉시 바로잡아 revision1 D434/A3 및 기존 evidence를 보존했다. 제품/결과변경0. 다음 담당 sandbox 쓰기 거절은 정확 허용 파일의 require_escalated 자동심사로 처리하며 ACL/config/다른root 우회0이다.
+### 2026-10-26 UI round2 GREEN 자원 사전등록
+
+- RED의 정확 정리·별도 root/process0 이후 같은 literal D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01에 새 빈 instance/root/temp를 만든다. owner SINSAN\cyhuh·모든 조상 nonlink/realpath/소유/부재를 생성 전 다시 확인한다. 제품 후보 고정과 spec6ED/나머지 원문 확인 후 실행한다.
+- 기존 positive와 round1/round2 전체 spec, 기존 각각90초 제한을 유지한다. 프로필은 전용 browser·browser-round1·browser-round2 세 개이며 TEMP/TMP=root/temp, 기존 ANVIL QA 표식/ROOT만 사용한다. Vite 메모리·실제 컴포넌트/nativefetch·same-origin 합성 응답이다. 실제 DB/서비스/Secret/Agent·사용자 브라우저 변경0이다.
+- 수명은 최초 생성부터30분·정리5분 여유, 최대270초·예상25초다. 성공/실패 모두 context 종료→정확 관련 process0·owner/nonlink/inventory→등록 파일·빈 폴더 개별 정리→별도 root/process0 확인한다. 새 owner/link/활성 process 발견 시 삭제하지 않고 기록한다. 기존 RED와 미검증 범위는 보존한다.
+### 2026-10-26 다음 업무 선행 대조·조회 오류 기록
+
+- 다음 독립 업무는 Stage B FN05/UI10의 보관 지식 항목별 검토 상세 조회다. 기존 서버/reader/검증기의 contentReviews 5항목과 당시 제목·판정·이유·검토자·시각은 존재하고 현재 Page는 JSON만 표시한다. 업무카드 DD233A5B를 작성했으며 새 API/SQL/권한 변경0이다. UI02 round2 writer 해제 뒤 별도 단일 구현자를 배정한다.
+- Main 조회에서 존재하지 않는 knowledge-api.ts와 apps/web/package.json을 추정해 읽어 각각 경로 없음 오류가 발생했다. 실제 api.ts·루트 package.json으로 확인했으며 변경0이다. sandbox Git 경로 접근 거절은 d6e276의 승인된 정확 경로 읽기에서 해소했고 실제 HEAD816f34f1·staging0·기존 dirty/보호8을 확인했다. 같은 추정 조회를 재실행하지 않는다.
+### 2026-10-26 UI round2 실제 RED·전용 자원 정리 완료
+
+- Main 2e2e15/session63011→96b506 실제 exit1, 5tests 중 PASS1/FAIL4/skip0·22372.9904ms다. 최초 이탈·CSRF 변경·같은 값 clone 각각 자기 준비 잠금 잔류와 새 조회 차단 2건을 재현했다. 다른 새 준비 ID 보존은 PASS이며 부모 실패1을 포함한다. 기존 positive/round1은 선택 제외로 PASS 상속하지 않는다. spec6ED05897 및 제품D43445D8 고정 반례 결과다.
+- f1299e는 등록 경로의 owner SINSAN\cyhuh·link0·관련 process0 확인 후 228파일/80폴더·16022215bytes를 10:55:38.9351058Z에 개별 정리했다. 730c49 별도 조회 10:55:50.8588699Z root부재/process0이다. 생성10:51:37.8449169Z/만료11:21:37.8449169Z 안에 정리했다.
+- 원 UI 담당에게 DocumentImport.tsx 한 파일의 자기 준비 잠금 정리만 round2 보완 GO한다. 폐기된 표시 scope와 정리를 분리하되 같은 작업 ID/소유 문맥만 해제하고 새 ID·새 버퍼를 지우거나 과거 본문/metadata를 복구하지 않는다. test6ED05897/기대/timeout·다른12파일 동결, Main 제품 수정0·단일 writer다. 실제 DB/서비스/Secret/Agent 변경0이다.
+### 2026-10-26 UI round2 test 고정·RED 사전등록
+
+- test-only원담당이spec1개append·36451bytes/6ED058975689514BFC3EBBCDD04DB482057F7FC7B7B4D93B4E1DE7D8DEFAE6F8로고정/쓰기해제했다. 기존26333prefix A3F00C4E와원11063prefix EF3FDBC0·제품DocD434/다른12원문불변·node --check0을보고했다. Main이현재test전체/prefix/다른12해시를독립확인했다. 제품보완전이며현재writer0이다.
+- RED는literal D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01 GREEN정리/별도부재확인뒤새빈root/temp로생성,owner현재 SINSAN\cyhuh·전체조상nonlink/실경로/소유/부재재확인,전용root/browser-round2만추가한다. 기존ANVIL표식/ROOT/TEMP/TMP=root/temp 유지,메모리Vite/실제품/nativefetch·same-origin합성응답·실DB/파일저장·서비스/Secret/Agent·사용자브라우저변경0이다.
+- 최초생성부터30분·정리5분여유,round2선택90초1test/4subcase·RED예상25초. 최초보호GET지연후진짜이탈·CSRF교체·같은값clone의자기잠금정리/새명시조회가능과다른새준비ID보존을확인한다. 이전시험선택제외를표시하고PASS상속0이다. 성공/실패모두context종료/관련프로세스0→정확owner/link/inventory→전용파일·빈폴더개별정리→별도root/process0 확인한다. 불명소유/link/활성process는삭제0·기록,정리전제품보완GO0이다.
+### 2026-10-26 UI round1 GREEN7·새 준비잠금 I3와 round2 착수
+
+- Main348af9는DocD43445D8/specA3F00C4E·기타11불변/strictdiff0을확인했다. 006a99새GREEN root/temp 생성10:32:55.1347086Z/만료11:02:55.1347086Z·owner SINSAN\cyhuh,34c29d session51894→bc72a2 실제exit0/7PASS/0FAIL/0skip·15233.4198ms다. 기존positive9654.5576ms와round1 5개 반례4988.9134ms가모두통과했다. 이전RED는보존한다.
+- fe8d40소유/link/process0 inventory410파일/135폴더·30454906bytes후10:36:43.2103553Z개별정리,d5a434별도10:36:50.6332342Z root부재/관련process0확인이다. 원문/DB/서비스/Secret/Agent변경0이며GreenResource에증거를보존했다.
+- scoped재검수는원I1/I2 ADDRESSED·fix새C0/I1/M0 REWORK다. 새I3는최초준비GET지연중이탈/CSRF변경후자기importPreparationId정리도차단돼재진입이잠기는문제다. Main은위GREEN7범위와분리해미완료로남긴다. 원담당round2는먼저새test-only반례를추가하고MainRED/정리확인뒤제품1파일최소수정으로진행한다. 기존prefix/기대/90초를보존·현재codewriter0에서원담당1로만전환하며Main제품수정0이다.
+### 2026-10-26 UI round1 제품 후보 고정·GREEN 자원 사전등록
+
+- 원담당이DocumentImport.tsx만+16/-10·20157bytes/D43445D8203AB78E010A922399D8888CC10D6D7F5AD67D879566EBC12271FB34로보완후고정/쓰기해제했다. I1 priorUncertain/이번inflight분리,I2 scope별WeakMap발급·관측순번으로외부교체/과거객체관측시폐기·내부updater발급객체등록이다. 담당38PASS/0skip(1706.3941ms)·타입0/메모리제품437modules build0(773ms),UPLOAD함수prefix/나머지12불변을보고했다. Main은정확후보·spec A3F00C4E/다른11원문·소유diff를독립확인한다.
+- 담당git diff문맥오류는미확인으로제출했으며Main의정확문맥검사와구분한다. 현재추가제품수정0/동시writer0,같은반례GREEN과scoped재리뷰전합격0이다. 기존38단위의의존TS원문은그대로여서Main이무관회귀를반복하지않고변경된컴포넌트의실제DOM/타입·한정검수를진행한다.
+- GREEN은literal D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01 RED정리/별도부재확인뒤다시생성하는새빈instance다. owner현재 SINSAN\cyhuh/생성전전체조상nonlink·realpath·소유·부재확인,root/temp와기존positive용root/browser·새반례용root/browser-round1만사용한다. 기존ANVIL표식/ROOT/TEMP/TMP는동일이며Vite메모리/same-origin합성응답·실컴포넌트/nativefetch,실DB/파일원문저장·서비스/Secret/Agent/사용자브라우저변경0이다.
+- 전체spec의기존positive1+round1/5subcase를기존각90초그대로실행(최대180초/예상15초),최초생성부터30분·정리5분여유다. 성공/실패모두context종료→관련node/전용msedge0·정확root소유/link/inventory→전용파일/빈디렉터리개별정리→별도root부재/process0확인한다. 불명소유/link/활성process는삭제하지않고기록하며과거RED는보존한다.
+### 2026-10-26 UI round1 실제 RED 확인·최소 제품 보완 GO
+
+- Main3a3665는spec26333bytes/A3F00C4E·기존11063prefix EF3FDBC0보존을확인했다. cf20a3새등록root/temp 생성10:15:04.0574433Z/만료10:45:04.0574433Z·owner SINSAN\cyhuh/빈파일0. dd4ed3실행session16984를d70ff5로계속관측해실제exit1/6tests·1PASS·5FAIL·0skip/9056.0503ms를확인했다. 부모실패1+FIRST409/422/clone/ABA4실패이며LOSS뒤같은명령409/복구는PASS다. 원positive는선택제외·PASS상속0이다.
+- 409/422각2·clone8·ABA4개의DOM반례를실제제품/nativefetch에서재현했으며import/setup/timeout실패가아니다. 원input/명령/업로드이력/파일POST0검사와기존LOSS보수처리는유지한다. 상세ROUND1_RED_RESOURCE.json에고정test/product해시·수명·정리를기록했다. 예상RED라도원실패를그대로보존한다.
+- f07b05소유/link/process0 inventory186파일/58폴더·14722085bytes후10:17:09.4226725Z개별정리,147ee0별도10:17:18.3751831Z root부재/관련process0확인이다. 그뒤원UI담당만단일writer로DocumentImport.tsx 한파일의I1/I2최소보완GO를진행한다. 테스트A3F00C4E/기대/timeout불변·N4/보호8/Main문서/Git/실DB·서비스·Agent변경0이다. 같은반례GREEN과직접회귀·한정재검수전합격0이다.
+### 2026-10-26 UI round1 RED 자원 사전등록
+
+- literal D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01의과거instance는정리/부재확인완료다. 이번은생성전부재·전체조상nonlink/realpath/소유를재검사한새빈root/temp이며현재Windows사용자 SINSAN\cyhuh 소유다. ANVIL_UI02_CREATED_ORIGINAL_QA=1/ANVIL_UI02_CREATED_ORIGINAL_QA_ROOT=위root,해당명령TEMP/TMP=root/temp를사용한다. RED는root/browser-round1전용Edge프로필만추가하며기존positive용browser는생성하지않는다.
+- 수명최초생성부터30분·정리5분여유,round1선택90초1test/5subcase·예상10초다. Vite메모리/실컴포넌트/nativefetch와same-origin합성응답만사용하고실DB/파일원문저장/리스너/서비스/Secret/실Agent/사용자브라우저변경0이다. spec A3F00C4E·기존11063prefix EF3FDBC0와나머지12hash를확인한다.
+- node --test --test-name-pattern round1 tests/browser/UI06/created-original-import.spec.ts로새반례만실행하며기존positive선택제외를범위표시한다. expectedRED도실제결과그대로보존한다. context종료→관련node/전용msedge0→정확root소유/link/inventory→전용파일/빈폴더개별정리→별도root부재/관련process0을확인한다. 불명소유/link/활성process면삭제0/기록하며정리전제품수정GO0이다.
+### 2026-10-26 N4 round1 해소 인수·UI 반례 고정
+
+- N4 scoped재검수2개에서I1/I2·I3/I4모두source ADDRESSED,추가C0/I0/M1이다. close미래시험이실제CloseOriginal→Dispose/receipt·channel event를직접호출하지않는M1은열린검증보완으로보존한다. 원문/조건/불변/미실행은N4검수보고에누적했고실제native/OS PASS·전체기능완료로승격하지않는다. Main제품수정0,현재N4쓰기해제유지다.
+- UI test-only담당은spec1개append후고정/쓰기해제했다. 새26333bytes/A3F00C4E35BB6B6251B876F022AA8E741B45E969C344D4152B80248BCA91E4F3,기존11063bytes prefix는EF3FDBC0그대로/제품9+unit2+harness1동일·node --check0. 실제DOM RED는아직미실행이다.
+- 새RED는기존literal root/env의새빈instance/temp·browser-round1만사용하고round1선택을실행한다. 기존positive선택제외는명시하며PASS를상속하지않는다. 제품수정은MainRED와정확정리/잔여0확인뒤원UI담당에게GO한다. 현재codewriter0·추가QA생성0이다.
+### 2026-10-26 N4 round1 후보 고정·UI test-only writer 전환
+
+- N4담당이round1후보를고정·writer해제했다. nativeD3235B38/host1EA9445D/transport1B8D86FA/payload2AED0B86·담당strictdiff/PSAST0·G/W/frame/OwnedRuntime와PS전체불변보고를검수기록에누적했다. Main이고정해시/소유diff만확인하고불변PS검사는반복하지않는다. I1~I4해소는독립한정재검수후판정한다. 실제native/C#실행제외유지다.
+- 현재N4source는동결/읽기재검수로전환한다. UI원담당에게기존DOM기대/prefix·90초불변인round1독립test1개/순차5반례추가의test-only쓰기를단일writer로전환한다. 최초409/422·LOSS뒤거절/동일명령복구·동일값객체교체·지연객체ABA를제품수정전실제RED로확인할계획이다. MainRED확인전제품보완쓰기0,새QA생성0이다.
+### 2026-10-26 N4 round1 실제 보완 적용·UI 반례 준비
+
+- 단일N4담당이현재실행성공후I1~I4소스보완을적용했다고보고했다. I1은실패Process/Thread/PID/TID와native실패사실을비소유private기록으로보존,I2는원C budget실패시UNKNOWN Snapshot9→기존private Capture 메모리보존뒤전송거절,I3는Remaining/Adopt실패latch,I4는CloseOriginal receipt의원handle/raw/attempted/succeeded/내부예외보존과최초불명후예산전체차단이다.
+- C event는pending=false후close성공시에만참조를제거하고불명에는event/data/OVERLAPPED를보존한다는담당보고다. 실제소비budget객체상태전이·첫/중간close false/예외·실패raw·UNKNOWN Cleanup→Capture의미래시험source를추가했고실행0이다. 최종소스/PS AST/diff·불변대조전이므로미리해소/PASS로표시하지않는다.
+- UI원담당은C0/I2보고의반례추가/최소수정계획을읽기만준비중이다. N4쓰기해제전UI제품·시험수정0,Main제품수정0·동시codewriter1유지다. 검증제외인C#parser/compiler/RunAll/native·OS/실DB/서비스/Agent실행0이며환경복구사실은실제현재실행증거로판정한다.
+### 2026-10-26 UI 독립 검수 C0/I2·순차 보완 접수
+
+- 기존UI읽기검수담당이실제source/WI/manifest13을읽고C0/I2/M0 REWORK를제출했다. I1은최초POST전inflight uncertain=true를현재state에서OR하여유효JSON409/422도미확인으로고정하고명시닫기/편집복귀를막는다. I2는같은필드/importState를가진새buffer객체및원객체로돌아오는ABA를scope/generation이구분하지못해옛표시·늦은응답이살아남는다. 서버권한우회로분류하지않는다.
+- fc3f1a의 UI02_CREATED_ORIGINAL_IMPORT_REVIEW.md에정확위치/영향/최소수정/반례·검수범위를기록했다. 513fb9의manifest는과거config NOT_COMPLETED를history로보존하고현재REWORK/I2로갱신했다. 합성38/DOM1+첫빈문서1PASS는그범위만유지하며이반례의PASS로승격하지않는다. 기존UPLOAD/PNG 본문/명령/target와기대완화없음은독립검수범위에서확인했다.
+- 현재N4담당이실제running이며유일codewriter다. 원UI담당의round1은N4쓰기해제뒤같은13경로와반례먼저작성/실제RED→최소제품보완→GREEN/한정재검수로진행한다. 현재추가QA생성0,Main제품수정0,전역설정/새서버·SQL·권한·실DB/서비스/Agent변경0이다. 이미승인된기능의실제오류보완이므로추가사용자승인대기로돌리지않는다.
+### 2026-10-26 실제 subagent 실행 재개 확인·환경 차단 해제
+
+- 39c07d의config수정시각은08:48:14.1411050Z로같았지만새가용skill목록/현재실행능력을파일시각만으로판정하지않고기존미완료UI읽기검수담당1회만재개했다. 실제읽기exit0·config오류재현없음·HEAD816f34f1/WI일치/manifest13중13일치를보고했다. 과거terminal오류는그대로보존하되현재미실행차단으로계속쓰지않는다. Main전역설정변경/새task생성/우회0이다.
+- 동일시각만으로현재실행불가를단정하는근거는불충분하므로이번실제성공증거로환경선행을갱신한다. 목표는사용자재개로active상태이며별도완료판정0,완료한기능시험은재실행하지않는다.
+- UI13은계속동결/읽기검수이며확정거절뒤uncertain보존과동일값다른buffer객체의표시현재성경계를조사중이다. N4원담당만단일codewriter로기존round1 I1~I4최소보완을재개한다. source4의고정값8BAF/1EA9/4C37/11AA와WI를대조하고새API/SQL/권한/실DB/서비스/Agent/native실행범위는늘리지않는다. 이전미완료/검수지적은모두그대로인계한다.
 ### 2026-10-26 18:40 KST 재개 후 동일 외부 차단 감사
 
 - 차단뒤목표재개1회차에는추가첫빈문서정상QA1건을실행/정리해새증거를얻었고기록4문서c4a84d1a88fb8b832b2f3b6576bb08001ea947b3를private게시했다. 이후2회차5d61f5(09:39:36Z),3회차f119d7(09:40:47Z)에서config수정시각08:48:14.1411050Z/291행key command·길이44불변·HEAD c4a84d1a/추적dirty0/stage0/보호8을확인했다. PMO도기존차단변화없음/새지원결정없음이며실행중지원turn은정상종료했다.

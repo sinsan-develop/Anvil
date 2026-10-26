@@ -1,0 +1,31 @@
+{
+  "command": "node --test --test-name-pattern round2 tests/browser/UI06/created-original-import.spec.ts",
+  "removedDirectories": 80,
+  "skipped": 0,
+  "root": "D:/tmp/anvil-v3-stage-b/ui02-created-original-dom-20261026-01",
+  "pass": 1,
+  "actualDb": "NOT_RUN",
+  "fail": 4,
+  "removedFiles": 228,
+  "removedBytes": 16022215,
+  "removedAtUtc": "2026-10-26T10:55:38.9351058Z",
+  "expiresAtUtc": "2026-10-26T11:21:37.8449169Z",
+  "createdAtUtc": "2026-10-26T10:51:37.8449169Z",
+  "relatedProcessCount": 0,
+  "phase": "ROUND2_RED",
+  "independentCheckedAtUtc": "2026-10-26T10:55:50.8588699Z",
+  "durationMs": 22372.9904,
+  "exitCode": 1,
+  "productSha256": "D43445D8203AB78E010A922399D8888CC10D6D7F5AD67D879566EBC12271FB34",
+  "passedCases": [
+    "NEW_PREPARATION_PRESERVED"
+  ],
+  "specSha256": "6ED058975689514BFC3EBBCDD04DB482057F7FC7B7B4D93B4E1DE7D8DEFAE6F8",
+  "rootExists": false,
+  "servicesChanged": 0,
+  "failedCases": [
+    "INITIAL_UNMOUNT",
+    "INITIAL_CSRF",
+    "INITIAL_SAME_VALUE_CLONE"
+  ]
+}

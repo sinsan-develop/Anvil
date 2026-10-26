@@ -50,3 +50,13 @@ b7520b는 새 전용 Edge에서 UI02 보호 자료 링크→문서 화면의 buf
 추가 root는09:28:55.0215629Z 생성/09:58:55.0215629Z 만료,6ad9b6의 소유/link/관련프로세스0 inventory186파일/58폴더·14644612bytes 후09:31:45.0402125Z에 개별 정리했다. 53e8ed 별도09:31:52.4850847Z에 root부재/관련프로세스0을 확인했다. 상세 UI02_CREATED_ORIGINAL_FIRST_DRAFT_QA_RESOURCE.json.
 
 Main의 읽기 검수는 새 조회 route·현재 보호 목록 링크·DocumentsPage/Editor 전달·기존 PNG 분기 보존·정확 ref/bytes/hash·현재성/WeakSet·명시 후보와 채택·미확인 명령 보존을 대조했다. 이 Main 검수와 실패한 별도 subagent 소스 검수는 구분하며, 후자는 계속 미완료다. 전역 설정 복구 없이 C/I0 또는 정식 독립 인수를 합성 시험으로 대신하지 않는다.
+
+## 후속 실제 독립 검수
+
+현재읽기실행성공으로환경오류를재현하지않았으며C0/I2/M0 REWORK를받았다. 최초확정거절의uncertain처리와같은값새buffer/객체ABA의표시현재성을보완해야한다. 상세UI02_CREATED_ORIGINAL_IMPORT_REVIEW.md. 과거미실행이력과현재검수를구분하며미수정반례를이전합성PASS로대신하지않는다.
+
+## round2 한정 인수
+
+원 I3 ADDRESSED·C0/I0/M0 소스 검수 ACCEPT다. DocumentImport.tsx:104가 자기 준비 ID와 동일 사용자/프로젝트/문서/기준 버전/hash만 대조해 현재 버퍼의 잠금만 해제한다. 새 ID·다른 대상·현재 입력/pending/history를 보존하고 표시/비동기 권한은 복구하지 않는다. 직전 원문으로 역대치한 SHA D43445D8 일치로 나머지 코드 불변을 확인했다. 검수자 변경/실행0이다.
+
+Main d05d1c→fc015d 전체 고정 spec 실제 exit0·12PASS/0FAIL/0skip·13119.6472ms다. 정상 흐름과 round1/round2 모든 반례가 통과했다. 제품6D0B9AED/spec6ED05897에 한정한다. 949058 정리·74dce9 독립 root/process0 확인을 ROUND2_GREEN_RESOURCE.json에 보존했다. 원 RED를 소급하지 않는다. 실제 DB/서비스 제공 화면·사용자 인수·Agent 실행은 NOT_RUN이며 전체 UI02/FN03/Stage 완료가 아니다.

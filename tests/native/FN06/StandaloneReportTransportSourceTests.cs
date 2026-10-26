@@ -107,5 +107,47 @@ internal static class StandaloneReportTransportSourceTests
         }
     }
 
-    internal static void RunAll(){BindingIsCanonicalAndNamespaced();ReadyHasExactLayoutAndUnits();OrderedChunksAndEndAreExact();WrongFramesAndIncompleteReportsAreRejected();BudgetOnlyShortens();InheritedBudgetKeepsTheFirstChildClock();StrictEndDoesNotRequirePipeEof();BadFramePoisonsTheOriginalCollector();}
+
+    static void FailedCreateRawOutputIsRetainedWithoutOwnership(){
+        var failure=new DevelopmentRecoveryPathGuard.QaFailedCreateOutput(new IntPtr(123),new IntPtr(456),789,987);
+        Require(failure.NativeCallFailed&&failure.HasUnconfirmedOutput&&failure.Process==new IntPtr(123)&&failure.Thread==new IntPtr(456)&&failure.Pid==789&&failure.Tid==987);
+        int cleanupEffects=0;Reject(()=>{failure.RequireNoUnconfirmedOutput();cleanupEffects++;});Require(cleanupEffects==0);
+        var invalid=new DevelopmentRecoveryPathGuard.QaFailedCreateOutput(new IntPtr(-1),new IntPtr(-2),1,2);
+        Reject(()=>invalid.RequireNoUnconfirmedOutput());Require(invalid.Process==new IntPtr(-1)&&invalid.Thread==new IntPtr(-2));
+        var empty=new DevelopmentRecoveryPathGuard.QaFailedCreateOutput(IntPtr.Zero,IntPtr.Zero,0,0);Require(empty.NativeCallFailed&&!empty.HasUnconfirmedOutput);empty.RequireNoUnconfirmedOutput();
+    }
+    static DevelopmentRecoveryPathGuard.QaStandaloneBudget NewBudget(){
+        DateTime now=DateTime.UtcNow;return new DevelopmentRecoveryPathGuard.QaStandaloneBudget(now,now.AddMinutes(2),false);
+    }
+    static void SameBudgetStaysFailedAfterClockRecovery(){
+        foreach(bool expired in new[]{false,true}){
+            var budget=NewBudget();DateTime start=budget.Started;
+            Require(budget.ObserveSample(start.AddSeconds(1),1000)>0);
+            Reject(()=>budget.ObserveSample(expired?budget.Deadline:start.AddMilliseconds(500),2000));
+            int stop=0,fallback=0,close=0;
+            Reject(()=>{budget.ObserveSample(start.AddSeconds(2),2000);stop++;});
+            Reject(()=>{budget.ObserveSample(start.AddSeconds(3),3000);fallback++;});
+            Reject(()=>{budget.ObserveSample(start.AddSeconds(4),4000);close++;});
+            Reject(()=>budget.Adopt(Ready()));Require(stop==0&&fallback==0&&close==0);
+        }
+    }
+    static void FirstOrMiddleCloseFailurePreservesReferences(){
+        foreach(bool middle in new[]{false,true})foreach(bool exception in new[]{false,true}){
+            var budget=NewBudget();
+            var first=new DevelopmentRecoveryPathGuard.KernelHandle(new IntPtr(101),false);
+            var failed=new DevelopmentRecoveryPathGuard.KernelHandle(new IntPtr(202),false);
+            var later=new DevelopmentRecoveryPathGuard.KernelHandle(new IntPtr(303),false);
+            if(middle){var success=budget.BeginCloseObservation(first);budget.CompleteCloseObservation(success,true,true,false);}
+            var receipt=budget.BeginCloseObservation(failed);
+            Reject(()=>budget.CompleteCloseObservation(receipt,true,false,exception));
+            Require(Object.ReferenceEquals(receipt.Original,failed)&&receipt.Raw==new IntPtr(202)&&receipt.Completed&&receipt.Attempted&&!receipt.Succeeded&&receipt.ExceptionObserved==exception);
+            int laterClose=0;Reject(()=>{budget.BeginCloseObservation(later);laterClose++;});Require(laterClose==0);
+            Reject(()=>budget.Remaining());
+            var field=typeof(DevelopmentRecoveryPathGuard.QaStandaloneBudget).GetField("closeObservations",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+            var observations=(System.Collections.IList)field.GetValue(budget);Require(observations.Count==(middle?2:1)&&Object.ReferenceEquals(observations[observations.Count-1],receipt));
+            // wrapper는 비소유다. 실제 CloseHandle/event/pipe를 실행하는 시험이 아니다.
+        }
+    }
+
+    internal static void RunAll(){BindingIsCanonicalAndNamespaced();ReadyHasExactLayoutAndUnits();OrderedChunksAndEndAreExact();WrongFramesAndIncompleteReportsAreRejected();BudgetOnlyShortens();InheritedBudgetKeepsTheFirstChildClock();StrictEndDoesNotRequirePipeEof();BadFramePoisonsTheOriginalCollector();FailedCreateRawOutputIsRetainedWithoutOwnership();SameBudgetStaysFailedAfterClockRecovery();FirstOrMiddleCloseFailurePreservesReferences();}
 }

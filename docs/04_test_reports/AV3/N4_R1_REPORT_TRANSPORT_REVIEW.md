@@ -33,3 +33,20 @@ Main1b8c1c는 4hash 일치·엄격 diffcheck exit0·실행 없는 PS AST errors0
 ## 게시 전 보존 감사
 
 Main137beb의기존Git개행정책대조에서native작업원문8BAFA840과저장blob5D7EF2D9(오브젝트79c95e5e)는CRLF→LF만다르다. 나머지3source는동일바이트다. 실제checkout/compile/OS는미실행이며round1담당은전역config오류로보완적용0에서종료했다. Important4는계속열려있다.
+
+## 보완 round1 후보 — 재검수 전
+
+원담당은I1~I4최소수정과관련미래시험source를작성하고writer를해제했다. native D3235B380633E005ABD475A5730B42C982AE64F4AB162F48538C6B77B4DD79F0, PS1EA9445DDC3309E67B201231D214968B70D82DA6EE6624BBAE59E1C2E951D2E6, transport시험1B8D86FAFA3B970E0EA984759C384EF27098563512CE5992825AE24EEB0E9B53, payload시험2AED0B860A39F55604DE55BC435239AC8895B85341DFB148A0313878BB4C963E다.
+
+담당287fd1은소유4 strictdiff0/실행없는PS AST errors0·기존G/W/frame/OwnedRuntime텍스트불변·PS전체/R0/최초throw불변·4false/QAmax2/75·70선행유지를보고했다. Main은정확4hash·소유diff를대조하고같은PS해시의이미수행한구문검사를반복하지않는다. native+82/-37·payload시험+34·transport시험+43/-1이며기존반례는유지했다.
+
+I1실패raw비소유기록,I2 UNKNOWN메모리Snapshot9→private Capture뒤전송거절,I3 Remaining/Adopt실패latch,I4 원CloseOriginal receipt/최초불명후효과차단과terminal event의성공후에만참조제거가담당의보완요지다. 미래시험은실제budget객체상태전이·첫/중간close false/예외·실패raw/정리차단·UNKNOWN Cleanup/Capture를다룬다.
+
+실제C#parser/compiler/RunAll/Assembly/native/OS·DB/서비스/Agent 실행은제외그대로다. 해당미래시험을실행한TDD/PASS로표시하지않는다. 독립재검수는이후fixdiff와I1~I4의ADDRESSED/NOT_ADDRESSED·새파손만판정하며,현재4지적의해소를먼저선언하지않는다. native작업blob76d1a599와예정저장blob91a00935의기존개행차이는후속게시전별도감사한다.
+## round1 한정 재검수 결과
+
+원 전체호출선검수자는I1/I2 ADDRESSED·fix새C0/I0/M0,예산/소유검수자는I3/I4 ADDRESSED·fix새C0/I0/M1을제출했다. 지정4해시를시작/종료에대조했고변경/실행0이다. 실패raw는비소유로원owner에보존/후속정리차단,예산실패는UNKNOWN Snapshot9→private rows/payload보존뒤동일latch의Peer검사에서전송거절된다. Remaining/Adopt의영구faulted와실제STOP/fallback/close소비지점,Dispose전wrapper/raw 선등록·결과receipt·실패후전체budget차단,event성공뒤에만참조제거를source로확인했다.
+
+M1은tests/native/FN06/StandaloneReportTransportSourceTests.cs:134–149의미래close시험이다. CompleteCloseObservation에결과를직접주입하여실제CloseOriginal→Dispose→receipt/channel event호출선이빠져도잡지못한다. 예산시험은실제budget객체상태전이를다루지만STOP/fallback자체를호출하지않는다. 해당연결은소스대조범위이며실행증거가아니다.
+
+Main판정: 소스수정분의기존Important4는해소로인수하고M1은열린미래검증보완으로보존한다. 현재제품의추가C/I는없다. 현재계약의실행제외를그대로유지하며커널mock/구조개편을추가해사용자기능구현을지연시키지않는다. 미래직접호출선시험보완과실제native/OS 검증은아직미완료이며향후해당검수에반드시대조한다. 이판정은전체N4/FN06/FN08/Stage/계획완료가아니다.
