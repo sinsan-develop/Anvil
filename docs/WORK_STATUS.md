@@ -1,4 +1,21 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN04 보관 관계 검사 source 한정 검수 종료
+
+- Mainf77dfa는신규79줄PRODUCT7D67DBA5/시험전체를읽었고62a828 원파일부재/patch/후보4587227A 검증·적용뒤전체type0·신규관계21+직접의존입력11 총32 PASS282.4477ms/skip0·diff0이다. 제출첫수동22개는등록/실행21개로정정했다. 보호reader는fakeadapter이며실SQL/DB/원문저장소/실권한·동시성실험0이다.
+- 독립 fn04_stored_relations_review는신규2파일/원계약·기존보호reader를직접대조해명세적합C0/I0/M1로판정했다. fullref/선택결과/설계/계획/decision관계와원자료/gap복사보존·미확인6항목/no ready·권한·적용성공승격을확인했다. 구조적타입/fake404전파가잘못결박된실caller부재를증명하지않으며현재미연결전제와구분했다.
+- M1 deferred: 신규시험94~102의title/form/stage변경은hash불일치가먼저거절해각관계guard삭제를독립검출하지못한다. 별도proposedContent변조는검증한다. actualcaller/실연결검수또는전체Stage검토때canonicalhash와approved/planref를함께갱신한정합반례를흡수한다. 이M1을없음/해소로표시하지않고최종branch검토대상에남긴다. 제품C/I finding은없어미연결source단위통합을진행하며광범위검사/반복test-loop는하지않는다.
+- 소유신규module/직접unit·plan/status 정확4경로만checkpoint한다. 문서head/현재pointer/approval/writer/concurrency/activation은계속미확인, r1NOT_ADOPTED보관/GET/CAS/SQL미채택·기존route/op/DB/권한/Agent변경0이다. 실제기준적용/사용가능·전체FN04/Stage·계획완료는아니며rollback은소유커밋revert다.
+### 2026-10-26 FN04 보관 관계 검사 — 선행 RED
+
+- 단일writer TESTONLY testonly.patch BD8CF13D·신규시험D7923FBB를Main5c1079가원파일부재/hash대조뒤적용했다. 새module부재ERR_MODULE_NOT_FOUND 1fileFAIL/0PASS121.4972ms가예정된선행RED이며21개동작시험실행이나실제제품오류로세지않는다. 작성자의첫수동22집계는실제파일등록21로교정했고Main GREEN때실제실행건수를확인한다.
+- 같은writer에게private제품1만구현하도록지시했다. 기존보호reader의결과를project/actor/db에결박한내부adapter로받아원기준AF02보호근거와선택결과sameform/head미확인을구분한다. 반환은보관ref/조회버전사실/계획확정사실과unverified6항목을유지하며impact.items/gaps를그대로복사한다. 승인/현재pointer/실writer/동시성/적용가능판정은추가하지않는다.
+- 작성자의미존재work-plan-review.ts 추정읽기1회는부재·변경0으로기록하고같은추정재시도/우회없이실제기존read/decision본문으로대조했다. actualsource/DB·문서원본저장소/권한·Agent·환경/원격실행0·Main검수전미완료다.
+### 2026-10-26 FN04 입력 검사 게시·보관 참조 관계 검사 착수
+
+- Main160ff1 소유4경로b9cc82c5d12fda39dd0e2b2eb0e2f33f6570063e local/privateexact·trackedclean/보호8·원격main불변을확인했다. 완료staging은fullinventory6파일/dir8과Main731be6 exactset/hash·owner/link/경로대조뒤해당파일/빈dir만정리했다. 실제기준적용기능완료는아니다.
+- 읽기담당과Main0bea11는기존보호reader의증명범위를대조했다. 변경조회는최신impact/fullref·원명령무결성,문서version은정확원문/confirmed/review/validation이나head정보없음,계획read는불변DRAFT snapshot/관계투영만이다. 계획decision은기존head/confirmed/confirmation/latestreview/readiness를추가로반환하므로current확정확인은그경로만소비한다. DRAFT표시나row0을확정/안전으로오독하지않는다.
+- Main은fn04_activation_stored_relations 단일writer에private관계reader/직접unit 최대2를배정했다. 기존입력parser·보호change/proposal/document/plan read·plan decision만소비해fullref/최신impact·before/proposal·실selection결과·title/form/stage/content/hash·plan.designRef와확정을대조한다. 새publicDTO/route/SQL/권한·보관/CAS/승인소비/포인터전환0이며ready/authorized/applied=true를만들지않는다. impact.items/gaps를보존하고문서head/현재pointer/승인/writer/동시성미확인은별도로남긴다.
+- TESTONLY선행·.av3-data/fn04-activation-stored-relations-staging은해당sourcepatch/snapshot수명으로등록하며통합뒤exact정리한다. 실제DB/원본문서저장소·OS/Agent/서비스/원격/port생성0·기존r1미채택경계보존이다. 실제적용/사용가능·전체FN04/Stage/계획완료아니다.
 ### 2026-10-26 FN04 기존 입력/대상 검사 source 한정 검수 종료
 
 - Main1e6231 TESTONLY48EE0B45·시험6C3F5DD7을원파일부재/hash대조뒤적용했고새모듈부재ERR_MODULE_NOT_FOUND 1fileFAIL/0PASS117.7333ms를확인했다. 이는신규모듈선행RED이며실제기능오류/11동작실행으로세지않는다.
