@@ -41,3 +41,12 @@ DOM 명령은 node --test tests/browser/UI06/created-original-import.spec.ts다.
 UI13 source와 N44 source, 보호8·기존 자료를 보존한다. 설정 복구 뒤 독립 UI 검수와 원 N4 담당의4지적 보완을 순차 재개한다. 실제 정식 반영·검증은 기존 실행 범위를 대조하며, 이번 합성 검수를 실제 사용 가능 상태로 승격하지 않는다.
 
 Rollback은 이 UI13 경로의 소유 변경만 되돌리는 새 commit이다. 원문·DB·후보 자료 삭제나 무관 N4/보호 자료 복구는 포함하지 않는다. 정확한 안전 checkpoint는 WORK_STATUS의 후속 Git 확인에 기록한다.
+## 후속 Main 검수 — 빈 문서 첫 진입
+
+앞선 e7da75 DOM은 미저장 입력을 가진 문서 버퍼에서 시작했다. Main은 이 결과로 빈 버퍼의 첫 진입까지 통과했다고 주장하지 않고, 추가 한 건만 검증했다. 제품·저장소 시험 파일 수정이나 이전 실패 조건 시험 재실행은 없다.
+
+b7520b는 새 전용 Edge에서 UI02 보호 자료 링크→문서 화면의 buffer null 확인→새 문서 작성→정확 공식 양식 선택→현재 프로젝트 제어 조회→빈 초안→기존 원문 보호 재조회→importDocument만1회→후보 확인 전 본문 빈값 유지→별도 명시 채택을 확인했다. 결과1 PASS/0 FAIL/0 skip,1944.1132ms다. 원 artifact ID/bytes/hash·BOM/CRLF 보존, files POST0·자동 문서 저장/확정0·원문 script 실행0을 확인했다. 공식 양식과 기준 원문/hash는 기존 정본으로 생성했고 응답은 same-origin 합성이다. 실제 API/DB 저장 증거가 아니다.
+
+추가 root는09:28:55.0215629Z 생성/09:58:55.0215629Z 만료,6ad9b6의 소유/link/관련프로세스0 inventory186파일/58폴더·14644612bytes 후09:31:45.0402125Z에 개별 정리했다. 53e8ed 별도09:31:52.4850847Z에 root부재/관련프로세스0을 확인했다. 상세 UI02_CREATED_ORIGINAL_FIRST_DRAFT_QA_RESOURCE.json.
+
+Main의 읽기 검수는 새 조회 route·현재 보호 목록 링크·DocumentsPage/Editor 전달·기존 PNG 분기 보존·정확 ref/bytes/hash·현재성/WeakSet·명시 후보와 채택·미확인 명령 보존을 대조했다. 이 Main 검수와 실패한 별도 subagent 소스 검수는 구분하며, 후자는 계속 미완료다. 전역 설정 복구 없이 C/I0 또는 정식 독립 인수를 합성 시험으로 대신하지 않는다.

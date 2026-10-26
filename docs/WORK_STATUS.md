@@ -1,4 +1,16 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 18:32 KST 첫 빈 문서 진입 검증 증거 보완
+
+- b7520b 추가정상1 PASS/0 FAIL/0 skip·1944.1132ms: UI02귀속보호목록링크→buffer null→새문서작성→정확공식양식선택/현재제어조회→빈초안→기존원문보호조회→기존importDocument1회→별도명시채택을확인했다. 새file POST/자동문서저장·확정0,원artifact ID/bytes/hash·BOM/CRLF보존/script실행0이다. 기존보안반례시험은재실행하지않았고제품/저장소시험파일수정0이다.
+- 이한건은기존DOM의미저장buffer시작과다른미검증범위를확인한Main검수이며same-origin합성API/공식양식원문·실제품컴포넌트범위다. 실제API/DB저장·served/TLS·사용자인수로승격하지않는다. 별도subagent소스검수는전역config오류로여전히미완료이며Main읽기검수/합성시험으로대신완료표시하지않는다.
+- 등록새root8d8558 생성09:28:55.0215629Z/만료09:58:55.0215629Z·owner SINSAN\cyhuh/빈파일0. 6ad9b6 소유/link/관련process0 inventory186파일/58폴더·14644612bytes후09:31:45.0402125Z에개별정리,53e8ed별도09:31:52.4850847Z root부재/관련process0·CIM성공확인이다. FIRST_DRAFT_QA_RESOURCE.json·기존결과/manifest에범위를누적했다.
+- 전역설정수정/구현인수0·N4보완적용0/Important4열림·UI13원해시불변·현재codewriter0이다. 이번목표재개에서는실제새검수증거를얻었으나subagent복구선행은그대로다. 같은오류로재시도/무관회귀반복하지않고다음재개시실제설정변화부터대조한다.
+### 2026-10-26 UI 첫 빈 문서 진입 검수·일회 자원 사전등록
+
+- 목표재개후3a2ea4는config수정시각08:48:14.1411050Z불변·기존QA부재를확인했다. PMO지원답변도기존환경차단변화없음이다. 같은config로subagent재실행하지않고제품구현인수0을유지한다. Main의소스읽기검수는별도로계속한다.
+- Maind14322/0222a7/1d74f5에서새route/링크/전달·기존PNG분기·현재성/WeakSet보존·신규단위반례·NewDocumentForm/제어조회진입을읽었다. 기존DOM은seed.buffer가있는상태이므로빈buffer에서새양식선택→현재control→기존원문후보/명시채택의첫사용자정상흐름은직접확인하지않았다. 기존검증을그범위로승격하지않고새한건만추가한다.
+- 새literal root D:/tmp/anvil-v3-stage-b/ui02-created-original-first-draft-20261026-01,owner현재Windows사용자 SINSAN\cyhuh,생성전부재/전체조상nonlink·realpath/소유를재검사한다. root/temp와전용root/browser만사용,Node일회메모리검증/실제제품컴포넌트·기본nativefetch·공식양식원문/hash·same-origin합성API다. Vite write:false/리스너0·DB/서비스/Secret/사용자브라우저·Agent변경0이다.
+- 수명최초생성부터30분/정리5분여유,90초1case/예상10초. 해당명령TEMP/TMP=root/temp·전용Edgeprofile=root/browser,실제API/DB저장증거아님. 성공/실패모두context종료→관련node/msedge0→정확root소유/link/inventory확인→전용파일/빈폴더개별정리→별도부재/관련process0확인. 불명소유/link/활성process면삭제하지않고기록한다. 새제품/저장계약/시험기대변경0이며정식별도소스검수는미완료상태다.
 ### 2026-10-26 18:10 KST 환경 차단 인수·안전 checkpoint
 
 - 41d7cc에서이번소유24경로엄격cached check0후WIP68ddf524ec60082a69d6780592453d83c9094adc를commit/private게시했고실제원격동일·main f976ed5e29e14b13e12729d5b1ccf98f050f2210불변·tracked clean/보호8을확인했다. 이는인수완료가아닌미완료원문보존이다. 이후4aeaa7의09:10:39.6135016Z읽기에서도같은HEAD/추적dirty0/stage0/보호untracked8·등록QA부재다.
