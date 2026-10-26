@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { FormsCatalog } from '../methodologies/FormsCatalog.tsx';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
@@ -26,6 +26,21 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
   const [filterInput, setFilterInput] = useState({ scope: '', name: '', status: '' }), [filters, setFilters] = useState({ scope: '', name: '', status: '' });
   function resetList() { setCursor(null); setPageHistory([]); setVersion(null); setListRetry(value => value + 1); }
   const selected = page?.items.find(item => item.ref.id === selectedId);
+  // 현재본 편집 source와 과거 복사 source는 분리한다. owner 전환은 렌더에서 즉시 fencing한다.
+  const alive=useRef(true);useEffect(()=>()=>{alive.current=false;},[]);
+  const copyScope=useRef<{session:typeof session;userId:string;clientId:string;csrf:string;client:ApiClient;transport:typeof fetch;version:MethodVersion|null;selectedId:string;pending:boolean;error:ApiError|null;retry:number;listRetry:number;cursor:string|null}|null>(null);
+  const observed=copyScope.current;
+  if(!observed||observed.session!==session||observed.userId!==session.user.id||observed.clientId!==session.clientId||observed.csrf!==session.csrfToken||observed.client!==client||observed.transport!==client.transport||observed.version!==version||observed.selectedId!==selectedId||observed.pending!==pending||observed.error!==error||observed.retry!==retry||observed.listRetry!==listRetry||observed.cursor!==cursor)copyScope.current={session,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,client,transport:client.transport,version,selectedId,pending,error,retry,listRetry,cursor};
+  const context=copyScope.current!;
+  const contextCurrent=()=>alive.current&&copyScope.current===context&&session.user.id===context.userId&&session.clientId===context.clientId&&session.csrfToken===context.csrf&&client.transport===context.transport&&!context.pending&&!context.error;
+  const [historicalCopy,setHistoricalCopy]=useState<{source:MethodVersion;context:typeof context;comparisonCurrent:()=>boolean}|null>(null);
+  const historicalCurrent=()=>!!historicalCopy&&contextCurrent()&&historicalCopy.context===context&&historicalCopy.comparisonCurrent();
+  const copyLocked=!!buffer.pending||!!buffer.preparationId||!!buffer.review?.pending||!!buffer.application?.pending||!!buffer.application?.preparationId;
+  function selectHistorical(source:MethodVersion,comparisonCurrent:()=>boolean){
+    if(!contextCurrent()||!comparisonCurrent()||copyLocked||!version||source.scope!=='USER_COMMON'||source.ref.id!==version.ref.id||source.ref.version>version.ref.version)return;
+    const freeze=(value:unknown)=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){Object.freeze(value);for(const child of Object.values(value))freeze(child);}};freeze(source);
+    setHistoricalCopy({source,context,comparisonCurrent});
+  }
   function failed(cause: unknown) {
     const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
     if (failure.status === 401 || failure.status === 403) { setPage(null); setVersion(null); if (failure.status === 401) onAuthenticationLost(); }
@@ -74,8 +89,8 @@ export function MethodologyEditorPage({ client, session, buffer, onChange, formB
         </section> : null}
         <details><summary>구조 검사 결과 · 실제 실행 검증 아님</summary><StoredMethodValidation graph={version.graph} validation={version.validation} onSelect={setNodeId} /></details>
       </section> : null}
-      <CommonMethodEditor client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={resetList} />
-      {version && selected && !pending && !error ? <CommonMethodVersionComparison key={`${session.user.id}:${session.clientId}:${version.ref.id}:${version.ref.version}:${version.ref.contentHash}`} client={client} selected={selected} base={version} onAuthenticationLost={onAuthenticationLost} /> : null}
+      <CommonMethodEditor copySelection={historicalCopy?{source:historicalCopy.source,current:historicalCurrent,clear:()=>setHistoricalCopy(null)}:undefined} client={client} session={session} source={!pending && !error ? version : null} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={resetList} />
+      {version && selected && !pending && !error ? <CommonMethodVersionComparison key={`${session.user.id}:${session.clientId}:${version.ref.id}:${version.ref.version}:${version.ref.contentHash}`} client={client} selected={selected} base={version} copyAccess={{context,current:contextCurrent,disabled:copyLocked,onSelect:selectHistorical,onInvalidate:()=>setHistoricalCopy(null)}} onAuthenticationLost={onAuthenticationLost} /> : null}
       {version && !pending && !error ? <MethodReviewPanel client={client} session={session} source={version} buffer={buffer} onChange={onChange} onVerified={setVersion} onAuthenticationLost={onAuthenticationLost} /> : null}
       <p className="meta">내 공통 방법론의 공간형·단계/문서/조건 편집과 내용 검토·별도 확정을 연결했습니다. 프로젝트 적용·실제 Agent·환경·한도 연결은 아직 미완료입니다. 화면 조회나 확정으로 Agent를 시작하지 않습니다.</p>
     </section>

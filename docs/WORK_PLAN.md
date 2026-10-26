@@ -1481,3 +1481,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-27 FN16/UI14 소스 연결 추가 — 부분 구현 유지
 
 선택 문서 버전의 BODY/첨부 1개에 한정한 exportProject 명령·별도 보관·목록/고정조회/복사본 다운로드와 UI14 설정 패널을 연결했다. Main 합성 파일/API13·직접 영향21·실제 App 합성 Edge11, 독립 scoped C0/I0/M0다. 미적용0043·실제PG/POSIX·정식서비스·사용자다운로드·전체백업/복원은 미완료/미검증이다. 위 등록부의 공적 API 미구현 표기는 이 선택 반출 source 부분만 보완된 것이며 전체 완료로 바꾸지 않는다. 상세 [검수 기록](04_test_reports/AV3/FN16_SELECTED_ARTIFACT_EXPORT_RESULT.md).
+
+### 2026-10-27 FN02/UI03 과거 공통본 복사 연결
+
+기존 과거 조회·비교에서 검증한 USER_COMMON 버전을 명시 복사 대상으로 선택하고 새 내 공통본→편집·기존 저장/재조회로 연결했다. 현재본 편집/검토와 프로젝트 gateway는 유지한다. Main 합성 App9 PASS·type/diff0, 독립 C0/I0/M1(수락 후 GET 실패 별도 반례 미실행)이며 실제 DB/served·전체 FN02/UI03는 미확인/미완료다. 상세 [결과](04_test_reports/AV3/UI03_HISTORICAL_COMMON_METHOD_COPY_RESULT.md).

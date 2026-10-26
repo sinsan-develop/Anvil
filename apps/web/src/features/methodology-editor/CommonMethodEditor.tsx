@@ -16,9 +16,9 @@ import {readMethodDraftFile,importMethodDraft} from './method-draft-import.ts';
 import {MethodDraftExport} from './MethodDraftExport.tsx';
 import {DuplicateNodeRepair} from './DuplicateNodeRepair.tsx';
 
-export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId }: {
+export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId,copySelection }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;projectId?:string;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;projectId?:string;copySelection?:{source:MethodVersion;current:()=>boolean;clear:()=>void};
 }) {
   const fieldId = useId();
   const latestBuffer=useRef(buffer);latestBuffer.current=buffer;
@@ -77,32 +77,34 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
       return {...previous,dirty:true,validation:null,graph:{...graph,nodes:graph.nodes.filter((_,position)=>position!==index)}};
     });setSavedVersion(null);
   }
-  async function submit(command: MethodCommand, name: string, purpose: string) {
-    if (pending || command.clientId !== session.clientId) return;
+  async function submit(command: MethodCommand, name: string, purpose: string,copyCurrent?:()=>boolean) {
+    if (pending || command.clientId !== session.clientId || copyCurrent&&!copyCurrent()) return;
     setPending(true); setError(null); setSavedVersion(null);
     const preparationId=crypto.randomUUID();preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));
     let applied = false;
     try {
       command = gateway ? await gateway.prepare(command) : command;
-      if(!active.current)return;
+      if(!active.current||copyCurrent&&!copyCurrent())return;
       onChange(previous => previous.preparationId===preparationId?({ ...previous,preparationId:null, ownerUserId: session.user.id, pending: { request: command, name, purpose } }):previous);
       const ref = gateway ? (await gateway.write(command)).data.ref : await writeCommonMethod(client, command, session.csrfToken, session.user.id);
       applied = true;
+      if(copyCurrent&&!copyCurrent())return;
       const value = gateway ? await gateway.read(ref, name, purpose) : await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
-      if(!active.current)return;
+      if(!active.current||copyCurrent&&!copyCurrent())return;
       onChange(previous => previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),application:previous.application} : previous);
       setSavedVersion(ref.version); onSaved();
     } catch (cause: unknown) {
-      if(!active.current)return;
+      if(!active.current||copyCurrent&&!copyCurrent())return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
       if (failure.status === 401) onAuthenticationLost();
     } finally { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;if(active.current)setPending(false); }
   }
   function copy() {
-    if (!source || locked || !copyName.trim() || !replaceAllowed()) return;
+    const copySource=copySelection?.source??source,guard=copySelection?copySelection.current:undefined;
+    if (!copySource || locked || !copyName.trim() || guard&&!guard() || !replaceAllowed() || guard&&!guard()) return;
     void submit({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'copyMethodology', targetId: null, expectedVersion: 0, clientId: session.clientId,
-      payload: { sourceRef: source.ref, name: copyName, scope: gateway ? 'PROJECT' : 'USER_COMMON', reason: gateway ? '선택한 원본을 프로젝트 전용으로 복사' : '선택한 원본을 내 공통본으로 복사' } }, copyName, source.purpose);
+      payload: { sourceRef: copySource.ref, name: copyName, scope: gateway ? 'PROJECT' : 'USER_COMMON', reason: gateway ? '선택한 원본을 프로젝트 전용으로 복사' : '선택한 원본을 내 공통본으로 복사' } }, copyName, copySource.purpose,guard);
   }
   function save() {
     if (locked || !buffer.name.trim() || !buffer.purpose.trim() || !buffer.reason.trim()) return;
@@ -122,8 +124,9 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     <MethodDraftExport key={session.user.id+':'+(gateway?'PROJECT':'USER_COMMON')} buffer={buffer} userId={session.user.id} scope={gateway?'PROJECT':'USER_COMMON'} disabled={locked||!editing}/>
     <details><summary>방법론 가져오기 형식</summary><p>기존 초안 저장의 name·purpose·scope·graph·reason JSON만 읽습니다. UTF-8 최대 2MiB, scope는 현재 작성 공간과 같아야 합니다. 가져온 참조는 미검증이며 명령·확정·적용 권한을 가져오지 않습니다. 편집 후 별도로 저장하세요.</p><pre>{JSON.stringify({name:'새 방법론',purpose:'개발 절차 정의',scope:gateway?'PROJECT':'USER_COMMON',graph:{nodes:[],edges:[],entryNodeId:'',terminalNodeIds:[]},reason:'기존 절차 가져오기'},null,2)}</pre></details>
     {importing?<p role="status">방법론 파일 대조 중</p>:null}{importError?<p role="alert">{importError} · 기존 입력과 명령은 보존했습니다.</p>:null}
+    {copySelection?<p role="status">복사 전용 과거 원본: v{copySelection.source.ref.version} · {copySelection.source.name} · {copySelection.source.ref.contentHash}{copySelection.current()?' · 선택만으로 전송하지 않습니다.':' · 현재 문맥에서 사용할 수 없습니다. 다시 비교·선택하거나 해제하세요.'}<button disabled={locked} onClick={copySelection.clear}>과거 복사 원본 해제</button></p>:!gateway&&source?<p className="meta">복사 원본: 현재 조회 v{source.ref.version} · {source.name} · {source.ref.contentHash}</p>:null}
     <fieldset disabled={locked}><label>복사본 이름<input value={copyName} onChange={event => setCopyName(event.target.value)} maxLength={200} /></label>
-      <button disabled={!source || !copyName.trim()} onClick={copy}>{gateway ? '프로젝트 전용으로 복사' : '내 공통본으로 복사'}</button>
+      <button disabled={!(copySelection?.source??source) || !copyName.trim() || !!copySelection&&!copySelection.current()} onClick={copy}>{gateway ? '프로젝트 전용으로 복사' : '내 공통본으로 복사'}</button>
       <button onClick={() => { if (replaceAllowed()) { onChange({ ...emptyMethodBuffer(), ownerUserId: session.user.id, dirty: true }); setError(null); setSavedVersion(null); } }}>새 방법론 작성</button>
       {source?.scope === (gateway ? 'PROJECT' : 'USER_COMMON') ? <button onClick={() => { if (replaceAllowed()) { onChange(methodBuffer(source, session.user.id)); setError(null); setSavedVersion(null); } }}>{gateway ? '이 전용본 편집' : '이 공통본 편집'}</button> : null}
     </fieldset>
