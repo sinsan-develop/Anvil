@@ -1,4 +1,10 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 명시 계약 결정 경계 확인·FN17 독립 설계 선행 기록
+
+- 338d3d 조건부preflight/현황2경로 checkpoint3dc301ecd23d90c827f7e68e5f7ba0e107e89390,45d68e private exact/main불변/staging0·보호8을확인했다. 그뒤제품변경0이다.
+- PMO cursor29의지원답변은②새공개API/영구자료·접근/서버판정/수치의계약채택결정경계이며R2자체특정auto-review거절은확인된것이아니라고명시했다. 과거메시지전송거절을R2코드실행거절로오인하지않는다. cursor30도새채택답변없음/기존질문유지를확인했다. Main은기존질문반복·채택추정·제품/SQL착수0이다.
+- 결정지원과독립적으로FN17의미완료설계선행을읽어 A46F2A20 preflight로보존했다. 기존지원관측재개발0·실제APPROVAL_REQUESTED/원ref/현재본인requiredDecider·같은transaction/replay·mutable승인row의FK주의·본인읽음신규권한/멱등/한도미확정과0017계획명충돌을명확히했다. 제품/SQL발행이나알림기능완료가아니며push/외부전송·실DB/서비스/권한/Agent0이다.
+- 현재codewriter0/등록QA0,소스기능checkpoint는f12f8764·문서 checkpoint별도이며전체작업계획미완료다. 정확R2결정확인뒤조건부A/B를새단일writer에순차배정할준비만마쳤고사람의명시중지/대기지시는없다.
 ### 2026-10-26 결정 전 source preflight·기존 질문 보존
 
 - 7c5d27 정확후보/검토/현황3경로 ce7855bfa5df413286b8c74b5c41cf830475d4ff commit,4ecffc private exact·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변/staging0·보호미추적8만을확인했다. 제품checkpoint는f12f8764이며그뒤는문서뿐이다.
