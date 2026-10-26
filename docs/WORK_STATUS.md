@@ -1,4 +1,27 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 캡처 준비 파일 저장 — 한정 검수 종료
+
+- Main4d68d2는 R2 manifestE11828EF/표준patch2EBF7FD2·동일원시험44CD83D2→9A167209를 검증·적용했고 type0이다. 제품DD04618D는 변경없이 유지했다. 첫M1의 거절 bridge receipts는 같은 손상준비root의 새 준비원장과 실제 bridge-rejected-results FileStore의 새 결과원장에 주입해 관측대상과 일치시켰다. 기존 빈dir·capture0 기대를 유지하며 R1 무context patch거절은 당시이력으로 남긴다.
+- Main23ac9b/488c6e actualfile 부모1+하위7 총8 PASS10052.6051ms/실패·skip0이다. 원 준비 THREAD/TURN exact 재조회/중복·claim재발급거절·sync뒤callback실패보존/만료·손상/lock/abort/닫힌tx/읽기전쓰기/write실패·직접row변조·512행/2MiB와 기존 START bridge 준비sync→CREATE→결과sync 및 두 새 원장재조회를 확인했다. 전체stdout/inventory raw459578B87D04E3BE1B351C28DE637A7264E199006271F30FC9445F8A4A0CC93C로 보존했다.
+- 생성 직전 실제시각02:44:41.1473157Z·상한03:14:41.1473157Z·정리5분여유를 기록했다. Main7e7ee5/4da676는 전체inventory/실경로·상/하위nonlink·현재owner·956파일bytes/hash·선언24하위+고장시험빈dir1을 대조해 exact956파일/25dir/root를02:45:37.2259127Z에 정리했다. 693937 별도root부재·최종source/test hash/diff0이며 이번상한을 준수했다.
+- Main2baea0 준비원장/START/TURN 메모리 인접11 PASS5157.7542ms이다. 기존결과store/원장/bridge/timeout과 Web은변경없어 불변전체검사/build/browser를반복하지않았다. 신규store제품1·시험1만이며 원claimId·512/2MiB·기한/부모검사·SYNTHETIC_ONLY/기본미등록을 유지한다.
+- 독립 provider_capture_preparation_store_review는 최종제품DD04618D/시험9A167209/원로그실제8PASS·현재root부재를 직접 대조해 M1해소·최종C0/I0/M0 한정수용으로판정했다. 독립실행0·type/인접11·전체정리과정은Main증거와구분한다. 원80ms메모리transport에서codec입력획득뒤bridge.complete직접호출이며실transportE2E/TURNbridgefile통합은아니다. 실제sync실패·중도부분write·links/교체재현/OS보호·전원손실/native/실Agent는미검증이다.
+- 제품/test·plan/status 정확4경로만checkpoint한다. 기본실행기등록·실Provider/키/rawhandle/암호문본문·새API/DB/권한/서비스0, 전체FN06/FN08·Stage/계획미완료다. rollback은소유commit revert, 손상/불명자료자동초기화/삭제는제품에추가하지않았다. 인계sourcecache15파일/4dir는fullhash/owner/nonlink대조후정리하며Main이다음허용미완료를계속선정한다.
+### 2026-10-26 캡처 준비 파일 QA 실제 생성 직전
+
+- Main은 제품 DD04618D/시험9A167209·type0·root부재/부모nonlink를 확인했다. 실제 파일 생성 시험 시작 2026-10-26T02:44:41.1473157Z, 상한 2026-10-26T03:14:41.1473157Z이며 예상검사1분/정리5분을 포함해30분내여유를 확인했다. 고정24하위폴더·등록파일만사용하고 Main소유 MAIN_GREEN_OUTPUT.log에 전체stdout/inventory를 기록한다. 정식환경/실Agent/키/native변경0·종료뒤exact소유/링크/파일bytes/hash·inventory로정리/별도부재확인한다.
+
+### 2026-10-26 캡처 준비 저장 — 선행 RED·관측 대상 보완
+
+- Main08cc5b TESTONLY manifest13281963/patch8BC12A26/시험44CD83D2 적용 뒤 module부재1FAIL/0PASS424.6056ms로source선행RED를 확인했다. root 생성전 import 실패이며 실제파일 QA가 아니다. Main4d5668은 PRODUCT manifest5E197EB2/patchB5A4262D/제품DD04618D를 원파일부재·hash대조해 적용했고 전체type0이다. 기존원장/bridge/결과store/timeout변경0이다.
+- 독립검수는 손상준비 거절 시험의 receipts가 bridge-results에 주입됐으나 미주입 bridge-rejected-results 빈dir를 확인하는 M1 관측불일치를 발견했다. capture0은 유효하나 결과저장 관측은 약해 실제QA 전에 같은writer가 거절bridge용 준비/결과원장을 정확root로 새로 주입하는 시험만 보완한다. source/기대값/시간제한 변경0·실제파일생성 전이라 검사를 반복하지 않았다.
+- Main70ecb3의 delta명 change.patch 추정읽기1회는 부재/변경0이었고 실제목록 TEST_DELTA.patch로 정정했다. 3cf66f의 manifest23BF926C/patch660DDBD1·원시험44CD83D2 대조 뒤 git apply --check는 context없는 hunk96을 거절해 source변경0이다. 같은writer에 동일preimage/result9A167209·표준3줄context의 새동결R2를 요청했다. 검사완화/동결덮어쓰기0, 실제GREEN수명은아직시작전·root부재다.
+- 신규시험의 START file 통합은 원 codec input을 획득한 뒤 bridge.complete 직접호출이다. 원80ms 메모리transport/실Agent end-to-end나TURN bridge전체file통합을 증명하지 않으며 THREAD/TURN 준비원장재조회와START bridge순서/결과원장file재조회를 분리한다.
+### 2026-10-26 캡처 결과 게시·정리·준비 원장 저장 착수
+
+- Main4a02b2/1595e8 신규 결과adapter/test·plan/status4경로 fc37ce07e1df5be5e677e321da9de1228a575414 local/private exact·tracked clean/보호8·원격mainf976ed5e 불변이다. sourcecache는 인계된17파일/14dir·전체rawhash/owner/nonlink를 Main685a9f에서 대조해 exact 정리했고 별도부재를 확인한다. QA상한6.86초 초과와 초기타입/지문 정정은 이력/PMO예외로 남았다.
+- 읽기담당과Main0899cd는 기존 provider-capture-preparation 포트와 START/TURN bridge의 준비 sync→capture→결과 sync 순서를 확인했다. 준비는 bindingHash/bindingInput/parent를 보관하지만 구체파일store가 없어 원장이 재생성되면 입력 claimId를 유지해 읽을 수 없다. 다음 단위는 신규 준비fileadapter와 기존bridge/결과fileadapter에 명시 주입한 준비·결과 저장/재조회다. 두root/lock분리·512행/2MiB·원claimId/중복/기한 기준을 유지하고 source준비를 실행허가/실Provider 진위로 승격하지 않는다.
+- .av3-data/provider-capture-preparation-file-store-staging은 해당 단일writer의 patch/snapshot 검수수명으로 등록한다. 실제 QA root D:\tmp\anvil-provider-capture-preparation-store는 생성전부재·현재사용자소유·고정시험하위만 사용한다. 최초 실제 파일 생성 시험 직전에 시각/예상검사+정리여유를 확인하고 그시점부터최대30분상한을 기록한다. module부재RED는 root를만들지않으며 실제생성시각을대신하지않는다. 파일/owner/link/전체inventory/hash대조뒤정확정리·별도잔여0, 공유TEMP/서비스/DB/키/실Agent0이다.
 ### 2026-10-26 FN06/FN08 캡처 metadata 파일 adapter — 한정 검수 종료
 
 - Maina07e49/C2652404는 시험 overload1곳을 BFEEF915→C7558DE7로 보정했고 거절 기대값을 유지했다. cc10c4/133a8a에서 제품38010AAC·시험 결과 hash 대조/전체type0 뒤 실제 파일 저장·원장 새 instance THREAD/TURN exactread/중복0·sync뒤callback실패보존·손상/부분/UTF8·lock/abort/닫힌tx/동일tx경합/읽기전쓰기·write실패·직접row변조·512행/2MiB·충돌/부모없음의 부모1+하위8 총9 PASS10009.2139ms/skip0이다. 전체 stdout/inventory log raw4485C42FAB0F67C2E7E6BE9EE6C814FDA7C790B8A579427B633C64358E609182로 보존했다.
