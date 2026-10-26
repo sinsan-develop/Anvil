@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 UI06/FN03 보관 제안 반영 결과 원문 조회 착수**: SELECTED 제안의 실제 반영 문서/정확 버전을 기존 보호 reader로 명시 조회한다. 기준·제안/selection 관계와 결과 hash를 대조하며 자동 반영·새 API/DB/권한0. RED→직접DOM5·기존App합성5·인접unit2/type/build/diff 확인·독립C0/I0/M0. 이소스단위는검수됐으나served/실DB·전체UI06/FN03는미완료다.
+
 - **2026-10-26 UI10/FN05 저장 지식 고정 원문 조회 착수**: 현재 검색 조건이 새 제안 지식을 숨겨도 저장 resultRef의 기존 보호 reader를 명시적으로 열도록 연결한다. 검색/원입력·원명령은 유지, 새 API·DD166F 역조회·자동 원문 조회0. TESTONLY RED 뒤 실제 Page 합성DOM5·기존reader/이력8·type/build/diff 확인, 독립C0/I0/M0. 이 조회 소스 단위는 검수됐으며 served/실DB·전체UI10/FN05는 미완료다.
 
 - **2026-10-26 UI02 소비 초안 재진입 착수**: 기존 보호 GET의 consumedProjectId를 현재 조회 문맥에 결박해 생성된 프로젝트/문서로 이어가는 동선 누락을 보완한다. 미제공/명시 null 구분·위조/모순거절, 자동 재생성·기존 명령 해제0. GET 반례 RED 뒤 직접client2·Page DOM5·인접12/type/build/diff 확인, 독립C0/I0/M0. 이 재진입 소스 단위는 검수됐으며 served/실DB·전체UI02/FN01는 미완료다.

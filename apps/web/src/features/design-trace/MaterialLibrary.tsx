@@ -3,7 +3,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readStoredImport, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
-import { readStoredProposal, resumeStoredProposal, type ProposalComparison } from './proposal-api.ts';
+import { readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
 
 export function MaterialLibrary({ client, projectId, session, canPrepare, onPrepared, onBusy, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; canPrepare: boolean; onPrepared: (buffer: DocumentBuffer) => void; onBusy: (busy: boolean) => void; onAuthenticationLost: () => void }) {
   const [imports, setImports] = useState<MaterialPage<ImportSummary> | null>(null), [proposals, setProposals] = useState<MaterialPage<ProposalSummary> | null>(null);
@@ -11,6 +11,19 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const [importLoading, setImportLoading] = useState(true), [proposalLoading, setProposalLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState<ApiError | null>(null);
   const [importView, setImportView] = useState<StoredImportView | null>(null), [proposalView, setProposalView] = useState<ProposalComparison | null>(null), [acknowledged, setAcknowledged] = useState(false);
   const [forms, setForms] = useState<FormSummary[]>([]), [selectedForm, setSelectedForm] = useState('');
+  type Scope = { client: ApiClient; projectId: string; userId: string; clientId: string };
+  const scopeRef = useRef<Scope>({ client, projectId, userId: session.user.id, clientId: session.clientId });
+  if (scopeRef.current.client !== client || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId) scopeRef.current = { client, projectId, userId: session.user.id, clientId: session.clientId };
+  const scope = scopeRef.current;
+  const [proposalScope, setProposalScope] = useState<Scope | null>(null);
+  const shownProposal = proposalScope === scope ? proposalView : null;
+  const signature = shownProposal ? JSON.stringify({ proposal: shownProposal.proposal, base: { id: shownProposal.base.document.id, version: shownProposal.base.document.version, contentHash: shownProposal.base.document.contentHash, title: shownProposal.base.document.title, formRef: shownProposal.base.document.formRef, stageNodeRef: shownProposal.base.document.stageNodeRef } }) : '';
+  const latest = useRef({ scope, view: shownProposal, signature, onAuthenticationLost }); latest.current = { scope, view: shownProposal, signature, onAuthenticationLost };
+  const selectionGeneration = useRef(0), resultGeneration = useRef(0);
+  type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
+  const [result, setResult] = useState<ResultBinding | null>(null);
+  const visibleResult = result?.scope === scope && result.view === shownProposal && result.signature === signature ? result : null;
+  const selectedVersion = shownProposal ? selectedProposalVersion(shownProposal) : null;
   const mounted = useRef(true), running = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   function failed(cause: unknown) { if (!mounted.current) return; const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(e); if ([401,403,404].includes(e.status)) { setImportView(null); setProposalView(null); setImports(null); setProposals(null); if (e.status === 401) onAuthenticationLost(); } }
@@ -25,11 +38,31 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     return () => { current = false; };
   }, [client,projectId,proposalCursor,proposalStatus,reload]);
   async function open(kind: 'IMPORT' | 'PROPOSAL', id: string) {
-    if (running.current) return; running.current = true; setBusy(true); setError(null); setAcknowledged(false); setImportView(null); setProposalView(null); setForms([]); setSelectedForm('');
+    if (running.current) return;
+    const generation = ++selectionGeneration.current, openedScope = scope;
+    const active = () => mounted.current && scopeRef.current === openedScope && selectionGeneration.current === generation;
+    resultGeneration.current++; setResult(null); setProposalScope(null);
+    running.current = true; setBusy(true); setError(null); setAcknowledged(false); setImportView(null); setProposalView(null); setForms([]); setSelectedForm('');
     try {
-      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id); const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (mounted.current) { setImportView(view); setForms(options); } }
-      else { const view = await readStoredProposal(client,projectId,id); if (mounted.current) setProposalView(view); }
-    } catch (e) { failed(e); } finally { running.current = false; if (mounted.current) setBusy(false); }
+      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id); const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setForms(options); } }
+      else { const view = await readStoredProposal(client,projectId,id); if (active()) { setProposalView(view); setProposalScope(openedScope); } }
+    } catch (e) { if (active()) failed(e); } finally { if (selectionGeneration.current === generation) { running.current = false; if (mounted.current) setBusy(false); } }
+  }
+  async function readSelected() {
+    const view = shownProposal;
+    if (!view || !selectedVersion || visibleResult?.loading) return;
+    const binding = { scope, view, signature }, generation = ++resultGeneration.current;
+    const active = () => mounted.current && scopeRef.current === binding.scope && resultGeneration.current === generation && latest.current.view === binding.view && latest.current.signature === binding.signature;
+    setResult({ ...binding, value: null, loading: true, error: null });
+    try {
+      const value = await readSelectedProposalDocument(client, projectId, view, active);
+      if (active()) setResult({ ...binding, value, loading: false, error: null });
+    } catch (cause) {
+      if (!active()) return;
+      const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      setResult({ ...binding, value: null, loading: false, error });
+      if (error.status === 401) latest.current.onAuthenticationLost();
+    }
   }
   async function prepare(kind: 'IMPORT' | 'PROPOSAL') {
     if (!canPrepare || !acknowledged || running.current) return;
@@ -37,7 +70,7 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     try {
       let value: DocumentBuffer;
       if (kind === 'IMPORT' && importView) value = await prepareStoredImport(client,projectId,importView,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
-      else if (kind === 'PROPOSAL' && proposalView && !proposalView.proposal.selections.length) value = await resumeStoredProposal(client,projectId,proposalView.proposal.id,session);
+      else if (kind === 'PROPOSAL' && shownProposal && !shownProposal.proposal.selections.length) value = await resumeStoredProposal(client,projectId,shownProposal.proposal.id,session);
       else throw new ApiError('MATERIAL_SELECTION_REQUIRED');
       if (mounted.current) onPrepared(value);
     } catch (e) { failed(e); } finally { running.current = false; onBusy(false); if (mounted.current) setBusy(false); }
@@ -53,8 +86,12 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     {importView ? <section aria-label="보관 후보 원문 확인"><h3>가져오기 후보 {importView.candidate.status}</h3><p>원본 SHA256 {importView.candidate.originalRef.contentHash}</p><a href={`/api/v1/projects/${projectId}/files/${importView.candidate.originalRef.artifactId}`} download>보관한 원본 다운로드</a>{importView.candidate.issues.map((i,n) => <p key={n}>{i.code} · {i.message}</p>)}
       {importView.body !== null ? <><pre className="document-original" aria-label="보관 후보 원문">{importView.body}</pre>{!importView.candidate.intendedFormRef ? <><label htmlFor="stored-import-form">보관 후보 적용 양식</label><select id="stored-import-form" disabled={busy} value={selectedForm} onChange={e => setSelectedForm(e.target.value)}><option value="">양식 선택</option>{forms.map(f => <option value={f.ref.id} key={f.ref.id}>{f.name} · v{f.ref.version}</option>)}</select></> : <p>가져올 때 지정한 양식 v{importView.candidate.intendedFormRef.version}을 유지합니다.</p>}<label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 원문을 확인했고 새 문서 초안으로 준비하겠습니다</label><button disabled={busy || !canPrepare || !acknowledged || !importView.candidate.intendedFormRef && !selectedForm} onClick={() => { void prepare('IMPORT'); }}>보관 후보로 새 문서 준비</button></> : <p>미지원/확인 실패 원본은 보존하지만 본문으로 반영하지 않습니다.</p>}
     </section> : null}
-    {proposalView ? <section aria-label="보관 제안 원문 비교"><h3>{proposalView.base.document.title} · 기준 {proposalView.proposal.baseRef.version}</h3><pre className="document-original" aria-label="보관 제안 기준 원문">{proposalView.base.body}</pre><pre className="document-original" aria-label="보관 제안 새 원문">{proposalView.proposedBody}</pre><pre aria-label="보관 제안 변경 구간">{JSON.stringify(proposalView.diff,null,2)}</pre><p>{proposalView.proposal.selections.length ? `이미 반영한 버전 ${proposalView.proposal.selections[0]!.version}` : '아직 반영하지 않은 제안입니다. 실제 반영 시 현재 기준을 다시 검사합니다.'}</p>
-      {!proposalView.proposal.selections.length ? <><label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 제안의 차이를 확인했고 반영 작업을 열겠습니다</label><button disabled={busy || !canPrepare || !acknowledged} onClick={() => { void prepare('PROPOSAL'); }}>보관 제안 반영 작업 열기</button></> : null}
+    {shownProposal ? <section aria-label="보관 제안 원문 비교"><h3>{shownProposal.base.document.title} · 기준 {shownProposal.proposal.baseRef.version}</h3><pre className="document-original" aria-label="보관 제안 기준 원문">{shownProposal.base.body}</pre><pre className="document-original" aria-label="보관 제안 새 원문">{shownProposal.proposedBody}</pre><pre aria-label="보관 제안 변경 구간">{JSON.stringify(shownProposal.diff,null,2)}</pre><p>{shownProposal.proposal.selections.length ? `이미 반영한 버전 ${shownProposal.proposal.selections[0]!.version}` : '아직 반영하지 않은 제안입니다. 실제 반영 시 현재 기준을 다시 검사합니다.'}</p>
+      {selectedVersion ? <button disabled={visibleResult?.loading === true} onClick={() => { void readSelected(); }}>반영 결과 원문 보기</button> : null}
+      {visibleResult?.loading ? <p role="status">반영 결과 원문 조회 중</p> : null}
+      {visibleResult?.error ? <p role="alert">{visibleResult.error.message} · {visibleResult.error.code}</p> : null}
+      {visibleResult?.value ? <section aria-label="제안 반영 결과 원문"><h4>반영 결과 · 버전 {visibleResult.value.document.version}</h4><p>읽기 전용 · 문서 {visibleResult.value.document.id} · SHA256 {visibleResult.value.document.contentHash}</p><pre className="document-original" aria-label="반영 결과 원문">{visibleResult.value.body}</pre></section> : null}
+      {!shownProposal.proposal.selections.length ? <><label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 제안의 차이를 확인했고 반영 작업을 열겠습니다</label><button disabled={busy || !canPrepare || !acknowledged} onClick={() => { void prepare('PROPOSAL'); }}>보관 제안 반영 작업 열기</button></> : null}
     </section> : null}
   </section>;
 }

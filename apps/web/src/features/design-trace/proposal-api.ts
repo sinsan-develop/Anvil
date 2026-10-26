@@ -82,6 +82,24 @@ async function compareResolvedProposal(client: ApiClient, pid: string, value: Pr
   if (diff.unchangedBefore + diff.unchangedAfter > lines.length || lines.slice(diff.unchangedBefore, lines.length - diff.unchangedAfter).join('') !== diff.before.join('') || [...lines.slice(0,diff.unchangedBefore), ...diff.after, ...lines.slice(lines.length - diff.unchangedAfter)].join('') !== proposedBody) throw new ApiError('PROPOSAL_DIFF_INVALID');
   return { proposal: value, base, proposedBody, diff };
 }
+
+// 비교를 통과한 제안의 selection은 서버의 동일 문서 base+1 저장 관계만 허용한다.
+export function selectedProposalVersion(comparison: ProposalComparison): { id: string; version: number } | null {
+  const p = comparison.proposal, base = comparison.base.document, selection = p.selections[0];
+  if (p.selections.length !== 1 || !selection || !validRef(p.baseRef) || !Number.isSafeInteger(p.baseRef.version + 1)
+    || base.id !== p.baseRef.id || base.version !== p.baseRef.version || base.contentHash !== p.baseRef.contentHash
+    || selection.documentId !== p.baseRef.id || selection.version !== p.baseRef.version + 1 || !uuid.test(selection.selectedBy) || !Number.isFinite(Date.parse(selection.at))) return null;
+  return { id: selection.documentId, version: selection.version };
+}
+export async function readSelectedProposalDocument(client: ApiClient, projectId: string, comparison: ProposalComparison, active: () => boolean): Promise<Awaited<ReturnType<typeof readDocument>>> {
+  const ref = selectedProposalVersion(comparison);
+  if (!ref) throw new ApiError('PROPOSAL_SELECTION_INVALID');
+  if (!active()) throw new ApiError('DOCUMENT_READ_PAUSED');
+  const base = comparison.base.document, content = structuredClone(comparison.proposal.proposedContent);
+  const expectedContentHash = await documentDraftHash(base.title, structuredClone(base.formRef), content, structuredClone((base.stageNodeRef as StageNodeRef | null) ?? null));
+  if (!active()) throw new ApiError('DOCUMENT_READ_PAUSED');
+  return readDocument(client, projectId, ref.id, ref.version, { expectedContentHash, active });
+}
 export async function prepareProposalApplication(client: ApiClient, state: DocumentProposalBuffer, session: DocumentSession, acknowledged: boolean): Promise<DocumentWrite> {
   subject(state, session); const c = state.comparison, scope = context(state);
   if (!acknowledged || !c || c.proposal.id !== state.proposal?.id || c.proposal.selections.length || state.savedRef || state.applyCommand) throw new ApiError('PROPOSAL_SELECTION_REQUIRED');

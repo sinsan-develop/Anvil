@@ -1,4 +1,30 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 반영 결과 원문 — 한정 검수 종료
+
+- TESTTYPE_DELTA D0AD5DDB는 payload의 satisfies Plan 한 곳만 추가했다. Main15a63c 적용 후 type exit0·정상 반영 결과 정확v2 원문 DOM1 PASS·2.3초, 43f246 selection관계/복수·metadata/hash/body변조·403/404·주체/client/project/이탈·ABA·지연401 DOM4 PASS·9.0초/skip0이다.
+- 기존 material-library5시험은 정식 서비스 없이 실행할 정적App 공급이 없었다. Main은 기존시험·기대값을 바꾸지 않고 단일 writer에게 소유4번째 작은 wrapper만 배정했다. TEST_REGRESSION1C97873F는 기존 installWorkspaceBundle와 현재 apps/web/dist 조건을 쓰며 새listener0이다. Main1d2ace Webbuild exit0·429modules311ms·기존chunk경고 뒤 d2753a에서 기존 미반영 제안 재개/명시반영·조회자쓰기0·후보변조거절 등5 PASS·7.1초다. 47dbb3 최신type/diff0·wrapperFDA0E83E 일치다. 기존unit2 PASS는88c711 증거를 유지해 불필요하게 반복하지 않았다.
+- 독립 ui06_selected_proposal_review는 제품2/신규직접시험 전체·서버관계/reader/guard를 직접 대조해 C0/I0/M0, 추가wrapper9줄도 C0/I0/M0로 검수했다. 제품 FDDD4314/A269927C·직접specCFAA3E53·wrapperFDA0E83E가 통합대상이다. source-only준비와 actualPage/합성API 결과를 구분한다.
+- 실제 served/정식DB/login/TLS·non-nullstage 실왕복·현재문맥401 callback·최초open지연/지연중다른제안재선택·streamchunk 지연 직접증거는 이번시험에 없다. reader보호·기존stage회귀를 유지하되 미실행을 PASS로 승격하지 않는다. 전체UI06/FN03·Stage/계획은 미완료다. rollback은 해당소유커밋 revert이며 원문/데이터를 삭제하지 않는다.
+### 2026-10-26 UI06 제품 후보 적용·타입 준비 보정
+
+- Main2a3e6c는 PRODUCT D8F3BC7A의 기존 proposal helper/MaterialLibrary2경로 diff를 대조했다. eb5ba5에서 원본·patch·후보hash 검증/적용 후 제품 FDDD4314/A269927C 일치를 확인했다. 신규 API/DB/권한·원문 reader 변경0이다.
+- 타입 검사는 신규 spec89줄의 page.evaluate payload target 문자열 추론 TS2345에서 exit1, DOM은 아직 실행하지 않았다. 같은 작성자에게 해당 payload literal typing만 보정하도록 지시했고 제품·기대값은 유지한다. 기존 인접 제안2시험은 Main88c711 PASS·151.3857ms/skip0·diff0이다.
+### 2026-10-26 UI06 반영 결과 원문 — 실제 누락 RED
+
+- TESTONLY A613472E는 신규 selected-proposal-original.spec.ts119줄·0ABB3B89이며 Main5a3b5b에서 소유 시험만 적용했다. 첫 grep은 실제 없는 이름으로 No tests found/exit1이라 제품 검증에서 제외했다. 1140e7로 실제 제목을 읽고 1f5d66에서 정확 정상1건·max-failures1로 실행했다.
+- 실제 MaterialLibrary가 SELECTED목록→보호 기준 문서/제안 원문·diff 비교까지 정상 도달한 뒤 '반영 결과 원문 보기' 버튼이 없어 1FAIL/7.6978초/exit1이다. 준비 오류가 아닌 해당 화면 연결 누락 RED다. 기존 제품2 rawhash는 유지했다.
+- 같은 writer에게 이제 허용제품2만 구현해 동결 제출하도록 지시했다. selection/hash 관계·readDocument 보호·현재문맥/ABA/지연 응답·기존 편집/확정 동선을 검수하며 새계약/DB/권한/Agent 실행0이다.
+### 2026-10-26 UI06 보관 제안 반영 결과 원문 조회 착수
+
+- 읽기 담당이 서버 project-proposals의 기준ID/version·title/form/stage/content와 project-documents의 sameid/head+1·canonicalhash·selection 저장 관계를 확인했고 Main은 실제 MaterialLibrary/기존 proposal reader를 대조했다. SELECTED제안의 version 문구에서 실제 저장 결과를 다시 읽는 연결이 없다.
+- Main은 ui06_selected_proposal_original 단일 writer에게 기존 proposal-api/MaterialLibrary와 신규 직접 DOM시험·필요 시 인접 unit(최대4경로)만 배정했다. TESTONLY 먼저 동결/실RED 뒤 제품 구현한다. selection에는 hash가 없으므로 발명하지 않고 검증된 기준·제안으로 기존 hash산식을 계산해 기존 readDocument의 expected hash/active 검사를 소비한다.
+- 명시 결과조회만 연결하며 자동조회·재반영·편집준비·확정·새 API/DB/권한·Secret/Agent 실행0이다. client/project/사용자/기기/제안·선택/요청 회차·ABA와 지연 body/error/401 및 기존 pending 동선을 검수한다. 실제 DB/served와 전체UI06/FN03는 미완료다.
+- 작업 cache .av3-data/ui06-selected-proposal-staging은 해당 writer 소유·로컬 patch/snapshot 전용이며 통합/원출력 보존 후 정확 파일 집합·owner/link/hash를 확인해 정리한다. 외부 서비스/QA process/port·원격 자원 생성0이다. 다음 읽기 rg의 PowerShell brace구문1회 오류는 실행 전 parser에서 종료됐으며 대상변경0이다.
+### 2026-10-26 UI10 게시·후속 누락 조사
+
+- Main f3fe0c 소유4경로 c94a42a5243e9cc0758ac1e9db98b994fed849b7 commit, bc91c2 private 동일·tracked clean·보호 untracked8 불변이다. 원격 main은 f976ed5e29e14b13e12729d5b1ccf98f050f2210이다. 실제 local main ref는 0443043251d25aa77c17d23165b7c9299c8dbeb8로 오래된 선조(2b94f2 ancestor exit0, development/main 대비257뒤)이며, 앞선 요약의 local/remote main 동일 서술은 사실로 이월하지 않는다. main ref를 변경하지 않았다.
+- 완료 staging은 작성자 inventory7/하위dir0과 Main a25c18의 exactset/rawhash·owner/nonlink 대조 후 파일7/root만 정리했다. 808731 별도 조회에서 부재, FN15 C44 후보 hash 불변을 확인했다. Dtmp 결과와 보호 자료는 유지한다.
+- 다음 UI06/FN03 후보는 보관 제안의 이미 반영된 문서 버전을 실제 원문 reader에 연결하는 누락이다. 현재 selections는 version 문구만 표시한다. 실제 서버의 반영 관계·기존 reader/테스트를 읽기 대조 중이며 새 쓰기·API·DB·권한/Agent 실행은 없다. 추정 source 경로1회는 부재여서 rg로 실제 경로를 확인했고 변경0이다.
 ### 2026-10-26 UI10 저장 고정 원문 한정 검수 종료
 
 - 독립 ui10_saved_original_review는 제품 patch/신규 시험 전체·정본 카드/설계를 직접 읽고 C0/I0/M0로 판정했다. client/buffer/주체/프로젝트/fullref 세대와 ABA·지연 body/error/401, generic list/inspect 전환의 requestId/effect를 대조했다. 새 GET/DB/권한·거절 역조회·자동 실행은 없다.
