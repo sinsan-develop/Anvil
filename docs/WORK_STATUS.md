@@ -1,4 +1,82 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN01 게시 전 기록 포맷 오류 교정·Git 원문 구분
+
+- f399aa에서정확39소유경로stage를검증했으나cached diffcheck는2였다. 신규Main JSON의ConvertTo-Json CRLF가기존*.json -text정책에서trailing whitespace로판정된것이며제품실패가아니다. 전체출력은크므로같은진단의원문반복출력은중단했다. db53d4에서기존속성/설정만읽었고어떤Git설정·whitespace합격기준도변경하지않았다.
+- Main80faff는이번신규Main JSON10개만LF포맷으로정리해JSON객체값불변을확인했다. 역사fixture/사용자원문/제품·시험파일수정0이다. metadatabefore/afterSHA와값불변은SourceManifest.publication에보존했다.
+- 같은검사에서23현재작업원문과staged Gitblob을독립대조,14개는기존*.ts/tsx eol=lf에따른CRLF→LF만다르고나머지는raw동일함을확인했다. sha256은검증workingbytes,gitBlobSha256/ObjectId는게시바이트로분리했다. checkoutruntimeNOT_RUN을명시했으며둘의rawSHA동일/PASS를주장하지않는다. 현재SourceManifest FB093A5ADB96BEA137CC6A0334947D1A99578C44400F4F30FCC861395469BABF다.
+- c8d4af는등록worktree9개/5prunable표기를읽기확인했다. 다른worktree/branch/legacy자료정리0,StageB9c9e4ff5만이번게시대상이다.94c2eb의privateStageB9c9e4ff5/remote mainf976ed5e29e14b13e12729d5b1ccf98f050f2210를재검증했고다음은exact39경로재stage·엄격cached diffcheck·commit/private게시다. 보호8/N4/main·실DB/서비스는그대로다.
+### 2026-10-26 FN01 승인 r3 source·합성 검수 인수 및 통합 준비
+
+- Main914794의새빈B3 actualEdge/nativefetch→actualroute/repository/fakeDB/ArtifactStore 두case모두2PASS/0FAIL/0skip(6386ms):기존6보안반례·원문귀속과새초안첫POST→서버UUID GET→미선택업로드→명시선택/save/재조회/보호GET를확인했다. 추가test3파일독립C0/I0·기존첫case14552prefix보존·제품15불변이다. aa1e89최종48PASS/타입0,10009f제품build0·기존500kB경고유지,5b185adiffcheck0다. 실제PG가아닌source assertion1을구분했다.
+- B3 c84b95생성07:01:59.3297047Z/만료07:31:59.3297047Z,5f2a03inventory378파일/133폴더·29280890bytes/소유link/해당process0보존후86a9bfexact개별정리07:06:57.8300503Z.968a68별도07:07:10.5686549Z에양QAroot부재/관련process0확인이다. 앞선A1/B1/B2실패는그대로보존했고소급PASS0이다.
+- 최종SourceManifest C0232F597A285FD3DA7760253A8F546AEB61FA6375E4643CD7A2493CB6C044EF는검증후23현재hash재일치·직접명령/결과·제외범위를결박했다. WI C5785F57와부모계약F4E734B3의범위는동일하며pendingSQL76D16C97은applied/executionAuthorized:false다. source/검수기록과FN01_DRAFT_ARTIFACT_STORAGE_RESULT.md를보존하고계획FN01/UI02의해당부분만갱신했다.
+- 단일구현담당이이직접승인범위COMPLETED와writer소유권해제를제출했다. Main이독립검수/실행/통합을맡았으며제품코드직접수정0·동시writer0·N4/보호8변경0이다. 실제PG적용/구문·권한·제약/경합·실COMMIT,정식root/서비스/로그인TLS/실Agent/OScrash·socketabort는미실행이다. 실제사용가능/전체FN01/UI02/Stage/전체계획완료로승격하지않는다.
+- 다음은이번소유23source/시험과Main문서만정확commit/private기존branch게시·SHA/main불변/보호8확인이다. 일반Stage gate미충족이므로PR/병합/배포/작업공간정리0이다. 통합후Main이이미승인된다음미완료source를선정해계속하며PMO의다음작업배정을기다리지않는다.
+### 2026-10-26 최종 DOM B3 두 진입 사례 사전 등록
+
+- Main8d07fc는제품15파일불변과기존DOM전체14552bytes의D0F46477prefix를독립검증했다. 새spec25AD0C9556E6E6CFC276450AD00186BAE5D585039DC074FDA0EDD8F4E49907E2·harness1DEAEC66249E72AE41ABB3FEF42A32B847B37BE9604D08044E1E59179DA0E843·fixture061613D02F456CEFC36B0F9637E5E280835C579FDE843C1A2ED9F8061E620F44만추가검수로변경됐다. 이전23파일snapshot은새SourceManifest232399167720978C18A8B2E183E1695598F161122F009C2296B799F496D8A730의previousSnapshots에보존했다.
+- aa1e89 Main재검사에서새fixture를소비하는집중/인접48PASS/0skip·타입0이다. 제품15파일/의존성이바뀌지않아10009f의제품build0를반복하지않았다. SQL정의assert1과실PG증거는구분한다. 전달된--import tsx표기는기존명령과달랐으나실행/설치하지않고정정했다. 원래node --test명령을유지한다.
+- B3는기존모든instance정리/별도부재확인후exact등록② D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-dom-20261026-01을부모realpath/link·소유·부재확인뒤새빈root/temp로생성한다. 새생성부터30분/정리5분여유·현재Windows사용자소유·동일QA env/TEMP/TMP·정확개별정리/별도잔여확인방법은유지한다. 기존수명연장/기존파일재사용0이다.
+- case1은browser/artifacts,새첫저장case2는browser-first-save/artifacts-first-save를분리하고temp만공유한다. 같은Node시험파일에서순차실행·각90초·예상총3분이다. 합성원문각10KiB미만과두일회Edgeprofile/temp만허용하고Vitewrite:false·기본nativefetch→page.route→actualroute/repository/fakeDB/ArtifactStore로연결한다. 실제DB/서비스/기존인증서·권한/실Agent/사용자브라우저는사용하지않는다.
+- case1의기존6보안반례/전체저장→귀속흐름과case2의빈버퍼/초기DB없음→실제POST201/서버UUID GET200→미선택업로드→명시선택/PATCHv2→재조회/보호원문을검증한다. 첫case의기대/timeout은변경하지않았다. 아직B3실행전이며전체기능/Stage/계획완료는아니다.
+### 2026-10-26 B2 새 대상 반례·정리·최종 소스와 첫 저장 검수 보완
+
+- B2 c422c5최초06:20:06.3875631Z/만료06:50:06.3875631Z·새빈root/temp에서Main8b91c7실제DOM exit1/0PASS/1FAIL/0skip(3162ms),기존5반례는사라지고요청A metadata가다른App버퍼B에표시되는1건만재현했다. Binput/history/pending·POST불변은유지했다.3e8b14소유/link/프로세스0inventory189파일·70폴더/14640446bytes보존,ca7f1b정리06:22:09.1733504Z,b41d6b별도06:22:23.8889949Z에양QAroot부재/관련process0확인이다. 이전RED를PASS로소급하지않는다.
+- 원담당이actual targetDraftId를GET/receipt·표시snapshot/currentbuffer에결박해보완했고독립round2정적ADDRESSED/새C/I0이다. 기존다른초안보존·불러오기/명령/history는그대로다. 같은반례를추후새빈B3로검증한다.
+- EOF정리는이번소유23파일만끝의여분개행제거·본문/중간개행/조건/기대불변으로수행했다. Main5832d6의23현재hash일치·21개이전검수/실행hash는현재bytes에EOF suffix만붙여복원됨을독립검증했다. SourceManifest1A5AEA82751879504291FB8CB8A23E2DF88472176BA17174A3550D82D3BAB835는이시점의고정기록이다.5b185adiffcheck0,1f9a8b집중/직접인접48PASS/0skip,10009f타입/제품build0·기존500kB경고유지다. SQL정의assert1은실PG가아니다.
+- 실제파일시험은같은bytes2036478D를unit에서integration으로분류이동한뒤EOF2bytes만정리한92D589CD가현재원문이다. A2이전경로의같은본문1PASS와새경로미재실행을구분한다. 일반unitglob에실환경필수시험을잘못넣지않는내부배치보완이며skip/사례삭제/기대완화0이다. Main WI비의미r3 C5785F57로원직접승인/부모CFD7에결박,SQL미적용manifest는EOF비의미76D16C97·applied/executionAuthorized:false를유지한다.
+- 마지막점검에서저장된초안GET부터시작하는기존DOM만으로는이번부모보완의첫중간저장POST→새ID GET을확인하지못함을분리했다. 이정상진입은같은승인기능이므로spec/harness/transaction fixture만추가검수중이며제품15파일은동결유지한다. 빈초안화면→실제POST/새ID GET→원문업로드/미선택→명시선택/save까지확인하고기존6반례/수직case·기대/timeout은유지한다. fixture는초기초안없음/실제INSERT상태전이를추가하며기존기본의미는바꾸지않는다.
+- 다음B3생성전등록을갱신하며첫case의browser/artifacts와새case의browser-first-save/artifacts-first-save를분리하고temp만공유한다. 실제DB/서비스/계정·권한/TLS/Agent0,현재QA자원0이다. 이전23파일manifest는시험추가전snapshot으로보존하고추가후새시험hash/동적결과를결박한다. 전체기능/Stage/계획완료는아니다.
+### 2026-10-26 DOM B2 생성 전 추가 대상 혼합 반례 고정
+
+- UI scoped 재검수에서초기I1/I2/I3는정적ADDRESSED지만수정중새I1을발견했다. requested A와App buffer B가다를때A GET의metadata를B자료로표시할수있다. 부모는Binput을보존하지만snapshot에실제조회target ID가없다. Main463002실제source도대조했고바이트권한우회가아닌대상혼합으로판정했다.
+- B2는아직생성0이므로앞선예상GREEN계획을이추가반례의실제RED확인으로변경한다. 기존5반례/기대/timeout90초를유지하고A URL·독립Bbuffer의원input/pending/history불변과A ref/hash비노출을추가한spec9CB44A6DCCBC22E4086E8EE4E2369F42D8ED541CCA4C07A04704A3F91D38BAFE/harness1C5F1A58를고정했다. 제품Parent36322/Panel3D679/ReviewCAF878은새I1미수정이다.
+- exact등록②경로·현재Windows사용자·부모/link/부재검사·최초생성30분/정리5분여유·TEMP/TMP·생성종류/정확정리방법은동일하다. 새B2 RED실행/정리/별도잔여0후원담당이targetDraftId를실제GET/receipt에결박하는최소수정을하고새B3로GREEN검증한다. 버퍼삭제/시험완화/새endpoint/실DB·서비스·Agent변경0이다. 현재두QAroot모두부재다.
+### 2026-10-26 FN01 UI 보완 후 같은 반례의 DOM B2 사전 등록
+
+- 원담당이I2/I3를보완하고제품/시험을동결했다. Parent36322AFE54AA927516AD13B2DC774F8D717CE0BB5BC53782551027CD4D4B8B4C·Panel3D679E1E987B2D30BBEF94E62BD1F62A1E197993F95ED6389B727F94C339C26B·ReviewCAF87835C81F9CDE1B61662960F053D7F4497330C7ABC75D537709DB4B785923다. 보호metadata표시snapshot과현재identity/attempt,API/CSRF교체·거절/새mount시숨김,명시보호GET성공만복구,원input/pending/history보존을연결했다. 담당type0/APIunit7PASS보고와Main의실제DOM검증전상태를구분한다.
+- B2는B1정리·별도부재확인후같은등록②exact D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-dom-20261026-01을부모realpath/link·소유·부재확인후새빈root/temp로생성한다. 새생성부터30분/정리5분여유·현재Windows사용자소유,동일env/TEMP/TMP·Edgeprofile/합성artifacts·Vitewrite:false·정확정리방법을유지한다. 이전B1수명을연장하거나이전파일을재사용하지않는다.
+- 기대값/timeout90초/반례를그대로둔specF8C74E79F7C932A1038481E10282078DEAC3906003F4C1DE3CF55A9FFF504970·harness1C5F1A582649E8883F9579F7DE026414D251DD6A204A42A2AD3326C15739737A를Main이재실행한다. 실제브라우저nativefetch→actualservercode/fakeDB/ArtifactStore이며실제PG/서비스/사용자인수증거가아니다. UI독립scoped재검수도병행하며아직GREEN/완료판정0이다.
+### 2026-10-26 FN01 실제 DOM B1 반례 확인·정리·UI 보완
+
+- d83566에서등록②B1을새빈root/temp로생성:2026-10-26T05:59:56.6789861Z/만료06:29:56.6789861Z·현재Windows사용자소유/nonlink. specF8C74E79F7C932A1038481E10282078DEAC3906003F4C1DE3CF55A9FFF504970·harness1C5F1A582649E8883F9579F7DE026414D251DD6A204A42A2AD3326C15739737A와I2/I3미수정제품hash를확인했다. 기본new ApiClient nativefetch의실제HTTP→page.route→buildApp.inject→server/service/fakeDB/실제ArtifactStore를소비했다.
+- Main5e1499 exit1/0PASS/1FAIL/0skip·실제3913ms에서정확5개securityFailures를재현했다: 완료POST403뒤과거ref/hash노출,명시protectedmetadata복구경계없음,보호GET거절후과거ref/hash노출,remount뒤App보존ref/hash재노출,같은user/client CSRF교체뒤옛GEThydrate. import/timeout실패가아니다. 기본업로드·선택/save·생성·보호GET와원buffer/history보존까지도달한뒤이반례로실패했으며전체DOM/기능PASS가아니다.
+- d9e5fb에서Edgeprofile/temp/합성원문186파일·69디렉터리·14549687bytes·소유/link/관련process0inventory를보존했다.53f574에서정확개별정리완료06:03:04.2054454Z·만료이내,334073별도06:03:15.8699997Z에양QAroot부재/해당process0을확인했다. 실제DB/서비스/계정·권한/TLS/Agent변경0이며사용자브라우저는사용하지않았다.
+- 원담당에게UI수정round1의I2/I3제품보완GO. 부모현재readidentity/attempt의protectedmetadata표시snapshot,거절시표시무효화·명시GET성공만복구,Panel/Review공유·remount보호,CSRF/API교체전지연hydrate폐기를연결한다. 원input/pending/command/history삭제·덮기0,기존반례spec/harness기대값/timeout은유지한다. 새공개API/정식권한부여가아닌승인원문조회경계보완이다.
+- 다음은같은반례의새빈B2 GREEN와UI독립scoped재검수·최종타입/빌드·exactdiff보존이다. 현재QA자원0이며B1 RED를소급PASS로바꾸지않는다. Stage/전체계획·실제사용완료는아니다.
+### 2026-10-26 FN01 실제 파일 A2 통과·정리 후 DOM B1 착수
+
+- fresh A2 582c64에서등록①를새빈instance로생성:2026-10-26T05:52:51.0857001Z/만료06:22:51.0857001Z·현재Windows사용자소유/nonlink. Main614c56 실제ArtifactStore수직2PASS/0skip,7a9a55실파일부분/완료seal·동일ID재확인·귀속복사·정확중복회수1PASS/0skip이다. 같은artifact ID/bytes/hash·원uploadcommand 보존→선택save/v2→생성→기존PROJECT원문GET·완료명령replay·권한회수비노출을fakeDB와실제파일에서확인했다. 실제PG/서비스가아니다.
+- 4ccdac inventory10파일/24디렉터리/1487bytes·소유/link/해당process0보존후05f013개별정리완료05:55:35.3037774Z. 02148f별도관측05:55:56.5243237Z에등록①부재/해당process0·②미생성을확인했다. 자원/원문지문/정리기록은FN01_DRAFT_ARTIFACT_QA_A2_RESOURCE.json·A2_INVENTORY.json에보존했다. 기존실패A1을PASS로소급하지않는다.
+- UI초기정적C0/I3/M0중I1의기본nativefetch호출문맥은API9B4C5F0C75323BCE8405AA8E063A6BA1B0D56603F2920B560A8F7036963D2605로보완됐고담당function형transport반례2RED→API6PASS보고가있다. I2권한회수후옛ref/hash표시와I3같은user/client의CSRF교체전지연GET채택은제품미수정상태를보존하고실제DOM RED부터확인한다.
+- DOM B1은기등록②exact D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-dom-20261026-01을부모realpath/link/소유·부재확인후root/temp만생성한다. 최초생성부터30분/정리5분여유·owner현재Windows사용자,ENV ANVIL_FN01_ARTIFACT_DOM_QA=1/ROOT=등록②·실행TEMP/TMP=②/temp다. specF8C74E79/harness1C5F1A58의기본ApiClient nativefetch→page.route→buildApp.inject→실제repository/service/fakeDB/ArtifactStore,실외부통신/listener/PG/서비스/Agent0이다. 예상3분/시험90초·기존등록정확정리방법은그대로다.
+- 첫B1은현재I2/I3반례를모아예상RED로판정한다. 실패도기록/정리/별도잔여0후같은담당이제품을보완하고새빈B2로GREEN검증한다. 원buffer/명령/history삭제·검사기준완화0,아직실제사용/기능전체/Stage/전체계획완료아니다.
+### 2026-10-26 FN01 파일 QA 실패 진단·정리와 fresh A2 등록
+
+- 첫 등록① Mainb878e5 integration은1PASS/1FAIL/0skip·업로드503, 별도file-cases05315b는0PASS/1FAIL·EPERM: operation not permitted, fsync를재현했다. putDraft106의새COPYFILE_EXCL복사본을O_RDONLY로sync하는곳이며copyDraft도같다. ACL/권한·DB·서비스 문제가 아니라신규파일핸들열기방식으로원인을좁혔다. Microsoft FlushFileBuffers 공식문서의GENERIC_WRITE요구를대조했다. 같은실패를반복재실행하지않았다.
+- 허용신규DRAFT만O_RDWR sync/readhash/close·lstat/realpath/fddevino/nlink검사로보완했다. 기존PROJECTput/read/#bytes는그대로다. 새storeEB9C41BE5A0BC920BE11091EFAC6FE03DBD67A91FCAC90FAC78CEBADF1EDF683는한정독립C0/I0/M0이며실파일재검증전이다. fsync무시·ACL/OS권한변경·symlink생성0이다.
+- 1300a6에서실패QA4파일/12디렉터리·204bytes·소유/link/해당process0inventory를보존했고92b0a2에서정확개별정리했다. 8cf6df별도관측05:43:09Z에등록①부재/해당process0/②미생성을확인했다. 생성05:38:24.7839376Z→정리05:42:54.5296447Z로기존만료06:08:24.7839376Z이내다. 상세 FN01_DRAFT_ARTIFACT_QA_A1_INVENTORY.json에원경로/bytes/hash/소유·정리시각을보존했다.
+- 원intent/event는유지하되REJECTED미생성종결21개가보관projection상한을깨지않도록source조회에서만제외했다. service51CE628EA5D05C34D855E715C2CC9A287B0BE595F5F59088EB0A4890F3006BCA는추가한정C0/I0/M0다. Mainc4613e신규+인접45PASS/0skip,cd724e타입/제품build0·기존500kB경고보존이다. SQL정의assert1은실PG가아니다.
+- fresh A2는같은등록①exact D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-storage-20261026-01을부재/부모/소유/link재검사후새빈root로다시생성한다. 이전instance정리완료를전제로새생성시각부터30분/정리5분여유,기존등록범위·owner SINSAN\cyhuh·생성종류/정확정리방법은동일하다. source API9B4C5F0C/nativecall보완,server51CE/route47B3/SQLC75/storeEB9/integration1864/files2036고정에서Main이실행한다. 실제DB/서비스/Agent0이다.
+- UI초기정적C0/I3/M0: nativefetch호출문맥·403후옛ref/hash표시·CSRF교체전지연GET수용을원담당이허용UI파일안에서보완중이다. 파일A2와독립적으로진행하며②DOMroot는최종UIhash후에만생성한다. 전체기능/실사용/Stage완료아니다.
+### 2026-10-26 FN01 파일 QA① 실제 생성
+
+- c144c7에서 등록① D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-storage-20261026-01의 부재·부모realpath/link·소유를 확인하고 빈 일반 폴더를 생성했다. owner SINSAN\cyhuh, 최초2026-10-26T05:38:24.7839376Z·만료06:08:24.7839376Z, 생성시 파일0/link0이다. 테스트source1864E324/2036478D 고정 확인, 다음은 Main의 integration→files 실행과 정확 정리다. 등록② 생성0, 실제DB/서비스/Agent0이다.
+
+### 2026-10-26 FN01 실제 파일·화면 합성 QA 자원 사전 등록
+
+- 생성 전 등록이며 현재 생성0이다. Windows 공통 임시root D:/tmp만 사용한다. 등록① D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-storage-20261026-01, 등록② D:/tmp/anvil-v3-stage-b/fn01-draft-artifact-dom-20261026-01. Main/현재 사용자 SINSAN/cyhuh 소유·단일 실행, 각각 최초 생성부터 최대30분·마지막5분 정리 여유다. ① 시험/정확 정리/별도 부재 확인 후②를 새로 만든다. 기존 .av3-data/정식 원문/서비스 자료는 사용하지 않는다.
+- ① env ANVIL_FN01_ARTIFACT_QA=1와 ANVIL_FN01_ARTIFACT_QA_ROOT=등록①, 실제ArtifactStore+합성bytes/fakeDB로 integration FN01/draft-artifact-synthetic 다음 unit FN01/draft-artifact-files를 실행한다. 예상2분·원문10KiB미만/약40파일·폴더 이내다. draft-staging/UUID/UUID의 body/closed, draft-blobs/UUID/UUID, draft-adoptions/UUID/UUID/closed, blobs/UUID/UUID, file-cases의 같은 구조/합성부분body만 허용한다. listener/PG/외부통신0이다.
+- ② env ANVIL_FN01_ARTIFACT_DOM_QA=1와 ANVIL_FN01_ARTIFACT_DOM_QA_ROOT=등록②, 해당 실행의 TEMP/TMP만②/temp로 지정한다. 실제 React ProjectCreatePage→ApiClient→buildApp.inject→repository/service→실제ArtifactStore 경로다. Vite write:false·기존 headless Edge/browser profile·artifacts의 같은 합성원문·temp만 생성, timeout90초/예상3분이다. 부수 방법론/양식 목록은 fixture이며 실제 서비스/DB·로그인·TLS·Agent 검증으로 승격하지 않는다. 새 인증서/신뢰/서비스/권한 변경0이다.
+- 생성 직전 root 부재·D:/tmp 및 부모 실제 경로/link·현재 사용자·일반디렉터리를 재검사한다. 종료/실패 시 등록root 하위만 inventory(파일bytes/hash/소유/link)와 해당profile/루트에 결박된 Node/Edge만 확인한다. 소유/link/실행중 충돌은 보존·보고하고, 정확 파일을 개별 제거한 뒤 빈 하위디렉터리와root만 제거한다. 임의 재귀삭제/다른프로세스 종료0, 별도 읽기로 root부재/해당process0을 확인한다.
+- 고정 서버/SQL 수정round1은 I1/I2/M1 모두 독립 ADDRESSED·새C/I0이다. Main21ae21 집중14PASS/0skip 중 SQL정의1은 source assertion, 실제PG시험아니다. 신규 미적용 manifest는C75EE624 지문을 결박했지만 executionAuthorized/applied:false다. UI/실파일QA는 아직 NOT_RUN이며 전체기능·Stage완료아니다.
+### 2026-10-26 FN01 서버·SQL 중간 구현과 UI 연결 진행
+
+- 단일 writer는 DRAFT route/파일 port·ArtifactStore/intent/quota/기존 repository 호출선을 작성하고 UI02 업로드 API·패널과 기존 마법사/App 결합을 진행 중이다. 실제 DB/파일QA/listener/서비스/Agent0이며 작업 완료가 아니다. 최초 타입 검사 신규2오류를 보완한 뒤 담당 typecheck0 보고는 있으나 Main 최종 독립 실행 전이다.
+- 중간 독립 읽기에서 root 없는 getDraft의 과거 input ref 노출, SQL/TS attempt 인자 불일치·claim 미소비, 함수 PUBLIC 권한·deferred 최종완결 미연결을 발견했다. 담당이 같은 업무 내 보완했고 GET guard/attempt 소비는 읽기 확인했으나 SQL최종·실동작은 미검증이다. 작성중 검수이므로 전체합격/정식실패누적과 구분한다.
+- source SQL의 기존 PROJECT trigger 두 분기·원 upload command FK/출처·초기 방법론→초안 소비→source 선언 순서·불변 사건 권한을 보존하도록 선행 검수 결과를 전달했다. 기존 migration/runner/manifest 수정0, 신규0042는 pending·미적용이다. 현재 source-root-migration.ts의 실제45목록을 읽어 hash 대조했으며 과거 실제DB metadata46과 혼동하지 않는다.
+- 문서 checkpoint b6ce9be5의 현황 동기화에서 일부 이전 source 기록 누락을 diff로 발견해9c9e4ff5 후속 commit으로 누락 원문행을 이력 섹션에 보존했다. Main36dc51에서04e72460의 모든 비어있지않은 원문행 보존을 확인했다. 복원 첫 명령 끝의 잘못 남은 식별자는 쓰기 후 실패했으므로 재실행 대신 실제 저장/원문행 검증으로 확인했다. 이후 양측 현황 hash 동일을 먼저 확인해 동기화한다. history rewrite/reset0이다.
+- 0802d2 게시 후06cf5d의 private branch exact9c9e4ff5a3a8c5fd9b0f6604cc82e42bfe57b192·remote main f976ed5e 불변을 확인했다. 게시된 것은 Main문서2뿐이며 현재 제품/SQL/시험은 dirty·미검수다. diff의 작성중 EOFblank 경고도 PASS로 바꾸지 않았다. 보호8/N4 보존 유지, 다음은 고정 server/SQL 독립 검수와 UI·합성수직 검증이다.
 ### 2026-10-26 FN01 초기 RED·작업 기준 독립 검수 후 구현 GO
 
 - Main c23d47에서 신규 draft-artifact-synthetic.test.ts EE29FAF81A84AB124419F8C443BE55DD3843DE235F46F2172563F98D8CC26A15를 읽고 직접 실행했다. 실제 ApiClient→buildApp.inject→AccessRepository/ProjectsRepository fake transaction으로 초안 GET200 후 정확 DRAFT upload POST가 NOT_FOUND404≠201로 실패했다. exit1·1FAIL·0skip이며 import 오류가 아니다. PG/실파일/listener/서비스0이다. 이 최초 RED는 후속 저장·귀속·권한 경계를 입증하지 않는다.

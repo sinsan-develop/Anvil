@@ -1,0 +1,22 @@
+{
+  "instance": "B3",
+  "root": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01",
+  "owner": "SINSAN\\cyhuh",
+  "createdAt": "2026-10-26T07:01:59.3297047+00:00",
+  "deadline": "2026-10-26T07:31:59.3297047+00:00",
+  "expectedGreen": true,
+  "cases": 2,
+  "initialChildren": [
+    "temp"
+  ],
+  "allowedProfiles": [
+    "browser",
+    "browser-first-save"
+  ],
+  "allowedArtifacts": [
+    "artifacts",
+    "artifacts-first-save"
+  ],
+  "sourceManifestSha256": "232399167720978C18A8B2E183E1695598F161122F009C2296B799F496D8A730",
+  "reparse": false
+}

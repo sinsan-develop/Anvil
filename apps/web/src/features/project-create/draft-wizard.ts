@@ -8,7 +8,7 @@ export function draftWizardStep(buffer:DraftEditorState):number{
 }
 export function moveDraftWizardStep(buffer:DraftEditorState,userId:string,target:number,busy:boolean,editable:boolean):DraftEditorState|null{
  const current=draftWizardStep(buffer);
- if(!validStep(target)||Math.abs(target-current)!==1||busy||buffer.pendingCommand||buffer.pendingAction||buffer.ownerUserId&&buffer.ownerUserId!==userId)return null;
+ if(!validStep(target)||Math.abs(target-current)!==1||busy||buffer.upload||buffer.pendingCommand||buffer.pendingAction||buffer.ownerUserId&&buffer.ownerUserId!==userId)return null;
  if(target>current&&(!editable||!buffer.draftId||buffer.dirty))return null;
  return {...buffer,wizardStep:target};
 }

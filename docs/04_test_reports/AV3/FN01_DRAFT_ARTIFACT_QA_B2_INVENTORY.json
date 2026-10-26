@@ -1,0 +1,1835 @@
+{
+  "instance": "B2",
+  "root": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01",
+  "owner": "SINSAN\\cyhuh",
+  "createdAt": "2026-10-26T15:20:06.3875631+09:00",
+  "deadline": "2026-10-26T15:50:06.3875631+09:00",
+  "observedAt": "2026-10-26T15:21:39.7771631+09:00",
+  "qaProcesses": 0,
+  "result": "EXPECTED_RED_CURRENT_DRAFT_MIXING",
+  "tests": 1,
+  "passed": 0,
+  "failed": 1,
+  "skipped": 0,
+  "originalFiveViolations": 0,
+  "violations": [
+    "REQUEST_A_METADATA_DISPLAYED_IN_BUFFER_B"
+  ],
+  "entries": [
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\temp",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\VariationsSeedV2",
+      "directory": false,
+      "bytes": 11,
+      "sha256": "B4CC4174735C28360B9081BE3C3D0552D8A4B3CDB54431AC00ED0D622BAB6296",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\VariationsSafeSeedV2",
+      "directory": false,
+      "bytes": 19,
+      "sha256": "1560B22B2264F7CB6B7F6910164813F76C5E8A06FB1ACF85B375E687EE49C1AD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\VariationsRuntimeSeedV2",
+      "directory": false,
+      "bytes": 19,
+      "sha256": "1560B22B2264F7CB6B7F6910164813F76C5E8A06FB1ACF85B375E687EE49C1AD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Variations",
+      "directory": false,
+      "bytes": 85,
+      "sha256": "B26DA4F8C7E283AA74386DA0229D66AF14A37986B8CA828E054FC932F68DD557",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Local State",
+      "directory": false,
+      "bytes": 7628,
+      "sha256": "C1D1EB9821B2A658A2C15AC9FD7EDE2ADEAD2B0A58FA69A60C98E4A9706DA4A9",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Last Version",
+      "directory": false,
+      "bytes": 13,
+      "sha256": "847F27FF86DB8854A93EE7E0579B2F79F8E8D2BEA9841093E9CB0BD4D7C40F98",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\FirstLaunchAfterInstallation",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\topTraffic_638004170464094982",
+      "directory": false,
+      "bytes": 460992,
+      "sha256": "5A6B49358772DB0B5C682575F02E8630083568542B984D6D00727740506569D4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\topTraffic",
+      "directory": false,
+      "bytes": 29,
+      "sha256": "F81B7B9CE24F5A2B94182E817037B5F1089DC764BC7E55A9B0A6227A7E121F32",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\edgeSettings_2.0-a82cb2897a8bf9445d68dcc2be05af89ad4b2fda1fddb2952693be7cd5353ad3",
+      "directory": false,
+      "bytes": 130578,
+      "sha256": "A82CB2897A8BF9445D68DCC2BE05AF89AD4B2FDA1FDDB2952693BE7CD5353AD3",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\edgeSettings",
+      "directory": false,
+      "bytes": 81,
+      "sha256": "25061326ABC0B0E25214FFAE5B90B1EDCB73DED7B65C48A5555749544EBB2A08",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\customSettings_F95BA787499AB4FA9EFFF472CE383A14",
+      "directory": false,
+      "bytes": 35,
+      "sha256": "2BAE8302F9BD2D87AE26ACF692663DF1639B8E2068157451DA4773BD8BD30A2B",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\RemoteData\\customSettings",
+      "directory": false,
+      "bytes": 47,
+      "sha256": "D8D672F953E823063955BD9981532FC3453800C2E74C0CC3653D091088ABD3B3",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\local",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\local\\uriCache_",
+      "directory": false,
+      "bytes": 29,
+      "sha256": "87C1BA0F3A75480BEF554B38ABD51D7858BBE2CFF07D4FD29162B4468D2B6C43",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\local\\uriCache",
+      "directory": false,
+      "bytes": 9,
+      "sha256": "3D6F3F8F1456D7CE78DD9DFA8187318B38E731A658E513F561EE178766E74D39",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\local\\downloadCache_",
+      "directory": false,
+      "bytes": 29,
+      "sha256": "87C1BA0F3A75480BEF554B38ABD51D7858BBE2CFF07D4FD29162B4468D2B6C43",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\SmartScreen\\local\\downloadCache",
+      "directory": false,
+      "bytes": 14,
+      "sha256": "6E5DDBA6D7AA3B287EA364034E1F843E4146FF92C07D8426F4A7C4B0E6435006",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache\\index",
+      "directory": false,
+      "bytes": 262512,
+      "sha256": "A3A2AE945E304E180AB70A0B35BE7F9876EE3FFEE6CAA09076DA14FE6AD76B35",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache\\data_3",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "E09F42C398D688DCE168570291F1F92D079987DEDA3099A34ADB9E8C0522B30C",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "B1E963D702392FB7224786E7D56D43973E9B9EFD1B89C17814D7C558FFC0CDEC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\ShaderCache\\data_0",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "D6A5FE39CD672781B256E0E3102F7022635F1D4BB7CFCC90A80FFFE4D0F3877E",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Safe Browsing",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Nurturing",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Nurturing\\campaign_history-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Nurturing\\campaign_history",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "BF3CAA0226349B642E67DBCCD9D8125C8C9C402A60A8E4E6295B7DAD48FEB3DD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\index",
+      "directory": false,
+      "bytes": 262512,
+      "sha256": "9C300CEE88D558F535172FDE1BAB9048F3E8D56EC2709C10ED6F5B82E05F2173",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\f_000003",
+      "directory": false,
+      "bytes": 30444,
+      "sha256": "8576D4061FC786C73E37DE64872E44907281DF0E9C257AF1D7D227E06045F661",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\f_000002",
+      "directory": false,
+      "bytes": 16628,
+      "sha256": "0BC9CD4AFAEE0019D14B89C4CF5789211BE9E96CC2DE87B073AD12D4B812CB33",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\f_000001",
+      "directory": false,
+      "bytes": 16600,
+      "sha256": "BC5DD352BD62E2DD23DD2DBC119B86DB2040704427DBA2B5CBD58A086CD4ECBC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\data_3",
+      "directory": false,
+      "bytes": 4202496,
+      "sha256": "137C09AC95881C382EA22305D65544979630D6E3B20C926129137ABB59235CEB",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "A528AAA16D69D65379C59964D92FFAA937E24F42DFBDCB3F17910C7480ADECAE",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GrShaderCache\\data_0",
+      "directory": false,
+      "bytes": 45056,
+      "sha256": "25F5B8BD8143750229836079754237DC7B379C627386F402BB4F48A7ABED4658",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache\\DawnGraphiteCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache\\DawnGraphiteCache\\LSLKY6OQOC3C6NSMBEC62Q7Y6BL6S72V",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache\\DawnGraphiteCache\\LSLKY6OQOC3C6NSMBEC62Q7Y6BL6S72V\\cache.journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache\\DawnGraphiteCache\\LSLKY6OQOC3C6NSMBEC62Q7Y6BL6S72V\\cache.db-wal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\GPUPersistentCache\\DawnGraphiteCache\\LSLKY6OQOC3C6NSMBEC62Q7Y6BL6S72V\\cache.db",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\EdgeOptimizationGuideModelsManifest",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Web Data-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Web Data",
+      "directory": false,
+      "bytes": 227328,
+      "sha256": "2649B92FBC194CAAE3990F1310F16C314998CC845CFD8E8F08011EDD6057770A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Vpn Tokens-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Vpn Tokens",
+      "directory": false,
+      "bytes": 28672,
+      "sha256": "0750267321D06309DFD0BC3957B29483FE4F76CDB105E02E64DBE9EC240DDC03",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Top Sites-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Top Sites",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "4D9EBCF96FAF105E25D6D3E14AECE4730FFC7C87C242AB308DEA324D6615FF14",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\ServerCertificate-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\ServerCertificate",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "180FFBC2A4F10B5563F5A7BFE62D23909F0AA77572A06E59A9BE4C6FCA7176F7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Secure Preferences",
+      "directory": false,
+      "bytes": 12228,
+      "sha256": "95947530E89B24F1AA10A6CEE66F8C6FF932D61FC58EB3979B0ED66CCC3D217A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\README",
+      "directory": false,
+      "bytes": 182,
+      "sha256": "A0C9ABAE18599F0A65FC654AD36251F6330794BEA66B718A09D8B297F3E38E87",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Preferences",
+      "directory": false,
+      "bytes": 13026,
+      "sha256": "3D65658A79AD12DC11C4463629E28C1D803081840F1F392B8420A7CF1E86844A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Login Data-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Login Data For Account-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Login Data For Account",
+      "directory": false,
+      "bytes": 51200,
+      "sha256": "4825922749265B3039E3D5FABC9E5CBDD00406B0D256BAFEA9A835234AB38683",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Login Data",
+      "directory": false,
+      "bytes": 51200,
+      "sha256": "4825922749265B3039E3D5FABC9E5CBDD00406B0D256BAFEA9A835234AB38683",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\load_statistics.db",
+      "directory": false,
+      "bytes": 45056,
+      "sha256": "936451D9B1F8D876A254C1F03676E6DD38383CAE9E7D048AB9F5F85EF45A11DD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\HubApps Icons-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\HubApps Icons",
+      "directory": false,
+      "bytes": 28672,
+      "sha256": "5FB632FD6DA74C7F797600382215CBEEC68CBB132CC3BEB0D57562ECDCFF6B54",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\History-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\History",
+      "directory": false,
+      "bytes": 249856,
+      "sha256": "0533869C7045F11D8803DBECC12D461395D6B5606C555D9D656897EC9B4FA3AA",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Favicons-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Favicons",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "1FBC7EA9722B2154B0D69C9D0ED80B6C0C98C5D389CF31AC1A2B8DB030724840",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\EncryptedBookmarks2",
+      "directory": false,
+      "bytes": 3324,
+      "sha256": "0FDFFA57712CDF75188E6AD30D95918D8569C6335429F97CD228E76A0BE812F8",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\declarative_performance_observer.db-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\declarative_performance_observer.db",
+      "directory": false,
+      "bytes": 32768,
+      "sha256": "EDA4C9567974174F08A1DBCD8BADF4D6199A7E9A8B78B8826548F49E20E7BADF",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Bookmarks",
+      "directory": false,
+      "bytes": 3293,
+      "sha256": "F46F0D9687F119A2C30B3C0F8AC27960D3AC28E4243645DD1F08FB61390CC949",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\BookmarkMergedSurfaceOrdering",
+      "directory": false,
+      "bytes": 6,
+      "sha256": "4489F9E3E454748B3521EB214E0A5694D562CFF3D9FF511CB456953C8F534C00",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\arbitration_service_config.json",
+      "directory": false,
+      "bytes": 20347,
+      "sha256": "10FD9F7498F2534271AEC65104FA7659B1BCF58A593DC3A526DFC099E1F82B91",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Affiliation Database-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Affiliation Database",
+      "directory": false,
+      "bytes": 53248,
+      "sha256": "52B369AE1AC4DB15BE400B8D45B01D9E4C4054299FD3743F811E785A6ABCBE3A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\WebStorage",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\WebStorage\\QuotaManager-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\WebStorage\\QuotaManager",
+      "directory": false,
+      "bytes": 40960,
+      "sha256": "4C8C3AA22F80CBD16843184E7A483619BAEB366DC8FA67985FFC584B90821DDC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB\\LOG",
+      "directory": false,
+      "bytes": 315,
+      "sha256": "7CD1F02F3F30FA326830129C2F21328F3950428412A091C61CBC86B06B017C6B",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sync Data\\LevelDB\\000003.log",
+      "directory": false,
+      "bytes": 137,
+      "sha256": "225D5AE4F9F239789DA25E14EA1251600D0A4B71BA2521744392966950AD3744",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database\\LOG",
+      "directory": false,
+      "bytes": 339,
+      "sha256": "EB8D0C02DAA1B53E8C1D1ECEEC2B985A8BE18BAA0E21FF0934A264DA0A17B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Site Characteristics Database\\000003.log",
+      "directory": false,
+      "bytes": 40,
+      "sha256": "F096BC366A931FBA656BDCD77B24AF15A5F29FC53281A727C79F82C608ECFAB8",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\LOG",
+      "directory": false,
+      "bytes": 311,
+      "sha256": "E077CB2B110E7EA15BAB4ED1288CAAD045D5ED3BBABECC20A0E4317335E3CA58",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\000003.log",
+      "directory": false,
+      "bytes": 38,
+      "sha256": "1C43A1BDA1E458863C46DFAE7FB43BFB3E27802169F37320399B1DD799A819AC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata\\LOG",
+      "directory": false,
+      "bytes": 329,
+      "sha256": "CA0A7DB2D13BFAFE45934616198C02770AD1E98ED94813545B84B03C88CD2C3D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\shared_proto_db\\metadata\\000003.log",
+      "directory": false,
+      "bytes": 474,
+      "sha256": "EF3F0D26E55DD72095E6B252E86EB02E74B9BE665B8B8FE4EB07266CAE6887F1",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\db-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\db",
+      "directory": false,
+      "bytes": 45056,
+      "sha256": "0D6287FECEDBC44ED9F51DED9DE88629EC9F385ECFF5DA9A34E47E96FD5A9CBA",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\cache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\cache\\index",
+      "directory": false,
+      "bytes": 24,
+      "sha256": "FBCFE23A2ECB82B7100C50811691DDE0A33AA3DA8D176BE9882A9DB485DC0F2D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\cache\\index-dir",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Shared Dictionary\\cache\\index-dir\\the-real-index",
+      "directory": false,
+      "bytes": 48,
+      "sha256": "8ED15B7B42506A050E819A279E83A9234159A2F2B47376BFDDC544414AEECDDA",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions_Encrypted",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions_Encrypted\\Tabs_13437469220783043",
+      "directory": false,
+      "bytes": 2912,
+      "sha256": "91D5264503FC2A3CE8216E273C72E2BC980420EE63110A2072269200A1150A98",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions_Encrypted\\Session_13437469220709352",
+      "directory": false,
+      "bytes": 3660,
+      "sha256": "F2A3C51081F33F9E0C19C427EF590B07BE5FF4F484B8C94038E120BA71A0F3CD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions\\Tabs_13437469220781479",
+      "directory": false,
+      "bytes": 2747,
+      "sha256": "4CB039484588BAEC3794EB390B640574F74706062E76321F9945D733E62415BF",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Sessions\\Session_13437469220697895",
+      "directory": false,
+      "bytes": 2967,
+      "sha256": "DCD0B3A56FF37652F4B1DE21D88CFBA444BCD119238108549F5C26130409DDC7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage\\LOG",
+      "directory": false,
+      "bytes": 311,
+      "sha256": "EE2661F1B07184D1A8BE5169C3C24B6CC9BB70E2865A6FF5DE2AFEF7E238EE48",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Session Storage\\000003.log",
+      "directory": false,
+      "bytes": 49,
+      "sha256": "FFD700CF04BE6FE8D51E2FFB8A2E37BC3FA95A6679A4102FA35E8494C2350EAE",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\PersistentOriginTrials",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\PersistentOriginTrials\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\PersistentOriginTrials\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\parcel_tracking_db",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\parcel_tracking_db\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\parcel_tracking_db\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Nurturing",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Nurturing\\campaign_history-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Nurturing\\campaign_history",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "BF3CAA0226349B642E67DBCCD9D8125C8C9C402A60A8E4E6295B7DAD48FEB3DD",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Trust Tokens-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Trust Tokens",
+      "directory": false,
+      "bytes": 36864,
+      "sha256": "88BAFA2A265212152B2405502209D64438A416FF594A040E666F031EF442A812",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\TransportSecurity",
+      "directory": false,
+      "bytes": 522,
+      "sha256": "3AF3CF150F4F2C6694146BF58C278E01360798576F7BEEC4913DADBA45706D50",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Sdch Dictionaries",
+      "directory": false,
+      "bytes": 40,
+      "sha256": "6028BD681DBF11A0A58DDE8A0CD884115C04CAA59D080BA51BDE1B086CE0079D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\SCT Auditing Pending Reports",
+      "directory": false,
+      "bytes": 2,
+      "sha256": "4F53CDA18C2BAA0C0354BB5F9A3ECBE5ED12AB4D8E11BA873C2F11161202B945",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Reporting and NEL-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Reporting and NEL",
+      "directory": false,
+      "bytes": 36864,
+      "sha256": "93E3675D80B06B101A944262D3AC283C141186773F6F9A8513589BF094881B37",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\NetworkDataMigrated",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Network Persistent State",
+      "directory": false,
+      "bytes": 1127,
+      "sha256": "ECACCD96D0523AAC83F739E7C6F7E943EB3C875A7FEE2B027463B68531F42A39",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Device Bound Sessions-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Device Bound Sessions",
+      "directory": false,
+      "bytes": 20480,
+      "sha256": "6A22FF7CA6E53A73BC4578271E5F5BF34CDD7C1C9E8E13AEA5DB31AE5B2618D2",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Cookies-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Network\\Cookies",
+      "directory": false,
+      "bytes": 28672,
+      "sha256": "1BB7EA5008A38484BED70CB2FFF61A0B4A1BEDA2BB32DA52F974D582C7561800",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb\\LOG",
+      "directory": false,
+      "bytes": 323,
+      "sha256": "DC27DF16E81512B47650760E753151084116F45E557A65AE14ABB49766A317F5",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Local Storage\\leveldb\\000003.log",
+      "directory": false,
+      "bytes": 30,
+      "sha256": "8BD2EA70A0B70C91DE138A5B87C7936C6A6FA7C4275C54B97F4EF0CCC5B79BB4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache\\index",
+      "directory": false,
+      "bytes": 262512,
+      "sha256": "0AB35EC4987547EEB74866B6731D1FBA0ADF1925E13EC7224E59AA23C2266C71",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache\\data_3",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "E09F42C398D688DCE168570291F1F92D079987DEDA3099A34ADB9E8C0522B30C",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "B1E963D702392FB7224786E7D56D43973E9B9EFD1B89C17814D7C558FFC0CDEC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\GPUCache\\data_0",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "D6A5FE39CD672781B256E0E3102F7022635F1D4BB7CFCC90A80FFFE4D0F3877E",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State\\LOG",
+      "directory": false,
+      "bytes": 311,
+      "sha256": "449879F60BC62B33F8BFB79860E384D185CB6C6DF38253CC026E1B66C8ADEDDF",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension State\\000003.log",
+      "directory": false,
+      "bytes": 171,
+      "sha256": "14F92B911F9FE774720461EEC5BB4761AE6BFC9445C67E30BF624A8694B4B1DA",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts\\LOG",
+      "directory": false,
+      "bytes": 315,
+      "sha256": "A5D4510BF16FC74D963A2BCCCD82B6A130A86835001EF878F780D701EB41948A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Scripts\\000003.log",
+      "directory": false,
+      "bytes": 57,
+      "sha256": "99C59CBE7DB56D56A286485635E4467004641C6275E708887DD35728EB05109A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules\\MANIFEST-000001",
+      "directory": false,
+      "bytes": 41,
+      "sha256": "F9D31B278E215EB0D0E9CD709EDFA037E828F36214AB7906F612160FEAD4B2B4",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules\\LOG",
+      "directory": false,
+      "bytes": 311,
+      "sha256": "2038C624EDF5AEE86FCE4BE7BAFC8E6D4FB69425BD5ACE7225C0E5A115CDFFE0",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules\\CURRENT",
+      "directory": false,
+      "bytes": 16,
+      "sha256": "0F1BAD70C7BD1E0A69562853EC529355462FCD0423263A3D39D6D0D70B780443",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Extension Rules\\000003.log",
+      "directory": false,
+      "bytes": 57,
+      "sha256": "99C59CBE7DB56D56A286485635E4467004641C6275E708887DD35728EB05109A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\EdgePushStorageWithConnectTokenAndKey",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\EdgePushStorageWithConnectTokenAndKey\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\EdgePushStorageWithConnectTokenAndKey\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DualEngine",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DualEngine\\SiteList-Enterprise.json",
+      "directory": false,
+      "bytes": 2,
+      "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DualEngine\\SiteList-Consumer.json",
+      "directory": false,
+      "bytes": 2,
+      "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discounts_db",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discounts_db\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discounts_db\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discount_infos_db",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discount_infos_db\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\discount_infos_db\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache\\index",
+      "directory": false,
+      "bytes": 262512,
+      "sha256": "174FB800338CFAD06B2790A22E836CB20C58F3D835D7E5DDD57D508D53FB025A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache\\data_3",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "E09F42C398D688DCE168570291F1F92D079987DEDA3099A34ADB9E8C0522B30C",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "B1E963D702392FB7224786E7D56D43973E9B9EFD1B89C17814D7C558FFC0CDEC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnWebGPUCache\\data_0",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "D6A5FE39CD672781B256E0E3102F7022635F1D4BB7CFCC90A80FFFE4D0F3877E",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache\\index",
+      "directory": false,
+      "bytes": 262512,
+      "sha256": "72EEDEA9708694DCABC0A6C36AD8956FEC4EECBBBE6177EC8126B097801FF473",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache\\data_3",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "E09F42C398D688DCE168570291F1F92D079987DEDA3099A34ADB9E8C0522B30C",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "B1E963D702392FB7224786E7D56D43973E9B9EFD1B89C17814D7C558FFC0CDEC",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\DawnGraphiteCache\\data_0",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "D6A5FE39CD672781B256E0E3102F7022635F1D4BB7CFCC90A80FFFE4D0F3877E",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\commerce_subscription_db",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\commerce_subscription_db\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\commerce_subscription_db\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Collections",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Collections\\collectionsSQLite-journal",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Collections\\collectionsSQLite",
+      "directory": false,
+      "bytes": 73728,
+      "sha256": "C9B4EBB9E5D4CBA483B249F22FA994B7309AF6BC53EF599979218892E4D0BCD6",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\wasm",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\wasm\\index",
+      "directory": false,
+      "bytes": 24,
+      "sha256": "FBCFE23A2ECB82B7100C50811691DDE0A33AA3DA8D176BE9882A9DB485DC0F2D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\wasm\\index-dir",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\wasm\\index-dir\\the-real-index",
+      "directory": false,
+      "bytes": 48,
+      "sha256": "7C3D681FEB6C3197A607DF46BA0B448ABD8AC3E9CA671C1880BE38FBDBAE112C",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\js",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\js\\index",
+      "directory": false,
+      "bytes": 24,
+      "sha256": "FBCFE23A2ECB82B7100C50811691DDE0A33AA3DA8D176BE9882A9DB485DC0F2D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\js\\index-dir",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Code Cache\\js\\index-dir\\the-real-index",
+      "directory": false,
+      "bytes": 48,
+      "sha256": "C84646AF1FDA3BC3FC25B961E3A92BEF5BFF8711DFDE60547143229A72235082",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\ClientCertificates",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\ClientCertificates\\LOG",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\ClientCertificates\\LOCK",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\No_Vary_Search",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\No_Vary_Search\\snapshot.baf",
+      "directory": false,
+      "bytes": 20,
+      "sha256": "0C2DD377ED0CC66161E9DB8F89F7D8BCB3AD8C06C4A054BDCBA214AB05F58C9A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\No_Vary_Search\\journal.baj",
+      "directory": false,
+      "bytes": 4,
+      "sha256": "9C169428D852E25BD59B27652ED533D2A1F09F96E4C329FA5E06F47E16731543",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\index",
+      "directory": false,
+      "bytes": 524656,
+      "sha256": "8A41FABA1488435E14F458AA25BB6AEAE6B40D0B3D406FD39D357B857C689D6F",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\f_000001",
+      "directory": false,
+      "bytes": 683095,
+      "sha256": "90E734B891A5CF67004CD19FB56718B84D70FC0B758D207BC2C2E6B520E2F19A",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\data_3",
+      "directory": false,
+      "bytes": 4202496,
+      "sha256": "534908705608D2909A3BB1CC80174EF583B3C4C8AB6B23786D7AFFEB3DD98278",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\data_2",
+      "directory": false,
+      "bytes": 8192,
+      "sha256": "EC1702806F4CC7C42A82FC2B38E89835FDE7C64BB32060E0823C9077CA92EFB7",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\data_1",
+      "directory": false,
+      "bytes": 270336,
+      "sha256": "4587A4A96D8422D4AA40AFFD6C3923D0D6D5738B751671B7536414D59DA555E2",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Cache\\Cache_Data\\data_0",
+      "directory": false,
+      "bytes": 45056,
+      "sha256": "1300D162E08AEF41B611B3E1C4BF9329D905F383549DD293A034B206C1463E47",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Blueprints",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Default\\Blueprints\\blueprint_presence_index.json",
+      "directory": false,
+      "bytes": 24,
+      "sha256": "06398F1F11C73E23CC922FCC1FE2922A03CE60754A692C226CF9D1B1DAED2739",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad\\throttle_store.dat",
+      "directory": false,
+      "bytes": 20,
+      "sha256": "41C91A9C93D76295746A149DCE7EBB3B9EE2CB551D84365FFF108E59A61CC304",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad\\settings.dat",
+      "directory": false,
+      "bytes": 288,
+      "sha256": "735BDBA243C36C8BBCB042E8D5FB6586D0A7D15C1078F54FBEC689333A86487E",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad\\metadata",
+      "directory": false,
+      "bytes": 0,
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad\\reports",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\Crashpad\\attachments",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\browser\\component_crx_cache",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-staging",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-staging\\af010000-0000-4000-8000-000000000003",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-staging\\af010000-0000-4000-8000-000000000003\\31caa4e4-cd40-4116-8244-50a3730120c4",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-staging\\af010000-0000-4000-8000-000000000003\\31caa4e4-cd40-4116-8244-50a3730120c4\\closed",
+      "directory": false,
+      "bytes": 261,
+      "sha256": "FE4D04463E87EB932F0DD977B85637FAAD5053F52D5E1FC7A4DFB205F9F3FBCE",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-blobs",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-blobs\\af010000-0000-4000-8000-000000000003",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-adoptions",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-adoptions\\cb5733e6-b641-46b8-9d42-2f8116478bf9",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-adoptions\\cb5733e6-b641-46b8-9d42-2f8116478bf9\\d32b1aa3-4db0-49da-ae63-945eef72a05a",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\draft-adoptions\\cb5733e6-b641-46b8-9d42-2f8116478bf9\\d32b1aa3-4db0-49da-ae63-945eef72a05a\\closed",
+      "directory": false,
+      "bytes": 295,
+      "sha256": "D296A64DB85A3C3F96D6A2AB7AB4597E0A5766F9D07E47843EABD8425017CC5D",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\blobs",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\blobs\\b9e86de4-8ccd-4252-bfd9-1bab635be03e",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01\\artifacts\\blobs\\b9e86de4-8ccd-4252-bfd9-1bab635be03e\\d32b1aa3-4db0-49da-ae63-945eef72a05a",
+      "directory": false,
+      "bytes": 67,
+      "sha256": "5ED3DE992CEE64F45BB91DBE3D21A96B219B8FBEF9F54EADA61784F1BA1337D9",
+      "owner": "SINSAN\\cyhuh"
+    }
+  ],
+  "cleanedAt": "2026-10-26T06:22:09.1733504+00:00",
+  "rootAbsentAfterCleanup": true
+}

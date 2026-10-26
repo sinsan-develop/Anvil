@@ -2,7 +2,7 @@ import {createElement as h,type ReactNode} from 'react';
 import type {DraftEditorState} from './api.ts';
 
 /** 이 탭의 입력·저장 기록만 표시한다. 총괄·환경 선택이나 실제 준비/권한 판정은 하지 않는다. */
-export function DraftWizardReview({buffer,step,pinnedRequirements}:{buffer:DraftEditorState;step:3|4;pinnedRequirements?:ReactNode}){
+export function DraftWizardReview({buffer,step,pinnedRequirements,artifactRefsVisible=true}:{buffer:DraftEditorState;step:3|4;pinnedRequirements?:ReactNode;artifactRefsVisible?:boolean}){
  if(step===3)return h('section',{'aria-label':'총괄·환경 준비 상태'},h('h3',null,'총괄·환경 준비 상태'),
   h('dl',null,h('dt',null,'총괄 세션'),h('dd',null,'이 생성 화면의 선택 미구현 · 준비 필요'),h('dt',null,'코딩 Agent·개발환경'),h('dd',null,'이 생성 화면의 선택 미구현 · 실제 연결 미확인'),h('dt',null,'실행 권한'),h('dd',null,'미확인 · 이 화면에서 부여하지 않음')),
   buffer.input.methodologySelection?.kind==='NEW_PROJECT_DRAFT'?h('details',null,h('summary',null,'방법론 초안의 준비 요구'),
@@ -20,6 +20,7 @@ export function DraftWizardReview({buffer,step,pinnedRequirements}:{buffer:Draft
    h('dt',null,'방법론 선택'),h('dd',null,method?.kind==='CONFIRMED_REFERENCE'?`확정 참조 선택 · ${method.versionRef.id} v${method.versionRef.version} · SHA256 ${method.versionRef.contentHash}`:method?.kind==='NEW_PROJECT_DRAFT'?`방법론 초안 선택 · ${method.name} · 별도 검토·확정 필요`:'미선택'),
    h('dt',null,'중간본 저장 기록'),h('dd',null,buffer.draftId?`${buffer.draftId} v${buffer.version} · ${buffer.dirty?'미저장 입력 있음':'이 탭에 저장 응답 있음'}`:'저장 전')),
   input.sourceMode==='EXISTING'?h('section',{'aria-label':'검토할 소스 선언'},h('h4',null,'기존 소스 선언 · 실제 파일 접근 전'),input.sourceDeclaration?h('dl',null,h('dt',null,'기기·표시 이름'),h('dd',null,`${input.sourceDeclaration.hostLabel} · ${input.sourceDeclaration.displayName}`),h('dt',null,'위치 설명'),h('dd',null,input.sourceDeclaration.pathHint),h('dt',null,'선언 이유'),h('dd',null,input.sourceDeclaration.reason)):h('p',null,'선언 입력 미확인')):null,
+  h('section',{'aria-label':'선택한 원문 자료'},h('h4',null,'초안에 선택한 자료'),!artifactRefsVisible?h('p',null,'현재 보호 자료 조회 전입니다. 원 선택과 명령은 보존하며 참조는 표시하지 않습니다.'):input.artifactRefs.length?h('ul',null,input.artifactRefs.map(ref=>h('li',{key:ref.artifactId},ref.artifactId+' · '+ref.bytes+' bytes · '+ref.mediaType+' · SHA256 '+ref.contentHash))):h('p',null,'선택한 자료 없음'),h('p',null,'보관만 한 자료는 생성에 포함하지 않습니다. 미저장 선택은 먼저 중간 저장해야 합니다.')),
   h('p',null,'총괄·도구·환경 선택은 미구현이며 실제 연결·권한은 미확인입니다. 프로젝트 생성 후에도 준비가 필요합니다.'),
   h('p',null,'생성은 Agent 실행이 아닙니다. 기존 저장·방법론 확정 조건과 같은 명령의 결과 확인 절차를 따릅니다.'));
 }

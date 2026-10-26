@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "status": "SOURCE_ONLY_SCOPED_STATIC_REVIEWED",
+  "executionAuthorized": false,
+  "applied": false,
+  "branch": "codex/av3-stage-b",
+  "implementationBaseCommit": "04e7246021779bd36fca06fd9f965c24444c5e65",
+  "approval": {
+    "kind": "HUMAN_DIRECT_REPLY",
+    "questionId": "call_3619cd1844684a80876b59ff3cbcaecb",
+    "answer": "위 범위 구현 승인",
+    "contractPath": "docs/contracts/FN01_DRAFT_ARTIFACT_STORAGE_CANDIDATE.md",
+    "contractSha256": "F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0",
+    "workInstructionPath": "docs/work_packages/FN01_DRAFT_ARTIFACT_STORAGE_IMPLEMENTATION.md",
+    "workInstructionSha256": "C5785F57EC898547818BDC42C3DD772626A66F306C8043D9B208831560CAB494",
+    "nonSemanticParentWorkInstructionSha256": "CFD7F41AB1967105177D82850B64830034661A20AA20D82677CFD249D02D84E3"
+  },
+  "baselineDefinition": {
+    "path": "scripts/source-root-migration.ts",
+    "sha256": "0A5AE73A8E5A92E834E65C91330064F854EE7BEBAF257DA76BB43011706476E6",
+    "entryCount": 45,
+    "meaning": "실제 source 목록의 순서와 원문 지문이다. 대상 DB의 적용 현황이나 실제 적용 승인을 뜻하지 않는다."
+  },
+  "baselineSourceEntries": [
+    {
+      "id": "0000_environment",
+      "path": "db/migrations/0000_environment.sql",
+      "bytes": 343,
+      "sha256": "6EBBB9C580D54A50E0431806EE982244CBE134613354F8C3A8CD4F547E30178D"
+    },
+    {
+      "id": "0001_projects_access",
+      "path": "db/migrations/0001_projects_access.sql",
+      "bytes": 7372,
+      "sha256": "353D28D657794D47B84DB0C8A4D9481C8EBC9BF73278614578C6CF5CFD4C3643"
+    },
+    {
+      "id": "0011_authorization",
+      "path": "db/migrations/0011_authorization.sql",
+      "bytes": 9269,
+      "sha256": "B5922FE31715076E7CDB1F6485F9EA5AF4554C90FB957FB3B3A2C42EA22B9A21"
+    },
+    {
+      "id": "0003_documents",
+      "path": "db/migrations/0003_documents.sql",
+      "bytes": 3395,
+      "sha256": "51637420526C3BDAE9C9B1AE3A020F2FD5C964125F67CD680B646EB191A0F59B"
+    },
+    {
+      "id": "0002_methodologies",
+      "path": "db/migrations/0002_methodologies.sql",
+      "bytes": 3627,
+      "sha256": "0453854B9925F5FF2EEED15BABFB5DDA8446FBB751B3E7CAF0378A98D6DBCD34"
+    },
+    {
+      "id": "0002_builtin_condition_contract",
+      "path": "db/migrations/0002_builtin_condition_contract.sql",
+      "bytes": 1744,
+      "sha256": "EB2AD7F988BE2564B0D5FFFA79657060B7C60CDB22C891E7D0A412463821B3A9"
+    },
+    {
+      "id": "0011_user_common_control",
+      "path": "db/migrations/0011_user_common_control.sql",
+      "bytes": 3880,
+      "sha256": "EA3043A71F4D1557BF9620AC06F88274ED7227629FE2B1BFAB00E7409D16563C"
+    },
+    {
+      "id": "0011_user_common_forms",
+      "path": "db/migrations/0011_user_common_forms.sql",
+      "bytes": 1574,
+      "sha256": "B1BB3B65BD7F9616BB6F79E456C27C042DA4A2DFDFC8F3A6167E4CD06480044A"
+    },
+    {
+      "id": "0011_user_common_content_reviews",
+      "path": "db/migrations/0011_user_common_content_reviews.sql",
+      "bytes": 4756,
+      "sha256": "0009CFE2C02B92A4E930D538CE5C0C5D67215C6D89ACA6C1A4345868CCBC4F01"
+    },
+    {
+      "id": "0011_user_common_method_reviews",
+      "path": "db/migrations/0011_user_common_method_reviews.sql",
+      "bytes": 3384,
+      "sha256": "9E480E3BD4DA152BEFDBB2BCA8A2F5E1B3CDF0ED43336C5B210090F7FF02FEA2"
+    },
+    {
+      "id": "0011_project_creation",
+      "path": "db/migrations/0011_project_creation.sql",
+      "bytes": 1696,
+      "sha256": "0AD0E1E9D429AFE65014492D1CB07E629DF56C081D3643233C3F32BA5FF3FB95"
+    },
+    {
+      "id": "0011_draft_method_reviews",
+      "path": "db/migrations/0011_draft_method_reviews.sql",
+      "bytes": 6154,
+      "sha256": "A7AAD194C8DFF3A29EC502F1E94B0E4728BB5C087ABA02390F11A75C3765EFAF"
+    },
+    {
+      "id": "0011_project_policy_control",
+      "path": "db/migrations/0011_project_policy_control.sql",
+      "bytes": 3166,
+      "sha256": "E186F87E8BA04548D5559900F5AFABD9AEAD16B61808B066B868EAA6EA669020"
+    },
+    {
+      "id": "0003_project_artifacts",
+      "path": "db/migrations/0003_project_artifacts.sql",
+      "bytes": 2761,
+      "sha256": "78A0457FDA6C394605CA46A7B6AEC761AEC6DE0A84F47450B9CDA326DAC9CCD8"
+    },
+    {
+      "id": "0003_project_documents",
+      "path": "db/migrations/0003_project_documents.sql",
+      "bytes": 6207,
+      "sha256": "748E8F07FFA2B1093E1141504E8A5134332518A9BF56EC04584E59E84E7A4292"
+    },
+    {
+      "id": "0003_project_document_reviews",
+      "path": "db/migrations/0003_project_document_reviews.sql",
+      "bytes": 3054,
+      "sha256": "F1BA53B79B95A02867822743748EAD6F6DAFFF039A506651A26368D7B922DE75"
+    },
+    {
+      "id": "0003_document_confirmations",
+      "path": "db/migrations/0003_document_confirmations.sql",
+      "bytes": 6394,
+      "sha256": "58EBDD39CDDB67CBBF4FA2F21BEA42848DFA7E0851297BD7592F8B3CE36E9FD5"
+    },
+    {
+      "id": "0003_document_imports",
+      "path": "db/migrations/0003_document_imports.sql",
+      "bytes": 5668,
+      "sha256": "C9FFA0C09D8597E410A9B85EAD5B1AAD3413DF82E7F6EFA2169AD514FA001AFB"
+    },
+    {
+      "id": "0003_document_proposals",
+      "path": "db/migrations/0003_document_proposals.sql",
+      "bytes": 7167,
+      "sha256": "93CB063A0214F2197AFCA309ED3D4482A0EA8BAC765B9E72F42B110BDB6F542A"
+    },
+    {
+      "id": "0004_design_index",
+      "path": "db/migrations/0004_design_index.sql",
+      "bytes": 6091,
+      "sha256": "D0D6EF9221A46C96C4E6F033D6A14E22CC07B26A8BCB1949D67DBB8E574AEA6A"
+    },
+    {
+      "id": "0004_work_plan_drafts",
+      "path": "db/migrations/0004_work_plan_drafts.sql",
+      "bytes": 9758,
+      "sha256": "9EA544780D61CF7B5914B9DB597EADBA2291FB487F42A373D695F053B8E8610E"
+    },
+    {
+      "id": "0004_trace_links",
+      "path": "db/migrations/0004_trace_links.sql",
+      "bytes": 4200,
+      "sha256": "31B8F7525BF8E07C4E6E13644EA97715B39E57CB9400A7FECE8CBACCF1D0D51C"
+    },
+    {
+      "id": "0005_knowledge_drafts",
+      "path": "db/migrations/0005_knowledge_drafts.sql",
+      "bytes": 6722,
+      "sha256": "42EFE15B4EBE3A860364EF85D92631FCF85C71F7143738026155E5814893153A"
+    },
+    {
+      "id": "0005_conversations",
+      "path": "db/migrations/0005_conversations.sql",
+      "bytes": 6632,
+      "sha256": "8241D4E6321D8798ECC8E78D83EAE1147A3C8FF7110CDD86370CAB3B73BE98DC"
+    },
+    {
+      "id": "0005_knowledge_changes",
+      "path": "db/migrations/0005_knowledge_changes.sql",
+      "bytes": 6894,
+      "sha256": "03DC6518781E35AF3A06C28D7EE18D05936B2EBC9E513CBC0B100495B36C24FE"
+    },
+    {
+      "id": "0005_knowledge_confirmation",
+      "path": "db/migrations/0005_knowledge_confirmation.sql",
+      "bytes": 8502,
+      "sha256": "35BD5B9A3F6109881F0F22B1A06957114EA714556E03700678C7E1BA3D353766"
+    },
+    {
+      "id": "0005_artifact_quarantine",
+      "path": "db/migrations/0005_artifact_quarantine.sql",
+      "bytes": 4194,
+      "sha256": "27480EC2D09BC14BF88196E7D45104BFAC107F7FA362760246D0B49EAF043AD5"
+    },
+    {
+      "id": "0004_work_plan_confirmation",
+      "path": "db/migrations/0004_work_plan_confirmation.sql",
+      "bytes": 11374,
+      "sha256": "8C899DE2C7C5E673A8915FD2EBD83E78B32E0D87D4828B50CD76DD499B03A249"
+    },
+    {
+      "id": "0004_design_change_proposals",
+      "path": "db/migrations/0004_design_change_proposals.sql",
+      "bytes": 8373,
+      "sha256": "2CAFD54F19DADE5780C0F9DAB652999C65ED1B072BAFE3E64B701935EA7B7D70"
+    },
+    {
+      "id": "0004_design_impact_reviews",
+      "path": "db/migrations/0004_design_impact_reviews.sql",
+      "bytes": 6770,
+      "sha256": "E99067F14F8FA1D5BA775C3C6E4096ECF4A20483651D0E777776A74E4589275C"
+    },
+    {
+      "id": "0004_design_impact_review_operator_fix",
+      "path": "db/migrations/0004_design_impact_review_operator_fix.sql",
+      "bytes": 4857,
+      "sha256": "C3D5CB62A7F5615DB0325F9008031F61C6D16A225BC2EF241DEFCADBC75C002B"
+    },
+    {
+      "id": "0004_design_change_sources",
+      "path": "db/migrations/0004_design_change_sources.sql",
+      "bytes": 5187,
+      "sha256": "02B4F223F482EBE2DEDD8090EB725D93F953F0AFAC47702FE3D31F21609B0E69"
+    },
+    {
+      "id": "0004_design_change_source_binding_fix",
+      "path": "db/migrations/0004_design_change_source_binding_fix.sql",
+      "bytes": 2482,
+      "sha256": "1EC0D32D45A770998BE2DA36D2EAB7CD557F16314EE41618676BCEFEA704B95A"
+    },
+    {
+      "id": "0011_one_time_approval_requests",
+      "path": "db/migrations/0011_one_time_approval_requests.sql",
+      "bytes": 7013,
+      "sha256": "BE0C422F5E9F4F3869E076D6331436B6BF944ABF11865AA62D0E7AAA48CE1B5C"
+    },
+    {
+      "id": "0011_one_time_approval_decisions",
+      "path": "db/migrations/0011_one_time_approval_decisions.sql",
+      "bytes": 11763,
+      "sha256": "727C586254D34BD454986BF899CFC53429682E751DEB36555B5BDAE19A1F141A"
+    },
+    {
+      "id": "0011_one_time_approval_consumption",
+      "path": "db/migrations/0011_one_time_approval_consumption.sql",
+      "bytes": 11787,
+      "sha256": "9EAB1FCBA2586BF87F202CEFC39F300E152E1415C8339692438074B3B800B29D"
+    },
+    {
+      "id": "0005_project_constitutions",
+      "path": "db/migrations/0005_project_constitutions.sql",
+      "bytes": 8386,
+      "sha256": "71F4674B279FFEA063E3291C392AC822AB4367A0393834079B79CAEEA29DD765"
+    },
+    {
+      "id": "0001_source_declarations",
+      "path": "db/migrations/0001_source_declarations.sql",
+      "bytes": 6838,
+      "sha256": "246FD20284F998AC8D1C1CBEA1570372F7D6A204DAD885EA41112EEDA5B3C025"
+    },
+    {
+      "id": "0002_project_methodology_revisions",
+      "path": "db/migrations/0002_project_methodology_revisions.sql",
+      "bytes": 10332,
+      "sha256": "F816147A1454B428AF090B0FEB93E496B60CB4EABA7F5979FCCDF919FC353E68"
+    },
+    {
+      "id": "0003_document_stage_bindings",
+      "path": "db/migrations/0003_document_stage_bindings.sql",
+      "bytes": 3339,
+      "sha256": "5EC9965D55AD7968D5DAC7A2CF90F388B6E3BF6E1A1E74913D32BB8D1C4041E1"
+    },
+    {
+      "id": "0006_connection_candidates",
+      "path": "db/migrations/0006_connection_candidates.sql",
+      "bytes": 21225,
+      "sha256": "327AF229E0A2F88F1E763E83DDEBD3C522CF3CDA2D2D43E9355EF2C8BC8B280D"
+    },
+    {
+      "id": "0006_connection_candidate_guard_alias_fix",
+      "path": "db/migrations/0006_connection_candidate_guard_alias_fix.sql",
+      "bytes": 3540,
+      "sha256": "B9642EF359EA0ED71BB0D65551FEEAC9A287930A2EC81ED643F3E327D0204AA0"
+    },
+    {
+      "id": "0006_host_trust_registrations",
+      "path": "db/migrations/0006_host_trust_registrations.sql",
+      "bytes": 30770,
+      "sha256": "3027636015D284462A4F974AD792175851EF28F05C73117FD4A813853E329020"
+    },
+    {
+      "id": "0006_host_trust_challenge_protocol_fix",
+      "path": "db/migrations/0006_host_trust_challenge_protocol_fix.sql",
+      "bytes": 2653,
+      "sha256": "A57C5432F0EFF9152889B4DD7E23409E8DBC1CADD8B34426E0A6B3B012B15F3C"
+    },
+    {
+      "id": "0008_source_root_registry",
+      "path": "db/migrations/0008_source_root_registry.sql",
+      "bytes": 11509,
+      "sha256": "D9D27D2C92E31E6C5E50BF18762786D2CAD2B47A28905BC8F0F15FA2CEC72403"
+    }
+  ],
+  "pendingMigration": {
+    "id": "0042_draft_artifact_storage",
+    "path": "db/migrations/0042_draft_artifact_storage.sql.pending",
+    "sha256": "76D16C972339359B839ADA8A27A466C1F60873B5734FC37303F042B75C2CAA87",
+    "reviewStatus": "SCOPED_STATIC_RECONFIRMED_EOF_ONLY_PG_NOT_RUN",
+    "bytes": 44395,
+    "nonSemanticReviewParentSha256": "C75EE6247C792EDDF3778245491B02B657B95E89DDA7B68DD31CBCCEC67B7CD3"
+  },
+  "executionNotes": [
+    "실행 runner나 기존 migration 목록을 변경하지 않는다.",
+    "기존 실제 DB metadata46과 이 source 목록45를 같은 집합으로 단정하지 않는다.",
+    "대상 DB와 실제 선행 일치·SQL 구문·FK·권한·경합·실제 COMMIT은 미검증이다.",
+    "실제 DB 적용·사용자 권한·Secret·서비스·Agent 실행은 승인 범위에서 제외된다.",
+    "검수 중 SQL이 변경되면 최종 원문 지문과 bytes를 다시 결박해야 한다."
+  ]
+}

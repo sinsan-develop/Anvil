@@ -1,0 +1,392 @@
+-- FN01 r3 source-only forward 후보. 자동 적용 목록에 포함하지 않는다.
+-- 실제 PostgreSQL 구문/FK/권한/COMMIT/경합 미실행. 기존 SQL/PROJECT trigger는 변경하지 않는다.
+CREATE TABLE anvil.fn01_owner_quota (
+ owner_id uuid PRIMARY KEY REFERENCES anvil.users(id) ON DELETE RESTRICT,
+ reserved_bytes bigint NOT NULL DEFAULT 0 CHECK(reserved_bytes BETWEEN 0 AND 524288000),
+ reserved_count integer NOT NULL DEFAULT 0 CHECK(reserved_count BETWEEN 0 AND 200)
+);
+CREATE TABLE anvil.draft_upload_intents (
+ id uuid PRIMARY KEY, draft_id uuid NOT NULL REFERENCES anvil.project_drafts(id) ON DELETE RESTRICT,
+ actor_id uuid NOT NULL, client_id uuid NOT NULL, external_command_id uuid NOT NULL,
+ expected_version bigint NOT NULL CHECK(expected_version>0), request_hash text NOT NULL CHECK(request_hash~'^[a-f0-9]{64}$'), request_json jsonb NOT NULL,
+ artifact_id uuid NOT NULL UNIQUE, server_command_id uuid NOT NULL UNIQUE, receipt_id uuid NOT NULL UNIQUE, operation_id uuid NOT NULL UNIQUE,
+ ref_json jsonb NOT NULL, staging_key text NOT NULL UNIQUE, final_key text NOT NULL UNIQUE,
+ state text NOT NULL CHECK(state IN('RESERVED','BYTES_VERIFIED','FINALIZED','UNKNOWN','REJECTED')),
+ attempt bigint NOT NULL DEFAULT 0 CHECK(attempt>=0), result_json jsonb, created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ UNIQUE(draft_id,actor_id,client_id,external_command_id), UNIQUE(id,artifact_id), UNIQUE(draft_id,id,artifact_id)
+);
+CREATE TABLE anvil.draft_artifact_selection_versions (
+ draft_id uuid NOT NULL REFERENCES anvil.project_drafts(id) ON DELETE RESTRICT, draft_version bigint NOT NULL CHECK(draft_version>0),
+ refs_json jsonb NOT NULL CHECK(jsonb_typeof(refs_json)='array'), snapshot_hash text NOT NULL,
+ command_id uuid NOT NULL REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ receipt_id uuid NOT NULL REFERENCES anvil.authorization_receipts(id) ON DELETE RESTRICT,
+ PRIMARY KEY(draft_id,draft_version)
+);
+CREATE TABLE anvil.draft_artifact_selections (
+ draft_id uuid NOT NULL, draft_version bigint NOT NULL, artifact_id uuid NOT NULL REFERENCES anvil.artifacts(id) ON DELETE RESTRICT,
+ upload_intent_id uuid NOT NULL, ordinal integer NOT NULL CHECK(ordinal BETWEEN 0 AND 19), ref_json jsonb NOT NULL,
+ PRIMARY KEY(draft_id,draft_version,artifact_id), UNIQUE(draft_id,draft_version,ordinal),
+ FOREIGN KEY(draft_id,draft_version) REFERENCES anvil.draft_artifact_selection_versions(draft_id,draft_version) ON DELETE RESTRICT,
+ FOREIGN KEY(draft_id,upload_intent_id,artifact_id) REFERENCES anvil.draft_upload_intents(draft_id,id,artifact_id) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.draft_creation_intents (
+ id uuid PRIMARY KEY, draft_id uuid NOT NULL REFERENCES anvil.project_drafts(id) ON DELETE RESTRICT,
+ actor_id uuid NOT NULL, client_id uuid NOT NULL, external_command_id uuid NOT NULL, expected_version bigint NOT NULL,
+ request_hash text NOT NULL, request_json jsonb NOT NULL, target_project_id uuid NOT NULL UNIQUE,
+ refs_json jsonb NOT NULL, sources_json jsonb NOT NULL, selection_hash text NOT NULL,
+ state text NOT NULL CHECK(state IN('RESERVED','COPIES_VERIFIED','COMMITTED','UNKNOWN')),
+ attempt bigint NOT NULL DEFAULT 0 CHECK(attempt>=0), project_command_id uuid REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ result_json jsonb, created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(draft_id,expected_version) REFERENCES anvil.draft_artifact_selection_versions(draft_id,draft_version) ON DELETE RESTRICT,
+ UNIQUE(draft_id,actor_id,client_id,external_command_id)
+);
+CREATE UNIQUE INDEX fn01_pending_creation_once ON anvil.draft_creation_intents(draft_id,expected_version) WHERE state<>'COMMITTED';
+CREATE TABLE anvil.draft_artifact_quota_reservations (
+ id uuid PRIMARY KEY, owner_id uuid NOT NULL REFERENCES anvil.fn01_owner_quota(owner_id) ON DELETE RESTRICT,
+ upload_intent_id uuid UNIQUE REFERENCES anvil.draft_upload_intents(id) ON DELETE RESTRICT,
+ creation_intent_id uuid UNIQUE REFERENCES anvil.draft_creation_intents(id) ON DELETE RESTRICT,
+ held_bytes bigint NOT NULL CHECK(held_bytes>=0), held_count integer NOT NULL CHECK(held_count>=0),
+ CHECK((upload_intent_id IS NULL)<>(creation_intent_id IS NULL))
+);
+-- 프로젝트 생성 전 예약을 담으므로 project FK는 최종 adoption 사건이 소유한다.
+CREATE TABLE anvil.fn01_project_quota (project_id uuid PRIMARY KEY, reserved_bytes bigint NOT NULL CHECK(reserved_bytes BETWEEN 0 AND 10737418240), creation_intent_id uuid NOT NULL UNIQUE REFERENCES anvil.draft_creation_intents(id) ON DELETE RESTRICT);
+CREATE TABLE anvil.draft_artifact_adoptions (
+ artifact_id uuid PRIMARY KEY REFERENCES anvil.artifacts(id) ON DELETE RESTRICT,
+ upload_intent_id uuid NOT NULL, original_command_id uuid NOT NULL REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ draft_id uuid NOT NULL, draft_version bigint NOT NULL, ref_json jsonb NOT NULL,
+ source_key text NOT NULL, target_key text NOT NULL, project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ creation_intent_id uuid NOT NULL REFERENCES anvil.draft_creation_intents(id) ON DELETE RESTRICT,
+ create_command_id uuid NOT NULL REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ actor_id uuid NOT NULL, client_id uuid NOT NULL, adopted_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ FOREIGN KEY(upload_intent_id,artifact_id) REFERENCES anvil.draft_upload_intents(id,artifact_id) ON DELETE RESTRICT,
+ FOREIGN KEY(draft_id,draft_version,artifact_id) REFERENCES anvil.draft_artifact_selections(draft_id,draft_version,artifact_id) ON DELETE RESTRICT,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.draft_artifact_intent_events (
+ id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, upload_intent_id uuid REFERENCES anvil.draft_upload_intents(id) ON DELETE RESTRICT,
+ creation_intent_id uuid REFERENCES anvil.draft_creation_intents(id) ON DELETE RESTRICT,
+ state text NOT NULL, attempt bigint NOT NULL, recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ CHECK((upload_intent_id IS NULL)<>(creation_intent_id IS NULL))
+);
+REVOKE ALL ON anvil.fn01_owner_quota,anvil.draft_upload_intents,anvil.draft_creation_intents,anvil.draft_artifact_quota_reservations,anvil.fn01_project_quota,anvil.draft_artifact_selection_versions,anvil.draft_artifact_selections,anvil.draft_artifact_adoptions,anvil.draft_artifact_intent_events FROM PUBLIC,anvil_v3_app;
+GRANT SELECT ON anvil.fn01_owner_quota,anvil.draft_upload_intents,anvil.draft_creation_intents,anvil.draft_artifact_quota_reservations,anvil.fn01_project_quota,anvil.draft_artifact_selection_versions,anvil.draft_artifact_selections,anvil.draft_artifact_adoptions,anvil.draft_artifact_intent_events TO anvil_v3_app;
+REVOKE UPDATE,DELETE ON anvil.artifacts FROM anvil_v3_app;
+
+CREATE FUNCTION anvil.fn01_json(v jsonb) RETURNS text LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE out text;
+BEGIN
+ CASE jsonb_typeof(v)
+ WHEN 'object' THEN SELECT '{'||coalesce(string_agg(to_jsonb(key)::text||':'||anvil.fn01_json(value),',' ORDER BY key COLLATE "C"),'')||'}' INTO out FROM jsonb_each(v);
+ WHEN 'array' THEN SELECT '['||coalesce(string_agg(anvil.fn01_json(value),',' ORDER BY ordinal),'')||']' INTO out FROM jsonb_array_elements(v) WITH ORDINALITY AS e(value,ordinal);
+ ELSE out=v::text;
+ END CASE; RETURN out;
+END;$$;
+CREATE FUNCTION anvil.fn01_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$ SELECT encode(sha256(convert_to(anvil.fn01_json(v),'UTF8')),'hex') $$;
+CREATE FUNCTION anvil.fn01_active(s uuid,a uuid,c uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE good boolean;
+BEGIN
+ IF session_user<>'anvil_v3_app' THEN RAISE EXCEPTION 'FN01_APP_SESSION_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT true INTO good FROM anvil.auth_sessions x JOIN anvil.users u ON u.id=x.user_id JOIN anvil.clients k ON k.id=x.client_id AND k.user_id=u.id
+ WHERE x.id=s AND u.id=a AND k.id=c AND u.status='ACTIVE' AND u.revoked_at IS NULL AND k.revoked_at IS NULL AND x.revoked_at IS NULL
+ AND x.credential_generation=u.credential_generation AND x.idle_expires_at>clock_timestamp() AND x.absolute_expires_at>clock_timestamp() FOR UPDATE OF u,x,k;
+ IF good IS DISTINCT FROM true THEN RAISE EXCEPTION 'FN01_ACTIVE_SESSION_REQUIRED' USING ERRCODE='42501';END IF;
+END;$$;
+CREATE FUNCTION anvil.fn01_lock_owner(s uuid,a uuid,c uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);INSERT INTO anvil.fn01_owner_quota(owner_id) VALUES(a) ON CONFLICT DO NOTHING;
+ PERFORM 1 FROM anvil.fn01_owner_quota WHERE owner_id=a FOR UPDATE;
+END;$$;
+CREATE FUNCTION anvil.fn01_draft(s uuid,a uuid,c uuid,d uuid,v bigint,mutable boolean DEFAULT true) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_drafts;
+BEGIN
+ PERFORM anvil.fn01_lock_owner(s,a,c);SELECT * INTO r FROM anvil.project_drafts WHERE id=d AND owner_user_id=a FOR UPDATE;
+ IF NOT FOUND OR r.client_id<>c THEN RAISE EXCEPTION 'FN01_DRAFT_OWNER_CLIENT_REQUIRED' USING ERRCODE='42501';END IF;
+ IF mutable AND (r.consumed_project_id IS NOT NULL OR r.version<>v) THEN RAISE EXCEPTION 'FN01_DRAFT_VERSION_CONFLICT' USING ERRCODE='40001';END IF;
+END;$$;
+CREATE FUNCTION anvil.fn01_ref(a anvil.artifacts) RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$ SELECT jsonb_build_object('artifactId',(a).id,'bytes',(a).bytes,'contentHash',(a).content_hash,'mediaType',(a).media_type) $$;
+CREATE FUNCTION anvil.fn01_reserve_upload(s uuid,a uuid,c uuid,d uuid,p jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u anvil.draft_upload_intents;cmd jsonb=p->'command';b bigint=(cmd->'payload'->>'bytes')::bigint;v bigint=(cmd->>'expectedVersion')::bigint;ref jsonb;
+BEGIN
+ PERFORM anvil.fn01_draft(s,a,c,d,v);
+ IF jsonb_typeof(cmd) IS DISTINCT FROM 'object' OR (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(cmd) key) IS DISTINCT FROM ARRAY['clientId','commandId','expectedVersion','payload','schemaVersion']::text[] OR jsonb_typeof(cmd->'payload') IS DISTINCT FROM 'object' OR (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(cmd->'payload') key) IS DISTINCT FROM ARRAY['bytes','contentHash','mediaType']::text[] OR cmd->>'clientId' IS DISTINCT FROM c::text OR cmd->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR b NOT BETWEEN 0 AND 20971520 OR cmd->'payload'->>'contentHash' !~ '^[a-f0-9]{64}$'
+ OR p->>'requestHash' IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('operation','uploadProjectDraftArtifact','draftId',d,'command',cmd))
+ THEN RAISE EXCEPTION 'FN01_UPLOAD_INPUT_INVALID' USING ERRCODE='22023';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands WHERE draft_id=d AND actor_id=a AND command_id=(cmd->>'commandId')::uuid) THEN RAISE EXCEPTION 'FN01_COMMAND_CONFLICT';END IF;
+ IF (SELECT count(*) FROM anvil.draft_upload_intents WHERE draft_id=d AND state<>'REJECTED')>=20
+ OR EXISTS(SELECT 1 FROM anvil.fn01_owner_quota WHERE owner_id=a AND (reserved_bytes+2*b>524288000 OR reserved_count+2>200)) THEN RAISE EXCEPTION 'FN01_DRAFT_QUOTA_EXCEEDED';END IF;
+ UPDATE anvil.fn01_owner_quota SET reserved_bytes=reserved_bytes+2*b,reserved_count=reserved_count+2 WHERE owner_id=a;
+ ref=(cmd->'payload')||jsonb_build_object('artifactId',p->>'artifactId');
+ INSERT INTO anvil.draft_upload_intents(id,draft_id,actor_id,client_id,external_command_id,expected_version,request_hash,request_json,artifact_id,server_command_id,receipt_id,operation_id,ref_json,staging_key,final_key,state)
+ VALUES((p->>'id')::uuid,d,a,c,(cmd->>'commandId')::uuid,v,p->>'requestHash',cmd,(p->>'artifactId')::uuid,(p->>'serverCommandId')::uuid,(p->>'receiptId')::uuid,(p->>'operationId')::uuid,ref,'draft-staging/'||d||'/'||(p->>'id')||'/body','draft-blobs/'||d||'/'||(p->>'artifactId'),'RESERVED') RETURNING * INTO u;
+ INSERT INTO anvil.draft_artifact_quota_reservations(id,owner_id,upload_intent_id,held_bytes,held_count) VALUES(u.id,a,u.id,2*b,2);
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(u.id,'RESERVED',0);RETURN to_jsonb(u);
+END;$$;
+CREATE FUNCTION anvil.fn01_claim_intent(s uuid,a uuid,c uuid,k text,i uuid,h text) RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u anvil.draft_upload_intents;r anvil.draft_creation_intents;n bigint;
+BEGIN
+ IF k='UPLOAD' THEN
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,u.draft_id,u.expected_version);
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE id=i FOR UPDATE;
+ IF u.actor_id<>a OR u.client_id<>c OR u.request_hash<>h OR u.state NOT IN('RESERVED','UNKNOWN','BYTES_VERIFIED') THEN RAISE EXCEPTION 'FN01_INTENT_CONFLICT';END IF;
+ UPDATE anvil.draft_upload_intents SET attempt=attempt+1 WHERE id=i RETURNING attempt INTO n;
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(i,'ATTEMPT_STARTED',n);
+ ELSIF k='CREATION' THEN
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,r.draft_id,r.expected_version);
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i FOR UPDATE;
+ IF r.actor_id<>a OR r.client_id<>c OR r.request_hash<>h OR r.state='COMMITTED' THEN RAISE EXCEPTION 'FN01_INTENT_CONFLICT';END IF;
+ UPDATE anvil.draft_creation_intents SET attempt=attempt+1 WHERE id=i RETURNING attempt INTO n;
+ INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(i,'ATTEMPT_STARTED',n);
+ ELSE RAISE EXCEPTION 'FN01_INTENT_KIND_INVALID';END IF;RETURN n;
+END;$$;
+CREATE FUNCTION anvil.fn01_unknown_intent(s uuid,a uuid,c uuid,k text,i uuid,n bigint) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ PERFORM anvil.fn01_lock_owner(s,a,c);
+ IF k='UPLOAD' THEN
+ UPDATE anvil.draft_upload_intents SET state='UNKNOWN' WHERE id=i AND actor_id=a AND client_id=c AND attempt=n AND state NOT IN('FINALIZED','REJECTED');
+ IF FOUND THEN INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(i,'UNKNOWN',n);END IF;
+ ELSIF k='CREATION' THEN
+ UPDATE anvil.draft_creation_intents SET state='UNKNOWN' WHERE id=i AND actor_id=a AND client_id=c AND attempt=n AND state<>'COMMITTED';
+ IF FOUND THEN INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(i,'UNKNOWN',n);END IF;
+ ELSE RAISE EXCEPTION 'FN01_INTENT_KIND_INVALID';END IF;
+END;$$;
+-- owner/intent 행 잠금과 파일 시작 전 증가하는 attempt를 함께 사용한다.
+-- attempt>0은 살아 있는 다른 writer/부분 파일을 배제하지 못하므로 절대 quota를 해제하지 않는다.
+CREATE FUNCTION anvil.fn01_abort_upload(s uuid,a uuid,c uuid,d uuid,external_id uuid,h text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u anvil.draft_upload_intents;q anvil.draft_artifact_quota_reservations;
+BEGIN
+ PERFORM anvil.fn01_draft(s,a,c,d,0,false);
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE draft_id=d AND actor_id=a AND client_id=c AND external_command_id=external_id FOR UPDATE;
+ IF NOT FOUND OR u.request_hash IS DISTINCT FROM h OR u.state IN('FINALIZED','REJECTED') THEN RETURN;END IF;
+ IF u.attempt=0 THEN
+ SELECT * INTO q FROM anvil.draft_artifact_quota_reservations WHERE upload_intent_id=u.id FOR UPDATE;
+ IF NOT FOUND OR q.owner_id IS DISTINCT FROM a OR q.held_bytes<>2*(u.ref_json->>'bytes')::bigint OR q.held_count<>2 THEN RAISE EXCEPTION 'FN01_RESERVATION_INVALID';END IF;
+ UPDATE anvil.draft_upload_intents SET state='REJECTED' WHERE id=u.id;
+ UPDATE anvil.fn01_owner_quota SET reserved_bytes=reserved_bytes-q.held_bytes,reserved_count=reserved_count-q.held_count WHERE owner_id=a;
+ UPDATE anvil.draft_artifact_quota_reservations SET held_bytes=0,held_count=0 WHERE id=q.id;
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(u.id,'REJECTED_UNSTARTED',0);
+ ELSE
+ UPDATE anvil.draft_upload_intents SET state='UNKNOWN' WHERE id=u.id;
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(u.id,'UNKNOWN',u.attempt);
+ END IF;
+END;$$;
+CREATE FUNCTION anvil.fn01_finalize_upload(s uuid,a uuid,c uuid,i uuid,h text,n bigint,inspection jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u anvil.draft_upload_intents;result jsonb;artifact_state text;digest text;
+BEGIN
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,u.draft_id,u.expected_version);
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE id=i FOR UPDATE;
+ IF u.actor_id<>a OR u.client_id<>c OR u.request_hash<>h OR u.attempt<>n OR u.state NOT IN('RESERVED','UNKNOWN','BYTES_VERIFIED') THEN RAISE EXCEPTION 'FN01_UPLOAD_FENCE_CONFLICT';END IF;
+ IF jsonb_typeof(inspection) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(inspection))<>5 OR inspection->'policyVersion' IS DISTINCT FROM '1'::jsonb
+ OR inspection->>'method' IS DISTINCT FROM 'KNOWN_PATTERNS_RAW_BYTES' OR inspection->'complete' IS DISTINCT FROM 'false'::jsonb OR jsonb_typeof(inspection->'reasonCodes') IS DISTINCT FROM 'array'
+ OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(inspection->'reasonCodes') x WHERE x NOT IN('PRIVATE_KEY_MARKER','BEARER_TOKEN_MARKER','SECRET_ASSIGNMENT_MARKER'))
+ OR (SELECT count(*) FROM jsonb_array_elements_text(inspection->'reasonCodes'))<>(SELECT count(DISTINCT x) FROM jsonb_array_elements_text(inspection->'reasonCodes') x)
+ OR inspection->>'state' IS DISTINCT FROM CASE WHEN jsonb_array_length(inspection->'reasonCodes')>0 THEN 'SUSPECTED' ELSE 'NO_KNOWN_MARKER' END THEN RAISE EXCEPTION 'FN01_INSPECTION_INVALID';END IF;
+ artifact_state=CASE WHEN inspection->>'state'='SUSPECTED' THEN 'QUARANTINED' ELSE 'READY' END;
+ result=jsonb_build_object('scopeKind','DRAFT','draftId',u.draft_id,'commandId',u.external_command_id,'clientId',c,'version',u.expected_version,'status','APPLIED','data',jsonb_build_object('artifactRef',u.ref_json,'status','ARTIFACT_'||artifact_state,'inspection',inspection));
+ digest=anvil.fn01_hash(jsonb_build_object('kind','DRAFT','draftId',u.draft_id,'operation','uploadProjectDraftArtifact','actorId',a,'clientId',c,'requestHash',h));
+ UPDATE anvil.draft_upload_intents SET state='BYTES_VERIFIED' WHERE id=i;
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(i,'BYTES_VERIFIED',n);
+ INSERT INTO anvil.commands(id,scope_kind,scope_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,expected_version,result_ref,authorization_receipt_id,completed_at)
+ VALUES(u.server_command_id,'DRAFT',u.draft_id,u.draft_id,a,c,'uploadProjectDraftArtifact',u.external_command_id,h,u.operation_id,'APPLIED',u.expected_version,result,u.receipt_id,clock_timestamp());
+ INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,scope_digest) VALUES(u.receipt_id,'DRAFT',u.draft_id,u.server_command_id,jsonb_build_object('kind','HUMAN','userId',a),digest);
+ INSERT INTO anvil.draft_audit_events(draft_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,operation,outcome,reason_code)
+ SELECT u.draft_id,coalesce(max(server_sequence),0)+1,u.operation_id,jsonb_build_object('kind','HUMAN','userId',a),c,u.server_command_id,u.operation_id,'uploadProjectDraftArtifact','APPLIED','EXPLICIT_DRAFT_FILE_UPLOAD' FROM anvil.draft_audit_events WHERE draft_id=u.draft_id;
+ INSERT INTO anvil.artifacts(id,draft_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id,inspection_json)
+ VALUES(u.artifact_id,u.draft_id,(u.ref_json->>'bytes')::bigint,u.ref_json->>'contentHash',u.ref_json->>'mediaType',u.final_key,artifact_state,a,c,u.server_command_id,inspection);
+ UPDATE anvil.draft_upload_intents SET state='FINALIZED',result_json=result WHERE id=i;
+ INSERT INTO anvil.draft_artifact_intent_events(upload_intent_id,state,attempt) VALUES(i,'FINALIZED',n);RETURN result;
+END;$$;
+CREATE FUNCTION anvil.fn01_assert_upload_provenance(i uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE u anvil.draft_upload_intents;
+BEGIN
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE id=i;
+ IF u.id IS NULL OR u.state IS DISTINCT FROM 'FINALIZED' OR NOT EXISTS(
+ SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='DRAFT' AND r.scope_id=u.draft_id
+ JOIN anvil.draft_audit_events e ON e.command_id=c.id AND e.draft_id=u.draft_id AND e.operation_id=u.operation_id AND e.operation='uploadProjectDraftArtifact' AND e.outcome='APPLIED'
+ JOIN anvil.artifacts f ON f.id=u.artifact_id AND f.command_id=c.id AND f.created_by=u.actor_id AND f.client_id=u.client_id
+ WHERE c.id=u.server_command_id AND c.actor_id=u.actor_id AND c.client_id=u.client_id AND c.draft_id=u.draft_id AND c.command_id=u.external_command_id
+ AND c.scope_kind='DRAFT' AND c.scope_id=u.draft_id AND c.operation_id=u.operation_id AND c.operation='uploadProjectDraftArtifact' AND c.request_hash=u.request_hash AND c.state='APPLIED' AND r.id=u.receipt_id AND r.subject_ref=jsonb_build_object('kind','HUMAN','userId',u.actor_id)
+ AND r.scope_digest=anvil.fn01_hash(jsonb_build_object('kind','DRAFT','draftId',u.draft_id,'operation','uploadProjectDraftArtifact','actorId',u.actor_id,'clientId',u.client_id,'requestHash',u.request_hash))
+ AND e.event_id=u.operation_id AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',u.actor_id) AND e.client_ref=u.client_id AND e.reason_code='EXPLICIT_DRAFT_FILE_UPLOAD'
+ AND c.expected_version=u.expected_version AND c.result_ref=u.result_json AND c.result_ref->'data'->'artifactRef'=anvil.fn01_ref(f) AND anvil.fn01_ref(f)=u.ref_json
+ AND c.result_ref->'data'->'inspection'=f.inspection_json AND c.result_ref->'data'->>'status'='ARTIFACT_'||f.state
+ AND ((f.draft_id=u.draft_id AND f.project_id IS NULL AND f.storage_key=u.final_key) OR EXISTS(SELECT 1 FROM anvil.draft_artifact_adoptions ad WHERE ad.artifact_id=f.id AND ad.original_command_id=c.id AND ad.upload_intent_id=u.id AND ad.project_id=f.project_id AND ad.target_key=f.storage_key)))
+ THEN RAISE EXCEPTION 'FN01_UPLOAD_INCOMPLETE' USING ERRCODE='23514';END IF;
+END;$$;
+
+CREATE FUNCTION anvil.fn01_record_selection(s uuid,a uuid,c uuid,d uuid,v bigint,cmd uuid,receipt uuid,refs jsonb) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE item jsonb;f anvil.artifacts;u anvil.draft_upload_intents;ordinal integer=0;
+BEGIN
+ PERFORM anvil.fn01_draft(s,a,c,d,v);
+ IF jsonb_typeof(refs) IS DISTINCT FROM 'array' OR jsonb_array_length(refs)>20 OR (SELECT coalesce(sum((x->>'bytes')::bigint),0) FROM jsonb_array_elements(refs) x)>104857600
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands q JOIN anvil.authorization_receipts r ON r.id=q.authorization_receipt_id AND r.command_id=q.id AND r.scope_kind='DRAFT' AND r.scope_id=d
+ WHERE q.id=cmd AND q.draft_id=d AND q.actor_id=a AND q.client_id=c AND q.operation IN('createProjectDraft','saveProjectDraft') AND q.state='APPLIED' AND r.id=receipt
+ AND (q.result_ref->>'version')::bigint=v AND q.result_ref->'input'->'artifactRefs'=refs)
+ OR NOT EXISTS(SELECT 1 FROM anvil.project_drafts WHERE id=d AND input_json->'artifactRefs'=refs) THEN RAISE EXCEPTION 'FN01_SELECTION_COMMAND_REQUIRED';END IF;
+ PERFORM 1 FROM anvil.artifacts WHERE id IN(SELECT (value->>'artifactId')::uuid FROM jsonb_array_elements(refs)) ORDER BY id FOR UPDATE;
+ INSERT INTO anvil.draft_artifact_selection_versions(draft_id,draft_version,refs_json,snapshot_hash,command_id,receipt_id) VALUES(d,v,refs,anvil.fn01_hash(refs),cmd,receipt);
+ FOR item IN SELECT value FROM jsonb_array_elements(refs) LOOP
+ SELECT * INTO f FROM anvil.artifacts WHERE id=(item->>'artifactId')::uuid FOR UPDATE;
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE artifact_id=f.id AND server_command_id=f.command_id;
+ IF f.draft_id IS DISTINCT FROM d OR f.project_id IS NOT NULL OR f.state IS DISTINCT FROM 'READY' OR anvil.fn01_ref(f) IS DISTINCT FROM item OR u.state IS DISTINCT FROM 'FINALIZED' OR u.draft_id IS DISTINCT FROM d THEN RAISE EXCEPTION 'FN01_EXACT_DRAFT_ARTIFACT_REQUIRED';END IF;
+ PERFORM anvil.fn01_assert_upload_provenance(u.id);
+ INSERT INTO anvil.draft_artifact_selections(draft_id,draft_version,artifact_id,upload_intent_id,ordinal,ref_json) VALUES(d,v,f.id,u.id,ordinal,item);ordinal=ordinal+1;
+ END LOOP;
+END;$$;
+CREATE FUNCTION anvil.fn01_reserve_creation(s uuid,a uuid,c uuid,d uuid,p jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE draft anvil.project_drafts;v bigint=(p->'request'->>'draftVersion')::bigint;selection anvil.draft_artifact_selection_versions;r anvil.draft_creation_intents;sources jsonb;b bigint;n integer;oldcmd anvil.commands;
+BEGIN
+ PERFORM anvil.fn01_draft(s,a,c,d,v);SELECT * INTO draft FROM anvil.project_drafts WHERE id=d;
+ IF EXISTS(SELECT 1 FROM anvil.draft_creation_intents WHERE draft_id=d AND expected_version=v AND state<>'COMMITTED') THEN RAISE EXCEPTION 'FN01_PENDING_CREATION_CONFLICT';END IF;
+ IF p->'request'->>'draftId'<>d::text OR p->'request'->>'clientId'<>c::text OR p->>'requestHash' IS DISTINCT FROM anvil.fn01_hash(p->'request') THEN RAISE EXCEPTION 'FN01_CREATION_INPUT_INVALID';END IF;
+ SELECT * INTO selection FROM anvil.draft_artifact_selection_versions WHERE draft_id=d AND draft_version=v;
+ IF NOT FOUND THEN
+ -- 기존 무자료 초안은 원 저장 명령/receipt와 동일한 빈 snapshot만 보강한다.
+ IF draft.input_json->'artifactRefs'<>'[]'::jsonb THEN RAISE EXCEPTION 'FN01_SELECTION_MISSING';END IF;
+ SELECT * INTO oldcmd FROM anvil.commands WHERE draft_id=d AND actor_id=a AND client_id=c AND operation IN('createProjectDraft','saveProjectDraft') AND (result_ref->>'version')::bigint=v AND result_ref->'input'=draft.input_json AND state='APPLIED';
+ IF NOT FOUND THEN RAISE EXCEPTION 'FN01_SELECTION_COMMAND_MISSING';END IF;
+ PERFORM anvil.fn01_record_selection(s,a,c,d,v,oldcmd.id,oldcmd.authorization_receipt_id,'[]'::jsonb);
+ SELECT * INTO selection FROM anvil.draft_artifact_selection_versions WHERE draft_id=d AND draft_version=v;
+ END IF;
+ IF selection.refs_json IS DISTINCT FROM draft.input_json->'artifactRefs' THEN RAISE EXCEPTION 'FN01_SELECTION_CHANGED';END IF;
+ SELECT coalesce(jsonb_agg(jsonb_build_object('ref',x.ref_json,'uploadId',x.upload_intent_id) ORDER BY x.artifact_id),'[]'::jsonb),coalesce(sum((x.ref_json->>'bytes')::bigint),0),count(*) INTO sources,b,n FROM anvil.draft_artifact_selections x WHERE x.draft_id=d AND x.draft_version=v;
+ IF n<>jsonb_array_length(selection.refs_json) THEN RAISE EXCEPTION 'FN01_SELECTION_INCOMPLETE';END IF;
+ IF b>10737418240 OR EXISTS(SELECT 1 FROM anvil.fn01_owner_quota WHERE owner_id=a AND (reserved_bytes+b>524288000 OR reserved_count+n>200)) THEN RAISE EXCEPTION 'FN01_DRAFT_QUOTA_EXCEEDED';END IF;
+ UPDATE anvil.fn01_owner_quota SET reserved_bytes=reserved_bytes+b,reserved_count=reserved_count+n WHERE owner_id=a;
+ INSERT INTO anvil.draft_creation_intents(id,draft_id,actor_id,client_id,external_command_id,expected_version,request_hash,request_json,target_project_id,refs_json,sources_json,selection_hash,state)
+ VALUES((p->>'id')::uuid,d,a,c,(p->'request'->>'commandId')::uuid,v,p->>'requestHash',p->'request',(p->>'targetProjectId')::uuid,selection.refs_json,sources,selection.snapshot_hash,'RESERVED') RETURNING * INTO r;
+ INSERT INTO anvil.draft_artifact_quota_reservations(id,owner_id,creation_intent_id,held_bytes,held_count) VALUES(r.id,a,r.id,b,n);
+ INSERT INTO anvil.fn01_project_quota(project_id,reserved_bytes,creation_intent_id) VALUES(r.target_project_id,b,r.id);
+ INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(r.id,'RESERVED',0);RETURN to_jsonb(r);
+END;$$;
+CREATE FUNCTION anvil.fn01_copies_verified(s uuid,a uuid,c uuid,i uuid,h text,n bigint) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.draft_creation_intents;f anvil.artifacts;item jsonb;
+BEGIN
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,r.draft_id,r.expected_version);SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i FOR UPDATE;
+ IF r.actor_id<>a OR r.client_id<>c OR r.request_hash<>h OR r.attempt<>n OR r.state='COMMITTED' OR NOT EXISTS(SELECT 1 FROM anvil.project_drafts d WHERE d.id=r.draft_id AND d.input_json->'artifactRefs'=r.refs_json) THEN RAISE EXCEPTION 'FN01_CREATION_FENCE_CONFLICT';END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(r.refs_json) ORDER BY value->>'artifactId' LOOP
+ SELECT * INTO f FROM anvil.artifacts WHERE id=(item->>'artifactId')::uuid FOR UPDATE;
+ IF f.draft_id IS DISTINCT FROM r.draft_id OR f.project_id IS NOT NULL OR f.state IS DISTINCT FROM 'READY' OR anvil.fn01_ref(f) IS DISTINCT FROM item THEN RAISE EXCEPTION 'FN01_COPY_SOURCE_CHANGED';END IF;
+ END LOOP;
+ UPDATE anvil.draft_creation_intents SET state='COPIES_VERIFIED' WHERE id=i;
+ INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(i,'COPIES_VERIFIED',n);
+END;$$;
+CREATE FUNCTION anvil.fn01_commit_creation(s uuid,a uuid,c uuid,i uuid,h text,cmd uuid,n bigint) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.draft_creation_intents;f anvil.artifacts;u anvil.draft_upload_intents;item jsonb;q anvil.draft_artifact_quota_reservations;
+BEGIN
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,r.draft_id,r.expected_version);SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i FOR UPDATE;
+ IF r.actor_id<>a OR r.client_id<>c OR r.request_hash<>h OR r.attempt<>n OR r.state<>'COPIES_VERIFIED'
+ OR NOT EXISTS(SELECT 1 FROM anvil.project_drafts WHERE id=r.draft_id AND input_json->'artifactRefs'=r.refs_json)
+ OR NOT EXISTS(SELECT 1 FROM anvil.draft_artifact_selection_versions WHERE draft_id=r.draft_id AND draft_version=r.expected_version AND refs_json=r.refs_json AND snapshot_hash=r.selection_hash)
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands x JOIN anvil.authorization_receipts ar ON ar.id=x.authorization_receipt_id AND ar.command_id=x.id AND ar.scope_kind='PROJECT' AND ar.scope_id=x.project_id
+ JOIN anvil.project_members m ON m.project_id=x.project_id AND m.user_id=a AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.project_control pc ON pc.project_id=x.project_id AND pc.actor_id=a AND pc.client_id=c AND pc.generation=1 AND pc.revoked_at IS NULL
+ WHERE x.id=cmd AND x.project_id=r.target_project_id AND x.actor_id=a AND x.client_id=c AND x.command_id=r.external_command_id AND x.operation='createProject' AND x.state='APPLIED' AND x.request_hash=r.request_hash)
+ THEN RAISE EXCEPTION 'FN01_CREATION_EXACT_AUTH_REQUIRED';END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(r.refs_json) ORDER BY value->>'artifactId' LOOP
+ SELECT * INTO f FROM anvil.artifacts WHERE id=(item->>'artifactId')::uuid FOR UPDATE;
+ SELECT * INTO u FROM anvil.draft_upload_intents WHERE artifact_id=f.id AND server_command_id=f.command_id AND draft_id=r.draft_id;
+ IF f.draft_id IS DISTINCT FROM r.draft_id OR f.project_id IS NOT NULL OR f.state IS DISTINCT FROM 'READY' OR anvil.fn01_ref(f) IS DISTINCT FROM item OR u.state IS DISTINCT FROM 'FINALIZED' THEN RAISE EXCEPTION 'FN01_ADOPTION_SOURCE_INVALID';END IF;
+ PERFORM anvil.fn01_assert_upload_provenance(u.id);
+ INSERT INTO anvil.draft_artifact_adoptions(artifact_id,upload_intent_id,original_command_id,draft_id,draft_version,ref_json,source_key,target_key,project_id,creation_intent_id,create_command_id,actor_id,client_id)
+ VALUES(f.id,u.id,f.command_id,r.draft_id,r.expected_version,item,f.storage_key,'blobs/'||r.target_project_id||'/'||f.id,r.target_project_id,r.id,cmd,a,c);
+ UPDATE anvil.artifacts SET draft_id=NULL,project_id=r.target_project_id,storage_key='blobs/'||r.target_project_id||'/'||f.id WHERE id=f.id;
+ END LOOP;
+ SELECT * INTO q FROM anvil.draft_artifact_quota_reservations WHERE creation_intent_id=i FOR UPDATE;
+ UPDATE anvil.fn01_owner_quota SET reserved_bytes=reserved_bytes-q.held_bytes,reserved_count=reserved_count-q.held_count WHERE owner_id=a;
+ UPDATE anvil.draft_artifact_quota_reservations SET held_bytes=0,held_count=0 WHERE id=q.id;
+ UPDATE anvil.draft_creation_intents SET state='COMMITTED',project_command_id=cmd WHERE id=i;
+ INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(i,'COMMITTED',n);
+END;$$;
+CREATE FUNCTION anvil.fn01_creation_result(s uuid,a uuid,c uuid,i uuid,result jsonb) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.draft_creation_intents;
+BEGIN
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=i;PERFORM anvil.fn01_draft(s,a,c,r.draft_id,r.expected_version,false);
+ IF r.state<>'COMMITTED' OR r.actor_id<>a OR r.client_id<>c OR result->>'id' IS DISTINCT FROM r.target_project_id::text OR r.result_json IS NOT NULL THEN RAISE EXCEPTION 'FN01_CREATION_RESULT_INVALID';END IF;
+ UPDATE anvil.draft_creation_intents SET result_json=result WHERE id=i;
+END;$$;
+CREATE FUNCTION anvil.fn01_release_duplicates(s uuid,a uuid,c uuid,i uuid,artifact uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE adoption anvil.draft_artifact_adoptions;q anvil.draft_artifact_quota_reservations;
+BEGIN
+ PERFORM anvil.fn01_lock_owner(s,a,c);SELECT * INTO adoption FROM anvil.draft_artifact_adoptions WHERE artifact_id=artifact AND creation_intent_id=i AND actor_id=a AND client_id=c;
+ IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=adoption.project_id AND user_id=a AND revoked_at IS NULL)
+ OR NOT EXISTS(SELECT 1 FROM anvil.artifacts x WHERE x.id=artifact AND x.project_id=adoption.project_id AND x.storage_key=adoption.target_key AND x.state='READY' AND anvil.fn01_ref(x)=adoption.ref_json) THEN RAISE EXCEPTION 'FN01_DUPLICATE_RELEASE_DENIED';END IF;
+ SELECT * INTO q FROM anvil.draft_artifact_quota_reservations WHERE upload_intent_id=adoption.upload_intent_id FOR UPDATE;
+ UPDATE anvil.fn01_owner_quota SET reserved_bytes=reserved_bytes-q.held_bytes,reserved_count=reserved_count-q.held_count WHERE owner_id=a;
+ UPDATE anvil.draft_artifact_quota_reservations SET held_bytes=0,held_count=0 WHERE id=q.id;
+ IF q.held_count>0 THEN INSERT INTO anvil.draft_artifact_intent_events(creation_intent_id,state,attempt) VALUES(i,'EXACT_DUPLICATES_RECLAIMED',0);END IF;
+END;$$;
+
+-- API 함수의 한 transaction이 끝날 때만 성공 상태를 허용한다. nullable receipt FK만 믿지 않는다.
+CREATE FUNCTION anvil.fn01_complete_upload() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM anvil.draft_upload_intents WHERE id=NEW.id AND state='FINALIZED') THEN PERFORM anvil.fn01_assert_upload_provenance(NEW.id);END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn01_upload_complete AFTER INSERT OR UPDATE ON anvil.draft_upload_intents DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_complete_upload();
+CREATE FUNCTION anvil.fn01_complete_creation() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.draft_creation_intents;
+BEGIN
+ SELECT * INTO r FROM anvil.draft_creation_intents WHERE id=NEW.id;
+ IF r.state='COMMITTED' AND (
+ r.result_json IS NULL OR NOT EXISTS(SELECT 1 FROM anvil.project_drafts d JOIN anvil.commands c ON c.id=r.project_command_id
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=r.target_project_id
+ JOIN anvil.audit_events e ON e.command_id=c.id AND e.project_id=r.target_project_id AND e.outcome='APPLIED'
+ JOIN anvil.project_members m ON m.project_id=r.target_project_id AND m.user_id=r.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.project_control pc ON pc.project_id=m.project_id AND pc.actor_id=r.actor_id AND pc.client_id=r.client_id AND pc.generation=1 AND pc.revoked_at IS NULL
+ JOIN anvil.project_methodologies pm ON pm.project_id=m.project_id AND pm.application_version=1
+ WHERE d.id=r.draft_id AND d.consumed_project_id=r.target_project_id AND d.version=r.expected_version AND d.input_json->'artifactRefs'=r.refs_json
+ AND c.project_id=r.target_project_id AND c.actor_id=r.actor_id AND c.client_id=r.client_id AND c.operation='createProject' AND c.state='APPLIED' AND c.command_id=r.external_command_id AND c.request_hash=r.request_hash AND c.result_ref=r.result_json)
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='DRAFT' AND ar.scope_id=r.draft_id JOIN anvil.draft_audit_events e ON e.command_id=c.id AND e.draft_id=r.draft_id AND e.operation='createProject' AND e.outcome='APPLIED'
+ WHERE c.draft_id=r.draft_id AND c.actor_id=r.actor_id AND c.client_id=r.client_id AND c.operation='createProject' AND c.command_id=r.external_command_id AND c.request_hash=r.request_hash AND c.state='APPLIED' AND c.result_ref=r.result_json)
+ OR (SELECT count(*) FROM anvil.draft_artifact_adoptions WHERE creation_intent_id=r.id)<>jsonb_array_length(r.refs_json)
+ OR EXISTS(SELECT 1 FROM anvil.draft_artifact_adoptions ad JOIN anvil.artifacts f ON f.id=ad.artifact_id WHERE ad.creation_intent_id=r.id AND (ad.project_id<>r.target_project_id OR f.project_id IS DISTINCT FROM r.target_project_id OR f.draft_id IS NOT NULL OR f.command_id<>ad.original_command_id OR f.storage_key<>ad.target_key OR anvil.fn01_ref(f)<>ad.ref_json)))
+ THEN RAISE EXCEPTION 'FN01_CREATION_INCOMPLETE' USING ERRCODE='23514';END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn01_creation_complete AFTER INSERT OR UPDATE ON anvil.draft_creation_intents DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_complete_creation();
+CREATE FUNCTION anvil.fn01_artifact_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM anvil.draft_upload_intents WHERE artifact_id=OLD.id) THEN
+ IF (to_jsonb(NEW)-ARRAY['project_id','draft_id','storage_key']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['project_id','draft_id','storage_key'])
+ OR OLD.project_id IS NOT NULL OR NEW.draft_id IS NOT NULL OR NEW.project_id IS NULL
+ OR NOT EXISTS(SELECT 1 FROM anvil.draft_artifact_adoptions ad WHERE ad.artifact_id=OLD.id AND ad.draft_id=OLD.draft_id AND ad.project_id=NEW.project_id AND ad.source_key=OLD.storage_key AND ad.target_key=NEW.storage_key AND ad.original_command_id=OLD.command_id)
+ THEN RAISE EXCEPTION 'FN01_ARTIFACT_PROVENANCE_IMMUTABLE' USING ERRCODE='23514';END IF;
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn01_artifact_immutable BEFORE UPDATE ON anvil.artifacts FOR EACH ROW EXECUTE FUNCTION anvil.fn01_artifact_immutable();
+CREATE FUNCTION anvil.fn01_intent_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ IF TG_TABLE_NAME='draft_upload_intents' THEN
+ IF (to_jsonb(NEW)-ARRAY['state','attempt','result_json']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['state','attempt','result_json']) OR OLD.state IN('FINALIZED','REJECTED') AND NEW IS DISTINCT FROM OLD THEN RAISE EXCEPTION 'FN01_UPLOAD_PROVENANCE_IMMUTABLE';END IF;
+ ELSE
+ IF (to_jsonb(NEW)-ARRAY['state','attempt','project_command_id','result_json']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['state','attempt','project_command_id','result_json'])
+ OR OLD.state='COMMITTED' AND ((to_jsonb(NEW)-'result_json') IS DISTINCT FROM (to_jsonb(OLD)-'result_json') OR OLD.result_json IS NOT NULL AND NEW.result_json IS DISTINCT FROM OLD.result_json) THEN RAISE EXCEPTION 'FN01_CREATION_PROVENANCE_IMMUTABLE';END IF;
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn01_upload_immutable BEFORE UPDATE ON anvil.draft_upload_intents FOR EACH ROW EXECUTE FUNCTION anvil.fn01_intent_immutable();
+CREATE TRIGGER fn01_creation_immutable BEFORE UPDATE ON anvil.draft_creation_intents FOR EACH ROW EXECUTE FUNCTION anvil.fn01_intent_immutable();
+-- 원 command와 receipt/audit는 해당 FN01 완료 사실이 형성된 이후 변경할 수 없다.
+-- 생성 transaction 안의 첫 result_ref 완성은 creation.result_json이 아직 NULL이므로 허용한다.
+CREATE FUNCTION anvil.fn01_command_protected(i uuid) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.draft_upload_intents WHERE server_command_id=i AND state='FINALIZED')
+ OR EXISTS(SELECT 1 FROM anvil.draft_artifact_selection_versions WHERE command_id=i)
+ OR EXISTS(SELECT 1 FROM anvil.draft_creation_intents r JOIN anvil.commands c ON c.id=i WHERE r.state='COMMITTED' AND r.result_json IS NOT NULL
+ AND (r.project_command_id=c.id OR c.scope_kind='DRAFT' AND c.draft_id=r.draft_id AND c.actor_id=r.actor_id AND c.client_id=r.client_id AND c.command_id=r.external_command_id AND c.operation='createProject'))
+$$;
+CREATE FUNCTION anvil.fn01_command_immutable() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE i uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN i=OLD.id;ELSE i=OLD.command_id;END IF;
+ IF anvil.fn01_command_protected(i) AND (TG_OP='DELETE' OR to_jsonb(NEW) IS DISTINCT FROM to_jsonb(OLD)) THEN RAISE EXCEPTION 'FN01_COMPLETED_COMMAND_IMMUTABLE' USING ERRCODE='23514';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn01_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn01_command_immutable();
+CREATE TRIGGER fn01_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn01_command_immutable();
+CREATE TRIGGER fn01_draft_audit_immutable BEFORE UPDATE OR DELETE ON anvil.draft_audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn01_command_immutable();
+CREATE TRIGGER fn01_project_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn01_command_immutable();
+REVOKE ALL ON FUNCTION anvil.fn01_assert_upload_provenance(uuid),anvil.fn01_command_protected(uuid),anvil.fn01_command_immutable() FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn01_abort_upload(uuid,uuid,uuid,uuid,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn01_abort_upload(uuid,uuid,uuid,uuid,uuid,text) TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn01_json(jsonb),anvil.fn01_hash(jsonb),anvil.fn01_active(uuid,uuid,uuid),anvil.fn01_draft(uuid,uuid,uuid,uuid,bigint,boolean),anvil.fn01_ref(anvil.artifacts),anvil.fn01_complete_upload(),anvil.fn01_complete_creation(),anvil.fn01_artifact_immutable(),anvil.fn01_intent_immutable() FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn01_lock_owner(uuid,uuid,uuid),anvil.fn01_reserve_upload(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_claim_intent(uuid,uuid,uuid,text,uuid,text),anvil.fn01_unknown_intent(uuid,uuid,uuid,text,uuid,bigint),anvil.fn01_finalize_upload(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn01_record_selection(uuid,uuid,uuid,uuid,bigint,uuid,uuid,jsonb),anvil.fn01_reserve_creation(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_copies_verified(uuid,uuid,uuid,uuid,text,bigint),anvil.fn01_commit_creation(uuid,uuid,uuid,uuid,text,uuid,bigint),anvil.fn01_creation_result(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_release_duplicates(uuid,uuid,uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn01_lock_owner(uuid,uuid,uuid),anvil.fn01_reserve_upload(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_claim_intent(uuid,uuid,uuid,text,uuid,text),anvil.fn01_unknown_intent(uuid,uuid,uuid,text,uuid,bigint),anvil.fn01_finalize_upload(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn01_record_selection(uuid,uuid,uuid,uuid,bigint,uuid,uuid,jsonb),anvil.fn01_reserve_creation(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_copies_verified(uuid,uuid,uuid,uuid,text,bigint),anvil.fn01_commit_creation(uuid,uuid,uuid,uuid,text,uuid,bigint),anvil.fn01_creation_result(uuid,uuid,uuid,uuid,jsonb),anvil.fn01_release_duplicates(uuid,uuid,uuid,uuid,uuid) TO anvil_v3_app;

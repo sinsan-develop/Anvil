@@ -1,0 +1,12 @@
+{
+  "instance": "B1",
+  "root": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-dom-20261026-01",
+  "owner": "SINSAN\\cyhuh",
+  "createdAt": "2026-10-26T05:59:56.6789861+00:00",
+  "deadline": "2026-10-26T06:29:56.6789861+00:00",
+  "expectedRed": true,
+  "children": [
+    "temp"
+  ],
+  "reparse": false
+}

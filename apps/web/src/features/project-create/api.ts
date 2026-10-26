@@ -1,18 +1,20 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
+import { readDraftArtifactRefs, validDraftArtifactRef, type DraftArtifactRef, type DraftStoredArtifact } from '../../../../../contracts/draft-artifacts.ts';
+import type { DraftUploadBuffer } from './draft-artifact-api.ts';
 import type { DraftMethodSelection } from '../../../../../contracts/project-drafts.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { reviewRefFor, type ContentReviewRef, type ReviewOutcome } from '../methodologies/forms-api.ts';
 import type{SourceDeclaration}from'../../../../server/modules/projects/source-declaration.ts';
 export interface SourceDeclarationView{ref:VersionRef;authority:'USER_DECLARED';readiness:'UNVERIFIED';declaration:SourceDeclaration}
 
-export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY'|'EXISTING';sourceDeclaration?:SourceDeclaration; methodologySelection: DraftMethodSelection | null; artifactRefs: [] }
+export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY'|'EXISTING';sourceDeclaration?:SourceDeclaration; methodologySelection: DraftMethodSelection | null; artifactRefs: DraftArtifactRef[] }
 export interface DraftMethodState { ref: VersionRef; validation: { validForConfirmation: boolean; issues: { code: string; severity: string }[] }; contentReviewCriteria: { criteriaVersion: number; items: { criterionId: string; title: string }[] }; contentReviews: { reviewRef: ContentReviewRef; reason: string; reviewerSubjectRef: { kind: 'HUMAN'; userId: string; sameAsTargetRecorder: boolean }; sourceKind: 'HUMAN_REVIEW'; reviewedAt: string }[]; confirmation: { id: string; decidedBy: string; decidedAt: string; reviewRefs: ContentReviewRef[] } | null }
-export interface DraftResult { draftId: string; version: number; step: number; input: DraftInput; sourceDeclaration?:SourceDeclarationView;editable?: boolean; consumedProjectId?: string | null; methodologyState?: DraftMethodState | null }
+export interface DraftResult { storedArtifacts?: DraftStoredArtifact[]; draftId: string; version: number; step: number; input: DraftInput; sourceDeclaration?:SourceDeclarationView;editable?: boolean; consumedProjectId?: string | null; methodologyState?: DraftMethodState | null }
 export interface DraftReviewInput { ref: VersionRef; criteriaVersion: number; items: { criterionId: string; outcome: ReviewOutcome; evidenceRefs: []; reason: string }[]; outcome: ReviewOutcome; reason: string; dirty: boolean }
 export interface DraftAction { kind: 'review' | 'create'; body: Record<string, unknown>; draftId: string; dispatchId?:string }
 export interface CreatedProject { id: string; name: string; purpose: string; desiredOutcome: string; version: number; currentMethodologyRef: VersionRef; baselineRef: null;sourceMode?:'EMPTY'|'EXISTING';sourceDeclaration?:SourceDeclarationView|null; readinessIssues: { code: string }[]; participation: 'OWNER'; controlState: { actorId: string; clientId: string; generation: number; status: 'HELD' } }
 export interface PendingDraftCommand { draftId: string | null; fingerprint: string; body: Record<string, unknown>; dispatchId?:string }
-export interface DraftEditorState { ownerUserId: string | null; input: DraftInput; draftId: string | null; version: number; dirty: boolean; pendingCommand: PendingDraftCommand | null; methodologyState?: DraftMethodState | null; review?: DraftReviewInput | null; pendingAction?: DraftAction | null; createdProject?: CreatedProject | null; wizardStep?: number }
+export interface DraftEditorState { upload?: DraftUploadBuffer | null; uploadHistory?: DraftUploadBuffer[]; storedArtifacts?: DraftStoredArtifact[]; ownerUserId: string | null; input: DraftInput; draftId: string | null; version: number; dirty: boolean; pendingCommand: PendingDraftCommand | null; methodologyState?: DraftMethodState | null; review?: DraftReviewInput | null; pendingAction?: DraftAction | null; createdProject?: CreatedProject | null; wizardStep?: number }
 export function emptyDraft(): DraftEditorState { return { ownerUserId: null, input: { name: '', purpose: '', desiredOutcome: '', sourceMode: 'EMPTY', methodologySelection: null, artifactRefs: [] }, draftId: null, version: 0, dirty: false, pendingCommand: null }; }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 function validSelection(selection: DraftMethodSelection | null) {
@@ -33,7 +35,9 @@ async function draftResult(value: unknown):Promise<DraftResult> {
   const result = value as DraftResult;
   if (!result || !uuid.test(result.draftId) || !Number.isSafeInteger(result.version) || result.version < 1 || !Number.isInteger(result.step) || result.step < 1 || result.step > 4
     || !result.input || typeof result.input.name !== 'string' || typeof result.input.purpose !== 'string' || typeof result.input.desiredOutcome !== 'string'
-    || !['EMPTY','EXISTING'].includes(result.input.sourceMode) || !validSelection(result.input.methodologySelection) || !Array.isArray(result.input.artifactRefs) || result.input.artifactRefs.length) throw new ApiError('RESPONSE_INVALID');
+    || !['EMPTY','EXISTING'].includes(result.input.sourceMode) || !validSelection(result.input.methodologySelection) || !Array.isArray(result.input.artifactRefs) || result.input.artifactRefs.some(ref => !validDraftArtifactRef(ref))) throw new ApiError('RESPONSE_INVALID');
+  try { readDraftArtifactRefs(result.input.artifactRefs); } catch { throw new ApiError('RESPONSE_INVALID'); }
+  if (result.storedArtifacts !== undefined && (!Array.isArray(result.storedArtifacts) || result.storedArtifacts.length > 20 || result.storedArtifacts.some(x => !x || !uuid.test(x.commandId) || !Number.isSafeInteger(x.expectedVersion) || x.expectedVersion < 1 || !['RESERVED','BYTES_VERIFIED','FINALIZED','UNKNOWN','REJECTED'].includes(x.state) || !validDraftArtifactRef(x.ref) || ![null,'READY','QUARANTINED'].includes(x.artifactState) || x.projectId !== null && !uuid.test(x.projectId)))) throw new ApiError('RESPONSE_INVALID');
   if(result.input.sourceMode==='EXISTING'){const source=await validSourceView(result.sourceDeclaration,result.draftId,result.version),input=result.input.sourceDeclaration;if(!validSourceDeclaration(input)||(['hostLabel','displayName','pathHint','reason']as const).some(k=>source.declaration[k]!==input[k]))throw new ApiError('RESPONSE_INVALID');}else if(result.input.sourceDeclaration!==undefined||result.sourceDeclaration!=null)throw new ApiError('RESPONSE_INVALID');
   const state = result.methodologyState;
   if (state != null && (!state.ref || state.ref.id !== result.draftId || state.ref.version !== result.version || !/^[0-9a-f]{64}$/.test(state.ref.contentHash)

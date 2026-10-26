@@ -32,7 +32,8 @@ UI02에서 실제 초안 ID를 만든 뒤 원문을 업로드하고, 사용자�
 
 직접 검수 source:
 
-- 신규 `tests/unit/FN01/draft-artifact-input.test.ts`, `draft-artifact-service.test.ts`, `draft-artifact-files.test.ts`.
+- 신규 `tests/unit/FN01/draft-artifact-input.test.ts`, `draft-artifact-service.test.ts`.
+- 실제 파일 QA는 `tests/integration/FN01/draft-artifact-files.test.ts`다. 동일 원문 시험을 실제 파일 환경에 맞는 분류로만 이동하며 생략·skip·기대값 변경은 하지 않는다.
 - 신규 `tests/support/draft-artifact-fixture.ts`: 합성 identity·transaction rollback/commit을 갖춘 fake DB/파일 port. 실제 DB의 제약·경합을 검증했다고 하지 않는다.
 - 신규 `tests/integration/FN01/draft-artifact-synthetic.test.ts`: 실제 route/service/repository/ApiClient의 수직 소비.
 - 신규 `tests/unit/UI02/draft-artifact-api.test.ts`, `tests/browser/UI02/draft-artifact.spec.ts`, 필요 시 해당 spec의 harness 한 개.
@@ -85,3 +86,8 @@ Main이 이 카드·승인 binding·미적용 manifest·현황/계획을 소유�
 실제 PG/DB 적용·정식 storage root/소유권·실 OS fsync/프로세스 재시작·서비스·사용자 권한·Agent는 미실행으로 남긴다. 검수 자원은 Main이 이름/owner/수명/정리를 사전 등록하고 정확 정리·별도 잔여0을 확인한다. source checkpoint는 기존 branch에만 보존하며 Stage 전체 gate·실사용·PR/병합 승인을 대신하지 않는다.
 
 rollback은 소유 commit 일반 revert다. SQL은 미적용 상태로 보존하고 실제 원문·DB·권한/감사 이력을 reset/delete하지 않는다.
+
+
+### 비의미 시험 분류 r3
+
+부모 WI r2 SHA256 CFD7F41AB1967105177D82850B64830034661A20AA20D82677CFD249D02D84E3에서 신규 실파일 시험의 경로만 unit/FN01에서 integration/FN01로 분류했다. 원문 SHA256 2036478DDB7B0CC504C5DD68E8A747F2294C435F0AD1A36ECB62B0E5D4F586F9와 사례·기대·호출 의존 깊이는 동일하다. Main의 A2 7a9a55 1PASS는 이전 경로의 같은 바이트 실행 증거이며 새 경로로 다시 실행했다고 주장하지 않는다. 일반 unit glob에서 환경 필수 실제파일 검수를 잘못 실행하지 않게 하는 내부 배치 보완이며 승인 r3 계약 F4E734B3·기능/공개API·DB/권한·실행 제외 범위를 변경하지 않는다. MAIN_RECONFIRMED_NON_SEMANTIC으로 원 직접 승인 call_3619cd1844684a80876b59ff3cbcaecb와 부모 WI에 결박한다.

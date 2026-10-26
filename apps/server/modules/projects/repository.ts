@@ -1,6 +1,8 @@
 import { AccessRepository, AuthFailure } from '../access/repository.ts';
 import { ProjectListCodec, projectListFilter } from './service.ts';
 import { randomUUID } from 'node:crypto';
+import { DraftArtifacts } from './draft-artifacts.ts';
+import { readDraftArtifactRefs, type DraftArtifactRef } from '../../../../contracts/draft-artifacts.ts';
 import type { PoolClient } from 'pg';
 import type { AuthenticatedIdentity } from '../access/repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -23,13 +25,14 @@ function integer(value: string | number): number {
 export class ProjectsRepository {
   #access: AccessRepository;
   #cursor: ProjectListCodec;
-  constructor(access: AccessRepository) { this.#access = access; this.#cursor = new ProjectListCodec(value => access.signProjectCursor(value)); }
-  async #draftInput(db: PoolClient, owner: string, input: DraftInput) {
+  readonly artifacts: DraftArtifacts;
+  constructor(access: AccessRepository, artifacts = new DraftArtifacts(access)) { this.artifacts = artifacts; this.#access = access; this.#cursor = new ProjectListCodec(value => access.signProjectCursor(value)); }
+  async #draftInput(db: PoolClient, owner: string, input: DraftInput, artifactRefs: DraftArtifactRef[] = []) {
     if(!['EMPTY','EXISTING'].includes(input.sourceMode)||input.sourceMode==='EMPTY'&&input.sourceDeclaration!==undefined)throw new AuthFailure('SOURCE_DECLARATION_INPUT_INVALID',422);
     const sourceDeclaration=input.sourceMode==='EXISTING'?readSourceDeclaration(input.sourceDeclaration):null;
-    if (input.artifactRefs !== undefined && (!Array.isArray(input.artifactRefs) || input.artifactRefs.length)) throw new AuthFailure('ARTIFACT_STORAGE_NOT_READY', 412);
+    if (canonicalJson(readDraftArtifactRefs(input.artifactRefs ?? [])) !== canonicalJson(artifactRefs)) throw new AuthFailure('DRAFT_ARTIFACT_REFS_INVALID', 422);
     const methodologySelection = await selectDraftMethodology(db, owner, input.methodologySelection);
-    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode,...(sourceDeclaration?{sourceDeclaration}:{}),methodologySelection, artifactRefs: [] };
+    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode,...(sourceDeclaration?{sourceDeclaration}:{}),methodologySelection, artifactRefs };
   }
   #draftView(row: { id: string; version: string; step: number; input_json: unknown }) { return { draftId: row.id, version: integer(row.version), step: row.step, input: row.input_json }; }
   async #draftCommand(db: PoolClient, identity: AuthenticatedIdentity, draftId: string, operation: string, request: DraftCreate | DraftSave | ProjectCreate | DraftOperation, result: unknown) {
@@ -44,10 +47,12 @@ export class ProjectsRepository {
     await db.query('UPDATE anvil.commands SET authorization_receipt_id=$2 WHERE id=$1', [id, receiptId]);
     await db.query("INSERT INTO anvil.draft_audit_events(draft_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,operation,outcome,reason_code) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,'APPLIED','OWNED_DRAFT_ONLY' FROM anvil.draft_audit_events WHERE draft_id=$1", [draftId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: identity.actorId }), identity.clientId, id, operationId, operation]);
     if(declaration)await storeSourceDeclaration(db,identity,draftId,declaration.ref.version,declaration.declaration,id);
+    if (['createProjectDraft','saveProjectDraft'].includes(operation)) await this.artifacts.snapshot(db, identity, draftId, draftResult.version!, id, receiptId, draftResult.input?.artifactRefs ?? []);
     return result;
   }
   async createDraft(token: string, csrf: string, request: DraftCreate) {
     return this.#access.authenticated(token, csrf, async (db, identity) => {
+      await this.artifacts.lockOwner(db, identity);
       if (request.clientId !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
       const previous = (await db.query("SELECT c.request_hash,c.result_ref,d.client_id FROM anvil.commands c JOIN anvil.project_drafts d ON d.id=c.draft_id WHERE c.actor_id=$1 AND c.operation='createProjectDraft' AND c.command_id=$2", [identity.actorId, request.commandId])).rows[0];
       if (previous) {
@@ -64,30 +69,48 @@ export class ProjectsRepository {
     return this.#access.authenticated(token, null, async (db, identity) => {
       const row = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2', [draftId, identity.actorId])).rows[0];
       if (!row) throw new AuthFailure('NOT_FOUND', 404);
+      await this.artifacts.guardSnapshot(db, identity, draftId, row.input_json);
       const declaration=row.input_json?.sourceMode==='EXISTING'?await readSourceDeclarationRecord(db,row.id,integer(row.version)):null;
       if(declaration&&canonicalJson(declaration.declaration)!==canonicalJson(row.input_json.sourceDeclaration))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
-      return { ...this.#draftView(row),...(declaration?{sourceDeclaration:declaration}:{}),editable: row.client_id === identity.clientId && !row.consumed_project_id, consumedProjectId: row.consumed_project_id, methodologyState: await draftMethodologyState(db, row) };
+      return { ...this.#draftView(row), storedArtifacts: await this.artifacts.projection(db, identity, draftId), ...(declaration?{sourceDeclaration:declaration}:{}),editable: row.client_id === identity.clientId && !row.consumed_project_id, consumedProjectId: row.consumed_project_id, methodologyState: await draftMethodologyState(db, row) };
     });
   }
   async saveDraft(token: string, csrf: string, draftId: string, request: DraftSave) {
+    const replay = await this.#access.authenticated(token, csrf, async (db, identity) => {
+      await this.artifacts.lockOwner(db, identity);
+      const row = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [draftId, identity.actorId])).rows[0];
+      if (!row) throw new AuthFailure('NOT_FOUND', 404);
+      if (request.clientId !== identity.clientId || row.client_id !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
+      const previous = (await db.query("SELECT request_hash,result_ref FROM anvil.commands WHERE draft_id=$1 AND actor_id=$2 AND operation='saveProjectDraft' AND command_id=$3", [draftId, identity.actorId, request.commandId])).rows[0];
+      if (!previous) return null;
+      if (previous.request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
+      await this.artifacts.guardSnapshot(db, identity, draftId, previous.result_ref.input);
+      return { result: previous.result_ref };
+    });
+    if (replay) return replay.result;
+    const verified = await this.artifacts.prepareSelection(token, csrf, draftId, request.expectedVersion, request.clientId, request.input.artifactRefs ?? []);
     return this.#access.authenticated(token, csrf, async (db, identity) => {
+      await this.artifacts.lockOwner(db, identity);
       const row = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [draftId, identity.actorId])).rows[0];
       if (!row) throw new AuthFailure('NOT_FOUND', 404);
       if (request.clientId !== identity.clientId || row.client_id !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
       const previous = (await db.query("SELECT request_hash,result_ref FROM anvil.commands WHERE draft_id=$1 AND actor_id=$2 AND operation='saveProjectDraft' AND command_id=$3", [draftId, identity.actorId, request.commandId])).rows[0];
       if (previous) {
         if (previous.request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
+        await this.artifacts.guardSnapshot(db, identity, draftId, previous.result_ref.input);
         return previous.result_ref;
       }
       if (row.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 412);
       if (integer(row.version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
-      const input = await this.#draftInput(db, identity.actorId, request.input);
+      const refs = await this.artifacts.validateSelection(db, identity, row, request.input.artifactRefs ?? [], verified);
+      const input = await this.#draftInput(db, identity.actorId, request.input, refs);
       const updated = (await db.query('UPDATE anvil.project_drafts SET version=version+1,step=$2,input_json=$3,updated_at=now() WHERE id=$1 RETURNING *', [draftId, request.step, JSON.stringify(input)])).rows[0];
       return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, { ...this.#draftView(updated), methodologyState: await draftMethodologyState(db, updated) });
     });
   }
   async draftOperation(token: string, csrf: string, draftId: string, request: DraftOperation) {
     return this.#access.authenticated(token, csrf, async (db, identity) => {
+      await this.artifacts.lockOwner(db, identity);
       const draft = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [draftId, identity.actorId])).rows[0];
       if (!draft) throw new AuthFailure('NOT_FOUND', 404);
       if (request.clientId !== identity.clientId || draft.client_id !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
@@ -103,18 +126,23 @@ export class ProjectsRepository {
     });
   }
   async createProject(token: string, csrf: string, request: ProjectCreate) {
-    return this.#access.authenticated(token, csrf, async (db, identity) => {
+    const creation = await this.artifacts.prepareCreation(token, csrf, request);
+    if (creation.state === 'COMMITTED') return creation.result_json;
+    const created = await this.#access.authenticated(token, csrf, async (db, identity) => {
+      await this.artifacts.lockOwner(db, identity);
       const draft = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [request.draftId, identity.actorId])).rows[0];
       if (!draft) throw new AuthFailure('NOT_FOUND', 404);
       if (request.clientId !== identity.clientId || draft.client_id !== identity.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
       const previous = (await db.query("SELECT operation,request_hash,result_ref FROM anvil.commands WHERE draft_id=$1 AND actor_id=$2 AND command_id=$3", [draft.id, identity.actorId, request.commandId])).rows;
       if (previous.length) {
         if (previous.length !== 1 || previous[0].operation !== 'createProject' || previous[0].request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
+        await this.artifacts.guardSnapshot(db, identity, draft.id, { artifactRefs: creation.refs_json });
         return previous[0].result_ref;
       }
       if (draft.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 409);
       if (integer(draft.version) !== request.draftVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
-      const input = await this.#draftInput(db, identity.actorId, draft.input_json);
+      await this.artifacts.guardSnapshot(db, identity, draft.id, draft.input_json);
+      const input = await this.#draftInput(db, identity.actorId, draft.input_json, creation.refs_json);
       const declaration=input.sourceMode==='EXISTING'?await readSourceDeclarationRecord(db,draft.id,integer(draft.version)):null;
       if(declaration&&canonicalJson(declaration.declaration)!==canonicalJson(input.sourceDeclaration))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
       if (![input.name, input.purpose, input.desiredOutcome].every(value => typeof value === 'string' && !!value.trim())) throw new AuthFailure('PROJECT_PURPOSE_REQUIRED', 422);
@@ -125,7 +153,7 @@ export class ProjectsRepository {
       const method = selected.kind === 'NEW_PROJECT_DRAFT' ? { name: selected.name, purpose: selected.purpose, graph_json: selected.graph } : (await db.query('SELECT name,purpose,graph_json FROM anvil.methodology_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [ref.id, ref.version, ref.contentHash])).rows[0];
       if (!method) throw new AuthFailure('METHODOLOGY_SOURCE_NOT_READY', 422);
       await requirePreparedForms(db, identity.actorId, method.graph_json);
-      const projectId = randomUUID(), applicationId = randomUUID(), commandId = randomUUID(), receiptId = randomUUID(), operationId = randomUUID();
+      const projectId = creation.target_project_id, applicationId = randomUUID(), commandId = randomUUID(), receiptId = randomUUID(), operationId = randomUUID();
       const snapshot = { name: method.name, purpose: method.purpose, graph: method.graph_json, sourceRef: ref, ...(dedicated ? { draftConfirmationRef: { draftRef: dedicated.ref, confirmationId: dedicated.confirmation!.id } } : {}) };
       const snapshotHash = contentHash(canonicalJson(snapshot));
       await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.creation_draft_id',$2,true)", [identity.actorId, draft.id]);
@@ -141,12 +169,17 @@ export class ProjectsRepository {
       }
       await db.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,1,$3,$4,$5,$6,$7,$8)', [applicationId, projectId, ref.id, ref.version, ref.contentHash, JSON.stringify(snapshot), snapshotHash, identity.actorId]);
       await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,outcome,reason_code,scope_digest,source_kind) VALUES($1,1,$2,$3,$4,$5,$6,$7,'APPLIED','FIRST_PROJECT_FROM_OWNED_DRAFT',$8,'HUMAN_COMMAND')", [projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: identity.actorId }), identity.clientId, commandId, operationId, JSON.stringify(targetRef), scopeDigest]);
+      await this.artifacts.commitCreation(db, identity, creation, commandId);
       await db.query('UPDATE anvil.project_drafts SET consumed_project_id=$2,updated_at=now() WHERE id=$1', [draft.id, projectId]);
       if(declaration)await db.query('INSERT INTO anvil.project_source_declarations(project_id,declaration_id,declaration_version,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6)',[projectId,declaration.ref.id,declaration.ref.version,identity.actorId,identity.clientId,commandId]);
       const result = await this.#detail(db, identity, projectId);
       await db.query('UPDATE anvil.commands SET result_ref=$2 WHERE id=$1', [commandId, JSON.stringify(result)]);
-      return this.#draftCommand(db, identity, draft.id, 'createProject', request, result);
+      const completed = await this.#draftCommand(db, identity, draft.id, 'createProject', request, result);
+      await this.artifacts.completeCreation(db, identity, creation, completed);
+      return completed;
     });
+    await this.artifacts.reclaim(token, csrf, creation);
+    return created;
   }
   async list(token: string, raw: Record<string, unknown>) {
     return this.#access.authenticated(token, null, async (db, identity) => {

@@ -7,6 +7,8 @@ import {registerNextActionBasisRoute} from '../scheduling/next-action-basis-rout
 import { AuthFailure } from '../access/repository.ts';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { ProjectsRepository } from './repository.ts';
+import { DraftArtifacts } from './draft-artifacts.ts';
+import { registerDraftArtifactRoutes } from './draft-artifact-routes.ts';
 import type { DraftCreate, DraftSave, ProjectCreate } from './repository.ts';
 import type { DraftOperation } from './draft-review.ts';
 import { ProjectPolicyRepository, type ProjectCommand } from '../access/project-command.ts';
@@ -74,7 +76,9 @@ function token(request: FastifyRequest): string {
 }
 export function registerProjectRoutes(app: FastifyInstance, options: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts) {
   if(syntheticExecution!==undefined)checkSyntheticHumanExecutionPorts(syntheticExecution);
-  const repository = new ProjectsRepository(options.repository), policies = new ProjectPolicyRepository(options.repository), documents = new ProjectDocuments(options.artifactRoot), host = new URL(options.origin).host;
+  const draftArtifacts = new DraftArtifacts(options.repository, options.artifactRoot);
+  registerDraftArtifactRoutes(app, options.origin, draftArtifacts);
+  const repository = new ProjectsRepository(options.repository, draftArtifacts), policies = new ProjectPolicyRepository(options.repository), documents = new ProjectDocuments(options.artifactRoot), host = new URL(options.origin).host;
   const designIndex=new ProjectDesignIndex(documents),sourceLinks=new ProjectDocumentSourceLinks();
   const results=new ProjectResultSubmissions();
   const resultPageCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('ASSIGNMENT_RESULT_SUBMISSIONS:'+value));
