@@ -1,4 +1,33 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN01 결정 전달 차단과 직접 확인 요청
+
+- PMO turn01a1763b-c15a-7070-9540-f484b750b254의 완료 snapshot은 FN01 r3를 코드·화면·미적용 SQL·합성 검증 기준으로 한정 채택했다고 밝혔다. 다만 PMO의 후속 메시지 전송은 auto-review에서 해당 구체 메시지의 명시적 전송 승인 부족으로 거절됐고 실제 전달0이다. Main은 읽기 snapshot을 성공한 승인 전달로 치환하지 않으며 거절된 전송/코드 착수 우회0이다. FN01 r3 exact F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0의 위 범위만 신산님께 직접 비동기 확인을 1회 요청했다. 정식 DB·권한·Secret·서비스·Agent 실행은 제외한다. CapabilityReport는 여전히 미채택이다.
+- Main git diff --check에서 새 WORK_STATUS prefix의 CRLF가 trailing whitespace로 보고됐다. Main 소유 새 prefix만 LF로 정리했다. 줄바꿈 복원 비교가 원본의 LF까지 CRLF로 바꾸는 검사 오류1은 원본/정규화 내용을 직접 대조해 수정했다. 후보는 이전부터 LF여서 바이트/hash가 그대로였으며 의미·후보 hash 변경0이다. 이후 diff --check exit0, 현재 private branch70faf141/mainf976ed5e의 실제 ls-remote 동일을 확인했다. 제품 시험 실패나 ACL 오류로 분류하지 않는다.
+- 제품 writer0·기존 보호8/미완료 원문 보존·실행 변경0이다. 실제 구현을 시작하지 않은 상세 검수/읽기 조사를 기능 완성으로 기록하지 않는다. 직접 확인 전 FN01 source/SQL write는 하지 않으며 승인과 무관한 실제 호출선 검토만 가능하다.
+
+### 2026-10-26 FN01 r3 계약 검수와 정확 상세 처분 요청
+
+- 독립 r2 검토는 C0/I0/M1이다. Main은 완료 업로드 v1→선택 저장 v2 후 v1 원 명령 재확인이 현재 초안 버전 검사로 막힐 모호함을 실제 문구로 확인해 §4만 분리했다. 현재 인증/CSRF·원 작성 client/소유를 먼저 검사한 뒤 FINALIZED 같은 요청 replay는 현재 원문 권한·격리/무결성·동일 body를 확인하고 원 receipt만 반환하며, 신규·미확정만 미소비/exactVersion을 요구한다. r3 canonical/source SHA256 F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0이며 scoped 독립 C0/I0/M0다. 설계 검수이며 실제 원자성/복구 PASS가 아니다.
+- PMO에 r3의 정확 DRAFT 전송/보호 조회·원 command 보존/귀속·intent/quota/미적용 SQL 상세 채택만 요청했고 전달 성공을 확인했다. 기존 FN06_CAPABILITY_REPORT_PERSISTENCE_PROPOSAL SHA3AE123551CB1CE2D437F538578993F39E8ED150BBE33F3A273818D8798BF5C81의 10/20 설계만 위임 이후 채택 처분 존재도 별도로 확인 요청했다. CapabilityReport 저장/보호 조회가 UI04 prepareExecution 화면 저장의 실제 선행 공백이며 candidate ref/fixture로 대신하지 않는다. 같은 질문 신규 복제/사용자 재질문0이다.
+- 후보는 둘 다 NOT_ADOPTED이며 제품/SQL/실DB/보관소·정책/서비스/Agent 변경0이다. Main은 실제 호출선의 구현 파일/초안 version 발급·격리/재확인 접점 읽기를 계속하며 완료 검사를 반복하지 않는다. 전체 계획 미완료이며 문서 진도를 사용자 기능 완성으로 계산하지 않는다.
+
+### 2026-10-26 FN01 원문 보관 후보 r2 독립 재검수 착수
+
+- Main은 r1 독립 검토 C0/I3/M2에 따라 업로드 durable intent, 원 업로드 provenance와 버전 선택/귀속 사건, owner quota의 선예약/잔류 산입, 8000 UTF-8 bytes metadata, 소비 후 원 client replay 권한을 후보 r2에 구체화했다. canonical/source SHA256 81E11E70F5D41D66500D5281A0CC180313E0C3A0D9B395903CACE78E16421F86 일치이며 PROPOSED/NOT_ADOPTED다. 기존 승인 요구의 첨부 기능을 재승인받는 것이 아니라 빠진 전송/귀속 상세만 판정 대상으로 한정한다.
+- 실제 Git HEAD70faf1415c7986666114078780ae144af080ef11, branch codex/av3-stage-b 및 Main 문서 변경/보호8을 대조했다. 현재 제품 writer0, 제품/SQL/DB/파일 보관소/권한/서비스/Agent 변경0이다. 기존 완료 검사를 재실행하지 않았으며 독립 scoped 재검수 후 새 delta만 PMO에 전달한다. 재검수 전 finding 해소나 실제 기능 완료를 주장하지 않는다.
+
+### 2026-10-26 FN01 초안 자료 실제 누락과 상세 후보
+
+- 앞단 읽기담당과Mainbaa18c/7b6d65/d46aa4는 UI02/FN01의자료첨부→초안저장→생성시같은원문귀속 누락을 확인했다. INTERFACES9.2/DATA_MODEL6.4~6.6은이를요구하지만repository는nonempty artifactRefs412·Web은[]고정이다. 기존artifacts는draft_id열이있어도appguard가PROJECT/READY만허용·UPDATE/DELETE금지이며,현재document_imports는project_id필수다. 초안ID를projectID처럼쓰거나PROJECT승인/정책을초안으로우회하지않는다.
+- Main은 기능재승인 대신 빠진전송/소유·자료귀속/복구상세를검수가능하게만들기위해 FN01_DRAFT_ARTIFACT_STORAGE_CANDIDATE.md를 PROPOSED/NOT_ADOPTED로작성했다. 동일 canonical/source SHA5461DC87DF9083099FCA90209D41D12BC00FBEAEF656447A771EC8B35BAD0CD8이다. 별도 DRAFT 명령/보호조회·receipt/audit·정확ref·원문격리와file/DB분리·생성intent/복사검증→최종원자귀속을권장하며브라우저메모리전용/임시프로젝트대안의요구불충족을구분했다. 제안한도·신규상세/미적용SQL·실제적용을분리하고생성전파서/대화/공식문서미완료를숨기지않는다.
+- 제품/SQL/원문파일/DB/권한/서비스·Agent변경0이다. 이문서는기능구현진도가아닌필수상세결정준비이며독립읽기검토후정확delta만PMO에전달한다. 기존계획전체/FN01재승인·FN13거절SQL재시도를요청하지않는다. 기존412와보호8은유지한다.
+- Main의경로소속추정읽기가 apps/runner·delta change.patch·execution(s)·documents/artifact-store.ts 등에서재발해해당방식을중단하고PMO예외로공유했다. 파일/권한/ACL변경0,서로연속제품시험3실패라고과장하지않는다. 5ab2ab rg--files결과를보관한별도호출에서만actual apps/server/storage/artifact-store.ts를읽었고,0003_document_imports도f3754c 실제목록뒤별도1ab824로확인했다. 목록발견과미확인파일읽기를한묶음으로실행하지않는다.
+- PMO FN13답변은기존0029 source 특정거절/해제미확인을확인했으나원질문전달ID/답변은확보하지못했다. Main의과거요청기록과독립원출처확인을구분한다. PMO handoff기록완료문구는실제Access denied로미저장이어서PMO가철회했고,이대화수신내용만근거로남긴다. 현재후보5파일/거절·저장미연결을그대로보존한다.
+### 2026-10-26 준비 저장 게시·정리와 앞단 핵심 미완료 재대조
+
+- Main1bfee2/db21ac는 검수4경로70faf1415c7986666114078780ae144af080ef11 local/private exact·tracked clean/보호8·원격mainf976ed5e불변을 확인했다. 인계15파일/4dir fullhash·owner/nonlink는46541d에서 exact정리했고d23fcb 별도QA/cache양root부재다. 실제QA상한준수/초기RED·M1·적용전실패·미검증은원기록유지다.
+- 다음선정은 주변store/helper·유사승인wrapper를더늘리지않고 정본앞단의화면→처리→저장/조회누락을대조한다. 읽기담당의기존FN13 '소유미확인' 추정은Maind99998/c04e3c에서정정했다. 보호checkpoint5파일은이chat Main의10/20 미완성source이며 정확0029 source auto-review거절/SQL생성0·DB적용0·임시saveCheckpoint op회수로보존중이다. 소유불명때문이라는설명으로미완료를방치하거나거절을우회하지않는다. PMO에기존정확질문/현재처분·새직접답변존재만확인요청했고중복사용자질문/SQL재시도0이다.
+- 독립읽기2범위는 StageB FN01~05의공식산출물/방법론·설계계획연결과 FN09임무작성/검토/확정/배정/지시준비의실소비다. 새공개계약/권한delta는정확입증하며기존P02/채택계약내미구현route/처리도후보로본다. source제품write는현재0이며완료기능검사를반복하지않는다. 앞선FN04/FN10/FN13/FN14·실Agent/DB/TLS미결을전체할일없음으로일반화하지않되,주변source를사용가능기능진도로대체하지않는다.
 ### 2026-10-26 캡처 준비 파일 저장 — 한정 검수 종료
 
 - Main4d68d2는 R2 manifestE11828EF/표준patch2EBF7FD2·동일원시험44CD83D2→9A167209를 검증·적용했고 type0이다. 제품DD04618D는 변경없이 유지했다. 첫M1의 거절 bridge receipts는 같은 손상준비root의 새 준비원장과 실제 bridge-rejected-results FileStore의 새 결과원장에 주입해 관측대상과 일치시켰다. 기존 빈dir·capture0 기대를 유지하며 R1 무context patch거절은 당시이력으로 남긴다.
