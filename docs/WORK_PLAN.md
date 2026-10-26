@@ -1485,3 +1485,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-27 FN02/UI03 과거 공통본 복사 연결
 
 기존 과거 조회·비교에서 검증한 USER_COMMON 버전을 명시 복사 대상으로 선택하고 새 내 공통본→편집·기존 저장/재조회로 연결했다. 현재본 편집/검토와 프로젝트 gateway는 유지한다. Main 합성 App9 PASS·type/diff0, 독립 C0/I0/M1(수락 후 GET 실패 별도 반례 미실행)이며 실제 DB/served·전체 FN02/UI03는 미확인/미완료다. 상세 [결과](04_test_reports/AV3/UI03_HISTORICAL_COMMON_METHOD_COPY_RESULT.md).
+
+- **2026-10-27 UI03/FN03 과거 공통 양식 복사 소스 검수**: 기존 과거 비교에서 복사 전용 snapshot 선택→기존 copyForm의 exact 과거 ref/양식 코드·정의→새 ID/v1→편집/save/v2 재조회를 연결했다. 기존 App 버튼 부재 RED 뒤 Main fresh type/diff0·실제 App/Edge 합성 API12 PASS/9.9s·독립 C0/I0/M0를 확인했다. 현재본/dirty·검토 원명령·문맥·응답유실/POST수락후GET실패 보호를 검수했다. API/transport 직접 교체와 GET 도중 문맥 전환은 정적 근거만, 실제 DB/served·사용자 인수는 미확인이다. 신규 API/SQL/권한/서비스/Secret/실Agent0, QA exact 정리·독립 잔류0. 전체 FN03/UI03/Stage B/계획 완료는 아니다. 결과 UI03_HISTORICAL_COMMON_FORM_COPY_RESULT.md.

@@ -5,9 +5,9 @@ import { getForm, type FormVersion } from './forms-api.ts';
 import { emptyFormBuffer, formBuffer, removeFormRepeatField, removeDuplicateFormRepeatField, changeFormItemType, moveFormEntry, type FormBuffer, type DuplicateFormFieldSelection } from './form-editor-state.ts';
 import type { FormDefinition, FormItem } from '../../../../server/modules/documents/forms.ts';
 
-export function CommonFormEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved }: {
+export function CommonFormEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, copySelection }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: FormVersion | null;
-  buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void; onSaved: () => void;
+  buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; copySelection?: {source:FormVersion;current:()=>boolean;clear:()=>void};
 }) {
   const fieldId = useId();
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [saved, setSaved] = useState<number | null>(null);
@@ -16,6 +16,11 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   const latest=useRef({buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange});
   latest.current={buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange};
+  const executionScope=useRef<{session:typeof session;userId:string;clientId:string;csrf:string;client:ApiClient;transport:typeof fetch;source:FormVersion|null;sourceRef:string}|null>(null),sending=useRef(false);
+  const observed=executionScope.current,sourceRef=JSON.stringify(source?.ref);
+  if(!observed||observed.session!==session||observed.userId!==session.user.id||observed.clientId!==session.clientId||observed.csrf!==session.csrfToken||observed.client!==client||observed.transport!==client.transport||observed.source!==source||observed.sourceRef!==sourceRef)executionScope.current={session,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,client,transport:client.transport,source,sourceRef};
+  const scope=executionScope.current!;
+  const executionCurrent=()=>alive.current&&executionScope.current===scope&&client.transport===scope.transport&&session.user.id===scope.userId&&session.clientId===scope.clientId&&session.csrfToken===scope.csrf&&JSON.stringify(source?.ref)===scope.sourceRef;
   const duplicateFields=item?.fields.flatMap((field,index)=>item.fields.filter(value=>value.fieldId===field.fieldId).length>1?[{field,index}]:[])??[];
   const selectedDuplicate=duplicateSelection?.buffer===buffer&&duplicateSelection.fields===item?.fields&&duplicateSelection.contextFingerprint===JSON.stringify(buffer)?duplicateFields.find(value=>value.index===duplicateSelection.index&&value.field===duplicateSelection.field&&JSON.stringify(value.field)===duplicateSelection.fingerprint):undefined;
   function removeDuplicateField(){
@@ -33,26 +38,31 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   function replaceAllowed() { return !buffer.pending && !buffer.review?.pending && (!(buffer.dirty || buffer.review?.dirty) || confirm('미저장 양식 편집·내용 검토 입력을 바꿀까요?')); }
   function change(patch: Partial<FormDefinition>) { onChange(previous => previous.definition ? { ...previous, dirty: true, definition: { ...previous.definition, ...patch } } : previous); setSaved(null); }
   function changeItem(patch: Partial<FormItem>) { if (definition) change({ items: definition.items.map(value => value.itemId === buffer.itemId ? { ...value, ...patch } : value) }); }
-  async function submit(request: MethodCommand, name: string, formCode: string) {
-    if (pending || request.clientId !== session.clientId) return;
-    const work = { request, name, formCode };
+  async function submit(request: MethodCommand, name: string, formCode: string,copyCurrent?:()=>boolean) {
+    if (sending.current || pending || request.clientId !== session.clientId || !executionCurrent() || copyCurrent&&!copyCurrent()) return;
+    const work = { request, name, formCode };sending.current=true;
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: work })); setPending(true); setError(null); setSaved(null);
+    const current=()=>executionCurrent()&&(!copyCurrent||copyCurrent());
     let applied = false;
     try {
       const ref = await writeCommonFormDraft(client, request, session.csrfToken, session.user.id); applied = true;
+      if(!current())return;
       const value = await getForm(client, { ref, name, formCode, scope: 'USER_COMMON' });
-      onChange(previous => previous.pending?.request.commandId === request.commandId ? { ...formBuffer(value, session.user.id), review: previous.review } : previous);
+      if(!current())return;
+      onChange(previous => current()&&previous.pending?.request.commandId === request.commandId&&!previous.review?.pending ? { ...formBuffer(value, session.user.id), review: previous.review } : previous);
       setSaved(ref.version); onSaved();
     } catch (cause: unknown) {
+      if(!current())return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
+      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => current()&&previous.pending?.request.commandId===request.commandId ? { ...previous, pending: null } : previous);
       if (failure.status === 401) onAuthenticationLost();
-    } finally { setPending(false); }
+    } finally { sending.current=false;if(alive.current)setPending(false); }
   }
   function copy() {
-    if (!source || locked || !copyName.trim() || !replaceAllowed()) return;
+    const copySource=copySelection?.source??source,guard=copySelection?.current;
+    if (!copySource || locked || sending.current || !copyName.trim() || !executionCurrent() || guard&&!guard() || !replaceAllowed() || !executionCurrent() || guard&&!guard()) return;
     void submit({ schemaVersion: 1, commandId: crypto.randomUUID(), operation: 'copyForm', targetId: null, expectedVersion: 0, clientId: session.clientId,
-      payload: { sourceRef: source.ref, name: copyName, scope: 'USER_COMMON', reason: '선택한 원본을 내 양식으로 복사' } }, copyName, source.definition.formCode);
+      payload: { sourceRef: copySource.ref, name: copyName, scope: 'USER_COMMON', reason: '선택한 원본을 내 양식으로 복사' } }, copyName, copySource.definition.formCode,guard);
   }
   function save() {
     if (!definition || locked || !definition.name.trim() || !definition.formCode.trim() || !buffer.reason.trim()) return;
@@ -84,7 +94,8 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   }
   if (buffer.ownerUserId && buffer.ownerUserId !== session.user.id) return <section><p role="alert">다른 로그인 사용자의 양식 편집은 표시하거나 전송하지 않습니다.</p><button onClick={() => { if (confirm('이 탭의 이전 사용자 양식 편집만 버릴까요? 서버 자료는 유지합니다.')) onChange(emptyFormBuffer()); }}>탭의 이전 양식 편집 닫기</button></section>;
   return <section className="status-card definition-editor" aria-label="내 공통 양식 작업"><h3>내 양식 작성·개정</h3><p className="meta">공식 8종·구버전은 보존합니다. 초안 저장은 내용 검토·사용자 확정이 아닙니다.</p>
-    <fieldset disabled={locked}><label>양식 복사본 이름<input maxLength={200} value={copyName} onChange={event => setCopyName(event.target.value)} /></label><button disabled={!source || !copyName.trim()} onClick={copy}>내 공통 양식으로 복사</button>
+    {copySelection&&copySelection.current()?<p className="meta">복사 전용 과거 원본: v{copySelection.source.ref.version} · {copySelection.source.definition.formCode} {copySelection.source.definition.name}<button disabled={locked} onClick={()=>{if(!locked&&executionCurrent()&&copySelection.current())copySelection.clear();}}>과거 복사 원본 해제</button></p>:null}
+    <fieldset disabled={locked}><label>양식 복사본 이름<input maxLength={200} value={copyName} onChange={event => setCopyName(event.target.value)} /></label><button disabled={!(copySelection?.source??source) || !copyName.trim() || !!copySelection&&!copySelection.current()} onClick={copy}>내 공통 양식으로 복사</button>
       <button disabled={!source} onClick={() => { if (source && replaceAllowed()) { onChange({ ...emptyFormBuffer(), ownerUserId: session.user.id, dirty: true, definition: { formCode: 'USER01', name: '새 양식', purpose: '', scope: 'USER_COMMON', authorRole: '', reviewerRole: '', confirmerRole: '', requiredInputs: [], items: [], authoringStandardRef: source.authoringStandard.ref } }); setSaved(null); setError(null); } }}>새 양식 작성</button>
       {source?.definition.scope === 'USER_COMMON' ? <button onClick={() => { if (replaceAllowed()) { onChange(formBuffer(source, session.user.id)); setSaved(null); setError(null); } }}>이 공통 양식 편집</button> : null}
     </fieldset>
