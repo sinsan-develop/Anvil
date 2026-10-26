@@ -1,4 +1,10 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 결정 대기 인수 checkpoint — goal 차단 감사 첫 회
+
+- 승인된 FN01/후속UI02·UI10·UI06의 이번소스/합성구현·직접검수는기록한범위에서인수했으며전체계획완료가아니다. 실제DB/서비스/Agent/사용자인수·native실행은별도미검증/제외그대로다. 제품checkpoint f12f8764 뒤는미채택계약·읽기기록만이다.
+- 다음선택단위의정확조건은CapabilityReport HUMAN r2 SHA6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8의명시채택답변이다. PMO cursor31까지새답변없음/기존질문유지를확인했다. PMO는실제auto-review거절이아닌새API·영구자료계약의별도결정경계라고명시했다. 기존질문복제·새계약구현·실제DB/권한/Agent실행0이다.
+- 이조건으로다음선택구현이진행불가한goal차단감사는이번을첫회로기록한다. 아직3회연속충족을주장하지않아goal을blocked/paused/complete로바꾸지않았다. 새명시답변또는독립적인정당한구현단위가확인되면그근거로계속하며같은검사/표시업무를반복하지않는다. 다음goal계속turn에서동일조건이실제지속되는지증거를대조한다.
+- 새상위계약결정전가능한preflight/설계선행기록은보존했고작업지시미발행이다. 현재codewriter0·등록QA0·보호미추적8유지. 실제소스개발경로/branch/private exact는Git으로다시대조하고원문/미추적/이력rewrite/새branch·worktree·자동화변경0을유지한다.
 ### 2026-10-26 명시 계약 결정 경계 확인·FN17 독립 설계 선행 기록
 
 - 338d3d 조건부preflight/현황2경로 checkpoint3dc301ecd23d90c827f7e68e5f7ba0e107e89390,45d68e private exact/main불변/staging0·보호8을확인했다. 그뒤제품변경0이다.
