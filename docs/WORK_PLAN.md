@@ -1,5 +1,11 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 UI06 원문 승인 표시 정합성**: 편집 buffer와 frozen pending이 다르면 이전 승인 설명을 숨기고 원입력 복귀 시 원상태를 보존한다. 새 DOM2 RED→직접21 PASS/type/diff0·독립 scoped C0/I0/M0, 등록 QA7파일/5dir·설정1 수명 내 정리/별도 부재 확인. 기존 권한·명령·원문·일회승인 의미 불변이며 실제 DB/served·전체 UI06 미완료다.
+
+
+- **2026-10-26 FN06 HTTPS QA 기존 보완 독립 정적 검수**: 최초 절대상한·stage 전 종료/부분 lease 정리의 원 I1/I2는 현재 source 호출선 대조로 Addressed·scoped C0/I0/M0다. 실제 OS 신호/부분 파일 실패·보완 후 HTTPS actual은 미실행이며 과거 실행 PASS와 구분한다. 제품 변경·기존 시험 재실행0, FN06/UI11 전체 미완료 유지.
+
+
 - **2026-10-26 FN06/FN08 캡처 준비 원장 파일 저장 착수**: 기존 준비 포트의 concrete adapter와 START/TURN→결과fileadapter를 명시주입해 준비/결과 재생성exactread를 연결한다. 기존순서/claimId·SYNTHETIC_ONLY·기본미등록·rawhandle/키/실Agent0. 선행module부재RED 뒤 실제file8·인접메모리11/type/diff0·관측M1보정/독립C0/I0/M0,956파일/25dir수명내정리·잔여0. 원codec획득후STARTbridge직접file통합범위이며실transport/Agent·전체FN06/FN08는미완료다.
 
 - **2026-10-26 FN06/FN08 캡처 metadata 파일 저장 연결 착수**: 기존 결과 저장 포트에 제한 파일 adapter를 공급해 저장·원장 재생성·정확 ref 재조회를 연결한다. 합성metadata/SYNTHETIC_ONLY·기본미등록·rawhandle/키/본문/실Agent0. 선행module부재RED 뒤 실제 파일9·인접메모리11/type/diff0·독립C0/I0/M0로한정검수,정리931파일/22dir잔여0·기록상한6.86초초과예외보존. 실제보호/Agent·전체FN06/FN08는미완료다.
@@ -1254,7 +1260,7 @@
 | UI08 | 승인·원인 미확인 문제 | C | UI00 | UI00,FN11,FN12 | 작업 중·FN11 요청/조회·3종 결정→정확 후보 재결박/별도 소비·원 명령 보존,36fa3e51 same-client actual1 PASS·QA잔여0. 선택 보고의 고정 임무/완료·검증조건 조회 추가(기존2GET/hash·선택/거절회수/이탈), 신규unit3+인접4/새DOM3+기존3+장벽1/typebuild·scopedC0/I0/M0·QA01/02잔여0. 실제DB/정식served·FN12 원인 분류·실제 사용자/Agent 인수 미연결/미확인  2026-10-25 선택 보고 등록 산출물·명령 출력·diff 읽기 연결, 합성 DOM5/5·인접11/type0·한정 C0/I0/M0·QA0(04b62d16), 실제 DB/served는 미검증. |
 | UI09 | 새 세션·다른 도구 이전 | D | UI00 | UI04,FN14 | 부분 구현·기존 읽기 인계 기록/맥락 원문 보존, 이전 대상 보관 후보 목록·다음 페이지/고정 조회와 임무 요구6능력 비교 연결. 신규 합성DOM5+인접2/직접unit14/type/build 확인·QA0. 문서 보고와 실측 미확인 구분. 실제 대상 채택/세션 생성·회수·이해대조·이전/재개·WSL/DB/Agent/인수 미완료 |
 | UI10 | 헌법·지식·결정 이유 | B | UI00 | UI00,FN05 | 작업 중·기존 원문/지식·대화/정정/제외·검토/확정·별도 헌법 적용 actual7cf8c005 유지. 정정 비교·문서 출처 조회/첨부·보관 대화→현재 지식 출처 추가에 이어 고정 ARTIFACT 텍스트 조회 후보를 연결(unit23·browser4+보정1·한정 독립C0/I0/M0). 이번 실제 DB/서비스 반영은 미검증. 공유·임무별 선별/전달·사용자 browser DB 미완료  2026-10-25 정정 전후 scope-only 비교·당시 업무/단계 원문 연결, 합성 DOM5/5·reader7/type0·한정 C0/I0/M0·QA0(cb2eb4c2), 실제 DB/served는 미검증.  2026-10-25 REVIEW 첫 명시거절의 입력·원명령 보존 재편집 연결, 합성DOM1/1·집중unit9/type/Webbuild0·한정 C0/I0/M0·QA0. 실제DB/served·전체업무인수는 미확인. |
-| UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보/환경·HUMAN 신뢰관리/별도승인(UI08)·명령보존, 기존 CAS/합성browser27 PASS 유지. e07312d3 native↔strict TLS/PG/동일UI11 정상·본문유실1 PASS/정리0. 단일독립 C0/I2/M0의 QA수명/초기종료는 Main 순수보완(unit190/type0)·actual 재실행0/PMO 수용 전. AuthForm클릭/사용자인수·영구host/Agent·정책생성·전체UI11 미완료  2026-10-25 현재 프로젝트 정책 전체 읽기 연결(작성준비/제어/재인증0), actual합성DOM하위6/부모포함7·기존unit7/type/Webbuild426·M1보완후C0/I0/M0·QA0. 실정책변경0/실DBserved미확인. |
+| UI11 | Agent·환경·권한 설정 | C | UI00 | UI00,FN06,FN11 | 작업 중·후보/환경·HUMAN 신뢰관리/별도승인(UI08)·명령보존, 기존 CAS/합성browser27 PASS 유지. e07312d3 native↔strict TLS/PG/동일UI11 정상·본문유실1 PASS/정리0. 단일독립 C0/I2/M0의 QA수명/초기종료는 Main 순수보완(unit190/type0)·2026-10-26 scoped 정적 C0/I0/M0·actual 재실행0/PMO 수용 전. AuthForm클릭/사용자인수·영구host/Agent·정책생성·전체UI11 미완료  2026-10-25 현재 프로젝트 정책 전체 읽기 연결(작성준비/제어/재인증0), actual합성DOM하위6/부모포함7·기존unit7/type/Webbuild426·M1보완후C0/I0/M0·QA0. 실정책변경0/실DBserved미확인. |
 | UI12 | 작업 사용자·클라이언트 인계 | E | UI00 | UI00,FN15 | 부분 구현·기존 제어기록과 SELF 요청/목록·고정 원문/미확인 요약 소비 source 연결. 기본OFF·수락/제어전환 미구현, 실제 DOM/served/DB·실사용 미검증. 직접14/type/build·독립C0/I0/M0 범위만 확인 |
 | UI13 | 모바일 대화·지시·승인 | E | UI00 | UI04,UI08,FN15,FN17 | 시작 전 |
 | UI14 | 백업·한도·알림·보조 조회 | E | UI00 | UI00,FN10,FN16,FN17 | 부분 구현·설정의 브라우저 알림 API/현재권한 명시 조회·재조회. 단위3·통제DOM1/실제Edge읽기1/typebuild·QA잔여0. 알림설정저장/목록·전달/백업복원·전체연결 미완료 |
@@ -1263,7 +1269,7 @@
 | FN03 | 문서 가져오기·양식·편집·확정 | B | FN01 | FN01 | 작업 중·원문/불변 버전·검토/확정·후보/제안/충돌·단계 연결 actual6cdb21cb·forward40 확인. source 실관측/드리프트·실제 사용자 UI DB 여정 미완료 |
 | FN04 | 설계 추적·계획·변경 영향 | B | FN02,FN03,FN11 | FN02,FN03,FN11 | 작업 중 — D/S·업무 카드/두 선행·불변 계획/개정·화면 검토 선택·trace edge·계획 검토/확정의 화면/same-client actual. 요청4종 출처·사람 영향 이력/미확인 보존 actual df2f81ff·forward33 확인. 변경 적용/UI07·실제 browser DB 여정 미완료 |
 | FN05 | 헌법·지식·원문·맥락 전달 | B | FN03 | FN03 | 작업 중·원문/지식·대화·정정/제외·검토/확정·헌법 별도 적용/불변 이력/현재 유효성 actual7cf8c005·forward37 확인. 공유·임무 맥락 선별/실제 전달·이해(FN09/IX04) 미완료  2026-10-25 저장 맥락 부분 순서·바이트 위치/길이·부분hash/참조 상세 읽기 연결, SSR3/3·type/Webbuild427·한정C0/I0/M0. 추가통신/전달0·실DB/served 미검증. |
-| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·기존 DPAPI/CNG/상태전용 신뢰·44교정 제한수용 유지. e07312d3 native→strict TLS/WSL PG→UI11 정상/본문유실2건1 PASS/36923ms·정리0. 단일독립 C0/I2/M0의 QA수명/초기종료 Main 보완·순수7/unit190/type0·보완후actual/독립재검수0, PMO 수용 전. SQL44불변/QA45표0, 영구 PC/실제 Agent·능력실측·전체연결 미완료 |
+| FN06 | 첫 실제 코딩 Agent·환경 연결 | C | FN01,FN11,P02 | FN01,FN11,P02 | 작업 중·기존 DPAPI/CNG/상태전용 신뢰·44교정 제한수용 유지. e07312d3 native→strict TLS/WSL PG→UI11 정상/본문유실2건1 PASS/36923ms·정리0. 단일독립 C0/I2/M0의 QA수명/초기종료 Main 보완·순수7/unit190/type0·보완후 actual0·2026-10-26 scoped 정적 C0/I0/M0, PMO 수용 전. SQL44불변/QA45표0, 영구 PC/실제 Agent·능력실측·전체연결 미완료 |
 | FN07 | 두 번째 실제 Agent·계정 교체 | D | FN06 | FN06 | 시작 전 |
 | FN08 | Windows 실행·회수·중복 방지 | C | FN01,FN06,FN11 | FN01,FN06,FN11 | 부분 구현·QA-02 bbb239dd 합성 실제1 PASS/71523.4163ms·정리0/19960·relay 보존은 유지. 별도 내부precondition2파일 집중4 PASS/type0·항상실행불가이며 사용자기능진도 아님. sourceScopes/envelope/durable 결과형 미정·verifier/실제dispatch·ACK/spool/Agent 연결 미구현. 원QA-01 REWORK/40744미확정·잔여OS미검증·전체인수와 구분 |
 | FN09 | 총괄·단계·하위 임무 배정 | C | FN02,FN04,FN05,FN08,FN11 | FN02,FN04,FN05,FN08,FN11 | 부분 구현·FILE비교 한정수용 유지. 초안 서버/API·UI04 작성/개정준비·정확조회/원입력·같은명령 보존 후보9e42149. 원I2개 RED보완·scoped C0/I0·직접10/UI5·목록cursor2 확인. 목록M1은후속4handler보정/합성UI9PASS/scopedC0/I0으로해소. 격리47SQL COMMIT/hash/권한·무명령거절PASS·QA0, 정식46/새2표미적용. 별도정식 schema-only 준비5PASS·scopedC0/I0/새M0·플랫폼실행전거절/적용0·실제저장/API/서비스·배정/Agent·전체완료 미확인 |

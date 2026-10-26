@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentBuffer,DocumentSession} from './editor-api.ts';
-import {newDocumentUploadApproval,prepareDocumentUploadApproval,bindDocumentUploadApproval,reopenDocumentUploadApproval} from './document-upload-approval.ts';
+import {newDocumentUploadApproval,prepareDocumentUploadApproval,bindDocumentUploadApproval,reopenDocumentUploadApproval,matchesDocumentSaveInput} from './document-upload-approval.ts';
 import {sendApprovalCommand,type ApprovalRequestWork} from '../decisions/api.ts';
 import {documentMutationUncertain,isKnownDocumentRejection} from './mutation-result.ts';
 const risks={data:'데이터 위험',security:'보안 위험',cost:'비용 위험',interruption:'중단 영향',unverified:'미확인 사항'};
@@ -28,7 +28,7 @@ export function DocumentUploadApprovalEditor({client,session,buffer,disabled,onC
  }
  async function bind(){if(!a?.requestId||a.commandHash||!start())return;const active=operation();try{const next=await bindDocumentUploadApproval(client,buffer,a.requestId,session,active);if(active())update(b=>b.pending===p?next:b,active);}catch(e){failure(e,active);}finally{end();}}
  function edit(next:ApprovalRequestWork){if(w&&!disabled&&!busy&&!w.pending&&!w.resultId){const active=operation();replace(w,next,active);}}
- if(!p||p.save||buffer.ownerUserId!==session.user.id||p.upload.clientId!==session.clientId||buffer.saveUncertain||!a&&(buffer.failure?.code!=='APPROVAL_REQUIRED'||buffer.failure.status!==412))return null;
+ if(!p||!matchesDocumentSaveInput(buffer,p,session)||p.save||buffer.ownerUserId!==session.user.id||p.upload.clientId!==session.clientId||buffer.saveUncertain||!a&&(buffer.failure?.code!=='APPROVAL_REQUIRED'||buffer.failure.status!==412))return null;
  return <section aria-label="문서 원문 일회 승인"><h3>문서 원문 업로드 승인</h3><p className="meta">요청·별도 결정·결박 후에도 업로드하지 않습니다. 아래 저장 재개 버튼으로 원문 업로드와 문서 저장을 진행하세요.</p>
  {!w?<button type="button" disabled={disabled||busy} onClick={()=>void begin()}>문서 원문 승인 요청 준비</button>:<>
  <details><summary>원문 업로드 명령·해시</summary><pre>{JSON.stringify(w.candidate,null,2)}</pre></details>

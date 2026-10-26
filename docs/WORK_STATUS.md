@@ -1,4 +1,37 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 오래된 업로드 승인 표시 보완 검수 종료
+
+- 단일 writer ui06_upload_stale_display_fix는 Component의 import·early-null guard 두 줄에서 기존 matchesDocumentSaveInput만 소비했다. 제품 SHA256 DFD1B83FC5AAACF2A945D599DB064B24F6E3262A642FC5181E21D35D45AC8DA3, 직접 spec7F574FCBF7E4D31E50FF933BD9271DA1C9AE0E6712799280544176983E93642A다. 기존 helper/정책/업로드·저장/원명령·이력 삭제·자동 실행 변경0이며 old시험94행 불변/신규2건만 추가했다.
+- Main2fd9ba는 TESTONLY/제품원hash를 대조했다. 제품수정 전 node node_modules/@playwright/test/cli.js test --config qa-ui06-upload-display.playwright.config.ts --grep '외부 본문 불일치'는8a2d99/7885f0 exit1·2 FAIL이며 실제 본문변경 뒤 이전승인region 잔류에서 실패했다. 제품보완 뒤 b30a7c/ec262e는 tsc --noEmit -p tsconfig.base.json exit0·git diff --check0 후 같은 설정의 직접 spec전체21 PASS20.0s/FAIL·SKIP0을 확인했다. 새2와 직접영향 기존19의 한정회귀이며 전체제품/DB/served/Agent 검증이 아니다. Vite source 메모리 번들이 실제 Component/API client·기존 승인 reader를 소비했고 기존 사용자브라우저/실서비스 요청0이다.
+- 새 반례는 요청준비/기존ID결박 각각 외부B→A에서 이전승인 숨김·원후보/입력/승인ID/명령 보존·자동전송/저장0을 확인했고, 명시재개 시 동일commandId/payload/body/requestId와 saveDocumentDraft approvalRef:null을 유지했다. 독립 reviewer는 실제 source/hash/HEAD대조로 scoped C0/I0/M0·기존M1 source해소를 확인했다. reviewer실행0, MainGREEN과 구분한다.
+- 자원31a6bc 실제생성 UTC03:46:50.2100886Z·상한04:16:50.2100886Z다. Main21744d는 원RED산출을 같은root의 red-results로 보존한뒤 GREEN을 실행했다. 정리전 source7F/제품DF·config D5BD9BD6·현재owner/nonlink·전체inventory7파일/5dir·해당Edge/Nodeprocess0을 확인했다.78ca36 exact비재귀정리는03:50:16.7776175Z 완료로상한내/정리5분여유 준수, f49bcb별도root/config부재와최종hash/diff0이다. 임시결과/스크린샷만폐기하고실제명령·실패/결과텍스트는본기록/tool출력에보존한다. 다른resource삭제0이다.
+- writer쓰기 소유를 해제했다. 실제 DB/served·전체UI06/FN03/Stage/계획 미완료·FN01 직접확인pending·CapabilityReport미채택/기존특정거절은 그대로다. rollback은 소유 commit 일반revert이며 원문·DB/승인이력 삭제0, Main소유문서2/제품1/시험1 정확4경로만 기존branch에 보존한다.
+
+### 2026-10-26 UI06 기존 M1 승인 표시 정합성 보완 착수
+
+- FN01 direct 확인 pending과 별개로 기존 deferred M1을 같은 UI06 범위에서 처리한다. Main은 actual DocumentUploadApprovalEditor가 pending/owner/client만으로 이전 승인 설명을 표시하고 기존 matchesDocumentSaveInput을 렌더링에서 소비하지 않는 점을 확인했다. helper와 저장은 불일치 전송을 거절하므로 새 권한/승인 계약을 바꾸지 않고 표시만 실제 입력과 대조한다. 원본 pending/명령·기존 승인 이력을 삭제하지 않는다.
+- 단일 writer에게 기존 Component와 직접 browser spec 두 경로만 허용한다. 먼저 원 pending을 보존한 외부 buffer body 변경의 요청준비/결박후 DOM 반례를 기존 harness에 추가하고 제품 변경 전 Main RED를 확인한다. 이후 기존 입력비교 함수를 표시 guard에 최소 소비하고 같은 직접검사/필요 type·직접인접만 확인한다. 기존 완료의 전수검사·새 API/DB/권한·Agent 실행0이다.
+- 자원 사전등록: Windows D:\tmp\anvil-v3-stage-b\ui06-upload-display-01 단일 합성 브라우저 QA root, 소유 Main/현재 사용자, 생성후 최대30분·정리5분여유. 실제 생성 직전 시간/부모 realpath·owner/nonlink·부재를 재확인하고 exact 시험 산출물/빈디렉터리만 정리·독립 부재를 확인한다. 기존 browser/user profile·서비스/DB·Secret·포트 정의 변경0. 설정 파일은 기존 작업 branch의 qa-ui06-upload-display.playwright.config.ts 한 개만 Main 소유 임시 작성/회수하며 제품 설정에 반영하지 않는다. 현재 양 경로의 Test-Path False이며 아직 resource 생성0이다.
+
+### 2026-10-26 FN06 HTTPS-QA 기존 I1/I2 독립 정적 검수 종료
+
+- 독립 fn06_https_lifecycle_scoped_review는 현재 HEAD ee023aaa에서 e07312d3 이후 지정5파일 diff를 읽고 보완 commit b608a67132fa9a3c15ff763e7cfd750eb953e6b6의 원 I1/I2를 source Addressed·scoped C0/I0/M0로 판정했다. Main은 보고의 source hash3을393e9d 실제 출력과 대조했다. standalone main→serve→validator/stage와 Windows constructor가 같은 최초 절대상한을 소비하며, stop 설치→stage·effect 직렬대기/종료뒤차단·메모리 owned/attempted 기반 부분정리가 실제 본문에 연결된다.
+- 순수 fixture는 실제 validator/lifecycle/이름 guard를 호출하지만 stage()/removePartialStage()/실제 OS 신호·부분 파일 쓰기·close 실패를 실행하지 않는다. 실제 HTTPS/DB/OS·보완후 actual 재실행0이며 과거 e07312d3 actual PASS나 이전190 PASS를 신규 실제검증으로 승격하지 않는다. SIGKILL/전원손실/악성 동일사용자 교체는 원 제한 범위 밖이다. 기존 수명/초기종료 원 REWORK는 이력으로 보존하고 최신 scoped 정적 해소만 추가한다.
+- 제품·시험 수정0/재실행0/환경·Secret·권한·자원 생성0이다. 검수 증거는 source 검수 미완료 한 건의 해소이며 사용자 기능 새 완성이나 전체 FN06/UI11/Stage/계획 완료가 아니다. PMO에 정확 수용 범위와 남은 actual 미검증을 공유한다. FN01 직접 확인 pending·CapabilityReport 미채택·기타 특정 거절은 별개로 유지한다.
+
+### 2026-10-26 목표 계속 실행과 FN06 미완료 독립 검수
+
+- 직전 goal turn은 FN01 후보 상세/독립 검수·ee023aaa private checkpoint 보존의 진전으로 분류하며 실제 사용자 기능 추가0이다. 이번 재검증에서 PMO의 FN01 결정 전달 거절/직접 확인 pending과 CapabilityReport 미채택은 그대로다. PMO 원 turn의 실제 거절 대상이 후속 메시지 전송이며 제품코드/SQL 자체의 거절이 아님을 대조했지만, 실패한 전달을 성공한 인계로 바꾸거나 동일 전송을 우회하지 않는다. 기존 직접 질문을 반복하지 않는다.
+- 계획의 FN06 HTTPS-QA C0/I2/M0 뒤 Main 보완에 scoped 독립 재검수가 미완료인 것을 별도로 선정했다. 처음 전체deadline과 TLS stage 전 종료/부분 lease 쓰기 정리의 실제 source callsite/fault fixture를 read-only reviewer에게 배정했다. 실제 TLS/DB/OS/Agent 재실행0, 동일 기존 검사 반복0, 보호8과 제품 writer0을 유지한다. 기존190 PASS와 e07312d3 actual은 각 당시 범위이며 신규 재검수 완료 증거로 재사용하지 않는다.
+- 현재 HEAD ee023aaaaf975125a1106d050f7bb551d95169ab·Main WORK_STATUS 변경/보호8·diffcheck0이다. 검수 소스 fn06-https-qa-server SHA9F26078F03E9D3150651E4BE9F7814BE8C4E2A8098C79C8820B24E435164F80B, fn06-windows-qa-resources SHA375FA69B690590EE521B718F60896F2A5881B40A507B1DE604964D66935BD3DA, https-qa-lease시험 SHA1C7FA72CCC35C326ACF9CB5917C4CA6A28FEB4764A8417016B30C9A27B73B14A를 실제 확인했다. Git sandbox work-tree context 오류는 elevated 읽기로 구분했으며 설정/ACL 변경0이다.
+- Main이 이전 경로 발견을 지키지 않고 reports/AV3/FN06를 추정해 rg root 오류1을 추가 발생시켰다. 해당 추정 경로를 재시도하지 않고 실제 rg --files 결과에서 tests/support 및 integration/unit 경로를 발견한 별도 호출로 전환했다. 이는 source/제품 시험 실패가 아니며 동일 근본 경로 추정 오류의 재발로 PMO 예외 이력을 유지하고 추가 추정 읽기는 중단한다.
+
+### 2026-10-26 FN01 안전 checkpoint·직접 확인 대기와 독립 조사 결과
+
+- Main173a1c는 후보와 WORK_STATUS 정확 두 문서를 ee023aaaaf975125a1106d050f7bb551d95169ab로 commit했다. 7e5960 private push 뒤 ls-remote에서 기존 codex/av3-stage-b exact ee023aaa와 원격 main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 확인했다. 제품/SQL 변경0·보호 untracked8 유지, 후보 hash F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0 그대로다.
+- PMO는 직접 확인1회 pending과 중복 질문/전송 재시도0을 확인했다. Main은 아직 직접 답변을 받지 않았으며 FN01 source/SQL writer0이다. 별개 UI03/FN02·UI06/FN03 기존 서버 명령→화면 단절을 읽기 담당이 대조했으나 새 배정할 단절을 입증하지 못했다. 방법론 복사/개정/검토/확정/별도 적용과 문서 작성/가져오기/제안/검토/확정에는 이미 화면 소비가 있다. 미구현으로 다시 선정하지 않으며 이 읽기를 served/실DB/전체 완료로 바꾸지 않는다. 기존 시험 재실행0·제품/DB/권한/서비스/Agent 변경0이다.
+- 현재 turn은 FN01 계약의 구체화·독립 검수·기존 branch 보존 진전이며 사용자 기능 새 완료0이다. 직접 질문의 정확 범위와 거절 사유는 앞선 기록을 따른다. 이후 신산님의 직접 답변이 오면 exact 후보와 새 승인 범위를 대조해 한 writer에게 실제 구현을 맡긴다. Main 상태 기록 도구의 JavaScript 문자열 구문 오류1은 도구 실행 전 실패로 파일 변경0이며 문자열 조립으로 정정했다.
+
 ### 2026-10-26 FN01 결정 전달 차단과 직접 확인 요청
 
 - PMO turn01a1763b-c15a-7070-9540-f484b750b254의 완료 snapshot은 FN01 r3를 코드·화면·미적용 SQL·합성 검증 기준으로 한정 채택했다고 밝혔다. 다만 PMO의 후속 메시지 전송은 auto-review에서 해당 구체 메시지의 명시적 전송 승인 부족으로 거절됐고 실제 전달0이다. Main은 읽기 snapshot을 성공한 승인 전달로 치환하지 않으며 거절된 전송/코드 착수 우회0이다. FN01 r3 exact F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0의 위 범위만 신산님께 직접 비동기 확인을 1회 요청했다. 정식 DB·권한·Secret·서비스·Agent 실행은 제외한다. CapabilityReport는 여전히 미채택이다.
@@ -7538,3 +7571,7 @@
 - 다음 조치: 로컬 백업과 비워진 원격 저장소를 보존하고 새 설계의 핵심 이전 시나리오와 화면을 구체화한다. 저장소 재생성·삭제 권한 추가 인증은 하지 않는다.
 
 상세 보관 목록과 복구 근거는 Backup/Anvil/legacy-20261015-1420의 ARCHIVE_STATUS.md 및 local-archive-manifest.csv에 있다. 로컬 자료는 삭제한 WSL 폴더와 기존 소스를 복구·참조할 수 있는 원본이며 과거 GitHub 서비스 상태 전체의 무손실 복구를 뜻하지 않는다.
+
+- UI06 합성 QA 실제 생성 직전 UTC 2026-10-26T03:46:50.2100886Z / 상한 2026-10-26T04:16:50.2100886Z / 정리 5분 여유. root/config 부재·부모 nonlink/현재 owner를 대조했고 TESTONLY7F574FCB/제품854243B6 불변에서 새 반례2만 RED 실행한다.
+
+- UI06 Main RED 8a2d99/7885f0: 제품854243B6 불변·시험7F574FCB에서 새 DOM2건 모두 실패 exit1이다. qa.set buffer B로 실제 편집 본문 변경은 통과했지만 이전 승인 region count0 기대/실제1에서 실패했다. 준비/결박 양 단계의 같은 표시 원인1회이며 기반 setup/selector 오류가 아니다. raw 실패/정상구분은 tool 출력에 보존하고 같은 writer에 기존 입력 비교 함수의 표시 guard 소비만 지시했다. 시험 고정/정책·저장·원문/명령 변경0.
