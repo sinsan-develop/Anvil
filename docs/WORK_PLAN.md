@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-26 FN04 기존 기준 적용 입력/대상 검사 착수**: 승인P02 payload5개/봉투위치를그대로privateparser로구현한다. 새route/operation·승인후보보관/CAS/SQL·실적용0, 미채택delta와분리·모듈부재RED→직접11/type/diff0·독립C0/I0/M0로source단위검수. 실제기준적용/사용가능완료아니다.
+
 - **2026-10-26 UI02 조회 전용 초안 내용 왕복 착수**: 성공GET에결박된Page-local조회단계로저장4단계내용을왕복한다. 기존편집helper/저장/생성기준·상위buffer/원명령은보존·새API/권한0. 실RED뒤신규DOM5·기존consumedDOM5·type/build/diff·수집12확인,소비조회회귀I1보정·재검수C0/I0/M0. 기존편집unit12는보정전불변helper증거이며served/실DB·전체UI02/FN01는미완료다.
 
 - **2026-10-26 UI06/FN03 가져오기 사용 이력 원문 조회 착수**: 보관 후보의 실제 사용 이력 한 건에서 저장 문서의 정확버전 원문을 기존GET로 조회한다. 편집된결과허용·후보/문서/원본artifact/양식·hash대조, 자동저장·새API/DB/권한0. RED→직접DOM6·기존/직전영향DOM10·unit3/type/build/diff·수집16 확인·독립C0/I0/M0. 이소스단위는검수됐으며served/실DB·전체UI06/FN03는미완료다.

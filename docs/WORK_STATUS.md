@@ -1,4 +1,29 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 FN04 기존 입력/대상 검사 source 한정 검수 종료
+
+- Main1e6231 TESTONLY48EE0B45·시험6C3F5DD7을원파일부재/hash대조뒤적용했고새모듈부재ERR_MODULE_NOT_FOUND 1fileFAIL/0PASS117.7333ms를확인했다. 이는신규모듈선행RED이며실제기능오류/11동작실행으로세지않는다.
+- Main4f2b19는PRODUCT C0A7CEE5의신규26줄/시험전체를읽었고3e8de3 신규제품3031EFA7 적용후11 PASS216.6891ms/skip0·전체type/diff0이다. Main144ad5 소비처검색은신규module/test뿐이며기존route/handler/operation/SQL·권한/소비는미연결이다. 기존helper와기존consumer변경0이므로무관한browser/전체회귀는반복하지않았다.
+- 독립 fn04_activation_existing_input_review는정본/공유유틸/refs schema·신규2파일/patch를직접대조해C0/I0/M0로판정했다. target검사는typedpayload와봉투id/version의형식일치만, 실제현재성/hash/권한/승인소비/writer안전을증명하지않는것을확인했다.
+- 신규제품/직접unit·plan/status 정확4경로만checkpoint한다. P02기존payload검사source준비이며실제기준적용기능/사용가능·전체FN04/Stage/계획완료아니다. r1미채택후보보관/GET/CAS/SQL·실DB/정책/실전환/Agent/서비스0·기존gap/412보존, rollback은소유커밋revert다.
+### 2026-10-26 FN04 기존 입력/대상 계약 구현 착수
+
+- Main은1bc4fc의기존INTERFACES10.2 payload5개(changeRef/impactRef/approvedDesignRef/confirmedPlanRef/reason)와공통봉투인approvalRef위치를그대로소비하는private입력/대상검사를다음독립source단위로선정했다. 새코드부재가새승인사유는아니며r1추가원문보관/CAS/SQL·실행미결과분리한다.
+- fn04_activation_existing_input 단일writer 소유는신규traceability/design-activation-input.ts와FN04직접unit 최대2다. exact키/4개VersionRef·기존reason한도·논리target/expectedVersion과changeRef의일치를검사하며원입력과분리한다. 새권한/승인형식·승인소비/handler/route/operationenum/기존API/DTO·SQL·포인터/재확인연결0이다.
+- TESTONLY선행후Main실RED→제품검수하며초기모듈부재RED는새함수작성증거로만구분한다. .av3-data/fn04-activation-existing-input-staging은해당writer patch/snapshot용수명으로등록·통합뒤exactset/owner/link/hash정리한다. 실제영향gap/writer안전은기존412/미확인보존·실DB/정책/실전환/Agent/서비스/원격자원0이다. 이를실제기준적용기능/사용가능/전체FN04완료로세지않는다.
+### 2026-10-26 FN04 핵심 미완료·상세 차이 구분
+
+- 읽기담당과Main1bc4fc/c9a95a는 activateDesignChange의P02기존payload5개·봉투approvalRef·원자기준/영향/설계/계획대조·writer안전미확인412를다시읽었다. 코드부재자체는새승인사유가아니다. 84C4AB82 r1의추가차이는후보원문/이유전체보관·OWNER AND 원요청자보호조회,baselineRefs 최초[]/fullactivationCAS,forwardSQL의승인소비/pointer/재확인원자저장이다.
+- 기존WORK_STATUS는10/21 직접결정미수신/NOT_ADOPTED를기록하지만플랫폼거절원문을확인하지않았다고명시한다. 이를FN04전체구현금지나계획전체할일없음으로일반화하지않는다. 실제writer안전/실행·시험gap은합성count0으로대체하지않으며기존특정경계는유지한다.
+- Main834adb의추정schema하위경로/잘못된module경로읽기는부재로실패·변경0이었다. 이turn앞선정본card/MaterialLibrary추정읽기와같은경로추정유형이재발3건이어서그방식은중단한다(서로연속실행3실패나제품오류라는주장은아님). 45c646의실제rg--files목록에서traceability/design-changes·approvals/approval-input·access/project-command를확정했고이목록만이후읽기에사용한다. 권한/ACL·환경변경0, PMO예외공유후실제경로/상세차이만대조한다.
+### 2026-10-26 다음 미완료 선정 기준 보완
+
+- Main은다음조사에서'기존API소비만'으로범위를불필요하게좁히지않도록읽기담당에정정했다. 신산님최신지시대로승인된설계/P02상세계약/업무카드에정의된미구현처리·저장·조회/route구현도대조한다. 새코드를작성하는것과승인밖계약/범위확장은다르다.
+- 새공개계약이정말필요하면기존승인대비정확delta/영향을입증해Main이판정하며, 이미확인된DD166F/FN15 C44·DB/정책/Secret/실Agent등특정경계는일반지시로해제하지않는다. 계획순서·단일writer·실행증거/미검증구분은유지한다.
+### 2026-10-26 UI02 readonly 왕복 게시·정리
+
+- Main9ad88c는소유4경로ada9afa05841b8ded8180a25fa1e551e0e84ce58 commit/privateexact·trackedclean/보호8·원격mainf976ed5e불변을확인했다. 검수된source단위이며실DB/served·전체Stage/계획완료아니다.
+- 완료staging은작성자의full지문11파일/dir0와Main3189cf exactset·rawhash·현재owner·상위/파일nonlink대조뒤해당파일/root만정리했다. 최초EOF미포함snapshot과중간I1패치의내용은커밋/원출력/현황이력으로구분해남겼고실행실패/보정이력을삭제하지않는다. Dtmp시험결과·FN15 C44·보호자료는보존한다.
+- 다음미완료는Main이정본/실코드읽기조사를통해선정중이다. FN15 C44의새직접답변/성공한승인전달은아직확인되지않아재실행0을유지한다. PMO의다음작업배정을기다리는전체대기상태가아니다.
 ### 2026-10-26 UI02 readonly 왕복 한정 검수 종료
 
 - 같은writer TEST_CONSUMED_DELTA17607FD9를Mainf0e692 적용/검증후 정상consumedreadonlystep4 첫previousdisabled 1FAIL8.7424초로I1을실재현했다. FIX41947A3C는소비제외조건29bytes 한곳만제거했다. Main68b609 Page6F3CC802/시험287568DE 검증·적용뒤추가소비왕복DOM1PASS3.1초·type/diff0이다.
