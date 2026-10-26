@@ -4,6 +4,8 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
+import {ProjectApprovals} from '../approvals/project-approvals.ts';
+import {readApprovalRef,assertApprovalCandidate,type ApprovalDetails} from '../approvals/approval-input.ts';
 import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
 import { exact, uuid } from '../knowledge/knowledge-entry.ts';
 import type { ProjectDocuments } from '../documents/project-documents.ts';
@@ -18,12 +20,12 @@ type BaselineDraftSnapshot = Pick<Awaited<ReturnType<ProjectBaselineSources['res
  schemaVersion: 1; contentConfirmed: false; recordedBy: { kind: 'HUMAN'; userId: string }; recordedAt: string;
 };
 type BaselineReviewSnapshot = { input: BaselineContentReview; reviewedBy: { kind: 'HUMAN'; userId: string }; reviewedAt: string; independence: 'NOT_CLAIMED' };
-const receiptColumns = ',c.operation,c.state,c.expected_version,c.actor_id command_actor,c.client_id command_client,c.command_id command_external_id,c.request_hash,c.control_generation,c.policy_ref,c.payload_ref,c.approval_consumption_id,c.result_ref,c.scope_kind command_scope_kind,c.scope_id command_scope_id,ar.subject_ref authorization_subject_ref,ar.policy_ref authorization_policy_ref,ar.scope_digest receipt_scope_digest,a.scope_digest audit_scope_digest,a.outcome audit_outcome,a.source_kind audit_source_kind,a.server_sequence ';
-const receiptJoin = (alias: string) => ` JOIN anvil.commands c ON c.id=${alias}.command_id AND c.project_id=${alias}.project_id JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id JOIN anvil.audit_events a ON a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id `;
+const receiptColumns = ',c.operation,c.state,c.expected_version,c.actor_id command_actor,c.client_id command_client,c.command_id command_external_id,c.request_hash,c.control_generation,c.policy_ref,c.payload_ref,c.approval_consumption_id,c.result_ref,c.scope_kind command_scope_kind,c.scope_id command_scope_id,ar.subject_ref authorization_subject_ref,ar.policy_ref authorization_policy_ref,ar.scope_digest receipt_scope_digest,a.scope_digest audit_scope_digest,a.outcome audit_outcome,a.source_kind audit_source_kind,a.server_sequence,a.approval_ref audit_approval_ref,ar.approval_decision_ref,ac.decision_id baseline_decision_id,ad.request_id baseline_request_id ';
+const receiptJoin = (alias: string) => ` JOIN anvil.commands c ON c.id=${alias}.command_id AND c.project_id=${alias}.project_id JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id JOIN anvil.audit_events a ON a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id LEFT JOIN anvil.approval_consumptions ac ON ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.project_id=c.project_id LEFT JOIN anvil.approval_decisions ad ON ad.id=ac.decision_id AND ad.project_id=c.project_id `;
 const draftsSelect = 'SELECT v.*,d.head_version,d.updated_at' + receiptColumns + 'FROM anvil.baseline_draft_versions v JOIN anvil.baseline_drafts d ON d.project_id=v.project_id AND d.id=v.draft_id' + receiptJoin('v');
 const reviewsSelect = 'SELECT r.*' + receiptColumns + 'FROM anvil.baseline_content_reviews r' + receiptJoin('r');
 // legacy는 receipt가 없으므로 outer join하며 본문을 공개/현재 head로 승격하지 않는다.
-const baselinesSelect = 'SELECT b.*' + receiptColumns + 'FROM anvil.project_baselines b' + receiptJoin('b').replaceAll(' JOIN ', ' LEFT JOIN ');
+const baselinesSelect = 'SELECT b.*' + receiptColumns + 'FROM anvil.project_baselines b' + receiptJoin('b').replaceAll(/(?<!LEFT) JOIN /g, ' LEFT JOIN ');
 const at = async (db: PoolClient): Promise<string> => {
  const value = (await db.query('SELECT transaction_timestamp() AS at')).rows[0]?.at;
  if (!(value instanceof Date) || !Number.isFinite(value.getTime())) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
@@ -39,7 +41,8 @@ export class ProjectBaselines {
  constructor(sources: Pick<ProjectBaselineSources, 'resolve'>, documents: Pick<ProjectDocuments, 'version' | 'originalText'>) { this.sources = sources; this.documents = documents; }
  #envelope(request: ProjectCommand, operation: string, targetId: string | null, expectedVersion: number) {
   if (request.operation !== operation || request.targetId !== targetId || request.expectedVersion !== expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
-  if (request.approvalRef !== null || request.baselineRefs.length) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);
+  if (request.baselineRefs.length) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);
+  if(request.approvalRef!==null)readApprovalRef(request.approvalRef);
  }
  async #basis(db: PoolClient, actor: AuthenticatedIdentity, pid: string, input: BaselineDraftInput) {
   const resolved = await this.sources.resolve(db, actor, pid, input);
@@ -50,18 +53,26 @@ export class ProjectBaselines {
   }
   return { input: resolved.input, sourceBinding: resolved.sourceBinding, evidenceBindings: resolved.evidenceBindings, issues: resolved.issues };
  }
- #receipt(row: any, ref: VersionRef, snapshot: any, operation: string, status: string, payload: unknown, targetId: string | null, expectedVersion: number) {
-  const request = { schemaVersion: 1, projectId: row.project_id, commandId: row.command_external_id, clientId: row.command_client, controlGeneration: Number(row.control_generation), operation, targetId, expectedVersion, baselineRefs: [], approvalRef: null, payload };
+ async #receipt(db:PoolClient,actor:AuthenticatedIdentity,row: any, ref: VersionRef, snapshot: any, operation: string, status: string, payload: unknown, targetId: string | null, expectedVersion: number) {
+  let approvalRef=null,approvalDetails:ApprovalDetails|null=null;
+  if(row.approval_consumption_id!==null){
+   const view=await new ProjectApprovals().read(db,actor,row.project_id,row.baseline_request_id);
+   if(!view.consumption||view.storedStatus!=='CONSUMED'||view.consumption.id!==row.approval_consumption_id||view.consumption.serverCommandId!==row.command_id||view.consumption.requestHash!==row.request_hash||view.consumption.commandId!==row.command_external_id||view.decision?.id!==row.baseline_decision_id||row.approval_decision_ref!==row.baseline_decision_id||!same(view.request.policyRef,row.policy_ref))throw Error('BASELINE_APPROVAL_RECEIPT_INVALID');
+   approvalDetails=view.request.details;approvalRef=readApprovalRef({requestId:view.request.id,decisionId:view.decision.id,scopeDigest:view.request.scopeDigest});
+   if(!same(row.audit_approval_ref,approvalRef)||!same(row.payload_ref,{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(payload)),scopeDigest:approvalRef.scopeDigest}))throw Error('BASELINE_APPROVAL_RECEIPT_INVALID');
+  }else if(row.payload_ref!==null||row.approval_decision_ref!=null||row.audit_approval_ref!=null)throw Error('BASELINE_APPROVAL_RECEIPT_INVALID');
+  const request:ProjectCommand = { schemaVersion: 1, projectId: row.project_id, commandId: row.command_external_id, clientId: row.command_client, controlGeneration: Number(row.control_generation), operation, targetId, expectedVersion, baselineRefs: [], approvalRef, payload:payload as Record<string,unknown> };
+  if(approvalDetails)assertApprovalCandidate(approvalDetails,request,row.command_actor,row.project_id);
   const scope = contentHash(canonicalJson({ projectId: row.project_id, actorId: row.command_actor, clientId: row.command_client, controlGeneration: Number(row.control_generation), requestHash: row.request_hash, policyRef: row.policy_ref, targetRef: ref }));
   if (!isVersionRef(ref) || !uuid(row.created_by) || !uuid(row.client_id) || row.operation !== operation || row.state !== 'APPLIED' || Number(row.expected_version) !== expectedVersion
    || row.command_actor !== row.created_by || row.command_client !== row.client_id || row.command_scope_kind !== 'PROJECT' || row.command_scope_id !== row.project_id
-   || row.approval_consumption_id !== null || row.payload_ref !== null || !same(row.authorization_subject_ref, { kind: 'HUMAN', userId: row.created_by, clientId: row.client_id })
+   || !same(row.authorization_subject_ref, { kind: 'HUMAN', userId: row.created_by, clientId: row.client_id })
    || !same(row.authorization_policy_ref, row.policy_ref) || row.receipt_scope_digest !== scope || row.audit_scope_digest !== scope || row.audit_outcome !== 'APPLIED' || row.audit_source_kind !== 'HUMAN_COMMAND'
    || !Number.isSafeInteger(Number(row.server_sequence)) || Number(row.server_sequence) < 1 || row.request_hash !== contentHash(canonicalJson(request))
    || contentHash(canonicalJson(snapshot)) !== ref.contentHash || row.result_ref?.status !== 'APPLIED' || row.result_ref.projectId !== row.project_id || row.result_ref.targetId !== ref.id || row.result_ref.version !== ref.version
    || row.result_ref.data?.status !== status || !same(row.result_ref.data.ref, ref) || !same(row.result_ref.data.snapshot, snapshot)) throw Error('BASELINE_RECEIPT_INVALID');
  }
- #draft(row: any, pid: string, id: string, version: number) {
+ async #draft(db:PoolClient,actor:AuthenticatedIdentity,row: any, pid: string, id: string, version: number) {
   try {
    const snapshot = row.version_json, ref = { id, version, contentHash: row.content_hash }, analysis = readBaselineDraftInput(snapshot.input);
    if (row.project_id !== pid || row.draft_id !== id || Number(row.version) !== version || Number(row.head_version) < version
@@ -70,7 +81,7 @@ export class ProjectBaselines {
     || !same(snapshot.issues, analysis.issues) || !same(snapshot.recordedBy, { kind: 'HUMAN', userId: row.created_by }) || !timestamp(snapshot.recordedAt)
     || (version === 1 ? analysis.input.baseRef !== null : !analysis.input.baseRef || analysis.input.baseRef.id !== id || analysis.input.baseRef.version !== version - 1)
     || !same(snapshot.evidenceBindings, analysis.input.items.map(item => ({ itemId: item.itemId, evidenceRefs: item.evidenceRefs })))) throw Error();
-   this.#receipt(row, ref, snapshot, 'saveBaselineDraft', 'BASELINE_DRAFT_STORED', analysis.input, version === 1 ? null : id, version - 1);
+   await this.#receipt(db,actor,row, ref, snapshot, 'saveBaselineDraft', 'BASELINE_DRAFT_STORED', analysis.input, version === 1 ? null : id, version - 1);
    return { projectId: pid, ref, snapshot: structuredClone(snapshot) as BaselineDraftSnapshot, headVersion: Number(row.head_version) };
   } catch { throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503); }
  }
@@ -80,7 +91,7 @@ export class ProjectBaselines {
   const rows = (await db.query(draftsSelect + 'WHERE v.project_id=$1 AND v.draft_id=$2 AND v.version=$3', [pid, id, version])).rows;
   if (!rows.length) throw new AuthFailure('NOT_FOUND', 404);
   if (rows.length !== 1) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
-  return this.#draft(rows[0], pid, id, version);
+  return this.#draft(db,actor,rows[0], pid, id, version);
  }
  async #currentDraft(db: PoolClient, actor: AuthenticatedIdentity, pid: string, ref: VersionRef, checkBasis = true) {
   const row = (await db.query('SELECT head_version FROM anvil.baseline_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [pid, ref.id])).rows[0];
@@ -131,23 +142,23 @@ export class ProjectBaselines {
   reviewed.items = reviewed.items.map(item => ({ ...item, evidenceRefs: input.items.find(candidate => candidate.itemId === item.itemId)!.evidenceRefs }));
   await this.#basis(db, actor, pid, reviewed);
  }
- #review(row: any) {
+ async #review(db:PoolClient,actor:AuthenticatedIdentity,row: any) {
   try {
    const snapshot = row.review_json, input = readBaselineContentReview(snapshot.input), ref = { id: row.review_id, version: 1, contentHash: row.content_hash };
    if (!exact(snapshot, ['input', 'reviewedBy', 'reviewedAt', 'independence']) || !same(input.draftRef, { id: row.draft_id, version: Number(row.draft_version), contentHash: row.draft_hash })
     || !same(snapshot.reviewedBy, { kind: 'HUMAN', userId: row.created_by }) || !timestamp(snapshot.reviewedAt) || snapshot.independence !== 'NOT_CLAIMED') throw Error();
-   this.#receipt(row, ref, snapshot, 'reviewBaselineContent', 'BASELINE_CONTENT_REVIEWED', input, input.draftRef.id, input.draftRef.version);
+   await this.#receipt(db,actor,row, ref, snapshot, 'reviewBaselineContent', 'BASELINE_CONTENT_REVIEWED', input, input.draftRef.id, input.draftRef.version);
    return { ref, snapshot: structuredClone(snapshot) as BaselineReviewSnapshot, serverSequence: Number(row.server_sequence) };
   } catch { throw new AuthFailure('BASELINE_REVIEW_INTEGRITY_FAILED', 503); }
  }
- async #reviews(db: PoolClient, pid: string, ref: VersionRef) {
-  return (await db.query(reviewsSelect + 'WHERE r.project_id=$1 AND r.draft_id=$2 AND r.draft_version=$3 ORDER BY a.server_sequence DESC LIMIT 201', [pid, ref.id, ref.version])).rows.map(row => this.#review(row));
+ async #reviews(db: PoolClient, actor:AuthenticatedIdentity,pid: string, ref: VersionRef) {
+  return Promise.all((await db.query(reviewsSelect + 'WHERE r.project_id=$1 AND r.draft_id=$2 AND r.draft_version=$3 ORDER BY a.server_sequence DESC LIMIT 201', [pid, ref.id, ref.version])).rows.map(row => this.#review(db,actor,row)));
  }
- async #referencedReview(db: PoolClient, pid: string, ref: VersionRef) {
+ async #referencedReview(db: PoolClient, actor:AuthenticatedIdentity,pid: string, ref: VersionRef) {
   const rows = (await db.query(reviewsSelect + 'WHERE r.project_id=$1 AND r.review_id=$2', [pid, ref.id])).rows;
   if (!rows.length) throw new AuthFailure('NOT_FOUND', 404);
   if (rows.length !== 1) throw new AuthFailure('BASELINE_REVIEW_INTEGRITY_FAILED', 503);
-  const stored = this.#review(rows[0]);
+  const stored = await this.#review(db,actor,rows[0]);
   if (!same(stored.ref, ref)) throw new AuthFailure('VERSION_CONFLICT', 409);
   return stored;
  }
@@ -165,10 +176,10 @@ export class ProjectBaselines {
   const input = readBaselineConfirmation(request.payload); this.#envelope(request, 'confirmBaseline', input.draftRef.id, input.draftRef.version);
   const pid = request.projectId, draft = await this.#currentDraft(db, actor, pid, input.draftRef);
   if ((await db.query(baselinesSelect + 'WHERE b.project_id=$1 AND b.draft_id=$2 AND b.draft_version=$3', [pid, input.draftRef.id, input.draftRef.version])).rows.length) throw new AuthFailure('VERSION_CONFLICT', 409);
-  const latest = (await this.#reviews(db, pid, input.draftRef))[0];
+  const latest = (await this.#reviews(db, actor,pid, input.draftRef))[0];
   if (!latest || latest.snapshot.input.outcome !== 'ACCEPTED' || !input.reviewRefs.some(ref => same(ref, latest.ref))) throw new AuthFailure('BASELINE_REVIEW_REQUIRED', 422);
   for (const ref of input.reviewRefs) {
-   const review = await this.#referencedReview(db, pid, ref);
+   const review = await this.#referencedReview(db, actor,pid, ref);
    if (!same(review.snapshot.input.draftRef, input.draftRef) || review.snapshot.input.outcome !== 'ACCEPTED') throw new AuthFailure('BASELINE_REVIEW_REQUIRED', 422);
    this.#reviewAlignment(review.snapshot.input, draft.snapshot.input, review.snapshot.reviewedAt);
    await this.#reviewSources(db, actor, pid, draft.snapshot.input, review.snapshot.input);
@@ -209,15 +220,15 @@ export class ProjectBaselines {
     || snapshot.schemaVersion !== 1 || snapshot.kind !== 'FEATURE_STATUS_V1' || snapshot.contentConfirmed !== true || Object.keys(flags).some(key => snapshot[key] !== false)
     || !same(snapshot.adoptedBy, { kind: 'HUMAN', userId: row.created_by }) || !timestamp(snapshot.adoptedAt) || !(snapshot.previousBaselineRef === null || isVersionRef(snapshot.previousBaselineRef))
     || row.draft_id !== input.draftRef.id || Number(row.draft_version) !== input.draftRef.version) throw Error();
-   this.#receipt(row, ref, snapshot, 'confirmBaseline', 'FEATURE_BASELINE_ADOPTED', input, input.draftRef.id, input.draftRef.version);
+   await this.#receipt(db,actor,row, ref, snapshot, 'confirmBaseline', 'FEATURE_BASELINE_ADOPTED', input, input.draftRef.id, input.draftRef.version);
    const draft = await this.#loadDraft(db, actor, pid, input.draftRef.id, input.draftRef.version);
    if (!same(draft.ref, input.draftRef) || !same(draft.snapshot.input, snapshot.input) || !same(draft.snapshot.sourceBinding, snapshot.sourceBinding) || !same(draft.snapshot.evidenceBindings, snapshot.evidenceBindings)) throw Error();
    const source = (snapshot.input as BaselineDraftInput).source.snapshotRef;
    if (row.source_snapshot_ref !== (source?.id ?? null) || (row.source_snapshot_version === null ? null : Number(row.source_snapshot_version)) !== (source?.version ?? null) || (row.source_snapshot_hash ?? null) !== (source?.contentHash ?? null)) throw Error();
-   for (const reviewRef of input.reviewRefs) { const review = await this.#referencedReview(db, pid, reviewRef); if (!same(review.snapshot.input.draftRef, draft.ref) || review.snapshot.input.outcome !== 'ACCEPTED') throw Error(); this.#reviewAlignment(review.snapshot.input, draft.snapshot.input, review.snapshot.reviewedAt); evidenceReviews.push(review.snapshot.input); }
+   for (const reviewRef of input.reviewRefs) { const review = await this.#referencedReview(db, actor,pid, reviewRef); if (!same(review.snapshot.input.draftRef, draft.ref) || review.snapshot.input.outcome !== 'ACCEPTED') throw Error(); this.#reviewAlignment(review.snapshot.input, draft.snapshot.input, review.snapshot.reviewedAt); evidenceReviews.push(review.snapshot.input); }
    stored = { ref, snapshot: structuredClone(snapshot) };
   } catch { throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503); }
-  const latest = (await this.#reviews(db, pid, stored.snapshot.draftRef))[0];
+  const latest = (await this.#reviews(db, actor,pid, stored.snapshot.draftRef))[0];
   let currentCheck = await this.#currentCheck(db, actor, pid, stored.snapshot);
   if (currentCheck.state === 'MATCHED_METADATA') try {
    for (const input of evidenceReviews) await this.#reviewSources(db, actor, pid, stored.snapshot.input, input);
@@ -229,7 +240,7 @@ export class ProjectBaselines {
   return { projectId: pid, status: 'FEATURE_STATUS_V1' as const, ...stored, currentCheck, currentContentReviewValid, contentConfirmed: true, ...flags, observedAt: new Date().toISOString() };
  }
  async decision(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number) {
-  const draft = await this.readDraft(db, actor, pid, id, version), reviews = await this.#reviews(db, pid, draft.ref);
+  const draft = await this.readDraft(db, actor, pid, id, version), reviews = await this.#reviews(db, actor,pid, draft.ref);
   const adoptedRows = (await db.query(baselinesSelect + 'WHERE b.project_id=$1 AND b.draft_id=$2 AND b.draft_version=$3', [pid, id, version])).rows;
   if (adoptedRows.length > 1) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
   const adopted = adoptedRows.length ? await this.read(db, actor, pid, adoptedRows[0].id, Number(adoptedRows[0].version)) : null;

@@ -1,0 +1,133 @@
+{
+  "kind": "FN01_BASELINE_ONE_TIME_APPROVAL_SOURCE_MANIFEST",
+  "baseline": "8bd9232e68329cf1e1bee417f2fcb5ef29549dad",
+  "workInstructionSha256": "93029BE781FE39DC5D113D27196BC08837B309AB82320E7195ADC32E11D9BFCA",
+  "files": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "sha256": "A7063A821F7420036BA023E8617E04E6F97B473770FEE70D27B4FB679A96F3AC",
+      "gitBlobSha256": "A7063A821F7420036BA023E8617E04E6F97B473770FEE70D27B4FB679A96F3AC",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "sha256": "BBC7CB8BB8DD7C162C26AAE15E1CB6615E8EF5DA77B050FDEEB8E9462DB7FB99",
+      "gitBlobSha256": "BBC7CB8BB8DD7C162C26AAE15E1CB6615E8EF5DA77B050FDEEB8E9462DB7FB99",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "sha256": "7D959B524F99C9999A73E05868335FA7125B57BDDF3CDE336D686B646B4AC32A",
+      "gitBlobSha256": "7D959B524F99C9999A73E05868335FA7125B57BDDF3CDE336D686B646B4AC32A",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/projects/project-baselines.ts",
+      "sha256": "321025A52A9A090AF0CFBCECBC8EC97C45423EAB4AA384F4B07D6F85850F1F0B",
+      "gitBlobSha256": "1E2E8B36D859FBFFDFE93182DDC4C45124CE60AD9BF0A7AA4B904833F2FD756D",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/project-create/baseline-api.ts",
+      "sha256": "660335F6A6800169849C3DEC3BC707031E5B8EB03E50AFB772C054CF2452CD5D",
+      "gitBlobSha256": "96A0E5EA17FB4AD2DBB3C5F31B1D192056303F5337BEA03C70208DB7906141AC",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/project-create/ProjectBaselinePanel.tsx",
+      "sha256": "EDFF678096C517EECD28252684F1618C9F76C790D8DE797772C8330332072C30",
+      "gitBlobSha256": "F48F8BEA765DCF055DBFB0B9270330388582AC634820D402E760B2EC1D07DABB",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/project-create/baseline-approval.ts",
+      "sha256": "A598D699B80307EEB73CE2F6696B74E4A1F9D417F7AD3C9649F9472830E17346",
+      "gitBlobSha256": "2A468CC888361672F195D8FF8AF167C7A799AE79D0BAB841CD52A01117CDBEB3",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/project-create/BaselineApprovalEditor.tsx",
+      "sha256": "178229ACF6699FD11755C92DF4B4FFD4DC8F1FC704F7EC43DFB271E98A0BCE06",
+      "gitBlobSha256": "30111C2CD2C18DD5607F0BF4BCC0E38559404F193BE2C824FB6A21AEFAC32A90",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "sha256": "36430242874EEBB2A66CB2CFF3841CB7C40C03752539A20D6B234976774D9D52",
+      "gitBlobSha256": "36430242874EEBB2A66CB2CFF3841CB7C40C03752539A20D6B234976774D9D52",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "sha256": "8068F81D4F41942698DECE702610914C0AC236043662A42F998067B4F73D26DF",
+      "gitBlobSha256": "6B120D961DE06BCB64920F6CC82F336401AC903946CBC68D7A482350A01C3920",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "db/migrations/0045_baseline_one_time_approval.sql.pending",
+      "sha256": "AD9B0D917C71E3B5C080F15431ACF64405B433A1E424C236F22A6BAFD2FF2C75",
+      "gitBlobSha256": "9A5C774BA0E51C533619CC884399BEAE2379B87987F59730CEA562B0E5C2FFB3",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN01/baseline-approval-input.test.ts",
+      "sha256": "7A4D55C341AEA508F835446EBA20E9BDE6808DC9DBAFD1730DB86D38096241BB",
+      "gitBlobSha256": "3EE13A0F887EC333AB52252E458651ED79201A1084C0FABBB8D47BF20D0A001F",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN01/baseline-approval-consumption.test.ts",
+      "sha256": "484A012145A577E1C02FC4D7D48C059C1CB4BBEE702A440B146B580E40579D4E",
+      "gitBlobSha256": "3E31260F03260BE38BACE0853922F829189248A52F3BC6D0640C6C10A570F085",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/UI02/baseline-approval-api.test.ts",
+      "sha256": "91B797DBD8E7F4F4BF794D46F8FD4CB89F495C288E1C668AFD48AF6C9489824E",
+      "gitBlobSha256": "1D57C850E6B4BD555B1219BD83218F36350048A2CE7D85BEE5950C64AE11B5B1",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/browser/UI02/baseline-one-time-approval.spec.ts",
+      "sha256": "143622BA94DB7C4A3EC8EF4A394C3FF66C04DFE0EC0CE81CC79E1DFF0134664E",
+      "gitBlobSha256": "FA165C20EE70F9805E3DB745FC04F4B954503A3438351F0BEAFA084864C83CD6",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN01/baseline-command-policy.test.ts",
+      "sha256": "5555D44778EE5E97D29CC4DB4F261A951878DD84EBE545502BA450C3B6E09391",
+      "gitBlobSha256": "6F6FC6B95B38FE60AE789FCA8CFB0B29DA87285A7006052EFB31F31C8941E5A6",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN01/baseline-store.test.ts",
+      "sha256": "0F7BE95B2971EEFF6100A4E0B04059D00DC39ED3DB8A2EDE2A04531DB7FC5100",
+      "gitBlobSha256": "FB9931B272B19E64B561E74D911D0BFF3B037E669F30C5CB649DD10D687C0521",
+      "normalization": "CRLF_TO_LF_ONLY"
+    }
+  ],
+  "verification": {
+    "mainFocusedCommand": "node --test tests/unit/FN01/baseline-approval-input.test.ts tests/unit/FN01/baseline-approval-consumption.test.ts tests/unit/FN01/baseline-command-policy.test.ts tests/unit/FN01/baseline-store.test.ts tests/unit/UI02/baseline-api.test.ts tests/unit/UI02/baseline-approval-api.test.ts tests/unit/UI02/baseline-upload-approval.test.ts tests/unit/FN11/approval-input.test.ts tests/unit/FN16/export-approval-input.test.ts tests/unit/FN16/export-approval-api.test.ts",
+    "mainFocusedPassed": 61,
+    "followupCommand": "node --test tests/unit/UI02/baseline-api.test.ts tests/unit/UI02/baseline-approval-api.test.ts tests/unit/UI02/baseline-upload-approval.test.ts",
+    "followupPassed": 23,
+    "finalAll62SingleRun": false,
+    "actualAppSyntheticApiEdge": {
+      "passed": 1,
+      "durationSeconds": 4.6,
+      "operations": 3,
+      "separateApprovals": 3
+    },
+    "priorAppFailures": [
+      "PRODUCT_CALLBACK_I1",
+      "HEADING_STRICT_LOCATOR",
+      "REVIEW_LABEL_LOCATOR"
+    ],
+    "independentCode": "I1_ADDRESSED_NO_NEW_CI",
+    "independentSql": "C0/I0/M0_STATIC_ONLY",
+    "actualPgSql": "NOT_RUN",
+    "served": "NOT_RUN",
+    "sourceCoreObservation": "NOT_RUN",
+    "userAcceptance": "NOT_RUN"
+  }
+}

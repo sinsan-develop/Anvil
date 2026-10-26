@@ -28,9 +28,8 @@ test('현재 명시 AUTO만 후보 writer를 호출하고 동일 command replay�
  f.request.payload.reason = '다른 payload'; await assert.rejects(f.run(), /IDEMPOTENCY_CONFLICT/); assert.equal(f.calls(), 1);
 });
 test('REQUIRE_APPROVAL·의미 없는 approvalRef·DENY/만료/다른 client/옛 제어 세대에서 후보 writer 부작용0이다', async () => {
- for (const mutate of [(f: any) => f.disposition('REQUIRE_APPROVAL'), (f: any) => { f.request.approvalRef = { fake: true }; }]) {
-  const f = fixture(); mutate(f); await assert.rejects(f.run(), /BASELINE_APPROVAL_NOT_CONNECTED/); assert.equal(f.calls(), 0);
- }
+ const required=fixture();required.disposition('REQUIRE_APPROVAL');await assert.rejects(required.run(),{message:'APPROVAL_REQUIRED',statusCode:412});assert.equal(required.calls(),0);
+ const extra=fixture();extra.request.approvalRef={fake:true};await assert.rejects(extra.run(),{message:'APPROVAL_NOT_REQUIRED',statusCode:422});assert.equal(extra.calls(),0);
  for (const mutate of [(f: any) => f.disposition('DENY'), (f: any) => f.expire(), (f: any) => { f.request.clientId = id(99); }, (f: any) => f.control({ actor_id: actor.actorId, client_id: actor.clientId, generation: 2, revoked_at: null })]) {
   const f = fixture(); mutate(f); await assert.rejects(f.run()); assert.equal(f.calls(), 0);
  }

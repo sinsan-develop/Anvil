@@ -1,0 +1,251 @@
+-- FN01/FN11/UI02 기준선 세 연산 forward 후보. 실제 SQL/DB NOT_RUN, 미적용.
+-- 0015의 source/CORE/review/CAS guard를 그대로 보존하며 0044 뒤 wrapper chain만 확장한다.
+CREATE FUNCTION anvil.fn01_baseline_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(anvil.execution_json_shape(s,ARRAY['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])
+ AND s->>'operation' IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline')
+ AND s->>'payloadHash' ~ '^[a-f0-9]{64}$' AND s->'baselineRefs'='[]'::jsonb AND s->'sourceScopes'='[]'::jsonb AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb
+ AND ((s->>'operation'='saveBaselineDraft' AND s->'targetRef'='null'::jsonb AND s->'expectedVersion'='0'::jsonb)
+ OR (anvil.baseline_ref(s->'targetRef') AND s->'expectedVersion'=s->'targetRef'->'version'
+ AND EXISTS(SELECT 1 FROM anvil.baseline_drafts h JOIN anvil.baseline_draft_versions v ON v.project_id=h.project_id AND v.draft_id=h.id AND v.version=h.head_version
+ WHERE h.project_id=pid AND jsonb_build_object('id',h.id,'version',h.head_version,'contentHash',v.content_hash)=s->'targetRef'))),false);
+$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_baseline;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation' IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') THEN anvil.fn01_baseline_approval_target_valid(pid,s)
+ ELSE anvil.connection_candidate_approval_target_before_baseline(pid,s) END;
+$$;
+CREATE FUNCTION anvil.fn01_baseline_approval_execution_valid(pid uuid,cid uuid,did uuid,consumed boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE payload jsonb;op text;target jsonb;expected bigint;snapshot jsonb;
+BEGIN
+ SELECT c.operation,c.result_ref->'data'->'snapshot' INTO op,snapshot FROM anvil.commands c WHERE c.id=cid AND c.project_id=pid;
+ IF op NOT IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') OR snapshot IS NULL THEN RETURN false;END IF;
+ payload=CASE WHEN op='confirmBaseline' THEN jsonb_build_object('draftRef',snapshot->'draftRef','reviewRefs',snapshot->'reviewRefs','reason',snapshot->'reason','acknowledged',snapshot->'acknowledged') ELSE snapshot->'input' END;
+ target=CASE WHEN op='saveBaselineDraft' THEN payload->'baseRef' ELSE payload->'draftRef' END;
+ expected=CASE WHEN target='null'::jsonb THEN 0 ELSE (target->>'version')::bigint END;
+ RETURN EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=did
+ JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=did AND d.decision='APPROVE' AND d.request_version=1
+ JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id AND r.scope_digest=d.scope_digest AND r.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=pid AND p.archived_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=pid AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=pid AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.project_id=pid AND c.id=cid AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation=op AND c.state='APPLIED'
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND (target='null'::jsonb AND op='saveBaselineDraft' AND expected=0 OR anvil.baseline_ref(target))
+ AND r.status=CASE WHEN consumed THEN 'CONSUMED' ELSE 'APPROVED' END AND r.version=CASE WHEN consumed THEN 3 ELSE 2 END
+ AND r.expires_at>clock_timestamp() AND c.approval_consumption_id IS NOT NULL AND c.expected_version=expected
+ AND c.command_id=r.candidate_command_id AND c.actor_id=r.created_by AND c.client_id=r.client_id
+ AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND r.request_json->>'controlGeneration'=c.control_generation::text AND r.action_scope_json->>'controlGeneration'=c.control_generation::text
+ AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND r.action_scope_json->>'operation'=op AND r.action_scope_json->'targetRef'=target AND r.action_scope_json->'expectedVersion'=to_jsonb(expected)
+ AND r.scope_digest=anvil.execution_json_hash(r.action_scope_json)
+ AND r.action_scope_json->>'payloadHash'=anvil.execution_json_hash(payload)
+ AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation
+ AND d.decision_json->'policyRef'=c.policy_ref
+ AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.execution_json_hash(payload),'scopeDigest',r.scope_digest)
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'operation',op,'targetId',target->>'id','expectedVersion',expected,'baselineRefs','[]'::jsonb,
+ 'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',payload))
+ AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'projectId'=pid::text
+ AND c.result_ref->>'status'='APPLIED'
+ AND c.result_ref->'data'->>'status'=CASE op WHEN 'saveBaselineDraft' THEN 'BASELINE_DRAFT_STORED' WHEN 'reviewBaselineContent' THEN 'BASELINE_CONTENT_REVIEWED' ELSE 'FEATURE_BASELINE_ADOPTED' END
+ AND c.result_ref->'data'->'ref'->>'id'=c.result_ref->>'targetId' AND c.result_ref->'data'->'ref'->'version'=c.result_ref->'version'
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id
+ AND a.outcome='APPLIED' AND a.scope_digest=ar.scope_digest AND a.policy_ref=c.policy_ref AND a.target_ref=c.result_ref->'data'->'ref'
+ AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.source_kind='HUMAN_COMMAND'
+ AND a.approval_ref=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest))
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+ WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+ AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='REQUIRE_APPROVAL' AND rule->'limitPolicyRef'='null'::jsonb AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (NOT consumed OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac
+ WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.decision_id=did
+ AND ac.scope_digest=r.scope_digest AND ac.policy_id=pp.id AND ac.policy_version=pp.head_version)));
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_baseline;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=did JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE c.project_id=pid AND c.id=cid AND (c.operation IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') OR r.action_scope_json->>'operation' IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline')))
+ THEN anvil.fn01_baseline_approval_execution_valid(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_baseline(pid,cid,did) END;
+$$;
+CREATE OR REPLACE FUNCTION anvil.baseline_authorized(pid uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT op IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') AND EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id AND ar.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=c.project_id AND p.archived_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.id::text=current_setting('anvil.command_id',true) AND c.project_id=pid AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation=op AND c.state='APPLIED'
+ AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND (c.approval_consumption_id IS NULL AND c.payload_ref IS NULL AND ar.approval_decision_ref IS NULL OR c.approval_consumption_id IS NOT NULL AND anvil.fn01_baseline_approval_execution_valid(pid,c.id,ar.approval_decision_ref,true))
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest)
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+  WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+  AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op AND rule->>'disposition'=CASE WHEN c.approval_consumption_id IS NULL THEN 'AUTO' ELSE 'REQUIRE_APPROVAL' END AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op AND (rule->>'disposition'='DENY' OR c.approval_consumption_id IS NULL AND rule->>'disposition'='REQUIRE_APPROVAL') AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ );
+$$;
+CREATE OR REPLACE FUNCTION anvil.guard_feature_baseline() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cmd anvil.commands%ROWTYPE;d anvil.baseline_draft_versions%ROWTYPE;b anvil.project_baselines%ROWTYPE;review_record anvil.baseline_content_reviews%ROWTYPE;
+ s jsonb;payload jsonb;ref jsonb;rid uuid;dv bigint;op text;status text;target jsonb;expected bigint;latest jsonb;chosen jsonb;previous jsonb;max_version bigint;scope text;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;END IF;
+ IF TG_OP='DELETE' OR TG_OP='UPDATE' AND TG_TABLE_NAME NOT IN('baseline_drafts','baseline_heads') THEN RAISE EXCEPTION 'FEATURE_BASELINE_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO cmd FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);
+ s=cmd.result_ref->'data'->'snapshot';
+ IF TG_TABLE_NAME IN('baseline_drafts','baseline_draft_versions') THEN
+  op='saveBaselineDraft';status='BASELINE_DRAFT_STORED';
+  IF TG_TABLE_NAME='baseline_drafts' THEN rid=NEW.id;dv=NEW.head_version;
+   IF TG_OP='INSERT' THEN IF dv<>1 THEN RAISE EXCEPTION 'BASELINE_HEAD_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+   ELSIF dv<>OLD.head_version+1 OR to_jsonb(NEW)-ARRAY['head_version','updated_at'] IS DISTINCT FROM to_jsonb(OLD)-ARRAY['head_version','updated_at'] THEN RAISE EXCEPTION 'BASELINE_HEAD_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSE rid=NEW.draft_id;dv=NEW.version;
+   IF NEW.command_id IS DISTINCT FROM cmd.id OR NEW.version_json IS DISTINCT FROM s OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(s),'UTF8')),'hex')
+    OR NOT EXISTS(SELECT 1 FROM anvil.baseline_drafts h WHERE h.project_id=NEW.project_id AND h.id=rid AND h.head_version=dv) THEN RAISE EXCEPTION 'BASELINE_EXACT_DRAFT_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+  payload=s->'input';expected=dv-1;target=CASE WHEN dv=1 THEN 'null'::jsonb ELSE to_jsonb(rid) END;
+  IF (TG_TABLE_NAME='baseline_draft_versions' OR TG_OP='INSERT') AND (NEW.created_by IS DISTINCT FROM cmd.actor_id OR NEW.client_id IS DISTINCT FROM cmd.client_id) THEN RAISE EXCEPTION 'BASELINE_CURRENT_WRITER_REQUIRED' USING ERRCODE='42501';END IF;
+  IF NOT anvil.baseline_draft_valid(NEW.project_id,s)
+   OR s->'recordedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id) OR (s->>'recordedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) THEN RAISE EXCEPTION 'BASELINE_VALID_DRAFT_REQUIRED' USING ERRCODE='42501';END IF;
+  IF dv=1 THEN IF payload->'baseRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'BASELINE_HEAD_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSE SELECT * INTO d FROM anvil.baseline_draft_versions WHERE project_id=NEW.project_id AND draft_id=rid AND version=dv-1;
+   IF d.draft_id IS NULL OR payload->'baseRef' IS DISTINCT FROM jsonb_build_object('id',rid,'version',dv-1,'contentHash',d.content_hash) THEN RAISE EXCEPTION 'BASELINE_HEAD_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+  ref=jsonb_build_object('id',rid,'version',dv,'contentHash',encode(sha256(convert_to(anvil.assignment_draft_canonical(s),'UTF8')),'hex'));
+ ELSIF TG_TABLE_NAME='baseline_content_reviews' THEN
+  op='reviewBaselineContent';status='BASELINE_CONTENT_REVIEWED';rid=NEW.draft_id;dv=NEW.draft_version;expected=dv;target=to_jsonb(rid);payload=s->'input';
+  SELECT * INTO d FROM anvil.baseline_draft_versions WHERE project_id=NEW.project_id AND draft_id=rid AND version=dv;
+  IF NEW.command_id IS DISTINCT FROM cmd.id OR NEW.created_by IS DISTINCT FROM cmd.actor_id OR NEW.client_id IS DISTINCT FROM cmd.client_id OR NEW.review_json IS DISTINCT FROM s OR d.draft_id IS NULL OR NEW.draft_hash IS DISTINCT FROM d.content_hash
+   OR NOT EXISTS(SELECT 1 FROM anvil.baseline_drafts h WHERE h.project_id=NEW.project_id AND h.id=rid AND h.head_version=dv)
+   OR payload->'draftRef' IS DISTINCT FROM jsonb_build_object('id',rid,'version',dv,'contentHash',d.content_hash) OR NOT anvil.baseline_draft_valid(NEW.project_id,d.version_json)
+   OR NOT anvil.baseline_review_valid(NEW.project_id,s,d.version_json) OR s->'reviewedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+   OR (s->>'reviewedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(s),'UTF8')),'hex') THEN RAISE EXCEPTION 'BASELINE_EXACT_REVIEW_REQUIRED' USING ERRCODE='42501';END IF;
+  ref=jsonb_build_object('id',NEW.review_id,'version',1,'contentHash',NEW.content_hash);
+ ELSIF TG_TABLE_NAME='project_baselines' THEN
+  op='confirmBaseline';status='FEATURE_BASELINE_ADOPTED';rid=NEW.draft_id;dv=NEW.draft_version;expected=dv;target=to_jsonb(rid);
+  SELECT * INTO d FROM anvil.baseline_draft_versions WHERE project_id=NEW.project_id AND draft_id=rid AND version=dv;
+  SELECT jsonb_build_object('id',baseline_id,'version',baseline_version,'contentHash',baseline_hash) INTO previous FROM anvil.baseline_heads WHERE project_id=NEW.project_id;
+  SELECT COALESCE(MAX(version),0)+1 INTO max_version FROM anvil.project_baselines WHERE project_id=NEW.project_id;
+  IF NEW.baseline_kind IS DISTINCT FROM 'FEATURE_STATUS_V1' OR NEW.command_id IS DISTINCT FROM cmd.id OR NEW.created_by IS DISTINCT FROM cmd.actor_id OR NEW.client_id IS DISTINCT FROM cmd.client_id OR d.draft_id IS NULL
+   OR NEW.version IS DISTINCT FROM max_version OR NEW.content_json IS DISTINCT FROM s OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(s),'UTF8')),'hex')
+   OR NOT EXISTS(SELECT 1 FROM anvil.baseline_drafts h WHERE h.project_id=NEW.project_id AND h.id=rid AND h.head_version=dv)
+   OR NOT anvil.baseline_keys(s,ARRAY['schemaVersion','kind','draftRef','input','sourceBinding','evidenceBindings','reviewRefs','previousBaselineRef','reason','acknowledged','adoptedBy','adoptedAt','contentConfirmed','sourceAuthorizationVerified','coverageVerified','executionAuthorized','dispatchPerformed'])
+   OR s->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR s->>'kind' IS DISTINCT FROM 'FEATURE_STATUS_V1' OR s->'draftRef' IS DISTINCT FROM jsonb_build_object('id',rid,'version',dv,'contentHash',d.content_hash)
+   OR s->'input' IS DISTINCT FROM d.version_json->'input' OR s->'sourceBinding' IS DISTINCT FROM d.version_json->'sourceBinding' OR s->'evidenceBindings' IS DISTINCT FROM d.version_json->'evidenceBindings'
+   OR s->'previousBaselineRef' IS DISTINCT FROM COALESCE(previous,'null'::jsonb) OR s->'acknowledged' IS DISTINCT FROM 'true'::jsonb OR s->'contentConfirmed' IS DISTINCT FROM 'true'::jsonb
+   OR s->'sourceAuthorizationVerified' IS DISTINCT FROM 'false'::jsonb OR s->'coverageVerified' IS DISTINCT FROM 'false'::jsonb OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+   OR NOT anvil.baseline_text(s->'reason') OR NOT anvil.baseline_sensitive_free(s) OR octet_length(anvil.assignment_draft_canonical(s))>2097152
+   OR s->'adoptedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id) OR (s->>'adoptedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+   OR NOT anvil.baseline_draft_valid(NEW.project_id,d.version_json) OR jsonb_typeof(s->'reviewRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'reviewRefs') NOT BETWEEN 1 AND 200
+   OR NEW.source_snapshot_ref::text IS DISTINCT FROM s->'input'->'source'->'snapshotRef'->>'id' OR to_jsonb(NEW.source_snapshot_version) IS DISTINCT FROM NULLIF(s->'input'->'source'->'snapshotRef'->'version','null'::jsonb)
+   OR NEW.source_snapshot_hash IS DISTINCT FROM s->'input'->'source'->'snapshotRef'->>'contentHash' THEN RAISE EXCEPTION 'BASELINE_CONTENT_ADOPTION_REQUIRED' USING ERRCODE='42501';END IF;
+  SELECT jsonb_build_object('id',r.review_id,'version',1,'contentHash',r.content_hash) INTO latest FROM anvil.baseline_content_reviews r JOIN anvil.audit_events a ON a.project_id=r.project_id AND a.command_id=r.command_id AND a.outcome='APPLIED'
+   WHERE r.project_id=NEW.project_id AND r.draft_id=rid AND r.draft_version=dv ORDER BY a.server_sequence DESC LIMIT 1;
+  IF latest IS NULL OR NOT (s->'reviewRefs') @> jsonb_build_array(latest) OR (SELECT count(DISTINCT value) FROM jsonb_array_elements(s->'reviewRefs'))<>jsonb_array_length(s->'reviewRefs') THEN RAISE EXCEPTION 'BASELINE_LATEST_REVIEW_REQUIRED' USING ERRCODE='42501';END IF;
+  FOR chosen IN SELECT value FROM jsonb_array_elements(s->'reviewRefs') LOOP
+   SELECT * INTO review_record FROM anvil.baseline_content_reviews WHERE project_id=NEW.project_id AND review_id::text=chosen->>'id';
+   IF review_record.review_id IS NULL OR chosen IS DISTINCT FROM jsonb_build_object('id',review_record.review_id,'version',1,'contentHash',review_record.content_hash) OR review_record.draft_id IS DISTINCT FROM rid OR review_record.draft_version IS DISTINCT FROM dv OR review_record.draft_hash IS DISTINCT FROM d.content_hash
+    OR review_record.review_json->'input'->>'outcome' IS DISTINCT FROM 'ACCEPTED' OR NOT anvil.baseline_review_valid(NEW.project_id,review_record.review_json,d.version_json) OR review_record.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(review_record.review_json),'UTF8')),'hex')
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands rc JOIN anvil.audit_events ra ON ra.project_id=rc.project_id AND ra.command_id=rc.id AND ra.outcome='APPLIED' WHERE rc.id=review_record.command_id AND rc.project_id=NEW.project_id AND rc.operation='reviewBaselineContent' AND rc.state='APPLIED' AND rc.result_ref->'data'->'ref'=chosen AND rc.result_ref->'data'->'snapshot'=review_record.review_json) THEN RAISE EXCEPTION 'BASELINE_ACCEPTED_REVIEW_REQUIRED' USING ERRCODE='42501';END IF;
+  END LOOP;
+  payload=jsonb_build_object('draftRef',s->'draftRef','reviewRefs',s->'reviewRefs','reason',s->'reason','acknowledged',true);
+  ref=jsonb_build_object('id',NEW.id,'version',NEW.version,'contentHash',NEW.content_hash);
+ ELSIF TG_TABLE_NAME='baseline_heads' THEN
+  op='confirmBaseline';status='FEATURE_BASELINE_ADOPTED';
+  SELECT * INTO b FROM anvil.project_baselines WHERE project_id=NEW.project_id AND id=NEW.baseline_id AND version=NEW.baseline_version;
+  IF b.id IS NULL OR b.baseline_kind IS DISTINCT FROM 'FEATURE_STATUS_V1' OR b.command_id IS DISTINCT FROM cmd.id OR b.content_hash IS DISTINCT FROM NEW.baseline_hash THEN RAISE EXCEPTION 'BASELINE_EXPLICIT_HEAD_REQUIRED' USING ERRCODE='42501';END IF;
+  IF TG_OP='UPDATE' THEN previous=jsonb_build_object('id',OLD.baseline_id,'version',OLD.baseline_version,'contentHash',OLD.baseline_hash);ELSE previous='null'::jsonb;END IF;
+  IF s->'previousBaselineRef' IS DISTINCT FROM previous OR s IS DISTINCT FROM b.content_json THEN RAISE EXCEPTION 'BASELINE_EXPLICIT_HEAD_REQUIRED' USING ERRCODE='42501';END IF;
+  rid=b.draft_id;dv=b.draft_version;expected=dv;target=to_jsonb(rid);payload=jsonb_build_object('draftRef',s->'draftRef','reviewRefs',s->'reviewRefs','reason',s->'reason','acknowledged',true);
+  ref=jsonb_build_object('id',NEW.baseline_id,'version',NEW.baseline_version,'contentHash',NEW.baseline_hash);
+ ELSE RAISE EXCEPTION 'BASELINE_TABLE_INVALID' USING ERRCODE='42501';END IF;
+ scope=encode(sha256(convert_to(anvil.assignment_draft_canonical(jsonb_build_object('projectId',NEW.project_id,'actorId',cmd.actor_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,'requestHash',cmd.request_hash,'policyRef',cmd.policy_ref,'targetRef',ref)),'UTF8')),'hex');
+ IF cmd.id IS NULL OR NOT anvil.baseline_authorized(NEW.project_id,op) OR cmd.expected_version IS DISTINCT FROM expected
+  OR cmd.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR cmd.result_ref->>'projectId' IS DISTINCT FROM NEW.project_id::text OR cmd.result_ref->>'targetId' IS DISTINCT FROM ref->>'id' OR cmd.result_ref->'version' IS DISTINCT FROM ref->'version'
+  OR cmd.result_ref->'data'->>'status' IS DISTINCT FROM status OR cmd.result_ref->'data'->'ref' IS DISTINCT FROM ref
+  OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=cmd.id AND ar.id=cmd.authorization_receipt_id AND ar.scope_digest=scope)
+  OR cmd.request_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(jsonb_build_object('schemaVersion',1,'projectId',NEW.project_id,'commandId',cmd.command_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,'operation',op,'targetId',target,'expectedVersion',expected,'baselineRefs','[]'::jsonb,'approvalRef',COALESCE((SELECT jsonb_build_object('requestId',d.request_id,'decisionId',d.id,'scopeDigest',ac.scope_digest) FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id WHERE ac.project_id=cmd.project_id AND ac.command_id=cmd.id AND ac.id=cmd.approval_consumption_id),'null'::jsonb),'payload',payload)),'UTF8')),'hex') THEN RAISE EXCEPTION 'BASELINE_CURRENT_EXACT_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE FUNCTION anvil.fn01_baseline_approval_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;c anvil.commands;did uuid;matched boolean;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_TABLE_NAME='commands' THEN pid=NEW.project_id;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN pid=NEW.scope_id;cid=NEW.command_id;
+ ELSE pid=NEW.project_id;cid=NEW.command_id;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=pid;
+ IF c.operation IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') AND c.approval_consumption_id IS NOT NULL THEN
+  SELECT decision_id INTO did FROM anvil.approval_consumptions WHERE project_id=pid AND id=c.approval_consumption_id AND command_id=cid;
+  matched=CASE c.operation
+   WHEN 'saveBaselineDraft' THEN EXISTS(SELECT 1 FROM anvil.baseline_draft_versions v WHERE v.project_id=pid AND v.command_id=cid AND v.version_json=c.result_ref->'data'->'snapshot' AND jsonb_build_object('id',v.draft_id,'version',v.version,'contentHash',v.content_hash)=c.result_ref->'data'->'ref')
+   WHEN 'reviewBaselineContent' THEN EXISTS(SELECT 1 FROM anvil.baseline_content_reviews v WHERE v.project_id=pid AND v.command_id=cid AND v.review_json=c.result_ref->'data'->'snapshot' AND jsonb_build_object('id',v.review_id,'version',1,'contentHash',v.content_hash)=c.result_ref->'data'->'ref')
+   ELSE EXISTS(SELECT 1 FROM anvil.project_baselines v JOIN anvil.baseline_heads h ON h.project_id=v.project_id AND h.baseline_id=v.id AND h.baseline_version=v.version AND h.baseline_hash=v.content_hash WHERE v.project_id=pid AND v.command_id=cid AND v.baseline_kind='FEATURE_STATUS_V1' AND v.content_json=c.result_ref->'data'->'snapshot' AND jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash)=c.result_ref->'data'->'ref') END;
+  IF did IS NULL OR matched IS DISTINCT FROM true OR anvil.fn01_baseline_approval_execution_valid(pid,cid,did,true) IS DISTINCT FROM true THEN RAISE EXCEPTION 'BASELINE_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER fn01_baseline_commands_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_authorization_receipts_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_approval_consumptions_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_audit_events_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_baseline_draft_versions_complete AFTER INSERT ON anvil.baseline_draft_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_baseline_content_reviews_complete AFTER INSERT ON anvil.baseline_content_reviews DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE CONSTRAINT TRIGGER fn01_baseline_project_baselines_complete AFTER INSERT ON anvil.project_baselines DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_complete();
+CREATE FUNCTION anvil.fn01_baseline_approval_command_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE protected_old boolean;protected_new boolean=false;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN
+  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+ END IF;
+ protected_old=OLD.operation IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') AND (
+  OLD.approval_consumption_id IS NOT NULL OR OLD.payload_ref IS NOT NULL
+  OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=OLD.id AND ar.approval_decision_ref IS NOT NULL)
+  OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.command_id=OLD.id));
+ IF TG_OP='UPDATE' THEN
+  protected_new=NEW.operation IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') AND (
+   NEW.approval_consumption_id IS NOT NULL OR NEW.payload_ref IS NOT NULL
+   OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=NEW.id AND ar.approval_decision_ref IS NOT NULL)
+   OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.command_id=NEW.id));
+ END IF;
+ IF COALESCE(protected_old,false) OR COALESCE(protected_new,false)
+ THEN RAISE EXCEPTION 'BASELINE_APPROVAL_COMMAND_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn01_baseline_approval_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_command_immutable();
+
+-- 최종 command의 소비/receipt/감사를 나중에 수정하거나 지우는 우회도 차단한다.
+CREATE FUNCTION anvil.fn01_baseline_approval_link_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE old_command uuid;new_command uuid;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;END IF;
+ old_command=OLD.command_id;IF TG_OP='UPDATE' THEN new_command=NEW.command_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id IN(old_command,new_command) AND c.operation IN('saveBaselineDraft','reviewBaselineContent','confirmBaseline') AND (c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL))
+ THEN RAISE EXCEPTION 'BASELINE_APPROVAL_LINK_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn01_baseline_consumption_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_link_immutable();
+CREATE TRIGGER fn01_baseline_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_link_immutable();
+CREATE TRIGGER fn01_baseline_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn01_baseline_approval_link_immutable();

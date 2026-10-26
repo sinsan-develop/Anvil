@@ -34,12 +34,12 @@ test('미검토·뒤의 REWORK·다른항목/분류·옛 head는 채택하지 �
  await assert.rejects(confirm(f, draft, [accepted]), /BASELINE_REVIEW_REQUIRED/);
  f.drafts.get(draft.id).head_version = 2; await assert.rejects(review(f, draft), /VERSION_CONFLICT/);
 });
-test('현재 원문 거절/변경·다른 주체·승인 미연결·변조 receipt를 통과시키지 않는다', async () => {
+test('현재 원문 거절/변경·다른 주체·잘못된 승인 참조·변조 receipt를 통과시키지 않는다', async () => {
  const f = fixture(), draft = (await save(f)).data.ref;
  f.sourceError(new AuthFailure('ARTIFACT_QUARANTINED', 412)); const read = await f.store.readDraft(f.db, actor, pid, draft.id, 1); assert.equal(read.currentCheck.state, 'UNAVAILABLE');
  await assert.rejects(review(f, draft), /ARTIFACT_QUARANTINED/); f.sourceError(null); f.sourceChanged();
  assert.equal((await f.store.readDraft(f.db, actor, pid, draft.id, 1)).currentCheck.state, 'CHANGED'); await assert.rejects(review(f, draft), /BASELINE_SOURCE_CHANGED/);
- const approval = baselineCommand('saveBaselineDraft', baselineInput()); approval.approvalRef = { fake: true }; await assert.rejects(f.store.save(f.db, actor, approval, policy), /BASELINE_APPROVAL_NOT_CONNECTED/);
+ const approval = baselineCommand('saveBaselineDraft', baselineInput()); approval.approvalRef = { fake: true }; await assert.rejects(f.store.save(f.db, actor, approval, policy), {message:'APPROVAL_REFERENCE_INVALID',statusCode:422});
  const row = f.versions.get(f.key(draft.id, 1)); f.commands.get(row.command_id).command_client = id(99); await assert.rejects(f.store.readDraft(f.db, actor, pid, draft.id, 1), /BASELINE_INTEGRITY_FAILED/);
 });
 test('격리된 옛 근거는 이력으로 보존하고 이를 제거한 새 초안 개정은 막지 않는다', async () => {

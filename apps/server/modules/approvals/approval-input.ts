@@ -32,6 +32,10 @@ export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand
   let payload;try{payload=readDocumentSourceLinkInput('detachDocumentSource',c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(canonicalJson(s.targetRef)!==canonicalJson(payload.sourceLinkRef)||s.expectedVersion!==1)throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  }
+ if(['saveBaselineDraft','reviewBaselineContent','confirmBaseline'].includes(s.operation)){
+  const target=s.operation==='saveBaselineDraft'?c.payload.baseRef:c.payload.draftRef;
+  if(!((target===null&&s.operation==='saveBaselineDraft')||isVersionRef(target))||canonicalJson(s.targetRef)!==canonicalJson(target))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+ }
  if(c.projectId!==projectId||c.commandId!==details.candidateCommandId||s.requestedSubjectRef.kind!=='HUMAN'||s.requestedSubjectRef.userId!==actorId||s.requestedSubjectRef.clientId!==c.clientId||s.controlGeneration!==c.controlGeneration||s.operation!==c.operation||s.expectedVersion!==c.expectedVersion||(s.targetRef?.id??null)!==c.targetId||canonicalJson(s.baselineRefs)!==canonicalJson(c.baselineRefs)||s.payloadHash!==contentHash(canonicalJson(c.payload)))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
 }
 export function readApprovalDecision(value:unknown):ApprovalDecisionInput{
