@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI06_IMPORT_UPLOAD_APPROVAL_ROUND1_GREEN",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui06-import-upload-approval-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T11:39:37.0428721Z",
+    "expiresAtUtc": "2026-10-26T12:09:37.0428721Z",
+    "configSha256": "CD2C6866C8E8DD936D3DFE7318F06A15FC24EEDE65399668828D5AD111E9BA5F",
+    "phase": "ROUND1_GREEN"
+  },
+  "execution": {
+    "startTool": "841718",
+    "completionTool": "c60c78",
+    "command": "node node_modules/@playwright/test/cli.js test --config <registered-root>/qa.config.mjs",
+    "tests": 25,
+    "passed": 25,
+    "failed": 0,
+    "skipped": 0,
+    "exitCode": 0,
+    "reportedDuration": "20.9s",
+    "transport": "SYNTHETIC_API_CLIENT_ACTUAL_COMPONENT",
+    "savedCounterMeaning": "IMPORT_CANDIDATE_RESPONSE_COUNT_NOT_DOCUMENT_SAVE"
+  },
+  "source": {
+    "documentImportSha256": "DCC953A5405CB2DF5557E2FA1E50608EDED396761C0F4167AED4F9C1285DD201",
+    "specSha256": "75D4E6A97E2EE64CE72296E6454CC33DBFB3F43732D33ABA28EF8647224B8545"
+  },
+  "review": {
+    "round": 1,
+    "status": "SCOPED_SOURCE_ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "resolved": "I1_CLOSE_DURING_APPROVAL_PENDING_UNCERTAIN"
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui06-import-upload-approval-20261026-01",
+    "removedAtUtc": "2026-10-26T11:41:55.6041128Z",
+    "files": 7,
+    "directories": 5,
+    "bytes": 153586,
+    "owner": "SINSAN\\cyhuh",
+    "links": 0,
+    "processes": 0,
+    "rootExists": false
+  },
+  "independent": {
+    "checkedAtUtc": "2026-10-26T11:42:31.3633165Z",
+    "rootExists": false,
+    "relatedProcessCount": 0
+  },
+  "actualDb": "NOT_RUN",
+  "served": "NOT_RUN",
+  "actualServerConsumption": "NOT_RUN",
+  "agent": "NOT_RUN"
+}

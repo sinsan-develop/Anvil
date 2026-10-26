@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI06_IMPORT_UPLOAD_APPROVAL_ROUND1_RED",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui06-import-upload-approval-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T11:30:59.5384580Z",
+    "expiresAtUtc": "2026-10-26T12:00:59.5384580Z",
+    "configSha256": "68560B482F9755FF9960B9E7EEA89EFC4DA858E241F5E0940DD59F812BEBAEBB",
+    "phase": "ROUND1_RED"
+  },
+  "runs": [
+    {
+      "tools": [
+        "273f91",
+        "757a01",
+        "173125"
+      ],
+      "specSha256": "5E42CDC1920EF69FD50761534ACD5E50C47818125C082CC23469A5BC750DF34A",
+      "collected": 24,
+      "passed": 22,
+      "failed": 2,
+      "productAssertionFailures": 1,
+      "testLocatorInfrastructureFailures": 1,
+      "exitCode": 1,
+      "reportedDuration": "27.7s"
+    },
+    {
+      "tools": [
+        "c27a82",
+        "9e5d3e"
+      ],
+      "specSha256": "33A090D2BB2204C0AB818891035E3A8AAE978698F99EB845D1BF1C43EDE5E63B",
+      "selection": "round1",
+      "selected": 2,
+      "passed": 0,
+      "failed": 2,
+      "productAssertionFailures": 2,
+      "testLocatorInfrastructureFailures": 0,
+      "exitCode": 1,
+      "notSelected": 22
+    }
+  ],
+  "finding": "I1_CLOSE_ENABLED_DURING_APPROVAL_PENDING_OR_UNCERTAIN",
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui06-import-upload-approval-20261026-01",
+    "removedAtUtc": "2026-10-26T11:34:42.4926243Z",
+    "files": 9,
+    "directories": 7,
+    "bytes": 182403,
+    "owner": "SINSAN\\cyhuh",
+    "links": 0,
+    "processes": 0,
+    "rootExists": false
+  },
+  "independent": {
+    "checkedAtUtc": "2026-10-26T11:34:56.5090014Z",
+    "rootExists": false,
+    "relatedProcessCount": 0
+  },
+  "actualDb": "NOT_RUN",
+  "servicesChanged": 0,
+  "agentExecution": "NOT_RUN"
+}

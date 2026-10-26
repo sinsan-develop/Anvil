@@ -1,4 +1,36 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI06 업로드 승인 재개 소스 한정 인수
+
+- 원담당round1 DocDCC953A5/24697bytes·spec75D4E6A9/21892bytes 고정·writer해제다. 직접인접38PASS/0skip·369.2079ms/type/메모리build/nodecheck/diff0이며 이전19846prefix33A090D2/원15539prefixF4937EF9·나머지5·CREATED_ORIGINAL 본문불변이다. 독립재검수원I1해소·C0/I0/M0,Main제품수정0이다.
+- f767fb 정확7원문/diff후새GREEN root/temp/설정1 생성11:39:37.0428721Z/만료12:09:37.0428721Z,841718/session82924→c60c78 실제25PASS/0FAIL/skip0·20.9s다. 요청·결박·명시재개·원bytes/명령/replay·만료/회수·문맥ABA/늦은401·미확인닫기차단/확인된닫기취소수락과자동취소0을확인했다. 후보응답수를실문서저장으로표현하지않는다.
+- 66ec5c owner/link/process0 뒤7파일/5폴더·153586bytes를11:41:55.6041128Z개별정리,a317b9 별도11:42:31.3633165Z root/process0 확인이다. RESULT/REVIEW·RED/GREEN_RESOURCE·SOURCE_MANIFEST에누적했다. 실제 DB/정책/서비스·승인소비transaction·사용자인수·Agent는NOT_RUN이며전체FN03/FN11/UI06·Stage/계획은미완료다.
+- 독립후속조사에서StageB·P1C1~C3의추가source기능을억지로분할하지않았다. C1 prepareExecution UI저장은실제capabilityRef생산/보호조회계약이선행이고현제안3AE12355는미채택이다. Main은PMO가요청한정확HUMAN계약/DDL·읽기/replay·현재성/기존재인증/한도·실PG제외의별도후보를작성하고기존질문복제/채택전제품구현0을유지한다. 외부경계를전체계획완료나할일없음으로바꾸지않는다.
+### 2026-10-26 다음 C1 능력 보고 계약의 정확 보완·UI06 GREEN 사전등록
+
+- PMO는 기존 CapabilityReport A안3AE12355 미채택/새직접답변없음을확인했고 질문반복없이 HUMAN입출력/원주장·서버판정분리, 고정GET/replay·회수/제어변경읽기, 정확DDL/권한,현재성/기존재인증·한도·실패닫힘을구체화하도록지원했다. 기존§6 실격리PG시험은이번source·합성범위에서제외해야한다. Main은기존제안원문을보존한별도후보만보완하고채택전제품/SQL실행0이다. 해당지원처리를기능구현완료로계산하지않는다.
+- UI06 GREEN은RED정리/별도부재확인뒤literal D:/tmp/anvil-v3-stage-b/ui06-import-upload-approval-20261026-01의새빈root/temp·qa.config.mjs1/results·TEMP내전용Playwright profile을동일owner/nonlink/실경로/생성전부재확인후생성한다. 기존workers1/retries0·각60초/expect5초·전체10분/trace·video·screenshot off·메모리Vite/합성transport를유지한다. 기존24와추가확인된닫기취소/수락1case만실행하고실제수집수를기록한다.
+- 최초생성부터30분/정리5분여유·성공실패모두context/runner종료→정확관련process0/owner/link/inventory→파일·빈폴더개별정리→별도root/process0을확인한다. 실제DB/서비스/권한/Secret/Agent·사용자브라우저변경0이다. 담당고정해시와Main한정검수전제품인수0·Main제품수정0유지다.
+### 2026-10-26 UI06 닫기 반례 실제 RED·정리 후 제품 GO
+
+- Main9a773c 생성11:30:59.5384580Z/만료12:00:59.5384580Z,273f91→173125 전체24수집/22PASS·2FAIL(exit1/27.7s). 첫POST지연은닫기enabled의제품RED,둘째는CONNECTION_LOST alert2개매치strictlocator오류라제품실패로세지않는다.
+- 원담당이새locator1개만exact요청상태문구로보정한spec33A090D2/19846bytes·원15539prefix F4937EF9/제품/다른시험불변을고정했다. 같은등록instance/수명내c27a82→9e5d3e round1두반례만재실행exit1/0PASS·2FAIL: pending/uncertain둘다닫기enabled를확인했다. 이전22선택제외·PASS상속0이다.
+- ca3f65 정확owner/link/process0 뒤9파일/7폴더·182403bytes를11:34:42.4926243Z 개별정리,c28ae0 별도11:34:56.5090014Z root/process0확인이다. 원실패는RESOURCE에보존했다. Main제품수정0,원담당만DocumentImport의별도approvalBusy·pending/uncertain닫기표시/실행차단과확인된요청의ID/이력보존·닫기취소아님명시확인을최소보완한다. 현재source/실제DB·서비스·Agent전체완료0이다.
+### 2026-10-26 UI06 독립 I1 접수·제품 보완 전 반례 고정
+
+- 독립 검수 C0/I1/M0 REWORK: 부모후보닫기가승인child의running만변경된상태/pending·uncertain을검사하지않아importState:null로미확인원명령·bytes/요청이력을잃는다. 정확위치/영향/최소보완은UI06_IMPORT_UPLOAD_APPROVAL_REVIEW.md에기록했다. 아직실제DOM실행0이며기존unit38PASS로덮지않는다.
+- 원담당에게round1 test-only로기존spec22/제품7고정·신규POST지연/응답유실후닫기반례2개를append하도록배정했다. Main RED·정리뒤최소제품보완GO, 같은반례GREEN/한정재검수순서다. 현재등록QA경로는Test-Path부재·생성0이며기존사전등록에추가반례를동일60초/수명내포함한다.
+- Main이CapabilityReport 제안경로를contracts로추정해읽은부재오류를기록한다. 앞선knowledge-api/package경로추정과동일근본원인이반복돼추정읽기를중단하고rg실제목록유일선택으로전환했다.7ff5de가실제work_packages경로와SHA3AE12355/DRAFT_NOT_ADOPTED를확인했다. 제품/권한변경0·같은부재경로재시도0이다. 다음C1준비UI저장은실제capabilityRef공급/계약채택과별도이며fixture승격0이다.
+### 2026-10-26 UI06 가져오기 승인 후보 고정·DOM 자원 사전등록
+
+- 담당 제품4/신규시험3 고정·writer해제다. helper부재RED와승인ref제거누락RED9PASS/1FAIL후최종직접10·인접38PASS/type/메모리제품·harness build/diff0을보고했다. CREATED_ORIGINAL 함수·분기본문은정규화불변이라고제출했으며Main독립검수/실제DOM전인수0이다. 합친build명령구문오류1은제품실행전실패와구분하고분리build성공으로정정했다.
+- literal D:/tmp/anvil-v3-stage-b/ui06-import-upload-approval-20261026-01에새빈root/temp를만든다. owner SINSAN\cyhuh·전체조상nonlink/realpath·생성전부재·소유를확인한다. Main이root/qa.config.mjs1개를쓰며root/results와root/temp/playwright_chromiumdev_profile-*·Playwright임시물만생성허용한다. TEMP/TMP=root/temp,설치된msedge/headless/workers1/retries0·각60초/expect5초·전체10분,trace/video/screenshot off다. 최초생성부터30분·정리5분여유를유지한다.
+- 메모리 Vite/실제 DocumentImport/ApiClient·기존validator·주입합성transport와차단된https문서만실행하며실HTTP서버·실DB/정책/서비스/Secret/Agent·사용자브라우저변경0이다. 예상22시험·약1분이고collect결과를실측한다. qa.saved는실문서저장이아닌import후보응답수다.
+- 성공/실패모두runner/context종료→정확관련node/msedge0·소유/link/inventory→등록파일·빈폴더개별정리→별도root/process0확인한다. 미상소유/link/활성process는삭제0/기록한다. 독립정적검수의후보닫기/승인요청pending이력유실지적은별도확인하며시험PASS로덮지않는다.
+### 2026-10-26 UI10 checkpoint 원격 보존·UI06 구현 계속
+
+- 현재 단일 writer가 신규 unit EOF CR/LF5bytes만 정리했다. 원E6296C1F/4101bytes→3BFB5FC0/4096bytes·실제코드까지 byte prefix 불변이다. Main9ffe27이 직전 staged 원문과 LF/EOF 외 내용동일을 독립확인했고5 working/index 원문 대조4 EOL차이만·cachedcheck0이다. 테스트 기대/제품변경0이며 미실행을 새 runtime PASS로 표시하지 않았다.
+- e290b6 정확11경로 UI10 checkpoint1407c9c879b0b929ad54a15f0f09c60bc656c5d9,9c6c54 private exact·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변/staging0이다. 현재 UI06 source는 제외했고보호8도변경하지않았다.
+- UI06 담당은 helper 부재RED(e338ca)후 직접6GREEN/type0(5a4441)을 보고했고 전용 승인 화면/기존UPLOAD연결·실패/문맥반례를 보강중이다. 최종후보동결·한정검수전 인수0이며 actualDB·서비스·Agent/추가QA생성0 유지다. Main은 관리/검수/통합,제품수정0이다.
 ### 2026-10-26 UI10 checkpoint staging 검사·비의미 정리 배정
 
 - 2d13c2 정확11경로 staging 후 cached --check가 신규 unit31행 EOF 추가빈줄로 exit1이었다. working diff검사만으로 새 untracked 시험의 공백까지 확인한 것으로 해석하지 않으며 원 오류를 보존한다. commit/push는 아직0이다.

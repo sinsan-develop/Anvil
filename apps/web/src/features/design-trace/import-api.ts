@@ -1,3 +1,4 @@
+import {validateImportUploadBinding,validateImportUploadApproval,type ImportUploadApproval} from './import-upload-approval.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentBuffer, type DocumentSession, type DocumentWrite } from './editor-api.ts';
 import type { ImportCandidate } from '../../../../server/modules/documents/project-imports.ts';
@@ -5,7 +6,7 @@ import {readCreatedOriginal} from './created-original-import.ts';
 import type {CreatedOriginalSelection} from '../../shell/routes.ts';
 type AttachmentTarget={id:string;version:number;contentHash:string};
 interface ImportBufferCommon { ownerUserId: string; name: string; bytes: Uint8Array<ArrayBuffer>; recordCommandId: string; attempted: boolean; uncertain: boolean; candidate: ImportCandidate | null; failure: { code: string; status: number; quarantinedArtifactId?:string } | null; attachmentTarget?:AttachmentTarget; attemptId?:string }
-export interface UploadDocumentImportBuffer extends ImportBufferCommon {source?:'UPLOAD';upload:DocumentWrite;record:DocumentWrite|null}
+export interface UploadDocumentImportBuffer extends ImportBufferCommon {source?:'UPLOAD';upload:DocumentWrite;record:DocumentWrite|null;uploadApproval?:ImportUploadApproval}
 export interface CreatedOriginalImportBuffer extends ImportBufferCommon {source:'CREATED_ORIGINAL';original:CreatedOriginalSelection;upload:null;record:DocumentWrite;attachmentTarget?:undefined}
 export type DocumentImportBuffer=UploadDocumentImportBuffer|CreatedOriginalImportBuffer;
 export function rejectedDocumentImport(state: DocumentImportBuffer): boolean {
@@ -65,14 +66,17 @@ export async function continueDocumentImport<T extends DocumentImportBuffer>(cli
     return{...next,uncertain:false,candidate,failure:null};
   }
   const u = state.upload;
-  if (state.ownerUserId !== session.user.id || u.clientId !== session.clientId || !uuid.test(u.projectId) || !uuid.test(u.commandId) || !uuid.test(state.recordCommandId) || !uuid.test(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || u.operation !== 'uploadArtifact' || u.targetId !== null || u.expectedVersion !== 0 || u.schemaVersion !== 1 || u.baselineRefs.length || u.approvalRef !== null || !Number.isSafeInteger(u.controlGeneration) || u.controlGeneration < 1 || u.payload.bytes !== state.bytes.byteLength || state.bytes.byteLength > 20 * 1024 * 1024 || u.payload.contentHash !== await digest(state.bytes) || !['text/plain;charset=utf-8','text/markdown;charset=utf-8','application/octet-stream','image/png'].includes(String(u.payload.mediaType))) throw new ApiError('IMPORT_INPUT_INVALID');
+  if (state.ownerUserId !== session.user.id || u.clientId !== session.clientId || !uuid.test(u.projectId) || !uuid.test(u.commandId) || !uuid.test(state.recordCommandId) || !uuid.test(session.clientId) || !/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken) || u.operation !== 'uploadArtifact' || u.targetId !== null || u.expectedVersion !== 0 || u.schemaVersion !== 1 || u.baselineRefs.length || !Number.isSafeInteger(u.controlGeneration) || u.controlGeneration < 1 || u.payload.bytes !== state.bytes.byteLength || state.bytes.byteLength > 20 * 1024 * 1024 || u.payload.contentHash !== await digest(state.bytes) || !['text/plain;charset=utf-8','text/markdown;charset=utf-8','application/octet-stream','image/png'].includes(String(u.payload.mediaType))) throw new ApiError('IMPORT_INPUT_INVALID');
+  if(state.uploadApproval?.commandHash&&u.approvalRef===null)throw new ApiError('IMPORT_UPLOAD_APPROVAL_MISMATCH',409);
+  if(u.approvalRef!==null){await validateImportUploadBinding(state,formRef,session,active);if(!state.record)await validateImportUploadApproval(client,state,formRef,session,active);}
   let next = state;
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   if (!next.record) {
     const response = await postDocumentCommand(client, u, session.csrfToken, state.bytes), a = response.data?.artifactRef;
+    if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
     if (!a || !uuid.test(a.artifactId) || a.bytes !== u.payload.bytes || a.contentHash !== u.payload.contentHash || a.mediaType !== u.payload.mediaType || response.targetId !== a.artifactId || response.version !== null || response.data.status !== 'ARTIFACT_READY') throw new ApiError('RESPONSE_INVALID');
     // 같은 업로드의 정상 receipt를 확인한 시점에만 업로드 단계의 미확인을 해소한다.
-    next = { ...next, uncertain: false, record: { ...u, commandId: state.recordCommandId, operation: 'importDocument', payload: { fileRef: a, intendedFormRef: { ...formRef }, sourceRefs: [] } } }; checkpoint(next);
+    next = { ...next, uncertain: false, record: { ...u, commandId: state.recordCommandId, operation: 'importDocument', approvalRef:null, payload: { fileRef: a, intendedFormRef: { ...formRef }, sourceRefs: [] } } }; checkpoint(next);
   }
   const record = next.record!;
   const a = record.payload.fileRef as ImportCandidate['originalRef'];
