@@ -43,6 +43,22 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
   const [selected, setSelected] = useState<DocumentSummary | null>(null), [version, setVersion] = useState('');
   const [opened, setOpened] = useState<{ document: DocumentVersion; body: string } | null>(null), [readError, setReadError] = useState<ApiError | null>(null), [reading, setReading] = useState(false);
   const generation = useRef(0);
+  // 본문 다운로드만 현재 조회·주체·transport에 결박한다. 다른 보기의 상태는 바꾸지 않는다.
+  const downloadIdentity = [client, client.transport, projectId, session.user.id, session.clientId, stageFilter, cursor, refresh, requestedDocument] as const;
+  const downloadScope = useRef(downloadIdentity), downloadLive = useRef(true);
+  if (downloadIdentity.some((value, index) => value !== downloadScope.current[index])) downloadScope.current = downloadIdentity;
+  type DownloadRead = { document: DocumentVersion; scope: typeof downloadIdentity; generation: number };
+  const downloadRead = useRef<DownloadRead | null>(null);
+  const downloadView = useRef({ opened, version, selected, reading, readError, loading, listError });
+  downloadView.current = { opened, version, selected, reading, readError, loading, listError };
+  function recordDownload(document: DocumentVersion, request: number, scope: typeof downloadIdentity) {
+    if (downloadLive.current && request === generation.current && scope === downloadScope.current && scope[0].transport === scope[1]) downloadRead.current = { document, scope, generation: request };
+  }
+  function currentDownload(read: DownloadRead | null): read is DownloadRead {
+    const view = downloadView.current;
+    return !!read && downloadLive.current && read === downloadRead.current && read.scope === downloadScope.current && read.scope[0].transport === read.scope[1] && read.generation === generation.current && view.opened?.document === read.document && view.version === String(read.document.version) && (!view.selected || view.selected.id === read.document.id) && !view.reading && !view.readError && !view.loading && !view.listError && (!stageFilter || sameStageRef(read.document.stageNodeRef, stageFilter.ref));
+  }
+  const bodyDownload = currentDownload(downloadRead.current) ? downloadRead.current : null;
   const preparationGate=useRef(createDocumentPreparationGate()).current;
   const [editingError, setEditingError] = useState<ApiError | null>(null), [starting, setStarting] = useState(false);
   const [choosingForm, setChoosingForm] = useState(false);
@@ -64,7 +80,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     generation.current++;setScreenOrigin(null);setReading(false);setSelected(null);setOpened(null);setVersion('');setRegisteredView(null);setAnchorSelection(null);setShowComparison(false);setShowDesignIndex(false);setShowSourceLinks(false);setReadError(null);
     setPage(null);setCursor(null);setListError(null);setStageFilter(value);
   }
-  useEffect(() => () => { generation.current++; }, []);
+  useEffect(() => { downloadLive.current = true; return () => { downloadLive.current = false; downloadRead.current = null; generation.current++; }; }, []);
   useEffect(() => {
     let current = true; setLoading(true); setListError(null);
     listDocuments(client, projectId, cursor,stageFilter?.ref).then(value => { if (current) setPage(previous => cursor && previous ? { ...value, items: [...new Map([...previous.items, ...value.items].map(item => [item.id, item])).values()] } : value); }).catch((cause: unknown) => {
@@ -75,48 +91,48 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
   }, [client, projectId, cursor, refresh,stageFilter]);
   useEffect(()=>{
     if(!requestedDocument)return;
-    const ref=structuredClone(requestedDocument),request=++generation.current;
+    const ref=structuredClone(requestedDocument),request=++generation.current,scope=downloadScope.current;
     setSelected(null);setOpened(null);setReadError(null);setReading(true);setScreenOrigin(null);setRegisteredView(null);setAnchorSelection(null);
-    readDocument(client,projectId,ref.id,ref.version,{expectedContentHash:ref.contentHash,active:()=>request===generation.current}).then(value=>{if(request!==generation.current)return;setOpened(value);setVersion(String(value.document.version));setRegisteredView({code:'선택한 문서',kind:'문서'});}).catch(cause=>{if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if(error.status===401)onAuthenticationLost();}).finally(()=>{if(request===generation.current)setReading(false);});
+    readDocument(client,projectId,ref.id,ref.version,{expectedContentHash:ref.contentHash,active:()=>request===generation.current}).then(value=>{if(request!==generation.current)return;recordDownload(value.document,request,scope);setOpened(value);setVersion(String(value.document.version));setRegisteredView({code:'선택한 문서',kind:'문서'});}).catch(cause=>{if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if(error.status===401)onAuthenticationLost();}).finally(()=>{if(request===generation.current)setReading(false);});
     return()=>{generation.current++;};
   },[client,projectId,requestedDocument]);
   async function open(item: DocumentSummary, requested: number) {
     setScreenOrigin(null);
     setShowSourceLinks(false);
-    const request = ++generation.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
-    try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) { if(stageFilter&&!sameStageRef(value.document.stageNodeRef,stageFilter.ref))throw new ApiError('DOCUMENT_STAGE_CHANGED');setOpened(value); } }
+    const request = ++generation.current, scope = downloadScope.current; setRegisteredView(null); setAnchorSelection(null); setShowComparison(false); setSelected(item); setVersion(String(requested)); setOpened(null); setReadError(null); setReading(true); setShowDesignIndex(false);
+    try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) { if(stageFilter&&!sameStageRef(value.document.stageNodeRef,stageFilter.ref))throw new ApiError('DOCUMENT_STAGE_CHANGED');recordDownload(value.document,request,scope);setOpened(value); } }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
   }
   async function openScreen(sourceRef:ScreenRegion['documentRef'],region:ScreenRegion){
     if(!opened||reading||starting||opened.document.id!==sourceRef.id||opened.document.version!==sourceRef.version||opened.document.contentHash!==sourceRef.contentHash)return;
-    const context:ScreenRegionContext={projectId,userId:session.user.id,clientId:session.clientId,sourceRef:{...sourceRef}},request=++generation.current;
+    const context:ScreenRegionContext={projectId,userId:session.user.id,clientId:session.clientId,sourceRef:{...sourceRef}},request=++generation.current,scope=downloadScope.current;
     setShowSourceLinks(false);
     setReadError(null);setReading(true);setShowComparison(false);
     try{
       const value=await readRegisteredScreen(client,context,{...context,region},()=>request===generation.current);
       if(request!==generation.current)return;
-      setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setShowDesignIndex(false);setRegisteredView({code:region.screenCode,kind:'시안'});setScreenOrigin(structuredClone({...context,region}));setAnchorSelection(value.anchorSelection);
+      recordDownload(value.document,request,scope);setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setShowDesignIndex(false);setRegisteredView({code:region.screenCode,kind:'시안'});setScreenOrigin(structuredClone({...context,region}));setAnchorSelection(value.anchorSelection);
     }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setSelected(null);setRegisteredView(null);setAnchorSelection(null);setShowDesignIndex(false);if(error.status===401)onAuthenticationLost();}}
     finally{if(request===generation.current)setReading(false);}
   }
   async function returnToDesign(){
     if(!opened||!screenOrigin||reading||starting)return;
-    const current={projectId,userId:session.user.id,clientId:session.clientId,screenRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}},selection=screenOrigin,request=++generation.current;
+    const current={projectId,userId:session.user.id,clientId:session.clientId,screenRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}},selection=screenOrigin,request=++generation.current,scope=downloadScope.current;
     setReading(true);setReadError(null);setOpened(null);setAnchorSelection(null);setShowDesignIndex(false);setShowComparison(false);setShowSourceLinks(false);setRegisteredView(null);setScreenOrigin(null);
-    try{const value=await readRegisteredDesignOrigin(client,current,selection,()=>request===generation.current);if(request!==generation.current)return;setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setRegisteredView({code:'원설계',kind:'설계'});setAnchorSelection(value.anchorSelection);}
+    try{const value=await readRegisteredDesignOrigin(client,current,selection,()=>request===generation.current);if(request!==generation.current)return;recordDownload(value.document,request,scope);setSelected(null);setVersion(String(value.document.version));setOpened({document:value.document,body:value.body});setRegisteredView({code:'원설계',kind:'설계'});setAnchorSelection(value.anchorSelection);}
     catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if(error.status===401)onAuthenticationLost();}
     finally{if(request===generation.current)setReading(false);}
   }
   async function refreshOpened(ref:ScreenRegion['documentRef']){
     if(!opened||opened.document.id!==ref.id||opened.document.version!==ref.version||opened.document.contentHash!==ref.contentHash)return;
     if(selected){await open(selected,ref.version);return;}
-    const before=opened.document,request=++generation.current;setReading(true);setReadError(null);
+    const before=opened.document,request=++generation.current,scope=downloadScope.current;setReading(true);setReadError(null);
     try{
       const value=await readDocument(client,projectId,ref.id,ref.version);if(request!==generation.current)return;
       const body=value.document.content.body,prior=before.content.body,form=value.document.formRef;
       if(value.document.contentHash!==ref.contentHash||body.artifactId!==prior.artifactId||body.bytes!==prior.bytes||body.contentHash!==prior.contentHash||body.mediaType!==prior.mediaType||form.id!==before.formRef.id||form.version!==before.formRef.version||form.contentHash!==before.formRef.contentHash)throw new ApiError('SCREEN_REGION_REFERENCE_CHANGED');
-      setOpened(value);
+      recordDownload(value.document,request,scope);setOpened(value);
     }catch(cause){if(request!==generation.current)return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setReadError(error);if([401,403,404].includes(error.status)){setOpened(null);setRegisteredView(null);setAnchorSelection(null);if(error.status===401)onAuthenticationLost();}}
     finally{if(request===generation.current)setReading(false);}
   }
@@ -218,9 +234,10 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
       {showPlans?<WorkPlanLibrary client={client} projectId={projectId} session={session} documents={page?.items??[]} canPrepare={!buffer&&!review&&!confirmation&&!starting&&!choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next=>{onChange(previous=>previous===null?next:previous);setShowPlans(false);}}/>:null}
       {showMaterials ? <MaterialLibrary client={client} projectId={projectId} session={session} canPrepare={!buffer && !review && !confirmation && !starting && !choosingForm} onBusy={setStarting} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous === null ? next : previous); setShowMaterials(false); }} /> : null}
       {choosingForm ? <><NewDocumentForm client={client} session={session} projectId={projectId} onAuthenticationLost={onAuthenticationLost} onPrepared={next => { onChange(previous => previous?.pending || previous?.proposalState || (previous?.designIndexState||previous?.workPlanState||previous?.designDependencyState) || previous?.importState || previous?.importPreparationId || previous && previous.ownerUserId !== session.user.id ? previous : next); setChoosingForm(false); }} /><button onClick={() => setChoosingForm(false)}>양식 선택 닫기</button></> : null}
-      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => setVersion(event.target.value)} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView.code} 고정 {registeredView.kind} 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
+      {selected ? <div className="project-toolbar"><label>조회 버전<input type="number" min="1" max={selected.headVersion} value={version} onChange={event => { downloadRead.current = null; setVersion(event.target.value); }} /></label><button disabled={reading || !Number.isSafeInteger(Number(version)) || Number(version) < 1 || Number(version) > selected.headVersion} onClick={() => { void open(selected, Number(version)); }}>지정 버전 조회</button></div> : registeredView ? <p>{registeredView.code} 고정 {registeredView.kind} 버전 {version} 조회 · 최신 head 미확인 · 새 버전 저장은 기존 서버의 정확 버전 충돌 검사를 따릅니다.</p> : <p>문서를 선택하세요.</p>}
       {opened&&screenOrigin&&screenOrigin.projectId===projectId&&screenOrigin.userId===session.user.id&&screenOrigin.clientId===session.clientId&&screenOrigin.region.documentRef.id===opened.document.id&&screenOrigin.region.documentRef.version===opened.document.version&&screenOrigin.region.documentRef.contentHash===opened.document.contentHash?<button disabled={reading||starting||!!readError||loading||!!listError} onClick={()=>{void returnToDesign();}}>원설계 항목으로 돌아가기</button>:null}
       {reading ? <p role="status">원문 무결성 확인 중</p> : null}{readError ? <p role="alert">{readError.message} · {readError.code}</p> : null}
+      {bodyDownload ? <p><a href={`/api/v1/projects/${projectId}/files/${bodyDownload.document.content.body.artifactId}`} download={`artifact-${bodyDownload.document.content.body.artifactId}.bin`} onClick={event => { if (!currentDownload(bodyDownload)) event.preventDefault(); }}>저장 본문 보관 원본 다운로드</a></p> : null}
       {opened ? <><h2>{opened.document.title}</h2><p>{opened.document.confirmed ? '확정된 버전' : '초안 · 내용 검토/사용자 확정과 별개'}</p><p className="meta">버전 {opened.document.version} · 양식 {opened.document.formRef.id} v{opened.document.formRef.version} · SHA256 {opened.document.contentHash}</p>
         <button disabled={reading||!!readError||loading||!!listError} onClick={()=>setShowSourceLinks(v=>!v)}>{showSourceLinks?'소스 연결 조회 닫기':'이 버전 소스 연결 조회'}</button>
 {showSourceLinks&&!reading&&!readError&&!loading&&!listError?<DocumentSourceLinks key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} documentRef={{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash}} onDetach={!sourceDetach&&onSourceDetachChange&&!buffer?.pending&&!review?.pending&&!confirmation?.pending?beginSourceDetach:undefined} onAuthenticationLost={onAuthenticationLost}/>:null}

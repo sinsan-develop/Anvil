@@ -8110,3 +8110,13 @@
 - **FN11/FN17 정책 화면 후속 착수·QA 사전등록**: WI1A10CB0C 독립preflight C0/I0/M0 뒤 단일writer fn17_read_policy_ui를 배정했다. Main은제품수정0. exact 신규 QA root D:\tmp\anvil-v3-stage-b\ui11-notification-policy-20261027-01, owner SINSAN\cyhuh, bundle/results/temp/screenshots/playwright.config.mjs, 생성후30분·workers1/retry0/timeout30초/global10분, 기존Node/Edge·listener0를등록했다. 부모owner/nonlink·대상부재 확인, 생성은아직0이며 실행직전재확인한다. 결과뒤owner/link/process확인→exact회수→독립잔류0, 실제DB/정책·서비스·Agent·Secret변경0. 상세 FN17_MARK_READ_POLICY_UI_QA_RESOURCE.json.
 
 - **2026-10-27 FN11·FN17 읽음 정책 UI 검수 인수**: 단일writer4파일 RED7PASS/2FAIL→GREEN9·직접인접16/typecheck/diff0, Main bee132 unit9PASS·61fd8b 합성App 신규5PASS(6475.293ms), 독립C0/I0/M0. 기본미선택/DENY/다른규칙보존·명시정책전송·자동mark0, 실제정책/DB/서비스0/미검증. 등록QA는97f6da생성→c5ccae정확회수→별도부재/process0확인, 결과/manifest/resource에보존했다. 완료된기존기능재실행0·Main제품수정0. 다음 저장문서 본문 보호원본 다운로드 연결을 실제source/기존계약으로 구체화중이며 PMO배정대기0.
+
+- **2026-10-27 정책 checkpoint/다음 실제 문서 기능 착수 선정**: b9672277f25dd215562735039abb94144cd5fda2는정확정책4+문서6·77a717 private exact/main f976불변·보호8유지. FN16전체모듈부재/미구현을숨기지않으며, 읽기조사에서기존FN03의고정BODY artifact 보호GET 소비누락을확인했다. 다음2경로 WI는저장본문원본다운로드·링크scope·바이트보존만연결하고새backup계약/TLS/DB/권한실행0. Main은독립preflight뒤단일writer에spec RED→구현을순차배정한다.
+
+- **FN03 본문원본 다운로드 QA 사전등록**: exact D:\tmp\anvil-v3-stage-b\ui06-stored-body-download-20261027-01, owner SINSAN\cyhuh, bundle/results/temp/downloads/screenshots/playwright.config.mjs, 각생성후30분·workers1/retry0/timeout30초/global10분. 신규대상부재를확인했고현재생성0. 기존Node/Vite write:false·Edge합성route만사용하며HTTP/TLS listener·새인증서/신뢰·DB/서비스0. RED/GREEN은원결과보존/각정확회수·독립잔류0, 실제보호서버시험과분리한다. resource JSON정본에기록.
+
+- **FN03 본문 다운로드 실제 RED 확인**: Main072d03 단일 새 시험은 기존 문서 원문 일치 뒤 다운로드 링크 부재로 exit1/1FAIL·7080.698ms. 기준 제품 E06D55/spec65490FDA·메모리bundle884e16을 보존했고 동일writer 최소 구현을 진행한다. RED QA는eacd27에서14파일13dir2162174bytes·owner/nonlink/process0후19:14:34Z 정확회수, 별도부재/process0 확인. 환경선행오류/실제서버실패로분류하지않으며 GREEN은아직미실행이다.
+
+- **FN03 본문 UI GREEN 첫 결과/다운로드 경계 분리**: 최종제품44185254/spec81D4E4AD·1c0a4a 새GREEN은 c2bc3f 신규6중5PASS/1FAIL(실제download event후 failure=canceled)이다. 원문byte/saveAs/PNG는미도달·제품click/합성전달 원인미확정, 기준완화/소급PASS0. 동일담당은읽기원인분리만진행하고Main은원report/context지문을resource에보존했다. 기존5성공은반복하지않으며다운로드1만필요근거로후속검수한다. 실제TLS/인증서/DB/서비스변경0.
+
+- **2026-10-27 FN03 본문 다운로드 source 검수 인수/미확인 분리**: 제품44185254/spec81D4E4AD 독립C0/I0/M0·Main c2bc3f 신규6중5PASS/1FAIL·byte/PNG미도달. 제품없는최소page/context probe b95523/43c715도download canceled/fileGET미도달이므로합성전달경계로분리하되원FAIL/실제서버미검증보존. 최초최소HTML charset누락1은판정제외·정정했다. RED/GREEN자원각회수·독립잔류0, 실제TLS/DB/권한/서비스/Agent변경0. 결과서에2지문·명령·미검증·재검수조건보존, UI06/FN03부분상태만갱신. 다음은이미승인된FN16실제파일manifest내부엔진이며구체공적형식/영속API와분리한다.

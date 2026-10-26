@@ -1,0 +1,213 @@
+{
+  "status": "CLEANED_PARTIAL_INDEPENDENT",
+  "root": "D:/tmp/anvil-v3-stage-b/ui06-stored-body-download-20261027-01",
+  "owner": "SINSAN\\cyhuh",
+  "purpose": "FN03/UI06 고정 문서 버전의 BODY 보호GET·원본 다운로드 소비 합성Edge 검수",
+  "lifetimeMinutes": 30,
+  "children": [
+    "bundle",
+    "results",
+    "temp",
+    "downloads",
+    "screenshots",
+    "playwright.config.mjs"
+  ],
+  "runtime": "기존 Node/Vite write:false·기존 Edge headless 전용 임시 profile; 합성 request route, HTTP/TLS listener 없음",
+  "limits": {
+    "workers": 1,
+    "retries": 0,
+    "testTimeoutMs": 30000,
+    "expectTimeoutMs": 5000,
+    "globalTimeoutMs": 600000
+  },
+  "exclusions": [
+    "실제DB/정책/서비스/Secret·인증서",
+    "사용자브라우저/OS알림·Agent",
+    "원본자료/기존QA경로",
+    "미채택새backup계약"
+  ],
+  "cleanup": "매 RED/GREEN 인스턴스 생성직전부재/부모소유자·비링크 확인, 생성후30분내 exact root owner/link/process검사후정확제거, 별도부재0확인",
+  "instances": [
+    {
+      "kind": "RED",
+      "createdAtUtc": "2026-10-26T19:12:03.835Z",
+      "expiresAtUtc": "2026-10-26T19:42:03.835Z",
+      "productBefore": "E06D55B99A1EE03E8BA8DA7033D375A7FFD317A1C42E28025A881908655BE23A",
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T19:14:34.1629087Z",
+        "owner": "SINSAN\\cyhuh",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui06-stored-body-download-20261027-01",
+        "links": 0,
+        "processesBefore": 0,
+        "files": 14,
+        "directories": 13,
+        "bytes": 2162174,
+        "removedAtUtc": "2026-10-26T19:14:34.1905577Z",
+        "rootRemaining": false,
+        "independent": {
+          "atUtc": "2026-10-26T19:14:52.9208816Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      },
+      "assets": [
+        {
+          "path": "assets/index-BKf6gZby.js",
+          "bytes": 1987860,
+          "sha256": "FD1DB78471A521083B7A0CC77C7162F2E20FA5C9F2C1C33B0CDA61DD4F95B244"
+        },
+        {
+          "path": "assets/index-BHDH6qmX.css",
+          "bytes": 10984,
+          "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+        },
+        {
+          "path": "index.html",
+          "bytes": 354,
+          "sha256": "DD08AEDFAA9C1FED8A77C339CE3EDFEE754C586845E24921BC10C8BDF7372BB6"
+        }
+      ],
+      "result": {
+        "tool": "072d03",
+        "exit": 1,
+        "stats": {
+          "startTime": "2026-10-26T19:13:47.608Z",
+          "duration": 7080.698,
+          "expected": 0,
+          "skipped": 0,
+          "unexpected": 1,
+          "flaky": 0
+        },
+        "reportSha256": "671F91E6EEACD06758271F5143BBE337A1B6FBCCAAF58E630010A484103DBBD1",
+        "specSha256": "65490FDA43E09249DCD01E57206C16FFA6DA7296F1695D8EA9EE5FC287713353",
+        "failure": "원문 일치 검사 통과 뒤 본문 다운로드 링크 부재 / href expectation 5000ms",
+        "classification": "기능 미구현 RED, 실제서버미실행",
+        "contexts": [
+          {
+            "path": "output\\UI06-document-read-저장-본문-다-c52e0--제공하고-자동-GET·POST를-추가하지-않는다\\error-context.md",
+            "sha256": "41DE9E24127BD2C9166C0369FD0075C35DA0A635DB086832C0D2BFF9ABEE074F"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "GREEN",
+      "createdAtUtc": "2026-10-26T19:18:47.223Z",
+      "expiresAtUtc": "2026-10-26T19:48:47.223Z",
+      "files": {
+        "apps/web/src/features/design-trace/DocumentsPage.tsx": "4418525451859B712F0E34C24FA236B201D27A76272625BE31576C7E44F2A56E",
+        "tests/browser/UI06/document-read.spec.ts": "81D4E4AD85BD79622F36D58FA95566801AFBC4F6FA1BBD68AB542E5DC02764C7"
+      },
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T19:24:21.7990766Z",
+        "owner": "SINSAN\\cyhuh",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui06-stored-body-download-20261027-01",
+        "links": 0,
+        "processesBefore": 0,
+        "files": 16,
+        "directories": 13,
+        "bytes": 2235626.0,
+        "removedAtUtc": "2026-10-26T19:24:21.8240184Z",
+        "rootRemaining": false,
+        "independent": {
+          "atUtc": "2026-10-26T19:25:13.9597882Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      },
+      "assets": [
+        {
+          "path": "assets/index-09Mdi6OU.js",
+          "bytes": 1989268,
+          "sha256": "E769162C135ACDA84B6A66D71E43A06EA311EF91420C41CFCFD00AA6B519B617"
+        },
+        {
+          "path": "assets/index-BHDH6qmX.css",
+          "bytes": 10984,
+          "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+        },
+        {
+          "path": "index.html",
+          "bytes": 354,
+          "sha256": "C5F77F8D6545475DEAD136B4EE9507F6CEB7AF5CDCCF40F800BE4877395EE703"
+        }
+      ],
+      "attempts": [
+        {
+          "tool": "c2bc3f",
+          "exit": 1,
+          "stats": {
+            "startTime": "2026-10-26T19:19:00.401Z",
+            "duration": 6688.719999999999,
+            "expected": 5,
+            "skipped": 0,
+            "unexpected": 1,
+            "flaky": 0
+          },
+          "reportSha256": "CFABAA85ECF440E5306A0838D1C08CE59F305D7F9E866AB668B4C61183E45823",
+          "specSha256": "81D4E4AD85BD79622F36D58FA95566801AFBC4F6FA1BBD68AB542E5DC02764C7",
+          "failure": "download.failure() returned canceled; download event observed; byte/saveAs/PNG not reached",
+          "classification": "제품 click/합성전달 경계 미확정, PASS로승격하지않음",
+          "contexts": [
+            {
+              "path": "output\\UI06-document-read-저장-본문-다-246ff-의-바이트·SHA256·BOM·CRLF를-보존한다\\error-context.md",
+              "sha256": "304DAEF133B9EFEC514B987BEFAF3E18673576E9262EDF258146A98D498C7A19"
+            }
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "path": "results/minimal-download-probe-2.json",
+          "sha256": "053FC8616B20ED0B522E2487FC0859A0D6E5130F7215739E4D03DC055D5D4427",
+          "result": {
+            "productUsed": false,
+            "tlsListener": false,
+            "hits": [
+              "/probe"
+            ],
+            "events": [
+              {
+                "type": "response",
+                "url": "https://localhost:3830/probe",
+                "status": 200
+              }
+            ],
+            "text": "원본 진단",
+            "suggestedFilename": "probe.bin",
+            "failure": "canceled"
+          }
+        },
+        {
+          "path": "results/minimal-download-probe-context.json",
+          "sha256": "923C8F2068A9573483AB6067329E8D357EEBCBBDF46F2E93052E6E6B91DC1160",
+          "result": {
+            "productUsed": false,
+            "tlsListener": false,
+            "interception": "context.route",
+            "hits": [
+              "/probe"
+            ],
+            "events": [
+              {
+                "type": "response",
+                "url": "https://localhost:3830/probe",
+                "status": 200
+              }
+            ],
+            "suggestedFilename": "probe.bin",
+            "failure": "canceled"
+          }
+        }
+      ],
+      "diagnosticExcluded": {
+        "tools": [
+          "7b9ff0",
+          "d2801d"
+        ],
+        "reason": "Main 최초 최소 HTML에 UTF-8 선언이 없어 클릭 선행 미도달/timeout; 제품/다운로드 판정 근거 제외"
+      },
+      "conclusion": "제품 미사용 최소 page/context route에서도 download canceled·file GET 미도달. 합성 전달 경계 미충족; 실제 TLS/서버 다운로드·bytes/hash/PNG 미검증. 기존5PASS/1FAIL 보존, 기준완화0"
+    }
+  ]
+}
