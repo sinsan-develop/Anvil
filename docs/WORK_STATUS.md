@@ -1,4 +1,24 @@
 # Anvil 재설계 작업현황
+### 2026-10-26 UI10 checkpoint staging 검사·비의미 정리 배정
+
+- 2d13c2 정확11경로 staging 후 cached --check가 신규 unit31행 EOF 추가빈줄로 exit1이었다. working diff검사만으로 새 untracked 시험의 공백까지 확인한 것으로 해석하지 않으며 원 오류를 보존한다. commit/push는 아직0이다.
+- Main은 제품/시험수정0을 유지하고 현재 유일 writer UI06 담당에게 해당 UI10 unit의 EOF 빈줄만 제거하는 정확1경로 정리를 추가 배정했다. 기존코드 앞bytes/기대는보존·새SHA·바이트감소만제출,UI10다른파일/실행/Git변경0이다. 완료 후 stagingblob/해시를 다시 대조한다. UI06 독립기능구현은 계속한다.
+- 다음 카드658BFE36의 기존 서버/승인계약 선행 읽기검수 Important0을 확인했다. 실제후보검수가아니며제품/시험/자원변경0이다.
+### 2026-10-26 UI10 보관 검토 상세 한정 인수·UI06 승인 재개 착수
+
+- UI10 담당5파일 고정·writer해제, 신규SSR 모듈부재RED2→직접2/인접포함12PASS·type/메모리제품build/diff0이다. 독립 task 검수 C0/I0/M0·기준Page본문은추가2줄외불변을확인했다. Main163d2b 정확5해시·caf220 diff 대조,548822 실제Page/ApiClient/기존validator·주입합성GET DOM1PASS/0skip·2581.3338ms다. 실제 Network/DB·서비스 인수로승격하지않는다.
+- 등록root 생성11:07:55.6789104Z/만료11:37:55.6789104Z,51b5a0 owner/link/process0 확인후177파일/57폴더·13364152bytes를11:08:27.2146721Z정리,51c309 별도11:08:42.6720715Z root/process0확인이다. RESULT/QA_RESOURCE/SOURCE_MANIFEST에기록했다.
+- 다음 Stage B FN03/FN11/UI06 실제누락은 uploadArtifact REQUIRE_APPROVAL에서 가져오기를 재개할수없는경로다. 기존서버/INTERFACES 일회승인만소비하며새API/SQL/정책변경0인카드658BFE36을발행했다. ui06_import_upload_approval 단일writer에게허용4제품/신규시험을배정·제품전RED를진행한다. 업로드승인은후속importDocument에명시null로차단·CREATED_ORIGINAL/기존PNG/원명령·bytes보존을고정했다. Main제품수정0/실DB·서비스·Agent0유지다.
+### 2026-10-26 UI10 저장 검토 상세 후보·합성 DOM 자원 사전등록
+
+- ui10_stored_review_details가 허용5파일 고정·writer해제했다. PageA2A582F4/새 표시2E1735D7/unitE6296C1F/spec66DC4EF3/harness9AC867F4이며 제품diff는 Page+2/신규표시다. 담당 모듈부재 RED2→신규2/인접포함12PASS·type/메모리build/diff0, 시험 TSX loader 인프라오류1 보정과 실제 제품 오류를 구분했다. Main은 독립 source 검수와 실제 합성 DOM을 진행하며 전체 기능 인수로 승격하지 않는다.
+- literal D:/tmp/anvil-v3-stage-b/ui10-stored-review-details-20261026-01의 새 빈 root/temp와 전용 root/browser를 사용한다. owner SINSAN\cyhuh·생성 전 부재/전체조상nonlink/realpath·소유를 재확인한다. 환경은 ANVIL_UI10_STORED_REVIEW_QA=1/ANVIL_UI10_STORED_REVIEW_ROOT=등록root/TEMP·TMP=root/temp다. 메모리 Vite·실제 KnowledgePage/ApiClient/기존 validator와 주입 합성 GET만 사용한다. 실제 HTTP서버·실DB·서비스/Secret/Agent·사용자브라우저변경0이다.
+- 단1test timeout60초/locator5초·예상10초, 수명 최초생성부터30분/정리5분여유다. 생성물은 등록root/browser 전용Edge프로필과 root/temp 임시물만 허용한다. 성공/실패모두 context종료→정확 관련process0/owner/link/inventory→전용파일·빈폴더 개별정리→별도root/process0확인한다. 미상소유/link/활성process는삭제0/기록한다. 추가 명령전송0·다른버전/원문GET403숨김·escape·버퍼callback0을 확인한다.
+### 2026-10-26 UI02/N4 보완 checkpoint 게시·UI10 계속
+
+- c7840d 정확16경로 staging/diff0,038030 working/index17원문 대조에서15 raw동일·Panel/native2 EOL만 차이로 감사 기록을 추가했다. Git 속성/제품 bytes 변경0, Git checkout runtime 미실행을 구분했다. 최종17경로만07fc13 e1a1f49171dc54f2e7a26bcb5407003836e2218b로 commit했다.
+- 150b62 기존 private branch non-force push 및 exact SHA 확인, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·staging0이다. 진행 중 UI10 source는 제외하고 보호 미추적8도 그대로 남겼다. 전체 Stage/계획 완료나 N4 native/실제 DB/served 검증 완료가 아니다. 관련 판정과 다음 작업을 PMO 기존 대화에 전달했다.
+- UI10 담당의 정확 허용 경로 쓰기는 require_escalated 자동심사로 진행 중이다. sandbox 첫 쓰기 거절은 파일 생성/제품 변경0이며 경로·권한 우회0으로 보존한다. Main은 코드 구현0·담당 단일writer 유지, 다음 결과의 독립 검수/직접 UI 확인을 준비한다.
 ### 2026-10-26 UI02 소스 검수·DOM12 인수 / 다음 UI10 단일 writer
 
 - 원 담당 round2 제품6D0B9AED/20426bytes, 직전대비 주석+finally1줄(+2/-1) 고정·writer해제다. 직접38PASS/type0/제품437modules 메모리build0, Main5a11c3 정확제품/spec6ED·diff0, 독립 재검수 I3 ADDRESSED·C0/I0/M0다.

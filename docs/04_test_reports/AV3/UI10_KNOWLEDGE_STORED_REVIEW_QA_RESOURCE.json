@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "task": "UI10_KNOWLEDGE_STORED_REVIEW_DETAILS",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui10-stored-review-details-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T11:07:55.6789104Z",
+    "expiresAtUtc": "2026-10-26T11:37:55.6789104Z",
+    "profiles": [
+      "browser"
+    ]
+  },
+  "execution": {
+    "command": "node --test tests/browser/UI10/knowledge-stored-review-details.spec.ts",
+    "tool": "548822",
+    "exitCode": 0,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 2581.3338,
+    "scope": "ACTUAL_COMPONENT_SYNTHETIC_TRANSPORT"
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui10-stored-review-details-20261026-01",
+    "removedAtUtc": "2026-10-26T11:08:27.2146721Z",
+    "files": 177,
+    "directories": 57,
+    "bytes": 13364152,
+    "owner": "SINSAN\\cyhuh",
+    "links": 0,
+    "processes": 0,
+    "rootExists": false
+  },
+  "independent": {
+    "checkedAtUtc": "2026-10-26T11:08:42.6720715Z",
+    "rootExists": false,
+    "relatedProcessCount": 0
+  },
+  "actualDb": "NOT_RUN",
+  "served": "NOT_RUN",
+  "userAcceptance": "NOT_RUN",
+  "agent": "NOT_RUN"
+}
