@@ -1,5 +1,12 @@
 # Anvil 재설계 작업현황
 
+## 현재 재개 — 2026-10-27 FN04 직접 계약·구현 승인
+
+- 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
+- 현재source codex/av3-stage-b/0def97b7·trackedclean/보호8보존. 단일담당 ui08_reported_download에게FN04읽기preflight만배정했고Main은관리·설계상세·검수·통합을맡는다. 허용경로/WI/freshRED전제품작성0,기존입력/관계검사·완료동선재구현0이다. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외이며§6실안전공급자없는생산적용412유지다.
+- P03/FN16기존정확결정은별개로남기고이번FN04승인을다른실행·전환경계까지확대하지않는다. 전체WORK_PLAN은미완료이며이번직접승인작업을이어간다.
+
+
 ## 현재 인수 요약 — 2026-10-27 P03 실행 결정 전달 후
 
 - **현재 단계:** 로컬·WSL 기능 구현 1단계. 전체 WORK_PLAN 미완료이며 완료보고 상태가 아니다. Stage A의 과거 수용 이력은 보존하되 현재 정식 개발 PG 컨테이너/네트워크 부재와 원 volume 보존 상태를 별도로 관리한다.
@@ -8554,3 +8561,12 @@
 
 - **새 결정 대기 구현 차단 감사3회·상태 전환 기준 충족**:직전goalturn은상태재확인/기록만인no progress였다. 이번67347a는24cd70ea/동일branch·Main WORK_STATUS만dirty/index0·후보92602F25/보호8불변,PMOcursor16 changedfalse·idle/terminal을확인했다. 새직접답변이없고확인된live작업핸들도없으므로verifiedwait가아니다. 동일실질경계는FN04원r1+보완의새저장/보호조회계약채택과P03/FN16의기존정확결정이며세goalturn연속구현진전없이유지됐다. 기존소비컴파일승인재사용/새질문복제/소스·SQL·DB·정책·서비스·Agent·새QA0이다.
 - 전체목표/미완료범위는그대로이며UI08소스5665/문서보완24cd를전체완료로승격하지않는다. 기존StageB~G의나머지실Agent/회수/이전/인계·복원/설치/실환경/사용자인수선행은직전한정대조대로미충족이다. 현근거안의정당한독립구현단위를확정하지못해차단기준을충족하며안전checkpoint보존후goal상태를blocked로요청한다(complete/paused아님). 정확새답변또는실질외부선행변화뒤유효범위만단일담당→독립검수→Main통합으로재개하며재개시차단감사는새로센다.
+
+- **P03 새 단발 직접승인·자원 사전등록**:PMO전달call_a5b62cad523c44689b487cb8d51b4812 ‘잔여 위험을 한정 수락하고 조사1회승인’수신확인10:55:41Z/만료최대11:25:41Z·연장0. exact20a807dd/planC996/controllerB071/shell1568만적용·현재0def대체0. 승인기록docs/approvals/P03_PG_DISCOVERY_METADATA_R2_20261027.json SHA6B084C414129B12FB97875C982E139ECF0B342DB818A93DC546A40CF53E4E638이며비밀없는기록자체가승인인증은아니다. Main은fresh도구/부모·기한/부재대조후새sourceQA /home/daon/anvil-v3-pgdiscovery-20261027-r2-src(UID1000/0700)와ledger /home/daon/.local/share/anvil-v3-pgdiscovery-20261027-r2(UID1000/0700),grant0600/runInstance/소비·receipt를준비한다. helper anvil-v3-pgdiscovery-20261027-r2/image594290e9·원volumeRO/nocopy/networknone/publish0/UID999/capdrop·create/start각1·전체60초/내부55초/8KiB/entry100000,정상exited0exacthelper만rm/신규source정리·원장소비증거보존·독립부재/원identity대조다. 오류/created/미종료/신원불명은보존/자동재시도/force0. UID1001소유주체미해결잔여위험을이번만수락·source내용/hash/파일명출력0. PG/DB복구·서비스/Secret/Agent는제외다. FN04담당은읽기preflight완료·제품writer0으로동시충돌을피한다.
+
+- **P03 신규 단발 RO metadata 실측·정리 완료**:09ae66 fresh도구/부모/부재/원identity를대조하고f17080 새GitQA exact20a/controllerB071/shell1568/planC996·0700ledger/grant0c64/instance2f6e를준비했다.32858a apply딱1회exit0/2.2023843초·METADATA_COLLECTED_AND_CLEANED/complete=true·helperb5e2 정상exited0/소비true/생성·시작·정리각1/TERM0/receiptfailedfalse다. rootUID999/GID999/mode700,1873entries/1873inodes·regular1846/dirs27·symlink/special0·logical75529846/allocated75739136만관측,원파일명/내용/hash출력0이다.
+- 09e2f6 11:01:55Z exactQA inode4001347/owner/link/clean뒤2755files175dirs/51618912bytes개별정리·helper부재/원identity·소비자0,7d1c3b 별도11:02:17Z QA/name/fullID부재·원identity/소비자0/ledger3지문일치를확인했다. 0700원장grant/consumed/receipt는의도보존(소비3511187e·receipt719c3c26/7줄)·재실행/리셋0이다. 상세 docs/04_test_reports/AV3/P03_PG_DISCOVERY_METADATA_R2_ACTUAL_RESULT_20261027.md에정확권한/명령/도구9지문/결과·미검증을보존했다. 구조조사완료와PG/DB복구·schema/서비스·사용가능을구분하고후자는NOT_RUN이다. FN04단일담당은읽기preflight완료·MainWI확정뒤구현으로이어간다.
+
+- FN04 WI946E 첫독립C0/I1:Main의snapshot필드수표기19가채택계약18과달랐다. 계약표/실구현값은변경하지않고WI1곳만‘채택계약§2정확18필드’로정정했다. 새WI SHA69EF6664015FBFDB54BAB099620C4FE454F0E21EEAFCC5188E21E00F6A0DCAE5이며manifest F512/승인CF12/부모84C4/보완9260불변,제품·시험·SQL0이다. 이오기는작성전발견된Main문서오류1회이며담당에게정정지문을전달·한정재검수후TEST_ONLY를GO한다.
+
+- FN04 WI69EF 한정재검수는원I1 ADDRESSED/C0I0·한곳정정외원WI지문동일을확인했다. 같은단일담당에게신규서버fixture/시험5만TEST_ONLY GO·실행0/제품SQLUI0으로배정했고MainfreshRED전추가제품작성금지다. Main은신규승인2/정확P03실제결과/계획·현황/WI·manifest를안전checkpoint로보존한다. 실제FN04기능완료/DB적용·서비스/Agent0이다.

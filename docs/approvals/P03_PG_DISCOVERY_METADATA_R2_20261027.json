@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "HUMAN_APPROVED_ONE_USE_RO_METADATA",
+  "source": {
+    "kind": "PMO_DELEGATED_DIRECT_USER_REPLY",
+    "threadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "questionItemId": "[\"request_user_input_async\",\"call_a5b62cad523c44689b487cb8d51b4812\",0]",
+    "answer": "잔여 위험을 한정 수락하고 조사 1회 승인"
+  },
+  "issuedAt": "2026-10-27T10:55:41.000Z",
+  "expiresAt": "2026-10-27T11:25:41.000Z",
+  "executionCommit": "20a807dd28fa5f537f8ac06fa004902220b0b567",
+  "planSha256": "C9960CD6D65DBFB0BE47E3C7A3131809D2A090CD59C51F36C6890B3BBA73794D",
+  "controllerSha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7",
+  "shellSha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B",
+  "allowed": {
+    "sourceRoot": "/home/daon/anvil-v3-pgdiscovery-20261027-r2-src",
+    "ledgerRoot": "/home/daon/.local/share/anvil-v3-pgdiscovery-20261027-r2",
+    "helper": "anvil-v3-pgdiscovery-20261027-r2",
+    "volume": "anvil-v3-development-pgdata",
+    "volumeMode": "READ_ONLY_VOLUME_NOCOPY",
+    "maxCreates": 1,
+    "maxStarts": 1,
+    "totalMs": 60000,
+    "metadataBytes": 8192
+  },
+  "residualRiskAccepted": "P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN",
+  "excluded": [
+    "원volumeRW/복사",
+    "PG기동/SQL/DB복구/서비스",
+    "설치/chown/ACL/계정/인증서/키/Secret",
+    "Agent/Oracle"
+  ],
+  "externalUserApprovalVerified": false
+}

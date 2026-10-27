@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "HUMAN_APPROVED_SOURCE_IMPLEMENTATION_ONLY",
+  "project": "Anvil v3",
+  "observedAt": "2026-10-27T10:54:04.267Z",
+  "source": {
+    "kind": "DIRECT_USER_REPLY",
+    "questionItemId": "[\"request_user_input_async\",\"call_fa997b24d02f4905b251e0f55c46ed63\",0]",
+    "answer": "위 범위 계약·구현 승인"
+  },
+  "documents": [
+    {
+      "path": "docs/contracts/FN04_ACTIVATION_APPROVAL_DELTA_PROPOSAL.md",
+      "sha256": "84C4AB82C2003F7F0D7E541FD881C804614CACFE5BFC4AF92CE485ECE9AC0573"
+    },
+    {
+      "path": "docs/contracts/FN04_ACTIVATION_POINTER_CONTRACT_ADDENDUM_CANDIDATE.md",
+      "sha256": "92602F25436F423002607BA1B118B35D4F273E55DAC06E2D33F082D18EEFB715"
+    }
+  ],
+  "allowed": [
+    "activateDesignChange 한 연산의 승인 후보 저장·보호 조회",
+    "현재/고정 적용 이력 GET 2개와 불변 snapshot/hash",
+    "정확 baselineRefs/CAS·일회 승인 검증/소비/replay",
+    "기존 UI07/UI08의 명시 준비·요청·결정·결박·조회 연결",
+    "기존 SQL을 보존하는 미적용 forward SQL·합성 검증"
+  ],
+  "excluded": [
+    "실제 DB 적용·지속 데이터 변경",
+    "실제 사용자 권한 부여·정책 변경",
+    "실제 기준 전환·업무 재개",
+    "서비스·Secret·인증서 변경",
+    "Agent/native 실행·외부 비용·Oracle/운영"
+  ],
+  "invariants": [
+    "부모 §6의 실제 영향 완전성/OS writer 근거 미충족 시 생산 적용412 유지",
+    "기존 입력·관계 검사 재사용",
+    "원문·이력·승인/소비 기록 보존",
+    "본 기록은 앱 실행 허가·개발 DB 적용 토큰이 아님"
+  ]
+}
