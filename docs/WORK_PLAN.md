@@ -1262,7 +1262,7 @@
 |---|---|---|---|---|---|
 | P01 | 상세 클릭형 동작·오류 검토 | A | 현재 설계 | 현재 설계 | 완료 · 2026-10-15 Main 어울 / 사용자 ‘P01 시안·양식 승인’ · 근거 P01 REVIEW-02·WORK_STATUS |
 | P02 | 실제 Agent 지원·기술·계약 확정 | A | 현재 설계 | 현재 설계 | 완료 · 2026-10-16 Main 어울 / P02 RESULT·TD-01~03·독립 검토 보완. 실제 연동 미검증 |
-| P03 | 개발 기준선·검증 실행 환경 | A | P01,P02 | P01,P02 | 완료 · 2026-10-16 Main 어울 / ENVIRONMENT_READY·P03 RESULT, 제품 기능 완료 아님 |
+| P03 | 개발 기준선·검증 실행 환경 | A | P01,P02 | P01,P02 | 완료 · 2026-10-16 Main 어울 / ENVIRONMENT_READY·P03 RESULT, 제품 기능 완료 아님 2026-10-27 기존정식환경복구는미완료. 새단발RO구조조사·일회QA회수/원장보존완료(32858a/7d1c3b), DB/schema/서비스ready·복제/복구는NOT_RUN. |
 | UI00 | 공통 작업틀·상태 표현 | B | P03 | P03 | 작업 중 · 2026-10-16 Main 어울 / WORK_STATUS·FN01 연결 전 부분 구현 |
 | UI01 | 프로젝트 목록 | B | UI00 | UI00,FN01 | 작업 중 · 허가 목록/검색/관측·오류 보존 partial·WORK_STATUS. 2026-10-26 현재 목록→UI12 인계 진입 연결·집중17/type/build 확인·독립 C0/I0/M0. 생성/단계 메타·실제 새 UI DB 여정 미완료 |
 | UI02 | 프로젝트 생성·기존 소스 기준선 | B | UI00 | UI00,FN01,FN02,FN03 | 작업 중·생성 초안/방법론 선택·검토/확정·빈/기존 소스 선언 입력/조회·생성 same-client actual d8128157, fixture10 확인. 실제 관측/기준선·문서/환경/총괄·사용자 UI DB 미완료  2026-10-25 중복 단계 정의의 일반 수정/삭제 차단·참조 보존 명시 복구(bca42c9a), 실제 두 편집기 합성 DOM1/1·인접13/typebuild0·한정 C0/I0/M0·QA0. 실제 DB/served는 미검증.  2026-10-25 기준선 근거파일의 전송 전 실패 입력보존·권한상실 잠금/재조회·실제 prop 고정 후 전송 연결, 합성DOM1/1·인접unit16/typebuild0·한정 C0/I0/M0·QA0. 실제DB/served·전체인수 미확인.  2026-10-26 FN01 원문 첨부 r3의 source/UI/pending0042·합성 검수 범위 완료: Main48집중/인접·실제파일3·실제Edge/fakeDB2 PASS, 독립finding 해소·QA0. 실제PG/정식root·서비스/실Agent 미적용·미검증이며 FN01/UI02 전체 완료는 아님. 결과 FN01_DRAFT_ARTIFACT_STORAGE_RESULT.md. |

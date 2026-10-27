@@ -1,5 +1,12 @@
 ## 2026-10-27 12:31 KST 복구 전제 추가 관측 — 기존 네트워크도 없음
 
+## 2026-10-27 20:02 KST P03 RO 구조조사·일회 자원 회수
+
+- 새직접승인 exact20a807dd/planC996/controllerB071/shell1568으로구조metadata조사1회를수행했다. 32858a exit0/complete=true·image594290e9·원volume anvil-v3-development-pgdata RO/nocopy/원identity일치, rootUID999/GID999/mode700·1873항목/1846파일/27dir·symlink/special0·logical75529846/allocated75739136을확인했다. 파일명/원내용/hash출력0·PG기동/SQL/복구/서비스/Secret/권한/Agent0이다.
+- 09e2f6 exact sourceQA2755files175dirs·51618912bytes개별회수후7d1c3b 11:02:17.542Z(20:02:17 KST) 별도조회에서QA/helper name/fullID부재·원volumeidentity/소비자0을확인했다. /home/daon/.local/share/anvil-v3-pgdiscovery-20261027-r2 0700원장의0600 grant/consumed/receipt3개는의도보존·단발소진이다. 상세 P03_PG_DISCOVERY_METADATA_R2_ACTUAL_RESULT_20261027.md·WORK_STATUS를따른다.
+- 구조사실만확인했으며DB무결성/현재schema·실제복구/환경ready는미검증이다. 원본RO→보호사본복제/전후·사본지문검증,사본PG기동/정식전환은각별도정확효과검토·결정이필요하다. 이번metadata승인/UID1001잔여위험수락은재사용하지않는다.
+
+
 - 9ba767의 등록 anvil-v3-development network inspect는 not-found다. 과거 network ID d3253166...를 현재 신원/허가로 재사용하지 않는다. PG 컨테이너 복구 외에 새 네트워크 생성/연결 정의의 정확 결정도 필요하며 자동 생성하지 않았다.
 - 같은 읽기에서 원 named volume은 local·CreatedAt2026-10-16T03:53:33+09:00·project=v3/owner=P03/instance=dc22a0629e79f259dcd935845e88e58e를 보존했다. 이 볼륨을 참조하는 컨테이너 목록도0이다. 메타데이터 일치가 DB 내용/무결성 증명은 아니다.
 - 기존 보호 root는 디렉터리0700/uid1000/gid1000, bootstrap-password는 일반파일0600/uid1000/gid1000·실경로가 등록 경로와 같다. 값/비밀번호/DSN은 읽거나 출력하지 않았다.

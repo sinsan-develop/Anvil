@@ -1,8 +1,10 @@
+import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from './repository.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
+import {isVersionRef} from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import{ProjectApprovals}from'../approvals/project-approvals.ts';
 import{readApprovalRef}from'../approvals/approval-input.ts';
@@ -18,7 +20,7 @@ import { readSourceScopesV1, type SourceScopeV1 } from '../../../../contracts/ru
 import { cloneV1, refV1, uuidV1, isoV1 } from '../../../../contracts/runtime/validation-v1.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework','markNotificationRead','exportProject'] as const;
+export const documentOperations = ['uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'activateDesignChange', 'linkTrace', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework','markNotificationRead','exportProject'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 export const runtimeOperations = ['authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery'] as const;
 export interface ExecutionRule extends Omit<MaterialRule, 'targetScopes' | 'limitPolicyRef'> {
@@ -71,19 +73,20 @@ export async function currentPolicy(db: PoolClient, projectId: string) {
   if (contentHash(canonicalJson({ rules: row.rules_json, reason: row.reason, reviewRefs: row.review_refs })) !== row.content_hash) throw new AuthFailure('POLICY_INTEGRITY_FAILED', 503);
   return { ref: { id: row.id, version: Number(row.head_version), contentHash: row.content_hash }, rules: row.rules_json as ProjectPermissionRule[], reason: row.reason, reviewRefs: row.review_refs, createdAt: row.created_at.toISOString() };
 }
-export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, inspectPending=false) {
+export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, inspectPending=false, documents?:ProjectDocuments) {
   const policy = await currentPolicy(db, request.projectId);
   if (!policy) throw new AuthFailure('PERMISSION_POLICY_UNCONFIGURED', 412);
   if (!documentOperations.includes(request.operation as typeof documentOperations[number])) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const matched = policy.rules.filter(rule => rule.subjectRef.kind === 'HUMAN' && rule.subjectRef.userId === actor.actorId && rule.targetScopes.some(scope => scope.kind === 'PROJECT' && scope.projectId === request.projectId) && rule.operations.includes(request.operation) && Date.parse(rule.expiresAt) > Date.now());
   if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const approvalRequired=matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL');
+  if(request.operation==='activateDesignChange'&&!approvalRequired)throw new AuthFailure('APPROVAL_REQUIRED',412);
   if (request.operation === 'cancelQueuedRequest' && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('STAGE_QUEUE_APPROVAL_NOT_CONNECTED',412);
   // 역할/예약은 기존 REQUIRE_APPROVAL의 exact authorize→consume 경로를 사용한다. 실제 실행 준비/이해 검토는 계속 차단한다.
   if (['prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
-    if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}
+    if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals(documents).authorize(db,actor,request,policy.ref);}
     else if(request.approvalRef!==null)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
   }
   return {...policy,approvalRequired,validUntil:Math.min(...matched.map(rule=>Date.parse(rule.expiresAt)))};
@@ -94,16 +97,21 @@ export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity
   if (rows.length !== 1 || rows[0].operation !== request.operation || rows[0].request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
   return rows[0].result_ref;
 }
-export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string) {
-  const id = randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
-  const approval=request.approvalRef===null?null:readApprovalRef(request.approvalRef),consumptionId=approval?randomUUID():null,payloadRef=approval?{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(request.payload)),scopeDigest:approval.scopeDigest}:null;
+export interface ActivationReceiptIds{readonly serverCommandId:string;readonly consumptionId:string;readonly documents?:ProjectDocuments}
+const activationReservations=new WeakSet<object>();
+export function reserveActivationReceiptIds(documents?:ProjectDocuments):ActivationReceiptIds{const value=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),documents});activationReservations.add(value);return value;}
+export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string, reserved?:ActivationReceiptIds) {
+  if(reserved&&(request.operation!=='activateDesignChange'||request.approvalRef===null||!activationReservations.has(reserved)))throw new AuthFailure('ACTIVATION_RECEIPT_RESERVATION_INVALID',422);
+  if(reserved)activationReservations.delete(reserved);
+  const id = reserved?.serverCommandId??randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
+  const approval=request.approvalRef===null?null:readApprovalRef(request.approvalRef),consumptionId=approval?(reserved?.consumptionId??randomUUID()):null,payloadRef=approval?{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(request.payload)),scopeDigest:approval.scopeDigest}:null;
   const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: 'id' in ref ? ref.id : ref.artifactId, version: 'version' in ref ? ref.version : null, data: { ...('id' in ref ? { ref } : { artifactRef: ref }), ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
   const scopeDigest = contentHash(canonicalJson({ projectId: request.projectId, actorId: actor.actorId, clientId: actor.clientId, controlGeneration: request.controlGeneration, requestHash: contentHash(canonicalJson(request)), policyRef, targetRef: ref }));
   await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,$14,$15,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, consumptionId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, payloadRef?JSON.stringify(payloadRef):null, JSON.stringify(result)]);
   await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref) VALUES($1,'PROJECT',$2,$3,$4,$5,$6,$7)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest,approval?.decisionId??null]);
   await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
   await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
-  if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals().consume(db,actor,request,policyRef,id,consumptionId);}
+  if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals(reserved?.documents).consume(db,actor,request,policyRef,id,consumptionId);}
   // 실행 봉투는 실제 저장된 receipt의 불변 scope digest를 참조한다. 일반 API result의 의미는 바꾸지 않는다.
   return { result, id, authorizationReceiptRef: {id:receiptId,version:1,contentHash:scopeDigest} };
 }
@@ -115,8 +123,8 @@ export async function recordProjectDenial(access: AccessRepository, token: strin
   });
 }
 export class ProjectPolicyRepository {
-  #access: AccessRepository;
-  constructor(access: AccessRepository) { this.#access = access; }
+  #access: AccessRepository;#documents?:ProjectDocuments;
+  constructor(access: AccessRepository,documents?:ProjectDocuments) { this.#access = access;this.#documents=documents; }
   async read(token: string, projectId: string) {
     return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
   }
@@ -127,7 +135,7 @@ export class ProjectPolicyRepository {
       const result=await this.#access.authenticated(token, csrf, async (db, actor) => {
         await currentProjectController(db, actor, request);
         if (request.operation !== 'savePermissionPolicy') {
-          const policy = await authorizeMaterial(db, actor, request);
+          const policy = await authorizeMaterial(db, actor, request,false,this.#documents);
           const checkExportDeadline=async()=>{if(request.operation!=='exportProject')return;const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;exportDeadline=Math.min(exportDeadline,notificationSessionDeadline(actor,at,before),before+policy.validUntil-at.getTime());if(performance.now()>=exportDeadline)throw new AuthFailure('EXPORT_TIME_LIMIT',503);};
           await checkExportDeadline();
           const previous = await projectReplay(db, actor, request);
@@ -146,7 +154,7 @@ export class ProjectPolicyRepository {
           };
           await checkNotificationDeadline();
           if (previous !== undefined) return previous;
-          if (request.baselineRefs.length) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
+          if (request.baselineRefs.length&&(request.operation!=='activateDesignChange'||request.baselineRefs.length!==1||!isVersionRef(request.baselineRefs[0]))) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
           if(request.operation==='exportProject'){exportStarted=true;await db.query("SELECT set_config('anvil.export_payload',$1,true)",[canonicalJson(request.payload)]);}
           const applied=await material(db, actor, policy.ref,request.operation==='exportProject'?exportDeadline:undefined);

@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "phase": "SERVER_SOURCE_ONLY_FROZEN",
+  "approvalRecordSha256": "CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046",
+  "workInstructionSha256": "69EF6664015FBFDB54BAB099620C4FE454F0E21EEAFCC5188E21E00F6A0DCAE5",
+  "files": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "sha256": "AF64051217E21FC595EE10F5F2EC0CD48320754E0815FD105EA9E718762257D6"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "sha256": "EA1389B0FE6573AA2FBE7E87830851D75AC11A3B2B6AA16D618F6F4E68AEFA44"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "sha256": "98AC59FC1241BDB0A2E6208E5AC83D1827B464DDB6FEA5BE6BDBCFF3EF8E0002"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "sha256": "3CB7B89C1E2AE2BB811437142F78D1467F506E9CE7A422C544179607416068A8"
+    },
+    {
+      "path": "apps/server/modules/traceability/baseline-activation-record.ts",
+      "sha256": "0EF5D15BC055714774285EB4E4BE0DF4EEB4D512AE1BF392C15ADE00467B8030"
+    },
+    {
+      "path": "apps/server/modules/traceability/baseline-activations.ts",
+      "sha256": "F873C6EB6E903C8EEA5D97F97AED0DEA0AE0EE0857C2463F3EA7689F807F32E2"
+    },
+    {
+      "path": "apps/server/modules/approvals/design-activation-approval-candidate.ts",
+      "sha256": "11B10D45E4C9EC20ECD97E23CDF8E633FF11FDA9F4C9DDE1712998A13E8CD96A"
+    },
+    {
+      "path": "db/migrations/0050_design_baseline_activations.sql.pending",
+      "sha256": "65979FEC7C3DFA006FA312479D15BAD3089C73D6FA6EFAD8D7AD8C6C2D8414D7"
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-fixture.ts",
+      "sha256": "4455050B07E3896D8E57BD01AC9D7F702846EA63F38B65E781818CB2E84BAAC8"
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activations.test.ts",
+      "sha256": "2B974A14D6AC471E46E0A80636B9672584CF4F3C57F901E6D332C2866BA76562"
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-read.test.ts",
+      "sha256": "7FFC63AACD29CF5756517657A58A1D74FA3881D59AAF951A8200BC96AAE2AEFB"
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-routes.test.ts",
+      "sha256": "F6E268739298B4F4141B8A0490B3DC7E0AD90DC35CAE9AC34C466DA752D1D8C1"
+    },
+    {
+      "path": "tests/unit/FN11/design-activation-approval.test.ts",
+      "sha256": "9A55B49DA6276B607DE50849251EB94EDD19A97283AB64B9FDDBA9A0506408A4"
+    }
+  ],
+  "uiInitialUnchanged": true,
+  "protectedUntrackedUnchanged": true,
+  "actualPgExecuted": false
+}

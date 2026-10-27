@@ -4,7 +4,7 @@
 
 - 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
 - 현재source codex/av3-stage-b/0def97b7·trackedclean/보호8보존. 단일담당 ui08_reported_download에게FN04읽기preflight만배정했고Main은관리·설계상세·검수·통합을맡는다. 허용경로/WI/freshRED전제품작성0,기존입력/관계검사·완료동선재구현0이다. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외이며§6실안전공급자없는생산적용412유지다.
-- P03/FN16기존정확결정은별개로남기고이번FN04승인을다른실행·전환경계까지확대하지않는다. 전체WORK_PLAN은미완료이며이번직접승인작업을이어간다.
+- P03 RO구조조사는새단발승인으로실행·정리·독립사후확인을완료하고소비원장을보존했다(32858a/09e2f6/7d1c3b). 후속복제/PG·DB복구는미승인·미실행이고FN16질문은별개로남는다. 전체WORK_PLAN은미완료이며현재FN04직접승인범위를이어간다.
 
 
 ## 현재 인수 요약 — 2026-10-27 P03 실행 결정 전달 후
@@ -8570,3 +8570,23 @@
 - FN04 WI946E 첫독립C0/I1:Main의snapshot필드수표기19가채택계약18과달랐다. 계약표/실구현값은변경하지않고WI1곳만‘채택계약§2정확18필드’로정정했다. 새WI SHA69EF6664015FBFDB54BAB099620C4FE454F0E21EEAFCC5188E21E00F6A0DCAE5이며manifest F512/승인CF12/부모84C4/보완9260불변,제품·시험·SQL0이다. 이오기는작성전발견된Main문서오류1회이며담당에게정정지문을전달·한정재검수후TEST_ONLY를GO한다.
 
 - FN04 WI69EF 한정재검수는원I1 ADDRESSED/C0I0·한곳정정외원WI지문동일을확인했다. 같은단일담당에게신규서버fixture/시험5만TEST_ONLY GO·실행0/제품SQLUI0으로배정했고MainfreshRED전추가제품작성금지다. Main은신규승인2/정확P03실제결과/계획·현황/WI·manifest를안전checkpoint로보존한다. 실제FN04기능완료/DB적용·서비스/Agent0이다.
+
+- **FN04 서버 freshRED·제품 GO**:Main84e836은실DB금지pool/Fastifyinject·listen/외부자원0의신규시험을읽기대조했다(위험API검색rg무일치exit1은부재관측). dbe52f node --test 신규서버4파일은19수집/2PASS17FAIL/skip0·3836.9905ms/exit1이다. 12실패는정확신규module부재,나머지5는실제GET404≠401·command400≠401·미등록generation404≠400·baselineRef범위412·targethash불일치수락의기능RED다. fixture18필드/hash와기존소비replay2는PASS·fixture/타입오류로RED를대체하지않았다.
+- 초기TEST_ONLY5raw제출지문/기존제품9/보호8불변을대조하고단일담당에게WI69EF업무1의서버기존4/신규3/pendingSQL1만제품GO한다. UI제품/새UI시험·브라우저/QA·실DB/SQL실행/Agent/Git0,기존검사기대/timeout완화0이다. 정상transaction시험은내부합성routine만·생산신규apply는§6근거없음412유지,Main제품수정0이다.
+
+- **FN04 TEST_ONLY 독립C0/I2·검수범위 정정**:담당서버구현중독립읽기에서①생산안전helper/익명route만으로실activate→저장오배선을못잡는공백②fixture배열복원을실소비/receipt전체원자성으로표현하는과장이발견됐다. 현재제품최종결함판정이아니다. 같은시험5에실publicactivate의412/쓰기0과실persistProjectReceipt의예약ID동일성/소비순서를추가하도록같은담당에지시했다. 기존assert/timeout삭제·완화0·fixture시험제목/보고는실패전파/호출순서로한정·실PG/COMMIT/deferred/경합미검증을유지한다. 내부documents보호reader의명시전달은허용서버4안의필수의존wire로채택하며기존caller기본/권한은보존한다. Main제품직접수정0이다.
+
+- FN04 담당첫서버구현시험1107a2는14PASS3FAIL(route구문오류로3case대신file1집계)/type24c526실패를제출했다. 원인은routes치환String.replace의$'확장에의한소유파일문법손상1,owner/member조회schema오류raw전파1,OVERFLOWfixture의MAXgeneration/previousnull모순1로서로다르다. samecause3회가아니며제품/fixture오류를혼합PASS로덮지않는다. 같은담당이manifest초기routes바이트와자기diff만대조해복원/함수치환·503래핑·계약유효한overflow합성참조를최소보강한다. 기존409기대/손상503반례/timeout유지·실역사전수/PG증거주장0·허용파일밖/실DB/QA/Agent0,Main제품수정0이다.
+
+- P03後続읽기지원은원본RO→보호새volumeRW복제→원본전후/사본내용·선정metadata일치까지만독립가능함을대조했다(PG기동별도). cp/tar경로/hash/옵션·하위UID/mode/ACL/xattr·대상초기소유/공간inode·writer작업창통제·새시간상한은아직미확인이다. 이전9도구/단발소진/R2위험수락은새내용hash/복제허가로재사용하지않는다. 권장은직접새namedvolume사본이며archive중간본은민감사본/공간이더늘어나는대안으로남긴다. 새source/실조회/사본/권한·PG·SQL실행0이며Main은FN04구현우선으로유지한다.
+
+- **FN04 서버 최종Main검사·독립round1**:2e8a22 실제13raw/기존UI5/보호8불변을대조하고servercandidate manifest02144303으로동결했다. Main0fda5c 신규25+직접인접42=67PASS/FAIL0/skip0·1352.9022ms, a9359c type0이다. 이전담당66+후속9를최종67단일run로묶지않고Main이실제로실행한새67을별도로기록한다.
+- 독립서버13검수C0/I1는새GETprojection의fn04_activation_candidate_valid/history_valid가기본VOLATILE이라하위조회snapshot이달라질수있다는지적이다. Mainf991bc/1cf98a도해당header를확인했고원시험I2(실activate412/실receiptUUID)는해소됐음을확인했다. 같은담당round1에서read.test에snapshot설정정적반례만먼저추가→MainfreshRED→pendingSQL읽기체인한정수정/재검수로진행한다. DB설정계약의정적검사이며PG경합PASS로승격0·기존25기대/timeout/다른함수guard보존·UI/실DB0이다.
+- Mainf991bc의sandbox git diff는원문‘fatal: this operation must be run in a work tree’였고뒤파일읽기는가능했다. Git읽기성공으로치환하지않고knownworktree격리조건에맞춰1cf98a에서정확읽기만승격해대조했다. Gitconfig/ACL변경·제품실패주장0이다.
+
+- FN04 SQL snapshot round1 TEST_ONLY는read.test만78C94677로추가·나머지12동결지문불변이었다. Mainf06fd6 선택정적반례1은0PASS1FAIL/skip0·118.1642ms/exit1,원문‘fn04_activation_history_valid의AS이전STABLE선언이없으면중첩조회가새snapshot을얻을수있다’로실설정누락을확인했다. 동일담당에게0050.pending의history_valid/candidate_valid 순수읽기선언만STABLE로고정하는한정GO를준다. payload_valid IMMUTABLE/현재성·시각·DMLguard는불변·AS이전선언만검사하며본문/주석문자열로통과불가다. 실PG/동시성/COMMIT는NOT_RUN·기대/timeout·다른파일수정0이다.
+
+- **FN04 서버단계한정인수·UI TEST_ONLY착수**:Main5ab38b round1 read6PASS/skip0·285.0675ms·fbac39 추가TS포함type0,독립원I1 ADDRESSED/C0I0. fce7c7은SQL2header역치환원raw동일/나머지11·UI5/보호8불변을확인했다. 이전Main67과후속read6은서로다른구간증거이며최종68단일PASS로합성0이다. 결과 docs/04_test_reports/AV3/FN04_ACTIVATION_APPROVAL_POINTER_RESULT_20261027.md에기능부분구현/명령·실결과/오류·미검증을보존했다.
+- 같은담당에게UI API시험2/DOMtest·harness2(허용22~25)만TEST_ONLY GO. 실제상위App→UI07→UI08→UI07왕복미연결RED를목표로하며기존상위실소비선/초기조회성공을검수한다. source1~21동결·UI제품/브라우저·QA/실DB/서비스/Agent/Git0. Main서버안전checkpoint뒤정확HEAD를전달한다.
+
+- FN04서버checkpoint Main6f53b1 exact19 stage·서버13중raw5동일/EOL8만·문서6raw동일·보호8/UI5불변/cachedcheck0. RESULT에게시index8지문을추가해실행raw와구분했다. 신규UI TEST_ONLY4는별도담당작업으로보존·stage제외이며실DB·SQLapply/PR/merge0이다.
