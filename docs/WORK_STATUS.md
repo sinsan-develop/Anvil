@@ -8675,4 +8675,6 @@
 
 - **FN05/UI10 다음독립미완료 상세후보**:단일담당이requestKnowledgeShare의코드명령/route/UI소비선0·기존SQL공유차단/상태·대상resolver·승인결박공백을읽기로확인했다. Main은A요청metadata보관/본인보호조회만후보로선정하고B실공유집행은제외했다. 신규docs/contracts/FN05_KNOWLEDGE_SHARE_REQUEST_CANDIDATE.md 15520bytes/F60EEE63D28E65949B41BEA1F67D5B70F61767F84141E67A9F1CCBAC8A226B47를정본/source동일확인,현재허용목록/새API·schema/권한으로채택하지않았다. RECORDED_ONLY/currentCheck분리·현재원문/target접근·미지원common·본인조회·정확명령/replay/민감·승인Ref미연결거절/실전송·SHARED·승인소비0·D1~5필요결정을명시했다. 첫저장ParserError1(빈파이프,실행전파일0)은마지막출력배열식만동일본문으로정정한f46de2 exit0에서회복했다. Main본문읽기대조후별도독립검수중·제품/SQL/시험/환경0,새사용가능기능/전체완료아니다.
 
-- **FN05共有요청 후보 독립검수**:제출F60EEE63지문일치·후보문서한정C0I0/필수보완0을확인했다. 기존requestKnowledgeShare의출발측보관/본인조회부분업무이나현재source연산0·SQLguard공유차단으로새API/schema/조회권한은추가채택필요한후보그대로다. 요청≠SHARED/targetREAD≠쓰기·현재권한/원문·승인미연결거절/common미지원·불가최소응답분리가유지됐다. PMO에코드·화면·미적용SQL/합성구현의정확상세계약채택만요청하며실제DB/정책부여/복사·전송·권한·Agent는제외한다. P03질문중복/실행0·원계획미완료유지.
+- **FN05 공유요청 후보 독립검수**:제출F60EEE63지문일치·후보문서한정C0I0/필수보완0을확인했다. 기존requestKnowledgeShare의출발측보관/본인조회부분업무이나현재source연산0·SQLguard공유차단으로새API/schema/조회권한은추가채택필요한후보그대로다. 요청≠SHARED/targetREAD≠쓰기·현재권한/원문·승인미연결거절/common미지원·불가최소응답분리가유지됐다. PMO에코드·화면·미적용SQL/합성구현의정확상세계약채택만요청하며실제DB/정책부여/복사·전송·권한·Agent는제외한다. P03질문중복/실행0·원계획미완료유지.
+
+- **정확 FN05 후보 직접결정 질문 접수**:PMO최신회신은지원재개P03/FN16한정으로신규FN05계약판단범위밖이며후보채택/구현승인전달0이라고명시했다. Main은F60EEE63 A안(D1~5)의기존계획상태/대상·보호API·미적용저장계약추가와코드·화면·미적용SQL·합성검수만직접질문1개를제시했고accepted=true다. 실제공유/전송/대상쓰기/승인생성·소비/DB적용/정책부여/서비스/Secret/Agent제외,답변전code0/질문중복0이다. P03실제copy질문도별도로미답변이며하나의답변을다른범위허가로전용하지않는다. 두질문외새전수탐색/완료시험반복을개발진도로만들지않고원자료와source checkpoint를보존한다.
