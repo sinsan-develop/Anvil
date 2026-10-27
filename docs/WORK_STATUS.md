@@ -8541,3 +8541,11 @@
 
 - **FN04 기존 후보 독립대조 결과·기존질문 보존**:SHA84C4AB82 후보는사용자가치/비중복이나현상태C0/I1이다. I1은후속CAS에필요한불변activation정확snapshot/hash·현재pointer보호GET/읽기주체·부재/과거/현재변경구분의상세계약미정이다. 현재baseline_activations는논리정의이며실저장/조회없음,공개command/dispatch도없다. 기존입력/관계parser는이미구현되어재작성0이고candidate보관은계속계획저장전용·baselineRefs=[]guard다. reason보호검사는새입구에명시연결해야한다. §6실안전gap는현재항상생성/삭제금지여서412그대로다. 후보그대로전체구현을발행하지않는다.
 - 기록상10/21정확채택질문·10/25답변미수신이력이확인돼직접질문을복제하지않는다. 현재PMO지원범위밖판정도기존미채택을해소하지않는다. 미적용SQL번호0050은다른후보와충돌가능해미고정이다. 문서제안/합성helper를실제기능완료로세지않고기존P03/FN16·FN04질문의정확답변/필수외부선행변화시그범위로재개한다. 이번turn은UI08실구현·검수·게시의progress이며동일차단3회감사/goal완료또는blocked를임의주장하지않는다.
+
+
+- **FN04 I1 한정 보완 후보 착수**: 이번goal직전turn은UI08실구현/검수/게시의progress다. 새833b81은4d41151a/privateexact/trackedclean·보호8불변,PMOcursor15는P03/FN16새답변0·idle/terminal이어서live작업verifiedwait가아니다. 기존FN04현재pointer설계공백I1은채택대기와독립적으로구체화가능한필수상세계약이므로새보완후보로한정한다. 기존r1 84C4AB82/질문은불변·제품/SQL/환경0이며현재자료형/조회/원문공개delta를미채택으로명시한다.
+
+
+- **FN04 I1 보완 후보 검토·정확 채택 질문**:d001b9 신규보완문서 FN04_ACTIVATION_POINTER_CONTRACT_ADDENDUM_CANDIDATE.md SHA92602F25436F423002607BA1B118B35D4F273E55DAC06E2D33F082D18EEFB715/12138bytes를양쪽에작성했다.978b50 부모84C4불변/양쪽동일·제품diff0,독립읽기C0/I0로snapshot/hash·현재/고정GET·NONE/유실·과거/세대/CAS/replay의원I1상세계약공백이문서상해소됐음을확인했다. reason/원payload중복공개0·기존후보OWNER+원요청자보호와새OWNER적용사실조회delta를분리했다. 저장guard/경합·실기능검증PASS는아니다.
+- 최신goal의설계결정필요시신산님결정요청경계에따라원r1과이새GET/snapshot보완을함께채택하는source/UI/pendingSQL/합성범위의정확질문1개를directasync제시했다. PMO한정범위밖판정/기존P03·FN16질문은유지하며재개를대신지시하지않는다. 과거부모만의답변을새보완까지승인한것으로넓히지않는다. 실제DB/정책/권한·실기준전환/서비스/Secret/Agent·§6실안전생산은제외/412그대로다.
+- 이번turn은새기능구현/시험진전0이며설계검수로필요한정확결정범위를보완한것이다. 직전UI08progress뒤새답변없는구현차단감사첫회로보수적으로센다. 새질문을일반성공/기능완료로세지않고goal active유지·완료/blocked전환0이다. 답변뒤유효범위만WI/단일subagent/검수로이어가며현재codewriter0/등록QA0이다.
