@@ -8317,3 +8317,12 @@
 
 
 - **FN09 기존 화면시험 Main 검수·통합 준비**: 단일담당은 시험1파일의 TSX 재귀 메모리 변환만 보완했다. Main09ffc4 실제 기존4 PASS358.9764ms/skip0·type/diff0, c85650의 constpid이하 fixture/시험 본문 바이트 동일true를 확인했다. 최종SHA3762371CB1A51523AF2FD24FA016891E6F94640C24E183E01A69956CB02EC217·독립 C0/I0다. 담당 타입보정2회/추정읽기2건은 제품 실패와 구분한다. 제품·SQL/DB/Auth/정책·서비스·Secret/Agent/자원변경0·보호8보존이며 소유시험1+WI/결과/계획/현황4문서 정확5로 기존branch checkpoint/private 게시한다. 앞선 수집FAIL만 후속해소했고 전체 미검증/계획 미완료는 유지한다. 다음은 실제 미구현 FN16 수동백업의 보호참조/수집·상태 저장 상세안을 구체화해 PMO에 정확한 결정·지원만 요청하며 임의 키/대상/수치·실자원을 만들지 않는다.
+
+
+- **FN09 수집 복구 게시·FN16 상세 후보 구체화**: 186d9b의c629308bcd3125fb6a8e8c891e1743a11a8b7897은a20d6e exact5/원문indexEXACT5·4c0946 private/local exact·trackedclean/보호8/mainf976불변이다. Main은실제누락FN16/UI14의보호참조·수동정책/job·전체자료collector/원자성공백을docs/contracts/FN16_MANUAL_BACKUP_POLICY_CANDIDATE.md r1 SHAFB1684C3826FE74FE4403A93AA6EE71E695A180F019F1E6ECDDF39811B2DDD93에구체화했다. A설치설정참조선택/B소유자보호참조설정화면중B권장이나NOT_ADOPTED·제품/DB/키/경로/서비스변경0이다. 현재지원되지않는collector/키/소스를완료로숨기지않고필요결정을PMO에구체요청한다. Node24/PG15공식문서읽기는설계근거이며구현검증이아니다. 독립후보검토후상세계약채택과실행승인을분리한다.
+
+
+- **FN16 후보 독립 검토 보완 r2**: r1 검수는 연결 설정의 비밀 제외 참조·제공 알림 설정·실행/감사 이력의 명시 누락과 Repeatable Read 수집 snapshot에서 최종 현재 권한까지 검사할 때의 회수/격리 관측 공백을 확인했다. Main은 수집 목록을 보완하고 별도 현재 DB 경계의 publish 전 인증/제어/정책·키/대상/격리 재검사·job/정확 소비 결박·파일/commit 비원자성과 불명 보존을 명시했다. 옛 ref 일괄거절 문구는 무효화/현재선택 불일치로 좁혀 유효한 과거 원문/옛 복호화키를 보존한다. 후보r2 SHA717496CD0E47ED1A267A689FAF82D9D2C9AF5A4D10FA83112B80A1660AEED5B0·NOT_ADOPTED/제품쓰기0이며 B선택이 미정 키보호/유실/이식 계약의 구현 승인이 아님을 명시했다. 다음은 이 구체 후보의 PMO 최초 경로/상세화 결정을 요청하고 실제 키/대상/DB/서비스 실행과 분리한다.
+
+
+- **FN16 후보 r2 검토 결과·채택 경계**: 독립 검수는 필수 자료/별도 현재권한 경계/유효 과거 ref 보존의 원 보완을 해소했다고 판정했다. 후보717496CD는 NOT_ADOPTED이며 B 선택만으로 키 보호 adapter·유실/이식 미정 계약의 구현을 허가하지 않는다. 추가 대조상 A의 기존 saveBackupPolicy(policy,reason)/createBackup(policyRef,sourceSelection,reason)와 공통 targetId/expectedVersion으로 정책CAS·수동접수는 정의 가능하나 보호 참조 공급/목록·정확 조회·실제 파일 생성은 상세화가 필요하다. 구현되지 않은 공급자를 합성 ID로 정식 대체하지 않는다. PMO 최신2860d926:4는 자기 대기 유지/추가지시0이므로 Anvil 전체 중단으로 확대하지 않고 정확 A/B·상세 계약 결정만 요청한다. Main은 소유 후보/현황2문서로 검토 기준을 게시하며 추가 원계약 대조·상세화는 계속하되 미채택 등록/키 계약의 제품 쓰기는 하지 않는다.
