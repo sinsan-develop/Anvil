@@ -8678,3 +8678,11 @@
 - **FN05 공유요청 후보 독립검수**:제출F60EEE63지문일치·후보문서한정C0I0/필수보완0을확인했다. 기존requestKnowledgeShare의출발측보관/본인조회부분업무이나현재source연산0·SQLguard공유차단으로새API/schema/조회권한은추가채택필요한후보그대로다. 요청≠SHARED/targetREAD≠쓰기·현재권한/원문·승인미연결거절/common미지원·불가최소응답분리가유지됐다. PMO에코드·화면·미적용SQL/합성구현의정확상세계약채택만요청하며실제DB/정책부여/복사·전송·권한·Agent는제외한다. P03질문중복/실행0·원계획미완료유지.
 
 - **정확 FN05 후보 직접결정 질문 접수**:PMO최신회신은지원재개P03/FN16한정으로신규FN05계약판단범위밖이며후보채택/구현승인전달0이라고명시했다. Main은F60EEE63 A안(D1~5)의기존계획상태/대상·보호API·미적용저장계약추가와코드·화면·미적용SQL·합성검수만직접질문1개를제시했고accepted=true다. 실제공유/전송/대상쓰기/승인생성·소비/DB적용/정책부여/서비스/Secret/Agent제외,답변전code0/질문중복0이다. P03실제copy질문도별도로미답변이며하나의답변을다른범위허가로전용하지않는다. 두질문외새전수탐색/완료시험반복을개발진도로만들지않고원자료와source checkpoint를보존한다.
+
+### 2026-10-28 동일 결정 경계 재대조 — 감사 2회
+
+직전 goal turn은 source367d 게시·실행후보190ce/FN05후보07c·현황5e35로정본상태와다음행동을변경한 progress였다. 이번 continuation은8b5051의실Git/private5e35동일·trackedclean/보호12불변·후보C2B1/F60동일과PMO cursor27 terminal/새P03답변없음을확인했으나새기능/구현/시험진전없는 no progress다. subagent도모두completed/interrupted이며liveprocess검증대기가아니다. 원turn말미부터동일한P03실효과결정/FN05상세계약직접답변경계가연속2회관측됐다. goal active유지·complete/paused/blocked아직호출0. 단순계속입력/자동goal을정확답변으로전용하지않으며질문/기존검사/독립조사반복·새권한/DB/실행0. 재개조건은각기존질문의명시답변/실질선행변화이며전체계획미완료를보존한다.
+
+### 2026-10-28 동일 결정 경계 감사 3회 — goal 차단 판정
+
+이번도 no progress이며ac597f는HEAD5e35·Main현황1dirty/보호8untracked보존,PMO cursor28 terminal은P03새답변없음을확인했다. FN05직접질문에도새답변이없고실제공유요청계약/코드GO로전용할권한근거가없다. 원turn말미·앞continuation·현재의동일한실제효과/상세계약결정경계가연속3회충족됐고,livejob verified wait가아니다. 완료검사재실행/같은조사·질문반복으로진도를만들거나새임의기능을발명하지않는다. 기존계획미완료·원본/기존승인·미검증/보호자료를보존하고goal을blocked로설정한다. 사용자중지에의한paused나목표complete가아니다. 기존P03실제copy질문의정확답변또는FN05후보F60EEE63의정확채택답변/실질선행변화가오면해당범위만새감사로재개한다. 제품/DB/권한/실행/새자원/실Agent0이다.
