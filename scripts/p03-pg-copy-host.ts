@@ -1,0 +1,298 @@
+import {createHash} from 'node:crypto';
+import {spawn as nodeSpawn} from 'node:child_process';
+import {constants,promises as fs,type Stats} from 'node:fs';
+import {dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {parseWireJson} from '../contracts/canonical.ts';
+
+// COPY 전용 준비 실행기. import/default/plan/factory 생성은 외부 환경을 조회하지 않는다.
+export const FIXED_COPY=Object.freeze({shellPath:'scripts/pg-recovery-copy.sh',controllerPath:'scripts/p03-pg-copy-host.ts',scope:'P03_PROTECTED_COPY_R1',sourceRoot:'/home/daon/anvil-v3-pgcopy-20261027-r1-src',ledgerRoot:'/home/daon/.local/share/anvil-v3-pgcopy-20261027-r1',branch:'codex/av3-stage-b',remote:'git@github-sinsan-develop:sinsan-develop/Anvil.git',node:'/opt/node-v24.21.0-linux-x64/bin/node',nodeSha256:'7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c',sourceVolume:'anvil-v3-development-pgdata',sourceInstance:'dc22a0629e79f259dcd935845e88e58e',sourceCreated:'2026-10-16T03:53:33+09:00',copyVolume:'anvil-v3-pgdata-recovery-20261027-r1',toolsName:'anvil-v3-pgcopy-tools-20261027-r1',initName:'anvil-v3-pgcopy-init-20261027-r1',copyName:'anvil-v3-pgcopy-20261027-r1',image:'sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',daemon:'e3349f1d-dbfc-478a-96d9-295bf6c6839e',sourceMount:'/var/lib/postgresql/data',copyMount:'/anvil-recovery-copy',auditMount:'/anvil-copy-audit',totalMs:600000,sourceMs:500000,reserveMs:25000,grantMs:1800000,logicalBytes:268435456,auditBytes:33554432,stdoutBytes:16384,controlBytes:262144,maxEntries:100000});
+const f=FIXED_COPY,roles=['tools','init','copy'] as const;
+type Role=typeof roles[number];
+type Result={code:number|null;signal:string|null;closed:boolean;stdout:string;stderr:string;error?:string;clientTermRequested?:boolean;clientCloseUnconfirmed?:boolean};
+type Command={kind:string;role?:Role;id?:string;instance?:string;carrier?:string[];script?:Buffer;target?:string};
+type Ports={now():number;wallNow():number;fs:{binding(d:number):Promise<any>;consume(v:any,d:number):Promise<void>;receipt(v:any,d:number):Promise<void>};git:{binding(d:number):Promise<any>};evidence?:{binding(d:number):Promise<any>};docker:{command(c:Command,d:number):Promise<Result>}};
+class Fault extends Error{readonly code:string;constructor(code:string){super(code);this.code=code;}}
+const check=(value:unknown,code:string):void=>{if(!value)throw new Fault(code);};
+const object=(v:any)=>!!v&&typeof v==='object'&&!Array.isArray(v),keys=(v:any,k:string[])=>object(v)&&Object.keys(v).sort().join('|')===[...k].sort().join('|');
+const normalize=(v:any):any=>Array.isArray(v)?v.map(normalize):object(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,normalize(v[k])])):v;
+const same=(a:any,b:any)=>JSON.stringify(normalize(a))===JSON.stringify(normalize(b));
+const full=(v:any)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),instance=(v:any)=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v),uint=(v:any)=>Number.isSafeInteger(v)&&v>=0;
+const hash=(v:Uint8Array)=>createHash('sha256').update(v).digest('hex');
+const instant=(v:any)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v;
+const codeOf=(e:unknown)=>e instanceof Fault?e.code:'IO_UNKNOWN';
+export function parseCopyArguments(args:string[]){if(!args.length||same(args,['--plan']))return'plan';if(same(args,['--apply']))return'apply';throw new Fault('ARGUMENTS_REJECTED');}
+export function proposalCopy(){return{status:'PREPARATION_ONLY',complete:false,scope:f.scope,actualExecutionAuthorized:false,externalUserApprovalVerified:false,totalMs:f.totalMs,sourceMs:f.sourceMs,reserveMs:f.reserveMs,sourcePreservationRequired:true,copyPreservationRequired:true,writer:'UNVERIFIED',hardQuota:'UNVERIFIED',acl:'UNVERIFIED',xattr:'UNVERIFIED',systemExecutionProvider:'UNVERIFIED'};}
+function carrier(g:any){const r=g.riskBinding;return['--scope',f.scope,'--run-instance',g.runInstance,'--source-instance',f.sourceInstance,'--copy-instance',g.runInstance,'--decision-sha256',r.decisionSha256,'--acl',r.acl,'--xattr',r.xattr,'--quota',r.quota,'--writer',r.writer,'--writer-evidence-sha256',r.writerEvidenceSha256,'--quota-evidence-sha256',r.quotaEvidenceSha256];}
+function validCarrier(a:any):a is string[]{if(!Array.isArray(a)||a.length!==22)return false;const flags=['--scope','--run-instance','--source-instance','--copy-instance','--decision-sha256','--acl','--xattr','--quota','--writer','--writer-evidence-sha256','--quota-evidence-sha256'];if(!flags.every((k,i)=>a[2*i]===k)||a[1]!==f.scope||!instance(a[3])||a[5]!==f.sourceInstance||a[7]!==a[3]||!full(a[9])||a[11]!=='REQUIRE_NONE_VERIFIED'||a[13]!=='REQUIRE_NONE_VERIFIED'||a[15]!=='REQUIRE_ENFORCED'||a[17]!=='REQUIRE_CONTROLLED'||!full(a[19])||!full(a[21]))return false;return true;}
+function validateGrant(b:any,g:any,wall:number){check(b.platform==='linux'&&b.uid===1000&&b.safePaths===true&&b.nodePath===f.node&&b.nodeSha256===f.nodeSha256&&b.sourceRoot===f.sourceRoot&&b.ledgerRoot===f.ledgerRoot,'HOST_BINDING');check(!b.consumed,'ALREADY_CONSUMED');const v=b.grant;check(keys(v,['schema','scope','branch','commit','controllerSha256','shellSha256','nodeSha256','gitSha256','dockerSha256','runInstance','issuedAt','expiresAt','totalMs','sourceMs','reserveMs','stdoutBytes','controlBytes','auditBytes','logicalBytes','maxEntries','maxVolumes','maxCreates','maxStarts','names','riskBinding']),'GRANT_REJECTED');check(v.schema===1&&v.scope===f.scope&&v.branch===f.branch&&/^[a-f0-9]{40}$/.test(v.commit)&&full(v.controllerSha256)&&full(v.shellSha256)&&v.nodeSha256===f.nodeSha256&&full(v.gitSha256)&&full(v.dockerSha256)&&b.gitSha256===v.gitSha256&&b.dockerSha256===v.dockerSha256&&instance(v.runInstance)&&instant(v.issuedAt)&&instant(v.expiresAt)&&Date.parse(v.issuedAt)<=wall&&wall<Date.parse(v.expiresAt)&&Date.parse(v.expiresAt)>Date.parse(v.issuedAt)&&Date.parse(v.expiresAt)-Date.parse(v.issuedAt)<=f.grantMs,'GRANT_REJECTED');for(const k of ['totalMs','sourceMs','reserveMs','stdoutBytes','controlBytes','auditBytes','logicalBytes','maxEntries']as const)check(v[k]===f[k],'GRANT_REJECTED');check(v.maxVolumes===1&&v.maxCreates===3&&v.maxStarts===3&&same(v.names,{source:f.sourceVolume,copy:f.copyVolume,tools:f.toolsName,init:f.initName,helper:f.copyName}),'GRANT_REJECTED');const r=v.riskBinding;check(keys(r,['scope','runInstance','decisionSha256','ownerReplacement','acl','xattr','quota','writer','writerEvidenceSha256','quotaEvidenceSha256'])&&r.scope===f.scope&&r.runInstance===v.runInstance&&full(r.decisionSha256)&&r.ownerReplacement==='EXACT_RUN_ACCEPTED'&&validCarrier(carrier(v)),'GRANT_REJECTED');check(g.branch===f.branch&&g.commit===v.commit&&g.remote===f.remote&&g.clean===true&&g.controllerSha256===v.controllerSha256&&g.shellSha256===v.shellSha256&&Buffer.isBuffer(g.shell)&&hash(g.shell)===v.shellSha256,'SOURCE_BINDING');return v;}
+function validateEvidence(e:any,g:any,wall:number){check(keys(e,['schema','scope','runInstance','sourceInstance','copyInstance','decisionSha256','observedAt','expiresAt','writer','quota'])&&e.schema===1&&e.scope===f.scope&&e.runInstance===g.runInstance&&e.sourceInstance===f.sourceInstance&&e.copyInstance===g.runInstance&&e.decisionSha256===g.riskBinding.decisionSha256&&instant(e.observedAt)&&instant(e.expiresAt)&&Date.parse(e.observedAt)<=wall&&wall<Date.parse(e.expiresAt)&&Date.parse(e.expiresAt)<=Date.parse(g.expiresAt),'COPY_EVIDENCE_UNVERIFIED');check(keys(e.writer,['status','evidenceSha256'])&&e.writer.status==='CONTROLLED'&&e.writer.evidenceSha256===g.riskBinding.writerEvidenceSha256&&keys(e.quota,['status','evidenceSha256','allocationLimitBytes','reserveBytes'])&&e.quota.status==='ENFORCED'&&e.quota.evidenceSha256===g.riskBinding.quotaEvidenceSha256&&uint(e.quota.allocationLimitBytes)&&e.quota.allocationLimitBytes===536870912&&uint(e.quota.reserveBytes)&&e.quota.reserveBytes===134217728,'COPY_EVIDENCE_UNVERIFIED');return e;}
+const env=['PATH=/usr/bin:/bin','LANG=en_US.utf8','LC_ALL=C','BASH_ENV=','ENV=','GOSU_VERSION=1.19','PG_MAJOR=15','PG_VERSION=15.18-1.pgdg13+1',`PGDATA=${f.sourceMount}`];
+const name=(r:Role)=>r==='tools'?f.toolsName:r==='init'?f.initName:f.copyName;
+const labels=(r:Role,n:string)=>({'anvil.project':'v3','anvil.owner':'project-main','anvil.instance':n,'anvil.role':r});
+const args=(r:Role,a:string[])=>['--signal=TERM',r==='copy'?'500':'100','/bin/bash','--noprofile','--norc','-s','--','--'+(r==='tools'?'preflight':r==='init'?'init':'copy')+'-p03-copy-r1',...a];
+function mounts(r:Role){return r==='tools'?[]:r==='init'?[{Type:'volume',Source:f.copyVolume,Target:f.copyMount,ReadOnly:false,VolumeOptions:{NoCopy:true}}]:[{Type:'volume',Source:f.sourceVolume,Target:f.sourceMount,ReadOnly:true,VolumeOptions:{NoCopy:true}},{Type:'volume',Source:f.copyVolume,Target:f.copyMount,ReadOnly:false,VolumeOptions:{NoCopy:true}}];}
+function tmpfs(r:Role){const uid=r==='init'?0:999;return{[r==='copy'?f.auditMount:f.sourceMount]:`rw,noexec,nosuid,nodev,size=33554432,uid=${uid},gid=${uid},mode=0700`};}
+function exposure(v:any){return v===undefined||v===null||keys(v,[])||keys(v,['5432/tcp'])&&keys(v['5432/tcp'],[]);}
+function imageValid(v:any){const expected=['PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin',...env.filter(s=>!['PATH=','LC_ALL=','BASH_ENV=','ENV='].some(k=>s.startsWith(k)))];return object(v)&&v.Id===f.image&&object(v.Config)&&keys(v.Config.Volumes,[f.sourceMount])&&same([...(v.Config.Env??[])].sort(),expected.sort())&&exposure(v.Config.ExposedPorts);}
+function sourceValid(v:any){return object(v)&&v.Name===f.sourceVolume&&v.Driver==='local'&&v.Scope==='local'&&v.CreatedAt===f.sourceCreated&&(v.Options===null||keys(v.Options,[]))&&same(v.Labels,{'anvil.project':'v3','anvil.owner':'P03','anvil.instance':f.sourceInstance});}
+function volumeLabels(n:string){return{'anvil.project':'v3','anvil.owner':'project-main','anvil.instance':n,'anvil.role':'copy-volume','anvil.source-instance':f.sourceInstance};}
+function copyValid(v:any,g:any,wall:number){return object(v)&&v.Name===f.copyVolume&&v.Driver==='local'&&v.Scope==='local'&&(v.Options===null||keys(v.Options,[]))&&same(v.Labels,volumeLabels(g.runInstance))&&instant(v.CreatedAt)&&Date.parse(v.CreatedAt)>=Date.parse(g.issuedAt)&&Date.parse(v.CreatedAt)<Date.parse(g.expiresAt)&&Date.parse(v.CreatedAt)<=wall;}
+function actualMounts(actual:any,expected:any[],volumePaths:Record<string,string>){return Array.isArray(actual)&&actual.length===expected.length&&actual.every((m:any,i:number)=>{const e=expected[i];if(e.Type==='volume')return keys(m,['Type','Name','Source','Destination','Driver','Mode','RW','Propagation'])&&m.Type==='volume'&&m.Name===e.Name&&m.Destination===e.Destination&&m.Driver==='local'&&m.RW===e.RW&&typeof volumePaths[e.Name]==='string'&&m.Source===volumePaths[e.Name]&&(m.Mode===''||m.Mode===(e.RW?'rw':'ro'))&&(m.Propagation===''||m.Propagation==='rprivate');return keys(m,['Type','Source','Destination','Mode','RW','Propagation'])&&m.Type==='tmpfs'&&m.Source===''&&m.Destination===e.Destination&&m.Mode===''&&m.RW===true&&m.Propagation==='';});}
+function own(v:any,id:string,r:Role,g:any,imageExposure:any,volumePaths:Record<string,string>){if(!object(v)||v.Id!==id||v.Name!=='/'+name(r)||v.Image!==f.image||!object(v.Config)||!object(v.HostConfig)||!object(v.State)||!instant(v.Created))return false;const c=v.Config,h=v.HostConfig,ms=mounts(r),t=tmpfs(r),expectedMounts=[...ms.map(m=>({Type:'volume',Name:m.Source,Destination:m.Target,RW:!m.ReadOnly,Driver:'local'})),...Object.keys(t).map(Destination=>({Type:'tmpfs',Destination,RW:true}))];return Date.parse(v.Created)>=Date.parse(g.issuedAt)&&Date.parse(v.Created)<Date.parse(g.expiresAt)&&same(c.Labels,labels(r,g.runInstance))&&c.User===(r==='init'?'0:0':'999:999')&&same(c.Entrypoint,['/usr/bin/timeout'])&&same(c.Cmd,args(r,carrier(g)))&&c.OpenStdin===true&&c.Tty===false&&same([...(c.Env??[])].sort(),[...env].sort())&&same(c.ExposedPorts??null,imageExposure??null)&&exposure(c.ExposedPorts)&&h.NetworkMode==='none'&&h.ReadonlyRootfs===true&&same(h.CapDrop,['ALL'])&&same(h.CapAdd??[],r==='init'?['CHOWN']:[])&&same(h.SecurityOpt,['no-new-privileges'])&&h.Privileged===false&&h.PidsLimit===32&&h.Memory===268435456&&h.NanoCpus===500000000&&(!h.PortBindings||keys(h.PortBindings,[]))&&(!h.Binds||same(h.Binds,[]))&&same(h.Tmpfs,t)&&same(h.Mounts,ms)&&actualMounts(v.Mounts,expectedMounts,volumePaths)&&object(v.NetworkSettings)&&(!v.NetworkSettings.Ports||keys(v.NetworkSettings.Ports,[]))&&keys(v.NetworkSettings.Networks,['none'])&&v.RestartCount===0&&v.State.OOMKilled===false&&typeof v.State.Running==='boolean';}
+const toolPaths=['/bin/bash','/usr/bin/timeout','/usr/bin/find','/usr/bin/stat','/usr/bin/sha256sum','/usr/bin/id','/usr/bin/readlink','/usr/bin/awk','/usr/bin/cp','/usr/bin/sort','/usr/bin/cmp','/usr/bin/df','/usr/bin/getfacl','/usr/bin/getfattr','/usr/bin/chmod','/usr/bin/chown'];
+function toolReport(raw:string){let v:any;try{v=parseWireJson(raw);}catch{throw new Fault('COPY_TOOLS_INVALID');}check(keys(v,['status','complete','tools','features'])&&v.status==='COPY_TOOLS_VERIFIED'&&v.complete===true&&Array.isArray(v.tools)&&v.tools.length===toolPaths.length,'COPY_TOOLS_INVALID');check(v.tools.every((t:any,i:number)=>keys(t,['path','canonical','sha256','regular','symlink','image'])&&t.path===toolPaths[i]&&([t.path,...t.path==='/bin/bash'?['/usr/bin/bash']:t.path==='/usr/bin/awk'?['/usr/bin/mawk','/usr/bin/gawk']:[]].includes(t.canonical))&&full(t.sha256)&&t.regular===true&&t.symlink===false&&t.image===f.image)&&same(v.features,{nulFind:true,nulHash:true,nulSort:true,compare:true,archiveCopy:true,capacity:true}),'COPY_TOOLS_INVALID');return v;}
+function rootReport(raw:string){let v:any;try{v=parseWireJson(raw);}catch{throw new Fault('COPY_ROOT_INVALID');}check(keys(v,['status','complete','empty','rootOnly','recursive','before','after'])&&v.status==='COPY_ROOT_INITIALIZED'&&v.complete===true&&v.empty===true&&v.rootOnly===true&&v.recursive===false&&same(v.before,{uid:0,gid:0,mode:'755',type:'directory',symlink:false})&&same(v.after,{uid:999,gid:999,mode:'700',type:'directory',symlink:false}),'COPY_ROOT_INVALID');}
+export function parseCopyResult(raw:string):any{check(typeof raw==='string'&&Buffer.byteLength(raw)<=f.stdoutBytes,'COPY_RESULT_LIMIT');let v:any;try{v=parseWireJson(raw);}catch{throw new Fault('COPY_RESULT_INVALID');}check(keys(v,['status','complete','sourceIdentity','copyIdentity','sourceBefore','sourceAfter','copy','sourceConsumersBefore','sourceConsumersAfter','writer','metadata','capacity','contentVerified','selectedMetadataVerified','pointInTimeConsistencyProven','postgresStarted'])&&v.status==='PROTECTED_COPY_VERIFIED'&&v.complete===true,'COPY_RESULT_INVALID');check(keys(v.sourceIdentity,['name','instance','createdAt'])&&same(v.sourceIdentity,{name:f.sourceVolume,instance:f.sourceInstance,createdAt:f.sourceCreated})&&keys(v.copyIdentity,['name','instance'])&&v.copyIdentity.name===f.copyVolume&&instance(v.copyIdentity.instance),'COPY_RESULT_IDENTITY');const s=v.sourceBefore;check(keys(s,['entries','regularEntries','directoryEntries','regularLogicalBytes','manifestSha256','selectedMetadataSha256'])&&[s.entries,s.regularEntries,s.directoryEntries,s.regularLogicalBytes].every(uint)&&s.entries>0&&s.entries<=f.maxEntries&&s.directoryEntries>=1&&s.regularEntries+s.directoryEntries===s.entries&&s.regularLogicalBytes<=f.logicalBytes&&full(s.manifestSha256)&&full(s.selectedMetadataSha256)&&same(s,v.sourceAfter)&&same(s,v.copy),'COPY_RESULT_MISMATCH');check(same(v.sourceConsumersBefore,[])&&same(v.sourceConsumersAfter,[])&&keys(v.writer,['status','windowEvidenceSha256'])&&v.writer.status==='CONTROLLED'&&full(v.writer.windowEvidenceSha256)&&same(v.metadata,{acl:'NONE_VERIFIED',xattr:'NONE_VERIFIED',allUid:999,allGid:999,symlinks:0,special:0,hardlinks:0,externalMounts:0}),'COPY_RESULT_UNVERIFIED');const c=v.capacity;check(keys(c,['availableBytes','availableInodes','quotaStatus','allocationLimitBytes','reserveBytes','manifestLimitBytes'])&&[c.availableBytes,c.availableInodes,c.allocationLimitBytes,c.reserveBytes,c.manifestLimitBytes].every(uint)&&c.quotaStatus==='ENFORCED'&&c.reserveBytes>=f.auditBytes&&c.manifestLimitBytes===f.auditBytes&&c.availableBytes>=s.regularLogicalBytes+c.reserveBytes+c.manifestLimitBytes&&c.availableInodes>=s.entries+100&&c.allocationLimitBytes>=s.regularLogicalBytes+c.manifestLimitBytes+c.reserveBytes&&v.contentVerified===true&&v.selectedMetadataVerified===true&&v.pointInTimeConsistencyProven===false&&v.postgresStarted===false,'COPY_RESULT_CAPACITY');return v;}
+function decode(r:Result):any{check(!r.error&&r.closed&&r.code===0&&r.signal===null&&!r.stderr,'CONTROL_UNKNOWN');try{return parseWireJson(r.stdout);}catch{throw new Fault('CONTROL_JSON');}}
+function ids(r:Result){check(!r.error&&r.closed&&r.code===0&&!r.signal&&!r.stderr,'CONTROL_UNKNOWN');if(!r.stdout.trim())return[];try{const values=r.stdout.trim().split('\n').map(s=>parseWireJson(s));check(values.every(full)&&new Set(values).size===values.length,'CONTROL_IDS');return values;}catch{throw new Fault('CONTROL_IDS');}}
+
+export async function runCopyHost(input:{mode?:string},ports?:Ports):Promise<any>{if(!input.mode||input.mode==='plan')return proposalCopy();check(input.mode==='apply'&&ports,'MODE_REJECTED');const p=ports!,deadline=p.now()+f.totalMs;let phase='binding',failure:string|null=null,pendingIO=false,consumed:boolean|null=false,consumeAttempted=false,receiptFailed=false,grant:any=null,git:any=null,binding:any=null,exposureValue:any=null,copyCreated=false,verified:any=null;const volumePaths:Record<string,string>={};const helpers:Partial<Record<Role,{id:string;createdAt?:string;closed:boolean;removed:boolean;termAttempted:boolean;removeAttempted:boolean}>>={};
+ const step=async<T>(op:()=>Promise<T>,io=true):Promise<T>=>{check(p.now()<deadline,'DEADLINE');let timer:ReturnType<typeof setTimeout>|undefined;try{const v=await Promise.race([op(),new Promise<never>((_,reject)=>timer=setTimeout(()=>{pendingIO||=io;reject(new Fault('DEADLINE'));},Math.max(1,deadline-p.now())))]);if(p.now()>=deadline){pendingIO||=io;throw new Fault('DEADLINE');}return v;}finally{clearTimeout(timer);}};
+ const cmd=async(c:Command)=>{check(p.now()<deadline,'DEADLINE');const r=await p.docker.command(c,deadline);check(p.now()<deadline||r.error,'DEADLINE');return r;};
+ const receipt=async()=>{try{await step(()=>p.fs.receipt({schema:1,scope:f.scope,phase,consumed,consumeAttempted,pendingIO,copyCreated,helpers:Object.fromEntries(Object.entries(helpers).map(([k,v])=>[k,{id:v!.id,closed:v!.closed,removed:v!.removed}])),error:failure,externalUserApprovalVerified:false,sourcePreservationRequired:true,copyPreservationRequired:true},deadline));}catch{receiptFailed=true;throw new Fault('RECEIPT_UNKNOWN');}};
+ const fresh=async()=>{const b=await step(()=>p.fs.binding(deadline));check(b.grantFingerprint===binding.grantFingerprint,'GRANT_CHANGED');validateGrant({...b,consumed:false},git,p.wallNow());};
+ const evidence=async()=>{check(p.evidence&&typeof p.evidence.binding==='function','COPY_EVIDENCE_UNVERIFIED');return validateEvidence(await step(()=>p.evidence!.binding(deadline)),grant,p.wallNow());};
+ const inspect=async(r:Role)=>{const h=helpers[r]!;const v=decode(await cmd({kind:'inspect',role:r,id:h.id}));check(own(v,h.id,r,grant,exposureValue,volumePaths)&&Date.parse(v.Created)<=p.wallNow()&&(!h.createdAt||h.createdAt===v.Created),'IDENTITY_UNKNOWN');h.createdAt??=v.Created;return v;};
+ const clean=async(r:Role)=>{const h=helpers[r];if(!h||h.removed||p.now()>=deadline)return;let v=await inspect(r);if(v.State.Running){check(!h.termAttempted,'STOP_UNCONFIRMED');h.termAttempted=true;phase='term-'+r;await receipt();const term=await cmd({kind:'term',role:r,id:h.id});check(!term.error&&term.closed&&term.code===0&&!term.signal&&!term.stderr&&term.stdout.trim()===h.id,'STOP_UNCONFIRMED');v=await inspect(r);}check(h.closed&&v.State.Running===false&&v.State.Status==='exited'&&v.State.ExitCode===0&&instant(v.State.FinishedAt)&&Date.parse(v.State.FinishedAt)>0,'STOP_UNCONFIRMED');check(!h.removeAttempted,'REMOVE_UNKNOWN');h.removeAttempted=true;phase='remove-'+r;await receipt();const rm=await cmd({kind:'remove',role:r,id:h.id});check(!rm.error&&rm.closed&&rm.code===0&&!rm.signal&&!rm.stderr&&rm.stdout.trim()===h.id,'REMOVE_UNKNOWN');check(ids(await cmd({kind:'named',role:r})).length===0,'ABSENCE_UNKNOWN');h.removed=true;};
+ try{binding=await step(()=>p.fs.binding(deadline));git=await step(()=>p.git.binding(deadline));grant=validateGrant(binding,git,p.wallNow());await evidence();phase='preflight';check(decode(await cmd({kind:'daemon'}))===f.daemon,'DAEMON_MISMATCH');const image=decode(await cmd({kind:'image'}));check(imageValid(image),'IMAGE_MISMATCH');exposureValue=image.Config.ExposedPorts??null;const sourceVolume=decode(await cmd({kind:'sourceVolume'}));check(sourceValid(sourceVolume)&&typeof sourceVolume.Mountpoint==='string'&&sourceVolume.Mountpoint.startsWith('/')&&!sourceVolume.Mountpoint.split('/').includes('..'),'SOURCE_VOLUME_MISMATCH');volumePaths[f.sourceVolume]=sourceVolume.Mountpoint;for(const r of roles)check(ids(await cmd({kind:'named',role:r})).length===0,'HELPER_EXISTS');const prior=await cmd({kind:'copyVolume'});check(!prior.error&&prior.closed&&prior.code===0&&!prior.signal&&!prior.stderr&&!prior.stdout.trim(),'COPY_VOLUME_EXISTS');check(ids(await cmd({kind:'consumers',target:'source'})).length===0,'FOREIGN_CONSUMER');await fresh();await evidence();check(deadline-p.now()>=f.sourceMs+f.reserveMs,'START_BUDGET');phase='consume';consumeAttempted=true;consumed=null;await step(()=>p.fs.consume({schema:1,scope:f.scope,runInstance:grant.runInstance,commit:grant.commit,controllerSha256:grant.controllerSha256,shellSha256:grant.shellSha256,decisionSha256:grant.riskBinding.decisionSha256,externalUserApprovalVerified:false},deadline));consumed=true;await receipt();phase='create-volume';await receipt();check(deadline-p.now()>=f.sourceMs+f.reserveMs,'START_BUDGET');const volume=await cmd({kind:'createVolume',instance:grant.runInstance});check(!volume.error&&volume.closed&&volume.code===0&&!volume.signal&&!volume.stderr&&volume.stdout.trim()===f.copyVolume,'COPY_VOLUME_CREATE_UNKNOWN');copyCreated=true;const newVolume=decode(await cmd({kind:'copyVolume'}));check(copyValid(newVolume,grant,p.wallNow())&&typeof newVolume.Mountpoint==='string'&&newVolume.Mountpoint.startsWith('/')&&!newVolume.Mountpoint.split('/').includes('..'),'COPY_VOLUME_IDENTITY');volumePaths[f.copyVolume]=newVolume.Mountpoint;
+ for(const r of roles){phase='create-'+r;await fresh();await receipt();check(deadline-p.now()>f.reserveMs,'START_BUDGET');const made=await cmd({kind:'create',role:r,instance:grant.runInstance,carrier:carrier(grant)});check(!made.error&&made.closed&&made.code===0&&!made.signal&&!made.stderr&&full(made.stdout.trim()),'CREATE_UNKNOWN');helpers[r]={id:made.stdout.trim(),closed:false,removed:false,termAttempted:false,removeAttempted:false};const v=await inspect(r);check(v.State.Status==='created'&&!v.State.Running,'STATE_UNKNOWN');check(copyValid(decode(await cmd({kind:'copyVolume'})),grant,p.wallNow())&&sourceValid(decode(await cmd({kind:'sourceVolume'}))),'VOLUME_CHANGED');await fresh();await evidence();check(ids(await cmd({kind:'consumers',target:'copy'})).every(id=>r!=='tools'&&id===helpers[r]!.id),'FOREIGN_COPY_CONSUMER');if(r==='copy'){check(deadline-p.now()>=f.sourceMs+f.reserveMs,'START_BUDGET');check(ids(await cmd({kind:'consumers',target:'source'})).every(id=>id===helpers.copy!.id),'FOREIGN_CONSUMER');}phase='start-'+r;await receipt();check(deadline-p.now()>=(r==='copy'?f.sourceMs+f.reserveMs:f.reserveMs+1),'START_BUDGET');const out=await cmd({kind:'start',role:r,id:helpers[r]!.id,script:git.shell});helpers[r]!.closed=out.closed===true;check(!out.error&&out.closed&&out.code===0&&!out.signal&&!out.stderr,'START_UNKNOWN');if(r==='tools')toolReport(out.stdout);else if(r==='init')rootReport(out.stdout);else{await evidence();check(ids(await cmd({kind:'consumers',target:'source'})).every(id=>id===helpers.copy!.id),'FOREIGN_CONSUMER');verified=parseCopyResult(out.stdout);check(verified.copyIdentity.instance===grant.runInstance&&verified.writer.windowEvidenceSha256===grant.riskBinding.writerEvidenceSha256&&verified.capacity.allocationLimitBytes===536870912&&verified.capacity.reserveBytes===134217728,'COPY_RESULT_IDENTITY');}await clean(r);}
+ check(sourceValid(decode(await cmd({kind:'sourceVolume'})))&&copyValid(decode(await cmd({kind:'copyVolume'})),grant,p.wallNow()),'POST_VOLUME_MISMATCH');check(ids(await cmd({kind:'consumers',target:'source'})).length===0,'FOREIGN_CONSUMER');phase='finished';await receipt();
+ }catch(e){failure=codeOf(e);for(const r of roles){if(helpers[r]&&!helpers[r]!.removed&&p.now()<deadline&&!receiptFailed){try{await clean(r);}catch{/* 신원/close/IO 불명은 보존한다. */}}}if(consumed===true&&!receiptFailed&&p.now()<deadline){try{await receipt();}catch{failure='RECEIPT_UNKNOWN';}}}
+ const complete=!failure&&!receiptFailed&&!!verified&&roles.every(r=>helpers[r]?.removed===true);return{status:complete?'PROTECTED_COPY_VERIFIED_AND_HELPERS_CLEANED':'NOT_COMPLETE',complete,externalUserApprovalVerified:false,sourcePreservationRequired:true,copyPreservationRequired:true,postgresStarted:false,pointInTimeConsistencyProven:false,phase,error:failure,consumed,consumeAttempted,pendingIO,copyCreated,receiptFailed,helpers,copyResult:complete?verified:null};}
+
+type Spawn=(...args:any[])=>any;
+function boundedChild(spawn: Spawn, binary: string, invocation: string[], env: Record<string, string>,
+  now: () => number, deadline: number, cap: number, input?: Buffer): Promise<Result> {
+  return new Promise(resolve => {
+    let settled = false; let child: any; let stdout = Buffer.alloc(0); let stderr = Buffer.alloc(0); let total = 0;
+    const remaining = deadline - now();
+    if (remaining <= 0) { resolve({ code: null, signal: null, closed: false, stdout: '', stderr: '', error: 'DEADLINE' }); return; }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (result: Result) => { if (settled) return; settled = true; clearTimeout(timer); resolve(result); };
+    const failure = (error: string) => {
+      if (settled) return; settled = true; clearTimeout(timer);
+      let clientTermRequested = false;
+      if (child) {
+        // 원 spawn handle만 대상으로 정상 TERM 최대1. 전역 PID 검색/kill/unref는 없다.
+        clientTermRequested = true; try { child.kill('SIGTERM'); } catch { /* 원문은 내보내지 않는다. */ }
+        for (const stream of [child.stdin, child.stdout, child.stderr]) { try { stream.destroy(); } catch { /* 보존 */ } }
+      }
+      resolve({ code: null, signal: null, closed: false, stdout: '', stderr: '', error, clientTermRequested, clientCloseUnconfirmed: !!child });
+    };
+    try {
+      child = spawn(binary, invocation, { shell: false, env, stdio: ['pipe', 'pipe', 'pipe'], cwd: '/', windowsHide: true });
+      timer = setTimeout(() => failure('DEADLINE'), Math.max(1, remaining));
+      const collect = (isError: boolean) => (data: Buffer | string) => {
+        if (settled) return; const bytes = Buffer.from(data); total += bytes.length;
+        if (total > cap) { stdout = Buffer.alloc(0); stderr = Buffer.alloc(0); failure('OUTPUT_LIMIT'); return; }
+        if (isError) stderr = Buffer.concat([stderr, bytes]); else stdout = Buffer.concat([stdout, bytes]);
+      };
+      child.stdout.on('data', collect(false)); child.stderr.on('data', collect(true));
+      child.stdout.on('error', () => failure('STREAM_UNKNOWN')); child.stderr.on('error', () => failure('STREAM_UNKNOWN'));
+      child.stdin.on('error', () => failure('STDIN_UNKNOWN'));
+      child.on('error', () => failure('SPAWN_UNKNOWN'));
+      child.on('close', (code: number | null, signal: string | null) => {
+        if (now() >= deadline) { failure('DEADLINE'); return; }
+        try { finish({ code, signal, closed: true, stdout: new TextDecoder('utf-8', { fatal: true }).decode(stdout), stderr: new TextDecoder('utf-8', { fatal: true }).decode(stderr) }); }
+        catch { failure('STREAM_ENCODING'); }
+      });
+      child.stdin.end(input);
+    } catch { failure('SPAWN_UNKNOWN'); }
+    // host client TERM과 별개로 helper 신원을 다시 관측해 helper TERM을 판단한다.
+  });
+}
+
+function argv(c:Command):string[]{switch(c.kind){case'daemon':return['info','--format','{{json .ID}}'];case'image':return['image','inspect',f.image,'--format','{{json .}}'];case'sourceVolume':return['volume','inspect',f.sourceVolume,'--format','{{json .}}'];case'copyVolume':return['volume','inspect',f.copyVolume,'--format','{{json .}}'];case'consumers':check(c.target==='source'||c.target==='copy','COMMAND_REJECTED');return['container','ls','--all','--no-trunc','--filter','volume='+(c.target==='source'?f.sourceVolume:f.copyVolume),'--format','{{json .ID}}'];case'named':check(roles.includes(c.role!),'ROLE_REJECTED');return['container','ls','--all','--no-trunc','--filter','name=^/'+name(c.role!)+'$','--format','{{json .ID}}'];case'createVolume':check(instance(c.instance),'INSTANCE_REJECTED');return['volume','create','--driver','local',...Object.entries(volumeLabels(c.instance!)).flatMap(([k,v])=>['--label',k+'='+v]),f.copyVolume];case'create':{check(roles.includes(c.role!)&&instance(c.instance),'ROLE_REJECTED');check(validCarrier(c.carrier)&&c.carrier![3]===c.instance,'CARRIER_REJECTED');const r=c.role!,ms=mounts(r);return['create','--name',name(r),...Object.entries(labels(r,c.instance!)).flatMap(([k,v])=>['--label',k+'='+v]),'--pull=never','--network','none','--read-only','--user',r==='init'?'0:0':'999:999','--cap-drop','ALL',...r==='init'?['--cap-add','CHOWN']:[],'--security-opt','no-new-privileges','--pids-limit','32','--memory','256m','--cpus','0.5',...ms.flatMap(m=>['--mount','type=volume,source='+m.Source+',target='+m.Target+(m.ReadOnly?',readonly':'')+',volume-nocopy']),...Object.entries(tmpfs(r)).flatMap(([k,v])=>['--tmpfs',k+':'+v]),...env.flatMap(v=>['--env',v]),'--interactive','--entrypoint','/usr/bin/timeout',f.image,...args(r,c.carrier!)];}default:check(full(c.id),'ID_REJECTED');check(roles.includes(c.role!),'ROLE_REJECTED');if(c.kind==='inspect')return['container','inspect',c.id!,'--format','{{json .}}'];if(c.kind==='start')return['container','start','--attach','--interactive',c.id!];if(c.kind==='term')return['container','kill','--signal=TERM',c.id!];if(c.kind==='remove')return['container','rm',c.id!];throw new Fault('COMMAND_REJECTED');}}
+export function createCopyDockerAdapter(options:{spawn?:Spawn;now:()=>number}){const spawn=options.spawn??nodeSpawn;const call=(invocation:string[],deadline:number,cap:number,input?:Buffer)=>boundedChild(spawn,'/usr/bin/docker',['--host','unix:///var/run/docker.sock',...invocation],{PATH:'/usr/bin:/bin',LANG:'C',LC_ALL:'C'},options.now,deadline,cap,input);return{command(c:Command,deadline:number):Promise<Result>{const invocation=argv(c);if(c.kind==='copyVolume')return(async()=>{const r=await call(['volume','ls','--filter','name=^'+f.copyVolume+'$','--format','{{json .Name}}'],deadline,f.controlBytes);if(r.error||!r.closed||r.code!==0||r.signal||r.stderr||!r.stdout.trim())return r;let nameValue:any;try{nameValue=parseWireJson(r.stdout.trim());}catch{return{...r,error:'CONTROL_JSON',stdout:'',stderr:''};}if(nameValue!==f.copyVolume)return{...r,error:'VOLUME_UNKNOWN',stdout:'',stderr:''};return call(invocation,deadline,f.controlBytes);})();return call(invocation,deadline,c.kind==='start'?f.stdoutBytes:f.controlBytes,c.kind==='start'?c.script:undefined);}};}
+export function createCopySystemPorts(_options?:unknown): Ports {
+  const now = () => performance.now();
+  const ledger = FIXED_COPY.ledgerRoot; let receiptIdentity: { dev: number; ino: number } | null = null;
+  const rootIdentity = new Map<string, { dev: number; ino: number }>();
+  let activeDeadline = 0;
+  const checkTime = () => check(now() < activeDeadline, 'DEADLINE');
+  const io = async <T>(operation: () => Promise<T>): Promise<T> => { checkTime(); const result = await operation(); checkTime(); return result; };
+  const open = async (path: string, flags: number, mode?: number) => {
+    checkTime(); const handle = await fs.open(path, flags, mode);
+    if (now() >= activeDeadline) { await handle.close(); throw new Fault('DEADLINE'); } return handle;
+  };
+  const observeNodeParents = async (): Promise<NodeParentFacts[]> => {
+    const out: NodeParentFacts[] = [];
+    for (const expected of nodeParents) {
+      const s = await io(() => fs.lstat(expected.path)); const canonical = await io(() => fs.realpath(expected.path));
+      out.push({ path: expected.path, canonical, isDirectory: s.isDirectory(), isSymbolicLink: s.isSymbolicLink(),
+        uid: s.uid, gid: s.gid, mode: s.mode & 0o7777, dev: s.dev, ino: s.ino });
+    }
+    return out;
+  };
+  const nodeFileFacts = (s: Stats, canonical: string): NodeBinaryFacts => ({
+    path: FIXED_COPY.node, canonical, isFile: s.isFile(), isSymbolicLink: s.isSymbolicLink(), uid: s.uid, gid: s.gid,
+    mode: s.mode & 0o7777, nlink: s.nlink, dev: s.dev, ino: s.ino, size: s.size, mtimeMs: s.mtimeMs,
+  });
+  async function safePath(path: string, file: boolean, exactMode?: number) {
+    const stat = await io(() => fs.lstat(path)); check(!stat.isSymbolicLink() && (file ? stat.isFile() && stat.nlink === 1 : stat.isDirectory()), 'PATH_REJECTED');
+    check(await io(() => fs.realpath(path)) === path, 'PATH_REJECTED');
+    check(stat.uid === 1000 && (stat.mode & 0o022) === 0 && (exactMode === undefined || (stat.mode & 0o777) === exactMode), 'PATH_REJECTED'); return stat;
+  }
+  async function fixedRoots() {
+    check(process.platform === 'linux' && process.getuid?.() === 1000, 'HOST_BINDING');
+    for (const path of [FIXED_COPY.sourceRoot, ledger]) {
+      const s = await safePath(path, false, path === ledger ? 0o700 : undefined); const initial = rootIdentity.get(path);
+      check(!initial || initial.dev === s.dev && initial.ino === s.ino, 'ROOT_CHANGED');
+      if (!initial) rootIdentity.set(path, { dev: s.dev, ino: s.ino });
+    }
+    // Ancestor symlink/쓰기권한도검사한다. 시스템root는uid0,개인root는uid1000만허용한다.
+    for (const root of [FIXED_COPY.sourceRoot, ledger]) {
+      for (let ancestor = dirname(root);; ancestor = dirname(ancestor)) {
+        const s = await io(() => fs.lstat(ancestor));
+        check(s.isDirectory() && !s.isSymbolicLink() && [0, 1000].includes(s.uid) && (s.mode & 0o022) === 0
+          && await io(() => fs.realpath(ancestor)) === ancestor, 'PATH_REJECTED'); if (ancestor === '/') break;
+      }
+    }
+  }
+  async function readSafe(path: string, limit: number, mode?: number) {
+    await safePath(path, true, mode); const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try { const s = await io(() => handle.stat()); check(s.isFile() && s.nlink === 1 && s.uid === 1000 && s.size <= limit
+      && (s.mode & 0o022) === 0 && (mode === undefined || (s.mode & 0o777) === mode), 'PATH_REJECTED');
+      const bytes = Buffer.alloc(s.size + 1); const read = await io(() => handle.read(bytes, 0, bytes.length, 0));
+      const after = await io(() => handle.stat()); check(read.bytesRead === s.size && after.size === s.size
+        && after.dev === s.dev && after.ino === s.ino && after.mtimeMs === s.mtimeMs, 'FILE_CHANGED'); return bytes.subarray(0, s.size); }
+    finally { await handle.close(); }
+  }
+  async function absent(path: string) {
+    try { await io(() => fs.lstat(path)); return false; } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true; throw error instanceof Fault ? error : new Fault('PATH_UNKNOWN'); }
+  }
+  async function createNew(path: string, record: unknown) {
+    await fixedRoots(); const handle = await open(path, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+    try { await io(() => handle.writeFile(JSON.stringify(record) + '\n')); await io(() => handle.sync()); } finally { await handle.close(); }
+    const dir = await open(ledger, constants.O_RDONLY | constants.O_DIRECTORY | constants.O_NOFOLLOW);
+    try { await io(() => dir.sync()); } finally { await dir.close(); }
+  }
+  const toolPins=new Map<string,string>();
+  async function rootTool(path:string){
+    for(const parent of ['/','/usr','/usr/bin']){const st=await io(()=>fs.lstat(parent));check(st.isDirectory()&&!st.isSymbolicLink()&&st.uid===0&&(st.mode&0o022)===0&&await io(()=>fs.realpath(parent))===parent,'TOOL_BINDING');}
+    const before=await io(()=>fs.lstat(path));check(before.isFile()&&!before.isSymbolicLink()&&before.nlink===1&&before.uid===0&&(before.mode&0o022)===0&&before.size<=268435456&&await io(()=>fs.realpath(path))===path,'TOOL_BINDING');
+    const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);const digest=createHash('sha256');let count=0;
+    try{const opened=await io(()=>handle.stat());check(opened.dev===before.dev&&opened.ino===before.ino&&opened.size===before.size,'TOOL_BINDING');const chunk=Buffer.alloc(1048576);for(;;){const r=await io(()=>handle.read(chunk));count+=r.bytesRead;check(count<=before.size,'TOOL_BINDING');if(!r.bytesRead)break;digest.update(chunk.subarray(0,r.bytesRead));}const after=await io(()=>handle.stat());check(after.dev===before.dev&&after.ino===before.ino&&after.mtimeMs===before.mtimeMs&&after.size===before.size&&count===before.size,'TOOL_BINDING');}finally{await handle.close();}
+    const after=await io(()=>fs.lstat(path));check(after.dev===before.dev&&after.ino===before.ino&&after.mtimeMs===before.mtimeMs&&after.uid===0&&(after.mode&0o022)===0&&!after.isSymbolicLink(),'TOOL_BINDING');const value=digest.digest('hex');check(!toolPins.has(path)||toolPins.get(path)===value,'TOOL_CHANGED');toolPins.set(path,value);return value;
+  }
+  const adapter=createCopyDockerAdapter({now});
+  const docker={async command(command:Command,deadline:number){activeDeadline=deadline;await rootTool('/usr/bin/docker');return adapter.command(command,deadline);}};
+  const git = async (invocation: string[], deadline: number) => {
+    checkTime(); await rootTool('/usr/bin/git'); const r = await boundedChild(nodeSpawn, '/usr/bin/git', ['--no-optional-locks', '-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '-C', FIXED_COPY.sourceRoot, ...invocation],
+      { PATH: '/usr/bin:/bin', LANG: 'C', LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null', GIT_TERMINAL_PROMPT: '0' }, now, deadline, FIXED_COPY.controlBytes);
+    if (r.error || !r.closed || r.code !== 0 || r.signal || r.stderr) throw new Fault('GIT_UNKNOWN'); checkTime(); return r.stdout;
+  };
+  return { now, wallNow: () => Date.now(), docker,
+    // 현재 신뢰 producer 미채택. grant의 REQUIRE/문자열은 관측 사실이 아니다.
+    evidence: { async binding() { return { status: 'UNVERIFIED', writer: 'UNVERIFIED', quota: 'UNVERIFIED' }; } },
+    fs: {
+      async binding(deadline) {
+        activeDeadline = deadline; checkTime();
+        await fixedRoots(); const raw = await readSafe(join(ledger, 'grant.json'), 8192, 0o600);
+        const grant = parseGrantRecord(raw);
+        const parentsBefore = await observeNodeParents();
+        const nodeStat = await io(() => fs.lstat(FIXED_COPY.node));
+        const canonical = await io(() => fs.realpath(FIXED_COPY.node));
+        check(process.execPath === FIXED_COPY.node && nodeStat.isFile() && !nodeStat.isSymbolicLink() && nodeStat.nlink === 1
+          && nodeStat.uid === 1001 && nodeStat.gid === 1001 && (nodeStat.mode & 0o7777) === 0o755
+          && nodeStat.size <= 268435456 && canonical === FIXED_COPY.node, 'NODE_BINDING');
+        const nodeHandle = await open(FIXED_COPY.node, constants.O_RDONLY | constants.O_NOFOLLOW); const nodeHash = createHash('sha256');
+        let initial: Stats; let openedAfter: Stats;
+        try {
+          initial = await io(() => nodeHandle.stat()); check(initial.dev === nodeStat.dev && initial.ino === nodeStat.ino && initial.nlink === 1, 'NODE_BINDING');
+          const bytes = Buffer.alloc(1048576); let count = 0;
+          for (;;) { const r = await io(() => nodeHandle.read(bytes)); count += r.bytesRead; check(count <= nodeStat.size, 'NODE_BINDING');
+            if (!r.bytesRead) break; nodeHash.update(bytes.subarray(0, r.bytesRead)); checkTime(); }
+          openedAfter = await io(() => nodeHandle.stat()); check(count === nodeStat.size && openedAfter.size === nodeStat.size && openedAfter.mtimeMs === nodeStat.mtimeMs, 'NODE_BINDING');
+        } finally { await nodeHandle.close(); }
+        const after = await io(() => fs.lstat(FIXED_COPY.node)); const afterCanonical = await io(() => fs.realpath(FIXED_COPY.node));
+        const procStat = await io(() => fs.stat('/proc/self/exe')); const procCanonical = await io(() => fs.realpath('/proc/self/exe'));
+        const parentsAfter = await observeNodeParents(); const digest = nodeHash.digest('hex');
+        assertNodeTrustFacts({ platform: process.platform, executionUid: process.getuid!(), execPath: process.execPath,
+          binary: nodeFileFacts(nodeStat, canonical), opened: nodeFileFacts(initial, canonical), openedAfter: nodeFileFacts(openedAfter, canonical),
+          after: nodeFileFacts(after, afterCanonical), sha256: digest, parentsBefore, parentsAfter,
+          procSelfExe: { canonical: procCanonical, isFile: procStat.isFile(), dev: procStat.dev, ino: procStat.ino, size: procStat.size } });
+        return { platform: process.platform, uid: process.getuid!(), safePaths: true, nodePath: process.execPath,
+          nodeSha256: digest, gitSha256: await rootTool('/usr/bin/git'), dockerSha256: await rootTool('/usr/bin/docker'), sourceRoot: FIXED_COPY.sourceRoot, ledgerRoot: ledger,
+          grant, consumed: !await absent(join(ledger, 'consumed.json')), grantFingerprint: hash(raw) };
+      },
+      async consume(record, deadline) {
+        activeDeadline = deadline; checkTime();
+        check(await absent(join(ledger, 'receipt.jsonl')), 'RECEIPT_EXISTS'); await createNew(join(ledger, 'consumed.json'), record);
+      },
+      async receipt(record, deadline) {
+        activeDeadline = deadline; checkTime();
+        await fixedRoots(); const path = join(ledger, 'receipt.jsonl');
+        if (!receiptIdentity) {
+          await createNew(path, record); const s = await safePath(path, true, 0o600); receiptIdentity = { dev: s.dev, ino: s.ino }; return;
+        }
+        const s = await safePath(path, true, 0o600); check(s.dev === receiptIdentity.dev && s.ino === receiptIdentity.ino && s.size <= 65536, 'RECEIPT_CHANGED');
+        const handle = await open(path, constants.O_WRONLY | constants.O_APPEND | constants.O_NOFOLLOW);
+        try { const opened = await io(() => handle.stat()); check(opened.dev === s.dev && opened.ino === s.ino && opened.nlink === 1 && opened.uid === 1000 && (opened.mode & 0o777) === 0o600, 'RECEIPT_CHANGED');
+          await io(() => handle.writeFile(JSON.stringify(record) + '\n')); await io(() => handle.sync()); } finally { await handle.close(); }
+      },
+    },
+    git: { async binding(deadline) {
+      activeDeadline = deadline; checkTime(); await fixedRoots(); await safePath(join(FIXED_COPY.sourceRoot, '.git'), false);
+      await safePath(join(FIXED_COPY.sourceRoot, 'scripts'), false); await safePath(join(FIXED_COPY.sourceRoot, 'contracts'), false);
+      const branch = (await git(['branch', '--show-current'], deadline)).trim(); const commit = (await git(['rev-parse', 'HEAD'], deadline)).trim();
+      check(/^[a-f0-9]{40}$/.test(commit), 'SOURCE_BINDING');
+      const remote = (await git(['remote', 'get-url', 'development'], deadline)).trim();
+      const clean = !(await git(['status', '--porcelain', '--untracked-files=all'], deadline)).trim();
+      const shell = Buffer.from(await git(['show', `${commit}:${FIXED_COPY.shellPath}`], deadline));
+      const controller = Buffer.from(await git(['show', `${commit}:${FIXED_COPY.controllerPath}`], deadline));
+      const shellWorking = await readSafe(join(FIXED_COPY.sourceRoot, FIXED_COPY.shellPath), 65536);
+      const controllerWorking = await readSafe(join(FIXED_COPY.sourceRoot, FIXED_COPY.controllerPath), 131072);
+      check(hash(shellWorking) === hash(shell) && hash(controllerWorking) === hash(controller)
+        && fileURLToPath(import.meta.url) === join(FIXED_COPY.sourceRoot, FIXED_COPY.controllerPath), 'SOURCE_BINDING');
+      return { branch, commit, remote, clean, shell, shellSha256: hash(shell), controllerSha256: hash(controller) };
+    } },
+  };
+}
+
+const ownerTrustStatus='OWNER_UNRESOLVED_RESIDUAL_RISK';
+const nodeParents = Object.freeze([
+  Object.freeze({ path: '/', uid: 0, gid: 0, mode: 0o755 }),
+  Object.freeze({ path: '/opt', uid: 0, gid: 0, mode: 0o755 }),
+  Object.freeze({ path: '/opt/node-v24.21.0-linux-x64', uid: 1001, gid: 1001, mode: 0o755 }),
+  Object.freeze({ path: '/opt/node-v24.21.0-linux-x64/bin', uid: 1001, gid: 1001, mode: 0o755 }),
+]);
+type NodeBinaryFacts = { path: string; canonical: string; isFile: boolean; isSymbolicLink: boolean;
+  uid: number; gid: number; mode: number; nlink: number; dev: number; ino: number; size: number; mtimeMs: number };
+type NodeParentFacts = { path: string; canonical: string; isDirectory: boolean; isSymbolicLink: boolean;
+  uid: number; gid: number; mode: number; dev: number; ino: number };
+type NodeTrustFacts = {
+  platform: string; executionUid: number; execPath: string; binary: NodeBinaryFacts; opened: NodeBinaryFacts;
+  openedAfter: NodeBinaryFacts; after: NodeBinaryFacts; sha256: string;
+  procSelfExe: { canonical: string; isFile: boolean; dev: number; ino: number; size: number };
+  parentsBefore: NodeParentFacts[]; parentsAfter: NodeParentFacts[];
+};
+function assertNodeTrustFacts(facts: NodeTrustFacts) {
+  const validBinary = (value: NodeBinaryFacts) => object(value) && value.path === FIXED_COPY.node && value.canonical === FIXED_COPY.node
+    && value.isFile === true && value.isSymbolicLink === false && value.uid === 1001 && value.gid === 1001
+    && value.mode === 0o755 && value.nlink === 1 && uint(value.dev) && uint(value.ino)
+    && uint(value.size) && value.size <= 268435456 && Number.isFinite(value.mtimeMs);
+  check(object(facts) && facts.platform === 'linux' && facts.executionUid === 1000 && facts.execPath === FIXED_COPY.node
+    && [facts.binary, facts.opened, facts.openedAfter, facts.after].every(validBinary)
+    && same(facts.binary, facts.opened) && same(facts.binary, facts.openedAfter) && same(facts.binary, facts.after)
+    && facts.sha256 === FIXED_COPY.nodeSha256, 'NODE_BINDING');
+  const validParents = (values: NodeParentFacts[]) => Array.isArray(values) && values.length === nodeParents.length
+    && values.every((value, i) => { const expected = nodeParents[i]!;
+      return object(value) && value.path === expected.path && value.canonical === expected.path
+        && value.isDirectory === true && value.isSymbolicLink === false && value.uid === expected.uid
+        && value.gid === expected.gid && value.mode === expected.mode && uint(value.dev) && uint(value.ino); });
+  check(validParents(facts.parentsBefore) && validParents(facts.parentsAfter)
+    && same(facts.parentsBefore, facts.parentsAfter), 'NODE_BINDING');
+  const proc = facts.procSelfExe;
+  check(object(proc) && proc.canonical === FIXED_COPY.node && proc.isFile === true && proc.dev === facts.binary.dev
+    && proc.ino === facts.binary.ino && proc.size === facts.binary.size, 'NODE_BINDING');
+  return { status: ownerTrustStatus };
+}
+function parseGrantRecord(raw: Uint8Array): unknown {
+  check(raw.byteLength <= 8192, 'GRANT_REJECTED');
+  try { return parseWireJson(new TextDecoder('utf-8', { fatal: true }).decode(raw)); }
+  catch { throw new Fault('GRANT_REJECTED'); }
+}
+
+if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1]){try{const mode=parseCopyArguments(process.argv.slice(2)),r=await runCopyHost({mode},mode==='apply'?createCopySystemPorts():undefined);process.stdout.write(JSON.stringify(r)+'\n');process.exitCode=r.complete||mode==='plan'?0:1;}catch(e){process.stdout.write(JSON.stringify({status:'NOT_COMPLETE',complete:false,error:codeOf(e),externalUserApprovalVerified:false,sourcePreservationRequired:true,copyPreservationRequired:true})+'\n');process.exitCode=1;}}

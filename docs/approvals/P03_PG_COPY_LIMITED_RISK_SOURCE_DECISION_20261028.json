@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "status": "DELEGATED_SOURCE_CONTRACT_IMPLEMENTATION_ONLY",
+  "observedAt": "2026-10-27T15:00:20Z",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "basis": "신산님 PMO 지시 동일 위임·정본후보전문/hash 직접대조 후 정확5 source/합성계약 채택",
+  "candidatePath": "docs/contracts/P03_PG_COPY_LIMITED_RISK_DELTA_CANDIDATE_20261027.md",
+  "candidateSha256": "FFC3F2A2979A7845C48B61946A32F0B142C698ED7C6E8004D3038BAD777670D3",
+  "workInstructionPath": "docs/work_packages/P03_PG_COPY_LIMITED_RISK_SOURCE_WI_20261028.md",
+  "workInstructionSha256": "C0ABA0F2C3F854CAEF52918DCFC4E5563F7AE6E9F77A9513D343DE6F29A70F1B",
+  "allowed": [
+    "scripts/p03-pg-copy-host.ts",
+    "scripts/pg-recovery-copy.sh",
+    "tests/unit/P03/pg-recovery-copy-host.test.ts",
+    "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+    "docs/work_packages/P03_PG_COPY_EXECUTION_PLAN_20261027.md"
+  ],
+  "strictPreserved": true,
+  "notExecutionGrant": true,
+  "actualEffectsAuthorized": false,
+  "excluded": [
+    "실제위험수락",
+    "실grant작성·소비",
+    "probe/create/copy/권한",
+    "PG/DB/서비스/Agent",
+    "strict 실패시자동limited전환",
+    "새helper/서비스/설치"
+  ]
+}
