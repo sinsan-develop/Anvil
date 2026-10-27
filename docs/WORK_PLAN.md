@@ -1512,3 +1512,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN06 outer 수집 소스 보완**: stdout/stderr 분리·유한 오류 metadata/원보존 true 유지 소스를 보완했다. Main pure11/type/diff·독립 C/I0 한정이며 실제collector/컴파일 통합 NOT_RUN, 원02 UNKNOWN/소진 보존이다. 불변PS3시험이 잘못 재실행된 범위이탈은 실제12PASS/5pwsh 호출선으로 결과서에 기록했고 NOT_RERUN으로 포장하지 않는다. 전체FN06/계획 미완료, 실제추가실행/새후보0이다.
+
+
+- **2026-10-27 P03 RO 조사 source 준비**: 보존volume 복구선행을 추측하지 않도록 숫자metadata 집계·고정script/실행안만 준비했다. Main 합성8·문법/default/type·독립 C/I0 한정이며 실제volume/PG/hostcontroller 미검증·NOT_EXECUTION_READY다. 원PG_VERSION을 반복하지 않았고 원자료 변경0, 기능 진도나 P03/전체계획 완료로 승격하지 않는다. 정확 증거는 P03_PG_RECOVERY_DISCOVERY_PREPARATION_RESULT_20261027.md를 따른다.
