@@ -8407,3 +8407,9 @@
 
 
 - **FN06 진단 수집 소스 Main 검수 완료·실행 미승인**: Mainff31cc RED2→30ba25 신규/기존12PASS3648.6227ms/skip0·type/diff0,4c38b8 PS AST4-only0·독립C0/I0/M0를확인했다. 같은Process의bounded출력/exit를실제apply신원검사앞에보존하고원신원FAIL/Stop제한·pending메모리보호를유지한다. 새02manifest04EC52DC/입력7055A009/runnerF1FF82C1/test118F70C6/실행안0C8DAC94이며원native12/tool4/옵션한도불변·원01자료/소비보존이다. source-only5파일+WI/결과/계획/현황을검수하고같은branch checkpoint/private게시를준비한다. source/code·AST/모의검증한정이며actualcompiler/QA/새결정/marker/DB/키/서비스/Agent0·실OS/compileNOT_RUN·전체미완료유지다. 오류와미검증은소유결과서FN06_COMPILER_DIAGNOSTIC_CAPTURE_PREPARATION_RESULT_20261027.md에구분했다. 다음실제실행은새정확직접결정전0이며독립FN16새계약은PMO전달된사용자결정과분리한다.
+
+
+- **FN06 후보02 새 직접 승인·실행 전 등록**: 신산님 call_49e6eb6664914038afe0ace71fbe9ffd 답변 ‘새 후보02 컴파일 1회 승인’을수신했다. 승인관측06:15:02Z~만료06:45:02Z·연장0, 게시fb0f56856d3eeb41bfe88d05716c14b6d282fded/plan0C8DAC94/manifest04EC52DC/input7055A009/runnerF1FF82C1에새decision02를정확결박했다. 등록root D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-02,형제소비marker·src12/binDLL/temp만,ownerSINSAN/cyhuh·최대30분/compiler15초/진단16KiB/library1회·실행/로드0이다. 생성전실제부재/부모realpath/nonlink/ACL·source/tool지문/서명·privateexact를runner에서재검사한다. 확인된소유파일/빈dir만정리·marker보존,불명은보존/보고하며권한/전역process강제종료/Agent/Job/PInvoke/DB/키/서비스0이다. 원01허가/소비/실패는불변이며새01리셋/재사용0. 현재실compiler02미실행으로다음은읽기preflight후플랫폼정확승인실행1회다.
+
+
+- **FN06 후보02 실제 결과불명·단발소진 기록**: 새직접승인call_49e6eb...·게시fb0f5685·plan0C8DAC94/decision51C629E9를대조했다. Main8c1f9b PLAN_ONLY0후 d7c01d→56d750 apply는OUTER_RESULT_UNKNOWN/exit1로반환됐다. Main9d650d/b5b255는QA02부재·markerBFAC30DF/consumed06:16:32.178Z·activecsc0/동시간host후보0을읽기로확인했다. marker는Start전생성이라실compiler시작/exit/diag/출력DLL은미확정이며이단발은소진/재실행0이다. 원PSstdout/stderr는회수되지않았고원인확정0·내부cleanup성공을추정PASS로만들지않는다. 실제등록QA현재없음/소비기록의도적보존·추가삭제/kill/ACL/DB/키/서비스/Agent0. exactactual결과서FN06_OWNERSHIP_COMPILE_ONLY_ACTUAL_RESULT_20261027_02.md에원문/직접승인/후속부재와미검증을분리했고동일담당read-only outer수집조사배정·추가codewrite0이다. 원모의12/C0I0는실제성공증거로승격하지않고전체미완료유지한다.

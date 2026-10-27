@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "status": "APPROVED_COMPILE_ONLY",
+  "approvalKind": "DIRECT_USER_EXACT_EXECUTION",
+  "candidateId": "FN06_OWNERSHIP_COMPILE_ONLY_20261027_02",
+  "manifestHash": "04EC52DC9D837A890487041756DBE96249F90C5AB6F9BA5BAD993815F77910B9",
+  "sourceCheckpoint": "24e70f71a865e3e4779f769a787000d9d6f77e98",
+  "executionCommit": "fb0f56856d3eeb41bfe88d05716c14b6d282fded",
+  "inputHash": "7055A009B77120A895A5CFC3E5661932082C8B19851250CEF5F1B25B75C4E4C2",
+  "runnerHash": "F1FF82C1986CF6E4462CD9873EEF1D294EA92BA678AA62B4BBA9B0D1D8FD5D4B",
+  "qaRoot": "D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-02",
+  "output": "bin/OwnershipEvidenceSource.dll",
+  "limits": {
+    "qaLifetimeMs": 1800000,
+    "compilerTimeoutMs": 15000,
+    "diagnosticBytes": 16384,
+    "compilerAttempts": 1
+  },
+  "approvedAt": "2026-10-27T06:15:02.000Z",
+  "expiresAt": "2026-10-27T06:45:02.000Z",
+  "runId": "FN06_OWNERSHIP_COMPILE_ONLY_20261027_02",
+  "maximumRuns": 1
+}
