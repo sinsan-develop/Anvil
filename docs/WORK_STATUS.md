@@ -3,7 +3,7 @@
 ## 현재 재개 — 2026-10-27 FN04 직접 계약·구현 승인
 
 - 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
-- 현재안전source codex/av3-stage-b/62972b09(서버 게시)와 후속UI12 동결·통합준비. Main35/type·독립C0I0·실제합성DOM 문맥2+정상1 분리PASS/PNG2·QA별도0. 초기단일담당 초안은보존하고무응답후한정보완을순차인계했으며Main제품write0. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외·생산§6실안전gap412유지·전체계획미완료다.
+- 현재안전source codex/av3-stage-b/2f5963b227110243a89c2f1b60958b19486a941f·private exact/추적clean·main f976ed5e불변(5c1889). FN04 승인 source/UI/pending SQL·합성 핵심 검수 한정완료: Main35/finaltype·독립C0I0·실제합성DOM 문맥2+정상1 분리PASS·PNG2/QA별도0. Main제품write0·현재writer전원쓰기중지/보호8보존. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외·생산§6실안전gap412유지·전체계획미완료다.
 - P03 RO구조조사는새단발승인으로실행·정리·독립사후확인을완료하고소비원장을보존했다(32858a/09e2f6/7d1c3b). 후속복제/PG·DB복구는미승인·미실행이고FN16질문은별개로남는다. 전체WORK_PLAN은미완료이며현재FN04직접승인범위를이어간다.
 
 
@@ -8618,3 +8618,5 @@
 - 후속c7e6d1 normalcase1FAIL/skip0·7344.0171ms는요청→승인→결박→412/유실같은명령→합성SUCCESS/현재/고정·과거이력까지진행한뒤전역첫hash선택자가닫힌details의hiddenpre를집은시험선택문맥충돌이다.590efc 실제fixedregion p에정확hash표시확인·제품그대로/시험구문만해당region p로한정지시. 부분흐름PNG2를직접보았고00CBF4F5/8BCDA738 지문은실패이력에보존하되최종PASS로승격0. f153d4 230files81dirs27681736bytes/PNG2회수→81e1bf13:09:40.2543449Z별도root/process0. 실제DB/서비스/Agent/전체계획완료0이며정상case남은음성·최종PNG는아직미검증이다.
 
 - **FN04 승인 source/UI 한정 검수 완료·통합 준비**:13e933 normal1PASS/skip0·5162.5283ms,기존733039/1a6efd 문맥2PASS와분리증거.31658c finaltype/diff0/UI12hash·PNG2보존직접확인·독립원I1/후속/Panel C0I0. ff1602 exact189files60dirs/26302788bytes회수→8baa53별도root/process0. 서버13/보호8/최신main불변대조후source12+소유문서/PNG exact19 checkpoint/private게시로이어간다. 실DB/served/실기준전환/Agent/전체계획완료아니다.
+
+- **FN04 exact checkpoint 게시 확인**:Main4b5738의2f5963b227110243a89c2f1b60958b19486a941f는62972b09직접자식exact19·38fa7e raw/index차이10파일CRLF→LF만/보호8·cachedcheck0이다.5c1889 nonforce private exact·추적clean/미추적보호8만·mainf976불변. 결과서·UI candidate manifest·정본PNG2에분리PASS와원실패/미검증/QA정리증거를보존했다. 이번승인범위 source구현·합성검수만끝났고실제DB/서비스복구·실안전공급자·기존FN16결정과전체WORK_PLAN은남는다. PMO에필요결정/지원만전달하고이미완료한시험은반복하지않는다.
