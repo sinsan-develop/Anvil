@@ -51,3 +51,143 @@ test('실제 framing hash 호출선의 가짜외부명령 경고/실패/짧은�
 
 for(const channel of ['stdout','stderr'])test(`raw NUL ${channel}는 문자열치환 전에 거절하고 외부stderr/후속0이다`,()=>{const command="p03_fake_external(){ printf '"+'a'.repeat(64)+"  -\\n'; printf '\\0'"+(channel==='stderr'?' >&2':'')+"; }; p03_copy_capture_memory hash p03_fake_external && printf 'FOLLOWUP\\n'",r=invoke(command);assert.notEqual(r.status,0);assert(!r.stdout.toString('utf8').includes('FOLLOWUP'));});
 test('memory capture는 cap marker를 payload와 구별하고 종료상태/다중stderr를 보존한다',()=>{let r=invoke("p03_fake_external(){ printf '%16383s\\n' ''; }; p03_copy_capture_memory help p03_fake_external && printf 'FOLLOWUP\\n'");assert.equal(r.status,0);assert(r.stdout.toString('utf8').includes('FOLLOWUP'));for(const command of ["p03_fake_external(){ printf '%16384s\\n' ''; }; p03_copy_capture_memory help p03_fake_external","p03_fake_external(){ printf '"+'a'.repeat(64)+"  -\\n'; return 7; }; p03_copy_capture_memory hash p03_fake_external","p03_fake_external(){ printf '"+'a'.repeat(64)+"  -\\n'; printf '\\n' >&2; printf 'private-name' >&2; }; p03_copy_capture_memory hash p03_fake_external"]){r=invoke(command+" && printf 'FOLLOWUP\\n'");assert.notEqual(r.status,0);assert(!r.stdout.toString('utf8').includes('FOLLOWUP'));assert(!r.stdout.toString('utf8').includes('private-name'));}});
+
+// P03 limited-risk TEST_ONLY append. 위 strict/library 시험 원바이트는 보존한다.
+// 감시는 완성 report fixture를 판정하는 대신 실제 supervisor 호출선에 fake cp/clock/관측/TERM/wait/dispose를 주입한다.
+function limitedMonitorCommand(scenario:string){assert(/^[a-z-]+$/.test(scenario));return 'SCENARIO='+scenario+'\n'+String.raw`
+declare -i FAKE_NOW=0 FAKE_STARTS=0 FAKE_OBSERVES=0 FAKE_POLLS=0 FAKE_TERMS=0 FAKE_WAITS=0 FAKE_DISPOSES=0 FAKE_COLLECTS=0 FAKE_FOREIGN=0
+declare -i FAKE_SOURCE_LOGICAL=5 FAKE_SOURCE_ALLOCATED=4096 FAKE_SOURCE_ENTRIES=3
+case $SCENARIO in source-logical-limit) FAKE_SOURCE_LOGICAL=268435457;; source-allocation-limit) FAKE_SOURCE_ALLOCATED=536870913;; source-entry-limit) FAKE_SOURCE_ENTRIES=100001;; numeric-overflow) FAKE_SOURCE_LOGICAL=9007199254740992;; esac
+P03_LIMITED_VIOLATION_LATCHED=false
+P03_LIMITED_PRESERVATION_REQUIRED=false
+p03_limited_now(){ P03_LIMITED_NOW_MS=$FAKE_NOW; }
+p03_limited_cp_start(){
+ ((FAKE_STARTS+=1)); P03_LIMITED_CP_PID=4242; P03_LIMITED_CP_PARENT_PID=42; P03_LIMITED_CP_START_IDENTITY=12345
+ [[ $SCENARIO != spawn-failure ]]
+}
+p03_limited_cp_identity(){
+ P03_LIMITED_OBSERVED_PID=4242; P03_LIMITED_OBSERVED_PARENT_PID=42; P03_LIMITED_OBSERVED_START_IDENTITY=12345
+ if ((FAKE_NOW>0)); then
+  case $SCENARIO in wrong-pid) P03_LIMITED_OBSERVED_PID=4343;; wrong-parent) P03_LIMITED_OBSERVED_PARENT_PID=43;; wrong-start) P03_LIMITED_OBSERVED_START_IDENTITY=99999;; esac
+ fi
+ if [[ $SCENARIO == changed-before-term && $FAKE_OBSERVES -ge 2 ]]; then P03_LIMITED_OBSERVED_PARENT_PID=43; fi
+ return 0
+}
+p03_limited_space_observe(){
+ ((FAKE_OBSERVES+=1)); P03_LIMITED_AVAILABLE_BYTES=1073741824; P03_LIMITED_AVAILABLE_INODES=1000000; P03_LIMITED_SPACE_OBSERVED_MS=$FAKE_NOW; P03_LIMITED_SPACE_STATUS=OBSERVED
+ if ((FAKE_OBSERVES==1)); then case $SCENARIO in before-low) P03_LIMITED_AVAILABLE_BYTES=134217727;; before-inode) P03_LIMITED_AVAILABLE_INODES=102;; before-estimate) P03_LIMITED_AVAILABLE_BYTES=167776255;; esac; fi
+ if ((FAKE_OBSERVES>=2)); then
+  case $SCENARIO in low|late-success|finish-race|changed-before-term|wait-unknown) P03_LIMITED_AVAILABLE_BYTES=134217727;; inode) P03_LIMITED_AVAILABLE_INODES=102;; observation-error) P03_LIMITED_SPACE_STATUS=ERROR; return 1;; observation-delay) ((FAKE_NOW+=10001));; esac
+ fi
+ return 0
+}
+p03_limited_cp_poll(){
+ ((FAKE_POLLS+=1)); P03_LIMITED_CP_DONE=false; P03_LIMITED_CP_EXIT=0; P03_LIMITED_CP_CLOSED=false
+ if [[ $SCENARIO == normal || $SCENARIO == finish-race || $SCENARIO == dispose-error ]]; then
+  if ((FAKE_NOW>=10000)); then P03_LIMITED_CP_DONE=true; P03_LIMITED_CP_CLOSED=true; fi
+ fi
+ return 0
+}
+p03_limited_wait_tick(){
+ case $SCENARIO in period-delay) ((FAKE_NOW+=10001));; deadline) FAKE_NOW=500001;; *) ((FAKE_NOW+=10000));; esac
+ return 0
+}
+p03_limited_cp_term(){
+ ((FAKE_TERMS+=1)); if [[ $1 != 4242 ]]; then ((FAKE_FOREIGN+=1)); return 1; fi
+ return 0
+}
+p03_limited_cp_wait(){
+ ((FAKE_WAITS+=1)); P03_LIMITED_CP_DONE=true; P03_LIMITED_CP_EXIT=0; P03_LIMITED_CP_CLOSED=true
+ if [[ $SCENARIO == wait-unknown ]]; then P03_LIMITED_CP_CLOSED=false; return 1; fi
+ return 0
+}
+p03_limited_watch_dispose(){
+ ((FAKE_DISPOSES+=1)); P03_LIMITED_TIMER_DISPOSED=true; P03_LIMITED_PIPE_CLOSED=true
+ if [[ $SCENARIO == dispose-error ]]; then P03_LIMITED_TIMER_DISPOSED=false; return 1; fi
+ return 0
+}
+declare -F p03_limited_copy_supervise >/dev/null || { printf 'LIMITED_SUPERVISOR_SOURCE_MISSING\n'; exit 99; }
+p03_limited_copy_supervise --scope P03_PROTECTED_COPY_LIMITED_RISK_R1 --source-deadline-ms 500000 --deadline-ms 600000 --reserve-bytes 134217728 --min-inodes 103 --expected-needed-bytes 33558528 --source-logical-bytes "$FAKE_SOURCE_LOGICAL" --source-allocated-bytes "$FAKE_SOURCE_ALLOCATED" --source-entry-count "$FAKE_SOURCE_ENTRIES" --max-observation-ms 10000
+supervised=$?
+if [[ $supervised == 0 ]]; then ((FAKE_COLLECTS+=1)); fi
+printf 'LIMITED_MONITOR %s %s %s %s %s %s %s %s %s %s\n' "$supervised" "$FAKE_STARTS" "$FAKE_OBSERVES" "$FAKE_TERMS" "$FAKE_WAITS" "$FAKE_DISPOSES" "$FAKE_COLLECTS" "$FAKE_FOREIGN" "$P03_LIMITED_VIOLATION_LATCHED" "$P03_LIMITED_PRESERVATION_REQUIRED"
+`;}
+function limitedMonitor(scenario:string){const r=invoke(limitedMonitorCommand(scenario));assert.notEqual(r.status,99,'LIMITED_SUPERVISOR_SOURCE_MISSING');assert.equal(r.status,0);const lines=r.stdout.toString('utf8').trim().split('\n');assert.equal(lines.shift(),'PREPARATION_ONLY');assert.equal(lines.length,1);const [tag,rc,starts,observes,terms,waits,disposes,collects,foreign,latched,preserve]=lines[0]!.split(' ');assert.equal(tag,'LIMITED_MONITOR');for(const value of [rc,starts,observes,terms,waits,disposes,collects,foreign])assert.match(value??'',/^\d+$/);return{rc:Number(rc),starts:Number(starts),observes:Number(observes),terms:Number(terms),waits:Number(waits),disposes:Number(disposes),collects:Number(collects),foreign:Number(foreign),latched,preserve};}
+
+test('LIMITED 실감시 호출선 정상은 원cp1→최대10초관측→정상종료→회수1·선정결과수집1이다',()=>{const r=limitedMonitor('normal');assert.equal(r.rc,0);assert.equal(r.starts,1);assert(r.observes>=3);assert.equal(r.terms,0);assert.equal(r.disposes,1);assert.equal(r.collects,1);assert.equal(r.foreign,0);assert.equal(r.latched,'false');});
+for(const scenario of ['low','inode','observation-error','observation-delay','period-delay','deadline','late-success'])test('LIMITED 실감시 '+scenario+'는 원cp TERM1·유한wait/회수·위반latch로늦은성공수집0이다',()=>{const r=limitedMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,1);assert.equal(r.terms,1);assert.equal(r.waits,1);assert.equal(r.disposes,1);assert.equal(r.collects,0);assert.equal(r.foreign,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');});
+for(const scenario of ['wrong-pid','wrong-parent','wrong-start','changed-before-term'])test('LIMITED 실감시 '+scenario+'는 신원불명대상TERM/후속0·부분사본/helper보존이다',()=>{const r=limitedMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,1);assert.equal(r.terms,0);assert.equal(r.disposes,1);assert.equal(r.collects,0);assert.equal(r.foreign,0);assert.equal(r.preserve,'true');});
+test('LIMITED cp정상종료와위반관측 경합은 종료사실로 latch를 덮지 않고 성공수집0이다',()=>{const r=limitedMonitor('finish-race');assert.notEqual(r.rc,0);assert.equal(r.starts,1);assert.equal(r.terms,0);assert.equal(r.disposes,1);assert.equal(r.collects,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');});
+for(const scenario of ['before-low','before-inode','before-estimate','source-logical-limit','source-allocation-limit','source-entry-limit','numeric-overflow'])test('LIMITED cp시작전 '+scenario+'의범위/예상량/가용bytes/inode guard는 cp0이다',()=>{const r=limitedMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,0);assert.equal(r.terms,0);assert.equal(r.collects,0);});
+for(const scenario of ['spawn-failure','wait-unknown','dispose-error'])test('LIMITED '+scenario+'의 불명/회수실패는 새cp/성공수집0이다',()=>{const r=limitedMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,1);assert(r.terms<=1);assert.equal(r.foreign,0);assert.equal(r.collects,0);assert.equal(r.preserve,'true');});
+
+// 메모리 검토본: 기존 helper/strict prefix를 수정하지 않고 append하는 deadline 반례.
+function limitedDeadlineMonitor(scenario:string){
+ assert(/^(initial|done-now|done-sample)-(source|total)-(equal|over)$/.test(scenario));
+ let command=limitedMonitorCommand('normal').replace('SCENARIO=normal\n','SCENARIO='+scenario+'\n');
+ command=command.replace('--source-deadline-ms 500000 --deadline-ms 600000','--source-deadline-ms 5000 --deadline-ms 6000');
+ command=command.replace('P03_LIMITED_SPACE_STATUS=OBSERVED\n',String.raw`P03_LIMITED_SPACE_STATUS=OBSERVED
+ if ((FAKE_OBSERVES==1));then
+  case $SCENARIO in initial-source-equal)FAKE_NOW=5000;;initial-source-over)FAKE_NOW=5001;;initial-total-equal)FAKE_NOW=6000;;initial-total-over)FAKE_NOW=6001;;esac
+ fi
+ if ((FAKE_OBSERVES==2));then
+  case $SCENARIO in done-sample-source-equal)FAKE_NOW=5000;;done-sample-total-equal)FAKE_NOW=6000;;esac
+ fi
+`);
+ command=command.replace('P03_LIMITED_CP_CLOSED=false\n',String.raw`P03_LIMITED_CP_CLOSED=false
+ if ((FAKE_POLLS==1));then
+  case $SCENARIO in
+   done-now-source-equal)FAKE_NOW=5000;P03_LIMITED_CP_DONE=true;P03_LIMITED_CP_CLOSED=true;;
+   done-now-total-equal)FAKE_NOW=6000;P03_LIMITED_CP_DONE=true;P03_LIMITED_CP_CLOSED=true;;
+   done-sample-source-equal|done-sample-total-equal)FAKE_NOW=4000;P03_LIMITED_CP_DONE=true;P03_LIMITED_CP_CLOSED=true;;
+  esac
+ fi
+ case $SCENARIO in done-*)P03_LIMITED_CP_DONE=true;P03_LIMITED_CP_CLOSED=true;;esac
+`);
+ const r=invoke(command);assert.equal(r.status,0);
+ const lines=r.stdout.toString('utf8').trim().split('\n');assert.equal(lines.shift(),'PREPARATION_ONLY');assert.equal(lines.length,1);
+ const [tag,rc,starts,observes,terms,waits,disposes,collects,foreign,latched,preserve]=lines[0]!.split(' ');
+ assert.equal(tag,'LIMITED_MONITOR');
+ for(const value of [rc,starts,observes,terms,waits,disposes,collects,foreign])assert.match(value??'',/^\d+$/);
+ return{rc:Number(rc),starts:Number(starts),observes:Number(observes),terms:Number(terms),waits:Number(waits),disposes:Number(disposes),collects:Number(collects),foreign:Number(foreign),latched,preserve};
+}
+for(const scenario of ['initial-source-equal','initial-source-over','initial-total-equal','initial-total-over'])test('LIMITED deadline initial sample '+scenario+'는 cp0·후속0이다',()=>{
+ const r=limitedDeadlineMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,0);assert.equal(r.terms,0);assert.equal(r.waits,0);assert.equal(r.disposes,1);assert.equal(r.collects,0);assert.equal(r.foreign,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');
+});
+for(const scenario of ['done-now-source-equal','done-now-total-equal','done-sample-source-equal','done-sample-total-equal'])test('LIMITED deadline DONE '+scenario+'는 늦은성공수집0·위반latch·부분보존이다',()=>{
+ const r=limitedDeadlineMonitor(scenario);assert.notEqual(r.rc,0);assert.equal(r.starts,1);assert.equal(r.terms,0);assert.equal(r.disposes,1);assert.equal(r.collects,0);assert.equal(r.foreign,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');
+});
+
+// LIMITED 마지막호출선: 실제 mode/proc/cp를 호출하지 않는 명시 fake 주입만 사용한다.
+test('LIMITED 마지막호출선 dispatcher 세 rolemode의 invalid carrier는 실함수 진입0이다',()=>{
+ const text=shellBytes().toString('utf8'),boundary=text.lastIndexOf('if [[ -n ${BASH_SOURCE[0]-}');
+ assert(boundary>0);
+ const allowed=new Set(['p03_copy_fail','p03_copy_uint','p03_copy_parse','p03_limited_parse']);
+ const names=[...text.matchAll(/^(p03_[a-z0-9_]+)\(\)\{/gm)].map(v=>v[1]!);
+ const sentinels=names.filter(name=>!allowed.has(name)).map(name=>name+"(){ printf 'FORBIDDEN_REAL_ENTRY\\n'; return 97; }").join('\n')+'\n';
+ const program=Buffer.from(text.slice(0,boundary)+sentinels+text.slice(boundary),'utf8');
+ for(const mode of ['--preflight-p03-copy-limited-risk-r1','--init-p03-copy-limited-risk-r1','--copy-p03-copy-limited-risk-r1']){
+  const r=spawnSync(bash,['--noprofile','--norc','-s','--',mode],{input:program,encoding:'utf8',env:{SystemRoot:process.env.SystemRoot,PATH:'C:/Program Files/Git/usr/bin;C:/Program Files/Git/bin',BASH_ENV:'',ENV:'',LC_ALL:'C'},timeout:15000,maxBuffer:16384,windowsHide:true});
+  assert.equal(r.error,undefined);assert.equal(r.status,1,mode);assert.equal(r.stderr,'');assert(!r.stdout.includes('FORBIDDEN_REAL_ENTRY'));
+  assert.deepEqual(JSON.parse(r.stdout),{status:'LIMITED_COPY_BINDING_UNVERIFIED',complete:false});
+ }
+});
+function limitedReapBoundary(kind:string){
+ assert(['known','unreaped','open','initial-unknown'].includes(kind));
+ let command=limitedMonitorCommand('normal');
+ command=command.replace('p03_limited_cp_identity(){\n','p03_limited_cp_identity(){\n '+(kind==='initial-unknown'?'return 1':'if ((FAKE_NOW>0));then return 1;fi')+'\n');
+ const original='if ((FAKE_NOW>=10000)); then P03_LIMITED_CP_DONE=true; P03_LIMITED_CP_CLOSED=true; fi';
+ const replacement='if ((FAKE_NOW>=10000)); then P03_LIMITED_CP_DONE=true; P03_LIMITED_CP_CLOSED='+(kind==='open'?'false':'true')+'; P03_LIMITED_CP_REAPED='+(kind==='unreaped'?'false':'true')+'; fi';
+ assert(command.includes(original));command=command.replace(original,replacement);
+ const r=invoke(command);assert.equal(r.status,0);
+ const lines=r.stdout.toString('utf8').trim().split('\n');assert.equal(lines.shift(),'PREPARATION_ONLY');assert.equal(lines.length,1);
+ const [tag,rc,starts,observes,terms,waits,disposes,collects,foreign,latched,preserve]=lines[0]!.split(' ');
+ assert.equal(tag,'LIMITED_MONITOR');
+ for(const value of [rc,starts,observes,terms,waits,disposes,collects,foreign])assert.match(value??'',/^\d+$/);
+ return{rc:Number(rc),starts:Number(starts),terms:Number(terms),waits:Number(waits),disposes:Number(disposes),collects:Number(collects),foreign:Number(foreign),latched,preserve};
+}
+for(const kind of ['known','unreaped','open','initial-unknown'])test('LIMITED 마지막호출선 proc 소실 '+kind+'는 원job 회수증거만 수락한다',()=>{
+ const r=limitedReapBoundary(kind);assert.equal(r.starts,1);assert.equal(r.terms,0);assert.equal(r.foreign,0);assert.equal(r.disposes,1);
+ if(kind==='known'){assert.equal(r.rc,0);assert.equal(r.collects,1);assert.equal(r.waits,1);assert.equal(r.latched,'false');}
+ else{assert.notEqual(r.rc,0);assert.equal(r.collects,0);assert.equal(r.waits,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');}
+});

@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "task": "P03_LIMITED_RISK_SOURCE_IMPLEMENTATION",
+  "branch": "codex/av3-stage-b",
+  "sourceBase": "8f8c76c96d7a8a87f6be51d4cf49fd6ccc1a2c12",
+  "privateBaseVerified": true,
+  "candidateSha256": "FFC3F2A2979A7845C48B61946A32F0B142C698ED7C6E8004D3038BAD777670D3",
+  "workInstructionSha256": "C0ABA0F2C3F854CAEF52918DCFC4E5563F7AE6E9F77A9513D343DE6F29A70F1B",
+  "decisionSha256": "C1EC91083EBD910220CB22DC83BC895A2850ECD3F94B914B5DBBFC68C8E25E9B",
+  "initialPhase": "TEST_ONLY_TWO_FILES",
+  "allowed": [
+    {
+      "path": "scripts/p03-pg-copy-host.ts",
+      "strictBaselineRawSha256": "7A62FFD7AE310A950243F668AAA91BA01C8BB9C1D5A4B148C535DB6E33A33743",
+      "strictBaselineGitBlobSha256": "8D81CD5068B8E762ACFB7C5733BABAC40116392387000FB75F27F6DCDA5F967E"
+    },
+    {
+      "path": "scripts/pg-recovery-copy.sh",
+      "strictBaselineRawSha256": "70697DC3D787D5CED8442730B3A3A68BD8D61E1A883B73CF462E2BE452145782",
+      "strictBaselineGitBlobSha256": "70697DC3D787D5CED8442730B3A3A68BD8D61E1A883B73CF462E2BE452145782"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-host.test.ts",
+      "strictBaselineRawSha256": "C4523CD7882BF25E626D0820688524AA8024208BBC5A39556274354193E133CA",
+      "strictBaselineGitBlobSha256": "3D8681EA15C69160E0F153D39F020392C28FA14A2F6B5D537C0034C3694F1048"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+      "strictBaselineRawSha256": "B6A5677F13F0632EED1F71234831AE50B89D5FFB1B49CC6CBC6D1AC9EFCA762A",
+      "strictBaselineGitBlobSha256": "B015490BD8E4F37F9BB12BF6B6DB72BF26E9FC64D1E72646A0E1F0E4FFA36183"
+    },
+    {
+      "path": "docs/work_packages/P03_PG_COPY_EXECUTION_PLAN_20261027.md",
+      "strictBaselineRawSha256": "1E97EA97C326F41A4D545070AE300223718E7BD39E6FB75A4F52900601F6FE04",
+      "strictBaselineGitBlobSha256": "1E97EA97C326F41A4D545070AE300223718E7BD39E6FB75A4F52900601F6FE04"
+    }
+  ],
+  "protectedExisting": [
+    {
+      "path": "scripts/p03-pg-discovery-host.ts",
+      "sha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7"
+    },
+    {
+      "path": "scripts/pg-recovery-discovery-readonly.sh",
+      "sha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-host.test.ts",
+      "sha256": "207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-preparation.test.ts",
+      "sha256": "B90F8D8799ABF4DB877227BDEBE48CBAD5CBDF80BA7F015EB1AD13EE7E8A96FB"
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "strictPolicyPreserved": true,
+  "actualExecutionAuthorized": false,
+  "notExecutionGrant": true
+}
