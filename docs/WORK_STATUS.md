@@ -8362,3 +8362,15 @@
 
 
 - **PMO 후속 지원·구체 검토본**: Main은 FN16_PROTECTED_REFERENCE_CONTRACT_REVIEW.md r1과 P03_PRESERVED_PG_VOLUME_RECOVERY_REVIEW.md r1을 작성했다. PMO는 FN16 새참조등록/회수/재대조·고정GET/권한방향을 상세화기준으로 채택하고 최초MANUAL/소유자이식에맞춰 사용자해제형이식키를 첫후보로 권장했다. 이는새공개API/자료/키보호의제품구현승인이아니며 정확route/DTO/pagination/오류/공급자/불변표·KDF/키입력메모리수명/유실이식/옛키·한도/허용파일을한검토본으로고정한다. 내부유한수치제안·검수는Main기술판단으로가능하나운영기본값/자동삭제/묵시누락은불가다. PG문서는비가동사본검증우선/원본직접기동위험과새resource/기동전guard·실행안미정·별도승인을명시했으며실제copy/mount/DB/서비스실행0이다. 독립FN06조사는후보개정과완성형연결이서로다르고현재nativefactory/current권위/보호handle 선행이남음을확인했다. 실제Agent첫지시를바로허위완료하지않고 최신소유C#source보정후compile-only미실행의정확의존/명령/허가경계를읽기전용대조한다. 제품진도는FN12게시까지이며이후검토문서는구현완료로세지않는다.
+
+
+- **지원 문서 게시·FN06 새실행 제외 대조**: 319514의64bb7ab2db534e66d66bf150529df3017e4bd70e는지원문서2+현황정확3이며a41cc1 private/local exact·trackedclean/보호8·mainf976불변이다. PMO는PG비가동원본RO복제/전체검증/사본PG격리1회/정식전환별도방향을채택했으나consumer0경쟁·외부tablespace/pg_wal/config/SSL·restore/archive/recovery/standby/preload의시작위험과사본접근/수명·exact도구/한도를보완하도록했다. 실제PG실행0이다. FN06지원은이번PMO한정재개두사안밖이라검토/승인하지않는다는최신회신을확인했다. 이를Anvil전체중단으로확대하지않고Main은compile12rawsource/tool4 manifest D6DE65F1을읽기고정·cb6eee 부모owner/SYSTEMACL·신규QA부재만확인했다. 옛D1compile제외/D2소진은유지하며새직접실행결정전compiler/QA생성0이다. 다음단일subagent에순수실행준비runner/단위/정확계획4경로만위임하고실제실행은별도대조한다. FN16정확보호참조/사용자해제키상세계약은읽기전용지원으로병행한다.
+
+
+- **FN06 새 compile-only 순수 준비 RED·GO**: 단일담당은신규 ownership-compile-only-preparation.test.ts SHA C322A2E23E2CF88BE253CC736E69241F94240E69ACD9DAF9A89C13742C2DD2D2만TEST_ONLY작성했다. Main0dd7d9 실제node --test는순수builder/decision/runner미구현assert로7FAIL/skip0/161.7585ms/exit1이다. Main은같은담당에WI허용4경로의준비source/단위/실행계획만GO했고actualcompiler/QA/소비/승인JSON·DLL실행/Agent/DB/Secret/서비스0를유지했다. manifest sourceCheckpoint64는native12의기준이력이며최종승인결정은준비runner게시후actualexactHEAD/hash와별도결박한다. 현재SOURCEONLY/D2소진을묵시로해제하지않고미결박apply는FS/compiler전에거절한다. a58f38은Main소유STATUS/WI/manifest외제품dirty0·보호8/HEAD64·diff0를확인했다. 담당Git격리오류1은반복/우회0·정식FAILURE_REPORT0이며전체계획미완료다.
+
+
+- **FN06 준비 중 독립 Important2·최소예외처리 판단**: 읽기전용잠정검수는pending ReadAsync 완료전Process.Dispose/공유bufferClear와종료불명시PID/start/exe인수증거소실을확인했다. Main은같은담당에게국소보완/순수음성시험을지시했다. 새상주handoff호스트/범용daemon을만들지않는작은안을우선한다. 판단근거는불명compiler/QA를자동kill/delete하지않고실제관측과미관측을보존하는것이기존요구이며원핸들영구보존서비스는아니기때문이다. read완료전zero0·불완전메모리정리false·정확PID/start/관측exe·원핸들처리정책과후속담당fresh동일성재검증한계를명시하며독립재검수한다. 이는내부준비방법의국소판단이고실제compiler/QA/Agent실행승인이아니다. aefee8은고정csc Authenticode Valid/MicrosoftWindows·신규QA부재만확인했다. 현재전체계획미완료/실행0이다.
+
+
+- **FN06 compile-only 준비 Main 검수·통합 준비**: 단일담당허용4파일동결·Maindc48fc 순수9PASS156.2842ms/type/Node구문0·d0460f PS문자열ASTparse0·QA/marker/직접승인JSON부재를확인했다. payload본문/실제plan/apply/compiler/native/Agent/DB/Secret/서비스는미실행이다. 독립Important2는read완료뒤zero/dispose·불명인수facts/원핸들종료한계로ADDRESSED·최종C0/I0다. 실제빠른종료/pipe취소/OS정리경합·outertimeout은미검증/UNKNOWN이며수명/완전소거를보장하지않는다. 결과서 FN06_OWNERSHIP_COMPILE_ONLY_PREPARATION_RESULT_20261027.md에정확증거/지문/새실행결정경계를기록하고소유9경로로기존branch checkpoint/private게시한다. 이준비는실제Agent연결/전체FN06/Stage/계획완료가아니다. 이후read-onlyplanmetadata와새직접실행승인을분리하고옛D1/D2허가를재사용하지않는다.

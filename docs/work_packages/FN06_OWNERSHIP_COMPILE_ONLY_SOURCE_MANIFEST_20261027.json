@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "status": "PREPARATION_ONLY_NOT_EXECUTION_APPROVAL",
+  "candidateId": "FN06_OWNERSHIP_COMPILE_ONLY_20261027_01",
+  "sourceCheckpoint": "64bb7ab2db534e66d66bf150529df3017e4bd70e",
+  "sources": [
+    {
+      "path": "apps/connector/native/OwnershipEvidenceHost.cs",
+      "bytes": 35353,
+      "sha256": "C21CC141EE808A43AC6861FF99769393FEF226EEF1DA7685BA84BEEDD8E5C490"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceImageBindingSource.cs",
+      "bytes": 5750,
+      "sha256": "542F3ED8E6F30B736FDE3662BF2501CDB93E4DFBDE832701C70B5204458F9802"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceImageOwnerSource.cs",
+      "bytes": 7895,
+      "sha256": "87F027C30FA2C62E17567D3C7B5801CF1D390E88C38149CB7A2F4503087541EE"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceJobAssignmentSource.cs",
+      "bytes": 8819,
+      "sha256": "A9AAC6D4003ACC20D5CF3DFAE321536673FB3079AE922B2AD0108657504B1156"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceJobFactorySource.cs",
+      "bytes": 8387,
+      "sha256": "960B59F6D96096FBFD7B61219A40FEB3F53D263CAE05010633BFB9BDB28DF70E"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidencePreparationInputSource.cs",
+      "bytes": 5668,
+      "sha256": "32BC2D7174C603A924B77CDE7827658153244567EA6B6FA8EC4C4FAC6B935792"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidencePreparedFactsSource.cs",
+      "bytes": 3883,
+      "sha256": "E694C6E176726CACD52DECF78A90975224DE540C8878232E206BDE0893B226DA"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs",
+      "bytes": 14659,
+      "sha256": "E93D5185DB75C9EB68F97BE2C7E1B071248552DC2DC17C50AF255362EF81BFD0"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceProcessStartupSource.cs",
+      "bytes": 11812,
+      "sha256": "E4D89DF08A972F4B92C1E3E991D193FBD9F8CD5C3731759492F1DCAEC2C7A58C"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceRootSource.cs",
+      "bytes": 12994,
+      "sha256": "C1213018DAE0C37D3D468A55D9DA74AE1E707F5499B645DEE3C190AF7CE9E4AF"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceWorker.cs",
+      "bytes": 4120,
+      "sha256": "4FFADB0DD6F04D274F02F2DD467F3279B220BD08D9F8A30DC7CEF535D380C1B9"
+    },
+    {
+      "path": "apps/connector/native/OwnershipEvidenceWorkerInputSource.cs",
+      "bytes": 5458,
+      "sha256": "18B728E200628C154FEFB7E1E37932710B897A8763A48BEFBCE7DD4617D358F7"
+    }
+  ],
+  "tools": [
+    {
+      "path": "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe",
+      "bytes": 2569832,
+      "sha256": "46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00"
+    },
+    {
+      "path": "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/mscorlib.dll",
+      "bytes": 5445432,
+      "sha256": "11AC114C43ECF6996BEF58BA3C99FBA3693A4560A84EEADDE54D193060DC626C"
+    },
+    {
+      "path": "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/System.dll",
+      "bytes": 3545264,
+      "sha256": "2B3C17C6208A0B4B6BEB94E1A066F99BA06CDB2EA919479E99D47E8C6D96DC71"
+    },
+    {
+      "path": "C:/Windows/Microsoft.NET/Framework64/v4.0.30319/System.Core.dll",
+      "bytes": 1551104,
+      "sha256": "8B898BED54AE8CC61F9C58CC3EB062724F8357D2BDDA338B5D363654ECFF333D"
+    }
+  ],
+  "proposedQaRoot": "D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-01",
+  "proposedOutput": "bin/OwnershipEvidenceSource.dll",
+  "proposedLimits": {
+    "qaLifetimeMs": 1800000,
+    "compilerTimeoutMs": 15000,
+    "diagnosticBytes": 16384,
+    "compilerAttempts": 1
+  },
+  "compilerOptions": [
+    "/noconfig",
+    "/nologo",
+    "/nostdlib+",
+    "/target:library",
+    "/debug-",
+    "/optimize-",
+    "/warn:4",
+    "/warnaserror+",
+    "/platform:anycpu",
+    "/codepage:65001",
+    "/utf8output"
+  ],
+  "excluded": [
+    "DLL_LOAD",
+    "REFLECTION",
+    "ADD_TYPE",
+    "INITIALIZER",
+    "WORKER_OR_HELPER_EXECUTION",
+    "JOB_OR_PINVOKE",
+    "AGENT_OR_COST",
+    "DB_OR_SECRET_OR_SERVICE",
+    "INSTALL_OR_DOWNLOAD"
+  ],
+  "actualCompilerExecuted": false
+}

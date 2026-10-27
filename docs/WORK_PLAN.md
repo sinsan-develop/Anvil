@@ -1503,3 +1503,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN12/UI05 결과 검수 기준 개정 checkpoint**: 기존 보호 원문 선택→다중sources/환경·exact직전ref 보존→명시 개정 저장→같은ID 다음버전 exactGET을 연결했다. 최초/파일v1보존·미확인동일명령·선택ABA/이탈보호, Main unit18·실제App합성10·type/build/diff0·QA정리0·독립C0/I0. 실제DB/서비스/Agent·사용자인수·전체FN12/UI05/Stage/계획은미완료이며 WORK_STATUS와 FN12_RESULT_CRITERIA_REVISION_RESULT.md의 증거범위를따른다.
+
+
+- **2026-10-27 FN06 native 선행 검증 준비 checkpoint**: 보정된OwnershipEvidence12제품source의컴파일미확인을위해 exactmanifest/tool·단발libraryargv·미결박apply차단·bounded캡처/소유정리 준비를고정했다. 순수9·type/구문/AST0·독립C0/I0이며실제compiler/QA/native/Agent는NOT_RUN이다. 새직접실행결정전기존compile제외유지·기능개발완료진도로세지않고 전체FN06/Stage/계획미완료를WORK_STATUS/결과서에기록한다.
