@@ -2,16 +2,16 @@ import {createHash} from 'node:crypto';
 import {types} from 'node:util';
 
 export const ownershipCompileOnly = Object.freeze({
-  candidateId: 'FN06_OWNERSHIP_COMPILE_ONLY_20261027_01',
-  manifestPath: 'docs/work_packages/FN06_OWNERSHIP_COMPILE_ONLY_SOURCE_MANIFEST_20261027.json',
-  manifestHash: 'D6DE65F1226575736CCF65AC951C44FE632012D1EBA9D25D2CF276ACDFF08A57',
-  sourceCheckpoint: '64bb7ab2db534e66d66bf150529df3017e4bd70e',
+  candidateId: 'FN06_OWNERSHIP_COMPILE_ONLY_20261027_02',
+  manifestPath: 'docs/work_packages/FN06_OWNERSHIP_COMPILE_ONLY_SOURCE_MANIFEST_20261027_02.json',
+  manifestHash: '04EC52DC9D837A890487041756DBE96249F90C5AB6F9BA5BAD993815F77910B9',
+  sourceCheckpoint: '24e70f71a865e3e4779f769a787000d9d6f77e98',
   branch: 'codex/av3-stage-b',
-  qaRoot: 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-01',
+  qaRoot: 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-02',
   parent: 'D:/Project/Anvil/.av3-data',
-  consumedMarker: 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-01.consumed.json',
+  consumedMarker: 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-02.consumed.json',
   output: 'bin/OwnershipEvidenceSource.dll',
-  decisionPath: 'docs/approvals/FN06_OWNERSHIP_COMPILE_ONLY_20261027_01.json',
+  decisionPath: 'docs/approvals/FN06_OWNERSHIP_COMPILE_ONLY_20261027_02.json',
 });
 export const compileOnlyHash = (raw: Uint8Array) => createHash('sha256').update(raw).digest('hex').toUpperCase();
 export function compileOnlyFail(code = 'INPUT_INVALID'): never { throw Error('OWNERSHIP_COMPILE_ONLY_' + code); }

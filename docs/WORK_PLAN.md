@@ -1506,3 +1506,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN06 native 선행 검증 준비 checkpoint**: 보정된OwnershipEvidence12제품source의컴파일미확인을위해 exactmanifest/tool·단발libraryargv·미결박apply차단·bounded캡처/소유정리 준비를고정했다. 순수9·type/구문/AST0·독립C0/I0이며실제compiler/QA/native/Agent는NOT_RUN이다. 새직접실행결정전기존compile제외유지·기능개발완료진도로세지않고 전체FN06/Stage/계획미완료를WORK_STATUS/결과서에기록한다.
+
+
+- **2026-10-27 FN06 진단 수집 소스 보완**: 원 compiler1회는 소진·결과미확정으로 보존한다. 실제 apply의 진단/exit 유실 경계를 소스에서 보완하고 신규/기존 모의12·type/diff·PS AST 및 독립 C/I0만 확인했다. 새 후보02는 미승인/실행0·실컴파일/OS NOT_RUN, 전체 FN06/계획 미완료. 정확 증거는 FN06_COMPILER_DIAGNOSTIC_CAPTURE_PREPARATION_RESULT_20261027.md를 따른다.

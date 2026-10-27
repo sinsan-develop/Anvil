@@ -79,22 +79,107 @@ $facts=Preflight
 $facts|ConvertTo-Json -Depth 12 -Compress
 `;
 
+// 원 Process의 pipe/종료 관측은 image 신원 증명과 별개다. 함수 자체는 시작/중단/FS 권한이 없다.
+const captureScript = String.raw`
+function CaptureOriginalCompiler {
+ param($Compiler,[string]$ExpectedExe,$Sources,[datetimeoffset]$Expires,$Context=$null,$Clock=$null,[scriptblock]$StopVerified=$null)
+ $localContext=($null -eq $Context)
+ if($localContext){$Context=@{outMemory=[IO.MemoryStream]::new();errMemory=[IO.MemoryStream]::new();outBuffer=[byte[]]::new(4096);errBuffer=[byte[]]::new(4096);outTask=$null;errTask=$null;cancel=[Threading.CancellationTokenSource]::new()}}
+ if(!$Clock){$Clock=[Diagnostics.Stopwatch]::StartNew()}
+ $identity=@{pid=$null;startTicks=$null;expectedExe=$ExpectedExe;observedExe=$null;exeObserved=$false;imageErrorType=$null;imageErrorCode=$null;hasExitedAtImageObservation=$null;startErrorType=$null}
+ $verified=$false;$total=0;$reservedOut=0;$reservedErr=0;$eofOut=$false;$eofErr=$false;$limitHit=$false;$timedOut=$false;$captureFailure=$null;$diagnostics=@();$exitObserved=$false;$exitCode=$null
+ try {
+  # 조회보다 먼저 같은 원 Process의 두 pipe 읽기를 예약한다. 예약+보존 합계는 16KiB 이하다.
+  $reservedOut=4096;$Context.outTask=$Compiler.StandardOutput.BaseStream.ReadAsync($Context.outBuffer,0,4096,$Context.cancel.Token)
+  $reservedErr=4096;$Context.errTask=$Compiler.StandardError.BaseStream.ReadAsync($Context.errBuffer,0,4096,$Context.cancel.Token)
+  try{$identity.pid=$Compiler.Id;$identity.startTicks=[string]$Compiler.StartTime.ToUniversalTime().Ticks}catch{$identity.startErrorType='START_OBSERVATION_FAILED'}
+  try {
+   $identity.hasExitedAtImageObservation=[bool]$Compiler.HasExited
+   if(!$identity.hasExitedAtImageObservation){
+    $previousError=if($Error.Count){$Error[0]}else{$null};$module=$Compiler.MainModule
+    # PS ScriptProperty는 예외를 Error 원장에만 남기고 null을 반환할 수 있다. 원문은 내보내지 않는다.
+    if(!$module -and $Error.Count -and ![object]::ReferenceEquals($previousError,$Error[0])){throw $Error[0].Exception}
+    $image=$module.FileName;if($image -is [string] -and $image.Length){$identity.observedExe=$image.Replace('\','/');$identity.exeObserved=$true}
+   }
+  }catch{
+   $errorType='IMAGE_OBSERVATION_FAILED';$errorCode=$null;$errorObject=$_.Exception
+   for($depth=0;$errorObject -and $depth -lt 5;$depth++){
+    if($errorObject -is [ComponentModel.Win32Exception]){$errorType='Win32Exception';$errorCode=$errorObject.NativeErrorCode;break}
+    if($errorObject -is [InvalidOperationException]){$errorType='InvalidOperationException'}
+    $errorObject=$errorObject.InnerException
+   }
+   $identity.imageErrorType=$errorType;$identity.imageErrorCode=$errorCode
+   try{$identity.hasExitedAtImageObservation=[bool]$Compiler.HasExited}catch{$identity.hasExitedAtImageObservation=$null}
+  }
+  $verified=($identity.pid -gt 0 -and $null -ne $identity.startTicks -and $identity.exeObserved -and $identity.observedExe -ceq $ExpectedExe)
+  while($true){
+   try{$exitObserved=[bool]$Compiler.HasExited}catch{$exitObserved=$false}
+   if($eofOut -and $eofErr -and $exitObserved){break}
+   if($Clock.ElapsedMilliseconds -ge 15000 -or [datetimeoffset]::UtcNow.AddSeconds(5) -ge $Expires){$timedOut=$true;break}
+   foreach($stream in @('out','err')){
+    $task=$Context[$stream+'Task'];$done=if($stream -eq 'out'){$eofOut}else{$eofErr};if($done){continue}
+    if(!$task){
+     $available=16384-$total-$reservedOut-$reservedErr;if($available -le 0){continue};$reserve=[Math]::Min(4096,$available)
+     if($stream -eq 'out'){$reservedOut=$reserve}else{$reservedErr=$reserve}
+     $pipe=if($stream -eq 'out'){$Compiler.StandardOutput.BaseStream}else{$Compiler.StandardError.BaseStream}
+     $Context[$stream+'Task']=$pipe.ReadAsync($Context[$stream+'Buffer'],0,$reserve,$Context.cancel.Token);$task=$Context[$stream+'Task']
+    }
+    if(!$task.IsCompleted){continue};$n=$task.GetAwaiter().GetResult();$buffer=$Context[$stream+'Buffer'];$memory=$Context[$stream+'Memory']
+    $Context[$stream+'Task']=$null;if($stream -eq 'out'){$reservedOut=0}else{$reservedErr=0}
+    if($n -eq 0){if($stream -eq 'out'){$eofOut=$true}else{$eofErr=$true};continue}
+    $retain=[Math]::Min($n,16384-$total);if($retain -gt 0){$memory.Write($buffer,0,$retain);$total+=$retain};if($retain -lt $n){$limitHit=$true}
+    [Array]::Clear($buffer,0,$buffer.Length)
+   }
+   if($total -ge 16384 -and !($eofOut -and $eofErr)){$limitHit=$true};if($limitHit){break};Start-Sleep -Milliseconds 5
+  }
+ }catch{$captureFailure='OWNERSHIP_COMPILE_ONLY_CAPTURE_FAILED'}
+ # 중단은 외부에서 원 handle/PID/ticks/image/child를 다시 검증할 때만 가능하다. 불명 image에서는 호출하지 않는다.
+ if(($limitHit -or $timedOut) -and $verified -and $StopVerified){try{& $StopVerified @{pid=$identity.pid;ticks=[int64]$identity.startTicks}}catch{$captureFailure='OWNERSHIP_COMPILE_ONLY_STOP_UNKNOWN'}}
+ try{$exitObserved=[bool]$Compiler.HasExited;if($exitObserved){$exitCode=$Compiler.ExitCode}}catch{$exitObserved=$false;$exitCode=$null}
+ $capture=@{combinedCapturedBytes=$total;stdoutCapturedBytes=$Context.outMemory.Length;stderrCapturedBytes=$Context.errMemory.Length;stdoutEof=$eofOut;stderrEof=$eofErr;limitHit=$limitHit;timedOut=$timedOut;exitObserved=$exitObserved;memoryErasureGuaranteed=$false;managedBufferClearAttempted=$false}
+ foreach($pair in @(@('stdoutSha256',$Context.outMemory),@('stderrSha256',$Context.errMemory))){
+  $array=$pair[1].ToArray()
+  try{
+   $capture[$pair[0]]=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($array));$text=[Text.Encoding]::UTF8.GetString($array)
+   foreach($match in [regex]::Matches($text,'(?m)^(?:(.+?)\((\d{1,7}),(\d{1,7})\):\s*|CSC\s*:\s*)?(?:error|warning)\s+(CS\d{4})\b')){
+    if($diagnostics.Count -ge 128){break};$source=$null;$line=$null;$column=$null
+    if($match.Groups[1].Success){$basename=$match.Groups[1].Value.Replace('\','/').Split('/')[-1];foreach($file in $Sources){if($basename -ceq $file.path.Replace('\','/').Split('/')[-1]){$source=$basename;break}};$line=[int]$match.Groups[2].Value;$column=[int]$match.Groups[3].Value}
+    $diagnostics+=@{code=$match.Groups[4].Value;source=$source;line=$line;column=$column}
+   }
+  }finally{[Array]::Clear($array,0,$array.Length)}
+ }
+ $failure=if(!$verified){'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}elseif($captureFailure){$captureFailure}elseif(!$exitObserved){'OWNERSHIP_COMPILE_ONLY_EXIT_UNKNOWN'}elseif($limitHit -or $timedOut -or !$eofOut -or !$eofErr){'OWNERSHIP_COMPILE_ONLY_CAPTURE_INCOMPLETE'}elseif($exitCode -ne 0){'OWNERSHIP_COMPILE_ONLY_COMPILER_FAILED'}else{$null}
+ if($localContext){
+  $Context.cancel.Cancel();$drain=[Diagnostics.Stopwatch]::StartNew()
+  while((($Context.outTask -and !$Context.outTask.IsCompleted) -or ($Context.errTask -and !$Context.errTask.IsCompleted)) -and $drain.ElapsedMilliseconds -lt 1000){Start-Sleep -Milliseconds 5}
+  if((!$Context.outTask -or $Context.outTask.IsCompleted) -and (!$Context.errTask -or $Context.errTask.IsCompleted)){
+   foreach($task in @($Context.outTask,$Context.errTask)){if($task){try{$null=$task.GetAwaiter().GetResult()}catch{}}}
+   foreach($buffer in @($Context.outBuffer,$Context.errBuffer)){[Array]::Clear($buffer,0,$buffer.Length)}
+   foreach($memory in @($Context.outMemory,$Context.errMemory)){$buffer=$memory.GetBuffer();[Array]::Clear($buffer,0,$buffer.Length);$memory.Dispose()};$Context.cancel.Dispose()
+  }
+ }
+ return @{status='FAIL_COMPILE_ONLY';failure=$failure;compilerIdentity=$identity;identityVerified=$verified;stopAuthorized=$false;capture=$capture;diagnostics=$diagnostics;exitCode=$exitCode}
+}
+`;
+
 /** 새 허가 후에만 쓰일 고정 adapter의 소스. 현재 준비/단위시험에서는 실행하지 않는다. */
 const applyScript = psPrelude + String.raw`
 $state=@{status='FAIL_COMPILE_ONLY';phase='PREFLIGHT';failure=$null;cleanupFailure=$null;processStarted=$false;oneUseConsumed=$false;qaCreated=$false;qaRootAbsent=$false;actualCompilerExecuted=$false;externalUserApprovalVerified=$false;dllLoaded=$false;nativeFunctionsInvoked=0;actualAgentCalls=0;databaseWrites=0;serviceChanges=0;exitCode=$null;capture=$null;output=$null;diagnostics=@();compilerIdentity=$null;hostIdentity=$null;handoffRequired=$false;finalization=$null;stopIdentityChecked=$false;stopRequested=$false;stopOutcome='NOT_REQUESTED';memoryCleanupComplete=$false}
+` + captureScript + String.raw`
 $compiler=$null;$proof=$null;$rootCreated=$false;$knownFiles=@();$knownDirs=@();$captureOut=[IO.MemoryStream]::new();$captureErr=[IO.MemoryStream]::new();$outBuffer=[byte[]]::new(4096);$errBuffer=[byte[]]::new(4096);$outTask=$null;$errTask=$null;$unknown=$false;$readCancel=[Threading.CancellationTokenSource]::new()
+$captureContext=@{outMemory=$captureOut;errMemory=$captureErr;outBuffer=$outBuffer;errBuffer=$errBuffer;outTask=$null;errTask=$null;cancel=$readCancel}
 $hostProcess=[Diagnostics.Process]::GetCurrentProcess();$state.hostIdentity=@{pid=$hostProcess.Id;startTicks=[string]$hostProcess.StartTime.ToUniversalTime().Ticks;exe=$hostProcess.MainModule.FileName.Replace('\','/')}
 $qa=$p.qaRoot;$exe=$p.tools[0].path;$expires=[datetimeoffset]::ParseExact($p.decision.expiresAt,'yyyy-MM-ddTHH:mm:ss.fffZ',[Globalization.CultureInfo]::InvariantCulture,[Globalization.DateTimeStyles]::AssumeUniversal)
 function Window([int]$reserve=0){if([datetimeoffset]::UtcNow.AddSeconds($reserve) -ge $expires){throw 'OWNERSHIP_COMPILE_ONLY_WINDOW_EXPIRED'}}
-function Owned {
- if(!$compiler -or !$state.processStarted -or !$proof -or $compiler.Id -ne $proof.pid -or $compiler.StartTime.ToUniversalTime().Ticks -ne $proof.ticks){throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}
+function Owned($candidateProof=$proof) {
+ if(!$compiler -or !$state.processStarted -or !$candidateProof -or $compiler.Id -ne $candidateProof.pid -or $compiler.StartTime.ToUniversalTime().Ticks -ne $candidateProof.ticks){throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}
  if(!$compiler.HasExited -and $compiler.MainModule.FileName.Replace('\','/') -cne $exe){throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}
- $children=@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$proof.pid)|Where-Object {$_.CreationDate.ToUniversalTime().Ticks -ge $proof.ticks})
+ $children=@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$candidateProof.pid)|Where-Object {$_.CreationDate.ToUniversalTime().Ticks -ge $candidateProof.ticks})
  if($children.Count){throw 'OWNERSHIP_COMPILE_ONLY_CHILD_UNKNOWN'}
 }
-function StopOwned {
+function StopOwned($candidateProof=$proof) {
  if(!$compiler -or !$state.processStarted -or $compiler.HasExited){return}
- try{Owned;$state.stopIdentityChecked=$true}catch{$state.stopOutcome='IDENTITY_OR_CHILD_UNKNOWN';throw}
+ try{Owned $candidateProof;$state.stopIdentityChecked=$true}catch{$state.stopOutcome='IDENTITY_OR_CHILD_UNKNOWN';throw}
  # 같은 .NET Process handle의 신원이 일치한 compiler 본체만 중단한다. tree kill 없음.
  $state.stopRequested=$true;$state.stopOutcome='REQUESTED_EXIT_UNCONFIRMED'
  $compiler.Kill();if(!$compiler.WaitForExit(1000)){throw 'OWNERSHIP_COMPILE_ONLY_STILL_ACTIVE'};$state.stopOutcome='EXIT_OBSERVED'
@@ -119,14 +204,14 @@ function Cleanup {
  if(Test-Path -LiteralPath $qa){throw 'OWNERSHIP_COMPILE_ONLY_CLEANUP_REMAINS'};RelatedZero;$state.qaRootAbsent=$true
 }
 function Finalization {
- $outSettled=(!$outTask -or $outTask.IsCompleted);$errSettled=(!$errTask -or $errTask.IsCompleted);$exited=(!$compiler -or !$state.processStarted)
+ $outSettled=(!$captureContext.outTask -or $captureContext.outTask.IsCompleted);$errSettled=(!$captureContext.errTask -or $captureContext.errTask.IsCompleted);$exited=(!$compiler -or !$state.processStarted)
  if(!$exited){try{$exited=$compiler.HasExited}catch{$exited=$false}}
  $key=([int]$outSettled).ToString()+([int]$errSettled).ToString()+([int]$exited).ToString()
  return $p.finalizationPolicies[$key]
 }
 function ReleaseCompleted {
  $policy=Finalization;if(!$policy.canDisposeProcess){return $false}
- foreach($task in @($outTask,$errTask)){if($task){try{$null=$task.GetAwaiter().GetResult()}catch{}}}
+ foreach($task in @($captureContext.outTask,$captureContext.errTask)){if($task){try{$null=$task.GetAwaiter().GetResult()}catch{}}}
  foreach($buffer in @($outBuffer,$errBuffer)){[Array]::Clear($buffer,0,$buffer.Length)}
  foreach($memory in @($captureOut,$captureErr)){$buffer=$memory.GetBuffer();[Array]::Clear($buffer,0,$buffer.Length);$memory.Dispose()}
  if($compiler){$compiler.Dispose()};$readCancel.Dispose();$hostProcess.Dispose();return $true
@@ -152,35 +237,15 @@ try {
  foreach($arg in $p.argv){$info.ArgumentList.Add($arg)};$info.Environment['TEMP']=$qa+'/temp';$info.Environment['TMP']=$qa+'/temp'
  $knownFiles+=($qa+'/bin/OwnershipEvidenceSource.dll')
  $compiler=[Diagnostics.Process]::new();$compiler.StartInfo=$info;$clock=[Diagnostics.Stopwatch]::StartNew()
- if(!$compiler.Start()){throw 'OWNERSHIP_COMPILE_ONLY_START_FAILED'};$state.processStarted=$true;$state.actualCompilerExecuted=$true
- $state.compilerIdentity=@{pid=$compiler.Id;startTicks=$null;expectedExe=$exe;observedExe=$null;exeObserved=$false}
- try{$state.compilerIdentity.startTicks=[string]$compiler.StartTime.ToUniversalTime().Ticks;if($compiler.HasExited){throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'};$state.compilerIdentity.observedExe=$compiler.MainModule.FileName.Replace('\','/');if($state.compilerIdentity.observedExe -cne $exe){throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'};$state.compilerIdentity.exeObserved=$true;$proof=@{pid=$compiler.Id;ticks=$compiler.StartTime.ToUniversalTime().Ticks};Owned}catch{$unknown=$true;throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}
- $reservedOut=0;$reservedErr=0;$eofOut=$false;$eofErr=$false;$limitHit=$false;$timedOut=$false;$total=0
- while(!$eofOut -or !$eofErr -or !$compiler.HasExited){
-  if($clock.ElapsedMilliseconds -ge 15000 -or [datetimeoffset]::UtcNow.AddSeconds(5) -ge $expires){$timedOut=$true;break}
-  foreach($stream in @('out','err')){
-   $task=if($stream -eq 'out'){$outTask}else{$errTask};$done=if($stream -eq 'out'){$eofOut}else{$eofErr}
-   if($done){continue}
-   if(!$task){
-    $available=16384-$total-$reservedOut-$reservedErr
-    if($available -le 0){continue};$reserve=[Math]::Min(4096,$available)
-    if($stream -eq 'out'){$reservedOut=$reserve;$outTask=$compiler.StandardOutput.BaseStream.ReadAsync($outBuffer,0,$reserve,$readCancel.Token);$task=$outTask}else{$reservedErr=$reserve;$errTask=$compiler.StandardError.BaseStream.ReadAsync($errBuffer,0,$reserve,$readCancel.Token);$task=$errTask}
-   }
-   if(!$task.IsCompleted){continue};$n=$task.GetAwaiter().GetResult();$buffer=if($stream -eq 'out'){$outBuffer}else{$errBuffer};$memory=if($stream -eq 'out'){$captureOut}else{$captureErr}
-   if($stream -eq 'out'){$outTask=$null;$reservedOut=0}else{$errTask=$null;$reservedErr=0}
-   if($n -eq 0){if($stream -eq 'out'){$eofOut=$true}else{$eofErr=$true};continue}
-   $retain=[Math]::Min($n,16384-$total);if($retain -gt 0){$memory.Write($buffer,0,$retain);$total+=$retain};if($retain -lt $n){$limitHit=$true;break}
-   [Array]::Clear($buffer,0,$buffer.Length)
-  }
-  if($total -ge 16384 -and !($eofOut -and $eofErr)){$limitHit=$true};if($limitHit){break};Start-Sleep -Milliseconds 5
- }
- if($limitHit -or $timedOut){try{StopOwned}catch{$unknown=$true;throw 'OWNERSHIP_COMPILE_ONLY_STOP_UNKNOWN'}}
- Owned
- $state.capture=@{combinedCapturedBytes=$total;stdoutCapturedBytes=$captureOut.Length;stderrCapturedBytes=$captureErr.Length;stdoutEof=$eofOut;stderrEof=$eofErr;limitHit=$limitHit;timedOut=$timedOut;exitObserved=$compiler.HasExited;memoryErasureGuaranteed=$false;managedBufferClearAttempted=$false}
- foreach($pair in @(@('stdoutSha256',$captureOut),@('stderrSha256',$captureErr))){$array=$pair[1].ToArray();try{$state.capture[$pair[0]]=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($array));$text=[Text.Encoding]::UTF8.GetString($array);foreach($match in [regex]::Matches($text,'\((\d{1,7}),(\d{1,7})\):\s*(?:error|warning)\s+(CS\d{4})\b')){if($state.diagnostics.Count -ge 128){break};$state.diagnostics+=@{code=$match.Groups[3].Value;line=[int]$match.Groups[1].Value;column=[int]$match.Groups[2].Value}}}finally{[Array]::Clear($array,0,$array.Length)}}
- if(!$compiler.HasExited){$unknown=$true;throw 'OWNERSHIP_COMPILE_ONLY_EXIT_UNKNOWN'};$state.exitCode=$compiler.ExitCode
- if($limitHit -or $timedOut -or !$eofOut -or !$eofErr){throw 'OWNERSHIP_COMPILE_ONLY_CAPTURE_INCOMPLETE'}
- if($compiler.ExitCode -ne 0){throw 'OWNERSHIP_COMPILE_ONLY_COMPILER_FAILED'}
+ if(!$compiler.Start()){throw 'OWNERSHIP_COMPILE_ONLY_START_FAILED'};$state.processStarted=$true;$state.actualCompilerExecuted=$true;$state.phase='CAPTURE'
+ $evidence=CaptureOriginalCompiler -Compiler $compiler -ExpectedExe $exe -Sources $p.sources -Expires $expires -Context $captureContext -Clock $clock -StopVerified {param($candidate) StopOwned $candidate}
+ # 이 네 사실은 신원/child 검증보다 먼저 보존한다. 검증 실패는 진단/exit를 삭제하지 않는다.
+ $state.compilerIdentity=$evidence.compilerIdentity;$state.capture=$evidence.capture;$state.diagnostics=$evidence.diagnostics;$state.exitCode=$evidence.exitCode
+ $state.phase='VERIFY'
+ if(!$evidence.identityVerified){$unknown=$true;throw 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN'}
+ $proof=@{pid=$evidence.compilerIdentity.pid;ticks=[int64]$evidence.compilerIdentity.startTicks}
+ try{Owned}catch{$unknown=$true;throw}
+ if($evidence.failure){if($evidence.failure -in @('OWNERSHIP_COMPILE_ONLY_EXIT_UNKNOWN','OWNERSHIP_COMPILE_ONLY_STOP_UNKNOWN','OWNERSHIP_COMPILE_ONLY_CAPTURE_FAILED')){$unknown=$true};throw $evidence.failure}
  $dll=$qa+'/bin/OwnershipEvidenceSource.dll';Private $dll;$item=Get-Item -LiteralPath $dll;if($item -isnot [IO.FileInfo] -or $item.Length -le 0){throw 'OWNERSHIP_COMPILE_ONLY_OUTPUT_INVALID'}
  $state.output=@{path='bin/OwnershipEvidenceSource.dll';bytes=$item.Length;sha256=(Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash};$state.status='PASS_COMPILE_ONLY';$state.phase='CLEANUP'
 }catch{$code=[string]$_.Exception.Message;$state.failure=if($code -match '^OWNERSHIP_COMPILE_ONLY_[A-Z_]+$'){$code}else{'OWNERSHIP_COMPILE_ONLY_UNCLASSIFIED_FAILURE'};if($state.processStarted -and !$state.capture){$unknown=$true}}
@@ -215,7 +280,7 @@ function scriptText(script: string, payload: unknown) {
   return script.replace('__PAYLOAD__', Buffer.from(JSON.stringify(payload), 'utf8').toString('base64'));
 }
 /** AST 구문 검사 전용 공개 값. 문자열을 읽는 것은 실행이 아니다. */
-export const ownershipCompileOnlyWindowsScripts = Object.freeze({metadata: metadataScript, apply: applyScript, bootstrap});
+export const ownershipCompileOnlyWindowsScripts = Object.freeze({metadata: metadataScript, apply: applyScript, bootstrap, capture: captureScript});
 function encoded(script: string) { return Buffer.from(script, 'utf16le').toString('base64'); }
 
 function readGit(args: string[]) {

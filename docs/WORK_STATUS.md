@@ -8392,3 +8392,18 @@
 
 
 - **FN06 실제compiler1회소진·결과미확정/QA정리**: 1248d4는actualCompilerExecuted/oneUseConsumed=true·cscPID45592/startTicks639286750602461192·image미관측·IDENTITY_UNKNOWN·exit/capture/outputnull·processExitedtrue/FAIL이었다. phasePREFLIGHT표시로미사용이라오인하지않고이실제1회는소진·추가실행0이다. Main1ff350은기록csc/hostPID45592/54068부재/QA참조process0·manifest동일copy12/빈bin-temp/DLL없음/owner비link를확인했다. Main7a6d55 fresh동일근거와exact16항목후사본12/빈dir4만05:22:13.985Z개별회수·79eb36별도rootfalse/소비marker45C21C7D동일보존. 원native/ACL/processkill/DB/키/서비스변경0. 실제C#성공/결함/빠른종료원인은미확정이며marker리셋/기준완화0,결과서 FN06_OWNERSHIP_COMPILE_ONLY_ACTUAL_RESULT_20261027.md에원UNKNOWN/부모승인/국소보완/실제실패와미검증을분리했다. 다음은신원FAIL은유지하되유한exit/diag유실방지source보완과새실행범위를구체화하고소진허가로재시도하지않는다. 전체FN06/Stage/계획미완료다.
+
+
+- **FN06 진단 수집 보완 TEST_ONLY 배정**: cold-recovery에서 local HEAD24e70f71·tracked clean/보호8와 신규 소유WI1을 대조했다. 원compiler 실제1회는 소진이며 소비marker45C21C7D 보존·QA01부재를 읽기로 확인해 재실행하지 않았다. WI FN06_COMPILER_DIAGNOSTIC_CAPTURE_PREPARATION_WI_20261027.md SHA CAE7ADF6BF73E5838A8FE28973EED412EB58CE004A73A78358E58ED54814C870에 따라 단일 담당 fn06_diagnostic_capture에 허용5경로의 진단/exit 유실 회귀 TEST_ONLY를 배정했다. Main fresh RED 전 제품 보완0, actual compiler/QA/결정JSON/marker/native12/DB/Secret/서비스/Agent 실행·변경0이다. 신원 FAIL 기준을 유지하고 새 후보02는 미승인 상태로 준비만 한다. 기존 실제FAIL/UNKNOWN은 보존하며 다음은 회귀RED 대조·국소구현·독립검수다. 전체FN06/계획 미완료·Main 관리검수통합 유지.
+
+
+- **FN06 진단 수집 모의회귀 RED 확인**: Main2999e2는 신규TEST_ONLY의 PS 줄바꿈 backtick 때문에 TS수집ERR_INVALID_TYPESCRIPT_SYNTAX/104.2816ms를 확인했다. 같은담당이 문자열만 [char]10으로 보정/nodecheck0 후 Mainff31cc는 의도한 독립수집함수 부재RED2/135.4599ms/skip0을 확인했다. 수집오류와 행동RED는 compiler실행/제품 정식실패와 구별한다. 허용5경로 구현GO를 같은담당에 전달했고 Main제품수정0·실제compiler/QA/approval/marker/native/DB/서비스/Agent0이다. 두 실제손실경계(최초identity catch와 capture전Owned)를 모두 연결검수하며 FAIL/Stop권한/한도는 유지한다. 별도읽기에서 정본root에제품script미존재1건·rg glob전달오류1건은 source실제경로/rg -g로 수정했고 제품오류로 세지 않는다. FN16 정확회수와head CAS의 계약차이는읽기전용검토,PG지원은실행전새RO관측필요와복제/사본기동단계를분리해준비중·실행0이다.
+
+
+- **FN16 보호참조 첫 업무 R2 정확 채택 요청**: PMO의보호참조상세화방향을등록/개정/고정조회/신규사용회수/UI14의첫업무로좁혀 docs/contracts/FN16_PROTECTED_REFERENCE_REGISTRATION_CONTRACT_R2.md SHA CA7774F7A5C102B2B6EDD3D5D6E87701FEADE197E91B2186D05F4AACFE30AA21에고정했다. outer/ActionScope는현재headCAS·payload는회수할정확과거ref로분리해공통guard완화0이다. 독립C0/I2(허구command/audit VersionRef·회수event지문미정)는실제귀속ID·version1정확snapshot/hash로보완·scopedC0/I0이다. 문서§6기존8+신규12경로/새pending0050후보와GET4/명령2의정확계약을PMO에전달성공해채택판단을요청했다. 현재문서미채택/제품코드SQL쓰기0·정식공급자/키/백업job/collector/암호화/복원/실DB/정책/PG/서비스/OS/Agent실행0이며문서진도를기능완료로세지않는다. 읽기중추정query-input.ts미존재1건은파일추측을중단하고실제기존codec정의를대조했다. Main은별도FN06단일writer보완을계속관리하며PMO다음작업배정대기0이다.
+
+
+- **FN16 R2 PMO 한정 회신·직접 결정 전달**: PMO는새후보CA7774F7 전문/hash를직접대조했고상세화방향만으로새공개API/데이터/조회접근계약구현승인으로추정하지않는다고회신했다. PMO가이정확20파일의코드/화면/미적용SQL/합성검증만을신산님께비동기질문으로전달했고접수true·답변0이다. 중복질문0·현재NOT_ADOPTED/제품미착수유지·실DB/권한/공급자/키/서비스/PG/OS/Agent제외다. 이는새계약판단만이고별도FN06단일writer소스보완과기존승인계획은계속한다.
+
+
+- **FN06 진단 수집 소스 Main 검수 완료·실행 미승인**: Mainff31cc RED2→30ba25 신규/기존12PASS3648.6227ms/skip0·type/diff0,4c38b8 PS AST4-only0·독립C0/I0/M0를확인했다. 같은Process의bounded출력/exit를실제apply신원검사앞에보존하고원신원FAIL/Stop제한·pending메모리보호를유지한다. 새02manifest04EC52DC/입력7055A009/runnerF1FF82C1/test118F70C6/실행안0C8DAC94이며원native12/tool4/옵션한도불변·원01자료/소비보존이다. source-only5파일+WI/결과/계획/현황을검수하고같은branch checkpoint/private게시를준비한다. source/code·AST/모의검증한정이며actualcompiler/QA/새결정/marker/DB/키/서비스/Agent0·실OS/compileNOT_RUN·전체미완료유지다. 오류와미검증은소유결과서FN06_COMPILER_DIAGNOSTIC_CAPTURE_PREPARATION_RESULT_20261027.md에구분했다. 다음실제실행은새정확직접결정전0이며독립FN16새계약은PMO전달된사용자결정과분리한다.

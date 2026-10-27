@@ -11,13 +11,14 @@ const input = await import(new URL('../../../scripts/fn06-ownership-compile-only
   .catch(error => { if (error.code === 'ERR_MODULE_NOT_FOUND') return {}; throw error; });
 const runner = await import(new URL('../../../scripts/run-fn06-ownership-compile-only.ts', import.meta.url).href)
   .catch(error => { if (error.code === 'ERR_MODULE_NOT_FOUND') return {}; throw error; });
-const manifestRaw = readFileSync(new URL('../../../docs/work_packages/FN06_OWNERSHIP_COMPILE_ONLY_SOURCE_MANIFEST_20261027.json', import.meta.url));
+const originalManifestRaw = readFileSync(new URL('../../../docs/work_packages/FN06_OWNERSHIP_COMPILE_ONLY_SOURCE_MANIFEST_20261027.json', import.meta.url));
+const manifestRaw = readFileSync(new URL('../../../docs/work_packages/FN06_OWNERSHIP_COMPILE_ONLY_SOURCE_MANIFEST_20261027_02.json', import.meta.url));
 const manifest = JSON.parse(manifestRaw.toString('utf8'));
-const manifestHash = 'D6DE65F1226575736CCF65AC951C44FE632012D1EBA9D25D2CF276ACDFF08A57';
-const checkpoint = '64bb7ab2db534e66d66bf150529df3017e4bd70e';
-const qaRoot = 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-01';
-const decisionPath = 'docs/approvals/FN06_OWNERSHIP_COMPILE_ONLY_20261027_01.json';
-const candidateId = 'FN06_OWNERSHIP_COMPILE_ONLY_20261027_01';
+const manifestHash = '04EC52DC9D837A890487041756DBE96249F90C5AB6F9BA5BAD993815F77910B9';
+const checkpoint = '24e70f71a865e3e4779f769a787000d9d6f77e98';
+const qaRoot = 'D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-02';
+const decisionPath = 'docs/approvals/FN06_OWNERSHIP_COMPILE_ONLY_20261027_02.json';
+const candidateId = 'FN06_OWNERSHIP_COMPILE_ONLY_20261027_02';
 const sha = (raw: Uint8Array) => createHash('sha256').update(raw).digest('hex').toUpperCase();
 
 function observations() {
@@ -91,6 +92,14 @@ async function invoke(args: string[], f = fakePorts()) {
 }
 
 test('고정 raw manifest/source12/tool4와 정확 library argv만 계획한다', () => {
+  assert.equal(sha(originalManifestRaw), 'D6DE65F1226575736CCF65AC951C44FE632012D1EBA9D25D2CF276ACDFF08A57');
+  const original = JSON.parse(originalManifestRaw.toString('utf8'));
+  for (const key of ['sources', 'tools', 'compilerOptions', 'proposedLimits', 'excluded']) assert.deepEqual(manifest[key], original[key]);
+  for (const key of ['sources', 'tools']) {
+    const arrayBytes = (raw: Buffer) => raw.toString('utf8').match(new RegExp('"' + key + '": \\[([\\s\\S]*?)\\n  \\]'))?.[0];
+    assert(arrayBytes(originalManifestRaw));
+    assert.equal(arrayBytes(manifestRaw), arrayBytes(originalManifestRaw), key + ' 원 배열 바이트는 동일해야 한다');
+  }
   assert.equal(sha(manifestRaw), manifestHash);
   const plan = build();
   assert.equal(plan.candidateId, candidateId);
@@ -266,4 +275,95 @@ test('실제 apply payload 역직렬화는 승인 ISO 문자열과 UTC 만료시
     approvedValue: '2026-10-27T05:02:17.000Z', expiresValue: '2026-10-27T05:32:17.000Z',
     expiresUtc: '2026-10-27T05:32:17.000Z',
   });
+});
+
+// TEST_ONLY: 독립된 실제 수집 함수 정의만 실행한다. apply/preflight/FS/marker/Process.Start는 실행하지 않는다.
+function collectSyntheticCompilerEvidence(mode: 'exited' | 'image-error' | 'mismatch', stdoutBytes = 64) {
+  const capture = runner.ownershipCompileOnlyWindowsScripts.capture;
+  assert.equal(typeof capture, 'string', '신원 관측 실패에도 같은 Process의 진단/exit를 수집하는 독립 PS 함수 원문이 필요하다');
+  const apply = runner.ownershipCompileOnlyWindowsScripts.apply as string;
+  assert(apply.includes(capture), '모의 시험 함수 원문과 실제 apply에 포함된 함수는 같아야 한다');
+  const collectAt = apply.indexOf('$evidence=CaptureOriginalCompiler');
+  const saveAt = apply.indexOf('$state.compilerIdentity=$evidence.compilerIdentity');
+  const validateAt = apply.indexOf('try{Owned}catch', saveAt);
+  assert(collectAt > 0 && saveAt > collectAt && validateAt > saveAt, '실제 호출선에서 collect→state 보존→Owned 검증 순서를 유지한다');
+  assert.doesNotMatch(capture, /Preflight|ProcessStartInfo|\.Start\(|Get-CimInstance|Get-Process|Stop-Process|Remove-Item|New-Item|\[IO\.File\]|consumedMarker/i,
+    '시험하는 수집 함수에는 실행/FS/marker/다른 process 조회가 없어야 한다');
+  const script = String.raw`
+$ErrorActionPreference='Stop'
+$tokens=$null;$errors=$null
+$definition=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__CAPTURE__'))
+$ast=[Management.Automation.Language.Parser]::ParseInput($definition,[ref]$tokens,[ref]$errors)
+if($errors.Count -or $ast.BeginBlock -or $ast.ProcessBlock -or @($ast.EndBlock.Statements|Where-Object {$_ -isnot [Management.Automation.Language.FunctionDefinitionAst]}).Count){throw 'TEST_FUNCTION_DEFINITIONS_ONLY'}
+. ([scriptblock]::Create($definition))
+$expected='C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe'
+$out=[IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes(('x' * __BYTES__)))
+$err=[IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes(('D:/private/source/Known.cs(7,11): error CS0246: private-diagnostic-body'+[char]10+'error CS2008: private-global-body'+[char]10)))
+$process=[pscustomobject]@{Id=1234;StartTime=[datetime]::new(2026,10,27,4,0,0,[DateTimeKind]::Utc);ExitCode=1;StandardOutput=[pscustomobject]@{BaseStream=$out};StandardError=[pscustomobject]@{BaseStream=$err};KillCalls=0;DisposeCalls=0;ImageReads=0}
+$process|Add-Member ScriptMethod Kill {$this.KillCalls++;throw 'TEST_STOP_FORBIDDEN'}
+$process|Add-Member ScriptMethod Dispose {$this.DisposeCalls++;throw 'TEST_DISPOSE_FORBIDDEN'}
+switch('__MODE__'){
+ 'exited' {$process|Add-Member NoteProperty HasExited $true;$process|Add-Member ScriptProperty MainModule {throw [InvalidOperationException]::new('private-already-exited-detail')}}
+ 'image-error' {$process|Add-Member ScriptProperty HasExited {return $this.ImageReads -gt 0};$process|Add-Member ScriptProperty MainModule {$this.ImageReads++;throw [ComponentModel.Win32Exception]::new(5,'private-image-detail')}}
+ 'mismatch' {$process|Add-Member ScriptProperty HasExited {return $this.ImageReads -gt 0};$process|Add-Member ScriptProperty MainModule {$this.ImageReads++;return [pscustomobject]@{FileName='C:/foreign/other.exe'}}}
+}
+$script:stopCallbackCalls=0
+try {
+ $result=CaptureOriginalCompiler -Compiler $process -ExpectedExe $expected -Sources @(@{path='native/Known.cs'}) -Expires ([datetimeoffset]::UtcNow.AddSeconds(25)) -StopVerified {$script:stopCallbackCalls++;throw 'TEST_STOP_CALLBACK_FORBIDDEN'}
+ @{result=$result;killCalls=$process.KillCalls;disposeCalls=$process.DisposeCalls;stopCallbackCalls=$script:stopCallbackCalls}|ConvertTo-Json -Depth 10 -Compress
+} finally {$out.Dispose();$err.Dispose()}
+`.replace('__CAPTURE__', Buffer.from(capture, 'utf8').toString('base64'))
+    .replace('__MODE__', mode).replace('__BYTES__', String(stdoutBytes));
+  // 긴 함수 원문은 stdin으로 전달한다. 실행 내용은 위 AST 제한 함수+메모리 모의뿐이다.
+  const result = spawnSync('C:/Program Files/PowerShell/7/pwsh.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', '& ([scriptblock]::Create([Console]::In.ReadToEnd()))'], {
+    input: script, windowsHide: true, shell: false, encoding: 'utf8', timeout: 5000, maxBuffer: 16384,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.signal, null);
+  assert.equal(result.status, 0, '모의 원 Process의 유한 진단 수집은 신원 실패만으로 중단되지 않아야 한다: ' + result.stderr);
+  assert.equal(result.stderr.trim(), '');
+  assert.doesNotMatch(result.stdout, /private-diagnostic-body|private-global-body|private-image-detail|private-already-exited-detail|D:\/private\/source/);
+  const evidence = JSON.parse(result.stdout);
+  assert.equal(evidence.stopCallbackCalls, 0, '신원불명에서는 실제 Stop callback에 도달하지 않아야 한다');
+  return evidence;
+}
+
+test('신원 미관측/조회예외/불일치에도 원 Process 유한 진단·exit는 보존하고 PASS·Stop권한은 주지 않는다', () => {
+  for (const mode of ['exited', 'image-error', 'mismatch'] as const) {
+    const {result, killCalls, disposeCalls} = collectSyntheticCompilerEvidence(mode);
+    assert.equal(result.status, 'FAIL_COMPILE_ONLY');
+    assert.equal(result.failure, 'OWNERSHIP_COMPILE_ONLY_IDENTITY_UNKNOWN');
+    assert.equal(result.exitCode, 1);
+    assert.equal(result.capture.exitObserved, true);
+    assert.equal(result.capture.stdoutEof, true);
+    assert.equal(result.capture.stderrEof, true);
+    assert.equal(result.capture.limitHit, false);
+    assert.equal(result.capture.timedOut, false);
+    assert(result.capture.combinedCapturedBytes > 64 && result.capture.combinedCapturedBytes <= 16384);
+    assert.equal(result.compilerIdentity.expectedExe, manifest.tools[0].path);
+    assert.equal(result.compilerIdentity.exeObserved, mode === 'mismatch');
+    assert.equal(result.compilerIdentity.observedExe, mode === 'mismatch' ? 'C:/foreign/other.exe' : null);
+    assert.equal(result.stopAuthorized, false);
+    assert.equal(killCalls, 0);
+    assert.equal(disposeCalls, 0);
+    assert.deepEqual(result.diagnostics, [
+      {code: 'CS0246', source: 'Known.cs', line: 7, column: 11},
+      {code: 'CS2008', source: null, line: null, column: null},
+    ]);
+    if (mode === 'image-error') {
+      assert.equal(result.compilerIdentity.imageErrorType, 'Win32Exception');
+      assert.equal(result.compilerIdentity.imageErrorCode, 5);
+      assert.equal(result.compilerIdentity.hasExitedAtImageObservation, true);
+    }
+  }
+});
+
+test('신원 불명인 원 Process의 출력 상한도 16KiB이며 강제중단·PASS로 바꾸지 않는다', () => {
+  const {result, killCalls, disposeCalls} = collectSyntheticCompilerEvidence('image-error', 20000);
+  assert.equal(result.status, 'FAIL_COMPILE_ONLY');
+  assert.equal(result.stopAuthorized, false);
+  assert.equal(result.capture.combinedCapturedBytes, 16384);
+  assert.equal(result.capture.limitHit, true);
+  assert.equal(killCalls, 0);
+  assert.equal(disposeCalls, 0);
 });
