@@ -1,4 +1,15 @@
 # Anvil 재설계 작업현황
+
+## 현재 인수 요약 — 2026-10-27 P03 실행 결정 전달 후
+
+- **현재 단계:** 로컬·WSL 기능 구현 1단계. 전체 WORK_PLAN 미완료이며 완료보고 상태가 아니다. Stage A의 과거 수용 이력은 보존하되 현재 정식 개발 PG 컨테이너/네트워크 부재와 원 volume 보존 상태를 별도로 관리한다.
+- **최신 안전한 소스:** codex/av3-stage-b / private·local exact `20a807dd28fa5f537f8ac06fa004902220b0b567`. 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210`이며 이branch결과를 main 통합으로 부르지 않는다. 후속 UI05 업무의 소유 source·검수 자료·현황 변경은 최신 이력에 명시하며 보호untracked8은 보존한다.
+- **현재 구현·검수:** P03 구조조사 host 소스 준비는 Main 신규28 PASS/type·구문0/독립지정C0I0. 실제 metadata·복구·제품 사용 증거가 아니다. UI06/UI10한정대조에서이미연결된동선을재작업하지않았다. Stage B/C·나머지UI/FN/IX는아래기존상태표와최신상세이력을대조한다.
+- **정확한 다음 실행 결정:** PMO가20a807dd/실행안C9960CD6의새GitQA/원장/helper1·원volumeRO·60초/8KiB/30분·숫자ownerUID1001잔여위험한정수락을사용자에게단1회질문했다. 답변전riskack/grant/QA/helper/mount/PG/DB/서비스/Agent생성·실행0. 현재원volume내용/Secret/PG기동/복제는요청범위밖이다.
+- **UI05 독립 진전:** 등록 산출물 원본 다운로드 source 연결·직접14/합성 Edge1/type·메모리build·독립C0I0·QA정리 확인. 실제 API/DB/served·전체 기능은 미확인으로 남긴다.
+- **다른 결정 경계:** FN16 보호참조 계약의기존정확질문은답변대기·중복요청0. 컴파일01/02는소비·미확정이력을보존하며다시실행하지않는다. 준비검수/질문대기를기능진도나완료로세지않는다.
+- **인수 규칙:** 완료된시험/기능을반복하지않고신규답변또는정당한독립선행이있을때같은branch·단일구현담당→독립검수→Main통합을계속한다. 아래10월26일blocked감사기록은과거이력이며현재중지지시/현재goal차단판정을대신하지않는다.
+
 ### 2026-10-26 PMO 자동 점검 모델 용량 오류·기존 계약 차단 유지
 
 - PMO cursor38은systemError/terminal이며turn01a17863-4a74-7e43-b3b4-b407d9b53fd7의원오류는 Selected model is at capacity. Please try a different model. 이다. 최근원turn읽기로해당입력이heartbeat자동점검이고새사람승인답변이아님을확인했다.
@@ -8467,3 +8478,27 @@
 
 
 - **P03 관측 profile·Node 후보 Main28 검수·후속 통합 준비**: 위임근거추가재심1회는d32021 허용·actual0이며최초거절이력은보존했다. Main eb151d 신규28PASS325.9054ms/skip0·d92264 type/구문0·독립Node보완C0/I0/M0로 sourceB071A57A/unit207D7A4C의exactNode1001·원handlehash/부모/proc·한정riskack필수를검수했다. USER승인인증/owner신뢰해결0·OWNER_UNRESOLVED_RESIDUAL_RISK유지,현재grant/QA/helper/mount/PG/DB/서비스/Agent0이다. Main은실행봉투의정확env-i호출·최종SHA/30분/ROhelper1/60초/8KiB/소비보존/정상정리·불명보존을기존plan에구체화하여plan C9960CD6로갱신(소스/시험불변·추가절읽기검수중). UI06/UI10한정조사는이미연결동선을중복하지않고새단위를입증하지못했으며공유B/Agent전달·실제증거/정식DB선행을기록했다. 소유source3+WI/결과/환경/현황정확7후속checkpoint를준비하며전체계획완료/실제실행준비로승격0이다.
+
+
+- **P03 정확 실행후보20a807dd 게시·PMO 한정 결정 전달**: a3650a의20a807dd28fa5f537f8ac06fa004902220b0b567은1bd72b15직접자식exact7·4822d4 raw/indexEXACT7/보호8/지문3/diff0·5b707d nonforceprivateexact·trackedclean/mainf976불변이었다. 추가실행봉투읽기검수도기존계약충돌C/I0·정확게시SHA결박이남았다는조건을확인하여Main은20a807dd/sourceB071A57A/planC9960CD6/WI87035로PMO에전달했다. PMO의실제결정지원범위에맞춰새GitQA/원장/nonce·helper1/원volumeRO/60초/8KiB/최대30분·정상정리/불명보존/소비보존·UID1001소유주체미해결위험한정수락을구체화했으며현재외부실행결정/실grant/신규자원/PG/DB/서비스/Agent0이다. FN16기존질문중복0. 이누적STATUS만Main소유의새dirty기록이며게시source/실행안/code는동결·기존보호자료와원marker불변이다. 승인/선행밖실행은하지않고실제결정후같은게시SHA로진행한다. 전체계획완료보고/목표완료아니다.
+
+
+- **후속 goal turn — 정확 결정 유지·UI05 소비선 한정 대조**: 직전turn은source20a807dd구현/검수/게시와실관측으로다음조치를바꾼progress다. 이번1f5495 PMOcursor11 idle/changedfalse·질문답변0, d6fc9f HEAD20a807dd/STATUS만dirty/보호8·390af5 privateexact/main불변·동결source/실행안지문동일을읽기로확인했다. 이는livejob의verified wait나새구현진도가아니다. 기존P03/FN16질문을복제·소진compiler/기존시험을재실행하지않는다. 앞선UI06/UI10조사도반복0. 독립진행가능범위를더정확히판단하려고읽기담당p03_discovery_review에게StageC UI05/FN12의보관manifest artifact참조→기존보호GET/원문다운로드소비선1개만대조하도록했다. 새API/자료/권한·실DB/Agent가필요하면기존계약구현단위로포장하지않으며현재읽기뿐·제품writer0/실제자원0·전체목표미완료유지다.
+
+
+- **UI05 등록 산출물 원본 다운로드 독립 착수**: 읽기담당은기존ResultArtifactTexts의텍스트2MiB조회와별개로manifest등록PDF/이미지등원본다운로드가결과화면에없음을actual소비선으로입증했다. 기존INTERFACES/project-files.ts보호GET·20MiB·현재auth/member/quarantine/storehash를재사용하므로새API/schema/권한0이다. Main339d12 WI UI05_RESULT_ARTIFACT_DOWNLOAD_WI_20261027.md SHA E66680EC19B363121807AEE779F3B08BDF5C794D6290C93A0148393766893291를source3/test3정확6에고정·독립사전C0/I0,새단일writer ui05_artifact_download에게TEST_ONLY부터배정했다. MainfreshRED전제품코드0·기존텍스트/UI08/서버/공용ApiClient/보호8/PG후보보존·실DB/서비스/Agent0이다. 기능은선택결과단일artifact fullref/hash→boundedbinary/hash→명시Blob다운로드이며inline/자동실행·완료판정0. impeccable context665994는기존surface한정으로로드했고PRODUCT/DESIGN없음이새설계/질문사유가아님을적용·관련craft-floor읽기후기존스타일을유지한다. Main의추정path읽기83d1be/1041d2는부재오류로확인·제품부재근거로쓰지않았다. 같은파일명추정습관을중단하고rg실제목록에확인된경로만읽는조치로전환했다. 신규소스/명시unit·type/메모리build·등록후DOM만검수하며기존검증반복/새권한질문0. P03/FN16의정확외부결정대기와독립진행을분리·전체계획미완료다.
+
+
+- **UI05 원본 다운로드 Main RED·DOM QA 사전등록**: 담당신규unit B1815B13은공개함수readResultArtifactDownload 부재의11FAIL/skip0/exit1,Main605902 fresh동일공개함수부재RED를확인해허용6구현GO했다. 기존기능시험/DB/권한재승인0·제품은담당1명만쓴다. 추정파일명읽기담당2건은rg실제목록사용으로정정·제품정식실패와분리했다.
+  - DOM literal D:/tmp/anvil-v3-stage-b/ui05-result-artifact-download-20261027-01,ownerSINSAN/cyhuh·root/temp/browser/downloads/results만,합성bytes원본다운로드·메모리Vite/실component/ApiClient·주입transport/설치msedge/headless/1920x1080다. 실제HTTP서버/정식DB/사용자브라우저·Agent0. ENV opt-in ANVIL_UI05_ARTIFACT_DOWNLOAD_DOM_QA=1·TEMP/TMP=root/temp,최초생성30분/개별60초/browser15초/전체10분·worker1/retry0·trace/video/screenshot기본OFF. Main등록후에만실DOM실행한다.
+  - ccfa6c 생성전root부재/조상nonlink·DrootSYSTEM,Dtmp및stageb부모SINSAN/cyhuh를확인했다. 6628bd는PS서로다른객체컬럼출력때부모metadata가숨겨져JSON형식으로수정한읽기출력문제1건이며ACL오류/권한변경아니다. 실제root생성0·실행직전realpath/link/부재를다시대조한다. 종료후관련process0→owner/link/범위inventory→소유파일/빈dir개별회수→독립root/process부재를확인하며불명은보존/보고한다.
+
+
+- **UI05 후보 Main14 검수·실DOM 직전**: source3+신규test3담당동결/독립정적6파일C0/I0뒤Main be7a1d 신규11+기존text3=14PASS409.6125ms/skip0·f59b88 type0·68417c Web메모리build outputs1/writefalse exit0를확인했다. 기존text함수본문/parentimport+연결2줄외/UI08불변을읽기대조했다. 담당type초기5진단+DOMfixture undefined1은최소보정후0·경로추정읽기2는실제목록전환·정식제품실패와분리했다. actualAPI/DB/served/Agent/전체업무완료아니다.
+  - 시각검수를위해기존CSS tokens.css/app.css 메모리적용과등록root/results/ui05-result-artifact-download.png 영역PNG1개만DOMtest에추가(새DOMtest6A6E033D18359A6CD02DC21B2E70C9E1FCCF245E305B1F8A4C3C359246D6D259). 기존source/unit/harness/CSS는불변·소스unit반복0·담당최종type/DOM메모리build/diff0다. Main은실제브라우저다운로드event/정확바이트hash·401/403/404/412/type/hash/loss·선택/주체ABA/transport/결과/unmount를등록QA에서검수한다. 현재root생성0·생성직전부재/부모소유/link/realpath확인뒤Main이root/temp/browser/downloads/results만만든다. 최대30분/시험60초·종료후정확소유정리/독립부재·불명보존기준은그대로다.
+
+
+- **UI05 원본 다운로드 실제 합성DOM 검수·정리·통합 준비**: Main46cfae 등록Edge/headless1PASS3670.897ms/skip0로실제부모/ApiClient·명시downloadevent/saveAs byteshash·7오류/선택·주체ABA/transport·결과/unmount차단을확인했다. CSS2메모리적용·PNG24142bytes/SHA5880D058을직접보고검수자료로보존·eebbe8 변경UI detector[]다. 9516de sandboxCIM접근거부때빈배열은0증거로쓰지않고696e83의승격정확read process0/owner/생성시각과분리했다. dd2219 186files/61dirs/14618188bytes를09:40:35.840Z개별정리·b49d3b별도root/process0확인. 실제DB/served/사용자/Agent미검증·멈춘read즉시취소미검증이며source/합성으로전체완료주장0이다. Main643302 parent역raw검사는1byteEOL차이로실패했으나1d2461이의미2줄외CRLF/LF만임을확인·API기존text rawprefix동일·제품수정/시험반복0이다. 45f55a 문서보존guard는이미RESULT양쪽저장후PLAN_COPY_DIFF로중단했고plan/status를그시점수정하지않았다. 44fbd4는기존10/25 OS후보설명분리와UI06진도표현2군데차이임을확인했으므로타업무이력을덮어쓰지않고양쪽의동일UI05행에이번검수note만반영했다. source6+WI/결과/PNG/계획/현황exact11소유checkpoint를준비·전체계획미완료다.
+
+
+- **UI05 index exact11·EOL 별도 보존**: Main6e827c는source6+WI/결과/PNG/계획/현황11만stage·보호8/지문/cachedcheck0를확인했다. 원문/index5동일·source/test6은CRLF→LF만차이로정확index6지문을결과서에추가기록했다. 설정/working제품/테스트기대변경0·의미동일검사반복0이다. 문서보존guard로발견한기존PLAN두표현차이는그대로보존하고이번UI05행만독립반영했다. 다음같은경로doc2만restage후commit/privateexact·main불변을대조한다. 전체계획완료/정식API·DB인수와구분한다.

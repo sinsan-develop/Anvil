@@ -14,3 +14,34 @@ export async function readResultArtifactText(client:ApiClient,original:Submitted
  if(!exact(v,['projectId','resultRef','artifactRef','bytes','mediaType','text','sourceState','evidenceProvenanceVerified','completionAccepted','executionAuthorized','dispatchPerformed','observedAt'])||v.projectId!==pid||!same(v.resultRef,r.ref)||!same(v.artifactRef,wanted)||!Number.isSafeInteger(v.bytes)||v.bytes<0||v.bytes>2*1024*1024||!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(v.mediaType)||typeof v.text!=='string'||v.sourceState!=='REGISTERED_BYTES_ONLY'||['evidenceProvenanceVerified','completionAccepted','executionAuthorized','dispatchPerformed'].some(k=>v[k as keyof typeof v]!==false)||typeof v.observedAt!=='string'||!Number.isFinite(Date.parse(v.observedAt))||new Date(v.observedAt).toISOString()!==v.observedAt||Date.parse(v.observedAt)<Date.parse(r.snapshot.submittedAt)||encoder.encode(ordered(v)).length>2*1024*1024)fail();
  const bytes=encoder.encode(v.text);if(bytes.length!==v.bytes||await digest(bytes)!==wanted.contentHash)fail();return active()?structuredClone(v):null;
 }
+
+export interface ResultArtifactDownload {artifactRef:PlanRef;bytes:Uint8Array<ArrayBuffer>;filename:string;mediaType:'application/octet-stream'}
+/** 선택 제출의 선언과 원본 bytes만 대조한다. 출처·시험/검수 합격은 확정하지 않는다. */
+export async function readResultArtifactDownload(client:ApiClient,original:SubmittedResultView,selected:PlanRef,active:()=>boolean):Promise<ResultArtifactDownload|null>{
+ const r=structuredClone(original),wanted=structuredClone(selected),transport=client.transport,current=()=>active()&&client.transport===transport;
+ const pid=r?.snapshot?.scope?.projectId,encoded=new TextEncoder().encode(ordered(r?.snapshot));
+ if(!uuid(pid)||!ref(r.ref)||!ref(wanted)||wanted.version!==1||encoded.length>2*1024*1024||await digest(encoded)!==r.ref.contentHash||!Array.isArray(r.snapshot.manifest.artifactRefs)||r.snapshot.manifest.artifactRefs.filter(v=>v.id===wanted.id).length!==1||!r.snapshot.manifest.artifactRefs.some(v=>same(v,wanted)))fail();
+ if(!current())return null;
+ let response:Response;
+ try{response=await transport.call(globalThis,`/api/v1/projects/${pid}/files/${wanted.id}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'}});}catch{if(!current())return null;throw new ApiError('CONNECTION_LOST');}
+ let reader:ReadableStreamDefaultReader<Uint8Array>|undefined,completed=false;
+ try{
+  if(response.body)reader=response.body.getReader();
+  if(!current())return null;
+  if(!response.ok)throw new ApiError('RESULT_ARTIFACT_DOWNLOAD_FAILED',response.status);
+  if(response.headers.get('content-type')?.trim().toLowerCase()!=='application/octet-stream'||!reader)fail();
+  const length=response.headers.get('content-length');
+  if(length!==null&&(!/^\d+$/.test(length)||!Number.isSafeInteger(Number(length))||Number(length)>20*1024*1024))fail();
+  const chunks:Uint8Array<ArrayBuffer>[]= [];let total=0;
+  while(true){
+   const part=await reader!.read();if(!current())return null;if(part.done)break;
+   if(!(part.value instanceof Uint8Array)||total+part.value.byteLength>20*1024*1024)fail();
+   total+=part.value.byteLength;chunks.push(new Uint8Array(part.value));
+  }
+  if(length!==null&&Number(length)!==total)fail();
+  const bytes=new Uint8Array(total);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  const actual=await digest(bytes);if(!current())return null;if(actual!==wanted.contentHash)fail();
+  completed=true;return{artifactRef:wanted,bytes,filename:`artifact-${wanted.id}.bin`,mediaType:'application/octet-stream'};
+ }catch(cause){if(!current())return null;if(cause instanceof ApiError)throw cause;throw new ApiError('RESULT_ARTIFACT_RESPONSE_INVALID');}
+ finally{if(reader){if(!completed)try{await reader.cancel();}catch{}try{reader.releaseLock();}catch{}}}
+}
