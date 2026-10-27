@@ -14,12 +14,14 @@ import { ImpactDocumentOriginal } from './ImpactDocumentOriginal.tsx';
 import { ImpactDesignItemOriginal } from './ImpactDesignItemOriginal.tsx';
 import { ImpactScreenRegionOriginal } from './ImpactScreenRegionOriginal.tsx';
 import { ImpactInputPlanOriginal } from './ImpactInputPlanOriginal.tsx';
+import {DesignActivationPanel} from './DesignActivationPanel.tsx';
+import type {ActivationBuffer} from './activation-api.ts';
 import { ImpactItemFilter } from './ImpactItemFilter.ts';
 
 const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${value.contentHash}`;
 export interface ChangeEditorGate { acquire: () => boolean; release: () => void; allowed: () => boolean }
 const targetLabel = (value: ImpactTargetRef) => `${value.kind} · ${value.localCode ?? value.id} · v${value.versionRef.version}${value.anchor ? ' · ' + value.anchor : ''}`;
-export function DesignChangesPage({ client, projectId, session, buffer, onChange, reviewBuffer, onReviewChange, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; reviewBuffer: ImpactReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<ImpactReviewBuffer | null>>; onAuthenticationLost: () => void }) {
+export function DesignChangesPage({ client, projectId, session, buffer, onChange, reviewBuffer, onReviewChange, activationBuffer, onActivationChange, onActivationRequest, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; activationBuffer?:ActivationBuffer|null;onActivationChange?:Dispatch<SetStateAction<ActivationBuffer|null>>;onActivationRequest?:(buffer:ActivationBuffer)=>boolean;reviewBuffer: ImpactReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<ImpactReviewBuffer | null>>; onAuthenticationLost: () => void }) {
   const [requestId, setRequestId] = useState(''), [value, setValue] = useState<DesignChangePage | null>(null), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [before, setBefore] = useState<number | null>(null);
   const alive = useRef(true), flight = useRef(false);
   const editorFlight=useRef(false), latest=useRef({buffer,reviewBuffer});latest.current={buffer,reviewBuffer};
@@ -35,10 +37,10 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
     catch (cause) { if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); }
     finally { flight.current = false; if (alive.current) setBusy(false); }
   }
-  return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>
+  return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>{onActivationChange&&onActivationRequest?<DesignActivationPanel client={client} projectId={projectId} session={session} page={value} selectionId={requestId} buffer={activationBuffer??null} onChange={onActivationChange} onRequest={onActivationRequest} onAuthenticationLost={onAuthenticationLost}/>:null}
     <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} gate={requestGate} reading={busy} blocked={editorBusy||!!reviewBuffer&&!reviewBuffer.result} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
     <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
-    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 승인·기준 적용·작업 재개는 아직 연결되지 않았습니다.</p>
+    <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 기준 적용은 정확 후보의 별도 승인과 적용 절차를 따릅니다. 작업 재개는 실행하지 않습니다.</p>
     <form onSubmit={event => { event.preventDefault(); void load(requestId, null); }}><fieldset disabled={busy}><legend>저장된 요청 찾기</legend>
       <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { setRequestId(event.target.value); setValue(null); setError(null); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>
     </fieldset></form>

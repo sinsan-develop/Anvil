@@ -3,7 +3,7 @@
 ## 현재 재개 — 2026-10-27 FN04 직접 계약·구현 승인
 
 - 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
-- 현재source codex/av3-stage-b/0def97b7·trackedclean/보호8보존. 단일담당 ui08_reported_download에게FN04읽기preflight만배정했고Main은관리·설계상세·검수·통합을맡는다. 허용경로/WI/freshRED전제품작성0,기존입력/관계검사·완료동선재구현0이다. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외이며§6실안전공급자없는생산적용412유지다.
+- 현재안전source codex/av3-stage-b/62972b09(서버 게시)와 후속UI12 동결·통합준비. Main35/type·독립C0I0·실제합성DOM 문맥2+정상1 분리PASS/PNG2·QA별도0. 초기단일담당 초안은보존하고무응답후한정보완을순차인계했으며Main제품write0. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외·생산§6실안전gap412유지·전체계획미완료다.
 - P03 RO구조조사는새단발승인으로실행·정리·독립사후확인을완료하고소비원장을보존했다(32858a/09e2f6/7d1c3b). 후속복제/PG·DB복구는미승인·미실행이고FN16질문은별개로남는다. 전체WORK_PLAN은미완료이며현재FN04직접승인범위를이어간다.
 
 
@@ -8590,3 +8590,31 @@
 - 같은담당에게UI API시험2/DOMtest·harness2(허용22~25)만TEST_ONLY GO. 실제상위App→UI07→UI08→UI07왕복미연결RED를목표로하며기존상위실소비선/초기조회성공을검수한다. source1~21동결·UI제품/브라우저·QA/실DB/서비스/Agent/Git0. Main서버안전checkpoint뒤정확HEAD를전달한다.
 
 - FN04서버checkpoint Main6f53b1 exact19 stage·서버13중raw5동일/EOL8만·문서6raw동일·보호8/UI5불변/cachedcheck0. RESULT에게시index8지문을추가해실행raw와구분했다. 신규UI TEST_ONLY4는별도담당작업으로보존·stage제외이며실DB·SQLapply/PR/merge0이다.
+
+- FN04 UI Main68a289 신규API2시험은10수집/0PASS10FAIL/skip0·182.2153ms/exit1이다. 신규reader/prepare/send·요청/결박module부재9건과기존validateApprovalView의activate후보거절1건으로구분했다. 기대/timeout완화·제품작성0이며구문/fixture실패로대체하지않았다. 실App DOM의Main등록자원은위QA계획에따르고980f36 사전부재/owner/nonlink를확인했다. 현재RED실행/브라우저/생성0·TEST_ONLY screenshot동기화한정작업뒤동결지문을대조한다.
+
+- **FN04 UI actualApp RED·정확 QA 정리**: Main b6246b는 세션/기존 설계변경 보호원문·hash/예상외요청0/pageerror0 뒤 새 “설계 변경 적용 준비” 버튼 부재에서 3500ms locator timeout을 확인했다. 1수집/0PASS1FAIL/skip0·7154.8549ms/exit1이며 fixture/bootstrap 실패가 아니다. DOM ABDD12E0·API2/harness/server13/UI5/보호8 동결. 생성12:17:56.857985Z의 등록 literal QA는5f7a8c에서 process0·정확 생성시각/owner/link 대조후227files/81dirs/16013896bytes·PNG0을개별회수했다. 별도조회 root/process0 후 동일담당 UI제품8경로만 GO한다. Main a19349는 manifest의 실제 allowed를 files로 잘못읽은 사전guard 오류로 자원생성전중단·66ecbd 실제키/QA부재 확인 뒤 필드명만수정했으며 제품실패/PASS로세지않는다. 실DB/SQLapply/서비스/Agent0·전체계획미완료다.
+
+- **FN04 UI 독립시험검토·단일담당 구현GO**:p03_discovery_review C0/I1는helper Scope단위와달리actual mounted UI07 선택A→B→A·늦은원문/current JSON/hash를직접재현하지않는공백이다. 같은담당이DOM반례를제품작성전에추가하고기존기대/timeout·주체/CSRF/transport단위증거를실화면증거로확대하지않도록지시했다. 기존Main API RED10/actualApp prepare부재RED1와QA별도0을선행으로WI9~16 UI제품8만GO·server13/시험17~21/보호8불변이다. 담당기본단위/직접인접/type/메모리build후동결·Mainfresh검수/새빈QA GREEN/독립재검토로이어간다. 실제DB·SQLapply/기준전환/서비스/Agent0·Main제품write0·전체계획미완료유지다.
+
+- **FN04 UI 첫 구현·fixture경계 검수**:담당601c6a 신규API9PASS1FAIL/type진단을보존했다. Main6fe35e는404음성및직전wrongcandidate3반례가transport함수교체후옛buffer지문을써대상GET전에올바른scopeguard로거절되는fixture충돌을확인했다. 새합성transport에정합buffer를명시결박해404의GET1/후속0과원문GET도달/의도오류를검사하도록한정보정GO했다. 제품guard/기대/timeout완화0·기기/이탈/transport회수음성유지. 기존DocumentWrite를넓히지않고신규ActivationCommand내타입을정의하며DOMcallback 정적narrowing명시cast만허용한다. Main제품write0·실DOM/자원/실DB/서비스/Agent0·source동결후Mainfresh검수예정이다.
+
+- **FN04 UI 작성본 독립round1 I1**:독립읽기12raw동일의C0/I1는ApprovalsPage requestSave의activate경로가alive만검사하고유실보존w.pending이면frozen검사없이새transport/현재CSRF로원명령을재전송할수있는문맥회수누락이다. Main00000f 실제50~59/helper11을읽어확인했다. 같은담당에게신규activation승인요청에만원user/client/csrf/ApiClient/transport·binding/epoch를준비hash후·POST직전·늦은수집/후속GET전에검사하고반례RED부터보강하도록지시했다. 기존원명령/미확인보존·문맥동일수동재확인·다른승인경로불변·기준/timeout완화0이다. 원래mounted선택ABA반례와fixture GET도달/정확오류보강은작성확인됐지만실DOM은NOT_RUN. Main제품수정0/실DB·QA·서비스·Agent0·최종합격전한정재검수한다.
+
+- **FN04 단일담당 내부턴 재개 관리**:Main12:41:58Z/c087fc에서I1관련제품/시험4가12:29이후불변이고주기적단계질문응답이없음을확인했다. 내부running턴만interrupt후193d80에서dirty초안/보호자료보존·I1관련4raw독립검수당시동일·QA부재를읽어확인했다. 같은담당에게원I1 하나와기존ActivationScope 최소5접점/기존시험/원pending보존을좁혀즉시재개지시했다. 담당교체/신규writer/Main제품수정/파일복구·reset0이며정식FAILURE_REPORT회수로세지않는운영내부중단1이다. 전체계획을중지하거나사람승인대기로바꾸지않는다.
+
+- **FN04 I1 한정 subagent 인계**:동일담당재개/주기확인에도응답과I1관련파일진척이없어기존writer를다시interrupt·쓰기중지했다. Main은기존초안/검수12raw를보존한채새subagent fn04_activation_context_fix에원I1한건만정확인계했다. 새담당즉시수신/반례→최소수정·로컬검사범위를확인했다. 사용자chat/branch/worktree/automation신규0·동시writer1·Main제품write0이며기존작업폐기/형식적실패3회처리/임의takeover가아니다. 허용제품은ApprovalsPage/해당approvalhelper(필요시기존ActivationScope),시험4뿐·그외source/문서/서버/보호자료불변/실제DOM·DB·서비스·Agent0이다. 외부실행판정과전체계획완료는유지미완료다.
+
+- **FN04 I1 실제화면 TEST_ONLY QA 사전등록**:새담당은허용harness/DOMcase에controlled실제ApprovalsPage same-mounted준비중문맥교체·유실pending재확인·늦은수집/후속GET0반례를작성하고제품미수정을보고했다. Main은기존exact회수된literal fn04-activation-approval-ui-20261027-01에새빈root/새생성시각으로I1 case만선택하는RED를등록한다. temp/browser/results만·ownerSINSAN/cyhuh·최초30분/개별60초/전체10분/retry0·PNG/trace/video/download0·정확정리/별도0을유지하며최종test/harness동결지문/typebuild확인뒤만생성/실행한다. 실제DB/서비스/Agent/사용자브라우저0·기존시험완료반복0·Main제품수정0이다.
+
+- **FN04 I1 actualApprovalsPage Main RED·보완GO**:새담당TEST_ONLY harness47777654/DOMBCD34A76 type·메모리build0뒤Main335f43 새선택case는1수집/0PASS1FAIL/skip0·2357.533ms/exit1, user준비해시문맥교체POST0기대에서actual1로실누락을재현했다. 최초생성12:50:13.100239Z의등록새빈QA는68f07c185files/60dirs/13952561bytes·PNG0/process0개별회수→e4be2c 12:50:51.9309425Z별도root/process0. 같은새단일담당에게I1한정제품GO,원후보command별최초scopecapture보존/현재render epoch·helper해시후검사/기존pending직전·늦은수집후속GET검사를보완한다. 새capture로같은옛work를문맥교체뒤부활시키지않으며원명령/불명전송상태·같은문맥수동확인보존·다른승인불변이다. Main제품write0/정식DB·서비스·Agent0·전체계획미완료.
+
+- **FN04 I1 보완1 Main 검수·후속GET 잔여**:Main6797de 신규12+직접인접23=35PASS/FAIL0/skip0·513.9676ms,5004ba type0. 독립5raw일치·원준비/pending POST/늦은POST영수증경계해소이나load내readApproval JSON/hash후alive/sequence만검사하여same-mounted문맥교체뒤원후보reason수집가능한잔여I1을확인했다. 같은담당은제품동결후이미시작한보호GET/JSON/hash중교체DOM반례를별도case로작성한다. MainfreshRED·exactQA정리/독립0뒤그수집선만한정수정·다른승인불변/실DB0으로이어간다.
+- Main문서check의혼합CR경고는8a4868의현재추가hunk/정본동일대조후1e24fa에서추가줄의CR만STATUS16/RESULT11줄제거,논리내용동일/기존이력바이트보존·diffcheck0로정리했다. f6caa1의rawHEADprefix단순비교실패는읽기guard이며초기6행Main메타변경때문에append-only전체prefix가아니었고제품/이력복구0이다.
+
+- **FN04 I1 후속 보호GET actualRED·정리**:TEST_ONLY harnessA8901DE1/DOM E62BF876·type/memorybuild0 뒤Main3f8c05의선택case1수집/0PASS1FAIL/skip0·7438.2545ms/exit1은get/user교체후이전원문수집0기대actual1을확인했다. 시작된원문GET의실수집누락이며초기bootstrap실패가아니다. 생성12:58:47.9946173Z의등록새빈QA는98f27c182files/60dirs/13795002bytes·PNG0/process0개별회수→e85e3e12:59:18.3096228Z별도root/process0. 동일단일담당에게load내JSON/hash후setView/onChange/오류반영전scope검사/자동selectedId보호만GO·다른승인불변·기대/상한유지. 제품실패기록보존/실DB·서비스·Agent0·Main제품write0·전체계획미완료다.
+
+- **FN04 최종DOM 부분통과·정상화2건**:Main733039→동일handle23935/1a6efd는3수집/2PASS1FAIL/skip0·11594.4422ms. 준비/pending/늦은POST및보호GET/JSON/hash문맥회수2case는통과했고actualApp초기render는새Panel의undefined ref→ordered JSON.parse 오류로실패했다. Maine948b3가동일빈선택식으로SyntaxError를재현한뒤동일담당이ref2곳만null보완(C4127EB9),Mainc7e6d1역치환원7BA91raw일치를검증했다. 해당QA9298f5 243files81dirs15408138bytes/PNG0회수→68964c별도0. Mainbf68b7는foreach의in공백오기PS파싱오류로생성전중단이며그후공백만교정했다.
+- 후속c7e6d1 normalcase1FAIL/skip0·7344.0171ms는요청→승인→결박→412/유실같은명령→합성SUCCESS/현재/고정·과거이력까지진행한뒤전역첫hash선택자가닫힌details의hiddenpre를집은시험선택문맥충돌이다.590efc 실제fixedregion p에정확hash표시확인·제품그대로/시험구문만해당region p로한정지시. 부분흐름PNG2를직접보았고00CBF4F5/8BCDA738 지문은실패이력에보존하되최종PASS로승격0. f153d4 230files81dirs27681736bytes/PNG2회수→81e1bf13:09:40.2543449Z별도root/process0. 실제DB/서비스/Agent/전체계획완료0이며정상case남은음성·최종PNG는아직미검증이다.
+
+- **FN04 승인 source/UI 한정 검수 완료·통합 준비**:13e933 normal1PASS/skip0·5162.5283ms,기존733039/1a6efd 문맥2PASS와분리증거.31658c finaltype/diff0/UI12hash·PNG2보존직접확인·독립원I1/후속/Panel C0I0. ff1602 exact189files60dirs/26302788bytes회수→8baa53별도root/process0. 서버13/보호8/최신main불변대조후source12+소유문서/PNG exact19 checkpoint/private게시로이어간다. 실DB/served/실기준전환/Agent/전체계획완료아니다.

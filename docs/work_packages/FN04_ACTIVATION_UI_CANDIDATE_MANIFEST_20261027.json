@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "phase": "UI_SOURCE_SYNTHETIC_VERIFIED_ACTUAL_DB_NOT_RUN",
+  "sourceBase": "62972b097dd493d156e2704bcdea0a9c5f3fafdd",
+  "files": [
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "6C5E7F05DCB9AB20FDEAC09958CABD68DD1915320B3A3D98C7A772DC72BFF08A",
+      "indexSha256": "8389AB74063B93A9FFFD773138331ED204870B376E56588DFA6E5BCDDE275459"
+    },
+    {
+      "path": "apps/web/src/features/design-change/DesignChangesPage.tsx",
+      "sha256": "786E7204735E4B0D4C5C0856E50ED0B91F728E6F823FC76B519D5BEC03D7A58B",
+      "indexSha256": "786E7204735E4B0D4C5C0856E50ED0B91F728E6F823FC76B519D5BEC03D7A58B"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "sha256": "82FED454E732B1ABAB9D5E9723E728269CFC9F92B3C2AA12E41477794A38AFA5",
+      "indexSha256": "C29B7E7C03203D2A196835B1B470BBB43ACFA7302CF1144D00036D1A6DE52AC2"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "sha256": "B9D20E90E1BC6C16B4B007D6FA1BC06ABB767C50BD575A7A65327EAB50A0211C",
+      "indexSha256": "6312AFBA5BCA53BA5A6ED04E939F79E1177EEDD95857D28EB9B195AB7A6B35DE"
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "sha256": "EDD355E3153CB6013B101A54F6CC2CBB8F3CCF4B31FE6BB77E9BD800A100B526",
+      "indexSha256": "EDD355E3153CB6013B101A54F6CC2CBB8F3CCF4B31FE6BB77E9BD800A100B526"
+    },
+    {
+      "path": "apps/web/src/features/design-change/activation-api.ts",
+      "sha256": "24527AC57F8A45D524B0BDCBECBD812FA4739748F6367C66DFA0A16DE09CEFEF",
+      "indexSha256": "E8A09750DB7450570391986CC1903F96350507074358A096D95EF51D74B0CE4E"
+    },
+    {
+      "path": "apps/web/src/features/design-change/DesignActivationPanel.tsx",
+      "sha256": "E57C3D411D316D699B70D900E6ED882ED534337E82DE6D6C23E866BB310570A9",
+      "indexSha256": "AB26EA3E519B4A9C0ABCEC84713F4A098E84BE1DA0A1002EF134A686437C05D2"
+    },
+    {
+      "path": "apps/web/src/features/decisions/design-activation-approval-api.ts",
+      "sha256": "284722F8DF71557DA2BCD33BB4DC1EDC24D56174900BB9D594859D255A5232CE",
+      "indexSha256": "70B6F61EF925ED5928F0B6ABDE68F208BD79F11D3AF7F664A5035987C1ED3389"
+    },
+    {
+      "path": "tests/unit/UI07/design-activation-api.test.ts",
+      "sha256": "648F6A55A7C8BFB2F347383923C4C538B069E24EBE225997EBB7F3700E48E2CF",
+      "indexSha256": "F24DCE01F8C60FE7FA94F60F3C13A0C7D72F0E9E071A8A6675DE28A7F2611E7F"
+    },
+    {
+      "path": "tests/unit/UI08/design-activation-approval-api.test.ts",
+      "sha256": "CFB63D0570C8000A66BE03F1669F0C7C9AADC5168F88EC24FC7CD304A4BF6665",
+      "indexSha256": "DD4CA61A4681E38E2D7513EC0EAE8C8E6ABA42AE5220E056816B5391E3FECDB6"
+    },
+    {
+      "path": "tests/browser/UI07/design-activation-approval-dom-harness.tsx",
+      "sha256": "A8901DE17628C662A213389C025CBF275371DE761FD15287DA72D1D8E24B54DA",
+      "indexSha256": "6E292B03C0E0DDA03F0A299D66CC7243AFFA4CB7FB108F51EBDFD143DF00D98D"
+    },
+    {
+      "path": "tests/browser/UI07/design-activation-approval-dom.test.ts",
+      "sha256": "9D914E9C2E6EBCB9C12434DD75183F6AD4A212E3FEBE67BE8858FF2356168389",
+      "indexSha256": "9BF43BB0B4F7696B872FA63B44B02610C829FB30331C03B4CB906161029C694D"
+    }
+  ],
+  "server13RawUnchanged": true,
+  "protected8RawUnchanged": true,
+  "actualDb": "NOT_RUN",
+  "mainContextDom": "733039/1a6efd: context2 PASS; normal App initial render FAIL preserved",
+  "mainVerification": {
+    "focused": "6797de:35PASS/skip0",
+    "type": "31658c:exit0",
+    "contextDom": "733039/1a6efd:2PASS(normal initial failure separately preserved)",
+    "normalDom": "13e933:1PASS/skip0",
+    "independent": "I1/followup/panel C0I0",
+    "cleanup": "ff1602/8baa53:path/process0",
+    "actualDb": "NOT_RUN",
+    "fullPlan": "INCOMPLETE"
+  }
+}
