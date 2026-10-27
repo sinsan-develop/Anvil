@@ -46,8 +46,10 @@ function fixture() {
       const found = rows.filter(r => r.project_id === p[0] && (sql.includes('v.scope_json=$2') ? canonicalJson(r.snapshot_json.scope) === canonicalJson(JSON.parse(p[1])) : r.policy_id === p[1] && r.version === p[2]));
       return { rows: (sql.includes('ORDER BY') ? found.sort((a,b) => b.version - a.version).slice(0,1) : found).map(r => ({ ...r, ...receipts.get(r.command_id) })) };
     }
-    if (sql.startsWith('INSERT INTO anvil.commands')) { trace.push('COMMAND'); receipts.set(p[0], { result_ref: JSON.parse(p[14]), operation: p[4], state: 'APPLIED', command_actor: p[2], command_client: p[3], request_hash: p[6], command_key: p[5], control_generation: p[11] }); return { rows: [] }; }
-    if (sql.startsWith('INSERT INTO anvil.authorization_receipts') || sql.startsWith('INSERT INTO anvil.audit_events') || sql.startsWith('SELECT set_config')) return { rows: [] };
+    if (sql.startsWith('INSERT INTO anvil.commands')) { trace.push('COMMAND'); receipts.set(p[0], { server_command_id:p[0],operation_id:p[7],authorization_receipt_id:p[8],approval_consumption_id:p[9],expected_version:p[10],policy_ref:JSON.parse(p[12]),payload_ref:p[13]===null?null:JSON.parse(p[13]),receipt_rows:[],audit_rows:[],approval_rows:[],result_ref: JSON.parse(p[14]), operation: p[4], state: 'APPLIED', command_actor: p[2], command_client: p[3], request_hash: p[6], command_key: p[5], control_generation: p[11] }); return { rows: [] }; }
+    if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){receipts.get(p[2]).receipt_rows.push({id:p[0],scope_kind:'PROJECT',scope_id:p[1],command_id:p[2],subject_ref:JSON.parse(p[3]),policy_ref:JSON.parse(p[4]),scope_digest:p[5],approval_decision_ref:p[6]});return{rows:[]};}
+    if(sql.startsWith('INSERT INTO anvil.audit_events')){receipts.get(p[4]).audit_rows.push({project_id:p[0],actor_ref:JSON.parse(p[2]),client_ref:p[3],command_id:p[4],operation_id:p[5],target_ref:JSON.parse(p[6]),policy_ref:JSON.parse(p[7]),approval_ref:p[8]===null?null:JSON.parse(p[8]),scope_digest:p[10],outcome:'APPLIED',source_kind:'HUMAN_COMMAND'});return{rows:[]};}
+    if(sql.startsWith('SELECT set_config'))return{rows:[]};
     if (sql.startsWith('INSERT INTO anvil.limit_policy_versions')) { trace.push('POLICY'); rows.push({ project_id: p[0], policy_id: p[1], version: p[2], content_hash: p[3], snapshot_json: JSON.parse(p[4]), created_by: p[5], client_id: p[6], command_id: p[7] }); return { rows: [] }; }
     throw Error('UNEXPECTED_SQL ' + sql.slice(0,120));
   }};
@@ -99,14 +101,14 @@ test('저장 hash/영수증/작성자/이전ref가 변조되면 정상정책으�
     Object.assign(row,structuredClone(saved)); mutate(row); await assert.rejects(f.store.read(f.db,actor,pid,result.data.ref.id,1),/LIMIT_POLICY_INTEGRITY_FAILED/);
   }
 });
-test('작성연산만 명시HUMAN 정책에 추가하며 실제runtime AUTO/null·일회승인 미연결은 열지 않는다', async () => {
+test('작성연산만 명시HUMAN 정책에 추가하며 실제runtime은 열지 않고 작성연산의 별도승인을 요구한다', async () => {
   const rule:any={ ruleId:'limit',subjectRef:{kind:'HUMAN',userId:pid},operations:['applyLimitPolicy','revokeLimitPolicy'],targetScopes:[input().scope],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+60000).toISOString() };
   assert.equal(materialRules([rule],pid,pid).length,1);
   assert.throws(()=>materialRules([{ ...rule,operations:['authorizeExecution'] }],pid,pid),/POLICY_SCOPE_NOT_READY/);
   assert.throws(()=>materialRules([{ ...rule,limitPolicyRef:policyRef }],pid,pid),/POLICY_SCOPE_NOT_READY/);
   const payload={rules:[{...rule,disposition:'REQUIRE_APPROVAL'}],reason:'합성',reviewRefs:[]};
   const db:any={query:async()=>({rows:[{id:pid,head_version:1,rules_json:payload.rules,reason:payload.reason,review_refs:[],content_hash:contentHash(canonicalJson(payload)),created_at:new Date()}]})};
-  await assert.rejects(authorizeMaterial(db,actor,{operation:'applyLimitPolicy',projectId:pid,approvalRef:null} as any),/LIMIT_POLICY_APPROVAL_NOT_CONNECTED/);
+  await assert.rejects(authorizeMaterial(db,actor,{operation:'applyLimitPolicy',projectId:pid,approvalRef:null} as any),/APPROVAL_REQUIRED/);
 });
 test('기존 명령 저장경로가 제어/명시정책을 먼저 검사하고 exact 재전송은 원영수증만 돌려준다', async () => {
   const f=fixture(); let authorized=true, applied=0, stored:any=null; const request=f.command();

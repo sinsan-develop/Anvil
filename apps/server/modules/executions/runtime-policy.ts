@@ -1,3 +1,5 @@
+import {ProjectApprovals} from '../approvals/project-approvals.ts';
+import type {ApprovalScope} from '../approvals/approval-input.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -53,7 +55,11 @@ function readInput(value: unknown, revoke: boolean): LimitPolicyInput | LimitPol
 export const readLimitPolicyInput = (value: unknown) => readInput(value, false) as LimitPolicyInput;
 export const readRevokeLimitPolicyInput = (value: unknown) => readInput(value, true) as LimitPolicyRevokeInput;
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
-const select = 'SELECT v.*,c.result_ref,c.operation,c.state,c.actor_id command_actor,c.client_id command_client,c.request_hash,c.command_id command_key,c.control_generation FROM anvil.limit_policy_versions v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id ';
+const select = `SELECT v.*,c.result_ref,c.operation,c.state,c.actor_id command_actor,c.client_id command_client,c.request_hash,c.command_id command_key,c.control_generation,c.id server_command_id,c.operation_id,c.authorization_receipt_id,c.approval_consumption_id,c.policy_ref,c.payload_ref,c.expected_version,
+ (SELECT COALESCE(jsonb_agg(to_jsonb(ar)),'[]'::jsonb) FROM anvil.authorization_receipts ar WHERE ar.command_id=c.id) receipt_rows,
+ (SELECT COALESCE(jsonb_agg(to_jsonb(a)),'[]'::jsonb) FROM anvil.audit_events a WHERE a.command_id=c.id) audit_rows,
+ (SELECT COALESCE(jsonb_agg(jsonb_build_object('id',ac.id,'requestId',d.request_id,'decisionId',ac.decision_id)),'[]'::jsonb) FROM anvil.approval_consumptions ac LEFT JOIN anvil.approval_decisions d ON d.id=ac.decision_id AND d.project_id=ac.project_id WHERE ac.command_id=c.id) approval_rows
+ FROM anvil.limit_policy_versions v LEFT JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id `;
 
 /** 비실행 작성 경로. 현재 HUMAN 제어·명시 정책 transaction 안에서 사용하며 예산 예약/실행 허가를 발급하지 않는다. */
 export class ProjectLimitPolicies {
@@ -62,7 +68,7 @@ export class ProjectLimitPolicies {
     // executions의 정확 현재 세대 resolver를 연결하기 전 호출자 선언만으로 실행 범위를 만들지 않는다.
     if (scope.kind === 'EXECUTION') throw new AuthFailure('LIMIT_POLICY_EXECUTION_SCOPE_NOT_CONNECTED', 412);
   }
-  #view(row: any): LimitPolicyRecord {
+  async #view(db: PoolClient, actor: AuthenticatedIdentity, row: any): Promise<LimitPolicyRecord> {
     try {
       const s = row.snapshot_json, ref = { id: row.policy_id, version: Number(row.version), contentHash: row.content_hash };
       if (!uuidV1(row.project_id) || !refV1(ref) || !recordV1(s, ['limits','scope','reason','policyBaseVersion','state','previousRef','decidedBy','decidedAt','expiresAt','executionAuthorized','dispatchPerformed'])
@@ -78,24 +84,51 @@ export class ProjectLimitPolicies {
         || row.result_ref?.data?.status !== (s.state === 'APPLIED' ? 'LIMIT_POLICY_APPLIED' : 'LIMIT_POLICY_REVOKED')
         || !same(row.result_ref?.data?.ref, ref) || !same(row.result_ref?.data?.snapshot, s)) throw Error();
       const payload = { ...(s.state === 'APPLIED' ? { limits: s.limits } : {}), scope: s.scope, reason: s.reason, policyBaseVersion: s.policyBaseVersion };
-      if (row.request_hash !== contentHash(canonicalJson({ schemaVersion: 1, projectId: row.project_id, commandId: row.command_key, clientId: row.client_id,
-        controlGeneration: Number(row.control_generation), operation: row.operation, targetId: s.previousRef?.id ?? null, expectedVersion: s.policyBaseVersion,
-        baselineRefs: [], approvalRef: null, payload }))) throw Error();
+      if(!Array.isArray(row.receipt_rows)||row.receipt_rows.length!==1||!Array.isArray(row.audit_rows)||row.audit_rows.length!==1||!Array.isArray(row.approval_rows))throw Error();
+      const ar=row.receipt_rows[0],audit=row.audit_rows[0];let approvalRef=null;
+      if(row.approval_consumption_id!==null){
+        if(row.approval_rows.length!==1||row.approval_rows[0].id!==row.approval_consumption_id)throw Error();
+        const link=row.approval_rows[0],history=await new ProjectApprovals().readLimitPolicyConsumption(db,actor,row.project_id,link.requestId),r=history.request,used=history.consumption;
+        approvalRef={requestId:link.requestId,decisionId:link.decisionId,scopeDigest:r.scopeDigest};
+        if(history.storedStatus!=='CONSUMED'||!used||history.decision?.decision!=='APPROVE'||history.decision.id!==link.decisionId
+          ||used.id!==row.approval_consumption_id||used.serverCommandId!==row.command_id||used.commandId!==row.command_key||used.requestHash!==row.request_hash
+          ||r.details.candidateCommandId!==row.command_key||r.details.actionScope.operation!==row.operation||!same(r.details.actionScope.targetRef,s.previousRef)
+          ||r.details.actionScope.expectedVersion!==s.policyBaseVersion||r.details.actionScope.payloadHash!==contentHash(canonicalJson(payload))
+          ||!same(r.requestedBy,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||r.controlGeneration!==Number(row.control_generation)
+          ||!same(r.policyRef,row.policy_ref)||!same(row.payload_ref,{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(payload)),scopeDigest:r.scopeDigest})
+          ||Date.parse(used.consumedAt)<Date.parse(history.decision.decidedAt)||Date.parse(used.consumedAt)>=Date.parse(r.details.expiresAt))throw Error();
+      }else if(row.approval_rows.length||row.payload_ref!==null)throw Error();
+      const request={schemaVersion:1,projectId:row.project_id,commandId:row.command_key,clientId:row.client_id,controlGeneration:Number(row.control_generation),operation:row.operation,targetId:s.previousRef?.id??null,expectedVersion:s.policyBaseVersion,baselineRefs:[],approvalRef,payload};
+      const scopeDigest=contentHash(canonicalJson({projectId:row.project_id,actorId:row.created_by,clientId:row.client_id,controlGeneration:Number(row.control_generation),requestHash:row.request_hash,policyRef:row.policy_ref,targetRef:ref}));
+      if(row.request_hash!==contentHash(canonicalJson(request))||Number(row.expected_version)!==s.policyBaseVersion||row.server_command_id!==row.command_id
+        ||row.result_ref.commandId!==row.command_key||row.result_ref.operationId!==row.operation_id||row.result_ref.targetId!==ref.id||row.result_ref.version!==ref.version
+        ||ar.id!==row.authorization_receipt_id||ar.command_id!==row.command_id||ar.scope_kind!=='PROJECT'||ar.scope_id!==row.project_id||!same(ar.subject_ref,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})
+        ||!same(ar.policy_ref,row.policy_ref)||ar.scope_digest!==scopeDigest||ar.approval_decision_ref!==(approvalRef?.decisionId??null)
+        ||audit.project_id!==row.project_id||audit.command_id!==row.command_id||audit.operation_id!==row.operation_id||audit.outcome!=='APPLIED'||audit.source_kind!=='HUMAN_COMMAND'
+        ||!same(audit.actor_ref,{kind:'HUMAN',userId:row.created_by})||audit.client_ref!==row.client_id||!same(audit.policy_ref,row.policy_ref)||!same(audit.target_ref,ref)||audit.scope_digest!==scopeDigest||!same(audit.approval_ref,approvalRef))throw Error();
       return { projectId: row.project_id, ref, snapshot: cloneV1(s) as LimitPolicySnapshot };
     } catch { throw new AuthFailure('LIMIT_POLICY_INTEGRITY_FAILED', 503); }
   }
-  async #head(db: PoolClient, projectId: string, scope: LimitScope) {
+  async #head(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, scope: LimitScope) {
     const row = (await db.query(select + 'WHERE v.project_id=$1 AND v.scope_json=$2::jsonb ORDER BY v.version DESC LIMIT 1', [projectId, JSON.stringify(scope)])).rows[0];
-    return row ? this.#view(row) : null;
+    return row ? this.#view(db, actor, row) : null;
+  }
+  /** 현재 승인 대상만 검사한다. 역사 소비 reader는 현재 head/권한을 재인가하지 않는다. */
+  async assertApprovalTarget(db: PoolClient,actor: AuthenticatedIdentity,projectId: string,scope: ApprovalScope){
+    if(!['applyLimitPolicy','revokeLimitPolicy'].includes(scope.operation))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+    await projectMember(db,actor,projectId,true);
+    const head=await this.#head(db,actor,projectId,{kind:'PROJECT',projectId});
+    if(!same(scope.targetRef,head?.ref??null)||scope.expectedVersion!==(head?.ref.version??0)
+      ||scope.operation==='revokeLimitPolicy'&&(!head||head.snapshot.state!=='APPLIED'))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
+    return head;
   }
   async #write(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef, revoke: boolean) {
     const input = readInput(request.payload, revoke), operation = revoke ? 'revokeLimitPolicy' : 'applyLimitPolicy';
     this.#scope(input.scope, request.projectId);
     if (request.operation !== operation || request.clientId !== actor.clientId || request.baselineRefs.length) throw new AuthFailure('LIMIT_POLICY_INPUT_INVALID', 422);
-    if (request.approvalRef !== null) throw new AuthFailure('LIMIT_POLICY_APPROVAL_NOT_CONNECTED', 412);
     const member = await projectMember(db, actor, request.projectId, true);
     if (member.archived_at) throw new AuthFailure('PROJECT_ARCHIVED', 412);
-    const head = await this.#head(db, request.projectId, input.scope);
+    const head = await this.#head(db, actor, request.projectId, input.scope);
     if (input.policyBaseVersion !== (head?.ref.version ?? 0) || request.expectedVersion !== input.policyBaseVersion || request.targetId !== (head?.ref.id ?? null)
       || revoke && (!head || head.snapshot.state === 'REVOKED')) throw new AuthFailure('VERSION_CONFLICT', 409);
     const at = (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
@@ -104,6 +137,8 @@ export class ProjectLimitPolicies {
       decidedBy: { kind: 'HUMAN', userId: actor.actorId }, decidedAt: at,
       expiresAt: revoke ? head!.snapshot.expiresAt : new Date(Date.parse(at) + limits.maxElapsedMs).toISOString(), executionAuthorized: false, dispatchPerformed: false };
     const ref = { id: head?.ref.id ?? randomUUID(), version: input.policyBaseVersion + 1, contentHash: contentHash(canonicalJson(snapshot)) };
+    if(request.approvalRef!==null)await new ProjectApprovals().authorize(db,actor,request,policyRef);
+    await db.query("SELECT set_config('anvil.limit_policy_payload',$1,true)",[canonicalJson(request.payload)]);
     const receipt = await persistProjectReceipt(db, actor, request, ref, { status: revoke ? 'LIMIT_POLICY_REVOKED' : 'LIMIT_POLICY_APPLIED', snapshot }, policyRef, 'EXPLICIT_LIMIT_POLICY_AUTHORING');
     await db.query('INSERT INTO anvil.limit_policy_versions(project_id,policy_id,version,content_hash,snapshot_json,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
       [request.projectId, ref.id, ref.version, ref.contentHash, JSON.stringify(snapshot), actor.actorId, actor.clientId, receipt.id]);
@@ -116,7 +151,7 @@ export class ProjectLimitPolicies {
     await projectMember(db, actor, projectId);
     const row = (await db.query(select + 'WHERE v.project_id=$1 AND v.policy_id=$2 AND v.version=$3', [projectId,id,version])).rows[0];
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
-    return this.#view(row);
+    return this.#view(db, actor, row);
   }
   /** 현재 정책 원문 확인일 뿐이다. 누적/예약/비용·OS 허가 검사는 후속 실행 transaction이 별도로 수행한다. */
   async resolveCurrent(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, ref: VersionRef, scope: LimitScope): Promise<LimitPolicyRecord> {
@@ -124,7 +159,7 @@ export class ProjectLimitPolicies {
     this.#scope(scope, projectId);
     const member = await projectMember(db, actor, projectId, true);
     if (member.archived_at) throw new AuthFailure('PROJECT_ARCHIVED', 412);
-    const head = await this.#head(db, projectId, scope);
+    const head = await this.#head(db, actor, projectId, scope);
     if (!head || !same(head.ref, ref)) throw new AuthFailure('LIMIT_POLICY_NOT_CURRENT', 409);
     if (head.snapshot.state !== 'APPLIED') throw new AuthFailure('LIMIT_POLICY_REVOKED', 412);
     const at = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at.getTime();

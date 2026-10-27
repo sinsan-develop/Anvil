@@ -77,6 +77,13 @@ test('runtime 정책 저장은 현재 예산 원문을 재확인하고 없는 re
   const budgetRef={id:eid,version:1,contentHash:contentHash(canonicalJson(snapshot))};
   const budgetCommand={...request(),controlGeneration:2,operation:'applyLimitPolicy',payload:{limits,scope:snapshot.scope,reason:snapshot.reason,policyBaseVersion:0}};
   const row={project_id:pid,policy_id:eid,version:1,content_hash:budgetRef.contentHash,snapshot_json:snapshot,created_by:pid,client_id:eid,state:'APPLIED',command_actor:pid,command_client:eid,operation:'applyLimitPolicy',command_key:budgetCommand.commandId,control_generation:2,request_hash:contentHash(canonicalJson(budgetCommand)),result_ref:{projectId:pid,status:'APPLIED',data:{status:'LIMIT_POLICY_APPLIED',ref:budgetRef,snapshot}}};
+  // 강화된 실제 SELECT의 원 command/receipt/audit 열을 공급한다. 예산 만료/쓰기 기대는 유지한다.
+  const serverCommandId=crypto.randomUUID(),operationId=crypto.randomUUID(),receiptId=crypto.randomUUID(),requestHash=contentHash(canonicalJson(budgetCommand));
+  const scopeDigest=contentHash(canonicalJson({projectId:pid,actorId:pid,clientId:eid,controlGeneration:2,requestHash,policyRef:ref,targetRef:budgetRef}));
+  Object.assign(row,{command_id:serverCommandId,server_command_id:serverCommandId,operation_id:operationId,authorization_receipt_id:receiptId,approval_consumption_id:null,expected_version:0,policy_ref:ref,payload_ref:null,approval_rows:[],
+   receipt_rows:[{id:receiptId,command_id:serverCommandId,scope_kind:'PROJECT',scope_id:pid,subject_ref:{kind:'HUMAN',userId:pid,clientId:eid},policy_ref:ref,scope_digest:scopeDigest,approval_decision_ref:null}],
+   audit_rows:[{project_id:pid,command_id:serverCommandId,operation_id:operationId,actor_ref:{kind:'HUMAN',userId:pid},client_ref:eid,target_ref:budgetRef,policy_ref:ref,approval_ref:null,outcome:'APPLIED',source_kind:'HUMAN_COMMAND',scope_digest:scopeDigest}]});
+  Object.assign(row.result_ref,{commandId:budgetCommand.commandId,operationId,targetId:budgetRef.id,version:1});
   const r:any=mode==='DOCUMENT'?{...rule(),operations:['saveDocumentDraft'],targetScopes:[{kind:'PROJECT',projectId:pid}],limitPolicyRef:null,expiresAt:until}:rule({limitPolicyRef:budgetRef,expiresAt:new Date(at.getTime()+(mode==='TOO_LONG'?90000:30000)).toISOString()});
   let writes=0,budgetReads=0;const db:any={query:async(sql:string,p:any[]=[])=>{
    if(sql.startsWith('SELECT p.id,p.archived_at'))return{rows:[{id:pid,participation:'OWNER',archived_at:null}]};

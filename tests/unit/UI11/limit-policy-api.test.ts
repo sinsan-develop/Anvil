@@ -49,7 +49,7 @@ test('정책 미설정/금지 우선/승인필요/옛 제어는 저장 허가로
  const rule={subjectRef:{kind:'HUMAN',userId:uid},operations:['applyLimitPolicy'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:new Date(Date.now()+60000).toISOString()};
  for(const mode of ['MISSING','DENY','APPROVAL','CONTROL']){
   let posts=0;const client=new ApiClient(async(u,i)=>{if(i?.method==='POST')posts++;return json(String(u).endsWith('permission-policy')?(mode==='MISSING'?{configured:false,policy:null}:{configured:true,policy:{ref:{id,version:1,contentHash:'a'.repeat(64)},rules:mode==='DENY'?[rule,{...rule,disposition:'DENY'}]:[{...rule,disposition:mode==='APPROVAL'?'REQUIRE_APPROVAL':'AUTO'}]}}):{id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:uid,generation:mode==='CONTROL'?3:2,status:'HELD'}});});
-  await assert.rejects(m.limitPolicyAccess(client,buffer(),s,'applyLimitPolicy'));assert.equal(posts,0);
+  if(mode==='APPROVAL'){const access=await m.limitPolicyAccess(client,buffer(),s,'applyLimitPolicy');assert.equal(access.approvalRequired,true);}else await assert.rejects(m.limitPolicyAccess(client,buffer(),s,'applyLimitPolicy'));assert.equal(posts,0);
  }
 });
 test('응답 유실과 거절은 보존하며 CAS 정리는 새 초안/동결 명령을 덮지 않는다',async()=>{

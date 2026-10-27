@@ -1,0 +1,121 @@
+{
+  "kind": "FN10_LIMIT_POLICY_ONE_TIME_APPROVAL_SOURCE_MANIFEST",
+  "baseline": "75b7405bf87742a68f8b5a9a9d5ab79a819272ed",
+  "workInstructionSha256": "998700A28A4C4D59010D0FB2D20F21BE223A33622B42B7421535AAE9F4313D0C",
+  "files": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "sha256": "907F27B95D89B6F98F99F0E57AF38A432F84BB5D751378E6242644C927595EDA",
+      "gitBlobSha256": "907F27B95D89B6F98F99F0E57AF38A432F84BB5D751378E6242644C927595EDA",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "sha256": "23CFD7AB9EBEC64BFF764744AA4179D4ED32D18BF5EB0E20E3E9D7D0B2A74F7E",
+      "gitBlobSha256": "23CFD7AB9EBEC64BFF764744AA4179D4ED32D18BF5EB0E20E3E9D7D0B2A74F7E",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "sha256": "5CCA239A58AD24394A14A363AE27891649022B03741FA0B9DCDF5A31F65DCFBC",
+      "gitBlobSha256": "5CCA239A58AD24394A14A363AE27891649022B03741FA0B9DCDF5A31F65DCFBC",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/executions/runtime-policy.ts",
+      "sha256": "3FD4A24CF3DA750AA558964A2D115434EB6039A239FA680F87A591E8976C7661",
+      "gitBlobSha256": "3FD4A24CF3DA750AA558964A2D115434EB6039A239FA680F87A591E8976C7661",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/connections/limit-policy-api.ts",
+      "sha256": "030149EFF00C34F428A3C58969BFF5538A2B56CB10DE1BA96067DCD701B50F98",
+      "gitBlobSha256": "030149EFF00C34F428A3C58969BFF5538A2B56CB10DE1BA96067DCD701B50F98",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/connections/LimitPolicyPanel.tsx",
+      "sha256": "36A1D4158EB70853FD507710E7D29E5AF33A8E791C22367FBB8D242E8B964F57",
+      "gitBlobSha256": "36A1D4158EB70853FD507710E7D29E5AF33A8E791C22367FBB8D242E8B964F57",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/connections/limit-policy-approval.ts",
+      "sha256": "4C1C93AF5CD9EC1A13331213CC9DD390276A85222DCC9EB95B1F8A96E46A2406",
+      "gitBlobSha256": "4C1C93AF5CD9EC1A13331213CC9DD390276A85222DCC9EB95B1F8A96E46A2406",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/connections/LimitPolicyApprovalEditor.tsx",
+      "sha256": "2E053716833E7B0079C4A04E97772F4A9F62C28A5761645E290A7DE22EADB98E",
+      "gitBlobSha256": "2E053716833E7B0079C4A04E97772F4A9F62C28A5761645E290A7DE22EADB98E",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "sha256": "9AB1EBF2D4117A6BF23E9F016BD3E4AB40CE92439377ACDE9EB02AE6E40706BE",
+      "gitBlobSha256": "9AB1EBF2D4117A6BF23E9F016BD3E4AB40CE92439377ACDE9EB02AE6E40706BE",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "sha256": "64DB0D9070CE69BEFC0D73694152299855E27D7AEF68945B0EDDB30A7CFBF615",
+      "gitBlobSha256": "64DB0D9070CE69BEFC0D73694152299855E27D7AEF68945B0EDDB30A7CFBF615",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "6988C2AB373DE728596117F84E5E30D730D6CADC9FBCEF684DCCE8CCD795D503",
+      "gitBlobSha256": "6988C2AB373DE728596117F84E5E30D730D6CADC9FBCEF684DCCE8CCD795D503",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "db/migrations/0048_limit_policy_one_time_approval.sql.pending",
+      "sha256": "C306D174D09A3E091C377BCDDA8A39AE4B96E9E2116AB1B2DE721996988E03AF",
+      "gitBlobSha256": "C306D174D09A3E091C377BCDDA8A39AE4B96E9E2116AB1B2DE721996988E03AF",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN10/limit-policy-approval-input.test.ts",
+      "sha256": "AB3A9F8C2B6748CB168A0C5FF4367FAADBCE20FA0302BBB9BD725016F0E2FC72",
+      "gitBlobSha256": "AB3A9F8C2B6748CB168A0C5FF4367FAADBCE20FA0302BBB9BD725016F0E2FC72",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN10/limit-policy-approval-consumption.test.ts",
+      "sha256": "03C620BB0E59CA3C9FDFC11178CA1958DC8DB8FC9C46CF7FA725F6956DF82D4C",
+      "gitBlobSha256": "03C620BB0E59CA3C9FDFC11178CA1958DC8DB8FC9C46CF7FA725F6956DF82D4C",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/UI11/limit-policy-approval-api.test.ts",
+      "sha256": "4E694AC8A1FBAC4ED6544C8E57FD2B4E9D856C8CBBCD842CAF7678C62C165AA9",
+      "gitBlobSha256": "4E694AC8A1FBAC4ED6544C8E57FD2B4E9D856C8CBBCD842CAF7678C62C165AA9",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/browser/UI11/limit-policy-one-time-approval.spec.ts",
+      "sha256": "EFA73A65E125D6E581AB9C5C3E31ECA21546D2FE2437543BEC465190768C08C6",
+      "gitBlobSha256": "EFA73A65E125D6E581AB9C5C3E31ECA21546D2FE2437543BEC465190768C08C6",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN08/runtime-policy.test.ts",
+      "sha256": "1A6A8F06385BFE1A67363AFD5320EDB2F12D1A877CF6922D9DFF3DA8BF54B400",
+      "gitBlobSha256": "1A6A8F06385BFE1A67363AFD5320EDB2F12D1A877CF6922D9DFF3DA8BF54B400",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/UI11/limit-policy-api.test.ts",
+      "sha256": "4168CE8A137B2949115664D3C2A26968064813C15008421E1203ACA22B09A049",
+      "gitBlobSha256": "4168CE8A137B2949115664D3C2A26968064813C15008421E1203ACA22B09A049",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN08/runtime-permission.test.ts",
+      "sha256": "C25A882B5C250B737E2176D7AD1CC0E71F07BF365316541085B4D4D301575EFF",
+      "gitBlobSha256": "C25A882B5C250B737E2176D7AD1CC0E71F07BF365316541085B4D4D301575EFF",
+      "normalization": "EXACT"
+    }
+  ]
+}
