@@ -3,7 +3,7 @@
 ## 현재 재개 — 2026-10-27 FN04 직접 계약·구현 승인
 
 - 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
-- 현재안전source codex/av3-stage-b/2f5963b227110243a89c2f1b60958b19486a941f·private exact/추적clean·main f976ed5e불변(5c1889). FN04 승인 source/UI/pending SQL·합성 핵심 검수 한정완료: Main35/finaltype·독립C0I0·실제합성DOM 문맥2+정상1 분리PASS·PNG2/QA별도0. Main제품write0·현재writer전원쓰기중지/보호8보존. 실제DB/정책·권한/실기준전환/서비스/Secret/Agent는승인제외·생산§6실안전gap412유지·전체계획미완료다.
+- 제품 안전 checkpoint2f5963b227110243a89c2f1b60958b19486a941f와 게시 증거 tail7b633d92는 각각 exact19/source·WORK_STATUS-only다. 각 게시 때 local/private exact·mainf976불변을 확인했다. FN04 source/UI 검수는 Main35/finaltype·독립C0I0·실제합성DOM 문맥2+정상1 분리PASS·PNG2/QA0이며 실제DB/served/Agent/전체계획미완료다. 현재는 P03 보호사본 실행 없는 source 준비(TEST_ONLY)를 단일담당에게 배정했고 실제 probe/create/copy/권한/PG/SQL/서비스0이다. 후속 문서 checkpoint의 실제 HEAD/원격은 시작 시 Git으로 대조한다.
 - P03 RO구조조사는새단발승인으로실행·정리·독립사후확인을완료하고소비원장을보존했다(32858a/09e2f6/7d1c3b). 후속복제/PG·DB복구는미승인·미실행이고FN16질문은별개로남는다. 전체WORK_PLAN은미완료이며현재FN04직접승인범위를이어간다.
 
 
@@ -8620,3 +8620,8 @@
 - **FN04 승인 source/UI 한정 검수 완료·통합 준비**:13e933 normal1PASS/skip0·5162.5283ms,기존733039/1a6efd 문맥2PASS와분리증거.31658c finaltype/diff0/UI12hash·PNG2보존직접확인·독립원I1/후속/Panel C0I0. ff1602 exact189files60dirs/26302788bytes회수→8baa53별도root/process0. 서버13/보호8/최신main불변대조후source12+소유문서/PNG exact19 checkpoint/private게시로이어간다. 실DB/served/실기준전환/Agent/전체계획완료아니다.
 
 - **FN04 exact checkpoint 게시 확인**:Main4b5738의2f5963b227110243a89c2f1b60958b19486a941f는62972b09직접자식exact19·38fa7e raw/index차이10파일CRLF→LF만/보호8·cachedcheck0이다.5c1889 nonforce private exact·추적clean/미추적보호8만·mainf976불변. 결과서·UI candidate manifest·정본PNG2에분리PASS와원실패/미검증/QA정리증거를보존했다. 이번승인범위 source구현·합성검수만끝났고실제DB/서비스복구·실안전공급자·기존FN16결정과전체WORK_PLAN은남는다. PMO에필요결정/지원만전달하고이미완료한시험은반복하지않는다.
+
+- **다음 P03 복구 선행의 실행 준비 후보 구체화**:FN04 source/UI승인범위게시후실제기능사용을막는정식개발DB복구를우선한다. 기존복구review/R2조사실행6문서와실도구9·상태를대조해복제전용source/실행안은아직없음을확인했다. P03_PG_COPY_PREPARATION_SCOPE_20261027.md는기존R2재실행없이미래단일복제실행안내제한preflight/새사본init/내용·선정metadata전후비교를준비하는지원후보이며코드·실행0이다. cp/sort/cmp/df지원·하위소유/ACL/xattr·실대상quota/space/새root·UID1001새한정위험결정의미확정을분리했고PG기동별도·원본/부분사본보존·600초/256MiB등새수치는실행결정필수후보로명시했다. PMO는정확대상/명령/한도를후보로대조하겠다고회신했고FN16CA7774질문새답변없음·중복질문0. 독립읽기검토중·Main책임으로다음source준비범위를구체화하며PMO다음업무배정대기0이다.
+- 읽기도구2e3b4f의PowerShellliteralwildcard rg경로오류와b31102의문서정본cwd에서scripts/tests검색부재는제품부재로쓰지않았다.68b420의rg -g 및20109a/589ee4의명시된코드작업위치에서만기존P03 source2/시험2·공개접점을대조했다. 실제효과/파일복구/권한변경0이다. GNU사이트조회실패뒤배포자공식manpage를읽어cp/zero기능후보를구분했으나실이미지지원PASS로대체하지않는다.
+
+- **P03 보호사본 source 준비 TEST_ONLY 착수**:PMO 직접검토009EA669의한copy안preflight준비·controller/shell/fake/실행안추가사람결정불필요를수신했고실제효과승인은아님을결정D394B4에보존했다. WI DC5A3B33/manifest88F12335(신규source/test/실행안5부재·원R2 source/test4와보호8지문)·scope원I1(writer작업창)해소/WI독립C0I0뒤현재단일담당fn04_activation_context_fix에게시험2만배정했다. Mainfresh모듈/스크립트부재RED전controller/shell/실행안0·Main제품write0·실grant/소비/SSH/Docker/원내용/복제/권한/PG/DB/서비스0. source준비의실행안에정확init권한/프레이밍/private파이프오류/할당inode·예산/실패보존표를구체화하며모든미관측을승격하지않는다. 다음MainfreshRED/같은담당GO/독립검수·정확게시후에만실제새실행결정을구체요청한다.

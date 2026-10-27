@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "task": "P03_PROTECTED_COPY_SOURCE_PREPARATION",
+  "sourceBase": "7b633d922479b3090cf283aecb4fac58a777b81a",
+  "branch": "codex/av3-stage-b",
+  "allowed": [
+    {
+      "path": "scripts/p03-pg-copy-host.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "scripts/pg-recovery-copy.sh",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-host.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "docs/work_packages/P03_PG_COPY_EXECUTION_PLAN_20261027.md",
+      "initialSha256": null
+    }
+  ],
+  "protectedExisting": [
+    {
+      "path": "scripts/p03-pg-discovery-host.ts",
+      "sha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7"
+    },
+    {
+      "path": "scripts/pg-recovery-discovery-readonly.sh",
+      "sha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-host.test.ts",
+      "sha256": "207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-preparation.test.ts",
+      "sha256": "B90F8D8799ABF4DB877227BDEBE48CBAD5CBDF80BA7F015EB1AD13EE7E8A96FB"
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "actualExecution": "NOT_AUTHORIZED_NOT_RUN"
+}
