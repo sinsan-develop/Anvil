@@ -11,7 +11,7 @@ import { candidateOperations } from '../connections/candidate-input.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
 import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-const consumableOperations = ['buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
+const consumableOperations = ['startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
@@ -82,6 +82,9 @@ export class ProjectApprovals{
   return this.#read(db,actor,pid,id,consumableOperations);
  }
  /** 불변 당시 소비만 검증한다. 현재 정책/제어의 진행은 역사 위조가 아니다. */
+ async readStageStartConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
+  const {row,...history}=await this.#history(db,actor,pid,id,['startStage']);return history;
+ }
  async readContextConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const {row,...history}=await this.#history(db,actor,pid,id,['buildTaskContext']);return history;
  }
