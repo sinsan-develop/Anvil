@@ -8356,3 +8356,9 @@
 
 
 - **FN12 개정 연결 Main 검수·통합 준비**: Main1cb761 신규/인접18 PASS258.6035ms·c83884 type0·3ed254 메모리build456/340ms·a02902 실제 App 합성10 PASS13.0초를 확인했다. 정상 v1→v2→v3/다중sources·원문거절/변조·주체/선택ABA·유실/GET실패/불일치/이탈을 검수했으며 실제DB/서비스/Agent PASS는 아니다. 독립 잠정ABA I1은epoch/context 보강으로ADDRESSED·최종C0/I0다. 동일mounted Editor 주체ABA 직접시험은NOT_RUN. c8602a 등록QA69항목04:06:13.265Z 회수·f940c5별도부재0·관련process0. Main append 개행오류1은소유추가부분만보정해diff0,담당flags타입3건최종0·Git격리오류는제품실패와분리했다. 결과서 FN12_RESULT_CRITERIA_REVISION_RESULT.md에정확명령/지문/미검증/rollback을기록하고소유9경로로기존branch checkpoint/private게시한다. 전체FN12/Stage/계획미완료·DB복구실행0이며 PMO B상세화/보존복구지원과독립후속을계속한다.
+
+
+- **FN12 개정 연결 checkpoint 게시**: bc6251의44f97ad3128d7c79661d59bcbf598eac2f58c38f는기준3891c544직접자식정확9경로이며5b7c4c에서원문/index EXACT7·CRLF→LF만2/보호8을확인했다. 319ba9 일반private push뒤local/remote exact·trackedclean/보호untracked8·mainf976불변이다. 제품/합성검수단위완료와정식DB/서비스/Agent/인수·전체계획미완료를분리해PMO에보고했다. 신규unit EOF2바이트비의미보정은담당동결/앞부분동일·시험반복0이며실제실행시지문과최종지문을결과서에병기했다. 다음독립미구현조사와FN16B보호참조상세계약·PG비가동사본보존복구실행안준비를계속하고실제복구는임의실행하지않는다.
+
+
+- **PMO 후속 지원·구체 검토본**: Main은 FN16_PROTECTED_REFERENCE_CONTRACT_REVIEW.md r1과 P03_PRESERVED_PG_VOLUME_RECOVERY_REVIEW.md r1을 작성했다. PMO는 FN16 새참조등록/회수/재대조·고정GET/권한방향을 상세화기준으로 채택하고 최초MANUAL/소유자이식에맞춰 사용자해제형이식키를 첫후보로 권장했다. 이는새공개API/자료/키보호의제품구현승인이아니며 정확route/DTO/pagination/오류/공급자/불변표·KDF/키입력메모리수명/유실이식/옛키·한도/허용파일을한검토본으로고정한다. 내부유한수치제안·검수는Main기술판단으로가능하나운영기본값/자동삭제/묵시누락은불가다. PG문서는비가동사본검증우선/원본직접기동위험과새resource/기동전guard·실행안미정·별도승인을명시했으며실제copy/mount/DB/서비스실행0이다. 독립FN06조사는후보개정과완성형연결이서로다르고현재nativefactory/current권위/보호handle 선행이남음을확인했다. 실제Agent첫지시를바로허위완료하지않고 최신소유C#source보정후compile-only미실행의정확의존/명령/허가경계를읽기전용대조한다. 제품진도는FN12게시까지이며이후검토문서는구현완료로세지않는다.
