@@ -8326,3 +8326,18 @@
 
 
 - **FN16 후보 r2 검토 결과·채택 경계**: 독립 검수는 필수 자료/별도 현재권한 경계/유효 과거 ref 보존의 원 보완을 해소했다고 판정했다. 후보717496CD는 NOT_ADOPTED이며 B 선택만으로 키 보호 adapter·유실/이식 미정 계약의 구현을 허가하지 않는다. 추가 대조상 A의 기존 saveBackupPolicy(policy,reason)/createBackup(policyRef,sourceSelection,reason)와 공통 targetId/expectedVersion으로 정책CAS·수동접수는 정의 가능하나 보호 참조 공급/목록·정확 조회·실제 파일 생성은 상세화가 필요하다. 구현되지 않은 공급자를 합성 ID로 정식 대체하지 않는다. PMO 최신2860d926:4는 자기 대기 유지/추가지시0이므로 Anvil 전체 중단으로 확대하지 않고 정확 A/B·상세 계약 결정만 요청한다. Main은 소유 후보/현황2문서로 검토 기준을 게시하며 추가 원계약 대조·상세화는 계속하되 미채택 등록/키 계약의 제품 쓰기는 하지 않는다.
+
+
+- **정식 개발 환경 현재 부재 관측·읽기 도구 오류 분리**: e4ee5a는2026-10-27T03:07:46Z 지정PG anvil-v3-development-pg에no such object를관측했고Git후속은set-e로미실행이었다. 0dc5fc에서Windows3830/5546 LISTEN0·daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e 동일을확인했으나원격stdin스크립트는EOF문법오류로Git조회전중단했다. 567e13은정식Git HEAD ff0fcd13695ae0affa2fd773dc96667e1d7c88f8를읽었다. 해당호출의Docker형식문자열2개와111701의형식인자2개는원격인자/PowerShellscriptblock해석으로실패했고현재값으로사용하지않는다. cf1f46은형식없는Docker --quiet 읽기로exit0/Anvil컨테이너0/등록볼륨 anvil-v3-development-pgdata 이름존재를03:10:06.105Z 확인했다. 볼륨내용/무결성·현재schema·키/Secret은읽지않았고삭제주체/원인은미확정이다. 반복실패한PowerShell형식전달접근은중단하고필요한추가이미지/드라이버메타데이터는정적명령문을Node ssh argv로전달하는방식으로직접정정한다. 서비스/DB시작·재생성·볼륨마운트/데이터변경0·기존허가재실행0이다. PMO에는볼륨보존복구의정확결정/지원만요청하고소스작업전체를중단하지않는다.
+
+
+- **P03/IX01 읽기 전용 볼륨 metadata QA 사전등록**: 4ad1c0의정적Node ssh argv는exit0으로기존PG이미지 sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f·등록볼륨driver local을읽어형식인자전달문제를해소했다. 다음일회컨테이너 anvil-v3-pgmeta-20261027-r1만생성전부재를확인하고 owner Project Main/label runid동일,위캐시이미지pull=never,PGdata볼륨을/anvil-pgmeta에readonly/volume-nocopy,network none/read-only rootfs/user999:999/capdropALL/no-new-privileges/pids16/memory32MiB/CPU0.2로제한한다. PG entrypoint는실행하지않고/bin/sh가정규·비symlink·8바이트이하PG_VERSION의숫자major만출력한다. DB연결/본문·키/Secret읽기·볼륨쓰기0이며2분내종료/실패시생성ID·image/label/mountRO대조후해당일회컨테이너만정리·독립잔류0을확인한다. 원볼륨/이미지/네트워크/정식서비스는보존한다. 이metadata는자료무결성/복구완료증거가아니다.
+
+
+- **PG metadata QA 마운트 상세 정정(생성 전)**: 공식PG이미지의선언VOLUME에익명볼륨이자동생성되지않도록등록볼륨RO목적지를/anvil-pgmeta대신기존이미지의/var/lib/postgresql/data로맞춘다. 생성전image Config.Volumes가해당1개뿐인지읽고검증하며추가선언이있으면생성하지않는다. PG_VERSION만읽는정적명령/네트워크none/DB미기동/원볼륨보존/2분정리조건은불변이다.
+
+
+- **P03/IX01 metadata 일회 QA 종료·현재 환경 기록**: e52b9e는등록컨테이너ID2ea8ad20938c7ba3d59cd073ba92e6ce37058aa7cd74bc032e7d5bf53d7f1bc4를03:19:40.866Z 생성·image594290e9/owner project-main/networknone/rootfsRO/user999·mount1/namePGvolume/RWfalse를검증했다. PG entrypoint/DB접속없이PG_VERSION 숫자만PG_MAJOR15/3bytes로읽고03:19:41.468Z즉시제거했다. 별도89ce36은03:21:19.865Z QA잔류0/Anvil컨테이너0/원namedvolume보존을확인했다. 실제자료/DBschema/무결성·서비스준비는NOT_RUN이고원볼륨/기존이미지/네트워크·Secret변경0이다. DENV에현재관측을앞에추가해과거running/migration기록을현재로오인하지않게했다. 필요한지원은기존볼륨보존복구의새정확판단이며과거start/TLS승인재사용0·Main은원계약상세화와다른승인작업을계속한다.
+
+
+- **현재 복구 전제 추가 확인**: 9ba767은등록network anvil-v3-development도없음을확인했다. 원볼륨의P03원label/instance/CreatedAt·volume소비자0·보호root0700/uid1000와bootstrap일반파일0600/실경로만대조했고비밀본문0이다. 이미지optionalUser format실패1회는2784ae index조회로정정해Usernull/entrypointdocker-entrypoint.sh/cmdpostgres/declaredvolume1을확인했다. 독립조사는최초provision이새Secret/역할/schema까지생성하므로복구에재사용금지,정상시작/정지WAL쓰기와바이트불변rollback불가를명시했다. Main은새네트워크생성까지추가된복구결정경계를PMO에전달하고실행하지않는다. 원볼륨/이미지·보호참조/Secret/권한/서비스변경0·이전QA잔류0이다.

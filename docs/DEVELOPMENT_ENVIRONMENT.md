@@ -1,3 +1,23 @@
+## 2026-10-27 12:31 KST 복구 전제 추가 관측 — 기존 네트워크도 없음
+
+- 9ba767의 등록 anvil-v3-development network inspect는 not-found다. 과거 network ID d3253166...를 현재 신원/허가로 재사용하지 않는다. PG 컨테이너 복구 외에 새 네트워크 생성/연결 정의의 정확 결정도 필요하며 자동 생성하지 않았다.
+- 같은 읽기에서 원 named volume은 local·CreatedAt2026-10-16T03:53:33+09:00·project=v3/owner=P03/instance=dc22a0629e79f259dcd935845e88e58e를 보존했다. 이 볼륨을 참조하는 컨테이너 목록도0이다. 메타데이터 일치가 DB 내용/무결성 증명은 아니다.
+- 기존 보호 root는 디렉터리0700/uid1000/gid1000, bootstrap-password는 일반파일0600/uid1000/gid1000·실경로가 등록 경로와 같다. 값/비밀번호/DSN은 읽거나 출력하지 않았다.
+- 캐시 이미지의 선택적 User 필드가 없어 초기 format 조회는 실패했다. 2784ae가 optional index로03:31:03.294Z 재조회해 User=null(명시 사용자 없음), Entrypoint=[docker-entrypoint.sh], Cmd=[postgres], 선언VOLUME=/var/lib/postgresql/data를 확인했다. 앞선 metadata QA UID999는 정식 실행 정의가 아니다.
+- 최초 provision-development.ts는 신규 자원/Secret/역할·schema 생성 전용으로, 기존 network/volume/root 존재를 거절한다. 기존 볼륨 복구에 --create를 재실행하거나 guard를 제거하지 않는다. 정상 PG 시작/중지에는 WAL·제어/통계파일 등 원볼륨 쓰기 가능성이 있어 바이트 불변 rollback을 약속하지 않는다.
+- 추가 SQL/DB 연결·원본문·Secret·권한/서비스·자원 생성/변경0이다. 복구 실행은 현재 볼륨 보존·이미지/entrypoint/UID·네트워크·보호 참조·기한·실패시 정상정지/잔여보존·새 소유 표식이 고정된 별도 판단 후에만 가능하다.
+
+## 2026-10-27 12:21 KST 정식 개발 환경 읽기 갱신 — PG 컨테이너 없음/볼륨 metadata만 확인
+
+- Windows3830/5546 LISTEN0(0dc5fc,03:08:29.715Z). WSL Docker daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/NAME SINSAN은 기존 기록과 같고, 등록 anvil-v3-development-pg inspect는 no-such-object였다. Anvil 이름 필터의 컨테이너는0개(cf1f46/89ce36)다. 삭제 주체·원인은 미확정이다.
+- 등록 named volume anvil-v3-development-pgdata와 driver local, 캐시 PG15 이미지 sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f는 존재한다(4ad1c0). 볼륨 이름 존재만으로 자료 무결성·DB/schema 상태를 확인했다고 하지 않는다.
+- 사전등록 일회 anvil-v3-pgmeta-20261027-r1의 ID2ea8ad20938c7ba3d59cd073ba92e6ce37058aa7cd74bc032e7d5bf53d7f1bc4는 위 캐시 이미지/pull=never·network none·read-only rootfs·uid/gid999·capdropALL/no-new-privileges·pids16/memory32MiB/CPU0.2, named volume을 /var/lib/postgresql/data에 readonly/volume-nocopy로 연결했다. 이미지 선언 VOLUME1과 mount1/원볼륨RO를 시작 전 확인했다. postgres/초기화 entrypoint는 실행하지 않고 shell이 regular/nonlink/8바이트 이하 PG_VERSION의 숫자 major만 읽었다.
+- e52b9e의03:19:40.866~03:19:41.468Z 생성/관측/회수에서 **PG_MAJOR=15 / PG_VERSION_BYTES=3**만 확인했다. DB 연결·SQL/본문·Secret/키 읽기·원볼륨 쓰기0. 데이터 무결성/현재 migration·실DB ready·복구/서비스 정상 증거가 아니다.
+- QA 컨테이너는 즉시 제거했고 별도89ce36(03:21:19.865Z)에서 QA0/Anvil container0/원 named volume 보존을 확인했다. 이미지/원볼륨/네트워크/정식 서비스 변경0이다.
+- 정식 WSL Git HEAD는 ff0fcd13695ae0affa2fd773dc96667e1d7c88f8(567e13)다. 새 branch 소스는 private6a5840c0에 게시됐지만 정식 checkout 전환/서비스 반영은 하지 않았다. 새 schema/자료·현재 TLS/신뢰는 이번에 조회하지 않았다.
+- 오래된 최초 PG 생성/단1회start/TLS 전환 허가를 재사용하지 않는다. 복구는 기존 볼륨 보존과 현재 배포 정의·보호 참조·네트워크/이미지·실행 영향·rollback의 새 정확 판단을 받은 뒤 수행한다. PMO에 필요한 결정/지원만 보고하고 독립 소스/계약 작업은 계속한다.
+- 원격 stdin EOF와 PowerShell의 Go-format 인자 전달 실패는 도구 오류로 WORK_STATUS에 분리했다. 형식 없는 Docker 목록과 정적 Node ssh argv로 교정했으며 초기 오류를 컨테이너/이미지 부재로 오인하지 않는다.
+
 # Anvil 재설계 개발환경
 
 - 2026-10-25 07:25 KST 새 직접승인P1: exactf8fe81e5/기존probe의정식anvil_v3_development/anvil_v3_app READ ONLY1회a02537 exit0, PG150018·migration46·0012~0017/0031미적용·고정8객체중project_methodologies만/r/application_command_columnfalse를확인했다. 스키마/제품자료/계정·Secret/TLS/서비스변경0, 전용신규Git/npm102/cache는fe1ced정리/4e9a6a별도SSH부재확인. PG는유지한다. 이는현재metadata관측만이고웹/기능복구증거가아니다. 보호source후보는준비중·native NOT_COMPILED/NOT_OS_VERIFIED이며실행차단을유지한다.
