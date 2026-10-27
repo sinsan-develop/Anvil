@@ -1500,3 +1500,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN09 기존 화면시험 수집 복구**: 하위 TSX를 메모리 변환하는 시험1파일만 보완해 Main의 기존4건 PASS358.9764ms/type/diff0·독립 C0/I0를 확인했다. fixture/기대 본문은 기준HEAD와 바이트 동일하며 제품·환경 변경0이다. 과거 수집FAIL은 보존하고 해당 검증 공백만 해소했다. 실제 SQL/정식DB·서비스·Agent/사용자 인수와 전체 업무는 미완료다. 상세 docs/04_test_reports/AV3/FN09_SCREEN_MEMORY_IMPORT_RECOVERY_RESULT.md.
+
+
+- **2026-10-27 FN12/UI05 결과 검수 기준 개정 checkpoint**: 기존 보호 원문 선택→다중sources/환경·exact직전ref 보존→명시 개정 저장→같은ID 다음버전 exactGET을 연결했다. 최초/파일v1보존·미확인동일명령·선택ABA/이탈보호, Main unit18·실제App합성10·type/build/diff0·QA정리0·독립C0/I0. 실제DB/서비스/Agent·사용자인수·전체FN12/UI05/Stage/계획은미완료이며 WORK_STATUS와 FN12_RESULT_CRITERIA_REVISION_RESULT.md의 증거범위를따른다.

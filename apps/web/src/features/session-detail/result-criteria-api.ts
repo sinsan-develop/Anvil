@@ -5,8 +5,8 @@ import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 export const resultTestKinds=['BUILD','TYPECHECK','UNIT','INTEGRATION','BROWSER','AGENT','DEPLOYMENT','SECURITY'] as const;
 export interface CriteriaRow{field:'acceptanceCriteria'|'verificationRequirements';index:number;criterionId:string;testId:string;kind:string}
-type CriteriaInput={assignmentRef:PlanRef;baseRef:PlanRef|null;items:{criterionId:string;testId:string;kind:string;environmentRef:PlanRef;sources:{field:CriteriaRow['field'];index:number;contentHash:string}[]}[];reason:string};
-export interface CriteriaRegistration{ownerUserId:string;assignment:ConfirmedAssignmentView;command:{schemaVersion:1;projectId:string;commandId:string;clientId:string;controlGeneration:number;operation:'saveResultCriteria';targetId:null;expectedVersion:0;baselineRefs:[];approvalRef:null;payload:CriteriaInput}}
+export type CriteriaInput={assignmentRef:PlanRef;baseRef:PlanRef|null;items:{criterionId:string;testId:string;kind:string;environmentRef:PlanRef;sources:{field:CriteriaRow['field'];index:number;contentHash:string}[]}[];reason:string};
+export interface CriteriaRegistration{ownerUserId:string;assignment:ConfirmedAssignmentView;base?:RegisteredCriteria;command:{schemaVersion:1;projectId:string;commandId:string;clientId:string;controlGeneration:number;operation:'saveResultCriteria';targetId:string|null;expectedVersion:number;baselineRefs:[];approvalRef:null;payload:CriteriaInput}}
 /** POST APPLIED 이후 조회 거절은 저장 명령 자체의 확정 거절이 아니다. */
 export class CriteriaReadbackUnconfirmed extends ApiError{readonly writeMayHaveApplied=true;}
 export interface RegisteredCriteria{projectId:string;ref:PlanRef;snapshot:{assignmentRef:PlanRef;baselineRefs:PlanRef[];items:{criterionId:string;testId:string;kind:string;environmentRef:PlanRef;required:true}[]};input:CriteriaInput;sourceBindings:{criterionId:string;sources:CriteriaInput['items'][number]['sources']}[];createdBy:string;registeredAt:string;registryStored:true;reviewStored:false;completionAccepted:false;executionAuthorized:false;dispatchPerformed:false;observedAt:string}
@@ -30,6 +30,29 @@ export async function prepareCriteriaRegistration(assignment:ConfirmedAssignment
  sessionBinding(session);if(!Number.isSafeInteger(generation)||generation<1)fail('RESULT_CRITERIA_BINDING_INVALID');const a=structuredClone(assignment),payload=await inputFor(a,rows,reason);
  return{ownerUserId:session.user.id,assignment:a,command:{schemaVersion:1,projectId:a.projectId,commandId:crypto.randomUUID(),clientId:session.clientId,controlGeneration:generation,operation:'saveResultCriteria',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload}};
 }
+/** 선택 원문을 보호 reader와 동일하게 검증하고 원조건 배열을 보존한다. */
+async function revisionInputFor(assignment:ConfirmedAssignmentView,base:RegisteredCriteria,items:CriteriaInput['items'],reason:string):Promise<CriteriaInput>{
+ try{
+  if(!base||!ref(base.ref))fail();
+  const selected={ref:base.ref,createdBy:base.createdBy,registeredAt:base.registeredAt,conditionCount:base.input?.items?.length,registryStored:true as const,reviewStored:false as const,completionAccepted:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  await readStoredCriteria(new ApiClient(async()=>Response.json(base)),assignment,selected,()=>true);
+  if(!Array.isArray(items)||items.length!==base.input.items.length||typeof reason!=='string'||!reason.trim()||reason.length>20000)fail();
+  const ids=new Set<string>();
+  for(let index=0;index<items.length;index++){
+   const item=items[index]!,original=base.input.items[index]!;
+   if(!exact(item,['criterionId','testId','kind','environmentRef','sources'])||!code(item.criterionId)||ids.has(item.criterionId)||!code(item.testId)||!resultTestKinds.includes(item.kind as any)||!same(item.environmentRef,original.environmentRef)||!same(item.sources,original.sources))fail();
+   ids.add(item.criterionId);
+  }
+  const input={assignmentRef:structuredClone(assignment.ref),baseRef:structuredClone(base.ref),items:structuredClone(items),reason};
+  if(new TextEncoder().encode(ordered({assignment,input})).length>2*1024*1024)fail();
+  return input;
+ }catch{fail('RESULT_CRITERIA_BINDING_INVALID');}
+}
+export async function prepareCriteriaRevision(assignment:ConfirmedAssignmentView,base:RegisteredCriteria,items:CriteriaInput['items'],reason:string,session:DocumentSession,generation:number):Promise<CriteriaRegistration>{
+ sessionBinding(session);if(!Number.isSafeInteger(generation)||generation<1)fail('RESULT_CRITERIA_BINDING_INVALID');
+ const a=structuredClone(assignment),b=structuredClone(base),payload=await revisionInputFor(a,b,items,reason);
+ return{ownerUserId:session.user.id,assignment:a,base:b,command:{schemaVersion:1,projectId:a.projectId,commandId:crypto.randomUUID(),clientId:session.clientId,controlGeneration:generation,operation:'saveResultCriteria',targetId:b.ref.id,expectedVersion:b.ref.version,baselineRefs:[],approvalRef:null,payload}};
+}
 function projection(a:ConfirmedAssignmentView,input:CriteriaInput){return{snapshot:{assignmentRef:input.assignmentRef,baselineRefs:a.snapshot.definition.baselineRefs,items:input.items.map(i=>({criterionId:i.criterionId,testId:i.testId,kind:i.kind,environmentRef:i.environmentRef,required:true as const}))},sourceBindings:input.items.map(i=>({criterionId:i.criterionId,sources:i.sources}))};}
 async function validateView(v:RegisteredCriteria,p:CriteriaRegistration,r:PlanRef,registeredAt:string){
  const expected=projection(p.assignment,p.command.payload);
@@ -38,14 +61,20 @@ async function validateView(v:RegisteredCriteria,p:CriteriaRegistration,r:PlanRe
 /** 같은 pending 명령의 수동 재확인만 허용한다. 단절에 새 command ID를 자동 생성하지 않는다. */
 export async function saveCriteriaRegistration(client:ApiClient,pending:CriteriaRegistration,session:DocumentSession,active:()=>boolean):Promise<RegisteredCriteria|null>{
  sessionBinding(session);const p=structuredClone(pending),c=p.command;
- if(p.ownerUserId!==session.user.id||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!uuid(c.commandId)||c.clientId!==session.clientId||c.projectId!==p.assignment.projectId||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||c.operation!=='saveResultCriteria'||c.targetId!==null||c.expectedVersion!==0||!same(c.baselineRefs,[])||c.approvalRef!==null||!exact(c.payload,['assignmentRef','baseRef','items','reason'])||!Array.isArray(c.payload.items))fail('RESULT_CRITERIA_BINDING_INVALID');
- if(c.payload.items.some(i=>!Array.isArray(i.sources)||i.sources.length!==1))fail('RESULT_CRITERIA_BINDING_INVALID');
- const rows=c.payload.items.map(i=>({field:i.sources[0]!.field,index:i.sources[0]!.index,criterionId:i.criterionId,testId:i.testId,kind:i.kind}));if(!same(c.payload,await inputFor(p.assignment,rows,c.payload.reason)))fail('RESULT_CRITERIA_BINDING_INVALID');if(!active())return null;
+ if(p.ownerUserId!==session.user.id||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!uuid(c.commandId)||c.clientId!==session.clientId||c.projectId!==p.assignment.projectId||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||c.operation!=='saveResultCriteria'||!same(c.baselineRefs,[])||c.approvalRef!==null||!exact(c.payload,['assignmentRef','baseRef','items','reason'])||!Array.isArray(c.payload.items))fail('RESULT_CRITERIA_BINDING_INVALID');
+ if(c.payload.baseRef===null){
+  if(c.targetId!==null||c.expectedVersion!==0||p.base!==undefined||c.payload.items.some(i=>!Array.isArray(i.sources)||i.sources.length!==1))fail('RESULT_CRITERIA_BINDING_INVALID');
+  const rows=c.payload.items.map(i=>({field:i.sources[0]!.field,index:i.sources[0]!.index,criterionId:i.criterionId,testId:i.testId,kind:i.kind}));
+  if(!same(c.payload,await inputFor(p.assignment,rows,c.payload.reason)))fail('RESULT_CRITERIA_BINDING_INVALID');
+ }else{
+  if(!p.base||!ref(c.payload.baseRef)||!same(c.payload.baseRef,p.base.ref)||c.targetId!==p.base.ref.id||c.expectedVersion!==p.base.ref.version||!same(c.payload,await revisionInputFor(p.assignment,p.base,c.payload.items,c.payload.reason)))fail('RESULT_CRITERIA_BINDING_INVALID');
+ }
+ if(!active())return null;
  let response:Response;try{response=await client.transport.call(globalThis,`/api/v1/projects/${c.projectId}/commands`,{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':session.csrfToken,'Idempotency-Key':c.commandId},body:JSON.stringify(c)});}catch{throw new ApiError('CONNECTION_LOST');}
  if(!active())return null;let v:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}catch{fail('RESULT_CRITERIA_RESPONSE_INVALID');}if(!response.ok)throw new ApiError(typeof v?.code==='string'&&/^[A-Z_]{1,80}$/.test(v.code)?v.code:'REQUEST_FAILED',response.status);
- const d=v?.data,expected=projection(p.assignment,c.payload);if(v?.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==c.projectId||v.status!=='APPLIED'||!date(v.serverReceivedAt)||!ref(d?.ref)||d.ref.version!==1||v.targetId!==d.ref.id||v.version!==1||!same(d,{ref:d.ref,status:'RESULT_CRITERIA_STORED',...expected,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false})||await hash(expected.snapshot)!==d.ref.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+ const d=v?.data,expected=projection(p.assignment,c.payload);if(v?.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==c.projectId||v.status!=='APPLIED'||!date(v.serverReceivedAt)||!ref(d?.ref)||d.ref.version!==c.expectedVersion+1||v.targetId!==d.ref.id||v.version!==c.expectedVersion+1||c.targetId!==null&&d.ref.id!==c.targetId||!same(d,{ref:d.ref,status:'RESULT_CRITERIA_STORED',...expected,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false})||await hash(expected.snapshot)!==d.ref.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');
  if(!active())return null;let value:RegisteredCriteria;
- try{value=await client.get<RegisteredCriteria>(`/api/v1/projects/${c.projectId}/result-criteria/${d.ref.id}/versions/1`);}catch(cause){const error=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID');throw new CriteriaReadbackUnconfirmed(error.code,error.status);}
+ try{value=await client.get<RegisteredCriteria>(`/api/v1/projects/${c.projectId}/result-criteria/${d.ref.id}/versions/${d.ref.version}`);}catch(cause){const error=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID');throw new CriteriaReadbackUnconfirmed(error.code,error.status);}
  if(!active())return null;await validateView(value,p,d.ref,v.serverReceivedAt);return active()?structuredClone(value):null;
 }
 export interface StoredCriteriaSummary{ref:PlanRef;createdBy:string;registeredAt:string;conditionCount:number;registryStored:true;reviewStored:false;completionAccepted:false;executionAuthorized:false;dispatchPerformed:false}
