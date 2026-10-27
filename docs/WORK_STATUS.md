@@ -8686,3 +8686,9 @@
 ### 2026-10-28 동일 결정 경계 감사 3회 — goal 차단 판정
 
 이번도 no progress이며ac597f는HEAD5e35·Main현황1dirty/보호8untracked보존,PMO cursor28 terminal은P03새답변없음을확인했다. FN05직접질문에도새답변이없고실제공유요청계약/코드GO로전용할권한근거가없다. 원turn말미·앞continuation·현재의동일한실제효과/상세계약결정경계가연속3회충족됐고,livejob verified wait가아니다. 완료검사재실행/같은조사·질문반복으로진도를만들거나새임의기능을발명하지않는다. 기존계획미완료·원본/기존승인·미검증/보호자료를보존하고goal을blocked로설정한다. 사용자중지에의한paused나목표complete가아니다. 기존P03실제copy질문의정확답변또는FN05후보F60EEE63의정확채택답변/실질선행변화가오면해당범위만새감사로재개한다. 제품/DB/권한/실행/새자원/실Agent0이다.
+
+### 2026-10-28 FN05 A안 직접승인으로 구현 재개
+
+신산님call_84af3084e4294486a1514f370614dbb3/item0의‘A안 계약·source-only 구현 승인’을후보F60EEE63와정확결박했다. 과거미승인/blocked감사는이력이고이번FN05계약/코드·화면·미적용SQL·합성검수의차단을해소한다. 실제공유/전송/대상쓰기/승인생성·소비/DB적용/정책부여/서비스/Secret/실Agent제외·별도P03실제copy미승인은유지한다. fresh단일담당fn05_share_request_impl에읽기전용정확파일/기존패턴preflight를배정했고Main제품write0·현재TDD前이다. Main442f6b의가정경로project-knowledge.ts읽기는ENOENT1/변경0이며rg--files로실제knowledge.ts를찾았다. 완료검사반복0·원보호8보존·전체WORK_PLAN미완료,이번재개부터새차단감사로센다.
+
+- **FN05 A안 WI preflight C0I0·시험작성 GO**:독립담당이F60/FD0·WI88A6/manifest8AC1·기존4raw/신규13부재/보호12를직접대조해C0I0를확인했다. 공통command의source선잠금/raw replay를그대로쓰지않고공개POST의UUID정렬잠금/현재재투영·inspectPending승인선거절·보호GET/최종기한검사를실제반례로증명한다. Main은WI의logical route에기존/api/v1 prefix를명시하는기술표기만정리했다(범위불변). 승인/업무WI/manifest/현황4문서checkpoint뒤TEST_ONLY신규시험4부터단일담당TDD GO,Main제품write0/실DB·환경0.
