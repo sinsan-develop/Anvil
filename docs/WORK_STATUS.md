@@ -8386,3 +8386,9 @@
 
 
 - **FN06 날짜 파서 국소 보완 검수**: Maind24379 actualprefix회귀RED1→ac863a GREEN1/1041.5767ms/type구문0·독립C0/I0,runner는DateKindString한줄만/원바이트역대조일치·기존unit9보존이다. native12/tool4/input/manifest/실행안·argv/root/한도/원시간창불변·compiler미사용근거를RECONFIRMATION.md에기록했다. 실제재실행은새sourcecheckpoint/privateexact와부모직접승인의동일효과범위·플랫폼대조전0이며원OUTERUNKNOWN은소급PASS하지않는다. 원결정JSON은현시점변경하지않고Git에부모원문으로보존한다.
+
+
+- **FN06 원 미사용 승인의 파서 보완 재결박**: 독립국소C0/I0·원compiler미사용/소비0근거와부모직접승인원문을대조했다. 828c62의76a852225a72c51aff21c8c21ba1141785a3cca8는원parser1행+회귀+부모승인/재확정/현황정확5이며5954dd private/local exact·mainf976불변이다. 원결정9ED533B5는Gitblob에보존하고현재runtime결정은executionCommit/runnerHash 두필드만76a85222/1414DF17로재결박했다. approvedAt05:02:17/expires05:32:17·runId/단발1·manifest/native12/tool4/input/argv/root/한도/제외는불변이며실제compiler/소비0이다. 이는부모승인의동일실행효과를위한내부비의미기술보완분류이지새직접승인/기한연장/범위확대가아니다. 실제실행은플랫폼심사에서이근거를인정한경우만하고거절시우회하지않는다.
+
+
+- **FN06 실제compiler1회소진·결과미확정/QA정리**: 1248d4는actualCompilerExecuted/oneUseConsumed=true·cscPID45592/startTicks639286750602461192·image미관측·IDENTITY_UNKNOWN·exit/capture/outputnull·processExitedtrue/FAIL이었다. phasePREFLIGHT표시로미사용이라오인하지않고이실제1회는소진·추가실행0이다. Main1ff350은기록csc/hostPID45592/54068부재/QA참조process0·manifest동일copy12/빈bin-temp/DLL없음/owner비link를확인했다. Main7a6d55 fresh동일근거와exact16항목후사본12/빈dir4만05:22:13.985Z개별회수·79eb36별도rootfalse/소비marker45C21C7D동일보존. 원native/ACL/processkill/DB/키/서비스변경0. 실제C#성공/결함/빠른종료원인은미확정이며marker리셋/기준완화0,결과서 FN06_OWNERSHIP_COMPILE_ONLY_ACTUAL_RESULT_20261027.md에원UNKNOWN/부모승인/국소보완/실제실패와미검증을분리했다. 다음은신원FAIL은유지하되유한exit/diag유실방지source보완과새실행범위를구체화하고소진허가로재시도하지않는다. 전체FN06/Stage/계획미완료다.
