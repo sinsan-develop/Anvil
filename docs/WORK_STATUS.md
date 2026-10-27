@@ -3,7 +3,7 @@
 ## 현재 인수 요약 — 2026-10-27 P03 실행 결정 전달 후
 
 - **현재 단계:** 로컬·WSL 기능 구현 1단계. 전체 WORK_PLAN 미완료이며 완료보고 상태가 아니다. Stage A의 과거 수용 이력은 보존하되 현재 정식 개발 PG 컨테이너/네트워크 부재와 원 volume 보존 상태를 별도로 관리한다.
-- **최신 안전한 소스:** codex/av3-stage-b / private·local exact `585ea34ae4704621634a4db7b6dad125cbca4231`. 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210`이며 이branch결과를 main 통합으로 부르지 않는다. 후속 UI05 업무의 소유 source·검수 자료·현황 변경은 최신 이력에 명시하며 보호untracked8은 보존한다.
+- **최신 안전한 소스:** codex/av3-stage-b / private·local exact `5665de9bb3746c1821daef701f7d1bcca96f00b9`. 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210`이며 이branch결과를 main 통합으로 부르지 않는다. 후속 UI05 업무의 소유 source·검수 자료·현황 변경은 최신 이력에 명시하며 보호untracked8은 보존한다.
 - **현재 구현·검수:** P03 구조조사 host 소스 준비는 Main 신규28 PASS/type·구문0/독립지정C0I0. 실제 metadata·복구·제품 사용 증거가 아니다. UI06/UI10한정대조에서이미연결된동선을재작업하지않았다. Stage B/C·나머지UI/FN/IX는아래기존상태표와최신상세이력을대조한다.
 - **정확한 다음 실행 결정:** PMO가20a807dd/실행안C9960CD6의새GitQA/원장/helper1·원volumeRO·60초/8KiB/30분·숫자ownerUID1001잔여위험한정수락을사용자에게단1회질문했다. 답변전riskack/grant/QA/helper/mount/PG/DB/서비스/Agent생성·실행0. 현재원volume내용/Secret/PG기동/복제는요청범위밖이다.
 - **UI05 독립 진전:** 등록 산출물 원본 다운로드 source 연결·직접14/합성 Edge1/type·메모리build·독립C0I0·QA정리 확인. 실제 API/DB/served·전체 기능은 미확인으로 남긴다.
@@ -8526,3 +8526,18 @@
 - GREEN299a57 생성10:14:51.9129041Z·34587f exact230파일82dir/16031760bytes 정리10:15:51Z/c416da 별도10:16:01Z root/process0이다. PNG13297bytes/86A1D8F0 보존·직접시각확인,RESULT에RED/GREEN·raw지문/변경전후/미검증·rollback을누적했다. 실제API/DB/정식served/사용자인수는NOT_RUN·전체UI08/계획미완료이며Main제품수정0·P03/FN16정확질문중복0이다.
 
 - UI08 a64cbb exact10 staging·제품/시험2 raw동일/3 CRLF→LF만·보호8불변/cachedcheck0. RESULT에게시index3지문을추가했다. 기존main/다른자료변경·전체Stage합격상속0이며같은branch검수checkpoint로보존한다.
+
+
+- **UI08 checkpoint 게시·다음 실제 선행 대조**:4e4ff4의5665de9bb3746c1821daef701f7d1bcca96f00b9 exact10을ec4633에서기존privatebranch에nonforce게시·exactSHA/trackedclean/mainf976불변으로확인했다. PMO에결과/미검증·QA0를보고했다. 읽기검수는StageB/C의UI03방법론/ UI06양식작성/ UI04문서원문·첨부동선이이미연결됨을확인해재작업0으로뒀다.
+- StageD~G한정대조는FN10~13실scheduler/dispatch·ACK/쓰기회수·양성상태/재개, FN14실도구이전·미채택2표/조회계약, FN15실수집/수락/원자제어전환, IX04~08실Agent/환경·복원·설치/사용자인수선행을분리했다. 이번조사안에서새독립구현단위를확정하지못했으며전체계획완료/가능한모든업무소진판정은아니다. 작은합성helper·중복다운로드를진도로만들지않는다.
+- Main785741은목록확인없이추정계약FN06_PROVIDER_SESSION_HANDLE_CONTRACT_R2.md를읽어NOT_FOUND,8ab1a5는추정apps/runner를검색해경로없음1이었다. 즉시추정읽기를중단하고반환된실제docs/contracts/FN06_PROVIDER_HANDLE_BINDING_PROPOSAL.md·apps/connector파일목록으로정정했다. ACL오류·제품실패가아니며파일생성/권한변경/재실행0이다. 이후실제목록에존재하는경로만대조했다.
+
+
+- **FN04 정확 미채택 계약 결정지원·Main 경로오류3회**:11bccc는기존후보SHA84C4AB82/§8.1의5필드보관·보호조회/현재pointerCAS·일회소비와§6실안전412분리를확인했다. PMO에위임범위한정채택여부를요청했고현재source와독립읽기검수중이며채택전코드/SQL0이다. 기존P03/FN16질문복제0이다.
+- Maincc24ed는추정apps/server/modules/design-changes를rg인자로넣어경로없음1을추가발생시켰다. 앞선785741/8ab1a5와같은근본원인(실제목록을먼저고정하지않은경로추정)3회로분류해Main의추정경로읽기/검색을중단했다. 부분검색결과를전체성공으로세지않는다. 독립읽기담당은반환된실제목록으로만대조하며Main은기존확정경로의문서/Git관리만한다. ACL/환경변경·제품패치/전체회귀0,정확누락경로와영향을PMO에예외공유한다. 이오류를사용자계약승인차단이나제품결함으로해석하지않는다.
+
+- PMO cursor14 한정지원판정: 현재재개범위는P03/FN16이며FN04채택지원은범위밖으로처리하지않겠다고답했다. Main은이를FN04거절/기존계획취소/새사람승인으로치환하지않고현재별도계약후보독립검토만유지한다. PMO재개/범위확대·새계약구현·SQL/실기준전환0이다.
+
+
+- **FN04 기존 후보 독립대조 결과·기존질문 보존**:SHA84C4AB82 후보는사용자가치/비중복이나현상태C0/I1이다. I1은후속CAS에필요한불변activation정확snapshot/hash·현재pointer보호GET/읽기주체·부재/과거/현재변경구분의상세계약미정이다. 현재baseline_activations는논리정의이며실저장/조회없음,공개command/dispatch도없다. 기존입력/관계parser는이미구현되어재작성0이고candidate보관은계속계획저장전용·baselineRefs=[]guard다. reason보호검사는새입구에명시연결해야한다. §6실안전gap는현재항상생성/삭제금지여서412그대로다. 후보그대로전체구현을발행하지않는다.
+- 기록상10/21정확채택질문·10/25답변미수신이력이확인돼직접질문을복제하지않는다. 현재PMO지원범위밖판정도기존미채택을해소하지않는다. 미적용SQL번호0050은다른후보와충돌가능해미고정이다. 문서제안/합성helper를실제기능완료로세지않고기존P03/FN16·FN04질문의정확답변/필수외부선행변화시그범위로재개한다. 이번turn은UI08실구현·검수·게시의progress이며동일차단3회감사/goal완료또는blocked를임의주장하지않는다.
