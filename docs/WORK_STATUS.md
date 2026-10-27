@@ -8549,3 +8549,8 @@
 - **FN04 I1 보완 후보 검토·정확 채택 질문**:d001b9 신규보완문서 FN04_ACTIVATION_POINTER_CONTRACT_ADDENDUM_CANDIDATE.md SHA92602F25436F423002607BA1B118B35D4F273E55DAC06E2D33F082D18EEFB715/12138bytes를양쪽에작성했다.978b50 부모84C4불변/양쪽동일·제품diff0,독립읽기C0/I0로snapshot/hash·현재/고정GET·NONE/유실·과거/세대/CAS/replay의원I1상세계약공백이문서상해소됐음을확인했다. reason/원payload중복공개0·기존후보OWNER+원요청자보호와새OWNER적용사실조회delta를분리했다. 저장guard/경합·실기능검증PASS는아니다.
 - 최신goal의설계결정필요시신산님결정요청경계에따라원r1과이새GET/snapshot보완을함께채택하는source/UI/pendingSQL/합성범위의정확질문1개를directasync제시했다. PMO한정범위밖판정/기존P03·FN16질문은유지하며재개를대신지시하지않는다. 과거부모만의답변을새보완까지승인한것으로넓히지않는다. 실제DB/정책/권한·실기준전환/서비스/Secret/Agent·§6실안전생산은제외/412그대로다.
 - 이번turn은새기능구현/시험진전0이며설계검수로필요한정확결정범위를보완한것이다. 직전UI08progress뒤새답변없는구현차단감사첫회로보수적으로센다. 새질문을일반성공/기능완료로세지않고goal active유지·완료/blocked전환0이다. 답변뒤유효범위만WI/단일subagent/검수로이어가며현재codewriter0/등록QA0이다.
+
+- **새 결정 대기 구현 차단 감사2회**:직전goalturn은설계후보보완/질문만이며기능구현진전0(no progress)로분류한다. b34876 현재24cd70ea/동일branch·tracked/index clean·후보92602F25불변,PMOcursor16 idle/terminal·새사람답변없음을확인했다. live job의verifiedwait가아니다. 동일선행(정확계약채택/외부실행결정)지속2회이며새질문·동일검사/작은helper·제품/SQL/QA/DB/권한/Agent0이다. 아직3회가아니므로goal active유지·완료/blocked/paused전환0,기존질문의정확답변후허용범위로재개한다.
+
+- **새 결정 대기 구현 차단 감사3회·상태 전환 기준 충족**:직전goalturn은상태재확인/기록만인no progress였다. 이번67347a는24cd70ea/동일branch·Main WORK_STATUS만dirty/index0·후보92602F25/보호8불변,PMOcursor16 changedfalse·idle/terminal을확인했다. 새직접답변이없고확인된live작업핸들도없으므로verifiedwait가아니다. 동일실질경계는FN04원r1+보완의새저장/보호조회계약채택과P03/FN16의기존정확결정이며세goalturn연속구현진전없이유지됐다. 기존소비컴파일승인재사용/새질문복제/소스·SQL·DB·정책·서비스·Agent·새QA0이다.
+- 전체목표/미완료범위는그대로이며UI08소스5665/문서보완24cd를전체완료로승격하지않는다. 기존StageB~G의나머지실Agent/회수/이전/인계·복원/설치/실환경/사용자인수선행은직전한정대조대로미충족이다. 현근거안의정당한독립구현단위를확정하지못해차단기준을충족하며안전checkpoint보존후goal상태를blocked로요청한다(complete/paused아님). 정확새답변또는실질외부선행변화뒤유효범위만단일담당→독립검수→Main통합으로재개하며재개시차단감사는새로센다.
