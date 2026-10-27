@@ -79,7 +79,8 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   if (!matched.length || matched.some(rule => rule.disposition === 'DENY')) throw new AuthFailure('PROJECT_OPERATION_DENIED', 403);
   const approvalRequired=matched.some(rule => rule.disposition === 'REQUIRE_APPROVAL');
   if (request.operation === 'cancelQueuedRequest' && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('STAGE_QUEUE_APPROVAL_NOT_CONNECTED',412);
-  if (['defineProjectRole','bindResponsibleSession','prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
+  // 역할/예약은 기존 REQUIRE_APPROVAL의 exact authorize→consume 경로를 사용한다. 실제 실행 준비/이해 검토는 계속 차단한다.
+  if (['prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}

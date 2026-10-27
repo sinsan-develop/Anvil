@@ -3,11 +3,13 @@ import { documentControl, postDocumentCommand, type DocumentSession, type Docume
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
 import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
+import type {ApprovalRequestWork,ApprovalView} from '../decisions/api.ts';
+import {responsibleSessionCommand} from './responsible-session-approval.ts';
 
 export type ResponsibleSessionAction='COORDINATOR'|'STAGE_OWNER'|'BIND';
 export interface PreparationRecord {projectId:string;ref:PlanRef;snapshot:Record<string,any>}
 export interface ResponsibleSessionState {projectId:string;assignmentRef:PlanRef;roles:PreparationRecord[];bindings:PreparationRecord[];preparations:PreparationRecord[];hasMorePreparations:boolean;currentness:'NOT_RECHECKED';executionAuthorized:false;dispatchPerformed:false}
-export interface ResponsibleSessionBuffer {bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
+export interface ResponsibleSessionBuffer {responsibleApproval?:{request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};closedResponsibleApprovals?:{command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];savedReceipt?:{ref:PlanRef;snapshot:Record<string,any>};bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
 const exact=(v:any,keys:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const uuid=(v:any):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref=(v:any):v is PlanRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&/^[a-f0-9]{64}$/.test(v.contentHash);
@@ -69,6 +71,12 @@ export function canPrepareResponsibleSessionInput(buffer:ResponsibleSessionBuffe
 export function assertResponsibleSessionInputCurrent(current:ResponsibleSessionBuffer|null,original:ResponsibleSessionBuffer) {
   if(!current||!same(current,original))throw new ApiError('RESPONSIBLE_SESSION_INPUT_CHANGED',409);
 }
+/** 승인 Editor의 각 before-request CAS는 내부 reducer가 소유한다. 바깥 경계는 원명령/주체/입력을 고정한다. */
+export function updateResponsibleSessionApprovalBuffer(current:ResponsibleSessionBuffer|null,original:ResponsibleSessionBuffer,change:(b:ResponsibleSessionBuffer)=>ResponsibleSessionBuffer){
+  if(!current)return current;
+  const core=(b:ResponsibleSessionBuffer)=>{const {responsibleApproval,closedResponsibleApprovals,...rest}=b;return rest;};
+  return same(core(current),core(original))?change(current):current;
+}
 /** dirty 폐기 확인은 호출 화면에서 수행한다. 여기서는 표시만 먼저 숨기며 원 입력/명령은 수정하지 않는다. */
 export async function prepareResponsibleSessionInput(client:ApiClient,confirmed:ConfirmedAssignmentView,session:DocumentSession,buffer:ResponsibleSessionBuffer|null,hide:()=>void,active:()=>boolean) {
   if(!canPrepareResponsibleSessionInput(buffer,confirmed,session))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
@@ -85,9 +93,10 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
   if(b.projectId!==confirmed.projectId||!same(b.assignmentRef,confirmed.ref)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||state.projectId!==b.projectId||!same(state.assignmentRef,b.assignmentRef)||!text(b.reason)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   const coordinator=state.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
   if(b.pending){
+    responsibleSessionCommand(b,s);
     const p=b.pending;
     if(!exact(p,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
-      ||p.schemaVersion!==1||p.projectId!==b.projectId||p.clientId!==s.clientId||p.controlGeneration!==b.controlGeneration||!uuid(p.commandId)||p.approvalRef!==null||p.baselineRefs.length
+      ||p.schemaVersion!==1||p.projectId!==b.projectId||p.clientId!==s.clientId||p.controlGeneration!==b.controlGeneration||!uuid(p.commandId)||p.approvalRef!==null&&!b.responsibleApproval?.commandHash||p.baselineRefs.length
       ||p.payload.reason!==b.reason)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
     if(action==='BIND'){
       const previous=p.payload.existingSessionBindingRef;
@@ -114,7 +123,8 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
   return{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:b.controlGeneration,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:structuredClone(payload)};
 }
 export async function sendResponsibleSessionAction(client:ApiClient,command:DocumentWrite,session:DocumentSession) {
-  if(!['defineProjectRole','bindResponsibleSession'].includes(command.operation)||command.clientId!==session.clientId||command.approvalRef!==null||command.baselineRefs.length)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
+  const approval=command.approvalRef as any;
+  if(!['defineProjectRole','bindResponsibleSession'].includes(command.operation)||command.clientId!==session.clientId||approval!==null&&(!exact(approval,['requestId','decisionId','scopeDigest'])||!uuid(approval.requestId)||!uuid(approval.decisionId)||!/^[a-f0-9]{64}$/.test(approval.scopeDigest))||command.baselineRefs.length)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   const receipt=await postDocumentCommand(client,command,session.csrfToken),data=receipt.data;
   if(!data||!ref(data.ref)||receipt.targetId!==data.ref.id||receipt.version!==data.ref.version||data.status!==(command.operation==='defineProjectRole'?'PROJECT_ROLE_DEFINED':'RESPONSIBLE_SESSION_RESERVED'))throw new ApiError('RESPONSE_INVALID');
   await verifyHash(data.snapshot,data.ref);

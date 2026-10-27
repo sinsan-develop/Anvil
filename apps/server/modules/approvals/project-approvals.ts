@@ -1,4 +1,5 @@
 import {ProjectLimitPolicies} from '../executions/runtime-policy.ts';
+import {assertResponsibleSessionApprovalTarget} from '../assignments/responsible-sessions.ts';
 import{randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
 import{AuthFailure,type AuthenticatedIdentity}from'../access/repository.ts';
@@ -12,7 +13,7 @@ import { candidateOperations } from '../connections/candidate-input.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
 import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-const consumableOperations = ['applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
+const consumableOperations = ['defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
@@ -36,6 +37,7 @@ export class ProjectApprovals{
    return{...approval,replay:true};
   }
   if(view.storedStatus!=='APPROVED'||view.currentVersion!==2||view.expired||view.consumption)throw new AuthFailure('APPROVAL_NOT_USABLE',412);
+  if(['defineProjectRole','bindResponsibleSession'].includes(c.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(c.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(c.operation==='saveWorkPlanDraft')await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,r.details.actionScope,view.candidatePlan?.payload);
   return{...approval,replay:false};
@@ -57,6 +59,7 @@ export class ProjectApprovals{
   const candidatePolicy=await authorizeMaterial(db,actor,{...c,operation:details.actionScope.operation},true);
   if(!candidatePolicy.approvalRequired)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
   if(Date.parse(details.expiresAt)>candidatePolicy.validUntil)throw new AuthFailure('APPROVAL_EXCEEDS_POLICY_EXPIRY',422);
+  if(['defineProjectRole','bindResponsibleSession'].includes(details.actionScope.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(plan)await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,details.actionScope,p.candidatePayload);
   if((await db.query('SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2',[c.projectId,details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_REQUESTED',409);
@@ -74,6 +77,7 @@ export class ProjectApprovals{
   if(view.currentVersion!==p.expectedVersion||view.storedStatus!=='PENDING'||view.decision)throw new AuthFailure('VERSION_CONFLICT',409);
   if(p.scopeDigest!==r.scopeDigest)throw new AuthFailure('APPROVAL_SCOPE_MISMATCH',409);
   if(view.effectiveState!=='PENDING'||canonicalJson(policyRef)!==canonicalJson(r.policyRef))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
+  if(['defineProjectRole','bindResponsibleSession'].includes(r.details.actionScope.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(r.details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(r.details.actionScope.operation==='saveWorkPlanDraft')await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,r.details.actionScope,view.candidatePlan?.payload);
   const snapshot={requestId:p.requestId,requestVersion:p.expectedVersion,requestRef:view.requestRef,scopeDigest:p.scopeDigest,decision:p.decision,reason:p.reason,decidedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},controlGeneration:c.controlGeneration,policyRef},ref={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(snapshot))},decision={id:ref.id,...snapshot,decidedAt:(await db.query('SELECT transaction_timestamp() at')).rows[0].at.toISOString()};
@@ -86,6 +90,9 @@ export class ProjectApprovals{
   return this.#read(db,actor,pid,id,consumableOperations);
  }
  /** 불변 당시 소비만 검증한다. 현재 정책/제어의 진행은 역사 위조가 아니다. */
+ async readResponsibleSessionConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
+  const {row,...history}=await this.#history(db,actor,pid,id,['defineProjectRole','bindResponsibleSession']);return history;
+ }
  async readLimitPolicyConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const {row,...history}=await this.#history(db,actor,pid,id,['applyLimitPolicy','revokeLimitPolicy']);return history;
  }

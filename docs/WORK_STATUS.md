@@ -8264,3 +8264,50 @@
 - **한도 정책 actual 핵심3 PASS·재전송 관측 시점 보정**: Main ef021e에서 FLOW(신규/개정/회수 각 독립승인)·AUTO_NULL·LOST_REQUEST 3 PASS8.1s,LOST_WRITE1FAIL/후속5NOT_RUN이었다. 재확인 click 직후 commands에 첫승인POST1건만 있는 시점에 at(-2)를 비교한 시험 원인이며 Main33aeb8은 전송 전 비동기 access와 실제 POST 도착 때 push하는 fixture를 확인했다. 제품 B66061E3은 불변이며 spec1파일의 요청/저장 유실 두 곳만 실제POST 정확2건 도착을 expect.poll로 관측한 뒤 기존 전체 명령 동일성·저장1회 기대를 유지하도록 보정했다. 새specEFA73A65E125D6E581AB9C5C3E31ECA21546D2FE2437543BEC465190768C08C6/type0·독립scoped C0/I0/M0, sleep/timeout/기대완화0. febd7c는등록QA28항목01:32:02.140Z소유/link/path/process0확인후정리·부재확인. 새QA후속은남은LOST_WRITE/GET_FAIL/REJECTED/REVOKED_POLICY/UNKNOWN412/LEAVE_INFLIGHT6모드만검증하며앞선성공3을전수반복하지않는다. 원실패와미실행을보존·실DB/서비스/비용/Agent0·Main제품수정0.
 
 - **한도 정책 승인 최종 소스 통합 준비**: Main5b84bc 새QA01:34:17.153Z/JS B66061E3 불변에서 LOST_WRITE/GET_FAIL/REJECTED/REVOKED_POLICY/UNKNOWN412/LEAVE_INFLIGHT6 PASS8.3s/exit0,앞선핵심3 PASS8.1s와분리했다. 3a073c 소유/link/경로/process0확인뒤등록QA21항목01:34:39.724Z정리·최종type/diff0,별도63bcd2 rootFalse. 원I2 FLOW1FAIL/완료문구selector1FAIL/재전송집계1FAIL과도달범위는보존한다. Main d21e6b는허용19소스만stage·raw/index19 EXACT/정규화0·manifest기록·WI998700A2불변을확인했다.0048의향후checkout LF→CRLF경고는설정변경없이분리보존한다. 소스19+소유문서5 exact24로기존branchcheckpoint/private게시하고보호8/main을보존한다. 실제SQL/정식DB·서비스/비용·Agent/인수0·Main제품수정0·전체목표active이다. 다음읽기조사는defineProjectRole/bindResponsibleSession의저장과RESERVED/CANDIDATE_ONLY/handle=null/실행false경계를확인했으며한도통합후해당기존역할/예약승인만진행한다. prepareExecution/reviewUnderstanding의미해결실제Capability/응답귀속과미채택HUMAN R2/providerhandle는이번예약승인으로해제하지않는다.
+
+- **한도 정책 게시·다음 책임 역할/예약 승인 연결 준비**: 553fb6/a9b4df의658951cc5f3e76e2968cf7d77b9113f1874cba01은exact24·local/private동일·trackedclean/보호8/mainf976불변이다. PMO에성과/미검증/다음선정만전달·다음배정대기0. Mainbbed8e/2548de/569c1f는기존역할중복거절,최초session1+binding1/후속같은sessionRef의binding버전추가,기존AUTO명시저장과함수형부모를대조했다. 다음WI FN09_RESPONSIBLE_SESSION_ONE_TIME_APPROVAL_IMPLEMENTATION.md SHA73DD668F29B3F20B3B52F6FC892F4AA84513029E803B800785FDC0764077B447·허용18은각역할정의/예약/후속결박의독립승인연결이다. RESERVED/CANDIDATE_ONLY/handle null/실행false와기존미확인을유지하고외부Agent/native·prepareExecution/reviewUnderstanding/HUMAN R2/providerhandle는열지않는다. 독립preflight후단일writer를신규소비시험부터배정하며현재제품/SQL쓰기0. 신규등록QA D:/tmp/anvil-v3-stage-b/ui04-responsible-session-approval-20261027-01의dist/results/temp/config.mjs만,env ANVIL_UI04_RESPONSIBLE_SESSION_APPROVAL_DIST exactdist/owner SINSAN\cyhuh·각생성30분·생성전부재/parentowner/link/realpath→write:false합성AppEdge→실패/종료소유/path/link/process0정확회수·별도잔류0이다. 실DB/정책부여/서비스·Secret/비용/Agent0·Main제품수정0·전체목표active다.
+
+
+- **FN09 승인 연결 사전검토·단일 담당 배정**: WI73DD668F/기준658951cc는독립C0/I0이며Main dd6aaa의실제Git은같은branch/HEAD·Main소유현황dirty·신규WI와보호8보존이다. 단일담당 fn09_responsible_session_one_time_approval에게신규소비시험1파일만먼저배정했고제품/SQL은Main actual RED확인뒤GO한다. 이번cold복구중정본root package.json조회1회는소스파일위치오인으로경로없음이었으며쓰기0·source cwd의실제package로정정했다. 같은오류재실행/ACL변경0·Main제품수정0·실DB/서비스/Agent0·전체목표active다.
+
+
+- **FN09 actual RED·후속 단일 구현 GO**: 신규소비시험25FE4AE2만작성된제품불변기준에서Main ca6724 node --test tests/unit/FN09/responsible-session-approval-consumption.test.ts는exit1/1FAIL358.8202ms/skip0이었다. 실제authorizeMaterial82의EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED/412와기대APPROVAL_REQUIRED/412차이를확인했고모듈부재/환경실패가아니다. 같은writer에게WI73DD668F허용18의제품/화면/0049pendingSQL연결을GO했다. prepareExecution/reviewUnderstanding·실DB/정책부여/서비스/Secret/Agent/비용은열지않는다. Main읽기중PowerShell rg의wildcard경로0016*/0048*가error123이었으며2cfe65의-g필터로정정·파일변경0·같은명령반복0이다. Main제품수정0·QA생성0·전체목표active다.
+
+
+- **FN09 서버쓰기 자동심사 거절1·영향 분리**: 단일writer의서버4파일일괄문자열치환시도가제품쓰기전거절됐다. 사유는FN09보안/권한변경명시승인근거부족과일괄치환범위/정확성불확실이다. Main은같은실행우회/반복을금지하고기존직접지시의승인계획구현재승인0·Agent연결구현·FN11일회승인계약과정본두연산의동일성을읽기로입증하도록지시했다. FN05exact16직접승인을FN09전용으로주장하지않는다. 충분한근거와최소개별patch일때만재심사1회,재거절시정확범위보고·서버쓰기중지다. UI/신규시험등영향없는작업은계속하며실DB/정책부여/서비스/Agent0·제품쓰기0이다. PMO에사유/조치전달·배정대기0.
+
+
+- **FN09 정확1행 재심사 거절·직접확인1회**: 기존사용자계획구현/FN11계약근거와정확1행patch를제시한재심사도쓰기전거절됐다. 자동심사는두연산의fail-closed미연결guard대체가영구권한동작변경이며FN09정확직접승인이없다고판단했다. 서버/SQL쓰기0·추가재심사/우회0,Main은WI73DD668F허용18/실DB·정책부여·서비스·Secret/Agent제외범위에대해직접사용자비동기질문1회만발행했다. 응답전서버/SQL만보류하고단일writer의영향없는화면/신규시험은계속한다. PMO에정확사유/조치전달·전체계획대기/완료승격0이다.
+
+
+- **FN09 직접승인 수신·구현 재개**: 신산님이직접질문call_ecd59c3833a144098f6830a55ecaa65c/0에‘위 범위 코드·화면·미적용 SQL 구현 승인’으로응답했다. WI73DD668F허용18의defineProjectRole/bindResponsibleSession미연결guard→기존일회승인검증/소비연결이며DENY·현재로그인/제어·정확명령/기한/일회소비를유지하고prepareExecution/reviewUnderstanding는계속차단한다. 실제DB적용·정책/권한부여·서비스·Secret·Agent제외다. Main은새직접승인을같은단일writer에게전달해해당서버/0049pending후속구현을GO했고재승인대기해소·Main제품수정0·전체목표active다.
+
+
+- **FN09 직접승인 이후 patch 순서 안전 보정**: 새승인후미연결guard1행을먼저분리하려던patch도쓰기전거절됐지만이번사유는승인부재가아니라검증·소비연결보다guard제거가선행하는중간보안약화였다. Main은재승인질문없이안전대안으로기존미연결guard를유지한채정확두연산의입력/대상·원명령·소비/영수증·원장검증을먼저보강하고,그경로의독립대조후마지막에guard를연결하도록순서를변경했다. 같은위험명령재시도/우회0·제품쓰기아직0,직접승인73DD668F범위불변·UI/시험계속·Main제품수정0이다.
+
+
+- **다음 실제 미구현 기능 읽기 대조**: 독립next_plan_unit_readonly는FN16/UI14의saveBackupPolicy→createBackup→job/manifest재조회를기존계획상실제누락으로확인했다. 현재반출은문서BODY/첨부1개이며보호대상·키·보존/검사ref resolver/전체자료collector·DB/파일일관기준·policy/job저장은미구현이다. P02최초수동/자동삭제OFF와기존filemanifest/bundle/검증엔진은재사용하되반출root/용량상수/DPAPI를백업정책으로자동채택하지않는다. 상세계약결정공백을PMO에전달했고조회분석만수행·새DTO/schema/수치/실자원변경0이다. 현FN09는승인검증보강부터개별patch가허용돼같은writer구현중·기존미연결guard는검증완결전유지한다. 미구현을추후시험으로숨기지않고전체계획미완료를유지한다.
+
+
+- **FN09 검증 보강 초안 독립 검수**: Main 80be53에서 서버 3개와 미적용 SQL 0049의 지문 820FA080/87DF4E44/F42F8CCF/9AE757B3 및 diff check0을 확인했다. 독립 검수는 전체 대상·원명령·당시 정책·소비·영수증/감사, 역할/최초 세션/후속 결박의 카디널리티와 async 호출, 기존 SQL wrapper/현재성/false 조건 보존을 읽고 C0/I0/M0로 판정했다. 실제 SQL·DB 검증은 NOT_RUN이다. Main은 동일 담당에게 준비된 검증 경로로 마지막 guard/transaction payload를 연결하도록 GO했다. 외부 실행 준비 두 연산의 차단과 실제 DB/정책부여/서비스/Agent 제외는 유지한다. UI도 같은 담당이 계속 구현하며 Main 제품 수정0이다.
+
+
+- **FN09 기존 화면시험 수집 오류 분리**: 담당의 responsible-session-screen.test.ts 실행은 기존 ClaimUnderstandingHistory.tsx의 Node ERR_UNKNOWN_FILE_EXTENSION에서 수집 실패했다. Main20d826은 이 import가 HEAD658951cc에도 존재함을 확인했다. 이는 현재 제품 변경으로 확정한 회귀가 아니며 직접 승인 exact18 밖의 기존 시험 loader를 임의 수정하지 않는다. 원 FAIL과 미실행 항목을 보존하고 신규 actual App 검증에서 영향받는 원명령 미확인·다른 주체 비노출을 확인한다. 전체 Stage 검증 충족/병합으로 승격하지 않는다. 서버 신규 소비5/입력3·기존13 PASS는 담당 제출 증거이며 Main fresh와 구분한다. 실제 DB/서비스/Agent0·Main 제품 수정0이다.
+
+
+- **FN09 승인 연결 Main fresh·최종 서버 재검수**: Main718c7c는 신규 소비/입력·기존 책임세션/웹·신규 UI승인 API·공유 FN11/FN05/FN10/한도정책의 직접 인접 9파일을 실행해 77 PASS1474.1485ms/skip0을 확인했다. be3e66 지문은 최종 access6C35A722/responsible3AA13069/helper42EC0C22/API EF7A791F/UI시험131FAEA8/소비시험650909D8이다. 독립 최종 서버 delta는 C0/I0이며 기존 현재성→정확 authorize→tx-local payload→receipt/소비 순서와 실행 준비 차단을 확인했다. SQL9AE757B3는 정적 판정만이며 실제 compile/DML/COMMIT/RLS/경합 NOT_RUN이다. UI/App/spec은 담당이 마무리 중이고 별도 독립 UI읽기검수를 병행한다. 기존 화면시험 수집FAIL은 보존·실DB/서비스/Agent0·전체계획 미완료다.
+
+
+- **FN09 실제 App 첫 실행 실패·시험 절차 보정**: 03fd90에서 등록 QA 부재/부모 SINSAN\cyhuh·nonlink/시험7374A8C3를 확인했다. da9e21은02:14:00.632Z 생성·456모듈330ms·JS5FD150D886794C1219CA0974B57D01DB629DF0939E3436BF7C5BF4F8D5490621로 실행했다. b4a500 첫 FLOW는 책임 세션 입력 준비 locator 미표시에서30초 FAIL/8 NOT_RUN이다. Main8e822b/278bd3는 실제 DOM과 AssignmentContentDecision52의 confirmed 조건을 대조해 최초 확정 저장 후 기존 확정 원본 재조회가 빠진 시험 절차임을 확인했다. 제품 변경 없이 spec에 명시 조회만 보강하도록 같은 담당에게 지시·timeout/기대 완화0이다. 45b890은 소유/link/경로/process0 확인 후 등록40항목을02:15:49.968Z 정리했고152d50 별도 부재를 확인했다. 담당 configFile 메모리build의 임시파일 EPERM1회와 configFile:false 후속 성공은 Main 실제 빌드와 구분한다. 실DB/서비스/Agent0·원실패 보존·전체완료 아님.
+
+
+- **FN09 실제 빈 화면 I1 확정·국소 보정 배정**: 두번째118ea8 QA02:17:06.127Z/JS5FD150D8 불변의0b08f9는 승인 요청 준비에서30초FAIL/8 NOT_RUN, 실제 screenshot가 빈 화면이며 DOM snapshot도 없었다. ca900a는40항목02:19:55.554Z 회수·f13529 부재다. 신규 진단 spec0F6351CA의 FLOW1건만412e4f에서02:21:19.583Z 재현했고 pageerror ‘undefined is not valid JSON’/JSON.parse→ordered→App updater를 확인·6b0cd2 exit1/1FAIL이다. 독립 검수는 기존 C0/I0를 C0/I1 OPTIONAL_UNDEFINED_IN_ORDERED_BUFFER로 정정했다. 전송전 savedReceipt:undefined·성공/종결 responsibleApproval:undefined own-key가 전체 buffer CAS의 ordered와 충돌한다. Main은 같은 담당에게 해당 허용 경로에서 own-key를 만들지 않거나 명시 제거하는 국소 보정과 신규 RED→GREEN을 지시했다. 공통 ordered/권한/timeout 변경0·서버/SQL 불변이다. a0c5d9는 진단QA40항목02:22:09.815Z 정리·954c40 별도 부재를 확인했다. 원 실패/실제 미검증을 보존·전체 완료로 승격0이다.
+
+
+- **FN09 I1 보정 검증·정상 승인 FLOW 통과**: 담당은 종결 반환의 own-key 직렬화 실제 RED4aface→GREEN3255e1 후 허용3경로만 보정했다. Main d652da 직접 인접25 PASS305.7762ms/skip0과 독립 원I1 ADDRESSED·새C0/I0를 확인했다. 신규 helper9B404400/Workspace0E175A7E/UIunitE8F74FAB이며 서버/SQL은 불변이다. 084360 새 QA02:24:28.729Z·456모듈324ms/JS A5F6F218A69B127CB2F59DFBDC2C49226DD713900275E226582405573DF1EC97에서 FLOW(총괄/단계/첫 예약/후속 결박 각 독립 승인)1 PASS, AUTO_NULL은 n=2 후보옵션 부재로30초 FAIL/후속7 NOT_RUN·전체37.2s였다. Main2bae19는 실제 DOM 기본옵션만 존재·listCandidates가 명시 현재 역할/예약 조회에서만 실행됨을 확인해, AUTO 시험에서 후보 선택 전 기존 조회를 명시하도록 spec만 보정했다. FLOW 통과를 반복하지 않고 남은8개만 검증한다. 985715는41항목02:25:58.454Z 소유/link/path/process0 후 정리·e78e70 별도 부재다. 원 실패·실DB/served 미검증·전체 미완료를 유지한다.
+
+
+- **FN09 후속8 PASS·늦은 응답 검증 보강**: d6dfaf는 신규 QA02:27:19.863Z/JS A5F6F218 불변으로 이미 통과한 FLOW를 제외했다. 251dfc는 AUTO_NULL/LOST_REQUEST/LOST_WRITE/GET_FAIL/REJECTED/REVOKED_POLICY/UNKNOWN412/LEAVE_INFLIGHT 8 PASS18.9s/exit0이다. 05b304에서 소유/link/경로/process0 대조 후36항목02:28:17.732Z 정리·최종type/diff0, b600c3 별도 부재를 확인했다. 독립 최종 spec검수는 LEAVE의 release 직후 종료가 실제 늦은 응답 처리 후 관측을 기다리지 않는 C0/I1 검증 공백을 확인했다. 제품 결함으로 확정한 것은 아니며 기존8 PASS가 늦은 응답 후 보호까지 증명한다고 주장하지 않는다. 같은 담당에게 정확 첫 Request의 응답/finished와 브라우저 렌더 경계 뒤 원명령/UNKNOWN·저장0 재검사를 보강하도록 지시했다. 제품 불변·고정sleep/timeout완화0·후속은 해당1모드만 실행하고 이미 통과한 나머지는 반복하지 않는다.
+
+
+- **FN09 소스 통합 준비·검증 공백 해소**: bba002의 최종 LEAVE1 PASS3.4s는 실제 첫 응답 완료/렌더 뒤 원명령·UNKNOWN·입력·정확 재전송2·저장0을 확인했다. 독립 검증 I1 ADDRESSED/새C0/I0, 제품 A5F6F218 불변·spec7CED6266이다. 2e5661 최종type/diff0·등록QA36항목02:32:44.952Z 소유/link/경로/process0 뒤 회수·3b744d 별도 부재를 확인했다. Mainc09ee5는 승인 허용18 중 실제 변경17만 stage하고 원문/index를 EXACT7·CRLF→LF만10으로 대조했다. manifest C5E2372910A02A49CBB5026BBD6A3F1C5F6377602CEF43E44A78B40252D746E3에 양쪽 지문·보호8/불변 허용1을 보존했다. 소유 결과서/계획/현황과 WI/manifest 정확5문서를 더해 소스17+문서5=22 checkpoint/private 게시를 검토한다. 기존 화면시험 수집FAIL·실SQL/정식DB/서비스·Agent/인수 NOT_RUN과 전체 미완료는 유지한다. 다음은 이 화면시험의 기존 TSX 수집 경로를 최소 범위로 보완해 직접 영향 회귀 공백을 닫고, 별도 실제 미구현 FN16의 계약 공백은 PMO 결정/지원과 분리해 구체화한다. Main 제품 수정0·추가 코드 writer0이다.

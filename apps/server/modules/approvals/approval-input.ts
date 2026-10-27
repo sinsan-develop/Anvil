@@ -4,6 +4,7 @@ import type{VersionRef}from'../../../../contracts/generated-types.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{readDocumentSourceLinkInput}from'../documents/document-source-link-history.ts';
+import{readProjectRole,readResponsibleSessionBinding}from'../assignments/responsible-sessions.ts';
 
 export interface ApprovalScope{operation:string;targetRef:VersionRef|null;expectedVersion:number;payloadHash:string;baselineRefs:never[];environmentRef:null;sourceScopes:never[];limitsRef:null;requestedSubjectRef:{kind:'HUMAN';userId:string;clientId:string};controlGeneration:number}
 export interface ApprovalDetails{reason:string;risks:{data:string;security:string;cost:string;interruption:string;unverified:string};rollback:{method:string;limitations:string;evidenceRefs:never[]};expiresAt:string;actionScope:ApprovalScope;candidateCommandId:string}
@@ -20,7 +21,7 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
  const s=value.actionScope;
  if(!exact(s,['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])||typeof s.operation!=='string'||!context.allowedOperations.includes(s.operation)||!Number.isSafeInteger(s.expectedVersion)||s.expectedVersion<0||!hash(s.payloadHash)||!Array.isArray(s.baselineRefs)||!Array.isArray(s.sourceScopes)||!exact(s.requestedSubjectRef,['kind','userId','clientId'])||s.requestedSubjectRef.kind!=='HUMAN'||s.requestedSubjectRef.userId!==context.actorId||s.requestedSubjectRef.clientId!==context.clientId||!Number.isSafeInteger(s.controlGeneration)||s.controlGeneration<1||s.controlGeneration!==context.controlGeneration||(s.targetRef===null?s.expectedVersion!==0:!isVersionRef(s.targetRef)||s.targetRef.version!==s.expectedVersion))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(value.rollback.evidenceRefs.length||s.baselineRefs.length||s.environmentRef!==null||s.sourceScopes.length||s.limitsRef!==null)throw new AuthFailure('APPROVAL_REFERENCE_NOT_CONNECTED',412);
- if(['exportProject','buildTaskContext','startStage'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(['exportProject','buildTaskContext','startStage','defineProjectRole'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='revokeLimitPolicy'&&s.targetRef===null)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='detachDocumentSource'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDetails;
@@ -28,6 +29,12 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
 /** 주체/기기·기준세대와 exact 후보만 대조한다. 승인 여부/만료 검사를 대체하지 않는다. */
 export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand,actorId:string,projectId:string){
  const s=details.actionScope;
+ if(['defineProjectRole','bindResponsibleSession'].includes(s.operation)){
+  let target=null;
+  try{if(s.operation==='defineProjectRole')readProjectRole(c.payload);else target=readResponsibleSessionBinding(c.payload).existingSessionBindingRef;}
+  catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
+  if(canonicalJson(s.targetRef)!==canonicalJson(target))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+ }
  if(['exportProject','buildTaskContext','startStage'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='detachDocumentSource'){
   let payload;try{payload=readDocumentSourceLinkInput('detachDocumentSource',c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}

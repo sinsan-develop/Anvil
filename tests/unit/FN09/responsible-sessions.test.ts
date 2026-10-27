@@ -77,8 +77,10 @@ function storeFixture() {
     if (sql.startsWith('SELECT p.id,p.archived_at,m.participation')) return { rows: p[0] === pid ? [{ id: pid, participation: 'OWNER' }] : [] };
     if (sql.startsWith('SELECT transaction_timestamp')) return { rows: [{ at: new Date('2026-10-19T01:00:00.000Z') }] };
     if (sql.startsWith('SELECT head_version FROM anvil.connection_candidates')) return { rows: [{ head_version: connection.headVersion }] };
-    if (sql.startsWith('INSERT INTO anvil.commands')) { commands.set(p[0], { result_ref: JSON.parse(p[14]), operation: p[4], state: 'APPLIED', expected_version: p[10], command_actor: p[2], command_client: p[3] }); return { rows: [] }; }
-    if (sql.startsWith('INSERT INTO anvil.authorization_receipts') || sql.startsWith('INSERT INTO anvil.audit_events') || sql.startsWith('SELECT set_config')) return { rows: [] };
+    if (sql.startsWith('INSERT INTO anvil.commands')) { commands.set(p[0], { server_command_id:p[0],operation_id:p[7],authorization_receipt_id:p[8],approval_consumption_id:p[9],policy_ref:JSON.parse(p[12]),payload_ref:p[13]===null?null:JSON.parse(p[13]),request_hash:p[6],command_key:p[5],control_generation:p[11],receipt_rows:[],audit_rows:[],approval_rows:[],result_ref: JSON.parse(p[14]), operation: p[4], state: 'APPLIED', expected_version: p[10], command_actor: p[2], command_client: p[3] }); return { rows: [] }; }
+    if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){commands.get(p[2]).receipt_rows.push({id:p[0],scope_kind:'PROJECT',scope_id:p[1],command_id:p[2],subject_ref:JSON.parse(p[3]),policy_ref:JSON.parse(p[4]),scope_digest:p[5],approval_decision_ref:p[6]});return{rows:[]};}
+    if(sql.startsWith('INSERT INTO anvil.audit_events')){commands.get(p[4]).audit_rows.push({project_id:p[0],actor_ref:JSON.parse(p[2]),client_ref:p[3],command_id:p[4],operation_id:p[5],target_ref:JSON.parse(p[6]),policy_ref:JSON.parse(p[7]),approval_ref:p[8]===null?null:JSON.parse(p[8]),scope_digest:p[10],outcome:'APPLIED',source_kind:'HUMAN_COMMAND'});return{rows:[]};}
+    if (sql.startsWith('SELECT set_config')) return { rows: [] };
     if (sql.startsWith('INSERT INTO anvil.project_roles')) { roles.push({ project_id: p[0], role_id: p[1], version: p[2], content_hash: p[3], snapshot_json: JSON.parse(p[4]), created_by: p[5], client_id: p[6], command_id: p[7] }); return { rows: [] }; }
     if (sql.startsWith('INSERT INTO anvil.agent_sessions')) { sessions.push({ project_id: p[0], session_id: p[1], version: p[2], content_hash: p[3], snapshot_json: JSON.parse(p[4]), created_by: p[5], client_id: p[6], command_id: p[7] }); return { rows: [] }; }
     if (sql.startsWith('INSERT INTO anvil.role_bindings')) { bindings.push({ project_id: p[0], binding_id: p[1], version: p[2], role_id: p[3], session_id: p[4], content_hash: p[5], snapshot_json: JSON.parse(p[6]), created_by: p[7], client_id: p[8], command_id: p[9] }); return { rows: [] }; }
@@ -196,7 +198,7 @@ test('새 비실행 명령은 명시 정책/현재 제어를 요구하고 거절
       const promise = policies.command('synthetic','synthetic',request, async () => { writes++; return { reserved: true }; });
       if (condition === 'AUTO') { assert.deepEqual(await promise, { reserved: true }); assert.equal(writes,1); }
       else if (condition === 'REPLAY') { assert.deepEqual(await promise, { original: true }); assert.equal(writes,0); }
-      else if (condition === 'APPROVAL_REQUIRED') { await assert.rejects(promise,/EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED/);assert.equal(writes,0); }
+      else if (condition === 'APPROVAL_REQUIRED') { await assert.rejects(promise,/APPROVAL_REQUIRED/);assert.equal(writes,0); }
       else { await assert.rejects(promise); assert.equal(writes,0); }
     }
   }
