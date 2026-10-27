@@ -8440,3 +8440,15 @@
 
 
 - **P03 RO 집계 준비 Main8PASS·정적 I1 해소**: Mainfa6611 동일신규8PASS2059.8609ms/상한648.5426ms로행별Bash deadline결함보완을확인했다. 99f2fc -n/defaultPrep0뒤producer stderr I1은한줄그룹차단으로보완·Main0b0abb 역대조raw동일/최종-n/type/diff0·독립I1 ADDRESSED/C0I0M0다. unitB90F8D87/집계불변이므로기존8반복0·고장주입NOT_RUN이다. shell156867EF/실행안32E9DD88의source3+WI/결과/계획/현황4=exact7 checkpoint를준비한다. 실제hostcontroller/현재image도구/PGUID/source metadata/SSH/WSL/Docker/volume/DB/서비스/Agent는NOT_RUN·NOT_EXECUTION_READY,기능완료로세지않는다. source-only준비다음은기존제어재사용가능성과최소한도/신원/정리controller를좁히며새RO효과는정확직접결정전0이다.
+
+
+- **P03 host 제어 TEST_ONLY Main RED·동일담당 GO**: 최신 source checkpoint6d584a619c457218d7b40e94e58358264270943a·보호untracked8/기존tracked clean을1fd519에서대조했다. WI C08526AAB0FC26BCFD9B00BE6195FC81A67EB044B7B1F0E3700267F773FFC729의단일담당 p03_discovery_host_control이신규unit만제출·Main e18418 fresh4FAIL/HOST_CONTROL_SOURCE_MISSING/exit1이다. 같은담당에허용source/unit/실행안3파일만GO했다. daemon info전체대신ID필드만조회·controlJSON256KiB와metadata8KiB분리·전체60초중start직전57.5초잔여기준은내부최소기술판단이다. fake전체수명·기한/소진/변조/소유·환경/마운트/외부소비자·timeout/출력/불명보존을같은실제제어경로로검증한다. 실제Docker/WSL/volume/PG/DB/Secret/서비스/PS/C#/Agent/신규record생성0·기존컴파일02승인/소비는재사용0이다. 기존provision파일명추정읽기922689의NOT_FOUND1은rg목록확인후정확provision-development.ts로바로잡은읽기오류이며제품실패아니다. Git sandbox실패는허용된정확read를승격해대조했고ACL/Git설정변경0이다. Main제품수정0·전체계획미완료,다음은담당제출검수/독립리뷰/소유checkpoint다.
+
+
+- **P03 host 독립 예비 I3·동일효과 최소 보완**: 독립읽기는deadline밖FS대기/timeout후client·pipe생존/중복JSON키허용3건을지적했다. 같은단일담당에전후deadline검사·lateIO보존/후속mutation0·기존순수parseWireJson재사용·원spawnhandleTERM최대1/stdio회수만source-only기술보완으로지시했다. 새권한/daemon/PID탐색/SIGKILL/unref/실제Docker/WSL/PG/PS/C#/Agent0·기존60초/8KiB/단발불변이다. volumeCreated는DEVELOPMENT_ENVIRONMENT역사근거확인·새실측0,created미실행helper보존은의도된정책이며실행안책임으로명시한다. Main의tsconfig.json추정읽기218c3a는NOT_FOUND1·package정본tsconfig.base.json확인으로종료·코드/설정변경0이다. 최종독립검수와Main새명시unit전까지합격/실행준비완료아니다.
+
+
+- **P03 host 최종 I1·receipt 예산 경계 RED**: Main4332ab 신규18PASS231.6903ms/fdbdb0 type·source/unit구문0·e09b90 동결3지문일치후독립C0/I1/M0는receipt await뒤최소잔여재검사누락을확인했다. 같은담당TEST_ONLY2추가후Mainf869a7 신규20중18PASS2FAIL236.0281ms/exit1(create/start mutation1!==0)로재현·동일담당round1 실제호출직전57.5초guard2곳최소보완GO다. 원기대/한도/단발·소비/created보존은불변·실제0이다. 별도읽기는Config.ExposedPorts부재가publish0보다강한추가조건임을확인했으며고정image실제EXPOSE는미실측이다. Main은image선언을preflight관측값에결박해Config와대조하는방법/실portbinding0보존의합성TEST_ONLY를먼저지시했다. 실제값추정수정/실image조회/DB·서비스/Agent실행0,소스준비를완료기능으로세지않는다.
+
+
+- **P03 host 제어 최종24 검수·통합 준비**: Main8fdda4 신규24PASS242.4678ms/skip0·a8948f type/구문0·383a12 최종sourceEA54D05C/unit7B7212AD/실행안5364283F 지문/신규공백0·독립지정범위C0/I0/M0를확인했다. receipt예산I1은가드2곳·EXPOSE선언/실게시혼동은preflight고정선언대조로최소보완·기준완화0·Main제품직접수정0이다. b4e326 보호8/소비01·02불변/컴파일QA부재,실제WSL/Docker/원volume/PG/DB/서비스/PS/C#/Agent0·새자원0이다. 결과서 P03_PG_DISCOVERY_HOST_PREPARATION_RESULT_20261027.md에정확RED/GREEN/오류/미검증/rollback을분리했다. 기존branch에소유source3+WI/결과/현황정확6 checkpoint/private게시후실행효과·bootstrap미진을대조한다. source준비단위검수와실제실행준비/기능완료는별개·전체미완료유지다.
