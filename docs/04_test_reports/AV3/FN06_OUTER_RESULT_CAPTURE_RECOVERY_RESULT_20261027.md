@@ -37,3 +37,9 @@ HANDOFF 조기회신은 현재stderr0과stderrEOF를 별도 enum으로 구분하
 
 신규collector의실제PS/컴파일/apply 통합은 NOT_RUN. 원02 소비/승인은변경·재사용하지않고 새03도만들지않았다. 고정source12/tool4·PS원문·실행안·기존시험은불변이다. 원02 QA부재/소비marker보존은 원실행결과서의시점별관측을따른다.
 sourcecheckpoint/private에소유2파일과WI/결과/현황/계획을보존한다. 실제실행이필요하면정확대상·목적·승인경계를별도구체화하며원소진허가를재사용하지않는다. 전체Stage/계획완료/실Agent연결/DB·서비스복구로승격하지않는다. rollback은소유2파일후속정상revert·신규unit보존이며원native/승인/marker·기존DB/키/서비스삭제0이다.
+
+
+## Main 별도 읽기 전용 CIM 채널 진단
+
+소스검수/게시후 Main60b7bb는추가컴파일없이동일bootstrap으로현재자기PID의Win32_Process Count만읽는별도A/B진단을명시수행했다. 이는이탈했던기존PS시험재실행과다른새읽기진단이며pwsh2회를사용했다. 기본progress와프로세스내ProgressPreference=SilentlyContinue 두모드모두exit0/stdout47bytes/유효READONLY_CIM_PROBE/selfCount1/stderr0/CLIXMLfalse였다. 원문·사설경로출력0·코드/영구설정/DB/서비스/승인/marker/QA변경0이다.
+현재조건에서CIM 안내출력혼합가설은재현되지않았다. 과거첫모듈사용/환경차이가능성까지부정하거나원02원인을확정하지않으며, ProgressPreference제품변경은하지않았다. 컴파일/apply/native/Agent는실행하지않았다. 이유없는같은진단반복0이다.

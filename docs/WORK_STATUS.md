@@ -8428,3 +8428,6 @@
 
 
 - **FN06 outer 보존 I1 해소·Main pure11 검수**: Main5c70f5 RED1→a2251c 신규pure11PASS132.6173ms/skip0·type/diff0,독립fix-round1 I1 ADDRESSED/C0I0M0를확인했다. 외부FAIL에서도검사된보존true를유지·미관측false합성0이다. runnerF160E775/신규unit0050AEDD의허용2파일만소스변경,608fc5 PS블록raw동일/보호8불변·Main제품수정0이다. WI현재305E9FAA(전5C9B)검증문언명확화와기존PS3시험의실제5pwsh재실행이탈·추가중지/순수파일만재개·원02UNKNOWN/단발소진을결과서FN06_OUTER_RESULT_CAPTURE_RECOVERY_RESULT_20261027.md에분리했다. 읽기스크립트변수TDZ1건은변수명보정뒤읽기대조0·새PS/시험반복0. 현재source-only검수이며실제collector/컴파일/apply/OS/전체FN06/계획미검증·미완료,원승인/marker재사용0·새03후보0이다. 소유2+문서4 exact6 checkpoint/private게시를준비하며독립FN16새계약은PMO전달된직접결정을중복요청하지않고확인한다.
+
+
+- **FN06 별도CIM 채널진단·P03 RO범위 정리**: Main60b7bb는검수/게시후별도읽기전용자기PID조회 A/B의pwsh2회를명시수행했다. 기본/SilentlyContinue모두exit0/stdout47/stderr0/CLIXMLfalse로현재CIM안내출력가설은미재현·원02원인미확정유지/제품progress설정변경0이다. 이는이탈한기존PS5회와분리해결과서에누적·추가compiler/apply/QA/DB/서비스/marker0이다. 새P03_PG_RECOVERY_DISCOVERY_SCOPE_R2.md SHA6FC9A7CB0F6421944C60E7E8987DDF9579B9599F1844935381A58FC7CBE5E860는원내용/hash/PG_VERSION재조회/PGbinary실행을제외한source구조metadata최소범위후보로작성·독립범위C0I0다. 도구literal/script/argv/hash미확정·실행준비완료아님을명시했고새helper/source읽기실행0·원volume보존이다. FN16결정은기존PMO전달질문을중복하지않으며실행선행/지원계획을기능완료로세지않는다.
