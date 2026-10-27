@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
 import {test} from 'node:test';
 
-// TEST_ONLY: 이 파일은 메모리 입력/포트만 사용한다. compiler/QA/소비파일 생성은 없다.
+// TEST_ONLY: 메모리 포트 및 명시 허용된 실제 apply의 deserialize/expiry prefix만 검사한다.
+// prefix 회귀는 고정 JSON·함수 정의/현재 WindowsIdentity 읽기 이하이며 compiler/QA/소비파일 생성은 없다.
 // 실제 사용자 결정 인증은 이 순수 binding 검사나 주입 포트가 대신하지 않는다.
 const input = await import(new URL('../../../scripts/fn06-ownership-compile-only-input.ts', import.meta.url).href)
   .catch(error => { if (error.code === 'ERR_MODULE_NOT_FOUND') return {}; throw error; });
@@ -235,4 +237,33 @@ test('미결박 apply와 허가 boolean/임의 옵션은 실행/FS변경 전에 
   await assert.rejects(invoke(['--apply'], f), /OWNERSHIP_COMPILE_ONLY_/);
   assert.equal(f.calls.mutation, 0);
   assert.equal(f.calls.factory, 0);
+});
+
+test('실제 apply payload 역직렬화는 승인 ISO 문자열과 UTC 만료시각을 보존한다', () => {
+  const apply = runner.ownershipCompileOnlyWindowsScripts.apply as string;
+  // 실제 export의 prelude만 사용한다. state/배열/Process 객체 초기화와 실행 본문은 포함하지 않는다.
+  const cut = apply.indexOf('\n$state=@');
+  assert(cut > 0, '실제 apply의 state 초기화 앞 경계가 필요하다');
+  const prelude = apply.slice(0, cut);
+  const expiry = apply.match(/^\$qa=\$p\.qaRoot;\$exe=\$p\.tools\[0\]\.path;\$expires=\[datetimeoffset\]::ParseExact[^\r\n]*$/m)?.[0];
+  assert(expiry, '실제 apply의 원 expiry 해석문이 필요하다');
+  assert.equal(prelude.includes("$state=@"), false);
+  assert.equal(prelude.includes('[Diagnostics.Process]'), false);
+  // 합성 고정 JSON이다. 결정 파일을 읽거나 시간창/허가/소비기록을 만들지 않는다.
+  const literalJson = '{"qaRoot":"D:/Project/Anvil/.av3-data/fn06-ownership-compile-20261027-01","tools":[{"path":"C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe"}],"decision":{"approvedAt":"2026-10-27T05:02:17.000Z","expiresAt":"2026-10-27T05:32:17.000Z"}}';
+  const script = prelude.replace('__PAYLOAD__', Buffer.from(literalJson, 'utf8').toString('base64')) + '\n' + expiry + String.raw`
+@{approvedType=$p.decision.approvedAt.GetType().FullName;expiresType=$p.decision.expiresAt.GetType().FullName;approvedValue=$p.decision.approvedAt;expiresValue=$p.decision.expiresAt;expiresUtc=$expires.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')}|ConvertTo-Json -Compress
+`;
+  const result = spawnSync('C:/Program Files/PowerShell/7/pwsh.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+    windowsHide: true, shell: false, encoding: 'utf8', timeout: 5000, maxBuffer: 16384,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.signal, null);
+  assert.equal(result.status, 0, '실제 deserialize/expiry prefix는 compiler/FS 없이 해석돼야 한다: ' + result.stderr);
+  assert.equal(result.stderr.trim(), '');
+  assert.deepEqual(JSON.parse(result.stdout), {
+    approvedType: 'System.String', expiresType: 'System.String',
+    approvedValue: '2026-10-27T05:02:17.000Z', expiresValue: '2026-10-27T05:32:17.000Z',
+    expiresUtc: '2026-10-27T05:32:17.000Z',
+  });
 });

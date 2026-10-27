@@ -37,7 +37,7 @@ const powershell = 'C:/Program Files/PowerShell/7/pwsh.exe';
 const bootstrap = String.raw`$ErrorActionPreference='Stop';$stream=[Console]::OpenStandardInput();$buffer=[byte[]]::new(65536);$length=0;try{while($true){if($length -eq $buffer.Length){if($stream.ReadByte() -ne -1){throw 'OWNERSHIP_COMPILE_ONLY_SCRIPT_TOO_LARGE'};break};$read=$stream.Read($buffer,$length,$buffer.Length-$length);if(!$read){break};$length+=$read};$text=[Text.UTF8Encoding]::new($false,$true).GetString($buffer,0,$length);& ([scriptblock]::Create($text))}finally{[Array]::Clear($buffer,0,$buffer.Length);$stream.Dispose()}`;
 const psPrelude = String.raw`
 $ErrorActionPreference='Stop'
-$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__PAYLOAD__'))|ConvertFrom-Json -AsHashtable
+$p=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('__PAYLOAD__'))|ConvertFrom-Json -AsHashtable -DateKind String
 if(!$IsWindows){throw 'OWNERSHIP_COMPILE_ONLY_WINDOWS_REQUIRED'}
 $owner='SINSAN\cyhuh';$sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 if([Security.Principal.WindowsIdentity]::GetCurrent().Name -cne $owner){throw 'OWNERSHIP_COMPILE_ONLY_OWNER_UNVERIFIED'}

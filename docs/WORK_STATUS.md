@@ -8374,3 +8374,15 @@
 
 
 - **FN06 compile-only 준비 Main 검수·통합 준비**: 단일담당허용4파일동결·Maindc48fc 순수9PASS156.2842ms/type/Node구문0·d0460f PS문자열ASTparse0·QA/marker/직접승인JSON부재를확인했다. payload본문/실제plan/apply/compiler/native/Agent/DB/Secret/서비스는미실행이다. 독립Important2는read완료뒤zero/dispose·불명인수facts/원핸들종료한계로ADDRESSED·최종C0/I0다. 실제빠른종료/pipe취소/OS정리경합·outertimeout은미검증/UNKNOWN이며수명/완전소거를보장하지않는다. 결과서 FN06_OWNERSHIP_COMPILE_ONLY_PREPARATION_RESULT_20261027.md에정확증거/지문/새실행결정경계를기록하고소유9경로로기존branch checkpoint/private게시한다. 이준비는실제Agent연결/전체FN06/Stage/계획완료가아니다. 이후read-onlyplanmetadata와새직접실행승인을분리하고옛D1/D2허가를재사용하지않는다.
+
+
+- **FN06 준비 게시·읽기전용plan·새직접결정 대기**: 55442b의a8a1c17bfd300fcac05d9cbdfc175bfd5b9f98d2는준비정확9경로/978481원문indexEXACT9·native12/보호8불변이다. 14ee6e private/local exact·mainf976불변을확인했다. 290d64의실제--plan은2026-10-27T04:47:01.044Z PLAN_ONLY/argv27·actualHEADa8a1·input4748D7A3/runner92BA1A25/manifestD6DE65F1 binding을반환했고executionAuthorized/externalUserApprovalVerified=false다. 이는읽기metadata payload만실행한것으로apply/compiler/QA/소비/승인JSON생성0이다. b70c6c QA/marker부재,1acd45 원D1패킷§1.1의C#compile명시제외를직접대조했다. PMO한정재개가FN06실행을포함하지않으므로신산님께동결실행안SHA38ACE796·게시H/a8a1의compile1회만비동기로정확질문했다. 답변전실행결정JSON/시간창/소비기록을만들지않고최신코드/지문을보존한다. 실제컴파일만의대기이며FN16정확계약/PG보존복구실행안의지원준비는계속한다. 이현황append는소유미커밋기록이며게시코드H는변경하지않았다.
+
+
+- **FN06 compile-only 새 직접승인·사전등록**: 신산님 call_ed1ed8eac53848b68e70c595604a2fdc의정확질문에‘위 범위 컴파일 1회 승인’을수신했다. Main66dae8은게시a8a1c17b·input4748D7A3/runner92BA1A25/manifestD6DE65F1/실행안38ACE796일치·QA/소비/결정파일부재·기존보호8을확인했다. 승인수신관측UTC2026-10-27T05:02:17.000Z~2026-10-27T05:32:17.000Z 30분·고정native12/library1회/compiler15초/진단16KiB·DLL실행load/Agent/Job/PInvoke/키/DB/서비스0이다. 전용QA .av3-data/fn06-ownership-compile-20261027-01 및단발소비marker만생성대상이고확인소유만정리·불명보존/보고한다. 직접승인원문은Main이외부대조했고내부결정JSON은그사실을암호학적으로인증하지않는다. 새정확결정기록을생성했으나아직compiler/QA/consumed는0이며이후플랫폼심사로단1회실행한다.
+
+
+- **FN06 승인 실행 wrapper 결과불명·새 파서 회귀 RED**: 9e45c6 apply는OUTER_RESULT_UNKNOWN/exit1로끝났고actual재실행0이다. 936734 읽기에서QA/소비marker부재·등록QA참조csc0,ed1d05 actualcode에서expiryParse가marker/csc시작보다앞임을확인했다. 50d3f3 literal재현은pwsh7.6.9의JSON ISO→System.DateTime 자동변환이ParseExact를실패시키고DateKindString에서는성공함을확인했다. 기존wrapper의원PS오류문자열을복구한것은아니며원UNKNOWN은보존한다. Maind24379는실제exportedprefix를쓴신규회귀1FAIL/skip0/1108.7981ms로동일Format실패를확인했다. Main은같은담당에게의도한문자열/시간범위를보존하는국소parserfix만GO했다. 실제compiler/QA/결정/소비재실행수정0·native12/args/한도/원승인창불변이다. 이전현황append는자동심사가중복으로거절했으나a0893a 실제양쪽파일읽기는9e45c6/50d3f3/이실패marker가모두없음을확인했다. 이번쓰기직전동일marker존재시중단하는중복방지guard로새사실을1회만기록한다. PMO예외보고는전달됐으며검사완화/우회/새실행권한발급0이다.
+
+
+- **FN06 날짜 파서 국소 보완 검수**: Maind24379 actualprefix회귀RED1→ac863a GREEN1/1041.5767ms/type구문0·독립C0/I0,runner는DateKindString한줄만/원바이트역대조일치·기존unit9보존이다. native12/tool4/input/manifest/실행안·argv/root/한도/원시간창불변·compiler미사용근거를RECONFIRMATION.md에기록했다. 실제재실행은새sourcecheckpoint/privateexact와부모직접승인의동일효과범위·플랫폼대조전0이며원OUTERUNKNOWN은소급PASS하지않는다. 원결정JSON은현시점변경하지않고Git에부모원문으로보존한다.
