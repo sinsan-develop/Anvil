@@ -329,49 +329,124 @@ function readDecisionFile(path: string): unknown {
   } catch { return compileOnlyFail('DECISION_UNAVAILABLE'); }
 }
 
-/** 외부 PS 결과도 bounded 수집한다. outer timeout은 compiler tree를 광역 종료하지 않고 UNKNOWN으로 보고한다. */
+type OuterPipe = {on(event: string, callback: (...args: any[]) => void): unknown; destroy(): unknown};
+type OuterChild = {pid?: unknown; stdout: OuterPipe; stderr: OuterPipe; stdin: OuterPipe; on(event: string, callback: (...args: any[]) => void): unknown; unref(): unknown};
+type OuterClock = {now(): string; setTimeout(callback: () => void, ms: number): unknown; clearTimeout(handle: any): void};
+const outerClock: OuterClock = {now: () => new Date().toISOString(), setTimeout, clearTimeout};
+const outerStatuses = new Set(['PASS_COMPILE_ONLY', 'FAIL_COMPILE_ONLY', 'HANDOFF_REQUIRED']);
+const outerSourceNames = new Set(['OwnershipEvidenceHost.cs', 'OwnershipEvidenceImageBindingSource.cs', 'OwnershipEvidenceImageOwnerSource.cs', 'OwnershipEvidenceJobAssignmentSource.cs', 'OwnershipEvidenceJobFactorySource.cs', 'OwnershipEvidencePreparationInputSource.cs', 'OwnershipEvidencePreparedFactsSource.cs', 'OwnershipEvidenceProcessOwnerSource.cs', 'OwnershipEvidenceProcessStartupSource.cs', 'OwnershipEvidenceRootSource.cs', 'OwnershipEvidenceWorker.cs', 'OwnershipEvidenceWorkerInputSource.cs']);
+const integer = (value: unknown, min: number, max: number): value is number => Number.isSafeInteger(value) && (value as number) >= min && (value as number) <= max;
+const outerCode = (value: unknown) => typeof value === 'string' && /^OWNERSHIP_COMPILE_ONLY_[A-Z_]{1,100}$/.test(value) ? value : null;
+const object = (value: any) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const hostIdentity = (value: any) => object(value) && Object.keys(value).length === 3 && integer(value.pid, 1, 0xFFFFFFFF) && typeof value.startTicks === 'string' && /^\d{1,19}$/.test(value.startTicks) && value.exe === powershell;
+
+/** 원문 객체를 반환하지 않고 필요한 관측만 복사한다. 이 값은 정리/중단 신원 proof가 아니다. */
+function outerInnerEvidence(value: any) {
+  const safe: any = {status: value.status, externalUserApprovalVerified: false};
+  for (const key of ['processStarted', 'oneUseConsumed', 'qaCreated', 'qaRootAbsent', 'actualCompilerExecuted', 'dllLoaded', 'handoffRequired', 'stopIdentityChecked', 'stopRequested', 'memoryCleanupComplete', 'originalHandleTransferable', 'hostExitReleasesOriginalHandle', 'maximumLifetimeGuaranteed']) if (typeof value[key] === 'boolean') safe[key] = value[key];
+  for (const key of ['failure', 'cleanupFailure']) if (value[key] === null || outerCode(value[key])) safe[key] = outerCode(value[key]);
+  if (value.exitCode === null || integer(value.exitCode, -0x80000000, 0x7FFFFFFF)) safe.exitCode = value.exitCode;
+  if (['PREFLIGHT', 'CAPTURE', 'VERIFY', 'CLEANUP', 'PRESERVED_ORIGINAL_HANDLE'].includes(value.phase)) safe.phase = value.phase;
+  if (['NOT_REQUESTED', 'IDENTITY_OR_CHILD_UNKNOWN', 'REQUESTED_EXIT_UNCONFIRMED', 'EXIT_OBSERVED'].includes(value.stopOutcome)) safe.stopOutcome = value.stopOutcome;
+  if (value.qaCleanup === 'NOT_CLEANED') safe.qaCleanup = 'NOT_CLEANED';
+  if (hostIdentity(value.hostIdentity)) safe.hostIdentity = {pid: value.hostIdentity.pid, startTicks: value.hostIdentity.startTicks, exe: powershell};
+  for (const key of ['nativeFunctionsInvoked', 'actualAgentCalls', 'databaseWrites', 'serviceChanges']) if (integer(value[key], 0, 0x7FFFFFFF)) safe[key] = value[key];
+  const knownExe = 'C:/Windows/Microsoft.NET/Framework64/v4.0.30319/csc.exe';
+  if (object(value.compilerIdentity)) {
+    const identity = value.compilerIdentity, copy: any = {};
+    if (integer(identity.pid, 1, 0xFFFFFFFF)) copy.pid = identity.pid;
+    if (identity.startTicks === null || (typeof identity.startTicks === 'string' && /^\d{1,19}$/.test(identity.startTicks))) copy.startTicks = identity.startTicks;
+    for (const key of ['expectedExe', 'observedExe']) if (identity[key] === null || identity[key] === knownExe) copy[key] = identity[key];
+    for (const key of ['exeObserved', 'hasExitedAtImageObservation']) if (identity[key] === null || typeof identity[key] === 'boolean') copy[key] = identity[key];
+    for (const key of ['imageErrorType', 'startErrorType']) if ([null, 'IMAGE_OBSERVATION_FAILED', 'Win32Exception', 'InvalidOperationException', 'START_OBSERVATION_FAILED'].includes(identity[key])) copy[key] = identity[key];
+    if (identity.imageErrorCode === null || integer(identity.imageErrorCode, -0x80000000, 0x7FFFFFFF)) copy.imageErrorCode = identity.imageErrorCode;
+    safe.compilerIdentity = copy;
+  }
+  if (object(value.capture)) {
+    const copy: any = {};
+    for (const key of ['combinedCapturedBytes', 'stdoutCapturedBytes', 'stderrCapturedBytes']) if (integer(value.capture[key], 0, 16384)) copy[key] = value.capture[key];
+    for (const key of ['stdoutEof', 'stderrEof', 'limitHit', 'timedOut', 'exitObserved', 'managedBufferClearAttempted']) if (typeof value.capture[key] === 'boolean') copy[key] = value.capture[key];
+    copy.memoryErasureGuaranteed = false;
+    for (const key of ['stdoutSha256', 'stderrSha256']) if (typeof value.capture[key] === 'string' && /^[0-9A-F]{64}$/.test(value.capture[key])) copy[key] = value.capture[key];
+    safe.capture = copy;
+  }
+  for (const [key, fields] of [['finalization', ['outReadSettled', 'errReadSettled', 'processExited', 'readsSettled', 'canClearBuffers', 'canDisposeProcess', 'handoffRequired']], ['retainedUntilHostExit', ['originalProcessObject', 'pendingReadTasks', 'sharedReadBuffers']]] as const) {
+    if (object(value[key])) { const copy: any = {}; for (const field of fields) if (typeof value[key][field] === 'boolean') copy[field] = value[key][field]; safe[key] = copy; }
+  }
+  if (object(value.output) && value.output.path === fixed.output && integer(value.output.bytes, 1, Number.MAX_SAFE_INTEGER) && typeof value.output.sha256 === 'string' && /^[0-9A-F]{64}$/.test(value.output.sha256)) safe.output = {path: fixed.output, bytes: value.output.bytes, sha256: value.output.sha256};
+  if (Array.isArray(value.diagnostics)) safe.diagnostics = value.diagnostics.slice(0, 128).filter((d: any) => object(d) && typeof d.code === 'string' && /^CS\d{4}$/.test(d.code)).map((d: any) => ({code: d.code, source: outerSourceNames.has(d.source) ? d.source : null, line: integer(d.line, 1, 9999999) ? d.line : null, column: integer(d.column, 1, 9999999) ? d.column : null}));
+  return safe;
+}
+
+/** 명시적으로 받은 원 child의 event만 수집한다. spawn/OS 조회/kill 권한을 만들지 않는다. */
+export function collectOwnershipCompileOnlyResult(child: OuterChild, clock: OuterClock = outerClock): Promise<any> {
+  return new Promise(accept => {
+    const stdout: Buffer[] = [], stderr: Buffer[] = [];
+    let stdoutBytes = 0, stderrBytes = 0, overflow = false, done = false, stderrEof = false, streamError = false;
+    let spawnError: string | null = null, stdinError: string | null = null, timer: unknown;
+    const errorKind = (error: unknown) => {
+      const code = error && typeof error === 'object' ? Object.getOwnPropertyDescriptor(error, 'code')?.value : null;
+      return ['ENOENT', 'EACCES', 'EPERM', 'EPIPE', 'ECONNRESET'].includes(code) ? code as string : 'OTHER';
+    };
+    const parse = () => {
+      if (overflow) return {stage: 'NOT_PARSED', value: null};
+      const raw = Buffer.concat(stdout);
+      try {
+        const text = raw.toString('utf8'); if (!text.trim()) return {stage: 'EMPTY_STDOUT', value: null};
+        let value: any; try { value = JSON.parse(text); } catch { return {stage: 'INVALID_JSON', value: null}; }
+        if (!object(value) || !outerStatuses.has(value.status) || (value.externalUserApprovalVerified !== undefined && value.externalUserApprovalVerified !== false) || (value.status === 'HANDOFF_REQUIRED' ? value.handoffRequired !== true || !hostIdentity(value.hostIdentity) : value.handoffRequired === true)) return {stage: 'INVALID_SHAPE', value: null};
+        return {stage: 'VALID_JSON', value};
+      } finally { raw.fill(0); }
+    };
+    const finish = (reason: string | null, closeCode: number | null = null, closeSignal: string | null = null, early = false) => {
+      if (done) return;
+      const parsed = parse(); if (early && (parsed.value?.status !== 'HANDOFF_REQUIRED' || parsed.stage !== 'VALID_JSON' || stderrBytes || overflow || streamError || spawnError || stdinError)) return;
+      done = true; if (timer !== undefined) clock.clearTimeout(timer);
+      const safe = parsed.value ? outerInnerEvidence(parsed.value) : {externalUserApprovalVerified: false};
+      const failure = reason ?? (overflow ? 'OUTER_CAPTURE_UNKNOWN' : streamError ? 'OUTER_RESULT_UNKNOWN' : stderrBytes ? 'OUTER_STDERR_PRESENT' : parsed.stage !== 'VALID_JSON' || closeSignal || closeCode === null || (parsed.value.status === 'PASS_COMPILE_ONLY' && closeCode !== 0) ? 'OUTER_RESULT_UNKNOWN' : null);
+      if (!early && failure) { safe.status = 'FAIL_COMPILE_ONLY'; safe.failure = 'OWNERSHIP_COMPILE_ONLY_' + failure; }
+      const pid = Object.getOwnPropertyDescriptor(child, 'pid')?.value, observedAt = clock.now();
+      safe.outerEvidence = {stdoutBytes, stderrBytes, combinedBytes: stdoutBytes + stderrBytes, overflow, closeCode, closeSignal,
+        parseStage: early ? stderrEof ? 'HANDOFF_STDERR_EOF' : 'HANDOFF_STDERR_OPEN' : streamError ? 'STREAM_ERROR' : parsed.stage,
+        parsedStatus: parsed.value?.status ?? null, spawnError, stdinError, childPid: integer(pid, 1, 0xFFFFFFFF) ? pid : null,
+        observedAt: typeof observedAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(observedAt) ? observedAt : null};
+      for (const buffer of [...stdout, ...stderr]) buffer.fill(0);
+      if (early || reason) {
+        for (const pipe of [child.stdout, child.stderr, child.stdin]) { try { pipe.destroy(); } catch { /* 원문 없는 종결 */ } }
+        try { child.unref(); } catch { /* 원문 없는 종결 */ }
+      }
+      accept(safe);
+    };
+    const data = (channel: 'stdout' | 'stderr', chunk: Buffer) => {
+      if (done || overflow) return;
+      if (!Buffer.isBuffer(chunk)) { streamError = true; finish('OUTER_RESULT_UNKNOWN'); return; }
+      const retain = Math.min(chunk.length, 16384 - stdoutBytes - stderrBytes);
+      if (retain) { (channel === 'stdout' ? stdout : stderr).push(Buffer.from(chunk.subarray(0, retain))); if (channel === 'stdout') stdoutBytes += retain; else stderrBytes += retain; }
+      if (retain < chunk.length) overflow = true;
+      if (channel === 'stdout' && chunk.includes(10)) finish(null, null, null, true);
+    };
+    child.stdout.on('data', chunk => data('stdout', chunk)); child.stderr.on('data', chunk => data('stderr', chunk));
+    child.stderr.on('end', () => { if (!done) stderrEof = true; });
+    for (const pipe of [child.stdout, child.stderr]) pipe.on('error', () => { if (done) return; streamError = true; finish('OUTER_RESULT_UNKNOWN'); });
+    child.on('error', error => { if (done) return; spawnError = errorKind(error); finish('OUTER_START_FAILED'); });
+    child.stdin.on('error', error => { if (done) return; stdinError = errorKind(error); finish('OUTER_STDIN_UNKNOWN'); });
+    child.on('close', (code, signal) => {
+      const closeCode = integer(code, -0x80000000, 0x7FFFFFFF) ? code : null;
+      const closeSignal = signal == null ? null : ['SIGTERM', 'SIGKILL', 'SIGINT', 'SIGBREAK', 'SIGHUP', 'SIGABRT'].includes(signal) ? signal : 'OTHER';
+      finish(null, closeCode, closeSignal);
+    });
+    timer = clock.setTimeout(() => finish('OUTER_TIMEOUT_UNKNOWN'), 60000);
+  });
+}
+
+/** 고정 spawn 진입점은 유지한다. 수집기를 먼저 붙여 stdin 실패/조기 event도 관측한다. */
 async function applyWindows(payload: unknown) {
   const script = scriptText(applyScript, payload);
   if (Buffer.byteLength(script) > 65536) return compileOnlyFail('SCRIPT_TOO_LARGE');
   const child = spawn(powershell, ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded(bootstrap)], {cwd: sourceRoot, windowsHide: true, shell: false, stdio: ['pipe', 'pipe', 'pipe']});
-  child.stdin.on('error', () => { /* 시작/종료 결과는 아래 error/close에서 판정한다. */ });
+  const result = collectOwnershipCompileOnlyResult(child);
   child.stdin.end(script);
-  return await new Promise<any>((accept, reject) => {
-    const buffers: Buffer[] = []; let bytes = 0, overflow = false, done = false;
-    const timer = setTimeout(() => {
-      if (done) return; done = true;
-      child.stdout.destroy(); child.stderr.destroy(); child.unref();
-      reject(Error('OWNERSHIP_COMPILE_ONLY_OUTER_TIMEOUT_UNKNOWN'));
-    }, 60000);
-    const data = (chunk: Buffer) => {
-      if (done || overflow) return;
-      if (bytes + chunk.length > 16384) { overflow = true; return; }
-      bytes += chunk.length; buffers.push(Buffer.from(chunk));
-      if (chunk.includes(10)) {
-        try {
-          const value = JSON.parse(Buffer.concat(buffers).toString('utf8'));
-          if (value.status === 'HANDOFF_REQUIRED' && value.handoffRequired === true && value.hostIdentity?.pid > 0) {
-            done = true; clearTimeout(timer);
-            child.stdout.destroy(); child.stderr.destroy(); child.stdin.destroy(); child.unref();
-            for (const buffer of buffers) buffer.fill(0);
-            accept(value);
-          }
-        } catch { /* 분할된 JSON은 close 또는 다음 chunk에서만 판정한다. */ }
-      }
-    };
-    child.stdout.on('data', data); child.stderr.on('data', data);
-    child.once('error', () => { if (done) return; done = true; clearTimeout(timer); reject(Error('OWNERSHIP_COMPILE_ONLY_OUTER_START_FAILED')); });
-    child.once('close', code => {
-      if (done) return; done = true; clearTimeout(timer);
-      try {
-        if (overflow) return reject(Error('OWNERSHIP_COMPILE_ONLY_OUTER_CAPTURE_UNKNOWN'));
-        const value = JSON.parse(Buffer.concat(buffers).toString('utf8'));
-        if (!value || (code !== 0 && value.status === 'PASS_COMPILE_ONLY')) return reject(Error('OWNERSHIP_COMPILE_ONLY_OUTER_RESULT_UNKNOWN'));
-        accept(value);
-      } catch { reject(Error('OWNERSHIP_COMPILE_ONLY_OUTER_RESULT_UNKNOWN')); }
-      finally { for (const buffer of buffers) buffer.fill(0); }
-    });
-  });
+  return await result;
 }
 
 function windowsPorts(): Ports {

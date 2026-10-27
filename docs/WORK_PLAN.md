@@ -1509,3 +1509,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN06 진단 수집 소스 보완**: 원 compiler1회는 소진·결과미확정으로 보존한다. 실제 apply의 진단/exit 유실 경계를 소스에서 보완하고 신규/기존 모의12·type/diff·PS AST 및 독립 C/I0만 확인했다. 새 후보02는 미승인/실행0·실컴파일/OS NOT_RUN, 전체 FN06/계획 미완료. 정확 증거는 FN06_COMPILER_DIAGNOSTIC_CAPTURE_PREPARATION_RESULT_20261027.md를 따른다.
+
+
+- **2026-10-27 FN06 outer 수집 소스 보완**: stdout/stderr 분리·유한 오류 metadata/원보존 true 유지 소스를 보완했다. Main pure11/type/diff·독립 C/I0 한정이며 실제collector/컴파일 통합 NOT_RUN, 원02 UNKNOWN/소진 보존이다. 불변PS3시험이 잘못 재실행된 범위이탈은 실제12PASS/5pwsh 호출선으로 결과서에 기록했고 NOT_RERUN으로 포장하지 않는다. 전체FN06/계획 미완료, 실제추가실행/새후보0이다.

@@ -8413,3 +8413,18 @@
 
 
 - **FN06 후보02 실제 결과불명·단발소진 기록**: 새직접승인call_49e6eb...·게시fb0f5685·plan0C8DAC94/decision51C629E9를대조했다. Main8c1f9b PLAN_ONLY0후 d7c01d→56d750 apply는OUTER_RESULT_UNKNOWN/exit1로반환됐다. Main9d650d/b5b255는QA02부재·markerBFAC30DF/consumed06:16:32.178Z·activecsc0/동시간host후보0을읽기로확인했다. marker는Start전생성이라실compiler시작/exit/diag/출력DLL은미확정이며이단발은소진/재실행0이다. 원PSstdout/stderr는회수되지않았고원인확정0·내부cleanup성공을추정PASS로만들지않는다. 실제등록QA현재없음/소비기록의도적보존·추가삭제/kill/ACL/DB/키/서비스/Agent0. exactactual결과서FN06_OWNERSHIP_COMPILE_ONLY_ACTUAL_RESULT_20261027_02.md에원문/직접승인/후속부재와미검증을분리했고동일담당read-only outer수집조사배정·추가codewrite0이다. 원모의12/C0I0는실제성공증거로승격하지않고전체미완료유지한다.
+
+
+- **FN06 외부 결과 혼합 유실 확정·source-only 회귀 배정**: 읽기조사는applyWindows가stdout/stderr를같은buffers로합쳐JSON.parse하고close code/signal/채널길이/parse분류를남기지않는소스결함을확인했다. 원02실패의실제원인은원데이터부재로미확정이며PS finally후단예외등다른경로도가능하다. 소유결과정확3은7ab9c5의3654715d813682dcb87393dde207f41a05b06c59로commit/a75879 privateexact·mainf976불변·trackedclean,독립결과문서C0/I0다. 새WI FN06_OUTER_RESULT_CAPTURE_RECOVERY_WI_20261027.md SHA5C9B5FEAE58C43A16A47EDED1B9EE7A2F07D8E3CBCAB067BDB523E74211612D8로허용runner/신규unit2경로·fakeEventEmitter/Buffer·주입timer TEST_ONLY를같은담당에배정했다. MainfreshRED전제품보완0·실제spawn/PS/FS/QA/compiler/새후보/승인/marker/DB/키/서비스/Agent0이며stderr무시PASS·합계16KiB/외부60초완화0이다. 원실패와소비는보존·전체미완료,PMO에는실행예외만전달성공하고지원범위를확대하지않았다.
+
+
+- **FN06 outer 순수회귀 RED10·소스보완 GO**: Main5a5c1d는신규fakeEventEmitter/Buffer·주입timer10개를실행해collector부재행동RED10/exit1을확인했다. 같은담당에허용runner+신규unit2경로만구현GO,원PS/captureScript/native12/input/manifest/plan/approval/marker/기존unit은불변이다. 기존12중timestamp1/PS모의2는실pwsh를시작한다는담당확인으로이번재검증에서명시NOT_RERUN·기존순수9+신규10/type/Node/diff만확인하도록명확히했다. 원PS본문bytes불변은읽기대조하며이전12PASS를새실행으로보고하지않는다. actualcompiler/PS/QA/새후보/소비/DB/키/서비스/Agent0·stderr무시PASS/집계한도완화0이다.
+
+
+- **FN06 시험선택 범위 이탈·추가실행 중지**: 담당은기존pure9선택을위해negative-lookahead test-name-pattern을사용했으나기존12전체가실행됐다고즉시보고했다. 실제기존12PASS/4337.4667ms/skip0이며timestamp1/PS모의2의3시험을NOT_RERUN/pure9로표시하지않는다. 해당시험코드의spawn경로상timestamp1+image3모드+limit1로pwsh5회가포함된다(개별OS추적이아닌완료시험/호출선근거). 최신Main의실pwsh0검증범위이탈1건이며제품정식FAIL/C#실행과구분한다. 실제compiler/apply/native/Agent/DB/서비스/QA생성0·원소비/승인/native불변이라는담당제출이며Main읽기대조를한다. 신규pure10은10PASS149.365ms/skip0·type/Node0담당증거,Mainfresh/독립검수와구분한다. Main은같은명령/추가시험·제품수정중지를지시했고마지막rawhash/PS4불변·허용2diff·정확명령의읽기보고만허용했다. 명령필터실패의상세원인은미확정·추측확정0,권한확대/실행추인0·위험없는독립관리는계속한다.
+
+
+- **FN06 outer 독립 I1·보존 필요 true 덮기 재작업1**: Main d4310b읽기와독립검수는runner407의outer failure가validHANDOFF의handoffRequired=true를false로덮는C0/I1/M0를확인했다. 실제PS미종료/read보존과finalization.handoffRequired=true를부정할근거가없으므로Main은최소수정이필수라고판정했다. 같은담당fix-round1/동일유효source실패1회이며Main제품직접수정0. 신규outer순수unit에HANDOFF+stderr/timeout/streamerror의FAIL·원true보존·kill0 회귀TEST_ONLY부터배정했다. 범위이탈수습뒤읽기확인한신규pure파일만검증범위를재개하며기존preparation unit/PS모의/actualcompiler/apply/QA/DB/키/서비스/Agent재실행0이다. PS재실행이탈은해소됐다고덮지않고이력보존,현재원인/원02UNKNOWN/소비불변이다.
+
+
+- **FN06 outer 보존 I1 해소·Main pure11 검수**: Main5c70f5 RED1→a2251c 신규pure11PASS132.6173ms/skip0·type/diff0,독립fix-round1 I1 ADDRESSED/C0I0M0를확인했다. 외부FAIL에서도검사된보존true를유지·미관측false합성0이다. runnerF160E775/신규unit0050AEDD의허용2파일만소스변경,608fc5 PS블록raw동일/보호8불변·Main제품수정0이다. WI현재305E9FAA(전5C9B)검증문언명확화와기존PS3시험의실제5pwsh재실행이탈·추가중지/순수파일만재개·원02UNKNOWN/단발소진을결과서FN06_OUTER_RESULT_CAPTURE_RECOVERY_RESULT_20261027.md에분리했다. 읽기스크립트변수TDZ1건은변수명보정뒤읽기대조0·새PS/시험반복0. 현재source-only검수이며실제collector/컴파일/apply/OS/전체FN06/계획미검증·미완료,원승인/marker재사용0·새03후보0이다. 소유2+문서4 exact6 checkpoint/private게시를준비하며독립FN16새계약은PMO전달된직접결정을중복요청하지않고확인한다.
