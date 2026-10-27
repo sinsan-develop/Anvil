@@ -47,8 +47,8 @@ test('준비 저장은 기존 명령·불변 manifest/items와 같은 명령 rep
 });
 test('옛 제어·DENY·미지원 일회 승인·변조 재사용과 잘못된 새 후보 envelope는 거절한다', async () => {
  for (const change of [(f: any) => f.oldControl(), (f: any) => f.policy('DENY'), (f: any) => { f.command.targetId = uid; }, (f: any) => { f.command.expectedVersion = 1; }]) { const f = setup(); change(f); await assert.rejects(f.save()); assert.equal(f.bundles.length, 0); }
- const pending = setup(); pending.policy('REQUIRE_APPROVAL'); await assert.rejects(pending.save(), /CONTEXT_APPROVAL_NOT_CONNECTED/); assert.equal(pending.bundles.length, 0);
- const extra = setup(); extra.command.approvalRef = {}; await assert.rejects(extra.save(), /CONTEXT_APPROVAL_NOT_CONNECTED/);
+ const pending = setup(); pending.policy('REQUIRE_APPROVAL'); await assert.rejects(pending.save(), (e:unknown)=>e instanceof AuthFailure&&e.message==='APPROVAL_REQUIRED'&&e.statusCode===412); assert.equal(pending.bundles.length, 0);
+ const extra = setup(); extra.command.approvalRef = {}; await assert.rejects(extra.save(), (e:unknown)=>e instanceof AuthFailure&&e.message==='APPROVAL_NOT_REQUIRED'&&e.statusCode===422);
  const replay = setup(); await replay.save(); replay.command.payload = { ...replay.command.payload, reason: '다른 내용' }; await assert.rejects(replay.save(), /IDEMPOTENCY_CONFLICT/); assert.equal(replay.bundles.length, 1);
 });
 test('보호 재조회는 현재 원문 불가·변경을 과거 INCLUDED로 덮지 않고 회원 부재·manifest 변조를 거절한다', async () => {

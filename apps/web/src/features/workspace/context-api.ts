@@ -1,6 +1,7 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentSession, type DocumentWrite } from '../design-trace/editor-api.ts';
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
+import type {ApprovalRequestWork,ApprovalView} from '../decisions/api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 import type { ContextPreparationInput } from '../../../../server/modules/context/context-input.ts';
@@ -9,6 +10,8 @@ import type { buildContextManifest } from '../../../../server/modules/context/co
 type Manifest = ReturnType<typeof buildContextManifest>['manifest'];
 export const contextCodes = ['PURPOSE_REASON', 'RULES_SCOPE', 'LATEST_INSTRUCTIONS', 'DECISIONS_REASON', 'CURRENT_POSITION', 'ACTUAL_GAPS', 'NEXT_ACTION'] as const;
 export interface ContextPreparationBuffer {
+ closedContextApprovals?: {command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];
+ contextApproval?: {request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};
  bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; assignmentRef: PlanRef; budgetRef: PlanRef | null;
  input: ContextPreparationInput; pending: DocumentWrite | null; resultRef: PlanRef | null; result: ContextPreparationView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null;
 }
@@ -38,7 +41,7 @@ function inputValid(v: any): v is ContextPreparationInput {
  return new TextEncoder().encode(ordered(v)).length <= 2097152;
 }
 function check(v: any): v is CurrentCheck { return exact(v, ['state', 'issues']) && ['MATCHED_METADATA', 'CHANGED', 'UNAVAILABLE'].includes(v.state) && Array.isArray(v.issues) && v.issues.length <= 1 && (v.state === 'MATCHED_METADATA' ? v.issues.length === 0 : v.issues.length === 1 && v.issues[0] === (v.state === 'CHANGED' ? 'CURRENT_SOURCE_OR_BASIS_CHANGED' : 'CURRENT_SOURCE_OR_BASIS_UNAVAILABLE')); }
-function commandValid(v: any): v is DocumentWrite { return exact(v, ['schemaVersion', 'projectId', 'commandId', 'clientId', 'controlGeneration', 'operation', 'targetId', 'expectedVersion', 'baselineRefs', 'approvalRef', 'payload']) && v.schemaVersion === 1 && uuid(v.projectId) && uuid(v.commandId) && uuid(v.clientId) && Number.isSafeInteger(v.controlGeneration) && v.controlGeneration > 0 && v.operation === 'buildTaskContext' && v.targetId === null && v.expectedVersion === 0 && Array.isArray(v.baselineRefs) && v.baselineRefs.length === 0 && v.approvalRef === null && inputValid(v.payload); }
+function commandValid(v: any): v is DocumentWrite { return exact(v, ['schemaVersion', 'projectId', 'commandId', 'clientId', 'controlGeneration', 'operation', 'targetId', 'expectedVersion', 'baselineRefs', 'approvalRef', 'payload']) && v.schemaVersion === 1 && uuid(v.projectId) && uuid(v.commandId) && uuid(v.clientId) && Number.isSafeInteger(v.controlGeneration) && v.controlGeneration > 0 && v.operation === 'buildTaskContext' && v.targetId === null && v.expectedVersion === 0 && Array.isArray(v.baselineRefs) && v.baselineRefs.length === 0 && (v.approvalRef === null || exact(v.approvalRef,['requestId','decisionId','scopeDigest']) && uuid(v.approvalRef.requestId) && uuid(v.approvalRef.decisionId) && hash(v.approvalRef.scopeDigest)) && inputValid(v.payload); }
 function bound(b: ContextPreparationBuffer, s: DocumentSession) {
  if (!uuid(b.bindingId) || !uuid(b.projectId) || !uuid(s.user.id) || !uuid(s.clientId) || b.ownerUserId !== s.user.id || b.ownerClientId !== s.clientId || !Number.isSafeInteger(b.controlGeneration) || b.controlGeneration < 1 || !/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)) throw new ApiError('CONTEXT_BINDING_INVALID');
 }

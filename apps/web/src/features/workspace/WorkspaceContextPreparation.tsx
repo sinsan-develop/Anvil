@@ -12,20 +12,25 @@ import { newContextPreparation, prepareContextWrite, sendContextPreparation, rea
 import { contextObservation } from './context-observation.ts';
 import { reuseContextPreparationInput } from './context-reuse.ts';
 import {appendContextSourceToBuffer,contextSourceSelectionState,removeContextSourceFromBuffer} from './context-source-selection.ts';
+import {ContextApprovalEditor} from './ContextApprovalEditor.tsx';
+import {checkContextApprovalBinding} from './context-approval.ts';
 import {editContextPreparationBuffer} from './context-preparation-edit.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
 
 const labels = { PURPOSE_REASON: '목적과 이유', RULES_SCOPE: '헌법과 범위', LATEST_INSTRUCTIONS: '최신 관련 지시', DECISIONS_REASON: '결정과 이유', CURRENT_POSITION: '현재 위치', ACTUAL_GAPS: '실제 공백', NEXT_ACTION: '다음 행동' };
 export function WorkspaceContextPreparation({ client, confirmed, session, buffer, onChange, owner, busy, run }: { client: ApiClient; confirmed: ConfirmedAssignmentView; session: DocumentSession; buffer: ContextPreparationBuffer | null; onChange: Dispatch<SetStateAction<ContextPreparationBuffer | null>>; owner: boolean; busy: boolean; run: (action: () => Promise<void>) => void }) {
+ const live=useRef({client,session,transport:client.transport,confirmed:ordered(confirmed.ref),binding:buffer?.bindingId,epoch:0});
+ if(live.current.client!==client||live.current.session!==session||live.current.transport!==client.transport||live.current.confirmed!==ordered(confirmed.ref)||live.current.binding!==buffer?.bindingId)live.current={client,session,transport:client.transport,confirmed:ordered(confirmed.ref),binding:buffer?.bindingId,epoch:live.current.epoch+1};
+ const epoch=live.current.epoch,transport=client.transport;
  const alive = useRef(true), sequence = useRef(0); useEffect(() => { alive.current = true; return () => { alive.current = false; sequence.current++; }; }, []);
  const [original,setOriginal]=useState<{itemId:string;nonce:number;contextId:string;kind:ContextSourceSelection['kind']}|null>(null);
  const [selected, setSelected] = useState<keyof typeof labels>('PURPOSE_REASON');
  const [{ opened, page }, observe] = useReducer(contextObservation, { sequence: 0, opened: null, page: null });
  const begin = () => { const next = ++sequence.current; observe({ kind: 'BEGIN', sequence: next }); return next; };
- const current = (ticket: number) => alive.current && sequence.current === ticket;
+ const current = (ticket: number) => alive.current && sequence.current === ticket && live.current.epoch===epoch && client.transport===transport;
  const bound = !buffer || buffer.projectId === confirmed.projectId && buffer.ownerUserId === session.user.id && buffer.ownerClientId === session.clientId;
  const sameTarget = !buffer || ordered(buffer.assignmentRef) === ordered(confirmed.ref);
- const update = (change: (current: ContextPreparationBuffer) => ContextPreparationBuffer) => { const binding = buffer?.bindingId; onChange(current => current && current.bindingId === binding ? change(current) : current); };
+ const update = (change: (current: ContextPreparationBuffer) => ContextPreparationBuffer) => { const binding = buffer?.bindingId; onChange(current => current && current.bindingId === binding && current.ownerUserId===session.user.id && current.ownerClientId===session.clientId && current.controlGeneration===buffer?.controlGeneration && ordered(current.input)===ordered(buffer?.input) && ordered(current.pending)===ordered(buffer?.pending) ? change(current) : current); };
  async function prepare() {
   if (!owner || !bound || buffer?.pending || buffer?.uncertain || buffer?.dirty && !confirm('미저장 맥락 준비 입력을 버리고 새로 준비할까요?')) return;
   const ticket = begin();
@@ -41,12 +46,15 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
   try {
    const generation = await documentControl(client, confirmed.projectId, session); if (!current(ticket)) return;
    if (generation !== buffer.controlGeneration) throw new ApiError('CONTROL_GENERATION_CONFLICT', 409);
-   const command = prepareContextWrite(buffer, session); update(current => ({ ...current, pending: command, uncertain: true, failure: null, result: null }));
+   await checkContextApprovalBinding(buffer,session);if(!current(ticket))return;
+   const command = prepareContextWrite(buffer, session);
+   const apply=(change:(b:ContextPreparationBuffer)=>ContextPreparationBuffer)=>onChange(b=>b&&b.bindingId===buffer.bindingId&&b.ownerUserId===session.user.id&&b.ownerClientId===session.clientId&&b.controlGeneration===buffer.controlGeneration&&ordered(b.input)===ordered(command.payload)&&(b.pending===null||ordered(b.pending)===ordered(command))?change(b):b);
+   apply(current => ({ ...current, pending: command, uncertain: true, failure: null, result: null }));
    const resultRef = await sendContextPreparation(client, command, session.csrfToken); if (!current(ticket)) return;
-   update(current => ({ ...current, pending: null, resultRef, result: null, uncertain: false, dirty: false, failure: null }));
+   apply(current => ({ ...current, pending: null, resultRef, result: null, uncertain: false, dirty: false, failure: null }));
   } catch (cause) {
    if (!current(ticket)) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-   update(current => ({ ...current, failure: { code: failure.code, status: failure.status }, uncertain: previouslyUncertain || failure.status === 0 || failure.status >= 500 || ['RESPONSE_INVALID', 'CONTEXT_INTEGRITY_FAILED'].includes(failure.code) })); throw failure;
+   onChange(b=>b&&b.bindingId===buffer.bindingId&&b.ownerUserId===session.user.id&&b.ownerClientId===session.clientId&&b.controlGeneration===buffer.controlGeneration&&ordered(b.input)===ordered(buffer.input)&&(!buffer.pending||ordered(b.pending)===ordered(buffer.pending))?{...b,failure:{code:failure.code,status:failure.status},uncertain:previouslyUncertain||failure.status===0||failure.status>=500||['RESPONSE_INVALID','CONTEXT_INTEGRITY_FAILED'].includes(failure.code)}:b); throw failure;
   }
  }
  async function read(ref: PlanRef) {
@@ -79,8 +87,10 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
     <ContextDeliveryLimits limits={buffer.input.limits} disabled={locked} onChange={(limits,field)=>onChange(current=>editContextPreparationBuffer(current,buffer,session,{kind:'DELIVERY_LIMIT',field,value:limits[field]}))}/>
    </fieldset>
    {!buffer.resultRef ? <button disabled={busy || !owner || !sameTarget || !contextDeliveryLimitsValid(buffer.input.limits)} onClick={() => run(save)}>{buffer.pending ? '같은 준비 명령 결과 확인' : '준비 저장'}</button> : <><p>준비 저장 영수증 확인 · 본문/현재 상태는 별도 재조회</p><button disabled={busy} onClick={() => run(() => read(buffer.resultRef!))}>저장 후보 정확 재조회</button></>}
+   {buffer.pending&&!buffer.resultRef?<ContextApprovalEditor client={client} session={session} buffer={buffer} disabled={busy||!owner||!bound||!sameTarget} update={change=>onChange(b=>b&&b.bindingId===buffer.bindingId&&b.ownerUserId===session.user.id&&b.ownerClientId===session.clientId&&b.controlGeneration===buffer.controlGeneration&&ordered(b.pending)===ordered(buffer.pending)&&ordered(b.input)===ordered(buffer.input)?change(b):b)} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
+   {buffer.closedContextApprovals?.length?<p>종결 승인·원명령 보존 {buffer.closedContextApprovals.length}건 · 서버 이력은 유지합니다.</p>:null}
    {buffer.pending ? <p>미확인 명령 {buffer.pending.commandId} · 원입력 보존 · 자동 재발행 없음</p> : null}{buffer.failure ? <p role="alert">{buffer.failure.code} · 입력과 명령을 보존했습니다.</p> : null}
-   {buffer.pending && buffer.failure && !buffer.uncertain ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 보존한 입력을 수정할까요?')) update(current => ({ ...current, pending: null, failure: null })); }}>거절 확인 후 입력 수정</button> : null}
+   {buffer.pending && buffer.failure && !buffer.uncertain && !buffer.contextApproval ? <button disabled={busy} onClick={() => { if (confirm('거절된 원 명령을 확인했습니다. 보존한 입력을 수정할까요?')) update(current => ({ ...current, pending: null, failure: null })); }}>거절 확인 후 입력 수정</button> : null}
   </> : <p>확정 임무의 준비 입력은 아직 없습니다.</p>}
   {opened && bound && sameTarget ? <section aria-label="저장 맥락 metadata"><p>이번 조회 원문 대조: {opened.currentCheck.state} · {opened.observedAt} · 실행 준비 판정 아님</p><p>필수 누락: {opened.manifest.missingRequired.join(', ') || '당시 metadata상 없음 · 의미/예산 미검증'}</p><ul>{opened.manifest.items.map(item => <li key={item.itemId}>{labels[item.category as keyof typeof labels]} · 당시 {item.includedState} · {item.reason}{item.includedState==='INCLUDED'&&opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?<button type="button" disabled={busy} onClick={()=>setOriginal(o=>({itemId:item.itemId,contextId:opened.ref.id,kind:opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)!.selection!.kind,nonce:(o?.nonce??0)+1}))}>선택 {opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?.kind==='KNOWLEDGE_VERSION'?'지식':opened.manifest.sourceBindings.find(b=>b.itemId===item.itemId)?.selection?.kind==='DOCUMENT_VERSION'?'문서':'지시'} 원문 보기: {item.itemId}</button>:null}</li>)}</ul><p>계획 부분 {opened.manifest.deliveryPlan.parts.length}개 · 실제 전달0</p><ul>{opened.manifest.unverified.map(issue => <li key={issue}>{issue}</li>)}</ul>
    <ContextDeliveryParts parts={opened.manifest.deliveryPlan.parts} />

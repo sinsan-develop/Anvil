@@ -11,7 +11,7 @@ import { candidateOperations } from '../connections/candidate-input.ts';
 import { trustRegistrationOperations } from '../connections/trust-registration-input.ts';
 import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-const consumableOperations = ['saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
+const consumableOperations = ['buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
@@ -81,6 +81,10 @@ export class ProjectApprovals{
  async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   return this.#read(db,actor,pid,id,consumableOperations);
  }
+ /** 불변 당시 소비만 검증한다. 현재 정책/제어의 진행은 역사 위조가 아니다. */
+ async readContextConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
+  const {row,...history}=await this.#history(db,actor,pid,id,['buildTaskContext']);return history;
+ }
  /** 준비의 보관 소비 이력만 읽는다. 일반 승인 발급/authorize/consume allowlist는 넓히지 않는다. */
  async readOwnershipPreparationConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   try{
@@ -95,7 +99,7 @@ export class ProjectApprovals{
    return{purpose:'OWNERSHIP_PREPARATION_APPROVAL_HISTORY_ONLY' as const,projectId:pid,requestRef:v.requestRef,decisionRef:d.ref,consumptionId:used.id,commandRef,candidateCommandId:used.commandId,scopeDigest:used.scopeDigest,payloadHash:s.payloadHash,policyRef:used.policyRef,controlGeneration:r.controlGeneration,consumedAt:used.consumedAt,observedAt:finalAt.toISOString(),expiresAt:r.details.expiresAt,missingEvidence:['AUTHENTICATED_PREPARATION_COMMAND','ORIGINAL_RECEIPT_LINK','VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE'] as const,preparationAuthorized:false as const,observationRequestAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch{throw new AuthFailure('OWNERSHIP_APPROVAL_HISTORY_UNAVAILABLE',412);}
  }
- async #read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[]){
+ async #history(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[]){
   await projectMember(db,actor,pid);const row=(await db.query('SELECT r.*,c.operation,c.actor_id,c.client_id command_client,c.result_ref FROM anvil.approval_requests r JOIN anvil.commands c ON c.id=r.command_id AND c.project_id=r.project_id WHERE r.project_id=$1 AND r.id=$2',[pid,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
   const request=row.request_json;if(!request||typeof request!=='object')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   const{id:requestId,version,status,createdAt,...snapshot}=request,ref=row.result_ref?.data?.ref;
@@ -110,6 +114,10 @@ export class ProjectApprovals{
    if(!saved||saved.decision!=='APPROVE'||used.scope_digest!==row.scope_digest||used.decision_id!==saved.id||used.candidate_command_id!==snapshot.details.candidateCommandId||used.actor_id!==row.created_by||used.client_id!==row.client_id||Number(used.control_generation)!==snapshot.controlGeneration||used.policy_id!==row.policy_ref.id||Number(used.policy_version)!==row.policy_ref.version||canonicalJson(used.policy_ref)!==canonicalJson(row.policy_ref)||used.state!=='APPLIED'||used.result_ref?.status!=='APPLIED'||used.operation!==snapshot.details.actionScope.operation||Number(used.expected_version)!==snapshot.details.actionScope.expectedVersion||used.approval_consumption_id!==used.id||used.approval_decision_ref!==saved.id||!isVersionRef({id:used.candidate_command_id,version:1,contentHash:used.request_hash})||canonicalJson(used.payload_ref)!==canonicalJson({kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:snapshot.details.actionScope.payloadHash,scopeDigest:row.scope_digest}))throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
    consumption={id:used.id,status:'CONSUMED',commandId:used.candidate_command_id,serverCommandId:used.command_id,requestHash:used.request_hash,scopeDigest:used.scope_digest,policyRef:used.policy_ref,consumedAt:used.consumed_at.toISOString()};
   }
+  return{row,request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,decision,consumption,candidatePlan};
+ }
+ async #read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[]){
+  const {row,request,requestRef:ref,currentVersion,storedStatus,decision,consumption,candidatePlan}=await this.#history(db,actor,pid,id,allowedOperations),snapshot=request;
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date,policy=await currentPolicy(db,pid),control=(await db.query('SELECT actor_id,client_id,generation,revoked_at FROM anvil.project_control WHERE project_id=$1',[pid])).rows[0];
   const stale=!policy||canonicalJson(policy.ref)!==canonicalJson(row.policy_ref)||!control||control.revoked_at||control.actor_id!==row.created_by||control.client_id!==row.client_id||Number(control.generation)!==snapshot.controlGeneration;
   const expired=row.expires_at.getTime()<=now.getTime(),effectiveState=['PENDING','APPROVED'].includes(row.status)?expired?'EXPIRED':stale?'REVOKED':row.status:row.status;

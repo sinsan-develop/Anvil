@@ -81,7 +81,6 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   if (['startStage','cancelQueuedRequest'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('STAGE_QUEUE_APPROVAL_NOT_CONNECTED',412);
   if (['applyLimitPolicy','revokeLimitPolicy'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('LIMIT_POLICY_APPROVAL_NOT_CONNECTED',412);
   if (['defineProjectRole','bindResponsibleSession','prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
-  if ((contextPreparationOperations as readonly string[]).includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('CONTEXT_APPROVAL_NOT_CONNECTED', 412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals().authorize(db,actor,request,policy.ref);}
