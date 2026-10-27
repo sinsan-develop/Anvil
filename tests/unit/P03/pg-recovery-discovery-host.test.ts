@@ -94,11 +94,12 @@ async function fixture() {
   const grant = { schema: 1, scope: f.scope, branch: f.branch, commit: 'c'.repeat(40), controllerSha256: 'd'.repeat(64),
     shellSha256: f.shellSha256, nodeSha256: f.nodeSha256, runInstance: instance,
     issuedAt: new Date(wall - 1000).toISOString(), expiresAt: new Date(wall + 60000).toISOString(),
-    totalMs: 60000, metadataBytes: 8192, maxCreates: 1, maxStarts: 1 };
+    totalMs: 60000, metadataBytes: 8192, maxCreates: 1, maxStarts: 1,
+    numericOwnerRiskAcknowledgement: 'P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN' };
   const env = ['PATH=/usr/bin:/bin', 'LANG=en_US.utf8', 'LC_ALL=C', 'BASH_ENV=', 'ENV=',
     'GOSU_VERSION=1.19', 'PG_MAJOR=15', 'PG_VERSION=15.18-1.pgdg13+1', `PGDATA=${f.mount}`];
   const image = { Id: f.image, Config: { Volumes: { [f.mount]: {} }, Env: env.filter(v => !['LC_ALL=', 'BASH_ENV=', 'ENV='].some(key => v.startsWith(key)))
-    .map(v => v.startsWith('PATH=') ? 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin' : v) } };
+    .map(v => v.startsWith('PATH=') ? 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin' : v) } };
   const volume = { Name: f.volume, Driver: 'local', Scope: 'local', CreatedAt: f.volumeCreated, Options: null,
     Labels: { 'anvil.project': 'v3', 'anvil.owner': 'P03', 'anvil.instance': f.volumeInstance } };
   const container = { Id: id, Name: `/${f.name}`, Image: f.image, Created: new Date(wall).toISOString(), RestartCount: 0,
@@ -431,5 +432,87 @@ test('EXPOSE선언의 생성후 추가/변조·실제portbinding은 start0·보�
     assert.equal(result.startAttempted, false, kind);
     assert.equal(result.removeAttempted, false, kind);
     assert.equal(result.sourcePreservationRequired, true, kind);
+  }
+});
+
+test('실제 image관측 PATH는 고정후보로 수락하되 helper PATHoverride/unknown차단을 유지한다', async () => {
+  const observed = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin';
+  const x = await fixture();
+  x.image.Config.Env = x.image.Config.Env.map(v => v.startsWith('PATH=') ? `PATH=${observed}` : v);
+  const result = await x.host.runDiscoveryHost({ mode: 'apply' }, x.ports);
+  assert.equal(result.complete, true);
+  assert.ok(x.host.createArguments(x.instance).includes('PATH=/usr/bin:/bin'));
+  assert.equal(x.container.Config.Env.find(v => v.startsWith('PATH=')), 'PATH=/usr/bin:/bin');
+  for (const kind of ['image-path', 'helper-path', 'unknown']) {
+    const y = await fixture(); y.image.Config.Env = y.image.Config.Env.map(v => v.startsWith('PATH=') ? `PATH=${observed}` : v);
+    if (kind === 'image-path') y.image.Config.Env = y.image.Config.Env.map(v => v.startsWith('PATH=') ? v + ':/unapproved' : v);
+    if (kind === 'helper-path') y.container.Config.Env = y.container.Config.Env.map(v => v.startsWith('PATH=') ? `PATH=${observed}` : v);
+    if (kind === 'unknown') y.image.Config.Env.push('NODE_OPTIONS=unapproved');
+    const rejected = await y.host.runDiscoveryHost({ mode: 'apply' }, y.ports);
+    assert.equal(rejected.complete, false, kind); assert.equal(rejected.startAttempted, false, kind);
+  }
+});
+
+// 이미 확인된 path/owner/mode/hash는 구현 FIXED에서 복사하지 않는 독립 literal이다.
+// 부모 inode·mtime/size 숫자는 순수 교체 탐지용 합성값이며 실측값 주장0이다.
+function independentNodeFacts() {
+  const binary = { path: '/opt/node-v24.21.0-linux-x64/bin/node', canonical: '/opt/node-v24.21.0-linux-x64/bin/node',
+    isFile: true, isSymbolicLink: false, uid: 1001, gid: 1001, mode: 0o755, nlink: 1,
+    dev: 2096, ino: 724935, size: 100, mtimeMs: 123 };
+  const parents = [
+    { path: '/', uid: 0, gid: 0, mode: 0o755 }, { path: '/opt', uid: 0, gid: 0, mode: 0o755 },
+    { path: '/opt/node-v24.21.0-linux-x64', uid: 1001, gid: 1001, mode: 0o755 },
+    { path: '/opt/node-v24.21.0-linux-x64/bin', uid: 1001, gid: 1001, mode: 0o755 },
+  ].map((parent, index) => ({ ...parent, canonical: parent.path, isDirectory: true, isSymbolicLink: false, dev: 2096, ino: 800 + index }));
+  return { platform: 'linux', executionUid: 1000, execPath: '/opt/node-v24.21.0-linux-x64/bin/node',
+    binary, opened: structuredClone(binary), openedAfter: structuredClone(binary), after: structuredClone(binary),
+    sha256: '7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c',
+    procSelfExe: { canonical: '/opt/node-v24.21.0-linux-x64/bin/node', isFile: true, dev: 2096, ino: 724935, size: 100 },
+    parentsBefore: parents, parentsAfter: structuredClone(parents) };
+}
+const ownerRiskAcknowledgement = 'P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN';
+
+test('독립literal Node1001:1001/0755·고정hash/부모/proc일치는 잔여위험상태로 순수수락한다', async () => {
+  const host = await subject();
+  assert.equal(typeof host.assertNodeTrustFacts, 'function', 'NODE_OWNER_CANDIDATE_HELPER_MISSING');
+  assert.deepEqual(host.assertNodeTrustFacts(independentNodeFacts()), { status: 'OWNER_UNRESOLVED_RESIDUAL_RISK' });
+});
+
+test('Node/부모 전후소유·inode/link/hash·proc교체와 임의UID fallback을 순수거절한다', async () => {
+  const host = await subject();
+  assert.equal(typeof host.assertNodeTrustFacts, 'function', 'NODE_OWNER_CANDIDATE_HELPER_MISSING');
+  for (const mutate of [
+    (v: any) => { v.binary.uid = 0; }, (v: any) => { v.binary.uid = 1000; }, (v: any) => { v.binary.gid = 1000; },
+    (v: any) => { v.binary.mode = 0o775; }, (v: any) => { v.binary.nlink = 2; }, (v: any) => { v.binary.isSymbolicLink = true; },
+    (v: any) => { v.binary.canonical = '/other/node'; }, (v: any) => { v.opened.ino++; }, (v: any) => { v.openedAfter.ino++; },
+    (v: any) => { v.after.ino++; }, (v: any) => { v.after.uid = 0; }, (v: any) => { v.after.mtimeMs++; },
+    (v: any) => { v.sha256 = '0'.repeat(64); }, (v: any) => { v.execPath = '/other/node'; },
+    (v: any) => { v.executionUid = 1001; }, (v: any) => { v.procSelfExe.ino++; },
+    (v: any) => { v.procSelfExe.canonical += ' (deleted)'; },
+    (v: any) => { v.parentsBefore[0].isSymbolicLink = true; },
+    (v: any) => { v.parentsBefore[1].canonical = '/other'; },
+    (v: any) => { v.parentsBefore[2].uid = 0; }, (v: any) => { v.parentsBefore[2].gid = 0; },
+    (v: any) => { v.parentsAfter[3].mode = 0o777; }, (v: any) => { v.parentsAfter[3].ino++; },
+    (v: any) => { v.parentsAfter.pop(); },
+  ]) {
+    const facts = independentNodeFacts(); mutate(facts);
+    assert.throws(() => host.assertNodeTrustFacts(facts), /NODE_BINDING/);
+  }
+});
+
+test('한정잔여위험 acknowledgement 없거나 다른값이면 Docker0·정확값도 승인인증false다', async () => {
+  for (const value of [undefined, false, true, 'accepted', ownerRiskAcknowledgement]) {
+    const x = await fixture();
+    if (value !== undefined) (x.grant as any).numericOwnerRiskAcknowledgement = value;
+    else delete (x.grant as any).numericOwnerRiskAcknowledgement;
+    const result = await x.host.runDiscoveryHost({ mode: 'apply' }, x.ports);
+    if (value === ownerRiskAcknowledgement) {
+      assert.equal(result.complete, true);
+      assert.equal(result.ownerTrustStatus, 'OWNER_UNRESOLVED_RESIDUAL_RISK');
+      assert.equal(result.externalUserApprovalVerified, false);
+    } else {
+      assert.equal(result.complete, false, String(value));
+      assert.equal(x.state.calls.length, 0, String(value));
+    }
   }
 });

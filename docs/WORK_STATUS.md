@@ -8452,3 +8452,18 @@
 
 
 - **P03 host 제어 최종24 검수·통합 준비**: Main8fdda4 신규24PASS242.4678ms/skip0·a8948f type/구문0·383a12 최종sourceEA54D05C/unit7B7212AD/실행안5364283F 지문/신규공백0·독립지정범위C0/I0/M0를확인했다. receipt예산I1은가드2곳·EXPOSE선언/실게시혼동은preflight고정선언대조로최소보완·기준완화0·Main제품직접수정0이다. b4e326 보호8/소비01·02불변/컴파일QA부재,실제WSL/Docker/원volume/PG/DB/서비스/PS/C#/Agent0·새자원0이다. 결과서 P03_PG_DISCOVERY_HOST_PREPARATION_RESULT_20261027.md에정확RED/GREEN/오류/미검증/rollback을분리했다. 기존branch에소유source3+WI/결과/현황정확6 checkpoint/private게시후실행효과·bootstrap미진을대조한다. source준비단위검수와실제실행준비/기능완료는별개·전체미완료유지다.
+
+
+- **P03 host checkpoint 게시·실환경 profile 차이 확인**: a05672의1bd72b151d85dc00bc14e3cb912b74fe0a257491는exact6/1123추가·fbb304 raw/indexEXACT6/보호8/diff0,68928b nonforceprivateexact·trackedclean/mainf976불변이다. 이후Main74bfc1 별도읽기전용WSLpreflight는uid1000·Node지문동일/소유uid1001(후보uid0과다름)·imagePATH의PGbin추가/EXPOSE5432tcp·원volume/daemon동일/소비자0/후보경로부재를확인했다. 실제생성/mount/PG/DB/Secret/서비스/Agent0·현재apply는거절조건이며실행하지않았다. 관측Nodeowner/hash를정확신뢰후보로채택할지PMO한정지원요청·담당읽기진단만배정/제품새쓰기0이다. 환경문서에현재관측/후보차이를누적했고실행준비/기능완료로세지않는다. Main0aa040의검토본경로추정1건NOT_FOUND는rg--files목록으로docs/contracts정확위치를확인한읽기오류이며제품변경0이다. 기존FN16결정질문중복0·전체계획미완료다.
+
+
+- **P03 최소 신뢰 대조·PATH25 검수·Node 후보 TEST_ONLY**: PMO는정확Nodepath/hash/UID1001의source-only후보준비를채택하되소유주체/ACL확인또는미해결numericowner교체위험의정확실행수락을분리했다. Maine94e53 getent1001 exit2=NOT_FOUND·기존rootPython의지정5경로ACLxattr ENODATA/현재uid1000쓰기false로조회실패/미확인을좁혔고설치·권한변경0이다. 소유주체미해결/향후할당·교체위험은유지·준비완료0. 담당초기Node TEST_ONLY2는미정FIXED복사양성이라Main미채택으로철회·27중24PASS3FAIL이력보존/기존24삭제·완화0. Main86abbb PATH신규1은24PASS1FAIL226.4798ms→2ab15e 최종25PASS247.6495ms/type0로정확한원PATH한literal교정만검수했다. source2F842B3B/unitCA2A86DF/실행안3CDC180A는이단계지문·Nodeuid0guard는그대로다. 다음단일담당은측정근거를독립fixture로쓴Node신뢰후보TEST_ONLY부터작성하며MainfreshRED전제품보완0이다. grant한정잔여위험ack는외부사람승인인증이아닌binding후보·현재생성0. 실제helper/sourceQA/ledger/mount/PG/DB/서비스/Agent0·전체미완료·FN16질문중복0이다.
+
+
+- **P03 Node 정확 신뢰후보 fresh RED·source-only GO**: PMO한정source후보채택과현재관측근거로단일담당은미정FIXED복사없이독립literalfixture·변조23개/원riskack음성3unit을제출했다. Main52ee40 신규28중25PASS3FAIL246.3302ms/exit1(helper부재2·ack누락수락1)확인뒤같은허용3의pureNodehelper→실factory관측/원handlehash·부모/proc대조와정확riskack필수만GO했다. 숫자UID1001소유주체NOT_FOUND/향후할당·교체위험은미해결로명시하고현재grant/실행승인0이다. source-only후보와실제도구신뢰수락을분리·임의UIDfallback/설치/chown/ACL변경/추가원격조회/실Docker/PG/DB/서비스/Agent0,Main제품직접수정0이다. 이전PATH25PASS와현재새계약28RED를섞지않고최종독립검수/현재정확실행후보가남았다.
+
+
+- **P03 Node source 패치 자동심사 거절·위임근거 재심**: 단일담당의UID0→1001정확Node후보·부모/proc검사/닫힌grant위험ack source패치는auto-review에서정확사용자보안경계승인미확인으로거절됐다. e8d770 source2F842B3B/unitA8E7지문불변·패치0확인,기존PATH교정외Node제품반영0·후속검증NOT_RUN이다. Main은신산님직접PMO동일지시위임및후속위임결정동일취급원문과PMO의정확source-only채택·WI87035를추가근거로한동일패치1회재심만허용했다. 근거없는반복/도구교체/분할우회/Main대리코드작성0·재거절시중단한다. 거절사유/새권한미발급/actual0는PMO에전달했다. 이한정차단과별개로읽기담당은승인StageB의기존API/저장계약안에서UI06/UI10의다음중요미연결사용흐름1개만중복없이조사한다. 신규실API/DB/권한/서비스/Agent·계정/ACL변경0·전체계획미완료다.
+
+
+- **P03 관측 profile·Node 후보 Main28 검수·후속 통합 준비**: 위임근거추가재심1회는d32021 허용·actual0이며최초거절이력은보존했다. Main eb151d 신규28PASS325.9054ms/skip0·d92264 type/구문0·독립Node보완C0/I0/M0로 sourceB071A57A/unit207D7A4C의exactNode1001·원handlehash/부모/proc·한정riskack필수를검수했다. USER승인인증/owner신뢰해결0·OWNER_UNRESOLVED_RESIDUAL_RISK유지,현재grant/QA/helper/mount/PG/DB/서비스/Agent0이다. Main은실행봉투의정확env-i호출·최종SHA/30분/ROhelper1/60초/8KiB/소비보존/정상정리·불명보존을기존plan에구체화하여plan C9960CD6로갱신(소스/시험불변·추가절읽기검수중). UI06/UI10한정조사는이미연결동선을중복하지않고새단위를입증하지못했으며공유B/Agent전달·실제증거/정식DB선행을기록했다. 소유source3+WI/결과/환경/현황정확7후속checkpoint를준비하며전체계획완료/실제실행준비로승격0이다.

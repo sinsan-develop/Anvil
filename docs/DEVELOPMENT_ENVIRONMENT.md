@@ -399,3 +399,19 @@ CurrentUser Root 신뢰 저장소에 새 CA의 정확 thumbprint1개를 넣는 �
 ## 2026-10-27 FN16 집중 검수 환경 범위
 
 실제 파일 manifest/bundle 검수는 Windows의 등록 D:/tmp QA·PowerShell7 owner 확인 전용이다. 전체 npm test 및 Linux/WSL 실행은 이번 미실행이며 교차 OS PASS가 아니다. 저장소 CI workflow는 현재 조사에서 없고, 기존 FN06/FN08도 Windows 전용 조건이 있다. 환경별 실행 대상은 향후 실제 Gate에 맞춰 명시하며 이 기록으로 skip/기준 완화를 채택하지 않는다. 제품 Node 모듈의 Linux 동작·정식 WSL 서비스/DB 상태는 이 집중 검수로 새 확인하지 않았다.
+
+
+## 2026-10-27 17:42 KST P03 host 실행 전 읽기 대조
+
+Main74bfc1(UTC08:42:13.098Z) 고정ssh/Node의읽기전용조회exit0/stderr0이다. daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e·image594290e9·원volume/local/CreatedAt2026-10-16T03:53:33+09:00/기존labels·optionsEmpty 일치,지정helper0/원volume소비자0,새source/ledger후보경로부재를확인했다. 원파일내용·Secret·PG_VERSION을읽거나새mount/자원을생성하지않았다.
+기존Node /opt/node-v24.21.0-linux-x64/bin/node는실uid1000환경에서파일uid1001/mode755/nonlink/realpath동일/hash7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c다. 이는현재controller의미실측uid0조건과다르며실행불가상태다. UID1001신뢰채택/OS권한변경은자동처리하지않고PMO지원요청했다.
+실image의PATH는 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin 이며GOSU_VERSION1.19/LANGen_US.utf8/PG_MAJOR15/PG_VERSION15.18-1.pgdg13+1/PGDATA고정·unknownEnv0,EXPOSE5432/tcp1개·선언VOLUME1개다. 기존후보PATH는실제와달라거절되며값을느슨하게수락하지않는다. Docker실행파일uid0/mode755/nonlink/hash7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b,Gituid0/mode755/nonlink/hasheb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201을읽었다. 실제OS/도구의전체신뢰를이metadata만으로증명하지않는다.
+조회는자원변경0·원volume내용/mount/PG/DB/서비스/Agent0이다. 과거실측을이번실측으로소급하지않으며다음은정확신뢰후보/관측profile국소보완과별도실행효과대조다.
+
+
+## 2026-10-27 17:49 KST Node 소유 조회·고정 경로 ACL 최소 대조
+
+Maine94e53(UTC08:49:41.186Z) 고정단일getent passwd1001은exit2/errornull/stderr0이므로NOT_FOUND다. 전체계정목록/암호정보를조회하지않았다. numericUID1001은현재계정명에귀속되지않으며악성/안전어느쪽도단정하지않는다.
+이미설치된 /usr/bin/python3→/usr/bin/python3.12(root소유0755)를-I고정읽기로만사용했다.신규설치0이다. Node및 /·/opt·/opt/node-v24.21.0-linux-x64·bin 고정5경로에서POSIX ACL access/default xattr은모두ENODATA(파일default는NOT_APPLICABLE)·현재uid1000의effective쓰기false였다. mode755만으로ACL을검증했다고한것이아니며별도xattr관측이다.
+ba0213(08:45:34.659Z)은 /·/opt uidgid0:0/755, versionroot/bin/node1001:1001/755/nonlink/realpath동일, node dev2096/inode724935/nlink1 및현재/proc/self/exe동일을관측했다. getfacl없음으로당시ACL미검증이었으며이후e94e53로이관측범위만보완했다. 실행uid1000의쓰기불가와ownerUID1001/향후계정할당·privileged주체의교체가능성은별개다. hash확인전후/실행중교체·loader/공유라이브러리신뢰전체는증명하지않는다.
+PMO는기존Nodepath/hash/UID1001고정source-only후보준비와관측imagePATH교정을채택했다. 소유주체미해결잔여위험을명시한정확외부실행결정전actual0이다. 설치/chown/ACL변경/다른runtime탐색/새도구연쇄준비/원volume읽기·mount/PG/DB/서비스0. source에grant문자열이있어도외부사람승인을인증하지않는다.

@@ -37,3 +37,13 @@ WI 최초 C08526AAB0FC26BCFD9B00BE6195FC81A67EB044B7B1F0E3700267F773FFC729, 내�
 ## 다음과 복구
 기존 branch에 소유6파일만 checkpoint/private 게시하고 exact SHA를 확인한다. 이후 실제 실행 전 source Git/도구·root·Env·record·원자원 현재 신원과 정확 권한을 대조한다. 현재 grant/실행승인 발급0. 소진된 compiler02 승인으로 재시도하지 않는다. FN16의 기존 정확 계약 결정 질문도 중복하지 않는다.
 rollback은 소유 신규3 source의 검토된 정상 revert이며 기존 자료·소비marker·원 volume·서비스 삭제가 아니다. WORK_STATUS에 담당·오류·검수·미검증·다음 조치를 누적한다. 이 checkpoint로 전체 Stage/계획 완료나 병합을 주장하지 않는다.
+
+
+## 관측 profile·정확 Node 후보의 후속 source 검수 — 2026-10-27
+
+1bd72b151d85dc00bc14e3cb912b74fe0a257491의최초source준비뒤새Main읽기74bfc1/ba0213/e94e53을실시했다. daemon/image/원volume·소비자0/신규후보경로부재를대조했고,실imagePATH의PGbin추가·Node1001:1001/0755·현재execuid1000을관측했다. getent1001 exit2=NOT_FOUND,지정5경로ACLaccess/default ENODATA·현재uid1000쓰기false다. root소유기존Python읽기만·설치/chown/ACL/DB/서비스변경0이다. 미확인owner를확인했다고바꾸지않고향후할당/소유자교체·loader/해시-실행경합의위험을남긴다.
+PMO는신산님의직접위임범위에서정확UID1001/hash/path·원PATH source-only후보교정을채택했다. source패치첫auto-review는정확보안경계사용자승인미확인으로거절·제품미반영을확인했다. 신산님직접위임2문구→PMOexactsource-only채택→WI87035→actual제외0의근거를추가한동일패치1회재심d32021은허용됐다. 도구교체/분할/대리write/범위은폐0이며두결과모두보존한다. 실제실행승인은발급하지않았다.
+초기Node TEST_ONLY2는미정FIXED복사양성으로Main미채택·철회한후담당27의24PASS3FAIL이력을보존했다. 기존24기대/합격기준을삭제하거나완화한것이아니다. Main86abbb PATH신규1 RED→2ab15e 25PASS247.6495ms/type0으로image원PATH1literal교정검수. 이후실측literal을독립fixture로한새명시Node과업Main52ee40은28중25PASS3FAIL246.3302ms였다. purehelper를실factory의원O_NOFOLLOW handle/hash·부모전후/proc동일성에연결하고grant한정위험ack를필수로보완했다. 누락/false/true/임의문자열은Docker0이고정확값도외부승인인증이아니다. OWNER_UNRESOLVED_RESIDUAL_RISK는plan/consume/receipt/result에유지한다.
+Main eb151d의정확명령 node --test tests/unit/P03/pg-recovery-discovery-host.test.ts → 최종28PASS/0FAIL/skip0/325.9054ms/exit0. d92264의tsconfig.base type·신규source/test nodecheck exit0. 독립지정Node보완범위C0/I0/M0이며실명령/시험실행0의읽기검수다. 담당첫FS타입number|bigint오류는명시Stats로최소보정·최종0,Main제품수정0이다.
+최종source raw B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7,unit207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E,Main실행봉투추가후plan C9960CD6D65DBFB0BE47E3C7A3131809D2A090CD59C51F36C6890B3BBA73794D,현재WI87035F754EAD40E87DF762F787257BE7CA6E0F80DE193247F9A244746550C00F. 선행지문표는최초checkpoint의이력이며이최종지문과섞지않는다. 실제Linuxfactory/OS/도구변조/QA bootstrap·원volume metadata/PG복구/Agent/제품사용·전체계획은미검증·미완료다.
+UI06/UI10의다음독립미연결1개한정조사는기존API의새source연결누락을입증하지못했다. 이미연결된문서/계획/지식/헌법동선을반복하지않으며공유B계약·Agent전달/실제실행증거·정식DB/서비스복구선행을구분했다. 실제결정봉투는원volume RO조사helper1개/새GitQA·원장·30분·60초·정확risk수락·불명보존/정상정리로구체화했으며실행0이다. 소유7경로의후속checkpoint/private게시후정확commit과남은실행결정을PMO로전달한다.

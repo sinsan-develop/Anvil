@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawn as nodeSpawn } from 'node:child_process';
-import { constants, promises as fs } from 'node:fs';
+import { constants, promises as fs, type Stats } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseWireJson } from '../contracts/canonical.ts';
@@ -37,6 +37,14 @@ class Fault extends Error {
 }
 const codeOf = (error: unknown) => error instanceof Fault ? error.code : 'IO_UNKNOWN';
 const integer = (value: unknown) => Number.isSafeInteger(value) && (value as number) >= 0;
+const ownerTrustStatus = 'OWNER_UNRESOLVED_RESIDUAL_RISK' as const;
+const numericOwnerRiskAcknowledgement = 'P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN';
+const nodeParents = Object.freeze([
+  Object.freeze({ path: '/', uid: 0, gid: 0, mode: 0o755 }),
+  Object.freeze({ path: '/opt', uid: 0, gid: 0, mode: 0o755 }),
+  Object.freeze({ path: '/opt/node-v24.21.0-linux-x64', uid: 1001, gid: 1001, mode: 0o755 }),
+  Object.freeze({ path: '/opt/node-v24.21.0-linux-x64/bin', uid: 1001, gid: 1001, mode: 0o755 }),
+]);
 function keys(value: unknown, allowed: string[]) {
   return object(value) && Object.keys(value).sort().join('|') === [...allowed].sort().join('|');
 }
@@ -50,6 +58,7 @@ export type Grant = {
   schema: 1; scope: string; branch: string; commit: string; controllerSha256: string; shellSha256: string;
   nodeSha256: string; runInstance: string; issuedAt: string; expiresAt: string;
   totalMs: number; metadataBytes: number; maxCreates: 1; maxStarts: 1;
+  numericOwnerRiskAcknowledgement: typeof numericOwnerRiskAcknowledgement;
 };
 export type HostBinding = { platform: string; uid: number; safePaths: boolean; nodePath: string; nodeSha256: string;
   sourceRoot: string; ledgerRoot: string; grant: unknown; consumed: boolean; grantFingerprint: string };
@@ -69,7 +78,38 @@ export function parseArguments(args: string[]): 'plan' | 'apply' {
 export function proposal() {
   return { status: 'PREPARATION_ONLY', complete: false, externalUserApprovalVerified: false,
     scope: FIXED.scope, totalMs: FIXED.totalMs, metadataBytes: FIXED.metadataBytes,
-    actualExecutionAuthorized: false };
+    actualExecutionAuthorized: false, ownerTrustStatus };
+}
+type NodeBinaryFacts = { path: string; canonical: string; isFile: boolean; isSymbolicLink: boolean;
+  uid: number; gid: number; mode: number; nlink: number; dev: number; ino: number; size: number; mtimeMs: number };
+type NodeParentFacts = { path: string; canonical: string; isDirectory: boolean; isSymbolicLink: boolean;
+  uid: number; gid: number; mode: number; dev: number; ino: number };
+export type NodeTrustFacts = {
+  platform: string; executionUid: number; execPath: string; binary: NodeBinaryFacts; opened: NodeBinaryFacts;
+  openedAfter: NodeBinaryFacts; after: NodeBinaryFacts; sha256: string;
+  procSelfExe: { canonical: string; isFile: boolean; dev: number; ino: number; size: number };
+  parentsBefore: NodeParentFacts[]; parentsAfter: NodeParentFacts[];
+};
+export function assertNodeTrustFacts(facts: NodeTrustFacts) {
+  const validBinary = (value: NodeBinaryFacts) => object(value) && value.path === FIXED.node && value.canonical === FIXED.node
+    && value.isFile === true && value.isSymbolicLink === false && value.uid === 1001 && value.gid === 1001
+    && value.mode === 0o755 && value.nlink === 1 && integer(value.dev) && integer(value.ino)
+    && integer(value.size) && value.size <= 268435456 && Number.isFinite(value.mtimeMs);
+  requireValue(object(facts) && facts.platform === 'linux' && facts.executionUid === 1000 && facts.execPath === FIXED.node
+    && [facts.binary, facts.opened, facts.openedAfter, facts.after].every(validBinary)
+    && same(facts.binary, facts.opened) && same(facts.binary, facts.openedAfter) && same(facts.binary, facts.after)
+    && facts.sha256 === FIXED.nodeSha256, 'NODE_BINDING');
+  const validParents = (values: NodeParentFacts[]) => Array.isArray(values) && values.length === nodeParents.length
+    && values.every((value, i) => { const expected = nodeParents[i]!;
+      return object(value) && value.path === expected.path && value.canonical === expected.path
+        && value.isDirectory === true && value.isSymbolicLink === false && value.uid === expected.uid
+        && value.gid === expected.gid && value.mode === expected.mode && integer(value.dev) && integer(value.ino); });
+  requireValue(validParents(facts.parentsBefore) && validParents(facts.parentsAfter)
+    && same(facts.parentsBefore, facts.parentsAfter), 'NODE_BINDING');
+  const proc = facts.procSelfExe;
+  requireValue(object(proc) && proc.canonical === FIXED.node && proc.isFile === true && proc.dev === facts.binary.dev
+    && proc.ino === facts.binary.ino && proc.size === facts.binary.size, 'NODE_BINDING');
+  return { status: ownerTrustStatus };
 }
 export function parseGrantRecord(raw: Uint8Array): unknown {
   requireValue(raw.byteLength <= 8192, 'GRANT_REJECTED');
@@ -91,7 +131,7 @@ function safeEnv(value: unknown, image: boolean) {
     if (!Object.hasOwn(expectedEnvironment, key)) return false;
     if (image && key === 'PATH') {
       // 기본 image PATH도 검사한다. 이후 고정 PATH로 override한다.
-      if (parsed[key] !== '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin') return false;
+      if (parsed[key] !== '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin') return false;
     } else if (parsed[key] !== expectedEnvironment[key as keyof typeof expectedEnvironment]) return false;
   }
   const needed = image ? ['PATH', 'LANG', 'GOSU_VERSION', 'PG_MAJOR', 'PG_VERSION', 'PGDATA'] : Object.keys(expectedEnvironment);
@@ -255,12 +295,13 @@ function grantValid(binding: HostBinding, git: GitBinding, wall: number): Grant 
     && binding.sourceRoot === FIXED.sourceRoot && binding.ledgerRoot === FIXED.ledgerRoot
     && binding.nodePath === FIXED.node && binding.nodeSha256 === FIXED.nodeSha256, 'HOST_BINDING');
   requireValue(!binding.consumed, 'ALREADY_CONSUMED');
-  requireValue(keys(g, ['schema', 'scope', 'branch', 'commit', 'controllerSha256', 'shellSha256', 'nodeSha256', 'runInstance', 'issuedAt', 'expiresAt', 'totalMs', 'metadataBytes', 'maxCreates', 'maxStarts']), 'GRANT_REJECTED');
+  requireValue(keys(g, ['schema', 'scope', 'branch', 'commit', 'controllerSha256', 'shellSha256', 'nodeSha256', 'runInstance', 'issuedAt', 'expiresAt', 'totalMs', 'metadataBytes', 'maxCreates', 'maxStarts', 'numericOwnerRiskAcknowledgement']), 'GRANT_REJECTED');
   const grant = g as unknown as Grant; const issued = Date.parse(grant.issuedAt); const expiry = Date.parse(grant.expiresAt);
   requireValue(grant.schema === 1 && grant.scope === FIXED.scope && grant.branch === FIXED.branch
     && /^[a-f0-9]{40}$/.test(grant.commit) && fullId(grant.controllerSha256) && /^[a-f0-9]{32}$/.test(grant.runInstance)
     && grant.shellSha256 === FIXED.shellSha256 && grant.nodeSha256 === FIXED.nodeSha256
     && grant.totalMs === FIXED.totalMs && grant.metadataBytes === FIXED.metadataBytes && grant.maxCreates === 1 && grant.maxStarts === 1
+    && grant.numericOwnerRiskAcknowledgement === numericOwnerRiskAcknowledgement
     && Number.isFinite(issued) && Number.isFinite(expiry) && issued <= wall && wall < expiry
     && expiry > issued && expiry - issued <= FIXED.grantMs, 'GRANT_REJECTED');
   requireValue(git.branch === FIXED.branch && git.commit === grant.commit && git.remote === FIXED.remote && git.clean
@@ -294,7 +335,7 @@ export async function runDiscoveryHost(input: { mode?: 'plan' | 'apply' }, ports
   const receipt = async () => {
     try { await step(() => ports.fs.receipt({ schema: 1, scope: FIXED.scope, phase, id, instance, consumed, consumeAttempted, pendingIO, createAttempted, startAttempted,
       termAttempted, removeAttempted, helperAbsent, sourcePreflightObserved, sourceObserved, clientTermRequested, clientCloseUnconfirmed,
-      helperExitCode, helperSignal, helperCloseObserved, failurePhase, error: failure, externalUserApprovalVerified: false }, deadline), true); }
+      helperExitCode, helperSignal, helperCloseObserved, failurePhase, ownerTrustStatus, error: failure, externalUserApprovalVerified: false }, deadline), true); }
     catch { receiptFailed = true; throw new Fault('RECEIPT_UNKNOWN'); }
   };
   const command = async (value: Command, end = deadline) => {
@@ -327,7 +368,8 @@ export async function runDiscoveryHost(input: { mode?: 'plan' | 'apply' }, ports
     requireValue(deadline - ports.now() >= FIXED.startMinimumMs, 'START_BUDGET');
     phase = 'consume'; consumeAttempted = true; consumed = null;
     await step(() => ports.fs.consume({ schema: 1, scope: FIXED.scope, instance, commit: grant.commit,
-      controllerSha256: grant.controllerSha256, externalUserApprovalVerified: false }, deadline), true); consumed = true; await receipt();
+      controllerSha256: grant.controllerSha256, ownerTrustStatus, numericOwnerRiskAcknowledgement,
+      externalUserApprovalVerified: false }, deadline), true); consumed = true; await receipt();
     phase = 'create'; createAttempted = true; await receipt();
     requireValue(deadline - ports.now() >= FIXED.startMinimumMs, 'START_BUDGET');
     const create = await command({ kind: 'create', instance });
@@ -382,7 +424,7 @@ export async function runDiscoveryHost(input: { mode?: 'plan' | 'apply' }, ports
   if (consumed) { try { await receipt(); } catch { failure = 'RECEIPT_UNKNOWN'; failurePhase ??= phase; } }
   const complete = !failure && !receiptFailed && !!metadata && helperAbsent === true && sourceObserved === true;
   return { status: complete ? 'METADATA_COLLECTED_AND_CLEANED' : 'NOT_COMPLETE', complete,
-    externalUserApprovalVerified: false, phase, failurePhase, error: failure, helperExitCode, helperSignal, helperCloseObserved, consumed, consumeAttempted, pendingIO, clientTermRequested, clientCloseUnconfirmed, createAttempted, startAttempted, termAttempted,
+    externalUserApprovalVerified: false, ownerTrustStatus, phase, failurePhase, error: failure, helperExitCode, helperSignal, helperCloseObserved, consumed, consumeAttempted, pendingIO, clientTermRequested, clientCloseUnconfirmed, createAttempted, startAttempted, termAttempted,
     removeAttempted, helperId: id, helperAbsent, sourcePreflightObserved, sourceVolumeObserved: sourceObserved,
     sourcePreservationRequired: createAttempted || consumed !== false, receiptFailed, metadata: complete ? metadata : null };
 }
@@ -399,6 +441,19 @@ export function createSystemPorts(): Ports {
     check(); const handle = await fs.open(path, flags, mode);
     if (now() >= activeDeadline) { await handle.close(); throw new Fault('DEADLINE'); } return handle;
   };
+  const observeNodeParents = async (): Promise<NodeParentFacts[]> => {
+    const out: NodeParentFacts[] = [];
+    for (const expected of nodeParents) {
+      const s = await io(() => fs.lstat(expected.path)); const canonical = await io(() => fs.realpath(expected.path));
+      out.push({ path: expected.path, canonical, isDirectory: s.isDirectory(), isSymbolicLink: s.isSymbolicLink(),
+        uid: s.uid, gid: s.gid, mode: s.mode & 0o7777, dev: s.dev, ino: s.ino });
+    }
+    return out;
+  };
+  const nodeFileFacts = (s: Stats, canonical: string): NodeBinaryFacts => ({
+    path: FIXED.node, canonical, isFile: s.isFile(), isSymbolicLink: s.isSymbolicLink(), uid: s.uid, gid: s.gid,
+    mode: s.mode & 0o7777, nlink: s.nlink, dev: s.dev, ino: s.ino, size: s.size, mtimeMs: s.mtimeMs,
+  });
   async function safePath(path: string, file: boolean, exactMode?: number) {
     const stat = await io(() => fs.lstat(path)); requireValue(!stat.isSymbolicLink() && (file ? stat.isFile() && stat.nlink === 1 : stat.isDirectory()), 'PATH_REJECTED');
     requireValue(await io(() => fs.realpath(path)) === path, 'PATH_REJECTED');
@@ -450,19 +505,30 @@ export function createSystemPorts(): Ports {
         activeDeadline = deadline; check();
         await fixedRoots(); const raw = await readSafe(join(ledger, 'grant.json'), 8192, 0o600);
         const grant = parseGrantRecord(raw);
+        const parentsBefore = await observeNodeParents();
         const nodeStat = await io(() => fs.lstat(FIXED.node));
+        const canonical = await io(() => fs.realpath(FIXED.node));
         requireValue(process.execPath === FIXED.node && nodeStat.isFile() && !nodeStat.isSymbolicLink() && nodeStat.nlink === 1
-          && nodeStat.uid === 0 && (nodeStat.mode & 0o022) === 0 && nodeStat.size <= 268435456 && await io(() => fs.realpath(FIXED.node)) === FIXED.node, 'NODE_BINDING');
+          && nodeStat.uid === 1001 && nodeStat.gid === 1001 && (nodeStat.mode & 0o7777) === 0o755
+          && nodeStat.size <= 268435456 && canonical === FIXED.node, 'NODE_BINDING');
         const nodeHandle = await open(FIXED.node, constants.O_RDONLY | constants.O_NOFOLLOW); const nodeHash = createHash('sha256');
+        let initial: Stats; let openedAfter: Stats;
         try {
-          const initial = await io(() => nodeHandle.stat()); requireValue(initial.dev === nodeStat.dev && initial.ino === nodeStat.ino && initial.nlink === 1, 'NODE_BINDING');
+          initial = await io(() => nodeHandle.stat()); requireValue(initial.dev === nodeStat.dev && initial.ino === nodeStat.ino && initial.nlink === 1, 'NODE_BINDING');
           const bytes = Buffer.alloc(1048576); let count = 0;
           for (;;) { const r = await io(() => nodeHandle.read(bytes)); count += r.bytesRead; requireValue(count <= nodeStat.size, 'NODE_BINDING');
             if (!r.bytesRead) break; nodeHash.update(bytes.subarray(0, r.bytesRead)); check(); }
-          const after = await io(() => nodeHandle.stat()); requireValue(count === nodeStat.size && after.size === nodeStat.size && after.mtimeMs === nodeStat.mtimeMs, 'NODE_BINDING');
+          openedAfter = await io(() => nodeHandle.stat()); requireValue(count === nodeStat.size && openedAfter.size === nodeStat.size && openedAfter.mtimeMs === nodeStat.mtimeMs, 'NODE_BINDING');
         } finally { await nodeHandle.close(); }
+        const after = await io(() => fs.lstat(FIXED.node)); const afterCanonical = await io(() => fs.realpath(FIXED.node));
+        const procStat = await io(() => fs.stat('/proc/self/exe')); const procCanonical = await io(() => fs.realpath('/proc/self/exe'));
+        const parentsAfter = await observeNodeParents(); const digest = nodeHash.digest('hex');
+        assertNodeTrustFacts({ platform: process.platform, executionUid: process.getuid!(), execPath: process.execPath,
+          binary: nodeFileFacts(nodeStat, canonical), opened: nodeFileFacts(initial, canonical), openedAfter: nodeFileFacts(openedAfter, canonical),
+          after: nodeFileFacts(after, afterCanonical), sha256: digest, parentsBefore, parentsAfter,
+          procSelfExe: { canonical: procCanonical, isFile: procStat.isFile(), dev: procStat.dev, ino: procStat.ino, size: procStat.size } });
         return { platform: process.platform, uid: process.getuid!(), safePaths: true, nodePath: process.execPath,
-          nodeSha256: nodeHash.digest('hex'), sourceRoot: FIXED.sourceRoot, ledgerRoot: ledger,
+          nodeSha256: digest, sourceRoot: FIXED.sourceRoot, ledgerRoot: ledger,
           grant, consumed: !await absent(join(ledger, 'consumed.json')), grantFingerprint: hash(raw) };
       },
       async consume(record, deadline) {
@@ -504,6 +570,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const result = await runDiscoveryHost({ mode }, mode === 'apply' ? createSystemPorts() : undefined);
     process.stdout.write(JSON.stringify(result) + '\n'); process.exitCode = result.complete || mode === 'plan' ? 0 : 1;
   } catch (error) {
-    process.stdout.write(JSON.stringify({ status: 'NOT_COMPLETE', complete: false, error: codeOf(error), externalUserApprovalVerified: false }) + '\n'); process.exitCode = 1;
+    process.stdout.write(JSON.stringify({ status: 'NOT_COMPLETE', complete: false, error: codeOf(error), ownerTrustStatus, externalUserApprovalVerified: false }) + '\n'); process.exitCode = 1;
   }
 }

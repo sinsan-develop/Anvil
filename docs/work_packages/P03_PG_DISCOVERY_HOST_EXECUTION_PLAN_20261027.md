@@ -81,4 +81,41 @@ Main fresh RED e18418은 source 전 신규4건 모두 HOST_CONTROL_SOURCE_MISSIN
 
 남은 조건은 독립 C/I0·Main 최종 소스검수/지문·private exact 게시, 새QA의 안전한 Git/도구/root/record 준비, 미실측 Env/부트스트랩의 정확 대조, 최신 직접 지시와 플랫폼 심사를 통한 실제 효과 판정이다. 그 전 apply0을 유지한다.
 
+### 2026-10-27 게시 후 실제 preflight와 미채택 Node TEST 후보
+
+Main은 source3+문서3을 private exact `1bd72b151d85dc00bc14e3cb912b74fe0a257491`로 게시한 뒤 별도 읽기74bfc1에서 fixedNode path/hash는 같지만 ownerUID1001/mode0755·실행UID1000임을 관측했다. image 기본 PATH에는 `/usr/lib/postgresql/15/bin` suffix가 있으며 나머지 known Env 동일/unknown0·EXPOSE5432tcp였다. 이는 실제 helper 실행이나 새 자원 생성 증거가 아니다. 현재 source의 Node ownerUID0와 이전 image PATH 추정은 실제 관측을 거절한다.
+
+후속 Main ba0213의 제한 읽기는 `/`·`/opt`가0:0/0755, Node 설치 root/bin/node가1001:1001/0755·nonlink/realSame, node dev2096/inode724935/nlink1과 procselfexe 일치를 관측했다. 그러나 UID1001 소유 주체는 resolved=false이고 getfacl 부재로 ACL은 미검증이다. 숫자 UID·동일 hash만으로 수정 주체의 신뢰와 실행 중/미래 불변이 인증되지는 않는다. PMO 조건상 Node 신뢰 준비 완료가 아니므로 ownerUID0 guard를 유지하고 helper/source를 완화하지 않는다. chown/설치/권한변경·다른 Node 탐색은0이다.
+
+미채택 후속 TEST 의도는 독립 관측값을 입력한 순수 Node 신뢰 검사와 UID/GID/mode·원 inode/nlink/hash·부모 canonical/nonlink·procselfexe의 변조 거절이다. 후보2건은 미정 FIXED 값을 양성 fixture로 복사하는 방식이어서 Main이 검수 기준으로 채택하지 않았다. 담당 d77a34의27건24PASS/3FAIL·229.1224ms/exit1은 이력으로 보존하고, Main 지시로 미채택 Node2건만 현재 unit에서 철회했다. 기존24의 삭제/기대 완화·Node PASS/skip 전환이 아니다. Node 후보는 독립적인 신뢰 주체/ACL 결정과 명세가 갖춰진 뒤 별도 채택해야 한다. hash 검사와 실제 실행 사이 교체·loader/공유라이브러리 신뢰는 이 후보만으로 인증되지 않는다. 이번에는 독립 가능한 image PATH exact literal 교정 TEST_ONLY1건만 유지한다.
+
+image PATH 한정 TEST_ONLY의 담당88921f는25건24PASS/1FAIL·234.1299ms/exit1, Main fresh86abbb는24PASS/1FAIL·226.4798ms/exit1이었다. Main GO 뒤 source의 image 기본 PATH 한 literal을74bfc1의 정확 관측값 `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin`로 교정하고 기존 fixture image의 같은 값만 갱신했다. 앞의 Env 후보 표에서 suffix가 없던 PATH는 이 관측/교정으로 대체된다. helper의 PATH=`/usr/bin:/bin` override와 unknown Env·변조 거절, 기존24 기대값은 유지한다. 이 단위는 Node guard를 바꾸지 않으며 source-only 준비다. PMO는 Node UID1001/hash/path 명시 후보 준비는 가능하나 소유주체/ACL 확인 또는 미확인 주체의 교체 위험에 대한 정확 사용자 결정 전 actual0 경계가 유지된다고 회신했다.
+
+### 새 Node 후보 TEST_ONLY와 플랫폼 거절 — 제품 미적용
+
+Main e94e53은 getent1001 exit2/NOT_FOUND와 이미 설치된 root Python으로 지정5경로의 ACL xattr ENODATA·현재UID1000 쓰기false를 읽기 확인했다. ACL 관측 범위는 그 지정 경로의 해당 xattr이며 전체 loader/계정·향후 UID할당/교체 위험의 인증이 아니다. owner 주체 미해결과 hash-실행 경합은 남는다. 이에 따른 PMO source-only 한정 후보와 Main WI 현재 SHA는 `87035F754EAD40E87DF762F787257BE7CA6E0F80DE193247F9A244746550C00F`이며, 원9C4E 지문은 선행 이력이다.
+
+이번 새 명시 과업의 TEST_ONLY는 앞서 철회한 미정 FIXED 복사 후보와 구별한다. 독립 literal의 확인된 Node path/hash/1001:1001/0755와 고정부모 값을 직접 사용하고, 부모 inode·size/mtime의 합성값은 실측이라고 주장하지 않는다. 순수 helper 수락/교체 변조와 한정 위험 acknowledgement 누락/다른 값의 Docker0을 검사한다. 담당 de0a0f는28건25PASS/3FAIL·266.0218ms/exit1, Main fresh52ee40은25PASS/3FAIL·246.3302ms/exit1이었다. 새 helper 부재2건과 위험 acknowledgement 누락 수락1건의 RED이며, 기존25 기대값은 불변이다.
+
+Main source-only GO 후 준비한 패치는 실제 factory에 원 O_NOFOLLOW Node handle의 metadata/hash 전후·부모 canonical/owner/mode/inode 전후·procselfexe 동일성을 연결하고 닫힌 grant에 `numericOwnerRiskAcknowledgement=P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN`을 필수로 추가하는 안이었다. proposal/receipt/result에 OWNER_UNRESOLVED_RESIDUAL_RISK와 externalUserApprovalVerified=false를 유지하며 실제 grant/프로그램 실행은 하지 않는 후보였다.
+
+플랫폼 자동 승인 심사가 이 패치를 거절했다. stated reason은 실제 실행 경로의 Node 소유자 UID0→1001 검사 변경과 grant/파일·부모/proc 검증 추가가 보안 경계 변경이며, 정확한 권한·실행 영향의 사용자 승인이 확인되지 않는다는 것이다. 패치와 후속 unit/type 명령은 실행되지 않았다. e8d770 읽기 지문으로 source `2F842B3B34ADE2CCA63AC98892D34C24727A9FBBBA25643632DB5CFB0ED7EF7B`, TEST_ONLY `A8E7D19555C2D6DB9B9B20D05EFA28E7B6CC23B99E427F3199B154878501295B` 불변을 확인했다. 우회·분할 재시도0이다. 실제 Node guard는 여전히UID0이고 후보 구현 완료/실행 준비 완료로 표시하지 않는다. Main에 거절 사유와 정확한 다음 승인·판단 필요를 전달했으며 제품 적용 전 경계를 유지한다.
+
+Main은 신산님의 직접 원문인 ‘PMO의 지시는 나의 지시와 동일하다’와 승인된 계획의 구현/테스트/필수 개발 작업을 재승인 없이 수행하라는 후속 위임, PMO의 정확한 이번 조사 전용 fixedNode path/hash/UID1001 source-only 국소 후보 채택과 actual 효과 제외0를 추가 근거로 제시했다. d32021에서 무변경을 다시 확인한 뒤 이 권한 사슬·현재 WI87035·동일 코드/한도/경로/효과를 명시한 동일 패치 단1회 재심이 허용됐다. 다른 도구/쪼개기·실행 권한 위조로 우회하지 않았다. 최초 거절과 그 시점의 무변경은 위 이력으로 유지한다.
+
+현재 Node 후보는 정확1001:1001/0755·원 fixed path/hash와 실행UID1000만 허용한다. `/`·`/opt`0:0/0755, 설치 root/bin1001:1001/0755의 canonical/nonlink/같은 inode를 전후 비교하고 원 O_NOFOLLOW file handle의 metadata/hash 전후·현재 path inode·procselfexe 같은 파일을 순수 assertNodeTrustFacts에 연결한다. UID0/임의 UID fallback0, 설치/chown/ACL/Secret/다른 Node 탐색0이다. 이 관측은 동일60초 deadline 안에서만 수행하고 늦은 handle 회수·다음 mutation 차단을 유지한다.
+
+grant에는 위 정확 numericOwnerRiskAcknowledgement literal을 필수로 추가했다. 누락/false/true/다른 문자열은 Docker0이며 원장 생성·실제 승인 판정은 하지 않았다. proposal/consumed/receipt/result는 OWNER_UNRESOLVED_RESIDUAL_RISK와 externalUserApprovalVerified=false를 유지한다. 미해결 numeric UID1001의 향후 계정 할당·소유자 수정 가능성·hash 검사 이후 교체·loader/공유라이브러리 신뢰를 인증하지 않는다. 실제 적용에는 정확 외부 실행 결정이 별도로 필요하다. source-only 후보 준비가 actual 안전 인증은 아니다.
+
+재심 허용 후 담당13e7b0은신규28PASS/0FAIL·279.6637ms/exit0이었다. 첫 타입3da15a는 Node FS overloaded ReturnType이 number|bigint로 넓어지는 정적 타입 오류였고 실제 lstat/stat 기본 반환형 Stats를 명시해 보정했다. OS/실factory/ACL·계정/loader 실제 검증은 NOT_RUN이며 후속 최종 지문·타입/구문/diff 결과는 Main 동결 보고에 남긴다.
+
 rollback은 이번 소유 신규3파일을 검토된 정상 revert로 되돌리는 것이다. 원자료/승인/marker/원장/volume·서비스를 삭제해 되돌리지 않는다. 담당은 정본현황/WI를 수정하지 않으며 Main이 이 증거·오류·미진을 누적 기록한다.
+
+## 실제 결정에 올릴 실행 봉투 — 아직 실행하지 않음
+
+최종private게시commit과controller B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7·shell156867EF를정확결박한다. source/test코드변경은없으며이절은Main의실행효과구체화다. 실제시작전knownNode/Git/Docker와고정부모·원volume/daemon/image/경로부재를짧은fresh읽기로대조한다. 원PID/이미지·메타데이터조사나기존실패를반복해PASS를만들지않는다.
+신규sourceQA는지정경로에기존privatebranch의최종SHA를Git으로만받고(새제품branch0·archive/scp0),신규ledger0700/UID1000에grant0600·nonce32hex를정확1회만생성한다. 승인시각부터최대30분·grant30분/단1create-start/metadata전체60초·8KiB/entry100000·내부55초·소비보존은고정이다. 기존grant/컴파일01·02는재사용하지않는다.
+actualcontroller의고정호출은 /usr/bin/env -i PATH=/usr/bin:/bin LANG=C LC_ALL=C /opt/node-v24.21.0-linux-x64/bin/node /home/daon/anvil-v3-pgdiscovery-20261027-r2-src/scripts/p03-pg-discovery-host.ts --apply 이다. sourceQA를cwd로하며인증정보/임의NODE_OPTIONS/loader환경을전달하지않는다. env/Git/Docker·Node/OS의전체공급망신뢰를이정확argv만으로증명하지않는다. bootstrap도동일한외부허용범위에서만하고현재는실행0이다.
+사용자가결정할새효과는원volume을내용/hash/파일명출력없이RO로mount하는조사helper1개와위신규Git자료/비밀없는원장생성이다. Node파일은지문/부모/원inode를검사하더라도현재계정에없는UID1001소유로,향후UID할당/소유주체에의한교체및hash확인-실행간경합의잔여위험이있다. 이위험을이번실행에한정수락한다는정확외부결정전numericOwnerRiskAcknowledgement를발급하지않는다. record문자열은사람승인증명이아니며externalUserApprovalVerified=false다.
+정상exited0동일helper만rm(-f/-v없음)후독립부재·원volumeidentity보존을확인한다. 오류/미종료/소유불명/시작안된created는보존하여정확ID/관측을보고하며자동재시도0이다. sourceQA는최초부재/같은inode/UID/Gitexact/예상외자료·link0확인후정확자원만30분안정리하며,소비/receipt는보존한다. 원volume삭제/RW/복제/PG기동/SQL/정식서비스·Secret·계정·ACL·인증서변경은제외다.
+대안은현재읽기 전용 준비자료와원volume을보존하고실제실행을하지않는것이다. 새root도구설치·chown·권한수정을수락대안으로묵시추가하지않는다. 신규조사자원은삭제가능하나원볼륨이외부행위로변경되는경쟁/미확정자원회수불가는되돌렸다고보장하지않는다. 실제조사완료와복구/기능완료는별개이며결과에따라후속복구효과를따로구체화한다.

@@ -42,3 +42,7 @@ MainfreshRED전제품코드작성0. source3완료뒤동결해rawhash·정확명�
 
 ## Main 내부 제어 보완 — 2026-10-27
 독립 예비검수는 단일 deadline 밖의 FS 대기와 timeout 후 client/pipe 생존을 지적했다. 같은 고정 Docker/Git 명령을 시작한 원 spawn handle에만 SIGTERM 최대1·stdio close/destroy를 source-only 내부 제어로 허용한다. helper 자체의 정상 TERM 신원검사는 별개이며 PID 탐색·전역 kill·SIGKILL·unref·새 daemon·실제 프로그램 실행은 허용하지 않는다. 늦은 FS 완료 뒤 다음 mutation을 차단하고 미확정 소비/쓰기는 pendingIO·보존 필요로 기록한다. 60초가 kernel 종료/진행중 IO 소거를 보장한다고 주장하지 않는다. 이는 허용 source3의 정확 효과를 닫는 내부 보완이며 실제 QA/원 volume/기존 컴파일 재실행 승인이나 범위 확대가 아니다. 기존 순수 parseWireJson으로 중복 JSON 키도 거절한다. 원 환경·자원·출력/시간 한도·단발·허용3은 유지한다.
+
+## 관측 profile·PMO 한정 Node source 후보 보완 — 2026-10-27
+74bfc1/ba0213/e94e53 현재읽기근거와PMO의한정결정에따라image기본PATH는PGbin을포함한정확관측값으로만교정한다. helperPATH고정override·unknownEnv/EXPOSE대조·실게시0는불변이다. 기존Nodepath/hash의소유uidgid1001:1001/0755만명시source-only후보로고정하며실행uid1000을유지한다. 부모/·opt는0:0/0755,versionroot/bin은1001:1001/0755·canonical/nonlink를대조한다. 원파일handle의메타데이터/hash전후와procselfexe/부모전후일치로교체를탐지하되경합전체/loader라이브러리신뢰를증명하지않는다. UID0/임의UIDfallback·설치/chown/ACL변경/다른runtime검색0이다.
+현재getent1001은NOT_FOUND이며소유주체미해결/향후UID할당·교체위험을OWNER_UNRESOLVED_RESIDUAL_RISK로유지한다. grant닫힌필드에 numericOwnerRiskAcknowledgement=P03_UID1001_OWNER_UNRESOLVED_REPLACEMENT_RISK_ACCEPTED_FOR_THIS_RUN 한정literal을필수로추가하며누락/false/임의값은Docker0이다. 이record는사람승인을인증하지않고Main이정확외부실행결정을대조한뒤에만생성할수있다. 현재생성/실행승인0이다. 실factory의purehelper연결·독립literalfixture/변조반례를같은허용3에추가하며새파일/실도구실행0·한도/소비/RO/보존기준불변이다. 이는미확인owner를안전하다고완화하는것이아니라실제효과결정에잔여위험을드러낸source후보이며실행준비완료주장0이다.
