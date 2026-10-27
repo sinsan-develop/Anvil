@@ -11,9 +11,22 @@ import { newResponsibleSessionBuffer } from '../../../apps/web/src/features/work
 const require=createRequire(import.meta.url);
 // TSX만 메모리에서 변환한다. 파일/서버/DOM/DB/외부 Agent 생성이 아니다.
 const sourceUrl=new URL('../../../apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx',import.meta.url);
-const compiled=(await transformWithOxc(await readFile(sourceUrl,'utf8'),fileURLToPath(sourceUrl),{lang:'tsx'})).code;
-const code=compiled.replace(/(from\s*['"])([^'"]+)(['"])/g,(_match,start,path,end)=>start+(path.startsWith('.')?new URL(path,sourceUrl).href:pathToFileURL(require.resolve(path)).href)+end);
-const {WorkspaceResponsibleSessions,ProviderClaimHistoryPanel,ProviderClaimHistoryRow}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const memoryModules=new Map<string,Promise<string>>();
+function memoryTsxUrl(url:URL):Promise<string> {
+  const cached=memoryModules.get(url.href);if(cached)return cached;
+  const pending=(async()=>{
+    const compiled=(await transformWithOxc(await readFile(url,'utf8'),fileURLToPath(url),{lang:'tsx'})).code;
+    let code='',offset=0;
+    for(const match of compiled.matchAll(/(from\s*['"])([^'"]+)(['"])/g)) {
+      const start=match[1]!,path=match[2]!,end=match[3]!,resolved=path.startsWith('.')?new URL(path,url):pathToFileURL(require.resolve(path));
+      const target=resolved.pathname.endsWith('.tsx')?await memoryTsxUrl(resolved):resolved.href;
+      code+=compiled.slice(offset,match.index)+start+target+end;offset=match.index+match[0].length;
+    }
+    return 'data:text/javascript;base64,'+Buffer.from(code+compiled.slice(offset)).toString('base64');
+  })();
+  memoryModules.set(url.href,pending);return pending;
+}
+const {WorkspaceResponsibleSessions,ProviderClaimHistoryPanel,ProviderClaimHistoryRow}=await import(await memoryTsxUrl(sourceUrl));
 const pid='11111111-1111-4111-8111-111111111111',ref={id:pid,version:1,contentHash:'a'.repeat(64)},session:any={user:{id:pid},clientId:pid,csrfToken:'a'.repeat(43)};
 const confirmed:any={projectId:pid,ref,snapshot:{contentConfirmed:true,executionAuthorized:false,dispatchPerformed:false}};
 function render(buffer:any,owner=true) {

@@ -8311,3 +8311,9 @@
 
 
 - **FN09 소스 통합 준비·검증 공백 해소**: bba002의 최종 LEAVE1 PASS3.4s는 실제 첫 응답 완료/렌더 뒤 원명령·UNKNOWN·입력·정확 재전송2·저장0을 확인했다. 독립 검증 I1 ADDRESSED/새C0/I0, 제품 A5F6F218 불변·spec7CED6266이다. 2e5661 최종type/diff0·등록QA36항목02:32:44.952Z 소유/link/경로/process0 뒤 회수·3b744d 별도 부재를 확인했다. Mainc09ee5는 승인 허용18 중 실제 변경17만 stage하고 원문/index를 EXACT7·CRLF→LF만10으로 대조했다. manifest C5E2372910A02A49CBB5026BBD6A3F1C5F6377602CEF43E44A78B40252D746E3에 양쪽 지문·보호8/불변 허용1을 보존했다. 소유 결과서/계획/현황과 WI/manifest 정확5문서를 더해 소스17+문서5=22 checkpoint/private 게시를 검토한다. 기존 화면시험 수집FAIL·실SQL/정식DB/서비스·Agent/인수 NOT_RUN과 전체 미완료는 유지한다. 다음은 이 화면시험의 기존 TSX 수집 경로를 최소 범위로 보완해 직접 영향 회귀 공백을 닫고, 별도 실제 미구현 FN16의 계약 공백은 PMO 결정/지원과 분리해 구체화한다. Main 제품 수정0·추가 코드 writer0이다.
+
+
+- **FN09 게시·기존 화면시험 수집 복구 착수**: 73e875의4f5701c5a7251ceb9354fd15504ec2035658419e는4265fb exact22(EXACT12/개행만10)·fcb3a9 private/local exact·tracked clean/보호8/mainf976불변이다. Main409add는기존책임세션화면시험의ClaimUnderstandingHistory.tsx Node수집FAIL/exit1·353.264ms를실제확인했다. 다음 소유 WI FN09_SCREEN_MEMORY_IMPORT_RECOVERY_WORK_INSTRUCTION.md SHADBCA324BDA7EC70512B589CDF7A97E6EFFB4A7347FC3445A7438A57A46BCEF65는시험1파일의메모리import변환만보완하고기존4개검수기대·데이터·제품/권한을보존한다. 단일새담당에배정·Main관리검수통합,새QA/실DB/서비스/Agent0이다. 전체계획미완료·목표active이며별도FN16상세계약공백은PMO지원과분리한다.
+
+
+- **FN09 기존 화면시험 Main 검수·통합 준비**: 단일담당은 시험1파일의 TSX 재귀 메모리 변환만 보완했다. Main09ffc4 실제 기존4 PASS358.9764ms/skip0·type/diff0, c85650의 constpid이하 fixture/시험 본문 바이트 동일true를 확인했다. 최종SHA3762371CB1A51523AF2FD24FA016891E6F94640C24E183E01A69956CB02EC217·독립 C0/I0다. 담당 타입보정2회/추정읽기2건은 제품 실패와 구분한다. 제품·SQL/DB/Auth/정책·서비스·Secret/Agent/자원변경0·보호8보존이며 소유시험1+WI/결과/계획/현황4문서 정확5로 기존branch checkpoint/private 게시한다. 앞선 수집FAIL만 후속해소했고 전체 미검증/계획 미완료는 유지한다. 다음은 실제 미구현 FN16 수동백업의 보호참조/수집·상태 저장 상세안을 구체화해 PMO에 정확한 결정·지원만 요청하며 임의 키/대상/수치·실자원을 만들지 않는다.

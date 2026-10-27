@@ -1497,3 +1497,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-27 FN09/FN11/UI04 역할·예약 일회 승인 소스 검수**: WI73DD668F의 허용18 중17경로를 구현했다. Main 신규/인접77 PASS, UI 오류 국소 보정 후25 PASS, 실제 App FLOW1·후속8·늦은 응답 보강1을 분리 검증했다. 두 독립 I1은 보정·재검수 C0/I0이며 최종 QA 잔류0이다. 기존 화면시험 TSX 수집FAIL과 실제 SQL/DB/정식 서비스·Agent/사용자 인수는 미충족으로 남긴다. 부분 구현이며 전체 FN09/FN11/UI04·Stage·계획 완료가 아니다. 결과 docs/04_test_reports/AV3/FN09_RESPONSIBLE_SESSION_ONE_TIME_APPROVAL_RESULT.md와 SOURCE_MANIFEST를 따른다.
+
+
+- **2026-10-27 FN09 기존 화면시험 수집 복구**: 하위 TSX를 메모리 변환하는 시험1파일만 보완해 Main의 기존4건 PASS358.9764ms/type/diff0·독립 C0/I0를 확인했다. fixture/기대 본문은 기준HEAD와 바이트 동일하며 제품·환경 변경0이다. 과거 수집FAIL은 보존하고 해당 검증 공백만 해소했다. 실제 SQL/정식DB·서비스·Agent/사용자 인수와 전체 업무는 미완료다. 상세 docs/04_test_reports/AV3/FN09_SCREEN_MEMORY_IMPORT_RECOVERY_RESULT.md.
