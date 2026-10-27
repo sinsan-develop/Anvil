@@ -3,7 +3,7 @@
 ## 현재 인수 요약 — 2026-10-27 P03 실행 결정 전달 후
 
 - **현재 단계:** 로컬·WSL 기능 구현 1단계. 전체 WORK_PLAN 미완료이며 완료보고 상태가 아니다. Stage A의 과거 수용 이력은 보존하되 현재 정식 개발 PG 컨테이너/네트워크 부재와 원 volume 보존 상태를 별도로 관리한다.
-- **최신 안전한 소스:** codex/av3-stage-b / private·local exact `20a807dd28fa5f537f8ac06fa004902220b0b567`. 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210`이며 이branch결과를 main 통합으로 부르지 않는다. 후속 UI05 업무의 소유 source·검수 자료·현황 변경은 최신 이력에 명시하며 보호untracked8은 보존한다.
+- **최신 안전한 소스:** codex/av3-stage-b / private·local exact `585ea34ae4704621634a4db7b6dad125cbca4231`. 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210`이며 이branch결과를 main 통합으로 부르지 않는다. 후속 UI05 업무의 소유 source·검수 자료·현황 변경은 최신 이력에 명시하며 보호untracked8은 보존한다.
 - **현재 구현·검수:** P03 구조조사 host 소스 준비는 Main 신규28 PASS/type·구문0/독립지정C0I0. 실제 metadata·복구·제품 사용 증거가 아니다. UI06/UI10한정대조에서이미연결된동선을재작업하지않았다. Stage B/C·나머지UI/FN/IX는아래기존상태표와최신상세이력을대조한다.
 - **정확한 다음 실행 결정:** PMO가20a807dd/실행안C9960CD6의새GitQA/원장/helper1·원volumeRO·60초/8KiB/30분·숫자ownerUID1001잔여위험한정수락을사용자에게단1회질문했다. 답변전riskack/grant/QA/helper/mount/PG/DB/서비스/Agent생성·실행0. 현재원volume내용/Secret/PG기동/복제는요청범위밖이다.
 - **UI05 독립 진전:** 등록 산출물 원본 다운로드 source 연결·직접14/합성 Edge1/type·메모리build·독립C0I0·QA정리 확인. 실제 API/DB/served·전체 기능은 미확인으로 남긴다.
@@ -8502,3 +8502,27 @@
 
 
 - **UI05 index exact11·EOL 별도 보존**: Main6e827c는source6+WI/결과/PNG/계획/현황11만stage·보호8/지문/cachedcheck0를확인했다. 원문/index5동일·source/test6은CRLF→LF만차이로정확index6지문을결과서에추가기록했다. 설정/working제품/테스트기대변경0·의미동일검사반복0이다. 문서보존guard로발견한기존PLAN두표현차이는그대로보존하고이번UI05행만독립반영했다. 다음같은경로doc2만restage후commit/privateexact·main불변을대조한다. 전체계획완료/정식API·DB인수와구분한다.
+
+
+- **UI05 원본 다운로드 checkpoint 게시·다음 UI08 연결 선정**: df4632의585ea34ae4704621634a4db7b6dad125cbca4231은20a807dd직접자식exact11(source6+WI/결과/PNG/계획/현황),1fd0e3→d73ce2 같은실행handle로private게시/localexact·trackedclean/mainf976불변을확인했다. 6e827c raw/index5동일·source6 CRLF→LF만차이·보호8/cachedcheck0와raw/index지문을결과서에분리보존했다. 제품·검사기대·Git설정변경0·정식API/DB/served/사용자·Agent/전체계획미완료다.
+  - 다음독립후보는UI08 중요문제보고에서기존downloadcomponent를재사용하는원본받기다. 읽기검수는실호출선App→ApprovalsPage(기존session보유)→ReportedResultIssue의session전달/원본download만미연결임을입증했고SCREEN_WORK S08근거확인범위와일치한다고판정했다. 최소제품2파일+기존harnessfixture1·신규DOM2만설계하며UI05바이트unit/이미완료시험은반복하지않는다. 실제파일명이ApprovalsPage이며가칭DecisionsPage를추정읽지않고실제목록으로확인했다. 새API/schema/권한0·명시GET/현재session·권한거절회수/지연응답검수를단일subagent에이어배정한다.
+  - P03정확질문20a807dd는585의부모로보존·원controller/shell/실행안지문불변이며현재HEAD로묵시대체하지않는다. PMO에이번단위진행과다음독립연결을보고했고P03/FN16질문을중복하지않았다. 최신STATUS누적만Main소유후속dirty로남으며완료목표/Stage병합/운영전환은선언하지않는다.
+
+
+- **UI08 보고 원본 다운로드 독립 착수·DOM RED 사전등록**: Mainc485ee WI UI08_REPORTED_ARTIFACT_DOWNLOAD_WI_20261027.md SHA CD586F0D11A137B5967419F0266C415FFBE77DCADA9B40AE639B0CBBDCF62F21·독립사전C0/I0의정확5경로를새단일writer ui08_reported_download에게배정했다. 기준585ea34a·MainSTATUS/WI외기존보호8·UI05엔진보존·제품2/기존fixture1은Mainfresh실DOM RED/정리/GO전수정0이다. 허용신규DOM2는현재실위젯/ApiClient·기존GET의원문조회성공뒤원본download영역미연결을검사한다. 실제App→ApprovalsPage현재session전달은type/정적선으로별도대조하며위젯만으로전체승인/DB여정PASS0.
+  - QA literal D:/tmp/anvil-v3-stage-b/ui08-reported-artifact-download-20261027-01,ownerSINSAN/cyhuh·root/temp/browser/downloads/results만. 63a925 root부재·부모nonlink/reparsefalse·DrootSYSTEM/Dtmp·stageb부모SINSAN/cyhuh를확인했다. ENV ANVIL_UI08_REPORTED_ARTIFACT_DOWNLOAD_DOM_QA=1,TEMP/TMP=root/temp·Edgeheadless1920x1080·실source+합성transport/dummyorigin만·최초생성30분/시험60초/browser15초·전체10분·retry0/worker1다. GREEN만results/ui08-reported-artifact-download.png1개허용·기존CSS메모리·trace/video0·실DB/서비스/사용자브라우저/Agent0. RED후관련process0/owner/nonlink/inventory→등록파일/빈dir개별회수→독립부재뒤제품GO하고GREEN은새생성시각의새빈instance로실행한다. 현재QA생성0이다.
+  - 담당추정document-api읽기오류1은실제목록/editor-api의DocumentSession으로정정·추가추정읽기금지/제품실패와분리했다. 원제품2/기존harness raw지문고정·현재TEST_ONLY준비중,Main제품직접수정0·새API/schema/권한/실행효과0·전체계획미완료다.
+
+
+- **UI08 실제 미연결 RED·정확 정리 후 제품 GO**: 신규DOMtest FD268CA5/harness9B801532의실제기존ReportedResultIssue/ApiClient를Main이실행했다. 935a82 RED QA생성UTC10:07:04.3201496Z(ownerSINSAN/cyhuh),ac06e3 0PASS1FAIL/skip0/5571.7373ms·원보고article조회성공뒤등록원본다운로드영역wait3500ms timeout으로UI08_DOWNLOAD_NOT_CONNECTED를입증했다. fixture/권한/일반접속오류가아니며현기능부재RED다. context종료뒤8027eb는fresh root시각/owner/nonlink/범위inventory·관련process0를확인하고225files/82dirs/14652027bytes를10:07:42.061Z개별회수·099915 별도10:07:51.841Z root/process0를확인했다.
+  - 같은단일담당에게허용제품2+기존harnesssessionfixture1의GO를전달했다. 신규DOM2기대/timeout/범위완화0·기존UI05엔진/바이트unit반복0·새API/schema/권한/승인/분류/실DB/Agent0다. 다음source5동결/type·메모리build·독립검수뒤GREEN을새빈instance로검수한다. 현재root부재·Main제품수정0·전체계획미완료다.
+
+
+- **UI08 보고 원본 다운로드 최종 후보·GREEN 전 대조**: 단일 담당 허용5 지문을86e9a1로 재확인했다. 새 시험의 count:number 3곳만 되돌려 계산한 메모리 지문은 TEST_ONLY FD268CA5와 같아 기대/timeout 완화0이다. 독립 지정5 C0/I0·Main fresh type f67b36 exit0/메모리 Web build4f5c79 output1/writefalse/exit0·제품 diff3ba314를 확인했다. 실 브라우저 GREEN은 아직 NOT_RUN이며 UI05 완료14시험 재실행0이다.
+- GREEN은 기존 등록 literal D:/tmp/anvil-v3-stage-b/ui08-reported-artifact-download-20261027-01의 새 빈 instance로 root/temp/browser/downloads/results만 생성한다. 86e9a1 부모 SINSAN/cyhuh·nonlink·root부재, 기존 RED정리/독립부재099915를 확인했다. 생성시각부터30분/수동DOM60초·Edge15초/retry0·결과PNG1·합성transport/기존style만 사용한다. 실API/DB/served/사용자브라우저/Agent0이며 완료후 exact owner/link/process/inventory 정리 및 별도부재를 확인한다. Main 제품수정0·전체계획미완료다.
+
+
+- **UI08 보고 원본 다운로드 소스·합성 한정 검수**: 단일담당허용5 지문86e9a1/독립C0I0·Main type f67b36/메모리build4f5c79/diff3ba314·새DOM b4065a 1PASS5991.6804ms/skip0·detect6a8a5c []로검수했다. 실제다운로드2/hash·권한회수/주체·transport·선택ABA/닫기·unmount늦은응답을확인했다. Main6b2415 --import tsx 미설치오기는browser실행전오류로분리·Node24직접TS실행으로정정,설치/기대완화0이다.
+- GREEN299a57 생성10:14:51.9129041Z·34587f exact230파일82dir/16031760bytes 정리10:15:51Z/c416da 별도10:16:01Z root/process0이다. PNG13297bytes/86A1D8F0 보존·직접시각확인,RESULT에RED/GREEN·raw지문/변경전후/미검증·rollback을누적했다. 실제API/DB/정식served/사용자인수는NOT_RUN·전체UI08/계획미완료이며Main제품수정0·P03/FN16정확질문중복0이다.
+
+- UI08 a64cbb exact10 staging·제품/시험2 raw동일/3 CRLF→LF만·보호8불변/cachedcheck0. RESULT에게시index3지문을추가했다. 기존main/다른자료변경·전체Stage합격상속0이며같은branch검수checkpoint로보존한다.

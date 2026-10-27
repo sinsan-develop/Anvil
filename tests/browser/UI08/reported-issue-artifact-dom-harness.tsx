@@ -23,7 +23,7 @@ function Harness(){
  const [model,setModel]=useState({selected:0,client:0,project:seed.pid,epoch:0,closed:false,hash:false});
  const selection=structuredClone(seed.results[model.selected].selection);if(model.hash)selection.item.ref.contentHash='f'.repeat(64);
  return <><nav aria-label="합성 조회 문맥"><button onClick={()=>setModel(p=>({...p,epoch:p.epoch+1,closed:false,selected:0,client:0,project:seed.pid,hash:false}))}>시험 초기화</button>{(['선택','선택 해시','클라이언트','프로젝트'] as const).map(kind=>(['A','B'] as const).map(side=><button key={kind+side} onClick={()=>setModel(p=>kind==='선택'?{...p,selected:side==='A'?0:1,closed:false}:kind==='선택 해시'?{...p,hash:side==='B'}:kind==='클라이언트'?{...p,client:side==='A'?0:1}:{...p,project:side==='A'?seed.pid:seed.otherProject})}>{kind} {side}</button>))}</nav>
- <ReportedResultIssue key={model.epoch} client={clients[model.client]!} projectId={model.project} selection={model.closed?null:selection} onClose={()=>setModel(p=>({...p,closed:true}))} onAuthenticationLost={()=>{qa.authLost++;}}/>
+ <ReportedResultIssue key={model.epoch} client={clients[model.client]!} projectId={model.project} session={{user:{id:'55555555-5555-4555-8555-555555555555'},clientId:'66666666-6666-4666-8666-666666666666',csrfToken:'a'.repeat(43)}} selection={model.closed?null:selection} onClose={()=>setModel(p=>({...p,closed:true}))} onAuthenticationLost={()=>{qa.authLost++;}}/>
  </>;
 }
 createRoot(document.getElementById('root')!).render(<Harness/>);
