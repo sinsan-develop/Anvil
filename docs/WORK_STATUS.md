@@ -8910,3 +8910,33 @@
 
 
 - **P03 R2 새actual결정안 준비·독립검토**: docs/work_packages/P03_R2_LIMITED_COPY_ONCE_EXECUTION_DECISION_PACKET_20261028.md SHA662FEF2E1913B2CCF770052ED631D5C74A4D76C142A6FB543A379721F6D3A64B/16478bytes양쪽동일·Mainbc9648원문대조·독립문서C0/I0/M0. exact8e9292d8/controller532621/shellCF6B/candidate467A·새6대상·추가volume1/위험4·단발30분/600초·정상자기회수·R1/R2부분사본/원장보존·PGSQL서비스제외를결박했다. 문서적합≠새실제승인/환경안전확인·actual0/원격0/grantnonce0,PMO에정확차이/판정지원만요청하며독립가능기능조사는계속한다.
+
+
+- **PMO R2 실제결정 질문 제출·답변 미도착**: PMO는packet662FEF2E/결과D6F2및localcontrollerLF532621/shellCF6B를직접대조한뒤새R2 actual질문1회 accepted=true로신산님께제출했다고위임메시지로확인했다. 실제Git/111/독립은Main보고·결과서기준으로구별했고원337E소진/R1보존+R2추가공간/위험4/30분단발/보존을설명했다. 현재답변없음·같은질문추가0·새nonce/grant/시각/원격/QA/volume/helper/cp0. packet게시ff429762는localprivate동일·mainf976불변·trackedclean/보호8유지(07266d). FN01~05등과FN13~16의기존채택소비누락을기존담당2인이읽기전용분담대조중이며전체개발대기나완료로처리하지않는다.
+
+
+- **다음기능 FN16/UI14 미전송 편집복귀 선정**: 독립spec의실제project-backups-api merge(no receipt null금지)·ProjectBackupsPanel work생성뒤fieldset잠금/미전송해제없음 누락을Main e6b135/ee311d로확인했다. 기존FN16준비POST0/별도전송·불명전송명령보존계약안의local행위로한정해pristine미전송만명시확인후원선택/이유편집복귀를계획한다. 새서버취소/API/SQL/권한·실반출0,UNKNOWN/REQUIRED/BOUND·inflight·accesslost·타주체/CAS늦은응답보호유지. 단일기존담당에게정확WI/manifest2문서만준비배정·제품시험write전독립검토·MainRED필수/Main제품0. FN13~15읽기담당도기존재조회완료/서버cursor미계약을분리해중복대상으로선정하지않았다.
+
+
+- **FN16 읽기 경로 오류 분리**: primary는NotificationScope를잘못된features/notifications경로로rg해경로없음1후실import ../../notifications/project-notifications-api.ts의실경로를읽기정정했다. Main ea77a3는Windows rg에literal playwright*/docs/04_test_reports/AV3/FN16*를넘겨oserror123각1이었고앞선정확파일읽기는성공했다. 파일/제품/시험/환경효과0·정식개발실패횟수0,권한/설정변경으로우회하지않는다. 기존browser의oldQA엄격등록은보존하고새전용QA정확경로만추가하는시험계획을요구했다.
+
+
+- **FN16 미전송편집복귀 TEST_ONLY 착수**: WI3BC97DAE31DA15CCE2EC49BDC72F722F8139F8465DE0E9653FCE076DEAEF8B0E/manifest64AFA1BD1D4F76CADDF83CEB81A186D2D77814B608B5C3D866D0B3E4E9CC31C4양쪽동일. Main9ad12f HEADff429762/기존branch/indexempty·status만dirty·기존api/panel/browser raw·Appreadonly/보호12/신규unit결과부재대조·독립WIC0/I0/M0후단일기존담당에unit1/browser1만TEST_ONLY를배정했다. 제품2/MainfreshRED전0·browser실행/QA0·서버/SQL/권한/실반출0/Main제품0. actualP03승인답변전0과독립진행이며기준완화/완료된기능재구현은하지않는다.
+
+
+- **FN16 미전송편집복귀 Main 첫 RED**: 신규unit D20B422DCD1656E422B5827C5854607AA521A5E5CDD07DB629DF48771F5A9CC7/10911bytes를동결하고Main20e0b4는원api44616FC8/panel0359A536불변에서node --test --test-reporter=spec tests/unit/FN16/unsent-export-edit-return.test.ts를실행했다. 11수집2PASS9FAIL/224.6914ms/skip0/exit1로내부해제접점부재기능RED이며수집/실환경오류아니다. 실제prepare가fakeGET2로발급한객체·POST0/일회·위조/dispatch무효/CAS/ABA·입력반환을기대한다. 독립시험검수후제품2만GO예정·browser작성중/실행QA0·실제반출/DB/서비스/Agent0/Main제품0. 신규시험의실행전user.displayName장식제거는DocumentSession타입정합1이며기대완화/제품실패로세지않는다.
+
+
+- **FN16 Main fresh GREEN·UI QA 생성전등록**: Maincb8f06 신규11+기존export-approval-api9 단일20PASS/444.0626ms/skip0/exit0,030f03 type0. api35CB93F5/panel439F279D·unitD20B/browserA663동결,독립source검수진행중. 실App한정QA등록: D:/tmp/anvil-v3-stage-b/ui14-unsent-export-edit-return-20261028-01(ownerSINSAN\cyhuh),새bundle/results/temp/임시config만·생성뒤최대30분·실제서비스/포트listener/인증서/DB/권한/Secret0·existingmsedge/기존Playwright+Vite만. 생성직전부재·부모/realpath/nonlink/owner확인후생성하고정상종료뒤등록하위모든항목·소유process/Edgeprofile0확인후정확QA만회수/독립부재확인한다. 기존공유browserTemp나oldQA재사용0·config의timeout15000/retries0/workers1/TLSignorefalse·sameoriginroute감사보존. 단위fixture를실DB·servedPASS로승격0/Main제품0이다.
+
+
+- **FN16 독립API I1·한정RED보완**: Panel439F/browserA663정적C0/I0/M0이나API35CB는exportedsendExport직접호출시markExportDispatch선행이없으면unsentbasis/release가남아전송후genericmerge해제가가능한I1이확인됐다. 현재Panel은mark선행이므로현UI즉시결함이라고주장하지않고API미전송사실경계를보완한다. 단일담당에기존신규unit안직접sendpending/응답유실후old/newproof거절반례만TEST_ONLY추가GO·제품2Main새RED전동결. QA06549e는등록root부재/부모ownerSINSANcyhuh/nonlink확인뒤새root1생성·소유확인했고현재build/browser실행0이며최대30분수명/회수를유지한다. source/시험기대완화·새파일/서버/DB/실반출0/Main제품0이다.
+
+
+- **FN16 API I1 Main 직접 재현·한정GO**: 신규unit0E1073D0184538B4901B7326EFC92DD00CB23A2ED130F81FB858F6347C48F442에POST_PENDING/RESPONSE_LOST×OLD_PROOF/NEW_PROOF반례4만추가(기존11기대보존). Main395b7c는API35CB/panel439F불변에서 --test-name-pattern=직접sendExport로4수집0PASS4FAIL/179.1481ms/skip0/exit1을확인했다. 전송후oldproof merge가null/newproof발급이성공하는원결함RED다. 같은담당에sendExport자체basis/release폐기1곳만GREEN GO,unit0E1073/browserA663/Panel439F동결·기존전송/가드기대완화0·실QA build/browser아직0/Main제품0.
+
+
+- **FN16 I1재검수·실제DOM 첫실패 분리**: API2D5B독립I1ADDRESSED/scopedC0/I0/M0,Main22bf19 신규15+기존9 단일24PASS/210.6651ms/skip0·4821ba type0. fffd40 새등록QA Vite468modules build0(기존chunk>500k경고만/최적화범위확장0),596c08/4e453a actualEdge18=13PASS5FAIL51.0s/exit1:기존11모두PASS/new7중5의filledtextarea exactgetByLabel반출이유부재다. cba50c screenshot/57021a DOMcontext는입력과원값보존을확인했고wrappinglabel 이름검색차이를원인추론으로분리했다. 기대/selector/timeout완화없이단일담당Panel textarea aria-label1곳을보완해최종6AC014CB/type0,API2D5B/unit0E1073/browserA663불변. 단일run동일오류5건을연속재실행3회로세지않으며첫FAIL을소급PASS하지않는다. 실패산출물은동일QA내보존하고새results로재검증뒤정확정리예정·실서비스/DB/실반출/Agent0.
+
+
+- **FN16 실제App 한정검수·QA회수 완료**: Panel6AC014CB aria-label1보완만으로5919de Vite468modules build0·cbe4ec 동일spec18PASS17.1s/exit0(기존11+신규7)·기대/selector/timeout불변. 첫596c08/4e453a13PASS5FAIL51s는소급PASS하지않고이력보존,NO_COLOR/FORCE_COLOR경고와chunk>500k경고는기능실패와분리한다. 원sourceAPII1은2D5B보완/독립I1ADDRESSED C0/I0/M0,Main22bf1924PASS210.6651ms/type4821ba0·aria뒤author d3ddtype0. 정상준비해제/취소·원선택이유복귀·remount입력≠검증문서/명시재조회재동의·새command·inflight/LOST/REQUIRED/DENIED/CSRF원명령보존을실제Edge+합성sameoriginAPI로확인했다. e4f1f1은등록QA03:45:09.2713659Z생성→03:51:48.0842665Z소유/nonlink하위검사뒤68files17dirs3801961bytes회수,별도a48cb7 03:52:01.7932196Z부재·QA Node/Edge양slash0. QA실패스크린샷등도등록임시자료로회수했으므로현재파일현존을주장하지않는다. 단일담당에게허용결과1문서만배정·Main제품0·實DB/서비스/실반출/Agent/전체FN16/계획완료아니다.

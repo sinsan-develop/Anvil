@@ -1557,3 +1557,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-28 P03 R2 source 한정 보완**: PMO채택3A7094B8/후보467A5FFF/WI9CB1FF2B/manifest49AC56FD에서보존R1과분리한고정대상6을controller/shell에결박했다. Main RED111=75PASS36FAIL→GREEN111PASS·type/문법0·독립source/test C0/I0/M0. 원R1 actual337E승인은소진·NOT_COMPLETE를유지하고R1사본/원장보존,새R2 actual승인·실행/DB/서비스복구는NOT_RUN이다. source진도를사용자기능/정식DB준비/전체P03완료로승격하지않는다.
+
+
+- **2026-10-28 FN16/UI14 미전송 편집 복귀 소스·화면 검수**: 기존준비POST0/별도전송계약내에서본인미전송원객체만명시해제해원선택/이유입력으로돌아간다. 문서검증상태/동의는초기화하고명시GET·fullref대조·재동의후새명령을준비한다. UNKNOWN/승인/권한상실/타문맥/이미전송은보존하며send API진입도oldproof를폐기한다. Main신규15+직접9=24PASS·type/build0·실제Edge합성API18PASS17.1s·독립I1해소C0/I0/M0·QA0. 실제DB/정식서비스/실반출·전체백업복원/사용자인수·전체FN16/계획은미완료다.

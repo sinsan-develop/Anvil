@@ -37,9 +37,11 @@ export async function prepareExport(api:ApiClient,projectId:string,s:DocumentSes
  const checked=await exportDocument(api,projectId,selection.documentRef.id,selection.documentRef.version);if(!active()||!same(checked.ref,selection.documentRef)||!checked.artifacts.some(x=>same(x.ref,selection.artifactRef)))throw new ApiError('EXPORT_CONTEXT_CHANGED');
  const generation=await documentControl(api,projectId,s);if(!active())throw new ApiError('EXPORT_CONTEXT_CHANGED');
  const command:ProjectCommand=freeze({schemaVersion:1,projectId,commandId:crypto.randomUUID(),clientId,controlGeneration:generation,operation:'exportProject',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{includeSource:false,selection:structuredClone(selection),reason}});
- return{bindingId:crypto.randomUUID(),ownerUserId:userId,ownerClientId:clientId,projectId,csrfToken:csrf,api,transport,command,body:browserCanonical(command),receipt:null};
+ const prepared:ExportPending={bindingId:crypto.randomUUID(),ownerUserId:userId,ownerClientId:clientId,projectId,csrfToken:csrf,api,transport,command,body:browserCanonical(command),receipt:null};
+ unsentPrepared.set(prepared,{api,session:s,userId,clientId,projectId,csrf,transport,command,body:prepared.body,bindingId:prepared.bindingId});return prepared;
 }
 export async function sendExport(api:ApiClient,p:ExportPending,s:DocumentSession,current:()=>boolean):Promise<VersionRef>{
+ unsentPrepared.delete(p);unsentRelease.delete(p);
  const active=()=>current()&&exportPendingMatches(p,api,s,p.projectId),c=p.command;
  if(!active()||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||c.schemaVersion!==1||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1||!uuid(c.commandId)||c.operation!=='exportProject'||c.projectId!==p.projectId||c.clientId!==p.ownerClientId||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null&&!approvalRefValid(c.approvalRef)||c.baselineRefs.length||!exact(c.payload,['includeSource','selection','reason'])||c.payload.includeSource!==false||!selectionValid(c.payload.selection)||browserCanonical(c)!==p.body)throw new ApiError('EXPORT_CONTEXT_CHANGED');
  const generation=await documentControl(api,p.projectId,s);if(!active()||generation!==c.controlGeneration)throw new ApiError('EXPORT_CONTEXT_CHANGED');
@@ -48,8 +50,20 @@ export async function sendExport(api:ApiClient,p:ExportPending,s:DocumentSession
  if(!response.ok){const code=v&&typeof v==='object'?(v as {code?:unknown}).code:null;throw new ApiError(typeof code==='string'&&/^[A-Z_]{1,64}$/.test(code)?code:'REQUEST_FAILED',response.status);}
  if(!exact(v,['commandId','operationId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])||v.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==p.projectId||v.status!=='APPLIED'||v.version!==1||!exact(v.data,['status','ref'])||v.data.status!=='EXPORT_STORED'||!ref(v.data.ref)||v.data.ref.version!==1||v.targetId!==v.data.ref.id||!iso(v.serverReceivedAt)||!Array.isArray(v.evidenceRefs)||v.evidenceRefs.length||!Array.isArray(v.warnings)||v.warnings.length)return invalid();return freeze(structuredClone(v.data.ref));
 }
+interface UnsentBasis{api:ApiClient;session:DocumentSession;userId:string;clientId:string;projectId:string;csrf:string;transport:typeof fetch;command:ProjectCommand;body:string;bindingId:string}
+const unsentPrepared=new WeakMap<ExportPending,UnsentBasis>(),unsentRelease=new WeakMap<ExportPending,()=>boolean>();
+function pristineUnsent(p:ExportPending):boolean{const b=unsentPrepared.get(p);return !!b&&p.api===b.api&&p.transport===b.transport&&b.api.transport===b.transport&&p.ownerUserId===b.userId&&p.ownerClientId===b.clientId&&p.projectId===b.projectId&&p.csrfToken===b.csrf&&p.command===b.command&&p.body===b.body&&p.bindingId===b.bindingId&&b.session.user.id===b.userId&&b.session.clientId===b.clientId&&b.session.csrfToken===b.csrf&&p.dispatchState===undefined&&p.receipt===null&&!p.accessLost&&p.approvalRequest==null&&p.command.approvalRef===null;}
+/** 현재 실제 발급 객체의 local 해제 자격만 검사한다. 서버 취소/조회/전송은 없다. */
+export function canReleaseUnsentExport(api:ApiClient,p:ExportPending,session:DocumentSession,current:()=>boolean):boolean{return current()&&pristineUnsent(p)&&unsentPrepared.get(p)?.session===session&&exportPendingMatches(p,api,session,p.projectId);}
+/** 명시 확인 직후의 한 번뿐인 exact-old CAS 근거. 반환값은 검증 원문이 아닌 보존 입력이다. */
+export function prepareUnsentExportRelease(api:ApiClient,p:ExportPending,session:DocumentSession,current:()=>boolean):{selection:ExportSelection;reason:string}{
+ if(!canReleaseUnsentExport(api,p,session,current))throw new ApiError('EXPORT_CONTEXT_CHANGED');
+ const selected=p.command.payload.selection,reason=p.command.payload.reason;if(!selectionValid(selected)||typeof reason!=='string')throw new ApiError('EXPORT_CONTEXT_CHANGED');
+ unsentRelease.set(p,()=>canReleaseUnsentExport(api,p,session,current));return{selection:structuredClone(selected),reason};
+}
 export function mergeExportPending(old:ExportPending|null,expected:string|null,next:ExportPending|null):ExportPending|null{
- if((old?.bindingId??null)!==expected||old&&!old.receipt&&next===null)return old;
+ if((old?.bindingId??null)!==expected)return old;
+ if(old&&!old.receipt&&next===null){const proof=unsentRelease.get(old);unsentRelease.delete(old);if(!proof||!proof())return old;unsentPrepared.delete(old);return null;}
  if(old&&next&&(old.bindingId!==next.bindingId||old.ownerUserId!==next.ownerUserId||old.ownerClientId!==next.ownerClientId||old.projectId!==next.projectId||old.csrfToken!==next.csrfToken||old.api!==next.api||old.transport!==next.transport||(old.command!==next.command||old.body!==next.body)&&exportTransitions.get(next)!==old))return old;
  if(old?.dispatchState==='UNKNOWN'&&next&&next.dispatchState!=='UNKNOWN'&&exportTransitions.get(next)!==old)return old;
  if(old?.dispatchState==='BOUND'&&next&&next.dispatchState==='REQUIRED')return old;
@@ -60,7 +74,7 @@ export function mergeExportPending(old:ExportPending|null,expected:string|null,n
 function approvalRefValid(v:unknown):boolean{return exact(v,['requestId','decisionId','scopeDigest'])&&uuid(v.requestId)&&uuid(v.decisionId)&&hash(v.scopeDigest);}
 const exportTransitions=new WeakMap<ExportPending,ExportPending>();
 /** 불명 상태는 명확한 이번 응답 또는 검증한 일회 결박으로만 전이한다. */
-export function markExportDispatch(p:ExportPending):ExportPending{const next={...p,dispatchState:'UNKNOWN' as const,approvalEligible:p.dispatchState!=='UNKNOWN'&&p.command.approvalRef===null};exportTransitions.set(next,p);return next;}
+export function markExportDispatch(p:ExportPending):ExportPending{unsentRelease.delete(p);unsentPrepared.delete(p);const next={...p,dispatchState:'UNKNOWN' as const,approvalEligible:p.dispatchState!=='UNKNOWN'&&p.command.approvalRef===null};exportTransitions.set(next,p);return next;}
 export function markExportApprovalRequired(p:ExportPending):ExportPending{if(p.receipt||p.accessLost||p.command.approvalRef!==null||(p.dispatchState!=='UNKNOWN'||p.approvalEligible!==true))throw new ApiError('EXPORT_CONTEXT_CHANGED');const next={...p,dispatchState:'REQUIRED' as const,approvalEligible:false};exportTransitions.set(next,p);return next;}
 export function bindExportApprovalCommand(p:ExportPending,approvalRef:unknown):ExportPending{
  if(p.receipt||p.accessLost||p.dispatchState!=='REQUIRED'||p.command.approvalRef!==null||!approvalRefValid(approvalRef))throw new ApiError('APPROVAL_CANDIDATE_MISMATCH',409);
