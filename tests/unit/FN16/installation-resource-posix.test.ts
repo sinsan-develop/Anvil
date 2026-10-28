@@ -191,3 +191,22 @@ for(const boundary of ['CREATE','OPEN'] as const)test(`posixReview ${boundary} f
   assert.equal([...z.native.names.values()][0]!.has(id(80)),true,'생성/기존 이름은 삭제하지 않음');await z.adapter.dispose();assert.equal(z.native.count('CLOSE_FILE'),1);
  }finally{await safeDispose(z.adapter);}
 });
+
+
+test('posixRetention 정상 300회 순차 조회는 닫힌 handle 보관과 무관하며 close Promise를 유지한다',async()=>{
+ const z=await setup();try{
+  const created=await create(z.root,80);await created.close();const retained:any[]=[];
+  for(let n=0;n<300;n++){const h=await z.root.open(id(80),{noFollow:true});retained.push(h);assert.deepEqual(await h.read(10),Uint8Array.of(1,2,3));const closing=h.close();assert.equal(h.close(),closing);await closing;}
+  const reads=z.native.count('READ');await assert.rejects(retained[0].read(10),exact('RESOURCE_UNVERIFIED',412));assert.equal(z.native.count('READ'),reads);
+  assert.equal(z.native.count('CLOSE_FILE'),301);assert([...z.native.rows.values()].every(row=>row.closed));
+  await z.adapter.dispose();assert.equal(z.native.count('CLOSE_FILE'),301);assert.equal(z.native.count('CLOSE_ROOT'),1);
+ }finally{await safeDispose(z.adapter);}
+});
+
+test('posixRetention 불명 close는 동일 거절 Promise와 원 오류 차단을 보존한다',async()=>{
+ const z=await setup();try{
+  const h=await create(z.root,81);z.native.state.fault='CLOSE_FILE';const closing=h.close();assert.equal(h.close(),closing);await assert.rejects(closing,exact('RESOURCE_STATE_UNKNOWN',503));
+  assert.equal(h.close(),closing);await assert.rejects(h.close(),exact('RESOURCE_STATE_UNKNOWN',503));await assert.rejects(h.read(10),exact('RESOURCE_UNVERIFIED',412));
+  assert.equal(z.native.count('CLOSE_FILE'),1);assert.equal(z.native.count('READ'),0);await assert.rejects(z.adapter.dispose(),exact('RESOURCE_STATE_UNKNOWN',503));assert.equal(z.native.count('CLOSE_FILE'),1);
+ }finally{await safeDispose(z.adapter);}
+});

@@ -56,15 +56,15 @@ function readFile(value:unknown,owner:number):InstallationNativeFileObservation 
 }
 function track<T>(set:Set<Promise<unknown>>,promise:Promise<T>):Promise<T>{set.add(promise);void promise.then(()=>set.delete(promise),()=>set.delete(promise));return promise;}
 async function drain(set:Set<Promise<unknown>>){while(set.size)await Promise.allSettled([...set]);}
-interface FileState {cap:object;created:boolean;observation:InstallationNativeFileObservation|null;phase:'OPEN'|'REMOVING'|'REMOVED'|'PUBLISHING'|'PUBLISHED'|'UNKNOWN';closing:boolean;active:Set<Promise<unknown>>;closePromise:Promise<void>|null;handle:InstallationProbeHandle}
+interface FileState {cap:object|null;created:boolean;observation:InstallationNativeFileObservation|null;phase:'OPEN'|'REMOVING'|'REMOVED'|'PUBLISHING'|'PUBLISHED'|'UNKNOWN';closing:boolean;active:Set<Promise<unknown>>;closePromise:Promise<void>|null;handle:InstallationProbeHandle}
 
 class ManagedRoot implements InstallationVaultRootHandle {
  readonly binding:InstallationPosixBinding;
- readonly #port:InstallationResourceNativePort;readonly #cap:object;readonly #adapter:InstallationResourcePosixAdapter;
+ readonly #port:InstallationResourceNativePort;#cap:object|null;readonly #adapter:InstallationResourcePosixAdapter;
  readonly #files=new Map<InstallationProbeHandle,FileState>();readonly #active=new Set<Promise<unknown>>();
  #baseline:InstallationNativeRootObservation|null=null;#poison=false;#closing=false;#closed=false;#closePromise:Promise<void>|null=null;
  constructor(adapter:InstallationResourcePosixAdapter,port:InstallationResourceNativePort,cap:object,binding:InstallationPosixBinding){this.#adapter=adapter;this.#port=port;this.#cap=cap;this.binding=binding;}
- async initialize(){this.#baseline=readRoot(await this.#native(()=>this.#port.inspectRoot(this.#cap)),this.binding);}
+ async initialize(){this.#baseline=readRoot(await this.#native(()=>this.#port.inspectRoot(this.#cap!)),this.binding);}
  #guard(){if(this.#closing||this.#closed||this.#adapter.closing)throw problem();if(this.#poison)throw unknown();}
  #sanitize(error:unknown){if(error instanceof AuthFailure&&['INPUT_INVALID','RESOURCE_UNVERIFIED','RESOURCE_STATE_UNKNOWN','RESOURCE_PROCESSING'].includes(error.message)){if(error.message==='RESOURCE_STATE_UNKNOWN')this.#poison=true;return problem(error.message,error.statusCode);}this.#poison=true;return unknown();}
  async #native<T>(body:()=>Promise<T>):Promise<T>{try{return await body();}catch{this.#poison=true;throw unknown();}}
@@ -72,19 +72,19 @@ class ManagedRoot implements InstallationVaultRootHandle {
   try{this.#guard();}catch(e){return Promise.reject(e);}
   const task=(async()=>{try{return await body();}catch(e){throw this.#sanitize(e);}})();track(this.#active,task);if(file)track(file.active,task);return task;
  }
- async #current(){if(this.#poison)throw unknown();const now=readRoot(await this.#native(()=>this.#port.inspectRoot(this.#cap)),this.binding),before=this.#baseline;if(!before||now.generation!==before.generation||JSON.stringify(now.parents)!==JSON.stringify(before.parents))throw problem();return now;}
+ async #current(){if(this.#poison)throw unknown();const now=readRoot(await this.#native(()=>this.#port.inspectRoot(this.#cap!)),this.binding),before=this.#baseline;if(!before||now.generation!==before.generation||JSON.stringify(now.parents)!==JSON.stringify(before.parents))throw problem();return now;}
  async inspect(){return this.#run(async()=>copy((await this.#current()).root));}
  #file(handle:InstallationProbeHandle,mutable=false):FileState {const f=this.#files.get(handle);if(!f||f.closing)throw problem();if(f.phase==='UNKNOWN'||this.#poison)throw unknown();if(['REMOVING','REMOVED','PUBLISHING'].includes(f.phase)||mutable&&(!f.created||f.phase!=='OPEN'))throw problem();return f;}
- async #stat(f:FileState){const current=readFile(await this.#native(()=>this.#port.stat(this.#cap,f.cap)),this.binding.ownerUid);if(!f.observation||JSON.stringify(current)!==JSON.stringify(f.observation))throw problem();return current;}
+ async #stat(f:FileState){const current=readFile(await this.#native(()=>this.#port.stat(this.#cap!,f.cap!)),this.binding.ownerUid);if(!f.observation||JSON.stringify(current)!==JSON.stringify(f.observation))throw problem();return current;}
  #io<T>(f:FileState,body:()=>Promise<T>):Promise<T>{try{this.#file(f.handle);}catch(e){return Promise.reject(e);}return this.#run(async()=>{await this.#current();await this.#stat(f);const result=await body();await this.#stat(f);await this.#current();return result;},f);}
  async #adopt(reply:unknown,created:boolean):Promise<InstallationProbeHandle>{
   if(!exact(reply,['capability','observation'])||!object(reply.capability))throw unknown();
   this.#adapter.claimCapability(reply.capability);
   const f:FileState={cap:reply.capability,created,observation:null,phase:'OPEN',closing:false,active:new Set(),closePromise:null,handle:null!};
   f.handle=Object.freeze({
-   sync:()=>this.#io(f,async()=>{try{await this.#native(()=>this.#port.sync(this.#cap,f.cap));}catch{this.#poison=true;f.phase='UNKNOWN';throw unknown();}}),
+   sync:()=>this.#io(f,async()=>{try{await this.#native(()=>this.#port.sync(this.#cap!,f.cap!));}catch{this.#poison=true;f.phase='UNKNOWN';throw unknown();}}),
    stat:()=>this.#io(f,async()=>copy(f.observation!.file)),
-   read:(max:number)=>{if(!integer(max,1)||max>16385)return Promise.reject(input());return this.#io(f,async()=>{const data=await this.#native(()=>this.#port.read(this.#cap,f.cap,max));if(!(data instanceof Uint8Array)||data.byteLength>max||data.byteLength!==Math.min(f.observation!.file.bytes,max))throw unknown();return Uint8Array.from(data);});},
+   read:(max:number)=>{if(!integer(max,1)||max>16385)return Promise.reject(input());return this.#io(f,async()=>{const data=await this.#native(()=>this.#port.read(this.#cap!,f.cap!,max));if(!(data instanceof Uint8Array)||data.byteLength>max||data.byteLength!==Math.min(f.observation!.file.bytes,max))throw unknown();return Uint8Array.from(data);});},
    close:()=>this.#closeFile(f)
   });this.#files.set(f.handle,f);
   try{f.observation=readFile(reply.observation,this.binding.ownerUid);}catch{f.phase='UNKNOWN';this.#poison=true;try{await this.#closeFile(f);}catch{}throw unknown();}
@@ -93,34 +93,34 @@ class ManagedRoot implements InstallationVaultRootHandle {
  create(value:{fileId:string;bytes:Uint8Array;exclusive:true;noFollow:true;mode:number}):Promise<InstallationProbeHandle>{
   if(!exact(value,['fileId','bytes','exclusive','noFollow','mode'])||!uuid(value.fileId)||!(value.bytes instanceof Uint8Array)||value.bytes.byteLength<1||value.bytes.byteLength>16384||value.exclusive!==true||value.noFollow!==true||value.mode!==0o600)return Promise.reject(input());
   const bytes=Uint8Array.from(value.bytes),fileId=value.fileId;
-  const task=this.#run(async()=>{let effect=false,h:InstallationProbeHandle|undefined;try{const current=await this.#current();if(current.root.availableBytes<bytes.length)throw problem();effect=true;h=await this.#adopt(await this.#native(()=>this.#port.create(this.#cap,{fileId,bytes,exclusive:true,noFollow:true,mode:0o600})),true);await this.#current();return h;}catch(e){if(h)try{await this.#closeFile(this.#files.get(h)!);}catch{}if(effect){this.#poison=true;throw unknown();}throw e;}});
+  const task=this.#run(async()=>{let effect=false,h:InstallationProbeHandle|undefined;try{const current=await this.#current();if(current.root.availableBytes<bytes.length)throw problem();effect=true;h=await this.#adopt(await this.#native(()=>this.#port.create(this.#cap!,{fileId,bytes,exclusive:true,noFollow:true,mode:0o600})),true);await this.#current();return h;}catch(e){if(h)try{await this.#closeFile(this.#files.get(h)!);}catch{}if(effect){this.#poison=true;throw unknown();}throw e;}});
   return task.finally(()=>bytes.fill(0));
  }
  open(fileId:string,flags:{noFollow:true}):Promise<InstallationProbeHandle>{
   if(!uuid(fileId)||!exact(flags,['noFollow'])||flags.noFollow!==true)return Promise.reject(input());
-  return this.#run(async()=>{let h:InstallationProbeHandle|undefined;await this.#current();try{h=await this.#adopt(await this.#native(()=>this.#port.open(this.#cap,fileId,{noFollow:true})),false);await this.#current();return h;}catch{if(h)try{await this.#closeFile(this.#files.get(h)!);}catch{}this.#poison=true;throw unknown();}});
+  return this.#run(async()=>{let h:InstallationProbeHandle|undefined;await this.#current();try{h=await this.#adopt(await this.#native(()=>this.#port.open(this.#cap!,fileId,{noFollow:true})),false);await this.#current();return h;}catch{if(h)try{await this.#closeFile(this.#files.get(h)!);}catch{}this.#poison=true;throw unknown();}});
  }
  #terminal(handle:InstallationProbeHandle,expected:InstallationFileIdentity,kind:'REMOVE'|'PUBLISH',destination?:string):Promise<void>{
   let f:FileState;try{this.#guard();f=this.#file(handle,true);if(!identity(expected)||!f.observation||!sameId(expected,f.observation.file.identity))throw problem();if(f.active.size)throw problem('RESOURCE_PROCESSING',409);}catch(e){return Promise.reject(e);}
   const fixed=copy(expected);f.phase=kind==='REMOVE'?'REMOVING':'PUBLISHING';
   return this.#run(async()=>{try{
    await this.#current();await this.#stat(f);
-   if(kind==='REMOVE'){const result=await this.#native(()=>this.#port.remove(this.#cap,f.cap,copy(fixed)));if(!exact(result,['identity','removed'])||!identity(result.identity)||!sameId(result.identity,fixed)||result.removed!==true)throw unknown();f.phase='REMOVED';}
-   else{const result=await this.#native(()=>this.#port.publish(this.#cap,f.cap,copy(fixed),{fileId:destination!,exclusive:true,noFollow:true}));if(!exact(result,['identity','fileId','exclusive','temporaryRemoved'])||!identity(result.identity)||!sameId(result.identity,fixed)||result.fileId!==destination||result.exclusive!==true||result.temporaryRemoved!==true)throw unknown();f.phase='PUBLISHED';}
+   if(kind==='REMOVE'){const result=await this.#native(()=>this.#port.remove(this.#cap!,f.cap!,copy(fixed)));if(!exact(result,['identity','removed'])||!identity(result.identity)||!sameId(result.identity,fixed)||result.removed!==true)throw unknown();f.phase='REMOVED';}
+   else{const result=await this.#native(()=>this.#port.publish(this.#cap!,f.cap!,copy(fixed),{fileId:destination!,exclusive:true,noFollow:true}));if(!exact(result,['identity','fileId','exclusive','temporaryRemoved'])||!identity(result.identity)||!sameId(result.identity,fixed)||result.fileId!==destination||result.exclusive!==true||result.temporaryRemoved!==true)throw unknown();f.phase='PUBLISHED';}
    await this.#current();
   }catch{f.phase='UNKNOWN';this.#poison=true;throw unknown();}},f);
  }
  remove(handle:InstallationProbeHandle,expected:InstallationFileIdentity){return this.#terminal(handle,expected,'REMOVE');}
  publish(handle:InstallationProbeHandle,expected:InstallationFileIdentity,value:{fileId:string;exclusive:true;noFollow:true}){if(this.binding.purpose!=='KEY_VAULT')return Promise.reject(problem());if(!exact(value,['fileId','exclusive','noFollow'])||!uuid(value.fileId)||value.exclusive!==true||value.noFollow!==true)return Promise.reject(input());return this.#terminal(handle,expected,'PUBLISH',value.fileId);}
- fsyncParent(){return this.#run(async()=>{try{await this.#current();await this.#native(()=>this.#port.fsyncParent(this.#cap));await this.#current();}catch{this.#poison=true;throw unknown();}});}
+ fsyncParent(){return this.#run(async()=>{try{await this.#current();await this.#native(()=>this.#port.fsyncParent(this.#cap!));await this.#current();}catch{this.#poison=true;throw unknown();}});}
  #closeFile(f:FileState):Promise<void>{
   if(f.closePromise)return f.closePromise;f.closing=true;
-  f.closePromise=track(this.#active,(async()=>{await drain(f.active);try{await this.#port.closeFile(this.#cap,f.cap);}catch{f.phase='UNKNOWN';this.#poison=true;throw unknown();}})());return f.closePromise;
+  f.closePromise=track(this.#active,(async()=>{await drain(f.active);try{await this.#port.closeFile(this.#cap!,f.cap!);f.cap=null;this.#files.delete(f.handle);}catch{f.phase='UNKNOWN';this.#poison=true;throw unknown();}})());return f.closePromise;
  }
  dispose():Promise<void>{
   if(this.#closePromise)return this.#closePromise;this.#closing=true;
   this.#closePromise=(async()=>{await drain(this.#active);let failed=false;for(const f of this.#files.values())try{await this.#closeFile(f);}catch{failed=true;}
-   try{await this.#port.closeRoot(this.#cap);}catch{failed=true;}this.#closed=true;if(failed)throw unknown();})();return this.#closePromise;
+   try{await this.#port.closeRoot(this.#cap!);this.#cap=null;}catch{failed=true;}this.#closed=true;if(failed)throw unknown();})();return this.#closePromise;
  }
 }
 
