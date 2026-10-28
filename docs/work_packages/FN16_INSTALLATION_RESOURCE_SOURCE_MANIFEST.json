@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "baseline": "282e2d15b5af359323ba2db02ce3b9ba72dd9704",
+  "contractSha256": "5A6819E626F2FF4104862988C07230A00676D07F06A25658BC9344746335D053",
+  "approvalSha256": "3FAD0CE959F9972E0DA1C131FFA5FB07521B2381343D3D590A6957BCFE33CBDF",
+  "writer": "fn05_share_request_impl",
+  "files": [
+    {
+      "path": "contracts/runtime/backup-installation-resources-v1.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/backups/portable-key-envelope.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/backups/installation-resource-store.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/backups/installation-resource-routes.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/backups/installation-resource-catalog.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/web/src/features/backups/InstallationResourcePanel.tsx",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/web/src/features/backups/installation-resource-api.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "db/migrations/0054_backup_installation_resources.sql.pending",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/backups/backup-resource-provider.ts",
+      "baselineRawSha256": "A40B32DE3162E312DE6410207C4F190371CAEE7B1100D5B57EDC38BEDDF00189"
+    },
+    {
+      "path": "apps/server/modules/backups/backup-reference-store.ts",
+      "baselineRawSha256": "7C532543F9A26573D98180FEFF9B17E7DB0196FC6EB65346B7F8F1E8066622EB"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "baselineRawSha256": "BA82A9CE6A040ACACF8C236F0196D588528FFDA6ADB7B143657C4A42A89A3C6C"
+    },
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "baselineRawSha256": "64BAE209E62FB5F624EBDA9E3C3746AB670F4B1A40E2AE7222A3898D33D8B8BD"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "baselineRawSha256": "D266C058E7163C2310251BFDBAF7F99B38FB13503DE45DC480EEED6B58DDE3AB"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "baselineRawSha256": "E5B30B5FFDC9934700BADBC28DB1E8C8E1E8B4D3202C86DD01F33B72418CEA6D"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "baselineRawSha256": "0C7D86F845262A14FEFB7F8F18C0C194AD6BC10666F05D1D03304120F65F3FD2"
+    },
+    {
+      "path": "apps/web/src/features/backups/BackupReferencePanel.tsx",
+      "baselineRawSha256": "F3297027E7244925DE70E2A1CA2F8B17A684017B23035B3A0043C8A8BC615ACF"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "baselineRawSha256": "36E862501BDF9B3899723E019035CA8A8101E72625861F9CAFF7A0A7029096F8"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "baselineRawSha256": "465726146D76AB97EB983007107B47AFC2119557C3AB1AA52F3B13DE60E9FDCC"
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "baselineRawSha256": "B0AD1FCAA0E8FDC0D0803FF7ED73AFAEFC818803527F5747F34CD88F8DA5457C"
+    },
+    {
+      "path": "tests/unit/FN16/portable-key-envelope.test.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "tests/unit/FN16/installation-resource-input.test.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "tests/unit/FN16/installation-resource-store.test.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "tests/unit/FN16/installation-resource-routes.test.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "tests/unit/UI14/installation-resource-api.test.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "tests/browser/UI14/installation-resource.spec.ts",
+      "baselineRawSha256": null
+    },
+    {
+      "path": "apps/server/modules/access/repository.ts",
+      "baselineRawSha256": "48ACE9A3B6BE563C7FB25A6552E3EB38E50352C6DCD3DA4FECBF56EB3FD48CC5"
+    },
+    {
+      "path": "apps/web/src/features/backups/backup-reference-api.ts",
+      "baselineRawSha256": "0FF1B1426D750DF04C08C2F2251950A4FE3AB737371E87514FE85E47B3C15BD8"
+    }
+  ],
+  "initialBlock": "TEST_ONLY portable-key-envelope and installation-resource-input",
+  "excluded": [
+    "actual keys/secrets/catalog",
+    "DB/GRANT/service/Agent execution",
+    "old SQL migrations",
+    "protected untracked8/discovery4/export2"
+  ],
+  "scopeRevision": "r3: 기존 R2 참조 선택의 실제 준비 소비파일 추가; 계약/R2 reasonCodes 불변"
+}

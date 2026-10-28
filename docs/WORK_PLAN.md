@@ -1570,3 +1570,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-28 P03 내부 신원·tmpfs 보호 source 검수**: created/started 신원과 volume-only inspect·HostConfig.Tmpfs를 분리하고 실제 mode의 첫 쓰기 전 mountinfo/stat guard를 추가했다. Main 직접122PASS/type·Bash·diff0/독립C0I0M0, 초기 fixture 가정I1 및 후속LF FAIL은 기록 보존. 실제 Docker/복제/PG/DB0이며 원R2 NOT_COMPLETE·단발소진 유지, 전체P03/작업계획 완료아님. 다음 FN16 설치자원·이식키 및 P03 R3 결박은 별도 미채택 계약 후보로 관리한다.
+
+
+- **2026-10-28 FN16/UI14 설치자원·이식키 신규 계약 착수**: 직접승인으로5A6819E6의코드/화면/미적용SQL/합성검증을채택했다. 신규명령intent·원승인1회소비/fulfill귀속·슬롯/이식키·key-state/본인재잠금·보관확인/옛키보존을순차연결한다. 실제키/DB/서비스및전체백업실행은제외하고부분/미검증을분리한다.

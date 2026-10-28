@@ -9043,3 +9043,21 @@
 - PMO 실제대화01a18165/01a1816a 읽기확인: FN16 후보5A6819E6의 새API/권한/키계약은 정확사용자질문1회제출·답변미수신. PMO 회신전송은자동승인검토가명시전송승인미확인으로거절했고P03 R3 source결정전달도대기중이다. 읽은내부판단을차단된전달의우회승인으로사용하지않고두후보NOT_ADOPTED·제품GO0 유지. 질문중복/같은전송재시도0.
 - Primary 읽기준비: FN16첫단위는신규 contracts/runtime/backup-installation-resources-v1.ts, apps/server/modules/backups/portable-key-envelope.ts, tests/unit/FN16/portable-key-envelope.test.ts의비밀없는닫힌codec/AAD/hash(3경로부재확인)를권장. 계약채택후TEST_ONLY→MainRED→제품2GO. 실제KDF/AES/키/DB/권한0;parse/기대identity·AADhash대조는GCM인증PASS아님.0053.pending까지존재확인·후속번호예약0.
 - 조사rg의미존재packages oserror2는실목록확인으로정정·변경0. 기존완료기능반복작업0. 전체계획은미완료이며진행가능기존wire누락은현재조사범위에서미확보;명시결정도착시위정확단위를즉시이어간다.
+
+
+### 2026-10-28 FN16 신규 자원·이식키 직접 승인 재개
+- 신산님 직접 원문과 PMO 전달확인에 따라 후보5A6819E6 계약/source/UI/미적용SQL/합성검증을 채택했다. 승인기록 docs/approvals/FN16_INSTALLATION_RESOURCE_DIRECT_APPROVAL_20261028.json. 후보원문/hash는보존하며 NOT_ADOPTED는승인전이력으로만해석한다. 실제키/Secret/catalog·DB적용/권한·서비스/Agent·전체백업실행은제외, P03신규actual승인으로확대0.
+- 기준282e2d15 trackedclean/protected8보존. Main관리/독립검수·기존primary단일writer, 전체범위의형식/암호→intent저장조회→route/승인연결→UI14를순차완성한다. 첫codec만전체기능완료로축소하지않는다. 최신결정은기존승인대기를해소하며동일질문재요청0.
+
+- FN16 primary 첫시험2 TEST_ONLY 배정. 독립 호출선검토로 기존 인증폐기 repository1을 허용범위에 추가(제품20/시험6). 로그아웃/재인증/비밀번호변경·복구/정책저장의 실제소비선만 연결하며 회원/제어전환 mutator미구현·직접DB즉시통지미보장은 분리한다. Main 보조읽기 sandbox worktree접근거절은 elevated읽기로확인; 잘못 추정한0053_backup_protected_references 경로1회실패는 실제0053_backup_references로정정, 파일/권한변경0.
+
+- FN16 첫블록 Main8d2b3c 독립 RED: node --test --test-reporter=spec tests/unit/FN16/portable-key-envelope.test.ts tests/unit/FN16/installation-resource-input.test.ts =15수집1PASS14FAIL/skip0/cancel0/todo0·160.6616ms exit1. 기반RFC7914공개primitive1PASS와제품접점부재14FAIL을분리. adf703시험내용검토뒤runtime/portable제품2 GO, 제품명세완화0·실키/DB/서비스0. 시험raw EB3D77B4/D45EAF83동결.
+
+- 후속R2참조 선택은실제backup-reference-api.ts의RETENTION전용준비분기가있어허용1추가·총27(제품21/시험6). Main039dd0의잘못복수명파일읽기1회는실제import단수경로로정정(a82c9b), 파일변경0. 독립첫시험C0/I2는RELOCK_KEY음성과기존ref단독변조가누락된검수범위문제,같은시험2에보강지시했다.
+
+### 2026-10-28 FN16 첫 입력·이식키 코드 검수
+- Main df0973 최종 node --test --test-reporter=spec tests/unit/FN16/portable-key-envelope.test.ts tests/unit/FN16/installation-resource-input.test.ts =20PASS/0FAIL/0SKIP/0CANCEL/0TODO3248.0198ms, 뒤tsc --noEmit -p tsconfig.base.json exit0. runtimeED8EF021/cryptoA6CCAE45/시험14A69BAB·082B5613 동결. 독립quality scoped C0/I0/M0, spec재검토중.
+- 최초시험1P14F→첫15PASS 이후시험I2(과거RELOCK_KEY/기존ref단독변조)보강. 제품원857E의cleanup I1은{}반환시gate영구잠김이었으며Buffer검사/중첩finally로보완하고다음정상engine반례확인. 보강전RED부재는숨기지않으며첫RED·정적finding·선제교정·추가합격을분리한다.
+- primary공개합성고정프로필메모리측정342cff:Node24.22.1/OpenSSL3.5.9/win32x64, wrap240.798ms+unwrap239.649ms=480.447ms, processPeakRss210044KiB. 운영성능/OS완전소거/실키PASS아님. 실제키/DB/서비스변경0. 다음catalog/lease/intent저장합성TEST_ONLY를동일primary에배정했다. 전체FN16·작업계획완료아님.
+
+- FN16 첫4파일 독립spec도C0/I0/M0·시험I2 ADDRESSED. Main은승인/WI/manifest/계획/현황+첫4의정확9경로checkpoint만수행하며다음store시험과보호8은포함하지않는다.
