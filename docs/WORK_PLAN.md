@@ -1586,3 +1586,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN16 이식키 가져오기 source 부분 검수**: 같은프로젝트/key정체성·원암호문을새설치descriptor에보존하고LOCKED/보관미확인·별도VERIFY/R2선택을연결했다. 첫실패후원intent재사용I1은보완하여Main9+ENROLL직접3/type0·독립C0I0. 실제설치이전/DB/키/서비스는NOT_RUN;암호변경·회전·UI14/전체FN16은계속미완료다.
 
 - **2026-10-28 FN16 암호 변경·키 교체 source 부분 검수**: 같은DEK 새wrapping·보관확인후head전진·옛파일보존과 새DEK/key회전·R2자동선택0을 연결했다. Main신규7+직접기존34/R2 16/type0·독립C0I0, pending0054미적용. 실제키/DB/서비스·사용자인수 NOT_RUN;UI14/App 및 전체백업·FN16은계속미완료다.
+
+
+- **2026-10-28 FN16/UI14 설치 자원 신규 계약 source 검수**: 원명령/일회 승인 왕복·명시 실행, 보호 조회·자기 재잠금·R2 exact ref 선택, 합성 전용 Secret 6 action을 연결했다. Main 직접 unit/타입/build/범위별 합성 DOM 및 독립 C0I0, 등록 QA30분 이내 회수·별도 잔여0. 실제 App Secret 입력·native 설치 adapter는 미제공/미구현, 0054 미적용·실제 키/DB/서비스/백업복원/사용자 인수 NOT_RUN. 전체 FN16·계획 완료가 아니며 결과는 docs/04_test_reports/AV3/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md와 WORK_STATUS 참조.

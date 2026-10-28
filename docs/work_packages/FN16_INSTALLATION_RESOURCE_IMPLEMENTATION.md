@@ -34,3 +34,7 @@ backup-reference-api.ts의 prepareBackupReference가 현재RETENTION만허용한
 
 ## r4 원 intent·공통 transaction 오류 처리 연결
 Main6b9e23 실 AccessRepository+합성 pool 반례에서 정상 COMMIT/확정 rollback2PASS, rollback실패/COMMIT응답불명3FAIL692.921ms를 확인했다. 기존 허용 access/repository.ts의 #transaction만 정상 연결 반환은 보존하고 불명 연결은 오류를 전달해 폐기한다. 원 업무 오류와 저장 결과 불명은 유지하며 자동 재실행·성공 승격하지 않는다. 이는 새 권한/DB 실행이 아닌 원 intent 원자 저장의 필수 오류 처리다. 변경 전 release()무조건 반환과 변경 후 불명 release(error)의 diff를 검수하고 기존 auth-transaction/auth-http 직접 회귀를 확인한다. 허용27·계약/수치·실제키/DB/서비스 제외는 불변이다.
+
+
+## r5 승인된 신규 연산의 기존 정책 검증 정합
+Main e6fcdd 기존 R2 client9 중8PASS/1FAIL243.2822ms는 승인된 manageBackupResource 1개 추가와 이전29개 exact 기대의 차이다. tests/unit/UI14/backup-reference-api.test.ts 한 경로를 추가한다. 이전29개 순서와 신규manageBackupResource 정확1개, 기본DENY/권한자동생성0을 모두 검사하며 기존 기대/시험을 제거하거나 필터로 숨기지 않는다. 제품/계약/수치 변경0·허용28경로/시험7. 기존시험 변경전raw B108A39BAC9FFA6C65ECB10D3060CA13714D70D057859E4BDB1A6F6CB21C1560를 보존한다.

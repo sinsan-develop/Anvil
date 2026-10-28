@@ -112,6 +112,10 @@
     {
       "path": "apps/web/src/features/backups/backup-reference-api.ts",
       "baselineRawSha256": "0FF1B1426D750DF04C08C2F2251950A4FE3AB737371E87514FE85E47B3C15BD8"
+    },
+    {
+      "path": "tests/unit/UI14/backup-reference-api.test.ts",
+      "baselineRawSha256": "B108A39BAC9FFA6C65ECB10D3060CA13714D70D057859E4BDB1A6F6CB21C1560"
     }
   ],
   "initialBlock": "TEST_ONLY portable-key-envelope and installation-resource-input",
@@ -121,5 +125,5 @@
     "old SQL migrations",
     "protected untracked8/discovery4/export2"
   ],
-  "scopeRevision": "r3: 기존 R2 참조 선택의 실제 준비 소비파일 추가; 계약/R2 reasonCodes 불변"
+  "scopeRevision": "r5: 승인된 manageBackupResource의 기존 R2 정책 시험 정합 경로만 추가; 기존29순서/정확신규1/DENY 유지; 제품/계약 확대0"
 }

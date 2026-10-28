@@ -7,7 +7,7 @@ export const policyEditorOperations={
   ['confirmWorkPlan','작업계획 확정'],['proposeDesignChange','설계 변경 요청'],['reviewChangeImpact','변경 영향 검토'],['activateDesignChange','설계 변경 별도 적용'],['linkTrace','추적 연결'],
   ['requestKnowledgeShare','지식 공유 요청 보관'],['saveKnowledge','헌법·지식 초안 저장'],['appendConversation','대화 원문 보관'],['correctKnowledge','지식 정정'],['excludeKnowledge','지식 제외'],
   ['confirmKnowledge','헌법·지식 확정'],['applyConstitution','헌법 별도 적용'],['requestApproval','일회 승인 요청'],['decideApproval','일회 승인 결정'],
-  ['copyMethodology','방법론 복사'],['saveMethodologyDraft','방법론 초안 저장'],['confirmMethodology','방법론 확정'],['applyMethodology','방법론 별도 적용'],['markNotificationRead','알림 읽음 표시'],['saveBackupReference','보호참조 작성·개정'],['revokeBackupReference','보호참조 신규 사용 회수']
+  ['copyMethodology','방법론 복사'],['saveMethodologyDraft','방법론 초안 저장'],['confirmMethodology','방법론 확정'],['applyMethodology','방법론 별도 적용'],['markNotificationRead','알림 읽음 표시'],['saveBackupReference','보호참조 작성·개정'],['revokeBackupReference','보호참조 신규 사용 회수'],['manageBackupResource','설치 자원·이식키 관리']
  ],
  PROJECT_PREPARATION:[
   ['prepareAssignment','임무 초안 저장'],['reviewAssignmentContent','임무 내용 검토'],['confirmAssignment','임무 별도 확정'],['buildTaskContext','임무 맥락 구성'],
