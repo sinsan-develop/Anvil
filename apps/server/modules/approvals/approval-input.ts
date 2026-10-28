@@ -23,7 +23,7 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
  if(s.operation==='activateDesignChange'&&(s.targetRef===null||s.baselineRefs.length>1||!s.baselineRefs.every(isVersionRef)))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(value.rollback.evidenceRefs.length||(s.operation!=='activateDesignChange'&&s.baselineRefs.length)||s.environmentRef!==null||s.sourceScopes.length||s.limitsRef!==null)throw new AuthFailure('APPROVAL_REFERENCE_NOT_CONNECTED',412);
  if(['exportProject','buildTaskContext','startStage','defineProjectRole'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
- if(s.operation==='revokeLimitPolicy'&&s.targetRef===null)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(['revokeLimitPolicy','revokeBackupReference'].includes(s.operation)&&s.targetRef===null)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='detachDocumentSource'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDetails;
 }

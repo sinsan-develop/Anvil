@@ -8949,3 +8949,60 @@
 
 
 - **FN16 보호참조 준비문서 동결·정확 결정 대기**: WI docs/work_packages/FN16_PROTECTED_REFERENCE_REGISTRATION_IMPLEMENTATION.md SHA41D4B6287A8ADAB8EA0EA3E057EA95C23B147FBF2AE61020C7EB4DFD94CDC056/14185bytes·manifestBB30C1112AA55ECEC906842B2200ECC04CEA8E918AB5ABB443D86542D31C94F5/10997bytes양쪽동일·독립준비문서C0/I0/M0. Main5afde5/1e76b9는HEAD4191/status만dirty·existing8/protected12/frozen2불변·0053부재/count23·PENDING_EXACT_PMO_SOURCE_ADOPTION을확인했다. PMO최신snapshot는FN16 CA777기존정확질문미답변/채택0·0053번호와원질문범위영향대조필요,새GO/중복질문0이며P03 R2 actual도별개미답변이라고확인했다. 재개조건은(1)정확FN16source채택/번호대조기록후Mainpreflight/TDD,또는(2)새R2exact actual직접답변/결정지문·최초시각확인후해당단발준비/실행이다. 그전원P03승인재사용·새nonce/grant/원격조회/QA/volume/복제·FN16제품/시험/SQL생성0. 다음업무배정을기다리는것이아니라확인된계약/외부실행결정경계이며전체작업계획미완료/최종완료보고0을유지한다.
+
+
+- **목표 결정 대기 재확인 (GOAL_APPROVAL_BLOCKED_AUDIT_20261028_03)**: 2026-10-28T05:06:51.273Z Main은 재개 후 연속 세 goal turn에서 같은 결정 미도착을 확인했다. PMO cursor 68b8b749-19a8-4d60-918c-7a79a7596ec0:1은 idle/completed·변경 없음이며 실행 중 process 대기로 계산하지 않는다. FN16 보호참조 CA777 정확 source 채택/0053 번호 범위와 P03 R2 실제 복제 packet662FEF의 새 단발 결정이 미도착이다. 기존 독립 조사에서 확인된 실제 Agent·DB·기준 적용/인계 선행을 우회하거나 완료된 source 시험을 반복하지 않는다. 현재 HEAD625f4255와 private 동일·tracked clean/보호 untracked8은 직전 Main 0fde1b 대조이며 이번 새 원격 실행 사실로 재표시하지 않는다. 전체 계획은 미완료; 목표 상태만 BLOCKED로 전환하고 같은 질문 재발행·자동화 변경·제품/시험/SQL·원격/DB/서비스/Agent 실행은 0이다. 정확 결정 도착 후 해당 범위부터 재개하며 본 기록만 관리 파일의 미커밋 변경으로 보존한다. 앞선 sandbox git status의 work tree 오류는 elevated 읽기 0fde1b 성공과 구분하며 Git 설정/ACL은 변경하지 않았다.
+
+
+- **2026-10-28 직접 승인·작업 재개**: 신산님이 FN16 보호참조 계약과 P03 R2 복제1회를 함께 직접 승인했다. 승인 원문·범위는 docs/approvals/P03_R2_COPY_ONCE_DIRECT_APPROVAL_20261028.json 및 FN16_PROTECTED_REFERENCE_DIRECT_APPROVAL_20261028.json에 보존한다. 최초관측05:07:58Z/절대만료05:37:58Z, 이전기한·단발재사용0. P03 source8e9292d8·packet662FEF·R2 QA /home/daon/anvil-v3-pgcopy-20261028-r2-src·ledger /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2·copy volume anvil-v3-pgdata-recovery-20261028-r2·helper anvil-v3-pgcopy-tools-20261028-r2 / anvil-v3-pgcopy-init-20261028-r2 / anvil-v3-pgcopy-20261028-r2를 생성전등록한다. daon1000 소유·image594290e9·30분창/정상자기회수·원R1/새사본/원장보존, 실제 PG/SQL/서비스0. FN16은 source-only 단일writer가 먼저 문서2/기준대조;0050점유에 따른0053번호조정은 의미범위불변이다. 현재 실행결과는 미확인이다.
+
+- **R2 승인시각 보수 정합**: PMO가 원userMessage01a180e8-4fe7-7661-9c54-bc2856c03558/turn startedAt1793164070 근거를 전달했다. 최초관측보다8초 이른05:07:50Z와 절대만료05:37:50Z를 TIME_BOUND 승인기록으로 고정한다. 기존ABFD 기록은 이력보존·grant에는 새지문을 사용·창연장0/아직실행0.
+
+- **R2 준비와 FN16 첫 검증**: P03 새시각 승인 FD568644(05:07:50~05:37:50Z)으로 cafb36 사전조사에서 정확신원/신규부재/소비자0을 확인했다. 9ddd4f 원격Git준비의 로컬관측120초 종료61f073 exit1은 복제실패나 원격종료증거가 아니다. f1d77d/fef203은 동일python1046141/git1046145/ssh1046146/indexpack1046396 생존·pack68468747bytes(05:13:41Z)/grant미생성을 확인했다. 새fetch/복제 재시도0. 부가 procIO읽기29efeb FileNotFoundError1은 후속동일PID실존과 구분·신호/ACL변경0. FN16 문서36B5/CC5E 독립C0/I0·Maina8cfec 기존8raw일치후 첫unit1C157382에서 c28ceb12=8PASS4FAIL445.1887ms/skip0 exit1: 새op2 policy미지원·승인공유목록부재의 실제기능RED이며 import오류아니다. 제품/SQL아직0·시험추가기준완화0.
+
+- **P03 R2 실제진입 전 checkpoint**: 9bf106 준비취소검토는 LEDGER_ALREADY_CREATED assertion으로 신호전 종료했다. 재다운로드/TERM0이며 원준비가 완료된 사실을39f01b05:21:30Z에서독립확인:exact8e9292d8/branch/clean·QA0700/ledger0700/grant0600·원준비PID4부재·consumed/receipt부재. grant83E7333EC47938FE507682102834189AFD0298677306D22697FA08832B6C5706/2322bytes·nonce06c4c4d535836be65745a7de63822a8c·decisionFD568644·05:07:50~05:37:50Z. Main은고정entry apply-limited-risk 단1회만실행하며원R1/원본·새부분사본·원장보존/정상자기helper회수·기한연장0. FN16routes 독립I1 OWNER조회반례추가는시험만/실제DB0으로진행중이다.
+
+- **P03 R2 단발 실패·보존/QA정리**: a08583 고정entry1회 exit1 NOT_COMPLETE/create-tools/IDENTITY_UNKNOWN, consumedtrue/copyCreatedtrue/pendingIOfalse/receiptFailedfalse. tools852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35 created/Pid0/Runningfalse·cp/PG미도달. 5c877c/독립검토는h.Mountsnull 대예상[]·실Mounts[] 대tmpfs1의두거절조건을확인;유일원인/전체신원일치미확정·성공소급0/재실행0. 원본/R1/R2metadata및소비자0/ledger0600보존.13715005:24:57.808Z exactQA검사뒤2902files178dirs234005789bytes정리,21dff0별도05:25:53.400Z QA부재/init-copyhelper0/tools잔여1·볼륨소비자0·원장보호확인. 원packet은정상exited만rm허용이므로createdhelper1은보존하고PMO에정확fullID미시작정리추가판단요청했다. 추가복제·PG/DB/서비스실행0이다.
+- **FN16 저장블록 착수 검증**: 입력제품2의목록추가만으로author44PASS/type0·Maind7fec944PASS/diff확인·독립C0/I0. store6215B28C fresh3b04b0 12=2PASS10FAIL1485.0644ms,원routes7C9A fresh46a2a3 7=1PASS6FAIL1898.3607ms로공개경로미등록/명령enum400을확인. 독립I1 OWNER반례누락은routes0C31F942로보완·Main8a189a필터3=0PASS3FAIL1170.5608ms/인증미도달로미등록404가거짓PASS안됨·재리뷰I1ADDRESSED C0I0. 기존단일담당에게manifest허용runtime/server/store/routes/0053미적용SQL블록만GO;실DB/정책/키/서비스/Agent0·UI제품은후속RED뒤진행·Main제품write0.
+
+### P03 R2 잔존 tools 1개 한정 정리 사전 기록 — 2026-10-28T05:34:28.431Z
+
+- PMO가 실제 전체 신원 5b91c1을 직접 대조하고 위임 지원 범위에서 created/미시작 tools fullID 852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35의 정상 rm 1회만 승인했다. docs/approvals/P03_R2_CREATED_HELPER_EXACT_CLEANUP_PMO_20261028.json 참조. 직전 전체 신원·설정·nonce·Created·Pid0·mount0를 다시 대조한다. 불명/변경은 보존한다.
+- 원/R1/R2 volume 및 ledger 보존, start/신호/force/복제 재실행/DB/서비스0. 기존 복제 NOT_COMPLETE·단발 소진은 유지한다. QA 경로는 앞서 정확 회수됨.
+
+### P03 R2 정확 정리 완료 / FN16 저장조회 독립 검수 — 2026-10-28T05:38:37.585Z
+
+- Main fb3a9b: PMO 한정 승인42A51EC0에 따라 created/미시작 tools의 전체23 신원·설정 checks를 05:35:03.730012Z 다시 대조한 뒤 fullID852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35 정상 docker rm(옵션 없음) 1회 exit0. 원/R1/R2 volume metadata 및 ledger6 bytes 불변. 독립 b3e337 05:35:24.402016Z helper3이름/fullID·QA 잔여0, volume3·ledger2 보존/소비자0 확인. 결과서 P03_R2_LIMITED_COPY_ONCE_20261028_RESULT.md 84326C26A41573DF727A651BD56724424385C7D416810143FE40E4BD103D493A. 복제 NOT_COMPLETE·단발 승인 소진·실제cp/PG 미도달을 유지하며 성공 소급/재시도0.
+- 5b91c1 전체 대조에서 기존 ownLimited 실패 조건2는 HostConfig.Mounts key 부재 및 시작 전 runtime Mounts=[]였다. readonly6598d6 KeyError와 get(null) 표현은 별도 관측 오류로 보존하고 단독원인 범위를 이 관측 객체에 한정한다.
+- FN16 primary 저장조회 source9/test3 중간동결. author56bda5 신규32+FN17직접32=64PASS, type9c1d19 exit0. Main fresh9351d6 같은64 dotPASS exit0. 그러나 독립 C0/I2: (1)0053 complete trigger가 authorization_receipts에 없는 NEW.project_id 접근으로 다른 receipt에도 오류; (2)store 조회에서 command request hash·권한 scope_digest·감사 정확 귀속 대조 부족. 같은 단일 writer가 기존 허용 source/test에서 RED→GREEN 보완 중이며 현 블록 합격/실DB PASS 아님. UI시험2 작성은 보존 후 서버 보완 우선.
+- 최초 오류 보존: 정책승인null 선거절1·TS2739 1, 신규 fixture column matcher id/project_id suffix1와 auditargs command$5=args4/operation$6=args5 1을 실제SQL에 맞게 보정. 기대값 완화0. 서로 다른 원인이며 동일 정식실패3회 인수 조건 아님.
+- Main 보조읽기 b8bdc2에서 미존재 tests/browser/UI14/backup-edit-return.spec.ts 조회1 오류, rg--files로 실제 project-export-approval.spec.ts 확인; 파일변경/권한변경0.
+
+### P03 R2 이후 source-only 최소 교정안 읽기 검토 — 2026-10-28T05:41:23.073Z
+
+- quality read-only: ownLimited 및 동일파일 strict own이 created와 started에 같은 runtime tmpfs 기대를 적용한 내부 결함. source후속교정 후보는 controller1+기존 host/time 시험2이며 shell/환경/실복제 변경0. created tools에만 요청volume0일 때 HostConfig.Mounts key부재 또는[]와 runtime[]/정확Tmpfs를 구분하고, init/copy 원·사본volume exact RO/RW/NoCopy 검사는 시작 전부터 유지한다. started에는 기존 전체runtime mount검증과신원을유지한다. created허용을자동정리권한으로확대하지않는다. 실제시작후관측형상은아직미검증.
+- 현 단일 writer는 FN16 보완 중이므로 P03 동시 source writer0. 다음 source교정은 기존승인 내부버그 범위로 순차 진행하며, 과거R1/R2 실패·소진승인은보존하고 새 actual 실행은 별도 정확결정/대상 전미실행.
+
+### FN16 보호참조 화면 QA 생성 전 등록 / 서버 보완 재검수 — 2026-10-28T05:42:55.923Z
+
+- 새 QA literal D:/Project/Anvil/.av3-data/ui14-protected-reference-20261028-01 (bundle/results/temp/qa.config.cjs만), owner SINSAN\cyhuh, 생성 후 최대30분 및 완료시 정확회수. 사용자 브라우저 프로필/기존서비스/HTTP server/DB0. 로컬 Vite 산출물·합성 same-origin https://localhost:3830 자산/API·일회 Edge headless만 검증. app사용자인수/실DB/실자원 공급자/키 PASS 아님. 생성직전 root부재·parentowner/link/realpath 확인 후 만든다. Primary는시험만작성·Main이환경생성/검증/정리한다.
+- 서버보완 원 TS I1+SQL I1/I2 모두독립 ADDRESSED/C0I0. store7C532543F9A26573D98180FEFF9B17E7DB0196FC6EB65346B7F8F1E8066622EB·SQL570031EA7B666F1AC82F65D7C804E3A217611453ED61D30BA2A27D706588D0FE·test8552F87362F865C55380852210F3763BC011ECD4E024907A4B5B554B660B74AE. author 추가반례33dedf/a8c9b0 원RED→57ace1 store16PASS/type0. Mainfresh9f1c43 changedstore16+directroutes8=24dotPASS/typeexit0. SQL2정적시험은실PG검증아님. UI시험2작성중이며제품UI는아직없다.
+
+### FN16 UI14 실제 App RED 및 화면 구현 착수 — 2026-10-28T05:46:32.421Z
+
+- 신규 UIunit D10F2191AC83E31B00C12D36EA107614CB59E5D1B55D58432F02A3C343C34563 Main94f38e=7중3PASS4FAIL(실제policy목록누락2/readApproval RESPONSE_INVALID2),독립C0I0. Primary consumer2만보완 c1d274=7PASS183ms. 기존29/order/DENY/export회귀불변.
+- 생성전등록 QA D:/Project/Anvil/.av3-data/ui14-protected-reference-20261028-01의 root부재·parentrealpath/nonlink/owner SINSAN\cyhuh 확인. Main9295b7 2026-10-28T05:45:29.744Z 생성, 최대수명06:15:29.744Z. Vite현재App468module buildexit0, 기존500kBchunk경고(자동구조/최적화0). bundle/temp/results/config만생성,HTTP/DB서비스0.
+- Main02593f 실제Edge/headless/1worker/retry0/기존timeout의 최소DOM1은 기존반출regionvisible 뒤 신규 보호참조등록조회region부재로1FAIL. 시험89FF307CC269BE9FD90A48FFBFAF3BD63EB5D6DD42F49ED564B71CB04452AC09. NO_COLOR경고는별도. 시험API는합성sameorigin이며realDB/served증거아님. 이원RED를보존하고같은primary에 신규API/Panel+App/승인복귀제품구현을GO했다. 실제DB/키/실Agent/서비스0.
+
+- FN16 source manifest의 DOCUMENT_TWO_ONLY는 최초문서검토시점이력으로이동하고, 직접승인C184 아래 Main단계별RED/검수후서버·UI 구현GO를 currentGo에갱신했다. 계약CA777·허용23경로·실제효과제외불변이며 재승인대상이아닌실행상태기록이다.
+
+### P03 내부 source 오류 보완 순차 착수 준비 — 2026-10-28T06:10:47.624Z
+
+- FN16 source/test 동결·검수 및 결과서 작성 뒤 같은 primary가 docs/work_packages/P03_CREATED_HELPER_IDENTITY_SOURCE_WI_20261028.md의 controller1+directtest2를 수정한다. created/started 신원검사 구분 외 범위확대0, 실제복제·신호·환경0. 원R2 NOT_COMPLETE와 승인소진/보존자원은유지한다.
+
+
+### 2026-10-28 FN16 source 단위 검수 종료·P03 내부 오류 보완 준비
+- Main 어울: FN16 source/UI 단위 검수 완료, 전체 FN16/작업계획 완료 아님. 결과서 SHA256 30BEC66D8ED73385861FC8BCAFE9DAC7E1CD96D2E5760B354303BFB4290C4168. 독립 C0/I0; Main 서버24·UI9 집중/타입, 실제 App+Edge 합성4 및 별도 프로젝트 ABA1 통과. 기존 동일 검사는 반복하지 않음. 실제 DB/SQL 적용·RLS·백업/복원·정식 사용자 인수 NOT_RUN.
+- QA 전용 경로는 06:07:42Z 59파일/15디렉터리 정리, 독립 06:07:53Z 경로·해당 프로세스0 확인. P03 R2는 consumed/FAIL/create-tools, cp0·PG0; helper 정상 rm1와 QA 정리 완료, 원/R1/R2 volume·원장 보존. 결과 F17CE240.
+- 동일 원인 정식 실패3 없음. Main 읽기 rg glob 오류123은 -g 방식으로 보정했으며 파일 변경 없음. sandbox git status의 work tree 오류는 elevated 실제 status로 분리 확인함.
+- 다음: 정확 소유32경로 branch checkpoint 후 WI A698A9DA의 P03 controller/직접 시험3경로 내부 보완을 기존 primary에게 배정. 새 복제·grant·서비스 실행 없음. 보호 untracked8·discovery4·기존 반출2 보존.

@@ -436,3 +436,9 @@ PMO는기존Nodepath/hash/UID1001고정source-only후보준비와관측imagePATH
 ## 2026-10-28 R2 고정 대상 소스 검수 범위
 
 R2 후보467A5FFF는 sourceRoot /home/daon/anvil-v3-pgcopy-20261028-r2-src, ledgerRoot /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2, copyVolume anvil-v3-pgdata-recovery-20261028-r2 및 tools/init/copy의20261028-r2이름을고정한다. 이번에는소스와합성검수만진행했고실제부재/owner/link/공간을새조회하거나grant/nonce·QA·volume/helper를생성하지않았다. Main집중111PASS/type/문법0·독립C0/I0은실제복제/PG복구증거가아니다. 기존R1volume/원장/실패는그대로보존하며새exactcommit/controller/shell·대상·위험·수명을결박한별도실행안과새직접actual승인이필요하다.
+
+## 2026-10-28 R2 실제 1회 실패·보존 및 정확 helper 정리
+
+- 직접 승인 FD568644…의 exact8e9292d8/controller53262107/shellCF6B604C R2 실행은 create-tools/IDENTITY_UNKNOWN, NOT_COMPLETE·consumed=true였다. 시작 전 tools 관측에서 HostConfig.Mounts key부재/runtimeMounts[]로 기존 보호검사를 통과하지 못했으며 cp/PG/DB는 미도달이다. 새실행·승인재사용0.
+- 원 volume과 R1 보존에 더해 R2 anvil-v3-pgdata-recovery-20261028-r2(instance06c4c4d535836be65745a7de63822a8c/CreatedAt2026-10-28T14:22:01+09:00), 보호원장 /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2를 보존한다. R2원장grant83e7333ec47938fe507682102834189afd0298677306d22697fa08832b6c5706, consumedf3e349a8aea1069cc4d6a11fda73a55453e8280678b797b2b896384407ad637d, receipt103252b959f1898b7e3cbe90af2df400fe884845dedf4ec4b95724e7344f2604.
+- PMO 별도 exact정리승인42A51EC0 후 tools fullID852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35의 전체신원을 직전재확인하고 normalrm1. Main독립 b3e337(05:35:24.402016Z)에서 QA/helper0, 원/R1/R2volume·ledger보존과volume소비자0 확인. 자동삭제할보존자원이 아니다. 세부 docs/04_test_reports/AV3/P03_R2_LIMITED_COPY_ONCE_20261028_RESULT.md(84326C26…) 참조.

@@ -1,0 +1,287 @@
+-- FN16 CA777 source-only forward 후보. 0050 점유에 따른 0053 번호 재배치.
+-- 미적용: 실제 PG compile/DML/RLS/GRANT/COMMIT/경합/xid wrap/subtransaction 검증 NOT_RUN.
+-- 기존 0050/0051/0052 및 적용 manifest는 변경하지 않는다. provider/실키/backup 실행을 구현하지 않는다.
+CREATE TABLE anvil.backup_references(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,
+ kind text NOT NULL CHECK(kind IN('TARGET','ENCRYPTION_KEY','RETENTION','VERIFICATION')),
+ head_version bigint NOT NULL CHECK(head_version BETWEEN 1 AND 9007199254740991),
+ created_by uuid NOT NULL REFERENCES anvil.users(id),created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id)
+);
+CREATE TABLE anvil.backup_reference_versions(
+ project_id uuid NOT NULL,reference_id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
+ snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),
+ previous_version bigint,previous_hash text,actor_id uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,reference_id,version),UNIQUE(project_id,reference_id,version,content_hash),
+ FOREIGN KEY(project_id,reference_id) REFERENCES anvil.backup_references(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,reference_id,previous_version,previous_hash) REFERENCES anvil.backup_reference_versions(project_id,reference_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id),
+ CHECK((version=1 AND previous_version IS NULL AND previous_hash IS NULL) OR (version>1 AND previous_version IS NOT NULL AND previous_hash IS NOT NULL AND previous_version=version-1 AND previous_hash~'^[a-f0-9]{64}$'))
+);
+ALTER TABLE anvil.backup_references ADD CONSTRAINT backup_reference_head_fk FOREIGN KEY(project_id,id,head_version)
+ REFERENCES anvil.backup_reference_versions(project_id,reference_id,version) DEFERRABLE INITIALLY DEFERRED;
+CREATE TABLE anvil.backup_reference_events(
+ project_id uuid NOT NULL,id uuid NOT NULL,reference_id uuid NOT NULL,reference_version bigint NOT NULL,reference_hash text NOT NULL,
+ event_kind text NOT NULL CHECK(event_kind='REVOKED'),reason text NOT NULL,actor_id uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL,
+ version bigint NOT NULL CHECK(version=1),snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,reference_id,reference_version,event_kind),
+ FOREIGN KEY(project_id,reference_id,reference_version,reference_hash) REFERENCES anvil.backup_reference_versions(project_id,reference_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id)
+);
+CREATE INDEX backup_reference_page ON anvil.backup_reference_versions(project_id,created_at DESC,reference_id DESC);
+-- provisioning의 default CRUD를 명시적으로 회수한다. head 한 열 외 UPDATE/DELETE를 허용하지 않는다.
+REVOKE ALL ON anvil.backup_references,anvil.backup_reference_versions,anvil.backup_reference_events FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.backup_references,anvil.backup_reference_versions,anvil.backup_reference_events TO anvil_v3_app;
+GRANT UPDATE(head_version) ON anvil.backup_references TO anvil_v3_app;
+CREATE FUNCTION anvil.fn16_backup_owner(pid uuid) RETURNS boolean LANGUAGE sql STABLE AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id
+ WHERE p.id=pid AND p.archived_at IS NULL AND m.user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND m.participation='OWNER' AND m.revoked_at IS NULL);
+$$;
+ALTER TABLE anvil.backup_references ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.backup_references FORCE ROW LEVEL SECURITY;
+ALTER TABLE anvil.backup_reference_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.backup_reference_versions FORCE ROW LEVEL SECURITY;
+ALTER TABLE anvil.backup_reference_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.backup_reference_events FORCE ROW LEVEL SECURITY;
+-- FN17 SECURITY DEFINER도 FORCE RLS를 자동 우회하지 않는다. migrator 조회 역시 현재 actor의 OWNER 범위뿐이다.
+CREATE POLICY backup_reference_head_read ON anvil.backup_references FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY backup_reference_version_read ON anvil.backup_reference_versions FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY backup_reference_event_read ON anvil.backup_reference_events FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY backup_reference_head_insert ON anvil.backup_references FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) AND created_by=nullif(current_setting('anvil.actor_id',true),'')::uuid);
+CREATE POLICY backup_reference_head_update ON anvil.backup_references FOR UPDATE TO anvil_v3_app USING(anvil.fn16_backup_owner(project_id)) WITH CHECK(anvil.fn16_backup_owner(project_id));
+CREATE POLICY backup_reference_version_insert ON anvil.backup_reference_versions FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) AND actor_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND client_id=nullif(current_setting('anvil.client_id',true),'')::uuid AND command_id=nullif(current_setting('anvil.command_id',true),'')::uuid);
+CREATE POLICY backup_reference_event_insert ON anvil.backup_reference_events FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) AND actor_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND client_id=nullif(current_setting('anvil.client_id',true),'')::uuid AND command_id=nullif(current_setting('anvil.command_id',true),'')::uuid);
+CREATE FUNCTION anvil.fn16_backup_text(v jsonb,n integer) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='string' AND length(btrim(v#>>'{}'))>0 AND (v#>>'{}')!~('[[:cntrl:]'||chr(127)||'-'||chr(159)||']')
+ AND (SELECT COALESCE(sum(CASE WHEN ascii(ch)>65535 THEN 2 ELSE 1 END),0)<=n FROM regexp_split_to_table(v#>>'{}','') ch),false);
+$$;
+CREATE FUNCTION anvil.fn16_backup_ref(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(anvil.execution_json_shape(v,ARRAY['id','version','contentHash'])
+ AND (v->>'id')~'^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'
+ AND jsonb_typeof(v->'version')='number' AND (v->>'version')~'^[1-9][0-9]*$' AND (v->>'version')::numeric<=9007199254740991 AND (v->>'contentHash')~'^[a-f0-9]{64}$',false);
+$$;
+CREATE FUNCTION anvil.fn16_backup_snapshot(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ -- default 공급자 부재에서는 RETENTION 자동삭제OFF metadata만 새 저장 가능하다.
+ SELECT COALESCE(anvil.execution_json_shape(v,ARRAY['kind','displayName','spec','reason']) AND v->>'kind'='RETENTION'
+ AND anvil.fn16_backup_text(v->'displayName',120) AND anvil.fn16_backup_text(v->'reason',2000)
+ AND v->'spec'=jsonb_build_object('automaticDeletion',false),false);
+$$;
+CREATE FUNCTION anvil.fn16_backup_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql STABLE AS $$
+ SELECT COALESCE(s->>'operation' IN('saveBackupReference','revokeBackupReference') AND s->'baselineRefs'='[]'::jsonb AND s->'sourceScopes'='[]'::jsonb AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb AND
+ ((s->>'operation'='saveBackupReference' AND s->'targetRef'='null'::jsonb AND s->>'expectedVersion'='0') OR EXISTS(
+ SELECT 1 FROM anvil.backup_references h JOIN anvil.backup_reference_versions v ON v.project_id=h.project_id AND v.reference_id=h.id AND v.version=h.head_version
+ WHERE h.project_id=pid AND s->'targetRef'=jsonb_build_object('id',h.id,'version',v.version,'contentHash',v.content_hash) AND s->>'expectedVersion'=v.version::text)),false);
+$$;
+-- 이전 지원 연산/0049 책임주체/0050 활성화/FN17 의미를 그대로 위임한다.
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_backup_reference;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation' IN('saveBackupReference','revokeBackupReference') THEN anvil.fn16_backup_target_valid(pid,s) ELSE anvil.connection_candidate_approval_target_before_backup_reference(pid,s) END;
+$$;
+CREATE FUNCTION anvil.fn16_backup_current(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE AS $$
+DECLARE c anvil.commands;p anvil.permission_policy_versions;rule jsonb;matched boolean:=false;requires boolean:=false;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.id IS NULL OR c.operation NOT IN('saveBackupReference','revokeBackupReference') OR c.state<>'APPLIED' OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid
+ OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RETURN false;END IF;
+ -- 잠금 대기 전 조건에 세션/기한을 섞지 않는다. 잠금 뒤 새 statement의 clock으로 재검사한다.
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id
+ WHERE pr.id=pid AND m.user_id=c.actor_id FOR UPDATE OF pr,m,pc;
+ IF NOT FOUND THEN RETURN false;END IF;
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id
+ JOIN anvil.users u ON u.id=c.actor_id JOIN anvil.clients cl ON cl.id=c.client_id AND cl.user_id=u.id
+ WHERE pr.id=pid AND pr.archived_at IS NULL AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL AND u.status='ACTIVE' AND cl.revoked_at IS NULL
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions a WHERE a.user_id=u.id AND a.client_id=cl.id AND a.credential_generation=u.credential_generation AND a.revoked_at IS NULL AND a.idle_expires_at>clock_timestamp() AND a.absolute_expires_at>clock_timestamp());
+ IF NOT FOUND THEN RETURN false;END IF;
+ SELECT pv.* INTO p FROM anvil.permission_policies pp JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version
+ WHERE pp.project_id=pid AND c.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash);
+ IF p.policy_id IS NULL OR p.content_hash IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('rules',p.rules_json,'reason',p.reason,'reviewRefs',p.review_refs)) THEN RETURN false;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(p.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND rule->'operations' ? c.operation AND (rule->>'expiresAt')::timestamptz>c.completed_at THEN
+   -- 접수시 유효했던 최단 창을 다른 긴 AUTO로 연장하지 않는다.
+   IF (rule->>'expiresAt')::timestamptz<=clock_timestamp() THEN RETURN false;END IF;
+   IF rule->>'disposition'='DENY' THEN RETURN false;END IF;
+   IF rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+   matched:=true;requires:=requires OR rule->>'disposition'='REQUIRE_APPROVAL';
+  END IF;
+ END LOOP;
+ RETURN matched AND requires=(c.approval_consumption_id IS NOT NULL);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_approval_valid(pid uuid,cid uuid,did uuid,historical boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands;r anvil.approval_requests;d anvil.approval_decisions;ar anvil.authorization_receipts;s jsonb;target jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=did;
+ SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ s:=r.action_scope_json;
+ IF c.id IS NULL OR d.id IS NULL OR r.id IS NULL OR ar.id IS NULL OR c.operation NOT IN('saveBackupReference','revokeBackupReference') OR d.decision<>'APPROVE' OR d.request_version<>1
+ OR NOT ((r.version=2 AND r.status='APPROVED') OR (r.version=3 AND r.status='CONSUMED')) OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid OR c.state<>'APPLIED'
+ OR c.approval_consumption_id IS NULL OR ar.approval_decision_ref IS DISTINCT FROM d.id OR ar.scope_kind<>'PROJECT' OR ar.scope_id<>pid
+ OR c.policy_ref IS DISTINCT FROM r.policy_ref OR c.policy_ref IS DISTINCT FROM ar.policy_ref OR d.decision_json->'policyRef' IS DISTINCT FROM c.policy_ref
+ OR c.command_id IS DISTINCT FROM r.candidate_command_id OR r.created_by IS DISTINCT FROM c.actor_id OR r.client_id IS DISTINCT FROM c.client_id OR d.decided_by IS DISTINCT FROM c.actor_id OR d.client_id IS DISTINCT FROM c.client_id OR d.control_generation IS DISTINCT FROM c.control_generation
+ OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR s->'requestedSubjectRef' IS DISTINCT FROM ar.subject_ref
+ OR s->>'operation' IS DISTINCT FROM c.operation OR s->>'expectedVersion' IS DISTINCT FROM c.expected_version::text OR s->>'controlGeneration' IS DISTINCT FROM c.control_generation::text
+ OR r.scope_digest IS DISTINCT FROM anvil.execution_json_hash(s) OR d.scope_digest IS DISTINCT FROM r.scope_digest
+ OR s->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR s->'sourceScopes' IS DISTINCT FROM '[]'::jsonb OR s->'environmentRef' IS DISTINCT FROM 'null'::jsonb OR s->'limitsRef' IS DISTINCT FROM 'null'::jsonb
+ OR c.payload_ref IS DISTINCT FROM jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',s->>'payloadHash','scopeDigest',r.scope_digest) THEN RETURN false;END IF;
+ IF c.expected_version=0 THEN
+  IF c.operation<>'saveBackupReference' OR s->'targetRef' IS DISTINCT FROM 'null'::jsonb OR c.result_ref->'data'->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+ ELSE
+  target:=s->'targetRef';
+  IF NOT EXISTS(SELECT 1 FROM anvil.backup_reference_versions v WHERE v.project_id=pid AND target=jsonb_build_object('id',v.reference_id,'version',v.version,'contentHash',v.content_hash) AND v.version=c.expected_version) THEN RETURN false;END IF;
+  IF c.operation='saveBackupReference' AND c.result_ref->'data'->'previousRef' IS DISTINCT FROM target THEN RETURN false;END IF;
+ END IF;
+ IF NOT historical AND (r.expires_at<=clock_timestamp() OR NOT anvil.fn16_backup_current(pid,cid)) THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_backup_reference;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands WHERE project_id=pid AND id=cid AND operation IN('saveBackupReference','revokeBackupReference')) THEN anvil.fn16_backup_approval_valid(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_backup_reference(pid,cid,did) END;
+$$;
+CREATE FUNCTION anvil.fn16_backup_receipt_valid(pid uuid,cid uuid,ref jsonb,payload jsonb,status text,target jsonb,expected bigint) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands;ar anvil.authorization_receipts;approval jsonb:='null'::jsonb;d anvil.approval_decisions;r anvil.approval_requests;digest text;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ IF c.id IS NULL OR ar.id IS NULL OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid OR c.state<>'APPLIED' OR c.expected_version<>expected
+ OR c.operation IS DISTINCT FROM CASE status WHEN 'REFERENCE_STORED' THEN 'saveBackupReference' WHEN 'REFERENCE_REVOKED' THEN 'revokeBackupReference' ELSE '' END
+ OR ar.scope_kind<>'PROJECT' OR ar.scope_id<>pid OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) THEN RETURN false;END IF;
+ IF c.approval_consumption_id IS NOT NULL THEN
+  SELECT d0.* INTO d FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d0 ON d0.project_id=ac.project_id AND d0.id=ac.decision_id WHERE ac.id=c.approval_consumption_id AND ac.project_id=pid AND ac.command_id=c.id;
+  SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;
+  IF d.id IS NULL OR r.id IS NULL OR ar.approval_decision_ref IS DISTINCT FROM d.id OR NOT anvil.fn16_backup_approval_valid(pid,cid,d.id,true) OR r.action_scope_json->>'payloadHash' IS DISTINCT FROM anvil.execution_json_hash(payload) THEN RETURN false;END IF;
+  approval:=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest);
+ ELSE
+  IF ar.approval_decision_ref IS NOT NULL OR c.payload_ref IS NOT NULL THEN RETURN false;END IF;
+ END IF;
+ digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ RETURN COALESCE(c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation',c.operation,'targetId',target,'expectedVersion',expected,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',payload))
+ AND ar.scope_digest=digest AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=pid::text AND c.result_ref->>'status'='APPLIED'
+ AND c.result_ref->'data'->'ref'=ref AND c.result_ref->'data'->>'status'=status AND c.result_ref->>'targetId'=ref->>'id' AND c.result_ref->'version'=ref->'version'
+ AND (SELECT count(*)=1 FROM anvil.audit_events ae WHERE ae.project_id=pid AND ae.command_id=c.id AND ae.operation_id=c.operation_id AND ae.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND ae.client_ref=c.client_id AND ae.target_ref=ref AND ae.policy_ref=c.policy_ref AND ae.approval_ref IS NOT DISTINCT FROM CASE WHEN approval='null'::jsonb THEN NULL ELSE approval END AND ae.outcome='APPLIED' AND ae.source_kind='HUMAN_COMMAND' AND ae.scope_digest=digest)
+ AND (SELECT count(*)=1 FROM anvil.authorization_receipts WHERE command_id=c.id),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_version_valid(pid uuid,rid uuid,ver bigint) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE v anvil.backup_reference_versions;h anvil.backup_references;c anvil.commands;previous jsonb;ref jsonb;
+BEGIN
+ SELECT * INTO v FROM anvil.backup_reference_versions WHERE project_id=pid AND reference_id=rid AND version=ver;
+ SELECT * INTO h FROM anvil.backup_references WHERE project_id=pid AND id=rid;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=v.command_id;
+ IF v.reference_id IS NULL OR h.id IS NULL OR c.id IS NULL OR h.kind IS DISTINCT FROM v.snapshot_json->>'kind' OR NOT anvil.fn16_backup_snapshot(v.snapshot_json) OR v.actor_id IS DISTINCT FROM c.actor_id OR v.client_id IS DISTINCT FROM c.client_id THEN RETURN false;END IF;
+ IF v.version=1 THEN
+  IF v.previous_version IS NOT NULL OR v.previous_hash IS NOT NULL THEN RETURN false;END IF;
+ ELSE
+  IF v.previous_version IS NULL OR v.previous_hash IS NULL OR v.previous_version IS DISTINCT FROM v.version - 1
+  OR NOT EXISTS(SELECT 1 FROM anvil.backup_reference_versions previous WHERE previous.project_id=pid AND previous.reference_id=rid AND previous.version=v.version-1 AND previous.version=v.previous_version AND previous.content_hash=v.previous_hash
+   AND previous.content_hash=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'id',rid,'version',previous.version,'snapshot',previous.snapshot_json,'previousRef',CASE WHEN previous.version=1 THEN 'null'::jsonb ELSE jsonb_build_object('id',rid,'version',previous.previous_version,'contentHash',previous.previous_hash) END))) THEN RETURN false;END IF;
+ END IF;
+ previous:=CASE WHEN v.version=1 THEN 'null'::jsonb ELSE jsonb_build_object('id',rid,'version',v.previous_version,'contentHash',v.previous_hash) END;
+ ref:=jsonb_build_object('id',rid,'version',ver,'contentHash',v.content_hash);
+ RETURN COALESCE(v.content_hash=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'id',rid,'version',ver,'snapshot',v.snapshot_json,'previousRef',previous))
+ AND c.result_ref->'data'->'previousRef'=previous AND v.created_at=date_trunc('milliseconds',c.completed_at)
+ AND c.result_ref->>'serverReceivedAt'=to_char(v.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND anvil.fn16_backup_receipt_valid(pid,c.id,ref,v.snapshot_json,'REFERENCE_STORED',CASE WHEN ver=1 THEN 'null'::jsonb ELSE to_jsonb(rid) END,ver-1),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_event_valid(pid uuid,eid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE e anvil.backup_reference_events;c anvil.commands;s jsonb;ref jsonb;target jsonb;
+BEGIN
+ SELECT * INTO e FROM anvil.backup_reference_events WHERE project_id=pid AND id=eid;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=e.command_id;
+ IF e.id IS NULL OR c.id IS NULL OR e.actor_id IS DISTINCT FROM c.actor_id OR e.client_id IS DISTINCT FROM c.client_id OR e.created_at IS DISTINCT FROM date_trunc('milliseconds',c.completed_at) THEN RETURN false;END IF;
+ target:=jsonb_build_object('id',e.reference_id,'version',e.reference_version,'contentHash',e.reference_hash);
+ s:=jsonb_build_object('eventId',e.id,'version',1,'eventKind','REVOKED','projectId',pid,'referenceRef',target,'reason',e.reason,'actorId',e.actor_id,'clientId',e.client_id,'clientCommandId',c.command_id,'createdAt',to_char(e.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+ ref:=jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash);
+ RETURN COALESCE(e.version=1 AND e.event_kind='REVOKED' AND e.snapshot_json=s AND e.content_hash=anvil.execution_json_hash(s) AND anvil.fn16_backup_text(to_jsonb(e.reason),2000)
+ AND c.result_ref->'data'->'referenceRef'=target AND anvil.fn16_backup_receipt_valid(pid,c.id,ref,jsonb_build_object('referenceRef',target,'reason',e.reason),'REFERENCE_REVOKED',to_jsonb(e.reference_id),c.expected_version),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_write() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands;cid uuid;wanted uuid;row_data jsonb;
+BEGIN
+ IF TG_OP='DELETE' OR (TG_OP='UPDATE' AND TG_TABLE_NAME<>'backup_references') THEN RAISE EXCEPTION 'BACKUP_REFERENCE_IMMUTABLE' USING ERRCODE='23514';END IF;
+ cid:=nullif(current_setting('anvil.command_id',true),'')::uuid;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=NEW.project_id;
+ -- xmin은 UPDATE에도 바뀌므로 원 command 불변 trigger+접수시각 결박을 함께 쓴다. 시각만으로 신규판정하지 않는다.
+ IF c.id IS NULL OR NOT anvil.fn16_backup_current(NEW.project_id,c.id)
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands x WHERE x.id=c.id AND x.xmin=pg_current_xact_id()::xid)
+ OR date_trunc('milliseconds',c.completed_at) IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+ THEN RAISE EXCEPTION 'BACKUP_REFERENCE_CURRENT_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='backup_references' THEN
+  IF c.operation<>'saveBackupReference' OR NEW.id::text IS DISTINCT FROM c.result_ref->'data'->'ref'->>'id' OR NEW.head_version::text IS DISTINCT FROM c.result_ref->'data'->'ref'->>'version' THEN RAISE EXCEPTION 'BACKUP_REFERENCE_HEAD_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+  IF TG_OP='INSERT' THEN
+   IF NEW.head_version<>1 OR c.expected_version<>0 OR NEW.created_by<>c.actor_id OR NEW.created_at<>date_trunc('milliseconds',c.completed_at) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_INITIAL_HEAD_REQUIRED' USING ERRCODE='23514';END IF;
+  ELSIF (to_jsonb(NEW)-'head_version') IS DISTINCT FROM (to_jsonb(OLD)-'head_version') OR NEW.head_version<>OLD.head_version+1 OR c.expected_version<>OLD.head_version THEN RAISE EXCEPTION 'BACKUP_REFERENCE_HEAD_CAS_REQUIRED' USING ERRCODE='23514';END IF;
+ ELSE
+  IF NEW.command_id<>c.id OR NEW.actor_id<>c.actor_id OR NEW.client_id<>c.client_id OR NEW.created_at<>date_trunc('milliseconds',c.completed_at) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+  IF TG_TABLE_NAME='backup_reference_versions' AND (c.operation<>'saveBackupReference' OR NEW.version<>c.expected_version+1 OR NOT anvil.fn16_backup_snapshot(NEW.snapshot_json)) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_VERSION_REQUIRED' USING ERRCODE='23514';END IF;
+  IF TG_TABLE_NAME='backup_reference_events' THEN
+   SELECT id INTO wanted FROM anvil.backup_references WHERE project_id=NEW.project_id AND id=NEW.reference_id AND head_version=c.expected_version FOR UPDATE;
+   IF c.operation<>'revokeBackupReference' OR wanted IS NULL THEN RAISE EXCEPTION 'BACKUP_REFERENCE_REVOKE_HEAD_REQUIRED' USING ERRCODE='23514';END IF;
+  END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;c anvil.commands;v anvil.backup_reference_versions;e anvil.backup_reference_events;
+BEGIN
+ IF TG_TABLE_NAME='authorization_receipts' THEN
+  IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;
+  pid:=NEW.scope_id;cid:=NEW.command_id;
+ ELSIF TG_TABLE_NAME='commands' THEN
+  IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;
+  pid:=NEW.project_id;cid:=NEW.id;
+ ELSIF TG_TABLE_NAME='backup_references' THEN
+  pid:=NEW.project_id;cid:=nullif(current_setting('anvil.command_id',true),'')::uuid;
+ ELSIF TG_TABLE_NAME IN('backup_reference_versions','backup_reference_events','audit_events','approval_consumptions') THEN
+  pid:=NEW.project_id;cid:=NEW.command_id;
+ ELSE RAISE EXCEPTION 'BACKUP_REFERENCE_TRIGGER_TABLE_INVALID' USING ERRCODE='23514';END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.operation NOT IN('saveBackupReference','revokeBackupReference') OR c.operation IS NULL THEN RETURN NEW;END IF;
+ IF NOT anvil.fn16_backup_current(pid,cid) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_FINAL_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ IF c.operation='saveBackupReference' THEN
+  SELECT * INTO v FROM anvil.backup_reference_versions WHERE project_id=pid AND command_id=cid;
+  IF v.reference_id IS NULL OR NOT anvil.fn16_backup_version_valid(pid,v.reference_id,v.version)
+  OR NOT EXISTS(SELECT 1 FROM anvil.backup_references h WHERE h.project_id=pid AND h.id=v.reference_id AND h.head_version=(SELECT max(version) FROM anvil.backup_reference_versions x WHERE x.project_id=pid AND x.reference_id=h.id))
+  OR EXISTS(SELECT 1 FROM anvil.backup_reference_events WHERE project_id=pid AND command_id=cid) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_EXACT_VERSION_REQUIRED' USING ERRCODE='23514';END IF;
+ ELSE
+  SELECT * INTO e FROM anvil.backup_reference_events WHERE project_id=pid AND command_id=cid;
+  IF e.id IS NULL OR NOT anvil.fn16_backup_event_valid(pid,e.id) OR EXISTS(SELECT 1 FROM anvil.backup_reference_versions WHERE project_id=pid AND command_id=cid) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_EXACT_EVENT_REQUIRED' USING ERRCODE='23514';END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn16_backup_dependency_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN cid:=OLD.id;IF OLD.operation IN('saveBackupReference','revokeBackupReference') OR (TG_OP='UPDATE' AND NEW.operation IN('saveBackupReference','revokeBackupReference')) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_COMMAND_IMMUTABLE' USING ERRCODE='23514';END IF;
+ ELSE cid:=OLD.command_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.backup_reference_versions WHERE command_id=cid) OR EXISTS(SELECT 1 FROM anvil.backup_reference_events WHERE command_id=cid) THEN RAISE EXCEPTION 'BACKUP_REFERENCE_ORIGIN_IMMUTABLE' USING ERRCODE='23514';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER backup_reference_head_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.backup_references FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_write();
+CREATE TRIGGER backup_reference_version_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.backup_reference_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_write();
+CREATE TRIGGER backup_reference_event_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.backup_reference_events FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_write();
+CREATE CONSTRAINT TRIGGER backup_reference_command_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_head_complete AFTER INSERT OR UPDATE ON anvil.backup_references DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_version_complete AFTER INSERT ON anvil.backup_reference_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_event_complete AFTER INSERT ON anvil.backup_reference_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_receipt_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_audit_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE CONSTRAINT TRIGGER backup_reference_consumption_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_complete();
+CREATE TRIGGER backup_reference_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_dependency_immutable();
+CREATE TRIGGER backup_reference_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_dependency_immutable();
+CREATE TRIGGER backup_reference_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_dependency_immutable();
+CREATE TRIGGER backup_reference_consumption_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn16_backup_dependency_immutable();
+REVOKE ALL ON FUNCTION anvil.fn16_backup_owner(uuid),anvil.fn16_backup_text(jsonb,integer),anvil.fn16_backup_ref(jsonb),anvil.fn16_backup_snapshot(jsonb),anvil.fn16_backup_target_valid(uuid,jsonb),anvil.fn16_backup_current(uuid,uuid),anvil.fn16_backup_approval_valid(uuid,uuid,uuid,boolean),anvil.fn16_backup_receipt_valid(uuid,uuid,jsonb,jsonb,text,jsonb,bigint),anvil.fn16_backup_version_valid(uuid,uuid,bigint),anvil.fn16_backup_event_valid(uuid,uuid),anvil.fn16_backup_write(),anvil.fn16_backup_complete(),anvil.fn16_backup_dependency_immutable() FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_backup_write(),anvil.fn16_backup_complete(),anvil.fn16_backup_dependency_immutable() FROM anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn16_backup_owner(uuid),anvil.fn16_backup_text(jsonb,integer),anvil.fn16_backup_ref(jsonb),anvil.fn16_backup_snapshot(jsonb),anvil.fn16_backup_target_valid(uuid,jsonb),anvil.fn16_backup_current(uuid,uuid),anvil.fn16_backup_approval_valid(uuid,uuid,uuid,boolean),anvil.fn16_backup_receipt_valid(uuid,uuid,jsonb,jsonb,text,jsonb,bigint),anvil.fn16_backup_version_valid(uuid,uuid,bigint),anvil.fn16_backup_event_valid(uuid,uuid) TO anvil_v3_app;
+-- 기존 승인 guard 본문은 교체하지 않는다. 두 wrapper만 새op2를 위임하여 FN17 hook/cap/원승인 검사를 보존한다.
+
+REVOKE ALL ON FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) TO anvil_v3_app;

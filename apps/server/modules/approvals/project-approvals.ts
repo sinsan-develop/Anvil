@@ -16,7 +16,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = ['defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations];
+export const consumableOperations = ['defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -41,6 +41,7 @@ export class ProjectApprovals{
    return{...approval,replay:true};
   }
   if(view.storedStatus!=='APPROVED'||view.currentVersion!==2||view.expired||view.consumption)throw new AuthFailure('APPROVAL_NOT_USABLE',412);
+  if(['saveBackupReference','revokeBackupReference'].includes(c.operation))await (await import('../backups/backup-reference-store.ts')).assertBackupReferenceApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['defineProjectRole','bindResponsibleSession'].includes(c.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(c.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(c.operation==='activateDesignChange')await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateActivation?.payload,this.#documents);
@@ -66,6 +67,7 @@ export class ProjectApprovals{
   const candidatePolicy=await authorizeMaterial(db,actor,{...c,operation:details.actionScope.operation},true,this.#documents);
   if(!candidatePolicy.approvalRequired)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
   if(Date.parse(details.expiresAt)>candidatePolicy.validUntil)throw new AuthFailure('APPROVAL_EXCEEDS_POLICY_EXPIRY',422);
+  if(['saveBackupReference','revokeBackupReference'].includes(details.actionScope.operation))await (await import('../backups/backup-reference-store.ts')).assertBackupReferenceApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(['defineProjectRole','bindResponsibleSession'].includes(details.actionScope.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(activation)await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload,this.#documents);

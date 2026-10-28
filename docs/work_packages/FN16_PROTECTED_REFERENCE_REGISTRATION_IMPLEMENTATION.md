@@ -2,7 +2,15 @@
 
 > 수행 방식: 기존 단일 writer가 단계별 Main TEST_ONLY → fresh RED → 제품 GO를 받아 실행한다. 실행 시 executing-plans 절차를 적용하며 이 문서 자체는 실행 GO가 아니다.
 
-**상태: PENDING_EXACT_PMO_SOURCE_ADOPTION**
+**현재 상태: SOURCE_ADOPTED_DOCUMENT_REVIEW_ONLY**
+
+2026-10-28 신산님 직접 지시 “FN16 보호참조 계약과 P03 R2 복제 1회 둘 다 승인해. 계속 진행해.”를 Main이 전달했다. FN16 CA777 후보의 source-only 채택 대기는 해소됐다. 현재 기준은 Main 지정 625f4255이며 정확 full HEAD/Git 상태의 기록·확인은 Main 소유다. 제품8·보호12·완료코드2의 실제 raw를 재대조해 모두 기존 manifest와 일치함을 확인했고 0053 후보 파일은 여전히 부재다.
+
+0050 점유로 인한 0053_backup_references.sql.pending 재배치는 동일 계약의 비의미 번호 재배치로 반영한다. 원 CA777의 0050 명칭은 과거 후보 원문에 보존한다. 승인 기록 파일은 Main이 별도 작성하며 이 문서가 승인 기록을 대신하지 않는다. 현재 author GO는 문서2 갱신뿐이며 문서검토/기준확인 뒤 Main TEST_ONLY 배정 전에는 제품·시험·SQL 생성과 실행 모두0이다. 실제 DB·권한·키·서비스·Agent는 제외한다. P03 actual은 Main 단독 소유로 이 FN16 업무에서 접근·실행하지 않는다.
+
+아래 4191a7fa/PENDING 및 PMO 번호대조 대기 문구는 최초 준비 당시의 이력이다. 현재 채택 상태는 이 갱신 절이 우선하며, 원 pending 이력과 원문을 삭제하지 않는다.
+
+**최초 준비 상태(보존 이력): PENDING_EXACT_PMO_SOURCE_ADOPTION**
 
 목표는 보호참조 metadata의 등록·개정·정확 버전 조회·신규 사용 회수를 UI14에 연결하는 source-only 단위다. 기존 TypeScript/Fastify/React/PostgreSQL pending source 패턴을 사용하고 새 의존성·범용 구조를 만들지 않는다.
 
@@ -82,3 +90,7 @@ browser 파일은 tests/browser/UI14/backup-reference.spec.ts만 보강 대상�
 조사 오류 이력: 부가 검토 문서를 docs/work_packages/FN16_PROTECTED_REFERENCE_CONTRACT_REVIEW.md로 읽으려 한 경로 오류1이 있었다. 정확 경로는 docs/contracts/FN16_PROTECTED_REFERENCE_CONTRACT_REVIEW.md이며 원 CA777 전문 읽기는 성공했다. 잘못된 부가 조회를 계약 근거로 사용하지 않았고 파일 영향0/제품 실패0/정식 FAILURE_REPORT 횟수0이다. 이후 rg --files/실 import의 exact path를 사용한다.
 
 문서준비 시 신규12·결과1·문서2는 양쪽에서 부재를 확인했다. 실제 Git 상태는 Main 확인 책임이며 작성자가 재실행하거나 변경하지 않는다. 현재 실DB/SQL/권한·provider·키·서비스·Agent·browser·served·사용자 인수는 NOT_RUN이다. 전체 FN16/Stage/계획 완료를 주장하지 않는다. 정확 채택·번호 대조·Main GO 후에만 다음 단계로 재개한다. 원 후보/보호 파일·기존 미전송 완료코드·기존 SQL을 보존하며 rollback은 Main이 source-only 해당 단위의 정확 diff를 선택 복구하고 실제 DB 되돌리기로 주장하지 않는다.
+
+## 7. 직접 승인 반영 후 재개 경계
+
+현재 source 채택 및 0050→0053 비의미 재배치 반영은 완료했다. 최초 준비의 승인 대기 체크는 이 갱신으로 해소하며 Main approval 기록과 preflight/TEST_ONLY 지시를 연결한 뒤 입력 블록부터 재개한다. 지금 제품/시험/SQL GO는 없고 기존20+문서2+결과1의23경로만 관리한다. 기존raw8·보호12·미전송 완료코드2의 실제 바이트 재대조는 전부 일치했다. 문서 외 변경·시험/타입/환경 실행·Git 작업은0이다.

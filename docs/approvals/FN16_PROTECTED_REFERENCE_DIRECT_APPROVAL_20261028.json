@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "userAnswer": "FN16 보호참조 계약과 P03 R2 복제 1회 둘 다 승인해. 계속 진행해.",
+  "authority": "DIRECT_USER_THIS_THREAD",
+  "observedAt": "2026-10-28T05:07:58.000Z",
+  "candidateSha256": "CA7774F7A5C102B2B6EDD3D5D6E87701FEADE197E91B2186D05F4AACFE30AA21",
+  "scope": "source-only code UI unapplied SQL synthetic tests",
+  "sqlNumber": {
+    "from": "0050_backup_references.sql.pending",
+    "to": "0053_backup_references.sql.pending",
+    "reason": "0050 occupied; non-semantic unused filename adjustment"
+  },
+  "exclusions": [
+    "actual DB",
+    "permissions",
+    "keys",
+    "services",
+    "Agent"
+  ]
+}

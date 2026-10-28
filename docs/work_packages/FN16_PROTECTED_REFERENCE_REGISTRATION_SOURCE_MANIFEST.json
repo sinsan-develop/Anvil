@@ -1,17 +1,23 @@
 {
   "schemaVersion": 1,
   "task": "FN16_PROTECTED_REFERENCE_REGISTRATION",
-  "state": "PENDING_EXACT_PMO_SOURCE_ADOPTION",
-  "base": "4191a7faf67d1f7b56b79eb89c269ddcfb0ad5b1",
+  "state": "SOURCE_ADOPTED_DOCUMENT_REVIEW_ONLY",
+  "base": "625f4255",
   "branch": "codex/av3-stage-b",
-  "baseEvidence": "Main 지정 기준; Mainstatusdirty1/App 및 사용자 dirty 보존; 작성자 Git0",
+  "baseEvidence": "Main 지정 현재 짧은 HEAD; full HEAD/branch/status 기록은 Main 소유. 기존8·보호12·완료2 actual raw 재대조 전부 일치",
   "writer": "fn05_share_request_impl",
   "mainProductWrite": false,
   "candidate": {
     "path": "docs/contracts/FN16_PROTECTED_REFERENCE_REGISTRATION_CONTRACT_R2.md",
     "sha256": "CA7774F7A5C102B2B6EDD3D5D6E87701FEADE197E91B2186D05F4AACFE30AA21",
-    "exactAdoptionEvidence": null,
-    "existingPmoQuestionPending": true,
+    "exactAdoptionEvidence": {
+      "type": "HUMAN_DIRECT_INSTRUCTION_RELAYED_BY_MAIN",
+      "text": "FN16 보호참조 계약과 P03 R2 복제 1회 둘 다 승인해. 계속 진행해.",
+      "scope": "FN16 CA777 source-only",
+      "approvalRecordOwner": "Main",
+      "approvalRecordPath": null
+    },
+    "existingPmoQuestionPending": false,
     "duplicateQuestionAuthorized": false
   },
   "sqlNumber": {
@@ -19,11 +25,12 @@
     "collision": "db/migrations/0050_design_baseline_activations.sql.pending",
     "currentMaximum": "0052",
     "proposed": "db/migrations/0053_backup_references.sql.pending",
-    "state": "PENDING_PMO_QUESTION_SCOPE_AND_NUMBER_RECONCILIATION",
+    "state": "NON_SEMANTIC_RENUMBERING_REFLECTED_AFTER_DIRECT_ADOPTION",
     "automaticallyIncludedInExistingQuestion": false,
-    "recheckAbsenceBeforeCreation": true
+    "recheckAbsenceBeforeCreation": true,
+    "note": "0050 점유→0053 재배치; 원후보0050 명칭 불변. 기존질문 자동포함 주장은 하지 않음"
   },
-  "workInstructionSha256": "41D4B6287A8ADAB8EA0EA3E057EA95C23B147FBF2AE61020C7EB4DFD94CDC056",
+  "workInstructionSha256": "36B5B718E3AAA9E186ECA0CF49EC216BCFF16C0E6F7E3A6A34A7A7885C70B8BD",
   "allowedPathCount": 23,
   "allowed": [
     {
@@ -238,8 +245,8 @@
   "preserveAppAndUserDirty": true,
   "appIsAllowedBaselineNotPermanentlyReadonly": true,
   "phaseOrder": [
-    "EXACT_PMO_SOURCE_ADOPTION_AND_SQL_NUMBER_SCOPE",
-    "MAIN_PREFLIGHT",
+    "SOURCE_ADOPTED_DOCUMENT_REVIEW",
+    "MAIN_PREFLIGHT_AND_TEST_ONLY_GO",
     "INPUT_TEST_ONLY_MAIN_RED_PRODUCT_GO",
     "STORE_ROUTES_SQL_TEST_ONLY_MAIN_RED_PRODUCT_GO",
     "UI_TEST_ONLY_MAIN_RED_PRODUCT_GO",
@@ -277,5 +284,55 @@
   "existingTestsSqlAppliedManifestWrite": false,
   "newDependencies": false,
   "newGenericStructure": false,
-  "mainOwnsGitStatusAndPublication": true
+  "mainOwnsGitStatusAndPublication": true,
+  "history": [
+    {
+      "state": "PENDING_EXACT_PMO_SOURCE_ADOPTION",
+      "base": "4191a7faf67d1f7b56b79eb89c269ddcfb0ad5b1",
+      "workInstructionSha256": "41D4B6287A8ADAB8EA0EA3E057EA95C23B147FBF2AE61020C7EB4DFD94CDC056",
+      "manifestSha256": "BB30C1112AA55ECEC906842B2200ECC04CEA8E918AB5ABB443D86542D31C94F5",
+      "sqlNumber": {
+        "originalCandidate": "db/migrations/0050_backup_references.sql.pending",
+        "collision": "db/migrations/0050_design_baseline_activations.sql.pending",
+        "currentMaximum": "0052",
+        "proposed": "db/migrations/0053_backup_references.sql.pending",
+        "state": "PENDING_PMO_QUESTION_SCOPE_AND_NUMBER_RECONCILIATION",
+        "automaticallyIncludedInExistingQuestion": false,
+        "recheckAbsenceBeforeCreation": true
+      },
+      "note": "최초 pending 준비 이력 보존; 당시 승인/번호대조 대기"
+    },
+    {
+      "state": "DOCUMENT_TWO_ONLY",
+      "manifestSha256": "CC5EB529746AA3162711E6B16E4A49FFA03B0F3664604C76A22D6FA10AEEF24D",
+      "note": "문서채택 확인 시점의 GO; 뒤 Main 단계별 실제 RED·검수 후 source 쓰기 GO 이력은 WORK_STATUS에 보존"
+    }
+  ],
+  "currentGo": "SOURCE_IMPLEMENTATION_ACTIVE_WITHIN_DIRECT_APPROVAL",
+  "baselineRecheck": {
+    "existing8": true,
+    "protected12": true,
+    "frozenCompleted2": true,
+    "new0053Absent": true,
+    "method": "read-only actual raw SHA256 comparison",
+    "gitVerificationOwner": "Main"
+  },
+  "p03ActualOwner": "Main; FN16 writer 접근/실행0",
+  "executionGrants": {
+    "approvalRecord": "docs/approvals/FN16_PROTECTED_REFERENCE_DIRECT_APPROVAL_20261028.json",
+    "approvalSha256": "C1846395A56A0FCF47E4F6DCD66420D4DC9EF5AB5B275A94AAD9932F3CA98530",
+    "singleWriter": "developer-primary",
+    "mainProductWrites": 0,
+    "server": "implemented; scoped findings addressed; fresh24 PASS; actualSQL NOT_RUN",
+    "ui": "existing consumers unit RED then implementation; Main realApp minimal DOM RED02593f; allowed UI6 implementation GO",
+    "runtimeExcluded": [
+      "actual DB",
+      "GRANT",
+      "keys",
+      "services",
+      "Agent",
+      "P03 execution"
+    ],
+    "updatedAt": "2026-10-28T05:47:43.462Z"
+  }
 }
