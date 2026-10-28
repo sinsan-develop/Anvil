@@ -8785,3 +8785,9 @@
 - **정정 Form 한정 검수 완료**: 독립품질C0I0M0/명세C0I0·b0f900동결7/신규root부재/ownerSINSANcyhuh/link0/profile0뒤Main e27bb8은SSR1+DOM부모1/하위3=5수집5PASS/0FAIL/skip0/cancel0/todo0·6152.6897ms/exit0. 정상upload승인→correctnull/targetversion/원출처·요청/업로드유실/후속412·원pending보호를직접Form합성transport로확인했고UI08전체시험은반복하지않았다. eded5f소유186files59dirs14638593bytes/linkescape0/profile0정확회수·330fc5별도root부재/profile0. ABA끝관측은transportJSON종료기준이며제품hash/finally완료까지의직접barrier NOT_VERIFIED를독립정적epoch차단/단위active와구분해보존한다. 실제DB/권한집행/정식served/Agent/사용자인수와전체FN05/UI10/Stage/계획미완료,결과1문서정리후기존branch체크포인트로통합한다.
 
 - 정정결과서원D113A909의Main2982ca정확명령표기를npm별칭에서실제실행node tsc--noEmit--p명령으로문서1행만정정했다. scope/판정/기대/제품/시험불변·최종결과SHAB8BBC6BCF9E1E063CC54425D36C81F82E2DBD90708213F6C0BBD5D400D87C3FD로정본/source동일보존,기존명령표기오류를감추지않는다.
+
+- **정정 checkpoint·다음 검색 계약 경계**:cf838e/e264b3 exact11 bb738bc903dca93d7c513a0219f469879f6d5808 local/private동일·mainf976불변·trackedclean/보호8만untracked를확인했다. 독립읽기에서즉시착수신규권장없음,save/correct자체승인미지원·scope검색§2.1 NOT_ADOPTED/IX01실사용P03선행을분리했다. Main150f0e/352374는원후보E4D828C5와현재검색whitelist/cursor를대조했고PMO회신은기존채택근거없음·P03/FN16지원범위밖직접결정필요다. 기존후보§2.1만읽기검색선택/cursor/source-only로결정packet에고정·새제품/시험/DB효과0,정확결정전구현하지않고기존질문중복0이다.
+
+- 검색결정안원2E1FB333 독립C0I1은‘새SQL제외’가필수기존SELECT필터source변경까지금지하는것처럼읽힐모호성이다. 기존SELECT/cursor필터source포함·새table/DDL/migration/schema/실DB접속SQL실행제외로한문장만명확화했다. 범위·권한·실행제외/원후보E4불변이며재검수후정확source-only결정1회만요청한다.
+
+- 검색결정안19D93DB1의기존I1은ADDRESSED/scoped C0I0로재검수됐다. §2.1채택/구현전상태이며실제제품/시험/DB효과0. 현재독립구현대조상즉시착수신규없음과이미열린P03/FN16/CapabilityReport질문을분리하고검색의정확새계약결정만1회요청한다.
