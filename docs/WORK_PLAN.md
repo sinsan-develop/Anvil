@@ -1537,3 +1537,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 기존 uploadArtifact 일회 승인 계약의 새 지식 작성 소비선 누락을 허용8/WI3F3D69D1로 구현한다. 공유요청 A안/대화 업로드 완료범위는 보존한다. Main 단위12의기본양성1·미구현/latecheckpoint11FAIL과실제Page SSR1FAIL을확인했고독립반례보강I1해소C0I0뒤제품4를단일담당에배정했다. 후속saveKnowledge는별도명령/approvalRef:null,새API/SQL/정책/DB/서비스/Agent변경0. 현재구현중이며실제DB·정식화면·전체FN05/UI10/Stage/계획완료아니다.
 
 - **2026-10-28 새 지식 원문 업로드 승인 연결 한정 검수**: 기존 계약의 요청/UI08 별도 결정/명시 결박/원명령 재개와 후속save null 연결. Main 직접25PASS/type·최종 실제합성SSR/DOM6PASS(7460.5211ms), 제품I1 상태 전달 보완/동일fixture오류3회 시험1분기 Main인수·독립C0I0·QA4회정확정리/별도0. 실제DB/정식served/전체FN05/UI10/Stage/계획은미완료이며원FAIL/미검증은결과서·WORK_STATUS에보존한다.
+
+- **2026-10-28 FN05/UI10 지식 정정 원문 업로드 승인 연결 착수**: 기존 정정 업무의 uploadArtifact 일회승인 소비선만다음허용8로구현한다. 기존지식/대화업로드·공유요청완료범위를보존하고후속correctKnowledge별도/null·target/version·원문출처를유지한다. 실제DB/서비스/Agent·새API/SQL/권한0,MainRED선행/단일writer/최소직접검증으로진행하며전체계획미완료다.
+
+- **2026-10-28 정정 업로드 승인 한정 소스검수**: 신규/직접13PASS·type/실제Form SSR/DOM5PASS(6152.6897ms)·독립C0I0·전용QA정리/별도0. 후속correctnull·targetversion·원문출처보존을연결했다. ABA최종barrier/실DB·정식served·사용자인수및전체FN05/UI10/Stage/계획은미검증·미완료로분리한다.

@@ -8769,3 +8769,19 @@
 - `tests/unit/FN05/knowledge-upload-approval.test.ts`: `C8BA75CDC718C4BA0E4DF6BC0EF640497244AD0DFCDE82ECB26A71141F2502DA`
 - `tests/browser/UI10/knowledge-upload-approval-dom.test.ts`: `3AF0BF2E7C6E07CDBAD13399E6DAA522A897A3717678BE10E0F71C32C67BB0EB`
 - `tests/browser/UI10/knowledge-upload-approval-dom-harness.tsx`: `BFEC8F6E2AB2A87E38D0F104A6F68199F3D9F2CEEC9CCAD3DD9DD1A16BCE03BD`
+
+- **새 지식 업로드 checkpoint·다음 정정 소비선**: bec6dc/9f9a6e exact12 commit32d34b524771859b854c0b0486fa020391e73456 local/private동일·mainf976불변·trackedclean/보호8만untracked확인,PMO에원실패/인수/최종소스검수·미검증을보고했다. 다음독립읽기에서saveKnowledge자체는서버consumable미지원으로보완대상에서제외했다. 기존uploadArtifact계약을소비하는지식정정화면만미연결(correction-api null강제/후속spread,Form승인UI0)로Main9551fd대조,허용8 WI를고정해다음TEST_ONLY를배정한다. 새API/SQL/권한·실DB/서비스/Agent0·완료된기능검사재실행0이다.
+
+- 지식정정upload WI77056A7A/기존raw2의독립preflight C0I0·필수보완0. 기존upload승인만소비·correctKnowledge null/targetversion·기존시험보존·실제DB제외와최소DOM범위를대조했다. 신규unit동결즉시MainRED를확인하고제품GO전기존2불변을검증한다.
+
+- **정정 업로드 Main TEST_ONLY RED**: E36091A7동결 신규unit11을Main e540be로실행해1PASS10FAIL/skip0/cancel0/todo0·209.0045ms/exit1확인. 기본null정정양성1PASS·helper부재8·기존lateuploadcheckpoint1!==0/late최종ref rejection부재2실결함RED다. aa2589에서기존제품2 E590/B2C9불변확인뒤helper/api2만GREEN GO,Form/editor2는SSR RED전write0. author초기v3/supersedesnull fixture오류b54ad6의3RESPONSE_INVALID는기능RED로세지않고검증된기존v1fixture계약재사용으로분리했다. 신규unit독립검토·DOM준비중/QA0·실DB/서비스/Agent0·기존완료시험재실행0이다.
+
+- 정정unit E360독립명세 C0I1: coherent재hash반례의rest변수가input인데hash(snapshot)을호출해helper구현뒤ReferenceError가날공백을확인했다. 변수명정합1곳만기대불변보정하도록전달했고이반례를아직정상변조거절실행증거로세지않는다. 원MainRED/기본양성·late결함2와원지문은보존한다.
+
+- **정정 UI Main SSR RED·제품GO**: unit변수명1곳기대불변보정 D9239B4A/typeauthor13bdf4exit0. 동결DOMtest91B5F88B/harnessFC8ADD77에서Main93a5e6 SSR1수집0PASS1FAIL/656.4364ms/exit1으로실제정정Form승인editor부재확인,허용제품4GREEN GO를발행했다. DOM은직접Form정상/요청·업로드유실+후속412/중요문맥이탈3하위만준비·UI08전체회귀반복0·actualQA0.
+
+- **정정 Main GREEN/합성DOM 사전등록**:1ce229의새정정11+기존직접2는단일13PASS/0FAIL/skip0/cancel0/todo0·281.342ms/exit0,2982ca type0. 제품4동결/독립명세·품질검수중이며실DB/전체완료아니다. 등록QA D:/tmp/anvil-v3-knowledge-correction-upload-approval-dom-20261028-01 및bundle/browser만·Windowscyhuh/현재session/최초생성부터30분목표. 기존Edge headless전용profile·serviceWorkersblock·browser15s/default10s/test60s,가상https://anvil.invalid:3830/ GET문서만충족/나머지외부요청차단·합성transport만/실listener·DB·서버포트0. 실제CSSwrite:false포함·수정Form정상/유실·후속412/문맥이탈3하위만·UI08전체회귀재실행0. childenv ANVIL_KNOWLEDGE_CORRECTION_UPLOAD_DOM_QA=1만설정,생성직전root부재/부모realpath/link·owner·profile0확인·충돌시생성삭제0. 정상contextclose후정확root소유/linkescape/profile0검사→전용만회수→별도부재확인. 현재생성0·불명은보존/보고·기존process강제종료0이다.
+
+- **정정 Form 한정 검수 완료**: 독립품질C0I0M0/명세C0I0·b0f900동결7/신규root부재/ownerSINSANcyhuh/link0/profile0뒤Main e27bb8은SSR1+DOM부모1/하위3=5수집5PASS/0FAIL/skip0/cancel0/todo0·6152.6897ms/exit0. 정상upload승인→correctnull/targetversion/원출처·요청/업로드유실/후속412·원pending보호를직접Form합성transport로확인했고UI08전체시험은반복하지않았다. eded5f소유186files59dirs14638593bytes/linkescape0/profile0정확회수·330fc5별도root부재/profile0. ABA끝관측은transportJSON종료기준이며제품hash/finally완료까지의직접barrier NOT_VERIFIED를독립정적epoch차단/단위active와구분해보존한다. 실제DB/권한집행/정식served/Agent/사용자인수와전체FN05/UI10/Stage/계획미완료,결과1문서정리후기존branch체크포인트로통합한다.
+
+- 정정결과서원D113A909의Main2982ca정확명령표기를npm별칭에서실제실행node tsc--noEmit--p명령으로문서1행만정정했다. scope/판정/기대/제품/시험불변·최종결과SHAB8BBC6BCF9E1E063CC54425D36C81F82E2DBD90708213F6C0BBD5D400D87C3FD로정본/source동일보존,기존명령표기오류를감추지않는다.
