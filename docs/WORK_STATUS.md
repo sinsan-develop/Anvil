@@ -9551,3 +9551,12 @@
 - 적용이력reason Main66af42 2FAIL/366.4909ms→투영42B보완후Mainc830ed13PASS/799.0388ms/type/diff0. source04A962/행동FF7CAA/schemaE810불변. 결과 FN16_METHODOLOGY_APPLICATION_INVENTORY_RESULT_20261029.md,독립최종pending. 다음 본인수신알림/읽음이력은기존primary WI문서만준비,새제품0·실제키DB서비스0.
 
 - 적용이력04A96260 독립최종C0/I0/M0. sameSource/applyDraft직접분기와reason/hash보존확인,원실패/시험한계보존. 신규3+WI/결과/WORK_STATUS/WORK_PLAN정확7checkpoint,다음알림WI/보호8제외. 실제DB키서비스0.
+
+### 2026-10-29 FN16 본인 승인알림·최초 읽음 이력 착수
+- 앞선 적용이력e98d39cd10f782d41248ababe978321dd6a5b974 private동일/main불변(bf7179),보호8지문모두불변(57c836). 기존알림producer와수집누락을Maina71220/c51c1c/a1ac30 및독립reviewer가확인. 신규WI2E93986AA164778BC8A1214C02525CE81C0A2F774358C153E623839C59D013A4는본인RLS/GUC·불변원요청/가변현재상태·최초읽음·국소명령/auth/audit만수집. 원candidatepayload/전체승인결박/다른수신자/설정미수집을명시한다. 기존primary시험2→MainRED→source1,독립검수. author wildcard rg123읽기오류1은실목록으로교정·실제키DB서비스0.
+
+- 알림 WI2E93986A 독립C0/I0/M0. Mainff5df9 시험268B1BF1/84AB070E 동결확인·신규13중schema1PASS/미구현12FAIL/skip0/170.9266ms exit1. author최초df8882 fixture타입1건은값/기대불변타입표시로교정,type165fd3/diff93959c0. 기존primary 신규source1GO·reviewerTEST_ONLY검수,실제DB키서비스0. 원request preimage와다른수신자는NOT_PERFORMED/NOT_COLLECTED유지.
+
+- 2026-10-29 FN16 알림 수집 최종 검수: Main9a27ef 기존13합성PASS/skip0/724.8055ms·type/diff0. 독립C0/I1/M0에서 requestApproval/markNotificationRead 사이 동일 actor·commandId 중복을 operation 포함키가 허용하는 정합 결함 확인. 실제0011_project_policy_control.sql:6 유일성에 맞춰 반례 RED→한정 보완을 기존primary에게 지시했다. 초기13PASS를 최종완료로 게시하지 않는다. 실제키DB서비스0.
+
+- 알림 I1 Main526d5b 정합반례1FAIL→operation 접두사만제거. Main1c2f09 source02981FB2/행동D1BFFB5E/schema84AB070E 동일·14PASS/0FAIL/skip0/788.7964ms/type/diff0. 독립 최종C0/I0/M0·I1해결/메모리역산이전AFE6일치. 결과 FN16_NOTIFICATION_INVENTORY_RESULT_20261029.md. 실제DB키서비스0·전체FN16미완료;다음결과제출이력 WI만준비.
