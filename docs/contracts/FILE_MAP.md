@@ -447,3 +447,15 @@ INTERFACES §13~14·DATA_MODEL §10은 §3의 FN09~18 모듈·schema/migration/�
 KnowledgePage/App→KnowledgeShareRequestPanel/knowledge-share-request-api는원선택·pending·same-origin·본인목록/고정조회/최소불가응답을소유한다. 기존policy-editor-profile/CandidatePolicyPanel은같은동작의명시선택지/범위설명만추가한다. pending0051만신규이며기존SQL/적용manifest는불변이다. unit4·DOMtest/harness2·결과서1에서범위를검수한다. 실제스타일은기존main.tsx와같은tokens.css/app.css를합성harness에서읽고해당CSS파일을수정하지않는다.
 
 원32직접/인접26·보완후server23·타입검사·실제App/KnowledgePage합성DOM을분리기록하며실DB/원자성/RLS/정식served/실공유/사용자인수를PASS로승격하지않는다. 전체FN05/UI10/Stage완료는별도다.
+
+
+## 2026-10-28 FN05 단계·업무 지식 검색 소비선
+
+- 서버입력: apps/server/modules/knowledge/knowledge-search-scope.ts. 기존knowledge.ts의projectMember→실scope참조검증→필터WHERE/기존codec서명cursor→기존보호read를소비한다. 기존routes.ts는수정하지않았다.
+- Web: 기존features/knowledge/api.ts/KnowledgePage.tsx와신규knowledge-search-scope.ts/KnowledgeSearchScopePicker.tsx. workspace적용본·work-plan목록/정확GET선택→canonical query→현재조건결과/커서소비이며기존작성·승인·정정·공유버퍼를보존한다.
+- 검수: `tests/unit/FN05/knowledge-scope-search-input.test.ts`
+- 검수: `tests/unit/FN05/knowledge-scope-search-store.test.ts`
+- 검수: `tests/unit/FN05/knowledge-scope-search-api.test.ts`
+- 검수: `tests/browser/UI10/knowledge-scope-search-dom.test.ts`
+- 검수: `tests/browser/UI10/knowledge-scope-search-dom-harness.tsx`
+- 결과: `docs/04_test_reports/AV3/FN05_KNOWLEDGE_SCOPE_SEARCH_RESULT.md`. fakeDB/SQL문자열·합성transport만확인하며실제DB/서비스반영0.

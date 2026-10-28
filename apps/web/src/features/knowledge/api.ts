@@ -1,3 +1,4 @@
+import {knowledgeSearchScopeWire,type KnowledgeSearchScope} from './knowledge-search-scope.ts';
 import {validateKnowledgeUploadBinding,validateKnowledgeUploadApproval,type KnowledgeUploadApproval} from './knowledge-upload-approval.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {postDocumentCommand,type DocumentWrite,type DocumentSession} from '../design-trace/editor-api.ts';
@@ -76,9 +77,10 @@ export async function validateKnowledgeView(v:KnowledgeView,pid:string,ref:Ref):
   const bytes=new TextEncoder().encode(v.body);if(bytes.length!==v.entry.contentRef.bytes||await digest(bytes)!==v.entry.contentRef.contentHash)throw new ApiError('KNOWLEDGE_INTEGRITY_FAILED');
   return v;
 }
-export async function searchKnowledge(client:ApiClient,pid:string,query='',kind='',cursor:string|null=null,status:'ACTIVE'|'PROPOSED'|'CONFIRMED'|'EXCLUDED'='ACTIVE'){
+export async function searchKnowledge(client:ApiClient,pid:string,query='',kind='',cursor:string|null=null,status:'ACTIVE'|'PROPOSED'|'CONFIRMED'|'EXCLUDED'='ACTIVE',scope:KnowledgeSearchScope|null=null){
   if(!uuid.test(pid)||query.length>200||!query.isWellFormed()||kind&&!knowledgeKinds.includes(kind as KnowledgeEntry['kind'])||cursor!==null&&(typeof cursor!=='string'||cursor.length>4096)||!['ACTIVE','PROPOSED','CONFIRMED','EXCLUDED'].includes(status))throw new ApiError('CLIENT_PATH_INVALID');
-  const qs=new URLSearchParams({query,limit:'50'});if(kind)qs.set('kind',kind);if(cursor)qs.set('cursor',cursor);if(status!=='ACTIVE')qs.set('status',status);
+  const scopeWire=scope===null?null:knowledgeSearchScopeWire(scope);
+  const qs=new URLSearchParams({query,limit:'50'});if(scopeWire!==null)qs.set('scope',scopeWire);if(kind)qs.set('kind',kind);if(cursor)qs.set('cursor',cursor);if(status!=='ACTIVE')qs.set('status',status);
   const v=await client.get<{items:KnowledgeHit[];hasMore:boolean;nextCursor:string|null;searchScope:'TITLE_REASON';observedAt:string}>(`/api/v1/projects/${pid}/knowledge?${qs}`);
   if(!v||!Array.isArray(v.items)||v.items.length>50||v.searchScope!=='TITLE_REASON'||typeof v.hasMore!=='boolean'||(v.hasMore?typeof v.nextCursor!=='string'||!v.nextCursor||v.nextCursor.length>4096:v.nextCursor!==null))throw new ApiError('RESPONSE_INVALID');
   if(!Number.isFinite(Date.parse(v.observedAt))||v.items.some(i=>!i||!isRef(i.versionRef)||!knowledgeKinds.includes(i.kind)||kind&&i.kind!==kind||typeof i.title!=='string'||i.title.length>200||typeof i.reasonSnippet!=='string'||i.reasonSnippet.length>200||(status==='ACTIVE'?!['PROPOSED','CONFIRMED'].includes(i.state):i.state!==status)||i.state==='CONFIRMED'&&typeof i.currentConfirmationValid!=='boolean'||!Array.isArray(i.sourceRefs)||i.sourceRefs.length>200))throw new ApiError('RESPONSE_INVALID');

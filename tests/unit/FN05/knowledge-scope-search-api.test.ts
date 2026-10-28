@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {ApiClient,ApiError} from '../../../apps/web/src/api/client.ts';
+import {searchKnowledge} from '../../../apps/web/src/features/knowledge/api.ts';
+import {canonicalJson} from '../../../contracts/canonical.ts';
+const pid='11111111-1111-4111-8111-111111111111',ref={id:'22222222-2222-4222-8222-222222222222',version:1,contentHash:'a'.repeat(64)},scope={stageRef:{applicationRef:ref,nodeId:'N1'},taskRef:null,includeProjectWide:false};
+const empty={items:[],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:'2026-10-28T00:00:00Z'};
+const search=searchKnowledge as (...args:any[])=>ReturnType<typeof searchKnowledge>;
+test('무필터 URL/기존응답 그대로 유지, 선택scope만 canonical JSON 단일 query로 전송한다',async()=>{const calls:string[]=[],client=new ApiClient(async(path,init)=>{assert.equal(init?.credentials,'same-origin');calls.push(String(path));return Response.json(empty);});assert.deepEqual(await search(client,pid,'원문','','cursor-one','EXCLUDED'),empty);assert.equal(calls[0],'/api/v1/projects/'+pid+'/knowledge?query='+encodeURIComponent('원문')+'&limit=50&cursor=cursor-one&status=EXCLUDED');await search(client,pid,'원문','FACT','cursor-two','ACTIVE',scope);const url=new URL(calls[1]!,'https://anvil.invalid');assert.equal(url.origin,'https://anvil.invalid');assert.deepEqual(url.searchParams.getAll('scope'),[canonicalJson(scope)]);assert.equal(url.searchParams.get('cursor'),'cursor-two');assert.equal(url.searchParams.get('kind'),'FACT');});
+test('Web의 잘못된scope/두refnull·추가키는 GET 전에 거절한다',async()=>{let calls=0;const client=new ApiClient(async()=>{calls++;return Response.json(empty);});for(const bad of [{...scope,stageRef:null},{...scope,extra:true},{...scope,includeProjectWide:1},{...scope,stageRef:{...scope.stageRef,nodeId:'../'+'x'.repeat(200)}}])await assert.rejects(search(client,pid,'','',null,'ACTIVE',bad),ApiError);assert.equal(calls,0);});
+test('선택scope가 있어도 기존응답형식·kind/status 검사를 완화하지 않는다',async()=>{const client=new ApiClient(async()=>Response.json({...empty,items:[{versionRef:ref,title:'다른상태',kind:'FACT',sourceRefs:[],reasonSnippet:'검증',state:'EXCLUDED'}]}));await assert.rejects(search(client,pid,'','FACT',null,'ACTIVE',scope),ApiError);});

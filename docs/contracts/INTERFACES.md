@@ -1142,3 +1142,12 @@ POST /api/v1/projects/:projectId/commands의APPLIED data는 {ref,request}이며 
 GET /api/v1/projects/:projectId/knowledge-share-requests와 /:id/versions/1?contentHash=…는 현재출발접근+createdBy=본인으로선필터한다. 목록은유한limit/서명cursor를actor/project/limit에결박하고전역건수/대상역조회는없다. 같은원명령replay도현재보호투영하며과거상세receipt를그대로재노출하지않는다. 인증identity의actor/client를각transaction-localGUC로설정하고새RLS표조회전에결박한다. 프로젝트/member/head잠금과불변원문3표의기존SELECT계약·원문재검사를유지하며권한확대없다.
 
 UI10은현재고정지식→허가대상조회/목적입력→명시요청보관→본인목록/고정조회로연결한다. 미전송초안명시닫기와미결원명령보존/동일재확인을구분하고사용자·project·client·control·선택/ABA/lateJSON을대조한다. 정책화면은동일operation선택지/범위설명만추가하며기본DENY/명시준비·전송/기존규칙을보존한다. 실DB·정책부여/서비스반영/실공유는아직미실행이다. 검수는동명FN05_KNOWLEDGE_SHARE_REQUEST_RESULT.md를따른다.
+
+
+## 2026-10-28 FN05 단계·업무 검색 §2.1 source-only 채택
+
+직접승인078AF6AB/결정안19D93DB1에따라기존GET /api/v1/projects/:projectId/knowledge의선택적scope query를추가했다. 최대2048자canonical JSON 정확{stageRef,taskRef,includeProjectWide},두ref모두null/중복query·비정규JSON/추가key·잘못된참조는거절한다. projectMember후같은프로젝트의실고정적용본/계획·정확node/task를검증한다.
+
+선택stage OR task 및명시공통포함조건을서버WHERE에서정렬/LIMIT전에적용하고기존제목·이유/kind/status/정렬/상한을함께보존한다. scoped cursor는KNOWLEDGE_SCOPE_V1/canonical scope/기존project·actor·query-kind-status-limit에결박하며다른조건/무필터와혼용거절. scope없으면기존SQL7매개값/cursor filter직렬화·응답KnowledgeHit를그대로유지한다. UI10은기존보호GET에서고정ref를선택하며본문자동조회/새권한/공유·실행허가는추가하지않는다.
+
+기존SELECTsource필터만추가했고새table/DDL/migration/schema·실제DB접속SQL실행·정책/서비스/Secret/Agent0이다. Main신규/직접19PASS/type·합성SSR/DOM4PASS는source소비검증이며실PG문법/권한·정식served/사용자인수는NOT_RUN이다. 과거후보E4D828C5의NOT_ADOPTED는이번직접승인전이력으로보존한다.
