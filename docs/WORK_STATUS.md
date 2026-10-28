@@ -9371,3 +9371,19 @@
 - 남은 경계: 실제App Secret입력은TLS·로그보호 입증 전 금지, 설치 verifier의 실제 근거 발급/현재성 미제공, 전체 백업 수집·policy/job·암호화bundle/복원은 미완료다. 현재 기능을 전체백업 완료로 보고하지 않는다.
 
 - Mainc4bbd1 commit전cached diff검사에서 자기 신규WI의EOF 빈줄1을 발견해 commit0으로중단했다. 문서끝빈줄만비의미정정하고내용/허용범위/부모승인보존, 새hash를재기록했다. source/시험변경0·기존실패숨김0.
+
+## 2026-10-29 FN16 다음 수동 백업 단위의 선행 대조
+- 최신 소스 35cf7d049002bc901c29ef7cd468f155fbd8e819은 Main 6a024f에서 private 동일·tracked clean·main f976 불변, 기존 보호 미추적 8경로 보존을 재확인했다. 앞서 완료한 source/합성 검증을 반복하지 않았다.
+- PMO는 후보717496CD의 B방향·상세화 위임과 채택된 CA7774F7/5A6819E6/08EA3478의 각 범위를 구분해 회신했다. 전체 collector/job/bundle/복원 계약을 포괄 채택한 추가 문서는 이번 관련 검색 범위에서 확인하지 못했다. 상세 후보 작성은 기존 위임 범위이며 다음 작업 배정을 기다리지 않는다.
+- Main은 기존 primary에게 정책 저장/조회와 실제 호출선·선행을, 기존 reviewer에게 자료 table/blob·공통본/격리/이력/권한 제외의 읽기 전용 대조를 맡겼다. 이 단계 코드 writer0, 실제 키·DB·서비스·P03 실행0이다.
+- 승인08EA3478 §A8은 SELECTED_FILES_V1을 전체 정책/job 적합으로 대체하지 못하도록 한다. 정책 저장을 먼저 열기 위해 이 기준을 낮추거나 미지원 전체 검사 프로필을 공급하지 않는다. 실제 매핑을 바탕으로 다음 상세 후보의 최소 계약 차이를 정리한다.
+
+- FN16 내부 문서 이력 후보 최초60F4795C의 독립 C0/I2/M1은 현재 권한을 RR 자료 snapshot과 혼동한 점, source 연결/분리 이력 누락, 작성기준 본문 포함 표현이었다. 별도 RC 현재권한/단일 RO RR 자료, document_source_links/events와 투영 hash 분리, body_utf8 제외/NOT_PERFORMED로 보완한 25E4F29C7D925BABD6919DFC5C446696B3D7A0920B758C3E4C1AD759730DD17E는 scoped C0/I0/M0다. 전체 백업 공개 형식·정책/job은 열지 않으며 PMO에는 내부 source 단위 범위 판단만 요청했다. 기존 primary는 코드 작성 전 정확5경로 WI를 준비한다.
+- Main615004 읽기 명령의 추정 source-links.ts 부재는 exit1이다. 실제 열거된 document-source-link-history.ts와 document-stage.ts/project-imports.ts를 e7cca3에서 읽어 대조했다. 제품/원문 변경0·오류를 통과로 표시하지 않았고 후속은 확인된 경로를 사용한다.
+
+
+- 2026-10-29 04:31 KST PMO는 후보25E4F29C의 호출선 없는 내부 SELECT source2+시험3을 기존 상세화·구현 범위로 판단했다. 별도 사용자 재승인/다음 배정 대기 불필요이며 Main의 WI·구현·검수 책임을 확인했다. 결정 FN16_DOCUMENT_INVENTORY_INTERNAL_SCOPE_DECISION_20261029.json에 회신과 직접 전달 승인 근거를 보존한다. 실제 DB·파일·키·서비스·job·P03 제외와 08EA A8 유지. 기존 primary의 정확 WI 완성 후 TEST_ONLY부터 진행한다.
+
+
+- 내부 수집기 WI 최초48378746의 독립 C0/I1/M0는 artifactLinks 결과 투영 누락이었다. Main은 정확 문서/버전/원문/kind 관계와 복수 문서·SOURCE 반례를 보완했고 최종23FA5E0AAF87D85692005B5B346DAF9294D37417419AB45DC047DEA4C3F4F764 scoped C0/I0/M0를 확인했다. 기존 primary에게 신규 input 시험1파일 TEST_ONLY를 지시했다. Main RED 전에 제품코드 작성0, 실제DB/파일/키/서비스0. 기존 auth 잠금에는 query timeout이 없어 deadline 전체강제종료를 보장하지 않는 제한을 WI에 명시했다.
+- Main155f86 문서 checkpoint 직전 diff 검사가 새 누적 기록의 CRLF/끝 빈줄을 거절하여 commit0이었다. 기존 이력은 보존하고 이번 Main 소유 tail의 줄끝만 정리한 뒤 동일4문서를 재검사한다. 제품/시험 변경0.
