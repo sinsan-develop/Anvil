@@ -1591,3 +1591,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN16/UI14 설치 자원 신규 계약 source 검수**: 원명령/일회 승인 왕복·명시 실행, 보호 조회·자기 재잠금·R2 exact ref 선택, 합성 전용 Secret 6 action을 연결했다. Main 직접 unit/타입/build/범위별 합성 DOM 및 독립 C0I0, 등록 QA30분 이내 회수·별도 잔여0. 실제 App Secret 입력·native 설치 adapter는 미제공/미구현, 0054 미적용·실제 키/DB/서비스/백업복원/사용자 인수 NOT_RUN. 전체 FN16·계획 완료가 아니며 결과는 docs/04_test_reports/AV3/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md와 WORK_STATUS 참조.
 
 - **2026-10-28 FN16 REWRAP 결과 연결 보완**: 새 wrapping 고정본의 명시 다운로드→별도 VERIFY 준비를 연결했다. Main직접409 RED→unit11+추가BOM1/type/build·실제App합성신규1/기존다운로드1PASS,독립C0I0·QA02잔여0. 기본head보존·원승인·R2자동선택0,실제키/DB/서비스/사용자인수미검증·전체FN16미완료. 상세결과FN16_INSTALLATION_RESOURCE_RESULT_20261028.md.
+
+
+- **2026-10-29 FN16 안전handle 관리 adapter**: root/file 소유·불명보존·종료회수와 store 연결을 source로 구현, Main합성26/type/diff0·독립C0I0. 실제 Linux native연산/loader·OS검증·실제키/DB/서비스는 미구현 또는 NOT_RUN이며 기본공급자 차단과 전체FN16 부분 상태를 유지한다.

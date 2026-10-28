@@ -442,3 +442,9 @@ R2 후보467A5FFF는 sourceRoot /home/daon/anvil-v3-pgcopy-20261028-r2-src, ledg
 - 직접 승인 FD568644…의 exact8e9292d8/controller53262107/shellCF6B604C R2 실행은 create-tools/IDENTITY_UNKNOWN, NOT_COMPLETE·consumed=true였다. 시작 전 tools 관측에서 HostConfig.Mounts key부재/runtimeMounts[]로 기존 보호검사를 통과하지 못했으며 cp/PG/DB는 미도달이다. 새실행·승인재사용0.
 - 원 volume과 R1 보존에 더해 R2 anvil-v3-pgdata-recovery-20261028-r2(instance06c4c4d535836be65745a7de63822a8c/CreatedAt2026-10-28T14:22:01+09:00), 보호원장 /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2를 보존한다. R2원장grant83e7333ec47938fe507682102834189afd0298677306d22697fa08832b6c5706, consumedf3e349a8aea1069cc4d6a11fda73a55453e8280678b797b2b896384407ad637d, receipt103252b959f1898b7e3cbe90af2df400fe884845dedf4ec4b95724e7344f2604.
 - PMO 별도 exact정리승인42A51EC0 후 tools fullID852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35의 전체신원을 직전재확인하고 normalrm1. Main독립 b3e337(05:35:24.402016Z)에서 QA/helper0, 원/R1/R2volume·ledger보존과volume소비자0 확인. 자동삭제할보존자원이 아니다. 세부 docs/04_test_reports/AV3/P03_R2_LIMITED_COPY_ONCE_20261028_RESULT.md(84326C26…) 참조.
+
+## 2026-10-29 FN16 native 후속 검증안의 읽기 전용 환경 확인
+
+Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount ext4. stat -f의 ext2/ext3 표시는 findmnt의 ext4로 보완했으며 서로 다른 파일시스템이라고 오인하지 않는다. /usr/local/bin/node는 현재 /opt/node-v24.22.1-linux-x64/bin/node로 연결되고, version directory/bin/node는 uidgid0:0·0755, node 일반파일126879696bytes·SHA256 e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb다. 기존 /opt/node-v24.21.0-linux-x64는 별도 과거 경로이며 이번에 변경하지 않았다.
+
+24.22.1 include/node/node_api.h는 root:root0644/10370bytes/SHA256 2d4560831e525b47b060ec8a0864ab73993df9e20215ce9f0fe7b24cd31af32a. /usr/bin/cc는 /usr/bin/x86_64-linux-gnu-gcc-13으로 연결되며 해당 일반파일은 root:root0755/1023032bytes다. binary hash/전체 부모 보호·ACL·동적loader 신뢰나 실제 컴파일·native로드·OS 경쟁/내구성을 이 metadata로 PASS 선언하지 않는다. 실제 도구 실행·설치/권한 변경·QA파일/키/catalog·DB·서비스 생성0. 다음 exact 실행안에서 현재성/도구/보호/자원·수명을 다시 결박한다.

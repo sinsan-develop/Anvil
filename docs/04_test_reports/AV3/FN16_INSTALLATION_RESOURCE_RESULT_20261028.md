@@ -86,3 +86,10 @@
 - 최종API8A8705C321A7674D85EDD7EE58BABA85AAC4CC60930278B4B3AC941E71E58211, PanelD174A7A9B6A9F9BE58383806AD58FBFC491FA07C70248B4FD640F6EDC3B5D5C4, unitEEB0C6153A8B28C8EC453536E35A23FF3BD46E9C611DDD76652B69E488A736F6, browserFB8EFAA0DFC76CD680CB52A486B883AAB8EAAD047B24CF03C79D63C52A3C93E8. rollback은이소스변경검토revert이며과거키/원문/DB변경0. 실제adapter/Secret입력활성화/DB적용/사용자인수·전체FN16/작업계획은미완료다.
 
 - FN16 probe 소비선 보완 검수: Main2a62c7 신규4+직접영향targetFulfill7=11PASS1683.3357ms/skip0, type/diff0. 독립fn16_review C0I0. 제품은 store clean의 close위치1줄만 변경했고 시험58줄append·원prefix보존. store C4A3CB7C8AD6D43A9715FAC14B4D3DCB2A56D54BBB6C9106053F419170BDF7E7, test6F773EE5487DD9291310AD535C8AAB8891B7283CBA8598258706FBE51EB2A506. remove/fsync/close불명은UNKNOWN·원intent재실행0·기존파일보존. 실제native경쟁/FS/키/DB/서비스NOT_RUN. 이는native연결전필수소비선정합이며전체FN16완료아님.
+
+## 2026-10-29 FN16 관리 handle adapter 소스 검수
+- Main d68570 adapter20·종료2·직접영향probe4=26PASS1331.5189ms/skip0, type/diff0. 독립 round1 C0I0: root tuple정규화·native오류새객체/poison·미반환자기cap단발회수3건 ADDRESSED. 최초15GREEN만으로 합격하지 않았으며 추가5RED/보완결과를 보존한다.
+- opaque native-port의 root/file소유·현재관측/세대·bounded bytes복사/소거·동시변경/불명재시도차단·dispose drain을 구현했다. store는 registry즉시잠금 후 catalog단발회수를 await하며 새503으로 원오류상세를 배제한다. 기본catalog는 실제공급자없이 UNCONFIGURED/UNVERIFIED를 유지한다. 실제 native연산/loader는 아직 미구현이다.
+- exact source: posix11F95CD0B4A3FE9EF69133453A5DAB698C16552469C1C958B3D854083346D85A, catalog3061D3A54C4DA30E3B5AC75E0D1D444ACAB5288249D9A7F739EAF69CEF932253, store6CFC5BDEDFDD2FE8A3308B6728A60E497638E9A44ED4F122E57C16AFEF9A5075; 시험CBA8C2A17A1F8E047C8A014C00598B50DBE9419E78BA355C26BBE02E57A55F4C/DC5EAF679D9131FD9AD869F1115F8CF04448EA20BFF32FC65A2EDBD0312F2AA7. 기존store시험213312prefix보존.
+- WI B519 정확5코드/시험, 공개API/SQL/권한/수치변경0. 실제nativecompile/load/FS·키/catalog/DB/서비스·사용자인수NOT_RUN, 새실행자원0. 다음은 NativePort12연산의 Linux소스와 build/검증경계를 구현한다. rollback은 허용source 검토revert이며 자료/키/DB삭제0. 전체FN16/작업계획 완료가 아니다.
+- Main 기록명령의 JavaScript SyntaxError는 도구 호출 전 오류로 파일/Git효과0이었다. 명령 문자열을 바로잡았으며 제품 실패와 구분한다.

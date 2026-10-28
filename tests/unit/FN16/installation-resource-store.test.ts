@@ -532,3 +532,25 @@ for(const fault of ['REMOVE','PARENT_SYNC','CLOSE'] as const)test(`probeOpenHand
   assert.equal(f.tables.consumptions.length,1);assert.equal(f.probe.files.get('existing-preserved'),z.preserved);
  }finally{await f.close();}
 });
+
+test('storeCatalogDispose registry 즉시 잠금 뒤 catalog drain을 await하며 같은 Promise로 단발 회수한다',async()=>{
+ const m=await api('store','InstallationResourceStore','InstallationKeyLeaseRegistry'),r=registry(m.InstallationKeyLeaseRegistry),active=open(r);
+ let release!:()=>void,calls=0,settled=false;const gate=new Promise<void>(resolve=>{release=resolve;});
+ const catalog={list(){return{state:'UNCONFIGURED',items:[]};},async prepareSlot(){throw new AuthFailure('RESOURCE_UNVERIFIED',412);},dispose(){calls++;return gate;}};
+ const store=new m.InstallationResourceStore({installationKeyRegistry:r.value},{catalog});let pending:any;
+ try{
+  pending=store.dispose();assert(active.key.every(v=>v===0),'catalog await 전에 기존 평문 즉시 소거');assert.equal(r.value.status(scope,resourceRef).state,'LOCKED');
+  assert(pending instanceof Promise,'기존 async onClose가 기다릴 catalog 회수 Promise');assert.equal(store.dispose(),pending,'중복 dispose는 같은 Promise');
+  void pending.then(()=>{settled=true;});await Promise.resolve();assert.equal(calls,1);assert.equal(settled,false);
+  release();await pending;assert.equal(settled,true);assert.equal(calls,1);assert(active.key.every(v=>v===0));
+ }finally{release();if(pending instanceof Promise)await pending.catch(()=>{});}
+});
+
+test('storeCatalogDispose 회수 불명은 비밀 없는503이며 registry 잠금·단발 시도·오류를 보존한다',async()=>{
+ const m=await api('store','InstallationResourceStore','InstallationKeyLeaseRegistry'),r=registry(m.InstallationKeyLeaseRegistry),active=open(r);let calls=0;
+ const catalog={list(){return{state:'UNCONFIGURED',items:[]};},async prepareSlot(){throw new AuthFailure('RESOURCE_UNVERIFIED',412);},async dispose(){calls++;throw Error('synthetic-private-catalog-close-detail');}};
+ const store=new m.InstallationResourceStore({installationKeyRegistry:r.value},{catalog}),pending=store.dispose();
+ assert(active.key.every(v=>v===0));assert.equal(r.value.status(scope,resourceRef).state,'LOCKED');assert(pending instanceof Promise);
+ await assert.rejects(pending,(e:any)=>{assert(exact('RESOURCE_STATE_UNKNOWN',503)(e));assert(![String(e),e.stack,JSON.stringify(e),String(e.cause)].join('|').includes('synthetic-private-catalog-close-detail'));return true;});
+ assert.equal(store.dispose(),pending);await assert.rejects(store.dispose(),exact('RESOURCE_STATE_UNKNOWN',503));assert.equal(calls,1);assert(active.key.every(v=>v===0));
+});
