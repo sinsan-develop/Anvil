@@ -9462,3 +9462,15 @@
 - Main 신규 RED 64eb9c: node --experimental-strip-types --test tests/unit/FN16/conversation-inventory.test.ts tests/unit/FN16/conversation-inventory-schema.test.ts, exit1, 14건 중 schema1 PASS/제품부재13 FAIL, skip0, 260.0287ms. TEST_ONLY behavior CD9532053747D33B90B835E1FDE29E8C88DD6152E1ED2FB74A8535E8A6711BCE/schema F05437F3749DFC933E863E8F1401F0F4FD224E75D2E003075DA04477A26404DA 고정 후 primary 제품 GO. Main source 수정0. 정상/정정/201대화 pagination·권한/기한·격리·무결성/회수 한정 검증이다.
 - Main 5a291b 신규14 PASS/0FAIL/skip0/459.3723ms, typecheck·diff0. source7115F0FF…, 시험CD953205…/F05437F3…불변. 독립 WI/시험/제품 C0/I0/M0. 초기 정적 offset 이름 오탐1은 batchStart로 보완·기대값 변경0, 실제 DB/FS/키/서비스0.
 - 결과 FN16_CONVERSATION_INVENTORY_RESULT_20261029.md에 대화계보·현재권한·한도/격리 보존과 실제 미검증을 기록했다. 이번 단위만 부분 구현 완료이며 전체 FN16/계획 미완료. 다음 지식·헌법 자료군 준비를 계속한다.
+
+### 2026-10-29 FN16 지식·헌법 자료군 착수
+- 대화 수집 0a25d6f41726c50faeaa0d4751fcf74b40c0e5b1 정확7파일 게시·local/private동일·main f976ed5e 불변·보호미추적8 보존(7d652b). 전체 계획 미완료이므로 이어서 지식/헌법 버전·정정/제외·검토·적용 이력 수집을 선정했다.
+- WI FN16_KNOWLEDGE_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md. 기존 primary 시험→RED→source, reviewer독립검수. 실제DB/FS/키/서비스0·새 공개/권한/schema계약0. 기존14/32 불변시험 반복0.
+- 지식 WI preflight I1: audit_events.id가 실제 event_id와 불일치. primary/reviewer가 독립 발견했고 Main16f8a2로 확인해 event_id·server_sequence keyset으로 정정했다. 제품 작성/실제SQL실행 전 문서 오기 수정이며 승인범위·권한 변경0.
+- 지식 WI r1 SHA45EE71D5C68B0A7A1DF989FFDFD5AD4C6D0D9468E62C0B5441CD893A1DAA6399 독립 재검토에서 audit 열 I1 해결·C0/I0/M0. 보호 미추적8은 5c3809 실제 지문이 기존 기록과 모두 같았다.
+- 다음 소비선 읽기: 기존 currentScope로 대화/지식 exact artifact 검증을 연결할 수 있다. 대화의 MESSAGE_QUARANTINED와 artifact READY는 별개이므로 메시지→bodyRef 격리를 잃지 않도록 해야 한다. 지식 EXCLUDED/SUPERSEDED는 역사 상태이며 격리와 혼동하지 않는다. 아직 다음 source 수정0·실제 원문 읽기0.
+- Main5a8661 지식 신규RED: node --test tests/unit/FN16/knowledge-inventory.test.ts tests/unit/FN16/knowledge-inventory-schema.test.ts exit1, schema1PASS/제품부재13FAIL, skip0,372.9483ms. TEST_ONLY 지문22E4834CE69AE56B0823AB2FFB8690B6E2192DF6B98BFE4B6DCA2F9A032EA7A0/D820700EF189CD5FDFA0D119243EE5CB188BA34407AA7E01D5BE069720B999BD 고정, 독립C0/I0/M0. primary sourceGO·Main source수정0. fixture의 result.commandId와commands.id 차이는 실제 request.commandId 저장 계약(109/111행)과 일치했다.
+- 지식 최초제품 author594a44 신규14PASS/670.0706ms, 타입8e4434 제품순환추론3+fake cursor비교1 오류. 명시타입과 fake string|number 단언1곳으로 보완, 98af39 14PASS/658.883ms·2376c6 type/diff0. 중간 LF→CRLF는 복구했으며 단언 제거 rawhash가 원 TEST_ONLY와 일치(6bb9fb). 중간 source CE1B5D18…은 최종 합격으로 게시하지 않았다.
+- Main 9d76e3/caa5b5/abe713 제품 읽기와 reviewer 독립 C0/I1/M0: ARTIFACT 출처 전용 media_type은 원 hash에 결박되지 않아 손상 row의 known-marker가 DTO에 나갈 수 있다. 정상업로드는 MIME enum이고 원문읽기는 text2종으로 제한됨(df7769), 정상 API 취약점/실제 유출을 확인한 것은 아니다. WI7 민감 투영 누락으로 한정해 primary에 반례1 RED→safe(ref)→GREEN 보완 지시. Main source수정0·실제DBFS0.
+- Main 9d09da는 추정 경로 artifact-input.ts/project-artifacts.ts 검색 os2(없는파일)였고 df7769 실제목록에서 project-files.ts/project-documents.ts로 확인했다. 이후 검색은 실목록 경로만 사용한다. 제품오류/권한오류가 아니다.
+- 지식 I1 반례00ba58 RED1FAIL→safe(ref)10bytes보완→8abc1e15PASS. Main533e2c 최종15PASS/skip0/645.7015ms·type/diff0. source6554BBE0…/test2EEFFF47…/schemaD820700E…; 독립I1해결C0/I0/M0. 결과 FN16_KNOWLEDGE_INVENTORY_RESULT_20261029.md. 실제DB/원문/키/서비스·전체FN16는미완료이며 다음대화/지식 원문검증소비선으로이어간다.
