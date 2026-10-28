@@ -8901,3 +8901,12 @@
 
 
 - **P03 R2 결과서 동결**: Main7894ec은결과D6F2B914685682CA64CC41189D99C79B5E53D987B8D58EC9D51A2DEAA8BB9B1F/12264bytes양쪽동일·보호12불변을확인했다. 보충전ADDD77은이력이며최종은Main관리CRLF오류·8c0442diff0보충포함이다. source제품2/test3검증뒤exact변경13경로만게시하고원R1보존·actual0경계를유지한다.
+
+
+- **P03 R2 source exact 게시**: e2bfe3 exact13 commit8e9292d83c4ebe857919480b0d3468a0f7c1eaa3,879898/63b490은local/private同SHA·trackedclean/보호untracked8만·mainf976불변을확인했다. GitLFcontroller532621070134EC7AE63151DEE3F25EFD7D49456CC7481E4C79401157E1695261/shellCF6B604C2EBB3DC8552C9F341934CC00A5F7970AD8B2F17C1435DF6B14C0A9C8·결과D6F2B914동결. 기존한정source검수는완료,새실제복제/DB/서비스는미완료다. 단일기존담당에게이exactsource·새6targets·원R1승인소진/사본원장보존·위험4/단발/보존을명시한R2 actual결정안1문서만작성배정했으며grant/nonce/issued/expires·원격조회/실행0이다. 독립담당은기존채택계약안다음기능누락을읽기전용대조하며PMO의다음배정을기다리지않는다.
+
+
+- **다음독립기능 읽기대조·핵심Agent선행 구분**: spec은FN09역할/예약승인·이해검토,실행시작취소,FN12제출/검수화면의기존소비를확인해재구현하지않았다. 실제실행준비는capabilityRef필수·능력보관HUMANR2미채택,실행port SYNTHETIC_ONLY/queueWAITINGassignmentnull·dispatchfalse,FN12보완approvalRef거절이므로단순누락UI로붙이면기존계약경계를넘는다. 기존미완료/선행차단으로분리하며이조사만으로전체할일소진·대기·계획완료를판정하지않는다. 다른FN/UI의기존채택API미소비를추가읽기대조하도록같은독립담당에게배정했다. 제품/문서(source)/시험/환경효과0이다.
+
+
+- **P03 R2 새actual결정안 준비·독립검토**: docs/work_packages/P03_R2_LIMITED_COPY_ONCE_EXECUTION_DECISION_PACKET_20261028.md SHA662FEF2E1913B2CCF770052ED631D5C74A4D76C142A6FB543A379721F6D3A64B/16478bytes양쪽동일·Mainbc9648원문대조·독립문서C0/I0/M0. exact8e9292d8/controller532621/shellCF6B/candidate467A·새6대상·추가volume1/위험4·단발30분/600초·정상자기회수·R1/R2부분사본/원장보존·PGSQL서비스제외를결박했다. 문서적합≠새실제승인/환경안전확인·actual0/원격0/grantnonce0,PMO에정확차이/판정지원만요청하며독립가능기능조사는계속한다.
