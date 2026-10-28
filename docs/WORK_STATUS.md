@@ -9220,3 +9220,20 @@
 - QA: 등록 root D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-01, SINSAN\cyhuh 소유. 22:38:43 생성→23:03:58 KST 정확 realpath/link0/process0 확인 후 파일11·디렉터리7 정리(c7ac57), 약25분15초로30분 이내. 별도 Main9676c7 Test-Path=False로 잔여0 확인. 서버 listener/실제키·DB·서비스 생성0. 화면 시각 확인은 앞선 PNG 관측 기록이며 QA 이미지도 등록 범위와 함께 회수했다.
 - 남은 구현: 실제 native 안전 handle adapter/설치 catalog 공급자와 실제 App Secret 활성화 연결. 기본 UNCONFIGURED/UNVERIFIED로 닫는다. 실제 DB migration/RLS/trigger/COMMIT, OS 파일 내구성/TLS/로그, 실제 키·백업/복원·서비스·사용자 인수는 NOT_RUN 또는 승인 제외이며 합성 성공으로 대체하지 않는다.
 - 기존 보호14경로는5485c4 raw 불변 확인. 원 승인·계약과 기존 검사 기준 보존. rollback은 이번 source 변경의 검토된 revert이며 기존 자료/키/DB 삭제·초기화는 없다. 정확 허용 파일만 기존 branch checkpoint로 보존하고 PMO에 source 한정 결과·남은 선행을 전달한다.
+
+
+- **2026-10-28 FN16 UI checkpoint 및 다음 기능 연결**: 529bc86fbd07989a89baa04a0d35f042f5a5a23d는 cba813e5 직접 자식 정확16경로이며 private 게시 후 e45e78 local/private 동일·tracked clean·main f976ed5e 불변, 보호 untracked8 보존을 확인했다. PMO에 source 한정 결과와 실제 제외·미구현을 전달했다. 후속 읽기 대조에서 REWRAP 새 wrapping은 VERIFY 전 head가 아닌데 UI가 head 목록 소속만 허용해 보관 확인을 준비할 수 없는 연결 누락을 발견했다. 계약5A6819 §6.2/6.6의 기존 고정 버전 GET·별도 VERIFY를 소비하는 같은 허용4경로(client/Panel/unit/browser) 보완을 동일 primary에 TEST_ONLY 배정했다. 새 API/SQL/계약/실제키·DB·서비스 변경0, UNLOCK/REWRAP/ROTATE head 조건·R2자동선택0·실제 App Secret 미제공은 유지한다. Main RED→제품보완→집중검수 순서이며 앞서 완료한 불변 검증은 반복하지 않는다.
+
+- FN16 후속 비head wrapping 소비선 Main RED: cc2447 신규3=1PASS2FAIL217.1488ms(고정 보호조회 누락·wrongref 거절 부재), 직접 준비 반례063774 1FAIL182.2174ms는 기존prepare의 RESOURCE_VERSION_CONFLICT409/head목록 제한을 재현했다. 같은primary 제품GO, 보호고정GET의current.eligible=true 필수와다른action head조건유지. 합성기능구현이며actual0. d7e923의rg Windows glob경로오류는a5b398의-g필터로해소한읽기명령오류로분리한다.
+
+- FN16 REWRAP 결과 연결 QA 사전등록: D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-02, Main/SINSAN\cyhuh 소유, bundle/temp/results/playwright.config.mjs만 사용. 기존QA01재사용0, 생성전부재/realpath/link/owner확인, 최대30분내정확정리·독립잔여조회. 기존Edge headless1 worker/retry0/timeout15000·API route.fulfill 합성, listener/실제키/DB/서비스0. 신규REWRAP 결과→다운로드→VERIFY 준비와직접영향기존다운로드만실행.
+
+
+## 2026-10-28 FN16 새 wrapping 보관 확인 연결 보완
+
+- 판정: 같은 승인 계약§6.2/6.6 안의 소비선 누락을 보완했다. REWRAP 성공의 정확 resultRef를 명시 선택하여 고정본 보호 조회·암호문 다운로드·별도 VERIFY 원명령 준비로 연결한다. 보관 확인 전에 기본 wrapping을 바꾸지 않으며 자동 승인/fulfill/R2 선택0이다.
+- 변경 전: 새 wrapping은 server head 목록에 없어 prepare가409로거절하고Panel은결과문자만표시했다. 변경 후: VERIFY에한해고정버전GET의닫힌DTO/ref/hash/kind/current.eligible와파일canonical/hash를재검사한다. 다른UNLOCK/REWRAP/ROTATE의기존head조건은유지한다. 원intent action/resource를원명령과대조하고현재buffer/문맥/403/이탈/UNKNOWN보존검사를유지한다. 제품2·시험2,새API/SQL/계약0.
+- Main063774 직접1RED RESOURCE_VERSION_CONFLICT409(182.2174ms), cc2447 보호조회/거절누락2RED·head보존1PASS 뒤431da4 unit11PASS213.5437ms/type/build0. 독립fn16_review 읽기검수C0I0. 마지막BOM274.5396ms1PASS(54860d)는이미반영된ignoreBOM:true의직접음성이며새제품결함/RED라고주장하지않는다. Main의이전출력기반누락추정은최신source대조로정정했다.
+- Main eac465 실제App합성2=기존다운로드1PASS/새REWRAP1FAIL. 새명령은DOM에존재했으나닫힌details.innerText가빈값인시험관측오류였다(928e5b). summary명시클릭·본문visible검사만보완후cb68df 신규1PASS4.2초. 기존assertion/timeout/retry보존,제품불변,기존성공재실행0. 실제Secret입력/실DB/서비스성공이아니다.
+- QA02: 등록root D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-02, SINSAN\cyhuh. 23:21:29 생성→23:26:08 정확경로/owner/link0/process0확인후파일12·디렉터리8회수(54860d), 약4분40초. 별도70e244 Exists=false. 실제키/DB/서비스/Agent변경0.
+- 최종API8A8705C321A7674D85EDD7EE58BABA85AAC4CC60930278B4B3AC941E71E58211, PanelD174A7A9B6A9F9BE58383806AD58FBFC491FA07C70248B4FD640F6EDC3B5D5C4, unitEEB0C6153A8B28C8EC453536E35A23FF3BD46E9C611DDD76652B69E488A736F6, browserFB8EFAA0DFC76CD680CB52A486B883AAB8EAAD047B24CF03C79D63C52A3C93E8. rollback은이소스변경검토revert이며과거키/원문/DB변경0. 실제adapter/Secret입력활성화/DB적용/사용자인수·전체FN16/작업계획은미완료다.
