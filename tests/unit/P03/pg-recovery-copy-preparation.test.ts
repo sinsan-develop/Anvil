@@ -191,3 +191,34 @@ for(const kind of ['known','unreaped','open','initial-unknown'])test('LIMITED �
  if(kind==='known'){assert.equal(r.rc,0);assert.equal(r.collects,1);assert.equal(r.waits,1);assert.equal(r.latched,'false');}
  else{assert.notEqual(r.rc,0);assert.equal(r.collects,0);assert.equal(r.waits,0);assert.equal(r.latched,'true');assert.equal(r.preserve,'true');}
 });
+
+// I1: inspect에 tmpfs를 합성하지 않으며 kernel guard는 순수 mock만 사용한다.
+const tmpfsRow='31 20 0:42 / /anvil-copy-audit rw,nosuid,nodev,noexec,relatime - tmpfs tmpfs rw,size=32768k,uid=999,gid=999,mode=700\n';
+function tmpfsGuard(row:string,stat='999 999 700',target='/anvil-copy-audit',uid=999,gid=999){
+ // Bash에는 검증할 문자열의 quoted literal만 전달한다.
+ const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";
+ const command=`declare -F p03_copy_require_tmpfs >/dev/null || exit 91; p03_copy_mountinfo_read(){ P03_MOUNTINFO=${quote(row)}; }; p03_copy_tmpfs_stat(){ [[ $1 == ${quote(target)} ]] || return 1; P03_VALUE=${quote(stat)}; }; p03_copy_require_tmpfs ${quote(target)} ${uid} ${gid}; rc=$?; printf 'TMPFS %s\\n' "$rc";`;
+ const r=invoke(command);assert.equal(r.status,0,'kernel tmpfs guard must exist');assert.equal(r.stdout.toString(),'PREPARATION_ONLY\nTMPFS '+(r.stdout.toString().endsWith('TMPFS 0\n')?'0':'1')+'\n');return r.stdout.toString().endsWith('TMPFS 0\n');
+}
+test('I1 mountinfo guard는 exact tmpfs·순서무관 flags·32MiB·stat를 쓰기 없이 검증한다',()=>{
+ assert.equal(tmpfsGuard(tmpfsRow),true);assert.equal(tmpfsGuard(tmpfsRow.replace('size=32768k','size=33554432')),true);
+ assert.equal(tmpfsGuard('31 20 0:42 / /var/lib/postgresql/data nodev,rw,noexec,nosuid - tmpfs tmpfs rw,size=32768k\n','0 0 700','/var/lib/postgresql/data',0,0),true);
+ for(const row of [tmpfsRow.replace('noexec,',''),tmpfsRow.replace('nosuid,',''),tmpfsRow.replace('nodev,',''),tmpfsRow.replace('rw,nosuid','ro,nosuid'),tmpfsRow.replace('32768k','32767k'),tmpfsRow.replace('size=32768k,',''),tmpfsRow.replace('size=32768k','size=32768k,size=32768k'),tmpfsRow.replace('size=32768k','size=999999999999999999999999999k'),tmpfsRow.replace('uid=999','uid=0'),tmpfsRow.replace('gid=999','gid=0'),tmpfsRow.replace('mode=700','mode=755'),tmpfsRow.replace(' - tmpfs ',' - ext4 '),tmpfsRow+tmpfsRow,tmpfsRow.replace('/anvil-copy-audit','/wrong'),tmpfsRow.replace('/anvil-copy-audit','/anvil-copy\\055audit'),tmpfsRow.replace(' - ',' '),tmpfsRow.replace('rw,nosuid','rw,rw,nosuid'),tmpfsRow.replace('rw,nosuid','rw=bad,nosuid'),tmpfsRow.replace('tmpfs tmpfs rw,','tmpfs tmpfs rw=bad,')])assert.equal(tmpfsGuard(row),false,row.slice(0,120));
+ for(const stat of ['0 999 700','999 0 700','999 999 755','999 999 700\nextra'])assert.equal(tmpfsGuard(tmpfsRow,stat),false,stat);
+});
+test('I1 각 실제 mode는 tmpfs guard 거절 뒤 첫 capture·parse·chmod·cp 진입0이다',()=>{
+ for(const name of ['p03_copy_runtime_tools','p03_copy_init','p03_copy_runtime','p03_limited_runtime_tools','p03_limited_runtime']){
+  const r=invoke(`G=0; X=0; p03_copy_require_tmpfs(){ ((G+=1)); return 1; }; p03_copy_capture_memory(){ ((X+=1)); return 1; }; p03_copy_capture(){ ((X+=1)); return 1; }; p03_copy_observe(){ ((X+=1)); return 1; }; p03_copy_parse(){ ((X+=1)); return 1; }; p03_limited_parse(){ ((X+=1)); return 1; }; ${name}; rc=$?; printf 'MODE %s %s %s\\n' "$rc" "$G" "$X";`);
+  assert.equal(r.status,0);assert.equal(r.stdout.toString(),'PREPARATION_ONLY\nMODE 1 1 0\n',name);
+ }
+});
+test('I1 bounded reader는 stdin mock의 cap+1/NUL을 거절하고 원문을 출력하지 않는다',()=>{
+ const source=shellBytes().toString('utf8').replaceAll('\r\n','\n');const start=source.indexOf('p03_copy_mountinfo_read(){'),end=source.indexOf('\np03_copy_tmpfs_stat(){',start);assert(start>=0&&end>start);const reader=source.slice(start,end).replace('</proc/self/mountinfo','');
+ for(const [input,success] of [[Buffer.from(tmpfsRow),true],[Buffer.alloc(262144,120),true],[Buffer.alloc(262145,120),false],[Buffer.from('x\0y'),false]] as const){
+  const r=invoke(reader+'; p03_copy_mountinfo_read; rc=$?; printf \'READ %s\\n\' "$rc";',input);assert.equal(r.status,0);assert.equal(r.stdout.toString(),'PREPARATION_ONLY\nREAD '+(success?0:1)+'\n');
+ }
+});
+test('I1 directory/nonlink stat 포트가 거절하면 mountinfo 양성도 거절한다',()=>{
+ const r=invoke("p03_copy_mountinfo_read(){ P03_MOUNTINFO='"+tmpfsRow+"'; }; p03_copy_tmpfs_stat(){ return 1; }; p03_copy_require_tmpfs /anvil-copy-audit 999 999; rc=$?; printf 'STAT %s\\n' \"$rc\";");
+ assert.equal(r.status,0);assert.equal(r.stdout.toString(),'PREPARATION_ONLY\nSTAT 1\n');
+});

@@ -58,6 +58,61 @@ p03_copy_capture_memory(){
  value=${captured%$'\036'}
  p03_copy_scalar_format "$kind" "$value"
 }
+# --tmpfs는 inspect.Mounts와 별개다. 첫 쓰기 전에 bounded kernel/stat를 교차 확인한다.
+p03_copy_mountinfo_read(){
+ local LC_ALL=C status
+ P03_MOUNTINFO=''
+ IFS= read -r -d '' -n 262145 P03_MOUNTINFO 2>/dev/null </proc/self/mountinfo; status=$?
+ [[ $status == 1 && ${#P03_MOUNTINFO} -le 262144 ]]
+}
+p03_copy_tmpfs_stat(){
+ [[ -d $1 && ! -L $1 ]] || return 1
+ p03_copy_capture_memory stat /usr/bin/stat -c '%u %g %a' -- "$1"
+}
+p03_copy_require_tmpfs(){
+ local LC_ALL=C target=$1 uid=$2 gid=$3 line separator i count=0 opt key value size=0 uid_seen=false gid_seen=false
+ case "$target:$uid:$gid" in /var/lib/postgresql/data:999:999|/var/lib/postgresql/data:0:0|/anvil-copy-audit:999:999) ;; *) return 1;; esac
+ p03_copy_mountinfo_read || return 1
+ [[ -n $P03_MOUNTINFO && ${#P03_MOUNTINFO} -le 262144 && $P03_MOUNTINFO == *$'\n' && $P03_MOUNTINFO != *$'\r'* && $P03_MOUNTINFO != *$'\t'* && $P03_MOUNTINFO != *'\'* ]] || return 1
+ local -a fields=() options=()
+ local -A mounted=() super=()
+ while IFS= read -r line; do
+  [[ -n $line ]] || return 1
+  IFS=' ' read -r -a fields <<< "$line"
+  ((${#fields[@]}>=10)) || return 1
+  [[ ${fields[0]} =~ ^[0-9]+$ && ${fields[1]} =~ ^[0-9]+$ && ${fields[2]} =~ ^[0-9]+:[0-9]+$ && ${fields[3]} == /* && ${fields[4]} == /* ]] || return 1
+  separator=0
+  for ((i=6;i<${#fields[@]};i++));do if [[ ${fields[$i]} == - ]];then [[ $separator == 0 ]] || return 1;separator=$i;fi;done
+  ((separator>=6 && ${#fields[@]}==separator+4)) || return 1
+  [[ ${fields[4]} == "$target" ]] || continue
+  ((count+=1));((count==1)) || return 1
+  [[ ${fields[$((separator+1))]} == tmpfs && ${fields[$((separator+2))]} == tmpfs ]] || return 1
+  mounted=(); super=()
+  [[ ${fields[5]} != ,* && ${fields[5]} != *, && ${fields[5]} != *,,* ]] || return 1
+  IFS=, read -r -a options <<< "${fields[5]}"
+  for opt in "${options[@]}";do [[ $opt =~ ^[a-zA-Z0-9_-]+$ && ! -v mounted[$opt] ]] || return 1;mounted[$opt]=1;done
+  [[ -v mounted[rw] && -v mounted[noexec] && -v mounted[nosuid] && -v mounted[nodev] && ! -v mounted[ro] && ! -v mounted[exec] && ! -v mounted[suid] && ! -v mounted[dev] ]] || return 1
+  value=${fields[$((separator+3))]}
+  [[ $value != ,* && $value != *, && $value != *,,* ]] || return 1
+  IFS=, read -r -a options <<< "$value"
+  for opt in "${options[@]}";do
+   key=${opt%%=*};value=${opt#*=}
+   [[ $opt =~ ^[a-zA-Z0-9_]+(=[a-zA-Z0-9_:./-]+)?$ ]] || return 1
+   [[ $key != rw || $opt == rw ]] || return 1
+   [[ $key =~ ^[a-zA-Z0-9_]+$ && ! -v super[$key] ]] || return 1;super[$key]=1
+   case $key in
+    size) case $value in 33554432|32768k)size=33554432;;*)return 1;;esac;;
+    uid) [[ $value == "$uid" ]] || return 1;uid_seen=true;;
+    gid) [[ $value == "$gid" ]] || return 1;gid_seen=true;;
+    mode) [[ $value == 700 || $value == 0700 ]] || return 1;;
+    ro|exec|suid|dev)return 1;;
+   esac
+  done
+  [[ -v super[rw] && $size == 33554432 && ( $uid == 0 || $uid_seen == true ) && ( $gid == 0 || $gid_seen == true ) ]] || return 1
+ done <<< "${P03_MOUNTINFO%$'\n'}"
+ ((count==1)) || return 1
+ p03_copy_tmpfs_stat "$target" && [[ $P03_VALUE == "$uid $gid 700" ]]
+}
 p03_copy_sha256(){ /usr/bin/sha256sum "$@"; }
 p03_copy_hash_stream(){ p03_copy_capture_memory hash p03_copy_sha256 || return 1; printf '%s' "$P03_VALUE"; }
 p03_copy_frames(){
@@ -141,6 +196,7 @@ p03_copy_cp(){ p03_copy_observe /anvil-copy-audit/cp.stdout /anvil-copy-audit/cp
 
 # 아래 함수는 실제 helper 안에서만 호출한다. 출력/오류는 보호 tmpfs 안에 둔다.
 p03_copy_runtime_tools(){
+ p03_copy_require_tmpfs /var/lib/postgresql/data 999 999 || return 1
  local path canonical value expected comma=''
  local -a paths=(/bin/bash /usr/bin/timeout /usr/bin/find /usr/bin/stat /usr/bin/sha256sum /usr/bin/id /usr/bin/readlink /usr/bin/awk /usr/bin/cp /usr/bin/sort /usr/bin/cmp /usr/bin/df /usr/bin/getfacl /usr/bin/getfattr /usr/bin/chmod /usr/bin/chown)
  local -A known=( [/bin/bash]=223fe8564b60636bc738b6178d3ba9a50ef7d791266b0efae6363bb716e4c47f [/usr/bin/timeout]=6ca1891dfc0b05d7680770c2884c0391b92467c7bb6500a5c84677e6481739f1 [/usr/bin/find]=91b75e72c495e68dd6aab198c2fd6c458fd51a2dc361045ee31f8e657417de26 [/usr/bin/stat]=128754b37ab743a539d889a91441c440f9b52df77f4e008b345ff221ce1daeaa [/usr/bin/sha256sum]=89f8c1d1ba3c76138f3771e1a91e2796ade6180b1c1e4258c04698ff32787c97 [/usr/bin/id]=50629fa0ab5c003b538d4ccf7de34e85d2df4e799a79eb2dd4c2f7b1e0d7ca59 [/usr/bin/readlink]=1dcaf494f4dec175292b1684b3e978d18a4c3c703c52f81606d9e8eea30eb6db [/usr/bin/awk]=eff9f2b711eb5bee1b58d4d33b891e8da8f6534655d3854a45bd10217dbb28e6 )
@@ -168,6 +224,7 @@ p03_copy_runtime_tools(){
  printf '],"features":{"nulFind":true,"nulHash":true,"nulSort":true,"compare":true,"archiveCopy":true,"capacity":true}}\n'
 }
 p03_copy_init(){
+ p03_copy_require_tmpfs /var/lib/postgresql/data 0 0 || return 1
  local root=/anvil-recovery-copy audit=/var/lib/postgresql/data before after
  p03_copy_capture_memory uint /usr/bin/id -u && [[ $P03_VALUE == 0 ]] || return 1
  p03_copy_capture_memory uint /usr/bin/id -g && [[ $P03_VALUE == 0 ]] || return 1
@@ -233,6 +290,7 @@ p03_copy_scan(){
  printf '{"entries":%s,"regularEntries":%s,"directoryEntries":%s,"regularLogicalBytes":%s,"manifestSha256":"%s","selectedMetadataSha256":"%s"}' "$P03_COUNT" "$P03_FILES" "$P03_DIRS" "$P03_LOGICAL" "${sum:0:64}" "${meta:0:64}" >"$prefix.summary"
 }
 p03_copy_runtime(){
+ p03_copy_require_tmpfs /anvil-copy-audit 999 999 || return 1
  local -a binding=("$@")
  p03_copy_parse "$@" && [[ ${#P03_COPY[@]} == 11 ]] || return 1
  local nonce=${P03_COPY[--run-instance]} writer=${P03_COPY[--writer-evidence-sha256]} source=/var/lib/postgresql/data target=/anvil-recovery-copy audit=/anvil-copy-audit empty capacity available inodes header summary before after copied
@@ -460,6 +518,7 @@ p03_limited_probe_attribute(){
  if [[ $kind == ACL ]];then P03_LIMITED_ACL_STATE=$state;P03_LIMITED_ACL_REASON=$reason;else P03_LIMITED_XATTR_STATE=$state;P03_LIMITED_XATTR_REASON=$reason;fi
 }
 p03_limited_runtime_tools(){
+ p03_copy_require_tmpfs "${1:-/var/lib/postgresql/data}" 999 999 || return 1
  local private=${1:-/var/lib/postgresql/data}
  [[ $private == /var/lib/postgresql/data || $private == /anvil-copy-audit ]] || return 1
  p03_copy_capture_memory stat /usr/bin/stat -c '%u %g %a' -- "$private" && [[ $P03_VALUE == '999 999 700' ]] || return 1
@@ -548,6 +607,7 @@ p03_limited_scan(){
  printf '{"entries":%s,"regularEntries":%s,"directoryEntries":%s,"regularLogicalBytes":%s,"manifestSha256":"%s","selectedMetadataSha256":"%s"}' "$P03_COUNT" "$P03_FILES" "$P03_DIRS" "$P03_LOGICAL" "${sum:0:64}" "${meta:0:64}" >"$prefix.summary"
 }
 p03_limited_runtime(){
+ p03_copy_require_tmpfs /anvil-copy-audit 999 999 || return 1
  local -a binding=("$@")
  p03_limited_parse "$@" || return 1
  local nonce=${P03_LIMITED_BINDING[--run-instance]} decision=${P03_LIMITED_BINDING[--decision-sha256]} source=/var/lib/postgresql/data target=/anvil-recovery-copy audit=/anvil-copy-audit sourceid entry deadline source_deadline before after copied logical allocated entries needed comparison

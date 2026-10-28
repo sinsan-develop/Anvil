@@ -1567,3 +1567,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 직접 승인 CA777 보호참조 계약에 따라 UI14 등록·개정·고정 버전 조회·과거 버전 신규 사용 회수를 기존 명령/일회 승인/감사와 연결했다. 실제 설치 공급자 부재는 명시하고 자동삭제 OFF 보관 참조만 정상 저장 대상으로 제공한다. 기존 선택 문서 반출은 보존했다.
 - 단일 primary 구현 후 Main 집중 unit·type/build·실제 App의 합성 API 흐름4와 프로젝트 A→B→A 보류응답1을 검증했다. 독립 조회 귀속/SQL trigger·이전ref NULL/응답 대상 결박 지적은 보완 후 C0/I0이며 전용 QA는 수명 안에 정리·독립 잔여0이다. 상세 증거는 docs/04_test_reports/AV3/FN16_PROTECTED_REFERENCE_REGISTRATION_RESULT.md 및 WORK_STATUS에 기록한다.
 - 0053은 미적용 SQL이다. 실제 DB/RLS/COMMIT·설치 공급자/키/백업 생성·복원·served 사용자 인수는 미검증 또는 미구현이며 전체 FN16/UI14/계획 완료가 아니다. 다음 P03 created helper 신원 검사 내부 오류를 source-only로 보완한다. 실제 R2 복제 실패/승인 소진은 유지한다.
+
+
+- **2026-10-28 P03 내부 신원·tmpfs 보호 source 검수**: created/started 신원과 volume-only inspect·HostConfig.Tmpfs를 분리하고 실제 mode의 첫 쓰기 전 mountinfo/stat guard를 추가했다. Main 직접122PASS/type·Bash·diff0/독립C0I0M0, 초기 fixture 가정I1 및 후속LF FAIL은 기록 보존. 실제 Docker/복제/PG/DB0이며 원R2 NOT_COMPLETE·단발소진 유지, 전체P03/작업계획 완료아님. 다음 FN16 설치자원·이식키 및 P03 R3 결박은 별도 미채택 계약 후보로 관리한다.

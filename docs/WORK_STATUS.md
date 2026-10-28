@@ -9006,3 +9006,27 @@
 - QA 전용 경로는 06:07:42Z 59파일/15디렉터리 정리, 독립 06:07:53Z 경로·해당 프로세스0 확인. P03 R2는 consumed/FAIL/create-tools, cp0·PG0; helper 정상 rm1와 QA 정리 완료, 원/R1/R2 volume·원장 보존. 결과 F17CE240.
 - 동일 원인 정식 실패3 없음. Main 읽기 rg glob 오류123은 -g 방식으로 보정했으며 파일 변경 없음. sandbox git status의 work tree 오류는 elevated 실제 status로 분리 확인함.
 - 다음: 정확 소유32경로 branch checkpoint 후 WI A698A9DA의 P03 controller/직접 시험3경로 내부 보완을 기존 primary에게 배정. 새 복제·grant·서비스 실행 없음. 보호 untracked8·discovery4·기존 반출2 보존.
+
+
+### 2026-10-28 4482cf09 게시 및 후속 업무 분리
+- Main: 검수된 FN16 source/test20+결과/WI/manifest3, 관리문서9의 정확32경로를4482cf099b1095f6f5f463c946411f31e03828cd로 commit/private push했다. b403a7 local/private 동일, main f976ed5e 불변, tracked clean·기존untracked8만 보존. 0892b0 보호8/discovery4/기존반출2 지문 모두 불변.
+- P03 primary는 WI59F1B667(원A698 내부정합)을 받아controller/직접시험3만 TDD 중이다. tools 요청volume0 HostConfig absent/[] 동치는단계무관, runtime created/started 엄격 분리·init/copy 시작전원본RO/사본RW/NoCopy검사·정리기준불변. 독립 quality C0/I0. 실재실행/새grant0.
+- FN16 독립 후속조사: 현 보호참조 R2 CA777 범위 추가source 누락 없음. TARGET/KEY/VERIFICATION은 계약상공급자미연결412이며전체백업미구현을완료로숨기지않는다. PMO 기존2565/2573의 B·사용자해제형이식키 상세화방향에 따라 별도문서담당이 다음보호자원/키계약 후보1개를구체화한다. 제품/키/DB변경0, 후보는NOT_ADOPTED·결정지원준비만한다.
+- 보조읽기오류: PMO docs/reports 경로없음(oserror3)1, 실제 reports 경로로 정정읽기; 파일/권한변경0.
+
+
+### 2026-10-28 P03 created/started source 검수
+- Primary source3 동결: controller raw3088264F3BD9FE2A5D47FD72A7826CC35AA60E018D6B67F6995DACDC27F15E92/LF907F051D1CE3E39B2D55A59A297A1F93A69C4BB78628F5CB51CBB44DC5C604FE, hosttest raw6978559A9A147CFA7811DA1F4A731A417C565ABA978F4721BF495D56F4E24236, timetest E78FE1C3D0F13C0C8E6222246052CB64E9EFFD3BAE8B4B56AEFBE543DE3E0284.
+- Main d356ea: node --test --test-reporter=spec tests/unit/P03/pg-recovery-copy-host.test.ts tests/unit/P03/pg-recovery-copy-docker-time.test.ts =62PASS/0FAIL/0SKIP/0CANCEL/0TODO600.1882ms exit0. 141f97 tsc --noEmit -p tsconfig.base.json·허용3 diffcheck exit0. 독립quality C0/I0/M0, 단계호출/volumeRO-RW/NoCopy/cleanup기준/반환형식/음성정확오류·횟수확인. 실Docker/WSL/복제/신호/DB0; 실제initcopy/started형태NOT_RUN.
+- 원RED f10ca4 신규7=0PASS7FAIL201.1972ms. 중간1e6863=5PASS2FAIL은limited후속inspect의stage누락1곳보완. ef2306 문자열anchor개수불일치는파일write전거절/제품변경0으로분리. 동일근본정식실패3회아님·기준완화0.
+- 원R2 NOT_COMPLETE/승인소진/사본·원장보존은불변. 후속R3 고정대상결박은문서후보1개만준비하며 source채택/최종exact실행결정전actual0·새grant0.
+
+- P03 추가독립근거 I1: --tmpfs와--mount type=tmpfs inspect백엔드혼동을 Main공식문서/소스대조로발견, quality가앞선C0I0판정을정정했다. 현재3088/합성62PASS를완료로승격하지않고WI후속절에공식근거와정확보완범위를기록했다. 실제host버전/실mount미확인·새actual0, sameprimary3경로만재보완. 보조rg glob경로123오류1은-g정정/파일변경0으로분리.
+
+
+### 2026-10-28 P03 내부 신원·tmpfs 보호 source 최종 검수
+- Main fresh 77dbe2/5b9360: node --test --test-reporter=spec tests/unit/P03/pg-recovery-copy-host.test.ts tests/unit/P03/pg-recovery-copy-docker-time.test.ts tests/unit/P03/pg-recovery-copy-preparation.test.ts =122PASS/0FAIL/0SKIP/0CANCEL/0TODO14569.3845ms exit0. type/Bash-n/diff d57c0e exit0. 독립 최종 C0/I0/M0.
+- 최초62PASS는 --tmpfs inspect 가정 오류 I1 발견 뒤 합격 근거에서 정정했다. 현재 volume-only inspect와 HostConfig.Tmpfs를 분리하고 실제 mode의 첫 쓰기 전 bounded mountinfo/stat 검사를 추가했다. WI C1C7F56E의 제품2/시험3 범위만 보완했다.
+- Main a2383e/4896c1의 LF 필수 FAIL은 후속 음성2줄 삽입 CRLF 회귀였다. CR2→0 보정 뒤 최종122PASS이며 원FAIL/부분4PASS 검수 누락을 소급 삭제하지 않는다. 동일 근본 정식실패3회 없음. shell raw=LF76952702BA93E48ACE81A879C19D0190A7CE3D4EA5A7374B0E494AD650335271.
+- 실제 Docker/WSL/cp/PG/DB/서비스/신호0. R2 actual NOT_COMPLETE·단발소진·보존 사본/원장은 유지하며 실제 mount 보호·복제·전체 P03는 미검증/미완료다.
+- FN16 다음 설치 자원/이식키 후보 r2 5A6819E6는 독립 I3 해소 C0/I0 후 PMO에 정확 신규 API/권한/암호/유한 수치의 source-only 채택 결정을 요청했다. 현재 NOT_ADOPTED·실키/DB/서비스0. Main은 별도 P03 통합을 계속한다.
