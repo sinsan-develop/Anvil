@@ -9178,3 +9178,18 @@
 - 기존 미연결 IMPORT를 원명령/승인소비→유효귀속 durable claim→원프로젝트/key identity·hash/tag 검증→새설치descriptor·원암호문 불변저장·LOCKED/copy미확인→별도VERIFY/R2명시선택까지 연결했다. 새 DEK 생성/재포장0·옛 descriptor 자동유효화0·동일key 중복등록0. ENROLL1/1 검사는 별도 action분기에 유지한다.
 - Main b535f3 IMPORT8+직접keyLife7=15PASS2690.1184ms/type/diff0 후독립I1을발견해ce6af0 최소1RED918.0535ms→19d4da IMPORT9PASS1736.9695ms로보완했다. 공통메서드검증순서변경의기존ENROLL 정상·원승인·claimrollback3만추가81e386=3PASS1454.0111ms/type0. 독립I1 ADDRESSED/C0I0; 최종store664849D3/SQLFCF64E54/testCEDE208E. 실제PG/RLS/OS/TLS·운영키/서비스·실제설치이전/사용자인수 NOT_RUN이며 전체FN16 미완료다.
 - I1전후: 잘못된hash/origin의claim전거절로READY잔류→유효owner/current/원CONSUMED/ref대조후PROCESSING확정·Secret검증·실패시도종료. 타인의intent나잘못된ref가원시도를소진하지않는다. 원시험기대완화0·actual0. 다음동일primary REWRAP/ROTATE와UI14/App 연결을계속한다.
+
+- Main dda368 IMPORT checkpoint2b49bd9688e90a7a5faf10bf4d7131d3caef828d는ea883146직접자식 source/test3+관리2정확5경로·local/private동일·mainf976불변·trackedclean/보호8only. PMO부분보고전달, 동일primary REWRAP/ROTATE TEST_ONLY3흐름착수. 신규실제효과/재승인질문0.
+
+- FN16 REWRAP/ROTATE TEST_ONLY Mainca87e3 신규keyEvolution3=0PASS3FAIL1171.4782ms/exit1skip0, testE160688C200751byte·원IMPORTprefix보존. 모두공개원명령412미연결로후속crypto/버전미도달. 같은DEK재포장/VERIFY전head유지, 연속미확인wrapping버전재사용0/옛VERIFY역행0, 새DEK/key회전·기존R2/암호문보존3흐름의제품GO를같은primary에발행했다. 독립읽기에서registry fixedref/version·reconcile/SQL동일키다른wrapping단일lease접점을전달했고기완료판정에소급finding으로세지않는다. 실제키/DB/서비스0·새publicAPI0.
+
+- REWRAP/ROTATE source 연결중 type0 후최초후속3실패는새유효두번째intent에도기존합성vault가intents[0]만PROCESSING으로요구하는fixture가정이었다. 첫파일쓰기전거절이며제품/정식실패3회에합산하지않는다. 새evolution suffix에서현재정확PROCESSING+claimCOMMIT을검사하는모델로한정보완,원시험prefix/기준유지·actual0이다. 후속정상/중요실패GREEN은아직미확인.
+
+- REWRAP/ROTATE author2472e3 keyEvolution정상3PASS1373.499ms: 같은DEK재포장·VERIFY전후head1→2, 미확인2/3발행·옛VERIFY역행0, ROTATE새key/DEK·옛파일/R2참조보존후속도달. 아직Main/SQL정합·중요실패/같은키다른wrapping lease검수전이다. ENROLL전용fixture가정은새suffix현재PROCESSING+claimCOMMIT vault로해소했고, 중간편집script substring오류a8dccc는파일변경0/뒤같은시험불필요재실행과분리기록한다. 제품정식동일실패3회아님·actual0.
+
+- REWRAP/ROTATE 최종초안store004A3E9E/SQL8CC95B9D/test8ABEC260(CRLF0): Main0752b0 keyEvolution7PASS1774.2181ms/type0/diff0. 정상3+틀린옛비밀번호/제어회수/파일뒤불명3+같은key다른wrapping단일lease1이다. version별상태/registry/reconcile 변경의직접영향으로Main7a262d 기존등록·가져오기·lease34PASS5943.1348ms/R2기존16PASS1566.6621ms추가, 불변전수반복0. 독립source검수진행중이며 실제PG/RLS/trigger/키/서비스0. 같은primary는backend동결상태에서UI client·실제App TEST_ONLY를준비한다. UI준비로Secret실사용·새readiness계약을허가하지않는다.
+
+### 2026-10-28 FN16 암호 변경·자료 키 교체 source 부분 검수
+- REWRAP은 옛 비밀번호로 같은 DEK를 인증해 새 salt/nonce·불변 wrappingVersion을 발행하고, 새 파일의 별도 VERIFY 전까지 기본 head를 유지한다. 이미 발행한 미확인 버전을 포함해 다음 버전을 배정하며 낮은/옛 VERIFY로 head가 역행하지 않는다. ROTATE는 새 keyId/DEK를 만들고 LOCKED/보관미확인으로 저장하며 R2 고정 참조는 자동 교체하지 않는다. 옛 파일/암호문/고정ref/원승인 이력은 보존한다.
+- 변경 전후: ENROLL/IMPORT version1 고정→origin별 원검사 유지+REWRAP 계보/version별 상태·registry·reconcile·단일lease 대조; 단순head증분→전체발행max+1/최종CAS; 신규암호파일확인전선택0. Main0752b0 신규7PASS1774.2181ms/type0/diff0, 구조변경직접7a262d 기존34PASS5943.1348ms/R2기존16PASS1566.6621ms, 독립fn16_review C0I0. source004A3E9E/SQL8CC95B9D/test8ABEC260 지문64b518 확인.
+- 0054 미적용이며 실제PG 함수/trigger/RLS/COMMIT·OS파일/키·TLS/서비스·사용자인수 NOT_RUN. UI14/App·전체백업실행·전체FN16/작업계획 미완료. 다음 동일primary가 코드/화면·합성 검증 범위에서 승인복귀/명시실행/조회/잠금 UI를 연결한다. 실제App의Secret입력은준비입증부재로제공하지않으며새임의readinessAPI/flag를추가하지않는다.
