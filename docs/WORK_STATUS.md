@@ -9528,3 +9528,7 @@
 - PMO 회신: 수동정책 save/get/list 상세후보 구체화는기존위임으로진행한다. 08EA A8의전체coverage부족시save도차단을보존하며SELECTED_FILES_V1·DRAFT명칭우회0. 신규공개DTO/영속/coverage의정확delta는후보완성후검토한다. 실제키/DB/서비스/job0·baseline독립진행. 읽기80aea4의경로glob os123는동일형식재시도없이실목록의고정파일읽기eee75d로대체했다.
 
 - baseline r2 Main19d28714중1PASS/13미구현FAIL후제품GO, Mainee4824 source7E041631/시험5BD62735·F5487C07동일·14PASS/0FAIL/skip0/894.1319ms/type/diff0. 독립scopedC0/I0/M0·국소consumption I1해결. 결과 FN16_BASELINE_INVENTORY_RESULT_20261029.md. 실제키DB서비스0·전체FN16미완료. 다음수동정책후보158E10BC는PMO회신대로작성·독립검토중이며미채택/제품0;기존primary는방법론이력의실제기수집범위를읽기대조한다.
+
+### 2026-10-29 FN16 방법론 역사 수집 착수·정책 계약 분리
+- baseline8b0391b0234600f2ec334e11be24acc468511b7b private동일/main불변(bdb881). document-inventory는문서가참조한적용/source만수집하므로미적용PROJECT개정/검토/확정이누락됨을Main04e00e/95162e/559f17/852d7d와기존primary가대조했다. 신규 WI EEDADEB3( FN16_PROJECT_METHODOLOGY_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md )는그전체역사만독립수집,전체application은별도미수집이다. 기존primary시험2만TEST_ONLY·reviewerWI읽기·Main관리,실제DB키서비스0.
+- 수동정책후보158E10BC 독립C0/I0/M0. PMO는정확새GET2/payload/NONE/영속/coverage delta의채택질문1회를신산님께제출했다(accepted=true,답변미수신). 기존operation재승인이아니며이정확신규계약만NOT_ADOPTED. 동일질문반복/전체대기0. replay와현재eligibility·무결성오류분리/전체자료군coverage미정은후속WI에보존한다.
