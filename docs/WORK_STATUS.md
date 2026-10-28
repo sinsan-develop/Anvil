@@ -9165,3 +9165,16 @@
 - Main993104 두키3PASS1665.5004ms, 최종226707 keyLife22PASS/0FAIL/skip0/cancel0/todo0 4106.1366ms/type0/diff0. 앞선14·auth6·R2store16·registry9는 해당불변 범위 증거로 보존한다. author79a813 신규인증/예약5PASS1171.7825ms. 독립fn16_review는 source/SQL C0/I0/M0 및 LF동일성을 확인했다. 실제PG/RLS/trigger/COMMIT·OS보호·TLS·운영키/서비스·사용자인수는 NOT_RUN이다.
 - 최종 store96572877/SQLF91F1BED/test51348AA5. primary7a4679 own 원LF복구는 의미변경0이며 Main45b513 test 원128821byte prefix DACAFCC4 정확보존·보호untracked8 raw불변 확인. 최초0a75d3 문서대조 출력 cp949 오류는 UTF-8 stdout74a6ec로 교정했고 문서 차이는 과거 timestamp14ms/계획의 기존 이력·UI06 문구 차이로 확인하여 이번에 덮어쓰지 않는다. PowerShell profile conda 오류9e78c9는 login:false로 분리하고 프로필/권한변경0.
 - 화면 및 IMPORT/REWRAP/ROTATE는 미구현, 전체FN16/작업계획 완료아님. 다음 같은primary가 IMPORT부터 이어간다. 실제키/DB/서비스 변경0·검사기준완화0. rollback은 해당 source만 revert, 기존자료/자원삭제0.
+
+- Main4b09e7/54e56a lifecycle checkpoint ea883146685b7b53e012a955be43fe60b1e0c1db는 bb48215f 직접자식 source/test8+WORK_PLAN/WORK_STATUS2 정확10경로, local/private동일·mainf976ed5e불변·trackedclean/보호untracked8only. 독립LF 재대조도 C0I0M0 유지. PMO에부분검수/actual미검증을전달했고동일primary에게IMPORT_KEY TEST_ONLY를착수시켰다. 별도계약/실제키·DB·서비스승인요청0.
+
+- FN16 IMPORT TEST_ONLY Main e45df5 신규8=0PASS8FAIL1720.3639ms/skip0/cancel0/todo0 exit1(test43E368AA,184286byte). 원IMPORT command 미연결412에서모두RED이며후속crypto/파일/불명경계미도달로구분한다. author35b809 node8FAIL1538.3686ms 뒤type0의shell최종0을시험PASS로오인하지않는다. ea883 testprefix167591/51348AA5보존. 같은primary에IMPORT제품GO·독립시험검수배정, 실제키/DB/서비스0.
+
+- IMPORT Main b535f3 신규8+직접lifecycle7=15PASS2690.1184ms/type0/diff0(store80C884CA/SQLFCF64E54/test43E368AA). 독립source검수는첫I1: 승인된원intent의hash/origin오류를claim전에거절하여READY가남고같은intent에수정Secret재제출가능한경로를확인했다. 기존음성의KDF/파일0 PASS는보존하되원시도종료/재제출0은미보장이므로Primary에새반례와current귀속후durableclaim보완을지시했다. 원권한/ref불일치로타intent소진금지. 아직IMPORT통합합격아님·actual0. 후속REWRAP/ROTATE 시험준비는보존한다.
+
+- IMPORT I1 Main ce6af0 최소공개반례1RED918.0535ms/exit1(testEC4A467E,원184286prefix보존): 유효원승인/intent의틀린hash제출409·KDF/파일0 뒤stateREADY잔류를직접확인했다. authorbbbed3 1RED961.0702ms별도보존. 기존current/원ref권한대조후durableclaim확정→Secret검증의최소수정으로진행하며남의intent소진허용0·실제효과0이다.
+
+### 2026-10-28 FN16 IMPORT source 부분 검수
+- 기존 미연결 IMPORT를 원명령/승인소비→유효귀속 durable claim→원프로젝트/key identity·hash/tag 검증→새설치descriptor·원암호문 불변저장·LOCKED/copy미확인→별도VERIFY/R2명시선택까지 연결했다. 새 DEK 생성/재포장0·옛 descriptor 자동유효화0·동일key 중복등록0. ENROLL1/1 검사는 별도 action분기에 유지한다.
+- Main b535f3 IMPORT8+직접keyLife7=15PASS2690.1184ms/type/diff0 후독립I1을발견해ce6af0 최소1RED918.0535ms→19d4da IMPORT9PASS1736.9695ms로보완했다. 공통메서드검증순서변경의기존ENROLL 정상·원승인·claimrollback3만추가81e386=3PASS1454.0111ms/type0. 독립I1 ADDRESSED/C0I0; 최종store664849D3/SQLFCF64E54/testCEDE208E. 실제PG/RLS/OS/TLS·운영키/서비스·실제설치이전/사용자인수 NOT_RUN이며 전체FN16 미완료다.
+- I1전후: 잘못된hash/origin의claim전거절로READY잔류→유효owner/current/원CONSUMED/ref대조후PROCESSING확정·Secret검증·실패시도종료. 타인의intent나잘못된ref가원시도를소진하지않는다. 원시험기대완화0·actual0. 다음동일primary REWRAP/ROTATE와UI14/App 연결을계속한다.

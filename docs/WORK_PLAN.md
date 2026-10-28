@@ -1582,3 +1582,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN16 키 등록·보호 조회 source 부분 검수**: ENROLL 원승인/일회 실행, 암호화 이식키 파일 포트 저장·보호 다운로드·최초 잠금/보관 미확인 상태, R2 KEY 명시 선택 차단을 연결했다. Main 직접56·보완3/14·type/diff0와 독립C0I0 증거는WORK_STATUS에기록했다. 실제키/DB/서비스·native adapter/실사용은미검증이며UI 및 VERIFY/UNLOCK/RELOCK·이식/재포장/회전은계속미완료다. 전체FN16완료로표시하지않는다.
 
 - **2026-10-28 FN16 키 보관 확인·해제·재잠금 source 부분 검수**: 원승인에 묶인 VERIFY/UNLOCK, 자기 lease RELOCK, 인증/정책 회수·만료·재시작 잠금과 R2 키 선택을 연결했다. Main lifecycle22PASS/type/diff0·독립C0I0와 상세 오류/보완은 WORK_STATUS에 기록했다. 0054는 미적용, 실제 DB/키/서비스·OS/TLS/사용자인수 NOT_RUN. IMPORT/REWRAP/ROTATE·UI14/App 연결은 미완료이며 다음 구현으로 이어간다. 전체FN16 완료 아님.
+
+- **2026-10-28 FN16 이식키 가져오기 source 부분 검수**: 같은프로젝트/key정체성·원암호문을새설치descriptor에보존하고LOCKED/보관미확인·별도VERIFY/R2선택을연결했다. 첫실패후원intent재사용I1은보완하여Main9+ENROLL직접3/type0·독립C0I0. 실제설치이전/DB/키/서비스는NOT_RUN;암호변경·회전·UI14/전체FN16은계속미완료다.
