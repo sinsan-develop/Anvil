@@ -9061,3 +9061,18 @@
 - primary공개합성고정프로필메모리측정342cff:Node24.22.1/OpenSSL3.5.9/win32x64, wrap240.798ms+unwrap239.649ms=480.447ms, processPeakRss210044KiB. 운영성능/OS완전소거/실키PASS아님. 실제키/DB/서비스변경0. 다음catalog/lease/intent저장합성TEST_ONLY를동일primary에배정했다. 전체FN16·작업계획완료아님.
 
 - FN16 첫4파일 독립spec도C0/I0/M0·시험I2 ADDRESSED. Main은승인/WI/manifest/계획/현황+첫4의정확9경로checkpoint만수행하며다음store시험과보호8은포함하지않는다.
+
+- Main fc2b4d/4a1726 첫9파일6284b2f5b0c687bbe22063a1e57903c6c0c19bff private동일·mainf976ed5e불변·trackedclean확인, cf3cbb 보호untracked8지문불변. PMO에정확부분결과전달성공·새결정요청0. 다음store/catalog/lease/counter합성시험진행중이며 실제키/DB/서비스0. Main보조0010_auth.sql 추정읽기실패1은실제파일목록/기존0011로전환했고향후추정경로읽기중단·rg목록선확인. 반복된경로조회오류는제품정식실패와구별한다.
+
+- FN16 다음구분단위 Mainc2725c: node --test --test-reporter=spec tests/unit/FN16/installation-resource-store.test.ts =9수집0PASS9FAIL/0skip/cancel/todo145.2673ms exit1, 새catalog/registry/SQLlimiter접점부재. 시험rawDBB896CA·읽기88ea96확인뒤신규catalog/store2GO. 임시lease만메모리이고실패카운터는별도SQLtransaction접점,실제DB/RLS/경합검증0. 원CONSUMED귀속·intentdurable점유·파일DB UNKNOWN는후속동일store단위로연결할미완료다.
+
+- FN16 catalog/store初稿11PASS/type0는최종수용아님. Main07127e 합성재현:logout뒤동일actor/client의새session·정확generation2 활성화가NOT_FOUND404/exit1,잠긴옛소유자검사I1. 독립quality는KDF중인증상실시recordFailure재인증으로횟수유실I1,failures5/blocked_untilNULL 불정합허용I2를추가발견했다. 서로다른원인으로같은정식실패3회아님. 동일primary에게단발trusted시도귀속·기록의존분리/불정합503/새유효세션재개반례보완을지시. 실제키/DB/서비스0·기준완화0·fullintent/route미완료유지.
+
+### 2026-10-28 FN16 catalog·lease·실패제한 보완 검수
+- Main f4d594 node --test --test-reporter=spec tests/unit/FN16/installation-resource-store.test.ts 단일20PASS/0FAIL/0SKIP/0CANCEL/0TODO352.3076ms, 뒤tsc --noEmit -p tsconfig.base.json exit0. catalog5A5566BD/storeE42D4FFE/testBD4B2D42 동결·독립검수진행.
+- oldlockedowner404는Main07127e와primary새session조회REDeb4216 뒤보완. 활성타인status/relock보호유지·잠긴정확ref의새유효문맥조회/재해제반례확인. controlgeneration관측회수는즉시실DB통지와구별한다.
+- 원인증admit가영속RESERVED와opaque단발ticket을반환, 별도결과transaction의counter+RECORDED COMMIT확인뒤ACK. 재인증없는실패기록은새키사용권한을발급하지않고위조/재사용거절·기록불명재시작차단을합성검증했다. admit COMMIT전확정rollback/후응답유실도ticket0·KDF0와실제예약효과를구분했다. 5/null불정합원RED5f06ac·추가4RED2f360d와중간18PASSd32ac5는보존하며최종합격으로소급대체0.
+- 현재helper구분단위만검수하며fullintent/원CONSUMED귀속·0054·API/UI미완료. 실제DB/RLS/행경합/실파일·운영키·서비스0. 다음정확승인소비/파일DB UNKNOWN연결을같은primary가읽기준비중이다.
+
+
+- FN16 보조 저장3 최종 독립 spec/quality 모두 scoped C0/I0/M0. Main f4d59420PASS/type0와 지문 일치, full intent/receipt·0054·API/UI·실제 DB/키는 아직 미완료다. 이 검수된3과 현황만 checkpoint한 뒤 같은 primary가 원명령/승인1회/intent의 합성시험을 먼저 작성한다.
