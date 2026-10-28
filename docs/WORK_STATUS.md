@@ -9452,3 +9452,13 @@
 - 기존 current 모듈3566D196(+100/-14)+신규목록시험A1AA333A를 검수했다. Main e886da 목록15+기존단일17=32PASS588.4984ms/skip0,84dec0 type/diff0·독립최종C0/I0/M0. 결과 docs/04_test_reports/AV3/FN16_DOCUMENT_ARTIFACT_VERIFICATION_RESULT_20261029.md.
 - 실제collector1회→eligible중복없는각1회byte검사→마지막전체대상metadata재대조 연결. 최초격리/UNKNOWN IO0, 중간실패skip/retry0, 최초신원과관측된최소기한을유지한다. Main발견collector단축기한소실I1은9608a8 1RED후기존clock관측으로보완했다. 초기TS18048은fixture타입단언1곳보완이며기대완화0·정식동일오류3회아님.
 - 실제원문FS/DB/키/서비스/P03변경0·새route/job/SQL0, 0054pending8CC95B9D와보호8보존. atomic/fullProject/restorable=false·전체FN16/사용자화면·실제백업미완료. 이결과는문서범위내부연결에한정하며남은전체자료/암호화archive·실제환경검수와구분한다.
+
+### 2026-10-29 FN16 대화 자료군 수집 착수
+- 기준 81a509af/private 동일, 기존 문서 목록·원문 연결 32검증은 반복하지 않는다. 기존 두 담당자 읽기 대조로 대화·지식·헌법 수집 누락을 확인했다. 이번 업무는 대화 전체 순서·원문 참조·정정 계보의 내부 metadata 수집이며 실제 DB/FS/키/서비스 실행0이다.
+- Main WI FN16_CONVERSATION_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md 고정 후 기존 primary 단독 TEST_ONLY→RED→구현, 기존 reviewer 독립 검수. 공유요청 조회권한은 확장하지 않는다. 전체 FN16/작업계획은 미완료. 오류0, 다음 지식/헌법 자료군은 이어서 판단한다.
+- 착수 독립 WI 검토 C0/I0/M0. 현재 HUMAN 대화 parser·0005_conversations.sql의 정정/격리 계약과 대조했다. 반환 sourceHash와 익명 metadata projectionHash는 구분하고, command 증빙은 미수집 의존으로 표시한다.
+- 환경/읽기 오류: a31217에서 추정 파일명 db/migrations/0004_artifacts.sql 읽기 1회 실패(PATH_NOT_FOUND); 1527ff rg 목록으로 실제 0003_project_artifacts.sql·0005_artifact_quarantine.sql 확인했다. 842fd9 sandbox git status는 “fatal: this operation must be run in a work tree”; 367048 승인된 동일 경로 읽기에서 실제 branch/HEAD를 확인했으며 제품 오류가 아니다. 파일/권한 변경으로 우회하지 않았다.
+- 다음 지식·헌법 자료군은 기존 검토 조회 LIMIT200/SHARED 미지원/실제 원문 읽기 의존을 확인했다. 전체 metadata 수집은 명시열·keyset으로 별도 연결하며 현재 실행권한으로 복원하지 않는다. 현재 코드 writer는 대화 시험 한 명뿐이다.
+- Main 신규 RED 64eb9c: node --experimental-strip-types --test tests/unit/FN16/conversation-inventory.test.ts tests/unit/FN16/conversation-inventory-schema.test.ts, exit1, 14건 중 schema1 PASS/제품부재13 FAIL, skip0, 260.0287ms. TEST_ONLY behavior CD9532053747D33B90B835E1FDE29E8C88DD6152E1ED2FB74A8535E8A6711BCE/schema F05437F3749DFC933E863E8F1401F0F4FD224E75D2E003075DA04477A26404DA 고정 후 primary 제품 GO. Main source 수정0. 정상/정정/201대화 pagination·권한/기한·격리·무결성/회수 한정 검증이다.
+- Main 5a291b 신규14 PASS/0FAIL/skip0/459.3723ms, typecheck·diff0. source7115F0FF…, 시험CD953205…/F05437F3…불변. 독립 WI/시험/제품 C0/I0/M0. 초기 정적 offset 이름 오탐1은 batchStart로 보완·기대값 변경0, 실제 DB/FS/키/서비스0.
+- 결과 FN16_CONVERSATION_INVENTORY_RESULT_20261029.md에 대화계보·현재권한·한도/격리 보존과 실제 미검증을 기록했다. 이번 단위만 부분 구현 완료이며 전체 FN16/계획 미완료. 다음 지식·헌법 자료군 준비를 계속한다.

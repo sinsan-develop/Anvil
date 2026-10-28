@@ -1611,3 +1611,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 원문 readonly reader 부분 구현: 실제 Node 읽기본문과 byte verifier 연결을 합성16건·타입·독립검수로 확인했다. 실제 보관소 설정/활성화·현재 DB 권한/격리 대조·전체 백업/복원은 미완료다. 결과: docs/04_test_reports/AV3/FN16_ARTIFACT_READONLY_READER_RESULT_20261029.md.
 - **2026-10-29 FN16 원문 현재 권한·상태 연결:** 단일 exact artifact의 RC 양끝 auth/OWNER·귀속/격리 확인과 DB반납 후 byte검증 source를 구현했다. Main 신규17PASS·type/diff0·독립C0/I0/M0. 현재 관측만 확인하며 inventory 포함관계·전체backup/restorable=false; 실제 DB/FS/키/서비스·화면 연결은 미완료다. 상세 FN16_ARTIFACT_CURRENT_VERIFICATION_RESULT_20261029.md. 다음 live inventory 대상목록 연결을 진행한다.
 - **2026-10-29 FN16 문서 목록 원문 연결:** 실제collector의exact목록→중복없는원문검증→최종모든검증대상현재상태대조를 연결했다. Main신규15+변경영향기존17=32PASS·type/diff0·독립I1보완C0/I0/M0. 격리/UNKNOWN IO0·실패를skip으로낮추지않음·최소세션기한유지. 실제DB/파일/키/서비스·전체프로젝트backup/복원/화면인수미완료, false경계유지. 상세 FN16_DOCUMENT_ARTIFACT_VERIFICATION_RESULT_20261029.md.
+
+- **2026-10-29 FN16 대화 자료군:** 대화 순서·원문 exact 참조·정정계보의 내부 metadata 수집 신규14합성 PASS/type·diff0/독립 C0/I0/M0. 실제 DB/원문·전체백업·복원·화면은 미완료, 지식·헌법 자료군을 이어간다. 상세 FN16_CONVERSATION_INVENTORY_RESULT_20261029.md.
