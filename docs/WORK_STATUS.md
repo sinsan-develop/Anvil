@@ -8692,3 +8692,29 @@
 신산님call_84af3084e4294486a1514f370614dbb3/item0의‘A안 계약·source-only 구현 승인’을후보F60EEE63와정확결박했다. 과거미승인/blocked감사는이력이고이번FN05계약/코드·화면·미적용SQL·합성검수의차단을해소한다. 실제공유/전송/대상쓰기/승인생성·소비/DB적용/정책부여/서비스/Secret/실Agent제외·별도P03실제copy미승인은유지한다. fresh단일담당fn05_share_request_impl에읽기전용정확파일/기존패턴preflight를배정했고Main제품write0·현재TDD前이다. Main442f6b의가정경로project-knowledge.ts읽기는ENOENT1/변경0이며rg--files로실제knowledge.ts를찾았다. 완료검사반복0·원보호8보존·전체WORK_PLAN미완료,이번재개부터새차단감사로센다.
 
 - **FN05 A안 WI preflight C0I0·시험작성 GO**:독립담당이F60/FD0·WI88A6/manifest8AC1·기존4raw/신규13부재/보호12를직접대조해C0I0를확인했다. 공통command의source선잠금/raw replay를그대로쓰지않고공개POST의UUID정렬잠금/현재재투영·inspectPending승인선거절·보호GET/최종기한검사를실제반례로증명한다. Main은WI의logical route에기존/api/v1 prefix를명시하는기술표기만정리했다(범위불변). 승인/업무WI/manifest/현황4문서checkpoint뒤TEST_ONLY신규시험4부터단일담당TDD GO,Main제품write0/실DB·환경0.
+
+- **FN05 A안 TEST_ONLY 진행**:허용unit4는실제registerProjectRoutes/Fastify.inject 공개POST/보호GET·기존ProjectKnowledge reader소비선을연결하고DB/원문저장포트만합성으로검사하도록작성중이다. 현재제품/SQL/DB/환경/QA자원0. Main의추가기존파일읽기중없는access/project-policies.ts는ENOENT1·변경0이고rg--files로실제파일목록을확인한뒤가정경로추가시도중단했다. 다른가정경로knowledge/project-knowledge.ts오류와합쳐Main이름추측ENOENT2이며제품실패아니다. 필수publicpath반례/승인선거절/replay현재투영/기한검사를완화하지않는다.
+
+- **FN05 TEST_ONLY Main fresh RED 확인**:bd41d9에서unit4고정raw6C4D7176/8ECD7E2C/5A03A3B1/46078B91와기존제품4/보호12불변을대조하고등록한node--test명령을실행했다. 28수집/0PASS28FAIL/skip0/cancel0/todo0·1284.629ms/childexit1(Main검사wrapperexit0)로입력/Web모듈/pendingSQL부재·공개POST enum미연결·전용412부재의RED를확인했다. author95335e최종28RED/1620.3913ms와별도명령증거이며author최초27/12PASS는enum거절만으로음성통과한옛시험으로보존하고정상POST선행/cursor반례보강을구분했다. 저장전parse1/UI10부모부재1은도구오류로기능RED에세지않는다. 실제DB/물리원문/COMMIT/RLS는합성으로미검증·Main제품write0,구현GO준비/기존기대완화금지다.
+
+- **Main 자료경로 추측 오류 3회·조회방법 인수 보완**:442f6b의knowledge/project-knowledge.ts,97b928의access/project-policies.ts,16a789의connections/policy-editor-profiles.ts는실재경로를먼저확인하지않고추측해각ENOENT/IO오류1이났다. 동일근본원인3회로Main의추측경로명령을중단하고이후경로는rg--files출력·manifest·실제import문에나온정확값으로만열기로고정한다. 마지막실제import는policy-editor-profile.ts(단수)이며더이상다른이름을추측하지않는다. 모두읽기실패/파일·제품변경0이고단일담당의승인구현은별개로계속한다. 환경/ACL오류로오인하거나검증PASS/개발진전으로세지않는다.
+
+- **FN05 WI r2 내부소비선 보완**:Main be0228/1bf32b/769b10/28dac9/f822ad가실제권한편집기의PROJECT_MATERIAL 선택지에requestKnowledgeShare가없음을확인했다. 새op는이미직접승인A/서버명시정책계약에포함됐으나사용자가그기존정책화면에서선택할수없으므로policy-editor-profile.ts/CandidatePolicyPanel.tsx의선택지·범위설명만추가허용한다. source-only/실제정책부여0·기본DENY/모든기존규칙/기한/승인미연결거절불변,새권한/저장계약변경0인내부누락보완이다. 부모WI3A04/manifest8AC는86a8708Git보존·부모승인FD0/specF60불변,19허용/기존6·신규13로revision2를기록했다. 추가2제품은새동일UI시험RED후만수정하며Main제품write0다.
+
+- **FN05 중간소비선 검수·r2 Main RED**:Main4d2b13은service/target실소스를읽어최단권한창과read/list원문조회후권한현재성검사보완을지시했다. author중간22와97a0dc의직접4/31PASS는제출당시범위이며Main최종fresh검증전이다. serverfixture는기존persistProjectReceipt의실제scope_kind/scope_id/payload_ref/audit열투영으로보완했고원28기대보존/공개POST승인·복수AUTO·조회중회수반례를추가했다. route치환문자열의달러토큰해석수집구문오류1은rawbaseline확인+callback치환으로교정·기능RED와분리했다. r2독립C0I0후Main34886b는추가2제품raw불변/UI시험C874CF52를확인해옵션0!==1인1RED/187.1411ms/childexit1을직접확인하고그2파일GREEN GO를발행했다. author1f8dd8 RED는별도333.588ms,56f93b 직접TSX미지원수집오류는Vite write:false SSR로보완했다. Main8855e4의UI원문읽기로미전송초안닫기부재·같은원ref의pending재확인조건·목록state의key/epoch동기격리공백을한정지적해같은담당이반례/보완중이다. 실제DB/정책부여/QA/서비스/공유0·Main제품write0·전체완료아니다.
+
+- **FN05 Main 합성DOM 첫실행 FAIL·정확회수**:fab0b6은등록QA부재/부모nonlink·owner/userSINSANcyhuh/profile프로세스0을확인했다. 동결DOM2(10E55234/C8B1ED30)를별도env로5fce21/session7907→bd4962실행해tests5(부모포함)/PASS2FAIL3/skip0/cancel0·16319.6245ms/exit1이었다. 정상보관/최소조회·미전송닫기와LOST→EXCLUDED동일원명령case는PASS,actorABA복귀/App재진입두case는pending보존으로새작성버튼이정상disabled인데selecthelper가enabled를요구해5s실패했다. 제품원인으로단정하거나원실패를소급PASS하지않고pending복귀전용기대(새작성disabled/같은원명령·재확인enabled)로보완안을요청했다. 정상contextclose후d5c46a가절대path/owner/link0/profileprocess0을확인해229files79dirs16126311bytes의등록root만회수했고417534별도조회에서root부재/profile0을확인했다. 실제서버/DB·정책·공유0이다.
+
+- **FN05 독립 명세C0I0/품질I2·round1 준비**:명세독립검수는공개POST/GET2/App→KnowledgePage→Panel/API/권한선거절·현재투영이승인A에맞는지C0I0로확인했다. 원28시험과거원문snapshot은전달되지않아직접rawdiff보존NOT_VERIFIED를명시했다(현재시험약화정황없음과구분). 품질독립은I1새read/replayTx에RLS필수anvil.actor_id설정누락,I2불변3표(document_versions/conversation_messages/artifacts)의FOR SHARE가앱roleSELECT/INSERT전용과충돌을확정했다. Main422d5e/공식PG15 SELECT문서 https://www.postgresql.org/docs/15/sql-select.html 에서locking SELECT의UPDATE권한요건을대조했다. broadUPDATE/기존권한·guard확대없이인증된Tx-local문맥과불변성/프로젝트잠금·현재성재대조를보존하는최소source보완을같은담당에게요청했다. 현32/26/typePASS는실RLS/권한/DB증거아니며I2해소로부르지않는다. actualSQL/DB여전히NOT_RUN·새실행0이다.
+
+- **Main 재작업 dispatch 상태 오류1 보완**:fn05_share_request_impl이QA대기INCOMPLETE로turn을끝낸뒤Main이DOM원실패/품질I2를send_message로보내큐에만적재하고followup_task를즉시호출하지않아재작업이시작되지않았다. 이를livejob진전으로세지않고같은담당에게정확followup_task를발행해round1의계획/한정반례대조부터재개했다. 제품/시험/환경효과0인관리오류이며신규담당/동시writer/범위변경0,이후idle/completed담당에게후속작업을줄때followup반환과실제running상태를확인한다. 원DOMFAIL/품질I2/자원정리증거는그대로보존한다.
+
+
+### 2026-10-28 FN05/UI10 A안 한정 소스 검수 결과
+
+- 고정 지식 버전·명시 프로젝트 대상·목적의 출발측 요청 보관과 본인 보호 조회를 코드·화면·미적용 SQL로 구현했다. 상태는 RECORDED_ONLY이며 실제 공유가 아니다. FN05/UI10은 부분 구현, 전체 Stage B와 작업계획은 미완료다.
+- Main 검증은 최초 집중32 PASS·인접26 PASS·type exit0, 품질 보완 뒤 영향 서버23 PASS·type exit0이다. 이를 새 단일34검사 실행으로 합산하지 않는다. 독립 명세 C0/I0/M0, 품질 I1/I2 보완 재검토 C0/I0이다.
+- 최종 실제 공통 스타일 포함 합성 DOM은 d84fbd tests5/PASS5/FAIL0/skip0/6077.5975ms/exit0. 정상 보관·보호 조회·미전송 닫기·동일 원명령 재확인·지연 응답/actor ABA·App 재진입을 확인했다. root12px/배경 적용만 확인했으며 상세 시안 인수나 정식 served 증거가 아니다.
+- QA 3회 원 실패와 후속 결과를 보존했다. 최종66526c에서 소유187파일/58폴더/14734646bytes만 정리했고 b0f15a 별도 조회 root부재/profile프로세스0이다.
+- 실제 DB/SQL 적용·RLS/권한 실행·privileged 동시변경 원자성·실제 공유/전송·정식 화면·사용자 인수는 NOT_RUN/NOT_PROVEN. P03 실제 보호사본 복제의 기존 결정 질문과 FN16 지원은 별개로 유지한다.
+- 결과: docs/04_test_reports/AV3/FN05_KNOWLEDGE_SHARE_REQUEST_RESULT.md SHA256 CFF45146EC048CD2F78C3FBB66977DFD3F80B2066F037DE05B013F76406BFE47. Main 제품 수정0·동시 writer0. 완료된 검증은 반복하지 않고 exact allowlist checkpoint와 다음 독립 미완료 업무를 대조한다.

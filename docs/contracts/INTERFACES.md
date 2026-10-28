@@ -1131,3 +1131,14 @@ EXISTING 초안의 `sourceDeclaration`은 `hostLabel,displayName,pathHint,reason
 조회 `GET projects/:projectId/documents/:id/source-links`는 링크/버전·최근 관측 snapshot·상태 MATCH/DRIFT/UNVERIFIED/DETACHED·선택/제안 ID/이력을 반환한다. 관측 부재를 MATCH로 계산하지 않는다. 연결·반출입/착수/제출/재개 시 영향을 받는 링크만 FN08 읽기로 비교하고 sourceLinkEvent를 남긴다. 관측 hash가 현재 링크 version과 바뀌면 옛 선택의 재사용을409로 거절한다. 이 흐름은 소스 파일 쓰기/자동 되돌리기 기능이 아니다. 소스 복원은 FN13의 별도 exact 승인·보존 검증을 따른다.
 
 본인 공통 방법론 후속 연결은 METHODOLOGY 내용 검토와 confirmMethodology다. 같은 owner/current client·exact head/version/hash·서버 감사 순서·ReviewRef·미확인 명령 보존 규칙을 적용한다. 기준1은 METHOD_PURPOSE_SCOPE/METHOD_FLOW_CONTROL/METHOD_INPUT_OUTPUT/METHOD_COMPLETION_APPROVAL/METHOD_RECORD_LIMITS다. 구조 ERROR 또는 최신 검토가 ACCEPTED가 아니면 확정422. 연결 양식은 exact 내용을 대조하고 SYSTEM의 P01 승인된 불변 원본과 USER_COMMON의 실제 확정+최신 ACCEPTED를 구분해 확인한다. 기본 양식 출처 승인을 Anvil 사용자 확정/제품 인수로 만들지 않는다. 새 개정은 이전 확정을 이월하지 않으며 프로젝트 적용·Agent 실행은 별도다.
+
+
+## 2026-10-28 FN05 지식 공유요청 A안 상세 계약 채택
+
+직접승인 call_84af3084e4294486a1514f370614dbb3/item0 ‘A안 계약·source-only 구현 승인’, 원후보 F60EEE63/승인FD0A5A0B를 따른다. requestKnowledgeShare는 출발측 요청metadata 보관만이며 실제공유/전송·대상쓰기·SHARED·승인생성/소비가 아니다. 새명령은 targetId=null/expectedVersion=0/baselineRefs=[]/approvalRef=null, payload={versionRefs,explicitTargets:PROJECT[],purpose}의닫힌입력이다. 현재sourceOWNER/client/control·명시AUTO정책/최단기한·실원문/격리/hash·target실제활성회원읽기/현재version을검사한다. common은미지원, REQUIRE_APPROVAL/non-null승인은inspectPending포함generic승인처리전412로닫힌다.
+
+POST /api/v1/projects/:projectId/commands의APPLIED data는 {ref,request}이며 request는 RECORDED_ONLY/version1·네효과(transferPerformed/sharedEventCreated/approvalConsumed/executionAuthorized)=false다. 현재METADATA_ELIGIBLE일때만snapshot(projectId/createdBy/clientId/controlGeneration/versionRefs/대상당시version/purpose/policyRef/recordedAt)을반환한다. 현재확인불가시는requestRef/state/currentCheck=UNAVAILABLE/reasonCode=SOURCE_OR_TARGET_UNAVAILABLE/효과false만반환하고목적·선택·대상수/이름을숨긴다. 과거요청은수정하지않는다.
+
+GET /api/v1/projects/:projectId/knowledge-share-requests와 /:id/versions/1?contentHash=…는 현재출발접근+createdBy=본인으로선필터한다. 목록은유한limit/서명cursor를actor/project/limit에결박하고전역건수/대상역조회는없다. 같은원명령replay도현재보호투영하며과거상세receipt를그대로재노출하지않는다. 인증identity의actor/client를각transaction-localGUC로설정하고새RLS표조회전에결박한다. 프로젝트/member/head잠금과불변원문3표의기존SELECT계약·원문재검사를유지하며권한확대없다.
+
+UI10은현재고정지식→허가대상조회/목적입력→명시요청보관→본인목록/고정조회로연결한다. 미전송초안명시닫기와미결원명령보존/동일재확인을구분하고사용자·project·client·control·선택/ABA/lateJSON을대조한다. 정책화면은동일operation선택지/범위설명만추가하며기본DENY/명시준비·전송/기존규칙을보존한다. 실DB·정책부여/서비스반영/실공유는아직미실행이다. 검수는동명FN05_KNOWLEDGE_SHARE_REQUEST_RESULT.md를따른다.

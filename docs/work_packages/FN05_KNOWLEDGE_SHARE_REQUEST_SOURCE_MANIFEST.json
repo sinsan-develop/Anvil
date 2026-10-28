@@ -92,6 +92,16 @@
       "path": "docs/04_test_reports/AV3/FN05_KNOWLEDGE_SHARE_REQUEST_RESULT.md",
       "existing": false,
       "rawSha256": null
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "existing": true,
+      "rawSha256": "EDD355E3153CB6013B101A54F6CC2CBB8F3CCF4B31FE6BB77E9BD800A100B526"
+    },
+    {
+      "path": "apps/web/src/features/connections/CandidatePolicyPanel.tsx",
+      "existing": true,
+      "rawSha256": "C38BDAE775DA2BA8652E4D0D78B4EC22803BCB8A504910C626D3BBA8AB6F58E1"
     }
   ],
   "protectedExisting": [
@@ -146,5 +156,7 @@
       "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
     }
   ],
-  "actualEffectsAuthorized": false
+  "actualEffectsAuthorized": false,
+  "revision": 2,
+  "parentManifestSha256": "8AC128317E97DDA7DD8C52EA662DBBBBA67A0DBEF0F2F31A94676E8BF949A478"
 }

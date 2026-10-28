@@ -8,7 +8,7 @@
 
 ## 시작·소유권
 
-기존 codex/av3-stage-b / 제품기준9bebd8c0. Main소유 승인·이WI·manifest·현황 문서 변화와 제품 변화를 분리한다. 정확17허용파일/기존4raw·신규13부재 및 보호12는 동명 SOURCE_MANIFEST.json을 따른다. 다른 source·기존SQL/knowledge.ts/guard·정책편집기·dependency·설정·보호untracked8 변경0. 새branch/worktree/commit/push는 구현자가 하지 않는다. Main이검수후일반checkpoint게시한다. Git sandbox 오류는 환경경계이며 ACL/config수정이나 우회·반복0; 필요elevated 고정git -C와 login:false만 쓴다.
+기존 codex/av3-stage-b / 제품기준9bebd8c0. Main소유 승인·이WI·manifest·현황 문서 변화와 제품 변화를 분리한다. 정확19허용파일/기존6raw·신규13부재 및 보호12는 동명 SOURCE_MANIFEST.json을 따른다. 다른 source·기존SQL/knowledge.ts/guard·dependency·설정·보호untracked8 변경0. 정책편집기는아래r2의정확2파일선택지/범위설명만예외다. 새branch/worktree/commit/push는 구현자가 하지 않는다. Main이검수후일반checkpoint게시한다. Git sandbox 오류는 환경경계이며 ACL/config수정이나 우회·반복0; 필요elevated 고정git -C와 login:false만 쓴다.
 
 ## 계약을 구체화한 Main 판단
 
@@ -26,7 +26,7 @@
 ## 순차 작업·검수
 
 - [ ] TEST_ONLY: 허용신규시험4+필요browser시험/harness만 작성. 정상원문/권한/원자저장·replay·본인읽기·권한/target/원문회수/변조·미지원/민감·approval연결0·late JSON/UNAVAILABLE누출0 반례. source변경0. Main이실제RED를확인한뒤구현GO.
-- [ ] GREEN: 지정제품10/pendingSQL만 구현하고 해당시험·type·직접인접회귀. fakeDB/문서원문fake포트는합성으로명시. 실제SQL/DB미실행. 정적SQL검사는문법컴파일/트리거실행PASS로부르지않는다.
+- [ ] GREEN: 지정제품12/pendingSQL만 구현하고 해당시험·type·직접인접회귀. fakeDB/문서원문fake포트는합성으로명시. 실제SQL/DB미실행. 정적SQL검사는문법컴파일/트리거실행PASS로부르지않는다.
 - [ ] UI 합성DOM: 허용두파일의 실제 KnowledgePage/Panel 소비경로를Vite로bundle하고mock만주입한다. 선택→보관→목록→고정조회·실패/응답유실/문맥변경·불가최소응답을검사한다. 실제served/DB인수아님. 별도QA GO전환경/자원생성0.
 - [ ] 독립 검수·정확diff/허용범위·보호자료/hash·Main선택검사. Critical/Important는보완후재검수. 변경없는검사를불필요하게반복하지않는다.
 - [ ] 결과문서: exact명령/exit/RED→GREEN·직접/인접/DOM각범위·실패·오류횟수·미실행·정리/rollback·다음기능을기록한다. 전체FN05/Stage/WORK_PLAN완료나실제공유PASS로표시하지않는다.
@@ -44,3 +44,7 @@ QA root D:/tmp/anvil-v3-fn05-share-request-dom-20261028-01, 하위bundle/browser
 ## 제출 상태
 
 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED를구분하고정식실패는같은원인/증거/변경/남은판단을모두제출한다. 현재예외/도구권한은제품실패로세지않고동일3회반복하지않는다. Main은전체계획완료까지이어가며이번승인으로P03결정을대체하지않는다.
+
+## r2 Main 내부 구현 판단 — 기존 권한 작성 화면의 동작 선택지
+
+부모WI3A04B2A0/manifest8AC12831의코드본문은Git86a8708에보존한다. Main이실제policy-editor-profile.ts/PROJECT_MATERIAL과CandidatePolicyPanel.tsx를읽어requestKnowledgeShare선택지부재를확인했다. 이대로는source/AUTO명시정책을정상화면에서선택할수없으므로정확기존2파일을허용목록에추가한다. 추가는기존operation의선택지·한국어범위설명(요청보관≠공유/승인,REQUIRE_APPROVAL미연결거절)뿐이다. 기존선택지/규칙/만료/단독제어/기존규칙보존/명령준비·전송·재확인검사와기본DENY를유지한다. 실제정책부여/자동규칙생성/권한확대0,정책저장/API/DB계약변경0이다. 승인후보F60/A source-only경계와부모승인FD0를유지하는내부소비선누락보완이며새사람승인을요구하지않는다. 허용UI10시험에기존선택지보존·새옵션·기본DENY/부수동작0 반례를먼저추가하고해당2파일은그RED후에만수정한다. 모든기존4/보호12 baseline은재설정하지않고추가2의현재raw만새기준으로잡는다.

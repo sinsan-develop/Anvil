@@ -1,0 +1,134 @@
+-- FN05 A안 source-only forward 후보. 적용 manifest 미등록, 실제 SQL compile/DML/RLS/경합 NOT_RUN.
+-- 기존 0050까지의 함수/receipt/정책을 전제로 하며 기존 지식 guard나 정책을 변경하지 않는다.
+CREATE TABLE anvil.knowledge_share_requests(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ state text NOT NULL CHECK(state='RECORDED_ONLY'),content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),
+ snapshot_json jsonb NOT NULL,request_json jsonb NOT NULL,created_by uuid NOT NULL,client_id uuid NOT NULL,
+ control_generation bigint NOT NULL CHECK(control_generation BETWEEN 1 AND 9007199254740991),policy_ref jsonb NOT NULL,
+ command_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,id,version,content_hash),
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE INDEX knowledge_share_requests_own_page ON anvil.knowledge_share_requests(project_id,created_by,created_at DESC,id DESC);
+CREATE FUNCTION anvil.fn05_share_input_valid(pid uuid,p jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE r jsonb;t jsonb;
+BEGIN
+ IF (anvil.execution_json_shape(p,ARRAY['versionRefs','explicitTargets','purpose'])
+ AND jsonb_typeof(p->'versionRefs')='array' AND jsonb_array_length(p->'versionRefs') BETWEEN 1 AND 200
+ AND jsonb_typeof(p->'explicitTargets')='array' AND jsonb_array_length(p->'explicitTargets') BETWEEN 1 AND 200
+ AND anvil.result_text_valid(p->'purpose',20000) AND anvil.work_plan_text_present(p->>'purpose')
+ AND octet_length(p::text)<=2097152) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ IF (p->>'purpose') ~* '-----BEGIN ([A-Z0-9]+ )?PRIVATE KEY-----|\yBearer[[:space:]]+[A-Za-z0-9_.~+/-]{16,}|\y(password|passwd|api[_-]?key|access[_-]?token|token|secret)[[:space:]]*[:=][[:space:]]*["'']?[^[:space:]"'']{4,}' THEN RETURN false;END IF;
+ FOR r IN SELECT value FROM jsonb_array_elements(p->'versionRefs') LOOP
+  IF (anvil.execution_json_shape(r,ARRAY['id','version','contentHash']) AND (r->>'id')~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND (r->>'version')~'^[1-9][0-9]*$' AND (r->>'version')::numeric<=9007199254740991 AND (r->>'contentHash')~'^[a-f0-9]{64}$') IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ END LOOP;
+ IF (SELECT count(*)<>count(DISTINCT value->>'id') FROM jsonb_array_elements(p->'versionRefs')) THEN RETURN false;END IF;
+ FOR t IN SELECT value FROM jsonb_array_elements(p->'explicitTargets') LOOP
+  IF (anvil.execution_json_shape(t,ARRAY['kind','projectId']) AND t->>'kind'='PROJECT' AND (t->>'projectId')~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND t->>'projectId'<>pid::text) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ END LOOP;
+ IF (SELECT count(*)<>count(DISTINCT value->>'projectId') FROM jsonb_array_elements(p->'explicitTargets')) THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn05_share_request_valid(pid uuid,rid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.knowledge_share_requests;c anvil.commands;ar anvil.authorization_receipts;s jsonb;ref jsonb;expected jsonb;digest text;targets jsonb;v jsonb;t jsonb;
+BEGIN
+ SELECT * INTO r FROM anvil.knowledge_share_requests WHERE project_id=pid AND id=rid;
+ IF r.id IS NULL THEN RETURN false;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=r.command_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ s:=r.snapshot_json;ref:=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash);
+ IF (anvil.execution_json_shape(s,ARRAY['projectId','createdBy','clientId','controlGeneration','versionRefs','explicitTargets','purpose','policyRef','recordedAt'])
+ AND anvil.execution_json_shape(r.request_json,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
+ AND s->>'projectId'=pid::text AND s->>'createdBy'=r.created_by::text AND s->>'clientId'=r.client_id::text AND s->'controlGeneration'=to_jsonb(r.control_generation)
+ AND s->'policyRef'=r.policy_ref AND s->>'recordedAt'=to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND r.content_hash=anvil.execution_json_hash(s) AND r.version=1 AND r.state='RECORDED_ONLY'
+ AND jsonb_typeof(s->'explicitTargets')='array' AND jsonb_array_length(s->'explicitTargets') BETWEEN 1 AND 200) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ FOR t IN SELECT value FROM jsonb_array_elements(s->'explicitTargets') LOOP
+  IF (anvil.execution_json_shape(t,ARRAY['kind','projectId','version']) AND (t->>'version')~'^[1-9][0-9]*$' AND (t->>'version')::numeric<=9007199254740991) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ END LOOP;
+ SELECT jsonb_agg(value-'version' ORDER BY ord) INTO targets FROM jsonb_array_elements(s->'explicitTargets') WITH ORDINALITY q(value,ord);
+ IF (anvil.fn05_share_input_valid(pid,r.request_json->'payload')
+ AND r.request_json->'payload'=jsonb_build_object('versionRefs',s->'versionRefs','explicitTargets',targets,'purpose',s->'purpose')
+ AND r.request_json=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',r.client_id,'controlGeneration',r.control_generation,'operation','requestKnowledgeShare','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',r.request_json->'payload')
+ AND c.id IS NOT NULL AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.project_id=pid AND c.operation='requestKnowledgeShare' AND c.state='APPLIED'
+ AND c.actor_id=r.created_by AND c.client_id=r.client_id AND c.control_generation=r.control_generation AND c.expected_version=0
+ AND c.request_hash=anvil.execution_json_hash(r.request_json) AND c.policy_ref=r.policy_ref AND c.approval_consumption_id IS NULL AND c.payload_ref IS NULL
+ AND date_trunc('milliseconds',c.completed_at)=r.created_at AND ar.id IS NOT NULL AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=r.policy_ref
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',r.created_by,'clientId',r.client_id) AND ar.approval_decision_ref IS NULL) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',r.created_by,'clientId',r.client_id,'controlGeneration',r.control_generation,'requestHash',c.request_hash,'policyRef',r.policy_ref,'targetRef',ref));
+ expected:=jsonb_build_object('requestRef',ref,'state','RECORDED_ONLY','recordedAt',s->'recordedAt','currentCheck','METADATA_ELIGIBLE','snapshot',s,'transferPerformed',false,'sharedEventCreated',false,'approvalConsumed',false,'executionAuthorized',false);
+ IF (ar.scope_digest=digest AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'projectId'=pid::text AND c.result_ref->>'commandId'=c.command_id::text
+ AND c.result_ref->>'targetId'=r.id::text AND c.result_ref->'version'='1'::jsonb AND c.result_ref->>'serverReceivedAt'=s->>'recordedAt'
+ AND c.result_ref->'data'=jsonb_build_object('ref',ref,'request',expected)
+ AND (SELECT count(*)=1 FROM anvil.audit_events e WHERE e.command_id=c.id AND e.project_id=pid AND e.outcome='APPLIED'
+ AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',r.created_by) AND e.client_ref=r.client_id AND e.policy_ref=r.policy_ref AND e.approval_ref IS NULL
+ AND e.scope_digest=digest AND e.reason_code='EXPLICIT_KNOWLEDGE_SHARE_METADATA_REQUEST' AND e.target_ref=ref)) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+-- 현재 자격은 INSERT 때만 검사한다. 이후 회수/정정이 과거 snapshot의 역사적 무결성을 무효화하지 않는다.
+CREATE FUNCTION anvil.fn05_share_current() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p anvil.permission_policy_versions;rule jsonb;v jsonb;t jsonb;allowed boolean:=false;
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id
+ WHERE pr.id=NEW.project_id AND pr.archived_at IS NULL AND m.user_id=NEW.created_by AND m.revoked_at IS NULL AND m.participation='OWNER'
+ AND pc.actor_id=NEW.created_by AND pc.client_id=NEW.client_id AND pc.generation=NEW.control_generation AND pc.revoked_at IS NULL) THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_CURRENT_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ SELECT pv.* INTO p FROM anvil.permission_policies pp JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version
+ WHERE pp.project_id=NEW.project_id AND NEW.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash);
+ IF p.policy_id IS NULL OR p.content_hash<>anvil.execution_json_hash(jsonb_build_object('rules',p.rules_json,'reason',p.reason,'reviewRefs',p.review_refs)) THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_POLICY_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(p.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND rule->'operations' ? 'requestKnowledgeShare' AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF rule->>'disposition'<>'AUTO' THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_POLICY_UNAVAILABLE' USING ERRCODE='23514';END IF;allowed:=true;
+  END IF;
+ END LOOP;
+ IF NOT allowed THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_POLICY_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ FOR t IN SELECT value FROM jsonb_array_elements(NEW.snapshot_json->'explicitTargets') LOOP
+  IF NOT EXISTS(SELECT 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id WHERE pr.id=(t->>'projectId')::uuid AND pr.id<>NEW.project_id AND pr.version=(t->>'version')::bigint AND pr.archived_at IS NULL AND m.user_id=NEW.created_by AND m.revoked_at IS NULL) THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_TARGET_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ END LOOP;
+ FOR v IN SELECT value FROM jsonb_array_elements(NEW.snapshot_json->'versionRefs') LOOP
+  IF NOT EXISTS(SELECT 1 FROM anvil.knowledge_entries k JOIN anvil.knowledge_versions kv ON kv.project_id=k.project_id AND kv.entry_id=k.id AND kv.version=k.head_version
+   WHERE k.project_id=NEW.project_id AND k.id=(v->>'id')::uuid AND kv.version=(v->>'version')::bigint AND kv.content_hash=v->>'contentHash'
+   AND NOT EXISTS(SELECT 1 FROM anvil.knowledge_events e WHERE e.project_id=k.project_id AND e.entry_id=k.id AND e.version=kv.version AND e.kind='EXCLUDED')) THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_SOURCE_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ END LOOP;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn05_share_current BEFORE INSERT ON anvil.knowledge_share_requests FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_current();
+REVOKE ALL ON FUNCTION anvil.fn05_share_current() FROM PUBLIC,anvil_v3_app;
+CREATE FUNCTION anvil.fn05_share_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'KNOWLEDGE_SHARE_IMMUTABLE' USING ERRCODE='23514';END;$$;
+CREATE TRIGGER fn05_share_immutable BEFORE UPDATE OR DELETE ON anvil.knowledge_share_requests FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_immutable();
+CREATE FUNCTION anvil.fn05_share_provenance() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF anvil.fn05_share_request_valid(NEW.project_id,NEW.id) IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_INTEGRITY_FAILED' USING ERRCODE='23514';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn05_share_provenance AFTER INSERT ON anvil.knowledge_share_requests DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_provenance();
+CREATE FUNCTION anvil.fn05_share_command_complete() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE rid uuid;
+BEGIN
+ IF NEW.operation='requestKnowledgeShare' THEN
+  SELECT id INTO rid FROM anvil.knowledge_share_requests WHERE project_id=NEW.project_id AND command_id=NEW.id;
+  IF rid IS NULL OR anvil.fn05_share_request_valid(NEW.project_id,rid) IS DISTINCT FROM TRUE THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_COMMAND_INCOMPLETE' USING ERRCODE='23514';END IF;
+ END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn05_share_command_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_command_complete();
+CREATE FUNCTION anvil.fn05_share_dependency_immutable() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE protected boolean;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN SELECT EXISTS(SELECT 1 FROM anvil.knowledge_share_requests WHERE command_id=OLD.id) INTO protected;
+ ELSE SELECT EXISTS(SELECT 1 FROM anvil.knowledge_share_requests WHERE command_id=OLD.command_id) INTO protected;END IF;
+ IF protected THEN RAISE EXCEPTION 'KNOWLEDGE_SHARE_DEPENDENCY_IMMUTABLE' USING ERRCODE='23514';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn05_share_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_dependency_immutable();
+CREATE TRIGGER fn05_share_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_dependency_immutable();
+CREATE TRIGGER fn05_share_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn05_share_dependency_immutable();
+ALTER TABLE anvil.knowledge_share_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.knowledge_share_requests FORCE ROW LEVEL SECURITY;
+CREATE POLICY fn05_share_read ON anvil.knowledge_share_requests FOR SELECT TO anvil_v3_app USING(created_by=nullif(current_setting('anvil.actor_id',true),'')::uuid AND EXISTS(SELECT 1 FROM anvil.project_members m JOIN anvil.projects p ON p.id=m.project_id WHERE m.project_id=knowledge_share_requests.project_id AND m.user_id=created_by AND m.revoked_at IS NULL AND p.archived_at IS NULL));
+CREATE POLICY fn05_share_insert ON anvil.knowledge_share_requests FOR INSERT TO anvil_v3_app WITH CHECK(created_by=nullif(current_setting('anvil.actor_id',true),'')::uuid AND client_id=nullif(current_setting('anvil.client_id',true),'')::uuid AND command_id=nullif(current_setting('anvil.command_id',true),'')::uuid AND EXISTS(SELECT 1 FROM anvil.project_members m JOIN anvil.projects p ON p.id=m.project_id JOIN anvil.project_control pc ON pc.project_id=p.id WHERE m.project_id=knowledge_share_requests.project_id AND m.user_id=created_by AND m.revoked_at IS NULL AND m.participation='OWNER' AND p.archived_at IS NULL AND pc.actor_id=created_by AND pc.client_id=knowledge_share_requests.client_id AND pc.generation=control_generation AND pc.revoked_at IS NULL));
+REVOKE ALL ON anvil.knowledge_share_requests FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.knowledge_share_requests TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn05_share_input_valid(uuid,jsonb),anvil.fn05_share_request_valid(uuid,uuid),anvil.fn05_share_immutable(),anvil.fn05_share_provenance(),anvil.fn05_share_command_complete(),anvil.fn05_share_dependency_immutable() FROM PUBLIC,anvil_v3_app;

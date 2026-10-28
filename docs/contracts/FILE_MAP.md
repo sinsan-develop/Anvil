@@ -438,3 +438,12 @@ INTERFACES §13~14·DATA_MODEL §10은 §3의 FN09~18 모듈·schema/migration/�
 프로젝트 전용 방법론 입력은 `apps/web/src/features/project-create/DraftMethodEditor.tsx`가 기존 UI03의 그래프/단계·입출력/조건 편집 부품을 소비하고 기존 초안 저장으로 보존한다. 공통본 writer를 호출하지 않는다. GET 기반 원본 복사는 같은 디렉터리 MethodologySelection이 정확 sourceRef를 남기며 명시 저장 전에는 서버를 쓰지 않는다.
 
 2026-10-16 직접 승인 후속: `apps/server/modules/projects/draft-review.ts`가 현재 owner/client·exact draft ref의 recordContentReview/confirmDraftMethodology를, 기존 repository/routes가 최초 createProject를 처리한다. `db/migrations/0011_project_creation.sql`→`0011_draft_method_reviews.sql`은 기존10개 뒤의 forward DAG다. 첫 PROJECT 원본/고정 snapshot·owner/control1·명령/receipt/audit는 같은 transaction, 후속 PROJECT 개정·실행 허가는 별도다. UI는 `features/project-create/DraftReviewPanel.tsx`·기존 page/api·root buffer이며 `tests/integration/FN01/draft-create.test.ts`, `tests/browser/UI02/project-finalize.spec.ts`, `tests/unit/UI02/finalize-api.test.ts`가 실제/합성 경계를 나눠 확인한다. 문서 import/기존 소스/실제 UI DB/Agent는 이 연결의 완료 범위가 아니다.
+
+
+## 2026-10-28 FN05 지식 공유요청 A안 소비선
+
+직접승인F60EEE63/FD0A5A0B·WI r2/동명SOURCE_MANIFEST가정확19구현/시험/결과파일을고정한다. server knowledge-share-request-input/knowledge-share-targets/project-knowledge-share-requests는닫힌입력/현재접근/출발측원장·보호읽기를각각소유한다. 기존project-command/routes는새operation과전용승인미연결거절·공개POST/GET2만연결한다.
+
+KnowledgePage/App→KnowledgeShareRequestPanel/knowledge-share-request-api는원선택·pending·same-origin·본인목록/고정조회/최소불가응답을소유한다. 기존policy-editor-profile/CandidatePolicyPanel은같은동작의명시선택지/범위설명만추가한다. pending0051만신규이며기존SQL/적용manifest는불변이다. unit4·DOMtest/harness2·결과서1에서범위를검수한다. 실제스타일은기존main.tsx와같은tokens.css/app.css를합성harness에서읽고해당CSS파일을수정하지않는다.
+
+원32직접/인접26·보완후server23·타입검사·실제App/KnowledgePage합성DOM을분리기록하며실DB/원자성/RLS/정식served/실공유/사용자인수를PASS로승격하지않는다. 전체FN05/UI10/Stage완료는별도다.

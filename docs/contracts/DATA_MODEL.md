@@ -436,3 +436,10 @@ FN01 직접 승인 후속 forward38의 실제 저장 구분: 초기0001 source_d
 2026-10-16 방법론 검토 연결: 새 forward `0011_user_common_method_reviews`는 methodology_reviews에 nullable client_id/command_id를 추가해 기존 자료를 보존하고, 새로운 app INSERT는 owner USER_COMMON·현재 actor/client·같은 APPLIED command/operation·expected version·receipt exact ref를 trigger로 검사한다. content_reviews의 같은 보호는 FORM/METHODOLOGY만 허용한다. review/confirmation은 append-only이며 기존 적용9개 SQL 불변, 실제 프로젝트 권한·정책/승인 소비는 만들지 않는다.
 
 2026-10-16 생성 초안 보완 직접 승인 후 `0011_project_creation`은 첫 생성의 project_methodologies INSERT만 현재 인증 actor/owner/client·미소비 draft/OWNER/control1·APPLIED createProject/receipt와 묶는다. 기존 snapshot UPDATE/DELETE 금지다. `0011_draft_method_reviews`의 append-only 확정 행은 `id PK,draft_id,version,graph_hash,graph_json,review_refs,validation_json,decided_by,client_id,command_id UNIQUE,decided_at`이며 `(draft_id,version,graph_hash,id)` UNIQUE다. content_reviews의 USER_COMMON guard는 유지하고 DRAFT_METHODOLOGY 전용 guard를 나눠 current draft/client·exact ref/command/receipt를 검사한다. 초안 검토 target_id는 실제 draft_id이고 아직 없는 project_id를 만들지 않는다. 첫 PROJECT 정의/버전1 INSERT만 같은 최초 생성의 context로 허용하며 후속 개정·실행 권한은 열지 않는다. 생성 실패는 초안 소비·프로젝트/멤버/제어/전용 원본·snapshot/명령/receipt/audit 모두 rollback한다. 기존10개 SQL과 공통/공식 원본·기존 버전은 보존한다.
+
+
+## 2026-10-28 FN05 A안 출발측 공유요청 원장 — 미적용0051
+
+0051_knowledge_share_requests.sql.pending는직접승인F60EEE63 A안의source-only후보다. 기존migration/적용manifest/knowledge_events·공유guard를바꾸지않았고실제SQLcompile/DML/RLS/경합은NOT_RUN이다. 새표 anvil.knowledge_share_requests는(project_id,id)PK·version1/RECORDED_ONLY 고정,content_hash/snapshot_json/request_json·created_by/client_id/control_generation/policy_ref/command_id/created_at을보존한다. command_id unique·project/command와actor/client의deferred참조,본인paging색인·불변guard·정확command/receipt/audit/snapshot검사를정의한다.
+
+현재검사currentCheck는저장하지않는다. 원문bytes/대상명·수신자료를복제하지않고선택exactrefs와당시targetversion·목적만보관한다. SELECT는인증actor의transaction-local문맥+본인범위로제한하며서비스도현재출발/대상/원문을대조한다. 신규표의guard용정의는pending안에만있고이번보완에서기존불변표의UPDATE권한·추가definer/GRANT/기존guard를넓히지않았다. 실제공유/원문이전/승인소비·대상쓰기모델로사용하지않는다. privileged외부DB/파일동시변경의원자성은미실증이다.

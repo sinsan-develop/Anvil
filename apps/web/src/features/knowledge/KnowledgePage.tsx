@@ -1,3 +1,5 @@
+import {KnowledgeShareRequestPanel} from './KnowledgeShareRequestPanel.tsx';
+import type {KnowledgeShareRequestBuffer,KnowledgeShareChange} from './knowledge-share-request-api.ts';
 import {KnowledgeStoredReviewDetails} from './KnowledgeStoredReviewDetails.tsx';
 import{QuarantinedOriginalNotice}from'../design-trace/QuarantinedOriginalNotice.tsx';
 import{useEffect,useRef,useState}from'react';
@@ -33,7 +35,7 @@ interface SavedKnowledgeRead {key:string;generation:number;requestId:number;buff
 function savedKnowledgeReadKey(projectId:string,userId:string,clientId:string,buffer:KnowledgeBuffer|null,working:boolean){return JSON.stringify([projectId,userId,clientId,buffer?.projectId,buffer?.ownerUserId,buffer?.ownerClientId,buffer?.controlGeneration,buffer?.resultRef?.id,buffer?.resultRef?.version,buffer?.resultRef?.contentHash,!!buffer?.pending,!!buffer?.uncertain,working]);}
 function sameKnowledgeFilter(current:KnowledgeSearchFilter,applied:KnowledgeSearchFilter){return current.query===applied.query&&current.kind===applied.kind&&current.status===applied.status;}
 export function canContinueKnowledgeSearch(current:KnowledgeSearchFilter,applied:KnowledgeSearchFilter|null,cursor:string|null,next:string|null){return !!applied&&!!cursor&&cursor===next&&sameKnowledgeFilter(current,applied);}
-export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,exclusion,onExclusionChange,correction,onCorrectionChange,decision,onDecisionChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;exclusion:KnowledgeExclusionBuffer|null;onExclusionChange:(b:KnowledgeExclusionBuffer|null)=>void;correction:KnowledgeCorrectionBuffer|null;onCorrectionChange:(change:KnowledgeCorrectionChange)=>void;decision:KnowledgeDecisionBuffer|null;onDecisionChange:(change:KnowledgeDecisionChange)=>void;onAuthenticationLost:()=>void}){
+export function KnowledgePage({client,projectId,session,buffer,onChange,conversationBuffer,onConversationChange,exclusion,onExclusionChange,correction,onCorrectionChange,decision,onDecisionChange,onAuthenticationLost,shareBuffer=null,onShareChange}:{client:ApiClient;projectId:string;session:DocumentSession;buffer:KnowledgeBuffer|null;onChange:(b:KnowledgeBuffer|null)=>void;conversationBuffer:ConversationBuffer|null;onConversationChange:(b:ConversationBuffer|null)=>void;exclusion:KnowledgeExclusionBuffer|null;onExclusionChange:(b:KnowledgeExclusionBuffer|null)=>void;correction:KnowledgeCorrectionBuffer|null;onCorrectionChange:(change:KnowledgeCorrectionChange)=>void;decision:KnowledgeDecisionBuffer|null;onDecisionChange:(change:KnowledgeDecisionChange)=>void;onAuthenticationLost:()=>void;shareBuffer?:KnowledgeShareRequestBuffer|null;onShareChange?:(change:KnowledgeShareChange)=>void}){
   const[query,setQuery]=useState(''),[kind,setKind]=useState(''),[items,setItems]=useState<KnowledgeHit[]>([]),[next,setNext]=useState<string|null>(null),[readLoading,setLoading]=useState(false),[working,setWorking]=useState(false),[readError,setError]=useState<ApiError|null>(null),[readView,setView]=useState<KnowledgeView|null>(null);
   const alive=useRef(true),locked=useRef(false),requestId=useRef(0);
   const[status,setStatus]=useState<'ACTIVE'|'PROPOSED'|'CONFIRMED'|'EXCLUDED'>('ACTIVE');
@@ -109,5 +111,6 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
     {view?<KnowledgeStoredReviewDetails key={JSON.stringify([projectId,session.user.id,session.clientId,savedGeneration,view.ref.id,view.ref.version,view.ref.contentHash])} view={view}/>:null}
     {view?<KnowledgeHistory view={view}/>:null}
     {view?<KnowledgeDocumentSources key={JSON.stringify([projectId,session.user.id,session.clientId,view.ref,view.state])} client={client} projectId={projectId} session={session} view={view} onAuthenticationLost={onAuthenticationLost}/>:null}
+    {onShareChange?<KnowledgeShareRequestPanel client={client} projectId={projectId} session={session} selected={view} buffer={shareBuffer} onChange={onShareChange} onAuthenticationLost={onAuthenticationLost}/>:null}
   </section>;
 }
