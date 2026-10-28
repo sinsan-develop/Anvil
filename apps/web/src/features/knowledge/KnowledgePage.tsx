@@ -1,3 +1,4 @@
+import {KnowledgeUploadApprovalEditor} from './KnowledgeUploadApprovalEditor.tsx';
 import {KnowledgeShareRequestPanel} from './KnowledgeShareRequestPanel.tsx';
 import type {KnowledgeShareRequestBuffer,KnowledgeShareChange} from './knowledge-share-request-api.ts';
 import {KnowledgeStoredReviewDetails} from './KnowledgeStoredReviewDetails.tsx';
@@ -43,6 +44,18 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
   const searchFilter={query,kind,status},filterChanged=!!appliedSearch&&!sameKnowledgeFilter(searchFilter,appliedSearch);
   const work=buffer?.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
   const ownedElsewhere=!!buffer&&!work;
+  const saveEpoch=useRef(0),saveOwned=useRef(new Set<KnowledgeBuffer|null>([buffer])),saveOwner=useRef(buffer),saveFlight=useRef<number|null>(null);
+  const saveIdentity=useRef({client,projectId,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken});
+  const before=saveIdentity.current;
+  if(before.client!==client||before.projectId!==projectId||before.user!==session.user.id||before.clientId!==session.clientId||before.csrf!==session.csrfToken||!saveOwned.current.has(buffer)){saveEpoch.current++;saveOwned.current=new Set([buffer]);}
+  saveIdentity.current={client,projectId,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken};saveOwner.current=buffer;
+  const approvalEpoch=saveEpoch.current,[uploadActivity,setUploadActivity]=useState({epoch:-1,busy:false}),uploadApprovalBusy=uploadActivity.epoch===approvalEpoch&&uploadActivity.busy;
+  const approvalRequestBusy=!!work?.pending?.uploadApproval?.request?.pending||!!work?.pending?.uploadApproval?.request?.uncertain;
+  useEffect(()=>{if(saveFlight.current!==null&&saveFlight.current!==approvalEpoch){saveFlight.current=null;locked.current=false;setWorking(false);}},[approvalEpoch]);
+  function approvalChange(change:KnowledgeBuffer|null|((previous:KnowledgeBuffer|null)=>KnowledgeBuffer|null)){
+    if(!alive.current||saveEpoch.current!==approvalEpoch)return;const current=saveOwner.current;if(!current||!saveOwned.current.has(current)||current.projectId!==projectId||current.ownerUserId!==session.user.id||current.ownerClientId!==session.clientId)return;
+    const next=typeof change==='function'?change(current):change;if(next===current)return;saveOwned.current.add(next);saveOwner.current=next;onChange(next);
+  }
   const savedKey=savedKnowledgeReadKey(projectId,session.user.id,session.clientId,buffer,working);
   const savedOwner=useRef({client,buffer,projectId,userId:session.user.id,clientId:session.clientId,working,key:savedKey,generation:0});
   const previousSavedOwner=savedOwner.current;
@@ -70,15 +83,18 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
   function edit(patch:Partial<KnowledgeBuffer>){if(!work||work.pending||working||work.resultRef)return;onChange({...work,...patch,dirty:true,failure:null});}
   async function applyConstitution(){if(!view||buffer||exclusion||correction||decision||locked.current||view.entry.kind!=='CONSTITUTION'||!view.currentConfirmationValid||view.appliedAsConstitution)return;const target=view;locked.current=true;setWorking(true);setError(null);try{const generation=await documentControl(client,projectId,session);if(!alive.current)return;const current=await readProjectConstitution(client,projectId);if(!alive.current)return;const b=newKnowledgeDecision(projectId,target,session,generation,'APPLY');b.applicationBaseRef=current.current?.ref??null;onDecisionChange(b);}catch(e){if(alive.current)failed(e);}finally{locked.current=false;if(alive.current)setWorking(false);}}
   async function save(){
-    if(!work||locked.current||work.resultRef)return;locked.current=true;setWorking(true);setError(null);let current=work;
+    if(!work||locked.current||uploadApprovalBusy||approvalRequestBusy||work.resultRef||work.pending?.uploadApproval&&!work.pending.uploadApproval.commandHash)return;
+    const epoch=saveEpoch.current;saveFlight.current=epoch;locked.current=true;setWorking(true);setError(null);let current=work;
+    const active=()=>alive.current&&saveEpoch.current===epoch&&saveOwned.current.has(saveOwner.current)&&saveIdentity.current.projectId===projectId&&saveIdentity.current.user===session.user.id&&saveIdentity.current.clientId===session.clientId;
+    const publish=(next:KnowledgeBuffer)=>{if(!active())return false;saveOwned.current.add(next);current=next;onChange(next);return true;};
     try{
-      if(!current.pending){current={...current,pending:await prepareKnowledge(current,session)};onChange(current);}
-      const ref=await sendKnowledge(client,current,session,p=>{current={...current,pending:p};onChange(current);},()=>alive.current);
-      current={...current,resultRef:ref,pending:null,failure:null,uncertain:false,dirty:false};onChange(current);if(alive.current)void list();
-    }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');const uncertain=isConfirmedArtifactQuarantine(a)?false:current.uncertain||a.code!=='KNOWLEDGE_CONTINUATION_PAUSED'&&!isKnownDocumentRejection(a);current={...current,failure:documentFailure(a),uncertain};onChange(current);if(alive.current)failed(a);}
-    finally{locked.current=false;if(alive.current)setWorking(false);}
+      if(!current.pending){const pending=await prepareKnowledge(current,session);if(!active()||!publish({...current,pending}))return;}
+      const ref=await sendKnowledge(client,current,session,p=>{if(active())publish({...current,pending:p});},active);
+      if(!active())return;publish({...current,resultRef:ref,pending:null,failure:null,uncertain:false,dirty:false});if(active())void list();
+    }catch(e){if(active()){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');const uncertain=isConfirmedArtifactQuarantine(a)?false:current.uncertain||a.code!=='KNOWLEDGE_CONTINUATION_PAUSED'&&!isKnownDocumentRejection(a);publish({...current,failure:documentFailure(a),uncertain});failed(a);}}
+    finally{if(saveFlight.current===epoch){saveFlight.current=null;locked.current=false;if(alive.current&&saveEpoch.current===epoch)setWorking(false);}}
   }
-  function close(){if(!work||working||work.uncertain||work.pending&&!isKnownDocumentRejection(work.failure))return;if((work.dirty||work.pending)&&!confirm('작성 중 입력과 명확히 거절된 명령을 닫을까요? 저장된 원문은 삭제하지 않습니다.'))return;onChange(null);}
+  function close(){if(!work||working||uploadApprovalBusy||approvalRequestBusy||work.uncertain||work.pending&&!isKnownDocumentRejection(work.failure))return;if((work.dirty||work.pending)&&!confirm('작성 중 입력과 명확히 거절된 명령을 닫을까요? 저장된 원문은 삭제하지 않습니다.'))return;onChange(null);}
   async function inspect(ref:KnowledgeView['ref'],saved?:Omit<SavedKnowledgeRead,'requestId'>){if(locked.current)return;setView(null);setError(null);setLoading(true);const id=++requestId.current,selection=saved?{...saved,requestId:id}:null;setSavedRead(selection);const active=()=>alive.current&&id===requestId.current&&(!selection||currentSavedRead(selection));try{const v=await readKnowledge(client,projectId,ref);if(active())setView(v);}catch(e){if(active())failed(e);}finally{if(alive.current&&id===requestId.current)setLoading(false);}}
   function inspectSaved(){if(!work?.resultRef||work.pending||work.uncertain||working||locked.current)return;const ref={id:work.resultRef.id,version:work.resultRef.version,contentHash:work.resultRef.contentHash},selection={key:savedKey,generation:savedGeneration,buffer:work,client,ref};if(currentSavedRead(selection))void inspect(ref,selection);}
   return<section className="editor-page"><header><h2>헌법·지식·결정 이유</h2><button type="button" onClick={()=>void start()} disabled={!!buffer||!!exclusion||!!correction||!!decision||working}>새 지식 작성</button><span title="원문/지식 저장·조회·정정·사용 제외・내용 검토·별도 확정입니다. 헌법 적용은 별도 확인하며 Agent 전달은 미연결입니다."> ⓘ</span></header>
@@ -96,8 +112,9 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
       <label>지식 제목<input aria-label="지식 제목" maxLength={200} value={work.title} onChange={e=>edit({title:e.target.value})}/></label>
       <label>지식 원문<textarea aria-label="지식 원문" rows={10} value={work.body} onChange={e=>edit({body:e.target.value})}/></label>
       <label>지식 작성 이유<textarea aria-label="지식 작성 이유" rows={3} maxLength={20000} value={work.reason} onChange={e=>edit({reason:e.target.value})}/></label>
-    </fieldset><KnowledgeDocumentPicker key={JSON.stringify([projectId,session.user.id,session.clientId,work.controlGeneration])} client={client} projectId={projectId} disabled={working||!!work.pending||!!work.resultRef||work.uncertain} onAttach={source=>{if(locked.current||working)throw new ApiError('KNOWLEDGE_SOURCE_LOCKED');onChange(attachKnowledgeDocument(work,session,projectId,source));}} onAuthenticationLost={onAuthenticationLost}/><button type="button" disabled={working||!!work.resultRef||!work.title.trim()||!work.reason.trim()} onClick={()=>void save()}>{work.pending?'같은 지식 명령 결과 확인':'지식 초안 저장'}</button><button type="button" disabled={working||work.uncertain||!!work.pending&&!isKnownDocumentRejection(work.failure)} onClick={close}>작성 닫기</button>
-    {canReopenRejectedKnowledgeDraft(work,projectId,session)?<button type="button" disabled={working} onClick={()=>{if(locked.current||working)return;if(confirm('명확히 거절된 지식 명령을 확인했습니다. 작성 내용·출처를 유지하고 별도 명령으로 계속 작성할까요? 업로드된 원문은 삭제하지 않습니다.')){onChange(reopenRejectedKnowledgeDraft(work,projectId,session));setError(null);}}}>거절 확인 후 지식 입력 계속 작성</button>:null}
+    </fieldset><KnowledgeDocumentPicker key={JSON.stringify([projectId,session.user.id,session.clientId,work.controlGeneration])} client={client} projectId={projectId} disabled={working||!!work.pending||!!work.resultRef||work.uncertain} onAttach={source=>{if(locked.current||working)throw new ApiError('KNOWLEDGE_SOURCE_LOCKED');onChange(attachKnowledgeDocument(work,session,projectId,source));}} onAuthenticationLost={onAuthenticationLost}/><button type="button" disabled={working||uploadApprovalBusy||approvalRequestBusy||!!work.pending?.uploadApproval&&!work.pending.uploadApproval.commandHash||!!work.resultRef||!work.title.trim()||!work.reason.trim()} onClick={()=>void save()}>{work.pending?'같은 지식 명령 결과 확인':'지식 초안 저장'}</button><button type="button" disabled={working||uploadApprovalBusy||approvalRequestBusy||work.uncertain||!!work.pending&&!isKnownDocumentRejection(work.failure)} onClick={close}>작성 닫기</button>
+    {!work.pending?.uploadApproval&&canReopenRejectedKnowledgeDraft(work,projectId,session)?<button type="button" disabled={working} onClick={()=>{if(locked.current||working)return;if(confirm('명확히 거절된 지식 명령을 확인했습니다. 작성 내용·출처를 유지하고 별도 명령으로 계속 작성할까요? 업로드된 원문은 삭제하지 않습니다.')){onChange(reopenRejectedKnowledgeDraft(work,projectId,session));setError(null);}}}>거절 확인 후 지식 입력 계속 작성</button>:null}
+    <KnowledgeUploadApprovalEditor client={client} session={session} buffer={work} disabled={working} onChange={approvalChange} onAuthenticationLost={onAuthenticationLost} onBusy={busy=>{if(saveEpoch.current===approvalEpoch)setUploadActivity({epoch:approvalEpoch,busy});}}/>
     {work.resultRef?<><p role="status">지식 초안 저장 확인 · v{work.resultRef.version} · 별도 확정 전</p><button type="button" disabled={loading||working||!!work.pending||work.uncertain} onClick={inspectSaved}>저장한 지식 고정 원문 보기</button></>:null}<QuarantinedOriginalNotice failure={work.failure}/>{work.failure?<p role="alert">{work.failure.code}{work.uncertain?' · 결과 미확인: 같은 명령으로 확인하세요.':''}</p>:null}</section>:null}
     {error&&!work?.failure?<p role="alert">{error.code}</p>:null}
     <form onSubmit={e=>{e.preventDefault();void list();}}><label>지식 검색<input aria-label="지식 검색" value={query} maxLength={200} onChange={e=>setQuery(e.target.value)}/></label><label>종류 필터<select aria-label="종류 필터" value={kind} onChange={e=>setKind(e.target.value)}><option value="">전체</option>{knowledgeKinds.map(k=><option key={k} value={k}>{knowledgeLabels[k]}</option>)}</select></label><label>지식 상태 필터<select aria-label="지식 상태 필터" value={status} onChange={e=>setStatus(e.target.value as typeof status)}><option value="ACTIVE">제외하지 않은 최신 버전</option><option value="PROPOSED">제안 상태</option><option value="CONFIRMED">확정 이력 있음</option><option value="EXCLUDED">사용 제외 · 명시 조회</option></select></label><button disabled={loading} type="submit">제목·이유 검색</button></form>

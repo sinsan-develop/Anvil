@@ -1,3 +1,4 @@
+import {validateKnowledgeUploadBinding,validateKnowledgeUploadApproval,type KnowledgeUploadApproval} from './knowledge-upload-approval.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {postDocumentCommand,type DocumentWrite,type DocumentSession} from '../design-trace/editor-api.ts';
 import {validKnowledgeScope,knowledgeScopeOf} from './knowledge-scope.ts';
@@ -9,7 +10,7 @@ import type{MessageRef}from'../../../../server/modules/knowledge/conversation-in
 import{validateConstitutionRecord,type ConstitutionRecord}from'./constitution-proof.ts';
 type Ref={id:string;version:number;contentHash:string};
 export const knowledgeKinds=['PURPOSE','CONSTITUTION','DECISION','FACT','HYPOTHESIS','FAILURE_SOLUTION','CAUTION'] as const;
-export interface KnowledgePending{upload:DocumentWrite;save:DocumentWrite|null;saveId:string;snapshot:{scope?:KnowledgeScope;kind:KnowledgeEntry['kind'];title:string;body:string;reason:string;sourceRefs:KnowledgeEntry['sourceRefs']}}
+export interface KnowledgePending{uploadApproval?:KnowledgeUploadApproval;upload:DocumentWrite;save:DocumentWrite|null;saveId:string;snapshot:{scope?:KnowledgeScope;kind:KnowledgeEntry['kind'];title:string;body:string;reason:string;sourceRefs:KnowledgeEntry['sourceRefs']}}
 export interface KnowledgeBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;scope?:KnowledgeScope;kind:KnowledgeEntry['kind'];title:string;body:string;reason:string;sourceRefs:KnowledgeEntry['sourceRefs'];pending:KnowledgePending|null;resultRef:Ref|null;failure:{code:string;status:number;quarantinedArtifactId?:string}|null;uncertain:boolean;dirty:boolean}
 export interface KnowledgeView{ref:Ref;entry:KnowledgeEntry;body:string;state:'PROPOSED'|'CONFIRMED'|'SUPERSEDED'|'EXCLUDED';headVersion:number;supersedesRef:Ref|null;contentReviewCriteria?:KnowledgeReviewCriteria;contentReviews?:KnowledgeStoredReview[];confirmation?:null|{eventId:string;reviewRefs:KnowledgeReviewRef[];reason:string;actorRef:{kind:'HUMAN';userId:string};recordedAt:string};currentConfirmationValid?:boolean;appliedAsConstitution:boolean;constitutionApplication?:ConstitutionRecord;redactionState:'NOT_REDACTED';sensitiveInspection:'KNOWN_PATTERNS_ONLY';agentDelivery:'NOT_CONNECTED';history:{id:string;kind:'PROPOSED'|'CORRECTED'|'CONFIRMED'|'EXCLUDED';reason:string;actorRef:{kind:'HUMAN';userId:string};baseRef?:Ref|null;sourceRefs?:KnowledgeEntry['sourceRefs']|null;reviewRefs?:KnowledgeReviewRef[]|null;recordedAt:string}[]}
 export interface KnowledgeHit{versionRef:Ref;title:string;kind:KnowledgeEntry['kind'];sourceRefs:KnowledgeEntry['sourceRefs'];reasonSnippet:string;state:'PROPOSED'|'CONFIRMED'|'EXCLUDED';currentConfirmationValid?:boolean}
@@ -40,19 +41,25 @@ export async function sendKnowledge(client:ApiClient,input:KnowledgeBuffer,sessi
   const b=structuredClone(input),s=structuredClone(session);
   owner(b,s);let p=b.pending;if(!validKnowledgeScope(knowledgeScopeOf(b),b.projectId,b.kind)||!p||!uuid.test(p.saveId)||!validSources(b.sourceRefs)||b.sourceRefs.length>=200||canonical(p.snapshot)!==canonical({kind:b.kind,title:b.title,body:b.body,reason:b.reason,sourceRefs:b.sourceRefs,...(b.scope===undefined?{}:{scope:b.scope})}))throw new ApiError('KNOWLEDGE_INPUT_INVALID');
   const u=p.upload,bytes=new TextEncoder().encode(p.snapshot.body);
-  if(u.schemaVersion!==1||u.projectId!==b.projectId||!uuid.test(u.commandId)||u.clientId!==s.clientId||u.controlGeneration!==b.controlGeneration||u.operation!=='uploadArtifact'||u.targetId!==null||u.expectedVersion!==0||u.baselineRefs.length||u.approvalRef!==null||canonical(u.payload)!==canonical({mediaType:'text/plain;charset=utf-8',bytes:bytes.length,contentHash:await digest(bytes)}))throw new ApiError('KNOWLEDGE_INPUT_INVALID');
+  if(u.schemaVersion!==1||u.projectId!==b.projectId||!uuid.test(u.commandId)||u.clientId!==s.clientId||u.controlGeneration!==b.controlGeneration||u.operation!=='uploadArtifact'||u.targetId!==null||u.expectedVersion!==0||u.baselineRefs.length||u.approvalRef!==null&&!p.uploadApproval?.commandHash||u.approvalRef===null&&!!p.uploadApproval||canonical(u.payload)!==canonical({mediaType:'text/plain;charset=utf-8',bytes:bytes.length,contentHash:await digest(bytes)}))throw new ApiError('KNOWLEDGE_INPUT_INVALID');
   if(!active())throw new ApiError('KNOWLEDGE_CONTINUATION_PAUSED');
+  if(u.approvalRef!==null)await validateKnowledgeUploadBinding(p,s,active);
   if(!p.save){
-    const r=await postDocumentCommand(client,u,s.csrfToken,bytes),a=r.data?.artifactRef;
+    if(u.approvalRef!==null)await validateKnowledgeUploadApproval(client,p,s,active);
+    if(!active())throw new ApiError('KNOWLEDGE_CONTINUATION_PAUSED');
+    const r=await postDocumentCommand(client,u,s.csrfToken,bytes);
+    if(!active())throw new ApiError('KNOWLEDGE_CONTINUATION_PAUSED');
+    const a=r.data?.artifactRef;
     if(!a||!uuid.test(a.artifactId)||canonical({bytes:a.bytes,contentHash:a.contentHash,mediaType:a.mediaType})!==canonical(u.payload)||r.targetId!==a.artifactId||r.version!==null||r.data.status!=='ARTIFACT_READY')throw new ApiError('RESPONSE_INVALID');
     const entry:KnowledgeEntry={kind:p.snapshot.kind,title:p.snapshot.title,contentRef:a,sourceRefs:[...p.snapshot.sourceRefs,{kind:'ARTIFACT',id:a.artifactId,contentHash:a.contentHash}],reason:p.snapshot.reason,scope:structuredClone(knowledgeScopeOf(b)),relatedRefs:[]};
-    p={...p,save:{...u,commandId:p.saveId,operation:'saveKnowledge',payload:{entry}}};checkpoint(p);
+    p={...p,save:{...u,approvalRef:null,commandId:p.saveId,operation:'saveKnowledge',payload:{entry}}};checkpoint(p);
   }
   if(!active())throw new ApiError('KNOWLEDGE_CONTINUATION_PAUSED');
   const c=p.save!,e=c.payload.entry as KnowledgeEntry;
 if(c.schemaVersion!==1||c.projectId!==u.projectId||c.clientId!==u.clientId||c.controlGeneration!==u.controlGeneration||c.commandId!==p.saveId||c.operation!=='saveKnowledge'||c.targetId!==null||c.expectedVersion!==0||c.baselineRefs.length||c.approvalRef!==null||!validEntry(e,b.projectId)||canonical(e.scope)!==canonical(knowledgeScopeOf(b))||e.title!==b.title||e.kind!==b.kind||e.reason!==b.reason||canonical({bytes:e.contentRef.bytes,contentHash:e.contentRef.contentHash,mediaType:e.contentRef.mediaType})!==canonical(u.payload)||canonical(e.sourceRefs)!==canonical([...p.snapshot.sourceRefs,{kind:'ARTIFACT',id:e.contentRef.artifactId,contentHash:e.contentRef.contentHash}]))throw new ApiError('KNOWLEDGE_INPUT_INVALID');
   const r=await postDocumentCommand(client,c,s.csrfToken),ref=r.data?.ref;
   if(!isRef(ref)||ref.version!==1||r.targetId!==ref.id||r.version!==1||r.data?.status!=='PROPOSED'||canonical(r.data.entry)!==canonical(e)||ref.contentHash!==await entryHash(e))throw new ApiError('RESPONSE_INVALID');
+  if(!active())throw new ApiError('KNOWLEDGE_CONTINUATION_PAUSED');
   return ref;
 }
 export async function readKnowledge(client:ApiClient,pid:string,ref:Ref):Promise<KnowledgeView>{

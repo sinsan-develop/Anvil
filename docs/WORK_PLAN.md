@@ -1530,3 +1530,10 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - QA 3회 원 실패와 후속 결과를 보존했다. 최종66526c에서 소유187파일/58폴더/14734646bytes만 정리했고 b0f15a 별도 조회 root부재/profile프로세스0이다.
 - 실제 DB/SQL 적용·RLS/권한 실행·privileged 동시변경 원자성·실제 공유/전송·정식 화면·사용자 인수는 NOT_RUN/NOT_PROVEN. P03 실제 보호사본 복제의 기존 결정 질문과 FN16 지원은 별개로 유지한다.
 - 결과: docs/04_test_reports/AV3/FN05_KNOWLEDGE_SHARE_REQUEST_RESULT.md SHA256 CFF45146EC048CD2F78C3FBB66977DFD3F80B2066F037DE05B013F76406BFE47. Main 제품 수정0·동시 writer0. 완료된 검증은 반복하지 않고 exact allowlist checkpoint와 다음 독립 미완료 업무를 대조한다.
+
+
+### 2026-10-28 FN05/UI10 새 지식 원문 업로드 승인 연결 착수
+
+기존 uploadArtifact 일회 승인 계약의 새 지식 작성 소비선 누락을 허용8/WI3F3D69D1로 구현한다. 공유요청 A안/대화 업로드 완료범위는 보존한다. Main 단위12의기본양성1·미구현/latecheckpoint11FAIL과실제Page SSR1FAIL을확인했고독립반례보강I1해소C0I0뒤제품4를단일담당에배정했다. 후속saveKnowledge는별도명령/approvalRef:null,새API/SQL/정책/DB/서비스/Agent변경0. 현재구현중이며실제DB·정식화면·전체FN05/UI10/Stage/계획완료아니다.
+
+- **2026-10-28 새 지식 원문 업로드 승인 연결 한정 검수**: 기존 계약의 요청/UI08 별도 결정/명시 결박/원명령 재개와 후속save null 연결. Main 직접25PASS/type·최종 실제합성SSR/DOM6PASS(7460.5211ms), 제품I1 상태 전달 보완/동일fixture오류3회 시험1분기 Main인수·독립C0I0·QA4회정확정리/별도0. 실제DB/정식served/전체FN05/UI10/Stage/계획은미완료이며원FAIL/미검증은결과서·WORK_STATUS에보존한다.

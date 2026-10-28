@@ -8721,3 +8721,51 @@
 
 
 - **2026-10-28 FN05 A안 checkpoint 게시 확인**: f4f6f2에서 결과서 raw18/허용26/보호12/index내용 동일 또는 CRLF→LF만/cached diff0을 확인하고 3bc8be67e23a6e5e27bfa150fba6da8879d1b99c로 commit했다. 9397b1 일반 push 뒤 실제 development 기존 codex/av3-stage-b exact SHA 동일·private main f976ed5e 불변·tracked clean/보호8만 untracked를 확인했다. PMO는 한정 소스 검수 결과를 접수했고 기존 P03 질문의 새 답변이 없다고 회신했다. 중복 질문/실제 복제·DB·서비스·공유 실행0이다. 이번 초기 sandbox Git 조회 ca6fba의 must be run in a work tree 오류는 기존 승인 elevated 실제 조회940cf6에서 정상 대조했고 Git 손상/제품 실패로 오인하지 않았다. 다음 기존 FN05/UI10 카드의 독립 미완료 소비선을 읽기 전용으로 대조 중이며 완료된 테스트/구현 재실행0·전체계획 미완료다.
+
+
+- **다음 FN05/UI10 새 지식 본문 승인 소비선 착수**: 독립 읽기에서 api.ts의 uploadArtifact 준비·send가 approvalRef:null만 허용하고 새 지식 작성 UI에는 기존 일회 승인 소비가 없는 것을 확인했다. 대화 업로드 구현과 별개이며 서버 uploadArtifact/승인 계약은 기존 승인 범위다. source fa913f85에서 허용8 WI를 고정해 동일 단일 담당에게 신규 시험 TEST_ONLY부터 배정한다. 후속 saveKnowledge null·기본 DENY·원문/원명령·보호12 불변, 새 API/SQL/DB/정책/서비스/Agent0. Main RED 전 제품write0·전체계획미완료다.
+
+- **새 지식 업로드 승인 preflight**: 독립 읽기 C0/I0·WI3F3D69D1/기존raw2 일치·허용8/기존계약/실행제외를확인했다. Main은실제api.ts의save생성이upload를spread함을읽어승인ref전파위험을특정했고save생성의명시null 및 실제두POST upload nonnull/save null·save412에서upload승인재사용0을새시험기준으로담당에게전달했다. 기존제품/시험변경0·MainRED전TEST_ONLY유지다.
+
+- **새 지식 업로드 승인 Main TEST_ONLY RED**: unit1 3C94F44BDE7EB8CD51D3B97143FE9DEDE9A699EE69274A848EFD747EC113F347·제품2 raw9A594F/83DA51불변을확인한뒤72e737의node--test--test-reporter=spec 해당파일은11수집1PASS10FAIL/skip0/cancel0/todo0·188.992ms/exit1이었다. 기본null저장양성1PASS/신규helper부재9FAIL·기존lateJSON이탈후checkpoint1!==0실결함1FAIL이며fixture환경실패아니다. Main은helper/api2만GREEN GO,Page/editor2는DOM TEST_ONLY MainRED뒤GO로구분했다. 기존시험불변·실제DB/QA/서비스/Agent0·전체계획미완료다.
+
+- **신규 unit 독립 I1 한정 보완**: 원raw3C94 명세검토 C0/I1에서fixture가준비actionScope를그대로복사/hash하므로양쪽공통오류를놓칠수있다고확인했다. 기존11기대·MainRED보존후원upload에서독립expectedScope/candidateCommandId대조와유효재hash된주요결박필드변조거절POST0반례만동일unit에append하도록같은담당에전달했다. active무효화unit을실ABA화면검증으로승격하지않고DOM후속에분리한다. 구현/검증기준확대가아닌기존승인결박검수공백보완·기존API/SQL/권한변경0이다.
+
+- **새 지식 업로드 Main UI/보강 RED 뒤 제품GO**: DOMtest678C8B1E/harnessFA31CFCC동결뒤Main291baa의SSR선택은1수집0PASS1FAIL/skip0·656.5267ms/exit1으로실제KnowledgePage의승인editor부재를확인했다(browser/QA생성0). unit04645EEF의scope독립expected·coherent재hash변조반례append후Main5236f5는12수집1PASS11FAIL/196.5515ms/exit1이며원기본null양성·helper부재10·latecheckpoint1 실패다. Main은허용제품4GREEN GO를같은단일담당에게발행했다. 기존시험기준/CSS/서버/SQL불변·후속save null·실제DOM별도GO전0·실DB/정책/서비스/Agent0·전체계획미완료다.
+
+- unit04645EEF의독립scope/재hash변조추가반례는기존I1 ADDRESSED/scoped C0I0로재검토됐다. 제품GREEN/실제DB증거가아니며원11·기존기준을유지한다.
+
+
+- **새 지식 업로드 합성DOM 자원 사전등록**: D:/tmp/anvil-v3-knowledge-upload-approval-dom-20261028-01 및 bundle/browser 하위만,Windows cyhuh 소유/현재session/최초생성부터30분목표. 기존설치Edge headless·전용persistentprofile·serviceWorkers block·browser15초/default10초·test60초 유지. 전요청intercept 가상https://anvil.invalid:3830/ GET문서만충족/다른외부요청전부차단,새listener/실제server/DB/포트0. 기존tokens/app CSS를write:false번들에포함하고실App→UI08별도결정/복귀·원upload/save분리·소비뒤재확인·원pending/ABA/불명닫기를확인한다. env ANVIL_KNOWLEDGE_UPLOAD_DOM_QA=1은해당child에만설정한다. 생성직전root부재·부모realpath/link·현재owner/profileprocess0을확인하며충돌시생성/삭제0. 정상contextclose후등록root소유파일·link/이탈/profileprocess신원을확인해정확회수하고별도부재조회한다. 불명은보존/보고·기존프로세스강제종료0. 현재아직QA생성0이며최종source동결/검수후Main GO만실행한다.
+
+- **새 지식 업로드 첫 GREEN 제출·시험 타입오류 분리**: author26b26e 집중12PASS/257.2417ms,efab96 SSR1PASS/702.7478ms,f8bebb 원knowledge-api+conversation-upload 직접회귀13PASS/256.7983ms·각exit0는제출증거이며Main최종검증전이다. 695800 type실패6은신규시험failure추론2/의도적wire범위변조cast1/DOM라벨tuple1/callback타입2이며제품타입오류0이라고제출했다. 원기대/동작불변의타입명시만보정하도록하고원3C94/04645prefix이력과최종raw변경을분리보존한다. 제품4독립품질검수를시작했고actualDOM/QA생성0·실DB0이다.
+
+- **새 지식 업로드 Main 검증·실제DOM 원FAIL**: Main87e24b 신규12+기존직접13은단일25PASS/281.0955ms/skip0·de0045 typeexit0. 명세C0I0/품질C0I0M1의대화→지식안내문구만9DC66EF8로보정했다. ab13f7 preflight는현재명령pwsh자체의root문자열까지profile로검출해생성전중단,9ea66d가pwsh만확인했고205037JSON에서root부재/부모ownerSINSANcyhuh/link0/실browser0·동결raw6일치를확인했다. afcbd7→6641/c1a9c5 실제SSR+DOM은6수집2PASS4FAIL(부모포함)/skip0·15023.6321ms/exit1. 실제App→UI08결정/복귀·동일upload/savenull과SSR은PASS,Page모드두case는qa.approve null.requestRef/마지막은거절수정button10000timeout으로실패했다. 이를제품실패/fixture실패로미리단정하지않고같은담당에게원인분리를맡겼다. 0dd962는등록rootowner/linkescape0/profile0·228files80dirs16099776bytes확인후정확회수,b4d94f별도부재/profile0. 재실행/timeout연장/기준완화0·실DB/서비스/공유/Agent0이며원FAIL보존한다.
+
+- **실제DOM 원인분리·한정 재작업GO**: child2/3은requesthelper가click뒤SAVED완료대기없이qa.approve를호출한시험경합(APP양성만저장확인대기)으로분리했다. child4는Editor의연속pending→uncertain→failure CAS에서Page.approvalChange가saveOwner.current를next로동기갱신하지않아실제저장ref와로컬current가달라지는제품I1이다. Mainc8698b실코드/독립정적동일경로대조후Page1의자체소유ref동기갱신+test1의명시SAVED/REJECTED완료대기만GO. 기존빠른422/불명닫기·actor/client/epoch/ownedguard·timeout/skip불변,기존actualFAIL이RED증거다. 제품3/기존unit25불변·반복0·실제DOM재실행은동결뒤Main만수행하며DB/서비스/Agent0이다.
+
+- **DOM 2회차·I1 실제 해소/남은 시험준비2**: Page2073E8D3/test17C79동결·authorbd9985 typeexit0/독립I1 ADDRESSED C0I0뒤Main ea2b4b는6수집3PASS3FAIL/7105.7941ms/exit1이다. SSR·App정상·빠른422/요청유실/닫기case4는PASS로제품I1해소를확인했다. case2는전송완료전캡처original undefined와나중명령비교,case3는project전이의정상초기두GET가harness미등록unknown인실패다. 제품4동결·기준/timeout/skip불변,시험준비근본오류2회로같은담당/독립읽기의비동기관측·정확route준비감사뒤만수정/재실행하기로했다. c3477d owner/linkescape0/profile0·186files59dirs14702229bytes정확회수,0fc438별도root부재/profile0. actualDOM원FAIL보존·전체/실DBPASS아니다.
+
+- **DOM fixture 3회 실패·Main 시험 한정 인수**:5e3bc5는6수집4PASS2FAIL/12956.1426ms이며새지식의3 DOM실패시나리오는PASS,강화된App UI08최종정산은RESPONSE_INVALID/v1PENDING이다. 기존AppPASS를실제정산PASS로소급하지않는다. 동일fixture계약/준비누락3회로담당중지/write회수후Main이takeover문서의harness1만인수했다. 실제서버/API는decision본문/data.ref분리인데fixture만GET용ref를본문에중첩반환한것을98ab3d/b27512로확인,정확분리한곳만수정한다. 제품4/기존기준/timeout/skip불변. QA8ff819 228files80dirs16075515bytes정리/a43013별도0·전체계획미완료다.
+
+
+## Main 최종 판정·실패 보존
+
+- 판정: 기존 계약의 새 지식 원문 uploadArtifact 일회 승인 소비선 source-only 검수 완료. 실제 DB·정식 served·사용자 인수와 전체 FN05/UI10/Stage/WORK_PLAN은 미완료. 제품4는 담당 구현, Main 제품 수정0·시험 harness 한 분기만 3회 동일 준비 오류 후 인수했다.
+- Main 87e24b 신규12+직접회귀13 단일25PASS/281.0955ms/exit0·de0045 type0. 이후 Page 상태 ref 한 곳 보완은 아래 실제 DOM으로 검증했다. 006ab4/14bdd4 최종 type exit0. 변경 없는 단위25는 반복하지 않았다.
+- 원 DOM2회차 ea2b4b: 6수집3PASS3FAIL/7105.7941ms, 빠른422·유실·닫기 제품 I1 해소 확인. 정리c3477d 186files59dirs14702229bytes/별도0fc438 root부재·profile0.
+- 원 DOM3회차 4d504e→5e3bc5: 6수집4PASS2FAIL/12956.1426ms. 강화된 App UI08 정산은 RESPONSE_INVALID/v1 PENDING. 앞선 App PASS는 내부 view만 관측하여 실제 결정 정산을 확인하지 못한 제한 증거로 보존한다. 정리8ff819 228files80dirs16075515bytes/별도a43013 부재·profile0.
+- 동일 DOM fixture 계약/최종 관측 준비 누락3회로 담당 중단·시험 write 회수/인수문서 작성 f97bec. Main98ab3d/b27512가 실제 서버/API의 ref와 결정 본문 분리 계약을 대조했다. fixture만 GET용 decision.ref를 POST 본문에 중첩 반환하여 hash 거절이 발생했다. Main762226은 허용 harness 분기1곳만 ref를 destructure, 제품 validator/검사 기대/timeout/skip은 불변. 독립 scoped C0/I0.
+- 최종 Main052082: 같은 테스트 파일의 SSR1+DOM 부모1/하위4=6수집6PASS/FAIL0/skip0/cancel0/todo0·7460.5211ms/exit0. 실제 React App→UI08 결정의 API 응답검증/현재 v2 APPROVED/재조회→후보복귀·원명령 결박→명시 재개·upload nonnull/save null, 소비·유실 정확 재확인, actor/client/project/control ABA, 거절수정·요청 유실/닫기 보호를 합성 transport에서 확인했다. root 공통 CSS 포함, 실제 서비스/DB 증거는 아니다.
+- 생성 전 2d9c63 root부재/ownerSINSANcyhuh/link0/profile0. 최종1a9537 소유186files59dirs14705929bytes/linkescape0/profile0 정확 정리, 9f8aec 별도 root부재/profile0. QA4회 모두 자원 회수·별도 부재 확인, 기존 사용자/서버 자원 변경0.
+- 실제 DB/SQL/RLS·승인 소비 권한 집행·정식 API/Web·실제 Agent/비용·사용자 인수 NOT_RUN. 기존 계약·기준을 낮추거나 테스트 PASS를 실제 기능 배포로 승격하지 않는다. rollback은 승인 범위 source diff만, 실제 환경 변경0.
+
+### 최종 동결 코드·시험7 raw
+
+- `apps/web/src/features/knowledge/api.ts`: `74BD47F41AC67EE9DC977A71E59FB3F1D67D259EA6A4967C41308192919B250E`
+- `apps/web/src/features/knowledge/KnowledgePage.tsx`: `2073E8D3AF8A985989AAEF96CAAACB82EFCC757F5076F21B4EA1BDDCBB3DC444`
+- `apps/web/src/features/knowledge/knowledge-upload-approval.ts`: `FA1978071B6B7CD57E5D21D2FC99453CDB996B910FCA23FDBE2B3FE218D19375`
+- `apps/web/src/features/knowledge/KnowledgeUploadApprovalEditor.tsx`: `9DC66EF8651AAAD32F0080BC292CDC9237F12465C3852BA0E9E5EF074B60D70D`
+- `tests/unit/FN05/knowledge-upload-approval.test.ts`: `C8BA75CDC718C4BA0E4DF6BC0EF640497244AD0DFCDE82ECB26A71141F2502DA`
+- `tests/browser/UI10/knowledge-upload-approval-dom.test.ts`: `3AF0BF2E7C6E07CDBAD13399E6DAA522A897A3717678BE10E0F71C32C67BB0EB`
+- `tests/browser/UI10/knowledge-upload-approval-dom-harness.tsx`: `BFEC8F6E2AB2A87E38D0F104A6F68199F3D9F2CEEC9CCAD3DD9DD1A16BCE03BD`
