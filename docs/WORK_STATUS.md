@@ -8813,3 +8813,20 @@
 - **검색 게시 재확인·FN17 다음 의미 결정 분리**: 기존 codex/av3-stage-b HEAD7d52b81ff9383af8aa598259450d439aae6e57b7 및 tracked WORK_STATUS-only dirty/보호 untracked8을 Main07aeb9 읽기로 확인했다. 검색 완료19PASS/type0/합성DOM4PASS의 변경 없는 검사는 반복하지 않았다. 독립 조사에서 모바일 알림은 기존 상단 메뉴→settings→ProjectNotificationsPanel→동일요청 동선이 있어 재개발 제외다. FN17 실제 producer/notifications·notification_reads 저장DDL은 source상 미구현이며 actualDB 미조회다. 기존 승인producer보다 reader 허용연산이 좁아 신규생산 시 원본무결성503을 막는 정합보완이 필요하다. PMO 실제회신01a18027은 A원요청까지rollback·프로젝트10000상한 채택근거없음/현재P03·FN16지원밖 직접결정필요임을 확인했다. 신규 결정안 FN17_APPROVAL_NOTIFICATION_PRODUCER_DECISION_PACKET.md SHA BAA454FCA8C900DF0A44F704190BBC808D05B5F54ED1602CA49F3D9A4A2A3709를 양쪽동일보존,자동삭제OFF에서상한후신규승인계속차단 영향과B/C대안·source-only미적용SQL/실제DB·GRANT실행제외를 명시했다. 독립검토중·아직질문/채택/producer·SQL·시험구현0이며 다른승인범위독립구현1건을별도읽기로선정중이다. 기존P03/FN16/CapabilityReport질문중복0·Main제품write0·정식실패0·QA자원0·전체계획미완료다.
 
 - FN17 결정안 BAA454FC 독립 문서검토 C0/I0/M0·필수보완0을 확인했다. A 원승인까지rollback/10000·자동삭제OFF 차단과 대안/실제실행제외를 정확질문1회로 신산님께 발행accepted=true(답변 미수신), PMO에 보고했다. 이는 source-only새의미 채택 질문이며 기존P03/FN16/CapabilityReport질문은중복하지 않았다. 답변전producer/SQL/시험구현0·다른독립조사계속·전체완료아니다.
+
+
+- **FN03/UI06 기존 조회 소비 보완 착수**: 기존GET의authorRef/createdAt/statusHistory.actorRef를화면에연결하는WI8D7AE99B/manifestEFFBA0E0 양쪽동일·독립preflightC0/I0/M0. Mainad2098은a2ff8802 HEAD/제품2raw/보호12/indexempty·trackedclean 확인,신규unit1/SSR-DOM2 TEST_ONLY만단일담당GO·제품2write0/실QA0이다. 작성기록자는저장인증HUMAN이며원문저자/LLM추정0·본문hashmetadata편입0·기본접힘/현재고정조회재사용·추가GET/POST0. 기존계획안독립작업으로재승인없이진행한다.
+
+- **FN17 A 직접승인 수신**: call_95ad36ce82b64af7925dc9282b12f3e0/item0 신산님답변 ‘A안 동작·source-only 구현 승인’은결정BAA454FC에결박한다. A원승인까지rollback·프로젝트10000상한/429/자동삭제OFF/상한뒤새요청계속차단을채택했고코드·미적용SQL·합성시험만허용/실제DB·DDL·GRANT·정책권한·서비스·Secret·Agent·외부송신0. 별도담당에게승인기록1문서만보존지시·현재FN03단일writer와동시제품write0. FN03보완뒤정확FN17파일목록/inventory·WI로이어가며계획전체완료가아니다.
+
+
+- **FN03 Main RED·검증순서 비의미 조정**: Main4e965f 신규unit7은4PASS3FAIL/172.4827ms/skip0/exit1,추가metadata검증부재3의실제Missingexpectedrejection을확인했다.7484da제품2원raw/신규unit000F불변·독립unit품질C0/I0/M0뒤API1GREEN GO. Page의opened는내부state로초기SSR만으로조회후상세를검증할수없어source문자열검사/강제state/새export를추가하지않았다. Mainf95be7/01db4a실제표시누락+동unitRED를근거로Page도허용범위GREEN GO·조회후표시는최소실제합성DOM검증으로확인한다. 이는내부검증순서비의미조정·제품/계약/허용파일/검수기준완화0이며조회후SSR RED를수행한것처럼세지않는다. authorAPI7PASS는제출범위/Mainfresh GREEN아직미실행이다.
+
+
+- **FN03 Main GREEN·합성DOM 자원 사전등록**: Main0b1334 신규7+기존직접13 단일20PASS/511.796ms/FAIL0/skip0/cancel0/todo0,3d05bf typeexit0. API1E91/Page3273/unit000F/DOM9B46·DC5A 동결이며독립Page/DOM검토중이다. 등록QA root D:/tmp/anvil-v3-document-record-provenance-dom-20261028-01 및bundle/browser만/WindowsSINSANcyhuh·현재세션·최초생성부터최대30분. 기존Edgeheadless전용profile/serviceWorkersblock·1920x1080/기존CSS12px·browser15s/default10s/test60s,가상https://anvil.invalid:3830/ 정확GET를합성transport로충족/나머지외부요청차단/실listener·서버port·DB0. childenv ANVIL_DOCUMENT_RECORD_PROVENANCE_DOM_QA=1만Mainchild에설정한다. 정상Page조회후접힘/기록자구분·미제공/과거버전/403최종렌더·lateJSON문맥4종/dirtybuffer·POST0 두하위만실행한다. 생성직전root부재/부모realpath·link·owner/profile0/동결raw5·보호12확인→Main실행→정상contextclose후소유root/imageprocess/linkescape검사→등록전용만정확회수→별도부재/profile0조회. 충돌/불명은생성삭제강제종료0·보존보고한다. 정식served/실DB·SQL·정책·Agent·사용자인수아니다.
+
+
+- **FN03 실제 합성DOM 1회 PASS·정확 정리**: Main2a7b9a 동결제품2/시험3·보호12/root부재guard뒤SSR1+DOM부모1/하위2=4수집4PASS/3571.8502ms/skip0/cancel0/todo0/exit0. 실제React·원문합성GET/bytes/hash뒤기본접힘/기록자≠확정행위자/미제공/과거버전·추가GET0·403최종렌더·늦은JSON4문맥숨김·dirtybuffer/callback/POST0·unknown0을확인했다.2e9ab0 UI기계검사[]·실제DB/서버권한/정식served/Agent/사용자인수아님. ea5a89 소유SINSANcyhuh/185files58dirs14619729bytes/linkescape0/profile0 확인후정확등록root만정리,35ef5f독립root부재/profile0. 원재실행0/기준완화0·담당은허용결과서1만작성중/제품시험freeze·독립PageDOM검수뒤통합한다.
+
+
+- **FN03 문서 기록자 상세 한정 소스검수 완료**: API/unit/PageDOM 독립한정C0/I0/M0·필수미해결0. Main직접20PASS/type0·실제합성DOM4PASS와정확전용QA잔여0을결합해기존GET metadata소비단위만소스검수완료로판정한다. 실제DB/정식served/권한집행/Agent/사용자인수·전체FN03/UI06/Stage/계획은미완료. 제품2/시험3동결불변·결과서PENDING문구만해당독립판정으로정리후기존branchexactcheckpoint로통합,다음직접승인FN17 producer TEST_ONLY로이어간다. FN17WI preflightI1은신규자기행RLS SELECT전authenticatedactor/clientGUC설정누락위험으로문서보강중이며실제코드/SQL/시험아직0·새의미확대0이다.

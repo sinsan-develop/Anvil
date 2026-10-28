@@ -1545,3 +1545,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN05/UI10 단계·업무별 검색 착수**: 직접승인된§2.1 optional scope·서버선별·cursor결박을기존무필터호환/권한/응답보존으로구현한다. 허용12/TEST_ONLY→MainRED→단일writer·최소회귀/합성DOM순서,실제DB/DDL/정책/서비스/Agent제외·전체계획미완료.
 
 - **2026-10-28 단계·업무별 검색 한정 소스검수**: 직접승인§2.1의서버OR/공통선별·범위cursor·Web고정단계/업무선택을연결했다. Main신규/직접19PASS/type/최소합성SSR·DOM4PASS(4952.0527ms)/독립C0I0·전용QA회수/별도0. 무필터계약·권한·기존버퍼보존,실PG/정식served·사용자인수및전체FN05/UI10/Stage/계획은미완료다.
+
+
+- **2026-10-28 FN03/UI06 보관 작성·상태 주체 상세**: 기존getDocumentVersion의authorRef/createdAt/statusHistory.actorRef를검증·기본접힘으로표시했다. 작성인증기록자와내용저자를구분/미제공·과거버전·현재고정조회guard·본문hash불변/추가GETPOST0. 신규7+직접13=Main20PASS/type0,실제React합성DOM4PASS/독립C0I0M0·전용QA잔여0. 이소비단위는소스검수완료이며실제DB·정식served/전체FN03/UI06/Stage완료아님. 증거 docs/04_test_reports/AV3/FN03_DOCUMENT_RECORD_PROVENANCE_RESULT.md.

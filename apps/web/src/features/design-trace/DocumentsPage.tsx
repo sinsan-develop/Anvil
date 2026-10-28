@@ -59,6 +59,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     return !!read && downloadLive.current && read === downloadRead.current && read.scope === downloadScope.current && read.scope[0].transport === read.scope[1] && read.generation === generation.current && view.opened?.document === read.document && view.version === String(read.document.version) && (!view.selected || view.selected.id === read.document.id) && !view.reading && !view.readError && !view.loading && !view.listError && (!stageFilter || sameStageRef(read.document.stageNodeRef, stageFilter.ref));
   }
   const bodyDownload = currentDownload(downloadRead.current) ? downloadRead.current : null;
+  const recordProvenance=bodyDownload?.document;
   const preparationGate=useRef(createDocumentPreparationGate()).current;
   const [editingError, setEditingError] = useState<ApiError | null>(null), [starting, setStarting] = useState(false);
   const [choosingForm, setChoosingForm] = useState(false);
@@ -261,6 +262,12 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
         {!reading&&!readError&&!loading&&!listError?<DocumentMarkdownPreview key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash,opened.document.content.body.contentHash])} body={opened.body} mediaType={opened.document.content.body.mediaType}/>:null}
         {!reading&&!readError&&!loading&&!listError?<StoredDocumentAttachments key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} document={opened.document} onAuthenticationLost={onAuthenticationLost}/>:null}
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}
+        {recordProvenance?<details key={JSON.stringify([projectId,session.user.id,session.clientId,recordProvenance.id,recordProvenance.version,recordProvenance.contentHash])} aria-label="보관 작성·상태 주체"><summary>보관 작성·상태 주체</summary>
+          <p className="meta">문서 {recordProvenance.id} · 고정 버전 {recordProvenance.version}</p>
+          <dl><div><dt>작성 기록자</dt><dd>{recordProvenance.authorRef?recordProvenance.authorRef.userId:'미제공'}</dd></div><div><dt>보관 작성 시각</dt><dd>{recordProvenance.createdAt?<time dateTime={recordProvenance.createdAt}>{recordProvenance.createdAt}</time>:'미제공'}</dd></div></dl>
+          <ol>{recordProvenance.statusHistory.map((event,index)=><li key={index}>{event.kind} · 상태 변경 주체: {event.actorRef?event.actorRef.userId:'미제공'}<p>{event.reason} · <time dateTime={event.at}>{event.at}</time></p></li>)}</ol>
+          <p className="meta">작성 기록자는 저장 명령의 인증 주체이며 원문 내용의 실제 저자를 뜻하지 않습니다. 주체 정보는 본문 해시의 대상이 아니며 현재 권한·독립 검수를 증명하지 않습니다.</p>
+        </details>:null}
         <h3>저장 이력</h3><ul>{opened.document.statusHistory.map((event, index) => <li key={index}>{event.kind} · {event.reason} · {new Date(event.at).toLocaleString('ko-KR')}</li>)}</ul></> : null}
       {opened ? <><h3>양식의 내용 검토 기준</h3><ul>{opened.document.contentReviewCriteria.items.map(item => <li key={item.criterionId}>{item.title}<ul>{item.reviewCriteria.map((criterion, index) => <li key={index}>{criterion}</li>)}</ul></li>)}</ul>
         <h3>기록된 내용 검토</h3>{!opened.document.contentReviews.length ? <p>아직 내용 검토가 기록되지 않았습니다.</p> : opened.document.contentReviews.map(review => <section className="status-card" key={review.ref.id}><p>{review.ref.outcome} · {new Date(review.reviewedAt).toLocaleString('ko-KR')}</p><p>{review.reason}</p><p className="meta">검토자 {review.reviewer.userId}</p>{review.reviewer.sameAsTargetRecorder ? <p>작성 기록자와 같은 사용자 · 독립 검수 아님</p> : null}<ul>{review.items.map(item => <li key={item.criterionId}>{item.criterionId} · {item.outcome} · {item.reason}</li>)}</ul><p className="meta">내용 검토자의 판단이며 사용자 확정/실제 시험 합격/Agent 실행 승인이 아닙니다.</p></section>)}</> : null}
