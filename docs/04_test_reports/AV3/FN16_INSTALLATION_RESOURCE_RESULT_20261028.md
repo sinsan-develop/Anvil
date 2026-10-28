@@ -107,3 +107,10 @@
 - Main ed90bd 최초14/default2/type/diff0 뒤 독립 I1 native 입력 상한3개와 Main profileRef key순서 결함을 확인했다. author a19d58 4RED143.9635ms→ba3260 18GREEN188.1187ms. Main c8bca7 최종18PASS169.2919ms/skip0·type/diff0; scoped 독립 C0/I0. 최초 성공 뒤 발견한 결함/원 실패를 보존하고 기존14기대 삭제·완화0. author14602c 시험TS2532는 test non-null 표기만 보완 후type0, 별도 환경/제품 실패로 합산하지 않는다.
 - provider SHA256 A4BA3AEE7594A68EF9EBAD0431ED0C1AAE54B384DF450CAC08094BFD3B563F45, unit5408808EDAF36924F76B38F6CC7FF9BE14A4D2ED7B829E9A90FFF5EC4003387E, WI43E78003. 실제 native15는 소스불변으로 재실행하지 않았다. 새 QA 자원·실제 catalog/키/DB/Secret/서비스/Agent/P03 변경0.
 - 변경 전 내부 catalog 조합 부재, 변경 후 명시 dependency가 있을 때만 보호 목록·준비 가능. rollback은 신규 provider 주입 소스 revert이며 기존 자료/키/DB 삭제0. 실제 설치 loader·보호 verifier·App Secret 활성화와 DB 적용/사용자 인수·전체 FN16/계획은 미완료다. 다음은 기존 계약의 미연결 경계를 좁게 확인한다.
+## 2026-10-29 FN16 보호 설치파일 reader 소스 검수
+- 판정: 신규 reader 구현·핵심 메모리 합성 동작 확인. 실제 Linux 설치 파일/경합/native loader·키·DB·서비스는 미검증·미실행이다.
+- Main42c0fd 동결 source CD969B8C2EE050ADFE03F0C02AA2592DED2EC852CF17681BA56A46F87846694B/test BB12623626D13C5EDD96611FAB1DD352A4347FF9839DE4B7D842141F773F6CFE: `node --test tests/unit/FN16/installation-resource-protected-files.test.ts` 17PASS/0FAIL/0SKIP256.5785ms, `npm run typecheck`/`git diff --check` exit0. 독립 scoped C0/I0, mount I1 해소.
+- 이전 구현은 설치 파일 reader 부재였고, 현재는 기본 Node fs 읽기 본문·보호된 root부터 동일FD 성분 열기·owner/mode/identity/현재 mount·bytes/hash 대조·목적별 catalog 복사/artifact pin·단일 작업/drain/단발회수를 제공한다. 실제 installer 보호 증거를 대신하거나 default catalog를 활성화하지 않는다.
+- 원실패 이력 유지: Main59b62b 신규 mount2 RED; authorf388fc 보완16PASS/1FAIL은 새 임시FD를 장기보유FD 역순 대상으로 함께 센 시험 관측 오류1이었다. helper만 최초 보유FD로 좁히고 기존 기대값·모든FD 단발/잔여0는 유지했으며 author81195d 해당1PASS/type/diff0 후 Main 전체17로 확인했다. 기존15·native15 검증기준 완화0, 변경없는 native15 반복0.
+- 실제 QA 생성/키/DB/서비스/P03 변경0, 기존 보호8경로 보존. rollback은 신규 reader/source의 검토된 revert이며 자료 삭제나 권한 변경0. 다음은 기존 provider snapshot 검증 재사용과 동일 artifact FD 로더의 최소 내부 bootstrap 연결이다. 전체 FN16/작업계획 완료가 아니다.
+- Main377783 rg Windows glob 조회 실패는6df919 디렉터리+-g필터로 정정했으며 파일/환경 영향0.
