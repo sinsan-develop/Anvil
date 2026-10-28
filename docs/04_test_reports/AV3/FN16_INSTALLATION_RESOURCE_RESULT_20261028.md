@@ -101,3 +101,9 @@
 - Mainc97736 실제native15PASS/0FAIL/0SKIP279.856159ms, exit0. create/sync/read/remove, 같은inode exclusivepublish+tmp제거,선점/위조/닫힌handle/타root/경로·부모교체/symlink/FIFO거절·기존파일보존,dispose와선행read drain,닫힌filecap300/rootcap65보유후정상조회/회수검증. 강제GC/할당실패주입/전원손실/다른UID공격·운영설치보호는NOT_RUN.
 - 사전등록 QA /home/daon/anvil-v3-fn16-native-qa-20261029-01은daon1000:1000/0700·identity2096:8835152. 51f2b1 exactGitclean/owner/mount0/process0 확인후생성190.322초이내파일2987·디렉터리220·내부시험symlink2포함정리. 별도c91c20 QA_ABSENT/OWNED_GROUPS_ZERO. compiler1468886/첫Node1468978/보완Node1475975 그룹잔여0.
 - 실제키/운영catalog/DB/권한/Secret/서비스/Agent/P03변경0. 현재 제품default는UNCONFIGURED/UNVERIFIED유지. 다음은native factory→관리adapter/catalog의명시dependency 연결을기존승인source·합성범위로대조한다. rollback은이번소스의검토된revert이며자료/키삭제나DB초기화없음.
+## 2026-10-29 FN16 설치 catalog 조합 소스 검수
+- 판정: 내부 공급자 조합 구현·핵심 합성 동작 확인. 기본 공급자와 실제 설치 활성화는 변경하지 않았다.
+- 신규 provider/unit2경로. 고정 snapshot→필수 현재성 verifier→단일 native factory/관리 adapter→기존 보호 목록/준비 주입을 연결했다. 목적·현재 root/공간·admission32·단발 drain/dispose를 검사하고 근거 회수 관측 후 기존 handle 신규 사용도 막는다. 운영 verifier/native loader는 아직 미제공이며 합성 VERIFIED를 실제 설치 검증으로 취급하지 않는다.
+- Main ed90bd 최초14/default2/type/diff0 뒤 독립 I1 native 입력 상한3개와 Main profileRef key순서 결함을 확인했다. author a19d58 4RED143.9635ms→ba3260 18GREEN188.1187ms. Main c8bca7 최종18PASS169.2919ms/skip0·type/diff0; scoped 독립 C0/I0. 최초 성공 뒤 발견한 결함/원 실패를 보존하고 기존14기대 삭제·완화0. author14602c 시험TS2532는 test non-null 표기만 보완 후type0, 별도 환경/제품 실패로 합산하지 않는다.
+- provider SHA256 A4BA3AEE7594A68EF9EBAD0431ED0C1AAE54B384DF450CAC08094BFD3B563F45, unit5408808EDAF36924F76B38F6CC7FF9BE14A4D2ED7B829E9A90FFF5EC4003387E, WI43E78003. 실제 native15는 소스불변으로 재실행하지 않았다. 새 QA 자원·실제 catalog/키/DB/Secret/서비스/Agent/P03 변경0.
+- 변경 전 내부 catalog 조합 부재, 변경 후 명시 dependency가 있을 때만 보호 목록·준비 가능. rollback은 신규 provider 주입 소스 revert이며 기존 자료/키/DB 삭제0. 실제 설치 loader·보호 verifier·App Secret 활성화와 DB 적용/사용자 인수·전체 FN16/계획은 미완료다. 다음은 기존 계약의 미연결 경계를 좁게 확인한다.
