@@ -1580,3 +1580,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN16 설치 TARGET 등록 연결 소스 검수**: 승인된 슬롯 선택의 원 intent 실행·상태 재조회·보호 descriptor 발행 및 기존 R2 정확 참조의 명시 저장/고정 조회를 연결했다. 기본 실제 공급자 부재는 UNCONFIGURED로 닫고, 합성 safe-handle에서 중복·권한/기한 상실·파일/DB 결과 불명·재실행 금지를 검증했다. Main등록89/보완관련27·type/diff0와독립C0I0 근거는WORK_STATUS에기록했다. 0054는미적용이며실DB/OS/TLS/실키·사용자인수는미검증;키관리/API후속·화면연결과전체FN16은계속미완료다.
 
 - **2026-10-28 FN16 키 등록·보호 조회 source 부분 검수**: ENROLL 원승인/일회 실행, 암호화 이식키 파일 포트 저장·보호 다운로드·최초 잠금/보관 미확인 상태, R2 KEY 명시 선택 차단을 연결했다. Main 직접56·보완3/14·type/diff0와 독립C0I0 증거는WORK_STATUS에기록했다. 실제키/DB/서비스·native adapter/실사용은미검증이며UI 및 VERIFY/UNLOCK/RELOCK·이식/재포장/회전은계속미완료다. 전체FN16완료로표시하지않는다.
+
+- **2026-10-28 FN16 키 보관 확인·해제·재잠금 source 부분 검수**: 원승인에 묶인 VERIFY/UNLOCK, 자기 lease RELOCK, 인증/정책 회수·만료·재시작 잠금과 R2 키 선택을 연결했다. Main lifecycle22PASS/type/diff0·독립C0I0와 상세 오류/보완은 WORK_STATUS에 기록했다. 0054는 미적용, 실제 DB/키/서비스·OS/TLS/사용자인수 NOT_RUN. IMPORT/REWRAP/ROTATE·UI14/App 연결은 미완료이며 다음 구현으로 이어간다. 전체FN16 완료 아님.

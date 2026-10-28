@@ -1,3 +1,4 @@
+import type {InstallationKeyLeaseRegistry} from '../backups/installation-resource-store.ts';
 import type {InstallationResourceCatalogPort} from '../backups/installation-resource-catalog.ts';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
@@ -24,6 +25,7 @@ export class AccessRepository {
   pool: Pool;
   installationId: string;
   installationResourceCatalog?: InstallationResourceCatalogPort;
+  installationKeyRegistry?: InstallationKeyLeaseRegistry;
   #key: Buffer;
   constructor(pool: Pool, config: { installationId: string; key: Buffer }) {
     if (config.key.length !== 32 || !/^[0-9a-f-]{36}$/.test(config.installationId)) throw Error('AUTH_CONFIG_INVALID');
@@ -189,6 +191,7 @@ export class AccessRepository {
       const now = new Date(), nextToken = randomBytes(32).toString('base64url'), csrfToken = this.#csrf(nextToken);
       const expiresAt = new Date(Math.min(row.absolute_expires_at.getTime(), now.getTime() + 30 * 60_000)).toISOString();
       const reauthUntil = new Date(Math.min(row.absolute_expires_at.getTime(), now.getTime() + 5 * 60_000)).toISOString();
+      this.installationKeyRegistry?.invalidateSession(row.id);
       await db.query('UPDATE anvil.auth_sessions SET revoked_at=$2 WHERE id=$1', [row.id, now]);
       await db.query('INSERT INTO anvil.auth_sessions(id,token_digest,user_id,client_id,credential_generation,csrf_digest,idle_expires_at,absolute_expires_at,reauth_until) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)', [randomUUID(), digest(nextToken), row.uid, row.client_id, row.current_generation, digest(csrfToken), expiresAt, row.absolute_expires_at, reauthUntil]);
       await this.#audit(db, 'REAUTHENTICATE', 'APPLIED', 'SESSION_ROTATED', row.uid, row.client_id);
@@ -213,6 +216,7 @@ export class AccessRepository {
         return { failure: 'AUTH_REQUIRED', status: 401 };
       }
       const phc = await hashPassword(input.newPassword);
+      this.installationKeyRegistry?.invalidateActor(row.uid);
       await db.query('UPDATE anvil.users SET credential_generation=credential_generation+1,version=version+1 WHERE id=$1', [row.uid]);
       await db.query('UPDATE anvil.password_credentials SET argon2_phc=$2,credential_generation=credential_generation+1,changed_at=now() WHERE user_id=$1', [row.uid, phc]);
       await db.query('UPDATE anvil.auth_sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1', [row.uid]);
@@ -252,6 +256,7 @@ export class AccessRepository {
         if (previous) return same(previous.protected_fingerprint, fingerprint) ? { value: undefined } : { failure: 'IDEMPOTENCY_CONFLICT', status: 409 };
         if (!secret.consumed_at) {
           const phc = await hashPassword(input.newPassword);
+          this.installationKeyRegistry?.invalidateActor(user.id);
           await db.query('UPDATE anvil.users SET credential_generation=credential_generation+1,version=version+1 WHERE id=$1', [user.id]);
           await db.query('UPDATE anvil.password_credentials SET argon2_phc=$2,credential_generation=credential_generation+1,changed_at=now() WHERE user_id=$1', [user.id, phc]);
           await db.query('UPDATE anvil.auth_sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1', [user.id]);
@@ -322,6 +327,7 @@ export class AccessRepository {
       const row = (await db.query('SELECT id,csrf_digest,revoked_at FROM anvil.auth_sessions WHERE token_digest=$1 FOR UPDATE', [digest(token)])).rows[0];
       if (!row || row.revoked_at) return { value: undefined };
       if (!same(row.csrf_digest, digest(csrf))) return { failure: 'CSRF_INVALID', status: 403 };
+      this.installationKeyRegistry?.invalidateSession(row.id);
       await db.query('UPDATE anvil.auth_sessions SET revoked_at=now() WHERE id=$1', [row.id]);
       await this.#audit(db, 'LOGOUT', 'APPLIED', 'SESSION_REVOKED'); return { value: undefined };
     });

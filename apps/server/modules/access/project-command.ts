@@ -183,6 +183,7 @@ export class ProjectPolicyRepository {
         if (!Number.isSafeInteger(version)) throw new AuthFailure('VERSION_CONFLICT', 409);
         const ref = { id, version, contentHash: contentHash(canonicalJson({ rules, reason: p.reason, reviewRefs: [] })) };
         const receipt = await persistProjectReceipt(db, actor, request, ref, { status: 'POLICY_SAVED' }, current?.ref ?? null, current ? 'EXPLICIT_POLICY_REVISION' : 'OWNER_REAUTHENTICATED_INITIAL_POLICY');
+        this.#access.installationKeyRegistry?.invalidateProject(request.projectId);
         if (!current) await db.query('INSERT INTO anvil.permission_policies(id,project_id,head_version,created_by) VALUES($1,$2,1,$3)', [id, request.projectId, actor.actorId]);
         else await db.query('UPDATE anvil.permission_policies SET head_version=$2 WHERE id=$1', [id, version]);
         await db.query('INSERT INTO anvil.permission_policy_versions(project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)', [request.projectId, id, version, JSON.stringify(rules), ref.contentHash, p.reason, '[]', actor.actorId, actor.clientId, receipt.id]);
