@@ -9518,3 +9518,13 @@
 - 작업계획시각교정 Main0350cd sourceEE930589/행동D188/schema2E8불변,기존15+새9=24PASS/skip0/1553.0863ms/type/diff0. 6행내8대소검사만제거·같은사건일치/원hash/버전/감사검사유지. 결과 FN16_WORK_PLAN_TIMESTAMP_RECOVERY_RESULT_20261029.md. 실제DBFS키서비스0·전체FN16미완료.
 
 - 최종 독립 재검수: 시각 역전 I1 해결, scoped C0/I0/M0. reviewer는 현재 EE930589 지문/본문과 동결 시험을 직접 확인했고 git diff 환경 오류는 Main0350cd의 성공 증거와 구분했다. 실제 실행 범위 확대0.
+
+### 2026-10-29 FN16 활성 기준 역사 수집 착수
+- 시각 정합 보완86711e00bfe4cb832eb2a0223893ade5649ef77e local/private 동일·main f976ed5e 불변(65288b), 보호8 보존. 다음 WIC7D89237133E0AE755FB8CB340C42A24435C2F174EDBA8D6A352C0C309FCE6B8 독립 C0/I0/M0, 기존 primary가 신규 시험2만 TEST_ONLY 후 Main RED·제품1 GO. 서로 다른 transaction의 시각 단조를 새로 요구하지 않는다. 실제키/DB/서비스/P03/Agent0·전체FN16미완료.
+
+- 후속 전체수동백업 정책 저장/조회 계약은 기존 후보717496CD가NOT_ADOPTED이고 설치자원5A6819E6 범위 밖임을 실제 WI/INTERFACES§14.1과대조했다. PMO에 정책 불변 저장·조회/UI14만 한정 상세화/구현 결정 지원을 요청했으며 현재 baseline TEST_ONLY는 계속한다. job/암호화/실제복원·실제키DB서비스0. 읽기9e6859에서 apps/contracts 추정경로os2가재발해 해당명령확장을중단했고5538ec 실제contracts/db목록으로교정했다. 이후목록획득없이경로작성하지않는다;제품오류아님.
+
+- baseline Mainba623d 최초13중1PASS/12미구현FAIL/skip0/873.3511ms exit1. 독립 검토는 기존writer가 commands.approval_consumption_id와activation/snapshot에동일예약ID를저장함을확인해I1 국소결박누락을발견했다. WI96F66B48로commands13번째열검사만추가;primaryTEST_ONLY에NULL/다른ID음성보강,외부승인검증 NOT_PERFORMED유지·source아직0.
+- PMO 회신: 수동정책 save/get/list 상세후보 구체화는기존위임으로진행한다. 08EA A8의전체coverage부족시save도차단을보존하며SELECTED_FILES_V1·DRAFT명칭우회0. 신규공개DTO/영속/coverage의정확delta는후보완성후검토한다. 실제키/DB/서비스/job0·baseline독립진행. 읽기80aea4의경로glob os123는동일형식재시도없이실목록의고정파일읽기eee75d로대체했다.
+
+- baseline r2 Main19d28714중1PASS/13미구현FAIL후제품GO, Mainee4824 source7E041631/시험5BD62735·F5487C07동일·14PASS/0FAIL/skip0/894.1319ms/type/diff0. 독립scopedC0/I0/M0·국소consumption I1해결. 결과 FN16_BASELINE_INVENTORY_RESULT_20261029.md. 실제키DB서비스0·전체FN16미완료. 다음수동정책후보158E10BC는PMO회신대로작성·독립검토중이며미채택/제품0;기존primary는방법론이력의실제기수집범위를읽기대조한다.

@@ -1625,3 +1625,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 설계변경·영향검토 내부이력: 공유최초명령/원hash/버전·gap/익명투영 구현, Main14PASS/type/diff0. 정상시각역전I1 보완·실제DB/키/서비스/전체백업복원UI 미검증. 인접작업계획의동일시각가정은별도보완중. 결과 FN16_DESIGN_CHANGE_INVENTORY_RESULT_20261029.md.
 
 - 2026-10-29 FN16 작업계획이력 정합교정: 앞선검수에서놓친근거없는transaction시각단조8검사를한정보완. Main24PASS/type/diff0,기존15기대유지·정상역전보존/동일사건불일치거절. 실제DB/전체백업복원/UI 미검증. 결과 FN16_WORK_PLAN_TIMESTAMP_RECOVERY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 활성 기준 역사 내부 수집: 세대/부모/현재포인터·원hash·국소명령결박·재검토참조 보존을source로구현했다. Main14합성PASS/type/diff0·독립C0/I0/M0. 전체승인결박/재검토대상집합NOT_PERFORMED,실제PG/키/서비스·전체백업/복원/사용자인수미검증·전체FN16미완료. 결과 docs/04_test_reports/AV3/FN16_BASELINE_INVENTORY_RESULT_20261029.md.
