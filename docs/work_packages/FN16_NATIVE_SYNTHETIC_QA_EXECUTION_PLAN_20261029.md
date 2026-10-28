@@ -6,9 +6,9 @@
 직접 승인3FAD0CE9의 코드·합성검증과 PMO 공통§6의 필수 build/WSL QA 범위다. 실제 설치 catalog·키·DB·서비스를 만들거나 변경하지 않는다. Linux native 파일 연산을 공개 문자열 fixture로 검증하는 일회성 개발 시험이며 실제 키·백업/복원·서비스 수용 증거가 아니다. 원 계약5A6819E6와 source WI C6E59B3E의 보호 기준은 유지한다.
 
 ## 사전조건
-- native4파일의 소스 검수 Critical/Important0, 정확 변경·시험·미검증 기록, 기존 branch private 게시 exact SHA 확인.
+- native4와 retention adapter/unit2의 소스 검수 Critical/Important0, 정확 변경·시험·미검증 기록, 기존 branch private 게시 exact SHA 확인.
 - 실행 직전 이 문서에 source commit와 addon.c/build/test SHA256을 결박한다. 미기입 상태 실행 금지.
-- source commit: PENDING_SOURCE_REVIEW. addon.c/build/test hash: PENDING_SOURCE_REVIEW.
+- source commit: 7fc087b2f80daeb245d275330fbaa82b637ff787. addon.c SHA25620DC3C14A1D406329487A993E63355BB656A6A235786104BCFA843A7C044F532; binding.gyp237171593AB8E5CCD5CE548F20142F69BEF9DA0AECED0D951ED23590EBE5A053; BUILD0E60317B037C13E0E8D7B3E8F3D9505F411AF7B4238C3F51A7D862CCDC1A7E96; native시험14252DC4846AE4FB061E85B08D0517E0143C517602B13917C0382492644E6C15. Git blob/WSL LF 지문 기준. Main ded9be 단위22/type/diff0 및 독립 C0/I0 확인; native15건(기존13+반복2), fixture16. retention WI B09AED75 포함.
 - compiler/header/runtime의 현재 지문과 owner·모드·부모·링크를 대조하고 변경/불명은 실행하지 않는다. 자동 설치·도구 교체·권한 수정은 하지 않는다.
 - 신규 QA root 부재, /home/daon의 realpath·owner·link, ext4 및 procfs를 확인한다. 기존 경로가 있으면 덮어쓰기/자동 삭제하지 않는다.
 

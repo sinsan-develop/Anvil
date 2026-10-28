@@ -93,3 +93,11 @@
 - exact source: posix11F95CD0B4A3FE9EF69133453A5DAB698C16552469C1C958B3D854083346D85A, catalog3061D3A54C4DA30E3B5AC75E0D1D444ACAB5288249D9A7F739EAF69CEF932253, store6CFC5BDEDFDD2FE8A3308B6728A60E497638E9A44ED4F122E57C16AFEF9A5075; 시험CBA8C2A17A1F8E047C8A014C00598B50DBE9419E78BA355C26BBE02E57A55F4C/DC5EAF679D9131FD9AD869F1115F8CF04448EA20BFF32FC65A2EDBD0312F2AA7. 기존store시험213312prefix보존.
 - WI B519 정확5코드/시험, 공개API/SQL/권한/수치변경0. 실제nativecompile/load/FS·키/catalog/DB/서비스·사용자인수NOT_RUN, 새실행자원0. 다음은 NativePort12연산의 Linux소스와 build/검증경계를 구현한다. rollback은 허용source 검토revert이며 자료/키/DB삭제0. 전체FN16/작업계획 완료가 아니다.
 - Main 기록명령의 JavaScript SyntaxError는 도구 호출 전 오류로 파일/Git효과0이었다. 명령 문자열을 바로잡았으며 제품 실패와 구분한다.
+
+## 2026-10-29 FN16 native 파일 처리기 실제 합성 검증
+- 판정: 기능 단위 구현·핵심 합성 동작 확인. 전체 FN16/계획/실제 설치 catalog·키 사용 완료는 아니다.
+- source7fc087b2f80daeb245d275330fbaa82b637ff787(기존 branch exact10경로), private8970d8동일·main f976불변. native20DC3C14/BUILD0E60317B/gyp23717159/test14252DC4, adapter1D614D04/unit235D0B1D. 독립sourceC0/I0, Mainded9be adapter22/type/diff0.
+- WSL107dfa 고정gcc13 compile0, binary SHA2560aa2058440133d45d8853aa5ae697d52bbdd176cd2b7ac517b0c0339425fc9ea. misleading-indentation warning1(line327)은 남은 소스 가독성 항목이며 warning0이라고 주장하지 않는다. 최초 시험은 바이너리groupwrite 준비오류로공통before에서15FAIL/0PASS138.625625ms, native실행0. Main이자기QA파일정확hash/owner확인후0700제한·부모umask077보완,source/binarybytes/검사기준불변으로1회재확인했다.
+- Mainc97736 실제native15PASS/0FAIL/0SKIP279.856159ms, exit0. create/sync/read/remove, 같은inode exclusivepublish+tmp제거,선점/위조/닫힌handle/타root/경로·부모교체/symlink/FIFO거절·기존파일보존,dispose와선행read drain,닫힌filecap300/rootcap65보유후정상조회/회수검증. 강제GC/할당실패주입/전원손실/다른UID공격·운영설치보호는NOT_RUN.
+- 사전등록 QA /home/daon/anvil-v3-fn16-native-qa-20261029-01은daon1000:1000/0700·identity2096:8835152. 51f2b1 exactGitclean/owner/mount0/process0 확인후생성190.322초이내파일2987·디렉터리220·내부시험symlink2포함정리. 별도c91c20 QA_ABSENT/OWNED_GROUPS_ZERO. compiler1468886/첫Node1468978/보완Node1475975 그룹잔여0.
+- 실제키/운영catalog/DB/권한/Secret/서비스/Agent/P03변경0. 현재 제품default는UNCONFIGURED/UNVERIFIED유지. 다음은native factory→관리adapter/catalog의명시dependency 연결을기존승인source·합성범위로대조한다. rollback은이번소스의검토된revert이며자료/키삭제나DB초기화없음.
