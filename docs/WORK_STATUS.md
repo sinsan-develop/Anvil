@@ -9532,3 +9532,11 @@
 ### 2026-10-29 FN16 방법론 역사 수집 착수·정책 계약 분리
 - baseline8b0391b0234600f2ec334e11be24acc468511b7b private동일/main불변(bdb881). document-inventory는문서가참조한적용/source만수집하므로미적용PROJECT개정/검토/확정이누락됨을Main04e00e/95162e/559f17/852d7d와기존primary가대조했다. 신규 WI EEDADEB3( FN16_PROJECT_METHODOLOGY_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md )는그전체역사만독립수집,전체application은별도미수집이다. 기존primary시험2만TEST_ONLY·reviewerWI읽기·Main관리,실제DB키서비스0.
 - 수동정책후보158E10BC 독립C0/I0/M0. PMO는정확새GET2/payload/NONE/영속/coverage delta의채택질문1회를신산님께제출했다(accepted=true,답변미수신). 기존operation재승인이아니며이정확신규계약만NOT_ADOPTED. 동일질문반복/전체대기0. replay와현재eligibility·무결성오류분리/전체자료군coverage미정은후속WI에보존한다.
+
+- 방법론 WI preflight 최초C0/I1/M0: 선택한검토의일부가확정후미래ACCEPTED여도정상최신ref와함께포함될수있는문구누락이다. 실제writer의시점에존재한검토선택과대조해r2 FC8DBCCB의모든선택reviewSeq<confirmationSeq로한정보완,시험반례추가전달. timestamp대소추가0·source아직0. 정책후보158E10BC는aeb41c7d8a0e96631747fcef1d7ea04757789a0c/private동일로보존(9dcdf8),main불변·미채택유지.
+
+- 방법론 TEST_ONLY D1AB8736/B09E4DFA, Main4bb84713중schema1PASS/미구현12FAIL/skip0/246.896ms exit1·type/diff0 제출확인,독립C0/I0/M0. 기존primary에신규제품1만GO. 초기초안생성/미완성graph/복수확정뒤REWORK·미래검토반례유지. author332795 sandboxGit오류는bf4960 elevated정확읽기0으로구분. author91941f 추정읽기파일부재는실존project-input.ts로교정·제품오류아님. 실제키DB서비스0.
+
+- 방법론 역사 Main08f6fb 신규13PASS/0FAIL/skip0/1108.0238ms·type/diff0,source6C77A703/시험D1AB8736·B09E4DFA불변. 독립최종검수 진행 중이며 전체FN16완료가 아니다. 실제키DB서비스0; 다음 전체방법론 적용이력 WI만 기존primary가 작성한다. 결과 FN16_PROJECT_METHODOLOGY_INVENTORY_RESULT_20261029.md.
+
+- 방법론 역사 동결6C77A703 독립최종C0/I0/M0. 초기name/purpose 공백 의심은 실제confirmDraftMethodology의nonempty 검사로해소하여finding아님. Main검증과독립검수가완료한신규3+WI/결과/WORK_STATUS/WORK_PLAN만checkpoint,보호8/다음WI제외. PMO에승인범위·결과/미검증전달성공;정책후보의기존질문은답변수신시에만회신하며중복질문0.
