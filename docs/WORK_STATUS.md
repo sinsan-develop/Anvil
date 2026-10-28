@@ -9120,3 +9120,31 @@
 
 
 - FN16 TARGET 등록 source 구분단위 최종: Main771277 직접영향target27PASS/0FAIL/0skip/cancel/todo3145.625ms, aab2fc type/diff0·정확8raw 확인. 앞선Main440643 원등록89PASS는보존하고불변경로재실행0. source store2F326CB6/0054FFC89F12/testFE251B47에서독립spec·quality 신규3미진모두ADDRESSED/C0I0M0. 전역root설치/identity배타·최종handle재검사·원READY감소UNKNOWN감사와CLAIMED0을연결했다. 새등록route/0054는untracked분모밖도정확포함하며기존보호8은제외한다. 실제DB문법/RLS/경합/COMMIT·OS파일보호/실키·서비스변경0,UI/키업무/전체FN16미완료. 다음은같은primary의키전체lifecycle TEST_ONLY→연결·UI합성검수다.
+
+- Main86f9c8/389766 등록source8+관리2 정확10경로f233746cee1e670a54829644a48e77a708e664ae local/private동일·mainf976ed5e불변·trackedclean/보호8only확인. cb94c6 보호8raw불변. PMO에부분검수결과전달,같은primary key전체lifecycle중첫 ENROLL/portable GET/vault불명창/TLS·20KiB TEST_ONLY착수. 실제키/DB/서비스0·새결정요청0·전체완료주장0.
+
+- FN16 ENROLL 첫TEST_ONLY Main6b23a7 신규9=0PASS9FAIL/skip0/cancel0/todo0·2014.7263ms exit1, 시험DDBD670E(106952bytes). 원HTTP ENROLL intent가현미연결412에서거절되며실wrap/vault/fault후속도달은0이므로암호/내구검증실패로확대하지않는다. 정상1은실portable wrap/unwrap·전체hash/원본DEK소거,신규8은파일·DB불명/원소비귀속/claimrollback을검사한다. 같은primary에첫key소비제품GO,분리routes TLS·20KiB TEST_ONLY와독립시험검수를병행한다. 실키/DB/서비스0. PMO최신회신은부분접수/추가결정없음이며다음배정대기0.
+
+- Mainedcf56 새route TEST_ONLY CCF170D0 9=6PASS3FAIL/skip0/cancel0/todo0·1635.2892ms. TLS외피/XFP2는현Secret미연결INPUT_INVALID422(명시TLSguard412기대),portableGET1은미등록404(실인증401기대)다. 기존닫힘422를평문누출로보고하지않는다. 다중byte/escape원요청20KiB·CSRF/Origin/connector·응답/주입로그비밀없음6PASS는합성범위이며실TLS/프록시로그입증아님. 같은primary가Main키제품GO하에순차연결중이고원9/route9동결시험독립검수중. 실제키/DB/서비스0.
+
+- FN16 키 TEST_ONLY 독립검수 C0/I3(시험관측보완):claim fault가모든authenticated COMMIT/총횟수에묶인것을실PROCESSING전이transaction확정관측으로좁히고,vaultpublish전임시readback변조의정확도달/publish0를추가한다. route genericerror는단순4xx가아닌표식포함합성Error의실전역handler도달1·정확503/STORAGE_FAILED·비밀없음을검사한다. 제품누출확정아니며같은primary에게원기준보존/TDD보강을지시하고ENROLL제품구현은계속한다. 실제DB/TLS/키/서비스0.
+
+- FN16 키시험관측I3는store3256C376/routes635B91CA에서독립spec·quality ADDRESSED/C0I0M0. Main91241c 새보완선택3=1PASS2FAIL/skip0/cancel0/todo0·1261.8654ms:실전역handler표식예외1은정확503/비밀0기존보장PASS,claim/readback2는원ENROLL준비412에서RED이고후속미도달유지. Main제품GO유지·동일primary소비선구현중·실제키/DB/서비스0.
+
+- FN16 ENROLL제품초안 store23C53FF5/catalog97ABBB39/routes8BB96C4A에서Main2ff024 ENROLL10+route10=20PASS/0FAIL/0skip/cancel/todo2656.6501ms. 실제기존crypto wrap+unwrap은공개메모리합성정상1에서소비됐고운영키/실파일/실DB/TLS검증아님. 독립quality C0/I2:publish/fsync뒤권한·기한실패의FAILED오분류(계약UNKNOWN)와최종rootinspect/COMMIT대기뒤최단기한반환장벽누락. 동일primary에파일효과단계·기한대기반례/최소보완을지시했으며0054 ENROLL행관계확장은계속작성중. 원20PASS는부분검사로보존·전체키생명주기/화면/실사용완료아님.
+
+- ENROLL 기한/효과보완 Main44d85e 신규4RED0PASS4FAIL1847.395ms→Main72572f 관련4PASS1701.056ms. 독립quality도해당I2 ADDRESSED/C0I0(후속R2KEY변경은별도)확인. 0054초안199CA576의spec C0/I1은TARGET partialroot UNIQUE가KEY공유는허용하지만TARGET↔KEY_VAULT혼용을막지못하는점이다. 같은primary에양방향/타project역할충돌·KEY공유정상반례와첫파일효과전원자귀속을지시했다. 새공개계약/의존extension/실제GRANT·DB변경없이허용미적용SQL내정합보완하며R2KEY조회·copy미확인선택차단연결도진행한다. 전체키/UI아직미완료.
+
+- FN16 root-role 보완 TEST_ONLY author39c523 신규5=0PASS5FAIL1542.8092ms/exit1(test3386E715). 혼용 양방향은 거절 누락, KEY 공유/claim 불명 보존은 역할행 부재, SQL은 전역 역할 원본 부재를 각각 관측했다. 같은 primary의 이미 승인된 최소 보완을 계속한다. claim 전 PREPARE/ROOT 읽기와 파일효과를 구분하는 시험 명확화는 사유를 공개하고, 첫 쓰기/KDF는 durable claim COMMIT 확인 뒤만 허용한다. 기존 합격 기준 완화나 실제 DB 실행은 없다. R2 KEY provider 독립 quality C0/I0/M0(provider46DE2CC8/storeABF5DA78), root-role/SQL은 별도 미해소 검수다.
+
+- FN16 Secret UI 사전검수: 현 공개 DTO에는 실제 TLS/ingress/body/error/trace 로그 입증 신호가 없다. App의 Secret 입력은 기본 비활성, 비밀 없는 명령/승인복귀/조회·본인 exact relock 및 명시 합성조건 검수는 계속한다. PMO 회신도 기존5A6819E6의 적용으로 확인했으며 새 준비상태 공개조회·증거발급/수명/회수 계약은 미채택 후속 후보다. 임의 flag/protocol/slot VERIFIED를 실제 입증으로 쓰지 않고 새API·실제키/DB/서비스 변경0. 현재 구현 중단/재승인 질문0.
+
+- Main d898ce FN16 ENROLL/rootRole/직접 TARGET/Secret route 선택56=56PASS/0FAIL/skip0/cancel0/todo0·5750.9086ms. abe090 source202029DD/testCA4ABE5B/routes635B91CA/SQL84A8E9B1 지문 확인. 실제 공개 메모리 wrap/unwrap과 합성 safe handle/DB 모델이며 실PG·OS·TLS가 아니다. root-role spec I는 최종SQL84A8의 잠금뒤 context 재검사로 ADDRESSED; 앞선4E60715E에는 없었던 읽기시점 차이를 보존한다. primary 자기발견과 spec 확인으로 membership회수 뒤 감소event INSERT뿐 아니라 SELECT RLS도 OWNER한정이라 UNKNOWN기록이rollback될 수 있어, 원actor/client/intent/process 감소행만 좁히는 보완을 계속한다. 현재PROCESSING은닫히지만UNKNOWN기록합격으로세지않는다.
+
+- Main4f721c 감소기록/락후검사 신규3PASS1245.7531ms,7bdba8 type/diff0. SQL274BF0CF spec 감소I1 ADDRESSED/C0I0(원승인표 RLS source포함대조), 실제PG미실행유지. 최종quality는store202029DD의adapter slot객체를claim이별칭보관해다음prepare의A→B변경시두쪽이함께바뀌는I1을발견했다. Main64f5f6직접확인후같은primary에prepared metadata 자체snapshot·중첩값분리와첫파일효과0반례를지시했다. adapter원객체freeze/정상새handlewrapper일괄금지0,첫20원시험prefix유지. 동결7경로41659d일치검증은이보완전이력이며아직checkpoint합격이아니다.
+
+### 2026-10-28 FN16 ENROLL·암호화 이식키 보호 조회 소스 구분단위 검수
+- 동일 primary가 ENROLL 원명령/일회 승인 소비→한 번의 fulfill→공개 메모리 합성 wrapping→불변 vault 포트 저장→LOCKED/copyConfirmed=false→portable/key-state·R2 KEY 목록/선택차단을 연결했다. 실제 safe-handle adapter는 미구성으로 닫힌다. root 역할 혼용은 원 claim에서 전역 배타 예약, KEY vault 공유만 허용하며 결과불명 예약은 보존한다.
+- Main d898ce 직접영향56PASS5750.9086ms,660313 감소2=1PASS1FAIL→4f721c 감소/잠금뒤정적3PASS1245.7531ms. 별칭 I1 Main7dfe33 2RED→b85366 영향14PASS2578.4925ms. 436d5d 최종type/diff0·보호untracked8raw불변. 최종storeC88687E7/testDACAFCC4/SQL274BF0CF; 나머지catalog97ABBB39/routes8BB96C4A/provider46DE2CC8/routetest635B91CA. 독립spec/quality 중요지적을보완후각scopedC0I0M0. 불변전체검사재실행0.
+- 변경사유/전후: secret 미연결→ENROLL 및 보호다운로드/상태조회; TARGET전용root→TARGET/KEY_VAULT역할혼용금지; adapter객체별칭→자체metadata snapshot; 파일효과뒤오류FAILED→UNKNOWN보존; 최종비동기/COMMIT뒤기한재검사; OWNER회수시감소기록RLS거절→원actor/client/intent/process의감소행만보호기록. 기존R2닫힌사유/원승인/기존검사기준보존. author신규시험타입추론1오류는시험포트형만보완했고행동기대변경0. SQL LF→CRLF예고는보존·설정변경0.
+- 이는 source/메모리·합성 I/O·SQL정적검수이며 실제PG문법/DML/RLS/COMMIT/경합·OS파일내구성/TLS/운영로그/실키/사용자인수는NOT_RUN이다. 화면과VERIFY/UNLOCK/RELOCK/hooks/IMPORT/REWRAP/ROTATE는미완료, 전체FN16/작업계획완료아님. 실키/DB/서비스변경0. rollback은이7경로source revert이며기존자원/자료삭제0. 다음같은primary가키보관확인·해제/재잠금·인증회수를기능묶음으로구현한다.
