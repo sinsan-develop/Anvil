@@ -8830,3 +8830,6 @@
 
 
 - **FN03 문서 기록자 상세 한정 소스검수 완료**: API/unit/PageDOM 독립한정C0/I0/M0·필수미해결0. Main직접20PASS/type0·실제합성DOM4PASS와정확전용QA잔여0을결합해기존GET metadata소비단위만소스검수완료로판정한다. 실제DB/정식served/권한집행/Agent/사용자인수·전체FN03/UI06/Stage/계획은미완료. 제품2/시험3동결불변·결과서PENDING문구만해당독립판정으로정리후기존branchexactcheckpoint로통합,다음직접승인FN17 producer TEST_ONLY로이어간다. FN17WI preflightI1은신규자기행RLS SELECT전authenticatedactor/clientGUC설정누락위험으로문서보강중이며실제코드/SQL/시험아직0·새의미확대0이다.
+
+
+- **FN03 게시·FN17 승인범위 TEST_ONLY 인수**:9dd6b9 exact10 commit579f2cf7c96df8831a8c05ec7b105990b757bb9d/843ef5 local-private동일·mainf976불변·trackedclean(보호8+후속준비문서3만untracked). FN03최종결과66AEC6F8·Main제품write0·검증반복0. FN17 direct승인D2DCD9B8/packetBAA454FC/WIr2E890D96F/manifestB84C08BE는원I1(GUC선행)보강scopedC0/I0/M0. 기준manifesta2ff는역사baseline이며실행인수parent579f2cf7에서FN17기존제품2raw/보호12·신규7부재를재확인후단일기존담당fn05_share_request_impl에게신규시험4만TEST_ONLY로배정한다. FN03제품/시험동결보존,Main제품write0·FN17제품4/SQL생성MainRED전0. 실제DB/DDL/GRANT·정책권한·서비스·Secret·Agent·QA자원0/전체계획미완료다.

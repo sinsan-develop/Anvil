@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "task": "FN17_APPROVAL_NOTIFICATION_PRODUCER",
+  "recordedDate": "2026-10-28",
+  "questionCall": "call_95ad36ce82b64af7925dc9282b12f3e0",
+  "questionItem": 0,
+  "questionSummary": "결정안의 A 원자성·프로젝트당 10,000행/초과429 및 한정 source-only 구현 채택 여부",
+  "answer": "A안 동작·source-only 구현 승인",
+  "approvalSource": "Main이 직접 질문의 신산님 답변을 확인하여 전달한 현재 승인",
+  "packet": "docs/work_packages/FN17_APPROVAL_NOTIFICATION_PRODUCER_DECISION_PACKET.md",
+  "packetSha256": "BAA454FCA8C900DF0A44F704190BBC808D05B5F54ED1602CA49F3D9A4A2A3709",
+  "candidate": "docs/work_packages/FN17_IN_APP_APPROVAL_NOTIFICATION_CONTRACT_CANDIDATE.md",
+  "candidateSha256": "041B1AC3E210D210C157AE2936DFD7241162AFC7897F8DF91F2509C6071CCF1D",
+  "decision": {
+    "selectedAlternative": "A",
+    "eventKind": "APPROVAL_REQUESTED",
+    "channel": "IN_APP",
+    "recipient": "서버 원 snapshot의 requiredDecider와 동일한 요청자 HUMAN 본인",
+    "atomicity": "신규 requestApproval의 같은 transaction에서 내부 알림을 저장한다. 알림 저장·guard·상한 실패 시 원 request/receipt/commands·authorization receipt/audit·기존 candidate capture·알림 모두 commit0으로 rollback한다.",
+    "notificationRowsPerProject": 10000,
+    "capacityExceededStatus": 429,
+    "capacityExceededCode": "NOTIFICATION_CAPACITY_EXCEEDED",
+    "automaticDeletion": "OFF",
+    "retentionPeriod": "미정",
+    "capacityOperationalImpact": "상한 도달 뒤 새 승인 요청 자체가 계속 거절될 수 있다. 시간 경과나 승인 처리만으로 자동 복구되지 않는다. 기존 GET·원명령 replay·mark는 가능하며 새 승인 요청 저장 복구는 별도 명시 결정이 필요하다.",
+    "capacityRecoveryExcluded": [
+      "자동정리",
+      "상한 상향·새 상한값",
+      "보존정책 개정"
+    ],
+    "notificationCreationOnReplay": false,
+    "historicalBackfill": false,
+    "publicPublishApiAdded": false
+  },
+  "approvedSourceOnlyScope": [
+    "기존 requestApproval 신규 성공 transaction의 내부 알림 생산자 코드",
+    "기존 reader의 지원 연산을 현재 requestApproval 실제 지원 연산과 정합하게 보완. 새 승인 연산·정책·권한 확대가 아님",
+    "미적용 forward 저장 DDL·PK/FK·중복/불변/원본 결박 guard·RLS·기존 owner/app 대상 최소권한 SQL source",
+    "집중 unit/in-process/fakeDB·필요 type/직접 영향 회귀 등 합성 검증 및 필요한 계약/결과 문서"
+  ],
+  "preserved": [
+    "기존 GET/list/mark·UI14·정책·모바일 접근의 완료 source와 공개 DTO/receipt 계약",
+    "현재 원 요청 지원 연산·target/current 검사와 권한 경계",
+    "기존 SQL과 저장 자료·원 요청/receipt/capture 이력",
+    "원명령 replay는 보존하되 replay/GET/mark에서 신규 알림 생성·과거 backfill은 하지 않음"
+  ],
+  "excludedActualExecution": [
+    "실제 DB 접속·SQL/DDL/migration/GRANT 적용",
+    "정책·계정권한 부여·새 계정/credential",
+    "기존 데이터 재작성·삭제·자동정리",
+    "서비스 변경·배포",
+    "Secret·인증서",
+    "실제 Agent·비용",
+    "외부 push/SMTP/송신·구독·설정",
+    "일반진도/완료/오류·타수신자 생산자·과거 backfill"
+  ],
+  "implementationAuthorized": true,
+  "actualExecutionAuthorized": false,
+  "currentExecutionState": "DOCUMENT_RECORD_ONLY_IMPLEMENTATION_NOT_STARTED",
+  "writerConstraint": "현재 단일 코드 writer는 FN03 TEST_ONLY 담당이다. 본 기록 작성 중 FN17 제품/시험/SQL source 쓰기0.",
+  "workInstructionIssued": false,
+  "allowlistAndSqlNumber": "FN03 완료 뒤 Main이 실제 inventory를 대조하여 정확 허용목록과 신규 SQL 번호를 고정할 예정. 이 기록은 번호나 구현 허용파일을 예약하지 않음.",
+  "validationState": "이 승인기록으로 새 시험을 실행하거나 PASS를 선언하지 않는다. 실제 DB/SQL 문법·DML/COMMIT/RLS/권한/경합·served·사용자 인수는 별도 미검증이다.",
+  "completionClaim": "FN17·Stage·WORK_PLAN 전체 완료가 아님"
+}
