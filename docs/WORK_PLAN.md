@@ -1541,3 +1541,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-28 FN05/UI10 지식 정정 원문 업로드 승인 연결 착수**: 기존 정정 업무의 uploadArtifact 일회승인 소비선만다음허용8로구현한다. 기존지식/대화업로드·공유요청완료범위를보존하고후속correctKnowledge별도/null·target/version·원문출처를유지한다. 실제DB/서비스/Agent·새API/SQL/권한0,MainRED선행/단일writer/최소직접검증으로진행하며전체계획미완료다.
 
 - **2026-10-28 정정 업로드 승인 한정 소스검수**: 신규/직접13PASS·type/실제Form SSR/DOM5PASS(6152.6897ms)·독립C0I0·전용QA정리/별도0. 후속correctnull·targetversion·원문출처보존을연결했다. ABA최종barrier/실DB·정식served·사용자인수및전체FN05/UI10/Stage/계획은미검증·미완료로분리한다.
+
+- **2026-10-28 FN05/UI10 단계·업무별 검색 착수**: 직접승인된§2.1 optional scope·서버선별·cursor결박을기존무필터호환/권한/응답보존으로구현한다. 허용12/TEST_ONLY→MainRED→단일writer·최소회귀/합성DOM순서,실제DB/DDL/정책/서비스/Agent제외·전체계획미완료.

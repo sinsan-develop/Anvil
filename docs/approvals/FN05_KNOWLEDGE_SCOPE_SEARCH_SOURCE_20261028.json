@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "task": "FN05_KNOWLEDGE_SCOPE_SEARCH",
+  "questionCall": "call_263d314c1a4746edb77c31cdc18f4c2e",
+  "questionItem": 0,
+  "answer": "검색 계약·source-only 구현 승인",
+  "packet": "docs/work_packages/FN05_KNOWLEDGE_SCOPE_SEARCH_DECISION_PACKET.md",
+  "packetSha256": "19D93DB1D81DDCE278CDCF1741A9A6C855C172B350BECC99347CF6193C310FED",
+  "sourceBaseline": "c602480e37b7b025cd3b50ad153d50a3fdddc2b6",
+  "approvedScope": [
+    "기존 검색의 선택적 scope query·서버 선별·cursor 결박",
+    "화면 연결·합성 검증",
+    "기존 SELECT 필터 source 구현"
+  ],
+  "excluded": [
+    "새 table·DDL·migration",
+    "실제 DB 접속·SQL 실행",
+    "정책·권한 부여",
+    "서비스·Secret·인증서",
+    "실제 Agent·비용"
+  ],
+  "actualExecutionAuthorized": false
+}

@@ -8793,3 +8793,9 @@
 - 검색결정안19D93DB1의기존I1은ADDRESSED/scoped C0I0로재검수됐다. §2.1채택/구현전상태이며실제제품/시험/DB효과0. 현재독립구현대조상즉시착수신규없음과이미열린P03/FN16/CapabilityReport질문을분리하고검색의정확새계약결정만1회요청한다.
 
 - **정확 검색결정 질문·독립 업무 대조 보존**:6215b0 문서tail68070bd892ec908904a1727a4012a12c0ab8ff10 local/private동일·trackedclean/mainf976불변후검색결정안19D93DB1의source-only채택대보류질문1회를신산님께직접발행accepted=true,답변아직없음. PMO에도정확후보/범위/질문1회만전달했고P03/FN16/CapabilityReport기존질문중복0. 별도읽기에서FN10기존승인UI소비완료,FN12승인소비연산미지원,FN13checkpoint서버미연결/실중지선행,FN14인계저장미채택,FN15권한전환제외를대조해이범위의즉시독립소비누락을확정하지못했다. 이는미완료기능없음/전체완료가아니며검색의미채택API·다른실행/데이터계약결정을임의해제하지않는다. 검색답변전제품/시험/계약활성화0·기존완료구현/검사재실행0·모든담당동결/QA잔여0,소스검수완료3범위와실DB/정식served/전체계획미완료를보존한다.
+
+- **단계·업무 검색 직접 승인 접수**: call_263d314c1a4746edb77c31cdc18f4c2e/item0에 신산님이 ‘검색 계약·source-only 구현 승인’으로 답했다. 결정안19D93DB1을 양쪽 정본에서 재검증하고 승인 기록을 보존했다. 기존 검색·권한·응답 호환/선택 scope·cursor 결박의 source-only 범위이며 실제DB/DDL/정책/서비스/Secret/Agent는 제외한다. 정확 허용 파일과 TEST_ONLY를 고정한 뒤 단일 subagent 구현을 진행한다.
+
+- **검색 정확 구현범위 고정**: a80dd7/d81cfa/352374에서현재검색whitelist/기존scope검증·실제적용본/계획선택API를대조했다. 직접승인078AF6AB/결정19D의허용12(기존3/신규9·제품6/신규시험5/결과1)와기존raw3/보호12를manifest에고정했다. TEST_ONLY선행·기존무필터cursor/SQL매개값/응답/권한불변·실제DB/DDL/Agent제외,Main제품write0/단일담당으로위임한다.
+
+- 검색 WI BACFF86B/manifest73ACA9CF/승인078AF6AB 독립preflight C0I0·기존제품3/보호12 raw일치를확인했다. 담당은신규unit3을canonical입력·실제search소비/WHERE/cursor·Web호환으로분리작성중이며제품6write0/QA0이다.
