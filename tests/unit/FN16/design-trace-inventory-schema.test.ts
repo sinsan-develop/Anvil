@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {existsSync,readFileSync} from 'node:fs';
+const root=new URL('../../../',import.meta.url),read=(file:string)=>readFileSync(new URL('db/migrations/'+file,root),'utf8');
+// migration 허용열/원 writer 관계를 읽기 대조한다. 실제 PG/RLS 실행은 아니다.
+const maps=[
+ ['0004_design_index.sql','design_items','id project_id design_document_id document_version document_hash local_code title anchor item_hash item_json created_by client_id command_id created_at',14],
+ ['0004_design_index.sql','screen_regions','id project_id design_item_id screen_code source_document_id source_version source_hash artifact_id anchor region_hash region_json created_by client_id command_id created_at',15],
+ ['0004_trace_links.sql','trace_edges','id project_id from_kind from_id from_version from_code to_kind to_id to_version to_code relation design_refs edge_json edge_hash reason created_by client_id command_id created_at',19],
+ ['0011_authorization.sql','commands','id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id',11]
+]as const;
+test('designTraceSchema 실제명시열·색인공유명령/edge유일명령 구별',()=>{for(const[file,table,fields,count]of maps){const sql=read(file),start=sql.indexOf('CREATE TABLE anvil.'+table),end=sql.indexOf('\n);',start);assert(start>=0&&end>start);const ddl=sql.slice(start,end);assert.equal(fields.split(' ').length,count);for(const field of fields.split(' '))assert(new RegExp(String.raw`\b${field}\s+(uuid|text|bigint|jsonb|timestamptz)\b`).test(ddl),table+'.'+field);if(table==='design_items'||table==='screen_regions')assert(!/command_id uuid NOT NULL UNIQUE/.test(ddl));if(table==='trace_edges')assert(/command_id uuid NOT NULL UNIQUE/.test(ddl));}assert(read('0004_design_index.sql').includes('UNIQUE(project_id,design_item_id,screen_code,anchor)'));});
+test('designTraceSchema 명시읽기·원문/일반조회·권한/설계변경·쓰기0',()=>{const u=new URL('apps/server/modules/backups/design-trace-inventory.ts',root);assert(existsSync(u),'설계 추적 inventory 미구현');const source=readFileSync(u,'utf8');for(const[,table]of maps)assert(source.includes(table));assert(!/SELECT\s+(?:\w+\.)?\*/i.test(source));assert(!/\bOFFSET\s+(?:\d|\$)/i.test(source));assert(!/new\s+ProjectDesignIndex|new\s+ProjectTraces|originalText\(|readFile\(|storage_key|body_utf8/.test(source));assert(!/\b(?:INSERT\s+INTO|UPDATE\s+anvil\.|DELETE\s+FROM|CREATE\s+TABLE)/i.test(source));assert(!/FROM anvil\.(?:authorization_receipts|artifacts|document_versions|work_plan_versions|design_changes|baseline_activations|permission_policies)/.test(source));});

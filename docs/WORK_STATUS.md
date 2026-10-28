@@ -9489,3 +9489,11 @@
 - 신규 TEST_ONLY 행동358C9AFCA6B4424E848E1EFF45F1C68AAAF2242FB0BFE7A04BF075AC7A459BC6/schema2E8AC46B79F25715DFC74C11089F92E556FEE995069968C1B14A57A138A8AE6E 동결. Main f4a75b node --test --test-reporter=tap 두파일 실제exit1/collector미구현 확인. 출력필터가 앞오류만남겨 이번기록은미출력count/time을추정하지않는다. 기존primary source1 GO, reviewer시험검수. 실제DBFS키서비스0/기존제품수정0.
 - 구현 후 author b480e6 신규14PASS/1752.5534ms·bc7689 type/diff0, source3BFDB061. Main3d60e3/02c3e3/c709e7 읽기검수에서 중요한정합후보: 기존 writer는 과거screenReviewRef를 reviewed Set에넣지않아 동일target의과거참조반복을 SCREEN_REVIEW_MISSING 초안으로저장가능하나 새collector는전부중복거절한다. 기존자료보존차이로좁혀 reviewer판단 및 primary반례 RED→보완지시, 기존writer/기대14변경0·실제DB0. 최초자체14PASS는최종합격으로게시하지않았다.
 - 작업계획이력 I1은 f136ef 신규1RED503후 source139bytes 한정보완, 기존writer/시험14기대불변. Main3f989f 최종15PASS/0FAIL/skip0/1341.8959ms·type/diff0. 제품077E5DA0/시험5799384C/schema2E8AC46B·독립I1해결C0/I0/M0. 결과 FN16_WORK_PLAN_INVENTORY_RESULT_20261029.md. 실제키/DB/FS/서비스·전체백업/복원/UI NOT_RUN, 전체계획미완료.
+
+### 2026-10-29 FN16 설계·화면 위치·추적 보존 착수
+- bc4376d6 작업계획이력 게시 이후 동일 승인 범위의 다음 내부 자료군이다. 신규 WI FN16_DESIGN_TRACE_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md, 기존 primary TEST_ONLY→Main RED→구현, reviewer 독립검수. 실제 키/DB/FS/서비스0, 전체 FN16 미완료.
+- 읽기 오류 c1539e의 추정 document-input.ts 부재는 91458f 실제 목록으로 교정했다. 이후 실제 목록 경로만 읽는다. 재개 sandbox Git status의 work tree 오류는 87b526 elevated 동일경로 읽기에서 tracked clean/보호8 확인; 권한 변경0·제품 오류 아님.
+- WI7EBB4A78 독립 C0/I0/M0, Main72e7aa 신규13 중 schema1PASS/미구현12FAIL/skip0/213.2614ms exit1. 시험 EBF6B836/F5F10ED1 동결 후 기존 primary에 source1만 GO, Main source수정0·actual0.
+- Main15a828 읽기에서 미확인 r2-backup-verification.ts 경로를 추정해 os2가 재발했다. 해당 추정읽기를 중단했으며 다음 경로는 rg --files의 실제 목록으로만 취득한다. 권한/제품오류·검증결과로 계산하지 않는다.
+
+- 설계추적 source4F2EB532·시험EBF6/F5F10 불변, Main197d92 신규13PASS/0FAIL/skip0/519.7763ms·type/diff0, 기존reviewer C0/I0/M0. 실제DB/FS/키/서비스0·전체FN16미완료, 결과 FN16_DESIGN_TRACE_INVENTORY_RESULT_20261029.md. 새 구현오류0. 다음 설계변경이력은 읽기preflight/WI 준비만했고 현재제품writer0.
