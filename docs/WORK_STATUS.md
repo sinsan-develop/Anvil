@@ -9509,3 +9509,12 @@
 - Main2d5d1b/독립읽기로 work-plan-inventory 시각대소8개도동일I1 확인. 앞선독립C0에서놓친결함으로정정,완료기준완화아니며기존writer정합오류이다. 별도 WI FN16_WORK_PLAN_TIMESTAMP_RECOVERY_20261029.md SHA F29EF7C991862BA3C19EFB782616341A1F1287C0205C7D44C242A297AEAE9423로다음보완,baseline WI는아직미착수.
 
 - 설계변경 최종독립scoped C0/I0/M0·I1해결, Main1a1dd2는제거103자복원한메모리SHA가이전16210391과같음을확인해추가제품변경0을검증했다. 다음작업계획교정WIF29EF도독립C0/I0/M0.
+
+### 2026-10-29 FN16 작업계획 시각 정합 보완 착수
+- 기준4fb6e7268a15b191c049fae9744ed0624153d0d4 private동일/main불변(3a15b9), 보호8와준비WI2보존. WIF29EF7C9 독립C0/I0/M0. 기존primary가허용시험1에정상역전반례만추가하고MainRED후제품1의8대소조건한정보완,실제키/DB/서비스0. 완료된기능전체회귀0·기존15기대불변.
+
+- 작업계획 시각반례 Main88cabe: node --test --test-reporter=tap --test-name-pattern=workPlanTimestampRecovery tests/unit/FN16/work-plan-inventory.test.ts → 새9중정상8FAIL/동일사건불일치음성1PASS/skip0/439.21ms exit1. source077E/testD188 지문확인, primary 8대소조건만 SOURCE_GO. confirmationVersion은선행같은원인에서RED이므로후단독립실행으로주장0. 기존15기대/prefix보존·actual0.
+
+- 작업계획시각교정 Main0350cd sourceEE930589/행동D188/schema2E8불변,기존15+새9=24PASS/skip0/1553.0863ms/type/diff0. 6행내8대소검사만제거·같은사건일치/원hash/버전/감사검사유지. 결과 FN16_WORK_PLAN_TIMESTAMP_RECOVERY_RESULT_20261029.md. 실제DBFS키서비스0·전체FN16미완료.
+
+- 최종 독립 재검수: 시각 역전 I1 해결, scoped C0/I0/M0. reviewer는 현재 EE930589 지문/본문과 동결 시험을 직접 확인했고 git diff 환경 오류는 Main0350cd의 성공 증거와 구분했다. 실제 실행 범위 확대0.

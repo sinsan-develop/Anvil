@@ -92,3 +92,32 @@ test('workPlanInventoryHistoricalScreenRefs 이전 ACCEPTED 중복·순서·원h
  assert.deepEqual(v.snapshot.issues,value.issues);assert.equal(v.status,'DRAFT');assert.equal(r.metadataComplete,false);
  assert.equal(r.externalDependencies.filter((d:any)=>d.kind==='SCREEN_REVIEW'&&d.ref.id===old.id).length,1);
 });
+// 서로 다른 transaction의 시각은 업무 버전 순서가 아니다. 동일 사건 row/receipt 시각은 함께 변경한다.
+for(const mode of ['headUpdated','priorVersion','versionUpdated','reviewVersion','reviewConfirmation','confirmationVersion','confirmationUpdated','confirmationOrder']as const){
+ test('workPlanTimestampRecovery '+mode,async()=>{
+  const f=fixture(),head=f.t('work_plans').find(p=>p.id===f.first.ref.id),accepted=f.t('content_reviews').find(r=>r.id===f.accepted.id);
+  const event=(row:any,offset:number)=>{const time=new Date(at.getTime()+offset);row.created_at=time;const c=f.t('commands').find(c=>c.id===row.command_id);c.result_ref.serverReceivedAt=time.toISOString();if(c.operation==='recordContentReview')c.result_ref.data.review.reviewedAt=time.toISOString();};
+  if(mode==='headUpdated')head.updated_at=new Date(at.getTime()-1);
+  if(mode==='priorVersion')event(f.second.row,-1);
+  if(mode==='versionUpdated')event(f.second.row,1);
+  if(mode==='reviewVersion')event(accepted,-1);
+  if(mode==='reviewConfirmation')event(accepted,1);
+  if(mode==='confirmationVersion'){event(accepted,-2);event(f.confirmation,-1);}
+  if(mode==='confirmationUpdated')event(f.confirmation,1);
+  if(mode==='confirmationOrder'){
+   const ref=f.review(f.second),confirmation=clone(f.confirmation),old=f.t('commands').find(c=>c.id===f.confirmation.command_id),c=clone(old),validation={validForConfirmation:true,issues:[],sourceRefs:[f.second.snapshot.documentRef,f.second.snapshot.designRef],screenReviewRefs:f.second.snapshot.screenReviewRefs};
+   Object.assign(confirmation,{id:id(9100),version:2,target_hash:f.second.ref.contentHash,review_refs:[ref],validation_json:validation,command_id:id(9101)});
+   Object.assign(c,{id:confirmation.command_id,expected_version:2,authorization_receipt_id:id(9102)});Object.assign(c.result_ref,{operationId:id(9103),commandId:id(9104),version:2,data:{ref:f.second.ref,status:'CONFIRMED',confirmationId:confirmation.id,reviewRefs:[ref],validation,activatedAsBaseline:false}});
+   f.t('commands').push(c);f.t('work_plan_confirmations').push(confirmation);head.confirmed_version=2;head.updated_at=new Date(at.getTime()+1);event(f.confirmation,1);
+  }
+  const before=clone({versions:f.t('work_plan_versions').map(v=>v.version_json.ref),audits:f.t('audit_events')});const r=await f.run();
+  assert.deepEqual(r.versions.map((v:any)=>v.ref),before.versions);
+  for(const row of f.t('work_plan_versions'))assert.equal(r.versions.find((v:any)=>v.ref.id===row.plan_id&&v.ref.version===row.version).recordedAt,row.created_at.toISOString());
+  for(const row of f.t('content_reviews'))assert.equal(r.reviews.find((v:any)=>v.ref.id===row.id).reviewedAt,row.created_at.toISOString());
+  for(const row of f.t('work_plan_confirmations'))assert.equal(r.confirmations.find((v:any)=>v.id===row.id).confirmedAt,row.created_at.toISOString());
+  assert.deepEqual(f.t('audit_events'),before.audits);assert(r.reviews.some((v:any)=>v.ref.outcome==='REWORK'));assert.equal(r.restorable,false);
+ });
+}
+test('workPlanTimestampRecovery 같은 사건 row·receipt·검토JSON 시각 불일치는 거절',async()=>{
+ for(const mode of ['versionReceipt','reviewJson','confirmationReceipt','firstHead']){const f=fixture();if(mode==='versionReceipt')f.second.row.created_at=new Date(at.getTime()+1);if(mode==='reviewJson'){const row=f.t('content_reviews')[0];f.t('commands').find(c=>c.id===row.command_id).result_ref.data.review.reviewedAt=new Date(at.getTime()+1).toISOString();}if(mode==='confirmationReceipt')f.t('commands').find(c=>c.id===f.confirmation.command_id).result_ref.serverReceivedAt=new Date(at.getTime()+1).toISOString();if(mode==='firstHead')f.t('work_plans')[0].created_at=new Date(at.getTime()-1);await assert.rejects(f.run(),rejected(503));}
+});
