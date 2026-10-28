@@ -9328,3 +9328,27 @@
 - Main ed3b23 문서 저장 명령은 exit1/출력 없음으로 실패했다. 0d3fd9에서 양쪽 파일 부재·STATUS 미반영을 확인한 뒤 canonical patch와 한 파일 복사 d87c9d exit0/동일 hash로 복구했다. 제품 코드·실자료 변경0, 같은 실패 반복0.
 - 별도 Stage B 좁은 조사: UI01 실제 단계 투영은 추가 계약, FN03 관측 연결은 FN08 검증된 읽기 결과가 선행이다. 이미 완료한 source를 반복하거나 전체 미완료 업무가 없다고 판정하지 않았다.
 - Main WI C9687B028BB4B92EEBCDB038FC73FB792895D25AA6BA143C1DE2BB7401B44EE3로 FN16 A안 제품8·시험5 경로를 고정했다. 기존 fn16_primary 단독 TEST_ONLY부터 수행하고 Main RED→구현→독립 검수→필요 집중 검증 순서다. 과거 snapshot/SQL/실제 설치와 전체 백업은 보존·제외한다. read-only 검수의 역사/신규 분리, 출처·cursor·저장 양측 검증·replay·UI 경계를 WI에 반영했다.
+
+- 독립 WI 검토 C0/I0 후 승인·WI·현황 3문서만 fad2521c501edabfbd086cb71f80da28dfe3a2ec로 기록했다. 9862e3 private 동일/main f976 불변을 확인했다. Primary 신규 provider TEST_ONLY D68340192E8BA90557897BC1D2F7458B68DFD7501D1C25D1205554BFA527981A의 Main fccdf6 직접 실행은 factory 미구현으로 12건 RED/exit1이다. 구현 전 실패이며 실제 DB·native·키·서비스 실행0. 같은 writer가 provider/runtime을 구현한다.
+
+- 신규 공급 블록(runtime EC31C578·provider AFB6FAAF·시험 D6834019)의 Main 8617c9 직접 합성12 PASS/0FAIL/0SKIP, 211.848ms를 확인했다. 앞선 fccdf6 미구현 RED와 구분한다. 실제 profile 설정·키·DB·native/서비스0, 아직 store/UI 연결 전이다. Primary는 동일 허용 범위의 store/route TEST_ONLY를 준비하고 reviewer는 공급 블록을 읽기 검수한다.
+
+- 공급 블록 runtime EC31C578/provider AFB6FAAF/unit D6834019의 독립 검수는 C0/I0이며 아직 caller/UI 검수와 구분한다. Main a0e573 신규 store/route 7건은 0PASS/7FAIL/0SKIP·2805.0333ms/exit1(새 GET404, 기존 저장412, 신규400 미연결)로 RED를 확인했다. 기존 부재412 시험은 새 유효 checks3으로 유지하고 빈 checks400 반례를 분리했다. 담당자는 허용4 소비선을 연결 중이며 실제 DB/서비스 변경0이다.
+
+- UI14 FN16 검증 프로필 합성 QA 사전등록: D:\Project\Anvil\.av3-data\ui14-verification-profile-20261029-01 (하위 bundle/results/tmp/cache 및 단발 playwright.config.cjs), owner=SINSAN\cyhuh, 시작=2026-10-29T03:44:41.9098665+09:00, 종료기한=2026-10-29T04:14:41.9098665+09:00. 경로 생성 전 부재와 parent link0 확인. Node 기존설치/Edge 기존설치 headless1·현재계정의 자기프로세스만, 네트워크는 합성 HTTPS3830 route 응답 및 미등록abort·실제listen0. 실제키/DB/Secret/service/Agent 실행0. 정확 경로·owner/link/process 대조 후 자기 QA만30분내 정리하고 별도부재조회한다.
+
+- Main7426d4 서버 직접 인접43건은42PASS/1FAIL/0SKIP·2368.3073ms다. 기존 KEY 부재 시험이 installation_resource_versions SELECT를 모의 DB에서 처리하지 못해 실패했고, 해당 제품 KEY경로는이번diff없음(a082b0). 통과로 처리하지 않고 실제미구성 공급자 호출경계를 원인대조 중이다. 신규 서버7은PASS. 독립검수는 신규중복checks가 역사파서에서먼저422가되는I1을찾아 신규save400만보완하도록지시했다.
+- Main795b3a Web API 신규4는미연결0PASS4FAIL203.9221ms/skip0 RED. UI QA ownerSINSAN\\cyhuh, 실제App363906 build0(기존chunk500KiB경고1), dd6ab0 합성브라우저1은새조회버튼부재15초FAIL/exit1이다. 3b5ed6 actualApp snapshot확인. 테스트시간/기준은그대로이며실제서버listen/키DB변경0. 등록QA 종료기한04:14:41+09:00.
+
+- 기존 KEY 예외 원인 대조: fad2521c와 현재 #key/keySelectable은 동일하고 미구성에도 설치키 조회를 호출했다. Main은 같은 허용 store 경로에서 명시 UNCONFIGURED만 기존412로 먼저 닫는 최소 보완을 결정했다. 구성된 경로/원404 일괄변환/fixture 기대완화0. 신규 duplicate checks Main c4e0db는422≠400의1RED1187.0889ms/skip0이며 기존 역사파서를 보존한 새쓰기 경계 보완을 지시했다.
+
+- 2026-10-29 Main e27c40 최종 서버/입력/Web 인접57 PASS2407.4312ms/skip0 exit0: KEY 미구성412와 신규 중복checks400 반례를 해결했다. 기존 provider12는 불변이라 반복하지 않았다. 실제App b5d5e8 build0 뒤 c71d60/afaa9b 두 브라우저 시험은 승인 계약의 '선택 파일 검증 기준' 제목 부재로 같은 선택 전 지점에서 FAIL했다. 후속 승인/저장 동작은 아직 미도달이며 PASS 아님. Primary에게 Panel 제목만 보완하도록 전달했고 테스트 기대 유지, 실제 키/DB/서비스 변경0이다.
+
+## 2026-10-29 FN16 선택 파일 검증 프로필 source 검수
+- 판정: 승인 후보08EA3478·승인D1ED7A7F·WI C9687B02의 제품8/시험5를 구현하고 핵심 합성 흐름을 확인했다. 실제 프로필 설정 발급·DB/정책·키·서비스·Agent·전체 백업/복원은 미실행이며 전체 FN16/계획 완료가 아니다.
+- 변경 전 VERIFICATION 저장은 공급 부재412로 차단됐고, 변경 후 명시 주입된 프로필만 OWNER 조회→검사3/한도7·정확ref 선택→원명령·별도 승인 결박→저장/replay·현재성 조회로 연결된다. 기본 실제 공급은 계속 UNCONFIGURED다. 새 SQL0/기존 미적용0054 보존, 과거 snapshot parser·원명령·권한·일회 소비·감사 기준 유지.
+- Main 신규공급12 PASS211.848ms(8617c9); 수정 후 서버/입력/Web 인접57 PASS2407.4312ms/skip0(e27c40); 최종type/diff0(b55ae6). 실제 App 합성 Edge2 PASS3.8s(b5f410)는 프로필 명시선택/준비 POST0, 별도 승인·정확 원명령 재개·저장·재조회, 선택 뒤 회수/늦은 목록 이탈을 확인했다. same-origin 합성 응답이며 실제 서버/DB 검증이 아니다. 현재 App build473modules/403ms exit0, 기존 chunk500KiB 경고1은 별도 보존했다.
+- 최초 provider12 미구현 RED, 서버7 RED, Web4 RED, App 미연결1 RED를 보존한다. 서버 인접 첫42PASS/1FAIL은 기존 KEY 미구성 공급자도 조회하던 경계로 확인해 명시 UNCONFIGURED만412 선행 반환했다. 신규 duplicate checks422는 추가1RED 후 신규 저장에서만400으로 보완했다. App 첫 연결2FAIL은 계약상 제목 누락으로 선택 전 멈췄고 Panel 제목1개만 추가하여 동일 기대를 통과했다. 시험 삭제/기준 완화0.
+- 독립 scoped 최종 C0/I0/M0: 중복 checks I1·제목 M1 해소. provider/currentness/cursor·저장 전후 회수·replay·OWNER/context/UNKNOWN를 대조했다. 주요 SHA: store A86CC16149DCA20BAD84A14C03453ED08E993C94C1C00495FD0F300A37AB6C38, API5AF522EF873B888753B10837CF66D449409AFB613F217904EB062E1ECA9D7C54, Panel4070C1FE9F2EF154F677ABDB2CC8FF5819072D06AD1F703BFD31DB0835D76706.
+- 등록 Windows QA ui14-verification-profile-20261029-01은 owner SINSAN/cyhuh·link0·process0 확인 후 생성604.03초에 파일6/디렉터리4만 회수(d5c78a). 독립0cd638 Test-Path False. 첫sandbox CIM 접근 불가(b28e3e)는 elevated 정확 조회로 해결했으며 제품 실패/프로세스 없음으로 오인하지 않았다. 실패 PNG는 일회 자원과 폐기, 텍스트 실패와 source 시험 보존.
+- rollback은 이번 신규 optional 공급/연결의 검토된 revert이며 기존 자료·키·DB 삭제0. Main은 소유13경로와 현황·계획·결과만 checkpoint로 보존하고 다음 독립 미완료의 계약/호출선을 기존primary 읽기 조사로 확인한다. 실제 배포·사용자 인수 완료는 주장하지 않는다.

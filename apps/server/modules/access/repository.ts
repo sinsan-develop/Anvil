@@ -1,3 +1,4 @@
+import type {VerificationProfileSource} from '../backups/backup-verification-profiles.ts';
 import type {InstallationKeyLeaseRegistry} from '../backups/installation-resource-store.ts';
 import type {InstallationResourceCatalogPort} from '../backups/installation-resource-catalog.ts';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -25,6 +26,7 @@ export class AccessRepository {
   pool: Pool;
   installationId: string;
   installationResourceCatalog?: InstallationResourceCatalogPort;
+  verificationProfileSource?: VerificationProfileSource;
   installationKeyRegistry?: InstallationKeyLeaseRegistry;
   #key: Buffer;
   constructor(pool: Pool, config: { installationId: string; key: Buffer }) {

@@ -179,7 +179,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   registerProjectDocumentReads(app, options, documents);
 
   const installationResources=new InstallationResourceStore(options.repository,{catalog:options.repository.installationResourceCatalog});
-  const backupReferences=new BackupReferenceStore(options.repository,new InstallationBackupResourceProvider(installationResources));
+  const backupReferences=new BackupReferenceStore(options.repository,new InstallationBackupResourceProvider(installationResources),options.repository.verificationProfileSource);
   app.addHook('onClose',async()=>installationResources.dispose());
   app.register(async projects => {
     projects.removeContentTypeParser('application/json');

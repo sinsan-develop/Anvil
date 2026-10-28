@@ -7,6 +7,7 @@ function token(r:FastifyRequest){if(r.headers.authorization!==undefined)throw ne
 /** 기존 projects strict JSON parser/origin hook 하위에만 등록한다. */
 export function registerBackupReferenceReads(app:FastifyInstance,store:BackupReferenceStore){
  const prefix='/api/v1/projects/:projectId',project={params:object({projectId:uuid})},fixed={params:object({projectId:uuid,id:uuid,version:{type:'string',pattern:'^[1-9][0-9]{0,15}$'}})};
+ app.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>(prefix+'/backup-verification-profiles',{schema:project},r=>store.verificationProfiles(token(r),r.params.projectId,r.query));
  app.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>(prefix+'/backup-resources',{schema:project},r=>store.resources(token(r),r.params.projectId,r.query));
  app.get<{Params:{projectId:string;id:string;version:string};Querystring:Record<string,unknown>}>(prefix+'/backup-resources/:id/versions/:version',{schema:fixed},r=>store.resource(token(r),r.params.projectId,r.params.id,Number(r.params.version),r.query));
  app.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>(prefix+'/backup-references',{schema:project},r=>store.list(token(r),r.params.projectId,r.query));
