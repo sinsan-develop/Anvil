@@ -1,3 +1,5 @@
+import {registerInstallationResourceRoutes} from '../backups/installation-resource-routes.ts';
+import {InstallationBackupResourceProvider} from '../backups/backup-resource-provider.ts';
 import {InstallationResourceStore} from '../backups/installation-resource-store.ts';
 import {ProjectBackups} from '../backups/project-backups.ts';
 import {BackupReferenceStore} from '../backups/backup-reference-store.ts';
@@ -175,8 +177,10 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const approvalCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('APPROVALS:'+value));
   const conversationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATIONS:'+value)),messageCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATION_MESSAGES:'+value));
   registerProjectDocumentReads(app, options, documents);
-  const backupReferences=new BackupReferenceStore(options.repository);
+
   const installationResources=new InstallationResourceStore(options.repository,{catalog:options.repository.installationResourceCatalog});
+  const backupReferences=new BackupReferenceStore(options.repository,new InstallationBackupResourceProvider(installationResources));
+  app.addHook('onClose',async()=>installationResources.dispose());
   app.register(async projects => {
     projects.removeContentTypeParser('application/json');
     projects.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, raw, done) => { try { done(null, parseWireJson(String(raw))); } catch { done(Object.assign(Error('INPUT_INVALID'), { statusCode: 400 }), undefined); } });
@@ -184,6 +188,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
       if (request.headers.host !== host || request.method !== 'GET' && (request.headers.origin !== options.origin || !/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] ?? ''))) throw new AuthFailure('ORIGIN_INVALID', 403);
     });
     registerBackupReferenceReads(projects,backupReferences);
+    registerInstallationResourceRoutes(projects,installationResources);
     projects.get<{Params:{projectId:string}}>('/api/v1/projects/:projectId/baseline-activations/current',{schema:{params:object({projectId:idSchema})}},request=>{if(Object.keys(request.query as object).length)throw new AuthFailure('INPUT_INVALID',400);return options.repository.authenticated(token(request),null,(db,actor)=>baselineActivations.current(db,actor,request.params.projectId));});
     projects.get<{Params:{projectId:string;id:string;generation:string}}>('/api/v1/projects/:projectId/baseline-activations/:id/versions/:generation',{schema:{params:object({projectId:idSchema,id:idSchema,generation:{type:'string',pattern:'^[1-9][0-9]*$'}})}},request=>{const generation=Number(request.params.generation);if(!Number.isSafeInteger(generation)||generation<1||Object.keys(request.query as object).length)throw new AuthFailure('INPUT_INVALID',400);return options.repository.authenticated(token(request),null,(db,actor)=>baselineActivations.read(db,actor,request.params.projectId,request.params.id,generation));});
     projects.get<{ Querystring: Record<string, unknown> }>('/api/v1/projects', request => repository.list(token(request), request.query));

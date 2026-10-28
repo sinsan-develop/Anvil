@@ -9092,3 +9092,31 @@
 - intent기한 I1 Mainc869c9 신규5=1PASS4FAIL1270.5385ms·기록상100초수명/초기61초·receipt61초·INSERT61초의APPLIED200을재현했다. 역사replay1PASS는신규사용허가가아님. test40768CCE 동결후같은primary에고정createdAt+60000/최종창보완GO,실제SQL/키0.
 
 - FN16 원intent 구분 최종Main1e668d store38PASS/0FAIL/0skip/cancel/todo2763.9639ms/type0/diff0. store585A1080/test40768CCE 독립spec·quality I1 ADDRESSED/C0I0M0. 고정createdAt+60초 및저장/반환창,역사replay분리확인. 기존Main7437aa auth6/author인접45는불변기존검사로보존·다시실행0. 제품6/시험1과관리3만checkpoint하고동일primary의실제fulfill·pending0054·R2조회연결을다음단위로진행한다. 현재REGISTER_TARGET intent준비까지만구현,다른action은명시412이며실제DB/키/서비스0·전체FN16미완료다.
+
+- Maincaec8f/9ea1b6 원intent제품6/test1/관리3 정확10경로c2fb759107e57f4a01ace90d76edd6983030dad2 private동일·mainf976ed5e불변·trackedclean확인. 보호untracked8raw불변. 같은primary에원CONSUMED귀속/durableclaim/합성probe/descriptor/R2조회까지다음TEST_ONLY GO,미적용0054는후속제품단위에포함한다. 실키/DB/서비스0.
+
+- Main 인수 재대조: c2fb7591 이후 tracked 변경은 소유 WORK_STATUS뿐, 보호 untracked8 유지(8b89e6). 기본 shell profile의 conda 시작 경고/비상승 Git status의 worktree 오류는 login:false·승인된 elevated 읽기로 구분 확인했고 권한·환경 변경0. 추정 backup-resources-v1.ts 읽기 실패는 실제 목록의 backup-references-v1.ts로 교정했다. 등록 fulfill TEST_ONLY를 동일 primary가 계속하며 실제 키/DB/서비스0. 별도 FailureLimiter transaction의 불명 연결 반환 경로는 독립 읽기 검수 중이다.
+
+- FN16 독립 quality C0/I1: FailureLimiter.#transaction의 별도 COMMIT/ROLLBACK불명 db.release()가 남아 있음을확인. 기존counter fixture release no-op/rollback성공과realAccess시험범위를구별한다. 같은primary TEST_ONLY에limiter직접release(error)·후속연결교체반례를추가하고MainRED후최소보완한다. 앞선20/38PASS를이별도경로합격으로확장하지않음. PMO최신수신은c2fb부분검수접수/추가지시없이연결위임,후속모델capacity오류는본구현중단근거아니다. 실제DB/키/서비스0.
+
+- Main c3ec14 TARGET fulfill/경계·limiter TEST_ONLY 최종185B2A2E(70876bytes) 새16=3PASS13FAIL/0skip/cancel/todo1412.0538ms exit1. 정상limiter2/기존connector1PASS, 실limiterrelease불명3 및 미등록fulfill/query/CSRF/20KiB10 RED. 기존원명령→INTENT_READY/소비1이실제선행하며 import/환경실패가아니다. 원descriptor/지연coldUNKNOWN보강후Main최종실행확인. 동일primary에신규route/등록fulfill/공급자R2/미적용0054·별도limiter최소보완 GO, 독립시험검수병행·동시codewriter0. 실제키/DB/서비스0.
+
+- 독립 TEST_ONLY spec185B C0/I2: 성공후동일fulfill재제출의부작용0과remove/parentfsync실패창반례가누락. 같은primary에필수반례보강을지시했고기존16RED·원기준보존. 실제R2명시참조저장도조회만으로완료하지않고saveBackupReference원권한/receipt호출반례를추가한다. cold늦은성공차단·limiter실release관측은시험대행안전stub없음을확인했다. 0054 FK/RLS/deferred실DB검증으로승격하지않는다. PMO에c3ec14/승인제품착수전달성공,신규결정요청0.
+
+- Mainc1f3cf 추가targetCleanup/targetReference TEST_ONLY00855651(76451bytes):3건0PASS3FAIL1073.2796ms/exit1·신규fulfill미등록404. 성공후재POST무효과·remove/parent실패UNKNOWN 및기존실R2 TARGET저장/receipt/고정조회경로를보강하고동일primary제품GO를유지했다. 별도재승인/PMO배정대기0. 추가시험은명시합성policy옵션만사용하고기존38기대·보호자료불변,실DB/키/서비스0.
+
+- 동결시험00855651의독립spec I1/I2 ADDRESSED/C0I0M0 확인. 제품GO유지하며 원빈공급자의R2 page(limit/cursor) 실제목록연결도기존계약대로검수한다. 현재등록API/descriptor/미적용0054구현진행중이고 Main제품동시write0.
+
+- FN16 등록초안store/catalog(d82032/f62e07)저장후독립사전quality C0/I2: 동일root다른slot중복귀속과claimCOMMIT반환전local등록틈의GET falseUNKNOWN. 같은primary에반례우선최소보완을지시했다. route/provider/R2초안 author선택19=18PASS1FAIL2609.9716ms/type0이며RESOURCE fault가CLAIMED event에도주입된모델분류를descriptor INSERT로정정중이다. 원부분FAIL보존·최종합격아님,0054아직미저장·실제DB/키/서비스0.
+
+
+### 2026-10-28 FN16 TARGET 등록 연결 독립 검수
+- Main440643 동결 등록 source/test8의 집중3파일89PASS/0FAIL/0skip/cancel/todo4060.5568ms,1769ac type/diff0. 기존38+신규27 및 R2직접24의 합성 결과다. 원초안의R2 22PASS2FAIL은기본UNCONFIGURED공급자조기닫기로수정했고기존시험기준변경0. 0054 C7C1AA05는미적용·실PG/SQL/RLS/COMMIT NOT_RUN. 실키/DB/서비스0.
+- 독립quality 기존claim틈/limiter연결폐기/GET최단기한·반환/R2명시저장최종현재성은ADDRESSED. 잔여C0/I2: 현재project한정중복조회로타project동일root귀속가능,probe뒤등록INSERT대기중root변경최종검사누락. 계약§3의동일root중복금지·등록직전현재검사에따라Main채택하고동일primary에두반례TEST_ONLY지시했다. RLS타프로젝트자료노출없이전역배타보장및동일handle최종재검사를검수한다. 서로다른근본원인으로정식실패3회인수조건아님. 전체FN16/UI/계획미완료·완료보고0.
+
+- FN16 미적용0054 독립spec는READY claim transaction이rollback된뒤 #decrease가process_id null을보존하면서non-null process event를넣는충돌을발견했다. SQL line86/98/117 guard와합성모델을함께대조하고최초제출UNKNOWN의원귀속·재실행금지보완을같은primary TEST_ONLY에포함했다. 실제PG판정으로승격0·거짓CLAIMED이력추가금지. 후속UI는기존App CAS/settings·UI08복귀·R2명시선택소비선을읽기확인했으며새Agent/서비스/DB변경0.
+
+- Main78413a 신규targetGlobalRoot/targetFinalRoot/targetClaimRollback/SQL정적2 실제5수집0PASS5FAIL/skip0/cancel0/todo0·1151.4493ms exit1. source/test FC613979 동결에서최종root변조200·claimrollback뒤READY를직접확인했다. 전역root반례는공유합성UNIQUE의23505→503과정규화409기대를대조하며실제0054project한정index는별도정적으로실패확인;실PG/RLS보장아님. 같은primary에허용store/0054/test의중요3점최소보완GO. 원인불명fsopen UNKNOWN1은원raw보존뒤정확patch/append저장으로재개했으며권한/환경변경0,선택0wrapperPASS는기능검증분모에서제외했다.
+
+
+- FN16 TARGET 등록 source 구분단위 최종: Main771277 직접영향target27PASS/0FAIL/0skip/cancel/todo3145.625ms, aab2fc type/diff0·정확8raw 확인. 앞선Main440643 원등록89PASS는보존하고불변경로재실행0. source store2F326CB6/0054FFC89F12/testFE251B47에서독립spec·quality 신규3미진모두ADDRESSED/C0I0M0. 전역root설치/identity배타·최종handle재검사·원READY감소UNKNOWN감사와CLAIMED0을연결했다. 새등록route/0054는untracked분모밖도정확포함하며기존보호8은제외한다. 실제DB문법/RLS/경합/COMMIT·OS파일보호/실키·서비스변경0,UI/키업무/전체FN16미완료. 다음은같은primary의키전체lifecycle TEST_ONLY→연결·UI합성검수다.

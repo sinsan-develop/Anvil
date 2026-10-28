@@ -11,3 +11,10 @@ export class InstallationResourceCatalog{
 
 /** 설치 service 내부 주입 경계. 실 safe handle 공급자는 아직 연결하지 않는다. */
 export interface InstallationResourceCatalogPort{list(kind:'TARGET'|'ENCRYPTION_KEY'):any|Promise<any>;prepareSlot(slotId:string,kind:unknown):Promise<unknown>}
+
+export interface InstallationFileIdentity{device:string;inode:string}
+export interface InstallationRootInspection{identity:InstallationFileIdentity;kind:string;symlink:boolean;uid:number;gid:number;mode:string;availableBytes:number;availableInodes:number}
+export interface InstallationProbeInspection{identity:InstallationFileIdentity;kind:string;symlink:boolean;uid:number;gid:number;mode:string;bytes:number}
+export interface InstallationProbeHandle{sync():Promise<void>;read(maxBytes:number):Promise<Uint8Array>;stat():Promise<InstallationProbeInspection>;close():Promise<void>}
+export interface InstallationRootHandle{inspect():Promise<InstallationRootInspection>;create(input:{fileId:string;bytes:Uint8Array;exclusive:true;noFollow:true;mode:number}):Promise<InstallationProbeHandle>;remove(file:InstallationProbeHandle,expected:InstallationFileIdentity):Promise<void>;fsyncParent():Promise<void>}
+export interface PreparedInstallationSlot{slotId:string;installationId:string;profileRef:{id:string;version:number;contentHash:string};expectedRootIdentity:InstallationFileIdentity;ownerUid:number;rootHandle:InstallationRootHandle}

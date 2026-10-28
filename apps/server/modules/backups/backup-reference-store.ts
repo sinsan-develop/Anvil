@@ -9,7 +9,7 @@ import {authorizeMaterial,currentProjectController,persistProjectReceipt,project
 import {ProjectApprovals} from '../approvals/project-approvals.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import {ProjectListCodec} from '../projects/service.ts';
-import {UnconfiguredBackupResourceProvider} from './backup-resource-provider.ts';
+import {type BackupResourceProvider,UnconfiguredBackupResourceProvider} from './backup-resource-provider.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const bad=(code='BACKUP_REFERENCE_INTEGRITY_FAILED',status=503):never=>{throw new AuthFailure(code,status);};
 function input<T>(f:()=>T,status=422):T{try{return f();}catch(e){if(e instanceof AuthFailure)throw e;return bad('INPUT_INVALID',status);}}
@@ -17,8 +17,8 @@ function stamp(v:unknown):string{if(!(v instanceof Date)||!Number.isFinite(v.get
 interface ReferenceView {ref:VersionRef;snapshot:BackupReferenceSnapshot;previousRef:VersionRef|null;createdAt:string;commandRecordId:string;clientCommandId:string;operationId:string;auditEventId:string;current:{eligible:boolean;reasonCodes:string[];observedAt:string}}
 /** 보관 metadata만 저장한다. 실제 backup/key/provider 실행 capability를 발급하지 않는다. */
 export class BackupReferenceStore {
- #access:AccessRepository;#provider=new UnconfiguredBackupResourceProvider();
- constructor(access:AccessRepository){this.#access=access;}
+ #access:AccessRepository;#provider:BackupResourceProvider;
+ constructor(access:AccessRepository,provider:BackupResourceProvider=new UnconfiguredBackupResourceProvider()){this.#access=access;this.#provider=provider;}
  async #local(db:PoolClient,a:AuthenticatedIdentity){await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true)",[a.actorId,a.clientId]);}
  async #owner(db:PoolClient,a:AuthenticatedIdentity,pid:string){const p=await projectMember(db,a,pid,true);if(p.archived_at||p.participation!=='OWNER')bad('NOT_FOUND',404);}
  async #clock(db:PoolClient,a:AuthenticatedIdentity){const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;notificationSessionDeadline(a,at,before);if(!(at instanceof Date))return bad();return at;}
@@ -27,8 +27,9 @@ export class BackupReferenceStore {
  #query(q:Record<string,unknown>,resources=false){return input(()=>backupReferenceQuery(q,resources),400);}
  #codec(domain:string){return new ProjectListCodec(v=>this.#access.signProjectCursor('FN16_BACKUP_REFERENCES:'+domain+':'+v));}
  #filter(a:AuthenticatedIdentity,pid:string,domain:string,kind:string|undefined,limit:number){return {query:canonicalJson({domain,projectId:pid,actorId:a.actorId,clientId:a.clientId,kind:kind??null,order:'CREATED_AT_ID_DESC'}),archived:false,limit};}
- async resources(token:string,pid:string,q:Record<string,unknown>){const query=this.#query(q,true);return this.#read(token,pid,async(db,a)=>{const at=await this.#clock(db,a),filter=this.#filter(a,pid,'RESOURCE',query.kind,query.limit);if(query.cursor)try{this.#codec('RESOURCE').read(query.cursor,a.actorId,filter,at);}catch{bad('CURSOR_INVALID',400);}return {state:this.#provider.state,page:{items:this.#provider.list(pid,query.kind!),nextCursor:null,hasMore:false,observedAt:at.toISOString()}};});}
- async resource(token:string,pid:string,id:string,version:number,q:Record<string,unknown>){if(Object.keys(q).length)bad('INPUT_INVALID',400);return this.#read(token,pid,async()=>{if(!uuidV1(id)||!Number.isSafeInteger(version)||version<1)bad('INPUT_INVALID',400);const value=this.#provider.read(pid,id,version);if(!value)bad('NOT_FOUND',404);return value;});}
+ async resources(token:string,pid:string,q:Record<string,unknown>){const query=this.#query(q,true);return this.#read(token,pid,async(db,a)=>{const at=await this.#clock(db,a),filter=this.#filter(a,pid,'RESOURCE',query.kind,query.limit),codec=this.#codec('RESOURCE');let pos:{at:string;id:string}|null=null;if(query.cursor)try{pos=codec.read(query.cursor,a.actorId,filter,at);}catch{bad('CURSOR_INVALID',400);}const state=await(this.#provider.stateFor?.(query.kind!)??this.#provider.state),all=state==='UNCONFIGURED'?[]:[...await this.#provider.list(pid,query.kind!,{db,actor:a})];all.sort((x,y)=>y.verifiedAt.localeCompare(x.verifiedAt)||y.ref.id.localeCompare(x.ref.id));const rows=pos?all.filter(x=>x.verifiedAt<pos!.at||x.verifiedAt===pos!.at&&x.ref.id<pos!.id):all,items=rows.slice(0,query.limit),hasMore=rows.length>query.limit,last=items.at(-1);return{state,page:{items,nextCursor:hasMore&&last?codec.create(a.actorId,filter,{at:last.verifiedAt,id:last.ref.id},at):null,hasMore,observedAt:at.toISOString()}};});}
+ async resource(token:string,pid:string,id:string,version:number,q:Record<string,unknown>){if(Object.keys(q).length)bad('INPUT_INVALID',400);return this.#read(token,pid,async(db,a)=>{if(!uuidV1(id)||!Number.isSafeInteger(version)||version<1)bad('INPUT_INVALID',400);const value=await this.#provider.read(pid,id,version,{db,actor:a});if(!value)bad('NOT_FOUND',404);return value;});}
+ async #target(db:PoolClient,a:AuthenticatedIdentity,pid:string,snapshot:BackupReferenceSnapshot){const wanted=(snapshot.spec as {installationResourceRef:VersionRef}).installationResourceRef,value=await this.#provider.read(pid,wanted.id,wanted.version,{db,actor:a});if(!value||value.kind!=='TARGET'||!same(value.ref,wanted)||value.current?.eligible!==true)bad('BACKUP_RESOURCE_PROVIDER_NOT_CONNECTED',412);return value;}
  async #head(db:PoolClient,pid:string,id:string){return (await db.query('SELECT * FROM anvil.backup_references WHERE project_id=$1 AND id=$2 FOR UPDATE',[pid,id])).rows[0];}
  async #version(db:PoolClient,pid:string,id:string,version:number){const row=(await db.query('SELECT v.*,r.kind,r.head_version FROM anvil.backup_reference_versions v JOIN anvil.backup_references r ON r.project_id=v.project_id AND r.id=v.reference_id WHERE v.project_id=$1 AND v.reference_id=$2 AND v.version=$3',[pid,id,version])).rows[0];if(!row)bad('NOT_FOUND',404);return row;}
  async #receipt(db:PoolClient,pid:string,row:any,ref:VersionRef,status:string,payload:unknown,targetId:string|null,expectedVersion:number|null){
@@ -60,8 +61,8 @@ export class BackupReferenceStore {
   const c=await this.#receipt(db,pid,row,ref,'REFERENCE_STORED',snapshot,version===1?null:id,version-1);if(!same(c.result_ref.data.previousRef,previousRef))return bad();
   const events=(await db.query('SELECT * FROM anvil.backup_reference_events WHERE project_id=$1 AND reference_id=$2 AND reference_version=$3',[pid,id,version])).rows;
   if(events.length>1)return bad();for(const event of events){if(event.reference_hash!==ref.contentHash)return bad();await this.#event(db,pid,event);}
-  const at=await this.#clock(db,a),reasonCodes=events.length?['REFERENCE_REVOKED']:snapshot.kind==='VERIFICATION'?['VERIFICATION_NOT_CONNECTED']:['RESOURCE_PROVIDER_NOT_CONNECTED'];
-  return {ref,snapshot,previousRef,createdAt:stamp(row.created_at),commandRecordId:c.id,clientCommandId:c.command_id,operationId:c.operation_id,auditEventId:c.audit_event_id,current:{eligible:false,reasonCodes,observedAt:at.toISOString()}};
+  const at=await this.#clock(db,a);let eligible=false;let reasonCodes=events.length?['REFERENCE_REVOKED']:snapshot.kind==='VERIFICATION'?['VERIFICATION_NOT_CONNECTED']:['RESOURCE_PROVIDER_NOT_CONNECTED'];if(!events.length&&snapshot.kind==='TARGET'){try{await this.#target(db,a,pid,snapshot);eligible=true;reasonCodes=[];}catch(e){if(!(e instanceof AuthFailure)||e.statusCode!==412)throw e;}}
+  return {ref,snapshot,previousRef,createdAt:stamp(row.created_at),commandRecordId:c.id,clientCommandId:c.command_id,operationId:c.operation_id,auditEventId:c.audit_event_id,current:{eligible,reasonCodes,observedAt:at.toISOString()}};
  }
  async #event(db:PoolClient,pid:string,row:any){
   const s=row.snapshot_json,ref={id:row.id,version:1,contentHash:hash(s)};
@@ -90,7 +91,7 @@ export class BackupReferenceStore {
   if(c.operation==='saveBackupReference'&&c.targetId===null&&c.expectedVersion!==0||c.targetId!==null&&(!uuidV1(c.targetId)||c.expectedVersion<1))bad('VERSION_CONFLICT',409);
   const head=c.targetId===null?null:await this.#head(db,c.projectId,c.targetId);if(c.targetId!==null&&(!head||Number(head.head_version)!==c.expectedVersion))bad('VERSION_CONFLICT',409);
   let previousRef:VersionRef|null=null;if(head){const v=await this.#view(db,a,c.projectId,await this.#version(db,c.projectId,head.id,Number(head.head_version)));previousRef=v.ref;if(snapshot&&v.snapshot.kind!==snapshot.kind)bad('VERSION_CONFLICT',409);}
-  if(snapshot?.kind==='TARGET')bad('BACKUP_RESOURCE_PROVIDER_NOT_CONNECTED',412);if(snapshot?.kind==='ENCRYPTION_KEY')bad('KEY_PROTECTION_UNVERIFIED',412);if(snapshot?.kind==='VERIFICATION')bad('REFERENCE_UNAVAILABLE',412);
+  if(snapshot?.kind==='TARGET')await this.#target(db,a,c.projectId,snapshot);if(snapshot?.kind==='ENCRYPTION_KEY')bad('KEY_PROTECTION_UNVERIFIED',412);if(snapshot?.kind==='VERIFICATION')bad('REFERENCE_UNAVAILABLE',412);
   let target:ReferenceView|null=null;
   if(revocation){if(!head||revocation.referenceRef.id!==head.id)bad('VERSION_CONFLICT',409);try{target=await this.#view(db,a,c.projectId,await this.#version(db,c.projectId,revocation.referenceRef.id,revocation.referenceRef.version));}catch(e){if(e instanceof AuthFailure&&e.statusCode===404)bad('VERSION_CONFLICT',409);throw e;}if(!same(target.ref,revocation.referenceRef))bad('VERSION_CONFLICT',409);if(target.current.reasonCodes.includes('REFERENCE_REVOKED'))bad('REFERENCE_ALREADY_REVOKED',409);}
   if(policy.approvalRequired&&c.approvalRef===null)bad('APPROVAL_REQUIRED',412);
@@ -100,7 +101,7 @@ export class BackupReferenceStore {
    const receipt=await persistProjectReceipt(db,a,c,ref,{status:'REFERENCE_STORED',previousRef},policy.ref,'EXPLICIT_BACKUP_REFERENCE_STORED');
    if(!head)await db.query('INSERT INTO anvil.backup_references(project_id,id,kind,head_version,created_by,created_at) VALUES($1,$2,$3,$4,$5,$6)',[c.projectId,id,snapshot.kind,version,a.actorId,createdAt]);
    else{const updated=await db.query('UPDATE anvil.backup_references SET head_version=$3 WHERE project_id=$1 AND id=$2 AND head_version=$4',[c.projectId,id,version,c.expectedVersion]);if(updated.rowCount!==1)bad('VERSION_CONFLICT',409);}
-   await db.query('INSERT INTO anvil.backup_reference_versions(project_id,reference_id,version,snapshot_json,content_hash,previous_version,previous_hash,actor_id,client_id,command_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[c.projectId,id,version,JSON.stringify(snapshot),ref.contentHash,previousRef?.version??null,previousRef?.contentHash??null,a.actorId,a.clientId,receipt.id,createdAt]);await current();return receipt.result;
+   await db.query('INSERT INTO anvil.backup_reference_versions(project_id,reference_id,version,snapshot_json,content_hash,previous_version,previous_hash,actor_id,client_id,command_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[c.projectId,id,version,JSON.stringify(snapshot),ref.contentHash,previousRef?.version??null,previousRef?.contentHash??null,a.actorId,a.clientId,receipt.id,createdAt]);if(snapshot.kind==='TARGET')await this.#target(db,a,c.projectId,snapshot);await current();return receipt.result;
   }
   if(!revocation||!target)return bad();const eventId=randomUUID(),event={eventId,version:1,eventKind:'REVOKED',projectId:c.projectId,referenceRef:target.ref,reason:revocation.reason,actorId:a.actorId,clientId:a.clientId,clientCommandId:c.commandId,createdAt:createdAt.toISOString()},ref={id:eventId,version:1,contentHash:hash(event)};
   const receipt=await persistProjectReceipt(db,a,c,ref,{status:'REFERENCE_REVOKED',referenceRef:target.ref},policy.ref,'EXPLICIT_BACKUP_REFERENCE_REVOKED');

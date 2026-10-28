@@ -1,7 +1,9 @@
 import type {BackupReferenceKind} from '../../../../contracts/runtime/backup-references-v1.ts';
-/** 실제 설치 공급자가 아직 연결되지 않았다. 임의 path/key/UUID를 descriptor로 합성하지 않는다. */
-export class UnconfiguredBackupResourceProvider {
- readonly state='UNCONFIGURED' as const;
- list(_projectId:string,_kind:BackupReferenceKind):readonly never[]{return [];}
- read(_projectId:string,_id:string,_version:number):null{return null;}
-}
+import type {PoolClient} from 'pg';
+import type {AuthenticatedIdentity} from '../access/repository.ts';
+import type {InstallationResourceStore} from './installation-resource-store.ts';
+export interface BackupResourceContext {db:PoolClient;actor:AuthenticatedIdentity}
+export interface BackupResourceProvider {readonly state:string;stateFor?(kind:BackupReferenceKind):string|Promise<string>;list(projectId:string,kind:BackupReferenceKind,context?:BackupResourceContext):readonly any[]|Promise<readonly any[]>;read(projectId:string,id:string,version:number,context?:BackupResourceContext):any|Promise<any>}
+/** 미구성 공급자는 descriptor를 합성하지 않는다. */
+export class UnconfiguredBackupResourceProvider implements BackupResourceProvider {readonly state='UNCONFIGURED';list(_p:string,_k:BackupReferenceKind):readonly never[]{return [];}read(_p:string,_i:string,_v:number):null{return null;}}
+export class InstallationBackupResourceProvider implements BackupResourceProvider {readonly state='UNCONFIGURED';private store:InstallationResourceStore;constructor(store:InstallationResourceStore){this.store=store;}stateFor(kind:BackupReferenceKind){return this.store.resourceConfigurationState(kind as 'TARGET'|'ENCRYPTION_KEY');}async list(pid:string,kind:BackupReferenceKind,c?:BackupResourceContext){return c?this.store.resourceList(c.db,c.actor,pid,kind as 'TARGET'|'ENCRYPTION_KEY'):[];}async read(pid:string,id:string,v:number,c?:BackupResourceContext){if(!c||await this.store.resourceConfigurationState('TARGET')==='UNCONFIGURED')return null;return this.store.resourceRead(c.db,c.actor,pid,id,v);}}

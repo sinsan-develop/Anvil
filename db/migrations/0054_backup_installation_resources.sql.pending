@@ -1,0 +1,207 @@
+-- FN16 5A6819E6 r2 등록 블록의 source-only forward 후보. 적용/PG compile/RLS/COMMIT 검증 NOT_RUN.
+-- Secret/키 저장 및 실제 catalog adapter는 이 블록에서 구현하지 않는다.
+CREATE TABLE anvil.installation_resource_intents(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,actor_id uuid NOT NULL,client_id uuid NOT NULL,session_id uuid NOT NULL REFERENCES anvil.auth_sessions(id),
+ command_id uuid NOT NULL UNIQUE,authorization_receipt_id uuid NOT NULL REFERENCES anvil.authorization_receipts(id),scope_digest text NOT NULL CHECK(scope_digest~'^[a-f0-9]{64}$'),
+ state text NOT NULL CHECK(state IN('READY','PROCESSING','SUCCEEDED','FAILED','UNKNOWN','EXPIRED')),process_id uuid,result_ref jsonb,
+ snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),created_at timestamptz NOT NULL,expires_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,id,content_hash),FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id),CHECK(expires_at>created_at AND expires_at<=created_at+interval '60 seconds'),
+ CHECK((state='READY' AND process_id IS NULL AND result_ref IS NULL) OR (state='PROCESSING' AND process_id IS NOT NULL AND result_ref IS NULL) OR (state='SUCCEEDED' AND process_id IS NOT NULL AND result_ref IS NOT NULL) OR (state IN('FAILED','UNKNOWN','EXPIRED') AND result_ref IS NULL))
+);
+-- 만료 READY는 보존한다. 무기한 READY unique index 대신 project 행 잠금 후 유효창을 센다.
+CREATE TABLE anvil.installation_resources(project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,kind text NOT NULL CHECK(kind='TARGET'),head_version bigint NOT NULL CHECK(head_version=1),installation_id uuid NOT NULL,slot_id uuid NOT NULL,created_by uuid NOT NULL,created_at timestamptz NOT NULL,PRIMARY KEY(project_id,id),UNIQUE(project_id,installation_id,slot_id));
+CREATE TABLE anvil.installation_resource_versions(project_id uuid NOT NULL,resource_id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),origin_intent_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE,actor_id uuid NOT NULL,client_id uuid NOT NULL,snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),probe_json jsonb NOT NULL,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,resource_id,version),UNIQUE(project_id,resource_id,version,content_hash),FOREIGN KEY(project_id,resource_id) REFERENCES anvil.installation_resources(project_id,id) DEFERRABLE INITIALLY DEFERRED,FOREIGN KEY(project_id,origin_intent_id) REFERENCES anvil.installation_resource_intents(project_id,id),FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id),FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id));
+ALTER TABLE anvil.installation_resources ADD CONSTRAINT installation_resource_head FOREIGN KEY(project_id,id,head_version) REFERENCES anvil.installation_resource_versions(project_id,resource_id,version) DEFERRABLE INITIALLY DEFERRED;
+-- RLS로 다른 project 행을 읽지 않아도 같은 설치의 동일 root는 전역 UNIQUE가 배타한다.
+CREATE UNIQUE INDEX installation_resource_root_unique ON anvil.installation_resource_versions((snapshot_json->>'installationId'),(probe_json->'rootIdentity'->>'device'),(probe_json->'rootIdentity'->>'inode'));
+CREATE TABLE anvil.installation_resource_events(project_id uuid NOT NULL,id uuid NOT NULL,intent_id uuid NOT NULL,resource_id uuid,process_id uuid NOT NULL,event_kind text NOT NULL CHECK(event_kind IN('CLAIMED','SUCCEEDED','FAILED','UNKNOWN')),actor_id uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL,snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,intent_id,process_id,event_kind),FOREIGN KEY(project_id,intent_id) REFERENCES anvil.installation_resource_intents(project_id,id),FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id),FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id));
+CREATE TABLE anvil.installation_key_failure_limits(project_id uuid NOT NULL REFERENCES anvil.projects(id),bucket_kind text NOT NULL CHECK(bucket_kind IN('ACTOR_KEY','PROJECT')),bucket_key text NOT NULL,failures integer NOT NULL CHECK(failures BETWEEN 1 AND 5),window_started_at timestamptz NOT NULL,blocked_until timestamptz,PRIMARY KEY(project_id,bucket_kind,bucket_key),CHECK((failures<5 AND blocked_until IS NULL) OR (failures=5 AND blocked_until IS NOT NULL AND blocked_until>=window_started_at)));
+CREATE TABLE anvil.installation_key_attempts(id uuid NOT NULL,project_id uuid NOT NULL REFERENCES anvil.projects(id),actor_id uuid NOT NULL,client_id uuid NOT NULL,session_id uuid NOT NULL REFERENCES anvil.auth_sessions(id),key_id uuid NOT NULL,created_at timestamptz NOT NULL,state text NOT NULL CHECK(state IN('RESERVED','RECORDED','FAILED','SUCCEEDED','UNKNOWN')),outcome text CHECK(outcome IN('FAILED','SUCCEEDED')),PRIMARY KEY(project_id,id),FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id),CHECK((state='RESERVED' AND outcome IS NULL) OR (state='RECORDED' AND outcome IS NOT NULL) OR (state IN('FAILED','SUCCEEDED') AND state=outcome) OR state='UNKNOWN'));
+-- 실패 예약은 key 사용 허가가 아니다. full key fulfill의 intent 귀속은 후속 블록에서 추가한다.
+CREATE FUNCTION anvil.fn16_installation_approval(pid uuid,cid uuid,did uuid,historical boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands;ar anvil.authorization_receipts;r anvil.approval_requests;d anvil.approval_decisions;s jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=did;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;s:=r.action_scope_json;
+ IF c.id IS NULL OR ar.id IS NULL OR d.id IS NULL OR r.id IS NULL OR c.operation<>'manageBackupResource' OR c.state<>'APPLIED' OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid OR ar.scope_kind<>'PROJECT' OR ar.scope_id<>pid OR c.expected_version<>0 OR d.decision<>'APPROVE' OR d.request_version<>1 OR NOT((r.status='APPROVED' AND r.version=2) OR(r.status='CONSUMED' AND r.version=3))
+ OR c.approval_consumption_id IS NULL OR ar.approval_decision_ref IS DISTINCT FROM d.id OR c.command_id IS DISTINCT FROM r.candidate_command_id OR r.created_by IS DISTINCT FROM c.actor_id OR r.client_id IS DISTINCT FROM c.client_id OR d.decided_by IS DISTINCT FROM c.actor_id OR d.client_id IS DISTINCT FROM c.client_id OR d.control_generation IS DISTINCT FROM c.control_generation
+ OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR s->'requestedSubjectRef' IS DISTINCT FROM ar.subject_ref OR c.policy_ref IS DISTINCT FROM ar.policy_ref OR c.policy_ref IS DISTINCT FROM r.policy_ref OR d.decision_json->'policyRef' IS DISTINCT FROM c.policy_ref
+ OR s->>'operation' IS DISTINCT FROM c.operation OR s->'targetRef' IS DISTINCT FROM 'null'::jsonb OR s->>'expectedVersion' IS DISTINCT FROM '0' OR s->>'controlGeneration' IS DISTINCT FROM c.control_generation::text OR s->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR s->'sourceScopes' IS DISTINCT FROM '[]'::jsonb OR s->'environmentRef' IS DISTINCT FROM 'null'::jsonb OR s->'limitsRef' IS DISTINCT FROM 'null'::jsonb
+ OR r.scope_digest IS DISTINCT FROM anvil.execution_json_hash(s) OR d.scope_digest IS DISTINCT FROM r.scope_digest OR c.payload_ref IS DISTINCT FROM jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',s->>'payloadHash','scopeDigest',r.scope_digest) THEN RETURN false;END IF;
+ IF NOT historical AND r.expires_at<=clock_timestamp() THEN RETURN false;END IF;RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_installation;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$ SELECT CASE WHEN s->>'operation'='manageBackupResource' THEN s->'targetRef'='null'::jsonb AND s->>'expectedVersion'='0' ELSE anvil.connection_candidate_approval_target_before_installation(pid,s) END;$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_installation;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands WHERE project_id=pid AND id=cid AND operation='manageBackupResource') THEN anvil.fn16_installation_approval(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_installation(pid,cid,did) END;$$;
+CREATE FUNCTION anvil.fn16_installation_origin(pid uuid,iid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE i anvil.installation_resource_intents;c anvil.commands;ar anvil.authorization_receipts;ac anvil.approval_consumptions;d anvil.approval_decisions;r anvil.approval_requests;ref jsonb;cmd jsonb;approval jsonb;digest text;
+BEGIN
+ SELECT * INTO i FROM anvil.installation_resource_intents WHERE project_id=pid AND id=iid;SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=i.command_id;SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;SELECT * INTO ac FROM anvil.approval_consumptions WHERE project_id=pid AND id=c.approval_consumption_id;SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=ac.decision_id;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;
+ IF i.id IS NULL OR c.id IS NULL OR ar.id IS NULL OR ac.id IS NULL OR NOT anvil.fn16_installation_approval(pid,c.id,d.id,true) THEN RETURN false;END IF;
+ ref:=jsonb_build_object('id',i.id,'version',1,'contentHash',i.content_hash);approval:=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest);cmd:=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',i.client_id,'controlGeneration',c.control_generation,'operation','manageBackupResource','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',i.snapshot_json->'payload');digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',i.actor_id,'clientId',i.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ IF i.content_hash IS DISTINCT FROM anvil.execution_json_hash(i.snapshot_json) OR c.request_hash IS DISTINCT FROM anvil.execution_json_hash(cmd) OR i.actor_id<>c.actor_id OR i.client_id<>c.client_id OR i.authorization_receipt_id<>ar.id OR i.scope_digest IS DISTINCT FROM digest OR ar.scope_digest IS DISTINCT FROM digest
+ OR i.snapshot_json->>'id' IS DISTINCT FROM i.id::text OR i.snapshot_json->>'version' IS DISTINCT FROM '1' OR i.snapshot_json->>'projectId' IS DISTINCT FROM pid::text OR i.snapshot_json->>'actorId' IS DISTINCT FROM i.actor_id::text OR i.snapshot_json->>'clientId' IS DISTINCT FROM i.client_id::text OR i.snapshot_json->>'sessionId' IS DISTINCT FROM i.session_id::text OR i.snapshot_json->>'clientCommandId' IS DISTINCT FROM c.command_id::text OR i.snapshot_json->'policyRef' IS DISTINCT FROM c.policy_ref OR i.snapshot_json->'approvalRef' IS DISTINCT FROM approval OR (i.snapshot_json->>'createdAt')::timestamptz<>i.created_at OR (i.snapshot_json->>'expiresAt')::timestamptz<>i.expires_at
+ OR i.snapshot_json->'payload'->>'action' IS DISTINCT FROM 'REGISTER_TARGET' OR i.snapshot_json->'payload'->'resourceRef' IS DISTINCT FROM 'null'::jsonb OR i.snapshot_json->'payload'->>'expectedResourceVersion' IS DISTINCT FROM '0' OR i.snapshot_json->'payload'->'expectedLeaseGeneration' IS DISTINCT FROM 'null'::jsonb OR i.snapshot_json->'payload'->'envelopeHash' IS DISTINCT FROM 'null'::jsonb
+ OR r.action_scope_json->>'payloadHash' IS DISTINCT FROM anvil.execution_json_hash(i.snapshot_json->'payload') OR ac.command_id<>c.id OR ac.scope_digest IS DISTINCT FROM r.scope_digest OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'INTENT_READY' OR c.result_ref->'data'->'intentRef' IS DISTINCT FROM ref OR c.result_ref->'data'->'ref' IS DISTINCT FROM ref
+ OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM pid::text OR (c.result_ref->>'serverReceivedAt')::timestamptz<>i.created_at OR date_trunc('milliseconds',c.completed_at)<>i.created_at THEN RETURN false;END IF;
+ RETURN (SELECT count(*)=1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',i.actor_id) AND a.client_ref=i.client_id AND a.operation_id=c.operation_id AND a.target_ref=ref AND a.policy_ref=c.policy_ref AND a.approval_ref=approval AND a.scope_digest=digest AND a.source_kind='HUMAN_COMMAND' AND a.outcome='APPLIED') AND (SELECT count(*)=1 FROM anvil.audit_events WHERE project_id=pid AND command_id=c.id);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.fn16_installation_current(pid uuid,iid uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE AS $$
+DECLARE i anvil.installation_resource_intents;c anvil.commands;p anvil.permission_policy_versions;rule jsonb;matched boolean:=false;did uuid;
+BEGIN
+ SELECT * INTO i FROM anvil.installation_resource_intents WHERE project_id=pid AND id=iid;SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=i.command_id;
+ IF c.id IS NULL OR i.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR i.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RETURN false;END IF;
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id WHERE pr.id=pid AND m.user_id=i.actor_id FOR UPDATE OF pr,m,pc;
+ IF NOT FOUND THEN RETURN false;END IF;
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id JOIN anvil.users u ON u.id=i.actor_id JOIN anvil.clients cl ON cl.id=i.client_id AND cl.user_id=u.id JOIN anvil.auth_sessions a ON a.id=i.session_id AND a.user_id=u.id AND a.client_id=cl.id
+ WHERE pr.id=pid AND pr.archived_at IS NULL AND m.user_id=i.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL AND pc.actor_id=i.actor_id AND pc.client_id=i.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL AND u.status='ACTIVE' AND cl.revoked_at IS NULL AND a.credential_generation=u.credential_generation AND a.revoked_at IS NULL AND a.idle_expires_at>clock_timestamp() AND a.absolute_expires_at>clock_timestamp() AND i.expires_at>clock_timestamp();
+ IF NOT FOUND THEN RETURN false;END IF;
+ SELECT pv.* INTO p FROM anvil.permission_policies pp JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version WHERE pp.project_id=pid AND c.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash);
+ IF p.policy_id IS NULL OR p.content_hash IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('rules',p.rules_json,'reason',p.reason,'reviewRefs',p.review_refs)) THEN RETURN false;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(p.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',i.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND rule->'operations' ? 'manageBackupResource' AND (rule->>'expiresAt')::timestamptz>i.created_at THEN
+   IF (rule->>'expiresAt')::timestamptz<=clock_timestamp() OR rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;matched:=true;
+  END IF;
+ END LOOP;
+ SELECT decision_id INTO did FROM anvil.approval_consumptions WHERE project_id=pid AND id=c.approval_consumption_id;
+ RETURN matched AND anvil.fn16_installation_approval(pid,c.id,did,false) AND anvil.fn16_installation_origin(pid,iid);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.fn16_installation_write() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE i anvil.installation_resource_intents;c anvil.commands;ref jsonb;
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'INSTALLATION_PRESERVE_REQUIRED' USING ERRCODE='23514';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ IF TG_TABLE_NAME='installation_resource_intents' THEN
+  IF TG_OP='INSERT' THEN
+   SELECT * INTO c FROM anvil.commands WHERE project_id=NEW.project_id AND id=NEW.command_id;
+   IF NEW.state<>'READY' OR NEW.process_id IS NOT NULL OR NEW.result_ref IS NOT NULL OR c.operation<>'manageBackupResource' OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) OR NEW.created_at<>date_trunc('milliseconds',transaction_timestamp()) OR NOT EXISTS(SELECT 1 FROM anvil.commands origin WHERE origin.project_id=NEW.project_id AND origin.id=c.id AND origin.xmin=pg_current_xact_id()::xid) OR NEW.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'INSTALLATION_NEW_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+   IF EXISTS(SELECT 1 FROM anvil.installation_resource_intents old WHERE old.project_id=NEW.project_id AND (old.state IN('PROCESSING','UNKNOWN') OR(old.state='READY' AND old.expires_at>clock_timestamp()))) THEN RAISE EXCEPTION 'INSTALLATION_PENDING_LIMIT' USING ERRCODE='23514';END IF;
+  ELSE
+   IF (to_jsonb(NEW)-ARRAY['state','process_id','result_ref']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['state','process_id','result_ref']) OR NEW.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RAISE EXCEPTION 'INSTALLATION_ORIGIN_IMMUTABLE' USING ERRCODE='23514';END IF;
+   IF OLD.state='READY' AND NEW.state='PROCESSING' THEN
+    IF NEW.process_id IS NULL OR NEW.result_ref IS NOT NULL OR NOT anvil.fn16_installation_current(OLD.project_id,OLD.id) THEN RAISE EXCEPTION 'INSTALLATION_CLAIM_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+   ELSIF NEW.state IN('FAILED','UNKNOWN','EXPIRED') AND OLD.state IN('READY','PROCESSING','SUCCEEDED') THEN
+    IF NEW.result_ref IS NOT NULL OR NOT anvil.fn16_installation_origin(OLD.project_id,OLD.id) OR NOT ((OLD.state='READY' AND OLD.process_id IS NULL AND NEW.state='UNKNOWN' AND NEW.process_id IS NOT NULL) OR (OLD.state<>'READY' AND NEW.process_id IS NOT DISTINCT FROM OLD.process_id)) THEN RAISE EXCEPTION 'INSTALLATION_REDUCTION_REQUIRED' USING ERRCODE='23514';END IF;
+   ELSIF OLD.state='PROCESSING' AND NEW.state='SUCCEEDED' THEN
+    IF NEW.process_id IS DISTINCT FROM OLD.process_id OR NEW.result_ref IS NULL OR NOT anvil.fn16_installation_current(OLD.project_id,OLD.id) THEN RAISE EXCEPTION 'INSTALLATION_ACTIVATION_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+   ELSE RAISE EXCEPTION 'INSTALLATION_SINGLE_USE_REQUIRED' USING ERRCODE='23514';END IF;
+  END IF;
+ ELSIF TG_TABLE_NAME='installation_resources' THEN
+  IF TG_OP<>'INSERT' OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NOT anvil.fn16_backup_owner(NEW.project_id) OR (SELECT count(*) FROM anvil.installation_resources WHERE project_id=NEW.project_id)>=8 THEN RAISE EXCEPTION 'INSTALLATION_TARGET_LIMIT' USING ERRCODE='42501';END IF;
+ ELSIF TG_TABLE_NAME='installation_resource_versions' THEN
+  SELECT * INTO i FROM anvil.installation_resource_intents WHERE project_id=NEW.project_id AND id=NEW.origin_intent_id;
+  IF TG_OP<>'INSERT' OR i.state<>'PROCESSING' OR NEW.command_id<>i.command_id OR NEW.actor_id<>i.actor_id OR NEW.client_id<>i.client_id OR NOT anvil.fn16_installation_current(i.project_id,i.id) OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(NEW.snapshot_json) OR NEW.snapshot_json->'originIntentRef' IS DISTINCT FROM jsonb_build_object('id',i.id,'version',1,'contentHash',i.content_hash) OR NEW.snapshot_json->'protectionEvidenceRef' IS DISTINCT FROM jsonb_build_object('id',i.process_id,'version',1,'contentHash',anvil.execution_json_hash(NEW.probe_json)) OR NEW.probe_json->'rootIdentity'->>'device' IS NULL OR NEW.probe_json->'rootIdentity'->>'inode' IS NULL OR NEW.probe_json->'probe'->>'removed' IS DISTINCT FROM 'true' OR NEW.probe_json->'probe'->>'parentSynced' IS DISTINCT FROM 'true' OR NOT EXISTS(SELECT 1 FROM anvil.installation_resources head WHERE head.project_id=NEW.project_id AND head.id=NEW.resource_id AND NEW.snapshot_json->>'installationId'=head.installation_id::text AND NEW.snapshot_json->>'slotId'=head.slot_id::text AND NEW.probe_json->>'installationId'=head.installation_id::text AND NEW.probe_json->>'slotId'=head.slot_id::text) THEN RAISE EXCEPTION 'INSTALLATION_DESCRIPTOR_REQUIRED' USING ERRCODE='23514';END IF;
+ ELSIF TG_TABLE_NAME='installation_resource_events' THEN
+  SELECT * INTO i FROM anvil.installation_resource_intents WHERE project_id=NEW.project_id AND id=NEW.intent_id;
+  IF TG_OP<>'INSERT' OR NEW.command_id<>i.command_id OR NEW.actor_id<>i.actor_id OR NEW.client_id<>i.client_id OR NEW.process_id IS DISTINCT FROM i.process_id OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(NEW.snapshot_json) OR NEW.snapshot_json->'intentRef' IS DISTINCT FROM jsonb_build_object('id',i.id,'version',1,'contentHash',i.content_hash) OR NEW.snapshot_json->>'eventKind' IS DISTINCT FROM NEW.event_kind OR ((NEW.snapshot_json ? 'previousState' OR NEW.snapshot_json ? 'claimConfirmed') AND NOT coalesce(NEW.event_kind='UNKNOWN' AND i.state='UNKNOWN' AND NEW.snapshot_json->>'previousState'='READY' AND NEW.snapshot_json->'claimConfirmed'='false'::jsonb AND NOT EXISTS(SELECT 1 FROM anvil.installation_resource_events prior WHERE prior.project_id=i.project_id AND prior.intent_id=i.id AND prior.process_id=i.process_id AND prior.event_kind='CLAIMED'),false)) OR NOT anvil.fn16_installation_origin(i.project_id,i.id) THEN RAISE EXCEPTION 'INSTALLATION_EVENT_ORIGIN_REQUIRED' USING ERRCODE='23514';END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn16_installation_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;i anvil.installation_resource_intents;v anvil.installation_resource_versions;
+BEGIN
+ IF TG_TABLE_NAME='authorization_receipts' THEN IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;pid:=NEW.scope_id;cid:=NEW.command_id;
+ ELSIF TG_TABLE_NAME='commands' THEN IF NEW.scope_kind<>'PROJECT' THEN RETURN NEW;END IF;pid:=NEW.project_id;cid:=NEW.id;
+ ELSE pid:=NEW.project_id;cid:=NEW.command_id;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.commands WHERE project_id=pid AND id=cid AND operation='manageBackupResource') THEN RETURN NEW;END IF;
+ SELECT * INTO i FROM anvil.installation_resource_intents WHERE project_id=pid AND command_id=cid;
+ IF i.id IS NULL OR NOT anvil.fn16_installation_origin(pid,i.id) THEN RAISE EXCEPTION 'INSTALLATION_ATOMIC_INTENT_REQUIRED' USING ERRCODE='23514';END IF;
+ -- 원 intent 최초 생성 Tx와 후속 fulfill Tx를 구분한다. 역사 READY receipt는 만료 후에도 immutable이다.
+ IF TG_TABLE_NAME IN('commands','authorization_receipts','audit_events','approval_consumptions') OR(TG_TABLE_NAME='installation_resource_intents' AND TG_OP='INSERT') THEN
+  IF i.state<>'READY' OR NOT anvil.fn16_installation_current(pid,i.id) THEN RAISE EXCEPTION 'INSTALLATION_READY_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSIF i.state IN('PROCESSING','SUCCEEDED') THEN
+  IF NOT anvil.fn16_installation_current(pid,i.id) THEN RAISE EXCEPTION 'INSTALLATION_FINAL_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ -- 원 claim COMMIT이 미확정/rollback이면 CLAIMED 성공을 합성하지 않는다. 원 READY의 감소 attempt만 UNKNOWN 이벤트로 결박한다.
+ IF i.state IN('PROCESSING','SUCCEEDED','FAILED','UNKNOWN') AND i.process_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM anvil.installation_resource_events e WHERE e.project_id=pid AND e.intent_id=i.id AND e.process_id=i.process_id AND e.event_kind='CLAIMED') AND NOT(i.state='UNKNOWN' AND EXISTS(SELECT 1 FROM anvil.installation_resource_events e WHERE e.project_id=pid AND e.intent_id=i.id AND e.process_id=i.process_id AND e.event_kind='UNKNOWN' AND e.snapshot_json->>'previousState'='READY' AND e.snapshot_json->'claimConfirmed'='false'::jsonb)) THEN RAISE EXCEPTION 'INSTALLATION_CLAIM_EVENT_REQUIRED' USING ERRCODE='23514';END IF;
+ IF i.state IN('FAILED','UNKNOWN') AND i.process_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM anvil.installation_resource_events e WHERE e.project_id=pid AND e.intent_id=i.id AND e.process_id=i.process_id AND e.event_kind=i.state) THEN RAISE EXCEPTION 'INSTALLATION_REDUCTION_EVENT_REQUIRED' USING ERRCODE='23514';END IF;
+ IF i.state='SUCCEEDED' THEN
+  SELECT * INTO v FROM anvil.installation_resource_versions WHERE project_id=pid AND origin_intent_id=i.id;
+  IF v.resource_id IS NULL OR i.result_ref IS DISTINCT FROM jsonb_build_object('id',v.resource_id,'version',v.version,'contentHash',v.content_hash) OR NOT EXISTS(SELECT 1 FROM anvil.installation_resource_events e WHERE e.project_id=pid AND e.intent_id=i.id AND e.process_id=i.process_id AND e.event_kind='SUCCEEDED' AND e.resource_id=v.resource_id) THEN RAISE EXCEPTION 'INSTALLATION_SUCCESS_DESCRIPTOR_REQUIRED' USING ERRCODE='23514';END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn16_installation_dependency_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN cid:=OLD.id;IF OLD.operation='manageBackupResource' OR(TG_OP='UPDATE' AND NEW.operation='manageBackupResource') THEN RAISE EXCEPTION 'INSTALLATION_COMMAND_IMMUTABLE' USING ERRCODE='23514';END IF;ELSE cid:=OLD.command_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.installation_resource_intents WHERE command_id=cid) THEN RAISE EXCEPTION 'INSTALLATION_RECEIPT_IMMUTABLE' USING ERRCODE='23514';END IF;IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn16_installation_attempt_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'INSTALLATION_ATTEMPT_PRESERVE' USING ERRCODE='23514';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ IF TG_TABLE_NAME='installation_key_attempts' THEN
+  IF NEW.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RAISE EXCEPTION 'INSTALLATION_ATTEMPT_OWNER' USING ERRCODE='42501';END IF;
+  IF TG_OP='INSERT' THEN
+   IF NEW.state<>'RESERVED' OR NOT anvil.fn16_backup_owner(NEW.project_id) OR NOT EXISTS(SELECT 1 FROM anvil.auth_sessions a WHERE a.id=NEW.session_id AND a.user_id=NEW.actor_id AND a.client_id=NEW.client_id AND a.revoked_at IS NULL AND a.idle_expires_at>clock_timestamp() AND a.absolute_expires_at>clock_timestamp()) OR EXISTS(SELECT 1 FROM anvil.installation_key_attempts WHERE project_id=NEW.project_id AND state IN('RESERVED','RECORDED','UNKNOWN')) THEN RAISE EXCEPTION 'INSTALLATION_ATTEMPT_ADMISSION' USING ERRCODE='42501';END IF;
+  ELSE
+   IF (to_jsonb(NEW)-ARRAY['state','outcome']) IS DISTINCT FROM(to_jsonb(OLD)-ARRAY['state','outcome']) OR NOT((OLD.state='RESERVED' AND NEW.state='RECORDED') OR(OLD.state='RECORDED' AND NEW.state=OLD.outcome AND NEW.outcome=OLD.outcome)) THEN RAISE EXCEPTION 'INSTALLATION_ATTEMPT_SINGLE_USE' USING ERRCODE='23514';END IF;
+  END IF;
+ ELSE
+  IF NOT EXISTS(SELECT 1 FROM anvil.installation_key_attempts a WHERE a.project_id=NEW.project_id AND a.actor_id::text=current_setting('anvil.actor_id',true) AND a.client_id::text=current_setting('anvil.client_id',true) AND a.state='RESERVED' AND ((NEW.bucket_kind='PROJECT' AND NEW.bucket_key=NEW.project_id::text) OR(NEW.bucket_kind='ACTOR_KEY' AND NEW.bucket_key=a.actor_id::text||':'||a.key_id::text))) THEN RAISE EXCEPTION 'INSTALLATION_FAILURE_ORIGIN' USING ERRCODE='42501';END IF;
+ END IF;RETURN NEW;
+END;$$;
+
+-- provisioning default CRUD를 회수하고 필요한 열만 허용한다. FORCE RLS owner도 자동 우회하지 않는다.
+REVOKE ALL ON anvil.installation_resource_intents,anvil.installation_resources,anvil.installation_resource_versions,anvil.installation_resource_events,anvil.installation_key_failure_limits,anvil.installation_key_attempts FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.installation_resource_intents,anvil.installation_resources,anvil.installation_resource_versions,anvil.installation_resource_events,anvil.installation_key_failure_limits,anvil.installation_key_attempts TO anvil_v3_app;
+GRANT UPDATE(state,process_id,result_ref) ON anvil.installation_resource_intents TO anvil_v3_app;
+GRANT UPDATE(head_version) ON anvil.installation_resources TO anvil_v3_app;
+GRANT UPDATE(state,outcome) ON anvil.installation_key_attempts TO anvil_v3_app;
+GRANT UPDATE(failures,window_started_at,blocked_until) ON anvil.installation_key_failure_limits TO anvil_v3_app;
+ALTER TABLE anvil.installation_resource_intents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_resource_intents FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_resource_intents_read ON anvil.installation_resource_intents FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE POLICY installation_resource_intents_insert ON anvil.installation_resource_intents FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE POLICY installation_resource_intents_update ON anvil.installation_resource_intents FOR UPDATE TO anvil_v3_app USING(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true))) WITH CHECK(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE TRIGGER installation_resource_intents_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_resource_intents FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_write();
+ALTER TABLE anvil.installation_resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_resources FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_resources_read ON anvil.installation_resources FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY installation_resources_insert ON anvil.installation_resources FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id));
+CREATE TRIGGER installation_resources_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_resources FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_write();
+ALTER TABLE anvil.installation_resource_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_resource_versions FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_resource_versions_read ON anvil.installation_resource_versions FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY installation_resource_versions_insert ON anvil.installation_resource_versions FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id));
+CREATE TRIGGER installation_resource_versions_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_resource_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_write();
+ALTER TABLE anvil.installation_resource_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_resource_events FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_resource_events_read ON anvil.installation_resource_events FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id));
+CREATE POLICY installation_resource_events_insert ON anvil.installation_resource_events FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id));
+CREATE TRIGGER installation_resource_events_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_resource_events FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_write();
+ALTER TABLE anvil.installation_key_failure_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_key_failure_limits FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_key_failure_limits_read ON anvil.installation_key_failure_limits FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id) OR EXISTS(SELECT 1 FROM anvil.installation_key_attempts a WHERE a.project_id=installation_key_failure_limits.project_id AND a.actor_id::text=current_setting('anvil.actor_id',true) AND a.client_id::text=current_setting('anvil.client_id',true) AND a.state IN('RESERVED','RECORDED')));
+CREATE POLICY installation_key_failure_limits_insert ON anvil.installation_key_failure_limits FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) OR EXISTS(SELECT 1 FROM anvil.installation_key_attempts a WHERE a.project_id=installation_key_failure_limits.project_id AND a.actor_id::text=current_setting('anvil.actor_id',true) AND a.client_id::text=current_setting('anvil.client_id',true) AND a.state IN('RESERVED','RECORDED')));
+CREATE POLICY installation_key_failure_limits_update ON anvil.installation_key_failure_limits FOR UPDATE TO anvil_v3_app USING(anvil.fn16_backup_owner(project_id) OR EXISTS(SELECT 1 FROM anvil.installation_key_attempts a WHERE a.project_id=installation_key_failure_limits.project_id AND a.actor_id::text=current_setting('anvil.actor_id',true) AND a.client_id::text=current_setting('anvil.client_id',true) AND a.state IN('RESERVED','RECORDED'))) WITH CHECK(anvil.fn16_backup_owner(project_id) OR EXISTS(SELECT 1 FROM anvil.installation_key_attempts a WHERE a.project_id=installation_key_failure_limits.project_id AND a.actor_id::text=current_setting('anvil.actor_id',true) AND a.client_id::text=current_setting('anvil.client_id',true) AND a.state IN('RESERVED','RECORDED')));
+CREATE TRIGGER installation_key_failure_limits_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_key_failure_limits FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_attempt_guard();
+ALTER TABLE anvil.installation_key_attempts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.installation_key_attempts FORCE ROW LEVEL SECURITY;
+CREATE POLICY installation_key_attempts_read ON anvil.installation_key_attempts FOR SELECT TO anvil_v3_app,anvil_v3_migrator USING(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE POLICY installation_key_attempts_insert ON anvil.installation_key_attempts FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE POLICY installation_key_attempts_update ON anvil.installation_key_attempts FOR UPDATE TO anvil_v3_app USING(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true))) WITH CHECK(anvil.fn16_backup_owner(project_id) OR (actor_id::text=current_setting('anvil.actor_id',true) AND client_id::text=current_setting('anvil.client_id',true)));
+CREATE TRIGGER installation_key_attempts_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.installation_key_attempts FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_attempt_guard();
+CREATE CONSTRAINT TRIGGER installation_resource_intents_installation_complete AFTER INSERT OR UPDATE ON anvil.installation_resource_intents DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER installation_resource_versions_installation_complete AFTER INSERT ON anvil.installation_resource_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER installation_resource_events_installation_complete AFTER INSERT ON anvil.installation_resource_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER commands_installation_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER authorization_receipts_installation_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER audit_events_installation_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE CONSTRAINT TRIGGER approval_consumptions_installation_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_complete();
+CREATE TRIGGER commands_installation_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_dependency_immutable();
+CREATE TRIGGER authorization_receipts_installation_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_dependency_immutable();
+CREATE TRIGGER audit_events_installation_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_dependency_immutable();
+CREATE TRIGGER approval_consumptions_installation_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn16_installation_dependency_immutable();
+REVOKE ALL ON FUNCTION anvil.fn16_installation_approval(uuid,uuid,uuid,boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_origin(uuid,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_current(uuid,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_write() FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_complete() FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_dependency_immutable() FROM PUBLIC;
+REVOKE ALL ON FUNCTION anvil.fn16_installation_attempt_guard() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn16_installation_approval(uuid,uuid,uuid,boolean),anvil.fn16_installation_origin(uuid,uuid),anvil.fn16_installation_current(uuid,uuid) TO anvil_v3_app;
