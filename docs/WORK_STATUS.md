@@ -9444,3 +9444,11 @@
 - 제품C29CDB36/시험7FFDFE3F 구현·Main0758d3 신규17PASS575.5016ms/skip0·343e78 type/diff0·독립C0/I0/M0. 기존제품/SQL/권한수정0, 전후 RC현재권한·귀속/격리·세션·기한·DB반납후 byte검증 연결. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_CURRENT_VERIFICATION_RESULT_20261029.md.
 - 최초15미구현RED, 저자보강 cleanup+취소1RED, TS2366 1건은 별개 원인으로 보존·최소보완했고 기존기대완화0이다. 실제DB/FS/키/서비스/P03·전체backup/사용자화면 검증0. 보호8 유지·외부QA생성0.
 - 다음 live inventory의 정확한 원문목록과 총한도/최종상태 연결은 primary 읽기 preflight 중이며 제품착수0이다. 이전 metadata·단일byte·readonlyreader의 불변 시험을 전수 반복하지 않는다.
+## 2026-10-29 FN16 현재성 연결 게시·목록 연결 착수
+- 7d9610에서6fce9c673b5818424b09d248d6a42210813481cd private동일·main f976불변·추적clean/보호8보존확인, PMO에결과전달했다.
+- 후속 WI docs/work_packages/FN16_DOCUMENT_ARTIFACT_VERIFICATION_20261029.md SHA2C9F890B969EEA8579A7BBC60EB7F7A77F0ED303FBCE6EBBE36303F3ADE5F757: 실제collector→중복없는원문목록→최종전체대상상태검사. 현재단일모듈private scope공유로최초신원/기한을고정하고기존17기대는유지한다. primary신규목록TEST_ONLY/reviewerWI읽기. 실제DB/FS/키/서비스/P03변경0·새route/job/SQL0. 전체FN16미완료.
+- 목록연결 WI2C9F와 TEST_ONLY6DE550EA 독립 C0/I0/M0. Main0b3701 신규14건은함수미구현0PASS/14FAIL/skip0/531.5867ms exit1, 090340본문대조. 기존primary에 artifact-current-verification.ts private scope공유·livecollector연결만GO했다. 이번변경영향의기존단일17은기대불변재검증예정이며실제DB/FS/키/서비스0이다.
+## 2026-10-29 FN16 문서 목록 원문 연결 검수
+- 기존 current 모듈3566D196(+100/-14)+신규목록시험A1AA333A를 검수했다. Main e886da 목록15+기존단일17=32PASS588.4984ms/skip0,84dec0 type/diff0·독립최종C0/I0/M0. 결과 docs/04_test_reports/AV3/FN16_DOCUMENT_ARTIFACT_VERIFICATION_RESULT_20261029.md.
+- 실제collector1회→eligible중복없는각1회byte검사→마지막전체대상metadata재대조 연결. 최초격리/UNKNOWN IO0, 중간실패skip/retry0, 최초신원과관측된최소기한을유지한다. Main발견collector단축기한소실I1은9608a8 1RED후기존clock관측으로보완했다. 초기TS18048은fixture타입단언1곳보완이며기대완화0·정식동일오류3회아님.
+- 실제원문FS/DB/키/서비스/P03변경0·새route/job/SQL0, 0054pending8CC95B9D와보호8보존. atomic/fullProject/restorable=false·전체FN16/사용자화면·실제백업미완료. 이결과는문서범위내부연결에한정하며남은전체자료/암호화archive·실제환경검수와구분한다.
