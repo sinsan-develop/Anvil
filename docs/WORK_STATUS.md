@@ -9387,3 +9387,33 @@
 
 - 내부 수집기 WI 최초48378746의 독립 C0/I1/M0는 artifactLinks 결과 투영 누락이었다. Main은 정확 문서/버전/원문/kind 관계와 복수 문서·SOURCE 반례를 보완했고 최종23FA5E0AAF87D85692005B5B346DAF9294D37417419AB45DC047DEA4C3F4F764 scoped C0/I0/M0를 확인했다. 기존 primary에게 신규 input 시험1파일 TEST_ONLY를 지시했다. Main RED 전에 제품코드 작성0, 실제DB/파일/키/서비스0. 기존 auth 잠금에는 query timeout이 없어 deadline 전체강제종료를 보장하지 않는 제한을 WI에 명시했다.
 - Main155f86 문서 checkpoint 직전 diff 검사가 새 누적 기록의 CRLF/끝 빈줄을 거절하여 commit0이었다. 기존 이력은 보존하고 이번 Main 소유 tail의 줄끝만 정리한 뒤 동일4문서를 재검사한다. 제품/시험 변경0.
+
+- FN16 내부 inventory 문서4 checkpoint b954806d1d09d6c25572ada730e9d31819f93fe8은 f5e258에서 private 동일/main f976 불변으로 게시했다. Main1475d1 입력시험7은 미구현 RED(165.2184ms/skip0)였고 primary 입력1파일 BF0D84A1 구현 후 Main8292d0 7PASS/138.9929ms/skip0을 확인했다. primary typecheck f3f769 exit0이며 독립 입력검수 진행 중이다. collector/schema는 TEST_ONLY 단계, 실제DB/파일/키/서비스/Agent/P03 실행0이다.
+- Main67655d의 sandbox Git status는 `fatal: this operation must be run in a work tree`로 실패했고 원인 구분을 위해 승인된 elevated 읽기8292d0에서 정상 상태를 확인했다. 정본 D:/Project/Anvil의 과거 dirty/deleted/untracked는 보존했으며 코드 branch의 보호8 및 새 입력2만 확인했다. sandbox 오류를 제품 실패나 PASS로 바꾸지 않는다.
+
+- 입력 독립 검수 C0/I1/M0: descriptor 검사 뒤 반복 property get이 Proxy에서 검증값과 반환값을 바꿀 수 있었다. 신규 반례1ECCEC61은 Main7d3980에서 actual Infinity 대 expected1048576의 RED1/162.5166ms/skip0을 확인했다. 같은 primary에게 top/limits descriptor값 1회 snapshot 검증·반환 보완을 지시했고 공유 validation helper/collector 제품 변경은 아직0이다. 보호8 hash는 ff3c68에서 기존값과 동일했다. PMO에는 b954806d 게시와 입력 보완 중/실제변경 제외를 전달했다.
+
+- 입력 I1 보완 BDEE5D81/시험 DAE6217E는 Maine14b8f 9PASS174.0275ms/skip0, 독립 scoped C0/I0/M0로 확인했다. top/limits own descriptor 각1회 값만 검증·반환하고 공유helper변경0. primary38d268 typecheck의 collector TEST_ONLY 초안 index possiblyundefined5건은 시험작성 오류로 분리하고 담당 보완 중이며 전체type PASS로 주장하지 않는다. collector 제품GO 전 필수반례를 동결하고 Main RED를 확인한다.
+
+- collector/schema TEST_ONLY 0FA056BC/6676BA09에 대해 Mainf5b159는13건중 실제migration열대조1PASS·수집기부재12FAIL/skip0/251.035ms를 확인했다. 미구현 실패이며 검증통과나제품실패로확대하지 않는다. 같은primary에게 신규document-inventory.ts PRODUCT GO, 기존schema/권한/publicroute/원문/실행연결변경0을지시했다. primaryacc583 타입검사exit0으로앞선초안5오류해소. 독립reviewer는정상fixture와기존저장/helper계약대조, Main동시코드쓰기0. 입력최종9PASS/C0I0M0는동결했다.
+
+- collector TEST_ONLY0FA056 독립읽기 C0/I2: 문서 command_id 생성식이 doc50v2/doc51v1에서 중복(실제 UNIQUE), 제안본문이기준과같아 PROPOSAL_NO_CHANGE이며diff를일반첨부로재사용했다. Main5a0df6 실제writer/schema대조후정상fixture의고유ID/변경본문/전용JSONdiff와그실제합집합usage로보완허용(기준완화0). 거대row CASE 공백regex과다escape도시험오류로정정한다. 현재source실행PASS0이며기존failure보존.
+- WI의 SQL-side row크기검사를 위해 명시허용열CTE→CASE size이하inventory_data/초과null+row_bytes 반환을채택하고fake도동일관측형식으로보완한다. 실제전체row/금지본문읽기·제품rawfallback0, 실제PG구문/RLS검증NOT_RUN. 입력최종파일불변/실제키DB서비스0.
+
+- Main95a5dd/eb5f0b 작성중 검수에서 RR statement_timeout이첫설정값으로남는점과확정 review_refs가실제review대상문서/버전/hash를직접대조하지않는점을발견해같은primary보완지시했다. 자료helper422를그대로반환하는경로도기존collector고정503기준에맞춘다. 신규cross-review반례·query별남은상한반영후검수하며소스완료주장0. 보정fixture FEBA816B는기존I2scoped재검수중이다.
+- Main5da355 검색은 Windows경로위치의FN16* wildcard로os123 exit1이었다.33a348에서디렉터리+rg -g 필터로정정했다. 자료/제품변경0,해당읽기오류는제품FAIL이나검증PASS로계상하지않는다.
+
+- primary 첫제품 b49bcc6PASS7FAIL/808.749ms은form/method 합성반환의미선택definition_id가exact row검사에걸린문제로분리했다. 실제SELECT에없는두열만fake에서제거하고제품exact검사/기대값보존. 이후author daacdc13PASS653.6748ms. 타입52325d unknown/null narrowing12건은별도보완중으로전체타입PASS주장0.
+- Main검수지적3개에대한author 신규반례67a4b3은0PASS3FAIL417.2322ms: 다른문서review ID확정연결허용, 저장stage불량422반환, RR query직전timeout미갱신. 같은collector1파일최소보완중이며이3RED를기존13PASS로덮지않는다. 실제DB/키/서비스/P03변경0.
+
+- collector2347251B/시험0CB47B96/schema6676BA09에대해Main8a3ccf16PASS727.9666ms/skip0을직접확인했다. authorfd5b73 16PASS768.8975ms와별개실행이며현재후보의합성증거다. 입력9는불변직접증거유지. 공개route/실DB/키/서비스/job연결0.
+- 독립전체검수에후보를동결했다. Main67aa88에서기존writeDocumentReview의닫힌4필드/outcome/reason형식검사가수집기에누락됨을확인했고origin_ref_json exact외부참조추출도남았다. BEGIN응답유실시begun=false로정상release될가능성은독립검수중이다. 이잔여를숨기거나16PASS로전체완료처리하지않는다.
+- Main641012의추정review파일2경로읽기는파일없음오류였다. 동일호출의실제파일열거결과에서project-content-review.ts/content-review.ts를67aa88로읽어정정했다. 반복추정경로검색방식을중단하고확인된목록경로만사용한다. 파일변경0.
+
+- 독립collector2347251B C0/I3/M0는 Main의기존관측과동일하며중복새finding계수0이다. 같은primary에게review형식·알려진origin exact분류/투영·BEGIN불명회수의TEST_ONLY RED→최소제품보완을연속지시했다. input·기존기대·공유코드불변,실제DB/파일/키/서비스0.
+- 다음선행읽기대조(d24396/독립review): 문서inventory 다음후보는정확artifact참조의내부원문검증수집기(source·합성)다. 기존ProjectBackups의project/상태재검사와filemanifest/filebundle의bytes/hash기능을참조하되공개archive/암호화AAD·policy/job·파일게시·복원계약은별도다. 아직후속WI/제품착수0이며08EA A8 전체coverage경계유지.
+
+## 2026-10-29 FN16 문서 metadata inventory 소스 검수
+- 판정: 신규제품2/시험3 구현·핵심합성확인, 전체FN16/실제백업·복원 미완료. 최종입력BDEE5D81·collectorF5C39009/시험DAE6217E·4FDAFCA5·6676BA09, 기존제품/SQL/권한변경0. Main e14b8f 입력9PASS174.0275ms와 f0a49d collector/schema20PASS807.1983ms는별도실행/skip0, c9d853 type/diff exit0. 독립최종C0/I0/M0·기존I3해소.
+- 동일프로젝트/정확ref·시작종료RC현재권한·단일RO RR/keyset·자료hash/closure·SQL측큰row본문억제·query별남은시간·UTF8사용량·BEGIN/rollback불명회수를구현했다. 원문bytes/키/서비스실행0, blob NOT_PERFORMED/fullProjectCoverage false/restorable false 유지. 상세증거 docs/04_test_reports/AV3/FN16_DOCUMENT_INVENTORY_RESULT_20261029.md.
+- 실제PG/RLS/SQL/동시성·원문·전체자료/정책job/암호화·복원·사용자인수 NOT_RUN/미완료. 등록QA생성0, 보호8기존hash보존. 기존불변광범위검증반복0. 다음은정확artifact참조의내부원문검증수집기선행상세화다.
