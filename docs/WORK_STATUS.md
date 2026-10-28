@@ -9497,3 +9497,15 @@
 - Main15a828 읽기에서 미확인 r2-backup-verification.ts 경로를 추정해 os2가 재발했다. 해당 추정읽기를 중단했으며 다음 경로는 rg --files의 실제 목록으로만 취득한다. 권한/제품오류·검증결과로 계산하지 않는다.
 
 - 설계추적 source4F2EB532·시험EBF6/F5F10 불변, Main197d92 신규13PASS/0FAIL/skip0/519.7763ms·type/diff0, 기존reviewer C0/I0/M0. 실제DB/FS/키/서비스0·전체FN16미완료, 결과 FN16_DESIGN_TRACE_INVENTORY_RESULT_20261029.md. 새 구현오류0. 다음 설계변경이력은 읽기preflight/WI 준비만했고 현재제품writer0.
+
+### 2026-10-29 FN16 설계변경 이력 수집 착수
+- 직전 설계추적987b3ff374de1bda2ef6dc2a6087a53ddac97753 private동일/main불변(ab00f2), 보호8 보존·다음WI만미추적이다. 이번 WI FN16_DESIGN_CHANGE_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md SHADADAD1E647EF472D77C7CE6493B3BCB153B7F9F14775796188B8C22E9EA4BD2B에 기존 요청/기계영향/사람검토 역사 수집을 결박한다. 기존 primary 단독TEST_ONLY/reviewer독립;실제DB/FS/키/서비스0·전체FN16미완료.
+
+- 설계변경 TEST_ONLY 36633485/66113D71 동결·독립C0/I0/M0, Main2c6c6a 신규13중1PASS/미구현12FAIL/skip0/243.3472ms exit1 후 primary source1 GO. 최초fixture좁은추론6TS오류는행타입2곳명시로해결·값/기대불변. 실제자원0. Main c3e6ea의rg 경로wildcard os123는 ef5e40 -g '*.sql'로교정(읽기만),제품오류아님.
+
+- 설계변경 author source16210391 신규13PASS/843.3467ms·type/diff0 제출. Main cfe066에서 impact 버전간 transaction_timestamp 단조강제2곳이 기존writer에 없는 잠재I1을 발견했다. 초기 제출을최종합격으로게시하지않고기존primary에정합시간역전 반례RED·reviewer독립판단을요청했다. 실제DB0·기존13기대불변. author sandbox diff exit128은elevated읽기0으로구분했다.
+
+- 설계변경I1 b50bad RED후두대소조건103자제거, Main1972d3 sourceF73137CC/행동C99ED633/schema66113 동일·14PASS/skip0/871.9276ms·type/diff0. 각행시각/원hash·버전검사는유지. 결과 FN16_DESIGN_CHANGE_INVENTORY_RESULT_20261029.md. 실제DBFS키서비스0·전체미완료.
+- Main2d5d1b/독립읽기로 work-plan-inventory 시각대소8개도동일I1 확인. 앞선독립C0에서놓친결함으로정정,완료기준완화아니며기존writer정합오류이다. 별도 WI FN16_WORK_PLAN_TIMESTAMP_RECOVERY_20261029.md SHA F29EF7C991862BA3C19EFB782616341A1F1287C0205C7D44C242A297AEAE9423로다음보완,baseline WI는아직미착수.
+
+- 설계변경 최종독립scoped C0/I0/M0·I1해결, Main1a1dd2는제거103자복원한메모리SHA가이전16210391과같음을확인해추가제품변경0을검증했다. 다음작업계획교정WIF29EF도독립C0/I0/M0.
