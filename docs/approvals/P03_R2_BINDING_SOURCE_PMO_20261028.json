@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "recordId": "P03_R2_BINDING_SOURCE_PMO_20261028",
+  "recordedDate": "2026-10-28",
+  "status": "DELEGATED_PMO_SOURCE_ONLY_ADOPTED",
+  "authority": {
+    "kind": "DELEGATED_PMO_SOURCE_SUPPORT_DECISION",
+    "pmoThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "evidence": "본 turn에 Main이 전달한 PMO 위임 메시지: candidate467A5FFF의 source-only 후속계약·제품2/직접시험3 구현·합성검수 채택. 실제 실행허가0.",
+    "pmoReport": "ANVIL_V3_MANAGEMENT_HANDOFF_2026-10-17.md",
+    "pmoReportSaved": "Main이 PMO 저장 확인을 전달함. 본 문서 담당은 PMO 원문을 별도 조회하거나 새 직접 사람 답변을 수집하지 않음.",
+    "newHumanActualApproval": false,
+    "actualExecutionAuthorized": false
+  },
+  "candidate": {
+    "path": "docs/contracts/P03_PG_COPY_LIMITED_RISK_R2_BINDING_CANDIDATE_20261028.md",
+    "sha256": "467A5FFF50C0C22D76F283AF144A312E8BA7D805AA5E5F12AF52870FB63064AF",
+    "preserveOriginal": true,
+    "statusExplanation": "후보 원문에 있는 미채택 표기는 채택 전 immutable 원문으로 보존한다. 이 기록이 현재의 PMO source-only 채택 상태를 설명하며 원문을 재작성하지 않는다.",
+    "parentPath": "docs/contracts/P03_PG_COPY_LIMITED_RISK_DELTA_CANDIDATE_20261027.md",
+    "parentSha256": "FFC3F2A2979A7845C48B61946A32F0B142C698ED7C6E8004D3038BAD777670D3"
+  },
+  "sourceFixBaseline": {
+    "commit": "9bb9780e02b31620309109249b0ea33a54a027fc",
+    "controllerGitLfSha256": "E3934DE4FC9B32727ED2BF9B6768CD1190EB846EC4F16C9224DCD23ECFEC1A8E",
+    "meaning": "시각 source 교정의 기존 검수 기준선. 새 R2 구현의 최종 commit/hash나 실제 실행 권한이 아님."
+  },
+  "originalActualRun": {
+    "decisionSha256": "337E26F75B85F4F04EB9901F899BB5EF87B0631E86A3F834A6EE9933DF6F07D0",
+    "sourceCommit": "367d9d49daeee08a319431853006db0647129910",
+    "status": "NOT_COMPLETE",
+    "phase": "create-volume",
+    "error": "COPY_VOLUME_IDENTITY",
+    "consumed": true,
+    "copyCreated": true,
+    "helpers": 0,
+    "cpReached": false,
+    "approvalExhausted": true,
+    "retryAuthorized": false,
+    "preserveR1CopyAndLedger": true,
+    "preserveOriginalFailure": true,
+    "priorSource5398And54922AuthorizeR2": false,
+    "meaning": "원 actual 단발 승인·과거 source 승인을 새 R2 실행 승인으로 승격하지 않는다."
+  },
+  "sourceOnlyAllowed": {
+    "contractAdoption": true,
+    "implementation": true,
+    "syntheticVerification": true,
+    "productFiles": [
+      {
+        "path": "scripts/p03-pg-copy-host.ts",
+        "scope": "FIXED_COPY의 sourceRoot/ledgerRoot/copyVolume/toolsName/initName/copyName 6개 literal과 limited candidate SHA의 정확 R2 결박"
+      },
+      {
+        "path": "scripts/pg-recovery-copy.sh",
+        "scope": "strict/limited 결과 두 곳의 copyIdentity.name 및 limited parser/결과 candidate SHA의 정확 R2 결박"
+      }
+    ],
+    "directExistingTests": [
+      "tests/unit/P03/pg-recovery-copy-host.test.ts",
+      "tests/unit/P03/pg-recovery-copy-docker-time.test.ts",
+      "tests/unit/P03/pg-recovery-copy-preparation.test.ts"
+    ],
+    "testScope": "정확 R2 fixture 정합·관련 합성 검수. 기존 기대/부정 조건·원 R1 이름/경로/candidate/grant 거절 보존. 기준 완화0.",
+    "implementationGate": "정확 WI/manifest 및 단일 writer 아래 TEST_ONLY→Main fresh RED→제품 GO→독립 검수·합성 검증 순서. 이 기록으로 순서를 생략하지 않음.",
+    "newExactSourceBinding": "새 전체 source commit/controller/shell hash는 구현·검수·게시 뒤 별도 actual packet에서만 고정한다. 현재 record가 최종 실행 source를 정하지 않음."
+  },
+  "r2FixedResourceProposal": {
+    "sourceRoot": "/home/daon/anvil-v3-pgcopy-20261028-r2-src",
+    "ledgerRoot": "/home/daon/.local/share/anvil-v3-pgcopy-20261028-r2",
+    "copyVolume": "anvil-v3-pgdata-recovery-20261028-r2",
+    "toolsName": "anvil-v3-pgcopy-tools-20261028-r2",
+    "initName": "anvil-v3-pgcopy-init-20261028-r2",
+    "copyName": "anvil-v3-pgcopy-20261028-r2",
+    "existenceObserved": false,
+    "resourcesCreated": false,
+    "futureActualEffect": "실제 승인·실행 시 R1 보존 사본에 더해 새 volume1이 추가되고 부분 사본도 보존한다. 이 실제 효과는 별도 actual 승인 대상이다."
+  },
+  "preserve": [
+    "원 source volume/instance/CreatedAt 및 daemon/image/Node/hash",
+    "기존 strict/limited protocol scope/policy/mode/carrier와 닫힌 key 집합",
+    "위험4: writer 완전통제·시점일관성 미입증, hardquota 미강제, ACL/xattr 도구 미지원 한정, Node numeric owner1001·loader/hash→실행 경합",
+    "최초 승인창30분·전체600초/source500초/reserve25초·기존 용량/entry/관측/출력 한도",
+    "nonce/동일 run 결박·단발 consume/receipt·신원/기한/오류 enum·R1 실패 기록",
+    "원본 RO/nocopy·init 새 빈 root1곳 CHOWN만·기존 최소권한·network none/포트0",
+    "원 R1 copy/ledger 보존·자동 삭제/강제 회수/재시도/창 연장0",
+    "외부 입력 params/env 범용화·새 공개 API/권한 확대0"
+  ],
+  "excludedUntilNewExplicitActualApproval": [
+    "실제 원격 조회·QA 생성·Git checkout",
+    "새 grant/nonce/실행 기한 생성·원 R1 원장 수정/삭제/재사용",
+    "volume/helper/container 생성·시작·회수·cp·TERM",
+    "PG/SQL/DB·GRANT·권한 효과·서비스·Secret·Agent",
+    "R1/R2 사본 삭제·원본 복원·동일 승인 재실행",
+    "플랫폼 거절 우회"
+  ],
+  "executionState": {
+    "actualRun": "NOT_AUTHORIZED_NOT_RUN",
+    "newGrantOrNonce": false,
+    "remoteEnvironmentChanges": false,
+    "sourceImplementationCompleted": false,
+    "syntheticVerificationCompletedByThisRecord": false,
+    "copyOrPostgresPass": false,
+    "wholeP03OrPlanComplete": false
+  },
+  "recordWriterScope": "이번 문서 담당은 양쪽 동일 승인기록 신규1개만 작성. 후보/원승인/코드/시험/Git/환경 변경0."
+}

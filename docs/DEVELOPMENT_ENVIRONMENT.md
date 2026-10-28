@@ -431,3 +431,8 @@ PMO는기존Nodepath/hash/UID1001고정source-only후보준비와관측imagePATH
 - ledger /home/daon/.local/share/anvil-v3-pgcopy-20261027-r1은uid1000/0700,grant·consumed·receipt는0600/nlink1로보존한다. grantSHA263864d5ea021ef9a1f124492a7c65225a410514ea068ee28e281e847dc21c1f,consumed42b273c87648af15973c18bb081b03ce0f971e34bc42863d37c4f6648dcbe898,receiptb34eb206d02ac657107634c630e65eda99c36a837b4744926b626cc95872c1c5. 비밀원문·개별파일을Git/출력으로옮기지않았다.
 - 승인전용QA /home/daon/anvil-v3-pgcopy-20261027-r1-src만정상종료/clean exactGit/소유·링크·PID대조후회수했다. 별도SSH1fa379(02:48:02Z)에서QA부재/helper3부재·양volume/ledger보존을확인했다. 보존자원은자동삭제/복구rollback대상이아니다.
 - 원인은Docker의정상+09시간표현을grant용UTC문자열동등성검사로거절한source버그다. 별도source보완의48PASS/type0은실Docker재실행·복제수용·DB/API/Web복구가아니다. 新실행은새exactsource/resource/기한/승인전NOT_RUN. 기존Secret·인증서·권한·서비스/Oracle/Agent변경0이다.
+
+
+## 2026-10-28 R2 고정 대상 소스 검수 범위
+
+R2 후보467A5FFF는 sourceRoot /home/daon/anvil-v3-pgcopy-20261028-r2-src, ledgerRoot /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2, copyVolume anvil-v3-pgdata-recovery-20261028-r2 및 tools/init/copy의20261028-r2이름을고정한다. 이번에는소스와합성검수만진행했고실제부재/owner/link/공간을새조회하거나grant/nonce·QA·volume/helper를생성하지않았다. Main집중111PASS/type/문법0·독립C0/I0은실제복제/PG복구증거가아니다. 기존R1volume/원장/실패는그대로보존하며새exactcommit/controller/shell·대상·위험·수명을결박한별도실행안과새직접actual승인이필요하다.
