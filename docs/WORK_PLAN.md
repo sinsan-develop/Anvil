@@ -1607,3 +1607,4 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 신규 내부 수집기로 문서 전체 버전·연결·가져오기·제안·검토·확정·소스 이력과 필요한 양식/방법론 참조를 같은 자료 snapshot에서 대조한다. 시작/종료 현재 권한, 해시·관계·한도·불명 연결 회수 및 경로 없는 투영을 검증했다.
 - Main 입력9PASS와 수집기/schema20PASS는 별도 실행, type/diff0·독립 C0/I0/M0. 보고서: docs/04_test_reports/AV3/FN16_DOCUMENT_INVENTORY_RESULT_20261029.md.
 - 호출선 없는 source/합성 범위다. 실제 DB·원문 파일·전체 자료·정책/job·암호화·복원·사용자 화면/인수는 미완료이며 전체 Stage/FN16 완료로 바꾸지 않는다. 다음 내부 원문 검증 연결은 기존 승인·선행을 대조해 진행한다.
+- 2026-10-29 FN16 원문 크기/hash 검사 부분 구현: 내부 단일 artifact byte verifier는 합성13 PASS·타입검사·독립검수로 확인했다. 실제 보관소 reader·현재 권한/격리 대조·전체 수집/암호화/복원·사용자 화면 여정은 미완료로 유지한다. 결과: docs/04_test_reports/AV3/FN16_ARTIFACT_BYTE_VERIFICATION_RESULT_20261029.md.
