@@ -9481,3 +9481,11 @@
 - Main b17bdb에서 신규 TEST_ONLY(F5EE57CAB2E5210FB6CE7A5B729226AF6C62896ABCF36B29C27570D257815B43)를 실제 실행해 exit1/두 신규 함수 부재 오류를 확인했다. 출력은 길이 제한으로 일부 잘려 이번 기록은 정확 건수·시간을 주장하지 않는다. 독립 WI/TEST_ONLY C0/I0/M0 후 primary SOURCE_GO; 기존 공통 단일17/문서15는 normalize 영향에 한해서 재검증한다. 실제DB/FS/키/서비스0, Main 제품 수정0.
 - Main2772d4 이력연결 신규14+직접영향기존32=46 dot/exit0·type/diff0, source9EF2A9F0/testF5EE57CA·기존7FFD/A1AA불변. 독립최종C0/I0/M0. 결과 FN16_HISTORY_ARTIFACT_VERIFICATION_RESULT_20261029.md. 최초타입 initial 추론동일오류2회는부재분기명시로해결, 시험기대완화0. 실제DB/FS/키/서비스·전체백업/복원/화면미완료.
 - 기존두수집기14/15는수정0으로반복하지않았다. 다음작업계획이력자료군은기존담당자읽기preflight로이어가며새실행권한·공개계약을열지않는다.
+
+### 2026-10-29 FN16 작업계획 이력 수집 착수
+- f4d3bf2bf55f39f4466a225ba31d5794a2e4333f 정확6파일게시/private동일/main f976불변·추적clean/보호8보존(939cb2). 이력원문 연결 전체FN16완료아님. 남은작업계획 자료군을 기존담당자두명 읽기대조했고 신규3파일 내부collector로 선정했다.
+- WI FN16_WORK_PLAN_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md. version_json의 ref/status제외hash, ISSUES_ONLY정상초안/관계행0, 과거확정에현재latest강제0, 외부설계·문서참조미검증보존. 실제키/DB/서비스·FS0, 새공개형식/권한0. primary TEST_ONLY·reviewer WI검수로이어간다.
+- WI178A3181 독립 C0/I0/M0. 텍스트 task_code/dependency_task_code/phase keyset은 UUID가 아니므로 SQL cursor/정렬에 같은 C collation을 명시해 ASCII 비교와 일치시키는 내부구현 판단을 primary에 전달했다. 실제 DB collation 설정은 변경하지 않는다. source schema와 공개계약 변경0, 필요한 한정 반례만 추가한다.
+- 신규 TEST_ONLY 행동358C9AFCA6B4424E848E1EFF45F1C68AAAF2242FB0BFE7A04BF075AC7A459BC6/schema2E8AC46B79F25715DFC74C11089F92E556FEE995069968C1B14A57A138A8AE6E 동결. Main f4a75b node --test --test-reporter=tap 두파일 실제exit1/collector미구현 확인. 출력필터가 앞오류만남겨 이번기록은미출력count/time을추정하지않는다. 기존primary source1 GO, reviewer시험검수. 실제DBFS키서비스0/기존제품수정0.
+- 구현 후 author b480e6 신규14PASS/1752.5534ms·bc7689 type/diff0, source3BFDB061. Main3d60e3/02c3e3/c709e7 읽기검수에서 중요한정합후보: 기존 writer는 과거screenReviewRef를 reviewed Set에넣지않아 동일target의과거참조반복을 SCREEN_REVIEW_MISSING 초안으로저장가능하나 새collector는전부중복거절한다. 기존자료보존차이로좁혀 reviewer판단 및 primary반례 RED→보완지시, 기존writer/기대14변경0·실제DB0. 최초자체14PASS는최종합격으로게시하지않았다.
+- 작업계획이력 I1은 f136ef 신규1RED503후 source139bytes 한정보완, 기존writer/시험14기대불변. Main3f989f 최종15PASS/0FAIL/skip0/1341.8959ms·type/diff0. 제품077E5DA0/시험5799384C/schema2E8AC46B·독립I1해결C0/I0/M0. 결과 FN16_WORK_PLAN_INVENTORY_RESULT_20261029.md. 실제키/DB/FS/서비스·전체백업/복원/UI NOT_RUN, 전체계획미완료.
