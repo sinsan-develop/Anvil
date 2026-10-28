@@ -9321,3 +9321,10 @@
 - 다음미구현은R2가명시차단한VERIFICATION실제checks/limits공급이다. Main은FN16_VERIFICATION_PROFILE_SOURCE_CANDIDATE_20261029.md SHADFFD2FD1 후보를작성·독립검토에배정했다. A선택파일검사3개/정확limitsRef·새GET1/기존명령·조회source연결권장과B전체DB/암호화형식선결정을비교한다. 새공개/의미계약이므로현재제품수정0·기존412유지, 실제설정수치발급/DB/키서비스0이다. 한도값을기존10GiB/20MiB에서묵시전용하지않으며전체backup coverage를이부분프로필로대체하지않는다.
 - Main5b03a6의rg Windows wildcard경로조회실패는3e5faf 디렉터리+-g로정정했다. 관련파일변경/실행0, 이후검색은실제열거경로만사용한다.
 - FN16 VERIFICATION 후보독립DFFD2FD1 C0/I0 후Profile.ref→limitsRef동일전체ref·idASC/versionDESC정렬을명시한최종08EA347866945F647593E39B9A22F5CDCBC441253FE3B61B05D62492466D91FB를PMO에채택결정요청했다. source/UI/합성만후속후보이며actual설정수치발급/DB/키서비스0·현제품변경0·기존412유지다. Main은다음업무배정을기다리지않고기존primary에게별도승인범위내독립미완료1개read-only대조를맡겼다. 새공개/데이터계약미채택을전체계획승인으로대체하지않는다.
+- PMO 01a054f5 FN16회신: 최종후보08EA3478은새OWNER GET1/checks3/SELECTED_FILES_V1/7필드limitsRef·현재성의공개/데이터계약delta로별도사용자결정대상이며PMO가질문1회제출(accepted=true,답변없음)했다. Main중복질문/채택추정0·기존412보존·실제설정수치/DB/정책/키서비스/Agent/전체backup/P03제외유지. 전체개발중단지시아니며기존primary의다른승인독립업무읽기대조를계속한다. 후보문서64f5fd9fb467cc0360b139f524a5f3719af772ec은1ac423 private동일/main불변으로보존했다.
+## 2026-10-29 FN16 검증 프로필 A안 승인 반영
+- PMO는 신산님의 call_d08cff04abd2411a9eb7454c9de28443/item0 답변 ‘A 계약·source/UI·합성 채택 (권장)’을 전달했다. 후보 08EA347866945F647593E39B9A22F5CDCBC441253FE3B61B05D62492466D91FB 정확 범위에서 이전 결정 대기는 해소됐다. 승인 JSON D1ED7A7F7B328013A47DA04AFB87B7BF370826B5E4611017E58516F6AF272673을 양쪽 문서 위치에 저장 확인했다.
+- 기존 primary가 정확 경로·내부 port·최소 검수안을 대조한다. 실제 한도값/profile 설정·DB/정책·키·서비스·Agent·전체백업/P03는 제외하며 새 SQL도 필요하지 않다. PMO에 수신 확인을 전달했다.
+- Main ed3b23 문서 저장 명령은 exit1/출력 없음으로 실패했다. 0d3fd9에서 양쪽 파일 부재·STATUS 미반영을 확인한 뒤 canonical patch와 한 파일 복사 d87c9d exit0/동일 hash로 복구했다. 제품 코드·실자료 변경0, 같은 실패 반복0.
+- 별도 Stage B 좁은 조사: UI01 실제 단계 투영은 추가 계약, FN03 관측 연결은 FN08 검증된 읽기 결과가 선행이다. 이미 완료한 source를 반복하거나 전체 미완료 업무가 없다고 판정하지 않았다.
+- Main WI C9687B028BB4B92EEBCDB038FC73FB792895D25AA6BA143C1DE2BB7401B44EE3로 FN16 A안 제품8·시험5 경로를 고정했다. 기존 fn16_primary 단독 TEST_ONLY부터 수행하고 Main RED→구현→독립 검수→필요 집중 검증 순서다. 과거 snapshot/SQL/실제 설치와 전체 백업은 보존·제외한다. read-only 검수의 역사/신규 분리, 출처·cursor·저장 양측 검증·replay·UI 경계를 WI에 반영했다.

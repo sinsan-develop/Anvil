@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "status": "APPROVED_SOURCE_UI_SYNTHETIC",
+  "date": "2026-10-29",
+  "authority": "DIRECT_USER_VIA_AUTHORIZED_PMO",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "questionItem": "call_d08cff04abd2411a9eb7454c9de28443/item0",
+  "answer": "A 계약·source/UI·합성 채택 (권장)",
+  "contractPath": "docs/contracts/FN16_VERIFICATION_PROFILE_SOURCE_CANDIDATE_20261029.md",
+  "contractSha256": "08EA347866945F647593E39B9A22F5CDCBC441253FE3B61B05D62492466D91FB",
+  "scope": [
+    "SELECTED_FILES_V1 고정 검사 3종·7필드 limitsRef",
+    "새 OWNER GET·기존 saveBackupReference 및 조회",
+    "UI14·합성검증"
+  ],
+  "excluded": [
+    "실제 한도값/profile 설정 발급",
+    "DB·정책/권한·키·서비스·Agent 변경",
+    "전체 백업/복원 및 P03 실행"
+  ],
+  "baseline": "64f5fd9fb467cc0360b139f524a5f3719af772ec",
+  "branch": "codex/av3-stage-b"
+}
