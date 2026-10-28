@@ -1551,3 +1551,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-28 FN17 본인 승인요청 알림 생산 source**: 직접A승인에 따라 원요청/영수증/후보capture와 동일transaction 알림1·전체project10000cap/실패전체rollback·replay추가0·본인조회RLS문맥/지원19연산정합을 구현했다. 신규45PASS/직접기존22PASS/type0·TS/SQL 필수finding해소 독립C0I0(정적source한정).0052.pending은미적용이며 실제DB/RLS·권한/COMMIT·정식served/전달/인수·전체FN17/Stage/계획은미완료다. docs/04_test_reports/AV3/FN17_APPROVAL_NOTIFICATION_PRODUCER_RESULT.md 참조.
+
+
+- **2026-10-28 P03 실제 보호복제와 source 교정 분리**: 승인단발실행은새volume생성뒤시각문자열검사로NOT_COMPLETE/소비소진이며원·새volume/원장보존·QA/helper잔여0이다. 기존grantcanonical과Docker관측시각을분리한controller1 source교정은새13+기존host35=Main48PASS/type0·독립C0I0M0로한정검수됐다. 실제복제/PG/DB·서비스복구와전체P03는미완료,새actualrun은새exact승인전0. 원실패/교정증거는각별도결과서를따른다.

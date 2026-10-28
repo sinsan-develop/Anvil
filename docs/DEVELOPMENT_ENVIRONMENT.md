@@ -422,3 +422,12 @@ Maine94e53(UTC08:49:41.186Z) 고정단일getent passwd1001은exit2/errornull/std
 이미설치된 /usr/bin/python3→/usr/bin/python3.12(root소유0755)를-I고정읽기로만사용했다.신규설치0이다. Node및 /·/opt·/opt/node-v24.21.0-linux-x64·bin 고정5경로에서POSIX ACL access/default xattr은모두ENODATA(파일default는NOT_APPLICABLE)·현재uid1000의effective쓰기false였다. mode755만으로ACL을검증했다고한것이아니며별도xattr관측이다.
 ba0213(08:45:34.659Z)은 /·/opt uidgid0:0/755, versionroot/bin/node1001:1001/755/nonlink/realpath동일, node dev2096/inode724935/nlink1 및현재/proc/self/exe동일을관측했다. getfacl없음으로당시ACL미검증이었으며이후e94e53로이관측범위만보완했다. 실행uid1000의쓰기불가와ownerUID1001/향후계정할당·privileged주체의교체가능성은별개다. hash확인전후/실행중교체·loader/공유라이브러리신뢰전체는증명하지않는다.
 PMO는기존Nodepath/hash/UID1001고정source-only후보준비와관측imagePATH교정을채택했다. 소유주체미해결잔여위험을명시한정확외부실행결정전actual0이다. 설치/chown/ACL변경/다른runtime탐색/새도구연쇄준비/원volume읽기·mount/PG/DB/서비스0. source에grant문자열이있어도외부사람승인을인증하지않는다.
+
+
+## 2026-10-28 P03 단발 보호복제 실패·보존 상태
+
+- 새직접승인 결정337E26…/packetC2B1…의 fixed367d9d49 controller605FB846/shell04FE0C3F 1회 실행은create-volume/COPY_VOLUME_IDENTITY로NOT_COMPLETE였다. consumed=true/copyCreated=true/helpers={}·cp/PG/SQL미도달이며 같은승인재실행0. 결과 docs/04_test_reports/AV3/P03_LIMITED_COPY_ONCE_20261028_RESULT.md(SHA7E365AC6…).
+- 원volume anvil-v3-development-pgdata(instance dc22a0629e79f259dcd935845e88e58e,CreatedAt2026-10-16T03:53:33+09:00)는metadata동일/소비자0으로관측됐다. 원내용무결성·타writer부재·시점일관성을새로검증한것은아니다. 새volume anvil-v3-pgdata-recovery-20261027-r1(instance cef316aec47f84f6d3e0f27f1e1c939a,CreatedAt2026-10-28T11:44:26+09:00)은우리복사미도달상태로보존/소비자0이며삭제하지않는다.
+- ledger /home/daon/.local/share/anvil-v3-pgcopy-20261027-r1은uid1000/0700,grant·consumed·receipt는0600/nlink1로보존한다. grantSHA263864d5ea021ef9a1f124492a7c65225a410514ea068ee28e281e847dc21c1f,consumed42b273c87648af15973c18bb081b03ce0f971e34bc42863d37c4f6648dcbe898,receiptb34eb206d02ac657107634c630e65eda99c36a837b4744926b626cc95872c1c5. 비밀원문·개별파일을Git/출력으로옮기지않았다.
+- 승인전용QA /home/daon/anvil-v3-pgcopy-20261027-r1-src만정상종료/clean exactGit/소유·링크·PID대조후회수했다. 별도SSH1fa379(02:48:02Z)에서QA부재/helper3부재·양volume/ledger보존을확인했다. 보존자원은자동삭제/복구rollback대상이아니다.
+- 원인은Docker의정상+09시간표현을grant용UTC문자열동등성검사로거절한source버그다. 별도source보완의48PASS/type0은실Docker재실행·복제수용·DB/API/Web복구가아니다. 新실행은새exactsource/resource/기한/승인전NOT_RUN. 기존Secret·인증서·권한·서비스/Oracle/Agent변경0이다.

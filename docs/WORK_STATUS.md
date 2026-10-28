@@ -8869,3 +8869,17 @@
 
 
 - **P03 실제원인·회수 독립대조**:d9fa9e actualcopy CreatedAt2026-10-28T11:44:26+09:00/labels5·noncecef316·Name/Driver/localScope/nullOptions/Mountpoint 일치·원volume同instance/CreatedAt·양volume소비자0/helper3부재/controllerPID0·QAexact367clean을읽었다. 독립51a0ab 고정367 predicate 순수대조에서유일false는instant(CreatedAt)의toISOString원문동등성(정상epoch2026-10-28T02:44:26.000Z/승인창내)임을확정했다. Docker관측표현과grant용canonical시각검사의혼용이원인이다. cf052a normal종료·QArootdev2096/ino4212859/uid1000:1000/0700·자손2830files177dirs52840418bytes·linkescape0·controllerPID0/Gitclean확인뒤QA만정확회수,원/새volume·ledger삭제0.1fa379別SSH읽기02:48:02Z에서QA부재/helper3없음/원·새volumemetadata同값/양소비자0/ledger0700 uid1000·grant/consume/receipt0600nlink1/原SHA263864·42b273·b34eb2 보존을확인했다. 원내용/Secret/SQL읽기0·최초run원FAIL보존/복제완료아님/동승인재실행0. systematic-debugging지침과원관측/단일predicate근거로로컬source-only최소수정TDD를다음업무로선정하며새실제run은새정확승인전0이다.
+
+
+- **P03 Docker시각 source-only TEST_ONLY 착수**: 원실패/회수보고7E365AC6은f6dd75/d6e331 exact문서2 e8c0a42a1433a77e637dede5188a93312233f7aa local/private同SHA·trackedclean/보호8·mainf976不變에보존했다. 새WI3F4095D7/manifestFFA35EF7 양쪽동일·독립preflightC0/I0/M0. Main6409b2 실행기준e8/controllerC96raw·605LF/보호12/newtest·result부재/indexempty를확인하고신규pg-recovery-copy-docker-time.test.ts1만TEST_ONLY GO. Docker소비5의strictRFC3339 offset/nano와정밀epoch비교를보완하되grant/evidence canonical·source原createdliteral/nonce/labels/기한/단발/保全·shell/기존tests불변·제품1MainRED전0·實Docker/원격/cp/새grant/volume/helper/SQL/서비스0이다. 새actualrun승인아님/소진run再사용0/전체계획미완료. 병행정본관리담당은실증거로확인한INTERFACES누락문단/DATA_MODEL2행만canonical에추가하고삭제·교체·WORK_PLAN요약차이임의복원0으로한정한다.
+
+
+- **P03시각 Main source RED·controller1 GO**: c29504 신규pg-recovery-copy-docker-time9CD9777A는13최상위8PASS5FAIL/205.2293ms/skip0/cancel0/todo0/exit1. 純parser부재2·actual+09volume/UTCfraction/containerCreatedFinished公開strict/limited 소비3의실패이며canonicalmetadata/identity/기한·nonce/labels/sourceconsumer/grant/evidence거절8은유지된다.3db98e 원controllerC96/oldhost10CAFD44/shell04FE 불변뒤controller1만GREEN GO·新test독립검수중. Docker strictRFC3339/nano精密 비교만분리/5소비·inspect정밀기한적용,승인canonical/evidence/source 원literal/enum/timeout/consume·실보존과원actual失敗는不變. 再실제실행/원격/volume/helper/새grant/SQL·서비스0·Main제품write0. 같은원인실제재실행은새exact승인전NOT_RUN이다.
+
+- **정본 누락 추가 보완**: 계약관리담당이앞서실commit/동일현황으로검증한INTERFACES§13.3 누락12문단9363bytes 및DATA_MODEL result_reviews/result_rework_drafts2행948bytes만canonical에삽입했다. 각기존본문/EOL/FN17append保全·삭제교체0/source해당파일쓰기0. 新canonicalSHA INTERFACES00B5236DDE28348F76503CE10F0D8E43D24A35410526D405939E98FFC7A2A1A5/DATA C62FFB2E70C5D25E8A4783C42A74BAAF7BB025F7D52EE2F2321078221974722D·두문서normalizedsource동일,WORK_PLAN OS문단/UI06축약교체는보류保全/여전히다름. 코드진도/시험PASS로세지않는다.
+
+
+- **P03시각 source Main GREEN·독립품질**: ff8f12 신규13+기존host35 단일48PASS/408.7645ms/skip0/cancel0/todo0/exit0,55f31c node tsc--noEmit-p tsconfig.base.json exit0. controllerraw817E0E27/LFE3934DE4·신규test9CD9/oldhost10CA/shell04FE동결. 0e4246 Maindiff는Docker전용엄격calendar/offset/fraction1~9→bigintns·window/notFuture/positive 및기존metadata5+inspect미래비교에한정,기존grant/evidencecanonical/source原CreatedAt/상수/nonce/labels/closedshape/consume/timeout/保全불변·diffcheck0(원CRLF→indexLF예고만). 독립제품품질C0/I0/M0·신규시험C0/I0/M0,명세검수대기. 원fbe8b8 actual NOT_COMPLETE/소진grant/원·새volume·ledger保全/QAhelper0은보존하며48PASS를실Docker/복제/DBPASS로소급하지않는다. 新actual승인/원격/자원실행0·Main제품write0이다.
+
+
+- **P03시각 source-only 한정검수 완료**: 새unit/제품품질/명세모두C0/I0/M0·필수미해결0,Main48PASS/type0/diff0·controller817Eraw/E393LF동결을대조했다. result1/환경·계획기록뒤기존branchexactcheckpoint로통합한다. 원actual실행367/605·NOT_COMPLETE/소진grant/원·새volume·ledger保全/QAhelper0은그대로이며새source기준으로성공을소급하지않는다. 새actual후보의R2리소스binding은별도읽기설계검토중/아직코드·문서·grant·원격0이다.

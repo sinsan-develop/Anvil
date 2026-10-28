@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "task": "P03_DOCKER_TIMESTAMP_SOURCE_FIX",
+  "state": "DOCUMENT_PREPARATION_ONLY",
+  "base": "e8c0a42a1433a77e637dede5188a93312233f7aa",
+  "baseEvidence": "Main f6dd75/d6e331 actual 실패 결과/status exact2 게시 local/private 동일·trackedclean·보호8+기존4·mainf976불변. 작성자Git0",
+  "branch": "codex/av3-stage-b",
+  "writer": "fn05_share_request_impl",
+  "mainProductWrite": false,
+  "workInstructionSha256": "3F4095D76782F5D9F8117A7C80AEB8F0FB40190776D5E12E88850D23B0ED0886",
+  "actualSource": "367d9d49daeee08a319431853006db0647129910",
+  "actualControllerGitLfSha256": "605FB84674B99629B99004023AFF7F1E79F9400EFE8ADE0303043861E0F17AA8",
+  "originalFailure": {
+    "evidence": "Main fbe8b8/d9fa9e, 독립51a0ab",
+    "phase": "create-volume",
+    "code": "COPY_VOLUME_IDENTITY",
+    "consumed": true,
+    "copyCreated": true,
+    "helpers": 0,
+    "cpReached": false,
+    "retryAuthorized": false
+  },
+  "allowed": [
+    {
+      "path": "docs/work_packages/P03_DOCKER_TIMESTAMP_SOURCE_FIX_IMPLEMENTATION_20261028.md",
+      "existing": false,
+      "phase": "NOW_DOCUMENT_ONLY"
+    },
+    {
+      "path": "docs/work_packages/P03_DOCKER_TIMESTAMP_SOURCE_FIX_SOURCE_MANIFEST_20261028.json",
+      "existing": false,
+      "phase": "NOW_DOCUMENT_ONLY"
+    },
+    {
+      "path": "scripts/p03-pg-copy-host.ts",
+      "existing": true,
+      "phase": "AFTER_MAIN_RED_AND_PRODUCT_GO",
+      "rawSha256": "C96C7AAADC4B76822F698A6E4E9BD3CD7EADBA4F57ECC2EE5951FF3E598E40A5",
+      "lfSha256": "605FB84674B99629B99004023AFF7F1E79F9400EFE8ADE0303043861E0F17AA8"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-docker-time.test.ts",
+      "existing": false,
+      "absenceObserved": true,
+      "phase": "AFTER_TEST_ONLY_GO"
+    },
+    {
+      "path": "docs/04_test_reports/AV3/P03_DOCKER_TIMESTAMP_SOURCE_FIX_RESULT_20261028.md",
+      "existing": false,
+      "absenceObserved": true,
+      "phase": "AFTER_VERIFICATION_REPORT_GO"
+    }
+  ],
+  "readOnlyExisting": [
+    {
+      "path": "scripts/pg-recovery-copy.sh",
+      "rawSha256": "04FE0C3F958DFE5378F60A99D4EF5422F99C543DB66D24157A73BCBADD375FDC"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-host.test.ts",
+      "rawSha256": "10CAFD444DE2631E1B7F2778BBAF7B1484FAD27D0B091C4043A7D521BBD44DF2",
+      "lfSha256": "F276712E1D8417256722E986F2A69986C943F2234DEA3D4306481C1F54E2BB45"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+      "rawSha256": "55345F63479E88B6400EFE3348262885CAD1200C79D83736932C6BF1AEAEBA1F",
+      "lfSha256": "BF35F26C55262792C0B0CBFD0FC98AD1750C7B6774B8FAF0A19868C6CAF638B4",
+      "automaticExecution": false
+    }
+  ],
+  "protectedExisting": [
+    {
+      "path": "scripts/p03-pg-discovery-host.ts",
+      "sha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7"
+    },
+    {
+      "path": "scripts/pg-recovery-discovery-readonly.sh",
+      "sha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-host.test.ts",
+      "sha256": "207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-preparation.test.ts",
+      "sha256": "B90F8D8799ABF4DB877227BDEBE48CBAD5CBDF80BA7F015EB1AD13EE7E8A96FB"
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "dockerTimestampConsumers": [
+    {
+      "function": "copyValid",
+      "field": "CreatedAt",
+      "mode": "strict-and-limited"
+    },
+    {
+      "function": "own",
+      "field": "Created",
+      "mode": "strict"
+    },
+    {
+      "function": "runCopyHost.clean",
+      "field": "State.FinishedAt",
+      "mode": "strict"
+    },
+    {
+      "function": "ownLimited",
+      "field": "Created",
+      "mode": "limited"
+    },
+    {
+      "function": "runLimitedRiskCopyHost.clean",
+      "field": "State.FinishedAt",
+      "mode": "limited"
+    }
+  ],
+  "preserve": [
+    "grant/evidence canonical instant",
+    "decision and closed schemas",
+    "Node/source identity",
+    "sourceValid exact CreatedAt",
+    "nonce/labels",
+    "epoch bounds",
+    "single consumption",
+    "preservation",
+    "timeout",
+    "status/error enums",
+    "fixed resource constants"
+  ],
+  "testOnlyGoIssued": false,
+  "productGoIssued": false,
+  "actualEffectsAuthorized": false,
+  "actualDockerRemoteCpGrantContainerSqlServiceExecution": false,
+  "parentAssignmentBase": "d4fb5fc190f2a8816b0cababfea121c27d7715fe",
+  "dockerSchemaReference": {
+    "url": "https://raw.githubusercontent.com/moby/moby/v26.1.5/api/swagger.yaml",
+    "apiDocumentationVersion": "1.45",
+    "evidence": "Main 공식 schema 읽기",
+    "actualServerVersionVerified": false,
+    "actualContainerTimestampsObserved": false
+  }
+}
