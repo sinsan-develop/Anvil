@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "task": "FN16_PROTECTED_REFERENCE_REGISTRATION",
+  "state": "PENDING_EXACT_PMO_SOURCE_ADOPTION",
+  "base": "4191a7faf67d1f7b56b79eb89c269ddcfb0ad5b1",
+  "branch": "codex/av3-stage-b",
+  "baseEvidence": "Main 지정 기준; Mainstatusdirty1/App 및 사용자 dirty 보존; 작성자 Git0",
+  "writer": "fn05_share_request_impl",
+  "mainProductWrite": false,
+  "candidate": {
+    "path": "docs/contracts/FN16_PROTECTED_REFERENCE_REGISTRATION_CONTRACT_R2.md",
+    "sha256": "CA7774F7A5C102B2B6EDD3D5D6E87701FEADE197E91B2186D05F4AACFE30AA21",
+    "exactAdoptionEvidence": null,
+    "existingPmoQuestionPending": true,
+    "duplicateQuestionAuthorized": false
+  },
+  "sqlNumber": {
+    "originalCandidate": "db/migrations/0050_backup_references.sql.pending",
+    "collision": "db/migrations/0050_design_baseline_activations.sql.pending",
+    "currentMaximum": "0052",
+    "proposed": "db/migrations/0053_backup_references.sql.pending",
+    "state": "PENDING_PMO_QUESTION_SCOPE_AND_NUMBER_RECONCILIATION",
+    "automaticallyIncludedInExistingQuestion": false,
+    "recheckAbsenceBeforeCreation": true
+  },
+  "workInstructionSha256": "41D4B6287A8ADAB8EA0EA3E057EA95C23B147FBF2AE61020C7EB4DFD94CDC056",
+  "allowedPathCount": 23,
+  "allowed": [
+    {
+      "path": "docs/work_packages/FN16_PROTECTED_REFERENCE_REGISTRATION_IMPLEMENTATION.md",
+      "existing": false,
+      "phase": "NOW_DOCUMENT_ONLY"
+    },
+    {
+      "path": "docs/work_packages/FN16_PROTECTED_REFERENCE_REGISTRATION_SOURCE_MANIFEST.json",
+      "existing": false,
+      "phase": "NOW_DOCUMENT_ONLY"
+    },
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "existing": true,
+      "rawSha256": "78AE5BA840A56CAD4B97A9D602A94EA0DCA205FDAD1DCC12AE6DA58C9D72B168",
+      "lfSha256": "78AE5BA840A56CAD4B97A9D602A94EA0DCA205FDAD1DCC12AE6DA58C9D72B168",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "existing": true,
+      "rawSha256": "E0C6121ABE6AB3B52EACC840D0EF7A6752ACC7DCD3810A161123CAAE42BA831B",
+      "lfSha256": "E0C6121ABE6AB3B52EACC840D0EF7A6752ACC7DCD3810A161123CAAE42BA831B",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "existing": true,
+      "rawSha256": "EA1389B0FE6573AA2FBE7E87830851D75AC11A3B2B6AA16D618F6F4E68AEFA44",
+      "lfSha256": "EA1389B0FE6573AA2FBE7E87830851D75AC11A3B2B6AA16D618F6F4E68AEFA44",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "existing": true,
+      "rawSha256": "A41595201FB0CFD75D7C820857648080C3690B280F7E1D864E577D0DD89D3AB7",
+      "lfSha256": "A41595201FB0CFD75D7C820857648080C3690B280F7E1D864E577D0DD89D3AB7",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "existing": true,
+      "rawSha256": "57D571B07073C9DC1CF8708ED613F0889BB178964F1B335EC37F7963EFF804AB",
+      "lfSha256": "57D571B07073C9DC1CF8708ED613F0889BB178964F1B335EC37F7963EFF804AB",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "existing": true,
+      "rawSha256": "82FED454E732B1ABAB9D5E9723E728269CFC9F92B3C2AA12E41477794A38AFA5",
+      "lfSha256": "C29B7E7C03203D2A196835B1B470BBB43ACFA7302CF1144D00036D1A6DE52AC2",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "existing": true,
+      "rawSha256": "B9D20E90E1BC6C16B4B007D6FA1BC06ABB767C50BD575A7A65327EAB50A0211C",
+      "lfSha256": "6312AFBA5BCA53BA5A6ED04E939F79E1177EEDD95857D28EB9B195AB7A6B35DE",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "existing": true,
+      "rawSha256": "0694CB2794446EFD35AD2A9C080012E71ED4DFFC465AF6ACBB85B0BD042C65F7",
+      "lfSha256": "B4DF6D951ABCD13A050EE219DCB478892681B52335DE4592C73A5824C4F65B29",
+      "phase": "EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO_REQUIRED"
+    },
+    {
+      "path": "contracts/runtime/backup-references-v1.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "apps/server/modules/backups/backup-resource-provider.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "apps/server/modules/backups/backup-reference-store.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "apps/server/modules/backups/backup-reference-routes.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "apps/web/src/features/backups/backup-reference-api.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "apps/web/src/features/backups/BackupReferencePanel.tsx",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "db/migrations/0053_backup_references.sql.pending",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_MAIN_RED_AND_PRODUCT_GO"
+    },
+    {
+      "path": "tests/unit/FN16/backup-reference-input.test.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_AND_MAIN_TEST_ONLY_GO"
+    },
+    {
+      "path": "tests/unit/FN16/backup-reference-store.test.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_AND_MAIN_TEST_ONLY_GO"
+    },
+    {
+      "path": "tests/unit/FN16/backup-reference-routes.test.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_AND_MAIN_TEST_ONLY_GO"
+    },
+    {
+      "path": "tests/unit/UI14/backup-reference-api.test.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_AND_MAIN_TEST_ONLY_GO"
+    },
+    {
+      "path": "tests/browser/UI14/backup-reference.spec.ts",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_EXACT_ADOPTION_AND_MAIN_TEST_ONLY_GO"
+    },
+    {
+      "path": "docs/04_test_reports/AV3/FN16_PROTECTED_REFERENCE_REGISTRATION_RESULT.md",
+      "existing": false,
+      "absenceObservedBothRoots": true,
+      "phase": "AFTER_MAIN_VERIFICATION_REPORT_GO"
+    }
+  ],
+  "protectedExisting": [
+    {
+      "path": "scripts/p03-pg-discovery-host.ts",
+      "sha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7"
+    },
+    {
+      "path": "scripts/pg-recovery-discovery-readonly.sh",
+      "sha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-host.test.ts",
+      "sha256": "207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-preparation.test.ts",
+      "sha256": "B90F8D8799ABF4DB877227BDEBE48CBAD5CBDF80BA7F015EB1AD13EE7E8A96FB"
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "frozenCompletedCode": [
+    {
+      "path": "apps/web/src/features/backups/project-backups-api.ts",
+      "rawSha256": "2D5BBD3A505B9E76F2D60853E99E4889B5C9BA6804E0193F16D781066882F005",
+      "reason": "4191a7fa 미전송 준비해제 완료코드: 이번 변경대상 아님"
+    },
+    {
+      "path": "apps/web/src/features/backups/ProjectBackupsPanel.tsx",
+      "rawSha256": "6AC014CBE932696F916FB9C94F49144CD5CB7B8F4A1564F1B08270778C2A0D82",
+      "reason": "4191a7fa 미전송 준비해제 완료코드: 이번 변경대상 아님"
+    }
+  ],
+  "preserveAppAndUserDirty": true,
+  "appIsAllowedBaselineNotPermanentlyReadonly": true,
+  "phaseOrder": [
+    "EXACT_PMO_SOURCE_ADOPTION_AND_SQL_NUMBER_SCOPE",
+    "MAIN_PREFLIGHT",
+    "INPUT_TEST_ONLY_MAIN_RED_PRODUCT_GO",
+    "STORE_ROUTES_SQL_TEST_ONLY_MAIN_RED_PRODUCT_GO",
+    "UI_TEST_ONLY_MAIN_RED_PRODUCT_GO",
+    "INDEPENDENT_REVIEW_AND_MAIN_VERIFICATION",
+    "REPORT_GO"
+  ],
+  "fn17Impact": {
+    "sharedOperations": true,
+    "additionalNotificationProductChangeCurrentlyRequired": false,
+    "preserve": [
+      "same transaction request/receipt/capture/notification",
+      "10000 project cap",
+      "current and deferred guard",
+      "replay production zero",
+      "atomic rollback"
+    ],
+    "selectedReadOnlyAdjacentTests": [
+      "tests/unit/FN17/approval-notification-reader-operations.test.ts",
+      "tests/unit/FN17/approval-notification-request-transaction.test.ts"
+    ],
+    "outsideAllowlistChangeRequiresMainReview": true
+  },
+  "providerDefault": {
+    "state": "UNCONFIGURED",
+    "eligible": false,
+    "actualDescriptors": false,
+    "targetKeyStorageRejected": true,
+    "retentionAutomaticDeletion": false
+  },
+  "testOnlyGoIssued": false,
+  "productGoIssued": false,
+  "pendingSqlCreationGoIssued": false,
+  "actualBrowserGoIssued": false,
+  "actualEffectsAuthorized": false,
+  "existingTestsSqlAppliedManifestWrite": false,
+  "newDependencies": false,
+  "newGenericStructure": false,
+  "mainOwnsGitStatusAndPublication": true
+}
