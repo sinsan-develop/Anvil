@@ -9540,3 +9540,14 @@
 - 방법론 역사 Main08f6fb 신규13PASS/0FAIL/skip0/1108.0238ms·type/diff0,source6C77A703/시험D1AB8736·B09E4DFA불변. 독립최종검수 진행 중이며 전체FN16완료가 아니다. 실제키DB서비스0; 다음 전체방법론 적용이력 WI만 기존primary가 작성한다. 결과 FN16_PROJECT_METHODOLOGY_INVENTORY_RESULT_20261029.md.
 
 - 방법론 역사 동결6C77A703 독립최종C0/I0/M0. 초기name/purpose 공백 의심은 실제confirmDraftMethodology의nonempty 검사로해소하여finding아님. Main검증과독립검수가완료한신규3+WI/결과/WORK_STATUS/WORK_PLAN만checkpoint,보호8/다음WI제외. PMO에승인범위·결과/미검증전달성공;정책후보의기존질문은답변수신시에만회신하며중복질문0.
+
+### 2026-10-29 FN16 방법론 전체 적용이력 수집 착수
+- 방법론history3e83081eedb8cf51e43e6b54e7e91aa4b1e91fb7/private동일·main불변(9d121e),보호8보존. 신규 WI BA6CE55EE9BFEDD69C000F809A420C68591FA23AB0EF94B9925221B66D45AA74는전체application11/참조commands19/audit4만수집. 초기null/non-null v1·previous exact·원request hash보존,현재form/실행권한재판정0. 기존primary시험2→MainRED→source1,독립reviewer검수;실제키DB서비스0.
+
+- 적용이력 WI BA6CE55E 독립C0/I0/M0. Main a106a7 신규13중schema1PASS/미구현12FAIL/skip0/182.6411ms exit1, 행동C8CEA422/schemaE810FE75동결확인. 기존primary 신규source1만GO,reviewer시험검수. actual키DB서비스0·기존기능/시험변경0.
+
+- 적용이력 author3228f9 source5F6E5476 신규13PASS/769.6117ms/type/diff0 제출. 원타입5건(5d5b47)은검증뒤내부Row표시로해결. Main은검증만하고반환하지않은apply reason을FN16역사보존공백으로판정해WI r2의내부투영reason추가를지시했다. 초기null/실apply원형,새공개계약0·MainRED후한정보완;후속previousRef음성혼재한계는기록유지.
+
+- 적용이력reason Main66af42 2FAIL/366.4909ms→투영42B보완후Mainc830ed13PASS/799.0388ms/type/diff0. source04A962/행동FF7CAA/schemaE810불변. 결과 FN16_METHODOLOGY_APPLICATION_INVENTORY_RESULT_20261029.md,독립최종pending. 다음 본인수신알림/읽음이력은기존primary WI문서만준비,새제품0·실제키DB서비스0.
+
+- 적용이력04A96260 독립최종C0/I0/M0. sameSource/applyDraft직접분기와reason/hash보존확인,원실패/시험한계보존. 신규3+WI/결과/WORK_STATUS/WORK_PLAN정확7checkpoint,다음알림WI/보호8제외. 실제DB키서비스0.
