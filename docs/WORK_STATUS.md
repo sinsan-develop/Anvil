@@ -9434,3 +9434,13 @@
 ## 2026-10-29 FN16 readonly reader 소스 검수
 - 신규 source1483BB84/testBB7E1C69를 Main9545c4 16PASS1070.2835ms/skip0·eab546 type/diff0 및 독립 C0/I0/M0로 확인했다. 기존설치reader/ArtifactStore/byte verifier 변경0. 초기runtime 함수객체 오류와fixture TS2345는 별개 실패로 보존·최소보완했고 기대값완화0이다. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_READONLY_READER_RESULT_20261029.md.
 - 실제 Node readonly본문+FD/mount/owner/current성·bounded read·drain/단발회수는 구현, 실행은fake만이다. 실제Linux/FS/권한/키/DB/서비스/P03·전체백업·사용자 화면 검증은 미실행·미완료. 외부QA생성0·보호8 보존. 다음은현재로그인/OWNER/세대·원문귀속/격리 전후대조 orchestration의읽기설계이며 아직제품착수0이다.
+## 2026-10-29 FN16 원문 reader 게시·현재 권한 연결 착수
+- 46d037에서 43f8f908b59b722c1cefdd3f11fb0456863edfee private exact SHA 일치·main f976ed5e 불변·보호 미추적8 보존을 확인했다. PMO에 결과 및 실제 Linux/DB/키/서비스 미실행을 전달했다.
+- 다음 WI docs/work_packages/FN16_ARTIFACT_CURRENT_VERIFICATION_20261029.md SHA AE92C173DFAB2ADB61AD0E512AC4342B7C3DC9EC865C931F2F16E6FD01B27A84는 단일 exact artifact의 현재 권한·귀속·격리 전후대조다. 기존 primary TEST_ONLY, reviewer 읽기 독립검수. 실제 DB/파일/키/서비스·SQL migration·공개 route 변경0. 전체 백업과 inventory 포함관계는 후속 미완료다.
+- current 검증 WI AE92 독립 preflight C0/I0/M0. 반환은 ARTIFACT_CURRENT_VERIFICATION_V1/byteVerification/양끝 DB 관측사실로 한정하고 inventoryMembershipVerified=false·restorable=false를 유지한다. mediaType은 inventory와 같은 nonempty<=200, 기존 일반 helper 동작은 변경하지 않는다. primary TEST_ONLY 계속, 원문/DB 실제 실행0.
+- Main96a043의 sandbox Git read 실패는 경로 접근 환경 문제이며 1312ea elevated Git 상태로 확인했다. 제품 실패로 계상하지 않았다. 이후 Git 명령은 검증된 elevated 경로로만 수행한다.
+- Main2f29be current 신규15건은 함수 미구현으로0PASS/15FAIL/skip0/202.284ms exit1이었다. 시험C927A02A를4d5db3으로읽고독립C0/I0/M0확인후같은primary 제품GO했다. 실제DB/파일/키/서비스0, 원문읽기시DB active0·양끝검사·COMMIT후기한/취소·격리반례를유지한다. PG bigint bytes의정상문자열반례보강은기존기대값완화없이허용했다.
+## 2026-10-29 FN16 단일 원문 현재성 연결 검수
+- 제품C29CDB36/시험7FFDFE3F 구현·Main0758d3 신규17PASS575.5016ms/skip0·343e78 type/diff0·독립C0/I0/M0. 기존제품/SQL/권한수정0, 전후 RC현재권한·귀속/격리·세션·기한·DB반납후 byte검증 연결. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_CURRENT_VERIFICATION_RESULT_20261029.md.
+- 최초15미구현RED, 저자보강 cleanup+취소1RED, TS2366 1건은 별개 원인으로 보존·최소보완했고 기존기대완화0이다. 실제DB/FS/키/서비스/P03·전체backup/사용자화면 검증0. 보호8 유지·외부QA생성0.
+- 다음 live inventory의 정확한 원문목록과 총한도/최종상태 연결은 primary 읽기 preflight 중이며 제품착수0이다. 이전 metadata·단일byte·readonlyreader의 불변 시험을 전수 반복하지 않는다.

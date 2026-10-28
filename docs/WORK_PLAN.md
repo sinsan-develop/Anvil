@@ -1609,3 +1609,4 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 호출선 없는 source/합성 범위다. 실제 DB·원문 파일·전체 자료·정책/job·암호화·복원·사용자 화면/인수는 미완료이며 전체 Stage/FN16 완료로 바꾸지 않는다. 다음 내부 원문 검증 연결은 기존 승인·선행을 대조해 진행한다.
 - 2026-10-29 FN16 원문 크기/hash 검사 부분 구현: 내부 단일 artifact byte verifier는 합성13 PASS·타입검사·독립검수로 확인했다. 실제 보관소 reader·현재 권한/격리 대조·전체 수집/암호화/복원·사용자 화면 여정은 미완료로 유지한다. 결과: docs/04_test_reports/AV3/FN16_ARTIFACT_BYTE_VERIFICATION_RESULT_20261029.md.
 - 2026-10-29 FN16 원문 readonly reader 부분 구현: 실제 Node 읽기본문과 byte verifier 연결을 합성16건·타입·독립검수로 확인했다. 실제 보관소 설정/활성화·현재 DB 권한/격리 대조·전체 백업/복원은 미완료다. 결과: docs/04_test_reports/AV3/FN16_ARTIFACT_READONLY_READER_RESULT_20261029.md.
+- **2026-10-29 FN16 원문 현재 권한·상태 연결:** 단일 exact artifact의 RC 양끝 auth/OWNER·귀속/격리 확인과 DB반납 후 byte검증 source를 구현했다. Main 신규17PASS·type/diff0·독립C0/I0/M0. 현재 관측만 확인하며 inventory 포함관계·전체backup/restorable=false; 실제 DB/FS/키/서비스·화면 연결은 미완료다. 상세 FN16_ARTIFACT_CURRENT_VERIFICATION_RESULT_20261029.md. 다음 live inventory 대상목록 연결을 진행한다.
