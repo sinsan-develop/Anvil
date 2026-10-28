@@ -1151,3 +1151,8 @@ UI10은현재고정지식→허가대상조회/목적입력→명시요청보관
 선택stage OR task 및명시공통포함조건을서버WHERE에서정렬/LIMIT전에적용하고기존제목·이유/kind/status/정렬/상한을함께보존한다. scoped cursor는KNOWLEDGE_SCOPE_V1/canonical scope/기존project·actor·query-kind-status-limit에결박하며다른조건/무필터와혼용거절. scope없으면기존SQL7매개값/cursor filter직렬화·응답KnowledgeHit를그대로유지한다. UI10은기존보호GET에서고정ref를선택하며본문자동조회/새권한/공유·실행허가는추가하지않는다.
 
 기존SELECTsource필터만추가했고새table/DDL/migration/schema·실제DB접속SQL실행·정책/서비스/Secret/Agent0이다. Main신규/직접19PASS/type·합성SSR/DOM4PASS는source소비검증이며실PG문법/권한·정식served/사용자인수는NOT_RUN이다. 과거후보E4D828C5의NOT_ADOPTED는이번직접승인전이력으로보존한다.
+
+
+## 2026-10-28 FN17 승인 요청 알림 생산 source 계약 채택
+
+직접 승인 call_95ad36ce82b64af7925dc9282b12f3e0/item0 및 docs/approvals/FN17_APPROVAL_NOTIFICATION_PRODUCER_SOURCE_20261028.json(D2DCD9B8…)에 따라 결정안 BAA454FC…의 A를 채택했다. 기존 requestApproval 신규 성공 callback에서 원 receipt/request·후보capture와 같은 transaction으로 본인 APPROVAL_REQUESTED/IN_APP 알림을 보관한다. 공개 receipt·기존 알림9필드/GET/list/mark를 유지하고 실패는 원요청까지 rollback한다. 프로젝트 누적10000행 초과는429 NOTIFICATION_CAPACITY_EXCEEDED이며 자동삭제OFF/보존기간미정으로 상한후 새요청이 계속 차단될 수 있다. 복구는 별도 결정, 과거replay/GET/mark 추가생산·backfill0이다. reader지원19연산/GUC·원본검증과 producer 최초/후속 정책창·세션/요청기한을 대조한다. 실제DB·DDL/GRANT/정책권한·서비스·Secret·Agent/외부송신 실행은 제외하며 결과서의source-only증거·미검증을 따른다.

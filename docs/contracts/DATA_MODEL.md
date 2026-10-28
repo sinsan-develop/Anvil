@@ -443,3 +443,8 @@ FN01 직접 승인 후속 forward38의 실제 저장 구분: 초기0001 source_d
 0051_knowledge_share_requests.sql.pending는직접승인F60EEE63 A안의source-only후보다. 기존migration/적용manifest/knowledge_events·공유guard를바꾸지않았고실제SQLcompile/DML/RLS/경합은NOT_RUN이다. 새표 anvil.knowledge_share_requests는(project_id,id)PK·version1/RECORDED_ONLY 고정,content_hash/snapshot_json/request_json·created_by/client_id/control_generation/policy_ref/command_id/created_at을보존한다. command_id unique·project/command와actor/client의deferred참조,본인paging색인·불변guard·정확command/receipt/audit/snapshot검사를정의한다.
 
 현재검사currentCheck는저장하지않는다. 원문bytes/대상명·수신자료를복제하지않고선택exactrefs와당시targetversion·목적만보관한다. SELECT는인증actor의transaction-local문맥+본인범위로제한하며서비스도현재출발/대상/원문을대조한다. 신규표의guard용정의는pending안에만있고이번보완에서기존불변표의UPDATE권한·추가definer/GRANT/기존guard를넓히지않았다. 실제공유/원문이전/승인소비·대상쓰기모델로사용하지않는다. privileged외부DB/파일동시변경의원자성은미실증이다.
+
+
+## 2026-10-28 FN17 알림 저장 source 후보
+
+직접 승인 D2DCD9B8…/결정 BAA454FC…의 source-only 저장 정의는 db/migrations/0052_approval_in_app_notifications.sql.pending에 있다. notifications의 원request/receipt·본인수신자/불변본문·중복방지와 notification_reads의 최초읽음/원명령 결박을 새 forward source로 정의한다. 기존 SQL·적용 목록은 불변이며 실제PG구문/trigger/DML/COMMIT/RLS/권한·경합/xidwrap/subtransaction은 미검증이다. guard/현재성·전체project10000cap/현재transaction 신규원행 결박의 정적검수를 실제DB 준비/전체FN17완료로 표시하지 않는다.

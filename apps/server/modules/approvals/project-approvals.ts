@@ -1,3 +1,4 @@
+import {recordApprovalRequestNotification} from '../notifications/approval-notification-producer.ts';
 import {ProjectLimitPolicies} from '../executions/runtime-policy.ts';
 import {assertResponsibleSessionApprovalTarget} from '../assignments/responsible-sessions.ts';
 import{randomUUID}from'node:crypto';
@@ -15,7 +16,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-const consumableOperations = ['defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations];
+export const consumableOperations = ['defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -52,6 +53,8 @@ export class ProjectApprovals{
   const updated=await db.query("UPDATE anvil.approval_requests SET status='CONSUMED',version=3 WHERE project_id=$1 AND id=$2 AND version=2 AND status='APPROVED'",[c.projectId,approval.requestId]);if(updated.rowCount!==1)throw new AuthFailure('VERSION_CONFLICT',409);
  }
  async request(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
+  const initialRequestPolicy=await authorizeMaterial(db,actor,c);
+  if(canonicalJson(initialRequestPolicy.ref)!==canonicalJson(policyRef))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
   const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!p)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date;
   // 요청 지원과 실제 소비는 별개다. 분리의 새 저장 보호/소비 연결 완료 전 실제 실행은 거절한다.
@@ -74,6 +77,7 @@ export class ProjectApprovals{
   await db.query("INSERT INTO anvil.approval_requests(id,project_id,version,candidate_command_id,action_scope_json,scope_digest,details_json,required_decider_ref,status,expires_at,created_by,client_id,command_id,policy_ref,content_hash,request_json,created_at) VALUES($1,$2,1,$3,$4,$5,$6,$7,'PENDING',$8,$9,$10,$11,$12,$13,$14,$15)",[id,c.projectId,details.candidateCommandId,JSON.stringify(details.actionScope),scopeDigest,JSON.stringify(details),JSON.stringify(snapshot.requiredDecider),details.expiresAt,actor.actorId,actor.clientId,receipt.id,JSON.stringify(policyRef),ref.contentHash,JSON.stringify(request),request.createdAt]);
   if(activation)await new DesignActivationApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   if(plan)await new WorkPlanApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
+  await recordApprovalRequestNotification(db,actor,{command:c,request,receipt,initialPolicyValidUntil:initialRequestPolicy.validUntil});
   return receipt.result;
  }
  async decide(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){

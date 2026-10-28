@@ -459,3 +459,13 @@ KnowledgePage/App→KnowledgeShareRequestPanel/knowledge-share-request-api는원
 - 검수: `tests/browser/UI10/knowledge-scope-search-dom.test.ts`
 - 검수: `tests/browser/UI10/knowledge-scope-search-dom-harness.tsx`
 - 결과: `docs/04_test_reports/AV3/FN05_KNOWLEDGE_SCOPE_SEARCH_RESULT.md`. fakeDB/SQL문자열·합성transport만확인하며실제DB/서비스반영0.
+
+
+## 2026-10-28 FN17 승인 요청 알림 source 연결
+
+- 기존원명령hook/공유지원연산: apps/server/modules/approvals/project-approvals.ts
+- 내부 동일transaction producer: apps/server/modules/notifications/approval-notification-producer.ts
+- 본인조회·읽음/GUC/원본검증: apps/server/modules/notifications/project-notifications.ts
+- 미적용저장·guard/RLS: db/migrations/0052_approval_in_app_notifications.sql.pending (적용목록 편입/실행0)
+- 신규집중시험: tests/unit/FN17/approval-notification-producer.test.ts, tests/unit/FN17/approval-notification-request-transaction.test.ts, tests/unit/FN17/approval-notification-reader-operations.test.ts, tests/unit/FN17/approval-notification-sql.test.ts
+- 직접승인·WI/manifest·결과: docs/approvals/FN17_APPROVAL_NOTIFICATION_PRODUCER_SOURCE_20261028.json, docs/work_packages/FN17_APPROVAL_NOTIFICATION_PRODUCER_IMPLEMENTATION.md, docs/work_packages/FN17_APPROVAL_NOTIFICATION_PRODUCER_SOURCE_MANIFEST.json, docs/04_test_reports/AV3/FN17_APPROVAL_NOTIFICATION_PRODUCER_RESULT.md

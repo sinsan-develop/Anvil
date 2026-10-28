@@ -1548,3 +1548,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-10-28 FN03/UI06 보관 작성·상태 주체 상세**: 기존getDocumentVersion의authorRef/createdAt/statusHistory.actorRef를검증·기본접힘으로표시했다. 작성인증기록자와내용저자를구분/미제공·과거버전·현재고정조회guard·본문hash불변/추가GETPOST0. 신규7+직접13=Main20PASS/type0,실제React합성DOM4PASS/독립C0I0M0·전용QA잔여0. 이소비단위는소스검수완료이며실제DB·정식served/전체FN03/UI06/Stage완료아님. 증거 docs/04_test_reports/AV3/FN03_DOCUMENT_RECORD_PROVENANCE_RESULT.md.
+
+
+- **2026-10-28 FN17 본인 승인요청 알림 생산 source**: 직접A승인에 따라 원요청/영수증/후보capture와 동일transaction 알림1·전체project10000cap/실패전체rollback·replay추가0·본인조회RLS문맥/지원19연산정합을 구현했다. 신규45PASS/직접기존22PASS/type0·TS/SQL 필수finding해소 독립C0I0(정적source한정).0052.pending은미적용이며 실제DB/RLS·권한/COMMIT·정식served/전달/인수·전체FN17/Stage/계획은미완료다. docs/04_test_reports/AV3/FN17_APPROVAL_NOTIFICATION_PRODUCER_RESULT.md 참조.

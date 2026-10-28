@@ -1,0 +1,271 @@
+-- FN17 승인 A의 미적용 forward source. 실제 PG compile/DML/COMMIT/RLS/GRANT/경합 NOT_RUN.
+-- 0051까지의 source와 기존 migration owner를 전제로 한다. 적용 manifest/기존 SQL/역사 자료는 변경하지 않는다.
+CREATE TABLE anvil.notifications(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL,source_command_id uuid NOT NULL,approval_request_id uuid NOT NULL,
+ request_version bigint NOT NULL CHECK(request_version=1),request_content_hash text NOT NULL CHECK(request_content_hash ~ '^[a-f0-9]{64}$'),
+ recipient_user_id uuid NOT NULL REFERENCES anvil.users(id) ON DELETE RESTRICT,
+ event_kind text NOT NULL CHECK(event_kind='APPROVAL_REQUESTED'),channel text NOT NULL CHECK(channel='IN_APP'),
+ severity text NOT NULL CHECK(severity='ACTION_REQUIRED'),reason_code text NOT NULL CHECK(reason_code='APPROVAL_REQUESTED'),
+ delivery_state text NOT NULL CHECK(delivery_state='STORED_IN_APP'),created_at timestamptz NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash ~ '^[a-f0-9]{64}$'),UNIQUE(project_id,id),UNIQUE(project_id,id,recipient_user_id),
+ UNIQUE(project_id,source_command_id,event_kind,recipient_user_id,channel),UNIQUE(project_id,approval_request_id,recipient_user_id,channel),
+ FOREIGN KEY(project_id,source_command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,approval_request_id) REFERENCES anvil.approval_requests(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,recipient_user_id) REFERENCES anvil.project_members(project_id,user_id) ON DELETE RESTRICT
+);
+CREATE INDEX notifications_recipient_page ON anvil.notifications(project_id,recipient_user_id,created_at DESC,id DESC);
+CREATE TABLE anvil.notification_reads(
+ project_id uuid NOT NULL,notification_id uuid NOT NULL,recipient_user_id uuid NOT NULL,client_id uuid NOT NULL,
+ command_id uuid NOT NULL UNIQUE,notification_content_hash text NOT NULL CHECK(notification_content_hash ~ '^[a-f0-9]{64}$'),read_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,notification_id,recipient_user_id),
+ FOREIGN KEY(project_id,notification_id,recipient_user_id) REFERENCES anvil.notifications(project_id,id,recipient_user_id) ON DELETE RESTRICT,
+ FOREIGN KEY(recipient_user_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT
+);
+-- default app CRUD 부여를 새 두 표에서 명시 회수한다. 새 role/BYPASSRLS는 만들지 않는다.
+REVOKE ALL ON anvil.notifications FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON anvil.notification_reads FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.notifications TO anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.notification_reads TO anvil_v3_app;
+ALTER TABLE anvil.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.notifications FORCE ROW LEVEL SECURITY;
+ALTER TABLE anvil.notification_reads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.notification_reads FORCE ROW LEVEL SECURITY;
+CREATE POLICY notifications_self_read ON anvil.notifications FOR SELECT TO anvil_v3_app USING(
+ recipient_user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid
+ AND EXISTS(SELECT 1 FROM anvil.project_members m WHERE m.project_id=notifications.project_id AND m.user_id=recipient_user_id AND m.revoked_at IS NULL));
+CREATE POLICY notifications_self_insert ON anvil.notifications FOR INSERT TO anvil_v3_app WITH CHECK(
+ recipient_user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND source_command_id=nullif(current_setting('anvil.command_id',true),'')::uuid);
+CREATE POLICY notification_reads_self_read ON anvil.notification_reads FOR SELECT TO anvil_v3_app USING(
+ recipient_user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid
+ AND EXISTS(SELECT 1 FROM anvil.project_members m WHERE m.project_id=notification_reads.project_id AND m.user_id=recipient_user_id AND m.revoked_at IS NULL));
+CREATE POLICY notification_reads_self_insert ON anvil.notification_reads FOR INSERT TO anvil_v3_app WITH CHECK(
+ recipient_user_id=nullif(current_setting('anvil.actor_id',true),'')::uuid AND client_id=nullif(current_setting('anvil.client_id',true),'')::uuid
+ AND command_id=nullif(current_setting('anvil.command_id',true),'')::uuid);
+-- FORCE RLS는 owner도 적용받는다. 아래 두 SELECT policy는 현재 migration owner 하나에만 귀속된다.
+-- app에는 이 role의 membership/전역 SELECT를 주지 않는다. 내부 함수 EXECUTE도 아래에서 회수한다.
+DO $$ BEGIN
+ IF current_user='anvil_v3_app' THEN RAISE EXCEPTION 'NOTIFICATION_MIGRATION_OWNER_REQUIRED';END IF;
+ EXECUTE format('CREATE POLICY notifications_internal_owner ON anvil.notifications FOR SELECT TO %I USING(true)',current_user);
+ EXECUTE format('CREATE POLICY notification_reads_internal_owner ON anvil.notification_reads FOR SELECT TO %I USING(true)',current_user);
+END;$$;
+CREATE FUNCTION anvil.fn17_notification_body(n anvil.notifications) RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('id',n.id,'eventRef',jsonb_build_object('kind','APPROVAL_REQUESTED','serverCommandId',n.source_command_id,
+ 'requestRef',jsonb_build_object('id',n.approval_request_id,'version',1,'contentHash',n.request_content_hash),'channel','IN_APP',
+ 'occurredAt',to_char(n.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+ 'recipientRef',jsonb_build_object('kind','HUMAN','userId',n.recipient_user_id),'projectRef',jsonb_build_object('id',n.project_id),
+ 'severity','ACTION_REQUIRED','reason','APPROVAL_REQUESTED','authenticatedTarget',jsonb_build_object('kind','APPROVAL_REQUEST','projectId',n.project_id,'approvalRequestId',n.approval_request_id),'deliveryState','STORED_IN_APP');
+$$;
+-- 역사적 원 요청의 불변 snapshot/receipt/capture를 검증한다. 현재 request.version/status 진행은 허용한다.
+CREATE FUNCTION anvil.fn17_notification_origin_valid(pid uuid,rid uuid,source_id uuid,recipient uuid,occurred timestamptz,request_hash text)
+ RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.approval_requests;c anvil.commands;ar anvil.authorization_receipts;q jsonb;s jsonb;scope jsonb;ref jsonb;payload jsonb;candidate jsonb;original jsonb;digest text;
+BEGIN
+ SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=rid;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=source_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ q:=r.request_json;s:=q-ARRAY['id','version','status','createdAt'];scope:=q->'details'->'actionScope';ref:=jsonb_build_object('id',rid,'version',1,'contentHash',request_hash);
+ IF (r.id IS NOT NULL AND c.id IS NOT NULL AND ar.id IS NOT NULL AND r.command_id=source_id AND r.created_by=recipient
+ AND anvil.execution_json_shape(q,ARRAY['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','createdAt'])
+ AND q->>'id'=rid::text AND q->'version'='1'::jsonb AND q->>'status'='PENDING' AND q->>'projectId'=pid::text
+ AND q->>'createdAt'=to_char(occurred AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AND r.created_at=occurred
+ AND q->'details'=r.details_json AND scope=r.action_scope_json AND q->>'scopeDigest'=r.scope_digest
+ AND r.scope_digest=anvil.execution_json_hash(scope) AND r.content_hash=request_hash AND anvil.execution_json_hash(s)=request_hash
+ AND q->'requiredDecider'=jsonb_build_object('kind','HUMAN','userId',recipient) AND r.required_decider_ref=q->'requiredDecider'
+ AND q->'requestedBy'=jsonb_build_object('kind','HUMAN','userId',recipient,'clientId',r.client_id)
+ AND scope->'requestedSubjectRef'=q->'requestedBy' AND scope->'controlGeneration'=q->'controlGeneration'
+ AND (q->>'controlGeneration')::bigint=c.control_generation AND q->'policyRef'=r.policy_ref AND r.policy_ref=c.policy_ref
+ AND q->'details'->>'candidateCommandId'=r.candidate_command_id::text AND (q->'details'->>'expiresAt')::timestamptz=r.expires_at
+ AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation='requestApproval' AND c.state='APPLIED' AND c.expected_version=0
+ AND c.actor_id=recipient AND c.client_id=r.client_id AND c.payload_ref IS NULL AND c.approval_consumption_id IS NULL
+ AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref IS NULL
+ AND ar.subject_ref=q->'requestedBy' AND date_trunc('milliseconds',c.completed_at)=occurred) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ payload:=jsonb_build_object('details',q->'details');
+ IF scope->>'operation'='saveWorkPlanDraft' THEN
+  SELECT payload_json INTO candidate FROM anvil.work_plan_approval_candidates WHERE project_id=pid AND request_id=rid AND request_command_id=source_id
+   AND candidate_command_id=r.candidate_command_id AND payload_hash=scope->>'payloadHash' AND target_ref=scope->'targetRef'
+   AND created_by=recipient AND client_id=r.client_id AND control_generation=c.control_generation AND policy_ref=c.policy_ref;
+ ELSIF scope->>'operation'='activateDesignChange' THEN
+  SELECT payload_json INTO candidate FROM anvil.design_activation_approval_candidates WHERE project_id=pid AND request_id=rid AND request_command_id=source_id
+   AND candidate_command_id=r.candidate_command_id AND payload_hash=scope->>'payloadHash' AND target_ref=scope->'targetRef' AND baseline_refs=scope->'baselineRefs'
+   AND created_by=recipient AND client_id=r.client_id AND control_generation=c.control_generation AND policy_ref=c.policy_ref;
+ END IF;
+ IF scope->>'operation' IN('saveWorkPlanDraft','activateDesignChange') THEN
+  IF candidate IS NULL OR anvil.execution_json_hash(candidate) IS DISTINCT FROM scope->>'payloadHash' THEN RETURN false;END IF;
+  payload:=payload||jsonb_build_object('candidatePayload',candidate);
+ END IF;
+ original:=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+  'operation','requestApproval','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',payload);
+ digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',recipient,'clientId',c.client_id,'controlGeneration',c.control_generation,
+  'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ IF (c.request_hash=anvil.execution_json_hash(original) AND ar.scope_digest=digest
+ AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=pid::text
+ AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'targetId'=rid::text AND c.result_ref->'version'='1'::jsonb
+ AND c.result_ref->>'serverReceivedAt'=q->>'createdAt' AND c.result_ref->'data'=jsonb_build_object('ref',ref,'status','APPROVAL_REQUESTED','request',q)
+ AND (SELECT count(*)=1 FROM anvil.audit_events e WHERE e.project_id=pid AND e.command_id=source_id AND e.operation_id=c.operation_id
+  AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_ONE_TIME_APPROVAL_REQUEST' AND e.source_kind='HUMAN_COMMAND'
+  AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',recipient) AND e.client_ref=c.client_id AND e.target_ref=ref AND e.policy_ref=c.policy_ref
+  AND e.approval_ref IS NULL AND e.scope_digest=digest)) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+-- INSERT 전의 현재성만 검사한다. 역사 조회/승인 결정 이후에 현재 정책을 소급 적용하지 않는다.
+CREATE FUNCTION anvil.fn17_notification_current(pid uuid,source_id uuid,wanted_operation text) RETURNS boolean
+ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;p anvil.permission_policy_versions;rule jsonb;scope jsonb;expires timestamptz;matched boolean:=false;requires boolean:=false;minimum_expiry timestamptz;candidate_operation text;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=source_id;
+ IF c.id IS NULL OR c.operation<>wanted_operation OR c.state<>'APPLIED' OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid
+ OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true)
+ OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RETURN false;END IF;
+ -- 잠금 조건에는 기한/현재 상태를 넣지 않는다. 대기 후 별도 statement에서 재평가한다.
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id
+ WHERE pr.id=pid AND m.user_id=c.actor_id FOR UPDATE OF pr,m,pc;
+ IF NOT FOUND THEN RETURN false;END IF;
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id JOIN anvil.project_control pc ON pc.project_id=pr.id
+ JOIN anvil.users u ON u.id=c.actor_id JOIN anvil.clients cl ON cl.id=c.client_id AND cl.user_id=u.id
+ WHERE pr.id=pid AND pr.archived_at IS NULL AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL AND u.status='ACTIVE' AND cl.revoked_at IS NULL
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions a WHERE a.user_id=u.id AND a.client_id=cl.id AND a.credential_generation=u.credential_generation
+  AND a.revoked_at IS NULL AND a.idle_expires_at>clock_timestamp() AND a.absolute_expires_at>clock_timestamp());
+ IF NOT FOUND THEN RETURN false;END IF;
+ SELECT pv.* INTO p FROM anvil.permission_policies pp JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version
+ WHERE pp.project_id=pid AND c.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash);
+ IF p.policy_id IS NULL OR p.content_hash IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('rules',p.rules_json,'reason',p.reason,'reviewRefs',p.review_refs)) THEN RETURN false;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(p.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t=jsonb_build_object('kind','PROJECT','projectId',pid))
+   AND rule->'operations' ? wanted_operation AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF rule->>'disposition'<>'AUTO' THEN RETURN false;END IF;matched:=true;
+  END IF;
+ END LOOP;
+ IF NOT matched THEN RETURN false;END IF;
+ -- 원 transaction 시작 때 허용 창에 포함된 짧은 AUTO가 나중에 사라져 긴 AUTO로 대체되지 않는다.
+ IF EXISTS(SELECT 1 FROM jsonb_array_elements(p.rules_json) original_rule WHERE original_rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(original_rule->'targetScopes') t WHERE t=jsonb_build_object('kind','PROJECT','projectId',pid))
+ AND original_rule->'operations' ? wanted_operation AND (original_rule->>'expiresAt')::timestamptz>c.received_at
+ AND (original_rule->>'expiresAt')::timestamptz<=clock_timestamp()) THEN RETURN false;END IF;
+ IF wanted_operation='requestApproval' THEN
+  scope:=c.result_ref->'data'->'request'->'details'->'actionScope';candidate_operation:=scope->>'operation';expires:=(c.result_ref->'data'->'request'->'details'->>'expiresAt')::timestamptz;
+  IF expires<=clock_timestamp() THEN RETURN false;END IF;
+  FOR rule IN SELECT value FROM jsonb_array_elements(p.rules_json) LOOP
+   IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+    AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t=jsonb_build_object('kind','PROJECT','projectId',pid))
+    AND rule->'operations' ? candidate_operation AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+    IF rule->>'disposition'='DENY' THEN RETURN false;END IF;
+    requires:=requires OR rule->>'disposition'='REQUIRE_APPROVAL';
+    minimum_expiry:=least(minimum_expiry,(rule->>'expiresAt')::timestamptz);
+   END IF;
+  END LOOP;
+  IF NOT requires OR minimum_expiry IS NULL OR expires>minimum_expiry THEN RETURN false;END IF;
+ END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+-- 쓰기 접점만 현재 transaction의 신규 원본을 요구한다. 역사 origin_valid는 xmin을 검사하지 않는다.
+-- PG15 xmin은 row version의 xid이므로 UPDATE도 바뀐다. UPDATE 불가인 원 authorization/audit와
+-- 원 request의 불변 created_at/request_json 및 transaction_timestamp를 함께 결박한다(시각 단독 판정 아님).
+-- 기존 app에는 authorization_receipts/audit UPDATE/DELETE가 없고 request는 status/version UPDATE만 있다(0011).
+-- app의 기존 BEGIN 경로 기준이다. subtransaction/savepoint 및 xid wrap 실PG 검증은 NOT_RUN.
+CREATE FUNCTION anvil.fn17_notification_new_origin(pid uuid,rid uuid,source_id uuid) RETURNS boolean
+ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.approval_requests r ON r.project_id=c.project_id AND r.command_id=c.id
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ JOIN anvil.audit_events e ON e.project_id=c.project_id AND e.command_id=c.id AND e.operation_id=c.operation_id
+ WHERE c.project_id=pid AND c.id=source_id AND r.id=rid AND c.operation='requestApproval' AND c.state='APPLIED'
+ AND c.xmin=pg_current_xact_id()::xid AND r.xmin=pg_current_xact_id()::xid
+ AND ar.xmin=pg_current_xact_id()::xid AND e.xmin=pg_current_xact_id()::xid
+ AND c.received_at=transaction_timestamp() AND r.created_at=date_trunc('milliseconds',transaction_timestamp())
+ AND date_trunc('milliseconds',c.completed_at)=date_trunc('milliseconds',transaction_timestamp())
+ AND r.request_json->>'createdAt'=to_char(transaction_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_ONE_TIME_APPROVAL_REQUEST');
+$$;
+-- 다른 수신자 행/건수는 반환하지 않는다. 기존 owner 전용 RLS SELECT 통로로만 전체 project를 센다.
+CREATE FUNCTION anvil.assert_approval_notification_capacity(pid uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE source_id uuid;r anvil.approval_requests;total bigint;
+BEGIN
+ source_id:=nullif(current_setting('anvil.command_id',true),'')::uuid;
+ SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND command_id=source_id;
+ IF r.id IS NULL OR NOT anvil.fn17_notification_new_origin(pid,r.id,source_id) OR NOT anvil.fn17_notification_current(pid,source_id,'requestApproval') OR NOT anvil.fn17_notification_origin_valid(pid,r.id,source_id,r.created_by,r.created_at,r.content_hash)
+ THEN RAISE EXCEPTION 'NOTIFICATION_CURRENT_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT count(*) INTO total FROM anvil.notifications WHERE project_id=pid;
+ IF total>=10000 THEN RAISE EXCEPTION 'NOTIFICATION_CAPACITY_EXCEEDED' USING ERRCODE='P0001';END IF;
+END;$$;
+CREATE FUNCTION anvil.fn17_notification_insert() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NEW.recipient_user_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.source_command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
+ OR NOT anvil.fn17_notification_origin_valid(NEW.project_id,NEW.approval_request_id,NEW.source_command_id,NEW.recipient_user_id,NEW.created_at,NEW.request_content_hash)
+ OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(anvil.fn17_notification_body(NEW)) THEN RAISE EXCEPTION 'NOTIFICATION_EXACT_ORIGIN_REQUIRED' USING ERRCODE='23514';END IF;
+ -- 직접 app INSERT도 cap/current 검사를 우회하지 못한다. 같은 project lock 안에서 중복 count하며 행을 잠그지 않는다.
+ PERFORM anvil.assert_approval_notification_capacity(NEW.project_id);
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER notification_insert_guard BEFORE INSERT ON anvil.notifications FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_insert();
+CREATE FUNCTION anvil.fn17_notification_read_insert() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.notifications;c anvil.commands;ar anvil.authorization_receipts;ref jsonb;digest text;original jsonb;
+BEGIN
+ SELECT * INTO n FROM anvil.notifications WHERE project_id=NEW.project_id AND id=NEW.notification_id AND recipient_user_id=NEW.recipient_user_id;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=NEW.project_id AND id=NEW.command_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ ref:=jsonb_build_object('id',n.id,'version',1,'contentHash',n.content_hash);
+ IF (n.id IS NOT NULL AND c.id IS NOT NULL AND ar.id IS NOT NULL AND NEW.notification_content_hash=n.content_hash AND NEW.read_at>=n.created_at
+ AND NEW.recipient_user_id=c.actor_id AND NEW.client_id=c.client_id AND c.expected_version=1 AND c.payload_ref IS NULL AND c.approval_consumption_id IS NULL
+ AND n.content_hash=anvil.execution_json_hash(anvil.fn17_notification_body(n))
+ AND anvil.fn17_notification_origin_valid(n.project_id,n.approval_request_id,n.source_command_id,n.recipient_user_id,n.created_at,n.request_content_hash)
+ AND anvil.fn17_notification_current(NEW.project_id,c.id,'markNotificationRead')
+ AND ar.scope_kind='PROJECT' AND ar.scope_id=NEW.project_id AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref IS NULL
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)) IS DISTINCT FROM TRUE
+ THEN RAISE EXCEPTION 'NOTIFICATION_READ_EXACT_COMMAND_REQUIRED' USING ERRCODE='23514';END IF;
+ original:=jsonb_build_object('schemaVersion',1,'projectId',NEW.project_id,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+ 'operation','markNotificationRead','targetId',n.id,'expectedVersion',1,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('notificationRef',ref));
+ digest:=anvil.execution_json_hash(jsonb_build_object('projectId',NEW.project_id,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+ 'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ IF (c.request_hash=anvil.execution_json_hash(original) AND ar.scope_digest=digest AND c.result_ref->>'commandId'=c.command_id::text
+ AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=NEW.project_id::text AND c.result_ref->>'status'='APPLIED'
+ AND c.result_ref->>'targetId'=n.id::text AND c.result_ref->'version'='1'::jsonb
+ AND c.result_ref->'data'=jsonb_build_object('ref',ref,'status','NOTIFICATION_READ','readAt',to_char(NEW.read_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+ AND (SELECT count(*)=1 FROM anvil.audit_events e WHERE e.project_id=NEW.project_id AND e.command_id=c.id AND e.operation_id=c.operation_id
+ AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_NOTIFICATION_READ' AND e.source_kind='HUMAN_COMMAND' AND e.target_ref=ref AND e.policy_ref=c.policy_ref
+ AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND e.client_ref=c.client_id AND e.approval_ref IS NULL AND e.scope_digest=digest)) IS DISTINCT FROM TRUE
+ THEN RAISE EXCEPTION 'NOTIFICATION_READ_EXACT_RECEIPT_REQUIRED' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER notification_read_insert_guard BEFORE INSERT ON anvil.notification_reads FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_read_insert();
+CREATE FUNCTION anvil.fn17_notification_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION 'NOTIFICATION_IMMUTABLE' USING ERRCODE='23514';END;$$;
+CREATE TRIGGER notification_immutable BEFORE UPDATE OR DELETE ON anvil.notifications FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_immutable();
+CREATE TRIGGER notification_read_immutable BEFORE UPDATE OR DELETE ON anvil.notification_reads FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_immutable();
+-- 신규 요청만 같은 transaction의 알림을 요구한다. 기존 요청 backfill이나 UPDATE 시 생산은 없다.
+CREATE FUNCTION anvil.fn17_notification_complete() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT anvil.fn17_notification_new_origin(NEW.project_id,NEW.id,NEW.command_id) OR NOT anvil.fn17_notification_current(NEW.project_id,NEW.command_id,'requestApproval')
+ OR (SELECT count(*) FROM anvil.notifications n WHERE n.project_id=NEW.project_id AND n.approval_request_id=NEW.id AND n.source_command_id=NEW.command_id AND n.recipient_user_id=NEW.created_by)<>1
+ THEN RAISE EXCEPTION 'NOTIFICATION_ATOMIC_REQUEST_REQUIRED' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END;$$;
+CREATE CONSTRAINT TRIGGER notification_request_complete AFTER INSERT ON anvil.approval_requests DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_complete();
+-- 참조 중인 원 요청 본체/receipt/audit/capture는 보존한다. 승인 version/status 진행만 허용한다.
+CREATE FUNCTION anvil.fn17_notification_dependency_immutable() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE protected boolean:=false;source_id uuid;
+BEGIN
+ IF TG_TABLE_NAME='approval_requests' THEN
+  SELECT EXISTS(SELECT 1 FROM anvil.notifications WHERE project_id=OLD.project_id AND approval_request_id=OLD.id) INTO protected;
+  IF protected AND TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['version','status'])=(to_jsonb(OLD)-ARRAY['version','status']) THEN RETURN NEW;END IF;
+ ELSIF TG_TABLE_NAME IN('work_plan_approval_candidates','design_activation_approval_candidates') THEN
+  SELECT EXISTS(SELECT 1 FROM anvil.notifications WHERE project_id=OLD.project_id AND source_command_id=OLD.request_command_id) INTO protected;
+ ELSE
+  IF TG_TABLE_NAME='commands' THEN source_id:=OLD.id;ELSE source_id:=OLD.command_id;END IF;
+  SELECT EXISTS(SELECT 1 FROM anvil.notifications WHERE source_command_id=source_id)
+   OR EXISTS(SELECT 1 FROM anvil.notification_reads WHERE command_id=source_id) INTO protected;
+ END IF;
+ IF protected THEN RAISE EXCEPTION 'NOTIFICATION_SOURCE_IMMUTABLE' USING ERRCODE='23514';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER notification_request_immutable BEFORE UPDATE OR DELETE ON anvil.approval_requests FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+CREATE TRIGGER notification_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+CREATE TRIGGER notification_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+CREATE TRIGGER notification_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+CREATE TRIGGER notification_plan_capture_immutable BEFORE UPDATE OR DELETE ON anvil.work_plan_approval_candidates FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+CREATE TRIGGER notification_activation_capture_immutable BEFORE UPDATE OR DELETE ON anvil.design_activation_approval_candidates FOR EACH ROW EXECUTE FUNCTION anvil.fn17_notification_dependency_immutable();
+REVOKE ALL ON FUNCTION anvil.fn17_notification_body(anvil.notifications),anvil.fn17_notification_origin_valid(uuid,uuid,uuid,uuid,timestamptz,text),anvil.fn17_notification_current(uuid,uuid,text),anvil.fn17_notification_new_origin(uuid,uuid,uuid),anvil.fn17_notification_insert(),anvil.fn17_notification_read_insert(),anvil.fn17_notification_immutable(),anvil.fn17_notification_complete(),anvil.fn17_notification_dependency_immutable(),anvil.assert_approval_notification_capacity(uuid) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.assert_approval_notification_capacity(uuid) TO anvil_v3_app;

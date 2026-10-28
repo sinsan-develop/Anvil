@@ -8833,3 +8833,24 @@
 
 
 - **FN03 게시·FN17 승인범위 TEST_ONLY 인수**:9dd6b9 exact10 commit579f2cf7c96df8831a8c05ec7b105990b757bb9d/843ef5 local-private동일·mainf976불변·trackedclean(보호8+후속준비문서3만untracked). FN03최종결과66AEC6F8·Main제품write0·검증반복0. FN17 direct승인D2DCD9B8/packetBAA454FC/WIr2E890D96F/manifestB84C08BE는원I1(GUC선행)보강scopedC0/I0/M0. 기준manifesta2ff는역사baseline이며실행인수parent579f2cf7에서FN17기존제품2raw/보호12·신규7부재를재확인후단일기존담당fn05_share_request_impl에게신규시험4만TEST_ONLY로배정한다. FN03제품/시험동결보존,Main제품write0·FN17제품4/SQL생성MainRED전0. 실제DB/DDL/GRANT·정책권한·서비스·Secret·Agent·QA자원0/전체계획미완료다.
+
+
+- **FN17 Main 첫 reader RED·한정GREEN GO**: 승인준비888ed9/439dc7 cd3003388f193925f9e99e1f847d5baec7dd1736 local/private동일·mainf976불변·trackedclean/보호12/원제품2/신규7부재확인뒤단일담당TEST_ONLY4착수. Main8069fd 신규reader4E1741C3은24수집9PASS15FAIL/366.3019ms/skip0/exit1:신규GUC전처리누락GET/list/mark/ABA4·기존지원19중reader누락11의503이며기존8+정확음성1PASS. 549e3a 원제품98AC/3263·시험raw불변을확인하고readerGUC/지원목록정합만GREEN GO,원approvals는필요시기존목록export1곳만허용·producer/SQL/transactionhook은해당RED전0. 품질담당1회Selected model is at capacity로검수미수행·제품/정식실패횟수0,다른기존read-only담당에게동일시험검수한정전달했고새모델/세션생성0. 실제DB/환경/Agent0·Main제품write0이다.
+
+
+- **FN17 reader 한정GREEN·transaction RED**: Mainb8211c 신규reader24+기존입력/store/routes16 단일40PASS/2006.2334ms/skip0/exit0. readerD0D1/approvals4441(지원목록export만)은독립diffC0/I0·신규reader시험C0/I0. ABA다른사용자행은fixture주입이므로실제RLS/회원격리증거아님. Mainbb45ac 신규transaction19F829B9는6수집0PASS6FAIL/342.4772ms/skip0/exit1·5a5b2d 기존reader2동결/생산hook부재확인. 실제공통command→request/receipt/PLAN·ACTIVATIONcaptureINSERT가알림0/저장실패미거절/cap동시2commit으로RED이며독립시험C0/I0. assertCurrent명시stub·cap경합fixturequeue·저장뒤같은원명령replay는실DB후보현재성/PG잠금/HTTP유실증거아님. 새producer단위·SQL정적시험작성중/제품hook·producer·SQLsource는해당MainRED전0·실DB/서비스/Agent0·Main제품write0이다.
+
+
+- **FN17 producer·SQL Main RED·제품GO**:6075dd 신규producer5+SQL정적4=9수집0PASS9FAIL/128.2999ms/skip0/exit1은정확producer/0052pending부재RED다. c8c2f7 readerD0D1/approvals4441불변·시험FF7C592B/0CC0E36E/raw일치·신규2부재를확인했다. transaction6RED독립C0/I0와함께단일기존담당에게허용원approvals hook/newproducer/0052pending source만GREEN GO,기존reader는동결유지. 원receipt/request/실capture뒤같은transaction·replay추가0·전체project10000cap void검사/본인RLS와owner경계·원GUC/guard/최소권한source만작성,實DB/SQL/DDL/GRANT실행·기존SQL·적용manifest·서비스·Secret·Agent·QA자원0. 테스트기대변경0/실PG로PASS승격0·Main제품write0이다.
+
+
+- **FN17 중간소스·독립finding 보완**: producer0C5C5ABF/원hook3BE511C1/0052pending6E40BB61의author첫집중41PASS/type0는제출범위이며Main최종PASS아니다. 제품TS독립C0/I1은requestApproval AUTO규칙이cap/INSERT중만료돼도session/details기한만으로성공할공백이다. SQL독립C0/I3은(1)deferred완료guard가count1만검사해최종policy공백,(2)회원/control/session조건+FORUPDATE대기후별도현재성재검사없음,(3)과거APPLIED원command/GUC로역사request직접backfill가능/동transaction신규행증거미결박이다. 같은허용producer/hook/신규0052안에서원policy창끝재검사·deferredcurrent정합/10000성공보존·lock확보뒤clock/current재검사·DBtuple/currenttransaction신규원행결박(시각만추정금지)을보완GO,기존공통파일/SQL·새권한/특권확대0. 신규producer시험I1도예상INSERT/guard오류도달1회·cap→INSERT순서·unexpectedSQL[] 보강중(원FF7C보존). 실행SQL/DB/GRANT/서비스/Agent0·전체미완료·실제PG효과는NOT_PROVEN으로유지한다.
+
+
+- FN17 source보완GO구체화:producer의현재requestApproval policyref/허가rule기한을cap뒤재검사·최초허가창연장금지/INSERT후deadline차단,0052의deferredcomplete도최종current검사(상한10000성공을다시strictcap거절하지않음)를요구했다. SQLlock후별도현재성·현재transaction신규원행증거도같은허용source내보강중이며새특권/DB실행0. Main공식PG15문서 https://www.postgresql.org/docs/15/functions-info.html (pg_current_xact_id xid8→xid cast) 및 https://www.postgresql.org/docs/15/ddl-system-columns.html (xmin은rowversion삽입transaction/UPDATE새version,cmin은해당tx commandID)를읽어근거로전달했다. xid32wrap/서브transaction·UPDATE새version한계와원불변/시각결박을검토하고실PG실행효과를아직증명하지않는다. 자동권한확대/보완기준완화0·Main제품write0이다.
+
+
+- **FN17 보완 Main fresh GREEN**: a7718e 신규reader24+transaction8+producer7+SQLstatic6 단일45PASS/608.3464ms/FAIL0/skip0/cancel0/todo0/exit0.0cbf7e 기존work-plan-approval-candidate/designed-activation-approval 직접22PASS/450.7792ms/skip0/exit0,61ad29 node tsc--noEmit-p tsconfig.base.json exit0. d11320diffcheck0·기존SQL/적용manifest변경0/현재허용source외제품쓰기0. 보완TS A4159520/producer09FB56B9·producer시험90335597은원TS_I1/시험I1 ADDRESSED/scopedC0/I0/M0. SQLAA54E9E2의원I3재검수는아직PENDING·실PG구문/trigger/DML/COMMIT/RLS/동시잠금/권한및xidwrap/subtx효과NOT_RUN/NOT_PROVEN이다. author첫45=44PASS1FAIL은신규producerfixture관측map의POLICY분기누락(실際값UNEXPECTED,CAP,CLOCK vs期待POLICY,CAP,CLOCK)이며동분기만추가/기대·제품기준완화0,원실패보존한다. 실제환경/QA/DB/Agent0·Main제품write0·전체FN17/Stage/계획미완료다.
+
+
+- **FN17 source-only 한정 최종판정·문서기존차이 보존**: SQLAA54 원I1/I2/I3 ADDRESSED scopedC0/I0,TS A415/09FB·시험9033 I1 ADDRESSED scopedC0/I0/M0·필수미해결0. Main45PASS608.3464ms/직접기존22PASS450.7792ms/type0·diff0으로A승인범위소스검수완료·제품4/시험4동결/QA0/Main제품write0. 결과서·계약/파일지도/계획에이번범위만통합했다. f0660d는문서양쪽raw일치guard에서초기INTERFACES차이를발견해쓰기0으로중단했다.5e7010/eaf43d로INTERFACES/DATA_MODEL/WORK_PLAN의기존내용차이(정본vs既存committedsource의UI05보고/추적/작업현황 등,단순EOL아님)를확인했다.FILE_MAP/WORK_STATUS는원바이트동일이다. 기존문서를덮어써동기화하지않고각기존본문을보존한채현재FN17동일블록만append하며전체문서동일hash라고주장하지않는다. 이기존차이의별도대조·보완은후속관리항목/PMO공유로분리한다. 실제PG/DB/SQL/GRANT·서비스/Secret/Agent·인수/전체FN17·Stage·계획은미완료다.
