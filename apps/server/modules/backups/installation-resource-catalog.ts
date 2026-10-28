@@ -8,3 +8,6 @@ export class InstallationResourceCatalog{
  list(kind:unknown){if(kind!=='TARGET'&&kind!=='ENCRYPTION_KEY')throw new AuthFailure('INPUT_INVALID',400);return {state:this.#configured?'UNVERIFIED' as const:'UNCONFIGURED' as const,items:[]};}
  async prepareSlot(_slotId:string,_kind:unknown):Promise<never>{throw new AuthFailure('RESOURCE_UNVERIFIED',412);}
 }
+
+/** 설치 service 내부 주입 경계. 실 safe handle 공급자는 아직 연결하지 않는다. */
+export interface InstallationResourceCatalogPort{list(kind:'TARGET'|'ENCRYPTION_KEY'):any|Promise<any>;prepareSlot(slotId:string,kind:unknown):Promise<unknown>}

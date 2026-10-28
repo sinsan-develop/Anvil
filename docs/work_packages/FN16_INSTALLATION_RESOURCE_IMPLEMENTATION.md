@@ -30,3 +30,7 @@ Rollback: 허용변경만 source revert; 기존키/자료/DB/원장삭제0. 범�
 
 ## r3 R2 참조 선택 실제 소비 연결
 backup-reference-api.ts의 prepareBackupReference가 현재RETENTION만허용한다. 계약§6의검증된TARGET/KEY명시선택을위해 정확이파일을추가한다.현재slot/descriptor 검증·정확고정ref·copy확인등서버검사를유지하고 R2닫힌DTO/reasonCodes는변경하지않는다. 기존반출2와기존시험기준은보존한다.
+
+
+## r4 원 intent·공통 transaction 오류 처리 연결
+Main6b9e23 실 AccessRepository+합성 pool 반례에서 정상 COMMIT/확정 rollback2PASS, rollback실패/COMMIT응답불명3FAIL692.921ms를 확인했다. 기존 허용 access/repository.ts의 #transaction만 정상 연결 반환은 보존하고 불명 연결은 오류를 전달해 폐기한다. 원 업무 오류와 저장 결과 불명은 유지하며 자동 재실행·성공 승격하지 않는다. 이는 새 권한/DB 실행이 아닌 원 intent 원자 저장의 필수 오류 처리다. 변경 전 release()무조건 반환과 변경 후 불명 release(error)의 diff를 검수하고 기존 auth-transaction/auth-http 직접 회귀를 확인한다. 허용27·계약/수치·실제키/DB/서비스 제외는 불변이다.

@@ -9076,3 +9076,19 @@
 
 
 - FN16 보조 저장3 최종 독립 spec/quality 모두 scoped C0/I0/M0. Main f4d59420PASS/type0와 지문 일치, full intent/receipt·0054·API/UI·실제 DB/키는 아직 미완료다. 이 검수된3과 현황만 checkpoint한 뒤 같은 primary가 원명령/승인1회/intent의 합성시험을 먼저 작성한다.
+
+- Main194c98/1f9d60 보조3+현황의 정확4경로8f7772b1acdfa6af37fc9c034365e88c567a32f6 local/private동일·mainf976ed5e불변·trackedclean/보호untracked8만 확인. PMO 회신전달 승인 범위로 부분 결과 전송했다. 같은primary의 다음시험은 실제HTTP/원승인·receipt 소비선이며Main은제품동시수정0,실키/DB/서비스0.
+
+- Main4ea6a8 원intent TEST_ONLY의 --test-name-pattern=fullintent 신규8건0PASS8FAIL1238.0395ms/exit1을확인했다. 실패는실HTTP새op미연결400이며import/환경실패아니다. Main17b88e 기존20시험prefix불변. 실제ProjectApprovals/receipt소비를쓰는합성SQL모델이며실DB/권한/transaction증거아니다. rollback불명후연결차단을fixture가대신구현한경계는독립검수중이고제품검증으로승격하지않는다.
+
+- 원intent시험 I1은합성port차단과실제AccessRepository시험으로분리했다. Main6b9e23 realAccess5=정상2PASS/불명3FAIL692.921ms·원release(undefined)관측, 최종시험959E02BC/기존20prefix보존. WI r4는이미허용한repository공통transaction의불명연결폐기만필수보완으로기록하며동일primary에원intent첫제품연결과함께GO한다. 실제DB/키/서비스변경0·새승인요청0.
+
+- 독립spec 원intent시험I1 보완을959E02BC에서 ADDRESSED/C0I0M0로확인했다. 실AccessRepository+fakePool경계를추가해기존합성port보장과분리,제품수정합격과혼동0. PMO에Main6b9e23 공통transaction 결함·WI r4필수보완을보고했고새결정요청0. 같은primary는원snapshot hash와실receipt FK를분리해순환없이원명령귀속을구현중이다.
+
+### 2026-10-28 FN16 원 intent 연결 검수·기한 보완
+- Main7437aa store33+직접auth6=39PASS/0FAIL/0skip/cancel/todo1889.336ms·type/diff0, author신규13PASS1813ms/인접6파일45PASS2867ms. 제품6/test1동결 AEC304B0/959E02BC 기준이며실DB/0054/fulfill/UI는미완료다. routes CRLF→LF 예고는별도이며오류를숨기지않는다.
+- 독립quality I1: 최초intent의60초expiry를고정해도최종current검사에해당기한이없고transaction_timestamp와now기점차이가있다. INSERT/receipt대기로intent만만료되는반례와초기잠금대기를같은primary에시험우선보완지시했다. 이전39PASS는부분검사이며최종수용으로승격하지않음. 같은근본정식실패3회아님·실키/DB/서비스0.
+
+- intent기한 I1 Mainc869c9 신규5=1PASS4FAIL1270.5385ms·기록상100초수명/초기61초·receipt61초·INSERT61초의APPLIED200을재현했다. 역사replay1PASS는신규사용허가가아님. test40768CCE 동결후같은primary에고정createdAt+60000/최종창보완GO,실제SQL/키0.
+
+- FN16 원intent 구분 최종Main1e668d store38PASS/0FAIL/0skip/cancel/todo2763.9639ms/type0/diff0. store585A1080/test40768CCE 독립spec·quality I1 ADDRESSED/C0I0M0. 고정createdAt+60초 및저장/반환창,역사replay분리확인. 기존Main7437aa auth6/author인접45는불변기존검사로보존·다시실행0. 제품6/시험1과관리3만checkpoint하고동일primary의실제fulfill·pending0054·R2조회연결을다음단위로진행한다. 현재REGISTER_TARGET intent준비까지만구현,다른action은명시412이며실제DB/키/서비스0·전체FN16미완료다.

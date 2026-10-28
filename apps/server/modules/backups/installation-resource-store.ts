@@ -1,7 +1,12 @@
+import {ProjectApprovals} from '../approvals/project-approvals.ts';
+import {readApprovalRef} from '../approvals/approval-input.ts';
+import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {readManageBackupResourcePayload,type ManageBackupResourcePayload} from '../../../../contracts/runtime/backup-installation-resources-v1.ts';
+import {InstallationResourceCatalog,type InstallationResourceCatalogPort} from './installation-resource-catalog.ts';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
-import {AuthFailure,type AccessRepository} from '../access/repository.ts';
-import {projectMember} from '../access/project-command.ts';
+import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
+import {projectMember,currentProjectController,authorizeMaterial,projectReplay,persistProjectReceipt,type ProjectCommand} from '../access/project-command.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import {cloneV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 
@@ -109,4 +114,60 @@ export class InstallationResourceFailureLimiter{
  }
  recordFailure(ticket:object){return this.#complete(ticket,'FAILED');}
  completeSuccess(ticket:object){return this.#complete(ticket,'SUCCEEDED');}
+}
+
+const installationHash=(value:unknown)=>contentHash(canonicalJson(value));
+const installationSame=(one:unknown,two:unknown)=>canonicalJson(one)===canonicalJson(two);
+interface InstallationStoreOptions{catalog?:InstallationResourceCatalogPort}
+/** 원 명령/receipt와 intent의 영속 연결. 실제 Secret/파일 fulfill은 별도 단계다. */
+export class InstallationResourceStore{
+ readonly #access:AccessRepository;readonly #catalog:InstallationResourceCatalogPort;
+ constructor(access:AccessRepository,options:InstallationStoreOptions={}){this.#access=access;this.#catalog=options.catalog??new InstallationResourceCatalog();}
+ async #local(db:PoolClient,a:AuthenticatedIdentity){await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true)",[a.actorId,a.clientId]);}
+ async #clock(db:PoolClient){const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))return fail();return at;}
+ #stamp(value:unknown){if(!(value instanceof Date)||!Number.isFinite(value.getTime()))return fail();return value.toISOString();}
+ #payload(c:ProjectCommand){let payload:ManageBackupResourcePayload;try{payload=readManageBackupResourcePayload(c.payload);}catch{return fail('INPUT_INVALID',422);}if(c.targetId!==(payload.resourceRef?.id??null)||c.expectedVersion!==payload.expectedResourceVersion||c.baselineRefs.length)return fail('INPUT_INVALID',422);return payload;}
+ async #slot(payload:ManageBackupResourcePayload){const result=await this.#catalog.list('TARGET');if(result.state!=='CONFIGURED'||!Array.isArray(result.items))return fail('RESOURCE_UNVERIFIED',412);const rows=result.items.filter((v:any)=>v?.slotId===payload.slotId);if(rows.length!==1)return fail('RESOURCE_UNVERIFIED',412);const slot=rows[0];if(slot.purpose!=='BACKUP_TARGET'||slot.state!=='VERIFIED'||!refV1(slot.profileRef)||!Array.isArray(slot.reasonCodes)||slot.reasonCodes.length)return fail('RESOURCE_UNVERIFIED',412);}
+ async #verify(db:PoolClient,a:AuthenticatedIdentity,c:ProjectCommand,ref:RuntimeRefV1,previous:any){
+  const rows=(await db.query('SELECT * FROM anvil.installation_resource_intents WHERE project_id=$1 AND id=$2 FOR UPDATE',[c.projectId,ref.id])).rows;if(rows.length!==1)return fail();const row=rows[0],snapshot=row.snapshot_json;
+  const createdAt=this.#stamp(row.created_at),expiresAt=this.#stamp(row.expires_at),expected={id:ref.id,version:1,projectId:c.projectId,payload:c.payload,actorId:a.actorId,clientId:a.clientId,sessionId:a.authSession?.id,controlGeneration:c.controlGeneration,policyRef:snapshot?.policyRef,approvalRef:c.approvalRef,clientCommandId:c.commandId,createdAt,expiresAt};
+  if(!a.authSession||row.project_id!==c.projectId||row.actor_id!==a.actorId||row.client_id!==a.clientId||row.session_id!==a.authSession.id||!uuidV1(row.command_id)||row.content_hash!==ref.contentHash||!refV1(snapshot?.policyRef)||!installationSame(snapshot,expected)||installationHash(expected)!==ref.contentHash||Date.parse(expiresAt)<=Date.parse(createdAt)||Date.parse(expiresAt)-Date.parse(createdAt)>60000)return fail();
+  const commands=(await db.query(`SELECT c.*,ar.scope_kind AS receipt_scope_kind,ar.scope_id AS receipt_scope_id,ar.subject_ref,ar.policy_ref AS receipt_policy_ref,ar.scope_digest,ar.approval_decision_ref,
+   ae.event_id AS audit_event_id,ae.actor_ref AS audit_actor_ref,ae.client_ref AS audit_client_ref,ae.operation_id AS audit_operation_id,ae.target_ref AS audit_target_ref,ae.policy_ref AS audit_policy_ref,ae.approval_ref AS audit_approval_ref,ae.outcome AS audit_outcome,ae.scope_digest AS audit_scope_digest,ae.source_kind AS audit_source_kind,
+   (SELECT count(*)::int FROM anvil.audit_events counted WHERE counted.project_id=c.project_id AND counted.command_id=c.id) AS audit_count,
+   CASE WHEN rq.id IS NULL THEN NULL ELSE jsonb_build_object('requestId',rq.id,'decisionId',used.decision_id,'scopeDigest',used.scope_digest) END AS approval_ref
+   FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id
+   JOIN anvil.audit_events ae ON ae.project_id=c.project_id AND ae.command_id=c.id
+   JOIN anvil.approval_consumptions used ON used.id=c.approval_consumption_id AND used.project_id=c.project_id AND used.command_id=c.id
+   JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=used.decision_id
+   JOIN anvil.approval_requests rq ON rq.project_id=c.project_id AND rq.id=d.request_id AND rq.candidate_command_id=c.command_id
+   WHERE c.project_id=$1 AND c.id=$2`,[c.projectId,row.command_id])).rows;if(commands.length!==1)return fail();const saved=commands[0],approval=readApprovalRef(c.approvalRef),digest=installationHash({projectId:c.projectId,actorId:a.actorId,clientId:a.clientId,controlGeneration:c.controlGeneration,requestHash:installationHash(c),policyRef:snapshot.policyRef,targetRef:ref});
+  if(saved.id!==row.command_id||saved.project_id!==c.projectId||saved.scope_kind!=='PROJECT'||saved.scope_id!==c.projectId||saved.operation!=='manageBackupResource'||saved.state!=='APPLIED'||saved.actor_id!==a.actorId||saved.client_id!==a.clientId||saved.command_id!==c.commandId||saved.request_hash!==installationHash(c)||Number(saved.expected_version)!==c.expectedVersion||Number(saved.control_generation)!==c.controlGeneration||!installationSame(saved.policy_ref,snapshot.policyRef)||saved.authorization_receipt_id!==row.authorization_receipt_id||!uuidV1(saved.approval_consumption_id)||!installationSame(saved.approval_ref,approval)||!installationSame(saved.payload_ref,{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:installationHash(c.payload),scopeDigest:approval.scopeDigest})||saved.receipt_scope_kind!=='PROJECT'||saved.receipt_scope_id!==c.projectId||!installationSame(saved.subject_ref,{kind:'HUMAN',userId:a.actorId,clientId:a.clientId})||!installationSame(saved.receipt_policy_ref,snapshot.policyRef)||saved.approval_decision_ref!==approval.decisionId||saved.scope_digest!==digest||row.scope_digest!==digest)return fail();
+  if(saved.audit_count!==1||saved.audit_client_ref!==a.clientId||saved.audit_operation_id!==saved.operation_id||!installationSame(saved.audit_actor_ref,{kind:'HUMAN',userId:a.actorId})||!installationSame(saved.audit_target_ref,ref)||!installationSame(saved.audit_policy_ref,snapshot.policyRef)||!installationSame(saved.audit_approval_ref,approval)||saved.audit_outcome!=='APPLIED'||saved.audit_source_kind!=='HUMAN_COMMAND'||saved.audit_scope_digest!==digest)return fail();
+  const result=saved.result_ref;if(!installationSame(result,previous)||result.status!=='APPLIED'||result.projectId!==c.projectId||result.commandId!==c.commandId||result.operationId!==saved.operation_id||result.targetId!==ref.id||result.version!==1||result.serverReceivedAt!==createdAt||result.data?.status!=='INTENT_READY'||!installationSame(result.data.ref,ref)||!installationSame(result.data.intentRef,ref)||!installationSame(result.evidenceRefs,[])||!installationSame(result.warnings,[])||this.#stamp(saved.completed_at)!==createdAt)return fail();
+  return result;
+ }
+ async command(token:string,csrf:string,c:ProjectCommand){let returnDeadline=Infinity;
+  try{const result=await this.#access.authenticated(token,csrf,async(db,a)=>{
+   await this.#local(db,a);const created=(await db.query('SELECT transaction_timestamp() AS at')).rows[0]?.at,createdAt=this.#stamp(created);if(c.operation!=='manageBackupResource')return fail('PROJECT_OPERATION_DENIED',403);const payload=this.#payload(c);await currentProjectController(db,a,c);
+   let policy=await authorizeMaterial(db,a,c,true),deadline=policy.validUntil,intentDeadline:number|undefined;const originalPolicy=policy.ref;
+   const current=async()=>{await currentProjectController(db,a,c);policy=await authorizeMaterial(db,a,c,true);if(!installationSame(policy.ref,originalPolicy))return fail('RESOURCE_VERSION_CONFLICT',409);deadline=Math.min(deadline,policy.validUntil);const before=performance.now(),at=await this.#clock(db);returnDeadline=Math.min(returnDeadline,notificationSessionDeadline(a,at,before),before+deadline-at.getTime());if(intentDeadline!==undefined&&at.getTime()>=intentDeadline)return fail('RESOURCE_UNVERIFIED',412);if(at.getTime()>=deadline)return fail('PROJECT_OPERATION_DENIED',403);return at;};
+   await current();if(c.approvalRef===null)return fail('APPROVAL_REQUIRED',412);
+   if(payload.action!=='REGISTER_TARGET')return fail('RESOURCE_UNVERIFIED',412);
+   const approvals=new ProjectApprovals(),approvalRef=readApprovalRef(c.approvalRef),view=await approvals.read(db,a,c.projectId,approvalRef.requestId),authorized=await approvals.authorize(db,a,c,originalPolicy);
+   const previous=await projectReplay(db,a,c);
+   if(previous!==undefined){const ref=(previous as any)?.data?.intentRef;if(!refV1(ref))return fail();const verified=await this.#verify(db,a,c,ref,previous);await current();return verified;}
+   if(authorized.replay)return fail('APPROVAL_ALREADY_CONSUMED',409);
+   if(!a.authSession)return fail('AUTH_REQUIRED',401);intentDeadline=Math.min(created.getTime()+60000,deadline,Date.parse(view.request.details.expiresAt),Date.parse(a.authSession.idleExpiresAt),Date.parse(a.authSession.absoluteExpiresAt));deadline=Math.min(deadline,intentDeadline);let now=await current();
+   const pending=(await db.query("SELECT * FROM anvil.installation_resource_intents WHERE project_id=$1 AND (state='UNKNOWN' OR state='PROCESSING' OR (state='READY' AND expires_at>$2)) FOR UPDATE",[c.projectId,now])).rows;if(pending.length)return fail('RESOURCE_LIMIT',429);
+   await this.#slot(payload);now=await current();if(!a.authSession)return fail('AUTH_REQUIRED',401);
+   if(created.getTime()>now.getTime())return fail();
+   const id=randomUUID(),expiresAt=new Date(intentDeadline).toISOString(),snapshot={id,version:1,projectId:c.projectId,payload,actorId:a.actorId,clientId:a.clientId,sessionId:a.authSession.id,controlGeneration:c.controlGeneration,policyRef:originalPolicy,approvalRef:c.approvalRef,clientCommandId:c.commandId,createdAt,expiresAt},ref={id,version:1,contentHash:installationHash(snapshot)};
+   const receipt=await persistProjectReceipt(db,a,c,ref,{status:'INTENT_READY',intentRef:ref},originalPolicy,'INSTALLATION_RESOURCE_INTENT_READY');
+   await current();
+   await db.query('INSERT INTO anvil.installation_resource_intents(id,project_id,actor_id,client_id,session_id,command_id,authorization_receipt_id,scope_digest,state,snapshot_json,content_hash,created_at,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',[id,c.projectId,a.actorId,a.clientId,a.authSession.id,receipt.id,receipt.authorizationReceiptRef.id,receipt.authorizationReceiptRef.contentHash,'READY',JSON.stringify(snapshot),ref.contentHash,created,new Date(expiresAt)]);
+   const verified=await this.#verify(db,a,c,ref,receipt.result);await current();return verified;
+  });if(performance.now()>=returnDeadline)return fail('AUTH_REQUIRED',401);return result;}
+  catch(e){if(e instanceof AuthFailure)throw e;return fail();}
+ }
 }

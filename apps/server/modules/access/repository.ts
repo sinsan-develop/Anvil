@@ -1,3 +1,4 @@
+import type {InstallationResourceCatalogPort} from '../backups/installation-resource-catalog.ts';
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { hashPassword, verifyPassword, sessionIsActive } from './service.ts';
@@ -22,6 +23,7 @@ function normalizeName(value: string) {
 export class AccessRepository {
   pool: Pool;
   installationId: string;
+  installationResourceCatalog?: InstallationResourceCatalogPort;
   #key: Buffer;
   constructor(pool: Pool, config: { installationId: string; key: Buffer }) {
     if (config.key.length !== 32 || !/^[0-9a-f-]{36}$/.test(config.installationId)) throw Error('AUTH_CONFIG_INVALID');
@@ -69,9 +71,14 @@ export class AccessRepository {
   async #transaction<T>(body: (db: PoolClient) => Promise<Result<T>>): Promise<T> {
     const db = await this.pool.connect();
     let result: Result<T>;
-    try { await db.query('BEGIN'); result = await body(db); await db.query('COMMIT'); }
-    catch (error) { await db.query('ROLLBACK').catch(() => {}); throw error; }
-    finally { db.release(); }
+    let committing = false, releaseError: Error | undefined;
+    try { await db.query('BEGIN'); result = await body(db); committing = true; await db.query('COMMIT'); committing = false; }
+    catch (error) {
+      if (committing) releaseError = error instanceof Error ? error : Error('TRANSACTION_STATE_UNKNOWN');
+      try { await db.query('ROLLBACK'); } catch (rollbackError) { releaseError ??= rollbackError instanceof Error ? rollbackError : Error('TRANSACTION_STATE_UNKNOWN'); }
+      throw error;
+    }
+    finally { db.release(releaseError); }
     if ('failure' in result) throw new AuthFailure(result.failure, result.status);
     return result.value;
   }
