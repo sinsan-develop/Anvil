@@ -1600,3 +1600,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 내부 선행: 보호 설치파일 reader source CD969B8C/unit BB126236 구현. Main42c0fd 메모리17PASS256.5785ms/skip0·type/diff0, 독립 mount 보완 C0/I0. 실제 설치/Linux 경합·loader/키DB서비스·사용자 인수는 미검증이며 FN16 전체는 부분 구현 유지. 다음 내부 bootstrap 연결.
 - 2026-10-29 FN16 내부 bootstrap source3 연결: 보호catalog→동일heldFD loader→기존provider, Main최종신규16PASS204.4534ms·직접provider18 선행PASS·type/diff0·독립I1보완C0/I0. actual installer/FS/loader·키DB서비스/App Secret 활성화는미실행·미완료, 전체FN16은부분구현유지. 상세 FN16_INSTALLATION_RESOURCE_RESULT_20261028.md 최신누적결과.
 - 2026-10-29 FN16/UI14 선택 파일 검증 프로필: 승인08EA3478의 OWNER 조회·checks3/limits7·정확ref 선택·원명령 별도승인·저장/replay·현재성 연결을 구현했다. Main 공급12·직접인접57·실제App 합성2/type/build/diff0, 독립 C0/I0/M0, 등록QA604초내정리/별도잔여0. 실제 profile 설정/DB·키·서비스·전체백업/복원·사용자인수는 미실행이며 전체 FN16은 부분구현 유지. 상세 실패·보완·증거는 WORK_STATUS/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md.
+
+- 2026-10-29 FN16/UI14 로컬 암호문 파일→기존 envelopeHash 입력 연결: 명시선택·닫힌형식/원bytes 지문·내용비보존·별도원명령·늦은결과/UNKNOWN보존. Main unit18·실제App 합성5+추가1/type/build/diff0·독립C0/I0/M0·등록QA258.883초내정리/독립잔여0. 실제키인증/보관확인·TLS/DB/서비스 및 전체FN16은미완료, 상세 WORK_STATUS/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md.

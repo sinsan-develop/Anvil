@@ -129,3 +129,12 @@
 - 독립 scoped 최종 C0/I0/M0: 중복 checks I1·제목 M1 해소. provider/currentness/cursor·저장 전후 회수·replay·OWNER/context/UNKNOWN를 대조했다. 주요 SHA: store A86CC16149DCA20BAD84A14C03453ED08E993C94C1C00495FD0F300A37AB6C38, API5AF522EF873B888753B10837CF66D449409AFB613F217904EB062E1ECA9D7C54, Panel4070C1FE9F2EF154F677ABDB2CC8FF5819072D06AD1F703BFD31DB0835D76706.
 - 등록 Windows QA ui14-verification-profile-20261029-01은 owner SINSAN/cyhuh·link0·process0 확인 후 생성604.03초에 파일6/디렉터리4만 회수(d5c78a). 독립0cd638 Test-Path False. 첫sandbox CIM 접근 불가(b28e3e)는 elevated 정확 조회로 해결했으며 제품 실패/프로세스 없음으로 오인하지 않았다. 실패 PNG는 일회 자원과 폐기, 텍스트 실패와 source 시험 보존.
 - rollback은 이번 신규 optional 공급/연결의 검토된 revert이며 기존 자료·키·DB 삭제0. Main은 소유13경로와 현황·계획·결과만 checkpoint로 보존하고 다음 독립 미완료의 계약/호출선을 기존primary 읽기 조사로 확인한다. 실제 배포·사용자 인수 완료는 주장하지 않는다.
+
+## 2026-10-29 FN16 로컬 이식키 파일 지문 입력 검수
+- 판정: 기존 승인5A6819E6 §4.1/§5/§6의 입력 편의 연결을 WI1C34B9F1 정확 제품2/시험2로 구현·핵심 합성 확인했다. 파일 내용/이름은 command·App buffer/state에 보존하지 않고 SHA256만 기존 envelopeHash에 입력한다. 실제 키 인증/보관 확인·Secret 제출·DB·서비스·전체FN16 완료는 아니다.
+- 변경 전 hash 수동 입력만 가능, 변경 후 공개 합성 암호화 파일 선택→1~16KiB/UTF8/canonical/닫힌 고정형식·동일project/원byteshash 대조→hash만 입력·범위확인 해제. 기존 수동입력/SecretForm/download/parser/App는 보존한다. 읽기 중 수동편집·action/화면 ABA·인증세대 변화는 원buffer/ticket CAS로 늦은 반영을 막는다.
+- Maina65d86 신규6 미구현RED172.4338ms→9ea2cc 신규6+기존12=18PASS289.8952ms/skip0, 독립 helper C0/I0/M0. Mainc45ea0 실제App 첫1은 파일input부재15초RED. Panel 연결 후fc3677 App build473modules/411ms exit0·합성Edge5PASS5.8s; 제품불변에서 추가UNKNOWN1만278298 1PASS2.6s. 총범위5+1 별도 실행이며6한번실행으로주장하지 않는다. 최종56aea0 type/diff0·독립Panel/추가시험 C0/I0/M0.
+- 정상 파일의 hash만 정확 IMPORT 원명령에 반영/POST0, 파일명·본문·ciphertext·비밀번호입력 부재, BOM실패/취소 원값보존, 수동/action/화면ABA 지연결과 폐기, 원command 송신유실UNKNOWN 후 파일입력/새명령 차단·원body보존을 확인했다. 실제 서버적용·사용자키·TLS·DB 검증으로 확대하지 않는다.
+- 지문: API325783347A55691F6392C85FC859173CD013BC1D2A7469B7D55D476AA2B1F6A2, PanelFAE21D224332DEEB3DEB74952A3077924FB09E97BE2B28FA52E0D89882670B88, unit867281786E808DF5B1A8DA1EDD7D50D532C2CCD68BA7AEAF796B4F59A0D4DA52, browserAE7A90E0015674E9DC5D088438693081267CBA6E2FF36BA175AE577CD1926968. 동일불변 native/crypto/DB 시험반복0, 기준완화0.
+- 등록QA ui14-local-envelope-hash-20261029-01은 현재owner/link0/process0 확인 후258.883초내 파일6/dir5만정리(6de2fb), 별도71609d 부재. 실제키/DB/서비스/P03 변경0. JS 지역 bytes소거는best-effort이며OS완전소거주장0. rollback은신규helper/입력연결의검토된revert이며원파일삭제0.
+- 남은 경계: 실제App Secret입력은TLS·로그보호 입증 전 금지, 설치 verifier의 실제 근거 발급/현재성 미제공, 전체 백업 수집·policy/job·암호화bundle/복원은 미완료다. 현재 기능을 전체백업 완료로 보고하지 않는다.
