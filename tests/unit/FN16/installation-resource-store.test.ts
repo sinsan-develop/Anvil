@@ -474,3 +474,61 @@ test('keyEvolutionFailure REWRAP틀린옛비밀번호는실패소비·기존파�
 test('keyEvolutionFailure REWRAPKDF중제어회수는평문소거·새파일0',async()=>{const z=await evolutionFixture();try{const{ref}=await evolutionIntent(z,'REWRAP_KEY',z.keyRef,z.hash,7800);let entered!:()=>void;const ready=new Promise<void>(r=>entered=r);z.kdf.pause=true;z.kdf.entered=entered;const run=z.store.fulfill(intentToken,intentCsrf,pid,ref.id,{intentRef:ref,secretInput:{oldPassphrase:enrollmentPassword,newPassphrase:rewrapPassword,confirmPassphrase:rewrapPassword}});assert.equal(await Promise.race([ready.then(()=>true),run.then(()=>false,()=>false)]),true);z.f.current.generation=2;z.kdf.release!();await assert.rejects(run,exact('CONTROL_GENERATION_CONFLICT',409));assert(z.plain.every(v=>v.every(b=>b===0)));assert.equal(z.f.vault!.files.size,1);assert.equal(z.f.resources.versions.length,1);assert.equal(z.f.tables.consumptions.length,2);}finally{z.kdf.release?.();await z.close();}});
 test('keyEvolutionFailure ROTATEpublish뒤DB불명은UNKNOWN·파일보존·재실행0',async()=>{const z=await evolutionFixture();try{const{ref}=await evolutionIntent(z,'ROTATE_KEY',z.keyRef,null,7900);z.f.vault!.state.afterParent=()=>{z.f.fault.mode='WRAPPING';};const body={intentRef:ref,secretInput:{passphrase:rewrapPassword,confirmPassphrase:rewrapPassword}};await assert.rejects(z.store.fulfill(intentToken,intentCsrf,pid,ref.id,body),exact('RESOURCE_STATE_UNKNOWN',503));assert.equal(z.f.tables.intents.find((v:any)=>v.id===ref.id)!.state,'UNKNOWN');assert.equal(z.f.vault!.files.size,2);assert.equal(z.f.resources.versions.length,1);const count=z.generated.length;z.f.fault.mode='';await assert.rejects(z.store.fulfill(intentToken,intentCsrf,pid,ref.id,body),exact('RESOURCE_STATE_UNKNOWN',503));assert.equal(z.generated.length,count);assert.equal(z.f.references.versions.length,0);assert(z.generated.every(v=>v.every(b=>b===0)));}finally{await z.close();}});
 test('keyEvolutionLease 같은key다른wrapping은동시해제429·회수뒤고정버전재개',async()=>{const z=await evolutionFixture();try{const{out}=await rewrapped(z,8000),next=out.resultRef,wire=await downloadEvolution(z,next);await verifyEvolution(z,next,wire,8100);await verifyEvolution(z,z.keyRef,z.wire,8200,enrollmentPassword);const first=evolutionApproval(z.x,'UNLOCK_KEY',z.keyRef,z.hash,8300,0),response=await z.f.post(first.command);assert.equal(response.statusCode,200,response.body);const original=response.json().data.intentRef;await z.store.fulfill(intentToken,intentCsrf,pid,original.id,{intentRef:original,secretInput:{passphrase:enrollmentPassword,envelope:z.wire}});const active=z.plain.at(-1)!;assert(active.some(v=>v!==0));const a=evolutionApproval(z.x,'UNLOCK_KEY',next,intentHash(JSON.parse(wire)),8400,0),blocked=await z.f.post(a.command);assert.equal(blocked.statusCode,200,blocked.body);const pending=blocked.json().data.intentRef;await assert.rejects(z.store.fulfill(intentToken,intentCsrf,pid,pending.id,{intentRef:pending,secretInput:{passphrase:rewrapPassword,envelope:wire}}),exact('RESOURCE_LIMIT',429));assert(active.some(v=>v!==0));z.r.value.invalidateSession(sessionId);assert(active.every(v=>v===0));const again=evolutionApproval(z.x,'UNLOCK_KEY',next,intentHash(JSON.parse(wire)),8500,0),reply=await z.f.post(again.command);assert.equal(reply.statusCode,200,reply.body);const newRef=reply.json().data.intentRef;await z.store.fulfill(intentToken,intentCsrf,pid,newRef.id,{intentRef:newRef,secretInput:{passphrase:rewrapPassword,envelope:wire}});assert.equal((await z.store.keyState(intentToken,pid,next.id,next.version)).state,'UNLOCKED');assert.equal((await z.store.keyState(intentToken,pid,z.keyRef.id,z.keyRef.version)).state,'LOCKED');const stored=z.f.keys.states.find((v:any)=>v.resource_id===z.keyRef.id&&v.resource_version===1)!;assert.equal(stored.state,'LOCKED');assert.equal(stored.lease_generation,2);assert.deepEqual(z.f.unexpected,[]);}finally{await z.close();}});
+
+// 합성 safe-handle 소비선: 기존 fixture/기대는 보존하고 열린 자기 handle 정리 순서만 강화한다.
+async function probeOpenHandleFixture(fault: 'NONE'|'REMOVE'|'PARENT_SYNC'|'CLOSE') {
+ const f=await intentFixture(), order:string[]=[], closed=new WeakSet<object>(), wrapped=new WeakSet<object>();
+ const catalog=f.access.installationResourceCatalog, prepare=catalog.prepareSlot.bind(catalog);
+ const preserved={identity:{device:'41',inode:'existing-preserved'},data:Buffer.from('existing fixture bytes')};
+ f.probe.files.set('existing-preserved',preserved);
+ catalog.prepareSlot=async(...args:any[])=>{
+  const slot=await prepare(...args),root=slot.rootHandle;
+  if(!wrapped.has(root)){
+   wrapped.add(root);
+   const create=root.create.bind(root),remove=root.remove.bind(root),parent=root.fsyncParent.bind(root);
+   root.create=async(input:any)=>{
+    const handle=await create(input),close=handle.close.bind(handle);
+    handle.close=async()=>{order.push('CLOSE');assert(!closed.has(handle),'OS close 재시도 금지');closed.add(handle);await close();if(fault==='CLOSE')throw Error('synthetic-close-outcome-unknown');};
+    return handle;
+   };
+   root.remove=async(handle:any,expected:any)=>{
+    order.push('REMOVE');assert(!closed.has(handle),'remove는 열린 자기 handle만 허용');
+    const own=f.probe.files.get(handle.fileId);assert(own&&own.handle===handle);assert.deepEqual(own.identity,expected);
+    if(fault==='REMOVE')throw Error('synthetic-remove-outcome-unknown');
+    await remove(handle,expected);
+   };
+   root.fsyncParent=async()=>{order.push('PARENT_SYNC');if(fault==='PARENT_SYNC')throw Error('synthetic-parent-outcome-unknown');await parent();};
+  }
+  return slot;
+ };
+ return{f,order,preserved};
+}
+
+test('probeOpenHandle 정상은 remove→parent sync→close 뒤 등록하고 기존 파일을 보존한다',async()=>{
+ const z=await probeOpenHandleFixture('NONE'),{f}=z;
+ try{
+  const ref=intentOk(await f.post(f.command)).data.intentRef;
+  const done=targetView(await targetPost(f,ref),ref,'SUCCEEDED');assert(done.resultRef);
+  assert.deepEqual(z.order,['REMOVE','PARENT_SYNC','CLOSE']);
+  assert.equal(f.probe.files.size,1);assert.equal(f.probe.files.get('existing-preserved'),z.preserved);
+  assert.equal(f.resources.versions.length,1);assert.equal(f.tables.consumptions.length,1);
+  assert.equal(f.resources.versions[0].probe_json.probe.removed,true);assert.equal(f.resources.versions[0].probe_json.probe.parentSynced,true);
+ }finally{await f.close();}
+});
+
+for(const fault of ['REMOVE','PARENT_SYNC','CLOSE'] as const)test(`probeOpenHandle ${fault} 불명은 UNKNOWN·close 단1회·재정리 재실행0`,async()=>{
+ const z=await probeOpenHandleFixture(fault),{f}=z;
+ try{
+  const ref=intentOk(await f.post(f.command)).data.intentRef;
+  intentError(await targetPost(f,ref),503,'RESOURCE_STATE_UNKNOWN');
+  assert.equal(f.tables.intents[0].state,'UNKNOWN');assert.equal(f.resources.versions.length,0);
+  assert.deepEqual(z.order,fault==='REMOVE'?['REMOVE','CLOSE']:['REMOVE','PARENT_SYNC','CLOSE']);
+  assert.equal(f.probe.files.get('existing-preserved'),z.preserved);
+  assert.equal(f.probe.files.size,fault==='REMOVE'?2:1,'불명 remove는 파일 보존; 확인된 remove 뒤 sync/close 불명은 삭제를 되돌리거나 재시도하지 않음');
+  const before=[...z.order],creates=f.probe.trace.filter(v=>v==='CREATE').length;
+  const observed=targetView(await targetGet(f,'/backup-resource-intents/'+ref.id),ref,'UNKNOWN');assert.equal(observed.resultRef,null);
+  intentError(await targetPost(f,ref),503,'RESOURCE_STATE_UNKNOWN');
+  assert.deepEqual(z.order,before);assert.equal(f.probe.trace.filter(v=>v==='CREATE').length,creates);assert.equal(creates,1);
+  assert.equal(f.tables.consumptions.length,1);assert.equal(f.probe.files.get('existing-preserved'),z.preserved);
+ }finally{await f.close();}
+});

@@ -9239,3 +9239,10 @@
 - 최종API8A8705C321A7674D85EDD7EE58BABA85AAC4CC60930278B4B3AC941E71E58211, PanelD174A7A9B6A9F9BE58383806AD58FBFC491FA07C70248B4FD640F6EDC3B5D5C4, unitEEB0C6153A8B28C8EC453536E35A23FF3BD46E9C611DDD76652B69E488A736F6, browserFB8EFAA0DFC76CD680CB52A486B883AAB8EAAD047B24CF03C79D63C52A3C93E8. rollback은이소스변경검토revert이며과거키/원문/DB변경0. 실제adapter/Secret입력활성화/DB적용/사용자인수·전체FN16/작업계획은미완료다.
 
 - FN16 d44d7caf 게시 후802c81 local/private exact·main f976불변/보호8보존. 다음실제사용선행인POSIX안전파일adapter는미구현이며Native제품산출물·지원FS/위협전제결정이남았다. 읽기조사만수행(소스/컴파일/로드/실제키·DB·서비스0), Node공식API/로컬fs·Linux문서를대조하여 docs/work_packages/FN16_POSIX_SAFE_HANDLE_DECISION_PACKET_20261028.md 미채택후보를작성했다. PMO에는다음작업배정이아닌정확기술/중요위험경계결정만요청한다. 전체FN16/계획완료가아니다.
+
+- PMO2379FC09 회신: Node프로세스내Linux Node-API의상세설계/정확계약·허용파일·검증계획은기존FN16안전handle선행의내부구체화이며새사용자승인/다음배정대기불필요. native라는이유로후속전체를새승인으로일반화하지않는다. 현재요청에서제외한native코드/컴파일/로드/실FS·실제키/catalog/DB/서비스/P03실행허가로확대하지않는다. 동일UID면책/단일writer전제를확정보장으로채택하지않고원보장/설치전제/미충족·강제수단을상세화한다. Main은기존primary에게FN16_POSIX_SAFE_HANDLE_IMPLEMENTATION_DETAIL.md 문서1개초안만할당했고코드/자원변경0상태로계속한다.
+
+## 2026-10-29 FN16 안전 handle 소비선 계속
+- Main 내부 결정: probe remove→parent fsync→close, catalog 소유 FD의 명시 drain/dispose, publish의 동일 inode final 생성+자기tmp 정리 확인, 최초 Linux x64/Node24.22.1/NAPI8/ext4 검증대상을 상세안§10에 고정했다. 실제 지원/설치 evidence는 아직 미검증이며 권한·키·DB·서비스·native compile/load/실FS 실행0이다.
+- 기존 primary TEST_ONLY append4의 Main35584f는0PASS4FAIL4485.3391ms/skip0. 정상503 및 CLOSE 선행 순서로 기존 소비선 결함을 확인했다. 동일 store/test2경로 최소제품수정 GO, 기존209437바이트 시험prefix/검사기준보존. 새계약·사용자재승인·완료검증재실행0. 독립검토 후 소스에 한정해 통합하며 다음 안전adapter 구현을 계속한다.
+- FN16 probe 소비선 보완 검수: Main2a62c7 신규4+직접영향targetFulfill7=11PASS1683.3357ms/skip0, type/diff0. 독립fn16_review C0I0. 제품은 store clean의 close위치1줄만 변경했고 시험58줄append·원prefix보존. store C4A3CB7C8AD6D43A9715FAC14B4D3DCB2A56D54BBB6C9106053F419170BDF7E7, test6F773EE5487DD9291310AD535C8AAB8891B7283CBA8598258706FBE51EB2A506. remove/fsync/close불명은UNKNOWN·원intent재실행0·기존파일보존. 실제native경쟁/FS/키/DB/서비스NOT_RUN. 이는native연결전필수소비선정합이며전체FN16완료아님.
