@@ -1615,3 +1615,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-10-29 FN16 대화 자료군:** 대화 순서·원문 exact 참조·정정계보의 내부 metadata 수집 신규14합성 PASS/type·diff0/독립 C0/I0/M0. 실제 DB/원문·전체백업·복원·화면은 미완료, 지식·헌법 자료군을 이어간다. 상세 FN16_CONVERSATION_INVENTORY_RESULT_20261029.md.
 
 - **2026-10-29 FN16 지식·헌법 자료군:** 전체버전·정정/제외·검토·헌법적용계보 내부metadata 구현, Main15합성PASS/type·diff0/독립I1해결C0/I0/M0. 실제DB/원문·전체백업/복원·화면미완료. 결과 FN16_KNOWLEDGE_INVENTORY_RESULT_20261029.md; 다음원문검증연결.
+
+- **2026-10-29 FN16 대화·지식 원문 연결:** 실제collector→정확원문검증·메시지격리/current RC 연결. Main 신규14+공통영향32=46PASS/type·diff0/독립C0/I0/M0. 실제DB/원문FS/키/서비스·전체백업/복원/화면미완료. 결과 FN16_HISTORY_ARTIFACT_VERIFICATION_RESULT_20261029.md. 다음 작업계획 이력 수집.

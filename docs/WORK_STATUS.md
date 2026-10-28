@@ -9474,3 +9474,10 @@
 - Main 9d76e3/caa5b5/abe713 제품 읽기와 reviewer 독립 C0/I1/M0: ARTIFACT 출처 전용 media_type은 원 hash에 결박되지 않아 손상 row의 known-marker가 DTO에 나갈 수 있다. 정상업로드는 MIME enum이고 원문읽기는 text2종으로 제한됨(df7769), 정상 API 취약점/실제 유출을 확인한 것은 아니다. WI7 민감 투영 누락으로 한정해 primary에 반례1 RED→safe(ref)→GREEN 보완 지시. Main source수정0·실제DBFS0.
 - Main 9d09da는 추정 경로 artifact-input.ts/project-artifacts.ts 검색 os2(없는파일)였고 df7769 실제목록에서 project-files.ts/project-documents.ts로 확인했다. 이후 검색은 실목록 경로만 사용한다. 제품오류/권한오류가 아니다.
 - 지식 I1 반례00ba58 RED1FAIL→safe(ref)10bytes보완→8abc1e15PASS. Main533e2c 최종15PASS/skip0/645.7015ms·type/diff0. source6554BBE0…/test2EEFFF47…/schemaD820700E…; 독립I1해결C0/I0/M0. 결과 FN16_KNOWLEDGE_INVENTORY_RESULT_20261029.md. 실제DB/원문/키/서비스·전체FN16는미완료이며 다음대화/지식 원문검증소비선으로이어간다.
+
+### 2026-10-29 FN16 대화·지식 원문검증 연결 착수
+- 지식·헌법2643674508cb1156ebdb9e3ba89f8d9a978205ed 정확7파일게시/localprivate동일/main불변·보호8보존(2378d4). 전체완료아님. 다음 WI FN16_HISTORY_ARTIFACT_VERIFICATION_20261029.md로live두수집기의exact목록→원문검증연결을진행한다.
+- 메시지격리와artifact상태를별도현재검사, 최초격리IO0/이후변경전체실패·최소세션기한유지. 실제DBFS키서비스0, 내부source/합성만. 기존primary단독시험→RED→구현·기존reviewer검수.
+- Main b17bdb에서 신규 TEST_ONLY(F5EE57CAB2E5210FB6CE7A5B729226AF6C62896ABCF36B29C27570D257815B43)를 실제 실행해 exit1/두 신규 함수 부재 오류를 확인했다. 출력은 길이 제한으로 일부 잘려 이번 기록은 정확 건수·시간을 주장하지 않는다. 독립 WI/TEST_ONLY C0/I0/M0 후 primary SOURCE_GO; 기존 공통 단일17/문서15는 normalize 영향에 한해서 재검증한다. 실제DB/FS/키/서비스0, Main 제품 수정0.
+- Main2772d4 이력연결 신규14+직접영향기존32=46 dot/exit0·type/diff0, source9EF2A9F0/testF5EE57CA·기존7FFD/A1AA불변. 독립최종C0/I0/M0. 결과 FN16_HISTORY_ARTIFACT_VERIFICATION_RESULT_20261029.md. 최초타입 initial 추론동일오류2회는부재분기명시로해결, 시험기대완화0. 실제DB/FS/키/서비스·전체백업/복원/화면미완료.
+- 기존두수집기14/15는수정0으로반복하지않았다. 다음작업계획이력자료군은기존담당자읽기preflight로이어가며새실행권한·공개계약을열지않는다.

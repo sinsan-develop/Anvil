@@ -6,6 +6,9 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {verifyArtifactBytes,type ArtifactByteReader,type ArtifactByteVerification} from './artifact-byte-verification.ts';
 
 import {collectDocumentInventory} from './document-inventory.ts';
+import {collectConversationInventory} from './conversation-inventory.ts';
+import {collectKnowledgeInventory} from './knowledge-inventory.ts';
+import {readConversationInput} from '../knowledge/conversation-input.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 
 interface Input{projectId:string;artifactId:string;bytes:number;contentHash:string;mediaType:string;maxBytes:number;deadlineMs:number}
@@ -119,9 +122,9 @@ function currentScope(access:AccessRepository,token:string,input:{projectId:stri
  function normalize(error:unknown):never{
   if(error instanceof AuthFailure&&known.has(error))throw error;
   // 수집기에서 발급한 닫힌 오류만 새 객체로 전달한다. 원 DB/IO 객체·cause는 반환하지 않는다.
-  const codes:Record<string,number>={AUTH_REQUIRED:401,NOT_FOUND:404,DOCUMENT_INVENTORY_CANCELLED:409,DOCUMENT_INVENTORY_DEADLINE:413,DOCUMENT_INVENTORY_LIMIT:413,DOCUMENT_INVENTORY_INTEGRITY_FAILED:503,DOCUMENT_INVENTORY_STORAGE_FAILED:503,DOCUMENT_INVENTORY_SOURCE_CHANGED:503,DOCUMENT_INVENTORY_SENSITIVE_METADATA:503};
+  const codes:Record<string,number>={AUTH_REQUIRED:401,NOT_FOUND:404,DOCUMENT_INVENTORY_CANCELLED:409,DOCUMENT_INVENTORY_DEADLINE:413,DOCUMENT_INVENTORY_LIMIT:413,DOCUMENT_INVENTORY_INTEGRITY_FAILED:503,DOCUMENT_INVENTORY_STORAGE_FAILED:503,DOCUMENT_INVENTORY_SOURCE_CHANGED:503,DOCUMENT_INVENTORY_SENSITIVE_METADATA:503,CONVERSATION_INVENTORY_CANCELLED:409,CONVERSATION_INVENTORY_DEADLINE:413,CONVERSATION_INVENTORY_LIMIT:413,CONVERSATION_INVENTORY_INTEGRITY_FAILED:503,CONVERSATION_INVENTORY_STORAGE_FAILED:503,CONVERSATION_INVENTORY_SENSITIVE_METADATA:503,KNOWLEDGE_INVENTORY_CANCELLED:409,KNOWLEDGE_INVENTORY_DEADLINE:413,KNOWLEDGE_INVENTORY_LIMIT:413,KNOWLEDGE_INVENTORY_INTEGRITY_FAILED:503,KNOWLEDGE_INVENTORY_STORAGE_FAILED:503,KNOWLEDGE_INVENTORY_SENSITIVE_METADATA:503};
   if(error instanceof AuthFailure&&codes[error.message]===error.statusCode){
-   if(guardFailure&&error.message!=='DOCUMENT_INVENTORY_STORAGE_FAILED')throw guardFailure;
+   if(guardFailure&&!['DOCUMENT_INVENTORY_STORAGE_FAILED','CONVERSATION_INVENTORY_STORAGE_FAILED','KNOWLEDGE_INVENTORY_STORAGE_FAILED'].includes(error.message))throw guardFailure;
    throw fail(error.message,error.statusCode);
   }
   return stop('ARTIFACT_CURRENT_FAILED',503);
@@ -169,5 +172,105 @@ export async function verifyDocumentInventoryArtifacts(access:AccessRepository,t
    usage:{fileCount:selected.length,inputBytes,verifiedCount:verified.length,unverifiedCount:selected.length-verified.length,verifiedBytes,metadataBytes:0},atomicSnapshotVerified:false,fullProjectCoverage:false,restorable:false};
   for(let i=0;i<17;i++){scope.check();const size=Buffer.byteLength(canonicalJson(result));if(size>request.limits.metadataBytes)scope.stop('DOCUMENT_INVENTORY_LIMIT',413);if(size===result.usage.metadataBytes){scope.check();return result;}result.usage.metadataBytes=size;}
   return scope.stop('ARTIFACT_CURRENT_INTEGRITY_FAILED',503);
+ }catch(error){return scope.normalize(error);}
+}
+
+
+/** 대화 자료군의 live 목록·원문 양끝 관측이다. 전체 archive/원자적 snapshot 보장이 아니다. */
+export async function verifyConversationInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal){
+ return verifyHistoryInventoryArtifacts('CONVERSATION',access,token,value,reader,signal);
+}
+/** EXCLUDED/SUPERSEDED를 포함한 지식 역사를 검증한다. 현재 사용·실행 허가를 부여하지 않는다. */
+export async function verifyKnowledgeInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal){
+ return verifyHistoryInventoryArtifacts('KNOWLEDGE',access,token,value,reader,signal);
+}
+
+type HistoryRef={artifactId:string;bytes:number;contentHash:string;mediaType:string};
+type HistoryMessage={id:string;conversationId:string;sequence:number;contentHash:string;bodyRef:Readonly<HistoryRef>;message:unknown;redactionState:'NOT_REDACTED'|'QUARANTINED'};
+type HistoryItem={ref:Readonly<HistoryRef>;status:'VERIFIED';verification:CurrentArtifactVerification}|{ref:Readonly<HistoryRef>;status:'NOT_VERIFIED';reasonCode:'MESSAGE_QUARANTINED'|'ARTIFACT_NOT_READY'|'ARTIFACT_INSPECTION_UNKNOWN';sourceState:string;sourceInspectionStatus:string};
+
+// 두 진입점만 자료군을 고른다. 외부 inventory·수집기·SQL 선택 입력은 없다.
+async function verifyHistoryInventoryArtifacts(kind:'CONVERSATION'|'KNOWLEDGE',access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal){
+ const request=readDocumentInventoryInput(value),scope=currentScope(access,token,{projectId:request.projectId,deadlineMs:request.limits.deadlineMs},signal);
+ const inventoryScope=kind==='CONVERSATION'?'CONVERSATION_HISTORY_ONLY':'KNOWLEDGE_CONSTITUTION_HISTORY_ONLY';
+ const limit=():never=>scope.stop(kind+'_INVENTORY_LIMIT',413),invalid=():never=>scope.stop('ARTIFACT_CURRENT_INTEGRITY_FAILED',503);
+ const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+ const positive=(v:unknown)=>{const n=typeof v==='string'&&/^[1-9][0-9]*$/.test(v)?Number(v):v;if(!integer(n,1))return invalid();return n;};
+ try{
+  await scope.boundary([]);
+  const input={projectId:request.projectId,limits:{...request.limits,deadlineMs:scope.remaining()}};
+  const inventory=kind==='CONVERSATION'?await collectConversationInventory(scope.guardedAccess,token,input,signal):await collectKnowledgeInventory(scope.guardedAccess,token,input,signal);
+  scope.check();await scope.boundary([]);
+  if(inventory.kind!==kind+'_INVENTORY_V1'||inventory.scope!==inventoryScope||inventory.projectId!==request.projectId||!Array.isArray(inventory.artifacts)||!Array.isArray(inventory.issues)||!Array.isArray(inventory.externalDependencies))invalid();
+  const inventoryHash=contentHash(canonicalJson(inventory)),selected:Array<{ref:Readonly<HistoryRef>;state:string;inspectionStatus:string}>=[],byArtifact=new Map<string,Readonly<HistoryRef>>();let previous='',inputBytes=0;
+  for(const raw of inventory.artifacts){
+   scope.check();let row:Record<string,any>;try{row=data(raw,['artifactId','bytes','contentHash','mediaType','state','inspectionStatus','blobVerification']);}catch{invalid();}
+   if(!validUuid(row!.artifactId)||row!.artifactId<=previous||!integer(row!.bytes,0,20*1024*1024)||typeof row!.contentHash!=='string'||!/^[a-f0-9]{64}$/.test(row!.contentHash)||typeof row!.mediaType!=='string'||row!.mediaType.length<1||row!.mediaType.length>200||!row!.mediaType.isWellFormed()||!['READY','QUARANTINED','STAGING','FAILED'].includes(row!.state)||!['NO_KNOWN_MARKER','SUSPECTED','UNKNOWN'].includes(row!.inspectionStatus)||row!.blobVerification!=='NOT_PERFORMED')invalid();
+   if(selected.length>=request.limits.fileCount||inputBytes>Number.MAX_SAFE_INTEGER-row!.bytes||inputBytes>request.limits.inputBytes-row!.bytes)limit();
+   const ref=Object.freeze({artifactId:row!.artifactId,bytes:row!.bytes,contentHash:row!.contentHash,mediaType:row!.mediaType});previous=ref.artifactId;inputBytes+=ref.bytes;selected.push({ref,state:row!.state,inspectionStatus:row!.inspectionStatus});byArtifact.set(ref.artifactId,ref);
+  }
+  if(inventory.usage.fileCount!==selected.length||inventory.usage.inputBytes!==inputBytes||!integer(inventory.usage.metadataBytes,1,request.limits.metadataBytes))invalid();
+  // 최초 수집 DTO의 크기에 이후 현재성 조회 payload를 누적한다. 결과 DTO 한도는 별도로 확인한다.
+  let metadataBytes=inventory.usage.metadataBytes;
+  const messageMap=new Map<string,HistoryMessage[]>(),quarantined=new Set<string>(),messageIds=new Set<string>();
+  if(kind==='CONVERSATION'){
+   if(!Array.isArray(inventory.messages))invalid();
+   for(const raw of inventory.messages){
+    scope.check();let m:Record<string,any>,ref:Record<string,any>;
+    try{m=data(raw,['sourceRef','conversationId','serverSequence','author','message','redactionState','recordedAt','projectionHash']);ref=data(m.sourceRef,['kind','id','contentHash']);}catch{invalid();}
+    if(ref!.kind!=='CONVERSATION'||!validUuid(ref!.id)||messageIds.has(ref!.id)||typeof ref!.contentHash!=='string'||!/^[a-f0-9]{64}$/.test(ref!.contentHash)||!validUuid(m!.conversationId)||!integer(m!.serverSequence,1)||!same(m!.author,{kind:'HUMAN'})||!['NOT_REDACTED','QUARANTINED'].includes(m!.redactionState))invalid();
+    const {projectionHash,...projection}=m!;if(projectionHash!==contentHash(canonicalJson(projection)))invalid();
+    let parsed:ReturnType<typeof readConversationInput>;try{parsed=readConversationInput({conversationId:m!.conversationId,targetRoleRef:null,message:m!.message,sourceRefs:[]},request.projectId);}catch{invalid();}
+    const bodyRef=byArtifact.get(parsed!.message.bodyRef.artifactId);if(!bodyRef||!same(bodyRef,parsed!.message.bodyRef))invalid();
+    const item:HistoryMessage={id:ref!.id,conversationId:m!.conversationId,sequence:m!.serverSequence,contentHash:ref!.contentHash,bodyRef:bodyRef!,message:structuredClone(parsed!.message),redactionState:m!.redactionState};
+    if(!messageMap.has(bodyRef!.artifactId))messageMap.set(bodyRef!.artifactId,[]);messageMap.get(bodyRef!.artifactId)!.push(item);messageIds.add(item.id);if(item.redactionState==='QUARANTINED')quarantined.add(bodyRef!.artifactId);
+   }
+   if(selected.some(item=>!messageMap.has(item.ref.artifactId)))invalid();
+  }
+  async function currentMessages(refs:readonly Readonly<HistoryRef>[]){
+   if(kind!=='CONVERSATION'||!refs.length)return;
+   const wanted=refs.flatMap(r=>messageMap.get(r.artifactId)??[]).sort((a,b)=>a.id.localeCompare(b.id));
+   if(wanted.some(m=>m.redactionState!=='NOT_REDACTED')||new Set(wanted.map(m=>m.id)).size!==wanted.length)invalid();
+   await scope.guardedAccess.authenticated(token,null,async(db,actor)=>{
+    async function query(sql:string,values:unknown[]=[]){scope.check();await db.query("SELECT set_config('statement_timeout',$1,true)",[String(Math.min(2147483647,scope.remaining()))]);scope.check();const result=await db.query(sql,values);scope.check();return result;}
+    const isolation=(await query("SELECT current_setting('transaction_isolation') AS isolation")).rows;if(!Array.isArray(isolation)||isolation.length!==1||isolation[0]?.isolation!=='read committed')invalid();
+    const member=await projectMember({query}as unknown as PoolClient,actor,request.projectId,false);if(member.id!==request.projectId||member.archived_at!==null||member.participation!=='OWNER')scope.stop('NOT_FOUND',404);
+    const clock=(await query('SELECT clock_timestamp() AS at')).rows;if(!Array.isArray(clock)||clock.length!==1||!(clock[0]?.at instanceof Date)||!Number.isFinite(clock[0].at.getTime()))invalid();
+    for(let batchStart=0;batchStart<wanted.length;batchStart+=200){
+     scope.check();const batch=wanted.slice(batchStart,batchStart+200),remaining=request.limits.metadataBytes-metadataBytes;if(remaining<=0)limit();
+     const result=await query(`WITH inventory_row AS (SELECT project_id,conversation_id,id,sequence,content_hash,body_artifact_id,message_json,redaction_state FROM anvil.conversation_messages WHERE project_id=$1 AND id=ANY($2::uuid[]) ORDER BY id LIMIT 200)
+      SELECT CASE WHEN octet_length(to_jsonb(inventory_row)::text)<=$3::bigint THEN to_jsonb(inventory_row) ELSE NULL END AS inventory_data,octet_length(to_jsonb(inventory_row)::text) AS row_bytes FROM inventory_row ORDER BY inventory_row.id`,[request.projectId,batch.map(m=>m.id),remaining]);
+     if(!Array.isArray(result.rows)||result.rows.length!==batch.length||result.rows.length>200)invalid();const expected=new Map(batch.map(m=>[m.id,m])),seen=new Set<string>();
+     for(const raw of result.rows){
+      scope.check();let row:Record<string,any>,size:number;
+      try{const envelope=data(raw,['inventory_data','row_bytes']);size=positive(envelope.row_bytes);if(size>remaining||metadataBytes>request.limits.metadataBytes-size)limit();row=data(envelope.inventory_data,['project_id','conversation_id','id','sequence','content_hash','body_artifact_id','message_json','redaction_state']);}catch(e){return scope.normalize(e);}
+      const initial=expected.get(row!.id);if(!initial)return invalid();if(seen.has(row!.id)||row!.project_id!==request.projectId||row!.conversation_id!==initial.conversationId||positive(row!.sequence)!==initial.sequence||row!.content_hash!==initial.contentHash||row!.body_artifact_id!==initial.bodyRef.artifactId)invalid();
+      if(!['NOT_REDACTED','QUARANTINED'].includes(row!.redaction_state))invalid();if(row!.redaction_state!=='NOT_REDACTED')scope.stop('ARTIFACT_CURRENT_BLOCKED',412);
+      try{
+       const snapshot=data(row!.message_json,['conversationId','targetRoleRef','message','sourceRefs','serverSequence','authorRef']),author=data(snapshot.authorRef,['kind','userId']);
+       const parsed=readConversationInput({conversationId:snapshot.conversationId,targetRoleRef:snapshot.targetRoleRef,message:snapshot.message,sourceRefs:snapshot.sourceRefs},request.projectId);
+       if(snapshot.conversationId!==initial.conversationId||snapshot.serverSequence!==initial.sequence||author.kind!=='HUMAN'||!validUuid(author.userId)||contentHash(canonicalJson(snapshot))!==initial.contentHash||!same(parsed.message,initial.message)||!same(parsed.message.bodyRef,initial.bodyRef))invalid();
+      }catch{invalid();}
+      metadataBytes+=size!;seen.add(row!.id);
+     }
+    }
+    scope.check();
+   });
+   // 인증 transaction의 COMMIT과 연결 반환을 기다린 뒤 다시 검사한다.
+   scope.check();
+  }
+  const artifacts:HistoryItem[]=[],verified:Readonly<Input>[]=[];let verifiedBytes=0;
+  for(const item of selected){
+   scope.check();const reasonCode=quarantined.has(item.ref.artifactId)?'MESSAGE_QUARANTINED':item.state!=='READY'?'ARTIFACT_NOT_READY':item.inspectionStatus!=='NO_KNOWN_MARKER'?'ARTIFACT_INSPECTION_UNKNOWN':null;
+   if(reasonCode){artifacts.push({ref:item.ref,status:'NOT_VERIFIED',reasonCode,sourceState:item.state,sourceInspectionStatus:item.inspectionStatus});continue;}
+   await currentMessages([item.ref]);
+   const wanted=readInput({projectId:request.projectId,...item.ref,maxBytes:request.limits.inputBytes,deadlineMs:scope.remaining()}),verification=await scope.verify(wanted,reader);
+   verified.push(wanted);verifiedBytes+=wanted.bytes;artifacts.push({ref:item.ref,status:'VERIFIED',verification});
+  }
+  await currentMessages(verified);await scope.boundary(verified);scope.check();
+  const result={kind:kind+'_INVENTORY_ARTIFACT_VERIFICATION_V1',scope:inventoryScope,projectId:request.projectId,
+   inventory:{observation:{snapshot:inventory.observation.snapshot,startedAt:inventory.observation.startedAt,finishedAt:inventory.observation.finishedAt,isolation:inventory.observation.isolation,readOnly:inventory.observation.readOnly,authBoundary:inventory.observation.authBoundary},contentHash:inventoryHash,metadataComplete:inventory.metadataComplete,issueCount:inventory.issues.length,externalDependencyCount:inventory.externalDependencies.length},artifacts,
+   usage:{fileCount:selected.length,inputBytes,verifiedCount:verified.length,unverifiedCount:selected.length-verified.length,verifiedBytes,metadataBytes:0},atomicSnapshotVerified:false,fullProjectCoverage:false,restorable:false};
+  for(let i=0;i<17;i++){scope.check();const size=Buffer.byteLength(canonicalJson(result));if(size>request.limits.metadataBytes)limit();if(size===result.usage.metadataBytes){scope.check();return result;}result.usage.metadataBytes=size;}return invalid();
  }catch(error){return scope.normalize(error);}
 }
