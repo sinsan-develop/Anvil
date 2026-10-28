@@ -114,3 +114,10 @@
 - 원실패 이력 유지: Main59b62b 신규 mount2 RED; authorf388fc 보완16PASS/1FAIL은 새 임시FD를 장기보유FD 역순 대상으로 함께 센 시험 관측 오류1이었다. helper만 최초 보유FD로 좁히고 기존 기대값·모든FD 단발/잔여0는 유지했으며 author81195d 해당1PASS/type/diff0 후 Main 전체17로 확인했다. 기존15·native15 검증기준 완화0, 변경없는 native15 반복0.
 - 실제 QA 생성/키/DB/서비스/P03 변경0, 기존 보호8경로 보존. rollback은 신규 reader/source의 검토된 revert이며 자료 삭제나 권한 변경0. 다음은 기존 provider snapshot 검증 재사용과 동일 artifact FD 로더의 최소 내부 bootstrap 연결이다. 전체 FN16/작업계획 완료가 아니다.
 - Main377783 rg Windows glob 조회 실패는6df919 디렉터리+-g필터로 정정했으며 파일/환경 영향0.
+## 2026-10-29 FN16 보호 설치 bootstrap 소스 검수
+- 판정: 내부 catalog reader→고정 artifact loader→기존 catalog/provider 연결의 source·핵심 합성 검수 완료. 실제 설치 검증기/활성화·키·DB·서비스 및 FN16 전체/계획 완료는 아니다.
+- 정확 source3: 신규 installation-resource-bootstrap.ts E36F695FA0CC3EC7922273C34C014AC2A26AE87434B0B65DBC42ED238380DC77, 신규 bootstrap unit8B10723873D1701C2DB01F393A95D932A6744E577DD3D40595BC167B5E8DCD37, 기존provider0C2E0E6763AB4DAE8AC992420B62C83F9064C8309B6532061F787E68CD9F9623. provider는validator namedexport/호출명2줄만변경했다. WI2AC42008·부모70e56a2c.
+- 변경전 내부bootstrap부재, 변경후 보호catalog의boundedUTF8/중복키/원hash/기존snapshot검증→필수installer현재성→sameheldartifactFD 단발loader→reader후검사→provider 생성이 연결된다. default loader는process.dlopen본문을제공하지만이번시험은모두load/openFile/runtime합성이며실제호출0. module수명시도1·자동reload/unload주장0,wrapper active1/중첩409·drain후provider/artifact/catalog 단발회수·원오류비노출이다.
+- Mainb21cd9 첫동결32PASS186.5134ms/type/diff0 뒤정적검수에서초기input reflection의원오류정규화I1을발견했다. Main2c14ae 추가2RED156.405ms→같은primary source보완·기존32기대유지→author c73ffe34PASS304.4149ms/type/diff0. Mainc27170 최종신규16PASS204.4534ms/0FAIL/0SKIP·type/diff0, scoped독립I1해소C0/I0. 불변provider18은Mainb21증거와author최종34로보존하며Main재반복0. reader17/native15도소스불변으로반복0.
+- 합성결과를실제OS/installer 보호/키/DB/서비스지원으로올리지않는다. 필수installer검증기는아직실제제공0이며App Secret/defaultUNCONFIGURED·미적용0054는그대로다. 새QA/실제FS/native/키DB서비스/P03실행0. 보호8경로보존,rollback은신규bootstrap과provider export의검토된revert이며실자료삭제/권한변경없음.
+- 다음은같은승인source범위에서남은독립연결을read-only대조한다. actual설치/키DB서비스가필요한지점과미구현source를구분하며자동활성화나전체완료주장을하지않는다.

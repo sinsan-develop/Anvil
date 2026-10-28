@@ -23,7 +23,7 @@ const number=(v:unknown,min=0):v is number=>typeof v==='number'&&Number.isSafeIn
 const identity=(v:unknown)=>exact(v,['device','inode'])&&[v.device,v.inode].every(x=>typeof x==='string'&&/^(0|[1-9][0-9]{0,19})$/.test(x)&&BigInt(x)<=18446744073709551615n);
 const clone=<T>(v:T):T=>structuredClone(v);
 function freeze<T>(v:T):T{if(v&&typeof v==='object'){Object.freeze(v);for(const x of Object.values(v))freeze(x);}return v;}
-function readSnapshot(value:unknown):InstallationCatalogProviderSnapshot {
+export function readInstallationCatalogProviderSnapshot(value:unknown):InstallationCatalogProviderSnapshot {
  if(!exact(value,['installationId','slots'])||!uuid(value.installationId)||!Array.isArray(value.slots)||value.slots.length<1||value.slots.length>64)throw invalid();
  const ids=new Set<string>(),roots=new Set<string>(),paths:string[]=[];
  for(const s of value.slots){
@@ -83,7 +83,7 @@ class BoundCatalog implements InstallationResourceCatalogPort {
 
 /** 실제 설치 보호 검증/로드를 대신하지 않는 내부 조합. 기본 catalog에는 자동 등록하지 않는다. */
 export async function createInstallationResourceCatalogProvider(options:InstallationCatalogProviderOptions):Promise<InstallationResourceCatalogPort>{
- if(!object(options))throw invalid();const snapshot=readSnapshot(options.snapshot);
+ if(!object(options))throw invalid();const snapshot=readInstallationCatalogProviderSnapshot(options.snapshot);
  if(!object(options.verifier)||typeof options.verifier.assertCurrent!=='function')throw problem();
  if(Object.keys(options).some(k=>!['snapshot','nativeFactory','verifier'].includes(k))||!exact(options.verifier,['assertCurrent'])||typeof options.nativeFactory!=='function')throw invalid();
  const assertCurrent=options.verifier.assertCurrent.bind(options.verifier);

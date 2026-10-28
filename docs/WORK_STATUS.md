@@ -1,5 +1,15 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
+
+- 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
+- 직전 reader 게시 checkpoint는 `70e56a2c3bd0651717cea47220de5f80050894fa`, 기존 `codex/av3-stage-b` local/private 동일(3071d8). 통합 main은 `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 그대로다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 그대로 보존한다.
+- 완료한 내부 단위: native 공개 합성 Linux15건·정리0, catalog 조합 합성18건, 보호 reader 합성17건 및 해당 타입·독립 검수. 실제 설치 catalog/installer 검증·키 실사용·DB 적용·TLS·서비스/사용자인수는 미완료·미검증이다. 완료된 검사를 코드 변화 없이 반복하지 않는다.
+- 현재 단일 구현 담당 `fn16_primary`: WI `FN16_INSTALLATION_BOOTSTRAP_20261029.md` SHA2AC42008, 신규 bootstrap/unit+기존provider validator export3경로. Main e185b5 미구현14RED 이후 bootstrap 구현·입력오류 보완·최종 Main16/독립C0I0 검수를 마쳤으며 아래 최신 결과와 실제 Git HEAD를 대조한다. Main은 문서·검수·통합, `fn16_review`는 read-only 독립 검수다. bootstrap TEST_ONLY 합성주입으로 실제 dlopen/FS/키DB서비스0.
+- P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
+
+이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
+
 ## 현재 재개 — 2026-10-28 P03 남은 source 직접승인·구현 재개
 
 - 신산님 call_fa997b24d02f4905b251e0f55c46ed63 ‘위 범위 계약·구현 승인’으로 부모84C4AB82와보완92602F25의source/화면/미적용SQL/합성구현을함께채택했다. 승인기록 docs/approvals/FN04_ACTIVATION_APPROVAL_POINTER_IMPLEMENTATION_20261027.json SHA256 CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046. 과거NOT_ADOPTED/차단감사는이력이며이번정확범위의착수를막지않는다.
@@ -9294,3 +9304,16 @@
 - 원실패 이력 유지: Main59b62b 신규 mount2 RED; authorf388fc 보완16PASS/1FAIL은 새 임시FD를 장기보유FD 역순 대상으로 함께 센 시험 관측 오류1이었다. helper만 최초 보유FD로 좁히고 기존 기대값·모든FD 단발/잔여0는 유지했으며 author81195d 해당1PASS/type/diff0 후 Main 전체17로 확인했다. 기존15·native15 검증기준 완화0, 변경없는 native15 반복0.
 - 실제 QA 생성/키/DB/서비스/P03 변경0, 기존 보호8경로 보존. rollback은 신규 reader/source의 검토된 revert이며 자료 삭제나 권한 변경0. 다음은 기존 provider snapshot 검증 재사용과 동일 artifact FD 로더의 최소 내부 bootstrap 연결이다. 전체 FN16/작업계획 완료가 아니다.
 - Main377783 rg Windows glob 조회 실패는6df919 디렉터리+-g필터로 정정했으며 파일/환경 영향0.
+- FN16 reader70e56a2c3bd0651717cea47220de5f80050894fa는3071d8 private동일/main f976불변·trackedclean·보호8보존으로게시했다. PMO회신전달완료. 다음 내부bootstrap WI FF0E2C9B9156B65CF17CC8A78ACBFF2CAC1DB7D2C42095C72904C49BBD8B2CF9는 신규bootstrap/unit+기존provider validator export3경로이며 실제설정/키/DB/서비스/native실행0이다. 기존primary 인터페이스제안·독립preflight중,아직code0. 같은heldFD로검증/loader연결을제공하되 actualinstaller증거 미제공/defaultUNCONFIGURED를유지한다. Maind9c212 BUILD 경로오기읽기실패는437e91 목록검색→5a245d 정확native경로읽기로정정했고파일영향0.
+- FN16 bootstrap WI2AC420085DDF1C85335CBB24FE8FE0DCC52E1432C1E64DCF054DB478F766808A로 내부함수/build/runtime형식·한도/필수installer검증·active1/noqueue409·drain후회수를확정했고독립최종preflight C0/I0. 기존primary 신규시험1파일 TEST_ONLY중, 제품3경로수정은MainRED후다. 실제설치검증기부재/defaultUNCONFIGURED·actualnative/키DB서비스0 유지. PMO는reader게시보고를수신했고새개입사유없음을회신했다. 완료된native/reader시험반복0.
+- FN16 bootstrap TEST_ONLY14 source없는 상태에서Main52ea94 testC0DFD9D7확인, e185b5 0PASS14FAIL136.4929ms/skip0 exit1 모두미구현factory(undefined→function) RED였다. 14개독립제품결함이아니다. 유효경로는모두메모리openFile/load/runtime을명시주입하며actualFS/dlopen0. 같은primary WI2AC42008 정확3경로제품GO, Main은동시코드write0. 기존provider는검증기namedexport/호출명만정합하고판정기준유지;회수불명은load전이라도503을보존하도록전달했다.
+- FN16 bootstrap 최초동결 A50038D5/provider0C2E0E67/test0E30BDD2는Mainb21cd9 신규14+기존provider18=32PASS186.5134ms/skip0·type/diff0. provider변경은validator namedexport/호출명2줄뿐이다. author060957초기14PASS뒤 malformedJSON이hash분기에서먼저거절되는시험관측부족을찾아원descriptorhash/size와정합하게보강했고,기존거절/load0기대유지·최종32에서파서분기도확인했다. 독립제품검수중이며Main은초기input property읽기의원예외비노출후보를기존2경로음성반례로확인하도록같은primary에TEST_ONLY전달했다. 현재완료로승격하지않는다. 실제FS/dlopen/키DB서비스0.
+- Main882eb7 현행요약추가의CR 줄끝1곳은c045d8 정확자기문장만정정후diff0. 65d9e9 sandboxGit worktree접근오류는105c89와같은원인2회이며제품/저장소손상아님;후속Git은기존승인된elevated경로로한정해같은실패반복0. 과거자료/보호경로변경0.
+- FN16 bootstrap 초기입력오류 I1은Main/독립동일근본1건이다. Main2c14ae sourceA500/test8B107238에서 accessor/reflection 신규2건 0PASS2FAIL156.405ms/skip0·exit1로고정오류대신공개합성marker/cause가노출됨을재현했다. 실제비밀유출사고가아니며현재서비스적용0. 같은primary bootstrap/test2경로전체preflight정규화·getter실행전닫힌data검증보완GO,기존providerexport외변경0·원installer부재412/기존정상기대유지. 실제FS/dlopen/키DB서비스0.
+## 2026-10-29 FN16 보호 설치 bootstrap 소스 검수
+- 판정: 내부 catalog reader→고정 artifact loader→기존 catalog/provider 연결의 source·핵심 합성 검수 완료. 실제 설치 검증기/활성화·키·DB·서비스 및 FN16 전체/계획 완료는 아니다.
+- 정확 source3: 신규 installation-resource-bootstrap.ts E36F695FA0CC3EC7922273C34C014AC2A26AE87434B0B65DBC42ED238380DC77, 신규 bootstrap unit8B10723873D1701C2DB01F393A95D932A6744E577DD3D40595BC167B5E8DCD37, 기존provider0C2E0E6763AB4DAE8AC992420B62C83F9064C8309B6532061F787E68CD9F9623. provider는validator namedexport/호출명2줄만변경했다. WI2AC42008·부모70e56a2c.
+- 변경전 내부bootstrap부재, 변경후 보호catalog의boundedUTF8/중복키/원hash/기존snapshot검증→필수installer현재성→sameheldartifactFD 단발loader→reader후검사→provider 생성이 연결된다. default loader는process.dlopen본문을제공하지만이번시험은모두load/openFile/runtime합성이며실제호출0. module수명시도1·자동reload/unload주장0,wrapper active1/중첩409·drain후provider/artifact/catalog 단발회수·원오류비노출이다.
+- Mainb21cd9 첫동결32PASS186.5134ms/type/diff0 뒤정적검수에서초기input reflection의원오류정규화I1을발견했다. Main2c14ae 추가2RED156.405ms→같은primary source보완·기존32기대유지→author c73ffe34PASS304.4149ms/type/diff0. Mainc27170 최종신규16PASS204.4534ms/0FAIL/0SKIP·type/diff0, scoped독립I1해소C0/I0. 불변provider18은Mainb21증거와author최종34로보존하며Main재반복0. reader17/native15도소스불변으로반복0.
+- 합성결과를실제OS/installer 보호/키/DB/서비스지원으로올리지않는다. 필수installer검증기는아직실제제공0이며App Secret/defaultUNCONFIGURED·미적용0054는그대로다. 새QA/실제FS/native/키DB서비스/P03실행0. 보호8경로보존,rollback은신규bootstrap과provider export의검토된revert이며실자료삭제/권한변경없음.
+- 다음은같은승인source범위에서남은독립연결을read-only대조한다. actual설치/키DB서비스가필요한지점과미구현source를구분하며자동활성화나전체완료주장을하지않는다.
