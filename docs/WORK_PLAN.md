@@ -1726,3 +1726,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-30 UI03 방법론 확정 사건 상세 한정 검수
 - 기존GET 확정사건·당시검토ref 기본접힘/문맥해제·전용부모로딩/오류표시장벽만연결. WI545AE0C3·Main신규6/기존직접2각PASS·type/diff0·독립C0/I0·QA7037c4정리/54edbf별도부재. 미저장입력·동일미확인명령보존확인,직접clientprop·실DB/served/사용자인수NOT_RUN·UI03/FN02/StageB전체미완료. 결과 UI03_METHOD_CONFIRMATION_DETAILS_RESULT_20261030.md.
+
+### 2026-10-30 UI10 보관 공유요청 원문 미리보기 한정 검수
+- 기존A안 출발측 exactref 보호GET을패널내텍스트미리보기로연결·부모선택/공유원명령불변. WIAEC0AE85·Main자식7+부모1 Node8PASS/18.684초·표준Webbuild(타입포함)/diff0·독립I1회수보완후C0/I0·a436cc QA/process0. 합성transport이며실HTTP API/DB/served/사용자인수·UI10/FN05전체미완료. 결과 UI10_SHARE_REQUEST_ORIGINAL_PREVIEW_RESULT_20261030.md.

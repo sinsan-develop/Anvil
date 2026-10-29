@@ -2,9 +2,24 @@ import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {listProjects,type ProjectSummary} from '../projects/api.ts';
-import type {KnowledgeView} from './api.ts';
+import {readKnowledge,type KnowledgeView} from './api.ts';
 import {newKnowledgeShareRequest,prepareKnowledgeShareRequest,sendKnowledgeShareRequest,readKnowledgeShareRequest,listKnowledgeShareRequests,type KnowledgeShareRequestBuffer,type KnowledgeShareChange,type ShareView,type ShareRef,type KnowledgeSharePage} from './knowledge-share-request-api.ts';
 const fingerprint=(r:ShareRef|null|undefined)=>r?JSON.stringify([r.id,r.version,r.contentHash]):'';
+function RequestOriginalPreview({client,projectId,refs,onAuthenticationLost}:{client:ApiClient;projectId:string;refs:ShareRef[];onAuthenticationLost:()=>void}){
+ const [selected,setSelected]=useState<ShareRef|null>(null),[value,setValue]=useState<KnowledgeView|null>(null),[error,setError]=useState<ApiError|null>(null),[busy,setBusy]=useState(false);
+ const alive=useRef(true),sequence=useRef(0);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
+ async function inspect(ref:ShareRef){
+  const id=++sequence.current;setSelected(ref);setValue(null);setError(null);setBusy(true);
+  const current=()=>alive.current&&sequence.current===id;
+  try{const result=await readKnowledge(client,projectId,ref);if(current())setValue(result);}
+  catch(e){if(current()){const failure=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');setError(failure);if(failure.status===401)onAuthenticationLost();}}
+  finally{if(current())setBusy(false);}
+ }
+ function close(){sequence.current++;setSelected(null);setValue(null);setError(null);setBusy(false);}
+ return <><ul>{refs.map(ref=><li key={fingerprint(ref)}>{ref.id} v{ref.version} / {ref.contentHash}<button type="button" onClick={()=>void inspect(ref)}>요청 원 지식 보기</button></li>)}</ul>
+ {selected?<section aria-label="공유 요청 원 지식 미리보기"><p>현재 보관 요청에 기록된 원 지식의 읽기 전용 조회입니다.</p><button type="button" onClick={close}>원 지식 미리보기 닫기</button>{busy?<p role="status">원 지식을 확인하고 있습니다.</p>:null}{error?<p role="alert">원 지식을 확인하지 못했습니다. {error.code}</p>:null}{value?<><h4>{value.entry.title}</h4><p>{value.ref.id} v{value.ref.version} / {value.ref.contentHash}</p><p>조회 상태: {value.state} · 현재 최신 v{value.headVersion}</p><pre aria-label="요청 원 지식 본문">{value.body}</pre></>:null}</section>:null}</>;
+}
 export function KnowledgeShareRequestPanel({client,projectId,session,selected,buffer,onChange,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;selected:KnowledgeView|null;buffer:KnowledgeShareRequestBuffer|null;onChange:(change:KnowledgeShareChange)=>void;onAuthenticationLost:()=>void}){
  const [rawTargets,setTargets]=useState<ProjectSummary[]>([]),[rawTargetNext,setTargetNext]=useState<string|null>(null),[rawPage,setPage]=useState<KnowledgeSharePage|null>(null),[view,setView]=useState<{key:string;value:ShareView}|null>(null),[error,setError]=useState<{key:string;value:ApiError}|null>(null),[rawBusy,setBusy]=useState(false);
  const alive=useRef(true),locked=useRef(false),sequence=useRef(0);
@@ -56,6 +71,6 @@ export function KnowledgeShareRequestPanel({client,projectId,session,selected,bu
   {busy?<p role="status">요청을 확인하고 있습니다.</p>:null}
   {shownError?<p role="alert">요청을 확인하지 못했습니다. {shownError.code}</p>:null}
   {page?<><ul>{page.items.map(item=><li key={item.requestRef.id}><button type="button" disabled={busy} onClick={()=>void inspect(item.requestRef)}>{item.requestRef.id} 고정 조회</button><span>{item.currentCheck==='UNAVAILABLE'?'현재 원문 또는 대상 확인 불가':'요청 보관됨'}</span></li>)}</ul>{!page.items.length?<p>보관한 요청이 없습니다.</p>:null}{page.nextCursor?<button type="button" disabled={busy} onClick={()=>void requests(page.nextCursor)}>내 요청 다음 목록</button>:null}</>:null}
-  {shown?<section aria-label="보관 공유 요청 상세"><p role="status">요청 보관 상태입니다. 실제 공유·승인·수신은 수행하지 않았습니다.</p><p>{shown.requestRef.id} / v1 / {shown.requestRef.contentHash}</p>{shown.currentCheck==='UNAVAILABLE'?<p>현재 원문 또는 대상을 확인할 수 없어 선택과 목적을 표시하지 않습니다.</p>:<><p>{shown.snapshot.purpose}</p><ul>{shown.snapshot.versionRefs.map(r=><li key={r.id}>{r.id} v{r.version} / {r.contentHash}</li>)}</ul><ul>{shown.snapshot.explicitTargets.map(t=><li key={t.projectId}>{t.projectId} / 당시 프로젝트 v{t.version}</li>)}</ul></>}</section>:null}
+  {shown?<section aria-label="보관 공유 요청 상세"><p role="status">요청 보관 상태입니다. 실제 공유·승인·수신은 수행하지 않았습니다.</p><p>{shown.requestRef.id} / v1 / {shown.requestRef.contentHash}</p>{shown.currentCheck==='UNAVAILABLE'?<p>현재 원문 또는 대상을 확인할 수 없어 선택과 목적을 표시하지 않습니다.</p>:<><p>{shown.snapshot.purpose}</p><RequestOriginalPreview key={JSON.stringify([key,shown.requestRef])} client={client} projectId={projectId} refs={shown.snapshot.versionRefs} onAuthenticationLost={onAuthenticationLost}/><ul>{shown.snapshot.explicitTargets.map(t=><li key={t.projectId}>{t.projectId} / 당시 프로젝트 v{t.version}</li>)}</ul></>}</section>:null}
  </section>;
 }
