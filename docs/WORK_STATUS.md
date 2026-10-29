@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `a653d4c3ebaf22efe51d6d419b5683c8a58f3e96`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `2ff0fbbf9336ad60e8b2d9f729a73f64543d5563`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 다음 요청/결정 원ref의21번째 내부조합 연결을 사전검토 중이다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 현재 프로젝트 명령·권한영수증·감사 원장전체의 내부보존을 최종WI09D8987D로 단일Primary가 TDD 구현 중이다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9708,3 +9708,18 @@
 - 승인조합 actual대조결과기존Context/Notification은원ref provider를발급하나새승인namespace externalDependency자체는없음(Primary64b290/7d431f). 없는kind/외부결과주입으로시험하지않고Main/독립실DTO대조C0I0로실ApprovalHistory.decisions.declaredRequestRef·consumptions.decisionRef의nonnull2경로만STORED_RELATION dependency로명시추가하는WI최종C3211ECB5933D0C4CB520B3E2A41AA3ACEC23F63AA22421C7BF2CA3D19424B63을발행/GO했다. provider추가0/null원형발명0·ABSENT는원ref공급미확인(행소실/손상판정0),기존scope·기능추적목적내구현보완/공개API·권한변경0. 초기8EA386ED/중간AA59D5F9는문서이력. f80759기존provider5RED0P5F/602.7076ms→fd4788중간38P/type0는이력이며새관계검수완료아님. 같은담당관계반례RED→GREEN연속진행·실제키DB서비스0.
 
 - 승인원ref조합 Main20c425 직접영향41PASS/0FAIL/skip0/1229.8974ms/type·diff0·독립367156 C0/I0/최종4지문일치. 21번째실수집/nonnull원ref등록·nullableissue유지/명시STORED_RELATION2경로exact·원공급미확인·독립충돌확인. 기존child/hash/미판정선언·상한보존,불변collector재실행0/실키DB서비스0. 결과FN16_APPROVAL_HISTORY_COMPOSITION_RESULT_20261029.md/정확8경로게시후다음전체원장선행대조.
+
+- 2ff0fbbf9336ad60e8b2d9f729a73f64543d5563 정확8경로게시(24faeb/f9b341),local/private동일·main불변·trackedclean/보호8보존·PMO전달성공. 다음미수집프로젝트commands/authorization_receipts/audit_events전체metadata의실producer/state/명령없는DENIED·관측·정정/nullable·PII·원문제외/원형hash미존재한계를기존Primary/독립Reviewer가읽기대조중,제품GO전·실제키DB서비스0·전체계획미완료.
+
+### 2026-10-29 FN16 프로젝트 전체 통제원장 내부 보존 준비
+- Mainf8af6e/2567ec와Primary91b339/d85fbd/647d4f·독립f24162/c5a04b실producer대조: PROJECT commands전체21(기존20+draft_id)/동일scope권한영수증9/프로젝트감사16의3표합46열이한RR/FK검수단위다. createProject는일반CommandResult/target/hash식과달라draftcontext없는공식재계산을발명하면안된다. SERVER_DENIAL/CONNECTOR_PROTOCOL/SOURCE_OBSERVATION_PROTOCOL은command없음도정상,4command상태를APPLIED만필터하면안되며correction_of전이효력/이전sequence·감사chain을임의판정하지않는다. 표준HUMAN_APPLIED/CREATE_PROJECT/COMMANDLESS_AUDIT/SCHEMA_ONLY_STATE·UNSUPPORTED_SHAPE를구분해원형효력미검증·issue로보존하는좁은WI준비중/제품GO전·실제키DB서비스0·기존21source변경0.
+
+- 전체통제원장WI8407BB6DB81F7C5216813BE5598C436DD1233AB78B659087B9B0E12B3F70706B 작성/Main804711실생성ProjectDetail·46열대조후Primary/독립preflight중. 통상HUMAN_APPLIED/CREATE_PROJECT/COMMANDLESS3종/SCHEMA_ONLY·UNSUPPORTED형식분리,known위반fallback숨김0·nullable/원형미확인은정확issue/검증미실행보존·가짜VersionRef0. 실제키DB서비스SQL/기존21source변경0/제품GO전·전체목표active.
+
+- 원장WI초기8407BB6D의KNOWN외피식별I1을보완해최종09D8987D7FF1704B57C6E7AA5C68C08824DECF1CE0986306ED5995FB6711710D 발행. APPLIED/createProject operation우선·그외own key 예약5종중1개라도있으면정확CommandResult전체키/값검사/삭제·extra503,흔적없는미지원만정확issue/검증미실행(정상coverage근거0). Main실producer/독립367f89 C0/I0후허용신규3 TDD GO·단일Primary RED→GREEN연속,기존21/SQL/Git·실제키DB서비스/파일IO0·Main코드쓰기0/전체계획미완료.
+
+- 전체원장Primary32e80f 신규2시험13개0PASS/13FAIL은source미구현RED확인. persistProjectReceipt실source의ArtifactRef 결과version=null을확인해임시fixtureversion1을실형식으로보정/VersionRef는실ref.version대조,기존제품기준완화0. 독립신규시험읽기배정·같은담당source구현계속/기존21source·실제키DB서비스SQL/Git0.
+
+- 전체원장1차c2dc24 13PASS/type0후독립/자체I1(동일command정정감사rawtarget노출)을2b5a3a RED로재현·비primaryHUMAN감사를미지원shape/hash·미검증issue로보완했다. ea5d1b16P/정확46열정수시각H·후속최종DTO413,0b24cb회수오류+취소503,7ec145 ArtifactRef상한RED→보완도이력보존. 실제PG15공식문서/REL_15_STABLE JsonEncodeDateTime소스읽기확인후신규stamp만ISOoffset/0~6fraction UTC정규화·마이크로초비절삭을최종WI7DE711DCC09F560F6A5EB7BA9EB869787EF6B895CBB2FF68B0BCCCCC58E45919에추가했다(실DB접속아님/기존collector0). 후보4673e9 20P/type0·EBB8ADD2/4E62936F/456E76B9는중간검수이력이며Main947917에서WI양의연도범위누락(Date분기/연도0)을발견해Primary신규stamp1..9999/4반례최소보완중. Mainfresh는최종후1회만/실제키DB서비스0.
+
+- 전체통제원장 Mainf4fdbc 신규22PASS/0FAIL/skip0/499.2992ms/type·diff0·독립최종C0/I0·최종3지문동결확인. 정정rawtargetI1/46열정규화H·후속metadata/회수503·PGoffset마이크로초보존/양의연도·프로토콜strict유지검증. source1DAD7522/행동A552DBB9/schema456E76B9,실제DB키서비스/기존21source0·현재권한/원payload복원미검증. 결과FN16_PROJECT_CONTROL_LEDGER_INVENTORY_RESULT_20261029.md/정확7경로통합뒤다음선행대조.
