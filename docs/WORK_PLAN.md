@@ -1720,3 +1720,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-30 FN16 본인 제어이력 profile 검수
 
 - WI248A5895/결과 FN16_CONTROL_HANDOFF_HISTORY_PROFILE_RESULT_20261030.md: actualfactory생성/pool-access·실auth후Root신원/최소기한·전체metadataCharge를결박해control27/결합28을실Root/consumer로소비한다. 기본24/26/소스27·원public/collector·gates/본인만/합성false·세대미기록/전체missing유지. Main26P후필수RR/최종RC검증공백I1을추가2P로해소·type/diff0·독립C0I0,기존행동prefixhash불변·단일28전수합산0. 실제DB/FS키서비스/Agent/main활성/공개백업·복원/전체FN16·계획미완료.
+
+### 2026-10-30 UI01 대기 승인 페이지 왕복 한정 검수
+- UI01 기존 보호 GET 카드의 이전/재시도·성공이력/문맥 장벽 보완: WI D6BADB9B·Main dea469 신규7+기존1=8 PASS, ce4a24 누락기존3 별도PASS·reader4/type/diff0·독립C0/I0. 실제 client/project prop 교체·DB/served/사용자인수 NOT_RUN이며 UI01/FN01/Stage B 전체미완료. QA39d3d1정리/598253별도부재, 결과 UI01_PENDING_APPROVAL_PAGINATION_RESULT_20261030.md. 새API/SQL/실키DB서비스0.

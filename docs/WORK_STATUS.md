@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 현재 검증된 게시 checkpoint는 `d97a453673222270acb6e3cafd6b8568066f2950`이며 기존 `codex/av3-stage-b` local/private 동일(6b446a), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 현재 검증된 게시 checkpoint는 `a3718a18fe37ed353b3f47b3c27a23effa090717`이며 기존 `codex/av3-stage-b` local/private 동일(7caded), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9917,3 +9917,25 @@
 
 - Mainab6bf1 추가RR자료/최종RC인증pending2P/1023.7916ms·183e0b type/diff0·5hash일치·독립I1해소최종C0/I0다. 제품3/schema불변·행동70D1AFEB의앞65491B는이전B7EE22AF 정확동일/뒤3835B만추가를Main읽기hash로검산했다. 앞26P/3864.2501ms와뒤2를단일28전수로표기하지않는다. 두phase모두503/selftargetclient1/late1/이후query-release0/old24·IO0이며Root/factory연결구분·제품수정0이다.
 - 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_HISTORY_PROFILE_RESULT_20261030.md. 정확5코드+소유4문서게시준비·Main코드쓰기0/Primarywriter해제/보호8보존. fullmetadata비용동일cap변이RED와EOF편집거절실행0/안전대안·fixture오류이력분리. 실DB/FS키서비스/Agent/main활성/public백업복원/전체계획미완료유지다.
+
+- 2026-10-30 게시 대조: a3718a18은 d97a4536 직접 자식 정확9경로(ef4b7c), non-force private push 후 exact SHA 일치·tracked clean/보호8 보존·main f976 불변(7caded). 결과 C17B7E41/WI248A5895는 정본·source 동일(26dd4d), 기존 Main26+추가2 별도 검증·독립최종C0/I0를 보존한다. PMO 전달 완료. CGA 보완 취소는 유지하며 Anvil 전체 목표는 미완료다. 다음 Stage B 미완료 source/UI 후보 읽기 대조를 기존 Primary에 배정했고 model capacity 오류1회는 수행 미실행/제품실패 아님으로 분리, 동일 역할 한 번 재개 요청했다. 실제 키·DB·서비스·Agent 실행0.
+
+## 2026-10-30 UI01 대기 승인 이전 페이지 보완 착수
+- Main e67d00/독립 검토에서 기존 다음 cursor 덮어쓰기·이전 동작 누락을 확인했다. WI UI01_PENDING_APPROVAL_PAGINATION_IMPLEMENTATION_20261030.md의 코드3경로만 기존Primary에 위임 예정이며 현재 codeGO0. 기존 GET 계약 소비만 보완, 실제 단계/다음행동·새API/DB·키서비스 제외. QA literal ui01-approval-pagination-20261030-01/temp/results·owner Main/Primary·최대30분·확인된 자기경로/프로세스만 정리·서버/포트0을 사전등록했다(982572 부재확인). 기존 apps/web/dist 파생build만 정상갱신하며 원자료/보호8 보존. Primary capacity1회는 재개후 읽기결과 회수, 제품실패0. UI03 확정사건상세 미연결 후보는 후속으로 보존한다.
+
+- UI01 WI D6BADB9B/제품2FE9C1E5 일치·사전독립C0/I0 확인. 현재 HEAD a3718a18·문서dirty만(Main소유)/보호8을e6d73f로대조했다. 단일기존Primary에 정확제품1+신규시험/config2 경로 RED→GREEN GO, Main/Reviewer 제품write0. QA생성직전 부재/link/process 재확인·max30min·in-process합성브라우저만, 실제DB키서비스0을유지한다.
+
+- UI01 Primary 3a4473 경로선확인 누락1: 미확인 apps/web/src/features/projects/project-list-state.ts를 Get-Content -ErrorAction SilentlyContinue로 조회 시도해 exit1/내용0. 실존목록·Leaf검사 없이 추측경로를 추가한 절차오류이며 제품실패/ACL장애아님. 파일·권한변경0/재시도0. 미확인경로탐색을Main으로회수하고 Primary는 WI정확3+이미확인한시험/config/bundle/API의동일변수만사용, 필요심볼은Main에요청하도록교정했다. 허용코드TDD는계속하며같은절차재발시해당단계즉시중단·보고한다.
+
+- UI01 실행심사1회가 '현재 FN16 승인과 무관한 구체 UI01 QA/build 승인근거 없음'으로 실행전거절: 신규spec/config/QA/build/browser0·원제품2FE9불변(e7c60d), 반복/우회0. Main은 현active user goal 전체WORK_PLAN완료·원직접계획내구현/테스트재승인불필요, projectAGENTS10/17/§5.1·SCREEN_WORK UI01 cursor/뒤로(9be310)와 PMO§6 구현/build/로컬QA포함(b1cc97)을 실제대조했다. 새API/권한/DB계약변경없는 기존GET소비 내부누락/사전등록/C0I0를근거로 정상심사 재요청1회만 같은Primary에지시했다. 두번째거절이면추가재시도/우회없이정확범위사용자결정을요청하며이경계를모든작업완료로오인하지않는다.
+
+- UI01 정상재심사1회가 기존전체계획/UI01근거를인정해허용됐다. Primary201e15 build/type exit0·기존chunk500k/NO_COLOR경고보존. 등록QAroot생성2026-10-29T17:26:21.7437284Z ownerSINSAN\cyhuh/link0·최대17:56:21Z, session4991은93d3c0 exit1종료·실제이전버튼부재RED1이다. 제품단일writer구현계속·서버port/실DB키서비스Agent0. 실행거절을우회하지않고근거제시정상재심사로해결했으며직접사용자재승인요청0이다.
+
+- 시간표기정정: e7f869 실제CreationTimeUtc는2026-10-29T17:26:21.7437284Z(10/30 02:26KST), clock17:27:07UTC이다. 위초기기록의UTC날짜를KST날짜로잘못붙인Main오기1을정정했다. QA만료는10/29 17:56:21Z(10/30 02:56KST)이며수명연장0이다.
+
+- UI01 Main중간읽기42ed00: 성공응답전 next/previous가history push/pop하여실패한이전이동도이력이확정되는WI불일치1을발견했다. 완성제출전초안지적이며정식실패3회나인수로세지않는다. 같은Primary에실패3→2반례와요청target/마지막성공position분리또는동등보존을지시, 범위확대/기준완화0. 추가독립중간읽기검수도배정했으며Main코드write0이다.
+
+- UI01 Primary0b9254 실패이전RED→제품requested/성공position분리후2ada3a 신규2P/build0. 0236dd 추가5중4P/401조건1F는정상AuthForm전환후기존GET /api/v1/auth/setup 합성응답미정의1이며Main be2840/d2c020/288f89가AuthForm30/accessrepo116/route32의 {setupRequired:false,policyVersion:1}를확인해시험fixture만보완지시했다. d2c020의rg기존fixture무매치exit1은경로/권한오류아님. 제품4484C274에대해독립코드C0/I0, 직접client/project prop교체와401최종실행은아직미확정으로구분한다. Mainfresh검증/전체단위완료전이며실DB키서비스0이다.
+
+## 2026-10-30 UI01 대기 승인 페이지 왕복 최종 검수
+- Primary3hash동결·writer해제, Main dea469 신규7+기존1=8 PASS/8.2초,420072 reader4 PASS/242.096ms,aa3a77 type/diff0. Maingrep앵커선택오류1로기존3미선택→ce4a24 그3만별도PASS/3.2초,단일11전수로합산0. 독립최종C0/I0·직접client/project prop교체NOT_RUN을구분했다. 39d3d1 exactowner/realpath/link0/process0확인후QA8항목정리·598253독립부재/3hash불변. 실제DB키서비스/WSLserved·사용자인수/전체업무미완료. 변경3+WI/결과/계획/현황4의정확7경로게시예정,다음UI03확정사건상세기존GET표시누락을진행한다.
