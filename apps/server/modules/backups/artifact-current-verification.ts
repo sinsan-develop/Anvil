@@ -278,7 +278,7 @@ async function verifyHistoryInventoryArtifacts(kind:'CONVERSATION'|'KNOWLEDGE',a
 }
 
 /** 실제 조합에 포함된 원문의 현재 상태와 바이트만 확인한다. 전체 백업/복원은 아니다. */
-export async function verifyProjectInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal,baselineContext?:{baselines:ProjectBaselines;csrf:string}){
+export async function verifyProjectInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal,baselineContext?:{baselines:ProjectBaselines;csrf:string;sourceRootHistory?:true}){
  if(baselineContext!==undefined)return verifyFeatureProjectInventoryArtifacts(access,token,value,reader,signal,baselineContext);
  const request=readDocumentInventoryInput(value);let metadataBytes=0,inComposition=false;
  let scope:ReturnType<typeof currentScope>;
@@ -342,9 +342,9 @@ export async function verifyProjectInventoryArtifacts(access:AccessRepository,to
  }catch(error){return scope.normalize(error);}
 }
 
-async function verifyFeatureProjectInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal,baselineContext:{baselines:ProjectBaselines;csrf:string}){
+async function verifyFeatureProjectInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal,baselineContext:{baselines:ProjectBaselines;csrf:string;sourceRootHistory?:true}){
  const request=readDocumentInventoryInput(value),started=performance.now(),requestDeadline=started+request.limits.deadlineMs;
- let capturedContext:{baselines:ProjectBaselines;csrf:string};try{capturedContext=Object.freeze(data(baselineContext,['baselines','csrf']) as {baselines:ProjectBaselines;csrf:string});}catch{throw new AuthFailure('INPUT_INVALID',400);}const rootRemaining=Math.floor(requestDeadline-performance.now());if(rootRemaining<1)throw new AuthFailure('ARTIFACT_CURRENT_DEADLINE',413);
+ let capturedContext:{baselines:ProjectBaselines;csrf:string;sourceRootHistory?:true};try{const descriptors=Object.getOwnPropertyDescriptors(baselineContext),keys=Reflect.ownKeys(descriptors);if(![2,3].includes(keys.length)||keys.some(k=>k!=='baselines'&&k!=='csrf'&&k!=='sourceRootHistory'))throw Error();const values=data(baselineContext,keys as string[]);if(keys.length===3&&values.sourceRootHistory!==true)throw Error();capturedContext=Object.freeze(values as {baselines:ProjectBaselines;csrf:string;sourceRootHistory?:true});}catch{throw new AuthFailure('INPUT_INVALID',400);}const rootRemaining=Math.floor(requestDeadline-performance.now());if(rootRemaining<1)throw new AuthFailure('ARTIFACT_CURRENT_DEADLINE',413);
  const envelope=await composeProjectInventoryForArtifactVerification(access,token,{projectId:request.projectId,limits:{...request.limits,deadlineMs:rootRemaining}},signal,capturedContext),constraints=envelope.readConstraints;
  let effectiveDeadline=Math.min(requestDeadline,constraints.deadlineMonotonicMs),metadataBytes=0,inComposition=false,cleanupUnknown=false;
  const owned=new WeakSet<AuthFailure>(),fail=(code='ARTIFACT_CURRENT_FAILED',status=503):never=>{const e=new AuthFailure(code,status);owned.add(e);throw e;};

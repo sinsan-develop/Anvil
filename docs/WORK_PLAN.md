@@ -1712,3 +1712,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-30 FN16 선택26 원문 consumer 내부 연결 검수
 
 - WI EA6621CB/결과 FN16_FEATURE_BASELINE_ARTIFACT_CONSUMER_LINK_RESULT_20261029.md: 실제 Root26의 frozen 내부 신원/최소기한을 기존 원문 consumer 선택모드가 소비하며 실제 재인증·현재성·D/B/V 직렬회계를 유지한다. 기본24/다른소비자·class/helper·공개계약불변. Main 최초21P·추가보안회수3P를분리하고최종type/diff0·독립검증공백I1해소C0/I0,최종행동07DB73DA·역hash3A3365DA일치다. 실제DB/FS키서비스/Agent·public백업/복원/전체FN16및계획은미완료다.
+
+### 2026-10-30 FN16 소스 위치 선언 역사 profile 검수
+
+- WI B7666F2F/결과 FN16_SOURCE_ROOT_HISTORY_PROFILE_RESULT_20261030.md: 기본24/26 유지·명시server-only true에서만27을실Root/consumer가소비한다. 원read/5표66열·익명metadata·generic2참조미해결·Root-owned인증전용/RR자체단발정리·기한/회계유지. 첫Main31P후DB시각표현I1을보완해최종신규27P/type·diff0/독립C0I0,Root/consumer기존9범위불변을별도보존했다. 실제DB/FS키서비스/Agent/public백업·복원/전체FN16·계획미완료.
