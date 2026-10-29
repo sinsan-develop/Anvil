@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `ce9c79661f41cdc374eab110a3ba987bb2963a26`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `ea98178dfea545dece075149976707522820f963`이며 기존 `codex/av3-stage-b` local/private 동일(74d611), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9793,3 +9793,16 @@
 - 독립검수 I1: creation.sources_json은 실제0042에서artifact_id순인데 신규수집기가선택ordinal순으로대조해역순선택정상자료를거절하는오류를발견했다. 같은Primary에게creation대조목록만정렬하고원선택/ordinal/H는보존하는TDD보완을지시한다. Main25c758의16PASS는보완전증거다. 기존23/SQL/권한변경0이며새정상반례로검증한다.
 
 - 본인 소비초안 최종: 정렬 I1을 보완한 뒤 Main2f3b2e 신규17PASS/type·diff0·독립C0/I0로 검수했다. 원선택/ordinal/hash는 유지하고 creation 비교 copy만 artifactId순이다. 전체guard와소비provenance·11표141열·본인/소비project·선택budget·고정상태비노출을 확인했다. 기존23/SQL/실제DB키서비스·원문은변경하지않았고 미연결/전체미수집·미완료를유지한다. 결과 FN16_PROJECT_CREATION_DRAFT_INVENTORY_RESULT_20261029.md,정확7경로checkpoint.
+
+## 2026-10-29 FN16 본인 제어요청·인계 요약 역사 수집 선행 대조
+
+- 최신 사용자 답변의 취소 대상은 CGA 설계 보완 경로 질문이다. CGA 파일 변경0이며 Anvil 기존 작업계획 완료 지시는 유지한다.
+- 시작 Git은 codex/av3-stage-b / ea98178dfea545dece075149976707522820f963, tracked clean·보호 untracked8 보존이다. 본인 소비 초안 수집의 기존 합성·독립 검수는 반복하지 않았다. 실제 DB·키·서비스·Agent 실행0이다.
+- Primary 읽기 조사와 Main 실제 factory 대조: FN15 forSession의 실제 transaction 안에서만 enabled·정확 0041 checksum·token/CSRF를 확인하고 이후 FOR UPDATE를 사용한다. sourceMode 표식이나 별도 boolean은 이 권위를 증명하지 못한다. 현재 export 그대로 RO 수집 가능으로 판정하지 않는다.
+- 검토 중인 최소 내부 보완은 같은 factory가 캡처한 Pool/access/enabled/checksum을 직접 재사용하는 본인 역사 수집 메서드다. 현재 OWNER+본인 요청, CSRF 필수, 다른 유효 client의 본인 조회만 허용하며 타인/현재 controller 권한 확대0이다. 원 역사 읽기에 현재 재인증·정책·요청 만료 조건을 새로 부과하지 않는다.
+- 세대 전이 원장은 존재하지 않으며 summary의 SYNTHETIC_ONLY·실제 인계/실행 false를 유지한다. 원문·이유·actor/client·인증값 반출0, 새 공개 API·SQL·실제 환경 변경0이다. 담당 Primary는 재사용 함수/최소 범위 읽기, Reviewer는 독립 사전 검수 중이며 제품 코드 GO0이다. 새 오류0, 기존 경로 조사 오류4 이력은 보존한다.
+- FN16 본인 제어요청 역사 WI `38E083695298CE42881E2E1D43FD011DAA93C238B112443C021FFB398CCD4802`의 Main/Primary 사전 대조 및 독립 C0/I0 후 기존 Primary에 정확5코드 RED→GREEN GO를 전달했다. 실제 인증 접점은 caller-owned bounded RC의 authenticateInTransaction이며 authenticated callback 전 무제한 잠금 방식은 채택하지 않았다. 기존 factory/저장·읽기 본문·권한·23조합·실제 환경 불변이다. PMO에 정확 내부 보완과 인증 접점 정정을 전달했고 PMO도 코드 착수/검증 완료와 구분해 접수했다. remote 74d611에서 branch ea98178d/main f976 exact, staged0을 확인했다. 구현 진행 중이며 기능 완료가 아니다.
+- Primary 최초 합성 fixture의 collections 필수4키 누락1회를 보정했고, 제출 b1f4e1은 실제 신규 모듈/메서드 부재 RED 0 PASS/8 FAIL(216.7401ms)이다. 이는 수행자 보고이며 Main GREEN 검증 전이다. 새 승인 경계·도구 거절0, 허용5 구현 진행 중이다.
+
+- Main 직접 cebae8 지정 신규2+FN15 직접4는54 PASS/1035.4418ms/exit0, a13249 type/diff0, 2fbeb8 원 forSession/run/PgContext·summary 본문 불변을 확인했다. 독립 첫 C0/I0 이후 Main이 최종 DTO 직렬화 뒤 기한 재검사 누락을 지적했고 독립 재대조 Important1로 정정했다. 직렬화 중 요청/세션 최소기한이 지나도 성공을 반환할 수 있으므로 이 상태로 게시하지 않는다. 같은 Primary에 허용5 내 반환 직전 검사·시계만 진전시키는 신규 RED→GREEN 반례를 배정했다. 기존54 PASS는 해당 경계 미검수 이력이며 최종 합격이 아니다. 제품 결함1, 실제 DB/키/서비스 영향0이다.
+- FN16 본인 제어요청 역사 최종: 직렬화 I1 cb4267 RED→한정 보완, Main022c10 지정55 PASS/1772.8064ms·96e285 type/diff0·독립최종C0/I0·5지문일치. 현재OWNER+본인SQL/원factory gate·CSRF/原bundle·200+1/누적기한검사 소스 단위만 검수했다. 기존23미연결·전체미수집/합성false 유지, 실제DB키서비스·PG/OS기한/회수·UI/복원 미검증. 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_OWN_HISTORY_INVENTORY_RESULT_20261029.md.

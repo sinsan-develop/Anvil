@@ -301,3 +301,10 @@ export async function readControlHandoffSummary(value: unknown,
     throw new HandoffSummaryStoreFailure('HANDOFF_READ_FAILED', null);
   }
 }
+
+/** 내부 역사 수집의 원 bundle 검산만 수행한다. 현재 권한·실행 허가는 발급하지 않는다. */
+export function verifyStoredControlHandoffHistoryBundle(value:unknown,request:ControlRequestSnapshot,expectedRef:SummaryRef):HandoffSummaryResult {
+ const bundle=copy(value,null);if(!recordV1(bundle,['summary','command','receipts','audits']))return fail('HANDOFF_BUNDLE_INVALID',null);
+ const row=checkedRow(bundle.command,null),command=commandInput({schemaVersion:1,operation:'prepareControlHandoff',commandId:row.commandId,projectId:row.projectId,clientId:row.clientId,payload:{requestRef:row.requestRef}});
+ return verifiedSummaryBundle(bundle,request,command,expectedRef);
+}

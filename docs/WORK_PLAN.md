@@ -1687,3 +1687,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 본인 소비 프로젝트 초안metadata 착수: WI60FA9EAB·사전C0I0,신규3 TDD. 개인자료 own+consumedproject 제한·전체guard/선택provenance 분리·11표141열. 타creator/미소비/미선택UNKNOWN·quota/원문은제외,실제DB키서비스·0042·UI·복원미검증.
 
 - 2026-10-29 FN16 본인 소비초안/선택귀속metadata:11표141열·전체guard/소비provenance분리·원선택순서보존 구현. Main17합성PASS/type0·독립C0/I0. 실제DB권한/0042/원문/쓰기proof·UI·복원 미검증·23미연결/전체미수집유지. 결과 docs/04_test_reports/AV3/FN16_PROJECT_CREATION_DRAFT_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 본인 제어요청·인계 역사metadata 착수: WI38E08369·사전독립C0/I0, 기존2+신규3 코드만 단일 Primary에 배정. 원factory gate/CSRF·caller-owned boundedRC와 본인SQL선필터·원bundle검증을 보존한다. 기존23조합/전체미수집·합성false 유지, 실제DB·키·서비스·Agent·UI/복원 미검증이다.
+- FN16 본인 제어요청 역사 최종: 직렬화 I1 cb4267 RED→한정 보완, Main022c10 지정55 PASS/1772.8064ms·96e285 type/diff0·독립최종C0/I0·5지문일치. 현재OWNER+본인SQL/원factory gate·CSRF/原bundle·200+1/누적기한검사 소스 단위만 검수했다. 기존23미연결·전체미수집/합성false 유지, 실제DB키서비스·PG/OS기한/회수·UI/복원 미검증. 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_OWN_HISTORY_INVENTORY_RESULT_20261029.md.
