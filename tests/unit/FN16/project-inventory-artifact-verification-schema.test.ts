@@ -1,0 +1,4 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
+test('projectArtifactsSchema 실제조합·기존비공개검증·명시열·쓰기0',()=>{const s=readFileSync(new URL('../../../apps/server/modules/backups/artifact-current-verification.ts',import.meta.url),'utf8'),f=s.slice(s.indexOf('export async function verifyProjectInventoryArtifacts'));assert(f.length>100);assert(s.includes("from './project-inventory-composition.ts'"));assert(f.includes('composeProjectInventory('));assert(f.includes('scope.verify('));assert(f.includes('scope.boundary(verified)'));assert(f.includes('project_id,conversation_id,id,sequence,content_hash,body_artifact_id,message_json,redaction_state'));assert(!/\b(?:INSERT INTO|UPDATE anvil|DELETE FROM|CREATE TABLE|GRANT SELECT)\b/.test(f));assert(!/readFile|createBackup|saveBackupPolicy|Promise\.race/.test(f));});

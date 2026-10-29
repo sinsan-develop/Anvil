@@ -1,3 +1,4 @@
+import {composeProjectInventory} from './project-inventory-composition.ts';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
@@ -272,5 +273,69 @@ async function verifyHistoryInventoryArtifacts(kind:'CONVERSATION'|'KNOWLEDGE',a
    inventory:{observation:{snapshot:inventory.observation.snapshot,startedAt:inventory.observation.startedAt,finishedAt:inventory.observation.finishedAt,isolation:inventory.observation.isolation,readOnly:inventory.observation.readOnly,authBoundary:inventory.observation.authBoundary},contentHash:inventoryHash,metadataComplete:inventory.metadataComplete,issueCount:inventory.issues.length,externalDependencyCount:inventory.externalDependencies.length},artifacts,
    usage:{fileCount:selected.length,inputBytes,verifiedCount:verified.length,unverifiedCount:selected.length-verified.length,verifiedBytes,metadataBytes:0},atomicSnapshotVerified:false,fullProjectCoverage:false,restorable:false};
   for(let i=0;i<17;i++){scope.check();const size=Buffer.byteLength(canonicalJson(result));if(size>request.limits.metadataBytes)limit();if(size===result.usage.metadataBytes){scope.check();return result;}result.usage.metadataBytes=size;}return invalid();
+ }catch(error){return scope.normalize(error);}
+}
+
+/** 실제 조합에 포함된 원문의 현재 상태와 바이트만 확인한다. 전체 백업/복원은 아니다. */
+export async function verifyProjectInventoryArtifacts(access:AccessRepository,token:string,value:unknown,reader:ArtifactByteReader,signal:AbortSignal){
+ const request=readDocumentInventoryInput(value);let metadataBytes=0,inComposition=false;
+ let scope:ReturnType<typeof currentScope>;
+ const limit=():never=>scope.stop('PROJECT_ARTIFACT_INVENTORY_LIMIT',413),invalid=():never=>scope.stop('ARTIFACT_CURRENT_INTEGRITY_FAILED',503);
+ const remainingMetadata=()=>{scope.check();const n=request.limits.metadataBytes-metadataBytes;if(n<1)limit();return n;};
+ const charge=(n:number)=>{if(!integer(n,0)||n>request.limits.metadataBytes-metadataBytes)limit();metadataBytes+=n;};
+ const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+ const artifactSql='SELECT id,project_id,draft_id,bytes,content_hash,media_type,storage_key,state,inspection_json FROM anvil.artifacts WHERE project_id=$1 AND id=$2';
+ // 이 진입점의 RC만 감싼다. 기존 helper의 SQL/반환형과 다른 호출자는 바꾸지 않는다.
+ const metered={pool:access.pool,authenticated:async<T>(given:string,csrf:string|null,operation:(db:PoolClient,a:AuthenticatedIdentity)=>Promise<T>):Promise<T>=>access.authenticated(given,csrf,async(db,a)=>{
+  const proxy={query:async(sql:string,values:unknown[]=[])=>{
+   if(!inComposition&&sql===artifactSql){const cap=remainingMetadata(),r=await db.query(`WITH inventory_row AS (${artifactSql} LIMIT 1) SELECT CASE WHEN octet_length(to_jsonb(inventory_row)::text)<=$3::bigint THEN to_jsonb(inventory_row) ELSE NULL END AS inventory_data,octet_length(to_jsonb(inventory_row)::text) AS row_bytes FROM inventory_row`,[...values,cap]);
+    if(!Array.isArray(r.rows)||r.rows.length>1)invalid();const rows:Record<string,any>[]=[];for(const raw of r.rows){const e=data(raw,['inventory_data','row_bytes']);const n=typeof e.row_bytes==='string'&&/^[0-9]+$/.test(e.row_bytes)?Number(e.row_bytes):e.row_bytes;charge(n);if(!e.inventory_data)limit();rows.push(e.inventory_data);}return{...r,rows};
+   }
+   const r=await db.query(sql,values);if(!inComposition&&!sql.includes('set_config')){if(!Array.isArray(r.rows))invalid();charge(Buffer.byteLength(JSON.stringify(r.rows)));}return r;
+  }}as unknown as PoolClient;return operation(proxy,a);
+ })}as unknown as AccessRepository;
+ scope=currentScope(metered,token,{projectId:request.projectId,deadlineMs:request.limits.deadlineMs},signal);
+ try{
+  await scope.boundary([]);let composition:Record<string,any>;
+  try{inComposition=true;composition=await composeProjectInventory(scope.guardedAccess,token,{projectId:request.projectId,limits:{...request.limits,metadataBytes:remainingMetadata(),deadlineMs:scope.remaining()}},signal);}
+  catch(error){const codes:Record<string,number>={PROJECT_INVENTORY_CANCELLED:409,PROJECT_INVENTORY_DEADLINE:413,PROJECT_INVENTORY_LIMIT:413,PROJECT_INVENTORY_REFERENCE_CONFLICT:503,PROJECT_INVENTORY_FAILED:503,INPUT_INVALID:400,AUTH_REQUIRED:401,NOT_FOUND:404};if(error instanceof AuthFailure&&codes[error.message]===error.statusCode)scope.stop(error.message,error.statusCode);scope.stop('PROJECT_INVENTORY_FAILED',503);}
+  finally{inComposition=false;}
+  charge(composition!.usage.metadataBytes);scope.check();await scope.boundary([]);
+  const refs=new Map<string,Readonly<HistoryRef>>(),sources=new Map<string,string[]>(),messageRefs=new Map<string,{id:string;conversationId:string;contentHash:string}>(),blocked=new Map<string,Set<string>>(),initialQuarantine=new Set<string>();let inputBytes=0;
+  if(composition!.kind!=='PROJECT_INVENTORY_COMPOSITION_V1'||composition!.projectId!==request.projectId||!Array.isArray(composition!.references)||!Array.isArray(composition!.components)||!Array.isArray(composition!.issues)||!Array.isArray(composition!.notCollected))invalid();
+  for(const entry of composition!.references){scope.check();if(entry.projectId!==request.projectId)invalid();if(entry.namespace==='ARTIFACT'){
+    const r=data(entry.ref,['artifactId','bytes','contentHash','mediaType']);if(!validUuid(r.artifactId)||!integer(r.bytes,0,20*1024*1024)||typeof r.contentHash!=='string'||!/^[a-f0-9]{64}$/.test(r.contentHash)||typeof r.mediaType!=='string'||r.mediaType.length<1||r.mediaType.length>200||refs.has(r.artifactId)||!Array.isArray(entry.sources))invalid();
+    if(refs.size>=request.limits.fileCount||inputBytes>request.limits.inputBytes-r.bytes)limit();inputBytes+=r.bytes;refs.set(r.artifactId,Object.freeze(r as HistoryRef));sources.set(r.artifactId,[...entry.sources]);
+   }else if(entry.namespace==='CONVERSATION_MESSAGE'){
+    const r=data(entry.ref,['id','contentHash']),sc=data(entry.scope,['conversationId']);if(!validUuid(r.id)||!validUuid(sc.conversationId)||typeof r.contentHash!=='string'||!/^[a-f0-9]{64}$/.test(r.contentHash)||messageRefs.has(r.id))invalid();messageRefs.set(r.id,{id:r.id,conversationId:sc.conversationId,contentHash:r.contentHash});
+   }}
+  if(composition!.usage.fileCount!==refs.size||composition!.usage.inputBytes!==inputBytes)invalid();
+  const block=(id:string,reason:string)=>{const reasons=blocked.get(id)??new Set<string>();reasons.add(reason);blocked.set(id,reasons);};
+  for(const item of composition!.issues){const issue=item.issue;if(!issue||typeof issue.code!=='string')invalid();if(['ARTIFACT_NOT_READY','ARTIFACT_INSPECTION_UNKNOWN'].includes(issue.code)){const r=refs.get(issue.ref?.artifactId);if(!r||!same(r,issue.ref))invalid();block(r!.artifactId,issue.code);}else if(item.source==='Conversation'&&issue.code==='MESSAGE_QUARANTINED'){const m=messageRefs.get(issue.ref?.id);if(!m||issue.ref.kind!=='CONVERSATION'||m.contentHash!==issue.ref.contentHash)invalid();initialQuarantine.add(m!.id);}}
+  const bindings=new Map<string,{messageId:string;conversationId:string;sequence:number;bodyRef:Readonly<HistoryRef>}>();
+  async function currentMessages(wanted:readonly Readonly<HistoryRef>[]|null,initial=false){
+   const ids=wanted===null?[...messageRefs.keys()]:[...bindings.values()].filter(m=>wanted.some(r=>r.artifactId===m.bodyRef.artifactId)).map(m=>m.messageId);if(!ids.length)return;ids.sort();
+   await scope.guardedAccess.authenticated(token,null,async(db,actor)=>{
+    async function query(sql:string,values:unknown[]=[]){scope.check();await db.query("SELECT set_config('statement_timeout',$1,true)",[String(Math.min(2147483647,scope.remaining()))]);scope.check();const r=await db.query(sql,values);scope.check();return r;}
+    const iso=(await query("SELECT current_setting('transaction_isolation') AS isolation")).rows;if(iso.length!==1||iso[0]?.isolation!=='read committed')invalid();const member=await projectMember({query}as unknown as PoolClient,actor,request.projectId,false);if(member.id!==request.projectId||member.archived_at!==null||member.participation!=='OWNER')scope.stop('NOT_FOUND',404);
+    const clock=(await query('SELECT clock_timestamp() AS at')).rows;if(clock.length!==1||!(clock[0]?.at instanceof Date)||!Number.isFinite(clock[0].at.getTime()))invalid();
+    for(let i=0;i<ids.length;i+=200){const batch=ids.slice(i,i+200),cap=remainingMetadata(),result=await query(`WITH inventory_row AS (SELECT project_id,conversation_id,id,sequence,content_hash,body_artifact_id,message_json,redaction_state FROM anvil.conversation_messages WHERE project_id=$1 AND id=ANY($2::uuid[]) ORDER BY id LIMIT 200) SELECT CASE WHEN octet_length(to_jsonb(inventory_row)::text)<=$3::bigint THEN to_jsonb(inventory_row) ELSE NULL END AS inventory_data,octet_length(to_jsonb(inventory_row)::text) AS row_bytes FROM inventory_row ORDER BY inventory_row.id`,[request.projectId,batch,cap]);
+     if(!Array.isArray(result.rows)||result.rows.length!==batch.length||result.rows.length>200)invalid();const seen=new Set<string>();for(const raw of result.rows){const envelope=data(raw,['inventory_data','row_bytes']),n=typeof envelope.row_bytes==='string'&&/^[0-9]+$/.test(envelope.row_bytes)?Number(envelope.row_bytes):envelope.row_bytes;if(!integer(n,1)||n>cap||!envelope.inventory_data)limit();const row=data(envelope.inventory_data,['project_id','conversation_id','id','sequence','content_hash','body_artifact_id','message_json','redaction_state']),expected=messageRefs.get(row.id);if(!expected||!batch.includes(row.id)||seen.has(row.id)||row.project_id!==request.projectId||row.conversation_id!==expected.conversationId||row.content_hash!==expected.contentHash)invalid();
+      const sequence=typeof row.sequence==='string'&&/^[1-9][0-9]*$/.test(row.sequence)?Number(row.sequence):row.sequence;if(!integer(sequence,1))invalid();
+      const snap=data(row.message_json,['conversationId','targetRoleRef','message','sourceRefs','serverSequence','authorRef']),author=data(snap.authorRef,['kind','userId']);const parsed=readConversationInput({conversationId:snap.conversationId,targetRoleRef:snap.targetRoleRef,message:snap.message,sourceRefs:snap.sourceRefs},request.projectId);if(snap.conversationId!==expected!.conversationId||snap.serverSequence!==sequence||author.kind!=='HUMAN'||!validUuid(author.userId)||contentHash(canonicalJson(snap))!==expected!.contentHash)invalid();
+      const body=refs.get(parsed.message.bodyRef.artifactId);if(!body||row.body_artifact_id!==body.artifactId||!same(body,parsed.message.bodyRef))invalid();if(!['NOT_REDACTED','QUARANTINED'].includes(row.redaction_state))invalid();if(row.redaction_state==='QUARANTINED'&&!initialQuarantine.has(row.id))scope.stop('ARTIFACT_CURRENT_BLOCKED',412);
+      if(initial){bindings.set(row.id,{messageId:row.id,conversationId:expected!.conversationId,sequence,bodyRef:body!});if(initialQuarantine.has(row.id))block(body!.artifactId,'MESSAGE_QUARANTINED');}else{const old=bindings.get(row.id);if(!old||old.sequence!==sequence||!same(old.bodyRef,body))invalid();}seen.add(row.id);
+     }
+    }
+   });scope.check();
+  }
+  await currentMessages(null,true);
+  const artifacts:Array<Record<string,any>>=[],verified:Readonly<Input>[]=[];let verifiedBytes=0;
+  for(const r of refs.values()){scope.check();const reasonCodes=blocked.get(r.artifactId);if(reasonCodes){artifacts.push({ref:r,sources:sources.get(r.artifactId),status:'NOT_VERIFIED',reasonCodes:[...reasonCodes].sort(),sourceState:null,sourceInspectionStatus:null});continue;}
+   await currentMessages([r]);const wanted=readInput({projectId:request.projectId,...r,maxBytes:request.limits.inputBytes,deadlineMs:scope.remaining()}),verification=await scope.verify(wanted,reader);charge(Buffer.byteLength(canonicalJson(verification)));verified.push(wanted);verifiedBytes+=wanted.bytes;artifacts.push({ref:r,sources:sources.get(r.artifactId),status:'VERIFIED',verification});
+  }
+  await currentMessages(verified);await scope.boundary(verified);scope.check();
+  const result={kind:'PROJECT_INVENTORY_ARTIFACT_VERIFICATION_V1',projectId:request.projectId,composition:{compositionHash:composition!.compositionHash,observation:composition!.observation,components:composition!.components,issues:composition!.issues,notCollected:composition!.notCollected,dependencies:composition!.dependencies,limits:request.limits},artifacts,usage:{fileCount:refs.size,inputBytes,verifiedCount:verified.length,unverifiedCount:refs.size-verified.length,verifiedBytes,metadataBytes:0},atomicSnapshotVerified:false,fullProjectCoverage:false,restorable:false,authorizationRestoration:false,executionAuthorized:false,dispatchPerformed:false};
+  for(let i=0;i<17;i++){scope.check();const size=metadataBytes+Buffer.byteLength(canonicalJson(result));if(size>request.limits.metadataBytes)limit();if(result.usage.metadataBytes===size)return result;result.usage.metadataBytes=size;}return invalid();
  }catch(error){return scope.normalize(error);}
 }
