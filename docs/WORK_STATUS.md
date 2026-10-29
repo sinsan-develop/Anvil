@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `d80946a32e109094611c933b449b567bfcd5ee38`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `63f946e14c7877b3d07517b0bebdd61b03f2cb51`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 다음 수집 원문 현재상태·바이트 검증 연결을 읽기 대조 중이다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 다음 미수집 프로젝트 정책·승인/감사 자료군의 내부 보존 선행을 읽기 대조 중이다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9668,3 +9668,12 @@
 - 원문연결 Primary8d747c 신규2시험10개 0PASS/10FAIL/skip0/371.3005ms RED는 verifyProjectInventoryArtifacts 미구현 확인이며 실제서비스장애가아니다. 시작source9EF2A9F0E8961817F3F18EB484AF244CBF08156C8EFA76B507D8927FF6977FFE 직접캡처/ Main5b2999일치. 동일담당source구현연속진행·독립시험읽기배정,기존완료검사재실행0/실제자원변경0.
 
 - 조합원문연결 Main94e844 신규13PASS/0FAIL/skip0/1078.4564ms/type·diff0, 독립97b383 C0/I0·최종3지문동결확인. 기존helper본문시작9EF2A9F0불변/추가import+함수만. 공유IO1/최초차단공유IO0/후속변경실패·추가metadata최종단계초과/close불명+취소503확인. 실제키DB서비스/원문FS·전체백업복원UI미검증. 결과FN16_PROJECT_INVENTORY_ARTIFACT_VERIFICATION_RESULT_20261029.md, 정확7경로checkpoint뒤다음선행선정.
+
+- 63f946e14c7877b3d07517b0bebdd61b03f2cb51 정확7경로게시(71c3c1/f72f76),local/private동일·main불변·trackedclean/보호8보존/PMO전달성공. 다음미수집정책·일회승인/명령·auth영수증/감사원장의실schema·producer와원문/비밀제외·hash/범위를기존Primary와독립reviewer가읽기대조중이며제품GO전이다. 새로운API/정책/영속계약158E10은미채택유지·실제키DB서비스0/전체목표active.
+
+### 2026-10-29 FN16 권한정책 역사 내부 보존 착수
+- Main0d77fb/88bf62/de4f55/c3b8ca/0db7c1의 실제 schema·producer·sourceScopes와 Primary/독립 대조에서 정책2표 전체버전+해당savePermissionPolicy 선택명령20열/권한영수증9열/감사16열을다음단위로고정했다. auth_audit_events는projectId가없어조회제외·전체원장수집아님. 초기WI6A8E577F의version별rule주체검사I1을보완해최종A420B5E43105892E8869351D53D76EFFE7F37E39B025FF09E6B516F5A4214868/독립0aa85f C0/I0·Primaryf7d2e3대조후신규source1/test2 TDD GO. 명시증거version은과거작성자와rule주체대조(현재OWNER비교0),양null은원인불명/producer검증미실행보존,한쪽null503. 과거만료/빈rules/시각역전보존·원hash검증후PII경로투영/권한복원false. 기존19조합·actual키DB서비스·SQL/Git쓰기0,Main동시코드쓰기0·전체FN16미완료.
+
+- 정책역사 Primary6dc28b 신규2시험11개0PASS/11FAIL/skip0/180.5448ms RED는source미구현확인이다. 과거만료/작성자변경·시각역전/빈규칙·양null·실행scope·선택증거·201keyset·권한/기한/회수 반례를작성하고같은담당source구현계속. 독립읽기시험검수배정,기존조합·제품source수정0/실제DB키서비스0/Git0.
+
+- 정책역사 Main913dcb 신규11PASS/0FAIL/skip0/497.7219ms/type·diff0·독립a8c05c C0/I0/최종3지문일치. fixture생성가능시각보완·실표식민감재봉인거절·원inventoryHash7필드확인. 보호8cd615e SHA일치. source497630CF/행동95C96B2F/schema8D8C1CBB,실제DB키서비스0/전체원장·권한복원미검증. 결과FN16_PERMISSION_POLICY_INVENTORY_RESULT_20261029.md/정확7경로통합뒤기존조합참조연결검토.
