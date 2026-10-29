@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "PMO_LIMITED_B_ADOPTED_SOURCE_SYNTHETIC",
+  "authority": "USER_DELEGATED_PMO_DECISION",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "packetPath": "docs/work_packages/FN16_KNOWLEDGE_SHARE_PROTECTED_INVENTORY_DECISION_PACKET_20261029.md",
+  "packetSha256": "023B6BDFDF9D45DBE04667B885CA88940019AEC5141919C4EF99E34B9644CB3E",
+  "recordedAt": "2026-10-29T15:21:29.4266079+09:00",
+  "scope": [
+    "B 보호수집 상세 계약·허용 파일·보안 반례 WI 독립검토",
+    "기존 단일 Primary source·합성 구현·Main 검수/통합"
+  ],
+  "required": [
+    "본인만·타인/source접근상실 동일404·존재/건수 비노출",
+    "확인불가 본인은 기존 최소봉투 외 상세·건수·시각·정책 비노출",
+    "eligible은 기존 권한·정확원문hash·격리·세션 동등 검증과 최초최종재대조",
+    "신뢰 검사 공급자/RO 동등성 불가 시 원형 미수집·미검증"
+  ],
+  "excluded": [
+    "실제DB·키·권한·서비스·Agent·파일IO·대상/원문조회·공유전송 실행",
+    "새 공개API·기존FN05조회/0051/정책/인증 변경",
+    "타인/접근불가 원형 권한 확대C",
+    "158E10BC 채택·전체FN16/복원 완료"
+  ]
+}
