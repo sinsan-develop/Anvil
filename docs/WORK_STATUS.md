@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 현재 검증된 게시 checkpoint는 `27b79b7c6414e865a0ec23cff293e7c3eab70d0e`이며 기존 `codex/av3-stage-b` local/private 동일(1dfa64), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 현재 검증된 게시 checkpoint는 `a3982052ad04561ca9f9573494c05d5954fef49d`이며 기존 `codex/av3-stage-b` local/private 동일(3aa92c), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9982,3 +9982,18 @@
 
 ## 2026-10-30 UI10 원문 미리보기 최종 검수
 - setup회수I1은신규시험한정수정·BUILD/LAUNCH전안전fault각exit1/env복구/QA0·정상82ea8d/b08776 Node8PASS·독립scopedC0/I0로해소. Main a2c946/0ebd39/d31261 session15482 자식7+부모1 Node8PASS/0skip/18684.4276ms·환경복구/QA_REMOVED,16b744/c538d2 표준Webbuild타입포함/473module/801ms/diff0. a436cc 별도root/process0·최종3hash불변. 실제HTTP/bodypending·DBserved/사용자인수/OS불명close실패는미검증·실제키서비스Agent0. 코드3+WI/결과/계획/현황4 정확7경로게시예정,전체미완료/미채택기존질문반복0.
+
+- UI10 a3982052는27b79b7c 직접자식정확7경로(3d148f),3aa92c local/private동일·trackedclean/보호8불변/mainf976불변. 결과503BB9A9/WIAEC0AE85·Main자식7+부모1 Node8PASS/표준Webbuild타입포함/diff0·독립I1해소C0/I0·a436cc QA/process0을PMO에전달한다. 실제HTTP/DB/served/전체인수미검증. 다음은명시제외prepareExecution의준비본저장한정승인계약을실코드로구체화할읽기조사이며코드GO0·HUMAN R2기존질문반복0/실제Agent실행권한채택0이다.
+
+- Main경로절차예외0cfe06: 실제목록확인전추측 apps/web/src/features/approvals 인자를rg --files에넣어oserror2/그경로내용0을발생시켰다. 뒤독립hash명령exit0이초기경로오류를없애지않는다. Main기존누적7+이번1=8(구분된과거이력포함),파일/ACL/권한변경0·같은경로재시도0. 해당추측경로탐색단계를즉시중단하고새탐색은이미확인된고정root의rg --files 전체목록에서선택한동일문자열을Leaf확인후본문조회하는방식으로만재개한다. 새로운폴더인자추정/문자열축약재입력/오류숨김금지,일반코드/전체목표완료나외부환경장애로오인0. source후보문서작성은확인된근거만사용하며현재codeGO0다.
+
+- Main직접검색예외47505b: 고정root목록필터의경로치환을정규식-replace로작성하면서역슬래시escape를잘못주어InvalidOperation이한명령의파일루프에서여러번반복됐다. 본문선택/조회0·파일/권한/ACL변경0·실행중handle없음,뒤명령/exit0이초기실패를없애지않는다. 같은근본오류반복기준에따라해당Main경로필터/신규탐색단계를즉시중단했고동일명령재실행0이다. 원인fingerprint=MAIN_PATH_NORMALIZATION_REGEX_ESCAPE·한번의명령안다수오류이며개별제품실패로세지않는다. 후속은이전에5b711e로이미확인한정확ApprovalsPage경로의읽기대조를기존subagent에위임,Main은새경로추정/정규식정규화없이기존근거로예외·판정/결정문서만작성한다. 새권한/환경수정이나전체작업완료로오인하지않으며PMO에지원/예외근거를공유한다.
+
+## 2026-10-30 실행 준비 승인 저장 한정 결정안 작성
+- FN09_PREPARE_EXECUTION_APPROVAL_DECISION_PACKET_20261030.md를DRAFT/NOT_ADOPTED로작성·codeGO0. 기존73DD668F명시제외·요청payload/보호GET/승인소비·저장guard 변경을입증했다. AUTO서버저장은기존가능·REQUIRE_APPROVAL만미연결,cap/budget는형식ref/미검증유지. 권장A는정확후보보관/UI08원문/prepare저장소비/미적용SQL·합성만이며UI04유효ref공급자·HUMANR2채택·실DB/키서비스Agent는제외한다. hash-only로내용검토를주장하지않는다. 독립검토후PMO에정확결정지원요청하며이미질문한HUMANR2반복0,임의UUID폼/가짜진도0이다.
+
+- FN09결정안C25BFCE7은양측사전C0/I0. r2에서현재client/control검사가상위명령처리/현재제어와authorizeMaterial전체경로임을정확화하고7ref음성은문법/후보변조/기존관계검증만으로한정했다. cap/budget실체검증/HUMANR2채택을발명하지않으며A/B/공개계약delta/제외/codeGO0은불변이다. 정확r2hash로scoped재대조후PMO결정지원을요청한다.
+
+- FN09결정안r2 4B8455AE는최종scoped독립C0/I0·A/B/제외/코드GO0이일치했다. PMO에정확문서/hash·기존73DD명시제외/공개data·소비계약delta와권장A채택결정을요청했다. 위임범위밖이면그정확사실만회신받고직접사용자결정경계를처리한다. 이는PMO의다음작업배정을기다리는것이아니며HUMANR2기존질문반복0,실제AUTO런타임준비는미검증인코드기준사실이다. 채택전해당제품구현0·독립계획항목조사는계속한다.
+
+- PMO최종turn01a188fe-5f5b-7ed0-9f72-68660df60628/revision3 completed를실제wait_threads로확인했다. r2 A안을권장하지만기존명시제외·공개data계약변경이라신산님직접결정필요로판정,PMO대화에서A/B승인을한번요청했다. Main회신tool은자동심사에서'신산님명시메시지전송승인미확인'으로거절/전달0·재시도0이라고PMO가보고했으며Main은읽기로만사실확인했다. A채택/직접답변은아직없음·codeGO0. 이대화중복질문/전송우회/기존HUMANR2질문반복0,영향없는기존승인미완료기능의source대조는계속한다. 전체계획소진/완료나실제환경복구로오인하지않는다.
