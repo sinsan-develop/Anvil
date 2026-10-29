@@ -1675,3 +1675,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 연결·환경 후보 이력 내부 수집 착수: WI258B3E5B·Primary/독립C0I0로 신규3코드 TDD 배정. 프로젝트 후보2표·선택증빙만,실등록/소스root·키·서비스 미수집. 공유요청 원형/최소봉투는 기존무결성·RO동등성미확인으로 별도미구현 유지.
 
 - 2026-10-29 FN16 후보 이력 수집: 정확63열·과거버전/원hash·명령증빙·익명투영 구현, payloadHash I1 보완 후 Main16합성PASS/type0·독립C0/I0. 실제키DB서비스/등록·22조합/원형복원/UI 미완료. 결과 docs/04_test_reports/AV3/FN16_CONNECTION_CANDIDATE_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 후보 조합 연결 착수: WI D69CBE21·독립/Primary C0I0, 기존22뒤23번째 actual수집 및실책임세션연결후보참조만해소. 환경/실등록alias·미수집항목삭제0. 허용4코드TDD·직접4시험검수예정.
+
+- 2026-10-29 FN16 후보 조합 연결:23번째실수집/원7hash/실책임세션 연결후보원ref만해소. Main53합성PASS/type0·독립C0/I0. 환경/실등록alias·미수집삭제0,실제DB키서비스/원형복원/UI미검증. 결과 docs/04_test_reports/AV3/FN16_CONNECTION_CANDIDATE_COMPOSITION_RESULT_20261029.md.
