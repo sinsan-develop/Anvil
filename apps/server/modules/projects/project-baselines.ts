@@ -150,10 +150,13 @@ export class ProjectBaselines {
     || item.coreEvidence !== null && item.coreEvidence.checkedAt > reviewedAt;
   })) throw new AuthFailure('BASELINE_REVIEW_MISMATCH', 422);
  }
- async #reviewSources(db: PoolClient, actor: AuthenticatedIdentity, pid: string, draft: BaselineDraftInput, input: BaselineContentReview) {
+ async #reviewSources(db: PoolClient, actor: AuthenticatedIdentity, pid: string, draft: BaselineDraftInput, input: BaselineContentReview, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   const reviewed = structuredClone(draft);
   reviewed.items = reviewed.items.map(item => ({ ...item, evidenceRefs: input.items.find(candidate => candidate.itemId === item.itemId)!.evidenceRefs }));
-  await this.#basis(db, actor, pid, reviewed);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  if(backupBudget===undefined)await this.#basis(db, actor, pid, reviewed);else await this.#basis(db, actor, pid, reviewed,backupBudget);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
  }
  async #review(db:PoolClient,actor:AuthenticatedIdentity,row: any) {
   try {
@@ -222,14 +225,17 @@ export class ProjectBaselines {
   const stored = await this.#loadDraft(db, actor, pid, id, version);
   return { ...stored, currentCheck: await this.#currentCheck(db, actor, pid, stored.snapshot), contentConfirmed: false, ...flags, observedAt: new Date().toISOString() };
  }
- async read(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number) {
+ async read(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   await projectMember(db, actor, pid);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if (!uuid(id) || !Number.isSafeInteger(version) || version < 1) throw new AuthFailure('INPUT_INVALID', 400);
   const rows = (await db.query(baselinesSelect + 'WHERE b.project_id=$1 AND b.id=$2 AND b.version=$3', [pid, id, version])).rows;
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if (!rows.length) throw new AuthFailure('NOT_FOUND', 404);
   if (rows.length !== 1) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
   const row = rows[0];
-  if (row.baseline_kind === null) return { projectId: pid, status: 'LEGACY_UNVERIFIED' as const, ref: null, legacyRef: { id, version, contentHash: row.content_hash }, snapshot: null, contentConfirmed: false, currentCheck: { state: 'UNAVAILABLE', issues: ['LEGACY_BINDING_MISSING'] }, ...flags };
+  if (row.baseline_kind === null) { const legacy={ projectId: pid, status: 'LEGACY_UNVERIFIED' as const, ref: null, legacyRef: { id, version, contentHash: row.content_hash }, snapshot: null, contentConfirmed: false, currentCheck: { state: 'UNAVAILABLE', issues: ['LEGACY_BINDING_MISSING'] }, ...flags };if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return legacy;}
   let stored: { ref: VersionRef; snapshot: any };
   const evidenceReviews: BaselineContentReview[] = [];
   try {
@@ -240,42 +246,62 @@ export class ProjectBaselines {
     || !same(snapshot.adoptedBy, { kind: 'HUMAN', userId: row.created_by }) || !timestamp(snapshot.adoptedAt) || !(snapshot.previousBaselineRef === null || isVersionRef(snapshot.previousBaselineRef))
     || row.draft_id !== input.draftRef.id || Number(row.draft_version) !== input.draftRef.version) throw Error();
    await this.#receipt(db,actor,row, ref, snapshot, 'confirmBaseline', 'FEATURE_BASELINE_ADOPTED', input, input.draftRef.id, input.draftRef.version);
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
    const draft = await this.#loadDraft(db, actor, pid, input.draftRef.id, input.draftRef.version);
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
    if (!same(draft.ref, input.draftRef) || !same(draft.snapshot.input, snapshot.input) || !same(draft.snapshot.sourceBinding, snapshot.sourceBinding) || !same(draft.snapshot.evidenceBindings, snapshot.evidenceBindings)) throw Error();
    const source = (snapshot.input as BaselineDraftInput).source.snapshotRef;
    if (row.source_snapshot_ref !== (source?.id ?? null) || (row.source_snapshot_version === null ? null : Number(row.source_snapshot_version)) !== (source?.version ?? null) || (row.source_snapshot_hash ?? null) !== (source?.contentHash ?? null)) throw Error();
-   for (const reviewRef of input.reviewRefs) { const review = await this.#referencedReview(db, actor,pid, reviewRef); if (!same(review.snapshot.input.draftRef, draft.ref) || review.snapshot.input.outcome !== 'ACCEPTED') throw Error(); this.#reviewAlignment(review.snapshot.input, draft.snapshot.input, review.snapshot.reviewedAt); evidenceReviews.push(review.snapshot.input); }
+   for (const reviewRef of input.reviewRefs) { const review = await this.#referencedReview(db, actor,pid, reviewRef); if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget); if (!same(review.snapshot.input.draftRef, draft.ref) || review.snapshot.input.outcome !== 'ACCEPTED') throw Error(); this.#reviewAlignment(review.snapshot.input, draft.snapshot.input, review.snapshot.reviewedAt); evidenceReviews.push(review.snapshot.input); }
    stored = { ref, snapshot: structuredClone(snapshot) };
-  } catch { throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503); }
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  } catch(error) { if(backupBudget!==undefined&&isArtifactBackupReadFailure(error))throw error;throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503); }
   const latest = (await this.#reviews(db, actor,pid, stored.snapshot.draftRef))[0];
-  let currentCheck = await this.#currentCheck(db, actor, pid, stored.snapshot);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  let currentCheck = await (backupBudget===undefined?this.#currentCheck(db, actor, pid, stored.snapshot):this.#currentCheck(db, actor, pid, stored.snapshot,backupBudget));
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if (currentCheck.state === 'MATCHED_METADATA') try {
-   for (const input of evidenceReviews) await this.#reviewSources(db, actor, pid, stored.snapshot.input, input);
+   for (const input of evidenceReviews) {if(backupBudget===undefined)await this.#reviewSources(db, actor, pid, stored.snapshot.input, input);else await this.#reviewSources(db, actor, pid, stored.snapshot.input, input,backupBudget);if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);}
   } catch (error) {
+   if(backupBudget!==undefined&&isArtifactBackupReadFailure(error))throw error;
    if (!(error instanceof AuthFailure) || error.statusCode >= 500) throw error;
    currentCheck = { state: error.statusCode === 409 ? 'CHANGED' : 'UNAVAILABLE', issues: ['CURRENT_REVIEW_EVIDENCE_UNAVAILABLE'] };
   }
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   const currentContentReviewValid = currentCheck.state === 'MATCHED_METADATA' && latest?.snapshot.input.outcome === 'ACCEPTED' && stored.snapshot.reviewRefs.some((ref: VersionRef) => same(ref, latest.ref));
-  return { projectId: pid, status: 'FEATURE_STATUS_V1' as const, ...stored, currentCheck, currentContentReviewValid, contentConfirmed: true, ...flags, observedAt: new Date().toISOString() };
+  const result={ projectId: pid, status: 'FEATURE_STATUS_V1' as const, ...stored, currentCheck, currentContentReviewValid, contentConfirmed: true, ...flags, observedAt: new Date().toISOString() };
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return result;
  }
- async decision(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number) {
-  const draft = await this.readDraft(db, actor, pid, id, version), reviews = await this.#reviews(db, actor,pid, draft.ref);
+ async decision(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  const draft = await (backupBudget===undefined?this.readDraft(db, actor, pid, id, version):this.readDraft(db, actor, pid, id, version,backupBudget));
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  const reviews = await this.#reviews(db, actor,pid, draft.ref);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   const adoptedRows = (await db.query(baselinesSelect + 'WHERE b.project_id=$1 AND b.draft_id=$2 AND b.draft_version=$3', [pid, id, version])).rows;
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if (adoptedRows.length > 1) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
-  const adopted = adoptedRows.length ? await this.read(db, actor, pid, adoptedRows[0].id, Number(adoptedRows[0].version)) : null;
-  return { projectId: pid, draftRef: draft.ref, criteriaVersion: 1, reviews: reviews.slice(0, 200), hasMoreReviews: reviews.length > 200,
+  const adopted = adoptedRows.length ? await (backupBudget===undefined?this.read(db, actor, pid, adoptedRows[0].id, Number(adoptedRows[0].version)):this.read(db, actor, pid, adoptedRows[0].id, Number(adoptedRows[0].version),backupBudget)) : null;
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  const result={ projectId: pid, draftRef: draft.ref, criteriaVersion: 1, reviews: reviews.slice(0, 200), hasMoreReviews: reviews.length > 200,
    latestReviewAccepted: reviews[0]?.snapshot.input.outcome === 'ACCEPTED', adoptedRef: adopted?.ref ?? null,
    draftIsHead: draft.ref.version === draft.headVersion, currentCheck: draft.currentCheck, contentConfirmed: adopted?.contentConfirmed ?? false, ...flags, observedAt: new Date().toISOString() };
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return result;
  }
- async current(db: PoolClient, actor: AuthenticatedIdentity, pid: string) {
+ async current(db: PoolClient, actor: AuthenticatedIdentity, pid: string, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   await projectMember(db, actor, pid);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   const rows = (await db.query('SELECT * FROM anvil.baseline_heads WHERE project_id=$1', [pid])).rows;
-  if (!rows.length) return { projectId: pid, status: 'UNCONFIRMED' as const, ref: null, contentConfirmed: false, ...flags };
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  if (!rows.length) {const empty={ projectId: pid, status: 'UNCONFIRMED' as const, ref: null, contentConfirmed: false, ...flags };if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return empty;}
   if (rows.length !== 1) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
   const head = rows[0], ref = { id: head.baseline_id, version: Number(head.baseline_version), contentHash: head.baseline_hash };
   if (head.project_id !== pid || !isVersionRef(ref)) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
-  const adopted = await this.read(db, actor, pid, ref.id, ref.version);
+  const adopted = await (backupBudget===undefined?this.read(db, actor, pid, ref.id, ref.version):this.read(db, actor, pid, ref.id, ref.version,backupBudget));
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if (adopted.status !== 'FEATURE_STATUS_V1' || !same(adopted.ref, ref)) throw new AuthFailure('BASELINE_INTEGRITY_FAILED', 503);
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   return adopted;
  }
  async #list(db: PoolClient, actor: AuthenticatedIdentity, pid: string, query: Record<string, unknown>, codec: ProjectListCodec, kind: 'DRAFTS' | 'ADOPTIONS') {
