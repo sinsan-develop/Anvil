@@ -1,3 +1,4 @@
+import {assertArtifactBackupReadBudget,type ArtifactBackupReadBudget} from '../../storage/artifact-backup-budget-read.ts';
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { documentStageBinding, documentStageOptions, readStageNodeRef } from './document-stage.ts';
@@ -90,15 +91,24 @@ export class ProjectDocuments {
     const hasMore = rows.length > limit, visible = rows.slice(0, limit), last = visible.at(-1);
     return { items: visible.map(row => ({ id: row.id, title: row.title, headVersion: Number(row.head_version), confirmedVersion: row.confirmed_version === null ? null : Number(row.confirmed_version), updatedAt: row.updated_at.toISOString() })), hasMore, nextCursor: hasMore ? codec.create(actor.actorId, filter, { at: last!.cursor_at, id: last!.id }) : null, observedAt: new Date().toISOString() };
   }
-  async #artifact(db: PoolClient, projectId: string, ref: ArtifactRef) {
+  async #artifact(db: PoolClient, projectId: string, ref: ArtifactRef, backupBudget?: ArtifactBackupReadBudget) {
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const row = (await db.query("SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND content_hash=$3 AND bytes=$4 AND media_type=$5", [ref.artifactId, projectId, ref.contentHash, ref.bytes, ref.mediaType])).rows[0];
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     if (!row) throw new AuthFailure('ARTIFACT_NOT_READY', 422);
     if(row.state==='QUARANTINED')throw new AuthFailure('ARTIFACT_QUARANTINED',412);
     if (!this.#store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
     if (row.storage_key !== `blobs/${projectId}/${ref.artifactId}`) throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED', 503);
-    const bytes=await this.#store.read(projectId, ref.artifactId, ref);assertStoredArtifactReadable(row,bytes);return bytes;
+    const bytes=await (backupBudget===undefined?this.#store.read(projectId, ref.artifactId, ref):this.#store.read(projectId, ref.artifactId, ref,backupBudget));if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);assertStoredArtifactReadable(row,bytes);if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return bytes;
   }
-  async originalText(db:PoolClient,projectId:string,ref:ArtifactRef) {
+  async originalText(db:PoolClient,projectId:string,ref:ArtifactRef,backupBudget?:ArtifactBackupReadBudget) {
+    if(backupBudget!==undefined){
+      assertArtifactBackupReadBudget(backupBudget);
+      if(!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ref.mediaType)||ref.bytes>2*1024*1024)throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED',412);
+      const bytes=await this.#artifact(db,projectId,ref,backupBudget);assertArtifactBackupReadBudget(backupBudget);
+      let text:string;try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);}catch{throw new AuthFailure('DOCUMENT_UTF8_INVALID',422);}
+      assertArtifactBackupReadBudget(backupBudget);return text;
+    }
     if(!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ref.mediaType)||ref.bytes>2*1024*1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED',412);
     const bytes=await this.#artifact(db,projectId,ref);
     try {return new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);} catch {throw new AuthFailure('DOCUMENT_UTF8_INVALID',422);}
@@ -148,22 +158,35 @@ export class ProjectDocuments {
     await db.query("INSERT INTO anvil.document_version_events(id,project_id,document_id,version,event_kind,actor_ref,reason,command_id) VALUES($1,$2,$3,$4,'DRAFT_SAVED',$5,$6,$7)", [randomUUID(), request.projectId, id, version, JSON.stringify(authorRef), p.reason, receipt.id]);
     return receipt.result;
   }
-  async version(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
+  async version(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number, backupBudget?: ArtifactBackupReadBudget) {
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     await projectMember(db, actor, projectId);
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const row = (await db.query('SELECT v.*,d.confirmed_version FROM anvil.document_versions v JOIN anvil.documents d ON d.id=v.document_id AND d.project_id=v.project_id WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3', [projectId, id, version])).rows[0];
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
     const formRef = { id: row.form_definition_id, version: Number(row.form_version), contentHash: row.form_hash }, content = row.content_json as DocumentContent;
     if (contentHash(canonicalJson({ title: row.title, formRef, stageNodeRef: row.stage_ref_json, content })) !== row.content_hash) throw new AuthFailure('DOCUMENT_INTEGRITY_FAILED', 503);
     const stageBinding = await documentStageBinding(db, projectId, row.stage_ref_json, formRef, false);
-    const raw = await this.#artifact(db, projectId, content.body);
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+    const raw = await (backupBudget===undefined?this.#artifact(db, projectId, content.body):this.#artifact(db, projectId, content.body,backupBudget));
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     let body: string; try { body = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(raw); } catch { throw new AuthFailure('DOCUMENT_UTF8_INVALID', 422); }
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const form = (await db.query('SELECT definition_json FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3', [formRef.id, formRef.version, formRef.contentHash])).rows[0];
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     if (!form || contentHash(canonicalJson(form.definition_json)) !== formRef.contentHash) throw new AuthFailure('FORM_INTEGRITY_FAILED', 503);
     const reviews = await documentReviews(db, projectId, { id, version, contentHash: row.content_hash });
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const events = (await db.query("SELECT event_kind,actor_ref,reason,created_at,id FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 UNION ALL SELECT 'CONFIRMED',jsonb_build_object('kind','HUMAN','userId',confirmed_by),'별도 명시 확정',created_at,id FROM anvil.document_confirmations WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id", [projectId, id, version])).rows;
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const imports = (await db.query('SELECT import_id FROM anvil.document_import_selections WHERE project_id=$1 AND document_id=$2 AND version=$3', [projectId, id, version])).rows.map(value => value.import_id as string);
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const proposals = (await db.query('SELECT p.id FROM anvil.document_proposals p WHERE p.project_id=$1 AND p.document_id=$2 AND (p.base_version=$3 OR EXISTS(SELECT 1 FROM anvil.document_proposal_selections s WHERE s.project_id=p.project_id AND s.proposal_id=p.id AND s.version=$3)) ORDER BY p.created_at,p.id', [projectId, id, version])).rows.map(value => value.id as string);
-    return { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, stageBinding, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: proposals, sourceLinks: [], importCandidateRefs: imports };
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+    const result = { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, stageBinding, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: proposals, sourceLinks: [], importCandidateRefs: imports };
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+    return result;
   }
 }
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {

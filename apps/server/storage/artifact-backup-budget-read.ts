@@ -8,6 +8,8 @@ const states=new WeakMap<object,State>();
 const integer=(v:unknown,min=0):v is number=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=min;
 const known=new WeakSet<AuthFailure>();
 const fail=(code:string,status:number)=>{const e=new AuthFailure(code,status);known.add(e);return e;};
+/** 정확한 내부 오류 출처 구분이며 인증/권한 proof가 아니다. */
+export function isArtifactBackupReadFailure(value:unknown):value is AuthFailure{return value instanceof AuthFailure&&known.has(value);}
 export interface ArtifactBackupOwnedHandle {
  stat():Promise<{isFile():boolean;nlink:number;size:number;uid:number;mode:number}>;
  read(buffer:Buffer,offset:number,length:number,position:number):Promise<{bytesRead:number;buffer:Buffer}>;

@@ -1,3 +1,4 @@
+import {assertArtifactBackupReadBudget,isArtifactBackupReadFailure,type ArtifactBackupReadBudget} from '../../storage/artifact-backup-budget-read.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -44,13 +45,18 @@ export class ProjectBaselines {
   if (request.baselineRefs.length) throw new AuthFailure('BASELINE_APPROVAL_NOT_CONNECTED', 412);
   if(request.approvalRef!==null)readApprovalRef(request.approvalRef);
  }
- async #basis(db: PoolClient, actor: AuthenticatedIdentity, pid: string, input: BaselineDraftInput) {
-  const resolved = await this.sources.resolve(db, actor, pid, input);
+ async #basis(db: PoolClient, actor: AuthenticatedIdentity, pid: string, input: BaselineDraftInput, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  const resolved = await (backupBudget===undefined?this.sources.resolve(db, actor, pid, input):this.sources.resolve(db, actor, pid, input,backupBudget));
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   for (const item of input.items) if (item.designRef) {
-   const doc = await this.documents.version(db, actor, pid, item.designRef.id, item.designRef.version);
+   const doc = await (backupBudget===undefined?this.documents.version(db, actor, pid, item.designRef.id, item.designRef.version):this.documents.version(db, actor, pid, item.designRef.id, item.designRef.version,backupBudget));
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
    if (!same({ id: doc.id, version: doc.version, contentHash: doc.contentHash }, item.designRef)) throw new AuthFailure('BASELINE_DESIGN_MISMATCH', 409);
-   await this.documents.originalText(db, pid, doc.content.body);
+   if(backupBudget===undefined)await this.documents.originalText(db, pid, doc.content.body);else await this.documents.originalText(db, pid, doc.content.body,backupBudget);
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   }
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   return { input: resolved.input, sourceBinding: resolved.sourceBinding, evidenceBindings: resolved.evidenceBindings, issues: resolved.issues };
  }
  async #receipt(db:PoolClient,actor:AuthenticatedIdentity,row: any, ref: VersionRef, snapshot: any, operation: string, status: string, payload: unknown, targetId: string | null, expectedVersion: number) {
@@ -105,12 +111,15 @@ export class ProjectBaselines {
   }
   return stored;
  }
- async #currentCheck(db: PoolClient, actor: AuthenticatedIdentity, pid: string, snapshot: any) {
+ async #currentCheck(db: PoolClient, actor: AuthenticatedIdentity, pid: string, snapshot: any, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   try {
-   const basis = await this.#basis(db, actor, pid, snapshot.input);
+   const basis = await (backupBudget===undefined?this.#basis(db, actor, pid, snapshot.input):this.#basis(db, actor, pid, snapshot.input,backupBudget));
+   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
    return same(basis.sourceBinding, snapshot.sourceBinding) && same(basis.evidenceBindings, snapshot.evidenceBindings)
     ? { state: 'MATCHED_METADATA' as const, issues: [] as string[] } : { state: 'CHANGED' as const, issues: ['CURRENT_SOURCE_OR_EVIDENCE_CHANGED'] };
   } catch (error) {
+   if(isArtifactBackupReadFailure(error))throw error;
    if (!(error instanceof AuthFailure) || error.statusCode >= 500) throw error;
    return { state: error.statusCode === 409 ? 'CHANGED' as const : 'UNAVAILABLE' as const, issues: ['CURRENT_SOURCE_OR_EVIDENCE_UNAVAILABLE'] };
   }
@@ -199,7 +208,13 @@ export class ProjectBaselines {
   else await db.query('INSERT INTO anvil.baseline_heads(project_id,baseline_id,baseline_version,baseline_hash) VALUES($1,$2,$3,$4)', [pid, ref.id, version, ref.contentHash]);
   return receipt.result;
  }
- async readDraft(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number) {
+ async readDraft(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, version: number, backupBudget?: ArtifactBackupReadBudget) {
+  if(backupBudget!==undefined){
+   assertArtifactBackupReadBudget(backupBudget);
+   const stored=await this.#loadDraft(db,actor,pid,id,version);assertArtifactBackupReadBudget(backupBudget);
+   const currentCheck=await this.#currentCheck(db,actor,pid,stored.snapshot,backupBudget);assertArtifactBackupReadBudget(backupBudget);
+   const result={...stored,currentCheck,contentConfirmed:false,...flags,observedAt:new Date().toISOString()};assertArtifactBackupReadBudget(backupBudget);return result;
+  }
   const stored = await this.#loadDraft(db, actor, pid, id, version);
   return { ...stored, currentCheck: await this.#currentCheck(db, actor, pid, stored.snapshot), contentConfirmed: false, ...flags, observedAt: new Date().toISOString() };
  }

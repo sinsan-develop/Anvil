@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `94737bf64cd7e4274a1733dbd0dc41db935c9423`이며 기존 `codex/av3-stage-b` local/private 동일(a6233b), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `7ed7a72323d12a74049ecb61efa6a1d428591f7c`이며 기존 `codex/av3-stage-b` local/private 동일(9ba006), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9829,3 +9829,11 @@
 - reader 수행자 e2c304는15 PASS/201.0969ms, Main995f35는15 PASS/148.6599ms/exit0·96f221 type/diff0다. Windows fixture 오류 뒤 Python 기본cp949 읽기 실패1로 보정 미적용 상태의11P1F가 한 번 더 실행됐고 UTF-8 명시로 교정한 이력을 보존한다. Unix owner/mode·실FS는 미실행이다.
 - 독립 코드 검수 C0/I1: 기존 오류가 있는 첫 read의 close 대기 중 같은 budget의 다른 호출 close가 실패해 poison되어도 최종 if(!error) 검사 때문에 첫 read는 회수 불명503 대신 취소409/기한413을 반환할 수 있다. 같은 Primary에 정확 동시 순서 반례 RED→GREEN과 최종 cleanupUnknown 우선 검사를 재배정했다. Main/독립 최종 검수 전으로15 PASS를 최종 합격으로 게시하지 않는다. 제품 소스 지적1, 실제 FS/서비스 영향0이다.
 - FN16 선택backup budget reader 최종: WI8AF4A84E/Main66b56f 신규17합성 PASS/160.1039ms·6d3583 type/diff0·293c04 원storage본문불변·독립최종C0/I0·3hash일치. 코드I1의교차close불명우선과시험I1의signal한도마스킹을각실RED→GREEN/가드변이RED·원복으로해소했다. 협력기한만구현/OS절대회수미보장·실FS/Unix권한미검증·후속documents/baseline/기존23미연결. 약9PB누적극단한계기록·전체기능미완료. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_BACKUP_BUDGET_READ_RESULT_20261029.md.
+
+- 7ed7a72323d12a74049ecb61efa6a1d428591f7c는94737bf6 직접자식 정확7경로이며9ba006 local/private동일·trackedclean/보호8만잔여·mainf976불변이다. 실제환경반영0,PMO결과전달완료다.
+- 다음선행은동일budget의문서/기준선원문경로전달읽기대조다. #currentCheck가일반AuthFailure<500을UNAVAILABLE/CHANGED로반환하는기존의미는보존하되,budget취소409·기한/누적413이성공snapshot으로낮아지지않게정확자체오류의전달경계를확인한다. 아직코드GO0·실파일/DB키서비스/Agent0·기준선inventory/기존23연결0이다.
+- 2026-10-29 FN16 문서·기준선 budget전달 착수: WI603941E0E73095E5E862355BF8A72BE4621F36E6833F131787E54F0C660E55BF·Primary준비/독립사전C0I0로기존4+신규합성시험1 단일Primary GO. version첫원문읽기와originalText후속읽기모두동일budget을전달하고 자체예산오류만정확WeakSetpredicate로원catch에서재throw한다. 원404/409/412·503보호/기본의미불변,실FS/DB키서비스/Agent0·기존23/inventory미연결·실사용완료아님.
+
+- budget전달 Primary 최초1628b7은 실제save/read 원검산을통과한뒤전달/predicate부재로RED0 PASS/6 FAIL(427.7663ms)이다. 구현후25201d 신규6 PASS 보고를받았으며 source evidence1회+documents.version/originalText2회가같은budget의실helper를거친다. UTF8 decode후기한/회수poison 반례·직접reader17/type·Main/독립검수는진행전/진행중으로최종합격아니다. 신규실환경/자원/권한변경0.
+
+- FN16 문서·기준선 동일budget전달 최종: WI603941E0/Main035917 신규9+직접reader17=26합성 PASS/378.1892ms·950909 type/diff0·독립C0/I0·5지문일치. 실제source/evidence1+documents2읽기누적·정확자체오류재throw/외부동일message기존처리·decode기한catch보존을검수했다. 원무결성/기본의미불변·실FS/DB키서비스/등록/23조합/inventory미연결·전체미완료. 결과 docs/04_test_reports/AV3/FN16_BASELINE_BACKUP_BUDGET_FORWARDING_RESULT_20261029.md.

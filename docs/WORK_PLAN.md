@@ -1694,3 +1694,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 backup 선택 예산 reader 착수: 최종WI655C4B71·사전독립C0/I0/Primary준비확인 뒤 허용3코드를 단일 Primary에 GO했다. 최초C0/I1의회수불명budget재사용누락을보완했고 아직구현검증완료아니다. 원read/put/DRAFT불변·실FS/DB키서비스/Agent0·협력검사만/OS절대기한보장미구현·후속documents/baseline전달미완료를유지한다.
 
 - FN16 선택backup budget reader 최종: WI8AF4A84E/Main66b56f 신규17합성 PASS/160.1039ms·6d3583 type/diff0·293c04 원storage본문불변·독립최종C0/I0·3hash일치. 코드I1의교차close불명우선과시험I1의signal한도마스킹을각실RED→GREEN/가드변이RED·원복으로해소했다. 협력기한만구현/OS절대회수미보장·실FS/Unix권한미검증·후속documents/baseline/기존23미연결. 약9PB누적극단한계기록·전체기능미완료. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_BACKUP_BUDGET_READ_RESULT_20261029.md.
+
+- 2026-10-29 FN16 문서·기준선 budget전달 착수: WI603941E0E73095E5E862355BF8A72BE4621F36E6833F131787E54F0C660E55BF·Primary준비/독립사전C0I0로기존4+신규합성시험1 단일Primary GO. version첫원문읽기와originalText후속읽기모두동일budget을전달하고 자체예산오류만정확WeakSetpredicate로원catch에서재throw한다. 원404/409/412·503보호/기본의미불변,실FS/DB키서비스/Agent0·기존23/inventory미연결·실사용완료아님.
+
+- FN16 문서·기준선 동일budget전달 최종: WI603941E0/Main035917 신규9+직접reader17=26합성 PASS/378.1892ms·950909 type/diff0·독립C0/I0·5지문일치. 실제source/evidence1+documents2읽기누적·정확자체오류재throw/외부동일message기존처리·decode기한catch보존을검수했다. 원무결성/기본의미불변·실FS/DB키서비스/등록/23조합/inventory미연결·전체미완료. 결과 docs/04_test_reports/AV3/FN16_BASELINE_BACKUP_BUDGET_FORWARDING_RESULT_20261029.md.
