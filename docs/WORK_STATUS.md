@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `7612a36bfefd7e61e49bca2a29fb8c0bf8df8570`이며 기존 `codex/av3-stage-b` local/private 동일(e02b1a), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `a4f10b575486382899d1e424edccb45b2daabf1c`이며 기존 `codex/av3-stage-b` local/private 동일(1fac96), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: WI `FN16_ASSIGNMENT_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md` SHA 57DD101C의 임무 초안·내용검토·확정 이력 source1/test2. 결과검수 수집은 Main14PASS/독립C0I0로 마쳤고, 현재 단위는 Main 범위 검토 후 Primary RED→GREEN 연속 구현 중이다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary`: 다음 책임 역할·예약 세션·binding 이력 WI를 준비 중이다. 임무 이력은 정상 대형 초안 보완 후 Main15PASS/독립C0I0로 마쳤다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9581,3 +9581,14 @@
 - 임무source B26C36A5/행동37B19CBD/schemaD79EBB6F: Mainb629af 초기14PASS/0FAIL/skip0/1427.1201ms·type/diff0. Main2ef433/dfebc9와독립검수에서draft snapshot에원래없는2MiB상한을추가한I1확인. 원입력/명령한도이내지만basis·readiness추가후snapshot이커지는정상반례를기존primary에RED→한정보완지시했다. 입력/row/누적metadata/검토·확정실제상한은유지하며초기14PASS를최종합격으로게시하지않는다. 실제DB키서비스0.
 
 - 임무I1:정상payload2096652/명령2096961≤2MiB·snapshot2098360B 반례RED5031FAIL→draft추가상한만제거,기존입력/검토확정/metadata기준보존. 최종source1D3DD7BE/행동4ED4E470/schemaD79EBB6F,Main eb4c74 15PASS/0FAIL/skip0/1608.366ms/type/diff0·독립scopedC0/I0/M0. 결과FN16_ASSIGNMENT_INVENTORY_RESULT_20261029.md. 실제DB키서비스0·전체FN16미완료.
+
+- 다음 책임 세션 연결 준비: Main ea69f0 추정 modules/roles 읽기 부재는78a667 실제 assignments/responsible-sessions.ts로,5bd888 Windows rg wildcard오류123은83e6ea 실제0016경로로교정했다. 변경·제품실패0. Main adf3b3/42100b가 최초세션·binding 공유명령과기존0016/0049의역사/현재성경계를읽기대조했다. PMO a4f10b보고회신은새결정없이진행유지(cursor12);재질문0·실제키DB서비스0.
+
+### 2026-10-29 FN16 책임 역할·예약 세션·binding 이력 구현
+- WI AE754C6CE502E16E0A2B4B765D1C4D6EB805AF2CEB8041C4C3F2FE3E637E19F9는 기존 내부수집의 누락 자료군 보완으로 신규source1/test2만 허용한다. Main3222a9/9f0861 및0016/0049 실제producer 대조 후 기존primary 연속TDD GO,독립preflight 병행. 첫session/binding 공유명령·AUTO/소비승인·역사와현재성분리를 유지한다. Primary 추정decisions경로읽기1건은실제approvals경로로교정,비승격git status실패는Git변경0. 현재새공개계약/실제키DB서비스0·전체FN16미완료.
+
+- 책임세션 WI AE754C6C 독립사전C0/I0/M0. Primary0e5728 신규13 미구현RED, 첫09d3f8의시험harness추출문자열오기는신규시험에서만교정했다. Main49bd23·독립시험검수에서C0/I1/M1: 중복/previous/connection 반례가원명령·승인불일치에가려질가능성, 서로다른사용자가같은client를쓰는fixture불정합 확인. AUTO 반례의원hash 재결박과actor별client로한정보완지시,기대완화/현재client조회추가0. source담당은동일하며실제키DB서비스0.
+
+- 책임세션 초기source35508956/행동54F19E48/schema26ED2B9B: Main d56a05 집중15PASS/0FAIL/skip0/971.8716ms·type/diff0·지문일치. 앞선시험I1/M1은독립ADDRESSED. 최종source검수C0/I1/M0에서consume>=request.createdAt 추가하한을확인했다. Mainfe0ad1/65cae7 대조상책임세션reader/0049/WI에는없고ownership별도reader조건이므로정상시각역전반례RED→하한1개만제거하도록동일primary지시. 기존decidedAt하한/expiry상한/사건내일치유지·초기15PASS는최종합격아님.
+
+- 책임세션 최종I1: 요청시각역전 정상반례962bef1RED503→추가하한43자만제거. Main d43e83 최종16PASS/0FAIL/skip0/843.1784ms/type/diff0,sourceB5883116/행동B3A763F7/schema26ED2B9B일치·독립C0/I0/M0. 두시험I1/M1과제품I1해결,실제키DB서비스0·전체FN16미완료. 결과 FN16_RESPONSIBLE_SESSION_INVENTORY_RESULT_20261029.md. 다음작업문맥·실행준비이력 WI문서만 기존primary준비,신규제품GO전이다.
