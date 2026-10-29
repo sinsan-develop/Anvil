@@ -1651,3 +1651,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 관측/전체ACK/고정결과 내부수집:과거ACK보존/최신요약·선택receipt해시metadata구현,Main13합성PASS/type0. 실제서명/키DB서비스·전체백업복원미검증,이해검토/permit후속. 결과docs/04_test_reports/AV3/FN16_OBSERVATION_INVENTORY_RESULT_20261029.md.
 
 - 관측M1 scopekey보완후최종Main14PASS/type0·독립C0/I0/M0로정정,앞선13PASS는초기이력보존.
+
+- 2026-10-29 FN16 이해검토/START·SEND permit 내부수집:원검토명령과무명령permit구분·국소hash/예약/review관계구현. Main15합성PASS/type0·독립C0/I0. 실제키DB서비스/서명·nonce·전체백업복원미검증. 결과docs/04_test_reports/AV3/FN16_UNDERSTANDING_PERMIT_INVENTORY_RESULT_20261029.md.
