@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "PMO_LIMITED_A_ADOPTED_SOURCE_SYNTHETIC",
+  "authority": "USER_DELEGATED_PMO_DECISION",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "packetPath": "docs/work_packages/FN16_BACKUP_REFERENCE_HISTORY_SENSITIVE_SCOPE_DECISION_20261029.md",
+  "packetSha256": "425D6502F104A373796B10D6792AA709A9D9401CB8A11A871FC6B21168163571",
+  "recordedAt": "2026-10-29T16:08:43.7438064+09:00",
+  "scope": [
+    "기존OWNER·세션범위의 최소 역사metadata source·합성",
+    "9표116열/정확WI 독립검토 후 기존단일Primary TDD/Main검수"
+  ],
+  "required": [
+    "별도민감권한충족/완전익명확정0·해당검사NOT_PERFORMED·요건미정",
+    "원hash·이전/head·원명령/승인/소비/회수 역사 무결성 유지",
+    "자유문자열/PII·경로/handle/descriptor/키/Secret 비노출·고정오류",
+    "기존23조합/전체미수집 유지·실가용성/ready/eligible 승격0"
+  ],
+  "excluded": [
+    "기존GET/API/0053/RLS/정책/권한 변경",
+    "실제키/DB/서비스/파일IO/catalog/대상원문/Agent/반출복원실행",
+    "공유B 권위미충족과158E10BC 채택"
+  ]
+}
