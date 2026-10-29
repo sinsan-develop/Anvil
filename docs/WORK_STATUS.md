@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `e6d87afc7697bff889c8d52a1c42c3263dce2f62`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `6fb6f482be8c03d9b8bdee86dc63f1f71e2b1f2a`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9764,3 +9764,8 @@
 - Main 경로확인예외: 50f7c2 잘못된계약명,ff66fd literalglob,4c068c 추측assignments경로의읽기실패3건을경로사전확인누락으로묶어기록한다. 추측경로직접조회를중단했고619cff/4cc674/7792b9의실파일목록으로정확대상을확인했다. 파일/권한/ACL변경0·제품실패아님. 이후존재확인된정확경로만사용한다.
 
 - 후보23최종: Mainc64ad5직접53합성PASS/type·diff0·독립C0/I0.ledger22 fixture실패1건은정상큰행/동일한도/22SQL413쌍으로보완·합격기준불변.실등록/환경alias/missing삭제0·실DB키서비스0/보호8bb777b불변. 정확8경로checkpoint·결과 FN16_CONNECTION_CANDIDATE_COMPOSITION_RESULT_20261029.md. 전체계획미완료.
+
+
+## 2026-10-29 FN16 보호참조 이력 접근 조건 조사
+
+- Main/Primary/독립 대조에서 R2의 민감자료 접근 검사 문구와 실제 OWNER/세션 보호 사이의 추가 조건 정의를 확인하지 못했다. 보호참조3표와선택증빙9표116열의역사무결성은보존가능하지만 권한조건을임의해석하지않는다. 익명metadata만 A로허용할지/별도정책을먼저정의할지 B를 결정안으로PMO에요청한다. 제품코드·시험·기존GET/SQL/실제DB키서비스변경0,미수집상태유지. 문서 FN16_BACKUP_REFERENCE_HISTORY_SENSITIVE_SCOPE_DECISION_20261029.md.
