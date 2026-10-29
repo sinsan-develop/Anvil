@@ -24,6 +24,10 @@ export function createArtifactBackupReadBudget(value:{maxBytes:number;deadlineMs
 }
 /** ArtifactStore 경로/open 이전 제한 검사. IO 권한을 발급하지 않는다. */
 export function assertArtifactBackupReadBudget(value:unknown):asserts value is ArtifactBackupReadBudget {const s=state(value);check(s);if(s.busy)throw fail('ARTIFACT_BACKUP_BUSY',409);}
+/** 백업 내부의 누적 관측만 반환한다. 제한/권한을 변경하지 않는다. */
+export function readArtifactBackupReadUsage(budget:ArtifactBackupReadBudget):Readonly<{inputBytes:number}>{const s=state(budget);return Object.freeze({inputBytes:s.used});}
+/** 남은 기한은 단축만 가능하며 시작점/소비량은 바꾸지 않는다. */
+export function tightenArtifactBackupReadDeadline(budget:ArtifactBackupReadBudget,remainingMs:number):void{const s=state(budget);check(s);if(!integer(remainingMs,1))throw fail('ARTIFACT_BACKUP_INPUT_INVALID',400);const elapsed=performance.now()-s.started;const candidate=elapsed+remainingMs;if(!Number.isFinite(candidate))throw fail('ARTIFACT_BACKUP_INPUT_INVALID',400);s.deadlineMs=Math.min(s.deadlineMs,candidate);check(s);}
 /** 호출자는 정확 handle 소유권을 양도한다. 실패해도 같은 handle을 다시 close하지 않는다. */
 export async function readOwnedArtifactBackupBytes(handle:ArtifactBackupOwnedHandle,expected:{bytes:number;contentHash:string},budget:ArtifactBackupReadBudget):Promise<Buffer>{
  let s:State|undefined,locked=false,owned:Buffer|undefined,chunk:Buffer|undefined,error:unknown;

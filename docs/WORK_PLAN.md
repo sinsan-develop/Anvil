@@ -1698,3 +1698,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 문서·기준선 budget전달 착수: WI603941E0E73095E5E862355BF8A72BE4621F36E6833F131787E54F0C660E55BF·Primary준비/독립사전C0I0로기존4+신규합성시험1 단일Primary GO. version첫원문읽기와originalText후속읽기모두동일budget을전달하고 자체예산오류만정확WeakSetpredicate로원catch에서재throw한다. 원404/409/412·503보호/기본의미불변,실FS/DB키서비스/Agent0·기존23/inventory미연결·실사용완료아님.
 
 - FN16 문서·기준선 동일budget전달 최종: WI603941E0/Main035917 신규9+직접reader17=26합성 PASS/378.1892ms·950909 type/diff0·독립C0/I0·5지문일치. 실제source/evidence1+documents2읽기누적·정확자체오류재throw/외부동일message기존처리·decode기한catch보존을검수했다. 원무결성/기본의미불변·실FS/DB키서비스/등록/23조합/inventory미연결·전체미완료. 결과 docs/04_test_reports/AV3/FN16_BASELINE_BACKUP_BUDGET_FORWARDING_RESULT_20261029.md.
+
+- 2026-10-29 FN16 기능분류초안역사 source착수: WI3D0FCEBF·사전C0I0/허용4 단일Primary TDD. actual原get/선택증빙/고정26쿼리/단일budget계수·기한유지,실FSDB키서비스/23조합미연결·전체미완료.
+
+- FN16 기능분류초안역사최종: WI3D0FCEBF/최종Maincd5b82 신규32+직접26=58합성 PASS/2006.8638ms·332c0a type/diff0·독립재검수C0/I0/4hash일치. Q18정렬I1 d0fb00 실문서결과RED→비반출timestamp정렬로해소,원class/helper본문의미불변. 실제SQL문법/PG/FS·키서비스/IO회수/브라우저·복원미검증/23미연결·전체미수집false유지. rawmicro는변환전지문반영이지복원가능보관아님. 결과 docs/04_test_reports/AV3/FN16_FEATURE_BASELINE_DRAFT_HISTORY_RESULT_20261029.md.

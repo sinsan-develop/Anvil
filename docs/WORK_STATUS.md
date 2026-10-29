@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `7ed7a72323d12a74049ecb61efa6a1d428591f7c`이며 기존 `codex/av3-stage-b` local/private 동일(9ba006), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `0f03fd9e933e31d4fea137426b65f917d88f86a7`이며 기존 `codex/av3-stage-b` local/private 동일(bf665b), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9837,3 +9837,24 @@
 - budget전달 Primary 최초1628b7은 실제save/read 원검산을통과한뒤전달/predicate부재로RED0 PASS/6 FAIL(427.7663ms)이다. 구현후25201d 신규6 PASS 보고를받았으며 source evidence1회+documents.version/originalText2회가같은budget의실helper를거친다. UTF8 decode후기한/회수poison 반례·직접reader17/type·Main/독립검수는진행전/진행중으로최종합격아니다. 신규실환경/자원/권한변경0.
 
 - FN16 문서·기준선 동일budget전달 최종: WI603941E0/Main035917 신규9+직접reader17=26합성 PASS/378.1892ms·950909 type/diff0·독립C0/I0·5지문일치. 실제source/evidence1+documents2읽기누적·정확자체오류재throw/외부동일message기존처리·decode기한catch보존을검수했다. 원무결성/기본의미불변·실FS/DB키서비스/등록/23조합/inventory미연결·전체미완료. 결과 docs/04_test_reports/AV3/FN16_BASELINE_BACKUP_BUDGET_FORWARDING_RESULT_20261029.md.
+
+- 최신0f03fd9e933e31d4fea137426b65f917d88f86a7는7ed7a723 직접자식정확9경로, bf665b local/private동일·trackedclean·보호8만잔여/mainf976불변이다. PMO에정확소스검수/미검증/다음선행을전달했다.
+- 다음읽기대조는같은실ProjectBaselines인스턴스의원readDraft를재사용하는초안역사수집이다. caller-owned인증RC/ROmetadata/전후보호RC·세션최소기한·metadata/실읽기bytes/unique artifact fileCount·원명령receipt/선택승인검증의정확범위를확인한다. codeGO0·실FSDB키서비스/권한/새route0·기존23및전체미수집/false유지다.
+## 2026-10-29 Main 후속 배정 도구 오용·즉시 교정
+
+- 26패턴 최종보고 이후 Primary는 completed였으나 Main이 send_message로만 추가 읽기/상태확인을 보냈다. 이 도구는 완료된 담당자의 새 turn을 시작하지 않으므로 후속 조사가 실행되지 않은 채 Main이 기다렸다. 담당자의 지연/교착으로 판정한 것은 잘못이며 Main 운영 오류1원인이다.
+- interrupt_agent 확인의 previous_status는 completed로 실제 진행 작업을 중단하지 않았다. 같은 기존 Primary에 followup_task로 정확 남은 열/형식/오류추적 대조만 새로 배정했고 담당자가 후속 읽기 착수·실행중 tool session없음을 회신했다. 과거26패턴 재조사/새Agent/코드GO/실환경변경0이다.
+- 재발 방지: 다음 업무/재작업은 완료 상태면 반드시 followup_task로 시작한다. send_message는 실행중 담당자에게 보완 정보를 전달할 때만 사용한다. 결과 미도착 시 담당자의 실제 상태를 먼저 대조하고 완료 상태를 active 작업으로 오인해 대기하지 않는다. PMO에 Main 원인과 교정을 사실대로 전달하며 제품/ACL/권한 오류로 세지 않는다.
+## 2026-10-29 FN16 기능분류 기준선 초안 역사 수집 착수
+
+- WI3D0FCEBFB94CDD4213458563EDC91C5F81D8A4884BF693BB37DFBCBA821C24B6·Primary준비/독립사전C0I0를확인하고 기존class+budgethelper/신규행동schema2 정확4코드를 기존단일Primary에 followup_task로GO했다. 실제상태가완료였음을확인하고새turn을시작하는도구를사용했다.
+- 대상은0015초안/버전과선택원증빙이며0050적용inventory와구별한다. 고정24원data+2RR 쿼리의명시projection·SQL bigint선문자열화·Date와protocol/rawmicro분리,원catch에가린자체413/409/sticky회수503추적,동일budget실사용량조회/기한단축만2접점,고유파일선계수와원보호get전후재검사를수행한다. 직접원#.receipt/승인nonnull·ATTRIBUTE_REPORT·방법론/문서원읽기경로를거치는정합합성반례를요구했다.
+- source query패턴의version일부는int4이므로bigint와구분하며credential token_digest를선택하지않는다. stored지문은head/version/ref/선택증빙에한정,clock/observedAt/현재policy·control계산값을과거권한복원으로바꾸지않는다. metadata고정조회/반환량·한도는미실행SQL문법/실DB PASS가아니다.
+- 과거자료형조사일부는Python is_file 확인후본문을읽고나중에Test-Path를확인했다는Primary진술을보존한다. 정확PMO사전Test-Path순서와차이가있으며향후새경로는본문전정확절대경로 Test-Path -LiteralPath -PathType Leaf를사용한다. 실제없는경로본문실패증거는없고경로읽기오류누적5는변경하지않는다. 새범용도구/구조개편/권한/SQL/실FSDB키서비스Agent0·기존23미연결/전체미수집false유지다.
+- PMO 후속 정정: 선검사의 목적은 미확정 추측경로의 본문조회 방지다. 실제 목록에서 선택한 동일 정확경로를 Python is_file 등 동등한 읽기전용 검사로 본문 전에 확인했다면 충족한다. 특정 Test-Path 명령 미사용만으로 새오류/예외/승인대기·뒤늦은 반복검사를 만들지 않는다. 앞선 Primary 자료형 조사 선 is_file 확인은 이 정정 기준에 따라 새 오류로 합산하지 않는다.
+- 별개 실제 실패1: Primary는 목록의 tests/unit/FN08/source-read-records.test.ts 대신 rg 인자에 tests/unit/FN06/source-read-records.test.ts를 잘못 입력해 os error2를 받았다. 실제내용 회수0/파일·권한변경0, 잘못된 경로 재시도0이다. 실제미존재경로 본문조회 시도 실패이므로 기존5+이번1=누적6으로 기록한다. 선검사한 동일경로 변수/Path객체를 조회에 그대로 전달하고 재입력하지 않도록 좁게 교정했다. 특정검사명령 강제/기존자료재조사/전체중단0·WI3D0FCEBF TDD는 계속한다.
+- Primary0c3f41 최초메서드/helper2접점부재 RED0P3F 이후구현진행. 첫정상503은복원Date객체를canonical지문에넣은제품오류1과합성envelope가명시projection밖임의별표키를반환한fixture오류1이었다. raw envelope지문/명시projection fixture로교정후같은actualinstance정상1P를확인했다. 9a1ddc는nonnull승인+ATTRIBUTE_REPORT+방법론연결을실제ProjectApprovals/SourceReadRecords/documentStageBinding으로통과하고 Q06~09/Q12/Q19~24호출을확인한수행자증거다. 보안/paging/한도·타입·Main/독립검수는남았으며최종합격으로승격하지않는다. 실제FSDB/진행toolsession0이다.
+- 역사수집 최초 동결979914 신규30+직접전달9/reader17=56 PASS 수행자보고, Main d37273도56 PASS/1883.6063ms·895c62 type/diff0·4지문일치다. 원class/helper역대조는수행자706fd1 IDENTICAL. 단축호출만누락한539fdd변이는Root최종503과무관하게동일budget 직접DEADLINE검출이사라져독립RED였고원복했다. rawmicro는변환전관측hash에반영할뿐시각원값복원/현재권한proof가아니며clock/current관측은stored동일성에서제외한다.
+- 중간fixture IO/수집상태동명충돌과빈Q04 overflow hook은각각분리상태/실제Q10 hook으로보정했다. 후반세션기한의실제budgetDEADLINE과첫phase9bytes를독립검사하고남은rollback기한0은회수불명503우선으로정정해근거를보존했다. SQL누적SUM/첫초과반환은c55b6e schemaRED뒤보완했으며실PG문법PASS로승격하지않았다.
+- 독립최종C0/I1: Q18 proposal원조회 ORDER BY created_at,id가새envelope에서id정렬로바뀐다. 원원문함수를수정하지않고Q18만내부비반출정렬열/ordinal등으로원순서를보존하도록같은Primary에한정재작업GO했다. 실제ProjectDocuments.version proposalRefs에서생성순/UUID순이반대인2행RED를요구했고Root최종성공만으로마스킹하지않는다. 이전56P는이경계미검수이력이며현재미합격이다. 실제SQL/FS/DB키서비스0.
+- FN16 기능분류초안역사최종: WI3D0FCEBF/최종Maincd5b82 신규32+직접26=58합성 PASS/2006.8638ms·332c0a type/diff0·독립재검수C0/I0/4hash일치. Q18정렬I1 d0fb00 실문서결과RED→비반출timestamp정렬로해소,원class/helper본문의미불변. 실제SQL문법/PG/FS·키서비스/IO회수/브라우저·복원미검증/23미연결·전체미수집false유지. rawmicro는변환전지문반영이지복원가능보관아님. 결과 docs/04_test_reports/AV3/FN16_FEATURE_BASELINE_DRAFT_HISTORY_RESULT_20261029.md.
