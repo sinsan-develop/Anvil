@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `503a53cd304f4305e67e6f132a62385d3b4b6ed0`이며 기존 `codex/av3-stage-b` local/private 동일(72594a), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `17ddf0b5b3243365610b6a4d5b1acd2cfdd44da8`이며 기존 `codex/av3-stage-b` local/private 동일(bfc61f), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: 다음 작업문맥·실행준비 이력 WI를 준비 중이다. 책임 역할·예약 세션 이력은 Main16PASS/독립C0I0로 마쳤다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary`: 다음 실행·중단·회수 이력 WI를 준비 중이다. 문맥·실행준비 이력은 Main13PASS/독립C0I0로 마쳤다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9601,3 +9601,18 @@
 - 문맥·실행준비 최종: fixture 기준/readiness I1·후속exactref 반례I2 보완,제품검사완화0. Maind2c476 신규13PASS/0FAIL/skip0/1699.8434ms/type/diff0·sourceA00EA728/행동9EC5B450/schema993E7ABC일치·독립C0/I0/M0. Primary타입추론1원인은명시타입보완,플랫폼401과구분. 실제키DB서비스0·원문/PG/RLS/0046/runtime/전체백업복원UI미검증. 결과FN16_CONTEXT_PREPARATION_INVENTORY_RESULT_20261029.md.
 
 - 신규시험staged diffcheck6c385e EOF빈줄exit2로commit전중단→Primary5209cf 마지막LF1byte만제거/내용prefix동일·행동F082B39B. 의미불변재시험0·source/schema불변,통합검사재진행.
+
+### 2026-10-29 FN16 실행·중단·회수 이력 착수
+- 신산님 직접 지시로 해당 이력의 구현·검수·통합을 기존 fn16_primary에 배정했다. Main c645d6 PMO/프로젝트 지침·환경,9afaa3 계획FN16/설계10.4·실제표,92beeb 실행·회수원형대조. 810f88 HEAD17ddf0b5/private게시기준·tracked clean/보호8보존확인. 실제키DB서비스변경0·실행credential/Agent호출0. 먼저실제producer연결·자료군분할과정확source/test범위를WI1에정의하고독립검수후연속TDD한다. 전체FN16완료로승격하지않는다.
+
+- 실행이력은실제producer권위에따라①실행명령/복구허가/중단회수/outbox/공유초기graph②단계queue·정책/usage전체③worker관측/ACK/permit로분할했다. 첫WI15E7A924( FN16_EXECUTION_CONTROL_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md ) Main476d14검토후신규source1/test2 연속TDD GO·독립preflight병행. 실제credential/challenge/proof조회와rawgrant/envelope반환0. grant회수기록을실효회수/종료/소유해제로승격0·전체자료군미완료. PMO분할/범위보고전달완료.
+
+- 실행WI최종0B5F12CFCC2D9B7E11B05DAAA54EF8280D294AEA0398DFB2A70BEA44A593D9BC: SEND실제status SYNTHETIC_INSTRUCTION_QUEUE_STORED 및EOF동결. 기존부모15E7초안에서정정하고동일허용3파일TDD계속,새계약/실행효과0.
+
+- 실행WI최종74F5073879723928BDF79EF7C79FBB7968791F609BB2A78D0718504D46FE7864:예약snapshot원9필드오기만교정。Primary201eb5 schema1PASS/미구현12FAIL/skip0/527.1898ms RED。독립시험I1은동일project초기graph201개가writer단일/예약제약에어긋나단일graph+실quota내SEND100/STOP100의command201페이지경계로보완지시. 제품제약완화0·실DB증거승격0.
+
+- 실행control초기본 Primaryda1107신규13PASS/2579.2384ms/type0. 지역external중복선언1회는이름교정으로해결. 독립최종검수C0/I3: SEND예약이최초grant예산과같아야한다는추가조건,동일초기command의고아/중복EXECUTIONgrant허용,회수snapshot요청자user와row/commandactor결박누락. Main790d26 actualSENDproducer대조후기존primary에각원hash재결박RED→한정보완지시. 초기PASS를최종합격으로승격0·실제키DB서비스0.
+
+- 실행control Main9769e7 최종19PASS/0FAIL/skip0/2954.7949ms/type0·최종B281D33B/F341CE05/C4D1841D일치. 기존I3와추가SQL3관계RED→GREEN보완,실제키DB서비스0. 결과FN16_EXECUTION_CONTROL_INVENTORY_RESULT_20261029.md,독립scoped최종판정확인후통합. 다음stage/policy·실지원v1예약WI준비중,후속usage저장producer없어모델을실역사로승격0.
+
+- 실행control 독립최종C0/I0/M0·6관계해소/3지문일치확인. Main19PASS와독립읽기증거를분리해정확7경로checkpoint 진행,보호8/다음WI제외.
