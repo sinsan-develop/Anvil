@@ -1647,3 +1647,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 실행제어 내부수집 첫단위:START/SEND/STOP·RECOVERY·회수/outbox공유graph 구현,Main19합성PASS/type0. 실제키DB서비스/종료회수효과/전체백업복원미검증. 단계queue/정책·worker증거는후속미완료. 결과docs/04_test_reports/AV3/FN16_EXECUTION_CONTROL_INVENTORY_RESULT_20261029.md.
 
 - 2026-10-29 FN16 단계대기열·한도정책·예약내부이력:전체시작/취소·정책버전/회수·지원v1예약/선택명령증거 수집구현. Main16합성PASS/type0. 실제키DB서비스·usage후속저장/전체백업복원UI미완료. 결과docs/04_test_reports/AV3/FN16_STAGE_BUDGET_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 관측/전체ACK/고정결과 내부수집:과거ACK보존/최신요약·선택receipt해시metadata구현,Main13합성PASS/type0. 실제서명/키DB서비스·전체백업복원미검증,이해검토/permit후속. 결과docs/04_test_reports/AV3/FN16_OBSERVATION_INVENTORY_RESULT_20261029.md.
+
+- 관측M1 scopekey보완후최종Main14PASS/type0·독립C0/I0/M0로정정,앞선13PASS는초기이력보존.
