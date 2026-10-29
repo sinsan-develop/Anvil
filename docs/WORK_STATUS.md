@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 이번 단위의 검증 시작 checkpoint는 `514c601c6b5ba972c1682f366fac6e6fa1301175`이며 기존 `codex/av3-stage-b` local/private 동일(af3176), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 현재 검증된 게시 checkpoint는 `d97a453673222270acb6e3cafd6b8568066f2950`이며 기존 `codex/av3-stage-b` local/private 동일(6b446a), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9900,3 +9900,20 @@
 
 - Main898335 최종신규27P/5590.4977ms·1b66a7 type/diff0·5hash일치,collectorC5538A46/행동B546AD21·Root2521C6D6/consumer6F4E9EB8/schemaE695DB6A불변3. 시각I1은DBtop-level hash용copy/legacy비교에한정해동일instant offset정상·1micro변경음성·원protocol/H불변으로해소,독립최종C0/I0다. 앞Main31P의기존9와최종신규27을단일전수합계로표기하지않는다. 최초99e6211P3F→de40c2신규5P/마지막출력유실미확인후d960aa재확인27P는별도수행자이력이다.
 - 결과 docs/04_test_reports/AV3/FN16_SOURCE_ROOT_HISTORY_PROFILE_RESULT_20261030.md. Root-owned내부전용/standalone미지원·기본24/26/명시27·generic미해결과미수집umbrella/false유지·실환경0,정확5코드+소유4문서게시준비다. Main코드쓰기0·Primarywriter해제·보호8보존·실제백업복원/전체계획미완료를유지한다.
+## 2026-10-30 소스root profile 게시·본인 제어이력 연결 선행
+
+- d97a453673222270acb6e3cafd6b8568066f2950는c1ca0e6f 직접자식정확9경로다. 6b446a local/private동일·trackedclean/보호8·mainf976불변을확인했고PMO에결과55D0AC6D/최종신규27P·이전기존9범위분리·시각I1해소와실환경미검증을전달했다. Main코드쓰기0·실DB키서비스/FS원문/Agent/공개계약변경0·전체계획미완료다.
+- 다음은완료된FN15본인요청/합성인계역사수집을실Root/consumer명시profile에연결할수있는지Primary·독립에읽기배정했다. 실제captured factory gate·같은Root Pool/AccessRepository·초기신원/최소TTL/본인만·타인존재건수0·합성false/세대전이원장미존재를대조하며main.ts임의활성/가짜provider·새권한bool/공개API0이다. 완료55P/현재27 재실행0·code/WI GO0·보호8/사용자자료보존이다.
+- 본인제어역사 후속WI248A5895DF698DC451F13F942DD8B90DF07E827EC527D6EE699C28FBD83BC64C(27536B) 양root동일·문서writer해제다. Main6366b1/76bade본문·ecb76b기존prefix실매치와독립사전C0I0,5eca45 HEADd97/원factoryCAC475BB·Root2521C6D6·consumer6F4E9EB8일치·신규시험2부재후정확5코드TDD GO했다.
+- 실제생성객체의비공개소유기록에pool/access/원gate구성·실readclosure를고정하고토큰/connection前Root자원참조를대조한다. 이는오구성차단이지인증권위아니다. 실제auth직후Rootidentity4/절대최소기한을제한하고내부전체metadataCharge를Root가소비,원public메서드/DTO/default24·26·소스27보존·control27/결합28선택실소비·main활성0이다. 원opaque ref/hash·명령/payload hash는보존하되raw원문/nonce/새proof반출0,실DB키서비스/FS/Agent·수행자문서/Git쓰기0·Main같은코드쓰기0·보호8보존·전체계획미완료다.
+- 본인제어profile 수행자중간:최초bff073 신규부재RED0P2F→접점부재시험2P,실forSession request→prepareSummary 공유pool5표 생산87d1d5정상1P와995244신규11P를확인했다. 새control27/실consumer결합28·foreign/fake/options/identity/타인0/짧은TTL/전체cost 일부범위이며Main최종검증아니다. 최초fixture의status가정1FAIL은실receipt.outcome계약으로정정·제품실패와분리했다. nullable타입5건보완·pending/회수503와Root전체metadata독립반례/schema마무리중·실행handle0이다. sandboxGit fatal1은정확cwd elevated읽기23b302로해소·실환경/쓰기0이며제품/ACL오류로오인하지않는다.
+- 비용반례a5db17의413은DTO만차감변이14a591에서도통과해다른자식한도에가려졌음을확인·원복했다. Main309fd6 Root실차감과원내부envelope 경계를읽고추정임계치반복대신실측/단계trace를요청했다. 초기bbacbe/875d0d 측정은마스크·직렬화자리수차이의진단이며최종근거로승격하지않는다.
+- 자동안전심사1건은 s[:시작점] 시험교체가뒤시험까지자를수있다는이유로거절·실행0이다. 우회/동일스크립트재시도0,정확oldLine1회치환으로손실없는안전대안이승인됐다. 나머지시험역hash EBE4FDB3/Rootfinally원복을보존했다.
+- 수행자ecd2c7 독립화:원Rootusage389388/M36707/n2276·실다음child차감36707,변이Rootusage354957/차감2276. cap=usage+(M-실차감)-1000은양쪽388388동일이며원은factory3phase/모든후속후마지막RootDTO1회413,DTO차감변이는성공해Missing expected rejection RED→Root65B618C9정확원복GREEN이다. 기대413/자식/timeout기준변경0이다. pending/late/rollback-release+cancel5건7cfa42·OWNER404/원H-payload거절2건4e9247/type0는수행자중간증거로분리,최종집중·5지문동결준비중·실행handle0·실환경0이다.
+- 본인제어 첫동결 Main24be20 실26P(신규19+기존직접7)/3864.2501ms·12ee7d type/diff0·5hash일치(factoryF8B02E2C/Root65B618C9/consumer66E06AB1/행동B7EE22AF/schemaFBF97EBA),a6688f 원collectorB6CA불변·private실생성/pool-access검사·닫힌제약복사를대조했다. 비용실측root389388/M36707/n2276/cap388388·실최종RootDTO1회를Main출력에서도확인했다.
+- 독립제품C0/I0·WI필수검증공백I1:신규158-160/기존source의AUTH_PENDING·connect·rollback/release만으로factory RR자료pending·마지막RC pending을대체할수없다. 같은Primary에신규행동파일의실Root→factory 두phase표적pending·gate/auth선통과/late1/selfclient1/후속old24·IO0/503만보완GO했다. 첫26P는보완전증거/최종합격아니며제품문제발견시원인보고후factory내최소보정·기대값완화0,실환경0·Main같은코드쓰기0·보호8유지다.
+
+## 2026-10-30 FN16 본인 제어이력 연결 최종 검수
+
+- Mainab6bf1 추가RR자료/최종RC인증pending2P/1023.7916ms·183e0b type/diff0·5hash일치·독립I1해소최종C0/I0다. 제품3/schema불변·행동70D1AFEB의앞65491B는이전B7EE22AF 정확동일/뒤3835B만추가를Main읽기hash로검산했다. 앞26P/3864.2501ms와뒤2를단일28전수로표기하지않는다. 두phase모두503/selftargetclient1/late1/이후query-release0/old24·IO0이며Root/factory연결구분·제품수정0이다.
+- 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_HISTORY_PROFILE_RESULT_20261030.md. 정확5코드+소유4문서게시준비·Main코드쓰기0/Primarywriter해제/보호8보존. fullmetadata비용동일cap변이RED와EOF편집거절실행0/안전대안·fixture오류이력분리. 실DB/FS키서비스/Agent/main활성/public백업복원/전체계획미완료유지다.
