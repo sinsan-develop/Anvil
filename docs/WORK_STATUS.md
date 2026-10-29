@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `281b1976e56c20ebccaf192cb30e4bbf4a3fb175`이며 기존 `codex/av3-stage-b` local/private 동일(feffdf), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `a6bec11bd0c21314003bfc94eec1421a8f18550e`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: 다음이해검토·START/SEND permit이력을 구현 중이다. 관측이력은 Main14PASS/독립C0I0로 마쳤다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary`: 다음고정19수집기 내부조합을 구현 중이다. 이해permit은 Main15PASS/독립C0I0로 마쳤다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9643,3 +9643,17 @@
 - 이해/permit Primary7f26db 신규14중schema1PASS/미구현13FAIL/708.7564ms RED뒤source구현중. 독립시험I1은필터후audit.length+1로201검토의server_sequence중복fixture,독립counter/max+1로교정지시. M1 일부command/한도/WORK연결반례는앞참조에서거절가능해해당조건독립PASS주장0,WORKACCEPTED필요국소반례보강지시. 제품제약완화0·실제키DB서비스0.
 
 - 이해permit 최종Main8a5025 15PASS/0FAIL/skip0/3238.4166ms/type0·32ACA473/9941A499/162B6B1B일치·독립C0/I0. fixtureaudit순번과scope2MiB paging두scope교정·제품기준유지,WORK정상/NOTACCEPTED독립반례확인. SENDcommand/51건독립도달한계는보고서명시. 결과FN16_UNDERSTANDING_PERMIT_INVENTORY_RESULT_20261029.md. 실제키DB서비스0·전체FN16미완료,정확7경로통합뒤남은실사용backup연결을읽기대조.
+
+### 2026-10-29 FN16 고정 프로젝트 수집결과 내부 조합
+- 이해permit a6bec11bd0c21314003bfc94eec1421a8f18550e local/private동일·main불변·정확7경로/보호8보존(3c7fcd/ac19e1),PMO결과전달완료. 전체자료·사용자backup조합 actual읽기후다음업무는고정19collector실호출·exactref/충돌/미해소검사로선정했다. WI E4A9CECD1102EC11290D45AB633C726904BAA4C75924654D74B93E7900B54A8F Main6e8176/c61be8범위대조후기존primary 신규source1/test2연속TDD GO·독립preflight병행. metadata/deadline만잔여·childfile/input은원상한+전역artifactexactunion검사로중복선거절방지. 다중RR snapshot개별보존atomicfalse·전체coverage/restorablefalse,158E10정책API미채택우회0·실제키DB서비스0. 현재전체정책/승인·감사·공통자료·연결설정/원문미수집을명시한다.
+
+### 2026-10-29 FN16 조합 작업 실행자 인수 확인
+- Main 실제 agent 목록은 root만 반환하여 이전 primary/review handle 부재를 확인했다. 완료된 collector 재실행 없이 기존 신규 시험2와 미구현 source 상태를 보존하고, 신산님의 subagent 구현 지시에 따라 단일 fn16_primary_recovered 및 read-only fn16_review_recovered에 같은 WI E4A9CECD 범위만 인수했다. 기존 RED13은 미구현 시험이며 실제 DB/서비스 장애가 아니다. Main 0f67bc에서 branch codex/av3-stage-b·HEAD a6bec11b·관리문서1 dirty/신규WI·시험2/보호8 보존을 확인했다. 초기 sandbox git status의 work-tree 오류는 elevated 읽기에서 해소됐으며 Git 손상으로 판정하지 않는다. 실제 키·DB·서비스 변경0, 전체 목표 미완료.
+
+- 조합 시험 독립 읽기 검수는 C0/I2: 실행 execution/generation scope 동일 ID 정상과 서로 다른 artifact 전역 합집합 초과 반례가 빠졌고, exact참조 every의 빈배열 통과도 보완 필요하다. 제품 source 미존재 단계의 시험 사양 누락이며 Primary에 허용3경로 안의 최소 보강을 전달했다. 실제 제품 장애/실환경 결과로 확대하지 않는다.
+
+- 조합 구현 중 독립 검수는 실제 producer DTO 연결 오류를 발견했다: OBSERVATION 실행범위는 row.event, ContextPreparation ARTIFACT tuple은 dependency.ref에 있다. Primary가 같은 신규 source에서 보정하고 실제19 collector의 nonempty 반례를 추가 중이다. 추가로 명시 미수집 정책 참조의 NOT_COLLECTED 분류와 PROVIDER_CLAIM_ONLY/EXACT_STORED_PARENT_SUBSET_ONLY 원검증 제약 보존을 지시했다. 현재 담당자 보고14PASS/1FAIL·type0는 중간값이며 Main 최종 검증/PASS가 아니다. 실제키DB서비스변경0.
+
+- 조합 I5는 exacttuple 중복의 출처 누락으로 독립 발견했다. Primary b13379 RED1→최소 sources merge, Main6302c5 최종 신규16PASS/0FAIL/skip0/816.5532ms·type/diff0, sourceC4A0660E/행동D1103B53/schemaC5E3108E 확인. 초기8895b7/855B3544 결과는 이력이며 최종지문으로 대체하지 않는다. 실제키DB서비스0·전체FN16미완료, 독립최종판정 후 정확7경로checkpoint.
+
+- 독립최종9d84b2 C0/I0: I1~I5 보완과 최종3지문 일치 확인. 읽기 검수는 실제DB/FS/복원 증거가 아니다. Main6302c5와 함께 source후보를 인수하고 지정7경로만 게시한다. 보호8/다른작업 보존·실제키DB서비스0.
