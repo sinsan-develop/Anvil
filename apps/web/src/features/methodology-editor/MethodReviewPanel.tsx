@@ -84,7 +84,13 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
       </details>
     </div>)}
     <button disabled={locked || !matches || !!work?.dirty || latest?.ref.outcome !== 'ACCEPTED' || !!source.confirmation} onClick={confirmVersion}>이 방법론 버전 확정</button>
-    {source.confirmation ? <p>현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도</p> : <p>이 버전의 사용자 확정 이력 없음</p>}
+    {source.confirmation ? <><p>현재 버전 사용자 확정 이력 있음 · 실행 승인은 별도</p>
+      <details key={JSON.stringify([session.user.id,session.clientId,source.ref.id,source.ref.version,source.ref.contentHash,source.confirmation.id])} aria-label="방법론 확정 사건 상세" style={{overflowWrap:'anywhere'}}>
+        <summary>저장된 확정 사건 상세 보기</summary>
+        <p className="meta">이 저장 버전의 과거 사용자 확정입니다. 현재 프로젝트 적용·현재 권한·실행 승인·내용 독립검수 합격을 뜻하지 않습니다.</p>
+        <dl><dt>확정 사건 ID</dt><dd>{source.confirmation.id}</dd><dt>저장된 결정</dt><dd>{source.confirmation.decision}</dd><dt>기록 원 시각</dt><dd style={{whiteSpace:'pre-wrap'}}>{source.confirmation.decided_at}</dd><dt>확정 사용자 ID</dt><dd>{source.confirmation.decidedBy}</dd></dl>
+        <ul aria-label="확정 당시 검토 참조">{source.confirmation.reviewRefs.map((review,index)=><li key={JSON.stringify([index,review.id,review.targetRef])}><p>검토 ID {review.id}</p><p>기준 버전 {review.criteriaVersion} · 저장 판정 {review.outcome}</p><p>대상 ID {review.targetRef.id} · 대상 버전 {review.targetRef.version}</p><p>대상 내용 지문 {review.targetRef.contentHash}</p></li>)}</ul>
+      </details></> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
     {work?.pending && !pending ? <><p role="alert">검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.</p><button disabled={!matches || work.pending.clientId !== session.clientId} onClick={() => { void execute(work.pending!); }}>같은 검토·확정 명령 결과 확인</button></> : null}
     {error ? <p role="alert">{error.message} 검토 입력과 미확인 명령은 유지했습니다.</p> : null}

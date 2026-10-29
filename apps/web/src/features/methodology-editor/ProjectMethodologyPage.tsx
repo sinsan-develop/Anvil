@@ -73,7 +73,7 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
       <p>{source.confirmation ? '이 버전의 확정 이력 있음 · 적용 여부와 별도' : '이 버전의 별도 확정 이력 없음'}</p></section> : null}
     {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
     <CommonMethodEditor client={client} projectId={projectId} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => resetLists(false)} />
-    {source?.scope === 'PROJECT' ? <MethodReviewPanel client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
+    {!loading && !error && source?.scope === 'PROJECT' ? <MethodReviewPanel client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
     <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error} buffer={buffer} onChange={onChange} onApplied={setAppliedRef} onAuthenticationLost={onAuthenticationLost}/>
   </>;
 }

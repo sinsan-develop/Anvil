@@ -1723,3 +1723,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-30 UI01 대기 승인 페이지 왕복 한정 검수
 - UI01 기존 보호 GET 카드의 이전/재시도·성공이력/문맥 장벽 보완: WI D6BADB9B·Main dea469 신규7+기존1=8 PASS, ce4a24 누락기존3 별도PASS·reader4/type/diff0·독립C0/I0. 실제 client/project prop 교체·DB/served/사용자인수 NOT_RUN이며 UI01/FN01/Stage B 전체미완료. QA39d3d1정리/598253별도부재, 결과 UI01_PENDING_APPROVAL_PAGINATION_RESULT_20261030.md. 새API/SQL/실키DB서비스0.
+
+### 2026-10-30 UI03 방법론 확정 사건 상세 한정 검수
+- 기존GET 확정사건·당시검토ref 기본접힘/문맥해제·전용부모로딩/오류표시장벽만연결. WI545AE0C3·Main신규6/기존직접2각PASS·type/diff0·독립C0/I0·QA7037c4정리/54edbf별도부재. 미저장입력·동일미확인명령보존확인,직접clientprop·실DB/served/사용자인수NOT_RUN·UI03/FN02/StageB전체미완료. 결과 UI03_METHOD_CONFIRMATION_DETAILS_RESULT_20261030.md.
