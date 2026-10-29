@@ -24,6 +24,8 @@ export function createArtifactBackupReadBudget(value:{maxBytes:number;deadlineMs
 }
 /** ArtifactStore 경로/open 이전 제한 검사. IO 권한을 발급하지 않는다. */
 export function assertArtifactBackupReadBudget(value:unknown):asserts value is ArtifactBackupReadBudget {const s=state(value);check(s);if(s.busy)throw fail('ARTIFACT_BACKUP_BUSY',409);}
+/** 같은 요청 signal과 local 추가허용량에 대한 읽기전용 제한 검사다. 인증/권한 proof가 아니다. */
+export function assertArtifactBackupReadBudgetBinding(budget:ArtifactBackupReadBudget,signal:AbortSignal,maxAdditionalBytes:number):Readonly<{deadlineMonotonicMs:number}>{assertArtifactBackupReadBudget(budget);const s=state(budget);if(!(signal instanceof AbortSignal)||s.signal!==signal||!integer(maxAdditionalBytes,1))throw fail('ARTIFACT_BACKUP_INPUT_INVALID',400);const remaining=s.maxBytes-s.used;if(!Number.isSafeInteger(remaining)||remaining<0)throw fail('ARTIFACT_BACKUP_LIMIT',413);if(remaining>maxAdditionalBytes)throw fail('ARTIFACT_BACKUP_INPUT_INVALID',400);const deadlineMonotonicMs=s.started+s.deadlineMs;if(!Number.isFinite(deadlineMonotonicMs))throw fail('ARTIFACT_BACKUP_INPUT_INVALID',400);return Object.freeze({deadlineMonotonicMs});}
 /** 백업 내부의 누적 관측만 반환한다. 제한/권한을 변경하지 않는다. */
 export function readArtifactBackupReadUsage(budget:ArtifactBackupReadBudget):Readonly<{inputBytes:number}>{const s=state(budget);return Object.freeze({inputBytes:s.used});}
 /** 남은 기한은 단축만 가능하며 시작점/소비량은 바꾸지 않는다. */
