@@ -1667,3 +1667,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 승인 원ref 조합:고정21번째실수집/원요청·결정provider와실저장관계2경로 연결. Main직접영향41합성PASS/type0·독립C0/I0. nullable원형미확인/전환미저장·현재효력false/실제DB키서비스·전체원장·원형복원/archive/UI미완료. 결과docs/04_test_reports/AV3/FN16_APPROVAL_HISTORY_COMPOSITION_RESULT_20261029.md.
 
 - 2026-10-29 FN16 프로젝트전체 통제원장:PROJECT명령/권한영수증/감사3표46열 metadata·생성특수/무명령/미지원/정정분리구현,Main22합성PASS/type0·독립C0/I0. 실제DB키서비스·원payload/체인·원권한복원/archive/UI미완료. 결과docs/04_test_reports/AV3/FN16_PROJECT_CONTROL_LEDGER_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 정책·승인 DB 시간 호환 보완: 두 DB parser만 offset/마이크로초를 보존하고 원문 strict ISO/hash를 유지. 시험마스킹 I1 보완·Main74합성PASS/type0·독립C0/I0. 실제DB키서비스·전체백업복원/UI 미검증. 결과 docs/04_test_reports/AV3/FN16_POLICY_APPROVAL_PG_TIME_BOUNDARY_RECOVERY_RESULT_20261029.md.
