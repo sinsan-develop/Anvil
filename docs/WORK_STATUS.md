@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `ea98178dfea545dece075149976707522820f963`이며 기존 `codex/av3-stage-b` local/private 동일(74d611), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `94737bf64cd7e4274a1733dbd0dc41db935c9423`이며 기존 `codex/av3-stage-b` local/private 동일(a6233b), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9806,3 +9806,26 @@
 
 - Main 직접 cebae8 지정 신규2+FN15 직접4는54 PASS/1035.4418ms/exit0, a13249 type/diff0, 2fbeb8 원 forSession/run/PgContext·summary 본문 불변을 확인했다. 독립 첫 C0/I0 이후 Main이 최종 DTO 직렬화 뒤 기한 재검사 누락을 지적했고 독립 재대조 Important1로 정정했다. 직렬화 중 요청/세션 최소기한이 지나도 성공을 반환할 수 있으므로 이 상태로 게시하지 않는다. 같은 Primary에 허용5 내 반환 직전 검사·시계만 진전시키는 신규 RED→GREEN 반례를 배정했다. 기존54 PASS는 해당 경계 미검수 이력이며 최종 합격이 아니다. 제품 결함1, 실제 DB/키/서비스 영향0이다.
 - FN16 본인 제어요청 역사 최종: 직렬화 I1 cb4267 RED→한정 보완, Main022c10 지정55 PASS/1772.8064ms·96e285 type/diff0·독립최종C0/I0·5지문일치. 현재OWNER+본인SQL/원factory gate·CSRF/原bundle·200+1/누적기한검사 소스 단위만 검수했다. 기존23미연결·전체미수집/합성false 유지, 실제DB키서비스·PG/OS기한/회수·UI/복원 미검증. 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_OWN_HISTORY_INVENTORY_RESULT_20261029.md.
+
+- 94737bf64cd7e4274a1733dbd0dc41db935c9423는 ea98178d 직접 자식 정확9경로이며 a6233b에서 local/private 동일·tracked clean·보호8만 남음/mainf976 불변을 확인했다. 다음 기준선 초안의 실제 producer 대조는 기존 Primary 읽기 전용 조사다. CGA 변경0이다.
+- Main 2befa1에서 실재 파일 목록 대조 전에 잘못된 document-inventory-composition.ts 경로를 rg 인자로 사용해 `지정된 파일을 찾을 수 없습니다. (os error 2)`가 발생했다. 정확 대상 apps/server/modules/backups/document-inventory-composition.ts, 읽기 실패1(이전 별도4 포함 누적5)이며 제품/ACL/권한 오류가 아니다. 해당 경로 읽기를 반복하지 않고 d19ec4 repo-root rg --files에서 실제 project-inventory-composition.ts를 확인했다. 파일/권한 변경0이며 후속 읽기는 목록에서 확인한 경로만 사용한다.
+- PMO 후속 경로 교정 지시를 접수·Primary에 전달했다. 신규/미확정 경로는 repo-root rg --files 목록에서 선택 후 정확 절대경로를 Test-Path -LiteralPath -PathType Leaf로 확인하고 성공 경로만 본문/rg파일 인자로 사용한다. 없으면 읽기/추측 재시도0·목록 재매핑, 이미 확인된 경로의 반복 검사/새 도구/전체 중단0이다. 기존 baseline draft 조사는 계속하며 DB/키/서비스 승인 확대0이다.
+
+## 2026-10-29 FN16 기능분류 기준선 초안의 실제 보호 조회 대조
+
+- Primary와 Main a2b829 실제 source에서 0015 baseline_drafts/versions·ProjectBaselines.save/readDraft가 존재하고 기존0050 설계변경 적용 inventory와 별개임을 확인했다. 정식 DB 적용/실자료 조회는 하지 않았다. 원creator/client 전용이 아닌 현재 projectMember 조회이며 FN16 현재 OWNER 제한은 더 좁은 범위다.
+- 원 #currentCheck는 source/설계/증거 원문을 실제 검증한다. 404/409/412 등 AuthFailure<500은 snapshot/ref를 유지하고 UNAVAILABLE/CHANGED만 반환하나, tuple/storage-key/hash/실bytes 불일치503·일반 reader 오류는 전체 거절한다. opaque/NOT_PERFORMED 표시만으로 503 보호를 생략하는 수집안은 채택하지 않았다.
+- 같은 실제 ProjectBaselines 인스턴스의 #loadDraft/#currentCheck/readDraft를 재사용하는 내부 접점은 후보이며 코드 GO0이다. ArtifactStore.read의 readFile에 signal/deadline 접점이 없어 진행 IO 유한중단/회수를 기존 코드만으로 보장할 수 없다. 이미 구현한 FN16 bounded byte/metadata reader의 실제 재사용 가능성을 먼저 읽기 대조하고, 없으면 최소 backup 전용 계약 변경과 미구현 범위를 명시한다. 새 OS 도구/가짜 권위/원문 검사 생략0.
+- Primary가 modules/artifacts/artifact-store.ts로 잘못 매핑했을 때 새 사전 Test-Path가 false여서 본문 읽기를 하지 않았고, 실제 storage/artifact-store.ts로 목록 재매핑했다. 이는 사전 차단 동작이며 본문 읽기 오류 횟수는 증가하지 않는다. 코드·시험·SQL·Git·실파일/DB/키/서비스·Agent 실행0, 기존23/전체미수집·source 단위와 실제 기능 구분을 유지한다. PMO에는 정확 보호·기한 선행만 전달했다.
+## 2026-10-29 FN16 백업 원문 협력 예산 읽기 선행 WI
+
+- baseline draft 원 GET의 무결성503을 보존하기 위한 선행으로 ArtifactStore.read의 backup 전용 선택 제한·동일 owned-handle 알고리즘을 한정한다. 기존 verifier의 DTO를 Buffer로 가장하거나 선검증 후 다시 읽지 않는다. 현재 원문 보호 경로/권한은 유지한다.
+- 예정 허용3은 storage/artifact-store.ts·신규 artifact-backup-budget-read.ts·신규 FN16 합성 시험1이다. 실제 FS IO/DB/키/서비스/Agent·후속 documents/baseline 전달·기존23조합0, OS pending 절대기한/강제회수 미보장이다.
+- 최초 WI27971107 사전 독립 C0/I1: close 실패 뒤 공유 budget 재사용 차단이 빠졌다. Main이 §5에 sticky cleanupUnknown/poison·경로/open 전 차단·이미 양도된 새 handle의 close1/원 실패 handle 재close0·동시 실패의 타 read 점유 불변을 보완했다. 최종 WI655C4B71867086EE76BF4CA80294BD263D5F852F9B3459149537D0AEF2769746 재검수 중이며 제품 GO0이다. 설계 검수 지적1, 새 실행/도구 오류0이다.
+- 2026-10-29 FN16 backup 선택 예산 reader 착수: 최종WI655C4B71·사전독립C0/I0/Primary준비확인 뒤 허용3코드를 단일 Primary에 GO했다. 최초C0/I1의회수불명budget재사용누락을보완했고 아직구현검증완료아니다. 원read/put/DRAFT불변·실FS/DB키서비스/Agent0·협력검사만/OS절대기한보장미구현·후속documents/baseline전달미완료를유지한다.
+
+- Primary 최초 보고: 신규 budget reader 모듈 부재의 실제 RED0 PASS/12 FAIL(159.9727ms). 구현 뒤11 PASS/1 FAIL은 Windows에서 기존 owner/mode 가드가 조건부임에도 fixture가 무조건 거절을 기대한 시험자료 오류1이다. 제품 플랫폼 조건을 바꾸지 않고 fixture만 정합화하며 Unix 전용 분기는 현재 Windows에서 미실행으로 구분한다. 새 승인 거절0·실FS0·아직 Main/독립 최종 검수 전이다.
+
+- reader 수행자 e2c304는15 PASS/201.0969ms, Main995f35는15 PASS/148.6599ms/exit0·96f221 type/diff0다. Windows fixture 오류 뒤 Python 기본cp949 읽기 실패1로 보정 미적용 상태의11P1F가 한 번 더 실행됐고 UTF-8 명시로 교정한 이력을 보존한다. Unix owner/mode·실FS는 미실행이다.
+- 독립 코드 검수 C0/I1: 기존 오류가 있는 첫 read의 close 대기 중 같은 budget의 다른 호출 close가 실패해 poison되어도 최종 if(!error) 검사 때문에 첫 read는 회수 불명503 대신 취소409/기한413을 반환할 수 있다. 같은 Primary에 정확 동시 순서 반례 RED→GREEN과 최종 cleanupUnknown 우선 검사를 재배정했다. Main/독립 최종 검수 전으로15 PASS를 최종 합격으로 게시하지 않는다. 제품 소스 지적1, 실제 FS/서비스 영향0이다.
+- FN16 선택backup budget reader 최종: WI8AF4A84E/Main66b56f 신규17합성 PASS/160.1039ms·6d3583 type/diff0·293c04 원storage본문불변·독립최종C0/I0·3hash일치. 코드I1의교차close불명우선과시험I1의signal한도마스킹을각실RED→GREEN/가드변이RED·원복으로해소했다. 협력기한만구현/OS절대회수미보장·실FS/Unix권한미검증·후속documents/baseline/기존23미연결. 약9PB누적극단한계기록·전체기능미완료. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_BACKUP_BUDGET_READ_RESULT_20261029.md.

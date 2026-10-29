@@ -1690,3 +1690,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 - 2026-10-29 FN16 본인 제어요청·인계 역사metadata 착수: WI38E08369·사전독립C0/I0, 기존2+신규3 코드만 단일 Primary에 배정. 원factory gate/CSRF·caller-owned boundedRC와 본인SQL선필터·원bundle검증을 보존한다. 기존23조합/전체미수집·합성false 유지, 실제DB·키·서비스·Agent·UI/복원 미검증이다.
 - FN16 본인 제어요청 역사 최종: 직렬화 I1 cb4267 RED→한정 보완, Main022c10 지정55 PASS/1772.8064ms·96e285 type/diff0·독립최종C0/I0·5지문일치. 현재OWNER+본인SQL/원factory gate·CSRF/原bundle·200+1/누적기한검사 소스 단위만 검수했다. 기존23미연결·전체미수집/합성false 유지, 실제DB키서비스·PG/OS기한/회수·UI/복원 미검증. 결과 docs/04_test_reports/AV3/FN16_CONTROL_HANDOFF_OWN_HISTORY_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 backup 선택 예산 reader 착수: 최종WI655C4B71·사전독립C0/I0/Primary준비확인 뒤 허용3코드를 단일 Primary에 GO했다. 최초C0/I1의회수불명budget재사용누락을보완했고 아직구현검증완료아니다. 원read/put/DRAFT불변·실FS/DB키서비스/Agent0·협력검사만/OS절대기한보장미구현·후속documents/baseline전달미완료를유지한다.
+
+- FN16 선택backup budget reader 최종: WI8AF4A84E/Main66b56f 신규17합성 PASS/160.1039ms·6d3583 type/diff0·293c04 원storage본문불변·독립최종C0/I0·3hash일치. 코드I1의교차close불명우선과시험I1의signal한도마스킹을각실RED→GREEN/가드변이RED·원복으로해소했다. 협력기한만구현/OS절대회수미보장·실FS/Unix권한미검증·후속documents/baseline/기존23미연결. 약9PB누적극단한계기록·전체기능미완료. 결과 docs/04_test_reports/AV3/FN16_ARTIFACT_BACKUP_BUDGET_READ_RESULT_20261029.md.

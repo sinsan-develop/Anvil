@@ -1,3 +1,4 @@
+import {assertArtifactBackupReadBudget,readOwnedArtifactBackupBytes,type ArtifactBackupReadBudget} from './artifact-backup-budget-read.ts';
 import { constants } from 'node:fs';
 import { lstat, realpath, mkdir, open, readdir, copyFile, unlink, rmdir } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
@@ -62,8 +63,17 @@ export class ArtifactStore {
     await unlink(staged); await rmdir(staging);
     return `blobs/${projectId}/${artifactId}`;
   }
-  async read(projectId: string, artifactId: string, expected: { bytes: number; contentHash: string }) {
+  async read(projectId: string, artifactId: string, expected: { bytes: number; contentHash: string }, backupBudget?: ArtifactBackupReadBudget) {
     if (!uuid.test(projectId) || !uuid.test(artifactId) || !Number.isSafeInteger(expected.bytes) || expected.bytes < 0 || expected.bytes > 20 * 1024 * 1024 || !/^[0-9a-f]{64}$/.test(expected.contentHash)) throw Error('ARTIFACT_INPUT_INVALID');
+    if (backupBudget !== undefined) {
+      assertArtifactBackupReadBudget(backupBudget);
+      const path = await this.#directory(['blobs', projectId]);
+      assertArtifactBackupReadBudget(backupBudget);
+      if ((await lstat(join(path, artifactId))).isSymbolicLink()) throw Error('ARTIFACT_FILE_UNSAFE');
+      assertArtifactBackupReadBudget(backupBudget);
+      const file = await open(join(path, artifactId), constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+      return readOwnedArtifactBackupBytes(file, expected, backupBudget);
+    }
     const path = await this.#directory(['blobs', projectId]);
     if ((await lstat(join(path, artifactId))).isSymbolicLink()) throw Error('ARTIFACT_FILE_UNSAFE');
     return this.#bytes(join(path, artifactId), expected);
