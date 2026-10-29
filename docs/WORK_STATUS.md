@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `dd47e7c7ffea24033bb5ca3c7a6ecb63cfe392ec`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `ce9c79661f41cdc374eab110a3ba987bb2963a26`이며 기존 `codex/av3-stage-b` local/private 동일(3c7fcd/ac19e1), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
 - 현재 단일 구현 담당 `fn16_primary_recovered`: 고정19수집기 내부조합은 Main16PASS/독립C0I0로 게시했다. 조합 원문 현재상태·바이트 검증 연결도 Main13PASS/독립C0I0로 게시했다. 프로젝트 권한정책 역사도 Main11PASS/독립C0I0로 게시했다. POLICY_VERSION 참조도 고정20실수집/Main33PASS/독립C0I0로 연결했다. 승인요청·결정·소비 현재저장상태도 Main15PASS/독립C0I0로 게시했다. 요청/결정 원ref와실저장관계2경로도 고정21수집/Main41PASS/독립C0I0로연결했다. 프로젝트 전체 통제원장 내부수집은 최종WI7DE711DC/Main22합성PASS로 게시했다. 이번 두 DB시각 경계 보완은 WI01D358A4/Main74합성PASS·독립C0/I0로 검수했다. 신규 WI의 실제 producer 대조 후 Primary RED→GREEN 연속 구현과 Main 집중검증·독립검수를 수행한다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review_recovered`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
@@ -9784,3 +9784,12 @@
 - 보호이력 검증 보완: Main41c5b7의18PASS/type0는보완전증거.독립I1은승인nonnull+당시head2에서옛v1회수정상/targetRef오결박의독립음성이부족한검증공백이며제품오류미확정.같은Primary에게실ActionScope의targetRef=v2/payload.referenceRef=v1와후속v3역사를범위내확인지시,Main동일코드쓰기0.이전선택IDkey제품1건/fixture반환1건·타입fixture2건도최종결과와구분한다.
 
 - 보호참조 이력 최종: 승인된 과거 버전 회수의 검증 공백을 보완한 뒤 Main f5702b 신규19 PASS, 타입·diff exit0, 독립 C0/I0로 검수했다. 당시 head v2/회수 대상 v1/현재 head v3와 정합 재봉인 음성을 확인했고 source 변경은 필요하지 않았다. 새0053만 RLS 문맥·readback을 적용하며 기존23/API/SQL/실제DB키서비스는 변경하지 않았다. 결과 FN16_BACKUP_REFERENCE_HISTORY_INVENTORY_RESULT_20261029.md, 정확8경로 checkpoint. 민감검사 미정과 전체 미수집·미완료는 유지한다.
+
+
+## 2026-10-29 FN16 본인 소비 프로젝트 초안 수집 착수
+
+- Main/Primary/독립 읽기에서 본인 소유+요청프로젝트에 소비된 초안의 제한된 metadata는 기존 FN16 내부 범위로 대조했다. app 직접 SELECT와 RO guard가 실제 source상 가능하며 실권한/0042적용은 미검증이다. 최종WI60FA9EAB/사전C0I0로 신규3만 기존Primary TDD에배정했다. 공개guard의own READY미귀속허용과 별도소비provenance503을 분리하는 문서I1을 보완했다. 현재input전체guard를 선택반환쿼리의FINALIZED필터로 대체하지 않는다. 11표141열·원draft content_hash 미저장/가짜원ref0·미선택/타creator/미소비/개인quota제외·최종현재성·원문검증미실행·23미연결 유지. Main동일코드쓰기0/실제키DB서비스·원문IO·Agent0.
+
+- 독립검수 I1: creation.sources_json은 실제0042에서artifact_id순인데 신규수집기가선택ordinal순으로대조해역순선택정상자료를거절하는오류를발견했다. 같은Primary에게creation대조목록만정렬하고원선택/ordinal/H는보존하는TDD보완을지시한다. Main25c758의16PASS는보완전증거다. 기존23/SQL/권한변경0이며새정상반례로검증한다.
+
+- 본인 소비초안 최종: 정렬 I1을 보완한 뒤 Main2f3b2e 신규17PASS/type·diff0·독립C0/I0로 검수했다. 원선택/ordinal/hash는 유지하고 creation 비교 copy만 artifactId순이다. 전체guard와소비provenance·11표141열·본인/소비project·선택budget·고정상태비노출을 확인했다. 기존23/SQL/실제DB키서비스·원문은변경하지않았고 미연결/전체미수집·미완료를유지한다. 결과 FN16_PROJECT_CREATION_DRAFT_INVENTORY_RESULT_20261029.md,정확7경로checkpoint.

@@ -1683,3 +1683,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 보호참조 역사metadata 착수: PMO A425D6502/최종WI41EEE908·사전C0I0로신규3 TDD 배정. 새0053 RLS문맥만보완·기존23수정0,원명령/승인/회수9표116열. 실제민감권한/키DB서비스/원형반출복원/전체인수 미완료.
 
 - 2026-10-29 FN16 보호참조 이력 최소metadata:9표116열·원명령/승인/회수·새RR RLS문맥/비노출 구현. Main19합성PASS/type0·독립C0/I0. 별도민감검사미정·기존23미연결·전체미수집 유지,실제DB키서비스/원형반출복원/UI미검증. 결과 docs/04_test_reports/AV3/FN16_BACKUP_REFERENCE_HISTORY_INVENTORY_RESULT_20261029.md.
+
+- 2026-10-29 FN16 본인 소비 프로젝트 초안metadata 착수: WI60FA9EAB·사전C0I0,신규3 TDD. 개인자료 own+consumedproject 제한·전체guard/선택provenance 분리·11표141열. 타creator/미소비/미선택UNKNOWN·quota/원문은제외,실제DB키서비스·0042·UI·복원미검증.
+
+- 2026-10-29 FN16 본인 소비초안/선택귀속metadata:11표141열·전체guard/소비provenance분리·원선택순서보존 구현. Main17합성PASS/type0·독립C0/I0. 실제DB권한/0042/원문/쓰기proof·UI·복원 미검증·23미연결/전체미수집유지. 결과 docs/04_test_reports/AV3/FN16_PROJECT_CREATION_DRAFT_INVENTORY_RESULT_20261029.md.
