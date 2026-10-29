@@ -1661,3 +1661,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-10-29 FN16 프로젝트 권한정책 역사:정책2표전체버전+저장선택증빙3표 내부수집/PII경로제외투영 구현,Main11합성PASS/type0·독립C0/I0. 실제DB키서비스/전체원장·권한복원·archive/UI미완료,19조합미연결은후속. 결과docs/04_test_reports/AV3/FN16_PERMISSION_POLICY_INVENTORY_RESULT_20261029.md.
 
 - 2026-10-29 FN16 정책 참조 조합:고정20번째실수집/원7필드hash와POLICY_VERSION exact·부재·충돌연결,Main직접영향33합성PASS/type0. 실제DB키서비스/전체원장·권한복원·archive/UI미완료,기존정책/원문helper불변. 결과docs/04_test_reports/AV3/FN16_PERMISSION_POLICY_COMPOSITION_RESULT_20261029.md.
+
+- 2026-10-29 FN16 승인 저장상태:프로젝트승인3표전체현재행+선택증거3표 내부수집/초기v1ref·현재head·원형부재·전이미저장/익명투영 구현. Main15합성PASS/type0,실제키DB서비스/전체원장·현재승인효력/원형복원·archive/UI미완료. 결과docs/04_test_reports/AV3/FN16_APPROVAL_HISTORY_INVENTORY_RESULT_20261029.md.
