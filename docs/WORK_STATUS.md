@@ -3,9 +3,9 @@
 ## 현행 인수 요약 — 2026-10-29 FN16 source 연결 진행
 
 - 최신 직접 승인: FN16 신규 계약의 코드·화면·미적용 SQL·합성검증 및 PMO 회신 전달. 승인3FAD0CE9/계약5A6819이며 실제 키·DB·서비스 변경은 제외한다. 아래 10월26~28일의 승인대기/blocked 기록은 해당 시점 이력이며 이번 승인 범위의 실행을 막지 않는다.
-- 최신 게시 checkpoint는 `699b0b51e00e53d832be00c6bacb32abe0727f9b`이며 기존 `codex/av3-stage-b` local/private 동일(288302), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
+- 최신 게시 checkpoint는 `415ddf5a66b5a2637fe952c5f7e0b31ba50ef541`이며 기존 `codex/av3-stage-b` local/private 동일(bcac98), main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변이다. branch-only 구현이며 main 통합/전체 완료가 아니다. 보호 untracked8은 보존한다.
 - 최근 내부 단위: 문서·대화·지식·설계/계획·방법론·본인 알림의 metadata 수집과 일부 원문 검증 연결을 합성·타입·독립 검수했다. 알림은 교차연산 중복 I1 보완 후 Main14PASS/독립C0I0. source가 있는 것과 실제 백업/복원·UI 연결은 다르며 전체 FN16/사용자 인수는 미완료다. 실행하지 않은 실제 DB/키/서비스 검증을 PASS로 세지 않는다.
-- 현재 단일 구현 담당 `fn16_primary`: WI `FN16_RESULT_SUBMISSION_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md` SHA B48EF4C8의 결과제출 이력 source1/test2. Main·독립 preflight C0/I0/M0 후 TEST_ONLY 진행 중이다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
+- 현재 단일 구현 담당 `fn16_primary`: WI `FN16_RESULT_REVIEW_HISTORY_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md` SHA 045AB9FB의 결과 검수 기준·검토·재작업 이력 source1/test2. 결과제출 수집은 Main13PASS/독립C0I0로 마쳤고, 현재 단위는 독립 preflight C0/I0/M0 후 Primary RED→GREEN 연속 구현 중이다. 원 주장/미실행/실패와 실제 검수 판정을 구분한다. Main은 관리·검수·통합, `fn16_review`는 읽기 전용 독립 검수다. 수동 정책 신규 후보158E10BC는 별도 미채택이며 기존 PMO 질문 답변 전에는 구현하지 않는다. 나머지 독립 구현은 계속한다.
 - P03 R2는 일회 승인 소비 후 실패 이력·원/R1/R2 volume·원장 보존 상태이며 재실행하지 않는다. 실제 DB·서비스 복구는 이 FN16 승인에 포함하지 않는다. 전체 WORK_PLAN은 미완료이며 이후 정확 선행/새 승인 범위와 실제 증거에 따라 이어간다.
 
 이하 과거 인수 요약과 상세 일자 이력은 원문을 보존한다. 최신 수행 결과는 하단 누적 기록을 대조한다.
@@ -9567,3 +9567,8 @@
 - 결과제출 WIB48EF4C8 독립preflight C0/I0/M0. 시험0B983A6A/C0CB9D51 동결,Main81166c 신규13중schema1PASS/미구현12FAIL/skip0/505.41ms exit1. 기존primary 신규source1만GO. Maina98b11/632dde fixture·변조반례를읽어실제pureparser/원hash재결박/과거actor·false보존대조,author9111b1 type/diff0·작성오류0. 실제키DB서비스0.
 
 - 결과제출 sourceDF733B11/시험0B983A6A·C0CB9D51: Main4c570b13PASS/0FAIL/skip0/1547.1448ms/type/diff0,ef30f0/189a0e 전체읽기·독립최종C0/I0/M0. 기존SQL/source변경0·실제DB키서비스0·전체FN16미완료. 결과 FN16_RESULT_SUBMISSION_INVENTORY_RESULT_20261029.md. 다음결과검수기준/검토/재작업연결이력 WI문서준비.
+
+### 2026-10-29 FN16 결과 검수·재작업 이력 구현
+- WI 045AB9FB1E9022C953FD1C94E372A4FBAC2E8221442743F08EF8659903B7A0A9의 신규 source1/test2만 기존 fn16_primary에게 배정했다. 독립 사전 검토 C0/I0/M0, Primary 0daeb2 신규14 중 schema1 PASS/제품 부재13 FAIL/skip0/252.6009ms/exit1을 기록했다. 이 RED는 후단 보안 사례를 개별 실행한 증거가 아니다. Main 중간 RED 반복·단계별 재승인 대기를 없애고 동일 담당자가 GREEN까지 수행한 뒤 Main 집중검증·독립검수한다. 실제 키·DB·서비스 변경0, 기존 보호8 보존, 전체 FN16 미완료.
+
+- 결과검수이력 sourceC3005711/행동E115BD2A/schemaE90A4C12: Main30477a 신규14PASS/0FAIL/skip0/1276.5221ms·type/diff0, 독립최종C0/I0/M0. 구현 중 SQL template 구문오류2곳과 수정명령 parse오류1회(변경0)를 보완했고 시험기대 변경0. 결과 FN16_RESULT_REVIEW_HISTORY_INVENTORY_RESULT_20261029.md. 실제키DB서비스0·전체FN16미완료. 현황 양쪽 기존이력은 P03 2026-10-28 준비시각 06:10:47.610Z/624Z 차이만 있어 그대로 보존(df2db8); 이번 추가기록은 동일하다.
