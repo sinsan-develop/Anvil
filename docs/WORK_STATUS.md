@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-31 시험 앱 정리 완료
+- 신산님 직접 승인으로 숨김 시험 앱 main20344와 자연 종료한 자식3·감독기30398/34040의 종료를 회수하고 등록 QA 폴더를 정리했다. Main 독립7ae955에서 대상 프로세스0/QA경로 부재·보존 r3 전지문 불변을 확인했다.
+- 정상 packaged-entry 화면 검수는 INCOMPLETE다. 이번 정리 성공을 제품 검수/전체 계획 완료로 승격하지 않는다. 실제 DB·키·서비스·Agent·제품코드 변경0·새시험0이다.
+- 전체 WORK_PLAN은 미완료이며 FN13 r2 정확 source 계약의 채택 질문은 별도다. 아래의 시험 앱 생존/정리승인 대기 기록은 당시 이력으로 보존하고 현재 상태로 재사용하지 않는다.
 ## 현행 인수 요약 — 2026-10-30 FN18 한정 Shell 검수
 
 - 신산님 최신 FN06 HUMAN r2 계약 승인과 기존 작업계획 완료 지시에 따라 기존 Primary가 구현, Main이 관리·검수·통합한다. 실제 DB·키·서비스·Agent 실행 제외를 유지한다. 전체 WORK_PLAN·FN18·Stage E는 미완료다.
@@ -10239,3 +10243,11 @@
 - 직전 turn no progress2에이어 cc3791/PMO fd3be5d7:7도동일정확FN13 r2 채택·시험앱종료정리답변미수신을재확인했다. PMO 신규메시지는기존질문을반복하지않겠다는관찰보고이며사용자채택/조작승인이아니다. 순서상다음FN13의특정source거절을미해제한채보호5를수정하거나새SQL/API를등록할수없고,현재실DB/키서비스Agent/Oracle제외범위도불변이다. 기존소비선검토에서이미연결된기능을재작업하거나미사용wrapper·반복시험으로진도를만들지않는다.
 - no progress3의동일차단감사임계를충족해update_goal(status=blocked)를실제호출했고반환status=blocked를확인했다. COMPLETE/PAUSED로바꾸지않았고전체목표를축소하지않았다. 이후수행은이차단감사·상태반환의보존/보고뿐이며추가구현/검증/질문0이다.
 - 마지막확인HEAD2fbeee24·자료61BBF0DC불변·Main현황1dirty/보호8, 시험main20344/부모34040의원실행경로·생성시각live다. QA는기한만료INCOMPLETE이며잔류자원을진행중검증으로세지않는다. 강제종료/감독기종료/삭제/재실행0·등록QA보존. 정확승인후원scope에서30398/프로세스/marker를다시대조하고승인된범위만처리한다. FN13결정출처PMOturn01a18dc8/r2SHA61BBF0DC와이chat의시험앱정리질문을그대로유지한다.
+### 2026-10-31 시험용 Anvil 종료·정리 직접 승인 접수
+- 신산님이 call_128f5ab20ee64839bf03fe9e0c570e57/item0의정확시험main20344·동일자식3 종료·정리질문에 ‘시험용 앱만 종료·정리해’라고답했다. 이승인은자기시험프로세스와등록QA경로만이며실제서비스/DB/키/Agent·기존다른앱/r3artifact/source·새검수/재실행·FN13채택은포함하지않는다. 이전무승인force금지이력은보존하고현재정확승인범위만처리한다.
+- 기존Primary에게원scope30398/감독기34040·정확root/자식3의exe/생성시각/부모관계·marker/owner/link/실경로재검사후preflight보고를지시했다. Main5b564e는등록QArootnonlink/owner marker256EAFBC05B39CE79039398F03EF32BE046B316A98F326D47C3E4BAECAF75D5E불변을확인했다. 실행전신원불명은보존·보고하고다른PID/새자식으로확대하지않는다. cleanup결과와화면검수INCOMPLETE는별개다.
+### 2026-10-31 직접 승인된 시험 앱 종료·정리 완료
+- 신산님 call_128f5ab20ee64839bf03fe9e0c570e57/item0 ‘시험용 앱만 종료·정리해’를 근거로 기존 Primary가정리했다. ff5d15는raw100ns시각가드에서종료前실패/조작0, a46319에서CIM과같은microsecond정밀도 exact변환(ticks%10제거,±허용오차0)을검산했다. Main21d080도원4PID/시각·부모·exeF513지문/owner를독립확인하고한정GO를전달했다.
+- 2d1cd9 exit0: 원Process/SafeHandle에결박한main20344에만non-treeKill1회, exit-1(Node4294967295). 원child42664/42524/34320은자연종료code0이어서추가kill을생략했다. 다른PID/이름전체kill0, supervisor34040을먼저종료하지않았다. 원scope30398의child-exit/close/stdioClosedtrue/remaining0을회수했고감독기는자연종료했다. 감독기exit1은기존30분초과/UNKNOWN·강제정리기록이며정리실패또는제품검수PASS로바꾸지않는다.
+- 62aee8 exit0: 등록QAroot의literal realpath/marker256EAFBC/owner SINSAN\cyhuh·전체link0·사용process0·원exit결과를재검사후정확D:/tmp/anvil-v3-stage-b/fn18-packaged-ui-20261030-01의78files/41913626bytes만1회삭제했다. 직후root부재/대상PID0/exactexe0을확인했다. 보존artifact/SDK·다른앱·실DB키서비스Agent/source·새QA실행0이다.
+- Main독립7ae955 exit0에서qaExists=false/targetProcessCount0/exactExeCount0·r3exeF51394219B6AA44770D27231205BD93BD4AF2F57A1DCD2C7B66F0B35FD08E10F/manifestB68E97CEEBC7F8B612578E11D3799C961EE75C9C28055D54FA9096B0D7F3CB4A/receipt201BBC965E564F1E306FDF0B8CD7CA79A31D8F11ECCAABECE56DF0EADA4D916E불변을재확인했다. 승인된정리는완료이며정상entry물리UI검수는INCOMPLETE/NOT_EXECUTED그대로다. 종료정리승인이FN13 r2채택/새시험/전체계획재개승인이아님을유지한다.

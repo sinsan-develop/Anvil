@@ -463,3 +463,7 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 
 ### 2026-10-31 FN18 정상entry 시도 후
 정상 packaged entry는 1회 시도했으나 숨김 launch 옵션과 창 미표시로 INCOMPLETE입니다. 앞선 NOT_RUN은 그 이전 시점의 이력이며 화면 PASS로 승격하지 않습니다. 정확 시험 root/PID/소유감독기·정리승인 대기와 최신 live 관측은 WORK_STATUS·FN18 결과서36718F62를 대조합니다. 제품/보존 artifact/실DB키서비스Agent는 불변입니다.
+
+
+### 2026-10-31 승인된 시험 앱 정리 결과
+등록 QA 폴더 fn18-packaged-ui-20261030-01과시험본체/자식3·감독기는직접승인후정리됐다. Main7ae955에서QA부재·대상프로세스0·exactexe0을확인했고보존r3exe/manifest/receipt전지문은불변이다. 실제DB·키서비스Agent·제품source/SDK·새시험변경0,정상entry화면검수는INCOMPLETE를유지한다. 이전live/정리대기문구는원시점이력이다.
