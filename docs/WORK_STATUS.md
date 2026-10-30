@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-30 FN18 한정 Shell 검수
 
 - 신산님 최신 FN06 HUMAN r2 계약 승인과 기존 작업계획 완료 지시에 따라 기존 Primary가 구현, Main이 관리·검수·통합한다. 실제 DB·키·서비스·Agent 실행 제외를 유지한다. 전체 WORK_PLAN·FN18·Stage E는 미완료다.
-- FN18 게시 전: 현재 source HEAD/private `bd716e36513472be42f654fe2551838c2d4b2adf`, 제품 기준 `1f2fe20f9c9a49c31d201c1cb30b31d6d0949c39`, remote main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변. 새 source18은 검수·동결 상태이며 Main 문서5와 게시 준비 중이다. 보호 untracked8은 보존한다. branch-only이며 main 통합 아님.
+- 최신 제품 checkpoint는 `a020931dd3ae46631df88b323adf5a287ace3b8f`다(bd716e36 직접 자식/정확 source18+소유문서5=23). 967ce3 일반 non-force 게시 exit0·local/private exact 확인, remote main `f976ed5e29e14b13e12729d5b1ccf98f050f2210` 불변·tracked clean/보호8 유지. 이후 현황 문서는 제품 변경과 구분한다. branch-only이며 main 통합 아님.
 - FN06 HUMAN 주장 저장/보호 조회, UI05 원보고 미리보기, UI04 실제producer 선택→준비/별도승인/재조회는 앞선 검수·게시 이력이다. 완료 부분을 다시 구현하지 않는다.
 - FN18 한정 Shell·설정 보존·원격 격리/명시 연결·hide/show·종료 거부·10초 기한을 실제 Electron 합성으로 확인했다. Main policy5/strict0, full7·boundaries4는 각각 Node1 PASS·0 SKIP. 실제 TLS/서버/프로젝트·packaged main-entry/설치·서명/update·실행기 회수는 미검증/미구현이다. 원격 팝업·다운로드·브라우저 권한은 현재 미지원이며 거절만 확인했다.
 - 현재 r3 개발 실행디렉터리73파일/374007452bytes·asar8/원src7 동일·package투영 대조. 검토 사본 `.av3-data/v3-development/fn18-shell-20261030-01-r3`의 전 지문을 검산했다(r2 보존). 정본 r3 B68E97CE…/NOT_RELEASE/UNSIGNED_DEV, baseHead와 실제 source18 hash를 구분한다. 실제 packaged exe 자동 기동0.
@@ -10194,3 +10194,6 @@
 - toolchain generation2 f6263c는ConvertFromJson의DateTime자동변환시각가드에서삭제0으로멈췄다. marker5ABC3B0E/원UTC문자열불변·UtcKind/ToStringo exact비교를Main한정허용한7c5f2a에서전체경로/owner/link/CIM사용0 재확인뒤exactroot1회삭제·경로부재/참조0/SDK와packagedprocess0/nativeQA부재. 보존SDK/deps/out/r2/r3 합1700857278bytes<2GiB. 원실패를소급PASS하지않는다.
 - PMO compact cursor19는신규child r1결정없음/개입없음이다. Main은독립다음FN18 정상packaged entry의범위를준비한다. computer-use스킬을읽었으며직접PowerShell UIAutomation혼용없이CUA API로자기창을선택하는최소실검수안을쓸예정이다. 현재정상entry/도구/host생성0, appData경로값을환경변수만으로완전히격리했다고주장하지않는다.
 - FN18 최종5c7495 정확23stage/같은cachedwhitespace exit0, rawsource18 hash일치·Gitblob raw동일5/EOL만13/다른내용차이0을검산했다. branch/HEAD/privatebd716e36·정확developmentURL·remote mainf976불변확인. 최종문서AA87AEE5까지독립C0/I0후이기계검산수치만덧붙였으며제품/SDK/lock추가수정0·normalentry/실DB키서비스Agent0이다.
+- FN18 4b1bd5 일반hook commit a020931dd3ae46631df88b323adf5a287ace3b8f = bd716e36 직접자식/정확23. 967ce3 검증된development 기존codex/av3-stage-b에non-force push exit0, local/private exact동일·remote mainf976불변·tracked clean/보호untracked8유지. PR/main병합·실제DB키서비스Agent0.
+- r3 검토사본 SOURCE_CHECKPOINT_RECEIPT.json을9e5ec9에서create-new했다. SHA256201bbc965e564f1e306fdf0b8cd7ca79a31d8f11eccaabece56df0eada4d916e/6552bytes: codeC a020931d·r3manifestB68E97CE·raw source18 hash·Gitblob 동일5/EOL만13/다른내용0을결박한다. 원manifest변경0·추가실행0이며정상packagedentry미실행을명시한다. 현재제품checkpoint와후속문서tail은혼동하지않는다.
+- 다음독립FN18단위는정상Anvil.exe main-entry의설정화면/HTTP부적합거절/종료취소·실확인/정확process종료를새own userData로검수하는최소WI다. 기존SDKfactory메모리QA 반복·실서버/DB/Agent/설치/OS등록/CDP/제품QA IPC추가0. computer-use API만사용할방법을준비하고사용자작업/다른창을대상으로하지않는다. PMO child r1결정은여전히미채택·질문반복0.
