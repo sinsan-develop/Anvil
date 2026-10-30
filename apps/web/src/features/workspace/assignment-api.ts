@@ -1,3 +1,4 @@
+import type {ExecutionPreparationBuffer,ExecutionPreparationChange} from './execution-preparation-api.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { postDocumentCommand, type DocumentWrite, type DocumentSession } from '../design-trace/editor-api.ts';
 import type { WorkPlanView, PlanRef } from '../design-trace/work-plan-api.ts';
@@ -11,7 +12,7 @@ import type { SourceReadSnapshotView } from '../connections/source-read-api.ts';
 
 export interface AssignmentSnapshot { definition: AssignmentDefinition; reason: string; previousRef: PlanRef | null; basis: { planRef: PlanRef; applicationRef: PlanRef; designRef: PlanRef; taskCode: string; nodeId: string; taskCardHash: string }; readinessIssues: AssignmentIssue[]; status: 'DRAFT'; ready: false; executionAuthorized: false; dispatchPerformed: false }
 export interface AssignmentDraftView { projectId: string; ref: PlanRef; snapshot: AssignmentSnapshot; headVersion: number | null; sourceCurrentness: 'NOT_RECHECKED'; observedAt: string }
-export interface AssignmentBuffer { bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null; contentDecision?: AssignmentDecisionBuffer | null; contextPreparation?: ContextPreparationBuffer | null; responsibleSession?:ResponsibleSessionBuffer|null }
+export interface AssignmentBuffer { executionPreparation?:ExecutionPreparationBuffer|null; bindingId: string; projectId: string; ownerUserId: string; ownerClientId: string; controlGeneration: number; expectedDesignRef: PlanRef; input: AssignmentDraftInput; ref: PlanRef | null; pending: DocumentWrite | null; result: AssignmentDraftView | null; dirty: boolean; uncertain: boolean; failure: { code: string; status: number } | null; contentDecision?: AssignmentDecisionBuffer | null; contextPreparation?: ContextPreparationBuffer | null; responsibleSession?:ResponsibleSessionBuffer|null }
 export interface AssignmentPage { items: { ref: PlanRef; status: 'DRAFT'; goal: string; taskRef: AssignmentDefinition['taskRef']; issueCount: number; updatedAt: string; ready: false; executionAuthorized: false }[]; hasMore: boolean; nextCursor: string | null; observedAt: string }
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const hash = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
@@ -95,4 +96,13 @@ export async function listAssignmentDrafts(client: ApiClient, projectId: string,
   const page = await client.get<AssignmentPage>(`/api/v1/projects/${projectId}/assignment-drafts?${query}`);
   if (!exact(page, ['items', 'hasMore', 'nextCursor', 'observedAt']) || !Array.isArray(page.items) || page.items.length > 50 || typeof page.hasMore !== 'boolean' || (page.hasMore ? typeof page.nextCursor !== 'string' || !page.nextCursor || page.nextCursor.length > 4096 : page.nextCursor !== null) || !Number.isFinite(Date.parse(page.observedAt)) || new Set(page.items.map(i => i.ref?.id)).size !== page.items.length || page.items.some(i => !exact(i, ['ref', 'status', 'goal', 'taskRef', 'issueCount', 'updatedAt', 'ready', 'executionAuthorized']) || !reference(i.ref) || !task(i.taskRef) || !text(i.goal) || i.status !== 'DRAFT' || !Number.isSafeInteger(i.issueCount) || i.issueCount < 0 || !Number.isFinite(Date.parse(i.updatedAt)) || i.ready !== false || i.executionAuthorized !== false)) throw new ApiError('RESPONSE_INVALID');
   return page;
+}
+
+/** 기존 저장 임무를 연 상태에도 새 준비 입력을 App 소유 버퍼에 보존한다. 권한 판정은 하지 않는다. */
+export function applyExecutionPreparationBuffer(current:AssignmentBuffer|null,draft:AssignmentDraftView,session:DocumentSession,change:ExecutionPreparationChange):AssignmentBuffer|null{
+ if(current&&(current.pending||current.projectId!==draft.projectId||current.ownerUserId!==session.user.id||current.ownerClientId!==session.clientId))return current;
+ const value=change(current?.executionPreparation??null);if(!value)return current?{...current,executionPreparation:null}:current;
+ if(value.projectId!==draft.projectId||value.ownerUserId!==session.user.id||value.ownerClientId!==session.clientId)return current;
+ if(current)return{...current,executionPreparation:value,dirty:current.dirty||value.dirty,uncertain:!!current.contentDecision?.uncertain||!!current.contextPreparation?.uncertain||!!current.responsibleSession?.uncertain||value.uncertain};
+ return{bindingId:crypto.randomUUID(),projectId:draft.projectId,ownerUserId:session.user.id,ownerClientId:session.clientId,controlGeneration:value.controlGeneration,expectedDesignRef:draft.snapshot.basis.designRef,input:{baseRef:draft.snapshot.previousRef,definition:structuredClone(draft.snapshot.definition),reason:draft.snapshot.reason},ref:draft.ref,pending:null,result:draft,dirty:value.dirty,uncertain:value.uncertain,failure:null,executionPreparation:value};
 }

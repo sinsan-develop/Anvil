@@ -1,3 +1,6 @@
+import {applyExecutionPreparationBuffer} from './assignment-api.ts';
+import type {Ref} from '../connections/api.ts';
+import type {ExecutionPreparationChange} from './execution-preparation-api.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
@@ -20,7 +23,7 @@ import { AssignmentParentOriginal } from './AssignmentParentOriginal.tsx';
 import {AssignmentRevisionComparison} from './AssignmentRevisionComparison.tsx';
 import {AssignmentDraftRows} from './AssignmentDraftRows.ts';
 
-export function WorkspaceAssignments({ client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
+export function WorkspaceAssignments({providedHumanReportRef, client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { providedHumanReportRef?:Ref|null;client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
   const [drafts, setDrafts] = useState<AssignmentPage | null>(null), [opened, setOpened] = useState<AssignmentDraftView | null | undefined>(undefined), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [reread, setReread] = useState(false);
   const alive = useRef(true), flight = useRef(false);
@@ -34,7 +37,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     try { await action(); } catch (cause) { if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); }
     finally { flight.current = false; if (alive.current) setBusy(false); }
   }
-  const safeToReplace = () => !buffer?.pending && !buffer?.contentDecision?.pending && !buffer?.contentDecision?.uncertain && !buffer?.contextPreparation?.pending && !buffer?.contextPreparation?.uncertain && !buffer?.responsibleSession?.pending && !buffer?.responsibleSession?.uncertain && (!buffer?.dirty || confirm('미저장 임무 입력을 버리고 새 준비로 바꿀까요?'));
+  const safeToReplace = () => !buffer?.pending && !buffer?.contentDecision?.pending && !buffer?.contentDecision?.uncertain && !buffer?.contextPreparation?.pending && !buffer?.contextPreparation?.uncertain && !buffer?.responsibleSession?.pending && !buffer?.responsibleSession?.uncertain && !buffer?.executionPreparation?.pending && !buffer?.executionPreparation?.uncertain && (!buffer?.dirty || confirm('미저장 임무 입력을 버리고 새 준비로 바꿀까요?'));
   async function prepare() {
     if (!plan || !stage || !project.currentMethodologyRef || !owner || !bound || !safeToReplace()) return;
     const generation = await documentControl(client, project.id, session); if (!alive.current) return;
@@ -101,7 +104,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     onChange(current => {
       if (current?.pending || current && (current.ownerUserId !== session.user.id || current.ownerClientId !== session.clientId || current.projectId !== project.id)) return current;
       const previous=current?.contentDecision??null,value=typeof action==='function'?action(previous):action;
-      if (current) return {...current,contentDecision:value,dirty:!!value?.dirty||!!current.contextPreparation?.dirty||!!current.responsibleSession?.dirty,uncertain:!!value?.uncertain||!!current.contextPreparation?.uncertain||!!current.responsibleSession?.uncertain};
+      if (current) return {...current,contentDecision:value,dirty:!!value?.dirty||!!current.contextPreparation?.dirty||!!current.responsibleSession?.dirty||!!current.executionPreparation?.dirty,uncertain:!!value?.uncertain||!!current.contextPreparation?.uncertain||!!current.responsibleSession?.uncertain||!!current.executionPreparation?.uncertain};
       return {bindingId:crypto.randomUUID(),projectId:project.id,ownerUserId:session.user.id,ownerClientId:session.clientId,controlGeneration:value?.controlGeneration??project.controlState.generation??0,expectedDesignRef:shown.snapshot.basis.designRef,input:{baseRef:shown.snapshot.previousRef,definition:structuredClone(shown.snapshot.definition),reason:shown.snapshot.reason},ref:shown.ref,pending:null,result:shown,dirty:!!value?.dirty,uncertain:!!value?.uncertain,failure:null,contentDecision:value};
     });
   };
@@ -110,10 +113,11 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     onChange(current => {
       if (current?.pending || current && (current.ownerUserId !== session.user.id || current.ownerClientId !== session.clientId || current.projectId !== project.id)) return current;
       const previous = current?.contextPreparation ?? null, value = typeof action === 'function' ? action(previous) : action;
-      if (current) return { ...current, contextPreparation: value, dirty: (current.result ? !!current.contentDecision?.dirty : current.dirty) || !!value?.dirty || !!current.responsibleSession?.dirty, uncertain: !!current.contentDecision?.uncertain || !!value?.uncertain || !!current.responsibleSession?.uncertain };
+      if (current) return { ...current, contextPreparation: value, dirty: (current.result ? !!current.contentDecision?.dirty : current.dirty) || !!value?.dirty || !!current.responsibleSession?.dirty||!!current.executionPreparation?.dirty, uncertain: !!current.contentDecision?.uncertain || !!value?.uncertain || !!current.responsibleSession?.uncertain||!!current.executionPreparation?.uncertain };
       return { bindingId: crypto.randomUUID(), projectId: project.id, ownerUserId: session.user.id, ownerClientId: session.clientId, controlGeneration: value?.controlGeneration ?? project.controlState.generation ?? 0, expectedDesignRef: shown.snapshot.basis.designRef, input: { baseRef: shown.snapshot.previousRef, definition: structuredClone(shown.snapshot.definition), reason: shown.snapshot.reason }, ref: shown.ref, pending: null, result: shown, dirty: !!value?.dirty, uncertain: !!value?.uncertain, failure: null, contextPreparation: value };
     });
   };
+  const executionPreparationChange:(change:ExecutionPreparationChange)=>void=change=>{if(!shown||!bound)return;onChange(current=>applyExecutionPreparationBuffer(current,shown,session,change));};
   const responsibleChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>=action=>{
     if(!shown||!bound)return;
     onChange(current=>{
@@ -157,7 +161,7 @@ export function WorkspaceAssignments({ client, project, session, stage, buffer, 
     {shown?.snapshot.definition.parentAssignmentRef ? <AssignmentParentOriginal key={['parent-original',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} child={shown} busy={busy} run={action=>void perform(action)} renderConditions={snapshot=><AssignmentConditions snapshot={snapshot}/>} /> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
     {shown?.snapshot.previousRef?<AssignmentRevisionComparison key={['revision',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} current={shown} busy={busy} run={action=>void perform(action)}/>:null}
-    {shown&&bound&&shown.snapshot.definition.parentAssignmentRef===null?<AssignmentContentDecision key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
+    {shown&&bound&&shown.snapshot.definition.parentAssignmentRef===null?<AssignmentContentDecision providedHumanReportRef={providedHumanReportRef??null} executionPreparationBuffer={buffer?.executionPreparation??null} onExecutionPreparationChange={executionPreparationChange} key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
 

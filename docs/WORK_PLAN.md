@@ -1750,3 +1750,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-30 UI05 준비 원문에서 HUMAN 능력보고 읽기 연결
 - WI BE07FD2B/기존승인UI05 근거접근 범위에서 기존 FN06 고정GET만 명시 소비한다. 원준비 fullref·보고 hash와 연결/환경 pair검산·404namespace/v1외미확인·원주장/UNVERIFIED·실행false·페이지/선택보존을 연결했다. 새API/저장/SQL/권한·C1/7부족조건변경0.
 - Main기존helper4/최종신규4+기존6 DOM10자식(부모포함Node11)/typebuild/diff0·독립C0/I0·13지문동일·QA별도잔여0. 결과 docs/04_test_reports/AV3/UI05_PREPARATION_HUMAN_CAPABILITY_PREVIEW_RESULT_20261030.md. 실제DB/HTTP/상위전체App/served·사용자인수/전체UI05·FN09·Stage/계획은미완료다.
+### 2026-10-30 UI04 실제 참조의 의도준비·별도승인·보관 source 검수
+- WI9D251E4B·기존prepare A/HUMAN고정GET 소비만 exact12로 연결했다. 확정임무→실binding/context/연결·환경/HUMAN/예산명시선택·원형검산→범위/mode/이유→AUTO 또는실UI08별도결정→동일원명령명시재개/고정readback이다. 새공개API/SQL/권한·Agent실행0·기존7부족조건/NOT_AUTHORIZED/false 유지.
+- Main신규unit10/실DOM9자식+부모Node10·기존직접15/typebuild/diff0·독립I1/I2/parent보완후C0/I0·12지문동일/보호8불변·QA별도잔여0. 결과 docs/04_test_reports/AV3/UI04_EXECUTION_PREPARATION_COMPOSITION_RESULT_20261030.md. 실제HTTP/DB/전체App/served·사용자인수/전체UI04/FN09/FN11·Stage/계획미완료를유지한다.
