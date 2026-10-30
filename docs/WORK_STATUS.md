@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-31 정상 GUI 02 도구 권한 대기
+- 신산님 goal ACTIVE 직접 재개 뒤, 구 시험 정리 완료 상태에서 동일 r3의 정상 GUI 검수02를 시작했다. windowsHide:false·spawn 전 로그/즉시 listener 순서를 실제 명령으로 검토했고 원제품·SDK·artifact 변경/기존 native 시험 반복0이다.
+- 새등록 QA fn18-packaged-ui-20261031-02/session91041·감독기67496/root37448(UTC17:48:10.1705040Z)·markerA52938AF는후속관측에서unknownfalse/정확4process/약41.9MB였다. 원구PID20344 계열은정리완료이며혼동하지않는다. TTL30분/128MiB·normalexit후exactcleanup·불명보존/no force다.
+- Main은정확Anvil창5839198/제목1개를발견했지만ComputerUse앱제어승인시간만료로화면본문/입력은미실행이다. 신산님의앱제어허용준비또는직접정상종료질문답변을기다린다. 원구PID강제정리승인을새PID로확장하지않으며동일권한경계에서새시험을또띄우지않는다.
+- FN13 r2 SHA61BBF0DC의채택은별도미응답이다. 전체WORK_PLAN/FN18은미완료이고실DB/키서비스Agent/유효HTTPS/원격로그인/제품source변경0이다. 아래의구시험정리요약은당시이력이다.
 ## 현행 인수 요약 — 2026-10-31 시험 앱 정리 완료
 - 신산님 직접 승인으로 숨김 시험 앱 main20344와 자연 종료한 자식3·감독기30398/34040의 종료를 회수하고 등록 QA 폴더를 정리했다. Main 독립7ae955에서 대상 프로세스0/QA경로 부재·보존 r3 전지문 불변을 확인했다.
 - 정상 packaged-entry 화면 검수는 INCOMPLETE다. 이번 정리 성공을 제품 검수/전체 계획 완료로 승격하지 않는다. 실제 DB·키·서비스·Agent·제품코드 변경0·새시험0이다.
@@ -10251,3 +10256,15 @@
 - 2d1cd9 exit0: 원Process/SafeHandle에결박한main20344에만non-treeKill1회, exit-1(Node4294967295). 원child42664/42524/34320은자연종료code0이어서추가kill을생략했다. 다른PID/이름전체kill0, supervisor34040을먼저종료하지않았다. 원scope30398의child-exit/close/stdioClosedtrue/remaining0을회수했고감독기는자연종료했다. 감독기exit1은기존30분초과/UNKNOWN·강제정리기록이며정리실패또는제품검수PASS로바꾸지않는다.
 - 62aee8 exit0: 등록QAroot의literal realpath/marker256EAFBC/owner SINSAN\cyhuh·전체link0·사용process0·원exit결과를재검사후정확D:/tmp/anvil-v3-stage-b/fn18-packaged-ui-20261030-01의78files/41913626bytes만1회삭제했다. 직후root부재/대상PID0/exactexe0을확인했다. 보존artifact/SDK·다른앱·실DB키서비스Agent/source·새QA실행0이다.
 - Main독립7ae955 exit0에서qaExists=false/targetProcessCount0/exactExeCount0·r3exeF51394219B6AA44770D27231205BD93BD4AF2F57A1DCD2C7B66F0B35FD08E10F/manifestB68E97CEEBC7F8B612578E11D3799C961EE75C9C28055D54FA9096B0D7F3CB4A/receipt201BBC965E564F1E306FDF0B8CD7CA79A31D8F11ECCAABECE56DF0EADA4D916E불변을재확인했다. 승인된정리는완료이며정상entry물리UI검수는INCOMPLETE/NOT_EXECUTED그대로다. 종료정리승인이FN13 r2채택/새시험/전체계획재개승인이아님을유지한다.
+### 2026-10-31 goal 직접 재개·FN18 정상 GUI 미검수 항목 재개 준비
+- 신산님이goalstatus=active로명시재개했다. 직전직접승인된정리는7ae955/77a9b6e6에서완료된이력이며반복하지않는다. 이번2df812는현HEAD77a9b6e6/보호8·trackedclean·구QA부재/exactr3exeprocess0·새후보root부재를확인했다. FN13 r2는PMOcursor9에서도미응답이며goal재개자체를공개계약채택으로읽지않는다.
+- 승인된FN18계획의미완료정상entry화면검수를독립적으로이어간다. 동일보존r3와같은제품source를사용하고이전실패의기동옵션windowsHide:true를false로고정하여실제GUI를표시한다. helper는pipes/no새console이며시작log파일준비와spawn/exit/close리스너등록순서도실제명령으로검토한다. 새SDK/기존native시험반복·제품변경·재패키징0이다.
+- 생성전사전등록: D:/tmp/anvil-v3-stage-b/fn18-packaged-ui-20261031-02,owner SINSAN\cyhuh/기존Primary·Main,목적은정상main-entry초기설정/invalidhttp거절·입력보존/설정파일없음/실quit확인취소→수락. 최대30분·디스크128MiB,기존개발보존자료+QA총2GiB와free여유를지킨다. 새userData/appData/localAppData/temp/downloads·owner marker만이root안에create-new,명시--user-data-dir/허용env를사용한다. OSknown-folder전체redirect나전체OS네트워크0을주장하지않는다.
+- 실제r3exeF513/manifestB68/receipt201BBC·root부재/부모realpath/owner/link·기존서비스영향없음/동일exe0을직전재검사한다. Main은실제return된고유Anvil창만sky로조작하고유효HTTPS/원격UI/로그인·실DB/키서비스Agent/원본IO/OS설정·CDP/debug/제품QAhook/보안완화0이다. 정상childexit/stdio/감독기종료·전용process0후marker/소유·resolved/link/사용0을다시검사해정확root만삭제한다. 불명은보존/no kill이며구PID4에대한승인을새PID강제종료로확장하지않는다.
+- 기존Primary는정확실행명령작성만,기존Reviewer는literal/options/listener순서를읽기전용검수한다. Main의별도GO전새root생성/launch0. 전체WORK_PLAN/FN18완료판정0이며이번재개는새차단감사를0부터판정한다.
+- FN18 02의실제one-shot본문을Primary가제출했고독립Reviewer C0/I0로spawn전로그2개wx준비→windowsHide:false/ignore-pipe-pipe spawn→await없는spawn/error/exit/close/data리스너→timer순서를대조했다. poll실패를null로바꿔도LAUNCHED문자열이나올수있으므로Main CUA는unknown=false/createdUtc존재/정확rootPID·parent·CIM신원일치일때만시작한다. 자동삭제/kill/재기동없음·불명보존조건불변이다.
+- Main e565bd는GetCommand가두node.exe경로를반환한배열을단일실행파일로취급해버전조회전실패했다. 앱/QA생성0이며같은실행을강행하지않았다. 36b7fc에서각경로를개별대조해고정C:/Program Files/nodejs/node.exe v24.22.1만사용한다(기존등록Node). runtimecache v24.19.0은선택하지않았고네주입변수NODE_OPTIONS/NODE_PATH/NODE_EXTRA_CA_CERTS/ELECTRON_RUN_AS_NODE는모두부재를확인했다. helperchildallowenv는원검토본문그대로다.
+- 36b7fc의보존자원은1700863830bytes·전체link0,신규QA예약134217728합계가2147483648미만이며D여유99461574656bytes다. Main은이필수선행측정을마친뒤기존Primary에제출본문정확1회GO를발행했다. 아직실제실행결과/물리UI증거와합격판정은없고구시험INCOMPLETE는보존한다.
+- FN18 02 실제launch13b2ec/session91041/감독기67496/root37448/CreationUTC2026-10-30T17:48:10.1705040Z·정확r3exe/windowsHide:false·userdata1인자/unknownfalse/CIMexact4를수신했다. markerA52938AFEDF668DF582B85A861B18EE1786A05AC58A789A156BC73B1AEBB6239/nonce47b04b92-5b62-4089-bba7-a0cc219484a1,첫실측10008548→후속41913764bytes로128MiB미만이다. spawn이벤트/LAUNCHED는정상기록돼원bookkeeping누락을재현하지않았다.
+- Main sky.list_apps는정확r3process경로의Anvil1개/window5839198/제목‘Anvil 개발 클라이언트’를실제로반환했다. 원숨김launch와달리창이나타난사실만확인했으며내용/동작PASS는아니다. 이어get_window/get_window_state cellg4:92는정확오류‘Computer Use app approval timed out’로끝나스크린샷/접근성본문/입력검수는미수행이다. 앱제어도구의권한시간만료와Anvil제품/TLS/로그인실패를구분한다. 다른UI자동화/추정handle/직접IPC/보안장벽우회·같은앱재실행0이다.
+- 신산님께Codex앱제어허용요청에응답가능한지 또는시험창‘클라이언트종료’로직접정상종료할지질문1회accepted받았다. 사용자준비답변전같은승인prompt를반복하지않는다. 기존Primary는동일91041/원PID·marker/30분128MiB만RO관측하고만료/불명은보존·no force/자동삭제다. 정상수동종료가관측되면원exit/stdio를회수한뒤정확정리만별도GO한다. 이전구PID4의강제정리승인은이번PID로확장하지않는다. FN13r2미채택/실DB키서비스Agent0·제품/source/r3불변·전체미완료를유지한다.

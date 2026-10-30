@@ -467,3 +467,7 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 
 ### 2026-10-31 승인된 시험 앱 정리 결과
 등록 QA 폴더 fn18-packaged-ui-20261030-01과시험본체/자식3·감독기는직접승인후정리됐다. Main7ae955에서QA부재·대상프로세스0·exactexe0을확인했고보존r3exe/manifest/receipt전지문은불변이다. 실제DB·키서비스Agent·제품source/SDK·새시험변경0,정상entry화면검수는INCOMPLETE를유지한다. 이전live/정리대기문구는원시점이력이다.
+
+
+### 2026-10-31 정상 GUI 02 권한 대기
+새등록QA fn18-packaged-ui-20261031-02/session91041·앱37448/감독기67496이기동됐고Main은정확Anvil창1개를발견했다. ComputerUse앱승인시간만료로내용/물리UI조작은미실행이다. 원구시험정리완료와구분하며30분128MiB·samehandle관측/no force/불명보존·권한준비또는정상수동종료질문답변대기다. source/r3/SDK·실DB키서비스Agent변경0·권한경계미변경시새시험기동0이다.
