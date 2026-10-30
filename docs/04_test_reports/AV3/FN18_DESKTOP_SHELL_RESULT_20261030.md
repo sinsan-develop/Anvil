@@ -104,3 +104,13 @@ raw HTML byte가 바뀌어 r2 원본73파일/manifest를 canonical에 보존한 
 
 세대2 toolchain 정리의 최초 f6263c는 DateTime 자동 변환으로 시각 비교 가드에서 삭제0으로 멈췄다. 원marker5ABC3B0E…와 UTC Kind/왕복 원문 정확 일치를 재검사한 7c5f2a만 삭제 exit0이다. 정확 toolchain/QA 부재·SDK/packaged 프로세스0, 보존 SDK/deps/out/r2/r3 합계1700857278bytes<2GiB. 기존 키/형제 자료/ACL/서비스 변경 없음.
 최종 게시 전 Main5c7495는 raw 빌드 source18의 SHA256을 r3와 대조했다. Git staged blob은 5파일 raw 동일, 13파일은 Windows CRLF/LF만 다르고 다른 내용 차이0이었다. 이 정상 줄 끝 필터 관계를 실제 byte 동일과 구분하며 최종 checkpoint receipt에 결박한다.
+
+## 2026-10-31 정상 packaged main-entry 시도 — INCOMPLETE
+이 절은 앞선 정상entry NOT_RUN 이후의 실제 시도다. 원 native SDK QA·과거 실패·r3 제품/산출물 지문은 변경하지 않는다.
+
+- 제품 a020931d의 검토용 r3 Anvil.exe F51394219B6AA44770D27231205BD93BD4AF2F57A1DCD2C7B66F0B35FD08E10F를 4e9d77에서 1회 실행했다. explicit --user-data-dir=D:\tmp\anvil-v3-stage-b\fn18-packaged-ui-20261030-01\userData·허용env·QA최대128MiB/30분을 사용했다. 실제root PID20344/생성UTC2026-10-30T16:25:03.6333940Z, 감독기30398/PID34040이며 Main567988/7f9187의 exact경로·세션1·same시각·자식gpu/utility/renderer3을 확인했다. 이 환경은 실제 서버·키·DB·서비스·Agent와 분리한 시험이다.
+- supervisor의 windowsHide:true 옵션을 잘못 사용했다. Main Computer Use의 apps/windows에는 Anvil 창이 없고 MainWindowHandle=0/Responding=true다. 따라서 초기화면·HTTP 입력거절/입력보존·물리confirm취소/수락은 NOT_EXECUTED다. 프로세스 생존을 정상 화면 기동 PASS로 표시하지 않는다. windowsHide→libuv STARTF_USESHOWWINDOW/SW_HIDE·Windows 첫ShowWindow 계약은 원인 후보이며 현프로세스 직접 원인 확정은 아니다.
+- one-shot 감독기의 log파일open 이후 spawn listener 등록으로 launch 기록 이벤트를 놓칠 수 있는 별도 bookkeeping 누락도 수행자가 확인했다. 실제 launch도구/CIM·liveidentity 증거는 별도로 존재한다. 이 감독기를 hotpatch/재실행하지 않았다.
+- 실제 UI에 접근할 수 없어 Main은 타인 앱·추정windowhandle·직접UIAutomation/PInvoke/forceShow/중복실행을 하지 않았다. 정상트레이 ‘다시표시’ 행동1회를 요청하고 신산님 질문에 시험기동 옵션 실수임을 설명했다. 이후 같은시험20344와해당자식3만 신원 재검사후 종료/정리하는 정확 승인 질문을 보냈다. 답변 전 강제종료/삭제0이며 같은live감독기만 관측한다.
+- 현재결과는 INCOMPLETE·정리결정대기다. QA경로/소유marker·프로세스/stdio·디스크실측은 WORK_STATUS의 최신 관측으로 대조한다. 기한 초과/결과불명은 추가허가 없는 kill/삭제/자동재시도 없이 보존한다. 이 시도를 제품원인 FAIL·R6/실서버/사용자인수 PASS 또는 전체 FN18 완료로 바꾸지 않는다.
+- 제품/고정artifact/source18·SDK 변경0, 유효HTTPS/실계정/권한/외부푸시/Agent0, 사용자 설치·OS등록·업데이트0이다. 새 실행은 이번 시도와별개이며 원시도미완료기록을남기고 정확정리/기동옵션·범위/실행안을다시대조한뒤에만 가능하다.

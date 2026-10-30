@@ -460,3 +460,6 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 ### FN18 LF 정규화 후 현재 검토본 r3
 
 게시 전 같은 staged 검사에서 발견한4 EOF 형식만 비의미 보완했다. 현재 검토본은 `.av3-data/v3-development/fn18-shell-20261030-01-r3`, 73파일/374007452bytes·PE F5139421/asar068801D5/manifest B68E97CE다. 기존 r2 경로/73파일/manifest는 그대로 보존한다. 서로 다른 input/산출물 지문을 섞지 않는다. 세대2 toolchain도7c5f2a에서 정확 marker/UTC/owner/link/사용0 재검사 후 정리했고 임시 QA·SDK/packaged 프로세스0을 확인했다. 보존합1700857278bytes<2GiB이며 실제 packaged main-entry/설치/서명/업데이트/실서버/DB/Agent는 여전히 미실행이다.
+
+### 2026-10-31 FN18 정상entry 시도 후
+정상 packaged entry는 1회 시도했으나 숨김 launch 옵션과 창 미표시로 INCOMPLETE입니다. 앞선 NOT_RUN은 그 이전 시점의 이력이며 화면 PASS로 승격하지 않습니다. 정확 시험 root/PID/소유감독기·정리승인 대기와 최신 live 관측은 WORK_STATUS·FN18 결과서36718F62를 대조합니다. 제품/보존 artifact/실DB키서비스Agent는 불변입니다.
