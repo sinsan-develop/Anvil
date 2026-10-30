@@ -1,0 +1,16 @@
+{
+  "status": "ADOPTED_SOURCE_ONLY",
+  "date": "2026-10-30",
+  "authority": "신산님 직접 지시",
+  "instruction": "FN09 A안 승인해. 실제 DB·키·서비스·Agent 실행은 제외하고, 기존 subagent에게 구현을 맡겨. 너는 검수·통합하면서 작업계획서 완료까지 계속 진행해.",
+  "decisionPacket": "docs/work_packages/FN09_PREPARE_EXECUTION_APPROVAL_DECISION_PACKET_20261030.md",
+  "decisionPacketSha256": "4B8455AEECB0A200E97028573A08027F1F2954E546C6D7779FA89EB32B9CB49E",
+  "option": "A",
+  "baseline": "73e1f9f95acd5b4eb0c07e8281331ce673593e80",
+  "scope": ["실행 준비 전체 후보의 승인 요청 보관·보호 조회", "UI08 정확 후보 표시", "원명령 일회 승인 결박·소비의 코드", "미적용 forward SQL", "합성 검증·독립 검수·통합"],
+  "excluded": ["실제 DB 적용·접속·정책/권한 변경", "실제 키·Secret·인증서", "실제 서비스·Agent·Job 실행", "HUMAN R2 채택", "UI04 임의 참조 생산자", "Oracle·운영 배포"],
+  "invariants": ["NOT_AUTHORIZED", "executionAuthorized=false", "dispatchPerformed=false", "기존 미확인 조건 보존", "reviewUnderstanding 차단 유지", "기존 AUTO·다른 연산 의미 보존"],
+  "implementer": "기존 Primary subagent 단일 writer",
+  "controller": "Main 어울 검수·통합",
+  "completion": "전체 작업계획서 미완료"
+}

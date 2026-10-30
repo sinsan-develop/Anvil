@@ -83,8 +83,8 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   if(request.operation==='requestKnowledgeShare'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('KNOWLEDGE_SHARE_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='activateDesignChange'&&!approvalRequired)throw new AuthFailure('APPROVAL_REQUIRED',412);
   if (request.operation === 'cancelQueuedRequest' && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('STAGE_QUEUE_APPROVAL_NOT_CONNECTED',412);
-  // 역할/예약은 기존 REQUIRE_APPROVAL의 exact authorize→consume 경로를 사용한다. 실제 실행 준비/이해 검토는 계속 차단한다.
-  if (['prepareExecution','reviewUnderstanding'].includes(request.operation) && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
+  // 준비본 저장만 exact authorize→consume에 연결한다. 이해 검토·실제 실행 허가는 열지 않는다.
+  if (request.operation==='reviewUnderstanding' && (approvalRequired || request.approvalRef !== null)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals(documents).authorize(db,actor,request,policy.ref);}

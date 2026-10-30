@@ -37,7 +37,7 @@ export class ProjectExecutionPreparations {
   }
   async save(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef) {
     if(request.operation!=='prepareExecution'||request.targetId!==null||request.expectedVersion!==0)throw new AuthFailure('VERSION_CONFLICT',409);
-    if(request.approvalRef!==null||request.baselineRefs.length)throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
+    if(request.baselineRefs.length)throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
     const input=readExecutionPreparationInput(request.payload);
     if(input.projectId!==request.projectId)throw new AuthFailure('EXECUTION_PROJECT_MISMATCH',422);
     await projectMember(db,actor,request.projectId,true);

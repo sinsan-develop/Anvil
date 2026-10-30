@@ -1,3 +1,4 @@
+import {readExecutionIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
 import{AuthFailure}from'../access/repository.ts';
 import type{ProjectCommand}from'../access/project-command.ts';
 import type{VersionRef}from'../../../../contracts/generated-types.ts';
@@ -22,7 +23,7 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
  if(!exact(s,['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])||typeof s.operation!=='string'||!context.allowedOperations.includes(s.operation)||!Number.isSafeInteger(s.expectedVersion)||s.expectedVersion<0||!hash(s.payloadHash)||!Array.isArray(s.baselineRefs)||!Array.isArray(s.sourceScopes)||!exact(s.requestedSubjectRef,['kind','userId','clientId'])||s.requestedSubjectRef.kind!=='HUMAN'||s.requestedSubjectRef.userId!==context.actorId||s.requestedSubjectRef.clientId!==context.clientId||!Number.isSafeInteger(s.controlGeneration)||s.controlGeneration<1||s.controlGeneration!==context.controlGeneration||(s.targetRef===null?s.expectedVersion!==0:!isVersionRef(s.targetRef)||s.targetRef.version!==s.expectedVersion))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='activateDesignChange'&&(s.targetRef===null||s.baselineRefs.length>1||!s.baselineRefs.every(isVersionRef)))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(value.rollback.evidenceRefs.length||(s.operation!=='activateDesignChange'&&s.baselineRefs.length)||s.environmentRef!==null||s.sourceScopes.length||s.limitsRef!==null)throw new AuthFailure('APPROVAL_REFERENCE_NOT_CONNECTED',412);
- if(['exportProject','buildTaskContext','startStage','defineProjectRole'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(['exportProject','buildTaskContext','startStage','defineProjectRole','prepareExecution'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(['revokeLimitPolicy','revokeBackupReference'].includes(s.operation)&&s.targetRef===null)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='detachDocumentSource'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDetails;
@@ -38,6 +39,7 @@ export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand
   if(canonicalJson(s.targetRef)!==canonicalJson(target))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  }
  if(['exportProject','buildTaskContext','startStage'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(s.operation==='prepareExecution'){try{const p=readExecutionIntentV1(c.payload);if(p.projectId!==projectId||s.targetRef!==null||s.expectedVersion!==0)throw Error();}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}}
  if(s.operation==='detachDocumentSource'){
   let payload;try{payload=readDocumentSourceLinkInput('detachDocumentSource',c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(canonicalJson(s.targetRef)!==canonicalJson(payload.sourceLinkRef)||s.expectedVersion!==1)throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
