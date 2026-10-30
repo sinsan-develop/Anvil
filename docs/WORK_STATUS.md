@@ -10220,3 +10220,9 @@
 - FN18 등록시한2026-10-30T16:55:02.058Z가경과하여이번정상entry검수는INCOMPLETE/QA_TIME_EXPIRED로기록한다. Main35783e 만료후독립CIM은root20344(16:25:03.6333940Z)·자식42664/42524/34320/원시각·parent결박과owner marker256EAFBC05B39CE79039398F03EF32BE046B316A98F326D47C3E4BAECAF75D5E불변을확인했다. sky16:54:47도창없음/UI입력0이었다. source/r3/SDK·실DB키서비스Agent불변·재실행/force/삭제0. 이후live보존/정리관측은QA유효시간연장이나검수계속이아니며,종료정리답변전원supervisor30398을임의종료하지않는다.
 
 - Main의30398빈poll은자기toolscope에서Unknown process id였으나이를프로세스종료로판정하지않았다. 원Primary가같은30398을빈poll1회성공·exit없음/QA_30_MINUTE_LIMIT/unknowntrue를재확인했고85ddcc CIM은감독기34040(16:25:02.0067810Z)·root20344/자식3의원경로/생성시각·Session1 live를확인했다. 도구scope차이와실제종료를구분하며user정확종료·정리답변은여전히미수신이다. 검수시간연장/입력/재실행/감독기종료/force/삭제0,source/r3/키DB서비스Agent불변. 현재goal ACTIVE·전체미완료·현재단계는정확승인응답대기이며완료보고가아니다.
+
+### 2026-10-31 FN13 서버 checkpoint source-only 결정 자료 상세화
+- 직전goal turn은 FN18 실제entry시도/미완료근거·FN17미정계약보완으로진전이있었으나전체완료는아니다. 이번c07f2b는HEADa787/private게시이력·trackedclean/보호8·동일root20344/자식3/원시각live를확인했다. 종료정리승인답변은미수신·실조작0이며기한지난앱의생존을진행중QA/완료로간주하지않는다.
+- Main은정확수정대상·기존거절·현재소비누락에따라 docs/work_packages/FN13_SERVER_CHECKPOINT_STORAGE_DECISION_PACKET_20261031.md 를작성했다. r1 872FBFA9 독립C0/I0의WI주의점을고정하고Main의전역quota누락위험1을보완한r2최종61BBF0DC715F6326E17791147F604ED0E7921C5AD28B1858DD7486F29071C26F도한정독립C0/I0다. DRAFT/NOT_ADOPTED·구현GO아님·보호5원지문불변이다.
+- 범위는기존CheckpointInput/수행자주장을서버불변보관→fixedGET→새세션이ID를몰라도찾는목록GET의사용자흐름이다. 단순GET1로기능전체를대체하지않으며목록추가/원장1GiB·10000기록상한·AUTO/null만/글로벌quota증거없음차단을명시결정delta로분리했다. 원문·저장claim/실파일·회수·재개false와현재회원읽기/원작성자구분,현재auth→동일명령replay→신규CAS/용량순서·공유audit비연속·cursor15분/안전정수초과503을고정했다.
+- 실제SQL/DB/격리PG·GRANT/정책부여·키서비스Agent·파일IO/중지회수/복원재개는제외다. 기존거절된0029를작성/다른이름으로우회하지않고,채택된뒤에만새0058pending source와정확WI를검토한다. 현재제품/SQL/시험/사본생성0·기존질문/답변복구시겹침먼저대조다. Reviewer의wildcard경로인자SQL검색1회OS123은근거제외·재시도/수정0으로별도기록했다.
