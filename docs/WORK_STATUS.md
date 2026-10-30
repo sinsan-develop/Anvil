@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-31 UI09 기존 체크포인트 읽기 검수
+- FN13 제품3611de4a와 문서56ededa8 게시 후, UI09의 기존 FN13 목록/고정조회 소비를 승인계획안 내부UI업무로 이어서 구현했다. 제품1/시험2·서버/helper/App/SQL변경0, 기존Primary·Main검수/독립C0I0M0다.
+- Main9ed25b 인접11PASS/51920d type·메모리build0, 합성DOM 정상1/추가4/중복1은분리증거다. 실제신규저장은quota412·실HTTP/DB/서비스/Agent/인계·재개/사용자인수는미실행이며전체계획미완료다.
+- space10 정상finish·등록QA exact회수/별도부재, Main7eda0e 독립부재·동결3hash/보호3/원5복구manifest 불변확인. 결과UI09_CHECKPOINT_HISTORY_READ_RESULT_20261031.md에기록했고 소유checkpoint통합과 다음UI12 기존계약소비대조를계속한다.
+
+
 ## 현행 인수 요약 — 2026-10-31 FN13 r2 A source 통합 검수
 - 최신 직접승인으로 FN13 r2 A(61BBF0DC) source-only 구현을 기존 Primary에 위임했고 Main 검수·독립 C0/I0/M0를 마쳤다. 이전 아래의 FN13 미채택/결정대기BLOCKED는 과거이력이다. 현재 작업은 계속하며 전체 WORK_PLAN은 미완료다.
 - Main 최종 945c24 핵심·인접41PASS/skip0, cc2ca9 type0/20cde5 메모리build482modules0/diff0. 합성DOM5조건과 보완1조건은 별도 증거다. 실제 신규저장은 전체quota 공급자 미연결412로 불가하며 실제DB·권한·키·서비스·Agent 변경0이다.
@@ -10352,3 +10358,14 @@
 - d1cd75 checkpoint3611de4a0bfc677234087dc52a35269db466ef08은 정확20경로(코드/시험/SQL15+관련문서5)다. c23a85 정상push 뒤 local/private exact3611de4a·원격main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·trackedclean/다른보호3만untracked를 확인했다. stage전 reportEOF빈줄1은 원문말미만 정리하고 diff-check통과후 commit했다. 권한/기준완화0.
 - Main최종41PASS/type·메모리build0·독립C0I0M0, QA부재·복구원5/보호3hash불변을 결과서에 기록하고 PMO에 exactSHA/미완료·source-only 경계를 전달했다. 실제quota/신규저장불가·실DB/서비스/Agent 미실행·전체계획미완료를 유지한다.
 - 다음독립UI누락: UI09 읽기인계준비에서 기존FN13 목록/fixed helper 미소비. 기존계획/채택된GET을재사용하는 내부조회UI만, 새저장/인계확정/재개/public계약0으로 Main이선정했다. WI UI09_CHECKPOINT_HISTORY_READ_IMPLEMENTATION_20261031.md(SHADF5BB1838ADD1C06626457952FE359A414B4A19E0CFE9BE7A821621909FBA06A) 정확3경로·기존단일Primary·독립WI검수후GO. PMO다음배정대기로멈추지않는다.
+
+### UI09 기존 체크포인트 조회 구현 시작·합성 자원 사전 등록
+- WI DF5BB183 독립 C0/I0·같은Primary GO. route선택은draft일수있으므로 confirmed와직접동일성강제0; 기존 readTransferRecords가검산한 선택관계를유지하고 결과confirmed.fullref만FN13 GET에전달한다. 원WI의현재선택보호를구체화한비의미설명이며 새계약0.
+- 새논리UI09 검수root D:/tmp/anvil-v3-stage-b/ui09-checkpoint-history-20261031-01, owner SINSAN\cyhuh/담당Primary, 최초생성후30분/128MiB. 생성전부재·부모owner/realpath/link0. marker/html/seed/구분bundle/round만create-new한다. 신규taskSpace명 Anvil UI09 checkpoint history synthetic 20261031-01·최초1회ID/자기p1기록. 기존종료space9/QA재사용0.
+- file-origin/nativeWebCrypto·CSP/Network외부차단/메모리ApiClient·제품원component로명시조회/POST0을검증한다. 실제network/listener/DB/키/권한/서비스/Agent·별도browser0. 정상finish({keep:[]})1회→소유marker/realpath/link·사용중프로세스참조0→exactroot회수·Main독립부재, 불명/usercontrol/도구실패는보존·새space/강제kill금지.
+- Main조사중추정leaf경로읽기not-found가누적3회관측되어해당추정검색방식을중단했다. 필요한후속은실제파일인벤토리/문서에있는정확경로만사용한다. sandbox git worktree오류는환경범위이며권한/ACL/global설정변경0·실제판정은elevated검사와구분한다. 제품/데이터오류로승격하지않는다.
+
+### UI09 읽기 연결 동결·검수/정리
+- WI DF5BB183 / 제품02BCCFBA·DOM33D517AB·harnessB156A8B8 동결·Primary writer해제. route draft≠confirmed·다른과거작성자·페이지/고정원문·권한/손상·JSON/native digest 전환/ABA·actualtransport·중복클릭GET1/POST0을분리증명했다. 독립최종C0I0M0·Main11PASS/type·메모리build0·diff0.
+- ego10 정상finish f9fd80·13파일1437374bytes exact회수9b90e5/별도0819b6, Main7eda0e 등록FN13/UI09 QA부재·동결hash/다른보호3/복구manifest98EA불변확인. locator지원오류1/둘째disabled입력거절1·sandboxGit읽기거절1은제품오류/합격기준완화와분리,같은원인반복3/강제정리0.
+- FN14 준비기록후보E096C897은계속미채택이고 기존B analyzeTransferPreparation은SYNTHETIC_ONLY/caller입력분석전용이다. 이를실제인계기능으로승격하지않았다. 다음UI12/FN15이미채택SELF요청·안전요약의소비누락을같은담당이읽기대조중이며추가public/DB/권한/키/서비스/Agent0.
