@@ -3,7 +3,7 @@
 ## 현행 인수 요약 — 2026-10-31 후속 UI 부분 확인·정상 종료/정리 완료
 - 앱 제어 승인 후 Main은 실제 local설정·HTTP주소차단·입력보존/설정미생성을 확인했다. 신산님이 직접 종료확인을 수락했고 app37448 exit0/stdioClosed/잔여0을 회수했다. 취소 동작·전체 시각 레이아웃은 미검증이다.
 - 02 QA는7e1227에서정확소유조건확인후정리됐고Main51e31c에서경로부재/대상프로세스0·보존r3전지문불변을확인했다. 원01·02의만료/UNKNOWN·도구제어미확정이력은보존한다. 실제DB/키서비스Agent/제품source/SDK변경0·새시험0이다.
-- goal은신산님명시로ACTIVE이며전체WORK_PLAN/FN18미완료다. FN13 r2채택은별도결정이고기존질문을반복하지않는다. 아래의시험생존/도구권한대기요약은과거시점이다.
+- 현재goal은후속검수/정리이후FN13결정대기BLOCKED이며전체WORK_PLAN/FN18미완료다. FN13 r2채택은별도결정이고기존질문을반복하지않는다. 아래의시험생존/도구권한대기요약은과거시점이다.
 ## 현행 인수 요약 — 2026-10-31 정상 GUI 02 도구 권한 대기
 - 신산님 goal ACTIVE 직접 재개 뒤, 구 시험 정리 완료 상태에서 동일 r3의 정상 GUI 검수02를 시작했다. windowsHide:false·spawn 전 로그/즉시 listener 순서를 실제 명령으로 검토했고 원제품·SDK·artifact 변경/기존 native 시험 반복0이다.
 - 새등록 QA fn18-packaged-ui-20261031-02/session91041·감독기67496/root37448(UTC17:48:10.1705040Z)·markerA52938AF는후속관측에서unknownfalse/정확4process/약41.9MB였다. 원구PID20344 계열은정리완료이며혼동하지않는다. TTL30분/128MiB·normalexit후exactcleanup·불명보존/no force다.
@@ -10298,3 +10298,15 @@
 - source읽기검수는quit에서confirm true후에만IPC→main quit경로로간다는것과현재원격view없으면remote beforeunload가개입하지않음을확인했다. Electron confirm미지원이라는근거는없으며도구클릭미전달/확인창처리/표출원인은미확정이다. 공식BrowserWindow 문서의disableDialogs기본false 및45계열PR54451은지원맥락만증명하고이실제도구클릭의성공을증명하지않는다. https://www.electronjs.org/docs/latest/api/browser-window / https://releases.electronjs.org/pr/54451 . Main rawwindow-setup.tsURL404/검색무매치와Reviewer버전문서cache miss는근거제외했다. 우회IPC/confirm주입/강제종료로정상종료결과를만들지않았다.
 - 신산님이goalACTIVE를다시명시했고get_goal반환도active다. 이번정리/후속확인은진전이며전체WORK_PLAN/FN18은미완료다. FN13r2채택·실서버/설치/실행기회수등별도선행을해제하지않고,이미확인한화면/SDK검사를반복하지않는다. 현재새PID/QA자원은없다.
 - 이번4문서의최신요약/끝절/등록부행은독립읽기C0/I0(결과895E9AC5/D_ENV D6496CC2/현황91744CCD/계획3CB3E821 검토시점)로검수했다. Main실제UI/사용자수락·appcode0/감독기code1·미검증범위분리만확인한것이며제품전체합격판정아니다. source/앱·시험추가실행0.
+
+### 2026-10-31 후속 UI/정리 완료 뒤 FN13 결정 경계 감사 1
+- 직전goal turn은실제후속초기UI/HTTP거절·입력보존확인·사용자수락정상app종료/정리와4문서게시로진전이있었다. 이번a75549/PMOcursor12불변은다음FN13r2 SHA61BBF0DC의새채택답변없음을확인한관찰뿐이므로no progress1이다. 앱제어/구QA정리문제는해결됐으며그것을현재차단사유로재사용하지않는다.
+- 현재남은경계는기존질문된서버불변저장/고정·목록조회/미적용SQL 상세채택과별도실환경권한이다. source정확거절을미해제한채보호5를수정/API나새SQL을등록하지않고,기존독립소비선대조에서이미연결된기능/검사를반복하거나미사용wrapper로진도를대체하지않는다. 기존FN09child/FN16정책등질문도중복하지않는다.
+- HEAD4e6e6f50·trackedclean/보호8·자료지문불변·live QA/실행담당작업없음이다. 코드/SQL·시험/앱/관측루프·다른앱/실DB키서비스Agent/원본자료변경0이며현황기록만추가한다. goalACTIVE/전체미완료·새결정답변전같은동작반복0,새run차단임계3에는아직도달하지않았다.
+### 2026-10-31 후속 UI/정리 완료 뒤 FN13 결정 경계 감사 2
+- 직전turn no progress1에이어7d7cf5/PMOcursor12불변은같은FN13r2채택답변미수신이다. PMO는idle/terminal이며실행담당의live작업이나승인처리job으로간주하지않는다. 해결된앱제어/정리경계를되살리거나새QA를띄우지않는다.
+- no progress2·goalACTIVE/전체미완료·임계3전이다. HEAD4e6e6f50·Main현황1dirty/보호8불변, source/SQL/시험/서비스DB키Agent·원본자료변경0이다. 다음정확source결정과별도실행승인없이진행하거나동일질문/검사를반복할근거가없고,현황기록을기능진전으로세지않는다.
+### 2026-10-31 후속 UI/정리 완료 뒤 FN13 결정 경계 감사 3 — BLOCKED 확인
+- 직전no progress2에이어7d9dd4/PMOcursor12불변·정확r2SHA61BBF0DC불변을확인했다. 다음계획FN13의기존채택질문에새답변이없고기존독립소비선대조에서도현재채택범위내새구현단위를확정하지못했다. 같은질문/완료검사/미사용wrapper를반복하지않는다. 앱제어·normalexit·QA정리는해결됐으며현재차단사유는그것이아니다.
+- no progress3의fresh차단임계충족후update_goal(status=blocked)를실제호출해반환blocked를확인했다. 전체목표축소/COMPLETE/PAUSED0이다. 현상태보존과보고외추가source/SQL·시험/앱/관측루프·실DB키서비스Agent/원본자료변경0이다. 보호5의특정source거절해제/정확FN13r2채택과별도실행권한없이API/SQL을등록하지않는다.
+- 현재제품a020/r3전지문·HEAD4e6e6f50/보호8은불변이며Main소유현황만추가다. 원91041/app37448정상code0·stdio/잔여0·QA부재는51e31c로이미확인해다시검증하지않는다. 살아있는검수job/승인처리job을기다리는상태로꾸미지않는다. 다음은PMOturn01a18dc8의기존FN13r2질문정확답변뒤source범위/현재상태를재대조하는것이며동일질문을재발행하지않는다.
