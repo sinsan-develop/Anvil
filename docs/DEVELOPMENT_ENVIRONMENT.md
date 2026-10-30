@@ -471,3 +471,7 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 
 ### 2026-10-31 정상 GUI 02 권한 대기
 새등록QA fn18-packaged-ui-20261031-02/session91041·앱37448/감독기67496이기동됐고Main은정확Anvil창1개를발견했다. ComputerUse앱승인시간만료로내용/물리UI조작은미실행이다. 원구시험정리완료와구분하며30분128MiB·samehandle관측/no force/불명보존·권한준비또는정상수동종료질문답변대기다. source/r3/SDK·실DB키서비스Agent변경0·권한경계미변경시새시험기동0이다.
+
+
+### 2026-10-31 후속 UI 확인·02 QA 정리
+현재지시후속검수에서local초기화면/invalidHTTP차단·입력보존/설정미생성을확인했고신산님이직접확인을수락해app37448 exit0·stdio/잔여0을수집했다. 감독기exit1/원만료UNKNOWN은별도다. 정확02QA는정리됐고Main51e31c에서QA부재/대상0·r3전지문불변을확인했다. 취소동작·전체시각검수/실서버/설치/회수는미확인/미완료이며실DB키서비스Agent·source/SDK변경0이다.

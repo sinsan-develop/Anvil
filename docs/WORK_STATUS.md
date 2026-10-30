@@ -1,5 +1,9 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-31 후속 UI 부분 확인·정상 종료/정리 완료
+- 앱 제어 승인 후 Main은 실제 local설정·HTTP주소차단·입력보존/설정미생성을 확인했다. 신산님이 직접 종료확인을 수락했고 app37448 exit0/stdioClosed/잔여0을 회수했다. 취소 동작·전체 시각 레이아웃은 미검증이다.
+- 02 QA는7e1227에서정확소유조건확인후정리됐고Main51e31c에서경로부재/대상프로세스0·보존r3전지문불변을확인했다. 원01·02의만료/UNKNOWN·도구제어미확정이력은보존한다. 실제DB/키서비스Agent/제품source/SDK변경0·새시험0이다.
+- goal은신산님명시로ACTIVE이며전체WORK_PLAN/FN18미완료다. FN13 r2채택은별도결정이고기존질문을반복하지않는다. 아래의시험생존/도구권한대기요약은과거시점이다.
 ## 현행 인수 요약 — 2026-10-31 정상 GUI 02 도구 권한 대기
 - 신산님 goal ACTIVE 직접 재개 뒤, 구 시험 정리 완료 상태에서 동일 r3의 정상 GUI 검수02를 시작했다. windowsHide:false·spawn 전 로그/즉시 listener 순서를 실제 명령으로 검토했고 원제품·SDK·artifact 변경/기존 native 시험 반복0이다.
 - 새등록 QA fn18-packaged-ui-20261031-02/session91041·감독기67496/root37448(UTC17:48:10.1705040Z)·markerA52938AF는후속관측에서unknownfalse/정확4process/약41.9MB였다. 원구PID20344 계열은정리완료이며혼동하지않는다. TTL30분/128MiB·normalexit후exactcleanup·불명보존/no force다.
@@ -10278,3 +10282,19 @@
 - 직전turn no progress2에이어eddcc2/PMOcursor10불변은동일ComputerUse앱제어허용준비/정상수동종료및FN13r2답변미수신이다. 새답변없이UI권한barrier를우회하거나새GUI/SDK시험·미채택저장계약을구현할수없으며기존완료기능을다시만들지않는다. 이번turn도no progress3으로분류해fresh재개run의차단임계를충족했다.
 - update_goal(status=blocked)를호출해실제반환status=blocked를확인했다. COMPLETE/PAUSED가아니고전체목표를축소하지않았다. source제품/SQL/검증/추가질문/새앱/force/삭제0이며이후수행은현상태의보존/보고뿐이다.
 - 최종eddcc2에서root37448/부모67496/원exe경로·생성시각·markerA529는불변이었다. 관측UTC18:07:50은원30분기한전이며권한처리job이돌아가는증거는아니다. 원g4:92는terminal,02는화면/입력NOT_EXECUTED·AWAITING_TOOL_PERMISSION이다. Primary는원91041만기존TTL/128MiB내RO관측하고정상exit면exit/stdio회수만보고,만료면unknown보존후추가관측루프를실행하지않도록전달했다. 감독기임의종료/새PIDforce/시간연장/새자동화0·구PID종료승인확대0이다. 사용자답변후원신원/marker/시간조건을먼저재검증해야한다.
+### 2026-10-31 현재 창 제어·후속 UI 검수/정상 종료 직접 지시
+- 신산님이call_073bf823의권한준비답변후현재직접‘지금 Anvil 앱 제어 허용할 수 있어. 승인 요청을 다시 띄우고 화면 검수와 정상 종료까지 진행해’라고지시했다. 원02의30분만료/UNKNOWN·미검수는보존하며,기존창의현재후속UI검수와정상종료를별도10분내수행한다. 새GUI기동/원기한리셋/force권한확대0이다.
+- Main이fresh list_apps의정확r3Anvil창5839198을선택해앱제어승인을다시요청했고이번에는성공했다. 첫capture는다른창겹침이있어그내용을검수/추출/보고에쓰지않고재캡처하지않았다. 이후자기Anvil활성화·접근성텍스트만사용하고다른앱을조작하지않았다. Tab후실제RootWebArea localURI/초기미연결·서버입력·연결/종료컨트롤이확인됐다. 전체시각레이아웃PASS와구분한다.
+- 기존Primary는같은91041원handle/CIM/marker/config존재메타데이터만대조하고정상exit/stdio를회수한다. Main의기존창invalidHTTP거절/입력보존·quit취소/수락만허용,유효HTTPS/원격로그인·실DB키서비스Agent/원본IO/OS설정/제품code·직접IPC/대체UI자동화/새app/force0이다. 정상종료뒤exactQA정리는기존등록조건과MainGO에따른다.
+- 현재명시후속UI검수:텍스트접근성으로실제local설정화면·빈서버입력/미연결상태확인→실제입력컨트롤에합성http://anvil-packaged-qa.invalid설정→연결클릭→입력보존/미연결/일반오류안내/연결버튼활성을확인했다. Primary6dbc02도server-origin.json부재/원신원·marker일치를확인했다. Main a0a095의전용stderr452bytes는 anvil:connect/SERVER_ORIGIN_INVALID 원handler거절만기록했고실서버호출/설정저장으로승격하지않는다.
+- 정상종료확인창검수는미완료다. 첫종료클릭은‘user input was detected...get_window_state’가드로멈춰재관측했고,다음실제종료클릭후에도접근성본문/자기창목록에서대화상자를관측하지못했다. 포커스/정상File메뉴키조작후에도종료이벤트가없고메뉴클릭은‘call get_window_state before using this window’가드로멈췄다. 원인이앱/입력제어/대화상자표출중무엇인지미확정이며직접IPC/window.confirm주입/대체자동화/force로결과를맞추지않았다.
+- Main은신산님께Anvil을앞으로가져와‘클라이언트종료’한번클릭후확인창표시여부또는직접정상종료여부를알려달라는한정질문1회accepted받았다. 이는기능재승인요청이아니라실제동작과도구제어차이를분리할필요한사용자행동이다. 답변전입력을반복하지않는다. 현재10분한정검수의결과를전체레이아웃/실서버/전체FN18 PASS로바꾸지않는다.
+- 원supervisor91041의CIM조회는19:26이후0x80041032(호출취소) UNKNOWN을출력했으며exit/close는아직없다. Main ee837e의별도GetProcess는app37448/Window5839198/Respondingtrue를확인했다. CIM실패를process0/정상종료로세지않고원handle의종료/stdio와독립잔여근거가있을때만정리한다. 원r3/source/SDK·실DB키서비스Agent/원문파일변경·새GUI/강제종료/QA삭제0이다.
+### 2026-10-31 후속 UI 부분 확인·사용자 정상 종료·02 QA 정리 완료
+- 신산님이call_fdbf6df6의질문에‘직접 확인을 눌러 종료했어’라고답했다. 종료확인수락은신산님직접조작/보고이며Main자동취소·수락검증성공으로표시하지않는다. 초기local설정/미연결·합성invalidHTTP차단·입력보존/버튼활성·설정파일미생성은Main의실제접근성UI/전용handler로그·메타데이터근거로별도확인했다. 전체시각레이아웃/종료확인창취소는미검증이다.
+- 원Primary가91041의정상app37448 exitCode0/signalnull→close/stdioClosedtrue/remaining0·markerA529일치를수집했다(19:40:19.323Z). 감독기는자연종료exit1이며원30분만료/CIM취소의stickyUNKNOWN을보존한결과다. 정상appcode0과감독기code1/과거만료INCOMPLETE를분리하고소급PASS하지않는다. force0·새관측루프/앱기동0이다.
+- Primary7e1227 exit0는필터된정확5PID CIM0/.NET각PID부재/exactr3exe0·QA사용0·owner SINSAN\cyhuh/literalrealpath/전체link0·markerA529재확인후정확02QA79files/41914531bytes만1회삭제했다. config존재false·Root부재/대상0확인,원r3exeF513/manifestB68/receipt201BBC전지문불변이다.
+- Main독립51e31c exit0도qaExists=false/knownProcessCount0/exactExeCount0을확인했고r3exeF51394219B6AA44770D27231205BD93BD4AF2F57A1DCD2C7B66F0B35FD08E10F/manifestB68E97CEEBC7F8B612578E11D3799C961EE75C9C28055D54FA9096B0D7F3CB4A/receipt201BBC965E564F1E306FDF0B8CD7CA79A31D8F11ECCAABECE56DF0EADA4D916E불변이다. 실제DB/키서비스Agent/다른앱·제품code/SDK/원본자료변경0이다.
+- source읽기검수는quit에서confirm true후에만IPC→main quit경로로간다는것과현재원격view없으면remote beforeunload가개입하지않음을확인했다. Electron confirm미지원이라는근거는없으며도구클릭미전달/확인창처리/표출원인은미확정이다. 공식BrowserWindow 문서의disableDialogs기본false 및45계열PR54451은지원맥락만증명하고이실제도구클릭의성공을증명하지않는다. https://www.electronjs.org/docs/latest/api/browser-window / https://releases.electronjs.org/pr/54451 . Main rawwindow-setup.tsURL404/검색무매치와Reviewer버전문서cache miss는근거제외했다. 우회IPC/confirm주입/강제종료로정상종료결과를만들지않았다.
+- 신산님이goalACTIVE를다시명시했고get_goal반환도active다. 이번정리/후속확인은진전이며전체WORK_PLAN/FN18은미완료다. FN13r2채택·실서버/설치/실행기회수등별도선행을해제하지않고,이미확인한화면/SDK검사를반복하지않는다. 현재새PID/QA자원은없다.
+- 이번4문서의최신요약/끝절/등록부행은독립읽기C0/I0(결과895E9AC5/D_ENV D6496CC2/현황91744CCD/계획3CB3E821 검토시점)로검수했다. Main실제UI/사용자수락·appcode0/감독기code1·미검증범위분리만확인한것이며제품전체합격판정아니다. source/앱·시험추가실행0.
