@@ -1,0 +1,16 @@
+{
+  "status": "ADOPTED_SOURCE_ONLY",
+  "date": "2026-10-30",
+  "authority": "신산님 직접 지시",
+  "instruction": "UI05 A안 승인해. 실제 DB·키·서비스·Agent 실행은 제외하고 기존 subagent에게 구현을 맡겨. 너는 검수·통합하면서 작업계획서 완료까지 계속 진행해.",
+  "decisionPacket": "docs/work_packages/UI05_PREPARATION_HISTORY_PAGING_DECISION_PACKET_20261030.md",
+  "decisionPacketSha256": "0AC548FDFB371A576C09977A108F14818B740EBC0BDBB2DDAFD203C8C9A0817E",
+  "option": "A",
+  "baseline": "9eb36679df39704def0f4fd1758769728b58e1dc",
+  "scope": ["전용 보호 페이지 GET", "UI05 전체 준비 이력 탐색·정확 원문 선택", "코드·화면·합성 검증·독립 검수·통합"],
+  "excluded": ["실제 DB 접속·적용·권한/정책 변경", "새 table·SQL·migration", "실제 키·Secret·인증서", "실제 서비스·Agent·Job 실행", "Oracle·운영 배포", "FN06 HUMAN R2 채택"],
+  "invariants": ["기존 집계 API 보존", "기존 원문 GET 재사용", "currentness=NOT_RECHECKED", "executionAuthorized=false", "dispatchPerformed=false", "동시성 snapshot 보장 아님"],
+  "implementer": "기존 Primary subagent 단일 writer",
+  "controller": "Main 어울 검수·통합",
+  "completion": "전체 작업계획서 미완료"
+}
