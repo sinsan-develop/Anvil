@@ -1737,3 +1737,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 직접 A 승인1F480147/결정안0AC548FD·WI8A1EB49E의 정확9경로. 별도 보호 GET/cursor와21번째이후 발견→고정원문 검산을 UI05에 연결,기존집계/원reader/조회권 보존. 일반500은 성공ref/position만보존·보호2GET으로복구,문맥/ABA/권한실패/late본문숨김·nonGET0 유지.
 - Main신규·인접23+추가6+늦게추가된문법음성1각별도PASS·최종실DOM자식6+부모Node7/typebuild/diff0·독립I1/I2해소C0/I0·QA잔여0. 결과 docs/04_test_reports/AV3/UI05_PREPARATION_HISTORY_PAGING_RESULT_20261030.md.
 - 실DBSQL/정렬·RLS/경합·실HTTP/served·실부모buffer통합/물리launch불명/사용자인수 NOT_RUN. 전체UI05/FN08/Stage/계획완료와구분하며실제DB키서비스Agent0·새SQL0. 다음이해검토승인계약은미채택별도후보이며자동GO0이다.
+
+### 2026-10-30 FN09 이해검토 r1 A source 검수
+- 직접승인B7E7AE96/결정안6DA65EB6·WIAB27C0E2의정확18경로.전체nullapproval원명령후보/보호GET·UI08별도결정·UI05동일원명령명시결박/저장·AUTO/approved이력과미적용0056을연결했다.실행원형hash미보유/tuple간접결박·전후현재성/수신/6기준·두false보존.
+- Main서버10·기존직접61·신규SQLsource1·UI변경후영향25·helper변경후신규5는각별도실행,최종실DOM자식5+부모Node6/typebuild/diff0·독립I1/I2/UII1해소C0/I0·QA잔여0.실제로변경된UI영향20만61범위에서다시확인했고단일전수/고유사례수로합산하지않는다.결과 docs/04_test_reports/AV3/FN09_UNDERSTANDING_REVIEW_APPROVAL_RESULT_20261030.md.
+- 실DB/SQL해석·COMMIT/RLS/deferred·경합·실HTTP/served·실source/응답/수신·OS/Agent·전체shell/사용자인수NOT_RUN.실제키DB서비스Agent변경0·0056미적용.전체기능/Stage/계획완료·main병합으로승격하지않는다.

@@ -1,0 +1,16 @@
+{
+  "status": "ADOPTED_SOURCE_ONLY",
+  "date": "2026-10-30",
+  "authority": "신산님 직접 지시",
+  "instruction": "이해검토 r1 A안 승인해. 실제 DB·키·서비스·Agent 실행은 제외하고 기존 subagent에게 구현을 맡겨. 너는 검수·통합하면서 작업계획서 완료까지 계속 진행해.",
+  "decisionPacket": "docs/work_packages/FN09_UNDERSTANDING_REVIEW_APPROVAL_DECISION_PACKET_20261030.md",
+  "decisionPacketSha256": "6DA65EB62DCDF0BD08079F4F89513370AF77FECD5FE83B4ED331B03D554D2578",
+  "option": "A",
+  "baseline": "e87a6ebe85d4a85c8dc085ff1ed86dec48a16efc",
+  "scope": ["이해검토 전체 원명령 후보의 승인 요청 보관·보호 조회", "UI08 원문 표시·UI05 정확 명령 명시 재개", "일회 승인 소비·AUTO/approved 이력 검산", "미적용 forward SQL·합성 검증·독립 검수·통합"],
+  "excluded": ["실제 DB 접속·적용·정책/권한 변경", "실제 키·Secret·인증서", "실제 서비스·Agent·Job 실행", "실제 응답·OS 공급자 활성화", "비용·Oracle·운영 배포", "FN06 HUMAN R2 채택"],
+  "invariants": ["기존 AUTO/null 원형 보존", "reviewUnderstanding만 targetRef=null은 실행 hash 미보유·expectedVersion은 양수 generation", "불변 전체 원명령·승인 요청 payload/hash로 실행 tuple 결박", "승인 ref 추가 외 원명령 불변", "기존 인증·제어·정책·전후 current/수신·6기준 검사 유지", "SYNTHETIC_ONLY", "executionAuthorized=false", "dispatchPerformed=false"],
+  "implementer": "기존 Primary subagent 단일 writer",
+  "controller": "Main 어울 검수·통합",
+  "completion": "전체 작업계획서 미완료"
+}

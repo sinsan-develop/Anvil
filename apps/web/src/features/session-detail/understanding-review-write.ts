@@ -1,3 +1,5 @@
+import {understandingApprovalRef} from '../decisions/understanding-review-approval-api.ts';
+import type {ApprovalRequestWork} from '../decisions/api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {postDocumentCommand,type DocumentSession,type DocumentWrite} from '../design-trace/editor-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
@@ -5,7 +7,7 @@ import type {SubmittedResultView} from './result-api.ts';
 import {readStoredUnderstandingHistory,validateUnderstandingHistory,type UnderstandingHistoryView} from './understanding-history-api.ts';
 import type {UnderstandingRecord} from '../../../../server/modules/executions/execution-understanding.ts';
 type Input=UnderstandingRecord['snapshot']['input'];
-export interface UnderstandingReviewBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;result:SubmittedResultView;base:UnderstandingRecord;form:Omit<Input,'items'>&{items:(Omit<Input['items'][number],'judgement'>&{judgement:Input['items'][number]['judgement']|''})[]};pending:DocumentWrite|null;stored:UnderstandingRecord|null;uncertain:boolean;failure:{code:string;status:number}|null}
+export interface UnderstandingReviewBuffer{approval?:{work:ApprovalRequestWork|null;requestId:string};bindingId:string;ownerUserId:string;ownerClientId:string;result:SubmittedResultView;base:UnderstandingRecord;form:Omit<Input,'items'>&{items:(Omit<Input['items'][number],'judgement'>&{judgement:Input['items'][number]['judgement']|''})[]};pending:DocumentWrite|null;stored:UnderstandingRecord|null;uncertain:boolean;failure:{code:string;status:number}|null}
 export interface UnderstandingReviewStorage{buffers:Record<string,UnderstandingReviewBuffer|null>;onChange:(key:string,change:(value:UnderstandingReviewBuffer|null)=>UnderstandingReviewBuffer|null)=>void}
 export class UnderstandingReadbackUnconfirmed extends ApiError{readonly writeMayHaveApplied=true;}
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),uuid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v),safeText=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=20000&&!/-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9_.~+\/-]{16,}|\b(?:password|passwd|api[_-]?key|access[_-]?token|token|secret)\s*[:=]\s*["']?[^\s"']{4,}/i.test(v);
@@ -24,7 +26,8 @@ export async function prepareUnderstandingReview(raw:UnderstandingReviewBuffer,r
  const i=b.form,base=b.base.snapshot.input;
  if(!same(Object.keys(i).sort(),['bundleRef','responseRef','subjectBindingRef','criteriaVersion','items','reason'].sort())||!['bundleRef','responseRef','subjectBindingRef','criteriaVersion'].every(k=>same(i[k as keyof typeof i],base[k as keyof typeof base]))||!safeText(i.reason)||!Array.isArray(i.items)||i.items.length!==6||new Set(i.items.map(row=>row.code)).size!==6)fail();
  for(const row of i.items){const prior=base.items.find(v=>v.code===row.code);if(!prior||!same(Object.keys(row).sort(),['code','sourceRefs','responsePartRefs','judgement','reason'].sort())||!same(prior.sourceRefs,row.sourceRefs)||!same(prior.responsePartRefs,row.responsePartRefs)||!['MATCH','MISMATCH','INSUFFICIENT'].includes(row.judgement)||!safeText(row.reason))fail();}
- const expected:Omit<DocumentWrite,'commandId'>={schemaVersion:1,projectId:scope.projectId,clientId:session.clientId,controlGeneration:generation,operation:'reviewUnderstanding',targetId:e.id,expectedVersion:e.version,baselineRefs:[],approvalRef:null,payload:i};await hash(expected);
+ if(b.pending?.approvalRef!==undefined&&b.pending.approvalRef!==null&&!understandingApprovalRef(b.pending.approvalRef))fail();
+ const expected:Omit<DocumentWrite,'commandId'>={schemaVersion:1,projectId:scope.projectId,clientId:session.clientId,controlGeneration:generation,operation:'reviewUnderstanding',targetId:e.id,expectedVersion:e.version,baselineRefs:[],approvalRef:b.pending?.approvalRef??null,payload:i};await hash(expected);
  if(b.pending){const{commandId,...value}=b.pending;if(!uuid(commandId)||!same(value,expected))fail();return structuredClone(b.pending);}if(b.uncertain)fail();return{...expected,commandId:crypto.randomUUID()};
 }
 export async function saveUnderstandingReview(client:ApiClient,raw:UnderstandingReviewBuffer,rawSession:DocumentSession,active:()=>boolean):Promise<UnderstandingRecord|null>{
