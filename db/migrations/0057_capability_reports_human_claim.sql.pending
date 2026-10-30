@@ -1,0 +1,163 @@
+-- 미적용 source 전용: 사람 주장의 보관이며 실측·실행권한을 만들지 않는다.
+CREATE TABLE anvil.capability_reports(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ version bigint NOT NULL CHECK(version=1),
+ connection_id uuid NOT NULL,connection_version bigint NOT NULL CHECK(connection_version BETWEEN 1 AND 9007199254740991),connection_hash text NOT NULL CHECK(connection_hash~'^[0-9a-f]{64}$'),
+ environment_id uuid NOT NULL,environment_version bigint NOT NULL CHECK(environment_version BETWEEN 1 AND 9007199254740991),environment_hash text NOT NULL CHECK(environment_hash~'^[0-9a-f]{64}$'),
+ claim_json jsonb NOT NULL,claim_hash text NOT NULL CHECK(claim_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ supersedes_id uuid,supersedes_version bigint,supersedes_hash text,
+ created_by uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),
+ UNIQUE(project_id,id,version),UNIQUE(project_id,command_id),
+ FOREIGN KEY(project_id,created_by) REFERENCES anvil.project_members(project_id,user_id) ON DELETE RESTRICT,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,connection_id,connection_version) REFERENCES anvil.connection_candidate_versions(project_id,candidate_id,version) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,environment_id,environment_version) REFERENCES anvil.connection_candidate_versions(project_id,candidate_id,version) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,supersedes_id,supersedes_version) REFERENCES anvil.capability_reports(project_id,id,version) ON DELETE RESTRICT,
+ CHECK((supersedes_id IS NULL AND supersedes_version IS NULL AND supersedes_hash IS NULL) OR (supersedes_id IS NOT NULL AND supersedes_version=1 AND supersedes_hash~'^[0-9a-f]{64}$'))
+);
+CREATE TABLE anvil.capability_report_evidence(
+ project_id uuid NOT NULL,report_id uuid NOT NULL,report_version bigint NOT NULL CHECK(report_version=1),
+ capability_code text NOT NULL CHECK(capability_code IN('INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL')),
+ artifact_id uuid NOT NULL,artifact_hash text NOT NULL CHECK(artifact_hash~'^[0-9a-f]{64}$'),bytes bigint NOT NULL CHECK(bytes BETWEEN 0 AND 2097152),
+ media_type text NOT NULL CHECK(media_type IN('text/plain;charset=utf-8','text/markdown;charset=utf-8')),
+ PRIMARY KEY(project_id,report_id,report_version,capability_code,artifact_id),
+ FOREIGN KEY(project_id,report_id,report_version) REFERENCES anvil.capability_reports(project_id,id,version) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,artifact_id) REFERENCES anvil.artifacts(project_id,id) ON DELETE RESTRICT
+);
+REVOKE ALL ON anvil.capability_reports,anvil.capability_report_evidence FROM PUBLIC;
+REVOKE UPDATE,DELETE,TRUNCATE ON anvil.capability_reports,anvil.capability_report_evidence FROM anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.capability_reports,anvil.capability_report_evidence TO anvil_v3_app;
+
+CREATE FUNCTION anvil.fn06_capability_keys(v jsonb,keys text[]) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='object' AND (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(v) k)=(SELECT array_agg(k ORDER BY k) FROM unnest(keys) k),false);
+$$;
+CREATE FUNCTION anvil.fn06_capability_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$
+ SELECT encode(sha256(convert_to(anvil.assignment_draft_canonical(v),'UTF8')),'hex');
+$$;
+CREATE FUNCTION anvil.fn06_capability_text(v jsonb,max_length integer) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='string' AND (SELECT COALESCE(sum(CASE WHEN ascii(ch)>65535 THEN 2 ELSE 1 END),0) FROM regexp_split_to_table(v#>>'{}','') ch) BETWEEN 1 AND max_length AND (v#>>'{}')!~U&'^[\0009-\000D\0020\00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]*$' AND (v#>>'{}')!~'[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]',false);
+$$;
+CREATE FUNCTION anvil.fn06_capability_iso(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE s text;
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'string' THEN RETURN false;END IF;s=v#>>'{}';
+ RETURN s~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' AND to_char(s::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')=s;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;
+$$;
+CREATE FUNCTION anvil.fn06_capability_ref(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+ RETURN COALESCE(anvil.fn06_capability_keys(v,ARRAY['id','version','contentHash']) AND jsonb_typeof(v->'id')='string' AND (v->>'id')~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND jsonb_typeof(v->'version')='number' AND (v->>'version')~'^[1-9][0-9]*$' AND (v->>'version')::numeric<=9007199254740991 AND jsonb_typeof(v->'contentHash')='string' AND (v->>'contentHash')~'^[0-9a-f]{64}$',false);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;
+$$;
+CREATE FUNCTION anvil.fn06_capability_claim_valid(p jsonb,at_time timestamptz) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE cap jsonb;doc jsonb;a jsonb;seen text[]='{}';local_ids text[];all_refs jsonb='{}';aid text;
+BEGIN
+ IF NOT anvil.fn06_capability_keys(p,ARRAY['schemaVersion','connectionRef','environmentRef','tool','observedAt','expiresAt','supersedesRef','capabilities','reason']) OR p->'schemaVersion' IS DISTINCT FROM '1'::jsonb
+ OR NOT anvil.fn06_capability_ref(p->'connectionRef') OR NOT anvil.fn06_capability_ref(p->'environmentRef') OR (p->'supersedesRef' IS DISTINCT FROM 'null'::jsonb AND NOT anvil.fn06_capability_ref(p->'supersedesRef'))
+ OR NOT anvil.fn06_capability_keys(p->'tool',ARRAY['product','version','adapterVersion']) OR NOT anvil.fn06_capability_text(p->'tool'->'product',200) OR NOT anvil.fn06_capability_text(p->'tool'->'version',200) OR NOT anvil.fn06_capability_text(p->'tool'->'adapterVersion',200)
+ OR NOT anvil.fn06_capability_text(p->'reason',20000) OR NOT anvil.fn06_capability_iso(p->'expiresAt') OR (p->>'expiresAt')::timestamptz<=at_time OR (p->>'expiresAt')::timestamptz>at_time+interval '2 hours'
+ OR (p->'observedAt' IS DISTINCT FROM 'null'::jsonb AND (NOT anvil.fn06_capability_iso(p->'observedAt') OR (p->>'observedAt')::timestamptz>at_time))
+ OR jsonb_typeof(p->'capabilities') IS DISTINCT FROM 'array' OR jsonb_array_length(p->'capabilities') IS DISTINCT FROM 6 OR octet_length(convert_to(anvil.assignment_draft_canonical(p),'UTF8'))>2097152 THEN RETURN false;END IF;
+ FOR cap IN SELECT value FROM jsonb_array_elements(p->'capabilities') LOOP
+  IF NOT anvil.fn06_capability_keys(cap,ARRAY['code','documentation','submittedMeasurementState','requestedControlLevel','evidenceRefs','limitations']) OR jsonb_typeof(cap->'code') IS DISTINCT FROM 'string' OR NOT COALESCE(cap->>'code'=ANY(ARRAY['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL']),false) OR cap->>'code'=ANY(seen)
+  OR jsonb_typeof(cap->'submittedMeasurementState') IS DISTINCT FROM 'string' OR NOT COALESCE(cap->>'submittedMeasurementState'=ANY(ARRAY['VERIFIED','UNVERIFIED','UNSUPPORTED']),false)
+  OR jsonb_typeof(cap->'requestedControlLevel') IS DISTINCT FROM 'string' OR NOT COALESCE(cap->>'requestedControlLevel'=ANY(ARRAY['DIRECT','ISOLATED','OBSERVED_ONLY','UNVERIFIED']),false) OR NOT anvil.fn06_capability_text(cap->'limitations',20000)
+  OR jsonb_typeof(cap->'evidenceRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(cap->'evidenceRefs')>20 THEN RETURN false;END IF;
+  seen=array_append(seen,cap->>'code');doc=cap->'documentation';
+  IF doc IS DISTINCT FROM 'null'::jsonb THEN
+   IF NOT anvil.fn06_capability_keys(doc,ARRAY['source','observedAt','versionCompatibility']) OR NOT anvil.fn06_capability_text(doc->'source',2048) OR NOT COALESCE(doc->>'source'~'^https://[^/@[:space:]]+([/?#].*)?$',false) OR NOT anvil.fn06_capability_iso(doc->'observedAt') OR (doc->>'observedAt')::timestamptz>at_time OR jsonb_typeof(doc->'versionCompatibility') IS DISTINCT FROM 'string' OR NOT COALESCE(doc->>'versionCompatibility'=ANY(ARRAY['CONFIRMED','UNVERIFIED','UNSUPPORTED']),false) THEN RETURN false;END IF;
+  END IF;
+  local_ids='{}';FOR a IN SELECT value FROM jsonb_array_elements(cap->'evidenceRefs') LOOP
+   IF NOT anvil.fn06_capability_keys(a,ARRAY['artifactId','bytes','contentHash','mediaType']) OR NOT anvil.fn06_capability_ref(jsonb_build_object('id',a->'artifactId','version',1,'contentHash',a->'contentHash')) OR jsonb_typeof(a->'bytes') IS DISTINCT FROM 'number' OR NOT COALESCE(a->>'bytes'~'^(0|[1-9][0-9]*)$',false) OR (a->>'bytes')::numeric>2097152 OR jsonb_typeof(a->'mediaType') IS DISTINCT FROM 'string' OR NOT COALESCE(a->>'mediaType'=ANY(ARRAY['text/plain;charset=utf-8','text/markdown;charset=utf-8']),false) THEN RETURN false;END IF;
+   aid=a->>'artifactId';IF aid=ANY(local_ids) OR (all_refs ? aid AND all_refs->aid IS DISTINCT FROM a) THEN RETURN false;END IF;local_ids=array_append(local_ids,aid);all_refs=all_refs||jsonb_build_object(aid,a);
+  END LOOP;
+ END LOOP;
+ IF (SELECT count(*) FROM jsonb_object_keys(all_refs))>20 THEN RETURN false;END IF;
+ -- 원문은 변경하지 않는다. 알려진 민감 표식은 저장 거절한다.
+ IF anvil.assignment_draft_canonical(p)~*'-----BEGIN ([A-Z0-9]+ )?PRIVATE KEY-----|\mBearer[[:space:]]+[A-Za-z0-9_.~+/-]{16,}|\m(password|passwd|api[_-]?key|access[_-]?token|token|secret)[[:space:]]*[:=][[:space:]]*["'']?[^[:space:]"'']{4,}' THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;
+$$;
+
+CREATE FUNCTION anvil.fn06_capability_current(pid uuid,cid uuid,claim jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.projects p ON p.id=c.project_id AND p.archived_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.id=cid AND c.project_id=pid AND c.operation='recordCapabilityReport' AND c.state='APPLIED' AND c.expected_version=0 AND c.approval_consumption_id IS NULL AND c.payload_ref IS NULL
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND anvil.fn06_capability_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs))=pv.content_hash
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.user_id=s.user_id AND cl.id=s.client_id WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL AND s.credential_generation=u.credential_generation AND s.reauth_until>clock_timestamp() AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND r->'operations' ? 'recordCapabilityReport' AND r->>'disposition'='AUTO' AND (r->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND r->'operations' ? 'recordCapabilityReport' AND r->>'disposition' IN('DENY','REQUIRE_APPROVAL') AND (r->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (claim->>'expiresAt')::timestamptz>clock_timestamp()
+ AND (claim->>'expiresAt')::timestamptz<=(SELECT min((r->>'expiresAt')::timestamptz) FROM jsonb_array_elements(pv.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND r->'operations' ? 'recordCapabilityReport' AND (r->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM (VALUES('connectionRef','CONNECTION_CANDIDATE'),('environmentRef','ENVIRONMENT_CANDIDATE')) kinds(key,kind) WHERE NOT EXISTS(SELECT 1 FROM anvil.connection_candidates h JOIN anvil.connection_candidate_versions v ON v.project_id=h.project_id AND v.candidate_id=h.id AND v.version=h.head_version WHERE h.project_id=pid AND h.kind=kinds.kind AND v.kind=kinds.kind AND claim->kinds.key=jsonb_build_object('id',v.candidate_id,'version',v.version,'contentHash',v.content_hash) AND anvil.fn06_capability_hash(v.snapshot_json)=v.content_hash AND v.expires_at>clock_timestamp() AND (claim->>'expiresAt')::timestamptz<=v.expires_at))
+ );
+$$;
+
+CREATE FUNCTION anvil.fn06_capability_complete(cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE r anvil.capability_reports%ROWTYPE;c anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;expected jsonb;ref jsonb;request jsonb;digest text;effective jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL THEN RETURN false;END IF;IF c.operation<>'recordCapabilityReport' THEN RETURN true;END IF;
+ SELECT * INTO r FROM anvil.capability_reports WHERE command_id=cid;
+ IF r.id IS NULL OR NOT anvil.fn06_capability_claim_valid(r.claim_json,r.created_at) OR anvil.fn06_capability_hash(r.claim_json) IS DISTINCT FROM r.claim_hash OR r.created_at IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) THEN RETURN false;END IF;
+ ref=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash);
+ SELECT jsonb_agg(jsonb_build_object('code',code,'measurement',jsonb_build_object('state','UNVERIFIED'),'controlLevel','UNVERIFIED') ORDER BY ord) INTO effective FROM unnest(ARRAY['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL']) WITH ORDINALITY t(code,ord);
+ expected=jsonb_build_object('schemaVersion',1,'projectId',r.project_id,'reportId',r.id,'version',1,'claim',r.claim_json,'claimHash',r.claim_hash,'reportedBy',jsonb_build_object('kind','HUMAN','userId',r.created_by,'clientId',r.client_id),'sourceAssurance','HUMAN_CLAIM','bindingKind','CANDIDATE_ONLY','recordedAt',to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'executableObservationRef',NULL,'probeRunRef',NULL,'authorizationReceiptRef',NULL,'capabilities',effective,'executionAuthorized',false,'dispatchPerformed',false);
+ request=jsonb_build_object('schemaVersion',1,'projectId',r.project_id,'commandId',c.command_id,'clientId',r.client_id,'controlGeneration',c.control_generation,'operation','recordCapabilityReport','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',r.claim_json);
+ digest=anvil.fn06_capability_hash(jsonb_build_object('projectId',r.project_id,'actorId',r.created_by,'clientId',r.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ IF c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM r.project_id OR c.project_id IS DISTINCT FROM r.project_id OR c.actor_id IS DISTINCT FROM r.created_by OR c.client_id IS DISTINCT FROM r.client_id OR c.state IS DISTINCT FROM 'APPLIED' OR c.expected_version IS DISTINCT FROM 0 OR c.request_hash IS DISTINCT FROM anvil.fn06_capability_hash(request) OR c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL
+ OR r.claim_json->'connectionRef' IS DISTINCT FROM jsonb_build_object('id',r.connection_id,'version',r.connection_version,'contentHash',r.connection_hash) OR r.claim_json->'environmentRef' IS DISTINCT FROM jsonb_build_object('id',r.environment_id,'version',r.environment_version,'contentHash',r.environment_hash)
+ OR r.claim_json->'supersedesRef' IS DISTINCT FROM CASE WHEN r.supersedes_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',r.supersedes_id,'version',r.supersedes_version,'contentHash',r.supersedes_hash) END
+ OR r.snapshot_json IS DISTINCT FROM expected OR anvil.fn06_capability_hash(expected) IS DISTINCT FROM r.content_hash OR octet_length(convert_to(anvil.assignment_draft_canonical(expected),'UTF8'))>2097152
+ OR c.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM r.project_id::text OR c.result_ref->>'targetId' IS DISTINCT FROM r.id::text OR c.result_ref->'version' IS DISTINCT FROM '1'::jsonb OR c.result_ref->'evidenceRefs' IS DISTINCT FROM '[]'::jsonb OR c.result_ref->'warnings' IS DISTINCT FROM '[]'::jsonb OR c.result_ref->>'serverReceivedAt' IS DISTINCT FROM expected->>'recordedAt'
+ OR c.result_ref->'data' IS DISTINCT FROM jsonb_build_object('status','CAPABILITY_REPORT_RECORDED','ref',ref,'snapshot',expected,'effectiveForExecution',false,'dispatchPerformed',false)
+ OR ar.id IS NULL OR ar.scope_kind IS DISTINCT FROM 'PROJECT' OR ar.scope_id IS DISTINCT FROM r.project_id OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',r.created_by,'clientId',r.client_id) OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.approval_decision_ref IS NOT NULL OR ar.scope_digest IS DISTINCT FROM digest THEN RETURN false;END IF;
+ IF r.supersedes_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM anvil.capability_reports old WHERE old.project_id=r.project_id AND old.id=r.supersedes_id AND old.version=r.supersedes_version AND old.content_hash=r.supersedes_hash AND old.connection_id=r.connection_id AND old.connection_version=r.connection_version AND old.connection_hash=r.connection_hash AND old.environment_id=r.environment_id AND old.environment_version=r.environment_version AND old.environment_hash=r.environment_hash) THEN RETURN false;END IF;
+ IF (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=r.project_id AND a.command_id=c.id AND a.source_kind='HUMAN_COMMAND' AND a.outcome='APPLIED' AND a.correction_of IS NULL)<>1 OR NOT EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=r.project_id AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',r.created_by) AND a.client_ref=r.client_id AND a.target_ref=ref AND a.policy_ref=c.policy_ref AND a.approval_ref IS NULL AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.reason_code='HUMAN_CAPABILITY_CLAIM_ONLY' AND a.scope_digest=digest AND a.correction_of IS NULL) THEN RETURN false;END IF;
+ -- 주장 전체와 근거색인 전체를 양방향 비교한다. 근거0건도 정상이다.
+ IF EXISTS(SELECT cap->>'code',a->>'artifactId',a->>'contentHash',(a->>'bytes')::bigint,a->>'mediaType' FROM jsonb_array_elements(r.claim_json->'capabilities') cap CROSS JOIN LATERAL jsonb_array_elements(cap->'evidenceRefs') a EXCEPT SELECT capability_code,artifact_id::text,artifact_hash,bytes,media_type FROM anvil.capability_report_evidence WHERE project_id=r.project_id AND report_id=r.id AND report_version=1)
+ OR EXISTS(SELECT capability_code,artifact_id::text,artifact_hash,bytes,media_type FROM anvil.capability_report_evidence WHERE project_id=r.project_id AND report_id=r.id AND report_version=1 EXCEPT SELECT cap->>'code',a->>'artifactId',a->>'contentHash',(a->>'bytes')::bigint,a->>'mediaType' FROM jsonb_array_elements(r.claim_json->'capabilities') cap CROSS JOIN LATERAL jsonb_array_elements(cap->'evidenceRefs') a) THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;
+$$;
+
+CREATE FUNCTION anvil.fn06_capability_insert_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE r anvil.capability_reports%ROWTYPE;
+BEGIN
+ IF TG_TABLE_NAME='capability_reports' THEN r=NEW;
+  IF NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NOT COALESCE(anvil.fn06_capability_current(NEW.project_id,NEW.command_id,NEW.claim_json),false) THEN RAISE EXCEPTION 'CAPABILITY_CURRENT_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSE
+  SELECT * INTO r FROM anvil.capability_reports WHERE project_id=NEW.project_id AND id=NEW.report_id AND version=NEW.report_version;
+  IF r.id IS NULL OR r.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.artifact_id AND a.state='READY' AND a.content_hash=NEW.artifact_hash AND a.bytes=NEW.bytes AND a.media_type=NEW.media_type) THEN RAISE EXCEPTION 'CAPABILITY_EVIDENCE_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;RETURN NEW;
+END;
+$$;
+CREATE TRIGGER capability_report_insert_guard BEFORE INSERT ON anvil.capability_reports FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_insert_guard();
+CREATE TRIGGER capability_evidence_insert_guard BEFORE INSERT ON anvil.capability_report_evidence FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_insert_guard();
+CREATE FUNCTION anvil.fn06_capability_final_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN IF NEW.operation<>'recordCapabilityReport' THEN RETURN NEW;END IF;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='capability_reports' THEN cid=NEW.command_id;
+ ELSIF TG_TABLE_NAME='capability_report_evidence' THEN SELECT command_id INTO cid FROM anvil.capability_reports WHERE project_id=NEW.project_id AND id=NEW.report_id AND version=NEW.report_version;
+ ELSE cid=NEW.command_id;IF NOT EXISTS(SELECT 1 FROM anvil.commands WHERE id=cid AND operation='recordCapabilityReport') THEN RETURN NEW;END IF;END IF;
+ IF cid IS NULL OR NOT COALESCE(anvil.fn06_capability_complete(cid),false) THEN RAISE EXCEPTION 'CAPABILITY_REPORT_COMPLETE_RECEIPT_REQUIRED' USING ERRCODE='23514';END IF;RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER capability_command_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_final_guard();
+CREATE CONSTRAINT TRIGGER capability_report_complete AFTER INSERT ON anvil.capability_reports DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_final_guard();
+CREATE CONSTRAINT TRIGGER capability_evidence_complete AFTER INSERT ON anvil.capability_report_evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_final_guard();
+CREATE CONSTRAINT TRIGGER capability_receipt_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_final_guard();
+CREATE CONSTRAINT TRIGGER capability_audit_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_final_guard();
+CREATE FUNCTION anvil.fn06_capability_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'CAPABILITY_REPORT_IMMUTABLE' USING ERRCODE='42501';END;$$;
+CREATE TRIGGER capability_reports_immutable BEFORE UPDATE OR DELETE ON anvil.capability_reports FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_immutable();
+CREATE TRIGGER capability_evidence_immutable BEFORE UPDATE OR DELETE ON anvil.capability_report_evidence FOR EACH ROW EXECUTE FUNCTION anvil.fn06_capability_immutable();
+CREATE TRIGGER capability_reports_no_truncate BEFORE TRUNCATE ON anvil.capability_reports FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn06_capability_immutable();
+CREATE TRIGGER capability_evidence_no_truncate BEFORE TRUNCATE ON anvil.capability_report_evidence FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn06_capability_immutable();

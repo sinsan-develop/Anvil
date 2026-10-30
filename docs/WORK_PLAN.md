@@ -1742,3 +1742,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 직접승인B7E7AE96/결정안6DA65EB6·WIAB27C0E2의정확18경로.전체nullapproval원명령후보/보호GET·UI08별도결정·UI05동일원명령명시결박/저장·AUTO/approved이력과미적용0056을연결했다.실행원형hash미보유/tuple간접결박·전후현재성/수신/6기준·두false보존.
 - Main서버10·기존직접61·신규SQLsource1·UI변경후영향25·helper변경후신규5는각별도실행,최종실DOM자식5+부모Node6/typebuild/diff0·독립I1/I2/UII1해소C0/I0·QA잔여0.실제로변경된UI영향20만61범위에서다시확인했고단일전수/고유사례수로합산하지않는다.결과 docs/04_test_reports/AV3/FN09_UNDERSTANDING_REVIEW_APPROVAL_RESULT_20261030.md.
 - 실DB/SQL해석·COMMIT/RLS/deferred·경합·실HTTP/served·실source/응답/수신·OS/Agent·전체shell/사용자인수NOT_RUN.실제키DB서비스Agent변경0·0056미적용.전체기능/Stage/계획완료·main병합으로승격하지않는다.
+
+### 2026-10-30 FN06 HUMAN r2 능력보고 source 검수
+- 직접r2 승인7B22897F/계약65468084·WI7A95F469의 정확15경로를 기존 Primary가 구현하고 Main이 관리·검수했다. 사람6주장·근거/후보 exactref 보관·고정조회/UI11 원명령·raw편집 보존과 미적용0057 두표를 연결했다. 서버판정은 UNVERIFIED/CANDIDATE_ONLY·실행/dispatch false이며 실제 능력검증/허가 해제 아님.
+- Main 입력5+추가2/저장6+추가4/UIhelper5/기존인접19/SQLsource1은 별도 실행으로 구분한다. 최종 실제 Edge6자식+부모 Node7/typebuild/diff0·독립 최종C0/I0·QA별도잔여0. 결과 docs/04_test_reports/AV3/FN06_HUMAN_CAPABILITY_REPORT_RESULT_20261030.md.
+- 실제DB/SQL/권한/원문IO·HTTP/served·전체App/Agent·사용자인수는NOT_RUN, FN06/UI11·StageB/전체계획 미완료다. 기존선행·필수gate·실행차단은 유지하고 다음 미완료 단위를 이어간다.
