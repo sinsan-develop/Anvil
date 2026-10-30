@@ -46,3 +46,6 @@
 - 실제 전역quota 집계/예약 공급자, 신규저장 성공·실PG/RLS/COMMIT/경합·정식DB/서비스/UI 인수·실원문 파일 보존·Agent/중지/회수/재개는 **NOT_RUN 또는 미구현**이다. 이 중 실제 신규저장 불가는 후속 구현 선행이며 정밀시험 이월로 숨기지 않는다.
 - 다음은 계획의 남은 독립 구현을 계속 선정하고, 전역quota의 정확 후속 계약·통합 선행은 PMO 결정/지원과 분리한다. 이 결과만으로 전체 완료보고·PR/main 병합·배포를 하지 않는다.
 - rollback은 이번 소유 checkpoint를 후속 정상 revert하는 방식이다. 원5는 검산된 별도 복구사본이 있고 다른보호3·사용자변경은 건드리지 않는다. 자동reset/history rewrite0.
+
+## 게시 확인
+제품 checkpoint3611de4a0bfc677234087dc52a35269db466ef08, 정확20경로. c23a85 정상private push/동일SHA 확인, 원격main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변. trackedclean·다른보호3만untracked이며 PR/main 병합·실서비스반영0이다. 후속 UI09 기존목록/고정조회 연결은 별도 내부업무 WI로 이어간다.
