@@ -4,7 +4,7 @@
 - 신산님 goal ACTIVE 직접 재개 뒤, 구 시험 정리 완료 상태에서 동일 r3의 정상 GUI 검수02를 시작했다. windowsHide:false·spawn 전 로그/즉시 listener 순서를 실제 명령으로 검토했고 원제품·SDK·artifact 변경/기존 native 시험 반복0이다.
 - 새등록 QA fn18-packaged-ui-20261031-02/session91041·감독기67496/root37448(UTC17:48:10.1705040Z)·markerA52938AF는후속관측에서unknownfalse/정확4process/약41.9MB였다. 원구PID20344 계열은정리완료이며혼동하지않는다. TTL30분/128MiB·normalexit후exactcleanup·불명보존/no force다.
 - Main은정확Anvil창5839198/제목1개를발견했지만ComputerUse앱제어승인시간만료로화면본문/입력은미실행이다. 신산님의앱제어허용준비또는직접정상종료질문답변을기다린다. 원구PID강제정리승인을새PID로확장하지않으며동일권한경계에서새시험을또띄우지않는다.
-- FN13 r2 SHA61BBF0DC의채택은별도미응답이다. 전체WORK_PLAN/FN18은미완료이고실DB/키서비스Agent/유효HTTPS/원격로그인/제품source변경0이다. 아래의구시험정리요약은당시이력이다.
+- FN13 r2 SHA61BBF0DC의채택은별도미응답이며현재goal은도구권한/결정대기BLOCKED다. 전체WORK_PLAN/FN18은미완료이고실DB/키서비스Agent/유효HTTPS/원격로그인/제품source변경0이다. 아래의구시험정리요약은당시이력이다.
 ## 현행 인수 요약 — 2026-10-31 시험 앱 정리 완료
 - 신산님 직접 승인으로 숨김 시험 앱 main20344와 자연 종료한 자식3·감독기30398/34040의 종료를 회수하고 등록 QA 폴더를 정리했다. Main 독립7ae955에서 대상 프로세스0/QA경로 부재·보존 r3 전지문 불변을 확인했다.
 - 정상 packaged-entry 화면 검수는 INCOMPLETE다. 이번 정리 성공을 제품 검수/전체 계획 완료로 승격하지 않는다. 실제 DB·키·서비스·Agent·제품코드 변경0·새시험0이다.
@@ -10268,3 +10268,13 @@
 - FN18 02 실제launch13b2ec/session91041/감독기67496/root37448/CreationUTC2026-10-30T17:48:10.1705040Z·정확r3exe/windowsHide:false·userdata1인자/unknownfalse/CIMexact4를수신했다. markerA52938AFEDF668DF582B85A861B18EE1786A05AC58A789A156BC73B1AEBB6239/nonce47b04b92-5b62-4089-bba7-a0cc219484a1,첫실측10008548→후속41913764bytes로128MiB미만이다. spawn이벤트/LAUNCHED는정상기록돼원bookkeeping누락을재현하지않았다.
 - Main sky.list_apps는정확r3process경로의Anvil1개/window5839198/제목‘Anvil 개발 클라이언트’를실제로반환했다. 원숨김launch와달리창이나타난사실만확인했으며내용/동작PASS는아니다. 이어get_window/get_window_state cellg4:92는정확오류‘Computer Use app approval timed out’로끝나스크린샷/접근성본문/입력검수는미수행이다. 앱제어도구의권한시간만료와Anvil제품/TLS/로그인실패를구분한다. 다른UI자동화/추정handle/직접IPC/보안장벽우회·같은앱재실행0이다.
 - 신산님께Codex앱제어허용요청에응답가능한지 또는시험창‘클라이언트종료’로직접정상종료할지질문1회accepted받았다. 사용자준비답변전같은승인prompt를반복하지않는다. 기존Primary는동일91041/원PID·marker/30분128MiB만RO관측하고만료/불명은보존·no force/자동삭제다. 정상수동종료가관측되면원exit/stdio를회수한뒤정확정리만별도GO한다. 이전구PID4의강제정리승인은이번PID로확장하지않는다. FN13r2미채택/실DB키서비스Agent0·제품/source/r3불변·전체미완료를유지한다.
+### 2026-10-31 재개 run 도구 권한 경계 감사 1
+- 직전 turn은 구시험 정리 이후 실제 정상 GUI02 기동·Anvil창 발견으로 다음 행동을 바꾼 진전이었다. 이번3c8c7f/PMOcursor10은 동일 앱 제어 허용준비/수동종료 질문과FN13r2의새답변없음을확인했다. 관찰/현황만인이번turn을no progress1로기록한다. live37448/67496·markerA529불변은확인했지만외부앱제어권한없이진행중UI검증이라고표시하지않는다.
+- QA시한은원18:18경/128MiB그대로며추가GUI기동/승인prompt반복·우회자동화/직접IPC/입력·새PIDforce/삭제0이다. HEADa0e2f632·보호8·제품/source/r3/실DB키서비스Agent불변이며goalACTIVE/전체미완료를유지한다. 원g4:92는승인시간만료로terminal이고기다리는live UI도구호출이아니다. 다음안전행동은기존권한준비또는정상수동종료답변/관측뒤원신원·시간조건을재확인하는것이다. 차단임계3에는아직도달하지않았다.
+### 2026-10-31 재개 run 도구 권한 경계 감사 2
+- 직전turn no progress1에이어8a970b/PMOcursor10불변은동일ComputerUse앱제어허용준비/정상수동종료와FN13r2채택답변미수신이다. g4:92는terminal/PMO는idle이며살아있는권한처리job으로꾸미지않는다. 앱37448/부모67496/원생성시각·경로는생존했으나권한없이검수입력할수없고그자체를기능진전으로세지않는다.
+- no progress2·goalACTIVE/전체미완료,아직임계3전이다. Main현황1dirty·보호8/HEADa0e2f632·제품/r3불변,새source/시험/앱·승인prompt반복/다른도구우회/force/삭제0이다. 최초30분/128MiB/no force보존과기존질문을유지하며,새답변이나외부권한변경없이기존완료기능/SDK시험을다시하지않는다.
+### 2026-10-31 재개 run 도구 권한 경계 감사 3 — goal BLOCKED 확인
+- 직전turn no progress2에이어eddcc2/PMOcursor10불변은동일ComputerUse앱제어허용준비/정상수동종료및FN13r2답변미수신이다. 새답변없이UI권한barrier를우회하거나새GUI/SDK시험·미채택저장계약을구현할수없으며기존완료기능을다시만들지않는다. 이번turn도no progress3으로분류해fresh재개run의차단임계를충족했다.
+- update_goal(status=blocked)를호출해실제반환status=blocked를확인했다. COMPLETE/PAUSED가아니고전체목표를축소하지않았다. source제품/SQL/검증/추가질문/새앱/force/삭제0이며이후수행은현상태의보존/보고뿐이다.
+- 최종eddcc2에서root37448/부모67496/원exe경로·생성시각·markerA529는불변이었다. 관측UTC18:07:50은원30분기한전이며권한처리job이돌아가는증거는아니다. 원g4:92는terminal,02는화면/입력NOT_EXECUTED·AWAITING_TOOL_PERMISSION이다. Primary는원91041만기존TTL/128MiB내RO관측하고정상exit면exit/stdio회수만보고,만료면unknown보존후추가관측루프를실행하지않도록전달했다. 감독기임의종료/새PIDforce/시간연장/새자동화0·구PID종료승인확대0이다. 사용자답변후원신원/marker/시간조건을먼저재검증해야한다.
