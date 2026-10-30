@@ -1,0 +1,6 @@
+{
+ "name":"anvil-desktop","version":"0.1.0","private":true,"description":"Anvil Windows 개발 클라이언트","author":"Anvil","license":"UNLICENSED","main":"src/main.cjs",
+ "engines":{"node":">=24.18.0 <25","npm":">=11.12.1 <12"},
+ "scripts":{"typecheck":"node ../../node_modules/typescript/bin/tsc -p tsconfig.json","test":"node --test ../../tests/desktop/shell-policy.test.cjs","prepare:sdk":"node scripts/prepare-sdk.cjs","verify:sdk":"node scripts/verify-sdk.cjs","package":"electron-forge package --platform=win32 --arch=x64"},
+ "devDependencies":{"electron":"45.1.0","@electron-forge/cli":"8.0.1"}
+}

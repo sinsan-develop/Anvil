@@ -1,0 +1,11 @@
+'use strict';
+/** @typedef {{status:string,origin:string|null,error:string|null,configInvalid:boolean,runtimeStatus:string}} ShellState */
+/** @type {{getState:()=>Promise<ShellState>,connect:(origin:string,replace:boolean)=>Promise<ShellState>,quit:()=>Promise<ShellState>,onState:(cb:(s:ShellState)=>void)=>void,onQuitRequest:(cb:()=>void)=>void}} */
+const api=Reflect.get(window,'anvilDesktop');
+/** @template {HTMLElement} T @param {string} id @returns {T} */function element(id){const value=document.getElementById(id);if(!value)throw Error('LOCAL_ELEMENT_MISSING');return /** @type {T} */(value);}
+const originInput=/** @type {HTMLInputElement} */(element('origin'));const replaceInput=/** @type {HTMLInputElement} */(element('replace'));const submit=/** @type {HTMLButtonElement} */(element('connect'));const quit=/** @type {HTMLButtonElement} */(element('quit'));const info=/** @type {HTMLDialogElement} */(element('information'));let edited=false;
+originInput.addEventListener('input',()=>{edited=true;});
+/** @param {ShellState} state */function render(state){element('status').textContent=state.status+' · '+state.runtimeStatus;element('error').textContent=state.error||'';element('error').hidden=!state.error;element('replace-label').hidden=!state.configInvalid;if(!edited&&state.origin)originInput.value=state.origin;}
+/** @param {unknown} error */function failure(error){void error;element('error').textContent='요청을 확인하지 못했습니다. 입력을 보존하고 명시적으로 다시 확인하세요.';element('error').hidden=false;}
+async function requestQuit(){if(!window.confirm('클라이언트 종료는 Agent 회수·서버 작업 종료·checkpoint 완료 확인이 아닙니다. 미저장 입력의 종료 거부를 존중하며 종료를 요청할까요?'))return;quit.disabled=true;try{render(await api.quit());}catch(error){failure(error);}finally{quit.disabled=false;}}
+element('connect-form').addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;try{render(await api.connect(originInput.value,replaceInput.checked));}catch(error){failure(error);}finally{submit.disabled=false;}});quit.addEventListener('click',()=>{void requestQuit();});element('info').addEventListener('click',()=>info.showModal());element('close-info').addEventListener('click',()=>info.close());api.onState(render);api.onQuitRequest(()=>{void requestQuit();});api.getState().then(render).catch(failure);

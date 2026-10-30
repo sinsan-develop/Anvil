@@ -450,3 +450,13 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 24.22.1 include/node/node_api.h는 root:root0644/10370bytes/SHA256 2d4560831e525b47b060ec8a0864ab73993df9e20215ce9f0fe7b24cd31af32a. /usr/bin/cc는 /usr/bin/x86_64-linux-gnu-gcc-13으로 연결되며 해당 일반파일은 root:root0755/1023032bytes다. binary hash/전체 부모 보호·ACL·동적loader 신뢰나 실제 컴파일·native로드·OS 경쟁/내구성을 이 metadata로 PASS 선언하지 않는다. 실제 도구 실행·설치/권한 변경·QA파일/키/catalog·DB·서비스 생성0. 다음 exact 실행안에서 현재성/도구/보호/자원·수명을 다시 결박한다.
 ## 2026-10-29 FN16 native 공개 합성 검증 갱신
 앞선 metadata-only 기록 이후 exact7fc087b2를 신규 격리 Git checkout에서 빌드·로드했다. Node24.22.1/NAPI8/gcc13/ext4/proc, 고정 source20DC3C14/binary0aa2058440133d45d8853aa5ae697d52bbdd176cd2b7ac517b0c0339425fc9ea에서 실제 공개fixture15PASS279.856159ms/skip0. 최초QA 바이너리groupwrite 사전조건 실패는자기QA0700/umask077 보완후동일source/binary로재확인했고원실패기록유지. 신규 /home/daon/anvil-v3-fn16-native-qa-20261029-01은190.322초내정리·별도SSH잔여0. 실제키/설치catalog·DB·서비스·사용자사용/TLS·전원손실/강제할당실패는미확인또는제외다. native연산의시험범위를모든설치/파일시스템/보호보장으로확대하지않는다. 상세결과 WORK_STATUS/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md.
+## 2026-10-30 FN18 Windows 개발 Shell 한정 환경
+
+- 현재 1단계 개발이다. Electron45.1.0/Forge CLI8.0.1의 별도 desktop lock과 SDK를 사용하며 root 의존성·DB·키·기존 서비스는 변경하지 않았다. SDK ZIP 55eaba17…과 실제 exe C579ACAA…의 entry별 검산 뒤 격리 native QA를 수행했다.
+- 최초 r2 생성 당시 개발 패키지는 승인 branch의 `apps/desktop/out/Anvil-win32-x64`, 검토 사본은 `D:/Project/Anvil/.av3-data/v3-development/fn18-shell-20261030-01`이다. 후자는 새 부모/leaf만 생성·owner SINSAN/cyhuh·nonlink, 기존 형제 자료·ACL 변경 없음. 73파일/374007453bytes, packaged PE8E41878F/asar3B322BA1, 정본 r2 manifest A83FB6A7…를 대조했다.
+- NOT_RELEASE/UNSIGNED_DEV. 실제 Windows 설치·OS 등록·서명·업데이트·정상 packaged main-entry 기동·실서버/TLS/로그인·DB·실행기 회수는 미검증 또는 미구현이다. 같은 SDK에서 제품 Shell을 사용한 메모리 HTTPS QA가 실제 서버 검증을 대신하지 않는다.
+- `D:/tmp/anvil-v3-stage-b/fn18-shell-qa-20261030-01`은 각 실행 종료/stdio·정확SDKprocess0 뒤 정리했다. 별도 toolchain `D:/tmp/anvil-v3-stage-b/fn18-shell-toolchain-20261030-01`도 원marker/owner/realpath/link·CIM사용0 재검사 후 bb08c2로 제거했다. SDK cache/node_modules/out/검토사본은 후속 개발용으로 보존하며 합계1326725357bytes<2GiB다. 키·계정·사용자 설정은 포함하지 않는다.
+- 실행방법·미지원은 `docs/desktop/README.md`, 실제 명령·결과·미실행·복구는 `docs/04_test_reports/AV3/FN18_DESKTOP_SHELL_RESULT_20261030.md`를 따른다. 기존 실패/소급 PASS 금지, 실제 서비스를 켜거나 사용자 설치를 대신하지 않는다.
+### FN18 LF 정규화 후 현재 검토본 r3
+
+게시 전 같은 staged 검사에서 발견한4 EOF 형식만 비의미 보완했다. 현재 검토본은 `.av3-data/v3-development/fn18-shell-20261030-01-r3`, 73파일/374007452bytes·PE F5139421/asar068801D5/manifest B68E97CE다. 기존 r2 경로/73파일/manifest는 그대로 보존한다. 서로 다른 input/산출물 지문을 섞지 않는다. 세대2 toolchain도7c5f2a에서 정확 marker/UTC/owner/link/사용0 재검사 후 정리했고 임시 QA·SDK/packaged 프로세스0을 확인했다. 보존합1700857278bytes<2GiB이며 실제 packaged main-entry/설치/서명/업데이트/실서버/DB/Agent는 여전히 미실행이다.
