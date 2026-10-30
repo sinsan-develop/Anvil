@@ -1747,3 +1747,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 직접r2 승인7B22897F/계약65468084·WI7A95F469의 정확15경로를 기존 Primary가 구현하고 Main이 관리·검수했다. 사람6주장·근거/후보 exactref 보관·고정조회/UI11 원명령·raw편집 보존과 미적용0057 두표를 연결했다. 서버판정은 UNVERIFIED/CANDIDATE_ONLY·실행/dispatch false이며 실제 능력검증/허가 해제 아님.
 - Main 입력5+추가2/저장6+추가4/UIhelper5/기존인접19/SQLsource1은 별도 실행으로 구분한다. 최종 실제 Edge6자식+부모 Node7/typebuild/diff0·독립 최종C0/I0·QA별도잔여0. 결과 docs/04_test_reports/AV3/FN06_HUMAN_CAPABILITY_REPORT_RESULT_20261030.md.
 - 실제DB/SQL/권한/원문IO·HTTP/served·전체App/Agent·사용자인수는NOT_RUN, FN06/UI11·StageB/전체계획 미완료다. 기존선행·필수gate·실행차단은 유지하고 다음 미완료 단위를 이어간다.
+### 2026-10-30 UI05 준비 원문에서 HUMAN 능력보고 읽기 연결
+- WI BE07FD2B/기존승인UI05 근거접근 범위에서 기존 FN06 고정GET만 명시 소비한다. 원준비 fullref·보고 hash와 연결/환경 pair검산·404namespace/v1외미확인·원주장/UNVERIFIED·실행false·페이지/선택보존을 연결했다. 새API/저장/SQL/권한·C1/7부족조건변경0.
+- Main기존helper4/최종신규4+기존6 DOM10자식(부모포함Node11)/typebuild/diff0·독립C0/I0·13지문동일·QA별도잔여0. 결과 docs/04_test_reports/AV3/UI05_PREPARATION_HUMAN_CAPABILITY_PREVIEW_RESULT_20261030.md. 실제DB/HTTP/상위전체App/served·사용자인수/전체UI05·FN09·Stage/계획은미완료다.
