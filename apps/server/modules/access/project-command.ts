@@ -20,7 +20,7 @@ import { readSourceScopesV1, type SourceScopeV1 } from '../../../../contracts/ru
 import { cloneV1, refV1, uuidV1, isoV1 } from '../../../../contracts/runtime/validation-v1.ts';
 
 export interface ProjectCommand { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: string; targetId: string | null; expectedVersion: number; baselineRefs: unknown[]; approvalRef: unknown; payload: Record<string, unknown> }
-export const documentOperations = ['recordCapabilityReport', 'uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'activateDesignChange', 'linkTrace', 'requestKnowledgeShare', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework','markNotificationRead','exportProject','saveBackupReference','revokeBackupReference','manageBackupResource'] as const;
+export const documentOperations = ['saveCheckpoint', 'recordCapabilityReport', 'uploadArtifact', 'startStage', 'cancelQueuedRequest', 'saveDocumentDraft', 'detachDocumentSource', 'recordContentReview', 'confirmDocument', 'proposeDocumentChange', 'importDocument', 'indexDesignDocument', 'saveWorkPlanDraft', 'confirmWorkPlan', 'proposeDesignChange', 'reviewChangeImpact', 'activateDesignChange', 'linkTrace', 'requestKnowledgeShare', 'saveKnowledge', 'appendConversation', 'correctKnowledge', 'excludeKnowledge', 'confirmKnowledge', 'applyConstitution', 'requestApproval', 'decideApproval', 'copyMethodology', 'saveMethodologyDraft', 'confirmMethodology', 'applyMethodology', ...candidateOperations, ...trustRegistrationOperations, ...sourceRootOperations, ...sourceReadOperations, ...assignmentDraftOperations, ...assignmentConfirmationOperations, ...contextPreparationOperations, ...baselineOperations, 'defineProjectRole', 'bindResponsibleSession', 'prepareExecution', 'applyLimitPolicy', 'revokeLimitPolicy','reviewUnderstanding','submitResult','saveResultCriteria','evaluateResult','requestRework','markNotificationRead','exportProject','saveBackupReference','revokeBackupReference','manageBackupResource'] as const;
 export interface MaterialRule { ruleId: string; subjectRef: { kind: 'HUMAN'; userId: string }; operations: string[]; targetScopes: { kind: 'PROJECT'; projectId: string }[]; disposition: 'AUTO' | 'REQUIRE_APPROVAL' | 'DENY'; limitPolicyRef: null; expiresAt: string }
 export const runtimeOperations = ['authorizeExecution','queueExecutionCommand','revokeExecutionGrant','requestExecutionStop','authorizeExecutionRecovery'] as const;
 export interface ExecutionRule extends Omit<MaterialRule, 'targetScopes' | 'limitPolicyRef'> {
@@ -87,6 +87,7 @@ export async function authorizeMaterial(db: PoolClient, actor: AuthenticatedIden
   // 준비본·사람 이해검토 저장만 exact 승인에 연결한다. 실제 실행 허가는 열지 않는다.
   if (request.operation==='reviewUnderstanding' && (!uuidV1(request.targetId)||!Number.isSafeInteger(request.expectedVersion)||request.expectedVersion<1)) throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
   if(request.operation==='markNotificationRead'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);
+  if(request.operation==='saveCheckpoint'&&(approvalRequired||request.approvalRef!==null))throw new AuthFailure('CHECKPOINT_APPROVAL_NOT_CONNECTED',412);
   if(!inspectPending){
     if(approvalRequired){if(request.approvalRef===null)throw new AuthFailure('APPROVAL_REQUIRED',412);await new ProjectApprovals(documents).authorize(db,actor,request,policy.ref);}
     else if(request.approvalRef!==null)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
@@ -140,6 +141,10 @@ export class ProjectPolicyRepository {
           const policy = await authorizeMaterial(db, actor, request,false,this.#documents);
           const checkExportDeadline=async()=>{if(request.operation!=='exportProject')return;const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;exportDeadline=Math.min(exportDeadline,notificationSessionDeadline(actor,at,before),before+policy.validUntil-at.getTime());if(performance.now()>=exportDeadline)throw new AuthFailure('EXPORT_TIME_LIMIT',503);};
           await checkExportDeadline();
+          const checkCheckpoint=async()=>{if(request.operation!=='saveCheckpoint')return;await currentProjectController(db,actor,request);const current=await authorizeMaterial(db,actor,request,false,this.#documents),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at,s=actor.authSession;
+            if(!(at instanceof Date)||!Number.isFinite(at.getTime())||!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt)||!Number.isFinite(current.validUntil)||Math.min(current.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt))<=at.getTime())throw new AuthFailure('CHECKPOINT_CURRENT_REQUIRED',409);
+            if(request.baselineRefs.length||request.approvalRef!==null)throw new AuthFailure('CHECKPOINT_INPUT_INVALID',422);
+          };await checkCheckpoint();
           const previous = await projectReplay(db, actor, request);
           const checkNotificationDeadline=async()=>{
             if(request.operation!=='markNotificationRead')return;
@@ -155,13 +160,13 @@ export class ProjectPolicyRepository {
             if(!Number.isFinite(notificationPolicyDeadline)||performance.now()>=notificationPolicyDeadline)throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
           };
           await checkNotificationDeadline();
-          if (previous !== undefined) return previous;
+          if (previous !== undefined){await checkCheckpoint();return previous;}
           if (request.baselineRefs.length&&(request.operation!=='activateDesignChange'||request.baselineRefs.length!==1||!isVersionRef(request.baselineRefs[0]))) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
           if(request.operation==='exportProject'){exportStarted=true;await db.query("SELECT set_config('anvil.export_payload',$1,true)",[canonicalJson(request.payload)]);}
           const applied=await material(db, actor, policy.ref,request.operation==='exportProject'?exportDeadline:undefined);
           await checkExportDeadline();
-          await checkNotificationDeadline();return applied;
+          await checkNotificationDeadline();await checkCheckpoint();return applied;
         }
         if (!actor.reauthUntil || actor.reauthUntil.getTime() <= Date.now()) throw new AuthFailure('REAUTHENTICATION_REQUIRED', 412);
         const previous = await projectReplay(db, actor, request); if (previous !== undefined) return previous;

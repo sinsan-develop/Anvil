@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 현행 인수 요약 — 2026-10-31 FN13 r2 A source 통합 검수
+- 최신 직접승인으로 FN13 r2 A(61BBF0DC) source-only 구현을 기존 Primary에 위임했고 Main 검수·독립 C0/I0/M0를 마쳤다. 이전 아래의 FN13 미채택/결정대기BLOCKED는 과거이력이다. 현재 작업은 계속하며 전체 WORK_PLAN은 미완료다.
+- Main 최종 945c24 핵심·인접41PASS/skip0, cc2ca9 type0/20cde5 메모리build482modules0/diff0. 합성DOM5조건과 보완1조건은 별도 증거다. 실제 신규저장은 전체quota 공급자 미연결412로 불가하며 실제DB·권한·키·서비스·Agent 변경0이다.
+- 원5 복구사본 보존/검산·보호3 불변, 합성QA와ego는 정상finish·정확회수·Main별도부재 확인했다. 결과 docs/04_test_reports/AV3/FN13_SERVER_CHECKPOINT_STORAGE_RESULT_20261031.md를 따르며 source checkpoint/private 게시와 후속계획 선정은 이어간다.
+
+
 ## 현행 인수 요약 — 2026-10-31 후속 UI 부분 확인·정상 종료/정리 완료
 - 앱 제어 승인 후 Main은 실제 local설정·HTTP주소차단·입력보존/설정미생성을 확인했다. 신산님이 직접 종료확인을 수락했고 app37448 exit0/stdioClosed/잔여0을 회수했다. 취소 동작·전체 시각 레이아웃은 미검증이다.
 - 02 QA는7e1227에서정확소유조건확인후정리됐고Main51e31c에서경로부재/대상프로세스0·보존r3전지문불변을확인했다. 원01·02의만료/UNKNOWN·도구제어미확정이력은보존한다. 실제DB/키서비스Agent/제품source/SDK변경0·새시험0이다.
@@ -10310,3 +10316,34 @@
 - 직전no progress2에이어7d9dd4/PMOcursor12불변·정확r2SHA61BBF0DC불변을확인했다. 다음계획FN13의기존채택질문에새답변이없고기존독립소비선대조에서도현재채택범위내새구현단위를확정하지못했다. 같은질문/완료검사/미사용wrapper를반복하지않는다. 앱제어·normalexit·QA정리는해결됐으며현재차단사유는그것이아니다.
 - no progress3의fresh차단임계충족후update_goal(status=blocked)를실제호출해반환blocked를확인했다. 전체목표축소/COMPLETE/PAUSED0이다. 현상태보존과보고외추가source/SQL·시험/앱/관측루프·실DB키서비스Agent/원본자료변경0이다. 보호5의특정source거절해제/정확FN13r2채택과별도실행권한없이API/SQL을등록하지않는다.
 - 현재제품a020/r3전지문·HEAD4e6e6f50/보호8은불변이며Main소유현황만추가다. 원91041/app37448정상code0·stdio/잔여0·QA부재는51e31c로이미확인해다시검증하지않는다. 살아있는검수job/승인처리job을기다리는상태로꾸미지않는다. 다음은PMOturn01a18dc8의기존FN13r2질문정확답변뒤source범위/현재상태를재대조하는것이며동일질문을재발행하지않는다.
+## 2026-10-31 FN13 r2 A 직접승인·구현 재개
+
+- 신산님 직접승인으로 r2 SHA61BBF0DC…071C26F의 source-only 계약을 채택했다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다. 과거 미채택·0029 거절은 이력이며 신규0058 source허가를 취소하지 않는다.
+- 기존 단일Primary/독립검토에서 WIP5 hash·owner·link0, 실제전체quota producer부재와 replay전현재세션/정책기한 접점을 확인했다. 신규저장은412 PROJECT_STORAGE_QUOTA_UNVERIFIED로 차단하고 합성성공을 실제사용가능으로 보고하지 않는다.
+- canonical과 동일 승인기록13A07358/WI911758BC에 정확18경로·원5복구보존·TDD/검수범위를 고정했다. 원5보존/검산 후 기존담당 구현GO, 다른보호3 보존. 전체계획 미완료·계속진행.
+
+### FN13 구현 착수 증거
+- 승인13A07358/WI911758BC 독립 C0/I0·기존Primary 단일writer GO. canonical 등록 root의 원5 복구사본22,262bytes/hash·owner·link0 검산, manifest98EA34EAF6846AA092A6241CCBB3F6E9B6D93AB1FA338C486F0013CB9675FC3E 보존. 다른보호3 변경0.
+- 제품 전체quota producer 미연결412·실제DB/권한/키/서비스/Agent0 유지. sandbox git diff worktree오류1은 실행환경으로 분리, 글로벌설정/ACL변경0. PMO에 새직접승인/착수 전달.
+
+### FN13 TDD·중간 검수(작성 중)
+- 최초 consumer RED b56dae: fixed/list 미등록404≠보호401. 연결 후de09a4 인증1PASS, 후속bde549 서버/route9PASS·type185f8c0. 최종동결·실DB·사용가능 판정이 아니다.
+- 중간독립 CA6BED39 Important2: 이전실row/정확임무·chain/순번 관계검산, list순번과 정확HUMAN_COMMAND 감사결박 누락. 추가 MAX_SAFE_INTEGER 정확경계·canonical snapshot량산정 보완을 같은Primary에 TDD지시했다. 해소전 합격/commit0.
+- 작성오류: Node strip-only parameter-property1회, quota412 이후 도달불가부 narrowing/type1회는 담당자가 보완. Main 잘못 추정한 browser시험 leaf읽기1회 not-found는 inventory로 교정했으며 재실행/파일생성0. 실제 DB·권한·키·서비스·Agent0.
+
+### FN13 합성 UI 검수 자원 사전 등록·WI 보완 — 2026-10-31
+- 기존 source-only 합성 검증 안에서 신규 DOM2 시험을 ego-browser로 실행한다. ego-browser skill/guide v2.2.0 전체 end를 확인했다. Playwright import/별도 browser launch·기존 사용자 tab/profile 접근0.
+- 임시 root: D:/tmp/anvil-v3-stage-b/fn13-checkpoint-storage-20261031-01. owner SINSAN\cyhuh/담당 Primary. 생성 전 부재·부모 realpath/owner/link0를 확인한다. marker와 create-new round-01.mjs 및 합성 증거만 보관, 128MiB 상한·생성 후 최대30분. 새 listener/port/container/image/DB/실제품서비스/Agent0. Vite write:false 메모리 bundle·합성 transport만 쓴다.
+- ego taskSpace name: Anvil FN13 synthetic 20261031-01. 최초 생성 ID/Agent-owned p1 기록 후 같은space/page만 재사용한다. Page frame/합성 HTML 주입·명시 UI 조작/메모리검산만 하며 실제 네트워크·다운로드·사용자로그인/쿠키0. CSP/지원CDP로 외부요청을 막고 crypto secure-context 지원부터 확인한다. 제품 검증을 통과시키려고 crypto/권한/제어 우회0.
+- 정상 finish({keep:[]})를 정확1회 확인한 후 QA root owner/link/marker·소유사용중process0/크기·범위를 검산해 등록 root만 회수하고 Main이 독립 부재 확인한다. usercontrol/도구timeout/불명 launch·미확정종료/CIM 실패는 보존·보고하며 강제kill/일괄삭제/새space재시도0.
+- WI911758BC의 미등록 프로세스/브라우저 자원 제외를 위 명시 합성 QA에 한해 구체화한다. 실제 Agent·DB·권한·키·서비스 제외와 코드18경로·최종 기능 미완료 판정은 그대로다. 독립 서버14PASS(2f5a81)는 중간지문 범위로 기록하고 이후변경 영향 검증을 수행한다.
+
+### FN13 합성 UI 실행 방식 한정 보완
+- Primary 최초 ego관측: space9/p1 chrome://new-tab-page·native secureContext/subtle=true. round02는 NodeRuntime disconnected(exit1)·DOM조건도달 미확인. 같은space 관측에서 root/seed/QA없음·원url유지를 확인했고 같은명령 재실행/새space/내부chrome API접근0. 도구오류로 분리하고 제품FAIL/PASS로 판정하지 않는다.
+- 등록 QA root 안에 create-new synthetic.html(CSP default/connect-src none)·bundle.js만 추가 허용한다. 정상 Node/Vite로 합성bundle을 만든 뒤 ego는 동일space9/p1을 정확 생성file://에 명시이동·native secureContext/subtle 재확인하고 자기합성DOM만 조작한다. 실제 network/listener/사용자tab/crypto대체0·128MiB/최초30분 TTL·정상finish/소유검산회수 조건 불변. origin/권한우회는 하지 않는다.
+
+### FN13 서버·화면 중간 검증/재검수
+- Main2f5a81 서버/원record/route14PASS, 3e305f 준비·입력·UI05API/미적용SQL구조17PASS. 각각 해당 중간지문의 합성 범위이며 실제DB/SQL0이다.
+- 독립이력: 이전chain·감사seq Important2 및MAX_SAFE·canonical바이트는보완. INNERJOIN 증빙누락fixed와list는각실제JOIN의미반례RED→LEFTJOIN검산GREEN으로보완. 최종회원/임무/세션·replay전후finite/DBclock도보완했다.
+- UI118557 ego합성 클릭5조건PASS: 명시412/응답유실동일원명령왕복/목록고정원문·손상/주체·client·transport전환지연폐기/POST이탈뒤unknown보존. 실제API아닌memorytransport/nativecrypto/fileorigin·network0. 렌더없는transport교체Important1은후속보완중이며최종합격아님.
+- SQL은단일0058pending만·loader명시참조0(7e9297검색무매치). 구조검수는실PG/RLS/COMMIT/동시성미검증을대신하지않는다. 과거생성안/실서비스/API/정식DB변경0. QA원RED bundle과구분GREEN bundle은같은등록root의회수대상이다.
