@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 저장량·지속예약 A안 직접승인·ACTIVE 재개
+- 신산님이 후보9110DEA86C1616B224F5BB4DA6E1099B7BD9915A0DC67D044CDBC06827EE12E2의A안·새원장2표/관련코드/미적용SQL/합성구현을직접승인하고목표를ACTIVE로재개했다. 아래기존질문/일시정지는과거이력이며이번source범위의차단이아니다. 승인기록PROJECT_STORAGE_QUOTA_RESERVATION_APPROVAL_20261031.md/SHADE377C277F9C90C849586CF711977D4DE7DAFD013CE979F0336641201858E236.
+- 실제 DB·권한·키·파일조사·서비스·Agent실행 및 기존프로젝트차단해제 제외. 후보원문동결·기존자료0/READY승격0·UNKNOWN자동감액0을유지한다. 전체WORK_PLAN미완료이며계획완료책임은Main이다.
+- 실제348c12 시작codex/av3-stage-b/HEAD3e2decf2b3ef6099d21255e21b00a0d7c95bbfa9 local/private일치·mainf976불변·trackedclean/다른보호3hash불변. 기존단일Primary/Reviewer읽기preflight와Main writing-plans로정확WI/allowlist·2표/guard·분해를고정한뒤TDD한다. 기존FN13/UI09완료검사반복0,실DB/FS실측/새SQL/QA0.
+
+
 ## 현재 결정 인수 — 2026-10-31 quota source A안 직접 채택 질문 1회
 - PMO가 후보9110DEA86C1616B224F5BB4DA6E1099B7BD9915A0DC67D044CDBC06827EE12E2의 A안 source계약/새원장2표·미적용SQL·합성 구현 질문을 직접제시했다. 답변은아직없으며중복질문0. PMO turn01a18f45-08f1-7ad0-8c13-a253b978561f/질문message msg_0c09b62823129b7a016ae5309470a88191a48972dcfac6d243, 후속heartbeat turn01a18f45-fe9d-7ca1-b1f3-79990732d8ad도답변없음/DONT_NOTIFY다.
 - PMO판단근거는새지속data/다중transaction/오류의미·2B집계의기존한도영향이며기존FN13범위밖의중요delta다. 실제DB/권한/키/FS조사·서비스·Agent/기존project412해제는A에서도제외한다. 현재새계약DRAFT/NOT_ADOPTED·새코드/SQL0·writer/QA0, 기술세부WI/구현GO발행0.
@@ -10392,3 +10398,7 @@
 - UI11의executionHostRef·source/target/command/Secret 비어있지않은참조는현재 CANDIDATE_REFERENCE_NOT_CONNECTED/412 계약이며실참조보호reader·귀속/현재성계약없이임의UUID로대체0. UI12 main factory/기본OFF·0041checksum/실collector·수락/제어세대전환, UI13 실Agent전달/수신·제어인수/푸시는이번실제실행제외또는미채택선행으로분리한다. 대화원문저장을Agent지시실행으로표시하지않는다.
 - Main 내부지시의환경정의 UI13 번호오기1은정본UI11로정정·모바일로임의확대0. 실제모바일기기/430×844/서버결정동기화·새type/build/단위/브라우저/DB검사는이대조에서실행하지않았다. 현재writer/QA/미확정실행0·보호자료불변이다.
 - PMO cursor18의실제질문원turn/read_thread와cursor19 후속을대조해 quota9110 A 질문1회·답변없음·DONT_NOTIFY를확인했다. Main질문재발행/기존FN13승인대기회귀0·예약계약채택전새코드/SQL0. 이좁은대조는개발진도/기능완료가아니며후속세션에서같은기존소비확인을기계적으로반복하지않는다.
+
+## 2026-10-31 저장량·지속예약 A 구현 WI 고정
+- 담당 Main 어울/기존 Primary 단일 writer, 기존 Reviewer 읽기 검수. 직접승인 DE377C27·후보9110DEA8에 결박한 WI 1B92351C44F09A2AF7364B04424D65626767B2D8B69174F904D5391DE975538E를 작성했다. Q1 원장·예약/시작 → Q2 upload/diff → Q3 생성인계/checkpoint → Q4 검수·통합 순서, 허용14경로다.
+- createProject의 PROJECT 내부 commands.id와 외부 commandId/별도 draft 명령을 구분했다. 실제 DB·권한·키·파일 조사·서비스·Agent·기존 프로젝트 차단 해제 제외. 기존0058/보호3/복구원본 불변 유지. 코드 착수 전 WI 독립 검토 중이며 새 검증 결과 주장은 없다. WI 독립검토 C0/I0, 기록 과정 CRLF diff 경고1을 LF로 보정했다. 제품 오류0, 전체 계획 미완료.
