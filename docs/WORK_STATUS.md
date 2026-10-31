@@ -10777,3 +10777,13 @@
 - 기존 Primary 읽기 대조와 Main 실제 원문 대조에서 approval-input의 reviewUnderstanding 전용 targetRef=null/양수 실행 generation 원형이 저장될 수 있지만, approval-history-inventory:50의 일반 null0 검사에서503이 되는 공백을 확인했다. 아직 제품 재현 시험은 실행하지 않았다.
 - WI FN16_UNDERSTANDING_APPROVAL_SCOPE_INVENTORY_INTEGRATION_20261031.md SHA256 9FD623257554F378DDD7378FD6F62474D7FF4C75CC7B5541A8ED2C680C9E4CD1, 독립 경계검토 C0/I0다. 기존 승인 의미를 수집기에 맞추는 내부 보완이며 source1/신규시험1 정확2경로만 발행한다. 다른operation/legacyfallback/원증빙·OWNER/RR·NOT_PERFORMED 표시를 유지한다.
 - 같은 Primary에 control 게시 뒤 실제HEAD·D632A275 시작지문·신규시험 부재를 대조하고 RED→GREEN하도록 순차GO한다. Main 동일 코드 쓰기0, 다른 두collector·공개계약/producer/SQL·권한/실행·전체coverage412 변경0. 실제 DB/키/파일조사/서비스/Agent/일반차단 해제0·새QA0·전체계획 미완료다.
+
+## 2026-10-31 FN16 이해검토 scope 실제 RED
+- Primary bba48d에서 실제 ProjectApprovals.request→UnderstandingReviewApprovalCandidates.capture→persistProjectReceipt→알림의6종 INSERT가 합성 원장에 정상 생산된 뒤 수집기 details():50에서 APPROVAL_HISTORY_INVENTORY_INTEGRITY_FAILED503을 확인했다(단일1 FAIL/skip0/Node exit1). 이번 최초 재현은 준비 오류0이며 원생산 결과를 재봉인하지 않았다.
+- execution generation3과 control generation2를 분리했다. 과거 관측을 요청 만료 뒤로 두어 현재 기한을 과거 내용에 다시 적용하지 않도록 검수한다. source의 operation 한정 분기만 보완 중이며 Main 동일 코드 수정0, 최종 성공/전체 DB 검증으로 아직 판정하지 않는다.
+
+## 2026-10-31 FN16 이해검토 승인 이력 최종 source 검수
+- 기존 Primary 정확2경로 writer 반환. Main 763133 단일4파일38 PASS/skip0/todo0(957.1539ms), a250bf type/diff exit0. 최종 source6DC5C43D/시험52F1626E는 독립 C0/I0로 읽은 지문과 같으며 Main e3c8f6이 최소 한 조건 diff·기존3 회귀/보호3 원문 불변을 확인했다.
+- 결과 docs/04_test_reports/AV3/FN16_UNDERSTANDING_APPROVAL_SCOPE_INVENTORY_RESULT_20261031.md SHA256 C51E36E5FB3E7F6FE3AA80F43AE1663A5FA77C5272DB0EF0530AEF4826DEB5E7. 실제 request/candidate/receipt/알림 원형의 RED→GREEN과 canonical 숫자 분류/시험 타입 준비 오류를 구분했다. 별도 Primary 실행 수를 단일 Main38과 합산하지 않는다.
+- reviewUnderstanding의 null/양수 실행generation만 승인된 의미에 맞췄다. 다른operation/legacyfallback·현재 OWNER/RR·원proof·NOT_PERFORMED 및 일반 실행 차단을 유지한다. 제품/시험2+결과/계획/현황3 정확5경로만 통합한다.
+- 실제 DB/RLS/경합·키/사용자파일조사/서비스/Agent·실백업복원/사용자인수는 미실행/제외다. 새QA/handle0·전체FN16/계획미완료. 다음은 나머지 collector와 승인된 prepareExecution/reviewUnderstanding 원형 간 정합을 각각 좁혀 확인한다. 기존검증을 이유없이 반복하지 않는다.
