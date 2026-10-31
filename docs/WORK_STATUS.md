@@ -10470,3 +10470,7 @@
 - 후보r1 D1B3F3B5 독립C0/I0 뒤 Primary 실현성검토가 과거버전412 시hash미보유1을확인했다. r2 SHA8B6742A94ABB4433AF6A2B220EF823097AA7EAEFEB84B27E516A152D3BCF99F7는 overview knownhash선택/기존id-version보호읽기·원근거/graph검산→pagefullref고정·실패lookup문맥보존·기존signProjectCursor주입의별도sequencecodec으로보정, 독립scopedC0/I0다. 새공개GET2/별도DTO·readonlyUI의채택결정전이며제품/SQL/migration/실환경변경0.
 - Reviewer 원r1 읽기에서 추정 project-policy.ts 경로부재1은판정근거제외/재조회0, 실제project-command/원method/reader만대조했다. r2 새경로오류0. Main·Primary·Reviewer 모두 실제root목록확인후읽기만유지하며권한변경/탐색확장0.
 - 다음은 PMO에 위임범위 내 이 신규읽기계약A/B만결정요청. 기존FN14질문반복0, 새실제DB/키/서비스/Agent승인으로확대0. 전체계획완료/현재기능실사용PASS로승격0.
+
+## 2026-10-31 다음 FN02 source 위임 준비·채택 답변 미확인
+- r2후보문서/현황exact2 d51e7f028065a173a68edcb921635634838cfdee 게시·local/private동일/main불변·trackedclean/보호3보존. PMO turn01a19001-7bf3-7491-9ded-2cf23ce51681에서정확A/B질문을직접제시했다. 후속cursor35도답변미확인·중복질문0. FN14기존질문과구분하며미채택계약코드/API해제0.
+- Primary readpreflight는기존authenticated/db/actor·signProjectCursor주입과TTL30분·빈upper0/MAX_SAFE·nullable증빙/원confirmationrefs·정확7경로를확정했다. Main은FN02_REVIEW_OVERFLOW_READ_IMPLEMENTATION_20261031.md를PREPARATION_ONLY/NOT_DISPATCHED로기록했다. 별도채택기록과MainGO없이는구현0. 실제DB/SQL/권한/키/파일/서비스/Agent0·codewriter0.
