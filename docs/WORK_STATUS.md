@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN08 새 저장계약 결정 대기 1차수
+- PMO cursor46/turn01a190ca-a482-7e23-a2af-9f594c2b5b96는신산님께FN08 지속등록r2 A/B를직접질문했다. 후보2F04BB32F37C2968F1B1570B1792C27649C44D3E956DA5328C0FE1466F1401D5의새3표/guard/source분류·누적상한이정확신규차이이며,기존FN13승인재질문이아니다. 아직답변/채택없음·새source/SQLGO0·중복질문0이다.
+- 이차수는FN13 source구현·Main24검사·독립검수·bfc2ed01통합과다음구체계약작성/PMO결정요청의진전이었다. 현재PMO는idle/terminal이고살아있는job의verified wait가아니다. 같은차단재확인은이번이첫차수이며,직접승인으로해소된이전FN13 blocked횟수는상속하지않는다.
+- 실제3ad60b는후속문서checkpoint211ca0c7d5aa13e08fb5f12dd91a7af7a016140a local/private동일·mainf976불변·결과58D684DD/후보2F04BB32지문일치를확인했다. 기존담당은반환/읽기종료·새writer/QA0이다. 기존source별승인/caller대조와실환경제외는동일하고현재그안에서추가독립구현을확정하지못했지만,전체미완료소진/계획완료판정은아니다.
+- 채택답변시정확hash/기준Git·현재잠금/producer접점과SQL번호/허용경로WI를고정해같은Primary TDD·Mainfresh/독립검수·통합을재개한다. 그전반복검사·임의지속등록/원문공급·실DB/권한/키/파일조사/서비스/Agent·기존project일반차단해제0,완료보고0이다.
+
 ## 2026-10-31 다음 FN08 지속등록 r2 결정 요청
 - 후보 docs/work_packages/FN08_MATERIAL_REGISTRATION_STORAGE_R2_DECISION_20261031.md SHA2F04BB32F37C2968F1B1570B1792C27649C44D3E956DA5328C0FE1466F1401D5를PMO에정확A/B결정요청했다. 원F379F60D의새3표/guard·source종류·누적한도를구체화한신규저장계약이며완료FN13승인재요청이아니다.
 - 독립C0/I0와Primary실현성확인: sourceKind는SYNTHETIC_REFERENCE_ONLY_V1한종(태그자체권위0/port부재거절),같은PoolClient·기존user/session/client→project잠금완료뒤append/bind·deferred완결,새3표합산project100k행1GiB·동일grantID전버전10k행64MiB·만료산입·replay charge0. 기존0059/전체10GiBcoverage·원문/USER_INSTRUCTION/DD166F차단·기본app미주입은보존한다.
