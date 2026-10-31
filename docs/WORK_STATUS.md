@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN08 지속등록 r2 A 직접승인 재개
+- 신산님이후보2F04BB32+원F379F60D A를직접승인했다. 새직접binding을보존하며과거FN08미응답/BLOCKED는해소된이력이다. 목표ACTIVE·동일승인재질문0·이후차단감사횟수새로계산한다.
+- Mainfc57c4는HEAD25735248 local/private동일·trackedclean/보호3·mainf976불변·후보/원문지문일치를확인했다. 같은Primary는기존store C63A06F0/queue21FCC290·신규6부재·0062prefix부재와최소준비descriptor→append/proof조립접점을읽기확인했다. sandbox Git오판1은elevated읽기exit0으로구분했으며설정/ACL변경0이다.
+- Main은정확8WI를발행해기존Primary 단일writer TDD를맡기고동일코드수정0·독립검수/fresh/통합을소유한다. 실제DB/권한·키·사용자파일조사·서비스·Agent·기존project일반차단해제0·기본app/provider주입0·새schema실행0이다. 완료FN13/직전단위반복검증·전체계획완료주장0이다.
+
+
 ## 2026-10-31 FN08 동일 저장계약 미응답 3차수 — 차단 감사
 - 직전목표차수는동일새계약미응답의재확인/현황기록뿐인no progress였고살아있는job의verified wait가아니었다. 이번d2cdf2는HEAD4f21e7b4·local/private동일·trackedclean/보호3·mainf976불변·후보2F04BB32지문동일을확인했다. PMO47/turn01a190cc도idle/terminal·새승인없음이며기존Primary/Reviewer둘다completed,새writer/QA/실행handle0이다.
 - 원차수의PMO46정확A/B질문→후속47미답변→현재47변경없음으로같은FN08 3표/guard/source분류·누적상한계약차단이세목표차수반복됐다. 직접승인으로해소된예전FN13횟수는상속하지않았다. 다른현승인source/caller·실환경제외는변경없고그안의새독립구현을추가확정하지못했다. 전체계획소진/완료판정은아니다.
