@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 FN02 통합·FN14 A 순차 GO
+- FN02 exact10 제품/시험7+결과/계획/현황3 통합2008be2cc4d2d666091c0172ad5fda1c3c69f3bb는Maina4d553 local/private동일·mainf976불변·trackedclean,별도FN14WI/보호3만미추적확인. Main42PASS/skip0/type0·Web484/detect[]0·최종독립C0/I0,결과4F97AD0005E606D67FC9304D33E203E12224E6D66A509003A7693CF45B44C25E. 실PG/브라우저/served/전체업무완료아님.
+- 이미직접승인된FN14 A는기존Primary 같은단일writer에게MAIN_GO로순차발행한다. 준비WI1CCD88EB는독립C0/I0였고원E096/상한C842/승인B7의내용은동일하다. 신규8경로/0060prefix부재를발행직전재확인,원분석/0059·보호3/복구본보존. Main동일code수정0·기존Reviewer읽기.
+- 원계약끝절대로새input/verifier/store/inprocess·시험3·pendingSQL만이며실app/routes/공유operation/policy/실reader연결0. 기록/버전2표·작성자읽기·10000/1GiB별도상한/현재보호replay·rawDML guard를source합성검증한다. 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project차단해제0·새QA0. 전체WORK_PLAN미완료/goalACTIVE·이전차단/미발행은과거이력이다.
+
 ## 현재 인수 — 2026-10-31 FN02 r2·FN14 A 직접 승인·ACTIVE 재개
 - 신산님이 FN02 r2 8B6742A9와 FN14 원후보E096C897+상한C842350B의 A안을 함께 직접 승인하고 goal을ACTIVE로 재개했다. FN02_FN14_SOURCE_APPROVAL_20261031.md가현재binding이며이전BLOCKED/질문미답변/NOT_DISPATCHED는보존된과거이력이다. 반복승인요청0.
 - 실제15e9f4 HEADcea1c1ff/기존branch·trackedclean/보호3만untracked와후보/준비WI지문을대조했다. 기존Primary 단일writer로FN02 정확7경로를먼저TDD하고Main관리/검수/독립리뷰/통합후같은담당에게FN14를순서대로맡긴다. Main동일code수정0·새세션/예약0.
