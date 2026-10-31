@@ -1,6 +1,9 @@
 # Anvil 재설계 작업현황
 
 ## 2026-10-31 FN08 지속등록 r2 A 직접승인 재개
+- FN16 r2 문서독립C0/I0를확인했다. 실제정책enum은AUTO여서초안ALLOW용어1곳을AUTO로정정했고기능·승인범위변경0이다. 최종후보SHA53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E이며PMO에A/B정확채택결정을요청한다. 미채택/제품GO0·기존질문중복0/실환경0이다.
+- 다음FN16수동정책후보158E10BC는기존Primary/Reviewer의실제caller/WI대조로미채택·미구현임을확인했다. 독립C0/I2는정책전체승인후보보관·보호조회/소비와누적상한미정이다. 기존선택파일exportProject를다시개발하지않는다.
+- Main은새결정안 docs/work_packages/FN16_MANUAL_POLICY_STORAGE_R2_DECISION_20261031.md SHA53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E를작성해기존Reviewer에문서검수를배정했다. A권장안은전용승인후보포함새3표·프로젝트합산10000행64MiB·원형replay0/기존정책/후보이력보존·UI08원문확인후별도저장이며현재NOT_ADOPTED/코드GO0이다. 실coverage공급부재412·SELECTED_FILES차단/실DB·권한/키·파일/서비스/Agent제외불변. PMO정확채택결정후에만WI/구현을진행하며전체계획미완료다.
 - 소스checkpoint6658cbd9b87d1ae24f5f720d71f49d5fcb45e902 exact14를기존private branch에게시했다(2ef4d2). local/private동일·trackedclean/보호3만미추적·mainf976불변이다. Main107PASS/독립C0/I0는source단위이며실DB/실SEND/Agent·전체FN08/계획완료아니다.
 - 게시후기존Primary읽기대조에서현재WI안의queue prepare→append/register와역사read소비선은이미연결됐다. 제품describe/inspect 공급자/기본app주입은명시제외여서임의활성화0이다. 다음승인범위작업을찾기위해기존FN16수동정책저장후보158E10BC의중복/채택여부·상세계약검수를기존Reviewer에읽기만배정했다. 전체백업/job·실profile/키/DB/서비스활성화0·PMO업무배정대기0이다.
 - Main01dc56 최종동결정확6파일107PASS/0FAIL/0SKIP/0TODO·7619.2077ms,dae085 type/noEmit·diff exit0를확인했다. 독립fixture EFC66D60 scoped C0/I0는기존63시험·음성/3kind단언보존/등록별도검산·원정책검산식일치를확인했다. source4/SQL4EFEF392도각각독립C0/I0이며미해결C/I0이다. 9e3a9c/control6FAIL은보존하고최종PASS와구분한다.
