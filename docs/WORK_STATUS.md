@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 저장량 A source 검수·다음 업무 선정
+- 승인 source 범위 Q1~Q4를 검수했고 최종 제품/결과 checkpoint b8e8bc1ffd2e01ce296e192ea8c0235d1f432592를 기존 codex/av3-stage-b에 게시했다. 02c29d actual local/private 동일·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean/보호3만 untracked. Main89PASS/skip0·type0·메모리build482modules/exit0·독립 C0/I0, 결과 PROJECT_STORAGE_QUOTA_RESERVATION_SOURCE_RESULT_20261031.md SHA4FFE8DC321BCE887FF0F2DE51DE581C217B02AA83826E981E868D0609D31BCA9.
+- 실제DB/SQL·권한·키·현재파일/사용량조사·서비스·Agent·기존프로젝트차단해제는 제외/NOT_RUN이다. 생성/체크포인트는 별도 메모리모델, 실제PG 연속운영/사용자인수/전체계획완료가 아니다. 원0042/0058·보호3·원WIP5 복구본은 보존했다.
+- goal ACTIVE/전체 WORK_PLAN 미완료. 기존 Primary는 Stage B UI01~03/UI06/UI10의 실제 승인 내 미구현 접점을 읽기 preflight하며, 기존 Reviewer는 미채택 FN14 후보의 남은 계약·상한 결정 근거를 좁힌다. 현재 code writer0, 다음 구현은 Main이 정확 범위를 정해 같은 Primary에 맡긴다. 완료검사·기존 UI11/12/13 감사 반복0, PMO 다음 작업 배정 대기0. PMO에 source 결과·다음 조사 범위를 전달했다. 아래 Q3 구현중/이전 승인대기는 과거 이력이다.
+
 ## 현재 인수 — 2026-10-31 저장량 A Q2 검수·Q3 구현 중
 - 직접 승인된 저장량·지속예약 A는 기존 Primary 단일 writer, Main 관리·검수·통합으로 진행 중이다. Q1 원장 프로토콜 checkpoint15d36edb, Q2 upload/diff 소비 checkpoint39da3312c81c26802361850a6dbb62e4644b3c52를 기존 private branch에 보존했다. Main 동일 code 수정0, 보호3·기존0042/0058·복구원본 보존.
 - Q2 Main53PASS/type0 후 proposal replay Tx 경계1을 보완했고, 보완본 Main writers22PASS/type0·독립 C0/I0다. 두 결과는 분리 증거이며 합산 단일전수로 표시하지 않는다. WI r3 CD13DAAC5E1FDAF5AF368C745BED6125237BFAE62E0D9907E4C129A62AE7BBA3.
