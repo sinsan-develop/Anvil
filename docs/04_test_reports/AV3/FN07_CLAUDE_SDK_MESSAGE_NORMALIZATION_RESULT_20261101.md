@@ -8,7 +8,7 @@
 - 시작 `codex/av3-stage-b` / `cc41f1f756667464802c154dd34936b3c49a6caf`, tracked clean·보호 untracked3 보존. 기존 Primary가 source3 단일 writer, Main은 관리·검수·통합, 기존 Reviewer 읽기 전용.
 - 고정 근거는 공식 SDK0.3.224 tarball과 sdk.d.ts. package가 claudeCodeVersion2.1.224를 명시하나 설치된 CLI의 실제 호환·계정/비용·지원 실측은 아니다. SDK 객체 API를 CLI JSONL/control wire로 부르지 않는다.
 
-| 소유 파일 | SHA256 |
+| 소유 파일 | 로컬 검수 원바이트 SHA256(CRLF) |
 |---|---|
 | apps/connector/adapters/secondary/schemas.ts | CD501E069D03BE0D089D7F08CD3F02129063E2C39BA98F0917B07C301B4F1AAF |
 | apps/connector/adapters/secondary/codec.ts | BD3F367BD3724D66BB8690CE019B5770692DA3049337D8B6ABFD9C424CD921F7 |
@@ -43,3 +43,11 @@ git diff --check
 실 SDK/CLI import·설치·Agent 호출·계정/인증/비용·DB/권한/키/서비스·사용자 자료/백업 조사0. 디스크 QA·live handle0. 포트는 명시 메모리 모델이며 보호 저장·OS 격리·내구 전송 at-most-once 증거가 아니다. SDK 중첩 BetaMessage/usage/tool 구조 전체 validator도 아니다. 표준 native Promise의 즉시/지연 거절만 확인했으며 악성 하위 클래스·builtin 변조의 동일 JS 프로세스 격리는 보증하지 않는다.
 
 다음은 고정 객체 입력/결과를 기존 허가·보호 session/실행 사실과 연결할 수 있는 실제 source 소비선이다. provider 실행·인증/비용의 미결정은 별도로 유지하고 독립 source 구현은 계속한다. rollback은 소유 source commit 정상 revert이며 기존 primary·프로젝트 원문/지식·계정·사용자 설치는 변경하지 않는다.
+## Git 원바이트 추적 보완
+source7 checkpoint는 `0a24a14aa19a061801082bf5cc6e8819187e13ac`이다. 기존 Git 설정이 신규3의 CRLF를 LF로 정규화했다. Main `d88f82`는 아래 각 Git blob과 로컬 검수 원바이트를 CRLF→LF로만 바꾼 결과가 바이트 단위로 동일함을 확인했다. 위 표는 실제 실행한 로컬 원바이트이고 아래는 Git 저장 바이트다. 설정/제품 수정·history rewrite·불변 논리의 재시험은 하지 않았다.
+
+| Git blob 경로 | SHA256(LF) |
+|---|---|
+| apps/connector/adapters/secondary/schemas.ts | 4DAE2243F70ADA0024F8A5FE5A7F6CE0C100D7BDA3BF498020248C6261C71810 |
+| apps/connector/adapters/secondary/codec.ts | 07FEF597FC1A5E1EACAB8D0BCB1A173C1CD3CAA613A51970F80574413A0962CF |
+| tests/unit/FN07/claude-sdk-message-codec.test.ts | 33C25B023B20E18FA363A98066A0AB06B928008A79038D965334909CDBCAD8B2 |
