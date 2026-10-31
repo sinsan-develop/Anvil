@@ -1,3 +1,4 @@
+import {BackupPolicyApprovalCandidates} from './backup-policy-approval-candidate.ts';
 import {UnderstandingReviewApprovalCandidates} from './understanding-review-approval-candidate.ts';
 const samePreparationPayload=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 import {ExecutionPreparationApprovalCandidates} from './execution-preparation-approval-candidate.ts';
@@ -19,7 +20,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = ['reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
+export const consumableOperations = ['saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -50,6 +51,7 @@ export class ProjectApprovals{
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(c.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(c.operation==='activateDesignChange')await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateActivation?.payload,this.#documents);
   if(c.operation==='saveWorkPlanDraft')await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,r.details.actionScope,view.candidatePlan?.payload);
+  if(c.operation==='saveBackupPolicy'){if(!view.candidateBackupPolicy||canonicalJson(view.candidateBackupPolicy.payload)!==canonicalJson(c.payload))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);await new BackupPolicyApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateBackupPolicy.payload);}
   if(c.operation==='prepareExecution'){if(!view.candidatePreparation||!samePreparationPayload(view.candidatePreparation.payload,c.payload))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);await new ExecutionPreparationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidatePreparation.payload);}
   return{...approval,replay:false};
  }
@@ -65,8 +67,8 @@ export class ProjectApprovals{
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date;
   // 요청 지원과 실제 소비는 별개다. 분리의 새 저장 보호/소비 연결 완료 전 실제 실행은 거절한다.
   const details=readApprovalDetails(p.details,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,allowedOperations:consumableOperations,now});
-  const plan=details.actionScope.operation==='saveWorkPlanDraft',activation=details.actionScope.operation==='activateDesignChange',preparation=details.actionScope.operation==='prepareExecution',understanding=details.actionScope.operation==='reviewUnderstanding';
-  if(Object.keys(p).sort().join(',')!==(plan||activation||preparation||understanding?'candidatePayload,details':'details'))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+  const backupPolicy=details.actionScope.operation==='saveBackupPolicy',plan=details.actionScope.operation==='saveWorkPlanDraft',activation=details.actionScope.operation==='activateDesignChange',preparation=details.actionScope.operation==='prepareExecution',understanding=details.actionScope.operation==='reviewUnderstanding';
+  if(Object.keys(p).sort().join(',')!==(backupPolicy||plan||activation||preparation||understanding?'candidatePayload,details':'details'))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
   if(details.actionScope.operation==='detachDocumentSource')await assertSourceDetachApprovalTarget(db,actor,c.projectId,details.actionScope.targetRef!);
   if(details.candidateCommandId===c.commandId)throw new AuthFailure('APPROVAL_SELF_CANDIDATE_INVALID',422);
   const understandingCommand=understanding?await new UnderstandingReviewApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload):null;
@@ -79,6 +81,7 @@ export class ProjectApprovals{
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(activation)await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload,this.#documents);
   if(plan)await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,details.actionScope,p.candidatePayload);
+  if(backupPolicy)await new BackupPolicyApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload);
   if(preparation)await new ExecutionPreparationApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload);
   if((await db.query('SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2',[c.projectId,details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_REQUESTED',409);
   if((await db.query("SELECT 1 FROM anvil.commands WHERE project_id=$1 AND actor_id=$2 AND command_id=$3",[c.projectId,actor.actorId,details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_APPLIED',409);
@@ -88,6 +91,7 @@ export class ProjectApprovals{
   if(activation)await new DesignActivationApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   if(plan)await new WorkPlanApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   if(understanding)await new UnderstandingReviewApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
+  if(backupPolicy)await new BackupPolicyApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   if(preparation)await new ExecutionPreparationApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   await recordApprovalRequestNotification(db,actor,{command:c,request,receipt,initialPolicyValidUntil:initialRequestPolicy.validUntil});
   return receipt.result;
@@ -113,6 +117,13 @@ export class ProjectApprovals{
   return this.#read(db,actor,pid,id,consumableOperations);
  }
  /** 불변 당시 소비만 검증한다. 현재 정책/제어의 진행은 역사 위조가 아니다. */
+ async readBackupPolicyConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
+  const member=await projectMember(db,actor,pid,true);
+  if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NOT_FOUND',404);
+  const {row,...history}=await this.#history(db,actor,pid,id,['saveBackupPolicy'],true);
+  if(history.storedStatus!=='CONSUMED'||!history.consumption)throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
+  return history;
+ }
  async readResponsibleSessionConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const {row,...history}=await this.#history(db,actor,pid,id,['defineProjectRole','bindResponsibleSession']);return history;
  }
@@ -139,7 +150,7 @@ export class ProjectApprovals{
    return{purpose:'OWNERSHIP_PREPARATION_APPROVAL_HISTORY_ONLY' as const,projectId:pid,requestRef:v.requestRef,decisionRef:d.ref,consumptionId:used.id,commandRef,candidateCommandId:used.commandId,scopeDigest:used.scopeDigest,payloadHash:s.payloadHash,policyRef:used.policyRef,controlGeneration:r.controlGeneration,consumedAt:used.consumedAt,observedAt:finalAt.toISOString(),expiresAt:r.details.expiresAt,missingEvidence:['AUTHENTICATED_PREPARATION_COMMAND','ORIGINAL_RECEIPT_LINK','VERIFIED_WRITER_NONE_OR_RECLAIM','CANDIDATE_PROVENANCE'] as const,preparationAuthorized:false as const,observationRequestAuthorized:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch{throw new AuthFailure('OWNERSHIP_APPROVAL_HISTORY_UNAVAILABLE',412);}
  }
- async #history(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[]){
+ async #history(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[],backupPolicyHistory=false){
   await projectMember(db,actor,pid);const row=(await db.query('SELECT r.*,c.operation,c.actor_id,c.client_id command_client,c.result_ref FROM anvil.approval_requests r JOIN anvil.commands c ON c.id=r.command_id AND c.project_id=r.project_id WHERE r.project_id=$1 AND r.id=$2',[pid,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
   const request=row.request_json;if(!request||typeof request!=='object')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   const{id:requestId,version,status,createdAt,...snapshot}=request,ref=row.result_ref?.data?.ref;
@@ -147,6 +158,7 @@ export class ProjectApprovals{
   readApprovalDetails(snapshot.details,{actorId:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,allowedOperations,now:new Date(0)});
   const candidateActivation=snapshot.details.actionScope.operation==='activateDesignChange'?await new DesignActivationApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidatePlan=snapshot.details.actionScope.operation==='saveWorkPlanDraft'?await new WorkPlanApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
+  const candidateBackupPolicy=snapshot.details.actionScope.operation==='saveBackupPolicy'?await new BackupPolicyApprovalCandidates()[backupPolicyHistory?'readPolicyHistory':'read'](db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidatePreparation=snapshot.details.actionScope.operation==='prepareExecution'?await new ExecutionPreparationApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidateUnderstanding=snapshot.details.actionScope.operation==='reviewUnderstanding'?await new UnderstandingReviewApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const saved=(await db.query('SELECT d.*,c.operation,c.actor_id,c.client_id command_client,c.expected_version,c.result_ref FROM anvil.approval_decisions d JOIN anvil.commands c ON c.id=d.command_id AND c.project_id=d.project_id WHERE d.project_id=$1 AND d.request_id=$2',[pid,id])).rows[0],used=saved?(await db.query("SELECT ac.*,c.command_id candidate_command_id,c.request_hash,c.actor_id,c.client_id,c.control_generation,c.policy_ref,c.payload_ref,c.state,c.result_ref,c.operation,c.expected_version,c.approval_consumption_id,ar.approval_decision_ref FROM anvil.approval_consumptions ac JOIN anvil.commands c ON c.project_id=ac.project_id AND c.id=ac.command_id JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id WHERE ac.project_id=$1 AND ac.decision_id=$2",[pid,saved.id])).rows[0]:null;let decision=null,consumption=null;
@@ -156,15 +168,16 @@ export class ProjectApprovals{
   if(used){
    if(!saved||saved.decision!=='APPROVE'||used.scope_digest!==row.scope_digest||used.decision_id!==saved.id||used.candidate_command_id!==snapshot.details.candidateCommandId||used.actor_id!==row.created_by||used.client_id!==row.client_id||Number(used.control_generation)!==snapshot.controlGeneration||used.policy_id!==row.policy_ref.id||Number(used.policy_version)!==row.policy_ref.version||canonicalJson(used.policy_ref)!==canonicalJson(row.policy_ref)||used.state!=='APPLIED'||used.result_ref?.status!=='APPLIED'||used.operation!==snapshot.details.actionScope.operation||Number(used.expected_version)!==snapshot.details.actionScope.expectedVersion||used.approval_consumption_id!==used.id||used.approval_decision_ref!==saved.id||!isVersionRef({id:used.candidate_command_id,version:1,contentHash:used.request_hash})||canonicalJson(used.payload_ref)!==canonicalJson({kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:snapshot.details.actionScope.payloadHash,scopeDigest:row.scope_digest}))throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
    if(snapshot.details.actionScope.operation==='reviewUnderstanding'&&(!candidateUnderstanding||used.request_hash!==contentHash(canonicalJson({...candidateUnderstanding.command,approvalRef:{requestId:id,decisionId:saved.id,scopeDigest:row.scope_digest}}))))throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
+   if(snapshot.details.actionScope.operation==='saveBackupPolicy'){const s=snapshot.details.actionScope,original={schemaVersion:1,projectId:pid,commandId:snapshot.details.candidateCommandId,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,operation:'saveBackupPolicy',targetId:s.targetRef?.id??null,expectedVersion:s.expectedVersion,baselineRefs:[],approvalRef:{requestId:id,decisionId:saved.id,scopeDigest:row.scope_digest},payload:candidateBackupPolicy?.payload};if(!candidateBackupPolicy||used.request_hash!==contentHash(canonicalJson(original)))throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);}
    consumption={id:used.id,status:'CONSUMED',commandId:used.candidate_command_id,serverCommandId:used.command_id,requestHash:used.request_hash,scopeDigest:used.scope_digest,policyRef:used.policy_ref,consumedAt:used.consumed_at.toISOString()};
   }
-  return{row,request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,decision,consumption,candidatePlan,candidateActivation,candidatePreparation,candidateUnderstanding};
+  return{row,request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,decision,consumption,candidatePlan,candidateActivation,candidatePreparation,candidateUnderstanding,candidateBackupPolicy};
  }
  async #read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[]){
-  const {row,request,requestRef:ref,currentVersion,storedStatus,decision,consumption,candidatePlan,candidateActivation,candidatePreparation,candidateUnderstanding}=await this.#history(db,actor,pid,id,allowedOperations),snapshot=request;
+  const {row,request,requestRef:ref,currentVersion,storedStatus,decision,consumption,candidatePlan,candidateActivation,candidatePreparation,candidateUnderstanding,candidateBackupPolicy}=await this.#history(db,actor,pid,id,allowedOperations),snapshot=request;
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date,policy=await currentPolicy(db,pid),control=(await db.query('SELECT actor_id,client_id,generation,revoked_at FROM anvil.project_control WHERE project_id=$1',[pid])).rows[0];
   const stale=!policy||canonicalJson(policy.ref)!==canonicalJson(row.policy_ref)||!control||control.revoked_at||control.actor_id!==row.created_by||control.client_id!==row.client_id||Number(control.generation)!==snapshot.controlGeneration;
   const expired=row.expires_at.getTime()<=now.getTime(),effectiveState=['PENDING','APPROVED'].includes(row.status)?expired?'EXPIRED':stale?'REVOKED':row.status:row.status;
-  return{request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,effectiveState,decision,consumption,expired,basisCurrent:!stale,executionAuthorized:false,observedAt:now.toISOString(),...(candidatePlan?{candidatePlan}:{}),...(candidateActivation?{candidateActivation}:{}),...(candidatePreparation?{candidatePreparation}:{}),...(candidateUnderstanding?{candidateUnderstanding}:{})};
+  return{request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,effectiveState,decision,consumption,expired,basisCurrent:!stale,executionAuthorized:false,observedAt:now.toISOString(),...(candidatePlan?{candidatePlan}:{}),...(candidateActivation?{candidateActivation}:{}),...(candidatePreparation?{candidatePreparation}:{}),...(candidateUnderstanding?{candidateUnderstanding}:{}),...(candidateBackupPolicy?{candidateBackupPolicy}:{})};
  }
 }

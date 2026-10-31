@@ -1755,3 +1755,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-30 UI04 실제 참조의 의도준비·별도승인·보관 source 검수
 - WI9D251E4B·기존prepare A/HUMAN고정GET 소비만 exact12로 연결했다. 확정임무→실binding/context/연결·환경/HUMAN/예산명시선택·원형검산→범위/mode/이유→AUTO 또는실UI08별도결정→동일원명령명시재개/고정readback이다. 새공개API/SQL/권한·Agent실행0·기존7부족조건/NOT_AUTHORIZED/false 유지.
 - Main신규unit10/실DOM9자식+부모Node10·기존직접15/typebuild/diff0·독립I1/I2/parent보완후C0/I0·12지문동일/보호8불변·QA별도잔여0. 결과 docs/04_test_reports/AV3/UI04_EXECUTION_PREPARATION_COMPOSITION_RESULT_20261030.md. 실제HTTP/DB/전체App/served·사용자인수/전체UI04/FN09/FN11·Stage/계획미완료를유지한다.
+
+## 2026-10-31 FN16 수동 백업 정책 r2 A source 검수
+- 기존 Primary exact24 구현/writer 반환, 기존 Reviewer 최종 C0/I0. Main 최종 단일 11파일83PASS/skip0, type/diff exit0, 메모리 Web build487 모듈ID/출력3/write:false exit0. 완료된 검사는 반복하지 않는다.
+- 결과 docs/04_test_reports/AV3/FN16_MANUAL_POLICY_STORAGE_SOURCE_RESULT_20261031.md SHA256 9280911C3FA33DFF2AAEF8520FAF2EFCFD68C1CF76252627B6AAD4F1F7FFA80F. 원 실패·fixture 보강·미검증을 구분했다. 정책 입력/보관/보호조회·별도승인·명시소비 source를 연결했으나 기본 전체 coverage 미연결/412 유지다.
+- 실제 DB/SQL/권한/키/사용자파일조사/서비스/Agent·기존 프로젝트 차단 해제0/QA0. 실제 저장·백업/복원·전체 FN16/Stage/계획은 미완료다. exact30 소유 경로만 통합하고 보호3/복구자료 보존, 다음 미완료 업무를 Main이 계속 선정한다.
