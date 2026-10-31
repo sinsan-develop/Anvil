@@ -10871,3 +10871,13 @@
 - Main7f4a37 신규10+인접9 단일19PASS/skip0(192.5754ms),9ab307 type/diff0·신규untracked2별도공백0,source7047FB32/test3F911C84 최종 동일지문 독립C0/I0를 확인했다. 결과20D2E226BD82A71A4D3DE71B04FDF242FEA5AAB9C994A67BD21526FF05C3DEBF를작성했다. 함수부재RED와anchor동작RED·준비오류2를분리하고과거실행을소급하지않았다.
 - Proxy metadata trap은실행될수있으며throw시고정오류,실제get/getter값대신1회descriptor snapshot·plain/frozen 복제를검산한다. 모든Proxy거절/모든trap0으로보고하지않는다. inspect의callerchecks/proof입구0/원출처·실bytesNOT_RUN·codec미지원·현재graph미생성/false/412를유지한다.
 - Main은최종source2+결과/계획/현황3 정확5경로만통합하며실제DB·권한·키·사용자파일조사·parser/수입/영속/API/schema·서비스·Agent·계정연결/active파생/복원·기존차단해제0·QA/handle0이다. 완료된19/type는코드변경없이반복하지않는다. 전체FN16/Stage/계획미완료이며관계codec·원출처·상한/접근영속/crash 등정확미정계약과독립계획업무를계속한다.
+
+## 2026-10-31 IX01의 실제 환경 선행·DB 재승인 문구 정정
+- 기존reviewer의정본4문서한정대조에서계획내개발schema/migration·QA seed/reset·저장/조회는재승인불필요임을확인했다. Main은 INTEGRATION_WORK 산출/후속1줄만최신직접지침으로정정했다: AAA44DE68F726F5C2B3FC75F5E3BB798AC0D673D90FDB0C10CFC8319F291D377→B9CB976D2064EF648208D8C1B776BCF9F3F004018E8DFD3EEDFD76EEF8726A1E. 새자격증명/권한/Secret·계획밖DB·서비스별도경계와기존저장소branch push범위는유지한다. 기능추가/DB실행/정책부여진도가아니다.
+- Main e6ef07은 WSL-server의등록개발PG exactname docker ps --all 이름/status/image/ports만1회읽어exit0/결과행0을확인했다. DB·volume·원장·본문·Secret조회/서비스변경0이다. IX01미도달은등록실행대상부재의환경선행이며일반DB승인부족으로바꾸지않는다. 전체PG/자료부재·삭제원인/무결성을단정하지않는다.
+- 기존Primary의P03읽기6파일은옛R2 create-tools mount비교결함이현재hostAF61BAF2/shell76952702에이미수정되어새source수정근거가없음을확인했다. tools volume0/tmpfs1을분리하고first-write전실mountinfo/stat교차검산을유지한다. 기존Main122PASS/type/Bash/diff·독립C0/I0/10226945 증거를확인해동일검사재실행0. 옛NOT_COMPLETE/consumed·원/R1/R2사본원장보존은소급승격/재사용0이다.
+- 실제남은P03단위는기존미채택R3후보94BB0D36의고정literal6/candidateSHA·동일제품2/기존시험3 결박이다. protocol/schema/보호/위험4·한도불변의내부source정합인지과거별도직접금지인지PMO에정확결정지원을요청하고WI를준비한다. 실제resource/grant/copy/신호/PG·서비스실행은새exact실행경계전0이며현재무수정이다.
+
+## 2026-10-31 FN16 원관계 codec 후보 검수
+- 후보 FN16_PRINCIPAL_LINK_MANIFEST_BINDING_CANDIDATE_20261031.md SHA E571056F67E51DFEBA2DEEFC986053E375471A98FF773C5DC4008A4BD7CD325D(11312B63행)를기존Primary가작성하고독립C0/I0로검토했다. command FK유도(A)와같은고정관측clients의opaque2열관계추가(B,권장)를구별한다. pair역사ref는정확commandKey로명령별member를선택하고원projection hash를검산하며첫증빙임의선택/namespace순환0이다.
+- 원manifest 실제member/capture 완결·codec/producer 미지원은성공tag로대체하지않고역사적사람/서버진위보증과내부자료일치를구별한다. Main1ea748은원persistProjectReceipt의fullrequestHash와scopeDigest/원targetRef를좁혀읽어대조했다. A/B·exactprojection/member채택및capture선행을PMO에요청했으나현재NOT_ADOPTED/제품GO0·실제DB관측0이다. 후보/카드/현황만보존하고기존19/type/전체기능검증반복0·실제제외/보호3·전체계획미완료유지.
