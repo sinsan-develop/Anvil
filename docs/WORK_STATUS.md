@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 UI03 통합·UI01 저장 초안 이전 페이지 연결 착수
+- UI03 exact7 통합469d206d4f616dfc35bbb619311909bc19341139는 local/private 동일·tracked clean·mainf976 불변 확인. Main 최종23PASS/skip0·type/build·detect0·독립C0/I0. 합성 transport 실제 Chromium 클릭space17 정상finish·QA전용경로 독립부재, 실제HTTP/DB/서비스/Agent 미검증. UI03 결과보고서를 따른다.
+- 다음 UI01은 기존 저장 임무 초안 목록의 3→2 직접복귀 누락이며 기존 cursor 보호GET·제품1/신규시험1 범위다. WI UI01_ASSIGNMENT_DRAFTS_BACK_NAVIGATION_WI_20261031.md로 기존 Primary에 위임, Main 동일code수정0·Reviewer읽기검수. 실제DB/권한/키/사용자파일조사/서비스/Agent/기존project차단해제0·새QA0.
+- FN14 별도계약 결정은 기존질문 답변만 확인하고 반복요청0. 전체 WORK_PLAN 미완료, 완료보고 아님. 보호3/원5복구본·각 현황 이력 보존.
+
 ## 현재 인수 — 2026-10-31 UI03 저장 단계 한도 원문 연결 검수 중
 - 기존 Primary가 WI9099FD501CCA3ABFED409DE49A89486A214C426BEE3DDBED5B8B874C52AF8116의 정확 Page/Definition2+신규시험1을 구현·검증 중이며 Main은 동일 코드 수정0이다. 현재 source HEADde497b1b(제품468b5efe), Main 소유 WI/현황 변경은 별도다.
 - Primary080554 actual Page 원본선택/graph검산뒤버튼0 RED →661b8d 정상1 →a522eb 신규7PASS/type0 보고. 현재 직접3회귀/build/detect 마무리·독립 읽기 검토 중, Main 최종 채택 전이다. PROJECT 보관원본만 명시GET/공통·참조없음GET0·기록상태/값·현재효력/잔여미확인·POST0/편집불변·늦은digest/문맥/transport 가드 범위다.
@@ -10449,3 +10454,7 @@
 - UI03 Primary080554 actual ProjectMethodologyPage 목록GET→전용원본v1선택→graph hash검산/단계N1표시뒤연결한도원문버튼0 RED확인,준비오류아님/livehandle0. 실ReactDOM/ApiClient/원decoder+소형메모리DOM으로도달,제품Page/Definition2파일연결진행중·Main미검수/새QA0.
 - UI03 최종동결 Page4E70B948/Definition76A2F523/test3DBF9180,source.projectId와현재project결박1조건추가. Maina19338 최종신규8+직접15 총23PASS/skip0/type0·메모리build482/exit0,독립최종C0/I0·0654d0 최종target2 detect[]0. Primary앞선7+영향1/15는분리이력,서버/reader030149EF/편집불변. MainChrome QA 신규 D:/tmp/anvil-v3-stage-b/ui03-stored-node-limit-20261031-01 사전등록: owner SINSAN/cyhuh/Main·TTL30분/최대8MiB, 목적실Page선택→고정정책값/상태·기한·닫기/시각. 생성파일qa-manifest.json/build.mjs/harness.html/round-01~04.mjs/screen.png,전용ego1공간/p1·실network/listener/DB키권한서비스Agent0. 부재/경로/link/owner검산후생성,정상finish1회+정확등록파일/경로만정리·별도부재,기존사용자탭/space15재개0.
 - UI03 최종Maina19338 신규8+직접15 총23PASS/skip0/type·메모리Web482/exit0·0654d0 target2 detect[]·독립C0/I0. 실Chromium06e919 동결Page/Definition hash로815902B합성화면→958436 actualPage초기GET3→284ac4 원본선택/단계상세/정책GET1(전체GET5/POST0)·고정보관상태/값/단위/기한/비용·현재효력미확인·초안불변/onChange0/lost0/resource0/overflow0·Mainimage확인. 96d9b9 닫기/원본초안보존·추가GET0·space17정상finish, a9a86d 등록7파일884165B 정확소유/상위link/예산검산정리·170a34별도경로부재True/제품3·reader030149EF불변/diff0. 결과UI03_STORED_NODE_LIMIT_POLICY_READ_RESULT_20261031.md SHA4FA425DC37F895D066FCFAECE72E5763EE178F53CE7F6AC469B68B2DCA19D999,UI03/FN02단위만반영. 실제DB/서비스/현재정책효력·잔여/실행미검증/미반영·전체계획미완료다. 다음Primary읽기는UI01임무초안목록뒤로복귀미연결후보1을발견했으며Main실제근거대조후선정예정·코드0.
+
+## 2026-10-31 UI01 저장 초안 이전 페이지 source 검수
+- Main3ff2a0 최종27PASS/skip0/type0·c62d61 memorybuild482/detect[]0·독립exact2 C0/I0. 제품DF4E37F7/신규시험C9E3C5A9 동결·Primary writer반환, 기존reader/parent/API/SQL불변. UI01_ASSIGNMENT_DRAFTS_BACK_NAVIGATION_RESULT_20261031.md에 오류/미검증/복구 기록. 실제브라우저/HTTP/DB/서비스/Agent/기존project해제0·새QA0.
+- 전체계획미완료·Main통합준비/기존Primary FN06/08/09/10/12 다음source단위읽기대조. FN14 질문중복0·완료된UI04~08/FN16조회재작업0. 보호3·원5복구본 보존.
