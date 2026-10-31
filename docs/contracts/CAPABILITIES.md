@@ -101,3 +101,7 @@ FN06-CODEX-CODEC-01의 오프라인 codec은 위 고정 정의를 기존 Ajv str
 ## 2026-11-01 FN07 내부 source 프로토콜 기준
 실제 provider/인증·비용 선택과 분리하여 SDK 0.3.224의 공개 객체 메시지를 순수 정규화 구현의 기술 기준으로 고정한다. 공식 npm tarball SHA512 a4N8RcNf+8zqiTJjsntzJuYy3z/+J9K06/kVkZefNmAI8Yp4TmTZ+tpxUpKY8zhS8VewAxKSl9h0o/u7hKIdnA==, sdk.d.ts SHA256556277033B15112811922D84EC8DC846D446CCE7BD9AA27765C52A9C09869575, package의 claudeCodeVersion2.1.224 명시를 메모리 읽기로 대조했다. 이것을 CLI stream-json/control wire 또는 설치된 CLI의 실제 지원 근거로 바꾸지 않는다. SDK/CLI import·실행·계정/키/DB·비용/서비스/Agent 호출0이다.
 내부 codec은 사용자 입력의 미전송 준비와 session/uuid 대조·고정 envelope의 digest 사실만 제공한다. SDK 성공·도구 완료를 Anvil 승인·업무 합격·capability 실측으로 승격하지 않는다. SDK의 추가 메시지 분기·중첩 구조 전체/실제 transport·6함수·계정 교체/중지·OS 회수는 미구현 또는 미검증으로 남는다. 상세 범위는 FN07_CLAUDE_SDK_MESSAGE_NORMALIZATION_IMPLEMENTATION_20261101.md(SHA C69DF128D2A66F3AB5C8373DE2482D7A22E5B3153714FA571B00644E654FB8AE)이며 source 구현/검수 전 상태다.
+
+
+### 2026-11-01 FN07 source 부분 검수 결과
+고정 SDK 객체 codec3을 구현했고 Main 최종 신규17PASS(225.6213ms)/type·diff·신규공백0, 독립 보완 범위 C0/I0·최종3지문을 확인했다. 입력 준비물은 내부 보호 포트에만 불변 사본으로 전달하며, 공급자 success/error와 Anvil 권한·업무 합격·실제 지원을 분리한다. 결과 불명·잘못된 비동기 포트의 native Promise 거절은 UNKNOWN으로 남기고 capture 재호출0이다. 실제 SDK/CLI·6능력·계정 교체·서버/화면·OS 회수는 미실행/미구현이며 실제 연동 등급은 올리지 않는다. 상세 FN07_CLAUDE_SDK_MESSAGE_NORMALIZATION_RESULT_20261101.md 및 WORK_STATUS.
