@@ -1,6 +1,8 @@
 # Anvil 재설계 작업현황
 
 ## 2026-10-31 FN08 지속등록 r2 A 직접승인 재개
+- 소스checkpoint6658cbd9b87d1ae24f5f720d71f49d5fcb45e902 exact14를기존private branch에게시했다(2ef4d2). local/private동일·trackedclean/보호3만미추적·mainf976불변이다. Main107PASS/독립C0/I0는source단위이며실DB/실SEND/Agent·전체FN08/계획완료아니다.
+- 게시후기존Primary읽기대조에서현재WI안의queue prepare→append/register와역사read소비선은이미연결됐다. 제품describe/inspect 공급자/기본app주입은명시제외여서임의활성화0이다. 다음승인범위작업을찾기위해기존FN16수동정책저장후보158E10BC의중복/채택여부·상세계약검수를기존Reviewer에읽기만배정했다. 전체백업/job·실profile/키/DB/서비스활성화0·PMO업무배정대기0이다.
 - Main01dc56 최종동결정확6파일107PASS/0FAIL/0SKIP/0TODO·7619.2077ms,dae085 type/noEmit·diff exit0를확인했다. 독립fixture EFC66D60 scoped C0/I0는기존63시험·음성/3kind단언보존/등록별도검산·원정책검산식일치를확인했다. source4/SQL4EFEF392도각각독립C0/I0이며미해결C/I0이다. 9e3a9c/control6FAIL은보존하고최종PASS와구분한다.
 - 결과 docs/04_test_reports/AV3/FN08_SEND_MATERIAL_REGISTRATION_SOURCE_RESULT_20261031.md SHA33B2CC6F94428705FBCCB4F897C1E50AEC331B2F46A83C915FB20E42F4DB8323. Main2e1d03 소유9/보호3지문일치·0ef68a control a77415d1 local/private동일/mainf976불변확인뒤소유9+결과/계획/현황3+부록2 정확14만통합한다. writer반환/실행handle0/QA0·실환경제외불변이며main/배포/전체FN08·계획완료주장0이다.
 - SQL I4보정4EFEF392105984B5B1969B480D2D9AF2F3EFEA4F0E855F1730A9152019E3987E는기존Reviewer의scoped C0/I0/Addressed다. 등록SEND command-prefix를먼저대상화하고unknownpart/추가suffix의누락binding도거절하며exactpart는complete에서검산한다. a2f200RED→8bfd7f정적/분류모델6PASS는실SQL증거아니다.
