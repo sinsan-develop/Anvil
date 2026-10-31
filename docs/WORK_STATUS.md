@@ -10804,3 +10804,14 @@
 - 결과 docs/04_test_reports/AV3/FN16_PREPARATION_APPROVAL_INVENTORY_RESULT_20261031.md SHA256 F321EBC8AF8CD0743E580CE09CBB22BD118B9E2FDF859A2019D5190FD616BAF2. 실제 생산 뒤 null 승인 hash 재구성 RED와 PG Date 모델 준비 오류1회를 분리했다. 기존 AUTO/build·과거만료/다른현재OWNER의 역사 조회 및 현재 읽기/한도·dangling소비 거절을 보존했다.
 - 제품/시험2+결과/계획/현황3의 정확5경로만 통합한다. 실제DB/권한/키/사용자파일조사/서비스/Agent·실백업복원/일반차단 해제0, QA/handle0. 선택된 소비 후보를 검산한 것이며 모든미소비후보 반출·실제RLS/COMMIT/사용자인수는 미검증이다.
 - 전체 FN16/Stage/계획은 미완료다. 다음은 understanding-permit 수집과 승인된 이해검토 원형의 null 승인 가정을 별도로 대조한다. 완료된32/type 검증은 새 변경 없이 반복하지 않는다.
+
+## 2026-10-31 FN16 승인 준비 이력 게시·다음 대조
+- c5568bcd72d5347d29e515490a3a1febe69acb2b를 private 기존 branch와 동일하게 게시했다. tracked clean/보호 untracked3 보존, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 검산했고 PMO에 결과/한계를 전달했다.
+- 다음은 understanding-permit 수집의 승인 이해검토 원형 지원 한 건이다. Main은 source32ACA473의 null 승인 재구성과 readUnderstandingHistory의 승인 ref 지원,0056 후보12열/전체 원명령 hash 구조를 읽었다. 기존 Primary에 producer/선택후보·원요청/결정/소비/proof·현재OWNER/과거creator·기존 permit/false/DTO 보존의 최소 범위 preflight만 발행했다. 현재 새 code/시험 GO0·전체계획미완료/실제제외 유지.
+
+## 2026-10-31 FN16 승인 이해검토 permit 이력 WI 준비
+- Primary 읽기 대조에서 수집기133의 approvalRef:null 재구성 및119~120의 원hash/소비 가정이 approved review를 거절함을 확인했다. 기존 assertStoredUnderstandingApproval은 실제 SyntheticPgUnderstandingStore.list도 소비하는 순수 역사 helper이며 Main262a98에서 원 null승인 전체command·두hash·원request/decision/소비 관계 검산을 읽었다.
+- WI FN16_UNDERSTANDING_APPROVAL_PERMIT_INVENTORY_INTEGRATION_20261031.md SHA256 6D223643EFCD598E846D78AED023C22E0B4386E4E8502EB70F583ABB1F4FD873를 source1/신규시험1 정확2경로로 작성해 독립 경계검토에 전달했다. 같은RR의 선택승인3표/후보12열·관련command/proof와 helper를 결합하며 기존START/SEND loop·false/미검증 표시는 보존한다. scope의null대상/실행generation과 실제review command의executionId·제어generation을 구분한다.
+- Primary preflight의 PS 범위식 읽기 오류1은 교정됐고 제품/새시험 실행은 없다. 현재 새code GO전, Main 동일source쓰기0·실제DB/권한/키/파일조사/서비스/Agent·일반차단해제0·전체계획미완료다.
+
+- WI6D223643의 독립 경계검토 C0/I0 수신. control 게시 후 같은 Primary에게 정확2경로 TDD를 발행한다. 시작32ACA473/신규시험부재를 검산하고 현재OWNER·과거creator/원승인·선택proof/START·SEND 보존을 확인한다. Main 같은source쓰기/실제자원변경0.
