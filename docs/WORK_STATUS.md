@@ -10981,3 +10981,10 @@
 - 최종sourceWorkspace17E10C21/test2DBD6DF7의새index-r2 E84F247E를같은ego19/p1에서실행했다. round09의같은session49186을재실행없이poll해600511 exit0을수신했다. PC1920x1080/모바일430x932모두헌법·대화출처패널각1·선택B/draft보존·가로넘침0,Nativecrypto/Enter·pane요청5→5·전체합성GET/미지원0을확인하고두실제이미지를Main이읽었다. 원4개실패/초기잘못명명캡처를정상으로소급하지않는다.
 - abacaf에서원수명안에TaskSpace.finish keep[] 정상완료. 582bbf는23QA파일의정확목록/소유SINSAN\cyhuh·nonlink/절대경계검증후증거12개만프로젝트결과경로에해시동일복사하고23파일과빈root를비재귀회수했다. UTC15:02:57<deadline15:08:47,9f8381별도조회에서root부재·증거12hash일치/manifestEA1AB4EF 확인. 현재브라우저제어/QA process pending0이며다른사용자탭/서비스/DB/키/권한·Agent변경0이다.
 - UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md의최종판정은source·메모리·합성실브라우저핵심검수완료이고실제served/DB·사용자인수·전체UI13/Stage/계획미완료를유지한다. 단일28PASS/경고0/type/diff0와처음27PASS뒤발견된I1의RED→GREEN을분리했다. 기존scope내Workspace키2행보완만통합하며Main코드직접수정0,보호3/원복구자료/main을유지한다.
+
+
+- 최종보완/증거정확18 commit5a022ee901504ab68b435643d2f452d3de9ece7b의private동일·mainf976ed5e불변·trackedclean/보호untracked3을c5f5fb에서확인했다. PMO에실제I1보완전후/28PASS/nativeQA·정확회수·미검증을전달했다. 기존Primary는다음UI10별도key경고가실제중복으로이어지는지기존Page/신규경계시험/picker소비선한정읽기preflight중이다. 제품/시험추가쓰기·새QA0,반례전실증상단정0·전체계획active/미완료다.
+
+## 2026-11-01 UI10 편집 선택기 부모 경계 정정·다음 한정 업무
+- Primary/독립읽기에서실제같은sibling은Page116 ArtifactPicker와118 ScopePicker이고125 DocumentPicker는별도작성section내부임을확인했다. 앞선Scope/Document 같은key설명을충돌부모로묶은가설은정정한다. DocumentPicker는현재근거로제품수정대상이아니다. UI10실제중복/손상은아직미확정·UI13유사사례로대체판정0이다.
+- 기존PageFC6E9232+기존UI10시험A48FE630 정확2파일의 UI10_EDITOR_PICKER_IDENTITY_FIX_20261101.md를작성했다. 시험만추가→실제반례/MainRED→고정namespace두곳만보완하며본문·scope·sourceRefs·pending/기존4행동을보존한다. 신산님허용제품/시험읽기를사용하고실DB권한키서비스Agent/사용자·backup대상조사0·Main제품동시쓰기0·현재코드GO전이다.
