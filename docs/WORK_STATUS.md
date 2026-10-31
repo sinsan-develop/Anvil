@@ -10988,3 +10988,15 @@
 ## 2026-11-01 UI10 편집 선택기 부모 경계 정정·다음 한정 업무
 - Primary/독립읽기에서실제같은sibling은Page116 ArtifactPicker와118 ScopePicker이고125 DocumentPicker는별도작성section내부임을확인했다. 앞선Scope/Document 같은key설명을충돌부모로묶은가설은정정한다. DocumentPicker는현재근거로제품수정대상이아니다. UI10실제중복/손상은아직미확정·UI13유사사례로대체판정0이다.
 - 기존PageFC6E9232+기존UI10시험A48FE630 정확2파일의 UI10_EDITOR_PICKER_IDENTITY_FIX_20261101.md를작성했다. 시험만추가→실제반례/MainRED→고정namespace두곳만보완하며본문·scope·sourceRefs·pending/기존4행동을보존한다. 신산님허용제품/시험읽기를사용하고실DB권한키서비스Agent/사용자·backup대상조사0·Main제품동시쓰기0·현재코드GO전이다.
+
+
+## 2026-11-01 UI10 실제 선택기 중복 Main RED·제품 한정 GO
+- controlbcf1cc8b/WI9F404AF8의시험03C94A2F(21640B)·Page FC6E9232 불변에서Primary90f04a는실KnowledgePage/실React host onChange·원문A→B→A·명시제목변경후artifact10/scope1/doc버튼1을재현했다. 본문/scope/sourceRefs/pending보존·명시입력callback1·추가GET/POST/unknown/인증상실0은중복단언전통과했다. native브라우저입력이아닌React소유onChange직접호출이며한계를구분한다.
+- Main9a2a60 동일동결지문/제품불변후0PASS1FAIL/nativeexit1·622.8185ms,actual artifact10≠1·중복key경고10을확인했다. wrapperexit0은예상RED확인일뿐제품PASS가아니다. 현재실제Page선택기중복은검증됐고원인단독판정은수정전후검산으로좁힌다.
+- 기존Primary에게Page116 Artifact/118 Scope의고정namespace2곳만PRODUCT_GO. DocumentPicker125/다른picker/서버API·권한/DB/키서비스Agent/사용자·backup조사0,원단언·기존참조/주체·controlGeneration·순서/mount보존. 같은실반례GREEN→최종신규5+reader5/독립검수로확인하고Main동일코드쓰기0이다.
+
+
+## 2026-11-01 UI10 편집 선택기 중복 source 보정 검수
+- Page두key에artifact-picker:/scope-picker:고정접두사만추가해원rawFC6E9232역치환복원을확인했다. 최종Page0D79C497/32821B(원CRLF2보존·GitLF2BF7DF15별도),시험03C94A2F/21640B·기존4단언/reader불변. DocumentPicker125/다른picker·UI13·서버API/권한/SQL변경0이다.
+- Main9a2a60 실제Page artifact10≠1 RED후Main5c5034 최종신규5+reader5 단일10PASS/0FAIL/SKIP0/TODO0/CANCEL0·755.5269ms·경고0/type/diff0,독립최종C0/I0/M0. 수행자10/1704.9169ms·메모리build487/3은별도증거다. 원제목외본문/scope/sourceRefs/fixturepending보존·명시callback1외0/추가IO0을확인했으나fixture의pending값만증명하며채워진UNKNOWN전체/실브라우저/native입력으로확대0이다.
+- 결과 UI10_EDITOR_PICKER_IDENTITY_RESULT_20261101.md에정확명령/지문/부모경계정정·실제RED/GREEN·미검증/회수기록. 새QA/browser/service0·정상Node회수/보호3/Main제품동시쓰기0·실제DB키권한/Agent/사용자·backup대상조사제외유지. 전체UI10/계획미완료다.

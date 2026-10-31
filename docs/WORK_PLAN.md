@@ -1796,3 +1796,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-11-01 UI13 실제 화면 중복 보완·합성 시각 검수
 - 최초메모리27PASS뒤실제브라우저에서헌법4개중복을발견해I1로열고실App같은반례4≠1을고정했다. Workspace두sibling key의고정namespace2행보정후Main신규9+인접19단일28PASS/경고0·type/diff0·독립C0/I0/M0.
 - 같은최종source5hash에결박한actualApp/CSS합성브라우저에서430/1920·Enter/정상스크롤·pane전환·stage/draft보존·패널각1·가로넘침0을확인했다. 증거와원실패를보존하고ego정상finish/QA정확23파일·root회수/별도부재확인을원TTL안에완료했다. 실제DB/served·사용자인수·전체UI13/계획완료는아니다. 상세 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md 최종절.
+
+
+### 2026-11-01 UI10 편집 선택기 중복 보완
+- 실제같은부모의ArtifactPicker/ScopePicker 두key접두사만구분했다. 다른부모DocumentPicker를수정하지않고앞선부모경계가설을정정했다. MainactualPage artifact10≠1 RED→최종신규5+reader5 단일10PASS/경고0/type·diff0·독립C0/I0/M0.
+- 본문/참조/fixturepending보존·명시입력외자동IO0의메모리source검수이며실브라우저/native입력·채워진UNKNOWN전체·실DB/served·사용자인수/전체업무완료증거가아니다. 결과 UI10_EDITOR_PICKER_IDENTITY_RESULT_20261101.md. UI13최종코드와보호자료는불변이다.

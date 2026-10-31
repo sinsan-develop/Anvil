@@ -53,7 +53,7 @@ function delayedJson(value:unknown,status=200){
  return{response,state,entered:parsed.promise,release:()=>release.resolve()};
 }
 const rejections:unknown[]=[];const onRejection=(e:unknown)=>rejections.push(e);before(()=>process.on('unhandledRejection',onRejection));after(()=>{process.off('unhandledRejection',onRejection);assert.deepEqual(rejections,[]);});
-async function fixture(){
+async function fixture(managed=false){
  const calls:{path:string;method:string}[]=[],unknown:string[]=[],controls:{plan:Map<string,()=>Response|Promise<Response>>;method:null|(()=>Response|Promise<Response>)}={plan:new Map(),method:null};let changes=0,lost=0;
  const client=new ui.ApiClient(async(path:any,init:any)=>{const p=String(path),method=init?.method??'GET';calls.push({path:p,method});assert.equal(method,'GET');
   if(p.startsWith(`/api/v1/projects/${pid}/conversations?`))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
@@ -65,7 +65,8 @@ async function fixture(){
  });
  const session={user:{id:uid},clientId:cid,csrfToken:'c'.repeat(43)},buffer=ui.newKnowledge(pid,session,1);buffer.title='보존할 편집입력';buffer.reason='변경 금지';const original=structuredClone(buffer);
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- const change=()=>{changes++;};const props={client,projectId:pid,session,buffer,onChange:change,conversationBuffer:null,onConversationChange:change,exclusion:null,onExclusionChange:change,correction:null,onCorrectionChange:change,decision:null,onDecisionChange:change,onAuthenticationLost:()=>{lost++;}};
+ let liveBuffer=buffer;const change=()=>{changes++;};const props={client,projectId:pid,session,buffer,onChange:change,conversationBuffer:null,onConversationChange:change,exclusion:null,onExclusionChange:change,correction:null,onCorrectionChange:change,decision:null,onDecisionChange:change,onAuthenticationLost:()=>{lost++;}};
+ function ManagedPage(){const[current,setCurrent]=ui.React.useState(buffer);liveBuffer=current;return ui.React.createElement(ui.KnowledgePage,{...props,buffer:current,onChange:(value:any)=>{changes++;setCurrent(value);}});}
  const nodes=(predicate:(n:any)=>boolean)=>{const all:any[]=[];function visit(n:any){if(predicate(n))all.push(n);for(const c of n.childNodes)visit(c);}visit(container);return all;};
  const button=(name:string)=>{const b=nodes(n=>n.tagName==='BUTTON'&&n.textContent===name)[0];assert(b,'버튼 없음: '+name+' / '+container.textContent);return b;};
  const click=async(b:any)=>{assert(!b.disabled,'비활성 버튼');await ui.React.act(async()=>{b.dispatchEvent({type:'click',button:0,bubbles:true});});};
@@ -73,8 +74,8 @@ async function fixture(){
  const wait=async(check:()=>boolean)=>{const end=Date.now()+2000;while(!check()&&Date.now()<end)await settle();assert(check(),container.textContent);};
  const shown=()=>nodes(n=>n.getAttribute('aria-label')==='지식 관련 고정 원문'),status=()=>nodes(n=>n.getAttribute('role')==='status'),alerts=()=>nodes(n=>n.getAttribute('role')==='alert');
  const open=async(which:'A'|'B')=>{const b=nodes(n=>{if(n.tagName!=='BUTTON'||n.textContent!=='지식 원문 보기')return false;let p=n.parentNode;while(p&&p.tagName!=='LI')p=p.parentNode;return p?.textContent.includes('지식 '+which);})[0];assert(b,'지식 선택 없음');await click(b);await wait(()=>nodes(n=>n.getAttribute('aria-label')==='보관 지식 원문'&&n.textContent===which+' 부모본문').length===1);};
- await ui.React.act(async()=>root.render(ui.React.createElement(ui.KnowledgePage,props)));await wait(()=>nodes(n=>n.tagName==='BUTTON'&&n.textContent==='지식 원문 보기').length===2);
- return{calls,unknown,controls,client,buffer,original,container,button,click,settle,wait,shown,status,alerts,open,lost:()=>lost,changes:()=>changes,unchanged:()=>assert.deepEqual(buffer,original),close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ await ui.React.act(async()=>root.render(managed?ui.React.createElement(ManagedPage):ui.React.createElement(ui.KnowledgePage,props)));await wait(()=>nodes(n=>n.tagName==='BUTTON'&&n.textContent==='지식 원문 보기').length===2);
+ return{calls,unknown,controls,client,buffer,original,currentBuffer:()=>liveBuffer,container,button,click,settle,wait,shown,status,alerts,open,lost:()=>lost,changes:()=>changes,unchanged:()=>assert.deepEqual(buffer,original),close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 function traceDigest(holdSnapshot=false){
  const subtle=globalThis.crypto.subtle,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),native=subtle.digest.bind(subtle),entered=deferred<void>(),gate=deferred<void>();
@@ -113,4 +114,18 @@ test('scopeBoundary Stage native snapshot digest 완료후 반환대기 중 닫�
   await f.click(f.button('관련 고정 원문 닫기'));trace.release();await f.wait(()=>trace.state.targetReturned===1&&trace.state.done===trace.state.started);await f.settle();assert.equal(f.shown().length,0);assert.equal(f.status().length,0);assert.equal(f.alerts().length,0);assert.equal(f.calls.length,calls);assert(!f.button('관련 단계 1 원문 확인').disabled);
   await f.click(f.button('관련 단계 1 원문 확인'));await f.wait(()=>f.shown().length===1);assert(f.shown()[0].textContent.includes('고정 단계'));assert.equal(f.lost(),0);assertReadOnly(f);
  }finally{trace.release();try{await f.close();await f.settle();}finally{trace.restore();}}
+});
+// 실제 Page를 React host state에 연결하며 기존4의 고정callback fixture는 그대로 유지한다.
+// 입력은 React 소유 onChange로 반영하므로 native 브라우저 입력 검증과 구분한다.
+test('pickerIdentity 실제 편집buffer·원문 A→B→A·입력변경 뒤 선택기는 각각 하나다',async()=>{
+ const f=await fixture(true);try{
+  const nodes=(predicate:(n:any)=>boolean)=>{const result:any[]=[];function visit(n:any){if(predicate(n))result.push(n);for(const child of n.childNodes)visit(child);}visit(f.container);return result;};
+  const panels=(label:string)=>nodes(n=>n.getAttribute('aria-label')===label),documents=()=>nodes(n=>n.tagName==='BUTTON'&&n.textContent==='문서 출처 선택');
+  assert.ok(panels('지식 보관파일 출처 작성').length>0);assert.ok(panels('지식 관련성 선택').length>0);assert.equal(documents().length,1);
+  await f.open('A');await f.open('B');await f.open('A');assert.equal(f.changes(),0,'부모 원문선택은 초안을 바꾸지 않는다');const before=f.calls.length;
+  const title=panels('지식 제목')[0];assert.ok(title);const props=title[Object.keys(title).find(k=>k.startsWith('__reactProps$'))!];assert.equal(typeof props?.onChange,'function');
+  await ui.React.act(async()=>props.onChange({target:{value:'명시적으로 바꾼 제목'}}));await f.settle();
+  assert.deepEqual(f.currentBuffer(),{...f.original,title:'명시적으로 바꾼 제목',dirty:true,failure:null},'명시제목 외 원body·scope·sourceRefs·pending 보존');assert.equal(f.changes(),1);assert.equal(f.calls.length,before,'로컬 입력의 추가GET/POST0');assert.equal(f.unknown.length,0);assert(f.calls.every(c=>c.method==='GET'));assert.equal(f.lost(),0);
+  assert.deepEqual({artifact:panels('지식 보관파일 출처 작성').length,scope:panels('지식 관련성 선택').length,documentButtons:documents().length},{artifact:1,scope:1,documentButtons:1},'같은 Page의 편집 선택기 중복0');
+ }finally{await f.close();await f.settle();}
 });
