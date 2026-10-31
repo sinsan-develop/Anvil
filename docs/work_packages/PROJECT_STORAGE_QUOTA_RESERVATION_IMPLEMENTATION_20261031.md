@@ -37,6 +37,12 @@
 
 access/project-command.ts·App/기존 API helper는 불변을 우선한다. 보완이 실제로 필요하면 정확 caller/기존계약 영향과 추가 경로를 Main에 제시하고 허용범위를 고정한 뒤 수정한다. 일반 리팩토링/공통화0.
 
+## r2 내부 명확화 — 2026-10-31 독립 검토 보완
+- 부모 WI SHA1B92351C44F09A2AF7364B04424D65626767B2D8B69174F904D5391DE975538E의 승인 범위·공개 계약·허용14·한도·기한·제외는 불변이다. Main이 내부 계획 hash의 대상을 명확히 하고 IO_STARTED 이후 오류 보존을 보강한다.
+- ARTIFACT part.contentHash는 실제 본문 hash다. CHECKPOINT part.contentHash는 시각 없는 고정 준비 snapshot의 preparedHash이며 최종 snapshot.preparedHash와 정확히 대조한다. 최종 content_hash는 canonical 최종 snapshot hash·receipt ref·기존 checkpoint_complete로 별도 검산한다. 미래 운영Tx 시각의 최종 hash를 예측하거나 검사를 생략하지 않는다.
+- checkpoint recordedAt은 기존 운영Tx 시각·receipt와 동일하게 유지한다. 선행 예약 C는 같은 최종 구조/고정 길이 UTC 밀리초 시각의 정확 UTF-8 크기와 recordText로 계산하고, 실제 최종 C와 다시 같음을 검사한다. 부족 예약·준비 snapshot 크기 대용0.
+- settle은 이미 IO_STARTED 이후의 부작용 가능 경계다. 현재성/기한/권한 실패도 외부에는503 PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN으로 보존하고 원명령/R를 유지한다. 첫 FS 전 requireStarted의 현재성 검사는 그대로 유지한다.
+
 ## 이름·값·인터페이스 고정
 - 새 class는 project-storage-quota.ts의 ProjectStorageQuota, 실제 AccessRepository/ArtifactStore를 소비한다. 별도 공개 route/사용자 quota setter0.
 - 내부 계획·예약 bundle은 readonly/원형복사이며 first await 전에 원 command/metadata와 실제 incoming Buffer를 복사해 caller 수정/ABA로 대상·바이트가 바뀌지 않는다. commandHash/planHash·project/actor/client·정확 operation/part·policy/fullref·기한을 결박한다. source의 새 usage=0/VERIFIED bool·성공 callback·환경변수 우회0.
