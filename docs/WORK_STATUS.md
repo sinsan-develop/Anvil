@@ -10815,3 +10815,15 @@
 - Primary preflight의 PS 범위식 읽기 오류1은 교정됐고 제품/새시험 실행은 없다. 현재 새code GO전, Main 동일source쓰기0·실제DB/권한/키/파일조사/서비스/Agent·일반차단해제0·전체계획미완료다.
 
 - WI6D223643의 독립 경계검토 C0/I0 수신. control 게시 후 같은 Primary에게 정확2경로 TDD를 발행한다. 시작32ACA473/신규시험부재를 검산하고 현재OWNER·과거creator/원승인·선택proof/START·SEND 보존을 확인한다. Main 같은source쓰기/실제자원변경0.
+
+## 2026-10-31 FN16 승인 이해검토 permit 이력 실제 RED
+- Primary dbd100 Node exit1/fd59be 진단에서 실제 request/capture/decide/이해검토 service·store/persist/consume가 정상 생산된 뒤 collector133의 approvalRef:null 재구성이503 원인임을 확인했다. 첫 재현 준비 오류0이며 정상 결과 재봉인0이다.
+- 실행generation3/controlgeneration1과 actionScope null target/실command executionId를 분리했다. 기존 START1/SEND2 자료를 함께 두고 해당 loop의 byte 보존과 승인 관련4표/보조증빙 선택·순수 helper·원시각/순번 검산만 보완 중이다. 현재 최종 PASS/실DB 판정은 아니며 Main 같은source쓰기0·실제 제외/QA0 유지.
+
+## 2026-10-31 FN16 이해검토 이력 최종 검수 Important1
+- Main bbd4ff의 단일4파일34PASS/skip0 및 db3286 type/diff0는 해당 시험 범위만의 증거다. 독립 C0/I1은 AUTO 원형/command 승인 metadata가 모두 null인데 그 command의 고아 소비행만 존재하면 approvedCommandIds 조회에서 누락되는 공백이다. Main cb986a 실제 diff로 채택했고 최종 통합을 보류했다.
+- Primary91d7fc는 원 AUTO snapshot/command/ar/audit metadata를 그대로 두고 고아 AC행1개만 추가해 collector 성공/assert.rejects 실패 RED(Node exit1)를 확인했다. 제품678FC89E와 원회귀9941A499는 아직 미수정, 신규반례 시험5A8F47B07F547B40B75B417693691951FB762681A04CB7EF0BF733A9FE637BB2만 작성했다.
+- 보완 부록 FN16_UNDERSTANDING_AUTO_ORPHAN_CONSUMPTION_ADDENDUM_20261031.md SHA256 DF9F65719666F5EF8AD5CB7DCED53C19CE07F344A00AC4FA3AE09FA80F2AEAA1를 작성·독립 경계검토 중이다. review ID 전체에 한정한 기본 소비 존재 검산과, 기존 fixture tables19행 빈 approval_consumptions 1항목만 추가하는 정확3경로 보완이다. 정상 AUTO의 다른 후보/request/decision 조회0·원단언/거절 유지, unknown표[]fallback0.
+- 원 source의 START/SEND block은 독립 검토에서 11592bytes/SHA88F53144E2AF1DEA648ED1C0C846BB3E9B712026A6C41413F4001BFE46FE6434로 기준과 동일 확인했다. 다른 추가 C/I는 없으나 이 I1 해소/재검토 전 합격으로 승격하지 않는다. 실제 DB/권한/키/파일조사/서비스/Agent/복원0·새QA0·Main 코드쓰기0.
+
+- DF9F6571 부록 독립 경계검토 C0/I0 수신. control 게시 뒤 같은 Primary에 제품/신규시험/원fixture의 정확3경로 보정 GO를 발행한다. 기존 review ID 유한 소비검사 외 범위를 넓히지 않고 최종 source 재검토 전 통합하지 않는다.
