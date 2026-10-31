@@ -1,0 +1,135 @@
+-- FN14 source-only 미적용 후보. 실제 DB/권한/정책/서비스에 연결하지 않는다.
+-- 실제 source verifier/공통 잠금 규약이 미연결이므로 app raw 권한은 닫는다.
+CREATE TABLE anvil.transfer_preparation_records(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ creator_user_id uuid NOT NULL,creator_client_id uuid NOT NULL,version integer NOT NULL CHECK(version=1),created_at timestamptz NOT NULL,
+ UNIQUE(project_id,id),FOREIGN KEY(creator_user_id,creator_client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.transfer_preparation_record_versions(
+ record_id uuid NOT NULL,project_id uuid NOT NULL,version integer NOT NULL CHECK(version=1),snapshot_json jsonb NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),command_id uuid NOT NULL,policy_ref_json jsonb NOT NULL,created_at timestamptz NOT NULL,
+ PRIMARY KEY(record_id,version),UNIQUE(project_id,command_id),
+ FOREIGN KEY(project_id,record_id) REFERENCES anvil.transfer_preparation_records(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT
+);
+REVOKE ALL ON anvil.transfer_preparation_records,anvil.transfer_preparation_record_versions FROM PUBLIC,anvil_v3_app;
+CREATE FUNCTION anvil.fn14_record_canonical(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$ SELECT anvil.assignment_draft_canonical(v); $$;
+CREATE FUNCTION anvil.fn14_record_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$ SELECT encode(sha256(convert_to(anvil.fn14_record_canonical(v),'UTF8')),'hex'); $$;
+CREATE FUNCTION anvil.fn14_record_keys(v jsonb,keys text[]) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT CASE WHEN jsonb_typeof(v) IS DISTINCT FROM 'object' THEN false ELSE COALESCE((SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(v) k)=(SELECT array_agg(k ORDER BY k) FROM unnest(keys) k),false) END;
+$$;
+CREATE FUNCTION anvil.fn14_record_ref(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+ IF NOT anvil.fn14_record_keys(v,ARRAY['id','version','contentHash']) OR jsonb_typeof(v->'id') IS DISTINCT FROM 'string' OR jsonb_typeof(v->'version') IS DISTINCT FROM 'number' OR jsonb_typeof(v->'contentHash') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+ RETURN COALESCE(v->>'id'~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND v->>'version'~'^[1-9][0-9]*$' AND (v->>'version')::numeric<=9007199254740991 AND v->>'contentHash'~'^[0-9a-f]{64}$',false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn14_record_iso(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'string' OR (v#>>'{}') !~ '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$' THEN RETURN false;END IF;
+ RETURN to_char((v#>>'{}')::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')=(v#>>'{}');
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn14_record_reason(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='string' AND octet_length(convert_to(v#>>'{}','UTF8')) BETWEEN 1 AND 4096
+ AND length(btrim(v#>>'{}',chr(9)||chr(10)||chr(11)||chr(12)||chr(13)||chr(32)||chr(160)||chr(5760)||chr(8192)||chr(8193)||chr(8194)||chr(8195)||chr(8196)||chr(8197)||chr(8198)||chr(8199)||chr(8200)||chr(8201)||chr(8202)||chr(8232)||chr(8233)||chr(8239)||chr(8287)||chr(12288)||chr(65279)))>0
+ AND (v#>>'{}') !~ '[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]'
+ AND (v#>>'{}') !~* $pattern$-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----|\mBearer\s+[A-Za-z0-9_.~+/-]{16,}|\m(?:password|passwd|api[_-]?key|access[_-]?token|token|secret)\s*[:=]\s*["']?[^\s"']{4,}|\msk-(?:proj-)?[A-Za-z0-9_-]{20,}$pattern$,false);
+$$;
+CREATE FUNCTION anvil.fn14_record_snapshot_valid(s jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE x jsonb;k text;i integer;codes text[]=ARRAY['PURPOSE_REASON','RULES_SCOPE','LATEST_INSTRUCTIONS','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'];
+ permanent text[]=ARRAY['CHECKPOINT_NOT_COLLECTED','SOURCE_DIFFS_UNCOLLECTED','STOP_UNVERIFIED','WRITER_RECLAIM_UNVERIFIED','ORIGINAL_BYTES_UNCOLLECTED','RECORD_DURABILITY_UNVERIFIED','SOURCE_AUTHORIZATION_UNVERIFIED','UNDERSTANDING_UNREVIEWED','TRANSFER_CONFIRMATION_UNVERIFIED'];
+ allowed text[];missing boolean;
+BEGIN
+ allowed=permanent||ARRAY['CONTEXT_NOT_COLLECTED','TARGET_UNSUPPORTED','TARGET_CAPABILITIES_UNVERIFIED','ROLE_NOT_SELECTED','OLD_BINDING_NOT_COLLECTED','TARGET_NOT_SELECTED','CONTEXT_REQUIRED_MISSING','CONTEXT_EXCLUDED','CONTEXT_REDACTED','CONTEXT_CURRENTNESS_UNVERIFIED'];
+ IF NOT anvil.fn14_record_keys(s,ARRAY['schemaVersion','id','projectId','version','kind','state','assignmentRef','contextRef','roleRef','oldBindingRef','targetConnectionRef','baselineRefs','budgetRef','sourceRefs','requiredContext','gaps','reason','intentExpiresAt','observedAt','preparationStored','manifestStored','bindingFrozen','ready','resumeAuthorized','executionAuthorized','dispatchPerformed']) OR s->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR s->'version' IS DISTINCT FROM '1'::jsonb OR s->'kind' IS DISTINCT FROM '"TRANSFER_PREPARATION_RECORD"'::jsonb OR s->'state' IS DISTINCT FROM '"PREPARATION_ONLY"'::jsonb OR s->'preparationStored' IS DISTINCT FROM 'true'::jsonb THEN RETURN false;END IF;
+ IF NOT anvil.fn14_record_ref(jsonb_build_object('id',s->'id','version',1,'contentHash',repeat('a',64))) OR NOT anvil.fn14_record_ref(jsonb_build_object('id',s->'projectId','version',1,'contentHash',repeat('a',64))) OR NOT anvil.fn14_record_ref(s->'assignmentRef') OR NOT anvil.fn14_record_reason(s->'reason') OR NOT anvil.fn14_record_iso(s->'observedAt') OR NOT anvil.fn14_record_iso(s->'intentExpiresAt') THEN RETURN false;END IF;
+ IF (s->>'intentExpiresAt')::timestamptz<=(s->>'observedAt')::timestamptz OR (s->>'intentExpiresAt')::timestamptz>(s->>'observedAt')::timestamptz+interval '30 minutes' THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['manifestStored','bindingFrozen','ready','resumeAuthorized','executionAuthorized','dispatchPerformed'] LOOP IF s->k IS DISTINCT FROM 'false'::jsonb THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY ARRAY['contextRef','roleRef','oldBindingRef','targetConnectionRef','budgetRef'] LOOP IF s->k IS DISTINCT FROM 'null'::jsonb AND NOT anvil.fn14_record_ref(s->k) THEN RETURN false;END IF;END LOOP;
+ IF s->'oldBindingRef' IS DISTINCT FROM 'null'::jsonb AND s->'roleRef'='null'::jsonb THEN RETURN false;END IF;
+ IF jsonb_typeof(s->'baselineRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'baselineRefs')>200 OR jsonb_typeof(s->'sourceRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'sourceRefs')>207 OR jsonb_typeof(s->'requiredContext') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'requiredContext')<>7 OR jsonb_typeof(s->'gaps') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'gaps')>256 THEN RETURN false;END IF;
+ IF (SELECT count(*)<>count(DISTINCT anvil.fn14_record_canonical(v)) FROM jsonb_array_elements(s->'baselineRefs') v) OR (SELECT count(*)<>count(DISTINCT anvil.fn14_record_canonical(v)) FROM jsonb_array_elements(s->'sourceRefs') v) OR (SELECT count(*)<>count(DISTINCT v) FROM jsonb_array_elements(s->'gaps') v) THEN RETURN false;END IF;
+ FOR x IN SELECT value FROM jsonb_array_elements(s->'baselineRefs') LOOP IF NOT anvil.fn14_record_ref(x) THEN RETURN false;END IF;END LOOP;
+ FOR x IN SELECT value FROM jsonb_array_elements(s->'sourceRefs') LOOP
+  IF NOT anvil.fn14_record_keys(x,ARRAY['kind','ref','conversationId']) OR jsonb_typeof(x->'kind') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+  IF x->>'kind' IN('DOCUMENT_VERSION','KNOWLEDGE_VERSION') THEN IF x->'conversationId' IS DISTINCT FROM 'null'::jsonb OR NOT anvil.fn14_record_ref(x->'ref') THEN RETURN false;END IF;
+  ELSIF x->>'kind'='USER_INSTRUCTION' THEN IF NOT anvil.fn14_record_keys(x->'ref',ARRAY['kind','id','contentHash']) OR x->'ref'->'kind' IS DISTINCT FROM '"CONVERSATION"'::jsonb OR NOT anvil.fn14_record_ref(jsonb_build_object('id',x->'ref'->'id','version',1,'contentHash',x->'ref'->'contentHash')) OR NOT anvil.fn14_record_ref(jsonb_build_object('id',x->'conversationId','version',1,'contentHash',repeat('a',64))) THEN RETURN false;END IF;
+  ELSE RETURN false;END IF;
+ END LOOP;
+ FOR i IN 0..6 LOOP x=s->'requiredContext'->i;IF NOT anvil.fn14_record_keys(x,ARRAY['code','state']) OR x->'code' IS DISTINCT FROM to_jsonb(codes[i+1]) OR jsonb_typeof(x->'state') IS DISTINCT FROM 'string' OR COALESCE(x->>'state' NOT IN('NOT_COLLECTED','MISSING_OR_EXCLUDED','METADATA_ONLY'),true) THEN RETURN false;END IF;END LOOP;
+ FOR x IN SELECT value FROM jsonb_array_elements(s->'gaps') LOOP IF jsonb_typeof(x) IS DISTINCT FROM 'string' OR NOT COALESCE((x#>>'{}')=ANY(allowed),false) THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY permanent LOOP IF NOT (s->'gaps') ? k THEN RETURN false;END IF;END LOOP;
+ IF NOT (s->'gaps') ? 'TARGET_CAPABILITIES_UNVERIFIED' THEN RETURN false;END IF;
+ IF s->'contextRef'='null'::jsonb THEN IF jsonb_array_length(s->'sourceRefs')<>0 OR NOT (s->'gaps') ? 'CONTEXT_NOT_COLLECTED' OR EXISTS(SELECT 1 FROM jsonb_array_elements(s->'requiredContext') v WHERE v->>'state'<>'NOT_COLLECTED') THEN RETURN false;END IF;
+ ELSE IF (s->'gaps') ? 'CONTEXT_NOT_COLLECTED' OR EXISTS(SELECT 1 FROM jsonb_array_elements(s->'requiredContext') v WHERE v->>'state'='NOT_COLLECTED') THEN RETURN false;END IF;END IF;
+ missing=EXISTS(SELECT 1 FROM jsonb_array_elements(s->'requiredContext') v WHERE v->>'state'='MISSING_OR_EXCLUDED');IF missing IS DISTINCT FROM ((s->'gaps') ? 'CONTEXT_REQUIRED_MISSING') THEN RETURN false;END IF;
+ IF (s->'roleRef'='null'::jsonb) IS DISTINCT FROM ((s->'gaps') ? 'ROLE_NOT_SELECTED') OR (s->'oldBindingRef'='null'::jsonb) IS DISTINCT FROM ((s->'gaps') ? 'OLD_BINDING_NOT_COLLECTED') OR (s->'targetConnectionRef'='null'::jsonb) IS DISTINCT FROM ((s->'gaps') ? 'TARGET_NOT_SELECTED') THEN RETURN false;END IF;
+ RETURN octet_length(convert_to(anvil.fn14_record_canonical(s),'UTF8'))<=2097152;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn14_record_complete(cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands%ROWTYPE;r anvil.transfer_preparation_records%ROWTYPE;v anvil.transfer_preparation_record_versions%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;a anvil.audit_events%ROWTYPE;
+ s jsonb;ref jsonb;payload jsonb;request jsonb;digest text;at text;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL OR c.operation IS DISTINCT FROM 'createTransferPreparationRecord' OR c.state IS DISTINCT FROM 'APPLIED' OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM c.project_id OR c.draft_id IS NOT NULL OR c.expected_version IS DISTINCT FROM 0 OR (c.control_generation BETWEEN 1 AND 9007199254740991) IS DISTINCT FROM true OR c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL OR NOT anvil.fn14_record_ref(c.policy_ref) THEN RETURN false;END IF;
+ IF (SELECT count(*) FROM anvil.transfer_preparation_record_versions WHERE command_id=cid AND project_id=c.project_id)<>1 THEN RETURN false;END IF;
+ SELECT * INTO v FROM anvil.transfer_preparation_record_versions WHERE command_id=cid AND project_id=c.project_id;
+ SELECT * INTO r FROM anvil.transfer_preparation_records WHERE project_id=v.project_id AND id=v.record_id;
+ s=v.snapshot_json;IF r.id IS NULL OR NOT anvil.fn14_record_snapshot_valid(s) OR r.version<>1 OR v.version<>1 OR r.project_id IS DISTINCT FROM c.project_id OR r.creator_user_id IS DISTINCT FROM c.actor_id OR r.creator_client_id IS DISTINCT FROM c.client_id OR v.policy_ref_json IS DISTINCT FROM c.policy_ref OR s->>'id' IS DISTINCT FROM r.id::text OR s->>'projectId' IS DISTINCT FROM r.project_id::text OR v.content_hash IS DISTINCT FROM anvil.fn14_record_hash(s) THEN RETURN false;END IF;
+ at=to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+ IF r.created_at IS DISTINCT FROM date_trunc('milliseconds',r.created_at) OR s->>'observedAt' IS DISTINCT FROM at OR v.created_at IS DISTINCT FROM r.created_at OR date_trunc('milliseconds',c.received_at) IS DISTINCT FROM r.created_at OR date_trunc('milliseconds',c.completed_at) IS DISTINCT FROM r.created_at THEN RETURN false;END IF;
+ ref=jsonb_build_object('id',r.id,'version',1,'contentHash',v.content_hash);payload=jsonb_build_object('assignmentRef',s->'assignmentRef','contextRef',s->'contextRef','roleRef',s->'roleRef','oldBindingRef',s->'oldBindingRef','targetConnectionRef',s->'targetConnectionRef','intentExpiresAt',s->'intentExpiresAt','reason',s->'reason');
+ request=jsonb_build_object('schemaVersion',1,'projectId',r.project_id,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','createTransferPreparationRecord','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',payload);
+ IF c.request_hash IS DISTINCT FROM anvil.fn14_record_hash(request) THEN RETURN false;END IF;
+ digest=anvil.fn14_record_hash(jsonb_build_object('projectId',r.project_id,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ IF (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=cid)<>1 OR (SELECT count(*) FROM anvil.audit_events WHERE command_id=cid)<>1 THEN RETURN false;END IF;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE command_id=cid;SELECT * INTO a FROM anvil.audit_events WHERE command_id=cid;
+ IF ar.id IS DISTINCT FROM c.authorization_receipt_id OR ar.scope_kind IS DISTINCT FROM 'PROJECT' OR ar.scope_id IS DISTINCT FROM r.project_id OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.scope_digest IS DISTINCT FROM digest OR ar.approval_decision_ref IS NOT NULL OR date_trunc('milliseconds',ar.authorized_at) IS DISTINCT FROM r.created_at THEN RETURN false;END IF;
+ IF a.project_id IS DISTINCT FROM r.project_id OR a.operation_id IS DISTINCT FROM c.operation_id OR a.actor_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id) OR a.client_ref IS DISTINCT FROM c.client_id OR a.target_ref IS DISTINCT FROM ref OR a.policy_ref IS DISTINCT FROM c.policy_ref OR a.approval_ref IS NOT NULL OR a.outcome IS DISTINCT FROM 'APPLIED' OR a.source_kind IS DISTINCT FROM 'HUMAN_COMMAND' OR a.scope_digest IS DISTINCT FROM digest OR (a.server_sequence BETWEEN 1 AND 9007199254740991) IS DISTINCT FROM true OR date_trunc('milliseconds',a.recorded_at) IS DISTINCT FROM r.created_at THEN RETURN false;END IF;
+ IF NOT anvil.fn14_record_keys(c.result_ref,ARRAY['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt']) OR c.result_ref->'operationId' IS DISTINCT FROM to_jsonb(c.operation_id::text) OR c.result_ref->'commandId' IS DISTINCT FROM to_jsonb(c.command_id::text) OR c.result_ref->'projectId' IS DISTINCT FROM to_jsonb(r.project_id::text) OR c.result_ref->'status' IS DISTINCT FROM '"APPLIED"'::jsonb OR c.result_ref->'targetId' IS DISTINCT FROM to_jsonb(r.id::text) OR c.result_ref->'version' IS DISTINCT FROM '1'::jsonb OR c.result_ref->'data' IS DISTINCT FROM jsonb_build_object('ref',ref,'record',s,'preparationStored',true,'manifestStored',false) OR c.result_ref->>'serverReceivedAt' IS DISTINCT FROM at OR jsonb_typeof(c.result_ref->'evidenceRefs') IS DISTINCT FROM 'array' OR jsonb_typeof(c.result_ref->'warnings') IS DISTINCT FROM 'array' THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn14_record_insert_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n bigint;b numeric;
+BEGIN
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'PREPARATION_INTEGRITY_FAILED';END IF;
+ IF NOT anvil.fn14_record_snapshot_valid(NEW.snapshot_json) OR NEW.content_hash IS DISTINCT FROM anvil.fn14_record_hash(NEW.snapshot_json) OR NEW.policy_ref_json IS NULL OR NOT anvil.fn14_record_ref(NEW.policy_ref_json) THEN RAISE EXCEPTION 'PREPARATION_INTEGRITY_FAILED';END IF;
+ SELECT count(*) INTO n FROM anvil.transfer_preparation_records WHERE project_id=NEW.project_id;
+ SELECT COALESCE(sum(octet_length(convert_to(anvil.fn14_record_canonical(snapshot_json),'UTF8'))),0) INTO b FROM anvil.transfer_preparation_record_versions WHERE project_id=NEW.project_id;
+ IF n>10000 OR b+octet_length(convert_to(anvil.fn14_record_canonical(NEW.snapshot_json),'UTF8'))>1073741824 THEN RAISE EXCEPTION 'TRANSFER_PREPARATION_STORAGE_LIMIT' USING ERRCODE='P0001';END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn14_record_insert_guard BEFORE INSERT ON anvil.transfer_preparation_record_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_insert_guard();
+CREATE FUNCTION anvil.fn14_record_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'PREPARATION_RECORD_IMMUTABLE';END;$$;
+CREATE TRIGGER fn14_records_immutable BEFORE UPDATE OR DELETE ON anvil.transfer_preparation_records FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_immutable();
+CREATE TRIGGER fn14_versions_immutable BEFORE UPDATE OR DELETE ON anvil.transfer_preparation_record_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_immutable();
+CREATE TRIGGER fn14_records_no_truncate BEFORE TRUNCATE ON anvil.transfer_preparation_records FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn14_record_immutable();
+CREATE TRIGGER fn14_versions_no_truncate BEFORE TRUNCATE ON anvil.transfer_preparation_record_versions FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn14_record_immutable();
+CREATE FUNCTION anvil.fn14_record_deferred() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;pid uuid;rid uuid;
+BEGIN
+ IF TG_TABLE_NAME='transfer_preparation_records' THEN pid=NEW.project_id;rid=NEW.id;IF(SELECT count(*) FROM anvil.transfer_preparation_record_versions WHERE project_id=pid AND record_id=rid)<>1 THEN RAISE EXCEPTION 'PREPARATION_INTEGRITY_FAILED';END IF;SELECT command_id INTO cid FROM anvil.transfer_preparation_record_versions WHERE project_id=pid AND record_id=rid;
+ ELSIF TG_TABLE_NAME='transfer_preparation_record_versions' THEN cid=NEW.command_id;
+ ELSIF TG_TABLE_NAME='commands' THEN cid=NEW.id;IF NEW.operation<>'createTransferPreparationRecord' THEN RETURN NULL;END IF;
+ ELSE IF TG_OP='DELETE' THEN cid=OLD.command_id;ELSE cid=NEW.command_id;END IF;IF NOT EXISTS(SELECT 1 FROM anvil.commands WHERE id=cid AND operation='createTransferPreparationRecord') THEN RETURN NULL;END IF;END IF;
+ IF NOT anvil.fn14_record_complete(cid) THEN RAISE EXCEPTION 'PREPARATION_INTEGRITY_FAILED';END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn14_records_complete AFTER INSERT ON anvil.transfer_preparation_records DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_deferred();
+CREATE CONSTRAINT TRIGGER fn14_versions_complete AFTER INSERT ON anvil.transfer_preparation_record_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_deferred();
+CREATE CONSTRAINT TRIGGER fn14_commands_complete AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN(NEW.operation='createTransferPreparationRecord') EXECUTE FUNCTION anvil.fn14_record_deferred();
+CREATE CONSTRAINT TRIGGER fn14_receipts_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_deferred();
+CREATE CONSTRAINT TRIGGER fn14_audit_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_deferred();
+CREATE FUNCTION anvil.fn14_record_proof_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN IF OLD.operation='createTransferPreparationRecord' THEN RAISE EXCEPTION 'PREPARATION_RECORD_IMMUTABLE';END IF;
+ ELSIF EXISTS(SELECT 1 FROM anvil.commands WHERE id=OLD.command_id AND operation='createTransferPreparationRecord') THEN RAISE EXCEPTION 'PREPARATION_RECORD_IMMUTABLE';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn14_command_proof_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_proof_immutable();
+CREATE TRIGGER fn14_receipt_proof_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_proof_immutable();
+CREATE TRIGGER fn14_audit_proof_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn14_record_proof_immutable();
+-- PUBLIC의 기본 EXECUTE도 닫는다. 실제 app 활성화/권한 부여는 이번 source 계약 밖이다.
+REVOKE ALL ON FUNCTION anvil.fn14_record_canonical(jsonb),anvil.fn14_record_hash(jsonb),anvil.fn14_record_keys(jsonb,text[]),anvil.fn14_record_ref(jsonb),anvil.fn14_record_iso(jsonb),anvil.fn14_record_reason(jsonb),anvil.fn14_record_snapshot_valid(jsonb),anvil.fn14_record_complete(uuid),anvil.fn14_record_insert_guard(),anvil.fn14_record_immutable(),anvil.fn14_record_deferred(),anvil.fn14_record_proof_immutable() FROM PUBLIC,anvil_v3_app;
