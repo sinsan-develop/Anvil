@@ -10731,3 +10731,17 @@
 - FN16_FULL_BACKUP_VERIFICATION_SCOPE_DECISION_20261031.md를 Main이 작성했다. 전체 자료/schema 매핑→동일 기준 수집→암호화/검증복원→수동job/UI→실지원 coverage의 순서를 구체화하되 새 공개계약/키/DB/실행 채택은 하지 않는다. SHA256 A6776EE4A757F45DAE06534EC407B11DEEF2D625A1EC19517DFE9D6199A594F2.
 - 기존 Reviewer 첫 C0/I1은 Secret/계정·키 자체 비반출 누락으로, Main이 정본 FN16 기준을 §3에 추가해 scoped C0/I0 수신했다. 단순 복원권한 비활성화와 비밀 자체 비반출을 구분한다. 문서 한정 수정이며 source 코드/검사/환경 변경0.
 - 기존 Primary는 policy include7과 composition24/관측의 차이·기존 notCollected9/false 보존·선택파일 복원과 project bundle의 차이를 확인했다. 자료군↔collector/namespace·artifact 증빙의 내부 교차검증 후보를 읽기 구체화 중, 구현GO0이다. 전체 FN16/계획 미완료·실제 제외 유지.
+
+## 2026-10-31 FN16 A1 자료 매핑 작성 인수
+- 범위 후보/계획/현황3문서 checkpoint cc1fa2a6111f68c189c413f949e8312f4d4d2a5e private 동일·main f976ed5e 불변·보호3만 untracked를 확인했다. PMO는 상세화 후보임을 확인했으며 새제품/공개계약/실행 승인은 없다고 구분했다.
+- 기존 Primary에 정확 신규1문서 docs/contracts/FN16_FULL_BACKUP_DATA_MAPPING_CANDIDATE_20261031.md만 작성 GO를 발행했다. 자료군7별 실제24collector/feature·DDL/미적용표·codec·관계/역사·민감 비반출·미지원 근거를 작성한다. 단순 include 투영/기존 충돌검사 재구현은 전체여정 진도로 대체하지 않는다. 코드/SQL/시험/환경/Git mutation0, Main은 해당문서를 동시수정하지 않는다.
+- Main 읽기에서 composition은 반복 READ COMMITTED 관측이며 하나의 snapshot/전체원자성 근거가 아님을 재확인했다. key 파일 wildcard rg는 PowerShell path 문법 오류 exit1로 내용 미조회였고 재실행/권한변경0이다. 실제 DB/키/파일조사/서비스/Agent/차단해제0·전체계획 미완료 유지.
+
+## 2026-10-31 FN16 동일기준 수집·묶음 상세화와 실제 누락
+- Main A2 후보 FN16_FULL_BACKUP_SNAPSHOT_CONTRACT_CANDIDATE_20261031.md SHA256 2407841F04013EF9FED30C8D0CDAF56711D19F40A7717F6C66350C98CC93A291, 기존 Reviewer C0/I0. 단일RR 수집과 별도 최신권한/파일관측·publish/COMMIT불명을 분리했다. 기존 RC composition 변경/실행0.
+- A3/A4 후보 FN16_ENCRYPTED_BUNDLE_RESTORE_FORMAT_CANDIDATE_20261031.md SHA256 D7432ADC139B1453520050494E0B40A7BC3322E5E8A3E8F44379982937B73BBA. Node24 공식 API·NIST §8 근거 확인. 독립 첫 C0/I1(같은 실키의 ref/version/설치간 nonce 도메인 누락)을 보완해 C0/I0. 원문/비반출투영 hash구분·인증final 전채택0/정확codec미정동안parser구현GO0·실키발급0 유지.
+- Primary A1 대조에서 기존 assignment-inventory139/146은 FN09 새child HUMAN 내용검토/확정행을거절하는 실제누락을확인했다. Main이 FN16_CHILD_HUMAN_CONTENT_INVENTORY_INTEGRATION_20261031.md SHA256 07E7A004E87E4128C49DBDE5B976EB59312D115C14F4B5BBB15710439507326B 정확3경로를 후속내부통합WI로 작성·독립 경계검토에 전달했다. 기존19root실행소비선/권한·공개DTO/schema는변경하지않고 과거 내용만 수집한다. A1 writer반환후검토통과시에만코드dispatch,현재제품쓰기0.
+- Main 준비읽기의 skill경로1회/같은 WI파일명 추측2회는부재exit1, 실제rg파일목록으로정확SOURCE파일확인했다. rg경로wildcard문법오류는앞차수포함2회로, 실제디렉터리+glob인자로정정한검색exit0이며권한변경0. 실행·검증PASS와혼동하지않는다.
+- 실제DB/권한/키/사용자파일조사/서비스/Agent/일반차단해제0·새QA0·전체계획미완료. 이미완료된83/type/build재실행0. Main다음업무선정책임과기존Primary단일writer유지.
+
+- 내부 통합 WI07E7A004의 기존 Reviewer C0/I0 수신: 새 공개계약/권한/실행 차단 변경이 없는 기존 승인 기능 간 정합 보완으로 대조했다. 구현/시험 결과 판정은 아직 아니다.
