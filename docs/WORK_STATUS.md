@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 FN02 r2·FN14 A 직접 승인·ACTIVE 재개
+- 신산님이 FN02 r2 8B6742A9와 FN14 원후보E096C897+상한C842350B의 A안을 함께 직접 승인하고 goal을ACTIVE로 재개했다. FN02_FN14_SOURCE_APPROVAL_20261031.md가현재binding이며이전BLOCKED/질문미답변/NOT_DISPATCHED는보존된과거이력이다. 반복승인요청0.
+- 실제15e9f4 HEADcea1c1ff/기존branch·trackedclean/보호3만untracked와후보/준비WI지문을대조했다. 기존Primary 단일writer로FN02 정확7경로를먼저TDD하고Main관리/검수/독립리뷰/통합후같은담당에게FN14를순서대로맡긴다. Main동일code수정0·새세션/예약0.
+- 실제DB/SQL실행·권한·키/사용자파일조사·서비스·Agent·기존project차단해제0. FN02새SQL/DDL0, FN14미적용SQL/새기록2표만별도WI로허용. 전체WORK_PLAN미완료이며실제DB/served/사용자인수PASS로승격0. 보호3/원5복구본·기존이력보존.
+
 ## 현재 인수 — 2026-10-31 신규 계약 채택 차단 3차수 재확인
 - 전체 WORK_PLAN은 미완료이며 완료보고·main병합·정리 완료 상태가 아니다. 승인된 quota A source와 후속 UI06/UI03/UI01은 앞선 실제 지문·검수 범위만 유효하다. 최종 준비checkpoint e94cbc2613f5520b9e8946daf3d0d7e518e8a94d, 실제84c459 HEAD동일·trackedclean/보호3만비추적. 새제품변경/기존검사 재실행0.
 - 첫 차수는 UI01 통합·FN02 후보/준비WI 보존으로 진전한 뒤 신규계약 채택 차단에 도달했다. 후속차수1885cf/PMOcursor37은 동일미답변·진전없음, 이번84c459/PMOcursor37도 새답변없음으로 같은차단3차수를 재확인했다. PMO는idle/terminal이므로 살아있는job의 verified-wait로 세지 않는다. 현재 codewriter/QA/process0, 대기문구를 실행중인 작업으로 포장하지 않는다.

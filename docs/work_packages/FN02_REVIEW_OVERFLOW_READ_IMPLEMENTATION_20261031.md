@@ -1,6 +1,6 @@
 # FN02 과다 검토 버전 읽기 — 구현 준비 WI
 
-상태: PREPARATION_ONLY / NOT_DISPATCHED. FN02_REVIEW_OVERFLOW_READ_DECISION_20261031.md r2 SHA8B6742A94ABB4433AF6A2B220EF823097AA7EAEFEB84B27E516A152D3BCF99F7가 아직 NOT_ADOPTED다. 이 문서는 승인이나 코드 GO를 대신하지 않는다. 정확 채택 답변을 대조·기록한 뒤 Main의 명시 GO에서만 기존 Primary가 구현한다.
+상태: MAIN_GO / DIRECT_HUMAN_APPROVED. FN02_FN14_SOURCE_APPROVAL_20261031.md의 최신 직접 승인에 따라 FN02 r2 8B6742A94ABB4433AF6A2B220EF823097AA7EAEFEB84B27E516A152D3BCF99F7의 A안과 아래 정확7경로를 기존 Primary에게 발행한다. 이전 준비본의 미채택/NOT_DISPATCHED는 이력이며 현재GO를 막지 않는다. 계약/허용7경로/검증/실제실행 제외는 준비본D60C4F3A와 동일하다.
 
 ## 기준·정확 범위
 - 준비 기준 codex/av3-stage-b / d51e7f028065a173a68edcb921635634838cfdee(제품8c939d4b). 문서 checkpoint가 추가되면 구현 직전 실제 HEAD·dirty·기준2제품 지문을 다시 대조한다. 새branch/worktree/agent/chat/자동화0.
