@@ -1,5 +1,16 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 다음 FN08 지속등록 r2 결정 요청
+- 후보 docs/work_packages/FN08_MATERIAL_REGISTRATION_STORAGE_R2_DECISION_20261031.md SHA2F04BB32F37C2968F1B1570B1792C27649C44D3E956DA5328C0FE1466F1401D5를PMO에정확A/B결정요청했다. 원F379F60D의새3표/guard·source종류·누적한도를구체화한신규저장계약이며완료FN13승인재요청이아니다.
+- 독립C0/I0와Primary실현성확인: sourceKind는SYNTHETIC_REFERENCE_ONLY_V1한종(태그자체권위0/port부재거절),같은PoolClient·기존user/session/client→project잠금완료뒤append/bind·deferred완결,새3표합산project100k행1GiB·동일grantID전버전10k행64MiB·만료산입·replay charge0. 기존0059/전체10GiBcoverage·원문/USER_INSTRUCTION/DD166F차단·기본app미주입은보존한다.
+- 새코드/미적용SQL/합성만채택대상이며실DB/권한·GRANT/키/사용자파일조사·보호원문/서비스/Agent·기존project일반차단해제0. 기존읽기port·합성wrapper재개발0,새3표source합격을실SEND/Agent준비로승격0이다. 현재후보미채택/제품GO0이며Main이필요결정·계획선정/검수·통합책임을유지한다. 이전FN13 blocked횟수를상속하지않고동일질문반복0이다.
+
+## 2026-10-31 FN13 A 게시 checkpoint
+- 안전한소스checkpoint는 bfc2ed014a52a9bc4394a482dad8a2830eb22b8f / codex/av3-stage-b다. 실제462299에서local/private동일·trackedclean/보호3만미추적·mainf976불변을확인했다. 소유11(source/UI/시험8+결과/계획/현황3)만게시했고PMO에결과58D684DD·Main24PASS/type/memoryWeb484·독립C0/I0 및실환경제외를전달했다.
+- staged검사e80a3b에서새보고서EOF빈줄1을발견해제품코드/검사재실행없이그문서만정리했다. 최종결과SHA58D684DD8F76F985373262EE311A5048E6B6FD4F42AE327C4E128356435B4017로현황·계획참조를갱신했으며그이전F808지문은게시하지않았다. 전체FN13/작업계획완료·실제서비스반영/인수아님이다.
+- 다음핵심FN08의정확기존후보는 docs/contracts/FN08_SEND_MATERIAL_REGISTRATION_PROPOSAL.md / F379F60DD4BC5322B6EFB5694C3D4DEAA283F338C4808D6F2966753089FA349A다. 기존repository는clock/findByCommand/findByRef읽기port만이고지속생산자가부족하다. 원manifest→envelope→material과proof/receipt/binding/challenge소비의동일Tx·쌍방완결·누적한도/만료보존·COMMIT불명 의미가새계약차이다. 기존14필드wire/connectorGET·실보호원문/USER_INSTRUCTION·DD166F차단을유지하며3표작성만으로실공급/SEND가능이라말하지않는다.
+- 기존Primary는최소제품경로/sourceKind/기존quota소비가능성을읽기대조중이다. 기존Reviewer의추정service파일경로부재1은근거에서제외하고실제반환queue/store만사용했다. Main은새계약결정안을작성할책임을유지하며채택전source/SQLGO0·실DB/키/권한/파일/서비스/Agent0·완료단위재실행0이다.
+
 ## 2026-10-31 FN13 과거 페이지 A 소스 검수·통합 준비
 - 기존 Primary writer 반환 뒤 Main ff435c 정확 신규3+기존2의24PASS/skip0/type0, a599a9 메모리Web484/3outputs·UI detect[]/diff0를확인했다. 독립최종scopedC0/I0·미해결Critical/Important0다. 원read/olddecoder는실제Gitdiff에서본문변경없고기존회귀4PASS,기존GET rawquery제거gap만계약대로400으로보완했다.
 - 결과 docs/04_test_reports/AV3/FN13_STOP_REQUEST_PAGES_SOURCE_RESULT_20261031.md SHA 58D684DD8F76F985373262EE311A5048E6B6FD4F42AE327C4E128356435B4017. 새pageGET/고정20·전용서명cursor·현재subject/session·상한/proof·UI왕복/동일실패cursor·문맥회복/decoded2MiB를구현했다. 소유8+결과/계획/현황3만기존branch에통합한다.
