@@ -2,6 +2,8 @@
 
 2026-11-01 / Main 어울 / 기존 Primary 단일 writer
 
+기술 방법 보완: 원 WI2BA0612A의 feature/8경로/실행 제외는 동일하다. Main de19ac에서 고정 Forge core8.0.1 make의 providedForgeConfig/outDir 지원을 실제 코드로 확인했다(make.js SHA ce4eb0ca5ba5f3bf40add373796a81c07bb2dd546e0d77d274827bde795866d5). CLI가 지원하지 않는 별도 config 인자를 전달하지 않고 아래 자체 child entry의 공개 core API로 연결한다. 새 dependency/공개 계약/권한을 추가하는 변경이 아닌 내부 호출 방법 정정이다.
+
 ## 1. 기존 계획과 이번 단위
 
 FUNCTION_WORK FN18의 ‘설치 산출물 생성/검증용 환경 시험’과 WORK_PLAN §실행 범위의 ‘제품 코드·패키지 산출물 개발’을 수행한다. TD-01 Electron 선택과 현재 Forge8.0.1/Electron45.1.0을 유지한다. 기존 Shell WI의 installer 제외는 당시 단위의 경계이며 실제 사용자 설치를 새로 허가하는 문구가 아니다.
@@ -51,7 +53,7 @@ FUNCTION_WORK FN18의 ‘설치 산출물 생성/검증용 환경 시험’과 W
 
 - 기존 desktop package identity/런타임/userData·persist:anvil-web 의미는 변경하지 않는다. 새 maker의 이름/파일명은 개발 전용 후보를 구분하고 canonical 제품 설치 identity로 확정하지 않는다. 설치·업데이트 생명주기 처리가 없는 현재 Shell을 ‘설치 지원 완료’로 표시하지 않는다.
 - 별도 config는 기존 packager 설정과 local SDK verify hook을 그대로 소비한다. 원 config/기존 out은 보존한다. publishers/remoteReleases/autoUpdater·서명·인증서 옵션을 연결하지 않는다. 새 output은 Main이 등록한 새 빈 경로만 사용하며 검산 없는 `--from-package`/오래된 산출물 재사용0이다.
-- entry는 명시 동작만 한다. import/require만으로 다운로드·쓰기·child 실행0. 고정 Node/실제 CLI package metadata에서 확인한 entry를 shell:false/windowsHide로 호출한다. 추정 vendor leaf·임의 command/flags·shell 문자열 조립0. child 환경은 Windows/Node 동작에 필요한 allowlist와 등록 tmp/output만 전달하며 signing/token/proxy credential/NODE_OPTIONS를 이어받거나 로그에 출력하지 않는다.
+- entry는 명시 동작만 한다. import/require만으로 다운로드·쓰기·child 실행0. 고정 Node로 허용 make-script 자체의 전용 child 모드를 shell:false/windowsHide로 호출하고, child가 기존 CLI의 dependency로 실제 resolve한 core8.0.1 공개 make API를 별도 forgeConfig/outDir와 함께 소비한다. CLI의 미지원 인자나 기본 config로 fallback하지 않는다. 동적 import는 고정 검산 entry URL만 사용하고 설치 source/lock·모듈 버전/hash 및 실제 API의 config/outDir 소비를 실행 전 검산한다. exports가 막은 package.json subpath를 resolve한다고 가정하지 말고 실제 entry의 제한된 package 범위에서 metadata를 찾는다. 추정 vendor leaf·임의 command/flags·shell 문자열 조립0. child 환경은 Windows/Node 동작에 필요한 allowlist와 등록 tmp/output만 전달하며 signing/token/proxy credential/NODE_OPTIONS를 이어받거나 로그에 출력하지 않는다.
 - 작업 root/하위 경계·nonlink/regular/nlink/owner 표식·source/toolchain 지문을 검사한다. 기존 파일을 overwrite/clean하지 않는다. child stdout/stderr는 유한 길이와 비밀 없는 오류 코드로 수집하고 raw user 환경을 기록하지 않는다. 시간/출력/용량 한계와 자식 종료 확인을 갖추며, timeout·종료 불명은 산출물·소유 증거를 보존하고 Main에 보고한다. 공유 process/unknown PID 강제 종료0이다.
 - 새 artifact만 생성 후 exact 목록·크기/hash를 재검산한다. Setup의 PE 형식, nupkg의 파일 형식과 RELEASES filename/size/hash 대응을 확인한다. 예상 외 delta/MSI/파일·손상/연결 불일치는 거절한다. 형식/hash 검사는 서명 신뢰나 실제 설치 성공을 증명하지 않는다.
 - 생성 manifest는 repo-relative source 목록/hash·정확 source commit·SDK/lock/toolchain·명령/exit·artifact 목록/bytes/hash·유한 관측 시각만 담는다. 절대 source 작업 경로·사용자 환경/Secret를 복사하지 않는다. `releaseStatus:NOT_RELEASE`, `applicationAllowed:false`, 설치 생명주기/서명/실제 설치·업데이트/제거·호환성/복구의 미완료 상태를 명시한다. 다른 산출물의 PASS/정상 설치 flag를 주입할 수 없다.
