@@ -1,5 +1,13 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 두 A source 통합·다음 FN09 r2 결정 준비
+- FN02 제품2008be2c exact10·결과4F97AD00/Main42PASS·type/memoryWeb484/detect0·독립C0/I0, FN14 제품fc14810dd53424088afe474376f722480cde0ed3 exact11·결과A6F341B1/Main43PASS·type/diff0·독립C0/I0를기존privatebranch에통합했다. Maindd82c2에서local/private동일·trackedclean/보호3만미추적·mainf976불변확인. 이전FN14진행중/미발행은이력이다.
+- 두 A는 승인한 source/합성·pending SQL 범위만이다. FN14의실app/HTTP/화면·실제저장·보호provider·PG/trigger/경합·실이전은미구현/미검증, FN02의201+mutation차단·실PG/served도그대로다. 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project차단해제0·새QA0. 전체WORK_PLAN미완료/goalACTIVE/완료보고아님.
+- 다음은기존FN09자식HUMAN내용검토·별도확정·과거조회이다. 과거직접FN09 A는B50A7709→4B8455AE 실행준비와정확결박돼있고자식후보51F71890와다르다. DRAFT표제만아닌실binding/WI/결과/현재0034·root차단을대조했으며새내용허용은미채택이다.
+- Main은r1원문51F를동결한별도보완 FN09_CHILD_HUMAN_CONTENT_REVIEW_CONFIRMATION_R2_20261031.md SHA5880747B61C0D48C5D08F7F01CD8F43D6E6C30101CC73CB85485F623B5B0478D를작성·독립scopedC0/I0로검토했다. 기존로그인/policy조건/새reauthgate0·실제412/422/class412·child APPLIED 반환전도메인보호검산과과거부모CAS분리·root기본read/decision/current를보존한HUMANsibling/기존GET2만선택으로범위를명확히했다. 기존공통replay가원증빙을이미검산한다고과장하지않는다.
+- Primary actualconsumer19개/주입선map을대조,기존root전용중앙차단을그대로두면결과/checkpoint/context/실행상태등다른파일에guard를분산수정할필요가없다. SQLassignment_root_reference/10 downstreamtrigger보존·review/version만한정forward대체·새operation/endpoint/table/DTO0·실환경0의현재정확후보다. 새코드/SQL/버튼/구현GO0,다음필요결정만PMO에전달한다.
+- 읽기조사Windows literal glob 오류1은실제root/-g로교정·동일오류명령재시도0,마지막sandbox Git상태조회실패1은근거에서제외하고Main실제Git결과로대조했다. 제품실패/권한변경/우회가아니다. 현재writer/QA0·기존담당/보호3/원5복구본/이력보존.
+
 ## 현재 인수 — 2026-10-31 FN02 통합·FN14 A 순차 GO
 - FN02 exact10 제품/시험7+결과/계획/현황3 통합2008be2cc4d2d666091c0172ad5fda1c3c69f3bb는Maina4d553 local/private동일·mainf976불변·trackedclean,별도FN14WI/보호3만미추적확인. Main42PASS/skip0/type0·Web484/detect[]0·최종독립C0/I0,결과4F97AD0005E606D67FC9304D33E203E12224E6D66A509003A7693CF45B44C25E. 실PG/브라우저/served/전체업무완료아님.
 - 이미직접승인된FN14 A는기존Primary 같은단일writer에게MAIN_GO로순차발행한다. 준비WI1CCD88EB는독립C0/I0였고원E096/상한C842/승인B7의내용은동일하다. 신규8경로/0060prefix부재를발행직전재확인,원분석/0059·보호3/복구본보존. Main동일code수정0·기존Reviewer읽기.
