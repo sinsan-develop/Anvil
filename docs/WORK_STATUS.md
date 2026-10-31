@@ -10721,3 +10721,13 @@
 ## 2026-10-31 FN16 source 게시 checkpoint
 - exact30 commit d148808fe7ab1adba878d3ddf4d0af3740e5f9f7 게시/private 동일, tracked clean·기존 보호 untracked3 보존, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 실제 확인했다. PMO에 repo-relative 결과/증거·미검증을 전달했다.
 - 다음 작업 선정은 기존 Primary 읽기 전용 대조 진행 중이다. 코드·완료 검사 재실행0, 새 계약/실행 GO0. 전체 계획 미완료이며 실제 DB·권한·키·파일 조사·서비스·Agent·차단 해제 제외를 유지한다.
+
+## 2026-10-31 FN16 후속 선행 대조
+- 기존 Primary 읽기만 수행해 FN16 SELECTED_FILES 공급은 이미 구현됐고 정책 저장412는 원계약/r2의 의도된 경계임을 확인했다. FN14 공개routes/UI/실reader도 최신WI 명시 제외라 승인 누락으로 재해석하지 않았다. 코드/문서/시험/환경 변경0 보고를 인수했다.
+- Main은 다음 단위를 전체 수동정책 coverage 상세 계약 구체화로 선정했다. DB/schema·관계/역사·artifact bytes/hash/격리·암호화 bundle 인증/복원 비교·키 가용성·정확ref/한도/기한/현재성의 근거를 구분한다. 단순 full태그·합성 성공포트로412를 풀지 않는다. 아직 새 계약 채택·구현GO0이며 초안/독립 검토 후 필요한 의미 결정만 PMO에 요청한다.
+- PMO에 위 선행/다음 범위와 실제 제외를 전달했다. tail0d3de799/private 동일·main불변, 전체 계획 미완료. 이전 source83/type/build 재실행0·실제 DB/권한/키/파일조사/서비스/Agent/기존차단해제0 유지.
+
+## 2026-10-31 FN16 전체 검증 상세화 범위 후보
+- FN16_FULL_BACKUP_VERIFICATION_SCOPE_DECISION_20261031.md를 Main이 작성했다. 전체 자료/schema 매핑→동일 기준 수집→암호화/검증복원→수동job/UI→실지원 coverage의 순서를 구체화하되 새 공개계약/키/DB/실행 채택은 하지 않는다. SHA256 A6776EE4A757F45DAE06534EC407B11DEEF2D625A1EC19517DFE9D6199A594F2.
+- 기존 Reviewer 첫 C0/I1은 Secret/계정·키 자체 비반출 누락으로, Main이 정본 FN16 기준을 §3에 추가해 scoped C0/I0 수신했다. 단순 복원권한 비활성화와 비밀 자체 비반출을 구분한다. 문서 한정 수정이며 source 코드/검사/환경 변경0.
+- 기존 Primary는 policy include7과 composition24/관측의 차이·기존 notCollected9/false 보존·선택파일 복원과 project bundle의 차이를 확인했다. 자료군↔collector/namespace·artifact 증빙의 내부 교차검증 후보를 읽기 구체화 중, 구현GO0이다. 전체 FN16/계획 미완료·실제 제외 유지.

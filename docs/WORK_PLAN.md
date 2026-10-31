@@ -1760,3 +1760,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 기존 Primary exact24 구현/writer 반환, 기존 Reviewer 최종 C0/I0. Main 최종 단일 11파일83PASS/skip0, type/diff exit0, 메모리 Web build487 모듈ID/출력3/write:false exit0. 완료된 검사는 반복하지 않는다.
 - 결과 docs/04_test_reports/AV3/FN16_MANUAL_POLICY_STORAGE_SOURCE_RESULT_20261031.md SHA256 9280911C3FA33DFF2AAEF8520FAF2EFCFD68C1CF76252627B6AAD4F1F7FFA80F. 원 실패·fixture 보강·미검증을 구분했다. 정책 입력/보관/보호조회·별도승인·명시소비 source를 연결했으나 기본 전체 coverage 미연결/412 유지다.
 - 실제 DB/SQL/권한/키/사용자파일조사/서비스/Agent·기존 프로젝트 차단 해제0/QA0. 실제 저장·백업/복원·전체 FN16/Stage/계획은 미완료다. exact30 소유 경로만 통합하고 보호3/복구자료 보존, 다음 미완료 업무를 Main이 계속 선정한다.
+
+### 2026-10-31 FN16 다음 미완료 선행
+전체 수동 백업 검증 상세화 범위 후보: docs/work_packages/FN16_FULL_BACKUP_VERIFICATION_SCOPE_DECISION_20261031.md(A6776EE4A757F45DAE06534EC407B11DEEF2D625A1EC19517DFE9D6199A594F2), 독립 C0/I0. A1~A6 전체 여정을 상세화하며 단순 synthetic coverage 포트로412를 풀지 않는다. 아직 새 공개계약·실제 실행 채택/구현 GO가 아니며 기존 FN16 및 전체 계획 미완료를 유지한다.
