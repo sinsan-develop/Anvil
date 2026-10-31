@@ -10888,3 +10888,9 @@
 - 기존Primary6파일preflight는hostAF61BAF2/shell76952702·시험29902D84/95A87C0A/40E275DB를확인했다. 정상fixture만R3로정합하고oldR1/R2의원literal·과거candidate거절은보존한다. 이미수정된mount/시각/protocol/위험·한도/NoCopy·소비/fence·정상cleanup/불명보존을바꾸지않는다. 아직시험/제품쓰기GO전이며실제actual packet/grant·nonce/원격준비/자원/복제/PG/SQL·권한·키/서비스·Agent0이다. Sourcecontrol게시뒤기존Primary에게시험3 TEST_ONLY만발행한다.
 
 - Main의 스마트 인용부호 문자열 전달 오류2회는 현황 매개변수 결박/parse 단계에서 종료돼 제품·환경·commit 실행0이었다. 같은 문자열 조립을 중단하고 literal here-string으로 교정해 root 저장 성공/소스 control 미생성·staged0을 직접 확인했다. 기존 코드·보호3·원격은 보존한다.
+
+## 2026-10-31 P03 R3 최종 source Main·독립 검수
+- 수행자는제품host591B95E0/shell8F1C4351·시험FFDEC741/9C57668A/9EC69E3F의정확5파일로writer반환했다. Main bc8746의고정Node전체3파일단일묶음130PASS/0FAIL/0SKIP/0CANCEL/0TODO(15383.7826ms),4e1b0e type/Bash구문·shellCR0/LF·diff exit0을확인했다. 수행자2853dd→915660의130/18526.153ms는별도증거다. 최종5지문독립scopedC0/I0로원보호/음성단언·생성전소비0/생성후보존의구분을확인했다.
+- Main aa42db는메모리역치환후hostAF61BAF2/shell76952702 raw와동일함을독립검산했다. 제품diff host2+/2-,shell3+/3- 외byte변경0이다. sourcecode고정literal/후보/결과parser만변경했고실제Docker/원격/volume/helper·원장/grant/nonce/copy·PG/SQL/권한·Secret·서비스·Agent0이다. 도구는모두완료상태이며새지속QA자원0,실제환경정리/복구를수행한것으로승격하지않는다.
+- 결과 P03_R3_FIXED_BINDING_SOURCE_RESULT_20261031.md SHA5C7DDD317CB0E35D7D649F1D41D187B0B247E048861139FDAD2F95C5353A6444를작성했다. 최종source5+결과/계획/현황3 정확8경로만통합하며rawWindowscontroller와GitLF controller hash는실제실행안에서구분한다. 이미통과한130/type는코드불변이면반복0이다.
+- 실제복구는별도exact실행지시전0이며소진R1/R2권한/사본/원장보존·main불변/보호3을유지한다. 일반계획내DB재승인과등록PG부재의환경선행을혼동하지않는다. 전체P03/IX01/FN16/Stage/계획미완료이며다음은최종source commit/blob·대상/위험/수명·불명보존의정확후속실행지원범위를준비한다.
