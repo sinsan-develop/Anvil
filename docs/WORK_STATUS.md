@@ -10957,3 +10957,17 @@
 - 최종제품4/신규시험1 지문 A671D1A2/7E9A4D64/BE01680B/5DE25856/4F967C1E. Main4f03d3 신규8+직접인접19 단일27PASS/0FAIL/SKIP0/TODO0/CANCEL0·1129.4494ms/nativeexit0,React기존중복key경고46회별도관측. Maina1066a type/diff0·메모리Web build writefalse 출력3/487모듈,독립최종C0/I0/M0·M1해소다.
 - 실제App표시/앞3같은route·mount/소유문맥reset/승인정확복귀와별도실Workspace+Nav composition2의stage·임무초안·대화draft/UNKNOWN 원형보존을구분했다. composition2를App buffer저장종단으로확대하지않는다. 결과 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md에정확명령/지문/오류·미검증을보존했다. 제품최소연결이며기존API/routes/buffer/권한/SQL변경0이다.
 - 시각QA root는1ade27에서2026-10-31T14:38:47.1969973Z에신규생성했다. owner/currentUser SINSAN\cyhuh·부모/targetnonlink·생성전부재확인·30분수명/서비스와포트0이다. Primary에등록root의index.html 한개만create-new로합성실App+실CSS/nativecrypto/CSP외부접속금지로생성GO했고영구source5는동결했다. 아직브라우저/실제served·DB·사용자인수PASS아님,QA실생성/화면/정리는다음실제증거로구분한다. 전체계획미완료다.
+
+
+- UI13 ego round01 e97699는space19/p1에서nativeCrypto/secureContext=true·inner430x932·합성GET3/미지원0·대화만표시를관측했다. round02 c2bf75는pane전환GET3→3·route불변·가로넘침false를관측했으나캡처실이미지는넓은viewport였다. 호출간CDP크기유지미확인으로초기mobile-chat.png/mobile-steps.png를430px시각증거로사용하지않고원본보존한다. 제품실패/falsePASS0이다. 같은space/page를유지하고각캡처round안에서viewport재지정/실크기·PNG크기대조를수행한다.
+- 같은등록root/기존30분TTL안에서보정증거파일 mobile-chat-430.png/mobile-steps-430.png/mobile-docs-430.png를추가등록한다. 기존잘못명명된이미지덮기0·새space/서비스0·최종독립정리대상에함께포함한다.
+- round04 0a3ddc의단계B클릭은버튼y888~932/하단nav871~932의겹침으로포인터도달실패였다. 강제클릭0·같은space/page현재상태를round05 acc4e7에서관측하고정상wheel스크롤후버튼471~515/nav871로분리돼실클릭성공했다. 단계B→자료의선택단계보존·pane요청4→4/미지원0/비GET0을확인했다. 고정footer가영구적으로버튼을막는결함으로확정하지않으며자동스크롤한계를제품PASS로숨기지않는다.
+- 같은root/동일TTL에 round-06.mjs와mobile-chat-draft-430.png를추가등록한다. Enter키전환/미저장합성대화보존·wide mobile/PC캡처·observations만수행하고정리는별도마지막확인뒤진행한다. 다른서비스/Agent/데이터조사0.
+- round06 d302fb는실textbox입력→Enter로절차/자료전환→대화복귀의draft보존/추가요청0단언과430draft/wide캡처까지완료한뒤,스크롤아래에서상단PCsidebar링크가viewport밖이라실클릭이멈췄다. 나머지미실행관측JSON/desktop을성공으로표시하지않는다. 후속inline관측43641b는ego의top-level await 전달SyntaxError로실행전실패했으므로guide대로새.mjs만사용하고동일명령재송신/새space생성0이다.
+- 같은root/TTL안에round-07.mjs(현재상태관측·정상위스크롤·PC최종캡처/관측JSON),round-08.mjs(검수후정상TaskSpace.finish)만추가등록한다. 생성완료파일은덮지않으며제품/fixture수정0·실제환경변경0이다.
+
+## 2026-10-31 UI13 실제 브라우저 중복 패널 I1 발견
+- actualQA source5결박동일 index DA5535FA/space19에서nativecrypto/430·1920실CSS·Enter/draft·stageB보존은관측했으나PC자료에프로젝트적용헌법패널4개가쌓이는실제오류를발견했다(34d696 snapshot/desktop.png). 기존메모리27PASS·코드C0/I0를실UI완료로승격하지않고I1미해결로유지한다.
+- 독립읽기에서WorkspacePage68~69의두자료sibling ProjectConstitutionPanel/WorkspaceConversationSources key가동일project/user/client tuple임을확인했다. 다른부모ConversationPanel은이충돌대상이아니다. 단독원인은같은반례수정전후검증까지보류한다. Primary에기존신규UI13시험만정확1개패널/상태보존반례를추가지시/제품GO전수정0이다.
+- UI13_WORKSPACE_PANEL_IDENTITY_FIX_20261031.md에WorkspacePage+기존신규시험2파일만허용하는보완을작성했다. App/Navigation/CSS/API/권한·실제DB/키서비스Agent변경0·Main제품쓰기0,기존잘못된4개패널캡처/HTML은원형보존하고정상소급0이다. 현재QA원수명15:08:47Z전정리조건은그대로다.
+- Mainca485c는동결시험2DBD6DF7/제품Workspace7E9A4D64 불변확인후같은실App반례에서0PASS/1FAIL·nativeexit1/816.0188ms·헌법4≠1을독립확인했다. 직접브라우저증상과일치하며원문/초안보존단언후패널단언에서실패했다. 아직뒤대화출처1개단언은미도달이라GREEN에서검증한다. 보완WI5E5A89A3 독립C0/I0로정확2파일범위만확인,원경고를숨기거나정상소급하지않는다. 같은Primary에Workspace두key고정namespace만PRODUCT_GO한다.
