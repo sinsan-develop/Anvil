@@ -1809,3 +1809,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ## 2026-11-01 FN14 준비기록 서버 연결 source 검수
 - 기채택 준비기록 POST/고정GET·동일Tx 실제보호reader·역할binding증빙·fresh/history 연결을 구현했다. Main신규9+인접43=52PASS/type·diff0,등록합성원문3종 실제reader 별도1PASS·QA정확회수/독립부재,독립C0/I0/M0. 근거 docs/04_test_reports/AV3/FN14_PREPARATION_RECORD_SERVER_CONNECTION_RESULT_20261101.md. 화면6은원승인제외로후속결정대상/미변경,등록target reader412·실PG/서비스/Agent/이전/전체FN14·계획미완료다.
+
+
+- **2026-11-01 FN18 개발용 installer source 부분 검수**: 전용 생성/검산·NOT_RELEASE manifest와 maker8.0.1 고정 lock을 구현했다. Main17PASS/type/diff0·독립source/lock C0/I0, 자동script 없는 의존성 준비만 수행했다. NuGet/Squirrel 설정 탐색·내부 출력 상한 근거가 부족해 실제 native build는 차단하며 설치/서명/업데이트/복구·전체FN18은 미완료다. B1 준비 범위 과다·guard실패와B2 경고 미수집도 별도 보존. 상세 FN18_DEVELOPMENT_INSTALLER_SOURCE_RESULT_20261101.md/WORK_STATUS 참조.
