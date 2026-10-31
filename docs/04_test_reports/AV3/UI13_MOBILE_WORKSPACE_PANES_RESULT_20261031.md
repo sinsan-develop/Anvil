@@ -1,4 +1,19 @@
-# UI13 모바일 주 작업 영역 전환 — source 검수
+# UI13 모바일 주 작업 영역 전환 — 구현·검수 이력
+
+## 2026-11-01 KST 최종 보완 판정
+
+**source 구현·메모리 핵심 동작·합성 실제 브라우저 검수 완료.** 실제 서비스·DB/실권한·Agent 연결·사용자 인수 및 전체 UI13·작업계획은 미완료다.
+
+- 최초 실제 화면에서 헌법 패널 4개 중복을 발견해 I1로 유지했다. Main `ca485c`는 실제 App의 같은 순서에서 `4≠1` 행동 RED(native exit1/816.0188ms)를 독립 확인했다. 최초 27 PASS·아래 원 지문·`desktop.png`는 이력이며 정상으로 소급하지 않는다.
+- 보완 WI `UI13_WORKSPACE_PANEL_IDENTITY_FIX_20261031.md` SHA256 `5E5A89A3427CE23703B62A96D5AE01615C114C7F3FDEC2C0AE46C426D1B79E2E`, control `3570d1534b30d6233e9e29892f9dc7e0887b8ffb`에서 Workspace 두 sibling key의 고정 namespace만 추가했다. 역치환하면 원 bytes `7E9A4D64…`가 복원된다. props·주체·순서·mount·다른 제품3은 불변이다.
+- 최종 Workspace SHA256 `17E10C21C5A431A39E6B88618864988DAEBF89D8659FC43ABE3F2B1338B0C540`, 시험 SHA256 `2DBD6DF7A07D73F162663E2A2E7ADA32503A3D052DAD7232A5DF726D53CA5615`. 다른 제품3은 아래 초기 지문과 같다.
+- Main `70fca0`: 동일 다섯 시험 파일의 신규9+인접19 **28 PASS/FAIL0/SKIP0/CANCEL0/TODO0**, 1176.9951ms·exit0, 중복 key 경고0·type/diff0. 수행자의 최종28/1548.6396ms·메모리 build 출력3/모듈487은 별도 증거다. 독립 보완 검수 C0/I0/M0.
+- source5 지문에 결박한 새 HTML `E84F247E1B97B0A6EBB8C903203612AAA871AF0D97216058767B1C55505BC193`를 같은 ego space19에서 실행했다. Main `600511`에서 1920×1080 PC와 430×932 모바일 모두 헌법/대화출처 각각1개, 선택B·native 입력 초안 보존, 가로 넘침0을 확인하고 실제 이미지를 읽었다. pane 전환 요청5→5, 전체 요청은 합성 GET만·미지원0, native crypto 사용이다. DOM을 복제한 mock 화면이 아니라 실제 main/App·CSS이며 DB 없는 합성 transport임을 화면에 표시했다.
+- 실제 Enter 전환·정상 wheel 스크롤로 가려졌던 단계 버튼에 도달한 동작을 확인했다. 초기 캡처 크기 미고정, 자동 스크롤의 footer 가림/PC 링크 viewport 이탈, inline CLI 전달 오류는 원형과 한계를 보존한다. 강제 클릭·스타일 변조·같은 실패 명령 반복·새 space 우회는 하지 않았다.
+- [보완 PC 캡처](UI13_MOBILE_WORKSPACE_PANES_20261031/desktop-r2.png), [보완 모바일 캡처](UI13_MOBILE_WORKSPACE_PANES_20261031/mobile-r2.png), [수정 전 중복 캡처](UI13_MOBILE_WORKSPACE_PANES_20261031/desktop.png), [최종 관측](UI13_MOBILE_WORKSPACE_PANES_20261031/observations-r2.json). 초기 넓은 캡처 두 개는 430px 증거가 아니다. `EVIDENCE_MANIFEST.json` SHA256 `EA1AB4EF788DD3DA293C3DD11E26F7AA89099E968AE1EF3C4A45EC2EB3F29C8C`, 증거12개 hash를 별도 검산했다.
+- `abacaf`에서 `TaskSpace.finish({keep:[]})` 정상 완료, `582bbf`에서 정확 소유 QA23파일/빈 root를 비재귀 회수했다. UTC15:02:57에 원 TTL15:08:47 이내였고 `9f8381` 별도 조회에서 root 부재를 확인했다. 브라우저 상주 앱 전체나 다른 사용자 탭·프로필을 종료한 것이 아니다.
+
+## 최초 source 검수 기록 — 이하 이력 보존
 
 2026-10-31 / Main 어울 / source 구현·메모리 핵심 동작 확인, 실제 시각 QA 진행 전
 

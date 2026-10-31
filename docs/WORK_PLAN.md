@@ -1791,3 +1791,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-31 UI13 같은 모바일 Workspace 영역 전환
 - 승인시안의기존하단4탐색만사용해앞3영역을같은mount로전환하고단계·초안·UNKNOWN을보존하는source기능을연결했다. 실제App표시/소유문맥·승인복귀와별도composition의buffer보존증거를분리한다.
 - Main최종단일27PASS/type·메모리build487/3/diff0·독립C0/I0/M0. 결과 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md. 실제브라우저시각QA는별도진행전,실DB/served·사용자인수/전체UI13·계획미완료. 기존Reactkey경고는후속후보로보존한다.
+
+
+### 2026-11-01 UI13 실제 화면 중복 보완·합성 시각 검수
+- 최초메모리27PASS뒤실제브라우저에서헌법4개중복을발견해I1로열고실App같은반례4≠1을고정했다. Workspace두sibling key의고정namespace2행보정후Main신규9+인접19단일28PASS/경고0·type/diff0·독립C0/I0/M0.
+- 같은최종source5hash에결박한actualApp/CSS합성브라우저에서430/1920·Enter/정상스크롤·pane전환·stage/draft보존·패널각1·가로넘침0을확인했다. 증거와원실패를보존하고ego정상finish/QA정확23파일·root회수/별도부재확인을원TTL안에완료했다. 실제DB/served·사용자인수·전체UI13/계획완료는아니다. 상세 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md 최종절.

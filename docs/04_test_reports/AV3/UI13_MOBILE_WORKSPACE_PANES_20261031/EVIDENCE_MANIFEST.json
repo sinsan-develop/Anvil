@@ -1,0 +1,93 @@
+{
+  "copiedAt": "2026-10-31T15:02:57.541Z",
+  "scope": "SYNTHETIC_ONLY_NOT_SERVED",
+  "originalHtmlSha256": "DA5535FAA5A0424810FC6BC1E99A059ED02B3CFE907180C7FCB52AD513925B93",
+  "fixedHtmlSha256": "E84F247E1B97B0A6EBB8C903203612AAA871AF0D97216058767B1C55505BC193",
+  "diagnostics": [
+    "mobile-chat.png·mobile-steps.png는초기넓은화면캡처이며430px증거가아니다",
+    "desktop.png는최초헌법패널4개실패를보존한다",
+    "desktop-r2.png·mobile-r2.png는보완한source를표시한다"
+  ],
+  "files": [
+    {
+      "name": "mobile-chat.png",
+      "bytes": 80739,
+      "sha256": "804D13D65BEFCFC749A4017B53484148AA1AC66395CE94BC4DAEA86DF0B5425E",
+      "width": 1928,
+      "height": 1078
+    },
+    {
+      "name": "mobile-steps.png",
+      "bytes": 63949,
+      "sha256": "E49FD2BFA5E88D3F1A57544224110E261D42DB9D6A23BE6E254640538FDBCC07",
+      "width": 1928,
+      "height": 1078
+    },
+    {
+      "name": "mobile-chat-430.png",
+      "bytes": 45183,
+      "sha256": "1BFA2EB57B323A9FAC718346B1F139CA633E1CBEDEE933CF2776D43718EE1910",
+      "width": 430,
+      "height": 932
+    },
+    {
+      "name": "mobile-steps-430.png",
+      "bytes": 48610,
+      "sha256": "10EE9E2E1307A8D1C7E509B3AEB51C64083B9F7C564E6E3A040E396B4B8A73B9",
+      "width": 430,
+      "height": 932
+    },
+    {
+      "name": "mobile-docs-430.png",
+      "bytes": 35734,
+      "sha256": "8B67A337A25A45F3B9FFCF461FA32D1EF136BA9D5B7DB2A61F6CEBCDD630957E",
+      "width": 430,
+      "height": 932
+    },
+    {
+      "name": "mobile-chat-draft-430.png",
+      "bytes": 41025,
+      "sha256": "9C32AD4A20B66A13FEC096AC28C5E0D1094026456FE24922CEDF52462CB8E458",
+      "width": 430,
+      "height": 932
+    },
+    {
+      "name": "mobile-wide.png",
+      "bytes": 67825,
+      "sha256": "E4D2BDAE13F28BFFFD4345A18E4FCD17FD34C43E81DF015569F3391FD67B17BA",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "desktop.png",
+      "bytes": 129584,
+      "sha256": "2EEE5E30EF2F7556BA504CE3379DA1CE600D733EB5666434D39DFDA756B70B4A",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "desktop-r2.png",
+      "bytes": 136251,
+      "sha256": "7B55B997FB0006A0D7C158277DF4D11EA429A68BC32ABE68CF90DF0BC17F7F09",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "name": "mobile-r2.png",
+      "bytes": 39251,
+      "sha256": "56C181AA2C8DEE3243F4FE9374DC4F9E18D4EE2FD922E6B94D73880F7AC5A9C3",
+      "width": 430,
+      "height": 932
+    },
+    {
+      "name": "observations.json",
+      "bytes": 3555,
+      "sha256": "E585084CFB81A3CAEF9EF2D626017974E3BED732C234FE467D00EEE552409C11"
+    },
+    {
+      "name": "observations-r2.json",
+      "bytes": 2236,
+      "sha256": "B15791C87DCA6D183DC5A78A585921C4E45CEB578CC07EC3FC9F82B3CB86E279"
+    }
+  ]
+}

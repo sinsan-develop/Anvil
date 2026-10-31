@@ -10971,3 +10971,13 @@
 - 독립읽기에서WorkspacePage68~69의두자료sibling ProjectConstitutionPanel/WorkspaceConversationSources key가동일project/user/client tuple임을확인했다. 다른부모ConversationPanel은이충돌대상이아니다. 단독원인은같은반례수정전후검증까지보류한다. Primary에기존신규UI13시험만정확1개패널/상태보존반례를추가지시/제품GO전수정0이다.
 - UI13_WORKSPACE_PANEL_IDENTITY_FIX_20261031.md에WorkspacePage+기존신규시험2파일만허용하는보완을작성했다. App/Navigation/CSS/API/권한·실제DB/키서비스Agent변경0·Main제품쓰기0,기존잘못된4개패널캡처/HTML은원형보존하고정상소급0이다. 현재QA원수명15:08:47Z전정리조건은그대로다.
 - Mainca485c는동결시험2DBD6DF7/제품Workspace7E9A4D64 불변확인후같은실App반례에서0PASS/1FAIL·nativeexit1/816.0188ms·헌법4≠1을독립확인했다. 직접브라우저증상과일치하며원문/초안보존단언후패널단언에서실패했다. 아직뒤대화출처1개단언은미도달이라GREEN에서검증한다. 보완WI5E5A89A3 독립C0/I0로정확2파일범위만확인,원경고를숨기거나정상소급하지않는다. 같은Primary에Workspace두key고정namespace만PRODUCT_GO한다.
+
+
+## 2026-10-31 UI13 중복 패널 한정 보정 GREEN·실화면 재검수 등록
+- Primary는Workspace두key에고정namespace만추가했고역치환원7E9A4D64복원을확인했다. 새Workspace17E10C21/시험2DBD6DF7,다른App/Nav/CSS불변이다. Main70fca0 같은최종지문에서신규9+인접19 단일28PASS/FAIL0/SKIP0/CANCEL0/TODO0·1176.9951ms,중복key경고0/type·diff0을확인했다. 원4개실패/초기27PASS·경고46회는역사로보존한다.
+- 같은QAroot·기존15:08:47.1969973Z 수명안에새index-r2.html(create-new),round-09.mjs,round-10.mjs,desktop-r2.png,mobile-r2.png,observations-r2.json을추가등록한다. 원index DA5535FA·기존캡처/관측원형을덮지않고새최종5hash를메타에결박한다. 같은ego space19/p1로새HTML을열어동일행동후각패널1개·stage/draft보존/외부통신0을확인한다. 정상검수뒤TaskSpace.finish와정확QAroot회수를원수명안에서수행한다. 실제DB키권한서비스Agent·사용자/백업파일조사0이다.
+
+## 2026-11-01 UI13 실제 보완 검수·QA 회수 완료
+- 최종sourceWorkspace17E10C21/test2DBD6DF7의새index-r2 E84F247E를같은ego19/p1에서실행했다. round09의같은session49186을재실행없이poll해600511 exit0을수신했다. PC1920x1080/모바일430x932모두헌법·대화출처패널각1·선택B/draft보존·가로넘침0,Nativecrypto/Enter·pane요청5→5·전체합성GET/미지원0을확인하고두실제이미지를Main이읽었다. 원4개실패/초기잘못명명캡처를정상으로소급하지않는다.
+- abacaf에서원수명안에TaskSpace.finish keep[] 정상완료. 582bbf는23QA파일의정확목록/소유SINSAN\cyhuh·nonlink/절대경계검증후증거12개만프로젝트결과경로에해시동일복사하고23파일과빈root를비재귀회수했다. UTC15:02:57<deadline15:08:47,9f8381별도조회에서root부재·증거12hash일치/manifestEA1AB4EF 확인. 현재브라우저제어/QA process pending0이며다른사용자탭/서비스/DB/키/권한·Agent변경0이다.
+- UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md의최종판정은source·메모리·합성실브라우저핵심검수완료이고실제served/DB·사용자인수·전체UI13/Stage/계획미완료를유지한다. 단일28PASS/경고0/type/diff0와처음27PASS뒤발견된I1의RED→GREEN을분리했다. 기존scope내Workspace키2행보완만통합하며Main코드직접수정0,보호3/원복구자료/main을유지한다.

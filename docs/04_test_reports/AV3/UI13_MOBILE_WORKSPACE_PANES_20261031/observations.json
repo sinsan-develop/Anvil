@@ -1,0 +1,119 @@
+{
+  "observedAt": "2026-10-31T14:49:01.119Z",
+  "mobile": {
+    "width": 430,
+    "height": 932,
+    "route": "#/projects/ab130031-0000-4000-8000-000000000001/mobile",
+    "draftPreserved": true,
+    "stagePreserved": true,
+    "requests": [
+      {
+        "path": "/api/v1/session",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/conversations?limit=50",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/methodology-application",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      }
+    ],
+    "unsupported": [],
+    "visible": [
+      "총괄 작업"
+    ],
+    "horizontalOverflow": false
+  },
+  "wide": {
+    "width": 1920,
+    "height": 1080,
+    "scrollY": 0,
+    "columns": "1668.8px",
+    "shown": [
+      "총괄 작업"
+    ]
+  },
+  "desktop": {
+    "width": 1920,
+    "height": 1080,
+    "route": "#/projects/ab130031-0000-4000-8000-000000000001/workspace",
+    "columns": "240px 1140.8px 260px",
+    "shown": [
+      {
+        "label": "개발 절차",
+        "hidden": false,
+        "display": "block"
+      },
+      {
+        "label": "총괄 작업",
+        "hidden": false,
+        "display": "block"
+      },
+      {
+        "label": "프로젝트 자료",
+        "hidden": false,
+        "display": "block"
+      }
+    ],
+    "horizontalOverflow": false,
+    "source": {
+      "kind": "ANVIL_UI13_SYNTHETIC_VISUAL_QA",
+      "createdUtc": "2026-10-31T14:40:51.529Z",
+      "startedUtc": "2026-10-31T14:38:47.1969973Z",
+      "source": {
+        "apps/web/src/App.tsx": "A671D1A20CF20BE1A484D00EC96D9AAC6A119C86FBF30E6D7B17A254288CBCA0",
+        "apps/web/src/features/workspace/WorkspacePage.tsx": "7E9A4D645369347854ADAFACEBE52924D31E158E816F48A6497D77D54BCE7001",
+        "apps/web/src/features/mobile/MobileNavigation.tsx": "BE01680B4EB8157EF4ABD108C668F8B7EC01096DFD1F47DABAF95584DECF9EFE",
+        "apps/web/src/features/mobile/mobile.css": "5DE25856855D3C2E3D77158DA7D2ADE4C7F3647FC5675812F1D6AD6F88C94669",
+        "tests/unit/UI13/mobile-workspace-panes.test.ts": "4F967C1E162B1E9133767E14C80043D8FF882B0359E9E62FA86709EB174519DD"
+      },
+      "network": "BLOCKED",
+      "server": false,
+      "sourceOnly": true
+    },
+    "requests": [
+      {
+        "path": "/api/v1/session",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/conversations?limit=50",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/methodology-application",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      }
+    ],
+    "unsupported": []
+  },
+  "keyboardRound06": "Enter presses completed before PC click timeout",
+  "earlierFailures": [
+    "round02 capture viewport not pinned",
+    "round04 footer interception resolved by normal wheel",
+    "round06 PC link above viewport resolved by normal wheel",
+    "inline observation syntax failed before execution"
+  ]
+}

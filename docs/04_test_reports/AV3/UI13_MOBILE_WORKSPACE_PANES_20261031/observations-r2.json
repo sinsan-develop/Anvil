@@ -1,0 +1,71 @@
+{
+  "observedAt": "2026-10-31T15:00:49.116Z",
+  "paneRequestsBefore": 5,
+  "paneRequestsAfter": 5,
+  "desktop": {
+    "width": 1920,
+    "height": 1080,
+    "columns": "240px 1140.8px 260px",
+    "constitutionPanels": 1,
+    "conversationSources": 1,
+    "draftPreserved": true,
+    "stagePreserved": true,
+    "overflow": false
+  },
+  "mobile": {
+    "width": 430,
+    "height": 932,
+    "constitutionPanels": 1,
+    "conversationSources": 1,
+    "draftPreserved": true,
+    "stagePreserved": true,
+    "visible": [
+      "총괄 작업"
+    ],
+    "overflow": false,
+    "nativeCrypto": true,
+    "requests": [
+      {
+        "path": "/api/v1/session",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/conversations?limit=50",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001/methodology-application",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      },
+      {
+        "path": "/api/v1/projects/ab130031-0000-4000-8000-000000000001",
+        "method": "GET"
+      }
+    ],
+    "unsupported": [],
+    "source": {
+      "kind": "ANVIL_UI13_SYNTHETIC_VISUAL_QA",
+      "createdUtc": "2026-10-31T14:59:27.813Z",
+      "startedUtc": "2026-10-31T14:38:47.1969973Z",
+      "source": {
+        "apps/web/src/App.tsx": "A671D1A20CF20BE1A484D00EC96D9AAC6A119C86FBF30E6D7B17A254288CBCA0",
+        "apps/web/src/features/workspace/WorkspacePage.tsx": "17E10C21C5A431A39E6B88618864988DAEBF89D8659FC43ABE3F2B1338B0C540",
+        "apps/web/src/features/mobile/MobileNavigation.tsx": "BE01680B4EB8157EF4ABD108C668F8B7EC01096DFD1F47DABAF95584DECF9EFE",
+        "apps/web/src/features/mobile/mobile.css": "5DE25856855D3C2E3D77158DA7D2ADE4C7F3647FC5675812F1D6AD6F88C94669",
+        "tests/unit/UI13/mobile-workspace-panes.test.ts": "2DBD6DF7A07D73F162663E2A2E7ADA32503A3D052DAD7232A5DF726D53CA5615"
+      },
+      "network": "BLOCKED",
+      "server": false,
+      "sourceOnly": true,
+      "revision": 2
+    }
+  }
+}

@@ -28,13 +28,14 @@ class OwnedChannel extends NativeChannel{constructor(){super();channels.push(thi
 const id=(n:number)=>`ab130031-0000-4000-8000-${String(n).padStart(12,'0')}`,pid=id(1),uid=id(2),cid=id(3),at='2026-10-31T00:00:00.000Z';
 const location={hash:`#/projects/${pid}/mobile`,protocol:'https:'};
 const calls:{path:string;method:string}[]=[];
-let identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)},denyNextProject=false,richProject=false;
+let identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)},denyNextProject=false,richProject=false,projectOwner=false;
 const project={id:pid,name:'모바일 합성 프로젝트',purpose:'같은 작업영역 전환',desiredOutcome:'원입력 보존',version:1,createdAt:at,updatedAt:at,currentMethodologyRef:null,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],participation:'VIEWER',controlState:{actorId:null,clientId:null,generation:null,status:'UNASSIGNED'}};
 const transport:typeof fetch=async(input,init)=>{
  const path=String(input),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','시험은 조회만 허용한다');
  if(path==='/api/v1/session')return Response.json(identity);
- if(/^\/api\/v1\/projects\/[0-9a-f-]+$/.test(path)){if(denyNextProject){denyNextProject=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}return Response.json({...project,id:path.split('/').at(-1),currentMethodologyRef:richProject?applicationRef:null});}
+ if(/^\/api\/v1\/projects\/[0-9a-f-]+$/.test(path)){if(denyNextProject){denyNextProject=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}return Response.json({...project,id:path.split('/').at(-1),currentMethodologyRef:richProject?applicationRef:null,...(projectOwner?{participation:'OWNER',controlState:{actorId:identity.user.id,clientId:identity.clientId,generation:1,status:'HELD'}}:{})});}
  if(path===`/api/v1/projects/${pid}/methodology-application`)return Response.json({projectId:pid,applicationRef:richProject?applicationRef:null,snapshot:richProject?snapshot:null,observedAt:at,executionState:'NOT_CONNECTED'});
+ if(path.startsWith(`/api/v1/projects/${pid}/conversations?`))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
  return Response.json({code:'SYNTHETIC_NOT_SELECTED'},{status:403});
 };
 before(async()=>{
@@ -52,8 +53,8 @@ function labelled(root:MemoryNode,label:string){const n=all(root).find(n=>n.getA
 function hidden(n:MemoryNode){for(let p:MemoryNode|null=n;p;p=p.parentNode)if(p.attributes.has('hidden')||p.getAttribute('aria-hidden')==='true'||p.style.display==='none')return true;return false;}
 async function settle(){await ui.React.act(async()=>{await new Promise<void>(resolve=>setImmediate(resolve));});}
 async function wait(fn:()=>boolean){const end=Date.now()+2500;while(!fn()&&Date.now()<end)await settle();assert.ok(fn(),'실제 App/decoder 준비 완료');}
-async function fixture(methodology=false){
- location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;calls.length=0;
+async function fixture(methodology=false,owner=false){
+ location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;projectOwner=owner;calls.length=0;
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));
  await wait(()=>container.textContent.includes(project.name)&&all(container).some(n=>n.getAttribute('aria-label')==='총괄 작업'));
@@ -152,5 +153,20 @@ test('mobilePane 실제 anchor는 modifier·중간버튼·이미취소된 click�
    await ui.React.act(async()=>target.dispatchEvent(e));await settle();assert.equal(!!e.defaultPrevented,originalPrevented,'수정키/비기본/기취소 이벤트의 기본동작 보존');assert.equal(navItems(f.container)[0]!.getAttribute('aria-current'),'page','pane callback0');assert.equal(target.getAttribute('href'),`#/projects/${pid}/mobile`);
   }
   await ui.React.act(async()=>navItems(f.container)[1]!.dispatchEvent({type:'click',button:0,detail:0}));await settle();assert.equal(navItems(f.container)[1]!.getAttribute('aria-current'),'page','키보드 활성화가 생성하는 button0 click 전환');
+ }finally{await f.close();}
+});
+
+test('mobilePane 실제 App 단계·새대화·PC 왕복 뒤 헌법과 대화출처 패널은 각각 정확 하나다',async()=>{
+ const f=await fixture(true,true);try{
+  const count=(label:string)=>all(f.container).filter(n=>n.getAttribute('aria-label')===label).length;
+  assert.equal(count('프로젝트 적용 헌법'),1,'최초 헌법 한 개');assert.equal(count('사용자 발언·지시 원문 조회'),1,'최초 대화출처 한 개');
+  await click(navItems(f.container)[1]!);await selectSecondStage(f.container);await click(navItems(f.container)[0]!);await click(button(f.container,'새 프로젝트 대화'));
+  await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='대화 원문'));const textarea=labelled(f.container,'대화 원문');
+  // React 소유 onChange를 호출한다. 실제 브라우저 native 입력 증거와 구분한다.
+  const props=(textarea as any)[Object.keys(textarea).find(k=>k.startsWith('__reactProps$'))!];assert.equal(typeof props?.onChange,'function');
+  await ui.React.act(async()=>props.onChange({target:{value:'중복 패널 재현 합성 대화 초안'}}));await settle();
+  await click(navItems(f.container)[2]!);await navigate(`#/projects/${pid}/workspace`);await wait(()=>f.container.textContent.includes(project.name));await navigate(`#/projects/${pid}/mobile`);await wait(()=>f.container.textContent.includes(project.name));await click(navItems(f.container)[2]!);
+  assert.equal(labelled(f.container,'대화 원문').value,'중복 패널 재현 합성 대화 초안','실App buffer 보존');assert.equal(labelled(f.container,'절차 정의: 둘째 단계').getAttribute('aria-pressed'),'true');
+  assert.equal(count('프로젝트 적용 헌법'),1,'동일 Workspace 렌더 뒤 헌법 패널 중복0');assert.equal(count('사용자 발언·지시 원문 조회'),1,'대화출처 패널 중복0');assert.equal(calls.filter(c=>c.method!=='GET').length,0);
  }finally{await f.close();}
 });
