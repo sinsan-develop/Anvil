@@ -10854,3 +10854,10 @@
 - PMO cursor61은 결합안을 상세후보 방향으로 권장했으나 새계약채택/제품구현승인이 아니라고 명시했다. Main/독립reviewer도 §8 exact형식·접근·멱등·원자경계가 미정이므로 구체계약채택안으로는 준비미달/parser·store GO0를 판정했다. 이 후보를 기능구현진도나 전체복원완료로 승격하지 않는다.
 - 다음은 대표문서1종의 비활성 역사원본·비계정주체참조·원본↔파생매핑 논리봉투와 기존contentHash/관계검산·현재조회OWNER·충돌/중복·UNKNOWN/rollback을 구체화하는 최소범위다. 기존Primary는 재사용근거 preflight만 수행하며 새문서수정/source/시험/SQL GO0이다. 다른자료군/자동계정연결/활성복원은미지원, 실제제외·보호3·코드6c643577을 유지한다. PMO에는 이판정과 다음경계를 전달했다.
 - Main 이번 현황 추가의 혼합 CRLF/빈줄 때문에 최초 diff-check exit1이 발생했다. 제품파일 변경 없이 이번 추가구간만 LF/말미공백 정규화했고 원기존이력은 보존했다. 형식오류1이며 제품검증/권한오류가 아니다.
+
+## 2026-10-31 FN16 문서 역사봉투 r2 후보 최종 검수
+- 대표 DOCUMENT_VERSION 논리봉투 후보의 최종 SHA256은 924D7359C4113D87B9C3C16B85682A6221E4A1434C92DDDDCD3EB71BB0BF1285(36214B/222행)이다. Main dfd030과 독립읽기에서 원19201B/4339D2BD prefix 및 최종지문 일치를 확인했다. 중간 ED774D81 방향C0/I0 뒤 nullable stage의 정확snapshot/버전·상태 우선순위를 보완했고, 중간6E9F644F nodeId:UUID Important1은 실제helper 제한문자열로 정확문장1개만 고쳐 최종 scoped C0/I0로 해소했다.
+- 원manifest namespace/비순환hash·문서contentHash와원projection recordHash·비계정opaque참조·증빙/현재OWNER분리·닫힌검증8항목/배타판정·중복/충돌/UNKNOWN/미공개준비회수의 논리형식만 PMO에 한정채택 요청했다. 실제parser/수입저장/publicAPI/DBschema·관계별codec/출처증명·접근영속/crash·제품상한은 채택·구체화 전 GO0다. 아직 NOT_ADOPTED이며 모든 실제기능/전체복원·계획완료와 구분한다.
+- 결정과 별개로 기존Primary는 이미승인된 단계대기열·한도·예약이력 producer와 해당 inventory의 기존 source정합만6파일이내 읽기preflight 중이다. 새writer/제품/시험/SQL/실제DB·권한·키·사용자파일조사·서비스·Agent·일반차단해제0. 완료된35/type 검사는 변경없이 반복하지 않았다. 문서/현황 정확2경로만 보존하며 보호3/기존원문·코드는 유지한다.
+
+- 독립 다음대조는 기존Primary의 지정source6파일 읽기만으로 단계대기열/한도/예약이력의 새 불필요거절·주체치환·원hash재봉인 공백을 확인하지 못했다. 정상 startStage 승인요청/소비형식과 AUTO고아소비거절·한도정책·SEND원저장을 확인했으며 실제START producer 종단은6파일경계밖이라 판정하지 않았다. usageTransitionPersistence NOT_IMPLEMENTED 및 full/restorable=false는 보존된 미완료경계이며 기능완료가 아니다. 신규수정/시험후보0·실행한시험/DB0·QA/handle0으로 반환받았다.

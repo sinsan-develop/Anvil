@@ -108,3 +108,115 @@
 후속 WI의 필수 반례 후보는 다른 출처 동일UUID·동일 ref 상반hash·누락/고아 FK·미지원 주체/자료kind·원UUID 치환 후 원hash 재사용·다른 현재 사용자/소유권·권한 없는 역사 연결·원승인/소비 재사용·원본/파생 혼동·일부 archive만으로 전체 성공 표시·필수 원문/bytes 누락·실패 뒤 결과불명/중복 파생이다.
 
 이 문서는 후보 비교만 수행한다. 대표4계열 밖의 모든 schema/codec 변환은 확인하지 않았다. 기존 collector의 비식별 projection이 원문 전체의 대체가 아님을 유지한다. 새 users/clients·credential·권한·DB schema/API·비밀탐지 기준을 만들지 않으며 실제 실행은 승인하지 않는다. Main 독립 검토와 정확 채택 결정을 거친 뒤 최소 WI를 별도로 고정해야 한다.
+## 10. r2 — DOCUMENT_VERSION 한정 논리봉투 후보
+
+이 부록은 §8 중 대표 문서 버전 1종의 형식·접근·검증·멱등을 구체화하는 **신규 계약 제안 / NOT_ADOPTED**다. 앞선 A/B 비교 이력은 보존한다. 아래 형식은 기존 구현으로 존재한다는 뜻이 아니며 schema/API/SQL·제품 구현 GO는 0이다. 임무·승인 등 다른 자료, 전체 active graph, 자동 파생·현재 계정 연결은 범위 밖이다.
+
+### 10.1 출처와 두 hash의 분리
+
+모든 객체는 명시된 키만 허용하고, 생략과 null을 구분한다. `UUID`·`Hash`·`VersionRef`·`ISOms`는 각각 기존 `uuidV1`·`hashV1`·`refV1`·`isoV1`의 검증 의미를 재사용하는 제안이다. `Hash`는 소문자 64자리 hex, 버전·순번은 해당 원형에 맞는 양의 안전정수다. 임의 UUID 정규화·시각 반올림·원문 치환은 하지 않는다.
+
+```text
+namespace = {kind:'ANVIL_DOCUMENT_HISTORY_NAMESPACE_V1', originProjectId:UUID, sourceManifestHash:Hash}
+namespaceHash = contentHash(canonicalJson(namespace))
+historyRef = {kind:'ANVIL_DOCUMENT_HISTORY_REF_V1', namespaceHash:Hash,
+              originalRef:VersionRef, recordHash:Hash}
+envelope = {kind:'ANVIL_DOCUMENT_HISTORY_ENVELOPE_V1', namespace, namespaceHash,
+            recordSchema:'DOCUMENT_VERSION_PROJECTION_V1', originalRef:VersionRef,
+            originalRecord, recordHash:Hash, principals, evidenceRefs, derivation}
+```
+
+`sourceManifestHash`는 **이 봉투 생성 전에 확정된 원 source manifest**의 hash다. 봉투를 포함할 산출 manifest나 봉투 자신의 hash를 다시 입력하지 않는다. 외부 산출물 hash는 별도로 계산한다. 원 manifest의 정확 bytes/hash 결박과 출처 검증은 별개다. manifest 자기주장·자체 hash 일치만으로 진짜 원 서버/사람/권한을 보증하지 않는다.
+
+역사 키는 `(namespaceHash, 'DOCUMENT_VERSION', originalRef.id, originalRef.version)`이다. 다른 project/manifest의 동일 UUID는 다른 namespace이며 자동 합치지 않는다. 같은 원 project의 서로 다른 manifest도 자동 동일 역사로 승격하지 않는다. 출처 간 대응은 별도 채택 계약 없이는 미지원이다.
+
+`originalRef.contentHash`는 기존 문서의 `{title,formRef,stageNodeRef,content}` 4필드 canonical hash다. `recordHash`는 아래 **허용 projection 전체**의 canonical hash이며 author/client/관계를 포함한다. 원 DB 행의 물리 bytes hash나 기존 문서 contentHash와 동일하다고 표시하지 않는다. 제외열 때문에 원 DB 행 전체 보존을 주장할 수도 없다.
+
+### 10.2 원형 projection과 역사 주체
+
+`originalRecord`의 exact 최상위 키 후보는 `projectId, documentId, version, formRef, stageNodeRef, bodyArtifactId, title, sourceRefs, content, contentHash, sections, authorRef, validation, reason, clientId, commandRecordId, createdAt`이다. 이는 `document-inventory.ts:21`의 선택열과 문서 버전 DDL의 논리 대응이며 새로운 원형 codec 제안이다. `commandRecordId`는 내부 `commands.id`이고 외부 commandId로 대체하지 않는다. `projectId`는 namespace의 originProjectId, id/version/contentHash는 originalRef와 정확히 일치해야 한다.
+
+`content`는 기존 `{body,attachments,sections,sourceRefs}` 원형을 유지한다. ArtifactRef는 `{artifactId,bytes,contentHash,mediaType}`다. `formRef`는 기존 원 ref/decoder 의미를 유지한다. `stageNodeRef`는 실제 원형인 `null | {applicationId:UUID,nodeId:string}`이며 nodeId는 기존 `readStageNodeRef`의 비어 있지 않은 well-formed 문자열(length<=200, 제어문자 금지)로 UUID가 아니고 `implement` 같은 기존 값도 허용하며, application 버전을 자체 필드로 갖지 않는다. `authorRef`는 이 한정안에서 `{kind:'HUMAN',userId:UUID}`만 허용하며 다른 원형을 HUMAN으로 변환하지 않는다. `validation`은 기존 저장 JSON을 보존하되, 이를 현재 유효 판정으로 다시 해석하지 않는다. 중첩 원형의 등록 codec이 없거나 원 저장 형식과 다르면 `UNSUPPORTED`다. 단지 JSON 파싱 성공을 의미 검증 성공으로 세지 않는다.
+
+`principals`는 exact `{user,client}`이고 다음 키 외 계정 필드를 허용하지 않는다.
+
+```text
+user   = {kind:'HISTORICAL_USER_REF_V1', namespaceHash:Hash, userId:UUID}
+client = {kind:'HISTORICAL_CLIENT_REF_V1', namespaceHash:Hash, userId:UUID, clientId:UUID}
+```
+
+userId는 원 authorRef.userId와, clientId는 원 record.clientId와 일치해야 한다. client.userId는 user.userId와 일치해야 한다. **그 값의 일치만으로 원 client↔user 관계를 증명하지 않는다.** 원 source manifest에 결박된 해당 관계 증빙 및 관련 command/receipt/audit의 주체 대응을 별도 검산해야 한다. 관계 증빙의 exact export codec은 채택·구현 전까지 미지원이다.
+
+사용자명·표시명·이메일·상태·role·serverOwner·password/hash·credentialGeneration·session/token/CSRF·키·client 이름/기기정보 등은 이 주체 봉투의 비반출 필드다. 원 users/clients 행을 수입하거나 fake 계정/FK 대체행을 생성하지 않는다. opaque UUID는 비권한 식별자이며 익명성이나 현재 사용자 동일성을 보증하지 않는다. 허용키/제외열 검사와 본문 내 기존 비밀 검사 범위도 별개다. 새 비밀 탐지 기준을 이 후보에서 만들지 않는다.
+
+### 10.3 증빙 참조 폐쇄와 현재 접근 분리
+
+`evidenceRefs`는 exact `{kind:'SOURCE_HISTORY_EVIDENCE_REF_V1',namespaceHash,recordKind,key,recordHash}`의 유한 배열이다. `recordKind`별 `key`는 다음 제안만 허용하며, key 배열은 순서·길이·타입이 고정된다. 다른 namespace를 숨겨 연결하거나 임의 VersionRef로 위장하지 않는다.
+
+| recordKind | key 후보 | 필수 검산 |
+| --- | --- | --- |
+| DOCUMENT_HEAD | [documentId] | 원 document 귀속·원 작성 주체 및 버전 관계 |
+| FORM_VERSION | [formId, version] | 원 formRef 전체 hash·필수 항목 |
+| METHODOLOGY_APPLICATION | [applicationId, version] | stageNodeRef가 nonnull일 때만 필수. sourceManifest에 고정된 정확 application snapshot VersionRef와 원행의 application_version/snapshot_hash 관계를 검산해 version을 결정하고 원 노드 귀속을 검산. caller 추정·최신 조회 금지 |
+| ARTIFACT_METADATA | [artifactId] | 정확 bytes/hash/mediaType·원 상태/검사 정보 |
+| DOCUMENT_ARTIFACT_LINK | [documentId, version, artifactId, linkKind] | BODY/ATTACHMENT/SOURCE별 정확 귀속·중복·누락 |
+| PROJECT_COMMAND | [internalCommandRecordId] | 원 operation/대상/주체/결과·원 receipt/audit 대응 |
+| AUTHORIZATION_RECEIPT | [receiptId] | 원 PROJECT scope/명령/주체/시각·결과 결박 |
+| AUDIT_EVENT | [sequence, eventId] | 안전정수 순번·원 command/operation/주체·정확 cardinality |
+| PRINCIPAL_LINK | [userId, clientId] | 원 관계의 source 결박; 실제 계정행 반출0 |
+
+stageNodeRef가 nonnull인데 고정된 exact application snapshot/관계 증빙이 없으면 `MISSING`, 해당 원형/관계 codec이 지원되지 않으면 `UNSUPPORTED`다. null이면 application evidence는 불필요하며 임의 생성하지 않는다. 이 경우에도 form 검산은 항상 필수이고, `formStageRelations`는 form 검산과 원 stageNodeRef가 실제 null임을 확인한 결과로 판정한다. null을 이유로 form 검산을 생략하거나 수행하지 않은 application 검산을 성공으로 세지 않는다.
+
+이 표는 새 논리 참조 형식 후보다. 비버전 원행의 `recordHash`는 각 등록 projection codec의 hash이며 기존 표에 그 hash 열이 있다고 주장하지 않는다. source link 등 원 content의 추가 관계가 있으면 원 참조별 필수 폐쇄 항목으로 포함해야 한다. 표의 참조만 존재하고 해당 원문·관계 codec/검산이 없으면 폐쇄 성공이 아니다. 원 command 전체 서명·서버 진위 검증이 기존 문서 hash 검사로 제공된다고 주장하지 않는다.
+
+읽는 현재 주체는 현재 인증·대상 역사 보관영역의 OWNER/읽기 보호를 매 요청 확인한다. 역사 author/client·originProjectId·bundle 소지만으로 접근을 허가하지 않는다. 현재 조회자 정보는 원 record에 삽입하거나 원 주체로 위장하지 않는다. 이 보관영역의 실제 접근 저장 모델/endpoint는 아직 미채택이다.
+
+`derivation`은 exact `{kind:'DOCUMENT_DERIVATION_SLOT_V1',sourceHistoryRef:historyRef,currentAccountLink:null,derivedRef:null,state:'NOT_CREATED_UNSUPPORTED'}`로 고정한다. 이는 계보 슬롯일 뿐 현재 계정/권한 연결이 아니다. writer를 실행하지 않으며 현재 graph를 생성하지 않는다. 원 승인·소비·APPLIED 상태를 현재 허가로 재사용하지 않는다. 단순 archive 성공은 full restore/작업 재개 완료가 아니다.
+
+### 10.4 닫힌 검증 결과와 재사용 근거
+
+결과 후보는 exact `{kind:'DOCUMENT_HISTORY_VALIDATION_V1',historyRef,checks,historyState,currentGraphState:'NOT_CREATED_UNSUPPORTED',currentAccountLink:null,derivedRef:null,fullRestore:false,executionAuthorized:false}`다. `checks`의 exact 키는 `sourceBinding,recordHash,documentContentHash,principalRelation,formStageRelations,artifactLinks,commandReceiptAudit,artifactBytes`이며 각 값은 `NOT_RUN|VERIFIED|MISSING|UNSUPPORTED|MISMATCH` 중 하나다. 미수행·미지원·누락을 같은 성공 값으로 뭉개지 않는다.
+
+`historyState`는 아래 우선순위에서 **처음 해당하는 한 행만** 선택한다. 구조상 잘못된 봉투(키/타입/enum/필수 필드 위반)는 validation 결과 생성 전에 `REJECTED`하며 잘못된 결과 객체를 만들지 않는다. 구조상 유효한 결과의 각 check는 앞서 정한 5값만 허용한다. `recordHash`도 필수 검산이며 sourceBinding만 별도로 분리한다.
+
+| 우선순위 | 배타 판정 조건(앞선 행에 해당하지 않을 때) | historyState |
+| --- | --- | --- |
+| 1 | checks 중 MISMATCH가 하나라도 있음 | INVALID |
+| 2 | recordHash의 실제 검산이 VERIFIED이고, 다른 7개 check가 모두 NOT_RUN인 순수 봉투 검산만 수행됨 | ENVELOPE_ONLY |
+| 3 | sourceBinding을 제외한 나머지 필수 check 중 NOT_RUN/MISSING/UNSUPPORTED가 하나라도 있음 | INCOMPLETE |
+| 4 | sourceBinding 외 모든 필수 check가 VERIFIED이고, sourceBinding만 NOT_RUN/MISSING/UNSUPPORTED | SOURCE_UNVERIFIED |
+| 5 | sourceBinding을 포함한 모든 필수 check가 VERIFIED | HISTORICAL_DOCUMENT_VERIFIED |
+
+따라서 순수 봉투 검산의 ENVELOPE_ONLY는 일반 미수행의 INCOMPLETE보다 먼저 분류하며, 일부 semantic 검산만 수행했다면 INCOMPLETE다. recordHash 미수행/누락/미지원도 INCOMPLETE이며, 어떤 단계의 불일치도 INVALID가 우선한다. sourceBinding만 미확인인 경우는 나머지 필수 검산 전부가 VERIFIED일 때에만 SOURCE_UNVERIFIED다. 유효한 5값의 모든 조합은 위 표로 닫히며 알 수 없는 값은 구조 거절한다. HISTORICAL_DOCUMENT_VERIFIED도 문서 1종에만 해당하고 `VERIFIED_FULL`은 발급하지 않는다. 원문·참조·실bytes 미지원 상태에서 hash 자기일치만으로 승격하지 않는다.
+
+| 실제 재사용 심볼·근거 | 재사용 가능 범위 / 제공하지 않는 것 |
+| --- | --- |
+| `contracts/canonical.ts`의 `canonicalJson`, `contentHash`; `contracts/runtime/validation-v1.ts`의 `recordV1`, `uuidV1`, `refV1`, `hashV1`, `isoV1` | 닫힌 키·유한 JSON·정확 ref/ISOms·canonical UTF-8 hash. 출처 진위/권한/관계 증명은 아님 |
+| `project-documents.ts:185,204` 및 `document-inventory.ts:145~157` | 문서 4필드 hash, 원 content/별도 열 일치, artifact 선언/링크 관계의 기존 검산 근거. source 계정 복원이나 command 전체 서명 검증 아님 |
+| `document-stage.ts`의 `readStageNodeRef`, `document-validation.ts`의 `validateDocumentConfirmation` | 기존 stage 원형 및 문서 검증 의미의 재사용 접점. 현재 DB/원문·관계 의존성을 제거한 독립 bundle decoder가 이미 있다는 뜻 아님 |
+| `project-documents.ts:160~185`의 저장 검산 | body UTF-8·sections/form 필수·첨부 중복 등 별도 의미 검산 필요 근거. 과거 저장 validation JSON만 믿어 이를 생략하지 않음 |
+| `artifact-byte-verification.ts`의 `verifyArtifactBytes` | 공급받은 bytes의 유한 읽기/정확 hash·크기 검산 접점. 원 source/현재 store 전체성·복원 가능성·실제 공급을 보증하지 않음 |
+
+`ProjectDocuments.read`와 `collectDocumentInventory`는 현재 DB/회원/원문 저장소 보호를 포함하므로 bundle용 순수 decoder라고 호출하거나 보호를 우회하지 않는다. 현재 코드가 수행하는 문서 검산과 이 후보에서 새로 필요한 관계/export codec·sourceBinding은 별도 구현/검수 대상이다.
+
+기존 ArtifactRef bytes 상한은 20MiB(20,971,520), mediaType 길이는 200이며 이를 근거로만 재사용 제안한다(`project-documents.ts:32`, `document-inventory.ts:150`). 문서 조회 batching의 200은 전체 봉투 참조 상한이 아니다. `readDocumentInventoryInput`의 `InventoryLimits`는 양의 안전정수 `metadataBytes,inputBytes,fileCount,deadlineMs`를 받지만 고정 최대값을 정의하지 않는다. 이 후보는 시험 수치를 제품 상한으로 채택하지 않는다. 새 봉투 총 bytes/행수/증빙수·원자 준비 공간의 고정 최대값은 **채택 전 새 결정 항목**이며 미설정이면 수입 시작 불가다. 기존 수동정책/원장 한도가 자동 적용된다고 주장하지 않는다.
+
+### 10.5 논리 저장·재수입·취소·비파괴 rollback
+
+다음은 구현 전 채택할 논리 원자 경계의 제안이다. 검증 준비는 비공개이며, 공개 역사 행+필수 참조+불변 결과를 하나의 논리 commit으로 확정해야 한다. 실제 저장 매체/transaction·crash 복구 구현이 없는 현재 이를 원자성 검증 완료로 부르지 않는다.
+
+| 결과 상태 | 정확 조건과 허용 후속 행동 |
+| --- | --- |
+| PREPARED | 고정 namespace/키/recordHash·유한 입력과 검증 결과를 결박했으나 공개 행0. 미지원 검증은 그대로 기록하며 검증된 원형으로 표시0 |
+| COMMITTED | 원자 commit 및 정확 결과 ref/readback이 확인됨. 저장 결과와 의미 검증 결과는 별도이며 ENVELOPE_ONLY 저장을 VERIFIED로 승격0 |
+| REPLAY_EXISTING | 같은 역사 키·원 contentHash·recordHash 및 결정적 봉투/참조가 정확 동일하고 현재 읽기 보호가 통과. 기존 ref 반환·새 역사/매핑 행0·새 권한0 |
+| CONFLICT | 같은 키에서 상반 hash/원형/참조. 덮기·새 버전으로 자동 해결·출처 합치기0. 다른 namespace는 별도이고 자동 중복 제거0 |
+| REJECTED | 형식/크기/주체 허용키/명확 관계 불일치 등 commit 전 명확 거절. 원 source/기존 역사 변경0 |
+| CANCELLED_BEFORE_COMMIT | commit이 없고 원자 rollback·본 시도의 비공개 준비 회수가 확인된 경우만. 이미 COMMITTED면 취소로 삭제하지 않음 |
+| UNKNOWN | commit/결과/정리 여부 불명. 고정 시도·키·hash·관측을 보존하고 자동 재수입·새 시도·삭제0. 같은 시도의 보호된 결과 확인으로만 확정 상태로 이동 |
+
+멱등 확인은 동일 키의 불변 원형/증빙 일치까지 포함하며 한 번의 빈 조회만으로 미commit을 단정하지 않는다. COMMITTED 이후 취소 요청은 확정 결과를 보존하고 자동 삭제하지 않는다. rollback은 본 시도 소유의 **미공개 준비**만 회수하며 원 source/기존 역사/다른 시도를 재작성·삭제하지 않는다. 회수 결과가 불명이면 UNKNOWN이다. 현재 graph는 생성하지 않으므로 그 rollback을 구현했다고 주장하지 않는다. 향후 B의 실제 파생/현재 head 반영·후속 변경 보상은 별도 미채택 계약이다.
+
+### 10.6 정확 채택에 남은 결정
+
+이 부록의 namespace/projection/opaque 주체/증빙 키·결과 상태·멱등 원자 경계는 모두 신규 제안이다. 채택 전에는 (1) DOCUMENT_VERSION 및 각 필수 관계/PRINCIPAL_LINK의 export codec과 제외열 검산, (2) 원 source 진위·manifest 결박 근거와 미지원 처리, (3) 역사 보관영역의 현재 접근·불변 저장/UNKNOWN 조정·취소 권한, (4) 봉투/관계/행수/공간의 유한 수치와 실제 crash 복구 경계를 확정해야 한다. 현재 계정 연결·active graph 변환·다른 자료 종류는 미지원으로 남기며 이 부록을 근거로 새 users/clients·권한·현재 자료를 생성하지 않는다. 실제 DB/키/파일·서비스/Agent/복원 실행 및 제품 구현 승인은 0이다.
