@@ -10929,3 +10929,9 @@
 - WI A02C5AA3/control5dd71980의 신규시험1 A48FE630/19274B를 기존Primary가 구현·writer반환했다. Main0d2c2d 신규4+직접reader5 9PASS/FAIL0/SKIP0/TODO0/CANCEL0·649.6982ms/exit0, b07ef1 type/diff/newfile공백·지문0이며 제품3/기존시험불변이다. 독립동일지문C0/I0/M0. 기존동작그대로PASS이며제품RED→GREEN주장0·불변전체검사반복0이다.
 - 실제부모fullref A→B에서늦은A를폐기한뒤A재진입·늦은401폐기·Stage최종JSON/nativeDigest완료후반환hold중닫기를검증했다. 먼저A로복귀후옛응답을푸는같은객체ABA시험은아니다. GETonly/POST·자동GET·부모callback0/편집buffer불변,finally gate/native/global/root/ownedchannel회수·Node정상종료/QA0이다. 실브라우저·서버·DB·사용자인수는NOT_RUN/전체UI10·FN05·계획미완료를유지한다.
 - 기존Page118 ScopePicker/125 DocumentPicker의같은tuple Reactkey경고는수행자최종26회/Main관측으로보존했다. 경고숨김0/제품보정0·실누락/손상미증명이며다음좁은결함보완후보로분리한다. 준비오류는추정경로1/Viteentry1/PSquoting1로제품실패와구분한다. 결과 docs/04_test_reports/AV3/UI10_SCOPE_ORIGINAL_BOUNDARY_RESULT_20261031.md.
+
+
+## 2026-10-31 UI10 보존·다음 UI13 미연결 기능 선정
+- UI10 신규시험/결과/계획/현황 정확4를 eee88797aa84ea255f09d2462abc3eeb07d0790f로 기존private branch에 게시했다. 제품/기존시험변경0·보호3보존. 결과의범위는메모리행동검수이며전체기능·계획완료가아니다.
+- 기존Reviewer의독립다음대조에서UI12인계와UI05결과보완은이미소비연결돼있어재구현하지않는다. UI13은승인HTML core-workflow/index.html SHA8B76BDE3의하단4탐색/같은Workspace표시전환과달리앞3이별도route로움직여선택단계local상태를잃는미연결을확인했다. 처음제안한내부3탭추가는승인시안근거가없어폐기했고기존하단4개만사용한다.
+- 기존Primary읽기도App/MobileNavigation/Workspace소비선을대조했고임무/대화상위buffer재작성없이제품4·신규시험1로연결가능함을반환했다. WI UI13_MOBILE_WORKSPACE_PANES_IMPLEMENTATION_20261031.md SHA7646871F6A949A2E27188F746C063CD12268374E3832A774CB6DB9B9BE8D8E75는TEST_ONLY→Main행동RED→PRODUCT_GO를분리하며독립경계검수중이다. Main제품쓰기0/신규UI코드GO전/실제제외유지다.
