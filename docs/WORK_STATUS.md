@@ -1,5 +1,12 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN16 수동 백업 정책 저장 r2 A 직접승인 재개
+- Main c38a05는기존8시작지문일치/신규14부재를확인했다. WI docs/work_packages/FN16_MANUAL_POLICY_STORAGE_SOURCE_IMPLEMENTATION_20261031.md SHA03094CEDBABAF1AD937CD0B42379F38117D5461729989EDE6C7A690BF8FF802F의독립사전검수는C0/I0이다. 직접승인/WI/현황3통제문서만기존privatebranch에게시후같은Primary정확22 TDD GO를전달한다. 구현/실SQL합격주장0·Main동시코드쓰기0이다.
+- 신산님최신직접승인이후보53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E+원158E10BC의A를채택했다. 직접승인 docs/work_packages/FN16_MANUAL_POLICY_STORAGE_SOURCE_DIRECT_APPROVAL_20261031.md SHA00B3FC72B8B85FD1EACEB143C8DC42B4686561768FD8D214413F5B82DB693902를보존했다. 과거후보/차단감사는이력이며현재목표active·동일승인재질문0·새차단감사횟수새로계산한다.
+- Main a8356a는시작HEAD7bc6818f88399621fa73357da462bc0295b35b59 local/private동일·trackedclean/보호3·mainf976불변/후보hash일치를확인했다. 기존Primary는정확허용파일/시작hash·새파일/0063번호부재를읽기preflight중이다. Main이정확WI/독립검수·통제문서게시뒤같은담당에게TDD GO를전달한다. Main동시코드write0이다.
+- 기존Reviewer의읽기접점검토는동일Tx 보호참조내부조회/SELECTED_FILES와전체coverage분리·기본412/승인후보원문·replay분리·누적3표한도/현재성/늦은UI응답검산을요구했다. 후보채택은실profile·키가용성/실DB권위가아니며기존참조read와소비자guard를보존한다.
+- 현재1단계기능구현중이며실제DB/권한·키/사용자파일조사/서비스/Agent·기존project일반차단해제0·미적용SQL만허용된다. 완료FN08소스/시험재실행0·새branch/worktree/agent/자동화0·전체FN16/계획완료아니다.
+
 ## 2026-10-31 FN16 r2 동일 계약 미응답 세 번째 차수 — 차단 감사
 - 직전차수는동일새계약미응답확인·현황기록뿐인no progress였다. 이번1ed0e7은HEADf851b76d3f47fb29b4119b4d221da552ec0f5feb local/private동일·trackedclean/보호3보존·mainf976불변을확인했다. 후보53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E도동일하다. 완료FN08 검증은반복하지않았다.
 - 원차수PMO53의정확FN16 A/B질문→후속54미응답→현재54변경없음으로같은새저장/조회·승인후보·누적상한계약미채택이세목표차수반복됐다. 이전직접승인으로해소한FN08 횟수는상속하지않았다. PMO는idle/terminal이고기존Primary/Reviewer둘다completed·writer/QA/livehandle0이다. verified wait나진행중작업으로가장하지않는다.
