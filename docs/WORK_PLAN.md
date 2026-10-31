@@ -1786,3 +1786,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-10-31 UI10 관련 고정 원문 경계 보완
 - 신규시험1·제품불변. Main 신규4+reader5 단일9PASS/type/diff0·독립C0/I0/M0. 실제부모교체/늦은401·Stage최종JSON/nativehash반환중닫기 메모리행동검증이며 실제브라우저/DB/사용자인수·전체업무미완료. 결과 UI10_SCOPE_ORIGINAL_BOUNDARY_RESULT_20261031.md.
 - 부모 A→B에서늦은A폐기후A재진입순서이며먼저A복귀후응답해제의같은객체ABA증거로확대하지않는다. 기존React중복key경고는별도결함후보로보존한다.
+
+
+### 2026-10-31 UI13 같은 모바일 Workspace 영역 전환
+- 승인시안의기존하단4탐색만사용해앞3영역을같은mount로전환하고단계·초안·UNKNOWN을보존하는source기능을연결했다. 실제App표시/소유문맥·승인복귀와별도composition의buffer보존증거를분리한다.
+- Main최종단일27PASS/type·메모리build487/3/diff0·독립C0/I0/M0. 결과 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md. 실제브라우저시각QA는별도진행전,실DB/served·사용자인수/전체UI13·계획미완료. 기존Reactkey경고는후속후보로보존한다.

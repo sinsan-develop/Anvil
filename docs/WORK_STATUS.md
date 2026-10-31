@@ -10935,3 +10935,25 @@
 - UI10 신규시험/결과/계획/현황 정확4를 eee88797aa84ea255f09d2462abc3eeb07d0790f로 기존private branch에 게시했다. 제품/기존시험변경0·보호3보존. 결과의범위는메모리행동검수이며전체기능·계획완료가아니다.
 - 기존Reviewer의독립다음대조에서UI12인계와UI05결과보완은이미소비연결돼있어재구현하지않는다. UI13은승인HTML core-workflow/index.html SHA8B76BDE3의하단4탐색/같은Workspace표시전환과달리앞3이별도route로움직여선택단계local상태를잃는미연결을확인했다. 처음제안한내부3탭추가는승인시안근거가없어폐기했고기존하단4개만사용한다.
 - 기존Primary읽기도App/MobileNavigation/Workspace소비선을대조했고임무/대화상위buffer재작성없이제품4·신규시험1로연결가능함을반환했다. WI UI13_MOBILE_WORKSPACE_PANES_IMPLEMENTATION_20261031.md SHA7646871F6A949A2E27188F746C063CD12268374E3832A774CB6DB9B9BE8D8E75는TEST_ONLY→Main행동RED→PRODUCT_GO를분리하며독립경계검수중이다. Main제품쓰기0/신규UI코드GO전/실제제외유지다.
+
+
+## 2026-10-31 UI13 실제 App 행동 Main RED·최소 제품 연결 GO
+- control5f1670ed/WI7646871F의신규시험1 3D72840CACF191003CDB5C781EC56F9F111C28170031F85C5E58756F5014D566(9408B)을동결했다. Primaryaf63a9 exit1/1FAIL은실App세션GET→Workspace실decoder→실navigation/section도달후기본대화의절차hidden=false인행동실패다. 준비오류/타입부재RED가아니다.
+- Main667678 같은지문실행은0PASS/1FAIL/nativeexit1·746.5041ms로동일단언실패를확인했다. wrapperexit0은예상nativeRED1을확인했다는뜻이다. 제품4의시작hash EE1DE470/E298F66D/AD2840FB/19B2BFDB 불변을확인했다. 실제원본자료·DB·키·서비스·Agent호출0/QA0·정상회수다. 기존React동일key경고1은관측분리/숨김0이며이번범위제품수정에섞지않는다.
+- 같은Primary에게WI정확제품4+신규시험1만PRODUCT_GO한다. 나머지단계·초안/UNKNOWN·소유문맥reset·상세링크/PC필수검증은아직미실행이며최종까지구현·검수한다. Main동일코드쓰기0,기존routes/API/권한/상위buffer구조변경0·실제제외유지/전체계획미완료다.
+
+
+## 2026-10-31 UI13 중간 제품 검수·한정 재작업
+- 기존Primary는실App기본표시/같은route세영역·project/user/client초기화·PC·대화보존의중간6PASS를보고했다. 승인상세복귀1FAIL은메모리location의hashchange이벤트미발생하네스누락으로분리하고실제hash변경때만이벤트전달해선택3PASS로보강했다. 단계·임무초안·대화draft/UNKNOWN 원형보존과pane자체추가GET/POST0을포함하며최종검증전이라완료로승격하지않는다.
+- 제품4부분동결 A671D1A2/7E9A4D64/312C44B3/5DE25856 독립검수C0/I0/M1. Navigation의무조건preventDefault가수정키새탭열기등기존anchor기본동작을가로채는Minor1을발견해같은허용경로에서반례시험→일반클릭/Enter만내부전환·modifier/defaultPrevented기본동작보존의최소guard를지시했다. 새기능/route/API확대0·Main동일코드쓰기0이다.
+- Main CSS읽기1은추정 src/app.css 부재오류였고실목록89aba1로 src/styles/app.css를확인후cb0381에서project-workspace3열/@1000단일열원형을확인했다. 검색어무일치와제품실패를구분한다. ego-browser사용법읽기acf718는끝표식까지확인했으며아직브라우저space/QA/서비스생성0,실제사용자자료·백업대상/DB권한키서비스Agent제외유지다.
+
+## 2026-10-31 UI13 합성 실제 브라우저 QA 사전등록
+- 생성전등록: Windows root D:/tmp/anvil-v3-ui13-pane-qa-20261031-01, 신규index.html·round-01.mjs~round-05.mjs·mobile-chat.png/mobile-steps.png/mobile-docs.png/mobile-wide.png/desktop.png·observations.json만예정. owner현재실행Windows사용자(생성전부재/부모nonlink/해석된경로·소유확인),수명생성부터최대30분. Node/Vite는기존고정도구·write:false bundle,실App/실CSS+합성session/project/method/대화fixture만fileHTML에보관한다. 별도서비스/listener/port/DB/키/권한/Agent없음.
+- ego-browser사용법acf718의단일TaskSpace Anvil-v3-UI13-pane-QA-20261031-01·page p1을사용하고인증profile/기존사용자탭은조사·변경하지않는다. file://만열고fetch는명시합성dispatcher·미지원로컬실패/CSP connect-src none·외부자원0이다. nativecrypto없으면가짜성공0/보고한다. 화면430x932·1920x1080에서기존하단4/3pane·단계보존·PC3열·겹침을한정확인한다. 실제served/DB/실사용자인수는별개다.
+- 아직QA파일/TaskSpace/브라우저생성0. Primary는최종source검증우선이며별도GO전생성하지않는다. 최종지문동결후생성자료의sourcehash·합성표시를확인하고정확root/소유실행만회수한다. evidence만프로젝트docs의소유결과경로에보존하고전용QA나Space를정리/독립잔여확인한다. 불명자원은강제삭제0·보존보고다.
+
+## 2026-10-31 UI13 source 최종 검수·시각 QA 전 보존
+- 최종제품4/신규시험1 지문 A671D1A2/7E9A4D64/BE01680B/5DE25856/4F967C1E. Main4f03d3 신규8+직접인접19 단일27PASS/0FAIL/SKIP0/TODO0/CANCEL0·1129.4494ms/nativeexit0,React기존중복key경고46회별도관측. Maina1066a type/diff0·메모리Web build writefalse 출력3/487모듈,독립최종C0/I0/M0·M1해소다.
+- 실제App표시/앞3같은route·mount/소유문맥reset/승인정확복귀와별도실Workspace+Nav composition2의stage·임무초안·대화draft/UNKNOWN 원형보존을구분했다. composition2를App buffer저장종단으로확대하지않는다. 결과 UI13_MOBILE_WORKSPACE_PANES_RESULT_20261031.md에정확명령/지문/오류·미검증을보존했다. 제품최소연결이며기존API/routes/buffer/권한/SQL변경0이다.
+- 시각QA root는1ade27에서2026-10-31T14:38:47.1969973Z에신규생성했다. owner/currentUser SINSAN\cyhuh·부모/targetnonlink·생성전부재확인·30분수명/서비스와포트0이다. Primary에등록root의index.html 한개만create-new로합성실App+실CSS/nativecrypto/CSP외부접속금지로생성GO했고영구source5는동결했다. 아직브라우저/실제served·DB·사용자인수PASS아님,QA실생성/화면/정리는다음실제증거로구분한다. 전체계획미완료다.

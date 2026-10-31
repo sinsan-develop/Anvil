@@ -1,3 +1,4 @@
+import type {MobilePane} from '../mobile/MobileNavigation.tsx';
 import type {Ref} from '../connections/api.ts';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
@@ -16,7 +17,7 @@ import type {PlanTaskSelection} from '../../shell/routes.ts';
 import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
 import type {DocumentBuffer} from '../design-trace/editor-api.ts';
 
-export function WorkspacePage({providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
+export function WorkspacePage({mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
@@ -35,12 +36,12 @@ export function WorkspacePage({providedHumanReportRef, client, projectId, sessio
     {project && !pending && !error ? <>
       <header><h2>{project.name}</h2><p>{project.purpose}</p><p className="meta">원본 버전 {project.version} · 원본 변경 <time dateTime={project.updatedAt}>{new Date(project.updatedAt).toLocaleString('ko-KR')}</time> · 아래 내용은 프로젝트 조회 결과이며 실행 상태가 아닙니다.</p></header>
       <div className="project-workspace">
-        <section className="status-card" aria-label="개발 절차"><h3>개발 절차</h3>
+        <section className="status-card" aria-label="개발 절차" hidden={mobilePane!==undefined&&mobilePane!=='steps'}><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
           <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={setSelectedStage} />
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
-        <section className="status-card" aria-label="총괄 작업"><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
+        <section className="status-card" aria-label="총괄 작업" hidden={mobilePane!==undefined&&mobilePane!=='chat'}><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
           <WorkspaceAssignments providedHumanReportRef={providedHumanReportRef??null} key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} requestedTask={requestedTask} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
           <h4>사용자 발언·지시 원문 보관</h4><p className="meta">프로젝트 공통 원문입니다. 아래 저장은 총괄·단계 세션이나 Agent에 지시를 전달하는 기능이 아닙니다.</p>
           {project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId
@@ -51,7 +52,7 @@ export function WorkspacePage({providedHumanReportRef, client, projectId, sessio
           <h4>준비 상태</h4>{project.readinessIssues.length ? <ul>{project.readinessIssues.map((item, index) => <li key={index}>{issueLabel(item.code)}</li>)}</ul> : <p>프로젝트 조회에서 보고된 준비 부족 없음 · 실행 준비 완료 판정은 아닙니다.</p>}
           <p className="meta">원본 참여: {project.participation === 'OWNER' ? '소유자' : project.participation === 'VIEWER' ? '조회자' : '인계 가능 참여자'} · 원본 편집 제어: {project.controlState.status === 'HELD' ? '현재 사용자·기기' : project.controlState.status === 'OTHER_CLIENT' ? '다른 사용자·기기' : '미할당/회수됨'} · 실행 권한은 별도이며 이 화면에서는 지시할 수 없습니다.</p>
         </section>
-        <section className="status-card" aria-label="프로젝트 자료"><h3>프로젝트 자료</h3><ul>
+        <section className="status-card" aria-label="프로젝트 자료" hidden={mobilePane!==undefined&&mobilePane!=='docs'}><h3>프로젝트 자료</h3><ul>
           <li><a href={routeHref('documents', projectId)}>문서·설계·작업계획 열기</a></li><li><a href={routeHref('knowledge', projectId)}>헌법·지식·결정 이유 열기</a></li>
           <li><a href={routeHref('approvals', projectId)}>승인 요청·결정 열기</a></li><li><a href={routeHref('connections', projectId)}>도구·환경·소스 선언 열기</a></li>
         </ul>
