@@ -1772,3 +1772,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-31 FN16 일회 승인 준비 이력 내부 통합
 현재 승인된 prepareExecution 후보 intent·원{details,candidatePayload}·정확소비/receipt/audit를 같은RR의선택조회로 수집에 연결했다. AUTO/build·역사조회/현재보호·false/NOT_PERFORMED 및 전체coverage412를 보존한다. Main 단일4파일32PASS/type/diff0·동일2지문 독립C0/I0. 결과 FN16_PREPARATION_APPROVAL_INVENTORY_RESULT_20261031.md(F321EBC8AF8CD0743E580CE09CBB22BD118B9E2FDF859A2019D5190FD616BAF2). 실제DB/백업/복원·전체FN16/계획은 미완료다.
+
+### 2026-10-31 FN16 승인 이해검토·permit 이력 내부 통합
+승인된 이해검토 원형을 같은RR 선택증빙·기존 순수helper로 수집에 연결하고 AUTO의 고아 소비 단독 반례를 보완했다. Main 보정후 단일4파일35PASS/type/diff0·최종3지문 독립C0/I0. 원fixture의 빈소비표1항목 외 기존단언/행생산·START/SEND block·권한/false/미검증 표시는 보존한다. 결과 FN16_UNDERSTANDING_APPROVAL_PERMIT_INVENTORY_RESULT_20261031.md(C21462D2FDB6FE9F32C1D39644D75B95193D1A1687612B8E9A5B983D357EC3F6). 실제DB/백업/복원·전체FN16/계획은 미완료다.

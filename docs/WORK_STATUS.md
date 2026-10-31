@@ -10827,3 +10827,14 @@
 - 원 source의 START/SEND block은 독립 검토에서 11592bytes/SHA88F53144E2AF1DEA648ED1C0C846BB3E9B712026A6C41413F4001BFE46FE6434로 기준과 동일 확인했다. 다른 추가 C/I는 없으나 이 I1 해소/재검토 전 합격으로 승격하지 않는다. 실제 DB/권한/키/파일조사/서비스/Agent/복원0·새QA0·Main 코드쓰기0.
 
 - DF9F6571 부록 독립 경계검토 C0/I0 수신. control 게시 뒤 같은 Primary에 제품/신규시험/원fixture의 정확3경로 보정 GO를 발행한다. 기존 review ID 유한 소비검사 외 범위를 넓히지 않고 최종 source 재검토 전 통합하지 않는다.
+
+## 2026-10-31 Main 읽기 경로 오류 반복 조치
+- Main은 실제 목록 확인 전에 파일 leaf/폴더를 추정하는 방식으로 같은 읽기 오류를4개 대상에서 반복했다: FN16_ASSIGNMENT_INVENTORY_IMPLEMENTATION(정확파일은 SOURCE 포함), executions/execution-preparation-approval-candidate(정확폴더 approvals), executions/understanding-pg(정확파일 execution-understanding-store),0016_one_time_approvals(실제목록 미확인 추정명). 해당 추측 경로 읽기 방식을 중단한다.
+- 이후에는 rg --files/정본 import·실제 검색 결과로 확인된 경로에만 접근한다. source/권한/환경 변경은 없으며 읽기 실패를 제품 실패나 검증 PASS로 세지 않는다. 영향받지 않는 기존 Primary 결과의 검수·통합은 계속하고 이 예외/조치를 PMO에 보고한다. 같은 사용자 경로 추정을 추가 재시도하지 않는다.
+- 실제 이해검토 append는 created_at을 넘기지 않고 DB 기본값을 쓰며, command.completed_at과 소비행도 transaction 시각을 사용함을 확인했다. snapshot.recordedAt의 clock 관측과 이 DB 사건시각은 구분한다. 실제PG 실행 증거는 아니다.
+
+## 2026-10-31 FN16 승인 이해검토·permit 이력 최종 source 검수
+- 고아 소비 보정 후 Main973541 단일4파일35PASS/skip0/todo0(4159.6406ms),ec263b type/diff exit0. 최종3지문 DF84042B/857D795E/2FAE6763는 독립 scoped C0/I0 본과 동일하고 원 Important1 해소를 확인했다. 이전34PASS가 고아 단독 반례를 놓친 사실은 보존한다.
+- 결과 docs/04_test_reports/AV3/FN16_UNDERSTANDING_APPROVAL_PERMIT_INVENTORY_RESULT_20261031.md SHA256 C21462D2FDB6FE9F32C1D39644D75B95193D1A1687612B8E9A5B983D357EC3F6. Main c2763c은 3지문/원 schema·FN09/보호3 불변과 START/SEND 정규화block의 HEAD 동일을 확인했다. 독립 원block은11592bytes/SHA88F53144로 동일하다.
+- 같은RR 선택승인·후보/원명령·증빙과 순수helper를 사용하고 AUTO는 review ID전체의 유한 소비 존재검사를 거친다. 원fixture는 빈AC표1항목 외 불변, START/SEND·공개DTO·권한·false/NOT_PERFORMED·전체coverage412를 보존한다. 제품/시험3+결과/계획/현황3 정확6경로만 통합한다.
+- 실제 DB/권한/키/파일조사/서비스/Agent·실백업복원/사용자인수는 미검증/제외, QA/handle0·Main source쓰기0. 전체 FN16/Stage/계획은 미완료다. 다음은 미확정 A1/A4의 역사 주체 UUID/FK·계정 비반출·원hash/관계 보존 계약을 구체화한다.
