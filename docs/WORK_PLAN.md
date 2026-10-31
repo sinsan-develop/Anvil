@@ -1812,3 +1812,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-11-01 FN18 개발용 installer source 부분 검수**: 전용 생성/검산·NOT_RELEASE manifest와 maker8.0.1 고정 lock을 구현했다. Main17PASS/type/diff0·독립source/lock C0/I0, 자동script 없는 의존성 준비만 수행했다. NuGet/Squirrel 설정 탐색·내부 출력 상한 근거가 부족해 실제 native build는 차단하며 설치/서명/업데이트/복구·전체FN18은 미완료다. B1 준비 범위 과다·guard실패와B2 경고 미수집도 별도 보존. 상세 FN18_DEVELOPMENT_INSTALLER_SOURCE_RESULT_20261101.md/WORK_STATUS 참조.
+
+
+- **2026-11-01 FN04/UI05·UI06 등록 산출물–고정 업무 추적 source 연결**: a851090b8c57c25f55eb93fbc90f010e1a96fe42에서 기존 ARTIFACT→PLAN_TASK/IMPLEMENTS의 저장·정/역조회와 선택 결과→고정 임무 대조→명시 저장·App 원명령 보존을 연결했다. Main 직접/인접25PASS·type/diff/Web메모리build0, 독립C0/I0·오프라인 실제React browser 정상/중요음성 확인·QA정리0. 0064.pending 미적용이며 실제DB/권한/파일bytes·App route종단/서비스/Agent·사용자인수와전체업무는미완료다. [검수결과](04_test_reports/AV3/FN04_ARTIFACT_TASK_TRACE_RESULT_20261101.md)/WORK_STATUS 참조. 기존작업중·부분구현상태와선행·완료기준은유지한다.
