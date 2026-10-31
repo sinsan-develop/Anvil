@@ -15,7 +15,8 @@ type Read = (db: PoolClient, pid: string, ref: ImportArtifact) => Promise<Buffer
 type Put = (pid: string, id: string, bytes: Buffer) => Promise<string>;
 const exact = (v: unknown, keys: string[]): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join(',') === [...keys].sort().join(',');
 const text = (bytes: Buffer) => { try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw new AuthFailure('DOCUMENT_UTF8_INVALID', 422); } };
-export async function createDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef, base: BaseDocument, read: Read, put: Put) {
+export interface DocumentProposalPlan { proposal:DocumentProposal; content:Content; reason:string; diff:Buffer }
+export async function prepareDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, base: BaseDocument, read: Read, fixedIds?:{artifactId:string;proposalId:string}):Promise<DocumentProposalPlan> {
   const p = request.payload;
   if (!exact(p, ['baseRef','proposedContent','reason','sourceRefs']) || !isVersionRef(p.baseRef) || p.baseRef.id !== request.targetId || p.baseRef.version !== request.expectedVersion || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !Array.isArray(p.sourceRefs) || !exact(p.proposedContent, ['body','attachments','sections','sourceRefs']) || !isImportArtifact(p.proposedContent.body) || !Array.isArray(p.proposedContent.attachments) || p.proposedContent.attachments.length > 200 || !p.proposedContent.attachments.every(isImportArtifact) || !Array.isArray(p.proposedContent.sections) || p.proposedContent.sections.length > 200 || !Array.isArray(p.proposedContent.sourceRefs)) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
   if (p.sourceRefs.length || p.proposedContent.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
@@ -35,13 +36,20 @@ export async function createDocumentProposal(db: PoolClient, actor: Authenticate
   if (canonicalJson(content) === canonicalJson(base.content)) throw new AuthFailure('PROPOSAL_NO_CHANGE', 422);
   const diff = Buffer.from(canonicalJson({ ...documentTextDiff(original, proposed), baseRef: p.baseRef, baseBodyRef: base.content.body, proposedBodyRef: content.body, beforeContent: base.content, afterContent: content }));
   if (diff.length > 20 * 1024 * 1024) throw new AuthFailure('PROPOSAL_DIFF_TOO_LARGE', 413);
-  const diffRef = { artifactId: randomUUID(), bytes: diff.length, contentHash: contentHash(diff), mediaType: 'application/json;charset=utf-8' };
-  const proposal: DocumentProposal = { id: randomUUID(), baseRef: p.baseRef, proposedContentRef: content.body, diffRef, status: 'PENDING' };
-  const storageKey = await put(request.projectId, diffRef.artifactId, diff);
+  const diffRef = { artifactId: fixedIds?.artifactId??randomUUID(), bytes: diff.length, contentHash: contentHash(diff), mediaType: 'application/json;charset=utf-8' };
+  const proposal: DocumentProposal = { id: fixedIds?.proposalId??randomUUID(), baseRef: p.baseRef, proposedContentRef: content.body, diffRef, status: 'PENDING' };
+  return {proposal,content,reason:p.reason,diff:Buffer.from(diff)};
+}
+export async function storeDocumentProposal(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef,plan:DocumentProposalPlan,storageKey:string){
+  const {proposal,content,reason}=plan,diffRef=proposal.diffRef,p={baseRef:proposal.baseRef,reason};
   const receipt = await persistProjectReceipt(db, actor, request, p.baseRef, { status: 'PROPOSAL_RECORDED', proposal }, policyRef, 'EXPLICIT_DOCUMENT_PROPOSAL');
   await db.query("INSERT INTO anvil.artifacts(id,project_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,'READY',$7,$8,$9)", [diffRef.artifactId, request.projectId, diffRef.bytes, diffRef.contentHash, diffRef.mediaType, storageKey, actor.actorId, actor.clientId, receipt.id]);
-  await db.query('INSERT INTO anvil.document_proposals(id,project_id,document_id,base_version,base_hash,body_artifact_id,diff_artifact_id,content_json,proposal_json,content_hash,reason,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)', [proposal.id, request.projectId, base.id, base.version, base.contentHash, content.body.artifactId, diffRef.artifactId, JSON.stringify(content), JSON.stringify(proposal), contentHash(canonicalJson({ proposal, content, reason: p.reason })), p.reason, actor.actorId, actor.clientId, receipt.id]);
-  return receipt.result;
+  await db.query('INSERT INTO anvil.document_proposals(id,project_id,document_id,base_version,base_hash,body_artifact_id,diff_artifact_id,content_json,proposal_json,content_hash,reason,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)', [proposal.id, request.projectId, proposal.baseRef.id, proposal.baseRef.version, proposal.baseRef.contentHash, content.body.artifactId, diffRef.artifactId, JSON.stringify(content), JSON.stringify(proposal), contentHash(canonicalJson({ proposal, content, reason: p.reason })), p.reason, actor.actorId, actor.clientId, receipt.id]);
+  return receipt;
+}
+export async function createDocumentProposal(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef,base:BaseDocument,read:Read,put:Put){
+ const plan=await prepareDocumentProposal(db,actor,request,base,read),key=await put(request.projectId,plan.proposal.diffRef.artifactId,plan.diff);
+ return (await storeDocumentProposal(db,actor,request,policyRef,plan,key)).result;
 }
 export async function readDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, pid: string, id: string, read: Read) {
   await projectMember(db, actor, pid);

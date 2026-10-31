@@ -63,6 +63,13 @@ export class ArtifactStore {
     await unlink(staged); await rmdir(staging);
     return `blobs/${projectId}/${artifactId}`;
   }
+  /** 게시된 정확 본문과 해당 업로드 staging 회수를 확인한다. 다른 원본을 열거나 회수하지 않는다. */
+  async verifyPublished(projectId:string,artifactId:string,expected:{bytes:number;contentHash:string}) {
+    await this.read(projectId,artifactId,expected);
+    try { await this.#directory(['staging',projectId,artifactId]); }
+    catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}
+    throw Error('ARTIFACT_STAGING_REMAINS');
+  }
   async read(projectId: string, artifactId: string, expected: { bytes: number; contentHash: string }, backupBudget?: ArtifactBackupReadBudget) {
     if (!uuid.test(projectId) || !uuid.test(artifactId) || !Number.isSafeInteger(expected.bytes) || expected.bytes < 0 || expected.bytes > 20 * 1024 * 1024 || !/^[0-9a-f]{64}$/.test(expected.contentHash)) throw Error('ARTIFACT_INPUT_INVALID');
     if (backupBudget !== undefined) {

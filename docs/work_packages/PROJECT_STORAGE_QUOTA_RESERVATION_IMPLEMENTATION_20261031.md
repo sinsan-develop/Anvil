@@ -43,6 +43,12 @@ access/project-command.ts·App/기존 API helper는 불변을 우선한다. 보�
 - checkpoint recordedAt은 기존 운영Tx 시각·receipt와 동일하게 유지한다. 선행 예약 C는 같은 최종 구조/고정 길이 UTC 밀리초 시각의 정확 UTF-8 크기와 recordText로 계산하고, 실제 최종 C와 다시 같음을 검사한다. 부족 예약·준비 snapshot 크기 대용0.
 - settle은 이미 IO_STARTED 이후의 부작용 가능 경계다. 현재성/기한/권한 실패도 외부에는503 PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN으로 보존하고 원명령/R를 유지한다. 첫 FS 전 requireStarted의 현재성 검사는 그대로 유지한다.
 
+## r3 내부 재확인·최소 권한 — 2026-10-31 Q2
+- 부모 r2 SHA B8C7068FDADAFB8F29D017C1B802676FB6B7D0397361158A9897DA6482B09CCC. 승인 A의 같은 원명령 RESERVED 재확인에서 임의 새 part ID/갱신 기한으로 planHash를 바꾸지 않도록 내부 보호 조회를 구체화한다. 공개 API·승인 범위·허용14·실행 제외 불변이다.
+- 0059의 불필요한 두 표 app-role SELECT grant를 제거하고 원 REVOKE를 유지한다. 기존 class는 보호 함수만 사용한다. 현재 HTTP 교차 프로젝트 누출을 확인했다는 의미가 아니다.
+- quota_existing(s uuid,a uuid,c uuid,p uuid,q jsonb) 보호 함수를 허용한다. 실세션·현재 프로젝트 OWNER/제어/정책·원승인·원명령 hash/actor/client를 검산하고 project→account→해당 원명령 예약 순서로 잠근다. 다른 원명령/프로젝트 정보 반환0, 전체 part/plan/fence/phase 검산과 최소 실행 권한 source를 정의한다. 실제 함수/GRANT 실행0.
+- prepare는 현재 권한·원자료·기존 보호 replay를 보존하고, 이미 RESERVED인 정확 원명령만 원래 plan/part ID/deadline으로 재확인한다. 내부 derivePlan에 기존 part ID 힌트를 전달할 수 있으나 실제 bytes/hash/source를 재검산하고 불일치는409다. 원기한 연장0, 이미 IO_STARTED/UNKNOWN은503·재IO0, SETTLED는 기존 보호 replay만, CANCELLED 재시작0이다.
+- 반례: 예약 COMMIT 응답 유실 후 같은 명령 재확인에서 예약 증가0·원ID/기한 유지, 다른 본문/주체/기기 거절, 시작 COMMIT 유실 후 재IO0. 실제SQL 대신 기존 메모리 transaction으로 확인하고 실제PG는 미검증으로 남긴다.
 ## 이름·값·인터페이스 고정
 - 새 class는 project-storage-quota.ts의 ProjectStorageQuota, 실제 AccessRepository/ArtifactStore를 소비한다. 별도 공개 route/사용자 quota setter0.
 - 내부 계획·예약 bundle은 readonly/원형복사이며 first await 전에 원 command/metadata와 실제 incoming Buffer를 복사해 caller 수정/ABA로 대상·바이트가 바뀌지 않는다. commandHash/planHash·project/actor/client·정확 operation/part·policy/fullref·기한을 결박한다. source의 새 usage=0/VERIFIED bool·성공 callback·환경변수 우회0.

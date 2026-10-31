@@ -1,3 +1,7 @@
+import {ProjectStorageQuota,type StartedQuotaBundle} from '../projects/project-storage-quota.ts';
+import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {AccessRepository} from '../access/repository.ts';
+import {ProjectPolicyRepository,currentProjectController,authorizeMaterial,projectReplay} from '../access/project-command.ts';
 import {assertArtifactBackupReadBudget,type ArtifactBackupReadBudget} from '../../storage/artifact-backup-budget-read.ts';
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -17,7 +21,7 @@ import { documentReviewCriteria, documentReviews, writeDocumentReview } from './
 import { validateDocumentConfirmation } from './document-validation.ts';
 import { confirmProjectDocument } from './project-confirmation.ts';
 import { createDocumentImport, readDocumentImport, checkImportSelection } from './project-imports.ts';
-import { createDocumentProposal, readDocumentProposal, checkProposalSelection } from './project-proposals.ts';
+import { prepareDocumentProposal,storeDocumentProposal,type DocumentProposalPlan,readDocumentProposal,checkProposalSelection } from './project-proposals.ts';
 import { listDocumentMaterials } from './material-list.ts';
 import { readApplicationSnapshot } from '../methodologies/application-snapshot.ts';
 import {readDocumentSourceLinks} from './document-source-link-list.ts';
@@ -28,6 +32,7 @@ function exact(value: unknown, keys: string[]): value is Record<string, unknown>
 function artifactRef(value: unknown): value is ArtifactRef { return exact(value, ['artifactId', 'bytes', 'contentHash', 'mediaType']) && typeof value.artifactId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.artifactId) && Number.isSafeInteger(value.bytes) && Number(value.bytes) >= 0 && Number(value.bytes) <= 20 * 1024 * 1024 && typeof value.contentHash === 'string' && /^[0-9a-f]{64}$/.test(value.contentHash) && typeof value.mediaType === 'string' && value.mediaType.length <= 200; }
 export class ProjectDocuments {
   #store: ArtifactStore | null;
+  #proposalPlans=new WeakSet<DocumentProposalPlan>();
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
   async import(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     return createDocumentImport(db, actor, request, policyRef, (client, projectId, ref) => this.#artifact(client, projectId, ref));
@@ -35,12 +40,42 @@ export class ProjectDocuments {
   async imported(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
     return readDocumentImport(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
   }
-  async propose(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
-    if (!request.targetId) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
-    const base = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion);
-    return createDocumentProposal(db, actor, request, policyRef, base, (client, pid, ref) => this.#artifact(client, pid, ref), async (pid, id, bytes) => { if (!this.#store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412); return this.#store.put(pid, id, bytes); });
+  async proposeCommand(access:AccessRepository,policies:ProjectPolicyRepository,token:string,csrf:string,raw:ProjectCommand){
+    const request=cloneV1(raw),quota=new ProjectStorageQuota(access,this.#store??undefined,this);let plan:DocumentProposalPlan|undefined;
+    const prepared=await quota.prepare(token,csrf,request,async(db,actor,fixed,existing)=>{
+      if(!fixed.targetId)throw new AuthFailure('PROPOSAL_INPUT_INVALID',422);
+      const base=await this.version(db,actor,fixed.projectId,fixed.targetId,fixed.expectedVersion);
+      plan=await prepareDocumentProposal(db,actor,fixed,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:existing?.[0]?.id??randomUUID(),proposalId:randomUUID()});
+      this.#proposalPlans.add(plan);return [{key:'diff',kind:'ARTIFACT',id:plan.proposal.diffRef.artifactId,bytes:String(plan.diff.length),contentHash:contentHash(plan.diff),reservedBytes:String(plan.diff.length*2),settledBytes:String(plan.diff.length)}];
+    });
+    if(prepared.replay){
+      try{
+        return await access.authenticated(token,csrf,async(db,actor)=>{
+          await currentProjectController(db,actor,request);await authorizeMaterial(db,actor,request,false,this);
+          const previous=await projectReplay(db,actor,request),p=previous?.data?.proposal;
+          if(previous?.data?.status!=='PROPOSAL_RECORDED'||!p?.id)throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED',503);
+          const read=await this.proposal(db,actor,request.projectId,p.id);
+          if(canonicalJson(p)!==canonicalJson({id:read.id,baseRef:read.baseRef,proposedContentRef:read.proposedContentRef,diffRef:read.diffRef,status:read.status}))throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED',503);
+          const final=await quota.protectedReplay(db,actor,request);
+          if(canonicalJson(final)!==canonicalJson(previous))throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED',503);
+          return final;
+        });
+      }catch{throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
+    }
+    const started=await quota.start(token,csrf,await quota.reserve(token,csrf,prepared));
+    try{return await policies.command(token,csrf,request,(db,actor,policyRef)=>this.propose(db,actor,request,policyRef,{quota,started,plan:plan!}));}
+    catch{throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
   }
-  async proposal(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
+  async propose(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef,writing?:{quota:ProjectStorageQuota;started:StartedQuotaBundle;plan:DocumentProposalPlan}) {
+    if (!request.targetId) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
+    if(!writing||!this.#proposalPlans.has(writing.plan))throw new AuthFailure('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);
+    const base = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion),old=writing.plan;
+    const plan=await prepareDocumentProposal(db,actor,request,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:old.proposal.diffRef.artifactId,proposalId:old.proposal.id});
+    if(!plan.diff.equals(old.diff)||canonicalJson({proposal:plan.proposal,content:plan.content,reason:plan.reason})!==canonicalJson({proposal:old.proposal,content:old.content,reason:old.reason}))throw new AuthFailure('VERSION_CONFLICT',409);
+    const key=await writing.quota.publishArtifact(db,actor,request,writing.started,plan.diff),receipt=await storeDocumentProposal(db,actor,request,policyRef,plan,key);
+    await writing.quota.settleArtifact(db,actor,request,writing.started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});
+    return receipt.result;
+  }  async proposal(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
     return readDocumentProposal(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
   }
   async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {

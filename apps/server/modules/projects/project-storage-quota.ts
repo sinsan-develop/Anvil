@@ -7,7 +7,7 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 export const PROJECT_STORAGE_CAP=10737418240n;
 function fail(code='PROJECT_STORAGE_QUOTA_INPUT_INVALID',status=422):never{throw new AuthFailure(code,status);}
-const unknown=():never=>fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);
+function unknown():never{return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 function freeze<T>(v:T):T{if(v&&typeof v==='object'){for(const x of Object.values(v))freeze(x);Object.freeze(v);}return v;}
 export function quotaBytes(v:unknown):bigint{
@@ -33,6 +33,7 @@ function parts(raw:readonly QuotaPart[],operation:string):readonly QuotaPart[]{
 /** 내부 bundle은 호출 제한 데이터다. 매 단계 실제 인증·현재 정책·원장 검산을 대체하지 않는다. */
 export class ProjectStorageQuota{
  readonly #access:AccessRepository;readonly #documents?:ProjectDocuments;readonly #store?:ArtifactStore;
+ readonly #published=new WeakSet<object>();
  readonly #prepared=new WeakMap<object,PreparedState>();readonly #reserved=new WeakMap<object,BundleState>();readonly #started=new WeakMap<object,BundleState>();
  constructor(access:AccessRepository,store?:ArtifactStore,documents?:ProjectDocuments){this.#access=access;this.#store=store;this.#documents=documents;}
  async #current(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,state?:PreparedState){
@@ -44,22 +45,42 @@ export class ProjectStorageQuota{
   const deadline=Math.min(policy.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt),state?.deadline??Infinity);
   if(deadline<=at.getTime())fail('PROJECT_STORAGE_CURRENT_REQUIRED',412);
   if(state&&hash(policy.ref)!==hash(state.p.policyRef))fail('IDEMPOTENCY_CONFLICT',409);
-  return {policyRef:policy.ref,deadline,sessionId:s.id};
+  return {policyRef:policy.ref,deadline,sessionId:s.id,atMs:at.getTime()};
  }
- async prepare(token:string,csrf:string,raw:ProjectCommand,derivePlan:(db:PoolClient,actor:AuthenticatedIdentity,request:Readonly<ProjectCommand>)=>Promise<readonly QuotaPart[]>):Promise<PreparedQuotaCommand>{
+ async prepare(token:string,csrf:string,raw:ProjectCommand,derivePlan:(db:PoolClient,actor:AuthenticatedIdentity,request:Readonly<ProjectCommand>,existingParts?:readonly QuotaPart[])=>Promise<readonly QuotaPart[]>):Promise<PreparedQuotaCommand>{
   const request=freeze(cloneV1(raw));
-  const result=await this.#access.authenticated(token,csrf,async(db,actor)=>{
+  const result=await this.#durable(()=>this.#access.authenticated(token,csrf,async(db,actor)=>{
    const current=await this.#current(db,actor,request),replay=await projectReplay(db,actor,request);
-   const derived=replay===undefined?parts(await derivePlan(db,actor,request),request.operation):freeze([] as QuotaPart[]);
+   let existing:PreparedQuotaCommand|undefined;
+   const value=(await db.query('SELECT anvil.quota_existing($1,$2,$3,$4,$5::jsonb) AS value',[current.sessionId,actor.actorId,actor.clientId,request.projectId,JSON.stringify(request)])).rows[0]?.value;
+   if(replay!==undefined){if(value!==null&&value!==undefined&&canonicalJson(value)!==canonicalJson({replay:true}))unknown();}
+   else{
+    if(value!==null&&value!==undefined){
+     const v=cloneV1(value) as PreparedQuotaCommand;const {planHash,...body}=v;
+     if(v.replay!==false||v.actorId!==actor.actorId||v.commandHash!==hash(request)||hash(v.request)!==hash(request)||!isoV1(v.authorizedUntil)||hash(v.policyRef)!==hash(current.policyRef)||hash(body)!==planHash)fail('IDEMPOTENCY_CONFLICT',409);
+     parts(v.parts,request.operation);existing=freeze(v);
+    }
+   }
+   const derived=replay===undefined?parts(await derivePlan(db,actor,request,existing?.parts),request.operation):freeze([] as QuotaPart[]);
+   if(existing&&hash(derived)!==hash(existing.parts))fail('IDEMPOTENCY_CONFLICT',409);
    if(replay===undefined&&request.operation==='uploadArtifact'){
     const x=derived[0]!,p=request.payload;
     if(!Number.isSafeInteger(p.bytes)||Number(p.bytes)<0||Number(p.bytes)>20971520||x.bytes!==String(p.bytes)||x.contentHash!==p.contentHash)fail();
    }
-   const final=await this.#current(db,actor,request),deadline=Math.min(current.deadline,final.deadline);
+   const final=await this.#current(db,actor,request),deadline=Math.min(current.deadline,final.deadline,existing?Date.parse(existing.authorizedUntil):Infinity);
    if(hash(current.policyRef)!==hash(final.policyRef))fail('IDEMPOTENCY_CONFLICT',409);
-   const plan={request,actorId:actor.actorId,parts:derived,commandHash:hash(request),policyRef:current.policyRef,authorizedUntil:new Date(deadline).toISOString(),replay:replay!==undefined};
-   return {p:freeze({...plan,planHash:hash(plan)}),deadline};
-  });this.#prepared.set(result.p,result);return result.p;
+   if(deadline<=final.atMs)fail('PROJECT_STORAGE_CURRENT_REQUIRED',412);
+   const plan={request,actorId:actor.actorId,parts:derived,commandHash:hash(request),policyRef:current.policyRef,authorizedUntil:existing?.authorizedUntil??new Date(deadline).toISOString(),replay:replay!==undefined};
+   return {p:existing??freeze({...plan,planHash:hash(plan)}),deadline};
+  }));this.#prepared.set(result.p,result);return result.p;
+ }
+ /** 호출자 소유 보호 Tx 안에서 현재 권한과 과거 원정산 대응을 다시 검산한다. */
+ async protectedReplay(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand):Promise<any>{
+  const request=cloneV1(raw),current=await this.#current(db,actor,request),previous=await projectReplay(db,actor,request);
+  if(previous===undefined)unknown();
+  const value=(await db.query('SELECT anvil.quota_existing($1,$2,$3,$4,$5::jsonb) AS value',[current.sessionId,actor.actorId,actor.clientId,request.projectId,JSON.stringify(request)])).rows[0]?.value;
+  if(value!==null&&value!==undefined&&canonicalJson(value)!==canonicalJson({replay:true}))unknown();
+  await this.#current(db,actor,request);return cloneV1(previous);
  }
  async reserve(token:string,csrf:string,prepared:PreparedQuotaCommand):Promise<QuotaReservationBundle>{
   const state=this.#prepared.get(prepared);if(!state||prepared.replay)fail();
@@ -94,6 +115,21 @@ export class ProjectStorageQuota{
   const request=cloneV1(raw),state=this.#started.get(bundle);if(!state)fail();if(hash(parts(actualParts,request.operation))!==hash(state.p.parts))fail('IDEMPOTENCY_CONFLICT',409);
   const c=await this.#current(db,actor,request,state);
   const value=(await db.query('SELECT anvil.quota_require_started($1,$2,$3,$4,$5::jsonb) AS value',[c.sessionId,actor.actorId,actor.clientId,request.projectId,JSON.stringify({ids:bundle.ids,fences:bundle.fences,request,planHash:state.p.planHash})])).rows[0]?.value;if(value!==true)unknown();
+ }
+ /** 실제 원문 writer의 결과만 private 게시 확인으로 결박한다. 호출자가 성공 bool을 공급하지 않는다. */
+ async publishArtifact(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,bundle:StartedQuotaBundle,rawBytes:Buffer):Promise<string>{
+  const bytes=Buffer.from(rawBytes),state=this.#started.get(bundle),part=state?.p.parts[0];
+  try{
+   if(!state||!part||part.kind!=='ARTIFACT'||!this.#store||String(bytes.length)!==part.bytes||contentHash(bytes)!==part.contentHash)unknown();
+   await this.requireStarted(db,actor,request,bundle,[part]);
+   const key=await this.#store.put(request.projectId,part.id,bytes);
+   if(key!==`blobs/${request.projectId}/${part.id}`)unknown();
+   await this.#store.verifyPublished(request.projectId,part.id,{bytes:bytes.length,contentHash:part.contentHash});
+   await this.requireStarted(db,actor,request,bundle,[part]);this.#published.add(bundle);return key;
+  }catch{return unknown();}
+ }
+ async settleArtifact(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,bundle:StartedQuotaBundle,facts:QuotaReceiptFacts):Promise<void>{
+  if(!this.#published.has(bundle))unknown();await this.settle(db,actor,request,bundle,facts);
  }
  async settle(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand,bundle:StartedQuotaBundle,rawFacts:QuotaReceiptFacts):Promise<void>{
   // START 뒤에는 FS 도달 가능성이 있으므로 명확한 신규 거절로 낮추지 않는다.

@@ -1,10 +1,12 @@
+import {ProjectStorageQuota,type StartedQuotaBundle,type QuotaPart} from '../projects/project-storage-quota.ts';
+import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { authorizeMaterial, currentProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
-import { parseWireJson,canonicalJson } from '../../../../contracts/canonical.ts';
+import { parseWireJson,canonicalJson,contentHash } from '../../../../contracts/canonical.ts';
 import{inspectArtifact,assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
 import{isApprovalRef}from'../approvals/approval-input.ts';
 
@@ -24,6 +26,7 @@ function uploadContext(raw: unknown, projectId: string): ProjectCommand {
 }
 export function registerProjectFileRoutes(app: FastifyInstance, options: AccessRoutesOptions) {
   const store = options.artifactRoot ? new ArtifactStore(options.artifactRoot) : null, host = new URL(options.origin).host;
+  const quota=new ProjectStorageQuota(options.repository,store??undefined);
   const contexts = new WeakMap<FastifyRequest, ProjectCommand>();
   app.register(async files => {
     files.addContentTypeParser('application/octet-stream', { parseAs: 'buffer', bodyLimit: 20 * 1024 * 1024 }, (_request, body, done) => done(null, body));
@@ -41,9 +44,16 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
       }
     });
     files.post<{ Params: { projectId: string }; Body: Buffer }>('/api/v1/projects/:projectId/files', { bodyLimit: 20 * 1024 * 1024, schema: { params: { type: 'object', required: ['projectId'], additionalProperties: false, properties: { projectId: { type: 'string', pattern: uuid } } } } }, async (request, reply) => {
-      const context = contexts.get(request)!;
-      if (!Buffer.isBuffer(request.body) || request.body.length !== context.payload.bytes || createHash('sha256').update(request.body).digest('hex') !== context.payload.contentHash) throw new AuthFailure('ARTIFACT_BYTES_MISMATCH', 422);
-      const result = await options.repository.authenticated(token(request), csrf(request), async (db, actor) => {
+      const context = cloneV1(contexts.get(request)!);
+      const bytes=Buffer.isBuffer(request.body)?Buffer.from(request.body):null;
+      if (!bytes || bytes.length !== context.payload.bytes || createHash('sha256').update(bytes).digest('hex') !== context.payload.contentHash) throw new AuthFailure('ARTIFACT_BYTES_MISMATCH', 422);
+      const prepared=await quota.prepare(token(request),csrf(request),context,async(_db,_actor,_request,existing)=>[{
+        key:'body',kind:'ARTIFACT',id:existing?.[0]?.id??randomUUID(),bytes:String(bytes.length),contentHash:contentHash(bytes),reservedBytes:String(bytes.length*2),settledBytes:String(bytes.length)
+      }]);
+      let started:StartedQuotaBundle|undefined;
+      if(!prepared.replay)started=await quota.start(token(request),csrf(request),await quota.reserve(token(request),csrf(request),prepared));
+      let result:unknown;
+      try{result = await options.repository.authenticated(token(request), csrf(request), async (db, actor) => {
         await currentProjectController(db, actor, context); const policy = await authorizeMaterial(db, actor, context);
         const previous = await projectReplay(db, actor, context);
         if (!store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
@@ -57,13 +67,15 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
           else{assertStoredArtifactReadable(row,raw);if(previous.data.status!=='ARTIFACT_READY'||row.inspection_json!=null&&canonicalJson(previous.data.inspection??null)!==canonicalJson(row.inspection_json))throw new AuthFailure('ARTIFACT_RECEIPT_INVALID',503);}
           return previous;
         }
-        const artifactId = randomUUID(), storageKey = await store.put(context.projectId, artifactId, request.body);
-        const ref = { artifactId, contentHash: context.payload.contentHash as string, bytes: request.body.length, mediaType: context.payload.mediaType as string };
-        const inspection=inspectArtifact(request.body),state=inspection.state==='SUSPECTED'?'QUARANTINED':'READY';
+        if(!started)throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);
+        const artifactId = prepared.parts[0]!.id, storageKey = await quota.publishArtifact(db,actor,context,started,bytes);
+        const ref = { artifactId, contentHash: context.payload.contentHash as string, bytes: bytes.length, mediaType: context.payload.mediaType as string };
+        const inspection=inspectArtifact(bytes),state=inspection.state==='SUSPECTED'?'QUARANTINED':'READY';
         const receipt = await persistProjectReceipt(db, actor, context, ref, { status: state==='QUARANTINED'?'ARTIFACT_QUARANTINED':'ARTIFACT_READY',inspection }, policy.ref, state==='QUARANTINED'?'SENSITIVE_ARTIFACT_QUARANTINED':'EXPLICIT_PROJECT_FILE_UPLOAD');
         await db.query("INSERT INTO anvil.artifacts(id,project_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id,inspection_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", [artifactId, context.projectId, ref.bytes, ref.contentHash, ref.mediaType, storageKey,state,actor.actorId, actor.clientId, receipt.id,JSON.stringify(inspection)]);
+        await quota.settleArtifact(db,actor,context,started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});
         return receipt.result;
-      });
+      });}catch(error){if(started)throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);throw error;}
       return reply.code(201).send(result);
     });
     files.get<{ Params: { projectId: string; artifactId: string } }>('/api/v1/projects/:projectId/files/:artifactId', { schema: { params: { type: 'object', required: ['projectId', 'artifactId'], additionalProperties: false, properties: { projectId: { type: 'string', pattern: uuid }, artifactId: { type: 'string', pattern: uuid } } } } }, async (request, reply) => {
