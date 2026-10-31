@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 FN09 child HUMAN r2 A 직접승인 재개
+- 신산님이r2 5880747B+원r1 51F71890의하위HUMAN내용검토·별도확정·과거조회A를직접승인하고전체작업계획완료까지계속지시했다. FN09_CHILD_HUMAN_CONTENT_SOURCE_DIRECT_APPROVAL_20261031.md가현재binding이며이전BLOCKED/미채택/질문미답변은과거이력이다. 동일승인재질문0.
+- Main085387은HEADeb9590e7·trackedclean/보호3만untracked와대상지문을대조했다. fabbc6에서기존6제품지문·0061prefix부재를읽기확인했다. 기존Primary가이미읽은좁은consumer/공통child replay접점의최소경로·검증만확정중이고Main은정확WI를발행해같은담당에게TDD위임한다. Main동일코드수정0·기존Reviewer독립검수.
+- 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project활성화/일반차단해제0,기존root기본read/decision/current·10downstreamguard/원SQL/보호3/원5복구본보존. 전체WORK_PLAN미완료이며합성검증을실제PG/served/인수PASS로승격하지않는다.
+
 ## 현재 인수 — 2026-10-31 FN09 child 채택 답변 부재 3차수 재확인
 - 이미직접승인된FN02/FN14 A의source범위는각2008be2c/fc14810d에검수·통합했고그승인차단은해소됐다. 이번차단은별도미완료인자식HUMAN내용검토·확정의신규허용계약이다. 전체WORK_PLAN완료/실제DB·서비스/이전인수가아니며기존두A를다시승인받는것도아니다.
 - 신규대상은원r1 51F71890EDCE8668676A39AFD5A1A76DA71C5BB3FC26A60452F8464B8617BEBB + r2 5880747B61C0D48C5D08F7F01CD8F43D6E6C30101CC73CB85485F623B5B0478D. 원차수말미PMOturn01a1905b/cursor38의질문·미답변,후속4d5f6c/cursor39의동일미답변,현재a2188c/cursor39 새결정없음을확인해같은차단3차수다. 직전차수는진전없음/살아있는job의verified-wait아님이며PMO는idle/terminal이다.
