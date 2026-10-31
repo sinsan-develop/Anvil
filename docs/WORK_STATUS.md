@@ -10745,3 +10745,13 @@
 - 실제DB/권한/키/사용자파일조사/서비스/Agent/일반차단해제0·새QA0·전체계획미완료. 이미완료된83/type/build재실행0. Main다음업무선정책임과기존Primary단일writer유지.
 
 - 내부 통합 WI07E7A004의 기존 Reviewer C0/I0 수신: 새 공개계약/권한/실행 차단 변경이 없는 기존 승인 기능 간 정합 보완으로 대조했다. 구현/시험 결과 판정은 아직 아니다.
+
+## 2026-10-31 FN16 실제 통합 공백 우선순위
+- 문서 checkpoint6ffe6a2792d983674b9dd71a654ec13979c8ec0a에 A2/A3·내부통합WI/현황4문서를 게시했다. PMO는 child 과거내용 수집이 기존 승인 내 내부정합 보완이며 추가승인 요청 없이3경로TDD로 진행함을 확인했다.
+- 기존 Primary A1은 추가전수조사를 중단하고 확보된24collector/feature·DDL/최근표·child내용 row variant 공백을 부분후보1문서로 저장·반환하도록 조정했다. 미확인 열/registry는 구체후속목록으로 남기며 A1완료/전체coverage로승격0. 현재 agent 실행상태 running을 확인했고 source구현은아직발행전이다. 같은writer의문서반환후WI07E7을순차GO한다.
+- Main의 SOURCE가빠진옛WI파일명읽기는두root에서부재였고, rg --files로정확 FN16_ASSIGNMENT_INVENTORY_SOURCE_IMPLEMENTATION_20261029.md를찾아 old childdraft-only 조건/현재 FN09내용producer와대조했다. 코드/SQL/실DB/권한/키/파일조사/서비스/Agent/일반차단해제0·새QA0, 완료된검사재실행0.
+
+## 2026-10-31 FN16 child 내용 이력 통합 구현 발행
+- A1 부분후보7152EEB89567C78AC7EA417DF01B0E4B0A1172AB15604A518F1D69F11B919988/40559bytes/175줄을 Primary writer반환 후 인수·정본동일지문 동기화했다. 전체A1미완료·모든민감열/trigger/codec/실DB적용미확인은후속목록으로보존했다.
+- WI07E7A004/독립C0I0·실source1D3DD7BE/기존시험4ED4E470/신규child시험부재를확인해같은Primary에정확3경로TDD를발행한다. 기존FN09 HUMAN내용승인과FN16역사보존간내부정합보완이다. control게시뒤실제HEAD를기록하고시작하며, Main동일code수정0·Reviewerread-only. 전체공개형식/실행profile/정책412·19root실행소비선/SQL/권한변경0.
+- 검수는정상child내용producer의RED→GREEN·고정부모/원검토·receipt/audit·상반hash/범위/손자/타project/한도거절·기존root/childdraft/익명투영보존이다. 기존guard를일괄제거하거나승인된새내용 외거절기준을완화하지않는다. 실제DB/권한/키/파일조사/서비스/Agent/일반차단해제0·실제backup/복원NOT_RUN·전체계획미완료유지.
