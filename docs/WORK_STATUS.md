@@ -10386,3 +10386,9 @@
 - 후보 docs/contracts/PROJECT_STORAGE_QUOTA_RESERVATION_SOURCE_CANDIDATE_20261031.md 24571bytes/SHA9110DEA86C1616B224F5BB4DA6E1099B7BD9915A0DC67D044CDBC06827EE12E2를canonical/source동일bytes로작성·독립문서/실접점C0I0. DRAFT/NOT_ADOPTED이며제품/새SQL/실측/권한/DB/서비스/Agent0이다.
 - A는독립durable예약/시작COMMIT→운영Tx→같은Tx정산·UNKNOWN자동해제0·upload/diff/생성adoption/FN13전writer통합/새원장2표·미적용forwardSQL/source/합성을제안한다. FS임시2B·새원장/오류의미/다중Tx는기존FN13허가자동확대가아닌Main권장새선택이다. B는현재412유지. 기존project초기사용량검증/실제승격·실제UNKNOWN해제/회수·실SQL/DB/FS/서비스는A에서도제외한다.
 - 신규Fn14후보E096은C0I1(누적/전역quota누락)으로그대로채택요청하지않았다. 우선공통quota선행의정확후보만PMO결정경로로전달하며기존답변/질문중복0. 새계약채택뒤에만정확WI/allowlist/초기namespace증빙·coverage/오류호환조건을고정하며합성READY/stub확장만으로진도승격0. 전체계획미완료·현재codewriter/QA0.
+
+### quota 결정 대기와 독립 소비선 대조 결과 — 반복 방지 인수
+- 같은Primary의읽기대조만으로 UI12 SELF요청·고정안전요약, 정본UI11 환경후보 작성/저장/replay/목록/고정버전/개정, 정본UI13 공통Workspace 대화원문/ApprovalsPage·정확요청링크 소비를 확인했다. 이세한정범위에서새독립UI소비누락은확정하지못했으며기존기능/시험재작성0·전체계획소진판정0이다.
+- UI11의executionHostRef·source/target/command/Secret 비어있지않은참조는현재 CANDIDATE_REFERENCE_NOT_CONNECTED/412 계약이며실참조보호reader·귀속/현재성계약없이임의UUID로대체0. UI12 main factory/기본OFF·0041checksum/실collector·수락/제어세대전환, UI13 실Agent전달/수신·제어인수/푸시는이번실제실행제외또는미채택선행으로분리한다. 대화원문저장을Agent지시실행으로표시하지않는다.
+- Main 내부지시의환경정의 UI13 번호오기1은정본UI11로정정·모바일로임의확대0. 실제모바일기기/430×844/서버결정동기화·새type/build/단위/브라우저/DB검사는이대조에서실행하지않았다. 현재writer/QA/미확정실행0·보호자료불변이다.
+- PMO cursor18의실제질문원turn/read_thread와cursor19 후속을대조해 quota9110 A 질문1회·답변없음·DONT_NOTIFY를확인했다. Main질문재발행/기존FN13승인대기회귀0·예약계약채택전새코드/SQL0. 이좁은대조는개발진도/기능완료가아니며후속세션에서같은기존소비확인을기계적으로반복하지않는다.
