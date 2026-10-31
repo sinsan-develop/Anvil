@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN13 과거 페이지 A 직접승인 재개
+- 신산님이 후보B1ACDCD4의A안을직접승인했다. 직접승인문서를새binding으로보존하며과거3차수미응답/blocked는이력이다. 실제목표active재개이며같은승인재질문0,이후차단감사는새로계산한다.
+- Main37cb90에서HEAD8f58ecc8·local/private동일·trackedclean/보호3·mainf976불변·후보지문일치를확인했다. 기존Primary가정확5경로지문/신규3부재와전용cursor·DTO 최소접점을짧게대조중이다. Main은정확8WI발행뒤같은담당에게TDD를배정하고같은코드수정0·독립검수/통합을소유한다.
+- 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project일반차단해제0,새SQL/쓰기operation/QA프로세스0. 완료FN09/직전단위반복검증0·전체계획완료주장0이다.
+
+
 ## 2026-10-31 FN13 동일 계약 미응답 3차수 — 차단 감사
 - 직전차수는현승인안새독립후보를찾지못해코드진전이없었고PMO도idle/terminal이었다. 이번fa8d88에서HEADf8ed7648·local/private동일·trackedclean/보호3·mainf976불변·후보B1ACDCD4동일을확인했다. PMO cursor44/turn01a1909e도기존FN13 A/B결정미답변이며새채택/사용자조치가없다. 살아있는실행handle의verified wait가아니다.
 - 원차수PMO42의정확신규GET/페이지DTO/cursor계약결정질문→후속43미답변→현재44미답변으로같은조건3차수다. 과거FN09차단은계산에넣지않았다. 기존담당2명모두completed/실행중writer·QA0이고앞선카드·sourcecaller·최신WI대조로현승인안의미연결독립구현을추가확정하지못했다. 반복검사/합성wrapper추가·미채택/제외범위임의구현은하지않는다.
