@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 UI06 과거 계획 이력 연결 검수·다음 업무
+- 제품/결과 checkpoint468b5efe152294a34b9c35a6cd2d7be16aa2d4c6는 기존 codex/av3-stage-b local/private exact 동일, mainf976 불변·tracked clean/보호3만 untracked(e2c101). 제품History1·시험1·관련문서4만 통합했다. 기존 API/decoder·부모·서버/SQL·편집 입력 불변.
+- Main d77ed3 신규8/직접4 총12PASS/skip0·type0·독립C0/I0, 실제Chromium 합성GET3/POST0/realresource0·과거확정/현재무효·확정당시/현재reviewRef·닫기/원문유지·시각 확인. Main 관측식의 body.script 오염 timeout1은 실제root DOM으로 교정했으며 제품 실패로 승격하지 않는다. space15 정상finish1회·QA9파일745055B exact정리/별도부재 True. 결과 UI06_HISTORICAL_WORK_PLAN_DECISION_READ_RESULT_20261031.md SHA84B38E7BADC741D33CEE29884434A95D7008026958DDE77342AE795B05BE5FC9.
+- 실제HTTP/DB/권한/키/현재파일조사/서비스/Agent/기존project차단해제·사용자인수는 미실행/미반영이다. 저장량A source결과 b8e8bc1f도 보존하며 완료검사를 반복하지 않는다. 전체WORK_PLAN 미완료/goal ACTIVE, 현재 code writer0·기존Primary는 Stage B의 다른 실제 승인내 미연결 접점 읽기 preflight 중이다. Main이 다음 단위를 선정·배정하며 PMO 다음 작업 지시를 기다리지 않는다.
+- FN14 별도상한/신규계약 결정안 C842350B…는 문서전용4030ce5c로 보존한 미채택 자료다. PMO에 기존질문1회가 제시됐고 직접채택답변은 미확인, 중복질문0. 필요한 결정과 독립 구현을 분리한다. 아래 UI06 진행중/이전 hold는 과거 이력이다.
+
 ## 현재 인수 — 2026-10-31 저장량 A source 검수·다음 업무 선정
 - 승인 source 범위 Q1~Q4를 검수했고 최종 제품/결과 checkpoint b8e8bc1ffd2e01ce296e192ea8c0235d1f432592를 기존 codex/av3-stage-b에 게시했다. 02c29d actual local/private 동일·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean/보호3만 untracked. Main89PASS/skip0·type0·메모리build482modules/exit0·독립 C0/I0, 결과 PROJECT_STORAGE_QUOTA_RESERVATION_SOURCE_RESULT_20261031.md SHA4FFE8DC321BCE887FF0F2DE51DE581C217B02AA83826E981E868D0609D31BCA9.
 - 실제DB/SQL·권한·키·현재파일/사용량조사·서비스·Agent·기존프로젝트차단해제는 제외/NOT_RUN이다. 생성/체크포인트는 별도 메모리모델, 실제PG 연속운영/사용자인수/전체계획완료가 아니다. 원0042/0058·보호3·원WIP5 복구본은 보존했다.
