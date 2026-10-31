@@ -1,5 +1,14 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 다음 FN13 과거조회 결정 요청
+- 후보 docs/work_packages/FN13_STOP_REQUEST_PAGES_DECISION_20261031.md SHA B1ACDCD495DC7F1F582A49620E3456A06540729A218DA57657522219A4DE6FBC를 작성해 PMO에 A/B 정확 결정을 요청했다. 새읽기 GET/페이지 DTO/cursor 수명·상한 의미가 현재 추가 차이이며 기존 GET·원문·정책을 보존한다. 새 SQL/쓰기 operation/실환경은0이다. 초안 독립C0/I0·Primary실현성확인 뒤 빈목록/안전정수/2MiB·기존오류 의미를 고정했다. 아직 미채택/제품GO0이다.
+- 기존 Reviewer는 FN01~05와 FN09~14 한정 source/caller·승인 WI 대조에서 현승인내 새 독립 소비선을 확정하지 못했다. 전체 계획 소진/완료 판정이 아니다. FN03 실제 파일관측과 FN05 실제공유·FN14 실소비는 별도 계약/현재 제외 경계를 먼저 정해야 한다. 다음 현승인내 후보인 FN15/UI12 연결 여부도 기존 Primary가 읽기 대조 중이다. 완료된 단위 재개발·반복 검증0이며 PMO 다음배정 대기0이다.
+
+## 2026-10-31 FN09 소스 checkpoint 게시 확인
+- 7cda4b56cf34b0ae153e2dc2d482a5194b7871a5 exact13을 기존 private branch에 게시했다. 실제 local/private SHA 동일·tracked clean/보호3만 untracked·main f976ed5e 불변을8121e0으로 확인하고 PMO에 결과/제외/다음선정 사실을 전달했다. 전체 계획 완료가 아니며 source 검수 단위만 통합했다.
+- 다음 후보는 FN13 보관 중지 요청의 과거 탐색이다. 현재 LIMIT21/최근20·hasMore만 있고 cursor 입력·이전 조회가 없어 단순 버튼 연결로는 완료할 수 없다. 기존 Primary가 최소 공개 GET 계약 차이를 읽기 검토 중이며, 기존 Reviewer는 FN01~05의 이미 채택된 범위에서 독립 구현 가능한 미연결 source/UI를 대조한다. 새 미채택 계약의 code write0, 실제 DB/권한/키/파일 조사/서비스/Agent0이다.
+- Main의 추정 경로 읽기 오류는 parser·0013 SQL filename·후속 project-api 경로 각1로 같은 원인 3회다. 경로 추정 방식을 중단하고 rg 반환 목록·실제 import·담당자가 확인한 정확 경로만 읽는 것으로 고정한다. 마지막 오류명령 재실행0·파일/ACL 변경0이며 전체 승인 작업 중단 사유로 사용하지 않는다.
+
 ## 2026-10-31 FN09 하위 HUMAN r2 소스 검수·통합 준비
 - 기존 Primary 단일 writer를 반환받았다. Main fresh 3dbdcc 신규/인접42 PASS·skip0·type0, a78c5e 메모리 Web484/3outputs·UI detect[]·diff0, 기존 Reviewer 최종 C0/I0다. 신규시험은 서버8/UI9/SQL정적3, 직접 인접22이며 실환경 실행은0이다.
 - 결과 docs/04_test_reports/AV3/FN09_CHILD_HUMAN_CONTENT_SOURCE_RESULT_20261031.md SHA256 3F0BBD13E9E9A5D61145AC41EF03C0949769E4C1D024AB56D3B26B1E86D61163. 기존 GET2/POST2만 HUMAN sibling으로 연결하고 parent 현재성·원증빙 replay/과거조회·UI 명시검토/별도확정·후속 실행패널 미마운트를 구현했다. 원root/일반command/0013·0034/downstream10·보호3는 보존한다.
