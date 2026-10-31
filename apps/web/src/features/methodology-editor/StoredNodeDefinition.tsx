@@ -1,3 +1,6 @@
+import {useEffect,useRef,useState} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import {readLimitPolicy,type LimitPolicyRecord} from '../connections/limit-policy-api.ts';
 import type { MethodologyDocumentItem, MethodologyNode } from '../../../../../contracts/methodologies.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { PinnedFormOriginal, type PinnedFormAccess } from '../methodologies/PinnedFormOriginal.tsx';
@@ -34,7 +37,8 @@ export function StoredNodeResponsibilities({ node }: { node: MethodologyNode }) 
  </section>;
 }
 
-export function StoredNodeDefinition({ node, formAccess }: { node: MethodologyNode; formAccess?: PinnedFormAccess }) {
+interface LimitReadAccess {client:ApiClient;projectId:string;userId:string;clientId:string;sourceRef:VersionRef;onAuthenticationLost:()=>void}
+export function StoredNodeDefinition({ node, formAccess,limitAccess }: { node: MethodologyNode; formAccess?: PinnedFormAccess;limitAccess?:LimitReadAccess }) {
  return <div><h4>{node.nodeId}: {node.name}</h4><p>{node.purpose}</p>
   <dl><dt>단계 유형</dt><dd>{kinds[node.kind]}</dd><dt>책임 역할</dt><dd>{roles[node.role]}</dd><dt>진행 방식</dt><dd>{node.mode === 'AUTO' ? '허용 범위 안 자동' : '건별'}</dd></dl>
   <p className="meta">저장 원본 조회이며 편집·실행하지 않습니다. 실제 도구 배정·권한·한도 검증이 아닙니다.</p>
@@ -47,9 +51,48 @@ export function StoredNodeDefinition({ node, formAccess }: { node: MethodologyNo
    <Values title="요구 능력" values={node.requirements?.capabilities ?? []} /><Values title="요구 환경" values={node.requirements?.environment ?? []} />
    <Values title="기록 요구" values={node.recordRequirements} />
    <h5>한도 정책 고정 참조</h5>{node.limitPolicyRef ? <p><Reference value={node.limitPolicyRef} /></p> : <p>연결된 한도 정책 없음</p>}
+   {limitAccess&&node.limitPolicyRef?<StoredLimitPolicy access={limitAccess} nodeId={node.nodeId} reference={node.limitPolicyRef}/>:null}
    {node.kind === 'JOIN' ? <section aria-label="저장된 합류 정의"><h5>합류 규칙</h5>
     {node.joinRule?.mode === 'ALL' ? <p>모든 선행 결과</p> : node.joinRule?.mode === 'DECLARED_CONDITION' ? <><p>명시한 결과 조건 · 평가하지 않은 원문</p>{node.joinRule.condition ? <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(node.joinRule.condition, null, 2)}</pre> : <p>합류 조건 미작성</p>}</> : <p>합류 규칙 미작성</p>}
    </section> : null}
   </details>
  </div>;
+}
+
+function StoredLimitPolicy({access,nodeId,reference}:{access:LimitReadAccess;nodeId:string;reference:VersionRef}){
+ const context=JSON.stringify([access.projectId,access.userId,access.clientId,access.sourceRef,nodeId,reference]);
+ const [owner,setOwner]=useState({client:access.client,transport:access.client.transport,context,generation:0});
+ if(owner.client!==access.client||owner.transport!==access.client.transport||owner.context!==context){setOwner({client:access.client,transport:access.client.transport,context,generation:owner.generation+1});return null;}
+ return <LimitPolicyRead key={owner.generation} access={access} reference={reference}/>;
+}
+function LimitPolicyRead({access,reference}:{access:LimitReadAccess;reference:VersionRef}){
+ const [read,setRead]=useState<{token:object;transport:typeof access.client.transport;value:LimitPolicyRecord|null;error:ApiError|null;busy:boolean}|null>(null);
+ const current=useRef<object|null>(null),running=useRef(false),alive=useRef(true),lost=useRef(access.onAuthenticationLost);lost.current=access.onAuthenticationLost;
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;current.current=null;};},[]);
+ const shown=read?.token===current.current&&read.transport===access.client.transport?read:null;
+ async function open(){
+  if(running.current)return;
+  const token={},client=access.client,transport=client.transport,selected=structuredClone(reference),projectId=access.projectId;
+  const active=()=>alive.current&&current.current===token&&client.transport===transport;
+  running.current=true;current.current=token;setRead({token,transport,value:null,error:null,busy:true});
+  try{const value=await readLimitPolicy(client,projectId,selected);if(active())setRead({token,transport,value,error:null,busy:false});}
+  catch(cause){if(!active())return;const error=cause instanceof ApiError?cause:new ApiError('LIMIT_POLICY_RESPONSE_INVALID');setRead({token,transport,value:null,error,busy:false});if(error.status===401)lost.current();}
+  finally{if(current.current===token)running.current=false;}
+ }
+ const value=shown?.value,limits=value?.snapshot.limits;
+ return <section aria-label="연결 한도 정책 보관 원문">
+  <button type="button" disabled={!!shown?.busy} onClick={()=>void open()}>연결 한도 정책 원문 보기</button>
+  {shown?<button type="button" onClick={()=>{current.current=null;running.current=false;setRead(null);}}>연결 한도 정책 원문 닫기</button>:null}
+  {shown?.busy?<p role="status">연결 한도 정책 보관본 검산 중</p>:null}
+  {shown?.error?<p role="alert">{shown.error.message} · {shown.error.code} · 연결 한도 미확인. 원문 보기로 다시 조회하세요.</p>:null}
+  {value&&limits?<>
+   <p className="meta" style={{overflowWrap:'anywhere'}}>정책 {value.ref.id} · v{value.ref.version} · SHA256 {value.ref.contentHash}</p>
+   <p>{value.snapshot.state==='APPLIED'?'보관 적용 상태 (APPLIED)':'보관 회수 상태 (REVOKED)'}</p>
+   <p>결정 시각 <time dateTime={value.snapshot.decidedAt}>{value.snapshot.decidedAt}</time> · 기록 만료 시각 <time dateTime={value.snapshot.expiresAt}>{value.snapshot.expiresAt}</time></p>
+   <dl><dt>최대 시도</dt><dd>{limits.maxAttempts}회</dd><dt>최대 경과 시간</dt><dd>{limits.maxElapsedMs} ms</dd><dt>최대 호출</dt><dd>{limits.maxCalls}회</dd><dt>동시 임무</dt><dd>{limits.maxConcurrentAssignments}개</dd><dt>최대 임시 보관량</dt><dd>{limits.maxSpoolBytes} bytes</dd><dt>최대 오프라인 시간</dt><dd>{limits.maxOfflineMs} ms</dd></dl>
+   {Object.hasOwn(limits,'maxCost')?<p>보관 비용 한도 {limits.maxCost} {limits.currency}</p>:<p>비용 한도 미기록 · 0원 또는 무제한으로 해석하지 않습니다.</p>}
+   <p>보관 이유: {value.snapshot.reason}</p><p className="meta">결정자 {value.snapshot.decidedBy.userId}</p>
+   <p className="meta">저장 당시 상태와 기한입니다. 현재 정책 효력·잔여 예산·OS/Agent 강제·실행 허가는 미확인입니다. 원본·초안·정책을 변경하지 않습니다.</p>
+  </>:null}
+ </section>;
 }
