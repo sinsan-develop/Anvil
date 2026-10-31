@@ -10838,3 +10838,19 @@
 - 결과 docs/04_test_reports/AV3/FN16_UNDERSTANDING_APPROVAL_PERMIT_INVENTORY_RESULT_20261031.md SHA256 C21462D2FDB6FE9F32C1D39644D75B95193D1A1687612B8E9A5B983D357EC3F6. Main c2763c은 3지문/원 schema·FN09/보호3 불변과 START/SEND 정규화block의 HEAD 동일을 확인했다. 독립 원block은11592bytes/SHA88F53144로 동일하다.
 - 같은RR 선택승인·후보/원명령·증빙과 순수helper를 사용하고 AUTO는 review ID전체의 유한 소비 존재검사를 거친다. 원fixture는 빈AC표1항목 외 불변, START/SEND·공개DTO·권한·false/NOT_PERFORMED·전체coverage412를 보존한다. 제품/시험3+결과/계획/현황3 정확6경로만 통합한다.
 - 실제 DB/권한/키/파일조사/서비스/Agent·실백업복원/사용자인수는 미검증/제외, QA/handle0·Main source쓰기0. 전체 FN16/Stage/계획은 미완료다. 다음은 미확정 A1/A4의 역사 주체 UUID/FK·계정 비반출·원hash/관계 보존 계약을 구체화한다.
+
+## 2026-10-31 FN16 이해검토·permit 보정 게시·복원 계약 선행
+- 6c643577b4a09f1be37094a33b0412c0ab9da65d를 private 기존 branch와 동일하게 게시했다. tracked clean/보호 untracked3 보존, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 실제 확인하고 PMO에 결과·I1보정·미검증을 전달했다.
+- 독립 읽기 결과 설계§10.4(544~550),INTERFACES§14.1(1061/1066/1068),A1:162에는 계정비반출/원hash·관계보존/새인증/과거권한비활성 요구는 있으나 역사주체UUID/FK의 구체 복원방식은 미정이다. 현재로그인사용자를 과거작성자로 치환하면서 원hash를 유지할 수는 없다.
+- Main은 원UUID·원형의 비활성 이력 보존/현재로그인 별도매핑과, 새현재자료ID/hash 파생/원문별도출처보관의 구체 차이를 준비한다. 기존Primary에 대표3~4개 실제DDL/producer/reader 주체결박의 읽기지원만 발행했다. 전체schema전수조사/새코드·SQL·계정·권한·실DB·키·파일/서비스 실행0, 아직 새계약채택/GO0이다. 이 계약은 Anvil설치/서버 복원에 관한 것이며 같은Anvil 안의 Agent교체에서 프로젝트 원형을 바꾸는 지시가 아니다.
+
+## 2026-10-31 FN16 복원 역사주체 구체화·PMO 결정 요청
+- 기존 Primary의 대표4계열 읽기 대조에서 원주체 UUID/FK와 불변 증빙의 결박을 확인했다. 원문/원hash/관계는 비권한 역사로 보존하고 재개용 현재자료는 새ID/hash와 명시 lineage로 파생하는 결합안을 PMO에 방향 결정 요청했다. 가짜계정·옛승인 재발급·Secret 반출0, 단순archive만으로 전체복원완료금지, 동일Anvil의 Agent교체와 구분한다.
+- 기존 Primary는 정본 후보1문서만 작성하며 NOT_ADOPTED/source·SQL·시험 GO0이다. 코드6c643577 완료검증 재실행0, Main source쓰기/실제DB·권한·키·파일조사·서비스·Agent/기존프로젝트차단해제0. 전체계획미완료/정확계약결정과 독립검수 뒤 다음업무를 이어간다.
+
+
+## 2026-10-31 FN16 역사주체 후보 독립 검토·구체 계약 미달 분리
+- 기존 Primary 단일 후보 FN16_RESTORE_HISTORICAL_IDENTITY_CANDIDATE_20261031.md(4339D2BD8D8CF09F3FDE49213CF8B2B86EE8C5E824D5B020BD3F2FF5F0FE2BFC/19201bytes110줄) 반환. Main실제지문과 원문/독립검토 지문 일치, 방향비교 scoped C0/I0다. 첫도구인자오류1은 명령실행0으로 분리했다.
+- PMO cursor61은 결합안을 상세후보 방향으로 권장했으나 새계약채택/제품구현승인이 아니라고 명시했다. Main/독립reviewer도 §8 exact형식·접근·멱등·원자경계가 미정이므로 구체계약채택안으로는 준비미달/parser·store GO0를 판정했다. 이 후보를 기능구현진도나 전체복원완료로 승격하지 않는다.
+- 다음은 대표문서1종의 비활성 역사원본·비계정주체참조·원본↔파생매핑 논리봉투와 기존contentHash/관계검산·현재조회OWNER·충돌/중복·UNKNOWN/rollback을 구체화하는 최소범위다. 기존Primary는 재사용근거 preflight만 수행하며 새문서수정/source/시험/SQL GO0이다. 다른자료군/자동계정연결/활성복원은미지원, 실제제외·보호3·코드6c643577을 유지한다. PMO에는 이판정과 다음경계를 전달했다.
+- Main 이번 현황 추가의 혼합 CRLF/빈줄 때문에 최초 diff-check exit1이 발생했다. 제품파일 변경 없이 이번 추가구간만 LF/말미공백 정규화했고 원기존이력은 보존했다. 형식오류1이며 제품검증/권한오류가 아니다.
