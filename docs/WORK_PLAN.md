@@ -1763,3 +1763,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-31 FN16 다음 미완료 선행
 전체 수동 백업 검증 상세화 범위 후보: docs/work_packages/FN16_FULL_BACKUP_VERIFICATION_SCOPE_DECISION_20261031.md(A6776EE4A757F45DAE06534EC407B11DEEF2D625A1EC19517DFE9D6199A594F2), 독립 C0/I0. A1~A6 전체 여정을 상세화하며 단순 synthetic coverage 포트로412를 풀지 않는다. 아직 새 공개계약·실제 실행 채택/구현 GO가 아니며 기존 FN16 및 전체 계획 미완료를 유지한다.
+
+### 2026-10-31 FN16 하위 HUMAN 과거 내용 수집 통합
+승인된 FN09 HUMAN 내용행을 기존 FN16 이력 수집과 연결했다. 제품 두 일괄거절만 제거하고 부모계보·원명령/receipt/audit·false flags 및 실행 차단을 보존했다. Main 단일5파일35 PASS/type/diff0·독립 C0/I0. 결과 FN16_CHILD_HUMAN_CONTENT_INVENTORY_RESULT_20261031.md(07E2D83F02A5BE91A706F649BED4A58A4A83E504680186142183B453AE7C7B52). 실제 DB/백업/복원·전체 FN16/계획은 미완료다. A1의 당시 child 미지원 기록은 시작 checkpoint의 사실이며 현재 이 source 보완과 구분한다.
