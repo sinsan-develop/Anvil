@@ -1805,3 +1805,7 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ## 2026-11-01 FN09 총괄 예약 UI source 검수
 - 기존 generic roleRef 계약의 총괄 예약 선택·역할별 binding/연결/CAS·UNKNOWN 원명령·별도 승인 소비를 연결했다. Main 신규11+인접29=40PASS/type·diff0, 독립 C0/I0/M0. 근거 docs/04_test_reports/AV3/FN09_COORDINATOR_RESERVATION_UI_RESULT_20261101.md. 실제 서버/DB·UI08 전체·native 브라우저·Agent/served는 미검증이며 전체FN09/Stage/계획 미완료다.
+
+
+## 2026-11-01 FN14 준비기록 서버 연결 source 검수
+- 기채택 준비기록 POST/고정GET·동일Tx 실제보호reader·역할binding증빙·fresh/history 연결을 구현했다. Main신규9+인접43=52PASS/type·diff0,등록합성원문3종 실제reader 별도1PASS·QA정확회수/독립부재,독립C0/I0/M0. 근거 docs/04_test_reports/AV3/FN14_PREPARATION_RECORD_SERVER_CONNECTION_RESULT_20261101.md. 화면6은원승인제외로후속결정대상/미변경,등록target reader412·실PG/서비스/Agent/이전/전체FN14·계획미완료다.
