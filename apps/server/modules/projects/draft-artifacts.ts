@@ -1,3 +1,5 @@
+import {ArtifactStore,type ProjectNamespaceProof} from '../../storage/artifact-store.ts';
+import {ProjectStorageQuota} from './project-storage-quota.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
@@ -20,8 +22,10 @@ export class DraftArtifacts {
   readonly files: DraftArtifactFilePort | null;
   #access: AccessRepository;
   #proofs = new WeakSet<VerifiedDraftSelection>();
+  #namespaceProofs=new WeakMap<CreationPlan,ProjectNamespaceProof>();
+  #quota:ProjectStorageQuota;
   #active = new Set<string>();
-  constructor(access: AccessRepository, root?: string, files?: DraftArtifactFilePort) { this.#access = access; this.files = files ?? (root ? new StoredDraftArtifactFiles(root) : null); }
+  constructor(access: AccessRepository, root?: string, files?: DraftArtifactFilePort) { this.#access = access;this.#quota=new ProjectStorageQuota(access,root?new ArtifactStore(root):undefined); this.files = files ?? (root ? new StoredDraftArtifactFiles(root) : null); }
   #storage() { if (!this.files) return fail('ARTIFACT_STORAGE_UNCONFIGURED', 412); return this.files; }
   async #reserve(db: PoolClient, sql: string, values: unknown[]) {
     try { return await db.query(sql, values); }
@@ -162,7 +166,8 @@ export class DraftArtifacts {
   async snapshot(db: PoolClient, actor: AuthenticatedIdentity, draftId: string, version: number, commandId: string, receiptId: string, refs: unknown) {
     await db.query('SELECT anvil.fn01_record_selection($1,$2,$3,$4,$5,$6,$7,$8::jsonb)', [actor.authSession!.id, actor.actorId, actor.clientId, draftId, version, commandId, receiptId, JSON.stringify(readDraftArtifactRefs(refs))]);
   }
-  async prepareCreation(token: string, csrf: string, request: { draftId: string; draftVersion: number; clientId: string; commandId: string }): Promise<CreationPlan> {
+  async prepareCreation(token: string, csrf: string, raw: { draftId: string; draftVersion: number; clientId: string; commandId: string }): Promise<CreationPlan> {
+    const request=JSON.parse(canonicalJson(raw)) as typeof raw;
     const requestHash = contentHash(canonicalJson(request));
     const plan = await this.#access.authenticated(token, csrf, async (db, actor) => {
       await this.lockOwner(db, actor); const draft = await this.#draft(db, actor, request.draftId, request.clientId);
@@ -178,6 +183,7 @@ export class DraftArtifacts {
     if (this.#active.has(plan.id)) fail('DRAFT_CREATION_IN_PROGRESS'); this.#active.add(plan.id);
     try {
       plan.attempt = await this.#access.authenticated(token, csrf, async (db, actor) => (await db.query('SELECT anvil.fn01_claim_intent($1,$2,$3,$4,$5,$6) AS value', [actor.authSession!.id, actor.actorId, actor.clientId, 'CREATION', plan.id, requestHash])).rows[0].value);
+      if(this.files?.beginNamespace&&this.files.verifyNamespace)await this.files.beginNamespace(plan.target_project_id,plan.id);
       for (const entry of plan.sources_json) {
         const spec: DraftCopySpec = { draftId: plan.draft_id, intentId: entry.uploadId, creationId: plan.id, projectId: plan.target_project_id, ref: entry.ref };
         const raw = await this.#storage().readDraft(spec); if (inspectArtifact(raw).state === 'SUSPECTED') fail('ARTIFACT_QUARANTINED', 412);
@@ -187,13 +193,28 @@ export class DraftArtifacts {
         await this.lockOwner(db, actor); const draft = await this.#draft(db, actor, plan.draft_id, request.clientId); this.#current(draft, request.draftVersion); await this.guardSnapshot(db, actor, draft.id, { artifactRefs: plan.refs_json });
         await db.query('SELECT anvil.fn01_copies_verified($1,$2,$3,$4,$5,$6)', [actor.authSession!.id, actor.actorId, actor.clientId, plan.id, requestHash, plan.attempt]);
       });
-      return { ...plan, state: 'COPIES_VERIFIED' };
+      const result={...plan,state:'COPIES_VERIFIED'};
+      if(this.files?.beginNamespace&&this.files.verifyNamespace){const proof=await this.files.verifyNamespace(plan.target_project_id,plan.id,plan.refs_json);this.#namespaceProofs.set(result,proof);}
+      return result;
     } catch (error) {
-      await this.#access.authenticated(token, csrf, async (db, actor) => { await this.lockOwner(db, actor); await db.query('SELECT anvil.fn01_unknown_intent($1,$2,$3,$4,$5,$6)', [actor.authSession!.id, actor.actorId, actor.clientId, 'CREATION', plan.id, plan.attempt]); }).catch(() => {}); throw error;
+      await this.#access.authenticated(token, csrf, async (db, actor) => { await this.lockOwner(db, actor); await db.query('SELECT anvil.fn01_unknown_intent($1,$2,$3,$4,$5,$6)', [actor.authSession!.id, actor.actorId, actor.clientId, 'CREATION', plan.id, plan.attempt]); }).catch(() => {});
+      if(this.files?.beginNamespace&&this.files.verifyNamespace)return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);
+      throw error;
     } finally { this.#active.delete(plan.id); }
   }
   async commitCreation(db: PoolClient, actor: AuthenticatedIdentity, plan: CreationPlan, projectCommandId: string) {
     await db.query('SELECT anvil.fn01_commit_creation($1,$2,$3,$4,$5,$6,$7)', [actor.authSession!.id, actor.actorId, actor.clientId, plan.id, plan.request_hash, projectCommandId, plan.attempt]);
+  }
+  creationFailure(plan:CreationPlan,error:unknown):never{
+    // 실제 namespace/copy 확인 이후에는 운영 COMMIT 결과 불명도 새 생성으로 재시도하지 않는다.
+    if(this.#namespaceProofs.has(plan))return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);
+    throw error;
+  }
+  async adoptProjectQuota(db:PoolClient,actor:AuthenticatedIdentity,plan:CreationPlan,projectCommandId:string){
+    const proof=this.#namespaceProofs.get(plan);
+    // 원래 root 없는 metadata 생성은 보존하되 검증 계정으로 승격하지 않는다.
+    if(!proof)return;
+    await this.#quota.adoptCreation(db,actor,plan,{serverCommandId:projectCommandId},proof);
   }
   async completeCreation(db: PoolClient, actor: AuthenticatedIdentity, plan: CreationPlan, result: unknown) {
     await db.query('SELECT anvil.fn01_creation_result($1,$2,$3,$4,$5::jsonb)', [actor.authSession!.id, actor.actorId, actor.clientId, plan.id, JSON.stringify(result)]);

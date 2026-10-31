@@ -1,9 +1,10 @@
+import {ProjectStorageQuota,type StartedQuotaBundle,type QuotaPart} from '../projects/project-storage-quota.ts';
 import {randomUUID,timingSafeEqual} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,isoV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../../contracts/runtime/validation-v1.ts';
-import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
-import {authorizeMaterial,currentProjectController,persistProjectReceipt,projectMember,type ProjectCommand} from '../access/project-command.ts';
+import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
+import {authorizeMaterial,currentProjectController,persistProjectReceipt,projectMember,projectReplay,type ProjectPolicyRepository,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectCheckpointPreparation} from './project-checkpoint-preparation.ts';
 import {createCheckpointRecord,readCheckpointRecord} from './checkpoint-record.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
@@ -46,7 +47,33 @@ export class ProjectCheckpoints{
   const hasMore=rows.length>limit;let nextCursor:string|null=null;if(hasMore){if(!this.signCursor)fail();const text=Buffer.from(canonicalJson({scope,upper,before:items.at(-1)!.serverSequence,expiresAt})).toString('base64url');nextCursor=text+'.'+this.signCursor(text);}
   await this.#assignment(db,actor,pid,ar);const observedAt=await this.#clock(db);const session=actor.authSession;if(!session||Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))<=Date.parse(observedAt))fail('AUTH_REQUIRED',401);if(Date.parse(observedAt)>=expiresAt)fail('CURSOR_INVALID',400);return{items,hasMore,nextCursor,observedAt};
  }
- async save(db:PoolClient,rawActor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicy:Ref){
+ async #localQuota(db:PoolClient,projectId:string,incoming:bigint){
+  const q=(await db.query('SELECT count(*)::text AS count,COALESCE(sum(octet_length(anvil.checkpoint_canonical(snapshot_json))+octet_length(record_text)),0)::text AS bytes FROM anvil.checkpoint_records WHERE project_id=$1',[projectId])).rows[0];
+  if(!q||!/^\d+$/.test(String(q.count))||!/^\d+$/.test(String(q.bytes)))fail();
+  if(BigInt(q.count)>=10000n||BigInt(q.bytes)+incoming>1073741824n)fail('CHECKPOINT_STORAGE_LIMIT',429);
+ }
+ async saveCommand(access:AccessRepository,policies:ProjectPolicyRepository,token:string,csrf:string,raw:ProjectCommand){
+  const request=cloneV1(raw),quota=new ProjectStorageQuota(access);
+  const prepared=await quota.prepare(token,csrf,request,async(db,actor,fixed,existing)=>{
+   const policy=await authorizeMaterial(db,actor,fixed),plan=await this.#prepareSave(db,actor,fixed,policy.ref);
+   // UTC 밀리초 ISO의 길이만 고정한다. 미래 운영Tx 시각을 예측하지 않는다.
+   const record=createCheckpointRecord(plan.p,{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},'2000-01-01T00:00:00.000Z'),bytes=String(Buffer.byteLength(canonicalJson(record.snapshot))+Buffer.byteLength(record.recordText));
+   await this.#localQuota(db,request.projectId,BigInt(bytes));
+   return [{key:'checkpoint',kind:'CHECKPOINT',id:existing?.[0]?.id??randomUUID(),bytes,contentHash:record.snapshot.preparedHash,reservedBytes:bytes,settledBytes:bytes}];
+  });
+  if(prepared.replay){
+   try{return await access.authenticated(token,csrf,async(db,actor)=>{
+    await currentProjectController(db,actor,request);await authorizeMaterial(db,actor,request);
+    const previous=await projectReplay(db,actor,request),ref=previous?.data?.ref;if(previous?.data?.status!=='CHECKPOINT_RECORDED'||!refV1(ref))fail();
+    const read=await this.read(db,actor,request.projectId,ref.id);if(!same(read.ref,ref)||!same(previous.data,{ref,...this.#data(read.snapshot)}))fail();
+    const final=await quota.protectedReplay(db,actor,request);if(!same(final,previous))fail();return final;
+   });}catch{throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
+  }
+  const started=await quota.start(token,csrf,await quota.reserve(token,csrf,prepared));
+  try{return await policies.command(token,csrf,request,(db,actor,policyRef)=>this.save(db,actor,request,policyRef,{quota,started,part:prepared.parts[0]!}));}
+  catch{throw new AuthFailure('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
+ }
+ async #prepareSave(db:PoolClient,rawActor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicy:Ref){
   const actor=structuredClone(rawActor),request=cloneV1(raw),policyRef=cloneV1(rawPolicy),state=request.payload?.state,ar=state&&typeof state==='object'&&!Array.isArray(state)&&'assignmentRef'in state?state.assignmentRef:undefined;
   if(request.operation!=='saveCheckpoint'||!refV1(ar)||request.targetId!==ar.id||request.expectedVersion!==ar.version||request.approvalRef!==null||request.baselineRefs.length||!refV1(policyRef))fail('CHECKPOINT_INPUT_INVALID',422);
   await db.query('SELECT id FROM anvil.projects WHERE id=$1 FOR UPDATE',[request.projectId]);await this.#authorized(db,actor,request,policyRef);const p=await this.preparation.prepare(db,structuredClone(actor),request.projectId,ar,request.payload),base=p.input.baseRef;
@@ -54,13 +81,17 @@ export class ProjectCheckpoints{
   const heads=(await db.query(`SELECT v.id,v.content_hash FROM anvil.checkpoint_records v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id JOIN anvil.audit_events a ON a.project_id=v.project_id AND a.command_id=v.command_id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref' WHERE v.project_id=$1 AND v.assignment_id=$2 AND v.assignment_version=$3 AND v.assignment_hash=$4 ORDER BY a.server_sequence DESC LIMIT 1`,[request.projectId,ar.id,ar.version,ar.contentHash])).rows;
   // 신규 저장은 전역 10GiB의 동일 transaction 예약 공급자가 연결될 때까지 닫는다.
   if(heads.length&&(!base||heads[0].id!==base.id||heads[0].content_hash!==base.contentHash)||!heads.length&&base!==null)fail('CHECKPOINT_BASE_CONFLICT',409);
+  return {actor,request,policyRef,p,base,ar};
+ }
+ async save(db:PoolClient,rawActor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicy:Ref,writing?:{quota:ProjectStorageQuota;started:StartedQuotaBundle;part:QuotaPart}){
+  const {actor,request,policyRef,p,base,ar}=await this.#prepareSave(db,rawActor,raw,rawPolicy);
   const at=(await db.query('SELECT transaction_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))fail('CHECKPOINT_CLOCK_INVALID');const record=createCheckpointRecord(p,{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},at.toISOString());
-  const quota=(await db.query('SELECT count(*)::text AS count,COALESCE(sum(octet_length(anvil.checkpoint_canonical(snapshot_json))+octet_length(record_text)),0)::text AS bytes FROM anvil.checkpoint_records WHERE project_id=$1',[request.projectId])).rows[0];
-  if(!quota||!/^\d+$/.test(String(quota.count))||!/^\d+$/.test(String(quota.bytes)))fail();
-  if(BigInt(quota.count)>=10000n||BigInt(quota.bytes)+BigInt(Buffer.byteLength(canonicalJson(record.snapshot))+Buffer.byteLength(p.recordText))>1073741824n)fail('CHECKPOINT_STORAGE_LIMIT',429);
-  await this.#globalQuota();
-  await this.#authorized(db,actor,request,policyRef);const ref={id:randomUUID(),version:1,contentHash:hash(record.snapshot)},receipt=await persistProjectReceipt(db,actor,request,ref,this.#data(record.snapshot),policyRef,'EXPLICIT_CHECKPOINT_CLAIMS_NOT_RESUME');
+  const bytes=String(Buffer.byteLength(canonicalJson(record.snapshot))+Buffer.byteLength(record.recordText));
+  await this.#localQuota(db,request.projectId,BigInt(bytes));
+  if(!writing)await this.#globalQuota();
+  else await writing.quota.requireStarted(db,actor,request,writing.started,[{key:writing.part.key,kind:'CHECKPOINT',id:writing.part.id,bytes,contentHash:record.snapshot.preparedHash,reservedBytes:bytes,settledBytes:bytes}]);
+  await this.#authorized(db,actor,request,policyRef);const ref={id:writing?.part.id??randomUUID(),version:1,contentHash:hash(record.snapshot)},receipt=await persistProjectReceipt(db,actor,request,ref,this.#data(record.snapshot),policyRef,'EXPLICIT_CHECKPOINT_CLAIMS_NOT_RESUME');
   await db.query("SELECT set_config('anvil.checkpoint_session_id',$1,true)",[actor.authSession!.id]);await db.query('INSERT INTO anvil.checkpoint_records(project_id,id,assignment_id,assignment_version,assignment_hash,previous_id,previous_hash,content_hash,snapshot_json,record_text,created_by,client_id,command_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[request.projectId,ref.id,ar.id,ar.version,ar.contentHash,base?.id??null,base?.contentHash??null,ref.contentHash,JSON.stringify(record.snapshot),record.recordText,actor.actorId,actor.clientId,receipt.id,receipt.result.serverReceivedAt]);
-  const stored=await this.read(db,actor,request.projectId,ref.id);if(!same(stored.ref,ref)||!same(stored.snapshot,record.snapshot))fail('CHECKPOINT_WRITE_UNCONFIRMED');await this.#authorized(db,actor,request,policyRef);return cloneV1(receipt.result);
+  const stored=await this.read(db,actor,request.projectId,ref.id);if(!same(stored.ref,ref)||!same(stored.snapshot,record.snapshot))fail('CHECKPOINT_WRITE_UNCONFIRMED');await this.#authorized(db,actor,request,policyRef);if(writing)await writing.quota.settle(db,actor,request,writing.started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});return cloneV1(receipt.result);
  }
 }

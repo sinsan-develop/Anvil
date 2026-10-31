@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 저장량 A Q2 검수·Q3 구현 중
+- 직접 승인된 저장량·지속예약 A는 기존 Primary 단일 writer, Main 관리·검수·통합으로 진행 중이다. Q1 원장 프로토콜 checkpoint15d36edb, Q2 upload/diff 소비 checkpoint39da3312c81c26802361850a6dbb62e4644b3c52를 기존 private branch에 보존했다. Main 동일 code 수정0, 보호3·기존0042/0058·복구원본 보존.
+- Q2 Main53PASS/type0 후 proposal replay Tx 경계1을 보완했고, 보완본 Main writers22PASS/type0·독립 C0/I0다. 두 결과는 분리 증거이며 합산 단일전수로 표시하지 않는다. WI r3 CD13DAAC5E1FDAF5AF368C745BED6125237BFAE62E0D9907E4C129A62AE7BBA3.
+- 현재 기존 Primary가 Q3 새 프로젝트 namespace/closedcopy·adoption 생성Tx의 account/원장 인계와 checkpoint 소비를 구현한다. 기존 프로젝트 차단 해제·실제 DB/SQL/권한·키·현재 파일 조사·서비스·Agent 실행0, 메모리 합성 검증만 허용한다. 전체 WORK_PLAN은 미완료이며 goal ACTIVE, 완료보고 상태가 아니다. 아래 이전 결정대기·일시정지는 이력이다.
+
 ## 현재 인수 — 2026-10-31 저장량·지속예약 A안 직접승인·ACTIVE 재개
 - 신산님이 후보9110DEA86C1616B224F5BB4DA6E1099B7BD9915A0DC67D044CDBC06827EE12E2의A안·새원장2표/관련코드/미적용SQL/합성구현을직접승인하고목표를ACTIVE로재개했다. 아래기존질문/일시정지는과거이력이며이번source범위의차단이아니다. 승인기록PROJECT_STORAGE_QUOTA_RESERVATION_APPROVAL_20261031.md/SHADE377C277F9C90C849586CF711977D4DE7DAFD013CE979F0336641201858E236.
 - 실제 DB·권한·키·파일조사·서비스·Agent실행 및 기존프로젝트차단해제 제외. 후보원문동결·기존자료0/READY승격0·UNKNOWN자동감액0을유지한다. 전체WORK_PLAN미완료이며계획완료책임은Main이다.
@@ -10414,3 +10419,7 @@
 - Q2 동결 제출: 기존제품6+quota/0059/core/schema/writers 정확10경로, Primary6de40b53PASS·type/diff0·writer해제/handle0. Mainf1756d 최종동결source core19/schema5/writers21/기존직접8 총53PASS/skip0, f1439e type0. b7add4/1531a5/c7ad5c/32ed70에서실upload/diff dispatch·원자료재대조·게시/staging검산·보호replay·소비선을읽기확인했다. 현재독립최종검토중이며아직Q2채택/commit전이다. 실제DB/FS/QA0·Q3미착수. Webbuild는제품UI변경없어Q4최종1회로남겼다.
 - Q2 독립최종검토중 proposal replay의보호원문검산Tx와실제반환Tx가분리된경계보완필요발견. Main도source확인해기존Primary에같은최종Tx에서검산/반환하도록신규10범위반례보정배정했다. 실제격리변경producer/누출실행확정은아니며현재보호조회조건의합성경계다. 기존Main53PASS는보정전이력보존,보정후영향검수예정. Q3/실자원0.
 - Q2 보정후 독립scoped C0/I0/전체미해결C/I0. Main13ba03 최종writers22PASS/skip0+type0, d946d0에서같은최종Tx protectedReplay/원SETTLED검산·원receipt반환을확인했다. 앞선53과합산해단일전수PASS로표시하지않는다. 내부WI r3/실제품10범위만채택·기존Primarywriter해제,실SQL/PG/FS·승인생산/실서비스는미검증/제외다. 다음Q3 생성/adoption인계·checkpoint실소비를같은담당에연속배정한다. 전체WORK_PLAN/기존project차단해제완료아님.
+- Q3 중간6cc8d4: 실제 AccessRepository/ProjectsRepository 생성이 성공해도quota account가없는미연결RED를Primary가확인했다. 신규writers는FS binding을메모리로교체해실ArtifactStore namespace/closedcopy알고리즘을호출하며현재실제파일/DB/QA/livehandle0보고. namespace발급·capturedroot/0042copy·동일생성Tx인계구현중,checkpoint/0058대체는후속. 새계약막힘없음. 읽기중괄호파싱오류1은실행0으로좁혀보정,정식동일실패3아님.
+- Q3 중간 진행: Primary b6c760 빈신규생성1PASS,17961f 첨부B/기존빈namespace거절/COMMITTED무승격/관측복제·다른root거절4PASS/type0보고. 합산최종검수아니며Main미검수. 실제FSbinding은메모리Map/원binding복구·실파일0,0059양방향생성guard/checkpoint는구현중. pendinghandle/승인대기/새계약막힘0,adapter optional중복타입오류1회좁혀해소. 생성source호출선만기존Reviewer예비읽기배정·writer는Primary한명.
+- Q3 SQL예비독립Important1: app호출가능quota_adopt_creation이과거COMMITTED생성계보/rawmanifest만으로account없는legacy를VERIFIED로초기화할수있는현재Tx신규결박누락발견. 기존Primary에원project/불변PROJECTcreate명령·receipt/intent/adoption의현재생성Tx identity+원시각/계보교차검사·legacyraw호출반례RED→GREEN배정. Main은PG15공식functions-info/ddl-system-columns문서로xid8→xid cast와xmin의row-version의미를확인했고단독xmin/시각/GUC성공권위0을전달했다. 실제SQL/DB0. checkpoint정상d12a67 선택1PASS/type0는수행자중간증거,Main미검수다. 기존0058검산/4deferred/immutable보존은예비읽기확인.
+- Q3 최종독립C0/I0·Main9ecb97 정확6파일89PASS/skip0, fe43ad type0/c758bf diff0·0042/0058원형불변·fba5be승인14/동결문서·보호3지문불변. Q4 516a2b 메모리Web482modules/exit0,새QA/서비스0. 결과PROJECT_STORAGE_QUOTA_RESERVATION_SOURCE_RESULT_20261031.md SHA4FFE8DC321BCE887FF0F2DE51DE581C217B02AA83826E981E868D0609D31BCA9를작성하고FN01/FN03/FN13에source부분진척만각각누적했다. 두WORK_PLAN/WORK_STATUS이력차이는보존·전체덮어쓰기0. Main rg glob구문오류1은폴더+ -g로교정했으며권한/설정변경0. 생성/체크포인트fixture별도모델·실PG/SQL/FS/연속운영·native xid·기존차단해제미검증/제외다. 전체계획미완료·goal ACTIVE,다음단위선정계속.

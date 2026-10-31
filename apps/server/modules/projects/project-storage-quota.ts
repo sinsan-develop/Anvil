@@ -1,8 +1,9 @@
+import type {CreationPlan} from './draft-artifacts.ts';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {authorizeMaterial,currentProjectController,projectReplay,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectDocuments} from '../documents/project-documents.ts';
-import type {ArtifactStore} from '../../storage/artifact-store.ts';
+import type {ArtifactStore,ProjectNamespaceProof} from '../../storage/artifact-store.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 export const PROJECT_STORAGE_CAP=10737418240n;
@@ -75,6 +76,16 @@ export class ProjectStorageQuota{
   }));this.#prepared.set(result.p,result);return result.p;
  }
  /** 호출자 소유 보호 Tx 안에서 현재 권한과 과거 원정산 대응을 다시 검산한다. */
+ async adoptCreation(db:PoolClient,actor:AuthenticatedIdentity,creation:CreationPlan,receipt:{readonly serverCommandId:string},proof:ProjectNamespaceProof):Promise<void>{
+  try{
+   if(!this.#store||creation.state!=='COPIES_VERIFIED'||!uuidV1(receipt.serverCommandId)||!actor.authSession||!uuidV1(actor.authSession.id))unknown();
+   const manifest=this.#store.projectNamespaceFacts(proof,creation.target_project_id,creation.id,creation.refs_json),session=actor.authSession;
+   const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
+   if(!(at instanceof Date)||!Number.isFinite(at.getTime())||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt)||Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))<=at.getTime())unknown();
+   const value=(await db.query('SELECT anvil.quota_adopt_creation($1,$2,$3,$4,$5::jsonb) AS value',[session.id,actor.actorId,actor.clientId,creation.target_project_id,JSON.stringify({creationId:creation.id,requestHash:creation.request_hash,serverCommandId:receipt.serverCommandId,manifest,manifestHash:hash(manifest)})])).rows[0]?.value;
+   if(value!==true)unknown();
+  }catch{return unknown();}
+ }
  async protectedReplay(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand):Promise<any>{
   const request=cloneV1(raw),current=await this.#current(db,actor,request),previous=await projectReplay(db,actor,request);
   if(previous===undefined)unknown();

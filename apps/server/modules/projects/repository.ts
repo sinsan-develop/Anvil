@@ -125,7 +125,8 @@ export class ProjectsRepository {
       return writeDraftReview(db, identity, draft, request, result => this.#draftCommand(db, identity, draftId, request.operation, request, result));
     });
   }
-  async createProject(token: string, csrf: string, request: ProjectCreate) {
+  async createProject(token: string, csrf: string, raw: ProjectCreate) {
+    const request=JSON.parse(canonicalJson(raw)) as ProjectCreate;
     const creation = await this.artifacts.prepareCreation(token, csrf, request);
     if (creation.state === 'COMMITTED') return creation.result_json;
     const created = await this.#access.authenticated(token, csrf, async (db, identity) => {
@@ -176,8 +177,9 @@ export class ProjectsRepository {
       await db.query('UPDATE anvil.commands SET result_ref=$2 WHERE id=$1', [commandId, JSON.stringify(result)]);
       const completed = await this.#draftCommand(db, identity, draft.id, 'createProject', request, result);
       await this.artifacts.completeCreation(db, identity, creation, completed);
+      await this.artifacts.adoptProjectQuota(db,identity,creation,commandId);
       return completed;
-    });
+    }).catch(error=>this.artifacts.creationFailure(creation,error));
     await this.artifacts.reclaim(token, csrf, creation);
     return created;
   }

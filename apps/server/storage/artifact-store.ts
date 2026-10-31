@@ -1,3 +1,4 @@
+import {canonicalJson} from '../../../contracts/canonical.ts';
 import {assertArtifactBackupReadBudget,readOwnedArtifactBackupBytes,type ArtifactBackupReadBudget} from './artifact-backup-budget-read.ts';
 import { constants } from 'node:fs';
 import { lstat, realpath, mkdir, open, readdir, copyFile, unlink, rmdir } from 'node:fs/promises';
@@ -5,6 +6,10 @@ import { isAbsolute, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export interface ProjectNamespaceRef{readonly artifactId:string;readonly bytes:number;readonly contentHash:string;readonly mediaType:string}
+export interface ProjectNamespaceProof{readonly schemaVersion:1;readonly projectId:string;readonly creationId:string;readonly artifactRefs:readonly ProjectNamespaceRef[];readonly bytes:string}
+// 실제 저장소 관측의 출처만 기억한다. 인증·권한·현재 제어의 proof가 아니다.
+const namespaceProofs=new WeakMap<object,{root:string;facts:ProjectNamespaceProof}>();
 export class ArtifactStore {
   #root: string;
   constructor(root: string) { if (!isAbsolute(root) || resolve(root) !== root) throw Error('ARTIFACT_ROOT_INVALID'); this.#root = root; }
@@ -84,6 +89,38 @@ export class ArtifactStore {
     const path = await this.#directory(['blobs', projectId]);
     if ((await lstat(join(path, artifactId))).isSymbolicLink()) throw Error('ARTIFACT_FILE_UNSAFE');
     return this.#bytes(join(path, artifactId), expected);
+  }
+  async beginProjectNamespace(projectId:string,creationId:string):Promise<void>{
+    this.#draftIds(projectId,creationId);await this.#directory([]);
+    const parent=await this.#directory(['project-namespaces'],true),path=join(parent,projectId),marker=Buffer.from(canonicalJson({schemaVersion:1,projectId,creationId}));
+    try{await mkdir(path,{mode:0o700});}
+    catch(error){
+      if((error as NodeJS.ErrnoException).code!=='EEXIST')throw error;
+      await this.#directory(['project-namespaces',projectId]);
+      if(canonicalJson((await readdir(path)).sort())!==canonicalJson(['ready']))throw Error('PROJECT_NAMESPACE_UNKNOWN');
+      await this.#bytes(join(path,'ready'),{bytes:marker.length,contentHash:createHash('sha256').update(marker).digest('hex')});return;
+    }
+    // 기존 빈 디렉터리도 새 namespace라고 추정하지 않는다. 둘 다 독점 생성해야 한다.
+    for(const kind of ['blobs','staging']){const p=await this.#directory([kind],true);await mkdir(join(p,projectId),{mode:0o700});await this.#directory([kind,projectId]);}
+    await this.#writeClosed(join(path,'ready'),marker);
+  }
+  async verifyProjectNamespace(projectId:string,creationId:string,raw:readonly ProjectNamespaceRef[]):Promise<ProjectNamespaceProof>{
+    this.#draftIds(projectId,creationId);const refs=JSON.parse(canonicalJson(raw)) as ProjectNamespaceRef[];
+    if(!Array.isArray(refs)||refs.length>20||new Set(refs.map(r=>r.artifactId)).size!==refs.length)throw Error('PROJECT_NAMESPACE_INVALID');
+    for(const ref of refs)if(!uuid.test(ref.artifactId)||!Number.isSafeInteger(ref.bytes)||ref.bytes<0||ref.bytes>20971520||typeof ref.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(ref.contentHash)||typeof ref.mediaType!=='string')throw Error('PROJECT_NAMESPACE_INVALID');
+    const path=await this.#directory(['project-namespaces',projectId]),marker=Buffer.from(canonicalJson({schemaVersion:1,projectId,creationId}));
+    if(canonicalJson((await readdir(path)).sort())!==canonicalJson(['ready']))throw Error('PROJECT_NAMESPACE_UNKNOWN');
+    await this.#bytes(join(path,'ready'),{bytes:marker.length,contentHash:createHash('sha256').update(marker).digest('hex')});
+    const blobs=await this.#directory(['blobs',projectId]),staging=await this.#directory(['staging',projectId]);
+    if(canonicalJson((await readdir(blobs)).sort())!==canonicalJson(refs.map(r=>r.artifactId).sort())||(await readdir(staging)).length)throw Error('PROJECT_NAMESPACE_UNKNOWN');
+    for(const ref of refs)await this.#bytes(join(blobs,ref.artifactId),ref);
+    const facts:ProjectNamespaceProof=Object.freeze({schemaVersion:1,projectId,creationId,artifactRefs:Object.freeze(refs.map(r=>Object.freeze(r))),bytes:refs.reduce((n,r)=>n+BigInt(r.bytes),0n).toString()});
+    namespaceProofs.set(facts,{root:this.#root,facts});return facts;
+  }
+  projectNamespaceFacts(proof:ProjectNamespaceProof,projectId:string,creationId:string,refs:readonly ProjectNamespaceRef[]):ProjectNamespaceProof{
+    const value=namespaceProofs.get(proof);
+    if(!value||value.root!==this.#root||value.facts.projectId!==projectId||value.facts.creationId!==creationId||canonicalJson(value.facts.artifactRefs)!==canonicalJson(refs))throw Error('PROJECT_NAMESPACE_PROOF_INVALID');
+    return JSON.parse(canonicalJson(value.facts)) as ProjectNamespaceProof;
   }
   // DRAFT는 기존 PROJECT put/read와 별도 이름 공간·독점 작성 경계를 사용한다.
   #draftIds(...ids: string[]) { if (ids.some(id => !uuid.test(id))) throw Error('ARTIFACT_INPUT_INVALID'); }
