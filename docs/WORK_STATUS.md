@@ -10904,3 +10904,11 @@
 ## 2026-10-31 P03 R3 정적 제안 검수 결과 복구
 - 현재 대화의 원 실행결과를 read_thread로 복구해 exec-8f6c21b5-0bd5-4ccb-a7ad-87a09e25ec8e exit0을 확인했다. 구문검사 재실행0이다. 최종 제안53C896D067BFFD332FDB89B63C7E1D71E34D869CD438AD466A67A9D8385F6EF0의 Bash -n/Node --check 각0, CRLF→LF 정규화 Bash10856B/CD044AF75D129E4DF26238F20012C85CB909F95C24F29F41E50A30F35437756A·내부Node9103B/4A3E5AF48DFECEAE983508A09653C0966C3EFC80F25438498AA703200EC6AD06이다. preparationExecuted/remoteAccess/filesCreated 모두 false다.
 - 앞선 기본sandbox Git Bash DLL초기화3221225794의exit1과후속elevated 구문0은분리한다. 제품/WSL오류로승격하지않고Bash구문실패로도해석하지않는다. reviewer 최종53C896D0 C0/I0는development remote/고정SSH자동신뢰금지/freshQA -B경계의원I1해소다. 실제결정/시간/nonce/grant는 PENDING이며조회·준비·복제·PG·SQL·서비스·키실행0이다.
+
+
+- Main 문서 보존 중 canonical/source 혼합 줄바꿈으로 diff-check1회 실패해 stage/commit 전에 중단했다. 기존 source HEAD 4483228바이트를 그대로 두고 이번 새10행만 붙이는 방식으로 교정했다. 첫 Git show의 Node 기본1MiB 버퍼 ENOBUFS1은 제한16MiB로 조정해 해결했다. 제품/설정/과거 이력 변경0·검사 완화0이며 최종 diff/index check0이다. 문서2개만23446ec784d4af8b1365de291f69b184caae2df1로 게시했고 private동일/mainf976 불변/보호3을확인했다. 실제복구제안은동적PENDING·실제실행0으로PMO에전달했다.
+
+## 2026-10-31 독립 UI10 미검증 사례 선별과 소스 읽기 실행경계
+- 기존Primary가SCREEN_WORK122~130/FUNCTION_WORK63~73·WORK_STATUS1729의UI10관련원문보기두미검증(부모fullref교체/단계최종응답닫기)을독립후보로선정했다. Mainba3887는실제c152624b checkpoint의코드/시험6파일을확인했다. 앞선history조회75998b의exit1은Select-Object조기파이프종료이며정확commit한개재조회ba3887exit0으로원인을분리했다.
+- Primary012f5e metadataexit0에서6중KnowledgePage.tsx만후속변경68+/23-/6commit이고component/helper/시험3은변경이력0이다. 현재본문6읽기는자동심사가 '지정된 저장소 소스·시험 파일의 내용을 직접 읽는 파일 조사이며, 사용자 지시가 파일 조사를 명시적으로 제외한다'고실행전거절했다. 본문실행0/시험0/쓰기0·독립reviewer즉시중단·Git본문/새도구/다른leaf우회0이다. 해당6의현재동작/두사례해소여부는미확정이며원문제조사거절을제품실패로표시하지않는다.
+- PMO에앞선FN16제품3읽기거절과이번UI10제품/시험6의정확repo상대경로·거절원문을전달했다. 필요한결정은승인된제품소스/시험읽기와제외된사용자자료·백업대상실파일조사를구분하는것이며새계약/DB/키/서비스/Agent실행승인을추정하지않는다. 같은본문읽기추가재시도0,전체계획미완료/실제환경불변·새QA0. 계획상할일이없어서가아니라필수source검토의실행권한경계미해소다.
