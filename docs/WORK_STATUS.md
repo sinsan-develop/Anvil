@@ -1,5 +1,10 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN08 새 저장계약 미응답 2차수
+- 직전목표차수는FN13 source bfc2ed01 검수·통합과FN08구체계약2F04BB32/PMO질문46을만든진전이었다. 이번48d712에서HEADc3edf54c·local/private동일·trackedclean/보호3·mainf976불변·후보지문동일을확인했다. PMO cursor47/turn01a190cc는idle/terminal이며새채택·승인원문이없다. 두기존담당모두completed로새writer/QA/실행handle0이다.
+- 같은FN08 새3표·source분류·누적한도계약질문46→미답변47의두번째차수다. 살아있는process/job의verified wait가아니며현상태확인·현황기록을기능개발진도로세지않는다. 완료FN13/직전단위검증반복0·새code/SQL·실DB/권한/키/사용자파일조사/서비스/Agent·기존project일반차단해제0·동일질문추가0이다.
+- 앞서대조한나머지source별승인/caller와실환경제외범위는변하지않았고이안에서새독립구현을추가확정하지못했다. 전체계획완료/기능소진판정은아니다. PMO의정확2F04BB32 A/B질문을유지하며채택답변시같은Primary WI구현·Mainfresh/독립검수/통합을재개한다. 과거해소FN13 blocked횟수는상속하지않고목표ACTIVE를유지한다.
+
 ## 2026-10-31 FN08 새 저장계약 결정 대기 1차수
 - PMO cursor46/turn01a190ca-a482-7e23-a2af-9f594c2b5b96는신산님께FN08 지속등록r2 A/B를직접질문했다. 후보2F04BB32F37C2968F1B1570B1792C27649C44D3E956DA5328C0FE1466F1401D5의새3표/guard/source분류·누적상한이정확신규차이이며,기존FN13승인재질문이아니다. 아직답변/채택없음·새source/SQLGO0·중복질문0이다.
 - 이차수는FN13 source구현·Main24검사·독립검수·bfc2ed01통합과다음구체계약작성/PMO결정요청의진전이었다. 현재PMO는idle/terminal이고살아있는job의verified wait가아니다. 같은차단재확인은이번이첫차수이며,직접승인으로해소된이전FN13 blocked횟수는상속하지않는다.
