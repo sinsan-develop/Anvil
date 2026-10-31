@@ -1,6 +1,23 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN13 과거 페이지 A 소스 검수·통합 준비
+- 기존 Primary writer 반환 뒤 Main ff435c 정확 신규3+기존2의24PASS/skip0/type0, a599a9 메모리Web484/3outputs·UI detect[]/diff0를확인했다. 독립최종scopedC0/I0·미해결Critical/Important0다. 원read/olddecoder는실제Gitdiff에서본문변경없고기존회귀4PASS,기존GET rawquery제거gap만계약대로400으로보완했다.
+- 결과 docs/04_test_reports/AV3/FN13_STOP_REQUEST_PAGES_SOURCE_RESULT_20261031.md SHA 58D684DD8F76F985373262EE311A5048E6B6FD4F42AE327C4E128356435B4017. 새pageGET/고정20·전용서명cursor·현재subject/session·상한/proof·UI왕복/동일실패cursor·문맥회복/decoded2MiB를구현했다. 소유8+결과/계획/현황3만기존branch에통합한다.
+- Main0f7dec은최종8/보호3지문·control c8f2cb10 local/private동일·mainf976불변·등록worktree목록을대조했다. 보조AST비교API오류/추가comment경계텍스트비교실패는PASS근거에서제외하고실제diff·기존회귀로확인했다. 검증도구묶음인자오류는a699ad의일치Node프로세스0확인뒤올바른jobs로재실행했으며ff435c/a599a9만최종실행근거다. 코드/테스트기준완화·tool설치/설정0이다.
+- 실DB/권한/키/사용자파일조사/서비스/Agent·기존project일반차단해제0,실PG/SQL/원자성·경합/native브라우저/served/사용자인수NOT_RUN이다. 크기검사는decodedcanonical방어로native스트림상한이나유효원장초과경로증명이아니다. 별도QA/handle0·main통합/전체FN13/계획완료아님이다.
+- 다음은핵심FN08 SEND자료지속등록의실제저장공백과기존미채택3표계약 F379F60D를정확결정안으로대조한다. 기존읽기port/합성자료wrapper를재개발하거나실공급·Agent준비완료로승격하지않는다. 새계약채택전코드/SQLGO0,Main이선정·필요결정지원요청을주도한다.
+
 ## 2026-10-31 FN13 과거 페이지 A 직접승인 재개
+- UI 독립I1은 요약조회후client/관측transport교체시shown=null/requested=oldowner인데revision>0 조건으로버튼이영구비활성화되는문제였다. d07ad0 RED→391e75 성공/진행중×client/transport4분기1PASS로보완했고독립C0/I0를확인했다. 새UI729C8D20의summaryPending은현재owner의실제요청만분류하며자동GET0/옛401폐기·명시요약조회→과거재진입을보존한다.
+- Main169cd8/b9c00a는page decoder와공유ApiClient.get에decoded canonical UTF-8 2MiB검사가없는것을확인했다. 승인WI의크기방어를새page decoder한정조건/합성초과응답반례로추가하도록지시했다. 공유ApiClient/실제네트워크스트림수정0,valid원장의2MiB초과도달은미입증으로분리하며스트림메모리상한검증으로승격하지않는다. 실authenticated본문반환뒤monotonic31초최종거절7402fa는inject메모리증거일뿐실COMMIT지연시험아니다.
+- 서버동시append I1은b8b247 RED→최초t0 cutoff를SQL GREEN1로닫았고독립Addressed를확인했다. Main d37d7d는 history ECA4D6F3/routes7C527F1E 부분동결을대조했다. 완전DBsnapshot주장0이다.
+- client중간I1은첫페이지upper와첫item의fullref/hash불일치를재봉인해도수용하는문제다. before=null의상한·첫item exactref/시각검산을추가했다. e1fb3a는guard제거RED→finally원bytes복원→GREEN으로재현했고,30362e/c3de98의fixture alias동시변경은실제모순아닌준비오류1묶음으로정정했다. 현재API76034362를독립scoped재검토에전달했다. UI는실제과거버튼부재ac00b5 RED뒤연결중이며Main코드쓰기0/실환경0이다.
+- 기존GET rawquery 보완은5503f1 inject1PASS, DB시각31초처리반례는74783a 선택1PASS/type0으로닫았다. client새decoder부재RED→98511b1PASS/type0, UI는실제React페이지연결을진행중이다.
+- 서버부분동결 E7C4E582/7C527F1E의독립중간C0/I1:initial=t0고정뒤부모reader대기중정상t1요청이추가되면최초metadata에는포함하지만requestedAt>t0검사로503이된다. 최초SQL cutoff 또는metadata관측시각결박의일관된보완·정상동시append RED→GREEN를같은Primary에게지시했다. history만부분동결해제/기존route보완은보존,다른서명·binding·proof확정finding추가0·실SQL/실DB실행0이다.
+- 서버 be2449는 실제 기존 stop 원문 reader의 메모리 원장으로20→다음20→이전cursor 1PASS/type0이다. 추가상한/empty/append/동률/MAX_SAFE/결박/proof손상4조건이통과했으나 DB시각만31초 진행한 반례39687b가RED여서 monotonic뿐아니라DB경과30초도검사하도록보완중이다. 실제PG·지연시험아님.
+- inject8eaa85는기존GET?cursor=x가AJV query제거뒤200이되는기존구현gap을확인했다. Main은같은routes의기존handler에rawquery존재400 최소보완을허용했다. 원query0계약을실제보장하는수정이며plainGET/DTO/권한은보존하고기대값완화0이다. 작성중서버2는기존Reviewer에게보호·상한·시각경계읽기검수를배정했으며UI미작성은finding아니다.
+- 첫 TDD ddad59는 실제 ProjectStopRequestHistory.page 부재로 21번째/보호 왕복 조건 1FAIL/exit1을 확인했다. 기존5 시작지문·신규3부재·control HEAD가 일치하고 신규 서버시험1만 생성됐다. 기존 stop 원문 reader를 같은 메모리 원장으로 소비하며 부모 result/execution source는 대역이고 실제DB/프로세스·막힘0이다.
+- 승인·WI·현황 통제3문서를 c8f2cb10d4812a3fdc8bb719f61d2c968742e488로 기존 private branch에 게시하고 같은 Primary에게 정확8경로 TDD GO를 전달했다. 기존 Reviewer의 WI 사전 검수는 C0/I0이며 구현 합격이 아니다. Main은 동일 코드 수정0, source 제출 뒤 fresh 검사·독립 코드검수·통합을 수행한다. PMO에 직접승인 해소/GO/제외 범위를 전달했고 새 결정 요청은 없다.
 - 신산님이 후보B1ACDCD4의A안을직접승인했다. 직접승인문서를새binding으로보존하며과거3차수미응답/blocked는이력이다. 실제목표active재개이며같은승인재질문0,이후차단감사는새로계산한다.
 - Main37cb90에서HEAD8f58ecc8·local/private동일·trackedclean/보호3·mainf976불변·후보지문일치를확인했다. 기존Primary가정확5경로지문/신규3부재와전용cursor·DTO 최소접점을짧게대조중이다. Main은정확8WI발행뒤같은담당에게TDD를배정하고같은코드수정0·독립검수/통합을소유한다.
 - 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project일반차단해제0,새SQL/쓰기operation/QA프로세스0. 완료FN09/직전단위반복검증0·전체계획완료주장0이다.

@@ -144,7 +144,17 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
    if(performance.now()>=deadline)throw new AuthFailure('RESULT_OBSERVATION_CURSOR_EXPIRED',412);return value;
   });
   const stopRequestHistory=new ProjectStopRequestHistory(resultExecutionSource);
-  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/stop-requests',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>stopRequestHistory.read(db,actor,request.params.projectId,request.params.id));});
+  app.get<{Params:{projectId:string;id:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/results/:id/stop-request-pages',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({cursor:{type:'string',minLength:1,maxLength:4096}},[])}},async request=>{
+   if(request.headers.host!==host||request.headers.origin!==undefined&&request.headers.origin!==options.origin)throw new AuthFailure('ORIGIN_INVALID',403);
+   if(request.headers.authorization!==undefined)throw new AuthFailure('CONNECTOR_CREDENTIAL_SCOPE_DENIED',403);
+   const raw=new URL(request.raw.url??'','https://'+host).searchParams;
+   if([...raw.keys()].some(k=>k!=='cursor')||raw.getAll('cursor').length>1)throw new AuthFailure('INPUT_INVALID',400);
+   const started=performance.now();
+   const value=await options.repository.authenticated(token(request),null,(db,actor)=>stopRequestHistory.page(db,actor,request.params.projectId,request.params.id,raw.has('cursor')?{cursor:raw.get('cursor')!}:{},v=>options.repository.signProjectCursor('RESULT_STOP_REQUEST_PAGE_V1:'+v)));
+   if(performance.now()-started>=Math.min(30000,Date.parse(value.cursorExpiresAt)-Date.parse(value.observedAt)))throw new AuthFailure('RESULT_STOP_HISTORY_LIMIT',412);
+   return value;
+  });
+  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/stop-requests',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);if(new URL(request.raw.url??'',options.origin).searchParams.size)throw new AuthFailure('INPUT_INVALID',400);return options.repository.authenticated(token(request),null,(db,actor)=>stopRequestHistory.read(db,actor,request.params.projectId,request.params.id));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/observation-journal',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>observationJournal.read(db,actor,request.params.projectId,request.params.id));});
   const resultArtifacts=new ProjectResultArtifacts(results,options.artifactRoot?new ArtifactStore(options.artifactRoot):null);
   app.get<{Params:{projectId:string;id:string;artifactId:string}}>('/api/v1/projects/:projectId/results/:id/artifacts/:artifactId/text',{schema:{params:object({projectId:idSchema,id:idSchema,artifactId:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultArtifacts.read(db,actor,request.params.projectId,request.params.id,request.params.artifactId));});
