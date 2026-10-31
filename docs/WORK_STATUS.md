@@ -1,5 +1,12 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 신규 계약 채택 차단 3차수 재확인
+- 전체 WORK_PLAN은 미완료이며 완료보고·main병합·정리 완료 상태가 아니다. 승인된 quota A source와 후속 UI06/UI03/UI01은 앞선 실제 지문·검수 범위만 유효하다. 최종 준비checkpoint e94cbc2613f5520b9e8946daf3d0d7e518e8a94d, 실제84c459 HEAD동일·trackedclean/보호3만비추적. 새제품변경/기존검사 재실행0.
+- 첫 차수는 UI01 통합·FN02 후보/준비WI 보존으로 진전한 뒤 신규계약 채택 차단에 도달했다. 후속차수1885cf/PMOcursor37은 동일미답변·진전없음, 이번84c459/PMOcursor37도 새답변없음으로 같은차단3차수를 재확인했다. PMO는idle/terminal이므로 살아있는job의 verified-wait로 세지 않는다. 현재 codewriter/QA/process0, 대기문구를 실행중인 작업으로 포장하지 않는다.
+- 필요한 입력① FN02 r2 8B6742A94ABB4433AF6A2B220EF823097AA7EAEFEB84B27E516A152D3BCF99F7의 공개GET2/별도readonly응답·cursor 채택A/B. PMO turn01a19001-7bf3-7491-9ded-2cf23ce51681의 기존직접질문 답변만확인, 중복질문0. 준비WI D60C4F3ABC8C8D253106AABFBB44ED76CD88517B9D712BEBB63BCF19FAC0E712는NOT_DISPATCHED. 필요한 입력② 기존 FN14 준비기록/상한 후보 C842350B21242E6817FF1BA7BF709A286B8B33A936D368B212F98E63073DB0AD의 정확채택결정. quota원장A로이두공개/영속계약채택을대신하지않는다.
+- 앞선 Source 경계대조에서 독립적으로 바로구현할 채택내누락은추가확인하지못했고, 준비본/기존guard·미채택계약과 실제DB/권한/키/사용자파일조사/서비스/Agent·기존project차단해제 제외범위가 남는다. 검토한범위내판정이며 전체계획기능소진/완료라는뜻이아니다. 더작은가짜완료·반복검사/보고용후보추가로대신하지않는다.
+- 목표를BLOCKED로전환할조건이충족됐다. 상태도구반환을최종판정으로기록하며새승인답변/외부상태변경전반복자동실행·질문0. 재개시채택대상/hash/제외범위·실제Git/dirty를대조하고같은기존Primary에Main정확GO·독립검수·통합으로이어간다. 사용자자료·원5복구본/보호3·기존branch/이력은보존한다.
+
 ## 현재 인수 — 2026-10-31 UI01 통합·다음 공개 읽기 계약 구체화
 - UI01 exact6 commit8c939d4b7ab7c08a3156b9005b3cbeff6c33f5de local/private 동일·tracked clean·mainf976 불변, 보호3만 비추적. Main27PASS/skip0/type0·메모리build482/detect[]·독립C0/I0, 실제브라우저/HTTP/DB/서비스미검증. 결과E431CAA0A8ADC2B3855C5D797C8326D74CACA5578324EAE39959E87F6A89F3CD. 이전 UI01 통합준비·UI03 검수중은 이력이다.
 - 기존 Primary/Reviewer의 읽기 대조로 FN01 source권위·FN03 실검산·FN04 신규적용·FN05 실제공유/전달·FN06 실능력·FN07 둘째실도구·FN08 SEND지속등록·FN09 자식내용확정·FN10 실행별한도·FN12 실제근거·FN16 공적백업/민감역사·FN17 push·FN18 installer/업데이트의 남은 계약/실제공급자 경계를 분리했다. 기존 실효 false/412·NOT_ADOPTED를 ‘누락’으로 지워 통과시키지 않으며 완료된reader/inventory/정적검사를 반복하지 않는다. 이는 지정 source 범위 대조이고 전체 계획 소진/완료 판정이 아니다.
