@@ -1775,3 +1775,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-31 FN16 승인 이해검토·permit 이력 내부 통합
 승인된 이해검토 원형을 같은RR 선택증빙·기존 순수helper로 수집에 연결하고 AUTO의 고아 소비 단독 반례를 보완했다. Main 보정후 단일4파일35PASS/type/diff0·최종3지문 독립C0/I0. 원fixture의 빈소비표1항목 외 기존단언/행생산·START/SEND block·권한/false/미검증 표시는 보존한다. 결과 FN16_UNDERSTANDING_APPROVAL_PERMIT_INVENTORY_RESULT_20261031.md(C21462D2FDB6FE9F32C1D39644D75B95193D1A1687612B8E9A5B983D357EC3F6). 실제DB/백업/복원·전체FN16/계획은 미완료다.
+
+### 2026-10-31 FN16 문서 역사 논리형식 source 부분 검수
+- 직접채택924D7359 §10/WI1DDF6790에 따라 신규 내부 typedDTO·namespace/원projection/문서hash·주체/조건부ref·배타상태/메모리충돌 검산2파일을 구현했다. Main 신규10+인접9=19PASS/skip0·type/diff0·최종2지문 독립C0/I0. 실제parser/수입·저장/API/schema·원출처/관계codec/실bytes·권한/계정연결·active파생·복원은 미지원/미검증이며 실제DB·키·파일조사·서비스·Agent/기존차단해제0이다. 결과 docs/04_test_reports/AV3/FN16_DOCUMENT_HISTORY_LOGICAL_ENVELOPE_SOURCE_RESULT_20261031.md(20D2E226BD82A71A4D3DE71B04FDF242FEA5AAB9C994A67BD21526FF05C3DEBF). 논리type/hash 검수만이며 전체FN16/Stage/44업무 완료가 아니다.
