@@ -10374,3 +10374,9 @@
 - e35de5 정상commit/push 뒤 UI09제품checkpoint eabd1e3e23562cbe24a5688bab31bdb257e9f5f3 local/private동일·원격main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·trackedclean/보호3만untracked를확인했다. 정확제품1/시험2/관련문서3의6경로, actualDB/서비스/권한/Agent변경0·전체계획미완료다.
 - UI12/FN15의기존 SELF요청/고정안전요약은 ControlAccessPage→api→Appbuffer에이미연결돼있다. buildApp기본OFF/mainfactory미연결·0041checksum검사/실제collector·수락/제어전환이남았으며현재제외/별도계약을UI재작성으로우회하지않는다. 기존완료시험반복0.
 - PMO에 exact eabd결과와 FN14기존E096후보의현재위임범위·기존직접답변/중복질문대조 지원만요청했다. 새op/보호GET/준비metadata2표·조회권은FN13직접승인과별개이며승인추정0. Primary는quota집계/예약실접점·Reviewer는FN14후보현행차이를읽기대조, 코드/시험/SQL/QA0이다. Main이책임지고다음범위를선정하며PMO작업배정을기다리지않는다.
+
+### 프로젝트 quota source 후보·새 결정 경계 정리
+- Primary 읽기와 Main433e86/3ea5dd 대조: 기존 ArtifactStore는 blobs/staging 실제파일 cap10GiB, 0042는생성선택첨부예약이있다. canonical upload/diff는project DB잠금아래FS→receipt/artifact순서이나 뒤DB rollback은FS잔류를원복하지않는다. artifacts.bytes SUM만으로전역412해제0.
+- 후보 docs/contracts/PROJECT_STORAGE_QUOTA_RESERVATION_SOURCE_CANDIDATE_20261031.md 24571bytes/SHA9110DEA86C1616B224F5BB4DA6E1099B7BD9915A0DC67D044CDBC06827EE12E2를canonical/source동일bytes로작성·독립문서/실접점C0I0. DRAFT/NOT_ADOPTED이며제품/새SQL/실측/권한/DB/서비스/Agent0이다.
+- A는독립durable예약/시작COMMIT→운영Tx→같은Tx정산·UNKNOWN자동해제0·upload/diff/생성adoption/FN13전writer통합/새원장2표·미적용forwardSQL/source/합성을제안한다. FS임시2B·새원장/오류의미/다중Tx는기존FN13허가자동확대가아닌Main권장새선택이다. B는현재412유지. 기존project초기사용량검증/실제승격·실제UNKNOWN해제/회수·실SQL/DB/FS/서비스는A에서도제외한다.
+- 신규Fn14후보E096은C0I1(누적/전역quota누락)으로그대로채택요청하지않았다. 우선공통quota선행의정확후보만PMO결정경로로전달하며기존답변/질문중복0. 새계약채택뒤에만정확WI/allowlist/초기namespace증빙·coverage/오류호환조건을고정하며합성READY/stub확장만으로진도승격0. 전체계획미완료·현재codewriter/QA0.
