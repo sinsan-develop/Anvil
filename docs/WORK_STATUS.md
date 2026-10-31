@@ -1,5 +1,11 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN16 수동정책 저장 r2 결정 요청 — 첫 미응답 차수
+- 최신 안전checkpoint5695d0873dcf7b6e7818bbc3047c9deedbd6acba는제품FN08 6658cbd9와후속현황/다음후보를포함한다. 기존branch에게시됐고제품 trackedclean/보호3보존·mainf976불변이며실환경0이다. FN08 Main107PASS/독립C0/I0는source단위이고전체계획은미완료다.
+- 후보 docs/work_packages/FN16_MANUAL_POLICY_STORAGE_R2_DECISION_20261031.md SHA53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E를PMO에채택지원요청했다. PMO cursor53/turn01a19123-6601-73f1-9825-859e962874e0는신산님께A/B직접결정을질문했다. 새저장/조회·승인후보/누적상한계약의PMO AGENTS §6경계이며기존계획재승인이아니다. 현재미채택/제품GO0·같은질문재발송0이다.
+- A는정책2표+승인후보1표·누적10000행64MiB/정확원문후보보호조회·일회소비와UI14별도저장의source/미적용SQL/합성범위다. 기존계약/실행제외·실coverage부재412를보존한다. B는전체backup/job·키보호/복원계약후구현이다. 결정전실키/DB/권한/파일조사/서비스/Agent·기존프로젝트일반차단해제0이다.
+- 현재기존담당2명읽기완료·writer/QA/살아있는toolhandle0이며PMO도idle/terminal이다. 살아있는작업진행으로가장하지않는다. 이전직접승인으로해소한FN08 blocked횟수는이새계약에상속하지않고이번첫결정대기다. Main의계획완료책임은유지하며답변시정확후보/허용경로·WI를고정해같은Primary에위임한다. 완료된기능/검증반복·미채택계약임의구현·전체완료보고0이다.
+
 ## 2026-10-31 FN08 지속등록 r2 A 직접승인 재개
 - FN16 r2 문서독립C0/I0를확인했다. 실제정책enum은AUTO여서초안ALLOW용어1곳을AUTO로정정했고기능·승인범위변경0이다. 최종후보SHA53D2ED423629B6402BAAD1D42AAC5998A6F57AA6A4B15A0BB500AC158883FA0E이며PMO에A/B정확채택결정을요청한다. 미채택/제품GO0·기존질문중복0/실환경0이다.
 - 다음FN16수동정책후보158E10BC는기존Primary/Reviewer의실제caller/WI대조로미채택·미구현임을확인했다. 독립C0/I2는정책전체승인후보보관·보호조회/소비와누적상한미정이다. 기존선택파일exportProject를다시개발하지않는다.
