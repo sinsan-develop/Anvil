@@ -25,7 +25,7 @@ export class ProjectAssignmentDrafts {
   constructor(plans: Pick<ProjectWorkPlans, 'read' | 'decision'>, methods: Pick<ProjectMethodologies, 'readApplication'> = new ProjectMethodologies(), parents?: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>) {
     this.plans = plans; this.methods = methods; this.parents = parents ?? new ProjectAssignmentConfirmations(this);
   }
-  async #parent(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, input: AssignmentDraftInput) {
+  async #parent(db: PoolClient, actor: AuthenticatedIdentity, request: Pick<ProjectCommand, 'projectId' | 'targetId'>, input: AssignmentDraftInput) {
     const child = input.definition, ref = child.parentAssignmentRef;
     if (ref === null) return;
     if (ref.id === request.targetId) throw new AuthFailure('ASSIGNMENT_PARENT_INVALID', 422);
@@ -131,6 +131,21 @@ export class ProjectAssignmentDrafts {
     assertAssignmentRoot(draft.snapshot.definition);
     const basis = await this.#basis(db, actor, projectId, { baseRef: draft.snapshot.previousRef, definition: draft.snapshot.definition, reason: draft.snapshot.reason });
     if (!same(draft.snapshot.basis, basis)) throw new AuthFailure('ASSIGNMENT_BASIS_CHANGED', 409);
+    return draft;
+  }
+  /** HUMAN 내용쓰기 전용: 부모 잠금 뒤 child를 다시 읽고 원 기준을 대조한다. */
+  async currentForContent(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, ref: VersionRef) {
+    await projectMember(db, actor, projectId, true);
+    const discovery = await this.read(db, actor, projectId, ref.id, ref.version);
+    if (!same(discovery.ref, ref)) throw new AuthFailure('VERSION_CONFLICT', 409);
+    if (discovery.snapshot.definition.parentAssignmentRef === null) return this.current(db, actor, projectId, ref);
+    const input = { baseRef: discovery.snapshot.previousRef, definition: discovery.snapshot.definition, reason: discovery.snapshot.reason };
+    await this.#parent(db, actor, { projectId, targetId: ref.id }, input);
+    const head = (await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [projectId, ref.id])).rows[0];
+    if (!head || Number(head.head_version) !== ref.version) throw new AuthFailure('VERSION_CONFLICT', 409);
+    const draft = await this.read(db, actor, projectId, ref.id, ref.version);
+    if (!same(draft.ref, ref) || !same(draft.snapshot, discovery.snapshot)) throw new AuthFailure('VERSION_CONFLICT', 409);
+    if (!same(draft.snapshot.basis, await this.#basis(db, actor, projectId, input))) throw new AuthFailure('ASSIGNMENT_BASIS_CHANGED', 409);
     return draft;
   }
   async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>, codec: ProjectListCodec) {

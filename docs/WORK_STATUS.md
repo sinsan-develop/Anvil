@@ -1,5 +1,22 @@
 # Anvil 재설계 작업현황
 
+## 2026-10-31 FN09 하위 HUMAN r2 소스 검수·통합 준비
+- 기존 Primary 단일 writer를 반환받았다. Main fresh 3dbdcc 신규/인접42 PASS·skip0·type0, a78c5e 메모리 Web484/3outputs·UI detect[]·diff0, 기존 Reviewer 최종 C0/I0다. 신규시험은 서버8/UI9/SQL정적3, 직접 인접22이며 실환경 실행은0이다.
+- 결과 docs/04_test_reports/AV3/FN09_CHILD_HUMAN_CONTENT_SOURCE_RESULT_20261031.md SHA256 3F0BBD13E9E9A5D61145AC41EF03C0949769E4C1D024AB56D3B26B1E86D61163. 기존 GET2/POST2만 HUMAN sibling으로 연결하고 parent 현재성·원증빙 replay/과거조회·UI 명시검토/별도확정·후속 실행패널 미마운트를 구현했다. 원root/일반command/0013·0034/downstream10·보호3는 보존한다.
+- Main9a502e는 변경10 지문·보호3 일치, control c8fa59ee local/private 동일·main f976ed5e 불변과 등록 worktree 목록을 확인했다. 새 소스10+결과/계획/현황3만 통합하며 다른 worktree/역사·dirty는 보존한다. branch-only이며 main/전체 FN09/계획 완료가 아니다.
+- 실제 DB·권한·키·사용자 파일 조사·서비스·Agent·기존 프로젝트 일반 차단 해제0, 실제 PG 구문/trigger/원자성/경합·실브라우저·served·사용자 인수는 NOT_RUN이다. 임시 QA/프로세스 생성0. detect는 exit0/[]이나 보관 engine0.1.17과 pin0.1.18 차이 경고를 보존하고 도구 설치/삭제/설정은 변경하지 않았다.
+- 다음은 승인 범위 안의 남은 source/UI 소비선과 별도 계약 결정·실환경 제외 경계를 대조해 이어간다. PMO의 다음 업무 배정을 기다리지 않으며 전체 완료 주장0이다.
+
+## 2026-10-31 FN09 r2 구현 배정
+- 직접승인·WI·현황 정확3문서를 기존 branch에 c8fa59eecf0aa50f916026fcf928de7169ac2735로 commit/private push했다. WI SHA256 59FA7762426B4EFA57C717245BF45316E361A86B9D1E5AAB2136306B542B1C12, 기존 Reviewer 사전 scoped C0/I0. 기존 Primary에게 정확10경로 TDD 구현을 배정했으며 Main 코드 수정0이다.
+- PMO에는 직접승인으로 이전 미채택 대기가 해소됐고 구현·검수가 진행됨을 전달했다. 다음 작업 배정을 기다리지 않는다. 실제 DB/권한/키/사용자파일 조사/서비스/Agent/기존 프로젝트 일반 차단 해제0, 실제 동작 및 전체계획 완료 판정0. 이후 Primary 제출→Main fresh 핵심/인접검사→독립 코드 검수→소유 변경 통합 순서다.
+
+- 첫 TDD: Primary 5f7591은 신규 실제 class 호출에서 reviewContent 미구현을 1 FAIL/exit1로 확인했고 기존 6제품 시작 지문은 일치했다. 이후 HUMAN 전용 접점 구현 중이다. 새 계약 차단과 실제 환경 실행은 없다. Main 조회 오류는 공유 parser의 추정 경로 부재 1회(실제 apps/server/modules/assignments/assignment-input.ts로 교정) 및 sandbox Git context 오류 1회(elevated 읽기 확인으로 구분)이며 제품 실패·ACL 변경이 아니다. 원0034 SHA48853FAAE7A5CE71649743792DCE1119E7FFA6E1DF67B899703BE11904737972와 공유 parser SHA40093629F092FEB4BB8D661420B3985E8A9D93B72F37B6D290DF3995663D9ECF를 보존 검수 기준으로 확보했다. Primary craft-floor 추정 하위경로 부재1회는 정확 skill 경로로 정정했다.
+- 중간 서버256083은 실제 persistProjectReceipt와 같은 메모리 원장으로 child 검토→확정→조회 1 PASS/type0, 기존 read child412 보존을 확인했다. 부모 현재성은 아직 대역이므로 전체 검증은 아니다. 독립 중간 Important1: 기존 INNER JOIN 검토목록이 감사/command가 빠진 최신 REWORK를 숨기면 이전 ACCEPTED로 잘못 확정될 수 있다. Main64c05c로 소비선을 확인하고 기존 root 목록은 보존한 child 전용 완결검사와 최신 REWORK 감사누락 반례 RED→GREEN를 같은 Primary에게 지시했다. 정식 FAILURE_REPORT/동일실패3회는 아니며 구현 중 검수 보완이다. Primary fixture 내부/외부command ID 혼합1·tsconfig 미명시1은 시험/명령 교정으로 분리했다.
+- I1은 0d53ed의 정상 ACCEPTED→REWORK 실제 producer 뒤 최신 audit 누락 반례 RED로 재현했고 d81534는 child 원행 aggregate/cardinality 검사 뒤 GREEN(1 PASS)이다. 기존 root 목록은 변경하지 않았다. 서버4+0061 부분동결 de2de6 뒤 독립 검수에서 I1 Addressed를 확인했다.
+- SQL 중간 Important2: result_ref.snapshot.draftRef만으로 root/child를 분류하면 원 child 명령의 JSON을 정상 root draft로 바꿔 원행/receipt/audit 검산을 우회할 수 있다. 실제 command 결박 원내용 행→보호 draft로 분류하고 손상/누락을 root로 우회하지 않는 한정 보완을 같은 Primary에게 지시했다. SQL 해당 파일만 부분동결을 해제했으며 실제 SQL 실행은 0이다. 기존 SQL filename 추정 조회 오류1은 실제 rg 목록의0013_assignment_confirmation.sql로 교정했고 동일 실패명령 반복0이다.
+- UI 부분 동작: 874f43의 미연결 RED→5b6aa6 연결 GREEN 1PASS/type0, 1b70c7은 실제 React 폼의 명시 review→decision→confirm→fixedGET 합성 1PASS다. 실제 HTTP/브라우저가 아니다. 독립 UI I1은 확정 POST409/422까지 uncertain=true로 처리해 입력 수정을 막는 회귀이며, 원 pending/입력 보존·명시 거절 확인 후 수정과 통신 불명을 구분하도록 Primary에게 지시했다.
+- SQL 원행 분류 I2와 관련 operation 조기 반환은 보완했으나, 618995F0의 전체 command deferred 호출이 project_id NULL의 정상 DRAFT에도 적용되는 I1을 발견했다. 실제 내용 원행의 유무·종류/expected operation/정상 scope별 분기표와 child 정상·op 변조·반쪽 content·root·무관 PROJECT/DRAFT 반례로 같은 분류 원인을 함께 닫도록 지시했다. 기존 SQL 전체 재감사·실제 PG 실행0이다. 구조 단언·메모리 분기 모델은 SQL 실행 증거가 아니다.
 ## 현재 인수 — 2026-10-31 FN09 child HUMAN r2 A 직접승인 재개
 - 신산님이r2 5880747B+원r1 51F71890의하위HUMAN내용검토·별도확정·과거조회A를직접승인하고전체작업계획완료까지계속지시했다. FN09_CHILD_HUMAN_CONTENT_SOURCE_DIRECT_APPROVAL_20261031.md가현재binding이며이전BLOCKED/미채택/질문미답변은과거이력이다. 동일승인재질문0.
 - Main085387은HEADeb9590e7·trackedclean/보호3만untracked와대상지문을대조했다. fabbc6에서기존6제품지문·0061prefix부재를읽기확인했다. 기존Primary가이미읽은좁은consumer/공통child replay접점의최소경로·검증만확정중이고Main은정확WI를발행해같은담당에게TDD위임한다. Main동일코드수정0·기존Reviewer독립검수.

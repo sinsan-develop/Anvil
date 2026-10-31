@@ -1,3 +1,4 @@
+import type {ProjectAssignmentConfirmations} from '../assignments/project-assignment-confirmations.ts';
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import { randomUUID } from 'node:crypto';
@@ -130,6 +131,26 @@ export class ProjectPolicyRepository {
   constructor(access: AccessRepository,documents?:ProjectDocuments) { this.#access = access;this.#documents=documents; }
   async read(token: string, projectId: string) {
     return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
+  }
+  /** HUMAN 내용 두 operation만의 보호 소비선. 일반 replay는 원형을 유지한다. */
+  async assignmentContentCommand(token:string,csrf:string,request:ProjectCommand,contents:ProjectAssignmentConfirmations) {
+    if(!['reviewAssignmentContent','confirmAssignment'].includes(request.operation))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+    const original=cloneV1(request);
+    try{return await this.#access.authenticated(token,csrf,async(db,actor)=>{
+      await currentProjectController(db,actor,original);
+      const policy=await authorizeMaterial(db,actor,original,false,this.#documents);
+      const check=async()=>{
+        await currentProjectController(db,actor,original);
+        const current=await authorizeMaterial(db,actor,original,false,this.#documents);
+        const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at,session=actor.authSession;
+        if(!(at instanceof Date)||!Number.isFinite(at.getTime())||!session||!uuidV1(session.id)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt)||Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))<=at.getTime())throw new AuthFailure('AUTH_REQUIRED',401);
+        if(!Number.isFinite(policy.validUntil)||Math.min(policy.validUntil,current.validUntil)<=at.getTime()||canonicalJson(policy.ref)!==canonicalJson(current.ref))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+      };
+      await check();
+      const previous=await projectReplay(db,actor,original);
+      const result=previous!==undefined?await contents.replayContent(db,actor,original,previous):original.operation==='reviewAssignmentContent'?await contents.reviewContent(db,actor,original,policy.ref):await contents.confirmContent(db,actor,original,policy.ref);
+      await check();return result;
+    });}catch(error){await recordProjectDenial(this.#access,token,original.projectId,error);throw error;}
   }
   async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>) {
     let exportDeadline=performance.now()+30000,exportStarted=false;
