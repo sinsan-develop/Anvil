@@ -1,0 +1,19 @@
+-- 미적용 forward migration. 원 0004/권한/command trigger는 변경하지 않는다.
+BEGIN;
+ALTER TABLE anvil.trace_edges DROP CONSTRAINT trace_edges_from_kind_check;
+ALTER TABLE anvil.trace_edges ADD CONSTRAINT trace_edges_from_kind_check
+ CHECK (from_kind IN ('DESIGN_ITEM','SCREEN_REGION','PLAN_TASK','DOCUMENT_VERSION','ARTIFACT'));
+ALTER TABLE anvil.trace_edges ADD CONSTRAINT trace_artifact_task_only CHECK ((
+ from_kind <> 'ARTIFACT' OR (
+  to_kind='PLAN_TASK' AND relation='IMPLEMENTS' AND from_version=1 AND from_code=''
+  AND edge_json->'from'=jsonb_build_object('kind','ARTIFACT','id',from_id,'versionRef',jsonb_build_object('id',from_id,'version',1,'contentHash',edge_json->'from'->'versionRef'->>'contentHash'))
+  AND edge_json->'from'->'versionRef'->>'contentHash' ~ '^[0-9a-f]{64}$'
+  AND edge_json->'to'->>'kind'='PLAN_TASK'
+  AND edge_json->'to'->>'id'=to_id::text
+  AND edge_json->'to'->'versionRef'->>'id'=to_id::text
+  AND (edge_json->'to'->'versionRef'->>'version')::bigint=to_version
+  AND edge_json->'to'->>'localCode'=to_code
+  AND NOT (edge_json->'to' ? 'anchor')
+ )
+) IS TRUE);
+COMMIT;

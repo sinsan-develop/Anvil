@@ -19,7 +19,20 @@ export class ProjectTraces{
     if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['kind','id','versionRef','localCode','anchor'].includes(k)))throw new AuthFailure('TRACE_REFERENCE_INVALID',422);
     const r=value as TraceRef;
     if(typeof r.kind!=='string'||!isVersionRef({id:r.id,version:1,contentHash:'0'.repeat(64)})||!isVersionRef(r.versionRef)||r.localCode!==undefined&&(typeof r.localCode!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(r.localCode))||r.anchor!==undefined&&(typeof r.anchor!=='string'||!/^line:[1-9][0-9]{0,7}$/.test(r.anchor)))throw new AuthFailure('TRACE_REFERENCE_INVALID',422);
-    if(['REQUIREMENT','ARTIFACT','EXECUTION','TEST_EVIDENCE'].includes(r.kind))throw new AuthFailure('TRACE_SOURCE_NOT_READY',412);
+    if(r.kind==='ARTIFACT'){
+      if(!exactKeys(r,['kind','id','versionRef'])||r.id!==r.versionRef.id||r.versionRef.version!==1)throw new AuthFailure('TRACE_REFERENCE_INVALID',422);
+      await projectMember(db,actor,pid);
+      // 불변 metadata만 조회한다. artifacts UPDATE 권한·row lock·파일 bytes 읽기는 요구하지 않는다.
+      const row=(await db.query('SELECT id,project_id,content_hash,state,inspection_json FROM anvil.artifacts WHERE id=$1 AND project_id=$2',[r.id,pid])).rows[0];
+      if(!row)throw new AuthFailure('NOT_FOUND',404);
+      if(row.id!==r.id||row.project_id!==pid)throw new AuthFailure('TRACE_INTEGRITY_FAILED',503);
+      if(row.state==='QUARANTINED')throw new AuthFailure('ARTIFACT_QUARANTINED',412);
+      if(row.state!=='READY')throw new AuthFailure('ARTIFACT_NOT_READY',422);
+      if(row.inspection_json!=null&&canonicalJson(row.inspection_json)!==canonicalJson({policyVersion:1,method:'KNOWN_PATTERNS_RAW_BYTES',complete:false,state:'NO_KNOWN_MARKER',reasonCodes:[]}))throw new AuthFailure('ARTIFACT_INSPECTION_INTEGRITY_FAILED',503);
+      if(row.content_hash!==r.versionRef.contentHash)throw new AuthFailure('TRACE_REFERENCE_MISMATCH',409);
+      return{ref:{kind:'ARTIFACT',id:r.id,versionRef:r.versionRef},title:'등록 산출물 참조',designRefs:[]};
+    }
+    if(['REQUIREMENT','EXECUTION','TEST_EVIDENCE'].includes(r.kind))throw new AuthFailure('TRACE_SOURCE_NOT_READY',412);
     if(r.kind==='PLAN_TASK'){
       if(r.id!==r.versionRef.id||!r.localCode||r.anchor!==undefined)throw new AuthFailure('TRACE_REFERENCE_INVALID',422);
       const p=await this.#plans.read(db,actor,pid,r.id,r.versionRef.version);if(p.ref.contentHash!==r.versionRef.contentHash)throw new AuthFailure('TRACE_REFERENCE_MISMATCH',409);
@@ -47,7 +60,7 @@ export class ProjectTraces{
     const from=await this.#resolve(db,actor,request.projectId,p.from),to=await this.#resolve(db,actor,request.projectId,p.to);
     if(canonicalJson(from.ref)===canonicalJson(to.ref))throw new AuthFailure('TRACE_SELF_REFERENCE',422);
     const f=from.ref.kind,t=to.ref.kind;
-    if(!(p.relation==='IMPLEMENTS'&&f==='PLAN_TASK'&&['DESIGN_ITEM','SCREEN_REGION'].includes(t)||p.relation==='REFINES'&&(f==='SCREEN_REGION'&&t==='DESIGN_ITEM'||f==='DESIGN_ITEM'&&t==='DOCUMENT_VERSION'||f==='DOCUMENT_VERSION'&&t==='DOCUMENT_VERSION')||p.relation==='DEPENDS_ON'&&f===t&&['PLAN_TASK','DESIGN_ITEM'].includes(f)))throw new AuthFailure('TRACE_RELATION_INVALID',422);
+    if(!(p.relation==='IMPLEMENTS'&&f==='ARTIFACT'&&t==='PLAN_TASK'||p.relation==='IMPLEMENTS'&&f==='PLAN_TASK'&&['DESIGN_ITEM','SCREEN_REGION'].includes(t)||p.relation==='REFINES'&&(f==='SCREEN_REGION'&&t==='DESIGN_ITEM'||f==='DESIGN_ITEM'&&t==='DOCUMENT_VERSION'||f==='DOCUMENT_VERSION'&&t==='DOCUMENT_VERSION')||p.relation==='DEPENDS_ON'&&f===t&&['PLAN_TASK','DESIGN_ITEM'].includes(f)))throw new AuthFailure('TRACE_RELATION_INVALID',422);
     const designRefs=[...new Map([...from.designRefs,...to.designRefs].map(r=>[canonicalJson(r),r])).values()].sort((a,b)=>canonicalJson(a).localeCompare(canonicalJson(b)));
     if(!designRefs.length)throw new AuthFailure('TRACE_DESIGN_ANCHOR_REQUIRED',422);
     if((await db.query('SELECT 1 FROM anvil.trace_edges WHERE project_id=$1 AND from_kind=$2 AND from_id=$3 AND from_version=$4 AND from_code=$5 AND to_kind=$6 AND to_id=$7 AND to_version=$8 AND to_code=$9 AND relation=$10',[request.projectId,f,from.ref.id,from.ref.versionRef.version,from.ref.localCode??'',t,to.ref.id,to.ref.versionRef.version,to.ref.localCode??'',p.relation])).rowCount)throw new AuthFailure('TRACE_ALREADY_EXISTS',409);

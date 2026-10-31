@@ -1,7 +1,7 @@
 import {ApiClient,ApiError}from'../../api/client.ts';
 import type{PlanRef}from'./work-plan-api.ts';
 import{postDocumentCommand,type DocumentBuffer,type DocumentWrite,type DocumentSession}from'./editor-api.ts';
-export interface TraceRef{kind:'DESIGN_ITEM'|'SCREEN_REGION'|'PLAN_TASK'|'DOCUMENT_VERSION';id:string;versionRef:PlanRef;localCode?:string;anchor?:string}
+export interface TraceRef{kind:'DESIGN_ITEM'|'SCREEN_REGION'|'PLAN_TASK'|'DOCUMENT_VERSION'|'ARTIFACT';id:string;versionRef:PlanRef;localCode?:string;anchor?:string}
 export interface TraceEdge{id:string;from:TraceRef;to:TraceRef;relation:'REFINES'|'IMPLEMENTS'|'DEPENDS_ON';reason:string;designRefs:PlanRef[];edgeHash:string;createdAt:string}
 export interface TraceView{designRef:PlanRef;direction:'FORWARD'|'REVERSE';nodes:{ref:TraceRef;title:string;designRefs:PlanRef[]}[];edges:TraceEdge[];traversal:{edgeId:string;from:TraceRef;to:TraceRef}[];missingLinks:{ref:TraceRef;code:'PLAN_TASK_LINK_MISSING'}[];unknownEvidence:{code:string}[];baselineRef:null;hasMore:boolean;nextCursor:string|null;observedAt:string}
 export interface TaskTraceBuffer{bindingId:string;input:{from:TraceRef;to:TraceRef|null;relation:'IMPLEMENTS'|'DEPENDS_ON'|'REFINES';reason:string};pending:DocumentWrite|null;result:TraceEdge|null;failure:{code:string;status:number}|null;uncertain:boolean}
@@ -12,7 +12,8 @@ const normalize=(v:any):any=>Array.isArray(v)?v.map(normalize):v&&typeof v==='ob
 const same=(a:any,b:any)=>JSON.stringify(normalize(a))===JSON.stringify(normalize(b));
 async function digest(v:unknown){return[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(normalize(v)))))].map(n=>n.toString(16).padStart(2,'0')).join('');}
 function traceRef(v:any):v is TraceRef{
- if(!v||!uuid.test(v.id)||!ref(v.versionRef)||!['DESIGN_ITEM','SCREEN_REGION','PLAN_TASK','DOCUMENT_VERSION'].includes(v.kind))return false;
+ if(!v||!uuid.test(v.id)||!ref(v.versionRef)||!['DESIGN_ITEM','SCREEN_REGION','PLAN_TASK','DOCUMENT_VERSION','ARTIFACT'].includes(v.kind))return false;
+ if(v.kind==='ARTIFACT')return exact(v,['kind','id','versionRef'])&&v.id===v.versionRef.id&&v.versionRef.version===1;
  const indexed=['DESIGN_ITEM','SCREEN_REGION'].includes(v.kind),keys=['kind','id','versionRef',...(v.kind!=='DOCUMENT_VERSION'?['localCode']:[]),...(indexed?['anchor']:[])];
  return exact(v,keys)&&(v.kind!=='DOCUMENT_VERSION'?typeof v.localCode==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v.localCode):v.id===v.versionRef.id)&&(v.kind!=='PLAN_TASK'||v.id===v.versionRef.id)&&(!indexed||typeof v.anchor==='string'&&/^line:[1-9][0-9]{0,7}$/.test(v.anchor));
 }
