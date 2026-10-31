@@ -10861,3 +10861,8 @@
 - 결정과 별개로 기존Primary는 이미승인된 단계대기열·한도·예약이력 producer와 해당 inventory의 기존 source정합만6파일이내 읽기preflight 중이다. 새writer/제품/시험/SQL/실제DB·권한·키·사용자파일조사·서비스·Agent·일반차단해제0. 완료된35/type 검사는 변경없이 반복하지 않았다. 문서/현황 정확2경로만 보존하며 보호3/기존원문·코드는 유지한다.
 
 - 독립 다음대조는 기존Primary의 지정source6파일 읽기만으로 단계대기열/한도/예약이력의 새 불필요거절·주체치환·원hash재봉인 공백을 확인하지 못했다. 정상 startStage 승인요청/소비형식과 AUTO고아소비거절·한도정책·SEND원저장을 확인했으며 실제START producer 종단은6파일경계밖이라 판정하지 않았다. usageTransitionPersistence NOT_IMPLEMENTED 및 full/restorable=false는 보존된 미완료경계이며 기능완료가 아니다. 신규수정/시험후보0·실행한시험/DB0·QA/handle0으로 반환받았다.
+
+## 2026-10-31 FN16 문서 역사 논리형식 직접채택·source WI 경계검토
+- PMO의 trusted codex_delegation 수신: 신산님이 PMO chat에서 후보924D7359 §10의 DOCUMENT_VERSION 1종 비활성 역사 논리형식을 A안으로 직접채택하고 전달도승인했다. 한정기준은후속source-only 타입·검산이며실제parser/수입·영속/publicAPI/DBschema·권한·현재계정연결·active파생·복원실행은제외다. 원출처/관계codec/제품한도/접근·영속/crash는미정상태를유지한다.
+- 직접채택binding FN16_DOCUMENT_HISTORY_LOGICAL_ENVELOPE_DIRECT_ADOPTION_20261031.md SHA E561FC13B7DEFFAA36080D65EC398F622D94E6B8FE6040AA18206D0C6D4A9912, source WI FN16_DOCUMENT_HISTORY_LOGICAL_ENVELOPE_SOURCE_IMPLEMENTATION_20261031.md SHA1DDF67900F38F5723E02E48DAFEBD2E85DA4F6C05D5A2A87C77494867CD23EA5를작성했다. WI는신규내부모듈/신규메모리시험정확2경로,고정schema/publicAPI/기존helper변경0·Main제품쓰기0이며독립경계검토중이다.
+- 기존Primary preflight11030b/36d0e4에서2경로부재와지정5기존파일canonical/validation·FN16형식/시험style을확인했다. 실제source/manifest선행확정·영속유일성·실bytes를순수DTO로증명불가함을명시했고임의check태그/callback VERIFIED발급0을WI에고정했다. 현재code/시험GO전,실제제외/412/보호3·계획미완료 유지.
