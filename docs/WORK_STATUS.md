@@ -10881,3 +10881,10 @@
 ## 2026-10-31 FN16 원관계 codec 후보 검수
 - 후보 FN16_PRINCIPAL_LINK_MANIFEST_BINDING_CANDIDATE_20261031.md SHA E571056F67E51DFEBA2DEEFC986053E375471A98FF773C5DC4008A4BD7CD325D(11312B63행)를기존Primary가작성하고독립C0/I0로검토했다. command FK유도(A)와같은고정관측clients의opaque2열관계추가(B,권장)를구별한다. pair역사ref는정확commandKey로명령별member를선택하고원projection hash를검산하며첫증빙임의선택/namespace순환0이다.
 - 원manifest 실제member/capture 완결·codec/producer 미지원은성공tag로대체하지않고역사적사람/서버진위보증과내부자료일치를구별한다. Main1ea748은원persistProjectReceipt의fullrequestHash와scopeDigest/원targetRef를좁혀읽어대조했다. A/B·exactprojection/member채택및capture선행을PMO에요청했으나현재NOT_ADOPTED/제품GO0·실제DB관측0이다. 후보/카드/현황만보존하고기존19/type/전체기능검증반복0·실제제외/보호3·전체계획미완료유지.
+
+## 2026-10-31 P03 R3 source 직접 후속 지시·TEST_ONLY 준비
+- PMO trusted codex_delegation으로 신산님의 ‘R3 source 보완은 재승인 없이 진행하도록 전달, 실제 복구 실행은 별도 승인 유지’ 직접지시를수신했다. 기존후보94BB0D36의고정literal6/candidateSHA·제품2/시험3정합만이며FN16 PRINCIPAL_LINK B 미답변채택과별개다. 과거소스금지가아닌전달차단을새금지로유지하지않는다.
+- binding P03_R3_FIXED_BINDING_SOURCE_ADOPTION_20261031.md SHA EF21B4CBB5EB394A03EFDEFC49583DC9664EE056735BCD5D545C57362479F19C, WI P03_R3_FIXED_BINDING_SOURCE_IMPLEMENTATION_20261031.md SHA E332921F24919FFDEC82A4D2E639CA92CA6C8659DCBBE6502BDC4A656E8819CC를작성하고독립C0/I0를수신했다. parent94BB/고정5지문·TEST_ONLY→MainfreshRED/제품2불변→별도PRODUCT_GO·최종전체집중/검수/rollback을고정한다.
+- 기존Primary6파일preflight는hostAF61BAF2/shell76952702·시험29902D84/95A87C0A/40E275DB를확인했다. 정상fixture만R3로정합하고oldR1/R2의원literal·과거candidate거절은보존한다. 이미수정된mount/시각/protocol/위험·한도/NoCopy·소비/fence·정상cleanup/불명보존을바꾸지않는다. 아직시험/제품쓰기GO전이며실제actual packet/grant·nonce/원격준비/자원/복제/PG/SQL·권한·키/서비스·Agent0이다. Sourcecontrol게시뒤기존Primary에게시험3 TEST_ONLY만발행한다.
+
+- Main의 스마트 인용부호 문자열 전달 오류2회는 현황 매개변수 결박/parse 단계에서 종료돼 제품·환경·commit 실행0이었다. 같은 문자열 조립을 중단하고 literal here-string으로 교정해 root 저장 성공/소스 control 미생성·staged0을 직접 확인했다. 기존 코드·보호3·원격은 보존한다.
