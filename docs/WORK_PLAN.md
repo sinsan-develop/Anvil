@@ -1,5 +1,7 @@
 # Anvil v3 개발 작업계획서 — 위임·검수 가능한 업무 단위
 
+- **2026-10-31 FN08 SEND 자료 지속등록 r2 A 소스 검수**: 동일PoolClient의descriptor→manifest/material·queue예약/outbox와proof binding→소비/재확인을연결했다. 새3표합산project/grant상한·만료산입·replay추가0·역사read를보존하고0062는미적용이다. Main01dc56 신규/직접인접6파일107PASS/skip0·dae085 type/diff0, 독립source/SQL/fixture C0/I0다. 과거101P6F/control동일6F는기존정책fixture누락으로분리보존했고정확부록내증빙만보강했다. 결과 docs/04_test_reports/AV3/FN08_SEND_MATERIAL_REGISTRATION_SOURCE_RESULT_20261031.md SHA33B2CC6F94428705FBCCB4F897C1E50AEC331B2F46A83C915FB20E42F4DB8323. 실제DB/권한/키/파일조사/서비스/Agent/기존프로젝트차단해제0, 실제PG/HTTP/SEND·사용자인수/전체FN08·계획완료아니다.
+
 - **2026-10-26 FN03/FN11/UI06 파일가져오기 업로드 일회 승인 재개**: 기존계약의원command/bytes결박·명시재개·후속승인null차단·미확인닫기차단을구현. 직접인접38·실제합성DOM25/type/build/diff·독립I1해소C0/I0/M0·등록자원정리0. 실제DB/served/사용자인수·전체업무는미완료이며CapabilityReport미채택선행을별도후보로구체화한다.
 
 - **2026-10-26 FN05/UI10 저장 검토 상세 조회**: 기존contentReviews를항목별접힘조회로연결·SSR신규2/인접12·실제합성DOM1/type/build/diff·독립C0/I0/M0·자원정리0. 실제DB/served/전체업무인수미확인. 다음FN03/FN11/UI06의파일가져오기원문업로드일회승인재개누락을기존계약내단일writer로보완한다.

@@ -1,3 +1,4 @@
+import type {PreparedMaterial} from './execution-material-registration-input.ts';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
@@ -25,8 +26,10 @@ export interface SyntheticInstructionQueueStore {
  /** 저장된 현재 grant/세션/자료/능력을 조회하며 caller 입력을 현재 사실로 채택하지 않는다. P1은 합성 제공자만 쓴다. */
  current(db:PoolClient,actor:AuthenticatedIdentity,scope:Scope):Promise<Current>;
  claim(db:PoolClient,actor:AuthenticatedIdentity,scope:Scope,request:ProjectCommand):Promise<BudgetClaim>;
+ verifyReplay?(db:PoolClient,actor:AuthenticatedIdentity,scope:Scope,result:unknown):Promise<void>;
+ prepare?(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,binding:Binding):Promise<PreparedMaterial>;
  /** 같은 인증 tx에서 새 예약·명령·HELD_SYNTHETIC_ONLY outbox를 함께 저장한다. 별도 pool/COMMIT/실전달은 금지한다. */
- append(db:PoolClient,scope:Scope,record:SyntheticInstructionQueueRecord,reservation:BudgetRecord,createdCommandId:string):Promise<void>;
+ append(db:PoolClient,scope:Scope,record:SyntheticInstructionQueueRecord,reservation:BudgetRecord,createdCommandId:string,prepared?:PreparedMaterial):Promise<void>;
 }
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v)),positive=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>0;
 const fail=(code:string,status=412):never=>{throw new AuthFailure(code,status);};
@@ -69,7 +72,7 @@ export class ProjectExecutionInstructionQueue {
   const request=readRequest(value),p=request.payload as unknown as Input,scope={projectId:request.projectId,executionId:request.targetId!,executionGeneration:request.expectedVersion};
   try{return await this.access.authenticated(token,csrf,async(db,actor)=>{
    this.#port();await currentProjectController(db,actor,request);this.#human(actor,await this.#now(db));const first=readCurrent(await this.store.current(db,actor,cloneV1(scope)),scope,request,actor,await this.#now(db),true);
-   const policyInput={executionId:scope.executionId,executionGeneration:scope.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:first.c.fact.intent.sourceScopes};let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);const replay=await projectReplay(db,actor,request);if(replay!==undefined)return replay;
+   const policyInput={executionId:scope.executionId,executionGeneration:scope.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:first.c.fact.intent.sourceScopes};let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);const replay=await projectReplay(db,actor,request);if(replay!==undefined){if(this.store.verifyReplay)await this.store.verifyReplay(db,actor,cloneV1(scope),cloneV1(replay));await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);this.#human(actor,await this.#now(db));return replay;}
    // BUSY여도 원명령 영수증을 읽을 수 있지만 새 지시·예약은 IDLE 확인 뒤에만 만든다.
    await assertNoStoredExecutionStop(db,scope);
    if(first.c.turnState!=='IDLE')fail('INSTRUCTION_QUEUE_CURRENT_REQUIRED');
@@ -77,10 +80,11 @@ export class ProjectExecutionInstructionQueue {
    const planned=await this.budgets.planReservation(db,actor,claim),reservation=planned.record;if(reservation.snapshot.state!=='RESERVED'||reservation.ref.version!==1||!same(reservation.snapshot.claim,claim)||reservation.snapshot.executionAuthorized!==false||reservation.snapshot.dispatchPerformed!==false)fail('INSTRUCTION_QUEUE_RESERVATION_INVALID');
    const next=readCurrent(await this.store.current(db,actor,cloneV1(scope)),scope,request,actor,await this.#now(db));if(!same(first.binding,next.binding))fail('INSTRUCTION_QUEUE_CURRENT_CHANGED');policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);let at=await this.#now(db);
    const deadline=Math.min(at+30000,policy.validUntil,this.#human(actor,at),Date.parse(first.c.expiresAt),Date.parse(next.c.expiresAt),Date.parse(first.c.grantExpiresAt),...Object.values(next.c.fact.expires).map(Date.parse));if(deadline<=at)fail('INSTRUCTION_QUEUE_EXPIRED');
+   const prepared=this.store.prepare?cloneV1(await this.store.prepare(db,actor,cloneV1(request),cloneV1(first.binding))):undefined;
    const intent:Intent={transport:'SYNTHETIC_ONLY',state:'SYNTHETIC_INSTRUCTION_QUEUED',scope,requestHash:hash(request),currentBinding:first.binding,reservationRef:cloneV1(reservation.ref),reason:p.reason,queuedAt:new Date(at).toISOString(),expiresAt:new Date(deadline).toISOString(),executionAuthorized:false,dispatchPerformed:false},ref={id:randomUUID(),version:1,contentHash:hash(intent)};
    const receipt=await persistProjectReceipt(db,actor,request,ref,{status:'SYNTHETIC_INSTRUCTION_QUEUE_STORED',snapshot:intent,executionAuthorized:false,dispatchPerformed:false},policy.policyRef,'EXPLICIT_SYNTHETIC_INSTRUCTION_ONLY'),f=first.c.fact,i=f.intent;
    const unsigned={schemaVersion:1,commandId:request.commandId,issuedAt:intent.queuedAt,expiresAt:intent.expiresAt,executorRegistrationRef:f.registration.ref,context:{projectId:scope.projectId,assignmentId:i.assignmentRef.id,executionId:scope.executionId,executionGeneration:scope.executionGeneration,connectionRef:i.connectionRef,environmentRef:i.environmentRef,authorizationReceiptRef:receipt.authorizationReceiptRef,capabilityRef:i.capabilityRef,budgetRef:reservation.ref,sourceScopes:i.sourceScopes},operation:'SEND_INSTRUCTION',payload:{sessionBindingRef:p.sessionBindingRef,instructionRef:p.instructionRef,partsRef:p.partsRef}},envelope=readDispatchEnvelopeV1({...unsigned,envelopeHash:hash(unsigned)},at),record={ref,snapshot:{...intent,request,envelope}};
-   if(Buffer.byteLength(canonicalJson(record))>2097152)fail('INSTRUCTION_QUEUE_TOO_LARGE',422);const checkedRecord=readSyntheticInstructionQueueRecord(record,scope);this.#port();await this.store.append(db,cloneV1(scope),checkedRecord,cloneV1(reservation),receipt.id);this.#port();const final=readCurrent(await this.store.current(db,actor,cloneV1(scope)),scope,request,actor,await this.#now(db));if(!same(first.binding,final.binding)||Date.parse(final.c.expiresAt)<deadline)fail('INSTRUCTION_QUEUE_CURRENT_CHANGED');const lastPolicy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);at=await this.#now(db);this.#port();readCurrent(final.c,scope,request,actor,at);if(lastPolicy.validUntil<deadline||at>=Math.min(deadline,this.#human(actor,at)))fail('INSTRUCTION_QUEUE_EXPIRED');return receipt.result;
+   if(Buffer.byteLength(canonicalJson(record))>2097152)fail('INSTRUCTION_QUEUE_TOO_LARGE',422);const checkedRecord=readSyntheticInstructionQueueRecord(record,scope);this.#port();await this.store.append(db,cloneV1(scope),checkedRecord,cloneV1(reservation),receipt.id,prepared);this.#port();const final=readCurrent(await this.store.current(db,actor,cloneV1(scope)),scope,request,actor,await this.#now(db));if(!same(first.binding,final.binding)||Date.parse(final.c.expiresAt)<deadline)fail('INSTRUCTION_QUEUE_CURRENT_CHANGED');const lastPolicy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);at=await this.#now(db);this.#port();readCurrent(final.c,scope,request,actor,at);if(lastPolicy.validUntil<deadline||at>=Math.min(deadline,this.#human(actor,at)))fail('INSTRUCTION_QUEUE_EXPIRED');return receipt.result;
   });}catch(error){await recordProjectDenial(this.access,token,request.projectId,error);throw error;}
  }
 }
