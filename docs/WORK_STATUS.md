@@ -11130,3 +11130,16 @@
 - 다음실제통신코드를준비하는공개형식후보 FN06_FN08_OBSERVATION_HTTPS_WIRE_SOURCE_DECISION_20261101.md를작성했다. 초안targetHash가공개challenge에없음을실source8e4d38로대조해제거하고actualchallenge10필드/opaque refhash·기존canonicalJSON bodyHash를보존했다. 현재후보9DFA7EBF501D165066FCA222B7EAB8EEAB4AE600D0048EDE7142AFC4D74BD8D5는미채택/제품쓰기0·source4/가짜request검수만제안·실socket/키DB권한서비스Agent0다. 독립C0/I1은proof7이라는필드수오기를정확8+명시목록/EXECUTION_REQUEST_PROOF로보정할것이며검토완료뒤PMO에해당새공개header/응답포장만결정요청한다. 합성guard/현재project차단을완화하지않는다.
 - FN08 관측HTTPS wire후보를독립C0/I1와Primary기술대조로보완했다. 오기proof7→exact8(requestId/method/path/queryHash/bodyHash/grantRef/credentialGeneration/serverNonce),기존EXECUTION_REQUEST_PROOF domain/서명바이트불변을명시했다. 최종후보62E9B2D3E6D36489C2D7769BD8158B80E737A86D9FAA97A6035163FB3F4A00B3 독립§4.2 scoped재검토C0/I0·허용신규4 source가능확인,아직미채택/제품쓰기·검증실행0이다.
 - 결정요청은A의새Authheader/응답포장계약·실제 HTTPS호출‘소스’와명시request대역시험만이며등록/실socket·키credential/DB권한서비스/Agent·기존project차단해제는제외한다. 기존C3제공자SYNTHETIC_ONLY강제를해제하거나그tag만제거해production으로승격0이다. 현재정식source생산자·원기록·현재등록/서명provider와실제server repository/route등록은미완료로보존한다. 이정확새공개계약부분을PMO결정·지원대상으로게시하며이미승인된일반소스구현의재승인을요구하는것과구별한다.
+
+
+- FN08 미채택wire후보/현황정확2 commit64b09f3405253e6026030b6d7be440a620288853/private동일·mainf976ed5e불변·trackedclean/보호3을a74f01확인했다. 새공개Authheader/response추가분과기존C3합성한계·실효과제외를근거로PMO에A안 source-only채택결정/지원을정확1회요청했다. 아직미채택/제품4쓰기0·실socket/SDK/키credential/DB권한서비스Agent0·이미승인된일반소스구현재승인요청아님을명시했다. PMO응답을기다리며전계획을중지하지않고독립승인source를대조한다.
+- PMO compact cursor86은관측HTTPS공개형식의한정질문을신산님께전달했고아직채택답변없음을확인했다. 중복질문/코드GO0이다. 현재전체Goal은미완료·active이며추가결정을기다리는범위는새wiresource4에한정한다. 같은기존Primary에는UI06의기존GET참조중역조회/3축/화면·업무·시험의실제미연결소비선이있는지만정확파일목록으로독립읽기를배정했다. 이미연결된비교/핫스팟등재개발·재시험0/새허가·DTO추정0을유지한다.
+- UI06 독립소비선대조결과TraceViewer20~31의설계/화면/계획/문서원문·양방향/누락표시와StoredPlanTaskList의역할·파일선언·시험계획은이미연결됐다. 실제담당자/코드변경/시험결과는응답에없고server traces22는EXECUTION/TEST_EVIDENCE를TRACE_SOURCE_NOT_READY412로거절·68은두미연결코드를명시한다. WorkStatusAxes는현재caller/GET자료가없는내부표시후보다. 기존역할/계획을실제실행상태로꾸미거나함수만화면에붙여완료처리0이다.
+- source상태를선명히한다: UI01현재실행metadata·UI06실제시험/코드/3축producer·FN06/08production관측전송은정밀검사만남은것이아니라실제기능소비/생산코드미구현이다. PMO새wire질문은대기중이나goal전체대기아님. 다음기존Primary에는master TraceRef에이미선언된ARTIFACT의초기미구현412분기를기존공식ArtifactRef·보호metadata/현재권한·관계규칙만으로충실히구현할수있는지좁은source대조를배정했다. 새id/hash/권한/관계의미가필요하면임의생성하지않고경계를반환하며쓰기·실DB/파일/Agent0다.
+
+### 2026-11-01 FN04 등록 산출물–업무 추적 연결 착수
+- 담당 Main 어울/기존 Primary 단일 writer. 현재 source checkpoint64b09f34, protected untracked3만 보존. 정본 경로의 source 시험을 찾은 첫 읽기1은 경로 불일치로 실패했고 실제 source 경로에서 확인했다. 권한/ACL 변경0.
+- 독립 사전 대조: INTERFACES의 ARTIFACT TraceRef·IMPLEMENTS 및 기존 result reader의 version1/rawbytes hash가 승인되어 있으며 사용자 명시 연결은 실행·합격 권위를 만들지 않는다. 기존 승인 미구현 분기 완성으로 선정했다. 새 통신 공개계약 결정은 별도로 대기하며 이 작업은 진행한다.
+- UI05의 고정 draft/confirmed/result와 assignment-plan-original의 plan/taskCardHash 검산을 사용하여 등록 산출물 선택→기존 linkTrace 저장→UI06 정/역조회까지 한 단위로 구현한다. 서버는 프로젝트 READY metadata/hash와 고정 업무를 확인할 뿐 실제 Agent 계보·bytes 재검증을 증명하지 않는다.
+- WI docs/work_packages/FN04_ARTIFACT_TASK_TRACE_IMPLEMENTATION_20261101.md SHA256 2987A15207DA21379F3DD75494E9B6A051F9AFA6B89E2A73C4DF7DCCE90DA1E7. 제품8/시험4 허용, 원0004 보존·0064 forward 미적용. artifact UPDATE 권한/새GRANT/FOR SHARE 추가0. 기존 보호3·실제 사용자/백업 파일·DB·권한·키·서비스·Agent 실행 제외.
+- Primary에 신규서버 시험 한 파일 TEST_ONLY로 기존412 의미 RED를 지시했다. 제품 GO 전 독립 WI 검토/Main fresh를 수행한다. 현재 구현 완료/사용가능/실제 DB·WSL PASS 주장0.
