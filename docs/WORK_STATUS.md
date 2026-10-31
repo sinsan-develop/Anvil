@@ -1,5 +1,12 @@
 # Anvil 재설계 작업현황
 
+## 현재 인수 — 2026-10-31 UI01 통합·다음 공개 읽기 계약 구체화
+- UI01 exact6 commit8c939d4b7ab7c08a3156b9005b3cbeff6c33f5de local/private 동일·tracked clean·mainf976 불변, 보호3만 비추적. Main27PASS/skip0/type0·메모리build482/detect[]·독립C0/I0, 실제브라우저/HTTP/DB/서비스미검증. 결과E431CAA0A8ADC2B3855C5D797C8326D74CACA5578324EAE39959E87F6A89F3CD. 이전 UI01 통합준비·UI03 검수중은 이력이다.
+- 기존 Primary/Reviewer의 읽기 대조로 FN01 source권위·FN03 실검산·FN04 신규적용·FN05 실제공유/전달·FN06 실능력·FN07 둘째실도구·FN08 SEND지속등록·FN09 자식내용확정·FN10 실행별한도·FN12 실제근거·FN16 공적백업/민감역사·FN17 push·FN18 installer/업데이트의 남은 계약/실제공급자 경계를 분리했다. 기존 실효 false/412·NOT_ADOPTED를 ‘누락’으로 지워 통과시키지 않으며 완료된reader/inventory/정적검사를 반복하지 않는다. 이는 지정 source 범위 대조이고 전체 계획 소진/완료 판정이 아니다.
+- 구체 다음은 FN02 같은 버전 검토201행 이상에서 원본도412가 되는 접근 누락이다. FN02_REVIEW_OVERFLOW_READ_DECISION_20261031.md SHA D1B3F3B5053470F5AA1D1FFB3FB3D9E3AB88165DD6239719D7025C9F7DC8A3B6의 미채택 후보로 기존fullGET/명령guard 보존·별도readonly overview/페이지GET2/전체이력보존을 구체화하고 기존담당2명 읽기검토 중이다. 코드GO0·새API/SQL실행0. FN14는 앞선 질문 답변만 확인하고 반복0, PMO 다음배정 대기0.
+- Main6584fa의 desktop inventory wildcard*가 generated/node_modules까지 포함해 출력초과·추정tests/unit/FN18 경로부재1을 일으켰다. 해당확장조회는중단, 반환돼확인된 desktop package/config/WI source만읽어교정했다. 기존파일·환경·권한변경0. 이후 glob* broad조회/추정path인자를사용하지않는다. Primary modules/runtime추정인자1도즉시중단·실root목록에서교정, 동일제품실패3회는아니다.
+- 전체WORK_PLAN 미완료/goalACTIVE·Main관리검수통합, 현재codewriter0/실제DB·권한·키·사용자파일조사·서비스·Agent·기존project차단해제0/새QA0. 기존 자료와 현황 이력·원5복구본 보존.
+
 ## 현재 인수 — 2026-10-31 UI03 통합·UI01 저장 초안 이전 페이지 연결 착수
 - UI03 exact7 통합469d206d4f616dfc35bbb619311909bc19341139는 local/private 동일·tracked clean·mainf976 불변 확인. Main 최종23PASS/skip0·type/build·detect0·독립C0/I0. 합성 transport 실제 Chromium 클릭space17 정상finish·QA전용경로 독립부재, 실제HTTP/DB/서비스/Agent 미검증. UI03 결과보고서를 따른다.
 - 다음 UI01은 기존 저장 임무 초안 목록의 3→2 직접복귀 누락이며 기존 cursor 보호GET·제품1/신규시험1 범위다. WI UI01_ASSIGNMENT_DRAFTS_BACK_NAVIGATION_WI_20261031.md로 기존 Primary에 위임, Main 동일code수정0·Reviewer읽기검수. 실제DB/권한/키/사용자파일조사/서비스/Agent/기존project차단해제0·새QA0.
@@ -10458,3 +10465,8 @@
 ## 2026-10-31 UI01 저장 초안 이전 페이지 source 검수
 - Main3ff2a0 최종27PASS/skip0/type0·c62d61 memorybuild482/detect[]0·독립exact2 C0/I0. 제품DF4E37F7/신규시험C9E3C5A9 동결·Primary writer반환, 기존reader/parent/API/SQL불변. UI01_ASSIGNMENT_DRAFTS_BACK_NAVIGATION_RESULT_20261031.md에 오류/미검증/복구 기록. 실제브라우저/HTTP/DB/서비스/Agent/기존project해제0·새QA0.
 - 전체계획미완료·Main통합준비/기존Primary FN06/08/09/10/12 다음source단위읽기대조. FN14 질문중복0·완료된UI04~08/FN16조회재작업0. 보호3·원5복구본 보존.
+
+## 2026-10-31 FN02 검토과다 원본·이력 읽기 후보 r2 검토
+- 후보r1 D1B3F3B5 독립C0/I0 뒤 Primary 실현성검토가 과거버전412 시hash미보유1을확인했다. r2 SHA8B6742A94ABB4433AF6A2B220EF823097AA7EAEFEB84B27E516A152D3BCF99F7는 overview knownhash선택/기존id-version보호읽기·원근거/graph검산→pagefullref고정·실패lookup문맥보존·기존signProjectCursor주입의별도sequencecodec으로보정, 독립scopedC0/I0다. 새공개GET2/별도DTO·readonlyUI의채택결정전이며제품/SQL/migration/실환경변경0.
+- Reviewer 원r1 읽기에서 추정 project-policy.ts 경로부재1은판정근거제외/재조회0, 실제project-command/원method/reader만대조했다. r2 새경로오류0. Main·Primary·Reviewer 모두 실제root목록확인후읽기만유지하며권한변경/탐색확장0.
+- 다음은 PMO에 위임범위 내 이 신규읽기계약A/B만결정요청. 기존FN14질문반복0, 새실제DB/키/서비스/Agent승인으로확대0. 전체계획완료/현재기능실사용PASS로승격0.
