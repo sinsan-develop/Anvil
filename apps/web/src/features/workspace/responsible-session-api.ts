@@ -6,10 +6,10 @@ import { ordered } from '../knowledge/review-view.ts';
 import type {ApprovalRequestWork,ApprovalView} from '../decisions/api.ts';
 import {responsibleSessionCommand} from './responsible-session-approval.ts';
 
-export type ResponsibleSessionAction='COORDINATOR'|'STAGE_OWNER'|'BIND';
+export type ResponsibleSessionAction='COORDINATOR'|'STAGE_OWNER'|'BIND'|'BIND_COORDINATOR';
 export interface PreparationRecord {projectId:string;ref:PlanRef;snapshot:Record<string,any>}
 export interface ResponsibleSessionState {projectId:string;assignmentRef:PlanRef;roles:PreparationRecord[];bindings:PreparationRecord[];preparations:PreparationRecord[];hasMorePreparations:boolean;currentness:'NOT_RECHECKED';executionAuthorized:false;dispatchPerformed:false}
-export interface ResponsibleSessionBuffer {responsibleApproval?:{request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};closedResponsibleApprovals?:{command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];savedReceipt?:{ref:PlanRef;snapshot:Record<string,any>};bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
+export interface ResponsibleSessionBuffer {reservationKind?:'COORDINATOR'|'STAGE_OWNER';responsibleApproval?:{request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};closedResponsibleApprovals?:{command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];savedReceipt?:{ref:PlanRef;snapshot:Record<string,any>};bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
 const exact=(v:any,keys:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const uuid=(v:any):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref=(v:any):v is PlanRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&/^[a-f0-9]{64}$/.test(v.contentHash);
@@ -25,7 +25,7 @@ function scopesWithin(requested:any,allowed:any[]) {
     &&Array.isArray(s.targets)&&s.targets.length>0&&s.targets.every((t:any)=>{count++;return count<=200&&exact(t,['relativePath','kind','access','recursive'])&&t.kind==='FILE'&&t.recursive===false&&['READ','WRITE'].includes(t.access)&&typeof t.relativePath==='string'&&!t.relativePath.split('/').some((p:string)=>!p||p==='.'||p==='..')&&!/[\\:\u0000]/.test(t.relativePath)
       &&allowed.some(a=>['sourceRootRef','mappingRef','observationRef','baselineRef'].every(k=>same(a[k],s[k]))&&a.targets.some((target:any)=>same(target,t)));}));
 }
-function confirmedBinding(confirmed:ConfirmedAssignmentView){if(!uuid(confirmed.projectId)||!ref(confirmed.ref)||confirmed.snapshot.contentConfirmed!==true||confirmed.snapshot.executionAuthorized!==false||confirmed.snapshot.dispatchPerformed!==false)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');}
+function confirmedBinding(confirmed:ConfirmedAssignmentView){if(!uuid(confirmed.projectId)||!ref(confirmed.ref)||confirmed.snapshot.contentConfirmed!==true||confirmed.snapshot.executionAuthorized!==false||confirmed.snapshot.dispatchPerformed!==false||confirmed.snapshot.definition?.parentAssignmentRef!=null)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');}
 async function verifyHash(snapshot:unknown,reference:PlanRef) {
   const bytes=new TextEncoder().encode(ordered(snapshot));if(bytes.length>2*1024*1024)throw new ApiError('RESPONSE_INVALID');
   const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
@@ -80,11 +80,13 @@ export function updateResponsibleSessionApprovalBuffer(current:ResponsibleSessio
 /** dirty 폐기 확인은 호출 화면에서 수행한다. 여기서는 표시만 먼저 숨기며 원 입력/명령은 수정하지 않는다. */
 export async function prepareResponsibleSessionInput(client:ApiClient,confirmed:ConfirmedAssignmentView,session:DocumentSession,buffer:ResponsibleSessionBuffer|null,hide:()=>void,active:()=>boolean) {
   if(!canPrepareResponsibleSessionInput(buffer,confirmed,session))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
+  const selected=buffer?.reservationKind===undefined?'STAGE_OWNER':buffer.reservationKind;if(!['COORDINATOR','STAGE_OWNER'].includes(selected))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   hide();
   const generation=await documentControl(client,confirmed.projectId,session);
   if(!active())return null;
   const state=await readResponsibleSessionState(client,confirmed);if(!active())return null;
-  const next=newResponsibleSessionBuffer(confirmed,session,generation),role=state.roles.find(r=>r.snapshot.kind==='STAGE_OWNER'),existing=state.bindings.find(r=>same(r.snapshot.roleRef,role?.ref??null));
+  const next=newResponsibleSessionBuffer(confirmed,session,generation),role=state.roles.find(r=>r.snapshot.kind===selected),existing=state.bindings.find(r=>same(r.snapshot.roleRef,role?.ref??null));
+  if(buffer?.reservationKind!==undefined)next.reservationKind=selected;
   if(existing)next.connectionRef=structuredClone(existing.snapshot.connectionRef);
   return{buffer:next,state};
 }
@@ -92,16 +94,18 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
   confirmedBinding(confirmed);
   if(b.projectId!==confirmed.projectId||!same(b.assignmentRef,confirmed.ref)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||state.projectId!==b.projectId||!same(state.assignmentRef,b.assignmentRef)||!text(b.reason)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   const coordinator=state.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
+  const selected=b.reservationKind===undefined?'STAGE_OWNER':b.reservationKind,bindingAction=action==='BIND'||action==='BIND_COORDINATOR',role=action==='BIND_COORDINATOR'?coordinator:stage;
+  if(!['COORDINATOR','STAGE_OWNER'].includes(selected)||bindingAction&&selected!==(action==='BIND_COORDINATOR'?'COORDINATOR':'STAGE_OWNER'))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   if(b.pending){
     responsibleSessionCommand(b,s);
     const p=b.pending;
     if(!exact(p,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
       ||p.schemaVersion!==1||p.projectId!==b.projectId||p.clientId!==s.clientId||p.controlGeneration!==b.controlGeneration||!uuid(p.commandId)||p.approvalRef!==null&&!b.responsibleApproval?.commandHash||p.baselineRefs.length
       ||p.payload.reason!==b.reason)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
-    if(action==='BIND'){
+    if(bindingAction){
       const previous=p.payload.existingSessionBindingRef;
       if(previous!==null&&!ref(previous))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
-      if(!stage||p.operation!=='bindResponsibleSession'||!same(p.payload.roleRef,stage.ref)||!same(p.payload.assignmentRef,confirmed.ref)||!same(p.payload.connectionRef,b.connectionRef)
+      if(!role||p.operation!=='bindResponsibleSession'||!same(p.payload.roleRef,role.ref)||!same(p.payload.assignmentRef,confirmed.ref)||!same(p.payload.connectionRef,b.connectionRef)
         ||p.targetId!==(previous?.id??null)||p.expectedVersion!==(previous?.version??0))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
     }else if(p.operation!=='defineProjectRole'||p.payload.kind!==action||p.targetId!==null||p.expectedVersion!==0
       ||!same(p.payload.stageRef,action==='COORDINATOR'?null:{applicationRef:confirmed.snapshot.definition.taskRef.applicationRef,nodeId:confirmed.snapshot.definition.taskRef.nodeId})
@@ -113,12 +117,12 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
   else if(action==='STAGE_OWNER'){
     if(!coordinator)throw new ApiError('ROLE_PARENT_REQUIRED');
     payload={kind:'STAGE_OWNER',stageRef:{applicationRef:confirmed.snapshot.definition.taskRef.applicationRef,nodeId:confirmed.snapshot.definition.taskRef.nodeId},parentRoleRef:coordinator.ref,reason:b.reason};
-  }else if(action==='BIND'){
-    if(!stage||!ref(b.connectionRef))throw new ApiError('RESPONSIBLE_SESSION_SELECTION_REQUIRED');
-    const old=state.bindings.find(v=>same(v.snapshot.roleRef,stage.ref));
+  }else if(bindingAction){
+    if(!role||!ref(b.connectionRef))throw new ApiError('RESPONSIBLE_SESSION_SELECTION_REQUIRED');
+    const old=state.bindings.find(v=>same(v.snapshot.roleRef,role.ref));
     if(old&&!same(old.snapshot.connectionRef,b.connectionRef))throw new ApiError('SESSION_REPLACEMENT_REQUIRED',412);
     operation='bindResponsibleSession';targetId=old?.ref.id??null;expectedVersion=old?.ref.version??0;
-    payload={assignmentRef:confirmed.ref,roleRef:stage.ref,connectionRef:b.connectionRef,existingSessionBindingRef:old?.ref??null,reason:b.reason};
+    payload={assignmentRef:confirmed.ref,roleRef:role.ref,connectionRef:b.connectionRef,existingSessionBindingRef:old?.ref??null,reason:b.reason};
   }else throw new ApiError('RESPONSIBLE_SESSION_INPUT_INVALID');
   return{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:b.controlGeneration,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:structuredClone(payload)};
 }

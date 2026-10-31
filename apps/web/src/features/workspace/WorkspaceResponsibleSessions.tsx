@@ -17,21 +17,24 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   const context=useRef({client,transport:client.transport,session,confirmed,owner});
   if(context.current.client!==client||context.current.transport!==client.transport||context.current.session!==session||context.current.confirmed!==confirmed||context.current.owner!==owner){epoch.current++;context.current={client,transport:client.transport,session,confirmed,owner};}
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;epoch.current++;};},[]);
+  const active=(ticket:number)=>alive.current&&ticket===epoch.current&&context.current.client===client&&context.current.transport===client.transport;
   const sameOwner=!buffer||buffer.projectId===confirmed.projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId;
   const bound=sameOwner&&(!buffer||ordered(buffer.assignmentRef)===ordered(confirmed.ref));
   const update=(change:(b:ResponsibleSessionBuffer)=>ResponsibleSessionBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
-  const coordinator=state?.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER'),binding=state?.bindings.find(r=>ordered(r.snapshot.roleRef)===ordered(stage?.ref??null));
+  const coordinator=state?.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
+  const reservationKind=buffer?.reservationKind===undefined?'STAGE_OWNER':buffer.reservationKind,selectedRole=reservationKind==='COORDINATOR'?coordinator:reservationKind==='STAGE_OWNER'?stage:undefined,binding=state?.bindings.find(r=>ordered(r.snapshot.roleRef)===ordered(selectedRole?.ref??null));
+  const bindingAction:ResponsibleSessionAction=reservationKind==='COORDINATOR'?'BIND_COORDINATOR':'BIND';
   const locked=busy||!owner||!bound||!!buffer?.pending||!!buffer?.uncertain;
   const retainedSelection=buffer&&bound&&!binding&&buffer.connectionRef&&!candidates.some(hit=>ordered(hit.ref)===ordered(buffer.connectionRef))?buffer.connectionRef:null;
   async function load(cursor:string|null=null) {
     const ticket=epoch.current;setState(null);setNotice(null);
     const [value,page]=await Promise.all([readResponsibleSessionState(client,confirmed),listCandidates(client,confirmed.projectId,'CONNECTION_CANDIDATE',cursor)]);
-    if(!alive.current||ticket!==epoch.current)return;setState(value);setCandidates(page.items);setNextCursor(page.nextCursor);
+    if(!active(ticket))return;setState(value);setCandidates(page.items);setNextCursor(page.nextCursor);
   }
   async function prepare() {
     if(!owner||!canPrepareResponsibleSessionInput(buffer,confirmed,session))return;
     if(buffer?.dirty&&!confirm('미저장 책임 세션 입력을 버리고 새로 준비할까요?'))return;
-    const ticket=epoch.current,result=await prepareResponsibleSessionInput(client,confirmed,session,buffer,()=>{setState(null);setNotice(null);},()=>alive.current&&ticket===epoch.current);
+    const ticket=epoch.current,result=await prepareResponsibleSessionInput(client,confirmed,session,buffer,()=>{setState(null);setNotice(null);},()=>active(ticket));
     if(!result)return;const old=buffer?.bindingId;onChange(value=>value?.bindingId===old?result.buffer:value);setState(result.state);
   }
   async function write(action:ResponsibleSessionAction) {
@@ -40,37 +43,38 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     let acknowledged=false,current=original;
     const settle=(next:ResponsibleSessionBuffer)=>{const expected=current;onChange(previous=>previous&&ordered(previous)===ordered(expected)?next:previous);current=next;};
     try {
-      const generation=await documentControl(client,confirmed.projectId,session);if(!alive.current||ticket!==epoch.current)return;
+      const generation=await documentControl(client,confirmed.projectId,session);if(!active(ticket))return;
       assertResponsibleSessionInputCurrent(currentBuffer.current,original);
       if(generation!==buffer.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
-      if(action==='BIND'&&!buffer.pending) {
+      if((action==='BIND'||action==='BIND_COORDINATOR')&&!buffer.pending) {
         if(!buffer.connectionRef)throw new ApiError('RESPONSIBLE_SESSION_SELECTION_REQUIRED');
         const candidate=await readCandidate(client,confirmed.projectId,buffer.connectionRef);
         if(candidate.expired||candidate.candidate.kind!=='CONNECTION_CANDIDATE')throw new ApiError('CONNECTION_CANDIDATE_NOT_CURRENT',412);
-        if(!alive.current||ticket!==epoch.current)return;
+        if(!active(ticket))return;
       }
       assertResponsibleSessionInputCurrent(currentBuffer.current,original);
       const command=prepareResponsibleSessionAction(buffer,session,confirmed,state,action);
       if(command.approvalRef!==null)await checkResponsibleSessionApprovalBinding(buffer,session);
-      if(!alive.current||ticket!==epoch.current)return;
+      if(!active(ticket))return;
       assertResponsibleSessionInputCurrent(currentBuffer.current,original);
       settle(markResponsibleSessionDispatch(current,command));
       const receipt=await sendResponsibleSessionAction(client,command,session);acknowledged=true;
-      if(!alive.current||ticket!==epoch.current)return;
+      if(!active(ticket))return;
       settle(settleResponsibleSessionWrite(current,receipt));
-      setNotice((action==='BIND'?'책임 세션 예약':'역할 정의')+' 저장 영수증 확인 · v'+receipt.ref.version+' · 실제 Agent 실행 아님');
+      setNotice((action==='BIND'||action==='BIND_COORDINATOR'?'책임 세션 예약':'역할 정의')+' 저장 영수증 확인 · v'+receipt.ref.version+' · 실제 Agent 실행 아님');
       setState(null);const refreshed=await readResponsibleSessionState(client,confirmed);
-      if(alive.current&&ticket===epoch.current)setState(refreshed);
+      if(active(ticket))setState(refreshed);
     }catch(cause){
-      if(!alive.current||ticket!==epoch.current)return;
+      if(!active(ticket))return;
       const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
       settle({...current,failure:{code:failure.code,status:failure.status},uncertain:acknowledged?false:previouslyUncertain||failure.status===0||failure.status>=500||failure.code==='RESPONSE_INVALID'||failure.code==='RESPONSIBLE_SESSION_INTEGRITY_FAILED'});
       throw failure;
     }
   }
-  const retryAction:ResponsibleSessionAction=buffer?.pending?.operation==='bindResponsibleSession'?'BIND':buffer?.pending?.payload.kind==='STAGE_OWNER'?'STAGE_OWNER':'COORDINATOR';
+  const pendingRoles=state?.roles.filter(r=>ordered(r.ref)===ordered(buffer?.pending?.payload.roleRef))??[],pendingRole=pendingRoles.length===1?pendingRoles[0]:undefined;
+  const retryAction:ResponsibleSessionAction|null=buffer?.pending?.operation==='bindResponsibleSession'?(pendingRole?.snapshot.kind==='COORDINATOR'?'BIND_COORDINATOR':pendingRole?.snapshot.kind==='STAGE_OWNER'?'BIND':null):buffer?.pending?.payload.kind==='STAGE_OWNER'?'STAGE_OWNER':'COORDINATOR';
   return <section aria-label="책임 역할·예약 세션"><h6>책임 역할·예약 세션</h6>
-    <p>확정 임무의 단계책임자와 Anvil 세션을 연결합니다. RESERVED는 외부 Agent 세션 생성·실행 허가가 아닙니다.</p>
+    <p>확정 임무의 총괄 또는 단계책임자와 Anvil 예약 세션을 연결합니다. RESERVED는 외부 Agent 세션 생성·실행 허가가 아닙니다.</p>
     <button disabled={busy} onClick={()=>run(()=>load())}>현재 역할·예약·준비 이력 조회</button>
     <button disabled={busy||!owner||!canPrepareResponsibleSessionInput(buffer,confirmed,session)} onClick={()=>run(prepare)}>책임 세션 입력 준비</button>
     {!bound?<p role="alert">{sameOwner?'이전 임무 입력이 보관돼 있습니다. 미확인 명령이 없다면 입력 준비로 이 임무를 명시 선택하세요.':'다른 임무·주체의 미저장 입력/명령이 보관돼 있습니다. 원 대상으로 돌아가 확인하세요.'}</p>:null}
@@ -82,9 +86,11 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     {buffer&&bound&&buffer.pending&&(buffer.responsibleApproval||buffer.failure?.code==='APPROVAL_REQUIRED'&&buffer.failure.status===412&&!buffer.uncertain)?<ResponsibleSessionApprovalEditor client={client} session={session} buffer={buffer} disabled={busy||!owner} update={change=>onChange(previous=>updateResponsibleSessionApprovalBuffer(previous,buffer,change))} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
     {state?<><p>현재성 별도 재검사 필요 · 실행 허가 없음 · Agent 전달 없음</p>
       <ul>{state.roles.map(role=><li key={role.ref.id}>{role.snapshot.kind==='COORDINATOR'?'총괄':'선택 단계 책임자'} 역할 · {role.ref.id} · v{role.ref.version}</li>)}</ul>
-      {binding?<p>책임 세션 {binding.snapshot.sessionRef.id} · RESERVED · 결박 v{binding.ref.version}<br/>현재 결박 임무 {binding.snapshot.assignmentRef.id} · v{binding.snapshot.assignmentRef.version} · 도구 교체는 별도 이전 절차입니다.</p>:<p>이 단계에 저장된 책임 세션 예약이 없습니다.</p>}
+      {binding?<p>책임 세션 {binding.snapshot.sessionRef.id} · RESERVED · 결박 v{binding.ref.version}<br/>현재 결박 임무 {binding.snapshot.assignmentRef.id} · v{binding.snapshot.assignmentRef.version} · 도구 교체는 별도 이전 절차입니다.</p>:<p>선택 역할에 저장된 책임 세션 예약이 없습니다.</p>}
       {binding&&owner?<ProviderClaimHistoryPanel key={ordered([confirmed.projectId,binding.snapshot.sessionRef,session.user.id,session.clientId])} client={client} projectId={confirmed.projectId} sessionRef={binding.snapshot.sessionRef} subjectKey={session.user.id+':'+session.clientId} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
       {buffer&&bound?<><fieldset disabled={locked}><legend>현재 임무 책임자 정의·예약</legend>
+        <label>예약 대상 역할<select aria-label="예약 대상 역할" value={['COORDINATOR','STAGE_OWNER'].includes(reservationKind)?reservationKind:''} onChange={e=>{if(locked)return;const kind=e.target.value;if(kind!=='COORDINATOR'&&kind!=='STAGE_OWNER')return;const role=state.roles.find(r=>r.snapshot.kind===kind),existing=state.bindings.find(b=>ordered(b.snapshot.roleRef)===ordered(role?.ref??null));update(b=>({...b,reservationKind:kind,connectionRef:existing?structuredClone(existing.snapshot.connectionRef):null,dirty:true,failure:null}));}}><option value="STAGE_OWNER">선택 단계 책임자</option><option value="COORDINATOR">총괄</option></select></label>
+        {selectedRole?<p>예약 대상 {reservationKind==='COORDINATOR'?'총괄':'선택 단계 책임자'} · {selectedRole.ref.id} · v{selectedRole.ref.version} · {selectedRole.ref.contentHash}</p>:<p>선택 역할 정의가 없거나 확인되지 않았습니다. 정의 저장과 예약은 별도 명령입니다.</p>}
         <label>책임 역할·예약 이유<textarea maxLength={20000} value={buffer.reason} onChange={e=>update(b=>({...b,reason:e.target.value,dirty:true,failure:null}))}/></label>
         <label>기존 코딩 Agent 연결 후보<select value={buffer.connectionRef?ordered(buffer.connectionRef):''} disabled={!!binding} onChange={e=>{const hit=candidates.find(c=>ordered(c.ref)===e.target.value);update(b=>({...b,connectionRef:hit?structuredClone(hit.ref):null,dirty:true}));}}>
           <option value="">연결 후보 선택</option>{binding?<option value={ordered(binding.snapshot.connectionRef)}>기존 예약의 연결 유지 · {binding.snapshot.connectionRef.id}</option>:null}
@@ -94,9 +100,10 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
         {buffer.connectionRef?<p>선택 참조 {buffer.connectionRef.id} · v{buffer.connectionRef.version} · {buffer.connectionRef.contentHash} · 선택 보관은 현재성·실제 연결 인증이 아닙니다.</p>:null}
         <button disabled={!!coordinator||!buffer.reason.trim()} onClick={()=>run(()=>write('COORDINATOR'))}>총괄 역할 정의</button>
         <button disabled={!coordinator||!!stage||!buffer.reason.trim()} onClick={()=>run(()=>write('STAGE_OWNER'))}>선택 단계 책임 역할 정의</button>
-        <button disabled={!stage||!buffer.connectionRef||!buffer.reason.trim()} onClick={()=>run(()=>write('BIND'))}>{binding?'같은 책임 세션으로 임무 결박':'책임 세션 예약'}</button>
+        <button disabled={!selectedRole||!buffer.connectionRef||!buffer.reason.trim()} onClick={()=>run(()=>write(bindingAction))}>{binding?'같은 책임 세션으로 임무 결박':'책임 세션 예약'}</button>
       </fieldset>
-      {buffer.pending?<button disabled={busy||!owner} onClick={()=>run(()=>write(retryAction))}>같은 책임 세션 명령 결과 확인</button>:null}
+      {buffer.pending?.operation==='bindResponsibleSession'&&!retryAction?<p>원 예약 역할 원본이 미확인입니다. 현재 상태를 명시 조회한 뒤 같은 원명령만 확인하세요.</p>:null}
+      {buffer.pending?<button disabled={busy||!owner||!retryAction} onClick={()=>{if(retryAction)run(()=>write(retryAction));}}>같은 책임 세션 명령 결과 확인</button>:null}
       {buffer.pending&&buffer.failure&&!buffer.uncertain&&!buffer.responsibleApproval&&buffer.failure.code!=='APPROVAL_REQUIRED'&&buffer.pending.approvalRef===null?<button disabled={busy} onClick={()=>{if(confirm('명시 거절을 확인했습니다. 원 입력을 보존하며 명령만 해제할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 확인 후 입력 수정</button>:null}
       </>:null}
       {nextCursor?<button disabled={busy} onClick={()=>run(()=>load(nextCursor))}>다음 연결 후보 조회</button>:null}
