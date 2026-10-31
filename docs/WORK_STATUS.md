@@ -10787,3 +10787,14 @@
 - 결과 docs/04_test_reports/AV3/FN16_UNDERSTANDING_APPROVAL_SCOPE_INVENTORY_RESULT_20261031.md SHA256 C51E36E5FB3E7F6FE3AA80F43AE1663A5FA77C5272DB0EF0530AEF4826DEB5E7. 실제 request/candidate/receipt/알림 원형의 RED→GREEN과 canonical 숫자 분류/시험 타입 준비 오류를 구분했다. 별도 Primary 실행 수를 단일 Main38과 합산하지 않는다.
 - reviewUnderstanding의 null/양수 실행generation만 승인된 의미에 맞췄다. 다른operation/legacyfallback·현재 OWNER/RR·원proof·NOT_PERFORMED 및 일반 실행 차단을 유지한다. 제품/시험2+결과/계획/현황3 정확5경로만 통합한다.
 - 실제 DB/RLS/경합·키/사용자파일조사/서비스/Agent·실백업복원/사용자인수는 미실행/제외다. 새QA/handle0·전체FN16/계획미완료. 다음은 나머지 collector와 승인된 prepareExecution/reviewUnderstanding 원형 간 정합을 각각 좁혀 확인한다. 기존검증을 이유없이 반복하지 않는다.
+
+## 2026-10-31 FN16 이해검토 scope 통합 게시·다음 단위
+- 6ecef26ca8a022c989402c8ca475722c4042c66b를 private 기존 branch와 동일하게 게시했다. tracked clean/보호 untracked3 보존, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 검산했다. 게시 뒤 원격 조회 중인 session91320은 같은 handle을 polling해 최종 exit0을 확인했고 재실행하지 않았다. PMO에 결과/검증/제외 범위를 전달했다.
+- 다음은 A1 §7.2의 context-preparation 수집기와 이미 승인된 prepareExecution 일회승인 원형의 내부 정합 한 건이다. 기존 Primary에게 실제 producer/원문/소비·기존 buildTaskContext 승인 helper의 재사용과 정확 최소수정 경계를 읽기 대조하도록 발행했다. 다른 understanding-permit 수집기는 묶지 않는다. 현재 새 source/시험 실행 GO0·전체계획 미완료·실제 제외 유지.
+
+## 2026-10-31 FN16 승인 준비 이력 내부 통합 WI 검토
+- Primary preflight에서 prepareExecution 승인 이력이 기존 approvalFor의 buildTaskContext 전용 허용과 {details} 요청 재구성, 준비 loop의 approval=null에 충돌함을 확인했다. 같은 RR에서 기존0055 후보11열을 유한 선택 조회·순수 intent 검산 후 원 {details,candidatePayload}를 검산할 정확 source1/신규시험1 WI를 작성했다.
+- 첫 WI2E3AA355 독립 C0/I1은 §5에서 정상 과거 만료/다른 현재 OWNER까지 거절하는 문장 모순이었다. Main이 정상 역사 조회와 현재 접근/원증빙 실패를 분리해 80B49B26614FD8EBC6A9E76194B1EAAC98E70746950BE4EA095848D7CED8402E로 보완했다. 코드 발행 전 scoped 재검토 중이다. 과거에 현재 권한/기한을 재적용하거나 현재 OWNER를 원작성자로 위장하지 않는다.
+- Main 후보 모듈을 executions 폴더로 추측한 읽기1회는 부재였고, rg --files로 approvals의 실제 모듈을 확인했다. 기존0055 명시열/ProjectApprovals.capture/consume의 policy 결박을 source로 대조했으며 실제 SQL/권한/DB 실행은 없다. 기존 공개 DTO/표/SQL·실행 허가·coverage412/프로젝트 차단은 유지한다.
+
+- WI80B49B26의 문장 보완 재검토 C0/I0를 수신했다. control 게시 뒤 같은 Primary에게 정확2경로 TDD를 발행한다. 시작 source A00EA728과 신규 시험 부재를 확인하며, Main 동일 코드 쓰기/실제 자원 변경0을 유지한다.
