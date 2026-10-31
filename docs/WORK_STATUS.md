@@ -10768,3 +10768,12 @@
 - 결과 docs/04_test_reports/AV3/FN16_CHILD_HUMAN_CONTENT_INVENTORY_RESULT_20261031.md SHA256 07E2D83F02A5BE91A706F649BED4A58A4A83E504680186142183B453AE7C7B52. 준비422/SELECT 초과키 오류·실제 원guard 복원 RED·시험 타입 보완을 분리했다. 원래 실패를 PASS로 소급하지 않는다.
 - 실 PG/SQL/RLS·backup/복원·사용자 인수는 미실행/제외다. source/시험3+결과/계획/현황3의 정확6경로만 통합한다. 보호3 지문 보존·QA/handle0·Main 직접 코드 수정0, 실제 DB/권한/키/사용자파일조사/서비스/Agent/일반차단 해제0.
 - 전체 FN16/Stage/계획은 미완료이며 A1~A6 전체 수동백업 상세화를 계속한다. 이번 보완으로 전체 coverage나 실제 백업 성공을 발급하지 않는다. 완료된35/type 검사는 새 변경 없이 반복하지 않는다.
+
+## 2026-10-31 FN16 child 이력 통합 게시·다음 선행
+- source 결과 c61ea87586acb36fa552a93a11400d0ff2b3adcb를 private 기존 branch와 동일하게 게시했다. tracked clean·보호 untracked3 보존, main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 확인하고 PMO에 결과/검증/미검증을 전달했다.
+- 다음 미완료는 A1 §7.2의 approval-history 수집 expectedVersion 가정과 이미 승인된 reviewUnderstanding 양수 generation scope의 정합 한 건이다. 동일 Primary에게 실제 producer/수집기·기존 계약의 읽기 대조만 발행했다. 다른 두 collector를 묶지 않고 새 공개/저장/승인 계약이나 일반 target 검산 완화가 필요한지 먼저 판별한다. 현재 새 source GO/쓰기/시험 실행0, 완료된 child 검증 재실행0.
+
+## 2026-10-31 FN16 이해검토 승인 scope 호환성 발행
+- 기존 Primary 읽기 대조와 Main 실제 원문 대조에서 approval-input의 reviewUnderstanding 전용 targetRef=null/양수 실행 generation 원형이 저장될 수 있지만, approval-history-inventory:50의 일반 null0 검사에서503이 되는 공백을 확인했다. 아직 제품 재현 시험은 실행하지 않았다.
+- WI FN16_UNDERSTANDING_APPROVAL_SCOPE_INVENTORY_INTEGRATION_20261031.md SHA256 9FD623257554F378DDD7378FD6F62474D7FF4C75CC7B5541A8ED2C680C9E4CD1, 독립 경계검토 C0/I0다. 기존 승인 의미를 수집기에 맞추는 내부 보완이며 source1/신규시험1 정확2경로만 발행한다. 다른operation/legacyfallback/원증빙·OWNER/RR·NOT_PERFORMED 표시를 유지한다.
+- 같은 Primary에 control 게시 뒤 실제HEAD·D632A275 시작지문·신규시험 부재를 대조하고 RED→GREEN하도록 순차GO한다. Main 동일 코드 쓰기0, 다른 두collector·공개계약/producer/SQL·권한/실행·전체coverage412 변경0. 실제 DB/키/파일조사/서비스/Agent/일반차단 해제0·새QA0·전체계획 미완료다.
