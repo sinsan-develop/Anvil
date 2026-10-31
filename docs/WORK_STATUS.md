@@ -10923,3 +10923,9 @@
 - 신산님 최신 직접지시: 승인된 구현·검수에 필요한 제품 소스와 시험 파일 읽기 허용. 실제 사용자 자료·백업 대상 파일 조사와 DB·권한·키·서비스·Agent 실행은 계속 제외한다. 기존 subagent 구현/Main 검수·통합을 유지하고 사용자가 goal active로 재개했다. 앞선 읽기거절을 우회한 것이 아니라 거절사유에 해당하는 경계를 새 직접승인으로 해소했다.
 - 기존Primary에UI10관련원문보기6파일한정본문preflight를재개했다. Mainf0ab27는현재7651527446cd107790810154687ff9412a360206/보호3을확인하고 component/unit본문읽기exit0을확인했다. 부모참조교체·단계최종응답닫기두미검증만후속해소여부를먼저대조한다. 아직코드/시험쓰기0,현재결함추정0이며실제RED후최소제품수정여부를판정한다. PMO에읽기질문해소/재질문0을전달했고R3실제복제/새FN16계약은이승인으로GO하지않는다.
 - UI10 신규 TEST_ONLY WI UI10_SCOPE_ORIGINAL_BOUNDARY_TEST_20261031.md SHA A02C5AA3F625309903B1FDC6DA521B549664DFB6EEB292F0E863A4584AF4FC39를 작성했다. 실제부모 fullref교체/늦은401·STAGE최종JSON/nativehash중닫기 네묶음,신규시험1경로만허용/제품0·메모리DOM·GET전용·gate/native/global/채널회수이며기존독립검토자경계검수중이다. 아직시험쓰기GO전이며실제제외와전체미완료를유지한다.
+
+
+## 2026-10-31 UI10 고정 원문 경계 검수 보완
+- WI A02C5AA3/control5dd71980의 신규시험1 A48FE630/19274B를 기존Primary가 구현·writer반환했다. Main0d2c2d 신규4+직접reader5 9PASS/FAIL0/SKIP0/TODO0/CANCEL0·649.6982ms/exit0, b07ef1 type/diff/newfile공백·지문0이며 제품3/기존시험불변이다. 독립동일지문C0/I0/M0. 기존동작그대로PASS이며제품RED→GREEN주장0·불변전체검사반복0이다.
+- 실제부모fullref A→B에서늦은A를폐기한뒤A재진입·늦은401폐기·Stage최종JSON/nativeDigest완료후반환hold중닫기를검증했다. 먼저A로복귀후옛응답을푸는같은객체ABA시험은아니다. GETonly/POST·자동GET·부모callback0/편집buffer불변,finally gate/native/global/root/ownedchannel회수·Node정상종료/QA0이다. 실브라우저·서버·DB·사용자인수는NOT_RUN/전체UI10·FN05·계획미완료를유지한다.
+- 기존Page118 ScopePicker/125 DocumentPicker의같은tuple Reactkey경고는수행자최종26회/Main관측으로보존했다. 경고숨김0/제품보정0·실누락/손상미증명이며다음좁은결함보완후보로분리한다. 준비오류는추정경로1/Viteentry1/PSquoting1로제품실패와구분한다. 결과 docs/04_test_reports/AV3/UI10_SCOPE_ORIGINAL_BOUNDARY_RESULT_20261031.md.

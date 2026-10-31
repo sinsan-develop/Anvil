@@ -1781,3 +1781,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-10-31 P03 R3 고정 결박 source 부분 검수
 - 신산님 직접 source 진행지시/bindingEF21B4CB/WIE332921F에 따라 기존제품2·시험3의R3 literal6/candidateSHA·결과/parser/독립fixture만정합했다. Main선택RED1/9·제품불변확인후제품GO, 최종전체130PASS/skip0·type/Bash구문·LF/diff0·최종5지문독립C0/I0다. 제품을역치환하면시작raw와동일하며기존mount/시각/프로토콜·위험4·원본RO/NoCopy/소비·회수보호를유지한다. 결과 docs/04_test_reports/AV3/P03_R3_FIXED_BINDING_SOURCE_RESULT_20261031.md(5C7DDD317CB0E35D7D649F1D41D187B0B247E048861139FDAD2F95C5353A6444). 실제grant/자원/복제/PG·DB·서비스는미실행/별도exact실행경계이며P03정식환경/IX01/전체계획완료가아니다. 계획내일반DB작업은재승인대상으로취급하지않지만등록실행대상복구선행과구분한다.
+
+
+### 2026-10-31 UI10 관련 고정 원문 경계 보완
+- 신규시험1·제품불변. Main 신규4+reader5 단일9PASS/type/diff0·독립C0/I0/M0. 실제부모교체/늦은401·Stage최종JSON/nativehash반환중닫기 메모리행동검증이며 실제브라우저/DB/사용자인수·전체업무미완료. 결과 UI10_SCOPE_ORIGINAL_BOUNDARY_RESULT_20261031.md.
+- 부모 A→B에서늦은A폐기후A재진입순서이며먼저A복귀후응답해제의같은객체ABA증거로확대하지않는다. 기존React중복key경고는별도결함후보로보존한다.
