@@ -1818,3 +1818,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-11-01 관측 HTTPS·FN14 Web 직접 승인 재개**: 신산님이 관측 HTTPS 후보 A 계약·코드·합성검증과 FN14 Web 코드·화면·합성검증을 직접 승인했다. 기존 차단 사유의 이 두 source 경계가 해소되어 단일 Primary가 관측 신규4→FN14 Web 순서로 진행한다. 실제DB/권한/키/서비스/Agent 실행·사용자/백업자료조사·기존프로젝트차단해제는 제외하며 전체업무 완료·실환경 PASS로 해석하지 않는다. 관측 WI FN06_FN08_OBSERVATION_HTTPS_SOURCE_IMPLEMENTATION_20261101.md/WORK_STATUS 참조.
+
+
+- **2026-11-01 FN06/FN08 관측 HTTPS source 검수**: 채택A의wire codec·실제Node HTTPS 호출코드를신규4파일로구현했다. Main신규18/직접인접11=29PASS·type/diff0,독립최종C0/I0. parse전raw한도·ACK개수정합·실header왕복·최초최단기한반례를보완했고fake request만시험했다. 실제TLS/키·서명/현재권한·원기록/서버영속·SDK/Agent·전체FN06/FN08/계획은미완료다. FN14Web은같은Primary가순차구현중이며실환경효과0. [결과](04_test_reports/AV3/FN06_FN08_OBSERVATION_HTTPS_SOURCE_RESULT_20261101.md)/WORK_STATUS참조.

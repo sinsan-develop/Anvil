@@ -11193,3 +11193,13 @@
 - Primary399160은실제새wirecodec6PASS206.4897ms보고·defaultNodeHTTPSdriver와fake request종료회수구현을계속한다. Main이아직fresh/최종검수하지않았고실제socket/API/DB/키/서비스/Agent0이다. 종료 불명과ACKgap역전·기한전IO0·late error/response를검수기준으로전달했다.
 - FN14 Web 신규WI docs/work_packages/FN14_PREPARATION_RECORD_WEB_IMPLEMENTATION_20261101.md SHA874FE5DFB5B22B0437DBD24D272BD82C3670D242D9DD670E379725EE84D53066 독립C0/I0. 기존Web6에필수실React합성harness1을추가한exact7이며서버/SQL재구현0. detail.state는역할별최신binding으로선택임무와다를수있어confirmed/role fullref를대조하고알려진과거ref는기존보호GET로명시확인한다. target412원형보존·App전용버퍼·CSRF/세대별busy/UNKNOWN·영수증후GET실패분리를고정했다. 같은Primary가관측4동결후순차진행한다.
 - Main1e7626에서추정한transfers/api.ts는부재로읽기1실패했다. 실제파일목록을거치지않은준비경로오류이며권한/제품오류가아니다. 해당추정경로재시도0·이후literal조회는실제목록을기준으로한다. 실제원후보E096C897/옛WI5E6EC956 지문은확인했다.
+
+
+- FN14 Web control74e2d0: d4f04ded8befe8e49429a7f45b4185270c7c9e21 정확WI/현황2문서private게시,관측제품/시험stage0. Reviewer가새WI874FE5DF를기존wire/role최신binding/과거보호GET/target412·buffer·UNKNOWN경계와대조해C0/I0로반환했다.
+- 관측 codec 사전독립읽기 I1: readExecutionHttpRequestV1이실wire.bodyRaw byte상한을parse전검사하지않아정상operation과같은JSON앞에초과공백을붙여수락가능함을지적했다. Main이동일Primary에게각16KiB/1MiB raw wire음성RED→GREEN을지시했고canonicalbodyHash/서명/합격기준불변이다. 현재작성중지문한정finding이며기능실행증거전이다. Main은제품write0·실환경실행0을유지한다.
+- 관측 최종 수행자 동결: HTTP594C3B5E9084C014F3578616800FF507E255471ACFBB2502510D9B61A6FB27D9/HTTPSF7508C83D088AF14B7448AACC39D29010D5C66FC106056780EE8D2659260584E, 시험C02EBF9222F24FF8085CC0F100BB02C3743DB2B5F29A65DFA2804DD2D45C4B64/F69F96DFE44708AC8EA1847862A6A4902751C88E5D92FC128B95239CC6BFB59B. Primary2013b9 신규18/인접11=29PASS203.5865ms/type/diff0·보호3불변·QA/live0보고. 실제module부재와wire초과공백/ACK cardinality/표준header불호환/벽시계후퇴최초기한의실반례를구분했다.
+- Main666571 동결4의같은29조건fresh29PASS·0FAIL/SKIP/CANCEL/TODO·199.0508ms/typecheck/diff각exit0. 실제socket/TLS·서명key생성/검증·원기록/서버내구성·DB/서비스/Agent미실행이다. 인접execution-client/proof의키생성시험은이번범위에서실행하지않았고purecanonical/메모리observations만선정했다. false안전metadata를유지하며전송코드/형식검산을실제연결PASS로승격하지않는다.
+- 동결4는추가수정금지로독립최종검토중이다. 같은Primary를followup으로FN14Web exact7 TEST_ONLY에바로재개했고Main은관측4검수/통합을병행한다. 동시codewriter1·Main제품write0·실환경효과0이다.
+- 관측독립최종4파일C0/I0: raw한도/ACK cardinality·표준헤더·최초기한지적의실반례/보완과TLS/타이머/늦은event/불명원식별·고정false를확인했다. 실제TLS/서명진위/현재권한/서버내구성은미검증으로분리한다. 결과 docs/04_test_reports/AV3/FN06_FN08_OBSERVATION_HTTPS_SOURCE_RESULT_20261101.md에원지문/29PASS/미검증/실효과0/복구를기록했다.
+- FN14 Web 실제RED: Primary7602b3는실제React Page→기존보호GET5·확정임무표시후새준비기록작성버튼0≠1(1FAIL1299.6165ms)이다. Mainbdb70a도같은버튼부재1FAIL672.5938ms를확인해loader/fixture오류아님을검수했다. WI874FE5DF독립C0/I0아래exact7 PRODUCT_GO로같은Primary가실제UI저장/고정GET연결을진행중이며관측4수정0이다.
+- FN14 구현중불필요한추정contracts/runtime/project-operations.ts 조회1부재는준비오류로보고받았다. 같은호출실제project-command.ts에서기존연산등록확인·추정경로재시도0·실환경실행0이다. Main은제품/시험write0·별도재승인질문0을유지한다.
