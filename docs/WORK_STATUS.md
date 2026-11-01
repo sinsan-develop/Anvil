@@ -11406,3 +11406,9 @@
 - 증거: FN06 Main최종66PASS/type/diff0·독립보완C0/I0, 결과hash 80D7E96782E77E12ED7AD9E3DADAA98A926382BE4067790D746E9DFD07B1FBEE. FN16 Main최종9PASS/type/diff0·독립C0/I0·합성경로표현1줄동등성C0/I0, 결과hash 43BDE71F206A80124711A3D0322AB6A7502C680BE294BCDB4CC4B31CA2616F19. 최초RED/준비오류·gitleaks차단/오탐보완·실검증제외는각결과서와앞선기록에보존했다. 검사우회·실Secret노출/변경0이다.
 - 미완료: 두채택범위의source검수와전체FN06/FN14/FN16/WORK_PLAN완료를구분한다. 실제DB/권한/role/GRANT·RLS/잠금경합·키/파일조사·서비스/Agent·실인계/백업복원/설치/사용자인수는미실행이다. 필수gate미충족으로main병합/운영배포/branch삭제0이다.
 - 다음: 새reader의기존FN14/반출caller는연결됐으며단순누락은없다. 책임세션/능력보고의기존CANDIDATE_ONLY를등록정의증빙으로대체하지않는다. 기존Primary에게등록정의결박HUMAN보고의기존계약대비정확delta를한정읽기로맡겼다. 제품/문서변경없이기존승인내부연결가능여부와새public계약필요근거를반환받아Main이필요한결정/지원만PMO에요청한다. 전체source완료추정·같은시험/전수조사반복0이다.
+
+### 2026-11-01 다음 FN06 등록 정의 HUMAN 보고의 정확 결정 delta
+- 기존 Primary 한정읽기는 현재 HUMAN r2가 claim schema1·필수환경ref·후보 FK/만료·CANDIDATE_ONLY에 결박돼 등록정의 reader 교체만으로 연결할 수 없음을 확인했다. 새등록정의와 environment:null을 기존뜻으로 가장하지 않는다. 실제 source완료/전수감사 판정이 아니다.
+- Main이 FN06_REGISTERED_DEFINITION_HUMAN_REPORT_DECISION_CANDIDATE_20261101.md를 작성했다. A는 명시v2/등록정의·환경null/도구·기한·전용저장/목록·고정GET/UI source계약, B는 실제보호환경 선행이다. 새2표·유한10000/64MiB·기존합산cap/원증빙·AUTO전용/실측UNVERIFIED/권한false를명시하고실행/책임세션활성화·정의역갱신은제외한다. 기존목적의재승인이아니라schema/nullable/응답/저장관계의새public delta 결정안이다.
+- 첫독립C0/I1(C633CFC0)의replay순서를보정하고닫힌currentness조합·세션교체후자료를다시찾는유한목록/고정조회까지같은업무로구체화했다. 최종후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D는독립재검토C0/I0·시작끝지문동일이다. 채택후WI에서기존cursor만료·시각/id정밀도를고정한다.
+- 현재NOT_ADOPTED·제품/SQLwrite0,기존코드5263/FN061352불변·실DB/권한/키/서비스/Agent0이다. 정확후보를기존branch에문서전용게시하고PMO에A의source-only채택또는B선행결정만요청한다. PMO다음작업배정을기다리는것이아니며실제공급자/기능/인수미완료를helper·반복검사로대체하지않는다. 전체goal은active/계획미완료,기존완료검사재실행0이다.
