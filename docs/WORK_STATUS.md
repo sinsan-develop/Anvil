@@ -11969,3 +11969,39 @@ git diff --check
 - 신산님이 native 준비 계약 r2 A의 코드·화면·미적용SQL·합성검증과 기존subagent 구현을 직접 승인했다. 후보SHA5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085를실제대조했고승인전HEAD598bad9c/StageB·trackedclean/보호3를확인했다. 과거미채택/blocked기록을소급삭제하지않고이번정확경계만해소한다.
 - 승인원문/대상/제외는 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_R2_A_SOURCE_APPROVAL_20261102.md, 구현은 기존27경로WI로결박한다. 단일기존Primary/TDD·Main검수통합·기존Reviewer읽기전용, subagent-driven-development skill을적용하되신산님지시대로기존담당자를재사용한다. 신규세션/branch/자동화0.
 - 실제DB/권한/키/CA/TLS/서비스/native/OS/helper/compiler/Agent/실자료/P03R3실행은계속제외한다. 실제공급자부재는거절·기본미등록이며합성소비성공을실제권위/내구저장/Agent기능완료로승격하지않는다. 전체계획미완료·main병합/배포0이다. 다음은정확문서게시후동일Primary에업무A→B→화면순GO/기능반례검수다.
+### 2026-11-02 native 준비 업무A 첫 기능 반례
+- 기존Primary f35476: 새routes시험2건0PASS/2FAIL/native1/2487.4736ms. 명시source주입한options GET404≠503·새prepareNativeBoundary baseline정확1개를기존approval-input이412 APPROVAL_REFERENCE_NOT_CONNECTED로거절했다. loader/SQL부재시험실패가아닌현재소비반례다. 같은GO에서parser/승인/원명령·저장source를구현중이며실제효과0이다.
+- 기존Reviewer는원command/receipt비순환·정확승인자기소비·별도reserve·fresh/history·같은Tx의검수접점과음성반례를준비했고추가허용경로필요0을반환했다. Main제품동시쓰기0·현재제품동결/검수합격주장0이다.
+### 2026-11-02 native 준비 업무A 초기 GREEN·저장 시험 진행
+- Primary63ecbb의최초2반례는2PASS/native0/1359.9939ms로GREEN이다. 원명령→공통receipt→writerreserve→새2표INSERT/재조회source를작성했으나fakePG 정상/rollback검수전·0071미작성·미동결이며업무A완료로판정하지않는다.
+- 작성중tsc nullable/narrowing12진단으로exit1을확인한Primary가국소타입보정중이다. 같은실패3회로세지않고현재컴파일미통과로보존한다. Main은업무A가동결되기전dirty변경을최종검수하지않는다. 직접인접선정4시험의실파일읽기는제품SQL만대상이고keygen/외부process호출없음을1d78a0에서대조했다. PMO는직접승인수신/기존질문해소를cursor:5 completed로확인했다.
+### 2026-11-02 native 준비 원 영수증→writer proof 연결 결함
+- Primary의실제Fastify→인증Tx→commonreceipt→reserve 시험 e15bc1에서503,34cba6 원예외sideband로새result.data.preparationIntent를기존#proofs가data.intent로만읽어undefined해시하는연결오류를확정했다. Main은명시새status/data분기와기존D1/writer exact검산·감사reason보존을지시했고기본값대체/기준완화0이다. 보정중원인1이며아직동결/검수합격아니다.
+- 타입12진단은1개까지국소보정됐으나최종재실행전으로계속미통과기록이다. Main8f4dfe 변경경로목록대조는허용범위내이며보호3와다른기능수정0이다. 실제DB/권한/키/서비스/native/Agent/실자료/P03R3실행0·프로세스/QA0·단일Primary진행중이다.
+### 2026-11-02 native 준비 업무A query 경유 신규11 합성 통과
+- Primary51cdf1 신규3시험11PASS/native0/2989.5289ms: 원command/receipt/audit→reserve→2표/고정GET/replay, INSERT/CAS rollback, COMMIT불명원결과, 전역건수포화, REQUIRE_APPROVAL 자기소비정상과누락/다른명령/다중소비거절을실제query모델경유확인했다. 실제PG/권위성공은아니다.
+- 마지막타입1은새expectedWriterHeadRef를모르는재사용시험대역추론의국소annotation보정중이며최종type미실행상태다. 0071작성단계·B/Web미작성·업무A미동결/미완료를유지한다. Main은허용외기존시험수정필요시경로반환·실검산우회금지를지시했다. actual권위false/기본미등록·실환경효과0이다.
+### 2026-11-02 native 준비 업무A Main 독립 합성 검수·SQL finding
+- Primary는업무A14경로후보를동결/쓰기반환,SQL0071 SHA D7E788F01F4361F9702AF8A2FEBAD4D96051B69DD8F24E5FD885009A9F8062CF/30922B로제출했다. Mainf0d272 선정6파일57PASS/skip0/7528.9775ms, 동일session88808 최종회수0f1505 type·diff exit0/SQL지문동일. 실제PG·RLS/OID/실서비스/권위인수는미검증이다.
+- 기존Reviewer SQL정적I1: 기존capacity조기RETURN에native존재가없어native만있는project의used/held후속증가가새cap호출을건너뛴다. Main9e7af4에서현재105/124행을대조해확인했다. 추가I2인원receipt/audit/consumption후속변경의reverse완결접점은기존guard까지검토중이며최종finding전보정dispatch하지않는다. 57PASS는이정적누락해소를증명하지않으며업무A미합격유지다.
+- Primary는A14/SQL을동결하고겹치지않는B신규connector3+시험1에만구현GO를받았다. PREPARED→current/challenge/consume→ATTEMPTED→소유capability/fakefactory단발소비의실호출선TDD이며실제journal/키/native/네트워크실행0이다. Main제품동시쓰기0·기존Reviewer읽기전용·실제제외범위불변이다.
+### 2026-11-02 native 준비 업무A 독립 C0/I5·첫 보정 round
+- 기존Reviewer가동결14경로시작끝지문일치를확인해C0/I5반환했다. B/Web미구현을finding에넣지않았다. Main은67461d/9e7af4의source/SQL순서와대조하고동일Primary에A첫fixround를지시했다. B신규작성은보존하고A를우선순차보정, Main동시제품쓰기0이다.
+- SQL I1: 0071:105 native만있는project조기RETURN으로후속used/held증가의합산한도검사누락. I2: commands UPDATE·audit INSERT에서원native server_command_id를역분류해완결검산하지않아추가audit cardinality불일치가남을수있다. 기존0011 ACL의receipt/audit/소비UPDATE/DELETE회수는보존되므로실제app권한우회관측이라주장하지않는다.
+- 서버 I3: coordinator29의원승인request기한누락으로intent/grant가writer RESERVED보다길어정상짧은승인이SQL47에서실패한다. 정확보호승인기한을intent전최소수명에포함하고예약결과와대조한다. I4: options24가await뒤session/readpolicy기한을재검사하지않는다. 전체예산/최소기한반례를고정한다. I5: store.read12가CREATED.payload.parent와authority.parent·원command/receipt/audit/소비관계를복원검산하지않는다. 원형/hash재계산변조를거절하되freshhead/현재사업기한을역사에소급하지않는다.
+- 기존57PASS/type0는해당누락을해소한증거가아니다. 각genuineRED→GREEN/변경영향집중/인접·최종type/diff/동결후scoped재검토를진행한다. SQL은정적검수뿐실PG/RLS/OID/경합미검증, 실제DB/권한/키/서비스/OS/native/Agent/실자료/P03R3실행0·전체계획미완료다.
+### 2026-11-02 A 보정 중 B 부분 source 보존·기존 자료 대조
+- Primary는B신규4경로부분작성을보존하고A 첫fixround5건을우선순차보정중이다. B fb5ebc5PASS/native0/311.8008ms는한정소비증거이며타입3진단미보정으로전체type합격아니다. B module부재71de71은준비실패,55c7fa의REPLAY_ONLY reject기대를UNKNOWN분류로정정한경우도원소비/factory추가0단언은유지했다고반환했다. 독립검수전·전체B미완료로보존한다.
+- Main6475dd 기존0059/0065/0067/0070과보호untracked3의SHA7개기준일치를확인했다. 현재Main코드쓰기0·live실환경/QA0, 기존Primary A보정진행/Reviewer대기다. 다음은A보정반례/동결제출→scoped독립재검토→변경영향Main검수,이후같은승인범위B/Web를이어간다. 실제DB/권한/키/서비스/native/Agent/실자료/P03R3실행0·목표active/전체계획미완료다.
+### 2026-11-02 A 첫 보정 round 중간 반례·준비오류 구분
+- Primary5029f4의5FAIL은SQL정적I1/I2 및실제I3짧은승인/I5재봉인역사반례를포함한다. I4는supplier함수자체를교체해고정함수검사503에서먼저거절한시험준비오류였으므로기한genuineRED로기록하지않는다. 같은supplier의내부시각만진행시키도록시험대역을정정했다.
+- Primary5202b0 나머지4GREEN, f9bf6a 보정후session/readpolicy의await후기한소진412거절선정1PASS/native0/2951.5661ms를반환했다. I4는정적결함근거와보정후GREEN증거이며역패치로RED를만들지않는다. 추가parent/감사/소비변조·과거기한뒤역사/replay정상과변경영향·B허용파일최소타입보정을진행중이다. 아직미동결/재검수전·중요finding최종해소판정0·실제효과0이다.
+### 2026-11-02 A round1 재검수·round2 한정 수명 보정
+- Primary036287 신규19PASS/6143.8821ms 및전체type25a35c0·동결A5제출. Mainec2866 신규3파일19PASS/skip0/6656.6855ms,session48467최종8752cd type/diff0·A5SHA전부일치다. 독립재검토는원I1~I5 ADDRESSED이나보정diff신규I1로C0/I1이다.
+- 신규원인: coordinator26 Promise.race10초거절뒤authenticated가ROLLBACK/release해도source.options(rawdb)의await가살아있어후속query가반환된client로실행될수있다. Main54b180에서실제race/transaction종료순서를확인,동일Primary에fix round2를지시했다. 취소요청을정착완료로간주하지않고만료뒤원client사용차단/진행중query정착보호로한정보정한다. 단순무제한await로10초계약을바꾸지않으며인증공유구조개편/새권한/실DB실행0이다.
+- 실제공급자중단/자원회수미확인은UNKNOWN·보존이며성공주장0,현재B보존/A보정우선·Main동시제품쓰기0. 전체작업/계획미완료·SQL실PG/RLS/OID/경합NOT_RUN·실제DB/권한/키/서비스/native/Agent/실자료/P03R3실행0을유지한다.
+### 2026-11-02 native 준비 업무A source 검수·통합
+- round2독립재검토C0/I0/추가I1해소·두경로시작끝hash동일. Main26e88c 신규23PASS/7023.9787ms·1412e2 type/diff0,불변인접45는직전57PASS증거로보존했다. 실제PG/SQL/RLS/OID/경합·권위공급자·서비스인수미검증이다.
+- Mainf6b91c 정확A14 rawblob/stagedblob동일14·diff0뒤8cdb7f3f72011424182fd4de4669b824ae52b00d에415추가/10삭제로commit했다. 새0071의향후CRLF변환경고는있었지만현재바이트/인덱스일치·설정변경0. 별도B4/보호untracked3는stage하지않고보존했다.
+- 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_HUMAN_STORAGE_SOURCE_RESULT_20261102.md SHA90D7EDD9EE9B6352397B97E7B60668D09FCA44DE9D4EDDB099FB2B94C50A72A2를정본/source동일작성. A원명령/원영수증/예약/2표source검수일뿐전체native준비/FN06/FN08/계획완료가아니다. 기존SQL/보호자료지문유지·main병합/배포/실제DB/권한/키/서비스/OS/native/Agent/실자료/P03R3실행0이다.
+- B4동결48490185/3FAF4F4B/AA7342EA/시험596167CC는 Maina4e92a11PASS/460.5876ms/type/diff0·정확4지문일치로한정검수했고기존Reviewer가독립대조중이다. B서버 current/challenge/consume/delivery/SQL확장·Web는아직미구현이며후속으로이어간다.
