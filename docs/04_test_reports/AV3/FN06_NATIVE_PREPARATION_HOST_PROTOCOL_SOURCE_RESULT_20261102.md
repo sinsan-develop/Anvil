@@ -54,3 +54,6 @@ git diff --check
 Web 연결은 후속 작성 중이다. 실제 보호 issuer·키/TLS 채널·내구 local journal·물리 native factory/강제·회수·writer bootstrap 및 actual START/SEND/STOP/ACK의 공급자 구현·실측이 남았다. 인터페이스·합성 source의 성공을 실제 공급자 구현 완료나 `PASS`로 바꾸지 않는다.
 
 실제 PG 구문/trigger/RLS/OID/동시성, 실제 DB·권한·키·CA/TLS·서비스·OS/native/helper/compiler·Agent·실자료/백업 파일 조사·P03 R3는 NOT_RUN이다. 현재 서비스 반영·사용자 인수·전체 FN06/FN08/계획 완료를 주장하지 않는다. 복구는 해당 source commit의 정상 revert이며 미적용 SQL의 down/자료 삭제는 하지 않는다. 보호 자료·별도 UI 진행 파일을 보존하고 main 병합·배포0을 유지한다.
+
+### 2026-11-02 서버 후속 보완 고정본의 직접4시험 최종 묶음
+- Main690339→75df25→1e926d는 고정 서버/connector에서 native-preparation-authority-contract·store·routes·client의4파일을 node --test로 실행해63PASS/0FAIL/skip0/26451.8171ms/exit0을 확인했다. 앞선45PASS/1FAIL의 같은 delivery 예산 검사는 결정적 scheduler로 보완한 후 포함됐으며 과거 실패 기록을 소급삭제하지 않는다. 새 전수 프로젝트/실제DB·키·서비스/native/Agent 검증이 아니다. 현재UI9는 계속 writer 소유이며 이 결과는 UI/전체계획 PASS가 아니다.
