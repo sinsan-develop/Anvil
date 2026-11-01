@@ -11433,3 +11433,43 @@
 
 ### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
 신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.
+
+- 등록 정의 HUMAN 보고 A 재개 preflight 2e4a1b/93543e: local/private3fb08553·mainf976불변·후보5AEB6CE9/기존6지문·신규8부재를확인했고0067을예약했다. goal실상태active를확인해옛BLOCKED감사를새진행에이월하지않는다. 원cursor30분/시각3~6자리·DB US보존을WI에고정했다.
+- WI9966B28C 사전독립C0/I0·통제4문서6c5df77db1ca04abb2d0704c8fcaffbe1ccec947 private게시(58113→0def3d exit0)를확인해허용14 PRODUCT_GO를같은Primary에전달했다. Main제품write0·문서/Git/독립검수소유다. PMO에직접채택/재개를보고해이전같은승인질문을닫았다.
+- Primary32f379 최초기능RED는실제route고정GET/목록404≠401과실제Page의정상정의GET/decoder뒤작성버튼0≠1이다. 신규2파일0PASS/3FAIL/native1·1969.0112ms,loader/fixture실패아님. SQL부재는미실행준비경계로분리한다. app/root/채널회수·live0뒤같은작업에서제품구현을이어간다. 실제DB/권한/키/서비스/Agent·실사용자파일0이며이RED를제품완료/실검증으로꾸미지않는다.
+
+- 등록 정의 HUMAN 보고 구현 중 자동 안전심사 거절1: 0057을 읽어 신규0067과 허용 서비스/fixture를 만드는 일괄 명령이 기존0057 대규모 치환 위험으로 거절돼 미실행이다. 재실행/우회0. Main은 실제0057의 command·receipt·audit 지연 guard가 모든 recordCapabilityReport에 v1 행을 요구함을 확인했다. 0057 SHA256 47D0929B41A61824DE29E10B83CDF5DF345E6D08F690A17710780331AC94415A를 보존하고 WI9966B28C에 이미 포함된 신규0067 forward guard 보완으로 분리·검토하도록 동일Primary에 지시했다. v1 완결 기준 보존·v2 원명령/행 결박·양쪽namespace/반쪽거절·함수OID를 대조하며 SQL실행0이다. 영향없는 Web/types는 계속한다. 최초RED3과 route2/Page1 GREEN은 해당범위만이며 전체합격 아님.
+
+- Main 중간 소비대조에서 신규 Web prepare/send의 wire operation 2곳이 recordDefinitionCapabilityReport로 바뀌어 실제 route의 기존 recordCapabilityReport/schema2와 불일치함을 확인·동일Primary에 전달했다. Primary는 같은 원인을 국소 복원(f593c5)했고 실제React 저장 RESPONSE_INVALID(16a6e6)는 제품 오류, checkbox 준비오류(df2125)는 별도로 보존한다. 새operation/계약 확장0·기존v1불변이다. 실제 producer 저장/GET/replay 합성통과 보고는 Main fresh/최종독립 전 잠정이며 Web 원명령→POST route→영수증/고정GET 연결 보강을 계속한다.
+
+- 신규0067 forward dispatch 설계 독립 C0/I1: 기존 complete(uuid) 불변·final_guard 동일signature 교체는 타당하나 v2→v1 역방향 동일 report namespace/다른command 충돌 반례가 남았다. Main은 v1 분기 전에도 양쪽 project/id/version·command 충돌 거절, 원행분류를 operation 조기반환보다 앞에 배치, 신규evidence의 정확부모/nullcid 거절 및 기존 invoker/ACL 불변을 같은Primary에 보완 지시했다. 설계 검토 finding1이며 실제SQL/DB효과0·해소전 합격0이다.
+
+- Primary 신규0067 단일파일 source 저장48ee68을 수신하고 Main이 실제파일29415bytes/0057불변을 대조했다. 최초 거절 일괄명령은 재실행하지 않았으며 신규SQL작성만 분리한 안전대안으로 진행했다. 기존 complete(uuid) 재정의0·final_guard 동일signature 보완/양방향namespace와 후속합산cap을 독립Reviewer에게 재검토 요청했다. 미적용SQL 작성은 실제DDL/PG/OID실검증 PASS가 아니다.
+
+- FN06 실제 보호reader 합성자원 사전등록: literal root D:/tmp/anvil-v3-fn06-report-evidence-20261101-01, owner.json 및 blobs/ab140101-0000-4000-8000-000000000001/ab140101-0000-4000-8000-000000000090 일반파일1. UTF8 합성본문1KiB이하·전체16KiB이하, owner Main어울/현task, 수명생성후30분. 실제사용자/백업자료0·DB/키/서비스0. 생성직전 root부재·부모realpath/link·owner지문을확인하고 exact파일hash/link/소유기록에일치하는자원만정리·잔여0검산한다. 등록전생성0이며기존자원존재/신원불일치는보존·보고한다.
+
+- 사전등록 합성자원 ff2266/6596e6: 생성UTC2026-11-01T08:23:41.963Z·만료08:53:41.963Z, root D:/tmp/anvil-v3-fn06-report-evidence-20261101-01. 등록5경로 realpath일치/link0·OSowner SINSAN/cyhuh, 근거57bytes SHA70DC71EFA078B23F06CCE3BC6B108D6F7AC0CB14B3DCC8FFEA4DBEA151D48210, owner.json SHA593F63A2E938325F124A83466830739775DAD4313B280026BC3C8FC3346B77DD 확인. 기존Primary는 실제ProjectDocuments/ArtifactStore로 이합성파일만읽고 Main이시험후정확회수한다. 현재잔여는등록자원이며아직정리0주장없다.
+- 0067 첫독립 source검토 C0/I1: 역방향namespace·원행선분류/부모count1 보완확인, 신규91행 바깥command schema2 오류만남았다. 기존envelope1/claim2로국소보정중이며원0057불변·실SQL/OID/PG/경합미검증이다.
+
+- 보호reader 합성QA: Primary b51019 신규5PASS/native0 중 실제ProjectDocuments/ArtifactStore 조건1을 Main e0a980에서 exact이름으로독립1PASS/native0(1042.8913ms,PID90412) 확인했다. 등록57bytes→v2저장/고정GET과격리전읽기거절을 실제reader로 검산했으며 DB는메모리다. 7fce45와별도조회에서 소유기록/근거hash·등록항목4/링크0 확인후두파일/빈dir만정확회수,root부재·Primary78080/Main90412종료확인으로등록잔여0이다. QA소진/재사용·재생성0,실제DB/RLS/경합/Browser/Agent PASS아님.
+
+- 0067 신규SQL scoped 재검토 C0/I0, SHA33A8A80A7F149B09DAF6CC99DF1E2D4CB56083E8C2231AE391BDB1C43EB98CCB. 바깥schema1 보정의역치환이이전0BC99707과정확일치해변경범위확인,기존namespace/v1보존/합산cap 조건그대로다. 실제SQL/PG/OID/경합은미검증이며전체14코드최종검수아님. Primary에핵심fresh/replay·cursor/UNKNOWN/fencing·cap반례와최종writer반환을요청했다.
+
+- Main UI 중간대조: 보고닫기의 sequence무효화뒤 run.finally가current=false라lock해제를건너뛰는경로와 save의active확인전change/catch의늦은buffer갱신가능성을동일Primary에반례검증·보완지시했다. 기존writer외제품write0,닫기후재조회/늦은401·문맥변경·영수증보존을구분하며중복POST를열지않는다. 최종검수전후보finding이며통과로처리하지않았다.
+
+- Primary8c8cf6 실제React6조건3PASS/3FAIL/native1(1011.003ms): 저장/고정GET정상뒤pendingGET→보고닫기→새GET가lock로차단되는제품반례1을실증했다. 나머지2는JSON키순서직접문자열대조/해시완료전즉시확인의시험준비오류로분리해canonical/명시pending대기로보정한다. 동일Primary가run세대lock회수·POST전UNKNOWN보존·동일binding중복POST차단·late sent/catch차단을최소보완중이다. 준비오류를제품정식실패3회로계산하지않고이력보존한다.
+
+- Primary writer반환후 Main fresh 1b3534: 정확신규3/직접인접4=53PASS/0FAIL/SKIP/CANCEL/TODO·2265.1931ms/native0, type781ee6 exit0, 메모리build bd51e8 exit0(JS2508390/CSS11129/HTML354bytes·환경읽기/디스크산출0)를확인했다. 이증거는후속보정전후보의검사이며전체완료가아니다.
+- 전체14최종독립검토중 Important UI1: 동일ApiClient.transport를렌더없이교체하고조회완료시stale결과는버려도finally의current=false로busy/lock이잔류하는반례가발견됐다. 같은Primary에정확React RED→GREEN·새문맥회복/원POST중복차단/UNKNOWN보존의한정보완을재위임했다. Main코드write0·추가QA/실DB0,53통과만으로finding을무시하거나commit/main병합하지않는다.
+
+- 최종Reviewer의Git읽기는환경상 Permission denied라반복중단했다. Main f5598a elevated실제status/name-only native0으로 허용14+Main현황외제품변경0 및보호untracked3 FACFB938/CFB2969C/AE1B34C2 불변을확인·전달했다. 0057 47D0929B/0065 34B89B45불변. Main의0066 leaf추정1회는PATH_NOT_MATCHED로분리하고rg --files의실제0066_export_locked_metadata_reader.sql.pending를읽어대조했다. ACL/설정/권한변경0·검토실행환경오류를제품실패로계산하지않는다.
+
+- 최종독립 추가 Important UI2: 초안A의첫prepare/control조회대기중정의B선택으로App binding이바뀌어도Panel active가binding변경을못보고부모CAS무시후A POST가진행될수있는반례다. 실제Page prepare지연→B선택→A응답 POST0/B보존의RED→GREEN과dispatch전binding/원명령보존결박을동일Primary에추가위임했다. UI1은무렌더transport후latch회복,UI2는첫prepare중binding교체후전송보존성으로구분한다. 이전53PASS는후속수정전근거로보존하며Critical/Important미해소commit/push/main병합0이다.
+
+- 최종UI1 근본원인 실패횟수: 실제RED a73b06(6PASS/1FAIL) 뒤 첫국소finally보정7c5667도동일busy반례1FAIL, type90931c0이다. 현재같은UI1유효실패2회로기록하고성공승격0. 같은Primary는run고유소유token 회수와결과현재성/transport거절을분리하는한정보완중이며다음동일실패3회시추가지시/재시도중단·정식인수packet을반환한다. UI2는별도binding/CAS dispatch전보존반례로관리한다.
+
+- UI1 동일단언 a73b06→7c5667→d9a542 세연속오류 후 Primary INCOMPLETE/writer반환을확인했다. Main이인수시각부터UI경로단일writer이며Primary 추가쓰기/실행0이다. 최신d9a542=7PASS/1FAIL/native1·타입3357970,UI2 A→B선택POST0는PASS이나보정전RED미확보를명시한다. UI1의실제제품오류와native digest완료전단언은아직분리되지않아정식제품실패3회라고과장하지않는다. Main은제품을추측수정하기전에기존동일150회bounded flush범위에서완료관측후같은단언을검사하는시험한정보완으로원인을확인한다.
+
+- Main인수진단 a74022: 제품추가수정0,기존150회bounded flush안에서버튼회수후동일원조건을검사하자 UI1 4분기(FIXED/LIST×200/401) 1PASS/native0·1046.5633ms. FIXED200은native digest완료에추가flush1회,나머지0회였다. 따라서최신token보정후남은반복실패는비동기완료전단언문제였음을분리했다. stale원문/목록0·옛401인증종료0·명시조회복구·영수증/원body보존·POST1의기존단언을모두유지했고제품timeout/기준완화0이다. 최초제품UI1결함과이보정후시험오류이력은삭제하지않는다. 최종UI4경로와시험대기보완을독립재검토한다.
+
+- 2026-11-01 FN06 등록 정의 HUMAN 보고 A source-only 검수: 최종 Main55PASS/native0·type0·메모리Web build0, 독립 전체14 C0/I2→변경4 scoped C0/I0. 실제 보호reader 합성1PASS·등록잔여0. 별도schema2 보고/유한목록/고정GET/UI·한도연결을구현했으나 실제DB/RLS/권한/경합/Browser/App전체종단/서비스/Agent·사용자인수 NOT_RUN,전체FN06/UI11/계획미완료. 결과 docs/04_test_reports/AV3/FN06_REGISTERED_DEFINITION_HUMAN_REPORT_SOURCE_RESULT_20261101.md 를따른다. 기존v1/0057/0065/0066·보호3보존, main병합/배포0.

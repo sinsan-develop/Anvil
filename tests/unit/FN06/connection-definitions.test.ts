@@ -49,6 +49,7 @@ function storeFixture(){
  if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:commands.filter(r=>r.project_id===p[0]&&r.actor_id===p[1]&&r.command_id===p[2])};
  if(sql.startsWith('SELECT * FROM anvil.quota_account'))return{rows:[{coverage_state:mode.coverage,used_bytes:mode.used,held_bytes:mode.heldBytes}]};
  if(sql==='SELECT id FROM anvil.agent_connections WHERE project_id=$1 AND id=$2')return{rows:heads.filter(r=>r.project_id===p[0]&&r.id===p[1])};
+ if(sql==='SELECT canonical_bytes FROM anvil.definition_capability_reports WHERE project_id=$1 ORDER BY id'){assert.deepEqual(p,[pid]);return{rows:[]};}
  if(sql.startsWith('SELECT v.definition_json'))return{rows:rows.filter(r=>r.project_id===p[0]).map(r=>({...r,head_id:r.connection_id,head_version:1}))};
  if(sql.startsWith('INSERT INTO anvil.commands')){commands.push({id:p[0],project_id:p[1],actor_id:p[2],client_id:p[3],operation:p[4],command_id:p[5],request_hash:p[6],operation_id:p[7],authorization_receipt_id:p[8],approval_consumption_id:p[9],expected_version:p[10],control_generation:p[11],policy_ref:JSON.parse(p[12]),payload_ref:p[13]?JSON.parse(p[13]):null,result_ref:JSON.parse(p[14]),state:'APPLIED'});return{rows:[]};}
  if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){receipts.push({id:p[0],scope_kind:'PROJECT',scope_id:p[1],command_id:p[2],subject_ref:JSON.parse(p[3]),policy_ref:JSON.parse(p[4]),scope_digest:p[5],approval_decision_ref:p[6]});return{rows:[]};}

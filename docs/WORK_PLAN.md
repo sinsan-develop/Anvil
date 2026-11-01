@@ -1852,3 +1852,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
 신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.
+
+- 2026-11-01 FN06 등록 정의 HUMAN 보고 A source-only 검수: 최종 Main55PASS/native0·type0·메모리Web build0, 독립 전체14 C0/I2→변경4 scoped C0/I0. 실제 보호reader 합성1PASS·등록잔여0. 별도schema2 보고/유한목록/고정GET/UI·한도연결을구현했으나 실제DB/RLS/권한/경합/Browser/App전체종단/서비스/Agent·사용자인수 NOT_RUN,전체FN06/UI11/계획미완료. 결과 docs/04_test_reports/AV3/FN06_REGISTERED_DEFINITION_HUMAN_REPORT_SOURCE_RESULT_20261101.md 를따른다. 기존v1/0057/0065/0066·보호3보존, main병합/배포0.
