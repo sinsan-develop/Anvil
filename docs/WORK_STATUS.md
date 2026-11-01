@@ -11319,3 +11319,20 @@
 - FN12 수행자3a14a3 신규6PASS/native0 중간보고: 왕복/실패target·성공전위치·명시원문재선택·API/result/assignment ABA·무렌더transport/현재401·403/POST0을확인했다고보고했다. 원문GETpending/지연JSON음성보강뒤exact2동결·신규+pure인접4/type/diff를반환할예정이며아직Mainfresh/최종독립합격전이다. 실자원/livehandle0/Main제품write0.
 
 - FN12 최종Primary소유반환: widget94A62475/testCB55E506, c037d3 정확신규8+pureAPI4=12PASS/1330.4422ms·type728966 0·준비오류0. Mainac55e5 이름필터없이같은정확2시험파일 fresh12PASS/0FAIL/SKIP/CANCEL/TODO·1538.1348ms/type/diff0·시작끝지문동일,최종독립exact2 C0/I0. 원문GETpending transport회복추가 genuine021d86RED→040c04GREEN과첫null관측차이를보존했다. 실브라우저/서버cursor서명·API/DB키서비스Agent0/미검증·전체계획미완료. 결과 FN12_STORED_REWORK_PAGE_NAVIGATION_RESULT_20261101.md에원반례·정확명령/한계/복구를기록하고제품2+결과/PLAN/STATUS3만통합한다. Main전달외국어혼입1즉시정정은준비오류로제품과분리,현재검증준비/범위이탈0. 다음독립기능을같은Primary가읽기대조중/Main제품write0이다.
+
+- FN12 게시9dddea: 4a0626e2cef16cfe28f4e4669b160c36db06d38c는control747d005f직접자식 exact제품2+결과/PLAN/STATUS3이며local/private동일·mainf976불변·trackedclean/보호untracked3보존. 결과89367FA9EE9D64FD8251B7EC210B0412CF3AE99D5357323DF05B47A9A5D5B519/정확12PASS/type/diff0·독립C0/I0를PMO에전달했다. 실제서버서명·브라우저/DB·서비스·사용자인수는미검증·전체계획미완료·merge0. 같은Primary는다음독립FN기능읽기를진행중이다.
+
+### 2026-11-01 FN16 선택 원본 반출 metadata 권한 충돌 후보 검토
+- Primary읽기에서ProjectBackups.sourceRow의artifact SELECT FOR SHARE와0003:33/0042pending:75의app UPDATE/DELETE REVOKE 충돌정적후보를확인했다. Main은실목록730706→확인literal로source E1BE0569/0003/0042를읽고PG15공식SELECT 문서 https://www.postgresql.org/docs/15/sql-select.html 의UPDATE privilege요건을직접대조했다. 실제PG권한/재현/SQL실행0이며현재실DB오류로확정하지않는다.
+- 단순FORSHARE제거는아직구현GO아니다. 기존documentfullref/hash·첨부귀속·artifactmetadata/storagekey·READY/inspection·실bytes검사를보존하고,quarantine/state동시성보호와후속ALL TABLES/상속grant에따라정적판정이바뀌는지기존Reviewer가읽기검토중이다. 새GRANT/SECURITYDEFINER/DDL·실파일조사/키/서비스/Agent0·Main/Primary제품write0.
+- 원소스상artifact명시GRANT UPDATE는검색에서없고현재app source의artifact UPDATE는0042 draft→project adoption1뿐이었다. 이는운영owner의수동변경부재/동시성안전성증명이아니며,0042불변trigger가모든artifact행을보호한다고확대하지않는다. sourceRow는create/read/list/file에서사용되므로의미보호를확인한뒤exactscope를정한다.
+- Main운영전달의외국어혼입추가1은즉시한국어로정정했다. 같은writer/새구현배정아니며읽기진행확인만전달했고제품/시험변경0이다.
+
+- FN16 후보독립판정C0/I1: 단순FORSHARE제거는target.copy중owner격리UPDATE를막던잠금을없애기때문에동등안전보완으로채택하지않는다. 제품E1BE0569불변/실PG0. 잠금유지한정보호조회함수의새SECURITYDEFINER/EXECUTE정의를source미적용SQL로구체화하는후보 FN16_EXPORT_LOCKED_METADATA_READER_CANDIDATE_20261101.md를작성했다. 이는새중요권한계약delta로채택전구현0이며기존app UPDATE/DELETE회수·실DB권한/키/서비스/Agent제외유지. Reviewer literalglob 준비오류1은실제근거에서제외했고제품실패와분리한다.
+
+- FN16 잠금reader 후보r1의독립C0/I1: migration-owner 정의만으로직접함수호출/RLS경계를보존한다고볼수없어채택하지않는다. Primary가fn01_active 활성주체3값검산·현재member GET과OWNER fresh차이·sourceRow가APPLIED receipt보다선행함을읽기확인했다. 후보r2는서버검증identity3+기존선택5 총8인자·함수내활성/비회수회원검사·NOLOGIN한정소유자/NOBYPASSRLS·명시8열/동일TX잠금·PUBLIC회수/app EXECUTE·기존42883 FAILED503보존을구체화했다. 이는새권한계약결정후보이며소스/DDL구현·실role/DB변경0이다. 운영언어혼입반복은미검산전달방식중단·유니코드검사후그대로전달하는방식으로보정하고PMO보고했다.
+
+- FN16 보호조회 후보r2 2B351AA71037E43474CF767962821578B1F5DF49600E832AA17AF3D26BD59881의독립C0/I0:이전호출자/RLS I1을명세상해소했다. 현재identity3+metadata5·fn01_active/현재회원·역사GET범위보존·NOLOGIN/NOBYPASS한정소유자·8열반환/같은TX잠금·PUBLIC회수/app EXECUTE·기존42883 FAILED503을고정했다. 실제PG권한/상속·소유권/RLS/경합은미검증이고채택/구현GO가아니다. 현재단일Primary는다른기존계약기능을읽기대조중이며모든제품/SQLwrite0이다.
+
+
+- 결정안문서stage fe815e의diff check가신규요약뒤EOF빈줄2건을검출해commit/push전에차단했다. 제품/SQL/검사실행0. 소유문서의끝개행만1개로정리하고이력본문은재작성하지않는다. FN17추가한정읽기는browserpush지원조회/현재권한관측·AccountSecurity연결이이미있고선호저장/구독/전달/새사건은미채택상세계약이필요함을확인했다. source완료나실전달지원으로확대하지않는다.
