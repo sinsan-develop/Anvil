@@ -48,3 +48,15 @@
 | apps/web/src/features/connections/native-boundary-preparation-api.ts | 096A02F9E3C17A1FD68CFD20CA688FC5799304547FE490D59502FD3AF76848E9 |
 | tests/unit/UI11/native-boundary-preparation.test.ts | 772D09355DDD64D31D158C6E92BDF47B2228E70A63720B690E2D359BCE8CE62D |
 | tests/unit/UI11/preparation-policy.test.ts | 8E045C88A8EED438C59A2D39BCA6468416B7D3A7785D28B49D5DCF005F30EDB8 |
+## 2026-11-02 후속 — 실제 App 부모의 native 원명령 왕복
+
+이 절은 앞선 ‘App 본체 클릭 미실행’ 경계 중 **메모리 React에서 실제 App 부모 소비**만 추가 확인한다. 실제 브라우저·HTTP 서버·DB·권위·사용자 인수는 여전히 미검증이다.
+
+- 신규 tests/unit/UI11/native-boundary-preparation-app.test.ts 단1경로, SHA D5A93F7CBA09387FF4448994B2C8794FD35D026AFF8D726B186B1B5727E892A6/25149B/UTF-8 LF·CR0. 기존 Primary 구현, 제품·기존 시험 수정0. code bc4a5b091728a653e2bd0eb5d4b3cb6808937012 정확1/65추가, Main2bdb86 raw/staged1동일·stageddiff0.
+- 실제 App을 import/렌더하며 번들 평가 전에 고정 fetch를 설치한다. 세션GET부터 실제 changeNative CAS·requestNativeApproval·hashchange listener를 소비하고 hook/nativeStore 주입·합성 부모·기존 시험 import·실fetchfallback은 없다.
+- AUTO 명시 options→원명령→명시 저장/고정 조회, REQUIRE_APPROVAL의 UI08 요청/별도결정→UI11 복귀·동일 commandId/payload hash/baseline·승인ref·명시 POST 두 흐름을 확인했다.
+- 같은 화면의 connector-registrations?limit=50 / source-read-grants?limit=20 형제 GET2는 정확403과 화면 거절을 관측한다. 빈 성공/권한 부여로 대체하지 않는다. 허용목록 밖 요청은 sideband 실패이고 최종0이다.
+- Main1db363: node --test tests/unit/UI11/native-boundary-preparation-app.test.ts — 2PASS/0FAIL/skip0/1178.9096ms/exit0. 뒤 tsc --noEmit -p tsconfig.base.json·diff exit0·최종SHA일치. Primary1a9528 2PASS/1117.2242ms와 합산하지 않는다. 기존Page/서버/journal 검사는 불변이므로 반복하지 않았다.
+- APP_MEMORY_CLEANUP pendingFetch0/listener0/root0·ownedChannels closed/globals restored를 확인했다. 기존 Reviewer read-only C0/I0·시작끝SHA동일, 실제App소비선·정확대역·원명령·정리를 검토했다. 메모리 해시이동은 실제 브라우저 navigation 증거가 아니다.
+- bb6a75 virtual entry 판정 준비오류, 719d9a 정리 단언/채널회수 순서로 원실패가 가려진 runner대기와 자기handle47087 Ctrl+C exit1, e56c33 실제형제GET목록누락, href unknown 타입좁힘1을 분리보존한다. 정상기준 완화·제품 변경·권한 부여0이다. 정리 finally/mount실패root회수와 정확 형제403 대역을 보완한 최종 결과만 위2PASS다.
+- 실제 DB/권한·키·CA/TLS·서비스/native/OS/helper/compiler·Agent·실자료/실제파일/P03R3실행0, 실제 공급자/journal등록/factory 미연결과 기존App server2modules 포함 한계는 유지한다. 전체 IX/Stage/계획 완료, PR/main병합·배포·인수가 아니다.
