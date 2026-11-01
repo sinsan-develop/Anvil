@@ -1882,3 +1882,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-02 FN06/FN08 native 준비 계약 r2 A 직접 채택: 후보SHA5C4AF434…E3085의 코드·화면·미적용SQL·합성검증을 기존Primary에 위임한다. 승인기록 FN06_NATIVE_PREPARATION_R2_A_SOURCE_APPROVAL_20261102.md, 정확27경로WI를 따르며 실제DB/권한/키/서비스/Agent/실자료/P03R3 제외·공급자미등록·전체계획미완료를 유지한다.
 
 - 2026-11-02 native 준비 r2 A 업무A source 검수: code8cdb7f3f72011424182fd4de4669b824ae52b00d 정확14경로의 원명령→공통receipt/승인→writer예약→2표저장/고정조회/원replay·미적용0071을 연결했다. Main최종23PASS/type/diff0·독립5finding+추가1 보정C0/I0. 결과 FN06_NATIVE_PREPARATION_HUMAN_STORAGE_SOURCE_RESULT_20261102.md(SHA90D7EDD9…C50A72A2). B서버/connector·화면 후속·실제DB/권위/서비스/Agent/사용자인수와전체계획은미완료다.
+
+- 2026-11-02 native 준비 connector 부분 source 검수: code51c411eda507c136372b368e3c7aa2e15a5a2cb2 정확4경로93추가, 원시도journal포트→current/challenge/consume→ATTEMPTED→factory원ref/비공개once ticket 소비를연결했다. Main14PASS/type/diff0·독립I2보정C0/I0. 결과 FN06_NATIVE_PREPARATION_CONNECTOR_SOURCE_RESULT_20261102.md(SHA070D8E15…AE2BF406). 실제factory/durable/TLS/키·B서버/화면/전체계획미완료를유지하고서버B같은승인범위구현을이어간다.

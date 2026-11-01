@@ -12005,3 +12005,20 @@ git diff --check
 - Mainf6b91c 정확A14 rawblob/stagedblob동일14·diff0뒤8cdb7f3f72011424182fd4de4669b824ae52b00d에415추가/10삭제로commit했다. 새0071의향후CRLF변환경고는있었지만현재바이트/인덱스일치·설정변경0. 별도B4/보호untracked3는stage하지않고보존했다.
 - 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_HUMAN_STORAGE_SOURCE_RESULT_20261102.md SHA90D7EDD9EE9B6352397B97E7B60668D09FCA44DE9D4EDDB099FB2B94C50A72A2를정본/source동일작성. A원명령/원영수증/예약/2표source검수일뿐전체native준비/FN06/FN08/계획완료가아니다. 기존SQL/보호자료지문유지·main병합/배포/실제DB/권한/키/서비스/OS/native/Agent/실자료/P03R3실행0이다.
 - B4동결48490185/3FAF4F4B/AA7342EA/시험596167CC는 Maina4e92a11PASS/460.5876ms/type/diff0·정확4지문일치로한정검수했고기존Reviewer가독립대조중이다. B서버 current/challenge/consume/delivery/SQL확장·Web는아직미구현이며후속으로이어간다.
+### 2026-11-02 업무A 게시 대조·B connector 첫 보정
+- Mainca3a02에서A코드8cdb7f3f 뒤결과/계획/현황3문서a3b60191da0f5403f85471cc9e87f42632d2c42f를private게시하고local/private정확일치·원격mainf976ed5e불변을확인했다. Asource검수결과와실제효과미검증·전체미완료를PMO에전달했다. 이는전체완료보고가아니다.
+- B4 Maina4e92a11PASS/460.5876ms/type/diff0/4SHA일치뒤독립C0/I2: authority.nativeFactoryRef와실factory보호포트결박누락,invoke대기중head변화뒤ticket소비직전current검산누락. 후보§6/10.5 Main598d12대조후같은Primary에B첫fixround를지시했다. 새계약/권한확장이아닌채택의무보완이며기존4경로에만반례→최소보정, A14/원SQL/보호자료/실제효과변경0이다.
+- B서버hostcurrent/challenge/consume/delivery·0071후속사건·Web미구현은지속기록한다. 현재실제factory/키/파일/네트워크/서비스/DB/Agent/실자료/P03R3실행0·Main제품쓰기0·기존Reviewer는A결과서사실대조만진행중이다.
+### 2026-11-02 B connector 첫 보정 실제 두 반례
+- Primary2ca78d 신규선정2건0PASS/2FAIL/native1/187.1202ms: 잘못된factory fullref주입에도factory1≠0,invoke보류→HEAD_CHANGED→ticket소비뒤effects1≠0의genuineRED를확인했다. privatebinding exactfullref/포트·함수고정과실제async소비직전freshcurrent/최단기한을기존4경로에서국소보정중이다. A14/SQL변경0·실제효과0/live0이다.
+- A결과서 SHA90D7EDD9…C50A72A2도기존Reviewer의사실대조C0/I0·시작끝지문동일을수신했다. 전달증거범위에서23PASS/이전57의중복합산금지·정적SQL/fakePG와실측구분·B/전체미완료를확인했으며결과서내용을수정하지않았다.
+### 2026-11-02 B connector 보정 검수·부분 source checkpoint
+- Primary2ca78d factory불일치/지연소비genuineRED2→7f70f9최종14PASS·31b654type0. 비동기소비Promise미대기64fc49 native1도원정착/폐기/거절관측으로보완했다. 기존54653typehandle미회수는미확정기록으로남겼고최종현재type로대체확인했다. Primarydiff sandbox128은설정/권한을바꾸지않고Main승인환경으로구분했다.
+- Main572ccb 동일14PASS/skip0/388.9193ms/type·diff0·B4SHA일치. 독립B첫C0/I2→첫보정scopedC0/I0·변경3시작끝hash동일/local불변. Main0d5247의실제privatebinding/asyncconsume·미대기UNKNOWN폐기순서도대조했다. 실제factory/durable/TLS/키·암호양성은미검증이다.
+- Main315ec6 B4raw/stage동일4·diff0뒤51c411eda507c136372b368e3c7aa2e15a5a2cb2에정확4경로93추가로commit했다. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_CONNECTOR_SOURCE_RESULT_20261102.md SHA070D8E152B73255D65322FEAA2BE9B0D3452E2FE481FA888A4782FD5AE2BF406를정본/source동일작성·사실대조중이다.
+- 같은Primary는다음B서버구현을인수했다. 실제host current404누락→보호새목적credential/원HUMAN세션·OWNER·제어·정책/등록·writer현재성→challenge/proof/consume/보호delivery·typed사건/같은Tx저장과재조회를원WI허용27중기존9경로에서구현한다. hostbearer를HUMAN토큰으로위장하지않고서버가원저장근거를검산한다. B4동결/A기존SQL보존·코드Main동시쓰기0/실제DB/권한/키/서비스/TLS/OS/native/Agent/실자료/P03R3실행0이다.
+### 2026-11-02 B 서버 첫 기능 반례·원 계약의 보호 조회 분류 보완
+- Primary735251 실제buildApp native등록에서host current GET404≠공급자미연결503의genuineRED1(0PASS/1FAIL/native1/1363.7448ms)을확보했다. 현재host bearer를별도저장Tx의authoritydigest로조회하고서버가원HUMAN세션/OWNER/control/정책·등록·writer/proof를검산하는source를구현중이며HUMAN토큰위장0이다.
+- Main201a1a 후보§10.1/10.2/10.3 정확wire·별도목적/opaqueBearer·P256전용header·첫COMMIT만permit/재조회nullpermit·사전내구delivery최대1회·별도비밀인자조건을대조했다. 실제공급자키·네트워크·DB·Agent는기본미등록/미실행이다.
+- Main019458 후속정합finding1: r2는HUMAN고정GET의read정책없음/타project를404로은폐하지만현#readPolicy authorizeMaterial은412/403을그대로내보낸다. A과거선정검수는이분류를검증하지못했음을보존하고기존동일허용9경로service/routes/시험에서후속TDD보완을Primary에지시했다. auth401/공급자503/실제만료·불명·write오류까지통째로404로덮지않는다. 이는새계약/범위확대가아니라기채택r2의정확보호조회준수다.
+- B결과서070D8E15…AE2BF406의사실대조도독립C0/I0/시작끝지문동일. 현재code writer는기존Primary1명/Main제품쓰기0·실제제외효과0·전체계획미완료다.
