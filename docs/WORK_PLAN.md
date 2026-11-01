@@ -1832,3 +1832,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-11-01 UI11 후보 목록 탐색 source 보완**: 이전 페이지·실패한 동일cursor 명시 재조회와 scope/상세첫commit 폐기를 기존 후보GET으로 연결했다. Main 신규7/인접8=15PASS/type/diff0·독립exact2 C0/I0. 후보초안/UNKNOWN·POST0 보존, 실제브라우저/API/DB/서비스/Agent·전체UI11/계획은미완료. [결과](04_test_reports/AV3/UI11_CONNECTION_CANDIDATE_PAGINATION_RESULT_20261101.md).
 
 - **2026-11-01 UI05 상세 조회 문맥 source 보완**: 정상 보호조회 뒤 CSRF 교체 첫 commit의 옛 상세 노출을 재현·보완했다. auth/API/transport·mounted/revision·파일검사/하위조회 결박, nonempty checkpoint보존. Primary 신규7+순수인접4=11PASS, Main은 필터 이탈로 실제13PASS/type/diff0·독립exact2 C0/I0. Main SSR2 추가 실행/환경설정탐색미확정 예외를별도보존하며실브라우저/DB/서비스/Agent·전체UI05/계획은미완료다. [결과](04_test_reports/AV3/UI05_SESSION_DETAIL_READ_CONTEXT_RESULT_20261101.md).
+
+- **2026-11-01 FN12 보관 보완 이력 페이지 왕복 source 보완**: 최근 페이지 복귀·양방향 실패의 동일cursor 재조회와 성공위치 확정·명시 원문 재선택을 기존 보호GET/decoder로 연결했다. Main 신규8+순수인접4=12PASS/type/diff0·독립exact2 C0/I0. 첫cursor null은새관측일수있으며실서버서명/브라우저/DB/서비스/Agent·전체FN12/계획은미완료다. [결과](04_test_reports/AV3/FN12_STORED_REWORK_PAGE_NAVIGATION_RESULT_20261101.md).
