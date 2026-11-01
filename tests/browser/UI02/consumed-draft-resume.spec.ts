@@ -65,7 +65,7 @@ function Harness(){
   response.json=async()=>{call.jsonStarted=true;if(plan.delay)await new Promise<void>(resolve=>releases.set(index,resolve));try{return await json();}finally{call.settled=true;}};
   return response;
  }),[object]);
- const snapshot=()=>{qa.beforeEffectLinks=Array.from(document.querySelectorAll('a')).map(a=>a.getAttribute('href')??'').filter(h=>h.includes('/workspace')||h.includes('/documents'));};
+ const snapshot=()=>{qa.beforeEffectLinks=Array.from(document.querySelectorAll('a')).map(a=>a.getAttribute('href')??'').filter(h=>h.includes('/workspace')||h.includes('/documents')||h.includes('/connections'));};
  qa.set=(kind,side)=>{
   flushSync(()=>{if(kind==='user')setWho(side==='B'?ids.otherUser:ids.user);if(kind==='clientId')setDevice(side==='B'?ids.otherClient:ids.clientId);if(kind==='client')setObject(v=>v+1);if(kind==='draft')setBuffer(previous=>({...previous,draftId:side==='B'?ids.otherDraft:ids.draftId}));if(kind==='hide')setShown(side!=='B');});snapshot();
  };
@@ -91,13 +91,13 @@ async function mount(page:Page){
  await page.waitForFunction(()=>window.__consumedQA?.calls[0]?.settled);
  return{errors,requests};
 }
-const links=(page:Page)=>page.locator('a[href$="/workspace"],a[href$="/documents"]');
+const links=(page:Page)=>page.locator('a[href$="/workspace"],a[href$="/documents"],a[href$="/connections"]');
 async function enqueue(page:Page,plan:Plan){await page.evaluate(p=>window.__consumedQA.enqueue(p),plan);}
 async function settled(page:Page){await expect.poll(()=>page.evaluate(()=>window.__consumedQA.calls.every(c=>c.settled))).toBe(true);}
-async function exactLinks(page:Page,pid=projectId){await expect(links(page)).toHaveCount(2);expect((await links(page).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('href')))).sort()).toEqual([`#/projects/${pid}/documents`,`#/projects/${pid}/workspace`]);}
+async function exactLinks(page:Page,pid=projectId){await expect(links(page)).toHaveCount(3);expect((await links(page).evaluateAll(nodes=>nodes.map(n=>n.getAttribute('href')))).sort()).toEqual([`#/projects/${pid}/connections`,`#/projects/${pid}/documents`,`#/projects/${pid}/workspace`]);}
 async function reset(page:Page,buffer?:DraftEditorState){await page.evaluate(b=>window.__consumedQA.reset(b),buffer);await settled(page);}
 
-test('UI02_CONSUMED_DOM_RESUME 소비 GET 재진입은 정확 프로젝트 두 링크만 제공하고 재생성하지 않는다',async({page})=>{
+test('UI02_CONSUMED_DOM_RESUME 소비 GET 재진입은 정확 프로젝트 세 링크만 제공하고 재생성하지 않는다',async({page})=>{
  const f=await mount(page);await exactLinks(page);
  expect(await page.evaluate(()=>window.__consumedQA.posts)).toBe(0);
  expect(await page.evaluate(()=>window.__consumedQA.buffer.createdProject)).toBeUndefined();
