@@ -48,3 +48,6 @@ FN14는 동일 db/transaction의 실제 head·불변 정의 row와 canonical ful
 실제 파일/키/DB·서비스·Agent·OS 권한·브라우저 신뢰·현재 프로젝트 차단 해제0. React는 기존 메모리 DOM/Vite configFile:false/envDir:false/write:false 양식만 사용한다. createServer/실설정 탐색·이름필터로 넓은 시험 실행0. 직접 관련된 기존 pure 시험을 내용 확인 후 선택하고 정확 type/diff를 수행한다. 기존 기대값을 느슨하게 바꾸지 않는다. 기존 unconditional target412가 새 계약과 달라지면 source 미연결 음성을 보존하며 근거/diff를 Main에게 먼저 보고한다.
 
 정확 명령/exit·RED/GREEN·변경 diff·오류·미검증·QA/live0·최종16지문과 writer 반환을 보고한다. Main fresh 및 독립 C/I 검토 후 통합한다. source 검수를 실서비스/실사용/전체 FN06·FN14·WORK_PLAN 완료로 승격하지 않는다.
+
+## Main 보완1 — 기존 승인 준비 소비 파일의 누락 연결
+2026-11-01 실제 apps/web/src/features/decisions/api.ts:27의 prepareApprovalRequest는 기존 후보 전용 payload.policyRef/expiresAt을 읽어 새 exact {definition,reason}의 REQUIRE 흐름을 차단함을 확인했다. 기존 계약의 일회 승인 소비를 완성하는 내부 파일 배치 보완으로 17번째 허용 경로 apps/web/src/features/decisions/api.ts(시작 SHA256 3A7C2E3469755BB9772218745C58FAAED5E498AA05C061678C3C820EEA50572B)를 추가한다. 후보 분기·공개 payload·승인 종류/기한/권한은 변경하지 않는다. 정의 분기는 nested definition.policyRef와 현재 정책/사용자 입력 승인 기한을 기존 의미로 검사하며, 원 payload에 expiresAt을 새로 넣거나 무한 기한/NaN 비교로 허용하지 않는다. 원 command/payloadHash·null target/expectedVersion0·후속 소비 결박을 그대로 유지한다. 신규 UI11 시험에서 실제 승인 준비 함수를 호출해 정상·잘못된 정책/기한·후보 회귀를 검산한다. Main 승인 범위는 source-only 그대로이며 실제 DB·권한·키·서비스·Agent는 제외한다.

@@ -11373,3 +11373,10 @@
 - 신산님이두A안의코드·화면·미적용SQL·합성검증을직접승인하고기존subagent구현/Main검수통합·계획완료까지계속을지시했다. 이어목표상태active전환입력을수신했다. 앞선BLOCKED는이력이고현재계약결정선행은해소됐다. 실제DB/권한/키/서비스/Agent·실사용자/백업대상조사제외는유지한다.
 - 4596c8 source/private3301a1f6일치·mainf976불변·trackedclean/보호3과승인후보원문을대조했다. 후보FN06 80A2E0C1/FN16 2B351AA7 원문hash/옛미채택머리글은이력으로보존하고이최신승인/WI로채택범위를기록한다. 실제0065/0066부재를확인해각FN06정의/FN16잠금reader로예약했다. 기존Primary의FN06읽기2건경로준비오류와Main e9ca18의출력미수집조회는지문근거에서제외·동일명령재시도0이다.
 - FN06 최소16경로와FN16 최소3경로의source WI를발행했다. 단일Primary가FN06→FN16순차TDD,Main제품write0/기존Reviewer읽기검수. FN06는기존후보/승인·quota종류를위장하지않고더엄격한기존저장량도검산·미연결fail-closed를유지한다. FN16는현재authSession.id와역사member범위·잠금보존/NOLOGIN한정소유자미적용SQL을고정했다. 기존완료검사반복·실SQL/role/GRANT/권한/키/서비스/Agent실행0이다.
+
+- FN06/FN16 사전 독립 검토는 두 WI C0/I0다. 기존 quota의 부모 프로젝트 잠금·quota_complete 정합성을 재사용하고 정의가 있는 프로젝트의 후속 예약까지 합산 cap을 보호하되 무관 프로젝트에는 새 거절을 퍼뜨리지 않는 조건을 확인했다. 통제 문서5개 ab5870fadc35c18a5823b5eabff4995efa543d2a local/private 일치·main f976 불변이다.
+- Primary TEST_ONLY 533d22 exit1: 기존 보호 정책GET200을 기준으로 정의 고정GET404≠401, 실제 ReactPage 정의 작성 진입0≠1의 행동 RED2; 미적용0065 부재는 별도 준비RED1·loader실패0이다. 실제 DB/서비스/키/Agent 없이 메모리만 사용했고 React/app/채널 회수·live0이다. 기존 Primary에게 FN06 exact16 PRODUCT_GO를 전달했으며 Main 제품write0, FN16은 후속 순차다. 기존 완료시험은 반복하지 않았다.
+
+- FN06 제품 구현 중 첫 source 저장 b0c732를 수신했다. 입력/저장·고정 reader와 route/operation/FN14 접점은 작성 중이며 아직 GREEN/완료가 아니다. Primary의 문서 API/approval 경로 추정 및 literal glob 준비 읽기 오류는 제품 오류와 분리한다. 기존 목록/import로 확인된 경로만 사용하도록 전환했고 추정 조회 재시도는 중단했다. 실제 SQL/DB·권한·키·서비스·Agent 실행0이다.
+
+- FN06 기존 승인 준비 소비 누락을 확인해 decisions/api.ts를17번째 허용경로로 보완했다. 시작3A7C2E34·WI E66FA028의Main보완1에 후보/기한/원명령 결박 보존을 고정했고 독립검토 C0/I0다. 신규API/승인유형/expiry필드/실환경효과0, Primary 구현을 계속한다.
