@@ -11412,3 +11412,7 @@
 - Main이 FN06_REGISTERED_DEFINITION_HUMAN_REPORT_DECISION_CANDIDATE_20261101.md를 작성했다. A는 명시v2/등록정의·환경null/도구·기한·전용저장/목록·고정GET/UI source계약, B는 실제보호환경 선행이다. 새2표·유한10000/64MiB·기존합산cap/원증빙·AUTO전용/실측UNVERIFIED/권한false를명시하고실행/책임세션활성화·정의역갱신은제외한다. 기존목적의재승인이아니라schema/nullable/응답/저장관계의새public delta 결정안이다.
 - 첫독립C0/I1(C633CFC0)의replay순서를보정하고닫힌currentness조합·세션교체후자료를다시찾는유한목록/고정조회까지같은업무로구체화했다. 최종후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D는독립재검토C0/I0·시작끝지문동일이다. 채택후WI에서기존cursor만료·시각/id정밀도를고정한다.
 - 현재NOT_ADOPTED·제품/SQLwrite0,기존코드5263/FN061352불변·실DB/권한/키/서비스/Agent0이다. 정확후보를기존branch에문서전용게시하고PMO에A의source-only채택또는B선행결정만요청한다. PMO다음작업배정을기다리는것이아니며실제공급자/기능/인수미완료를helper·반복검사로대체하지않는다. 전체goal은active/계획미완료,기존완료검사재실행0이다.
+
+- PMO 판정 turn01a19612/cursor27ca73e0:7: A권장·직접채택승인대기. 새v2/저장2표/목록·고정GET은PMO AGENTS§6의위임밖public/데이터계약이며PMO가신산님께이미정확source범위승인을요청했다고회신했다. Main은동일질문을사용자에게중복요청하지않고기존FN06/FN16승인을유효하게유지한다. 신규제품/SQLwrite0,다음작업배정대기가아닌해당새계약의직접결정선행이다.
+- 기존Primary의읽기preflight는A안기존5+신규8=최소13경로·신규8/0067부재와실제보호정의/증거/cursor·합산cap접점까지확인했다. 실제원문양성에합성파일이필요하면등록선행이며FShelper/실DB/권한/키/서비스/Agent실행0이다. Main의파일명생략으로준비경로오류가발생해정확literal후보의양쪽5AEB6CE9를76d6b6으로확인/전달했고추정leaf재시도0이다. 단순준비오류는제품정식실패로누적하지않는다.
+- 최신AGENTS교체지시의Agency명시호출전용규칙을적용했다. Agency역할호출/새agent·세션·자동화생성0이며기존Primary/Reviewer만사용했다. 현재두담당자는결과반환완료·제품writer/알려진livehandle0. 새계약선행이외의미완료를통과/전체완료로표시하지않으며새응답이오면정확후보hash/범위부터대조해계속한다. 앞선코드13524478/5263f903및그검증은반복하지않는다. goal active·완료보고/main병합0이다.
