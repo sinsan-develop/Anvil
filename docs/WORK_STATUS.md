@@ -11965,3 +11965,7 @@ git diff --check
 - 동일 native 계약 미채택 경계는 후보 작성 turn→시험/WI 보완 turn→이번 실제 재대조의3개 연속 goal turn에서 유지됐다. 이미 가능한 기존 시험 보완과 구현 준비를 끝냈다. 후보r2/WI는 NO_CODE_GO이고 실제 DB/권한/키/서비스/Agent/실자료/P03R3 제외는 계속 유효하다. 이 조건을 넘는 제품쓰기·실제검증으로 진도를 만들지 않는다.
 - 계획FN06/FN08의 실제권위/dispatch는 이 선행 미채택·물리공급자 미구현과 연결되고 FN09/10/13 후속 실제실행은 그 근거가 필요하다. IX01~06 실제 종단은 DB/서비스/Agent 제외와 선행미완료로 수행불가다. FN16 전체반출/복원은 A6776EE4 상세범위 후보 미채택, FN18 실제installer는 native build/설치 실행 경계다. 앞선 한정 소비선 대조에서 완료된 화면을 다시 구현할 독립단위로 삼지 않았다. 남은 기능과 실제검증을 완료로 숨기지 않는다.
 - 현재 안전checkpoint8d4a73d791f89aae1a82a264dc439b5cf61f763f·trackedclean/보호3(기준SHA유지), live code writer/QA0. PMO에 기존 질문의 실제채택결정 필요와 이재개조건만 예외로전달하고 goal을 blocked로전환한다. 사용자 대기/중지 요청을 임의 추정한 paused도 전체계획 complete도 아니다. 재개조건은 PMO를 통한 후보r2 A의 명시채택 또는 정확한 다른범위지시이며, 재개시현재Git/hash대조후기존Primary 단일writer에만 GO한다. 질문중복·새예약/세션0이다.
+### 2026-11-02 native 준비 r2 A 직접 채택·source 구현 재개
+- 신산님이 native 준비 계약 r2 A의 코드·화면·미적용SQL·합성검증과 기존subagent 구현을 직접 승인했다. 후보SHA5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085를실제대조했고승인전HEAD598bad9c/StageB·trackedclean/보호3를확인했다. 과거미채택/blocked기록을소급삭제하지않고이번정확경계만해소한다.
+- 승인원문/대상/제외는 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_R2_A_SOURCE_APPROVAL_20261102.md, 구현은 기존27경로WI로결박한다. 단일기존Primary/TDD·Main검수통합·기존Reviewer읽기전용, subagent-driven-development skill을적용하되신산님지시대로기존담당자를재사용한다. 신규세션/branch/자동화0.
+- 실제DB/권한/키/CA/TLS/서비스/native/OS/helper/compiler/Agent/실자료/P03R3실행은계속제외한다. 실제공급자부재는거절·기본미등록이며합성소비성공을실제권위/내구저장/Agent기능완료로승격하지않는다. 전체계획미완료·main병합/배포0이다. 다음은정확문서게시후동일Primary에업무A→B→화면순GO/기능반례검수다.

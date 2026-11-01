@@ -1,17 +1,17 @@
-# FN06 native 준비 전용 권위 source 구현 계획·작업지시서 초안
+# FN06 native 준비 전용 권위 source 구현 계획·작업지시서
 
-2026-11-02 / Main 어울 / **PLANNING_ONLY_PENDING_CONTRACT_ADOPTION · NO_CODE_GO**
+2026-11-02 / Main 어울 / **R2_A_SOURCE_APPROVED · TEST_FIRST · 단일 기존 Primary**
 
-> 기존 Primary가 채택 확인과 Main GO 이후에만 subagent-driven-development·TDD로 구현한다. 기존 Reviewer는 읽기 전용, Main은 검수·통합을 맡는다. 지금 이 문서는 실행 지시나 새 계약의 채택이 아니다.
+> 신산님의 r2 A 직접 승인을 기록했다. 기존 Primary가 Main GO 후 subagent-driven-development·TDD로 구현하며 기존 Reviewer는 읽기 전용, Main은 검수·통합을 맡는다. 실제 효과 제외는 유지한다.
 
 **목표:** 별도 준비 권위의 HUMAN 요청·원 영수증·writer 예약·보호 저장/조회와 connector의 한 번 소비·factory 진입 보호를 source에서 연결한다. coding Agent 실행 기능의 완료를 뜻하지 않는다.
 **구조:** 기존 D1/v1·writer 계약을 보존하고 새 목적의 분리 모듈과 forward 미적용 SQL만 추가한다. 실제 공급자·라우트는 기본 미등록이며 보호 공급자 부재를 성공 대역으로 채우지 않는다.
 **기술:** 기존 TypeScript/Node/Fastify·PostgreSQL adapter source·React·Node test/메모리 ReactDOM. 의존성·package/lock 변경 없음.
-**설계 후보:** `docs/contracts/FN06_NATIVE_PREPARATION_AUTHORITY_CURRENT_CONSUME_CANDIDATE_20261102.md` r2, SHA256 `5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085`. 독립 검토 C0/I0는 채택 승인이 아니다. 원 후보의 정확 필드·정책·wire·저장 한도가 정본이며 이 WI가 변경하지 않는다.
+**채택 설계:** `docs/contracts/FN06_NATIVE_PREPARATION_AUTHORITY_CURRENT_CONSUME_CANDIDATE_20261102.md` r2 A, SHA256 `5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085`. 직접 승인 기록은 `docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_R2_A_SOURCE_APPROVAL_20261102.md`다. 원 후보의 정확 필드·정책·wire·저장 한도가 정본이며 이 WI가 변경하지 않는다.
 
 ## 1. 착수 조건과 제외
 
-- [ ] PMO를 통해 후보 r2 A의 명시 채택을 확인하고 발화/대상 hash/제외 범위를 기록한다. 시간 경과·권장·질문 전달·기존 writer B 승인을 채택으로 취급하지 않는다.
+- [x] 신산님의 새 직접 지시로 r2 A 채택을 확인하고 발화/대상 hash/제외 범위를 별도 기록했다. 시간 경과·권장·질문 전달·기존 writer B 승인을 채택으로 취급하지 않는다.
 - [ ] Main이 현재 branch/HEAD·dirty 소유권·후보 hash·기존 SQL·보호 untracked3 보존을 확인하고 아래 정확 경로에만 GO를 전달한다. 미채택이면 계획·읽기만 하며 제품/SQL 쓰기0이다.
 - [ ] 실제 DB/DDL/GRANT·권한·계정·키·CA/TLS·서비스·OS/native/compiler/helper·Agent·실자료/백업 파일 조사·P03 R3는 계속 제외한다. 합성 시험의 대역 함수 호출은 실제 OS/factory 호출이 아니다.
 - [ ] 같은 기능/경로 writer는 기존 Primary 한 명이며 Main 동시 수정0. 새 agent/chat/branch/worktree/예약0. 추가 경로가 필요하면 쓰기 전에 Main에 이유를 반환한다.
@@ -59,7 +59,7 @@
 
 27. 기존 `apps/server/modules/approvals/approval-input.ts` — 새 prepareNativeBoundary에만 정확1 baseline head fullref와 target/version 일치 분기를 연결한다. 기존 다른 연산의 비어 있지 않은 baseline 거절과 activateDesignChange 원형은 보존한다.
 
-Main 문서는 이 WI·WORK_STATUS·WORK_PLAN과 결과서다. 다른 소스·보호 파일·Backup·전역 설정은 소유 범위 밖이다. 기존 Primary의 읽기 대조로 정책 UI는 기존 PROJECT_PREPARATION 목록에 두 행동을 추가하면 되고 새 profile/buffer는 불필요함을 확인했다. 위27경로는 새 계약 작업 초안이며 GO 전에 확정한다. 현재 미채택 두 행동을 제품/시험에 미리 넣지 않는다.
+Main 문서는 이 WI·WORK_STATUS·WORK_PLAN·승인 기록과 결과서다. 다른 소스·보호 파일·Backup·전역 설정은 소유 범위 밖이다. 기존 Primary의 읽기 대조로 정책 UI는 기존 PROJECT_PREPARATION 목록에 두 행동을 추가하면 되고 새 profile/buffer는 불필요함을 확인했다. 위27경로를 채택된 source 허용 범위로 확정한다. 실제 사용자 정책을 부여하지 않는다.
 
 ## 3. 업무 A — HUMAN 원명령에서 보호 저장·재조회까지
 
