@@ -11808,3 +11808,8 @@ git diff --check
 - 제품 commit ca15275567d2be9f5aeeda59cc23afc5e7588557은 시작3e996d77 직접 자식·정확15제품/시험 경로다. Main0de27d는 허용30의 실제Git blob와 최종검증바이트 일치/mismatch0을 확인했다. 0069미적용·옛SQL3/보호untracked3·main보존, 새QA/프로세스/서비스0이다.
 - 결과 docs/04_test_reports/AV3/FN06_ENVIRONMENT_APPROVAL_PAYLOAD_SOURCE_RESULT_20261102.md SHA256 97CD4750B75982A403FA7EB601AABD408CA559F7B6A256C1AD56FE8D0944B743. 현계획 FN06/UI11의507B미구현 표기를 소스검수 상태로 정정했고 과거미채택/실패기록은유지했다. 실제DB·권한·키·서비스·Agent·실자료/브라우저/App·사용자인수 및 전체FN06/계획은미완료다.
 - 다음은 문서 checkpoint 게시/PMO 결과 전달 및 기존 승인 안의 다음 미완료 단위 선정이다. P03 R3 실제 복제는 이번 승인에 포함하지 않으며 기존 별도 결정 미확인이다. 완료된 검사 반복0, 실제 반영 또는 전면 완료로 승격0이다.
+
+### 2026-11-02 UI02 생성 후 환경 설정 진입 보완
+
+- 새 FN06 승인 경로는 생성 전 환경 귀속 DTO나 FN09 실행 권위를 추가하지 않는다. 기존 Primary 한정 대조와 Main31b4f0/be6c25/702d58에서 생성 직후 및 소비 초안 재진입 nav에 환경 설정 링크가 없음을 확인했다. 생성 후 같은 보호 프로젝트 ID의 기존 UI11로 명시 이동하는 내부 연결만 기존 계획 범위에서 보완한다.
+- UI02_CREATED_PROJECT_ENVIRONMENT_ENTRY_20261102.md의 정확3제품/시험 경로를 기존 Primary에게 맡긴다. 새 API/SQL/권한/실행0, 기존버퍼/문맥보호 유지. 실제 Page SSR 정상·중요음성과 기존 GET·동적보호 증거 재사용, 새 browser spec 기대는 미실행으로 분리한다. 새로운 시험도구·범용화/전수검사0이며 실제 DB·키·서비스·Agent·실자료 제외를 유지한다.
