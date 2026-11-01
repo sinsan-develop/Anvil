@@ -23,7 +23,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = ['establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
+export const consumableOperations = ['prepareNativeBoundary','establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -132,7 +132,7 @@ export class ProjectApprovals{
  /** writer 원장 내부의 정확 원command 소비 검산이며 공개 승인 원문 getter가 아니다. */
  async verifyWriterAuthorityConsumption(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,serverCommandId:string,originalActorId:string,policyRef:VersionRef){
   const member=await projectMember(db,actor,c.projectId,true);if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NOT_FOUND',404);
-  const approval=readApprovalRef(c.approvalRef),history=await this.#history(db,actor,c.projectId,approval.requestId,['establishProjectWriterBoundary','revokeProjectWriterAuthority']);
+  const approval=readApprovalRef(c.approvalRef),history=await this.#history(db,actor,c.projectId,approval.requestId,['establishProjectWriterBoundary','revokeProjectWriterAuthority','prepareNativeBoundary']);
   const r=history.request,u=history.consumption,d=history.decision;if(history.storedStatus!=='CONSUMED'||history.currentVersion!==3||!u||!d||d.id!==approval.decisionId||d.decision!=='APPROVE'||r.scopeDigest!==approval.scopeDigest||r.requestedBy.userId!==originalActorId||r.requestedBy.clientId!==c.clientId||canonicalJson(r.policyRef)!==canonicalJson(policyRef)||u.serverCommandId!==serverCommandId||u.commandId!==c.commandId||u.requestHash!==contentHash(canonicalJson(c))||u.scopeDigest!==approval.scopeDigest)throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
   assertApprovalCandidate(r.details,c,originalActorId,c.projectId);
  }
