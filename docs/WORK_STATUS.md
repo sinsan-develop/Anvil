@@ -11746,3 +11746,11 @@ git diff --check
 - Main fa9a9d의 LF Bash --noprofile --norc -n 및 내장 Node --check --input-type=module은 각각 exit0이다. 문서 본문 실행·실제 파일 준비·grant·DB·권한·키·서비스·Agent·실자료 조사0이다. 최초 sandbox e2d433의 stdin 파이프 종료는 구문 PASS가 아니며 별도 환경 오류1로 기록한다. Git sandbox의 'this operation must be run in a work tree'도 실제 elevated status와 구분했다.
 - 코드 보완 전53C896D0 → 보완 후3A284491, 네 역치환 정확 일치이며 문서 §7에 반례·구문·독립 검수 증거를 추가했다. 고정 source8d200·대상6·위험4·30분/1회·PENDING은 불변이다. 과거130검사는 재실행하지 않았다.
 - 결과는 제안 문서 결함의 국소 보완이며 P03 복구·IX01·FN06·작업계획서 완료가 아니다. 실제 R3는 별도 새 실행 결정이 필요하고, FN06 완성 환경 일회 승인507B는 미채택을 유지한다. 다음은 문서 checkpoint 게시·PMO 결정 지원이며 승인과 무관한 미완료 구현은 기존 선행 대조로 계속 선정한다.
+
+### 2026-11-02 설치형·모바일 잔여의 한정 선행 대조
+
+- 담당: 기존 Primary는 FN18, 기존 Reviewer는 FN17/UI13을 읽기 전용 대조했고 writer/실행 handle0으로 반환했다. 코드·시험·실자료·DB·키·서비스·Agent 실행0이다.
+- FN18의 makeDevelopmentInstaller→core.api.make→bounded Maker→inspectArtifacts→manifest 및 verifyDevelopmentManifest는 이미 연결됐다. 실제 생성은 INSTALLER_NATIVE_ISOLATION_NOT_VERIFIED와 과거 NuGet 진단 BASELINE_FAILED/원 stderr 미수집을 유지하며 재실행/guard 완화0이다. 업데이트·안전종료·복구는 설계§12.2의 정확 binding/실제 공급자 선행이 남아 source 재구현 대상으로 확정하지 않았다.
+- FN17/UI13의 대화·절차·문서 탭/App/Workspace, 동일 ApprovalsPage·요청 링크와 본인 알림 소비는 이미 연결돼 있다. 실제 전달·중지/재개·제어권 인수 및 미채택 push 계약은 단순 버튼 연결로 대체하지 않는다. 새 메뉴·공개 계약을 임의 추가하지 않았다. 조사 범위 밖과 전체 계획 완료를 증명하는 결과는 아니다.
+- P03 문서 checkpoint 2830276ce8f8c469c0d752a0acd04ed2c853db0b는 실제 private branch 동일, private main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean을 확인했다(05cb19). PMO cursor33은 기존 R3 질문을 최종40A7A65B 문서에 연결했고 새 직접 승인 없음/PENDING 유지라고 회신했다. 새·중복 승인 질문0이다.
+- 현재 명확한 재개 조건은 기존 FN06 승인 원문 보완507B 채택 답변 또는 고정 R3 새 실제 실행 결정이며 서로 대체하지 않는다. 현재 제외된 실제 효과는 실행하지 않는다. 한정 source 대조에서 바로 착수할 추가 독립 단위는 찾지 못했으며 전체 미완료를 완료로 승격하지 않는다.
