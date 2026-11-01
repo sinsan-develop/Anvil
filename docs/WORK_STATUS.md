@@ -11821,3 +11821,11 @@ git diff --check
 - 기존 Primary의 실제 SSR0d8bae RED 뒤5311b1 9PASS/type0·동결3을 독립 C0/I0로 인수했다. Main26d061 SSR9PASS/native0·0901e1 type0·diff0·889498 실제Git blob3와검증바이트 mismatch0이다. 초기sandbox 준비 EPERM은 d86485의 Vite 임시설정번들 쓰기에서 발생한 환경 오류이며 ACL/기준완화 없이 같은 승인 개발검사로 확인했다.
 - 제품d2595b9856863423df3a7c911b16885d67636325 정확3경로. 기존생성직후/소비초안의같은검산projectId nav에 connections명시링크만추가했고계약/원문/명령/권한/자동실행0. WI 검수결과절에 지문/정확명령/미실행을 기록했다. 실제browser/served/DB·사용자인수·생성전환경/총괄선택·전체UI02는미완료다.
 - 새전용QA/livehandle0, 실DB·권한·키·서비스·Agent·실자료조사0. 기존원문/보호3/옛SQL과main을보존한다. 다음은 핵심Agent 실제연결에 남은 기존 계약·권위/통신 공급자 선행을 구체화하며, 합성 facade를 추가해 실제연결완료로대체하지 않는다.
+
+### 다음 핵심 Agent 연결의 기존 권위 후보 대조
+
+- 기존 writer 권위 v3 BF19670D는 D1/환경507B와 별개 새 원장2표·operation/API/purpose의 미채택 후보다. 독립 C0/I1은 append 누적 한도/포화 의미 누락이다. actual 공급자/강제수단·grant 소비는 별도 선행으로 유지한다.
+- 부모를 수정하지 않고 FN06_WRITER_AUTHORITY_STORAGE_LIMIT_DECISION_20261102.md에 한도/포화 A후보를 작성했다.10000event/64MiB/전체event4MiB·기존payload2MiB/프로젝트10GiB 합산모델이며, 포화 시 새 회수증거도 수용되지 못할 위험·전용예약 미구현을 숨기지 않는다. 채택 전 source/SQL/권위 변경0이다.
+- 첫 문서저장 tool 구성은 JavaScript SyntaxError로 실행 전 실패했고 파일 변경0이다. 문서 배열 구성으로 바로잡았다. 이 결정 자료 정리는 실제 Agent 연결 진도가 아니며, 검토 뒤 PMO에 정확 선택·지원만 요청한다.
+
+- 저장 한도 보완 후보 A74FF95E…D72484는 독립 결정자료 한정 C0/I0다. 기존I1의무한누적/포화의미를구체화했지만 A의회수전용예약부재·포화후새회수사실미수용 위험은해결됐다고주장하지않는다. 부모BF19670D의B원장 source계약+이A한도 채택/B예약상세화/C현행유지 중 정확선택이필요하며 actual활성화는어느경우도미승인이다. 코드/SQL변경0. Main47e2e4의문서상 storage-quota 추정경로읽기오류1은 실제목록의 projects/project-storage-quota.ts로보정했고기존quota의ARTIFACT/CHECKPOINT전용닫힌계약을임의확장하지않는다.
