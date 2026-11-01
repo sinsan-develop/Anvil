@@ -11501,3 +11501,11 @@
 - 같은FN09 exact6/binding15/session7의직접채택선행과실제DB/권한/키/서비스/Agent제외가세연속유지됐다. 앞선FN06/FN14/FN09직접소비한정대조에서기존계약만으로새구현단위를확정하지못했고이를전체source완료로확대하지않는다. 목표를BLOCKED로전환해새근거없는동일점검/질문/작은helper·범위우회를중단한다. 전체WORK_PLAN은미완료·완료보고/전체Gate PASS/main병합0이다.
 - 필요한재개조건은이미PMO가요청한정확후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759의A source-only직접채택또는B/다른정확범위결정이다. 답변수신시원문hash/실제Git/허용경로를대조해같은Primary에게정확WI와TDD를전달한다. 중복승인질문0·현재신규제품/SQL쓰기0·실환경효과0을유지한다.
 - 안전인계 owner Main어울/branch codex/av3-stage-b/PAUSED_DECISION(새계약직접채택선행),마지막검수제품2e816315e692736f69ca48334df6fd5f15997c36·후보c909e9b8·원격복구ref 기존privatebranch. 진행중QA/knownhandle0·dirty제품0/보호untracked3보존. 이감사1~3과재개조건은WORK_STATUS-only 원격checkpoint로보존한다. reset/rebase/force/새branch·세션·자동화/미병합작업삭제0이다.
+
+### 2026-11-01 FN09 등록 정의 책임 세션 예약 A 직접 채택·재개
+신산님이 후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했다. goal실상태active를확인했으며옛BLOCKED/감사횟수는이력으로만보존한다. 기존exact5/14/6후보예약을유지하고명시connectionKind의신규exact6/15/7·같은operation/승인/CAS·예약false권한분기를채택한다. 실제DB/권한/키/서비스/Agent·사용자/백업자료조사·기존차단해제는제외한다. 기존Primary단일writer·Main관리/검수/통합·기존Reviewer독립검토로계속한다. 원후보hash/미채택머리글은소급수정하지않고이최신승인범위로기록한다. 전체계획은미완료다.
+
+- FN09 A 재개 preflight74a38d/7b26b6: local/private10cd3c84·원격mainf976불변·후보81E87C51/기존제품8 시작지문·신규0068/시험3부재를확인했다. 최초74a38d exit1은마지막rg0068무일치이며제품/환경실패아니다. 기존Primary의추가3소비자제안은실제호출선을Main이대조해허용12로고정했다.
+- WI E7996DD6D900473AA14AF7D7923E117B21E5F77DBDB9EAAF4A0AFE6933AFF855 독립사전C0/I0·0016/0049불변을확인했다. 같은Primary에TEST_ONLY 신규3만배정했고제품8/SQL쓰기0·실환경0이다. Main승인기록append의cwd누락조회 f5560a/문자열줄바꿈표현은준비오류로분리해70c197/54ca73에서정확source경로와방금추가suffix6개만검산보정했다. 기존문서이력의전체재작성0·후보원문hash불변이다.
+
+- FN09 구현WI 최종SHA256 4DA9F311ABCCE98FB1E9D052D3A39B8B453753FBFE691DE5D433A8B8474131C1을사용한다. Main MAIN_RECONFIRMED_NON_SEMANTIC: 부모는신산님직접채택후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759, 범위확대0. diff검사153e7a의EOF빈줄1바이트만998d37로제거했고새바이트+LF의SHA가원E7996DD6와정확일치한다. 독립EOF보정C0/I0·본문/허용12불변·기존지시/시험계속,같은검사기준으로게시한다.

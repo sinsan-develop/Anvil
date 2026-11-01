@@ -1168,3 +1168,8 @@ UI10은현재고정지식→허가대상조회/목적입력→명시요청보관
 
 ### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
 신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.
+
+### 2026-11-01 FN09 등록 정의 책임 세션 예약 A 직접 채택·재개
+신산님이 후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했다. goal실상태active를확인했으며옛BLOCKED/감사횟수는이력으로만보존한다. 기존exact5/14/6후보예약을유지하고명시connectionKind의신규exact6/15/7·같은operation/승인/CAS·예약false권한분기를채택한다. 실제DB/권한/키/서비스/Agent·사용자/백업자료조사·기존차단해제는제외한다. 기존Primary단일writer·Main관리/검수/통합·기존Reviewer독립검토로계속한다. 원후보hash/미채택머리글은소급수정하지않고이최신승인범위로기록한다. 전체계획은미완료다.
+
+- FN09 구현WI 최종SHA256 4DA9F311ABCCE98FB1E9D052D3A39B8B453753FBFE691DE5D433A8B8474131C1을사용한다. Main MAIN_RECONFIRMED_NON_SEMANTIC: 부모는신산님직접채택후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759, 범위확대0. diff검사153e7a의EOF빈줄1바이트만998d37로제거했고새바이트+LF의SHA가원E7996DD6와정확일치한다. 독립EOF보정C0/I0·본문/허용12불변·기존지시/시험계속,같은검사기준으로게시한다.
