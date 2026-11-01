@@ -39,3 +39,68 @@ test('실제deflate스트림을검산하고파일1GiB/전체4GiB관측초과는�
 });
 test('manifest외부고정hash가없거나다르면해당파일을새신뢰근거로승격하지않는다',async()=>{const m=model();await make.makeDevelopmentInstaller(m.plan,m.ports);await assert.rejects(verifier.verifyDevelopmentManifest(m.plan.resourceRoot,'',m.ports.io),/COMMITMENT_REQUIRED/);await assert.rejects(verifier.verifyDevelopmentManifest(m.plan.resourceRoot,'f'.repeat(64),m.ports.io),/MANIFEST_MISMATCH/);});
 test('close가관측중인자원검사보다먼저와도검사실패를늦은성공으로숨기지않는다',async()=>{const m=childModel();let reject;const checking=new Promise((_resolve,r)=>{reject=r;});const p=make.observeChild(m.child,1000,()=>checking,()=>0,()=>{},m.timing);m.pulse();m.child.emit('exit',0);m.child.emit('close',0);reject(Error('LIMIT_AFTER_CLOSE'));const r=await p;assert.equal(r.state,'UNKNOWN');m.child.stdout.destroy();m.child.stderr.destroy();m.child.stdin.destroy();});
+
+
+test('bounded Squirrel config는 core8이 clone/prepareConfig로 소비하는 실제 MakerBase 인스턴스다',async()=>{
+ const {createRequire}=require('node:module'),{pathToFileURL}=require('node:url');
+ const resolve=createRequire(path.resolve(__dirname,'../../apps/desktop/package.json'));
+ const MakerBase=(await import(pathToFileURL(resolve.resolve('@electron-forge/maker-base')).href)).default;
+ const base=require('../../apps/desktop/forge.config.cjs'),config=require('../../apps/desktop/forge.installer-development.config.cjs'),maker=config.makers[0];
+ assert(maker instanceof MakerBase,'기존 문자열 maker descriptor는 직접 유한감독 phase를 소비하는 MakerBase 인스턴스가 아니다');
+ const clone=maker.clone();assert(clone instanceof MakerBase);assert.notEqual(clone,maker);assert.equal(clone.name,maker.name);assert.equal(clone.configOrConfigFetcher,maker.configOrConfigFetcher);
+ await clone.prepareConfig('x64');assert.equal(clone.config.name,'AnvilDevelopmentArtifact');assert.equal(clone.config.setupExe,'Anvil-Development-NOT-RELEASE-Setup.exe');assert.equal(clone.config.noMsi,true);
+ assert.equal(config.hooks,base.hooks);assert.equal(config.packagerConfig.electronZipDir,base.packagerConfig.electronZipDir);assert.deepEqual(config.publishers,[]);
+});
+
+
+function phaseModel(mode='normal',m=model()){
+ const tools={};for(const key of['nuget','squirrel','template','loadingGif','winstallerPackage','winstallerEntry','lodashEntry','asarEntry']){const file=path.join('C:\\tools',key+'.bin'),value=key==='winstallerPackage'?JSON.stringify({name:'electron-winstaller',version:'5.4.4'}):key==='template'?require('node:fs').readFileSync(path.join(path.dirname(path.dirname(require('node:module').createRequire(path.resolve(__dirname,'../../apps/desktop/package.json')).resolve('electron-winstaller'))),'template.nuspectemplate'),'utf8'):key;m.add(file,value);tools[key]={path:file,sha256:verifier.digest(value),label:key};m.plan.toolFiles.push(tools[key]);}
+ const input={dir:path.join(m.plan.outputRoot,'Anvil-win32-x64'),makeDir:path.join(m.plan.outputRoot,'make'),targetArch:'x64',packageJSON:{name:'anvil-desktop',version:'0.1.0'},appName:'Anvil',forgeConfig:{publishers:[],packagerConfig:{}}};
+ const appMeta={name:'anvil-desktop',version:'0.1.0',description:'합성 설명',author:{name:'Anvil'},productName:'Anvil'};
+ m.ports.tick=()=>tick;
+ function packaged(){m.add(path.join(input.dir,'Anvil.exe'),peBytes());m.add(path.join(input.dir,'resources','app','package.json'),JSON.stringify(appMeta));}
+ const vendorFiles=['7z-x64.exe','7z-x64.dll','Setup.exe'].map(leaf=>{const file=path.join('C:\\tools',leaf);m.add(file,leaf);const t={path:file,sha256:verifier.digest(leaf),label:'squirrel-vendor.'+leaf};m.plan.toolFiles.push(t);return t;});
+ const calls=[],children=[],reports=[],deadlines=[];let tick=0,wall=Date.parse(m.plan.startedAt),timer;
+ const io={...m.ports.io,async copyNew(from,to){assert(!m.files.has(to));assert(m.dirs.has(path.dirname(to)));m.add(to,m.files.get(from));},async moveNew(from,to){await this.copyNew(from,to);m.files.delete(from);}};
+ const req=require('node:module').createRequire(path.resolve(__dirname,'../../apps/desktop/package.json')),lodash=req('lodash');
+ const runtime={plan:m.plan,io,now:()=>wall,tick:()=>tick,environment:m.ports.environment,tools,vendorFiles,readAsar:async()=>{throw Error('UNMODELED_ASAR');},render:(text,data)=>lodash.template(text)(data),convertVersion:v=>v,report:r=>reports.push(r),timing:{timer:(f,ms)=>{timer=f;deadlines.push(ms);return()=>{};},pulse:()=>()=>{}},spawnTool(exe,args,options){const c=childModel();children.push(c);calls.push({exe,args,options});setImmediate(()=>{if(calls.length===1){if(mode==='overflow'||mode==='wrapped')c.child.stdout.emit('data',Buffer.alloc(65537));if(mode==='timeout')timer();if(mode==='late'){timer();c.child.emit('error',Error('PRIVATE_RAW_MUST_NOT_LEAK'));}if(mode==='clock'){tick=899999;wall+=899999;}m.add(path.join(args[args.indexOf('-OutputDirectory')+1],'AnvilDevelopmentArtifact.0.1.0.nupkg'),zipBytes());}else{const out=args[args.indexOf('--releaseDir')+1];m.add(path.join(out,'Setup.exe'),peBytes());m.add(path.join(out,verifier.PACKAGE),zipBytes());m.add(path.join(out,'RELEASES'),'synthetic');}c.child.emit('exit',mode==='nonzero'?9:0);c.child.emit('close',mode==='mismatch'?8:mode==='nonzero'?9:0);});return c.child;}};
+ function dispose(){for(const c of children){c.child.stdin.destroy();c.child.stdout.destroy();c.child.stderr.destroy();}}
+ return{m,runtime,input,calls,children,reports,deadlines,packaged,dispose,advance(ms){tick+=ms;wall+=ms;}};
+}
+
+test('내부 overflow/time 불명은 실제 maker 거절과 CLI outcome 및 outer CLOSED를 지나도 UNKNOWN으로 보존된다',async()=>{
+ for(const mode of['overflow','timeout','mismatch','late','wrapped']){const f=phaseModel(mode),m=f.m;m.ports.runChild=async(p)=>{f.runtime.plan=p;f.packaged();const maker=make.createBoundedSquirrelMaker(undefined,f.runtime);await maker.prepareConfig('x64');const exit=await make.internalMakeOutcome(async()=>{try{return await maker.make(f.input);}catch(error){if(mode==='wrapped')throw Error('FORGE_FIXED_MESSAGE');throw error;}},p);return{state:'CLOSED',exit,pid:901,stdoutBytes:0,stderrBytes:0,reason:null};};try{const receipt=await make.makeDevelopmentInstaller(m.plan,m.ports);assert.equal(f.calls.length,1,'실제 첫 native phase 도달: '+mode);assert.equal(receipt.state,'UNKNOWN',mode);assert.equal(receipt.preserved,true);assert(!m.files.has(path.join(m.plan.resourceRoot,'installer-development-manifest.json')));}finally{f.dispose();}}
+});
+
+
+test('bounded maker의 실제 phase는 같은 nuspec/pack/releasify와 전용 config·환경을 유한 child로 소비한다',async()=>{
+ const f=phaseModel();f.m.addDir(f.m.plan.outputRoot);f.m.addDir(f.m.plan.tmpRoot);f.packaged();const maker=make.createBoundedSquirrelMaker(undefined,f.runtime).clone();await maker.prepareConfig('x64');try{const artifacts=await maker.make(f.input);assert.deepEqual(artifacts.map(p=>path.basename(p)).sort(),[verifier.SETUP,verifier.PACKAGE,'RELEASES'].sort());assert.equal(f.calls.length,2);const [pack,release]=f.calls;const cacheRoot=path.dirname(pack.exe);assert.equal(path.basename(pack.exe),'nuget.exe');assert.equal(path.basename(release.exe),'Squirrel.exe');assert.equal(f.m.files.get(path.join(cacheRoot,'7z.exe')).toString(),'7z-x64.exe');assert.equal(f.m.files.get(path.join(cacheRoot,'7z.dll')).toString(),'7z-x64.dll');for(const t of f.runtime.vendorFiles)assert.equal(verifier.digest(f.m.files.get(t.path)),t.sha256);assert.equal(pack.args[0],'pack');assert(pack.args.includes('-NoDefaultExcludes'));assert(pack.args.includes('-NonInteractive'));const cfg=pack.args[pack.args.indexOf('-ConfigFile')+1],xml=f.m.files.get(cfg).toString();assert(xml.includes('<packageSources><clear /></packageSources>'));assert(xml.includes('<packageSourceCredentials><clear /></packageSourceCredentials>'));assert.equal(release.args[0],'--releasify');assert(release.args.includes('--no-msi'));assert(!release.args.some(x=>/sign|msi.*true/i.test(x)));for(const call of f.calls){assert.equal(call.options.shell,false);assert.equal(call.options.windowsHide,true);assert(call.options.env.USERPROFILE.startsWith(f.m.plan.tmpRoot));assert(call.options.env.NUGET_PACKAGES.startsWith(f.m.plan.tmpRoot));assert(call.options.env.NUGET_CREDENTIALPROVIDERS_PATH.startsWith(f.m.plan.tmpRoot));assert.equal(call.options.env.NPM_TOKEN,undefined);}const nuspec=f.m.files.get(pack.args[1]).toString();assert(nuspec.includes('<id>AnvilDevelopmentArtifact</id>'));assert(nuspec.includes('Anvil.exe'));assert(nuspec.includes('합성 설명'));assert(f.m.files.has(path.join(f.input.dir,'Anvil.exe')));assert(f.deadlines[1]<=f.deadlines[0]);}finally{f.dispose();}
+});
+
+test('알려진 native nonzero는 FAILED이며 불명과 구분하고 다음 phase 및 자동재시도를 하지 않는다',async()=>{
+ const f=phaseModel('nonzero'),m=f.m;m.ports.runChild=async(p)=>{f.runtime.plan=p;f.packaged();const maker=make.createBoundedSquirrelMaker(undefined,f.runtime);await maker.prepareConfig('x64');return{state:'CLOSED',exit:await make.internalMakeOutcome(()=>maker.make(f.input)),pid:901,stdoutBytes:0,stderrBytes:0,reason:null};};try{const r=await make.makeDevelopmentInstaller(m.plan,m.ports);assert.equal(f.calls.length,1);assert.equal(r.state,'FAILED');assert.equal(r.preserved,true);}finally{f.dispose();}
+});
+
+test('phase의 설정·도구 변조는 child0이고 기본 native isolation gate는 계속 닫혀 있다',async()=>{
+ for(const kind of['tool','sign','remote','config']){const f=phaseModel();f.m.addDir(f.m.plan.outputRoot);f.m.addDir(f.m.plan.tmpRoot);f.packaged();if(kind==='tool')f.m.add(f.runtime.tools.nuget.path,'changed');if(kind==='sign')f.input.forgeConfig.packagerConfig.windowsSign={};if(kind==='remote')f.input.forgeConfig.packagerConfig.remoteReleases='https://example.invalid';const cfg={name:'AnvilDevelopmentArtifact',setupExe:verifier.SETUP,noMsi:true};if(kind==='config')cfg.noMsi=false;try{await assert.rejects(make.runBoundedSquirrelPhase(cfg,f.input,f.runtime));assert.equal(f.calls.length,0);}finally{f.dispose();}}await assert.rejects(make.nativePorts().verifyIsolation(),/INSTALLER_NATIVE_ISOLATION_NOT_VERIFIED/);
+});
+
+
+test('최초 guard의 단일 monotonic 예산과 뒤로 간 clock은 다음 phase로 연장되지 않는다',async()=>{
+ for(const kind of['expired','backward']){const f=phaseModel(),m=f.m;m.ports.now=f.runtime.now;m.ports.runChild=async(p)=>{f.runtime.plan=p;f.packaged();f.advance(kind==='expired'?900000:-1);const maker=make.createBoundedSquirrelMaker(undefined,f.runtime);await maker.prepareConfig('x64');return{state:'CLOSED',exit:await make.internalMakeOutcome(()=>maker.make(f.input)),pid:901,stdoutBytes:0,stderrBytes:0,reason:null};};try{const r=await make.makeDevelopmentInstaller(m.plan,m.ports);assert.equal(f.calls.length,0);assert.notEqual(r.state,'VERIFIED_DEVELOPMENT_ARTIFACT');assert(r.preserved);}finally{f.dispose();}}
+});
+
+
+test('I2 preflight await가 최초 60초 잔여를 소진하고 wall이 후퇴하면 첫 mkdir·child0으로 거절한다',async()=>{
+ const m=model(),start=Date.parse(m.plan.startedAt);let tick=100;m.setClock(start+840000);m.ports.tick=()=>tick;m.ports.verifyIsolation=async()=>{tick+=120000;m.setClock(start+1000);};await assert.rejects(make.makeDevelopmentInstaller(m.plan,m.ports),/INSTALLER_EXPIRED/);assert.equal(m.writes(),0);assert.equal(m.children(),0);
+});
+
+
+test('부모 원 monotonic deadline은 내부 입력에서 재연장되지 않고 만료·변조 입력을 거절한다',()=>{
+ const m=model(),start=Date.parse(m.plan.startedAt);let wall=start+840000,tick=100;const envelope=make.makeInternalEnvelope(m.plan,()=>wall,()=>tick);assert.equal(envelope.deadlineTick,60100);tick+=40000;wall=start+1000;const childPlan=make.readInternalEnvelope(envelope,()=>wall,()=>tick);assert.equal(make.makeInternalEnvelope(childPlan,()=>wall,()=>tick).deadlineTick,60100);tick=60100;assert.throws(()=>make.makeInternalEnvelope(childPlan,()=>wall,()=>tick),/INSTALLER_EXPIRED/);assert.throws(()=>make.readInternalEnvelope({...envelope,deadlineTick:Infinity},()=>wall,()=>tick));assert.throws(()=>make.readInternalEnvelope({...envelope,unexpected:true},()=>wall,()=>tick));
+});
+
+
+test('outer child의 반복·늦은 error도 raw 오류를 노출하거나 불명을 CLOSED로 되살리지 않는다',async()=>{
+ const m=childModel(),reports=[];const pending=make.observeChild(m.child,1000,async()=>{},()=>0,r=>reports.push(r),m.timing);m.child.emit('error',Error('PRIVATE_FIRST'));m.child.emit('error',Error('PRIVATE_SECOND'));m.child.emit('exit',0);m.child.emit('close',0);const r=await pending;await new Promise(resolve=>setImmediate(resolve));m.child.emit('error',Error('PRIVATE_LATE'));assert.equal(r.state,'UNKNOWN');assert(!JSON.stringify(reports).includes('PRIVATE'));assert.equal(m.stops(),2);m.child.stdin.destroy();m.child.stdout.destroy();m.child.stderr.destroy();
+});
