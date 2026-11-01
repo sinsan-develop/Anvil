@@ -117,19 +117,19 @@ try{
  const nf=await file(node,1001,nodeSha,268435456,0o755),self=await fs.stat('/proc/self/exe',{bigint:true});ok(nf.stat.gid===1001n&&await fs.realpath('/proc/self/exe')===node&&sameStat(nf.stat,self));
  for(const p of ['/','/usr','/usr/bin']){const s=await fs.lstat(p);ok(s.isDirectory()&&!s.isSymbolicLink()&&s.uid===0&&(s.mode&0o022)===0&&await fs.realpath(p)===p);}
  await rootTool('/usr/bin/git',gitSha256);await rootTool('/usr/bin/docker',dockerSha256);guard();
- phase='FRESH_SOURCE';await absent(src);await fs.mkdir(src,{mode:0o700});const sp=await root(src);await syncDir(dirname(src));
+ phase='FRESH_SOURCE';await absent(src);guard();await fs.mkdir(src,{mode:0o700});const sp=await root(src);await syncDir(dirname(src));
  await git(['clone','--quiet','--no-checkout','--single-branch','--origin','development','--branch',branch,remote,src]);await root(src,sp);
  await git(['-C',src,'checkout','--quiet','-B',branch,commit]);await root(src,sp);
  const gd=await fs.lstat(join(src,'.git'));ok(gd.isDirectory()&&!gd.isSymbolicLink()&&gd.uid===1000&&(gd.mode&0o022)===0&&await fs.realpath(join(src,'.git'))===join(src,'.git'));
  phase='EXACT_SOURCE_CHECK';const q=async args=>(await git(['-C',src,...args])).toString('utf8');
  ok((await q(['rev-parse','HEAD'])).trim()===commit&&(await q(['branch','--show-current'])).trim()===branch&&(await q(['remote','get-url','development'])).trim()===remote&&(await q(['status','--porcelain=v1','--untracked-files=all']))==='');
  for(const [path,digest,length]of pins){const blob=await git(['-C',src,'show','HEAD:'+path]),f=await file(join(src,path),1000,digest,length);ok(blob.length===length&&hash(blob)===digest&&f.bytes.equals(blob)&&!blob.includes(13));}
- phase='FRESH_LEDGER';await parents(ledger);await absent(ledger);await fs.mkdir(ledger,{mode:0o700});const lp=await root(ledger);await syncDir(dirname(ledger));
+ phase='FRESH_LEDGER';await parents(ledger);await absent(ledger);guard();await fs.mkdir(ledger,{mode:0o700});const lp=await root(ledger);await syncDir(dirname(ledger));
  const scope='P03_PROTECTED_COPY_LIMITED_RISK_R1',policy='P03_COPY_LIMITED_RISK_POLICY_R1_20261028';
  const acceptance={scope,policy,candidateSha256:candidate,runInstance,sourceInstance:'dc22a0629e79f259dcd935845e88e58e',copyInstance:runInstance,commit,controllerSha256:pins[0][1],shellSha256:pins[1][1],decisionSha256,issuedAt,expiresAt,delta:{writerFullyControlled:'NOT_PROVEN_ACCEPTED_FOR_THIS_RUN',hardQuota:'NOT_ENFORCED_ACCEPTED_FOR_THIS_RUN',acl:'UNAVAILABLE_ONLY_BASIC_METADATA_ACCEPTED',xattr:'UNAVAILABLE_ONLY_BASIC_METADATA_ACCEPTED',numericOwner1001:'NEW_EXACT_RUN_RISK_ACCEPTED'}};
  const grant={schema:1,scope,branch,commit,controllerSha256:pins[0][1],shellSha256:pins[1][1],nodeSha256:nodeSha,gitSha256,dockerSha256,runInstance,issuedAt,expiresAt,totalMs:600000,sourceMs:500000,reserveMs:25000,stdoutBytes:16384,controlBytes:262144,auditBytes:33554432,logicalBytes:268435456,maxEntries:100000,maxVolumes:1,maxCreates:3,maxStarts:3,names:{source:'anvil-v3-development-pgdata',copy:'anvil-v3-pgdata-recovery-20261028-r3',tools:'anvil-v3-pgcopy-tools-20261028-r3',init:'anvil-v3-pgcopy-init-20261028-r3',helper:'anvil-v3-pgcopy-20261028-r3'},policy,candidateSha256:candidate,decisionSha256,limitedAcceptance:acceptance};
  const bytes=Buffer.from(JSON.stringify(grant)+'\n');ok(bytes.length<=8192);guard();await root(src,sp);await root(ledger,lp);await absent(join(ledger,'grant.json'));await absent(join(ledger,'consumed.json'));await absent(join(ledger,'receipt.jsonl'));
- phase='GRANT_CREATE_NEW';const h=await fs.open(join(ledger,'grant.json'),C.O_WRONLY|C.O_CREAT|C.O_EXCL|C.O_NOFOLLOW,0o600);try{const s=await h.stat();ok(s.isFile()&&s.uid===1000&&s.nlink===1&&(s.mode&0o7777)===0o600);await h.writeFile(bytes);await h.sync();}finally{await h.close();}await syncDir(ledger);
+ phase='GRANT_CREATE_NEW';guard();const h=await fs.open(join(ledger,'grant.json'),C.O_WRONLY|C.O_CREAT|C.O_EXCL|C.O_NOFOLLOW,0o600);try{const s=await h.stat();ok(s.isFile()&&s.uid===1000&&s.nlink===1&&(s.mode&0o7777)===0o600);guard();await h.writeFile(bytes);await h.sync();}finally{await h.close();}await syncDir(ledger);
  await file(join(ledger,'grant.json'),1000,hash(bytes),8192,0o600);await root(src,sp);await root(ledger,lp);guard();
  // Main 기술제안: entry 전 최대 total600초의 허가 잔여를 확보한다. 제품 limit은 바꾸지 않는다.
  ok(e-Date.now()>=600000);process.stdout.write('R3_PREPARATION_CONFIRMED_ENTRY_NOT_RUN\n');
@@ -154,3 +154,13 @@ controller가 정상 종료/실close·exited/ExitCode0/FinishedAt·fullID/name/n
 이번에 요청할 실제 결정은 **고정 R3 source/대상6의 새1회·추가 volume1·같은 최초30분 안 준비/복제·위험4·정상정리/불명보존·후속 한정 읽기확인**뿐이다. PG 기동/SQL/schema/정식DB·서비스·권한/Secret·Agent 실행, 기존 프로젝트 차단 해제는 제외한다. 제한 사본 성공은 정식 환경 복구·IX01·전체 P03/WORK_PLAN 완료가 아니다.
 최초승인 30분은 준비+실행 허가 및 일회 QA 목표창이고 controller 내부 total600/source500초와 별개다. 단계별로 어느 창도 재시작하지 않는다. 보존 volume/ledger는 30분 자동삭제 대상이 아니다. Git 준비가 늦거나 child close/IO/cleanup이 불명이면 STOP·보존하며 템플릿도 강제종료나 기한 내 회수를 보장하지 않는다. 기존 bootstrap 도구/readlink/stat/sha256sum과 Node/부모·Git/Docker의 실제 신원·소유·공간 전제는 현재 UNKNOWN이며 승인 뒤 첫쓰기 전 확인해야 한다. 해결되지 않으면 Node 준비/entry0이다.
 남은 전제는 이 정적 템플릿의 독립 검토, 새 실제 결정기록·동적 입력, 승인 뒤 실제 현장 관측이다. sourceRoot/ledger 및 부분 grant가 생긴 뒤 실패하면 해당 시도의 소유 QA만 별도 소유/링크·사용중0 검산 후 회수 판단하며 자동 retry/덮기/삭제0이다. grant/consumed/receipt·원/R1/R2/새R3 volume은 보존한다. 이 문서만으로 이를 충족하거나 actual 권한을 발급하지 않는다.
+## 7. 2026-11-02 준비 템플릿 만료 경계 보완·정적 검수
+
+- 기존 Primary가 같은 문서의 준비 템플릿에 guard 검산 4곳만 추가했다. 비동기 부재 검산 뒤 source/ledger mkdir 직전, grant O_EXCL open 직전, handle 검산 뒤 write 직전이다. 이미 소유한 handle의 sync·finally close는 유지한다.
+- 수정 전 문서 SHA256 53C896D067BFFD332FDB89B63C7E1D71E34D869CD438AD466A67A9D8385F6EF0 → 코드 보완 직후 3A284491B7C8994E8B6E2B07D27B6ED7ED45E62EE72D20319658BA8B6A168655. 네 변경 역치환은 수정 전 바이트와 정확히 같다. 이 절은 검수 사실만 추가하며 템플릿·고정 source·대상·위험·한도·PENDING·실행 권한을 바꾸지 않는다. MAIN_RECONFIRMED_NON_SEMANTIC.
+- 메모리 fake fs/clock 반례 e666d3: 2 PASS/4 FAIL → 2e5081: 6 PASS/0 FAIL, exit0. 실제 파일·grant·복구 생성0이다. open 완료가 만료 뒤이면 write0/close1, 정상 경로 mkdir2/open1/write1/sync1/close1, write 이후 만료에도 sync·close 유지다. fake absent 주입 누락1은 시험 준비 오류로 분리한다.
+- 독립 scoped 검토 C0/I0: 네 guard와 역치환, 기한 경계, close 유지, 불변 범위를 확인했다. 실제 실행 승인 판정이 아니다.
+- Main fa9a9d: LF로 추출한 Bash 10888바이트/SHA256 E1FA62EA9E4A0503969A437DDCCB8BB9943E06BB790979897D3F503A89A4234E를 기존 Bash의 --noprofile --norc -n으로 구문만 검사하여 exit0. 내장 JavaScript 9135바이트/SHA256 6DA53037F85D684DB61BE6A92F4B36D830C482BBD83439BC26DF4067BE8350BB는 Node --check --input-type=module로 구문만 검사하여 exit0. stdin 외 실행 파일 저장0, 본문 실행0, BASH_ENV/ENV/NODE_OPTIONS는 검사 자식 환경에서 제거했다.
+- 최초 sandbox 검사 e2d433은 stdin 쓰기 때 '파이프가 끝났습니다.'로 중단돼 구문 PASS로 계산하지 않는다. 실제 구문 결과는 위 fa9a9d뿐이다. 문서 두 사본의 검사 전후 SHA는 3A284491…A168655로 불변이었다.
+- 원문 작성 시점의 '실행/구문시험하지 않았다'는 당시 이력이다. 현재는 로컬 구문검사만 통과했고 실제 WSL 준비·복제·PG·DB·서비스·키·Agent·실자료 조사는 실행하지 않았다. 기존 완료 source 130시험은 반복하지 않았다.
+- 실제 실행 결정과 동적 입력은 여전히 PENDING이다. 소비된 R2 승인을 재사용하거나 이 보완을 실제 실행 승인으로 해석하지 않는다.
