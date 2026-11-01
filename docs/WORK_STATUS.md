@@ -11724,3 +11724,10 @@ process.stdout.write(JSON.stringify({chunks:(Array.isArray(r)?r[0]:r).output.fil
 '@ | & 'C:\Program Files\nodejs\node.exe' --input-type=module
 git diff --check
 ```
+
+
+### FN06 source checkpoint의 실제 private 게시 확인
+
+- e4163f의 일반 push 뒤 dc3e0e에서 local/private `66b5667f74b04c2c35c6bce53de1d8c04659bb63` 동일을 확인했다. 이 문서 checkpoint는 검증한 코드 `a1398da511946540f05ee6c8d4ac7ae9e10cd2fb`를 포함하며 코드/WI bytes는 변하지 않았다.
+- private main `f976ed5e29e14b13e12729d5b1ccf98f050f2210`, local main `0443043251d25aa77c17d23165b7c9299c8dbeb8` 불변을 실제 조회했다. tracked clean·보호 untracked3만 남았고 정리/병합/배포/DB·키·서비스·Agent 효과0이다.
+- 결과 문서와 FN06/UI11 현황을 보존했으며 전체 계획은 미완료다. 507B 미채택 경로412와 실제 환경 검증 미실행을 유지한다. 다음 미완료 단위는 기존 승인·선행·현재 소스 근거로 Main이 선정하고, PMO에는 필요한 결정·지원만 요청한다.
