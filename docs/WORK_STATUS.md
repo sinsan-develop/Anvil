@@ -11960,3 +11960,8 @@ git diff --check
 ### 2026-11-02 안전 checkpoint 게시 대조
 - 시험5199d950 뒤 준비 문서929859e40e22dc8f587f6555977a4c8902fa7d3c(정확WI+WORK_STATUS2경로)를기존private branch에비강제push했고3e7e16 actual조회로local/private동일을확인했다. trackedclean/보호untracked3의SHA전부동일·원격mainf976ed5e/localmain04430432불변이다. PR/병합/배포0이다.
 - PMO에는기존시험누락보완과미채택계약의준비검수·현재정확checkpoint만전달했다. 새질문/승인반복0·native미승인/GO0·실제효과0 유지다. 현재live제품writer/QA자원0이며결정전해당새계약코드쓰기없이기존계획완료책임을유지한다.
+### 2026-11-02 새 계약 결정 경계 3개 연속 goal turn 재대조
+- 직전 goal turn은 기존 준비 정책 시험의 실제 결함 보완/검수/게시와 구체 WI 보완으로 progress였다. 이번 compact wait에서 PMO cursor82c350b3-c1ba-4852-9b7a-de9e60e40967:4 unchanged·idle/latest completed를 확인했다. 실행 중 job을 기다리는 verified wait가 아니며 새 채택 답변은 없다.
+- 동일 native 계약 미채택 경계는 후보 작성 turn→시험/WI 보완 turn→이번 실제 재대조의3개 연속 goal turn에서 유지됐다. 이미 가능한 기존 시험 보완과 구현 준비를 끝냈다. 후보r2/WI는 NO_CODE_GO이고 실제 DB/권한/키/서비스/Agent/실자료/P03R3 제외는 계속 유효하다. 이 조건을 넘는 제품쓰기·실제검증으로 진도를 만들지 않는다.
+- 계획FN06/FN08의 실제권위/dispatch는 이 선행 미채택·물리공급자 미구현과 연결되고 FN09/10/13 후속 실제실행은 그 근거가 필요하다. IX01~06 실제 종단은 DB/서비스/Agent 제외와 선행미완료로 수행불가다. FN16 전체반출/복원은 A6776EE4 상세범위 후보 미채택, FN18 실제installer는 native build/설치 실행 경계다. 앞선 한정 소비선 대조에서 완료된 화면을 다시 구현할 독립단위로 삼지 않았다. 남은 기능과 실제검증을 완료로 숨기지 않는다.
+- 현재 안전checkpoint8d4a73d791f89aae1a82a264dc439b5cf61f763f·trackedclean/보호3(기준SHA유지), live code writer/QA0. PMO에 기존 질문의 실제채택결정 필요와 이재개조건만 예외로전달하고 goal을 blocked로전환한다. 사용자 대기/중지 요청을 임의 추정한 paused도 전체계획 complete도 아니다. 재개조건은 PMO를 통한 후보r2 A의 명시채택 또는 정확한 다른범위지시이며, 재개시현재Git/hash대조후기존Primary 단일writer에만 GO한다. 질문중복·새예약/세션0이다.
