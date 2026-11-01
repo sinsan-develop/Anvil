@@ -1,7 +1,7 @@
-# FN06 환경 설정 source-only 구현 작업지시서 초안
+# FN06 환경 설정 source-only 구현 작업지시서
 
-2026-11-01 / Main 어울 / DRAFT_NOT_DISPATCHABLE
-계약 후보 채택 대기 / PRODUCT_GO 아님
+2026-11-01 / Main 어울 / ADOPTED_SOURCE_ONLY / TEST_FIRST
+r4 A 직접 채택 완료 / 정확 범위 Main dispatch 후 단일 Primary 수행
 
 ## 1. 목표·기준·착수 조건
 
@@ -12,7 +12,7 @@
 
 기존 FN09 완료 체크포인트276f8dcc와 후속현황77147d83·분석3ab4ac46·후보c4aef268을 재구현하지 않는다. source baseline은 branch codex/av3-stage-b의 안전한 실제 HEAD를 dispatch 직전에 재검산한다. 기존 보호3/사용자 dirty·untracked는 범위 밖이다.
 
-PMO가 이 후보의 새 명령/읽기정책/저장 원형/보호 역사소비를 직접 채택 대상으로 구분했다. 정확 채택 답변·대상hash·제외범위를 기록하고 이 WI를 확정한 뒤에만 PRODUCT_GO를 발행한다. 이 초안이나 기존 FN09 승인만으로 구현을 시작하지 않는다. 승인 전 수행은 읽기/계획·문서 준비까지다.
+PMO가 직접 채택 대상으로 구분했던 r4 A는 신산님의 현재 직접 승인으로 채택됐다. 승인 기록의 대상hash·제외범위와 이 WI exact29를 결박하고 Main이 동일 Primary에게 TDD를 dispatch한다. 기존 FN09 승인을 재사용한 것이 아니다. §7의 현재 승인 결박을 적용한다.
 
 ## 2. 역할과 순서
 
@@ -105,3 +105,13 @@ Web build: 기존 Vite의 configFile:false/envDir:false/publicDir:false/write:fa
 제출은 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED를 구분한다. 변경29경로의 실제diff/hash·실행명령/exit·기능/준비실패·시험범위·미검증·livehandle/QA잔여·다음조치를 반환한다. 진행상태 문장만으로 완료라고 하지 않는다.
 
 실제환경 변경이 없으므로 복구는 해당source checkpoint의 정상 Git 되돌리기 검토로 한정한다. 사용자dirty/보호3/기존원문/SQL/이력을 reset/rebase/force로 지우지 않는다. 문서/합성 PASS를 실제 PG·RLS/OID/경합·App·서비스·Agent·전체FN06/계획의 PASS로 승격하지 않는다.
+
+## 7. 2026-11-01 직접 승인 결박·착수 확정
+
+신산님이 현재 대화에서 r4 A의 코드·화면·미적용 SQL·합성 검증을 직접 승인했다.
+docs/04_test_reports/AV3/FN06_ENVIRONMENT_CONFIGURATION_APPROVAL_20261101.md에 원문·대상 BA002F75·제외를 기록한다.
+기존 WI 초안8E23109E의 exact29·EV-A/B/C·검수/복구·제외는 불변이다. 이 확정은 미채택 경계를 해소하고 동일 범위 TDD 착수 상태로 전환하는 것이다.
+0069 부재와 기존 보호3/hash·source ea46d188 local/private동일을 확인했다. Main의 통제문서 게시 후 실제 새 HEAD가 작업 기준이다.
+기존 Primary만 허용29의 단일 code writer다. Main은 같은 제품 경로를 수정하지 않는다.
+최초 기능 RED와 준비 실패를 구분해 보고하고, 올바른 RED 후 같은 허용 범위에서 EV-A→EV-B→EV-C 구현·기본 검증을 계속한다. 중간 결과를 전체 완료로 처리하지 않는다.
+현재 source-only 승인 외 효과를 요구하는 시험/명령은 자동 실행하지 않는다.

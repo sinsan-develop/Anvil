@@ -1861,3 +1861,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - FN09 구현WI 최종SHA256 4DA9F311ABCCE98FB1E9D052D3A39B8B453753FBFE691DE5D433A8B8474131C1을사용한다. Main MAIN_RECONFIRMED_NON_SEMANTIC: 부모는신산님직접채택후보81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759, 범위확대0. diff검사153e7a의EOF빈줄1바이트만998d37로제거했고새바이트+LF의SHA가원E7996DD6와정확일치한다. 독립EOF보정C0/I0·본문/허용12불변·기존지시/시험계속,같은검사기준으로게시한다.
 
 - 2026-11-01 FN09 등록 정의 책임 세션 예약 A source-only 검수: Main314806 선정35PASS/native0·ef22fc type0·dd6d9e 메모리Web build0·2338d6 diff/raw0, 제품/SQL I1각1 보완뒤독립최종C0/I0. 기존후보exact5/14/6과등록정의exact6/15/7·일회승인/replay/CAS/영수증/UNKNOWN을연결하고실행준비는명시거절했다. FN16/FN12는원형수용뿐·실행/복원false유지다. 0068미적용·실PG/RLS/OID/경합/App·Browser/서비스/Agent·사용자인수NOT_RUN,전체FN09/계획미완료. 결과 docs/04_test_reports/AV3/FN09_REGISTERED_DEFINITION_RESERVATION_SOURCE_RESULT_20261101.md 를따르며main병합/배포0이다.
+
+- 2026-11-01 FN06 환경 정의 r4 A는 신산님 직접 승인으로 source-only 구현 착수 범위가 확정됐다. 후보 BA002F75·승인기록 E56BC7DC·WI66503F67의 정확29경로/EV-A→B→C/TDD·독립검수로 진행한다. 실제 DB·권한·키·서비스·Agent 실행·실자료 조사는 제외하며, 기능 전체/실제 연결/사용자 인수/계획 완료는 아직 미충족이다.
