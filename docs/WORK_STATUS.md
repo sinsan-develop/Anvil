@@ -11282,3 +11282,11 @@
 - UI11 Primary 04642a 실제React 첫GREEN 뒤95551a 신규6PASS(native0) 중간보고: 기존listCandidates decoder의왕복/실패동일cursor/UNKNOWN원명령bytes·주체/API/CSRF/filter ABA·무렌더transport교체/옛401폐기·현재401/중복클릭을확인했다고보고했다. 아직Main fresh/최종독립검수전이다. Reviewer의이전상세첫render노출반례후보는확정finding아니며Primary에게실fixture RED대조를지시했다. 실브라우저/서비스/DB/키/Agent0·Main제품write0.
 
 - UI11 최종Primary소유반환: 동결Page0E97C1EC/test71DABCD4,3578c4 신규7+인접8=15PASS/1370.96ms·정확type0. Maina153fe/ae26cb fresh15PASS/0FAIL/SKIP/CANCEL/TODO·2250.3268ms/type/diff각0·시작끝지문동일. 최종독립C0/I0는상세detailOwner·실패target/history·ABA/transport/401·UNKNOWN/POST0을확인했다. 실제React메모리DOM과실브라우저를구분했고QA/live0·실DB권한키serviceAgent0이다. 준비오류4·상세실RED→GREEN을결과서에보존했다. 정확제품2+PLAN/STATUS/결과3만통합하며전체계획미완료·다음독립업무읽기를같은Primary에배정했다.
+
+- UI11 게시741676: a683755ae1e806d1edd25ad8127ea19a692cf512는control320e09ce직접자식 exact제품2+결과/PLAN/STATUS3이며local/private동일·main f976불변·trackedclean/보호untracked3만유지. 결과SHA91E9D44CB232E78FC21088FE87034EE251E55C6E84D6403CBEEF5B1FAEDBEA3F, PMO에실제검수·실환경미검증·전체미완료와다음읽기대조를보고했다. 실제DB·권한·키·서비스·Agent·merge0. 기존Primary읽기대조진행중/Main제품write0이다.
+- Main c9d518의선택검색은실제존재미확인 packages/runner 경로를포함해부재오류1을냈다. 서버의기존SYNTHETIC_ONLY표시읽기는성공했으나전체검색성공으로주장하지않는다. 같은추정경로재시도0·제품변경0,후속코드탐색은기존Primary의실제목록기준결과만사용한다. 경로추정준비오류를실제제품/권한실패로계산하지않는다.
+
+### 2026-11-01 UI05 상세 조회 인증 문맥 source 보완 착수
+- 기존Primary가기존 Page37~47의조회scope에auth/CSRF/transport세대가없음을읽기확인했다. 행동RED전이므로확정결함아님. 기존보호GET계약안의exact2로실제React정상원문→문맥교체첫commit/늦은401반례를먼저검증하고확인때만최소보완한다. WI UI05_SESSION_DETAIL_READ_CONTEXT_SOURCE_IMPLEMENTATION_20261101.md, 기준a683755a/제품시작D426835C. 실제DB·권한·키·서비스·Agent0/동시writer1/Main제품write0. HTTPS server는원WI가repository/현재등록/서명공급자를제외하므로synthetic태그를벗기는우회연결0이다.
+
+- UI05 WI 사전독립C0/I0·시작제품D426835C일치. 기존보호GET결과를현재auth/API/transport에결박하는내부보완이며새인증/저장계약아님을확인했다. 첫commit의상세/파일검사·옛하위콜백·ABA/401·loading/정상재조회·부모버퍼/POST0을최종검수한다. 아직제품RED/최종합격은없다.
