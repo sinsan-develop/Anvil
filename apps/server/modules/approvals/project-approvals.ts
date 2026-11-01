@@ -1,3 +1,4 @@
+import {recordV1,refV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {EnvironmentApprovalCandidates} from '../connections/project-environments.ts';
 import {environmentWriteOperations} from '../../../../contracts/runtime/environment-configuration-v1.ts';
 import {BackupPolicyApprovalCandidates} from './backup-policy-approval-candidate.ts';
@@ -22,7 +23,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = [...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
+export const consumableOperations = ['establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -128,6 +129,13 @@ export class ProjectApprovals{
   return this.#read(db,actor,pid,id,consumableOperations);
  }
  /** 불변 당시 소비만 검증한다. 현재 정책/제어의 진행은 역사 위조가 아니다. */
+ /** writer 원장 내부의 정확 원command 소비 검산이며 공개 승인 원문 getter가 아니다. */
+ async verifyWriterAuthorityConsumption(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,serverCommandId:string,originalActorId:string,policyRef:VersionRef){
+  const member=await projectMember(db,actor,c.projectId,true);if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NOT_FOUND',404);
+  const approval=readApprovalRef(c.approvalRef),history=await this.#history(db,actor,c.projectId,approval.requestId,['establishProjectWriterBoundary','revokeProjectWriterAuthority']);
+  const r=history.request,u=history.consumption,d=history.decision;if(history.storedStatus!=='CONSUMED'||history.currentVersion!==3||!u||!d||d.id!==approval.decisionId||d.decision!=='APPROVE'||r.scopeDigest!==approval.scopeDigest||r.requestedBy.userId!==originalActorId||r.requestedBy.clientId!==c.clientId||canonicalJson(r.policyRef)!==canonicalJson(policyRef)||u.serverCommandId!==serverCommandId||u.commandId!==c.commandId||u.requestHash!==contentHash(canonicalJson(c))||u.scopeDigest!==approval.scopeDigest)throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
+  assertApprovalCandidate(r.details,c,originalActorId,c.projectId);
+ }
  async readBackupPolicyConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const member=await projectMember(db,actor,pid,true);
   if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NOT_FOUND',404);
@@ -194,4 +202,24 @@ export class ProjectApprovals{
   const expired=row.expires_at.getTime()<=now.getTime(),effectiveState=['PENDING','APPROVED'].includes(row.status)?expired?'EXPIRED':stale?'REVOKED':row.status:row.status;
   return{request,requestRef:ref,currentVersion:Number(row.version),storedStatus:row.status,effectiveState,decision,consumption,expired,basisCurrent:!stale,executionAuthorized:false,observedAt:now.toISOString(),...(candidateEnvironment?{candidateEnvironment}:{}),...(candidatePlan?{candidatePlan}:{}),...(candidateActivation?{candidateActivation}:{}),...(candidatePreparation?{candidatePreparation}:{}),...(candidateUnderstanding?{candidateUnderstanding}:{}),...(candidateBackupPolicy?{candidateBackupPolicy}:{})};
  }
+}
+
+/** 기존 승인 DTO/원 actionScope를 그대로 소비하는 source-only writer 결박 검사. */
+export function checkWriterAuthorityApproval(command:ProjectCommand,value:unknown,disposition:'AUTO'|'REQUIRE_APPROVAL'|'DENY',now:number,subject:{userId:string;clientId:string}):void{
+ const fail=():never=>{throw Error('WRITER_APPROVAL_INVALID');};
+ if(disposition==='AUTO'){if(command.approvalRef!==null||value!==null)fail();return;}
+ if(disposition!=='REQUIRE_APPROVAL'||!recordV1(value,['requestRef','request','decision','consumption']))return fail();
+ const approval=readApprovalRef(command.approvalRef),request=value.request,decision=value.decision;
+ if(!refV1(value.requestRef)||!request||typeof request!=='object'||!decision||typeof decision!=='object')return fail();
+ const {id,version,status,createdAt,...snapshot}=request;
+ if(id!==approval.requestId||version!==1||status!=='PENDING'||!isoV1(createdAt)||value.requestRef.id!==id||value.requestRef.version!==1||value.requestRef.contentHash!==contentHash(canonicalJson(snapshot))||snapshot.projectId!==command.projectId||snapshot.requestedBy?.kind!=='HUMAN'||snapshot.requestedBy.userId!==subject.userId||snapshot.requestedBy.clientId!==subject.clientId||snapshot.scopeDigest!==approval.scopeDigest||contentHash(canonicalJson(snapshot.details?.actionScope))!==approval.scopeDigest||decision.id!==approval.decisionId||decision.decision!=='APPROVE'||decision.requestId!==id||decision.scopeDigest!==approval.scopeDigest||value.consumption!==null)fail();
+ readApprovalDetails(snapshot.details,{actorId:subject.userId,clientId:subject.clientId,controlGeneration:command.controlGeneration,allowedOperations:[command.operation],now:new Date(now)});
+ assertApprovalCandidate(snapshot.details,command,subject.userId,command.projectId);
+}
+
+/** 소비 전 일반 검사는 유지하고, 같은 원명령의 실제 저장 proof에 결박된 자기소비만 postcheck한다. */
+export function checkWriterAuthorityConsumedApproval(command:ProjectCommand,value:unknown,before:unknown,proof:{commandRef:VersionRef;authorizationReceiptRef:VersionRef;auditRef:VersionRef},now:number,subject:{userId:string;clientId:string}):void{
+ const fail=():never=>{throw Error('WRITER_APPROVAL_INVALID');};if(!recordV1(value,['requestRef','request','decision','consumption'])||!recordV1(before,['requestRef','request','decision','consumption'])||before.consumption!==null||!refV1(proof.commandRef)||proof.commandRef.contentHash!==contentHash(canonicalJson(command))||!refV1(proof.authorizationReceiptRef)||!refV1(proof.auditRef))return fail();
+ const u=value.consumption,approval=readApprovalRef(command.approvalRef);if(!recordV1(u,['id','status','commandId','serverCommandId','requestHash','scopeDigest','policyRef','consumedAt'])||!isVersionRef({id:u.id,version:1,contentHash:'0'.repeat(64)})||u.status!=='CONSUMED'||u.commandId!==command.commandId||u.serverCommandId!==proof.commandRef.id||u.requestHash!==contentHash(canonicalJson(command))||u.scopeDigest!==approval.scopeDigest||canonicalJson(u.policyRef)!==canonicalJson(before.request.policyRef)||!isoV1(u.consumedAt)||Date.parse(u.consumedAt)>now)return fail();
+ const original={...value,consumption:null};if(canonicalJson(original)!==canonicalJson(before))return fail();checkWriterAuthorityApproval(command,original,'REQUIRE_APPROVAL',now,subject);
 }
