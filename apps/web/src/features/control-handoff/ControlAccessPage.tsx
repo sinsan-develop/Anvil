@@ -13,20 +13,37 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const localScope=useRef(new ControlScope()),scope=parentScope??localScope.current;scope.bind(session??null,projectId);
  const live=useRef({client,projectId,session,buffer,onChange});live.current={client,projectId,session,buffer,onChange};
  const [view,setView]=useState<View>(emptyView),[ticketRevision,setTicketRevision]=useState(0);
- const context=useRef({session,projectId,client});if(context.current.session!==session||context.current.projectId!==projectId||context.current.client!==client){context.current={session,projectId,client};scope.dispose();scope.bind(session??null,projectId);}
+ const context=useRef({session,projectId,client,transport:client.transport,csrf:session?.csrfToken});
+ const navigation=useRef<{OWN:{cursors:(string|null)[];index:number};CONTROLLER:{cursors:(string|null)[];index:number};failed:{view:'OWN'|'CONTROLLER';cursor:string|null;index:number}|null}>({OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null});
+ const visibleContext=useRef<object|null>(null),ticketContexts=useRef(new WeakMap<ControlTicket,object>());if(context.current.session!==session||context.current.projectId!==projectId||context.current.client!==client||context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){context.current={session,projectId,client,transport:client.transport,csrf:session?.csrfToken};navigation.current={OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null};scope.dispose();scope.bind(session??null,projectId);}
  useEffect(()=>()=>scope.dispose(),[scope]);
  // Never show a prior scope's sensitive result in the render preceding an effect.
  const visible=useRef<{session:ControlSession|undefined;projectId:string;client:ApiClient}|null>(null);
- const currentView=visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
+ const currentView=visibleContext.current===context.current&&visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
  const b=buffer&&session&&buffer.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
  const pending=b?.pending??null,unresolved=!!pending&&pending.status!=='CONFIRMED';
  const configured=!!session&&!!onChange;
- const matches=(ticket:ControlTicket,binding:string|null)=>scope.current(ticket,binding)&&live.current.session===session&&live.current.projectId===projectId&&live.current.client===client;
- function start(binding:string|null=null){const ticket=scope.ticket(binding);visible.current={session,projectId,client};setView(v=>({...v,error:null,busy:true}));setTicketRevision(v=>v+1);return ticket;}
+ const matches=(ticket:ControlTicket,binding:string|null)=>{
+  if(!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
+  if(context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){scope.dispose();setTicketRevision(v=>v+1);return false;}
+  return live.current.session===session&&live.current.projectId===projectId&&live.current.client===client;
+ };
+ function start(binding:string|null=null){const ticket=scope.ticket(binding);ticketContexts.current.set(ticket,context.current);visibleContext.current=context.current;visible.current={session,projectId,client};setView(v=>({...v,error:null,busy:true}));setTicketRevision(v=>v+1);return ticket;}
  function fail(cause:unknown,ticket:ControlTicket,binding:string|null=null){if(!matches(ticket,binding))return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setView({...emptyView(),error});if(error.status===401)onAuthenticationLost();}
  function api(){if(!session)throw new ApiError('AUTH_REQUIRED',401);return new ControlApi(client.transport,session,projectId);}
  async function loadState(){const t=start();setView({...emptyView(),busy:true});try{const state=await api().state();if(matches(t,null))setView({...emptyView(),state});}catch(e){fail(e,t);}}
- async function loadList(view:'OWN'|'CONTROLLER',cursor:string|null=null){const t=start();setView(v=>({...v,list:null,request:null,summary:null,headNone:false}));try{const list=await api().list(view,cursor);if(matches(t,null))setView(v=>({...v,list,busy:false}));}catch(e){fail(e,t);}}
+ async function loadList(view:'OWN'|'CONTROLLER',cursor:string|null=null,index=0,retry=false){
+  const t=start();navigation.current.failed={view,cursor,index};
+  setView(v=>({...v,list:null,request:null,summary:null,headNone:false}));
+  try{
+   let state=currentView.state;
+   if(retry){state=await api().state();if(!matches(t,null))return;}
+   if(!state||view==='CONTROLLER'&&(state.control.state!=='HELD'||state.participation!=='OWNER'))throw new ApiError('REQUEST_FAILED',403);
+   const list=await api().list(view,cursor);if(!matches(t,null))return;
+   const history=navigation.current[view];history.cursors=history.cursors.slice(0,index);history.cursors[index]=cursor;history.index=index;navigation.current.failed=null;
+   setView(v=>({...v,state,list,busy:false}));
+  }catch(e){fail(e,t);}
+ }
  async function select(requestRef:ControlRef){const t=start();setView(v=>({...v,request:null,summary:null,headNone:false}));try{const request=await api().request(requestRef);if(matches(t,null))setView(v=>({...v,request,busy:false}));}catch(e){fail(e,t);}}
  async function loadSummary(){const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,summary:null,headNone:false}));try{const head=await api().head(selected.requestRef);if(!matches(t,null))return;if(head.head.state==='NONE'){setView(v=>({...v,headNone:true,busy:false}));return;}const result=await api().summary(selected.requestRef,head.head.summaryRef,selected.snapshot.expiresAt);if(matches(t,null))setView(v=>({...v,summary:result,busy:false}));}catch(e){fail(e,t);}}
  function edit(field:'reason'|'expiresAt',value:string){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);onChange(b?.bindingId??null,{...old,[field]:value});}
@@ -82,7 +99,9 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   <section aria-label="인수 요청 목록"><h3>인수 요청 목록</h3>
    <button type="button" disabled={!state||currentView.busy||!!currentView.error} onClick={()=>void loadList('OWN')}>내 요청 목록 조회</button>
    <button type="button" disabled={state?.control.state!=='HELD'||state.participation!=='OWNER'||currentView.busy||!!currentView.error} onClick={()=>void loadList('CONTROLLER')}>현재 제어자 요청 목록 조회</button>
-   {currentView.list?<><p>서버 관측 {currentView.list.observedAt} · {currentView.list.view}</p>{currentView.list.items.length===0?<p>확인된 요청이 없습니다.</p>:<ol>{currentView.list.items.map((item,index)=><li key={item.requestRef.id}><button type="button" disabled={currentView.busy} onClick={()=>void select(item.requestRef)}>요청 {index+1} 원문 확인</button> 생성 {item.createdAt} · 만료 {item.expiresAt} · {item.current.expired?'기한 경과':'관측 시점 기한 내'} · 기준 {item.current.baseControlState}</li>)}</ol>}{currentView.list.hasMore?<button type="button" disabled={currentView.busy} onClick={()=>void loadList(currentView.list!.view,currentView.list!.nextCursor)}>다음 요청 목록 조회</button>:null}</>:null}
+   {visibleContext.current===context.current&&navigation.current.failed?<button type="button" disabled={!configured||currentView.busy} onClick={()=>{const target=navigation.current.failed;if(target)void loadList(target.view,target.cursor,target.index,true);}}>같은 요청 목록 다시 조회</button>:null}
+   {currentView.list&&navigation.current[currentView.list.view].index>0?<button type="button" disabled={currentView.busy} onClick={()=>{const list=currentView.list!,history=navigation.current[list.view],index=history.index-1;void loadList(list.view,history.cursors[index]!,index);}}>이전 요청 목록 조회</button>:null}
+   {currentView.list?<><p>서버 관측 {currentView.list.observedAt} · {currentView.list.view}</p>{currentView.list.items.length===0?<p>확인된 요청이 없습니다.</p>:<ol>{currentView.list.items.map((item,index)=><li key={item.requestRef.id}><button type="button" disabled={currentView.busy} onClick={()=>void select(item.requestRef)}>요청 {index+1} 원문 확인</button> 생성 {item.createdAt} · 만료 {item.expiresAt} · {item.current.expired?'기한 경과':'관측 시점 기한 내'} · 기준 {item.current.baseControlState}</li>)}</ol>}{currentView.list.hasMore?<button type="button" disabled={currentView.busy} onClick={()=>void loadList(currentView.list!.view,currentView.list!.nextCursor,navigation.current[currentView.list!.view].index+1)}>다음 요청 목록 조회</button>:null}</>:null}
   </section>
   {request?<section aria-label="선택한 고정 요청"><h3>선택한 고정 요청</h3><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{request.snapshot.reason}</p><p>요청 사용자·기기 {request.snapshot.requestedBy.actorId} / {request.snapshot.requestedBy.clientId}</p><p>요청 만료 {request.snapshot.expiresAt} · 서버 관측 {request.observedAt} · {request.current.expired?'기한 경과':'관측 시점 기한 내'} · 현재 기준 {request.current.baseControlState}</p>
    <button type="button" disabled={!canPrepare} onClick={prepareSummary}>미확인 요약 준비 명령 보존</button>

@@ -11345,3 +11345,7 @@
 - 독립Reviewer가기존OWN/CONTROLLER GET의단방향·실패view/cursor유실누락을확인했다. 실목록389737→literal e17a2a에서제품F1AB74EB/신규시험부재를확인했다. fail이현재제어상태도지우므로기존fail-closed를유지하고실패target/history만보존·필요한현재state GET을새로확인하는범위로WI FN15_CONTROL_REQUEST_PAGINATION_SOURCE_IMPLEMENTATION_20261101.md exact2를고정한다. 실제수락·권한·제어전환·DB키서비스Agent0/명령buffer불변/POST0이며FN16/FN06미채택대기는별도다.
 
 - FN15/UI12 WI A950E5B4 사전독립C0/I0:현재state/목록/상세를지우는fail-closed·최신state뒤권한조건검사·OWN/CONTROLLER분리·성공history/실패target·원문재선택·부모buffer/POST0과정확2범위를확인했다. 실제수락/제어이전은제외·기존Primary구현중/Main제품write0이다.
+
+- FN15 genuineRED22650c: 고정Node의신규React시험이실제현재제어HELD→OWN정상첫/다음목록을기존decoder로통과한뒤이전요청버튼0≠1,0PASS1FAIL/exit1·716.8706ms를확인했다. loader/fixture준비실패아님. 같은허용2에서성공history/실패target·state fail-closed·원명령보존을구현중이며livehandle0/Main제품write0·실환경0이다.
+
+- FN15 최종동결소유반환: Page255F7815/test444010CB,Primary9ea2d3 신규8+pureAPI7=15PASS/1129.1481ms·정확type0. Mainaad63f 이름필터없이정확2시험파일 fresh15PASS/0FAIL/SKIP/CANCEL/TODO·761.8452ms/type/diff0·시작끝2지문동일,fa6bc7 실제diff대조·독립최종exact2C0/I0. 실패state삭제·freshstate선행/CONTROLLER상실거절·OWN이력분리·UNKNOWN원형/목록POST0을확인했다. Primary/Reviewer sandbox diff조회오류는증거에서제외·Main검사와분리하고실서명/브라우저/PG/수락/이전·실권한키서비스Agent는미실행이다. 결과 FN15_CONTROL_REQUEST_PAGINATION_RESULT_20261101.md에정확반례/검사/오류/미검증/복구를기록해제품2+결과/PLAN/STATUS3만통합하며전체계획미완료·merge0이다.
