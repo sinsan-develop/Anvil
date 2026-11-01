@@ -1872,3 +1872,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-02 FN06 완성형 환경 승인 원문 보완의 소스/합성 검수는 docs/04_test_reports/AV3/FN06_ENVIRONMENT_APPROVAL_PAYLOAD_SOURCE_RESULT_20261102.md를 따른다. 실제DB·권한·키·서비스·Agent·실자료/실브라우저·사용자인수는 미실행이며 전체FN06/UI11/계획 미완료다.
 
 - 2026-11-02 UI02 생성후·소비초안재진입의 기존UI11 도구·환경설정 명시링크 소스보완을 완료했다. MainSSR9PASS/type/diff0·독립C0/I0·제품d2595b98, 실제browser/served/DB·전체UI02미완료. UI02_CREATED_PROJECT_ENVIRONMENT_ENTRY_20261102.md 검수결과/WORK_STATUS 참조.
+
+- 2026-11-02 FN06/FN08 writer 권위 B안과 저장 한도 A안은 직접 source-only 채택됐다. 코드·미적용SQL·합성검증을 기존Primary 단일writer로 진행하며 actual권위/실DB·권한·키·서비스·Agent·실자료/P03R3는 제외한다. 직접승인기록/현재WORK_STATUS를 따르고 전체업무미완료를 유지한다.

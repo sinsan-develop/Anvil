@@ -11846,3 +11846,11 @@ git diff --check
 - 같은 미채택 조건이 세 연속 goal turn에 유지됐다. 첫 turn은507B/생성후링크를완료한뒤새writer계약의필요결정을PMO에전달했고, 둘째는결정없음/기존방법론편집의독립누락미확정, 셋째c0556f/PMOcursor38도새채택답변없음이다. 두기존담당자는completed/livehandle0이며이를실행중대기라고표시하지않는다.
 - 현HEAD05140d60/tracked clean, 부모BF19670D와한도A74FF95E의지문불변을실제읽기확인했다. 현재새2표·API/purpose/원문소비의source계약은미승인이고실제효과제외도유효하다. 이미수행한검사를다시실행하거나합성연결을실제권위로승격하지않는다.
 - 목표는미완료·BLOCKED로기록한다. 정확한재개조건은PMO기존질문의①부모B+한도Asource채택/②회수예약우선상세화/③현행유지에대한명시답변을받아선택범위·제외·필수선행을다시결박하는것이다. 새질문/세션/예약·코드/SQL/실환경실행0이며전체source/계획완료주장은없다.
+
+## 2026-11-02 writer 권위 B·저장 한도 A 직접 채택·재개
+
+- 신산님이 부모BF19670D B와 한도A74FF95E A의 코드·미적용SQL·합성검증을 직접 승인했다. FN06_WRITER_AUTHORITY_SOURCE_APPROVAL_20261102.md에 원문·대상·제외를 보존한다. 이전차단은당시이력이며해당source계약채택조건이해소됐다.
+- 시작2d595c78 local/private동일·tracked clean/보호3보존, 실제DB·권한·키·서비스·Agent·실자료/P03R3·actualgrant/강제수단제외를유지한다. 기존Primary에게쓰기전최소구현매핑/허용경로를준비시켰고 Main이 exact WI결박후단일writer TDD를진행한다. 새서명키·실credential·공급자/OS실행을전제하지않는다.
+- A의회수전용예약부재·포화시새회수사실미수용과원행보존/다음writer차단을그대로구현하며몰래예약안으로바꾸지않는다. 이미검수된환경원문승인/UI02링크/방법론편집은재실행하지않는다. 현재단계는로컬·WSL 기능구현의source-only범위이며전체완료가아니다.
+
+- writer WI FN06_WRITER_AUTHORITY_SOURCE_IMPLEMENTATION_20261102.md SHA01EB3380A9FB32B61BF6B67E8EEA2C746EB1E322132B0EC254FC39198C081852를 정확11경로/WA-1→2→3로 고정했고 독립 preflight C0/I0다. Primary 읽기준비도 완료했으며 첫반례는기존buildApp의누락route404로확보해신규모듈loader부재와분리한다. 인접시험파일의존재미확인조회준비오류1은실제목록으로교정하고제품실패로계산하지않는다. Main게시commit이기준이며동일Primary만제품/시험writer로전환한다.
