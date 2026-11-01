@@ -11854,3 +11854,59 @@ git diff --check
 - A의회수전용예약부재·포화시새회수사실미수용과원행보존/다음writer차단을그대로구현하며몰래예약안으로바꾸지않는다. 이미검수된환경원문승인/UI02링크/방법론편집은재실행하지않는다. 현재단계는로컬·WSL 기능구현의source-only범위이며전체완료가아니다.
 
 - writer WI FN06_WRITER_AUTHORITY_SOURCE_IMPLEMENTATION_20261102.md SHA01EB3380A9FB32B61BF6B67E8EEA2C746EB1E322132B0EC254FC39198C081852를 정확11경로/WA-1→2→3로 고정했고 독립 preflight C0/I0다. Primary 읽기준비도 완료했으며 첫반례는기존buildApp의누락route404로확보해신규모듈loader부재와분리한다. 인접시험파일의존재미확인조회준비오류1은실제목록으로교정하고제품실패로계산하지않는다. Main게시commit이기준이며동일Primary만제품/시험writer로전환한다.
+
+### writer B·한도 A 최초 기능 RED
+
+- 기준 ecc861121c86138e69b8a7f68edb74d1e893ad69 통제문서를 기존private branch에 게시했고, 기존Primary를followup_task로실제구현GO했다. 독립preflight C0/I0·단일writer/허용11이다.
+- Primary2aa8b8: Node --test tests/unit/FN06/project-writer-authority-routes.test.ts의기존buildApp current요청404≠503으로0PASS/1FAIL/native1·2104.1093ms. 명시 source검수의존성입구의기능누락이며신규모듈loader/fixture준비실패가아니다. 같은GO로schema→상태/용량→입구/SQL구현을계속한다. 실제DB·권한·키·서비스·Agent·실자료/P03R3는미실행이다.
+
+- WA-1 중간: Primary가 project-writer-authority-v1.ts의exact report/head/event·kind별payload·서명domain4·SourceScope재사용/유한한도를작성했고4b710b 계약3PASS/native0이다. e1162d의신규schema모듈부재는loader준비실패1로분리하며첫기능RED2aa8b8을대체하지않는다. 아직동결/전체검수전이며WA-2 원자journal/bootstrap·lease/CAS/포화모델을계속한다. 실효과0이다.
+
+- WA-1 부분동결: schema A8A97B78…931B7F9A/계약시험3D5543CC…13EDC4768,4b710b3PASS/native0·152.766ms. 기존Reviewer에게이두파일의exact/hash/domain/null·한도검토만맡겼고Primary는겹치지않는state/route를계속한다. state첫실행c217e6 8PASS/1FAIL은다른body반례가먼저구조거절돼기대오류코드와달랐던준비문제1로분리하고,정상구조의단일필드차이반례로보정한다. 아직전체기능합격/실권위지원아니다.
+
+- 0070 부분동결 SHA0ECEA5FE4EDFD39748C6FCE57F9C3121DADD1F64C92AA6E2081604C84A25ABDA,26bcbb source정적1PASS/native0·541.6613ms. 기존Reviewer에게이SQL의2표/참조·불변/CAS/한도·RLSfalse만검토시켰고Primary는모델/입구를계속한다. 실제PG/구문/OID/경합/권한적용은미검증이다.
+- 0f2ab0 기존buildApp+인증/회원/제어/정책의establish/current/replay·STATUS_ONLY/현재DENY·기본미등록route4PASS/native0, f0b5f1 준비물검산누락 reserve RED 뒤bf7a5b 정상/거절2PASS를제출했다. 중간결과를전체B/실제권위/Agent지원PASS로승격하지않는다.
+
+- 0070 독립정적 C0/I1/Maincde536확인:request FK가임의event도받고ACCEPTED report와원REQUESTED의purpose/nonce/scope/lease·상태event두관측ref의실ACCEPTED원행결박이부족해보고없는BOUNDARY_ESTABLISHED/head조합을SQL자체가거절하지못한다. 실제app우회관측은아니며현재RLSfalse유지다. 같은Primary에게SQL동결해제/round1을지시했다.
+- Main65291b의BEFORE guard만있는상태에서stateevent↔최종head완결과oldhead중간합계vs최종교체합계의64MiB경계차이를추가I2후보로확인하도록요청했다. 확정판정전후를분리하며구조반례/정적검사·모델을실PG검증으로승격하지않는다. 필요시동일0070의지연완결로좁게묶고새표/권한/실SQL0·기존원문보존을유지한다.
+
+- WA-2 부분동결: 모델507DB1A8…2E26585/시험FA464F93…9A2A3545,5ceb49 state16PASS/native0·7390.9772ms. bootstrap/CAS/lease·준비물·불명/한도·만료후fresh회수·조회/replay를기존Reviewer가모델한정검토중이다.
+- SQL round1 재동결7B5A9D74…958543C4: 원REQUESTED↔report/ACCEPTED↔상태event실행관계와최종stateevent↔head/최종합계의지연완결을추가했다. e5f7a8 구조정적RED2→d7f827 정적2PASS/native0·953.4366ms. 중간caec63 여분괄호loader준비오류1은보정했으며PG동작PASS는아니다. 기존시험의n>=10000 단언은전/후삽입시점차이로 n>10000으로갱신필요하나동결검토뒤수정한다.
+- Main bfc381은routes가SOURCE_ONLY_MODEL 인스턴스를소비함을확인했고 새2표 지속저장/재조회 및기존원명령/receipt/audit원자결박 소스의구현유무를분리반환하도록요청했다. actualDB실행제외를PG저장코드작성금지로추론하지않으며,없다면미구현으로기록하고승인B안연결을계속검토한다. bfc381의Windows와일드카드 rg경로오류1은읽기준비로분리하고구현판정근거로쓰지않는다.
+
+### 2026-11-02 FN06 writer B/A 독립 검토 보정 및 저장 source 완결
+- Main 어울/기존 Primary 단일 writer/기존 Reviewer. WA-2 모델 frozen507DB1A8·시험FA464F93에 C0/I2: 저장 replay 결과 변조 수용, 공통 현재 기한을 bindings가 덮어쓰는 결함. 같은 Primary에게 최소 RED→GREEN 보정 지시, 모델/state 시험 동결 해제. 실제 권위·DB 우회 관측이 아닌 합성 모델 결함이다.
+- SQL0070 7B5A9D74의 원 요청/두 보고 결박 및 deferred 최종 head/용량 보완은 재검토 확인. 추가 C0/I1: ACTIVE의 정확 headRef를 사용하는 새 lease RESERVED 전이에 원 head phase/기한 제한이 없어 회수 없이 교체 가능. Main86·121~126·142~148 대조 후 같은 Primary에 전이 guard 보정 지시. source 정적 결함이며 RLSfalse·실제 SQL 미실행 유지.
+- 메모리 모델만으로 승인 B 저장 구현을 완료했다고 하지 않는다. WI §8에 동일 허용11경로의 PG 저장/재조회 adapter source·동일 Tx 실제 명령/영수증/감사 결박·불변 intent로 hash 순환 방지·원 replay와 현재 조회 분리·기본 미등록을 내부 구현 방법으로 기록했다. WI 최신 SHA AEEF19024FF87327575EA751D48674AF613D34EC5A2D235677F048BD5D511F17. Primary가 실제 저장 source 부재를 확인하고 보완한다. 실제 DB/권한/키/서비스/Agent/실자료/P03R3 실행0.
+- 현재 HEAD ecc861121c86138e69b8a7f68edb74d1e893ad69 유지. 제품/시험 변경은 기존 승인 writer 소유, Main은 WI/현황만 수정. 기존 보호 untracked3 보존. 다음은 같은 담당자의 보정 및 저장 adapter source 구현→독립 scoped 검수→Main fresh 영향 검증이다. 전체 FN06/FN08/작업계획 미완료.
+### 2026-11-02 FN06 writer 보정 중간 증거
+- Primary 모델 I1/I2 de4b88 0PASS2FAIL→793c97 직접4PASS/native0/1190.9899ms 제출. 저장 replay 결과 닫힌 구조/false4/원 요청/역사 head 재구성 및 최종 공통 기한 clamp 보완. PG adapter 연결 중으로 모델 아직 최종 동결/독립 재검수 전이며 Main PASS로 승격하지 않는다.
+- SQL lifecycle round2 SHA33609EB5923C08EB552A5032C4E2B787D65EA30AADECE971CE1BEED3A9567960, Primary159ea1 반례RED1→1620b7 정적3PASS/native0/996.8425ms 제출. 기존 Reviewer scoped 검수 진행. 실제SQL/DB 미실행.
+- WI §8 저장 결박 방법의 독립 사전 검토 C0/I0. 불변 intent→동일Tx 원 command/receipt/audit→event/head는 허용 source 내부 구현으로 판정. 외부commandId/serverCommandId 구분·동일원감사 검산·COMMIT 성공 전 반환 금지·원 replay 불변 유지·reserve 원명령 보존을 Primary에 전달했다. 제품 구현의 합격 판정은 아직 아니다.
+- Main 보호 untracked3 및0059/0065/0067 SHA256을 재조회해 기존 지문과 일치 확인. 실제 사용자 자료/백업/DB/키/서비스/Agent/P03R3 조사·실행0. 다음은 저장 source slice 제출과 scoped 검수이다.
+### 2026-11-02 FN06 writer SQL round2 해소·저장 연결 진행
+- 기존 Reviewer의 SQL33609EB5923C08EB552A5032C4E2B787D65EA30AADECE971CE1BEED3A9567960 scoped C0/I0 수신. RESERVED 원phase/기한·새lease, REVOKE 원lease/run, 기존 보고 결박·최종 head/용량 보존 확인. 실제PG구문/trigger/경합 검증은 하지 않았다.
+- Primary가 동일 신규 모듈 안의 PG adapter #proofs/#load/#save/current/command/acceptObservation 본문을 작성 중. ce03c1의 import/helper 위치 문자열 불일치로 앞 보조 연결이 누락된 준비 오류1을 보고했고 현재 줄 대조 후 국소 연결한다. 합성 기능 RED나 DB 실패로 분류하지 않는다. 남은 것은 타입 준비·route persistence 의존성·fake PoolClient 정상/rollback/commit불명/replay 검수. 아직 구현 미완결/독립검수 전이며 Main은 동시 code write0·추가시험0, 실제 제외 실행0이다.
+### 2026-11-02 FN06 writer 고정 계약 Main 독립 검증
+- Main31ab3c: node --test tests/unit/FN06/project-writer-authority-contract.test.ts tests/unit/FN06/registration-proof.test.ts →6PASS/native0/179.952ms, skip0. 동결된 WA1 exact/null/hash/domain 계약과 기존 고정 등록 서명 벡터의 직접 회귀만 확인했다. 실제키 생성/등록·Agent·DB 실행0.
+- 이 두 파일과 해당 source 불변이면 최종 검수에서 반복 실행하지 않는다. 변경 중인 상태/저장 adapter/API는 아직 별도 제출·검수 전이다. 전체 B source/계획 완료 판정은 하지 않는다.
+### 2026-11-02 FN06 writer 인접 검증 범위 보정
+- Primary가 기존 ownership-preparation-receipt fixture의 중첩 archive fixture 내부 generateKeyPairSync 호출을 보고했다. Main10e772로 intent 시험도 같은 receipt fixture를 부르는 것을 확인했다. 실제 등록키가 아닌 시험용 키 생성이지만 이번 고정 벡터 중심 source 검수에서는 intent/receipt 두 기존 시험을 실행하지 않고 NOT_RUN으로 남긴다. 기존 fixture를 변경하거나 키 생성 동작을 고정키 재사용으로 보고하지 않는다.
+- Main의 고정 계약·등록 proof6PASS는 유지한다. 남은 선정은 새 state/routes 및 FN11 approval-input·type/diff이며, 실제 D1 reader 정상 저장 근거가 새 시험에서 미확인이면 별도 미확인으로 기록한다. 기존 reader 코드 연결과 실제 권위·DB 검증 완료를 혼동하지 않는다.
+### 2026-11-02 FN06 writer 저장 slice Main 검증·독립 검토 진행
+- Primary PG adapter/model ED0925F2FE96F09DD72A559A38C62F9666EB8D5099571223778E4C11F3617C73 및 routes031E2E5C·approvalsD5CDDDC8·state시험4240A3FF·routes시험61F46BA1 동결 제출. 원 명령/영수증/audit proof와 새2표 저장/CAS·새instance GET·원 intent replay·내부 원preparation+별도plan reader 연결 source를 작성했다. 실제 공급자/DB/권한/OS는 미등록·미검증이다.
+- Main555657: node --test tests/unit/FN06/project-writer-authority-state.test.ts tests/unit/FN06/project-writer-authority-routes.test.ts tests/unit/FN11/approval-input.test.ts →41PASS/native0/7092.5355ms/skip0. Main765244: tsc --noEmit -p tsconfig.base.json 및 git diff --check exit0. 기존3파일 CRLF→LF Git 경고는 별도이며 설정/ACL 변경0이다. 앞선 고정6PASS와 합산47건이나 실제PG/인수 PASS가 아니다.
+- 기존 Reviewer가 WA2 I1/I2·PGproof/Tx/API 최종 source를 검토 중이며, REQUIRE_APPROVAL을 persistProjectReceipt로 소비한 뒤 current가 같은 승인을 미소비로 다시 검사해 정상 변경을 rollback할 수 있는 Important 후보를 발견했다. Main4304ec로 해당 순서 대조, 확정 반례/최종 findings를 기다려 같은 Primary가 최소 보정한다. 아직 전체 source 합격/완료 판정 아님. 실제 제외 실행0.
+### 2026-11-02 FN06 writer PG 일회 소비 재검사 결함 보정
+- 최종 독립 검토 ED0925 slice C0/I1: persistProjectReceipt가 정상 REQUIRE_APPROVAL 소비를 저장한 뒤 두 번째 current가 consumption=null을 다시 요구해 정상 명령도 rollback하는 결함 확정. 같은 basis 비교의 자기소비 변화도 함께 처리해야 한다. Main이84/164→89/153→approval 검사 순서를 대조했고 기존 Primary에게 정상 승인 반례 RED→GREEN·정확 원명령/server command/receipt의 자기소비만 후속 재검산하도록 지시했다. 일반 승인 소비전 검증·DENY·기한을 완화하지 않는다. 이 새 원인 보정1회이며 앞서 해소된 WA2/SQL 원인과 별도다.
+- Reviewer는 WA2 결과변조/기한 결함 해소 및 실제 PG adapter source·원 proof·비순환intent·동일Tx 2표 저장/재조회·기본 미등록을 확인했다. Main 추가로 관측 저장 후 current 재검사 부재 가능성을 기존 Reviewer/Primary에 좁혀 확인하도록 했다. 아직 확정하지 않았으며 실제DB 우회나 권위 성공으로 보고하지 않는다.
+- 기존47PASS는 해당 동결본의 선정 합성 증거로 보존하되 중요 보정 후 변경 영향 검사를 다시 수행한다. 전체 source 완료/계획 완료·main병합·배포0, 실제DB/권한/키/서비스/Agent/실자료/P03R3 실행0.
+### 2026-11-02 FN06 writer PG 후속 보정 반례 상태
+- 관측 저장 뒤 현재성 결함은 독립 추가 C0/I1 확정: model최종current 뒤 #save/#load만 수행해 외부등록회수/기한소진을 postcheck하지 않는다. 같은 Primary1edc17에서 두번째 보고 저장 뒤 등록회수인데도 reject하지 않는 genuine RED 확보. 같은 Tx rollback·기한/current 재검산을 보완한다.
+- 승인 소비 결함의 초기 대역은 실제 consumption INSERT 전에503이어서 genuine RED가 아니다. 실제 기존 #history SQL은 SELECT ac.*,c.command_id로 시작하나 대역이 SELECT ac.*,c.operation만 처리한 준비원인1(관측2회)을 확인, prefix 모형을 맞춘 뒤 소비 후 반례를 확인한다. 제품 승인 기준은 이 준비오류를 이유로 변경하지 않는다. 동일 정식 실패3회로 세지 않는다. live0·동일 Primary 보정 중·Main 동시writer0·실제 제외실행0.
+### 2026-11-02 FN06 writer B/A source 최종 검수·제품 checkpoint
+- 기존 Primary가 두PG 결함의 genuine RED(승인829ea8, 관측1edc17)→a6da7a 직접4PASS 및 type4d16bc exit0로 보정·동결·writer 반환/live0. 독립 scoped 재검토는 두finding 해소 C0/I0다. 일반 consumption=null 검사 유지·정확 자기소비만 postcheck, 관측저장 뒤 원HUMAN/source현재성/기한 재검사와 전체Tx rollback을 확인했다.
+- Mainc80c9a 새state/routes 최종40PASS/native0/skip0/6565.57ms, 93ad05 tsc noEmit·diff0. 앞선불변계약/등록6PASS와FN11입력5PASS는 별도 보존하고 중복실행을 더하지 않는다. 실제DB·인수 PASS 아님.
+- 기존수정3와신규계약/시험2의 개행만 Primary806f4a/2fc15f에서LF로정규화했다. before.replace(CRLF,LF)===after·다른바이트변경0, 보호fixture/원본SQL/설정변경0. Main70f6d7의 함수저장값 소실로paths undefined인 지문검사 준비오류1은173554의명시10경로raw/stagedblob일치10/불일치0으로해소했다. 기능실패아님.
+- 제품commit77352ea8bc90bbfe7f64fd65126b839c9c3a6da8, ecc861121c86138e69b8a7f68edb74d1e893ad69 직접자식,정확10경로·594추가/3삭제. Main659ec0에서게시전private StageB=ecc861·원격main=f976ed5e29e14b13e12729d5b1ccf98f050f2210·localmain0443043251d25aa77c17d23165b7c9299c8dbeb8 확인. 아직이기록시점새checkpoint미게시다.
+- 결과 docs/04_test_reports/AV3/FN06_WRITER_AUTHORITY_SOURCE_RESULT_20261102.md SHA16BCA54CE278C2BF44D896BA813C33FB6143FCEB6DC7E7FF07AAF20F143E9ABB를정본/현재source에동일작성하고계획에source검수만반영했다. SQL0070미적용/RLSfalse·기본source미등록/실행false유지, actual공급자·grant소비/OS강제·D1정상생산예약·실DB/경합·App/browser인수미검증. 실제DB/권한/키/서비스/Agent/실자료/P03R3실행0, 전체계획미완료다. 다음은문서사실대조→정확문서checkpoint/private게시대조→다음미완료source선정이다.

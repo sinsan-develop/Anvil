@@ -1874,3 +1874,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-02 UI02 생성후·소비초안재진입의 기존UI11 도구·환경설정 명시링크 소스보완을 완료했다. MainSSR9PASS/type/diff0·독립C0/I0·제품d2595b98, 실제browser/served/DB·전체UI02미완료. UI02_CREATED_PROJECT_ENVIRONMENT_ENTRY_20261102.md 검수결과/WORK_STATUS 참조.
 
 - 2026-11-02 FN06/FN08 writer 권위 B안과 저장 한도 A안은 직접 source-only 채택됐다. 코드·미적용SQL·합성검증을 기존Primary 단일writer로 진행하며 actual권위/실DB·권한·키·서비스·Agent·실자료/P03R3는 제외한다. 직접승인기록/현재WORK_STATUS를 따르고 전체업무미완료를 유지한다.
+
+- 2026-11-02 FN06 writer 권위 B·저장 한도 A source 검수: 코드77352ea8bc90bbfe7f64fd65126b839c9c3a6da8의 정확10경로에 event/head 계약·모델·원 명령/영수증/감사와 같은Tx의 PG 저장/조회 adapter source·보호 API·0070 미적용SQL을 연결했다. Main최종40PASS/native0/type·diff0와 불변 계약/등록6·별도 승인입력5의 선정 증거, 독립 보정 최종C0/I0를 결과 docs/04_test_reports/AV3/FN06_WRITER_AUTHORITY_SOURCE_RESULT_20261102.md(SHA16BCA54CE278C2BF44D896BA813C33FB6143FCEB6DC7E7FF07AAF20F143E9ABB)에 기록한다. 실제 DB/권한/키/서비스/Agent/실자료/P03R3 실행0, 실제D1 정상예약종단/권위공급자/OS/사용자인수는 미검증·미구현이다. 포화면 회수기록도 거절될 수 있는 A의 한계 유지. source 검수이며 전체 FN06/FN08/Stage B/계획 완료로 표시하지 않는다.

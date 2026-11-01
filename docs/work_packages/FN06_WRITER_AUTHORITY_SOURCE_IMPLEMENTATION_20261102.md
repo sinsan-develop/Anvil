@@ -56,3 +56,9 @@ WA-1 exact DTO/hash/domain/명시 null·한도; WA-2 bootstrap/CAS/lease·revoke
 ## 7. 제출·미검증·복구
 실제 변경파일/diff/hash·명령/각 exit·RED/GREEN·준비오류/정식 실패 횟수·미실행·livehandle/QA·남은 작업을 반환하고 writer를 돌려준다. 단순 진행 문장을 COMPLETED로 쓰지 않는다. new dedicated QA root/파일·실서비스를 만들지 않는다.
 실제 권위/OS/provider·보호키/credential·DB/RLS/경합·실통신·Agent·사용자 인수·head 복구/재등록과 전체 FN06/FN08/WORK_PLAN은 남는 범위다. 복구는 새 source 비활성 보존 또는 정확 diff의 정상 revert 검토이며 reset/force/history rewrite·원문/실패 이력 삭제0이다.
+
+## 8. Main 내부 구현 구체화 — 2026-11-02
+승인 B의 source 저장 구현은 메모리 상태 모델만으로 완료되지 않는다. 동일 허용11경로 안에서 새2표의 PG 저장·재조회 adapter source와 기존 명령/허가 영수증/감사/일회 소비의 동일 authenticated transaction 연결을 구현한다. 실제 DB 접속·SQL 적용·권한 활성화는 하지 않는다.
+순환 hash를 방지하기 위해 원명령과 이전 상태에 결박되며 미래 event/head 참조를 포함하지 않는 불변 intent를 기존 영수증 대상으로 사용한다. 그 transaction에서 생성한 실제 command/receipt/audit fullref를 사건에 결박하고 최종 head CAS·완결·저장 한도를 검산한다. 모델 임시 참조를 실제 저장 증빙으로 사용하지 않는다. 원명령 replay는 고정 intent 영수증을 반환하고 현재 상태는 보호 GET으로 별도 재조회한다. commit 불명 상태를 메모리 성공으로 대체하지 않는다.
+reserve 내부 접점은 실제 원 preparation command와 별도 reservation plan을 받으며 공개 operation을 추가하지 않는다. 기본 app 의존성은 계속 미등록이고 RLS false·실제 공급자/credential 부재를 유지한다. fake PoolClient의 쿼리/원자 순서·rollback·재조회 시험은 합성 검증이며 실제 PG 내구성·권한·경합 검증이 아니다.
+이는 부모 B 및 직접 승인된 source-only 범위 안의 저장 결박 구현 방법 구체화이며 기능/공개 효과/실행 권한을 확장하지 않는다. §1의 부모 계약·직접 승인 hash는 유지한다. 앞선 §5 합산10GiB 모델과 실제 저장 한도 검산의 증거를 구분하며 기존 quota SQL은 변경하지 않는다.
