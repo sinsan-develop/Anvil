@@ -11813,3 +11813,11 @@ git diff --check
 
 - 새 FN06 승인 경로는 생성 전 환경 귀속 DTO나 FN09 실행 권위를 추가하지 않는다. 기존 Primary 한정 대조와 Main31b4f0/be6c25/702d58에서 생성 직후 및 소비 초안 재진입 nav에 환경 설정 링크가 없음을 확인했다. 생성 후 같은 보호 프로젝트 ID의 기존 UI11로 명시 이동하는 내부 연결만 기존 계획 범위에서 보완한다.
 - UI02_CREATED_PROJECT_ENVIRONMENT_ENTRY_20261102.md의 정확3제품/시험 경로를 기존 Primary에게 맡긴다. 새 API/SQL/권한/실행0, 기존버퍼/문맥보호 유지. 실제 Page SSR 정상·중요음성과 기존 GET·동적보호 증거 재사용, 새 browser spec 기대는 미실행으로 분리한다. 새로운 시험도구·범용화/전수검사0이며 실제 DB·키·서비스·Agent·실자료 제외를 유지한다.
+
+- Main 배정 오류1: 기존 Primary의 읽기 조사 완료 뒤 send_message만 전달했고 idle 담당자의 새 구현 턴을 followup_task로 시작하지 않았다. wait_agent timeout은 실행 중 작업의 검증된 대기로 취급하지 않는다. 실제 git diff0 및 interrupt_agent의 previous_status=completed로 실행 미착수를 확인했다. 이는 작업없음/사용자승인부족이 아니라 Main 배정 누락이다. 같은 담당자를 followup_task로 확정WI 구현 GO 재개했고 새agent/세션/제품직접쓰기0이다. 기존 완료조사 재실행/실환경 변경0, 이후 실제 agent 상태와 결과를 확인한다.
+
+### UI02 생성 후 환경 진입 소스 검수·통합
+
+- 기존 Primary의 실제 SSR0d8bae RED 뒤5311b1 9PASS/type0·동결3을 독립 C0/I0로 인수했다. Main26d061 SSR9PASS/native0·0901e1 type0·diff0·889498 실제Git blob3와검증바이트 mismatch0이다. 초기sandbox 준비 EPERM은 d86485의 Vite 임시설정번들 쓰기에서 발생한 환경 오류이며 ACL/기준완화 없이 같은 승인 개발검사로 확인했다.
+- 제품d2595b9856863423df3a7c911b16885d67636325 정확3경로. 기존생성직후/소비초안의같은검산projectId nav에 connections명시링크만추가했고계약/원문/명령/권한/자동실행0. WI 검수결과절에 지문/정확명령/미실행을 기록했다. 실제browser/served/DB·사용자인수·생성전환경/총괄선택·전체UI02는미완료다.
+- 새전용QA/livehandle0, 실DB·권한·키·서비스·Agent·실자료조사0. 기존원문/보호3/옛SQL과main을보존한다. 다음은 핵심Agent 실제연결에 남은 기존 계약·권위/통신 공급자 선행을 구체화하며, 합성 facade를 추가해 실제연결완료로대체하지 않는다.
