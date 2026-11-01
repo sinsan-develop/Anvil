@@ -1,3 +1,4 @@
+import {ProjectConnectionDefinitions} from '../connections/project-connection-definitions.ts';
 import {PreparationRecordSourceAdapter} from '../transfers/preparation-record-source-adapter.ts';
 import {PreparationRecordVerifiers} from '../transfers/preparation-record-verifiers.ts';
 import {ProjectTransferPreparationRecords} from '../transfers/preparation-records.ts';
@@ -177,9 +178,11 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const baselineCodec = new ProjectListCodec(value => options.repository.signProjectCursor('FEATURE_BASELINES:' + value));
   const contexts = new ProjectContexts(new ProjectContextSources({ confirmations: assignmentConfirmations, drafts: assignments, documents, knowledge, conversations }), assignmentConfirmations);
   const connectionCandidates = new ProjectConnectionCandidates(options.repository);
+  const connectionDefinitions=new ProjectConnectionDefinitions(options.repository);
+  app.get<{Params:{projectId:string;id:string;version:string}}>('/api/v1/projects/:projectId/connections/:id/versions/:version',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>{if([...new URL(request.raw.url??'','https://anvil.invalid').searchParams].length)throw new AuthFailure('INPUT_INVALID',400);return options.repository.authenticated(token(request),null,(db,actor)=>connectionDefinitions.read(db,actor,request.params.projectId,request.params.id,Number(request.params.version)));});
   const capabilityReports=new ProjectCapabilityReports(options.repository,connectionCandidates,documents);
   const responsibleSessions = new ResponsibleSessions(projectMethods, assignmentConfirmations, assignments, connectionCandidates);
-  const preparationRecords=new ProjectTransferPreparationRecords({transport:'PROTECTED_SOURCE',access:options.repository,verifiers:new PreparationRecordVerifiers(new PreparationRecordSourceAdapter({assignments:assignmentConfirmations,drafts:assignments,contexts,sessions:responsibleSessions,documents,knowledge,conversations}))});
+  const preparationRecords=new ProjectTransferPreparationRecords({transport:'PROTECTED_SOURCE',access:options.repository,verifiers:new PreparationRecordVerifiers(new PreparationRecordSourceAdapter({assignments:assignmentConfirmations,drafts:assignments,contexts,sessions:responsibleSessions,documents,knowledge,conversations,connections:connectionDefinitions}))});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/transfer-preparations/:id/versions/1',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);if(request.headers.authorization!==undefined)throw new AuthFailure('CONNECTOR_CREDENTIAL_SCOPE_DENIED',403);if([...new URL(request.raw.url??'','https://anvil.invalid').searchParams].length)throw new AuthFailure('INPUT_INVALID',400);return preparationRecords.read(token(request),request.params.projectId,request.params.id,1);});
   const resultReworkPreparation=new ProjectResultReworkPreparation({assignments:assignmentConfirmations,results,criteria:resultCriteria,reviews:resultReviews,sessions:responsibleSessions});
   const resultReworks=new ProjectResultReworks(resultReworkPreparation,responsibleSessions);
@@ -325,6 +328,7 @@ projects.post<{ Params: { projectId: string }; Body: ProjectCommand }>('/api/v1/
       if((sourceReadOperations as readonly string[]).includes(request.body.operation))return sourceReadGrants.command(token(request),csrf(request),request.body);
       if((sourceRootOperations as readonly string[]).includes(request.body.operation))return sourceRoots.command(token(request),csrf(request),request.body);
       if(request.body.operation==='recordCapabilityReport')return capabilityReports.command(token(request),csrf(request),request.body);
+      if(request.body.operation==='registerConnection'&&Object.hasOwn(request.body.payload,'definition'))return connectionDefinitions.command(token(request),csrf(request),request.body);
       if (['registerConnection', 'saveEnvironment'].includes(request.body.operation)) return connectionCandidates.command(token(request), csrf(request), request.body);
       if (trustRegistrationOperations.includes(request.body.operation as typeof trustRegistrationOperations[number])) return connectorRegistrations.command(token(request), csrf(request), request.body);
       if(request.body.operation==='requestApproval') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>approvals.request(db,actor,request.body,policyRef));

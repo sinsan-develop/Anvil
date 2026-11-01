@@ -1841,3 +1841,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 ### 2026-11-01 FN06 정의 저장 A·FN16 잠금 조회 r2 A 직접 채택
 신산님 직접 승인에 따라 FN06 후보 80A2E0C160D3F5DCDB161AECBDFE3F4CCE632716C33C71A7C26C188A35639B12의 exact 정의 등록·고정 보호 조회·UI11/FN14 연결과 FN16 후보 2B351AA71037E43474CF767962821578B1F5DF49600E832AA17AF3D26BD59881의 동일 transaction 잠금 보호 조회를 source-only로 채택한다. 원 후보의 미채택 표기는 당시 이력으로 보존한다. 실제 DB·권한·키·서비스·Agent 실행은 제외하며 계약 채택과 실제 기능 인수는 구분한다. 기존 Primary 단일 writer가 FN06→FN16 순차 구현하고 Main이 독립 검수·통합한다. 상세 허용 경로·검증·미적용 SQL은 docs/work_packages/FN06_CONNECTION_DEFINITION_SOURCE_IMPLEMENTATION_20261101.md 및 FN16_EXPORT_LOCKED_METADATA_READER_SOURCE_IMPLEMENTATION_20261101.md를 따른다. 전체 작업계획은 미완료다.
+
+- **2026-11-01 FN06 ConnectionDefinition A source 검수**: 후보를보존한정의등록→기존AUTO/별도REQUIRE일회소비→불변저장/고정보호GET·UI11/FN14정확target선택을연결했다. 별도canonical상한과기존원장합산cap·감사완결/UNKNOWN을보존했다. Main최종8파일66PASS/type/diff0·독립C0/I0,0065.pending미적용. 실제DB/권한/RLS/경합·브라우저·실도구/인계/Agent/전체FN06·FN14·계획미완료. 결과 docs/04_test_reports/AV3/FN06_CONNECTION_DEFINITION_SOURCE_RESULT_20261101.md (SHA256 80D7E96782E77E12ED7AD9E3DADAA98A926382BE4067790D746E9DFD07B1FBEE). 다음FN16동일Tx잠금reader를기존Primary가순차구현한다.

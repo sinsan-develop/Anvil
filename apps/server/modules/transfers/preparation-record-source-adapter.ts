@@ -1,3 +1,4 @@
+import {ProjectConnectionDefinitions} from '../connections/project-connection-definitions.ts';
 import type {PoolClient} from 'pg';
 import type {AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
@@ -13,16 +14,18 @@ import {cloneV1,type RuntimeRefV1} from '../../../../contracts/runtime/validatio
 import {preparationFailure,preparationHash,type PreparationPayload,type PreparationSource} from './preparation-record-input.ts';
 
 type Scope={db:PoolClient;actor:AuthenticatedIdentity;projectId:string};
-type Readers={assignments:ProjectAssignmentConfirmations;drafts:ProjectAssignmentDrafts;contexts:ProjectContexts;sessions:ResponsibleSessions;documents:ProjectDocuments;knowledge:ProjectKnowledge;conversations:ProjectConversations};
+type Readers={assignments:ProjectAssignmentConfirmations;drafts:ProjectAssignmentDrafts;contexts:ProjectContexts;sessions:ResponsibleSessions;documents:ProjectDocuments;knowledge:ProjectKnowledge;conversations:ProjectConversations;connections?:ProjectConnectionDefinitions};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const exact=(actual:unknown,expected:unknown)=>{if(!same(actual,expected))preparationFailure('VERSION_CONFLICT',409);};
 /** Route가 보유한 실제 보호 클래스만 capture한다. 인증/transaction/원문 저장을 새로 만들지 않는다. */
 export class PreparationRecordSourceAdapter {
  readonly transport='SYNTHETIC_ONLY' as const;
+ readonly #connections:ProjectConnectionDefinitions|null;readonly #connectionRead:ProjectConnectionDefinitions['read']|null;
  readonly #readAssignment:ProjectAssignmentConfirmations['read']; readonly #currentDraft:ProjectAssignmentDrafts['current'];
  readonly #readContext:ProjectContexts['read']; readonly #readRole:ResponsibleSessions['readRole']; readonly #readBinding:ResponsibleSessions['readBinding'];
  readonly #document:ProjectDocuments['version']; readonly #text:ProjectDocuments['originalText']; readonly #knowledge:ProjectKnowledge['read']; readonly #message:ProjectConversations['readMessage'];
  constructor(r:Readers){
+  this.#connections=r.connections instanceof ProjectConnectionDefinitions?r.connections:null;this.#connectionRead=this.#connections?ProjectConnectionDefinitions.prototype.read.bind(this.#connections):null;
   for(const [value,Type] of [[r.assignments,ProjectAssignmentConfirmations],[r.drafts,ProjectAssignmentDrafts],[r.contexts,ProjectContexts],[r.sessions,ResponsibleSessions],[r.documents,ProjectDocuments],[r.knowledge,ProjectKnowledge],[r.conversations,ProjectConversations]] as const)if(!(value instanceof Type))preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
   this.#readAssignment=ProjectAssignmentConfirmations.prototype.read.bind(r.assignments);this.#currentDraft=ProjectAssignmentDrafts.prototype.current.bind(r.drafts);
   this.#readContext=ProjectContexts.prototype.read.bind(r.contexts);this.#readRole=ResponsibleSessions.prototype.readRole.bind(r.sessions);this.#readBinding=ResponsibleSessions.prototype.readBinding.bind(r.sessions);
@@ -39,7 +42,7 @@ export class PreparationRecordSourceAdapter {
  async lock(s:Scope,parents:readonly {kind:string;id:string;version?:number}[]){
   await projectMember(s.db,s.actor,s.projectId,true);
   const sql:Record<string,string>={ASSIGNMENT:'SELECT id FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE',contextRef:'SELECT id FROM anvil.context_bundles WHERE project_id=$1 AND id=$2 FOR SHARE',roleRef:'SELECT role_id FROM anvil.project_roles WHERE project_id=$1 AND role_id=$2 FOR SHARE',oldBindingRef:'SELECT binding_id FROM anvil.role_bindings WHERE project_id=$1 AND binding_id=$2 AND version=$3 FOR SHARE',DOCUMENT_VERSION:'SELECT id FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR UPDATE',KNOWLEDGE_VERSION:'SELECT id FROM anvil.knowledge_entries WHERE project_id=$1 AND id=$2 FOR UPDATE',CONVERSATION:'SELECT id FROM anvil.conversations WHERE project_id=$1 AND id=$2 FOR UPDATE',USER_INSTRUCTION:'SELECT id FROM anvil.conversation_messages WHERE project_id=$1 AND id=$2 FOR SHARE'};
-  for(const parent of parents){if(parent.kind==='targetConnectionRef')preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);const q=sql[parent.kind];if(!q)preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);if(!(await s.db.query(q,parent.kind==='oldBindingRef'?[s.projectId,parent.id,parent.version]:[s.projectId,parent.id])).rows.length)preparationFailure('NOT_FOUND',404);}
+  for(const parent of parents){if(parent.kind==='targetConnectionRef'){if(!this.#connections)preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);if(!(await s.db.query('SELECT id FROM anvil.agent_connections WHERE project_id=$1 AND id=$2',[s.projectId,parent.id])).rows.length)preparationFailure('NOT_FOUND',404);continue;}const q=sql[parent.kind];if(!q)preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);if(!(await s.db.query(q,parent.kind==='oldBindingRef'?[s.projectId,parent.id,parent.version]:[s.projectId,parent.id])).rows.length)preparationFailure('NOT_FOUND',404);}
  }
  async assignment(s:Scope,ref:RuntimeRefV1,options?:{fresh:boolean}){
   const value=await this.#readAssignment(s.db,s.actor,s.projectId,ref.id,ref.version);exact(value.ref,ref);
@@ -55,7 +58,7 @@ export class PreparationRecordSourceAdapter {
   else {const rows=(await s.db.query("SELECT binding_id,version,content_hash FROM anvil.role_bindings WHERE project_id=$1 AND role_id=$2 AND snapshot_json->'assignmentRef'=$3::jsonb AND snapshot_json->'roleRef'=$4::jsonb ORDER BY binding_id,version LIMIT 1 FOR SHARE",[s.projectId,ref.id,canonicalJson(payload.assignmentRef),canonicalJson(ref)])).rows; if(!rows.length)preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);const row=rows[0];binding=await this.binding(s,{id:row.binding_id,version:Number(row.version),contentHash:row.content_hash});}
   exact(binding.roleRef,ref);exact(binding.assignmentRef,payload.assignmentRef);return {projectId:s.projectId,ref:value.ref,assignmentRef:binding.assignmentRef};
  }
- async target(_s:Scope,_ref:RuntimeRefV1):Promise<never>{return preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);}
+ async target(s:Scope,ref:RuntimeRefV1){if(!this.#connections)preparationFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);const value=await this.#connectionRead!(s.db,s.actor,s.projectId,ref.id,ref.version);exact(value.ref,ref);return{projectId:s.projectId,ref:value.ref,kind:'REGISTERED_CONNECTION' as const,support:'UNVERIFIED' as const};}
  async source(s:Scope,source:PreparationSource){
   if(source.kind==='DOCUMENT_VERSION'){const v=await this.#document(s.db,s.actor,s.projectId,source.ref.id,source.ref.version);exact({id:v.id,version:v.version,contentHash:v.contentHash},source.ref);await this.#text(s.db,s.projectId,v.content.body);}
   else if(source.kind==='KNOWLEDGE_VERSION'){const v=await this.#knowledge(s.db,s.actor,s.projectId,source.ref.id,source.ref.version);exact(v.ref,source.ref);}

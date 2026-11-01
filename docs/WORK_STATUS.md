@@ -11380,3 +11380,15 @@
 - FN06 제품 구현 중 첫 source 저장 b0c732를 수신했다. 입력/저장·고정 reader와 route/operation/FN14 접점은 작성 중이며 아직 GREEN/완료가 아니다. Primary의 문서 API/approval 경로 추정 및 literal glob 준비 읽기 오류는 제품 오류와 분리한다. 기존 목록/import로 확인된 경로만 사용하도록 전환했고 추정 조회 재시도는 중단했다. 실제 SQL/DB·권한·키·서비스·Agent 실행0이다.
 
 - FN06 기존 승인 준비 소비 누락을 확인해 decisions/api.ts를17번째 허용경로로 보완했다. 시작3A7C2E34·WI E66FA028의Main보완1에 후보/기한/원명령 결박 보존을 고정했고 독립검토 C0/I0다. 신규API/승인유형/expiry필드/실환경효과0, Primary 구현을 계속한다.
+
+- FN06 작성 중 server/SQL6개 snapshot 독립 검토 C0/I1: 0065 guard가 command/receipt와 정의는 대조하지만 원audit 정확1행 완결을 강제하지 않아, 감사 없는 저장 후 보호GET503 가능성이 있다. 같은Tx deferred audit/operationId·scopeDigest·actor/client/target/policy 검산과 누락/변조 반례를 기존 Primary에게 지시했다. 중간6지문은 시작/끝동일이며 최종동결검수는 별도다. Reviewer의 승인모듈 경로 조회 오류1은 근거에서 제외했다. 실제SQL/DB/권한/서비스/Agent0이다.
+
+- FN06 Primary 진행 검증: 서버11조건·SQL정적3조건·React7조건을 각각 확인했다고 제출했고 최종 묶음/인접/type/메모리build·17지문 동결은 아직 반환 전이다. 같은PoolClient의 정의target reader와 실제 Panel 선택→준비, 원일회승인/재사용·정책/상한·GET실패/UNKNOWN/늦은401을 보강했다. 중간 제어fixture URL/DTO1·aria-label 대기1·SQL정적시험 따옴표/괄호 준비문법1·App선언순서/decoder narrowing 오류를 보정했으며 제품 성공과 분리 기록한다. Main f933d4의 sandbox git diff는 worktree 권한오류로 무효였고16c86a의 승인된 읽기 diff로 대조했다. 권한/설정 변경·같은 sandbox 명령 재시도0이다. 최종 fresh/독립검수 전 PASS 인수0이다.
+
+- Main FN06 동결본 검수 c6d8cd: 신규21+후보/정책·FN14 순수인접43=64PASS/skip0,6bc9a1 type/diff0·17지문을 대조했다. 이는source 합성범위이며 실PG/브라우저 증거가 아니다. 최종 독립 검토에서 I2 판독불가409를 명확거절로 오분류하는 UI 경계, I3 AUTO audit의 SQL NULL 대 JSONB null 비교로 정상 deferred proof를 거절하는 SQL 경계를 확인했다. 해당4경로 내 반례·보완을 기존 Primary에게 전달했고 미해결 finding이 있어 아직 통합/완료판정하지 않는다. Main제품write0·실환경효과0이다.
+
+- FN06 I2/I3 반례 보완 후 Primary 신규23PASS·최종React8PASS/type0·갱신5지문을 반환했다. Main 최종집중/인접 실행은 자동승인심사 기한초과로 처음 시작되지 않았고 도구가 허용한1회 재시도623de1에서 session52492를 받았다. 같은handle 2a5bc2로 최종66PASS/skip0·9055.513ms를 수집했으며 type/diff 후속은 같은handle에서 관측 중이다. timeout을 제품실패로 해석하거나 별도 실행을 중복 시작하지 않았다. 독립 scoped 재검토도 진행 중이며 실제DB/권한/키/서비스/Agent0이다.
+
+- FN16 TEST_ONLY c1b12f는 실제sourceRow의 정상문서/hash·귀속 뒤 기존artifacts FOR SHARE에서 권한모델42501 RED를 재현했다. 문서hash/첨부음성1PASS·원문잠금반례1FAIL/780.4368ms다. 끝의해시조회가wrapper exit0을만들어native 종료코드는NOT_CAPTURED로분리하고같은시험을다시실행하지않았다. 신규시험DC4A98FE·제품E1BE0569불변·0066미작성,실FS/DB/권한/키/서비스/Agent0·live0이다. canonical cwd에서source파일2부재준비오류121866은알려진source cwd로만교정했으며추정leaf/실FSfixture실행0이다.
+
+- FN06 최종 source 검수: 보완후 Main66PASS/skip0·type/diff0, 독립5개 scoped C0/I0·나머지12불변으로 I1/I2/I3를해소했다. 결과 FN06_CONNECTION_DEFINITION_SOURCE_RESULT_20261101.md SHA256 80D7E96782E77E12ED7AD9E3DADAA98A926382BE4067790D746E9DFD07B1FBEE. 리뷰 pending_init을실상태로확인해초기화만중단/동일Reviewer1회재개했고최종반환을받았다. FN06제품17동결을유지한채기존Primary가서로다른FN16 exact3을순차구현중이며Main제품write0이다. 통합commit은FN06 exact17+결과/계획/현황만포함하고FN16진행중변경/보호3은stage하지않는다. 실제DB·권한·키·서비스·Agent/전체FN06·FN14·계획완료/main병합0이다.

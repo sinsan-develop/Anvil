@@ -1,0 +1,120 @@
+-- FN06 A: source-only forward / 미적용. 기존 후보/원장 kind·수치 보존.
+CREATE TABLE anvil.agent_connections(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ head_version bigint NOT NULL CHECK(head_version=1),created_by uuid NOT NULL REFERENCES anvil.users(id),
+ created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),UNIQUE(project_id,id)
+);
+CREATE TABLE anvil.connection_definition_versions(
+ project_id uuid NOT NULL,connection_id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ definition_json jsonb NOT NULL,canonical_json text NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ canonical_bytes bigint NOT NULL CHECK(canonical_bytes BETWEEN 1 AND 2097152),
+ created_by uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ request_json jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),PRIMARY KEY(project_id,connection_id,version),
+ FOREIGN KEY(project_id,connection_id) REFERENCES anvil.agent_connections(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT
+);
+ALTER TABLE anvil.agent_connections ADD CONSTRAINT connection_definition_head FOREIGN KEY(project_id,id,head_version) REFERENCES anvil.connection_definition_versions(project_id,connection_id,version) DEFERRABLE INITIALLY DEFERRED;
+REVOKE ALL ON anvil.agent_connections,anvil.connection_definition_versions FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.agent_connections,anvil.connection_definition_versions TO anvil_v3_app;
+-- head FOR SHARE는 UPDATE 권한이 필요하다. app에 UPDATE를 부여하지 않고 project 공통잠금과 불변 head를 사용한다.
+CREATE FUNCTION anvil.connection_definition_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE k text;
+BEGIN
+ IF NOT anvil.checkpoint_keys(v,ARRAY['id','version','status','label','toolProduct','toolVersion','adapterKind','connectorId','accountRef','modelOptions','environmentRef','policyRef','capabilityReportRef']) OR v->>'id'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR v->'version' IS DISTINCT FROM '1'::jsonb OR v->'status' IS DISTINCT FROM '"NOT_READY"'::jsonb OR jsonb_typeof(v->'modelOptions') IS DISTINCT FROM 'object' OR NOT anvil.fn14_record_ref(v->'policyRef') THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['label','toolProduct','toolVersion','adapterKind'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string' OR length(v->>k) NOT BETWEEN 1 AND 200 OR btrim(v->>k)='' OR (v->>k)~'[[:cntrl:]]' THEN RETURN false;END IF;
+ END LOOP;
+ -- 이번 producer는 실제 보호 provider가 없어 명시 null 외에는 SOURCE_VERIFIER_NOT_CONNECTED이다.
+ IF v->'connectorId' IS DISTINCT FROM 'null'::jsonb OR v->'accountRef' IS DISTINCT FROM 'null'::jsonb OR v->'environmentRef' IS DISTINCT FROM 'null'::jsonb OR v->'capabilityReportRef' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.connection_definition_authorized(pid uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id AND ar.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=c.project_id AND p.archived_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE session_user='anvil_v3_app' AND c.id::text=current_setting('anvil.command_id',true) AND c.project_id=pid AND c.operation=op AND op IN('registerConnection','saveEnvironment') AND c.state='APPLIED'
+ AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+  WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+  AND s.credential_generation=u.credential_generation AND s.reauth_until>clock_timestamp() AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op AND rule->>'disposition' IN('AUTO','REQUIRE_APPROVAL') AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op AND rule->>'disposition'='REQUIRE_APPROVAL' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+  OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.decision_id=ar.approval_decision_ref))
+ AND c.result_ref->'data'->>'status'='CONNECTION_DEFINITION_STORED'
+ );
+$$;
+CREATE FUNCTION anvil.connection_definition_insert() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands%ROWTYPE;ref jsonb;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'CONNECTION_IMMUTABLE';END IF;
+ IF NOT anvil.connection_definition_authorized(NEW.project_id,'registerConnection') THEN RAISE EXCEPTION 'CONNECTION_NOT_AUTHORIZED';END IF;
+ IF TG_TABLE_NAME='agent_connections' THEN
+  IF NEW.head_version<>1 OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) THEN RAISE EXCEPTION 'CONNECTION_DEFINITION_INTEGRITY_FAILED';END IF;RETURN NEW;
+ END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=NEW.command_id AND project_id=NEW.project_id;
+ ref=jsonb_build_object('id',NEW.connection_id,'version',NEW.version,'contentHash',NEW.content_hash);
+ IF c.id IS NULL OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id IS DISTINCT FROM NEW.created_by OR c.client_id IS DISTINCT FROM NEW.client_id OR c.expected_version<>0 OR NOT anvil.checkpoint_keys(NEW.request_json,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) OR NEW.request_json->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR NEW.request_json->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR NOT anvil.checkpoint_keys(NEW.request_json->'payload',ARRAY['definition','reason']) OR jsonb_typeof(NEW.request_json->'payload'->'reason') IS DISTINCT FROM 'string' OR length(NEW.request_json->'payload'->>'reason') NOT BETWEEN 1 AND 20000 OR btrim(NEW.request_json->'payload'->>'reason')='' OR c.request_hash IS DISTINCT FROM anvil.fn01_hash(NEW.request_json) OR NEW.request_json->'payload' IS DISTINCT FROM jsonb_build_object('definition',NEW.definition_json-'id'-'version'-'status','reason',NEW.request_json->'payload'->'reason') OR NEW.request_json->>'operation' IS DISTINCT FROM 'registerConnection' OR NEW.request_json->>'projectId' IS DISTINCT FROM NEW.project_id::text OR NEW.request_json->>'clientId' IS DISTINCT FROM NEW.client_id::text OR NEW.request_json->'targetId' IS DISTINCT FROM 'null'::jsonb OR NEW.request_json->'expectedVersion' IS DISTINCT FROM '0'::jsonb OR NOT anvil.connection_definition_valid(NEW.definition_json) OR NEW.definition_json->>'id' IS DISTINCT FROM NEW.connection_id::text OR NEW.definition_json->>'version' IS DISTINCT FROM NEW.version::text OR NEW.canonical_json IS DISTINCT FROM anvil.fn01_json(NEW.definition_json) OR NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(NEW.definition_json) OR NEW.canonical_bytes IS DISTINCT FROM octet_length(convert_to(NEW.canonical_json,'UTF8')) OR c.result_ref->'data'->'ref' IS DISTINCT FROM ref OR c.result_ref->'data'->'definition' IS DISTINCT FROM NEW.definition_json OR c.result_ref->'data'->'previousRef' IS DISTINCT FROM 'null'::jsonb OR c.policy_ref IS DISTINCT FROM NEW.definition_json->'policyRef' THEN RAISE EXCEPTION 'CONNECTION_DEFINITION_INTEGRITY_FAILED';END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER connection_head_insert BEFORE INSERT OR UPDATE OR DELETE ON anvil.agent_connections FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_insert();
+CREATE TRIGGER connection_version_insert BEFORE INSERT OR UPDATE OR DELETE ON anvil.connection_definition_versions FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_insert();
+-- 감사/영수증은 정상 producer 호출을 가정하지 않고 DB 완결로 재검산한다.
+CREATE FUNCTION anvil.connection_definition_proof(v anvil.connection_definition_versions) RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ WHERE c.id=v.command_id AND c.project_id=v.project_id AND c.scope_kind='PROJECT' AND c.scope_id=v.project_id AND c.state='APPLIED' AND c.operation='registerConnection'
+ AND c.command_id::text=v.request_json->>'commandId' AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=v.project_id::text AND c.result_ref->>'targetId'=v.connection_id::text AND c.result_ref->'version'=to_jsonb(v.version) AND c.actor_id=v.created_by AND c.client_id=v.client_id AND c.request_hash=anvil.fn01_hash(v.request_json) AND c.expected_version=0 AND c.control_generation=(v.request_json->>'controlGeneration')::bigint
+ AND c.policy_ref=v.definition_json->'policyRef' AND c.result_ref->'data'->'definition'=v.definition_json
+ AND c.result_ref->'data'->'ref'=jsonb_build_object('id',v.connection_id,'version',v.version,'contentHash',v.content_hash) AND c.result_ref->'data'->>'status'='CONNECTION_DEFINITION_STORED'
+ AND ar.scope_kind='PROJECT' AND ar.scope_id=v.project_id AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',v.created_by,'clientId',v.client_id) AND ar.policy_ref=c.policy_ref
+ AND ar.scope_digest=anvil.fn01_hash(jsonb_build_object('projectId',v.project_id,'actorId',v.created_by,'clientId',v.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND (SELECT count(*) FROM anvil.authorization_receipts x WHERE x.command_id=c.id)=1
+ AND (SELECT count(*) FROM anvil.audit_events e WHERE e.project_id=v.project_id AND e.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events e WHERE e.project_id=v.project_id AND e.command_id=c.id AND e.operation_id=c.operation_id AND e.scope_digest=ar.scope_digest AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',v.created_by) AND e.client_ref=v.client_id AND e.target_ref=c.result_ref->'data'->'ref' AND e.policy_ref=c.policy_ref AND v.request_json ? 'approvalRef' AND e.approval_ref IS NOT DISTINCT FROM CASE WHEN v.request_json->'approvalRef'='null'::jsonb THEN NULL ELSE v.request_json->'approvalRef' END AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_UNVERIFIED_CONNECTION_DEFINITION' AND e.source_kind='HUMAN_COMMAND')
+ AND ar.approval_decision_ref IS NOT DISTINCT FROM CASE WHEN v.request_json->'approvalRef'='null'::jsonb THEN NULL ELSE (v.request_json->'approvalRef'->>'decisionId')::uuid END
+ AND ((v.request_json->'approvalRef'='null'::jsonb AND c.approval_consumption_id IS NULL) OR EXISTS(SELECT 1 FROM anvil.approval_consumptions x WHERE x.id=c.approval_consumption_id AND x.project_id=c.project_id AND x.command_id=c.id AND x.decision_id=ar.approval_decision_ref)));
+$$;
+CREATE FUNCTION anvil.connection_definition_capacity(p uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h bigint;n bigint;b numeric;ac anvil.project_storage_accounts%ROWTYPE;
+BEGIN
+ -- 정의 없는 프로젝트의 기존 예약/조회 의미를 바꾸지 않는다.
+ IF NOT EXISTS(SELECT 1 FROM anvil.agent_connections WHERE project_id=p) THEN RETURN;END IF;
+ PERFORM id FROM anvil.projects WHERE id=p FOR UPDATE;
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF ac.project_id IS NULL OR ac.coverage_state<>'VERIFIED' THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ IF NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ SELECT count(*) INTO h FROM anvil.agent_connections WHERE project_id=p;
+ SELECT count(*),COALESCE(sum(canonical_bytes),0) INTO n,b FROM anvil.connection_definition_versions WHERE project_id=p;
+ IF EXISTS(SELECT 1 FROM anvil.connection_definition_versions v LEFT JOIN anvil.agent_connections x ON x.project_id=v.project_id AND x.id=v.connection_id WHERE v.project_id=p AND (x.id IS NULL OR x.head_version<>v.version OR NOT anvil.connection_definition_proof(v) OR NOT anvil.connection_definition_valid(v.definition_json) OR v.canonical_json IS DISTINCT FROM anvil.fn01_json(v.definition_json) OR v.content_hash IS DISTINCT FROM anvil.fn01_hash(v.definition_json) OR v.canonical_bytes IS DISTINCT FROM octet_length(convert_to(v.canonical_json,'UTF8')))) OR h<>n THEN RAISE EXCEPTION 'CONNECTION_DEFINITION_INTEGRITY_FAILED';END IF;
+ IF h>1000 OR n>10000 OR b>67108864 OR ac.used_bytes+ac.held_bytes+b>10737418240 THEN RAISE EXCEPTION 'CONNECTION_STORAGE_LIMIT_REACHED';END IF;
+END;$$;
+CREATE FUNCTION anvil.connection_definition_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;
+BEGIN
+ IF TG_TABLE_NAME='authorization_receipts' THEN IF COALESCE(NEW.scope_kind,OLD.scope_kind)<>'PROJECT' THEN RETURN NULL;END IF;p=COALESCE(NEW.scope_id,OLD.scope_id);ELSE p=COALESCE(NEW.project_id,OLD.project_id);END IF;PERFORM anvil.connection_definition_capacity(p);
+ -- 새 정의 명령은 반드시 실제 불변 버전과 완결된다. 다른 registerConnection 후보는 보존한다.
+ IF TG_TABLE_NAME='commands' THEN
+ IF NEW.operation='registerConnection' AND NEW.result_ref->'data'->>'status'='CONNECTION_DEFINITION_STORED' AND NOT EXISTS(SELECT 1 FROM anvil.connection_definition_versions v WHERE v.project_id=p AND v.command_id=NEW.id) THEN RAISE EXCEPTION 'CONNECTION_DEFINITION_INTEGRITY_FAILED';END IF;END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER connection_head_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.agent_connections DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+CREATE CONSTRAINT TRIGGER connection_version_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.connection_definition_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+CREATE CONSTRAINT TRIGGER connection_account_capacity AFTER INSERT OR UPDATE OR DELETE ON anvil.project_storage_accounts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+CREATE CONSTRAINT TRIGGER connection_reservation_capacity AFTER INSERT OR UPDATE OR DELETE ON anvil.project_storage_reservations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+CREATE CONSTRAINT TRIGGER connection_command_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+REVOKE ALL ON FUNCTION anvil.connection_definition_valid(jsonb),anvil.connection_definition_authorized(uuid,text),anvil.connection_definition_insert(),anvil.connection_definition_capacity(uuid),anvil.connection_definition_final() FROM PUBLIC;
+-- INSERT trigger의 invoker helper만 허용하며 내부 capacity/definer 함수를 공개 호출하지 않는다.
+GRANT EXECUTE ON FUNCTION anvil.connection_definition_valid(jsonb),anvil.connection_definition_authorized(uuid,text),anvil.connection_definition_insert() TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.connection_definition_capacity(uuid),anvil.connection_definition_final() FROM anvil_v3_app;
+
+CREATE CONSTRAINT TRIGGER connection_audit_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+CREATE CONSTRAINT TRIGGER connection_receipt_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.connection_definition_final();
+REVOKE ALL ON FUNCTION anvil.connection_definition_proof(anvil.connection_definition_versions) FROM PUBLIC,anvil_v3_app;
