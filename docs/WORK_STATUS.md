@@ -11336,3 +11336,12 @@
 
 
 - 결정안문서stage fe815e의diff check가신규요약뒤EOF빈줄2건을검출해commit/push전에차단했다. 제품/SQL/검사실행0. 소유문서의끝개행만1개로정리하고이력본문은재작성하지않는다. FN17추가한정읽기는browserpush지원조회/현재권한관측·AccountSecurity연결이이미있고선호저장/구독/전달/새사건은미채택상세계약이필요함을확인했다. source완료나실전달지원으로확대하지않는다.
+
+- FN16 결정안게시76cb0c: fc5f0b5fdfcb9f3351ef956a0e67d77082ef895c는4a0626e2직접자식 exact후보/PLAN/STATUS3문서이며local/private동일·mainf976불변·trackedclean/보호3. 후보r2 2B351AA7·독립C0/I0와새NOLOGIN소유자/보호함수·한정권한정의라는정확delta를PMO에채택판단/직접결정지원요청으로전달했다. 실제DB/role/GRANT·제품/SQL구현0·새WI발행0이다. 기존FN06질문반복0. 제품코드는E1BE0569그대로이고단순잠금제거는불채택상태를유지한다.
+
+- PMO cursor114는FN16r2를새DB권한계약(PMO지침6)으로분류해신산님께A안source서버코드·미적용SQL·합성검수한정직접질문을발행했다. 답변미도착/미채택·구현GO0,실DB/role/권한/원본반출/키/서비스/Agent제외유지. Main은같은질문을반복하지않는다. 기존Primary는FN01~FN05,기존Reviewer는FN07~FN15의다른기존계약기능소비누락을분리된읽기범위로대조중이며제품writer0/새세션0이다.
+
+### 2026-11-01 FN15/UI12 인수 요청 목록 탐색 source 착수
+- 독립Reviewer가기존OWN/CONTROLLER GET의단방향·실패view/cursor유실누락을확인했다. 실목록389737→literal e17a2a에서제품F1AB74EB/신규시험부재를확인했다. fail이현재제어상태도지우므로기존fail-closed를유지하고실패target/history만보존·필요한현재state GET을새로확인하는범위로WI FN15_CONTROL_REQUEST_PAGINATION_SOURCE_IMPLEMENTATION_20261101.md exact2를고정한다. 실제수락·권한·제어전환·DB키서비스Agent0/명령buffer불변/POST0이며FN16/FN06미채택대기는별도다.
+
+- FN15/UI12 WI A950E5B4 사전독립C0/I0:현재state/목록/상세를지우는fail-closed·최신state뒤권한조건검사·OWN/CONTROLLER분리·성공history/실패target·원문재선택·부모buffer/POST0과정확2범위를확인했다. 실제수락/제어이전은제외·기존Primary구현중/Main제품write0이다.
