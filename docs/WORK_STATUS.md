@@ -12089,3 +12089,11 @@ git diff --check
 ### 2026-11-02 실제 App native 원명령 왕복 소비 source 검수·통합
 - 독립 신규test1 C0/I0·시작끝D5A93F7C…7E892A6 동일,Main1db363 실제App2PASS/type/diff0 뒤bc4a5b091728a653e2bd0eb5d4b3cb6808937012 정확1/65추가로checkpoint했다. Main2bdb86raw/stage동일·stageddiff0,기존제품/시험변경0이다.
 - 실제App세션GET·부모CAS/requestNativeApproval/hashchange의AUTO저장조회/REQUIRE_APPROVAL UI08별도결정→UI11동일원명령복귀를직접메모리소비로추가확인했다. 형제2GET의403·미허용요청0·live정리를관측하며실Browser/DB/권위/native/실제인수와구분한다. UI11_NATIVE_PREPARATION_R2_A_SOURCE_RESULT_20261102.md후속절에정확증거/준비오류·한계를누적했다. 전체계획미완료·실제효과제외유지다.
+### 2026-11-02 native HTTPS 구체 소비 공백 한정 읽기
+- Main eaab4a/cae045는NativeOwnedChannel의current/challenge/sign/consume포트만있고구체nativeHTTPSdriver가없음을확인했다. 기존execution-observation-https/trust-https의NodeHTTPSsource와r2§61/121/125/127 wire를대조하는읽기전용작업을같은Primary에맡겼다. 최대신규source/test2경로의내부driver가능성·생성인자/기한/abort/상한/비밀비노출·보호profile/credential/sign공급자미정여부를1페이지로반환하며코드쓰기GO0이다.
+- 새공개TLS/권위/키/credential/저장계약이필요하면정확미정필드와원계약차이를먼저분리한다. 기존단순options를검증된보호공급자라고위장하거나실제지원으로승격하지않는다. 실네트워크/CA·키·파일·DB/권한·서비스/native/Agent/실자료/P03R3효과0·새agent/chat/branch/worktree0,Main제품쓰기0·기존검사반복0이다.
+### 2026-11-02 native HTTPS source 내부 구현 사전 분해
+- Primary읽기대조는기존r2 wire/NativeOwnedChannel의구체HTTPSsource를신규source/test2로구현가능하며새공개wire/DB/키발급계약불필요라고반환했다. 보호profilematerial/current·nativebearer소유전달·등록signer는여전히미구현의존성이다. Main은이를명시한파생WI docs/work_packages/FN06_NATIVE_HTTPS_CHANNEL_SOURCE_IMPLEMENTATION_20261102.md SHA4F81118FEAC9EEC4D00101DF1AC2FA56AC66A69EC185F148E323047F432A6E30을작성했다.
+- 기존Reviewer preflight중·코드쓰기GO0. 고정HTTPS/목적credential/원proof·P1363 wire의내부driver구현만대상이며별도SPKI pin필드/새TLSregistry·키경로/실물발급·신뢰변경을추가하지않는다. 보호의존성부재를검증된실물로위장하지않고기본미등록SOURCE_ONLY_MODEL을유지한다.
+- 실네트워크/TLS·CA/키·파일·DB/권한·서비스/native/Agent/실자료/P03R3효과0,명시request/보호포트대역만시험하고기존검사불변이면반복0. 동일시도10초/최소기한/원signal·정리·비밀비노출·실제client소비를검수조건으로두었다. 전체계획미완료·Main제품쓰기0다.
+- nativeHTTPS파생WI 독립preflight C0/I0·시작끝4F81118F…32A6E30동일,Main신규2미존재확인후같은Primary정확2source GO를진행한다. 실제효과/새공개계약0·보호공급자미구현을유지한다.
