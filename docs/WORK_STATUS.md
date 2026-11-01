@@ -11290,3 +11290,16 @@
 - 기존Primary가기존 Page37~47의조회scope에auth/CSRF/transport세대가없음을읽기확인했다. 행동RED전이므로확정결함아님. 기존보호GET계약안의exact2로실제React정상원문→문맥교체첫commit/늦은401반례를먼저검증하고확인때만최소보완한다. WI UI05_SESSION_DETAIL_READ_CONTEXT_SOURCE_IMPLEMENTATION_20261101.md, 기준a683755a/제품시작D426835C. 실제DB·권한·키·서비스·Agent0/동시writer1/Main제품write0. HTTPS server는원WI가repository/현재등록/서명공급자를제외하므로synthetic태그를벗기는우회연결0이다.
 
 - UI05 WI 사전독립C0/I0·시작제품D426835C일치. 기존보호GET결과를현재auth/API/transport에결박하는내부보완이며새인증/저장계약아님을확인했다. 첫commit의상세/파일검사·옛하위콜백·ABA/401·loading/정상재조회·부모버퍼/POST0을최종검수한다. 아직제품RED/최종합격은없다.
+
+- UI05 genuineRED68846b: 기존보호draft/decision GET·실제decoder정상도달후현재App과같은key를유지한CSRF교체첫commit에옛상세노출,0PASS1FAIL/nativeexit1·779.4463ms이다. fixture/import준비실패가아닌제품반례로구분했다. 기존Primary가root조회scope·파일검사/결과·하위auth/unavailable콜백을같은세대에묶는최소보완중이며child저장/부모bufferwrite0·Main제품write0·실환경0이다. controlffbdf09f local/private일치·main불변·진행중source/teststage0.
+
+- UI05 작성중사전읽기에서rootunmount후하위콜백/복원콜백의부모방어후보를제기했으나Reviewer가실제child active/live/generation/seq cleanup·명시동기onRestore경로를확인해새확정C/I없음으로판정했다. 임의보관콜백직접호출대역을실제제품RED로집계하지않도록Primary에전달했다. 최초68846b CSRF첫commit노출RED와구분하고기존child저장/정리동작을보존한다. 범위외전수검증/child파일write0.
+
+- UI05 중간시험보고: 신규6중5PASS/1FAIL은최종합격아님. 현재401조건의Nodefixture와Vitebundle ApiError중복instanceof구성문제를실제bundle ApiClient/transport로좁히는중이며native/제품권한오류로단정하지않는다. f8580c wrapper0은뒤type명령성공일뿐앞시험실패를상쇄하지않는다. 시험null타입준비1은보정후정확type0,livehandle0. Main은최종집중/인접·type/diff/동결2를기다리며동일검사중복실행0이다.
+
+- UI05 Main 검증 예외: a233a9는PowerShell foreach의in공백누락으로parse exit1/모든검사미실행이다. 구문을보정한2adfd6은의도한신규7+pure인접4가아닌실제13PASS/0FAIL/SKIP/CANCEL/TODO·2778.0321ms였고기존SSR/createServer2까지실행됐다. 정확root type/diff각0·시작끝소유2지문동일이다. 원출력을예정11PASS로축소/미선정으로보고하지않는다.
+- Main의negative lookahead 이름필터가두SSR을제외하지않았다. argv진단342001은Node가옵션을소비해[]라서전달증거가아니며,e49e21은--뒤의상수문자열을JSON으로읽어지정필터문자열전달자체정상만확인했다. 원시험재실행/즉석변형시험0. Primary에게이미실행된11선택의정확명령만요청했다.
+- 실제SSR2는기존제품vite.config.ts를createServer(middlewareMode:true,hmr:false,watch:null)로열어정적SSR후finallyclose한다. 명시listen없음·command전체exit0. config에envDir:false가없어설정탐색/.env접근가능성을배제하지못한다. 실제Secret/키파일의존재·본문을조사하지않았고미접근/노출없음으로단정하지않는다. Git관측상예상source2·STATUS·기존보호3·신규test외추가untracked0이지만ignored cache/외부파일무변경의증거는아니다. 별도실DB·권한·키변경·정식서비스·Agent명령0.
+- PMO에검증범위이탈·영향/미확정·재실행0·근거를즉시보고했다. 실제13기능결과/type/diff0은보존하되필수전체Gate나예정scope준수로승격하지않는다. 제품2는동결유지·새환경/도구/Secret조사0,안전한문서증거·통합검토를이어간다.
+
+- UI05 최종동결: Page9EA72B34/test93EC9DE0,Primary5c9f7d 실제11PASS/1348.6716ms·정확type0·writer반환/live0. Main2adfd6 실제13PASS/2778.0321ms/type/diff0·소유2시작끝지문동일,의도한11과SSR추가2/설정탐색미확정은예외로분리한다. 최종독립exact2 C0/I0·파일parser/실원명령종단·실브라우저/DB미검증유지. PMO109확인·필터변형재실행0. 결과 UI05_SESSION_DETAIL_READ_CONTEXT_RESULT_20261101.md에실제명령·원RED/오류·제외와예외·복구를보존하고제품2+결과/PLAN/STATUS3만통합한다. 전체계획미완료·merge0/Main제품write0.
