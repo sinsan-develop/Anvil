@@ -1849,3 +1849,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - FN16 결과서 hash 정정: 커밋검사 합성경로 오탐의 동일값 표현 보완·단일줄 독립C0/I0와Main최종9PASS를 기록한 최종 docs/04_test_reports/AV3/FN16_EXPORT_LOCKED_METADATA_READER_SOURCE_RESULT_20261101.md SHA256 43BDE71F206A80124711A3D0322AB6A7502C680BE294BCDB4CC4B31CA2616F19 를 사용한다. 이전hash는 게시전 초안 이력이다. 실제검증 제외와 전체업무 미완료 상태는 같다.
 
 - **2026-11-01 FN06 등록 정의 HUMAN 보고 결정 후보·미채택**: 기존HUMAN r2/CANDIDATE_ONLY·환경필수와새정의의의미가달라단순reader대체불가다. Main후보 docs/contracts/FN06_REGISTERED_DEFINITION_HUMAN_REPORT_DECISION_CANDIDATE_20261101.md (5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D),독립보정C0/I0를PMO결정에제출한다. schema2·환경null/기한·도구·분리저장/유한목록·고정GET·UI를제안하며아직제품/SQL구현0·실행권한확대0이다. 원v1/이미검수한FN06/FN16source는보존하고전체계획미완료상태를유지한다.
+
+### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
+신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.

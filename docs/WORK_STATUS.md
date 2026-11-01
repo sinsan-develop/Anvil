@@ -11430,3 +11430,6 @@
 - 동일한새public/데이터계약직접채택선행과실DB/권한/키/서비스/Agent제외가세연속유지됐다. 기존승인내독립경로를한정대조했지만새단위를확정하지못했으며이를전체source완료로확대하지않는다. 목표를BLOCKED로전환해새근거없는동일검사/질문/작은helper·범위우회를중단한다. 전체WORK_PLAN은미완료·완료보고/전체Gate PASS/main병합0이다.
 - 필요한재개조건은PMO가이미요청한정확후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의A source-only직접채택또는B/다른정확범위결정이다. 새답변이오면원문hash/실제Git/허용범위를대조해기존Primary에게최소13경로의정확WI와TDD를전달한다. 사용자중복요청0·현재신규제품/SQLwrite0·실제DB/권한/키/서비스/Agent효과0이다.
 - 안전인계: owner Main어울,branch codex/av3-stage-b,상태PAUSED_DECISION(새계약직접채택선행),마지막검수제품13524478/5263f903·원격복구ref 기존privatebranch·이전정본checkpoint67de06e1. 진행중QA/knownhandle0·dirty제품0/보호untracked3보존. 이감사1~3과재개조건은WORK_STATUS-only원격checkpoint로보존하며reset/rebase/force/새branch·세션·자동화/미병합작업삭제0이다.
+
+### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
+신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.

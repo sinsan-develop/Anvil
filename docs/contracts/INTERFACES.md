@@ -1165,3 +1165,6 @@ UI10은현재고정지식→허가대상조회/목적입력→명시요청보관
 
 ### 2026-11-01 FN06 정의 저장 A·FN16 잠금 조회 r2 A 직접 채택
 신산님 직접 승인에 따라 FN06 후보 80A2E0C160D3F5DCDB161AECBDFE3F4CCE632716C33C71A7C26C188A35639B12의 exact 정의 등록·고정 보호 조회·UI11/FN14 연결과 FN16 후보 2B351AA71037E43474CF767962821578B1F5DF49600E832AA17AF3D26BD59881의 동일 transaction 잠금 보호 조회를 source-only로 채택한다. 원 후보의 미채택 표기는 당시 이력으로 보존한다. 실제 DB·권한·키·서비스·Agent 실행은 제외하며 계약 채택과 실제 기능 인수는 구분한다. 기존 Primary 단일 writer가 FN06→FN16 순차 구현하고 Main이 독립 검수·통합한다. 상세 허용 경로·검증·미적용 SQL은 docs/work_packages/FN06_CONNECTION_DEFINITION_SOURCE_IMPLEMENTATION_20261101.md 및 FN16_EXPORT_LOCKED_METADATA_READER_SOURCE_IMPLEMENTATION_20261101.md를 따른다. 전체 작업계획은 미완료다.
+
+### 2026-11-01 등록 정의 HUMAN 보고 A 직접 채택·구현 재개
+신산님이 후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의 A 코드·화면·미적용SQL·합성검증을 기존subagent에게 맡기도록 직접승인했고 goal active를 수신했다. 이전미채택/BLOCKED는이력이며새계약선행은해소됐다. 기존v1과실측UNVERIFIED/실행false를보존한v2·분리2표/상한·전용유한목록/고정GET/UI를 채택한다. 실제DB·권한·키·서비스·Agent/실사용자·백업대상파일조사·기존차단해제는제외한다. 기존Primary단일writer·Main검수/통합으로정확WI에따라재개하며원후보hash/머리글은소급수정하지않는다. 전체계획은미완료다.
