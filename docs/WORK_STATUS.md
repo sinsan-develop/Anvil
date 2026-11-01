@@ -11484,3 +11484,7 @@
 - 후보 docs/contracts/FN09_REGISTERED_DEFINITION_RESERVATION_DECISION_CANDIDATE_20261101.md SHA81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759를작성해기존Reviewer에독립검토를요청한다. A는기존v1을보존한명시등록정의예약분기의코드/화면/pendingSQL/합성검증, B는후순위유지/실측공급경계우선별도결정이다. 아직미채택·제품/SQL쓰기0·실환경0. Main rg의Windows pathglob123오류c17d65는-glob옵션으로교정한준비오류1이며같은명령반복/권한변경0이다.
 
 - 등록정의예약후보81E87C51 독립C0/I0·시작끝hash동일을확인했다. 기존exact5/14/6 대비신규exact6/15/7은실제새public/저장delta이며현재보호→replay/역사원증빙/교체/실행false보존을확인했다. 채택후WI에는0049 payload/session·binding proof판별결박,readBinding소비자의분기수용/거절,prepareExecution기존후보요구유지를정확고정한다. 미채택·제품/SQL쓰기0이고후보+현황2문서를게시해PMO에A채택/B선행유지의정확결정만요청한다.
+
+- FN09 등록정의예약후보 게시: cd3953 exact후보+WORK_STATUS2경로 commitc909e9b85c0204739727c0dab5a65d7205ba3950·push0, e9a42e actuallocal/private동일·trackedclean/보호3·mainf976불변·후보81E87C51동일이다. PMO에정확delta/대안/제외와A채택판정만요청했다.
+- PMO실제turn01a19655/cursor13은원문을대조한뒤 A권장·직접채택승인필요로판정해신산님께이미한번요청했다. 이유는PMO AGENTS§6의새공개API/데이터계약이며FN06사람보고승인을이번FN09입력/저장delta로상속하지않는다. Main은중복직접질문/승인추정0·신규제품/SQL쓰기0·실DB/권한/키/서비스/Agent0을유지한다.
+- 이번goal턴은새후보/독립검수/게시와실제결정요청으로다음행동이바뀐진전이며no-progress감사로계산하지않는다. 현담당두agent는읽기결과반환완료·제품writer/알려진livehandle/QA0. 전체계획미완료·goal active,새A/B답변수신시후보hash/실제Git부터대조해기존Primary단일writer의WI/TDD로계속한다. 완료검사/옛조사/승인요청을반복하지않으며현소유checkpoint는기존privatebranch에보존한다.
