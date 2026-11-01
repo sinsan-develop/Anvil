@@ -1824,3 +1824,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-11-01 FN14 Web 준비기록 source 검수**: 고정 임무/맥락/역할·과거결박의 명시 선택→원명령 준비→저장→영수증/고정GET을 App 전용 버퍼와 연결했다. Main신규14/인접11=25PASS/type/diff/Web메모리build0·독립C0/I0,실제오프라인Page/Panel 정상·GET실패/UNKNOWN/문맥복귀/재인증음성확인·QA정리0. 기존server/SQL/권한·키·서비스·Agent/실이전은변경·실행하지않았고 전체FN14/계획은미완료다. [결과](04_test_reports/AV3/FN14_PREPARATION_RECORD_WEB_RESULT_20261101.md)/WORK_STATUS참조.
+
+
+- **2026-11-01 FN14 Web 독립 고정조회 source 보완**: 새 App/같은 사용자 새 client에서 알려진 fullref를 buffer·쓰기 control·POST 없이 기존 보호 GET로 명시 조회하도록 연결했다. Main 신규20/직접인접11=31PASS·type/diff0·오프라인 실제 Page/Panel 정상/403/입력ABA폐기·POST0/부모buffer불변·독립 C0/I0·QA정리0. 기존 API/서버/SQL/권한 불변이며 실DB·서비스·Agent·실이전·전체FN14/계획은 미완료다. 근거 docs/04_test_reports/AV3/FN14_PREPARATION_RECORD_INDEPENDENT_READ_RESULT_20261101.md.
