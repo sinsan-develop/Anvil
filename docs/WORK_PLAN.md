@@ -1838,3 +1838,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - **2026-11-01 FN16 선택 원본 metadata 잠금 계약 결정 후보**: app UPDATE 회수와 기존 FOR SHARE의 정적 충돌을 확인했으나 실제PG 재현은미실행이다. 단순잠금제거는동시성보호I1로불채택. 새보호함수/NOLOGIN한정소유자·신원8인자·함수내활성/회원검사를정의한후보r2 2B351AA7은독립C0/I0이며아직미채택/구현0. 실제DB권한/키/서비스/Agent제외와FN16미완료상태는유지한다. [결정 후보](contracts/FN16_EXPORT_LOCKED_METADATA_READER_CANDIDATE_20261101.md).
 
 - **2026-11-01 FN15/UI12 인수 요청 목록 왕복 source 보완**: OWN/CONTROLLER 이력·실패target을분리하고최신state검산뒤동일cursor명시재조회·이전페이지복귀를연결했다. 기존state삭제/fail-closed·UNKNOWN/POST0보존. Main 신규8+순수API7=15PASS/type/diff0·독립exact2C0/I0. 실제서버서명·브라우저/DB·수락/제어전환·전체FN15/계획은미완료다. [결과](04_test_reports/AV3/FN15_CONTROL_REQUEST_PAGINATION_RESULT_20261101.md).
+
+### 2026-11-01 FN06 정의 저장 A·FN16 잠금 조회 r2 A 직접 채택
+신산님 직접 승인에 따라 FN06 후보 80A2E0C160D3F5DCDB161AECBDFE3F4CCE632716C33C71A7C26C188A35639B12의 exact 정의 등록·고정 보호 조회·UI11/FN14 연결과 FN16 후보 2B351AA71037E43474CF767962821578B1F5DF49600E832AA17AF3D26BD59881의 동일 transaction 잠금 보호 조회를 source-only로 채택한다. 원 후보의 미채택 표기는 당시 이력으로 보존한다. 실제 DB·권한·키·서비스·Agent 실행은 제외하며 계약 채택과 실제 기능 인수는 구분한다. 기존 Primary 단일 writer가 FN06→FN16 순차 구현하고 Main이 독립 검수·통합한다. 상세 허용 경로·검증·미적용 SQL은 docs/work_packages/FN06_CONNECTION_DEFINITION_SOURCE_IMPLEMENTATION_20261101.md 및 FN16_EXPORT_LOCKED_METADATA_READER_SOURCE_IMPLEMENTATION_20261101.md를 따른다. 전체 작업계획은 미완료다.

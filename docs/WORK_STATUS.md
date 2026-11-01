@@ -11368,3 +11368,8 @@
 - 다음필요조건은PMO에이미전달한FN06 ConnectionDefinition 저장/보호조회A 또는FN16 잠금reader/NOLOGIN소유자r2A의정확source-only채택답변이다. 어느한쪽새답변이오면대상문서hash와허용범위부터대조해그업무를기존Primary에게재배정하고Main이검수/통합한다. 단순FORSHARE제거·후보/hosttrust를등록연결로대체·의미false승격·질문중복0이다.
 - 실제DB/role/GRANT·권한/키·원본/백업대상조사·서비스/Agent·기존프로젝트차단해제제외는답변의정확명시변경전까지유지한다. 실제공급자·관측/배정/실중지/안전재개·수집/수락·전달·서명/설치/사용자인수는별도미완료다. Source합성검수를실사용/운영완료로승격하지않는다.
 - 인계상태: owner=Project Main 어울, branch=codex/av3-stage-b, worktree=PAUSED_DECISION(계약채택선행), 마지막검수코드/원격복구ref=8928f6279fba17f65c5704cfd51052d9d627409b 및기존privatebranch. 이기록은문서전용checkpoint로보존한다. 제품·SQLwrite/자동화·새세션/branch생성·main변경0,기존보호untracked3보존·미병합작업삭제0. 활성자원없음의근거는알려진담당/도구종료이며이전SSR2의환경탐색/ignored cache미확정은숨기거나강제정리하지않는다.
+
+### 2026-11-01 FN06 A・FN16 r2 A 직접 승인 재개
+- 신산님이두A안의코드·화면·미적용SQL·합성검증을직접승인하고기존subagent구현/Main검수통합·계획완료까지계속을지시했다. 이어목표상태active전환입력을수신했다. 앞선BLOCKED는이력이고현재계약결정선행은해소됐다. 실제DB/권한/키/서비스/Agent·실사용자/백업대상조사제외는유지한다.
+- 4596c8 source/private3301a1f6일치·mainf976불변·trackedclean/보호3과승인후보원문을대조했다. 후보FN06 80A2E0C1/FN16 2B351AA7 원문hash/옛미채택머리글은이력으로보존하고이최신승인/WI로채택범위를기록한다. 실제0065/0066부재를확인해각FN06정의/FN16잠금reader로예약했다. 기존Primary의FN06읽기2건경로준비오류와Main e9ca18의출력미수집조회는지문근거에서제외·동일명령재시도0이다.
+- FN06 최소16경로와FN16 최소3경로의source WI를발행했다. 단일Primary가FN06→FN16순차TDD,Main제품write0/기존Reviewer읽기검수. FN06는기존후보/승인·quota종류를위장하지않고더엄격한기존저장량도검산·미연결fail-closed를유지한다. FN16는현재authSession.id와역사member범위·잠금보존/NOLOGIN한정소유자미적용SQL을고정했다. 기존완료검사반복·실SQL/role/GRANT/권한/키/서비스/Agent실행0이다.
