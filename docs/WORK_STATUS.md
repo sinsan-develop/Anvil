@@ -11416,3 +11416,17 @@
 - PMO 판정 turn01a19612/cursor27ca73e0:7: A권장·직접채택승인대기. 새v2/저장2표/목록·고정GET은PMO AGENTS§6의위임밖public/데이터계약이며PMO가신산님께이미정확source범위승인을요청했다고회신했다. Main은동일질문을사용자에게중복요청하지않고기존FN06/FN16승인을유효하게유지한다. 신규제품/SQLwrite0,다음작업배정대기가아닌해당새계약의직접결정선행이다.
 - 기존Primary의읽기preflight는A안기존5+신규8=최소13경로·신규8/0067부재와실제보호정의/증거/cursor·합산cap접점까지확인했다. 실제원문양성에합성파일이필요하면등록선행이며FShelper/실DB/권한/키/서비스/Agent실행0이다. Main의파일명생략으로준비경로오류가발생해정확literal후보의양쪽5AEB6CE9를76d6b6으로확인/전달했고추정leaf재시도0이다. 단순준비오류는제품정식실패로누적하지않는다.
 - 최신AGENTS교체지시의Agency명시호출전용규칙을적용했다. Agency역할호출/새agent·세션·자동화생성0이며기존Primary/Reviewer만사용했다. 현재두담당자는결과반환완료·제품writer/알려진livehandle0. 새계약선행이외의미완료를통과/전체완료로표시하지않으며새응답이오면정확후보hash/범위부터대조해계속한다. 앞선코드13524478/5263f903및그검증은반복하지않는다. goal active·완료보고/main병합0이다.
+
+### 2026-11-01 등록 정의 보고 직접 결정 선행 감사1
+- 직전 goal턴은 FN06/FN16 제품 구현·검수·게시 및 정확 신규계약 후보/결정요청을 남긴 실제진도였다. 이번턴9a2ef2는local/private67de06e1동일·mainf976불변·trackedclean/보호3과PMOcursor8 idle/새직접채택답변없음을확인했다. 최신AGENTS의Agency명시호출전용변경은신규기능채택으로해석하지않았다.
+- 일부선행을이유로기존승인작업을모두막지않도록기존Primary/UI03와Reviewer/UI01을한정읽기로대조했다. UI03의복사/빈작성·노드/관계·저장/검토/별도확정/적용은실제호출이연결돼있었으며실동작/전체완료를뜻하지않는다. UI01의목록/결정/인수이동도연결됐고실제단계/담당/최근/다음집계는미구현·DTO5필드/선택·관측기준미정이다. 이UI01판정은WORK_STATUS11127/11173의기존경계재확인이며새진도로계산하지않고다시반복하지않는다.
+- 이번읽기에서기존계약만으로새로착수할핵심소비누락을확정하지못했다. 이한정결과를전체source완료/전수감사로확대하지않는다. 새v2는PMO가위임밖새public/데이터계약으로판정해이미사용자직접결정을요청한동일선행이며Main의중복질문/새채택해석/제품write0이다. 실제DB/권한/키/서비스/Agent·필수실인수제외도변경없다.
+- 두기존담당자는결과반환완료·제품writer/알려진livehandle0으로실행중job의verified wait가아니다. 현재독립구현경로를확정하지못한새선행감사1이고goal active유지·완료보고/main병합0이다. 원승인코드/검사·helper·같은조사를되풀이하지않고A의정확직접채택또는다른실제범위변경입력이오면그근거부터재개한다. 이추가WORK_STATUS만Main소유진행기록이며제품/보호3은불변이다.
+
+- 등록 정의 보고 결정 선행 감사2: 직전 goal턴은새구현이아닌선행재검증/기존UI호출한정읽기였고새진도로계산하지않는다. 이번963866은local/private67de06e1·mainf976불변·후보5AEB6CE9불변과Main소유WORK_STATUS만dirty/보호3을확인했다. PMOcursor9는idle·기존직접결정요청유지/새채택·자동재개지시없음을회신했고새user답변도없다. 두기존agent는실상태completed·제품writer/livehandle0이라실행관측대기가아니다. 같은public/데이터계약선행과실환경제외가유지돼새안전구현단위를확정하지못했다. 원코드/검사·같은조사·helper/질문/새세션반복0,전체계획미완료·goal active유지(감사2에서blocked/complete판정0)다.
+
+### 2026-11-01 등록 정의 보고 직접 결정 선행 감사3·인계
+- 직전두goal턴은같은선행재검증으로새구현진도가없었다. 세번째 e5478d는local/private67de06e1·mainf976불변·후보5AEB6CE9불변·Main소유현황기록만dirty/보호3과PMOcursor9 idle/새직접답변·범위변경없음을확인했다. collaboration실상태도두담당자completed·제품writer/알려진livehandle0이며진행중도구의관측timeout대기가아니다.
+- 동일한새public/데이터계약직접채택선행과실DB/권한/키/서비스/Agent제외가세연속유지됐다. 기존승인내독립경로를한정대조했지만새단위를확정하지못했으며이를전체source완료로확대하지않는다. 목표를BLOCKED로전환해새근거없는동일검사/질문/작은helper·범위우회를중단한다. 전체WORK_PLAN은미완료·완료보고/전체Gate PASS/main병합0이다.
+- 필요한재개조건은PMO가이미요청한정확후보5AEB6CE901F3AEBF891C7CEED550E0AE754EDAE427D4D1068B9B63F2A6EF6D8D의A source-only직접채택또는B/다른정확범위결정이다. 새답변이오면원문hash/실제Git/허용범위를대조해기존Primary에게최소13경로의정확WI와TDD를전달한다. 사용자중복요청0·현재신규제품/SQLwrite0·실제DB/권한/키/서비스/Agent효과0이다.
+- 안전인계: owner Main어울,branch codex/av3-stage-b,상태PAUSED_DECISION(새계약직접채택선행),마지막검수제품13524478/5263f903·원격복구ref 기존privatebranch·이전정본checkpoint67de06e1. 진행중QA/knownhandle0·dirty제품0/보호untracked3보존. 이감사1~3과재개조건은WORK_STATUS-only원격checkpoint로보존하며reset/rebase/force/새branch·세션·자동화/미병합작업삭제0이다.
