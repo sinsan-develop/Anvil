@@ -31,7 +31,7 @@ export function responsibleSessionCommand(b:ResponsibleSessionBuffer,s:DocumentS
   if(!exact(p,['kind','stageRef','parentRoleRef','reason'])||c.targetId!==null||c.expectedVersion!==0||!(p.kind==='COORDINATOR'?p.stageRef===null&&p.parentRoleRef===null:p.kind==='STAGE_OWNER'&&exact(p.stageRef,['applicationRef','nodeId'])&&reference((p.stageRef as any).applicationRef)&&text((p.stageRef as any).nodeId)&&reference(p.parentRoleRef)))fail();
  }else if(c.operation==='bindResponsibleSession'){
   const prior=p.existingSessionBindingRef as any;
-  if(!exact(p,['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason'])||!same(p.assignmentRef,b.assignmentRef)||!reference(p.roleRef)||!reference(p.connectionRef)||!same(p.connectionRef,b.connectionRef)||prior!==null&&!reference(prior)||c.targetId!==(prior?.id??null)||c.expectedVersion!==(prior?.version??0))fail();
+  if(!exact(p,[...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason'],...(Object.hasOwn(p,'connectionKind')?['connectionKind']:[])])||Object.hasOwn(p,'connectionKind')&&p.connectionKind!=='REGISTERED_DEFINITION'||Object.hasOwn(b,'connectionKind')&&b.connectionKind!=='REGISTERED_DEFINITION'||p.connectionKind!==b.connectionKind||!same(p.assignmentRef,b.assignmentRef)||!reference(p.roleRef)||!reference(p.connectionRef)||!same(p.connectionRef,b.connectionRef)||prior!==null&&!reference(prior)||c.targetId!==(prior?.id??null)||c.expectedVersion!==(prior?.version??0))fail();
  }else fail();
  const a=c.approvalRef as any;if(a!==null&&(!exact(a,['requestId','decisionId','scopeDigest'])||!uuid(a.requestId)||!uuid(a.decisionId)||!/^[a-f0-9]{64}$/.test(a.scopeDigest)))fail();
  return structuredClone(c);

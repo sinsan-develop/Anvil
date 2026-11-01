@@ -9,7 +9,7 @@ import {responsibleSessionCommand} from './responsible-session-approval.ts';
 export type ResponsibleSessionAction='COORDINATOR'|'STAGE_OWNER'|'BIND'|'BIND_COORDINATOR';
 export interface PreparationRecord {projectId:string;ref:PlanRef;snapshot:Record<string,any>}
 export interface ResponsibleSessionState {projectId:string;assignmentRef:PlanRef;roles:PreparationRecord[];bindings:PreparationRecord[];preparations:PreparationRecord[];hasMorePreparations:boolean;currentness:'NOT_RECHECKED';executionAuthorized:false;dispatchPerformed:false}
-export interface ResponsibleSessionBuffer {reservationKind?:'COORDINATOR'|'STAGE_OWNER';responsibleApproval?:{request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};closedResponsibleApprovals?:{command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];savedReceipt?:{ref:PlanRef;snapshot:Record<string,any>};bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
+export interface ResponsibleSessionBuffer {connectionKind?:'REGISTERED_DEFINITION';reservationKind?:'COORDINATOR'|'STAGE_OWNER';responsibleApproval?:{request:ApprovalRequestWork|null;requestId:string;commandHash:string|null};closedResponsibleApprovals?:{command:DocumentWrite;request:ApprovalRequestWork;view:ApprovalView}[];savedReceipt?:{ref:PlanRef;snapshot:Record<string,any>};bindingId:string;projectId:string;assignmentRef:PlanRef;ownerUserId:string;ownerClientId:string;controlGeneration:number;reason:string;connectionRef:PlanRef|null;pending:DocumentWrite|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
 const exact=(v:any,keys:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const uuid=(v:any):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref=(v:any):v is PlanRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&/^[a-f0-9]{64}$/.test(v.contentHash);
@@ -46,9 +46,9 @@ export async function readResponsibleSessionState(client:ApiClient,confirmed:Con
   if(new Set(v.roles.map(r=>r.snapshot.kind)).size!==v.roles.length)throw new ApiError('RESPONSE_INVALID');
   for(const r of v.roles)if(r.snapshot.kind==='STAGE_OWNER'&&!v.roles.some(p=>p.snapshot.kind==='COORDINATOR'&&same(p.ref,r.snapshot.parentRoleRef)))throw new ApiError('RESPONSE_INVALID');
   for(const binding of v.bindings){await record(binding,pid);const s=binding.snapshot;
-    if(!exact(s,['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'])
+    if(!exact(s,[...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'],...(Object.hasOwn(s,'connectionKind')?['connectionKind']:[])])||Object.hasOwn(s,'connectionKind')&&s.connectionKind!=='REGISTERED_DEFINITION'
       ||![s.assignmentRef,s.roleRef,s.connectionRef,s.sessionRef].every(ref)||s.existingSessionBindingRef!==null&&!ref(s.existingSessionBindingRef)||s.generation!==binding.ref.version
-      ||!v.roles.some(r=>same(r.ref,s.roleRef))||!text(s.reason)||!person(s.boundBy)||!date(s.boundAt)||s.state!=='RESERVED'||s.externalSessionHandleRef!==null||s.connectionReadiness!=='CANDIDATE_ONLY'||s.executionAuthorized!==false||s.dispatchPerformed!==false)throw new ApiError('RESPONSE_INVALID');
+      ||!v.roles.some(r=>same(r.ref,s.roleRef))||!text(s.reason)||!person(s.boundBy)||!date(s.boundAt)||s.state!=='RESERVED'||s.externalSessionHandleRef!==null||s.connectionReadiness!==(s.connectionKind==='REGISTERED_DEFINITION'?'REGISTERED_DEFINITION_ONLY':'CANDIDATE_ONLY')||s.executionAuthorized!==false||s.dispatchPerformed!==false)throw new ApiError('RESPONSE_INVALID');
   }
   if(new Set(v.bindings.map(r=>r.snapshot.roleRef.id)).size!==v.bindings.length)throw new ApiError('RESPONSE_INVALID');
   for(const preparation of v.preparations){await record(preparation,pid);const s=preparation.snapshot,i=s.intent;
@@ -87,11 +87,12 @@ export async function prepareResponsibleSessionInput(client:ApiClient,confirmed:
   const state=await readResponsibleSessionState(client,confirmed);if(!active())return null;
   const next=newResponsibleSessionBuffer(confirmed,session,generation),role=state.roles.find(r=>r.snapshot.kind===selected),existing=state.bindings.find(r=>same(r.snapshot.roleRef,role?.ref??null));
   if(buffer?.reservationKind!==undefined)next.reservationKind=selected;
-  if(existing)next.connectionRef=structuredClone(existing.snapshot.connectionRef);
+  if(existing){next.connectionRef=structuredClone(existing.snapshot.connectionRef);if(existing.snapshot.connectionKind==='REGISTERED_DEFINITION')next.connectionKind='REGISTERED_DEFINITION';}
   return{buffer:next,state};
 }
 export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:DocumentSession,confirmed:ConfirmedAssignmentView,state:ResponsibleSessionState,action:ResponsibleSessionAction):DocumentWrite {
   confirmedBinding(confirmed);
+  if(Object.hasOwn(b,'connectionKind')&&b.connectionKind!=='REGISTERED_DEFINITION')throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   if(b.projectId!==confirmed.projectId||!same(b.assignmentRef,confirmed.ref)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||state.projectId!==b.projectId||!same(state.assignmentRef,b.assignmentRef)||!text(b.reason)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
   const coordinator=state.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
   const selected=b.reservationKind===undefined?'STAGE_OWNER':b.reservationKind,bindingAction=action==='BIND'||action==='BIND_COORDINATOR',role=action==='BIND_COORDINATOR'?coordinator:stage;
@@ -105,7 +106,7 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
     if(bindingAction){
       const previous=p.payload.existingSessionBindingRef;
       if(previous!==null&&!ref(previous))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
-      if(!role||p.operation!=='bindResponsibleSession'||!same(p.payload.roleRef,role.ref)||!same(p.payload.assignmentRef,confirmed.ref)||!same(p.payload.connectionRef,b.connectionRef)
+      if(!role||p.operation!=='bindResponsibleSession'||!same(p.payload.roleRef,role.ref)||!same(p.payload.assignmentRef,confirmed.ref)||!same(p.payload.connectionRef,b.connectionRef)||p.payload.connectionKind!==b.connectionKind
         ||p.targetId!==(previous?.id??null)||p.expectedVersion!==(previous?.version??0))throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
     }else if(p.operation!=='defineProjectRole'||p.payload.kind!==action||p.targetId!==null||p.expectedVersion!==0
       ||!same(p.payload.stageRef,action==='COORDINATOR'?null:{applicationRef:confirmed.snapshot.definition.taskRef.applicationRef,nodeId:confirmed.snapshot.definition.taskRef.nodeId})
@@ -120,26 +121,35 @@ export function prepareResponsibleSessionAction(b:ResponsibleSessionBuffer,s:Doc
   }else if(bindingAction){
     if(!role||!ref(b.connectionRef))throw new ApiError('RESPONSIBLE_SESSION_SELECTION_REQUIRED');
     const old=state.bindings.find(v=>same(v.snapshot.roleRef,role.ref));
-    if(old&&!same(old.snapshot.connectionRef,b.connectionRef))throw new ApiError('SESSION_REPLACEMENT_REQUIRED',412);
+    if(old&&(!same(old.snapshot.connectionRef,b.connectionRef)||old.snapshot.connectionKind!==b.connectionKind))throw new ApiError('SESSION_REPLACEMENT_REQUIRED',412);
     operation='bindResponsibleSession';targetId=old?.ref.id??null;expectedVersion=old?.ref.version??0;
-    payload={assignmentRef:confirmed.ref,roleRef:role.ref,connectionRef:b.connectionRef,existingSessionBindingRef:old?.ref??null,reason:b.reason};
+    payload={assignmentRef:confirmed.ref,roleRef:role.ref,connectionRef:b.connectionRef,existingSessionBindingRef:old?.ref??null,reason:b.reason,...(b.connectionKind?{connectionKind:b.connectionKind}:{})};
   }else throw new ApiError('RESPONSIBLE_SESSION_INPUT_INVALID');
   return{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:b.controlGeneration,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:structuredClone(payload)};
 }
 export async function sendResponsibleSessionAction(client:ApiClient,command:DocumentWrite,session:DocumentSession) {
   const approval=command.approvalRef as any;
   if(!['defineProjectRole','bindResponsibleSession'].includes(command.operation)||command.clientId!==session.clientId||approval!==null&&(!exact(approval,['requestId','decisionId','scopeDigest'])||!uuid(approval.requestId)||!uuid(approval.decisionId)||!/^[a-f0-9]{64}$/.test(approval.scopeDigest))||command.baselineRefs.length)throw new ApiError('RESPONSIBLE_SESSION_BINDING_INVALID');
-  const receipt=await postDocumentCommand(client,command,session.csrfToken),data=receipt.data;
+  const receipt=command.payload.connectionKind==='REGISTERED_DEFINITION'?await postRegisteredReservation(client,command,session.csrfToken):await postDocumentCommand(client,command,session.csrfToken),data=receipt.data;
   if(!data||!ref(data.ref)||receipt.targetId!==data.ref.id||receipt.version!==data.ref.version||data.status!==(command.operation==='defineProjectRole'?'PROJECT_ROLE_DEFINED':'RESPONSIBLE_SESSION_RESERVED'))throw new ApiError('RESPONSE_INVALID');
   await verifyHash(data.snapshot,data.ref);
-  const snapshot=data.snapshot,input=command.operation==='defineProjectRole'?Object.fromEntries(['kind','stageRef','parentRoleRef','reason'].map(k=>[k,snapshot[k]])):Object.fromEntries(['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason'].map(k=>[k,snapshot[k]]));
+  const snapshot=data.snapshot,input=command.operation==='defineProjectRole'?Object.fromEntries(['kind','stageRef','parentRoleRef','reason'].map(k=>[k,snapshot[k]])):Object.fromEntries([...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason'],...(Object.hasOwn(snapshot,'connectionKind')?['connectionKind']:[])].map(k=>[k,snapshot[k]]));
   if(command.operation==='defineProjectRole'){
     if(data.ref.version!==1||!exact(snapshot,['kind','stageRef','parentRoleRef','reason','definedBy','definedAt'])||!same(snapshot.definedBy,{kind:'HUMAN',userId:session.user.id})||!date(snapshot.definedAt))throw new ApiError('RESPONSE_INVALID');
   }else{
-    if(!exact(snapshot,['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'])
+    if(!exact(snapshot,[...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'],...(Object.hasOwn(snapshot,'connectionKind')?['connectionKind']:[])])||Object.hasOwn(snapshot,'connectionKind')&&snapshot.connectionKind!=='REGISTERED_DEFINITION'
       ||data.ref.version!==command.expectedVersion+1||command.targetId!==null&&data.ref.id!==command.targetId||!ref(snapshot.sessionRef)||snapshot.sessionRef.version!==1||snapshot.generation!==data.ref.version
-      ||!same(snapshot.boundBy,{kind:'HUMAN',userId:session.user.id})||!date(snapshot.boundAt)||snapshot.connectionReadiness!=='CANDIDATE_ONLY')throw new ApiError('RESPONSE_INVALID');
+      ||!same(snapshot.boundBy,{kind:'HUMAN',userId:session.user.id})||!date(snapshot.boundAt)||snapshot.connectionReadiness!==(snapshot.connectionKind==='REGISTERED_DEFINITION'?'REGISTERED_DEFINITION_ONLY':'CANDIDATE_ONLY'))throw new ApiError('RESPONSE_INVALID');
   }
   if(!same(input,command.payload)||command.operation==='bindResponsibleSession'&&(snapshot.state!=='RESERVED'||snapshot.externalSessionHandleRef!==null||snapshot.executionAuthorized!==false||snapshot.dispatchPerformed!==false))throw new ApiError('RESPONSE_INVALID');
   return {ref:data.ref,snapshot:data.snapshot};
+}
+
+/** 신규 등록 정의 분기만의 bounded 응답판독. 기존 후보 전송 계약은 건드리지 않는다. */
+export class RegisteredReservationRejected extends ApiError{}
+async function postRegisteredReservation(client:ApiClient,command:DocumentWrite,csrf:string){
+ let response:Response;try{response=await client.transport.call(globalThis,`/api/v1/projects/${command.projectId}/commands`,{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':csrf,'Idempotency-Key':command.commandId},body:JSON.stringify(command)});}catch{throw new ApiError('CONNECTION_LOST');}
+ let value:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??'')||!response.body)throw Error();const reader=response.body.getReader(),chunks:Uint8Array[]=[],max=2097152;let size=0;try{while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>max){await reader.cancel();throw Error();}chunks.push(r.value);}}finally{reader.releaseLock();}const bytes=new Uint8Array(size);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);value=JSON.parse(raw);const stack:{keys:Set<string>|null;key:boolean}[]=[];for(const token of raw.match(/"(?:\\.|[^"\\])*"|[{}\[\],:]|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/g)??[]){if(token==='{'||token==='[')stack.push({keys:token==='{'?new Set():null,key:token==='{'});else if(token==='}'||token===']')stack.pop();else{const frame=stack.at(-1);if(!frame?.keys)continue;if(token===',')frame.key=true;else if(token===':')frame.key=false;else if(frame.key&&token.startsWith('"')){const k=JSON.parse(token);if(frame.keys.has(k))throw Error();frame.keys.add(k);}}}}catch{throw new ApiError('RESPONSE_INVALID',response.status);}
+ if(!response.ok){const codes:Record<number,readonly string[]>={400:['INPUT_INVALID'],401:['AUTH_REQUIRED'],403:['PROJECT_WRITE_DENIED','PROJECT_CONTROL_REQUIRED','PROJECT_OPERATION_DENIED'],404:['NOT_FOUND'],409:['VERSION_CONFLICT','CONTROL_GENERATION_CONFLICT','IDEMPOTENCY_CONFLICT','ROLE_STAGE_NOT_CURRENT','SESSION_REPLACEMENT_REQUIRED','PROJECT_ROLE_ALREADY_DEFINED','APPROVAL_CANDIDATE_MISMATCH'],412:['PROJECT_ARCHIVED','REAUTHENTICATION_REQUIRED','APPROVAL_REQUIRED','SOURCE_VERIFIER_NOT_CONNECTED','RESPONSIBLE_SESSION_SENSITIVE_CONTENT','APPROVAL_BASIS_NOT_CURRENT'],413:['PAYLOAD_TOO_LARGE'],422:['RESPONSIBLE_SESSION_INPUT_INVALID','PROJECT_ROLE_INPUT_INVALID','ROLE_STAGE_MISMATCH','ROLE_PARENT_INVALID']};if(response.status>=400&&response.status<500&&exact(value,['code','message','requestId','targetId','retryDisposition','details'])&&typeof value.code==='string'&&codes[response.status]?.includes(value.code)&&['요청을 처리하지 못했습니다','대상을 찾을 수 없습니다'].includes(value.message)&&text(value.requestId)&&value.requestId.length<=200&&value.targetId===null&&value.retryDisposition==='not-retryable'&&exact(value.details,[]))throw new RegisteredReservationRejected(value.code,response.status);throw new ApiError('RESPONSE_INVALID',response.status);}
+ if(!value||value.commandId!==command.commandId||value.projectId!==command.projectId||value.status!=='APPLIED'||!uuid(value.operationId)||!date(value.serverReceivedAt))throw new ApiError('RESPONSE_INVALID');return value;
 }

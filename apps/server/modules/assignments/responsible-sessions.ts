@@ -1,3 +1,4 @@
+import {ProjectConnectionDefinitions} from '../connections/project-connection-definitions.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -30,6 +31,7 @@ export interface ProjectRoleInput {
   kind: 'COORDINATOR' | 'STAGE_OWNER'; stageRef: ProjectStageRef | null; parentRoleRef: VersionRef | null; reason: string;
 }
 export interface ResponsibleSessionBindingInput {
+  connectionKind?:'REGISTERED_DEFINITION';
   assignmentRef: VersionRef; roleRef: VersionRef; connectionRef: VersionRef; existingSessionBindingRef: VersionRef | null; reason: string;
 }
 
@@ -55,7 +57,7 @@ export function readProjectRole(value: unknown): ProjectRoleInput {
 }
 export function readResponsibleSessionBinding(value: unknown): ResponsibleSessionBindingInput {
   const input = copyInput(value, 'RESPONSIBLE_SESSION_INPUT_INVALID');
-  if (!recordV1(input, ['assignmentRef', 'roleRef', 'connectionRef', 'existingSessionBindingRef', 'reason'])
+  if (!recordV1(input, [...['assignmentRef', 'roleRef', 'connectionRef', 'existingSessionBindingRef', 'reason'],...(!!input&&typeof input==='object'&&Object.hasOwn(input,'connectionKind')?['connectionKind']:[])]) || !!input&&typeof input==='object'&&Object.hasOwn(input,'connectionKind')&&(input as any).connectionKind!=='REGISTERED_DEFINITION'
     || !refV1(input.assignmentRef) || !refV1(input.roleRef) || !refV1(input.connectionRef)
     || input.existingSessionBindingRef !== null && !refV1(input.existingSessionBindingRef) || !validReason(input.reason)) {
     throw new AuthFailure('RESPONSIBLE_SESSION_INPUT_INVALID', 422);
@@ -78,9 +80,10 @@ export class ResponsibleSessions {
   readonly assignments: Pick<ProjectAssignmentConfirmations, 'read'>;
   readonly drafts: Pick<ProjectAssignmentDrafts, 'current'>;
   readonly connections: Pick<ProjectConnectionCandidates, 'read'>;
+  readonly #definitionRead:ProjectConnectionDefinitions['read']|null;
   constructor(methods: Pick<ProjectMethodologies, 'readApplication'>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>,
-    drafts: Pick<ProjectAssignmentDrafts, 'current'>, connections: Pick<ProjectConnectionCandidates, 'read'>) {
-    this.methods = methods; this.assignments = assignments; this.drafts = drafts; this.connections = connections;
+    drafts: Pick<ProjectAssignmentDrafts, 'current'>, connections: Pick<ProjectConnectionCandidates, 'read'>, definitions?:ProjectConnectionDefinitions) {
+    this.methods = methods; this.assignments = assignments; this.drafts = drafts; this.connections = connections;this.#definitionRead=definitions instanceof ProjectConnectionDefinitions?ProjectConnectionDefinitions.prototype.read.bind(definitions):null;
   }
   #envelope(request: ProjectCommand, operation: string, previous: VersionRef | null) {
     if (request.operation !== operation || request.targetId !== (previous?.id ?? null) || request.expectedVersion !== (previous?.version ?? 0)) throw new AuthFailure('VERSION_CONFLICT', 409);
@@ -91,7 +94,7 @@ export class ResponsibleSessions {
     if (!refV1(ref) || row.operation !== operation || row.state !== 'APPLIED' || row.command_actor !== row.created_by || row.command_client !== row.client_id
       || row.result_ref?.projectId !== row.project_id || row.result_ref?.status !== 'APPLIED' || row.result_ref?.data?.status !== status
       || !same(row.result_ref?.data?.ref, ref) || !same(row.result_ref?.data?.snapshot, snapshot) || contentHash(canonicalJson(snapshot)) !== ref.contentHash) throw Error('INTEGRITY');
-    const payload=operation==='defineProjectRole'?readProjectRole({kind:snapshot.kind,stageRef:snapshot.stageRef,parentRoleRef:snapshot.parentRoleRef,reason:snapshot.reason}):readResponsibleSessionBinding({assignmentRef:snapshot.assignmentRef,roleRef:snapshot.roleRef,connectionRef:snapshot.connectionRef,existingSessionBindingRef:snapshot.existingSessionBindingRef,reason:snapshot.reason});
+    const payload=operation==='defineProjectRole'?readProjectRole({kind:snapshot.kind,stageRef:snapshot.stageRef,parentRoleRef:snapshot.parentRoleRef,reason:snapshot.reason}):readResponsibleSessionBinding({assignmentRef:snapshot.assignmentRef,roleRef:snapshot.roleRef,connectionRef:snapshot.connectionRef,existingSessionBindingRef:snapshot.existingSessionBindingRef,reason:snapshot.reason,...(Object.hasOwn(snapshot,'connectionKind')?{connectionKind:snapshot.connectionKind}:{})});
     const target=operation==='defineProjectRole'?null:(payload as ResponsibleSessionBindingInput).existingSessionBindingRef,expected=target?.version??0;
     if(!Array.isArray(row.receipt_rows)||row.receipt_rows.length!==1||!Array.isArray(row.audit_rows)||row.audit_rows.length!==1||!Array.isArray(row.approval_rows))throw Error('INTEGRITY');
     const ar=row.receipt_rows[0],audit=row.audit_rows[0];let approvalRef=null;
@@ -168,9 +171,9 @@ export class ResponsibleSessions {
       const ref = { id: row.binding_id, version: Number(row.version), contentHash: row.content_hash }, snapshot = row.snapshot_json;
       await this.#verifyReceipt(db,actor,row, ref, snapshot, 'bindResponsibleSession', 'RESPONSIBLE_SESSION_RESERVED');
       readResponsibleSessionBinding({ assignmentRef: snapshot.assignmentRef, roleRef: snapshot.roleRef, connectionRef: snapshot.connectionRef, existingSessionBindingRef: snapshot.existingSessionBindingRef, reason: snapshot.reason });
-      if (!recordV1(snapshot, ['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'])
+      if (!recordV1(snapshot, [...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'],...(Object.hasOwn(snapshot,'connectionKind')?['connectionKind']:[])])
         || !refV1(snapshot.sessionRef) || snapshot.sessionRef.id !== row.session_id || snapshot.roleRef.id !== row.role_id || snapshot.generation !== ref.version
-        || snapshot.state !== 'RESERVED' || snapshot.externalSessionHandleRef !== null || snapshot.connectionReadiness !== 'CANDIDATE_ONLY'
+        || snapshot.state !== 'RESERVED' || snapshot.externalSessionHandleRef !== null || snapshot.connectionReadiness !== (snapshot.connectionKind==='REGISTERED_DEFINITION'?'REGISTERED_DEFINITION_ONLY':'CANDIDATE_ONLY')
         || snapshot.executionAuthorized !== false || snapshot.dispatchPerformed !== false || !isoV1(snapshot.boundAt)
         || !same(snapshot.boundBy, { kind: 'HUMAN', userId: row.created_by })) throw Error();
       return { ref, snapshot };
@@ -187,7 +190,8 @@ export class ResponsibleSessions {
       const snapshot = session?.snapshot_json;
       if(session){const data=session.result_ref?.data;await this.#verifyReceipt(db,actor,session,data?.ref,data?.snapshot,'bindResponsibleSession','RESPONSIBLE_SESSION_RESERVED');}
       if (!session || !same(sessionRef, { id: session.session_id, version: Number(session.version), contentHash: session.content_hash })
-        || contentHash(canonicalJson(snapshot)) !== sessionRef.contentHash || !recordV1(snapshot, ['roleRef','connectionRef','state','externalSessionHandleRef','reservedBy','reservedAt'])
+        || contentHash(canonicalJson(snapshot)) !== sessionRef.contentHash || !recordV1(snapshot, [...['roleRef','connectionRef','state','externalSessionHandleRef','reservedBy','reservedAt'],...(Object.hasOwn(snapshot,'connectionKind')?['connectionKind']:[])])
+        || (Object.hasOwn(snapshot,'connectionKind')?snapshot.connectionKind!=='REGISTERED_DEFINITION'||view.snapshot.connectionKind!==snapshot.connectionKind:Object.hasOwn(view.snapshot,'connectionKind'))
         || !same(snapshot.roleRef, view.snapshot.roleRef) || !same(snapshot.connectionRef, view.snapshot.connectionRef)
         || snapshot.state !== 'RESERVED' || snapshot.externalSessionHandleRef !== null || !isoV1(snapshot.reservedAt)
         || !same(snapshot.reservedBy, { kind: 'HUMAN', userId: session.created_by }) || session.state !== 'APPLIED' || session.operation !== 'bindResponsibleSession'
@@ -210,22 +214,29 @@ export class ResponsibleSessions {
       const task = assignment.snapshot.definition.taskRef;
       if (!same(task.applicationRef, role.snapshot.stageRef.applicationRef) || task.nodeId !== role.snapshot.stageRef.nodeId) throw new AuthFailure('ROLE_STAGE_MISMATCH', 422);
     }
-    const connection = await this.connections.read(db, actor, request.projectId, input.connectionRef.id, input.connectionRef.version);
-    if (!same(connection.ref, input.connectionRef)) throw new AuthFailure('VERSION_CONFLICT', 409);
-    const connectionHead = (await db.query('SELECT head_version FROM anvil.connection_candidates WHERE project_id=$1 AND id=$2 FOR SHARE', [request.projectId, input.connectionRef.id])).rows[0];
-    if (connection.expired || connection.candidate.kind !== 'CONNECTION_CANDIDATE' || Number(connectionHead?.head_version) !== input.connectionRef.version) throw new AuthFailure('CONNECTION_CANDIDATE_NOT_CURRENT', 412);
+    if(input.connectionKind==='REGISTERED_DEFINITION'){
+      if(!this.#definitionRead)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+      const connection=await this.#definitionRead(db,actor,request.projectId,input.connectionRef.id,input.connectionRef.version);
+      const heads=(await db.query('SELECT head_version FROM anvil.agent_connections WHERE project_id=$1 AND id=$2',[request.projectId,input.connectionRef.id])).rows;
+      if(!same(connection.ref,input.connectionRef)||heads.length!==1||Number(heads[0].head_version)!==input.connectionRef.version)throw new AuthFailure('VERSION_CONFLICT',409);
+    }else{
+      const connection = await this.connections.read(db, actor, request.projectId, input.connectionRef.id, input.connectionRef.version);
+      if (!same(connection.ref, input.connectionRef)) throw new AuthFailure('VERSION_CONFLICT', 409);
+      const connectionHead = (await db.query('SELECT head_version FROM anvil.connection_candidates WHERE project_id=$1 AND id=$2 FOR SHARE', [request.projectId, input.connectionRef.id])).rows[0];
+      if (connection.expired || connection.candidate.kind !== 'CONNECTION_CANDIDATE' || Number(connectionHead?.head_version) !== input.connectionRef.version) throw new AuthFailure('CONNECTION_CANDIDATE_NOT_CURRENT', 412);
+    }
     const latest = (await db.query(bindingSelect + 'WHERE b.project_id=$1 AND b.role_id=$2 ORDER BY b.version DESC LIMIT 1', [request.projectId, input.roleRef.id])).rows[0];
     let previous: Awaited<ReturnType<ResponsibleSessions['readBinding']>> | null = null;
     if (latest) {
       const view = await this.#bindingView(db,actor,latest);
-      if (!input.existingSessionBindingRef || !same(view.ref, input.existingSessionBindingRef) || !same(view.snapshot.connectionRef, input.connectionRef)) throw new AuthFailure('SESSION_REPLACEMENT_REQUIRED', 409);
+      if (!input.existingSessionBindingRef || !same(view.ref, input.existingSessionBindingRef) || !same(view.snapshot.connectionRef, input.connectionRef)||view.snapshot.connectionKind!==input.connectionKind) throw new AuthFailure('SESSION_REPLACEMENT_REQUIRED', 409);
       previous = await this.readBinding(db, actor, request.projectId, view.ref.id, view.ref.version);
     } else if (input.existingSessionBindingRef !== null) throw new AuthFailure('VERSION_CONFLICT', 409);
     const at = (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
-    const session = { roleRef: input.roleRef, connectionRef: input.connectionRef, state: 'RESERVED', externalSessionHandleRef: null, reservedBy: { kind: 'HUMAN', userId: actor.actorId }, reservedAt: at };
+    const session = { ...(input.connectionKind?{connectionKind:input.connectionKind}:{}),roleRef: input.roleRef, connectionRef: input.connectionRef, state: 'RESERVED', externalSessionHandleRef: null, reservedBy: { kind: 'HUMAN', userId: actor.actorId }, reservedAt: at };
     const sessionRef = previous?.snapshot.sessionRef ?? { id: randomUUID(), version: 1, contentHash: contentHash(canonicalJson(session)) };
     const version = (previous?.ref.version ?? 0) + 1;
-    const snapshot = { ...input, sessionRef, generation: version, state: 'RESERVED', externalSessionHandleRef: null, connectionReadiness: 'CANDIDATE_ONLY', executionAuthorized: false, dispatchPerformed: false, boundBy: { kind: 'HUMAN', userId: actor.actorId }, boundAt: at };
+    const snapshot = { ...input, sessionRef, generation: version, state: 'RESERVED', externalSessionHandleRef: null, connectionReadiness: input.connectionKind==='REGISTERED_DEFINITION'?'REGISTERED_DEFINITION_ONLY':'CANDIDATE_ONLY', executionAuthorized: false, dispatchPerformed: false, boundBy: { kind: 'HUMAN', userId: actor.actorId }, boundAt: at };
     const ref = { id: previous?.ref.id ?? randomUUID(), version, contentHash: contentHash(canonicalJson(snapshot)) };
     if(request.approvalRef!==null)await new ProjectApprovals().authorize(db,actor,request,policyRef);
     await db.query("SELECT set_config('anvil.responsible_session_payload',$1,true)",[canonicalJson(request.payload)]);

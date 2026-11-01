@@ -49,6 +49,7 @@ export class ProjectExecutionPreparations {
     if(binding.projectId!==request.projectId||!same(binding.ref,input.roleBindingRef)||!same(binding.snapshot.assignmentRef,input.assignmentRef)
       ||!same(binding.snapshot.connectionRef,input.connectionRef)||binding.snapshot.state!=='RESERVED'||binding.snapshot.externalSessionHandleRef!==null
       ||binding.snapshot.executionAuthorized!==false||binding.snapshot.dispatchPerformed!==false)throw new AuthFailure('EXECUTION_BINDING_MISMATCH',409);
+    if(Object.hasOwn(binding.snapshot,'connectionKind')||binding.snapshot.connectionReadiness!=='CANDIDATE_ONLY')throw new AuthFailure('EXECUTION_BINDING_MISMATCH',409);
     const head=(await db.query('SELECT binding_id,version,content_hash FROM anvil.role_bindings WHERE project_id=$1 AND role_id=$2 ORDER BY version DESC LIMIT 1',[request.projectId,binding.snapshot.roleRef.id])).rows[0];
     if(!head||!same(input.roleBindingRef,{id:head.binding_id,version:Number(head.version),contentHash:head.content_hash}))throw new AuthFailure('VERSION_CONFLICT',409);
     const context=await this.contexts.read(db,actor,request.projectId,input.contextBundleRef.id,input.contextBundleRef.version);
