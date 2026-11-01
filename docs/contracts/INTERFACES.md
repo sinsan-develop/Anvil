@@ -1156,3 +1156,9 @@ UI10은현재고정지식→허가대상조회/목적입력→명시요청보관
 ## 2026-10-28 FN17 승인 요청 알림 생산 source 계약 채택
 
 직접 승인 call_95ad36ce82b64af7925dc9282b12f3e0/item0 및 docs/approvals/FN17_APPROVAL_NOTIFICATION_PRODUCER_SOURCE_20261028.json(D2DCD9B8…)에 따라 결정안 BAA454FC…의 A를 채택했다. 기존 requestApproval 신규 성공 callback에서 원 receipt/request·후보capture와 같은 transaction으로 본인 APPROVAL_REQUESTED/IN_APP 알림을 보관한다. 공개 receipt·기존 알림9필드/GET/list/mark를 유지하고 실패는 원요청까지 rollback한다. 프로젝트 누적10000행 초과는429 NOTIFICATION_CAPACITY_EXCEEDED이며 자동삭제OFF/보존기간미정으로 상한후 새요청이 계속 차단될 수 있다. 복구는 별도 결정, 과거replay/GET/mark 추가생산·backfill0이다. reader지원19연산/GUC·원본검증과 producer 최초/후속 정책창·세션/요청기한을 대조한다. 실제DB·DDL/GRANT/정책권한·서비스·Secret·Agent/외부송신 실행은 제외하며 결과서의source-only증거·미검증을 따른다.
+
+
+### 2026-11-01 관측 HTTPS wire A안 source 계약 채택
+신산님 직접 지시 ‘관측 HTTPS 계약과 FN14 Web의 코드·화면·합성 검증 구현을 승인해’에 따라 [고정 후보 A안](../work_packages/FN06_FN08_OBSERVATION_HTTPS_WIRE_SOURCE_DECISION_20261101.md)(SHA256 62E9B2D3E6D36489C2D7769BD8158B80E737A86D9FAA97A6035163FB3F4A00B3) §4~6의 정상 EXECUTION challenge/observations HTTP 형식과 Node HTTPS 전송 코드·합성검증을 채택한다. 후보의 예전 미채택 표기는 당시 이력이다. 공개 URL/기존 proof exact8·서명 domain·canonical bodyHash를 유지하고, observations의 canonical base64url `Anvil-Execution-Auth:{schemaVersion:1,challengeRef,proof,signature}` 및 HTTP200 exact `{schemaVersion:1,data}` 포장을 적용한다. challenge는 기존 exact10필드, ACK는 기존 ref/snapshot/hash/sequence/gaps 의미와 고정 false 권위 flags를 유지한다. 전체 deadline·16KiB/1MiB·header4KiB decoded/8KiB encoded 상한과 fail-closed 조건은 후보 원문과 [구현지시서](../work_packages/FN06_FN08_OBSERVATION_HTTPS_SOURCE_IMPLEMENTATION_20261101.md)를 따른다.
+
+실제 DB·권한·키·서비스·Agent 실행, 실제 socket/API 시험·등록·원기록 생성·기존 프로젝트 차단 해제는 제외한다. 기존 SYNTHETIC_ONLY 모델을 production 응답으로 바꾸지 않으며 이 채택은 서버 생산 repository/서비스 등록이나 실제 연결·TLS·실행/완료 검증을 뜻하지 않는다.

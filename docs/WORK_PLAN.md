@@ -1815,3 +1815,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-11-01 FN04/UI05·UI06 등록 산출물–고정 업무 추적 source 연결**: a851090b8c57c25f55eb93fbc90f010e1a96fe42에서 기존 ARTIFACT→PLAN_TASK/IMPLEMENTS의 저장·정/역조회와 선택 결과→고정 임무 대조→명시 저장·App 원명령 보존을 연결했다. Main 직접/인접25PASS·type/diff/Web메모리build0, 독립C0/I0·오프라인 실제React browser 정상/중요음성 확인·QA정리0. 0064.pending 미적용이며 실제DB/권한/파일bytes·App route종단/서비스/Agent·사용자인수와전체업무는미완료다. [검수결과](04_test_reports/AV3/FN04_ARTIFACT_TASK_TRACE_RESULT_20261101.md)/WORK_STATUS 참조. 기존작업중·부분구현상태와선행·완료기준은유지한다.
+
+
+- **2026-11-01 관측 HTTPS·FN14 Web 직접 승인 재개**: 신산님이 관측 HTTPS 후보 A 계약·코드·합성검증과 FN14 Web 코드·화면·합성검증을 직접 승인했다. 기존 차단 사유의 이 두 source 경계가 해소되어 단일 Primary가 관측 신규4→FN14 Web 순서로 진행한다. 실제DB/권한/키/서비스/Agent 실행·사용자/백업자료조사·기존프로젝트차단해제는 제외하며 전체업무 완료·실환경 PASS로 해석하지 않는다. 관측 WI FN06_FN08_OBSERVATION_HTTPS_SOURCE_IMPLEMENTATION_20261101.md/WORK_STATUS 참조.

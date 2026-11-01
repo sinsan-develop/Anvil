@@ -11181,3 +11181,9 @@
 - 차단 감사3(3연속 동일조건 확인): e27160은source9d9b648c·보호3만유지/QA부재를확인했고PMO cursor91은changedfalse·idle·새결정없음이다. 미채택관측HTTPS 후보SHA62E9B2D3E6D36489C2D7769BD8158B80E737A86D9FAA97A6035163FB3F4A00B3도불변이다. Primary/Reviewer 모두completed이며현재실행중job/제품writer/임시QA0. 직전goal턴은진도가아닌동일차단재검증이고이번에도새안전행동을가능하게할답변/외부변화가없다. 완료검사를반복하거나미관측합성자료로범위를대체하지않는다.
 - 목표 차단 판정: 기존에전달한관측HTTPS 또는FN14 Web한정계약결정이필요하고,실제DB/권한/키/사용자·백업자료/서비스/Agent제외도유지된다. Stage B~E의대조한범위에서직접이어갈독립소비누락을확정하지못했으며이는전체source완료/전수감사주장이아니다. 전체WORK_PLAN은미완료·필수실환경검증미충족으로완료보고/merge0이다. 이3회감사에따라goal을blocked로전환하고기존질문답변이나명시재개/범위변경이있으면해당근거부터새차단감사를시작한다. 예약생성/삭제0·신규세션0·승인질문반복0.
 - 이번첫commentary의외국어혼입1은즉시한국어로바로잡았다. 새제품코드/시험/SQL/설정/실환경변경없이현재상태기록만보존한다.
+
+
+### 2026-11-01 최신 직접 승인으로 관측 HTTPS·FN14 Web 재개
+- 2026-11-01 최신직접승인 재개: 신산님이 ‘관측 HTTPS 계약과 FN14 Web의 코드·화면·합성 검증 구현을 승인해. 실제 DB·권한·키·서비스·Agent 실행은 제외하고 기존 subagent에게 맡겨’라고 직접 지시했다. goal은사용자에의해active로전환됐음을확인했다. 앞선blocked와차단감사3은당시이력이며현재두 source결정경계는해소됐다. 실제효과/자료조사제외는유지한다.
+- 95421a Git preflight: cf35023a1b2093792074abe7f74f9eebbc140016 local/private동일·main f976불변·tracked clean/보호3유지. 기존Primary에관측A 신규test2 TEST_ONLY를followup으로지시했고기존Reviewer가FN14Web6실제미연결·부재3/기존3을확인했다. 새세션/담당교체/자동화0·단일writer유지.
+- 관측 WI docs/work_packages/FN06_FN08_OBSERVATION_HTTPS_SOURCE_IMPLEMENTATION_20261101.md SHA2568FAF945EF9E18CEB5A49F44C91EAEE956C39AA0C6225498E8C2BDBFB2EB35329, 독립C0/I0. 후보62E9B2D3를부모로A공개header/응답·실NodeHTTPS코드만채택하며INTERFACES에현재승인기록추가,기존후보원문hash불변. Main은제품write0·실socket/실API/DB/권한/키/서비스/Agent0. fake request로만검수하며ACK역전/자기event의gap모순·기한전IO0·timeout뒤lateerror/response음성도포함한다.
