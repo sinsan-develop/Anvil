@@ -1,3 +1,4 @@
+import {environmentWriteOperations} from '../../../../contracts/runtime/environment-configuration-v1.ts';
 import {BackupPolicyApprovalCandidates} from './backup-policy-approval-candidate.ts';
 import {UnderstandingReviewApprovalCandidates} from './understanding-review-approval-candidate.ts';
 const samePreparationPayload=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -20,7 +21,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = ['saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
+export const consumableOperations = [...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -47,6 +48,7 @@ export class ProjectApprovals{
   }
   if(view.storedStatus!=='APPROVED'||view.currentVersion!==2||view.expired||view.consumption)throw new AuthFailure('APPROVAL_NOT_USABLE',412);
   if(['saveBackupReference','revokeBackupReference'].includes(c.operation))await (await import('../backups/backup-reference-store.ts')).assertBackupReferenceApprovalTarget(db,actor,c.projectId,r.details.actionScope);
+  if(environmentWriteOperations.includes(c.operation as any)&&c.operation!=='saveEnvironment')await (await import('../connections/project-environment-resources.ts')).assertEnvironmentApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['defineProjectRole','bindResponsibleSession'].includes(c.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(c.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(c.operation==='activateDesignChange')await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateActivation?.payload,this.#documents);
@@ -77,6 +79,7 @@ export class ProjectApprovals{
   if(!candidatePolicy.approvalRequired)throw new AuthFailure('APPROVAL_NOT_REQUIRED',422);
   if(Date.parse(details.expiresAt)>candidatePolicy.validUntil)throw new AuthFailure('APPROVAL_EXCEEDS_POLICY_EXPIRY',422);
   if(['saveBackupReference','revokeBackupReference'].includes(details.actionScope.operation))await (await import('../backups/backup-reference-store.ts')).assertBackupReferenceApprovalTarget(db,actor,c.projectId,details.actionScope);
+  if(environmentWriteOperations.includes(details.actionScope.operation as any)&&details.actionScope.operation!=='saveEnvironment')await (await import('../connections/project-environment-resources.ts')).assertEnvironmentApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(['defineProjectRole','bindResponsibleSession'].includes(details.actionScope.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,details.actionScope);
   if(activation)await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload,this.#documents);
@@ -103,6 +106,7 @@ export class ProjectApprovals{
   if(view.currentVersion!==p.expectedVersion||view.storedStatus!=='PENDING'||view.decision)throw new AuthFailure('VERSION_CONFLICT',409);
   if(p.scopeDigest!==r.scopeDigest)throw new AuthFailure('APPROVAL_SCOPE_MISMATCH',409);
   if(view.effectiveState!=='PENDING'||canonicalJson(policyRef)!==canonicalJson(r.policyRef))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
+  if(environmentWriteOperations.includes(r.details.actionScope.operation as any)&&r.details.actionScope.operation!=='saveEnvironment')await (await import('../connections/project-environment-resources.ts')).assertEnvironmentApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['defineProjectRole','bindResponsibleSession'].includes(r.details.actionScope.operation))await assertResponsibleSessionApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(['applyLimitPolicy','revokeLimitPolicy'].includes(r.details.actionScope.operation))await new ProjectLimitPolicies().assertApprovalTarget(db,actor,c.projectId,r.details.actionScope);
   if(r.details.actionScope.operation==='activateDesignChange')await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateActivation?.payload,this.#documents);
@@ -124,6 +128,7 @@ export class ProjectApprovals{
   if(history.storedStatus!=='CONSUMED'||!history.consumption)throw new AuthFailure('APPROVAL_CONSUMPTION_INTEGRITY_FAILED',503);
   return history;
  }
+ async readEnvironmentConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){const {row,...history}=await this.#history(db,actor,pid,id,environmentWriteOperations);return history;}
  async readResponsibleSessionConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const {row,...history}=await this.#history(db,actor,pid,id,['defineProjectRole','bindResponsibleSession']);return history;
  }

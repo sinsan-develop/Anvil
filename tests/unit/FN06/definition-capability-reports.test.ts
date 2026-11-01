@@ -56,6 +56,7 @@ function storeFixture(){
  if(sql.includes('FROM anvil.permission_policies p JOIN anvil.permission_policy_versions'))return{rows:[policy()]};
  if(sql==='SELECT clock_timestamp() AS at'||sql==='SELECT clock_timestamp() at')return{rows:[{at:new Date()}]};if(sql==='SELECT transaction_timestamp() AS at'||sql==='SELECT transaction_timestamp() at')return{rows:[{at}]};
  if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:commands.filter(r=>r.project_id===p[0]&&r.actor_id===p[1]&&r.command_id===p[2])};
+ if(sql==='SELECT * FROM anvil.environment_configuration_account($1,$2,$3,$4)'){assert.deepEqual(p,[actor.authSession.id,actor.actorId,actor.clientId,pid]);return{rows:[{coverage_state:mode.coverage,generation:'1',used_bytes:mode.used,held_bytes:mode.heldBytes,complete:false,environment_heads:'0',environment_versions:'0',environment_bytes:'0',definition_bytes:String(rows.reduce((n,r)=>n+BigInt(r.canonical_bytes),0n)),report_bytes:'0'}]};} // 환경0의 기존 writer가 자신의 원형/원장을 계속 검산한다.
  if(sql.startsWith('SELECT * FROM anvil.quota_account'))return{rows:[{coverage_state:mode.coverage,used_bytes:mode.used,held_bytes:mode.heldBytes}]};
  if(sql==='SELECT id FROM anvil.agent_connections WHERE project_id=$1 AND id=$2')return{rows:heads.filter(r=>r.project_id===p[0]&&r.id===p[1])};
  if(sql.startsWith('SELECT v.definition_json'))return{rows:rows.filter(r=>r.project_id===p[0]).map(r=>({...r,head_id:r.connection_id,head_version:1}))};
@@ -90,6 +91,7 @@ function storeFixture(){
 async function reportFixture(artifactRoot?:string){
  const f=storeFixture(),reports:any[]=[],evidence:any[]=[],artifacts:any[]=[],sqls:string[]=[];const original=f.db.query.bind(f.db),denials:any[]=[];
  f.db.query=async(sql:string,p:any[]=[])=>{sqls.push(sql);
+  if(sql==='SELECT * FROM anvil.environment_configuration_account($1,$2,$3,$4)'){const value=await original(sql,p);value.rows[0].report_bytes=String(reports.reduce((n,r)=>n+BigInt(r.canonical_bytes),0n));return value;}
   if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'SERVER_DENIAL'")){assert.equal(p.length,6);assert.equal(p[0],pid);denials.push({reason:p[5],actor:JSON.parse(p[2]),client:p[3]});return{rows:[]};}
   if(sql==='SELECT canonical_bytes FROM anvil.definition_capability_reports WHERE project_id=$1 ORDER BY id')return{rows:reports.map(r=>({canonical_bytes:r.canonical_bytes}))};
   if(sql==='SELECT id,canonical_bytes FROM anvil.definition_capability_reports WHERE project_id=$1 ORDER BY id')return{rows:reports.map(r=>({id:r.id,canonical_bytes:r.canonical_bytes}))};

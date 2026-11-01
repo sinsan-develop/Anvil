@@ -1,6 +1,7 @@
-export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARATION'|'PROJECT_RESULTS'|'PROJECT_LIMITS'|'PROJECT_SOURCE_DECLARATIONS'|'PROJECT_SOURCE_OBSERVATIONS'|'PROJECT_BASELINES'|'PROJECT_HOST_TRUST';
+export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARATION'|'PROJECT_RESULTS'|'PROJECT_LIMITS'|'PROJECT_SOURCE_DECLARATIONS'|'PROJECT_SOURCE_OBSERVATIONS'|'PROJECT_BASELINES'|'PROJECT_HOST_TRUST'|'PROJECT_ENVIRONMENT';
 export const policyEditorOperations={
  CANDIDATE:[['registerConnection','도구 후보·별도 연결 정의 저장'],['readConnectionDefinition','연결 정의 고정 조회'],['saveEnvironment','환경 후보 저장'],['recordCapabilityReport','사람 능력보고 보관']],
+ PROJECT_ENVIRONMENT:[['saveEnvironmentHostDeclaration','환경 host 선언 저장·개정'],['revokeEnvironmentHostDeclaration','환경 host 선언 신규 사용 회수'],['saveCommandProfileMetadata','명령 profile 저장·개정'],['revokeCommandProfileMetadata','명령 profile 신규 사용 회수'],['saveSecretReferenceMetadata','비밀 참조 metadata 저장·개정'],['revokeSecretReferenceMetadata','비밀 참조 metadata 신규 사용 회수'],['saveEnvironment','환경 구성 저장·개정'],['readEnvironmentHostDeclaration','환경 host 선언 목록·고정 조회'],['readCommandProfileMetadata','명령 profile 목록·고정 조회'],['readSecretReferenceMetadata','비밀 참조 metadata 목록·고정 조회'],['readEnvironmentVersion','환경 구성 목록·고정 조회']],
  PROJECT_MATERIAL:[
   ['exportProject','선택 문서 원본 1개 반출'],['uploadArtifact','원문 파일 보관'],['saveDocumentDraft','문서 초안 저장'],['recordContentReview','내용 검토 기록'],['confirmDocument','문서 확정'],
   ['proposeDocumentChange','문서 수정 제안'],['importDocument','문서 가져오기'],['detachDocumentSource','문서 소스 연결 해제'],['indexDesignDocument','설계 항목 연결'],['saveWorkPlanDraft','작업계획 초안 저장'],

@@ -24,7 +24,7 @@ EV-C: 기존 S11의 폼/보호선택·App 전용버퍼 ACK·별도승인·POST/r
 
 중간 단위 검사와 전체 기능 검수를 분리한다. 중간 PASS를 환경 전체 완료로 보고하지 않는다.
 
-## 3. 정확 코드·시험 허용29경로 후보
+## 3. 정확 코드·시험 허용30경로
 
 기존16:
 1. apps/server/modules/projects/routes.ts
@@ -44,7 +44,7 @@ EV-C: 기존 S11의 폼/보호선택·App 전용버퍼 ACK·별도승인·POST/r
 15. apps/web/src/features/decisions/api.ts
 16. apps/web/src/features/decisions/ApprovalsPage.tsx
 
-신규13:
+신규14:
 17. contracts/runtime/environment-configuration-v1.ts
 18. apps/server/modules/connections/project-environment-resources.ts
 19. apps/server/modules/connections/environment-registration-evidence.ts
@@ -58,6 +58,7 @@ EV-C: 기존 S11의 폼/보호선택·App 전용버퍼 ACK·별도승인·POST/r
 27. apps/web/src/features/connections/EnvironmentConfigurationPanel.tsx
 28. tests/unit/UI11/environment-configuration-ui.test.ts
 29. tests/browser/UI11/environment-configuration-dom-harness.tsx
+30. tests/unit/FN06/environment-configuration-fixture.ts
 
 신규 이름 충돌이 없고 현재 migration0068까지임은 읽기 조사에서 확인했다. 0069는 이 구현의 제안 번호이며 dispatch 직전에 충돌을 재확인하고 Main이 단일 담당자에게 예약한다. 앞 번호를 덮어쓰거나 기존 SQL을 수정하지 않는다. 새 경로·상수/함수 이동이 필요하면 코드 쓰기 전에 근거를 Main에 반환한다.
 
@@ -102,7 +103,7 @@ Web build: 기존 Vite의 configFile:false/envDir:false/publicDir:false/write:fa
 
 실제 DB/DDL·사용자권한/정책부여·GRANT·키/인증서/credential/실Secret·서비스·실Agent/비용·실사용자/백업파일 조사·기존프로젝트차단해제·원본SQL변경·main변경은 제외한다. 새 임시PG/컨테이너/native/실브라우저도 이 지시서에 포함하지 않는다.
 
-제출은 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED를 구분한다. 변경29경로의 실제diff/hash·실행명령/exit·기능/준비실패·시험범위·미검증·livehandle/QA잔여·다음조치를 반환한다. 진행상태 문장만으로 완료라고 하지 않는다.
+제출은 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED를 구분한다. 변경30경로의 실제diff/hash·실행명령/exit·기능/준비실패·시험범위·미검증·livehandle/QA잔여·다음조치를 반환한다. 진행상태 문장만으로 완료라고 하지 않는다.
 
 실제환경 변경이 없으므로 복구는 해당source checkpoint의 정상 Git 되돌리기 검토로 한정한다. 사용자dirty/보호3/기존원문/SQL/이력을 reset/rebase/force로 지우지 않는다. 문서/합성 PASS를 실제 PG·RLS/OID/경합·App·서비스·Agent·전체FN06/계획의 PASS로 승격하지 않는다.
 
@@ -115,3 +116,14 @@ docs/04_test_reports/AV3/FN06_ENVIRONMENT_CONFIGURATION_APPROVAL_20261101.md에 
 기존 Primary만 허용29의 단일 code writer다. Main은 같은 제품 경로를 수정하지 않는다.
 최초 기능 RED와 준비 실패를 구분해 보고하고, 올바른 RED 후 같은 허용 범위에서 EV-A→EV-B→EV-C 구현·기본 검증을 계속한다. 중간 결과를 전체 완료로 처리하지 않는다.
 현재 source-only 승인 외 효과를 요구하는 시험/명령은 자동 실행하지 않는다.
+
+## 8. Main 비의미 revision — 공유 합성 fixture 한 경로
+
+부모 WI SHA256 66503F67914258179B7AACFF64B98F35156643078A444C837005F68324F33235.
+부모 직접 승인 기록 E56BC7DC86998BAF7E40668E8687DEAA84F1F57994D8D972BD352EDCCD721579 / 계약 r4 BA002F75는 불변이다.
+
+Main은 필수 검수의 Node-only fixture 배치 보완으로 신규 tests/unit/FN06/environment-configuration-fixture.ts 한 파일을 추가 허용한다. 총 허용은 기존16/신규14의 정확30이다. 기능·공개/보호 계약·검수 기준·실환경제외는 변경하지 않아 MAIN_RECONFIRMED_NON_SEMANTIC으로 결박한다. 추가 사람 승인은 요구하지 않는다.
+
+기존 environment-resources.test.ts의 실제 buildApp/인증/SQL 메모리 factory와 상수를 의미변경 없이 추출해 environment-versions/UI11 시험에서 같은 실제 생산·저장·조회 모델을 소비한다. test.ts 직접 import로 시험이 중복 등록되거나 전체 SQL 모델을 복제하는 것을 피한다.
+이 helper는 test 등록·최상위 App/공유 global store/실DB·Secret·사용자 파일 접근을 만들지 않는다. 각 시험은 독립 factory와 정확 close를 유지하고, 미모델 SQL 거절·실제 보호 검산·기존 단언을 보존한다. browser harness/bundle은 이 Node-only helper를 import하지 않는다.
+0069·기존 코드/시험의 나머지 동일 Primary 단일 writer GO는 유지한다.

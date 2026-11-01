@@ -1,3 +1,4 @@
+import {assertEnvironmentConfigurationCapacity} from './project-environment-resources.ts';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
@@ -56,8 +57,10 @@ export class ProjectDefinitionCapabilityReports {
  const account=accounts[0];if(![account.used_bytes,account.held_bytes].every(v=>/^(0|[1-9][0-9]{0,18})$/.test(String(v))))integrity();
  const rows=(await db.query('SELECT id,canonical_bytes FROM anvil.definition_capability_reports WHERE project_id=$1 ORDER BY id',[pid])).rows;let total=0n;
  for(const row of rows){const stored=await this.#stored(db,actor,pid,row.id);const bytes=this.#bytes(stored.claim,stored.snapshot);if(String(bytes)!==String(row.canonical_bytes))integrity();total+=BigInt(bytes);}
- const definitions=(await db.query('SELECT connection_id,version,canonical_bytes FROM anvil.connection_definition_versions WHERE project_id=$1 ORDER BY connection_id,version',[pid])).rows;let definitionBytes=0n;
- for(const row of definitions){const d=await this.#definitions.read(db,actor,pid,row.connection_id,Number(row.version),false);const bytes=Buffer.byteLength(canonicalJson(d.definition));if(String(bytes)!==String(row.canonical_bytes))integrity();definitionBytes+=BigInt(bytes);}
+ const configuration=await assertEnvironmentConfigurationCapacity(db,actor,pid,BigInt(amount),'EXISTING_WRITE');let definitionBytes=0n;
+ if(configuration.heads>0||configuration.versions>0){definitionBytes=configuration.definitionBytes;if(configuration.reportBytes!==total)integrity();}
+ else{const definitions=(await db.query('SELECT connection_id,version,canonical_bytes FROM anvil.connection_definition_versions WHERE project_id=$1 ORDER BY connection_id,version',[pid])).rows;
+ for(const row of definitions){const d=await this.#definitions.read(db,actor,pid,row.connection_id,Number(row.version),false);const bytes=Buffer.byteLength(canonicalJson(d.definition));if(String(bytes)!==String(row.canonical_bytes))integrity();definitionBytes+=BigInt(bytes);}}
  if(rows.length+1>10000||total+BigInt(amount)>67108864n||BigInt(account.used_bytes)+BigInt(account.held_bytes)+definitionBytes+total+BigInt(amount)>10737418240n)throw new AuthFailure('CAPABILITY_REPORT_STORAGE_LIMIT_REACHED',429);
  }
  async command(token:string,csrf:string,request:ProjectCommand){
@@ -79,10 +82,10 @@ export class ProjectDefinitionCapabilityReports {
    const at=(await db.query('SELECT transaction_timestamp() AS at')).rows[0].at as Date;
    let claim=readDefinitionCapabilityReportClaim(request.payload,{now:at});
    if(Date.parse(claim.expiresAt)>policy.validUntil)throw new AuthFailure('CAPABILITY_REPORT_EXPIRY_EXCEEDED',412);
+   if(claim.environmentRef!==null)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
    const definition=await this.#definitions.read(db,actor,request.projectId,claim.connectionRef.id,claim.connectionRef.version,false);
    const heads=(await db.query('SELECT head_version FROM anvil.agent_connections WHERE project_id=$1 AND id=$2',[request.projectId,claim.connectionRef.id])).rows;
    if(heads.length!==1||Number(heads[0].head_version)!==claim.connectionRef.version||!same(definition.ref,claim.connectionRef)||definition.definition.toolProduct!==claim.tool.product||definition.definition.toolVersion!==claim.tool.version||!same(definition.definition.environmentRef,claim.environmentRef))throw new AuthFailure('CAPABILITY_REPORT_BINDING_CONFLICT',409);
-   if(claim.environmentRef!==null)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
    if(claim.supersedesRef){const old=await this.#stored(db,actor,request.projectId,claim.supersedesRef.id);if(!same(old.ref,claim.supersedesRef)||!same(old.claim.connectionRef,claim.connectionRef)||!same(old.claim.environmentRef,claim.environmentRef))throw new AuthFailure('CAPABILITY_REPORT_BINDING_CONFLICT',409);}
    for(const a of unique(claim))await this.#evidence(db,request.projectId,a);
    await current(Date.parse(claim.expiresAt));
