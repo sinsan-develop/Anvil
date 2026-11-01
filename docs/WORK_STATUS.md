@@ -11477,3 +11477,10 @@
 - 등록 정의 HUMAN 보고 게시 checkpoint: 정확17경로 commit2e816315e692736f69ca48334df6fd5f15997c36(허용14+결과/계획/현황3),018bde commit0·4c0064 push0·dc0adf actualprivate동일/trackedclean·보호untracked3만확인했다. 원격mainf976불변·localmain04430432를따로기록,main병합/배포0이다. 0067 stage의LF→CRLF예고경고1은보존하고설정/정규화0. 결과SHA41BB7309ECFB5194BDEFC501D0B5E5931082860570CC3927FA4CFB9159B318D5. 다음은이번선행변경으로열린기존승인FN06/FN14/FN09소비누락을기존Primary에한정읽기로대조하고완료검사/기존UI01·03조사반복을피한다. 전체WORK_PLAN/실환경인수는미완료다.
 
 - 다음 선행 한정대조: 기존Primary는이번새보고로독립소비기능이새로열리지는않았음을확인했다. FN06실측은실제실행/증거필요,HUMAN보고는대체불가;FN14등록정의reader는이미연결;FN09예약은기존candidate/head와CANDIDATE_ONLY snapshot에결박돼새등록정의예약의입력/조회/보호계약확정이필요하다. Main fdcc17에서실제assignments/responsible-sessions와FUNCTION_WORK/기존예약WI로대조했다. Main의잘못된execution접두사조회c95d5a는부재준비오류로보존하고744139실목록의assignments경로로교정·제품write/실행0이다. 다음은같은Primary가실제SQL FK/proof/입력/응답차이를한정읽기로반환하고Main이최소결정후보를준비한다. 완료검사/옛UI01·03조사반복0이며새공개계약을현승인으로추정하지않는다.
+
+### 2026-11-01 FN09 등록 정의 예약 최소 결정 후보 준비
+- 직전goal턴은등록정의HUMAN보고실제구현/55검수·독립finding보완·게시2e816315/1493c3f0의진전이었다. 이번시작b1fb70은local1493/trackedclean·보호3과기존Primary실행중을확인했다. PMOcompact cursor10은추가결정/개입없음이며기존미검증범위를유지했다.
+- 한정새대조는FN09 exact5/binding14/session6·0016 CHECK/guard/0049승인proof의후보결박과직접connectionFK부재를확인했다. 새정의예약은입력/공개snapshot/저장분기채택이필요하고HUMAN보고/기존승인으로추정하지않는다. 실제준비caller의후보요구도새예약으로열지않는다.
+- 후보 docs/contracts/FN09_REGISTERED_DEFINITION_RESERVATION_DECISION_CANDIDATE_20261101.md SHA81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759를작성해기존Reviewer에독립검토를요청한다. A는기존v1을보존한명시등록정의예약분기의코드/화면/pendingSQL/합성검증, B는후순위유지/실측공급경계우선별도결정이다. 아직미채택·제품/SQL쓰기0·실환경0. Main rg의Windows pathglob123오류c17d65는-glob옵션으로교정한준비오류1이며같은명령반복/권한변경0이다.
+
+- 등록정의예약후보81E87C51 독립C0/I0·시작끝hash동일을확인했다. 기존exact5/14/6 대비신규exact6/15/7은실제새public/저장delta이며현재보호→replay/역사원증빙/교체/실행false보존을확인했다. 채택후WI에는0049 payload/session·binding proof판별결박,readBinding소비자의분기수용/거절,prepareExecution기존후보요구유지를정확고정한다. 미채택·제품/SQL쓰기0이고후보+현황2문서를게시해PMO에A채택/B선행유지의정확결정만요청한다.
