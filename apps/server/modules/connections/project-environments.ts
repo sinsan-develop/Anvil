@@ -1,3 +1,5 @@
+import {ProjectApprovals} from '../approvals/project-approvals.ts';
+import type {ApprovalDetails,ApprovalScope} from '../approvals/approval-input.ts';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
@@ -6,7 +8,7 @@ import {ProjectSourceRoots} from './project-source-roots.ts';
 import {SourceReadRecords} from './source-read-records.ts';
 import {ProjectEnvironmentResources,environmentOwner,environmentReadPolicy,assertEnvironmentHistoryProof,environmentFailure,readEnvironmentCommand,loadEnvironmentRow,loadEnvironmentWriteRow,insertEnvironmentVersion,environmentWriteGuard,uniqueEnvironmentIssues} from './project-environment-resources.ts';
 import {verifyEnvironmentRegistrationEvidence} from './environment-registration-evidence.ts';
-import {canonicalJson} from '../../../../contracts/canonical.ts';
+import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {environmentHash,readEnvironmentInput,type EnvironmentInput,type HostRef,type MetadataKind,type MetadataSnapshot,type EnvironmentVersion,type EnvironmentSourceRoot} from '../../../../contracts/runtime/environment-configuration-v1.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 export class ProjectEnvironments{
@@ -22,9 +24,9 @@ export class ProjectEnvironments{
  for(const r of input.commandProfileRefs){const p=await this.#resource(db,a,pid,'COMMAND_PROFILE_METADATA',r.ref,fresh),d=p.definition;if(!hosts.some(h=>same(h,d.hostRef))||!rootRefs.some(root=>same(root.ref,d.workingDirectory.sourceRootRef)&&same(root.hostRef,d.hostRef)))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);for(const slot of d.secretSlots){const secret=secrets.get(canonicalJson(slot.secretRef));if(!secret||!same(secret.definition.hostRef,d.hostRef))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);}}
  }
  async command(token:string,csrf:string,raw:ProjectCommand){const started=performance.now(),c=readEnvironmentCommand(raw,'ENVIRONMENT_VERSION');let input:EnvironmentInput;try{input=readEnvironmentInput(c.payload.environment);}catch{environmentFailure('ENVIRONMENT_INPUT_INVALID',422);}try{return await this.access.authenticated(token,csrf,async(db,a)=>{await currentProjectController(db,a,c);if(!a.reauthUntil||a.reauthUntil.getTime()<=Date.now())environmentFailure('REAUTHENTICATION_REQUIRED',412);const policy=await authorizeMaterial(db,a,c,true);
- // 완성형 환경의 승인 namespace 원문 보관은 별도 결정 전 닫는다. 후보 승인을 전용하지 않는다.
- if(policy.approvalRequired||c.approvalRef!==null)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);
+ const approvals=new ProjectApprovals();
  const check=environmentWriteGuard(db,a,c,policy,started);await check();const previous=await projectReplay(db,a,c);if(previous!==undefined){const result=previous as any,old=await loadEnvironmentWriteRow(db,a,c);if(!old||!same(old.ref,result.data.ref)||!same(old.snapshot,result.data.snapshot))environmentFailure();await check();return result;}
+ if(policy.approvalRequired)await approvals.authorize(db,a,c,policy.ref);else if(c.approvalRef!==null)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);
  if(!same(input.policyRef,policy.ref))environmentFailure('ENVIRONMENT_VERSION_CONFLICT',409);const old=await loadEnvironmentWriteRow(db,a,c);if(old&&(!same(old.ref,c.payload.baseRef)||old.headVersion!==old.ref.version))environmentFailure('ENVIRONMENT_VERSION_CONFLICT',409);const evidence:any[]=[];await this.references(db,a,c.projectId,input,true,evidence);await check();const body={id:old?.ref.id??randomUUID(),version:c.expectedVersion+1,...input},snapshot={...body,contentHash:environmentHash(body)},result=await insertEnvironmentVersion(db,a,c,'ENVIRONMENT_VERSION',snapshot,evidence,policy.ref);await check();return result;
  });}catch(e){if(e instanceof AuthFailure)throw e;return environmentFailure();}}
  async history(db:PoolClient,a:AuthenticatedIdentity,pid:string,id:string,version:number){await environmentOwner(db,a,pid);const v=await loadEnvironmentRow(db,a,pid,'ENVIRONMENT_VERSION',id,version),snapshot=v.snapshot as EnvironmentVersion;await assertEnvironmentHistoryProof(db,a,pid,'ENVIRONMENT_VERSION',v.ref);return{...v,snapshot};}
@@ -34,3 +36,26 @@ export class ProjectEnvironments{
  for(const item of input.commandProfileRefs)add(await this.resources.currentMetadata(db,a,pid,'COMMAND_PROFILE_METADATA',item.ref));for(const item of input.secretRefs)add(await this.resources.currentMetadata(db,a,pid,'SECRET_REFERENCE_METADATA',item.ref));issues.push({code:'OBSERVATION_UNVERIFIED',target:null});const currentIssues=uniqueEnvironmentIssues(issues);return{projectId:pid,kind:'ENVIRONMENT_VERSION',ref:v.ref,snapshot:v.snapshot,historyVerification:'STORED_CONFIGURATION_VERIFIED',current:{headVersion:v.headVersion,configurationCurrentness:unavailable?'UNAVAILABLE':currentIssues.some(i=>i.code!=='OBSERVATION_UNVERIFIED')?'CHANGED':'MATCHED',issues:currentIssues,checkedAt:new Date().toISOString()},executionEligible:false,dispatchPerformed:false,observedAt:new Date().toISOString()};}
  async list(db:PoolClient,a:AuthenticatedIdentity,pid:string,query:Record<string,unknown>,codec:any){return this.resources.list(db,a,pid,'ENVIRONMENT_VERSION',query,codec);}
 }
+
+/** 완성형 환경 원문 전용. 후보 namespace나 실행 권한으로 대체하지 않는다. */
+export class EnvironmentApprovalCandidates{
+ async assertCurrent(db:PoolClient,a:AuthenticatedIdentity,pid:string,scope:ApprovalScope,value:unknown){
+  const payload=readEnvironmentApprovalPayload(value,scope.payloadHash),c=readEnvironmentCommand({schemaVersion:1,projectId:pid,commandId:'00000000-0000-4000-8000-000000000001',clientId:a.clientId,controlGeneration:scope.controlGeneration,operation:'saveEnvironment',targetId:payload.baseRef?.id??null,expectedVersion:payload.baseRef?.version??0,baselineRefs:[],approvalRef:null,payload},'ENVIRONMENT_VERSION');
+  if(scope.operation!=='saveEnvironment'||!same(scope.targetRef,payload.baseRef)||scope.expectedVersion!==c.expectedVersion||scope.baselineRefs.length||scope.environmentRef!==null||scope.sourceScopes.length||scope.limitsRef!==null||!same(scope.requestedSubjectRef,{kind:'HUMAN',userId:a.actorId,clientId:a.clientId}))environmentFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+  await environmentOwner(db,a,pid);await currentProjectController(db,a,c);const policy=await authorizeMaterial(db,a,c,true);if(!policy.approvalRequired||!same(policy.ref,payload.environment.policyRef))environmentFailure('APPROVAL_BASIS_NOT_CURRENT',412);
+  const checked=(await db.query('SELECT anvil.environment_approval_target($1,$2,$3,$4,$5,$6) AS valid',[a.authSession?.id,a.actorId,a.clientId,pid,JSON.stringify(payload),scope.controlGeneration])).rows;if(checked.length!==1||checked[0].valid!==true)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);return payload;
+ }
+ async capture(db:PoolClient,a:AuthenticatedIdentity,input:{command:ProjectCommand;requestId:string;serverCommandId:string;policyRef:any;details:ApprovalDetails;payload:unknown}){
+  const c=input.command,d=input.details,payload=await this.assertCurrent(db,a,c.projectId,d.actionScope,input.payload),projection=environmentApprovalProjection({projectId:c.projectId,requestId:input.requestId,requestCommandId:input.serverCommandId,candidateCommandId:d.candidateCommandId,payloadHash:d.actionScope.payloadHash,payload,createdBy:a.actorId,clientId:a.clientId,controlGeneration:c.controlGeneration,policyRef:input.policyRef});
+  if(c.operation!=='requestApproval'||c.targetId!==null||c.expectedVersion!==0||c.approvalRef!==null||c.baselineRefs.length||c.clientId!==a.clientId||!same(c.payload,{details:d,candidatePayload:payload}))environmentFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+  if(Buffer.byteLength(canonicalJson(payload))>2097152||Buffer.byteLength(canonicalJson(projection))>2097152)environmentFailure('ENVIRONMENT_INPUT_INVALID',422);
+  const rows=(await db.query('SELECT anvil.environment_approval_capture($1,$2,$3,$4,$5) AS captured',[a.authSession?.id,a.actorId,a.clientId,c.projectId,JSON.stringify(projection)])).rows;if(rows.length!==1||rows[0].captured!==true)environmentFailure('ENVIRONMENT_APPROVAL_INTEGRITY_FAILED',503);
+ }
+ async read(db:PoolClient,a:AuthenticatedIdentity,pid:string,id:string,meta:any){
+  await environmentOwner(db,a,pid);if(a.actorId!==meta.createdBy)environmentFailure('NOT_FOUND',404);
+  const rows=(await db.query('SELECT anvil.environment_approval_candidate($1,$2,$3,$4,$5) AS value',[a.authSession?.id,a.actorId,a.clientId,pid,id])).rows;
+  try{if(rows.length!==1||!rows[0].value)throw Error();const v=rows[0].value,payload=readEnvironmentApprovalPayload(v.payload,meta.details.actionScope.payloadHash),expected=environmentApprovalProjection({projectId:pid,requestId:id,requestCommandId:meta.serverCommandId,candidateCommandId:meta.details.candidateCommandId,payloadHash:meta.details.actionScope.payloadHash,payload,createdBy:meta.createdBy,clientId:meta.clientId,controlGeneration:meta.controlGeneration,policyRef:meta.policyRef});if(!same(v,expected)||meta.details.actionScope.operation!=='saveEnvironment'||!same(meta.details.actionScope.targetRef,payload.baseRef)||meta.details.actionScope.expectedVersion!==(payload.baseRef?.version??0))throw Error();return{kind:'ENVIRONMENT_DEFINITION' as const,payload,payloadHash:expected.payloadHash};}catch{environmentFailure('ENVIRONMENT_APPROVAL_INTEGRITY_FAILED',503);}
+ }
+}
+export function readEnvironmentApprovalPayload(value:unknown,hash:string){const c=readEnvironmentCommand({schemaVersion:1,projectId:'00000000-0000-4000-8000-000000000001',commandId:'00000000-0000-4000-8000-000000000002',clientId:'00000000-0000-4000-8000-000000000003',controlGeneration:1,operation:'saveEnvironment',targetId:(value as any)?.baseRef?.id??null,expectedVersion:(value as any)?.baseRef?.version??0,baselineRefs:[],approvalRef:null,payload:value},'ENVIRONMENT_VERSION'),payload=c.payload as any;payload.environment=readEnvironmentInput(payload.environment);if(contentHash(canonicalJson(payload))!==hash)environmentFailure('APPROVAL_CANDIDATE_MISMATCH',409);return payload as {environment:EnvironmentInput;baseRef:any;reason:string};}
+export function environmentApprovalProjection(v:any){return{projectId:v.projectId,requestId:v.requestId,requestCommandId:v.requestCommandId,candidateCommandId:v.candidateCommandId,payloadHash:v.payloadHash,payload:v.payload,createdBy:v.createdBy,clientId:v.clientId,controlGeneration:v.controlGeneration,policyRef:v.policyRef};}
