@@ -38,6 +38,11 @@ export function exportDb(bytes:Buffer){
  else if(sql.includes('FROM anvil.permission_policies'))rows=f.policy?[{id:id(8),head_version:1,rules_json:rules,content_hash:contentHash(canonicalJson({rules,reason:'합성',reviewRefs:[]})),reason:'합성',review_refs:[],created_at:new Date(at)}]:[];
  else if(sql.includes('to_regclass'))rows=[{storage:f.missing?null:'anvil.project_artifact_exports'}];
  else if(sql.startsWith('SELECT * FROM anvil.document_versions'))rows=p[0]===pid&&p[1]===did&&p[2]===1?[document]:[];
+ else if(sql==='SELECT * FROM anvil.fn16_export_artifact_metadata_locked($1,$2,$3,$4,$5,$6,$7,$8)'){
+  if(p.length!==8||p[5]!==actor.authSession.id||p[6]!==actor.actorId||p[7]!==actor.clientId)throw Object.assign(Error('FN01_ACTIVE_SESSION_REQUIRED'),{code:'42501'});
+  if(!f.member||p[0]!==pid)throw Object.assign(Error('FN16_EXPORT_PROJECT_MEMBER_REQUIRED'),{code:'42501'});
+  const r=f.artifact;if(r.project_id===p[0]&&r.id===p[1]&&r.content_hash===p[2]&&String(r.bytes)===String(p[3])&&r.media_type===p[4])rows=[{id:r.id,project_id:r.project_id,content_hash:r.content_hash,bytes:r.bytes,media_type:r.media_type,storage_key:r.storage_key,state:r.state,inspection_json:r.inspection_json}];
+ }
  else if(sql.startsWith('SELECT * FROM anvil.artifacts'))rows=p[0]===pid&&p[1]===aid&&p[2]===artifactRef.contentHash&&p[3]===artifactRef.bytes&&p[4]===artifactRef.mediaType?[f.artifact]:[];
  else if(sql.includes('FROM anvil.project_artifact_exports'))rows=f.jobs.filter(j=>j.project_id===p[0]&&(!sql.includes('id=$2')||j.id===p[1]));
  else if(sql.startsWith('INSERT INTO anvil.project_artifact_exports'))f.jobs.push({id:p[0],project_id:p[1],document_id:p[2],document_version:p[3],document_content_hash:p[4],artifact_id:p[5],artifact_content_hash:p[6],actor_id:p[7],client_id:p[8],command_id:p[9],manifest_json:JSON.parse(p[10]),content_hash:p[11],created_at:p[12],cursor_at:p[12].toISOString()});

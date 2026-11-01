@@ -21,3 +21,7 @@
 실 sourceRow와 app 권한 계약을 반영한 메모리 DB로 원충돌 RED를 먼저 확인한다. 신규 순수 시험에서 고정 함수8인자·정상 주체/역사 회원·신원부재/비활성/교차 프로젝트/5조건 mismatch·문서 hash/첨부/storagekey·격리/inspection·42883/42501을 검산한다. 새 SQL 파일 읽기/정적 구조 검산만 허용하며 실제 PG·DDL/GRANT·원본 FS·Secret·actual target copy는 실행하지 않는다. 기존 FS 포함 project-backups.test.ts 전체 실행0. 메모리 모델/SQL 정적 검사를 실제 권한·RLS·잠금 경합 PASS로 보고하지 않는다.
 
 기존 source/backend 오류 경계·원문/Secret 비노출과 head/참조 불변을 보존한다. 실제 payload 검사와 readonly-source 행 검사만으로 전체 backup/job/복원·coverage·프로젝트 차단 해제를 완료라고 하지 않는다. 정확 pure 명령/exit/type/diff·변경사유/diff·최종3지문·오류·미검증/QA/live0과 writer 반환을 보고하고 Main fresh/독립 검수로 통합한다.
+
+## Main 보완1 — 기존 시험 호출자·메모리 DB 계약 적응
+실제 typecheck가 기존 tests/unit/FN16/project-backups.test.ts:56의 sourceRow 직접3호출에서 필수 현재identity 누락을 확인했다. 4번째 경로로 해당시험파일(시작696229EA0E020284536E503FFF48AB3B3396C268E5CB69BE133744D1C633A793)을 허용하며 기존 fixture actor를 세호출에 전달하는 적응만 수행한다. 원 단언·기대값·FS수명/정리·검수기준은 바꾸지 않는다.
+Main은 같은 시험의 실제 DB fixture가 아직 옛 artifacts SELECT만 모형화함을 확인했다. 새 고정함수 호출을 무조건통과/빈행으로 흉내내지 않도록 5번째 경로 tests/unit/FN16/project-backups-fixture.ts(시작B10854024BA9F1280761ACC9CD2917476E2F15BFED5369927B7BCF15194E94C5)의 메모리 query분기에 현재고정8인자/신원·회원/5조건을 검산한 exact8열을 추가하는 적응을 허용한다. 원 FS helper·원정상/음성 단언·다른 SQL분기는 보존한다. 신규 순수시험에서 exportDb만 호출해 새분기의 정상/틀린신원/조건음성을 확인할 수 있으며 withExportFixture·execFileSync·fs 함수나 기존 FS시험 전체는 실행하지 않는다. 기존 fixture import에는 top-level FS/프로세스실행이 없음을 Main이 source로 확인했다. 제품1·미적용SQL1·신규순수시험1+기존시험/fixture2=정확5이며 새공개계약/실환경효과는 없다.
