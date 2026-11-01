@@ -127,3 +127,23 @@ Main은 필수 검수의 Node-only fixture 배치 보완으로 신규 tests/unit
 기존 environment-resources.test.ts의 실제 buildApp/인증/SQL 메모리 factory와 상수를 의미변경 없이 추출해 environment-versions/UI11 시험에서 같은 실제 생산·저장·조회 모델을 소비한다. test.ts 직접 import로 시험이 중복 등록되거나 전체 SQL 모델을 복제하는 것을 피한다.
 이 helper는 test 등록·최상위 App/공유 global store/실DB·Secret·사용자 파일 접근을 만들지 않는다. 각 시험은 독립 factory와 정확 close를 유지하고, 미모델 SQL 거절·실제 보호 검산·기존 단언을 보존한다. browser harness/bundle은 이 Node-only helper를 import하지 않는다.
 0069·기존 코드/시험의 나머지 동일 Primary 단일 writer GO는 유지한다.
+
+## 9. 2026-11-02 완성형 환경 승인 원문 보완안 직접 채택
+
+부모 WI SHA256 AACE847CA6010B1FCEEF2EE7B6FBF0ED9487A352CEB9E9A0014DA0D10FC715A8.
+보완 계약 docs/contracts/FN06_ENVIRONMENT_APPROVAL_PAYLOAD_BINDING_ADDENDUM_20261101.md SHA256 507B6E34B2C6C8D46CE2E57AF8CFCC562A64F07FB4DD2B1A916A57BA4AAF93BE의 §1~7은 현재 신산님 직접 승인으로 source-only 채택됐다. 승인 원문은 docs/04_test_reports/AV3/FN06_ENVIRONMENT_APPROVAL_PAYLOAD_APPROVAL_20261102.md에 보존한다.
+
+기존 정확30 경로를 그대로 허용한다. 새 파일/HTTP route/operation/scope는 추가하지 않는다. 기존 Primary 단일 code writer이며 Main은 제품/시험 코드를 동시에 수정하지 않는다. 기존 완료 환경·metadata 기능은 재구현하지 않는다.
+
+실행 순서:
+1. 실제 환경 producer/보호 reader의 합성 factory로 완성형 requestApproval 원문 capture→GET→별도 결정→원명령 소비/replay가 현재 412인 기능 RED를 먼저 확인한다. 시험 준비 오류와 기능 RED를 구분한다.
+2. requestApproval exact {details,candidatePayload}, ENVIRONMENT_DEFINITION marker/hash·불변 후보 저장·원행/영수증/감사 결박을 구현한다. legacy {details}/후보 namespace와 metadata6 승인은 보존한다.
+3. 공개 후보 GET은 현재 OWNER+원 작성자만, 내부 환경 역사 소비는 현재 OWNER/readEnvironmentVersion 정책 뒤 원 승인 당시 주체/명령/소비를 검산한다. actor 위장·현재 권한 우회·fresh 기한/head의 역사 소급0.
+4. 기존0069.pending에 새 후보1표와 필요한 함수/보호를 보완하되 실제 SQL/DDL/GRANT 실행0. 기존0059/0065/0067 원문은 변경0. 10000행/원문·projection 각2MiB/입력2MiB/환경64MiB/프로젝트10GiB를 한 번만 합산하며 회수 후 환급0.
+5. UI11 원 버퍼 ACK→원문 승인 요청, UI08 보호 원문/hash 확인·별도 결정, 정확 원명령 소비·명시 재시도/고정 재조회까지 연결한다. UNKNOWN/CSRF/transport·관측 세대/늦은 응답 fencing을 보존한다.
+
+필수 합성 반례: marker/원문 누락·다중·손상, 같은 UUID 다른 namespace, hash/baseRef/현재 head/기한·주체·세대·다른 payload replay, 10000/bytes 경계·이중계산, 다른 현재 OWNER 정상 역사조회와 공개 후보 조회 거절, 현재 읽기 정책 거절·외부 project·위장 actor. 기존 legacy/metadata/AUTO·정의·보고의 직접 영향 회귀만 선택한다. 전체 무관 회귀/기존 검증의 무조건 반복0.
+
+검수는 실제 생산/보호 reader를 소비하는 합성 Node/React 및 Fastify inject·미적용 SQL 정적 검토, 필요한 typecheck/메모리 build/diff로 한정한다. 실제 DB·권한·키·서비스·Agent·실자료 조사·실브라우저/App/실행 자원 생성은 이번에 하지 않는다. P03 R3는 별도 미결정이며 이 승인으로 재개하지 않는다.
+
+제출: 변경 파일/diff/hash·정확 명령/exit·RED/GREEN·미검증·오류 횟수·live handle0을 반환하고 writer를 돌려준다. 기존 Reviewer의 독립 검수 뒤 Main 통합한다. 부분 합성 PASS를 실제 PG/RLS/OID/경합·Agent/전체 FN06/계획 완료로 승격하지 않는다.

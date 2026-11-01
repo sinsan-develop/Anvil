@@ -1866,3 +1866,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - **2026-11-01 FN06 환경 정의 r4 source 부분 검수**: 코드 `a1398da511946540f05ee6c8d4ac7ae9e10cd2fb`의 허용30/실제변경28·WI 비의미 재확정을 확인했다. 환경·metadata 저장/조회/관계·현재성·별도 승인·정의 명시 연결을 소스/합성에서 검수했으며 Main4/5·type/메모리build/diff0, 범위별 독립 지적 보완 후 C0/I0다. 507B 완성형 환경 승인 원문 계약은 미채택/미구현이며 412를 유지한다. 0069.pending 미적용·실DB/RLS/OID/브라우저/App/Agent/전체업무·계획은 미완료다. [부분 검수](04_test_reports/AV3/FN06_ENVIRONMENT_CONFIGURATION_SOURCE_RESULT_20261101.md), WORK_STATUS 참조.
+
+- 2026-11-02 FN06 완성형 환경 승인 원문 보완507B는 직접 승인으로 source-only 채택됐다. 기존 미채택/412 기록은 이력이며 현재 구현 중이다. 허용30/미적용0069/실효과 제외·전체 미완료를 유지한다. WI §9/직접 승인 기록/WORK_STATUS를 따른다.
