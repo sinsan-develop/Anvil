@@ -13004,3 +13004,52 @@ git diff --check
 - 이번요청의실제산출물은기술검토서와누적WORK_STATUS다. 제품/시험/설정·실제키/DB/권한/서비스/Agent/네트워크변경·실행0, 완료된시험재실행0. 문서checkpoint는미채택상태를보존하며제품구현승인으로사용하지않는다. 전체계획미완료다.
 
 - 문서checkpoint의43ba2f staged diff check는신규검토서EOF빈줄1개를발견해commit전에중단했다. 내용/기준은바꾸지않고885458에서끝개행만한개로정리했다. 검수본문은동일하며최종검토서SHA F068FAE62BBA51CDE780F82E1E9F56BE334DC896817D5C5D0D616B5FA562B633이다. 앞4647B7B2는끝개행정리전지문이다. 최종staged본문이정리전내용의끝개행만바뀐것인지별도바이트검산후문서3만commit한다.
+
+### 2026-11-03 기술검토 문서 checkpoint·다음 증명 범위
+- fe4d6d는미채택후보r1·검토서·현황정확3문서의raw/index일치·stageddiff0 뒤 f6c4d09818a9db69ace5a7fbccd14689c93a62ac를commit했다. b58396 일반privatepush/localexactSHA·main f976ed5e29e14b13e12729d5b1ccf98f050f2210불변·trackedclean/보호untracked3을확인했다. 제품코드변경0·계약채택0이다.
+- 검토서최종SHA F068FAE62BBA51CDE780F82E1E9F56BE334DC896817D5C5D0D616B5FA562B633/원후보F301A7B8·보완9미해소를PMO에전달했다. 앞으로같은검토를반복하지않고r2구성에필요한exact원형/실제최대식을닫는다.
+- 기존Reviewer는session-first phase/nonce/replay·내장위임/currentwrapper/binding·typedSIGN의정확키/주체소비행렬,기존Primary는record/event의정확최대row/byte·예약slot/종료여유/native전체lifecycle대수만읽기설계로진행한다. 18row예산은조건부표로남기고실증명전확정하지않는다.
+- 새로운공개wire/인증·저장계약은미채택/구현GO0이다. 문서·제품소스쓰기/시험·실키·DB·권한·서비스·Agent·네트워크·실자료실행0,제품writer0을유지한다. 전체계획완료보고상태가아니다.
+
+### 2026-11-03 exact 원형·수정 예약식 및 native 최대식의 추가 기술 사실
+- Reviewer는session-first CHALLENGE/OPEN/STREAM/STATE의exactnull·요청/응답·receiverprincipal/prelisten새목적허가,offer내typed위임·명시binding/currentwrapper/위임SIGNframe원형을제안했다. prelisten은현재controller동일을요구하지않는새목적허가가필요하므로기존승인으로해석하지않는다. 최초challenge의OPEN/STATE목적선택은별도확인중이다. 기존SIGN/v1 exactparser는유지한다.
+- Primary는session-first/nonce·replay를포함해조건부예산을session18row/window9row/offer38row,base128KiB+offer당(command실제bytes+128KiB)로수정했다. Main순수정수계산은최대command2MiB일때k30=1167row/63.875MiB,k31=1205row/66MiB,k50=1927row/106.375MiB를확인했다. 앞k31=64MiB는이전조건부표에서만성립하며새확정값이아니다. 50개수용보장0·모든표는exactschema증명전제안이다.
+- 기존nativeauthority계상은authority2MiB+intent2MiB+wrapper,events최대16×(snapshot4MiB+wrapper)를포함해야한다. parser상한그대로의보수예약식68MiB+17KiB는기존native64MiB를초과하므로그방식은불가다. 한도확대/16을임의6으로줄이는우회는하지않는다. Primary에게실제닫힌event/receipt필드별canonical최대식과INSERT계상형태로16KiB상한후보가성립하는지만한정읽기·정수계산검증을배정했다.
+- A01의current/SIGN/writer선행과원형·예약증명/프레임상한등지적은아직미해소이며r1불변/SOURCE_GO0/EXECUTION_GO0다. 제품/시험/실제키·DB·권한·서비스·Agent/네트워크/실자료변경·실행0·제품writer0,전체계획미완료다.
+
+### 2026-11-03 기존 native typed 예약 상한 한정 증명 수용
+- Primary의기존native event/receipt필드별계산을Reviewer가독립읽기/순수문자열·정수계산으로대조해4,249,198canonicalbytes·17slots(권위1+event16)의안전보수예약식성립C0/I0를확인했다. 일반ref153/version1ref138,eventparser보수3409와authority/intent각2MiB·외피350의식이다. 최초ref152는153으로정정,종류별앞값은가정별보수치이지정확실제최대라고표시하지않는다.
+- actualcanonicalBytes는authority에intent도포함하고event는ref/snapshot을한번계산한다. SQL0071authority행4MiB한도를유지하므로독립snapshot상한+외피4194639가그대로저장가능하다는뜻은아니다. 제안예약은안전과대이며물리DB전체크기·신규ACK/위임R·공통명령/감사비용증명이아니다.
+- N64MiB/R64MiB를분리검사한다. 매offer에N최대4249198을예약하면빈N분모는15개,그때조건부R33554432/N63737970bytes다. R만의k30/전체offer50을정상수용보장으로쓰지않는다. 현재writer/원등록/실제스키마·부모기한은별도조건이며원값으로계산한정밀Nfuture는기준임의축소와구별한다.
+- 최초CHALLENGE의OPEN/STATE구분은서명대상requestedPhase를명시추가하는미채택안을권장한다. STREAM용challenge는OPEN성공발급이며같은STREAMid새연결/비밀replay0이다. 원후보r1은불변이다.
+- 위결과를검토서에누적해최신SHA D98DDD44B8D314D971222E763907E8E6F363A9E17A67F62F35478729D8F965DE로두정본동일저장했다. 이한정증명은B01/B02전체나Important9해소가아니다. 기존Primary에게새R각row/typed필드별byte상한과조건부128KiB예산을읽기·정수계산으로검증하도록한정배정했다. 제품/시험·실키/DB/권한/서비스/Agent실행0·제품writer0·전체계획미완료다.
+
+### 2026-11-03 새 R 계산의 원형 전달·명칭 정합 조건
+- Primary가다른subagent의최신exact원형본문을직접보유하지않음을보고해Main이Reviewer의내장위임/OfferSnapshot/CommandBinding/DelegatedCurrent/위임SIGNframe와session/ProofRequest/requestedPhase/ChallengeSnapshot필드목록을명시전달했다. 추정원형대체로계산한값을같은원형증명으로쓰지않는다.
+- 기존native hostPublicKeyFingerprint와후속제안hostKeyFingerprint가혼재함을Main이식별했다. 아직r2정본은없으며바이트상한은더긴기존명칭hostPublicKeyFingerprint로보수통일한다는조건을Primary에전달했다. 명칭선택은미채택원형정합재료이고키지문·권한의미를바꾸지않는다.
+- receiverPrincipal exact원형,OPEN/challenge원결과를재구성할nonce/생성시각/typed원행·원서명보관여부와공통명령/감사비용은누락하지말고조건부/미정으로분리하도록지시했다. 제품·문서소스쓰기/시험·실키·DB·권한·서비스·Agent·네트워크/실자료실행0·Primary읽기계산진행중이다.
+
+### 2026-11-03 새 R typed 필드 계산 — 기존 128KiB 예산 미증명 확인
+- Primary의명시전달원형계산은내장ReceiveDelegation3067bytes,offerwrapper commandbytes+3524,CommandBindingwrapper2245,currentwire2348의보수상한을제시했다. 조건부receiverPrincipal749·sessionwrapper2070·challengewrapper1700·SignedRequest2186·proofevidencewrapper2687은각가정과fixedpath256이하조건을명시했다. 원형최종확정/구현값이아니다.
+- challenge원결과nonce/발급시각과요청/소비서명증거를저장하면기존18/9/38row표가성립하지않는다. 조건부4sessionphase/STATE8회·각challenge3행/evidence2개가정은session26/window9/offer58row이며offer추가비137750bytes로128KiB(131072)보다6678bytes크다. 기준을맞추기위해증거를빼거나128KiB예산을증명됐다고표시하지않는다.
+- 조건부192KiB올림을쓰면base128KiB+k×(2MiB+192KiB),35+58k row이고k29=1717row/63.5625MiB,k30=1775row/65.75MiB다. 이식도ARM/ACK proof정확원형·실phase/event횟수·receiverPrincipal확정전제안일뿐수용보장이아니다.
+- 공통권한명령/receipt/audit의실제저장비L은R에원문복제하지않더라도Q에포함해야한다. 원native receipt의commandSnapshot/intent복제와새window/offer/cancel/close명령envelope·문자열escaping은별도미증명이다. U에이미계상된L을N/R/O에중복더하지않는다.
+- 정확대수를계속추정하지않도록기존Reviewer에게authority생성전ARM과ATTEMPTED후ACK의목적별exactproof/challenge/응답·원행검산역할만읽기설계배정했다. 실제키·DB·권한·서비스·Agent·네트워크·시험/제품쓰기0·원후보r1미채택/Important9미해소·전체계획미완료다.
+
+### 2026-11-03 ARM/ACK exact 초안·응답/terminal 교착 위험 한정 보완
+- Reviewer의목적별ARM/ACK body/challenge/proof/receipt·evidence원형을미채택계산자료 docs/contracts/FN06_NATIVE_RECEIVE_ARM_ACK_SCHEMA_TECHNICAL_DRAFT_20261103.md SHA9C9424591EAB32C52A36482089C4B53CEBB364CFDBD2034FE367E81EE1BCC851로동일보존했다. ARM은authority전존재하지않는refs필드없음,ACK는원ATTEMPTED후실수용commitment·원deadline필수다. 긴기존hostPublicKeyFingerprint명칭을정합했고원후보r1미변경/구현GO0다.
+- Main이기존supplier await→원operation terminalTx와ACKendpoint의commit후응답사이순환을제기했고Reviewer가교착가능성을인정했다. 비공개검산ACK후보를원operation에먼저전달→원operation의ACK/nonce/CONFIRMED동일후행Tx COMMIT→HTTP/HUMAN응답완료로분리하는안을권장한다. Tx/프로젝트잠금보유채endpoint대기0·미내구후보ackRef공개승격0·operation부재새재생성0·원10초/미정착IO소유보존이다. 코드수정/런타임교착시험증거아니다.
+- 위자료/필수내부delta를검토서에누적해최신SHA87ED1CBB5EBFECCB758297A0FC87DB9E004782DEC46EFC08F6D1C61F2832A1BD로동일저장했다. 같은Primary가정확초안필드만소비해ARM/ACK추가R대수를읽기·정수계산중이다. 원8KiB묶음·58row/192KiB예산은미증명이며권한L비용분리/행개수의미채택상태를유지한다.
+- 제품/시험/실제키·DB·권한·서비스·Agent/네트워크/실자료실행0·제품writer0·Important9미해소/전체계획미완료다.
+
+### 2026-11-03 ARM/ACK 목적별 조건부 byte 검산·기술초안 후속
+- Primary는원형9C942459를읽기·순수정수계산해ARM challenge/evidence2묶음7980bytes/3행≤8KiB,ACK묶음9619bytes/3행>8KiB를산출했다. ACK만12KiB로올리고ArmReceipt1361/AckSnapshot2245를별도원기록으로계산하면offer는commandbytes+140942로조건부192KiB안에55666bytes여유다. Main순수산술도일치한다.
+- purpose닫힌ASCII64/path고정ASCII256/method4/ref153·signature88의조건부상한이며실endpoint정본길이·phase/STATE8·사건수의의미채택/일반권한명령L비용·receiverPrincipal·프레임총한도는미증명이다. 58row/192KiB를전체계약확정/인수로쓰지않는다.
+- 기술초안typed필드는계산기준9C942459그대로두고교착보완·바이트결과/미정조건만추가해최신SHA5B99ADF296F83BF4AFF681CD4C002709E15C5E2A9C54A329666435580B376C23로동일저장했다. Reviewer에게그자료의원형/교착보완정합·한정바이트증명만독립읽기검수배정했다. 원r1F301A7B8불변/채택0·제품writer0다.
+- 실제키·DB·권한·서비스·Agent·네트워크·제품모듈실행/시험/컴파일·실자료/QA0·전체계획미완료다.
+
+### 2026-11-03 ARM/ACK 조건부 증명 독립 수용·전체 REWORK 유지
+- Reviewer는기술초안40030CE6F8ED11AF7D158B16B1DDB4547549B23EA45EE83DED7624BDEDBB124B의typed원형/교착보완·ARM7980/ACK9619·별도receipt1361/ACKrecord2245 조건부문자열대조C0/I0,항목합산58행/command외140942/192KiB여유55666 산술일치를반환했다.
+- 단각challenge requestId/nonce/원결과·소비행이기계상행에완결되는지,replay10/사건12가취소·만료·회수·단절·COMMIT불명·별도응답원형을모두포함하는지미증명이다. 별도필수행발견시추가해야하며L공통권한원장비용/receiverPrincipal/frame총한도도여전히미정이다.
+- 검토서최신SHA D5FDF6F9E1DCA779980B4324641221BF4507B8A7A9962A6D357E09794C707116에한정증명과미해소조건을누적했다. 원후보r1F301A7B8불변·Important9REWORK/미채택/구현GO0·실행GO0다. 보완기술초안은새계약승인이나실제기능완료가아니다.
+- 다음에는r2통합전nonce/replay·lifecycle필수행의실제전이별대수와L원장/위임current/실제caller·profile/frame을닫아야한다. 이번문서3종checkpoint에는기술초안·검토서·현황만포함하고기존후보/제품코드/보호untracked3는보존한다. 실제키·DB·권한·서비스·Agent/네트워크·시험/컴파일/실자료/QA0·전체계획미완료다.
