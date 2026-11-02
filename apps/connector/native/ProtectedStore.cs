@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 
 // 신뢰 등록용 고정 연산만 제공한다. 개인키/credential 평문 반환·명령 실행 API는 없다.
-internal static class ProtectedStore {
+internal static partial class ProtectedStore {
  static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 65536, RecursionLimit = 8 };
  static readonly UTF8Encoding Utf8 = new UTF8Encoding(false, true);
  static readonly byte[] SpkiPrefix = Hex("3059301306072A8648CE3D020106082A8648CE3D03010703420004");
