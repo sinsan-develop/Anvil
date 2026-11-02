@@ -55,9 +55,9 @@ internal static class DesktopTrustKeyHostSourceTests {
  static Dictionary<string,object> Public(){return new Dictionary<string,object>{{"keyId",Id},{"publicKeySpki","MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYP7UuiVanTHJYet0xjVtaMBJuJI7Yfps5mliLmDyn7Z5A_4QCLi8maQa6elWKLxk8vGyDC1-n1F3o8KU1EYimQ"},{"fingerprint","5a7a78cca4a0f420d9bc62bb669c3c2759e39f723d3ae10dcbe0f0815a07ecd4"}};}
  static byte[] Frame(int sequence,string operation,Dictionary<string,object> payload){return Encoding.UTF8.GetBytes(DesktopTrustKeyHostSource.Canonical(new Dictionary<string,object>{{"schemaVersion",1},{"purpose","DESKTOP_TRUST_KEY_OPERATION_V1"},{"requestId","be140001-0000-4000-8000-"+sequence.ToString("D12")},{"sequence",sequence},{"callExpiresAt","2030-01-01T00:00:01.000Z"},{"remainingMs",1000},{"signerRef",new Dictionary<string,object>{{"id",Id},{"version",1},{"contentHash",new string('d',64)}}},{"operation",operation},{"payload",payload}},0)+"\n");}
  sealed class Frames:MemoryStream {
-  readonly Queue<byte[]> frames;byte[] current;int position;
+  readonly Queue<byte[]> frames;byte[] current;int position;internal Action BeforeRead;
   internal Frames(params byte[][] values){frames=new Queue<byte[]>(values);}
-  public override Task<int> ReadAsync(byte[] b,int offset,int count,CancellationToken token){token.ThrowIfCancellationRequested();if(current==null||position==current.Length){if(frames.Count==0)return Task.FromResult(0);current=frames.Dequeue();position=0;}int n=Math.Min(count,current.Length-position);Buffer.BlockCopy(current,position,b,offset,n);position+=n;return Task.FromResult(n);}
+  public override Task<int> ReadAsync(byte[] b,int offset,int count,CancellationToken token){if(BeforeRead!=null)BeforeRead();token.ThrowIfCancellationRequested();if(current==null||position==current.Length){if(frames.Count==0)return Task.FromResult(0);current=frames.Dequeue();position=0;}int n=Math.Min(count,current.Length-position);Buffer.BlockCopy(current,position,b,offset,n);position+=n;return Task.FromResult(n);}
  }
  // 파일 존재 조합은 메모리 fault만 사용한다. 실제 파일·키·컴파일 실행은 없다.
  static Dictionary<string,byte[]> Snapshot(MemoryStore io){return io.Files.ToDictionary(x=>x.Key,x=>(byte[])x.Value.Clone());}
@@ -86,6 +86,11 @@ internal static class DesktopTrustKeyHostSourceTests {
   }
  }
  internal static async Task RunAll(){
+  // 원 wall이 정체해도 entry부터 경과한 mono를 callExpiresAt에 차감한다. raw Now는 보존한다.
+  double budgetMono=0;DateTime budgetWall=Now();var clock=new DesktopTrustKeyBudget(()=>budgetWall,()=>budgetMono);budgetMono=200;Reject(()=>clock.Tighten(Now().AddMilliseconds(100),100));
+  budgetMono=0;budgetWall=Now();clock=new DesktopTrustKeyBudget(()=>budgetWall,()=>budgetMono);clock.Tighten(Now().AddMilliseconds(500),500);budgetMono=100;Require(clock.Remaining()==400&&clock.Now==Now());budgetWall=Now().AddMilliseconds(200);Require(clock.Remaining()==300);budgetMono=150;Require(clock.Remaining()==250);clock.Tighten(Now().AddMilliseconds(900),900);Require(clock.Remaining()==250&&clock.ExpiresAt==Now().AddMilliseconds(500)&&clock.Now==Now().AddMilliseconds(200));
+  byte[] lateFrame=Frame(1,"READ_STATE",new Dictionary<string,object>{{"attemptId",Id}});string lateText=Encoding.UTF8.GetString(lateFrame).Replace("00:00:01.000Z","00:00:00.100Z").Replace("\"remainingMs\":1000","\"remainingMs\":100");double hostMono=0;var delayed=new Frames(Encoding.UTF8.GetBytes(lateText)){BeforeRead=()=>hostMono=200};var delayedKernel=new Kernel{Reader=delayed};var delayedRoots=new Roots();int delayedStores=0,delayedKeys=0;var delayedHost=new DesktopTrustKeyHostSource(new Resources(),delayedKernel,delayedRoots,Now,()=>hostMono,null,r=>{delayedStores++;return new MemoryStore();},(r,q)=>{delayedKeys++;return Public();});Require(await delayedHost.RunAsync()==1&&delayedRoots.Created==0&&delayedStores==0&&delayedKeys==0);
+
   FilePresenceMatrix();await ExistingRootAdmission();
   string[] labels={"한글 <>&\"\\","눈사람☃와😀","quote'","line\n\t\0"};string[] hashes={"fa3749817d3a7ab12b9c0a2c0d2aa4355e37bb5d2f28e2dfacd25731693cd39a","4d0f2dd6754b80b3c611aea64a175d02fc4cef7f66d42ac486e8797e79a01fa0","c91b6f827998bdb7c2c8d327af5d94b2e6a500a6b75dcf39b1a7275ea1124e4d","8384aeb70130e8623589927d7b7ec4a43341a35047cd5226a1050674bbab191a"};
   for(int i=0;i<labels.Length;i++){var value=new Dictionary<string,object>{{"label",labels[i]}};string encoded=DesktopTrustKeyHostSource.Canonical(value,0);Require(DesktopTrustKeyHostSource.Hash(Encoding.UTF8.GetBytes(encoded))==hashes[i]);Require(DesktopTrustKeyHostSource.Text(DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(encoded),false),"label")==labels[i]);}

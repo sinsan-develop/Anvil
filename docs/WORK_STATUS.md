@@ -12629,3 +12629,37 @@ git diff --check
 - Reviewer는 원WI102의 'runtime 명시요청은 총10초와 profile/catalogue/lease 최소기한을 min-only로 유지'·'고정wall상한·동적단조remaining'을 추가대조해 앞scopedC0/I0를C0/I1로정정했다. I1후행head/poisoned해소·direct6PASS는유효하지만I2는wall전진후만료만닫혔고전체최소기한해소로확대한판정이었다.
 - EEDE #run은원mono10초와rawwall ceiling만검사한다. 최초catalogue잔여100ms에서wall정체/mono200ms이면CAS진입/성공가능·pending은고정10초까지간다. 기존승인명세미달이며새gate가아니다. Main은source/unit2만같은Primary에게다시동결해제해관측wall/mono쌍의deadline min-only축소·같은잔여의검사/대기상한·늦은IO미정착/commit불명보존을보완지시했다.
 - 동일I2두번째정적미해소이며실C#실행/정식FAILURE_REPORT3으로계산0이다. 원6PASS/원실패·정정판정모두보존하고다른owner/실IPC/UI는동일단독writer가계속한다. PMO에정정/조치/실제효과제외를전달했고신규승인대기0·Main코드쓰기0이다.
+
+### 2026-11-02 FN06 I2 첫 관측 경계3회 후 Main2 단독 인수
+- source80FA/unit7968의 direct9PASS/FAIL0/SKIP0/1775.1449ms·4SHA전후동일은Main실행범위증거다. Reviewer는첫readHead의mono200ms대기/rawwall정체후expiry=firstWall+100ms를mono300ms로늦추는동일I2미해소를정적으로확인했다. ceiling관측후3조건만닫혔고관측전경과가소실된다. Primary도check뒤중복stable clock에서기한넘은관측후IO할수있는인접문제를자체발견했고파일은수정하지않았다.
+- 동일I2세번째정적미해소에따라Primary전체30writer를반환받았다. Primary ack/FINAL은활성명령·미저장·QA0과source80FA/unit7968불변이다. 실제FAILURE_REPORT3/동일C#실행3으로바꾸지않는다. Main은source/unit2만단독인수하고다른제품쓰기0,원기능RED preload입구미연결시험1/다른hot변경은보존한다.
+- Main원인가설은관측전단조경과를rawclock으로다시시작하고IO직전두번째clock을검산없이쓰는것이다. 최초/후행wall+mono쌍의effectivewall을max로유지하고모든codec/기한에동일기준을소비하되공개observedAt은실제wall관측값을보존한다. 동일check의검산된ports를직접소비해중복clock0,예산재기산/타임아웃연장0. 새음성2와공개관측양성1을먼저시험source에작성·실행후최소보완한다. 실제효과제외유지이며독립재검수를생략하지않는다.
+
+### 2026-11-02 FN06 Main I2 관측쌍 보완 RED→GREEN
+- Main은시험source3조건을먼저작성한뒤원80FA제품에서1PASS/2FAIL/exit1·1497.7583ms를실행확인했다. 첫readHead경과후만료거절누락과중복clock후unsafeIO1이실제음성이고공개원wall관측양성은통과했다. 하나의실행내서로다른두반례이며Main동일근본실패3회로계산0이다.
+- source는effectiveWall=max(rawwall,이전effective+단조경과)로최초/후행관측쌍을유지하고같은기준의min-only wall/mono deadline·검사/대기상한을소비한다. codec은내부effective의ceil 안전정수,공개observedAt은별도원wall관측값이다. IO직전중복stable clock은제거·검산한같은ports/함수만소비한다. 최소replacement10개역치환시원80FA SHA와일치한다.
+- 최종source9D087FD6E8A36C2C90940207946C4D01AB32F9AA687D08F223ABC6E2AE8514F3/unit5F0A419FA3116182D84B0204B8FBC77A382771F81160A6DC35DD502F42D74831. Main direct12PASS/FAIL0/SKIP0/1486.6292ms/exit0·roottype0이며원9/6/28과중첩합산0. 실제키/DB/서비스/OS/Agent·FSQA0,전체업무/실publish완료아니다.
+- 기존Reviewer에게원I1/I2·최초head경과/원기한/늦은IO·poison·공개시각보존만독립재검수요청했고Main2동결·Primarywriter0유지다. PMO에인수/실제RED와미검증/검수후반환계획을전달했다. 문서checkpoint112a10b608d54795ae1cc8af3207753f44f57828는private동일·main f976ed5불변·제품hot커밋아니다.
+
+### 2026-11-02 FN06 Main I2 독립 C0/I0·원구현 writer 반환
+- 기존Reviewer는source9D087FD6/unit5F0A419F의최초/후행effective관측쌍·min-only기한/타이머·중복clock0·끝head/codec/poison·공개rawwall분리와신규시험호출을대조해원I1/I2해소scopedC0/I0·시작끝2SHA동일을반환했다. Reviewer시험실행0이며Main12PASS를독립실행이라고바꾸지않는다. 앞판정정정/원실패이력유지다.
+- Main은제품writer를기존Primary에게반환했고source/unit·app/routes4동결유지·나머지원owner/profile/preload/IPC/main/settings첫업무를계속지시했다. 단독writer1·새agent/branch/chat/QA0,Main제품쓰기0. 실제효과·C#컴파일·키/DB/서비스/Agent·실자료/P03R3제외그대로·전체계획미완료다.
+
+### 2026-11-02 FN06 시도 없는 local 표시 접기 내부 판정
+- Primary는IDLE/UNAVAILABLE의attemptId=null과trust-act UUID필수의차이를발견해임의UUID/nullableact완화없이Main판정을요청했다. Main은r5trust-status exact의null attempt/현재양의epoch조합을시도없는local표시접기에사용가능하다고판정했다. 최초명시열기는{null,null}·실제시도뒤CLOSE는원actUUID그대로다.
+- 정확local sender/동일epoch·attempt없음·활성begin/pending없음일때Main소유disclosure/layout만접고busy면BUSY/상태보존한다. 응답은원IDLE/UNAVAILABLE/null필드·키/네트워크/기록/원장IO0·UUID발급0·phaseCLOSED위장0·자동poll토글0·renderer치수권위0다. 새field/privileged연산/제품기능확장이아닌내부표시기술판정이며별도승인대기0,기존단독writer가닫기/old epoch/busy음성과함께구현계속한다.
+
+### 2026-11-02 FN06 actual 제품 호출선 합성 정상 제출·UI/음성 작성 중
+- Primary는 실제제품owner→catalogue client→key-host client/동일fakechild저장모델의KEY_PENDING→CREATE1→KEY_READY 정상1PASS(a65132/3a2bd2),실preload원형RED1→1PASS(c512b3)를보고했다. 이어f4afe5에서실제품preload→shell handler→owner→같은client/명시fakechild의정상1PASS를제출했다. 실제Electron/키/Windows내구실행이아니라source호출선합성증거이며Main독립재실행/전체인수는아직0이다.
+- CRLF함수헤더불일치로IO주입이빠진fs undefined1(fe25a1)은별도준비오류로수정했고,그뒤handler부재RED1(074d74)→GREEN이었다. Main은반환때원위치/실FS·사용자config접근0근거를기존출력/source로함께요청했으며추가실자료조사/재실행을지시0이다.
+- 현재settings접힘/입력/버튼·ABA/sender·기존connect/quit음성은같은Primary가작성중이다. 최신보고활성handle/pending/QA0·동일원인미해소반복0,서버4/C#7/codec/verifier불변이다. Main은관리·검수·통합대기진행중/제품쓰기0·전체첫업무/계획미완료유지다.
+
+### 2026-11-02 FN06 동결 Peer budget 신규 정적 I1·기존 writer 한정 보완
+- Primary는owner최소기한연결중동결Peer의entry이후경과/첫frameTighten 재기산가능성을자체제보했고파일수정0이었다. Reviewer가DesktopTrustKeyPeerSource.cs14~19/Host59에서wall0/mono0→첫frame mono200/expirywall+100·remaining100이면deadlinemono300이되어root/저장/키dispatch로진행가능함을정적으로확인했다(C0/I1,F311원SHA전후동일). Node별도차단과C#최종경계를혼동하지않는다. 이전C#저장상태계보와별개신규1건·실행FAILURE3아니다.
+- Main은기존Primary단독writer에게정확30중Peer+Tests2만동결해제해Check/Tighten/Remaining의같은wall/mono관측쌍·effectivewall/min-only축소·검사후새clock재소비0를보완지시했다. 다른C#5동결유지·rawNow와내부유효시각분리·purebudget/Host첫frame지연시root/store/key0/정상·wall전진·감소보존시험source를추가한다. actual C#compile/RunAll/OS는여전히NOT_RUN·실행RED/GREEN주장0이다.
+- 같은Primary가NodeUI를순차계속하며Main코드쓰기0·새QA/키/권한/DB/서비스/Agent·실자료/P03R3실행0을유지한다. 현재앞단서버4/C#상태검수결과를이번budget미해결까지전체PASS로확대0·첫업무/전체계획미완료다.
+
+### 2026-11-02 FN06 Peer budget 한정 보완 독립 정적 C0/I0
+- Primary는Peer9F5334EA275F340D14A4F4BD521995E1102D329D64C77887F5408AE0DA855042/Tests33A1F8FB756BF978D65B4BBD5429AD6E5A70232FF6532F1314A7AF1FE80A24B4를재동결했다. 관측쌍numeric effective ms·Check/Tighten/Remaining 동일잔여·rawNow검산후원값보존과purebudget/Host첫frame지연root/store/key0 시험source추가다. 145e1d/ee18a7은저장/지문exit0일뿐C#실행RED/GREEN이아니다.
+- 기존Reviewer는원I1해소scopedC0/I0·2SHA전후동일·budget역치환원F311rawSHA일치를확인했다. Main도ProcessObservation이후원peer본문bytes불변을별도조회했다. 컴파일/RunAll/OS/실키/parity는모두NOT_RUN이며정적검수를실행PASS로확대0이다. 이번신규계보1회보완으로닫혔고이전state/I2횟수와합산0이다.
+- 해당2는다시동결유지하고Primary는원NodeUI/ABA·build→publisher종단을계속한다. Main제품쓰기0·새실QA/DB/권한/서비스/Agent/실자료/P03R3실행0. Main은동결native2와소유현황만후속복구checkpoint로보존하며다른hot변경은stage하지않는다.

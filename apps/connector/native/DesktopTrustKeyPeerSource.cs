@@ -10,13 +10,16 @@ using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 internal sealed class DesktopTrustKeyBudget {
- readonly Func<DateTime> wall;readonly Func<double> mono;DateTime last,expiry;double previous,deadline;
- internal DesktopTrustKeyBudget(Func<DateTime> utcNow,Func<double> monotonic){wall=utcNow;mono=monotonic;last=wall();previous=mono();expiry=last.AddSeconds(10);deadline=previous+10000;Check();}
- internal DateTime Now{get{return wall();}}
- internal DateTime ExpiresAt{get{return expiry;}}
- internal void Check(){DateTime w=wall();double m=mono();if(w.Kind!=DateTimeKind.Utc||Double.IsNaN(m)||Double.IsInfinity(m)||w<last||m<previous||w>=expiry||m>=deadline)throw DesktopTrustKeyParentBasisSource.Invalid();last=w;previous=m;}
- internal void Tighten(DateTime end,int remaining){Check();if(end.Kind!=DateTimeKind.Utc||remaining<1||remaining>10000)throw DesktopTrustKeyParentBasisSource.Invalid();expiry=end<expiry?end:expiry;deadline=Math.Min(deadline,mono()+remaining);Check();}
- internal int Remaining(){Check();int n=(int)Math.Floor(Math.Min(deadline-mono(),(expiry-wall()).TotalMilliseconds));if(n<1)throw DesktopTrustKeyParentBasisSource.Invalid();return n;}
+ readonly Func<DateTime> wall;readonly Func<double> mono;DateTime rawLast,expiry;double observedMono,deadline,effectiveMilliseconds;int remaining;
+ static double Milliseconds(DateTime value){return value.Ticks/(double)TimeSpan.TicksPerMillisecond;}
+ internal DesktopTrustKeyBudget(Func<DateTime> utcNow,Func<double> monotonic){wall=utcNow;mono=monotonic;rawLast=wall();observedMono=mono();if(rawLast.Kind!=DateTimeKind.Utc||Double.IsNaN(observedMono)||Double.IsInfinity(observedMono))throw DesktopTrustKeyParentBasisSource.Invalid();effectiveMilliseconds=Milliseconds(rawLast);expiry=rawLast.AddSeconds(10);deadline=observedMono+10000;Check();}
+ internal DateTime Now{get{Check();return rawLast;}}
+ internal DateTime ExpiresAt{get{Check();return expiry;}}
+ void BoundObserved(){deadline=Math.Min(deadline,observedMono+(Milliseconds(expiry)-effectiveMilliseconds));double value=Math.Min(deadline-observedMono,Milliseconds(expiry)-effectiveMilliseconds);if(Double.IsNaN(value)||Double.IsInfinity(value)||value<1||rawLast>=expiry||observedMono>=deadline)throw DesktopTrustKeyParentBasisSource.Invalid();remaining=(int)Math.Floor(value);}
+ internal void Check(){DateTime w=wall();double m=mono();if(w.Kind!=DateTimeKind.Utc||Double.IsNaN(m)||Double.IsInfinity(m)||w<rawLast||m<observedMono)throw DesktopTrustKeyParentBasisSource.Invalid();effectiveMilliseconds=Math.Max(Milliseconds(w),effectiveMilliseconds+(m-observedMono));rawLast=w;observedMono=m;BoundObserved();}
+ internal void Tighten(DateTime end,int suppliedRemaining){Check();if(end.Kind!=DateTimeKind.Utc||suppliedRemaining<1||suppliedRemaining>10000)throw DesktopTrustKeyParentBasisSource.Invalid();expiry=end<expiry?end:expiry;deadline=Math.Min(deadline,observedMono+suppliedRemaining);BoundObserved();}
+ // Check가 검산한 같은 관측 snapshot의 잔여만 반환한다. 새 clock 관측으로 창을 열지 않는다.
+ internal int Remaining(){Check();return remaining;}
 }
 internal sealed class DesktopTrustKeyProcessObservation {
  internal readonly uint Pid;internal readonly long Created;internal readonly string Image;internal readonly bool Alive;
