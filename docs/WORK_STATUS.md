@@ -12444,3 +12444,13 @@ git diff --check
 - 기존 Reviewer는 auth.at/공개 observedAt을 덮지 않고 별도 private {at,mono} clock 쌍을 두는 대안을 권고했다. DB후행관측 수신 mono를 고정해 max(후행시각,기존시각+경과)로 전진하며 실제 DB값은 보존하고 lease minimum은 min-only로 유지한다. 새 public/저장/권한/타이머0이다.
 - Main은 같은 정확5 WI r3 §6으로 재정리했다. docs/work_packages/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_IMPLEMENTATION_20261102.md SHA5005DFC45201823A941DDE6F80DFCB326505E150DF321B28F4B06CE3B17D15ED, parent r2 BAA73A1F, MAIN_RECONFIRMED_NON_SEMANTIC이다. r3 문서 독립 preflight 중이며 제품쓰기GO0, Main은 제품 국소 보정중단을 유지한다.
 - 반환 직전 source D927FA98AB232BC7A0B4F3223AE54FD7411BFF1B9C04DBFA1708D14ECD68AA5D/testC5064B2CF84DA1C2A3D06636549630FD64315B354C06326F9DFB0C3095273011, 기존3 지문 불변. 26e96e에서 보호untracked3의 원지문 보존/diff0을 확인했다. 독립 preflight 후 기존 Primary에게 단독writer를 명시 반환하며 Main/Reviewer의 동시제품쓰기0을 지킨다.
+### 2026-11-02 r3 단독 writer 재배정·다음 source 단위 사전 검토
+- r3 지시문 독립 preflight C0/I0 후 정확5 writer를 기존 Primary에게 반환했다. Main/Reviewer는 제품 수정0이다. 문서+현황 정확2 checkpoint558963c073739295f174cc449e61c83acf3fb58a를 private 기존branch에 게시(742838)했고 원격main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변이다.
+- Primary는 r3 시작5 지문 일치 확인 후 private clock 쌍과 writer/등록 최종 관측 수신mono를 결박하는 내부 보완을 진행 중이다. r3 최종 결과/독립 C0/통합은 아직 미충족이다. 이전Main 실패3 이력은 보존한다.
+- 독립적인 다음 생산 연결의 WI만 준비했다. FN06_NATIVE_PHYSICAL_FACTORY_COMPILER_SOURCE_IMPLEMENTATION_20261102.md SHA D260DFEBDF9B17AAD8071D3062E5BFBF26C6DDF92A9A36F321528D0E9B8A4200, 정확3/고정producer closure→명시driver 최대1→원 verifyOutput/원120초/UNKNOWN보존이며 기존Reviewer preflight C0/I0다. 실제compiler·spawn fallback·파일조사/실환경효과0, current r3 검수통합 전 제품쓰기GO0이다. 성공 verifier 대역으로 실제 FN18 연결 PASS를 만들지 않는다.
+- 해당후속이 보호mapping/서명전달/제품조립·전체계획 완료를 대신하지 않는다. FN03§13.4 미승인과 실제DB/키/권한/서비스/Agent/native/P03R3 실행 제외를 유지한다. PMO에는 예외/근거/진행가능범위만 전달했으며 새결정 요청0이다.
+### 2026-11-02 Main 경로 추정 재발 — 추가 탐색 금지 유지
+- Main의 후속 계획 읽기에서 실제 목록에 없는 docs/work_packages/FN06.md를 추정해 Get-Content 경로없음 준비오류가 재발했다. 같은 호출의 WORK_PLAN 표 읽기는 성공했으나 카드 읽기는 실패했으며 코드/권한/파일 변경0이다. 이를 제품 결함이나 카드 부재의 업무판정 근거로 쓰지 않는다.
+- 앞서 중단한 경로 추정 방식의 재발이므로 Main은 새 경로 탐색/추정 읽기를 더 하지 않는다. 기존 확인된 정확 경로만 사용하고 새 경로는 담당자가 actual 목록/import로 확인해 반환한 정보만 소비한다. 기존 Primary r3 구현과 Reviewer 검수는 영향받지 않아 계속한다. PMO에 재발과 시정범위를 보고한다.
+
+- 2026-11-02 FN06 native current source: code59b5b4d9c6ce3fc7d512caa7d753f16877064b5d 정확5/291추가26삭제, Main 동결후74PASS/FAIL0/SKIP0/type/diff0·독립C0/I0. 실제 동일Tx 조회·원prepare/RESERVED·Tx lease 폐기·private clock/min-only·권한/일회승인 보존을 확인했다. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_RESULT_20261102.md SHA92BABB3C2795A88F55E495D3E5A79AA825D78CF7D74BB9B6C8E49521F23617AF. 실패3→중단/재검토/r3 전환 이력 보존, 실제mapping/DB/키/권한/서비스/native/compiler/Agent/P03R3/사용자인수·전체FN06/FN08/계획은 미완료이며 기본미등록/거절 유지다.
