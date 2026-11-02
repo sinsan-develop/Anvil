@@ -16,7 +16,7 @@ async function render(projectId:string|null){
 test('설정은 같은 프로젝트의 원화면으로 연결하고 백업·복원 미구현을 표시한다',async()=>{
  const html=await render(pid);
  for(const screen of ['workspace','connections','approvals','control','documents'])assert.ok(html.includes('#/projects/'+pid+'/'+screen),screen);
- for(const text of ['설정 관련 원화면','백업·복원 설정·실행은 미구현','이동은 설정 저장·백업·복원·승인·실행이 아닙니다'])assert.ok(html.includes(text),text);
+ for(const text of ['설정 관련 원화면','전체 프로젝트 백업·복원 설정·실행은 아직 연결되지 않았습니다.','이동은 설정 저장·백업·복원·승인·실행이 아닙니다'])assert.ok(html.includes(text),text);
 });
 test('프로젝트 미선택 설정은 프로젝트별 상태·링크를 합성하지 않는다',async()=>{
  const html=await render(null);assert.ok(html.includes('프로젝트를 선택하면 같은 프로젝트의 원화면으로 이동할 수 있습니다'));

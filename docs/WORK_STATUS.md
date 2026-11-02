@@ -13238,3 +13238,53 @@ git diff --check
 - Git기준을정확히구분한다: 현재로컬main은0443043251d25aa77c17d23165b7c9299c8dbeb8, private main/development-main은f976ed5e29e14b13e12729d5b1ccf98f050f2210이다. 9f2155는로컬main이2026-10-08부터이ref이며원격main의조상임을확인했다. 예전 'main f976불변'은private통합ref관측으로한정하고로컬main까지동일했다는의미로쓰지않는다. 어느main도변경/정리하지않고현재branch에만보존한다.
 - 다음은정확7제품/시험+Main문서2를WIPcommit/private게시후동일Primary원34writer즉시재개다. 보호untracked3·관련없는자료보존,전체완료/PR/main병합·실제키/DB/권한/서비스/Agent/실자료실행0이다.
 - WIP 보존 도구 준비오류1(95a33b): 승인9경로 stage 뒤 5MiB 초과 WORK_STATUS의 index 바이트 읽기가 Node 기본1MiB maxBuffer로 ENOBUFS 종료됐다. commit/push는 실행되지 않았고 HEAD52a5·stage9/원파일·보호3은 보존했다. 실제 제품/SQL 실패가 아니다. 정본 현황을 축소하지 않고 해당 메모리 읽기 버퍼만16MiB로 명시해 동일9경로의 raw/index/diff를 재검산한다. LF→CRLF 안내는 Git 경고로 기록하며 설정/원문 개행을 임의 변경하지 않는다.
+### 2026-11-03 추가 WIP private 보존 완료·동일 구현 재개
+- Main a3fbf9는 정확7제품/시험+Main문서2=9경로의raw/index일치·diffcheck0·보호3불변을검산해 f8ecde82beb4e70e4b770df5453f337bca0aba87을commit했다. 부모는52a5ea32이며WIP복구보존이고전체검수/완료가아니다.
+- 27983c 정상privatepush뒤 branch exactSHA동일·private main f976ed5e/로컬main04430432 각각불변·trackedclean/보호untracked3보존을확인했다. 원SQL0072는미적용·서비스/Agent·사용자인수·PR/main병합0이다. ENOBUFS준비오류는버퍼명시보완1회로해결했으며검사기준/파일내용완화0이다.
+- Main은새HEAD f8ecde82와원WI B7856483/동일34경로로기존Primary 단일writer를재개한다. 남은KEEP/COLLECT전체정산·UI08원명령승인왕복/UNKNOWN·필요직접회귀를이어가며변경없는검사반복0이다. 실제키·DB·권한·서비스·Agent·네트워크/실자료·FSQA0·Main/Reviewer같은코드쓰기0·전체계획미완료다. 이보존후현황누적은다음checkpoint대상이다.
+### 2026-11-03 다음 계획 단위 FN04의 한정 선행 대조
+- 기존 Reviewer가 Stage B FN04/UI06·07 카드와 승인 INTERFACES의 계획저장/검토·확정, 정·역 추적, 변경요청/영향/승인·적용의 실제 caller를 읽었다. WorkPlanEditor→서버work-plans, DesignIndex/PlanTrace→TraceViewer·산출물역조회, DesignChanges→ActivationPanel→baseline-activations는연결돼있어완료된source연결을재작업하지않는다.
+- 이번좁은범위에서즉시착수할독립연결누락은찾지못했다. 실제design-impact 실행·시험증거공급자와OS writer회수근거는남아있으며빈gap/합성성공으로대체하지않는다. 이결과는공급자source구현가능성전체부정·새계약필수단정·전프로젝트작업소진/완료판정이아니다.
+- 현재Primary의FN03 KEEP/COLLECT 전체저장·UI08 왕복을계속하고, 해당검수후다음선행을선정한다. 이번조사는수정/시험·실DB/키/권한/서비스/Agent/실자료효과0이며같은codewriter한명을유지한다.
+### 2026-11-03 FN03 KEEP/COLLECT 합성 저장 흐름
+- Primary0d383d는실제App KEEP_SERVER1PASS를제출했다. 별도stream version2 append·기존link v1/문서불변·원receipt/정산·고정GET·replay추가0/다른본문409를확인한메모리범위다.
+- Primary616df7는실제service COLLECT 원부모종단1PASS/1291.2109ms/exit0을제출했다. 실제ProjectDocuments 보호reader/UTF8 parser/proposal/diff→같은원command의receipt/감사/import/proposal·게시1/verify1·정산/held0,첨부200·한글사유20000자(공통proposal64KiB초과)원값보존·본문/확정/기존Artifactbytes불변,동일명령replay게시0·같은관측새명령중복수집0을확인했다.
+- private관측공급자대역/메모리IO이며실제SQL/PG·FS/OS·served검증이아니다. 제품소스는f8ecde82와동일하고UI06시험확장만진행중이다. Main최종fresh결합검수는안정제출뒤진행하며남은UNKNOWN/실제UI08원명령왕복·직접인접검증을계속한다. 실제키·DB·권한·서비스·Agent·실자료실행0·전체계획미완료다.
+### 2026-11-03 FN04 영향 증거 공급의 후속 한 건 구체화
+- 기존 Reviewer는 design-impact의 ImpactTarget={ref,designRefs,dependencies}·2000건 상한과, 현 design-changes가 설계/화면/계획만 생산하는 점을 확인했다. 실행관측3표와 result_submissions의 보관 원행은 있지만 SYNTHETIC_ONLY/WORKER_CLAIM·provenanceVerified=false이므로 프로젝트 전체 실행·검증된 TEST_EVIDENCE·OS writer 안전의 완전성 증명이 아니다.
+- 고정 계획 업무→임무/실행 fullref·세대→제출 manifest/관측→시험 항목/원 evidence의 보관 사실을 모으는 내부adapter는 기존 source 범위에서 검토할 여지가 있다. 다만 미사용 adapter만 추가하거나 두 gap을 숨겨 기능 진도로 삼지 않는다. 활성화 계약78~85의 출처별 범위/누락/환경·세대/hash/현재귀속/초과/동시도착 검산과 실제 공급자 상세가 남는다. 이 절 자체가 새 OS/writer 증거 형식/발급권한을 정의한 것은 아니다.
+- 이번 결과는 다른 프로젝트/기능 전체의 source 구현 불가 판정이 아니며 현재 FN03 소비 연결 구현은 계속한다. Reviewer의 추정 result-submission-v1.ts 읽기 os error2는 실제 parser/store 경로로 정정했고 부재/계약누락 근거로 쓰지 않았다. 수정/시험·실DB/키/권한/서비스/Agent/실자료 효과0이다.
+### 2026-11-03 FN03 COLLECT 결과 불명·원문 음성 합성 검증
+- Primary8c1b99는COLLECT COMMIT응답유실/게시응답유실/원Artifact부재·격리선택3PASS/FAIL0/exit0/1492.1154ms를제출했다. 원receipt재조회/replay만허용하고재게시·재수입0,미확정원blob/held보존·metadata rollback,원문대체합성/변경·예약/게시0의메모리범위다.
+- 실제App UI06→UI08→원명령왕복·UNKNOWN 원명령보존시험을같은허용UI06파일에추가해첫실행중이다. 제품/SQL/quota는f8ecde82 기준불변이며실DB·키·권한·서비스·Agent·실자료효과0이다. 조립준비오류btoa미제공1은파일변경/시험실행전오류로분리했고UTF8직접저장으로정정했다. 동일원인제품보완실패0회다.
+- Main은기존Reviewer에원WI의전체producer/consumer연결한정검수를맡겼다. 이미확정한SQL/과금codec/원guard/I1 내부반복은제외하며route→서비스→별도stream/조회→Web/승인의연결누락과현재scope·UNKNOWN재전송0을본다. 작성중시험과실환경미검증을분리하고전체FN03/계획완료로확장하지않는다.
+### 2026-11-03 FN03 최종 화면 연결의 두 보완
+- Primary28a891은실제App메모리의명시소스조회→UI08진입→원문복귀·응답유실UNKNOWN/원명령보존1PASS를제출했다. 실제승인작성·결정·결박까지확장한262cdc에서는UI08복귀anchor가문서목록만가리키는행동RED를확인했다. 허용ApprovalsPage의source분기를기존documentVersionHref로좁혀보완중이다. 접힌조회클릭/기존commands endpoint 준비누락2는제품오류와분리한다.
+- 독립Reviewer최종연결검수C0/I1: DocumentSourceLinks E3CCAFB414221AA02C06EE82AEF51D7E71AAFBE73A469A0181ABFBD6FD7E9187의history catch가401/403/404뒤기존observations를회수하지않아raw사유/선택/proposalId를계속표시하고401부모전달도없다. Main53215c/3807b5로확인해Primary에실제React RED→GREEN을맡겼다. 기본목록refresh/오류와이력ticket의소유도같은회수원인범위에서대조한다.
+- 폐기문맥의늦은응답/오류는현재화면에반영하지않고pending/UNKNOWN원명령을삭제하지않는다. 새API/권한/검사기준·실제키/DB/권한/서비스/Agent·실자료실행0·Primary단일writer유지다.
+- 그밖에확인한App→HUMAN route/parser/policy→기본412→별도stream/고정reader→UI명시선택/일회승인연결은추가확정C/I0이다. 작성중UI시험은독립인수에서제외했고전체FN03·실환경/계획완료판정이아니다. 두보완의최종GREEN/독립재검수는아직전이다.
+### 2026-11-03 화면 보정 GREEN·독립 I1 해소와 직접 회귀 접점
+- Primary c0c67b는실제App UI06→UI08승인작성/명시결정/승인ref결박→원문복귀→POST응답유실UNKNOWN/추가POST0의1PASS/2377.9728ms를제출했다. source복귀anchor의기존documentVersionHref 한분기보정범위다.
+- 새이력회수I1은8af854 실제React2RED→a6b643 2PASS/1817.9282ms다. 401/403/404원상세회수·401부모전달·base refresh의historyticket폐기/늦은raw복구0·원buffer불변을확인했다. Main7c37b2는구현소유분리를읽었다.
+- 독립Reviewer는DocumentSourceLinks1C7593137FD00094DBEF1FF98DA3874C4BA3F0B4814F0373BE0DA93996B88CAC/ApprovalsPage1C756D1A404F0A49CDE2B57B4EE00C0BF6741F43D342CA694D0EF2094A68E930의시작끝지문을대조해원I1해소·두보정scopedC0/I0를반환했다. 시험지문은읽기시점부터6675E8C2D5D8D5DC06E9BB5C0525AFDB4C80821B35537B274DE1F755A69C2B2E라서앞제출30DE57과동일하다고소급하지않았다.
+- Mainc92788은기존optional session 없는읽기전용component호출에대한직접회귀접점을추가확인했다. 새baseeffect는무조건SourceLinkScope.capture를소비하지만bind는session존재시에만실행돼미결박capture가조회결과를폐기할수있다. 실제App은session을주며,기존optional계약정상/늦은응답fence를Primary가같은허용범위에서검증하도록전달했다. 아직최종판정/추가계약으로확대하지않는다.
+- Primary는직접인접묶음/type/diff를진행중이고실DB·키·권한·서비스·Agent/실자료효과0이다. 최종Mainfresh/전체source결과·전체FN03/계획완료는아직전이다.
+### 2026-11-03 최종 직접 묶음·문구 정합과 통합 key 보완
+- Primary cfb320의 정확명령은 node --test --test-concurrency=1 tests/unit/UI06/document-source-observation.test.ts tests/unit/FN03/document-source-link-history.test.ts tests/unit/FN03/document-source-link-records.test.ts tests/unit/FN03/document-source-link-list.test.ts 이며45PASS/FAIL0/skip0/6080.9008ms다. root054c2c noEmit0·diff22ae790을제출했다. optional session은907e28 RED→d24eaf 직접4PASS로보정하고독립38035FE2/Approvals1C756D1A scopedC0/I0를받았다.
+- 기존UI00 문구1FAIL은Main e5bb6d가10/27의92cef047 source변경과a5a2→f8ec의관련3파일diff0을확인해옛문구단언으로분리했다. Primary가정확현재문구1개만정정했고852eea2PASS/887.469ms다. 5링크/렌더IO0/비실행/미선택단언은모두유지한다. Main3611a2의추가확인은Vite임시config cache열기EPERM으로assertion전종료했으므로제품FAIL/control증거로쓰지않으며ACL/설정변경0이다.
+- 시험준비타입오류27fa7f/95d6ed는정확helper가아닌앞occurrence를보정한2회로원인을분리했고정확unknown helper의JSON wire/content-type수정뒤054c2c type0이다. f4363a의늦은401시험은새관측crypto hash 정착을유한UI대기로확인하도록보정한fixture계보다. 제품기준완화로통과시키지않는다.
+- Primary는동일React key경고를보존보고했다. Main ee717c는새DocumentSourceLinks와기존StoredDocumentAttachments/기록주체details의세형제가같은문서키를사용함을확인했다. 이번새소스연결도충돌하므로기계적으로기존경고로제외하지않고,허용DocsPage+기존UI06시험정확2경로에만기존Primary writer를재부여했다. 자료정체성suffix를보존하며세논리패널key종류를구분하는최소보완/실제App경고음성·패널보존검수뒤반환한다. 전수키개편·다른범위/실효과0이다.
+- 현재최종Mainfresh/보고서·source완료판정은이통합보완뒤진행한다. 실DB/SQL/OS·키/권한/서비스·Agent·실자료효과0·전체계획미완료다.
+### 2026-11-03 Main 최종 fresh 검증·관측 UI 시험 선행 정착 실패
+- Main7784fd는최종DocsPage7EFD7C5D/UI시험EFD3C5C0/SourceLinks38035FE2/Approvals1C756D1A/UI00C3BF76CC의raw지문·diffcheck0을확인했다. key보완은독립Reviewer가역치환87EB74D1과시작끝지문으로scopedC0/I0를반환했다.
+- Main6e9629(session88077→3585b2종료1)의직접4파일 fresh는45중44PASS/1FAIL/skip0/10994.158ms다. 실패는UI06:421 '서버 보존' 정상상세표시선행단언이고후행권한음성실행전이다. 묶음전체PASS/제품I1재발로자동분류하지않는다.
+- Mainc3b691은첫401/403/404·refresh시험이실제crypto hash/React정착을기다리지않고click직후단언하지만늦은401시험만40회유한대기를사용함을읽었다. 같은허용UI06시험1경로만Primary writer로재부여해정상readiness/후행오류정착뒤기존강한단언을유지하도록진단한다. 제품수정·암호stub·무한대기·제품기한연장/단언완화0이다. 이전fixture준비계보와실제보완실패횟수를구분하고3회조건을지킨다.
+- 별도Main ef3a9c 관측기한/원DB정착음성1PASS/1314.6741ms,562d07 root noEmit0,62773e Web메모리build는output3/chunk1/modules504/2650447bytes·write=false/envDir=false/publicDir=false로exit0이다. 이들은실DB/실파일/서비스·브라우저·OS/Agent검증이아니다. 제품불변이면다시반복하지않고미통과UI선행정착보완을우선한다.
+- 새자원/실제키·DB·권한·서비스·Agent/실자료효과0,전체FN03/계획미완료다.
+### 2026-11-03 FN03 소스 단위 최종 검수·결과서 인수
+- 시험 준비 보완의첫전체21d1e4는25PASS/1FAIL이었다. 세관측권한/경쟁시험은PASS였고optional기존ApiClient의Response.json 소비에잘못적용한body.locked=false관측이실패원인이었다. 원JSON메서드·receiver·실제parse/반환을보존하는정착관측으로수정하고기존최대40회유한대기·보안단언·암호검산·제품timeout은유지했다. Primary370a1226PASS/type0/diff0 뒤시험1경로writer를반환했다.
+- Main92d83c/5dbae5는최종시험60F650FE0A40333785A21022F23E774D616AB810E41918BBC0E66EFC73C9357D와수정내용을확인했다. bb648a node --test tests/unit/UI06/document-source-observation.test.ts 는26PASS/FAIL0/skip0/6852.3218ms,1aca56 rootnoEmit0이다. 앞4파일의44PASS/1FAIL을소급PASS하지않으며같은지문불변인접3의19PASS와최종수정UI26을분리했다. 제품불변의Web메모리504모듈/2650447B·query수명1PASS는반복하지않았다.
+- 기존Reviewer는최종시험선행정착60F650FE scopedC0/I0를반환했다. 실제parse완료·정상원상세/idle·오류정착뒤기존보안단언을유지하고skip/암호stub·제품기한확대가없는범위다. 앞제품/SQL/기한·최종UI회수/optional/key의한정검수와각정확지문을결과서에연결했다.
+- 신규결과서 docs/04_test_reports/AV3/FN03_SOURCE_OBSERVATION_DRIFT_SOURCE_RESULT_20261103.md SHA256 FD68CF04ECD7CD6E414CB981B1D75F9954D769E12AFC7C7125791E059638D1F9/13655B,정본/작업본동일이다. 허용34/변경27manifest·원WI B785/INTERFACES1DB6·보호3·WORK_STATUS의f8ec원bytes prefix보존을검산했다. 독립결과서사실대조C0/I0로과거실패/최종PASS·실환경미검증/부분구현을분리했다.
+- 판정은소스생산소비구현및수행합성검수범위완료다. 실제보호관측공급자/0072 SQL·DB/서비스·OS/실브라우저/사용자인수는미실행·미확인이며기본412·전체FN03/UI06/StageB/작업계획부분구현을유지한다. nativeR2 미채택·FN04실행/시험증거·실제writer안전선행도남는다. 실제키·DB·권한·서비스·Agent/제품네트워크·실자료효과0이다.
+- 다음은현재f8ec뒤정확최종제품/시험5+결과서/현황2의7경로를검수checkpoint/private보존하고원계획의다음안전작업을선정한다. PR/main병합·실배포·전체완료를하지않는다.

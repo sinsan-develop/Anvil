@@ -7,19 +7,30 @@ import {readSourceLinks,type SourceLinksView,type SourceLinkView} from './source
 type Ref={id:string;version:number;contentHash:string};
 export function DocumentSourceLinks({client,projectId,documentRef,onDetach,onAuthenticationLost,session,commandBuffer=null,onCommandChange}:{session?:DocumentSession;commandBuffer?:SourceLinkBuffer|null;onCommandChange?:(change:SourceLinkChange)=>void;client:ApiClient;projectId:string;documentRef:Ref;onDetach?:(value:SourceLinkView)=>void;onAuthenticationLost:()=>void}){
  const [observations,setObservations]=useState<{linkId:string;items:SourceObservationView[];nextCursor:string|null}|null>(null),[observing,setObserving]=useState(false);
- const sourceScope=useRef(new SourceLinkScope());
- if(session)sourceScope.current.bind(client,session,projectId,JSON.stringify([commandBuffer?.bindingId??null,documentRef]));
- useEffect(()=>()=>sourceScope.current.dispose(),[]);
- async function history(linkId:string,next=false){if(observing)return;const active=sourceScope.current.capture();setObserving(true);try{const page=await readSourceObservationPage(client,projectId,documentRef,linkId,active,next?observations?.nextCursor??null:null);if(active())setObservations({linkId,items:next?[...(observations?.items??[]),...page.items]:page.items,nextCursor:page.nextCursor});}catch(e){if(active())setError(e instanceof ApiError?e:new ApiError('DOCUMENT_SOURCE_RESPONSE_INVALID'));}finally{if(active())setObserving(false);}}
+ const sourceScope=useRef(new SourceLinkScope()),readIdentity=useRef<unknown[]>([]),readOwner=useRef<object>({});
+ const identity=[client,client.transport,projectId,documentRef.id,documentRef.version,documentRef.contentHash,session];
+ if(identity.some((v,i)=>v!==readIdentity.current[i])){readIdentity.current=identity;readOwner.current={};}
+ if(session)sourceScope.current.bind(client,session,projectId,JSON.stringify(documentRef));
+ function captureRead(){const owner=readOwner.current,transport=client.transport,captured=session?sourceScope.current.capture():()=>true;return()=>readOwner.current===owner&&client.transport===transport&&captured();}
+ useEffect(()=>()=>{readOwner.current={};sourceScope.current.dispose();},[]);
+ const historyOwner=useRef<object|null>(null),historyEpoch=useRef<object>({});
+ function revokeHistory(){historyEpoch.current={};historyOwner.current=null;setObservations(null);setObserving(false);}
+ async function history(linkId:string,next=false){
+  if(historyOwner.current)return;
+  const ticket={},epoch=historyEpoch.current,captured=captureRead(),active=()=>historyOwner.current===ticket&&historyEpoch.current===epoch&&captured();historyOwner.current=ticket;setObserving(true);
+  try{const page=await readSourceObservationPage(client,projectId,documentRef,linkId,active,next?observations?.nextCursor??null:null);if(active())setObservations({linkId,items:next?[...(observations?.items??[]),...page.items]:page.items,nextCursor:page.nextCursor});}
+  catch(e){if(active()){setObservations(null);const problem=e instanceof ApiError?e:new ApiError('DOCUMENT_SOURCE_RESPONSE_INVALID');setError(problem);if(problem.status===401)onAuthenticationLost();}}
+  finally{if(historyOwner.current===ticket){historyOwner.current=null;if(captured())setObserving(false);}}
+ }
  const [value,setValue]=useState<SourceLinksView|null>(null),[error,setError]=useState<ApiError|null>(null),[loading,setLoading]=useState(true),[reload,setReload]=useState(0);
  const {id,version,contentHash}=documentRef;
- useEffect(()=>{setObservations(null);setObserving(false);},[client,client.transport,projectId,id,version,contentHash,session]);
+ useEffect(()=>{revokeHistory();},[client,client.transport,projectId,id,version,contentHash,session]);
  useEffect(()=>{
-  let current=true;setValue(null);setError(null);setLoading(true);
-  readSourceLinks(client,projectId,{id,version,contentHash},()=>current).then(v=>{if(current)setValue(v);}).catch(cause=>{if(!current)return;const e=cause instanceof ApiError?cause:new ApiError('DOCUMENT_SOURCE_LINK_RESPONSE_INVALID');setValue(null);setError(e);if(e.status===401)onAuthenticationLost();}).finally(()=>{if(current)setLoading(false);});
+  let current=true;const captured=captureRead();revokeHistory();setValue(null);setError(null);setLoading(true);
+  readSourceLinks(client,projectId,{id,version,contentHash},()=>current&&captured()).then(v=>{if(current&&captured())setValue(v);}).catch(cause=>{if(!current||!captured())return;revokeHistory();const e=cause instanceof ApiError?cause:new ApiError('DOCUMENT_SOURCE_LINK_RESPONSE_INVALID');setValue(null);setError(e);if(e.status===401)onAuthenticationLost();}).finally(()=>{if(current&&captured())setLoading(false);});
   return()=>{current=false;};
- },[client,projectId,id,version,contentHash,reload]);
- return <section className="status-card" aria-label="문서 소스 연결 이력"><h3>문서 소스 연결</h3><button disabled={loading} onClick={()=>{setValue(null);setError(null);setLoading(true);setReload(n=>n+1);}}>소스 연결 새로고침</button>
+ },[client,client.transport,projectId,id,version,contentHash,reload,session]);
+ return <section className="status-card" aria-label="문서 소스 연결 이력"><h3>문서 소스 연결</h3><button disabled={loading} onClick={()=>{revokeHistory();setValue(null);setError(null);setLoading(true);setReload(n=>n+1);}}>소스 연결 새로고침</button>
   {session&&onCommandChange?<button disabled={!!commandBuffer} onClick={()=>onCommandChange(previous=>previous??newSourceLinkCommand(client,session,projectId,documentRef))}>새 소스 연결 준비</button>:null}
   {commandBuffer&&session&&onCommandChange?(JSON.stringify(commandBuffer.documentRef)===JSON.stringify(documentRef)?<SourceLinkCommandEditor client={client} session={session} buffer={commandBuffer} onChange={onCommandChange} onAuthenticationLost={onAuthenticationLost}/>:<p role="status">다른 문서의 원 소스 명령을 보존 중입니다. 원 문서로 돌아가 확인하세요.</p>):null}
   {loading?<p role="status">보관된 연결 이력 확인 중</p>:null}{error?<p role="alert">{error.code} · 연결을 확인하지 못했습니다.</p>:null}
