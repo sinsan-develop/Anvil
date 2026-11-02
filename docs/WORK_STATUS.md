@@ -13095,3 +13095,30 @@ git diff --check
 - 기존 Reviewer의 supplier race/Abort/opaque/lease 추적을 Main의 budget source 읽기와 대조했다. 외부 timeout/원 token 소거와 supplier 전달 복사본·하위 IO의 실제 정착은 다르다. HTTP 단절을 native 취소나 정리 완료로 해석하지 않는다. 원 operation의 result/settled 분리·단발 IO/buffer 소유 port 요구를 기술 검토서에 반영했다.
 - 실제 stream 구현·write/drain/close 정착 보장은 없고 새 공개 인증/위임 계약도 미채택이다. Important9 전체/실제 보안 검증·기능 완료로 승격하지 않는다. 제품 source·SQL·시험 변경0/제품 writer0. 실제 키·DB·권한·서비스·Agent·네트워크·컴파일·시험·실자료 조사/QA0, 이번 읽기 오류0.
 - 다음은 방향 선택 답변을 확인하되 미채택 의미를 임의로 구현하지 않고 R2의 내부 기술 보완과 새 의미 선택의 정확 의존을 유지하는 것이다. 전체 작업계획 미완료이며 native 최초 수신/위임은 아직 실제 사용 가능한 기능이 아니다.
+### 2026-11-03 기존 승인 독립 source 단위 대조
+- 직전 기술 검토서/현황2문서 checkpoint da3f4bbbaba2b59a7cb62a640e3db3489b7a1912의 private exact SHA·main f976ed5e 불변·tracked clean/보호 untracked3 보존을 확인했다. 기술 보고서 SHA5990315CC380DCBA9F821A946CA97214E4A93C5201E6B412DF60F8AA90BD0C05다.
+- 기존 Primary가 native/trust 남은 호출선을 읽기 대조했다. 최초 수신/전달 ACK는 새 위임 의미, 보호 current/profile·image는 실제 보호 생산근거, owner bridge/file journal 배송은 해당 입력의 제품 조립 호출자, RESTORE_VERIFY는 미채택 bootstrap, 실제 설치/C#/OS/journal/TLS는 실행 제외에 의존한다. 단순 exports/조립 wrapper나 가짜 verified 입력을 다음 완료 기능으로 만들지 않는다. 기존 승인 범위 전체를 새 승인 필요로 일반화하지 않는다.
+- Main은 기존 r5 신뢰 계약과 image supplier source를 한정 대조했고, 이 결론을 전체 계획의 할 일 없음으로 확대하지 않았다. 기존 Reviewer에게 계획 순서상 앞선 Stage B의 아직 미완료인 독립 source 기능을 실제 현황·소스와 대조하도록 배정했다. 완료된 source/시험 재실행·새 문서 양산0, 아직 code writer/구현 dispatch0다.
+- PMO 최신 회신은 새 방향 선택 결정 대기 유지·중복 질문 없음이다. 실제 응답 없이 채택을 추정하지 않는다. 실제 키·DB·권한·서비스·Agent·시험/컴파일·네트워크/실자료 조사0·전체 계획 미완료다.
+### 2026-11-03 Stage B 독립 source 잔여 대조
+- 기존 Reviewer는 FN01~05/FN11·UI00~03/UI06/UI10의 현재 표/후속 source 결과를 대조했다. 이번 범위에서 기존 승인만으로 바로 닫을 독립 source 단위를 확정하지 못했으며 전체 계획 소진/완료라고 판단하지 않았다.
+- FN01 실제 source 관측/VERIFIED는 FN08 보호 관측, FN03 드리프트 수집/KEEP_SERVER·COLLECT_PROPOSAL은 정확 관측 snapshot/artifact와 선택 저장계약, FN04 실제 안전 gap/기준전환은 해당 선행에 의존한다. FN02 영향 근거 없는 적용412는 보호 동작이며 단순 화면 연결로 풀지 않는다.
+- FN05 공유요청 REQUIRE_APPROVAL412는 승인 WI16의 명시 제외임을 Main이 대조했다. 요청 이력과 실제 공유를 구분한다. FN11 실제 DB/경합/Agent·UI00 served 세션 인수는 미검증이며 이미 구현된 source를 재작업하지 않는다.
+- 기존 Primary는 FN07의 고정 SDK 정규화 뒤 독립 source 생산·소비 단위를 별도 읽기 대조 중이다. 새 의미/실제효과 없이 완료할 단위를 찾는 범위이며 code writer0/구현 dispatch0다. 방향 선택은 PMO 요청 답변 전 미채택을 유지한다.
+- 실제 키·DB·권한·서비스·Agent·시험/컴파일·네트워크/실자료 조사0, 파일 변경은 Main 현황 누적뿐이며 오류0·전체 계획 미완료다.
+### 2026-11-03 FN07 독립 source 잔여 대조
+- 기존 Primary는 정규화 WI C69DF128…54FB8AE와 결과 checkpoint0a24a14a/17PASS·source를 대조했다. 승인 범위는 미전송 입력 준비/관측 정규화이며 transport/6함수 실행은 제외다. 기존 정규화는 재작업하지 않았다.
+- 실제 secondary는 schemas/codec이며 제품 caller 미연결이다. 기존 보호 session claim은 CODEX_APP_SERVER0.161.0 및 THREAD/TURN·thread/start/turn/start/turn/steer로 닫혀 있음을 Main이 source에서 확인했다. Claude session_id/uuid 대입·기존 parser 완화로 연결하지 않는다. Claude의 정확 claim/상관/보호 reader·SDK 대 CLI transport·인증/비용·FN06 소유/한도/중지 선행은 별도 미결정/미완료다.
+- 현재 승인만으로 완결할 FN07 신규 단위를 확정하지 못했지만 전체 계획에 할 일이 없다는 결론은 아니다. 기존 Reviewer에게 다음 Stage C FN12/FN13의 실제 저장·화면 caller 안의 독립 source 누락만 읽기 대조하도록 배정했다. 새 코드/문서 writer·실행0이며 다음 결과에 따라 Main이 계속 가능한 단위를 선정한다.
+- 실제 키·DB·권한·서비스·Agent·시험/컴파일·네트워크/실자료 조사0·오류0·전체 계획 미완료다.
+### 2026-11-03 FN03 승인 경계 오판 정정·다음 구현 단위 선정
+- 앞 Stage B 대조의 '드리프트 선택 미채택' 판단을 정정한다. Reviewer는 별도 FN03_SOURCE_CONTENT_HASH_DELTA_CANDIDATE.md §13.4(SHA746D1FBA11AFDB94D750955A14F7D465BAA5E19B71D8598C2EBDBE7CD738F173)의 새 정책 관리원문 보호저장/조회/허가 미채택을 INTERFACES§15.4의 드리프트 연산 전체에 잘못 연결했음을 인정했다. Main이 실제 INTERFACES1125~1131/557(현재SHA1DB611C1…)을 대조했다. 기존 link/proposeDocumentSourceChange·KEEP_SERVER/COLLECT_PROPOSAL·원본문불변/이력 의미는 승인 범위이며 재승인 불필요다.
+- 선정: UI06 문서 소스 연결의 관측·드리프트 선택 source 종단 연결. 기존 정책/명령→보호 관측→정확 Artifact 기반 import/proposal/선택 이력→고정 조회·화면을 연결한다. 실제 보호 공급자 기본미등록412·CONNECTOR_REPORTED/OS UNVERIFIED 승격0·원문 없는 COLLECT0·자동본문반영/확정0을 유지한다. 기존 v1 링크/분리 동작과 승인/감사·quota·미확인 원명령 보존을 지킨다.
+- 기존 Primary에게 구현 전 정확 경로·호환 event/forwardSQL·포트·quota·UI·TDD 검수안을 읽기 반환하도록 지시했다. Main은 상세 WI/허용경로를 고정한 뒤 단일 writer로 구현을 맡긴다. 현재 제품 writer0이며 기존 native 방향 선택 대기와 독립 진행한다.
+- Main 읽기명령의 literal glob 경로 오류1은 rg -g와 실제 경로로 보정했다. Reviewer의 추정 source 파일 읽기 오류1도 실제 목록으로 보정됐다. 승인 경계 오판1은 위 근거로 수정했고 사용자/PMO에 전달한다. 기준 완화·새 정책관리원문 구현·실제 키·DB·권한·서비스·Agent·네트워크·실자료 조사0, 전체 계획 미완료다.
+### 2026-11-03 FN03 드리프트 구현 WI 고정·scoped 사전검토
+- Main은 docs/work_packages/FN03_SOURCE_OBSERVATION_DRIFT_IMPLEMENTATION_20261103.md SHA455D63ED48F1F064216BBC06F96DFCCA079A10D7CD844948CEFFA318AAAF0619를 정본/작업본 동일 UTF8/LF로 고정했다. 기존제품21/신규6/직접인접시험7의 정확 허용34경로와 원SQL불변·실제효과제외를 명시했다. Main은제품코드를수정하지않는다.
+- 구현안 독립검토 C0/I1의 원import/proposal 자체receipt·quota중첩 문제를 WI§4에서 원proposeDocumentSourceChange 단일command/receipt/승인소비·내부계획재사용·원operation예약/IO/정산/보호replay로 보완하도록 지시했다. I1해소는 구현/검수 전 확정하지 않는다.
+- 기존v1 LINKED/DETACHED는 불변·새관측/선택 별도stream, 최초link target null/0·선택 ACTIVEref, 기본관측미등록412·원Artifact검산·본문/확정본불변을 고정했다. 새metadata 유한기본64KiB/record·project10000행/64MiB와 미래예약/actual 계상·quota기존기준불변·유한page/불명보존을 내부상세로 명시했다.
+- 기존 Reviewer가 WI의 새의미/기존guard완화·quota실현/경로한정 scoped검토중이다. Primary는 아직codewriter를받지않았으며검토후Main이정식dispatch한다. 실제키/DB/권한/서비스/Agent·네트워크·실자료/시험실행0·오류0·전체계획미완료다.
+- WI 독립검토 반환은 처음 불완전한 비한국어 한구절만 전달돼 판정에 사용하지 않았다(보고형식 오류1). 재전달에서 대상SHA455D63ED 시작/끝동일·WI C0/I0와 §4 I1 설계보완/구현판정분리·§3/5 guard·34경로를 확인했다. 추가시험/재검토실행0. 다음은 WI/현황2문서checkpoint 후 기존Primary 단일writer TDD dispatch다.
