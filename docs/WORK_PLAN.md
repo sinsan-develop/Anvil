@@ -1899,3 +1899,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-02 FN18 package 보호 source: code1d67636f 정확7/177추가20삭제·Main34PASS(신규13/legacyvendor21 구분)/type/diff·독립C0/I0. config→plugin/실제 합성bytes→verifier→sameMaker 원 snapshot 결박을 연결했다. 결과 FN18_PACKAGE_RUNTIME_HARDENING_SOURCE_RESULT_20261102.md 참조. 실제 package/loader/installer/native·DB키서비스Agent/P03R3·사용자인수/전체계획은 미완료이며 기본 native isolation 차단을 유지한다.
 
 - 2026-11-02 native owner bridge source: code0caad4eaf86377eb47f3262dd8abe957e04970ec 정확8/294추가10삭제·Main45PASS/type/diff·독립C0/I0. 원Client ticket/currentguard/budget→owner생성/조회/닫기source와UNKNOWN보존을연결했다. 결과 FN06_NATIVE_PREPARATION_OWNER_BRIDGE_SOURCE_RESULT_20261102.md 참조. 실제C#compile/실행·standaloneentry/build/보호startup·actualadmission/EOF호출선/DB키권한서비스Agent/P03R3/전체계획은미완료다.
+
+- 2026-11-02 native helper Host/Basis/Peer source: code c66fa5653b3da80a37153a18eac5e29491dfff7e 정확11/408추가21삭제·MainJS51/type/diff·정적I1/I2보정scopedC0/I0. 원peer/고정basis→기존dispatcher→EOF/IO소유정리를source로연결하고env/cwd/companion을보완했다. 결과 FN06_NATIVE_PREPARATION_OWNER_HOST_SOURCE_RESULT_20261102.md 참조. C#compile/RunAll/OS미실행·실build/basis/physicalfactory공급·제품등록/실admission/DB키권한서비스Agent/P03R3/전체계획은미완료다.
