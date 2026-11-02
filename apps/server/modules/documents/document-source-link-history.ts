@@ -4,8 +4,9 @@ import {isRelativeSourceFileV1} from '../../../../contracts/runtime/source-scope
 import {AuthFailure} from '../access/repository.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 
-interface LinkInput{documentRef:Ref;sourceRootId:string;relativePath:string;sourceSnapshotRef:Ref;blobHash:string;reason:string}
+export interface LinkInput{documentRef:Ref;sourceRootId:string;relativePath:string;sourceSnapshotRef:Ref;blobHash:string;reason:string}
 interface DetachInput{sourceLinkRef:Ref;reason:string}
+export interface SourceChangeInput{sourceLinkRef:Ref;observedSnapshotRef:Ref;choice:'KEEP_SERVER'|'COLLECT_PROPOSAL';reason:string}
 interface Scope{projectId:string;documentRef:Ref}
 interface Snapshot extends LinkInput{projectId:string;kind:'LINKED'|'DETACHED';state:'ACTIVE'|'DETACHED';previousRef:Ref|null;recordedAt:string}
 export interface DocumentSourceLinkRecord{ref:Ref;snapshot:Snapshot}
@@ -19,13 +20,15 @@ function link(value:unknown):value is LinkInput{
 /** 문법만 검사한다. 원문/OS/서명/현재 권한의 검증이나 연결 생성 허가가 아니다. */
 export function readDocumentSourceLinkInput(operation:'linkDocumentSource',value:unknown):LinkInput;
 export function readDocumentSourceLinkInput(operation:'detachDocumentSource',value:unknown):DetachInput;
-export function readDocumentSourceLinkInput(operation:string,value:unknown):LinkInput|DetachInput;
-export function readDocumentSourceLinkInput(operation:string,value:unknown):LinkInput|DetachInput{
+export function readDocumentSourceLinkInput(operation:'proposeDocumentSourceChange',value:unknown):SourceChangeInput;
+export function readDocumentSourceLinkInput(operation:string,value:unknown):LinkInput|DetachInput|SourceChangeInput;
+export function readDocumentSourceLinkInput(operation:string,value:unknown):LinkInput|DetachInput|SourceChangeInput{
  if(operation==='linkDocumentSource'){if(!link(value))return fail();}
  else if(operation==='detachDocumentSource'){if(!recordV1(value,['sourceLinkRef','reason'])||!refV1(value.sourceLinkRef))return fail();reason(value.reason);}
+ else if(operation==='proposeDocumentSourceChange'){if(!recordV1(value,['sourceLinkRef','observedSnapshotRef','choice','reason'])||!refV1(value.sourceLinkRef)||value.sourceLinkRef.version!==1||!refV1(value.observedSnapshotRef)||!['KEEP_SERVER','COLLECT_PROPOSAL'].includes(String(value.choice)))return fail();reason(value.reason);}
  else return fail();
  if(inspectArtifact(Buffer.from(canonicalJson(value),'utf8')).state==='SUSPECTED')return fail('DOCUMENT_SOURCE_LINK_SENSITIVE_CONTENT_SUSPECTED',412);
- return cloneV1(value) as LinkInput|DetachInput;
+ return cloneV1(value) as LinkInput|DetachInput|SourceChangeInput;
 }
 /** LINKED→DETACHED 부분 계약의 내부 이력 검사. 해시 일치는 출처/관측의 진위·자료 접근 허가가 아니다.
  * 저장 receipt/audit·same-project root/실제 content proof는 후속 서버 transaction에서 별도로 확인해야 한다.

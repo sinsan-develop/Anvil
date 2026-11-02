@@ -1,3 +1,6 @@
+import {canonicalJson} from '../../../../contracts/canonical.ts';
+import {projectMember} from '../access/project-command.ts';
+import type {ProjectListCodec} from '../projects/service.ts';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {recordV1,uuidV1,hashV1,arrayV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -24,4 +27,25 @@ export async function readDocumentSourceLinks(db:PoolClient,actor:AuthenticatedI
   for(const id of rows[0].ids.slice(0,20))items.push(await reader.read(db,actor,projectId,documentRef,id));
   return{projectId,documentRef,items,hasMore:rows[0].ids.length>20,observedAt:new Date().toISOString()};
  }catch(error){if(error instanceof AuthFailure)throw error;throw new AuthFailure('DOCUMENT_SOURCE_LINK_STORAGE_UNAVAILABLE',503);}
+}
+
+/** 관측/선택 별도 stream의 유한 페이지. v1 목록/이력 원형은 그대로 둔다. */
+export async function readDocumentSourceObservations(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,documentId:string,linkId:string,query:Record<string,unknown>,codec:ProjectListCodec){
+ if(!recordV1(query,['version','contentHash',...Object.keys(query).filter(k=>k==='limit'||k==='cursor')])||typeof query.version!=='string'||!(/^[1-9][0-9]{0,14}$/).test(query.version)||!hashV1(query.contentHash)||!uuidV1(linkId)||query.limit!==undefined&&(typeof query.limit!=='string'||!(/^[1-9][0-9]?$/).test(query.limit)||Number(query.limit)>50)||query.cursor!==undefined&&(typeof query.cursor!=='string'||query.cursor.length>4096))throw new AuthFailure('DOCUMENT_SOURCE_LINK_INPUT_INVALID',400);
+ const documentRef={id:documentId,version:Number(query.version),contentHash:query.contentHash},member=await projectMember(db,actor,projectId,true),reader=new DocumentSourceLinkRecords();
+ await reader.read(db,actor,projectId,documentRef,linkId);
+ const limit=query.limit===undefined?50:Number(query.limit),filter={query:canonicalJson({view:'DOCUMENT_SOURCE_OBSERVATIONS',projectId,documentRef,linkId,participation:member.participation}),archived:false,limit};let position:{at:string;id:string}|null=null;
+ if(query.cursor!==undefined){try{position=codec.read(String(query.cursor),actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}}
+ const rows=(await db.query(`SELECT id,stream_id,version,content_hash,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM anvil.document_source_observation_events WHERE project_id=$1 AND link_id=$2 AND ($3::timestamptz IS NULL OR (created_at,id)<($3::timestamptz,$4::uuid)) ORDER BY created_at DESC,id DESC LIMIT $5`,[projectId,linkId,position?.at??null,position?.id??null,limit+1])).rows;
+ if(!arrayV1(rows,limit+1))throw new AuthFailure('DOCUMENT_SOURCE_LINK_HISTORY_INVALID',503);
+ const items=[];let last:{at:string;id:string}|null=null;
+ for(const row of rows.slice(0,limit)){
+  if(!uuidV1(row.id)||!uuidV1(row.stream_id)||!Number.isSafeInteger(Number(row.version))||Number(row.version)<1||Number(row.version)>10000||typeof row.cursor_at!=='string')throw new AuthFailure('DOCUMENT_SOURCE_LINK_HISTORY_INVALID',503);
+  const item=await reader.observation(db,actor,projectId,documentRef,linkId,row.stream_id,Number(row.version));
+  if(item.ref.contentHash!==row.content_hash)throw new AuthFailure('DOCUMENT_SOURCE_LINK_HISTORY_INVALID',503);
+  if(Buffer.byteLength(canonicalJson({projectId,documentRef,linkId,items:[...items,item],hasMore:true,nextCursor:'x'.repeat(4096)}))>2097152)break;
+  items.push(item);last={at:row.cursor_at,id:row.id};
+ }
+ const hasMore=rows.length>items.length;if(hasMore&&!last)throw new AuthFailure('DOCUMENT_SOURCE_LINK_HISTORY_INVALID',503);
+ return{projectId,documentRef,linkId,items,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,last!):null};
 }

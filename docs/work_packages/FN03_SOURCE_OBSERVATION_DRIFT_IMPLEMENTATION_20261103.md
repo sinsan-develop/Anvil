@@ -78,7 +78,7 @@ IO를 포함하는 quota prepare/reserve/start/publish/settle 및 보호 replay�
 
 0032/0059 등 구SQL은 불변이다. 새 forward pending SQL은 최초link 생성, 별도 관측/선택 stream/head·원 command/receipt/audit/승인·COLLECT import/proposal/Artifact 연결 및 RLS/직접 DML 거절·현재성/지연 완결을 명시한다. application 등록만으로 정책/GRANT/실DB를 변경하지 않는다.
 
-기존20MiB 원Artifact·2MiB 본문/계획·10GiB project quota·자동삭제OFF·기존 operation 예약 계수를 완화하지 않는다. 새 관측/선택 metadata는 canonical record projection 최대64KiB, project 누적10000행/64MiB를 내부 기본 유한 한도로 둔다. 원본/증거·중복 저장행과 미래 예약을 누락/중복 계상하지 않는다. 목록은 page 최대50·bounded response2MiB와 명시 hasMore/고정 상세·기존 signed cursor pattern을 사용한다. 전체 이력을 page 생략으로 완료라 하지 않는다. 포화는 새 변경만 거절하고 기존 조회/기존 detach는 보존한다.
+기존20MiB 원Artifact·2MiB 본문/계획·10GiB project quota·자동삭제OFF·기존 operation 예약 계수를 완화하지 않는다. 새 SourceLinkEvent 행의 canonical record projection은 최대64KiB다. 기존 공통 command/receipt/audit/import/proposal/reservation 행에는 이 새 관측 행 상한을 일률 적용하지 않고 원 domain validator와 기존 유효 입력을 보존한다. 새 source 연산의 metadata 그룹은 project 누적10000행/64MiB를 내부 유한 한도로 둔다. 원본/증거·중복 저장행과 미래 예약을 누락/중복 계상하지 않는다. 목록은 page 최대50·bounded response2MiB와 명시 hasMore/고정 상세·기존 signed cursor pattern을 사용한다. 전체 이력을 page 생략으로 완료라 하지 않는다. 포화는 새 변경만 거절하고 기존 조회/기존 detach는 보존한다.
 
 새 metadata 및 COLLECT diff의 미래 bytes/slot을 원명령의 목적별 quota 예약에 함께 결박한다. 필요하면 SOURCE_LINK_EVENT라는 내부 part를 두 연산에만 한정하고, 기존 ARTIFACT/CHECKPOINT operation별 count/byte·2배예약/정산 guard는 그대로 둔다. 새 metadata actual/held와 기존U/H·다른 계상소계는 같은 project 잠금 아래 disjoint로 합산한다. forward collector·SQL guard와 runtime이 같은 식을 소비하며 coverage를 상수true로 바꾸지 않는다. UNKNOWN/미정착IO·원결과 미확정에서 예약 자동해제0. 정확 projection·정산표와 branch별 남은 여유를 코드/시험에서 제시하고, 기존 guard를 건드릴 추가 경로가 필요하면 Main에 먼저 반환한다.
 
@@ -103,3 +103,16 @@ App 소유의 원 command/body/hash를 현재 project/session/client/control·�
 실제 키/CA/Secret·DB 접속/SQL 적용/정책·GRANT·권한·서비스·Agent/SDK/CLI·native/C#/OS·실파일/백업대상 조사·네트워크·P03R3 실행0. 테스트는 합성 보호대역·메모리/정해진 소스 읽기만 사용한다. 실제 파일/서비스 자원이 필요하면 자동으로 만들지 말고 대체 가능한 메모리 검증부터 사용한다.
 
 복구는 소유 source commit의 정상 Git revert 검토다. reset/rebase/force/main직접쓰기·타인자료복구/삭제0. 실제 보호 공급자/DB/served·Agent는 계속 미확인이다.
+## 9. r2 내부 한도 적용 정정·Main 재확정
+
+부모 WI SHA256 455D63ED48F1F064216BBC06F96DFCCA079A10D7CD844948CEFFA318AAAF0619 / 기존 INTERFACES §15.4의 승인 의미·허용34경로·실효과 제외 불변.
+
+887f45의 순수 계산은 기존 isImportArtifact를 통과하는 attachments200개와 기존 reason20000 한글을 보존한 proposal projection이94692bytes임을 보였다. 새 SourceLinkEvent의64KiB를 공통 proposal 행 전체에 적용하는 것은 기존 유효 입력을 축소하므로 정정한다. SourceLinkEvent64KiB 자체나 기존20MiB Artifact/2MiB 본문·diff/10GiB project 기준을 완화하지 않는다.
+
+실제 collector row는 원 table별 종류와 projection을 명확히 매핑한다. caller가 COMMON이라는 표식으로 새 SourceLinkEvent 한도를 우회해서는 안 된다. 공통행은 원 validator·원 계획/명령/자료의 귀속과 실제 byte 합계로 검산하고, 실제 물리 slot≤10·중복계상0을 유지한다.
+
+미래 metadata는 준비 시 고정한 normalized projection의 canonical bytes S를 사용해 M=4*S+10*65536의 보수 예약안으로 구체화한다. 실제 행표에서 각 projection 요소의 가변 payload 복제가4회 이내임을 검산한다. 초과하면 정확 행표로 Main에 반환하며 예약식을 증명된 값으로 조정한다. 뒤640KiB는 고정 envelope/새 로컬 시각·hash 등 여유다. 실제 정산에는 모든 최종 행 bytes를 포함한다.
+
+단일 part의 b=M+D, r=M+2D에서는 D=r-b, M=2*b-r로 파생할 수 있다. 게시 전/정산에서 projection과 예약식을 다시 검산하며 원 Artifact 재계상0·diff 실제1배/예약2배·UNKNOWN hold·I1의 exact diffRef/단발 보호는 불변이다. M은 새로운 수용 상한이나 실제 사용량이 아니다.
+
+새 SourceLinkEvent 초과거절, 기존 유효94692B 공통 proposal 수용, table-kind 위장·예약부족·10slot·I1 음성을 구분해 반례를 확장한다. 기존 음성 단언을 제거하거나 넓은 COMMON 예외로 우회하지 않는다. 이 r2는 기존 기능·유효 입력을 보존하는 내부 적용 정정이며 새 역할/키/권한·공개 승인 의미·실제 DB/서비스/Agent 실행은 추가하지 않는다. 과거 WI/검토는 Git 이력에 보존하고 현재 최종 지문으로만 후속 구현을 대조한다.

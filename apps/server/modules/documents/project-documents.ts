@@ -1,3 +1,5 @@
+import {ProjectDocumentSourceLinks} from './project-source-links.ts';
+import {DocumentSourceLinkRecords} from './document-source-link-records.ts';
 import {ProjectStorageQuota,type StartedQuotaBundle} from '../projects/project-storage-quota.ts';
 import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AccessRepository} from '../access/repository.ts';
@@ -24,7 +26,7 @@ import { createDocumentImport, readDocumentImport, checkImportSelection } from '
 import { prepareDocumentProposal,storeDocumentProposal,type DocumentProposalPlan,readDocumentProposal,checkProposalSelection } from './project-proposals.ts';
 import { listDocumentMaterials } from './material-list.ts';
 import { readApplicationSnapshot } from '../methodologies/application-snapshot.ts';
-import {readDocumentSourceLinks} from './document-source-link-list.ts';
+import {readDocumentSourceLinks,readDocumentSourceObservations} from './document-source-link-list.ts';
 
 interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; mediaType: string }
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
@@ -34,6 +36,9 @@ export class ProjectDocuments {
   #store: ArtifactStore | null;
   #proposalPlans=new WeakSet<DocumentProposalPlan>();
   constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  /** 서버 내부 source 부모 명령의 기존 보호 Artifact reader/원 quota 연결. HTTP 입력으로 공급할 수 없다. */
+  sourceQuota(access:AccessRepository){return new ProjectStorageQuota(access,this.#store??undefined,this);}
+  async sourceArtifact(db:PoolClient,projectId:string,ref:ArtifactRef){return this.#artifact(db,projectId,ref);}
   async import(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     return createDocumentImport(db, actor, request, policyRef, (client, projectId, ref) => this.#artifact(client, projectId, ref));
   }
@@ -224,10 +229,13 @@ export class ProjectDocuments {
     return result;
   }
 }
-export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments) {
+export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments, sourceLinks=new ProjectDocumentSourceLinks()) {
   const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
   const codec = new ProjectListCodec(value => options.repository.signProjectCursor('DOCUMENTS:' + value));
-  app.get<{Params:{projectId:string;documentId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/documents/:documentId/source-links',{schema:{params:{type:'object',additionalProperties:false,required:['projectId','documentId'],properties:{projectId:idSchema,documentId:idSchema}},querystring:{type:'object',additionalProperties:false,required:['version','contentHash'],properties:{version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},contentHash:{type:'string',pattern:'^[0-9a-f]{64}$'}}}}},request=>options.repository.authenticated(readToken(request),null,(db,actor)=>readDocumentSourceLinks(db,actor,request.params.projectId,request.params.documentId,request.query)));
+  app.get<{Params:{projectId:string;documentId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/documents/:documentId/source-links',{schema:{params:{type:'object',additionalProperties:false,required:['projectId','documentId'],properties:{projectId:idSchema,documentId:idSchema}},querystring:{type:'object',additionalProperties:false,required:['version','contentHash'],properties:{version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},contentHash:{type:'string',pattern:'^[0-9a-f]{64}$'},view:{type:'string',const:'options'},mode:{type:'string',enum:['LINK','CHANGE']},rootId:idSchema,linkId:idSchema,linkHash:{type:'string',pattern:'^[0-9a-f]{64}$'},limit:{type:'string',pattern:'^[1-9][0-9]?$'},cursor:{type:'string',maxLength:4096}}}}},request=>options.repository.authenticated(readToken(request),null,async(db,actor)=>request.query.view==='options'?await sourceLinks.options(db,actor,request.params.projectId,request.params.documentId,{...request.query},new ProjectListCodec(value=>options.repository.signProjectCursor('DOCUMENT_SOURCE_OPTIONS:'+value))):await readDocumentSourceLinks(db,actor,request.params.projectId,request.params.documentId,request.query)));
+  const sourceObservationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('DOCUMENT_SOURCE_OBSERVATIONS:'+value));
+  app.get<{Params:{projectId:string;documentId:string;linkId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/documents/:documentId/source-links/:linkId/observations',{schema:{params:{type:'object',additionalProperties:false,required:['projectId','documentId','linkId'],properties:{projectId:idSchema,documentId:idSchema,linkId:idSchema}},querystring:{type:'object',additionalProperties:false,required:['version','contentHash'],properties:{version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},contentHash:{type:'string',pattern:'^[0-9a-f]{64}$'},limit:{type:'string',pattern:'^[1-9][0-9]?$'},cursor:{type:'string',maxLength:4096}}}}},request=>options.repository.authenticated(readToken(request),null,(db,actor)=>readDocumentSourceObservations(db,actor,request.params.projectId,request.params.documentId,request.params.linkId,request.query,sourceObservationCodec)));
+  app.get<{Params:{projectId:string;documentId:string;linkId:string;streamId:string;eventVersion:string};Querystring:{version:string;contentHash:string}}>('/api/v1/projects/:projectId/documents/:documentId/source-links/:linkId/observations/:streamId/versions/:eventVersion',{schema:{params:{type:'object',additionalProperties:false,required:['projectId','documentId','linkId','streamId','eventVersion'],properties:{projectId:idSchema,documentId:idSchema,linkId:idSchema,streamId:idSchema,eventVersion:{type:'string',pattern:'^[1-9][0-9]{0,3}$|^10000$'}}},querystring:{type:'object',additionalProperties:false,required:['version','contentHash'],properties:{version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},contentHash:{type:'string',pattern:'^[0-9a-f]{64}$'}}}}},request=>options.repository.authenticated(readToken(request),null,(db,actor)=>new DocumentSourceLinkRecords().observation(db,actor,request.params.projectId,{id:request.params.documentId,version:Number(request.query.version),contentHash:request.query.contentHash},request.params.linkId,request.params.streamId,Number(request.params.eventVersion))));
   app.get<{ Params: { projectId: string }; Querystring: Record<string, unknown> }>('/api/v1/projects/:projectId/documents/stage-options', { schema: { params: { type: 'object', additionalProperties: false, required: ['projectId'], properties: { projectId: idSchema } } } }, request => options.repository.authenticated(readToken(request), null, (db, actor) => documentStageOptions(db, actor, request.params.projectId, request.query)));
   function readToken(request: FastifyRequest) {
     if (request.headers.host !== new URL(options.origin).host) throw new AuthFailure('ORIGIN_INVALID', 403);

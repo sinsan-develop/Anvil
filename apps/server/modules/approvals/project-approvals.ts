@@ -23,7 +23,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
-export const consumableOperations = ['prepareNativeBoundary','establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
+export const consumableOperations = ['prepareNativeBoundary','establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'linkDocumentSource', 'proposeDocumentSourceChange', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
@@ -76,7 +76,7 @@ export class ProjectApprovals{
   const environment=details.actionScope.operation==='saveEnvironment'&&Object.hasOwn(p,'candidatePayload');
   const backupPolicy=details.actionScope.operation==='saveBackupPolicy',plan=details.actionScope.operation==='saveWorkPlanDraft',activation=details.actionScope.operation==='activateDesignChange',preparation=details.actionScope.operation==='prepareExecution',understanding=details.actionScope.operation==='reviewUnderstanding';
   if(Object.keys(p).sort().join(',')!==(environment||backupPolicy||plan||activation||preparation||understanding?'candidatePayload,details':'details'))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
-  if(details.actionScope.operation==='detachDocumentSource')await assertSourceDetachApprovalTarget(db,actor,c.projectId,details.actionScope.targetRef!);
+  if(['detachDocumentSource','proposeDocumentSourceChange'].includes(details.actionScope.operation))await assertSourceDetachApprovalTarget(db,actor,c.projectId,details.actionScope.targetRef!);
   if(details.candidateCommandId===c.commandId)throw new AuthFailure('APPROVAL_SELF_CANDIDATE_INVALID',422);
   if(environment)await new EnvironmentApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload);
   const understandingCommand=understanding?await new UnderstandingReviewApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload):null;

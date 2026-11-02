@@ -27,6 +27,18 @@ export async function createDocumentImport(db: PoolClient, actor: AuthenticatedI
   await db.query('INSERT INTO anvil.document_imports(id,project_id,original_artifact_id,form_definition_id,form_version,form_hash,candidate_json,content_hash,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', [candidate.id, request.projectId, p.fileRef.artifactId, formRef?.id ?? null, formRef?.version ?? null, formRef?.contentHash ?? null, JSON.stringify(candidate), contentHash(canonicalJson(candidate)), actor.actorId, actor.clientId, receipt.id]);
   return receipt.result;
 }
+/** 기존 파서와 원 Artifact만 재사용한다. 새 ProjectCommand나 영수증을 생성하지 않는다. */
+export async function prepareDocumentSourceImport(db:PoolClient,projectId:string,original:ImportArtifact,intendedFormRef:VersionRef,read:ReadArtifact,id:string):Promise<ImportCandidate>{
+ if(!isImportArtifact(original)||!isVersionRef(intendedFormRef)||!importUuid.test(id))throw new AuthFailure('INPUT_INVALID',422);
+ const bytes=await read(db,projectId,original);
+ if(bytes.length!==original.bytes||contentHash(bytes)!==original.contentHash)throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED',503);
+ const parsed=parseTextImport(bytes,original.mediaType);
+ return{id,originalRef:structuredClone(original),extractedContentRef:parsed.status==='READY'?structuredClone(original):null,intendedFormRef:structuredClone(intendedFormRef),...parsed};
+}
+export async function storeDocumentSourceImport(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,commandId:string,candidate:ImportCandidate){
+ const form=candidate.intendedFormRef;
+ await db.query('INSERT INTO anvil.document_imports(id,project_id,original_artifact_id,form_definition_id,form_version,form_hash,candidate_json,content_hash,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[candidate.id,projectId,candidate.originalRef.artifactId,form?.id??null,form?.version??null,form?.contentHash??null,JSON.stringify(candidate),contentHash(canonicalJson(candidate)),actor.actorId,actor.clientId,commandId]);
+}
 export async function readDocumentImport(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, read: ReadArtifact) {
   await projectMember(db, actor, projectId);
   const row = (await db.query('SELECT candidate_json,content_hash,created_at FROM anvil.document_imports WHERE project_id=$1 AND id=$2', [projectId, id])).rows[0];

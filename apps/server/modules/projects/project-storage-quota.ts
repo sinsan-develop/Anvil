@@ -1,3 +1,5 @@
+import {types} from 'node:util';
+import {sourceEventQuotaPart} from '../documents/document-source-observation.ts';
 import type {CreationPlan} from './draft-artifacts.ts';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
@@ -5,7 +7,7 @@ import {authorizeMaterial,currentProjectController,projectReplay,type ProjectCom
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import type {ArtifactStore,ProjectNamespaceProof} from '../../storage/artifact-store.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {cloneV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,recordV1,arrayV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 export const PROJECT_STORAGE_CAP=10737418240n;
 function fail(code='PROJECT_STORAGE_QUOTA_INPUT_INVALID',status=422):never{throw new AuthFailure(code,status);}
 function unknown():never{return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
@@ -16,7 +18,7 @@ export function quotaBytes(v:unknown):bigint{
  if(typeof v==='number'){if(!Number.isSafeInteger(v)||v<0)fail();return BigInt(v);}
  if(typeof v!=='string'||!/^(0|[1-9][0-9]{0,18})$/.test(v))return fail();const n=BigInt(v);if(n>9223372036854775807n)fail();return n;
 }
-export interface QuotaPart{readonly key:string;readonly kind:'ARTIFACT'|'CHECKPOINT';readonly id:string;readonly bytes:string;readonly contentHash:string;readonly reservedBytes:string;readonly settledBytes:string}
+export interface QuotaPart{readonly key:string;readonly kind:'ARTIFACT'|'CHECKPOINT'|'SOURCE_LINK_EVENT';readonly id:string;readonly bytes:string;readonly contentHash:string;readonly reservedBytes:string;readonly settledBytes:string}
 export interface PreparedQuotaCommand{readonly request:Readonly<ProjectCommand>;readonly actorId:string;readonly parts:readonly QuotaPart[];readonly commandHash:string;readonly planHash:string;readonly policyRef:RuntimeRefV1;readonly authorizedUntil:string;readonly replay:boolean}
 export interface QuotaReservationBundle{readonly request:Readonly<ProjectCommand>;readonly ids:readonly string[];readonly planHash:string}
 export interface StartedQuotaBundle extends QuotaReservationBundle{readonly fences:readonly string[]}
@@ -28,17 +30,74 @@ function parts(raw:readonly QuotaPart[],operation:string):readonly QuotaPart[]{
  for(const p of value){if(!p||Object.keys(p).sort().join(',')!==['key','kind','id','bytes','contentHash','reservedBytes','settledBytes'].sort().join(',')||typeof p.key!=='string'||!/^[A-Za-z0-9_-]{1,64}$/.test(p.key)||seen.has(p.key)||!uuidV1(p.id)||!hashV1(p.contentHash)||typeof p.bytes!=='string'||typeof p.reservedBytes!=='string'||typeof p.settledBytes!=='string')fail();seen.add(p.key);
  const b=quotaBytes(p.bytes),r=quotaBytes(p.reservedBytes),s=quotaBytes(p.settledBytes);
  if(p.kind==='ARTIFACT'){if(!['uploadArtifact','proposeDocumentChange'].includes(operation)||b>20971520n||r!==b*2n||s!==b)fail();}
+ else if(p.kind==='SOURCE_LINK_EVENT'){sourcePart(operation,p);}
  else if(p.kind==='CHECKPOINT'){if(operation!=='saveCheckpoint'||b>2097152n||r!==b||s!==b)fail();}else fail();
  }return freeze(value);
+}
+const SOURCE_RECORD_LIMIT=65536n,SOURCE_FUTURE_RECORDS=10n;
+const SOURCE_METADATA_RESERVATION=SOURCE_RECORD_LIMIT*SOURCE_FUTURE_RECORDS;
+function sourcePart(operation:string,part:QuotaPart){
+ const b=quotaBytes(part.bytes),r=quotaBytes(part.reservedBytes),settled=quotaBytes(part.settledBytes),diff=r-b,metadata=2n*b-r;
+ if(part.kind!=='SOURCE_LINK_EVENT'||!uuidV1(part.id)||!hashV1(part.contentHash)||!['linkDocumentSource','proposeDocumentSourceChange'].includes(operation)||part.key!==(operation==='linkDocumentSource'?'source_link':'source_choice')||diff<0n||diff>20971520n||operation==='linkDocumentSource'&&diff!==0n||metadata<SOURCE_METADATA_RESERVATION||r>10737418240n||settled!==0n)fail();
+ return{diff,reserved:r,metadata};
+}
+/** 각 record를 독립 snapshot으로 읽는다. Proxy/getter를 실행하거나 합계 한도로 대신하지 않는다. */
+function sourceRecord(value:unknown,limit=SOURCE_RECORD_LIMIT):unknown{
+ const copy=(v:unknown,depth:number):unknown=>{
+  if(depth>64)fail();if(v===null||typeof v==='boolean'||typeof v==='number')return v;
+  if(typeof v==='string'){if(!v.isWellFormed()||BigInt(Buffer.byteLength(v))>limit)fail();return v;}
+  if(!v||typeof v!=='object'||types.isProxy(v)||Object.getOwnPropertySymbols(v).length)fail();
+  const d=Object.getOwnPropertyDescriptors(v);
+  if(Array.isArray(v)){
+   const length=d.length?.value;if(!Number.isSafeInteger(length)||length<0||length>65536||Object.keys(d).length!==length+1)fail();
+   return Array.from({length},(_,i)=>{const p=d[String(i)];if(!p||!p.enumerable||!('value'in p))fail();return copy(p.value,depth+1);});
+  }
+  if(![Object.prototype,null].includes(Object.getPrototypeOf(v)))fail();
+  return Object.fromEntries(Object.entries(d).map(([k,p])=>{if(!p.enumerable||!('value'in p))fail();return[k,copy(p.value,depth+1)];}));
+ };
+ const result=copy(value,0);if(result===null||typeof result!=='object'||Array.isArray(result)||BigInt(Buffer.byteLength(canonicalJson(result)))>limit)fail();return result;
+}
+interface SourceDiffRef{readonly artifactId:string;readonly bytes:number;readonly contentHash:string;readonly mediaType:string}
+function sourceProjection(projection:unknown):Record<string,unknown>{
+ if(!projection||typeof projection!=='object'||types.isProxy(projection)||!recordV1(projection,['link','record','candidate','proposal']))fail();
+ const d=Object.getOwnPropertyDescriptors(projection);
+ return Object.fromEntries(['link','record','candidate','proposal'].map(key=>{const row=d[key]!.value;return[key,row===null?null:sourceRecord(row,key==='record'?SOURCE_RECORD_LIMIT:10737418240n)];}));
+}
+function sourcePlannedDiff(projection:Record<string,unknown>):SourceDiffRef{
+ const material=projection.proposal;
+ if(!recordV1(material,['proposal','content','reason'])||!recordV1(material.proposal,['id','baseRef','proposedContentRef','diffRef','status']))fail();
+ const ref=material.proposal.diffRef;
+ if(!recordV1(ref,['artifactId','bytes','contentHash','mediaType'])||!uuidV1(ref.artifactId)||!Number.isSafeInteger(ref.bytes)||ref.bytes<0||ref.bytes>20971520||!hashV1(ref.contentHash)||ref.mediaType!=='application/json;charset=utf-8')fail();
+ return Object.freeze({artifactId:ref.artifactId,bytes:ref.bytes,contentHash:ref.contentHash,mediaType:ref.mediaType});
+}
+/** 실제 SOURCE_LINK_EVENT consumer의 계산. actualRows 부재는 예약검사이며 정산 증거가 아니다. */
+export function sourceEventQuotaAccounting(operation:string,part:QuotaPart,projection:unknown,diffBytes:number,actualRows?:readonly unknown[]){
+ const budget=sourcePart(operation,part);
+ if(!Number.isSafeInteger(diffBytes)||diffBytes<0||BigInt(diffBytes)!==budget.diff)fail();
+ // exact4 계획과 신규 SourceEvent64KiB·가변 M 예약을 게시/정산에서 함께 검산한다.
+ const snapshot=sourceProjection(projection);
+ const expected=sourceEventQuotaPart(operation as 'linkDocumentSource'|'proposeDocumentSourceChange',part.id,snapshot,diffBytes);
+ if(canonicalJson(expected)!==canonicalJson(part))fail();
+ if(actualRows===undefined)return{recordCount:null,metadataBytes:null,diffBytes:String(diffBytes),actualBytes:null,reservedBytes:part.reservedBytes};
+ if(types.isProxy(actualRows)||Object.getPrototypeOf(actualRows)!==Array.prototype||!arrayV1(actualRows,Number(SOURCE_FUTURE_RECORDS))||!actualRows.length)fail();
+ // kind는 공개 입력이 아니다. 실제 SQL collector의 고정 table 분기에서만 생산한다.
+ const required:Record<string,string[]>={SOURCE_EVENT:['snapshot_json'],COMMAND:['result_ref'],AUTHORIZATION_RECEIPT:['subject_ref','scope_digest'],AUDIT:['actor_ref','target_ref'],IMPORT:['candidate_json'],PROPOSAL:['proposal_json','content_json','reason'],RESERVATION:['plan_json','phase'],LINK_HEAD:['current_event_id','link_version'],LINK_EVENT:['snapshot_json','link_version'],STREAM_HEAD:['stream_id','head_version'],APPROVAL_CONSUMPTION:['decision_id','command_id'],ARTIFACT:['content_hash','bytes','storage_key']};
+ const snapshots=actualRows.map(value=>{if(!value||typeof value!=='object'||types.isProxy(value)||!recordV1(value,['kind','row']))fail();const d=Object.getOwnPropertyDescriptors(value),kind=d.kind!.value,row=d.row!.value;
+  if(typeof kind!=='string'||!Object.hasOwn(required,kind))fail();const copied=sourceRecord(row,kind==='SOURCE_EVENT'?SOURCE_RECORD_LIMIT:budget.metadata);
+  if(!copied||typeof copied!=='object'||!required[kind]!.every(k=>Object.hasOwn(copied,k))||kind!=='SOURCE_EVENT'&&kind!=='LINK_EVENT'&&Object.hasOwn(copied,'snapshot_json'))fail();return copied;
+ }),metadata=snapshots.reduce<bigint>((n,row)=>n+BigInt(Buffer.byteLength(canonicalJson(row))),0n),actual=metadata+budget.diff;
+ if(metadata>budget.metadata||actual>budget.reserved)fail();
+ return{recordCount:snapshots.length,metadataBytes:String(metadata),diffBytes:String(diffBytes),actualBytes:String(actual),reservedBytes:part.reservedBytes};
 }
 /** 내부 bundle은 호출 제한 데이터다. 매 단계 실제 인증·현재 정책·원장 검산을 대체하지 않는다. */
 export class ProjectStorageQuota{
  readonly #access:AccessRepository;readonly #documents?:ProjectDocuments;readonly #store?:ArtifactStore;
  readonly #published=new WeakSet<object>();
+ readonly #sourceWrites=new WeakMap<object,{phase:'ENTERED'|'PUBLISHED'|'UNKNOWN';ref:SourceDiffRef;projectionHash:string}>();
  readonly #prepared=new WeakMap<object,PreparedState>();readonly #reserved=new WeakMap<object,BundleState>();readonly #started=new WeakMap<object,BundleState>();
  constructor(access:AccessRepository,store?:ArtifactStore,documents?:ProjectDocuments){this.#access=access;this.#store=store;this.#documents=documents;}
  async #current(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,state?:PreparedState){
-  if(!['uploadArtifact','proposeDocumentChange','saveCheckpoint'].includes(request.operation)||!uuidV1(request.projectId)||!uuidV1(request.commandId)||request.clientId!==actor.clientId)fail();
+  if(!['uploadArtifact','proposeDocumentChange','saveCheckpoint','linkDocumentSource','proposeDocumentSourceChange'].includes(request.operation)||!uuidV1(request.projectId)||!uuidV1(request.commandId)||request.clientId!==actor.clientId)fail();
   if(state&&(state.p.actorId!==actor.actorId||state.p.request.clientId!==actor.clientId||hash(request)!==state.p.commandHash))fail('IDEMPOTENCY_CONFLICT',409);
   await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request,false,this.#documents);
   const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at,s=actor.authSession;
@@ -139,6 +198,25 @@ export class ProjectStorageQuota{
    await this.requireStarted(db,actor,request,bundle,[part]);this.#published.add(bundle);return key;
   }catch{return unknown();}
  }
+ /** 원 source 부모 계획의 metadata+diff를 하나의 원장 part로 결박한다. 기존 ARTIFACT writer의 경계는 바꾸지 않는다. */
+ async publishSourceDiff(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,bundle:StartedQuotaBundle,projection:unknown,ref:{artifactId:string;bytes:number;contentHash:string},rawBytes:Buffer):Promise<string>{
+  const bytes=Buffer.from(rawBytes),state=this.#started.get(bundle),part=state?.p.parts[0];
+  let entered:{phase:'ENTERED'|'PUBLISHED'|'UNKNOWN';ref:SourceDiffRef;projectionHash:string}|undefined;
+  try{
+   if(!state||!part||part.kind!=='SOURCE_LINK_EVENT'||request.operation!=='proposeDocumentSourceChange'||!this.#store||this.#sourceWrites.has(bundle))unknown();
+   const snapshot=sourceProjection(projection),expected=sourcePlannedDiff(snapshot),provided=sourceRecord(ref);
+   sourceEventQuotaAccounting(request.operation,part,snapshot,bytes.length);
+   if(!recordV1(provided,['artifactId','bytes','contentHash',...(Object.hasOwn(provided as object,'mediaType')?['mediaType']:[])])||provided.artifactId!==expected.artifactId||provided.bytes!==expected.bytes||provided.contentHash!==expected.contentHash||Object.hasOwn(provided,'mediaType')&&provided.mediaType!==expected.mediaType||part.id!==expected.artifactId||bytes.length!==expected.bytes||contentHash(bytes)!==expected.contentHash)unknown();
+   const store=this.#store,put=store.put,verify=store.verifyPublished;
+   const stable=()=>{if(this.#store!==store||store.put!==put||store.verifyPublished!==verify||bytes.length!==expected.bytes||contentHash(bytes)!==expected.contentHash)unknown();sourceEventQuotaAccounting(request.operation,part,snapshot,bytes.length);};
+   entered={phase:'ENTERED',ref:expected,projectionHash:part.contentHash};this.#sourceWrites.set(bundle,entered);
+   await this.requireStarted(db,actor,request,bundle,[part]);stable();
+   const key=await put.call(store,request.projectId,expected.artifactId,bytes);stable();
+   if(key!==`blobs/${request.projectId}/${expected.artifactId}`)unknown();
+   await verify.call(store,request.projectId,expected.artifactId,Object.freeze({bytes:expected.bytes,contentHash:expected.contentHash}));stable();
+   await this.requireStarted(db,actor,request,bundle,[part]);stable();entered.phase='PUBLISHED';this.#published.add(bundle);return key;
+  }catch{if(entered)entered.phase='UNKNOWN';return unknown();}
+ }
  async settleArtifact(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,bundle:StartedQuotaBundle,facts:QuotaReceiptFacts):Promise<void>{
   if(!this.#published.has(bundle))unknown();await this.settle(db,actor,request,bundle,facts);
  }
@@ -158,6 +236,18 @@ export class ProjectStorageQuota{
    try{valid=!!row&&row.id===x.id&&row.snapshot_json?.preparedHash===x.contentHash&&hashV1(row.content_hash)&&hash(row.snapshot_json)===row.content_hash&&typeof row.record_text==='string'&&BigInt(Buffer.byteLength(canonicalJson(row.snapshot_json))+Buffer.byteLength(row.record_text))===quotaBytes(x.bytes);}catch{valid=false;}
    if(!valid)fail('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED',503);
   }
-  const v=(await db.query('SELECT anvil.quota_settle($1,$2,$3,$4,$5::jsonb) AS value',[c.sessionId,actor.actorId,actor.clientId,request.projectId,JSON.stringify({ids:bundle.ids,fences:bundle.fences,request,planHash:state.p.planHash,facts})])).rows[0]?.value;if(v!==true)unknown();await this.#current(db,actor,request,state);
+  let sourceAccounting:ReturnType<typeof sourceEventQuotaAccounting>|undefined;
+  if(request.operation==='linkDocumentSource'||request.operation==='proposeDocumentSourceChange'){
+   const part=state.p.parts[0]!;const budget=sourcePart(request.operation,part);
+   if(budget.diff>0n&&!this.#published.has(bundle))unknown();
+   // 실제 collector 미등록/누락은 UNKNOWN이다. 호출자 projection이나 성공 bool로 대체하지 않는다.
+   const rows=(await db.query('SELECT projection,record_projections,diff_bytes FROM anvil.document_source_quota_projection($1,$2)',[request.projectId,facts.serverCommandId])).rows;
+   if(rows.length!==1||!recordV1(rows[0],['projection','record_projections','diff_bytes'])||quotaBytes(rows[0].diff_bytes)!==budget.diff)unknown();
+   const row=rows[0],projection=sourceProjection(row.projection);
+   if(projection.proposal!==null){const published=this.#sourceWrites.get(bundle),planned=sourcePlannedDiff(projection);if(!published||published.phase!=='PUBLISHED'||published.projectionHash!==part.contentHash||canonicalJson(published.ref)!==canonicalJson(planned)||part.id!==planned.artifactId)unknown();}else if(budget.diff>0n)unknown();
+   sourceAccounting=sourceEventQuotaAccounting(request.operation,part,projection,Number(budget.diff),row.record_projections);
+   if(sourceAccounting.actualBytes===null)unknown();
+  }
+  const v=(await db.query('SELECT anvil.quota_settle($1,$2,$3,$4,$5::jsonb) AS value',[c.sessionId,actor.actorId,actor.clientId,request.projectId,JSON.stringify({ids:bundle.ids,fences:bundle.fences,request,planHash:state.p.planHash,facts,...(sourceAccounting?{sourceAccounting}:{})})])).rows[0]?.value;if(v!==true)unknown();await this.#current(db,actor,request,state);
  }
 }

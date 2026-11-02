@@ -1,3 +1,4 @@
+import type {DocumentSourceObservationPort} from './modules/documents/document-source-observation.ts';
 import {registerDesktopRuntimeCatalogue,type RuntimeCatalogueReadSource} from './modules/runtime-catalogue/desktop-runtime-catalogue-routes.ts';
 import {registerNativePreparationRoutes,type NativePreparationRoutesOptions} from './modules/executions/native-preparation-routes.ts';
 import {registerWriterAuthorityRoutes,type WriterAuthorityRoutesOptions} from './modules/executions/project-writer-authority-routes.ts';
@@ -19,7 +20,7 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -30,7 +31,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   });
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(writerAuthority?.enabled===true)registerWriterAuthorityRoutes(app,writerAuthority,access);

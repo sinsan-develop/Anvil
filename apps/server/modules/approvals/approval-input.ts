@@ -28,6 +28,8 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
  if(['exportProject','buildTaskContext','startStage','defineProjectRole','prepareExecution'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(['revokeLimitPolicy','revokeBackupReference'].includes(s.operation)&&s.targetRef===null)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='detachDocumentSource'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(s.operation==='linkDocumentSource'&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ if(s.operation==='proposeDocumentSourceChange'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDetails;
 }
 /** 주체/기기·기준세대와 exact 후보만 대조한다. 승인 여부/만료 검사를 대체하지 않는다. */
@@ -47,6 +49,11 @@ export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand
  if(s.operation==='detachDocumentSource'){
   let payload;try{payload=readDocumentSourceLinkInput('detachDocumentSource',c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(canonicalJson(s.targetRef)!==canonicalJson(payload.sourceLinkRef)||s.expectedVersion!==1)throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+ }
+ if(s.operation==='linkDocumentSource'||s.operation==='proposeDocumentSourceChange'){
+  let payload;try{payload=readDocumentSourceLinkInput(s.operation,c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
+  const target='sourceLinkRef'in payload?payload.sourceLinkRef:null;
+  if(canonicalJson(s.targetRef)!==canonicalJson(target)||s.expectedVersion!==(s.operation==='linkDocumentSource'?0:1))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  }
  if(['saveBaselineDraft','reviewBaselineContent','confirmBaseline'].includes(s.operation)){
   const target=s.operation==='saveBaselineDraft'?c.payload.baseRef:c.payload.draftRef;
