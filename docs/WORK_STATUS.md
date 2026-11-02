@@ -12846,3 +12846,8 @@ git diff --check
 - 수행자RED2ae8bf/251479는operation2/기대1·실ISSUE유실뒤calls5/기대4를확인했고기존fakeCREATE중복assert의후행uncaught도분리관측했다. 제품실효과0이다. 보정후9418c8 직접22PASS/type·구문·diff0 및c92541기본오류/KEY_READY1PASS는수행자증거다.
 - Main d2e930은최종9지문전후고정으로정상ISSUE·UNKNOWN/ISSUE유실뒤새begin효과0·최초replay·기본거절/KEY_READY선정5PASS/FAIL0/SKIP0/428.8103ms를fresh확인했고6d3d52 desktoptype exit0·9SHA전후동일이다. 앞Main52/직접3은이전원범위증거로보존하며중첩합산0·불변전체/QA재실행0이다.
 - 최종9inventory62778E45B54F7E7FDD862D4208FE0B8CE5AC73E23BE6ECA40F1F761BDDC56604·소유regular/nonlink·보호untracked3SHA불변을읽기검산했다. 미해결C/I0은소스단위scoped판정이며실C#/TLS/Windows/키/DB/서비스/Agent/설치·배포/인수는NOT_RUN·전체FN06/계획미완료다. Main이소유9code+현황만checkpoint로보존한다.
+
+### 2026-11-03 FN06 ISSUE-01 코드 게시·결과/복구 조사
+- 3e99e04eee4abe93ed82e927952bad814a6dd383는70d237b8직접자식 소유9code+WORK_STATUS정확10파일이다. raw/index소유10일치·staged diff check0 뒤일반commit/push했고local/privateexactSHA동일·remote main f976ed5e불변·tracked clean/보호untracked3만보존이다.
+- 신규 docs/04_test_reports/AV3/FN06_DESKTOP_TRUST_ISSUE_01_SOURCE_RESULT_20261103.md SHA5AC413373588B21976A336639F6C2B4B68726EA21F5B18C87E023021C098B5F9에정확코드SHA/9inventory62778E45·보정전52/직접3/최종선정5·판정정정·미실행/부분구현을결박했다. 기존Reviewer에게결과서의오기/과장만읽기검수배정·제품시험반복0이다.
+- 기존Primary에게같은r5 명시복구 RESTORE_VERIFY의보호metadata비활성복원/기존binding선택·원키/HUMAN관계재확인생산공백을읽기조사배정했다. exactIPC/trust-status IO0와대조하고새목록/API/선택권을추정해확장하지않는다. credential use-without-return·새ISSUE/키/native/실제효과는후속/제외다. 현재제품writer0·실키/DB/서비스/컴파일/Agent/QA0·전체계획미완료다.
