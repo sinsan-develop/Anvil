@@ -12815,3 +12815,34 @@ git diff --check
 ### 2026-11-03 FN06 ISSUE-01 사전 검토 수용
 - WI r1 CB45A313은기존Reviewer C0/I0·시작끝SHA동일,Primary정확9존재/시작SHA9개일치·필수추가경로/계약충돌0으로수용했다. 원HOST_PROOF private생산/소비·서버와동일두proof·ISSUE_PENDING선내구·STORE1/MATCH/CAS/closeConfirmed의닫힌업무다. 새bearer/use-without-return/복구/native·실제효과를추가하지않는다.
 - Main은WI+WORK_STATUS2문서를기존privatebranch에게시한뒤정확HEAD를기준으로기존Primary에게9경로sourceTDD를명시dispatch한다. Main/Reviewer제품쓰기0·단일writer·메모리시험만·실키/DB/서비스/컴파일/Agent/QA실행0·전체계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 착수·첫 실제 종단 RED
+- Primary607a76은HEAD70d237b8/허가9SHA9개일치·보호untracked3만을확인했다. d16fb3 명령의실제preload→handler pair/current CONFIRMED 뒤명시ISSUE는RESTORE_UNAVAILABLE로전체종단assertion실패(exit1/141.2958ms)했다. module부재/준비오류가아닌기존미지원기능RED다.
+- 같은Primary가owner원proof private생산·기존exchange/owned STORE/MATCH의생산연결을진행중이다. Main제품쓰기0·단일9writer·실키/DB/서비스/C#compile/Agent/네트워크/QA/live0·복구/native/use-without-return제외·전체계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 첫 정상 종단·타입 수용 전
+- Primary회신에서허가9중owner/client/policy/settingsHTML·JS/Host/Store/기존등록시험8수정·C#시험source1작성준비를확인했다. 첫genuineRED d16fb3뒤dce6b1 실제IPC ISSUE 정상1PASS/129.9278ms가원proof private생산→exchange P256검증2→STORE1/MATCH→REGISTERED/종료를소비했다. 아직수행자정상1증거이며전체검수/실제품성공아니다.
+- 408571 kind JSDoc누락2진단은동일원인첫타입실패1로기록하고정확union보정후9937d0 desktoptype exit0이다. C#Host/Store gate·상태는source작성만/compile·RunAll0이다. 현재live tool/session0·차단0·메모리중요실패/실settings클릭·C#시험source를계속한다.
+- Main은C#3이안정되면그범위만지문동결/반환후독립정적검수를병행하도록요청했다. 아직writer반환전이며Maincode쓰기0·Primary단독9writer·실키/DB/서비스/Agent/네트워크/QA0·전체계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 C#3 부분 반환·정적 검수 착수
+- Primary가C#3 writer를반환했다. Host13AF7D0127742E0D1F884F127764DD3DF899D9DC671413159E4A28198C40EEE4/Store11B51279FFA8254D4E4C5E7E3BBAB01E64F18318639FAEACD9AEA028CB421DE6/시험43A38C858770C56AC8A71705CC9A29D786639E74B7CFEAB5311E0646295C5720을Main이실제읽기검산하고ProtectedStore.cs62A348E7불변을확인했다.
+- b13fa4 source작성exit0·1cfaf9 소스/diff읽기exit0이며신규다중var구문0이라는수행자소스대조를반환했다. 원Read/sidecar/stickyUNKNOWN/KEY·ENROLL을유지하며ISSUE_PENDING→REGISTERED/UNKNOWN·credential exact/불변·ownedSIGN2/STORE1/MATCH·REGISTERED gate를작성했다. 실제Store/Host메모리포트의중복STORE/틀린MATCH/MATCH누락/유실시험source는작성만/compile·RunAll NOT_RUN이다.
+- 기존Reviewer에게이3만정적scoped검수를맡겼고다른6은Primary의중요실패/화면시험진행중이다. Main제품쓰기0·실키/DB/서비스/Agent/네트워크/QA/live0·전체FN06/계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 C# 정적 C0/I1·서버 기한 대조
+- Reviewer최종C0/I1은Store32의credential.expiresAt>registrationExpiresAt거절이다. 원server exchange102는min(now+15분,정책validUntil),Main도#basis37의validUntil이정책규칙기한만임을원source로대조해확인했다. 등록잔여60초/credential잔여15분의정상최초발급metadata를보관하지못하는충돌이며r5§3의두기한분리/WI구현4에맞지않는다.
+- Main은기존Primary에게Store/시험source2만동결해제해두기한원값보존·실제예산min유지를보정하고REGISTERED/UNKNOWN의해당정상경계시험source를추가하도록맡겼다. 원형/원키/ref/상태거절·STORE1/MATCH/CAS/UNKNOWN/sidecar유지,Host13AF7D01동결·다른6원작업계속이다. 서버/SQL수정/기한잘라저장/기준완화/실compile·RunAll0다.
+- Reviewer는그외원KEY/ENROLL/sidecar/stickyUNKNOWN·SIGN2/STORE1/MATCH/REGISTERED gate·primitive/저장한도의추가확정C/I없음·3SHA전후동일을반환했다. 첫정적I1계보를실제시험실패로세지않으며전체FN06/계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 기한 보관 보정·재동결
+- Primary가Store8993A9D78623547CB2A416036D8C5ADD6076AA231E75BE98AA5A41FFAE68A100/시험44CB98FD1E491228A155217B73CDF67206DA6EAC6D0B832A308F5751B98DD1FE를반환했고Host13AF7D01불변을Main읽기로확인했다. 두기한순서비교만제거·ISO형식/원값보존,등록60초/credential15분REGISTERED·UNKNOWN정상/형식거절시험source를추가했으나compile/RunAll0이다. 기존Reviewer에게이2만원I1재검수배정했다.
+- 같은잘못된비교가Nodeclient에도있어실제서버형태fixture로바꾼ac7b42 genuineRED1뒤943000 정상/STORE_LOST2PASS/251.0315ms를수행자가반환했다. 기한원값을잘라맞추지않고원lease.narrow min-only유지다. 다른6중요음성은계속·아직최종인수/전체FN06완료아님·실효과/QA/live0이다.
+### 2026-11-03 FN06 ISSUE-01 C# 기한 보정 수용
+- Store8993A9D7/시험44CB98FD의원I1해소 scopedC0/I0·시작끝SHA동일을수용했다. 두기한순서비교역치환으로직전Store SHA11B51279가정확복원됐고나머지검산불변,등록60초/credential15분원값의REGISTERED저장/Read·UNKNOWN Record/Transition·ISO형식거절시험source를읽기확인했다. 실제compile/RunAll0·Host13AF7D01불변/동결유지다.
+- Primary는나머지6 Node/화면의중요실패·선정인접/type/diff를계속한다. Main제품쓰기0·실효과/QA0·최종Node독립검수전·전체계획미완료다.
+### 2026-11-03 FN06 ISSUE-01 Main fresh52·타입0 / 추가 begin 우회 발견
+- Primary최종9를반환받아Main은고정9SHA전후대조에서8dbb23 등록시험52PASS/FAIL0/SKIP0/1162.812ms·직접기존3PASS/FAIL0/SKIP0/129.2208ms,2f95a0 desktoptype exit0을확인했다. 이전ENROLL33과중첩합산0이며실C#/TLS/키/DB/서비스/AgentPASS가아니다.
+- Reviewer최초Node6 C0/I0·6SHA앞뒤동일뒤Main추가소스대조에서begin44의현재phase검사누락을찾았다. 88abaf는원createTrustEnrollmentOwner+메모리createOperation(markEffect뒤OUTCOME_UNKNOWN)로UNKNOWN후새requestId begin을호출해operationCalls2(기대1),sameAttempt=false/원label소실 exit1을재현했다. 실FS/키/DB/네트워크/QA/소스쓰기0의직접반례다.
+- Reviewer는r5:133/171/189/241/292의원불명/pendingKeyId보존·새키우회금지와대조해C0/I1로정정했다. 앞C0/I0이해당경계를놓친이력을지우지않는다. Main은owner/기존등록시험2만동결해제해동일원요청replay유지·새begin초기IDLE만허용·원시도/label보존과실제ISSUE_LOST뒤추가준비0을보완하도록기존Primary에배정했다.
+- 다른7/C#3동결·Main제품쓰기0·단일writer·실효과/QA0·기준완화/새계약/승인요청0·전체FN06/계획미완료다. 최종52PASS를이결함의인수로승격하지않는다.
+### 2026-11-03 FN06 ISSUE-01 최종 보정 검수 수용·checkpoint 준비
+- owner5D3790F9B6A81929AFA32DD6D7981384CAAF679CD17CCD0DB4F741209BA95812/시험81FF1752793970DCFC24E5EF2B59BADB0A4755DCDD0CDC7C4DA5F2321810C076를반환받았다. 원replay/active/기본PROTECTION_UNAVAILABLE뒤IDLE guard한곳추가만역치환하면직전owner39DE6B99가정확복원됨을Reviewer가확인해추가I1해소 scopedC0/I0로수용했다. 앞C0/I0누락/정정이력은보존한다.
+- 수행자RED2ae8bf/251479는operation2/기대1·실ISSUE유실뒤calls5/기대4를확인했고기존fakeCREATE중복assert의후행uncaught도분리관측했다. 제품실효과0이다. 보정후9418c8 직접22PASS/type·구문·diff0 및c92541기본오류/KEY_READY1PASS는수행자증거다.
+- Main d2e930은최종9지문전후고정으로정상ISSUE·UNKNOWN/ISSUE유실뒤새begin효과0·최초replay·기본거절/KEY_READY선정5PASS/FAIL0/SKIP0/428.8103ms를fresh확인했고6d3d52 desktoptype exit0·9SHA전후동일이다. 앞Main52/직접3은이전원범위증거로보존하며중첩합산0·불변전체/QA재실행0이다.
+- 최종9inventory62778E45B54F7E7FDD862D4208FE0B8CE5AC73E23BE6ECA40F1F761BDDC56604·소유regular/nonlink·보호untracked3SHA불변을읽기검산했다. 미해결C/I0은소스단위scoped판정이며실C#/TLS/Windows/키/DB/서비스/Agent/설치·배포/인수는NOT_RUN·전체FN06/계획미완료다. Main이소유9code+현황만checkpoint로보존한다.
