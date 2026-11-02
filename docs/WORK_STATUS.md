@@ -12229,3 +12229,43 @@ git diff --check
 - 공식npmmetadata8ee3be는plugin-fuses8.0.1/fuses2.1.3의버전·integrity/peer·Node요구를확인했다. 기존Packager20.3.0/ASAR4.3.1/resedit2.0.3/PElib1.0.1고정선은dd0bbd로확인했다. webregistry직접open2가도구접근불가였던것은패키지부재아니며무인증공개metadata만유한Node HTTPS로대조했다. Anvil서버/키/DB/서비스호출·설치0이다.
 - WI docs/work_packages/FN18_PACKAGE_RUNTIME_HARDENING_SOURCE_IMPLEMENTATION_20261102.md SHA216287E8193E6FF66D249DC790197B6D5CD08AB28042023ACB1D6BE3945283D9 정확7경로·기존Primary단일writer/ Main제품쓰기0. 독립preflight C0/I0·시작끝SHA동일,실제효과제외·역사fixture/SDK불변·기존nativeisolationgate보존을확인해같은Primary에GO를진행한다.
 - 사전등록자원: D:\tmp\anvil-v3-fn18-fuse-deps-20261102-01(publicNPM cache/빈config/로그), D:\tmp\anvil-v3-fn18-package-hardening-20261102-01(신규합성PE/ASAR/시험산출물). 환경Windows·ownerFN18/Primary,목적이소스단위의필수의존성/fixture검증,각생성후최대60분/사용종료즉시소유exact정리·Main별도잔여확인이다. ecbd60은두root부재를확인했으며서로다른object혼합table로부모/기준hash출력이누락돼그부분확인증거로쓰지않는다. 생성직전abs/realpath/nonlink/소유·기준hash를다시검산한다. 실제SDK/기존캐시/사용자자료조사/actualElectron·installer/nativehelper/키/DB/권한/서비스/Agent/P03R3실행0이다.
+
+### 2026-11-02 FN18 source 의존성 준비 시작
+- WI216287E8…5283D9와사전등록현황을6cc2caab0249629a1488970b94fbd43d16f2d094로private게시후기존Primary에정확7경로GO를전달했다. Main제품쓰기0·한writer/기존자료보존을유지한다. PMO에기존FN18범위판정·새권한/신뢰root채택아님·실제효과제외를공유했다.
+- Primary6b2bba는source root와desktop .npmrc 부재·등록temp2 부모nonlink/부재·시작5SHA를JSON으로확인했고,b87007에서두새소유root를생성했다(보고된만료2026-11-02T02:42:58.553863Z). 7a3494도desktop .npmrc부재/link0·lock기존entry변경삭제0·새plugin8.0.1/fuses2.1.3 정확2/integrity일치를확인했다. 빈user/globalconfig·필수OS/도구환경allowlist·ignore-scripts/noaudit/nofund/publicregistry의lock-only exit0이다. 실제계정config/Secret읽기·SDK postinstall/다운로더0이며정상dev모듈추가만이어서기존서비스/사용자자료변경아니다.
+- 신규모듈준비·합성fixture검증이진행중이다. 실제package/installer/Electron·native/helper/키/DB/권한/서비스/Agent·실자료/P03R3실행0, 원SDK/archive·역사fixture불변·현재nativeadmission권위없음/전체계획미완료를유지한다. 소유cache/fixture는유한수명내정확회수·Main독립부재확인이필요하다.
+
+### 2026-11-02 FN18 실제 plugin 생산 연결 반례
+- Primary177153은실제Forge config→공식plugin/Packager producer의신규합성PE에서 RunAsNode=49(ENABLE)가남아기대48과다른기능RED/native1을확보했다. 5개fuse config연결뒤395ffb 해당1PASS/361.4635ms/exit0이다. 아직read-only verifier/소비maker전차단·pin과최종검수가남아전체성공으로승격하지않는다.
+- b4c7d0 NPM의새2모듈추가만·기존changed0/removed0/scripts0, ASAR4.3.1/resedit2.0.3동일버전direct승격을확인했다. SDK/archive·과거fixturebytes불변/실제package/Electron/installer/helper·키/DB/권한/서비스/Agent·실자료/P03R3실행0이다. 소유temp2만료02:42:58Z/live0이며기한내회수/별도잔여0확인이필요하다.
+
+### 2026-11-02 FN18 기존 vendor 시험·새무결성 소비 경계 판단
+- Primarydb790b는공식fuse read/ASARheader·Packager Integrity/ElectronAsar producer의신규합성bytes대조2PASS를보고했다. 기존installer phaseModel은작은기존PE/가짜ASAR로Maker.make의vendor동작을검사하므로이를새정책맞춤bytes로교체하지않는다.
+- Ruling: 기존내부PhaseRuntime DI에검산필수함수포트를두되부재/오류/불명은maker진입전거절한다. production nativePhaseRuntime은새실제verifier고정·optionalnoop/skip/CLI·환경·Plan선택0이다. 기존phaseModel에는vendor시험한정명시stub을주입해정확appDir/호출1/완료뒤vendor순서를단언하고기존bytes·vendor실패기준/단언을유지한다. 이기존시험PASS를새무결성증거로합산하지않는다.
+- 신규시험은같은Maker.make→실제새PE/ASAR/verifier로정상진입및불일치vendor호출0을검사한다. helper단독시험만으로소비완료주장0이다. Reviewer자문C0/I0는이조건의제안범위이며최종코드검수아니다. Main은동일7경로안의최소DI보완으로판정해Primary에게그부분GO를전달한다. 새권한/공개계약/실제effects/기준완화0·현재소유temp2만수명내사용·전체계획미완료 유지.
+
+### 2026-11-02 FN18 동일 타입 근본원인3회 Main 인수
+- Primary는config→실제Forge8 PluginInterface/공식flip/Packager resource→readverifier/postPackage·source/toolpin연결과신규실제bytes정상/음성7+pin1통과를보고했다. 남은maker필수DI/legacy보존은진행중이며최종검수아니다.
+- 동일verifier closure의metadata JSDoc 적용누락 타입오류6개가type3실행에서남았다는보고를확인했다. 최신공통지침/목표의동일근본원인3회규칙에따라타입이라는이유로자동제외하지않고Main이해당부분을직접인수한다. Primary에게추가수정/4차type실행중단·7전체writer반환/동결·진단원문/실행ID/변경지문/남은검증/temp소유기한의최소패킷을요청했다. 실제반환/지문확인전Main제품쓰기0이며동시writer0이다.
+- 인수범위는해당JSDoc타입표현의최소보정·직접검산에한정한다. 새설계/권한/판정기준완화·기존fixture변경0, 보정후Main writer반환뒤같은Primary가남은maker구현을이어간다. 새agent/branch/예약0·실제keys/DB/서비스/Agent/Electron/installer/native/실자료/P03R3효과0·temp2최초기한보존·전체계획미완료다.
+
+### 2026-11-02 Main 타입표현 직접 인수 결과
+- Primary는정식FAILURE_REPORT FN18-HARDENING-METADATA-JSDOC-TS2339로d97172/8628ab/866891의동일metadata closure타입오류3실행·최종TS2339 name/version/main의3대입+3읽기진단과7SHA/live0/temp2를반환했다. Main75e09f가7지문·동결diff0을확인해단일writer를인수했다.
+- Main3776b6는TypeScript7에없는JS compilerAPI 경로import ERR_MODULE_NOT_FOUND 준비오류1로파일쓰기/추가tsc실행전실패했다. 새dep/우회도구를넣지않고불필요한scanner의존성을제거했다. 9ae68e는신규verifier의 `;/** @type {Record<string,unknown>} */const metadata={};` 앞/뒤줄바꿈만넣었다. 역치환하면이전전체bytes동일·JS구문before/after정상·선언text와다른bytes불변,desktoptsc/diff0이다.
+- 신규verifier D7E5D1BC…1338A93→7ADA62AA68044BAEBB41231C685E6A22B5778EF5A8C7C5EA586814018A4E3C32, d1cc6d의다른6경로SHA불변을확인했다. 동작/기준완화/추가any0·타입check설정변경0이며주석적용문제만보완했다. scoped독립검토중이고7전체제품검수/남은maker DI·legacy/실제bytes소비검증은완료아니다. 검토후Mainwriter반환·같은Primary재개전까지동시쓰기0·실제효과제외·temp2최초기한유지다.
+
+### 2026-11-02 FN18 검산된 package와 실제 복사본 결박 보완
+- Primarydf131a 신규10PASS/2249.3222ms는실제Forge loader→신규bytes/verifier→동일Maker.make 정상·변조/검산부재vendor0을확인했고,추가node20000/20001경계선정2PASS를보고했다. 모두최종검수전증거다. fixture추출중TS7 API부재/const crc32형태오인은준비오류로분리·881a91준비0,권한지정누락5d215a EPERM은실쓰기0으로정정했다. 과거PE/ZIP함수원문SHA는보존했고실fixture를바꾸지않았다.
+- Main693890 실제source는검산이끝난뒤vendor 준비후103행snapshot을새기준으로잡아복사함을확인했다. Ruling: 필수내부verifyPackage는검산한exe/ASAR hash와동일한원package tree snapshot을결박해반환하고,Maker는그검산된원본을불변복사/구조검산해복사직전·각파일/복사후·마지막원package와대조한다. 검산뒤변경을새baseline으로채택하지않는다. native runtime은실제verifier값+전후snapshot동일성을대조하고legacy stub은vendor시험용메모리snapshot만반환한다. stub결과를새무결성증거로합산0이다.
+- 같은7경로안의원생산/소비내용일치오류를닫는필수보완이며Plan/CLI/권한/외부형식추가·기준완화0이다. 검산후복사전변경/새파일·대상불일치에서vendor0·원기한/한도유지의집중반례를추가하고불변기존fixture/이미확인한전수반복0으로진행한다. Main제품쓰기0·Primary단일writer·실제effects제외·최초temp만료02:42:58Z/소유정리유지다.
+
+### 2026-11-02 FN18 Main 독립 검증과 자원 회수
+- 이전 목표 turn은 모바일 승인 질문에 대기 계약을 설명한 것으로 구현 진전은 아니었다. 이번에는 Primary의 정확7 최종 writer 반환을 확인하고 Main fresh62430d를 실행했다. 신규 package13 + 기존 vendor21 = 34 PASS/2605.04ms/exit0, desktop typecheck/diff check0이다. legacy21은 새 무결성 증거가 아니며 실제 Electron/installer/native/키/DB/서비스/Agent 실행0이다.
+- 검산 원 package snapshot의 복사 전후 결박 반례를 포함한다. 기존 snapshot 변경 RED b5d95c와 초기 fuse RED177153은 보존한다. metadata JSDoc 동일오류3회는 Main 인수 보정 뒤 재발0이며 이후 준비/권한 지정 오류는 실제 제품 실패와 구분한다.
+- 기존 Reviewer에게 정확7 최종 독립 검수를 맡겼다. 같은 Primary는 코드 동결 상태에서 등록 temp2의 소유·nonlink/live0을 재확인하고 최초 만료02:42:58.553863Z 전에 정확 정리한다. Main은 별도 부재를 확인한다. 신규 node_modules는 정상 개발 의존성으로 보존하며 SDK/과거fixture/보호3은 수정하지 않는다.
+- FN03 §13.4 보호 관리 원문 A는 미승인이다. 모바일 질문은 승인이 아니며 반복 요청 없이 유지한다. 실제 DB·권한·키·서비스·Agent·실자료·P03R3 실행 제외와 전체 계획 미완료를 유지한다.
+### 2026-11-02 FN18 코드 검수·소유 자원 회수 완료
+- 독립 최종 C0/I0·7SHA 시작끝동일,Main52478e exact7 raw/index bytes와 staged diff0 뒤 code1d67636f50f0a8fb78bf6bdf8d72ed2ce165fd70으로 커밋했다. Mainfresh62430d 신규13+legacy21=34PASS/2605.04ms·desktoptype/diff0이다. 결과서 FN18_PACKAGE_RUNTIME_HARDENING_SOURCE_RESULT_20261102.md SHA FE1A739B1321A433F02434602A44E584B32E799632611985BC9E88C2DCF2D3E7에 변경·실패·검증·실제효과제외를 기록했다.
+- Primary 소유temp2 정리 첫 guard는 OWNER_MISMATCH로 삭제전 중단(exit1/삭제0). JSON날짜 자동변환을 원문 문자열 검산으로 보정한 e00f97 exit0에서 owner/nonlink/정확절대경로·관련Node0 뒤 등록2만 회수했다. 최초 만료02:42:58.553863Z 이전,연장0·개발의존성/SDK/다른경로변경0이다. Main 별도 Test-Path 두 경로 false와 보호untracked3 SHA 일치를 확인했다. 미정착 자원0·실제 환경 rollback0이다.
+- source-only 검수이며 실제 package/native isolation·owner/peer admission·보호키/공급자·DB/권한/서비스/Agent·실자료/P03R3/사용자인수/전체44업무 완료는 아니다. FN03 §13.4는 아직 미승인,영향없는 다음 계획 기능을 읽기 대조 중이다.
+- FN18 결과서 사실 검수는 root lock entry의 devDependencies4개 추가를 구분하도록1곳 보완했다. 기존non-root entry변경/삭제0·신규entry2개가 정확하다. 이전 FE1A739B 지문은보완전이력이며최종결과서 SHA 79FF133F0020D96C5B6C9BDD36951198955A1ED80133E4A6354A3B5E089ECA68 이다. 실제 source/시험/기준변경0·추가재시험0이다.

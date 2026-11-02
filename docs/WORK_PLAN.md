@@ -1895,3 +1895,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-02 native proof signer source: code5dcdef81 정확5·Main보완전9/3·최종선정5/type/diff·독립I1해소C0/I0. 원고정callExpiresAt+단조budget·privatecontext/slot·typed서명검산/C#비활성primitive를연결했다. Main한정신규C#compile1회exit0/DLL실행0·QA0은구문/타입근거뿐이며실제C#crypto/키·보호공급자·native/DB/서비스/Agent/사용자인수/전체계획은미완료다. 결과 FN06_NATIVE_PROOF_SIGNER_SOURCE_RESULT_20261102.md 참조.
 
 - 2026-11-02 native credential·ID·nonce crypto source: code1a4090da 정확신규2/114추가·Main11PASS/type/diff·독립C0/I0. 원coordinator의prepare/delivery·receipt/2표/commit/replay소비를연결했고신규crypto대역과기존영수증비밀아닌UUID사용을구분한다. count1/4/nonce직접검사는전체host실측아니며실제credential/키/DB/권한/서비스/Agent/실자료/P03R3·보호producer/기본등록/전체계획은미완료다. 결과 FN06_NATIVE_CRYPTO_SOURCE_RESULT_20261102.md 참조.
+
+- 2026-11-02 FN18 package 보호 source: code1d67636f 정확7/177추가20삭제·Main34PASS(신규13/legacyvendor21 구분)/type/diff·독립C0/I0. config→plugin/실제 합성bytes→verifier→sameMaker 원 snapshot 결박을 연결했다. 결과 FN18_PACKAGE_RUNTIME_HARDENING_SOURCE_RESULT_20261102.md 참조. 실제 package/loader/installer/native·DB키서비스Agent/P03R3·사용자인수/전체계획은 미완료이며 기본 native isolation 차단을 유지한다.
