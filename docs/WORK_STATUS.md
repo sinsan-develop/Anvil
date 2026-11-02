@@ -12943,3 +12943,64 @@ git diff --check
 - 신규결과 docs/04_test_reports/AV3/FN06_NATIVE_RUNTIME_PACKAGE_SOURCE_RESULT_20261103.md SHA3028D1421884E17EF276DD54F5A2B8D66C3E4CAFCC945DF28252866F6087BA7F·inventoryC773FD46664637DB2D3064A7C4E2A67333F8F5D763E6B0F3944C4A4614C0E6EB를확인했고결과서독립C0/I0·시작끝SHA동일이다.
 - Reviewer의앞owner역치환SHA끝자리 …A694A는오기였으며실계산값6D4913E51711B3F3C10F33DB98C5CECBA5691266CFD8A2CDC3D2E307CB2E32EA로정정했다. Main14e9c2도고정bundle require한줄diff만임을확인했다. 해당오기는제품/최종6지문불일치가아니다.
 - 제품writer0·실산출물파일/FSQA/설치/Electron/C#/키/DB/권한/서비스/네트워크/Agent/live0·전체FN06/FN18/계획미완료다. 실제native최초전달/보호profile·current/ACK의미채택경계를다음구체화대상으로둔다.
+
+### 2026-11-03 웹·모바일 native 위임의 정확 계약 차이
+- 결과tail8f694f31c2aeeac8a2147c6878c1fd6550939ccc를513852로privateexactSHA/main불변·trackedclean/보호3으로확인했다. 패키지단위는재실행하지않으며 PMO에코드/결과/미완료경계를전달했다.
+- 추가읽기에서 project-registration-reads.ts:40의requested_by/client_id동일필터와:51~60의현재controller·등록control/credential세대동일검사, 0006_host_trust_registrations.sql:53~67의원user/client/session/control/policy 현재성, native hostcurrent/consume와owner typedSIGN의같은주체검사가겹침을확인했다. 모바일로제어권을바꾸면원ISSUED/TRUSTED사실은보존되지만native현재성은닫힌다. 나중에PC로돌아와도제어세대가다르면자동복구되지않는다.
+- 현재명령의 HUMAN허가자/제어client와 원키/등록recipient를별도관계로명시하는목적한정단일명령위임이새공개/인증/지속계약후보다. 기존HUMAN/StatusOnly reader·connector_basis_current·원등록상태를바꾸거나false를무시하지않는다. 기존원writerhead도새주체로바꿔현재근거로승격하지않는다.
+- Primary읽기설계의후속은전체최종commandHash/approvalRef·offer/ARM·등록키bootstrap·고정native profile/current·휘발ACK/불명보존·교차client위임대체/보존행렬을실제일반Web/모바일경로에맞춰구체화하는것이다. 아직새endpoint/서명purpose/저장/위임을채택하지않으며sourceGO0/실행GO0·제품writer0이다. Main이한국어후보작성·독립검토후필요결정만PMO에요청한다.
+- 제품/시험쓰기·실파일산출/실자료·키/권한/DB/서비스/네트워크/Agent/C#/Electron/QA0·전체계획미완료다. PMO최신turn01a19d6f는새결정요청없이현재검사를유지한설계단계임을확인했다.
+- Main 3c0d9e는현황문자열의smart single quote를PowerShell단일인용문으로감싼준비오류1(ParserError)이다. 구문해석에서중단돼쓰기0이며제품오류가아니다. 이기록은literal here-string으로정정하고중복header부재를확인한뒤저장했다.
+
+### 2026-11-03 작업 중지 인계 현황 — 현황 기록만 수행
+
+- **단계·판정:** 로컬·WSL-server 기능 구현 1단계. 전체 작업계획은 미완료이며 목표 상태는 PAUSED다. 이번 요청은 현황 기록에 한정한다. 개발·하위 작업·자동 재개는 하지 않는다.
+- **담당·소유권:** Main 어울이 관리·검수·통합을 담당했다. 기존 Primary/Reviewer는 마지막 확인에서 모두 완료·반환 상태이며 제품 code writer는 0이다.
+- **마지막 게시 기준선:** codex/av3-stage-b의 HEAD와 private branch가 8f694f31c2aeeac8a2147c6878c1fd6550939ccc로 동일하다. 패키지 runtime 코드 checkpoint는 b2178d200a65113a260a3d66f9b47f99254699e8이다. 원격 main은 f976ed5e29e14b13e12729d5b1ccf98f050f2210을 유지한다. 540fac 읽기 확인이며 commit/push/병합은 실행하지 않았다.
+- **마지막 구현·검수 범위:** FN06/FN18 고정 native runtime의 메모리 CJS 생성, Forge copy hook 및 owner/Client/slot/HTTPS/signer의 동일 instance 소비를 source-only로 연결했다. 실제 설치형 배송·Agent 연결 완료를 뜻하지 않는다.
+- **기존 검증 증거:** Main 신규 bundle/copy 10 PASS, profile 인접 2 PASS, native 소비 17 PASS, 등록·발급·UNKNOWN 인접 6 PASS, root/desktop/명시 entry noEmit 각각 exit0 및 독립 정적 C0/I0. 이번 기록 작업에서 시험·빌드는 재실행하지 않았다. 결과서 docs/04_test_reports/AV3/FN06_NATIVE_RUNTIME_PACKAGE_SOURCE_RESULT_20261103.md의 SHA256 3028D1421884E17EF276DD54F5A2B8D66C3E4CAFCC945DF28252866F6087BA7F를 읽기 재확인했다.
+- **현재 미커밋 상태:** docs/WORK_STATUS.md의 누적 변경과 신규 docs/contracts/FN06_NATIVE_RECEIVE_DELEGATION_DELIVERY_CANDIDATE_20261103.md를 보존한다. 기존 보호 untracked 3개도 그대로 보존한다. 제품 코드의 미커밋 변경은 관측되지 않았다. 이번 요청으로 수정하는 파일은 정본과 개발 branch의 WORK_STATUS.md뿐이다.
+- **미채택 초안:** native 최초 수신·교차-client 한정 위임·offer/ARM·profile·ACK 계약 후보 r1의 SHA256은 F301A7B86EE0CE721F18B2872D69DA2B2FEE8437D5E41C649026388833D07176이다. DRAFT/NOT_ADOPTED/SOURCE_GO0/EXECUTION_GO0이며 독립 기술 검토 전이다. 수치와 경로는 Main의 제안일 뿐 확정 계약이 아니다.
+- **중지 처리 오류:** 중지 신호를 늦게 반영해 위 미채택 초안 저장 1회가 중지 신호 뒤 실행됐다. 이후 목표 PAUSED와 하위 작업 완료 상태를 확인하고 추가 작업을 중단했다. 초안 삭제·정식 채택·검수·commit/push로 이어가지 않았다.
+- **오류 이력:** 직전 패키지 단위의 entry module 형식 오류는 2회에서 추정 시도를 중단하고 WI r2의 .mts 대체로 보정했다. JSDoc 타입 오류와 현황 문자열 ParserError는 각각 별도 원인으로 기록·보정했다. 기존 상세 이력과 기준은 유지한다.
+- **남은 기능·미검증:** 실제 보호 current/profile 공급자, NativeOnly 최초 전달·수신 인증·ACK, 교차-client 위임, owner bridge/file journal 전체 배송 및 실제 설치·사용자 인수가 남아 있다. 실제 키·권한·DB·서비스·네트워크·C#/OS·Electron·Agent 실행·실자료/FS QA는 이번에도 수행하지 않았다.
+- **재개 조건·다음 조치:** 신산님의 명시적 재개 지시 후 실제 Git/정본/승인 회신을 먼저 대조한다. 완료된 패키지 단위는 반복하지 않고 후보 r1의 시작 caller, exact schema/proof/current wrapper, 기존 검사 대체·보존 행렬, ACK/terminal 원자 경계, 저장·예약 대수를 기술 검토한다. 필요한 새 공개·인증 계약 결정은 구체 후보를 완성한 뒤 PMO에 요청한다. 별도 복구 bootstrap 후보의 직접 결정 대기 기록도 유지한다.
+
+
+### 2026-11-03 native 최초 수신·위임 후보 기술 검토 재개
+- 신산님 최신 직접 지시에 따라 WORK_STATUS와 후보 원문을 확인하고 기존 Primary/Reviewer에게 읽기 기술검토를 배정했다. 검토 범위만 재개하며 구현·실제 실행 승인은 확대하지 않는다. 제품 code writer는0이다.
+- 후보 docs/contracts/FN06_NATIVE_RECEIVE_DELEGATION_DELIVERY_CANDIDATE_20261103.md r1 SHA F301A7B86EE0CE721F18B2872D69DA2B2FEE8437D5E41C649026388833D07176를 확인했다. DRAFT/NOT_ADOPTED/SOURCE_GO0/EXECUTION_GO0를 유지하고 제안 수치·새 인증·wire를 확정값으로 취급하지 않는다.
+- Reviewer는 최초 인증/nonce·두 주체/교차client 위임·원등록/policy/current·Web/모바일 시작/발견 경로를, Primary는 원10초/선commit/전달1회·ACK/terminal/불명·저장6종/예약/collector·종료여유 대수를 각각 검토한다. 후보·제품·시험 쓰기/실행 없이 정확 근거와 최소 보완안을 Main에 반환한다.
+- 실제 Git c5e6f3: codex/av3-stage-b HEAD8f694f31c2aeeac8a2147c6878c1fd6550939ccc, 현황dirty·미채택후보1+보호untracked3 보존, 제품dirty0. diff check는 기존 현황 EOF 빈줄1을 관측했으며 PASS로 기록하지 않았다. 이번 누적기록이 이어져 해당 EOF 여백을 본문 구분으로 보존한다.
+- 실제 키·DB·권한·서비스·네트워크·Agent·C#/Electron·실자료 조사/QA는0이다. 완료된 패키지 검증은 재실행하지 않는다. 전체 작업계획 미완료이며 기술검토 결과에 따라 필요한 후보 보완·별도 결정만 분리한다.
+
+
+### 2026-11-03 native 수신·위임 r1 기술검토 결과 — 보완9건
+- 기존 Reviewer는 인증/주체/호출선 C0/I3, 기존 Primary는 저장/전달/예약 C0/I6를 반환했다. 후보원문 시작·끝/source·정본 SHA F301A7B86EE0CE721F18B2872D69DA2B2FEE8437D5E41C649026388833D07176 동일이다. 실제취약점실행판정이아니며채택/구현준비미완료(REWORK)다.
+- 신규 docs/04_test_reports/AV3/FN06_NATIVE_RECEIVE_DELEGATION_TECH_REVIEW_20261103.md SHA0DA537BD1A961CCB819616B2974C19DEA5BA644184D5E68CF8B8E83B5646F3D4에 A01~03/B01~06의정확근거·반례·최소보완순서를기록했다. 원후보/제품소스는변경하지않았다.
+- 핵심은 위임결과를모든current/consume/SIGN에연결할원형, 최초window/session발견순환·freshness/replay, metadata예약원장의미지원operation/중복collector, 누락된인증증거/terminal여유대수, authority2MiB와frame2MiB충돌, ACK·terminal동일Tx/불명, 취소·bindingCAS, stream단발소유선이다. 미정5항목을인수로승격하지않는다.
+- 같은기존Reviewer에는최초발견/수신준비caller·nonce/replay단계(A02/03),Primary에는취소/binding/ACK/COMMIT불명/stream·원10초의상태Tx표(B04~06)만읽기보완안으로배정했다. 광범위재검토/코드변경/테스트0·기술내부원형은Main이정리하고새인증/공개계약결정은후보가닫힌뒤PMO에요청한다.
+- 실제키·DB·권한·서비스·네트워크·Agent·C#/Electron/실자료/QA실행0·제품writer0·전체계획미완료. 이번기술검토를원source계약채택이나실제기능완료로표시하지않는다.
+
+
+### 2026-11-03 최초인증·전달 원자성의 한정 보완안 수집
+- 같은Reviewer의A02/A03제안은 PC에서한번명시한유한수신session을window보다먼저준비→모바일의정확recipient window생성/원자결박→보호STATE→offer소프트웨어ARM→원POST순서다. CHALLENGE/OPEN/STREAM의window/session exactnull단계와requestId/clientNonce/replay원결과·충돌/미소비challenge상한을분리했다. 종료PC깨우기/매작업수동PC조작/무기한poll·자동재접속을해법으로가정하지않는다. 시계오차·정확schema/허가분모는아직미정이다.
+- 같은Primary의B04~06제안은취소/nativeTx의동일offer/head잠금·CAS,ARMED→COMMAND_BOUND/authority/binding동일Tx,ATTEMPTED선COMMIT/호출1회,ACK+DELIVERY_CONFIRMED동일후행Tx다. ACK미관측/COMMIT불명/ATTEMPTED만존재·terminal행미관측을나누고조회만허용·늦은응답승격/비밀재전달0·원10초공유·미정착IO소유보존을고정하는방향이다. terminal부재를UNCONFIRMED행존재로오인하지않는다.
+- 위미채택제안을검토서에누적해SHA3031F7C4D829379B7EB3D580D70502729B450E1939065CBA2A20C161BFF749B6로동일저장했다. 앞검토서0DA537BD는추가전지문이며원후보r1 F301A7B8은불변이다. Important9건의해소·계약채택으로승격하지않는다.
+- 남은A01의명시위임결과/소비행렬은Reviewer, B01~03의record/byte/slot예약·정산/collector·frame상한대수는Primary에게한정읽기보완으로배정했다. 제품writer0·코드/시험/실행0이며실키·DB·권한·서비스·Agent금지유지·전체계획미완료다.
+
+
+### 2026-11-03 기술검토 원형·예약 제안 정합 및 산술 검산
+- A01후속은commandHuman/recipientHuman/writerHuman을분리하고각options/current/issuer/hostconsume/localSIGN의검산행렬을제안했다. 위임은원recipient와현재client/control의직접동일관계만대체하며원등록내부정합·원session/policy/DENY·현재권한/승인·writer물리근거를보존한다. 모바일현재주체에유효한writerhead가없으면수신위임으로고치지않는미충족선행이다.
+- 두검토안의별도delegationRef 대내장1행가정을Main이대조했다. 추가한정검토는단일명령offer에불변typed위임을내장하고offerRef.contentHash로전체원command와결박하는안을권장했다. 위임내offerRef없음·가짜delegationRef없음·exactoffer고정조회/명시binding으로통일할r2방향이며r1은아직수정/채택하지않았다.
+- B01~03후속은U+H+O+N+R+Q단일계상식·새수신소계R/미래예약Q·동일account잠금·원nativecapacity/collector완결을제안했다. window18row/64KiB+offer당18row/(2MiB+64KiB)는exactschema증명전조건부예산이다. Main순수정수계산으로k31=576row/64MiB,k50=918row/103.1875MiB를확인해수행자의105.1875MiB산술오기를정정했다. 개수50상한을최대크기50개수용보장으로쓰지않는다.
+- frame은authority원문제외·별도등록키목적고정보호조회후정확ref/metadata6/opaque43만전달하는방향을권장했다. frame64KiB·querywrapper총한도·native전체lifecycle예약·record/byte최대대수는미증명/미정이며상한을확정했다고표시하지않는다.
+- 검토서누적최신SHA4647B7B2633A6F60D0E26ABD7BE42E5B5EE992C5B83CD2105C4D18C347519BDA, 원후보F301A7B8불변이다. Reviewer에게검토서의오기/과장만읽기확인배정했다. 새구현/시험/실제키·DB·권한·서비스·Agent/네트워크0·제품writer0·Important9미해소/원후보미채택/전체계획미완료다.
+
+
+### 2026-11-03 후보 기술검토 문서 검수 수용·소스 미채택 유지
+- 기존Reviewer는통합검토서한파일에서제안과의불일치/채택·해소과장없음C0/I0,시작끝SHA4647B7B2633A6F60D0E26ABD7BE42E5B5EE992C5B83CD2105C4D18C347519BDA동일을확인했다. 이는문서검수이며Important9건해소·원후보채택·제품안전검증PASS가아니다.
+- 원후보r1 F301A7B86EE0CE721F18B2872D69DA2B2FEE8437D5E41C649026388833D07176는그대로보존한다. 새명시위임/최초인증/공개wire/profile/ACK·저장계약은SOURCE_GO0/EXECUTION_GO0다. 향후r2는exactschema·실제시작caller/현재성공급·예산/종료대수·frame/Tx원자경계를닫고독립재검토해야한다.
+- 이번요청의실제산출물은기술검토서와누적WORK_STATUS다. 제품/시험/설정·실제키/DB/권한/서비스/Agent/네트워크변경·실행0, 완료된시험재실행0. 문서checkpoint는미채택상태를보존하며제품구현승인으로사용하지않는다. 전체계획미완료다.
+
+- 문서checkpoint의43ba2f staged diff check는신규검토서EOF빈줄1개를발견해commit전에중단했다. 내용/기준은바꾸지않고885458에서끝개행만한개로정리했다. 검수본문은동일하며최종검토서SHA F068FAE62BBA51CDE780F82E1E9F56BE334DC896817D5C5D0D616B5FA562B633이다. 앞4647B7B2는끝개행정리전지문이다. 최종staged본문이정리전내용의끝개행만바뀐것인지별도바이트검산후문서3만commit한다.
