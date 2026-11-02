@@ -10,7 +10,7 @@
 
 Main은 단순한 단방향 build를 선정했다: parent package 먼저 완성/검산→그 부모 basis를 helper에 정상 내장/compile→helper 전체 hash→새 physical factory namespace의 contentHash로 고정→기존 보호 server/current와 parent image supplier가 동일 fullref/hash 소비. 부모 ASAR에 helper hash를 넣지 않으며 normalized slot/PE patcher를 만들지 않는다. 이 단위는 build/배포를 실행하지 않는다.
 
-## 2. 정확10 허용 경로
+## 2. 정확11 허용 경로 — r2 시작 환경 보완
 
 신규7:
 1. apps/connector/native/NativePreparationOwnerParentBasisSource.cs
@@ -21,12 +21,13 @@ Main은 단순한 단방향 build를 선정했다: parent package 먼저 완성/
 6. tests/native/FN06/NativePreparationOwnerHostSourceTests.cs
 7. tests/unit/FN06/native-preparation-owner-host.test.ts
 
-기존3의 최소 연결:
+기존4의 최소 연결:
 8. apps/connector/native/NativePreparationOwnerBridgeSource.cs — Host가 같은 dispatcher를 생성/소비하도록 필요한 internal parsing/검산 접점만. 기존 owner·시간·UNKNOWN 의미 불변.
-9. apps/connector/runtime/native-preparation-owner-launcher.ts — Windows child의 유한 비동기 표준입출력에 필요한 overlapped stdio 연결만.
-10. tests/unit/FN06/native-preparation-owner-launcher.test.ts — 같은 stdio 동작·직접 영향 반례만.
+9. apps/connector/runtime/native-preparation-owner-launcher.ts — 유한 비동기 overlapped stdio와 r2 최소 env/cwd/companion 보호 연결만.
+10. tests/unit/FN06/native-preparation-owner-launcher.test.ts — 같은 stdio/환경/companion·직접 영향 반례만.
+11. tests/unit/FN06/native-preparation-owner-bridge.test.ts — 기존 통합 대역의 overlapped·명시 OS환경/companion 관측 적응과 직접 영향 검증만.
 
-기존 Primary만 이10경로를 수정하고 Main은 문서·관리·검수·통합한다. 다른 담당/보호 untracked3·old QA Host/Main/build·소진 compile-only 실행안·원 C# Job source/SQL/SDK/과거 fixture·공개 API/상위 r2 parser는 읽기 재사용하며 수정하지 않는다. 필요 경로가 더 생기면 정확 delta를 반환하고 임의 확장0이다. commit/push/docs는 Main 소유다.
+기존 Primary만 이11경로를 수정하고 Main은 문서·관리·검수·통합한다. 다른 담당/보호 untracked3·old QA Host/Main/build·소진 compile-only 실행안·원 C# Job source/SQL/SDK/과거 fixture·공개 API/상위 r2 parser는 읽기 재사용하며 수정하지 않는다. 필요 경로가 더 생기면 정확 delta를 반환하고 임의 확장0이다. commit/push/docs는 Main 소유다.
 
 ## 3. 고정 resource의 부모 basis
 
@@ -74,4 +75,19 @@ Node 시험은 실제 Client/bridge/launcher의 overlapped 설정·원 budget/cu
 
 실제 FS/OS/프로세스/C#compile/키DB서비스 실행0·메모리 포트만, QA 자원0을 우선한다. 추가 실제 자원이 필요하면 생성 전 Main에 정확 대상/owner/수명/정리를 요청한다. 동일 근본원인3회는 정식보고/동결·writer 반환이며 원인을 쪼개지 않는다.
 
-Primary는 정확10SHA/diff·각 명령/exit·RED/GREEN과 준비오류·C# 미실행·잔여/자원0·writer 반환을 제출한다. Main fresh·독립 C0/I0·정확 stage/commit/private게시 후 다음 build-source 단위로 진행한다. source 복구는 정상 revert이고 실제 환경 rollback0이다. 전체 FN06/FN08/44업무 완료는 여전히 별도다.
+Primary는 정확11SHA/diff·각 명령/exit·RED/GREEN과 준비오류·C# 미실행·잔여/자원0·writer 반환을 제출한다. Main fresh·독립 C0/I0·정확 stage/commit/private게시 후 다음 build-source 단위로 진행한다. source 복구는 정상 revert이고 실제 환경 rollback0이다. 전체 FN06/FN08/44업무 완료는 여전히 별도다.
+### r2 — CLR 시작 전 입력·Secret 상속 차단
+
+Main이 실제 launcher에서 env/cwd 미지정을 확인했다. Node 기본 부모 환경 상속은 COR_ENABLE_PROFILING/COR_PROFILER 등으로 CLR Main 전 DLL 로딩을 허용할 수 있다. 이는 기존 보호 요구의 구체 누락 보완이며 새 권한/신뢰 root가 아니다.
+
+이 helper에는 부모 환경 전체를 spread/열거/전달하지 않는 새 allowlist 객체만 전달한다. 허용 항목은 SystemRoot/WINDIR 두 Windows OS 경로뿐이다. 둘은 동일한 drive-absolute 정상 경로로 검산하고 누락/불일치/불명·NUL/경로탈출·과대값을 거절한다. 이것을 OS 진위 증명이라고 하지 않는다. PATH/TEMP/HOME·사용자 profile/credential·COR_/CORECLR_/COMPLUS_/AppDomainManager 계열을 전달하지 않는다. 실제 환경 값을 조사·기록하지 않고 시험은 명시 대역만 쓴다. 허용 키 이외 값/getter를 읽지 않으며 env 기본 상속0이다. cwd는 검산한 고정 helper 경로의 디렉터리다.
+
+이 새 physical helper source profile은 embedded basis와 Framework를 사용하며 외부 companion을 소비하지 않는다. 정확 경로 helperExe+'.config', helperExe+'.local', helperExe+'.manifest'의 부재만 launch 전에 허용한다. 파일/디렉터리/link 등 무엇이든 존재하면 거절하며 부재 외 오류도 거절한다. 삭제·마스킹·일반 폴더 조사0이다. 기본 경로는 concrete lstat 관측을 사용하고 시험의 관측 포트 누락이 실제 FS fallback으로 바뀌면 안 된다. 각 await 뒤 원 current/budget/supplier/image의 안정성을 유지하고 spawn 직전 다시 검사한다. 부재 snapshot만으로 TOCTOU 완전 방어나 전역 machine/GAC 신뢰를 입증했다고 하지 않는다. 실제 보호 package 위치/수명·Windows loader 검증은 별도 남긴다. configHash 공개 필드나 기존 basis exact8을 늘려 우회하지 않는다.
+
+반례: 부모 대역에 profiling/AppDomainManager/credential 표식 또는 미허용 getter가 있어도 child env에는 없고 getter도 실행0. OS경로 불명·companion 존재/오류·검사 await 중 head/기한/이미지 변경은 spawn0. 정상과 overlapped 전송/원 owner lifecycle을 유지한다. 이 최소 내부 보완의 추가 writer는 독립 검토/게시 후에만 확장한다.
+
+공식 근거:
+- https://learn.microsoft.com/en-us/dotnet/framework/unmanaged-api/profiling/setting-up-a-profiling-environment
+- https://learn.microsoft.com/en-us/dotnet/framework/configure-apps/file-schema/runtime/appdomainmanagerassembly-element
+
+resource private 가시성의 실제 경계도 명시한다. CLR GetManifestResourceInfo는 embedded/manifest-contained/외부 참조 여부를 검산하지만 public/private flag를 직접 노출하지 않는다. runtime에서 그 flag를 조회했다고 하지 않으며 후속 고정 /resource:...,private compiler 입력과 helper 전체 hash에 결박한다. 새 PE metadata parser/COM 경로를 이 이유로 추가하지 않는다. 새 코드의 권위는 private 표시 하나에서 나오지 않는다.
