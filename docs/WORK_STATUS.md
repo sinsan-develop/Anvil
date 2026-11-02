@@ -12280,3 +12280,11 @@ git diff --check
 - Main은 기존r2 §79/96/177의내부구현으로새6 source/시험을묶는 FN06_NATIVE_PREPARATION_OWNER_BRIDGE_SOURCE_IMPLEMENTATION_20261102.md SHA8632CDB6F2CD4460D23BF8F7FC468516036688FD49513DD6E948280039FE6A11을작성했다. 원Client private ticket→같은factory·직접소유bridge/launcher→C#원Job생성·조회·닫기/UNKNOWN lifecycle이다. 기존6선행source는읽기재사용,기존Host/Main/build·SQL·등록/키정책은불변이다.
 - 독립preflight를기존Reviewer에게요청했고codeGO전writer0이다. 새권한/store/공개operation/신뢰root·STATUS_ONLY승격·다른process접속/재시작holder복구를추가하지않는다. 메모리포트합성만하며실C#compile/native/helper/OS/DB권한키서비스Agent/실자료/P03R3실행0이다. standalonehelper entry/build/실보호supplier는이단위완료로주장하지않는다.
 - owner bridge WI8632CDB6 사전검수C0/I0·시작끝SHA동일을확인했다. 기존r2 source범위정합·원기한/고정정리budget/UNKNOWN후새OPEN금지의직접코드검수를예정한다. Main38411b 신규6부재확인뒤 같은Primary에정확6단일writerGO를전달하며Main제품쓰기0을유지한다.
+
+### 2026-11-02 native owner 구현 시작·원기한 검수 접점
+- WI8632CDB6/정확6·독립C0/I0를4d7ab5e62f5b9417262f5d3c5e889f0541f6e10a로private게시(local/private동일/main불변)후기존Primary단일writer가착수했다. Main제품쓰기0·다른담당변경/보호3보존·실제effects제외를유지한다.
+- Primary6d1c67 module부재는준비실패,16e0aa NATIVE_OWNER_UNAVAILABLE는최소거절진입에서정상lifecycle미구현을드러낸기능RED(exit1)로구분했다. 현재launcher소유/프레임/기한을구현중이며실spawn/FS/키/프로세스0·livehandle0이다. 최종GREEN/인수증거아니다.
+- 기존Reviewer의사전접점은ticket원consume await전OPEN금지·CREATED_OBSERVED의생성관측한정·상위guard후사실분리·UNKNOWNsticky/동일owner정리한정이다. 특히현재privatecallcontext에원deadline/remaining/guard가없어bridge새10초로재연장하면안됨을확인했다. Main은그사실을Primary에전달했고원signal/상위boundedcall·고정최소기한으로닫거나필수기존1파일변경이필요하면정확delta를반환하도록했다. 없는필드를추측해구현하거나writer범위를임의확장하지않는다.
+### 2026-11-02 owner bridge 원기한 전달의 WI r2
+- Primary는원deadline/remaining/guard부재를확인해기존client/consumer2의private budget전달을최소확장요청했다. Main405c75 actualsource에서원run최초10초·current후축소와privatecontext반환부재를대조했다. 새10초기산은원승인상한을위반하므로동일내부구현의필수보완으로판정했다. 공개wire/API/표/권한·실제효과범위변경0이다.
+- WI는원8632CDB6의신규6에서정확8(기존 native-preparation-client.ts/native-preparation-factory-consumer.ts2추가)로보완됐다. 최종SHA FF39A3325FCDF83854D6A0267B88235F28AFB25BF829260E0551CC2DB29B6E5D,독립preflightC0/I0·시작끝동일이다. 원ticket·factory/lifetime의privatebudget과context소비뒤읽기/await후stable·finally폐기·기존소비호환을직접코드검수한다. 추가2수정은지시서게시뒤같은Primary에게GO,동시writer0·Main제품쓰기0을유지한다.
