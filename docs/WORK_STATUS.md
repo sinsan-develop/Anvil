@@ -12488,3 +12488,18 @@ git diff --check
 - Main ff2768가원TTL안08:24:01.551638Z에원marker167B/SHA2FA8B4E9·owner/purpose/원ISO·nonlink·단일marker목록을검산해marker1개와빈root만비재귀삭제했다. 기존resource재사용/기한연장/확대삭제/ACL변경0이며테스트hook의fixture개별정리와구분한다. Main별도조회로root/marker부재를확인한다. 실제compiler/C#/OS·DB키권한서비스Agent·실자료P03R3 실행0,전체계획완료아니다.
 
 - 2026-11-02 FN06/FN18 compiler source: code941b68c56ef17685b5011600d1128b71d0279a42 정확3/220추가2삭제, Main신규33+인접9=42PASS/FAIL0/SKIP0·desktoptype/diff0·독립I1/I2해소C0/I0. 기존producer→단발명시driver→원출력검산/source수명·불명보존 연결, 등록QA원TTL안회수/별도잔여0. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PHYSICAL_FACTORY_COMPILER_SOURCE_RESULT_20261102.md SHA356F978D652D05BC6B176C6D9FFFDA868B38AE7FE64F41B53D9DBDC7DE2A9A25. 실제compiler/C#/OS·보호공급자·등록key/root생산/서명전달·제품조립·DB키권한서비스Agent·P03R3/사용자인수·전체FN06/FN18/계획미완료를유지한다.
+
+### 2026-11-02 compiler 게시 후 다음 실제 계약 상세화
+- a4248f는code941b68c56ef17685b5011600d1128b71d0279a42/docsbb87398124ebd99da1e8c133928f3dc3c897fdf4의privateexact동일/그시점trackedclean·보호untracked3/main불변을확인했다. 이후새후보문서작성은별도진행이며전체계획완료·PR/main병합0이다.
+- 남은StageC~E 한정읽기조사는현재소비화면/원명령·승인·이력을확인했으나즉시새구현후보를확정하지못했다. 실제source공급자·상세계약미완료와실제DB/Agent/회수/복원/설치검증미실행을구분하며소스전체완료로판정하지않는다. 명시AUTO-only queue/준비기록을단순일회승인누락으로완화0,coverage missing/disabled상수를성공으로바꾸지않는다.
+- Primary는신규 FN06_DESKTOP_TRUST_ENROLLMENT_OWNER_CANDIDATE_20261102.md r1 SHA7DCEA96A86836419183EC96AADBF9945600AFA176CEFF727783D2F99395A58D2를같은bytes로작성했다. 로컬UI/IPC·제품root/helper생산·지속key/root↔등록/profile복구의새delta를분리했고불완전/NOT_ADOPTED다. 최초한국어파이프저장준비오류1은생성전실패/직접UTF8로보정했다. Main검토후동일후보의상태별nullable·생산근거·오류/시안/추적을r2로구체화하도록같은Primary에게문서만위임했다. 제품/시험/키/파일효과GO0이다.
+- FN16_FULL_BACKUP_VERIFICATION_SCOPE_DECISION_20261031.md SHA A6776EE4A757F45DAE06534EC407B11DEEF2D625A1EC19517DFE9D6199A594F2의47행은Main의A1~A6상세화를명시허용한다. 이에기존Reviewer에게신규 FN16_FULL_BACKUP_RESTORE_CONTRACT_CANDIDATE_20261102.md 한파일/양쪽동일bytes작성만위임했다. 기존7자료군·sourceSelectionNONE·동일snapshot·암호화/키이식·검증복원/UI14·실제coverage전체를상세화하되미채택/원실행제외를유지한다. 기존선택파일/수동정책승인을다시요청하지않는다.
+- FN17_BROWSER_PUSH_CONTRACT_CANDIDATE_20261031.md SHA CEDD2A34215931D4BC67BBF5246D45B658E2DC68D967D29ECEB685A8FC6580D2는미채택/보호봉인·키profile상세미고정이다. 기존IN_APP승인알림/원자생산완료를되돌리지않고푸시공개/보호저장계약채택과실브라우저/키/외부Push를분리한다. FN03§13.4미승인과별개인준비항목이다.
+- Main은brainstorming스킬로새설계경계를검토하며기존지시에따라재인터뷰/같은범위재승인반복0,구체검토안후필요한정확결정만PMO/신산님께요청한다. 현재제품codewriter0,Primary/Reviewer는서로다른후보문서만작성·Main관리검수. 실제DB/권한/키/보호파일/서비스/컴파일/OS/Agent/실자료/P03R3/브라우저push 실행0·QA잔여0,전체계획미완료다.
+### 2026-11-02 다음 후보 문서 초안 보존 — 구현 승인 아님
+- FN06 desktop 등록 owner 후보 r3 B4F40A9689240E90F83CABB388BB3F99C534FA2FD2F4897A8216F97E12480A74는 r2 독립 C0/I3의 challenge/등록기한 혼동·projectId 생산 누락·pendingKeyId 유실을 보완했다. 아직 DRAFT/NOT_ADOPTED·구현GO0이고 root/helper 보호 upstream의 구체 생산/새 선택을 검토 중이다. Main은 이전 원형이 뒤 절로 계속 덮이는 혼동을 막기 위해 현 초안을 Git 보존 후 현재 규범 본문을 정리하도록 할 예정이다.
+- FN16 A1~A6 통합 후보 D3B3014E76D0DE5CC444C3C002C90CEA170939631519AA283B357AF54DDCACBF는 상세화 산출물이며 미채택/sourceGO0/실행GO0이다. 현재 전체 registry·동일실키 nonce 도메인·10GiB와 staging/감소기록 공간이 미정이다. 전체 registry는 실제 source/DDL/collector 사실을 Main이 더 고정할 업무이지 사용자에게 목록 작성을 넘길 결정이 아니다. 새 public/key-use/저장정책 선택은 정확 대안/권장안을 검토한 뒤 별도 채택한다.
+- FN16 후보 첫 대형 PowerShell 신규저장 명령은 Windows 길이제한 os206으로 프로세스 시작 전 실패/파일0이었다. 정본 apply_patch 신규생성 후 짧은 CreateNew 복사·SHA 동일로 정정했다. FN06 한국어 파이프 인코딩 준비오류1과 구분하며 반복 실패/제품 오류로 합산하지 않는다.
+- Main은 NIST SP800-38D 최종 원문과 Node24.16 공식 crypto 문서를 검토했다. 이는 AES-GCM/nonce/인증 전 미채택 경계의 검토 근거이며 암호계약 채택이 아니다. 정확24.22.1 웹문서 접근 불가는 실검증으로 승격하지 않는다. 두 후보의 실제 구현·키·DB·보호파일·서비스·Agent·백업/복원 효과0, 전체 계획 미완료다.
+
+- 2026-11-02 후보 초안 checkpoint 준비 d0dc74는 FN16 문서 EOF 빈줄1 때문에 diff check exit2에서 commit 전 중단했다. Main이 본문 변경 없이 끝 개행만 LF1개로 정규화했다. 현재 FN16 후보 SHA 4E8423F0445591AC9F47D50FCE04311934ED87D9D993FB546F16D9E2E02FB8D9, 부모 원문 SHA D3B3014E76D0DE5CC444C3C002C90CEA170939631519AA283B357AF54DDCACBF. 미채택/sourceGO0/실행GO0이며 이 비의미 보완은 계약 채택이 아니다.
