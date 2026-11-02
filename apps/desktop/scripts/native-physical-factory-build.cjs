@@ -54,9 +54,19 @@ async function produceCompileInput(input,ports={}){
  const checkInputs=async()=>{for(const source of compile.sources){const b=await io.read(path.join(repoRoot,...source.path.split('/')),1048576);check();if(hash(b)!==source.sha256)fail();}for(const binding of [compile.compiler,...compile.references]){const b=await io.read(binding.path,64*1024*1024);check();if(hash(b)!==binding.sha256)fail();}};
 
  /** @type {string|null} */
- let issuedHash=null;let busy=false;
+ let issuedHash=null;let busy=false,compilerAttempted=false;
  // 이 closure만 원 snapshot을 보유한다. 외부 JSON은 build proof가 아니다.
- return Object.freeze({compile,verifyOutput:async(/** @type {Buffer} */ bytes)=>{
+ return Object.freeze({compile,
+ remainingMs:()=>{check();return Math.max(0,Math.floor(120000-(performance.now()-started)));},
+ /** 원 closure의 단발 진입이다. callback은 정확 고정 입력만 받는다.
+  * @template T
+  * @param {(value:ReturnType<typeof createCompileInput>)=>T} invoke
+  */
+ enterCompiler:async(invoke)=>{
+  if(compilerAttempted||busy||typeof invoke!=='function')fail();compilerAttempted=true;busy=true;
+  try{check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();return invoke(compile);}finally{busy=false;}
+ },
+ verifyOutput:async(/** @type {Buffer} */ bytes)=>{
   if(busy)fail();busy=true;try{check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();const output=await verifyNativePhysicalFactory(bytes,compile.parentBasis);check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();
   if(issuedHash!==null&&issuedHash!==output.helperHash)fail();issuedHash=output.helperHash;
   return immutable({schemaVersion:1,purpose:'NATIVE_PHYSICAL_FACTORY_ARTIFACT',physicalNamespace:'ANVIL_NATIVE_OWNER_FACTORY_V1',factoryRef:{id:compile.factoryId,version:compile.factoryVersion,contentHash:output.helperHash},parentBasis:compile.parentBasis,helperBytes:output.helperBytes,buildInputHash:compile.inputHash});}finally{busy=false;}
