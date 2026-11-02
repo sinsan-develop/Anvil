@@ -12889,3 +12889,9 @@ git diff --check
 - 실제 연결은 같은 실행의 private REGISTERED producer→원 NativeClient/slot/HTTPS private context→typed signer→private mapping/exchange→owned helper/원키 Sign 소비선이다. 공개 RFC 시험키·메모리 helper/current/network 대역으로 검증했으며 실제 키·권한·DB·서비스·컴파일·Agent·네트워크·QA 생성/실행은 0이다.
 - 실제 보호 current/profile supplier, NativeOnly 전달·원 수신확인 생산자, desktop TS 전체 배송은 미완료다. 기본 미등록/UNAVAILABLE를 유지하며 전체 FN06/작업계획 완료로 보고하지 않는다. 복구 bootstrap 후보 43EBD866은 PMO 직접 질문의 별도 결정 대기이며 이번 r5 승인 재확인으로 채택하지 않는다.
 - sandbox Git work tree 조회 오류 4083b0은 환경 접근 오류로 분리했다. 동일 읽기를 승인 elevated 81a7f2로 확인했으며 설정/ACL 변경은 0이다. 실제 branch codex/av3-stage-b, HEAD 998a7ae6, 소유 코드5+현황 dirty 및 보호 untracked3만 존재하고 diff check0이다. LF→CRLF 경고는 보존한다.
+
+### 2026-11-03 FN06 LIVE-NATIVE-SIGN-01 코드 게시·결과 검수
+- 코드 08e6cde57a729067aca81e7e7c818408005558bf는 998a7ae6 직접 자식 소유 코드/시험5+현황 정확6이다. 6a9912 raw/index6 일치·staged diff0 뒤 일반 commit, d7314c 일반 push와 local/private exact SHA·main f976ed5e 불변·tracked clean/보호 untracked3 보존을 확인했다.
+- 결과 docs/04_test_reports/AV3/FN06_LIVE_NATIVE_SIGN_SOURCE_RESULT_20261103.md SHA64271DF08E16E79181E9E540E0B09C37934A68305565624A7690235EA76ECC28와 최종5 inventory B76E281AD830310CB9E87984FEFBCE3C28F2A54AA80ECDE3425739DA8317B78D를 재계산했고 결과서 독립 C0/I0·시작끝SHA 동일이다. 실제 실행/공급자/전달/전체 배송·FN06/계획 미완료를 유지한다.
+- PMO는 turn01a19d44-f326-7a42-982c-bf372c7c627c에서 보고 접수·독립대조 전 보고값과 별도 복구 직접결정 대기를 확인했다. Main은 중복 승인 질문이나 다음 배정 대기 없이 기존 Primary에게 native current/profile·NativeOnly delivery/ACK·desktop TS 배송 중 다음 승인 업무의 정확 공백만 읽기 조사 배정했다. 제품 writer0·실효과/QA0이다.
+- Main 468a22의 잘못된 connector/https 경로와 Windows rg wildcard 직접경로 os3/123은 준비 오류1로 기록했다. 파일 부재/기능 부재 근거로 쓰지 않았고 b1358e의 rg --files로 실제 runtime 경로를 찾았다. 동일 실패 명령 재실행0·코드/설정/ACL 변경0이다.
