@@ -12353,3 +12353,13 @@ git diff --check
 - 기존 Primary의 읽기설계로 실제 FN18 fuse/asar API는 파일경로를 읽으므로 memory 성공stub만으로 통합검수 불가임을 확인했다. build parser는 desktop/scripts 전용으로 두고 runtime은 기존 보호 fullref→image wholehash→launcher→helper startup을 소비하도록 고정했다. 부모ASAR에helperhash내장/순환build·새권위/STATUS_ONLY승격0이다.
 - 새 WI docs/work_packages/FN06_NATIVE_PHYSICAL_FACTORY_SOURCE_IMPLEMENTATION_20261102.md SHA202FC1062F2A4984D0C79BABF8045860ED53514490F05140438F13912C9E764D를 양쪽에 기록했다. 정확신규8 source/test·한writer·기본미등록·실제compiler제외, 합성파일root후보1/12파일/16MiB/최초30분/생성전Main등록·GO/정리검산을 고정했다. 아직 독립preflight/게시/제품쓰기GO전이며QA생성0이다.
 - Reviewer는 현재 제품14+시험4 RunAll의 fake resource/kernel/owner/stream 호출선을 정적으로 확인했다. 실제C#compile/RunAll성공은 아니다. 기존r2는actualcompiler를제외하므로 별도19입력(전용entry1포함) 제한실행후보문서만 작성하도록 맡겼다. 실제compiler/OS/native/DB/권한/키/service/Agent/실자료/P03R3실행0. 독립preflight 뒤 기존Primary에게 승인된 source구현을지시하며 전체계획미완료다.
+
+### 2026-11-02 physical factory source 구현 GO
+- 기존 Reviewer의 WI202FC106 독립preflight C0/I0를 받았다. Mainf544a3는 정확WI+WORK_STATUS2/raw-index동일/staged diff0 후6dc380b757f8bad1f804753b01b24f2dc7505b7c로commit/private동일을확인했다. PMO도해당정확8/제외범위를대조했으며실행승인이나기능PASS로해석하지않았다.
+- 기존Primary가idle인상태의send_message는작업을시작하지않으므로live목록을확인한뒤같은담당followup_task로GO를전달했다. 신규agent0·단일writer1이다. Primary는WI/hash·허용신규8부재·실제serverport·TS/CJS연결·root/desktoptype명령을확인한뒤시험파일작성을시작했다. 20e9de현재보호3외새build시험1이추가됐고기존tracked변경0/diff0이다.
+- 합성QA/실제compiler·OS/native/DB/권한/키/service/Agent·실자료/P03R3생성실행0, 컴파일실행후보문서는기존Reviewer가별도작성중이다. 원등록·권한·current검사/지원미확인보존을반례로확인하도록지시했으며최종기능검수는아직아니다.
+
+### 2026-11-02 관리형 fake C# 실행 후보 검토
+- Reviewer는 새 docs/work_packages/FN06_NATIVE_PREPARATION_MANAGED_FAKE_VALIDATION_EXECUTION_CANDIDATE_20261102.md SHA28C5E8F8155DF4135F8B8AAD6FACD66E82AA0C6A395A340E65C32EA125052906를 양쪽에 작성했다. 제품14/시험4/문서내전용entry1=19입력,compiler1/참조4의고정지문·compile1+managedfakeRun1·실제Job/PInvoke/제품Main0·원기한30분/각15초/출력16KiB·불명같은handle보존/정상exact정리를제안했다. QA생성/실행0이며승인아니다.
+- Main2ccd9c는현재18원본bytes/SHA 불일치0·전용entry697B/SHA390690DCA5B5E790A29EB414DD4BF2B6D752464E05DBFE8E6708F076B787ED37·문서SHA일치를독립검산했다. 같은call의sandboxgitdiff는worktree인식128이며파일검산성공과분리한다.
+- 아직supervisor구체구현·독립검수는없다. 따라서실행요청을완료된실행안처럼제출하지않고후보로보존하며실제compiler승인/실행0을유지한다. 현재단일제품writerPrimary의source8구현과무관하게Reviewer의fake호출선/초기화정적검토를계속한다. 컴파일실행안준비를이유로기능source작업을멈추지않는다.
