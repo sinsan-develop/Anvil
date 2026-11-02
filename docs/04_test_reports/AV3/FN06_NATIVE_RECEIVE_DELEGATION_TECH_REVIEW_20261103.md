@@ -405,3 +405,69 @@ DB는 own의 pending query 추적·settle 실제 정착 뒤 rollback/release를 
 반례는 ‘offer는 만료됐지만 원 전달/COMMIT 결과가 불명인 상태에서 TTL만 보고 Q 전액을 해제’하는 경우다. 이후 원 저장 사실이 확인되면 이미 다른 offer에 배정한 공간과 겹칠 수 있다. 원행/UNKNOWN 보존은 기존 guard로 정리할 수 있지만 안전한 해제 금액은 미정 terminal/슬롯 계약 없이 결정할 수 없다.
 
 이번 범위에서 추가 문서 모순은 확인하지 않았다. 이는 B02 전체 해소·후보 채택·구현 준비 완료 판정이 아니다. R2 원문은 수정하지 않았으며 실제 키·DB·권한·서비스·Agent·네트워크·실자료 조사·시험 실행은 없다. 기존 FN03 단일 구현은 별개로 계속한다.
+## B03 후속: 실제 JSON helper 경계와 새 frame 총한도의 구분
+
+기존 Primary는 생산측, 기존 Reviewer는 소비측과 일부 산술을 읽기 대조했다. R2 원문85F8F15E는 수정하지 않았다. 제품·문서 쓰기는 Main의 본 결과 통합만이며 모듈/시험·컴파일·키/DB/권한/서비스·Agent/제품 네트워크·실자료 실행은 없다. 이 절은 B03 전체 해소·새 wire 채택·구현 GO가 아니다.
+
+### 실제 생산·소비 경계
+
+- project-native-preparations.#deliverPrepared는 ATTEMPTED 선COMMIT 확인 뒤 exact6 metadata와 별도 opaque43을 supplier에 최대1회 넘긴다. binary stream frame 생산자는 없다. 기존 slot.accept는 수용 ACK가 아니며 새 offer/binding/ATTEMPTED·deliveryId 결박을 그 메서드 이름으로 증명하지 않는다.
+- native-preparation-proof-signer는 기존 private authority/challenge/request의 exact v1 frame을 만든다. trust-enrollment-owner는 channel.send에 {attemptId,frame} 객체를 넘기고 C# host는 frame의 Map을 요구한다. frame 전체를 JSON 문자열로 다시 escape하는 비용은 없다. 기존 NativeOnly bearer endpoint를 등록키만 가진 최초 수신자의 조회 인증으로 그대로 재사용할 수는 없다.
+- trust-key-host-client는 UTF8 JSON+LF다. signer 요청/응답 각각65536B·sequence64 이하를 정상 수용한다고 가정한 왕복 payload 상계는64×(65536+65536)=8388608B다. 부분수신·거절·재연결을 포함한 새 window 누적량 증명은 아니다.
+- 기존 owner launcher도 OPEN/QUERY/CLOSE JSON+LF다. C#은4096B chunk를 읽어 누적65536B를 검사한 뒤 frame에 쓰지만 Node 일부 경로는 Buffer.concat 뒤65536B를 검사한다. signer는 canonical 문자열 생성 뒤, key-host 생산자는 Buffer 할당 뒤 크기를 검사한다. 이 현재 구현을 R2의 길이 검사 전 할당0 증거로 쓰지 않는다. 이는 새 후보와의 호환/증명 공백이며 실제 OS 검증 실패 판정이 아니다.
+
+### 기존 정상 typed 경로의 조건부 UTF8 상한
+
+기존 exact v1·UUID36/hash64/ISO24·양의 안전정수 최대16자리와 닫힌 원형을 적용한 Primary의 정적 계산이다. 일반 fullref153B, version1 fullref138B이며 sourceScopes/preparationIntent는 현재 typed authority frame에 없어 여기에 중복 계상하지 않는다. 범용 send(operation,payload)의 임의 입력 상한으로 확대하지 않는다.
+
+| 기존 생산물 | bytes |
+|---|---:|
+| authority snapshot / ref wrapper 포함 | 2703 / 2861 |
+| request proof / purpose 서명 domain | 571 / 628 |
+| challenge | 930 |
+| typed signer frame | 4554 |
+| 현재 desktop envelope+LF | 5027 |
+| delivery exact6 / 별도 opaque43까지의 알려진 payload | 634 / 677 |
+
+Reviewer는 exact8 proof571/domain628, ref138/153, frame 객체 전달과 sourceScopes/intent 제외를 교차 확인했다.4554/5027도 위 폭 가정의 정상 typed 생산값이며 새 R2 수용 증거가 아니다.
+
+### 후보 DelegatedSignFrame의 조건부 계산
+
+A=authority ref wrapper 전체 bytes, C=최종 command canonical bytes로 둔다. R2 §6 열거가 고정되고 request/challenge가 기존 v1 exact 원형을 유지한다는 조건이다. Primary의 wrapper 계산은 Offer=C+3524, CommandBinding=2245, DelegatedCurrent=2348, DelegatedSignFrame=A+C+9885다. Reviewer는9885의 전체 필드별 최대식을 독립 재증명한 것은 아니므로 이를 완결된 새 wire 상한으로 표시하지 않는다.
+
+| 조건 | inner frame | 현재 desktop 외피+LF를 가정한 값 |
+|---|---:|---:|
+| 현재 typed A2861, C2097152 | 2109898 | 2110381 |
+| 명목 snapshot2MiB+wrapper158인 A2097310, C2097152 | 4204347 | 4204830 |
+
+외피+483은 새 operation명·일반 signerRef153·sequence64 이하·remaining10000 이하·ISO24·attemptId36·LF의 보수 가정이다. signerRef가 version1이면+468이다. Reviewer는 해당 산술과 객체 전달에 따른 이중 escape 없음만 교차 확인했다.4204830은4MiB(4194304)보다10526B 크지만, 명목 A2097310은 실제 현재 고정필드 authority가 그 크기까지 생성된다는 증거가 아니다. 새 wire 계약을 이렇게 채택하거나 기존65536을 늘리자는 결정도 아니다.
+
+Offer 자체의 C+3524와 새 고정보호조회 전체가 기존 HTTPS2MiB 응답에 맞는다고 가정하지 않는다. 고정조회는 authority/offer/binding/current와 응답 외피를, helper 요청은 실제 전달하도록 정한 원문·ref·서명대상과 내부 외피를 따로 계산해야 한다. 순간 buffer4MiB의 분모도 원문 문자열·독립 복사본·대기 write/부분수신을 어떻게 합산하는지 미정이므로 payload 한 개의 숫자만으로 증명하지 않는다.
+
+### 아직 숫자로 닫을 수 없는 부분
+
+- binary header·종류·순서·encoding·새 목적·수신자 검산 원형과 실제 보호 slot 수용 생산자가 미정이다. 알려진 payload의 일부677+4×153=1289B는 header/외피를 뺀 부분값이며 binary frame64KiB의 증명이 아니다.
+- session wrapper는 ReceiverPrincipal canonical bytes+1321이다. principal exact 원형이 없어 전체 상한은 미정이다. Session SignedRequest는 canonical(method)+canonical(path)+1922이며 ASCII method4/path256을 가정하면2186B지만 실제 endpoint 원형/상한이 확정된 증명은 아니다.
+- 새 stream의 총량은 header+payload뿐 아니라 부분/거절 bytes의 합과 재연결 후 같은 원 window 분모를 포함해야 한다. 기존 accepted sequence64·단일supplier 호출·write callback을 window 전체 제한이나 수용 ACK로 바꾸지 않는다.
+- 원10초·부분write/backpressure·실제IO 정착/버퍼회수는 B06의 소유 요구를 유지한다. 새 ReceiverPrincipal의 조회 인증·public wire/profile 권위·helper 위임 검산·계상 선택은 여전히 미채택 방향/원형에 의존한다.
+
+PMO는 이 대화에 새 native 설계방향 직접 답변이 없어 미선택을 유지한다고 확인했다. Main은 그 사실을 새 거절이나 승인으로 바꾸지 않는다. 기존 Source/FN03 검수 완료와 이 후보의 Important9·SOURCE_GO0/EXECUTION_GO0은 별개다.
+
+## B03 한정 계수의 독립 재검산 결과
+
+기존 Reviewer는 직전 절에서 남긴 A+C+9885 계수만 R2 §4/§6/§13의 열거 필드로 독립 검산했다. Main은 R2:65,104~116,272의 실제 Human·ReceiveDelegation·Offer·CommandBinding·DelegatedCurrent·DelegatedSignFrame 선언과 폭 가정을 대조했다. R2 원문85F8F15E는 그대로다. 앞 절의 '9885 전체 필드별 독립 미증명'은 이 후속 한정 계산으로 보완되며 과거 확인 범위의 기록을 삭제하지 않는다.
+
+| 구성 | 조건부 canonical bytes |
+|---|---:|
+| ReceiveDelegation 25필드: 키·구두점472 + 값2595 | 3067 |
+| OfferSnapshot의 command 제외 | 3351 |
+| Offer wrapper의 command 제외 | 3524 |
+| CommandBinding snapshot / wrapper | 2072 / 2245 |
+| DelegatedCurrent 19필드 | 2348 |
+| 기존 exact challenge / request | 930 / 571 |
+| 여섯 객체값을 제외한 DelegatedSignFrame 외피 | 267 |
+| A·C 제외 합계:3524+2245+2348+930+571+267 | 9885 |
+
+일반ref153·Human232·nonnull approvalRef185, UUID36/hash64/ISO24·안전정수16자리·닫힌ASCII 목적을 가정했다. status는 가장 긴 UNAVAILABLE을 사용한다. command는 객체이므로 C 안의 Unicode/escaping을 다시 escape하지 않고 sourceScopes/intent도 별도 복제하지 않는다. 따라서 앞 표의2110381/4204830 산식은 이 조건에서 유지된다.
+
+판정은 '현재 후보 열거·폭 가정 아래 계수의 조건부 독립 검산 완료'다. 실제 wrapper/parser 허용형·ReceiverPrincipal·helper 전달 선택이 바뀌면 다시 계산해야 한다. binary header/고정조회 전체·부분/거절/재연결·동시복사 buffer 총량과 실제 생산·ACK는 여전히 미정이다. 숫자 검산은 새 wire 채택·한도 확대·SOURCE_GO·EXECUTION_GO·전체 B03/Important9 해소가 아니다. 제품/시험/SQL/컴파일·키/DB/권한/서비스/Agent/제품 네트워크·실자료 실행0이다.
