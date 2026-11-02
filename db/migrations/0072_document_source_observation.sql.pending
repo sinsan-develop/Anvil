@@ -1,0 +1,690 @@
+-- FN03 §15.4 / WI r2 B7856483. 미적용 forward: 실제 PG/권한/관측 검증 NOT_RUN.
+-- 기존 LINKED1/DETACHED2 및 원 command/정책/Artifact 한도를 보존한다.
+BEGIN;
+CREATE TABLE anvil.document_source_observation_heads(
+ project_id uuid NOT NULL,link_id uuid NOT NULL,stream_id uuid NOT NULL,
+ head_version bigint NOT NULL CHECK(head_version BETWEEN 1 AND 10000),head_hash text NOT NULL CHECK(head_hash~'^[0-9a-f]{64}$'),
+ PRIMARY KEY(project_id,link_id),UNIQUE(project_id,stream_id),
+ FOREIGN KEY(project_id,link_id) REFERENCES anvil.document_source_links(project_id,id) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.document_source_observation_events(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL,link_id uuid NOT NULL,stream_id uuid NOT NULL,
+ version bigint NOT NULL CHECK(version BETWEEN 1 AND 10000),content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ snapshot_json jsonb NOT NULL CHECK(jsonb_typeof(snapshot_json)='object'),command_id uuid NOT NULL,
+ projection_hash text NOT NULL CHECK(projection_hash~'^[0-9a-f]{64}$'),created_at timestamptz NOT NULL,
+ UNIQUE(project_id,stream_id,version),UNIQUE(project_id,stream_id,version,content_hash),UNIQUE(project_id,command_id),
+ FOREIGN KEY(project_id,link_id) REFERENCES anvil.document_source_links(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,stream_id) REFERENCES anvil.document_source_observation_heads(project_id,stream_id) DEFERRABLE INITIALLY DEFERRED
+);
+ALTER TABLE anvil.document_source_observation_heads ADD CONSTRAINT source_observation_current
+ FOREIGN KEY(project_id,stream_id,head_version,head_hash) REFERENCES anvil.document_source_observation_events(project_id,stream_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED;
+CREATE UNIQUE INDEX source_observation_collect_once ON anvil.document_source_observation_events(project_id,link_id,
+ ((snapshot_json->'observation'->'snapshot'->'sourceSnapshotRef')::text)) WHERE snapshot_json->>'choice'='COLLECT_PROPOSAL';
+CREATE INDEX source_observation_page ON anvil.document_source_observation_events(project_id,link_id,created_at DESC,id DESC);
+
+-- 원 command 전체를 원 result/승인행에서만 재구성한다. caller JSON/GUC bool은 입력이 아니다.
+CREATE FUNCTION anvil.document_source_request(c anvil.commands) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s jsonb;p jsonb;approval jsonb='null'::jsonb;
+BEGIN
+ IF c.operation NOT IN('linkDocumentSource','proposeDocumentSourceChange') THEN RETURN NULL;END IF;
+ s=c.result_ref->'data'->'sourceEvent'->'snapshot';
+ IF c.operation='linkDocumentSource' THEN
+  p=c.result_ref->'data'->'snapshot'-ARRAY['projectId','kind','state','previousRef','recordedAt'];
+ ELSE p=jsonb_build_object('sourceLinkRef',s->'sourceLinkRef','observedSnapshotRef',s->'observation'->'snapshot'->'sourceSnapshotRef','choice',s->'choice','reason',s->'reason');END IF;
+ IF c.approval_consumption_id IS NOT NULL THEN
+  SELECT jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest) INTO approval
+   FROM anvil.authorization_receipts ar JOIN anvil.approval_decisions d ON d.id=ar.approval_decision_ref AND d.project_id=c.project_id
+   JOIN anvil.approval_requests r ON r.id=d.request_id AND r.project_id=d.project_id WHERE ar.id=c.authorization_receipt_id AND ar.command_id=c.id;
+  IF approval IS NULL THEN RETURN NULL;END IF;
+ END IF;
+ RETURN jsonb_build_object('schemaVersion',1,'projectId',c.project_id,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+  'operation',c.operation,'targetId',CASE WHEN c.operation='linkDocumentSource' THEN 'null'::jsonb ELSE s->'sourceLinkRef'->'id' END,
+  'expectedVersion',c.expected_version,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',p);
+EXCEPTION WHEN OTHERS THEN RETURN NULL;END;$$;
+
+-- 불변 서버 admission은 원 SourceLinkEvent다. 공급자의 proofRef와 다른 서버 사건 ref다.
+-- 이 검사는 receipt/hash/귀속을 검산하며 OS/P256/JS private 검증을 DB가 했다고 표시하지 않는다.
+CREATE FUNCTION anvil.document_source_admission(cid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;ar anvil.authorization_receipts;s jsonb;o jsonb;q jsonb;r jsonb;scope jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id AND scope_kind='PROJECT' AND scope_id=c.project_id;
+ s=c.result_ref->'data'->'sourceEvent'->'snapshot';r=c.result_ref->'data'->'sourceEvent'->'ref';o=s->'observation';scope=o->'snapshot'->'scope';q=anvil.document_source_request(c);
+ IF c.id IS NULL OR ar.id IS NULL OR c.operation NOT IN('linkDocumentSource','proposeDocumentSourceChange') OR c.state IS DISTINCT FROM 'APPLIED'
+  OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM c.project_id OR c.policy_ref IS NULL OR ar.policy_ref IS DISTINCT FROM c.policy_ref
+  OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+  OR q IS NULL OR c.request_hash IS DISTINCT FROM anvil.fn01_hash(q)
+  OR NOT anvil.execution_json_shape(s,ARRAY['projectId','sourceLinkRef','observation','choice','reason','previousRef','proposalId','importId','recordedAt'])
+  OR NOT anvil.execution_json_shape(r,ARRAY['id','version','contentHash']) OR r->>'contentHash' IS DISTINCT FROM anvil.fn01_hash(s)
+  OR NOT anvil.execution_json_shape(o,ARRAY['ref','snapshot']) OR o->'ref'->>'contentHash' IS DISTINCT FROM anvil.fn01_hash(o->'snapshot')
+  OR NOT anvil.execution_json_shape(o->'snapshot',ARRAY['scope','sourceRootRef','sourceSnapshotRef','blobHash','artifactRef','registrationRef','connectorRef','proofRef','observedAt','expiresAt'])
+  OR NOT anvil.execution_json_shape(scope,ARRAY['projectId','documentRef','sourceRootId','relativePath','actorId','clientId','humanSessionId','controlGeneration'])
+  OR scope->>'projectId' IS DISTINCT FROM c.project_id::text OR scope->>'actorId' IS DISTINCT FROM c.actor_id::text OR scope->>'clientId' IS DISTINCT FROM c.client_id::text
+  OR scope->>'controlGeneration' IS DISTINCT FROM c.control_generation::text OR s->>'projectId' IS DISTINCT FROM c.project_id::text
+  OR NOT anvil.result_text_valid(s->'reason',20000) OR NOT anvil.result_texts_safe(s)
+  OR s->>'recordedAt' IS DISTINCT FROM c.result_ref->>'serverReceivedAt'
+  OR (o->'snapshot'->>'observedAt')::timestamptz>=(o->'snapshot'->>'expiresAt')::timestamptz
+  OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text
+  OR c.result_ref->>'projectId' IS DISTINCT FROM c.project_id::text OR c.result_ref->>'status' IS DISTINCT FROM 'APPLIED'
+  OR c.result_ref->'data'->'observationRef' IS DISTINCT FROM o->'ref' THEN RETURN false;END IF;
+ IF c.operation='linkDocumentSource' THEN
+  IF c.expected_version<>0 OR s->'choice' IS DISTINCT FROM 'null'::jsonb OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'DOCUMENT_SOURCE_LINKED'
+   OR c.result_ref->'data'->'ref' IS DISTINCT FROM s->'sourceLinkRef' OR c.result_ref->'data'->'ref'->>'version' IS DISTINCT FROM '1'
+   OR c.result_ref->'data'->'ref'->>'contentHash' IS DISTINCT FROM anvil.fn01_hash(c.result_ref->'data'->'snapshot')
+   OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM (q->'payload')||jsonb_build_object('projectId',c.project_id,'kind','LINKED','state','ACTIVE','previousRef','null'::jsonb,'recordedAt',s->'recordedAt') THEN RETURN false;END IF;
+ ELSE
+  IF c.expected_version<>1 OR s->>'choice' NOT IN('KEEP_SERVER','COLLECT_PROPOSAL') OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'DOCUMENT_SOURCE_CHANGE_RECORDED'
+   OR c.result_ref->'data'->'ref' IS DISTINCT FROM r OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM s OR s->'sourceLinkRef'->>'version' IS DISTINCT FROM '1' THEN RETURN false;END IF;
+ END IF;
+ IF c.result_ref->>'targetId' IS DISTINCT FROM c.result_ref->'data'->'ref'->>'id' OR c.result_ref->'version' IS DISTINCT FROM c.result_ref->'data'->'ref'->'version' THEN RETURN false;END IF;
+ IF ar.scope_digest IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('projectId',c.project_id,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref')) THEN RETURN false;END IF;
+ RETURN (SELECT count(*)=1 FROM anvil.audit_events a WHERE a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id AND a.outcome='APPLIED'
+  AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref' AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND a.client_ref=c.client_id AND a.policy_ref=c.policy_ref);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+CREATE FUNCTION anvil.document_source_current(cid uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;s jsonb;r anvil.connector_registrations;k anvil.connectors;root record;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;s=c.result_ref->'data'->'sourceEvent'->'snapshot'->'observation'->'snapshot';
+ IF NOT anvil.document_source_admission(cid) OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
+  OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_ADMISSION_REQUIRED';END IF;
+ PERFORM anvil.quota_current((s->'scope'->>'humanSessionId')::uuid,c.actor_id,c.client_id,c.project_id,anvil.document_source_request(c));
+ PERFORM anvil.document_source_read_context((s->'scope'->>'humanSessionId')::uuid,c.actor_id,c.client_id,c.project_id);
+ IF (s->>'expiresAt')::timestamptz<=clock_timestamp() THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_OBSERVATION_EXPIRED';END IF;
+ SELECT v.*,h.head_version INTO root FROM anvil.source_roots h JOIN anvil.source_root_versions v ON v.project_id=h.project_id AND v.root_id=h.id AND v.version=h.head_version WHERE h.project_id=c.project_id AND h.id::text=s->'scope'->>'sourceRootId' FOR SHARE OF h;
+ SELECT * INTO r FROM anvil.connector_registrations WHERE project_id=c.project_id AND id::text=s->'registrationRef'->>'id' FOR SHARE;
+ SELECT * INTO k FROM anvil.connectors WHERE project_id=c.project_id AND id=r.connector_id AND registration_id=r.id FOR SHARE;
+ IF root.root_id IS NULL OR root.status IS DISTINCT FROM 'DECLARED' OR s->'sourceRootRef' IS DISTINCT FROM jsonb_build_object('id',root.root_id,'version',root.head_version,'contentHash',root.content_hash)
+  OR root.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('declaration',root.declaration_json,'status',root.status,'authority',root.authority,'readiness',root.readiness,'reason',root.reason))
+  OR root.connector_id IS DISTINCT FROM k.id OR r.id IS NULL OR r.state IS DISTINCT FROM 'ISSUED' OR k.id IS NULL OR k.status IS DISTINCT FROM 'TRUSTED'
+  OR r.revoked_at IS NOT NULL OR k.revoked_at IS NOT NULL OR NOT anvil.connector_basis_current(r.id,false)
+  OR r.requested_by IS DISTINCT FROM c.actor_id OR r.client_id IS DISTINCT FROM c.client_id OR r.control_generation IS DISTINCT FROM c.control_generation OR r.credential_generation IS DISTINCT FROM (SELECT credential_generation FROM anvil.users WHERE id=c.actor_id)
+  OR s->'registrationRef' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',r.version,'contentHash',anvil.fn01_hash(jsonb_build_object('registrationId',r.id,'version',r.version,'state',r.state,'scopeDigest',r.scope_digest)))
+  OR s->'connectorRef' IS DISTINCT FROM jsonb_build_object('id',k.id,'version',k.generation,'contentHash',anvil.fn01_hash(jsonb_build_object('connectorId',k.id,'registrationId',r.id,'scopeDigest',r.scope_digest,'generation',k.generation))) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_CURRENT_CHANGED';END IF;
+END;$$;
+
+-- 보안definer가 실제 인증 session과 회원관계를 검산한 뒤 원 typed context만 만든다.
+CREATE FUNCTION anvil.document_source_read_context(s uuid,a uuid,c uuid,p uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ IF NOT EXISTS(SELECT 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id WHERE pr.id=p AND m.user_id=a AND m.revoked_at IS NULL) THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ PERFORM set_config('anvil.source_read_session',s::text,true),set_config('anvil.source_read_actor',a::text,true),set_config('anvil.source_read_client',c::text,true),set_config('anvil.source_read_project',p::text,true);
+END;$$;
+CREATE FUNCTION anvil.document_source_read_allowed(p uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s uuid;a uuid;c uuid;
+BEGIN
+ s=nullif(current_setting('anvil.source_read_session',true),'')::uuid;a=nullif(current_setting('anvil.source_read_actor',true),'')::uuid;c=nullif(current_setting('anvil.source_read_client',true),'')::uuid;
+ IF p::text IS DISTINCT FROM current_setting('anvil.source_read_project',true) THEN RETURN false;END IF;
+ PERFORM anvil.fn01_active(s,a,c);
+ RETURN EXISTS(SELECT 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id WHERE pr.id=p AND m.user_id=a AND m.revoked_at IS NULL);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER TABLE anvil.document_source_observation_heads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.document_source_observation_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY source_observation_heads_read ON anvil.document_source_observation_heads FOR SELECT TO anvil_v3_app USING(anvil.document_source_read_allowed(project_id));
+CREATE POLICY source_observation_events_read ON anvil.document_source_observation_events FOR SELECT TO anvil_v3_app USING(anvil.document_source_read_allowed(project_id));
+CREATE POLICY source_observation_heads_insert ON anvil.document_source_observation_heads FOR INSERT TO anvil_v3_app WITH CHECK(anvil.document_source_read_allowed(project_id));
+CREATE POLICY source_observation_heads_update ON anvil.document_source_observation_heads FOR UPDATE TO anvil_v3_app USING(anvil.document_source_read_allowed(project_id)) WITH CHECK(anvil.document_source_read_allowed(project_id));
+CREATE POLICY source_observation_events_write ON anvil.document_source_observation_events FOR INSERT TO anvil_v3_app WITH CHECK(anvil.document_source_read_allowed(project_id));
+REVOKE ALL ON anvil.document_source_observation_heads,anvil.document_source_observation_events FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.document_source_observation_heads,anvil.document_source_observation_events TO anvil_v3_app;
+GRANT UPDATE(head_version,head_hash) ON anvil.document_source_observation_heads TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.document_source_request(anvil.commands),anvil.document_source_admission(uuid),anvil.document_source_current(uuid),anvil.document_source_read_context(uuid,uuid,uuid,uuid) FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.document_source_read_allowed(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.document_source_read_allowed(uuid),anvil.document_source_read_context(uuid,uuid,uuid,uuid) TO anvil_v3_app;
+
+CREATE FUNCTION anvil.guard_document_source_observation() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;h anvil.document_source_links;prior_head anvil.document_source_observation_heads;e anvil.document_source_observation_events;r jsonb;v jsonb;
+BEGIN
+ IF TG_OP='DELETE' OR TG_TABLE_NAME='document_source_observation_events' AND TG_OP<>'INSERT' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EVENT_IMMUTABLE';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO c FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true) AND project_id=NEW.project_id;
+ PERFORM anvil.document_source_current(c.id);r=c.result_ref->'data'->'sourceEvent'->'ref';v=c.result_ref->'data'->'sourceEvent'->'snapshot';
+ SELECT * INTO h FROM anvil.document_source_links WHERE project_id=NEW.project_id AND id=NEW.link_id FOR UPDATE;
+ IF h.id IS NULL OR h.state IS DISTINCT FROM 'ACTIVE' OR h.link_version<>1 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_CURRENT_LINK_REQUIRED';END IF;
+ IF TG_TABLE_NAME='document_source_observation_events' THEN
+  IF NEW.command_id IS DISTINCT FROM c.id OR NEW.stream_id::text IS DISTINCT FROM r->>'id' OR NEW.version::text IS DISTINCT FROM r->>'version'
+   OR NEW.content_hash IS DISTINCT FROM r->>'contentHash' OR NEW.snapshot_json IS DISTINCT FROM v
+   OR NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(NEW.snapshot_json)
+   OR NEW.created_at IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) OR (v->>'recordedAt')::timestamptz IS DISTINCT FROM NEW.created_at
+   OR octet_length(convert_to(anvil.fn01_json(to_jsonb(NEW)),'UTF8'))>65536
+   OR v->'sourceLinkRef'->>'id' IS DISTINCT FROM h.id::text OR v->'sourceLinkRef'->>'version' IS DISTINCT FROM '1'
+   OR NOT EXISTS(SELECT 1 FROM anvil.document_source_link_events origin WHERE origin.project_id=h.project_id AND origin.link_id=h.id AND origin.link_version=1 AND origin.content_hash=v->'sourceLinkRef'->>'contentHash')
+   OR v->'observation'->'snapshot'->'scope'->>'sourceRootId' IS DISTINCT FROM h.source_root_id::text
+   OR v->'observation'->'snapshot'->'scope'->>'relativePath' IS DISTINCT FROM h.relative_path
+   OR NOT EXISTS(SELECT 1 FROM anvil.document_versions d WHERE d.project_id=h.project_id AND d.document_id=h.document_id AND d.version=h.version
+    AND v->'observation'->'snapshot'->'scope'->'documentRef'=jsonb_build_object('id',d.document_id,'version',d.version,'contentHash',d.content_hash)) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_EVENT_REQUIRED';END IF;
+  SELECT * INTO prior_head FROM anvil.document_source_observation_heads WHERE project_id=h.project_id AND link_id=h.id FOR UPDATE;
+  IF prior_head.link_id IS NULL THEN
+   IF NEW.version<>1 OR v->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED';END IF;
+  ELSIF NEW.stream_id IS DISTINCT FROM prior_head.stream_id OR NEW.version<>prior_head.head_version+1
+   OR v->'previousRef' IS DISTINCT FROM jsonb_build_object('id',prior_head.stream_id,'version',prior_head.head_version,'contentHash',prior_head.head_hash) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED';END IF;
+ ELSE
+  SELECT * INTO e FROM anvil.document_source_observation_events WHERE project_id=NEW.project_id AND stream_id=NEW.stream_id AND version=NEW.head_version AND content_hash=NEW.head_hash;
+  IF e.command_id IS DISTINCT FROM c.id OR e.link_id IS DISTINCT FROM NEW.link_id OR NEW.stream_id::text IS DISTINCT FROM r->>'id'
+   OR NEW.head_version::text IS DISTINCT FROM r->>'version' OR NEW.head_hash IS DISTINCT FROM r->>'contentHash' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED';END IF;
+  IF TG_OP='INSERT' THEN IF NEW.head_version<>1 OR e.snapshot_json->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED';END IF;
+  ELSE IF (to_jsonb(NEW)-ARRAY['head_version','head_hash']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['head_version','head_hash']) OR NEW.head_version<>OLD.head_version+1
+   OR e.snapshot_json->'previousRef' IS DISTINCT FROM jsonb_build_object('id',OLD.stream_id,'version',OLD.head_version,'contentHash',OLD.head_hash) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED';END IF;END IF;
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER source_observation_event_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.document_source_observation_events FOR EACH ROW EXECUTE FUNCTION anvil.guard_document_source_observation();
+CREATE TRIGGER source_observation_head_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.document_source_observation_heads FOR EACH ROW EXECUTE FUNCTION anvil.guard_document_source_observation();
+
+-- 계상용 codec은 원자료/hash codec이 아니다. 원값/NULL 유무를 보존하며 byte 비용만 안정화한다.
+-- presence는 길이가 같은 '0'/'1', 숫자는20자리, enum은길이32, 시각은UTC6자리다.
+-- 원 reservation의 SETTLED 결과에 필요한 값은 실제 원 command/receipt에서만 얻는다.
+CREATE FUNCTION anvil.document_source_cost_row(kind text,row_value jsonb,cid uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v jsonb=row_value;k text;t text;c anvil.commands;ar anvil.authorization_receipts;
+BEGIN
+ IF jsonb_typeof(v)<>'object' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ IF kind IN('LINK_HEAD','STREAM_HEAD','RESERVATION') THEN
+  FOR k IN SELECT jsonb_object_keys(v) LOOP
+   IF k IN('head_version','link_version','reserved_bytes','settled_bytes','start_fence') THEN
+    IF v->k<>'null'::jsonb AND (v->>k)!~'^(0|[1-9][0-9]{0,18})$' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+    v=jsonb_set(v,ARRAY[k],jsonb_build_object('present',CASE WHEN v->k='null'::jsonb THEN '0' ELSE '1' END,'decimal',lpad(COALESCE(v->>k,'0'),20,'0')));
+   ELSIF k IN('state','phase') THEN
+    t=v->>k;IF t IS NULL OR length(t)>32 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+    v=jsonb_set(v,ARRAY[k],jsonb_build_object('length',lpad(length(t)::text,2,'0'),'value',rpad(t,32,' ')));
+   ELSIF k IN('server_command_id','authorization_receipt_id','scope_digest') THEN
+    t=v->>k;
+    IF t IS NOT NULL AND (k='scope_digest' AND t!~'^[0-9a-f]{64}$' OR k<>'scope_digest' AND t!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$') THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+    v=jsonb_set(v,ARRAY[k],jsonb_build_object('present',CASE WHEN t IS NULL THEN '0' ELSE '1' END,'value',COALESCE(t,CASE WHEN k='scope_digest' THEN repeat('0',64) ELSE '00000000-0000-0000-0000-000000000000' END)));
+   ELSIF k IN('linked_at','updated_at','created_at','started_at','settled_at','authorized_until') THEN
+    v=jsonb_set(v,ARRAY[k],jsonb_build_object('present',CASE WHEN v->k='null'::jsonb THEN '0' ELSE '1' END,'utc',CASE WHEN v->k='null'::jsonb THEN '0000-00-00T00:00:00.000000Z' ELSE to_char((v->>k)::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END));
+   END IF;
+  END LOOP;
+ END IF;
+ RETURN v;
+END;$$;
+
+-- 정규화 계획의 identity는 신규 local recordedAt/파생 local hash만 제외한다.
+-- 원 linkRef(선택), command/payload, supplier proof/ref/hash/time는 제외하지 않는다.
+CREATE FUNCTION anvil.document_source_quota_projection(pid uuid,cid uuid)
+ RETURNS TABLE(projection jsonb,record_projections jsonb,diff_bytes text) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;e anvil.document_source_observation_events;origin anvil.document_source_link_events;h anvil.document_source_links;sh anvil.document_source_observation_heads;
+ im anvil.document_imports;dp anvil.document_proposals;b anvil.artifacts;ar anvil.authorization_receipts;r anvil.project_storage_reservations;aud anvil.audit_events;ac anvil.approval_consumptions;
+ link jsonb='null'::jsonb;record jsonb;candidate jsonb='null'::jsonb;proposal jsonb='null'::jsonb;rows jsonb='[]'::jsonb;rv jsonb;normalized jsonb;d bigint=0;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF NOT anvil.document_source_admission(cid) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_ADMISSION_REQUIRED';END IF;
+ SELECT * INTO e FROM anvil.document_source_observation_events WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO r FROM anvil.project_storage_reservations WHERE project_id=pid AND actor_id=c.actor_id AND external_command_id=c.command_id AND part_kind='SOURCE_LINK_EVENT';
+ IF e.id IS NULL OR r.id IS NULL OR r.phase NOT IN('IO_STARTED','SETTLED') OR e.snapshot_json IS DISTINCT FROM c.result_ref->'data'->'sourceEvent'->'snapshot'
+  OR e.content_hash IS DISTINCT FROM anvil.fn01_hash(e.snapshot_json) OR e.stream_id::text IS DISTINCT FROM c.result_ref->'data'->'sourceEvent'->'ref'->>'id'
+  OR e.version::text IS DISTINCT FROM c.result_ref->'data'->'sourceEvent'->'ref'->>'version' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=cid;
+ SELECT * INTO aud FROM anvil.audit_events WHERE command_id=cid AND project_id=pid AND operation_id=c.operation_id AND outcome='APPLIED';
+ IF aud.event_id IS NULL THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ -- 실제 physical table별 고정 kind다. 공개 COMMON 분기/호출자 row 종류는 없다.
+ rows=jsonb_build_array(jsonb_build_object('kind','SOURCE_EVENT','row',to_jsonb(e)),jsonb_build_object('kind','COMMAND','row',to_jsonb(c)),
+  jsonb_build_object('kind','AUTHORIZATION_RECEIPT','row',to_jsonb(ar)),jsonb_build_object('kind','AUDIT','row',to_jsonb(aud)));
+ IF c.approval_consumption_id IS NOT NULL THEN
+  SELECT * INTO ac FROM anvil.approval_consumptions WHERE id=c.approval_consumption_id AND command_id=cid AND project_id=pid;
+  IF ac.id IS NULL THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+  rows=rows||jsonb_build_array(jsonb_build_object('kind','APPROVAL_CONSUMPTION','row',to_jsonb(ac)));
+ END IF;
+ IF c.operation='linkDocumentSource' THEN
+  SELECT * INTO origin FROM anvil.document_source_link_events WHERE project_id=pid AND command_id=cid AND link_version=1;
+  SELECT * INTO h FROM anvil.document_source_links WHERE project_id=pid AND id=e.link_id;
+  IF origin.id IS NULL OR h.id IS NULL OR origin.snapshot_json IS DISTINCT FROM c.result_ref->'data'->'snapshot' OR origin.content_hash IS DISTINCT FROM anvil.fn01_hash(origin.snapshot_json) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+  link=jsonb_build_object('ref',jsonb_build_object('id',h.id,'version',1),'snapshot',jsonb_set(origin.snapshot_json,'{recordedAt}','null'::jsonb));
+  -- head 소유는 최초 LINKED command다. 최신 detach event로 소유를 바꾸지 않는다.
+  rows=rows||jsonb_build_array(jsonb_build_object('kind','LINK_EVENT','row',to_jsonb(origin)),jsonb_build_object('kind','LINK_HEAD','row',anvil.document_source_cost_row('LINK_HEAD',to_jsonb(h),cid)));
+ END IF;
+ IF e.snapshot_json->>'choice'='COLLECT_PROPOSAL' THEN
+  SELECT * INTO im FROM anvil.document_imports WHERE project_id=pid AND command_id=cid;
+  SELECT * INTO dp FROM anvil.document_proposals WHERE project_id=pid AND command_id=cid;
+  SELECT * INTO b FROM anvil.artifacts WHERE project_id=pid AND command_id=cid;
+  IF im.id IS NULL OR dp.id IS NULL OR b.id IS NULL OR im.id::text IS DISTINCT FROM e.snapshot_json->>'importId' OR dp.id::text IS DISTINCT FROM e.snapshot_json->>'proposalId'
+   OR im.candidate_json IS DISTINCT FROM c.result_ref->'data'->'importCandidate' OR im.content_hash IS DISTINCT FROM anvil.fn01_hash(im.candidate_json)
+   OR dp.proposal_json IS DISTINCT FROM c.result_ref->'data'->'proposal' OR dp.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('proposal',dp.proposal_json,'content',dp.content_json,'reason',dp.reason))
+   OR b.id IS DISTINCT FROM dp.diff_artifact_id OR b.state IS DISTINCT FROM 'READY' OR b.media_type IS DISTINCT FROM 'application/json;charset=utf-8'
+   OR b.bytes NOT BETWEEN 0 AND 20971520 OR b.storage_key IS DISTINCT FROM 'blobs/'||pid::text||'/'||b.id::text
+   OR dp.proposal_json->'diffRef' IS DISTINCT FROM jsonb_build_object('artifactId',b.id,'bytes',b.bytes,'contentHash',b.content_hash,'mediaType',b.media_type)
+   OR im.candidate_json->'originalRef' IS DISTINCT FROM e.snapshot_json->'observation'->'snapshot'->'artifactRef'
+   OR im.candidate_json->'extractedContentRef' IS DISTINCT FROM im.candidate_json->'originalRef' OR im.candidate_json->>'status' IS DISTINCT FROM 'READY'
+   OR dp.content_json->'body' IS DISTINCT FROM im.candidate_json->'originalRef' OR dp.reason IS DISTINCT FROM e.snapshot_json->>'reason'
+   OR dp.proposal_json->'baseRef' IS DISTINCT FROM e.snapshot_json->'observation'->'snapshot'->'scope'->'documentRef'
+   OR NOT EXISTS(SELECT 1 FROM anvil.artifacts original WHERE original.project_id=pid AND original.id=im.original_artifact_id AND original.state='READY' AND anvil.fn01_ref(original)=im.candidate_json->'originalRef') THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_COLLECT_INCOMPLETE';END IF;
+  candidate=im.candidate_json;proposal=jsonb_build_object('proposal',dp.proposal_json,'content',dp.content_json,'reason',dp.reason);d=b.bytes;
+  rows=rows||jsonb_build_array(jsonb_build_object('kind','IMPORT','row',to_jsonb(im)),jsonb_build_object('kind','PROPOSAL','row',to_jsonb(dp)),jsonb_build_object('kind','ARTIFACT','row',to_jsonb(b)));
+ ELSE
+  IF e.snapshot_json->'proposalId' IS DISTINCT FROM 'null'::jsonb OR e.snapshot_json->'importId' IS DISTINCT FROM 'null'::jsonb
+   OR EXISTS(SELECT 1 FROM anvil.document_imports WHERE project_id=pid AND command_id=cid) OR EXISTS(SELECT 1 FROM anvil.document_proposals WHERE project_id=pid AND command_id=cid)
+   OR EXISTS(SELECT 1 FROM anvil.artifacts WHERE project_id=pid AND command_id=cid) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_COLLECT_INCOMPLETE';END IF;
+ END IF;
+ SELECT * INTO sh FROM anvil.document_source_observation_heads WHERE project_id=pid AND link_id=e.link_id AND stream_id=e.stream_id;
+ IF sh.link_id IS NULL OR sh.head_version<e.version THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_INCOMPLETE';END IF;
+ -- head 소유는 stream version1 command다. 현재 latest event/command는 귀속에 쓰지 않는다.
+ IF EXISTS(SELECT 1 FROM anvil.document_source_observation_events first_event WHERE first_event.project_id=pid AND first_event.stream_id=e.stream_id AND first_event.version=1 AND first_event.command_id=cid) THEN
+  rows=rows||jsonb_build_array(jsonb_build_object('kind','STREAM_HEAD','row',anvil.document_source_cost_row('STREAM_HEAD',to_jsonb(sh),cid)));
+ END IF;
+ normalized=jsonb_set(e.snapshot_json,'{recordedAt}','null'::jsonb);
+ IF c.operation='linkDocumentSource' THEN normalized=jsonb_set(normalized,'{sourceLinkRef}',e.snapshot_json->'sourceLinkRef'-'contentHash');END IF;
+ record=jsonb_build_object('ref',jsonb_build_object('id',e.stream_id,'version',e.version),'snapshot',normalized);
+ projection=jsonb_build_object('link',link,'record',record,'candidate',candidate,'proposal',proposal);
+ IF e.projection_hash IS DISTINCT FROM anvil.fn01_hash(projection) OR r.plan_json->'parts'->0->>'contentHash' IS DISTINCT FROM e.projection_hash THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_PLAN_CHANGED';END IF;
+ -- 실제 reservation의 현재 원값/NULL을 보존한다. 미래 SETTLED 값을 조작하지 않는다.
+ -- NULL→값/IO_STARTED→SETTLED/정산금액 자리수가 바뀌어도 같은 비용이며 후행 완결에서 재검산한다.
+ rv=to_jsonb(r);
+ rows=rows||jsonb_build_array(jsonb_build_object('kind','RESERVATION','row',anvil.document_source_cost_row('RESERVATION',rv,cid)));
+ IF jsonb_array_length(rows)>10 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_SLOT_LIMIT';END IF;
+ record_projections=rows;diff_bytes=d::text;RETURN NEXT;
+END;$$;
+
+CREATE FUNCTION anvil.document_source_accounting(pid uuid,cid uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x record;r anvil.project_storage_reservations;part jsonb;item jsonb;metadata numeric=0;planned numeric;m numeric;d numeric;b numeric;z numeric;n integer;
+BEGIN
+ SELECT * INTO x FROM anvil.document_source_quota_projection(pid,cid);
+ SELECT * INTO r FROM anvil.project_storage_reservations WHERE project_id=pid AND server_command_id=cid AND part_kind='SOURCE_LINK_EVENT';
+ IF r.id IS NULL THEN SELECT * INTO r FROM anvil.project_storage_reservations WHERE project_id=pid AND part_kind='SOURCE_LINK_EVENT' AND actor_id=(SELECT actor_id FROM anvil.commands WHERE id=cid) AND external_command_id=(SELECT command_id FROM anvil.commands WHERE id=cid);END IF;
+ IF r.id IS NULL OR r.phase NOT IN('IO_STARTED','SETTLED') OR NOT anvil.quota_plan_valid(r.plan_json-'coverageGeneration') THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ part=r.plan_json->'parts'->0;planned=octet_length(convert_to(anvil.fn01_json(x.projection),'UTF8'));m=4*planned+10*65536;
+ b=anvil.quota_decimal(part->'bytes');z=anvil.quota_decimal(part->'reservedBytes');d=z-b;
+ IF d<0 OR d>20971520 OR x.diff_bytes::numeric<>d OR 2*b-z<>m OR part->>'contentHash' IS DISTINCT FROM anvil.fn01_hash(x.projection) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_PLAN_CHANGED';END IF;
+ n=jsonb_array_length(x.record_projections);IF n<1 OR n>10 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_SLOT_LIMIT';END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(x.record_projections) LOOP
+  IF NOT anvil.execution_json_shape(item,ARRAY['kind','row']) OR item->>'kind' NOT IN('SOURCE_EVENT','COMMAND','AUTHORIZATION_RECEIPT','AUDIT','IMPORT','PROPOSAL','RESERVATION','LINK_HEAD','LINK_EVENT','STREAM_HEAD','APPROVAL_CONSUMPTION','ARTIFACT') THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+  b=octet_length(convert_to(anvil.fn01_json(item->'row'),'UTF8'));
+  IF item->>'kind'='SOURCE_EVENT' AND b>65536 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EVENT_LIMIT';END IF;
+  metadata=metadata+b;
+ END LOOP;
+ IF metadata>m OR metadata+d>r.reserved_bytes THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ RETURN jsonb_build_object('recordCount',n,'metadataBytes',metadata::text,'diffBytes',d::text,'actualBytes',(metadata+d)::text,'reservedBytes',r.reserved_bytes::text);
+END;$$;
+
+-- 원 one-part/예전 연산의 조건은 원 함수를 호출한다. 새 SOURCE만 exact식으로 검사한다.
+ALTER FUNCTION anvil.quota_plan_valid(jsonb) RENAME TO quota_plan_valid_before_source;
+CREATE FUNCTION anvil.quota_plan_valid(p jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE x jsonb;b numeric;r numeric;m numeric;d numeric;
+BEGIN
+ IF p->'request'->>'operation' NOT IN('linkDocumentSource','proposeDocumentSourceChange') THEN RETURN anvil.quota_plan_valid_before_source(p);END IF;
+ IF NOT anvil.checkpoint_keys(p,ARRAY['request','actorId','parts','commandHash','policyRef','authorizedUntil','replay','planHash']) OR p->'replay' IS DISTINCT FROM 'false'::jsonb
+  OR jsonb_typeof(p->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(p->'parts')<>1 OR p->>'planHash' IS DISTINCT FROM anvil.fn01_hash(p-'planHash')
+  OR p->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(p->'request') THEN RETURN false;END IF;
+ x=p->'parts'->0;
+ IF NOT anvil.checkpoint_keys(x,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']) OR x->>'kind' IS DISTINCT FROM 'SOURCE_LINK_EVENT'
+  OR x->>'key' IS DISTINCT FROM CASE WHEN p->'request'->>'operation'='linkDocumentSource' THEN 'source_link' ELSE 'source_choice' END
+  OR x->>'id'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR x->>'contentHash'!~'^[0-9a-f]{64}$' OR anvil.quota_decimal(x->'settledBytes')<>0 THEN RETURN false;END IF;
+ b=anvil.quota_decimal(x->'bytes');r=anvil.quota_decimal(x->'reservedBytes');d=r-b;m=2*b-r;
+ RETURN m>=655360 AND r<=10737418240 AND d BETWEEN 0 AND 20971520 AND (p->'request'->>'operation'<>'linkDocumentSource' OR d=0);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_operation_check;
+ALTER TABLE anvil.project_storage_reservations ADD CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject','linkDocumentSource','proposeDocumentSourceChange'));
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_part_kind_check;
+ALTER TABLE anvil.project_storage_reservations ADD CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION','SOURCE_LINK_EVENT'));
+-- 미정착/UNKNOWN에서 held 자동해제 경로를 만들지 않는다. 새 연산의 취소 저장함수는 없다.
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT source_reservation_no_implicit_release CHECK(part_kind<>'SOURCE_LINK_EVENT' OR phase<>'CANCELLED');
+
+-- 다음 quota_current는 원0059 본문+정확두 source 연산 literal이다.
+CREATE OR REPLACE FUNCTION anvil.quota_current(s uuid,a uuid,c uuid,p uuid,q jsonb) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE pv anvil.permission_policy_versions%ROWTYPE;pc anvil.project_control%ROWTYPE;m anvil.project_members%ROWTYPE;rule jsonb;matched boolean=false;approval boolean=false;
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ PERFORM id FROM anvil.projects WHERE id=p AND archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN PERFORM anvil.quota_error('NOT_FOUND');END IF;
+ SELECT * INTO m FROM anvil.project_members WHERE project_id=p AND user_id=a AND revoked_at IS NULL FOR UPDATE;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=p FOR UPDATE;
+ IF m.participation IS DISTINCT FROM 'OWNER' OR pc.actor_id IS DISTINCT FROM a OR pc.client_id IS DISTINCT FROM c OR pc.revoked_at IS NOT NULL THEN PERFORM anvil.quota_error('PROJECT_WRITE_DENIED');END IF;
+ IF NOT anvil.checkpoint_keys(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text OR jsonb_typeof(q->'controlGeneration') IS DISTINCT FROM 'number' OR q->>'controlGeneration' IS DISTINCT FROM pc.generation::text OR jsonb_typeof(q->'operation') IS DISTINCT FROM 'string' OR q->>'operation' NOT IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','linkDocumentSource','proposeDocumentSourceChange') THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ SELECT v.* INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=p FOR SHARE OF h;
+ IF pv.policy_id IS NULL OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN PERFORM anvil.quota_error('POLICY_INTEGRITY_FAILED');END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',a) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p)) AND rule->'operations' ? (q->>'operation') AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF jsonb_typeof(rule->'disposition') IS DISTINCT FROM 'string' OR rule->>'disposition'='DENY' OR rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') THEN PERFORM anvil.quota_error('PROJECT_OPERATION_DENIED');END IF;
+   matched=true;approval=approval OR rule->>'disposition'='REQUIRE_APPROVAL';
+  END IF;
+ END LOOP;
+ IF NOT matched THEN PERFORM anvil.quota_error('PROJECT_OPERATION_DENIED');END IF;
+ IF approval THEN
+  IF q->>'operation'='saveCheckpoint' THEN PERFORM anvil.quota_error('CHECKPOINT_APPROVAL_NOT_CONNECTED');END IF;
+  IF NOT EXISTS(SELECT 1 FROM anvil.approval_requests r JOIN anvil.approval_decisions d ON d.project_id=r.project_id AND d.request_id=r.id
+   WHERE r.project_id=p AND r.id::text=q->'approvalRef'->>'requestId' AND d.id::text=q->'approvalRef'->>'decisionId' AND d.decision='APPROVE' AND ((r.status='APPROVED' AND r.version=2 AND r.expires_at>clock_timestamp() AND NOT EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.decision_id=d.id)) OR(r.status='CONSUMED' AND r.version=3 AND EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.commands used ON used.id=ac.command_id AND used.project_id=ac.project_id WHERE ac.project_id=p AND ac.decision_id=d.id AND used.actor_id=a AND used.client_id=c AND used.command_id::text=q->>'commandId' AND used.request_hash=anvil.fn01_hash(q) AND used.approval_consumption_id=ac.id AND used.state='APPLIED')))
+   AND r.created_by=a AND r.client_id=c AND r.candidate_command_id::text=q->>'commandId' AND r.scope_digest=q->'approvalRef'->>'scopeDigest' AND d.scope_digest=r.scope_digest
+   AND r.scope_digest=anvil.fn01_hash(r.action_scope_json) AND r.action_scope_json->>'operation'=q->>'operation' AND r.action_scope_json->>'payloadHash'=anvil.fn01_hash(q->'payload')
+   AND r.action_scope_json->'expectedVersion'=q->'expectedVersion' AND r.action_scope_json->'controlGeneration'=q->'controlGeneration' AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',a,'clientId',c) AND r.action_scope_json->'baselineRefs'=q->'baselineRefs' AND r.action_scope_json->'environmentRef'='null'::jsonb AND r.action_scope_json->'sourceScopes'='[]'::jsonb AND r.action_scope_json->'limitsRef'='null'::jsonb AND COALESCE(r.action_scope_json->'targetRef'->>'id','')=COALESCE(q->>'targetId','') AND r.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash)
+   ) THEN PERFORM anvil.quota_error('APPROVAL_NOT_USABLE');END IF;
+ ELSE IF q->'approvalRef' IS DISTINCT FROM 'null'::jsonb THEN PERFORM anvil.quota_error('APPROVAL_NOT_REQUIRED');END IF;END IF;
+END;$$;
+
+CREATE FUNCTION anvil.document_source_capacity(p uuid,extra_metadata numeric,extra_slots bigint,extra_total numeric) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts;r anvil.project_storage_reservations;x jsonb;b numeric=0;n bigint=0;others numeric;
+BEGIN
+ PERFORM id FROM anvil.projects WHERE id=p FOR UPDATE;SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF ac.project_id IS NULL OR ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ FOR r IN SELECT * FROM anvil.project_storage_reservations WHERE project_id=p AND part_kind='SOURCE_LINK_EVENT' LOOP
+  IF r.phase='SETTLED' THEN x=anvil.document_source_accounting(p,r.server_command_id);b=b+(x->>'metadataBytes')::numeric;n=n+(x->>'recordCount')::bigint;
+  ELSIF r.phase IN('RESERVED','IO_STARTED','UNKNOWN') THEN b=b+2*anvil.quota_decimal(r.plan_json->'parts'->0->'bytes')-r.reserved_bytes;n=n+10;
+  ELSE RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_PROJECTION_INVALID';END IF;
+ END LOOP;
+ IF b+extra_metadata>67108864 OR n+extra_slots>10000 THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EVENT_LIMIT';END IF;
+ -- Source 실제/예약 bytes는 이미 U/H에 있다. 같은 bytes를 이 other 소계에 더하지 않는다.
+ SELECT COALESCE((SELECT sum(canonical_bytes) FROM anvil.connection_definition_versions WHERE project_id=p),0)
+  +COALESCE((SELECT sum(canonical_bytes) FROM anvil.definition_capability_reports WHERE project_id=p),0)
+  +COALESCE((SELECT sum(canonical_bytes+evidence_bytes) FROM anvil.environment_configuration_versions WHERE project_id=p),0)
+  +COALESCE((SELECT sum(canonical_bytes) FROM anvil.environment_approval_candidates WHERE project_id=p),0)
+  +COALESCE((SELECT sum(canonical_bytes) FROM anvil.native_preparation_authorities WHERE project_id=p),0)
+  +COALESCE((SELECT sum(canonical_bytes) FROM anvil.native_preparation_authority_events WHERE project_id=p),0) INTO others;
+ IF ac.used_bytes+ac.held_bytes+others+extra_total>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+END;$$;
+ALTER FUNCTION anvil.quota_reserve(uuid,uuid,uuid,uuid,jsonb) RENAME TO quota_reserve_before_source;
+CREATE FUNCTION anvil.quota_reserve(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x jsonb;b numeric;r numeric;already boolean;
+BEGIN
+ IF v->'request'->>'operation' IN('linkDocumentSource','proposeDocumentSourceChange') THEN
+  IF NOT anvil.quota_plan_valid(v) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INPUT_INVALID';END IF;
+  PERFORM anvil.quota_current(s,a,c,p,v->'request');
+  SELECT EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE project_id=p AND actor_id=a AND external_command_id=(v->'request'->>'commandId')::uuid) INTO already;
+  x=v->'parts'->0;b=anvil.quota_decimal(x->'bytes');r=anvil.quota_decimal(x->'reservedBytes');
+  PERFORM anvil.document_source_capacity(p,CASE WHEN already THEN 0 ELSE 2*b-r END,CASE WHEN already THEN 0 ELSE 10 END,CASE WHEN already THEN 0 ELSE r END);
+ END IF;
+ RETURN anvil.quota_reserve_before_source(s,a,c,p,v);
+END;$$;
+ALTER FUNCTION anvil.quota_settled_complete(anvil.project_storage_reservations) RENAME TO quota_settled_complete_before_source;
+CREATE FUNCTION anvil.quota_settled_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;ar anvil.authorization_receipts;x jsonb;
+BEGIN
+ IF r.part_kind IS DISTINCT FROM 'SOURCE_LINK_EVENT' THEN RETURN anvil.quota_settled_complete_before_source(r);END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=r.project_id AND id=r.server_command_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE command_id=c.id AND id=r.authorization_receipt_id;
+ IF r.phase IS DISTINCT FROM 'SETTLED' OR r.start_fence<>1 OR c.id IS NULL OR ar.id IS NULL OR NOT anvil.document_source_admission(c.id)
+  OR r.command_hash IS DISTINCT FROM c.request_hash OR r.external_command_id IS DISTINCT FROM c.command_id OR r.actor_id IS DISTINCT FROM c.actor_id OR r.client_id IS DISTINCT FROM c.client_id
+  OR r.authorization_receipt_id IS DISTINCT FROM c.authorization_receipt_id OR r.scope_digest IS DISTINCT FROM ar.scope_digest OR ar.policy_ref IS DISTINCT FROM c.policy_ref
+  OR r.plan_json->'request' IS DISTINCT FROM anvil.document_source_request(c) OR r.plan_hash IS DISTINCT FROM r.plan_json->>'planHash' OR r.plan_json->'policyRef' IS DISTINCT FROM c.policy_ref
+  OR r.part_key IS DISTINCT FROM r.plan_json->'parts'->0->>'key' OR r.reserved_bytes IS DISTINCT FROM anvil.quota_decimal(r.plan_json->'parts'->0->'reservedBytes') THEN RETURN false;END IF;
+ x=anvil.document_source_accounting(r.project_id,c.id);RETURN r.settled_bytes=(x->>'actualBytes')::bigint;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.quota_settle(uuid,uuid,uuid,uuid,jsonb) RENAME TO quota_settle_before_source;
+CREATE FUNCTION anvil.quota_settle(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations;x jsonb;charge bigint;cmd anvil.commands;
+BEGIN
+ IF v->'request'->>'operation' NOT IN('linkDocumentSource','proposeDocumentSourceChange') THEN RETURN anvil.quota_settle_before_source(s,a,c,p,v);END IF;
+ r=anvil.quota_check_bundle(s,a,c,p,v,'IO_STARTED');
+ SELECT * INTO cmd FROM anvil.commands WHERE project_id=p AND id=(v->'facts'->>'serverCommandId')::uuid;
+ IF cmd.id IS NULL OR cmd.actor_id IS DISTINCT FROM a OR cmd.client_id IS DISTINCT FROM c OR cmd.request_hash IS DISTINCT FROM r.command_hash THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN';END IF;
+ PERFORM anvil.document_source_current(cmd.id);
+ x=anvil.document_source_accounting(p,cmd.id);
+ IF v->'sourceAccounting' IS DISTINCT FROM x THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN';END IF;
+ charge=(x->>'actualBytes')::bigint;
+ r.phase='SETTLED';r.settled_bytes=charge;r.server_command_id=cmd.id;r.authorization_receipt_id=(v->'facts'->>'authorizationReceiptId')::uuid;r.scope_digest=v->'facts'->>'scopeDigest';r.settled_at=clock_timestamp();
+ IF NOT anvil.quota_settled_complete(r) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ UPDATE anvil.project_storage_reservations SET phase=r.phase,settled_bytes=r.settled_bytes,server_command_id=r.server_command_id,authorization_receipt_id=r.authorization_receipt_id,scope_digest=r.scope_digest,settled_at=r.settled_at WHERE id=r.id;
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes-r.reserved_bytes,used_bytes=used_bytes+charge,updated_at=clock_timestamp() WHERE project_id=p;
+ PERFORM anvil.document_source_capacity(p,0,0,0);RETURN true;
+END;$$;
+ALTER FUNCTION anvil.quota_complete(uuid) RENAME TO quota_complete_before_source;
+CREATE FUNCTION anvil.quota_complete(p uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT anvil.quota_complete_before_source(p) THEN RETURN false;END IF;
+ RETURN NOT EXISTS(SELECT 1 FROM anvil.document_source_observation_events e WHERE e.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.server_command_id=e.command_id AND r.part_kind='SOURCE_LINK_EVENT' AND r.phase='SETTLED'));
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_source;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,scope jsonb) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+BEGIN
+ IF scope->>'operation'='linkDocumentSource' THEN RETURN scope->'targetRef'='null'::jsonb AND scope->'expectedVersion'='0'::jsonb AND scope->>'payloadHash'~'^[0-9a-f]{64}$';END IF;
+ IF scope->>'operation'='proposeDocumentSourceChange' THEN
+  RETURN scope->'expectedVersion'='1'::jsonb AND EXISTS(SELECT 1 FROM anvil.document_source_links h JOIN anvil.document_source_link_events e ON e.project_id=h.project_id AND e.link_id=h.id AND e.link_version=1
+   WHERE h.project_id=pid AND h.state='ACTIVE' AND h.link_version=1 AND h.current_event_id=e.id AND e.content_hash=anvil.fn01_hash(e.snapshot_json)
+   AND scope->'targetRef'=jsonb_build_object('id',h.id,'version',1,'contentHash',e.content_hash));
+ END IF;RETURN anvil.connection_candidate_approval_target_before_source(pid,scope);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_source;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;r anvil.approval_requests;d anvil.approval_decisions;q jsonb;expected jsonb;s jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.operation NOT IN('linkDocumentSource','proposeDocumentSourceChange') THEN RETURN anvil.one_time_consumption_command_before_source(pid,cid,did);END IF;
+ SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=did;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;
+ q=anvil.document_source_request(c);s=c.result_ref->'data'->'sourceEvent'->'snapshot';
+ IF q IS NULL OR NOT anvil.document_source_admission(cid) OR c.approval_consumption_id IS NULL OR d.id IS NULL OR r.id IS NULL
+  OR r.version<>2 OR r.status IS DISTINCT FROM 'APPROVED' OR d.decision IS DISTINCT FROM 'APPROVE' OR d.request_version<>1
+  OR d.decided_by IS DISTINCT FROM c.actor_id OR d.client_id IS DISTINCT FROM c.client_id OR d.control_generation IS DISTINCT FROM c.control_generation
+  OR r.created_by IS DISTINCT FROM c.actor_id OR r.client_id IS DISTINCT FROM c.client_id OR r.candidate_command_id IS DISTINCT FROM c.command_id
+  OR r.required_decider_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id) OR r.policy_ref IS DISTINCT FROM c.policy_ref
+  OR d.decision_json->'policyRef' IS DISTINCT FROM c.policy_ref OR r.scope_digest IS DISTINCT FROM d.scope_digest OR r.scope_digest IS DISTINCT FROM anvil.fn01_hash(r.action_scope_json)
+  OR r.expires_at<=clock_timestamp() OR r.request_json->>'controlGeneration' IS DISTINCT FROM c.control_generation::text
+  OR q->'approvalRef' IS DISTINCT FROM jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest)
+  OR c.payload_ref IS DISTINCT FROM jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.fn01_hash(q->'payload'),'scopeDigest',r.scope_digest)
+  OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+  OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.approval_decision_ref=did) THEN RETURN false;END IF;
+ expected=jsonb_build_object('operation',c.operation,'targetRef',CASE WHEN c.operation='linkDocumentSource' THEN 'null'::jsonb ELSE s->'sourceLinkRef' END,
+  'expectedVersion',c.expected_version,'payloadHash',anvil.fn01_hash(q->'payload'),'baselineRefs','[]'::jsonb,'environmentRef','null'::jsonb,'sourceScopes','[]'::jsonb,'limitsRef','null'::jsonb,
+  'requestedSubjectRef',jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id),'controlGeneration',c.control_generation);
+ IF r.action_scope_json IS DISTINCT FROM expected OR NOT anvil.connection_candidate_approval_target_valid(pid,expected) THEN RETURN false;END IF;
+ PERFORM anvil.quota_current((s->'observation'->'snapshot'->'scope'->>'humanSessionId')::uuid,c.actor_id,c.client_id,pid,q);RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+-- 원 trigger 본문을 그대로 뒤에 보존한다.
+CREATE OR REPLACE FUNCTION anvil.guard_project_artifact_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+
+  IF current_user='anvil_v3_app' AND EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id=NEW.command_id AND c.operation='proposeDocumentSourceChange') THEN
+   PERFORM anvil.document_source_current(NEW.command_id);
+   IF NEW.draft_id IS NOT NULL OR NEW.project_id IS NULL OR NEW.state IS DISTINCT FROM 'READY' OR NEW.bytes NOT BETWEEN 0 AND 20971520
+    OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.storage_key IS DISTINCT FROM 'blobs/'||NEW.project_id::text||'/'||NEW.id::text OR NEW.media_type IS DISTINCT FROM 'application/json;charset=utf-8'
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'choice'='COLLECT_PROPOSAL'
+     AND c.result_ref->'data'->'proposal'->'diffRef'=jsonb_build_object('artifactId',NEW.id,'bytes',NEW.bytes,'contentHash',NEW.content_hash,'mediaType',NEW.media_type)) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_DIFF_REQUIRED';END IF;
+   RETURN NEW;
+  END IF;
+  IF current_user<>'anvil_v3_app' THEN RETURN NEW; END IF;
+  IF NEW.project_id IS NULL OR NEW.draft_id IS NOT NULL OR NEW.state<>'READY'
+    OR NEW.storage_key IS DISTINCT FROM 'blobs/'||NEW.project_id::text||'/'||NEW.id::text
+    OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true)
+    OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.project_control pc ON pc.project_id=c.project_id
+      JOIN anvil.permission_policies p ON p.project_id=c.project_id
+      JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='PROJECT' AND r.scope_id=c.project_id
+      WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.actor_id=NEW.created_by AND c.client_id=NEW.client_id
+        AND c.state='APPLIED' AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.revoked_at IS NULL AND pc.generation=c.control_generation
+        AND c.policy_ref->>'id'=p.id::text AND (c.policy_ref->>'version')::bigint=p.head_version AND r.policy_ref=c.policy_ref
+        AND ((c.operation='uploadArtifact' AND c.result_ref->'data'->'artifactRef'=jsonb_build_object('artifactId',NEW.id,'contentHash',NEW.content_hash,'bytes',NEW.bytes,'mediaType',NEW.media_type))
+          OR (c.operation='proposeDocumentChange' AND NEW.media_type='application/json;charset=utf-8' AND c.result_ref->'data'->>'status'='PROPOSAL_RECORDED'
+            AND c.result_ref->'data'->'proposal'->'diffRef'=jsonb_build_object('artifactId',NEW.id,'contentHash',NEW.content_hash,'bytes',NEW.bytes,'mediaType',NEW.media_type)))) THEN
+    RAISE EXCEPTION 'PROJECT_ARTIFACT_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_document_import_write() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE command_row anvil.commands%ROWTYPE; candidate anvil.document_imports%ROWTYPE;
+BEGIN
+
+  IF current_user='anvil_v3_app' AND TG_TABLE_NAME='document_imports' AND EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id=NEW.command_id AND c.operation='proposeDocumentSourceChange') THEN
+   PERFORM anvil.document_source_current(NEW.command_id);
+   IF NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(NEW.candidate_json)
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.artifacts b ON b.project_id=c.project_id AND b.id=NEW.original_artifact_id AND b.state='READY'
+     WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'choice'='COLLECT_PROPOSAL'
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'importId'=NEW.id::text AND c.result_ref->'data'->'importCandidate'=NEW.candidate_json
+     AND NEW.candidate_json->>'id'=NEW.id::text AND NEW.candidate_json->>'status'='READY' AND NEW.candidate_json->'originalRef'=anvil.fn01_ref(b)
+     AND NEW.candidate_json->'extractedContentRef'=anvil.fn01_ref(b) AND c.result_ref->'data'->'sourceEvent'->'snapshot'->'observation'->'snapshot'->'artifactRef'=anvil.fn01_ref(b)
+     AND NEW.candidate_json->'intendedFormRef'=jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash)) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_IMPORT_REQUIRED';END IF;
+   RETURN NEW;
+  END IF;
+  IF current_user<>'anvil_v3_app' THEN RETURN NEW; END IF;
+  SELECT c.* INTO command_row FROM anvil.commands c
+    JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+    JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+    JOIN anvil.projects pr ON pr.id=c.project_id AND pr.archived_at IS NULL
+    JOIN anvil.permission_policies p ON p.project_id=c.project_id AND p.id::text=c.policy_ref->>'id' AND p.head_version=(c.policy_ref->>'version')::bigint
+    JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='PROJECT' AND r.scope_id=c.project_id AND r.policy_ref=c.policy_ref
+    WHERE c.id=NEW.command_id AND c.state='APPLIED' AND c.project_id=NEW.project_id AND c.actor_id=NEW.created_by AND c.client_id=NEW.client_id
+      AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true);
+  IF command_row.id IS NULL THEN RAISE EXCEPTION 'IMPORT_AUTHORIZATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF TG_TABLE_NAME='document_imports' THEN
+    IF command_row.operation<>'importDocument' OR command_row.expected_version<>0
+      OR command_row.result_ref->'data'->'candidate' IS DISTINCT FROM NEW.candidate_json
+      OR NEW.candidate_json->>'id' IS DISTINCT FROM NEW.id::text
+      OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.original_artifact_id AND a.state='READY'
+        AND NEW.candidate_json->'originalRef'=jsonb_build_object('artifactId',a.id,'bytes',a.bytes,'contentHash',a.content_hash,'mediaType',a.media_type))
+      OR NEW.candidate_json->'intendedFormRef' IS DISTINCT FROM (CASE WHEN NEW.form_definition_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash) END)
+      THEN RAISE EXCEPTION 'IMPORT_CANDIDATE_REQUIRED' USING ERRCODE='42501'; END IF;
+  ELSE
+    SELECT * INTO candidate FROM anvil.document_imports WHERE project_id=NEW.project_id AND id=NEW.import_id;
+    IF command_row.operation<>'saveDocumentDraft' OR command_row.result_ref->'data'->>'importCandidateRef' IS DISTINCT FROM NEW.import_id::text
+      OR command_row.result_ref->>'targetId' IS DISTINCT FROM NEW.document_id::text OR (command_row.result_ref->>'version')::bigint IS DISTINCT FROM NEW.version
+      OR candidate.candidate_json->>'status' IS DISTINCT FROM 'READY'
+      OR NOT EXISTS(SELECT 1 FROM anvil.document_artifact_links l WHERE l.project_id=NEW.project_id AND l.document_id=NEW.document_id AND l.version=NEW.version AND l.artifact_id=candidate.original_artifact_id)
+      THEN RAISE EXCEPTION 'IMPORT_EXPLICIT_SELECTION_REQUIRED' USING ERRCODE='42501'; END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_document_proposal_write() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE proposal anvil.document_proposals%ROWTYPE;
+BEGIN
+
+  IF current_user='anvil_v3_app' AND TG_TABLE_NAME='document_proposals' AND EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id=NEW.command_id AND c.operation='proposeDocumentSourceChange') THEN
+   PERFORM anvil.document_source_current(NEW.command_id);
+   IF NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('proposal',NEW.proposal_json,'content',NEW.content_json,'reason',NEW.reason))
+    OR NEW.content_json->'sections' IS DISTINCT FROM '[]'::jsonb OR NEW.content_json->'sourceRefs' IS DISTINCT FROM '[]'::jsonb
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.documents h ON h.project_id=c.project_id AND h.id=NEW.document_id AND h.head_version=NEW.base_version
+     JOIN anvil.document_versions d ON d.project_id=h.project_id AND d.document_id=h.id AND d.version=NEW.base_version AND d.content_hash=NEW.base_hash
+     JOIN anvil.artifacts b ON b.project_id=c.project_id AND b.id=NEW.diff_artifact_id AND b.command_id=c.id AND b.state='READY'
+     WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'choice'='COLLECT_PROPOSAL'
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'proposalId'=NEW.id::text AND c.result_ref->'data'->'proposal'=NEW.proposal_json
+     AND NEW.proposal_json->>'id'=NEW.id::text AND NEW.proposal_json->>'status'='PENDING' AND NEW.proposal_json->'baseRef'=jsonb_build_object('id',NEW.document_id,'version',NEW.base_version,'contentHash',NEW.base_hash)
+     AND NEW.proposal_json->'diffRef'=anvil.fn01_ref(b) AND NEW.content_json->'attachments'=d.content_json->'attachments'
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->'observation'->'snapshot'->'artifactRef'=NEW.content_json->'body'
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'reason'=NEW.reason) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_PROPOSAL_REQUIRED';END IF;
+   RETURN NEW;
+  END IF;
+  IF current_user<>'anvil_v3_app' THEN RETURN NEW; END IF;
+  IF NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true)
+    OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) THEN RAISE EXCEPTION 'PROPOSAL_AUTHORIZATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF TG_TABLE_NAME='document_proposals' THEN
+    IF NOT anvil.document_command_authorized(NEW.project_id,NEW.document_id,NEW.base_version,'proposeDocumentChange')
+      OR NOT EXISTS(SELECT 1 FROM anvil.documents d JOIN anvil.commands c ON c.id=NEW.command_id
+        WHERE d.project_id=NEW.project_id AND d.id=NEW.document_id AND d.head_version=NEW.base_version
+          AND c.result_ref->'data'->'proposal'=NEW.proposal_json AND NEW.proposal_json->>'id'=NEW.id::text
+          AND NEW.proposal_json->'baseRef'=jsonb_build_object('id',NEW.document_id,'version',NEW.base_version,'contentHash',NEW.base_hash))
+      OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.diff_artifact_id AND a.command_id=NEW.command_id
+        AND NEW.proposal_json->'diffRef'=jsonb_build_object('artifactId',a.id,'contentHash',a.content_hash,'bytes',a.bytes,'mediaType',a.media_type))
+      OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.body_artifact_id AND a.state='READY'
+        AND NEW.content_json->'body'=jsonb_build_object('artifactId',a.id,'contentHash',a.content_hash,'bytes',a.bytes,'mediaType',a.media_type))
+      THEN RAISE EXCEPTION 'PROPOSAL_EXACT_RECEIPT_REQUIRED' USING ERRCODE='42501'; END IF;
+  ELSE
+    SELECT * INTO proposal FROM anvil.document_proposals WHERE project_id=NEW.project_id AND id=NEW.proposal_id;
+    IF NOT anvil.document_command_authorized(NEW.project_id,NEW.document_id,NEW.version,'saveDocumentDraft')
+      OR proposal.document_id IS DISTINCT FROM NEW.document_id OR proposal.base_version+1 IS DISTINCT FROM NEW.version
+      OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.document_versions v ON v.project_id=NEW.project_id AND v.document_id=NEW.document_id AND v.version=NEW.version
+        WHERE c.id=NEW.command_id AND c.result_ref->'data'->>'proposalRef'=NEW.proposal_id::text AND v.content_json=proposal.content_json)
+      THEN RAISE EXCEPTION 'PROPOSAL_EXPLICIT_SELECTION_REQUIRED' USING ERRCODE='42501'; END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_document_source_detach() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands%ROWTYPE;h anvil.document_source_links%ROWTYPE;e anvil.document_source_link_events%ROWTYPE;old_event anvil.document_source_link_events%ROWTYPE;s jsonb;reference jsonb;payload jsonb;
+BEGIN
+
+ IF current_user='anvil_v3_app' AND EXISTS(SELECT 1 FROM anvil.commands cmd WHERE cmd.id::text=current_setting('anvil.command_id',true) AND cmd.operation='linkDocumentSource') THEN
+  SELECT * INTO c FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);PERFORM anvil.document_source_current(c.id);s=c.result_ref->'data'->'snapshot';reference=c.result_ref->'data'->'ref';
+  IF TG_OP<>'INSERT' OR NEW.project_id IS DISTINCT FROM c.project_id THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_INITIAL_LINK_REQUIRED';END IF;
+  IF TG_TABLE_NAME='document_source_links' THEN
+   IF NEW.id::text IS DISTINCT FROM reference->>'id' OR NEW.link_version<>1 OR NEW.state IS DISTINCT FROM 'ACTIVE'
+    OR NEW.document_id::text IS DISTINCT FROM s->'documentRef'->>'id' OR NEW.version::text IS DISTINCT FROM s->'documentRef'->>'version'
+    OR NEW.source_root_id::text IS DISTINCT FROM s->>'sourceRootId' OR NEW.relative_path IS DISTINCT FROM s->>'relativePath'
+    OR NEW.source_snapshot_ref IS DISTINCT FROM s->'sourceSnapshotRef' OR NEW.blob_hash IS DISTINCT FROM s->>'blobHash'
+    OR NEW.linked_at IS DISTINCT FROM (s->>'recordedAt')::timestamptz OR NEW.updated_at IS DISTINCT FROM NEW.linked_at THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_INITIAL_LINK_REQUIRED';END IF;
+  ELSE
+   IF NEW.link_id::text IS DISTINCT FROM reference->>'id' OR NEW.link_version<>1 OR NEW.snapshot_json IS DISTINCT FROM s OR NEW.content_hash IS DISTINCT FROM reference->>'contentHash'
+    OR NEW.command_id IS DISTINCT FROM c.id OR NEW.created_at IS DISTINCT FROM (s->>'recordedAt')::timestamptz
+    OR NOT EXISTS(SELECT 1 FROM anvil.document_source_links h WHERE h.project_id=NEW.project_id AND h.id=NEW.link_id AND h.current_event_id=NEW.id AND h.link_version=1 AND h.state='ACTIVE') THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_INITIAL_LINK_REQUIRED';END IF;
+  END IF;RETURN NEW;
+ END IF;
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_OP NOT IN('INSERT','UPDATE') OR NOT anvil.document_source_detach_authorized(NEW.project_id) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_DETACH_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);
+ IF TG_TABLE_NAME='document_source_link_events' THEN
+  IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EVENT_IMMUTABLE' USING ERRCODE='42501';END IF;
+  e=NEW;SELECT * INTO h FROM anvil.document_source_links WHERE project_id=e.project_id AND id=e.link_id FOR UPDATE;
+  SELECT * INTO old_event FROM anvil.document_source_link_events WHERE project_id=h.project_id AND id=h.current_event_id AND link_id=h.id AND link_version=h.link_version;
+  IF h.id IS NULL OR h.link_version<>1 OR h.state<>'ACTIVE' OR old_event.id IS NULL OR old_event.link_version<>1
+   OR old_event.snapshot_json->>'kind' IS DISTINCT FROM 'LINKED' OR old_event.snapshot_json->>'state' IS DISTINCT FROM 'ACTIVE'
+   OR old_event.snapshot_json->'previousRef' IS DISTINCT FROM 'null'::jsonb OR old_event.content_hash IS DISTINCT FROM anvil.execution_json_hash(old_event.snapshot_json)
+   THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_CURRENT_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSE
+  h=OLD;SELECT * INTO e FROM anvil.document_source_link_events WHERE project_id=NEW.project_id AND id=NEW.current_event_id AND link_id=NEW.id AND link_version=NEW.link_version;
+  SELECT * INTO old_event FROM anvil.document_source_link_events WHERE project_id=h.project_id AND id=h.current_event_id AND link_id=h.id AND link_version=1;
+  IF TG_OP<>'UPDATE' OR h.link_version<>1 OR h.state<>'ACTIVE' OR NEW.link_version<>2 OR NEW.state<>'DETACHED' OR e.id IS NULL
+   OR (to_jsonb(NEW)-ARRAY['link_version','state','current_event_id','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['link_version','state','current_event_id','updated_at'])
+   OR NEW.updated_at IS DISTINCT FROM e.created_at THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ s=e.snapshot_json;reference=jsonb_build_object('id',h.id,'version',2,'contentHash',e.content_hash);
+ payload=jsonb_build_object('sourceLinkRef',jsonb_build_object('id',h.id,'version',1,'contentHash',old_event.content_hash),'reason',s->'reason');
+ IF NOT anvil.execution_json_shape(s,ARRAY['projectId','documentRef','sourceRootId','relativePath','sourceSnapshotRef','blobHash','reason','kind','state','previousRef','recordedAt'])
+  OR e.link_version<>2 OR e.command_id IS DISTINCT FROM c.id OR e.created_at IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+  OR e.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(s))>2097152
+  OR s->>'projectId' IS DISTINCT FROM h.project_id::text OR s->>'kind' IS DISTINCT FROM 'DETACHED' OR s->>'state' IS DISTINCT FROM 'DETACHED'
+  OR s->'previousRef' IS DISTINCT FROM payload->'sourceLinkRef'
+  OR (s-ARRAY['kind','state','previousRef','reason','recordedAt']) IS DISTINCT FROM (old_event.snapshot_json-ARRAY['kind','state','previousRef','reason','recordedAt'])
+  OR (s->>'recordedAt')::timestamptz IS DISTINCT FROM e.created_at OR e.created_at<old_event.created_at
+  OR NOT anvil.result_text_valid(s->'reason',20000) OR NOT anvil.assignment_content_reason(s->>'reason') OR NOT anvil.result_texts_safe(s)
+  OR s->>'relativePath' IS DISTINCT FROM h.relative_path OR s->>'sourceRootId' IS DISTINCT FROM h.source_root_id::text
+  OR s->'sourceSnapshotRef' IS DISTINCT FROM h.source_snapshot_ref OR s->>'blobHash' IS DISTINCT FROM h.blob_hash
+  OR NOT EXISTS(SELECT 1 FROM anvil.document_versions v WHERE v.project_id=h.project_id AND v.document_id=h.document_id AND v.version=h.version
+   AND s->'documentRef'=jsonb_build_object('id',v.document_id,'version',v.version,'contentHash',v.content_hash))
+  OR c.result_ref->>'targetId' IS DISTINCT FROM h.id::text OR c.result_ref->'version' IS DISTINCT FROM '2'::jsonb
+  OR c.result_ref->'data' IS DISTINCT FROM jsonb_build_object('ref',reference,'status','DOCUMENT_SOURCE_DETACHED','snapshot',s)
+  OR c.request_hash IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',c.project_id,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','detachDocumentSource','targetId',h.id,'expectedVersion',1,'baselineRefs','[]'::jsonb,'approvalRef',CASE WHEN c.approval_consumption_id IS NULL THEN 'null'::jsonb ELSE (
+   SELECT jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest)
+   FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id
+   JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id
+   WHERE ac.id=c.approval_consumption_id AND ac.project_id=c.project_id AND ac.command_id=c.id) END,'payload',payload))
+  THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_DETACH_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER source_link_initial_guard BEFORE INSERT ON anvil.document_source_links FOR EACH ROW EXECUTE FUNCTION anvil.guard_document_source_detach();
+GRANT INSERT ON anvil.document_source_links TO anvil_v3_app;
+
+CREATE FUNCTION anvil.document_source_observation_complete() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;cid uuid;e anvil.document_source_observation_events;h anvil.document_source_observation_heads;n bigint;latest bigint;x jsonb;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN IF NEW.operation NOT IN('linkDocumentSource','proposeDocumentSourceChange') OR NEW.state<>'APPLIED' THEN RETURN NULL;END IF;p=NEW.project_id;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='document_source_observation_events' THEN p=NEW.project_id;cid=NEW.command_id;
+ ELSE p=NEW.project_id;SELECT command_id INTO cid FROM anvil.document_source_observation_events WHERE project_id=p AND stream_id=NEW.stream_id AND version=NEW.head_version;END IF;
+ SELECT * INTO e FROM anvil.document_source_observation_events WHERE project_id=p AND command_id=cid;
+ IF e.id IS NULL OR NOT anvil.document_source_admission(cid) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_COMMAND_INCOMPLETE';END IF;
+ SELECT * INTO h FROM anvil.document_source_observation_heads WHERE project_id=p AND link_id=e.link_id;
+ SELECT count(*),max(version) INTO n,latest FROM anvil.document_source_observation_events WHERE project_id=p AND stream_id=e.stream_id;
+ IF h.link_id IS NULL OR h.stream_id IS DISTINCT FROM e.stream_id OR h.head_version IS DISTINCT FROM latest OR n IS DISTINCT FROM latest OR NOT EXISTS(SELECT 1 FROM anvil.document_source_observation_events last_event WHERE last_event.project_id=p AND last_event.stream_id=h.stream_id AND last_event.version=h.head_version AND last_event.content_hash=h.head_hash) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_HEAD_INCOMPLETE';END IF;
+ x=anvil.document_source_accounting(p,cid);
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.server_command_id=cid AND r.part_kind='SOURCE_LINK_EVENT' AND r.phase='SETTLED' AND anvil.quota_settled_complete(r)) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_QUOTA_INCOMPLETE';END IF;
+ PERFORM anvil.document_source_capacity(p,0,0,0);RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER source_observation_complete AFTER INSERT ON anvil.document_source_observation_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.document_source_observation_complete();
+CREATE CONSTRAINT TRIGGER source_observation_head_complete AFTER INSERT OR UPDATE ON anvil.document_source_observation_heads DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.document_source_observation_complete();
+CREATE CONSTRAINT TRIGGER source_observation_command_complete AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.document_source_observation_complete();
+-- 기존 import/proposal/artifact guard의 새 분기는 동일 cid에만 한정된다. 기존 호출은 원 본문이다.
+-- source 실제 행 역참조는 command/event/head 및 기존 quota/artifact 최종 trigger에서 함께 닫힌다.
+REVOKE ALL ON FUNCTION anvil.guard_document_source_observation(),anvil.document_source_cost_row(text,jsonb,uuid),anvil.document_source_accounting(uuid,uuid),anvil.document_source_capacity(uuid,numeric,bigint,numeric),anvil.document_source_observation_complete() FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.document_source_quota_projection(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.document_source_quota_projection(uuid,uuid) TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.quota_plan_valid(jsonb),anvil.quota_settled_complete(anvil.project_storage_reservations),anvil.quota_complete(uuid),anvil.quota_current(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.quota_reserve(uuid,uuid,uuid,uuid,jsonb),anvil.quota_settle(uuid,uuid,uuid,uuid,jsonb),anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.quota_reserve(uuid,uuid,uuid,uuid,jsonb),anvil.quota_settle(uuid,uuid,uuid,uuid,jsonb),anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) TO anvil_v3_app;
+-- 기존 INVOKER trigger의 source 분기가 호출한다. 원 receipt/세션/제어/정책을 내부 재검산하며 공개 HTTP/권한 입력은 없다.
+GRANT EXECUTE ON FUNCTION anvil.document_source_request(anvil.commands),anvil.document_source_admission(uuid),anvil.document_source_current(uuid) TO anvil_v3_app;
+-- payload 복제표(S의 요소별 상한):
+-- record: command.result.snapshot + command.result.sourceEvent + SOURCE_EVENT.snapshot =3회, reservation.request의 원 reason 등 최대1회 추가.
+-- link: command.result.snapshot + LINK_EVENT.snapshot =2회, LINK_HEAD의 root/path/ref는 부분복제. record내 linkRef는 고정 ref다.
+-- candidate: command.result.importCandidate + IMPORT.candidate_json =2회.
+-- proposal: PROPOSAL의 전체 content/reason1회 + command.result.proposal의 작은 ref 부분1회. diff payload는 D로 별도계상한다.
+-- 물리행: LINK 최대9(공통4+승인1+legacy2+streamhead1+reservation1),
+-- KEEP 최대7(공통4+승인1+첫streamhead1+reservation1), COLLECT 최대10(공통4+승인1+import/proposal/artifact3+첫streamhead1+reservation1).
+-- 4S+640KiB는 최종 실제 행 합계<=M 검산과 함께만 사용하며 이 표만으로 source/실DB 지원을 인증하지 않는다.
+COMMIT;

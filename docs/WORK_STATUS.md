@@ -13176,3 +13176,65 @@ git diff --check
 - 96331e 수동UUID입력 반례→26bc39 React1PASS/type0, 5e3f63 실제React rootGET→환경→보호후보→경로/시각 선택1PASS로 draft에 exact refs/hash를 내부결박했다. POST/원문조회0·실제서비스/사용자화면 인수증거 아님. 원문 없는 metadata에서 blob/Artifact를 추정하지 않는다.
 - SQL 읽기151a0a는 trigger 함수 위임호출 불가·원분기보존, SOURCE 실제정산 별도분기, mutable head/reservation의 안정 계상 필요를 확인했다. 최초 생성 command 귀속·고정폭 계상용 codec·NULL정보/원값 보존과 실제 데이터hash 구분을 구체화하며 아직 미작성/미검증이다.
 - 실제키·DB·권한·서비스·Agent·네트워크·사용자/백업파일조사0이며 Git private 보존만 수행한다. Main 보존 후 새기준SHA로 원34 단일writer를 재개한다. 보호3·관련없는 자료는 stage/변경하지 않는다.
+### 2026-11-03 WIP private 보존 완료·동일 구현 재개
+- Main48446d는 정확25 WIP 코드+WI/현황2=27경로의raw/index일치·stageddiffcheck0·보호3불변을확인해52a5ea32e44642dfe10c17f842d35eb9e1dda251을commit했다. ed1ddd 일반privatepush후remote exactSHA동일·main f976ed5e불변·trackedclean/보호untracked3보존을확인했다. WIP복구기준선이며전체검수/완료·PR/main병합·실배포는없다.
+- Main은새HEAD/WI B7856483·동일34경로로기존Primary 단일writer를재개했다. 남은0072 collector/guard·전체 sourcecommand fakeDB정상/회귀·UI08왕복/UNKNOWN을이어간다. 실제키·DB·권한·서비스·Agent·네트워크·실자료/FSQA0·Main/Reviewer제품쓰기0이다. 이현황누적은다음checkpoint대상이다.
+
+### 2026-11-03 native 기술 검토 인수·기존 단일 구현 유지
+- 신산님의 계속 지시와 WORK_STATUS, PMO/프로젝트 지침·설계·계획·개발환경을 대조했다. 현재 branch codex/av3-stage-b HEAD 52a5ea32e44642dfe10c17f842d35eb9e1dda251은 WIP 보존 기준선이며 전체 구현·검수 완료가 아니다.
+- native R2 후보 SHA256 85F8F15EDA74ED0530980A5B4C3706426860174987A7436348D0D82AAA7A441D와 기술검토 보고서 5990315CC380DCBA9F821A946CA97214E4A93C5201E6B412DF60F8AA90BD0C05를 확인했다. 완료한 B04/B05/B06 읽기 검토는 반복하지 않고 기존 Reviewer에 B01 또는 B02의 독립 쟁점 하나를 읽기 전용으로 배정했다. 기채택 내부 상세와 새 의미 결정 의존을 구분하며 후보 채택·구현 GO로 승격하지 않는다.
+- 기존 Primary는 동일 WI r2/34경로의 FN03 단일 writer를 유지한다. 신규 0072.pending은 작성 중이며 quota wrapper·완결 역참조·기존 trigger 보존·정적 검산과 전체 합성 흐름은 미완료다. Main의 같은 코드 수정·완료된 검사 재실행은 없다.
+- 실제 키·DB·권한·서비스·Agent·네트워크·실자료 조사는 수행하지 않았다. 오류 반복이나 신규 거절은 이번 인수에서 없으며, Main의 B07 호칭 오류는 실제 후보 식별자 B01/B02로 즉시 정정했다. 다음은 Reviewer의 한정 근거를 원문과 대조해 보고서/현황에 통합하고 Primary의 안정 제출을 검수하는 것이다.
+### 2026-11-03 native B02 한정 검토 통합
+- 기존 Reviewer는 수명 만료와 예약 해제의 구분 한 건을 반환했다. Main이 기존 0059:264~265/293~297·R2:235~241을 직접 대조했고, 기술검토 보고서에 통합했다. 보고서 두 사본 SHA256은 96D62299BF09F537D2730A4B05989864CBE3FF04FE19C5FC1A0257F038490227로 같다. R2 원문은 85F8F15E 지문 그대로 보존했다.
+- 만료·단절·COMMIT 불명에 따른 자동 예약 해제는 기존 guard가 허용하지 않는다. UNKNOWN 보존은 기존 내부 상세로 유지하고, 각 terminal의 실제 보존행/미래슬롯/held·used 대응은 미정 새 종료 의미를 확정한 뒤 계산한다. TTL만으로 전액 해제하면 늦게 확인된 원 저장과 후속 예약이 겹칠 수 있는 반례를 기록했다.
+- 이번 범위의 추가 문서 모순은 없으나 B02 전체·Important9 해소/채택·구현 GO는 아니다. 완료 검사 재실행·제품/SQL 수정·실제 키/DB/권한/서비스/Agent/네트워크·실자료 조사는 없었다. 기존 FN03 구현은 Primary 단일 writer로 계속하며 미적용 0072·전체 합성 흐름/검수는 아직 미완료다. 다음은 Primary 안정 제출 검수와 native 미정 의미의 기존 결정 경계 유지다.
+### 2026-11-03 FN03 원 명령·승인·불명 상태 한정 독립 검토
+- 기존 Reviewer는 안정된 원명령/일회승인 source 4파일과 실제 UI08/UI06 caller를 읽어 scoped C0/I0를 반환했다. 최초 link null/0·선택 원 fullref/v1, 현재 정책/DENY·정확 원 명령·동일명령 replay/다른명령 재사용 차단·승인 CAS, private buffer 원 body/hash와 UNKNOWN 재결박/자동전송0을 확인한 범위다.
+- 시작끝 지문: project-command BB14BA694EC6F28CF2B65BEB4FD73B54ECC26FEBDCEF52DBDAD08C86A031CF5C, approval-input A4D2A8D1BA8F363196D13BA2E15F1DA41F4B7CF779A351213154249C49DECE7F, project-approvals 35F37A756D82834F067F7267B2D113DD3733975E79595258D09FCCF8FC689AF6, source-link-approval-api BD51A837B73A21A1B05B4C9D23579490D24DA335C6EEEBF41BBB3AC60A57B61B. Main712f4a는 같은 source 지문/실제 분기를 확인했다.
+- SQL/quota/전체 저장 종단·새 시험/실환경은 이번 검토에 포함하지 않았다. Primary는0072와 남은 합성 흐름을 계속하며 수정된 파일에는 기존 검토를 자동 상속하지 않는다. 실제 키·DB·권한·서비스·Agent·실자료 실행0·Main/Reviewer 코드쓰기0·전체계획 미완료다.
+### 2026-11-03 FN03 미적용 SQL의 기존 guard 보존 한정 검수
+- 기존 Reviewer가 작성 중 0072.pending의 기존 연산 4분기만 읽기 대조해 C0/I0를 반환했다. 적용 지문 E561CDADB1BC68E426B6CD8D62417822B549756263463F252A9B032493706B06은 시작끝 동일하다. artifact/proposal은 최신0003_document_proposals.sql, import는0003_document_imports.sql, detach는0033의 기존 분기를 보존하며 기존 INVOKER/search_path·trigger 연결도 바꾸지 않는 범위다.
+- 새 source 분기·initial trigger·collector·정산 및 실제 SQL/권한 동작은 판정 밖이다. Primary에 정확 지문과 제외 범위를 전달했으며 수정 후 자동 상속하지 않는다. Main 같은 코드쓰기0·실제 키/DB/권한/서비스/Agent/실자료 실행0, 전체 FN03/계획 미완료다.
+- Reviewer의 읽기 준비 오류1: 직접 wildcard 경로 인수 os error123을 디렉터리 검색으로 정정했다. 제품 실패·파일 부재 근거로 사용하지 않았다. 같은 경로 표현 오류의 재발을 줄이기 위해 이후 검색은 실제 목록/디렉터리+glob 옵션만 사용한다.
+### 2026-11-03 FN03 SQL 동결·Main 핵심 합성 회귀
+- Primary가 미적용0072 SHA256 E561CDADB1BC68E426B6CD8D62417822B549756263463F252A9B032493706B06/78912B의 writer를 반환했다. Main d1c9c3은 해당 지문·bytes와 quota6939272B/관측D728DEFB/핵심시험4B948B56 고정을 확인하고 기존 Reviewer에 새 collector/정산·역완결 읽기 검수를 맡겼다. Primary는 충돌 없는 나머지 실제command fakeDB/UI08 합성 흐름을 계속한다.
+- Primary7e8375의 원trigger4 선언/본문suffix·quota_current 역치환·delimiter/끝COMMIT 검사는 정적검산이지 SQL 문법/PG실행 PASS가 아니다. 준비조회/reader 호출접점의7e91d0 5PASS·7bb0ee type0도 각각 제출 범위로 분리한다.
+- Main08e384 명령: node --test --test-concurrency=1 tests/unit/FN03/document-source-observation.test.ts tests/unit/FN13/project-storage-quota.test.ts. 동결 신규전체25+기존quota19=44PASS/FAIL0/skip0/1593.9349ms/exit0이다. 기존 valid94692B proposal 보존·SourceEvent64KiB 분리·예정diff 결박/단발·UNKNOWN/정책음성을 포함한다. 이전 선택10과 중복 합산하지 않는다.
+- 실제 SQL·DB·권한·키·서비스·Agent·실자료 실행은 없고, 실제 저장종단/UI08 전체와 전체 FN03·계획은 미완료다. Main의 subagent 메시지에 한국어 외 문장이 섞인 것은 즉시 한국어로 정정했으며 제품·검사 기준 변경은 없다.
+### 2026-11-03 FN03 SQL 저장·정산의 독립 정적 검수
+- 기존 Reviewer가 동결0072 E561CDAD/quota6939272B/관측D728DEFB/핵심시험4B948B56의 시작끝 지문을 대조해 새 source 저장→실table collector→예약·정산·역완결 한정 C0/I0를 반환했다. 최초 LINKED/stream v1 command 귀속, mutable행의 NULL/원값 보존 고정폭 비용, table별 kind·실소계/10행·4S+640KiB, 원 diffRef 단발·정산 역참조·UNKNOWN 보존을 읽은 범위다.
+- 실제 SQL collector·trigger·RLS·ACL·경합 실행은 없고, 기존 시험의 collector/settle은 메모리 모델이다. 정적 검토를 실제 PG/전체 FN03 인수로 승격하지 않는다.
+- Primary의 실제 COLLECT 합성 흐름에는 허용 project-documents.ts 안에서 기존 ArtifactStore 계약의 명시 내부 DI가 필요하다. Main은 원 root문자열 constructor/기본동작·HTTP주입0·bytes/hash/권한·보호검산 불변의 내부 구현 상세로 진행하게 했다. 새 파일/공개 API/권한 계약·실FS/키/DB/서비스/Agent 실행은 추가하지 않는다. LINK 저장→GET과 COLLECT 실제 reader/proposal 경로·UI08 왕복/UNKNOWN 검증을 이어간다.
+### 2026-11-03 FN03 실제 App 명령 합성에서 저장 lease 조기 종료 확인
+- Primary9b6f4c의 초기 LINK 실제buildApp/fakeDB 정상 흐름은503이었다. bacc13에서 DENIED 감사7인자를 성공감사11인자로 해석한 fixture 준비누락을 분리한 뒤73f51d에서 제품 원인 RED를 확인했다. 저장 Promise를 await하지 않고 반환해 finally의 관측lease.close가 저장 도중 실행되는 문제다. 보정 실패 반복은0회다.
+- Primary는 해당 접점만 return await로 보완 중이며 Main7daac2는 현재95~96행의 저장 await→finally close 순서를 읽기 확인했다. 원기한/기대값·보호검사는 완화하지 않았다. 정상 저장·고정GET/replay의 GREEN은 아직 제출 전이며 앞44PASS를 이 저장종단의 통과로 쓰지 않는다.
+- SQL E561 및 앞동결3은 그대로이고 실제SQL/FS·키/DB/권한/서비스/Agent/실자료 효과0이다. Main같은코드쓰기0·Primary단일writer를 유지한다.
+### 2026-11-03 FN03 초기 연결 App 합성 저장·재조회 GREEN
+- Primary e0ea03은 lease 조기 종료 접점 보정 뒤 실제 buildApp/ProjectDocuments의 초기 LINK 전체 메모리 흐름1PASS/FAIL0/skip0/1450.9623ms/exit0을 제출했다. 원 command/receipt/audit 각각1, 준비/최종 보호 read/current 각각2, quota SETTLED·held0, 고정GET 원event 일치/current검증false, 동일command replay 추가관측/추가쓰기0을 확인한 범위다.
+- 앞9b6f4c/bacc13의 fixture 준비오류와73f51d 제품RED는 보존하며 기대값·기한/검사기준을 바꾸지 않았다. 실제SQL·PG/OS/FS 증거가 아니고 Main 최종 종단 재검수도 아직 전이다. 기존 Primary는 KEEP/COLLECT/불명·UI08 나머지 합성 흐름을 계속하며 SQL E561과 앞 안정3은 불변이다. 실제 키·DB·권한·서비스·Agent·실자료 실행0·전체계획 미완료다.
+### 2026-11-03 FN03 미정착 query 보호 합성 증거와 초기 준비 경계 검수
+- Primary a486ee는 관측 공급자의 미정착 query·인증 callback 반환0·종료후 새 raw query0·늦은 결과 폐기 deferred 음성1PASS/31.3888ms를 제출했다. 관측모듈D728은 불변이며 핵심시험은98F78222C9E2F04C4BA28365779A47E5EDED0866D90AD99D717961C03AC4B341로 바뀌어 과거4B94/44건 지문과 구분한다.
+- Primary8eb0f8은 원10초 뒤 후속 등록query 시작의 제품RED를 확인했고, 같은service의 원lease/query facade 보완14376b에서 정상+음성2PASS/root type0을 제출했다. Main2b0023은 service CB2EB3DDEABE271A13F8B611EC92049B69380F504F7E24C1D941F7BE18A405DE에서 최종command의 해당 facade 연결을 확인했다.
+- Main은 초기 quota.prepare의 authorize/#prepare/current 호출에는 rawdb가 남아 있어, 초기 지연query 정착 뒤의 후속query에도 같은 원기한이 적용되는지 Primary에 한정 반례 확인을 요청했다. 최종단계 음성만으로 초기단계까지 검증했다고 하지 않는다. 원기한/정책검사 불변·같은허용코드·단일writer이며 실제 DB/키/권한/서비스/Agent/실자료 실행0이다.
+- 준비오류는 Python cp949 읽기1을 utf8 명시로 정정한 건과 추정storage파일명1을 실제import/sensitive-inspection.ts로 정정한 건이다. 부재·제품실패 근거로 사용하지 않는다. 전체기능/계획은 미완료다.
+### 2026-11-03 초기 인증 callback의 원기한 보호 보완
+- Primary는 초기 quota.prepare의 선행 current/authorize까지 rawdb가 사용되는 접점을 확인했다. 같은 허용 service 안의 요청 한정 authenticated facade로 원 receiver/token/CSRF·인증/commit 정착 소유를 보존하고, 초기/최종 callback의 source 질의를 원 outer 기한에 결박하는 TDD를 진행한다. 기존 AccessRepository/정책본문·권한·원기한은 변경하지 않는다.
+- Main e4bbd0/31b68e는 실제 PolicyRepository의 두 의존성과 별도4xx DENIED 감사 호출을 읽었다. 원기한 보호가 기존 거절감사를 조용히 없애거나 원오류를 가리지 않도록 material 질의와 감사의 소유·실패를 구분하라는 검수 접점을 전달했다. 현재 설계/구현중이고 GREEN/전체범위 판정은 없다.
+- Main261519의 추정 project-policies.ts 경로 읽기는os error2였고 같은 호출의 실제class 검색으로 project-command.ts를 확인해 정정했다. 부재/제품실패 근거로 사용하지 않았다. 이후 확인된 경로만 읽는다. 실제 키·DB·권한·서비스·Agent·실자료 실행0·유일writer 유지다.
+### 2026-11-03 FN03 양 단계 원기한·실제 원문 reader 합성 연결
+- Primary b42969는 초기 인증callback policy await의 제품RED1을 확인했다. 최종 같은조건/원root기한·정상LINK/GET/replay·COLLECT 원reader DI를 묶은2429a5는5PASS/FAIL0/skip0/1773.6993ms·rootnoEmit0이다. 원receiver/token/CSRF를 그대로 호출하고callback query만 원outer기한으로 제한하며 null-CSRF의 기존 DENIED감사는 원authenticate의 별도Tx로 보존하는 구현이다.
+- COLLECT의 명시 메모리 ArtifactStore 주입은082682의미등록412 RED 뒤 실제 원Artifact의DB/ref/bytes/hash/격리 검산 소비로 GREEN이다. 기존 root문자열constructor/기본동작과원검산을유지하며HTTP주입·실FS는없다.
+- Main e1f34d/cae917은 service2579A33DCD22E7C375A249F9F436EDE0E2E2EE9F116E684F815B926CE55D9340/documents41C4DC28B621DEEC263E1ECE46560A03C3D8AA7917B59FBB6A41D4D129404482/시험4F54CFC10A5B7F207FC4BD25732C685A7D8C6CE69188F824DD9A24B8AE5A4CF0를읽기확인하고기존Reviewer에해당접점재검수배정했다. 이전CB2E의조건부위험점검은새facade합격판정이아니었다.
+- Primary는더짧은정책기한에서rawquery미정착시응답/원callback정착·DENIED감사분리와KEEP/COLLECT전체정산/화면왕복을이어간다. 동일원인보완실패3회는없고lease조기finally/초기기한은각1회보완이다. 실제키·DB·권한·서비스·Agent·실자료실행0,SQL E561/동결quota·관측불변·전체계획미완료다.
+### 2026-11-03 FN03 최소 정책기한 연결 I1
+- 기존 Reviewer는 service2579A33D/documents41C4DC28의 시작끝지문을대조해 원authenticated receiver/token/CSRF·query만감싸는원Tx정착소유·null-CSRF별도DENIED감사·기존storeDI를보존한다고반환했다.
+- 잔여I1: 최초quota.#current가유효한짧은policy를받은뒤 clock query가미정착일때, facade는아직session/원10초만알고policy최소기한을derivePlan에서늦게반영한다. 예를들어policy100ms/원10초이면clock반환뒤만료거절과policy100ms에응답대기를끝내는것은다르다. 이미만료된policy를받는경우는기존Date.now필터가차단할수있으므로무조건후속query시작으로일반화하지않았다.
+- Main661445는실제authorizeMaterial/currentPolicy와quota.#current순서를읽고Primary에해당최초구간음성을정확히확인하도록전달했다. 현재진행중짧은policy기한음성과같은원기한요구안에서보완하며새권한/공개계약·원한도완화·전수검증추가는없다. 이I1은아직미해소이며앞5PASS/정적SQL C0를전체기능합격으로쓰지않는다. 실제키·DB·권한·서비스·Agent·실자료실행0·Primary단일writer유지다.
+### 2026-11-03 FN03 I1 해소·추가 WIP 보존 준비
+- Primary는 최소policy I1 RED60ce5f→GREEN45c1c1(집중6PASS/type0) 뒤 전체34경로writer를반환했다. 실행중도구/미저장/QA/실효과0이며 추가변경은제품기존6+신규SQL1이다. KEEP/COLLECT 전체저장·UI08 왕복은남아INCOMPLETE다.
+- 독립Reviewer는service15B9CA18/documents41C4DC28/시험253B317E의시작끝지문을대조해 원I1해소/scopedC0/I0를반환했다. 같은원명령 controller/authorize 선검산뒤최소policy기한을공통budget에고정하고원인증/Tx소유·별도DENIED감사·정착분리를보존하는범위다. SQL/전체FN03합격아니다.
+- Main316878은허용7raw지문/bytes와diffcheck0·현재privateHEAD52a5ea32를확인했다. Maind929af는 node --test --test-name-pattern='실제 App sourcecommand|실제 sourcecommand|COLLECT 명시메모리|최초짧은policy' tests/unit/UI06/document-source-observation.test.ts 를실행해6PASS/FAIL0/skip0/2453.1789ms/exit0을확인했다. 초기LINK저장/GET/replay·양phase원10초·보호readerDI·최초100ms정책pending응답/실query정착을증명하는합성범위다.
+- Git기준을정확히구분한다: 현재로컬main은0443043251d25aa77c17d23165b7c9299c8dbeb8, private main/development-main은f976ed5e29e14b13e12729d5b1ccf98f050f2210이다. 9f2155는로컬main이2026-10-08부터이ref이며원격main의조상임을확인했다. 예전 'main f976불변'은private통합ref관측으로한정하고로컬main까지동일했다는의미로쓰지않는다. 어느main도변경/정리하지않고현재branch에만보존한다.
+- 다음은정확7제품/시험+Main문서2를WIPcommit/private게시후동일Primary원34writer즉시재개다. 보호untracked3·관련없는자료보존,전체완료/PR/main병합·실제키/DB/권한/서비스/Agent/실자료실행0이다.
+- WIP 보존 도구 준비오류1(95a33b): 승인9경로 stage 뒤 5MiB 초과 WORK_STATUS의 index 바이트 읽기가 Node 기본1MiB maxBuffer로 ENOBUFS 종료됐다. commit/push는 실행되지 않았고 HEAD52a5·stage9/원파일·보호3은 보존했다. 실제 제품/SQL 실패가 아니다. 정본 현황을 축소하지 않고 해당 메모리 읽기 버퍼만16MiB로 명시해 동일9경로의 raw/index/diff를 재검산한다. LF→CRLF 안내는 Git 경고로 기록하며 설정/원문 개행을 임의 변경하지 않는다.

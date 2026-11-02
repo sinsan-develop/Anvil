@@ -48,7 +48,7 @@ export class ProjectDocumentSourceLinks{
    if(Object.getOwnPropertyDescriptor(source,'options')?.value!==method)fail();return Number(control.generation);
   };
   try{
-   const generation=await gate();let rootId=String(query.rootId??''),relativePath:string|null=null,linkRef:VersionRef|null=null;
+   const generation=await gate();await db.query('SELECT anvil.document_source_read_context($1,$2,$3,$4)',[actor.authSession!.id,actor.actorId,actor.clientId,projectId]);lease!.check();let rootId=String(query.rootId??''),relativePath:string|null=null,linkRef:VersionRef|null=null;
    const document=(await db.query('SELECT content_hash FROM anvil.document_versions WHERE project_id=$1 AND document_id=$2 AND version=$3',[projectId,documentId,documentRef.version])).rows[0];lease!.check();if(!document)fail('NOT_FOUND',404);if(document.content_hash!==documentRef.contentHash)fail('DOCUMENT_SOURCE_REFERENCE_CHANGED',409);
    if(query.mode==='CHANGE'){const view=await new DocumentSourceLinkRecords().read(db,actor,projectId,documentRef,String(query.linkId));lease!.check();if(!view.rawAllowed||view.state!=='ACTIVE'||view.ref.version!==1||view.ref.contentHash!==query.linkHash||!view.history.length)fail('DOCUMENT_SOURCE_LINK_VERSION_CONFLICT',409);const original=view.history[0]!.snapshot;rootId=original.sourceRootId;relativePath=original.relativePath;linkRef=view.ref;}
    const root=(await db.query('SELECT v.* FROM anvil.source_roots r JOIN anvil.source_root_versions v ON v.project_id=r.project_id AND v.root_id=r.id AND v.version=r.head_version WHERE r.project_id=$1 AND r.id=$2 FOR SHARE OF r',[projectId,rootId])).rows[0];lease!.check();
@@ -73,32 +73,52 @@ export class ProjectDocumentSourceLinks{
    await gate();return{view:'DOCUMENT_SOURCE_OPTIONS',projectId,documentRef,mode:query.mode,rootId,sourceLinkRef:linkRef,items,hasMore:page.hasMore,nextCursor:page.hasMore?codec.create(actor.actorId,filter,last!):null};
   }catch(error){if(error instanceof AuthFailure)throw error;fail('DOCUMENT_SOURCE_OBSERVATION_UNAVAILABLE',503);}finally{active=false;lease?.close();while(pending.size)await Promise.allSettled([...pending]);}
  }
+ /** 원 driver query의 실제 정착 후에만 기한 실패를 반환한다. abort를 정착으로 취급하지 않는다. */
+ #ownedDb(db:PoolClient,lease:ObservationLease):PoolClient{
+  const query=db.query;
+  return Object.freeze({query:async(...args:unknown[])=>{lease.check();const result=await Reflect.apply(query,db,args);lease.check();return result;}}) as unknown as PoolClient;
+ }
  /** 직접 link 호출은 보호 예약/현재성 closure 없이는 저장하지 않는다. */
  async link(_db:PoolClient,_actor:AuthenticatedIdentity,_input:ProjectCommand,_policyRef:VersionRef){this.#observations.require();fail('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);}
- async command(access:AccessRepository,policies:ProjectPolicyRepository,documents:ProjectDocuments,token:string,csrf:string,raw:ProjectCommand){
+ async command(access:AccessRepository,_policies:ProjectPolicyRepository,documents:ProjectDocuments,token:string,csrf:string,raw:ProjectCommand){
   const request=cloneV1(raw);if(!['linkDocumentSource','proposeDocumentSourceChange'].includes(request.operation))fail();
-  const quota=documents.sourceQuota(access),startedAt=performance.now();let active=true,plan:SourcePlan|undefined,timer:ReturnType<typeof setTimeout>|undefined;
-  const alive=()=>{if(!active||performance.now()-startedAt>=10000)fail('DOCUMENT_SOURCE_OBSERVATION_EXPIRED',409);};
+  const startedAt=performance.now(),startedWall=Date.now(),authenticate=access.authenticated;let active=true,plan:SourcePlan|undefined,timer:ReturnType<typeof setTimeout>|undefined,timerEnd=Infinity,deadlineEnd=startedAt+10000,wallEnd=Infinity;
+  let rejectDeadline:((error:AuthFailure)=>void)|undefined;const leases=new Set<ObservationLease>();
+  const arm=(mono:number,remaining:number)=>{if(!rejectDeadline||!active||timerEnd<=mono+remaining)return;if(timer)clearTimeout(timer);timerEnd=mono+remaining;timer=setTimeout(()=>{active=false;for(const lease of leases)lease.close();rejectDeadline?.(new AuthFailure('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503));},remaining);};
+  const alive=()=>{const mono=performance.now(),wall=Math.max(Date.now(),startedWall+mono-startedAt);deadlineEnd=Math.min(deadlineEnd,mono+wallEnd-wall);
+   if(!active||access.authenticated!==authenticate||!Number.isFinite(mono)||!Number.isFinite(wall)||mono>=deadlineEnd)fail('DOCUMENT_SOURCE_OBSERVATION_EXPIRED',409);const remaining=deadlineEnd-mono;arm(mono,remaining);return remaining;};
+  const ownedLease=(actor:AuthenticatedIdentity,until:number):ObservationLease=>{alive();if(actor.authSession)wallEnd=Math.min(wallEnd,until,Date.parse(actor.authSession.idleExpiresAt),Date.parse(actor.authSession.absoluteExpiresAt));const raw=observationLease(actor,until);leases.add(raw);const check=()=>{alive();raw.check();};check();return{signal:raw.signal,check,remaining:()=>Math.min(alive(),raw.remaining()),narrow:expiresAt=>{check();wallEnd=Math.min(wallEnd,Date.parse(expiresAt));raw.narrow(expiresAt);check();},close:()=>{leases.delete(raw);raw.close();}};};
+  // 원 repository가 인증/원 query/COMMIT/rollback 정착을 소유한다. 새 주체/DB 권위를 만들지 않는다.
+  // 기존 recordProjectDenial(token,null)은 독립 감사 Tx다. source material의 기한으로 이 원 감사 경로를 가리지 않는다.
+  const ownedAccess=Object.create(access) as AccessRepository;
+  Object.defineProperty(ownedAccess,'authenticated',{value:<T>(token:string,csrf:string|null,body:(db:PoolClient,actor:AuthenticatedIdentity)=>Promise<T>):Promise<T>=>{
+   if(csrf===null)return Reflect.apply(authenticate,access,[token,null,body]) as Promise<T>;
+   alive();return Reflect.apply(authenticate,access,[token,csrf,async(db:PoolClient,actor:AuthenticatedIdentity)=>{const lease=ownedLease(actor,Infinity);try{const value=await body(this.#ownedDb(db,lease),actor);lease.check();return value;}finally{lease.close();}}]) as Promise<T>;
+  }});Object.freeze(ownedAccess);
+  const quota=documents.sourceQuota(ownedAccess),policies=new ProjectPolicyRepository(ownedAccess,documents),deadline=new Promise<never>((_,reject)=>{rejectDeadline=reject;alive();});
   const work=(async()=>{
+   // 최초 quota의 내부 clock/query 대기 전에 원 정책의 최소기한을 고정한다.
+   // 기존 동일 원명령의 실제 인가 함수를 재사용하며 새 read operation/승인 소비를 만들지 않는다.
+   await ownedAccess.authenticated(token,csrf,async(db,actor)=>{await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request,false,documents);wallEnd=Math.min(wallEnd,policy.validUntil);alive();});
    const prepared=await quota.prepare(token,csrf,request,async(db,actor,fixed,existing)=>{
     alive();if(existing)fail('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503);
-    const policy=await authorizeMaterial(db,actor,request,false,documents),lease=observationLease(actor,policy.validUntil);
+    const policy=await authorizeMaterial(db,actor,request,false,documents),lease=ownedLease(actor,policy.validUntil);
     try{plan=await this.#prepare(db,actor,request,documents,lease,async()=>{alive();await currentProjectController(db,actor,request);const p=await authorizeMaterial(db,actor,request,false,documents);if(!same(p.ref,policy.ref))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.check();});return[plan.part];}finally{lease.close();}
    });
-   alive();if(prepared.replay)return access.authenticated(token,csrf,(db,actor)=>quota.protectedReplay(db,actor,request));
+   alive();if(prepared.replay)return ownedAccess.authenticated(token,csrf,(db,actor)=>quota.protectedReplay(db,actor,request));
    if(!plan)fail('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503);
    const started=await quota.start(token,csrf,await quota.reserve(token,csrf,prepared));
    try{return await policies.command(token,csrf,request,async(db,actor,policyRef)=>{
-    const policy=await authorizeMaterial(db,actor,request,false,documents),lease=observationLease(actor,Math.min(policy.validUntil,Date.parse(prepared.authorizedUntil)));
+    const policy=await authorizeMaterial(db,actor,request,false,documents),lease=ownedLease(actor,Math.min(policy.validUntil,Date.parse(prepared.authorizedUntil)));db=this.#ownedDb(db,lease);
     const check=async()=>{alive();await currentProjectController(db,actor,request);const current=await authorizeMaterial(db,actor,request,false,documents);if(!same(current.ref,policyRef)||!same(policy.ref,policyRef))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.narrow(new Date(current.validUntil).toISOString());};
     try{await check();const final=await this.#prepare(db,actor,request,documents,lease,check,plan);if(!same(final.projection,plan!.projection)||!same(final.part,plan!.part))fail('DOCUMENT_SOURCE_OBSERVATION_CHANGED',409);
-     await quota.requireStarted(db,actor,request,started,[plan!.part]);await check();return this.#store(db,actor,request,policyRef,final,quota,started,check);
+     await quota.requireStarted(db,actor,request,started,[plan!.part]);await check();return await this.#store(db,actor,request,policyRef,final,quota,started,check);
     }finally{lease.close();}
    });}catch{return fail('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503);}
   })();
   void work.catch(()=>{});
-  try{return await Promise.race([work,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new AuthFailure('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503)),10000);})]);}
-  finally{active=false;if(timer)clearTimeout(timer);}
+  try{return await Promise.race([work,deadline]);}
+  finally{active=false;rejectDeadline=undefined;if(timer)clearTimeout(timer);for(const lease of leases)lease.close();}
  }
  async #root(db:PoolClient,actor:AuthenticatedIdentity,observation:ObservationRecord){
   const s=observation.snapshot,root=(await db.query(`SELECT v.*,r.head_version FROM anvil.source_roots r JOIN anvil.source_root_versions v ON v.project_id=r.project_id AND v.root_id=r.id AND v.version=r.head_version WHERE r.project_id=$1 AND r.id=$2 FOR SHARE OF r`,[s.scope.projectId,s.scope.sourceRootId])).rows[0];
@@ -108,7 +128,8 @@ export class ProjectDocumentSourceLinks{
   if(!r||r.basis_current!==true||r.state!=='ISSUED'||r.connector_status!=='TRUSTED'||r.revoked_at||r.connector_revoked||!same(registrationRef(r),s.registrationRef)||!same(connectorRef(r,Number(r.generation)),s.connectorRef)||Number(r.credential_generation)!==actor.credentialGeneration||Number(r.control_generation)!==s.scope.controlGeneration)fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);
  }
  async #prepare(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,documents:ProjectDocuments,lease:ObservationLease,check:()=>Promise<void>,fixed?:SourcePlan):Promise<SourcePlan>{
-  this.#observations.require();await check();
+  db=this.#ownedDb(db,lease);this.#observations.require();await check();
+  if(!actor.authSession)fail('AUTH_REQUIRED',401);await db.query('SELECT anvil.document_source_read_context($1,$2,$3,$4)',[actor.authSession.id,actor.actorId,actor.clientId,request.projectId]);lease.check();
   const initial=request.operation==='linkDocumentSource';let linkId:string,documentRef:VersionRef,rootId:string,path:string,snapshotRef:VersionRef,oldHead:VersionRef|null=null,link:SourcePlan['link']=null;
   const input=initial?readDocumentSourceLinkInput('linkDocumentSource',request.payload):readDocumentSourceLinkInput('proposeDocumentSourceChange',request.payload);
   if(request.baselineRefs.length||request.clientId!==actor.clientId||!actor.authSession)fail();
@@ -157,7 +178,7 @@ export class ProjectDocumentSourceLinks{
   await db.query('INSERT INTO anvil.document_source_observation_events(id,project_id,link_id,stream_id,version,content_hash,snapshot_json,command_id,projection_hash,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[randomUUID(),request.projectId,plan.linkId,plan.record.ref.id,plan.record.ref.version,plan.record.ref.contentHash,JSON.stringify(plan.record.snapshot),receipt.id,plan.part.contentHash,plan.at]);
   if(!plan.oldHead)await db.query('INSERT INTO anvil.document_source_observation_heads(project_id,link_id,stream_id,head_version,head_hash) VALUES($1,$2,$3,$4,$5)',[request.projectId,plan.linkId,plan.record.ref.id,plan.record.ref.version,plan.record.ref.contentHash]);
   else if((await db.query('UPDATE anvil.document_source_observation_heads SET head_version=$3,head_hash=$4 WHERE project_id=$1 AND link_id=$2 AND head_version=$5 AND head_hash=$6',[request.projectId,plan.linkId,plan.record.ref.version,plan.record.ref.contentHash,plan.oldHead.version,plan.oldHead.contentHash])).rowCount!==1)fail('DOCUMENT_SOURCE_LINK_VERSION_CONFLICT',409);
-  await quota.settle(db,actor,request,started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});return receipt.result;
+  await quota.settle(db,actor,request,started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});await check();return receipt.result;
  }
  async detach(db:PoolClient,actor:AuthenticatedIdentity,input:ProjectCommand,policyRef:VersionRef){
   const request=cloneV1(input),payload=readDocumentSourceLinkInput('detachDocumentSource',request.payload);

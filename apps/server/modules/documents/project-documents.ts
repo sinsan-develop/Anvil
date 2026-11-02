@@ -35,7 +35,7 @@ function artifactRef(value: unknown): value is ArtifactRef { return exact(value,
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   #proposalPlans=new WeakSet<DocumentProposalPlan>();
-  constructor(root?: string) { this.#store = root ? new ArtifactStore(root) : null; }
+  constructor(root?: string,sourceStore?:ArtifactStore) { if(sourceStore!==undefined&&(!(sourceStore instanceof ArtifactStore)||root!==undefined))throw new AuthFailure('ARTIFACT_STORAGE_CONFIGURATION_INVALID',422);this.#store = sourceStore??(root ? new ArtifactStore(root) : null); }
   /** 서버 내부 source 부모 명령의 기존 보호 Artifact reader/원 quota 연결. HTTP 입력으로 공급할 수 없다. */
   sourceQuota(access:AccessRepository){return new ProjectStorageQuota(access,this.#store??undefined,this);}
   async sourceArtifact(db:PoolClient,projectId:string,ref:ArtifactRef){return this.#artifact(db,projectId,ref);}

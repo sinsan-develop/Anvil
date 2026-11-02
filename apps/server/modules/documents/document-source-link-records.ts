@@ -14,6 +14,7 @@ export class DocumentSourceLinkRecords{
  async observation(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,documentRef:Ref,linkId:string,streamId:string,version:number){
   if(!uuidV1(streamId)||!Number.isSafeInteger(version)||version<1||version>10000)throw new AuthFailure('DOCUMENT_SOURCE_LINK_INPUT_INVALID',400);
   const original=await this.read(db,actor,projectId,documentRef,linkId);
+  if(!actor.authSession)throw new AuthFailure('AUTH_REQUIRED',401);await db.query('SELECT anvil.document_source_read_context($1,$2,$3,$4)',[actor.authSession.id,actor.actorId,actor.clientId,projectId]);
   let rows:any[];try{rows=(await db.query(`SELECT e.*,c.operation,c.state command_state,c.command_id command_key,c.actor_id command_actor,c.client_id command_client,c.expected_version,c.policy_ref,c.result_ref,
    ar.command_id receipt_command_id,ar.subject_ref,ar.policy_ref receipt_policy_ref,origin.content_hash initial_hash,previous.content_hash previous_hash,
    (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=e.project_id AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref') audit_count

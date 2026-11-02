@@ -183,3 +183,15 @@ test('source quota 단위정정: 기존 유효94692B proposal은 신규SourceEve
 test('source quota 단위정정: row 종류 COMMON·SourceEvent를 proposal로 위장한 row는 정산할 수 없다',()=>{
  const projection=quotaProjection(1),part=sourceEventQuotaPart('proposeDocumentSourceChange',ref.id,projection,0);for(const kind of ['COMMON','PROPOSAL'])assert.throws(()=>sourceEventQuotaAccounting('proposeDocumentSourceChange',part,projection,0,[{kind,row:{snapshot_json:{value:'관측'}}}]));
 });
+
+
+test('관측 기한종료는 원DB정착이 아니다: 인증callback 보존·종료후 query0·late결과 폐기',async()=>{
+ let finishQuery!:(value:unknown)=>void,entered!:()=>void,queries=0,returned=false;const started=new Promise<void>(r=>entered=r),raw=new Promise(r=>finishQuery=r);let facade:PoolClient|undefined;
+ const db={query:async()=>{queries++;entered();return await raw;}} as unknown as PoolClient;
+ const source={read:async(owned:PoolClient)=>{facade=owned;await owned.query('SYNTHETIC_PENDING_QUERY');return observed();},current:async()=>observed()},service=new DocumentSourceObservations(source),short={...lease(),remaining:()=>5};
+ class QueryOwnerMemoryAccess extends AccessRepository{constructor(){super({} as never,{installationId:qid(201),key:Buffer.alloc(32)});}override async authenticated<T>(_t:string,_c:string|null,body:(db:PoolClient,a:AuthenticatedIdentity)=>Promise<T>){try{return await body(db,quotaActor);}finally{returned=true;}}}
+ const repository=new QueryOwnerMemoryAccess(),pending=repository.authenticated('model',null,(owned,a)=>service.observe(owned,a,scope,ref,short));void pending.catch(()=>{});
+ await started;await new Promise<void>(r=>setTimeout(r,15));assert.equal(returned,false,'관측5ms 경과가 원query 정착이 아님');assert.equal(queries,1);
+ await assert.rejects(facade!.query('SYNTHETIC_LATE_QUERY'));assert.equal(queries,1,'종료후 새 raw query 금지');assert.equal(returned,false);
+ finishQuery({rows:[]});await assert.rejects(pending,/DOCUMENT_SOURCE_OBSERVATION_EXPIRED/);assert.equal(returned,true);assert.equal(queries,1);
+});

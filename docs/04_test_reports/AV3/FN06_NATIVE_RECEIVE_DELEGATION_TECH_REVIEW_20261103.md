@@ -393,3 +393,15 @@ DB는 own의 pending query 추적·settle 실제 정착 뒤 rollback/release를 
 필요한 내부 제안은 OwnedDelivery{requestAbort,result,settled}다. 원 operation이 exact stream instance·전달 복사본·supplier Promise·원 deadline을 소유하며 외부 result와 내부 실제 settled를 분리한다. timeout/종료는 abort 요청·새 IO 차단만 수행한다. supplier/하위 write 정착 후에만 buffer/listener/handle을 회수하고 그 전 재사용·완전 정리 주장을 하지 않는다. HTTP 응답 대기자 소멸과 delivery 취소는 다르며 네트워크 대기 중 불필요한 DB lease를 잡지 않는다. 이미 시작한 DB query의 실제 settle 보호는 유지한다.
 
 현재 delivery에 options의 pendingOptionsSuppliers와 같은 별도 미정착 추적 port가 없고 실제 stream producer/consumer도 없다. 하위 write/drain/close·취소 보장은 미검증이다. 이는 향후 source 구현의 내부 소유 요구를 구체화한 읽기 결과이며 B06/보안·실행 검증 PASS가 아니다. 실제 비밀 바이트 조사·키/DB/권한/서비스/Agent·네트워크·모듈/시험 실행0이다.
+
+## B02 한정 후속: 수명 만료와 예약 해제의 구분
+
+기존 Reviewer가 R2 SHA256 85F8F15EDA74ED0530980A5B4C3706426860174987A7436348D0D82AAA7A441D의 B02 중 한 쟁점을 읽기 검토했고, Main은 원 SQL 0059:264~265,293~297과 후보:235~241을 직접 대조했다. 이전 B04/B05/B06 검토·제품 시험은 반복하지 않았다.
+
+- 기존 내부 guard로 유지할 내용: 만료·연결 단절·COMMIT 불명만으로 예약을 해제하지 않는다. 0059는 RESERVED/IO_STARTED/UNKNOWN을 기한과 무관하게 held에 포함한다. 삭제를 막고 CANCELLED 전환은 RESERVED에서만 허용하므로, UNKNOWN을 임의 종료로 바꾸는 근거가 없다.
+- 새 의미 결정에 의존하는 내용: 첫 terminal별 정산, window 종료 때 각 offer의 종료 여유, terminal 후 추가 회수 이력의 필요·허용 횟수다. 후보의 새 offer 종료 의미를 기존 quota CANCELLED로 일괄 치환하지 않는다.
+- 필요한 최소 기술 증거: 확정한 각 terminal branch에 원상태·효과 시작 여부·실제 보존행·미생성 미래슬롯·held 감액·used 증가를 대응시키고, 동일 Tx에서 합계가 보존됨을 검산한다. 이 대응 전에 총 row 수·총 bytes의 충분성을 확정하지 않는다.
+
+반례는 ‘offer는 만료됐지만 원 전달/COMMIT 결과가 불명인 상태에서 TTL만 보고 Q 전액을 해제’하는 경우다. 이후 원 저장 사실이 확인되면 이미 다른 offer에 배정한 공간과 겹칠 수 있다. 원행/UNKNOWN 보존은 기존 guard로 정리할 수 있지만 안전한 해제 금액은 미정 terminal/슬롯 계약 없이 결정할 수 없다.
+
+이번 범위에서 추가 문서 모순은 확인하지 않았다. 이는 B02 전체 해소·후보 채택·구현 준비 완료 판정이 아니다. R2 원문은 수정하지 않았으며 실제 키·DB·권한·서비스·Agent·네트워크·실자료 조사·시험 실행은 없다. 기존 FN03 단일 구현은 별개로 계속한다.
