@@ -89,6 +89,25 @@ referenceRules 항목={fieldPath,targetNamespace,required,scopeRule}, scopeRule=
 
 부록17~18은 실제 source DDL/collector 선택열의 대조 inventory다. 실행 가능한 전체 exact registry는 아직 미완성이다. 기존 부분 A1 후보를 복사해 COMPLETE=true를 발급할 수 없다. source 채택 전 각 entries의 실제 DDL/reader/hash와 표/필드 미분류0을 검토한 고정 부록이 필수다. 실행 중 미등록 namespace나 필수 row/본문/FK/이전 버전이 발견되면 COVERAGE_INCOMPLETE로 거절한다.
 
+### 4.1 plans 자료군의 codec·의존성 판정
+
+이 절은 실제 source를 읽은 현재 기술 근거다. 새 export codec/원문 반출을 채택하거나 plans 전체 coverage를 발급하지 않는다. ORIGINAL 가능은 해당 domain snapshot bytes/hash를 보존할 수 있다는 한정 판정이며 공통 command/receipt/audit·모든 의존성의 전체 폐쇄 성공을 뜻하지 않는다. 아래 경로는 모두 실제 저장소 상대경로다.
+
+| 대상 | 원형·hash와 현재 출력 | 정확 source 근거·남은 폐쇄 |
+|---|---|---|
+| 프로젝트 방법론 버전 | graph 원형 보존 가능. ref.contentHash는 graph만, name/purpose/origin/reason을 포함한 exportHash와 다름 | `apps/server/modules/backups/project-methodology-inventory.ts:16~22,112~125`. REVISION 직전ref 검산, COPY/draft confirmation/form/limitPolicy 외부 의존성은 별도 포함·검산 필요 |
+| 방법론 적용본 | application snapshot 전체의 ORIGINAL 가능. snapshotHash와 graph/sourceHash를 각각 재계산 | `apps/server/modules/methodologies/application-snapshot.ts:15~25`; `apps/server/modules/backups/methodology-application-inventory.ts:91~108`. 원 source methodology/form/limitPolicy·초기생성/draft confirmation·이전 applicationRef 폐쇄 필요 |
+| 작업계획 버전·업무카드·의존성 | version_json의 ref/status 제외 snapshot hash, card_json/card_hash 보존 가능. export envelope hash와 원domain hash 분리 | `apps/server/modules/traceability/work-plans.ts:67~75`; `apps/server/modules/backups/work-plan-inventory.ts:105~123`. AF04/AF02 문서·설계/화면 refs·screen review는 같은 파일115~119행의 외부 의존성 |
+| 양식·작성 공통기준 | 양식 definition_json 원hash 재계산 가능. 기존 공통기준 collector는 ref/시각만 반환하고 bodyVerification=NOT_PERFORMED. 양식 provenance도 원문과 투영 구분 | `apps/server/modules/documents/forms.ts:7~20,80`; `apps/server/modules/backups/document-inventory.ts:34~35,171~204`; `db/migrations/0003_documents.sql:2~7`의 body_utf8/source_approval_json. 공통기준 원문 reader/export codec 필요. origin_ref_json을 줄인 originProjection으로 원provenance 재계산 주장0 |
+| 임무 초안·검토·확정 | 원 version_json hash/영수증을 검산하지만 출력 reviewedBy/confirmedBy는 HUMAN 축약. 기존 출력은 REDACTED_HISTORY | `apps/server/modules/backups/assignment-inventory.ts:125~151`. draft 이전ref·plan/application/taskCard·parent assignment·선택review/원명령/receipt/audit 폐쇄 필요 |
+| 역할·책임 세션·결박 | 원snapshot을 검산한 뒤 definedBy/reservedBy/boundBy를 redacted 값으로 출력. 원ref 아래 투영 snapshot SOURCE_HASH PASS0 | `apps/server/modules/backups/responsible-session-inventory.ts:16~25,160~182`. policy/assignment/application/connection·정확 원승인소비 의존. 현재 역할·세션권위 복원0 |
+| 설계변경 기준선 activation | 원snapshot 전체hash를 검산하지만 collector는 recordedBy를 축약하므로 REDACTED_HISTORY | `apps/server/modules/traceability/baseline-activation-record.ts:12~19`; `apps/server/modules/backups/baseline-inventory.ts:87~95`. 이전activation/원command·후보/approval/consumption/policy/design/plan 폐쇄 필요 |
+| FeatureBaseline 초안·검토·채택 | 내부는 원행을 검산하나 현재 출력은 ref/provenanceHash/metadataHash/currentCheck 요약. 원문 ORIGINAL export source/codec 미구현 | `apps/server/modules/projects/project-baselines.ts:325,431~432,436,560~561`. draft version_json/review review_json/채택 content_json을 요약에서 복원할 수 없음. LEGACY_UNVERIFIED와 notCollected 보존 |
+
+방법론 검토 reviewer 축약은 `project-methodology-inventory.ts:154`, 작업계획 확정 confirmedBy 축약은 `work-plan-inventory.ts:138`에도 있다(둘 다 `apps/server/modules/backups/` 아래). 따라서 검토·확정의 projectionHash/증빙 대조와 원본 SOURCE_HASH 재계산을 분리한다. 원 actor/client UUID를 비권한 역사로 반출할지 또는 기존 보호 투영만 반출할지는 아직 미정 delta이며 이 절에서 채택하지 않는다.
+
+프로젝트가 실제 참조한 SYSTEM/USER_COMMON 방법론·양식의 정확 버전만 dependency 후보로 표시한다. 사용자 미선택 공통자료 전체·다른사용자의 비공개 자료를 자동 포함하지 않는다. 자료군 선택을 늘리지 않고 필요한 dependency/읽기 불가/필수 gap을 preview에 표시한다. 우선 적용snapshot/작업계획 ORIGINAL codec을 기술적으로 고정할 수 있으나 공통기준/FeatureBaseline 원문·보호투영·원명령 의존성이 닫히기 전 plans 전체 eligible0이다.
+
 ## 5. A2 — snapshot과 현재 권한·원기한
 
 불변 자료 수집은 새 한정 내부 접점으로 동일 PoolClient의 하나의 REPEATABLE READ transaction을 사용한다. 각 collector의 공개 RC wrapper를 바꾸거나 각자 connect/BEGIN/COMMIT하도록 두지 않는다. server가 검증한 actor/client/session/project에서 RLS 문맥을 만들며 임의 actor/purpose/GUC로 권위를 만들지 않는다.

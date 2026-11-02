@@ -12525,3 +12525,16 @@ git diff --check
 - 실제 FeatureBaselineDraftHistory/DecisionHistory·SourceRoot/ControlHandoff 소비와 static CREATE192/collector27파일·명시 선택열194행을 조사 부록으로 고정했다. 정적 선언/선택열은 실행 registry나 반출 허용목록이 아니다. ALTER/동적SQL/각JSON 민감 투영·전체 참조 폐쇄의 미확인 때문에 full coverage0/구현GO0이다. 원 SOURCE_HASH 재계산과 REDACTED_HISTORY receipt/hash 증빙 대조를 구분했다.
 - 같은 실키의 nonce 도메인/COMMIT 불명·외부 저장 cap/감소 원장 공간은 여전히 미정이다. 10GiB 안에 원자료+새3사본을 동시에 보유하는 보수안은 다른 비용 전 약2.5GiB부터 한계라는 영향을 숨기지 않는다. 사용자에게 기술 조사 책임을 넘기거나 이 후보를 승인된 설계로 표시하지 않는다.
 - 현재 담당자 역할은 FN06 r5 scoped 독립 읽기검수와 FN17 후보 상세화이며 제품 writer0. 코드/SQL/시험 재실행·실제 DB/권한/키/서비스/Agent/컴파일·실자료/P03R3/신규QA0, 전체 계획 미완료다.
+### 2026-11-02 FN06 r5 한정 재검수·정확 결정 요청
+- 기존 Primary의 독립 scoped 읽기검수는 HUMAN REJECTED 보완 C0/I0다. 실제 project-registrations.ts:44~55·project-registration-reads.ts:78의 REJECTED/ref/기한과 후보 저장/화면/추적이 일치하고 시작끝 SHA F6C8CB66 동일·쓰기/시험/실효과0이다. catalogue 신뢰 선택과 실제 구현 인수를 이번 scoped 결과로 승격하지 않는다.
+- 신산님께 r5 정확 SHA를 붙인 FN06 A안 source-only 채택 질문을 비동기1회 제시했다. 새 설치 고정 검증 기준/보호 배포목록·로컬 특권 통신·보호 저장/명시 복구가 기존 승인 대비 추가되는 계약임을 설명했다. 실제 키·권한·DB·서비스·컴파일·Agent 실행은 제외하며 응답 전 구현0. FN03의 기존 결정 질문은 반복하지 않았다.
+- FN16 후보/현황 정확2 checkpoint121a50c23d02ee69f6375ed799f8e68e6f11f612는743d07에서 private동일/main f976ed5e불변·그시점trackedclean/보호untracked3 보존을 확인했다. commit세션83682는96832c exit0으로 종결 확인했고 중복 commit0이다.
+- 승인 대기와 별개로 기존 Primary는 FN16 plans 자료군의 domain snapshot/hash codec·collector 선택열·이전버전/참조 폐쇄를 읽기만 조사한다. 기존 Reviewer는 FN17 보호구독/푸시 상세 후보 작성 중이다. 제품 writer0·실효과/새QA0·전체 계획 미완료다.
+### 2026-11-02 FN06 desktop r5 A안 직접 채택·구현 준비 재개
+- 신산님이 정확 후보 SHA F6C8CB668AC371993F0F623AC563583FFD757AFDAAE8D86573A4B71C9A4951E6 질문에 ‘A안 source-only 채택’으로 답했다. 승인기록 FN06_DESKTOP_TRUST_A_SOURCE_APPROVAL_20261102.md SHA7B8E5A34D69D85A69FEE2AEA3F69643427B4781BF2454E8B2FA37D2EA9AA75A3를 정본/source 동일bytes로639598에서 보존했다. 후보 바이트의 당시 NOT_ADOPTED 머리글은 이력이며 새 source 채택 기록이 현재 권위다. B별도releasekey/FN03/FN16/FN17 채택이나 실제효과 승인으로 확장0이다.
+- Main은 writing-plans 절차로 승인 기준의 실제 의존성/파일맵·WI를 확정한다. 기존 Primary의 predispatch 대조에서 owner physical helper는 전용 signer가 아니므로 catalogue codec/GET만 먼저 만들면 미완결임을 확인했다. 첫 의미 있는 source 인수 경계는 전용 key-host entry/부모·root 보호→source closure build/최종bytes 검산→catalogue 생산/고정GET→desktop 현재성 소비→명시 KEY_PENDING/KEY_READY다. 이후 같은 승인 안의 enroll/HUMAN/ISSUE·명시복구/native mapping을 이어간다. 정확 파일맵·검증 명령과 WI 독립 검수 전 코드쓰기0이다.
+- FN16 plans8종 조사표는 후보 §4.1에만 추가해 F66A106FC5AEC12D47DA15B112D0A102E7E02442CD5D58C730B41861B6E1E793/188001B로 동결했다. 원domainHash/exportHash·보호투영/원문부재·참조공백을 구분했고192표부록 확대0·전체 coverage0 유지다. 기존 Reviewer가 이 후보 I1/I2/예약식/inputRef 일관성을 읽기만 재검수한다.
+- FN17 기존 Reviewer는 단일r3 후보 B176B0A3C1857EC837802A019E40C0CFE32BBAB753580A233E7555F44BA0C797/48405B를 반환했다. 기존IN_APP9필드/10000/원승인원자성 보존, 보호입력/봉인·provider·단발/UNKNOWN·클릭/중요사건선행 상세화이며 미채택/구현GO0·최종독립검수 전이다. source도입·실전달로 표시하지 않는다.
+- 실제 DB·권한·키·서비스·컴파일/helper/OS·Agent·실자료/P03R3·신규QA 실행0, 제품writer0/기존담당자재사용·단독writer예정. 전체 계획 미완료이며 FN06 승인 작업 구현을 우선한다.
+- FN16 후보 F66A106F의 I1/I2/예약식/inputRef 한정 재검수는 기존 Reviewer C0/I0·시작끝SHA동일로 반환됐다. 이는 외부반입·키/nonce·FULL_BACKUP_IO/quota 선택의 채택이나 전체registry/backup지원 판정이 아니다.
+- FN06 승인 실행의 첫업무WI는 FN06_DESKTOP_TRUST_A_SOURCE_IMPLEMENTATION_20261102.md로 고정하고 기존 Primary에게 문서 초안 작성만 허용했다. Main이 첫인수경계/후속순서·실효과제외를 지정했다. 코드/시험쓰기0인 predispatch이며 WI 독립검수/게시후 단독writer로 구현을 시작한다.
