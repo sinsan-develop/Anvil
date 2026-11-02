@@ -12181,3 +12181,27 @@ git diff --check
 - Main한정compile계획대로 afbaa2가동결C#DDFF74BA…5912A5 한파일을고정csc로library compile1회했다. exit0/진단빈값·DLL15872B/SHA305C18B0CB2E67C4960FB8151AABDE8B20CCD502D352BDB296825B7511817AB5,load/실행0. 등록신규QA경로는소유대조정확정리·37af0c별도부재확인0잔여다. C#구문/타입/참조검증만이며canonical/crypto runtime·키/보호caller·물리OS/실제준비/Agent는NOT_RUN이다.
 - 결과 docs/04_test_reports/AV3/FN06_NATIVE_PROOF_SIGNER_SOURCE_RESULT_20261102.md SHA850DAC6517B4830CE3A2454491A72ABFFFE42C75274C97A15980D6CBE5751812는사실대조중이다. 기존Run/Load/build/desktop연결0·실제DB/권한/키/CA/서비스/native/helper/Agent/실자료/P03R3효과0·전체계획미완료/단일writer반환을유지한다.
 - 후속crypto WI초안C39BB6F5 preflight C0/I1은allocate를5전용으로오인한내용이었다. 실제prepare5/challenge1/consume4/delivery2·1을보존하는{1,2,4,5}·소비검증으로정정했고최종WI1B8C944D60BFD28F59CE77B72B4D09194CCEE94E28A4B26E2D15D187FD30B802 scopedI1해소C0/I0다. 기존r2wire/표·권한/실제효과변경0이며동일Primary 신규2 단일writer GO를다음으로진행한다.
+
+### 2026-11-02 signer 결과 게시·native crypto 단일writer GO
+- 결과 factual 독립 C0/I0·시작끝850DAC65…751812 동일, Main9de8f9 raw/index4·diff0 후 docs79cc02cc24b98f512a2d3b0eb2db8a4211b76a77을private 게시했다. f20fa7에서local/private동일·mainf976ed5e불변, trackedclean·보호untracked3만존재다. 9de8f9 guard는보호2를대조했고8ea242에서나머지FN10의정확AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6을따로재확인해이전지문과같음을확인했다. 잘못옮긴미사용guard문자열은대조증거로쓰지않는다.
+- 후속 WI1B8C944D60BFD28F59CE77B72B4D09194CCEE94E28A4B26E2D15D187FD30B802 정확신규2를같은Primary에GO했다. source생산은기존r2형식/원기한/단발callback·소거/allocate실제소비를보존, 모든시험은명시난수/UUID/clock/PoolClient합성대역이다. 실제난수·키/DB/권한/서비스/Agent/실자료/P03R3 실행0·Main제품쓰기0·동시writer0·전체계획미완료를유지한다. PMO에정확code/doc/SHA·compile한계/QA0·다음내부구현을보고했고실제실행허가로확대0이다.
+
+### 2026-11-02 native crypto 실제 coordinator 합성 RED
+- Primary0eaa85는 실제coordinator source.allocate(5)→새crypto 기본거절의503과기대200불일치로기능RED0PASS1FAIL/native1을확보했다. 앞47ee27의고정clock이원writer요청시각보다앞선fixture준비오류는원관측전clock전진으로분리보정했으며기존파일수정0이다. 신규2만단일writer진행·실제난수/Secret/DB/네트워크/서비스/Agent/실자료/P03R3효과0·live0이다.
+- PMO cursor11은결과/후속WI전문·지문을확인하고원예산보완과compile-only를실제C#서명/키사용과구분해기록·추가개입0을회신했다. 새실행권한으로확대하지않으며전체계획미완료를유지한다.
+
+### 2026-11-02 FN04/UI06 소스드리프트 실제 누락·별도 결정 지원
+- 기존Reviewer 한정대조와 Mainb71d45 실제source 확인: ProjectDocumentSourceLinks는detach만·초기LINK/관측권위없음, UI source이력/분리·UNVERIFIED만이며최초LINK/관측/MATCH·DRIFT/선택은미구현이다. 전체업무를실DB검증잔여로숨기지않는다. 기존SOURCE B채택을미승인으로되돌리지않는다.
+- FN03_SOURCE_CONTENT_HASH_DELTA_CANDIDATE.md SHA746D1FBA11AFDB94D750955A14F7D465BAA5E19B71D8598C2EBDBE7CD738F173 §13.4는새관리원문보호exact9/10·별도전용조회operation/AUTO·OWNER/재인증/현재제어·원문반환0의상세후보이며문서작성만채택상태다. 일반command payload_ref/files권한으로우회0이다. PMO에정확A source계약채택/기존채택기록지원과대안B/C·실제효과제외를요청했다. 새publicendpoint/guardSQL임의확정·실제DB/권한/키/서비스/Agent/실자료/P03R3실행0이다.
+- Main9959b0의소스경로추정읽기오류1은6edc59 rg실제목록의modules/documents 경로로정정했다. 이오류는기능부재근거가아니며향후이름만전달받은파일은실제목록확인후읽는다. Reviewer도문서경로준비오류1을실제목록으로정정해근거에서제외했다. 별도결정미정은해당연결만분리하며현재nativecrypto2단일writer진행을멈추지않는다.
+
+### 2026-11-02 native crypto 검증 범위 정정 — 기존 비밀 아닌 영수증 ID
+- Primary e195ab는 신규11PASS/4164.3009ms·type57ab1f exit0을 보고했으며 검수 전이다. 신규crypto의randomBytes/UUID/clock 포트는 명시deterministic이지만 기존 persistProjectReceipt(project-command.ts112/118)의 메모리영수증/audit용module randomUUID는 그대로 사용됨을 발견했다. 기존파일수정/실제credential·키/파일/DB/네트워크/서비스/Agent효과0과 구분한다.
+- Ruling: 기존 메모리영수증 UUID는 비밀/credential/실제키 생성이 아니며 최신 실제환경 제외에 해당하지 않는다. WI의모든대역문구는신규crypto포트에한정한다. 전체시험UUID/난수0으로주장하지않고 이전광범위표현은이구분으로정정한다. 기존제품/전역crypto binding mock·syncBuiltinESMExports·추가반복시험0, 일반영수증코드불변·보안/합격기준완화0이다. Main은동일2 writer반환후fresh/독립검수하며새계약/실제효과로확대하지않는다.
+- 타입중간의초기화흐름5와callback void변환1은신규타입작성오류로분리했다. callback unknown반환과검산local설정후필드대입으로type0이며기대값/기준완화/any0이다. 전체계획미완료 유지.
+
+### 2026-11-02 native crypto source 검수·통합
+- Primary writer반환/신규2동결 뒤 Main6896c9 source와명시대역/diff, 9187a0 신규11PASS/0FAIL/skip0/2859.0609ms·type/diff0·독립C0/I0(두SHA시작끝동일)를확인했다. Main72a23b 정확2SHA/raw-index일치·stageddiff0 후 code1a4090dad5ca48d8df856b1b00f30b6ff4ceb2ee 신규2/114추가 checkpoint다.
+- 실제coordinator에서prepare5/delivery2·1→receipt/writer예약/2표저장/commit후전달·callback부재rollback·COMMIT불명/명시replay추가생성전달0을확인했다. count1/4/nonce는직접포트검증이며전체host실측으로확대0. 신규crypto포트는대역,기존영수증/audit비밀아닌UUID사용은구분해보존한다. 실제credential/키/DB/권한/서비스/네트워크/Agent/실자료/P03R3효과0·QA0·전체계획미완료다.
+- 결과 docs/04_test_reports/AV3/FN06_NATIVE_CRYPTO_SOURCE_RESULT_20261102.md SHA88A69AF729D7316018DDC9571E9063E1365EED4EFD0E5C2D522ED97342552ECE 사실대조중,같은Primary는r2남은실제producer/권한계약차이최대3을읽기대조만한다. 새제품GO0·반복시험/미사용wrapper진도대체0이다.
+- PMO cursor12는FN03 §13.4 동일상세안SOURCE채택질문이10/24이미전달됐고해소한직접승인답변을찾지못했다고확인했다. 상세문서작성만채택상태·기존B SOURCE승인을새저장/조회권한에재사용0·질문반복0이다. 이별도미정과현재nativecrypto의독립진행을구분한다.
