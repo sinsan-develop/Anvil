@@ -1,4 +1,4 @@
-# FN06/FN18 NATIVE-RUNTIME-PACKAGE-01 — 고정 native proof runtime 배송 소스 WI r1
+# FN06/FN18 NATIVE-RUNTIME-PACKAGE-01 — 고정 native proof runtime 배송 소스 WI r2
 
 2026-11-03. PRE_DISPATCH_REVIEW. 독립 사전 검토·기존 Primary 수행가능성 확인·Main 게시/명시 배정 전 코드 GO0.
 
@@ -17,7 +17,7 @@ PMO turn01a19d4b-0e0d-7a70-94c2-8c0a345a81eb는 고정 Vite write:false 메모�
 | apps/desktop/src/trust-enrollment-owner.cjs | 기존 6D4913E51711B3F3C10F33DB98C5CECBA5691266CFD8A2CDC3D2E307CB2E32EA |
 | apps/desktop/scripts/desktop-runtime-profile.cjs | 기존 4F1A710856E640519ADDA3AC621CCB7C3805DC65FA5263874EAD4671090860CD |
 | tests/desktop/desktop-trust-registration.test.cjs | 기존 0FD9D7EC9B071755CDC8BD810E0BF04891186C952B0D00D16340830C6C08AA11 |
-| apps/desktop/scripts/native-proof-runtime-entry.ts | 신규·생성 전 부재 확인 |
+| apps/desktop/scripts/native-proof-runtime-entry.mts | 신규·생성 전 부재 확인 |
 | apps/desktop/scripts/native-proof-runtime-build.cjs | 신규·생성 전 부재 확인 |
 | tests/desktop/native-proof-runtime-build.test.cjs | 신규·생성 전 부재 확인 |
 
@@ -62,3 +62,15 @@ entry의 exact6 exports는 NativePreparationClient / NativePreparationCredential
 - root/desktop noEmit·신규 build 단위/변경 native 종단·기존 ISSUE/등록 직접 인접/구문·diff를 선택한다. 무관한 전수/실브라우저·C#/Electron/설치/QA 재실행0. 실제 번들/소스 앞뒤 SHA 및 수행자 명령·exit·시간/개수·미검증을 반환한다.
 - 실제 테스트 assertion/합격 기준을 낮추거나 exports fake로 원 실제 생성기를 우회하지 않는다. 같은 원인3회면 작업 중단·정식 fingerprint/증거/원인/남은 작업을 Main에 반환한다.
 - 완료보고는 소유6 diff/최종SHA·원 RED/GREEN·핵심/인접 검사·정리 live0·미완료 source 공급자/실제배송 NOT_RUN을 포함한다. Git commit/push는 Main이 독립 scoped 검수와 raw/index 확인 뒤 진행한다. 전체 FN06/FN18/계획 완료로 승격0.
+
+## r2 — MAIN_RECONFIRMED_NON_SEMANTIC·신규 entry module 확장자 보정
+
+r1 SHA F2AB6377916B1B86E9033018A93608FCFFDF29030B6E10184C34285A0E3A2965는 Git3c54c1f0에 보존한다. root NodeNext/verbatimModuleSyntax/erasableSyntaxOnly와 desktop package의 CommonJS 경계에서 .ts ESM export는 TS1295, import=require/export=는 TS1294와 Vite exact exports 거절로 이어졌다. 같은 module형식 원인2회 후 추가 우회 시도를 멈추고 **신규 entry 한 경로만 .mts로 대체**한다. 새로운 일곱 번째 제품 파일을 추가하거나 config/검사기준을 완화하지 않는다. 기존 runtime TS11·공개 exports6/행동/승인/실효과 제외는 동일하다.
+
+원 신규 .ts는 이 업무 수행자가 만든 미커밋 소유 regular/nonlink 파일인지 확인한 뒤 같은 scripts 디렉터리의 부재한 .mts로만 정상 이동한다. 타인/기존 자료·디렉터리 삭제0이다. builder의 고정 graph/entry 참조도 같은 대체 경로만 소비한다. 원 .ts를 fallback/별도 산출물로 남기지 않는다.
+
+root 기본 include의 .mts 미포함은 검사 제외로 이용하지 않는다. 기존 root/desktop noEmit를 그대로 실행하고, 다음 **원 root compilerOptions와 동등한 entry 명시 검사**를 추가한다.
+
+node node_modules/typescript/bin/tsc --noEmit --target ES2024 --lib ES2024,DOM,DOM.Iterable --module NodeNext --moduleResolution NodeNext --allowImportingTsExtensions --verbatimModuleSyntax --erasableSyntaxOnly --jsx react-jsx --strict --noUncheckedIndexedAccess --skipLibCheck --types node apps/desktop/scripts/native-proof-runtime-entry.mts
+
+최종 양식/경로 선택은 내부 비의미 구현 보정이다. 원 human r2/r5 source 승인과 PMO01a19d4b 메모리 build 결정이 부모이며 기능/공개계약/권한·보안·실행 범위는 확대하지 않는다. 독립 scoped r2 검토·Main 게시 후 기존 Primary에만 변경 경로 GO를 전달한다.

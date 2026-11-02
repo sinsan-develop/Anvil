@@ -12907,3 +12907,26 @@ git diff --check
 - WI F2AB6377은 Reviewer 독립 C0/I0·시작끝/두정본SHA 동일, Primary 기존3 시작SHA 일치/신규3 부재·허가6 수행가능/추가필수경로0으로 수용했다. exact12 closure·6exports·단일instance/WeakMap 원 소비 검수와 기존 Forge진입을 확인했다.
 - 기존 profile 전용 null IO0/보호 custom hook 시험은 보존하고 실제 기본 fixed hook에서는 profile null이어도 runtime 번들 준비를 생략하지 않는다. 기존 실FS QA 시험은 이번 실행에서 제외하며 향후 정확등록/정리 범위를 재검토해야 한다. 가상exports 성공값/조건부 생략으로 배송 누락을 숨기지 않는다.
 - Main은 WI+현황 정확2를 기존 branch에 게시하고 그 정확HEAD로 기존 Primary에게 허가6 TDD를 명시 배정한다. Main 제품쓰기0·단일writer·원고정 Vite 메모리 build/모델 copy IO만, 실제파일산출/키/권한/DB/서비스/C#/Electron/Agent/실QA FS0·전체계획미완료다.
+
+### 2026-11-03 NATIVE-RUNTIME-PACKAGE-01 명시 dispatch
+- 08b999의 WI+현황 정확2 commit 3c54c1f0cef2fe42eeba52833cfea13fb497a65a를 02c88e 일반 push·local/private exactSHA·main f976ed5e 불변·tracked clean/보호untracked3으로 확인했다.
+- Main은 그 정확HEAD/WI F2AB6377의 기존3+신규3을 기존 Primary 유일 code writer에게 TDD 명시 배정했다. Main/Reviewer의6경로쓰기0·추가경로는revision전반환·실효과/FS QA0이다. 실제 메모리Vite 산출물/같은instance 소비/원fixed hook/기본보호거절을검수하며 실제배송/설치나전체완료로승격하지않는다.
+- Reviewer는hot6를피해기채택native delivery/current/profile와기존HTTPS/등록wire의생산/수신공백만읽기대조한다. 아직새endpoint/서명purpose/ACK를선택·채택하지않으며필요delta와기존대안만분리한다. 복구직접결정대기와독립이고전체계획미완료다.
+
+### 2026-11-03 native 최초 전달의 실제 선행 공백 한정
+- Reviewer는 기존 native issuer deliver가 주입포트이고 slot.accept는 휘발 수용일 뿐 인증/ACK가 아니며, StatusOnly 등록credential은 NativeOnly로 재사용할 수 없고 기존 native HTTPS는 이미 전달된 bearer를 요구해 최초 인증이 순환함을 실제 계약/소스로 확인했다. 새 endpoint·서명 purpose·ACK·보호profile은 미선택/미채택이다.
+- 원 command는 authority 생성/commit 뒤 원10초 안에서 delivery를 기다린 다음 HUMAN 응답을 반환한다. 따라서 후속 HTTPS 수신 방식은 HUMAN POST 전에 원commandId/payloadHash·등록/키세대/profile에 묶인 일회 수신 대기를 준비할 별도 계약이 필요하다. authority를 미리 만들거나 최신pending을 임의선택하지 않는다. ACK도 현재 프로세스 휘발수용과 내구/복구 확인을 구분해야 한다. 유실·재시작/원ATTEMPTED는 불명으로 보존하고 자동 재전달/새명령우회 허용으로 바꾸지 않는다. 현재 패키지 구현의 GO와 분리한다.
+- Main18b4fe의 배열상한 밖 index/null메서드1·추정routes경로부재1은 읽기 준비오류다. 실제 app.ts의 import경로와 s.Count 검산을 사용한 da3f71에서 원command/delivery와 실제 routes를 대조했고 오류를 기능부재 증거로 쓰지 않았다. 앞468a22와같은추정경로준비오류는Main누적2회이므로 이후경로는rg --files/실제import로확정한뒤읽는다. 같은실패명령반복0·실효과/소스쓰기0이다.
+- Primary는 package업무 기준HEAD/WI/기존3SHA/신규3부재·Vite8.3.4를확인하고 실제fixed hook누락RED/동일realm시험조립을진행중이다. 현재추가경로/새계약필요0·실runtime파일/FSQA/C#/Electron/키/DB/서비스/Agent0·전체계획미완료다.
+
+### 2026-11-03 NATIVE-RUNTIME-PACKAGE-01 실제 번들·첫 종단 GREEN
+- Primary854899는 원 fixed hook의 runtime 호출 누락을 실제 source/모델접점에서 1FAIL RED로 재현했다. 이후 실제 고정 Vite write:false로 CJS72092bytes·exact12 graph/6exports를 메모리에 생성했고 신규 builder/copy 음성9PASS 및8479a2의 원 REGISTERED→같은bundle Client/slot/HTTPS→owner SIGN/consume/합성factory1 정상1PASS를 제출했다. 수행자 중간증거이며 Main 최종 인수 전이다.
+- 533ee3 desktop typecheck는 새JSDoc/readonly/Vite 반환union 진단18개 exit1, 같은타입계보 첫오류1로기록·Primary보정중이다. any전파/검사제외·기준완화0을지시했고 별도instance음성은실제로발급한원context를사용해helper0을확인하도록정확히검수한다.
+- 허가6단일writer유지·Main hot6쓰기0·실파일산출/FSQA/설치/Electron/C#/키/DB/권한/서비스/Agent/live0·최종6동결/독립검수/통합과전체계획은미완료다.
+
+### 2026-11-03 패키지 entry module형식2회·최소 r2 보정
+- Primary70834c 신규9/변경native17PASS·desktoptype보정0 뒤 root830cc2에서 신규 .ts entry가 desktop CommonJS경계의ESM export6로TS1295를만났다. 13bb26의import=require/export=는원erasableSyntaxOnly에TS1294 및Vite exactexports거절이었다. 같은module형식원인2회에서추가추정시도를중단·live0으로보고했고Main은설정/기준완화없이신규entry한경로 .mts 대체를최소안으로수용했다.
+- WI r2 SHA BCEDE8278264855C570BC8C6131AABA1D172EA4ED034A854E4A97F63E081FBE6은r1 F2AB6377/Git3c54c1f0를부모로MAIN_RECONFIRMED_NON_SEMANTIC 재확정후보이며같은6중신규1대체만이다. 기존root/desktop noEmit를유지하고원root compilerOptions전부와동등한 .mts명시검사CLI를추가했다. 새공개계약/권한/범위·7번째파일추가0이다.
+- f37bfb의읽기에서허가소스밖제품변경0·보호3/현황보존·구문5/diff0을수행자가확인했다. 633da3 sandbox Git메타데이터접근오류는준비오류로분리·elevated읽기로확인했고설정/ACL변경0이다. Main은r2 scoped검토/문서게시후동일Primary에게만 .mts변경GO를전달하며현재hot6쓰기0·실효과0이다.
+
+- r2 scoped 독립 C0/I0·시작끝/두정본SHA 동일·noEmit CLI 원옵션 전부 일치를 수용했다. Reviewer의 추정 root tsconfig.json 부재1은 실제 파일/명령으로 정정·제품결함 근거에서 제외했다. Main은 r2 문서2만 commit/private 게시하고 기존 dirty 제품6을 보존한다.
