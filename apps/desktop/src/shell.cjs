@@ -9,7 +9,7 @@ function registerLocalScheme(electron){electron.protocol.registerSchemesAsPrivil
 async function createShell(electron,options){
  let fs=nativeFs;if(options!==undefined){if(require('node:util').types.isProxy(options)||!options||typeof options!=='object')throw Error('SHELL_DEPENDENCY_INVALID');const d=Object.getOwnPropertyDescriptors(options);if(!d.io||!('value'in d.io)||Reflect.ownKeys(d).some(k=>typeof k!=='string'||!['io','trustDependencies'].includes(k)||!('value'in d[k])))throw Error('SHELL_DEPENDENCY_INVALID');fs=d.io.value;if(require('node:util').types.isProxy(fs)||!fs||typeof fs!=='object')throw Error('SHELL_DEPENDENCY_INVALID');for(const key of ['lstat','realpath','readFile','writeFile','open','rename']){const method=Object.getOwnPropertyDescriptor(fs,key);if(!method||!('value'in method)||typeof method.value!=='function')throw Error('SHELL_DEPENDENCY_INVALID');}}
 
- const suppliedTrust=options===undefined?createDesktopTrustDependencies(electron):(Object.getOwnPropertyDescriptor(options,'trustDependencies')?.value??null);
+ const initialTrust=options===undefined?createDesktopTrustDependencies(electron):(Object.getOwnPropertyDescriptor(options,'trustDependencies')?.value??null);
  const {app,BrowserWindow,WebContentsView,Tray,Menu,nativeImage,ipcMain,session}=electron;
  const dataDir=app.getPath('userData'),configPath=path.join(dataDir,'server-origin.json');
  const ds=await fs.lstat(dataDir);if(!ds.isDirectory()||ds.isSymbolicLink()||await fs.realpath(dataDir)!==dataDir)throw Error('CONFIG_DIRECTORY_UNSAFE');
@@ -18,9 +18,11 @@ async function createShell(electron,options){
  let stopped=false,busy=false,quitting=false,unknown=false,generation=0;
  /** @type {import('electron').WebContentsView|null} */let remote=null;
  let trustExpanded=false,authEpoch=0;
- const trust=createTrustEnrollmentOwner(()=>({origin:state.origin,identity:String(generation)+':'+String(remote?.webContents.id??0),authEpoch}),suppliedTrust,()=>resize());
-
  const localSession=session.fromPartition('anvil-local');const remoteSession=session.fromPartition('persist:anvil-web');
+ /** @type {any} */let suppliedTrust=null;
+ if(initialTrust!==null){if(require('node:util').types.isProxy(initialTrust)||!initialTrust||typeof initialTrust!=='object')throw Error('SHELL_DEPENDENCY_INVALID');suppliedTrust={};const descriptors=Object.getOwnPropertyDescriptors(initialTrust);for(const name of Reflect.ownKeys(descriptors)){if(typeof name!=='string'||!('value'in descriptors[name]))throw Error('SHELL_DEPENDENCY_INVALID');Reflect.set(suppliedTrust,name,descriptors[name].value);}if(options===undefined){suppliedTrust.nonce=()=>crypto.randomBytes(32).toString('base64url');suppliedTrust.connectorVersion=app.getVersion();}
+ suppliedTrust.createRegistrationClient=async(/** @type {any} */lease)=>{lease.check();const view=remote,origin=state.origin,observedGeneration=generation,observedAuth=authEpoch;if(!view||view.webContents.isDestroyed()||!origin)throw Error('PROTECTION_UNAVAILABLE');const current=()=>{lease.check();if(remote!==view||view.webContents.isDestroyed()||generation!==observedGeneration||authEpoch!==observedAuth||state.origin!==origin||stopped)throw Error('CONTEXT_CHANGED');};current();return require('./trust-registration-client.cjs').createTrustRegistrationClient(remoteSession,origin,lease,current);};Object.freeze(suppliedTrust);}
+ const trust=createTrustEnrollmentOwner(()=>({origin:state.origin,identity:String(generation)+':'+String(remote?.webContents.id??0),authEpoch}),suppliedTrust,()=>resize());
  const win=new BrowserWindow({width:1280,height:900,minWidth:640,minHeight:360,show:false,title:'Anvil 개발 클라이언트',webPreferences:{session:localSession,preload:path.join(__dirname,'preload.cjs'),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true}});
  const send=()=>{if(!win.isDestroyed())win.webContents.send('anvil:state',Object.freeze({...state}));};
  /** @param {string} status @param {string|null} [error] */const update=(status,error=null)=>{state={...state,status,error};send();};
