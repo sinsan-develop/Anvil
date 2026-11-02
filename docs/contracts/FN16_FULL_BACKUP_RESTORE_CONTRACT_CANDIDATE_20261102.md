@@ -124,6 +124,20 @@ referenceRules 항목={fieldPath,targetNamespace,required,scopeRule}, scopeRule=
 
 개별 document collector의 RR 관측과 전체 composition은 별개다. `apps/server/modules/backups/project-inventory-composition.ts:148~150`의 EXACT_REFERENCE_PRESENT는 원문/권위/전체 폐쇄 성공이 아니며 현재 전체 조합은 atomic:false다. §5의 같은 snapshot 생산 연결은 아직 구현해야 할 후보 요구다. 이 표를 실제 DB/파일 검사·현재 권한 부여·복원 권위 재생성의 증거로 사용하지 않는다.
 
+### 4.3 conversations/knowledge의 원문·참조 폐쇄 추가 대조
+
+기존 Reviewer의 제품 source 읽기 대조다. 실제 사용자 자료·DB·백업 파일을 조사하지 않았으며 계약 채택/coverage/복원 가능 판정이 아니다.
+
+| 경계 | 확인 사실과 남은 연결 | source 근거 |
+|---|---|---|
+| 전체 composition | child 원문 JSON이 아니라 component digest·건수·참조/의존 목록을 반환한다. 개별 ORIGINAL hash 검산 성공을 전체 export 가능으로 바꾸지 않는다. sourceSelection NONE도 외부 작업 소스 제외일 뿐이다 | apps/server/modules/backups/project-inventory-composition.ts:39~40,125~128,149; backup-policy-input.ts:7,14 |
+| 대화→지식 출처 | composition의 CONVERSATION_MESSAGE/conversationId/id/hash와 지식 출처 CONVERSATION 또는 USER_INSTRUCTION/id/hash는 자동 동일시할 수 없다. 원메시지 종류·대화 범위를 보호 reader로 결박해야 한다 | project-inventory-composition.ts:64~65,132,148; knowledge-inventory.ts:116 |
+| 원 snapshot/주체 | 대화의 authorRef.userId·targetRoleRef/sourceRefs, 지식 head의 작성자/client/command·사건 actor·reviewer·헌법 appliedBy가 축약돼 있다. null/빈 값이라도 정확 원형을 확보하기 전 축약 출력으로 원 snapshot hash를 재생성하지 않는다 | conversation-inventory.ts:94~97; knowledge-inventory.ts:117,141,152,164 |
+| 검토·사건과 blob | 사건 base/source/review refs만으로 원검토·확정·command/receipt/audit를 폐쇄하지 못한다. composition provider에 해당 독립 namespace 연결이 필요하며 artifact ref 수집은 실제 bytes 보관이 아니다 | project-inventory-composition.ts:65,135~137; knowledge-inventory.ts:167~169 |
+| 공유요청 역사 | 현재 composition에 공유요청 collector/namespace가 없다. 기존 본인 보호 목록/고정조회 권한을 OWNER 전체 export로 확대하지 않는다. RECORDED_ONLY 요청 보관은 실제 공유·대상 권한·지식 복원이 아니다 | project-inventory-composition.ts:37~65; apps/server/modules/knowledge/project-knowledge-share-requests.ts:97~114 |
+
+위 목록은 A1 registry의 남은 원문/참조 연쇄 한 묶음이다. 각 원codec·보호 reader·의존 원형·실제 bytes가 연결되기 전 fullProjectCoverage/restorable/권한 복원은 모두 false다. 전체 registry와 A3 키/nonce·D5 한도 결정은 여전히 미완료다.
+
 ## 5. A2 — snapshot과 현재 권한·원기한
 
 불변 자료 수집은 새 한정 내부 접점으로 동일 PoolClient의 하나의 REPEATABLE READ transaction을 사용한다. 각 collector의 공개 RC wrapper를 바꾸거나 각자 connect/BEGIN/COMMIT하도록 두지 않는다. server가 검증한 actor/client/session/project에서 RLS 문맥을 만들며 임의 actor/purpose/GUC로 권위를 만들지 않는다.

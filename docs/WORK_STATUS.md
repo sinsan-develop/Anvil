@@ -12608,3 +12608,24 @@ git diff --check
 - 기존 Reviewer는 Main 보완 동결 Store6063E378/HostE4D03ECC/TestsAF32E7AE에 대해 C0/I0를 반환했다. current/previous 동시 관측·관측후유실 sticky UNKNOWN, 직접APPEND 공통 기존root guard와 시험source16+유실+6조건 호출/보존을 코드로 대조했고 시작/끝SHA동일이다. 실제 C# 컴파일/RunAll/OS는 NOT_RUN이며 실행PASS가 아니다.
 - Main은 제품writer를 반환하고 기존 Primary에게 원 WIr2/r5의 남은 Node/profile/owner·local preload/IPC/main/settings 연결을 계속 맡겼다. 동결C#7·codec/verifier는 바꾸지 않는다. 다른 agent·새세션/branch/QA0이며 동시writer는1이다. Main은 검수·통합·기록을 맡는다.
 - PMO에 정적계보 해소와 READ_STATE 예시정정/실제미실행/단독writer반환을 전달했다. 새승인요청0·다음작업배정대기0. FN06 첫업무/전체계획 미완료를 유지한다.
+
+### 2026-11-02 FN06 동결 native source checkpoint·FN16 참조 공백 대조
+- Main은 동결 C#7+소유 WORK_STATUS만 정확8로 a6a9047252f6b3375d191482ba798e890b7a9a36(직전97e8c7a3 직접자식)을 commit/private 정상push했다. 원 raw Git blob과 index bytes 일치·staged diff check0, local/private exactSHA를확인했다. remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210은불변이다. 실제 compile/RunAll NOT_RUN을 commit 설명에도명시했고merge/배포/기능완료로처리0이다. 다른 hot Node/UI·보호untracked3 stage/commit0·세SHA보존.
+- 기존Reviewer의추가read-only는 FN16의 composition 요약과 대화/지식 원snapshot의 author/role/sourceRefs 축약·출처 namespace 불일치·검토/사건/command·receipt·audit 폐쇄·blob bytes 미포함·공유요청 collector 미포함을 대조했다. 실제자료/DB/파일조사·제품수정0이다. Main은후보 §4.3에사실만추가(6e74b6)했고양쪽SHA0A989E5D6C7ACF6C77C70BABBEEB155D8C1C0E5CF857A3B2D5156CCF09CC84C2/194971B를확인했다. 기존본문/표부록유지·미채택/SOURCE_GO0·EXECUTION_GO0·전체registry/복원/coverage완료아니다.
+- Primary는같은첫업무구현을계속하고Main은현재제품쓰기0이다. PMO 최신회신도추가결정없음/미완료와source-only경계유지이며새승인대기하지않는다.
+
+### 2026-11-02 FN06 server catalogue 동결 검수 C0/I2·단독 재작업
+- Primary가 server App/source/routes/unit4를 동결했다(B58BDDAF/0BF436BF/2E87941E/15415E58). Primary e0eee0 unit28PASS/skip0·2254.0587ms·roottype0는 제출증거다. Main은 짧은배송CJS2동결(profile200A518B/client1EB99372)과함께같은unit명령을fresh1회실행해28PASS/FAIL0/SKIP0/1940.4721ms/exit0·6SHA전후동일을확인했다. 해당2임시동결은즉시Primary에게반환했다. MODEl_ONLY/명시request대역·메모리GET만이며실compiler/publisher/HTTPS/KEY_READY·키/서비스증거가아니다.
+- 기존Reviewer의동결4정적검수는C0/I2다. I1 source34~35: 최초head뒤proof await중상위REVOKED로변해도옛ACTIVE반환·CAS불명poisoned후read정상제공. I2 source32~34: proof뒤CAS/readback중catalogue만료해도same본문만으로게시성공. r5online head/불명닫힘·원최소기한에미달하며Main기존28PASS가이음성까지증명하지않는다.
+- Main은source/unit2만동결해제하고기존Primary에게유한deferred음성RED→GREEN·끝head/불명대조·catalogue최소기한/CAS후codec검산을지시했다. app/routes2는동결유지·다른owner/IPC/UI도같은단독writer가순차계속한다. 코드직접인수0·첫검수라정적3회계보로계산0,이번원실패/미검증보존이다. 실제DB/권한/키/서비스/컴파일/Agent·실자료/P03R3/새QA0·전체업무미완료다.
+
+### 2026-11-02 FN06 catalogue 경합 보완 검증·route 입력 대조
+- Primary는092b3b의실제3음성RED(옛ACTIVE/poisoned조회/저장후만료)뒤source EEDE4D464C6048F82F849513BC2CF9B7AE73D767C0361F96F450A6FA635359B0와unit AA826C9DE37E1713BACAB5E26DFA79ECFFC0210736F0C111EFC31A9B1C153695를재동결했다. c77e79 direct6PASS/skip0/1123.9843ms·roottype0은수행자증거다. Main은같은선정명령 node --test --test-name-pattern='보호 원증거|보호 원행|source constructor|catalogue CAS 불명|읽기 proof|게시 CAS 뒤' tests/unit/FN06/desktop-runtime-catalogue.test.ts 를fresh실행해6PASS/FAIL0/SKIP0/2080.8632ms/exit0·4SHA전후동일을확인했다. 원28과중첩6을34독립PASS로합산0이다.
+- Reviewer는끝head전체대조/변경폐기·poisoned진입/반환차단·CAS뒤현재clockcodec·commit출발후poison보존의I1/I2해소scopedC0/I0·2SHA불변을반환했다. Main은고정10초timer와raw wall ceiling의원최소기한해석을원문에맞게추가read-only대조중이며새gate/컴파일을추가0이다.
+- Main추가메모리app.inject 입력검사는최초 empty-query 조건에서503!=400 assertion exit1이었다. 재대조에서inject가말단?를handler전정규화하고request.url/raw.url 모두?없는문자열임을확인했다. 실제wire말단?거절은미검증이며기대값을바꿔그조건PASS로승격하지않는다. 나머지query/authorization/cookie/invalidUUID/POST거절·기존health·기본미등록의별도7조건은7PASS/exit0·실network/파일/DB0이다. 최초가정오류1·제품원인미확정·재실행방법전환1이며원실패를보존한다.
+- 실제publisher/FS/키·권한/DB/서비스/Agent·C#compile/RunAll·P03R3는여전히NOT_RUN/제외다. Primary는owner/실IPC/UI를계속작성중이며기능/전체계획완료아니다.
+
+### 2026-11-02 FN06 I2 최소기한 재검수 판정 정정·동일 writer 재작업
+- Reviewer는 원WI102의 'runtime 명시요청은 총10초와 profile/catalogue/lease 최소기한을 min-only로 유지'·'고정wall상한·동적단조remaining'을 추가대조해 앞scopedC0/I0를C0/I1로정정했다. I1후행head/poisoned해소·direct6PASS는유효하지만I2는wall전진후만료만닫혔고전체최소기한해소로확대한판정이었다.
+- EEDE #run은원mono10초와rawwall ceiling만검사한다. 최초catalogue잔여100ms에서wall정체/mono200ms이면CAS진입/성공가능·pending은고정10초까지간다. 기존승인명세미달이며새gate가아니다. Main은source/unit2만같은Primary에게다시동결해제해관측wall/mono쌍의deadline min-only축소·같은잔여의검사/대기상한·늦은IO미정착/commit불명보존을보완지시했다.
+- 동일I2두번째정적미해소이며실C#실행/정식FAILURE_REPORT3으로계산0이다. 원6PASS/원실패·정정판정모두보존하고다른owner/실IPC/UI는동일단독writer가계속한다. PMO에정정/조치/실제효과제외를전달했고신규승인대기0·Main코드쓰기0이다.
