@@ -12851,3 +12851,11 @@ git diff --check
 - 3e99e04eee4abe93ed82e927952bad814a6dd383는70d237b8직접자식 소유9code+WORK_STATUS정확10파일이다. raw/index소유10일치·staged diff check0 뒤일반commit/push했고local/privateexactSHA동일·remote main f976ed5e불변·tracked clean/보호untracked3만보존이다.
 - 신규 docs/04_test_reports/AV3/FN06_DESKTOP_TRUST_ISSUE_01_SOURCE_RESULT_20261103.md SHA5AC413373588B21976A336639F6C2B4B68726EA21F5B18C87E023021C098B5F9에정확코드SHA/9inventory62778E45·보정전52/직접3/최종선정5·판정정정·미실행/부분구현을결박했다. 기존Reviewer에게결과서의오기/과장만읽기검수배정·제품시험반복0이다.
 - 기존Primary에게같은r5 명시복구 RESTORE_VERIFY의보호metadata비활성복원/기존binding선택·원키/HUMAN관계재확인생산공백을읽기조사배정했다. exactIPC/trust-status IO0와대조하고새목록/API/선택권을추정해확장하지않는다. credential use-without-return·새ISSUE/키/native/실제효과는후속/제외다. 현재제품writer0·실키/DB/서비스/컴파일/Agent/QA0·전체계획미완료다.
+### 2026-11-03 FN06 ISSUE 결과 tail·복구 계약 접점 분리
+- e758fb9c05b8507d7049d7dc3668fa7888ad45fe는3e99e04e직접자식 결과서+현황정확2이며local/private동일·tracked clean/보호untracked3·main f976ed5e불변이다. 결과서5AC41337 독립C0/I0·9inventory62778E45 재계산일치·정정/미실행표기를확인했고PMO에소스단위결과를전달했다.
+- Primary읽기조사에서재시작빈owner의attemptId=null과기존trust-act UUID필수/READ_STATE(null)record미반환/Root.Open부재시생성의실제공백을확인했다. startup에기존operation을자동호출하면온라인catalogue조회와충돌하므로임의구현하지않았다.
+- Main은 docs/contracts/FN06_DESKTOP_TRUST_RESTORE_BOOTSTRAP_CANDIDATE_20261103.md r1 SHA43EBD866E54A15E57B0E1ABFDAD4A6A02D093DAC89FED3EFF830CE768BBC6504를DRAFT/NOT_ADOPTED/SOURCE_GO0으로작성했다. 최초명시RESTORE_VERIFY만null입력허용·현재origin의유일binding보호읽기발견·existing-only root·원키/HUMAN관계확인이라는정확delta만결정후보로분리·독립검토중이다. 새목록/임의root/자동복구·키/발급·bearer/native·실효과는추가하지않는다.
+- 일부계약결정을이유로전체작업을멈추지않고기존Primary에게직접승인된native r2 A안의정확근거와같은실행REGISTERED에서독립적으로진행가능한caller/mapping source를읽기조사배정했다. source/문서/Git쓰기·시험·실키/DB/서비스/Agent/컴파일/QA0·전체계획미완료다.
+### 2026-11-03 FN06 복구 bootstrap 후보 기술검토 수용·결정 요청 준비
+- 후보43EBD866은기술독립검토C0/I0·시작끝SHA동일이다. null최초입력/유일binding보호발견은기존r5에없던delta로분리됐고existing-only root·복구조회highWater/pending쓰기0·원행결박읽기MATCH·다중/불명닫힘과채널수명전체쓰기금지가실현가능한한정안임을확인했다. 채택/구현GO/실복구PASS아니다.
+- Main은후보+현황을같은privatebranch에보존한뒤PMO에이정확계약채택의결정·지원만요청한다. 채택전bootstrap소스쓰기0·실키/DB/권한/서비스/컴파일/Agent/QA0. 별도native승인범위조사는계속하며전체계획미완료다.
