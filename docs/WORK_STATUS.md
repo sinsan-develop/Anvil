@@ -12363,3 +12363,24 @@ git diff --check
 - Reviewer는 새 docs/work_packages/FN06_NATIVE_PREPARATION_MANAGED_FAKE_VALIDATION_EXECUTION_CANDIDATE_20261102.md SHA28C5E8F8155DF4135F8B8AAD6FACD66E82AA0C6A395A340E65C32EA125052906를 양쪽에 작성했다. 제품14/시험4/문서내전용entry1=19입력,compiler1/참조4의고정지문·compile1+managedfakeRun1·실제Job/PInvoke/제품Main0·원기한30분/각15초/출력16KiB·불명같은handle보존/정상exact정리를제안했다. QA생성/실행0이며승인아니다.
 - Main2ccd9c는현재18원본bytes/SHA 불일치0·전용entry697B/SHA390690DCA5B5E790A29EB414DD4BF2B6D752464E05DBFE8E6708F076B787ED37·문서SHA일치를독립검산했다. 같은call의sandboxgitdiff는worktree인식128이며파일검산성공과분리한다.
 - 아직supervisor구체구현·독립검수는없다. 따라서실행요청을완료된실행안처럼제출하지않고후보로보존하며실제compiler승인/실행0을유지한다. 현재단일제품writerPrimary의source8구현과무관하게Reviewer의fake호출선/초기화정적검토를계속한다. 컴파일실행안준비를이유로기능source작업을멈추지않는다.
+
+### 2026-11-02 physical factory 합성 QA 생성 전 등록
+- Primary356cad가실제FN18 case준비완료/QA생성0/live0을반환했다. Main4760c9는정확대상 D:\tmp\anvil-v3-native-physical-factory-parent-20261102-01 부재, D:\tmp 일반directory/nonlink·owner/현재실행계정 SINSAN\cyhuh·절대parent일치를독립확인했다. 생성직전 Primary가D:까지부모link/realpath/부재/owner를다시확인한다.
+- 등록root1,소유담당fn16_primary_recovered/실행계정SINSAN\cyhuh,owner.json exact4 purpose=NATIVE_PHYSICAL_FACTORY_PARENT_QA/owner/createdAt/expiresAt,최초생성+30분·연장/재생성0. case-01의합성input/package.json·input/src/main.cjs·Anvil-win32-x64/Anvil.exe·resources/app.asar와표식만사용한다. 최대동시일반파일12/전체16MiB·PE/ASAR각4MiB·input각64KiB,새dep/네트워크/기존서비스영향0이다.
+- roottype/desktoptype확인뒤Primary생성·자체검수,case회수후Mainfresh직접검수에같은원root/원기한을재사용한다(새수명아님). 각case종료확인된자기파일개별회수,최종owner/nonlink·knownfiles/dirs·live0검산후원root정리/독립부재확인한다. 소유/작업정착/예상밖파일불명이면보존한다.
+- ANVIL_NATIVE_PHYSICAL_QA=REGISTERED를명시한합성시험만실제FN18공식file API/producer를소비한다. PE생성은합성데이터writer이며프로그램실행/실제compiler가아니다. 실제DB/권한/키/서비스/Agent/실자료/P03R3/OS-native는제외한다. 신규types 첫진단2원인(시험indexed byte/JSDoc null추론)은각1회보정중이며최종통과아니다.
+
+### 2026-11-02 physical factory 실제 합성 파일 연결 검증
+- Primary는준비module부재RED7fafbc와행동RED8126a3(metadata/managedresource alias수락)를구분했다. alias보정067b26 선정2PASS이며첫patch의Python cp949준비오류는쓰기0·UTF8명시후해소로별도기록한다. Main조기접점의정상Windows경로·workingDirectory/절대14source/inputHash·같은producer첫helperhash불변도구현중반영했다. 아직전체최종검수아니다.
+- 최초생성 dff49c: 등록root1/owner SINSAN\cyhuh/nonlink·marker158B, createdAt2026-11-02T05:13:59.778Z/expiresAt05:43:59.778Z·연장/재생성0. Main05fcbb가원marker/owner/link를독립검산했다. root/desktoptype e3ec4a,b67513/후속root f965fb0이있으며신규type준비진단을제품실패와분리했다.
+- Primary QA247f37 등록합성선정1PASS/415.3454ms(전체596.2946),실제FN18 pathread→producer→동일artifact servercurrent→Client/bridge/launcher fakechild1·최초hash pin/부모변경거절을확인했다고제출했다. case finally는원root owner.json만잔여를단언했고root/marker변경0/livecell0이다. 이는수행자제출이며Main최종독립재현전이다. 실제compiler/CLR/OS/nativeadmission·DB권한키serviceAgent/P03R3성공으로승격0.
+- 기존Reviewer사전읽기에는확정C/I0이나build/시험2가검토중변경되어최종C0는보류했다. 같은Primary가strict/getter/current음성보강뒤정확8동결/검증결과를반환하고Mainfresh·Reviewer변경분재검수·원기한내정확정리를이어간다. 전체계획미완료다.
+
+### 2026-11-02 physical factory source Main 검수·정리·게시
+- Primary정확8 동결writer반환뒤 Main19afd1/c78712가제출8SHA 시작끝동일을확인했다. Main1dc2db는등록원QA수명안에서신규build/source/image3+기존client/context/launcher3 전체57PASS/fail0/skip0/cancelled0/todo0·1554.5313ms·exit0을확인했다. 신규18=순수17+실제합성파일1,기존직접인접39이며수행자별도재검사는더하지않는다. Main29b586 root/desktoptype0·diff0이다.
+- 기존Reviewer최종C0/I0·8SHA동일,원config고정/cwd절대argv/inputHash·전후source/tool검산·최초helperhashpin·metadataalias·보호upstream/current·기본미등록·actualClientfake소비를확인했다. Mainc94c7f raw/index동일·정확8 stageddiff0뒤3eba28f989b757d0cee25cf1671c5ef5e937c08d(신규8/361추가)로commit/privateexactSHA확인했다. Git향후LF→CRLF경고는보존·설정변경0이다.
+- Primarybcdd99는원만료전05:23:29.4957370Z 정확marker1+빈root를비재귀회수했다. Main2d8552 05:23:50.9144140Z root/marker부재를독립확인했다. 첫2f6a26은ConvertFrom-Json DateTime자동변환준비오류/삭제0이며원문판독49ba1d뒤 -DateKind String으로해소했다. 기존FN18유사원인재발을기록하고앞으로표식시각은문자열판독한다. 실제서비스/사용자자료·live0·기한연장/재생성0이다.
+- 결과 docs/04_test_reports/AV3/FN06_NATIVE_PHYSICAL_FACTORY_SOURCE_RESULT_20261102.md SHA76E53F9CD10961CC8B5368E276A214D115AF1661A11BC4EF10570DE504431B8B에정확8/실행/원RED·준비오류·실제효과제외/정리/rollback을보존했다. 별도문서사실검수중이다. C#compile/OSnative/보호producer등록/DB권한키serviceAgent·실자료/P03R3/served/사용자인수·전체계획미완료를유지한다.
+- 같은Primary는다음미완료 실제caller/보호공급구현의승인범위/선행을읽기대조중이다. 컴파일후보문서28C5E8의supervisor구체구현/실행결정과FN03§13.4미승인을소스진도로대신하지않고영향없는계획단위를선정한다. 새agent/branch/worktree/자동화0이다.
+
+- 결과서사실검수도C0/I0·SHA76E53F9C 시작끝동일을확인했다. 제품/시험재실행0이다. 다음읽기대조는실제NativePreparationSource.options/current 보호producer와제품조립이누락됐음을식별했으며기존등록/writer원장/proof와실query의내부구현을다음업무로구체화한다. 실제관측부재는UNVERIFIED/거절을보존한다.
