@@ -12269,3 +12269,14 @@ git diff --check
 - Primary 소유temp2 정리 첫 guard는 OWNER_MISMATCH로 삭제전 중단(exit1/삭제0). JSON날짜 자동변환을 원문 문자열 검산으로 보정한 e00f97 exit0에서 owner/nonlink/정확절대경로·관련Node0 뒤 등록2만 회수했다. 최초 만료02:42:58.553863Z 이전,연장0·개발의존성/SDK/다른경로변경0이다. Main 별도 Test-Path 두 경로 false와 보호untracked3 SHA 일치를 확인했다. 미정착 자원0·실제 환경 rollback0이다.
 - source-only 검수이며 실제 package/native isolation·owner/peer admission·보호키/공급자·DB/권한/서비스/Agent·실자료/P03R3/사용자인수/전체44업무 완료는 아니다. FN03 §13.4는 아직 미승인,영향없는 다음 계획 기능을 읽기 대조 중이다.
 - FN18 결과서 사실 검수는 root lock entry의 devDependencies4개 추가를 구분하도록1곳 보완했다. 기존non-root entry변경/삭제0·신규entry2개가 정확하다. 이전 FE1A739B 지문은보완전이력이며최종결과서 SHA 79FF133F0020D96C5B6C9BDD36951198955A1ED80133E4A6354A3B5E089ECA68 이다. 실제 source/시험/기준변경0·추가재시험0이다.
+
+### 2026-11-02 다음 native owner 연결의 내부 구현 경계 결정
+- FN18 ebec5f2c1fbf119c812c8e5617ffea595e7dd114 local/private동일·tracked clean·remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 f9a3a5에서 확인했다. 보호untracked3는보존하며 전체계획완료/병합/배포하지 않았다.
+- Reviewer는 계획순서FN01~05·FN15/16/10·FN12의한정소비선을대조했다. 지식검색/대기목록/백업정책/제어요청/문제분류는이미연결돼새UI미구현으로취급하지않았다. SOURCE드리프트는보호관리원문계약·실관측생산이선행이고FN02적용은실행상태근거가없어차단을유지한다. 이한정조사는전체source완료판정아니다.
+- Primary의후속정확대조는ConnectionDefinition/환경정의/trustRegistration의기존참조가package/helper/process/channel을직접증명하지않음을확인했다. 그러나producer부재만으로새사람승인/store가필요하다고결론내릴근거도없다. r2§96/177은원공급자·보호소비source를이미승인했으므로Main은기존실행기가직접소유한원helper/channel만허용하는프로세스내부공급자A로상세화하기로했다. 기존r2·공개계약/권한확장이없는내부기술결정이다.
+- package/helper원격선택·STATUS_ONLY등록승격·새보호row/API·키/인증서/root·다른process재접속·재시작holder복구를추가하지않는다. 실제보호상태가없으면미등록/거절이며FN18관측을nativeadmission:true로바꾸지않는다. 기존소유객체에OPEN단발/QUERY/CLOSE·원수명·UNKNOWN/정리책임을묶는완결source업무의정확파일/생산소비·반례를같은Primary에게요청했다. 설계반환전codewriter0·실제compile/native/키DB권한서비스Agent/실자료/P03R3실행0이다.
+- Main4d6767의존재하지않는environments폴더검색은읽기준비오류로실변경0이다. d2cb6c의rg--files로실제connections/project-environments.ts등을확인했고추정경로를다시사용하지않는다. 검색일치없음의rg exit1은제품실패아니다.
+### 2026-11-02 native owner source 완결 업무 WI 초안
+- Main은 기존r2 §79/96/177의내부구현으로새6 source/시험을묶는 FN06_NATIVE_PREPARATION_OWNER_BRIDGE_SOURCE_IMPLEMENTATION_20261102.md SHA8632CDB6F2CD4460D23BF8F7FC468516036688FD49513DD6E948280039FE6A11을작성했다. 원Client private ticket→같은factory·직접소유bridge/launcher→C#원Job생성·조회·닫기/UNKNOWN lifecycle이다. 기존6선행source는읽기재사용,기존Host/Main/build·SQL·등록/키정책은불변이다.
+- 독립preflight를기존Reviewer에게요청했고codeGO전writer0이다. 새권한/store/공개operation/신뢰root·STATUS_ONLY승격·다른process접속/재시작holder복구를추가하지않는다. 메모리포트합성만하며실C#compile/native/helper/OS/DB권한키서비스Agent/실자료/P03R3실행0이다. standalonehelper entry/build/실보호supplier는이단위완료로주장하지않는다.
+- owner bridge WI8632CDB6 사전검수C0/I0·시작끝SHA동일을확인했다. 기존r2 source범위정합·원기한/고정정리budget/UNKNOWN후새OPEN금지의직접코드검수를예정한다. Main38411b 신규6부재확인뒤 같은Primary에정확6단일writerGO를전달하며Main제품쓰기0을유지한다.
