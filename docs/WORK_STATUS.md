@@ -12663,3 +12663,82 @@ git diff --check
 - Primary는Peer9F5334EA275F340D14A4F4BD521995E1102D329D64C77887F5408AE0DA855042/Tests33A1F8FB756BF978D65B4BBD5429AD6E5A70232FF6532F1314A7AF1FE80A24B4를재동결했다. 관측쌍numeric effective ms·Check/Tighten/Remaining 동일잔여·rawNow검산후원값보존과purebudget/Host첫frame지연root/store/key0 시험source추가다. 145e1d/ee18a7은저장/지문exit0일뿐C#실행RED/GREEN이아니다.
 - 기존Reviewer는원I1해소scopedC0/I0·2SHA전후동일·budget역치환원F311rawSHA일치를확인했다. Main도ProcessObservation이후원peer본문bytes불변을별도조회했다. 컴파일/RunAll/OS/실키/parity는모두NOT_RUN이며정적검수를실행PASS로확대0이다. 이번신규계보1회보완으로닫혔고이전state/I2횟수와합산0이다.
 - 해당2는다시동결유지하고Primary는원NodeUI/ABA·build→publisher종단을계속한다. Main제품쓰기0·새실QA/DB/권한/서비스/Agent/실자료/P03R3실행0. Main은동결native2와소유현황만후속복구checkpoint로보존하며다른hot변경은stage하지않는다.
+
+### 2026-11-02 FN06 UI 통합 음성 제출·실클릭/packaging 남음
+- Primary는450346에서실handler정상외sender/getter/Proxy/old epoch·인증ABA·기존connect/quit/veto·main128/320/520/작은창/CLOSE보존4PASS를제출했다. Main독립실행/전체UI인수0다. 같은묶음남은1은원IO종료요청직후cleanup finally전timer1을본실패이며수행자는조기관측으로분류했다. Main은원IO/close정착근거·유한microtask조건과원timer0/추가IO0기대값보존을요청했고단순timeout연장/green까지poll/불명→정착완료승격을허용0이다. 실제정착후잔여면제품문제로반환한다.
+- 현재settingsHTML/CSS/실JS클릭소비·compiler/publisher/Forge보호입력종단은미완료다. Primary보고live명령/권한대기/QA0·동일원인제품반복미해소0,Main제품쓰기0. 실제효과제외유지·첫업무/전체계획미완료다.
+
+### 2026-11-02 FN06 packaging 원접점 읽기 지원·기존 범위 조립 계속
+- 기존Reviewer는작성중snapshot설계지원으로profile create→privatecontext write복사본,Forge packageAfterCopy(buildPath/electronVersion/platform/arch),완성parent verifyPackageForMaker/produceCompileInput→privatecompilerproduct→publisher→readPublication/commit/readCommitted→server원행ports의기존접점을확인했다. 설치된shared-types/index.d.ts22~26/core/api/package.js124~125가hook인자근거다. hot최종검수/인수판정은아니다.
+- exact30안에서source조립가능하고새public API/키/저장형식필수근거는없었다. readOwnedPackageProfile literalnull은실upstream미등록기본값이나실고정profile생산자미구현과구분한다. 개발installer NOT_RELEASE/applicationAllowed:false·옛SOURCE_FILES를실승인/전체FN06 provenance로사용0,profile복사뒤ASAR확정·원checkout/완성ASAR사후변경0·실origin/설치provenance/배포공급자부재는미등록이다. Main은근거를Primary에게전달해새승인대기없이원source조립을계속하게했다.
+- Reviewer준비명령에서apps/desktop/forge*.cjs wildcard경로를rg에전달해Windows os123 1회후literal실파일로정정했다. 부재/제품실패근거로사용0·동일방식추가반복금지·실행/쓰기/FSQA0이다. Primary는UI실JS/직접음성·정상provenance종단미완료를보존하며단독writer유지한다.
+- Main의앞Peer+Tests+현황정확3 checkpoint404960c54fce2c077ea882035606f7fcce40479f는local/private동일·remote mainf976ed5불변을확인했다. 다른작성중제품/보호untracked stage0·실제효과0·전체계획미완료다.
+
+### 2026-11-02 FN06 settings 실소스 합성19 제출·desktop 타입 첫 실패
+- Primary ff7fc0는신규desktop14+기존shell-policy5=19PASS/FAIL0/SKIP0/224.218ms를제출했다. 실제제품settingsHTML/JS클릭·늦은IPC·입력/quit취소·ABA/oldfinally·작은창bounds의메모리대역검사이며실Electron/pixel/hit-test증거가아니다. Main독립재실행/해당묶음인수는아직0이다.
+- 같은명령뒤첫desktop타입검사는새CJS의미기재매개변수·null묶음변수·cancel closure 타입진단으로exit1이었다. 수행자는정확JSDoc/typedcancel holder를보완중이며이타입계보첫1·PASS승격0다. Main은기준/기대값/ts-ignore·검사설정완화·허용경로밖파일추가0을유지하고보완뒤부분동결지문/명령결과를요청했다.
+- compiler/publisher/Forge보호입력정상종단은여전히미완료다. 단독writerPrimary·Main제품쓰기0·실제DB/권한/키/서비스/C#컴파일/Agent·실자료/P03R3/새QA0을유지하며전체첫업무·계획미완료다.
+
+### 2026-11-02 FN06 desktop 동결11 Main19PASS·독립 C0/I3 재작업
+- Primary는desktoptype 실패계보2(미기재/nullable5 등)후568b0e exit0을제출했다. 최종guard뒤3c969b 직접4PASS/358.6741ms·앞19PASS는수행자증거다. Main은동결11(source10+desktop-owner-test)전후SHA동일을검산하고 node --test tests/desktop/desktop-trust-owner.test.cjs tests/desktop/shell-policy.test.cjs 를fresh실행해19PASS/FAIL0/SKIP0/225.27ms/exit0을확인했다. 실제Electron/Windows/pixel/C#·키/DB/서비스0·메모리DOM/IO대역만이다. hot scripts와경합하는Maindesktop전체type는최종안정묶음에서실행예정이다.
+- 기존Reviewer의변경전동결11판정은C0/I3다. I1:firstcurrent→writeHighWater→KEY_PENDING APPEND저장후불명을clientcatch가PROTECTION_UNAVAILABLE로바꾸고owner가UNAVAILABLE/attemptnull로숨김. I2:owner.narrow는검사deadline만줄이고schedule10000고정이라짧은기한의미정착IO대기상한미충족. I3:시도없는settings접기에서mainbounds만128·실panelDOMhidden누락이다. 나머지7끝SHA동일/추가C/I없음,키준비뒤pair/ISSUE/복구는이번단위구현아니다.
+- 같은Primary에게runtimeclient/owner/settingsJS/test4만동결해제했다. Primary2460bf exit1은I1저장응답유실/후행기한2·I2companionpending100ms·I3DOM미숨김 총4FAIL genuineRED다. 원Main19는이음성까지PASS승격0·별도보존한다.
+- Main은C#첫READ_STATE의Root.Open도새보호root를생성할수있어잠재효과출발/불명provenance를append뿐아니라첫helper/protectedIO부터보존하도록추가지시했다. helper전metadata실패/효과0은무조건UNKNOWN으로덮지않는다. 필요한경우exact30내host-client의private효과접점1도동결해제허용(최대5/다른6유지),새publicfield/권한변경0이다. Primary단독writer·Main코드쓰기0·실효과/QA0·첫업무/전체계획미완료다.
+
+### 2026-11-02 FN06 desktop I1/I3 해소·I2 후행 timer 재작업 / 새 QA 제안만
+- Primary2460bf 4RED→9a1943 직접4PASS 뒤첫READ잠재효과/늦은접기2를추가했다. 5bda01 전체24PASS/1FAIL은private효과표식이publicKEY_PENDING을너무일찍표시해bounds520!=320이었다. 표식만private으로유지보완후cf71c2 신규20+기존5=25PASS/FAIL0/SKIP0/211.4923ms·desktoptype0이다. 이부분기능계보실패1·기대값/기준완화0이다.
+- 재동결4 client3B0161F2/owner2F1C81E0/settings79C6D13D/test4A5467A1에대해Reviewer는I1첫spawn private표식/불명보존·I3같은generation성공두분기DOM숨김해소를확인했다. 원I2는owner check후행wall전진으로monoEnd를줄여도timer재예약이narrow에만있어미해소(C0/I1,4SHA시작끝동일)다. 잔여500→readImage반환wall+400/mono정체→companionpending의상한100반례가남는다. 같은계보두번째정적미해소·Main25fresh는아직NOT_RUN이며수행자25를전체인수로승격0이다.
+- Main은owner/test2만다시동결해제해같은snapshot의check축소에도timer앞당김·clock중복/재귀/기산0·유한음성을지시했다. client/settings와다른7은동결유지·Primary단독writer·Main제품쓰기0다.
+- Primary는남은source조립중실Forge packageAfterCopy/보호build행동일성→복사본profile→기존hardening→compilerproduct/publisher를연결중이고hot scriptstype진단fe84a7 1회→f9b90d exit0을보고했다. 정상FN18 reader시험을위한새합성QA 제안 D:/tmp/anvil-v3-desktop-trust-key-host-parent-20261102-01은아직GO0/생성0다. owner=fn16_primary_recovered,purpose=DESKTOP_TRUST_KEY_HOST_PARENT_QA,최초+30분/갱신0,최대12파일16MiB/개별PE·ASAR4MiB/입력64KiB,compiler/basis/output/tool/driver는메모리·기존source7읽기다. 정확marker명/전literal목록/기준SHA/TTL·소유정리/현재부재·link/realpath readiness를반환받은뒤Maincommentary+현황등록·exactGO후생성한다.
+- 실제키/권한/DB/서비스/C#컴파일/Agent·실사용자/백업자료조사·P03R3실행0유지,전체첫업무/계획미완료다.
+
+### 2026-11-02 FN06 새 합성 parent QA 생성 전 등록
+- root D:/tmp/anvil-v3-desktop-trust-key-host-parent-20261102-01, owner fn16_primary_recovered, purpose DESKTOP_TRUST_KEY_HOST_PARENT_QA. 최초owner.json의createdAt/그+1800000ms expiresAt 4필드만·갱신/재생성0·최대30분·동시실행0. 첫수행자정상1회성공뒤같은원TTL/동결source로Mainfresh1회만,불명/실패는자동재실행0이다. 실제C#compiler/EXE/helper/키/권한/DB/서비스/Agent/실사용자자료·P03R3실행0이다.
+- 전체등록파일6: owner.json; case-01/input/package.json; case-01/input/src/main.cjs; case-01/input/src/runtime-catalogue-profile.cjs; case-01/Anvil-win32-x64/Anvil.exe; case-01/Anvil-win32-x64/resources/app.asar. 실제예정6파일<9MiB·정책상한12/16MiB,개별PE·ASAR4MiB/입력64KiB·marker4KiB,모두합성/기존source복사본이며바이너리실행0이다. tool/reference/basis/output/driver/fakechild는메모리·C#source7읽기만이다.
+- source동결7: build7F2C7BEC3C8454006541F0D0271618385BFE8D82EFCB53E19192B5A8109A10C2/compilerA0F14E008371550C8A794B5B773480686889005D2B5A16F2C3A032563E8514CC/verifierCD7DD3ABA0074F36170965CC462258CFC8E024A51C016BA5078DE7502A911E7E/Forge7B35AE26CD6DF10FF297343E964D0A7BD311B0E1A93F85CBD3E01DD82BD0C140/profile4F1A710856E640519ADDA3AC621CCB7C3805DC65FA5263874EAD4671090860CD/publisher59CCAAC74C1F2794EB7427AABD272E175F5C5688BEAFB0525650FE7A49BB6BA0/test708FF71B89C0E382C110AD6A9CDEAF6C6B721498E3C2ED4B18C0A33A3C4E8275. 초기readiness후추가정상소비/proxy검산·VM URL/Buffer미주입정적준비누락1을명시주입만보정했다(847fb6 구문0/역치환일치·실행FAIL0). 지금제품/시험쓰기전부0·7최신SHA고정이다.
+- Main 실제preflight에서root부재·D:/ 및D:/tmp nonreparse/link없음·owner는각SYSTEM/SINSAN\cyhuh를확인했다. 생성직전다시absent/realpath/link확인·mkdir비재귀/create-new marker로출발한다. 원부모/기존서비스·다른프로젝트파일은수정0이다.
+- 명령은시험선택환경 ANVIL_DESKTOP_TRUST_BUILD_QA=REGISTERED 와 node --test --test-name-pattern='실제 FN18→Forge' tests/desktop/desktop-trust-key-host-build.test.cjs 한정이다. env는제품권위입력이아니다. 테스트는등록5fixture를개별unlink·빈case dir rmdir하고owner/root만Mainfresh까지보존한다. 두실행정착뒤Main은원marker/hash·root실경로/owner/nonlink·등록경로부재를검산후marker/빈root만비재귀정리·독립잔여0조회한다. 미정착/신원불명/예상밖자원은보존·보고하며강제삭제0이다.
+
+### 2026-11-02 FN06 합성 parent QA 실제 최초 생성·수행자 단발 GO
+- Main은생성직전root부재·부모realpath/nonlink·최신7sourceSHA를재검산하고root/owner.json만최초생성했다. createdAt=2026-11-02T13:39:07.529Z,expiresAt=2026-11-02T14:09:07.529Z(23:09:07.529 KST),갱신/재생성0. markerSHA6510E9825B845D9BEA0D93B383D5836ED0A0A7FF2BCBB624B042CD507617FD0E;root(dev3126079509,ino13792273861066277),marker(dev3126079509,ino12947848930934310). 실제root/marker owner모두SINSAN\cyhuh·nonlink/nlink1·등록marker1개/fixture0을확인했다.
+- 사전등록한정상시험1회만Primary에게GO한다. 원TTL·동결제품/시험쓰기0·순차실행1,성공/실패모두test.after소유fixture5/빈case개별정리·root/marker보존을반환한다. 실패/불명은재시도/추가case생성0·실C#컴파일/EXE/helper/키/DB/서비스/Agent0이다. 첫결과후Main은동일원TTL/동결source의독립fresh1회와즉시root/marker최종소유정리를진행한다.
+- Main은UI동결11의최종보완본전체명령을fresh실행해26PASS/FAIL0/SKIP0/468.1694ms/exit0·11SHA전후동일을확인했다. 동시에동결전체desktoptype exit0이다. 원I2후행timer까지Reviewer scopedC0/I0·ownerF9A61ACA/test19BD7864전후동일을반환했다. 원19/25/부분4와중첩합산0이며실Electron/C#·키/서비스/UI pixel증거아니다.
+
+### 2026-11-02 FN06 등록 parent QA 첫 단발 정상·Mainfresh 전
+- Primary093369의등록단발명령은exit0/1PASS/FAIL0/SKIP0/case2935.2925ms·전체3095.1116ms였다. 실제Forgecopy/공식FN18 path검산→메모리compiler원closure/privateproduct→publisher원행→실serverinjectGET→복사본배송profile reader→원owner/catalogue/keyhostclients→fixed합성공개SPKI/fakechild의pending선내구/CREATE1/KEY_READY·동일request추가0을대조했다. actualcompiler/C#/키/native/네트워크/DB0·MODEL_ONLY이다.
+- 수행자f4ae8d13:41:00.409Z에서등록5fixture/빈case dirs개별정리후owner.json1·case부재·OSownerSINSAN\cyhuh/link없음·원marker6510E9825...617FD0E/7sourceSHA불변/live0을반환했다. 원expiresAt14:09:07.529Z갱신0·root/marker는Mainfresh용보존상태다.
+- Main은동일동결source/원TTL/등록정상case1회만독립fresh하고결과무관하게정착/소유를확인한뒤root/marker최종회수·별도잔여0조회한다. 현재제품/시험쓰기전부0·새파일/case확장0·실효과제외유지다.
+
+### 2026-11-02 FN06 scripts compiler I1 보완·새 QA02 생성 전 등록
+- 이전scripts7정적 C0/I1은compiler A0F의후행wall전진이pendingtimer에미반영된경계다. 같은Primary에게compiler/test2만동결해제해보완지시했고다른28은동결유지했다. e1eef4의ownedIO 첫directory뒤wall+400/mono0→inspectFile미정착 timer500!=100은genuineRED1,00b892 같은음성1PASS/119.4797ms·desktoptype0,3daf9f구문/type0다. 이검사는공식parent reader전·실FS/QA0이며원IO정착전close/write/driver0·정착뒤추가IO0/files0을보존한다. Mainfresh도같은음성1PASS/FAIL0/SKIP0/142.7765ms/2SHA전후동일을확인했다.
+- 임시동결새compiler6CE13EF2A5D3763F790AADD177FFF83886C1AB9CAD4F83D859B0EF7730AA7C38/test337D81D3EA0AE74034C85C2EDA48334180C0806728227A1BA843420C7ED0A674. private effectivewall/mono관측쌍·원deadline/timer min-only/동일snapshot·clock중복/재귀0,UNKNOWN/늦은IO정착을실compile종료로바꾸지않는다. 원I1독립정적재검수중·실컴파일0이다.
+- 신규root D:/tmp/anvil-v3-desktop-trust-key-host-parent-20261102-02,owner fn16_primary_recovered/purpose DESKTOP_TRUST_KEY_HOST_PARENT_QA,owner.json exact4필드createdAt/그+1800000ms expiresAt·연장/재생성0이다. QA01은이미최종회수돼재사용0이다. root02의등록6파일은owner.json;case-01/input/package.json;case-01/input/src/main.cjs;case-01/input/src/runtime-catalogue-profile.cjs;case-01/Anvil-win32-x64/Anvil.exe;case-01/Anvil-win32-x64/resources/app.asar다. 정책최대12파일16MiB/실제6파일<9MiB·PE/ASAR각4MiB/입력64KiB·marker4KiB,tool/reference/basis/output/driver는메모리·C#7source읽기만이다.
+- 동결source7는build7F2C7BEC/compiler6CE13EF2/verifierCD7DD3AB/Forge7B35AE26/profile4F1A7108/publisher59CCAAC7/test337D81D3이고나머지28제품불변이다. 명령은시험선택 ANVIL_DESKTOP_TRUST_BUILD_QA=REGISTERED 및 node --test --test-name-pattern='실제 FN18→Forge|compiler I1 basis' tests/desktop/desktop-trust-key-host-build.test.cjs 한정이다. 정상1+실basis메모리write후sync미정착/lateclose1 음성1의유한2조건,명시entering.promise/5초watchdog는시험관측한도이며제품예산연장0이다.
+- Main은literal부재/부모owner·nonlink/realpath/7SHA를생성직전재검산하고root/marker만최초생성한다. 수행자단발2조건→fixture5/빈case개별정리·rootmarker보존→Main동일원TTL/동결source 독립fresh2조건후원identity/hash/owner/부재를확인해marker/빈root비재귀회수·별도잔여0조회한다. 실패/불명재시도·임의case/실데이터조사0,예상밖자원은보존·보고한다. 실제C#compiler/EXE/helper/native/키/권한/DB/서비스/Agent·실자료/P03R3실행0을유지한다.
+
+### 2026-11-02 FN06 QA02 실제 생성·단발2조건 GO
+- Main은source7(compiler6CE13EF2/test337D81D3 포함)·root02부재/부모realpath/nonlink를재검산후root/owner.json만최초생성했다. createdAt2026-11-02T14:05:10.088Z/expiresAt2026-11-02T14:35:10.088Z(23:35:10.088KST),갱신0;markerSHA3A06C14133AD45076F42B1653F3BB283DBD833D2A07D4149D7E800FD9225C062. root(dev3126079509,ino18014398511726113),marker(dev3126079509,ino17732923535015458),OSowner둘다SINSAN\cyhuh·nonlink/nlink1·marker1/fixture0이다.
+- 기존Reviewer는compiler I1해소scopedC0/I0·source/test2SHA전후동일·같은check관측의effective시각/deadline/timer축소·원basis finally의IO정착후자기handleclose/UNKNOWN보존을정적으로확인했다. QA02정상/sync경합실행증거로승격하지않았다.
+- Primary에게등록패턴 '실제 FN18→Forge|compiler I1 basis' 의정상1+sync경합1만한번GO한다. 그뒤test.after는등록fixture5/빈case만개별회수·root/marker보존을반환,Main은같은동결source/원TTL에서독립fresh2조건을한번실행후원신원/hash검산·marker/빈root비재귀회수·별도잔여0조회한다. 실패/불명은재시도/제품수정/추가case0·예상밖자원은보존한다. 전제품/시험쓰기0·실C#컴파일/native/키/DB/서비스/Agent·실자료/P03R3실행0이다.
+
+### 2026-11-02 FN06 QA02 수행자 단발2PASS·Mainfresh 전
+- Primary f0780a는등록패턴정상1+sync경합1의단발명령exit0/2PASS/FAIL0/SKIP0/2015.3181ms(정상1763.5612ms/sync67.2844ms)를반환했다. sync조건은메모리basis write1뒤wall+400/mono0→timer100→UNKNOWN/원sync미정착/close0/driver0→원sync정착뒤자기handle close1·output읽기/driver0·메모리basis원행1보존이다. 실제compiler종료/키미생성/실파일sync를증명하지않는다.
+- e01d61 14:07:15.724Z 수행자조회에서등록5fixture/빈case dirs개별정리·owner.json1/case부재·ownerSINSAN\cyhuh/nonlink·원marker3A06C141...5C062불변·7SHA전후일치/live0이다. 전30writer를반환했고root/marker는원expiresAt14:35:10.088Z까지Mainfresh/회수대기다.
+- Main은동일source7/원TTL의등록2조건독립fresh1회만진행하고정착/소유확인후marker/빈root를비재귀회수·별도잔여0조회한다. 재실행확장/신규case/제품쓰기0·실C#compiler/EXE/native/키/권한/DB/서비스/Agent·실자료/P03R3실행0이다.
+
+### 2026-11-02 FN06 첫 source 단위 통합 검수·코드 checkpoint 준비
+- QA02 Mainfresh 등록정상+sync경합단발은2PASS/FAIL0/SKIP0/1939.507ms(정상1742.0699ms/sync53.4457ms)/exit0·source7전후동일·fixture0·원marker동일이었다. 14:09:52.354Z 실제owner/dev/ino/hash/nonlink·유일marker를재검산후marker/빈root만비재귀회수했고,별도14:10:03.606Z QA01포함9대상literal조회잔여0을확인했다. 원expiry14:35이전정리·재생성/실compiler/키/DB/services0이다.
+- Main최종선정검증은catalogue 전체36PASS/FAIL0/SKIP0/3917.8802ms·profile새메모리2PASS/209.1467ms·root tsc --noEmit exit0·desktop tsc exit0이다. UI최종기능26PASS/468.1694ms와QA02 2PASS는각고유범위로보존하며이전19/25/부분시험과중첩합산0이다. 이미불변검수된verifier12를불필요재실행하지않았고현재정상종단은그실검산소비를포함한다.
+- 마지막scripts compiler I1는기존Reviewer정적재검수C0/I0·6CE/test337전후SHA동일로해소됐다. 기존codec/verifier/C#·server·UI개별scopedC0/I0와합쳐첫source단위의미해결C/I는0이나실제컴파일·CNG/DPAPI/Windows내구·TLS·설치/배포/인수는NOT_RUN이다.
+- Git정책의text/eol=lf준수로Primary가settings.css만CRLF1→LF 정리했다(eeb668): raw9ED43947→2896CF1540F462D18E886C528B326B2C7B6BEEDEB99957AF7A25623F2BE99699,1392→1391bytes·줄바꿈외동일/다른29불변이다. 동작/권한의미변경0·별도승인불필요·SourceScope30의최종inventorySHA54484A717CD65886270AE4E7F640D1BDCF3B4960C16F87C891DC7682B7B9E0C0,허가30/보호untracked3불변·WI352F/r5F6C8/직접승인7B8E불변을Main검산했다.
+- 판정은승인된첫코드/합성단위의한정검수이며FN06전체는부분구현이다. ENROLL/PROOF/HUMAN/ISSUE·명시복구/네이티브mapping·실보호배포공급자/설치권위·actualruntime은남아있다. main병합/배포/작업계획완료선언0. Main은소유변경만private코드checkpoint로보존하고결과보고를정확SHA에결박한뒤기존계약의다음미완료source업무를이어간다.
+
+### 2026-11-02 FN06 Git 줄바꿈 바이트 검산 보정·최종 소스 재동결
+- Main의첫소유22 staging에서raw/index 바이트guard가shell.cjs 차이를발견해exit1로중단했다. 커밋0·보호자료stage0이며Git규칙text/eol=lf가혼합CRLF를정규화한것임을소유30과index대조로확인했다. 차이는shell41/preload1/policy1/settingsJS1의CRLF뿐이며다른code차이0이었다. 이준비guard실패1은제품시험실패로계산하지않는다.
+- Primary에게정확4파일만CRLF→LF정리를맡겼고844540에서지정before/expectedafterSHA·UTF8roundtrip·줄바꿈외동일을모든쓰기전검산한뒤반환했다. 최종shell686EA797/preloadC2843A65/policy345704AB/settingsJS12F7E7BA,나머지26/문서/Git/시험변경0다. Git설정/합격기준을바꾸지않고다시raw=index 엄격검산으로진행한다.
+- Main은새30source실bytes/hash를재고정해inventory39BC28CAD8DB426CB00A53FC434964ED1D32A24E9FB62D7A33F07C2322CD0D1A를확인했다. 최종LF source의UI26PASS/FAIL0/SKIP0/346.0697ms·desktoptype exit0을추가검산했다. 이는바이트가달라진4소비경로확인이고앞26과중첩합산0이다. 코드의미/권한/공개계약변경0·r5/WI/직접승인불변·모든제품writer반환/실행·QA0이다.
+
+### 2026-11-02 FN06 마지막 staged 공백 guard 보정
+- 엄격raw/index일치검산은통과했지만staged diff --check가신규runtime-catalogue-profile.cjs20행공백36바이트를지적해exit2로커밋을중단했다. 최초unstaged검사에서untracked본문은대상아니었으므로이번staged검사에서확인된준비오류1이며제품시험PASS/FAIL과구분한다. 기준/Git설정완화0·index소유22외stage0다.
+- Primary가해당1행공백만제거하고9aea60에서before200A518B→833C4AA68A9C8CA3B505571693526C1D158A61709B156CE981071A695E67980E/10445→10409B·단일공백행역치환beforebyte정확일치를반환했다. Main도역치환SHA200A일치와나머지29코드hash불변을읽기검산했다. 동작/공개형식/권한변경0·QA재생성/검사기준완화0이다.
+- 최종허가30inventory는6B8FD4B8F49CA94C3968620A926C7106494C513EA377CC0FF284235092B1881A다. 앞39BC/5448 inventory는줄바꿈/공백정리전증거로보존하며최종Git바이트는현재30raw와동일하게stage한다. SourceGate합성증거는운영artifact완성/실제C#/TLS/키/배포PASS로확대0,전체계획미완료유지다.
