@@ -1,0 +1,42 @@
+import {recordV1,refV1,isoV1,cloneV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
+import {nativeHash,nativeSame,readNativeAuthority} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {NativePreparationHttpsChannel,type NativeHttpsBinding,type NativeHttpsMaterial} from './native-preparation-https.ts';
+import type {NativeChannelIdentity} from './native-preparation-client.ts';
+export interface NativeCredentialBaseMaterial{binding:NativeHttpsBinding;ca:string;profileExpiresAt:string;signerExpiresAt:string}
+/** 실제 보호 current/profile/signer 구현이 아닌 명시 source 의존성이다. */
+export interface NativeCredentialSlotSource{transport:'SOURCE_ONLY_MODEL';binding:NativeHttpsBinding;read(signal:AbortSignal):Promise<NativeCredentialBaseMaterial>;sign(bytes:Buffer,signal:AbortSignal):Promise<string>}
+export interface NativeCredentialDelivery{authorityRef:RuntimeRefV1;credentialId:string;credentialGeneration:number;registrationRef:RuntimeRefV1;channelProfileRef:RuntimeRefV1;expiresAt:string}
+type ChannelPorts=NonNullable<ConstructorParameters<typeof NativePreparationHttpsChannel>[2]>;
+const unavailable=():never=>{throw Error('NATIVE_CREDENTIAL_UNAVAILABLE');};
+const own=(value:object,key:string)=>{const d=Object.getOwnPropertyDescriptor(value,key);if(!d||!('value'in d))return unavailable();return d.value;};
+const shape=(v:unknown,keys:string[]):v is Record<string,any>=>recordV1(v,keys)&&keys.every(k=>{const d=Object.getOwnPropertyDescriptor(v,k);return !!d&&'value'in d;});
+function immutable<T>(v:T):T{if(v&&typeof v==='object'){for(const x of Object.values(v))immutable(x);Object.freeze(v);}return v;}
+/** 휘발 데이터 수용만 수행한다. ACK/보호 수신·영속 설치·peer/package/native 권위를 생산하지 않는다.
+ * 관리 문자열과 HTTPS에 이미 전달된 복사본의 완전 소거·진행 중 네트워크 취소·서버 회수는 보장하지 않는다. */
+export class NativePreparationCredentialSlot{
+ readonly transport='SOURCE_ONLY_MODEL' as const;
+ #authority:ReturnType<typeof readNativeAuthority>;#ref:RuntimeRefV1;#binding:NativeHttpsBinding;#source:NativeCredentialSlotSource|null;#read:unknown;#sign:unknown;#channel:NativePreparationHttpsChannel;
+ #secret:Uint8Array|null=null;#delivery:NativeCredentialDelivery|null=null;#closed=false;#deadline=Infinity;#baseDeadline=Infinity;#lastWall=-Infinity;#lastMono=-Infinity;#timerDeadline=Infinity;#timer:ReturnType<typeof setTimeout>|undefined;
+ #now:()=>number;#mono:()=>number;#set:typeof setTimeout;#clear:typeof clearTimeout;
+ constructor(options:{authority:unknown;identity:NativeChannelIdentity},source:NativeCredentialSlotSource|null=null,ports:ChannelPorts={}){
+  try{const original=options.authority;if(!shape(original,['ref','snapshot'])||!refV1(original.ref)||original.ref.version!==1)throw Error();this.#authority=readNativeAuthority(original.snapshot);this.#ref=cloneV1(original.ref);if(this.#ref.id!==this.#authority.authorityId||this.#ref.contentHash!==nativeHash(this.#authority))throw Error();const identity=immutable(cloneV1(options.identity));this.#binding=immutable({authorityRef:cloneV1(this.#ref),identity,hostPublicKeyFingerprint:this.#authority.scope.hostPublicKeyFingerprint});this.#source=source;this.#read=source?own(source,'read'):null;this.#sign=source?own(source,'sign'):null;
+   const port=(key:keyof ChannelPorts,fallback:unknown)=>Object.hasOwn(ports,key)?own(ports,key):fallback;this.#now=port('now',Date.now) as ()=>number;this.#mono=port('monotonicNow',()=>performance.now()) as ()=>number;this.#set=port('setTimeout',setTimeout) as typeof setTimeout;this.#clear=port('clearTimeout',clearTimeout) as typeof clearTimeout;if([this.#now,this.#mono,this.#set,this.#clear].some(v=>typeof v!=='function'))throw Error();this.#clock();if(source)this.#basePorts();
+   const protection={transport:'SOURCE_ONLY_MODEL' as const,binding:this.#binding,read:(signal:AbortSignal)=>this.#readMaterial(signal),sign:(bytes:Buffer,signal:AbortSignal)=>this.#signMaterial(bytes,signal)};this.#channel=new NativePreparationHttpsChannel({authority:{ref:this.#ref,snapshot:this.#authority},identity},protection,ports);
+  }catch{throw Error('NATIVE_CREDENTIAL_CONFIG_INVALID');}
+ }
+ #invalidate(){this.#closed=true;this.#secret?.fill(0);this.#secret=null;if(this.#timer!==undefined){this.#clear(this.#timer);this.#timer=undefined;}}
+ #clock(){const wall=this.#now(),mono=this.#mono();if(!Number.isSafeInteger(wall)||!Number.isFinite(new Date(wall).getTime())||!Number.isFinite(mono)||wall<this.#lastWall||mono<this.#lastMono){this.#invalidate();return unavailable();}this.#lastWall=wall;this.#lastMono=mono;return{wall,mono};}
+ #live(){if(this.#closed)return unavailable();const at=this.#clock();if(!this.#secret||!this.#delivery)return unavailable();if(at.wall>=Date.parse(this.#delivery.expiresAt)||at.mono>=Math.min(this.#deadline,this.#baseDeadline)){this.#invalidate();return unavailable();}return at;}
+ #basePorts(){try{const s=this.#source;if(!s||own(s,'transport')!=='SOURCE_ONLY_MODEL'||!nativeSame(own(s,'binding'),this.#binding)||own(s,'read')!==this.#read||own(s,'sign')!==this.#sign||typeof this.#read!=='function'||typeof this.#sign!=='function')return unavailable();return s;}catch{this.#invalidate();return unavailable();}}
+ #schedule(at:{wall:number;mono:number},deadline:number){if(deadline>=this.#timerDeadline)return;if(this.#timer!==undefined)this.#clear(this.#timer);this.#timerDeadline=deadline;this.#timer=this.#set(()=>this.#invalidate(),Math.max(1,Math.ceil(deadline-at.mono)));}
+ /** 결과 없음은 ACK가 아니다. 중복도 저장 기한/channel/원 예산을 갱신하지 않는다. */
+ readonly accept=(metadata:unknown,opaque:Uint8Array):void=>{
+  if(this.#closed)return unavailable();const at=this.#secret?this.#live():this.#clock(),a=this.#authority;
+  if(!shape(metadata,['authorityRef','credentialId','credentialGeneration','registrationRef','channelProfileRef','expiresAt'])||!nativeSame(metadata.authorityRef,this.#ref)||metadata.credentialId!==a.credentialId||metadata.credentialGeneration!==a.credentialGeneration||!nativeSame(metadata.registrationRef,a.scope.registrationRef)||!nativeSame(metadata.channelProfileRef,a.channelProfileRef)||!isoV1(metadata.expiresAt)||Date.parse(metadata.expiresAt)<=at.wall||Date.parse(metadata.expiresAt)>Date.parse(a.expiresAt)||!(opaque instanceof Uint8Array)||opaque.byteLength!==43)throw Error('NATIVE_CREDENTIAL_INPUT_INVALID');
+  const copy=Uint8Array.from(opaque);try{if(!copy.every(c=>c>=65&&c<=90||c>=97&&c<=122||c>=48&&c<=57||c===45||c===95))throw Error('NATIVE_CREDENTIAL_INPUT_INVALID');if(this.#secret){this.#live();if(!nativeSame(metadata,this.#delivery)||copy.some((v,n)=>v!==this.#secret![n]))throw Error('NATIVE_CREDENTIAL_CONFLICT');return;}this.#delivery=immutable(cloneV1(metadata) as NativeCredentialDelivery);this.#secret=Uint8Array.from(copy);this.#deadline=at.mono+Date.parse(metadata.expiresAt)-at.wall;this.#schedule(at,this.#deadline);}finally{copy.fill(0);}
+ };
+ readonly getChannel=():NativePreparationHttpsChannel=>{this.#live();this.#basePorts();return this.#channel;};
+ readonly dispose=():void=>{this.#invalidate();};
+ async #readMaterial(signal:AbortSignal):Promise<NativeHttpsMaterial>{this.#live();const source=this.#basePorts();if(signal.aborted)return unavailable();let raw:NativeCredentialBaseMaterial;try{raw=await Reflect.apply(this.#read as Function,source,[signal]);}catch{return unavailable();}const at=this.#live();this.#basePorts();if(signal.aborted)return unavailable();if(!shape(raw,['binding','ca','profileExpiresAt','signerExpiresAt'])||!nativeSame(raw.binding,this.#binding)||typeof raw.ca!=='string'||!raw.ca||Buffer.byteLength(raw.ca)>65536||!isoV1(raw.profileExpiresAt)||!isoV1(raw.signerExpiresAt)){this.#invalidate();return unavailable();}const expires=Math.min(Date.parse(raw.profileExpiresAt),Date.parse(raw.signerExpiresAt));this.#baseDeadline=Math.min(this.#baseDeadline,at.mono+expires-at.wall);if(expires<=at.wall){this.#invalidate();return unavailable();}this.#schedule(at,Math.min(this.#deadline,this.#baseDeadline));this.#live();return{binding:this.#binding,ca:raw.ca,profileExpiresAt:raw.profileExpiresAt,signerExpiresAt:raw.signerExpiresAt,bearer:Buffer.from(this.#secret!).toString('ascii'),credentialExpiresAt:this.#delivery!.expiresAt};}
+ async #signMaterial(bytes:Buffer,signal:AbortSignal):Promise<string>{this.#live();const source=this.#basePorts();if(signal.aborted)return unavailable();let signature:string;try{signature=await Reflect.apply(this.#sign as Function,source,[bytes,signal]);}catch{return unavailable();}this.#live();this.#basePorts();if(signal.aborted)return unavailable();return signature;}
+}
