@@ -12127,3 +12127,23 @@ git diff --check
 - 신규2 독립C0/I0·시작끝SHA동일,Main995b7e 신규10PASS/241.798ms+HTTPS선정정상1PASS/189.3073ms/type/diff0 뒤codee85911d5dde12210e8b05c8af49810d17fe6b746 정확2/81추가로checkpoint했다. Main14c064 raw/stage2동일·stageddiff0. 결과 FN06_NATIVE_CREDENTIAL_SLOT_SOURCE_RESULT_20261102.md SHA082AFD0DF11FDD298BB985217EE994AE2C798DFF49B13CF5211A2449D6625759 factual C0/I0다.
 - private복사·식별5/짧은전달기한고정·중복갱신0·단일channel·종료/late 새IO차단을확인했고accept void·ACK/ackRef/CONFIRMED0을유지한다. 평문Read/기존StatusOnly 파일/서명변경0·실보호recipient/profile/current/signer/issuer/factory/bridge미구현·실제효과제외/전체계획미완료다. writer반환/live0·시험timer0이다.
 - Main은같은Primary에별도native proof typed signer의source가능성을읽기/제안만맡겼다. 기존등록hostkey존재/fingerprint·r2canonical8/domain을검산하고SIGN_PROOF범용확대·새키/권한/저장/평문Read0으로구현할수있는정확접점·남은원예산전달·미정계약차이를1페이지로반환한다. 기존compiler문서의passive build가능성은정보만확인하며옛일회compile허가재사용/실제compiler·CNG/키/CA/파일조사/OS/helper/서비스/DB/Agent/P03R3실행0·코드GO0이다.
+### 2026-11-02 FN06 r2 남은 실제 연결 지도
+
+| 연결 단위 | 현재 source 증거 | 실제 사용/다음 조치 |
+|---|---|---|
+| HUMAN 요청·통제 저장/고정조회·host current/challenge/consume | HUMAN_STORAGE/HOST_PROTOCOL 결과와 해당 code checkpoint | 실제 DB/schema·source 보호공급자·서비스 미연결/미검증 |
+| client·원시도 file adapter·HTTPS wire | CONNECTOR/LOCAL_JOURNAL/HTTPS 결과, source 검수 | 실제 FS/OS/TLS·CA/키/profile 현재성·registered signer 미검증/미구현 |
+| UI11·UI08·App 원명령 왕복 | UI11 결과 후속 App2 source 검증 | 실제Browser/DB/서비스·사용자 인수 미확인 |
+| factory private 원본문맥 | FACTORY_CALL_CONTEXT 결과·Main24/독립C0I0 | same-process provenance만, peer/package·native OPEN 권위 아님 |
+| private 휘발 credential slot | CREDENTIAL_SLOT 결과·Main10+1/독립C0I0 | ACK/보호recipient 인증 없음, 실제 전달 producer 미구현 |
+| native proof typed signer | 기존REGISTER 키/서명과 r2 native domain 차이 읽기 중 | source 상세 입출력·남은 예산·기존 연산 보존 범위 확정 필요 |
+| profile/current·보호 전달/ACK·issuer | 실제 공급자 없음, metadata/선언값을 보호 증거로 대체하지 않음 | 보호 자료/현재성·sender/recipient/ACK 의미·구체 source 계약과 wiring 필요 |
+| C# factory/holder·실제 peer/package/channel | GAP_PACKET 및 PMO 한정 미발견 근거 | 사전인가·owner 보유/조회/정리·불명 수명과 구체 보호 producer 정의/구현 필요 |
+
+이는 전체44업무를 줄인 완료 기준이 아니라 현재 FN06 내부의 남은 연결을 고정한 지도다. source 부분 성공을 실제 키/DB/서비스/native/Agent·P03R3·사용자 인수로 승격하지 않는다. 새 wrapper/반복 검증을 완료 진도로 대신하지 않고 각 실제 미구현 연결을 순서대로 해소한다.
+### 2026-11-02 native typed proof signer source 후속 착수
+- Main86172a는 local/private f9ac35ebfc935b809303950bc4804aaa1078085d 및 main f976ed5e 불변·status 소유 기록 외 protected untracked3 보존을 확인했다. sandbox dfcdeb status의 work-tree 오류는 실행 환경 문제이며 elevated 실제 status로 대조했고 설정/ACL 변경0이다. 기존 source·합성검증 완료 단위는 재실행하지 않는다.
+- 기존Primary 읽기 제안은 등록키 저장이 CNG alias 전용이 아니라 DPAPI EccPrivateBlob임을 확인했다. Main의 비수출 CNG alias 가정은 채택하지 않는다. 실제caller/root/keymapping producer가 부재이므로 새 rawJSON signing 연산을 기존 ProtectedStore.Run에 노출하지 않고 닫힌 typed source/원 예산 문맥·C# primitive만 작성하는 내부 단위를 선택했다. Reviewer 제안 범위 C0/I0, 정확 WI preflight는 진행중/제품 GO 전이다.
+- 파생 WI docs/work_packages/FN06_NATIVE_PROOF_SIGNER_SOURCE_IMPLEMENTATION_20261102.md SHA016101BB9AF6D553EAC117993D3D2208D9A825CEE5179CB60E220A4D01303FCA 정확5경로. 기존 r2/승인/원 WI 불변, Main 제품쓰기0·기존Primary 단일writer 예정·새agent/chat/branch/예약0. 실제 키/DB/권한/CA/서비스/helper/compiler/Agent/실자료/P03R3 실행0·C#runtime parity 및 실제 공급자/전체계획 미완료다.
+
+- 정확 WI preflight C0/I0·시작끝016101BB…1303FCA 동일 확인 후 기존Primary 정확5경로 source GO를 전달했다. Main2ccdee의 자체기록 마지막 CRLF 혼용 diff 경고는 소유 append tail만 LF로 교정했고 내용/기존이력/제품파일 변경0이다.
