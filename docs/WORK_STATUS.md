@@ -12803,3 +12803,8 @@ git diff --check
 - 보정2 owner42237E776E1A3C5C3E48D0EB874CCFF2F1C85EAEE1243A128B9887FF864AF3EE/시험4BBE062A2D630A1E9A55081A920EB97FF4B0C7D241AB4912FCD08CCB4F19862F를반환받았다. 실제factory app.getVersion/32byte nonce생산·원예산CLOSED_CONFIRMED뒤성공·공유ticket효과·기지등록기한초기반영·SIGN전current를기존Reviewer가대조해원I1~I5해소 scopedC0/I0·2SHA전후동일로수용했다. 다른9불변이다.
 - Main0723d5는최종11SHA앞뒤고정에서신규등록시험33PASS/FAIL0/SKIP0/841.1718ms와직접기존3PASS/FAIL0/SKIP0/167.5313ms를독립fresh했다. cf05f1 desktop tsc exit0·11SHA앞뒤동일이다. 앞53과중첩합산0·불변policy/기존전체/verifier/QA재실행0이다. 85e0eb은소유11regular/nonlink·실bytes/hash와보호untracked3SHA불변을확인했다.
 - 미해결C/I0은이승인소스단위의scoped판정이며실C#compile/RunAll·Windows/DPAPI/CNG·TLS/cookie/설치·DB/서비스/Agent·인수는NOT_RUN/제외다. 실제생산factory의소스접점을소비한합성검사일뿐실배포provenance가아니다. FN06/전체계획미완료·ISSUE/복구/native후속은차단유지한다. Main은소유10code+현황만checkpoint로보존하고결과서에정확SHA를결박한다.
+
+### 2026-11-03 FN06 ENROLL-01 코드 checkpoint 게시·결과/다음 업무
+- 6f8a8ebf1c34af58a25e6eadfa8d91d797df28d3는ba778d32직접자식 소유코드10+WORK_STATUS정확11이다. 허가11중기존owner시험은불변이다. strict raw/index11+현황일치·staged diff check0 뒤일반commit/push했고,최종원격확인명령session58883을원handle로poll해exit0·local/privateexactSHA일치·remote main f976ed5e불변/ tracked clean·보호untracked3만보존을확인했다.
+- 신규 docs/04_test_reports/AV3/FN06_DESKTOP_TRUST_ENROLL_01_SOURCE_RESULT_20261103.md SHA A59F6F04C7A94E9E0E83AD1DA922E2731A776A33521C482BEEC129FA34FFC5D4에정확코드SHA/허가11inventory81D44F2571CFDCCE4F4C12E1623B58225D14EB5E421C5FBE2649C0B2EC7AA48C·Main최종33/직접3·정적검수/미실행/부분구현을결박했다. 기존Reviewer에게결과서오기/과장만읽기검수배정·제품시험반복0이다.
+- 기존Primary에게같은승인r5의다음명시ISSUE→StatusOnly보호저장→REGISTERED연결을읽기조사배정했다. 복구/native/새bearer사용계약을추정해확장하지않고정확원DTO/보호primitive재사용/미연결을확인한다. 현재제품writer0·실키/DB/서비스/컴파일/Agent/QA0·FN06/계획미완료다.
