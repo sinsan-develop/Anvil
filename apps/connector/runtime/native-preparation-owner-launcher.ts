@@ -1,3 +1,4 @@
+import {types} from 'node:util';
 import {spawn as nodeSpawn,type ChildProcessWithoutNullStreams} from 'node:child_process';
 import {readFile,lstat,realpath} from 'node:fs/promises';
 import {win32 as path} from 'node:path';
@@ -10,16 +11,18 @@ const copy=<T>(v:T):T=>JSON.parse(JSON.stringify(v));
 export interface NativeOwnerImageBinding{factoryRef:RuntimeRefV1;executablePath:string;executableHash:string}
 /** 보호 설치 mapping은 별도 공급자다. 이 객체/해시는 OS admission 증거가 아니다. */
 export interface NativeOwnerImageSupplier{binding:NativeOwnerImageBinding;read(signal:AbortSignal):Promise<NativeOwnerImageBinding>}
-export interface NativeOwnerPorts{spawn:(exe:string,args:readonly string[],options:{shell:false;windowsHide:true;stdio:['pipe','pipe','pipe']})=>ChildProcessWithoutNullStreams;read:(file:string)=>Promise<Buffer>;wall:()=>number;monotonic:()=>number}
+export interface NativeOwnerPorts{spawn:(exe:string,args:readonly string[],options:{shell:false;windowsHide:true;stdio:['overlapped','overlapped','overlapped'];env:NodeJS.ProcessEnv;cwd:string})=>ChildProcessWithoutNullStreams;read:(file:string)=>Promise<Buffer>;osEnvironment:()=>unknown;companion:(file:string)=>Promise<'ABSENT'>;wall:()=>number;monotonic:()=>number}
 export interface NativeOwnerOpen{bridgeRunId:string;bindingHash:string;context:unknown;callExpiresAt:string;remainingMs:number}
 export type NativeOwnerState='NEW'|'OPENING'|'OWNED'|'CLOSING'|'CLOSED_CONFIRMED'|'UNKNOWN';
 export interface NativeOwnerHandle{readonly state:NativeOwnerState;query():Promise<{state:'EMPTY_OBSERVED';holderId:string}>;close():Promise<{state:'CLOSED_CONFIRMED';holderId:string}>}
 const own=(v:object,k:string)=>{const d=Object.getOwnPropertyDescriptor(v,k);if(!d||!('value'in d))throw unavailable();return d.value;};
+async function absentCompanion(file:string):Promise<'ABSENT'>{try{await lstat(file);}catch(error){if(error&&typeof error==='object'&&'code'in error&&error.code==='ENOENT')return 'ABSENT';throw unavailable();}throw unavailable();}
+function minimalEnvironment(value:unknown):NodeJS.ProcessEnv{if(!value||typeof value!=='object'||types.isProxy(value))throw unavailable();const root=own(value,'SystemRoot'),windows=own(value,'WINDIR');if(typeof root!=='string'||typeof windows!=='string'||root.toLowerCase()!==windows.toLowerCase()||root.length>1024||!/^[A-Za-z]:\\/.test(root)||path.normalize(root)!==root||/[<>:"|?*\x00-\x1f]/.test(root.slice(2)))throw unavailable();return Object.freeze({SystemRoot:root,WINDIR:windows});}
 async function readImage(file:string){for(let current=file;;current=path.dirname(current)){const s=await lstat(current);if(s.isSymbolicLink()||current===file&&(!s.isFile()||s.size<1||s.size>64*1024*1024))throw unavailable();if(current===path.parse(current).root)break;}if((await realpath(file)).toLowerCase()!==file.toLowerCase())throw unavailable();return readFile(file);}
 /** 기본 미등록. import/constructor는 파일/프로세스 효과가 없다. */
 export class NativePreparationOwnerLauncher{
  #supplier:NativeOwnerImageSupplier|null;#binding:NativeOwnerImageBinding|null;#read:unknown;#ports:NativeOwnerPorts;#used=false;#owner:NativeOwnerHandle|null=null;
- constructor(supplier:NativeOwnerImageSupplier|null=null,ports:NativeOwnerPorts={spawn:(e,a,o)=>nodeSpawn(e,[...a],o),read:readImage,wall:()=>Date.now(),monotonic:()=>performance.now()}){this.#supplier=supplier;this.#binding=supplier?copy(own(supplier,'binding')):null;this.#read=supplier?own(supplier,'read'):null;this.#ports={...ports};}
+ constructor(supplier:NativeOwnerImageSupplier|null=null,ports:NativeOwnerPorts={spawn:(e,a,o)=>nodeSpawn(e,[...a],o),read:readImage,osEnvironment:()=>process.env,companion:absentCompanion,wall:()=>Date.now(),monotonic:()=>performance.now()}){this.#supplier=supplier;this.#binding=supplier?copy(own(supplier,'binding')):null;this.#read=supplier?own(supplier,'read'):null;this.#ports={...ports};}
  #stable(){const s=this.#supplier,b=this.#binding;if(!s||!b||own(s,'read')!==this.#read||typeof this.#read!=='function'||canonicalJson(own(s,'binding'))!==canonicalJson(b)||!recordV1(b,['factoryRef','executablePath','executableHash'])||!refV1(b.factoryRef)||!hashV1(b.executableHash)||typeof b.executablePath!=='string'||!path.isAbsolute(b.executablePath)||!/^[A-Za-z]:\\/.test(b.executablePath)||/[<>:"|?*\x00-\x1f]/.test(b.executablePath.slice(2))||path.normalize(b.executablePath)!==b.executablePath||b.executablePath.length>1024)throw unavailable();return b;}
  async closeOwned(){if(!this.#owner)throw unavailable();return this.#owner.close();}
  get factoryRef(){return this.#binding?copy(this.#binding.factoryRef):null;}
@@ -31,7 +34,14 @@ export class NativePreparationOwnerLauncher{
   const remaining=()=>{check();return Math.max(0,Math.min(deadline-p.monotonic(),expires-p.wall()));};
   const bounded=async<T>(work:()=>Promise<T>):Promise<T>=>{check();let timer:ReturnType<typeof setTimeout>|undefined;try{return await Promise.race([work(),new Promise<never>((_r,reject)=>{timer=setTimeout(()=>{active=false;reject(unavailable());},Math.max(1,Math.ceil(remaining())));})]);}finally{if(timer)clearTimeout(timer);}};
   const preparation=async()=>{check();const next=await preparationCheck();check();if(next!==undefined){if(!recordV1(next,['remainingMs','callExpiresAt'])||!Number.isFinite(next.remainingMs)||next.remainingMs<=0||next.remainingMs>fixed.remainingMs||!isoV1(next.callExpiresAt)||Date.parse(next.callExpiresAt)>Date.parse(fixed.callExpiresAt))throw unavailable();expires=Math.min(expires,Date.parse(next.callExpiresAt));deadline=Math.min(deadline,p.monotonic()+next.remainingMs);check();}if(signal.aborted)throw unavailable();};
-  const child=await bounded(async()=>{await preparation();const material=await (this.#read as NativeOwnerImageSupplier['read']).call(this.#supplier,signal);await preparation();if(canonicalJson(material)!==canonicalJson(b))throw unavailable();const image=await p.read(b.executablePath);await preparation();if(image.length<1||image.length>64*1024*1024||digest(image)!==b.executableHash)throw unavailable();check();return p.spawn(b.executablePath,[],{shell:false,windowsHide:true,stdio:['pipe','pipe','pipe']});});let state:NativeOwnerState='OPENING',sticky=false,sequence=0,buffer=Buffer.alloc(0),busy=false,closed=false,ended=false,writes=0;
+  const child=await bounded(async()=>{
+   await preparation();if(typeof p.osEnvironment!=='function'||typeof p.companion!=='function')throw unavailable();const env=minimalEnvironment(p.osEnvironment());
+   const material=await (this.#read as NativeOwnerImageSupplier['read']).call(this.#supplier,signal);await preparation();if(canonicalJson(material)!==canonicalJson(b))throw unavailable();
+   const companions=async()=>{for(const suffix of ['.config','.local','.manifest']){if(await p.companion(b.executablePath+suffix)!=='ABSENT')throw unavailable();await preparation();}};
+   await companions();const image=await p.read(b.executablePath);await preparation();if(image.length<1||image.length>64*1024*1024||digest(image)!==b.executableHash)throw unavailable();
+   await companions();const last=await p.read(b.executablePath);await preparation();if(last.length!==image.length||digest(last)!==b.executableHash||canonicalJson(minimalEnvironment(p.osEnvironment()))!==canonicalJson(env))throw unavailable();check();
+   return p.spawn(b.executablePath,[],{shell:false,windowsHide:true,stdio:['overlapped','overlapped','overlapped'],env,cwd:path.dirname(b.executablePath)});
+  });let state:NativeOwnerState='OPENING',sticky=false,sequence=0,buffer=Buffer.alloc(0),busy=false,closed=false,ended=false,writes=0;
   const stdin=child.stdin,stdout=child.stdout,stderr=child.stderr,write=stdin.write,end=stdin.end;
   const channelStable=()=>{if(own(child,'stdin')!==stdin||own(child,'stdout')!==stdout||own(child,'stderr')!==stderr||stdin.write!==write||stdin.end!==end)throw unavailable();};
   let pending:{sequence:number;requestId:string;written:boolean;data?:unknown;resolve:(v:any)=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}|null=null;
