@@ -1906,3 +1906,6 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - 2026-11-02 FN06 native current source: code59b5b4d9c6ce3fc7d512caa7d753f16877064b5d 정확5/291추가26삭제, Main 동결후74PASS/FAIL0/SKIP0/type/diff0·독립C0/I0. 실제 동일Tx 조회·원prepare/RESERVED·Tx lease 폐기·private clock/min-only·권한/일회승인 보존을 확인했다. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_RESULT_20261102.md SHA92BABB3C2795A88F55E495D3E5A79AA825D78CF7D74BB9B6C8E49521F23617AF. 실패3→중단/재검토/r3 전환 이력 보존, 실제mapping/DB/키/권한/서비스/native/compiler/Agent/P03R3/사용자인수·전체FN06/FN08/계획은 미완료이며 기본미등록/거절 유지다.
+
+
+- 2026-11-02 FN06/FN18 compiler source: code941b68c56ef17685b5011600d1128b71d0279a42 정확3/220추가2삭제, Main신규33+인접9=42PASS/FAIL0/SKIP0·desktoptype/diff0·독립I1/I2해소C0/I0. 기존producer→단발명시driver→원출력검산/source수명·불명보존 연결, 등록QA원TTL안회수/별도잔여0. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PHYSICAL_FACTORY_COMPILER_SOURCE_RESULT_20261102.md SHA356F978D652D05BC6B176C6D9FFFDA868B38AE7FE64F41B53D9DBDC7DE2A9A25. 실제compiler/C#/OS·보호공급자·등록key/root생산/서명전달·제품조립·DB키권한서비스Agent·P03R3/사용자인수·전체FN06/FN18/계획미완료를유지한다.

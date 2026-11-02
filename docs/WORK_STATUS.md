@@ -12454,3 +12454,37 @@ git diff --check
 - 앞서 중단한 경로 추정 방식의 재발이므로 Main은 새 경로 탐색/추정 읽기를 더 하지 않는다. 기존 확인된 정확 경로만 사용하고 새 경로는 담당자가 actual 목록/import로 확인해 반환한 정보만 소비한다. 기존 Primary r3 구현과 Reviewer 검수는 영향받지 않아 계속한다. PMO에 재발과 시정범위를 보고한다.
 
 - 2026-11-02 FN06 native current source: code59b5b4d9c6ce3fc7d512caa7d753f16877064b5d 정확5/291추가26삭제, Main 동결후74PASS/FAIL0/SKIP0/type/diff0·독립C0/I0. 실제 동일Tx 조회·원prepare/RESERVED·Tx lease 폐기·private clock/min-only·권한/일회승인 보존을 확인했다. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_RESULT_20261102.md SHA92BABB3C2795A88F55E495D3E5A79AA825D78CF7D74BB9B6C8E49521F23617AF. 실패3→중단/재검토/r3 전환 이력 보존, 실제mapping/DB/키/권한/서비스/native/compiler/Agent/P03R3/사용자인수·전체FN06/FN08/계획은 미완료이며 기본미등록/거절 유지다.
+
+### 2026-11-02 current source 게시·다음 compiler source 단독 착수
+- Main74PASS/type/diff·독립 코드/사실 C0/I0 후 정확5 코드59b5b4d9c6ce3fc7d512caa7d753f16877064b5d와 소유4문서662bb79d5c0746084cfc74599cab753a341a2e68를 기존 private branch에 게시했다. 4c4511에서 local/private exact동일·tracked clean/보호untracked3만존재·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변을 확인했다. 전체 기능/계획완료·PR/main병합0이다.
+- 다음 FN06/FN18 내부 compiler source WI D260DFEBDF9B17AAD8071D3062E5BFBF26C6DDF92A9A36F321528D0E9B8A4200 정확3/preflight C0I0를 기존 Primary 단독writer에게 GO했다. Main/Reviewer 제품쓰기0, 완료된current5 재작업0. 정상 producer 검증에 합성FS가 필요하면 literal자원·수명·정리 사전등록과 Main GO 전 생성0을 지시했다. 기존회수root 재사용/실제spawn fallback/실compiler·DB·키·권한·서비스·Agent·실자료·P03R3 실행0이다.
+- 실제 보호mapping/서명전달/제품조립과 필수 실제gate·사용자인수는 미완료, FN03§13.4는 미승인 유지다. 영향없는 승인소스 작업을 계속하며 다음지시나 같은범위 재승인을 기다리지 않는다.
+- 2026-11-02 병렬 읽기 조사: 기존 Reviewer에게 Stage B의 프로젝트 생성→방법론→공식 산출물→계획→지식 source 호출선에서 실제 사용자 흐름 연결의 다음 미구현1건을 정본/기존결과로 대조하도록 위임했다. Primary는 compiler exact3 단독writer, Main/Reviewer 제품쓰기0이다. 미승인 FN03§13.4/실제DB·권한·서비스 의존은 별도분리하며 완료기능 재실행·새계약·실자료조사0, 실제검증된경로만 반환한다. 다음 우선순위의 근거 조사이며 구현GO/범위확대가 아니다.
+- 2026-11-02 Stage B 독립 읽기 대조 반환: 기존 Reviewer는 FN01~05의 실제 화면→API→저장/고정조회 caller와 FUNCTION_WORK/기존 결과를 대조해 새계약 없이 바로 구현할 독립 소비공백을 찾지 못했다. 이는 해당 호출선의 한정 조사이며 Stage B 전체 source/기능 완료가 아니다. FN03 실관측·드리프트는 미승인§13.4/보호생산자 선행, 연결된 흐름의 실제DB·서비스·사용자여정은 미검증으로 구분한다. 완료단위 시험/수정/실자료조사0이며 compiler source 단독 구현을 계속한다.
+### 2026-11-02 compiler source 합성 QA 자원 생성 전 등록
+- literal D:\tmp\anvil-v3-native-physical-factory-compiler-parent-20261102-01, owner=기존 Primary fn16_primary_recovered/Windows SINSAN\cyhuh. 기존회수root와별개인새경로이며부재·부모 D:\tmp nonlink/실경로/소유자를생성직전재확인한다. 등록은실사용자자료/실제compiler실행허가가아니다.
+- purpose=NATIVE_PHYSICAL_FACTORY_COMPILER_PARENT_QA, owner.json exact4(createdAt/expiresAt/owner/purpose), 최초생성시각부터30분·연장/재생성0. marker1/input2/합성parent PE·ASAR2=예정5파일, 상한12파일/16MiB(PE/ASAR각4MiB,input각64KiB), case-01내일회생성이다. 실제14제품source 읽기와기존FN18고정path검산만실제IO이며compiler/basis/output/process/tool bytes는메모리명시대역이다.
+- 컨테이너/image/network/port/DB/키/권한/서비스/Agent/native/compiler실행0. 정상/명확실패후등록된소유파일·nonlink/identity·root범위를재확인해개별삭제하고빈dir만정리한다. 시험hook후marker만남으면소유marker지문/신원을확인해marker와빈root를비재귀정리하고Main별도부재확인한다. 불명종료/소유불일치/기한소진은보존·보고하며자동확대삭제0이다.
+- 시작증거 Primary aa5095부재/부모신원, module부재ff3c49준비실패1·순수거절6b89f7 2PASS·desktoptypeed3224 exit0(최초handleundefined타입2건보정,실제효과0). 아직전체검증/실producer정상PASS가아니다. Main등록기록후기존Primary에게정확생성·합성시험·정리만GO한다.
+### 2026-11-02 compiler QA 최초 생성 영수증
+- Primary3719d6에서 등록root를 최초생성했다. createdAt2026-11-02T07:54:57.616Z/expiresAt08:24:57.616Z·연장0, owner SINSAN\cyhuh/nonlink/실경로검산, owner.json167B SHA2FA8B4E9D52C1CA23BA044A859D6851E6CCDBE9F2A43CC915B347F1EAFD977CC다. Main은07:55:27 UTC root/marker를별도읽고marker지문·소유를대조했다. 현재active QA이며정리완료가아니다.
+- 첫 NORMAL 조건은기존Primary가실행한다. Main은중복시험/제품쓰기0을유지하며처음정한08:24:57.616Z안에정확소유자원정리와별도부재확인을수행한다. 실제compiler·DB·키·서비스·Agent·native·실자료·P03R3 실행0, 전체계획완료아니다.
+### 2026-11-02 compiler source 첫 정상·출력 getter 반증
+- Primary21a52e NORMAL1PASS/native0(363.7ms,총460.978ms)로실제FN18고정path producer→메모리basis exclusive/sync/readback→명시driver1→합성CLI/원verifyOutput 연결을확인했다. 이는실제compiler/C#실행이아니다.
+- CHUNK_GETTER4fd20d는stream byteLength getter실행1/기대0의genuineRED1이다. builtin getter판독과own byteLength override거절보완후6d16fc 정상/음성2PASS/native0이다. 이개별결과를새전체PASS로합산하지않으며최종type/집중묶음/독립검수는미충족이다. 모듈부재준비1/handle부재타입원인1(진단2건)은분리보존한다.
+- QA각hook뒤등록root의marker만보존,원TTL08:24:57.616Z/재생성·연장0/실제compiler·spawnfallback·DB키권한서비스Agent·실자료P03R3 실행0을유지한다. Main은중복시험/제품쓰기0,Primary가정확3 단독writer다.
+### 2026-11-02 compiler 제품 동결·독립 검수 시작
+- Primary 후보동결2: build9A106B119572EA41AD8846970608C44806A695FD35ED5BE2F949AA6324B7802B/compilerAE1E7AF0A653F711A380A972596AD3ADB03524944928BA97366860EB32D63BE4. 시험1은추가음성중이며Main은기존Reviewer에게제품2 읽기검수를위임했다. 제품최종C0/전체시험완료는아니다.
+- 5d7676 신규17PASS/type4572fc0 뒤 자체늦은open회수1f67e3 close0/기대1 RED를확인했다. 반환handle 소유캡처 뒤deadline검사로옮긴5499f7 NORMAL/PENDING_WRITE/PENDING_OPEN3PASS는별도원인1회보완이다. 앞선chunkgetter원인과구분하며추가시험결과와합산0이다.
+- Main541d9f의제품scope는허용3+소유현황/보호3로확인했다. diff실패는Main현황의줄분리2개에넣은CRLF였고84de1b가그두구분자만LF로보정해문서diff0이다. Primary제품2는Main수정0이다. QA원만료08:24:57.616Z·marker보존/live0/실제compiler·DB키권한서비스Agent·실자료P03R3 실행0을유지한다.
+### 2026-11-02 compiler 독립 정적 C0/I2 재작업
+- 동결제품2 독립검수는C0/I2다. I1: basis 원문Buffer를 IO.write에넘기고같은가변Buffer를readback기준으로재사용해,IO가같이변조하면원compile.basisBytes와달라도driver가시작될수있다. I2: readback b.equals/output bytes.length를반환Buffer에서직접읽어own getter/교체메서드가실행될수있다. 최종artifact위조/실OS실행성공은주장하지않는다.
+- Main은동일Primary의정확3 안에서해당보완만동결해제했다. 원immutable basis 비교기준·write독립사본과고정intrinsic/경계사본으로getter실행0·추가IO/driver0 반례를검증한다. 기존stream/readback/output전체에같은원인을일관되게적용하도록권고했고최대64MiB에전체numeric descriptor열거/상한전복사를하지않는다. 새계약/권한/실제실행0이다.
+- 기존17PASS/선정3PASS는이전코드이력이며최종인수아니다. Primary추가음성/정확3 제출후Main집중검증과Reviewer scoped재검수를수행한다. 원QA08:24:57.616Z안의정리·독립부재확인을우선하고기한연장/재생성0을유지한다. Main/Reviewer제품쓰기0,실compiler·DB키권한서비스Agent·실자료P03R3 실행0이다.
+### 2026-11-02 compiler Main 검증·회수 영수증
+- 최초 Main ca0eda exit1은 sandbox가등록root case-01 mkdir를EPERM으로막은준비오류다. ACL/권한변경없이동일정확범위 elevated1ce571에서신규33+직접인접build9=42PASS/FAIL0/SKIP0,2157.1939ms/exit0·desktoptype983c44 exit0·지문/diff68d462 exit0을확인했다. 최초준비실패를제품실패나PASS로소급하지않는다.
+- 최종3SHA compilerE88D4162135DE3639A2E8801E4151A501C1FB2FDB19E653F73239237DFFBD2D9/build9A106B119572EA41AD8846970608C44806A695FD35ED5BE2F949AA6324B7802B/testC9F719DE729C4D53DB4E6A2CC024640C19EED45CBFFA08196B442D6BAA96778B. 독립scoped재검수는I1/I2해소C0/I0·시작끝SHA동일·추가C/I0이다. Primary10cc9a의반례3은동일실행의서로다른I1/I2반례이며한번보완후반복실패0,직접5/8PASS와Main42를합산하지않는다.
+- 회수지시를send_message로보낸당시Primary가completed라새실행이시작되지않았음을Main이실제agent상태로확인했다. 메시지를실행증거로간주한관리오류를기록하고완료/idle담당자에게새실행은followup_task로명시위임한다. 86636c 08:22:46.531Z는root/marker존재였고정리완료가아니다.
+- Main ff2768가원TTL안08:24:01.551638Z에원marker167B/SHA2FA8B4E9·owner/purpose/원ISO·nonlink·단일marker목록을검산해marker1개와빈root만비재귀삭제했다. 기존resource재사용/기한연장/확대삭제/ACL변경0이며테스트hook의fixture개별정리와구분한다. Main별도조회로root/marker부재를확인한다. 실제compiler/C#/OS·DB키권한서비스Agent·실자료P03R3 실행0,전체계획완료아니다.
+
+- 2026-11-02 FN06/FN18 compiler source: code941b68c56ef17685b5011600d1128b71d0279a42 정확3/220추가2삭제, Main신규33+인접9=42PASS/FAIL0/SKIP0·desktoptype/diff0·독립I1/I2해소C0/I0. 기존producer→단발명시driver→원출력검산/source수명·불명보존 연결, 등록QA원TTL안회수/별도잔여0. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PHYSICAL_FACTORY_COMPILER_SOURCE_RESULT_20261102.md SHA356F978D652D05BC6B176C6D9FFFDA868B38AE7FE64F41B53D9DBDC7DE2A9A25. 실제compiler/C#/OS·보호공급자·등록key/root생산/서명전달·제품조립·DB키권한서비스Agent·P03R3/사용자인수·전체FN06/FN18/계획미완료를유지한다.
