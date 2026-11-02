@@ -13082,3 +13082,16 @@ git diff --check
 - 이 단위는 내부 접점 기술 구체화다. 새 인증/위임/public wire 의미 선택·R/N/L 전체 예약·profile/helper·writer 선행은 미완료이며 B04/Important9 전체 해소가 아니다. 방향 선택 요청은 PMO가 이미 전달했으므로 중복하지 않는다.
 - HEAD/private d24ab749 동일·main f976ed5e 불변을 읽기 확인했다. 보호 untracked3 지문은 기존값과 동일하다. 다음 checkpoint는 신규 R2·검토서·WORK_STATUS 정확3문서만 대상으로 하며 제품/SQL/시험 변경0이다. 문서 diff check0, 이번 단위 오류0. 실제 키·DB·권한·서비스·Agent·네트워크·컴파일·시험/실자료 조사0·전체 계획 미완료다.
 - checkpoint 경로 검산식에서 PowerShell -join/비교 괄호 누락으로 경로 불일치 오류1이 발생했다. 실제 staged 경로는 소유3문서로 확인했으며 다른 파일 stage/제품 변경은 없다. 식을 명시 괄호로 보정하고 raw/index·diff 검증을 다시 수행한다. 제품 실패로 분류하지 않는다.
+### 2026-11-03 R2 미채택 기술 검토 checkpoint 게시·B05 배정
+- 소유3문서(raw/index 일치·staged diff check0)를 af08e13bf0735a6ac9ac78e884223aabe8634462에 commit/private 일반 push했다. 실제 private exact SHA 동일·main f976ed5e29e14b13e12729d5b1ccf98f050f2210 불변·tracked clean/보호 untracked3 보존을 확인했다. 제품 기준 b2178d20 불변이다. 검토서 SHA6F41204872ECE0C74AD9FC4C8FA00DAC2F81446B8209DC7B06177BB2BC86FBFC/R2 85F8F15E는 미채택/구현GO0이며 게시가 승인이나 실행을 의미하지 않는다.
+- 기존 Primary에게 B05의 원 command Tx/replay/authority 저장과 offer 취소/COMMAND_BOUND 경쟁만 읽기 설계로 배정했다. 동일 잠금순서·CAS·원 command 유일성/역완결·승자/COMMIT 불명 결과를 현재 source 접점에 매핑한다. 기존 Reviewer의 B04 결과와 충돌 쓰기0·제품 writer0이며 새 agent/세션 생성0이다.
+- PMO에는 방향 선택을 중복 요청하지 않고 checkpoint·B04 증거와 다음 독립 기술 단위를 전달한다. 실제 키·DB·권한·서비스·Agent·시험·컴파일·네트워크·실자료/QA 실행0·전체 계획 미완료다. 이 현황 누적은 다음 소유 checkpoint 대상이다.
+### 2026-11-03 B05 취소·binding 경쟁 기술 단위 검수
+- 기존 Primary의 읽기 결과를 Main이 원 replay/hash·신규 native Tx/credential/delivery source와 대조했다. 원 replay 먼저/신규에만 offer/head 잠금·CAS, 원 command/receipt/writer/authority/binding/예약의 동일 Tx·양방향 완결안을 기술 검토서에 통합했다. 취소/결박 승자·COMMIT 불명·동일/다른 hash replay·단절 결과를 구분했다.
+- 새로운 offer 선택 입력·cancel 공개 계약/권한·제어 전환 뒤 조회·ReceiverPrincipal 계상은 미채택이다. 기존 ProjectCommand를 임의 확대하거나 최신 pending 선택·v1 authority 소급 binding 강제는 하지 않는다. B05 전체/Important9·실제 경합검증 완료가 아니다.
+- Main의 읽기 명령에서 project-command.ts 경로를 projects로 잘못 지정한 오류1은 rg --files로 access/project-command.ts 실제 경로를 찾고 읽어 보정했다. 제품 실패/실행0이며 checkpoint 비교식 오류와 다른 원인이다. 같은 근본 원인 3회 반복은 없다.
+- 담당 Main 관리·검수·통합/기존 Primary 읽기 반환, 제품 writer0. 실제 키·DB·권한·서비스·Agent·시험/컴파일·네트워크/실자료 조사0·전체 계획 미완료. 다음은 원 supplier/stream의 단발 소유·늦은 IO 정착을 현재 코드와 매핑하는 기술 단위다.
+### 2026-11-03 B06 delivery 미정착 소유 검수
+- 기존 Reviewer의 supplier race/Abort/opaque/lease 추적을 Main의 budget source 읽기와 대조했다. 외부 timeout/원 token 소거와 supplier 전달 복사본·하위 IO의 실제 정착은 다르다. HTTP 단절을 native 취소나 정리 완료로 해석하지 않는다. 원 operation의 result/settled 분리·단발 IO/buffer 소유 port 요구를 기술 검토서에 반영했다.
+- 실제 stream 구현·write/drain/close 정착 보장은 없고 새 공개 인증/위임 계약도 미채택이다. Important9 전체/실제 보안 검증·기능 완료로 승격하지 않는다. 제품 source·SQL·시험 변경0/제품 writer0. 실제 키·DB·권한·서비스·Agent·네트워크·컴파일·시험·실자료 조사/QA0, 이번 읽기 오류0.
+- 다음은 방향 선택 답변을 확인하되 미채택 의미를 임의로 구현하지 않고 R2의 내부 기술 보완과 새 의미 선택의 정확 의존을 유지하는 것이다. 전체 작업계획 미완료이며 native 최초 수신/위임은 아직 실제 사용 가능한 기능이 아니다.

@@ -371,3 +371,25 @@ ACK 후보 수용 전 검산은 잠정 관측이다. 후행 Tx에서 원 ATTEMPT
 따라서 내구 결과는 '검산된 ACK/terminal의 COMMIT 확인'으로만 표현한다. COMMIT 직후 회수와 경합할 수 있으므로 지금 사용 가능·미래 회수 없음·factory 실행 허가로 해석하지 않는다. 역사 CONFIRMED 보존과 실제 SIGN/consume 직전 fresh current는 별개다. COMMIT 성공 뒤 budget check 실패도 응답 불명으로 남기고 미저장으로 추정하지 않는다.
 
 최소 private 후보 결박안은 원 owner/stream/deadline의 module-private 객체 동일성, authorityRef/offerRef/bindingRef/receiveSessionRef/windowRef/deliveryAttemptRef/deliveryId, ackRequestHash/proofEvidenceHash/recipientNonce/opaqueCommitment다. recipient/profile/command tuple은 원 offer/binding에서 복원해 비교하고 caller의 중복 선언으로 권위를 만들지 않는다. exact ACK body/proof/signature는 불변 후보 자료로 검산하되 opaque 원문은 넣지 않는다. 새 공개 인증/위임 reader/current wrapper 원형은 미채택이다. 읽기 설계 결과이며 제품 동작/시험 PASS가 아니다.
+## B05 한정 후속: 취소와 원 command 결박 경쟁
+
+기존 Primary가 현재 authenticated transaction/replay/receipt/writer/native store 접점을 읽기 매핑했다. Main은 access/project-command.ts:100~104와 project-native-preparations.ts:79~86을 대조했다. 현재 인증·제어·정책 뒤 projectReplay가 원 requestHash를 검사하고 기존 결과를 반환하므로, replay에 ARMED를 다시 요구하거나 credential/예약/전송을 재생성하면 안 된다. 신규 분기만 원 options/current 앞에서 정확 offer/head를 잠그는 내부안을 권장한다.
+
+취소와 신규 binding은 같은 인증→project/member→control→policy→offer/head→필요 window/session→후속 writer/account 잠금순서를 공유해야 한다. account를 먼저 잡고 offer를 기다리는 역순은 만들지 않는다. 전체 시스템 deadlock 부재나 새 ReceiverPrincipal 경로의 잠금 정합이 이미 증명됐다는 뜻은 아니다.
+
+잠긴 ARMED head의 정확 version/마지막 불변전이·binding/terminal 부재·offer/최종command 전체hash·project/actor/승인·recipient/profile/window/session·기한/회수·기존 writer/source를 검사한다. 같은 Tx에서 원 command/receipt/audit/승인소비, writer RESERVED, authority/CREATED, CommandBinding, COMMAND_BOUND 전이/head CAS, 예약정산을 완결한다. CAS 영향행1 및 양방향 ref/hash가 불일치하면 전부 rollback하고 별도 중간 COMMIT은 두지 않는다.
+
+offer/authority/server command마다 binding1개, binding의 project/원 parent·command/receipt/audit 일치가 필요하다. 새 위임 분기의 authority/command에 binding이 정확1개인 역완결도 필요하다. 기존 v1 authority 전체에 binding을 소급 요구하거나 evidenceRefs 존재로 새 분기를 추정하지 않는다.
+
+cancel COMMIT 선승이면 binding 없이 CANCELLED·신규 발급0; binding 선승이면 COMMAND_BOUND/authority/binding을 보존하고 cancel 성공으로 표시하지 않는다. 원 COMMIT 불명은 exact command/offer association 조회만 허용하고 재발급·재전송0이다. rollback 요청 성공을 앞선 COMMIT 미적용 증거로 쓰지 않는다. 같은 command/hash replay는 현재 접근 후 원 결과·원 binding만 반환하고 다른 hash/이미 결박된 offer는 충돌이다. window 종료·stream 단절로 이미 결박된 원 사실을 취소나 미전달 확정으로 바꾸지 않는다.
+
+새 위임 분기 식별·offer 선택 입력, cancel operation/정책·정확 요청/결과/replay, 제어 변경 뒤 과거 조회 접근, ReceiverPrincipal 잠금·정산 권한은 새 계약 의존이다. 기존 ProjectCommand에 offerRef가 없다는 이유로 임의 필드를 추가하거나 최신 pending을 자동 선택하지 않는다. 이는 B05 내부 기술안이며 전체 해소/소스 구현 GO가 아니다. 제품·문서쓰기는 subagent0, Main의 본 검토 통합 외 코드/SQL/시험/실행0이다.
+## B06 한정 후속: 외부 기한과 실제 IO 정착의 소유
+
+기존 Reviewer가 #deliverPrepared:109~113/command:86/nativeWorkBudget:33~38을 읽었고 Main은 budget:33~38을 대조했다. delivery supplier의 finally는 deliveryOpaque 복사본을 supplier 정착 후 소거하지만 timer의 abort/race 종료만으로 pending supplier가 정착하지 않는다. 원 command finally의 pendingCredential.token 소거와 별도 deliveryOpaque 복사본 회수는 구분해야 한다. immutable token ASCII 문자열은 Buffer.fill로 완전 소거됐다고 주장할 수 없다. supplier의 추가 복사본도 이 코드의 소유 범위 밖이다.
+
+DB는 own의 pending query 추적·settle 실제 정착 뒤 rollback/release를 유지한다. wait/close는 외부 대기 종료·새 작업 차단이며 실제 IO 정착 증거가 아니다. budget controller와 delivery controller는 별도이고 budget.close가 delivery controller를 직접 abort하지 않는다. 현재 원 operation에는 HTTP socket 단절 신호의 직접 결박도 없다. 단절을 취소/미전달/DB 정착/완전 회수로 표시하지 않는다.
+
+필요한 내부 제안은 OwnedDelivery{requestAbort,result,settled}다. 원 operation이 exact stream instance·전달 복사본·supplier Promise·원 deadline을 소유하며 외부 result와 내부 실제 settled를 분리한다. timeout/종료는 abort 요청·새 IO 차단만 수행한다. supplier/하위 write 정착 후에만 buffer/listener/handle을 회수하고 그 전 재사용·완전 정리 주장을 하지 않는다. HTTP 응답 대기자 소멸과 delivery 취소는 다르며 네트워크 대기 중 불필요한 DB lease를 잡지 않는다. 이미 시작한 DB query의 실제 settle 보호는 유지한다.
+
+현재 delivery에 options의 pendingOptionsSuppliers와 같은 별도 미정착 추적 port가 없고 실제 stream producer/consumer도 없다. 하위 write/drain/close·취소 보장은 미검증이다. 이는 향후 source 구현의 내부 소유 요구를 구체화한 읽기 결과이며 B06/보안·실행 검증 PASS가 아니다. 실제 비밀 바이트 조사·키/DB/권한/서비스/Agent·네트워크·모듈/시험 실행0이다.
