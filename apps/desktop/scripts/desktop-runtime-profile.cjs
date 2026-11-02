@@ -37,7 +37,7 @@ function createDesktopTrustPackageProducer(source,io){
  });
 }
 /** 기본 Forge도 정확 copy hook을 가진다. 보호 upstream 부재를 임의 profile로 채우지 않는다.
- * @param {any} hooks
+ * @param {any} hooks @param {any} [runtimeIO]
  */
-function fixedDesktopTrustForgeHooks(hooks){return{...hooks,packageAfterCopy:async(/** @type {any} */ config,/** @type {string} */ root,/** @type {string} */ version,/** @type {string} */ platform,/** @type {string} */ arch)=>{if(hooks.packageAfterCopy)await hooks.packageAfterCopy(config,root,version,platform,arch);if(platform!=='win32'||arch!=='x64')return unavailable();return packageDesktopRuntimeProfile(root);}};}
+function fixedDesktopTrustForgeHooks(hooks,runtimeIO){return{...hooks,packageAfterCopy:async(/** @type {any} */ config,/** @type {string} */ root,/** @type {string} */ version,/** @type {string} */ platform,/** @type {string} */ arch)=>{if(hooks.packageAfterCopy)await hooks.packageAfterCopy(config,root,version,platform,arch);if(platform!=='win32'||arch!=='x64')return unavailable();await require('./native-proof-runtime-build.cjs').packageNativeProofRuntime(root,runtimeIO);return packageDesktopRuntimeProfile(root);}};}
 module.exports={readOwnedPackageProfile,createDesktopRuntimeProfile,writeDesktopRuntimeProfile,packageDesktopRuntimeProfile,createDesktopTrustPackageProducer,fixedDesktopTrustForgeHooks};

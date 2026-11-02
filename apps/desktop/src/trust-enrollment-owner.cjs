@@ -87,7 +87,7 @@ function createNativeProofSource(bindingInput,currentSource=null){
  if(source.transport!=='SOURCE_ONLY_MODEL'||typeof source.read!=='function'||canonicalJson(source.binding)!==canonicalJson(b)||identity.credentialPurpose!=='NATIVE_PREPARATION_ONLY'||!Number.isSafeInteger(identity.credentialGeneration)||identity.credentialGeneration<1||b.hostPublicKeyFingerprint!==bindingRecord.key.fingerprint||canonicalJson(identity.registrationRef)!==canonicalJson(bindingRecord.registration.registrationRef))return fail('PROTECTION_UNAVAILABLE');normalizeOrigin(identity.origin);
  const original=copy(bindingRecord),ownerEpoch=epoch,ownerContext=canonicalJson(context()),read=source.read,dependencyNames=['createOperation','createRegistrationClient','now','monotonic'],functions=dependencyNames.map(k=>own(dependencies,k));if(functions.some(f=>typeof f!=='function'))return fail('PROTECTION_UNAVAILABLE');
  // 고정 source 경로를 명시 호출 때만 로드한다. packaged TS 전체 지원을 뜻하지 않는다.
- const {NativePreparationProofSigner}=require('../../connector/runtime/'+'native-preparation-proof-signer.ts'),{restrictNativeProofSigningContext}=require('../../connector/runtime/'+'native-preparation-https.ts'),native=require('../../..'+'/contracts/runtime/native-preparation-authority-v1.ts');
+ const native=require('./'+'native-proof-runtime.cjs'),{NativePreparationProofSigner,restrictNativeProofSigningContext}=native;
  /** @type {any} */let material=null;
  /** @type {any} */let signing=null;
  let lastWall=-Infinity,closed=false;
