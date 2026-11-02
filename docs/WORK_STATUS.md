@@ -12859,3 +12859,11 @@ git diff --check
 ### 2026-11-03 FN06 복구 bootstrap 후보 기술검토 수용·결정 요청 준비
 - 후보43EBD866은기술독립검토C0/I0·시작끝SHA동일이다. null최초입력/유일binding보호발견은기존r5에없던delta로분리됐고existing-only root·복구조회highWater/pending쓰기0·원행결박읽기MATCH·다중/불명닫힘과채널수명전체쓰기금지가실현가능한한정안임을확인했다. 채택/구현GO/실복구PASS아니다.
 - Main은후보+현황을같은privatebranch에보존한뒤PMO에이정확계약채택의결정·지원만요청한다. 채택전bootstrap소스쓰기0·실키/DB/권한/서비스/컴파일/Agent/QA0. 별도native승인범위조사는계속하며전체계획미완료다.
+### 2026-11-03 FN06 복구 직접 결정 대기·독립 native 승인 범위 확인
+- PMO의실제대화turn01a19d20-097a-73e1-96c2-3ce6277b779a를확인했다. 후보43EBD866 전문/hash대조뒤필수UUID의nullable/보호발견query변경을PMO기존위임밖으로판정하고신산님께A안source-only채택/기존계약유지질문call_225cbaad84d2449b8be7669b487fd789을이미요청했다. 최신heartbeat회신은그직접결정대기유지다. Main은중복질문/침묵승인/코드GO확대0·복구후보미채택을유지한다.
+- Primary읽기는 native r2계약5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085/직접승인기록9B10475C96E993112B104F1813A86B1B2A2E401429CBED293100ACA036E17567를실제확인했다. 같은실행REGISTERED원행→mapping.resolve/owned helper→기존key Load→NativePreparationProofSource.Sign→원request/P256검산은복구와독립인승인소스업무다. 실제current/profile/NativeOnlydelivery·connectorTS전체배송생산자는별도남으며전체native완료아니다.
+- Main신규WI docs/work_packages/FN06_LIVE_NATIVE_SIGN_SOURCE_IMPLEMENTATION_20261103.md SHABC4F29C0FA4A9BE8C0F7B5471AE8493091EB5F87B7C9538612DD1D2976E74DA9를기존5경로·r2/r5/privatecontext/별도권위/원예산·실효과제외로작성해독립/수행가능성사전검토에배정했다. 현재code GO0/writer0·실키/DB/서비스/컴파일/Agent/QA0·전체계획미완료다.
+### 2026-11-03 FN06 LIVE-NATIVE-SIGN-01 사전 검토 수용
+- WI BC4F29C0은기존Reviewer C0/I0·시작끝SHA동일,Primary정확5존재/시작SHA5개일치·필수추가경로/계약충돌0으로수용했다. 원NativeHttps privatecontext/별도권위·원동적remaining/고정끝시각·기존key/typedprimitive를연결하며빌드closure/legacy ProtectedStore변경0이다.
+- mapping.resolve는살아있는REGISTERED private snapshot/epoch만검산하고원frame/dynamic remaining을받는exchange가보호current/HUMAN/catalogue/PUBLIC·helper를원예산으로소비한다. Load뒤남은예산을다시좁히고고정끝시각연장0이다. 정상통합은기존등록시험의실REGISTERED producer를써다른시험import중복실행0으로할수있음을확인했다.
+- Main은WI+현황2문서를기존privatebranch에게시한뒤정확HEAD로기존Primary5경로sourceTDD를dispatch한다. 실제supplier/NativeOnlydelivery/TS전체배송미완료·복구null미채택은그대로다. Main제품쓰기0·단일writer·실키/DB/서비스/컴파일/Agent/네트워크/QA0·전체계획미완료다.
