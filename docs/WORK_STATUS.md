@@ -12563,3 +12563,25 @@ git diff --check
 - 기존Reviewer의scoped재검수는I1/I2해소C0/I0다. 두guard역치환SHA가F97F1B74와같아나머지코드불변·시작끝1CEC58C2동일을확인했다. source/routes/publisher/전체첫업무판정은범위외다.
 - Main c4992c는동결codec독립메모리15조건을새로실행해15PASS/FAIL0/exit0·전후SHA동일을확인했다. 원11조건+최초/미래/현재rollback거절·이전rollback구조정상도포함했고FS쓰기/임시파일/네트워크/키0이다. a0ba4a의원10PASS/1FAIL은보존하며최종15와합산하지않는다. 이검사는metadata codec만증명하며실제release/publisher/부모artifact정합/키인가/OS를증명하지않는다.
 - Main은검수한codec한파일과소유현황만부분checkpoint한다. 나머지29코드/시험의작성중변경은stage/commit하지않고같은Primary가단독계속구현한다. 첫업무생산→host/build→catalogue→IPC/main→KEY_READY종단과전체계획미완료유지. 실제효과/새QA0이다.
+### 2026-11-02 FN06 전용 key-host build/verifier 작성 중
+- Primary605bc5의2PASS/1FAIL은전용build에옛owner목적이남은실제행동반례다. 전용목적/산출물/ref보완후6a7e93의build/verifier7PASS/exit0을보고받았다. 검증범위는고정compile인자·전용목적·합성PE/CLI원bytes의entry/private resource정상/변조거절뿐이며실제compiler/배포/키인가증거아니다. Main독립재실행0이다.
+- Mainab0280/2e0741은HEAD9b1783ee와작성중server/build/시험변경만읽었다. Primary는원compile/검수context→publisher반환접점이아직작성전이므로build/verifier를동결가능하다고보고하지않았다. Main은현재그부분을인수/검수완료로계산하지않으며codec1CEC동결·검수결과만유지한다.
+- 같은Primary가host/root/binding실source·publisher원context·actualIPC/main소비를계속구현중이다. 새배정/동시writer/실제compiler·DB·키·서비스·Agent·실자료/P03R3/새QA0,최종첫업무/계획미완료유지다.
+### 2026-11-02 FN06 전용 verifier 부분 동결·입력원형 C0/I1
+- Primary는 apps/desktop/scripts/verify-desktop-trust-key-host.cjs 한파일을 SHA65C4BB0112747B49FD57BE4B66A9D40256B89350E319AF2F30ECB772D919C700로부분동결했다. 1ee9a4 Buffer getter음성2RED→60d6dc build/verifier9PASS/0FAIL/skip0/183.7422ms와desktoptsc0을보고했다. build/compiler/시험은여전히작성중이며실FN18 path/compile/publish provenance/C#runtime은NOT_RUN이다.
+- 기존Reviewer정적 C0/I1은readBasis의descriptor검사뒤원객체get/spread재소비다. Main46eb2a의동결경계7조건은6PASS/해당1FAIL exit1·전후SHA동일이었다. 정상basis/옛owner목적거절/owngetter0/Buffergetter0/BufferProxy0/wrongbuffer거절은통과했지만basisProxy는get18회로원descriptor d64 대신a64를소비/수용했다. FS쓰기/임시파일/network/keys/native0이며실제publisher나키인가우회성공주장은아니다.
+- Main은같은Primary에게해당한파일만동결해제해Proxy사전거절·정확8 descriptor.value의독립snapshot·원객체재읽기0로보완지시했다. 정합PE/resource의반례RED→GREEN/새SHA·직접회귀뒤한정재검수한다. Main/Reviewer제품쓰기0·다른허용29경로구현계속·원실패보존이다.
+- Primary의4821dd 배송CJScodec동등벡터5PASS/client고정요청·부모/helper bytes/high-water·변조/늦은응답7PASS와e41802desktoptype0은작성중범위의중간증거다. JSDoc위치2곳각1회준비오류와sandbox git diff --numstat의9c1864 worktree오류는제품시험/실제Git손상과분리한다. codec1CEC의기존검수는불변이다.
+- publisher는compiler원producer/단발driver/최종검산의module-private 발급객체와보호build/verification원행·parent/bytes를교차검산하도록작성중이다. 실제공급자는기본미등록이고모델GET/KEY_READY를actualpublish-ready로승격0,실compile/OS/DB키권한서비스Agent·실자료/P03R3/QA0이다.
+
+### 2026-11-02 FN16 documents/artifacts 추가 사실 보완·조사 준비오류
+- 기존Reviewer는제품source/시험읽기만으로documents/artifacts 원domainHash/축약투영/실bytes검산·참조폐쇄·개별RR 대 전체composition atomic:false를확인해후보 §4.2에만반영했다. 후보최종B9B8B79D4A61468DEBD6604382253A28B801DD2389E7FBF34C21C02C471CF88D/192514B,Main830c6f에서양쪽SHA동일·추가절diff/형식0을확인했다. 앞§4.1/192표부록은불변·미채택/GO0·전체backup기능/권한복원/coverage완료아니다.
+- Reviewer준비명령1개의오류대상2: rg --files apps/server/modules/design-trace apps/web/src/features/documents apps/web/src/features/design-trace contracts. 앞두경로가각os2 부재였고실제목록의traceability/documents로정정했다. 부재/미구현근거로사용0·제품실패0.
+- Main의추가대조 e4c466은문서경로 docs/04_test_reports/AV3/FN16*에서os123,2a0ff8은소스경로 apps/server/modules/backups/backup*.ts에서같은os123이었다. 외부rg의경로wildcard방식을2회뒤즉시중단하고실제디렉터리 literal검색 c3e213로정정했다. 실제백업모듈에는knowledgeShare/knowledge_share/share_request 일치가없었다. 40174d도현재composition의Knowledge 단일collector를확인했으며이한정사실외전체표/동적경로누락0을주장하지않는다. 권한/ACL/Gitconfig변경·제품수정0이다.
+- Reviewer는이어conversations/knowledge 원hash와축약출력·공유요청RECORDED_ONLY/외부의존을읽기만대조해반환했다. 아직이결과를새계약채택/전체registry로승격하지않았고FN06 코드검수가우선이다. 실제대화·자료/DB조회0,전체계획미완료다.
+### 2026-11-02 FN06 verifier 보완 재검수·합성 정상 경로 확인
+- Primary f3870b의basisProxy3반례0PASS/3FAIL 뒤types.isProxy 사전거절과정확8 descriptor.value 독립snapshot만쓰도록1회보완했다. 1ef2ba build/verifier12PASS/0FAIL/skip0/134.9885ms·desktoptype0, verifier새SHA CD7DD3ABA0074F36170965CC462258CFC8E024A51C016BA5078DE7502A911E7E 재동결이다. 반례3은한실행의서로다른관측조건이며동일근본정식실패3회가아니다.
+- 기존Reviewer재검수는I1해소scopedC0/I0다. Proxy사전거절/descriptor snapshot외역치환SHA가65C4BB01과같고PE/CLI본문불변·시작끝CD7DD3동일이다. 역치환공백가정준비오류1은실제행경계로정정·파일수정0이며제품실패와분리한다.
+- Main686d17는동결verifier의입력경계10조건을독립메모리실행해10PASS/0FAIL/exit0·전후SHA동일을확인했다. 정상basis/옛purpose거절/getter0/BufferProxy0/wrongBuffer/expectedProxy0/독립동결snapshot/descriptor trap0/관측변조0을검산했다. 원46eb2a의6PASS/1FAIL은보존하며합산하지않는다. FS쓰기/임시파일/network/keys/native0이다.
+- Primary가검수용짧은동결한build29DBD7B177EAE242E5F84CAFD9A405B5EB0A64236BCB7C0E9DA4506C838DE3C2/testEAA0155E47B1D48C39A5FB2C2ED97E4C608531770A349498F97E63E1F9AC55F8/verifierCD7DD3을Main c567c5에서확인하고 node --test tests/desktop/desktop-trust-key-host-build.test.cjs 를fresh실행해12PASS/FAIL0/SKIP0/150.4028ms·세SHA전후동일을확인했다. 정상합성PE/CLI·3resource/entry음성·Buffer/Proxy경계이며실FN18경로producer/compiler/provenance가아니다. Main10과이12는서로중첩범위라22개독립PASS로합산하지않는다.
+- Main은verifier한파일만동결유지/부분checkpoint하고임시동결한build/test두경로는다시같은Primary에게작성허용했다. 다른29 코드/시험을stage하지않으며전체첫인수단위/등록기능/계획미완료유지다. 같은입력관측원인의신규경계를허용30안에서일관확인하도록지시했고새공통화/기존통과모듈재작성/범위확대0이다.

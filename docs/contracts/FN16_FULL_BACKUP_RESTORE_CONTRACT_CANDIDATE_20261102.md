@@ -108,6 +108,22 @@ referenceRules 항목={fieldPath,targetNamespace,required,scopeRule}, scopeRule=
 
 프로젝트가 실제 참조한 SYSTEM/USER_COMMON 방법론·양식의 정확 버전만 dependency 후보로 표시한다. 사용자 미선택 공통자료 전체·다른사용자의 비공개 자료를 자동 포함하지 않는다. 자료군 선택을 늘리지 않고 필요한 dependency/읽기 불가/필수 gap을 preview에 표시한다. 우선 적용snapshot/작업계획 ORIGINAL codec을 기술적으로 고정할 수 있으나 공통기준/FeatureBaseline 원문·보호투영·원명령 의존성이 닫히기 전 plans 전체 eligible0이다.
 
+### 4.2 documents/artifacts 자료군의 codec·원문·참조 폐쇄 판정
+
+이 표는 제품 source·시험을 읽은 기술 근거이며 새 export/원문 반출·권한 계약의 채택이 아니다. ORIGINAL 가능은 원 domain hash의 입력을 보존·재계산할 수 있다는 뜻이며 원행 전체·증빙·bytes·현재 접근의 완결을 뜻하지 않는다. sourceSelection NONE과 원문 비반출·미채택 권한 경계는 그대로다.
+
+| 대상 | 원형·hash와 현재 출력 | 실제 source 근거·남은 폐쇄 |
+|---|---|---|
+| 문서 버전 | contentHash는 `{title,formRef,stageNodeRef,content}`의 hash다. 작성자·검토·원명령까지 포함한 전체 행/export hash와 분리한다. 원 content_json과 해당 입력은 ORIGINAL 재계산 가능 | `apps/server/modules/documents/project-documents.ts:185~190,196~214`; `apps/server/modules/backups/document-inventory.ts:21,145~158,202`. 문서 head/모든 버전·BODY/ATTACHMENT 링크·양식/적용본·실제 bytes 폐쇄 필요 |
+| 반입 후보·변경 제안 | 반입은 candidate_json 전체, 제안은 `{proposal,content,reason}`의 원 hash를 재계산할 수 있다. 선택 이력은 별도 관계다 | `apps/server/modules/documents/project-imports.ts:25~36`; `apps/server/modules/documents/project-proposals.ts:47~59`; `apps/server/modules/backups/document-inventory.ts:24~27,159~162,203`. 원본/추출·diff artifact와 기준 문서·선택된 버전을 포함해야 한다. `apps/server/modules/documents/text-import.ts:1~5`의 READY는 지원 UTF-8 형식 판정이며 PNG 등의 추출 미지원과 원본 보존은 별개 |
+| 검토·확정·화면 영역 | HUMAN 검토/확정 대상과 기준을 보존한다. regionHash는 `{designItemId,screenCode,documentRef,artifactRef,anchor}`의 hash이며 기록시각을 추가한 projectionHash와 다르다 | `apps/server/modules/documents/project-content-review.ts:24~41`; `apps/server/modules/backups/document-inventory.ts:165~167`; `apps/server/modules/backups/design-trace-inventory.ts:94~102`. 문서/양식 기준·검토/확정·원명령/receipt/audit 폐쇄 필요. 화면 PNG 첨부·HUMAN 판정·region metadata를 실제 화면/내용/실행 검증으로 승격하지 않는다 |
+| 문서-소스 연결 | 원 snapshot hash는 codec으로 검산하지만 collector는 relativePath/reason을 제외한 축약 projection을 반환한다. sourceRef.contentHash와 projectionHash를 대체 사용하지 않는다 | `apps/server/modules/documents/document-source-link-history.ts:37~45`; `apps/server/modules/backups/document-inventory.ts:168~169`. SOURCE_SNAPSHOT fullref/blobHash는 외부 의존이다. FN03 §13.4 미채택 관리 원문 계약이나 외부 작업 소스 읽기 권위를 기존 문서 원문으로 간주하지 않는다 |
+| artifact 목록과 실제 bytes | 현재 inventory는 ref/상태/검사 요약이며 blobVerification=NOT_PERFORMED다. 실제 bytes SHA 검산은 별도 source이며 목록 일치만으로 대체할 수 없다 | `apps/server/modules/backups/document-inventory.ts:23,150~154,204`; `apps/server/modules/backups/artifact-byte-verification.ts:35~61`. 후자도 authorityVerified/sourceStabilityVerified/restorable=false를 유지한다. `apps/server/storage/artifact-store.ts:26~34,51~69,78~87`의 배타 게시·sync·readback/길이·SHA 검산과 `apps/server/modules/documents/project-documents.ts:129~145`의 귀속/상태/검사·보호 읽기를 실제 blob collector에 연결해야 한다 |
+
+`apps/server/modules/backups/document-history-envelope.ts:112~125`는 참조의 존재만으로 주체·양식/단계·artifact·command/receipt/audit 검산 성공을 만들지 않고 UNSUPPORTED/MISSING을 보존한다. 문서/첨부/반입/제안/검토와 원명령 증빙, 양식·공통기준·적용본 및 외부 source 참조를 실제 codec/보호 reader로 폐쇄하기 전 documents/artifacts 전체 coverage·복원 가능을 발급하지 않는다. 공통기준 원문과 provenance 축약의 한계는 §4.1을 따른다.
+
+개별 document collector의 RR 관측과 전체 composition은 별개다. `apps/server/modules/backups/project-inventory-composition.ts:148~150`의 EXACT_REFERENCE_PRESENT는 원문/권위/전체 폐쇄 성공이 아니며 현재 전체 조합은 atomic:false다. §5의 같은 snapshot 생산 연결은 아직 구현해야 할 후보 요구다. 이 표를 실제 DB/파일 검사·현재 권한 부여·복원 권위 재생성의 증거로 사용하지 않는다.
+
 ## 5. A2 — snapshot과 현재 권한·원기한
 
 불변 자료 수집은 새 한정 내부 접점으로 동일 PoolClient의 하나의 REPEATABLE READ transaction을 사용한다. 각 collector의 공개 RC wrapper를 바꾸거나 각자 connect/BEGIN/COMMIT하도록 두지 않는다. server가 검증한 actor/client/session/project에서 RLS 문맥을 만들며 임의 actor/purpose/GUC로 권위를 만들지 않는다.
