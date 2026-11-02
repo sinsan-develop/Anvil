@@ -12384,3 +12384,16 @@ git diff --check
 - 같은Primary는다음미완료 실제caller/보호공급구현의승인범위/선행을읽기대조중이다. 컴파일후보문서28C5E8의supervisor구체구현/실행결정과FN03§13.4미승인을소스진도로대신하지않고영향없는계획단위를선정한다. 새agent/branch/worktree/자동화0이다.
 
 - 결과서사실검수도C0/I0·SHA76E53F9C 시작끝동일을확인했다. 제품/시험재실행0이다. 다음읽기대조는실제NativePreparationSource.options/current 보호producer와제품조립이누락됐음을식별했으며기존등록/writer원장/proof와실query의내부구현을다음업무로구체화한다. 실제관측부재는UNVERIFIED/거절을보존한다.
+
+### 2026-11-02 다음 native current source 정확4 설계
+- 직전목표차수는physicalfactory code3eba28f9 및결과/계획/현황004f3b65를검수·게시하고QA원수명내정리/독립부재를확인한progress였다. 이번b51438은같은HEAD·trackedclean/보호3·diff0을확인했고완료57/타입/QA를재실행하지않았다.
+- 기존Primary읽기대조로실제NativePreparationSource의원authenticatedTx DB등록/writerproof복원producer가미구현임을확인했다. 기존schema의auth_sessions/users/clients·project_control/policy·writerheads/events·commands/receipt/audit/승인소비·registration/connector/생성command와basis-current를재사용할수있다. 원공개writer/등록reader의별도operation을native추가선행으로요구하지않고native자체정책으로검산한다.
+- 기존등록REGISTRATION_STATUS_ONLY/ACTIVE_STATUS_ONLY는base등록사실이며native승격근거가아니다. 이를모든base등록거절blacklist로바꾸지도않는다. 보호registration/factory/scope/profile현재mapping의실제producer는없으므로기본미등록/503·bootstrap원증거부재거절을보존하고합성포트PASS로실권위완성을주장하지않는다.
+- Main14940f 새 WI docs/work_packages/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_IMPLEMENTATION_20261102.md SHA5A7BC52021468A1ABD01D309A8D749A63640BC528825333B5F796FEF0FCF4DD0를양쪽에기록했다. 정확신규current-source/test2+기존writer/registration내부검산재사용2,실제SELECT→원caller연결·원10초/최소기한/최초EMPTYorRECLAIMED와원명령RESERVED구분을고정했다. 새DDL/API/권한/purpose·실DB/키/service/Agent/실자료/OScompiler/P03R3·새QA0이다.
+- 기존Reviewer독립preflight와기존Primary읽기시작SHA/부재확인을진행중이며제품쓰기GO0이다. 컴파일실행후보28C5E8·FN03§13.4미승인과무관한기존r2내부생산구현이며새계약이필요하면정확delta만분리한다. 전체계획완료아니다.
+
+### 2026-11-02 current source WI r2 — 원 작업 예산 접점 보완
+- r1 독립 preflight는 C0/I0였으나, Primary가 코딩 전에 실제 NativePreparationSource.options/current 서명에 원 signal/deadline/remaining 접점이 없음을 확인했다. source에서 새 10초를 시작하면 정책 조회에 이미 소비한 시간을 빠뜨리므로 구현 전 보완이 필요하다. 기존 두 시작 지문은 writer 8214D8C5E410FC93F9A890B3D0E3B244B34B1DDC8A90E8D40A4CC65FE0ABC035, 등록 reader 0C04988216F17E71E3EBEFC02B07533BE192D8C2DAE9EE038698211F1948B8E2이며 신규2는 부재다.
+- Main53d78f는 실제 public options의 기존 EMPTY/RECLAIMED 검사와 #freshHost의 RESERVED에서 source.options 재사용→원 명령 source.current 검산을 대조했다. 내부 options를 일괄 EMPTY로 제한하거나 원 baseline을 덮는 구현은 하지 않는다.
+- Main32409e는 WI r2 SHA BAA73A1FEE6A188FC9EE2737DBA57A5F59839AF2C79643B416049DBE288963A4를 양쪽에 기록했다. project-native-preparations.ts의 원 budget 전달1경로를 추가해 정확5로 고정했다. 선택적 typed 내부 인자/동등 private lease만 허용하고 공개 wire·기존 source 호환·정책·원 timer/최소기한은 유지한다. canonical r2 승인 문서는 불변이다.
+- r1 C0를 r2에 상속하지 않고 기존 Reviewer scoped 재검수와 Primary 추가 시작 지문을 확인한다. 제품 GO·시험·새 자원·실제 효과는 아직0이다. 추가 사용자 승인이 필요한 새 공개/저장/권한 계약은 이번 보완에 없으며, 실제 원 예산을 보존하기 위한 내부 구현 방법이다.
