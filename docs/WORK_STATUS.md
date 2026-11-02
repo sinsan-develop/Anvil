@@ -12544,3 +12544,22 @@ git diff --check
 - 첫 업무는 실제 source 생산→전용 key-host/build/최종검산→보호catalogue/read→actual preload/IPC/main→KEY_PENDING 선내구→키호출최대1/KEY_READY까지다. normal 합성/위조근거·원기한/UNKNOWN/ABA·pending내구실패key0/부재기본거절·fakeElectron/IO와 CSP/기존connect/quit/layout을 검수한다. C#compile/실행과 실제FN18 FS통합은 NOT_RUN/필요별도사전등록이며 얇은codec만으로 source완료라하지않는다.
 - 문서 최초 저장의 외국어 문자 사전검사1은 파일 생성 전 중단/정정한 준비오류이며 제품 실패가 아니다. 작성 동안 제품/시험쓰기0·실행0이었다. Main이 WI+현황을 게시하고 정확 HEAD에서 기존 Primary에게 단독writer를 dispatch한다. Main/Reviewer 같은코드쓰기0·코드/시험30외변경시정확보고후WI기술revision, commit/push/현황은Main소유다.
 - actual DB·권한·키·서비스·컴파일/helper/OS·Agent·실자료/P03R3/새QA는 계속 제외하며 실제설치/build/보호공급자 부재는 미등록이다. 후속enroll/HUMAN/ISSUE/명시복구/native mapping은같은승인안에서이어간다. 전체FN06/계획미완료다.
+### 2026-11-02 FN06 A안 제품 writer dispatch·최초 실제 기능 RED
+- Main9c6b7d의 WI/현황 정확2 commit77e45233a676b2c23fd87929df47b5077d0821c8을12f703에서 private동일/main f976ed5e불변·그시점trackedclean/보호untracked3로 확인한 뒤 기존Primary에게정확30 단독제품writer를명시dispatch했다. Main/Reviewer 제품쓰기0, Main은WORK_STATUS만소유한다.
+- Primary는HEAD77e45233/WI r2 SHA352F2ED8 검산뒤 실제 buildApp.inject를쓰는 tests/unit/FN06/desktop-runtime-catalogue.test.ts의 최초 기능 RED를 보고했다. dcd1a4/node --test 해당파일 exit1/1FAIL은 현재실route404 대 기대미등록producer503 불일치다. 모듈/loader준비실패0·실DB/서버리스너/키/네트워크0이며, 의도된TDD RED를정식FAILURE_REPORT 반복3회로세지않는다. Main의새독립실행이나기능PASS 판정은아니다.
+- Primary는허용30 안의source 구현중이며같은파일에중복dispatch/동시writer0. actualkeys/ACL/DB/서비스/compiler/helper/OS/Agent·실자료/P03R3/새QA0, 실제공급자미등록기본거절·후속단계/전체계획미완료유지. 의미있는동결후Main선정fresh검증/기존Reviewer독립검수를진행한다.
+### 2026-11-02 FN06 A 첫업무 서버 부분 구현 관측
+- Main52bbd7/e35895는허용server app·catalogue codec/source/routes·시험부분쓰기만읽었다. 작성중stub/TEST_ONLY_HELPER_BYTES·MODEL_ONLY성공을최종producer나KEY_READY근거로판정하지않고,Primary에실compiler/검수원context→보호publisher→고정profile/현재성소비와모델격리를최종검수초점으로전달했다. Main제품쓰기/시험재실행0이다.
+- Primary보고상 의미있는producer RED2638d7 뒤 중간GREEN36da6e 2PASS는기본거절과명시모델원행→실GET연결뿐이다. Node strip-only parameter property 준비오류1을별도정정했다. 이중간결과를actualpublisher/KEY_READY/최종전체PASS로합산하지않는다.
+- Primary는fake driver/model context·raw JSON/ordinary ports가실제게시/제품KEY_READY인가로승격되지않게분리하고source전체를MODEL_ONLY상수로남기지않겠다고확인했다. source 작성은계속중이며동결후별도검수한다. Main은서버부분의안정된의미경계를동결하면Reviewer가그부분을검수하는동안나머지허용경로구현을계속하도록운영한다.
+- 실제 DB/리스너/네트워크·키/ACL/서비스/native/compiler/Agent/실자료/P03R3/새QA0, 전체업무/계획미완료유지다.
+### 2026-11-02 FN06 catalogue 순수 codec 부분 동결·C0/I2 보완
+- Primary는 contracts/runtime/desktop-runtime-catalogue-v1.ts 하나를 SHA F97F1B742D48A1F62CA1B6D66BEAA414F39195F3A40A32D6905213A5AA88B6F0로부분동결했다. c52224 10PASS/skip0/1515.6035ms는기본route거절+중간모델GET+8codec음성의중간증거다. descriptor좁힘2타입진단은보정후b73f85 root noEmit0이며최종전체인수가아니다. 나머지source/routes/app/test는아직작성중이다.
+- 기존Reviewer의동결한파일정적판정 C0/I2: I1 parse전raw UTF8wire2MiB상한누락(공백패딩통과), I2 rollbackOf가현재sequence이상/최초개정의미래참조를형식만으로허용. 실제publisher우회/실제키인가성공은주장하지않는다. 실제대상존재/profile/부모/artifact관계는별도publisher검산이다.
+- Main a0ba4a는동결codec만독립메모리프로브11조건을실행해10PASS/I1반례1FAIL exit1·전후SHA동일을확인했다. 정상object/wire·부모/만료/nonfiniteclock·정합hash의잘못resource/중복role/cross-evidence·getter실행0·중복JSON거절은통과했다. rawwire2097153공백+정상JSON은거절기대와달리수용됐다. FS쓰기/임시파일/네트워크/키0. 이원실패를숨기거나최종전체PASS로합산하지않는다.
+- Main은같은Primary에게codec한파일동결을해제하고I1/I2음성RED→파싱전raw상한+rollbackOf.version<sequence 최소보완→직접회귀/새SHA를지시했다. 다른허용경로구현은계속하며두반례는같은근본정식실패3회가아니다. Main/Reviewer제품수정0·실제효과/QA0,전체첫업무/계획미완료다.
+### 2026-11-02 FN06 codec 보완 재동결·한정 검수 체크포인트
+- Primary a19ae0의선택음성3 genuineFAIL 뒤parse전UTF8wire상한과nonnull rollbackOf.version<sequence 두guard만보완했다. 89dc0f 해당시험13PASS/skip0/1729.0619ms·root noEmit0, 최종codec SHA1CEC58C2449347EB0D4F13CE8F7999630DC1DF431BF7170D69EEDCD871CAA052 재동결이다. 반례3은같은실행의서로다른I1/I2조건이며동일근본정식실패3회로세지않는다.
+- 기존Reviewer의scoped재검수는I1/I2해소C0/I0다. 두guard역치환SHA가F97F1B74와같아나머지코드불변·시작끝1CEC58C2동일을확인했다. source/routes/publisher/전체첫업무판정은범위외다.
+- Main c4992c는동결codec독립메모리15조건을새로실행해15PASS/FAIL0/exit0·전후SHA동일을확인했다. 원11조건+최초/미래/현재rollback거절·이전rollback구조정상도포함했고FS쓰기/임시파일/네트워크/키0이다. a0ba4a의원10PASS/1FAIL은보존하며최종15와합산하지않는다. 이검사는metadata codec만증명하며실제release/publisher/부모artifact정합/키인가/OS를증명하지않는다.
+- Main은검수한codec한파일과소유현황만부분checkpoint한다. 나머지29코드/시험의작성중변경은stage/commit하지않고같은Primary가단독계속구현한다. 첫업무생산→host/build→catalogue→IPC/main→KEY_READY종단과전체계획미완료유지. 실제효과/새QA0이다.
