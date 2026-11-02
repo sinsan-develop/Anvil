@@ -12503,3 +12503,15 @@ git diff --check
 - Main은 NIST SP800-38D 최종 원문과 Node24.16 공식 crypto 문서를 검토했다. 이는 AES-GCM/nonce/인증 전 미채택 경계의 검토 근거이며 암호계약 채택이 아니다. 정확24.22.1 웹문서 접근 불가는 실검증으로 승격하지 않는다. 두 후보의 실제 구현·키·DB·보호파일·서비스·Agent·백업/복원 효과0, 전체 계획 미완료다.
 
 - 2026-11-02 후보 초안 checkpoint 준비 d0dc74는 FN16 문서 EOF 빈줄1 때문에 diff check exit2에서 commit 전 중단했다. Main이 본문 변경 없이 끝 개행만 LF1개로 정규화했다. 현재 FN16 후보 SHA 4E8423F0445591AC9F47D50FCE04311934ED87D9D993FB546F16D9E2E02FB8D9, 부모 원문 SHA D3B3014E76D0DE5CC444C3C002C90CEA170939631519AA283B357AF54DDCACBF. 미채택/sourceGO0/실행GO0이며 이 비의미 보완은 계약 채택이 아니다.
+
+### 2026-11-02 모바일 승인 항목 설명 후 계약 검토 후속
+- 모바일 #8713da의 질문은 승인 요청 내용 확인이며 계약 채택으로 간주하지 않았다. FN03 원문 변경 이력/보호조회와 FN06 desktop 신뢰 연결의 새 결정 범위를 설명했고 동일 승인 질문을 다시 보내지 않는다. FN16은 기술 준비 미완료라 아직 승인 요청하지 않는다.
+- 현재 branch codex/av3-stage-b HEAD49f47b720ad1fa5179d5f5c6ab26e6c287c99cc1, 실제 elevated 읽기 b0148d에서 FN06 후보만 tracked dirty·보호 untracked3를 확인했다. 직전 sandbox의 worktree fatal은 실행 격리 결과이며 Git 손상/제품 실패로 판정하지 않는다. canonical의 기존 dirty/삭제 자료는 보존한다.
+- FN06 후보 r4 BB4B9219 독립 C0/I1: lastServerState의 REJECTED 누락으로 명확한 HUMAN 거절이 UNKNOWN과 혼동된다. 기존 Reviewer에게 동일 후보 문서만 보정하도록 위임했다. 원 fullref/비활성 상태를 보존하고 ISSUE/새 키/자동 등록은 차단한다. 새로운 사용자 권한 선택이 아닌 기술 보완이며 NOT_ADOPTED/GO0 유지다.
+- FN16 후보 4E8423F0 독립 C0/I2: 새 설치의 외부 bundle 반입 producer와 목록 DTO/응답 바이트 대수 불일치다. 기존 Primary에게 후보 문서만 맡겨 실제 source/DDL/collector 기반 registry 부록·FeatureBaseline 이력 누락·목록 축약 DTO·외부 반입 제안 계약을 보완한다. registry 확인은 담당자 업무이며 사용자에게 목록 작성 결정을 넘기지 않는다. 동일 실키 nonce 도메인·10GiB/staging 선택은 미정으로 분리한다.
+- subagent-driven-development 절차의 위임/독립 검수를 적용하되 기존 담당자 재사용·현재 현황 원장을 유지한다. 새 세션/branch/자동화0, 현재 제품 code writer0. 실제 DB·권한·키·서비스·Agent·컴파일·실자료 조사/P03R3 실행0, 신규 QA0. 전체 계획은 미완료이며 승인과 무관한 문서 기술 보완을 계속한다.
+### 2026-11-02 FN06 desktop 후보 r5 기술 보완 검수
+- 기존 Reviewer가 후보 한 파일을 r5 SHA F6C8CB668AC371993F0F623AC563583FFD757AFDAAE8D86573A4B71C9A4951E6로 보정했고 정본/source 동일 bytes를 Main cfbd11로 확인했다. 실제 project-registrations.ts의 HUMAN REJECTED/new fullref 생산과 후보 저장 enum·비활성 phase·시안·상태도·시험 추적을 대조했다. 명확 거절은 원행 보존, 원행/보관 불명은 UNKNOWN이며 ISSUE·새 키·자동 재등록 금지다. 이 지적의 한정 검수는 해소됐으며 코드/실기능 시험 PASS나 계약 채택으로 표시하지 않는다.
+- Main66e933 diff check0, private branch49f47b7/main f976ed5e를 실제 읽었다. r3 Git 이력을 보존하며 r4~r5의 규범 본문 정리를 후보 기록으로 checkpoint한다. 실제 설치 고정 catalogue authority·보호publisher/IPC/root/mapping 선택은 미채택/GO0다. FN03 승인도 아직 확인되지 않았다.
+- FN17 준비 inventory1fdbec의 입력에 존재하지 않는 packages 디렉터리를 포함해 rg os2가 출력됐다. 반환된 실제 파일 목록만 사용한062d42는 정상 읽기이며 새 경로 추측·권한 변경·재시도0이다. 제품 실패로 합산하지 않는다. FN17 기존 계약/제품 읽기를 담당자에게 전달하고 상세 후보 작성만 진행한다.
+- PMO에는 정확 branch/commit·두 승인 경계 설명·FN06 보완·FN16 C0/I2/기술 상세화·FN17 후보 상세화와 실제 실행 제외를 전달했다. PMO 다음 작업 배정을 기다리지 않는다. 전체 계획 미완료·새 QA0·실효과0 유지다.
