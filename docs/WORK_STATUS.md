@@ -12147,3 +12147,37 @@ git diff --check
 - 파생 WI docs/work_packages/FN06_NATIVE_PROOF_SIGNER_SOURCE_IMPLEMENTATION_20261102.md SHA016101BB9AF6D553EAC117993D3D2208D9A825CEE5179CB60E220A4D01303FCA 정확5경로. 기존 r2/승인/원 WI 불변, Main 제품쓰기0·기존Primary 단일writer 예정·새agent/chat/branch/예약0. 실제 키/DB/권한/CA/서비스/helper/compiler/Agent/실자료/P03R3 실행0·C#runtime parity 및 실제 공급자/전체계획 미완료다.
 
 - 정확 WI preflight C0/I0·시작끝016101BB…1303FCA 동일 확인 후 기존Primary 정확5경로 source GO를 전달했다. Main2ccdee의 자체기록 마지막 CRLF 혼용 diff 경고는 소유 append tail만 LF로 교정했고 내용/기존이력/제품파일 변경0이다.
+
+### 2026-11-02 native signer 지시 게시·제품 소유 진입점 대조
+- Main50b46a의 staged diff는 신규 WI 마지막 CRLF 경고 exit2로 commit 전 정지했다. 마지막 newline만 LF로 정규화한 최종 WI SHA653BC4950A56E0E4AC46FABD889621E309A5844087FB06F0A3AFF5D820A870DC는 이전016101BB와 의미/경로/승인범위 불변이다. Main 비의미 재확정, Primary에 정확 최종 SHA를 전달했고 b72bc4 raw/index2·diff0 뒤 b83b83bd 정확 문서2를 private 게시했다. 제품파일 동시쓰기0이다.
+- 독립 읽기 대조의 상위 조립점은 apps/desktop/src/main.cjs→shell.cjs의 Electron main이다. 창/서버origin/partition·목적IPC는 있으나 connector/native 수명·등록키mapping/caller/root·package 소유 producer 연결은 확인되지 않았다. windows-host.invokeProtectedHost/ProtectedStore와 ownership QA는 제품 native 권위로 승격하지 않는다. 기존get-state/connect/client-quit IPC를 새 native 권한으로 확대0이다.
+- Reviewer의 apps/connector/package.json 추정읽기 부재1은 준비오류로 분리했고 제품 미구현 근거에서 제외했다. 실제제품/시험/설계 범위의 좁은 source 읽기만이며 키/실자료·환경·네트워크/Agent 실행0이다. PMO에는 b83b83bd source 범위와 실제효과0·공급자잔여를 전달했고 다음배정 대기0·전체계획미완료를 유지한다.
+
+### 2026-11-02 native typed signer 기능 RED·PMO 확인
+- Primary da7325의 실제client→slot→HTTPS 신규집중시험은 node --test tests/unit/FN06/native-preparation-proof-signer.test.ts exit1/0PASS1FAIL/188.6152ms였다. 신규 signer 기본거절 UNKNOWN과 기대 CREATED_OBSERVED의 불일치이며 실제OS/factory 결과가 아닌 명시 합성 연결 반례다. loader부재 준비오류 및 출력 미회수는 행동 RED와 구분한다. 정확5경로 구현 계속/실제효과0·Main제품쓰기0이다.
+- PMO cursor10은 최종 WI653BC495…A870DC 전문·정확5경로/C#Run·Load·build 미연결 source 경계를 확인해 기록했으며 실제키/C#parity/caller 미확인과 추가개입0을 회신했다. 새 실행 허가로 해석하지 않는다.
+
+### 2026-11-02 native issuer 후속 내부 생산 접점 대조
+- Reviewer는 ProjectNativePreparations.NativePreparationSource.credential의 ID/세대/digest 반환·별도acceptSecret, app 명시주입 등록과 기존registration/source-read의 목적별randomBytes32/randomUUID/digest 분리를 대조했다. 실제native crypto 공급자/기본등록은 찾지 못했으며 native의prefix없는opaque43·원120초최소기한을 기존등록av3ct1_/15분 형식으로 바꾸지 않는다. 보호 전달/ACK/current와 분리된 내부crypto source가 후속 후보이고 아직code GO0이다.
+- Maina924c2는 잘못 추정한 apps/server/executions 경로읽기 exit1이었다. b2af96 rg실제목록에서 apps/server/modules/executions/project-native-preparations.ts를 찾아2d230c/9aefbf로 source입력/원coordinator의check·별도비밀copy·digest대조·같은Tx저장·commit후전달·finally소거를 확인했다. 경로준비오류는 제품/issuer부재 증거가 아니다. 실제비밀생성/DB/네트워크0이다.
+
+### 2026-11-02 typed signer 중간 수명 반례
+- Primary37db59는 실제client/slot/HTTPS→typed signer 합성 정상·집중음성8 GREEN/exit0/430.7961ms를 보고했다. 중간 slot.dispose 뒤 mapping 정착이 exchange1로 이어진 수명 누락은 원 context에 slot의 추가 거절 guard를 결박해 현재 exchange0으로 보완했다. Main fresh·독립검수 전 중간증거이며 최종합격/실제키보호가 아니다. mapping 만료 시험 기준시각 준비오류는 별도로 분리한다.
+- 후속 native crypto WI C39BB6F5B24DF914D957BA6264BDAFFAB086C98ACAA720F331EAD2BAA0BCCFE7는 source 공급자 부재를 좁힌 정확신규2 내부생산 단위로 preflight 중이다. 현재 signer5 writer 반환/통합 전 다음writer GO0·동시code writer0이다. 실제effects 제외·전체계획미완료 유지.
+
+### 2026-11-02 native signer Main 검증·독립 I1 재작업 판정
+- Primary5 writer반환/동결 뒤 Main52b932 source/diff, c2cfab 신규9PASS/0FAIL/skip0/484.4605ms·type0, 988fcc 직접영향3PASS/0FAIL/skip0/241.1565ms를 확인했다. Primary d6cde0/f73b4b와 중복합산하지 않는다. b7ecb7에서 기존 ProtectedStore/build/desktop의 새 primitive 연결0을 확인했다. C# compile/runtime/crypto parity NOT_RUN이다.
+- 독립C0/I1: typed frame이 생성시 remainingMs만 담고 C#이 수신뒤 새Stopwatch로 같은숫자를 시작해 전달지연을 원10초에서 차감하지 않는다. 원잔여100ms/frame200ms지연이면 authority/challenge가 살아있는동안 원기한뒤SignHash 진입 가능 source공백이다. Main도03c04d 본문으로 확인했다. 실제exchange/C#미실행으로 실제키사용사고 관측은 아니다. 부모 사후check만으로 이미시작한키사용을 되돌릴수없다.
+- Ruling: 동일정확5 안에서 원 channel의 최초단조예산과 함께 고정된 wall상한을 유지·더짧은현재기한으로만 좁히고 opaque lease/내부frame에 callExpiresAt로 결박한다. C#은 그고정원상한과 수신후 단조 remaining을 모두 서명직전/후 검사한다. 부모동적remaining/exchange직전검산·late폐기 유지, 새clockwindow/자동재시도0이다. 기존wire/public/권한/실제효과불변의 내부중요오류보완이며 Main제품쓰기0·동일Primary 재작업1을발행한다. 원653BC495 WI bytes는보존하고이내부fix보완지시를적용한다. scoped독립C0/I0·Main fresh 전통합금지/전체계획미완료 유지.
+
+### 2026-11-02 Main 한정 C# compile-only 검증 계획 — 실행 전
+- 최신 사용자 코드·합성검증 승인에는 compiler 자체 금지가 없고 실제키/DB/권한/서비스/Agent/실자료/P03R3가 제외다. 원 signer WI의 Primary compiler 제외는 유지한다. Main은 새C# source의 최소구문/타입 확인을 위해 실제crypto/helper/DLL실행과 구분한 compile-only1회 검증으로 한정 보완한다. 옛일회compiler승인 재사용0·기존helperbuild/Run/Load 연결0이다. 독립자문 C0/I0는권한승인대행이아니며최신직접범위/정확영향은Main이판정한다.
+- 대상신규QA경로 D:\tmp\anvil-v3-fn06-native-proof-build-20261102-01, 환경Windows, 소유Main/FN06 r2, 목적동결된신규NativePreparationProofSource.cs 한파일의library build, 수명생성후최대10분·compiler대기15초/진단16KiB. 현재37eb2a부재확인·생성직전부재/상위realpath/link·소유재대조, 최종sourceSHA/사전검수고정전실행0이다.
+- Compiler C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe 길이2569832/Product4.8.9221.0/SHA46809206887326D2D24DB1EFF1F3064DE972C3451ABE766B49111450A5E08E00/nonlink. 고정시스템참조만명시하고 /noconfig·응답파일0·추가source/전후실행명령0·/target:library·/platform:x64로1회실행한다. 생성DLL은load/실행0·metadata/hash만확인,확인된소유생성물만정확정리·독립잔여0을확인한다. compiler종료불명은보존/보고·추가실행0이다.
+- 이검증은해당compiler의구문/타입/참조적합성만증명하며 C#canonical/crypto parity·CNG/키사용·actualruntime·보호caller는계속NOT_RUN/미구현이다. 실제키/DB/권한/서비스/native/Agent/실자료/P03R3효과0을유지한다.
+
+### 2026-11-02 native proof signer source 검수·통합
+- 원I1 지연frame은Primary b1a691 RED→e5229c 선정5/type0, Mainba78ce 최종선정5PASS/0FAIL/skip0/302.6556ms·type/diff0·독립scoped I1해소C0/I0로보완했다. 보완전Main9/3과최종5는중복합산하지않는다. 37af0c 최종5SHA/raw-index일치·stageddiff0 뒤 code5dcdef810b5dd4072579a5a32934b137a24aaaef 정확5/208추가11삭제로checkpoint했다. 기존C#LF경고는현재bytes변경아니며설정/ACL0이다.
+- Main한정compile계획대로 afbaa2가동결C#DDFF74BA…5912A5 한파일을고정csc로library compile1회했다. exit0/진단빈값·DLL15872B/SHA305C18B0CB2E67C4960FB8151AABDE8B20CCD502D352BDB296825B7511817AB5,load/실행0. 등록신규QA경로는소유대조정확정리·37af0c별도부재확인0잔여다. C#구문/타입/참조검증만이며canonical/crypto runtime·키/보호caller·물리OS/실제준비/Agent는NOT_RUN이다.
+- 결과 docs/04_test_reports/AV3/FN06_NATIVE_PROOF_SIGNER_SOURCE_RESULT_20261102.md SHA850DAC6517B4830CE3A2454491A72ABFFFE42C75274C97A15980D6CBE5751812는사실대조중이다. 기존Run/Load/build/desktop연결0·실제DB/권한/키/CA/서비스/native/helper/Agent/실자료/P03R3효과0·전체계획미완료/단일writer반환을유지한다.
+- 후속crypto WI초안C39BB6F5 preflight C0/I1은allocate를5전용으로오인한내용이었다. 실제prepare5/challenge1/consume4/delivery2·1을보존하는{1,2,4,5}·소비검증으로정정했고최종WI1B8C944D60BFD28F59CE77B72B4D09194CCEE94E28A4B26E2D15D187FD30B802 scopedI1해소C0/I0다. 기존r2wire/표·권한/실제효과변경0이며동일Primary 신규2 단일writer GO를다음으로진행한다.
