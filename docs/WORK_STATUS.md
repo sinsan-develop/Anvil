@@ -12288,3 +12288,26 @@ git diff --check
 ### 2026-11-02 owner bridge 원기한 전달의 WI r2
 - Primary는원deadline/remaining/guard부재를확인해기존client/consumer2의private budget전달을최소확장요청했다. Main405c75 actualsource에서원run최초10초·current후축소와privatecontext반환부재를대조했다. 새10초기산은원승인상한을위반하므로동일내부구현의필수보완으로판정했다. 공개wire/API/표/권한·실제효과범위변경0이다.
 - WI는원8632CDB6의신규6에서정확8(기존 native-preparation-client.ts/native-preparation-factory-consumer.ts2추가)로보완됐다. 최종SHA FF39A3325FCDF83854D6A0267B88235F28AFB25BF829260E0551CC2DB29B6E5D,독립preflightC0/I0·시작끝동일이다. 원ticket·factory/lifetime의privatebudget과context소비뒤읽기/await후stable·finally폐기·기존소비호환을직접코드검수한다. 추가2수정은지시서게시뒤같은Primary에게GO,동시writer0·Main제품쓰기0을유지한다.
+### 2026-11-02 owner bridge 작성 중 TS 관측
+- Main a6ee8c는실제HEAD3f0d7f5b·WI r2 FF39A332 고정과추가2/새launcher시험의진행변경을확인했다. 9a000b는허용2의최소diff와신규bridge/시험출현을확인했으며제품쓰기/재시험0이다. 이전목표turn은FN18검수·정리/게시와owner실제착수로진전했고전체계획완료는아니다.
+- Primary348da8 신규TS9조건GREEN은작성중제출근거이며Main독립PASS아니다. Client finally뒤일반QUERY는원private budget폐기로거절하고CLOSE는원고정wall/단조상한안에서만허용하는방향이다. C# dispatcher는원candidate private보유·CreateEmptyJobSource/ReadEmpty/Dispose연결중이다.
+- 기한뒤명시close를성공으로판정하거나새IPC예산을만들지않는다. helper내부DisposeOwned는같은owner정리시도와불명보존만이며standaloneentry없음/실제EOF호출선미연결을남긴다. 실제spawn/FS/compile/native·키DB권한서비스Agent/실자료/P03R3실행0·livehandle0,최종8SHA/type/Mainfresh/독립코드검수는대기다.
+### 2026-11-02 내부 frame 한도와 원 정상 입력 범위 대조
+- Main은원판독상한2MiB와내부frame64KiB가충돌하는지추가대조했다. ff93a5 actualreadNativeAuthority/receipt/callContext는고정ref/hash/시각/정수만이며큰sourceScopes/intent는전달하지않음을확인했다. 상한2MiB만보고원형을임의로늘리거나줄이지않는다.
+- Primary74bb16은exactcontext5784B·정수16자리과대치환6279B·고정envelope/sequence과대치환+LF6683B를산출했다. 독립읽기검수C0/I0는임의본문이없는실제exact형식과유한header에한정해64KiB정상범위축소근거가없음을확인했다. Main은현재64KiB유지·8MiB증가0·원2MiB판독상한불변으로결정했고반례/보수검산을시험에남기도록했다. 이수치는원본임의본문용량을확장한새계약아니다.
+- Primary348da8 TS9조건/type b73e36 exit0은작성중근거다. 추가위조/privatebudget/await기한·미정착/경합·C#정적소스/직접인접검증과최종writer반환·Mainfresh/독립최종은아직남았다. 원반례/준비오류/부작용제외는보존한다.
+### 2026-11-02 owner bridge 반환 전 current guard 누락 보완
+- Primary e2eb8c는Node신규2+기존client/context4파일42PASS/478.5665ms·type0을보고했다. C#시험/compile/native는NOT_RUN이며native PASS로표현하지않는다. 33eb4a sandbox Git worktree exit128은읽기준비오류로PASS에포함하지않았다. CRLF→LF만의동등정규화후지문3fd26e도잠정값으로유지한다.
+- 최종자체대조에서privatebudget이시간/port stable만검사하여image supplier await중head변경후OPEN이앞서나갈수있는원current guard전달누락을발견했다. Primary는writer반환전동일8범위안의원guard결박/await뒤·OPEN직전current→stable→원budget재검사를보완중이다. Main은필수내부보완으로판정하고head변경spawn0의RED→GREEN·같은원수명/포트동일성/consumerfinally뒤거절을요청했다.
+- 앞42PASS는보완전증거이며최종통과/인수로승격하지않는다. Main제품쓰기/재시험0·Primary단일writer·실제effects0를유지하며최종8SHA/실제명령과정리/반환뒤Mainfresh/독립최종을수행한다.
+### 2026-11-02 owner QUERY guard 오류 계보와 보정 관측
+- Primary40105d는head변경후실제fake spawn1인RED를확보했고1aa96f2GREEN으로원guard await누락을보완했다. 실제 OS spawn실행증거가아니며명시메모리포트호출횟수다.
+- Primary는da9f43 시계후퇴UNKNOWN latch누락과eb87ee consumerfinally뒤전송전QUERY거절이같은owner정리까지오염시키는분류회귀를보고했다. Main은둘을서로다른근본원인으로쪼개지않고 FN06_OWNER_QUERY_GUARD_STATE_CLASSIFICATION 동일분류보정연속2회로집계했다. 다음같은분류실패는3회정식보고/writer반환을지시했다. 앞40105d의currentguard생산누락은별도계보다.
+- 다음보정 ee62d7 신규21PASS/286.778ms·Node/type exit0을Primary가제출하여3차실패는없었다. Clientfinally뒤일반QUERY는IO0거절/동일owner정리보존,시계/기한·전송후실패는stickyUNKNOWN으로구분한다. 직접인접24는da9f43에서통과했지만그전체명령44PASS/1FAIL은그대로실패이력으로보존한다. 이후launcher분류만수정된최종8동결/지문·Mainfresh/독립최종은아직필요하다.
+### 2026-11-02 owner bridge 동결 반환·Main fresh
+- Primary는최종8SHA와source구현을동결해writer반환했다. ee62d7 신규21PASS/286.778ms·type0,직접인접24의부분통과와전체44PASS/1FAIL원본을구분한다. 최종c7bfb0 scoped diff0·8파일LF/후행공백0,실C#시험/compile/native/OS/프로세스/실파일포트·키DB권한서비스Agent·실자료/P03R3실행0·QA/livehandle0이다.
+- Main9c07e2는정확8SHA일치뒤최종4파일(신규owner2+기존client/context2)45PASS/fail0/skip0/467.2449ms,tsc-p tsconfig.base.json/diff check exit0을독립확인했다. 중간실패/앞42/21/24와중복합산하지않는다. 독립최종코드검수는기존Reviewer가읽기수행중이며그전commit/인수완료로표시하지않는다.
+- 실제Client발급ticket/원budget/currentguard→메모리process/stream을사용하는실제launcher→owner OPEN/QUERY/CLOSE가대상이다. C#는기존primitive를호출하는dispatcher/가짜owner시험source만작성됐으며C#실행PASS아니다. standalonehelper entry/build/제품등록·actualpackage/peeradmission·EOF종료호출선·전체FN06/FN08/계획은미완료로남긴다.
+### 2026-11-02 owner bridge source 검수 기록
+- Main b61889는최종8SHA·raw/index동일·정확8 staged diff0을확인하고 code0caad4eaf86377eb47f3262dd8abe957e04970ec으로커밋했다. 독립최종C0/I0·8SHA시작끝동일,Main9c07e2의45PASS/467.2449ms·type/diff0을결과 FN06_NATIVE_PREPARATION_OWNER_BRIDGE_SOURCE_RESULT_20261102.md SHA69A2EC515D916D670CA372B3C23F647D869C516963194DBE1DA6A746EDB3B3EB에기록했다. 결과서사실검수도C0/I0이며앞실패/부분결과·C#미실행/실제미연결을보존했다.
+- Primary는writer반환상태에서다음보호startup/유한frame loop·EOF정리/buildsource폐쇄를읽기설계중이다. 첫stdinJSON자체를인가로쓰지않으며새store/key/root/공개operation·등록승격/다른process재접속은추가하지않는다. Node stdio/Windows실제peer·부모process instance/빌드고정package근거의사용가능성을공식source로확인한뒤범위를구체화한다. 아직후속코드GO0·실OS/native/compile/spawn/DB권한키서비스Agent/실자료/P03R3실행0·전체계획미완료다.
