@@ -12538,3 +12538,9 @@ git diff --check
 - 실제 DB·권한·키·서비스·컴파일/helper/OS·Agent·실자료/P03R3·신규QA 실행0, 제품writer0/기존담당자재사용·단독writer예정. 전체 계획 미완료이며 FN06 승인 작업 구현을 우선한다.
 - FN16 후보 F66A106F의 I1/I2/예약식/inputRef 한정 재검수는 기존 Reviewer C0/I0·시작끝SHA동일로 반환됐다. 이는 외부반입·키/nonce·FULL_BACKUP_IO/quota 선택의 채택이나 전체registry/backup지원 판정이 아니다.
 - FN06 승인 실행의 첫업무WI는 FN06_DESKTOP_TRUST_A_SOURCE_IMPLEMENTATION_20261102.md로 고정하고 기존 Primary에게 문서 초안 작성만 허용했다. Main이 첫인수경계/후속순서·실효과제외를 지정했다. 코드/시험쓰기0인 predispatch이며 WI 독립검수/게시후 단독writer로 구현을 시작한다.
+### 2026-11-02 FN06 A안 첫 의미 단위 WI 검수·dispatch 준비
+- Primary WI r1 SHA7F634F9C…/19055B는 기존8+신규21=29경로였고 독립 C0/I1은 기존 settings.css 허용 누락뿐이었다. Main083acf는 실제 stylesheet의 기존 flex/360px·CSP style-src self를 대조하고 CSS한파일/SHA D9F420E25A1B53C67CD81BED2AFEADC0581EE73997AF77352FD4E63AD109EAC9를 추가했다. 이는 새기능/보호계약 변경 없이 승인된 접힘/스크롤/작은창 UI를 구현할 기술 보완이다.
+- 최종 WI FN06_DESKTOP_TRUST_A_SOURCE_IMPLEMENTATION_20261102.md r2 SHA352F2ED8D67D27D3FA53E4083DC9ABD16109E3EF7D7AE20B17DA82B027B0B949는 정본/source동일·정확30(기존9/신규21)·시작9지문/신규21부재·중복0·diff0을 확인했다. 독립 scoped 재검수 I1해소 C0/I0/시작끝SHA동일이다. Main의 첫30 보정 뒤 미사용29 표기1을96749b에서30으로 맞춘 문서 보정 이력이다.
+- 첫 업무는 실제 source 생산→전용 key-host/build/최종검산→보호catalogue/read→actual preload/IPC/main→KEY_PENDING 선내구→키호출최대1/KEY_READY까지다. normal 합성/위조근거·원기한/UNKNOWN/ABA·pending내구실패key0/부재기본거절·fakeElectron/IO와 CSP/기존connect/quit/layout을 검수한다. C#compile/실행과 실제FN18 FS통합은 NOT_RUN/필요별도사전등록이며 얇은codec만으로 source완료라하지않는다.
+- 문서 최초 저장의 외국어 문자 사전검사1은 파일 생성 전 중단/정정한 준비오류이며 제품 실패가 아니다. 작성 동안 제품/시험쓰기0·실행0이었다. Main이 WI+현황을 게시하고 정확 HEAD에서 기존 Primary에게 단독writer를 dispatch한다. Main/Reviewer 같은코드쓰기0·코드/시험30외변경시정확보고후WI기술revision, commit/push/현황은Main소유다.
+- actual DB·권한·키·서비스·컴파일/helper/OS·Agent·실자료/P03R3/새QA는 계속 제외하며 실제설치/build/보호공급자 부재는 미등록이다. 후속enroll/HUMAN/ISSUE/명시복구/native mapping은같은승인안에서이어간다. 전체FN06/계획미완료다.
