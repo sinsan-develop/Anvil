@@ -275,3 +275,99 @@ ARM은authority생성전의exactoffer수신준비이고body/proof/challenge/rece
 - L권한명령/receipt/audit·승인소비,receiverPrincipal,실endpoint/closedenum,frame/위임helper전송총한도는별도조건이다.
 
 원후보r1 F301A7B86EE0CE721F18B2872D69DA2B2FEE8437D5E41C649026388833D07176는불변이다. **기술검토REWORK/Important9미해소·source/실행GO0를유지한다.** 기술적하위질문의답을얻은것과새인증/권한·공개wire·저장계약을채택하거나기능을완료한것은구분한다.
+
+
+## 필수 replay 행과 공통 권한 원장 L의 추가 검토
+
+### nonce 소비·원 결과 완결
+
+Primary의실제전이검토는앞session26/window9/offer58·event12를확정상수로쓸수없음을확인했다. challenge한건에는최대다음5행이필요하다.
+
+- 발급Tx: SignedChallengeRequest evidence + ChallengeSnapshot + **challenge-request replay** = 3행.
+- 최종proof처리Tx: proof evidence + **nonce-consumption/replay** = 추가2행.
+- 동일원결과재조회는추가행0이며다른본문/다른ID nonce재사용은충돌이다.
+
+앞표의challenge1/evidence2/replay1은서로다른두요청의replay를합쳐세어1행누락됐다. challengeRef소비unique와불변소비replay를원결과ref/hash에결박해야한다. challenge원문을mutable소비표시로바꾸거나COMMIT불명에서미소비를추정하지않는다. 유효proof의거절도nonce를소비할지와그원결과원형은아직선택이필요하다.
+
+이미존재하는SessionSnapshot/WindowSnapshot/OfferSnapshot/ArmReceipt/CommandBinding/AckSnapshot·기존N사건을전이의불변근거로쓰면같은R사건을기계적으로복제할필요는없다. head는현재투영이며전이근거ref를추적할수있어야한다. 단순UNKNOWN/응답유실/재시작은가짜terminal행을만드는근거가아니다.
+
+session/window/offer각첫terminal의상호배타branch,stream결박·단절사건,terminal뒤원무효화의보존목적/횟수를닫아야한다. window종료시offer50개를각종료한다면각offer에원종료행/정산여유가예약돼야한다. STATE원요청replay는당시의정확불변전이/head근거와관측시각으로재구성해야하며나중최신상태를원결과라고반환하지않는다.
+
+필수slot식은기본snapshot/head/예약 + 발급challenge별3 + 소비가능challenge별추가2 + 의미적으로필요한결박/종료행이다. 발급시최대5행을먼저예약하고actual행생성에맞춰future슬롯만감액한다. STATE횟수·CLOSE인증·terminal뒤무효화규칙을닫기전전체정수row상한은미증명이다.
+
+### 공통 L 계상은 기존 U가 자동 지원하지 않는다
+
+Reviewer는project-command.ts:114~120/128·project-approvals.ts:64~67·0059:249~270·0071:181~182를읽기대조했다.
+
+- native 성공commands.result_ref에는최종ProjectCommand전체commandSnapshot과preparationIntent전체가복제된다. 이를임의제거해비용을줄일수없다.
+- authorization_receipts·성공audit·approval consumption/원request상태변경과별도거절audit경로는각각실제저장비용이있다.
+- C=canonical native command bytes,I=canonical intent bytes일때현재result_ref만의부분상한은C+I+657이다. C/I각2MiB면4,194,961bytes이며전체command행·receipt/audit/승인소비는추가다. app.ts의2MiB요청body상한을성공result/응답상한으로해석하지않는다.
+- 0059는정해진SETTLED reservation의settledBytes로U를증가시키고reservation합계와일치를검사한다. 공통receipt함수에는L자동가산이없다. 기존nativeL이U에포함된다고가정하거나U를직접늘려quota_complete를우회할수없다.
+
+Lnative는명시canonical command행projection(result_ref포함)+authorizationreceipt+성공audit+승인시consumption/계상대상상태변경으로정의해야한다. 승인요청/별도결정명령의command/result/receipt/audit와승인원문은별도L이다. 같은내용도다른실제행에복제되면각각계산한다. 같은저장행을R/N/U에중복계산하지않는다.
+
+새window/offer/cancel/close의payload/성공·replayresult·operation/reasonCode·approval원문상한과Lprojection·reservation/정산·완결guard를닫아야한다. rawreason의UTF8/JSONescaping을길이와동일시하지않고거절반복·UNKNOWN의비용도누락하지않는다. 제품/실DB·권한변경을실행해확인한결과가아니라source범위의계약검토다.
+
+## 현재 작업 범위
+
+기존Primary는이결과들을새r2 **미채택통합초안문서**로정리한다. 원r1/제품/SQL을수정하지않고미정·의미선택·source-only채택필요delta와닫힌기술하위증명을분리한다. Main은검수·통합,Reviewer는기채택범위와실제새승인경계의한정대조를담당한다. 새agent/세션/제품writer·실키/DB/권한/서비스/Agent/네트워크·시험실행0이다.
+
+
+## 기채택 내부 구현과 실제 새 결정의 경계
+
+Reviewer는원native r2 A 계약/승인과trust r5 A 계약/승인을한정대조했다. **보호공급자부재라는이유만으로전달/ACK/전용HTTPS전체를새승인항목으로만들지않는다.**
+
+| 분류 | 근거 | 적용 |
+|---|---|---|
+| Main내부구현선택 | native r2 §5:57~63·§7:86~90·§10.3:139~147,승인기록:13 | 채택된의미를보존하는행배치·snapshot/head·hash순환방지·동일Tx/CAS·불명guard·정적대수는재승인불필요 |
+| 기채택공급자소스상세 | native r2 §5:61~65·§10.3:141,trust r5 §6:122·§7:138 | 고정HTTPS·원등록P256키·별도NativeOnly비밀·최초전달1회·CONFIRMED/UNCONFIRMED+ackRef는기채택. tuple/목적/주체/수명을바꾸지않는concretesupplier연결은내부구현 |
+| 새권한/주체관계 | r2§5:57의현재HUMANcontroller와실제registrationreader/hostcurrent의동일client/control검사대비r1§3/4 | controller와다른PCrecipient의prelisten·단일명령crossclient위임은새인증관계 |
+| 새publicwire·키서명의의미 | r2§10.2·§5:65·trustr5§6의기존닫힌목적대비r1§6/7 | bearer없는bootstrap/session/ARM/ACK endpoint·새proofdomain/helpercaller/replay원장은별도계약. 기존키를사용하는사실자체는재승인대상이아님 |
+| 혼합범위 | 기존r2의profile/보호전달/ACK대비r1§7/8 | 고정origin/CA검산supplier구현은기존범위. 새profileenvelope발급·회수/후퇴권위,새ACKproof/내구증거·외부조회는새의미 |
+| 새지속/계상대상과내부계산 | r2§7의native2표/기존분모대비r1§9 | 무엇을새로저장/계상하고포화시무엇을거절하는지는새지속계약. 그결정아래canonicalprojection/행배치/중복제거/최대식은Main기술책임 |
+
+필요한사람결정은같은사용자·정확프로젝트·살아있는원등록/session의단일명령위임을중심으로위새권한/새서명wire/증거저장·수명/회수·계상의최소묶음이다. 실제키/CA·DB/권한·서비스활성화·배포/실행,다른사용자/옛session복구·범용기기권한·writer소유전환은제외한다. 모바일에유효하지않은writerhead는수신위임승인으로해결된것이아니다.
+
+원승인의source-only/실효과제외는이미명확하다. r2승인기록:7,13~15와trust승인기록:13~16의코드/화면/미적용SQL/합성검증범위·Main상세파일고정권한을다시승인받지않는다. 단위해당내용이새의미에의존할때만그새의미를먼저결정한다.
+
+현재Primary의r2통합초안은이경계를분리하는문서작업이다. 원r1/제품/SQL을바꾸거나새의미를채택하지않는다. Main은재승인범위를부풀리지않고,기술적으로미완결인내용을실행가능한승인요청으로포장하지않는다.
+
+
+## R2 통합문서 반환·독립 정합 검토
+
+새통합후보: docs/contracts/FN06_NATIVE_RECEIVE_DELEGATION_DELIVERY_CANDIDATE_20261103_R2.md.
+최종SHA256 **85F8F15EDA74ED0530980A5B4C3706426860174987A7436348D0D82AAA7A441D**,39,755bytes. 두정본동일·UTF8/LF/끝개행1개·16절이다. 중간보고E299CDEE는마지막L_out/prelisten accounting보완전지문이며최종검토는85F8F15E에만적용한다. 기존Primary는문서writer를반환했고Main/Reviewer의같은경로쓰기0이다.
+
+Reviewer독립검토는두축으로판정했다.
+- **A: 문서정합C0/I0.** 기채택범위와새의미분리,내장위임/no가짜ref,비공개ACK후보/HTTP응답순서,challenge발급replay누락/5행식,미계상L_out·prelisten accountingcaller,조건부표철회,모바일writer/helperframe미충족이후속근거와일치한다. 시작끝/정본-sourceSHA동일이다.
+- **B: 채택·구현GO준비미완료.** ReceiverPrincipal/전용reader·prelisten목적허가/accountcaller,localIPC/명령·상태·오류/발견원형,nonce거절소비/CLOSE/STREAMnonce/STATE재구성·rate/cap,profile발급/slot→helper실제근거,ACK소유port/current관측exactschema,R/N/Lregistry/예약정산·모든guard,고정조회/binary/helper총상한과writer선행이필수미정으로남는다.
+
+원r1과R2모두DRAFT/NOT_ADOPTED/SOURCE_GO0/EXECUTION_GO0이며문서정합판정을Important9해소로쓰지않는다. 제품·SQL·시험·실키/DB/권한/서비스·Agent/네트워크변경·실행0이다.
+
+### 새 설계 방향에 대한 최소 결정 요청
+
+Main은PMO에완성계약/실행승인이아닌**새의미의설계방향**결정을요청했다. 권장A는같은사용자/정확프로젝트/살아있는원등록session에한정해현재controller와다른PCrecipient의유한prelisten·정확단일명령위임을허용하는방향이다. 이를증명하는새인증purpose/publicwire·profile권위·증거저장/계상을기술적으로닫아야한다. 대안B는현재동일client/controller계약을유지해cross-client수신설계를보류하는것이며모바일원격흐름은미충족으로남는다.
+
+A의새인증/원장표면과보존책임을명시했고source비활성복구와향후실제발급/저장후완전원복불가를구분했다. 실제키/CA·DB/권한·서비스·배포/Agent실행·다른사용자/옛session복구/범용기기권한/writer전환은제외했다. 기존HTTPSsupplier/P256/전달1회/ackRef·내부Tx/guard·계산은이미승인된상세라다시승인받지않는다. 이요청만으로어느방향도채택되지않는다.
+
+Main은PMO의다음작업배정을기다리지않으며새설계의미결정과무관한증거/기술정리를진행한다. 구현GO나사용자답변을시간경과로추정하지않는다.
+## B04 한정 후속: ACK 후보와 내구 결과의 분리
+
+기존 Reviewer의 읽기 검토를 Main이 project-native-preparations.ts:89~94,109~113과 대조했다. 최소 접점은 supplier 결과(112)와 원 후행 Tx(113) 사이이다. ATTEMPTED의 COMMIT 확인 후에만 단발 공급자를 호출하는 기존 조건과 원 deadline을 유지한다.
+
+내부 제안은 원 operation이 소유하는 AckOwnerPort(waitCandidate/submitCandidate/settleCommitted/settleUnknown/close)다. 검증 함수만 발급하는 비공개 후보를 supplier가 받고 반환하며, HTTP 응답 대기는 별도 submission으로 분리한다. 원 offer/authority/ATTEMPTED/stream instance/deadline에 결박하고 잠금을 보유한 채 ACK 응답을 기다리지 않는다. 기존 supplier 전체의 CONFIRMED 의미를 바꾸지 않는 별도 내부 branch가 필요하다.
+
+원 후행 Tx에서 후보·nonce·현재성·기한을 재검산하고 ACK/소비/CONFIRMED/offer terminal을 함께 저장한다. callback에서 응답 완료를 알리지 않고 #hostRun의 COMMIT 및 후행 check까지 성공한 뒤에만 내구 결과를 알린다. COMMIT 오류 또는 COMMIT 후 검사 실패는 미저장·rollback 성공을 추정하지 않는 불명으로 취급해야 한다. 현재 코드가 이 새 ACK 원형/port를 이미 구현했다는 뜻이 아니다.
+
+고정 내부 결과 후보: operation 부재 OWNER_UNAVAILABLE(재생성/전송0), 다른 후보·tuple 불일치 ACK_CONFLICT, 원 기한 경과 ACK_DEADLINE(새 수용/Tx0), COMMIT 관측 불확실 OUTCOME_UNKNOWN. 동일 후보는 원 submission/저장 결과만 반환하고 재전송하지 않는다. HTTP 연결 종료는 응답 대기자만 분리하며 원 작업/미정착 IO 소유를 없애지 않는다. 늦은 정착의 오류·버퍼 회수는 관측하되 성공/새 IO로 승격하지 않는다.
+
+이는 B04의 내부 연결 위치를 좁힌 기술 제안이다. 공개 ACK 인증/proof/저장 원형·전용 current 결과는 새 계약 결정에 의존하며 B04 전체나 Important9를 해소한 판정이 아니다. 제품 코드·시험·실행 변경0이다.
+## B04 후행 현재성 검사와 COMMIT 결과의 한계
+
+기존 Reviewer는 project-native-preparations.ts의 #access:48(OWNER/현재 controller), #readPolicy:49(읽기 명시 정책), #registration:96(원 등록·키·세대/상태·기한), #freshHost:97(RESERVED writer/head·선택·원 쓰기정책·source current·최소기한), #hostRun:91~94 및 후행 callback:113을 대조했다. Main도 앞 단계에서 동일 source의 진입/COMMIT/후행 흐름을 확인했다.
+
+ACK 후보 수용 전 검산은 잠정 관측이다. 후행 Tx에서 원 ATTEMPTED/deliveryId/terminal 부재뿐 아니라 후보의 offer/binding/session/window/stream·nonce·원 proof 관계를 다시 검사해야 한다. 후보의 과거 verifiedAt을 현재성 근거로 재사용하지 않는다. callback 뒤 COMMIT 직전에는 DB 시각·authority 기한·등록·operation check가 있으나 #freshHost 전체가 다시 호출되는 것은 아니다. COMMIT 뒤에는 budget/operation check만 있고 DB 전체 현재성 재조회는 없다.
+
+따라서 내구 결과는 '검산된 ACK/terminal의 COMMIT 확인'으로만 표현한다. COMMIT 직후 회수와 경합할 수 있으므로 지금 사용 가능·미래 회수 없음·factory 실행 허가로 해석하지 않는다. 역사 CONFIRMED 보존과 실제 SIGN/consume 직전 fresh current는 별개다. COMMIT 성공 뒤 budget check 실패도 응답 불명으로 남기고 미저장으로 추정하지 않는다.
+
+최소 private 후보 결박안은 원 owner/stream/deadline의 module-private 객체 동일성, authorityRef/offerRef/bindingRef/receiveSessionRef/windowRef/deliveryAttemptRef/deliveryId, ackRequestHash/proofEvidenceHash/recipientNonce/opaqueCommitment다. recipient/profile/command tuple은 원 offer/binding에서 복원해 비교하고 caller의 중복 선언으로 권위를 만들지 않는다. exact ACK body/proof/signature는 불변 후보 자료로 검산하되 opaque 원문은 넣지 않는다. 새 공개 인증/위임 reader/current wrapper 원형은 미채택이다. 읽기 설계 결과이며 제품 동작/시험 PASS가 아니다.
