@@ -12747,3 +12747,13 @@ git diff --check
 - f9346d1dd0bdecec6c5ffab48b58a87c4d920b8a는404960c5 직접 자식 소유22경로(코드21+현황)이며 raw/index30바이트동일·staged diff check0 뒤 commit했다. 기존 development/codex/av3-stage-b 일반 push 성공·실제 remote exact SHA동일·remote main f976ed5e29e14b13e12729d5b1ccf98f050f2210불변이다. tracked clean·보호untracked3보존이다.
 - 첫단위 결과는 docs/04_test_reports/AV3/FN06_DESKTOP_TRUST_A_CORE_SOURCE_RESULT_20261102.md 에 정확 코드SHA·최종30inventory6B8FD4B8·한정 합성 검수/QA정리0·NOT_RUN을 연결한다. FN06전체부분구현/전체계획미완료·실C#/키/DB/서비스/Agent실행0유지다.
 - 기존Primary에게 다음pair/proof/HUMAN의 기존r5·wire/서버/화면/C#호출경계 읽기전용조사만 배정했다. 현재code writer0·새계약발명/코드쓰기/실행0·Main은보고통합을진행한다.
+
+### 2026-11-02 FN06 첫 결과 tail·다음 ENROLL-01 사전검토
+- 결과서 독립검토는C0/I0·전30SHA/bytes/inventory6B8FD 재계산일치였다. 98eb34c2d30617a4eebc4c5888a16930630e17c9는f9346d1d직접자식 결과서+WORK_STATUS2이며local/private동일·tracked clean/보호untracked3·remote main f976ed5e불변이다. PMO에한정판정/미실행/다음업무를전달했다.
+- Primary읽기조사는r5기존서버/Web재사용·desktop pair/owned SIGN_PROOF/C#record미지원공백을확인했다. 다음업무는KEY_READY→원hint/ID선보관→고정HUMAN GET→enroll→등록8필드proof서명/prove→HUMAN대기·명시current확인까지ENROLL-01이다. ISSUE/복구/native/실키·DB·서비스·Agent는제외한다.
+- Main신규WI docs/work_packages/FN06_DESKTOP_TRUST_ENROLL_01_SOURCE_IMPLEMENTATION_20261102.md r1 SHA561D7CCDAA7FF076E5BADAE79971DE23B2F0B6FD0BF8D0EAA379AE66B3D2F2B5의기존9/신규2exact11·메모리TDD/정상·중요음성/원기한/내구/UNKNOWN·실제NOT_RUN경계를독립사전검토와수행가능성검토에맡겼다. 현재code GO0/writer0·기존source불변·QA0이며검토뒤명시dispatch한다. 승인된r5내기술구체화로추가사람승인요청0·전체계획미완료다.
+
+### 2026-11-03 FN06 ENROLL-01 r2 사전검토 수용·dispatch 준비
+- Reviewer r1 C0/I0·Primary exact11 수행가능/추가경로0. Primary가구현5열거의REVOKED/EXPIRED누락을찾아r5§8/구현8의기존필수상태와맞게문구만보완했다. r2 SHA08716073072ED73802ABF482E0B394AFA0A9B6D5A6B1E1680E2618EEEB1DE794,재검토C0/I0·역치환r1SHA정확복원·새기능/권한0이다.
+- Main기술선택은현재소유remoteSession Session.fetch의고정경로소비다. 첫선언조회는root node_modules/electron경로부재os3준비오류1,rg --files로실제apps/desktop/node_modules/electron/electron.d.ts를확인해14023선언을읽었다. 설치/패키지/환경변경0·코드실패로계산0이다.
+- WI와현황만기존private branch에게시후exactSHA/소유9시작hash/신규2부재를Primary가대조하고Main명시dispatch로source TDD를진행한다. 단일Primary11writer·Main/Reviewercode쓰기0·실C#/키/DB/권한/서비스/Agent/실자료/QA생성0·FN06/전체계획미완료다.
