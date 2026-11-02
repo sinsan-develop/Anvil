@@ -12397,3 +12397,50 @@ git diff --check
 - Main53d78f는 실제 public options의 기존 EMPTY/RECLAIMED 검사와 #freshHost의 RESERVED에서 source.options 재사용→원 명령 source.current 검산을 대조했다. 내부 options를 일괄 EMPTY로 제한하거나 원 baseline을 덮는 구현은 하지 않는다.
 - Main32409e는 WI r2 SHA BAA73A1FEE6A188FC9EE2737DBA57A5F59839AF2C79643B416049DBE288963A4를 양쪽에 기록했다. project-native-preparations.ts의 원 budget 전달1경로를 추가해 정확5로 고정했다. 선택적 typed 내부 인자/동등 private lease만 허용하고 공개 wire·기존 source 호환·정책·원 timer/최소기한은 유지한다. canonical r2 승인 문서는 불변이다.
 - r1 C0를 r2에 상속하지 않고 기존 Reviewer scoped 재검수와 Primary 추가 시작 지문을 확인한다. 제품 GO·시험·새 자원·실제 효과는 아직0이다. 추가 사용자 승인이 필요한 새 공개/저장/권한 계약은 이번 보완에 없으며, 실제 원 예산을 보존하기 위한 내부 구현 방법이다.
+
+### 2026-11-02 current source r2 검토·게시·구현 GO
+- 기존 Reviewer의 r2 scoped 검토 C0/I0·시작끝 SHA 동일과 Primary의 정확5 실현 가능 판정을 받았다. Main33ca43는 기존 writer/등록 reader/service 세 시작 지문이 제출값과 같음을 확인했다. 원 budget 전달은 같은 내부 작업의 기한 보존이며 공개 wire/저장/권한을 변경하지 않는다.
+- Main은 정확 WI+WORK_STATUS2의 raw/index 동일·staged diff0 뒤 639b01dece3ccfac252db1b7c3677d8f7098fea4를 commit/private exact SHA로 확인했다. 기존 Primary에게 정확5 단일 writer TDD GO를 전달했고 Main 제품 쓰기0이다. 같은 원인3회 인계·기준 완화 금지·실제 schema 정상 fixture/역사 proof/원 RESERVED·공개 reader/legacy source 호환·원 budget 반례를 고정했다.
+- 실제 DB·권한·키·서비스·Agent·실자료·native/compiler·P03R3·새 QA/의존성은0이다. 다음 Main 직접 회귀는 실제 파일 inventory에서 writer/등록/native 원 caller 영향을 선정하고, 완료된 physicalfactory57/합성 QA는 변경되지 않는 한 다시 실행하지 않는다. 전체 계획은 미완료다.
+
+### 2026-11-02 current source 작성 중 Tx lease 조기 검수
+- Primary는 원 bootstrap→실제 writer command/receipt/audit를 생산하는 메모리 fixture를 신규 시험에 작성했고, module 부재8ba6dc exit1은 준비 실패로 분리했다. 실제 키 생성/기존 시험 import 등록/실환경0이며 아직 행동 RED 완료라고 보고하지 않았다.
+- Main129ded는 원 budget/private lease 전달 변경을 읽었고, 기존 #readPolicy(21e774)대로 읽기에 새 fresh 재인증·별도 등록/writer read operation을 붙이지 않도록 원 규칙 보존을 전달했다. 최대10초뿐 아니라 좁힌 최소기한·늦은 결과 차단도 필수다.
+- 기존 Reviewer의 작성 중 service snapshot B06F0C07692D1FD2C9E27FB7956F8EEBE0ED4180A83810C9142215F4830FC2FC 조기 검수는 C0/I1이다. lease의 db/actor/pid·operation budget 검산이 owned DB의 active=false와 연결되지 않아, 초기 Tx 종료 후 delivery 보류 동안 보관한 옛 lease 검산이 통과할 수 있다. raw query는 기존 active guard가 막으므로 늦은 실제 SQL 성공/침해를 주장하지 않는다.
+- Main은 동일 Primary에게 메모리 행동 RED를 확보하고 해당 owned DB의 종료 상태를 lease 발급/check에 결박하도록 지시했다. 전체 원 budget은 delivery에 계속 유효해야 하므로 전체를 조기 종료하거나 새 timer로 우회하지 않는다. 정확5 안의 최소 보완이며 작성 중 I1을 최종 검수 실패/실제 실행 결과와 구분한다. 현재 단일 제품 writer1·Main 제품 수정0이다.
+
+### 2026-11-02 current source 정식 실패3회 Main 인수
+- 기존 Primary는 lineage FN06_NATIVE_CURRENT_MAPPING_VALIDATION_CEILING의 정상 options 503을 720ea4/5709ca/7954b5에서 연속 관측했다. 5709ca는 같은 FAIL 뒤 별도 delivery 진입 대기 미정착으로 session22973을 중단했고, 실제 종료 exit1/live0을 반환했다. 정식 FAILURE_REPORT·정확5 writer 반환을 받아 추가 지시/수정을 중단시켰다. 별도 Tx lease I1은 미해소이며 이전 sideband 준비 오류/진입 대기는 genuine RED로 세지 않는다.
+- Main c80fe1는 반환5 SHA와 diff0을 확인하고 정확5의 단독 writer를 인수했다. 시작 source111E0BD5B3B511EDF50C2E7B26896EE1983BC880DC38B8B0C73F7580FE0FB685/test24F0D03FDEFD725CDD0C0AE7BF3454FDCF572084904877CE8D86439A9A82CB0D/writer26256A2EB698F8B36551888DD871C8E1DD76A674B00243040AEC78CD9EC7A2BA/등록C07CC9D93312C102B959910208943066E81F62B4F3610E8FBBA5A8F169769EA5/serviceB06F0C07692D1FD2C9E27FB7956F8EEBE0ED4180A83810C9142215F4830FC2FC다.
+- 단계별 진단/TDD 스킬을 읽고 먼저 합성 시각만 계측했다. 03e0b3은 전체 시험의 anchor2개 중복을 발견해 파일쓰기/시험0에서 중단했다. d1193d가 원 test 지문 불변과 중복2를 확인한 뒤 현재 fixture 범위로만 좁혔다. a4fae3 RED는 authAt2030-01-01T00:00:00.283Z/mappingAt .289Z와 #build:48:763을 기록해 판독후 관측을 판독전 시각으로 막는 원인을 확정했다.
+- Main은 source의 미래시각 상한을 판독후 after.auth.at 대조로 옮기고 미래1초 관측의 거절 시험을 추가했다. 352a11은 미래음성1PASS, 정상은 기존등록 #record의 CONNECTOR_REGISTRATION_INTEGRITY_FAILED로 전진한1FAIL이다. 시각 동일원인 재발이 아니며 아직 정상/전체 PASS가 아니다. 기존 등록 guard는 완화하지 않고 Reviewer에게 실제 schema fixture/derived ref 불일치의 읽기 진단을 맡겼다. 별도 Tx lease I1을 순서대로 처리한다.
+- Main의 c861fb는 rg에 Windows wildcard 경로를 직접 전달한 os123 준비오류다. 이전 추정경로 지정 오류와 함께 해당 탐색방식의 중단 기준을 이미 넘겼으므로 새 경로 추정 탐색을 중단하고 기존 담당의 actual inventory/정본 확인 경로만 사용한다. 부분 성공한 access 소스 읽기와 실패한 migration 경로를 구분하며 ACL/파일 변경0이다. 이 예외와 인수 근거를 PMO에 보고했고, 영향없는 승인 작업은 계속한다.
+- 현재 실제 DB/키/권한/서비스/Agent/native/compiler/P03R3·QA/새경로·Main 범위밖 수정0이다. 최종 type·회귀·독립 검수·전체 계획 완료는 미충족이다.
+
+### 2026-11-02 Main current source 인수 후 집중 검증
+- 이전 goal turn은 모바일 승인 대상 설명이며 제품 진전이 아니었다. FN03 §13.4는 여전히 미승인이다. 이번에는 실제 source 정확5 변경을 보존하고 검증을 진행했다.
+- Main은 정식 동일 실패3 후 인수한 단독 writer다. 관측 미래시각 상한을 판독 후 시각으로 대조하고, owned Tx 종료 시 원 source lease를 무효화/abort하며, 보호 mapping의 고정 channelProfileRef와 실제 등록 JOIN 지문을 검사했다. 기존 공개 등록 조회 권한과 STATUS_ONLY 의미는 유지한다.
+- 새 정상 fixture는 실제 connector_basis_current의 정책 snapshot hash/registerConnector 규칙/session·세대 조건을 맞췄다. 기존 guard/기대값을 완화하지 않았다. 원 일회 승인 소비 뒤 current 재조회는 재소비하지 않고, 예약 후 기한은 원 발급 deadline보다 짧아지거나 기존 current보다 확대되면 rollback한다.
+- 이전 묶음 검증 출력은 context 절단으로 종료 결과를 복구하지 못해 PASS로 계산하지 않았다. 같은 코드의 증거 확보용 fresh 검증: node --test --test-reporter=spec tests/unit/FN06/native-preparation-current-source.test.ts tests/unit/FN06/native-preparation-routes.test.ts tests/unit/FN06/project-writer-authority-routes.test.ts tests/unit/FN06/project-writer-authority-state.test.ts, 3245c9/session31453 → 7cd042 exit0, 68 PASS/0 FAIL/0 SKIP, 14864.7833ms. 이 수치를 이전 개별 실행과 합산하지 않는다.
+- root typecheck: node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, 12e6af exit0. elevated 읽기 Git 상태/diff check 7b5cbd exit0, local HEAD639b01dece3ccfac252db1b7c3677d8f7098fea4, 제품 정확5+소유 WORK_STATUS 변경/보호 untracked3 보존. sandbox worktree 명령의 040672 exit1은 실행환경 Git 읽기 오류이며 제품 검증 실패와 구분한다.
+- 기존 Reviewer에게 현재 동결 정확5 독립 검수를 요청했다. 실제 mapping 공급자/DB/키/권한/서비스/native/compiler/Agent/P03R3/사용자인수는 미실행·미완료다. 최종 검수/통합·전체 계획 완료를 주장하지 않는다.
+### 2026-11-02 current source 최종 검수 I1 반증·최소 보완
+- Reviewer는 원 writer 조회 뒤 auth.at 재사용으로 조회 경과가 최소기한에 다시 더해지는 I1을 발견했다. 실제 저장 우회를 주장하지 않으며 원 기한 뒤 mapping 진입을 차단하는 요건이다.
+- ab74c3: 원 heads SELECT 후 합성 DB시각31초 진행 반례에서 실패 응답이지만 mappingCalls1로 genuine RED였다. Main은 최초 DBclock 수신시 clockMono를 고정하고 세션 최소기한을 즉시 tighten, 정책 await 경과를 차감하며 writer 후행 observedAt과 원 단조경과 중 큰 시각으로 만료를 검사했다. 새 public/DDL/타이머0이다. c551e9 직접3 PASS.
+- AUTH_EXPIRED 추가 시험 2f76b9는 지연이 service 선행 정책에 걸려 source session 판독 이후 만료 반례가 아니었다. sourceAuthSeen 이후 지연으로 범위를 고친770d0f PASS이며 앞선 fixture 오류를 genuine 제품 RED로 집계하지 않는다.
+- 보완 후 같은 집중4파일 fresh 검증04059c/session78424→e68b30 exit0, 70 PASS/FAIL0/SKIP0, 20486.8565ms. 원68 결과는 이전 코드 이력이며 합산하지 않는다. root type9a6764/session13802→649f5b exit0.
+- 동결 source F795AAFC59D6369D772DAB0F52ACC5C3062853F2D21FED831C1313BB81BECA81, test B07A5D587814F79784E2D0F6F3932DA6431B3B356A2DD113EA8A8A338A45D473. 기존3 hash 불변. 기존 Reviewer 최종 독립 검수를 재요청했다. 실제 DB/키/서비스/compiler/native/Agent/실자료/P03R3 변경0, 전체계획/실제보호공급자 미완료다.
+### 2026-11-02 current source I1 등록 조회 구간까지 보완
+- Reviewer는 동일 stale-anchor 원인이 #build 등록 await 뒤에도 남았다고 지적했다. Main330d73 반례는 mapping100ms/등록조회250ms에서 후속 query17로 genuine RED였다. final 저장 우회를 주장하지 않는다.
+- items 판독 즉시 원 단조 anchor로 최소기한을 고정하고, 등록 후 observedAt/원 단조경과 중 큰 현재시각으로 비교·tighten했다. cd1518 직접3 PASS/후속query0. 원 기한 연장/새 타이머/새 공개계약0이다.
+- 최종 동결 source D927FA98AB232BC7A0B4F3223AE54FD7411BFF1B9C04DBFA1708D14ECD68AA5D/test1B6158BA78F35CE0A4C3990E28AD8C8FE70953C6EA042909A593E02C4AA8ACE1, 기존3 지문 불변. fresh 집중4파일 e65256/session25654→b1440e exit0, 71 PASS/FAIL0/SKIP0, 14904.3583ms; root type24f6ac exit0. 이전68/70은 이전 코드 이력이며 합산하지 않는다.
+- 기존 Reviewer 최종 C/I를 대기하며 코드 동결한다. Primary는 다음 실제 생산·호출 연결의 읽기 조사만 수행한다. 보호 mapping·서명 전달·제품 조립은 아직 미구현이며 compiler source 후보가 이를 대체하지 않는다. 실제 DB/권한/키/서비스/Agent/native/compiler/실자료/P03R3 실행0을 유지한다.
+### 2026-11-02 Main 동일 최소기한 원인 세 번째 반례 — 국소 보정 중단
+- Reviewer는 후행 DBclock 전진을 item 기한 환산에 반영하지 않은 잔여 I1을 확인했다. Main598ac6의 ITEM_DB_FORWARD(첫 heads에서 DB+1000ms, mapping기한+100ms, 등록250ms)에서 후속query2로 genuine RED다. 앞선 ab74c3/330d73과 동일 stale-anchor 원인으로 묶어 3회 기준을 적용한다.
+- Main은 추가 국소 조건 수정·검증 반복·PASS/인수/commit 승격을 중단했다. 원 변경 정확5와 새 실패 시험을 보존한다. 이전71 PASS는 이전 D927 코드의 검증 이력이며 새72번째 반례 미해소로 현재 완료가 아니다. 실제 저장/인증 우회는 확인되지 않았고 원 최소기한 뒤 추가query가 문제다.
+- 원인 재검토: DB 후행 시각을 선택할 때 그 수신 순간의 단조 anchor까지 함께 보존해야 한다. 각 구간에서 과거 auth.at과 max만 부분적으로 조합하면 DB전진+후속 await를 일관되게 차감하지 못한다. 권장 대안은 내부 관측시각/단조 anchor 쌍으로 통일하고 기존 lease minimum은 절대 늘리지 않는 접근이다. 공개계약/타이머/DB/권한 변경 없이 기존 WI 정확5 내 재설계를 독립 검토한 뒤 writer 재배정 여부를 결정한다. 아직 구현 GO0이다.
+- PMO에 동일3회·영향·중단 범위·대안을 보고한다. 전체 goal은 중단하지 않으며 독립적인 승인 source 업무의 조사/계획을 계속한다. 실제DB/키/서비스/Agent/native/compiler/실자료/P03R3 실행0이다.
+### 2026-11-02 current source 재검토 후 내부 r3 지시서
+- 기존 Reviewer는 auth.at/공개 observedAt을 덮지 않고 별도 private {at,mono} clock 쌍을 두는 대안을 권고했다. DB후행관측 수신 mono를 고정해 max(후행시각,기존시각+경과)로 전진하며 실제 DB값은 보존하고 lease minimum은 min-only로 유지한다. 새 public/저장/권한/타이머0이다.
+- Main은 같은 정확5 WI r3 §6으로 재정리했다. docs/work_packages/FN06_NATIVE_PREPARATION_CURRENT_SOURCE_IMPLEMENTATION_20261102.md SHA5005DFC45201823A941DDE6F80DFCB326505E150DF321B28F4B06CE3B17D15ED, parent r2 BAA73A1F, MAIN_RECONFIRMED_NON_SEMANTIC이다. r3 문서 독립 preflight 중이며 제품쓰기GO0, Main은 제품 국소 보정중단을 유지한다.
+- 반환 직전 source D927FA98AB232BC7A0B4F3223AE54FD7411BFF1B9C04DBFA1708D14ECD68AA5D/testC5064B2CF84DA1C2A3D06636549630FD64315B354C06326F9DFB0C3095273011, 기존3 지문 불변. 26e96e에서 보호untracked3의 원지문 보존/diff0을 확인했다. 독립 preflight 후 기존 Primary에게 단독writer를 명시 반환하며 Main/Reviewer의 동시제품쓰기0을 지킨다.

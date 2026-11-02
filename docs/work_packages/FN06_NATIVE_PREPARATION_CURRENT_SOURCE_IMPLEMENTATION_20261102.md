@@ -1,6 +1,6 @@
 # FN06 native 준비 현재 source의 등록·writer 원장 실조회 구현
 
-- 날짜 2026-11-02 / r2 / Main 어울 / 구현 담당 fn16_primary_recovered 한 명
+- 날짜 2026-11-02 / r3 / Main 어울 / 구현 담당 fn16_primary_recovered 한 명
 - 계획 연결 WORK_PLAN FN06/FN08 native 준비의 실제 options/current 생산. 선행 code3eba28f9·검수기록004f3b65011e73a7e37767cf5a7439cfb31d64de.
 - 정본 r2 FN06_NATIVE_PREPARATION_AUTHORITY_CURRENT_CONSUME_CANDIDATE_20261102.md SHA5C4AF434D5367CDDB378238247056DD536F05CC6AA6AAB10DEE33DC99B2E3085 및 직접 source 승인 기록9B10475C96E993112B104F1813A86B1B2A2E401429CBED293100ACA036E17567의 내부 생산·검산 구현이다. 새 공개 계약/DDL/권한/실제 환경 변경 승인이 아니다.
 
@@ -60,3 +60,13 @@ r1 SHA5A7BC52021468A1ABD01D309A8D749A63640BC528825333B5F796FEF0FCF4DD0의 독립
 source.options는 최초 HUMAN options뿐 아니라 호스트 #freshHost에서도 호출된다. 공개 options의 기존 EMPTY_AT/RECLAIMED_AT 차단은 유지하되 내부 RESERVED 재검산을 무조건 막지 않는다. 원 source.current에는 원 prepare 명령/선택과 그 원 RESERVED tuple이 대조돼야 한다. caller flag나 새 공개 mode로 이를 선택하지 않는다. wire/JSON parser·issuer/consume/replay·정책·기존 timer/한도 완화0이며 필요한 직접 회귀를 포함한다.
 
 정확5 기존 시작 지문은 Primary 읽기 기록을 WORK_STATUS에 남긴다. 기존2 내부 검산 추출과 이1 budget 전달 외 재설계는 금지한다. 추가 경로가 또 필수이면 코딩 전에 근거를 반환한다. r2 재검토·Main 게시 뒤 단일 Primary에게 제품 GO를 전달한다.
+
+## 6. r3 내부 관측 clock 재정리 — MAIN_RECONFIRMED_NON_SEMANTIC
+
+- 부모 WI r2 SHA256 BAA73A1FEE6A188FC9EE2737DBA57A5F59839AF2C79643B416049DBE288963A4. 원 승인 r2 계약5C4AF434와 source 승인9B10475C 범위, 정확5 파일·공개/저장/권한·실행 제외는 그대로다. 사용자 요구/범위/중요 위험을 확대하지 않는 내부 기한 계산 보완이다.
+- Main의 구간별 stale-anchor 수정은 세 반례(ab74c3/330d73/598ac6) 후 중단했다. 실제 DB 관측값과 단조 시간 쌍을 일관되게 보존하는 대안을 기존 Reviewer가 정적 검토했다. 코드 인수 C0를 뜻하지 않는다.
+- 파일 내부의 작은 private clock helper로 {at:number,mono:number}에서 현재시각을 계산하고, 후행 DB관측 수신 즉시 고정한 mono와 max(후행관측,기존관측+누적경과)로만 전진한다. auth.at/공개 observedAt은 실제 DB값으로 보존한다. 범용 clock framework/새 타이머/공개 DTO를 만들지 않는다.
+- authority는 최초 clock 수신 anchor로 session 최소기한을 즉시 좁힌다. 명령의 유효 재인증 기한도 확인한 뒤 추가 await 전에 좁히며, 읽기에는 새 재인증 요구를 만들지 않는다. 정책 await 뒤 원 anchor 경과를 차감한다.
+- root는 writer 후행 observedAt과 그 수신 mono를 결박한 내부 clock을 반환한다. build는 mapping/item/등록/최종 await에서 이 쌍으로 경과를 차감하고, registration의 후행 DB관측도 같은 방식으로 전진시킨다. item 최소기한은 판독 직후 고정한다. 기존 lease.minimum은 min-only, 최초10초/발급 최소기한/원 command 재소비 금지를 유지한다.
+- 기존 WRITER_EXPIRED/AUTH_EXPIRED/ITEM_EXPIRED/ITEM_DB_FORWARD를 그대로 보존하고 DB전진 뒤 mapping 및 registration 대기가 이어지는 경우도 검사한다. 원 기한 뒤 새 query/mapping/저장0, 정상 AUTO/일회 승인/RESERVED·공개 실관측값 보존이 검수 기준이다. 기존 기대값을 낮추지 않는다.
+- Main은 해당 정확5 writer를 기존 Primary에게 반환해 이 재정리만 위임한다. 반환 전5 SHA와 정본을 확인하고 시작한다. Main은 같은 제품5 수정0, Reviewer는 읽기만 한다. 동일 실패 규칙은 유지하고 구현 제출 뒤 독립 검수/검증 없이 완료로 표시하지 않는다.
