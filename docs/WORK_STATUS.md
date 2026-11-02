@@ -12210,3 +12210,14 @@ git diff --check
 - crypto 결과사실독립C0/I0·시작끝88A69AF7…2552ECE 동일. Maina775f1 raw/index3·diff0후 docs30c49aff28495f60cf5d306ae498cdb2a961d7fd private게시·local/private동일·mainf976ed5e불변·trackedclean/보호untracked3보존을확인했다. PMO에code1a4090da/결과/포트별합성범위와실환경미검증을전달했다.
 - 같은Primary의남은3읽기결론: options/current의실제factory/source보호근거, 등록fullref/세대/fingerprint→keyId/caller/root·recipient/ACK, 원ticket→native helper/owner·peer/package/channel/holder수명은아직producer/계약이없다. 기존readOwnershipNativeFactoryBasis는factoryReady:false/writerState:UNKNOWN이며등록행/환경선언·일반PID/hash로승격하지않는다. 현재승인계약만으로바로완결할독립source단위를이3연결에서확정하지못했으며없는wrapper를추가하지않는다.
 - Main은다음으로기존실행기의원시도별helper소유A안의정확필드/보호생산근거·원본문맥/최소기한/단발진입·privateholder/query/close/불명인계와기존재사용대비새중요delta를구체화한다. 같은Primary는읽기/기술제안만맡고제품/문서/시험쓰기0·새code GO0, Main은후보설계·독립검토와필요한정확PMO결정을담당한다. 새상주서비스·사용자권한/키발급·실제DB/권한/키/서비스/native/Agent/실자료/P03R3실행0·전체계획미완료이며PMO다음배정대기0이다.
+
+### 2026-11-02 모바일 #8713da 승인 대상 설명
+- 신산님은현재필요승인내용을질문했다. 이는승인답변/실행허가가아니다. Main은FN03_SOURCE_CONTENT_HASH_DELTA_CANDIDATE §13.4 A의새관리원문보호보관·전용조회권한계약과코드/미적용SQL/합성검증1건이현재결정대상이며실제DB/권한부여/키/서비스/Agent/실자료/P03R3는제외라고설명했다. 기존질문의재발행/임의채택0이다.
+- nativeowner/peer는상세설계중이며아직신산님승인요청안으로완성되지않았음을구분했다. 기존Primary의기술제안읽기/작성전단계는계속하고새제품GO0·실제효과0을유지한다. 현재질문을전체대기/완료/범위확대로해석하지않는다.
+
+### 2026-11-02 native owner A 기술초안 인수 — 아직 채택/코드 GO 아님
+- 같은Primary의유한제안: 기존desktop이원시도전용helper를직접생성해반환processHANDLE/생성시각을보유하고필요handle만명시상속한전용channel을사용한다. 이커널관계만으로일반Node/동일사용자토큰이Anvil실행코드라는인증은안된다. 현재desktop의unsafe인자거절·제한IPC·asar포장에는보호package/실행코드 admission producer가없다.
+- 제안원형은bridgeRunId/desktop·helper{pid,creationTime100ns}/artifactManifestRef/desktopCodeHash/helperImageHash/channelInstanceId/factoryRef/bindingHash/callExpiresAt의보호생산근거와, schemaVersion/purpose/bridgeRunId/sequence/operation/requestId/bindingHash/callExpiresAt/remainingMs/payload의64KiB닫힌내부frame이다. OPEN_EMPTY는원authority/receipt/consumeRecordRef/permit에결박해최대1회, QUERY_EMPTY/CLOSE_OWNER는같은run의유일privateholder만대상이다. rawHANDLE반환/JSONcapability재생성0이며이필드안은아직미채택이다.
+- 제안상태ADMISSION_PENDING→READY→OPEN_STARTED→HELD→CLOSE_STARTED→CLOSED,시작후유실/기한/부모·helper종료/미정착은UNKNOWN·OPEN재시도/새helper우회0. 만료뒤close는이미보유한자기owner정리만·최초고정유한정리예산/미정착보존이며LocalHandleCloseConfirmed를writer부재/외부복제회수로승격0이다. 정확정리기한·상한/인계는Main상세화잔여다.
+- 남은핵심보안결정은승인artifact·실제desktop실행코드·소유runtime을묶는admission 최초신뢰기준과보호보관/변경권한이다. source구현/실측생산자가없으면실제OPEN은계속닫는다. 새DB/키/상주서비스는bridge자체필수추가로가정하지않고키mapping/recipientACK를자동해결했다고하지않는다. Main은기존위협모델/계약을대조해정확최소안을완성한뒤독립검토·필요결정을PMO로연결한다. 현재신산님질문에설명한승인대기1건(FN03 A)과이아직설계중인안을구분한다.
+- Primary는공개Microsoft GetProcessTimes/UpdateProcThreadAttribute/pipe/process권한/WinVerifyTrust문서만대조했으며코드/문서/Git/시험·실제OS/process/키/DB/서비스/Agent/실자료/P03R3조사·실행0이다. 모든제품writer반환·새제품GO0·전체계획미완료,Main의설계/관리작업은계속한다.
