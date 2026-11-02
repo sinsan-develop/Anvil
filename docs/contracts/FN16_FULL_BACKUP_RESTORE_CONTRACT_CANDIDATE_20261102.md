@@ -1,4 +1,4 @@
-# FN16 전체 수동 백업·검증 복원 통합 계약 후보 r1
+# FN16 전체 수동 백업·검증 복원 통합 계약 후보 r2
 
 2026-11-02 / 작성: 기존 Reviewer 어울 / Main 상세화 요청에 따른 문서 작성
 상태: DRAFT_REVIEW / NOT_ADOPTED / SOURCE_GO0 / EXECUTION_GO0
@@ -87,7 +87,7 @@ referenceRules 항목={fieldPath,targetNamespace,required,scopeRule}, scopeRule=
 - 최신 forward0060~0071에는 준비기록·하위임무·SEND material·정책·artifact trace·정의/보고·환경·writer/native가 추가됐다. 각 실제 표/허용열/원형/receipt/audit/참조 codec을 1:1 확인해 신규 registry 행으로 고정해야 한다. 번호범위만으로 전부 지원한다고 주장하지 않는다.
 - 원 command/승인후보·결과 DTO가 민감 원문을 보관한 경우 보호 투영 codec과 제외 ledger를 별도 검수한다. audit snapshot에 없는 원문을 collector가 재구성했다고 주장하지 않는다.
 
-현재 전체 exact registry 부록은 미완성이다. 기존 부분 A1 후보를 복사해 COMPLETE=true를 발급할 수 없다. source 채택 전 각 entries의 실제 DDL/reader/hash와 표/필드 미분류0을 검토한 고정 부록이 필수다. 실행 중 미등록 namespace나 필수 row/본문/FK/이전 버전이 발견되면 COVERAGE_INCOMPLETE로 거절한다.
+부록17~18은 실제 source DDL/collector 선택열의 대조 inventory다. 실행 가능한 전체 exact registry는 아직 미완성이다. 기존 부분 A1 후보를 복사해 COMPLETE=true를 발급할 수 없다. source 채택 전 각 entries의 실제 DDL/reader/hash와 표/필드 미분류0을 검토한 고정 부록이 필수다. 실행 중 미등록 namespace나 필수 row/본문/FK/이전 버전이 발견되면 COVERAGE_INCOMPLETE로 거절한다.
 
 ## 5. A2 — snapshot과 현재 권한·원기한
 
@@ -158,7 +158,7 @@ manifest totals는 자료 DTO/bytes와 descriptor를 합산하고 manifest 자�
 
 ## 8. A4 — 검증 복원·역사 보존과 실제 적용의 분리
 
-입력은 현재 설치에 보호 등록된 정확 bundleRef·key ref와 기대 originProjectId/registryRef다. 사용자가 보낸 header 식별자·임의 절대경로·bundle 소지만으로 조회/복호화 권한이 생기지 않는다. 복원 시험을 위해 원본을 overwrite하거나 계정을 만들지 않는다.
+입력은 §19에 따라 현재 검증 target 프로젝트에 보호 등록된 정확 inputRef(namespace FULL_BACKUP_BUNDLE_V1의 기존 생성 bundle 또는 FULL_BACKUP_INPUT_V1의 새 외부반입 ciphertext, §19의 신규 미채택 계약)·key ref와 기대 originProjectId/registryRef다. 사용자가 보낸 header 식별자·임의 절대경로·bundle 소지만으로 조회/복호화 권한이 생기지 않는다. 복원 시험을 위해 원본을 overwrite하거나 계정을 만들지 않는다.
 
 검증 순서:
 1. 현재 HUMAN/OWNER/control·명시 검증 정책·원승인/원command·보호 입력/검증 전용 target·key lease·기한/예약을 검산한다.
@@ -171,11 +171,11 @@ manifest totals는 자료 DTO/bytes와 descriptor를 합산하고 manifest 자�
 역사 저장소의 닫힌 논리 row 제안:
 {originProjectId,namespace,scope,ref,recordSchemaVersion,exportHash,projectionKind,payload,validationRunId}.
 이것은 기존 anvil 업무 표에 그대로 INSERT하는 복원이 아니다. 원 user/client는 비활성 역사 식별자이고 로그인/멤버/현재 control·승인소비/credential을 생성하지 않는다. 현재 읽는 사람의 권한은 검증 target의 현재 인증·정책으로 따로 검사한다.
-현재 자료로 재사용할 경우 새 current ID·원본ref·새 hash·현재 검토/확정/승인·명시 적용을 거치는 별도 계약이 필요하다. 이 후보에 confirmRestore/적용 endpoint는 없으며 적용 버튼도 disabled 이유를 제공한다.
+ReportSnapshot.inputRef는 §19의 typed union이며 새 설치의 외부반입도 원 입력 그대로 보존한다. 현재 자료로 재사용할 경우 새 current ID·원본ref·새 hash·현재 검토/확정/승인·명시 적용을 거치는 별도 계약이 필요하다. 이 후보에 confirmRestore/적용 endpoint는 없으며 적용 버튼도 disabled 이유를 제공한다.
 REDACTED_HISTORY의 원문 제외는 report에 남는다. 필수 원본이 없으면 검증 가능한 제한 범위는 보여주되 FULL_VERIFIED를 발급하지 않는다.
 
 ReportSnapshot exact 제안:
-{schemaVersion:1,kind:FULL_RESTORE_REPORT_V1,originProjectId,runRef,bundleRef,manifestRef,registryRef,verifierRef,checks,totals,issues,excluded,startedAt,completedAt,assurance,applied:false,authorizationRestored:false,writerResumed:false}
+{schemaVersion:1,kind:FULL_RESTORE_REPORT_V1,originProjectId,runRef,inputRef,manifestRef,registryRef,verifierRef,checks,totals,issues,excluded,startedAt,completedAt,assurance,applied:false,authorizationRestored:false,writerResumed:false}
 checks 항목={code,state:PASS|FAIL|NOT_RUN|UNSUPPORTED,evidenceRefs,reasonCode}; code는 AUTHENTICATED_ENVELOPE/RECORD_BYTES/SOURCE_HASH/REFERENCE_CLOSURE/HISTORY_CHAIN/BLOB_BYTES/READBACK로 닫는다.
 assurance=MODEL_ONLY|MANAGED_ARTIFACT_VALIDATED|ISOLATED_DB_VALIDATED의 수행 범위이며 하나가 다른 미수행을 대신하지 않는다. FULL_VERIFIED는 필수 check 모두 실제 계획된 수준에서 PASS·필수 issue0인 경우만 summary에 표시하고, source 합성 시험에서는 사용하지 않는다.
 
@@ -185,7 +185,7 @@ assurance=MODEL_ONLY|MANAGED_ARTIFACT_VALIDATED|ISOLATED_DB_VALIDATED의 수행 
 
 새 operation 후보:
 - createFullBackupJob: 정확 payload={policyRef,registryRef,previewDigest,reason}
-- createRestoreValidationJob: 정확 payload={bundleRef,validationTargetRef,keyReferenceRef,registryRef,reason}
+- createRestoreValidationJob: 정확 payload={inputRef,validationTargetRef,keyReferenceRef,expectedOriginProjectId,registryRef,reason}; inputRef는 §19의 기존 생성 bundle 또는 새 외부반입 typed ref만 허용한다
 두 명령 모두 기존 PROJECT 외피 schemaVersion/commandId/projectId/clientId/controlGeneration/operation/targetId/expectedVersion/baselineRefs/approvalRef/payload를 사용한다. 최초 targetId=null/expectedVersion0. baselineRefs는 registry가 정의한 정확 선택 ref를 정렬·중복거절한다. 각 payloadHash는 canonical payload 전체, 승인 actionScope는 그 원commandId/정확 policy·target·generation·hash와 결박한다.
 읽기 operation 후보는 readFullBackup/readRestoreValidation 두 개다. 기존 정책에 자동 추가0. 현재 DENY 우선·명시 AUTO 또는 새 정확 일회 승인 분기만 허용한다.
 
@@ -211,14 +211,14 @@ REQUIRE_APPROVAL일 때 UI08에서 별도 결정한 exact requestRef/decisionRef
   현재 보호 읽기와 정확 완료 bundle metadata/파일 재검산 후 암호문 bounded download만 제공. 미완료/불명은 다운로드0. raw target 경로/키 없음.
 
 JobView exact={projectId,ref,intentRef,operation,state,attemptRef,policyRef,bundleRef,reportRef,startedAt,deadlineAt,completedAt,issues,current,observedAt}.
-정책이 없는 restore validation의 policyRef는 null. 아직 없는 attempt/result/시각은 null이며 성공처럼 만들어 채우지 않는다.
+JobView/JobListItem의 bundleRef는 생성 job의 출력 bundle만 뜻하며 검증복원 job에서는 null이다. 검증복원의 원 입력은 intent의 inputRef와 report.inputRef에 §19 typed union으로 결박한다. 정책이 없는 restore validation의 policyRef는 null. 아직 없는 attempt/result/시각은 null이며 성공처럼 만들어 채우지 않는다.
 current={state:AVAILABLE|CHANGED|UNAVAILABLE,reasonCodes,observedAt}; 과거 job state와 현재 접근/키/파일 상태를 분리한다.
 Issue exact={code,target,required}; target={kind:PROJECT|POLICY|REGISTRY|KEY|TARGET|RECORD|BLOB|ATTEMPT,ref:null 또는 TypedRef}. code는 COVERAGE_INCOMPLETE/REQUIRED_EXCLUDED/SOURCE_UNAVAILABLE/SOURCE_CHANGED/REFERENCE_CONFLICT/KEY_LOCKED/KEY_USE_UNAVAILABLE/REGISTRY_UNSUPPORTED/BUDGET_EXPIRED/STORAGE_LIMIT/IO_UNKNOWN/COMMIT_UNKNOWN/INTEGRITY_FAILED로 닫는다. reasonCodes도 이 집합과 명시 PUBLIC_ERROR 코드만 허용하고 raw 오류문자열을 받지 않는다. issues 최대1000, target 중복은 code+정확target+required로 제거하며 초과는 truncated 성공이 아니라 실패다.
-Page exact={items,nextCursor,hasMore,observedAt}; cursor는 server 서명·project/actor/client·operation/정렬/고정 snapshot에 결박,30분·최대4096자·다른 문맥 거절. list/fixed는 원문 bundle/key를 반환하지 않는다.
+JobListItem exact={projectId,ref,intentRef,operation,state,policyRef,bundleRef,reportRef,startedAt,deadlineAt,completedAt,issueCount,currentState}. ref들은 기존 fullref 또는 아직 없으면 null, issueCount는0..1000 정수, currentState는 AVAILABLE/CHANGED/UNAVAILABLE다. 목록에는 issues/current.reasonCodes/원문을 인라인하지 않는다. 각 항목 canonical UTF-8 최대8192B를 서버가 검산하며 이를 넘는 원행은 무결성 실패이지 자르기 성공이 아니다. 동일 ref의 기존 fixed GET에서 JobView 전체를 읽는다. Page exact={items:JobListItem[],nextCursor,hasMore,observedAt}; cursor는 server 서명·project/actor/client·operation/정렬/고정 snapshot에 결박,30분·최대4096자·다른 문맥 거절. list/fixed는 원문 bundle/key를 반환하지 않는다.
 오류 DTO는 기존 공통6필드 code/message/requestId/targetId/retryDisposition/commandId를 유지한다. 코드 후보: AUTH_REQUIRED401, PROJECT_OPERATION_DENIED/PROJECT_CONTROL_REQUIRED403, NOT_FOUND404, VERSION_CONFLICT/CONCURRENT_CHANGE/IDEMPOTENCY_CONFLICT409, INTENT_EXPIRED410, BACKUP_REFERENCE_UNAVAILABLE/COVERAGE_INCOMPLETE/KEY_USE_UNAVAILABLE412, INPUT_INVALID422, BACKUP_STORAGE_LIMIT429, BACKUP_INTEGRITY_FAILED/BACKUP_STATE_UNKNOWN503.
 unknown SQL/IO/crypto 오류·키 존재·실경로·stack은 고정503으로 sanitize한다. 503은 실패 미전송의 증거가 아니며 원명령 재확인 안내를 유지한다.
 
-JobView/current response의 전체 JSON은 최대2MiB+1000*512B+4096B, Page는50개*8192B+4096B를 넘지 않도록 DTO builder에서 먼저 검산한다. 큰 manifest/registry/report 본문을 JobView에 인라인하지 않고 exact ref로만 연결한다. report 본문은 현재 보호 read 아래 별도 fixed GET /api/v1/projects/:projectId/restore-validation-reports/:id/versions/:version으로 최대2MiB를 반환하는 신규 endpoint 후보다. 큰 상세는 고정 ref별 유한 페이지 계약이 추가로 고정되기 전에는 생성 거절이며 임의 잘라 성공하지 않는다. 모든 GET stream은 상한 초과 시 cancel/release, 원 signal/기한을 보존한다.
+JobView/current response의 전체 JSON은 최대2MiB+1000*512B+4096B, Page는 실제 items 개수 n(0..50)에 대해 n*8192B+4096B이며 최대413696B를 넘지 않도록 DTO builder에서 먼저 검산한다. 큰 manifest/registry/report 본문을 JobView에 인라인하지 않고 exact ref로만 연결한다. report 본문은 현재 보호 read 아래 별도 fixed GET /api/v1/projects/:projectId/restore-validation-reports/:id/versions/:version으로 최대2MiB를 반환하는 신규 endpoint 후보다. 큰 상세는 고정 ref별 유한 페이지 계약이 추가로 고정되기 전에는 생성 거절이며 임의 잘라 성공하지 않는다. 모든 GET stream은 상한 초과 시 cancel/release, 원 signal/기한을 보존한다.
 현재 OWNER+원작성자만 job 원문/다운로드 조회하는 한정 제안이다. VIEWER·다른 OWNER의 원문 접근·다른 기기 creator 귀속 완화는 자동 포함하지 않는다. creator client는 원이력이며 새 현재 authenticated client로 본인 원기록을 조회할 수 있다. GET은 현재 제어 보유를 요구하지 않되 명시 read 정책은 검사한다. 다른 OWNER의 재난 복구 권한이 필요하면 별도 정확 범위를 결정한다.
 
 EventSnapshot exact={schemaVersion:1,kind:FULL_BACKUP_EVENT_V1,projectId,jobRef,attemptId,sequence,previousEventRef,event,state,occurredAt,actorRef,commandRecordRef,reservationRefs,resultRef,issues}. actorRef는 원HUMAN 또는 그 원명령에 결박된 내부 작업자 표시로만 사용하고 새Agent 권한을 발급하지 않는다. event는 상태와 같은 닫힌 단계 이름이며 serverCommand/proof가 없는 전이는 거절한다. sequence는1부터연속, previousEventRef 최초null/나머지직전exact이고 신규event/payload/hash와최종head의지연완결을검산한다.
@@ -246,9 +246,9 @@ head는 최종 event/fullref·세대수·최종 bytes cap을 검산한 CAS만 �
 
 예약 프로토콜 제안:
 기존 ARTIFACT/CHECKPOINT kind를 위장하지 않고 FULL_BACKUP_IO라는 새 저장예약 연산/집계 계약을 별도 채택한다. 기존0059 원형/수치·writer·quota_account 네 열을 바꾸지 않고 새 forward guard와 양방향 합산 보호가 필요하다.
-생성 입력 source 원문은 기존 U에 남고, 새 plaintext staging P·ciphertext C·검증 staging V와 실패 사본을 실제 별개 bytes로 예약한다. 최초 보수 상한 R=P+C+V+외피/manifest/index이며 같은 job의 중간 사본 해제는 소유·정착/삭제 확인 뒤에만 줄인다.
+K=10GiB, U=기존 실사용 원자료, H=기존 held(새 job의 중복 산입 제외), M=이번 예약에 포함되지 않은 metadata 실증가, R=동시에 존재하는 새 사본과 정리 불명 bytes의 예약으로 정의한다. R은 새 plaintext staging P·ciphertext C·검증 staging V 및 실제 별도 index/실패 사본을 포함하되 P/C/V에 이미 들어간 외피·manifest를 다시 더하지 않는다. 생성·외부 반입·검증 모두 동일 정의를 적용하며 같은 job의 중간 사본 해제는 소유·정착/삭제 확인 뒤에만 줄인다.
 최신 권한·project 잠금·원command/계획/fence의 독립 예약 COMMIT → 별도 IO_STARTED COMMIT → 실제 IO 단발 → publish/완료 검산 → 정산을 따른다. 운영 Tx rollback이 예약/시작 표식을 지우지 않는다.
-권장 보수안은 기존 프로젝트 U+R+새 증가가10GiB를 넘지 않게 하고 target 여유도 따로 검사하는 것이다. 따라서 원자료가 cap 근처인 프로젝트는 백업 staging을 예약하지 못할 수 있다. 이는 가용성의 중요한 제안 영향이며 숨기지 않는다. 대안은 외부 백업 저장소/검증 staging의 별도 유한 cap과 원 project cap 범위를 새로 정의하는 것이다. 이 선택은 D5에서 결정해야 하며 현재 값으로 구현 GO하지 않는다.
+권장 보수안은 U+H+M+R≤K로 검산하고 target 여유도 따로 검사하는 것이다. 기존 held나 이미 R에 포함된 metadata/사본을 새 증가로 중복 산입하지 않는다. 따라서 원자료가 cap 근처인 프로젝트는 백업 staging을 예약하지 못할 수 있다. 이는 가용성의 중요한 제안 영향이며 숨기지 않는다. 대안은 외부 백업 저장소/검증 staging의 별도 유한 cap과 원 project cap 범위를 새로 정의하는 것이다. 이 선택은 D5에서 결정해야 하며 현재 값으로 구현 GO하지 않는다.
 
 예약 해제:
 - IO_STARTED 전 명확 부재/미시작이면 같은 fence로 RESERVED→RELEASED를 저장한다.
@@ -323,7 +323,7 @@ A1~A4의 검산 근거가 없거나 current 보호조회 DENY/불명이면 사�
 | D2 snapshot/원형 | RR한정내부수집+최신RC허가+불변bytes/실검산, 비권한역사 저장 | 현재 anvil 표로 직접 복원은 계정FK/원형/권한 delta가 커 이번에는 제외 | 기존auth/RLS/모든collector 접점과 역사row exactcodec 추가검수 필요 |
 | D3 암호화/키 | 기존후보 AES-256-GCM 외피·수동 lease·동일실키 지속 nonce도메인·import복호화전용 | 매 backup용 파생/별도 키는 새 KDF/키수명계약이므로 이번에 임의 도입하지 않음. 키부재면 전체암호화보류 | 외피 검토 가능. 실제 key-use method/domain 증빙·사용량 정확상한/암호검수는 미정 |
 | D4 공개job/승인/조회 | §9 두명령/두read·별도후보·receiptintent·이력/다운로드·UNKNOWN재조회 | 기존정책저장 승인만 재사용하는 방식은 다른부작용허가라 배제 | 공개delta 선택과 현 ProjectCommand/승인/조회형 대조가 필요 |
-| D5 한도/예약 | §10 보수 U+held/최대3사본·양방향기존writer보호·누적cap | 외부bundle/검증staging 별도cap은 가용성이 좋지만 기존10GiB 범위와새저장도메인 결정 필요 | near-cap 생성불가 영향·감소기록공간·실제charge algebra를 결정한 뒤 sourceWI 가능 |
+| D5 한도/예약 | §10의 U+H+M+R≤K/동시 사본·양방향기존writer보호·누적cap | 외부bundle/검증staging 별도cap은 가용성이 좋지만 기존10GiB 범위와새저장도메인 결정 필요 | near-cap 생성불가 영향·감소기록공간·실제charge algebra를 결정한 뒤 sourceWI 가능 |
 | D6 적용/운영 | 검증전용·현재권한/계정/실행복원0·UNKNOWN보존/자동조정0 | 실제적용·운영조정/고아정리는 별도정확결정 | 이 제한 범위 검토 가능. 실제복원/사용자여정은 별도실행안 |
 
 Main/PMO가 먼저 검토할 것은 D1~D6의 구체 선택과 미정 해소 순서다. 한 번에 모든 실제 실행을 승인받는 질문이 아니다. 기존 Main 상세화 지시에 따라 A1 registry/키사용/예약 상세 증거를 더 고정할 수 있지만, 새 public/auth/storage/암호 의미의 채택은 별도로 받는다.
@@ -334,3 +334,682 @@ Main/PMO가 먼저 검토할 것은 D1~D6의 구체 선택과 미정 해소 순�
 이번 산출물은 신규 후보문서1개뿐이다. 정본/source에 같은 UTF-8/LF bytes로 작성하고 기존 파일이 있으면 덮어쓰지 않는다. 기존 정책/참조/키 envelope/SQL/원자료를 수정하지 않는다.
 후보가 채택되지 않으면 문서를 이력으로 남기거나 이 신규 문서 commit만 정상 revert할 수 있다. 실제 데이터/키/파일/서비스 rollback은 발생하지 않았다.
 기존 선택파일/수동정책 기능을 유지하며 전체 백업 부족을 숨기지 않는다. native owner·실Agent 연결은 이 업무의 원문 백업 목표와 독립이고 Agent 교체를 위해 백업 복원을 필수로 만들지 않는다.
+
+## 17. r2 교차 검토·registry 부록의 효력
+
+부모 r1 원문 SHA는 `D3B3014E`로 시작하는 작성 지문이며 EOF 빈줄 보정 후 검토 기준은 `4E8423F0445591AC9F47D50FCE04311934ED87D9D993FB546F16D9E2E02FB8D9`다. 이 revision은 Main이 위임한 기술 보완이며 새 채택/제품 GO가 아니다. 과거 부분 registry를 전체 지원으로 승격하지 않는다.
+
+아래 자동 대조표는 실제 `db/migrations/*.sql*`의 행 시작 CREATE TABLE 정적 선언 192개(고유192개)와 `apps/server/modules/backups/*inventory.ts` 27파일의 직접 선언 선택열을 읽은 source 관측이다. SQL/DB 실행0이다. 실제 DB catalog·동적 DDL·후행 ALTER/CHECK/FK/트리거·JSON 내부 원형·조건부 collector의 모든 branch까지 폐쇄한 결과가 아니다. 표의 행 수가 coverage proof는 아니다. 임의 producer/hash 상수로 전체 eligible을 만들지 않는다.
+
+자료군 분류 원칙: 프로젝트 문서/양식/설계는 documents, 대화는 conversations, 지식/헌법은 knowledge, 방법론/계획/임무/역할은 plans, 승인/정책/제어/감사는 decisions, 실행/관측/준비/writer/native/제출은 results, 보관된 실제 bytes는 artifacts다. 공유 commands/receipt/audit는 해당 원자료의 DEPENDENCY_INCLUDED로 한 번 수집하고 각 원참조는 모두 보존한다. 참조만 있고 비밀 없는 원문/codec이 없는 대상은 UNAVAILABLE/생성 차단이다. 원 사용자가 선택하지 않은 자료군은 dependency로 표시한다.
+
+비반출 기본: password/recovery credential·auth/session cookie/CSRF·pairing code/token/digest에 의한 인증수단·DEK/KEK·envelope 비밀번호·CA/키 원문·활성 grant/permit·socket/process handle·파일 실경로·OS 자격증명은 제외한다. digest/공개키/서명이 항상 안전하다고 일괄 판단하지 않는다. 저장 JSON/명령 payload/result/후보 원문은 operation별 exact 투영 검수 전 기본 UNKNOWN/반출 차단이다. 원 actor/client UUID는 비권한 역사 식별자로만 보관한다.
+
+### 17.1 기존 composition의 실제 추가 소비
+
+`apps/server/modules/backups/project-inventory-composition.ts:98~119`는 조건부 SourceRootHistory와 ControlHandoffOwnHistory를 포함한다. `139~145`는 `apps/server/modules/projects/project-baselines.ts:325`의 readDraftHistoryInventory와 `:436`의 readDecisionHistoryInventory를 호출해 FeatureBaselineDraftHistory/FeatureBaselineDecisionHistory를 추가한다. 기본24 목록에 없으나 실제 포함 대상이다.
+
+- FeatureBaselineDraftHistory: baseline_drafts/baseline_draft_versions·관련 원 command/receipt/audit/정확 선택자료·artifact. heads/versions/selectedEvidenceHash·metadataObservationHash와 NOT_STORED/UNVERIFIED 의미를 보존한다. group=plans, 현재 적용/쓰기 권위 복원0.
+- FeatureBaselineDecisionHistory: baseline_content_reviews/baseline_heads 및 정확 adoption/review 원행·참조. group=plans, reviews/adoptions/heads·원hash·현재성 미확인·contentConfirmed의 제한 의미를 보존한다.
+- SourceRootHistory: source_roots/source_root_versions·정확 원등록/command/receipt/audit 의존성. group=results의 선언 이력이며 OS 경로 관측/권한으로 승격0.
+- ControlHandoffOwnHistory: control_handoff_source_requests/summaries/commands/receipts/audits의 본인 범위. group=decisions, 실제어 이전·관측·권한 복원0. 현재 본인 제한을 백업 OWNER라는 이유로 확대하지 않는다.
+
+기존 collector가 hash/metadata만 보관하거나 notCollected를 반환하면 원 payload를 복원했다고 하지 않는다. 새 동일 RR collector는 공개 RC wrapper와 별도 내부 접점을 통해서만 source를 재사용하며 원 observation/isolation 주장을 바꾸지 않는다.
+
+### 17.2 최신 source의 별도 원형·명시 공백
+
+| 실제 DDL 자료 | 후보 포함/의존·codec 근거 | 남은 폐쇄·반출 기준 |
+|---|---|---|
+| 0037 provider_session_claims/proof_results/revocations | results·원 claim/proof 원형, 원명령/등록·scope·execution 의존 | 실제 provider session/credential·현재 권위 제외. 전체 export codec 미구현 |
+| 0039 execution_ownership_* 5표 | results·기존 ownership runtime 계약과 receipt/event/이전head | OS handle/현재소유 권위 제외. 역사payload codec/관계 전수 미완료 |
+| 0040 source_content_* 4표 | documents·source request/observation/verification·정책원행 | 실제 source 원문·권한/파일관측 미확인 보존. 미채택 실행범위 자동포함0 |
+| 0042 draft_artifact_*·draft_*_intents/quota·adoptions | artifacts/documents·project-creation-draft-inventory 실제선택열 | 미소비 개인초안 전체 접근0. quota/원command와 실제 immutable bytes closure 필요 |
+| 0043 project_artifact_exports | decisions/artifacts·과거반출metadata | 반출권한/현재download 재활성화0·원문이 없는 경우 이유보존 |
+| 0050 baseline_activations/current/rechecks·approval_candidates | plans/decisions·baseline-inventory+정확 후보/적용hash | candidate payload JSON 비밀투영·이전버전/원소비 전수검산 미완료 |
+| 0051 knowledge_share_requests | knowledge·원scope/후보/공유결정 이력 | 타사용자 비공개 지식 자동확대0·공유원문 codec 필요 |
+| 0052 notifications/notification_reads | decisions·notification-inventory | 본인알림 범위·원요청/중복읽음 보존 |
+| 0053 backup_references/versions/events | decisions·backup-reference-history-inventory | TARGET/KEY/RETENTION/VERIFICATION metadata만·실경로/실키원문0 |
+| 0054 installation_resource_* / installation_key_* / root_roles | decisions·backup-installation-resources-v1/installation-resource-store | wrapping 파일/키·lease원문0. 비반출 metadata projection·root역할 역사codec 미완료 |
+| 0055 execution_preparation_approval_candidates / 0056 understanding_review_approval_candidates | results/decisions·각 기존 collector 선택열 | 원후보/요청/결정/소비/receipt 정확관계·민감 payload 검수 필요 |
+| 0057 capability_reports/evidence / 0058 checkpoint_records | results·현재 capability/checkpoint 원형 | HUMAN 주장·UNVERIFIED/false 보존. checkpoint 실제blob ref/bytes 의존 |
+| 0059 project_storage_accounts/reservations | results·원quota kind/plan/part/fence | used/held를 복원 대상 계정에 적용0. 원역사와 실제 새예약 분리 |
+| 0060 transfer_preparation_records/versions | plans/results·원기록/이전ref/hash/command | 실제 책임/세션 이전 재개0·export codec 미완료 |
+| 0062 execution_material_manifests/materials/proof_bindings | results/artifacts·정확 manifest/원binding | 활성 SEND/permit 비반출·원bytes/nonce/민감명령 투영codec 필요 |
+| 0063 backup_policies/versions/approval_candidates | decisions·backup-policy-input/store | 정확7/sourceNONE/4ref·이전/CAS·후보원문 검산. 현재정책 자동복원0 |
+| 0065 agent_connections/connection_definition_versions | results·원 정의snapshot/ref/command | 현재 연결자격/실행권 복원0·환경ref closure |
+| 0067 definition_capability_reports/evidence | results·등록정의 보고원형/evidence | HUMAN 주장/OS_UNVERIFIED·원등록증빙 제한 보존 |
+| 0069 environment_configuration_heads/versions/approval_candidates | results/decisions·environment-configuration-v1·환경원형/승인원문 | 등록최소증빙·원command/소비·Secret metadata만, 실제비밀0 |
+| 0070 project_writer_authority_events/heads | results·project-writer-authority-v1 | typed사건/hashchain·원승인/등록·receipt 관계. actualflagsfalse·활성writer권위복원0 |
+| 0071 native_preparation_authorities/events | results·native-preparation-authority-v1 | grant/receipt/일회소비·delivery digest/proof의 안전투영. token/permit/capability/원비밀 비반출 |
+
+위는 실제 표/계약 연결 근거이지 실행 registry 등록 완료표가 아니다. 후속 부록의 UNMAPPED/DDL_ONLY·원형미검수 row가 하나라도 필수범위에 있으면 생성은 COVERAGE_INCOMPLETE다. 선택하지 않았다는 이유만으로 필수 command/receipt/FK 의존성을 생략하지 않는다.
+
+## 18. 원본 hash와 REDACTED_HISTORY의 검증 구분
+
+ORIGINAL은 저장당시 정확 source codec/domain의 원 projection bytes로 sourceRef.contentHash를 **재계산**하고 exportHash·raw artifact bytesHash도 각각 검산한다. export DTO의 hash를 source hash라고 부르지 않는다.
+
+REDACTED_HISTORY는 exportHash만 재계산 가능하다. 누락된 원본 전체의 SOURCE_HASH는 재계산 PASS를 발급하지 않는다. sourceReceiptRefs의 고정 원command/receipt/audit와 보관된 원sourceRef/hash를 대조한 결과는 HISTORY_CHAIN에 기록하고 reasonCode=SOURCE_HASH_EVIDENCE_ONLY로 구분한다. 이 reasonCode는 이번 후보에 추가하는 닫힌 report reason이며 기존 wire 확장이 아니다. SOURCE_HASH check의 state는 해당 원본을 검증하지 못했으면 NOT_RUN, reasonCode=SOURCE_REDACTED다. 필수원문이면 FULL_VERIFIED0. 안전한 metadata 역사만 요구하는 명시 profile이 필요하다면 그 profile 자체를 별도 선택으로 둔다. receipt 존재가 원내용을 복구/재계산했다는 뜻은 아니다.
+
+actual artifact reader `apps/server/modules/backups/artifact-readonly-reader.ts` MAX20MiB와 `artifact-byte-verification.ts`의20MiB를 유지한다. 새 bundle ciphertext는 별도10GiB 상한 reader/stream 계약으로 처리하고 기존 artifact reader에10GiB를 전달하거나 상수를 올리지 않는다. 사용자자료 원문blob별20MiB 제한과 전체암호문10GiB 제한은 다른 대상이다. 원복검증 staging에서도 이 구분을 유지한다.
+
+## 19. 새 설치의 외부 암호문 반입 계약 — 신규 결정 delta
+
+목표를 현재설치 생성파일 검증으로 축소하지 않는다. 새 설치에서 외부 bundle을 검증하려면 아래 새 public/storage 계약을 채택해야 한다. 아직 NOT_ADOPTED이며 기존 반출·선택파일 업로드 승인을 자동 이월하지 않는다.
+
+새 operation 후보 `createFullBackupImportIntent`, payload exact `{targetRef,expectedOriginProjectId,registryRef,expectedBytes,expectedSha256,reason}`. 기존 ProjectCommand/HUMAN OWNER·단독제어/현재세대·명시정책·정확 일회승인/원문후보·receiptintent를 재사용하되 이 operation의 권한/승인 소비는 새로 닫는다. expectedBytes는1..10GiB canonical10진, expectedSha256은암호문전체hash다. expectedOriginProjectId는사용자기대값이지원프로젝트의현재권한증명아님. targetRef는보호반입격리대상의정확ref이며임의path/URL0. 새nonce/키발급0.
+
+접수data exact `{status:'FULL_BACKUP_IMPORT_REQUESTED',intentRef,importRef,accepted:true,completed:false}`. 그뒤 POST `/api/v1/projects/:projectId/full-backup-inputs/:intentId/content` 한경로에서 `application/octet-stream` raw ciphertext만받는다. 기존인증/CSRF·현재OWNER/control/명시권한·원intent/command/approvalproof·동일client·기한/fence·독립예약 COMMIT·IO_STARTED COMMIT을검산한뒤단발쓰기한다. 새일반upload token/cookie export0, URLfetch0,압축전송/실행파일추출0. exactContentLength가expectedBytes와다르거나hash불일치는거절하며원시도/held를보존한다. 대기/새시도자동재전송0. 기존120초원기한과target/profile더짧은기한을늘리지않는다.
+
+전용 import 입력 descriptor snapshot exact:
+`{schemaVersion:1,kind:'FULL_BACKUP_INPUT_V1',projectId,intentRef,attemptId,source:'EXTERNAL_CIPHERTEXT',expectedOriginProjectId,registryRef,ciphertextBytes,ciphertextHash,targetRef,state:'IMPORTED_UNAUTHENTICATED',createdAt}`.
+그ref는이snapshot의canonicalhash이며기존FULL_BACKUP_BUNDLE_V1과구별하는신규namespace다. 내부fileidentity는별도보호저장에만두고publicref에path/key를넣지않는다. 불변publish/sync/readback/hash와완결COMMIT확인후에만이ref를fixedGET으로생산한다. 외부파일명/헤더/개인rawJSON을보호ref로등록하지않는다.
+
+GET `/api/v1/projects/:projectId/full-backup-inputs/:id/versions/:version`는현재보호읽기아래위metadata/ref·현재AVAILABLE/CHANGED/UNAVAILABLE만반환하며rawplaintext0. 새목록은제안하지않는다. 입력은새targetproject에귀속하고origin은원프로젝트UUID로별도보존한다. 다른설치동일원UUID를현재project/member로자동생성하지않는다.
+
+`createRestoreValidationJob` payload는 §9의 exact `{inputRef,validationTargetRef,keyReferenceRef,expectedOriginProjectId,registryRef,reason}`다. inputRef는 typed union의정확namespace FULL_BACKUP_BUNDLE_V1(현재설치기존생성) 또는 FULL_BACKUP_INPUT_V1(새외부반입)만받는다. 현재project의보호ref/실파일bytes를검산하되originProjectId는expected와인증후manifest/header가일치해야한다. 입력암호문길이/hash가맞아도인증·원본진위·복원성공이아니다. 새설치키IMPORT는기존portablekey별도명시동작이며복호화전용제한을보존한다.
+
+반입단계는bounded header의형식/길이검사만할수있고manifest/record/DB/historyparser를호출하지않는다. key선택후GCMfinal/tag/AAD/bodyHash전평문은새소유staging안에서만보관·채택0. 완전인증뒤에만기존검증순서를진행한다. 생성·반입·검증job의실제권한/예약/metadata한도를서로구분하고비밀/원키를반입파일에넣지않는다.
+
+새delta는입력intentoperation/쓰기정책·승인후보·rawciphertextPOST·보호입력고정GET·FULL_BACKUP_INPUT_V1저장·restorepayload변경이다. 이것은사용자선택대상이며Main의단순내부wrapper배치로채택하지않는다. 원 bundle의과거작성자를현재사용자로위장하지않고현재검증주체만새target권한을소비한다.
+
+## 20. 키/nonce·대수의 미정 유지
+
+이번보완은새암호알고리즘/KDF/실키도메인을채택하지않는다. 동일실DEK를keyId/wrappingVersion/alias/import/retry로다른도메인으로만드는것은금지다. 기존0054 lease/wrapping은데이터암호화nonce원장이아니다. 실제키동일성에결박된지속domainproducer·unique nonce원행·전instance사용량·cipher진입전COMMIT확인이구체화될때까지실encrypt차단이다. domain/nonce예약COMMIT불명에는cipher0·원nonce영구소진·새attempt재암호화0을적용하고재시작원조회식별/사용량완결을후속계약으로닫아야한다. source상bool성공으로대체0.
+
+대수는 K=10GiB, U=기존실사용원자료, H=기존held(새job중복산입제외), M=이번미포함metadata실증가, R=동시에존재하는새사본/정리불명예약으로두고 `U+H+M+R≤K`다. R의P/C/V에이미포함된manifest/외피를다시더하지않는다. 별도index/실패사본은정확물리논리소유로추가한다. P≈C≈V≈U라면다른비용전에도4U≤K,즉약2.5GiB에서보수cap에닿는다. 원자료10GiB를동일projectcap안3사본으로처리할수있다고하지않는다.
+
+D5는①이보수한계와nearcap백업불가를선택할지 ②외부bundle/staging의별도유한저장domain/cap을선택할지결정해야한다. 반입10GiB와새검증staging도동일대수에넣는다. 프로젝트논리cap과실disk/WAL/target여유는별도검산이다. 감소전용event/정산공간의사전유한예약과계속held보존중어느원형을쓸지도미정이다. 포화시감소사실을못기록했다고used/held를허위해제0. 독립예약/IO_STARTED COMMIT불명은IO시작0,원예약보존·조회로만전환한다.
+
+## 21. r2 준비도와 변경 범위
+
+기술I1은새설치입력producer/public/storage후보로상세화했고I2는목록전용JobListItem≤8192B·page≤413696B와fixedJobView분리로수정했다. 외부반입/키사용/보호저장·quota선택은채택되지않았다. registry는아래정적대조범위를명확히열거했지만ALTER/동적DDL/모든JSON민감투영·모든이전버전/참조까지의누락0을입증하지못했다. 따라서현재전체sourceWI GO불가·A6eligible선연결0이다. source/read-only조사로더닫을수있는정확기술항목을가짜포트나user질문으로미루지않는다.
+
+문서한개만수정하며제품/SQL/시험/Git/WORK_STATUS·실DB/키/파일/백업/복원/서비스/Agent/컴파일·새QA/세션실행0이다. 정본/source동일UTF8LF바이트로보관한다. 다음부록의rawSQL열명은반출허용목록이아니며민감열은명시투영/제외전채택0이다.
+
+## 22. 실제 DDL 선언 대조 부록
+본문 §1~21은 미채택 계약 후보이고 §22~23은 **읽기 조사 증거 부록**이다. 부록의 DDL/선택열/source 지문은 실행 registry, export 허용목록, codec 검증완료, 실제 백업지원의 증거가 아니다. 모든 gate가 해소됐다는 판정은 없으며 단순192행으로 누락0을 발급하지 않는다. 본문과 부록이 충돌하면 더 보수적인 차단을 유지하고 Main이 후속 기술 검토로 해소한다.
+
+
+CREATE TABLE 192개/고유192개. `DDL_CREATE_COLUMNS`는 정적 초기 선언열이며 후행 ALTER/동적 SQL/JSON 투영은 UNVERIFIED다. 식별자는 조사 근거이며 반출 권한이 아니다.
+
+| 표 | 근거 | CREATE 선언열 | 자료군/제외 후보 | 기존 선택열 근거 | 차단 상태 |
+|---|---|---|---|---|---|
+| `schema_migrations` | `db/migrations/0000_environment.sql:1` | `id,checksum,applied_at` | `EXCLUDED_INSTALLATION_RUNTIME` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `users` | `db/migrations/0001_projects_access.sql:1` | `id,login_name,normalized_login_name,display_name,status,credential_generation,server_owner,version,created_at,revoked_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `clients` | `db/migrations/0001_projects_access.sql:9` | `id,user_id,label,version,created_at,revoked_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `password_credentials` | `db/migrations/0001_projects_access.sql:14` | `user_id,argon2_phc,credential_generation,changed_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `auth_sessions` | `db/migrations/0001_projects_access.sql:18` | `id,token_digest,user_id,client_id,credential_generation,csrf_digest,created_at,last_seen_at,idle_expires_at,absolute_expires_at,reauth_until,revoked_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `installation_claims` | `db/migrations/0001_projects_access.sql:27` | `installation_id,bootstrap_digest,expires_at,consumed_at,owner_user_id,version` | `EXCLUDED_INSTALLATION_RUNTIME` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `recovery_credentials` | `db/migrations/0001_projects_access.sql:32` | `id,user_id,secret_digest,issued_at,consumed_at,revoked_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `user_invitations` | `db/migrations/0001_projects_access.sql:37` | `id,normalized_login_name,display_name,secret_digest,project_grants_json,expires_at,consumed_by,consumed_at,revoked_at,created_by` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `auth_attempt_windows` | `db/migrations/0001_projects_access.sql:43` | `bucket_kind,bucket_key,window_start,attempt_count,blocked_until,updated_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `auth_actions` | `db/migrations/0001_projects_access.sql:48` | `id,actor_scope,operation,command_id,protected_fingerprint,result_status,safe_result_ref,created_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `auth_audit_events` | `db/migrations/0001_projects_access.sql:53` | `id,server_sequence,subject_ref,action_id,client_ref,operation,outcome,reason_code,recorded_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `projects` | `db/migrations/0001_projects_access.sql:59` | `id,name,purpose,desired_outcome,version,archived_at,created_at,updated_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_drafts` | `db/migrations/0001_projects_access.sql:64` | `id,owner_user_id,client_id,version,step,input_json,consumed_project_id,created_at,updated_at` | `HISTORICAL_PROJECTION_REQUIRED` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `project_members` | `db/migrations/0001_projects_access.sql:73` | `project_id,user_id,participation,version,joined_at,revoked_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_control` | `db/migrations/0001_projects_access.sql:81` | `project_id,actor_id,client_id,generation,version,issued_at,revoked_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_declarations` | `db/migrations/0001_projects_access.sql:87` | `id,draft_id,project_id,version,declared_by,host_label,display_name,path_hint_protected_ref,origin_root_ref,reason,authority,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_baselines` | `db/migrations/0001_projects_access.sql:95` | `id,project_id,version,source_snapshot_ref,content_json,content_hash,created_by,created_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_declaration_versions` | `db/migrations/0001_source_declarations.sql:2` | `id,version,draft_id,draft_version,declared_by,client_id,content_hash,declaration_json,authority,readiness,command_id,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_source_declarations` | `db/migrations/0001_source_declarations.sql:10` | `project_id,declaration_id,declaration_version,created_by,client_id,command_id,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `methodology_definitions` | `db/migrations/0002_methodologies.sql:1` | `id,scope,owner_user_id,project_id,system_code,name,purpose,head_version,created_at` | `plans` | `project-methodology-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `methodology_versions` | `db/migrations/0002_methodologies.sql:14` | `definition_id,version,name,purpose,graph_json,content_hash,origin_ref_json,reason,created_by,created_at` | `plans` | `project-methodology-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `methodology_reviews` | `db/migrations/0002_methodologies.sql:24` | `id,definition_id,version,target_hash,validation_json,review_refs,decision,decided_by,decided_at` | `plans` | `project-methodology-inventory.ts:19` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `project_methodologies` | `db/migrations/0002_methodologies.sql:32` | `id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by,created_at` | `plans` | `document-inventory.ts:33; methodology-application-inventory.ts:13; project-methodology-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_confirmations` | `db/migrations/0003_document_confirmations.sql:2` | `id,project_id,document_id,version,target_hash,form_ref,review_refs,validation_json,confirmed_by,client_id,command_id,created_at` | `documents` | `document-inventory.ts:30` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_imports` | `db/migrations/0003_document_imports.sql:2` | `id,project_id,original_artifact_id,form_definition_id,form_version,form_hash,candidate_json,content_hash,created_by,client_id,command_id,created_at` | `documents` | `document-inventory.ts:24` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_import_selections` | `db/migrations/0003_document_imports.sql:14` | `id,project_id,import_id,document_id,version,created_by,client_id,command_id,created_at` | `documents` | `document-inventory.ts:25` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_proposals` | `db/migrations/0003_document_proposals.sql:1` | `id,project_id,document_id,base_version,base_hash,body_artifact_id,diff_artifact_id,content_json,proposal_json,content_hash,reason,created_by,client_id,command_id,created_at` | `documents` | `document-inventory.ts:26` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_proposal_selections` | `db/migrations/0003_document_proposals.sql:13` | `id,project_id,proposal_id,document_id,version,created_by,client_id,command_id,created_at` | `documents` | `document-inventory.ts:27` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `authoring_standard_versions` | `db/migrations/0003_documents.sql:2` | `id,version,content_hash,body_utf8,source_approval_json,created_at` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `form_definitions` | `db/migrations/0003_documents.sql:10` | `id,scope,owner_user_id,project_id,form_code,name,head_version,created_at` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `form_versions` | `db/migrations/0003_documents.sql:25` | `definition_id,version,definition_json,content_hash,authoring_standard_id,authoring_standard_version,authoring_standard_hash,authoring_standard_ref,origin_ref_json,created_by,created_at` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `artifacts` | `db/migrations/0003_project_artifacts.sql:1` | `id,project_id,draft_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id,created_at` | `artifacts` | `conversation-inventory.ts:15; document-inventory.ts:23; knowledge-inventory.ts:22; project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `documents` | `db/migrations/0003_project_documents.sql:1` | `id,project_id,title,head_version,confirmed_version,created_by,created_at,updated_at` | `documents` | `document-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_versions` | `db/migrations/0003_project_documents.sql:8` | `project_id,document_id,version,form_definition_id,form_version,form_hash,stage_ref_json,body_artifact_id,title,source_refs_json,content_json,content_hash,sections_json,author_ref_json,validation_json,reason,client_id,command_id,created_at` | `documents` | `document-inventory.ts:21` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_artifact_links` | `db/migrations/0003_project_documents.sql:25` | `project_id,document_id,version,artifact_id,kind` | `documents` | `document-inventory.ts:22` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_version_events` | `db/migrations/0003_project_documents.sql:31` | `id,project_id,document_id,version,event_kind,review_ref,actor_ref,reason,command_id,created_at` | `documents` | `document-inventory.ts:29` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `design_changes` | `db/migrations/0004_design_change_proposals.sql:2` | `id,project_id,version,before_id,before_version,before_hash,proposal_id,content_hash,change_json,created_by,client_id,command_id,created_at` | `documents` | `design-change-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `design_change_impacts` | `db/migrations/0004_design_change_proposals.sql:10` | `id,project_id,version,change_id,change_hash,source_kind,content_hash,impact_json,created_by,client_id,command_id,created_at` | `documents` | `design-change-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `design_items` | `db/migrations/0004_design_index.sql:1` | `id,project_id,design_document_id,document_version,document_hash,local_code,title,anchor,item_hash,item_json,created_by,client_id,command_id,created_at` | `documents` | `design-trace-inventory.ts:14` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `screen_regions` | `db/migrations/0004_design_index.sql:11` | `id,project_id,design_item_id,screen_code,source_document_id,source_version,source_hash,artifact_id,anchor,region_hash,region_json,created_by,client_id,command_id,created_at` | `documents` | `design-trace-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `trace_edges` | `db/migrations/0004_trace_links.sql:1` | `id,project_id,from_kind,from_id,from_version,from_code,to_kind,to_id,to_version,to_code,relation,design_refs,edge_json,edge_hash,reason,created_by,client_id,command_id,created_at` | `documents` | `design-trace-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `work_plan_confirmations` | `db/migrations/0004_work_plan_confirmation.sql:2` | `id,project_id,plan_id,version,target_hash,review_refs,validation_json,confirmed_by,client_id,command_id,created_at` | `plans` | `work-plan-inventory.ts:19` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `work_plans` | `db/migrations/0004_work_plan_drafts.sql:2` | `id,project_id,head_version,confirmed_version,created_by,created_at,updated_at` | `plans` | `work-plan-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `work_plan_versions` | `db/migrations/0004_work_plan_drafts.sql:8` | `project_id,plan_id,version,document_id,document_version,document_hash,design_id,design_version,design_hash,screen_review_refs,content_hash,version_json,created_by,client_id,command_id,created_at` | `plans` | `work-plan-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `plan_tasks` | `db/migrations/0004_work_plan_drafts.sql:24` | `project_id,plan_id,plan_version,task_code,task_type,card_json,card_hash,owner_role` | `plans` | `work-plan-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `plan_dependencies` | `db/migrations/0004_work_plan_drafts.sql:31` | `project_id,plan_id,plan_version,task_code,dependency_task_code,phase` | `plans` | `work-plan-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `conversations` | `db/migrations/0005_conversations.sql:1` | `id,project_id,target_role_ref,head_sequence,created_by,last_client_id,last_command_id,created_at,updated_at` | `conversations` | `conversation-inventory.ts:13` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `conversation_messages` | `db/migrations/0005_conversations.sql:7` | `project_id,conversation_id,sequence,id,author_ref,kind,body_artifact_id,source_refs,reply_to,supersedes_instruction_id,effective_scope,message_json,content_hash,redaction_state,client_id,command_id,recorded_at` | `conversations` | `conversation-inventory.ts:14` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `knowledge_entries` | `db/migrations/0005_knowledge_drafts.sql:1` | `id,project_id,kind,head_version,created_by,client_id,command_id,created_at` | `knowledge` | `knowledge-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `knowledge_versions` | `db/migrations/0005_knowledge_drafts.sql:8` | `project_id,entry_id,version,title,content_artifact_id,content_hash,source_refs,reason,scope_json,related_refs,entry_json,supersedes_version,created_by,client_id,command_id,created_at` | `knowledge` | `knowledge-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `knowledge_events` | `db/migrations/0005_knowledge_drafts.sql:21` | `id,project_id,entry_id,version,kind,reason,actor_ref,approval_ref,target_refs,client_id,command_id,recorded_at` | `knowledge` | `knowledge-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `constitution_applications` | `db/migrations/0005_project_constitutions.sql:2` | `project_id,application_version,content_hash,entry_id,version,confirmation_id,snapshot_json,applied_by,client_id,command_id,created_at` | `knowledge` | `knowledge-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `project_constitutions` | `db/migrations/0005_project_constitutions.sql:11` | `project_id,application_version,application_hash,entry_id,version` | `knowledge` | `knowledge-inventory.ts:21` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `connection_candidates` | `db/migrations/0006_connection_candidates.sql:2` | `id,project_id,kind,head_version,created_by,created_at` | `results` | `connection-candidate-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `connection_candidate_versions` | `db/migrations/0006_connection_candidates.sql:9` | `project_id,candidate_id,version,kind,snapshot_json,content_hash,created_by,client_id,command_id,expires_at,created_at` | `results` | `connection-candidate-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `connectors` | `db/migrations/0006_host_trust_registrations.sql:2` | `id,project_id,owner_user_id,client_id,credential_generation,host_label,host_fingerprint,public_key_spki,connector_version,registration_id,generation,status,created_at,revoked_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `connector_registrations` | `db/migrations/0006_host_trust_registrations.sql:13` | `id,project_id,connector_id,requested_by,client_id,session_id,credential_generation,control_generation,version,state,expected_host_fingerprint,observed_host_fingerprint,code_digest,code_consumed_at,enroll_request_hash,failed_attempts,scope_json,scope_digest,policy_ref,created_command_id,decision_command_id,created_at,expires_at,proofed_at,issued_at,revoked_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `connector_registration_challenges` | `db/migrations/0006_host_trust_registrations.sql:32` | `id,project_id,registration_id,purpose,payload_json,preflight_digest,failed_attempts,created_at,expires_at,consumed_at,proof_signature` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `connector_credentials` | `db/migrations/0006_host_trust_registrations.sql:42` | `id,project_id,connector_id,registration_id,generation,token_digest,scope,scope_digest,issued_at,expires_at,revoked_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `source_read_grants` | `db/migrations/0008_source_read_observation.sql:3` | `project_id,id,version,source_root_id,source_root_version,source_root_hash,connector_id,connector_generation,registration_id,registration_version,requested_by,client_id,session_id,credential_generation,control_generation,policy_ref,scope_json,scope_digest,created_command_id,created_at,expires_at,revoked_at,revoke_command_id,exchange_failures` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_read_challenges` | `db/migrations/0008_source_read_observation.sql:25` | `id,project_id,grant_id,preflight_digest,payload_json,created_at,expires_at,consumed_at,proof_signature,failed_attempts` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_read_credentials` | `db/migrations/0008_source_read_observation.sql:34` | `id,project_id,grant_id,connector_id,connector_generation,token_digest,scope,scope_digest,issued_at,expires_at,revoked_at,consumed_at` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `source_snapshots` | `db/migrations/0008_source_read_observation.sql:46` | `project_id,id,version,grant_id,report_command_id,source_root_id,source_root_version,connector_id,generation,scope_digest,report_json,content_hash,signature,observed_at,finished_at,received_at,evidence_class,os_verification` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_roots` | `db/migrations/0008_source_root_registry.sql:2` | `project_id,id,head_version,created_by,client_id,created_at` | `results` | `source-root-history-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `source_root_versions` | `db/migrations/0008_source_root_registry.sql:9` | `project_id,root_id,version,content_hash,declaration_json,status,authority,readiness,reason,actor_id,client_id,command_id,connector_id,created_at` | `results` | `source-root-history-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `permission_policies` | `db/migrations/0011_authorization.sql:1` | `id,project_id,head_version,created_by,created_at` | `decisions` | `permission-policy-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `permission_policy_versions` | `db/migrations/0011_authorization.sql:6` | `project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,created_at` | `decisions` | `permission-policy-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `commands` | `db/migrations/0011_authorization.sql:16` | `id,scope_kind,scope_id,project_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; assignment-inventory.ts:19; backup-reference-history-inventory.ts:11; baseline-inventory.ts:16; connection-candidate-inventory.ts:11; context-preparation-inventory.ts:30; design-change-inventory.ts:19; design-trace-inventory.ts:17; execution-control-inventory.ts:26; knowledge-inventory.ts:23; methodology-application-inventory.ts:14; notification-inventory.ts:17; permission-policy-inventory.ts:11; project-control-ledger-inventory.ts:10; project-creation-draft-inventory.ts:11; project-methodology-inventory.ts:21; responsible-session-inventory.ts:23; result-review-history-inventory.ts:19; result-submission-inventory.ts:14; source-root-history-inventory.ts:11; stage-budget-inventory.ts:27; understanding-permit-inventory.ts:31; work-plan-inventory.ts:21` | `PROJECTION_UNVERIFIED` |
+| `approval_requests` | `db/migrations/0011_authorization.sql:32` | `id,project_id,version,candidate_command_id,action_scope_json,scope_digest,details_json,required_decider_ref,status,expires_at,created_by,created_at` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; backup-reference-history-inventory.ts:11; context-preparation-inventory.ts:29; notification-inventory.ts:16; responsible-session-inventory.ts:22; stage-budget-inventory.ts:26; understanding-permit-inventory.ts:29` | `PROJECTION_UNVERIFIED` |
+| `approval_decisions` | `db/migrations/0011_authorization.sql:42` | `id,project_id,request_id,request_version,scope_digest,decision,reason,decided_by,client_id,control_generation,decided_at` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; backup-reference-history-inventory.ts:11; context-preparation-inventory.ts:27; responsible-session-inventory.ts:21; stage-budget-inventory.ts:25; understanding-permit-inventory.ts:28` | `PROJECTION_UNVERIFIED` |
+| `approval_consumptions` | `db/migrations/0011_authorization.sql:50` | `id,project_id,decision_id,command_id,scope_digest,policy_id,policy_version,consumed_at` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; backup-reference-history-inventory.ts:11; context-preparation-inventory.ts:26; responsible-session-inventory.ts:20; stage-budget-inventory.ts:24; understanding-permit-inventory.ts:27` | `PROJECTION_UNVERIFIED` |
+| `authorization_receipts` | `db/migrations/0011_authorization.sql:58` | `id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; assignment-inventory.ts:20; backup-reference-history-inventory.ts:11; connection-candidate-inventory.ts:11; context-preparation-inventory.ts:31; execution-control-inventory.ts:27; knowledge-inventory.ts:25; notification-inventory.ts:18; permission-policy-inventory.ts:11; project-control-ledger-inventory.ts:10; project-creation-draft-inventory.ts:11; responsible-session-inventory.ts:24; result-review-history-inventory.ts:20; result-submission-inventory.ts:15; source-root-history-inventory.ts:11; stage-budget-inventory.ts:28; understanding-permit-inventory.ts:32` | `PROJECTION_UNVERIFIED` |
+| `audit_events` | `db/migrations/0011_authorization.sql:70` | `project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of` | `DEPENDENCY_REDACTION_REQUIRED` | `approval-history-inventory.ts:10; assignment-inventory.ts:21; backup-reference-history-inventory.ts:11; connection-candidate-inventory.ts:11; context-preparation-inventory.ts:32; execution-control-inventory.ts:28; knowledge-inventory.ts:24; methodology-application-inventory.ts:15; notification-inventory.ts:19; permission-policy-inventory.ts:11; project-control-ledger-inventory.ts:10; project-creation-draft-inventory.ts:11; project-methodology-inventory.ts:22; responsible-session-inventory.ts:25; result-review-history-inventory.ts:21; result-submission-inventory.ts:16; source-root-history-inventory.ts:11; stage-budget-inventory.ts:29; understanding-permit-inventory.ts:33; work-plan-inventory.ts:22` | `PROJECTION_UNVERIFIED` |
+| `draft_audit_events` | `db/migrations/0011_authorization.sql:82` | `draft_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,operation,outcome,reason_code,recorded_at` | `DEPENDENCY_REDACTION_REQUIRED` | `project-creation-draft-inventory.ts:11` | `PROJECTION_UNVERIFIED` |
+| `project_events` | `db/migrations/0011_authorization.sql:90` | `project_id,server_sequence,event_id,kind,target_ref,command_id,safe_payload_json,recorded_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `delivery_outbox` | `db/migrations/0011_authorization.sql:97` | `id,project_id,command_id,kind,destination_ref,payload_ref,scope_digest,state,attempt_count,next_attempt_at,last_error_code` | `DEPENDENCY_REDACTION_REQUIRED` | `execution-control-inventory.ts:25` | `PROJECTION_UNVERIFIED` |
+| `draft_methodology_reviews` | `db/migrations/0011_draft_method_reviews.sql:1` | `id,draft_id,version,graph_hash,graph_json,review_refs,validation_json,decided_by,client_id,command_id,decided_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `content_reviews` | `db/migrations/0011_user_common_content_reviews.sql:1` | `id,scope_kind,scope_id,owner_user_id,project_id,draft_id,target_kind,target_id,target_version,target_hash,criteria_version,criteria_snapshot_json,items_json,outcome,reviewer_user_id,client_id,reviewer_subject_ref,source_kind,reason,command_id,created_at` | `results` | `document-inventory.ts:28; knowledge-inventory.ts:19; project-methodology-inventory.ts:18; work-plan-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `form_reviews` | `db/migrations/0011_user_common_content_reviews.sql:20` | `id,definition_id,version,target_hash,validation_json,review_refs,decision,decided_by,client_id,command_id,decided_at` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `user_common_audit_events` | `db/migrations/0011_user_common_control.sql:14` | `owner_user_id,scope_kind,server_sequence,event_id,client_id,command_id,operation_id,operation,target_ref,outcome,reason_code,recorded_at` | `HISTORICAL_PROJECTION_REQUIRED` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `assignment_drafts` | `db/migrations/0012_assignment_drafts.sql:2` | `project_id,id,head_version,created_by,client_id,created_at,updated_at` | `plans` | `assignment-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `assignment_draft_versions` | `db/migrations/0012_assignment_drafts.sql:9` | `project_id,draft_id,version,content_hash,version_json,created_by,client_id,command_id,created_at` | `plans` | `assignment-inventory.ts:16; context-preparation-inventory.ts:24` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `assignment_content_reviews` | `db/migrations/0013_assignment_confirmation.sql:2` | `project_id,review_id,draft_id,draft_version,draft_hash,content_hash,review_json,created_by,client_id,command_id,created_at` | `plans` | `assignment-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `assignment_versions` | `db/migrations/0013_assignment_confirmation.sql:10` | `project_id,assignment_id,version,content_hash,version_json,created_by,client_id,command_id,confirmation_id,created_at` | `plans` | `assignment-inventory.ts:18; context-preparation-inventory.ts:23; responsible-session-inventory.ts:19` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `context_bundles` | `db/migrations/0014_context_preparation.sql:2` | `project_id,id,version,assignment_id,assignment_version,assignment_hash,assignment_ref,baseline_refs,budget_ref,manifest_json,request_payload,content_hash,created_by,client_id,command_id,created_at` | `plans` | `context-preparation-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `context_items` | `db/migrations/0014_context_preparation.sql:12` | `project_id,bundle_id,bundle_version,item_id,category,required,source_ref,source_hash,included_state,reason,delivery_parts,issue` | `plans` | `context-preparation-inventory.ts:21` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `baseline_drafts` | `db/migrations/0015_project_baselines.sql:2` | `project_id,id,head_version,created_by,client_id,created_at,updated_at` | `plans` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `baseline_draft_versions` | `db/migrations/0015_project_baselines.sql:9` | `project_id,draft_id,version,content_hash,version_json,created_by,client_id,command_id,created_at` | `plans` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `baseline_content_reviews` | `db/migrations/0015_project_baselines.sql:19` | `project_id,review_id,draft_id,draft_version,draft_hash,content_hash,review_json,created_by,client_id,command_id,created_at` | `plans` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `baseline_heads` | `db/migrations/0015_project_baselines.sql:49` | `project_id,baseline_id,baseline_version,baseline_hash` | `plans` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_roles` | `db/migrations/0016_execution_preparation.sql:2` | `project_id,role_id,version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `plans` | `responsible-session-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `agent_sessions` | `db/migrations/0016_execution_preparation.sql:12` | `project_id,session_id,version,role_id,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `responsible-session-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `role_bindings` | `db/migrations/0016_execution_preparation.sql:22` | `project_id,binding_id,version,role_id,session_id,assignment_id,assignment_version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `plans` | `context-preparation-inventory.ts:25; responsible-session-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_preparations` | `db/migrations/0016_execution_preparation.sql:185` | `project_id,id,version,assignment_id,assignment_version,binding_id,binding_version,bundle_id,bundle_version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `context-preparation-inventory.ts:22` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `limit_policy_versions` | `db/migrations/0017_execution_authority.sql:3` | `project_id,policy_id,version,content_hash,snapshot_json,scope_json,created_by,client_id,command_id,created_at` | `results` | `stage-budget-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `usage_reservations` | `db/migrations/0017_execution_authority.sql:156` | `project_id,reservation_id,version,server_sequence,command_id,content_hash,snapshot_json,policy_id,policy_version` | `results` | `execution-control-inventory.ts:24; stage-budget-inventory.ts:21; understanding-permit-inventory.ts:25` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `executions` | `db/migrations/0017_execution_authority.sql:170` | `project_id,id,generation,transport,state,created_by,client_id,command_id,created_at` | `results` | `execution-control-inventory.ts:19` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_grants` | `db/migrations/0017_execution_authority.sql:178` | `project_id,id,version,execution_id,generation,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `execution-control-inventory.ts:20; observation-inventory.ts:20; stage-budget-inventory.ts:23; understanding-permit-inventory.ts:24` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `writer_claims` | `db/migrations/0017_execution_authority.sql:186` | `project_id,id,execution_id,generation,grant_id,grant_version,scope_json,expires_at,ownership_state,created_command_id,issued_at,reclaimed_at` | `results` | `execution-control-inventory.ts:21` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_commands` | `db/migrations/0017_execution_authority.sql:197` | `project_id,id,version,execution_id,generation,grant_id,grant_version,content_hash,envelope_hash,snapshot_json,authorization_ref,created_command_id,created_at` | `results` | `execution-control-inventory.ts:22; observation-inventory.ts:21; stage-budget-inventory.ts:22; understanding-permit-inventory.ts:23` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_credentials` | `db/migrations/0018_execution_observation.sql:2` | `project_id,id,version,grant_id,grant_version,credential_generation,content_hash,snapshot_json` | `EXCLUDED_AUTH_SECRET` | `NO_LITERAL_SELECTOR` | `EXCLUDED_REVIEW_REQUIRED` |
+| `execution_challenges` | `db/migrations/0018_execution_observation.sql:8` | `project_id,id,version,grant_id,grant_version,server_sequence,content_hash,snapshot_json,request_id,client_nonce,server_nonce` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_receipts` | `db/migrations/0018_execution_observation.sql:20` | `project_id,id,version,grant_id,grant_version,challenge_id,challenge_version,content_hash,snapshot_json` | `results` | `observation-inventory.ts:19; understanding-permit-inventory.ts:26` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_observations` | `db/migrations/0018_execution_observation.sql:228` | `project_id,execution_id,generation,id,version,event_sequence,grant_id,grant_version,content_hash,snapshot_json,event_id` | `results` | `observation-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_acknowledgements` | `db/migrations/0018_execution_observation.sql:237` | `project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,snapshot_json` | `results` | `observation-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_observation_results` | `db/migrations/0018_execution_observation.sql:327` | `project_id,execution_id,generation,proof_result_id,proof_result_version,ack_id,ack_version,content_hash,snapshot_json` | `results` | `observation-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_start_permits` | `db/migrations/0018_execution_observation.sql:369` | `project_id,execution_id,generation,id,version,proof_result_id,proof_result_version,content_hash,snapshot_json` | `results` | `understanding-permit-inventory.ts:21` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `understanding_reviews` | `db/migrations/0019_understanding_reviews.sql:4` | `project_id,execution_id,generation,id,version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `understanding-permit-inventory.ts:20` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_grant_revocations` | `db/migrations/0022_execution_grant_revocation.sql:3` | `project_id,id,version,execution_id,generation,grant_id,grant_version,content_hash,snapshot_json,created_by,client_id,created_command_id,created_at` | `results` | `execution-control-inventory.ts:23` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `execution_instruction_permits` | `db/migrations/0024_execution_instruction_permits.sql:4` | `project_id,execution_id,generation,id,version,command_id,command_record_id,command_record_version,grant_id,grant_version,reservation_id,reservation_version,proof_result_id,proof_result_version,envelope_hash,content_hash,snapshot_json` | `results` | `understanding-permit-inventory.ts:22` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `result_submissions` | `db/migrations/0025_result_submissions.sql:3` | `project_id,id,execution_id,generation,assignment_ref,execution_ref,manifest_ref,manifest_hash,submission_state,submitted_by,client_id,command_id,content_hash,snapshot_json,submitted_at` | `results` | `result-review-history-inventory.ts:18; result-submission-inventory.ts:13` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `result_criteria_versions` | `db/migrations/0026_result_review_criteria.sql:3` | `project_id,criteria_id,version,assignment_ref,assignment_id,assignment_version,content_hash,criteria_json,input_json,created_by,client_id,command_id,created_at` | `results` | `result-review-history-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `result_reviews` | `db/migrations/0027_result_reviews.sql:3` | `project_id,id,result_id,criteria_id,criteria_version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `result-review-history-inventory.ts:16` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `result_rework_drafts` | `db/migrations/0028_result_rework_drafts.sql:3` | `project_id,id,result_id,review_id,binding_id,binding_version,content_hash,snapshot_json,created_by,client_id,command_id,created_at` | `results` | `result-review-history-inventory.ts:17` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_source_links` | `db/migrations/0032_document_source_links.sql:4` | `project_id,id,document_id,version,source_root_id,relative_path,source_snapshot_ref,blob_hash,link_version,state,current_event_id,linked_at,updated_at` | `documents` | `document-inventory.ts:31` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `document_source_link_events` | `db/migrations/0032_document_source_links.sql:15` | `id,project_id,link_id,link_version,content_hash,snapshot_json,command_id,created_at` | `documents` | `document-inventory.ts:32` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `work_plan_approval_candidates` | `db/migrations/0035_work_plan_draft_approval.sql:3` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,target_ref,created_by,client_id,control_generation,policy_ref,created_at` | `plans` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `stage_runs` | `db/migrations/0036_stage_queue.sql:2` | `project_id,id,sequence,input_json,created_by,client_id,command_id,created_at` | `results` | `stage-budget-inventory.ts:18` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `queue_requests` | `db/migrations/0036_stage_queue.sql:9` | `project_id,request_id,version,sequence,content_hash,snapshot_json,command_id` | `results` | `stage-budget-inventory.ts:19` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `provider_session_claims` | `db/migrations/0037_provider_session_claims.sql.pending:23` | `project_id,claim_id,version,execution_id,generation,command_id,command_record_id,command_record_version,agent_session_id,agent_session_version,grant_id,grant_version,original_proof_result_id,original_proof_result_version,permit_id,permit_version,start_permit_id,instruction_permit_id,parent_thread_claim_id,parent_thread_claim_version,kind,request_id_digest,event_key,content_hash,snapshot_json,recorded_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `provider_session_claim_proof_results` | `db/migrations/0037_provider_session_claims.sql.pending:50` | `project_id,execution_id,generation,proof_result_id,proof_result_version,claim_id,claim_version,body_hash,receipt_json` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `provider_session_claim_revocations` | `db/migrations/0037_provider_session_claims.sql.pending:60` | `project_id,id,version,claim_id,claim_version,grant_revocation_id,grant_revocation_version,content_hash,snapshot_json,recorded_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_ownership_events` | `db/migrations/0039_ownership_authority.sql.pending:5` | `project_id,execution_id,execution_generation,event_id,version,sequence,project_sequence,content_hash,snapshot_json,candidate_anchor_json,request_id,kind,previous_event_id,previous_event_version,previous_event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_ownership_observations` | `db/migrations/0039_ownership_authority.sql.pending:25` | `project_id,execution_id,execution_generation,observation_id,version,request_id,content_hash,snapshot_json,accepted_event_ref,nonce_digest,request_version,request_hash,accepted_event_id,accepted_event_version,accepted_event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_ownership_anchors` | `db/migrations/0039_ownership_authority.sql.pending:44` | `project_id,execution_id,execution_generation,anchor_id,version,content_hash,snapshot_json,preparation_event_ref,adoption_event_ref,preparation_event_id,preparation_event_version,preparation_event_hash,adoption_event_id,adoption_event_version,adoption_event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_ownership_bindings` | `db/migrations/0039_ownership_authority.sql.pending:62` | `project_id,execution_id,execution_generation,binding_id,version,command_id,anchor_ref,attempt_ref,permit_ref,binding_event_ref,content_hash,snapshot_json,anchor_id,anchor_version,anchor_hash,attempt_id,attempt_version,permit_id,permit_version,binding_event_id,binding_event_version,binding_event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_ownership_heads` | `db/migrations/0039_ownership_authority.sql.pending:77` | `project_id,execution_id,execution_generation,id,head_generation,content_hash,snapshot_json,anchor_id,anchor_version,anchor_hash,current_event_id,current_event_version,current_event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_content_policy_events` | `db/migrations/0040_source_content_hash.sql.pending:4` | `project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at,previous_id,previous_version,previous_hash` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_content_requests` | `db/migrations/0040_source_content_hash.sql.pending:91` | `project_id,id,version,scope_json,scope_digest,created_command_id,requested_by,client_id,credential_generation,control_generation,source_root_id,source_root_version,connector_id,registration_id,created_at,expires_at,updated_at,content_policy_id,content_policy_version,content_policy_hash,state,preflight_json,preflight_digest,challenge_json,challenge_issued_at,challenge_expires_at,proof_signature,exchange_failures,credential_token_digest,credential_scope,credential_issued_at,credential_expires_at,observation_request_ref,observation_nonce_digest,permit_json,report_consumed_at,report_consumed_command_id,revoked_at,revoke_command_id` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_content_observations` | `db/migrations/0040_source_content_hash.sql.pending:428` | `project_id,id,version,request_id,request_version,scope_digest,report_command_id,report_json,content_hash,signature,observed_at,finished_at,received_at,evidence_class,os_verification` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `source_content_verifications` | `db/migrations/0040_source_content_hash.sql.pending:659` | `project_id,id,version,observation_id,observation_version,observation_hash,target_index,relative_path,document_id,document_version,document_hash,observer_implementation_ref,decision,verified_at,expires_at,previous_ref,snapshot_json,content_hash,previous_id,previous_version,previous_hash` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `control_handoff_source_requests` | `db/migrations/0041_control_handoff_source.sql.pending:60` | `project_id,id,version,content_hash,snapshot_json,metadata_json,requested_by,client_id,source_command_id,created_at,expires_at` | `decisions` | `control-handoff-history-inventory.ts:8` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `control_handoff_source_summaries` | `db/migrations/0041_control_handoff_source.sql.pending:85` | `project_id,request_id,request_version,request_hash,version,content_hash,body_json,metadata_json,source_command_id,observed_at,valid_until` | `decisions` | `control-handoff-history-inventory.ts:8` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `control_handoff_source_commands` | `db/migrations/0041_control_handoff_source.sql.pending:108` | `command_id,project_id,operation,actor_id,client_id,request_id,request_version,request_hash,summary_version,summary_hash,base_control_json,command_json,command_hash,payload_hash,created_at` | `decisions` | `control-handoff-history-inventory.ts:8` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `control_handoff_source_receipts` | `db/migrations/0041_control_handoff_source.sql.pending:140` | `command_id,project_id,body_json` | `decisions` | `control-handoff-history-inventory.ts:8` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `control_handoff_source_audits` | `db/migrations/0041_control_handoff_source.sql.pending:146` | `command_id,project_id,body_json` | `decisions` | `control-handoff-history-inventory.ts:8` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `fn01_owner_quota` | `db/migrations/0042_draft_artifact_storage.sql.pending:3` | `owner_id,reserved_bytes,reserved_count` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `draft_upload_intents` | `db/migrations/0042_draft_artifact_storage.sql.pending:8` | `id,draft_id,actor_id,client_id,external_command_id,expected_version,request_hash,request_json,artifact_id,server_command_id,receipt_id,operation_id,ref_json,staging_key,final_key,state,attempt,result_json,created_at` | `results` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `draft_artifact_selection_versions` | `db/migrations/0042_draft_artifact_storage.sql.pending:19` | `draft_id,draft_version,refs_json,snapshot_hash,command_id,receipt_id` | `results` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `draft_artifact_selections` | `db/migrations/0042_draft_artifact_storage.sql.pending:26` | `draft_id,draft_version,artifact_id,upload_intent_id,ordinal,ref_json` | `results` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `draft_creation_intents` | `db/migrations/0042_draft_artifact_storage.sql.pending:33` | `id,draft_id,actor_id,client_id,external_command_id,expected_version,request_hash,request_json,target_project_id,refs_json,sources_json,selection_hash,state,attempt,project_command_id,result_json,created_at` | `results` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `draft_artifact_quota_reservations` | `db/migrations/0042_draft_artifact_storage.sql.pending:46` | `id,owner_id,upload_intent_id,creation_intent_id,held_bytes,held_count` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `fn01_project_quota` | `db/migrations/0042_draft_artifact_storage.sql.pending:54` | `project_id,reserved_bytes,creation_intent_id` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `draft_artifact_adoptions` | `db/migrations/0042_draft_artifact_storage.sql.pending:55` | `artifact_id,upload_intent_id,original_command_id,draft_id,draft_version,ref_json,source_key,target_key,project_id,creation_intent_id,create_command_id,actor_id,client_id,adopted_at` | `results` | `project-creation-draft-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `draft_artifact_intent_events` | `db/migrations/0042_draft_artifact_storage.sql.pending:67` | `id,upload_intent_id,creation_intent_id,state,attempt,recorded_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_artifact_exports` | `db/migrations/0043_project_artifact_exports.sql.pending:26` | `id,project_id,document_id,document_version,document_content_hash,artifact_id,artifact_content_hash,actor_id,client_id,command_id,manifest_json,content_hash,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `design_activation_approval_candidates` | `db/migrations/0050_design_baseline_activations.sql.pending:3` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,target_ref,baseline_refs,created_by,client_id,control_generation,policy_ref,created_at` | `documents` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `baseline_activations` | `db/migrations/0050_design_baseline_activations.sql.pending:12` | `project_id,id,generation,content_hash,snapshot_json,previous_activation_id,command_id,approval_consumption_id,created_by,client_id,created_at` | `plans` | `baseline-inventory.ts:13` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `baseline_activation_current` | `db/migrations/0050_design_baseline_activations.sql.pending:22` | `project_id,activation_id,activation_ref` | `plans` | `baseline-inventory.ts:14` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `baseline_activation_rechecks` | `db/migrations/0050_design_baseline_activations.sql.pending:26` | `project_id,activation_id,plan_id,plan_version,plan_hash,task_code,impact_ref` | `plans` | `baseline-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `knowledge_share_requests` | `db/migrations/0051_knowledge_share_requests.sql.pending:3` | `project_id,id,version,state,content_hash,snapshot_json,request_json,created_by,client_id,control_generation,policy_ref,command_id,created_at` | `knowledge` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `notifications` | `db/migrations/0052_approval_in_app_notifications.sql.pending:3` | `id,project_id,source_command_id,approval_request_id,request_version,request_content_hash,recipient_user_id,event_kind,channel,severity,reason_code,delivery_state,created_at,content_hash` | `decisions` | `notification-inventory.ts:14` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `notification_reads` | `db/migrations/0052_approval_in_app_notifications.sql.pending:17` | `project_id,notification_id,recipient_user_id,client_id,command_id,notification_content_hash,read_at` | `decisions` | `notification-inventory.ts:15` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `backup_references` | `db/migrations/0053_backup_references.sql.pending:4` | `project_id,id,kind,head_version,created_by,created_at` | `decisions` | `backup-reference-history-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `backup_reference_versions` | `db/migrations/0053_backup_references.sql.pending:11` | `project_id,reference_id,version,snapshot_json,content_hash,previous_version,previous_hash,actor_id,client_id,command_id,created_at` | `decisions` | `backup-reference-history-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `backup_reference_events` | `db/migrations/0053_backup_references.sql.pending:24` | `project_id,id,reference_id,reference_version,reference_hash,event_kind,reason,actor_id,client_id,command_id,created_at,version,snapshot_json,content_hash` | `decisions` | `backup-reference-history-inventory.ts:11` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `installation_resource_intents` | `db/migrations/0054_backup_installation_resources.sql.pending:3` | `project_id,id,actor_id,client_id,session_id,command_id,authorization_receipt_id,scope_digest,state,process_id,result_ref,snapshot_json,content_hash,created_at,expires_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_resources` | `db/migrations/0054_backup_installation_resources.sql.pending:13` | `project_id,id,kind,head_version,installation_id,slot_id,created_by,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_resource_versions` | `db/migrations/0054_backup_installation_resources.sql.pending:15` | `project_id,resource_id,version,origin_intent_id,command_id,actor_id,client_id,snapshot_json,content_hash,probe_json,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_resource_events` | `db/migrations/0054_backup_installation_resources.sql.pending:20` | `project_id,id,intent_id,resource_id,process_id,event_kind,actor_id,client_id,command_id,snapshot_json,content_hash,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_key_failure_limits` | `db/migrations/0054_backup_installation_resources.sql.pending:22` | `project_id,bucket_kind,bucket_key,failures,window_started_at,blocked_until` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_key_attempts` | `db/migrations/0054_backup_installation_resources.sql.pending:23` | `id,project_id,actor_id,client_id,session_id,key_id,created_at,state,outcome` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_key_wrappings` | `db/migrations/0054_backup_installation_resources.sql.pending:26` | `project_id,resource_id,resource_version,key_id,key_version,wrapping_version,origin_intent_id,command_id,actor_id,client_id,envelope_hash,file_id,file_identity_json,snapshot_json,content_hash,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_key_states` | `db/migrations/0054_backup_installation_resources.sql.pending:30` | `project_id,resource_id,resource_version,key_id,lease_generation,state,copy_confirmed,audit_state,origin_intent_id,command_id,created_at,unlocked_until,updated_at,confirmed_at,confirmation_intent_id,last_intent_id,lease_owner_actor_id,lease_owner_client_id,lease_owner_session_id,control_generation` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_root_roles` | `db/migrations/0054_backup_installation_resources.sql.pending:91` | `installation_id,device,inode,purpose,first_project_id,first_intent_id,first_process_id,profile_ref,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `installation_key_state_history` | `db/migrations/0054_backup_installation_resources.sql.pending:389` | `project_id,resource_id,resource_version,event_id,actor_id,client_id,session_id,previous_state,next_state,created_at` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_preparation_approval_candidates` | `db/migrations/0055_execution_preparation_one_time_approval.sql.pending:3` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,created_by,client_id,control_generation,policy_ref,created_at` | `results` | `context-preparation-inventory.ts:28` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `understanding_review_approval_candidates` | `db/migrations/0056_understanding_review_one_time_approval.sql.pending:3` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,created_by,client_id,control_generation,policy_ref,command_hash,created_at` | `results` | `understanding-permit-inventory.ts:30` | `ALTER_JSON_CODEC_UNVERIFIED` |
+| `capability_reports` | `db/migrations/0057_capability_reports_human_claim.sql.pending:2` | `id,project_id,version,connection_id,connection_version,connection_hash,environment_id,environment_version,environment_hash,claim_json,claim_hash,snapshot_json,content_hash,supersedes_id,supersedes_version,supersedes_hash,created_by,client_id,command_id,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `capability_report_evidence` | `db/migrations/0057_capability_reports_human_claim.sql.pending:19` | `project_id,report_id,report_version,capability_code,artifact_id,artifact_hash,bytes,media_type` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `checkpoint_records` | `db/migrations/0058_checkpoint_records.sql.pending:3` | `project_id,id,assignment_id,assignment_version,assignment_hash,previous_id,previous_hash,content_hash,snapshot_json,record_text,created_by,client_id,command_id,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_storage_accounts` | `db/migrations/0059_project_storage_quota.sql.pending:3` | `project_id,schema_version,coverage_state,creation_intent_id,creation_command_id,initial_manifest_json,initial_manifest_hash,used_bytes,held_bytes,generation,created_at,updated_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_storage_reservations` | `db/migrations/0059_project_storage_quota.sql.pending:16` | `id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,created_at,started_at,settled_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `transfer_preparation_records` | `db/migrations/0060_transfer_preparation_records.sql.pending:3` | `id,project_id,creator_user_id,creator_client_id,version,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `transfer_preparation_record_versions` | `db/migrations/0060_transfer_preparation_records.sql.pending:8` | `record_id,project_id,version,snapshot_json,content_hash,command_id,policy_ref_json,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_material_manifests` | `db/migrations/0062_execution_material_registration.sql.pending:2` | `project_id,id,version,execution_id,generation,grant_id,grant_version,credential_generation,command_id,created_command_id,content_hash,snapshot_json` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_materials` | `db/migrations/0062_execution_material_registration.sql.pending:11` | `project_id,id,version,manifest_id,manifest_version,execution_id,generation,grant_id,grant_version,credential_generation,command_id,command_record_id,command_record_version,created_command_id,content_hash,snapshot_json` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `execution_material_proof_bindings` | `db/migrations/0062_execution_material_registration.sql.pending:22` | `project_id,proof_result_id,proof_result_version,execution_id,generation,grant_id,grant_version,credential_generation,material_id,material_version,content_hash,snapshot_json` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `backup_policies` | `db/migrations/0063_backup_policies.sql.pending:4` | `project_id,id,head_version` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `backup_policy_versions` | `db/migrations/0063_backup_policies.sql.pending:9` | `project_id,policy_id,version,content_hash,snapshot_json,previous_ref,command_id,client_command_id,created_by,client_id,created_at,projection_json` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `backup_policy_approval_candidates` | `db/migrations/0063_backup_policies.sql.pending:21` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,created_by,client_id,control_generation,policy_ref,projection_json` | `decisions` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `agent_connections` | `db/migrations/0065_connection_definitions.sql.pending:2` | `id,project_id,head_version,created_by,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `connection_definition_versions` | `db/migrations/0065_connection_definitions.sql.pending:7` | `project_id,connection_id,version,definition_json,canonical_json,content_hash,canonical_bytes,created_by,client_id,command_id,request_json,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `definition_capability_reports` | `db/migrations/0067_definition_capability_reports.sql.pending:4` | `id,project_id,version,connection_id,connection_version,connection_hash,environment_id,environment_version,environment_hash,claim_json,claim_hash,snapshot_json,content_hash,supersedes_id,supersedes_version,supersedes_hash,created_by,client_id,command_id,created_at,request_json,canonical_bytes` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `definition_capability_report_evidence` | `db/migrations/0067_definition_capability_reports.sql.pending:19` | `project_id,report_id,report_version,capability_code,artifact_id,artifact_hash,bytes,media_type` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `environment_configuration_heads` | `db/migrations/0069_environment_configuration.sql.pending:3` | `project_id,kind,id,head_version,created_by,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `environment_configuration_versions` | `db/migrations/0069_environment_configuration.sql.pending:10` | `project_id,kind,id,version,snapshot_json,content_hash,canonical_json,canonical_bytes,evidence_json,evidence_bytes,request_json,created_by,client_id,command_id,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `environment_approval_candidates` | `db/migrations/0069_environment_configuration.sql.pending:466` | `project_id,request_id,request_command_id,candidate_command_id,payload_hash,payload_json,created_by,client_id,control_generation,policy_ref,projection_json,canonical_bytes,created_at` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_writer_authority_events` | `db/migrations/0070_project_writer_authority.sql.pending:4` | `project_id,id,version,authority_epoch,sequence,kind,previous_ref,content_hash,payload_json,at,expires_at,lease_id,execution_id,execution_generation,subject_json,registration_ref,host_fingerprint,source_scopes_json,scope_hash,command_ref,authorization_receipt_ref,audit_ref,request_ref,nonce_digest,previous_id,previous_version,previous_hash,request_id,request_version,request_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `project_writer_authority_heads` | `db/migrations/0070_project_writer_authority.sql.pending:22` | `project_id,id,authority_epoch,head_generation,current_event_ref,phase,lease_id,execution_id,execution_generation,registration_ref,scope_hash,expires_at,content_hash,event_id,event_version,event_hash` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `native_preparation_authorities` | `db/migrations/0071_native_preparation_authority.sql.pending:3` | `project_id,id,version,content_hash,snapshot_json,intent_id,intent_hash,intent_json,credential_digest,server_command_id,lease_id,canonical_bytes` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+| `native_preparation_authority_events` | `db/migrations/0071_native_preparation_authority.sql.pending:10` | `project_id,id,version,authority_id,project_sequence,sequence,previous_ref,content_hash,snapshot_json,canonical_bytes,kind` | `results` | `NO_LITERAL_SELECTOR` | `DDL_ONLY_UNMAPPED` |
+
+## 23. 실제 collector 선택열 근거 부록
+
+아래 파일은 모두 `apps/server/modules/backups/` 아래다. 직접 선언 선택열은 source 근거이며 안전한 완성 export DTO가 아니다. 동적 query/수입 codec은 별도 폐쇄가 필요하다. payload/result/command/candidate 열은 operation별 비밀 투영 검수 전 차단이다.
+
+### `approval-history-inventory.ts`
+
+`collectApprovalHistoryInventory`; SHA256 `6DC5C43D7BC75FC1735C9ED41899EC60D1F7ABFDFCA738E1903D67BCD70A9101`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref received_at completed_at operation_id request_hash` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/approval-history-inventory.ts:10` |
+
+### `assignment-inventory.ts`
+
+`collectAssignmentInventory`; SHA256 `57E660312DEA87295E4735604F48A6E5D5615CB56B25ED46C2F204E07E715BF0`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `assignment_drafts` | `project_id id head_version created_by client_id created_at updated_at` | `apps/server/modules/backups/assignment-inventory.ts:15` |
+| `assignment_draft_versions` | `project_id draft_id version content_hash version_json created_by client_id command_id created_at` | `apps/server/modules/backups/assignment-inventory.ts:16` |
+| `assignment_content_reviews` | `project_id review_id draft_id draft_version draft_hash content_hash review_json created_by client_id command_id created_at` | `apps/server/modules/backups/assignment-inventory.ts:17` |
+| `assignment_versions` | `project_id assignment_id version content_hash version_json created_by client_id command_id confirmation_id created_at` | `apps/server/modules/backups/assignment-inventory.ts:18` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/assignment-inventory.ts:19` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/assignment-inventory.ts:20` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/assignment-inventory.ts:21` |
+
+### `backup-reference-history-inventory.ts`
+
+`collectBackupReferenceHistoryInventory`; SHA256 `1619652D908EE3FEA29A43BECFD797CA1C688AF92B0204682A6F60ED4A7BCC1D`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `backup_references` | `project_id id kind head_version created_by created_at` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `backup_reference_versions` | `project_id reference_id version snapshot_json content_hash previous_version previous_hash actor_id client_id command_id created_at` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `backup_reference_events` | `project_id id reference_id reference_version reference_hash event_kind reason actor_id client_id command_id created_at version snapshot_json content_hash` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `commands` | `id scope_kind scope_id project_id draft_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/backup-reference-history-inventory.ts:11` |
+
+### `baseline-inventory.ts`
+
+`collectBaselineInventory`; SHA256 `7E0416319C1F2A9F15C5BF218F2E6584C606FFA5F7666D288D2D4187495A374C`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `baseline_activations` | `project_id id generation content_hash snapshot_json previous_activation_id command_id approval_consumption_id created_by client_id created_at` | `apps/server/modules/backups/baseline-inventory.ts:13` |
+| `baseline_activation_current` | `project_id activation_id activation_ref` | `apps/server/modules/backups/baseline-inventory.ts:14` |
+| `baseline_activation_rechecks` | `project_id activation_id plan_id plan_version plan_hash task_code impact_ref` | `apps/server/modules/backups/baseline-inventory.ts:15` |
+| `commands` | `id command_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id` | `apps/server/modules/backups/baseline-inventory.ts:16` |
+
+### `connection-candidate-inventory.ts`
+
+`collectConnectionCandidateInventory`; SHA256 `3560579EE9A3C0CB08C760E1836D777E48CC87991E7EA3346E34965C54BC4B6B`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `connection_candidates` | `id project_id kind head_version created_by created_at` | `apps/server/modules/backups/connection-candidate-inventory.ts:11` |
+| `connection_candidate_versions` | `project_id candidate_id version kind snapshot_json content_hash created_by client_id command_id expires_at created_at` | `apps/server/modules/backups/connection-candidate-inventory.ts:11` |
+| `commands` | `id scope_kind scope_id project_id draft_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at` | `apps/server/modules/backups/connection-candidate-inventory.ts:11` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/connection-candidate-inventory.ts:11` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/connection-candidate-inventory.ts:11` |
+
+### `context-preparation-inventory.ts`
+
+`collectContextPreparationInventory`; SHA256 `2DA3E8F146084A3EE768A0E519BF05EB249F392BC2EB881493675A1400B90B88`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `context_bundles` | `project_id id version assignment_id assignment_version assignment_hash assignment_ref baseline_refs budget_ref manifest_json request_payload content_hash created_by client_id command_id created_at` | `apps/server/modules/backups/context-preparation-inventory.ts:20` |
+| `context_items` | `project_id bundle_id bundle_version item_id category required source_ref source_hash included_state reason delivery_parts issue` | `apps/server/modules/backups/context-preparation-inventory.ts:21` |
+| `execution_preparations` | `project_id id version assignment_id assignment_version binding_id binding_version bundle_id bundle_version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/context-preparation-inventory.ts:22` |
+| `assignment_versions` | `project_id assignment_id version content_hash version_json created_by created_at` | `apps/server/modules/backups/context-preparation-inventory.ts:23` |
+| `assignment_draft_versions` | `project_id draft_id version content_hash version_json` | `apps/server/modules/backups/context-preparation-inventory.ts:24` |
+| `role_bindings` | `project_id binding_id version content_hash snapshot_json created_by created_at` | `apps/server/modules/backups/context-preparation-inventory.ts:25` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/context-preparation-inventory.ts:26` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/context-preparation-inventory.ts:27` |
+| `execution_preparation_approval_candidates` | `project_id request_id request_command_id candidate_command_id payload_hash payload_json created_by client_id control_generation policy_ref created_at` | `apps/server/modules/backups/context-preparation-inventory.ts:28` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/context-preparation-inventory.ts:29` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/context-preparation-inventory.ts:30` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/context-preparation-inventory.ts:31` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/context-preparation-inventory.ts:32` |
+
+### `control-handoff-history-inventory.ts`
+
+`readOwnControlHandoffHistoryRows`; SHA256 `B6CA2A0EE35CF04828A5724C3A3A6AC2D25A1D15C3276CD370C0B07B1E463207`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `control_handoff_source_requests` | `project_id id version content_hash snapshot_json metadata_json requested_by client_id source_command_id created_at expires_at` | `apps/server/modules/backups/control-handoff-history-inventory.ts:8` |
+| `control_handoff_source_summaries` | `project_id request_id request_version request_hash version content_hash body_json metadata_json source_command_id observed_at valid_until` | `apps/server/modules/backups/control-handoff-history-inventory.ts:8` |
+| `control_handoff_source_commands` | `command_id project_id operation actor_id client_id request_id request_version request_hash summary_version summary_hash base_control_json command_json command_hash payload_hash created_at` | `apps/server/modules/backups/control-handoff-history-inventory.ts:8` |
+| `control_handoff_source_receipts` | `command_id project_id body_json` | `apps/server/modules/backups/control-handoff-history-inventory.ts:8` |
+| `control_handoff_source_audits` | `command_id project_id body_json` | `apps/server/modules/backups/control-handoff-history-inventory.ts:8` |
+
+### `conversation-inventory.ts`
+
+`collectConversationInventory`; SHA256 `7115F0FF13DBB7B1F8B20216F1734AE2355194FDD19F83EF1B17795E0D076B50`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `conversations` | `id project_id target_role_ref head_sequence created_by last_client_id last_command_id created_at updated_at` | `apps/server/modules/backups/conversation-inventory.ts:13` |
+| `conversation_messages` | `project_id conversation_id sequence id author_ref kind body_artifact_id source_refs reply_to supersedes_instruction_id effective_scope message_json content_hash redaction_state client_id command_id recorded_at` | `apps/server/modules/backups/conversation-inventory.ts:14` |
+| `artifacts` | `id project_id bytes content_hash media_type state inspection_json` | `apps/server/modules/backups/conversation-inventory.ts:15` |
+
+### `design-change-inventory.ts`
+
+`collectDesignChangeInventory`; SHA256 `F73137CC363D03DCE88523A41BA8CB40FD664E39FC17A202459511948489EDDC`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `design_changes` | `id project_id version before_id before_version before_hash proposal_id content_hash change_json created_by client_id command_id created_at` | `apps/server/modules/backups/design-change-inventory.ts:17` |
+| `design_change_impacts` | `id project_id version change_id change_hash source_kind content_hash impact_json created_by client_id command_id created_at base_version base_hash` | `apps/server/modules/backups/design-change-inventory.ts:18` |
+| `commands` | `id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id` | `apps/server/modules/backups/design-change-inventory.ts:19` |
+
+### `design-trace-inventory.ts`
+
+`collectDesignTraceInventory`; SHA256 `4F2EB532016AEEC17EC6DDB3E34121D685DD0A1FEC0ABAC23894285A04E2B264`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `design_items` | `id project_id design_document_id document_version document_hash local_code title anchor item_hash item_json created_by client_id command_id created_at` | `apps/server/modules/backups/design-trace-inventory.ts:14` |
+| `screen_regions` | `id project_id design_item_id screen_code source_document_id source_version source_hash artifact_id anchor region_hash region_json created_by client_id command_id created_at` | `apps/server/modules/backups/design-trace-inventory.ts:15` |
+| `trace_edges` | `id project_id from_kind from_id from_version from_code to_kind to_id to_version to_code relation design_refs edge_json edge_hash reason created_by client_id command_id created_at` | `apps/server/modules/backups/design-trace-inventory.ts:16` |
+| `commands` | `id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id` | `apps/server/modules/backups/design-trace-inventory.ts:17` |
+
+### `document-inventory.ts`
+
+`collectDocumentInventory`; SHA256 `F5C39009216E97691215B8F4E0BAA3F4803E1889F878298B223EAA1C0AEF1C11`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `documents` | `id project_id title head_version confirmed_version created_by created_at updated_at` | `apps/server/modules/backups/document-inventory.ts:20` |
+| `document_versions` | `project_id document_id version form_definition_id form_version form_hash stage_ref_json body_artifact_id title source_refs_json content_json content_hash sections_json author_ref_json validation_json reason client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:21` |
+| `document_artifact_links` | `project_id document_id version artifact_id kind` | `apps/server/modules/backups/document-inventory.ts:22` |
+| `artifacts` | `id project_id bytes content_hash media_type state inspection_json` | `apps/server/modules/backups/document-inventory.ts:23` |
+| `document_imports` | `id project_id original_artifact_id form_definition_id form_version form_hash candidate_json content_hash created_by client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:24` |
+| `document_import_selections` | `id project_id import_id document_id version created_by client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:25` |
+| `document_proposals` | `id project_id document_id base_version base_hash body_artifact_id diff_artifact_id content_json proposal_json content_hash reason created_by client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:26` |
+| `document_proposal_selections` | `id project_id proposal_id document_id version created_by client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:27` |
+| `content_reviews` | `id scope_kind scope_id project_id target_kind target_id target_version target_hash criteria_version criteria_snapshot_json items_json outcome reviewer_user_id client_id reviewer_subject_ref source_kind reason command_id created_at` | `apps/server/modules/backups/document-inventory.ts:28` |
+| `document_version_events` | `id project_id document_id version event_kind review_ref actor_ref reason command_id created_at` | `apps/server/modules/backups/document-inventory.ts:29` |
+| `document_confirmations` | `id project_id document_id version target_hash form_ref review_refs validation_json confirmed_by client_id command_id created_at` | `apps/server/modules/backups/document-inventory.ts:30` |
+| `document_source_links` | `project_id id document_id version source_root_id relative_path source_snapshot_ref blob_hash link_version state current_event_id linked_at updated_at` | `apps/server/modules/backups/document-inventory.ts:31` |
+| `document_source_link_events` | `id project_id link_id link_version content_hash snapshot_json command_id created_at` | `apps/server/modules/backups/document-inventory.ts:32` |
+| `project_methodologies` | `id project_id application_version source_definition_id source_version source_hash snapshot_json snapshot_hash created_by created_at` | `apps/server/modules/backups/document-inventory.ts:33` |
+
+### `execution-control-inventory.ts`
+
+`collectExecutionControlInventory`; SHA256 `B281D33B40679A87E1822885FA2CDBA3A3F496C2EC663A6A3C96E5B9FE87D675`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `executions` | `project_id id generation transport state created_by client_id command_id created_at` | `apps/server/modules/backups/execution-control-inventory.ts:19` |
+| `execution_grants` | `project_id id version execution_id generation content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/execution-control-inventory.ts:20` |
+| `writer_claims` | `project_id id execution_id generation grant_id grant_version scope_json expires_at ownership_state created_command_id issued_at reclaimed_at` | `apps/server/modules/backups/execution-control-inventory.ts:21` |
+| `execution_commands` | `project_id id version execution_id generation grant_id grant_version content_hash envelope_hash snapshot_json authorization_ref created_command_id created_at` | `apps/server/modules/backups/execution-control-inventory.ts:22` |
+| `execution_grant_revocations` | `project_id id version execution_id generation grant_id grant_version content_hash snapshot_json created_by client_id created_command_id created_at` | `apps/server/modules/backups/execution-control-inventory.ts:23` |
+| `usage_reservations` | `project_id reservation_id version server_sequence command_id content_hash snapshot_json policy_id policy_version created_command_id` | `apps/server/modules/backups/execution-control-inventory.ts:24` |
+| `delivery_outbox` | `id project_id command_id kind destination_ref payload_ref scope_digest state attempt_count next_attempt_at last_error_code` | `apps/server/modules/backups/execution-control-inventory.ts:25` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/execution-control-inventory.ts:26` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/execution-control-inventory.ts:27` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/execution-control-inventory.ts:28` |
+
+### `knowledge-inventory.ts`
+
+`collectKnowledgeInventory`; SHA256 `6554BBE0EA77A250AE3FDD6B96243CD1583CF780B426C8AACFE4DD06CCF71973`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `knowledge_entries` | `id project_id kind head_version created_by client_id command_id created_at` | `apps/server/modules/backups/knowledge-inventory.ts:16` |
+| `knowledge_versions` | `project_id entry_id version title content_artifact_id content_hash source_refs reason scope_json related_refs entry_json supersedes_version created_by client_id command_id created_at` | `apps/server/modules/backups/knowledge-inventory.ts:17` |
+| `knowledge_events` | `id project_id entry_id version kind reason actor_ref approval_ref target_refs client_id command_id recorded_at base_ref change_sources review_refs` | `apps/server/modules/backups/knowledge-inventory.ts:18` |
+| `content_reviews` | `id scope_kind scope_id project_id target_kind target_id target_version target_hash criteria_version criteria_snapshot_json items_json outcome reviewer_user_id client_id reviewer_subject_ref source_kind reason command_id created_at` | `apps/server/modules/backups/knowledge-inventory.ts:19` |
+| `constitution_applications` | `project_id application_version content_hash entry_id version confirmation_id snapshot_json applied_by client_id command_id created_at` | `apps/server/modules/backups/knowledge-inventory.ts:20` |
+| `project_constitutions` | `project_id application_version application_hash entry_id version` | `apps/server/modules/backups/knowledge-inventory.ts:21` |
+| `artifacts` | `id project_id bytes content_hash media_type state inspection_json` | `apps/server/modules/backups/knowledge-inventory.ts:22` |
+| `commands` | `id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id` | `apps/server/modules/backups/knowledge-inventory.ts:23` |
+| `audit_events` | `event_id project_id command_id server_sequence` | `apps/server/modules/backups/knowledge-inventory.ts:24` |
+| `authorization_receipts` | `id command_id policy_ref` | `apps/server/modules/backups/knowledge-inventory.ts:25` |
+
+### `methodology-application-inventory.ts`
+
+`collectMethodologyApplicationInventory`; SHA256 `04A962600EB746D7423A273729A01600DC1135A284E66F73CEADD4CBFD4FE451`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `project_methodologies` | `id project_id application_version source_definition_id source_version source_hash snapshot_json snapshot_hash created_by created_at application_command_id` | `apps/server/modules/backups/methodology-application-inventory.ts:13` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/methodology-application-inventory.ts:14` |
+| `audit_events` | `event_id project_id command_id server_sequence` | `apps/server/modules/backups/methodology-application-inventory.ts:15` |
+
+### `notification-inventory.ts`
+
+`collectNotificationInventory`; SHA256 `02981FB2B707FABEF6B37E316B505428A342502CC460E9FC342F94B762BAE5FB`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `notifications` | `id project_id source_command_id approval_request_id request_version request_content_hash recipient_user_id event_kind channel severity reason_code delivery_state created_at content_hash` | `apps/server/modules/backups/notification-inventory.ts:14` |
+| `notification_reads` | `project_id notification_id recipient_user_id client_id command_id notification_content_hash read_at` | `apps/server/modules/backups/notification-inventory.ts:15` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/notification-inventory.ts:16` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/notification-inventory.ts:17` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/notification-inventory.ts:18` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/notification-inventory.ts:19` |
+
+### `observation-inventory.ts`
+
+`collectObservationInventory`; SHA256 `C033F75381C8C4BC8ECDBD9F70DB121C6E74D49A314AC5F72CF539DC047082F7`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `execution_observations` | `project_id execution_id generation id version event_sequence grant_id grant_version content_hash snapshot_json event_id` | `apps/server/modules/backups/observation-inventory.ts:16` |
+| `execution_acknowledgements` | `project_id execution_id generation id version grant_id grant_version content_hash snapshot_json` | `apps/server/modules/backups/observation-inventory.ts:17` |
+| `execution_observation_results` | `project_id execution_id generation proof_result_id proof_result_version ack_id ack_version content_hash snapshot_json` | `apps/server/modules/backups/observation-inventory.ts:18` |
+| `execution_receipts` | `project_id id version grant_id grant_version challenge_id challenge_version content_hash snapshot_json` | `apps/server/modules/backups/observation-inventory.ts:19` |
+| `execution_grants` | `project_id id version execution_id generation content_hash snapshot_json` | `apps/server/modules/backups/observation-inventory.ts:20` |
+| `execution_commands` | `project_id id version execution_id generation grant_id grant_version content_hash envelope_hash snapshot_json authorization_ref created_command_id created_at` | `apps/server/modules/backups/observation-inventory.ts:21` |
+
+### `permission-policy-inventory.ts`
+
+`collectPermissionPolicyInventory`; SHA256 `F472913AB6D27BE608D97817CF7217BE46869A903113C44690F2B23BDF07524C`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `permission_policies` | `id project_id head_version created_by created_at` | `apps/server/modules/backups/permission-policy-inventory.ts:11` |
+| `permission_policy_versions` | `project_id policy_id version rules_json content_hash reason review_refs created_by created_at client_id command_id` | `apps/server/modules/backups/permission-policy-inventory.ts:11` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref received_at completed_at operation_id request_hash` | `apps/server/modules/backups/permission-policy-inventory.ts:11` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/permission-policy-inventory.ts:11` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/permission-policy-inventory.ts:11` |
+
+### `project-control-ledger-inventory.ts`
+
+`collectProjectControlLedgerInventory`; SHA256 `1DAD75229D6C12568C6A1E86192C0436F4D54B1CE15F5B77839ACBD047A97AC7`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `commands` | `id scope_kind scope_id project_id draft_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at` | `apps/server/modules/backups/project-control-ledger-inventory.ts:10` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/project-control-ledger-inventory.ts:10` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/project-control-ledger-inventory.ts:10` |
+
+### `project-creation-draft-inventory.ts`
+
+`collectProjectCreationDraftInventory`; SHA256 `A695586AE98A48A0693D316F61B31D6395BAE509BAE551720F4FCD0D57FC800D`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `project_drafts` | `id owner_user_id client_id version step input_json consumed_project_id created_at updated_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_artifact_selection_versions` | `draft_id draft_version refs_json snapshot_hash command_id receipt_id` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_artifact_selections` | `draft_id draft_version artifact_id upload_intent_id ordinal ref_json` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_artifact_adoptions` | `artifact_id upload_intent_id original_command_id draft_id draft_version ref_json source_key target_key project_id creation_intent_id create_command_id actor_id client_id adopted_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_creation_intents` | `id draft_id actor_id client_id external_command_id expected_version request_hash request_json target_project_id refs_json sources_json selection_hash state attempt project_command_id result_json created_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_upload_intents` | `id draft_id actor_id client_id external_command_id expected_version request_hash request_json artifact_id server_command_id receipt_id operation_id ref_json staging_key final_key state attempt result_json created_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `artifacts` | `id project_id draft_id bytes content_hash media_type storage_key state created_by client_id command_id created_at inspection_json` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `commands` | `id scope_kind scope_id project_id draft_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `draft_audit_events` | `draft_id server_sequence event_id actor_ref client_ref command_id operation_id operation outcome reason_code recorded_at` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/project-creation-draft-inventory.ts:11` |
+
+### `project-methodology-inventory.ts`
+
+`collectProjectMethodologyInventory`; SHA256 `6C77A70392F59E28568F3A9F859C5E25AADF99BF2C7C67E555E2E88B8FDF8071`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `methodology_definitions` | `id scope owner_user_id project_id system_code name purpose head_version created_at` | `apps/server/modules/backups/project-methodology-inventory.ts:16` |
+| `methodology_versions` | `definition_id version name purpose graph_json content_hash origin_ref_json reason created_by created_at` | `apps/server/modules/backups/project-methodology-inventory.ts:17` |
+| `content_reviews` | `id scope_kind scope_id owner_user_id project_id draft_id target_kind target_id target_version target_hash criteria_version criteria_snapshot_json items_json outcome reviewer_user_id client_id reviewer_subject_ref source_kind reason command_id created_at` | `apps/server/modules/backups/project-methodology-inventory.ts:18` |
+| `methodology_reviews` | `id definition_id version target_hash validation_json review_refs decision decided_by decided_at client_id command_id project_id` | `apps/server/modules/backups/project-methodology-inventory.ts:19` |
+| `project_methodologies` | `id project_id application_version source_definition_id source_version source_hash snapshot_json snapshot_hash created_by created_at` | `apps/server/modules/backups/project-methodology-inventory.ts:20` |
+| `commands` | `id command_id scope_kind project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id` | `apps/server/modules/backups/project-methodology-inventory.ts:21` |
+| `audit_events` | `event_id project_id command_id server_sequence` | `apps/server/modules/backups/project-methodology-inventory.ts:22` |
+
+### `responsible-session-inventory.ts`
+
+`collectResponsibleSessionInventory`; SHA256 `9A9D3CD996029042F271D9D50347FC16B4A9ADD7DC051C65C327BA2F3A7BA936`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `project_roles` | `project_id role_id version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/responsible-session-inventory.ts:16` |
+| `agent_sessions` | `project_id session_id version role_id content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/responsible-session-inventory.ts:17` |
+| `role_bindings` | `project_id binding_id version role_id session_id assignment_id assignment_version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/responsible-session-inventory.ts:18` |
+| `assignment_versions` | `project_id assignment_id version content_hash version_json created_by created_at` | `apps/server/modules/backups/responsible-session-inventory.ts:19` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/responsible-session-inventory.ts:20` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/responsible-session-inventory.ts:21` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/responsible-session-inventory.ts:22` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/responsible-session-inventory.ts:23` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/responsible-session-inventory.ts:24` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/responsible-session-inventory.ts:25` |
+
+### `result-review-history-inventory.ts`
+
+`collectResultReviewHistoryInventory`; SHA256 `C3005711C2CAA2CCC81C836EDDE8CE5884B7514D1C706C482C0F8F0E0524F339`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `result_criteria_versions` | `project_id criteria_id version assignment_ref assignment_id assignment_version content_hash criteria_json input_json created_by client_id command_id created_at` | `apps/server/modules/backups/result-review-history-inventory.ts:15` |
+| `result_reviews` | `project_id id result_id criteria_id criteria_version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/result-review-history-inventory.ts:16` |
+| `result_rework_drafts` | `project_id id result_id review_id binding_id binding_version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/result-review-history-inventory.ts:17` |
+| `result_submissions` | `project_id id content_hash snapshot_json submitted_by submitted_at` | `apps/server/modules/backups/result-review-history-inventory.ts:18` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/result-review-history-inventory.ts:19` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/result-review-history-inventory.ts:20` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/result-review-history-inventory.ts:21` |
+
+### `result-submission-inventory.ts`
+
+`collectResultSubmissionInventory`; SHA256 `DF733B11DC10001617F052349111B39F4FF76B192955E901FC5E25A3CC919187`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `result_submissions` | `project_id id execution_id generation assignment_ref execution_ref manifest_ref manifest_hash submission_state submitted_by client_id command_id content_hash snapshot_json submitted_at` | `apps/server/modules/backups/result-submission-inventory.ts:13` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/result-submission-inventory.ts:14` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/result-submission-inventory.ts:15` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/result-submission-inventory.ts:16` |
+
+### `source-root-history-inventory.ts`
+
+`collectSourceRootHistoryInventory`; SHA256 `C5538A46F6ED08A842009202C824923AF946B9C270A6F9F02A5C2AB4873BF26F`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `source_roots` | `project_id id head_version created_by client_id created_at` | `apps/server/modules/backups/source-root-history-inventory.ts:11` |
+| `source_root_versions` | `project_id root_id version content_hash declaration_json status authority readiness reason actor_id client_id command_id connector_id created_at` | `apps/server/modules/backups/source-root-history-inventory.ts:11` |
+| `commands` | `id scope_kind scope_id project_id draft_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at` | `apps/server/modules/backups/source-root-history-inventory.ts:11` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/source-root-history-inventory.ts:11` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/source-root-history-inventory.ts:11` |
+
+### `stage-budget-inventory.ts`
+
+`collectStageBudgetInventory`; SHA256 `ECE4CEEB5C0F11BC465DA418F156CAC4D36726382383251289C867454BF7D06F`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `stage_runs` | `project_id id sequence input_json created_by client_id command_id created_at` | `apps/server/modules/backups/stage-budget-inventory.ts:18` |
+| `queue_requests` | `project_id request_id version sequence content_hash snapshot_json command_id` | `apps/server/modules/backups/stage-budget-inventory.ts:19` |
+| `limit_policy_versions` | `project_id policy_id version content_hash snapshot_json scope_json created_by client_id command_id created_at` | `apps/server/modules/backups/stage-budget-inventory.ts:20` |
+| `usage_reservations` | `project_id reservation_id version server_sequence command_id content_hash snapshot_json policy_id policy_version created_command_id` | `apps/server/modules/backups/stage-budget-inventory.ts:21` |
+| `execution_commands` | `project_id id version execution_id generation grant_id grant_version content_hash envelope_hash snapshot_json authorization_ref created_command_id created_at` | `apps/server/modules/backups/stage-budget-inventory.ts:22` |
+| `execution_grants` | `project_id id version execution_id generation content_hash snapshot_json` | `apps/server/modules/backups/stage-budget-inventory.ts:23` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/stage-budget-inventory.ts:24` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/stage-budget-inventory.ts:25` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/stage-budget-inventory.ts:26` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/stage-budget-inventory.ts:27` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/stage-budget-inventory.ts:28` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/stage-budget-inventory.ts:29` |
+
+### `understanding-permit-inventory.ts`
+
+`collectUnderstandingPermitInventory`; SHA256 `DF84042B09956275D2D7D8A347410F583F97A083A611089855DE4C37CFDAE780`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `understanding_reviews` | `project_id execution_id generation id version content_hash snapshot_json created_by client_id command_id created_at` | `apps/server/modules/backups/understanding-permit-inventory.ts:20` |
+| `execution_start_permits` | `project_id execution_id generation id version proof_result_id proof_result_version content_hash snapshot_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:21` |
+| `execution_instruction_permits` | `project_id execution_id generation id version command_id command_record_id command_record_version grant_id grant_version reservation_id reservation_version proof_result_id proof_result_version envelope_hash content_hash snapshot_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:22` |
+| `execution_commands` | `project_id id version execution_id generation grant_id grant_version content_hash envelope_hash snapshot_json authorization_ref created_command_id created_at` | `apps/server/modules/backups/understanding-permit-inventory.ts:23` |
+| `execution_grants` | `project_id id version execution_id generation content_hash snapshot_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:24` |
+| `usage_reservations` | `project_id reservation_id version server_sequence command_id content_hash snapshot_json policy_id policy_version created_command_id` | `apps/server/modules/backups/understanding-permit-inventory.ts:25` |
+| `execution_receipts` | `project_id id version grant_id grant_version challenge_id challenge_version content_hash snapshot_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:26` |
+| `approval_consumptions` | `id project_id decision_id command_id scope_digest policy_id policy_version consumed_at` | `apps/server/modules/backups/understanding-permit-inventory.ts:27` |
+| `approval_decisions` | `id project_id request_id request_version scope_digest decision reason decided_by client_id control_generation decided_at command_id content_hash decision_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:28` |
+| `approval_requests` | `id project_id version candidate_command_id action_scope_json scope_digest details_json required_decider_ref status expires_at created_by created_at client_id command_id policy_ref content_hash request_json` | `apps/server/modules/backups/understanding-permit-inventory.ts:29` |
+| `understanding_review_approval_candidates` | `project_id request_id request_command_id candidate_command_id payload_hash payload_json created_by client_id control_generation policy_ref command_hash created_at` | `apps/server/modules/backups/understanding-permit-inventory.ts:30` |
+| `commands` | `id command_id scope_kind scope_id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id approval_consumption_id payload_ref completed_at operation_id request_hash` | `apps/server/modules/backups/understanding-permit-inventory.ts:31` |
+| `authorization_receipts` | `id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at` | `apps/server/modules/backups/understanding-permit-inventory.ts:32` |
+| `audit_events` | `project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of` | `apps/server/modules/backups/understanding-permit-inventory.ts:33` |
+
+### `work-plan-inventory.ts`
+
+`collectWorkPlanInventory`; SHA256 `EE930589A0562494B1367EDC7C77DEDD0F0A82CC2866886D7C3F1C78CF961823`.
+
+| 표 | 직접 선언된 선택열 | 근거 행 |
+|---|---|---|
+| `work_plans` | `id project_id head_version confirmed_version created_by created_at updated_at` | `apps/server/modules/backups/work-plan-inventory.ts:15` |
+| `work_plan_versions` | `project_id plan_id version document_id document_version document_hash design_id design_version design_hash screen_review_refs content_hash version_json created_by client_id command_id created_at` | `apps/server/modules/backups/work-plan-inventory.ts:16` |
+| `plan_tasks` | `project_id plan_id plan_version task_code task_type card_json card_hash owner_role` | `apps/server/modules/backups/work-plan-inventory.ts:17` |
+| `plan_dependencies` | `project_id plan_id plan_version task_code dependency_task_code phase` | `apps/server/modules/backups/work-plan-inventory.ts:18` |
+| `work_plan_confirmations` | `id project_id plan_id version target_hash review_refs validation_json confirmed_by client_id command_id created_at` | `apps/server/modules/backups/work-plan-inventory.ts:19` |
+| `content_reviews` | `id scope_kind scope_id project_id target_kind target_id target_version target_hash criteria_version criteria_snapshot_json items_json outcome reviewer_user_id client_id reviewer_subject_ref source_kind reason command_id created_at` | `apps/server/modules/backups/work-plan-inventory.ts:20` |
+| `commands` | `id project_id state operation actor_id client_id control_generation expected_version policy_ref result_ref authorization_receipt_id` | `apps/server/modules/backups/work-plan-inventory.ts:21` |
+| `audit_events` | `event_id project_id command_id server_sequence` | `apps/server/modules/backups/work-plan-inventory.ts:22` |

@@ -12515,3 +12515,13 @@ git diff --check
 - Main66e933 diff check0, private branch49f47b7/main f976ed5e를 실제 읽었다. r3 Git 이력을 보존하며 r4~r5의 규범 본문 정리를 후보 기록으로 checkpoint한다. 실제 설치 고정 catalogue authority·보호publisher/IPC/root/mapping 선택은 미채택/GO0다. FN03 승인도 아직 확인되지 않았다.
 - FN17 준비 inventory1fdbec의 입력에 존재하지 않는 packages 디렉터리를 포함해 rg os2가 출력됐다. 반환된 실제 파일 목록만 사용한062d42는 정상 읽기이며 새 경로 추측·권한 변경·재시도0이다. 제품 실패로 합산하지 않는다. FN17 기존 계약/제품 읽기를 담당자에게 전달하고 상세 후보 작성만 진행한다.
 - PMO에는 정확 branch/commit·두 승인 경계 설명·FN06 보완·FN16 C0/I2/기술 상세화·FN17 후보 상세화와 실제 실행 제외를 전달했다. PMO 다음 작업 배정을 기다리지 않는다. 전체 계획 미완료·새 QA0·실효과0 유지다.
+### 2026-11-02 FN03 승인 설명 정정·보호 원문 범위 대조
+- Main0e7e94는 FN03_SOURCE_CONTENT_HASH_DELTA_CANDIDATE.md §13.4/SHA746D1FBA11AFDB94D750955A14F7D465BAA5E19B71D8598C2EBDBE7CD738F173를 실제 대조했다. 앞선 사용자 설명의 ‘원문 내용 변경 시 이전 버전 보관’은 부정확했다. 정확 대상은 소스 내용 읽기 정책의 관리 명령 ProjectCommand 원 envelope를 불변 origin으로 보호 보관하고 정책 event/command/receipt/audit와 검산하는 새 계약이다. 일반 문서 버전 이력 기능이 아니다.
+- 신산님께 commentary로 바로 정정했다. 원문은 일반 화면/파일/Agent/검색/로그/감사에 반환하지 않고 전용 내부 inspector에만 전달한다. 새 조회 operation과 권한은 미채택이며 일반 응답도 최소ref/hash·UNVERIFIED다. 기존 원문 보존/관리 지시의 계약 상세를 재승인된 것으로 간주하지 않는다. 실제 DB·권한·키·서비스·Agent 실행 제외 유지.
+- code/SQL/시험/정책 변경0. 보호 untracked3의 현재 지문은7c4ead에서 기존 FACFB938/CFB2969C/AE1B34C2와 동일함을 확인했다. FN06 후보/현황 정확2 commit27c350504d932fe1571a5a0bc75b2ddc78debd25는 bc454f에서 private동일/main f976ed5e불변·그시점trackedclean으로 확인했다. 이후 문서 작업은 별도 미완료다.
+### 2026-11-02 FN16 후보 r2 기술 보완·조사 증거 동결
+- 기존 Primary가 FN16_FULL_BACKUP_RESTORE_CONTRACT_CANDIDATE_20261102.md r2 SHA38F43606F0DE8A835A027811E6FC99BAA26D882E7F22F40C0B19DEE81F40F4F2/183240B로 반환했다. Main9cbccc/f12b9e에서 양쪽 동일 SHA·diff check0·목록 JobListItem 상한8192B/Page 최대413696B·고정 상세 분리·외부반입 inputRef typed union을 직접 대조했다. 기존 §10의 예약식은 §20의 U+H+M+R≤K 및 중복 산입 금지와 통일했다. 전체 독립 재검수/계약 채택은 아직 아니다.
+- 외부 반입은 intent·격리 ciphertext POST·보호 입력 고정 GET·FULL_BACKUP_INPUT_V1 신규 미채택 계약으로 명시한다. 원 source를 보유하지 않은 새 설치 검증 목표를 현재 설치 파일만으로 축소하지 않았다. 실제 반입/복원·새 프로젝트/권한 생성0이다.
+- 실제 FeatureBaselineDraftHistory/DecisionHistory·SourceRoot/ControlHandoff 소비와 static CREATE192/collector27파일·명시 선택열194행을 조사 부록으로 고정했다. 정적 선언/선택열은 실행 registry나 반출 허용목록이 아니다. ALTER/동적SQL/각JSON 민감 투영·전체 참조 폐쇄의 미확인 때문에 full coverage0/구현GO0이다. 원 SOURCE_HASH 재계산과 REDACTED_HISTORY receipt/hash 증빙 대조를 구분했다.
+- 같은 실키의 nonce 도메인/COMMIT 불명·외부 저장 cap/감소 원장 공간은 여전히 미정이다. 10GiB 안에 원자료+새3사본을 동시에 보유하는 보수안은 다른 비용 전 약2.5GiB부터 한계라는 영향을 숨기지 않는다. 사용자에게 기술 조사 책임을 넘기거나 이 후보를 승인된 설계로 표시하지 않는다.
+- 현재 담당자 역할은 FN06 r5 scoped 독립 읽기검수와 FN17 후보 상세화이며 제품 writer0. 코드/SQL/시험 재실행·실제 DB/권한/키/서비스/Agent/컴파일·실자료/P03R3/신규QA0, 전체 계획 미완료다.
