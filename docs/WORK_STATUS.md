@@ -13899,3 +13899,7 @@ git diff --check
 - 원 RED1bdc94 1건 뒤 Primary649bf4 34PASS/skip0·type/Bash구문0. Main e4aa3d/c47b5d diff 소비와08fb80 신규34PASS/0FAIL/skip0/398.5456ms·a9c9f2 type+Bash구문 exit0/7.276초를 독립 확인했다. 완료 검증의 재실행이 아니라 바뀐 installer/회수 코드의 최종 검수다.
 - Main b476d4 bootstrap496caf4e/metadata23237b19 및4회수 SQL hash를 동결 source에서 독립 계산했다. 실제 SQL/role 실행0이다. PG15 CREATEROLE은 cluster 단위 위험이므로 새 일회 격리cluster에만 한정된 실제 결정이 필요하며 기존 사용자/cluster 권한 변경0이다.
 - 결과 r3 SHA942AE509C105E266C598CCFC22EFEE3872D8771AEC981DB225A974DB4DDD7D30, SOURCE_PREPARED_ACTUAL_NOT_RUN. Main은 source2+소유 문서만 checkpoint/private 게시 후 실행 후보에 exact code·SQL/role 검산·단1slot105·정리/UNKNOWN을 결박해 필요한 직접 결정을 요청한다. 전체계획/IX01/제품 기능 완료가 아니다.
+
+### 2026-11-03 IX01 실제 단발 QA 결정 패킷 결박
+- dbd9db 정확7/source2+소유문서5/rawindex일치/diff0→c84bdad14b1888281be2ee116031d573f9016193, 소유39236을8a0fca exit0으로 회수해 private exact·main/보호3 불변·tracked clean 확인. source별34PASS/미검증 구분은 결과r3를 따른다.
+- 실제 실행 후보 r4 SHA2D99172BC0155D9943884FC45FA978CF01E6082C0C4F11FB24A2E32521FAACB3에 exactcode·index105선택/SQL·일회installer CREATEROLE의 cluster위험·전후검산/회수·slot1·신규자원/기한/UNKNOWN·정리 범위를 결박했다. 기존 source-only에서 벗어나는 새 QA 실행만 직접 결정받을 준비이며 아직 승인/실행0이다. 다른 slot/기존 DB·권한·키·서비스/Agent/P03R3 제외는 유지한다.

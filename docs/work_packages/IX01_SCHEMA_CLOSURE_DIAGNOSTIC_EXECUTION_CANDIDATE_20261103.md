@@ -179,3 +179,48 @@ SQL baseline d2f6ab8c74fad09f26319f77b3acb80afe3f927b, index SHA dc8b5fc0fc6fc98
 ```
 
 최종 code SHA·bootstrap/회수 SQL/hash·role 검산과 Main 독립 source 검수가 아직 미결이다. **NOT_APPROVED / NOT_READY_TO_RUN**을 유지하고 현재 사용자 실행 승인 질문0이다.
+
+## r4 — 검수된 source 결박·직접 결정 요청안
+판정: **SOURCE_VERIFIED / EXECUTION_DECISION_REQUIRED / ACTUAL_PREFLIGHT_NOT_RUN**. 앞 r1~r3의 code/SQL 미정은 아래 값으로 해소한다. 실제 실행은 여전히 미승인이다.
+
+| 결박 | 정확 값 |
+|---|---|
+| 기존 개발 branch | codex/av3-stage-b |
+| 실제 실행 checkout/code SHA | c84bdad14b1888281be2ee116031d573f9016193 |
+| code parent | 10a00aad9b40a37f13a7a56b83d3b19824bf1833 |
+| SQL source baseline | d2f6ab8c74fad09f26319f77b3acb80afe3f927b |
+| driver SHA256 | 4750BAD4F26616807C7325E6967AA08212E3B4BE53ADFA3527D515D469BCB6D9 |
+| unit SHA256 | 2FDCA333CC22D1DBAD856C09AF423801B42400144335E7902EBAE8F5EC635B62 |
+| index SHA256 | DC8B5FC0FC6FC980EC28C7C5DC367BEE2CBAF1B20F877C06FF6E97851D286045 |
+| selected105 compact orderHash | 09d2e7d5cd8715a0ff02540d4397db2d4cb8dcf818d808ce328423d7583f24ef |
+| slot/previousHash | 1 / null, 추가 slot0·자동 재시도0 |
+| 소유 instance | c84bdad14b1888281be2ee116031d573, 비밀 아닌 고정 식별값 |
+| private exact | dbd9db의 소유 session39236→8a0fca exit0, exact SHA·main·보호3 불변·게시 시 tracked clean |
+| Main 검수 | 08fb80 34PASS/0FAIL/skip0/398.5456ms, a9c9f2 noEmit/Bash-n exit0, e4aa3d/c47b5d 정적 미해결 C/I0, 실제 PG검증0 |
+| 기존 접속 대상 | SSH WSL-server. 기존 scripts/link-development-db.ts:9의 등록 대상과 같으며 credential 설정/키 변경0. 실제 현재 접속/daemon/runtime 확인은 아직0 |
+
+### 정확 bootstrap/회수·검산 SQL
+hash 분모는 UTF-8·끝 개행 없음이다. 다음 bootstrap은 새 빈 cluster의 내부 Unix socket에서 초기 관리자 anvil_v3_bootstrap으로만 수행하며,105 원SQL의 실행 사용자는 anvil_v3_migrator이다. bootstrap 관리자가 원SQL을 대신 설치하지 않는다.
+```sql
+BEGIN;CREATE ROLE anvil_v3_migrator LOGIN INHERIT NOSUPERUSER NOCREATEDB CREATEROLE NOREPLICATION NOBYPASSRLS;CREATE ROLE anvil_v3_app LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;REVOKE ALL ON DATABASE anvil_v3_ix01_ddl_20261103_r1_a1 FROM PUBLIC;GRANT CONNECT ON DATABASE anvil_v3_ix01_ddl_20261103_r1_a1 TO anvil_v3_migrator,anvil_v3_app;REVOKE CREATE ON SCHEMA public FROM PUBLIC;CREATE SCHEMA anvil AUTHORIZATION anvil_v3_migrator;CREATE SCHEMA anvil_qa AUTHORIZATION anvil_v3_migrator;GRANT USAGE ON SCHEMA anvil,anvil_qa TO anvil_v3_app;ALTER DEFAULT PRIVILEGES FOR ROLE anvil_v3_migrator IN SCHEMA anvil,anvil_qa GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO anvil_v3_app;COMMIT;
+```
+bootstrap SHA256: **496caf4e72938b8129b8b52354afc7c0a8c8db8f2c39ed598716247b758ece8c**.
+
+회수 SQL은 아래4가지 중 실제 정착 metadata에 남은 정확 reader membership에 해당하는 하나만 허용한다. 원SQL에서 이미 회수했으면 빈 membership 변형을 사용한다. 원문/role/SQL을 임의로 추가하지 않는다.
+- "BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;COMMIT;" — SHA256 8fc938cc834680f8b7691a1df8317eac1c2e1f74df68894aa671e668fde6f3f5
+- "BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;REVOKE anvil_v3_fn15_reader_owner FROM anvil_v3_migrator;COMMIT;" — SHA256 10df64294c159ae5c0a0f7376a78c15fc703c9b1f11f8ce038eeaeb3a9b44df6
+- "BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;REVOKE anvil_v3_fn16_export_reader_owner FROM anvil_v3_migrator;COMMIT;" — SHA256 4990526c6cd10894cde5132680921f594a5e831e05fe59177dfb39a9ec05ba11
+- "BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;REVOKE anvil_v3_fn15_reader_owner FROM anvil_v3_migrator;REVOKE anvil_v3_fn16_export_reader_owner FROM anvil_v3_migrator;COMMIT;" — SHA256 8a8d58d31e4c2bd260fec6f59d362d1d03b1595d0278397f36a5946facc76992
+
+공유 metadata SQL SHA256: **23237b193e7c863d1d2b0e1c30eb29d9c5d62fc4d93129b97e525aff499812e1**. pg_roles의 이름/속성·pg_auth_members의 role/member/grantor/admin만 조회하며 password/원문/사용자 자료는 읽지 않는다. 대상은 새 빈 QA cluster뿐이다.
+```sql
+SELECT json_build_object('sessionUser',session_user,'currentUser',current_user,'roles',(SELECT COALESCE(json_agg(json_build_object('name',rolname,'superuser',rolsuper,'inherit',rolinherit,'createRole',rolcreaterole,'createDb',rolcreatedb,'replication',rolreplication,'bypassRls',rolbypassrls,'login',rolcanlogin,'validUntil',rolvaliduntil) ORDER BY rolname),'[]'::json) FROM pg_catalog.pg_roles),'memberships',(SELECT COALESCE(json_agg(json_build_object('role',r.rolname,'member',m.rolname,'grantor',g.rolname,'adminOption',a.admin_option) ORDER BY r.rolname,m.rolname),'[]'::json) FROM pg_catalog.pg_auth_members a JOIN pg_catalog.pg_roles r ON r.oid=a.roleid JOIN pg_catalog.pg_roles m ON m.oid=a.member JOIN pg_catalog.pg_roles g ON g.oid=a.grantor))::text;
+```
+검산은 pristine→installer→정착→revoked 네 경계다. PG15 고정 system12종/기본 membership3과 bootstrap을 검산하고, installer/app 및 원0066/0073 reader 두 역할 외의 새 role/예상 밖 membership을 거절한다. app/reader는 NOSUPERUSER/NOCREATEROLE/NOBYPASSRLS, installer는 NOSUPERUSER/NOCREATEDB/NOREPLICATION/NOBYPASSRLS를 유지하며 설치 구간 CREATEROLE만 정착 후 회수한다. 원SQL이 이미 회수한 reader membership 부재는 정상이다. metadata 불일치/회수 결과 불명은 UNKNOWN·stop/rm 포함 후속 mutation0이다.
+
+### 시간·입력과 실제 요청 범위
+- 이 문서의105 선택·위 exact code/SQL·slot1·resource literal은 고정이다. 미래 실제 허가 수신 뒤30분 내 준비·실행하고 PG 작업 예산은10분이다. issuedAt/만료시각은 허가 전 미리 소진시키지 않고 실행 직전1회 고정하며,18필드 공개 plan/owner marker의 원문 SHA256을 소진 의도/결과에 남긴다. 시간 파생/원장hash 계산이 새 대상/SQL/권한/slot을 허가하지 않는다. 입력hash 자체는 사람 승인 증거가 아니다.
+- 허용 여부를 직접 결정받을 것은 **새 전용 source checkout·보호 소진원장/빈 Docker config 생성, 새 PG15 container1회 기동, 합성 role/일회 installer CREATEROLE·원SQL105 정의 설치, 정착 후 해당 권한 회수/metadata 검산과 exact 신규 QA 종료·제거**이다. 기존 DB·role/권한·키·서비스 변경 제외는 유지한다.
+- 성공/명확 실패 뒤에는 fullID/소유/label/image/mount/port/network 검산한 신규 QA만 정리한다. stop --time5는 새 QA에5초 후 SIGKILL할 수 있음을 포함한다. Git source 경로는 새로 만든 사실·UID/realpath/link/dirty와 process 사용0을 확인한 경우만 정리하며 원장 감사는 보존한다. UNKNOWN은 자동정리/재실행하지 않으므로 자원이 기한을 넘겨 남을 수 있고, 그때 정확 소유 검토와 추가 조치를 보고한다.
+- 이것은 최신 SQL 정의 설치 의존을 확인하는 한정 실행이며 DB복구/실서비스·문서여정/Agent/IX01/전체계획 합격이 아니다. 실제 PGparser/권한회수/cleanup/자원 잔여 검수는 아직 NOT_RUN이다.
+- 선택 A(권장): 위 단발 실제 QA만 허용해 정의 설치 오류/다음 선행을 실제로 확인한다. 원상 복구는 새 QA 폐기로 가능하나 UNKNOWN에서는 자동 삭제하지 않는다. 선택 B: source-only를 유지해 실제 실행은 하지 않고 SQL/runtime 미확인을 남긴다. 기존 서비스/DB/키/Agent는 어느 선택에서도 제외한다.
