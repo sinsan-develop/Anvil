@@ -13818,3 +13818,22 @@ git diff --check
 - 응답 close 취소와 window.startedAt 항목 상한 Important2는 최종 source·등록 handler/합성 EventEmitter 및 DTO 반례로 Addressed입니다. 검토한 source 범위의 추가 미해결 C/I는 없습니다. 실제 socket·PG/RLS/경합·served/사용자 인수는 미검증입니다.
 - 결과 docs/04_test_reports/AV3/FN12_STORED_REVIEW_PAGES_SOURCE_RESULT_20261103.md SHA5AC889BCBA79A372F605B02DCB68143C1010268F54F3E1936BA88FD7C40DBEB3. 정확8+Main WI/결과/현황3의11경로만 기존 branch에 checkpoint로 보존합니다. UI05/FN12 요약은 부분구현[2]를 유지하며 이미 연결된 source와 실제 증거→ACCEPTED/Agent 실행·실환경 잔여를 구분했습니다.
 - Main은 동일8 코드 수정0이며 실제 DB/권한/회원/정책·키·서비스·Agent/OS/제품네트워크/파일 조사·새 SQL0입니다. 전체 작업계획 완료나 배포/사용자 인수를 선언하지 않습니다.
+
+### 2026-11-03 FN12 6b40370c private 보존·기존 native 같은-client 경로 대조
+- Main79bafa는 정확 source8와 소유 WI/결과/현황3의11경로 raw/index 동일·cached diff0을 확인해6b40370cdb36b48af566421405a612512bad46fb(parent4e0cd142)로 commit했습니다. 1dd4ec 정상 private push 뒤 exact SHA 일치·local main044304/private mainf976 불변·게시 당시 tracked clean/보호3 보존을 확인했습니다. 이후 현황만 새 Main 소유 변경입니다.
+- 현재 source 한정 구현·검수는 보존됐으며 실제 DB/권한/키/서비스/Agent·served·사용자 인수와 전체 FN12/계획 완료는 아닙니다. 같은 완료 검사·재구현을 반복하지 않습니다.
+- 다음은 기존 native source 승인에 이미 포함된 같은-client 기본 HTTPS supplier/NativeOnly 최초 전달의 실제 caller→adapter→issuer/current/consume/SIGN에서 남은 내부 생산·주입을 같은 Primary가 읽기 대조합니다. 새 교차-client/prelisten·새 서명목적/기록·profile/키 권한 계약과 분리하고, 기존 callback/합성 wrapper를 새 기능처럼 추가하지 않습니다. 코드 GO0·실제 환경0입니다.
+- 같은 Primary의 같은-client 조사 결과: 기본 HTTPS driver·credential slot exact6/별도 opaque·typed SIGN과 서버 ATTEMPTED 선COMMIT/최대1회 전달/후행 상태는 이미 구현돼 있습니다. 미연결은 검산된 native profile/current·보호 전달 supplier·ACK 생산자와 서버 main/desktop shell의 실제 조립입니다. catalogue 전용 profile을 native 권위로 전용하지 않습니다.
+- Main은 같은-client 기존 제어/등록/writer 조건을 그대로 만족하는 최초 전달을 먼저 구체화하는 구현 순서를 권장했습니다. 새 교차-client 위임은 미채택 R2/전체 요구의 잔여로 보존하며, 원 session/정책/DENY·물리 writer를 false에서 우회하지 않습니다.
+- 같은 Primary에게 보호 profile 생산→최초 수신 인증/주입→동일 slot/client→ACK→기존 발급/ATTEMPTED/후행 결과의 최소 수직 단위 기술안을 읽기만 맡겼습니다. 새 서명목적/HTTP·IPC/profile·저장 의미는 미채택으로 분리합니다. 기존 HTTPS/SIGN·B03 계산/5-source 조사 반복·callback 추가를 새 기능으로 보고하지 않으며 코드/시험/문서쓰기·실환경0입니다. Main은 새 계약을 임의 채택하지 않습니다.
+
+### 2026-11-03 FN06 같은-client 최소 수신 기술 대조
+- 신산님의 FN12 A안 직접 승인 binding과 계약 SHA59B7F0E6178048AD5E5D1A3F1CF8E5B6C11B44A609B0A911182C91E1F44FF0B4를 다시 대조했습니다. 현재 HEAD/private 보존 checkpoint는6b40370c이며 완료41검사·build·코드 재구현은 반복하지 않았습니다. 시작 tracked 변경은 Main 소유 WORK_STATUS와 WORK_PLAN2개, 보호 untracked3은 보존합니다.
+- 같은 Primary의 읽기 반환에서 기존 main 소유 Session.fetch/등록 HUMAN 조회·실제 connector_registrations.session_id 결박을 확인했습니다. 기존 NativePreparationHttpsChannel은 authority 이후 purpose/경로 전용이므로 bootstrap에 그대로 쓰지 않습니다. 내부 TLS/driver 재사용과 새 OPEN 인증 의미를 구분했습니다. slot.accept(void)를 ACK로 승격하지 않습니다.
+- Main 소유 기술 초안 docs/contracts/FN06_NATIVE_SAME_CLIENT_RECEIVE_TECHNICAL_DRAFT_20261103.md SHA3575856E0C3274676F7E611B73F2AEB9C0086AC525225A8AC668A9D4A9ED5DC9를 기록했습니다. NOT_ADOPTED/SOURCE_GO0/EXECUTION_GO0이며 새 공개/auth·등록키 서명·profile/ACK 계약을 암묵 채택하지 않습니다. Session.fetch의 service worker 개입은 입증되지 않았습니다.
+- 후속은 같은 Primary의 최초 receive 시작자→원 prepare 명령 caller→동일 요청 결박만 좁혀 읽습니다. 원 session/정책/DENY/writer·총10초·ATTEMPTED 선COMMIT/단발전달·불명 재시도 금지 보존, 교차-client/mobile 잔여도 유지합니다. 구체화되지 않은 새 인증안을 사용자에게 구현 승인으로 요청하지 않습니다.
+- Main 읽기 준비 오류: literal wildcard를 rg의 경로 인자로 보낸 fd1f92는 exit1/os123으로 읽기 실행 불가였고,26150d의 루트+-g로 정정했습니다.15e35a의 존재하지 않는 packages 인자는 경로 추정 오류였으며 실제 반환된 apps 경로만 후속 사용했습니다. 두 오류는 제품 실패·정식 Developer FAILURE_REPORT가 아닙니다. 해당 잘못된 검색 형식과 추정 경로 사용을 중단합니다.
+- PMO에 FN12 보존·부분 구현 및 FN06 신규 계약 미채택/코드GO0·후속 좁은 조사를 전달했습니다. 제품/시험/SQL 쓰기·실제 DB/권한/키/서비스/Agent/네트워크/OS/실자료0, 새 branch/세션/예약0입니다. 전체 계획 완료가 아닙니다.
+
+- 같은 Primary의 caller 반환을 반영해 Main 기술 초안에 로컬 수신 준비→원 Web 명령/승인→정확 binding/ARM→기존 native POST→단발 delivery/ACK 흐름을 추가했습니다. 초안 최종 SHA0E8F41E59469C7621E6663336FC4B1D7CBC8519CBA2790FB4E8E70FCA7527A3E이며 앞3575856E는 이전 기술 snapshot입니다. binding 단계에서 일회 승인을 먼저 소비하지 않고 원 native 명령에서만 소비하는 경계를 명시했습니다. 신규 IPC/HTTP/저장/auth는 여전히 미채택입니다.
+- 같은 Primary는 원 저장량 원장·native store와 신규 receiver/binding 단발성·정리의 최소 상태표를 읽기 대조 중입니다. memory만으로 재시작/복수 process 단발성을 보장한다고 하지 않습니다. Main 후보120초/원session+registration당1/command1은 아직 사용자 채택값이 아닙니다. fn06 코드writer0·실환경0입니다.

@@ -1909,3 +1909,9 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 
 
 - 2026-11-02 FN06/FN18 compiler source: code941b68c56ef17685b5011600d1128b71d0279a42 정확3/220추가2삭제, Main신규33+인접9=42PASS/FAIL0/SKIP0·desktoptype/diff0·독립I1/I2해소C0/I0. 기존producer→단발명시driver→원출력검산/source수명·불명보존 연결, 등록QA원TTL안회수/별도잔여0. 결과 docs/04_test_reports/AV3/FN06_NATIVE_PHYSICAL_FACTORY_COMPILER_SOURCE_RESULT_20261102.md SHA356F978D652D05BC6B176C6D9FFFDA868B38AE7FE64F41B53D9DBDC7DE2A9A25. 실제compiler/C#/OS·보호공급자·등록key/root생산/서명전달·제품조립·DB키권한서비스Agent·P03R3/사용자인수·전체FN06/FN18/계획미완료를유지한다.
+
+### 2026-11-03 FN12/UI05 과거 검수 페이지의 승인·검수 연결
+- 기존44업무 중 FN12/UI05의 상세 이력 조회를 구현한 source 하위 단위입니다. 새 Stage나 전체 완료 조건을 만들거나 축소하지 않습니다.
+- 직접 승인: call_38ed4cc7f50742c396f42772d7a66447의 A안 source-only. 고정 계약 [후보 r2](contracts/FN12_STORED_REVIEW_PAGES_CANDIDATE_20261103.md) SHA59B7F0E6178048AD5E5D1A3F1CF8E5B6C11B44A609B0A911182C91E1F44FF0B4, 현재 채택 binding은 [작업지시서](work_packages/FN12_STORED_REVIEW_PAGES_SOURCE_IMPLEMENTATION_20261103.md)와 WORK_STATUS를 따릅니다. 채택 전 후보 원문은 역사 바이트로 보존합니다.
+- [source 결과](04_test_reports/AV3/FN12_STORED_REVIEW_PAGES_SOURCE_RESULT_20261103.md) SHA5AC889BCBA79A372F605B02DCB68143C1010268F54F3E1936BA88FD7C40DBEB3. 정확8 구현·시험 파일과 소유문서3을 private6b40370c에 보존했고, Main 직접41PASS/메모리 build 및 재작업 근거를 기록했습니다.
+- FN12/UI05 전체는 부분 구현입니다. 실제 PG/RLS/served·사용자 인수와 검증 증거→ACCEPTED·실제 Agent 실행은 미완료입니다. 이 연결 기록은 기존 계획과 직접 승인 범위의 비의미 진행 추적이며 완료 기준을 바꾸지 않습니다.
