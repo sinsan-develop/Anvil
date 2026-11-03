@@ -13987,3 +13987,7 @@ Main 어울: 신산님 call_4662cf4731a44e75a3cd68e87e1181f1의 새 QA1회 승�
 
 ### 2026-11-04 IX01 R2 실제1회 FAILED·정리 검산
 Main 어울: R2승인소진. exact9c3674fa/SQL7e9ab984의105정의설치가0035에서42601/문장끝338행으로실패했다(8815c1 exit1). 오류원문미수집/직접원인미확정. installer권한회수검산·CLEANED,64a135/b34e7d독립확인에서신규source/fullID/QAname잔여0,감사3의도보존·정확복사. 준비CR경로오류1/래퍼구문오류1/기한오판자동심사거부1과시각증거로해소한사실을결과보고에보존한다. 실제추가QA0. 기존Primary읽기조사재개/코드writer0. 변경은본WORK_STATUS·신규결과보고·R2원장3. 미검증은뒤38정의·함수/RLS/API/UI/Agent/IX01인수. PMO보고완료. 상세: docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SLOT1_RESULT_20261104.md
+
+
+### 2026-11-04 IX01 0035 IF/CASE 최소source보정
+기존Primary가0035:308의CASE괄호2B/1hunk만보정하고writer반환했다. Main73bed0에서최종E7CD07F1·부모역치환동일/+2B/diffcheck0을독립검수. PG15공식문법소스의THEN/parenlevel경계근거확인. R2실제42601직접원인은미확정,실제추가QA0/기존실패보존. 상세 docs/04_test_reports/AV3/IX01_0035_IF_CASE_BOUNDARY_SOURCE_RESULT_20261104.md . 다음은새SQL기준의진단실행준비를source-only로결박하며기존승인은재사용하지않는다.

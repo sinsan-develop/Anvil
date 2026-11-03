@@ -305,7 +305,7 @@ BEGIN
   OR jsonb_typeof(s->'dependencies') IS DISTINCT FROM 'array' OR jsonb_typeof(s->'issues') IS DISTINCT FROM 'array'
   OR s->>'relationalProjection' NOT IN('STORED','ISSUES_ONLY') OR s->>'status' IS DISTINCT FROM 'DRAFT'
   OR s->'dependencies' IS DISTINCT FROM anvil.work_plan_approval_dependencies(b.payload_json->'tasks')
-  OR s->>'relationalProjection' IS DISTINCT FROM CASE WHEN anvil.work_plan_approval_structure_invalid(b.payload_json->'tasks') THEN 'ISSUES_ONLY' ELSE 'STORED' END
+  OR s->>'relationalProjection' IS DISTINCT FROM (CASE WHEN anvil.work_plan_approval_structure_invalid(b.payload_json->'tasks') THEN 'ISSUES_ONLY' ELSE 'STORED' END)
   OR NOT anvil.work_plan_approval_cycle_issues_valid(b.payload_json->'tasks',s->'issues')
   OR EXISTS(SELECT 1 FROM anvil.work_plan_approval_required_issues(b.payload_json->'tasks') required
    WHERE (SELECT count(*) FROM jsonb_array_elements(s->'issues') issue WHERE issue->>'code'=required.code AND issue->>'location'=required.location)
