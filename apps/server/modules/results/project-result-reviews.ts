@@ -1,4 +1,4 @@
-import {randomUUID} from 'node:crypto';
+import {randomUUID,timingSafeEqual} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -43,6 +43,37 @@ export class ProjectResultReviews{
   if(rows.length>21||new Set(rows.map(r=>r.id)).size!==rows.length)fail('RESULT_REVIEW_LEDGER_INVALID');
   for(const row of rows){const ref={id:row.id,version:1,contentHash:row.content_hash};if(!refV1(ref))fail('RESULT_REVIEW_LEDGER_INVALID');const value=await this.read(db,actor,pid,row.id),s=value.snapshot;if(!same(value.ref,ref)||!same(s.input.resultRef,result.ref))fail('RESULT_REVIEW_LEDGER_INVALID');items.push({ref:value.ref,criteriaRef:s.input.criteriaRef,outcome:s.input.outcome,reviewedBy:s.reviewedBy,sameAsSubmitter:s.sameAsSubmitter,reviewedAt:s.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false});}
   await projectMember(db,actor,pid);return cloneV1({projectId:pid,resultRef:result.ref,items:items.slice(0,20),hasMore:rows.length>20,selectionState:'NOT_SELECTED',observedAt:await this.#clock(db)});
+ }
+ /** 신규 유한 페이지. 인증 pool/Tx 종료는 기존 repository가 소유한다. */
+ async page(rawDb:PoolClient,rawActor:AuthenticatedIdentity,pid:string,resultId:string,query:unknown,sign:(text:string)=>string,signal?:AbortSignal){
+  const actor=structuredClone(rawActor),session=actor.authSession,start=performance.now();let deadline=start+30000,active=true,anchorAt=0,anchorMono=start;
+  const check=()=>{if(!active||signal?.aborted||performance.now()>=deadline)fail('RESULT_REVIEW_PAGE_EXPIRED',410);};
+  check();if(!uuidV1(pid)||!uuidV1(resultId)||!session||!uuidV1(session.id)||!Number.isSafeInteger(actor.credentialGeneration)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt))fail('AUTH_REQUIRED',401);
+  if(!recordV1(query,[])&&!recordV1(query,['cursor']))fail('INPUT_INVALID',400);
+  const cursor=(query as {cursor?:unknown}).cursor;if(cursor!==undefined&&(typeof cursor!=='string'||!cursor||cursor.length>4096||Buffer.byteLength(cursor)>4096))fail('INPUT_INVALID',400);
+  // 모든 하위 exact reader도 같은 query 경계를 소비한다. pending 자체는 제거/회수하지 않는다.
+  const db={query:async(...args:unknown[])=>{check();const value=await Reflect.apply(rawDb.query,rawDb,args);check();return value;}} as PoolClient;
+  const clock=async()=>{check();const at=Date.parse(await this.#clock(db)),mono=performance.now();if(!anchorAt){anchorAt=at;anchorMono=mono;}const now=Math.max(at,anchorAt+mono-anchorMono);anchorAt=now;anchorMono=mono;deadline=Math.min(deadline,mono+Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))-now);check();return new Date(at).toISOString();};
+  try{
+   const observed=await clock();await projectMember(db,actor,pid);check();const original=await this.results.read(db,structuredClone(actor),pid,resultId);check();if(!refV1(original.ref)||original.ref.id!==resultId||original.snapshot.scope.projectId!==pid)fail('RESULT_REVIEW_SOURCE_INVALID');
+   const binding=sign('binding:'+canonicalJson({purpose:'FN12_REVIEW_PAGES',userId:actor.actorId,clientId:actor.clientId,sessionId:session.id,credentialGeneration:actor.credentialGeneration,projectId:pid,resultRef:original.ref,pageSize:20}));
+   let window={startedAt:observed,expiresAt:new Date(Math.min(Date.parse(observed)+1800000,Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))).toISOString()},last:{at:string;id:string}|null=null,rootToken='';
+   const encode=(v:unknown)=>Buffer.from(canonicalJson(v)).toString('base64url');
+   const decode=(encoded:string,signature:string,message:string)=>{const expected=sign(message);if(!/^[a-f0-9]{64}$/.test(expected)||!timingSafeEqual(Buffer.from(signature,'hex'),Buffer.from(expected,'hex')))throw Error();const decoded=Buffer.from(encoded,'base64url').toString('utf8'),v=JSON.parse(decoded);if(Buffer.from(decoded).toString('base64url')!==encoded||canonicalJson(v)!==decoded)throw Error();return v;};
+   if(cursor!==undefined){
+    try{const parts=(cursor as string).split('.');if(![2,4].includes(parts.length)||parts.some((p,i)=>!(i%2?/^[a-f0-9]{64}$/:/^[A-Za-z0-9_-]+$/).test(p)))throw Error();const [encoded,signature,position,positionSignature]=parts;rootToken=encoded+'.'+signature;const v=decode(encoded!,signature!,'root:'+encoded);
+     if(!recordV1(v,['schemaVersion','purpose','binding','window'])||v.schemaVersion!==1||v.purpose!=='FN12_REVIEW_PAGES'||v.binding!==binding||!recordV1(v.window,['startedAt','expiresAt'])||!isoV1(v.window.startedAt)||!isoV1(v.window.expiresAt)||Date.parse(v.window.startedAt)>Date.parse(observed)||Date.parse(v.window.expiresAt)>Date.parse(v.window.startedAt)+1800000||Date.parse(v.window.expiresAt)<=Date.parse(v.window.startedAt))throw Error();window={startedAt:v.window.startedAt,expiresAt:v.window.expiresAt};
+     if(position!==undefined){const p=decode(position,positionSignature!,'position:'+rootToken+':'+position);if(!recordV1(p,['schemaVersion','purpose','last'])||p.schemaVersion!==1||p.purpose!=='FN12_REVIEW_PAGES'||!recordV1(p.last,['at','id'])||typeof p.last.at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,6}Z$/.test(p.last.at)||!Number.isFinite(Date.parse(p.last.at))||!uuidV1(p.last.id)||Date.parse(p.last.at)>Date.parse(window.startedAt))throw Error();last={at:p.last.at,id:p.last.id};}
+    }catch{fail('RESULT_REVIEW_CURSOR_INVALID',400);}
+   }else{const encoded=encode({schemaVersion:1,purpose:'FN12_REVIEW_PAGES',binding,window});rootToken=encoded+'.'+sign('root:'+encoded);}
+   deadline=Math.min(deadline,anchorMono+Date.parse(window.expiresAt)-anchorAt);check();
+   const rows=(await db.query(`SELECT id,content_hash,to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM anvil.result_reviews WHERE project_id=$1 AND result_id=$2 AND created_at<=$3::timestamptz AND ($4::timestamptz IS NULL OR (created_at,id)<($4::timestamptz,$5::uuid)) ORDER BY created_at DESC,id DESC LIMIT 21`,[pid,resultId,window.startedAt,last?.at??null,last?.id??null])).rows;
+   if(rows.length>21||new Set(rows.map(r=>r.id)).size!==rows.length)fail('RESULT_REVIEW_LEDGER_INVALID');
+   const items=[];let previous=last;
+   for(const row of rows){if(!uuidV1(row.id)||typeof row.cursor_at!=='string'||!Number.isFinite(Date.parse(row.cursor_at))||Date.parse(row.cursor_at)>Date.parse(window.startedAt)||previous&&(row.cursor_at>previous.at||row.cursor_at===previous.at&&row.id>=previous.id))fail('RESULT_REVIEW_LEDGER_INVALID');previous={at:row.cursor_at,id:row.id};const value=await this.read(db,actor,pid,row.id);check();const v=value.snapshot;if(!same(value.ref,{id:row.id,version:1,contentHash:row.content_hash})||!same(v.input.resultRef,original.ref)||v.reviewedAt!==new Date(row.cursor_at).toISOString())fail('RESULT_REVIEW_LEDGER_INVALID');items.push({ref:value.ref,criteriaRef:v.input.criteriaRef,outcome:v.input.outcome,reviewedBy:v.reviewedBy,sameAsSubmitter:v.sameAsSubmitter,reviewedAt:v.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false});}
+   await projectMember(db,actor,pid);const observedAt=await clock();check();const hasMore=rows.length>20,tail=rows[19],encoded=hasMore?encode({schemaVersion:1,purpose:'FN12_REVIEW_PAGES',last:{at:tail.cursor_at,id:tail.id}}):null,nextCursor=encoded?rootToken+'.'+encoded+'.'+sign('position:'+rootToken+':'+encoded):null;
+   const value={projectId:pid,resultRef:original.ref,items:items.slice(0,20),hasMore,nextCursor,selectionState:'NOT_SELECTED',observedAt,pageSize:20,window};if(nextCursor&&Buffer.byteLength(nextCursor)>4096||Buffer.byteLength(canonicalJson(value))>65536)fail('RESULT_REVIEW_PAGE_LIMIT');check();return cloneV1(value);
+  }finally{active=false;}
  }
  async save(db:PoolClient,rawActor:AuthenticatedIdentity,raw:ProjectCommand,rawPolicyRef:RuntimeRefV1){const actor=structuredClone(rawActor),request=cloneV1(raw),policyRef=cloneV1(rawPolicyRef);
   if(request.operation!=='evaluateResult'||request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null||request.baselineRefs.length||!refV1(policyRef))fail('RESULT_REVIEW_INPUT_INVALID',422);
