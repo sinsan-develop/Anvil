@@ -13397,3 +13397,36 @@ git diff --check
 - Main의추가읽기에서는execution-credential-current.ts의기존합성scope가executionGeneration/grantRef/credentialGeneration을쓰며HUMAN project controlGeneration과분리됨을확인했다. actual권위/OS증거는아니다. 이기존실행/grant를재발급/회수/재dispatch하지않는것과oldclient의새HUMAN명령차단을분리해같은범위시험으로검산하도록Primary에전달했다.
 - 독립Reviewer는승인설계9.3/INTERFACES13.6·FN01계보/실제발급코드를읽고,정확EMPTY생성계보+모든서버발급관리범위/원장·미정착/끝관측·공유잠금/세대fence가폐쇄됐음을증명하면외부OScurrent공급자를무조건요구할근거는없다고반환했다. 실제OS무실행증명이아니며count0/EMPTY표시/caller bool로닫지않는다. 기존root/복원/출처불명·실행/준비/불명work/coverage·잠금불완전은UNKNOWN그대로다. 전체발급경로폐쇄가아직증명됐다는판정은아니다. 준비조회파일명복수형1건은실목록으로정정했고부재근거로쓰지않았다.
 - Main은WI r6 FFF64865E8DD2DD72FF84B23D3D00792DE8202237897D442963A9BB63429607A의§15에위추가경로와같은원FN15의내부안전검산상세를기록했다. scope41·동일단일Primarywriter를이어주며code동시쓰기0·Git/문서Main소유다. 빈관리범위의protected생산/소비를실제로닫지못하면정확UNKNOWN을유지하고나머지구현을계속한다. 새OS proof/키목적/원문·사용자권한·실효과추가0·전체FN15/계획미완료다.
+### 2026-11-03 FN15 실제 서비스 연결·과거 GET 검증·미정착 기한 반례
+- Main d06e9f/95107e/ce053a는같은Primary running·HEAD22502d43/WIr6 FFF64865/수락서비스·0073pending실파일/route·Pg factory변경을읽기대조했다. 0073은10085B→30206B로작성중이며서비스checksum UNWRITTEN_SOURCE도아직최종고정전상태였다. 파일존재를SQL/RLS/기능완료로쓰지않고최종checksum·실물리연결을따로검수한다.
+- Primary는서비스준비/정산/replay·COMMIT불명2PASS(2da1d4),후속physical timestamp/session metadata4PASS(f6c8cb),actual Pg factory/새4route→서비스연결뒤root noEmit0(1e7521)을제출했다. 이는해당시점합성/타입범위이며전체SQL/수락/UI인수아니다. WIr6/41경로와폐쇄된EMPTY근거조건도수용했다고확인했다.
+- Main83e256은#summary가항상최신LIMIT1이라과거정확GET가막히는진행중접점을확인하고v1→v2후고정GET(v1)/옛v1새accept거절을분리하도록전달했다. Primary는8cebec행동RED→1d2dcb1PASS(과거v1반환·옛v1새accept409/facts추가0)를제출했다. 중간421fba는fakeDB가SQL LIMIT1을모델링하지않은준비누락1이며제품을재패치하지않고fixture를정정했다.
+- Main447ba8/59c0d3의추가읽기: 현재HandoffBudget.own은raw task를그냥await하고원기한timer/race가없으며서비스pool.connect도budget밖이었다. query/pool이계속pending이면원30초·더짧은기한에외부응답을끝내지못하고catch의close await도실제정착까지응답을붙잡는다. 이를진행중새반례로Primary에전달했다. deferred pool/query의외부bounded종료·그뒤새query/BEGIN0·늦은client/원query실정착/rollback/release소유를분리하는행동RED→GREEN이필요하다. pending조기삭제/정상pool반환/정리완료주장·기한완화0이다. 이는미완성단계확인사항이며정식동일실패3회로세지않는다.
+- codewriter는계속같은Primary41이며Main동일코드쓰기0·기존테스트중복실행0·실제키/DB/권한/서비스/Agent/제품네트워크/OS/실자료0이다. SQL·current/폐쇄근거·수락/후속UI전체는계속미완료·전체계획미완료다.
+### 2026-11-03 FN15 pool/query 외부 기한 RED→GREEN 제출
+- Primary는54f6b7에서pool/query가외부PENDING을유지하는행동RED2를확보했고1da70d보완후2PASS를제출했다. budget timer의외부응답과raw IO추적을분리하고pool.connect도원lease안에넣었다. 외부종료뒤미정착중BEGIN/후속query/rollback/release0,실제정착뒤late client release또는원rollback/release를검산한범위다.
+- COMMIT불명/rollback실패는정상pool반환대신error release로분리했다고반환했다. 원30초·session/reauth/source최소기한은늘리지않는다. 짧은session기한·후행wall축소·정리오류음성은아직추가중이며최종검수/전체서비스PASS가아니다. Main은같은writer를중복dispatch/검사재실행하지않고후속증거를기다린다.
+- 실제키/DB/권한/서비스/Agent/제품네트워크/OS/실자료/물리QA0·Primary41단일writer·Main동일코드쓰기0·전체FN15/작업계획미완료를유지한다.
+### 2026-11-03 FN15 capacity 중단 복구·두 번째 source WIP 보존
+- 기존Primary의모델turn은Selected model is at capacity오류1로authoritative errored였다. Main은running으로추정하거나새agent/모델을만들지않고같은agent를읽기복구했다. 복구결과HEAD22502d43/WIr6 FFF64865/41범위·미저장/진행중exec/session/cell0·실효과/QA0을확인해writer를일시반환받았다. 인프라오류1이며정식코드실패0이다.
+- Primary의후속f4b955는짧은session100ms/원query실제정착2PASS/619.4976ms·root noEmit0이다. 기존54f6b7 RED2→1da70d2PASS와같은범위를중복합산하지않고추가조건만구분한다. 검사는재실행하지않았다.
+- Main9cb87d는실제변경15경로전부가허용41안임·raw SHA·diffcheck0을읽기대조했다. pending0073 SHA1101014803AC758C361F2233FF7B36AD6E3AF412643CE7ECF288C771F977A033/30206B와service의UNWRITTEN_SOURCE checksum은아직작성중이라실제적용/최종checksumPASS가아니다. SQL/F완결·EMPTY폐쇄증명·정상수락CAS·일반guard/UI는미완료다.
+
+| 두 번째 WIP 경로 | SHA256 |
+|---|---|
+| apps/server/modules/approvals/project-approvals.ts | ECA1FC7CB101C94331011CDE7840384E7D9131AAF9B5697B11052F0F2BB551B3 |
+| apps/server/modules/control-handoff/control-grant.ts | 3821F25AABD3D9560A2CC34E818DB0459BCAFB0FBD08EBB60E1AE3712E2370D7 |
+| apps/server/modules/control-handoff/control-handoff-evidence-source.ts | CC895CEE414EEB5C9CEC76898DF9DD1AE3A9D845AEF6BD38DA6AA664D326D531 |
+| apps/server/modules/control-handoff/control-handoff-pg.ts | 911C6C1EC1AFEED6FFE0C82342EBA2552DB9C22CA28E875022D164751B892BE0 |
+| apps/server/modules/control-handoff/control-handoff-storage.ts | 4FF450979A37CA15053936BE1BB7E5E30BEA4AA8CE5ACE5B9E6703B85A6B8A3C |
+| apps/server/modules/control-handoff/routes.ts | 4603F33D857287F920455AA541D74C52A539086701D62E69FDBC0F38F34A693A |
+| apps/server/modules/executions/project-writer-authority.ts | C2EFB591F08A2D66C0C58326EE4AC0C373555CCC7A1CB4B9259FA1E4991737FD |
+| tests/unit/FN15/control-handoff-evidence-source.test.ts | C97C07380CEECB8D3FC795FC80415D3F782841015EF8CC41F4339A5323DD78BB |
+| tests/unit/FN15/control-handoff-protected-summary.test.ts | 6A721F1AE05AE313090104D1041E0732495156CE1DF52ECF33EEEFDE44F17914 |
+| tests/unit/FN15/control-handoff-storage.test.ts | CB90E494B1F6D3AAEE9E0E8E088B95C975035A706D8D7A8EC736AA13643B4DC3 |
+| apps/server/modules/control-handoff/control-acceptance.ts | 5732C1F0C813E9726FA9E1177DF6B5CE4DBAA4E29F3612769BE042658C0D975B |
+| apps/server/modules/control-handoff/control-handoff-protected-summary.ts | 29129E6972404964B97E22AE676AA432C9192F0A37B1C229B39EDD3FB98E795A |
+| db/migrations/0073_control_handoff_acceptance.sql.pending | 1101014803AC758C361F2233FF7B36AD6E3AF412643CE7ECF288C771F977A033 |
+| tests/unit/FN15/control-acceptance-schema.test.ts | 9D7D2848644CC200585499A0CE663C444ACE161259412357F371C50DCF55BA00 |
+| tests/unit/FN15/control-acceptance.test.ts | 16AF0AEDAF2EFCAD69A8563F7B62FFFB8ADAC90275283F985C4A3CD33B87612B |
+- Main은이코드15+현황1의정확16경로만WIP복구checkpoint/private로보존한다. 불완전SQL/checksum·남은연결을합격으로승격하지않고같은Primary41writer를즉시재개한다. 실제키/DB/권한/role/GRANT/서비스/Agent/제품네트워크/OS/실자료0·Main동일코드쓰기0·보호3보존·PR/main병합/배포/전체FN15·계획완료0이다.

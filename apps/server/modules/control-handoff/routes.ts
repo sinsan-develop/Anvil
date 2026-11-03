@@ -1,6 +1,7 @@
+import {ControlAcceptanceFailure,readControlAcceptanceCommand} from './control-acceptance.ts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { parseWireJson } from '../../../../contracts/canonical.ts';
-import { hashV1, recordV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
+import { hashV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { requestControl, ControlRequestStoreFailure } from './control-request-store.ts';
 import { readControlRequest, listControlRequests, ControlRequestReadFailure } from './control-request-read.ts';
@@ -93,6 +94,7 @@ const errorShape = (error: unknown): { code: string; status: number; commandId: 
       || (error.message === 'ORIGIN_INVALID' && error.statusCode === 403)
       || (error.message === 'INPUT_INVALID' && error.statusCode === 400)))
     return { code: error.message, status: error.statusCode, commandId: null };
+  if(error instanceof ControlAcceptanceFailure){const status=error.statusCode,code=status===401?'AUTH_REQUIRED':status===403?'ACCESS_DENIED':status===404?'NOT_FOUND':status===400?'INPUT_INVALID':status===409?'CONFLICT':status===412?'HANDOFF_NOT_READY':error.code==='CONTROL_ACCEPTANCE_OUTCOME_UNKNOWN'?'OUTCOME_UNKNOWN':'STORAGE_FAILED';return{code,status,commandId:error.commandId};}
   if (error instanceof ControlRequestStoreFailure || error instanceof ControlRequestReadFailure
     || error instanceof HandoffSummaryStoreFailure || error instanceof ControlDiscoveryFailure) {
     const code = error.code;
@@ -142,6 +144,23 @@ export function registerControlHandoffRoutes(app: FastifyInstance, options: Cont
     });
     const base = '/api/v1/projects/:projectId/control-requests';
     const version = `${base}/:requestId/versions/:requestVersion`;
+    const acceptancePort=(request:FastifyRequest,projectId:string)=>{const p=options.source.forSession(sessionToken(request),csrfToken(request),projectId).acceptancePort;if(!p)throw new ControlAcceptanceFailure('CONTROL_ACCEPTANCE_NOT_CONNECTED');return p;};
+    scoped.post<{Params:RequestParams;Body:unknown}>(`${version}/protected-handoff-summaries`,{bodyLimit:2*1024*1024},async(request,reply)=>{
+      const pid=validProject(request.params.projectId),c=readControlAcceptanceCommand(request.body,'prepareControlHandoff');if(c.projectId!==pid||c.payload.requestRef.id!==request.params.requestId||c.payload.requestRef.version!==exactVersion(request.params.requestVersion))fail('INPUT_INVALID',400);
+      return reply.code(201).send(await acceptancePort(request,pid).prepare(c));
+    });
+    scoped.get<{Params:SummaryParams;Querystring:unknown}>(`${version}/protected-handoff-summaries/:summaryVersion`,async request=>{
+      const pid=validProject(request.params.projectId),q=query(request.query,['requestHash','summaryHash']),r=requestRef(request.params,q.requestHash),ref={id:r.id,version:summaryVersion(request.params.summaryVersion),contentHash:validHash(q.summaryHash)};return acceptancePort(request,pid).readSummary(r,ref);
+    });
+    scoped.post<{Params:RequestParams;Body:unknown}>(`${version}/acceptances`,{bodyLimit:2*1024*1024},async(request,reply)=>{
+      const pid=validProject(request.params.projectId),c=readControlAcceptanceCommand(request.body,'acceptControl');if(c.projectId!==pid||c.payload.requestRef.id!==request.params.requestId||c.payload.requestRef.version!==exactVersion(request.params.requestVersion))fail('INPUT_INVALID',400);
+      return reply.code(201).send(await acceptancePort(request,pid).accept(c));
+    });
+    scoped.get<{Params:RequestParams&{commandId:string};Querystring:unknown}>(`${version}/acceptances/:commandId`,async request=>{
+      const pid=validProject(request.params.projectId),q=query(request.query,['commandHash']),result=await acceptancePort(request,pid).readResult(validProject(request.params.commandId),validHash(q.commandHash));
+      if(!recordV1(result,['schemaVersion','purpose','commandId','projectId','acceptanceRef','requestRef','summaryRef','previousControl','nextControl','grantRef','receiptRef','auditRef','recordedAt','executionAuthorized','dispatchPerformed','controlTransferred'])||result.purpose!=='CONTROL_ACCEPTANCE_RESULT'||result.projectId!==pid||result.commandId!==request.params.commandId||!refV1(result.requestRef)||result.requestRef.id!==request.params.requestId||result.requestRef.version!==exactVersion(request.params.requestVersion))throw new ControlAcceptanceFailure('CONTROL_ACCEPTANCE_NOT_FOUND',404);return result;
+    });
+
     scoped.get<{ Params: ProjectParams }>(
       '/api/v1/projects/:projectId/control-state', async request => {
         const projectId = validProject(request.params.projectId);

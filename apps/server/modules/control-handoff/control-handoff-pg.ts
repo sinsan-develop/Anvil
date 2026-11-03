@@ -1,3 +1,5 @@
+import {ControlAcceptanceService} from './control-acceptance.ts';
+import type {ControlHandoffEvidenceSource,HandoffClock} from './control-handoff-evidence-source.ts';
 import { readOwnControlHandoffHistoryRows } from '../backups/control-handoff-history-inventory.ts';
 import { readDocumentInventoryInput } from '../backups/document-inventory-input.ts';
 import { notificationSessionDeadline } from '../notifications/notification-input.ts';
@@ -93,6 +95,7 @@ function summaryRecord(row: Row): HandoffSummaryRecord {
 }
 
 export interface ControlHandoffPgSession {
+  acceptancePort?:ReturnType<ControlAcceptanceService['forSession']>;
   requestPort: ControlRequestStorePort;
   readPort: ControlRequestReadPort;
   summaryPort: HandoffSummaryPort;
@@ -101,7 +104,7 @@ export interface ControlHandoffPgSession {
 export interface ControlHandoffPgSource {
   forSession(token: string, csrf: string, projectId: string): ControlHandoffPgSession;
 }
-export interface ControlHandoffPgOptions { pool: Pool; access: AccessRepository; enabled?: boolean }
+export interface ControlHandoffPgOptions { pool: Pool; access: AccessRepository; enabled?: boolean; protectedEvidence?:ControlHandoffEvidenceSource; clock?:HandoffClock }
 
 type HistoryIdentity=Readonly<{actorId:string;clientId:string;credentialGeneration:number;sessionId:string}>;
 type HistoryConstraint=Readonly<{expectedIdentity:HistoryIdentity;deadlineMonotonicMs:number}>;
@@ -126,6 +129,7 @@ export async function readControlHandoffHistoryForComposition(source:unknown,roo
 /** 실제 연결은 enabled=true를 명시하고 transaction을 호출한 때에만 시작한다. */
 export function createControlHandoffPgSource(options: ControlHandoffPgOptions): ControlHandoffPgSource & {readOwnHistoryInventory(token:string,csrf:string,value:unknown,signal:AbortSignal):Promise<Record<string,unknown>>} {
   const enabled = options.enabled === true;
+  const acceptance=new ControlAcceptanceService({pool:options.pool,access:options.access,evidence:options.protectedEvidence,clock:options.clock});
   const source:ControlHandoffPgSource & {readOwnHistoryInventory(token:string,csrf:string,value:unknown,signal:AbortSignal):Promise<Record<string,unknown>>} = { readOwnHistoryInventory(token,csrf,value,signal){
     if(!enabled)return Promise.reject(new ControlHandoffPgFailure('CONTROL_REQUEST_NOT_CONNECTED'));
     return readOwnHistoryFromFactory(options.pool,options.access,token,csrf,value,signal);
@@ -168,6 +172,7 @@ export function createControlHandoffPgSource(options: ControlHandoffPgOptions): 
       } finally { db.release(); }
     }
     return {
+      acceptancePort:acceptance.forSession(token,csrf,projectId),
       requestPort: { sourceMode: 'POSTGRES_SOURCE', transaction: async <T>(work: (tx: ControlRequestTransaction) => Promise<T>) =>
         run(context => work(context.requestTransaction())) },
       readPort: { sourceMode: 'POSTGRES_SOURCE', signer,

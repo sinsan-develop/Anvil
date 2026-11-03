@@ -13,7 +13,7 @@ export const sameControl=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson
 export function copyControlData<T>(value:T,maxBytes=4*1024*1024):T{
  let bytes=0,nodes=0;const seen=new Set<object>();
  const read=(v:unknown,depth:number):unknown=>{
-  if(++nodes>200000||depth>64)fail();
+  if(++nodes>maxBytes*2||depth>64)fail();
   if(v===null||typeof v==='boolean')return v;
   if(typeof v==='number'){if(!Number.isSafeInteger(v))fail();return v;}
   if(typeof v==='string'){bytes+=Buffer.byteLength(v,'utf8');if(bytes>maxBytes)fail();return v;}
