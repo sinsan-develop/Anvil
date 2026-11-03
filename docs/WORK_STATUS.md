@@ -14117,3 +14117,11 @@ Main3de8b3 감사사본6 byteexact/mirror·보호untracked3불변·역할회수/
 
 ### 2026-11-04 provider owner source2 독립 검수
 Primary ba8bea 기존46+신규10=56PASS/skip0/1056.8243ms/e4985a noEmit0/0e325d Bash-n0/28ec28 diff0·writer반환/live0. Main5de96f fresh56PASS/skip0/1094.703ms,2fee27 driver23FF80EF/시험FBCC6C5E exact·원46보존/SQL제품불변·defaultbootstrap/metadataSQL불변·선택bootstrap256BDF90/회수A6BFD8FA actual생산원문hash 검산0. 61f5e6/a35d7a 실제공유path/hash/0037한정Tx·phase별owner/member·UNKNOWN차단읽기 scoped C0/I0/M0. 시험조립1363da1건은부분문자열치환의특수토큰준비오류로보정했고의도RED3+hashRED1→GREEN과분리했다. 정식반복보완실패0/Main코드write0. 실제PG/role/GRANT·키·서비스·Agent/P03R3실행0·새실QA미승인/원R4FAILED·R3UNKNOWN유지. 상세 docs/04_test_reports/AV3/IX01_PROVIDER_OWNER_SETUP_SOURCE_RESULT_20261104.md . 다음새namespace/code/roleSQL·Tx/기한·UNKNOWN·정리계약동결뒤새단발직접결정전실행금지. 전체계획미완료.
+
+
+### 2026-11-04 R5 고정 namespace source 준비 배정
+provider source2는4fa524c2dd2ec0c84ce15b00c61db716d4fe5122/88867c localprivateexact·trackedclean/보호3만이다. Main WI0993F9C6F6625DA3C2294891B567682A5DEEA9BCA67DA4A7F6B629D47E573FD4로같은Primary에driver/시험/R5 indexrawcopy 정확3경로 namespace/직전cwd음성만배정했다. 부모로직역치환byteequal·SQL0a/index106/선택105/2376139B/order09d/role권한·Tx·기한/UNKNOWN불변을검수한다. Main동시코드write0·실QA/DB/키/권한/WSL/서비스/Agent/P03R3실행0. R5실제자원은아직생성하지않으며새고정code/instance/SQL·회수/기한·정리실행안의직접결정전금지. 원R4FAILED/정리잔여0·감사보존과전체계획미완료를유지한다.
+
+
+### 2026-11-04 R5 source3 namespace 검수
+Primary c94421 부모raw역치환동일·cb934d 직접3PASS/skip0/166.4829ms/54ca29 Bash-n0/96af97 diff0·writer반환/live0. Main0c5b71 driverEE1795DA/시험D078D025·부모4fa524c2의namespace/제목/직전R4cwd음성만byteexact변경,신규indexrawD6B4 동일복사검산0. Main7faee8 변경음성1PASS/326.7841ms/diff0. 부모fresh56/noEmit은동일로직근거로재사용하며반복전수검사0. SQL0a/index106/명시105·2376139B/order09d·준비role/Tx/회수/기한/UNKNOWN불변. 실제R5/DB·권한·키·서비스·Agent/P03R3실행0,원R4FAILED/정리잔여0보존·전체계획미완료. 다음이source3의정확code를고정하고결과보고·새실행후보를작성한다.
