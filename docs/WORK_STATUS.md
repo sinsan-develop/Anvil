@@ -14017,3 +14017,7 @@ Primary be58b8/6f2c29 정확10파일/11표현/22B·writer반환. Main438efe 메�
 Primary최종12459DF3/BF64EC54/D6B4B8AB로writer반환/live0. ab9be4 39PASS/skip0/395.4085ms,983f7f타입0,cd268c Bash-n0,c6b1af diff0. Main f2070c최종39PASS/skip0/405.6222ms,23278c SQL106Gitblob일치/105선택2376139B/order09d·driver결박외변경0. 최초bf2206 38P1F는sandboxBash시작3221225794·f03dae Mainindex표머리오독count실패로분리보존,제품/시험기준완화0. source결과와R3실행후보를작성했으나코드SHA동결전/PENDING_CODE·실제미승인이다. 새bootstrapHash c490086b·기존회수/관측조건유지. 실제R3/DB/권한/키/WSL/서비스/Agent/P03R3실행0,이전R1/R2실패·감사보존·전체계획미완료.
 
 - Main cb3f5d는정확6stage/diff검사뒤WORK_STATUS raw/index조회에서Node기본buffer1MiB ENOBUFS로중단했다. commit은실행전이며staged자료보존. 파일크기기준buffer로읽기검산을보완하고제품/실제QA변경없음.
+
+
+### 2026-11-04 R3 단발 실행 후보 동결
+c15cb3 exact6source/docs commit fc59c4e8d1f0a56c909ed219fee5e7c0f86ba528를기준으로새실행패킷SHA256 866a67d9502adad98655511f88a9b2ba679e0e0afcf87e55a2417988b68a1caa를동결했다. bootstrap c490086b,SQL0a647daa/indexD6B4B8AB/105합계2376139B·order09d,신규r3자원/단1회/30분·PG10분·불명보존·정착권한회수/정리/기존DB키서비스Agent제외를명시했다. 실제R3미승인/미실행. R2승인은소진됐고재사용하지않는다.

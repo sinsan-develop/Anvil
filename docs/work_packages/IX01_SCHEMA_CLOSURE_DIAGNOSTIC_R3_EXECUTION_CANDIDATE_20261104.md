@@ -1,11 +1,11 @@
 # IX01 R3 SQL 정의 설치 단1회 실행 후보
 
-2026-11-04 · 미승인 / 실제실행금지 / 코드SHA동결전결정질문금지
+2026-11-04 · 미승인 / 코드·SQL 동결 / 실제 실행 금지
 
 R2는0035에서42601로실패했고회수·정리잔여0/감사보존했다. 이승인은소진됐다. R3는같은PL/pgSQL IF/CASE구문군0035+추가10파일11곳의괄호만보정한뒤전체정의설치를한번확인하는새범위다. 실제오류의직접원인은원문미수집으로미확정이며source검수를PG통과로승격하지않는다.
 
 ## 고정소스
-- 실행code: PENDING_CODE
+- 실행code: fc59c4e8d1f0a56c909ed219fee5e7c0f86ba528
 - SQL baseline:0a647daa66103ada3bd5e949b64f407c3e7b5687
 - driver SHA256:12459df3203ed856021a5341fd0472894ee7dff8716898eba7c6c47629c7864e
 - unit SHA256:bf64ec5496141c87122fb39dc3a52b9eac2a210e0b38dc128e7d87c590859dfe
@@ -147,3 +147,7 @@ BEGIN;CREATE ROLE anvil_v3_migrator LOGIN INHERIT NOSUPERUSER NOCREATEDB CREATER
   "db/migrations/0074_project_membership_versions.sql.pending"
 ]
 ```
+
+
+## 최종 게시 결박
+실제 실행은위code fc59c4e8d1f0a56c909ed219fee5e7c0f86ba528에서만수행한다. 새소유instance fc59c4e8d1f0a56c909ed219fee5e7c0f,slot1/previousHashnull. packet은후속문서commit에고정하지만실행code를문서tailSHA로대체하지않는다. 실행전local/privateexact와source clean·전체hash를재검산한다. 이문서는아직실제실행승인이아니며추가결정후에만30분창을시작한다.
