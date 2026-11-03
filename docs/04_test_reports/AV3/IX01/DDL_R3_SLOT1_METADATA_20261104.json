@@ -1,0 +1,61 @@
+{
+  "observedAt": "2026-11-03T16:36:40.850Z",
+  "manualReadOnly": true,
+  "dbExec": false,
+  "mutation": false,
+  "container": {
+    "id": "dda0ac772e0618ad143a7aedcb3a4a92c6354f7389d3f8e7e3635fa3c59250ec",
+    "name": "/anvil-ix01-ddl-pg-20261104-r3-a1",
+    "image": "sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f",
+    "labels": {
+      "anvil.instance": "fc59c4e8d1f0a56c909ed219fee5e7c0",
+      "anvil.owner": "IX01_DDL_20261104_R3",
+      "anvil.plan": "a4c40e6a3c425acc94321511ad3950b24dc6aadf6fdec6899644e1660bad19d9"
+    },
+    "user": "999:999",
+    "networkMode": "none",
+    "portBindings": {},
+    "publishAllPorts": false,
+    "readonlyRoot": true,
+    "privileged": false,
+    "capDrop": [
+      "ALL"
+    ],
+    "securityOpt": [
+      "no-new-privileges"
+    ],
+    "binds": null,
+    "tmpfs": {
+      "/tmp": "rw,noexec,nosuid,size=16777216,uid=999,gid=999",
+      "/var/lib/postgresql/data": "rw,noexec,nosuid,size=268435456,uid=999,gid=999",
+      "/var/run/postgresql": "rw,noexec,nosuid,size=16777216,uid=999,gid=999"
+    },
+    "mounts": [],
+    "logging": "none",
+    "pidsLimit": 64,
+    "memory": 536870912,
+    "nanoCpus": 1000000000,
+    "state": {
+      "running": true,
+      "status": "running",
+      "pid": 1047187,
+      "startedAt": "2026-11-03T16:35:59.772632382Z",
+      "finishedAt": "0001-01-01T00:00:00Z",
+      "exitCode": 0
+    }
+  },
+  "files": {
+    "owner.json": {
+      "bytes": 199,
+      "hash": "609f190d1fb0cbc8598a5d073ac8f4b185c53bbe2716881eab0a38d8b71c5b2b"
+    },
+    "slot-a1.intent.json": {
+      "bytes": 414,
+      "hash": "ef42cfebcc21ea1fc46911c96595cdb61e5010df4c0913cf5907118132628cce"
+    },
+    "slot-a1.result.json": {
+      "bytes": 821,
+      "hash": "0b0a8f67eadbb09ac21c6579b2ccef22cc631467c0ca38f9e5c45e68d71756b4"
+    }
+  }
+}
