@@ -13302,3 +13302,23 @@ git diff --check
 - 기존 Reviewer가 R2의 실제25필드 위임/Offer·Binding·19필드Current·원 challenge/request·frame외피를 독립 계산했다. 3524+2245+2348+930+571+267=9885가 같은 폭 가정에서 재현돼 산식 정정은 없다. Main은 원후보 실제 선언과 대조했다. 전체 후보나 실행 검증이 아닌 조건부 산술 검산이다.
 - 결과서의 직전 미증명 기록은 보존하고 후속 절로 보완했다. 최신 결과서 SHA256 4EFFA9FBF22105791BE87DADDE1DD62AA656CCFCDB72378DC5C39B782347F832, R2 원문85F8F15E 불변이다. nominal authority의 실제 생성 가능성·신규 parser/수신자 원형·고정조회/helper 총량·binary/부분/거절/재연결/동시복사 buffer 증거는 여전히 미확정이다. 후보 미채택·SOURCE_GO0/EXECUTION_GO0·Important9를 유지한다.
 - 이번 한정 검토 오류0·기존 제품 검사 재실행0·제품/시험/SQL 쓰기0다. 실제 키·DB·권한·서비스·Agent·제품 네트워크·실자료 조사 없이 문서만 누적했다. 기존 FN15 업무 초안1개 작성은 별도 문서 전용 위임이며 제품 구현을 시작하지 않았다. 전체 작업계획은 미완료다. 다음에는 미채택 방향과 무관하게 확정 가능한 남은 기술 경계만 이어간다.
+### 2026-11-03 FN15 기존 승인 수락 기능의 문서 초안 반환·독립 검수
+- 기존 Primary는 FN15_CONTROL_ACCEPTANCE_SOURCE_IMPLEMENTATION_20261103.md 한 파일 초안 writer를 반환했다. 현재 DRAFT/IMPLEMENTATION_GO0/EXECUTION_GO0이며 제품/SQL/시험/Git·실효과0이다. 초안의 내부 실행주소 한 줄은 Main이 공식 프로젝트/branch 표기로 보정했다. 현재 SHA256 E2850D9D3E9EC439C13CE039D873A2B04B2001A32E53C88CB77DDDD11052550E이며 정본에 보존했다.
+- Main은 기채택 FUNCTION_WORK FN15 및 INTERFACES13.6/15.2의 실제 수락·원자적 옛 grant회수/새 세대·HANDOFF_ELIGIBLE 일반 변경 의미를 대조했다. DTO/물리형식 미작성만으로 전체 수락 재승인을 요구하지 않는다. 현재 U1 보호 current/coverage·계속실행근거, U2 실제 quota분모/정산, U3 grant/결과/물리제약, U4 OWNER관리권한 분리의 기술 상세는 아직 닫히지 않았다. nullable adapter나 출처없는count0로 안전/완료를 만들지 않는다.
+- 기존 Reviewer에게 문서의 의미/실행가능한 전체호출선·구체 Important만 읽기 검수하도록 맡겼다. 같은 code writer0·제품 구현 dispatch0, 실제 키·DB·권한·서비스·Agent·제품 네트워크·실자료 조사0이다. 원native 후보는 별개 미채택이며 보고서/현황9458379e 정상private게시·원격동일SHA/private main불변을 확인하고 PMO에 기술범위만 전달했다. 다음은 WI 검토결과를 실제 승인근거와 대조해 내부 기술 상세를 확정하는 일이다. 전체계획 미완료다.
+### 2026-11-03 FN15 초안 독립 C0/I1·수락자/근거주체 분리 보완
+- Reviewer는 초안 E2850D9D의 §5가 수락자 auth Tx에서 기존 ProjectWriterAuthorityRepository.current를 호출하도록 한 점을 I1로 확인했다. 실제 current→#human은 OWNER/현재control actor-client를 요구하므로 아직 controller가 아닌 target은403이다. §6 CAS뒤에도 옛base current를 요구하면 정상 전환을 자기거절한다. Main은 기존 Primary에게 WI한파일만 r2 보완하도록 재위임했다. 기존 public current/OWNER 완화·actor위장·제품쓰기는 허용하지 않았다.
+- U1의 수락자 접근/원근거 base 주체/CAS뒤 nextControl 검산 분리는 기존 승인 의미 안의 기술 상세다. U2~U4도 저장분모·원자정산·grant/CAS·OWNER관리권한의 Main 확정점이며 전체 accept 재승인 근거가 아니다. 새 OS proof/발급권한·타인조회/관리권한 확대가 실제 필요할 때만 그delta를 별도 분리한다. 과거 결과 조회에는 현재 인증/원결과 보호를 적용하되 당시summary기한/base를 새수락처럼 다시 요구하지 않는다.
+- 같은 Reviewer는 현재 quota 분모에서0041 5원장/project_control 포함관계와 제한 caller 접점만 읽기 확인한다. 기존FN03 guard전수검토/시험을 반복하지 않는다. Reviewer의 추정 observation-journal.ts 읽기1은os error2 준비오류였고 부재/제품실패로 사용하지 않았다. 정식구현실패0·코드writer0·IMPLEMENTATION_GO0이며 실제DB/키/권한/서비스/Agent/실자료0이다.
+### 2026-11-03 FN15 저장분모 누락의 읽기 조사
+- 기존 Reviewer는0072까지0041의 requests/summaries/commands/receipts/audits와project_control canonical행비용이 기존U/H와 별도소계 모두 미포함임을 함수/실제 저장 호출선으로 확인했다. 권한/계보검사에서 해당표를 읽는 것은 bytes계상 증거가 아니다.0059 ADOPTION도 선택Artifact만 계상한다.
+- 필요한 불변식은 기존U+기존H+기존별도소계+F실제+F미생성예약이다. 각(table,PK) 한번·mutablecontrol최초anchor소유 유지·실제F저장/미래예약감액 동일Tx가 필요하며, 과거0041귀속과 새계상시점을 구별하고 과거발급/정산ref를 합성하지 않는다.
+- 별도소계방식은 모든환경/정의/native/source/일반최종reserve의합계접점이같은F를소비해야한다. Main은 누락된일부경로로상한을우회하지않도록 기존used/held대조에F를통합하는 내부기술방식을권장후보로Primary에전달했다. 신규forward에서기존complete/settled분기불변·FN15원행완결·목적제한caller를정확히닫기전에는GO하지않는다. 이권장은기존한도/권한변경·실제DB적용승인이아니다.
+- 기존quota_account는OWNER/환경문맥,quota_current는현재controller/정책을요구하므로target위장호출금지를유지한다. 같은WI문서보완만진행하며제품/SQL/시험쓰기0·실제키/DB/권한/서비스/Agent/제품네트워크·실자료조사0이다. 전체계획미완료다.
+### 2026-11-03 FN15 WI r2 문서 반환
+- 기존 Primary는 WI r2 SHA256 965600BCC272949CC3980D646C54E31295FEA86988F38F850087754200F6F27B/44282B/285행의 문서 writer를 반환했다. 후보22경로이며 제품/SQL/시험/실효과0, DRAFT/IMPLEMENTATION_GO0/EXECUTION_GO0이다. Main은 정본의부모E285를대조해같은r2를보존했다.
+- r2는수락자접근/원base근거와CAS뒤nextControl/replay를분리하고,writer/승인소비의순수검산추출기존2파일을후보에추가한다. public current/승인소비 OWNER와일반조회권한은유지한다. 기존current만export하면approval소유검사에서다시403이고0070기본거절RLS도있어연결됐다고할수없다. FN15목적SQLreader/공급자조립은U1,실제F계상통합은U2미정으로명시한다.
+- Main은실제수정절과기채택수락의대상/전후제어의미를대조하고같은Reviewer에원I1한정읽기재검수를맡겼다. 제품구현dispatch0·전체계획미완료다. 다음은서술모순해소와실제구현전미정을분리한검토결과를기록하고안전checkpoint를보존하는것이다.
+### 2026-11-03 FN15 r2 원I1 서술모순 한정 재검수
+- 기존 Reviewer는 r2 965600BC 시작끝지문불변을확인해 원I1의서술모순해소/scoped C0/I0를반환했다. 수락자접근과base근거주체/public OWNER보존, CAS전base/후nextControl/과거replay분리를대조한범위이며제품구현해소가아니다. U1목적제한SQLreader·공급자와U2 F통합은여전히미정이므로IMPLEMENTATION_GO0을유지한다.
+- Main은현황과새WI두문서를기존branch의문서초안checkpoint로보존한다. native검토9458379e와이문서초안은기능인수·PR/main병합·실배포/전체완료보고가아니다. codewriter0·실제키/DB/권한/서비스/Agent/제품네트워크·실자료0이며기존보호3은보존한다. 후속은U1/U2의정확내부caller/collector연결을기존승인안에서기술적으로닫는것이다.
