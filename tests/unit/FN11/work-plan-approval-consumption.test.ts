@@ -7,10 +7,11 @@ import { ProjectApprovals } from '../../../apps/server/modules/approvals/project
 const ids=Array.from({length:8},(_,i)=>`${i+1}`.repeat(8)+'-'+`${i+1}`.repeat(4)+'-4'+`${i+1}`.repeat(3)+'-8'+`${i+1}`.repeat(3)+'-'+`${i+1}`.repeat(12));
 const [pid,uid,requestId,decisionId,key,serverId,consumptionId,documentId]=ids as [string,string,string,string,string,string,string,string];
 const at='2026-10-21T00:00:00.000Z', now=new Date(at), hash=(v:unknown)=>contentHash(canonicalJson(v));
-const actor={actorId:uid,clientId:uid,serverOwner:false,credentialGeneration:1,reauthUntil:null};
-function fixture(options:{stale?:boolean;targetChanged?:boolean;deny?:boolean;expired?:boolean;rejected?:boolean;candidateMissing?:boolean;viewer?:boolean;pending?:boolean}={}) {
+const actor={actorId:uid,clientId:uid,serverOwner:false,credentialGeneration:1,reauthUntil:null,authSession:{id:uid,idleExpiresAt:new Date(now.getTime()+20*60_000).toISOString(),absoluteExpiresAt:new Date(now.getTime()+8*60*60_000).toISOString()}};
+function fixture(options:{stale?:boolean;targetChanged?:boolean;deny?:boolean;expired?:boolean;rejected?:boolean;candidateMissing?:boolean;viewer?:boolean;pending?:boolean;requestDenied?:boolean;omitRequestRule?:boolean}={}) {
  const ref={id:documentId,version:1,contentHash:'a'.repeat(64)},payload={documentRef:ref,designRef:{...ref,id:pid},screenReviewRefs:[],tasks:[],reason:' 원 입력 보존 '};
  const rules=[{ruleId:'SAVE',subjectRef:{kind:'HUMAN',userId:uid},operations:['saveWorkPlanDraft'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:options.deny?'DENY':'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt:'2099-10-21T00:00:00.000Z'}];
+ if(!options.omitRequestRule)rules.push({...rules[0]!,ruleId:'REQUEST',operations:['requestApproval'],disposition:options.requestDenied?'DENY':'AUTO'});
  const policy={rules,reason:'한 초안 저장',reviewRefs:[]},policyRef={id:uid,version:1,contentHash:hash(policy)};
  const scope={operation:'saveWorkPlanDraft',targetRef:null,expectedVersion:0,payloadHash:hash(payload),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:uid,clientId:uid},controlGeneration:1};
  const scopeDigest=hash(scope),details={reason:'한 초안',risks:{data:'초안',security:'확인',cost:'없음',interruption:'없음',unverified:'합성'},rollback:{method:'과거 보존',limitations:'삭제 아님',evidenceRefs:[]},expiresAt:options.expired?'2026-10-20T00:00:00.000Z':'2099-10-21T00:00:00.000Z',actionScope:scope,candidateCommandId:key};
@@ -60,8 +61,9 @@ test('승인 상세는 요청자가 확인할 정확 원입력을 반환한다',
  assert.deepEqual((view as unknown as {candidatePlan:unknown}).candidatePlan,{candidateCommandId:key,payloadHash:hash(f.command.payload),payload:f.command.payload});
 });
 test('요청은 원 payload를 같은 요청명령·정책 영수증에 보관하고 다른 연산에는 추가 필드를 허용하지 않는다',async()=>{
- const f=fixture(),events:{sql:string;args:unknown[]}[]=[];
+ const f=fixture(),events:{sql:string;args:unknown[]}[]=[],capacityCalls:unknown[][]=[];
  const db={query:async(sql:string,args:unknown[]=[])=>{
+  if(sql==='SELECT anvil.assert_approval_notification_capacity($1)'){assert.deepEqual(args,[pid]);capacityCalls.push([...args]);return{rows:[]};}
   if(sql.includes('transaction_timestamp()'))return{rows:[{at:now}]};
   if(sql.startsWith('SELECT 1 FROM anvil.'))return{rows:[],rowCount:0};
   if(sql.startsWith('INSERT INTO anvil.')||sql.includes("set_config('anvil.actor_id'")){events.push({sql,args});return{rows:[],rowCount:1};}
@@ -72,10 +74,14 @@ test('요청은 원 payload를 같은 요청명령·정책 영수증에 보관�
  const request=events.find(e=>e.sql.startsWith('INSERT INTO anvil.approval_requests'))!,candidate=events.find(e=>e.sql.startsWith('INSERT INTO anvil.work_plan_approval_candidates'))!;
  assert.ok(candidate,'승인 요청만 저장하고 원 후보를 빠뜨리면 안 된다');assert.equal(candidate.args[1],request.args[0]);assert.equal(candidate.args[2],request.args[10]);assert.deepEqual(JSON.parse(candidate.args[5] as string),f.command.payload);
  assert.deepEqual(JSON.parse(candidate.args[10] as string),f.policyRef);
+ assert.deepEqual(capacityCalls,[[pid]],'정확한 현재 프로젝트의 알림 capacity를 소비한다');
+ const notification=events.find(e=>e.sql.startsWith('INSERT INTO anvil.notifications'))!;assert.ok(notification,'원 요청과 후보 뒤 실제 알림 생산자가 저장한다');
+ assert(events.indexOf(request)<events.indexOf(candidate)&&events.indexOf(candidate)<events.indexOf(notification));
+ assert.equal(notification.args[1],pid);assert.equal(notification.args[2],request.args[10]);assert.equal(notification.args[3],request.args[0]);assert.equal(notification.args[5],request.args[12]);assert.equal(notification.args[6],actor.actorId);
  const before=events.length;
  for(const payload of [{details:f.details},{...f.requestCommand.payload,extra:true},{...f.requestCommand.payload,details:{...f.details,actionScope:{...f.details.actionScope,operation:'uploadArtifact'}}}])
   await assert.rejects(new ProjectApprovals().request(db,actor,{...f.requestCommand,payload} as ProjectCommand,f.policyRef),/APPROVAL_INPUT_INVALID/);
- assert.equal(events.length,before);
+ assert.equal(events.length,before);assert.deepEqual(capacityCalls,[[pid]],'잘못된 원입력은 추가 capacity/알림 저장을 만들지 않는다');
 });
 test('별도 결정 메서드는 원후보를 다시 읽고 기준이 진행됐으면 결정 영수증을 쓰지 않는다',async()=>{
  for(const changed of [false,true]){const f=fixture({pending:true,targetChanged:changed}),writes:string[]=[];
@@ -85,3 +91,5 @@ test('별도 결정 메서드는 원후보를 다시 읽고 기준이 진행됐�
   else{const result=await new ProjectApprovals().decide(db,actor,c,f.policyRef);assert.equal((result.data as Record<string,unknown>).status,'APPROVAL_DECIDED');assert(writes.some(s=>s.startsWith('INSERT INTO anvil.approval_decisions')));assert(f.targetReads.length>0);}
  }
 });
+
+test('requestApproval 명시규칙 누락·DENY는403이며 요청/후보/소비쓰기0',async()=>{for(const options of [{omitRequestRule:true},{requestDenied:true}]){const f=fixture(options),mutations:string[]=[];const db={query:async(sql:string,args:unknown[]=[])=>{if(/^(INSERT|UPDATE|DELETE)\b/.test(sql)||sql.includes('set_config('))mutations.push(sql);return f.db.query(sql,args);}}as unknown as PoolClient;await assert.rejects(new ProjectApprovals().request(db,actor,f.requestCommand as ProjectCommand,f.policyRef),(error:unknown)=>!!error&&typeof error==='object'&&'statusCode'in error&&error.statusCode===403&&error instanceof Error&&error.message==='PROJECT_OPERATION_DENIED');assert.deepEqual(mutations,[]);assert.deepEqual(f.writes,[]);}});

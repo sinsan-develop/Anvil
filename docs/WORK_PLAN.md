@@ -1930,3 +1930,9 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 ### 2026-11-03 IX01 installer source 선행 정합
 - [동일 source 결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SOURCE_RESULT_20261103.md) r3 SHA942AE509C105E266C598CCFC22EFEE3872D8771AEC981DB225A974DB4DDD7D30: 원0066/0073이 요구하는 새 빈 cluster installer 역할·전후 metadata·회수의 코드2를 준비했다. Main34PASS/skip0·type/Bash구문0이며 실제 PG/DDL·권한·키·서비스·Agent 실행0이다.
 - 실제 선행 미충족을 전체 합격 범위 축소로 해결하지 않는다.105는 원문 정의 설치 후보이며 실제 역할 부여/회수/정리와 IX01 여정은 별도 미실행이다. 기능 추가나 전체 완료로 세지 않는다.
+
+### 2026-11-03 IX01 실제 정의 설치 진단 결과 반영
+- r4단1회새PG진단에서0035(고정순서67번째)SQLSTATE22P02로실패했다. 정확source/role회수·QA정리/독립잔여0·감사보존은 [실제 결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SLOT1_RESULT_20261103.md) SHAE05891B6AF5EDB5B0AC13796647E68975C737ACB0884F56905F399B7658346F6를따른다.
+- 현재설치오류는기능연결차단으로source보완대상이며기존검사·guard·합격기준을유지한다. r4승인소진·재실행0,실제수정후GREEN/권한RLS·문서여정·서비스/Agent·IX01·전체계획은미완료다.
+
+- 2026-11-03 0035 source최소보정: [결과](04_test_reports/AV3/IX01_0035_JSON_PROJECTION_SOURCE_RESULT_20261103.md) SHA8D1799596856C81F6D44C493AFE99396BF01A4675BACFB72125016F96D9DE4B9, 괄호한hunk와현재승인/알림fixture정합·Main7PASS/type0. 원actual22P02실패/직접인과·수정후PG미확정/IX01미완료유지이며실제적용이나완료로세지않는다.

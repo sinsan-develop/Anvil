@@ -13903,3 +13903,41 @@ git diff --check
 ### 2026-11-03 IX01 실제 단발 QA 결정 패킷 결박
 - dbd9db 정확7/source2+소유문서5/rawindex일치/diff0→c84bdad14b1888281be2ee116031d573f9016193, 소유39236을8a0fca exit0으로 회수해 private exact·main/보호3 불변·tracked clean 확인. source별34PASS/미검증 구분은 결과r3를 따른다.
 - 실제 실행 후보 r4 SHA2D99172BC0155D9943884FC45FA978CF01E6082C0C4F11FB24A2E32521FAACB3에 exactcode·index105선택/SQL·일회installer CREATEROLE의 cluster위험·전후검산/회수·slot1·신규자원/기한/UNKNOWN·정리 범위를 결박했다. 기존 source-only에서 벗어나는 새 QA 실행만 직접 결정받을 준비이며 아직 승인/실행0이다. 다른 slot/기존 DB·권한·키·서비스/Agent/P03R3 제외는 유지한다.
+
+### 2026-11-03 IX01 새 QA 실제 실행 직접 결정 대기·독립 조사 지속
+- Main9344fa 문서2→54971005ff298ffcba6c22475edfc70225187135/private exact·tracked clean·main 불변을 확인했다. source 실행대상 c84bdad1과 결정 패킷 r4 SHA2D99172BC0155D9943884FC45FA978CF01E6082C0C4F11FB24A2E32521FAACB3은 동일하다.
+- functions.request_user_input_async로 새 단1QA PG/105정의 설치·그 빈cluster installer CREATEROLE/회수·정리와 UNKNOWN 잔여 위험을 직접 질문했고 tool accepted:true이다. 옵션은 새 일회 QA 실행 승인/실제 실행 없이 source-only 유지이며 아직 답변 미수신이다. hash를 승인 증거로 대신하지 않는다. 실제DB/권한/키/서비스/Agent·WSL/Docker·자원 생성/실행0 유지. PMO에 exact source/패킷·검수·직접 결정 경계를 전달했다.
+- 전체 작업은 임의 대기시키지 않는다. 같은 Primary에 FN12의 현 결과 증거·이상분류 소비와 기존 미채택 후보를 한정 읽기 대조하도록 맡겼다. 코드/시험/문서 쓰기·실행0, 완료단위 재실행/전체계획 재감사0이며 기존 채택 계약 안에서 독립 구현 가능한 다음소비1개가 있는지만 반환한다. 새권위/저장/API 계약을 승인됐다고 추정하지 않는다.
+
+### 2026-11-03 FN12 후속 소비 한정 읽기 반환
+- 기존 Primary의 읽기 대조는 result-evidence.ts:36~112의 SYNTHETIC_ONLY/기본 실제 제공자 부재, result-reviews.ts:73~82 및 project-result-reviews.ts:27~35의 실제 합격 권위 false, execution-issues.ts:25~30/stored-issue-basis.ts:28의 실제 관측 제공자 미연결을 확인했다. 보관 주장/과거 로그를 현재 신뢰 관측으로 승격하지 않는다. 읽기만·시험/코드/문서 쓰기/실환경0·writer0이다.
+- FN12_TEST_EVIDENCE_CLAIM_REGISTRY_PROPOSAL은 새 불변 미검증 주장 원장/API, FN12_REWORK_SUCCESSOR_LINEAGE_CANDIDATE는 별도 보완→후속임무→새제출 계보/공개·저장 계약으로 미채택이다. 페이지조회 직접 승인을 이 둘에 이월하지 않는다. 이번 한정 범위에서 기존소비를 반복 구현할 단위를 만들지 않았으며 전체44업무에 할 일이 없다는 판정이 아니다. 해당 계약 결정과 IX01 새 QA 직접 질문을 분리해 PMO에 필요한 지원만 전달한다.
+- 새 실제 QA 직접 질문은 아직 미응답이다. 해당 actual범위만 실행0으로 유지하며 source2의34PASS·보관페이지41PASS를 실제 DB·Agent/IX01·전체계획 완료로 보고하지 않는다.
+
+### 2026-11-03 IX01 새 일회 QA 실제 실행 직접 승인·생성 전 checkpoint
+- 신산님 call_be5aa1ea2d9f40ceab16ba27ebefcb5a가 실행안r4 SHA2D99172BC0155D9943884FC45FA978CF01E6082C0C4F11FB24A2E32521FAACB3/code c84bdad1의 새 일회 QA 실행을 승인했다. 최초 관측14:16:25Z, 준비·실행 전체 deadline14:46:25Z/PG예산10분·slot1단1회이며 추가slot/재시도0이다. 기존DB/권한/키/서비스/Agent/P03R3 제외는 유지한다.
+- Main cb413f actual 생성 전SSH exit0: WSL-server daon1000/hostSINSAN, Node root:root/0755/126879696B/등록e32e2d16 일치, daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/SINSAN, cachePG594290e9 및 declaredVOLUME /var/lib/postgresql/data 일치. 신규 source /home/daon/anvil-ix01-ddl-20261103-r1-qa 및 신규 원장 /home/daon/.local/share/anvil-v3-qa-receipts/ix01-ddl-20261103-r1 부재·등록QA이름0이다. 기존DB접속/role/서비스변경과 새자원생성은 아직0이다.
+- 생성 사전등록: 위 신규Git/source와 신규0700원장/docker-config, anvil-ix01-ddl-pg-20261103-r1-a1/DB anvil_v3_ix01_ddl_20261103_r1_a1, 소유Main/daon1000·image594290e9·networknone/port0/bind·volume0/tmpfs·원장감사보존·정착시정확fullID정리/UNKNOWN보존, 같은r4를따른다. 기존Primary에실행중복금지/writer0를전달했고 Main만단발실행한다.
+
+- Main946273의 소유48066을cfade6 진행확인 뒤f5bd93 exit0으로 회수했다. 새 source Git HEAD c84bdad14b1888281be2ee116031d573f9016193/clean·UID1000·driver4750BAD4/indexDC8B 실제일치, PG생성0을 확인했다. 이제 직접승인된 새0700원장/빈docker-config·owner0600을 준비하고 slot1 공개입력/원기한·hash를 고정해 driver --run 단1회만 실행한다. 기존서비스/DB/키/P03R3/Agent는 대상0, UNKNOWN후속0이다.
+
+### 2026-11-03 IX01 실제 DDL 실패·권한회수/QA정리 완료
+- b777c0→소유31253/86d064 exit1, r4/plan434efc6d/exactc84·SQLd2/105고정원문에서67번째0035 정의설치 SQLSTATE22P02/diagnosticnull로실패했다. 원psql오류문장/행번호미수집이며직접원인미확정,후속38실행0/전체설치·IX01불합격이다.
+- 실제rolemetadata 검산과일회installer CREATEROLE회수false·시스템hash불변·exact QAstop/rm CLEANED. e268e4 독립id/name잔여0,37561b 새source소유/clean/프로세스관측0검산후정리,74adbd14:30:17Z 별도source/fullID/등록QA이름0을확인했다. 감사원장0700/0600의3파일만의도보존·동일raw지문을검수docs에보존했다. 기존DB/권한/키/서비스/Agent/P03R3변경0이다.
+- 결과 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SLOT1_RESULT_20261103.md SHAE05891B6AF5EDB5B0AC13796647E68975C737ACB0884F56905F399B7658346F6, ACTUAL_DDL_FAILED/QA_CLEANED. 직접승인call_be5aa1ea는소진·재실행/slot2~3허가0이며Main과Primary모두실자원handle0이다.
+- 다음은같은Primary의0035미적용후보 한표현 source-only 최소보정범위다. 정적후보는JSON추출과-ARRAY괄호누락이며PG15우선순위에부합하나원실패직접인과확정아님. 원SQL분모d2/Git/실제FAILED·원장보존,실제GREEN/새PG는미실행·별도정확승인필요. 전체계획완료아니다.
+
+### 2026-11-03 0035 미적용 후보 한 표현 source 보정 배정
+- Main은 기존FN04/FN11/IX01의 구현의도와PG15우선순위·직접실패분모를대조해한표현의괄호 source 보완을선정했다. 공개API/데이터/권한계약과JSON제거목록/equality·정책·원승인·감사guard 변경0이며원d2/Git/실제FAILED는보존한다. 원실패행직접인과·실제GREEN은미확정/NOT_RUN이다.
+- WI docs/work_packages/IX01_0035_JSON_PROJECTION_SOURCE_CORRECTION_20261103.md SHAA80F69F3C596684A915A539157BC03062CF258DA7EF106A477858FB327D1DF75, 같은Primary에0035 SQL1경로만writer배정. 새literal/source모양test를통과증거로대체하지않고기존집중semantic시험/한hunk역치환·diff만확인한다. 실제적용이력이발견되면원파일수정중단/반환,실제DB/새PG/권한/키/서비스/Agent/P03R3재실행0이다.
+
+- Primary0035한hunk보정/역치환동일·새7EE0D5D3동결, 집중53d692 5PASS/1FAIL을그대로보존했다. Main c713d4는현재요청자체requestApprovalguard와SAVE만있는fixture의불일치를확인했다. WI r2 SHACBB458FB5828E2B60AF6F0A917A8CE84942F3253F1D706579412AF3C89A38F52로기존시험1경로만추가writer배정하며정상요청명시허가/누락·DENY쓰기0반례를정합한다. 생산guard/정책계약/SQL·기대값약화0·실제PGGREEN/재실행0이다.
+
+- Main e42023의추정parent apps/server/modules/approvals/approval-notification-producer.ts 읽기는없는경로로실패했다. 앞경로추정계열최소3기록에이어같은잘못된방법1건이추가됐다(전체최소4). 파일없음/환경장애로일반화하지않으며코드/권한/실자료변경0이다. 추정parent를붙여읽는방식은다시중단하고이후basename은rg --files의실제반환값에만연결해읽는다. PMO에방법오류/중단조치를공유한다.
+
+- 기존시험r2는74e745 6PASS/1FAIL알림포트누락으로반환됐다. Main68ae8b은실제반환producer경로/FN17기준시험을대조했다. WIr3 B40636D8425F3AF9FD745F2C71C5F6A87941E9E97E25ED373C8C32C02BB42BAB로같은시험1파일의정확cap함수args와현재authSession합성자료만정합하도록맡긴다. 생산guard/알림실패시원요청거절/cap10000·단언·기대값약화0이며실제DB/세션/권한/키/서비스/Agent재실행0이다.
+
+### 2026-11-03 0035 source 최소 보정·현재 합성시험 인수
+- SQL정확1hunk/괄호2바이트→7EE0D5D3·시험D9DD840B 동결/기존Primarywriter반환·live0. Main db5801 diff/지문과 b49e21 집중7PASS/0FAIL/skip0/973.6067ms·2d5f21 rootnoEmit exit0/6.7212초를독립확인했다. 기존5P1F→6P1F의서로다른fixture누락이력을보존했고현재생산guard/권한·알림cap/세션·기대값은변경하지않았다.
+- 결과 docs/04_test_reports/AV3/IX01_0035_JSON_PROJECTION_SOURCE_RESULT_20261103.md SHA8D1799596856C81F6D44C493AFE99396BF01A4675BACFB72125016F96D9DE4B9, SOURCE_CORRECTED/ACTUAL_PG_GREEN_NOT_RUN. 원실제slot1 SQLSTATE22P02는FAILED이며본정적한hunk와직접실패행인과는미확정이다. 실제GREEN/새QA/권한/키/DB/서비스/Agent실행0,이전QA잔여0/감사보존을유지한다.
+- Main7691c2/27c812은같은연산자우선순위패턴만조회해0071:61과0072:33/265를발견했고733166에서미적용주석/원SHA167FC4CF/E561CDAD를확인했다. 다음source보완은이정확2파일/3표현만별도범위로관리하며전체SQL자동수정/새계약추정0이다.

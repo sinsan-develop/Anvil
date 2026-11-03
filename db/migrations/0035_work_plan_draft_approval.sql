@@ -152,7 +152,7 @@ CREATE FUNCTION anvil.work_plan_approval_execution_valid(pid uuid,cid uuid,did u
  AND c.result_ref->'data'->'ref'->>'id'=c.result_ref->>'targetId'
  AND c.result_ref->'data'->'ref'->>'version'=(c.expected_version+1)::text
  AND c.result_ref->'data'->'workPlan'->>'status'='DRAFT'
- AND (c.result_ref->'data'->'workPlan'-ARRAY['ref','status','dependencies','issues','relationalProjection'])=b.payload_json
+ AND ((c.result_ref->'data'->'workPlan')-ARRAY['ref','status','dependencies','issues','relationalProjection'])=b.payload_json
  AND (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
  AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED'
  AND a.scope_digest=ar.scope_digest AND a.policy_ref=c.policy_ref AND a.target_ref=c.result_ref->'data'->'ref'
