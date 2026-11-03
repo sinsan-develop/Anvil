@@ -13970,3 +13970,7 @@ git diff --check
 - 기존Primary는2B555A8E/38E7554C/신규index11B2FA7E로정확3을동결·writer반환했다. 원61762→4d2b76수거/출력소실UNKNOWN/보완전703dae RED/TS2783시험준비보정은서로다른이력으로보존한다.
 - Main9e5a8b 최종39PASS/0FAIL/skip0/469.4384ms,0072d4→소유31431/cf1fac 타입+Bash구문 exit0,aedc83→소유42880/a997ce SQL106Gitblob일치/부모delta3파일8B·103불변/105선택2376115B·order09d를독립확인했다. 새index만docs에raw보존했고r1 index/원장·SQL/제품·보호3은불변이다.
 - 결과 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SOURCE_RESULT_20261104.md SHA9B829F9C77AFAD52496A95260B5057C110C9C90D2B2860BE08B24242B4D990BD, SOURCE_PREPARED/ACTUAL_R2_NOT_RUN. Main소유handle모두회수했고Primary유실순수검사호출종료는미확정으로유지한다. 실제WSL/PG/role/권한/키/서비스/Agent/새QA0·기존r4승인소진/첫FAILED·잔여0/감사보존·전체계획미완료다. 새실제1회는정확code·SQL/index·자원/정리결박후에만별도결정받는다.
+
+### 2026-11-04 r2 실제 단발 결정 패킷 결박
+- 62280c의소유45010을329683 exit0으로회수해source3+소유문서5 정확8을9c3674fa33802cefe35960e61974edaa73864b61/privateexact·clean·main/보호3불변으로보존했다. source3 지문/39PASS는위기록을따르며실제R2검증0이다.
+- Main은 docs/work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_EXECUTION_CANDIDATE_20261104.md r2 SHA766F911791F9175E2BCC6D314D961D8E9494005AD70D5445B614526729F3D0C7에 exact code/index/SQL·선택105·bootstrap/회수/관측hash·새자원·단1회·권한위험/기한·정리/UNKNOWN·제외를결박했다. 첫승인소진후새실행은아직미승인으로유지하고이정확범위만직접결정받는다.
