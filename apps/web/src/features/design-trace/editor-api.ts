@@ -46,7 +46,7 @@ export async function documentControl(client: ApiClient, projectId: string, sess
   if (!uuid.test(projectId)) throw new ApiError('CLIENT_PATH_INVALID');
   const value = await client.get<{ id: string; participation: string; controlState: { actorId: string; clientId: string; generation: number; status: string } }>(`/api/v1/projects/${projectId}`), state = value?.controlState;
   if (value?.id !== projectId || !state || !Number.isSafeInteger(state.generation) || state.generation < 1) throw new ApiError('RESPONSE_INVALID');
-  if (value.participation !== 'OWNER' || state.status !== 'HELD' || state.actorId !== session.user.id || state.clientId !== session.clientId) throw new ApiError('PROJECT_CONTROL_REQUIRED', 403);
+  if (!['OWNER','HANDOFF_ELIGIBLE'].includes(value.participation) || state.status !== 'HELD' || state.actorId !== session.user.id || state.clientId !== session.clientId) throw new ApiError('PROJECT_CONTROL_REQUIRED', 403);
   return state.generation;
 }
 export function editDocument(projectId: string, value: { document: DocumentVersion; body: string }, ownerUserId: string, controlGeneration: number): DocumentBuffer {

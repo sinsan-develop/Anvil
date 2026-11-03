@@ -49,3 +49,9 @@ test('단계에 연결된 문서 저장은 선택 참조를 pending·본문 hash
   assert.equal(result.contentHash, expectedHash); assert.deepEqual(commands[0], commands[1]); assert.deepEqual(commands[0].payload.stageNodeRef, stageNodeRef);
   assert.notEqual(await documentDraftHash(work.title, work.formRef, content), expectedHash, '미연결 hash와 연결 hash를 혼동하지 않는다');
 });
+
+ test('서버 검산 HELD HANDOFF_ELIGIBLE의 정확 세대만 documentControl이 소비한다',async()=>{
+ const {documentControl}=await import('../../../apps/web/src/features/design-trace/editor-api.ts');
+ const client=new ApiClient(async()=>Response.json({id:project,participation:'HANDOFF_ELIGIBLE',controlState:{actorId:id,clientId:id,generation:7,status:'HELD'}}));
+ assert.equal(await documentControl(client,project,session),7);
+ });

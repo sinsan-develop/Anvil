@@ -13354,3 +13354,34 @@ git diff --check
 
 - Ruling: 기존승인FN15의source내부상세를Main이확정하고단일기존Primary로구현한다 — SQLsignature/codec미작성만으로전체수락재승인을반복하지않고원기능을연결하기위함 — 잘못된내부선택은같은package의TDD/독립검수로재작업하며실제효과는발생시키지않는다. Main은40코드경로동시쓰기0,현황/Git/검수통합소유다.
 - 다음은r5/현황문서checkpoint/private동일확인뒤같은Primary에정확40경로writer를dispatch하는것이다. 새agent/branch/자동화0·전체FN15/작업계획미완료·PR/main병합/배포0을유지한다.
+### 2026-11-03 FN15 단일 Primary source 구현 dispatch
+- Main은r5/현황정확2문서를15b5d4cd88149811a525e5ffdc37d6b2c4967a4f로commit·정상privatepush하고local/remote동일SHA·private mainf976ed5e불변·trackedclean/보호3보존을확인했다. 이checkpoint의제품diff0이다.
+- 같은기존Primary에WI r5 34CE92CD7706BAD637DC7D7176AF67199C4AB4A9C9AC23D49CC6D9750569B522/§2정확40경로의source단일writer를명시dispatch했다. Main의동일40경로쓰기0,Primary의Git/WORK_STATUS/WI·다른문서쓰기0이다. 같은코드베이스의다른dirty/보호3·과거SQL/fixture를복구/삭제하지않는다. 새agent/branch/자동화0이다.
+- 범위는실제production reader/요약·원자수락/정산/현재grant→일반9op/서버/UI소비와TDD·필요집중/인접/noEmit/메모리build다. 내부exactSQL/codec/유한식을제약안구현하고새권한/공개의미·추가경로가필요할때만정확delta를반환한다. 공급자미등록UNKNOWN/수락0·실효과EXECUTION_GO0,실제키/DB/role/GRANT/정책/서비스/Agent/제품네트워크/OS/컴파일/실자료/물리QA/외부자원0을유지한다. 구현은착수지시상태이며현재행동RED/GREEN·코드완료판정은아직없다. 다음은Primary시작preflight/첫행동RED와진행을확인해독립검수/통합을잇는것이다. 전체FN15/StageB/작업계획미완료다.
+### 2026-11-03 FN15 시작 preflight·첫 행동 RED/GREEN 제출
+- 기존Primary는HEAD15b5d4cd/WI34CE92CD·기존27SHA/신규13부재·0073부재·보호3 보존의시작검산을완료했다고반환했다. e4ec66의actual documentControl HANDOFF+서버HELD 행동RED1(403)과새grant모듈부재준비RED3은분리한다. 253c38 최소보완뒤grant DAG/현재tuple/원기한비TTL/Proxy·getter3PASS와UI소비1PASS를제출했다. Main의fresh재실행이아닌Primary제출증거이며시간·정확전체명령은최종보고에서대조한다.
+- Main37ec16은현재실제변경이허용된신규control-grant.ts8053B/시험2644B와기존editor-api.ts/시험의4경로임을읽기확인했다. protected untracked3/다른파일보존·현황Main소유를유지한다. Main동일코드쓰기0·중복검사0이다.
+- 이GREEN은그한정모듈/UI소비만의증거다. 서버상세의실제grant검산/보호reader/요약·원자수락/SQL/F·전체App소비는아직연결중이며현재UI보완을사용가능기능/전체수락완료로표시하지않는다. 같은Primary가남은호출선을계속구현한다. codewriter는계속Primary,live/실제키·DB/권한/서비스/Agent/제품네트워크·실자료0·차단없음·전체계획미완료다.
+- wait_agent1회는dispatch전aborted였으며같은Primary의실제진행메시지/소스변경을확인했다. 관측중단을작업종료로보거나새agent/중복작업을시작하지않았다.
+### 2026-11-03 FN15 진행중 현재 grant 소비의 물리행 연결 확인사항
+- 시작 Main d93576은동일HEAD15b5d4cd/단일Primary running/최초허용4경로변경을대조했다. 기존테스트는재실행하지않았다. 진행중control-grant.ts의DAG/hash·현재tuple검산은실제로있지만readCurrentControlGrant의현재초기조회는control_handoffs.bundle_json한행에기반한다. 이는그럴듯한bundle의내부정합만으로별도물리grant/receipt/audit완결까지증명하지않는다.
+- Main은이를완료결함판정/정식실패로세지않고계속구현중인필수소비조건으로Primary에전달했다. 후속0073/reader에서실제ISSUED/REVOKED·명령·receipt/audit의물리행/역참조/유일성·현재미회수를결박하고,누락물리행+그럴듯한bundle반례를추가해야한다. 실제DB미적용deferredguard가있다는가정만으로권위/외부IO를먼저열지않는다.
+- 기존0041의정적원문은immutable/deferred bundle검사를정의하지만실제권한/PG완결증거는아니다. 새RLS/물리읽기/일반저장연결이없는부분은미검증그대로다. sourcewriter는계속같은Primary이며Main동일코드쓰기0·실제키/DB/권한/서비스/Agent/제품네트워크·실자료0이다. 전체단위/계획미완료다.
+### 2026-11-03 FN15 최초 source WIP writer 반환·복구 보존
+- Primary는진행중도구/미저장/실효과/QA0을확인해정확40경로writer를일시반환했다. 판정INCOMPLETE다. Main2f6068은제출코드/시험9개의raw SHA전부·보호untracked3지문·HEAD15b5d4cd·diffcheck0을읽기대조했다. 보호요약production모듈은아직없고그시험의준비RED가남아있음을확인했다. 이WIP를합격/전체완료로쓰지않는다.
+
+| WIP 경로 | SHA256 |
+|---|---|
+| apps/server/modules/control-handoff/control-grant.ts | AD12F7DEEFF1C43F9C2B661BD6B0493E47DFCCB86B83C609999EA0F342314697 |
+| apps/server/modules/control-handoff/control-handoff-storage.ts | EA209D49C37B9D22D27246796982E505048D26B32DB1B1D456F3021D56897378 |
+| apps/server/modules/control-handoff/control-handoff-evidence-source.ts | 8D35972F01AB93E6DB520B1CE38BF50A811C89EFFC970310D1242DE8525E9840 |
+| apps/web/src/features/design-trace/editor-api.ts | 57CF24E515C7A2AC06567C7A82534809ABE2FAC2A0ADF4052C7520CB83DECAE5 |
+| tests/unit/FN15/control-grant.test.ts | 8640ED456D1D1D188F4FAA5005D5F3085C558EBB00EB16B7897E61DE66E238B9 |
+| tests/unit/FN15/control-handoff-storage.test.ts | B93AF35C67DBCCEEFB7FF1C2A1BFEF829431A9A6F6C58A8F51CC4FE68E855C87 |
+| tests/unit/FN15/control-handoff-evidence-source.test.ts | 3B05EBD7A555025BDFFCF7688B065DEC876C77EF5CB2D2AA9BB9D5BD8B103931 |
+| tests/unit/FN15/control-handoff-protected-summary.test.ts | FBD8CC021DC45A132A89B002F22798D65F8D97D8F11C3A2E95B71D86698FEE7B |
+| tests/unit/UI06/editor-api.test.ts | A0C9544E52189C59CC2333DD52E5AEB3E780C9BEADBAF56EE479753262A5F245 |
+
+- Primary 실행 제출: node --test --test-name-pattern='서버 검산 HELD HANDOFF' tests/unit/UI06/editor-api.test.ts 행동RED403→1PASS/exit0/201.7756ms. node --test tests/unit/FN15/control-grant.test.ts 준비RED3와8e1249물리행누락행동RED1을구분하며bedc3d4PASS/exit0/156.7895ms다. node --test tests/unit/FN15/control-handoff-storage.test.ts 준비RED1→1PASS/exit0/127.2612ms. node --test tests/unit/FN15/control-handoff-evidence-source.test.ts 준비RED2→2PASS/exit0/561.2702ms다. 서로다른범위의합성증거이며Mainfresh중복실행은없다.
+- root noEmit은descriptor/unknown좁히기오류1의최소보정뒤exit0였으나이후추가된보호요약시험까지포함한최종typePASS가아니다. 마지막 node --test tests/unit/FN15/control-handoff-protected-summary.test.ts 는production모듈미작성의준비RED1/exit1/453.3454ms로남긴다. 이를제품실패나전체GREEN으로바꾸지않는다.
+- 보호요약·writer proof core·current공급자/0073/RLS·F실비용·수락Tx/replay/UNKNOWN·서버/UI전체는미완료다. WRITER_HISTORY_PROOF_CORE_NOT_CONNECTED는작성중누락을닫은현재상태이지완성공급자가아니다. Main은코드9+현황1의WIPcheckpoint/private보존뒤즉시같은Primary/같은40writer를재개한다. 실제키/DB/권한/서비스/Agent/제품네트워크/OS/실자료·새branch/agent0·PR/main병합/배포/전체완료0을유지한다.
