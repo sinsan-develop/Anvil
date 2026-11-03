@@ -1921,3 +1921,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 큰 SQL fake 모델·기존 fixture refs 결합으로 전체 통합을 대체하지 않는다. 실제 실행과 최신 SQL manifest·격리 자원/정리 선행은 미충족이며 IX01 통과/기능 완료가 아니다. 현재는 구문·타입 확인만 허용하고 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 
 - 2026-11-03 source 준비 반환: 위 시험1파일7DB320AC·Main 구문0/root noEmit0. [결과](04_test_reports/AV3/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_RESULT_20261103.md) SHA3257BED47FC3C014A38A8813F987B52274F6D451BA4E8DFCA11405D12C2E3410, PREPARED_NOT_EXECUTED. 최신 SQL manifest/격리 자원·별도 실행 승인과 실제 전체 여정은 미충족이며 IX01 상태를 완료로 바꾸지 않는다.
+
+### 2026-11-03 IX01 SQL 정의 의존 진단 source 준비 반영
+- 기존 IX01 선행 확인용 도구3을 준비했다. [WI](work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SOURCE_IMPLEMENTATION_20261103.md) r2 SHA55212D93438EA39BAA0EE4040048D8561C84EC1A82133EB44A510D3103466D2C, [source 결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SOURCE_RESULT_20261103.md) SHAF6CFA0BBFC7010C962C6E2F457947EAB5EA09F191344AC0035215586BD46A643.
+- Main 독립 unit27PASS/skip0·type/Bash 구문0·index106 Gitblob 일치. 실제 PG/DDL/권한/키/서비스/Agent·WSL/실자료0이며 도구 준비를 제품 기능·IX01 완료로 세지 않는다.
+- 105 전체 후보는0066/0073 역할 생성 선행과 현재 비특권 bootstrap이 충돌한다. 96 한정 후보로 전체 합격 범위를 줄이지 않으며 실제 실행·역할 경계는 미정/NOT_READY_TO_RUN이다. 기존 테스트·guard·완료 기준을 유지한다.

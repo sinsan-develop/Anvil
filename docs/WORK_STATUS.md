@@ -13865,3 +13865,23 @@ git diff --check
 - 결과 docs/04_test_reports/AV3/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_RESULT_20261103.md SHA3257BED47FC3C014A38A8813F987B52274F6D451BA4E8DFCA11405D12C2E3410. 판정 PREPARED_NOT_EXECUTED이며 Main은 시험을 실제로 실행할 수 있는 정확 manifest/격리 자원/승인 선행을 남깁니다. native 새 인증/profile/current 계약도 미채택입니다.
 - Main은 부가 읽기 e79999에서 존재를 확인하지 않은 apps/server/modules/documents/artifact-store.ts를 추정해 Get-Content 오류1을 냈습니다. 현재 작업의 경로 구성/추정 계열 오류는 fd1f92·15e35a·e79999 최소3건으로 기록합니다. 이 읽기 방식은 중단했고 후속57f675/0b0c83은 이미 확인된 실제 source 경로만 사용했습니다. 제품 변경/ACL/권한 변경0·실제 자료 읽기0이며 실패한 부가 읽기를 제품 결함으로 세지 않습니다. PMO에 범위·중단 조치를 공유합니다.
 - 다음은 같은 Primary의 실제 IX01 소비 함수/trigger/컬럼과 초기53 이후 필수 SQL delta·미확인 의존만 좁힌 읽기입니다. 완료 검증 반복0·코드writer0입니다. Main 소유 시험1+WI/결과/기술초안/계획/현황5의6경로만 기존 branch에 보존하며, 보호3·main과 실제 DB/키/권한/서비스/Agent·새 자원은 변경하지 않습니다. 전체 계획 미완료입니다.
+
+### 2026-11-03 schema 의존 진단 도구 source 준비
+- Main3885aa는 시험1+소유문서5의6경로 raw/index 동일·cached diff0·보호3 불변을 확인해d2f6ab8c74fad09f26319f77b3acb80afe3f927b(parent17351beb)로 commit했습니다.22e884 push 뒤 소유 session41677은 c4761a에서 exit0으로 회수했고 private exact d2f6ab8c/mainf976 불변·게시 시 tracked clean/보호3을 확인했습니다.
+- 같은 Primary의 quota DAG 반환은 직접 CREATE/호출 간선은 확인했으나 미정 간선0은 아닙니다.0042·0058→0059→0072→0073→0074 외에0032/0041과0073의GRANT/RLS 대상0039/0070/0071·0018/0019/0022/0024/0036/0055/0062 등이 설치 선행입니다.0069/0071 account alias·metadata 전이 폐쇄와0040 직접 필요 여부는 미확정입니다. 파일번호만으로 순서를 확정하지 않습니다.
+- Main d17e63은 SQL 기준 Git d2f6ab8c의 tracked .sql/.sql.pending가106개임을 읽기 확인했습니다. 이를 allowlist로 고정하되 적용 순서/전체 설치 지시로 취급하지 않습니다.
+- WI docs/work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_SOURCE_IMPLEMENTATION_20261103.md SHA BA51AE1F24D10D38A9FC68BE27A385E7E5821A6CCE6BC616CDC341DB594454F7에 따라 같은 Primary에 driver·순수 unit·기계 source index 정확3경로만 source writer로 배정합니다. 새 라이브러리/도구 설치·SQL 수정은0, 기본/import/plan IO0·원본보존·UNKNOWN/기한·소유 resource 검산을 고정합니다.
+- 향후 후보 자원은 anvil-ix01-ddl-pg-20261103-r1-a1/a2/a3 새 빈 PG 중 동시1, 기존 cache PG15 exact594290e9·network none/port0/hostbind·volume0/tmpfs only·read-only/UID999:999/capdrop/pids64/memory512MiB/CPU1입니다. 새 보호 소진 원장 후보도 WI에 literal로 기록했으나 실제 생성·접속은 미승인/0입니다. 기존 DB·P03 R3/원 volume·키·서비스·Agent·ysna/Oracle와 무관합니다.
+- 지금은 Bash 구문·순수 unit·root noEmit/diff와 source index만 준비합니다. 실제 DDL 진단/PG·컨테이너·원장 생성/정리와 SQL/권한 실행은 별도 exact packet/신산님·플랫폼 승인 전까지 NOT_RUN입니다. 도구 준비를 새 제품 기능/IX01 합격/전체 완료로 세지 않습니다. Main은 코드쓰기0이고 정확3의 기존 Primary만 writer입니다.
+
+### 2026-11-03 IX01 진단 source 동결·Main 독립 검수와 역할 선행 미충족
+- 기존 Primary가 정확3 source/data를 최종2A5D422C/CBE8B182/DC8B5FC0로 동결/반환했다. Main 코드쓰기0·추가 writer0이다. source3 외 SQL/제품 변경0, 기존 보호3 보존이다.
+- Main5766b6 실제 신규 unit27 PASS/0FAIL/skip0/319.7137ms/exit0,ada30b root noEmit+Bash -n exit0/4.9796초. Primary f7d968 27PASS와 별도로 독립 확인했다. 4509c1 index106 고정 Git blob SHA/bytes·기존53·명시105/96 순서hash 대조 exit0.
+- Main699e21에서0066/0073의 명시 CREATEROLE 선행과 동명 role 자동 인수 금지를 확인했다. 현재 NOCREATEROLE bootstrap과 충돌하며 known permission RED 반복/권한 상승/SQL guard 완화0이다. 원 index106은0031 중복정의2경로를 포함해 실제 후보105이며,0065까지96안은 전체 IX01 준비로 승격하지 않는다.
+- PMO에 정확한 두 후보의 역할 선행 판단·지원만 전달했다. 신산님 source-only/실제 DB·권한·키·서비스·Agent 제외는 유지하며 실제 승인 질문/WSL·Docker/PG/DDL/자원·원장 생성/정리/P03R3 전부0이다. UNKNOWN 자원은 기한을 넘길 수 있어 미래 실행안의 수동 소유 검토가 필요하다.
+- WI r2 SHA36B7D8CC9FAFD1557E02D119A6614C4AC740C3244CA38D6325E5D1CFD524A75D, 실행 후보 r2 SHA8318C3764385F24A6B4637FF90B4D7DE1CB73843D16453055BF1B2466462FE72, source 결과 SHAABAC516F7FCC23C71B3E36768B4D1B6D26DFC864E053D206F43DF75BC18C394E. 판정 SOURCE_PREPARED/ACTUAL_NOT_RUN, 전체 계획은 미완료이다. Main은 정확3+소유 문서만 raw/index/diff·보호 지문 대조 후 기존 branch private에 보존한다.
+
+
+- Main checkpoint 준비386cec은 status 출력 전체 trim으로 첫 행의 선행 공백을 지워 docs/WORK_PLAN.md를 ocs/WORK_PLAN.md로 오독해 stage 이전 거절됐다. 제품/파일/권한 오류가 아니며 변경0이다. status를 원문 NUL 필드로 파싱하도록 검수 명령만 보정한다. 동일 원인1회, Git 기준·보호 파일은 보존한다.
+
+- c71084/531a34 cached diff check는 Main 소유 문서3의 EOF 빈 줄만 지적했다(exit2). 문서 끝 개행만1개로 정정했고 source3·검증 바이트는 불변이다. 최종 WI 55212D93438EA39BAA0EE4040048D8561C84EC1A82133EB44A510D3103466D2C / 실행 후보 BE92FAE2B1F74BC827D9C6314D3B8680578D2288C94C3EE7B0792C7E6299CC31 / source 결과 F6CFA0BBFC7010C962C6E2F457947EAB5EA09F191344AC0035215586BD46A643이며 앞 지문은 빈줄 정정 전 snapshot이다. 제품 오류/기준 완화0.
