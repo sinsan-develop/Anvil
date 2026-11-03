@@ -127,10 +127,10 @@ CREATE FUNCTION anvil.fn15_grant_current(p uuid,a uuid,c uuid,g bigint,v bigint)
 
 -- 호출자는 실제 수락자다. 과거 원 command의 subject를 그 수락자로 치환하지 않는다.
 CREATE FUNCTION anvil.fn15_handoff_scope(s uuid,a uuid,c uuid,p uuid,r jsonb,fresh boolean) RETURNS anvil.control_handoff_source_requests LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE q anvil.control_handoff_source_requests;pc anvil.project_control;member anvil.project_members;session anvil.auth_sessions;
+DECLARE q anvil.control_handoff_source_requests;pc anvil.project_control;member record;session record;
 BEGIN
  IF session_user<>'anvil_v3_app' THEN RAISE EXCEPTION 'FN15_APP_SESSION_REQUIRED' USING ERRCODE='42501';END IF;PERFORM anvil.fn01_active(s,a,c);
- SELECT * INTO session FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;SELECT * INTO member FROM anvil.project_members WHERE project_id=p AND user_id=a;
+ SELECT id,user_id,client_id,reauth_until INTO session FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;SELECT project_id,user_id,participation,revoked_at INTO member FROM anvil.project_members WHERE project_id=p AND user_id=a;
  SELECT * INTO pc FROM anvil.project_control WHERE project_id=p;SELECT * INTO q FROM anvil.control_handoff_source_requests WHERE project_id=p AND id=(r->>'id')::uuid AND version=(r->>'version')::bigint AND content_hash=r->>'contentHash';
  IF member.user_id IS NULL OR member.revoked_at IS NOT NULL OR member.participation NOT IN('OWNER','HANDOFF_ELIGIBLE') OR q.id IS NULL OR r->>'version'<>'1' OR NOT EXISTS(SELECT 1 FROM anvil.projects WHERE id=p AND archived_at IS NULL) THEN RAISE EXCEPTION 'FN15_TARGET_REQUIRED' USING ERRCODE='42501';END IF;
  IF ((q.snapshot_json->'targetActorRef'->>'userId'=a::text AND q.snapshot_json->'targetClientRef'->>'clientId'=c::text) OR(pc.actor_id=a AND pc.client_id=c AND pc.revoked_at IS NULL AND q.snapshot_json->'baseControl'=anvil.fn15_basis(pc) AND(member.participation='OWNER' OR anvil.fn15_grant_current(p,a,c,pc.generation,pc.version)))) IS NOT TRUE THEN RAISE EXCEPTION 'FN15_TARGET_REQUIRED' USING ERRCODE='42501';END IF;
@@ -203,12 +203,20 @@ BEGIN
  END LOOP;RETURN future;
 END;$$;
 CREATE FUNCTION anvil.fn15_storage_anchor_one(p uuid,t text,k text,creation uuid DEFAULT NULL) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE x record;basis jsonb;at timestamptz=date_trunc('milliseconds',clock_timestamp());source_bytes bigint;anchor_bytes bigint;row_json jsonb;owner_kind text;owner_id uuid;
+DECLARE x record;basis jsonb;at timestamptz=date_trunc('milliseconds',clock_timestamp());source_bytes bigint;anchor_bytes bigint;row_json jsonb;owner_kind text;owner_id uuid;creation_source jsonb;born record;
 BEGIN
  SELECT * INTO x FROM anvil.fn15_legacy_projection(p) WHERE table_name=t AND row_identity=k;
  IF NOT FOUND OR EXISTS(SELECT 1 FROM anvil.fn15_storage_anchors z WHERE z.project_id=p AND z.table_name=t AND z.row_identity=k) THEN RAISE EXCEPTION 'FN15_ANCHOR_CONFLICT';END IF;
   owner_kind=CASE WHEN x.table_name='project_control' AND creation IS NOT NULL THEN 'PROJECT_CREATION' ELSE x.owner_kind END;owner_id=CASE WHEN x.table_name='project_control' THEN creation ELSE x.owner_command_id END;
-  basis=jsonb_build_object('projectId',p,'table',x.table_name,'rowIdentity',x.row_identity,'ownerKind',owner_kind,'ownerCommandId',owner_id,'initialHash',anvil.fn01_hash(x.projection),'initialControl',CASE WHEN x.table_name='project_control' THEN x.projection ELSE NULL END,'observedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+  creation_source=NULL;
+  IF x.table_name='project_control' AND creation IS NOT NULL THEN
+   SELECT i.id intent_id,i.draft_id,i.expected_version,d.input_json INTO born FROM anvil.draft_creation_intents i JOIN anvil.project_drafts d ON d.id=i.draft_id AND d.version=i.expected_version AND d.consumed_project_id=p
+   JOIN anvil.commands c ON c.id=i.project_command_id AND c.project_id=p AND c.operation='createProject' AND c.state='APPLIED' AND c.actor_id=i.actor_id AND c.client_id=i.client_id
+   WHERE i.target_project_id=p AND i.project_command_id=creation AND i.state='COMMITTED';
+   IF NOT FOUND THEN RAISE EXCEPTION 'FN15_CREATION_SOURCE_NOT_PROVEN';END IF;
+   creation_source=jsonb_build_object('intentId',born.intent_id,'draftId',born.draft_id,'draftVersion',born.expected_version,'sourceMode',born.input_json->'sourceMode','inputHash',anvil.fn01_hash(born.input_json));
+  END IF;
+  basis=jsonb_build_object('projectId',p,'table',x.table_name,'rowIdentity',x.row_identity,'ownerKind',owner_kind,'ownerCommandId',owner_id,'initialHash',anvil.fn01_hash(x.projection),'initialControl',CASE WHEN x.table_name='project_control' THEN x.projection ELSE NULL END,'creationSource',creation_source,'observedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
   source_bytes=anvil.fn15_cost_bytes(x.projection);row_json=jsonb_build_object('project_id',p,'table_name',x.table_name,'row_identity',x.row_identity,'owner_kind',owner_kind,'owner_command_id',owner_id,'basis_json',basis,'content_hash',anvil.fn01_hash(basis),'source_bytes',source_bytes,'anchor_bytes',0,'observed_at',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'));anchor_bytes=anvil.fn15_cost_bytes(row_json);
   INSERT INTO anvil.fn15_storage_anchors(project_id,table_name,row_identity,owner_kind,owner_command_id,basis_json,content_hash,source_bytes,anchor_bytes,observed_at) VALUES(p,x.table_name,x.row_identity,owner_kind,owner_id,basis,anvil.fn01_hash(basis),source_bytes,anchor_bytes,at);
 END;$$;
@@ -233,6 +241,7 @@ BEGIN
   IF x.table_name<>'project_control' AND(z.basis_json->>'initialHash' IS DISTINCT FROM anvil.fn01_hash(x.projection) OR z.owner_command_id IS DISTINCT FROM x.owner_command_id OR z.owner_kind<>'LEGACY_SOURCE_COMMAND') THEN RETURN false;END IF;
  END LOOP;
  IF EXISTS(SELECT 1 FROM anvil.fn15_storage_anchors a WHERE a.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.fn15_legacy_projection(p) x WHERE x.table_name=a.table_name AND x.row_identity=a.row_identity)) THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.control_handoff_acceptance_commands c WHERE c.project_id=p AND NOT anvil.fn15_command_complete(p,c.command_id)) THEN RETURN false;END IF;
  IF EXISTS(SELECT 1 FROM anvil.control_handoff_acceptance_commands c WHERE c.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.fn15_storage_reservations z WHERE z.project_id=p AND z.command_id=c.command_id AND z.phase='SETTLED'))
  OR EXISTS(SELECT 1 FROM anvil.control_handoff_protected_summaries s WHERE s.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.control_handoff_acceptance_commands c WHERE c.project_id=p AND c.command_id=s.source_command_id)) THEN RETURN false;END IF;
  FOR r IN SELECT * FROM anvil.fn15_storage_reservations WHERE project_id=p LOOP
@@ -291,6 +300,16 @@ BEGIN
 END;$$;
 REVOKE ALL ON FUNCTION anvil.fn15_control_storage_reserve(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn15_control_storage_settle(uuid,uuid,bigint),anvil.fn15_control_storage_actual(uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION anvil.fn15_control_storage_reserve(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn15_control_storage_settle(uuid,uuid,bigint),anvil.fn15_control_storage_actual(uuid,uuid) TO anvil_v3_app;
+
+-- 기존 complete 정의를 교체하기 전에 원 U0/H0의 불완전을 F 초기화로 덮지 않는다.
+DO $fn15_forward_base$
+DECLARE x record;
+BEGIN
+ LOCK TABLE anvil.projects,anvil.project_control,anvil.control_handoff_source_requests,anvil.control_handoff_source_summaries,anvil.control_handoff_source_commands,anvil.control_handoff_source_receipts,anvil.control_handoff_source_audits,anvil.project_storage_accounts,anvil.project_storage_reservations IN SHARE ROW EXCLUSIVE MODE;
+ FOR x IN SELECT project_id FROM anvil.project_storage_accounts ORDER BY project_id FOR UPDATE LOOP
+  IF NOT anvil.quota_complete(x.project_id) THEN RAISE EXCEPTION 'FN15_FORWARD_BASE_INCOMPLETE';END IF;
+ END LOOP;
+END;$fn15_forward_base$;
 
 -- U0/H0 비교에 Factual/Ffuture를 통합한다. source/Artifact 역완결은 원문 그대로다.
 CREATE OR REPLACE FUNCTION anvil.quota_complete_before_source(p uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -439,3 +458,500 @@ BEGIN
 END;$$;
 REVOKE ALL ON FUNCTION anvil.fn15_ordinary_quota_account(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION anvil.fn15_ordinary_quota_account(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+
+-- 최초 관측 anchor와 잔액 전환은 새 complete 정의와 같은 전체 migration Tx에 있다.
+-- 운영 중 일반 쓰기는 이 초기화 함수를 호출할 수 없다. 기존 control anchor 유실의 재생성 경로도 아니다.
+
+
+-- FN15 고정 reader는 같은 수락자 인증 Tx의 목적 범위만 읽는다. raw proof HTTP나 일반 OWNER current를 대신하지 않는다.
+GRANT SELECT ON anvil.commands,anvil.authorization_receipts,anvil.audit_events,anvil.approval_requests,anvil.approval_decisions,anvil.approval_consumptions TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_command_proof_select ON anvil.commands FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_receipt_proof_select ON anvil.authorization_receipts FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_audit_proof_select ON anvil.audit_events FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_approval_request_proof_select ON anvil.approval_requests FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_approval_decision_proof_select ON anvil.approval_decisions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_approval_consumption_proof_select ON anvil.approval_consumptions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE FUNCTION anvil.fn15_proof_wire_row(v jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+DECLARE k text;result jsonb=v;
+BEGIN
+ FOREACH k IN ARRAY ARRAY['received_at','completed_at','authorized_at','recorded_at','created_at','expires_at','decided_at','consumed_at'] LOOP
+  IF jsonb_typeof(v->k)='string' THEN result=jsonb_set(result,ARRAY[k],to_jsonb(to_char((v->>k)::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')));END IF;
+ END LOOP;
+ RETURN result;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn15_proof_wire_row(jsonb) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn15_proof_wire_row(jsonb) TO anvil_v3_fn15_reader_owner;
+CREATE FUNCTION anvil.fn15_handoff_writer_command(s uuid,a uuid,c uuid,p uuid,r jsonb,cid uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE q anvil.control_handoff_source_requests;commands_json jsonb;receipts_json jsonb;audits_json jsonb;approvals_json jsonb;result jsonb;wire jsonb;wire_limit bigint;
+BEGIN
+ q=anvil.fn15_handoff_scope(s,a,c,p,r,true);
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_writer_authority_events e WHERE e.project_id=p AND e.command_ref->>'id'=cid::text) THEN RAISE EXCEPTION 'FN15_WRITER_COMMAND_NOT_REFERENCED';END IF;
+ -- 비정상 복수행을 원문 aggregate/driver 반환 전에 거절한다. 정상 한 command/receipt/audit만 투영한다.
+ IF(SELECT count(*) FROM anvil.commands WHERE project_id=p AND scope_kind='PROJECT' AND id=cid)<>1
+ OR(SELECT count(*) FROM anvil.authorization_receipts WHERE scope_kind='PROJECT' AND scope_id=p AND command_id=cid)<>1
+ OR(SELECT count(*) FROM anvil.audit_events WHERE project_id=p AND command_id=cid)<>1
+ OR(SELECT count(*) FROM anvil.approval_consumptions WHERE project_id=p AND command_id=cid)>1 THEN RAISE EXCEPTION 'FN15_WRITER_PROOF_CARDINALITY_INVALID';END IF;
+ SELECT result_ref INTO wire FROM anvil.commands WHERE project_id=p AND scope_kind='PROJECT' AND id=cid;
+ wire_limit=CASE wire->'data'->>'status' WHEN 'WRITER_AUTHORITY_INTENT_RECORDED' THEN 4195565 WHEN 'OWNERSHIP_PREPARATION_INTENT_RECORDED' THEN 4099 WHEN 'NATIVE_BOUNDARY_PREPARATION_RECORDED' THEN 4194931 ELSE NULL END;
+ IF wire_limit IS NULL OR wire IS NULL OR octet_length(convert_to(anvil.fn01_json(wire),'UTF8'))>wire_limit THEN RAISE EXCEPTION 'FN15_WRITER_NORMAL_PRODUCER_INVALID';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.approval_consumptions ac
+  JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id
+  JOIN anvil.approval_requests req ON req.project_id=d.project_id AND req.id=d.request_id
+  JOIN anvil.commands rc ON rc.project_id=req.project_id AND rc.id=req.command_id
+  JOIN anvil.commands dc ON dc.project_id=d.project_id AND dc.id=d.command_id
+  WHERE ac.project_id=p AND ac.command_id=cid AND(
+   octet_length(convert_to(anvil.fn01_json(req.request_json),'UTF8'))>961668 OR octet_length(convert_to(anvil.fn01_json(req.details_json),'UTF8'))>961668
+   OR octet_length(convert_to(anvil.fn01_json(req.action_scope_json),'UTF8'))>2048
+   OR octet_length(convert_to(anvil.fn01_json(rc.result_ref),'UTF8'))>961668+65536
+   OR octet_length(convert_to(anvil.fn01_json(d.decision_json),'UTF8'))>120750 OR octet_length(convert_to(anvil.fn01_json(to_jsonb(d.reason)),'UTF8'))>120750
+   OR octet_length(convert_to(anvil.fn01_json(dc.result_ref),'UTF8'))>120750+65536)) THEN RAISE EXCEPTION 'FN15_WRITER_APPROVAL_PRODUCER_INVALID';END IF;
+
+ SELECT COALESCE(jsonb_agg(anvil.fn15_proof_wire_row(to_jsonb(x))),'[]'::jsonb) INTO commands_json FROM(SELECT id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at FROM anvil.commands WHERE project_id=p AND scope_kind='PROJECT' AND id=cid LIMIT 2)x;
+ SELECT COALESCE(jsonb_agg(anvil.fn15_proof_wire_row(to_jsonb(x))),'[]'::jsonb) INTO receipts_json FROM(SELECT id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at FROM anvil.authorization_receipts WHERE scope_kind='PROJECT' AND scope_id=p AND command_id=cid LIMIT 2)x;
+ SELECT COALESCE(jsonb_agg(anvil.fn15_proof_wire_row(to_jsonb(x)) ORDER BY x.server_sequence),'[]'::jsonb) INTO audits_json FROM(SELECT project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of FROM anvil.audit_events WHERE project_id=p AND command_id=cid ORDER BY server_sequence LIMIT 2)x;
+ SELECT COALESCE(jsonb_agg(jsonb_build_object('row',anvil.fn15_proof_wire_row(jsonb_build_object('action_scope_json',req.action_scope_json,'candidate_command_id',req.candidate_command_id,'client_id',req.client_id,'content_hash',req.content_hash,'created_at',req.created_at,'created_by',req.created_by,'details_json',req.details_json,'expires_at',req.expires_at,'policy_ref',req.policy_ref,'request_json',req.request_json,'required_decider_ref',req.required_decider_ref,'scope_digest',req.scope_digest,'status',req.status,'version',req.version,'operation',rc.operation,'actor_id',rc.actor_id,'command_client',rc.client_id,'result_ref',rc.result_ref)),'saved',anvil.fn15_proof_wire_row(jsonb_build_object('client_id',d.client_id,'content_hash',d.content_hash,'control_generation',d.control_generation,'decided_at',d.decided_at,'decided_by',d.decided_by,'decision',d.decision,'decision_json',d.decision_json,'id',d.id,'reason',d.reason,'request_version',d.request_version,'scope_digest',d.scope_digest,'operation',dc.operation,'actor_id',dc.actor_id,'command_client',dc.client_id,'expected_version',dc.expected_version,'result_ref',dc.result_ref)),'used',anvil.fn15_proof_wire_row(jsonb_build_object('id',ac.id,'decision_id',ac.decision_id,'command_id',ac.command_id,'scope_digest',ac.scope_digest,'policy_id',ac.policy_id,'policy_version',ac.policy_version,'consumed_at',ac.consumed_at,'request_hash',used.request_hash,'actor_id',used.actor_id,'client_id',used.client_id,'control_generation',used.control_generation,'policy_ref',used.policy_ref,'payload_ref',used.payload_ref,'state',used.state,'operation',used.operation,'expected_version',used.expected_version,'approval_consumption_id',used.approval_consumption_id,'candidate_command_id',used.command_id,'approval_decision_ref',ar.approval_decision_ref,'request_id',d.request_id,'decision',d.decision,'decision_scope_digest',d.scope_digest,'result_ref',jsonb_build_object('status',used.result_ref->'status'))))),'[]'::jsonb)
+ INTO approvals_json FROM anvil.approval_consumptions ac
+ JOIN anvil.commands used ON used.project_id=ac.project_id AND used.id=ac.command_id
+ JOIN anvil.authorization_receipts ar ON ar.command_id=used.id AND ar.id=used.authorization_receipt_id AND ar.scope_kind='PROJECT' AND ar.scope_id=p
+ JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id
+ JOIN anvil.commands dc ON dc.project_id=d.project_id AND dc.id=d.command_id
+ JOIN anvil.approval_requests req ON req.project_id=d.project_id AND req.id=d.request_id
+ JOIN anvil.commands rc ON rc.project_id=req.project_id AND rc.id=req.command_id
+ WHERE ac.project_id=p AND ac.command_id=cid;
+ result=jsonb_build_object('commands',commands_json,'receipts',receipts_json,'audits',audits_json,'approvals',approvals_json);
+ -- 정상 variable payload는 W+3R+3D+S다. used.result_ref는 같은 실제 command 행의 status만 읽어 두 번째 W를 보유하지 않는다.
+ -- 고정 투영열 102개와 두 닫힌 응답 header/root를 보수 포함한 160개 이내의 key/scalar, key64B/value256B/구분4B+괄호4096B는 55936B 이하다.
+ -- request/decision 응답의 variable 원문을 제외한 외피 각각 64KiB와 나머지 고정투영 64KiB를 K=196608B로 보수 포함한다.
+ -- S<=2048, W<=4195565,R<=961668,D<=120750이면 총7641475B<9437184B이며 approval 자체3445910B<4194304B다.
+ -- 이 원문 hash/equality 검사들은 Node pure core에서 그대로 소비한다. 보관 원행을 하나로 합성하거나 새 저장한도를 올리지 않는다.
+ -- Node는 문자열/key 조립예산 뒤 최종 canonical bytes도 검사한다. SQL/driver/raw packet/복사본은 동일 원 IO 정착 전까지 각 소유를 유지한다.
+ IF octet_length(convert_to(anvil.fn01_json(result),'UTF8'))>9437184 THEN RAISE EXCEPTION 'FN15_WRITER_COMMAND_PROOF_LIMIT' USING ERRCODE='54000';END IF;
+ PERFORM anvil.fn15_handoff_scope(s,a,c,p,r,true);
+ RETURN result;
+END;$$;
+ALTER FUNCTION anvil.fn15_handoff_writer_command(uuid,uuid,uuid,uuid,jsonb,uuid) OWNER TO anvil_v3_fn15_reader_owner;
+REVOKE ALL ON FUNCTION anvil.fn15_handoff_writer_command(uuid,uuid,uuid,uuid,jsonb,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn15_handoff_writer_command(uuid,uuid,uuid,uuid,jsonb,uuid) TO anvil_v3_app;
+
+CREATE FUNCTION anvil.fn15_ledger_fact(i uuid,v bigint,body jsonb,at timestamptz,until_at timestamptz,claim text) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('ref',jsonb_build_object('id',i,'version',v,'contentHash',anvil.fn01_hash(body)),'snapshot',body,'recordedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(until_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'provenance',claim);
+$$;
+REVOKE ALL ON FUNCTION anvil.fn15_ledger_fact(uuid,bigint,jsonb,timestamptz,timestamptz,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn15_ledger_fact(uuid,bigint,jsonb,timestamptz,timestamptz,text) TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(project_id,id,generation,transport,state,created_by,client_id,command_id,created_at) ON anvil.executions TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(project_id,id,assignment_id,assignment_version,assignment_hash,content_hash,command_id,created_at) ON anvil.checkpoint_records TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_execution_fact_select ON anvil.executions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_checkpoint_fact_select ON anvil.checkpoint_records FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+
+CREATE FUNCTION anvil.fn15_empty_issuer_lock() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NEW.project_id IS NULL THEN RETURN NEW;END IF;
+ IF TG_OP='UPDATE' AND OLD.project_id IS DISTINCT FROM NEW.project_id THEN RAISE EXCEPTION 'FN15_PROJECT_SCOPE_IMMUTABLE';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ PERFORM project_id FROM anvil.project_control WHERE project_id=NEW.project_id FOR UPDATE;
+ RETURN NEW;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn15_empty_issuer_lock() FROM PUBLIC,anvil_v3_app;
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.executions FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_grants FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.usage_reservations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.writer_claims FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_commands FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.delivery_outbox FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_credentials FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_challenges FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_observations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_acknowledgements FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_observation_results FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_start_permits FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_instruction_permits FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_grant_revocations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.project_writer_authority_events FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.project_writer_authority_heads FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_ownership_events FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_ownership_observations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_ownership_anchors FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_ownership_bindings FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_ownership_heads FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.native_preparation_authorities FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.native_preparation_authority_events FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_preparations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_preparation_approval_candidates FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.understanding_reviews FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.stage_runs FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.queue_requests FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.project_storage_reservations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.context_bundles FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.context_items FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.assignment_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.source_roots FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.source_root_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.project_source_declarations FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.project_roles FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.agent_sessions FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.role_bindings FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_material_manifests FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_materials FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.execution_material_proof_bindings FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+CREATE TRIGGER fn15_managed_scope_lock BEFORE INSERT OR UPDATE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn15_empty_issuer_lock();
+GRANT SELECT(project_id) ON anvil.executions TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.executions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_grants TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_grants FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.usage_reservations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.usage_reservations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.writer_claims TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.writer_claims FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_commands TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_commands FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.delivery_outbox TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.delivery_outbox FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_credentials TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_credentials FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_challenges TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_challenges FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_receipts TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_receipts FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_observations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_observations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_acknowledgements TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_acknowledgements FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_observation_results TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_observation_results FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_start_permits TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_start_permits FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_instruction_permits TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_instruction_permits FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_grant_revocations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_grant_revocations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.project_writer_authority_events TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.project_writer_authority_events FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.project_writer_authority_heads TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.project_writer_authority_heads FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_ownership_events TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_ownership_events FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_ownership_observations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_ownership_observations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_ownership_anchors TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_ownership_anchors FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_ownership_bindings TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_ownership_bindings FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_ownership_heads TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_ownership_heads FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.native_preparation_authorities TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.native_preparation_authorities FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.native_preparation_authority_events TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.native_preparation_authority_events FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_preparations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_preparations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_preparation_approval_candidates TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_preparation_approval_candidates FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.understanding_reviews TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.understanding_reviews FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.stage_runs TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.stage_runs FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.queue_requests TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.queue_requests FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.project_storage_reservations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.project_storage_reservations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.context_bundles TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.context_bundles FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.context_items TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.context_items FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.assignment_versions TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.assignment_versions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.source_roots TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.source_roots FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.source_root_versions TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.source_root_versions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.project_source_declarations TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.project_source_declarations FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.project_roles TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.project_roles FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.agent_sessions TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.agent_sessions FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.role_bindings TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.role_bindings FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_material_manifests TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_material_manifests FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_materials TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_materials FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(project_id) ON anvil.execution_material_proof_bindings TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_absence_scope_select ON anvil.execution_material_proof_bindings FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+GRANT SELECT(id,created_at) ON anvil.projects TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(id,version,owner_user_id,client_id,input_json,consumed_project_id) ON anvil.project_drafts TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(id,draft_id,expected_version,actor_id,client_id,target_project_id,project_command_id,request_hash,state,refs_json) ON anvil.draft_creation_intents TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(creation_intent_id,state,attempt) ON anvil.draft_artifact_intent_events TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(project_id,coverage_state,creation_intent_id,creation_command_id) ON anvil.project_storage_accounts TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(project_id,table_name,row_identity,basis_json,content_hash) ON anvil.fn15_storage_anchors TO anvil_v3_fn15_reader_owner;
+GRANT SELECT(id) ON anvil.schema_migrations TO anvil_v3_fn15_reader_owner;
+GRANT EXECUTE ON FUNCTION anvil.quota_creation_complete(uuid),anvil.quota_complete(uuid),anvil.fn15_storage_complete(uuid) TO anvil_v3_fn15_reader_owner;
+CREATE POLICY fn15_birth_draft_select ON anvil.project_drafts FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_birth_intent_select ON anvil.draft_creation_intents FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_birth_event_select ON anvil.draft_artifact_intent_events FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_birth_account_select ON anvil.project_storage_accounts FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE POLICY fn15_birth_anchor_select ON anvil.fn15_storage_anchors FOR SELECT TO anvil_v3_fn15_reader_owner USING(true);
+CREATE FUNCTION anvil.fn15_managed_empty(s uuid,a uuid,c uuid,p uuid,r jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE q anvil.control_handoff_source_requests;pc anvil.project_control;anchor record;i record;d record;cmd record;ar record;au record;source_rows jsonb;birth jsonb;snapshot jsonb;at timestamptz;until_at timestamptz;
+BEGIN
+ q=anvil.fn15_handoff_scope(s,a,c,p,r,true);
+ -- 미공유 snapshot/isolation/replication 또는 알려지지 않은 후행 schema를 빈 관리범위로 해석하지 않는다.
+ IF current_setting('transaction_isolation')<>'read committed' OR current_setting('session_replication_role')<>'origin'
+ OR EXISTS(SELECT 1 FROM anvil.schema_migrations WHERE id>'0073_control_handoff_acceptance') THEN RETURN NULL;END IF;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=p;
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_members m WHERE m.project_id=p AND m.user_id=pc.actor_id AND m.revoked_at IS NULL AND(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND anvil.fn15_grant_current(p,pc.actor_id,pc.client_id,pc.generation,pc.version)))) THEN RETURN NULL;END IF;
+ IF NOT anvil.quota_creation_complete(p) OR NOT anvil.quota_complete(p) OR NOT anvil.fn15_storage_complete(p)
+ OR NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts WHERE project_id=p AND coverage_state='VERIFIED') THEN RETURN NULL;END IF;
+ SELECT project_id,table_name,row_identity,basis_json,content_hash INTO anchor FROM anvil.fn15_storage_anchors WHERE project_id=p AND table_name='project_control' AND row_identity=p::text;
+ IF NOT FOUND OR anchor.basis_json->'creationSource'->>'sourceMode' IS DISTINCT FROM 'EMPTY' THEN RETURN NULL;END IF;
+ SELECT id,draft_id,expected_version,actor_id,client_id,target_project_id,project_command_id,request_hash,state,refs_json INTO i FROM anvil.draft_creation_intents WHERE target_project_id=p AND state='COMMITTED';
+ IF NOT FOUND OR i.refs_json IS DISTINCT FROM '[]'::jsonb OR anchor.basis_json->'creationSource'->>'intentId' IS DISTINCT FROM i.id::text THEN RETURN NULL;END IF;
+ SELECT id,version,owner_user_id,client_id,input_json,consumed_project_id INTO d FROM anvil.project_drafts WHERE id=i.draft_id;
+ IF NOT FOUND OR d.version IS DISTINCT FROM i.expected_version OR d.consumed_project_id IS DISTINCT FROM p OR d.owner_user_id IS DISTINCT FROM i.actor_id OR d.client_id IS DISTINCT FROM i.client_id
+ OR d.input_json->>'sourceMode' IS DISTINCT FROM 'EMPTY' OR d.input_json ? 'sourceDeclaration' OR anchor.basis_json->'creationSource'->>'inputHash' IS DISTINCT FROM anvil.fn01_hash(d.input_json)
+ OR NOT EXISTS(SELECT 1 FROM anvil.draft_artifact_intent_events WHERE creation_intent_id=i.id AND state='COMMITTED') THEN RETURN NULL;END IF;
+ SELECT id,request_hash,actor_id,client_id,operation_id,authorization_receipt_id INTO cmd FROM anvil.commands WHERE project_id=p AND id=i.project_command_id AND operation='createProject' AND state='APPLIED';
+ IF NOT FOUND OR cmd.request_hash IS DISTINCT FROM i.request_hash THEN RETURN NULL;END IF;
+ SELECT id,scope_digest INTO ar FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id AND command_id=cmd.id AND scope_kind='PROJECT' AND scope_id=p;
+ IF NOT FOUND THEN RETURN NULL;END IF;
+ SELECT event_id,scope_digest INTO au FROM anvil.audit_events WHERE project_id=p AND command_id=cmd.id AND operation_id=cmd.operation_id AND outcome='APPLIED' AND source_kind='HUMAN_COMMAND';
+ IF NOT FOUND OR au.scope_digest IS DISTINCT FROM ar.scope_digest THEN RETURN NULL;END IF;
+ IF anchor.basis_json->'initialControl'->>'actor_id' IS DISTINCT FROM i.actor_id::text OR anchor.basis_json->'initialControl'->>'client_id' IS DISTINCT FROM i.client_id::text
+ OR anchor.basis_json->'initialControl'->'generation' IS DISTINCT FROM '1'::jsonb OR anchor.basis_json->'initialControl'->'version' IS DISTINCT FROM '1'::jsonb THEN RETURN NULL;END IF;
+ -- 원 공통 command가 발급/준비/미정착 경로를 보이면 과거 row 삭제나 단순 count0로 폐쇄를 복원하지 않는다.
+ IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=p AND x.id<>cmd.id AND(x.state<>'APPLIED' OR x.operation NOT IN('savePermissionPolicy','saveProjectMembership','saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument','uploadArtifact','linkDocumentSource','proposeDocumentSourceChange','detachDocumentSource','requestApproval','decideApproval','markNotificationRead'))) THEN RETURN NULL;END IF;
+ IF(SELECT anvil.fn01_hash(to_jsonb(f.prosrc)) FROM pg_catalog.pg_proc f WHERE f.oid='anvil.fn15_empty_issuer_lock()'::regprocedure) IS DISTINCT FROM 'c210cba4f937b35290c98e4dfbbc5d46c383f1ed2c704e65400cc15e38c577c4' THEN RETURN NULL;END IF;
+ IF EXISTS(SELECT 1 FROM unnest(ARRAY['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_credentials','execution_challenges','execution_receipts','execution_observations','execution_acknowledgements','execution_observation_results','execution_start_permits','execution_instruction_permits','execution_grant_revocations','project_writer_authority_events','project_writer_authority_heads','execution_ownership_events','execution_ownership_observations','execution_ownership_anchors','execution_ownership_bindings','execution_ownership_heads','native_preparation_authorities','native_preparation_authority_events','execution_preparations','execution_preparation_approval_candidates','understanding_reviews','stage_runs','queue_requests','project_storage_reservations','context_bundles','context_items','assignment_versions','source_roots','source_root_versions','project_source_declarations','project_roles','agent_sessions','role_bindings','execution_material_manifests','execution_materials','execution_material_proof_bindings','commands']) AS expected(name) WHERE NOT EXISTS(
+  SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_class rel ON rel.oid=t.tgrelid JOIN pg_catalog.pg_namespace ns ON ns.oid=rel.relnamespace
+  WHERE ns.nspname='anvil' AND rel.relname=expected.name AND t.tgname='fn15_managed_scope_lock' AND t.tgfoid='anvil.fn15_empty_issuer_lock()'::regprocedure AND t.tgenabled='O' AND t.tgtype=23 AND NOT t.tgisinternal AND t.tgqual IS NULL AND t.tgnargs=0)) THEN RETURN NULL;END IF;
+ SELECT jsonb_agg(x.body ORDER BY x.ordinal) INTO source_rows FROM(SELECT 0 ordinal,jsonb_build_object('table','executions','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.executions WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 1 ordinal,jsonb_build_object('table','execution_grants','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_grants WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 2 ordinal,jsonb_build_object('table','usage_reservations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.usage_reservations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 3 ordinal,jsonb_build_object('table','writer_claims','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.writer_claims WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 4 ordinal,jsonb_build_object('table','execution_commands','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_commands WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 5 ordinal,jsonb_build_object('table','delivery_outbox','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.delivery_outbox WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 6 ordinal,jsonb_build_object('table','execution_credentials','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_credentials WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 7 ordinal,jsonb_build_object('table','execution_challenges','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_challenges WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 8 ordinal,jsonb_build_object('table','execution_receipts','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_receipts WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 9 ordinal,jsonb_build_object('table','execution_observations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_observations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 10 ordinal,jsonb_build_object('table','execution_acknowledgements','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_acknowledgements WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 11 ordinal,jsonb_build_object('table','execution_observation_results','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_observation_results WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 12 ordinal,jsonb_build_object('table','execution_start_permits','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_start_permits WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 13 ordinal,jsonb_build_object('table','execution_instruction_permits','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_instruction_permits WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 14 ordinal,jsonb_build_object('table','execution_grant_revocations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_grant_revocations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 15 ordinal,jsonb_build_object('table','project_writer_authority_events','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.project_writer_authority_events WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 16 ordinal,jsonb_build_object('table','project_writer_authority_heads','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.project_writer_authority_heads WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 17 ordinal,jsonb_build_object('table','execution_ownership_events','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_ownership_events WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 18 ordinal,jsonb_build_object('table','execution_ownership_observations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_ownership_observations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 19 ordinal,jsonb_build_object('table','execution_ownership_anchors','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_ownership_anchors WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 20 ordinal,jsonb_build_object('table','execution_ownership_bindings','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_ownership_bindings WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 21 ordinal,jsonb_build_object('table','execution_ownership_heads','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_ownership_heads WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 22 ordinal,jsonb_build_object('table','native_preparation_authorities','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.native_preparation_authorities WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 23 ordinal,jsonb_build_object('table','native_preparation_authority_events','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.native_preparation_authority_events WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 24 ordinal,jsonb_build_object('table','execution_preparations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_preparations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 25 ordinal,jsonb_build_object('table','execution_preparation_approval_candidates','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_preparation_approval_candidates WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 26 ordinal,jsonb_build_object('table','understanding_reviews','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.understanding_reviews WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 27 ordinal,jsonb_build_object('table','stage_runs','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.stage_runs WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 28 ordinal,jsonb_build_object('table','queue_requests','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.queue_requests WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 29 ordinal,jsonb_build_object('table','project_storage_reservations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.project_storage_reservations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 30 ordinal,jsonb_build_object('table','context_bundles','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.context_bundles WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 31 ordinal,jsonb_build_object('table','context_items','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.context_items WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 32 ordinal,jsonb_build_object('table','assignment_versions','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.assignment_versions WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 33 ordinal,jsonb_build_object('table','source_roots','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.source_roots WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 34 ordinal,jsonb_build_object('table','source_root_versions','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.source_root_versions WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 35 ordinal,jsonb_build_object('table','project_source_declarations','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.project_source_declarations WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 36 ordinal,jsonb_build_object('table','project_roles','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.project_roles WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 37 ordinal,jsonb_build_object('table','agent_sessions','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.agent_sessions WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 38 ordinal,jsonb_build_object('table','role_bindings','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.role_bindings WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 39 ordinal,jsonb_build_object('table','execution_material_manifests','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_material_manifests WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 40 ordinal,jsonb_build_object('table','execution_materials','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_materials WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body
+ UNION ALL SELECT 41 ordinal,jsonb_build_object('table','execution_material_proof_bindings','rows',COALESCE((SELECT jsonb_agg(jsonb_build_object('projectId',x.project_id)) FROM(SELECT project_id FROM anvil.execution_material_proof_bindings WHERE project_id=p LIMIT 1)x),'[]'::jsonb)) body)x;
+ birth=jsonb_build_object('intentId',i.id,'draftId',i.draft_id,'draftVersion',i.expected_version,'commandRef',jsonb_build_object('id',cmd.id,'version',1,'contentHash',cmd.request_hash),'requestHash',i.request_hash,'receiptId',ar.id,'scopeDigest',ar.scope_digest,'auditEventId',au.event_id,'auditScopeDigest',au.scope_digest,'initialControl',jsonb_build_object('actorId',i.actor_id,'clientId',i.client_id,'generation',1,'version',1),'anchorHash',anchor.content_hash);
+ at=date_trunc('milliseconds',clock_timestamp());until_at=LEAST(at+interval '30 seconds',q.expires_at);
+ snapshot=jsonb_build_object('schemaVersion',1,'purpose','FN15_CLOSED_MANAGED_ABSENCE','projectId',p,'requestRef',r,'baseControl',anvil.fn15_basis(pc),'subject',jsonb_build_object('actorId',a,'clientId',c,'sessionId',s),'birth',birth,'sources',source_rows,'guardHash','c210cba4f937b35290c98e4dfbbc5d46c383f1ed2c704e65400cc15e38c577c4','observedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(until_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+ PERFORM anvil.fn15_handoff_scope(s,a,c,p,r,true);RETURN jsonb_build_object('snapshot',snapshot,'contentHash',anvil.fn01_hash(snapshot));
+END;$$;
+ALTER FUNCTION anvil.fn15_managed_empty(uuid,uuid,uuid,uuid,jsonb) OWNER TO anvil_v3_fn15_reader_owner;
+REVOKE ALL ON FUNCTION anvil.fn15_managed_empty(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn15_handoff_facts(s uuid,a uuid,c uuid,p uuid,r jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE q anvil.control_handoff_source_requests;pc anvil.project_control;h anvil.project_writer_authority_heads;head_json jsonb;events_json jsonb;execution_json jsonb;commands_json jsonb;approvals_json jsonb;checkpoints_json jsonb;writer_count bigint;writer_bytes numeric;at timestamptz=date_trunc('milliseconds',clock_timestamp());until_at timestamptz;result jsonb;
+BEGIN
+ q=anvil.fn15_handoff_scope(s,a,c,p,r,true);SELECT * INTO pc FROM anvil.project_control WHERE project_id=p;until_at=LEAST(at+interval '30 seconds',q.expires_at);
+ SELECT * INTO h FROM anvil.project_writer_authority_heads WHERE project_id=p;
+ head_json=CASE WHEN h.id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('ref',jsonb_build_object('id',h.id,'version',h.head_generation,'contentHash',h.content_hash),'snapshot',anvil.writer_authority_head_snapshot(h)) END;
+ SELECT count(*),COALESCE(sum(octet_length(convert_to(anvil.execution_authority_canonical(jsonb_build_object('ref',jsonb_build_object('id',e.id,'version',e.version,'contentHash',e.content_hash),'snapshot',anvil.writer_authority_event_snapshot(e))),'UTF8'))),0) INTO writer_count,writer_bytes FROM anvil.project_writer_authority_events e WHERE project_id=p;
+ IF h.id IS NOT NULL THEN writer_bytes=writer_bytes+octet_length(convert_to(anvil.execution_authority_canonical(head_json),'UTF8'));END IF;
+ IF writer_count>10000 OR writer_bytes>67108864 THEN RAISE EXCEPTION 'FN15_WRITER_JOURNAL_LIMIT' USING ERRCODE='54000';END IF;
+ -- 네 공개 범주는 201번째 원행으로 200refs 초과를 입증한다. prefix를 완전 coverage/READY로 만들지 않으며 writer 전체 chain은 위 별도 10000/64MiB 검산을 유지한다.
+ SELECT COALESCE(jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',e.id,'version',e.version,'contentHash',e.content_hash),'snapshot',anvil.writer_authority_event_snapshot(e)) ORDER BY e.authority_epoch,e.sequence),'[]'::jsonb) INTO events_json FROM anvil.project_writer_authority_events e WHERE project_id=p;
+ -- 원 저장행의 작은 관측 projection이다. 기존 execution/command/approval/checkpoint 원문 ref를 합성하지 않는다.
+ SELECT COALESCE(jsonb_agg(anvil.fn15_ledger_fact(x.id,x.generation,jsonb_build_object('schemaVersion',1,'purpose','FN15_SERVER_LEDGER_FACT','projectId',p,'sourceTable','executions','id',x.id,'generation',x.generation,'transport',x.transport,'state',x.state,'createdBy',x.created_by,'clientId',x.client_id,'commandId',x.command_id),x.created_at,until_at,'HISTORICAL_CLAIM') ORDER BY x.id,x.generation),'[]'::jsonb) INTO execution_json FROM(SELECT id,generation,transport,state,created_by,client_id,command_id,created_at FROM anvil.executions WHERE project_id=p ORDER BY id,generation LIMIT 201)x;
+ SELECT COALESCE(jsonb_agg(anvil.fn15_ledger_fact(x.id,1,jsonb_build_object('schemaVersion',1,'purpose','FN15_SERVER_LEDGER_FACT','projectId',p,'sourceTable','commands','commandRef',jsonb_build_object('id',x.id,'version',1,'contentHash',x.request_hash),'actorId',x.actor_id,'clientId',x.client_id,'controlGeneration',x.control_generation,'state',x.state),x.received_at,until_at,'SERVER_LEDGER') ORDER BY x.id),'[]'::jsonb) INTO commands_json FROM(SELECT id,request_hash,actor_id,client_id,control_generation,state,received_at FROM anvil.commands WHERE project_id=p AND state<>'APPLIED' ORDER BY id LIMIT 201)x;
+ SELECT COALESCE(jsonb_agg(anvil.fn15_ledger_fact(x.id,x.version,jsonb_build_object('schemaVersion',1,'purpose','FN15_SERVER_LEDGER_FACT','projectId',p,'sourceTable','approval_requests','requestRef',CASE WHEN x.content_hash IS NULL THEN NULL ELSE jsonb_build_object('id',x.id,'version',1,'contentHash',x.content_hash) END,'currentVersion',x.version,'scopeDigest',x.scope_digest,'createdBy',x.created_by,'clientId',x.client_id,'status',x.status,'policyRef',x.policy_ref),x.created_at,LEAST(until_at,x.expires_at),'SERVER_LEDGER') ORDER BY x.id),'[]'::jsonb) INTO approvals_json FROM(SELECT id,version,content_hash,scope_digest,created_by,client_id,status,policy_ref,created_at,expires_at FROM anvil.approval_requests WHERE project_id=p AND status IN('PENDING','APPROVED','CHANGE_REQUESTED') ORDER BY id LIMIT 201)x;
+ SELECT COALESCE(jsonb_agg(anvil.fn15_ledger_fact(x.id,1,jsonb_build_object('schemaVersion',1,'purpose','FN15_SERVER_LEDGER_FACT','projectId',p,'sourceTable','checkpoint_records','checkpointRef',jsonb_build_object('id',x.id,'version',1,'contentHash',x.content_hash),'assignmentRef',jsonb_build_object('id',x.assignment_id,'version',x.assignment_version,'contentHash',x.assignment_hash),'commandId',x.command_id),x.created_at,until_at,'SERVER_LEDGER') ORDER BY x.id),'[]'::jsonb) INTO checkpoints_json FROM(SELECT id,content_hash,assignment_id,assignment_version,assignment_hash,command_id,created_at FROM anvil.checkpoint_records WHERE project_id=p ORDER BY id LIMIT 201)x;
+ result=jsonb_build_object('projectId',p,'requestRef',r,'baseControl',anvil.fn15_basis(pc),'writer',jsonb_build_object('head',head_json,'events',events_json,'commands','[]'::jsonb,'receipts','[]'::jsonb,'audits','[]'::jsonb,'approvals','[]'::jsonb),'executions',execution_json,'pendingCommands',commands_json,'pendingApprovals',approvals_json,'checkpoints',checkpoints_json,
+  -- 원 현재성/계속실행 보고의 보호 공급 조립은 아직 미연결이다. 원장 존재·빈 배열로 그 권위를 만들지 않는다.
+  'proofBasis',NULL,'emptyClosure',anvil.fn15_managed_empty(s,a,c,p,r));
+ PERFORM anvil.fn15_handoff_scope(s,a,c,p,r,true);RETURN result;
+END;$$;
+ALTER FUNCTION anvil.fn15_handoff_facts(uuid,uuid,uuid,uuid,jsonb) OWNER TO anvil_v3_fn15_reader_owner;
+REVOKE ALL ON FUNCTION anvil.fn15_handoff_facts(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn15_handoff_facts(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+
+-- 새 command의 원자료/receipt/audit/예약을 역사 검산한다. NOW나 과거 세션의 현재 생존을 재요구하지 않는다.
+CREATE FUNCTION anvil.fn15_command_complete(p uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE c anvil.control_handoff_acceptance_commands;q anvil.control_handoff_source_requests;z anvil.fn15_storage_reservations;sm anvil.control_handoff_protected_summaries;h anvil.control_handoffs;rr anvil.control_handoff_acceptance_receipts;aa anvil.control_handoff_acceptance_audits;expected jsonb;k text;part jsonb;command_ref jsonb;receipt_ref jsonb;
+BEGIN
+ SELECT * INTO c FROM anvil.control_handoff_acceptance_commands WHERE project_id=p AND command_id=cid;
+ IF c.command_id IS NULL OR c.command_hash IS DISTINCT FROM anvil.fn01_hash(c.command_json) OR c.result_hash IS DISTINCT FROM anvil.fn01_hash(c.result_json)
+ OR c.command_json->>'projectId' IS DISTINCT FROM p::text OR c.command_json->>'commandId' IS DISTINCT FROM cid::text OR c.command_json->>'operation' IS DISTINCT FROM c.operation OR c.command_json->>'clientId' IS DISTINCT FROM c.client_id::text
+ OR c.command_json->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR c.reauth_until IS NULL OR c.created_at>=c.reauth_until OR octet_length(convert_to(anvil.fn01_json(c.command_json),'UTF8'))>2097152 THEN RETURN false;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.auth_sessions a WHERE a.id=c.session_id AND a.user_id=c.actor_id AND a.client_id=c.client_id AND a.credential_generation=c.credential_generation AND c.created_at<a.idle_expires_at AND c.created_at<a.absolute_expires_at) THEN RETURN false;END IF;
+ SELECT * INTO q FROM anvil.control_handoff_source_requests WHERE project_id=p AND id=(c.command_json->'payload'->'requestRef'->>'id')::uuid AND version=1 AND content_hash=c.command_json->'payload'->'requestRef'->>'contentHash';
+ IF q.id IS NULL OR c.created_at>=q.expires_at OR c.command_json->'payload'->'requestRef' IS DISTINCT FROM jsonb_build_object('id',q.id,'version',1,'contentHash',q.content_hash) THEN RETURN false;END IF;
+ SELECT * INTO z FROM anvil.fn15_storage_reservations WHERE project_id=p AND command_id=cid;
+ IF z.command_id IS NULL OR z.phase IS DISTINCT FROM 'SETTLED' OR z.plan_json->'request' IS DISTINCT FROM c.command_json OR z.plan_json->'subject' IS DISTINCT FROM jsonb_build_object('actorId',c.actor_id,'clientId',c.client_id,'sessionId',c.session_id,'credentialGeneration',c.credential_generation) THEN RETURN false;END IF;
+ SELECT * INTO rr FROM anvil.control_handoff_acceptance_receipts WHERE project_id=p AND command_id=cid;SELECT * INTO aa FROM anvil.control_handoff_acceptance_audits WHERE project_id=p AND command_id=cid;
+ IF rr.id IS NULL OR aa.id IS NULL OR rr.content_hash IS DISTINCT FROM anvil.fn01_hash(rr.body_json) OR aa.content_hash IS DISTINCT FROM anvil.fn01_hash(aa.body_json) THEN RETURN false;END IF;
+ command_ref=jsonb_build_object('id',cid,'version',1,'contentHash',c.command_hash);receipt_ref=jsonb_build_object('id',rr.id,'version',1,'contentHash',rr.content_hash);
+ IF c.operation='prepareControlHandoff' THEN
+  IF EXISTS(SELECT 1 FROM anvil.control_handoffs WHERE project_id=p AND command_id=cid) THEN RETURN false;END IF;
+  SELECT * INTO sm FROM anvil.control_handoff_protected_summaries WHERE project_id=p AND source_command_id=cid;
+  IF sm.source_command_id IS NULL OR sm.request_id IS DISTINCT FROM q.id OR sm.observed_at IS DISTINCT FROM c.created_at OR sm.valid_until>q.expires_at OR sm.valid_until>sm.observed_at+interval '30 seconds' OR sm.valid_until<=sm.observed_at
+  OR sm.content_hash IS DISTINCT FROM anvil.fn01_hash(sm.body_json) OR c.result_json IS DISTINCT FROM jsonb_build_object('ref',jsonb_build_object('id',q.id,'version',sm.version,'contentHash',sm.content_hash),'snapshot',sm.body_json)
+  OR sm.body_json->'schemaVersion' IS DISTINCT FROM '2'::jsonb OR sm.body_json->>'purpose' IS DISTINCT FROM 'CONTROL_HANDOFF_PROTECTED_SUMMARY' OR sm.body_json->>'projectId' IS DISTINCT FROM p::text
+  OR sm.body_json->'requestRef' IS DISTINCT FROM c.command_json->'payload'->'requestRef' OR sm.body_json->'baseControl' IS DISTINCT FROM q.snapshot_json->'baseControl' OR sm.body_json->'summaryVersion' IS DISTINCT FROM to_jsonb(sm.version)
+  OR sm.body_json->'targetActorRef' IS DISTINCT FROM q.snapshot_json->'targetActorRef' OR sm.body_json->'targetClientRef' IS DISTINCT FROM q.snapshot_json->'targetClientRef'
+  OR c.actor_id::text IS DISTINCT FROM sm.body_json->'baseControl'->>'actorId' OR c.client_id::text IS DISTINCT FROM sm.body_json->'baseControl'->>'clientId'
+  OR sm.body_json->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR sm.body_json->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb OR sm.body_json->'controlTransferred' IS DISTINCT FROM 'false'::jsonb THEN RETURN false;END IF;
+  expected=jsonb_build_object('schemaVersion',1,'purpose','CONTROL_PROTECTED_SUMMARY_RECEIPT','id',rr.id,'projectId',p,'commandRef',command_ref,'summaryRef',c.result_json->'ref','recordedAt',to_char(c.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+  IF rr.body_json IS DISTINCT FROM expected OR aa.body_json IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'purpose','CONTROL_PROTECTED_SUMMARY_AUDIT','id',aa.id,'projectId',p,'commandRef',command_ref,'receiptRef',receipt_ref,'recordedAt',expected->'recordedAt') THEN RETURN false;END IF;
+ ELSIF c.operation='acceptControl' THEN
+  IF EXISTS(SELECT 1 FROM anvil.control_handoff_protected_summaries WHERE project_id=p AND source_command_id=cid) THEN RETURN false;END IF;
+  SELECT * INTO h FROM anvil.control_handoffs WHERE project_id=p AND command_id=cid;
+  SELECT * INTO sm FROM anvil.control_handoff_protected_summaries WHERE project_id=p AND request_id=q.id AND version=h.summary_version AND content_hash=h.summary_hash;
+  IF h.id IS NULL OR sm.source_command_id IS NULL OR NOT anvil.fn15_grant_complete(p,cid) OR h.accepted_at IS DISTINCT FROM c.created_at OR h.accepted_at>=sm.valid_until OR sm.body_json->>'transferState' IS DISTINCT FROM 'READY'
+  OR h.snapshot_json->'previousControl' IS DISTINCT FROM q.snapshot_json->'baseControl' OR h.next_generation IS DISTINCT FROM h.previous_generation+1
+  OR c.command_json->'payload'->'summaryVersion' IS DISTINCT FROM to_jsonb(sm.version) OR c.actor_id::text IS DISTINCT FROM q.snapshot_json->'targetActorRef'->>'userId' OR c.client_id::text IS DISTINCT FROM q.snapshot_json->'targetClientRef'->>'clientId' THEN RETURN false;END IF;
+ ELSE RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+-- 구·신 FN15 저장소는 하나의 공개 command UUID namespace다. 반대 순서 INSERT도 같은 잠금을 소비한다.
+CREATE UNIQUE INDEX fn15_accept_command_id_once ON anvil.control_handoff_acceptance_commands(command_id);
+CREATE FUNCTION anvil.fn15_command_namespace_guard() RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ -- 오래된 transaction snapshot으로 lock 뒤 상대table COMMIT을 누락하지 않는다. 격리설정은 변경하지 않고 거절한다.
+ IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'FN15_NAMESPACE_ISOLATION_REQUIRED' USING ERRCODE='25000';END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('fn15-command:'||NEW.command_id::text,0));
+ IF(TG_TABLE_NAME='control_handoff_source_commands' AND EXISTS(SELECT 1 FROM anvil.control_handoff_acceptance_commands WHERE command_id=NEW.command_id))
+ OR(TG_TABLE_NAME='control_handoff_acceptance_commands' AND EXISTS(SELECT 1 FROM anvil.control_handoff_source_commands WHERE command_id=NEW.command_id)) THEN RAISE EXCEPTION 'FN15_COMMAND_NAMESPACE_CONFLICT' USING ERRCODE='23505';END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn15_source_command_namespace BEFORE INSERT ON anvil.control_handoff_source_commands FOR EACH ROW EXECUTE FUNCTION anvil.fn15_command_namespace_guard();
+CREATE TRIGGER fn15_accept_command_namespace BEFORE INSERT ON anvil.control_handoff_acceptance_commands FOR EACH ROW EXECUTE FUNCTION anvil.fn15_command_namespace_guard();
+
+-- 기존 source의 유일한 control UPDATE는 수락 CAS다. 물리 grant 저장만으로 전환했다고 하지 않는다.
+CREATE FUNCTION anvil.fn15_control_transition_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.control_handoffs;pc anvil.project_control;
+BEGIN
+ IF to_jsonb(NEW) IS NOT DISTINCT FROM to_jsonb(OLD) THEN RETURN NEW;END IF;
+ IF NEW.project_id IS DISTINCT FROM OLD.project_id OR OLD.revoked_at IS NOT NULL OR NEW.revoked_at IS NOT NULL
+ OR NEW.generation IS DISTINCT FROM OLD.generation+1 OR NEW.version IS DISTINCT FROM OLD.version+1 THEN RAISE EXCEPTION 'FN15_CONTROL_CAS_INCOMPLETE' USING ERRCODE='23514';END IF;
+ SELECT * INTO h FROM anvil.control_handoffs stored WHERE stored.project_id=NEW.project_id AND stored.previous_generation=OLD.generation AND stored.next_generation=NEW.generation AND stored.xmin=pg_current_xact_id()::xid;
+ IF h.id IS NULL OR(h.snapshot_json->'previousControl' IS NOT DISTINCT FROM anvil.fn15_basis(OLD)) IS NOT TRUE
+ OR(h.snapshot_json->'nextControl' IS NOT DISTINCT FROM anvil.fn15_basis(NEW)) IS NOT TRUE OR(h.accepted_at IS NOT DISTINCT FROM NEW.issued_at) IS NOT TRUE
+ OR NOT anvil.fn15_command_complete(NEW.project_id,h.command_id) THEN RAISE EXCEPTION 'FN15_CONTROL_CAS_INCOMPLETE' USING ERRCODE='23514';END IF;
+ IF TG_WHEN='AFTER' THEN
+  SELECT * INTO pc FROM anvil.project_control WHERE project_id=NEW.project_id;
+  IF pc.project_id IS NULL OR anvil.fn15_basis(pc) IS DISTINCT FROM anvil.fn15_basis(NEW) OR pc.issued_at IS DISTINCT FROM NEW.issued_at OR pc.revoked_at IS NOT NULL
+  OR NOT anvil.fn15_storage_complete(NEW.project_id) OR NOT anvil.quota_complete(NEW.project_id) THEN RAISE EXCEPTION 'FN15_CONTROL_CAS_INCOMPLETE' USING ERRCODE='23514';END IF;
+ END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn15_control_transition BEFORE UPDATE ON anvil.project_control FOR EACH ROW EXECUTE FUNCTION anvil.fn15_control_transition_guard();
+CREATE CONSTRAINT TRIGGER fn15_control_transition_final AFTER UPDATE ON anvil.project_control DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_control_transition_guard();
+REVOKE ALL ON FUNCTION anvil.fn15_command_namespace_guard(),anvil.fn15_control_transition_guard() FROM PUBLIC,anvil_v3_app;
+CREATE FUNCTION anvil.fn15_metadata_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION 'FN15_ACCEPTANCE_METADATA_IMMUTABLE' USING ERRCODE='42501';END;$$;
+CREATE TRIGGER fn15_protected_summary_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_handoff_protected_summaries FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE TRIGGER fn15_handoff_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_handoffs FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE TRIGGER fn15_grant_event_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_grant_events FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE TRIGGER fn15_accept_command_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_handoff_acceptance_commands FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE TRIGGER fn15_accept_receipt_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_handoff_acceptance_receipts FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE TRIGGER fn15_accept_audit_immutable BEFORE UPDATE OR DELETE OR TRUNCATE ON anvil.control_handoff_acceptance_audits FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn15_metadata_immutable();
+CREATE FUNCTION anvil.fn15_metadata_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid=NEW.project_id;cid uuid;pc anvil.project_control;
+BEGIN
+ IF TG_TABLE_NAME='control_handoff_protected_summaries' THEN cid=NEW.source_command_id;
+ ELSIF TG_TABLE_NAME='control_grant_events' THEN SELECT command_id INTO cid FROM anvil.control_handoffs WHERE project_id=p AND id=NEW.acceptance_id;
+ ELSE cid=NEW.command_id;END IF;
+ IF TG_TABLE_NAME='control_handoffs' THEN
+  SELECT * INTO pc FROM anvil.project_control WHERE project_id=p;
+  IF pc.project_id IS NULL OR NEW.snapshot_json->'nextControl' IS DISTINCT FROM anvil.fn15_basis(pc) OR pc.issued_at IS DISTINCT FROM NEW.accepted_at OR pc.revoked_at IS NOT NULL THEN RAISE EXCEPTION 'FN15_CONTROL_CAS_INCOMPLETE' USING ERRCODE='23514';END IF;
+ END IF;
+ IF cid IS NULL OR NOT anvil.fn15_command_complete(p,cid) OR NOT anvil.fn15_storage_complete(p) OR NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'FN15_ACCEPTANCE_REVERSE_INCOMPLETE' USING ERRCODE='23514';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn15_protected_summary_final AFTER INSERT ON anvil.control_handoff_protected_summaries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+CREATE CONSTRAINT TRIGGER fn15_handoff_final AFTER INSERT ON anvil.control_handoffs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+CREATE CONSTRAINT TRIGGER fn15_grant_event_final AFTER INSERT ON anvil.control_grant_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+CREATE CONSTRAINT TRIGGER fn15_accept_command_final AFTER INSERT ON anvil.control_handoff_acceptance_commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+CREATE CONSTRAINT TRIGGER fn15_accept_receipt_final AFTER INSERT ON anvil.control_handoff_acceptance_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+CREATE CONSTRAINT TRIGGER fn15_accept_audit_final AFTER INSERT ON anvil.control_handoff_acceptance_audits DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn15_metadata_final();
+
+REVOKE ALL ON FUNCTION anvil.fn15_command_complete(uuid,uuid),anvil.fn15_metadata_immutable(),anvil.fn15_metadata_final() FROM PUBLIC,anvil_v3_app;
+-- PUBLIC 또는 app가 목적 없는 내부 검산/초기화 함수를 직접 호출하지 않는다. 고정 외부 접점만 다시 허용한다.
+REVOKE ALL ON FUNCTION anvil.fn15_cost_encode(jsonb,text),anvil.fn15_cost_bytes(jsonb),anvil.fn15_ref(jsonb),anvil.fn15_basis(anvil.project_control),anvil.fn15_grant_complete(uuid,uuid),anvil.fn15_grant_current(uuid,uuid,uuid,bigint,bigint),anvil.fn15_handoff_scope(uuid,uuid,uuid,uuid,jsonb,boolean),anvil.fn15_handoff_request_bundle(uuid,uuid,uuid,uuid,jsonb),anvil.fn15_physical_projection(jsonb),anvil.fn15_control_storage_actual(uuid,uuid),anvil.fn15_legacy_projection(uuid),anvil.fn15_storage_actual(uuid),anvil.fn15_storage_future(uuid),anvil.fn15_storage_anchor_one(uuid,text,text,uuid),anvil.fn15_storage_anchor(uuid,uuid),anvil.fn15_storage_complete(uuid),anvil.fn15_control_storage_reserve(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn15_control_storage_settle(uuid,uuid,bigint),anvil.fn15_storage_immutable(),anvil.fn15_creation_anchor_guard(),anvil.fn15_legacy_charge_guard(),anvil.fn15_ordinary_quota_account(uuid,uuid,uuid,uuid,jsonb),anvil.fn15_proof_wire_row(jsonb),anvil.fn15_handoff_writer_command(uuid,uuid,uuid,uuid,jsonb,uuid),anvil.fn15_ledger_fact(uuid,bigint,jsonb,timestamptz,timestamptz,text),anvil.fn15_handoff_facts(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn15_handoff_request_bundle(uuid,uuid,uuid,uuid,jsonb),anvil.fn15_handoff_writer_command(uuid,uuid,uuid,uuid,jsonb,uuid),anvil.fn15_handoff_facts(uuid,uuid,uuid,uuid,jsonb),anvil.fn15_control_storage_reserve(uuid,uuid,uuid,uuid,text,bigint,jsonb),anvil.fn15_control_storage_settle(uuid,uuid,bigint),anvil.fn15_control_storage_actual(uuid,uuid),anvil.fn15_ordinary_quota_account(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+DO $fn15_forward_f_initialization$
+DECLARE x record;ac anvil.project_storage_accounts;actual numeric;future numeric;other_bytes numeric;
+BEGIN
+ FOR x IN SELECT id FROM anvil.projects ORDER BY id FOR UPDATE LOOP
+  PERFORM anvil.fn15_storage_anchor(x.id,NULL);
+  IF NOT anvil.fn15_storage_complete(x.id) THEN RAISE EXCEPTION 'FN15_FORWARD_F_INCOMPLETE';END IF;
+  SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=x.id FOR UPDATE;
+  IF ac.project_id IS NOT NULL THEN
+   actual=anvil.fn15_storage_actual(x.id);future=anvil.fn15_storage_future(x.id);
+   -- 최초에는 새 F 원장이 없었다. 앞 base 검산의 U0/H0 cache에 실제 F만 한 번 더한다.
+   UPDATE anvil.project_storage_accounts SET used_bytes=ac.used_bytes+actual,held_bytes=ac.held_bytes+future,updated_at=clock_timestamp() WHERE project_id=x.id;
+   IF NOT anvil.quota_complete(x.id) THEN RAISE EXCEPTION 'FN15_FORWARD_QUOTA_INCOMPLETE';END IF;
+   SELECT COALESCE((SELECT sum(canonical_bytes) FROM anvil.connection_definition_versions WHERE project_id=x.id),0)
+    +COALESCE((SELECT sum(canonical_bytes) FROM anvil.definition_capability_reports WHERE project_id=x.id),0)
+    +COALESCE((SELECT sum(canonical_bytes+evidence_bytes) FROM anvil.environment_configuration_versions WHERE project_id=x.id),0)
+    +COALESCE((SELECT sum(canonical_bytes) FROM anvil.environment_approval_candidates WHERE project_id=x.id),0)
+    +COALESCE((SELECT sum(canonical_bytes) FROM anvil.native_preparation_authorities WHERE project_id=x.id),0)
+    +COALESCE((SELECT sum(canonical_bytes) FROM anvil.native_preparation_authority_events WHERE project_id=x.id),0) INTO other_bytes;
+   IF ac.used_bytes+actual+ac.held_bytes+future+other_bytes>10737418240 THEN RAISE EXCEPTION 'FN15_FORWARD_PROJECT_STORAGE_LIMIT';END IF;
+  END IF;
+  -- account 부재는 새 VERIFIED account를 만드는 근거가 아니다. anchor/F actual만 보존한다.
+ END LOOP;
+END;$fn15_forward_f_initialization$;
+
+GRANT EXECUTE ON FUNCTION anvil.fn01_json(jsonb),anvil.fn01_hash(jsonb),anvil.fn15_basis(anvil.project_control) TO anvil_v3_fn15_reader_owner;
+REVOKE CREATE ON SCHEMA anvil FROM anvil_v3_fn15_reader_owner;
+REVOKE anvil_v3_fn15_reader_owner FROM anvil_v3_migrator;
+DO $fn15_reader_postflight$
+DECLARE role_row pg_catalog.pg_roles;f record;item record;
+BEGIN
+ SELECT * INTO role_row FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_fn15_reader_owner';
+ IF role_row.oid IS NULL OR role_row.rolcanlogin OR role_row.rolinherit OR role_row.rolsuper OR role_row.rolcreatedb OR role_row.rolcreaterole OR role_row.rolreplication OR role_row.rolbypassrls
+ OR EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.roleid=role_row.oid OR m.member=role_row.oid)
+ OR pg_catalog.has_schema_privilege(role_row.oid,'anvil','CREATE') OR pg_catalog.pg_has_role('anvil_v3_app',role_row.oid,'MEMBER') THEN RAISE EXCEPTION 'FN15_READER_ROLE_POSTFLIGHT_FAILED';END IF;
+ FOR item IN SELECT c.oid,n.nspname,c.relname FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='anvil' AND c.relkind IN('r','p') LOOP
+  IF pg_catalog.has_table_privilege(role_row.oid,item.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') THEN RAISE EXCEPTION 'FN15_READER_DML_POSTFLIGHT_FAILED';END IF;
+ END LOOP;
+ FOR f IN SELECT p.* FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND p.proname IN('fn15_handoff_scope','fn15_handoff_request_bundle','fn15_handoff_writer_command','fn15_handoff_facts','fn15_managed_empty') LOOP
+  IF f.proowner<>role_row.oid OR NOT f.prosecdef OR f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']::text[]
+  OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(f.proacl,pg_catalog.acldefault('f',f.proowner))) ac WHERE ac.grantee=0 AND ac.privilege_type='EXECUTE')
+  OR(f.proname IN('fn15_handoff_scope','fn15_managed_empty') AND pg_catalog.has_function_privilege('anvil_v3_app',f.oid,'EXECUTE'))
+  OR(f.proname NOT IN('fn15_handoff_scope','fn15_managed_empty') AND NOT pg_catalog.has_function_privilege('anvil_v3_app',f.oid,'EXECUTE')) THEN RAISE EXCEPTION 'FN15_READER_FUNCTION_POSTFLIGHT_FAILED';END IF;
+ END LOOP;
+ IF(SELECT count(*) FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND p.proname IN('fn15_handoff_scope','fn15_handoff_request_bundle','fn15_handoff_writer_command','fn15_handoff_facts','fn15_managed_empty'))<>5 THEN RAISE EXCEPTION 'FN15_READER_FUNCTION_COUNT_INVALID';END IF;
+ IF NOT pg_catalog.has_function_privilege(role_row.oid,'anvil.fn01_json(jsonb)','EXECUTE') OR NOT pg_catalog.has_function_privilege(role_row.oid,'anvil.fn01_hash(jsonb)','EXECUTE') OR NOT pg_catalog.has_function_privilege(role_row.oid,'anvil.fn15_basis(anvil.project_control)','EXECUTE') THEN RAISE EXCEPTION 'FN15_READER_HELPER_POSTFLIGHT_FAILED';END IF;
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='anvil' AND c.relname IN('project_writer_authority_events','project_writer_authority_heads') AND(NOT c.relrowsecurity OR NOT c.relforcerowsecurity))
+ OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy p WHERE p.polrelid='anvil.project_writer_authority_events'::regclass AND pg_catalog.pg_get_expr(p.polqual,p.polrelid)='false')
+ OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy p WHERE p.polrelid='anvil.project_writer_authority_heads'::regclass AND pg_catalog.pg_get_expr(p.polqual,p.polrelid)='false') THEN RAISE EXCEPTION 'FN15_WRITER_RLS_POSTFLIGHT_FAILED';END IF;
+END;$fn15_reader_postflight$;
+COMMIT;

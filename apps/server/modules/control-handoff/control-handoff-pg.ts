@@ -1,3 +1,4 @@
+import {observeFn15CurrentControl} from './control-grant.ts';
 import {ControlAcceptanceService} from './control-acceptance.ts';
 import type {ControlHandoffEvidenceSource,HandoffClock} from './control-handoff-evidence-source.ts';
 import { readOwnControlHandoffHistoryRows } from '../backups/control-handoff-history-inventory.ts';
@@ -219,7 +220,7 @@ class PgContext {
       [this.projectId]));
     const clock = first(await this.db.query('SELECT clock_timestamp() AS at'));
     const participation = member?.participation;
-    return { project: project ? { id: text(project.id),
+    const observation:ControlRequestStoreObservation={ project: project ? { id: text(project.id),
       archivedAt: project.archived_at === null ? null : iso(project.archived_at) } : null,
       access: { projectId: this.projectId, now: iso(clock?.at),
         identity: { actorId: this.identity.actorId, clientId: this.identity.clientId,
@@ -235,6 +236,7 @@ class PgContext {
         control: control ? { projectId: text(control.project_id), actorId: text(control.actor_id),
           clientId: text(control.client_id), generation: integer(control.generation),
           version: integer(control.version), revokedAt: control.revoked_at === null ? null : iso(control.revoked_at) } : null } };
+    return observeFn15CurrentControl(this.db,this.projectId,observation);
   }
 
   private async commandRow(commandId: string): Promise<Row | null> {

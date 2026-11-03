@@ -80,6 +80,7 @@ function controlState(access: Access, projectId: string):
     && Date.parse(raw.revokedAt) <= Date.parse(access.observedAt)
     ? { state: 'UNASSIGNED', basis: null } : { state: 'UNVERIFIED', basis: null };
   if (access.basis === null) return { state: 'UNVERIFIED', basis: null };
+  if(access.member.participation==='HANDOFF_ELIGIBLE'&&raw.actorId===access.identity.actorId&&raw.clientId===access.identity.clientId&&!canController(access))return{state:'UNVERIFIED',basis:null};
   return { state: raw.actorId === access.identity.actorId && raw.clientId === access.identity.clientId
     ? 'HELD' : 'OTHER_CLIENT', basis: copy(access.basis) };
 }

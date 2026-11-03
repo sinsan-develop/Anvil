@@ -1,3 +1,4 @@
+import {freezeControl,hasFn15CurrentControlObservation} from './control-grant.ts';
 import { canonicalJson } from '../../../../contracts/canonical.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { arrayV1, isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
@@ -83,6 +84,7 @@ function listInput(value: unknown): { projectId: string; view: View; limit: numb
 interface Access { observedAt: string; identity: ControlRequestObservation['identity'];
   member: NonNullable<ControlRequestObservation['member']>;
   control: ControlRequestObservation['control']; basis: ControlRequestCursorBasis | null }
+const acceptedCurrentAccess=new WeakSet<object>();
 function currentBasis(value: unknown, projectId: string): ControlRequestCursorBasis | null {
   if (!recordV1(value, ['projectId', 'actorId', 'clientId', 'generation', 'version', 'revokedAt'])
     || value.projectId !== projectId || !uuidV1(value.actorId) || !uuidV1(value.clientId)
@@ -120,11 +122,13 @@ export function currentAccess(observation: unknown, projectId: string): Access {
     || member.revokedAt !== null
     || !['OWNER', 'HANDOFF_ELIGIBLE'].includes(member.participation))
     return fail('CONTROL_REQUEST_READ_DENIED');
-  return { observedAt: access.now, identity, member,
+  const result={ observedAt: access.now, identity, member,
     control: access.control, basis: currentBasis(access.control, projectId) };
+  if(hasFn15CurrentControlObservation(observation)){freezeControl(result);acceptedCurrentAccess.add(result);}
+  return result;
 }
 export function canController(access: Access): boolean {
-  return access.member.participation === 'OWNER' && access.basis !== null
+  return (access.member.participation === 'OWNER' || access.member.participation === 'HANDOFF_ELIGIBLE' && acceptedCurrentAccess.has(access)) && access.basis !== null
     && access.basis.actorId === access.identity.actorId
     && access.basis.clientId === access.identity.clientId;
 }

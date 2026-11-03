@@ -494,3 +494,48 @@ PMO는 이 대화에 새 native 설계방향 직접 답변이 없어 미선택�
 단일 stream만으로 병행 보호조회/helper와 늦은 IO의 총량이 닫히지 않는다. 최소 증거는 exact schema·직렬화 단계별 할당/복사표·유한 동시성/대기열·정착 전 소유표다. 현재 제안 64KiB/4MiB/100MiB는 증명된 cap이 아니다. 숫자를 키워 통과시키지 않는다.
 
 Main이 내부 원형·소유 상세를 보완할 수 있지만 공개 wire·새 인증 목적·profile 권위의 채택은 기술 상세 작성과 구분한다. 이번 검토로 새 승인 질문을 반복하거나 제품 구현을 시작하지 않는다. 판정 REWORK / Important9 / SOURCE_GO0 / EXECUTION_GO0 유지. 실제 키·DB·권한·서비스·Agent·제품 네트워크·실자료 조사·시험·컴파일 실행0이다.
+## B03 후속 — Main 인수 읽기 검토: 실제 할당·정착 접점
+
+2026-11-03 최신 직접 지시에 따른 읽기 검토다. 기존 Reviewer에게 먼저 위임했으나 근거 없는 편집 메모/비한국어 불완전 반환이 누적 3회여서 결과를 채택하지 않고 Main이 인수했다. 제품 코드 실패 3회나 후보 결함 추가 3건으로 세지 않는다. 기존 계산/시험은 반복하지 않았다. R2 원문은 그대로이며 Important9·NOT_ADOPTED·SOURCE_GO0/EXECUTION_GO0 유지다.
+
+| 실제 source 접점 | 확인 사실 | B03에 남겨야 할 기술 조건 |
+|---|---|---|
+| apps/desktop/src/trust-key-host-client.cjs:14,39 | copyBuffer는 잔여 65536-buffer.length를 검사한 뒤 chunk 복제한다. 따라서 이 경로를 무조건 concat 후 상한 검사라고 일반화하면 틀리다. concat 순간 기존 조립본·독립 chunk·새 조립본이 함께 존재한다. subarray는 view이고 decode 문자열/JSON 객체/canonical 문자열은 별도 소유다. | 각 단계의 독립 복사와 alias를 구분한 최대 동시 소유표. payload 64KiB만으로 순간 전체 메모리 상한을 증명하지 않는다. |
+| 같은 파일:33,36~47 | 송신 canonical 문자열/Buffer는 길이 검사 전에 생성된다. pending의 written+reply 두 조건으로 응답을 정착하며 writes가 남으면 end하지 않는다. timeout은 pending을 거절하지만 write callback의 frame 소유가 즉시 끝난다는 뜻은 아니다. | 미정착 write와 늦은 callback까지 비용/소유를 유지하고 새 수신 ACK와 구분. 현재 sequence64는 새 window bytes 누적 계수가 아니다. |
+| apps/connector/runtime/native-preparation-owner-launcher.ts:49~58 | 수신은 Buffer.concat 후 65536 검사다. 송신도 canonical+Buffer 생성 뒤 검사한다. busy/writes, pending, child close와 sticky UNKNOWN이 각각 다른 사실이다. | 할당 전 잔여 길이 검사 접점과 framing 보완을 별도로 명세. 현재 OPEN/QUERY/CLOSE helper를 새 delivery frame 생산자로 간주하지 않는다. |
+| apps/connector/runtime/native-preparation-proof-signer.ts:28~34 | 서명 입력 Buffer 독립 복사→frame canonical 문자열→helper 호출→raw 문자열→parse 객체와 signature Buffer가 생긴다. finally에서 입력 copy를 지우지만 다른 원본/문자열까지 회수됐다는 증거는 아니다. | 보호조회 원문·helper frame의 동시 소유 개수와 단계별 정착 조건을 명시. 입력·외피·parse를 하나의 4MiB payload로 뭉뚱그리지 않는다. |
+| apps/desktop/src/trust-enrollment-owner.cjs:140 | 현재 signNativeProof는 {attemptId,frame} 객체를 channel.send로 전달한다. frame JSON의 문자열 이중 escape를 가정하지 않는다. | 새 전달 선택이 기존 객체형과 다르면 정확 wire/outer 크기를 다시 산정. 현재 원형을 몰래 완화하지 않는다. |
+| apps/server/modules/executions/project-native-preparations.ts:109~113 | ATTEMPTED COMMIT 확인 뒤 deliveryOpaque 독립 Buffer를 supplier에 한 번 넘긴다. supplier finally가 그 복사본을 지우며 Promise.race timeout/abort 자체가 supplier 정착을 입증하지 않는다. | deadline이 지나도 미정착 소유를 완료로 계산하지 않고, 새 stream ACK와 기존 supplier 결과를 구분. 원 opaque·ASCII token 문자열과 delivery copy의 분모를 구별한다. |
+
+새 window 계수는 실제 입력을 받은 경계에서 framing 검산 전에 header·부분·거절 bytes를 차감하고, 재연결해도 같은 원 window의 누적값을 유지하도록 상세화해야 한다. 송신은 write가 받아들인 bytes와 아직 정착하지 않은 소유본을 구별해야 한다. 이는 필요한 불변조건이며 현재 source에 새 window 원장이 있다는 판정이 아니다. 새 카운터 저장 위치·수명·receiver 권위는 미채택 계약에 의존한다.
+
+내부 상세로 이어갈 수 있는 것은 기존 상한 내 복사/alias 지도, 잔여 용량 검사 위치, late IO 정착표다. 새 binary version/type/length 폭·순서·인증 목적, ReceiverPrincipal, profile 발행/회수 권위와 보호조회 접근 채택은 별도 의미 결정이다. 이번 검토에서 값을 임의 선택하거나 승인 질문을 반복하지 않는다. 다음 기술 산출물은 이 표를 소비하는 framing/할당 단계별 명세와 동시성 유한식이며 실제 구현 착수가 아니다.
+
+읽기 시작/끝 동일 지문:
+
+- SHA256 C3C9B04C2664F528F3B9D65C0E33F3866A34C63315232BCA0361688145B2CC1A (대상 trust-key-host-client.cjs)
+- native-preparation-owner-launcher.ts: 728A2C40CB5D5BF16E7D7F1740C3EE1CA637E6240D3CD1548879F9E1A5997EC3
+- native-preparation-proof-signer.ts: EFC1B5588C7252D22BC8B4A6DDC12C87B198E8D98DAFC03E0EAC9C7441857D8A
+- trust-enrollment-owner.cjs: 07CE69E6E8D683D61BE6B6F81A734C9768078B7C117EDC1823C5A10BEB6E0B64
+- project-native-preparations.ts: 3FA16AB290DCAD99AFC4D478F3688D4540B0AF4658CC8B4F75F7E76E2D22B0B5
+
+실제 키·DB·권한·서비스·Agent·네트워크·OS/helper 실행, 컴파일, 실제 자료 조사는 0이다. 제품/시험/SQL 수정도 0이다. 이 문서와 WORK_STATUS만 누적했다. 실제 수신·위임 작동 확인이나 전체 계획 완료 보고가 아니다.
+
+## native 최초 수신·위임 — 기존 계약과 새 결정의 경계 검토
+
+기존 Primary의 읽기 반환을 Main이 R2 원문 §2~13과 대조했다. Primary가 읽은 기술보고서 지문 726E2C1493C58BDEF36BC12ECB91CB76290914536A05CCFD865EB5EDB4301B31은 Main 후속 누적 이전 snapshot이다. 이를 최신 전체 보고서 검수 지문으로 주장하지 않는다. R2는 85F8F15E…A441D 불변이다.
+
+| 경계 | 기존 상세로 유지·구체화 | 아직 채택되지 않은 의미 |
+|---|---|---|
+| ReceiverPrincipal / R2:35~58 | 원 등록·세션·키·정책/DENY·writer 현재성 검산, 일반 HUMAN reader 보존 | 동일 사용자라도 다른 client에 정확 단일 명령 수신을 위임하는 권위 |
+| prelisten / R2:74~98 | 자동 시작·최신 pending 임의선택 금지, session/window 결박·원기한 | 사용자 로컬 수신 시작과 원격 window 발견·결박의 새 IPC/공개 동작 |
+| profile / R2:136 | 고정 HTTPS·원 목적·redirect 금지, catalogue 코드서명과 통신권위 분리 | profile 발행·개정·회수·후퇴 하한과 보호 설치 소비의 권위 |
+| nonce / R2:98,224~226 | 동일ID 동일본문 원결과, 다른본문/nonce 재사용 충돌, 불량서명 기록 생성0 | 유효 proof 업무거절 시 소비 여부·rate·시계 허용폭·STATE 횟수 |
+| CLOSE / R2:94,241 | 종료와 미정착 IO 소유 분리, 기존 helper CLOSE와 수신 종료 구별 | exact 서명목적·요청/결과·session/window/offer 종료 범위 |
+| ACK / R2:166~201 | 비공개 후보와 내구 ackRef 분리, 후행Tx·불명조회·성공이력 보존 | 새 ACK 공개/서명 의미와 terminal 후 추가 회수 이력·예약 |
+| 취소 / R2:180~199 | 같은 잠금/CAS·유일 binding·원 replay 발급0 | 새 cancel operation의 허가/입출력·제어변경 후 조회 접근 |
+| stream / R2:183,187,203~209 | ATTEMPTED 선COMMIT·단발전달·원10초·부분전송 재전달0 | 새 공개 인증·receiver 시작 의미. 이에 종속된 소유 port와 framing 구현은 아직 없음 |
+
+권장안과 채택 사실을 구분한다. same-user 단일명령·명시 유한 prelisten·별도 목적 profile·유효거절 nonce 일회소비·정확 session CLOSE·첫 terminal 불변·binding 전 취소는 현재 권장 방향이며 새 승인이나 실행 허가가 아니다. 기술 검토만으로 구현 준비 완료라고 하지 않는다. 전체 FN06의 실제 Agent 연결 검수도 여전히 미완료다.
+
+새 native 계약에 의존하지 않는 기존 승인 FN15 source 작업은 별개로 이어간다. 같은 Primary에게 WI r7 허용42 내 미적용0073의 COMMIT/최종service checksum·역완결/직접 합성검증을 맡겼다. 거절된 HE 후속 source action은 재시도하지 않으며, 실제 DB·권한·키·서비스·Agent·OS/제품 네트워크 실행은 계속 제외한다.

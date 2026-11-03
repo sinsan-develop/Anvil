@@ -6,13 +6,13 @@ import {isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contrac
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {verifiedBundle,currentAccess} from './control-request-read.ts';
 import type {ControlRequestSnapshot} from './control-request-snapshot.ts';
-import {createControlHandoffEvidenceSource,HandoffBudget,type HandoffClock,type ControlHandoffEvidenceSource,type HandoffEvidenceScope} from './control-handoff-evidence-source.ts';
+import {createControlHandoffEvidenceSource,HandoffBudget,handoffCategories,type HandoffClock,type ControlHandoffEvidenceSource,type HandoffEvidenceScope} from './control-handoff-evidence-source.ts';
 import {issueProtectedHandoffSummary,readProtectedHandoffSummary,type ProtectedHandoffSummary} from './control-handoff-protected-summary.ts';
 import {copyControlData,controlHash,sameControl,createControlAcceptanceChain,verifyControlAcceptanceChain,readCurrentControlGrant,readControlAcceptanceHistory,type ControlAcceptCommand,type ControlBasis} from './control-grant.ts';
 import {planControlStorage,settleControlStorage,type ControlStorageRow,controlStorageTables} from './control-handoff-storage.ts';
 export const controlAcceptanceMigration='0073_control_handoff_acceptance';
-// 0073 완성 후 그 실제 bytes checksum으로 고정한다. 미작성 상태는 실제 연결 불가다.
-export const controlAcceptanceChecksum='UNWRITTEN_SOURCE';
+// 미적용 0073의 raw UTF8/LF bytes checksum이다. 실제 schema 적용/검증을 대신하지 않는다.
+export const controlAcceptanceChecksum='276fe80304147c95b60493d92bb0d30df2c1dc1a31cfaa787e9f7c7d4d29bf76';
 export class ControlAcceptanceFailure extends AuthFailure{readonly code:string;readonly commandId:string|null;constructor(code:string,status=503,commandId:string|null=null){super(code,status);this.code=code;this.commandId=commandId;}}
 const fail=(code='CONTROL_ACCEPTANCE_INVALID',status=503,id:string|null=null):never=>{throw new ControlAcceptanceFailure(code,status,id);};
 export type ControlPrepareCommand={schemaVersion:1;operation:'prepareControlHandoff';commandId:string;projectId:string;clientId:string;payload:{requestRef:RuntimeRefV1}};
@@ -127,4 +127,4 @@ export class ControlAcceptanceService{
  }
  async #readResult(token:string,csrf:string,pid:string,commandId:string,commandHash:string){if(!uuidV1(commandId)||!/^[0-9a-f]{64}$/.test(commandHash))fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);return this.#run(token,csrf,pid,commandId,async ctx=>{const rows=(await ctx.db.query('SELECT * FROM anvil.control_handoff_acceptance_commands WHERE project_id=$1 AND command_id=$2',[pid,commandId])).rows;if(rows.length!==1||rows[0].actor_id!==ctx.actor.actorId||rows[0].client_id!==ctx.actor.clientId||rows[0].command_hash!==commandHash||rows[0].result_hash!==controlHash(rows[0].result_json))fail('CONTROL_ACCEPTANCE_NOT_FOUND',404);const chain=await readControlAcceptanceHistory(ctx.db,pid,commandId);if(!sameControl(chain.command,rows[0].command_json)||!sameControl(chain.result,rows[0].result_json)||controlHash(chain.command)!==commandHash)fail();return chain.result;});}
 }
-function handoffWatermark(collections:ProtectedHandoffSummary['snapshot']['collections']){return controlHash(Object.entries(collections).map(([key,c])=>({key,scopeHash:c.coverage.scopeHash,watermarkHash:c.coverage.watermarkHash,refs:c.items.map(i=>i.ref)})));}
+function handoffWatermark(collections:ProtectedHandoffSummary['snapshot']['collections']){return controlHash(handoffCategories.map(key=>{const c=collections[key];return{key,scopeHash:c.coverage.scopeHash,watermarkHash:c.coverage.watermarkHash,refs:c.items.map(i=>i.ref)};}));}

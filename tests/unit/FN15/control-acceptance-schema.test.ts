@@ -7,3 +7,40 @@ test('F complete는 legacy/실제새행/미생성예약/최초control anchor를 
  const s=await sql();for(const name of ['fn15_storage_actual','fn15_storage_future','fn15_legacy_projection','fn15_storage_anchor','quota_complete_before_source','quota_adopt_creation','fn15_creation_anchor_guard'])assert.ok(s.includes(name),name);
  assert.match(s,/initial_manifest_json/);assert.match(s,/Factual/);assert.match(s,/Ffuture/);assert.match(s,/DEFERRABLE INITIALLY DEFERRED/);assert.match(s,/next_generation/);assert.match(s,/CONTROL_ACCEPTANCE_BASIS/);
 });
+
+
+test('정적: reader 소유역할의 열별 SELECT 권한은 실제 scope projection과 일치한다',async()=>{
+ const text=await sql(),scope=text.slice(text.indexOf('CREATE FUNCTION anvil.fn15_handoff_scope('),text.indexOf('ALTER FUNCTION anvil.fn15_handoff_scope('));
+ assert.doesNotMatch(scope,/SELECT \* INTO (?:session|member) FROM anvil\.(?:auth_sessions|project_members)/);
+ assert.match(scope,/SELECT id,user_id,client_id,reauth_until INTO session FROM anvil.auth_sessions/);
+ assert.match(scope,/SELECT project_id,user_id,participation,revoked_at INTO member FROM anvil.project_members/);
+ assert.match(scope,/member record;session record/);
+});
+
+
+test('정적: 0073은 단일 COMMIT 전 postflight를 닫고 service가 실제 raw LF checksum을 소비한다',async()=>{
+ const {createHash}=await import('node:crypto'),raw=await readFile(new URL('../../../db/migrations/0073_control_handoff_acceptance.sql.pending',import.meta.url)),text=raw.toString('utf8'),service=await readFile(new URL('../../../apps/server/modules/control-handoff/control-acceptance.ts',import.meta.url),'utf8');
+ assert.equal(text.includes('\r'),false);assert.match(text,/END;\$fn15_reader_postflight\$;\nCOMMIT;\n$/);assert.equal((text.match(/^COMMIT;$/gm)??[]).length,1);
+ const checksum=createHash('sha256').update(raw).digest('hex');assert.ok(service.includes("controlAcceptanceChecksum='"+checksum+"'"));assert.equal(service.includes('UNWRITTEN_SOURCE'),false);
+});
+
+test('정적: 원자 수락은 실제 current tuple의 before/next와 handoff 역방향을 모두 검사한다',async()=>{
+ const s=await sql();assert.match(s,/CREATE TRIGGER fn15_control_transition BEFORE UPDATE ON anvil.project_control/);assert.match(s,/CREATE CONSTRAINT TRIGGER fn15_control_transition_final AFTER UPDATE ON anvil.project_control DEFERRABLE INITIALLY DEFERRED/);
+ const body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_control_transition_guard('),s.indexOf('CREATE FUNCTION anvil.fn15_metadata_immutable('));
+ for(const item of ["h.snapshot_json->'previousControl' IS NOT DISTINCT FROM anvil.fn15_basis(OLD)","h.snapshot_json->'nextControl' IS NOT DISTINCT FROM anvil.fn15_basis(NEW)",'h.accepted_at IS NOT DISTINCT FROM NEW.issued_at','NEW.generation IS DISTINCT FROM OLD.generation+1','NEW.version IS DISTINCT FROM OLD.version+1','anvil.fn15_command_complete(NEW.project_id,h.command_id)'])assert.ok(body.includes(item),item);
+ const final=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_metadata_final('),s.indexOf('CREATE CONSTRAINT TRIGGER fn15_protected_summary_final'));
+ assert.ok(final.includes("TG_TABLE_NAME='control_handoffs'"));assert.ok(final.includes("NEW.snapshot_json->'nextControl'"));assert.ok(final.includes('FN15_CONTROL_CAS_INCOMPLETE'));
+});
+
+test('정적: 구·신 FN15 namespace 충돌은 양 INSERT에서 동일 잠금/원행을 검사하고 reader 순수helper 권한도 닫는다',async()=>{
+ const s=await sql();for(const name of ['fn15_source_command_namespace','fn15_accept_command_namespace'])assert.ok(s.includes('CREATE TRIGGER '+name+' BEFORE INSERT'));
+ const body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_command_namespace_guard('),s.indexOf('CREATE FUNCTION anvil.fn15_control_transition_guard('));
+ assert.match(body,/pg_advisory_xact_lock/);assert.match(body,/FROM anvil.control_handoff_source_commands WHERE command_id=NEW.command_id/);assert.match(body,/FROM anvil.control_handoff_acceptance_commands WHERE command_id=NEW.command_id/);assert.match(body,/FN15_COMMAND_NAMESPACE_CONFLICT/);
+ assert.match(s,/GRANT EXECUTE ON FUNCTION anvil.fn01_json\(jsonb\),anvil.fn01_hash\(jsonb\),anvil.fn15_basis\(anvil.project_control\) TO anvil_v3_fn15_reader_owner;/);
+});
+
+
+test('정적: namespace는 오래된 snapshot 격리를 거절하고 VOLATILE lock 뒤 조회로 제한한다',async()=>{
+ const s=await sql(),body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_command_namespace_guard('),s.indexOf('CREATE FUNCTION anvil.fn15_control_transition_guard('));
+ assert.ok(body.includes("current_setting('transaction_isolation')<>'read committed'"));assert.ok(body.indexOf('FN15_NAMESPACE_ISOLATION_REQUIRED')<body.indexOf('pg_advisory_xact_lock'));assert.ok(body.indexOf('pg_advisory_xact_lock')<body.indexOf('FROM anvil.control_handoff_acceptance_commands'));assert.match(body,/RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY DEFINER/);
+});

@@ -47,3 +47,47 @@ test('project 상세 HELD는 HE에게 실제 수락 grant가 있을 때만 표�
  const denied=await repo.detail('memory',id(1));assert.deepEqual(denied.controlState,{actorId:null,clientId:null,generation:null,status:'UNASSIGNED'});
  present=true;assert.equal((await repo.detail('memory',id(1))).controlState.status,'HELD');present=false; participation='OWNER';assert.equal((await repo.detail('memory',id(1))).controlState.status,'HELD');participation='VIEWER';assert.equal((await repo.detail('memory',id(1))).controlState.status,'HELD');
 });
+
+
+test('FN15 후속 제어조회는 실제 물리 current grant의 HE만 HELD·CONTROLLER로 소비하고 복사·누락은 거절한다',async()=>{
+ const m=await load(),read=await import('../../../apps/server/modules/control-handoff/control-request-read.ts'),discovery=await import('../../../apps/server/modules/control-handoff/control-discovery-read.ts'),c=m.createControlAcceptanceChain(input());
+ const observation={project:{id:id(1),archivedAt:null},access:{projectId:id(1),now:'2026-11-03T01:00:00.000Z',identity:{actorId:id(8),clientId:id(4),credentialGeneration:1,currentCredentialGeneration:1,sessionRevokedAt:null,idleExpiresAt:'2026-11-04T00:00:00.000Z',absoluteExpiresAt:'2026-11-04T00:00:00.000Z',userActive:true,userRevokedAt:null,clientUserId:id(8),clientRevokedAt:null,reauthUntil:null},member:{projectId:id(1),userId:id(8),participation:'HANDOFF_ELIGIBLE',revokedAt:null},control:{projectId:id(1),...c.result.nextControl,revokedAt:null}}};
+ let present=true,queries=0;const db={query:async()=>{queries++;return{rows:present?[{project_id:id(1),next_generation:9,content_hash:c.acceptance.ref.contentHash,bundle_json:c,grant_rows:[c.grant,c.revocation],command_rows:[{command:c.command,result:c.result,commandHash:contentHash(canonicalJson(c.command)),resultHash:contentHash(canonicalJson(c.result))}],receipt_rows:[c.receipt],audit_rows:[c.audit],revoked_count:'0'}]:[]};}};
+ type Binder=(database:typeof db,projectId:string,value:typeof observation)=>Promise<typeof observation>;
+ const binder=(m as unknown as {observeFn15CurrentControl?:Binder}).observeFn15CurrentControl;
+ const seen=binder?await binder(db,id(1),observation):observation;
+ assert.equal(read.canController(read.currentAccess(seen,id(1))),true);
+ assert.equal(read.canController(read.currentAccess(structuredClone(seen),id(1))),false);
+ const port={sourceMode:'TEST_FAKE' as const,transaction:async<T>(work:(tx:never)=>Promise<T>)=>work({observe:async()=>seen}as never)};
+ assert.equal((await discovery.readControlState({projectId:id(1)},port as never)).control.state,'HELD');
+ present=false;const absent=binder?await binder(db,id(1),observation):observation;
+ assert.equal(read.canController(read.currentAccess(absent,id(1))),false);
+ assert.equal((await discovery.readControlState({projectId:id(1)},{...port,transaction:async<T>(work:(tx:never)=>Promise<T>)=>work({observe:async()=>absent}as never)}as never)).control.state,'UNVERIFIED');
+ assert.equal(queries,2);
+});
+
+
+test('검산된 FN15 HE Access는 사후 identity/basis 변경으로 다른 tuple의 권위를 만들지 않는다',async()=>{
+ const m=await load(),read=await import('../../../apps/server/modules/control-handoff/control-request-read.ts'),c=m.createControlAcceptanceChain(input());
+ const observation={project:{id:id(1),archivedAt:null},access:{projectId:id(1),now:'2026-11-03T01:00:00.000Z',identity:{actorId:id(8),clientId:id(4),credentialGeneration:1,currentCredentialGeneration:1,sessionRevokedAt:null,idleExpiresAt:'2026-11-04T00:00:00.000Z',absoluteExpiresAt:'2026-11-04T00:00:00.000Z',userActive:true,userRevokedAt:null,clientUserId:id(8),clientRevokedAt:null,reauthUntil:null},member:{projectId:id(1),userId:id(8),participation:'HANDOFF_ELIGIBLE',revokedAt:null},control:{projectId:id(1),...c.result.nextControl,revokedAt:null}}};
+ const db={query:async()=>({rows:[{project_id:id(1),next_generation:9,content_hash:c.acceptance.ref.contentHash,bundle_json:c,grant_rows:[c.grant,c.revocation],command_rows:[{command:c.command,result:c.result,commandHash:controlHashForTest(c.command),resultHash:controlHashForTest(c.result)}],receipt_rows:[c.receipt],audit_rows:[c.audit],revoked_count:'0'}]})};
+ const seen=await m.observeFn15CurrentControl(db as never,id(1),observation),access=read.currentAccess(seen,id(1));assert.ok(access.basis);
+ try{access.identity.actorId=id(98);access.basis.actorId=id(98);}catch{}
+ assert.equal(access.identity.actorId,id(8));assert.equal(access.basis.actorId,id(8));assert.equal(read.canController(access),true);assert.ok(Object.isFrozen(access));assert.ok(Object.isFrozen(access.identity));assert.ok(Object.isFrozen(access.basis));
+ const clone=structuredClone(access);assert.equal(read.canController(clone),false);
+ let getters=0,queries=0;const neverDb={query:async()=>{queries++;throw Error('IO 금지');}};
+ await assert.rejects(()=>m.observeFn15CurrentControl(neverDb as never,id(1),new Proxy(observation,{get(){getters++;throw Error('getter 금지');}})));
+ const getter={...observation};Object.defineProperty(getter,'access',{enumerable:true,get(){getters++;throw Error('getter 금지');}});await assert.rejects(()=>m.observeFn15CurrentControl(neverDb as never,id(1),getter));assert.equal(getters,0);assert.equal(queries,0);
+});
+const controlHashForTest=(v:unknown)=>contentHash(canonicalJson(v));
+
+test('actual PG source observe→currentAccess→HE 제어조회는 physical grant를 소비하고 누락·회수·만료를 닫는다',async()=>{
+ const m=await load(),pg=await import('../../../apps/server/modules/control-handoff/control-handoff-pg.ts'),discovery=await import('../../../apps/server/modules/control-handoff/control-discovery-read.ts'),c=m.createControlAcceptanceChain(input()),logs:string[]=[];
+ let present=true,missingReceipt=false,revoked='0',expired=false,participation='HANDOFF_ELIGIBLE',released=0;
+ const db={query:async(sql:string,args:unknown[]=[])=>{logs.push(sql);if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK')return{rows:[]};if(sql.includes('to_regclass'))return{rows:[{ready:true}]};if(sql.includes('FROM anvil.schema_migrations'))return{rows:[{id:args[0],checksum:'c6bd081fc7a70f8eaa68ac673cce6f8e41549d98f2c3e5bb3c22833874b0e522'}]};if(sql.includes('FROM anvil.projects'))return{rows:[{id:id(1),archived_at:null}]};if(sql.includes('FROM anvil.project_members'))return{rows:[{project_id:id(1),user_id:id(8),participation,revoked_at:null}]};if(sql.includes('FROM anvil.project_control'))return{rows:[{project_id:id(1),actor_id:id(8),client_id:id(4),generation:9,version:10,revoked_at:null}]};if(sql.includes('clock_timestamp'))return{rows:[{at:new Date('2026-11-03T01:00:00.000Z')}]};if(sql.includes('FROM anvil.control_handoffs'))return{rows:present?[{project_id:id(1),next_generation:9,content_hash:c.acceptance.ref.contentHash,bundle_json:c,grant_rows:[c.grant,c.revocation],command_rows:[{command:c.command,result:c.result,commandHash:controlHashForTest(c.command),resultHash:controlHashForTest(c.result)}],receipt_rows:missingReceipt?[]:[c.receipt],audit_rows:[c.audit],revoked_count:revoked}]:[]};throw Error('UNMODELED_SQL '+sql);},release(){released++;}};
+ const access={async authenticateInTransaction(actualDb:unknown,token:string,csrf:string){assert.equal(this,access);assert.equal(actualDb,db);assert.equal(token,'memory-token');assert.equal(csrf,'memory-csrf');return{actorId:id(8),clientId:id(4),credentialGeneration:1,reauthUntil:null,authSession:{id:id(40),idleExpiresAt:expired?'2026-11-03T00:00:00.000Z':'2026-11-04T00:00:00.000Z',absoluteExpiresAt:'2026-11-04T00:00:00.000Z'}};}};
+ const source=pg.createControlHandoffPgSource({pool:{connect:async()=>db},access,enabled:true}as never),session=source.forSession('memory-token','memory-csrf',id(1)),read=()=>discovery.readControlState({projectId:id(1)},session.discoveryPort);
+ assert.equal((await read()).control.state,'HELD');assert.equal(logs.filter(x=>x.includes('FROM anvil.control_handoffs')).length,2);
+ present=false;assert.equal((await read()).control.state,'UNVERIFIED');present=true;missingReceipt=true;await assert.rejects(read);missingReceipt=false;revoked='1';await assert.rejects(read);revoked='0';expired=true;await assert.rejects(read);expired=false;
+ const before=logs.filter(x=>x.includes('FROM anvil.control_handoffs')).length;participation='OWNER';assert.equal((await read()).control.state,'HELD');assert.equal(logs.filter(x=>x.includes('FROM anvil.control_handoffs')).length,before);assert.equal(released,6);assert.equal(logs.some(x=>x.startsWith('INSERT')||x.startsWith('UPDATE')||x.startsWith('DELETE')),false);
+});

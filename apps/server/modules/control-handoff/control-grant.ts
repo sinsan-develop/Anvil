@@ -81,3 +81,20 @@ export const ordinaryDocumentOperations=['saveDocumentDraft','recordContentRevie
 export const isOrdinaryControlOperation=(operation:string):boolean=>(ordinaryDocumentOperations as readonly string[]).includes(operation)||operation==='requestApproval'||operation==='decideApproval';
 
 export async function readCurrentControlGrant(db:Pick<PoolClient,'query'>,projectId:string,control:ControlBasis&{revoked_at:null}):Promise<ControlAcceptanceChain>{const result=await findCurrentControlGrant(db,projectId,control);if(!result)return fail();return result;}
+
+
+// FN15 내부 조회의 물리 검산 결과는 원 observation instance에만 묶는다. 공개 DTO/권한 flag가 아니다.
+const fn15Observations=new WeakMap<object,string>();
+export async function observeFn15CurrentControl<T>(db:Pick<PoolClient,'query'>,projectId:string,value:T):Promise<T>{
+ const seen=copyControlData(value),v=seen as unknown as {project?:{id?:unknown;archivedAt?:unknown};access?:{projectId?:unknown;identity?:{actorId?:unknown;clientId?:unknown};member?:{projectId?:unknown;userId?:unknown;participation?:unknown;revokedAt?:unknown};control?:{projectId?:unknown;actorId?:unknown;clientId?:unknown;generation?:unknown;version?:unknown;revokedAt?:unknown}}};
+ const a=v.access,m=a?.member,c=a?.control;
+ if(v.project?.id!==projectId||v.project.archivedAt!==null||a?.projectId!==projectId||m?.participation!=='HANDOFF_ELIGIBLE'||m.projectId!==projectId||m.userId!==a.identity?.actorId||m.revokedAt!==null||c?.projectId!==projectId||c.revokedAt!==null||c.actorId!==a.identity?.actorId||c.clientId!==a.identity?.clientId)return freezeControl(seen);
+ const basis={actorId:c.actorId,clientId:c.clientId,generation:c.generation,version:c.version};
+ if(!isControlBasis(basis))return freezeControl(seen);
+ if(await findCurrentControlGrant(db,projectId,{...basis,revoked_at:null}))fn15Observations.set(seen as object,controlHash(seen));
+ return freezeControl(seen);
+}
+export function hasFn15CurrentControlObservation(value:unknown):boolean{
+ if(value===null||typeof value!=='object'||types.isProxy(value))return false;
+ const hash=fn15Observations.get(value);return hash!==undefined&&hash===controlHash(copyControlData(value));
+}

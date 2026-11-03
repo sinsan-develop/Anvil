@@ -1,19 +1,20 @@
+import type {ControlAcceptanceChain} from '../../../../server/modules/control-handoff/control-grant.ts';
 import type {ProtectedHandoffSummary} from '../../../../server/modules/control-handoff/control-handoff-protected-summary.ts';
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref} from '../../shell/routes.ts';
 import {ProjectAccessSummary} from '../projects/ProjectAccessSummary.tsx';
 import {ControlApi,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
-import {ControlScope,emptyControlBuffer,freezeControlCommand,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
+import {ControlScope,emptyControlBuffer,freezeControlCommand,freezeControlAcceptance,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
 interface Props{client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
-interface View{state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;error:ApiError|null;busy:boolean}
-const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,error:null,busy:false});
+interface View{state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;acceptance:ControlAcceptanceChain['result']|null;error:ApiError|null;busy:boolean}
+const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,acceptance:null,error:null,busy:false});
 const labels={activeExecutions:'진행 작업',pendingCommands:'미결 명령',pendingApprovals:'미결 승인',sourceCheckpointRefs:'원본·체크포인트 참조'};
-/** Default-OFF FN15 source consumer. No accept, permission mutation, collector or control transfer. */
+/** 명시 조작만 원 명령을 보존해 전송한다. 실행 시작·자동 재전송은 하지 않는다. */
 export function ControlAccessPage({client,projectId,session,buffer=null,onChange,scope:parentScope,onAuthenticationLost}:Props){
  const localScope=useRef(new ControlScope()),scope=parentScope??localScope.current;scope.bind(session??null,projectId);
  const live=useRef({client,projectId,session,buffer,onChange});live.current={client,projectId,session,buffer,onChange};
- const [view,setView]=useState<View>(emptyView),[ticketRevision,setTicketRevision]=useState(0);
+ const [view,setView]=useState<View>(emptyView),[ticketRevision,setTicketRevision]=useState(0),[confirmedSummary,setConfirmedSummary]=useState<string|null>(null);
  const context=useRef({session,projectId,client,transport:client.transport,csrf:session?.csrfToken});
  const navigation=useRef<{OWN:{cursors:(string|null)[];index:number};CONTROLLER:{cursors:(string|null)[];index:number};failed:{view:'OWN'|'CONTROLLER';cursor:string|null;index:number}|null}>({OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null});
  const visibleContext=useRef<object|null>(null),ticketContexts=useRef(new WeakMap<ControlTicket,object>());if(context.current.session!==session||context.current.projectId!==projectId||context.current.client!==client||context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){context.current={session,projectId,client,transport:client.transport,csrf:session?.csrfToken};navigation.current={OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null};scope.dispose();scope.bind(session??null,projectId);}
@@ -59,13 +60,25 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  function preserve(command:Parameters<typeof freezeControlCommand>[1]){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);const next=freezeControlCommand(old,command);onChange(b?.bindingId??null,next);}
  function prepareRequest(){try{if(!session||!currentView.state||!b)return;preserve(selfRequestCommand(session,projectId,currentView.state,b.reason,b.expiresAt));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
  function prepareSummary(){const request=currentView.request,state=currentView.state;if(!session||!request||!state||state.control.state!=='HELD'||state.participation!=='OWNER'||request.current.expired||request.current.baseControlState!=='MATCHED'||!same(state.control.basis,request.snapshot.baseControl))return;preserve({schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...request.requestRef}}});}
+ function prepareProtected(){const selected=currentView.request;if(!session||!onChange||!selected||!canPrepare)return;const old=b??emptyControlBuffer(session,projectId),next=freezeControlCommand(old,{schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...selected.requestRef}}});if(next.pending&&next.pending.kind!=='ACCEPT')next.pending={...next.pending,kind:'PROTECTED_PREPARE'};onChange(b?.bindingId??null,next);}
+ function prepareAcceptance(){try{if(!session||!onChange||!b||!canAccept||!currentView.protectedSummary)return;const summary=currentView.protectedSummary,command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...summary.snapshot.requestRef},summaryVersion:summary.ref.version,reason:b.reason}};onChange(b.bindingId,freezeControlAcceptance(b,command,summary));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
  async function send(){
  const old=live.current.buffer,command=old?.pending;if(!old||!command||!session||!onChange||command.status==='SENDING'||command.status==='CONFIRMED'||old.ownerUserId!==session.user.id||old.ownerClientId!==session.clientId||old.projectId!==projectId)return;
  const binding=command.bindingId,t=start(binding),sending={...old,pending:{...command,status:'UNKNOWN' as const}};
  // Parent synchronously CAS-preserves the exact payload before any transport call.
  if(!onChange(old.bindingId,sending)){scope.ticket();setView(v=>({...v,busy:false}));return;}
  try{
- const result=await api().send(command.command);if(!matches(t,binding))return;
+ if(command.kind==='ACCEPT'){
+   const result=command.status==='UNKNOWN'?await api().acceptanceResult(command.command,command.summary):await api().accept(command.command,command.summary);if(!matches(t,binding))return;
+   const latest=live.current.buffer;if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding||!onChange(old.bindingId,{...latest,pending:{...command,status:'CONFIRMED'}}))return;
+   const state=await api().state();if(matches(t,binding))setView({...emptyView(),state,acceptance:result});return;
+  }
+  if(command.kind==='PROTECTED_PREPARE'){
+   if(command.command.operation!=='prepareControlHandoff')throw new ApiError('RESPONSE_INVALID');const summary=await api().prepareProtected(command.command);if(!matches(t,binding))return;
+   const latest=live.current.buffer;if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding||!onChange(old.bindingId,{...latest,pending:{...command,status:'CONFIRMED'}}))return;
+   setView(v=>({...v,protectedSummary:summary,protectedHeadState:null,busy:false}));return;
+  }
+  const result=await api().send(command.command);if(!matches(t,binding))return;
  const latest=live.current.buffer;if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding)return;
  if(!onChange(old.bindingId,{...latest,pending:{...command,status:'CONFIRMED'}}))return;
  // Re-read using fixed refs; no POST response alone grants a current permission.
@@ -80,9 +93,11 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const state=currentView.state,request=currentView.request,summary=currentView.summary;
  const canRequest=configured&&state?.control.state==='OTHER_CLIENT'&&!currentView.busy&&!currentView.error&&!unresolved;
  const canPrepare=configured&&state?.control.state==='HELD'&&state.participation==='OWNER'&&request&&!request.current.expired&&request.current.baseControlState==='MATCHED'&&same(state.control.basis,request.snapshot.baseControl)&&!currentView.busy&&!currentView.error&&!unresolved;
+ const protectedSummary=currentView.protectedSummary;
+ const canAccept=configured&&!!b?.reason.trim()&&!!request&&!request.current.expired&&request.current.baseControlState==='MATCHED'&&!!protectedSummary&&protectedSummary.snapshot.transferState==='READY'&&Date.parse(protectedSummary.snapshot.validUntil)>Date.now()&&protectedSummary.snapshot.targetActorRef.userId===session?.user.id&&protectedSummary.snapshot.targetClientRef.clientId===session?.clientId&&same(protectedSummary.snapshot.requestRef,request.requestRef)&&confirmedSummary===protectedSummary.ref.contentHash&&!currentView.busy&&!currentView.error&&!unresolved;
  void ticketRevision;
  return <section aria-label="작업 권한 인계"><h2>작업 권한 인계</h2>
-  <p>내 다른 기기의 인수 요청과 미확인 요약을 조회합니다. 연결은 기본 비활성입니다. 다른 사람 선택·다음 담당자 수락·권한 전환은 미구현입니다.</p>
+  <p>내 다른 기기의 인수 요청과 보호요약을 확인하고 명시적으로 수락합니다. 실제 보호 근거가 없으면 수락할 수 없습니다. 실행 작업은 자동 중단·재시작하지 않습니다.</p>
   <p role="status">조회는 인수 요청·수락·새 권한 발급이 아닙니다. 미확인 자료로 권한을 부여하지 않습니다.</p>
   <ProjectAccessSummary key={projectId} client={client} projectId={projectId} name="선택 프로젝트" disabled={false} onAuthenticationLost={onAuthenticationLost}/>
   <section aria-label="현재 제어와 내 기기"><h3>현재 제어와 내 기기</h3>
@@ -100,8 +115,8 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    <button type="button" disabled={!canRequest||!b?.reason.trim()||!b.expiresAt} onClick={prepareRequest}>인수 요청 명령 보존</button>
    <a href={routeHref('settings',projectId)}>로그인·재인증 설정</a>
   </section>
-  {pending?<section aria-label="보존된 인계 명령"><h3>보존된 인계 명령</h3><p>{pending.command.operation==='requestControl'?'인수 요청':'미확인 요약 준비'} · {pending.status}</p>
-   {pending.command.operation==='requestControl'?<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>보존한 요청 이유: {pending.command.payload.reason} · 요청 만료 {pending.command.payload.expiresAt}</p>:<p>선택한 고정 요청의 미확인 요약 준비 명령입니다.</p>}
+  {pending?<section aria-label="보존된 인계 명령"><h3>보존된 인계 명령</h3><p>{pending.kind==='ACCEPT'?'인수 수락':pending.kind==='PROTECTED_PREPARE'?'보호요약 준비':pending.command.operation==='requestControl'?'인수 요청':'미확인 요약 준비'} · {pending.status}</p>
+   {pending.command.operation==='requestControl'?<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>보존한 요청 이유: {pending.command.payload.reason} · 요청 만료 {pending.command.payload.expiresAt}</p>:pending.kind==='ACCEPT'?<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>보존한 수락 이유: {pending.command.payload.reason} · 보호요약 {pending.summary.ref.version}</p>:<p>선택한 고정 요청의 요약 준비 명령입니다.</p>}
    <p>결과가 불명이면 자동 재전송하지 않습니다. 같은 명령 확인은 원래 식별자와 본문을 사용합니다.</p>
    <button type="button" disabled={!configured||currentView.busy||pending.status==='SENDING'||pending.status==='CONFIRMED'||!!currentView.error} onClick={()=>void send()}>{pending.status==='UNKNOWN'?'같은 명령 결과 재확인':'보존한 명령 전송'}</button>
   </section>:null}
@@ -114,6 +129,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   </section>
   {request?<section aria-label="선택한 고정 요청"><h3>선택한 고정 요청</h3><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{request.snapshot.reason}</p><p>요청 사용자·기기 {request.snapshot.requestedBy.actorId} / {request.snapshot.requestedBy.clientId}</p><p>요청 만료 {request.snapshot.expiresAt} · 서버 관측 {request.observedAt} · {request.current.expired?'기한 경과':'관측 시점 기한 내'} · 현재 기준 {request.current.baseControlState}</p>
    <button type="button" disabled={!canPrepare} onClick={prepareSummary}>미확인 요약 준비 명령 보존</button>
+    <button type="button" disabled={!canPrepare} onClick={prepareProtected}>보호요약 준비 명령 보존</button>
    <button type="button" disabled={currentView.busy||!!currentView.error} onClick={()=>void loadSummary()}>최신 요약 참조·고정 원문 조회</button>
    <button type="button" disabled={currentView.busy||!!currentView.error} onClick={()=>void loadProtectedSummary()}>최신 보호요약 고정 원문 조회</button>
    {currentView.protectedHeadState?<p>{currentView.protectedHeadState==='NONE'?'보관된 보호요약이 없습니다.':'현재 요청의 보호요약 기준을 확인할 수 없습니다.'}</p>:null}
@@ -121,7 +137,9 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   </section>:null}
   {summary&&request?<ControlSummaryView summary={summary} requestExpiresAt={request.snapshot.expiresAt}/>:null}
   {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p><p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
-  <button type="button" disabled>인수 수락 (미구현)</button>
+  {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={confirmedSummary===protectedSummary.ref.contentHash} disabled={!configured||unresolved||currentView.busy} onChange={e=>setConfirmedSummary(e.target.checked?protectedSummary.ref.contentHash:null)}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
+   <button type="button" disabled={!canAccept} onClick={prepareAcceptance}>인수 수락 명령 보존</button>
+   {currentView.acceptance?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {currentView.acceptance.nextControl.actorId} / {currentView.acceptance.nextControl.clientId} · 세대 {currentView.acceptance.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p></section>:null}
   <a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>
  </section>;
 }
