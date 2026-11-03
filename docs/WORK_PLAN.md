@@ -1936,3 +1936,5 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 현재설치오류는기능연결차단으로source보완대상이며기존검사·guard·합격기준을유지한다. r4승인소진·재실행0,실제수정후GREEN/권한RLS·문서여정·서비스/Agent·IX01·전체계획은미완료다.
 
 - 2026-11-03 0035 source최소보정: [결과](04_test_reports/AV3/IX01_0035_JSON_PROJECTION_SOURCE_RESULT_20261103.md) SHA8D1799596856C81F6D44C493AFE99396BF01A4675BACFB72125016F96D9DE4B9, 괄호한hunk와현재승인/알림fixture정합·Main7PASS/type0. 원actual22P02실패/직접인과·수정후PG미확정/IX01미완료유지이며실제적용이나완료로세지않는다.
+
+- 2026-11-04 동일JSON추출/차집합결합source2·3표현보완: [결과](04_test_reports/AV3/IX01_PENDING_JSON_PROJECTION_PRECEDENCE_SOURCE_RESULT_20261104.md) SHA3BB5C05AD7682145DE93646603B75C7F28EADF5E90EB8CD6CF4615D9C766B966, Main29PASS/역치환동일. 실제SQL/PG·권한RLS/native·IX01/계획완료는미검증/미완료이며정밀검증이월로기능누락을숨기지않는다.

@@ -13941,3 +13941,13 @@ git diff --check
 - SQL정확1hunk/괄호2바이트→7EE0D5D3·시험D9DD840B 동결/기존Primarywriter반환·live0. Main db5801 diff/지문과 b49e21 집중7PASS/0FAIL/skip0/973.6067ms·2d5f21 rootnoEmit exit0/6.7212초를독립확인했다. 기존5P1F→6P1F의서로다른fixture누락이력을보존했고현재생산guard/권한·알림cap/세션·기대값은변경하지않았다.
 - 결과 docs/04_test_reports/AV3/IX01_0035_JSON_PROJECTION_SOURCE_RESULT_20261103.md SHA8D1799596856C81F6D44C493AFE99396BF01A4675BACFB72125016F96D9DE4B9, SOURCE_CORRECTED/ACTUAL_PG_GREEN_NOT_RUN. 원실제slot1 SQLSTATE22P02는FAILED이며본정적한hunk와직접실패행인과는미확정이다. 실제GREEN/새QA/권한/키/DB/서비스/Agent실행0,이전QA잔여0/감사보존을유지한다.
 - Main7691c2/27c812은같은연산자우선순위패턴만조회해0071:61과0072:33/265를발견했고733166에서미적용주석/원SHA167FC4CF/E561CDAD를확인했다. 다음source보완은이정확2파일/3표현만별도범위로관리하며전체SQL자동수정/새계약추정0이다.
+
+### 2026-11-03 같은 JSON 우선순위 오류군의 미적용 source2 배정
+- 3279a1→소유77656/55529b exit0으로SQL0035/시험·실제실패/원장/소유문서정확10을99f91d43162de8871a011e2c505b2ebb4d357821/privateexact·main/보호3불변·trackedclean으로보존했다.
+- WI docs/work_packages/IX01_PENDING_JSON_PROJECTION_PRECEDENCE_SOURCE_CORRECTION_20261103.md SHA0EC7F13D29C610A854849C83BE4F23E107B43BB578A40AD2621E52651ED64DD5, 기존Primary의sourcewriter는원지문167FC4CF/E561CDAD의미적용0071/0072 두파일·3표현괄호6바이트뿐이다. 기존공개/권한·JSON제거목록/current/signature/원payload·승인/감사조건은불변이며regex전체자동수정0이다. 실제적용근거발견시원수정중단/반환한다.
+- 기존순수FN06/FN03집중소비/역치환·diff만확인하며actualPG/RLS/native/서비스/권한/키/Agent·새QA0이다. r4승인소진/이전QA잔여0·감사보존은유지하고source를실제GREEN/전체계획완료로세지않는다.
+
+### 2026-11-04 동일 JSON 결합 오류군 source2 Main 검수
+- 기존Primary source2→11DCE811/8DB0B4C1 동결·writer반환/live0. Main798dc2 실제3hunk/6바이트diff와기존순수FN06/FN03집중29PASS/0FAIL/skip0/936.8324ms,adc7ad 부모99 raw역치환동일/한정패턴잔여0을독립확인했다. 기존guard/제거목록/current/signature·정책/권한/승인/감사조건/TS·시험·index/driver·보호3불변이다.
+- 결과 docs/04_test_reports/AV3/IX01_PENDING_JSON_PROJECTION_PRECEDENCE_SOURCE_RESULT_20261104.md SHA3BB5C05AD7682145DE93646603B75C7F28EADF5E90EB8CD6CF4615D9C766B966, SOURCE_CORRECTED/ACTUAL_SQL_NOT_RUN. 실제PG/RLS/native/DB·권한·키·WSL·서비스·Agent/P03R3·새 QA0, r4승인소진/이전QA잔여0·감사보존/전체계획미완료를유지한다.
+- 초기도구51c31c의skill경로 C:/Users/cyhuh/.codex/skills/superpowers/SKILL.md는카탈로그와다른추정경로였다. ErrorAction SilentlyContinue로오류원문이미수집됐고exit1이었다. PMO읽기는성공했으며뒤37f27c에서실제r9패키지를읽었다. 앞경로추정계열최소3+초기51c31c+후e42023으로현재확인최소5건이다. 이전최소4기록은확인범위가좁았던이력이며정정한다. 추정parent읽기는중단했고이후검수는실제rg반환경로/검증된문서만쓴다. 제품/권한/사용자자료변경0이고PMO에추가대조를공유한다.

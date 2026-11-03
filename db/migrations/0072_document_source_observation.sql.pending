@@ -30,7 +30,7 @@ BEGIN
  IF c.operation NOT IN('linkDocumentSource','proposeDocumentSourceChange') THEN RETURN NULL;END IF;
  s=c.result_ref->'data'->'sourceEvent'->'snapshot';
  IF c.operation='linkDocumentSource' THEN
-  p=c.result_ref->'data'->'snapshot'-ARRAY['projectId','kind','state','previousRef','recordedAt'];
+  p=(c.result_ref->'data'->'snapshot')-ARRAY['projectId','kind','state','previousRef','recordedAt'];
  ELSE p=jsonb_build_object('sourceLinkRef',s->'sourceLinkRef','observedSnapshotRef',s->'observation'->'snapshot'->'sourceSnapshotRef','choice',s->'choice','reason',s->'reason');END IF;
  IF c.approval_consumption_id IS NOT NULL THEN
   SELECT jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest) INTO approval
@@ -262,7 +262,7 @@ BEGIN
   rows=rows||jsonb_build_array(jsonb_build_object('kind','STREAM_HEAD','row',anvil.document_source_cost_row('STREAM_HEAD',to_jsonb(sh),cid)));
  END IF;
  normalized=jsonb_set(e.snapshot_json,'{recordedAt}','null'::jsonb);
- IF c.operation='linkDocumentSource' THEN normalized=jsonb_set(normalized,'{sourceLinkRef}',e.snapshot_json->'sourceLinkRef'-'contentHash');END IF;
+ IF c.operation='linkDocumentSource' THEN normalized=jsonb_set(normalized,'{sourceLinkRef}',(e.snapshot_json->'sourceLinkRef')-'contentHash');END IF;
  record=jsonb_build_object('ref',jsonb_build_object('id',e.stream_id,'version',e.version),'snapshot',normalized);
  projection=jsonb_build_object('link',link,'record',record,'candidate',candidate,'proposal',proposal);
  IF e.projection_hash IS DISTINCT FROM anvil.fn01_hash(projection) OR r.plan_json->'parts'->0->>'contentHash' IS DISTINCT FROM e.projection_hash THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_PLAN_CHANGED';END IF;
