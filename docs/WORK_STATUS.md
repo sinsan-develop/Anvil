@@ -13951,3 +13951,22 @@ git diff --check
 - 기존Primary source2→11DCE811/8DB0B4C1 동결·writer반환/live0. Main798dc2 실제3hunk/6바이트diff와기존순수FN06/FN03집중29PASS/0FAIL/skip0/936.8324ms,adc7ad 부모99 raw역치환동일/한정패턴잔여0을독립확인했다. 기존guard/제거목록/current/signature·정책/권한/승인/감사조건/TS·시험·index/driver·보호3불변이다.
 - 결과 docs/04_test_reports/AV3/IX01_PENDING_JSON_PROJECTION_PRECEDENCE_SOURCE_RESULT_20261104.md SHA3BB5C05AD7682145DE93646603B75C7F28EADF5E90EB8CD6CF4615D9C766B966, SOURCE_CORRECTED/ACTUAL_SQL_NOT_RUN. 실제PG/RLS/native/DB·권한·키·WSL·서비스·Agent/P03R3·새 QA0, r4승인소진/이전QA잔여0·감사보존/전체계획미완료를유지한다.
 - 초기도구51c31c의skill경로 C:/Users/cyhuh/.codex/skills/superpowers/SKILL.md는카탈로그와다른추정경로였다. ErrorAction SilentlyContinue로오류원문이미수집됐고exit1이었다. PMO읽기는성공했으며뒤37f27c에서실제r9패키지를읽었다. 앞경로추정계열최소3+초기51c31c+후e42023으로현재확인최소5건이다. 이전최소4기록은확인범위가좁았던이력이며정정한다. 추정parent읽기는중단했고이후검수는실제rg반환경로/검증된문서만쓴다. 제품/권한/사용자자료변경0이고PMO에추가대조를공유한다.
+
+### 2026-11-04 수정 SQL의 r2 단발 실행안 소스 준비
+- 99e108에서 source2/문서4를7e9ab984d2dad98fed208a2473853409dde927b9/private exact/clean·main/보호3 불변으로 보존했다. r4/slot1 승인은 소진·QA 잔여0/감사 보존이며 새 실제 실행은 하지 않는다.
+- WI docs/work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SOURCE_PREPARATION_20261104.md SHA436AEDDD1C980AFE995A3C70BC5FD61C81452AEA4D1D815797691CE1ACF2C93F, 같은Primary에 driver/unit/신규r2 index 정확3경로만 배정한다. 수정 SQLbaseline7e9·새20261104-r2 source/원장/container를 고정하며 r1 index/감사를 보존한다. 위치 미수집 공백만 숫자 statementEndLine로 보완하고 원문/Secret은 계속 버린다. 제품 API·권한/guard·기한 완화0이다.
+- 최초 WI 기록 d9f77b는 Node template 문자열 안의 미이스케이프 backtick 때문에 SyntaxError:Unexpected identifier psql/exit1로 평가 전 실패했다. 파일·코드/실자원 변경0이며 이1건을 보존하고 해당 문서 표기를 일반 문자로 바꿔 기록했다. 제품/PG 오류로 세지 않는다.
+- 실제DB/권한·키·WSL·서비스·Agent/P03R3·새QA0, 실제SQL/JSON연산/RLS/IX01 GREEN 미실행을 유지한다.
+
+- Main은r2 실행 후보 docs/work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_EXECUTION_CANDIDATE_20261104.md SHA4ACA9F9C53BEBA8DAD42CBAD6425BD0D32EF69E85589262811BBD39ECE6BFFF7에 수정SQL기준7e9/105순서·신규자원·권한위험·단1회·수명/정리/UNKNOWN·제외를 사전등록했다. code/index/SQL hash는 동결 후 결박할 값으로 아직 미정이므로 실제 질문/실행0이다.
+- Primary314922는r2프로필/위치값 RED2를 확보했다. 쓰기/index소유61762 회수 전에 후속검사를 실행한 순서 오류로703dae는 보완 전 RED로만 보존한다.61762→4d2b76 exit0 뒤에만 완료 source 검증을 계속하며 원명령 재시작·실제QA0이다. Main은 의존 검사 순차 실행을 지시했다.
+
+- r2 준비 중 Primary는 마지막 검수 호출 출력이 문맥 상한으로 소실됐다고 보고했다. 해당 원 검수 결과/handle은 UNKNOWN으로 보존하며 실제QA/DB/WSL/Docker 호출0이다. 이후 저장 상태·지문을 수거하고 순차검증을 진행했다.
+- fff3f2 순수39PASS/skip0/1090.709ms는 그 시점 source의 증거다. noEmit 소유71819→3c8841은 시험의status 중복 spread TS2783 준비 오류1이며 실제PG 오류가 아니다. 같은 허용시험1행을동일입력의Object.assign으로보정한3af6d5 뒤최종영향/타입/Bash-n/지문을순차검수중이다. 이전UNKNOWN/RED를PASS로소급하지않는다.
+
+- Main은 공식 docker-library/postgres의 현재 entrypoint에서 POSTGRES_HOST_AUTH_METHOD에 따른 host HBA 행 추가 동작을 확인했다. initdb의auth-host=reject 인자만으로 최종HBA 전체reject를 증명하지 않는다. 고정cache이미지의HBA 실제본문은 조회하지 않았으므로 현재공식코드의동작을그이미지관측으로단정하지않는다. r2 후보의표현은 Unix socket trust·TCP listen 비활성화/networknone/port0의정확한설정경계로정정했으며기존r4원문/실제결과는보존한다. 코드·기한·권한·격리조건변경0/추가실제접속0이다. 출처 https://raw.githubusercontent.com/docker-library/postgres/master/docker-entrypoint.sh.
+
+### 2026-11-04 r2 source3 Main 독립 검수
+- 기존Primary는2B555A8E/38E7554C/신규index11B2FA7E로정확3을동결·writer반환했다. 원61762→4d2b76수거/출력소실UNKNOWN/보완전703dae RED/TS2783시험준비보정은서로다른이력으로보존한다.
+- Main9e5a8b 최종39PASS/0FAIL/skip0/469.4384ms,0072d4→소유31431/cf1fac 타입+Bash구문 exit0,aedc83→소유42880/a997ce SQL106Gitblob일치/부모delta3파일8B·103불변/105선택2376115B·order09d를독립확인했다. 새index만docs에raw보존했고r1 index/원장·SQL/제품·보호3은불변이다.
+- 결과 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SOURCE_RESULT_20261104.md SHA9B829F9C77AFAD52496A95260B5057C110C9C90D2B2860BE08B24242B4D990BD, SOURCE_PREPARED/ACTUAL_R2_NOT_RUN. Main소유handle모두회수했고Primary유실순수검사호출종료는미확정으로유지한다. 실제WSL/PG/role/권한/키/서비스/Agent/새QA0·기존r4승인소진/첫FAILED·잔여0/감사보존·전체계획미완료다. 새실제1회는정확code·SQL/index·자원/정리결박후에만별도결정받는다.
