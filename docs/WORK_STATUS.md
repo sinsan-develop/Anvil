@@ -7473,7 +7473,7 @@
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/지식 정정·헌법 이력 actual7cf8c005는 과거 근거. 고정 문서출처 조회17b5af47 게시, 문서 명시선택→기존저장·재조회 후보browser6/unit14 핵심 확인 | 새후보 실제served/PG·다른종류 출처 직접열기·공유·임무 선별/이해 대조 |
 | UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존과 후보2/자료24/임무준비8의 별도 정책 작성 UI source·한정 bundle 확인. a890840a 정책/후보 actual7marker·QA잔여0 | 실제 host/credential/Agent·정식DB/served·8준비 도메인/전체 사용자 여정은 미완료·미확인 |
 | UI12 사람·클라이언트 인계 | [2] | 2026-11-03 source/합성: 보호요약·명시 수락·현재 grant 후속 조회/HE 화면 연결. private 9e5cd75a, 직접 인접45·UI5·Main집중3/2·type0 | 미적용0073·실제 DB/served/OS·일반문서 SQL 잔여·사용자 인수 미완료 |
-| UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
+| UI13 모바일 작업·승인 | [2] | 2026-11-01 결과기록의 같은 Workspace 대화/절차/문서 pane·승인 진입 source 및 합성 화면 검수 이력. 2026-11-03 실제 App·MobileNavigation 연결 읽기 대조, 현재 전체 served 검수는 아님 | 실제 Agent 지시/기기 제어·정식 DB/권한·사용자 인수 미완료. 새 기능과 이전 검수 이력 구분 |
 | UI14 설정·백업·보조 조회 | [] | S14 정적 시안 | 백업/영향·한도/알림·원화면과 같은 상태 조회 |
 
 ## 5. 기능 업무 — FN01~FN18
@@ -7496,7 +7496,7 @@
 | FN12 결과·검증·이상 판정 | [2] | Main 어울. 제출/목록 실제PG, 합성 검수/보완15·범위변조거절 보완. 54ad16f2 원제출+확정임무 검수source 실제PG1 PASS·UI05 조회후보 | typed기준/등록증거·검수/보완의 실제 저장·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [2] | 42671006 상세 입력/준비API/UI·13PASS/type/build·합성browser1 | 실제 불변저장/원문조회·상세참조·현재지점 파일/대조·정지확인·옛권한/중복 차단·안전재개 미완료 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
-| FN15 사람·클라이언트 제어권 | [2] | 2026-11-03 source/합성: 검산된 EMPTY READY→물리 저장/CAS·원 결과 재조회·후속 HE 제어소비. SQL COMMIT/checksum·역완결 source 보완, private 9e5cd75a | 일반9op 최종 SQL Owner 제한·실제 PG/RLS/경합/OS·전체 안전 수집/사용자 인수 미완료 |
+| FN15 사람·클라이언트 제어권 | [2] | 기존 수락/CAS·후속 현재 grant source 이력 보존. 2026-11-03 private19c61093에서 일반문서5op·upload/기존 승인·알림의 목적 context/SQL source 연결·Main 직접33 확인. 실제 DB 미적용 | detach/CHANGE raw·LINK/CHANGE 등록/관측 권위와 실제 PG/RLS/경합/OS·전체 안전 수집/사용자 인수 미완료 |
 | FN16 백업·반출·검증복원 | [] | 논리 보존/복원 설계 | 실제 manifest·별도복원·원문/관계/증거 무결성 |
 | FN17 중요 알림·모바일 전달 | [] | 중요/일반·미지원 구분 설계 | 실제 지원/허가·사건/인증요청 연결 |
 | FN18 Windows 설치형 산출물 | [] | TD-01 Electron Windows 설계 선택, 제품 구현 미착수 | 패키징/업데이트 계약 뒤 코드/산출물·같은 서버자료·안전복원 |
@@ -13759,3 +13759,26 @@ git diff --check
 - Main01a601은최종직접2파일을독립실행해33PASS/FAIL0/SKIP0/1845.0796ms/exit0을확인했다. 23faa7최종6지문일치·SQL181052B/CR0·0072/0074불변·보호3불변/diff0다. Main지적nullstatus·알림현재성Important는보완/역차분을읽어Addressed(source)이며검토한범위추가미해결C/I없음이다. 실제PG/권한/served·사용자인수는미검증이다.
 - 결과 docs/04_test_reports/AV3/FN15_UPLOAD_APPROVAL_SOURCE_RESULT_20261103.md SHA5400EFBC747408E157578E214F5E8C128F77B9184695B753F9D29ADCE3D4F6BB. 같은branch정확6+Main WI/현황/결과3=9경로만checkpoint로보존한다. 실제DB/권한/키/서비스/Agent/OS/실자료0·PR/merge/배포0·전체계획미완료다.
 - 다음은기존r7 U4중linkDocumentSource/proposeDocumentSourceChange의원등록/observation권위·전용DBfacade와실제원command 목적context의누락접점을읽기분리한다. 원source/provider부재를완화하지않고실행불가와source연결을구분한다. native/타사용자HE정책미채택·READY/QUARANTINED불일치등기존잔여보존이다.
+
+### 2026-11-03 19c61093 private 보존·후속 source 연결 조사
+- Main709b5c 최초checkpoint는Main보고서EOF빈줄1로cached diff에서쓰기전중단됐고커밋0이었다. 29fa77에서새마지막줄1만정정/현황지문동기화뒤76243c가정확9raw/index동일·cached diff0로19c61093acceb52c9c5ee1d223e5847645f4c33e(parent0e5)에commit했다. 결과보고서최종SHA5400EFBC747408E157578E214F5E8C128F77B9184695B753F9D29ADCE3D4F6BB다. 제품6의시험후변경0다.
+- 070a63정상privatepush/exactSHA19c61093·localmain044304/private mainf976불변·게시당시trackedclean/보호3만보존을확인했다. 실제DB/권한/키/서비스/Agent/OS/실자료·PR/merge/새branch/배포0·전체계획미완료다. 이후현황구간만새Main소유dirty다.
+- 같은Primary에게기존r7 U4 linkDocumentSource/proposeDocumentSourceChange의source observation/등록권위·ownedDBfacade와원command 목적context를읽기분리하도록맡겼다. raw공개/특수Owner·원provider부재412를보존하며최소내부연결가능단위만반환,코드GO0/시험반복0이다.
+
+### 2026-11-03 link/change 경계 반환·FN12/UI05 잔여 대조
+- 같은Primary는HEAD19c61093에서읽기반환했다. link/change는별도0072 source request/admission/current가원명령·보호관측·receipt/audit를재구성/검산하며현재문서목적context를요구하지않는다. 단순op추가는B0→B1 facade의WeakMap불일치를새로만드는미사용보완일수있어GO0다. Main80ef3a도auth facade/최종material/prepare의별도DB객체와CHANGErawAllowed제한을확인했다.
+- 실제connector_basis_current의기존0006 OWNER+요청자/client/credential/control현재성·관측공급자부재412와CHANGE공개rawOwner를보존한다. HEgrant만으로등록권위를대체/가짜basis_current:true/원문권한확대0·실환경/시험/코드쓰기0다. 기존일반9전체완료로보고하지않는다.
+- Main은계획다음독립잔여를FN12/UI05의등록증거→검수기준/검수·보완저장→UI08문제연결로좁혀같은Primary에읽기대조를맡겼다. 최신WI/결과와실제App/API를대조해완료source는반복하지않고실제Agent/DB/served제외와미구현소비선을분리한다. 전체미완료소진을아직판정하지않으며PMO업무배정을기다리는대기0다.
+
+### 2026-11-03 FN12 기존 구현 보존·과거 검수 목록 계약 준비
+- 같은Primary의실제소비선대조에서FN12/UI05 원검수자료·typed기준등록/개정·REWORK/BLOCKED저장/재조회·보완초안저장/페이지·UI08문제원문은이미구현됐다. 현재ACCEPTED는실검증증거공급선행으로명시거절하고수행자PASS로승격하지않는다. 기존source를재구현/시험반복하지않았다.
+- 실제잔여는검증증거생산/실후속임무·Agent배정,최근20이전검수목록의유한조회계약,보다넓은실원인증거다. Main88fcc0/b994bf는실제route178 no-query·Web strict6키/hasMore·최근20이전미연결문구를읽었다. 서버경로의초기추정읽기1은routes실제import와rg반환results경로로정정했고제품부재로세지않았다. 이후추정경로읽기0원칙을적용한다.
+- 다음한정후보는기존GET/DTO를그대로보존하는별도과거검수pageGET이다. 고정20/keyset·주체/project/exact결과ref·관측상한/현재권한·opaque cursor와원문검산/flags를구체화하도록같은Primary에게읽기만맡겼다. 공개조회계약신규이므로현재미채택·코드GO0/실환경0이며사용자/PMO정확결정전구현하지않는다.
+- 660504/a2ff0d의현재모바일App/pane연결과2026-11-01결과기록을대조해UI13요약의옛'정적시안'행을부분구현[2]로정정했다. 기존검수이력을현재서비스PASS로승격0/기존오류이력보존이다. FN15요약도private19c문서5op/upload source와남은raw/등록권위·actualPG를구분해부분구현[2]유지했다. 전체계획미완료다.
+
+### 2026-11-03 FN12 과거 검수 page 계약 후보 기술 검토
+- Main은새GET /results/:id/review-pages·기존GET/DTO보존·정확9키/고정20·21후보/64KiB·cursor4096/30분원기한·처리30초예산과원DB정착분리·사용자/client/session/credential/project/result결박·지연Tx비snapshot·이전위치100·false flags를 docs/contracts/FN12_STORED_REVIEW_PAGES_CANDIDATE_20261103.md SHA46CE3D9725930F3E65EB4F9C0823BD299973ACB72DA7B866FF0138DA596EBBBB로고정했다. NOT_ADOPTED/SOURCE_GO0/실행GO0·신규SQL/DDL/실DB/키/권한/서비스/Agent0다.
+- 0d1b6c는후보기존7경로존재/시작fullhash와신규UI05 pagination시험1부재를읽었다. 같은Primary에게정확후보의현재source부합·보안/실행가능C/I만읽기검토하도록배정했으며코드/시험쓰기·실행0이다.
+- Main af537e의순수메모리산술에서정확summary필드최대폭(ASCII ref/id/최대safe버전/고정시각/flags)691B·20+4096cursor+정확9키외피18355B<=65536B를확인했다. 실제API/DB/브라우저시험이아니며case조건을독립시험수로부풀리지않는다. 후보채택전제품GO0을유지한다.
+- 후보r1 문서검수 C0/I1은기존AccessRepository pool/인증진입과페이지소유기한의범위혼동이었다. Mainab408a는8경로/인증불변을유지하고페이지첫진입부터30초·기존pool/BEGIN/auth/rollback/release분리·원query정착을정확히기록한r2 SHA59B7F0E6178048AD5E5D1A3F1CF8E5B6C11B44A609B0A911182C91E1F44FF0B4를고정했다. 같은Primary scoped 재검토 C0/I0/I1 Addressed·r2시작끝동일,원r1종료출력미수거는UNKNOWN보존이다. 추가제품/시험0이다.
+- 새GET/DTO/cursor/페이지수명계약A채택과최근20유지B를PMO에정확결정·지원요청했다. 기존범위재승인/작업배정요청이아니며현재NOT_ADOPTED/SOURCE_GO0·사용자질문0·live/writer0이다. 실제DB/권한/키/서비스/Agent/OS/실자료0·전체계획미완료를보존한다.
