@@ -14064,3 +14064,11 @@ Main9b7a73:HEAD66a929aa61827c5d409c0ddca8f98c20c52f41d4·trackedclean/보호untr
 
 ### 2026-11-04 승인된 R3 정리 별도 잔여0 확인
 정리직접승인call_28d64e8/packet0920C830을적용했다. 05a439stop1회뒤응답UNKNOWN·rm0에서멈추고원장을보존했다. 749c2f읽기동일신원/exit0/PID0으로종료확정뒤09c109가stop재시도0/rm최초1·source만제거,7735be별도fullID/name/source부재를확인했다. 감사root/원R3UNKNOWN·R1R2실패보존,실제SQL/DB/role/권한/키·기존서비스/Agent/P03R3변경0. 초기읽기구문317363은본문실행전오류로분리하고문자열구조화+로컬구문검사로방식을바꿨다. 상세 docs/04_test_reports/AV3/IX01_R3_UNKNOWN_QA_MANUAL_CLEANUP_RESULT_20261104.md . 소스보완44PASS를실준비PASS로승격하지않고Main검수I2의최소보정을기존Primary에게배정했다.
+
+
+### 2026-11-04 최종서버 source2 첫 독립검수 I2 보정
+Primary9c85ec의기존39+신규5=44PASS/type/Bash/diff0은최초pure검사로보존한다. Main790222/1a8e21/501007는C0/I2를발견했다: actualrun.trim이PID1newline을없애정확newlineparser와불일치,actualpsql오류를parsePsqlFailure/UnknownOutcome로먼저정제해새role진단의원status/code가소실된다. 신규fixture가해당경계를우회했다. 같은Primary/source2에실공유경계를소비하는RED→최소보정으로재배정했다. Primary877b15 actualrun원표현식경계소비반례2RED/exit1/203.8397ms로두문제재현,이전124e94는시험추출공백/CRLF준비오류로분리. 기존DDLparser·trim/보안/UNKNOWN/기한변경0·실환경0을유지한다. Main코드쓰기0.
+
+
+### 2026-11-04 최종서버 준비 source2 I2 해소 검수
+Primary 최종7A1E0065/F14854C6·writer반환/live0. 877b15 실공유경계RED2→674217 GREEN2→522aa6 46PASS/skip0/967.5311ms,790623 noEmit0/776d02 Bash-n0/25a20b diff0. Mainaf6faa 최종46PASS/skip0/903.2594ms, d5d2ec 실제run→docker→psql→역할/PID1연결·동일hash/diffcheck0·scoped C0/I0/M0. 최초44PASS/I2/시험준비오류는보존한다. 실image/프로세스/PG·SQL105·RLS/API/UI 인수NOT_RUN,원R3UNKNOWN보존·7735be QA잔여0/감사보존. source2실환경반영0. 상세 docs/04_test_reports/AV3/IX01_FINAL_SERVER_READINESS_SOURCE_RESULT_20261104.md . 다음새정확namespace/code/실행안동결전새QA금지.
