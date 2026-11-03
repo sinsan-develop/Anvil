@@ -13974,3 +13974,16 @@ git diff --check
 ### 2026-11-04 r2 실제 단발 결정 패킷 결박
 - 62280c의소유45010을329683 exit0으로회수해source3+소유문서5 정확8을9c3674fa33802cefe35960e61974edaa73864b61/privateexact·clean·main/보호3불변으로보존했다. source3 지문/39PASS는위기록을따르며실제R2검증0이다.
 - Main은 docs/work_packages/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_EXECUTION_CANDIDATE_20261104.md r2 SHA766F911791F9175E2BCC6D314D961D8E9494005AD70D5445B614526729F3D0C7에 exact code/index/SQL·선택105·bootstrap/회수/관측hash·새자원·단1회·권한위험/기한·정리/UNKNOWN·제외를결박했다. 첫승인소진후새실행은아직미승인으로유지하고이정확범위만직접결정받는다.
+
+### 2026-11-04 r2 단발 QA 직접 승인·생성 전 기록
+- 신산님 call_4662cf4731a44e75a3cd68e87e1181f1가 r2 packet SHA766F911791F9175E2BCC6D314D961D8E9494005AD70D5445B614526729F3D0C7/code9c3674fa33802cefe35960e61974edaa73864b61의새QA단1회실제실행을승인했다. Main관측2026-11-03T15:40:59.000Z,전체deadline2026-11-03T16:10:59.000Z/PG예산10분·slot1만이며추가slot/재실행0이다.
+- f70953 생성전SSH exit0:새r2 source/receipt두경로·등록QA이름부재,daon1000/SINSAN·Node등록e32e2d16/root:root0755/126879696B·daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/SINSAN·cachePG594290e9/VOLUME1일치다. 실제기존DB/권한/키/서비스변경·새자원생성은아직0이다.
+- 사전등록: source /home/daon/anvil-ix01-ddl-20261104-r2-qa,원장 /home/daon/.local/share/anvil-v3-qa-receipts/ix01-ddl-20261104-r2/빈docker-config,container anvil-ix01-ddl-pg-20261104-r2-a1/DB anvil_v3_ix01_ddl_20261104_r2_a1. 소유Main/daon1000·slot1·고정image/networknone/port0/hostbind·volume0/tmpfs·정착시권한회수/정확QA정리/UNKNOWN보존·감사보존은r2원문을따른다. 기존Primary에중복실행금지/writer0를전달했다.
+
+
+### 2026-11-04 R2 승인 실행 소스 준비 확인
+Main 어울: 신산님 call_4662cf4731a44e75a3cd68e87e1181f1의 새 QA1회 승인을 적용한다. 기한 2026-11-03T16:10:59Z. 이전 clone handle85575의 마지막 출력은 회수되지 않아 보존하고 재clone하지 않았다. 39f82a 읽기 확인에서 exact9c3674fa·tracked clean·UID1000/0700·driver2b555a8e 확인. 마지막 shell 행에 CR이 들어가 index 조회만 경로 오류1; source 실패로 해석하지 않고 아래 정확 바이트 검사로 보완한다. PG/receipt 생성 전이며 등록된 R2 전용 자원만 생성·회수한다.
+
+
+### 2026-11-04 IX01 R2 실제1회 FAILED·정리 검산
+Main 어울: R2승인소진. exact9c3674fa/SQL7e9ab984의105정의설치가0035에서42601/문장끝338행으로실패했다(8815c1 exit1). 오류원문미수집/직접원인미확정. installer권한회수검산·CLEANED,64a135/b34e7d독립확인에서신규source/fullID/QAname잔여0,감사3의도보존·정확복사. 준비CR경로오류1/래퍼구문오류1/기한오판자동심사거부1과시각증거로해소한사실을결과보고에보존한다. 실제추가QA0. 기존Primary읽기조사재개/코드writer0. 변경은본WORK_STATUS·신규결과보고·R2원장3. 미검증은뒤38정의·함수/RLS/API/UI/Agent/IX01인수. PMO보고완료. 상세: docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SLOT1_RESULT_20261104.md
