@@ -13322,3 +13322,35 @@ git diff --check
 ### 2026-11-03 FN15 r2 원I1 서술모순 한정 재검수
 - 기존 Reviewer는 r2 965600BC 시작끝지문불변을확인해 원I1의서술모순해소/scoped C0/I0를반환했다. 수락자접근과base근거주체/public OWNER보존, CAS전base/후nextControl/과거replay분리를대조한범위이며제품구현해소가아니다. U1목적제한SQLreader·공급자와U2 F통합은여전히미정이므로IMPLEMENTATION_GO0을유지한다.
 - Main은현황과새WI두문서를기존branch의문서초안checkpoint로보존한다. native검토9458379e와이문서초안은기능인수·PR/main병합·실배포/전체완료보고가아니다. codewriter0·실제키/DB/권한/서비스/Agent/제품네트워크·실자료0이며기존보호3은보존한다. 후속은U1/U2의정확내부caller/collector연결을기존승인안에서기술적으로닫는것이다.
+### 2026-11-03 후속 U1/U2 기술 검토 재개와 실제 접점 대조
+- 시작 HEAD998994a5·trackedclean/보호untracked3·WI965600BC를대조했다. 이전차례는native검토와FN15문서반환/독립검수의authoritative문서·Git을변경한진전이며전체완료가아니다. 기존Primary의U1읽기작업은실제running상태를확인해중복dispatch하지않았고codewriter0이다.
+- Reviewer의U2안은 F독립원장/잔액은기존used=U0+Factual,held=H0+Ffuture 통합이다. 실제F행·예약자체·미생성분감액을동일Tx에서묶고(table,PK)단일귀속/원anchor를보존한다. Main은0072가quota_complete를quota_complete_before_source로rename한실제정의와0059의기존잔액대조·원reservation/Artifact/checkpoint역완결을읽어확인했다. 기존합계검사그대로호출후F가산은불일치이므로신규forward의정확함수조립이필요하다.
+- 최신quota_account의OWNER반환/기존분기·환경/native별도소계는유지한다. 이미account에서F를보는capacity에F를또더하지않는다. F표의deferred역완결·목적제한target caller·비순환plan/고정폭비용codec은아직구현전상세다. Reviewer가외국어로반환한원문은한국어로정정받았고공식문서에는한국어결과만쓴다.
+- 추가U2검토는기존project의anchor초기화와신규project생성의동일Tx접점이다. 기존정상quota를갑자기막거나anchor부재를F0으로누락하지않도록해당필수접점만기존Reviewer에맡겼다. 한도초과/불완전은미확정그대로이며자동삭제/과거grant합성·완료anchor재생성은없다.
+- Main은currentProjectController 호출파일39개와documentOperations의native/등록/일반문서혼합·project-source-links의별도OWNER검사를확인했다. 이를일괄완화하지않으며U4에서기채택operation별일반변경/별도OWNER를구분해야한다. 현재22경로만으로모든일반변경이완성됐다고하지않는다. 준비조회에서0059추정파일명은내용없음이었고rg로실제0059_project_storage_quota.sql.pending를찾아읽었다;부재/제품실패근거로쓰지않았다.
+- 실제제품/SQL/시험쓰기·실행0·키/DB/권한/서비스/Agent/제품네트워크/실자료0·IMPLEMENTATION_GO0/EXECUTION_GO0이다. 후속은U1실제reader와U2초기화의정확결과를Main이기채택의미안에서확정하는것이며새다음작업지시나전체기능재승인을기다리지않는다.
+### 2026-11-03 U1 목적제한 RLS와 U2 생성 초기화 기술안
+- Primary의U1읽기는동일인증Tx·실제target접근/원base주체·CAS뒤next/replay분리와기존22경로로조립가능함을반환했다. 기존public OWNER를느슨하게하지않는다. 실제RLS/공급자는아직미연결이며서버private객체만으로DB권한을증명하지않는다. Main은0070의FORCE RLS/false정책·0066전용reader패턴·fn01_active의실session검사를직접읽었다.
+- Reviewer는Main의새FN15전용NOLOGIN/NOINHERIT/NOBYPASSRLS 함수소유역할+명시SELECT정책/고정SECURITY DEFINER reader후보가현재모델과맞는다고반환했다. 이는FORCE RLS우회가아니라명시역할정책이다. appmembership/SET ROLE/rawSELECT·DML0,public OWNER/기존false정책보존·동명거절/migrator/임시CREATE·membership회수/postflight·최소열/EXECUTE/고정search_path/실session_user검사가필수다. 모든참조table의최소정책을함께닫아야한다. reader자체는SELECT만하고기존허가된외부Tx의project/member/control잠금으로DB일관성을소유한다. FOR SHARE/UPDATE를묵시적으로추가하지않는다.
+- U2초기화는신규0073전체Tx에서기존project의0041/control행검산→최초anchor·F잔액→새complete를원자설치한다. 초과/불완전이면forward전체실패·기존정의보존이다. 신규생성의quota_adopt_creation은used를Artifact total로덮고즉시complete하므로반환뒤hook은늦다. 그내부잔액/complete전에anchor/F를연결하며원manifest bytes/hash는Artifact만보존한다. account없는정상생성은정확새project/control INSERT와완성creation계보의지연trigger로anchor만만들고quota VERIFIED를합성하지않는다. anchor유실을일반쓰기에서재생성하지않는다.
+- Main은U1/U2위방향과U3비순환hash(acceptance basis→grant events→receipt→audit→최종result)·최초control의가짜과거grant 금지를기존Primary의WI한파일r3문서보완으로위임했다. U4operation별일반변경/명시OWNER매핑은기존Reviewer의읽기작업이다. codewriter0·구현/실행GO0,실제키/DB/권한/서비스/Agent/제품네트워크/실자료0이다. 내부chain 기존10000/64MiB와공개요약200refs/2MiB를같은분모로혼동하지않고각유한읽기/요약검산을분리하도록전달했다.
+- 준비오류: Main의rg 직접wildcard경로1은os error123이었고디렉터리+glob/실제파일로정정했다. 추가검색의exit1은해당범위일치없음이며제품실패가아니다. Reviewer의추정project-drafts디렉터리1은os error2였고실제repository/draft-artifacts경로로정정했다. 어느것도부재/제품FAIL/PASS근거로쓰지않았다. 실제수락/공급자/PG/권한인수는미검증·전체계획미완료다.
+### 2026-11-03 FN15 r3 기술 상세 반환과 U4 실제 UI 소비
+- 기존Primary는WI r3 SHA256 8B443D8F4D8E08123E900FE8E846E0ABE0850DB3EE5662F7FC4390239EFB8685/51686B/317행·diffcheck0의문서writer를반환했다. Main은반환bytes/부모965600BC를대조해정본에보존했다. U1전용SELECT역할/RLS·원인증행FOR UPDATE예외/내부chain분모, U2 F초기화/신규생성anchor·잔액complete, U3비순환ref순서를통합했으며구현/실행GO0이다.
+- Reviewer의U4읽기는일반새세대요청과명시OWNER/원작성자·원client를분리했다. 정책관리bootstrap·회원·공유·baseline·public writer/native/등록·특수승인후보는보존한다. requestApproval/decideApproval은일반작업의새세대·새요청에원정책/requiredDecider/원scope·기한을적용할수있지만옛요청/결정을인계하지않는다. 일반승인역사전체를OWNER전용으로오인하지않고기존회원조회범위를유지한다.
+- Main은editor-api.ts:45~50의documentControl이OWNER만허용하고projects/repository.ts:229가기존control행만으로HELD를표시하는실제접점을읽었다. helper만추가하면수락후UI일반편집이막히므로같은기능호출선에포함해야한다. 불필요한DTO필드를추가하기보다서버상세의HANDOFF_ELIGIBLE에만실제유효grant검산뒤HELD를주고클라이언트는그상태/actor/client/gen을소비하는기술방향을정했다. OWNER/VIEWER동작은보존한다.
+- 같은Primary에게WI r4문서1개만U4/필수경로를보완하도록위임했다. public currentProjectController는보존하고일반변경전용grant검산을분리하며중복OWNER가남은실제handler/quota와순환import없는grant검산module필요를대조한다. 모든39caller/모든documentOperations를포괄허용하지않는다. 정확필수경로만후보추가하며소스전체완료/실제사용가능으로표시하지않는다. 제품/SQL/시험쓰기·실행0·codewriter0·실제키/DB/권한/서비스/Agent/제품네트워크/실자료0,전체계획미완료다.
+### 2026-11-03 FN15 r4 독립 검수·r5 source 구현 확정
+- 기존Primary는r4 B05C33EE9B8F4F4373E45FCB936F34B89018D7E19887AD6660043C36AAB2C9AE/64580B/379행·후보40경로의문서writer를반환했다. Main은parent8B44와반환bytes를대조해정본에보존했다. Reviewer는r3 U1~U3/ r4 신규U4각각한정C0/I0·시작끝지문불변을반환했다. 이는서술정합이지코드/SQL/실환경PASS가아니다. Reviewer의추정document-source-observation-service.ts조회1은os error2준비오류였고실제project-source-links.ts로정정했다.
+- Main faaecb는HEAD998994a5에서40unique경로의기존27실재/신규13부재·0073접두부재·diffcheck0·추적변경문서2만을확인했다. Main은내부구현상세를WI r5 SHA256 34CE92CD7706BAD637DC7D7176AF67199C4AB4A9C9AC23D49CC6D9750569B522로확정했다. Source구현/메모리합성검수GO1,실효과EXECUTION_GO0이다. 실제키/DB/권한·role/GRANT/서비스/Agent/제품네트워크/OS·실자료/백업·물리QA는계속금지다.
+
+| 내부 단계/공유접점 | 생산→소비/충돌 대조 | Main 판단 |
+|---|---|---|
+| U1 보호reader와U3수락 | 같은실인증Tx/target·base·next·history분리,SELECT역할/정적함수→private근거 | OWNER위장/oldbase최종검사금지·미등록실공급자UNKNOWN. exactSQL/source-set은고정제약안구현후검수 |
+| U2초기계상과기존quota | 기존0041/control실비용·최초anchor→used/held/complete·신규생성 | 하나의0073forward경계·과거manifest/예약분기/상한불변·중복F0. 실제SQL은미실행 |
+| U3수락과U4일반변경 | 비순환acceptance/grant/receipt/audit→현재tuple/일반9op/HELD/UI12 | 같은Primary가순차구현. generic전체허가/OWNER승격0·옛승인새세대이전0 |
+| U4서버와화면 | project상세유효grant검산HELD→documentControl/실upload·quota·store·후속인계 | helper만구현완료금지. 미매핑일반domain은원FN15/전체계획미완료로잔존 |
+| 모든단계와시험 | 같은40경로production호출선/실제행관계→메모리fakeDB/DOM검증 | 준비RED/행동RED구분·보안/원한도/기대값완화0·직접인접만검사·실PG/OS승격0 |
+
+- Ruling: 기존승인FN15의source내부상세를Main이확정하고단일기존Primary로구현한다 — SQLsignature/codec미작성만으로전체수락재승인을반복하지않고원기능을연결하기위함 — 잘못된내부선택은같은package의TDD/독립검수로재작업하며실제효과는발생시키지않는다. Main은40코드경로동시쓰기0,현황/Git/검수통합소유다.
+- 다음은r5/현황문서checkpoint/private동일확인뒤같은Primary에정확40경로writer를dispatch하는것이다. 새agent/branch/자동화0·전체FN15/작업계획미완료·PR/main병합/배포0을유지한다.

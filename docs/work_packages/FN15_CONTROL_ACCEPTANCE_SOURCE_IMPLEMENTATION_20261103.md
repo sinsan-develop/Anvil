@@ -1,10 +1,10 @@
-# FN15 제어권 수락 source 전체 단위 작업지시서 초안
+# FN15 제어권 수락 source 단위 작업지시서
 
-- 상태: DRAFT / IMPLEMENTATION_GO0 / EXECUTION_GO0. Main 검수·독립 검토·명시 dispatch 전 제품 writer를 부여하지 않는다.
-- 개정: r2. 부모 r1 SHA256 E2850D9D3E9EC439C13CE039D873A2B04B2001A32E53C88CB77DDDD11052550E. 수락자 보호읽기와 CAS 전후 검산을 분리한 검토 보완이며 구현 GO가 아니다.
-- 이번 위임은 이 WI 문서 작성뿐이다. 제품·SQL·시험·Git·WORK_STATUS 쓰기와 실행은 금지다.
+- 상태: MAIN_APPROVED_SOURCE_IMPLEMENTATION / IMPLEMENTATION_GO1 / SYNTHETIC_VALIDATION_GO1 / EXECUTION_GO0(실효과). Main의 동일 Primary 명시 dispatch와 시작 preflight 뒤에만 허용 경로 source writer를 부여한다.
+- 개정: r5. 부모 r4 SHA256 B05C33EE9B8F4F4373E45FCB936F34B89018D7E19887AD6660043C36AAB2C9AE. Main은 기존 승인 FN15 의미 안의 source 구현 상세를 확정했다. 아래 과거 GO0/미정 기록은 당시 이력이며 현재 적용은 §14를 따른다.
+- 이번 위임은 단일 기존 Primary의 허용40경로 코드·화면·미적용 SQL·합성 시험 구현이다. Git·WORK_STATUS·다른 문서는 Main 소유이며 실제 효과는 계속 제외한다. 결과는 증거/미검증/변경지문을 갖춘 구조화 보고로 반환한다.
 - 실제 DB/권한/GRANT/정책 적용·키·서비스·Agent·네트워크·OS·사용자/백업 실자료·실컴파일·QA 자원 생성0.
-- 기준 프로젝트: D:/Project/Anvil, branch codex/av3-stage-b, HEAD 9458379e1736e5186a8ccc27e002278ef392bae0. Main의 문서 checkpoint이며 제품 변경0이라는 전달과 일치한다.
+- 기준 프로젝트: D:/Project/Anvil, branch codex/av3-stage-b, HEAD 998994a5fecb312064d128f793e73db8d1945f98. 이번 r3 문서 보완의 기준 checkpoint이며 제품 writer0이다.
 - 목표: 승인된 요청→안전 대기→정확 대상 수락→원자적 옛 grant 회수/새 제어 세대·grant 발급→기존 일반 변경/UI12 소비를 source-only 한 기능 단위로 완성한다.
 - 구조: 같은 authenticated Tx의 실제 DB reader와 기존 보호 reader가 자료를 생산하고, 서버 내부 출처·coverage·현재성·미정착 검산 뒤만 수락 CAS를 수행한다. 현재 실 공급자 부재는 UNKNOWN/수락0이다. nullable port나 미사용 adapter만 추가하고 완료하지 않는다.
 - 기술: 기존 Node/TypeScript/PostgreSQL pending SQL/React·기존 의존성만 사용한다. 새 framework/dep/키/서명 목적/실행 driver를 도입하지 않는다.
@@ -23,11 +23,11 @@
 
 구현자는 과거 성공한 request/summary/read/분류·pagination 기능을 다시 만들지 않는다. source-only 검증을 actual PG/실두기기/OS 안전성 인수로 승격하지 않는다.
 
-## 2. 정확 허용 경로 후보 22개
+## 2. 정확 허용 경로 후보 40개
 
-아래는 Main 검수용 초안 allowlist다. 지금의 제품 쓰기 권한이 아니다. 신규11은 조사 시 모두 부재였고 0073 접두 migration도 없었다. 코드 GO 직전 다시 확인한다.
+아래는 Main 검수용 초안 allowlist다. 지금의 제품 쓰기 권한이 아니다. r2 신규11은 당시 조사에서 부재였고 0073 접두 migration도 없었다. r4 control-grant.ts/시험은 새 후보이며 구현 GO 직전 신규 전체13의 부재를 다시 검산한다. 코드 GO 직전 다시 확인한다.
 
-### 2.1 기존 제품9 — 필요한 접점만
+### 2.1 기존 제품18 — 필요한 접점만
 - apps/server/modules/control-handoff/control-handoff-pg.ts
 - apps/server/modules/control-handoff/routes.ts
 - apps/server/modules/access/project-command.ts
@@ -37,12 +37,22 @@
 - apps/web/src/features/control-handoff/api.ts
 - apps/web/src/features/control-handoff/state.ts
 - apps/web/src/features/control-handoff/ControlAccessPage.tsx
+- apps/server/modules/projects/repository.ts
+- apps/server/modules/projects/project-storage-quota.ts
+- apps/server/modules/documents/project-documents.ts
+- apps/server/modules/documents/project-files.ts
+- apps/server/modules/documents/project-source-links.ts
+- apps/web/src/features/design-trace/editor-api.ts
+- apps/server/modules/control-handoff/control-request-read.ts
+- apps/server/modules/control-handoff/control-handoff-summary-store.ts
+- apps/server/modules/control-handoff/control-discovery-read.ts
 
-### 2.2 신규 제품4·forward1·시험6
+### 2.2 신규 제품5·forward1·시험7
 - apps/server/modules/control-handoff/control-handoff-evidence-source.ts
 - apps/server/modules/control-handoff/control-handoff-protected-summary.ts
 - apps/server/modules/control-handoff/control-acceptance.ts
 - apps/server/modules/control-handoff/control-handoff-storage.ts
+- apps/server/modules/control-handoff/control-grant.ts
 - db/migrations/0073_control_handoff_acceptance.sql.pending
 - tests/unit/FN15/control-handoff-evidence-source.test.ts
 - tests/unit/FN15/control-handoff-protected-summary.test.ts
@@ -50,13 +60,21 @@
 - tests/unit/FN15/control-handoff-storage.test.ts
 - tests/unit/FN15/control-acceptance-schema.test.ts
 - tests/unit/UI12/control-acceptance.test.ts
+- tests/unit/FN15/control-grant.test.ts
 
-### 2.3 기존 직접 인접시험2 — 필요한 새 반례만
+### 2.3 기존 직접 인접시험9 — 필요한 새 반례만
 - tests/unit/FN15/control-source-integration.test.ts
 - tests/unit/UI12/control-api.test.ts
+- tests/unit/UI06/editor-api.test.ts
+- tests/unit/FN03/document-source-observation.test.ts
+- tests/unit/FN13/project-storage-quota.test.ts
+- tests/unit/FN11/approval-list.test.ts
+- tests/unit/FN15/control-request-read.test.ts
+- tests/unit/FN15/control-handoff-summary-store.test.ts
+- tests/unit/FN15/control-discovery-read.test.ts
 
 ### 2.4 읽기 재사용·보호 경로
-기존 summary.ts/summary-store.ts/request input·snapshot·store·read·cursor·discovery, 0041 및 과거 SQL, AccessRepository, ProjectStorageQuota, ProjectApprovals, ProjectStageQueue, ProjectCheckpoints/CheckpointPreparation, writer/execution/stop/journal reader는 우선 읽기 재사용한다. r2의 writer/승인 두 경로는 §5.2의 순수 검산 추출 후보만 추가했다. public current/OWNER·일반 조회/명령 guard 본문 완화는 금지한다. 그 밖 실제 reader export/수정이 필수면 정확 경로·필요 변화·호환성을 Main에 반환해 allowlist를 먼저 revision한다.
+기존 request input·snapshot·store·cursor, v1 summary 원형, 0041 및 과거 SQL, AccessRepository, ProjectStageQueue, ProjectCheckpoints/CheckpointPreparation, writer/execution/stop/journal reader는 우선 읽기 재사용한다. writer/승인 두 경로의 §5.2 순수 검산과 r4 승인 일반 current 분리는 아래 목적 범위로만 수정한다. 기존 currentProjectController/public writer·native·등록/특수 승인 OWNER guard는 보존한다. 새 일반변경 guard와 FN15 grant 소비는 §8의 exact 경로/분기에만 연결한다. 그 밖 실제 reader export/수정이 필수면 정확 경로·필요 변화·호환성을 Main에 반환해 allowlist를 먼저 revision한다.
 
 apps/server/app.ts의 기존 controlHandoff.enabled 기본 OFF·source 옵션과 App.tsx의 기존 ControlAccessPage/원 buffer 소유를 재사용한다. 새로운 앱/전역 상태 도입0. baseline-sources·참여자관리·지식공유 결정/승인 후보의 별도 OWNER 조건은 읽기 보호 대상으로 둔다. 그 본문 수정이 필요하면 확장 전 반환한다. 보호 untracked3·SDK·역사 fixture·다른 작업자 변경은 복구/삭제하지 않는다.
 
@@ -135,7 +153,7 @@ CONTINUE_CONFIRMED는 실제 계속 실행이 유지되면서 원 client 신규 
 - 원 base 소유자: 잠긴 project_control의 원 actor/client/generation/version, 원 요청 baseControl, 원 writer event/command/authorization receipt/audit·승인소비/등록/키/observer의 실제 저장 subject다. 이 값은 수락자의 actor로 바꾸거나 로그인 세션을 합성할 자료가 아니다.
 - 수락자의 접근 목적은 FN15의 정확 요청/요약/수락 검산뿐이다. 일반 writer current/승인 raw 원문 조회·writer 변경·일반 프로젝트 쓰기 권한을 주지 않는다.
 
-신규 control-handoff-evidence-source.ts가 요청·target 접근/원 base/head 잠금/수명 검산 뒤에만 module-private 읽기 capability를 발급하는 후보를 사용한다. capability는 원 db/Tx·실제 수락자 identity·project/request fullref·summary/command 식별·잠긴 baseControl·budget/단계에 결박한다. raw JSON·다른 source instance/Tx·폐기된 capability는 소비하지 못한다. 이 capability는 OS proof나 새 사용자 인증수단이 아니며 실제 reader를 호출할 수 없는 경우 UNKNOWN을 보존한다.
+신규 control-handoff-evidence-source.ts가 요청·target 접근/원 인증 Tx의 project·member·control 잠금과 head 읽기/수명 검산 뒤에만 module-private 읽기 capability를 발급하는 후보를 사용한다. capability는 원 db/Tx·실제 수락자 identity·project/request fullref·summary/command 식별·잠긴 baseControl·budget/단계에 결박한다. raw JSON·다른 source instance/Tx·폐기된 capability는 소비하지 못한다. 이 capability는 OS proof나 새 사용자 인증수단이 아니며 실제 reader를 호출할 수 없는 경우 UNKNOWN을 보존한다.
 
 기존 두 파일의 최소 추출 후보는 다음과 같다. 함수명은 제안이며 현재 export가 존재한다고 주장하지 않는다.
 1. project-writer-authority.ts: #event/#head의 typed 변환, checkWriterChain/verifyHistoricalHead 및 #proofs/#load의 저장 관계 검산을 현재 actor 권한 wrapper와 분리한 순수 검산 접점. 입력은 FN15 reader가 실제 읽은 head/events/원 command·receipt/audit·검산된 승인소비 원형이다. 원 command의 실제 actor/client/controlGeneration과 각 event.subject·scope·등록·nonce·ref/hash를 검산하고 다른 principal로 치환하지 않는다. public current/#human/#ports/기존 WriterPersistenceSource.current 호출의 의미와 권한은 그대로 둔다.
@@ -143,7 +161,23 @@ CONTINUE_CONFIRMED는 실제 계속 실행이 유지되면서 원 client 신규 
 
 최소 반환자료는 project/request/baseControl, writer headRef/tipRef·phase/원 execution/lease/등록·scopeHash, 검산된 command/receipt/audit·승인소비의 refs, 관측/만료/coverage·gap/미정착 상태다. sourceScopes 원문·승인 reason/본문·원 session token·CA/SPKI·비밀은 FN15 HTTP/UI에 내보내지 않는다. 순수 검산 성공은 과거 저장 관계만 증명하며 현재 process/쓰기 fence·계속실행 proof를 생산하지 않는다.
 
-**아직 미구현 U1:** 목적 제한 SQL reader의 정확 접근 predicate/고정 query, 0070의 기본 거절 RLS와 FN15 전용 실제 읽기의 결박, 승인소비 원행을 public OWNER getter 없이 검산할 실제 reader 조립, 현재 writer/계속실행 근거의 실제 공급자는 아직 정의·구현 검토가 필요하다. 신규0073에서 실제 인증된 정확 target+살아 있는 원 요청+일치 baseControl+서버 목적/원행 관계에 한정된 읽기 경계를 설계하되 일반 raw SELECT 권한 확대·새 GUC bool·fake actor/별도 인증 Tx·실제 GRANT로 우회하지 않는다. 이 SQL/공급자 경계를 검수하기 전에는 연결 완료/READY를 표시하지 않는다.
+### 5.2.1 Main 확정 U1 내부 reader — pending SQL/소스 구현 전 검토
+
+신규0073은 FN15 전용 함수 소유역할을 NOLOGIN/NOINHERIT/NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/NOBYPASSRLS로 만들고, 필요한 최소 열 SELECT와 해당 역할 전용 SELECT RLS 정책만 정의한다. FN16 역할을 재사용하지 않는다. app 역할의 membership/SET ROLE/raw SELECT는 허용하지 않으며 기존 false 정책·DML 정책과 public OWNER guard는 그대로 둔다. FORCE RLS를 끄거나 우회하지 않는다. 역할·함수의 정확 이름과 signature는 구현 전 고정하며 현재 존재한다고 주장하지 않는다.
+
+0066_export_locked_metadata_reader.sql.pending:4~41의 migrator 검산·동명 역할/함수 존재 시 전체 거절·임시 migrator membership·schema CREATE 회수·PUBLIC EXECUTE 회수·app의 고정 함수 EXECUTE·postflight를 재사용한다. 0066의 artifact 잠금용 UPDATE 권한은 복사하지 않는다. fixed static SECURITY DEFINER 함수는 search_path를 pg_catalog로 고정하고 관계/함수는 schema-qualified로 참조하며 동적 SQL·caller relation/column 선택을 받지 않는다. 소유역할의 최소 열/정책/EXECUTE·membership 부재·schema CREATE 부재·FORCE RLS·기존 false/DML 보존을 postflight로 검산한다. 실제 role/GRANT/SQL 실행은 제외다.
+
+입력 후보는 project/request fullref, summary fullref(준비 단계는 부재), 원 accept command 식별/hash(준비 단계는 부재), 실제 session/actor/client, 닫힌 단계다. 이는 서버의 원 인증 Tx에서만 조립한다. SQL 함수는 session_user=anvil_v3_app와 fn01_active(session,actor,client)를 직접 검산하고, project 비보관·member 활성 OWNER/HANDOFF_ELIGIBLE·정확 request target·원 hash·기한·base 또는 이번 next/replay 관계를 실제 행에서 재구성한다. caller가 보낸 phase/base/command hash만으로 허가하지 않는다. 준비 단계는 원 current controller 및 정확 원 요청, 수락 전은 원 target+base, 수락 후는 같은 target+이번 수락의 next/불변 전후 이력, replay는 원 target+완전 stored 결과만 인정한다. 다른 요청·project·원 actor 위장·임의 과거 summary는 거절한다.
+
+함수 자체의 source SELECT에는 FOR UPDATE/SHARE를 사용하지 않는다. project/member/control 및 명령·요청 잠금은 기존 인증 Tx/accept 조립이 소유하고 함수는 같은 Tx에서 읽는다. 단, 기존0042:87 fn01_active 자체는 users/auth_sessions/clients FOR UPDATE를 수행하므로 무잠금 함수라고 표현하지 않는다. 원 auth Tx가 소유한 동일 인증행 잠금의 재검산이며 FN15 reader 역할에 UPDATE 권한을 추가하는 근거가 아니다. 잠금 순서·재진입은 실제 SQL 검수 대상으로 유지한다.
+
+읽을 자료는 0041 원 요청/요약·command/receipt/audit, project/member/control, 0070 writer head/events와 거기서 도달하는 공용 command/authorization_receipt/audit 및 approval request/decision/consumption이다. RLS SELECT 정책은 FN15 함수 소유역할만 대상으로 하며, 행의 project 및 고정 함수의 검산 범위를 벗어난 자료를 결과에 포함하지 않는다. app 직접 SELECT를 열지 않는다. SQL 결과는 서버 내부 검산용 최소 열이며 HTTP/UI에는 §5.2의 refs/watermark/gap projection만 전달한다. SQL이 JS private capability·OS proof를 검증했다고 표시하지 않는다.
+
+내부 결과는 원 db/Tx·실제 target/session·project/request/summary/command hash·단계·원 budget에 결박한 독립 불변 snapshot과 private provenance다. sourceScopes·승인 원문이 순수 core 검산에 필요한 경우 내부에서만 소유하고 공개 요약에 복제하지 않는다. Proxy/getter·다른 Tx/source instance·폐기된 수명·await 뒤 인증/원 기한 변경은 거절한다. #human/#ports를 fake base actor로 호출하지 않는다.
+
+공개 범주200refs/전체2MiB와 내부 chain의 기존10000/64MiB는 별도 분모다. 정상 chain을200개로 잘라 SAFE 또는 영구 UNKNOWN으로 만드는 정책을 추가하지 않는다. 기존 chain 상한 내 전체를 검산하고 요약에는 검산된 refs/워터마크만 투영한다. source별 내부 read bytes·wrapper/검산용 복사·누적 결과의 동시 보유 상한은 해당 typed source 상한의 합과 최대 중복사본 수로 별도 유한식을 고정한다. 정착 중 raw query buffer도 제외하지 않는다. 정확 식/원 row 선택열과 원 operation 최소기한 내 완료 가능성은 구현 전 검수 항목이며 새 무제한 read나 타이머 연장으로 해결하지 않는다. 초과/불완전은 source와 상한을 식별한 gap으로 반환한다.
+
+U1에서 아직 작성되지 않은 것은 위 목적제한 함수/정책의 exact SQL signature·열별 정책/쿼리, 두 순수 core 추출의 실제 조립, 내부 메모리 최대식과 source-set/watermark다. 원장 proof 검산과 actual current/fence/계속실행 공급자는 별개이며 후자는 실제 미등록이면 UNKNOWN/수락0이다. 합성 양성은 동일 생산/소비 코드를 fakeDB와 명시 보호포트로 검산하는 증거이고 실 DB RLS/OS 안전성 증거가 아니다. 현재 allowlist40 내 신규0073/reader와 기존 두 core 파일이 이 작업의 접점이며 실제 추가 경로가 필수이면 먼저 반환한다.
 
 ### 5.3 CAS 전후·replay의 검산 단계
 
@@ -169,6 +203,12 @@ CAS 뒤의 최종 재관측은 역할/기준이 바뀌지 않아야 한다는 �
 - control_handoff_storage_reservations 및 필요 최초 계상 anchor: §7의 실비용/불명 보존.
 - 새 protected-summary 생성의 command/receipt/audit도 새 원장에 포함한다. 기존0041의 operation CHECK나 v1 고정 원문은 느슨하게 바꾸지 않는다.
 - 새로운 mutable acceptance head가 필요하면 정확 물리행·최초 소유·byte/slot을 먼저 명시한다. 불변 이력을 head 하나에 숨기지 않는다.
+
+### 6.1.1 Main 확정 U3 비순환 hash/현재 grant 검산
+
+acceptance basis snapshot은 정확 원 requestRef/summaryRef/commandRef, before/next actor·client·generation·version tuple과 원 기록시각만 hash한다. 하위 grant/receipt/audit/result fullref를 넣지 않는다. commandRef는 결과 hash가 아닌 원 command 입력의 고정 ref를 사용하며 exact 물리 ref codec은 구현 전 검산한다. 생성 순서는 acceptanceRef → REVOKED/ISSUED 이벤트(acceptanceRef 참조) → receipt(원 acceptance와 두 이벤트 refs 참조) → audit(receipt 참조) → 최종 result(모든 refs 수집)다. command inputHash와 결과보관 hash는 구분하며 상호 hash 순환을 만들지 않는다.
+
+최초 project_control에는 과거 grant fullref가 없으므로 최초 anchor/before tuple과 이번 REVOKED 사실로 회수를 기록한다. 과거 ISSUED ref를 합성하지 않는다. 새 grant 현재성은 project_control exact next tuple과 해당 generation의 유일 ISSUED→acceptance→receipt→audit 역완결로 증명한다. 이후 회수된 과거 결과의 refs는 보존하되 현재 grant로 승격하지 않는다. unique/FK와 최종 역검산은 이 DAG에 맞춰 구현한다.
 
 참조는 같은 project의 exact id/version/hash FK, source command/receipt/audit와 immutable body/hash 양방향 검산을 둔다. request별 동일 base generation 수락1, project/새 generation1, command 동일 subject/client/hash1의 unique 조건을 둔다. 오래된 요청을 새 controller 대상으로 바꾸지 않는다.
 
@@ -204,22 +244,72 @@ COMMIT 시작 후 예외/응답 유실은 commandId와 원 body를 가진 UNKNOW
 
 새 작업에서 미리 알 수 있는 row projection 길이+고정 envelope를 계산해 예약하며, 저장 후 실제 table collector 합계로 정산한다. actual>reserved나 역참조/행수/종류 불일치는 COMMIT 전에 거절한다. 자기 reservation row 비용도 제외하지 않는다. phase/숫자/NULL/시각이 변하는 행의 계상 codec은 실제 값/NULL 정보를 보존하는 고정폭 표현으로 안정화하고 원문 canonical hash와 구분한다.
 
-r2 Main 읽기 결과(이 WI의 실제 실행 증거가 아님): 0072까지 기존0041 다섯 원장과 project_control 비용은 U/H/별도 소계 모두 미포함이다. 기존0059 quota_complete는 SETTLED/held 예약합, 0072는 SOURCE 역완결을 추가한다. Main 권장 내부 후보는 FN15 성분 F를 기존 used/held 대조에 통합하여 모든 기존 상한 소비자가 같은 값을 보는 방식이다. 별도 F를 임의 우회 가산하여 기존 used 일치 guard를 깨지 않는다. 신규 namespace/기존0041을 어느 기존 계상분모가 이미 포함하는지 고정 registry로 대조하고, 동일 실제 행 한번의 unified projection을 0073에서 연결한다. project_control 최초 command 귀속은 현재 row에 command_id가 없다는 사실을 숨기지 않는다. 검증 가능한 기존 계상 owner가 없으면 명시 최초 계상 anchor로 관측 사실/비용만 고정하고 과거 생성 주체/ref를 만들지 않는다.
+### 7.2 Main 확정 U2 F 통합·최초 계상
 
-**GO 전 미확정 U2:** 위 Main 권장 F 통합의 정확 projection/최초 계상·캐시 원장 이전 시점, quota_account/environment_configuration_account/connection_definition_capacity/native_preparation_capacity/document_source_capacity/최종 reserve의 동일 F 소비 및 quota_complete의 F 실제/미생성 예약 disjoint 역완결, 수락자 목적 제한 accounting caller의 SQL predicate, 고정폭 cost codec·reservation 자기 비용의 정확식/함수명. 과거0041 실제 행의 원 source command 귀속과 project_control 최초 관측 anchor 귀속을 구분하며, 과거 생성 command/실제 grant ref를 합성하지 않는다. 기존 예약 분기/한도·일반 OWNER public caller는 보존한다. 필요하면 기존 quota 모듈의 최소 공통 내부 조회 접점 경로를 Main이 allowlist에 추가한다. 현재22경로만으로 해결되었다고 주장하지 않는다. collector/분모/미해결 비용을 raw coverage=true로 닫지 않는다.
+0072까지 0041 다섯 원장과 project_control 비용이 기존 U/H에 미포함이라는 조사에 따라 FN15 독립 원장 F를 기존 잔액에 통합한다. used=U0+Factual, held=H0+Ffuture이며 각 실제 행/미생성 예약은 disjoint registry로 정확 한번 소유한다. 별도 합계를 guard 밖에 더해 기존 used 일치 검사를 우회하지 않는다. quota_account/environment_configuration_account/connection_definition_capacity/native_preparation_capacity/document_source_capacity 및 최종 reserve/complete 모두 동일 F를 소비해야 한다.
+
+신규0073 전체 Tx에서 기존0041/control의 최초 anchor와 F 잔액을 초기화하고 새 complete 정의를 원자 설치한다. 기존 실제 source command 귀속과 mutable control 최초 관측 anchor를 구분한다. 기존 row 누락/중복·역참조 불완전·기존 한도 초과면 forward 전체 실패이며 일부 설치/coverage 승격0이다. 현재 control의 최신 command로 소유를 옮기거나 과거 생성 ref를 합성하지 않는다.
+
+신규 생성은 0059 quota_adopt_creation(uuid,uuid,uuid,uuid,jsonb)의 Artifact total used 대입과 즉시 complete 사이에 정확 생성 anchor/Factual을 연결한다. manifest bytes/hash는 Artifact만 유지하며 FN15 비용을 Artifact manifest인 것처럼 바꾸지 않는다. account가 없는 정상 새 project는 정확 project/control INSERT와 원 createProject command·authorization receipt·audit·draft_creation_intent의 완성 계보를 확인하는 지연 trigger로 anchor만 만든다. xmin/시각 하나만으로 생성 권위를 만들지 않고 기존 quota_adopt_creation의 실제 관계 검산을 보존한다. anchor 생성만으로 quota VERIFIED 승격0이다. 기존 project의 최초 anchor 유실은 일반 쓰기에서 재생성하지 않고 무결성 오류로 닫는다.
+
+F 원장/anchor/reservation의 고정폭 계상 codec은 실제 값·NULL을 보존하고 plan/hash의 자기 참조를 만들지 않는다. reservation과 정산 자체의 실제 비용 및 미래 미생성 부분도 Factual/Ffuture에 분리해 complete로 역완결한다. 구체 함수명·projection·고정폭/NULL codec·예약 자기 비용식·초기화 잠금/지연 trigger의 exact predicate는 구현 전 검수 항목이다. 기존 예약 분기/한도·일반 OWNER public caller는 불변이다. 위 SQL 함수 정의 교체는 신규0073 안에서 수행하며 기존0059/과거 SQL 원문은 수정하지 않는다. 실제 quota 모듈 수정이 필요하다고 확인되면 정확 추가 경로를 먼저 반환한다.
 
 UNKNOWN hold는 자동 해제·삭제하지 않는다. 실제 확정 rollback/고정 정산 원행을 확인한 경로만 release하며 결과 불명은 조회만 한다. source-only SQL 파일 작성과 실제 적용·GRANT/기존 권한 변경은 별개다.
 
-## 8. 일반 변경과 OWNER 관리권한 분리
+## 8. 일반 변경과 OWNER 관리권한 분리 — r4 U4 내부 조립안
 
-수락 grant는 OWNER 승격이 아니다. 일반 변경 guard는 활성 OWNER 또는 유효 current handoff grant의 HANDOFF_ELIGIBLE을 현재 actor/client/generation·회수 상태에 exact 결박하고 원 명시 operation 정책/DENY/기한/일회승인을 그대로 소비한다. target 회원이라는 이유만으로 범용 변경을 허용하지 않는다. 거절 감사·source/정책 현재 재검산을 생략하지 않는다.
+수락 grant는 OWNER 승격이 아니다. 기존 currentProjectController와 public OWNER helper를 바꾸지 않고 별도 일반변경 guard를 둔다. 정확 operator/project/actor/client/controlGeneration·현재 미회수 control과 실제 수락 grant 역완결을 검사하고 기존 authorizeMaterial의 명시 operation 정책/DENY/기한/일회승인·현재 세션을 계속 소비한다. membership만 HANDOFF_ELIGIBLE이거나 control tuple만 맞는 것으로 허가하지 않는다. generic Repo가 documentOperations 전체를 새 일반변경 guard에 넘기는 방식은 금지한다.
 
-- savePermissionPolicy는 authorizeMaterial 예외 bootstrap이므로 별도 OWNER guard를 유지/추가해야 한다.
-- saveProjectMembership는 OWNER·최근 재인증·현재 제어·정책·마지막 OWNER/자기 승격 방지를 보존한다. 현재 미구현이면 이 WI로 그 기능을 새로 구현하지 않는다.
-- requestKnowledgeShare 출발 OWNER를 보존한다. currentProjectController 일반화로 출발 소유 권한이 풀리지 않게 해당 실제 caller에 별도 OWNER 조건을 둔다.
-- baseline-sources OWNER·승인 후보 OWNER·원 요청자 조회·결정 requiredDecider를 보존한다. 필수 수정이 이22 밖이면 사전 반환한다.
-- 기존 source/history 읽기 권한을 새 controller라는 이유만으로 확대하지 않는다. 새 grant의 범위는 해당 project의 단독 제어와 기존 허가된 일반 변경이다.
-- 역할 강제 OWNER 변경, 다른 사람 초대/공유·모바일 별도 승인 위임·새 policy 자동 발급·사용자/서버 owner 권한은 제외다.
+### 8.1 공유 grant 검산과 호출 분류
+
+신규 control-handoff/control-grant.ts는 acceptance→ISSUED/REVOKED→receipt→audit/최종 command 관계의 순수 검산과 최소 고정 DB projection reader를 분리한다. FN15 수락 모듈을 import하지 않아 Repo→accept→Repo 순환을 피한다. 일반 auth Tx가 실제 row를 읽고 검산한 immutable packet만 일반변경 guard/프로젝트 상세/FN15 current 판정에 소비한다. raw currentGrant=true·존재 count·caller fullref만으로 허가하지 않는다. 검산 결과는 같은 project/actor/client/generation/현재 control에 결박하며 각 await 뒤 다시 current/기한·회수를 확인한다. 과거 수락 성공이 현재 grant라는 뜻이 아니다. 최초 수락 때의 summary30초/원 요청·당시 세션/재인증 기한은 당시 유효성을 불변 이력으로 검산하는 조건이다. 현재 grant 조회에 그 과거 summary의 현재 미만료·old base의 현재성·원 세션의 현재 생존을 다시 요구하지 않는다. 현재 권한은 현재 active 로그인·사용자/client/회원·미회수 및 exact control actor/client/generation과 수락/발급/회수·receipt/audit의 불변 역완결로 검산한다. 계획 없는 grant TTL/자동회수·세션 변경만의 자동 강탈은 추가하지 않는다. 과거 접속시각·문서를 현재 OS 안전 근거로 사용하지 않는다.
+
+1차 일반문서 소비 후보는 saveDocumentDraft/recordContentReview/confirmDocument/proposeDocumentChange/importDocument/uploadArtifact/linkDocumentSource/proposeDocumentSourceChange/detachDocumentSource다. requestApproval/decideApproval은 아래 별도 후보·requiredDecider 조건을 더한다. 이는 operation별 정확 분기표이며 모든 domain을 허가하는 새 전체 allowlist가 아니다. 위 operation도 원 form/source/원작성자·특수승인/정책 조건에서 거절될 수 있다. 나머지 documentOperations와 assignmentContentCommand·saveCheckpoint/실행·등록·native·백업 등의 전용 소비선은 기존 OWNER helper를 유지한다. 별도 매핑 없이 이 WI의 HANDOFF_ELIGIBLE 일반기능 완료 범위로 세지 않는다.
+
+| 실제 접점 | r4 필요한 한정 변경 | 반드시 남길 조건/미완료 경계 |
+|---|---|---|
+| access/project-command.ts:63~69, command:162 | 원 currentProjectController 불변; Repo.command가 위 ordinary 문서/승인 operation일 때 별도 guard로 분기 | savePermissionPolicy는 별도 OWNER/current·재인증 bootstrap; 그 외 operation은 기존 helper. authorizeMaterial/원 receipt·replay/감사 불변 |
+| projects/repository.ts:209~229 | 기존 상세 DTO에서 HANDOFF_ELIGIBLE의 self HELD는 실제 현재 FN15 grant 검산 성공 때만 반환 | OWNER/VIEWER 기존 표시·조회/원 sourceDeclaration OWNER 경계 보존. grant 부재/회수/불완전은 HELD0; 기존 UNASSIGNED로 투영하며 exact 오류가 무결성 실패이면 성공 응답으로 숨기지 않음. 새 DTO/역할 필드0 |
+| design-trace/editor-api.ts:45~50 documentControl | OWNER 또는 HANDOFF_ELIGIBLE이 서버 검산 HELD+session actor/client+양의 generation을 만족할 때 기존 generation 소비 | VIEWER·OTHER_CLIENT/UNASSIGNED 거절, stale response/fence·원 document buffer/UNKNOWN 보존. 클라이언트 role만으로 허가0 |
+| documents/project-files.ts:41/57 | upload의 본문 수신 전·실제 저장 전 두 guard를 같은 일반변경 조건에 연결 | origin/CSRF/idempotency·Artifact bytes/hash/검사·정책·quota 유지 |
+| documents/project-documents.ts:59 및 save:156~ | proposal replay의 guard를 ordinary 분기와 정합; save/propose/import의 실제 storage 경로를 소비 | 문서 form은 SYSTEM 또는 실제 user 소유 USER_COMMON만 허용(:165); 수락으로 다른 사용자 공통양식/Artifact 원문·원작성자 선택 권한을 만들지 않음. 원 command/버전/hash/본문·receipt 귀속 보존 |
+| projects/project-storage-quota.ts:99~ | #current의 해당 ordinary operation만 새 grant guard 사용; prepare/reserve/start/publish/settle/replay 전체에서 같은 원문/current 소비 | saveCheckpoint 등 미매핑 operation은 기존 OWNER. 한도/미정착/단발/원 projection/불명 예약 보호 불변 |
+| documents/project-source-links.ts:40/102/106/113 | AUTO 또는 원 정책 아래 ordinary LINK/CHANGE의 옵션/prepare/check/최종 command에 같은 현재 grant 검산 | 옵션 조회는 가짜 command/승인소비0; DENY/없음 거절·기본포트412·원 Artifact·OS 미검증 보존. options 응답은 current 권위가 아님 |
+| approvals/project-approvals.ts:36/201 | 일반 승인 신규 요청의 effective-current는 원 requester/client/controlGeneration에 대한 OWNER 또는 검산된 현재 handoff grant로 판정 | 특수 후보의 OWNER/원 작성자/client는 그대로. 원 요청의 requiredDecider/scope/policy/기한·소비단발 유지. 옛 generation 요청을 새 수락자에게 이전하거나 snapshot 재작성0 |
+| 신규0073의 quota/문서 trigger 조립 | 아래 §8.3의 정확 ordinary branch에서만 실제 grant를 SQL로 검산 | 0059/0072/0003 과거 파일 불변·일반 bool/GUC 우회0·새 grant만으로 정책/소비 무시0 |
+
+### 8.2 OWNER·특수승인·원 주체 보존
+
+- savePermissionPolicy는 authorizeMaterial 예외 bootstrap이므로 별도 OWNER guard를 보존한다. 수락자 role을 OWNER로 바꾸지 않는다.
+- saveProjectMembership는 OWNER·최근 재인증·현재 제어·정책·마지막 OWNER/자기 승격 방지다. 현재 미구현이면 이 WI로 기능을 새로 만들지 않는다.
+- requestKnowledgeShare 출발 OWNER 및 baseline-sources OWNER/승인 후보 OWNER·원 요청자 조회·결정 requiredDecider를 보존한다.
+- 공개 writer/native/등록·backup·특수 승인 후보의 명시 OWNER/원 작성자/원 client 검산은 일반 guard로 대체하지 않는다. 실제 원문 접근·등록권한이 없으면 계속 거절한다.
+- linkDocumentSource/proposeDocumentSourceChange의 기본 AUTO와 REQUIRE_APPROVAL의 특수 OWNER target 검산을 분리한다. approvals/project-approvals.ts:79의 proposeDocumentSourceChange/detachDocumentSource는 기존 assertSourceDetachApprovalTarget를 통과해야 한다. 그 OWNER 후보 guard/원 target은 읽기 고정이며 HANDOFF_ELIGIBLE를 통과시키기 위해 수정하지 않는다. 따라서 AUTO 일반 source 경로와 달리 이 특수승인 경로는 여전히 거절될 수 있음을 UI/결과/완료 범위에 표시한다. 원 정책을 AUTO로 바꾸거나 승인 소비를 생략하지 않는다.
+- requestApproval/decideApproval은 새 현재 세대와 새 요청에 대한 원 일반 허가를 소비한다. 후보 requestedSubjectRef·controlGeneration·requiredDecider·원 scope/hash·정책·기한은 그대로이며 옛 승인 요청을 수락 grant로 되살리지 않는다. requiredDecider가 현재 수락자와 다르면 그 사람으로 위장하거나 자동 결정하지 않는다.
+
+### 8.3 SQL 저장·quota에서 남는 실제 OWNER 접점
+
+TypeScript guard만 바꾸어 source 저장 완료라고 하지 않는다. 최신0072 quota_current:330은 OWNER를 요구하고, 0059 quota_account:79는 OWNER만 잠그며,0072 guard_document_import_write:514도 OWNER member를 JOIN한다. 따라서 신규0073에서 기존 OWNER public caller/분기는 보존하면서 위 ordinary operation의 HANDOFF_ELIGIBLE+실수락 grant+exact 현재 control+원 정책/receipt를 검산하는 목적 제한 내부 분기를 연결해야 한다. quota_account의 기존 공개 OWNER 입력을 전역 완화하지 않으며 ordinary quota용 고정 내부 조회 함수 후보를 같은0073에 두고 TypeScript #current가 실제 원 operation으로 소비한다. 이 함수의 exact signature/소유역할·EXECUTE/정책·U2 F 동일식은 구현 전 검수 항목이다. U1 proof reader의 SELECT 역할을 저장 권한 역할로 전용하지 않는다.
+
+0003_project_documents.sql:37~64의 guard_document_draft_write는 OWNER 고정이 아니라 실제 command·receipt·control generation·원 author/client/hash를 검사한다. 그러므로 이를 OWNER 회귀로 오인해 완화하지 않는다. document version의 실제 작성자는 새 authenticated actor이고 과거 원문/author는 불변이다. 개인 USER_COMMON form·원 Artifact/원 import/proposal 선택 guard의 소유조건도 전역 완화하지 않는다. 새 수락자가 접근 가능한 실제 form/원자료가 없으면 해당 작업은 명시 거절되며 다른 사람의 원문을 자동 공개하지 않는다.
+
+신규0073의 문서/Artifact/import/proposal/source trigger는 현재 최신 정의 본문을 기준으로 exact ordinary branch만 추가하며 기존 원 operation·승인·hash/bytes·한도/역완결을 보존한다. trigger 본체를 임의 성공 callback에 위임하지 않는다. 실제 일치 row/실 grant 검사 없이 TypeScript 성공을 DB 검산으로 대신하지 않는다. 추가 guard가 발견되면 정확 함수·operation·필요 조건을 먼저 반환하고 미완료로 표시한다. 기존 과거 SQL 파일 수정은 허가하지 않는다.
+
+### 8.4 수락한 current의 FN15 후속 인계 소비
+
+ControlAccessPage.tsx:41/52/73/101의 CONTROLLER 목록/prepare 버튼은 현재 OWNER만 허용한다. control-request-read.ts:126 canController 역시 OWNER이며 control-handoff-summary-store.ts:82/269와 control-discovery-read.ts:148이 소비한다. UI만 role을 추가하면 서버에서 계속 닫히므로 이 실제 경로를 함께 연결한다.
+
+control-handoff-pg.ts:observe의 실제 OWNER/HANDOFF_ELIGIBLE member 복원 뒤 동일 auth Tx에서 현재 handoff grant packet을 검산한다. public v1 observation에 caller bool을 추가하지 않고 원 source instance/Tx/access identity에 결박한 private 결과를 controller 판정에 공급한다. 기존 OWNER 판정은 유지하고 HANDOFF_ELIGIBLE는 그 실제 current packet이 있을 때만 목적 제한 controller 판정을 통과한다. 기존 public OWNER helper를 일반화하지 않는다. OWN 조회와 CONTROLLER 조회를 합치거나 다른 사람의 과거 raw proof를 공개하지 않는다.
+
+기존 public checkControl/원 state DTO의 HELD·actor/client/basis를 서버가 실제 grant 검산 뒤 생산하고, 같은 source/기한/원 auth 소유를 UI와 prepare·discovery가 소비한다. 새 DTO 필드나 role 승격은 없다. 새 current가 만드는 보호 요약/다음 수락은 원 request/base·기한을 다시 검산하며 v1 SYNTHETIC_ONLY/acceptanceEnabled=false의 원문/해시·과거 조회는 불변이다. 후속 준비에서 실 current/fence 공급자가 없으면 새 controller여도 UNKNOWN/수락0이다. FN16 export 전용 OWNER 관측(control-handoff-pg.ts:462)은 이 FN15 controller 확장의 대상이 아니며 그대로 보존한다.
+
+### 8.5 r4 한정 검증·남는 경계
+
+실제 Repo detail→documentControl→upload/normal command/quota/store→receipt의 양성·grant 없는 가짜 self control/회수/다른client·옛generation·무정책/DENY/만료·특수OWNER 승인 거절을 fakeDB/메모리 UI로 검증한다. Repo와 generic guard가 같은 순수 grant 검산을 소비하고 별도 fabricated HELD를 쓰지 않는다. 실제 저장 SQL은 정적 source/행 관계와 실제 PG 인수를 분리한다.
+
+새 현재 HANDOFF_ELIGIBLE의 checkControl/CONTROLLER 발견·원 request 조회·새 보호 summary prepare→다음 target 수락의 생산소비도 기존 source/최소기한과 연결해 검증한다. 옛 v1 summary는 계속 수락0이고 old response/ABA/UNKNOWN 원 명령은 보존한다. 승인 목록은 새 일반 요청의 현재성만 바뀌고 옛 요청 REVOKED/만료와 특수OWNER 후보는 변하지 않아야 한다.
+
+미매핑 일반 domain/assignment/saveCheckpoint/실행·등록/native/백업·관리/특수승인 caller와 실제 원문 접근이 막힌 작업은 이40경로로 완료됐다고 하지 않는다. U1 exact SQL/source-set·실 공급자, U2 projection/정산·초기화, U3 exact codec/DAG 검수도 여전히 구현 전이다. 이들은 r4 문서만으로 PASS/실제사용가능이 되지 않는다.
 
 ## 9. UI12 원명령·불명·현재성
 
@@ -262,10 +352,10 @@ UNKNOWN hold는 자동 해제·삭제하지 않는다. 실제 확정 rollback/�
 
 | 항목 | 현재 초안의 권장·확정할 사항 | 실패시 |
 |---|---|---|
-| U1 protected source-set/current | §5.2의 수락자 전용 SQL/순수 검산 추출 조립·기본 거절 RLS/실 공급자, §5.3의 BEFORE/AFTER_ACCEPT 단계분리, 고정 source-set/워터마크·정착·현재 proof·계속실행과 §4 원형 | UNKNOWN/수락0, count0·bool로 READY0 |
-| U2 실제 저장 계상 | §7 Main 권장 F의 used/held/모든 capacity·reserve·complete 동일 반영·미생성예약 역완결·목적별 caller·최초 계상·실제 row codec/필수 경로 | IMPLEMENTATION_GO0, 정확 추가 경로를 Main에 반환 |
-| U3 물리 제약/결과 | §3/6 exact 보호 요약·수락 result/grant 이력·서버 전용 self-reference 없는 hash/FK/unique/CAS·공개 route의 한정 정합 | 기존 DTO/0041 불변, 임의 fullref0 |
-| U4 역할 경계 | §8 generic current grant의 검증과 기존 OWNER 관리/공유/결정 조건의 정확 caller·SQL guard | 역할 자동 승격/조건 삭제0, 추가 경로는 사전 반환 |
+| U1 protected source-set/current | §5.2.1 Main 확정 전용 SELECT 역할/RLS·fixed reader/순수 core·분모 분리의 exact SQL/내부 유한식 검수; actual current/fence 공급자 부재는 별도 | UNKNOWN/수락0, count0·bool로 READY0 |
+| U2 실제 저장 계상 | §7.2 Main 확정 F 통합/0073 원자 초기화·신규 creation anchor·complete·고정폭 비순환 비용식의 exact 구현 검수 | IMPLEMENTATION_GO0, 정확 추가 경로를 Main에 반환 |
+| U3 물리 제약/결과 | §6.1.1 Main 확정 acceptance→grant events→receipt→audit→result DAG와 최초 before anchor/현재 grant 역완결의 exact codec/FK 검수 | 기존 DTO/0041 불변, 임의 fullref0 |
+| U4 역할 경계 | §8 별도 ordinary guard·공유 control-grant·Repo HELD/documentControl·upload/quota/store/FN15 후속 인계의 실제 소비; 미매핑 operation/특수OWNER는 기존 거절 보존 | 역할 자동 승격/조건 삭제0, 추가 경로는 사전 반환 |
 
 U1~U4는 기존 FN15 의미를 기술적으로 닫는 항목이며, DTO/물리형식 미작성만으로 전체 accept 재승인을 요구하지 않는다. Main이 기존 근거 안의 내부 방법·경로·형식을 확정하고 독립 검토한 뒤 exact WI/hash/파일 소유를 dispatch한다.
 
@@ -275,7 +365,7 @@ U1~U4는 기존 FN15 의미를 기술적으로 닫는 항목이며, DTO/물리�
 
 이 문서 작성 결과는 설계 초안이며 구현 PASS가 아니다. 이후 구현자는 시작/끝 지문·정확 변경 목록·RED/준비 오류·명령/exit/count/시간·미검증·live/자원·rollback·writer 반환을 보고한다. Main이 문서/WORK_STATUS/Git·독립 검수·통합을 소유한다.
 
-완료의 최소 단위는 실제 서버의 새 보호 생산/수락 consumer→같은 Tx/CAS/비용/완결→UI12/기존 일반 변경 guard까지 source 연결이며 helper/interface만 추가한 상태는 미완료다. 생산 근거가 없는 경우에는 기본 UNKNOWN/수락0을 실제 경로로 검증하고 미등록 선행을 정확히 남긴다. 합성 양성은 실제 OS 안전·실 사용자 제어 전환·전체 FN15/계획 완료가 아니다.
+완료의 최소 단위는 실제 서버의 새 보호 생산/수락 consumer→같은 Tx/CAS/비용/완결→UI12/§8에서 매핑한 일반문서·승인·후속 인계 current 소비까지 source 연결이며 helper/interface만 추가한 상태는 미완료다. 생산 근거가 없는 경우에는 기본 UNKNOWN/수락0을 실제 경로로 검증하고 미등록 선행을 정확히 남긴다. 합성 양성은 실제 OS 안전·실 사용자 제어 전환·전체 FN15/계획 완료가 아니다.
 
 source rollback은 Main이 승인된 checkpoint의 정확 이번 경로만 회수한다. 기존 grant/세대·감사 원문/보관 요청을 삭제하거나 세대를 되돌려 양쪽 권한을 살리지 않는다. 0073은 미적용 상태 유지, 실제 DB downgrade/ACL/자원 정리는 이 WI로 허가하지 않는다.
 
@@ -283,3 +373,23 @@ source rollback은 Main이 승인된 checkpoint의 정확 이번 경로만 회�
 
 - r1 부모 E2850D9D3E9EC439C13CE039D873A2B04B2001A32E53C88CB77DDDD11052550E: Main canonical/mirror 정합 기준.
 - r2: Reviewer I1의 수락자 public current 재사용 오류와 CAS 후 old-base 최종검사 오류를 수정했다. 순수 검산 추출 후보 기존2파일을 추가해 allowlist22로 조정했고 public OWNER/current guard는 불변이다. SQL 목적제한 reader·실 공급자 미구현은 U1, Main 권장 F 통합은 U2 확정후보로 남긴다. 문서 보완만 수행하며 구현/실행 GO0이다.
+
+- r3 부모965600BCC272949CC3980D646C54E31295FEA86988F38F850087754200F6F27B: Main 확정 U1 전용 SELECT 역할/RLS·인증행 잠금 예외와 내부/공개 분모 분리, U2 F 초기화/생성 anchor·잔액/complete, U3 비순환 참조 순서를 본문에 통합했다. U4는 operation별 검토 중이며 exact SQL/비용식·실 공급자 부재를 완료로 표시하지 않는다. 문서만 보완, 구현/실행 GO0.
+
+- r4 부모8B443D8F4D8E08123E900FE8E846E0ABE0850DB3EE5662F7FC4390239EFB8685: Main U4 방향을 별도 ordinary guard/공유 grant·기존 상세 HELD/documentControl·실 upload/quota/store·FN15 후속 인계 소비로 통합하고 후보40경로로 구체화했다. 기존 public OWNER helper/관리·특수승인·원문 권한은 보존하며 미매핑 domain/실 SQL·공급자 미연결을 별도 미완료로 남긴다. 구현/실행 GO0.
+
+## 14. Main source 구현 확정과 위임 범위 — r5
+
+기존 승인 INTERFACES13.6/15.2와 FUNCTION_WORK FN15를 근거로 source 구현을 진행한다. U1~U3 r3 독립 C0/I0 및 U4 r4 독립 C0/I0는 문서 정합 증거이며 구현 합격이 아니다. 40경로(기존27·신규13)/0073 부재·diff check는 HEAD998994a5에서 확인했다. Main의 이 확정은 새 사람 권한·Agent 실행·DB 적용을 허가하지 않는다.
+
+- U1: §5.2의 FN15 전용 SELECT 역할·명시 RLS·정적 SECURITY DEFINER·현재 target/base/next/replay 구분을 구현한다. 기존 OWNER·false 정책·일반 raw 조회·DML을 보존한다. exact SQL signature/열별 쿼리·순수 검산 조립·source-set/watermark·내부 유한 메모리식은 고정된 목적/한도 안의 구현 상세로 Primary가 정하고 TDD·독립 검수에 제출한다. 현재 공급자가 없으면 실제 경로는 UNKNOWN/수락0이며 명시 합성 양성을 실제 공급자 연결로 승격하지 않는다.
+- U2: §7의 F 독립 원장/used·held 통합과 기존 프로젝트 forward 원자 초기화·신규 생성 anchor를 구현한다. 기존 예약·manifest·한도·별도 소계·권한 분기는 유지한다. exact 물리 plan·고정폭 cost codec·예약 자체 비용의 유한식·FK/역완결·guard 조립은 구현 상세다. SQL 파일을 작성하고 합성으로 검산하되 PG/role/GRANT/DDL은 실행하지 않는다.
+- U3: §6의 비순환 command input→acceptance basis→grant events→receipt→audit→result와 현재 tuple/CAS·역완결을 구현한다. 최초 anchor를 과거 grant 발급으로 만들지 않는다. COMMIT 불명·단절은 원 명령/결과 조회로만 다루고 자동 재호출·다중 grant·세대 역전환0이다.
+- U4: §8의 일반문서9 operation·기존 승인 엔진의 정확 분기와 실제 project 상세 HELD/documentControl·upload/quota/store·후속 FN15 인계를 연결한다. 기존 public OWNER helper·관리·특수 승인/원문·원작성자·requiredDecider는 유지한다. 미매핑 일반 domain은 원 FN15/전체 작업계획의 미완료로 남긴다. 이 source package가 전체 FN15의 최종 완료 기준을 줄이지 않는다.
+- 구현 순서는 보호 생산/원문 검산과 저장 비용→요약/수락·현재 grant→일반 서버/UI 소비로 이어지되 하나의 연결된 기능을 목표로 한다. 사용하지 않는 adapter나 시험 전용 복사 handler만 작성하고 완료하지 않는다. 내부 단계별 checkpoint는 허용하나 단계 일부를 최종 수락 기능 완료로 보고하지 않는다.
+- 새 테스트는 실제 production 호출선/상태/거절·정착·저장 결과를 검산한다. 준비 RED와 실제 행동 RED를 구분하며, 기대값·원 기한·기존 보안 검사는 완화하지 않는다. 모델/합성 DB 검증은 실제 SQL/RLS·두 기기·OS/Agent 인수와 구분한다. 필요한 직접/인접 검증만 선택하고 unchanged 전체 회귀는 반복하지 않는다.
+- 실제 키·DB·권한/역할·정책 적용·서비스·Agent·제품 네트워크·OS·실자료/백업 조사·컴파일/물리 QA는 금지다. 제품/시험 source 읽기는 허용한다. 외부 자원이나 별도 임시 QA가 필요하면 생성하지 말고 정확 이름·이유·수명·범위를 Main에 반환한다. 메모리 합성 및 noEmit/메모리 build는 source 검수 범위다.
+- Main은 기존 단일 Primary만 code writer로 지정하고 같은40경로를 동시에 수정하지 않는다. Primary는 subagent를 만들지 않는다. 실패·미확정·추가 경로/계약 필요가 있으면 현재 변경과 정확 근거를 반환한다. 내부 구현 방법은 Main이 판단하며 기존 기능 전체의 재승인을 다시 요청하지 않는다. 제품 범위/권한·원문/비용·공개 의미가 실제로 달라지는 delta만 별도 분류한다.
+- 완료 제출은 exact 변경 파일/SHA·실행 명령/exit/count/시간·RED/보완·미실행·미검증·자원/실효과0·writer 반환을 포함한다. Main은 독립 검수·집중 재확인·WORK_STATUS·기존 branch checkpoint/private 게시를 맡는다. PR/main 병합·배포·전체 완료는 이 source GO에 포함하지 않는다.
+
+Ruling: 이미 승인된 FN15의 source 구현 상세를 Main 권한으로 확정하고 진행한다 — 별도 사용자 역할이나 실제 효과를 추가하지 않으며, 미작성 SQL/codec만으로 전체 기능 재승인을 반복하지 않기 위함 — 잘못된 내부 상세는 같은 package에서 TDD·독립 검수로 재작업하고 실제 효과는 발생시키지 않는다.
