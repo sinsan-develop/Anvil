@@ -70,3 +70,18 @@ test('정적: 두 forward의 HE membership delta를 역치환하면 기존 invok
  assert.ok(helper.indexOf('2097314')<helper.indexOf('context=raw::jsonb'));for(const required of ["anvil.fn01_json(context) IS DISTINCT FROM raw","c.request_hash IS DISTINCT FROM anvil.fn01_hash(q)","actual_generation IS DISTINCT FROM generation","pc.generation IS DISTINCT FROM c.control_generation","ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)"])assert.ok(helper.includes(required),required);
  assert.doesNotMatch(helper,/GRANT|CREATE POLICY|SET ROLE/);
 });
+
+
+test('정적 import 연결: 최종0072 regular membership delta만 forward하고 COLLECT/Owner/invoker 원문은 동일하다',async()=>{
+ const s=await sql(),original=(await readFile(new URL('../../../db/migrations/0072_document_source_observation.sql.pending',import.meta.url),'utf8')).replaceAll('\r\n','\n'),head='CREATE OR REPLACE FUNCTION anvil.guard_document_import_write()',start=original.lastIndexOf(head),before=original.slice(start,original.indexOf('$$;',start)+3),at=s.lastIndexOf(head);assert.ok(at>=0,'최종0072 import guard forward 없음');
+ const body=s.slice(at,s.indexOf('$$;',at)+3),delta="(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND c.operation IN('importDocument','saveDocumentDraft') AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,c.operation)))";
+ assert.equal(body.split(delta).length,2);assert.equal(body.replace(delta,"m.participation='OWNER'"),before);const boundary="IF current_user<>'anvil_v3_app'";assert.equal(body.slice(0,body.indexOf(boundary)),before.slice(0,before.indexOf(boundary)));assert.doesNotMatch(body,/SECURITY DEFINER/);
+ const helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));assert.ok(helper.includes("op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument')"));
+});
+
+
+test('정적 import 연결: 원request file/form·null/0·save 선택과 receipt를 결박하며 FAILED/UNSUPPORTED 보관을 제한하지 않는다',async()=>{
+ const s=await sql(),body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));
+ for(const part of ["q->'targetId' IS DISTINCT FROM 'null'::jsonb","q->'expectedVersion' IS DISTINCT FROM '0'::jsonb","ARRAY['fileRef','intendedFormRef','sourceRefs']","q->'payload'->'sourceRefs' IS DISTINCT FROM '[]'::jsonb","q->'payload'->'fileRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'originalRef'","q->'payload'->'intendedFormRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'intendedFormRef'","q->'payload'->'importCandidateRef' IS DISTINCT FROM c.result_ref->'data'->'importCandidateRef'"])assert.ok(body.includes(part),part);
+ const at=body.indexOf("IF op='importDocument'"),end=body.indexOf('END IF;',at);assert.doesNotMatch(body.slice(at,end),/candidate[^;]*status[^;]*READY/);assert.ok(body.includes("WHEN insufficient_privilege THEN"));assert.ok(body.includes("RAISE;"));
+});

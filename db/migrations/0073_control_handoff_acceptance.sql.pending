@@ -930,11 +930,11 @@ BEGIN
 END;$fn15_forward_f_initialization$;
 
 GRANT EXECUTE ON FUNCTION anvil.fn01_json(jsonb),anvil.fn01_hash(jsonb),anvil.fn15_basis(anvil.project_control) TO anvil_v3_fn15_reader_owner;
--- FN15 일반문서 네 연산의 현재 인증 context만 소비한다. GUC 자체는 허가/증거 boolean이 아니다.
+-- FN15 일반문서 기본 네 연산과 가져오기의 현재 인증 context만 소비한다. GUC 자체는 허가/증거 boolean이 아니다.
 CREATE FUNCTION anvil.fn15_ordinary_document_command_current(pid uuid,cid uuid,op text) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE raw text;context jsonb;q jsonb;c anvil.commands;pc anvil.project_control;sid uuid;generation bigint;actual_generation bigint;
 BEGIN
- IF session_user<>'anvil_v3_app' OR op IS NULL OR op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange') THEN RETURN false;END IF;
+ IF session_user<>'anvil_v3_app' OR op IS NULL OR op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument') THEN RETURN false;END IF;
  raw=current_setting('anvil.fn15_document_context',true);
  IF raw IS NULL OR octet_length(convert_to(raw,'UTF8'))>2097314 THEN RETURN false;END IF;
  context=raw::jsonb;
@@ -953,6 +953,14 @@ BEGIN
  IF op='recordContentReview' AND(q->'payload'->>'targetKind' IS DISTINCT FROM 'DOCUMENT' OR NOT anvil.checkpoint_keys(q->'payload',ARRAY['targetKind','targetRef','criteriaVersion','items','outcome','reason'])
  OR q->'payload'->'targetRef'->>'id' IS DISTINCT FROM q->>'targetId' OR q->'payload'->'targetRef'->'version' IS DISTINCT FROM q->'expectedVersion'
  OR c.result_ref->'data'->'ref' IS DISTINCT FROM q->'payload'->'targetRef') THEN RETURN false;END IF;
+ IF op='importDocument' AND(q->'targetId' IS DISTINCT FROM 'null'::jsonb OR q->'expectedVersion' IS DISTINCT FROM '0'::jsonb
+ OR NOT anvil.checkpoint_keys(q->'payload',ARRAY['fileRef','intendedFormRef','sourceRefs']) OR q->'payload'->'sourceRefs' IS DISTINCT FROM '[]'::jsonb
+ OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'IMPORT_CANDIDATE'
+ OR q->'payload'->'fileRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'originalRef'
+ OR q->'payload'->'intendedFormRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'intendedFormRef'
+ OR c.result_ref->'data'->'artifactRef' IS DISTINCT FROM q->'payload'->'fileRef'
+ OR c.result_ref->>'targetId' IS DISTINCT FROM q->'payload'->'fileRef'->>'artifactId' OR c.result_ref->'version' IS DISTINCT FROM 'null'::jsonb) THEN RETURN false;END IF;
+ IF op='saveDocumentDraft' AND q->'payload'->'importCandidateRef' IS DISTINCT FROM c.result_ref->'data'->'importCandidateRef' THEN RETURN false;END IF;
  -- UUID는 원 AccessRepository callback에서 왔다. 다른 활성 session 하나로 바꾸지 않는다.
  PERFORM anvil.fn01_active(sid,c.actor_id,c.client_id);
  SELECT credential_generation INTO actual_generation FROM anvil.auth_sessions WHERE id=sid AND user_id=c.actor_id AND client_id=c.client_id;
@@ -1008,6 +1016,52 @@ BEGIN
         AND c.result_ref->'data'->'reviewRef'->>'outcome'=NEW.outcome
         AND NEW.criteria_snapshot_json->'formRef'=jsonb_build_object('id',v.form_definition_id,'version',v.form_version,'contentHash',v.form_hash)) THEN
     RAISE EXCEPTION 'PROJECT_DOCUMENT_REVIEW_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_document_import_write() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE command_row anvil.commands%ROWTYPE; candidate anvil.document_imports%ROWTYPE;
+BEGIN
+
+  IF current_user='anvil_v3_app' AND TG_TABLE_NAME='document_imports' AND EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id=NEW.command_id AND c.operation='proposeDocumentSourceChange') THEN
+   PERFORM anvil.document_source_current(NEW.command_id);
+   IF NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(NEW.candidate_json)
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.artifacts b ON b.project_id=c.project_id AND b.id=NEW.original_artifact_id AND b.state='READY'
+     WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'choice'='COLLECT_PROPOSAL'
+     AND c.result_ref->'data'->'sourceEvent'->'snapshot'->>'importId'=NEW.id::text AND c.result_ref->'data'->'importCandidate'=NEW.candidate_json
+     AND NEW.candidate_json->>'id'=NEW.id::text AND NEW.candidate_json->>'status'='READY' AND NEW.candidate_json->'originalRef'=anvil.fn01_ref(b)
+     AND NEW.candidate_json->'extractedContentRef'=anvil.fn01_ref(b) AND c.result_ref->'data'->'sourceEvent'->'snapshot'->'observation'->'snapshot'->'artifactRef'=anvil.fn01_ref(b)
+     AND NEW.candidate_json->'intendedFormRef'=jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash)) THEN RAISE EXCEPTION 'DOCUMENT_SOURCE_EXACT_IMPORT_REQUIRED';END IF;
+   RETURN NEW;
+  END IF;
+  IF current_user<>'anvil_v3_app' THEN RETURN NEW; END IF;
+  SELECT c.* INTO command_row FROM anvil.commands c
+    JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+    JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND (m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND c.operation IN('importDocument','saveDocumentDraft') AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,c.operation))) AND m.revoked_at IS NULL
+    JOIN anvil.projects pr ON pr.id=c.project_id AND pr.archived_at IS NULL
+    JOIN anvil.permission_policies p ON p.project_id=c.project_id AND p.id::text=c.policy_ref->>'id' AND p.head_version=(c.policy_ref->>'version')::bigint
+    JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='PROJECT' AND r.scope_id=c.project_id AND r.policy_ref=c.policy_ref
+    WHERE c.id=NEW.command_id AND c.state='APPLIED' AND c.project_id=NEW.project_id AND c.actor_id=NEW.created_by AND c.client_id=NEW.client_id
+      AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true);
+  IF command_row.id IS NULL THEN RAISE EXCEPTION 'IMPORT_AUTHORIZATION_REQUIRED' USING ERRCODE='42501'; END IF;
+  IF TG_TABLE_NAME='document_imports' THEN
+    IF command_row.operation<>'importDocument' OR command_row.expected_version<>0
+      OR command_row.result_ref->'data'->'candidate' IS DISTINCT FROM NEW.candidate_json
+      OR NEW.candidate_json->>'id' IS DISTINCT FROM NEW.id::text
+      OR NOT EXISTS(SELECT 1 FROM anvil.artifacts a WHERE a.project_id=NEW.project_id AND a.id=NEW.original_artifact_id AND a.state='READY'
+        AND NEW.candidate_json->'originalRef'=jsonb_build_object('artifactId',a.id,'bytes',a.bytes,'contentHash',a.content_hash,'mediaType',a.media_type))
+      OR NEW.candidate_json->'intendedFormRef' IS DISTINCT FROM (CASE WHEN NEW.form_definition_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash) END)
+      THEN RAISE EXCEPTION 'IMPORT_CANDIDATE_REQUIRED' USING ERRCODE='42501'; END IF;
+  ELSE
+    SELECT * INTO candidate FROM anvil.document_imports WHERE project_id=NEW.project_id AND id=NEW.import_id;
+    IF command_row.operation<>'saveDocumentDraft' OR command_row.result_ref->'data'->>'importCandidateRef' IS DISTINCT FROM NEW.import_id::text
+      OR command_row.result_ref->>'targetId' IS DISTINCT FROM NEW.document_id::text OR (command_row.result_ref->>'version')::bigint IS DISTINCT FROM NEW.version
+      OR candidate.candidate_json->>'status' IS DISTINCT FROM 'READY'
+      OR NOT EXISTS(SELECT 1 FROM anvil.document_artifact_links l WHERE l.project_id=NEW.project_id AND l.document_id=NEW.document_id AND l.version=NEW.version AND l.artifact_id=candidate.original_artifact_id)
+      THEN RAISE EXCEPTION 'IMPORT_EXPLICIT_SELECTION_REQUIRED' USING ERRCODE='42501'; END IF;
   END IF;
   RETURN NEW;
 END;

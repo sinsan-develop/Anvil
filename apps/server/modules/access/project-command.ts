@@ -72,7 +72,7 @@ export async function currentProjectController(db: PoolClient, actor: Authentica
   if (Number(control.generation) !== request.controlGeneration) throw new AuthFailure('CONTROL_GENERATION_CONFLICT', 409);
   return control;
 }
-const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange']);
+const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument']);
 const fn15HeActors=new WeakSet<object>();
 type Fn15DocumentContext={actor:AuthenticatedIdentity;actorId:string;clientId:string;session:AuthenticatedIdentity['authSession'];credentialGeneration:number;request:ProjectCommand;requestHash:string;used:boolean};
 const fn15DocumentContexts=new WeakMap<PoolClient,Fn15DocumentContext>();

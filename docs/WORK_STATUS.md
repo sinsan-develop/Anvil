@@ -7482,7 +7482,7 @@
 
 | 업무 | 상태 | 현재 요약 | 다음 수행·검수 |
 |---|---|---|---|
-| FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 인증 기반과 빈 초안→원자 생성/owner·client 제어1/receipt·감사·snapshot·재조회/중복/격리/DB 실패 rollback 확인. 실제 사용자/지속 QA 프로젝트0 | 기존 소스/기준선·복구/초대·실제 UI DB 여정 |
+| FN01 프로젝트 원본·접근·기준선 | [2] | Main 어울. 기존 인증·원자 생성/owner·제어/receipt·감사·격리/rollback 확인 이력 보존. 2026-11-03 private4d517f4e에서 참여권한 관리·불변 이력·정확 일회 승인·UI01/08 source 한정 검수. DB0074 미적용·실제 사용자 여정 미확인 | 기존 소스/기준선·복구/초대와 실제 DB·served·사용자 인수 잔여. source 검수를 전체 기능 완료로 승격하지 않음 |
 | FN02 내장/사용자 방법론·그래프 | [2] | Main 어울. 내장/공통본과 생성 초안 exact graph 검토/확정·소유·현재 버전·최신 REWORK 차단/프로젝트 전용 원본·고정 snapshot 실제 API/DB 확인 | 기존 프로젝트 개정/적용 전환·전체 편집/실제 UI DB 여정 |
 | FN03 문서 가져오기·양식·확정 | [2] | Main 어울. 원문/불변 버전·검토/확정·제안/후보 재개·충돌/대상 교체·고정 적용 단계/정확 양식 연결 actual6cdb21cb·forward40·QA 잔여0 | 소스 실관측/드리프트·실제 사용자 화면 DB 여정 |
 | FN04 설계 추적·계획·변경 영향 | [2] | Main 어울. AF02/AF03 위치·AF04 업무/선행·trace edge·계획 검토/확정/영향 이력의 기존 범위 한정 API/DB, 최신 원문 왕복은 합성 후보 검증 | 실제 실행/시험의3상태축·설계 변경 적용/계획개정·전체 실제 UI DB 여정 |
@@ -13715,3 +13715,17 @@ git diff --check
 - 최종SQL67696FDD3695199E2BE3450669D903BD286E6D87FE05361B7B2A75CE58A3EB96/33602B/CR0·service C32D51F62CE30D6D97BB4A9518E2EDDF5BBB9D527A9C05CE9C06EEFEF02DBAD0·schema시험E76387C7E3E7AA3CD7A447E547ECA392A3CD449AD44B1229FB14AE3BD9F87224다. Main0607e4는최종22·보호3·WI33C/승인51292지문일치와local/private6e3·localmain044304/private mainf976·정확developmentURL·diff0를확인했다.
 - 결과 docs/04_test_reports/AV3/FN01_PROJECT_MEMBERSHIP_SOURCE_RESULT_20261103.md SHAB8AFA7A00181536B1DAE7D5A4358198029227B09BE0823D9F6368635F97739A5. 검토구간추가미해결C/I없음의source한정이며실제DB/권한/회원·정책·키·서비스·Agent/네트워크/served·OS·사용자인수NOT_RUN·전체FN01/Stage/계획미완료다. 최초소실검사는UNKNOWN을보존한다.
 - 정확22제품/시험+Main6문서(현황/결과/WI/채택원문/FN15후속준비/미채택FN11후보)를기존branch정상checkpoint로보존한다. 보호3은비게시/무변경이고신규branch/force/main쓰기/PR/merge/배포0다. 후속준비/미채택후보의보존은제품GO/새권한승인이아니다. private exactSHA확인뒤기존FN15 import/선택source부록의기준/5지문을갱신해같은Primary에게이어가며완료분을다시실행하지않는다.
+### 2026-11-03 4d517f4e private 보존·FN15 import/선택 source 재개
+- Main260450은정확28경로만stage/raw-index동일·cacheddiff0를확인했다. 076a05 정상커밋4d517f4e11d5dd10b71c07f63ac1facfdb34cfb0(parent6e3),08a606 정상privatepush/exactremote같은SHA·localmain044304/private mainf976불변이다. 게시당시trackedclean/보호untracked3만보존·PR/merge/새branch/force/실행0다. 이후이Main현황/후속WI만새dirty로소유하며현재상태와게시시점을구분한다.
+- 다음기존WI r7 U4의importDocument/save선택source부록r2 SHA39ADDF15490B7A70C3C5C0FCE0EABB354BB563C239DA99BDE448B9B646B8D545(부모준비92E5145A)로실행기준을4d와실제5지문에고정했다. Main의old0072/helper/leaf소비선읽기와source기술검토에서새공개계약/권한범위추가없이기존일반9op의누락연결로한정했다. import의FAILED/UNSUPPORTED후보보존과READY만선택가능함을명시해원형식손실보고를회귀시키지않는다.
+- 같은Primary에기존5source/시험단일writer preflight→실제소비선RED/GREEN→COLLECT/Owner역차분·집중검수→writer반환을이어지시한다. Main은동일5코드쓰기0·문서/독립검수/Git만소유한다. 실제DB/권한·정책·회원/키·서비스·Agent/제품네트워크/OS·실자료0,원timeout/상한/secret감사유지·새approval생산/등록권위완화0다. 타사용자HE정책후보/native미채택과전체계획은그대로미완료다.
+
+### 2026-11-03 FN01 요약 정합·FN15 actual 소비선 RED
+- 현재 요약 FN01행은 [2] 부분구현을 유지하고 기존 인증/생성 검증 이력과 private4d517f4e source 검수를 구분해 갱신했다. 실제 DB0074/served·사용자 인수는 미확인이다. 과거 날짜별 원기록/승인·계획 범위/합격 기준은 보존했다.
+- 같은Primary33b4c7/7fbd88은HEAD4d·WI39ADDF15/기존5 시작hash전부일치·신규0·제품clean/Main현황·WI dirty/보호3를확인했다. f36f51의최종0072 forward부재정적RED1과메모리Store 상대경로준비오류를분리했고,absolute문자열만교정한dd5157은actualRepo→ProjectDocuments.import→Artifact reader→receipt→INSERT에서목적context0≠1 행동RED1에도달했다. 실제FS/DB0·라이브read exec완료이며정확5source단일writer를계속한다.
+
+### 2026-11-03 FN15 import/선택 source5 독립 검수
+- 같은Primary는정확5를동결/반환했다. 95b5d7두최초RED의GREEN뒤최종ec624d직접2파일23PASS/FAIL0/SKIP0/887.7104ms·57ac56rootnoEmit0·a32a53 full0072역치환/COLLECT동일·diff0를제출했다. 원type session28617은재실행하지않고수거했으며중간TS2345/TS2322는시험overload/literal조립준비오류로분리했다. 신규import시험은6개이며내부반복조건을개수로더하지않았다.
+- Maindc973c는최종5지문/실제diff에서Node fixedop+import·SQL원request file/form/null/0·save선택/receipt와최종0072 regular HE delta만변경됨을읽었다. 58d228은실제persistProjectReceipt의artifactRef/targetId/version:null생산과소비정합을대조했다. 목적helper/GUC상한·원session/credential/privategrant·Owner/invoker/COLLECT/등록권위·예외의미와기존FN01관리코드는보존했다.
+- 공유helper변경이영향받는직접2파일만Maind6f985가독립실행해23PASS/FAIL0/SKIP0/682.7742ms/exit0을확인했다. 이는actualRepo/ProjectDocuments/메모리reader와DB모델·정적SQL이지실제PG/RLS/ACL/경합집행아니다. 검토구간추가미해결C/I없음의한정source검수·실DB/권한·키/서비스/Agent/OS/제품네트워크/실자료0·전체FN15/계획미완료다.
+- 결과 docs/04_test_reports/AV3/FN15_IMPORT_SELECTION_SOURCE_RESULT_20261103.md SHA BF3A0956ABB0067AA12960C72E3B29173BE6FD4469305916F919440999DC139E. 실제DB/served/사용자인수와새import/save승인producer·타사용자HE정책생산·등록source권위는잔여다. 다음정확5+MainWI/현황/결과3의8경로checkpoint후detach/기존지원승인SQL체인을읽기분리한다. 보호3·FN01source/기존자료·main은보존한다.
