@@ -1,8 +1,8 @@
 # FN15 제어권 수락 source 단위 작업지시서
 
 - 상태: MAIN_APPROVED_SOURCE_IMPLEMENTATION / IMPLEMENTATION_GO1 / SYNTHETIC_VALIDATION_GO1 / EXECUTION_GO0(실효과). Main의 동일 Primary 명시 dispatch와 시작 preflight 뒤에만 허용 경로 source writer를 부여한다.
-- 개정: r6. 부모 r5 SHA256 34CE92CD7706BAD637DC7D7176AF67199C4AB4A9C9AC23D49CC6D9750569B522. Main은 기존 승인 FN15의 직접 인접 시험1개와 폐쇄된 빈 관리범위의 안전검산 상세를 보완했다. 현재 source 구현 적용은 §14~15이며 실효과 EXECUTION_GO0을 유지한다.
-- 이번 위임은 단일 기존 Primary의 허용41경로 코드·화면·미적용 SQL·합성 시험 구현이다. Git·WORK_STATUS·다른 문서는 Main 소유이며 실제 효과는 계속 제외한다. 결과는 증거/미검증/변경지문을 갖춘 구조화 보고로 반환한다.
+- 개정: r7. 부모 r6 SHA256 FFF64865E8DD2DD72FF84B23D3D00792DE8202237897D442963A9BB63429607A. 새0073 pending SQL의 exact byte checksum을 보존하는 Git LF 규칙 한 파일을 추가했다. 현재 source 적용은 §14~16이며 실효과 EXECUTION_GO0을 유지한다.
+- 이번 위임은 단일 기존 Primary의 허용42경로 코드·화면·미적용 SQL·합성 시험 구현이다. Git·WORK_STATUS·다른 문서는 Main 소유이며 실제 효과는 계속 제외한다. 결과는 증거/미검증/변경지문을 갖춘 구조화 보고로 반환한다.
 - 실제 DB/권한/GRANT/정책 적용·키·서비스·Agent·네트워크·OS·사용자/백업 실자료·실컴파일·QA 자원 생성0.
 - 기준 프로젝트: D:/Project/Anvil, branch codex/av3-stage-b, HEAD 998994a5fecb312064d128f793e73db8d1945f98. 이번 r3 문서 보완의 기준 checkpoint이며 제품 writer0이다.
 - 목표: 승인된 요청→안전 대기→정확 대상 수락→원자적 옛 grant 회수/새 제어 세대·grant 발급→기존 일반 변경/UI12 소비를 source-only 한 기능 단위로 완성한다.
@@ -23,11 +23,12 @@
 
 구현자는 과거 성공한 request/summary/read/분류·pagination 기능을 다시 만들지 않는다. source-only 검증을 actual PG/실두기기/OS 안전성 인수로 승격하지 않는다.
 
-## 2. 정확 허용 경로 41개
+## 2. 정확 허용 경로 42개
 
 아래는 Main 검수용 초안 allowlist다. 지금의 제품 쓰기 권한이 아니다. r2 신규11은 당시 조사에서 부재였고 0073 접두 migration도 없었다. r4 control-grant.ts/시험은 새 후보이며 구현 GO 직전 신규 전체13의 부재를 다시 검산한다. 코드 GO 직전 다시 확인한다.
 
-### 2.1 기존 제품18 — 필요한 접점만
+### 2.1 기존 제품·설정19 — 필요한 접점만
+- .gitattributes
 - apps/server/modules/control-handoff/control-handoff-pg.ts
 - apps/server/modules/control-handoff/routes.ts
 - apps/server/modules/access/project-command.ts
@@ -178,7 +179,7 @@ CONTINUE_CONFIRMED는 실제 계속 실행이 유지되면서 원 client 신규 
 
 공개 범주200refs/전체2MiB와 내부 chain의 기존10000/64MiB는 별도 분모다. 정상 chain을200개로 잘라 SAFE 또는 영구 UNKNOWN으로 만드는 정책을 추가하지 않는다. 기존 chain 상한 내 전체를 검산하고 요약에는 검산된 refs/워터마크만 투영한다. source별 내부 read bytes·wrapper/검산용 복사·누적 결과의 동시 보유 상한은 해당 typed source 상한의 합과 최대 중복사본 수로 별도 유한식을 고정한다. 정착 중 raw query buffer도 제외하지 않는다. 정확 식/원 row 선택열과 원 operation 최소기한 내 완료 가능성은 구현 전 검수 항목이며 새 무제한 read나 타이머 연장으로 해결하지 않는다. 초과/불완전은 source와 상한을 식별한 gap으로 반환한다.
 
-U1에서 아직 작성되지 않은 것은 위 목적제한 함수/정책의 exact SQL signature·열별 정책/쿼리, 두 순수 core 추출의 실제 조립, 내부 메모리 최대식과 source-set/watermark다. 원장 proof 검산과 actual current/fence/계속실행 공급자는 별개이며 후자는 실제 미등록이면 UNKNOWN/수락0이다. 합성 양성은 동일 생산/소비 코드를 fakeDB와 명시 보호포트로 검산하는 증거이고 실 DB RLS/OS 안전성 증거가 아니다. 현재 allowlist41 내 신규0073/reader와 기존 두 core 파일이 이 작업의 접점이며 실제 추가 경로가 필수이면 먼저 반환한다.
+U1에서 아직 작성되지 않은 것은 위 목적제한 함수/정책의 exact SQL signature·열별 정책/쿼리, 두 순수 core 추출의 실제 조립, 내부 메모리 최대식과 source-set/watermark다. 원장 proof 검산과 actual current/fence/계속실행 공급자는 별개이며 후자는 실제 미등록이면 UNKNOWN/수락0이다. 합성 양성은 동일 생산/소비 코드를 fakeDB와 명시 보호포트로 검산하는 증거이고 실 DB RLS/OS 안전성 증거가 아니다. 현재 allowlist42 내 신규0073/reader와 기존 두 core 파일이 이 작업의 접점이며 실제 추가 경로가 필수이면 먼저 반환한다.
 
 ### 5.3 CAS 전후·replay의 검산 단계
 
@@ -414,3 +415,14 @@ Anvil 자료/제어는 Agent와 독립적이다. 승인 설계9.3·INTERFACES13.
 실행·writer가 존재하는 정상 경로는 그대로 유지하며 activeExecutions=0을 일괄 요구하는 새 정책을 만들지 않는다. 현재/fence·계속 실행 공급자가 실제로 없는 경우는 UNKNOWN/수락0이다. 이 가지의 정확 source-set/SQL·수위/메모리식은 고정 목적 안의 구현 검수 사항이다. 완전한 발급 경로 폐쇄가 아직 증명됐다는 문서 판정은 아니며, 실제 코드·반례·잠금 소비 검수 전에는 READY로 보고하지 않는다. 새 OS proof·키 목적·역할/원문 권한을 이 보완으로 추가하지 않는다.
 
 독립 읽기 결과는 원계약 안에서 조건부 가능/전체 폐쇄 증명은 아직 아님이다. 실제 endpoint/source-set이 이를 닫지 못하면 그 정확 누락을 유지하고 다른 구현을 계속한다. 수락 기능 전체 재승인이나 'Agent가 없으니 항상 중단'으로 대체하지 않는다. source-only 구현 GO는 유지하고 실제 키/DB/권한/서비스/Agent/제품 네트워크·실자료 효과0이다.
+## 16. r7 새0073 SQL의 LF artifact 보존
+
+허용 경로는 기존41에 .gitattributes 한 파일을 더한42개다. 기존 .gitattributes 부모 SHA256은0AF8D73D5B670B3889E2EB5317301B1C52B9103DC5443F7FD3198EC29483F880이다.
+
+Main은WIP stage의LF→향후CRLF경고와git ls-files --eol/check-attr의i/lf·w/lf·text/eol unspecified를확인했다. 기존 .gitattributes에는 *.sql text eol=lf가있지만 *.sql.pending에는적용되지않는다. 기존migration manifest/runner는읽은UTF-8 SQL의raw SHA256을사용하므로줄바꿈차이를몰래정규화하거나기존checksum정책을바꾸지않는다.
+
+Primary는기존다른규칙과바이트를보존하고다음정확한한규칙만추가할수있다.
+
+db/migrations/0073_control_handoff_acceptance.sql.pending text eol=lf
+
+기존pending전체에새glob을적용하거나과거fixture/SQL을renormalize하지않고global/localGit설정을바꾸지않는다. 최종0073파일·Gitartifact의실제LF바이트/SHA와source checksum을대조한다. 이설정은versioned artifact형식의내부보완이며DB/권한/Secret/서비스/Agent/네트워크실행허가가아니다. 코드writer는계속같은Primary한명이고Main은문서/Git/검수만소유한다. source/SYNTHETIC GO1·실효과GO0과이전미완료/미검증분류를유지한다.

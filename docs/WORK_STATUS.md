@@ -13430,3 +13430,8 @@ git diff --check
 | tests/unit/FN15/control-acceptance-schema.test.ts | 9D7D2848644CC200585499A0CE663C444ACE161259412357F371C50DCF55BA00 |
 | tests/unit/FN15/control-acceptance.test.ts | 16AF0AEDAF2EFCAD69A8563F7B62FFFB8ADAC90275283F985C4A3CD33B87612B |
 - Main은이코드15+현황1의정확16경로만WIP복구checkpoint/private로보존한다. 불완전SQL/checksum·남은연결을합격으로승격하지않고같은Primary41writer를즉시재개한다. 실제키/DB/권한/role/GRANT/서비스/Agent/제품네트워크/OS/실자료0·Main동일코드쓰기0·보호3보존·PR/main병합/배포/전체FN15·계획완료0이다.
+### 2026-11-03 FN15 두 번째 WIP private 보존·동일 writer 재개·r7 LF 규칙
+- Main d188a0는코드15+현황1정확16경로를2700fb7653d195eb4aeb13384169cb8dbdd48723로WIPcommit했고d7b82a정상privatepush/동일SHA·private main불변·trackedclean/보호3을확인했다. 같은Primary41writer를즉시재개했다. 인프라capacity1복구는종료상태확인후같은agent만이어받았으며정식코드실패0·실행중도구0을유지했다. 실제실효과0이다.
+- stage에서새0073의LF→향후CRLF경고가있었다. Main은현재index/work모두LF/text·eol unspecified를관측하고492dde/9ad2ca에서기존 .gitattributes(부모0AF8D73D5B670B3889E2EB5317301B1C52B9103DC5443F7FD3198EC29483F880)의*.sql LF만있는실구성을읽었다. .sql.pending는그규칙밖이었다. 65ae3b의기존migrationrunner/manifest는readUTF8원문raw SHA256이고줄바꿈정규화가없다. 현재WSL/GitLF행동을위한관측이며실행/DB접속은하지않았다.
+- Main은WI r7 SHA15700DB2F63FFB6DE3F248B22142F76FBFF1B58AE30BC090EB08FAB610BDBE3F/§16에 .gitattributes 한경로만추가해현재42=기존29+신규13으로고정했다. 같은Primary가원규칙/바이트를보존하고새0073정확경로에 text eol=lf 한줄만추가한다. 과거pendingglob/renormalize/기존checksum정책·local/globalGit설정은바꾸지않는다. Main은해당설정을직접수정하지않고문서/Git/검수만소유한다.
+- 후속최종SQL/소스checksum은실제파일/Gitartifact바이트로검수한다. 현재UNWRITTEN_SOURCE/미완성DDL을합격으로승격하지않으며같은writer가SQL/F/EMPTYclosure/CAS·일반guard/UI를계속구현한다. 실제키/DB/권한/role/서비스/Agent/제품네트워크/OS/실자료0·전체FN15/계획미완료다.
