@@ -14048,3 +14048,19 @@ Main9b7a73:HEAD66a929aa61827c5d409c0ddca8f98c20c52f41d4·trackedclean/보호untr
 257f26 exit1 stageROLE_PRISTINE/UNKNOWN·ddlUNKNOWN/cleanupNOT_ATTEMPTED/roleEvidence{}·SQLstate/진단null. 원장plan a4c40e6a/fullIDdda0ac77/16:36:01Z. 소진승인재사용·재실행/추가DBexec/권한mutation/stop/rm0. Main2aebf0읽기전용신원·격리검산일치/runningtrue,eeea55 sourceUID1000/0700/exactclean/사용cwd0. 새PG1/source1잔여·정리완료아님,감사3/metadata정확보존. 기존DB키서비스Agent/P03R3변경0. 기존Primary source-only원인조사배정/코드writer0. 상세 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R3_SLOT1_RESULT_20261104.md . 정리만후보 docs/work_packages/IX01_R3_UNKNOWN_QA_CLEANUP_CANDIDATE_20261104.md SHA0920c8302201fd317547dcadc89f202e50be670be69c607ed3ceeb374b787de5 를동결하고별도직접결정전실행금지. 전체계획미완료.
 
 - Main ede8ec의게시전문장검사는기존전체WORK_STATUS의과거인용까지검사해중단했다(stage/commit전). 과거이력은수정하지않고이번신규문서만한국어검사대상으로한정했다. 실제QA/제품변경0.
+
+
+### 2026-11-04 최종PG준비 경계 source2 보완 배정
+기존Primary읽기와Main681d5e/PG15공식설명·공식현재entrypoint대조로임시socketready가최종server/db준비를보장하지않는경계를확인했다. 실제R3UNKNOWN직접원인은미확정/고정image내부바이트미검증. docs/work_packages/IX01_FINAL_SERVER_READINESS_SOURCE_WI_20261104.md에서기존driver/controller시험2경로만단일PrimaryTDD배정,finalPID1관측+기존목표DBrole1회검산/고정안전진단·UNKNOWN재시도금지·기존기한/권한유지를고정했다. 남은R3PG/source보존·정리직접질문대기이며실제DB/role/키/WSL/서비스/Agent/P03R3/새QA실행0.
+
+
+### 2026-11-04 source2 보완 RED·실제 경계 유지
+기존Primary1fbed2는신규pure5개RED/exit1/205.3641ms로최종PID1미연결/초기화40회/불명차단/역할진단누락을확인했다. 기존role읽기1회유지·별도SELECT0·fixedbuilder/parser/runtime콜백직결·trustedclass허용enum을기존diagnostic키로만기록하는보완진행중이다. 현재검수전이며실제R3원인확정/PGGREEN아니다. 실제접속0,남은QAmutation/삭제0,정리직접질문답변없음.
+
+
+### 2026-11-04 R3 UNKNOWN 소유 QA 정리만 직접 승인
+신산님call_28d64e850d4a4068bf1ee13008152fa8 ‘이번 R3 QA만 정리 승인’ 수신. Main관측issued2026-11-03T16:47:23Z/새기한17:17:23Z,packet0920C8302201FD317547DCADC89F202E50BE670BE69C607ED3CEEB374B787DE5(d62d3c hash일치). 정확fullIDdda0ac772e0618ad143a7aedcb3a4a92c6354f7389d3f8e7e3635fa3c59250ec·anvil-ix01-ddl-pg-20261104-r3-a1·source /home/daon/anvil-ix01-ddl-20261104-r3-qa만재검산후stop5최대1/rm1·정확source제거. 신원/종료/응답불명시후속mutation0·감사보존. SQL/DBexec/role조회/권한·키·기존서비스/Agent/P03R3·새QA/재실행0. g5:1270의기록명령은자동심사시간초과로CreateProcess전거부됐고d45721에서기록부재확인. 현재16:54:08Z로기한전이며허용된기록1회재시도다. 실제정리시도는아직0. source2는Primary44PASS뒤writer반환/Main검수중이고원격fc59source와구분한다.
+
+
+### 2026-11-04 승인된 R3 정리 별도 잔여0 확인
+정리직접승인call_28d64e8/packet0920C830을적용했다. 05a439stop1회뒤응답UNKNOWN·rm0에서멈추고원장을보존했다. 749c2f읽기동일신원/exit0/PID0으로종료확정뒤09c109가stop재시도0/rm최초1·source만제거,7735be별도fullID/name/source부재를확인했다. 감사root/원R3UNKNOWN·R1R2실패보존,실제SQL/DB/role/권한/키·기존서비스/Agent/P03R3변경0. 초기읽기구문317363은본문실행전오류로분리하고문자열구조화+로컬구문검사로방식을바꿨다. 상세 docs/04_test_reports/AV3/IX01_R3_UNKNOWN_QA_MANUAL_CLEANUP_RESULT_20261104.md . 소스보완44PASS를실준비PASS로승격하지않고Main검수I2의최소보정을기존Primary에게배정했다.

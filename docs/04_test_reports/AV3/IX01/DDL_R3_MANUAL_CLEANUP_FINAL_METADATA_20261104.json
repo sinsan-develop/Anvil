@@ -1,0 +1,18 @@
+{
+  "observedAt": "2026-11-03T17:00:25.409Z",
+  "containerAbsent": true,
+  "nameAbsent": true,
+  "sourceAbsent": true,
+  "auditRetained": true,
+  "mutation": false,
+  "files": {
+    "manual-cleanup-reconciled.intent.json": {
+      "bytes": 510,
+      "hash": "1914583f46681067c0a782201d19bd011131ef3deaa81e15640ab825745abd19"
+    },
+    "manual-cleanup-reconciled.result.json": {
+      "bytes": 515,
+      "hash": "7a6d1937a1dffa3cacb4fe46bf7f6fcadda4f46509d5442bc2f5fb8f36faef3a"
+    }
+  }
+}

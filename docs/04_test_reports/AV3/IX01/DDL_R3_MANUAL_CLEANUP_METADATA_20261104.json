@@ -1,0 +1,27 @@
+{
+  "observedAt": "2026-11-03T16:58:10.888Z",
+  "containerId": "dda0ac772e0618ad143a7aedcb3a4a92c6354f7389d3f8e7e3635fa3c59250ec",
+  "running": false,
+  "status": "exited",
+  "pid": 0,
+  "startedAt": "2026-11-03T16:35:59.772632382Z",
+  "finishedAt": "2026-11-03T16:55:47.064997392Z",
+  "exitCode": 0,
+  "error": "",
+  "sourceExists": true,
+  "sourceUses": 0,
+  "sourceScan": 240,
+  "events": [],
+  "files": {
+    "manual-cleanup.intent.json": {
+      "bytes": 541,
+      "hash": "c3791630ab6972295885cc2c536f47cd67bb37178d1958c33e1eeda4c23ba3fa"
+    },
+    "manual-cleanup.result.json": {
+      "bytes": 592,
+      "hash": "5f71bc63904fb37e8d8e8905b18de35f9352a74cb3e1f82cecdcccbe3ede2b6c"
+    }
+  },
+  "mutation": false,
+  "dbExec": false
+}
