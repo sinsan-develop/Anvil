@@ -1,0 +1,23 @@
+{
+  "at": "2026-11-03T23:34:52.353Z",
+  "processScan": {
+    "scanned": 246,
+    "matches": 0,
+    "at": "2026-11-03T23:34:52.347Z"
+  },
+  "sourceExists": true,
+  "records": {
+    "owner.json": {
+      "bytes": 199,
+      "hash": "e38fc39d2759a8c8b9dd1300e4aba98b139554cb1a7b28fdb81237bbbbf3c311"
+    },
+    "slot-a1.intent.json": {
+      "bytes": 414,
+      "hash": "a6a0806734a344077812fbf0ab9624093ccd99e534fa7af85855449dece75447"
+    },
+    "slot-a1.result.json": {
+      "bytes": 3361,
+      "hash": "71f719757d0c9e9a9b7b06afc56be86ccc6df8b1dbdf4bfa5740574f2f504940"
+    }
+  }
+}
