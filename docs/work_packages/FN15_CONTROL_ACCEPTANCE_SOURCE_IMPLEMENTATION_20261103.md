@@ -1,8 +1,8 @@
 # FN15 제어권 수락 source 단위 작업지시서
 
 - 상태: MAIN_APPROVED_SOURCE_IMPLEMENTATION / IMPLEMENTATION_GO1 / SYNTHETIC_VALIDATION_GO1 / EXECUTION_GO0(실효과). Main의 동일 Primary 명시 dispatch와 시작 preflight 뒤에만 허용 경로 source writer를 부여한다.
-- 개정: r5. 부모 r4 SHA256 B05C33EE9B8F4F4373E45FCB936F34B89018D7E19887AD6660043C36AAB2C9AE. Main은 기존 승인 FN15 의미 안의 source 구현 상세를 확정했다. 아래 과거 GO0/미정 기록은 당시 이력이며 현재 적용은 §14를 따른다.
-- 이번 위임은 단일 기존 Primary의 허용40경로 코드·화면·미적용 SQL·합성 시험 구현이다. Git·WORK_STATUS·다른 문서는 Main 소유이며 실제 효과는 계속 제외한다. 결과는 증거/미검증/변경지문을 갖춘 구조화 보고로 반환한다.
+- 개정: r6. 부모 r5 SHA256 34CE92CD7706BAD637DC7D7176AF67199C4AB4A9C9AC23D49CC6D9750569B522. Main은 기존 승인 FN15의 직접 인접 시험1개와 폐쇄된 빈 관리범위의 안전검산 상세를 보완했다. 현재 source 구현 적용은 §14~15이며 실효과 EXECUTION_GO0을 유지한다.
+- 이번 위임은 단일 기존 Primary의 허용41경로 코드·화면·미적용 SQL·합성 시험 구현이다. Git·WORK_STATUS·다른 문서는 Main 소유이며 실제 효과는 계속 제외한다. 결과는 증거/미검증/변경지문을 갖춘 구조화 보고로 반환한다.
 - 실제 DB/권한/GRANT/정책 적용·키·서비스·Agent·네트워크·OS·사용자/백업 실자료·실컴파일·QA 자원 생성0.
 - 기준 프로젝트: D:/Project/Anvil, branch codex/av3-stage-b, HEAD 998994a5fecb312064d128f793e73db8d1945f98. 이번 r3 문서 보완의 기준 checkpoint이며 제품 writer0이다.
 - 목표: 승인된 요청→안전 대기→정확 대상 수락→원자적 옛 grant 회수/새 제어 세대·grant 발급→기존 일반 변경/UI12 소비를 source-only 한 기능 단위로 완성한다.
@@ -23,7 +23,7 @@
 
 구현자는 과거 성공한 request/summary/read/분류·pagination 기능을 다시 만들지 않는다. source-only 검증을 actual PG/실두기기/OS 안전성 인수로 승격하지 않는다.
 
-## 2. 정확 허용 경로 후보 40개
+## 2. 정확 허용 경로 41개
 
 아래는 Main 검수용 초안 allowlist다. 지금의 제품 쓰기 권한이 아니다. r2 신규11은 당시 조사에서 부재였고 0073 접두 migration도 없었다. r4 control-grant.ts/시험은 새 후보이며 구현 GO 직전 신규 전체13의 부재를 다시 검산한다. 코드 GO 직전 다시 확인한다.
 
@@ -62,7 +62,7 @@
 - tests/unit/UI12/control-acceptance.test.ts
 - tests/unit/FN15/control-grant.test.ts
 
-### 2.3 기존 직접 인접시험9 — 필요한 새 반례만
+### 2.3 기존 직접 인접시험10 — 필요한 새 반례만
 - tests/unit/FN15/control-source-integration.test.ts
 - tests/unit/UI12/control-api.test.ts
 - tests/unit/UI06/editor-api.test.ts
@@ -72,6 +72,7 @@
 - tests/unit/FN15/control-request-read.test.ts
 - tests/unit/FN15/control-handoff-summary-store.test.ts
 - tests/unit/FN15/control-discovery-read.test.ts
+- tests/unit/UI00/control-access-page.test.ts
 
 ### 2.4 읽기 재사용·보호 경로
 기존 request input·snapshot·store·cursor, v1 summary 원형, 0041 및 과거 SQL, AccessRepository, ProjectStageQueue, ProjectCheckpoints/CheckpointPreparation, writer/execution/stop/journal reader는 우선 읽기 재사용한다. writer/승인 두 경로의 §5.2 순수 검산과 r4 승인 일반 current 분리는 아래 목적 범위로만 수정한다. 기존 currentProjectController/public writer·native·등록/특수 승인 OWNER guard는 보존한다. 새 일반변경 guard와 FN15 grant 소비는 §8의 exact 경로/분기에만 연결한다. 그 밖 실제 reader export/수정이 필수면 정확 경로·필요 변화·호환성을 Main에 반환해 allowlist를 먼저 revision한다.
@@ -177,7 +178,7 @@ CONTINUE_CONFIRMED는 실제 계속 실행이 유지되면서 원 client 신규 
 
 공개 범주200refs/전체2MiB와 내부 chain의 기존10000/64MiB는 별도 분모다. 정상 chain을200개로 잘라 SAFE 또는 영구 UNKNOWN으로 만드는 정책을 추가하지 않는다. 기존 chain 상한 내 전체를 검산하고 요약에는 검산된 refs/워터마크만 투영한다. source별 내부 read bytes·wrapper/검산용 복사·누적 결과의 동시 보유 상한은 해당 typed source 상한의 합과 최대 중복사본 수로 별도 유한식을 고정한다. 정착 중 raw query buffer도 제외하지 않는다. 정확 식/원 row 선택열과 원 operation 최소기한 내 완료 가능성은 구현 전 검수 항목이며 새 무제한 read나 타이머 연장으로 해결하지 않는다. 초과/불완전은 source와 상한을 식별한 gap으로 반환한다.
 
-U1에서 아직 작성되지 않은 것은 위 목적제한 함수/정책의 exact SQL signature·열별 정책/쿼리, 두 순수 core 추출의 실제 조립, 내부 메모리 최대식과 source-set/watermark다. 원장 proof 검산과 actual current/fence/계속실행 공급자는 별개이며 후자는 실제 미등록이면 UNKNOWN/수락0이다. 합성 양성은 동일 생산/소비 코드를 fakeDB와 명시 보호포트로 검산하는 증거이고 실 DB RLS/OS 안전성 증거가 아니다. 현재 allowlist40 내 신규0073/reader와 기존 두 core 파일이 이 작업의 접점이며 실제 추가 경로가 필수이면 먼저 반환한다.
+U1에서 아직 작성되지 않은 것은 위 목적제한 함수/정책의 exact SQL signature·열별 정책/쿼리, 두 순수 core 추출의 실제 조립, 내부 메모리 최대식과 source-set/watermark다. 원장 proof 검산과 actual current/fence/계속실행 공급자는 별개이며 후자는 실제 미등록이면 UNKNOWN/수락0이다. 합성 양성은 동일 생산/소비 코드를 fakeDB와 명시 보호포트로 검산하는 증거이고 실 DB RLS/OS 안전성 증거가 아니다. 현재 allowlist41 내 신규0073/reader와 기존 두 core 파일이 이 작업의 접점이며 실제 추가 경로가 필수이면 먼저 반환한다.
 
 ### 5.3 CAS 전후·replay의 검산 단계
 
@@ -389,7 +390,27 @@ source rollback은 Main이 승인된 checkpoint의 정확 이번 경로만 회�
 - 구현 순서는 보호 생산/원문 검산과 저장 비용→요약/수락·현재 grant→일반 서버/UI 소비로 이어지되 하나의 연결된 기능을 목표로 한다. 사용하지 않는 adapter나 시험 전용 복사 handler만 작성하고 완료하지 않는다. 내부 단계별 checkpoint는 허용하나 단계 일부를 최종 수락 기능 완료로 보고하지 않는다.
 - 새 테스트는 실제 production 호출선/상태/거절·정착·저장 결과를 검산한다. 준비 RED와 실제 행동 RED를 구분하며, 기대값·원 기한·기존 보안 검사는 완화하지 않는다. 모델/합성 DB 검증은 실제 SQL/RLS·두 기기·OS/Agent 인수와 구분한다. 필요한 직접/인접 검증만 선택하고 unchanged 전체 회귀는 반복하지 않는다.
 - 실제 키·DB·권한/역할·정책 적용·서비스·Agent·제품 네트워크·OS·실자료/백업 조사·컴파일/물리 QA는 금지다. 제품/시험 source 읽기는 허용한다. 외부 자원이나 별도 임시 QA가 필요하면 생성하지 말고 정확 이름·이유·수명·범위를 Main에 반환한다. 메모리 합성 및 noEmit/메모리 build는 source 검수 범위다.
-- Main은 기존 단일 Primary만 code writer로 지정하고 같은40경로를 동시에 수정하지 않는다. Primary는 subagent를 만들지 않는다. 실패·미확정·추가 경로/계약 필요가 있으면 현재 변경과 정확 근거를 반환한다. 내부 구현 방법은 Main이 판단하며 기존 기능 전체의 재승인을 다시 요청하지 않는다. 제품 범위/권한·원문/비용·공개 의미가 실제로 달라지는 delta만 별도 분류한다.
+- Main은 기존 단일 Primary만 code writer로 지정하고 같은41경로를 동시에 수정하지 않는다. Primary는 subagent를 만들지 않는다. 실패·미확정·추가 경로/계약 필요가 있으면 현재 변경과 정확 근거를 반환한다. 내부 구현 방법은 Main이 판단하며 기존 기능 전체의 재승인을 다시 요청하지 않는다. 제품 범위/권한·원문/비용·공개 의미가 실제로 달라지는 delta만 별도 분류한다.
 - 완료 제출은 exact 변경 파일/SHA·실행 명령/exit/count/시간·RED/보완·미실행·미검증·자원/실효과0·writer 반환을 포함한다. Main은 독립 검수·집중 재확인·WORK_STATUS·기존 branch checkpoint/private 게시를 맡는다. PR/main 병합·배포·전체 완료는 이 source GO에 포함하지 않는다.
 
 Ruling: 이미 승인된 FN15의 source 구현 상세를 Main 권한으로 확정하고 진행한다 — 별도 사용자 역할이나 실제 효과를 추가하지 않으며, 미작성 SQL/codec만으로 전체 기능 재승인을 반복하지 않기 위함 — 잘못된 내부 상세는 같은 package에서 TDD·독립 검수로 재작업하고 실제 효과는 발생시키지 않는다.
+## 15. r6 직접 인접 시험과 빈 관리범위의 증명
+
+### 15.1 시험 경로 추가
+
+허용 경로는 기존40에 tests/unit/UI00/control-access-page.test.ts 한 파일을 더한41개다. 기존 시험의 부모 SHA256은 B460D860C45F47F1BD85C6F76C382B23A44342E7DF2EF4BA2D61533A0132FDBB다. UI의 실제 수락/보호요약 제어 추가로 달라지는 '미구현' 문구·정확 버튼/입력 수를 실제 동작에 맞게 갱신할 수 있다. 초기 IO0·자동 허가/수락0·same-origin/선택 project 격리·확인 전 수락 disabled·v1 미확인/30초·원요청 기한 분리 단언은 그대로 보존한다. 단순 삭제·정규식 완화로 검사를 녹색으로 만들지 않고, 늘어난 실제 UI 제어와 안전한 초기 상태를 구체적으로 검사한다. 기존 기능 범위나 인수 기준의 완화가 아니다.
+
+### 15.2 Agent 미연결과 관리범위의 폐쇄된 부재를 구분
+
+Anvil 자료/제어는 Agent와 독립적이다. 승인 설계9.3·INTERFACES13.6의 제어권 이전과 실행 중단의 구분에 따라, 서버가 발급한 관리범위가 완전히 비었음을 실제로 증명한 경우까지 외부 OS current 공급자를 무조건 요구하지 않는다. 이 가지는 실OS에 어떤 프로세스도 없다는 증명이나 실제 실행·기존 root를 무시하는 예외가 아니다. 기존 current 공급자가 없다는 이유만으로 이 증명을 생성할 수 없다.
+
+필수 생산·소비 조건:
+- 정확 생성 intent→project/member/control→createProject command/receipt/audit→생성 완료의 불변 계보를 검산한다. EMPTY 표시나 caller provenance/coverage bool만으로 허가하지 않는다. 기존 root·복원·출처 불명·EXISTING/미확인 source는 이 가지로 안전 승격하지 않는다.
+- 고정된 서버 발급 source-set은 실행·grant·writer/native·전달/outbox·허가/준비·예약과 실제 발급 경로를 모두 포함한다. project별 끝 관측·원문/hash/역참조·누락·불명·미정착과 generation/watermark를 생산자가 검산한다. 한 표의 count0·첫 page·임의 source 목록은 충분하지 않다. SYNTHETIC_ONLY 원행도 삭제/무시하지 않고 미결로 분류한다.
+- 준비 시점뿐 아니라 accept 직전까지 실제 발급 경로와 공유하는 project/control 잠금·세대 fence로 폐쇄를 보존한다. 빈 조회 뒤 다른 grant/전달이 COMMIT될 수 있으면 증명이 아니다. 외부/파일 발급 경로가 닫혔음을 확인하지 못하거나 source-set/consumer 검산이 누락되면 UNKNOWN을 유지한다.
+- 동일 원 인증 Tx/project/base/요청/수락 명령·최소 기한에 결박한 private 결과로만 소비한다. CAS 후 nextControl·원 정책/세대·전후 이력·비용/물리행 완결을 검사하며, 옛 client의 대기 명령/승인은 재허가 없이 새 세대에서 수행되지 않는다.
+- 내부 이유/근거는 '발급된 관리범위의 폐쇄된 부재'만 나타낸다. OS 무실행·실제 fence CURRENT·새 실행 권한을 주장하지 않는다. DB 원문/권한/미정착 수집이 실패하거나 source-set 폐쇄가 증명되지 않으면 빈 결과로 대체하지 않는다.
+
+실행·writer가 존재하는 정상 경로는 그대로 유지하며 activeExecutions=0을 일괄 요구하는 새 정책을 만들지 않는다. 현재/fence·계속 실행 공급자가 실제로 없는 경우는 UNKNOWN/수락0이다. 이 가지의 정확 source-set/SQL·수위/메모리식은 고정 목적 안의 구현 검수 사항이다. 완전한 발급 경로 폐쇄가 아직 증명됐다는 문서 판정은 아니며, 실제 코드·반례·잠금 소비 검수 전에는 READY로 보고하지 않는다. 새 OS proof·키 목적·역할/원문 권한을 이 보완으로 추가하지 않는다.
+
+독립 읽기 결과는 원계약 안에서 조건부 가능/전체 폐쇄 증명은 아직 아님이다. 실제 endpoint/source-set이 이를 닫지 못하면 그 정확 누락을 유지하고 다른 구현을 계속한다. 수락 기능 전체 재승인이나 'Agent가 없으니 항상 중단'으로 대체하지 않는다. source-only 구현 GO는 유지하고 실제 키/DB/권한/서비스/Agent/제품 네트워크·실자료 효과0이다.
