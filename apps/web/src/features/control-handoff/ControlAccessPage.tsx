@@ -32,6 +32,12 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  };
  function start(binding:string|null=null){const ticket=scope.ticket(binding);ticketContexts.current.set(ticket,context.current);visibleContext.current=context.current;visible.current={session,projectId,client};setView(v=>({...v,error:null,busy:true}));setTicketRevision(v=>v+1);return ticket;}
  function fail(cause:unknown,ticket:ControlTicket,binding:string|null=null){if(!matches(ticket,binding))return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setView({...emptyView(),error});if(error.status===401)onAuthenticationLost();}
+ function currentController(state:ControlStateResult|null):state is ControlStateResult{
+  const basis=state?.control.basis;
+  return !!session&&live.current.session===session&&live.current.projectId===projectId&&live.current.client===client&&context.current.transport===client.transport&&context.current.csrf===session.csrfToken
+   &&state?.projectId===projectId&&state.actorId===session.user.id&&state.clientId===session.clientId&&(state.participation==='OWNER'||state.participation==='HANDOFF_ELIGIBLE')
+   &&state.control.state==='HELD'&&!!basis&&basis.actorId===session.user.id&&basis.clientId===session.clientId;
+ }
  function api(){if(!session)throw new ApiError('AUTH_REQUIRED',401);return new ControlApi(client.transport,session,projectId);}
  async function loadState(){const t=start();setView({...emptyView(),busy:true});try{const state=await api().state();if(matches(t,null))setView({...emptyView(),state});}catch(e){fail(e,t);}}
  async function loadList(view:'OWN'|'CONTROLLER',cursor:string|null=null,index=0,retry=false){
@@ -40,7 +46,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   try{
    let state=currentView.state;
    if(retry){state=await api().state();if(!matches(t,null))return;}
-   if(!state||view==='CONTROLLER'&&(state.control.state!=='HELD'||state.participation!=='OWNER'))throw new ApiError('REQUEST_FAILED',403);
+   if(!state||view==='CONTROLLER'&&!currentController(state))throw new ApiError('REQUEST_FAILED',403);
    const list=await api().list(view,cursor);if(!matches(t,null))return;
    const history=navigation.current[view];history.cursors=history.cursors.slice(0,index);history.cursors[index]=cursor;history.index=index;navigation.current.failed=null;
    setView(v=>({...v,state,list,busy:false}));
@@ -59,7 +65,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  function edit(field:'reason'|'expiresAt',value:string){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);onChange(b?.bindingId??null,{...old,[field]:value});}
  function preserve(command:Parameters<typeof freezeControlCommand>[1]){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);const next=freezeControlCommand(old,command);onChange(b?.bindingId??null,next);}
  function prepareRequest(){try{if(!session||!currentView.state||!b)return;preserve(selfRequestCommand(session,projectId,currentView.state,b.reason,b.expiresAt));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
- function prepareSummary(){const request=currentView.request,state=currentView.state;if(!session||!request||!state||state.control.state!=='HELD'||state.participation!=='OWNER'||request.current.expired||request.current.baseControlState!=='MATCHED'||!same(state.control.basis,request.snapshot.baseControl))return;preserve({schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...request.requestRef}}});}
+ function prepareSummary(){const request=currentView.request,state=currentView.state;if(!session||!request||!currentController(state)||currentView.busy||!!currentView.error||unresolved||request.current.expired||request.current.baseControlState!=='MATCHED'||!same(state.control.basis,request.snapshot.baseControl))return;preserve({schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...request.requestRef}}});}
  function prepareProtected(){const selected=currentView.request;if(!session||!onChange||!selected||!canPrepare)return;const old=b??emptyControlBuffer(session,projectId),next=freezeControlCommand(old,{schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...selected.requestRef}}});if(next.pending&&next.pending.kind!=='ACCEPT')next.pending={...next.pending,kind:'PROTECTED_PREPARE'};onChange(b?.bindingId??null,next);}
  function prepareAcceptance(){try{if(!session||!onChange||!b||!canAccept||!currentView.protectedSummary)return;const summary=currentView.protectedSummary,command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...summary.snapshot.requestRef},summaryVersion:summary.ref.version,reason:b.reason}};onChange(b.bindingId,freezeControlAcceptance(b,command,summary));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
  async function send(){
@@ -92,7 +98,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  }
  const state=currentView.state,request=currentView.request,summary=currentView.summary;
  const canRequest=configured&&state?.control.state==='OTHER_CLIENT'&&!currentView.busy&&!currentView.error&&!unresolved;
- const canPrepare=configured&&state?.control.state==='HELD'&&state.participation==='OWNER'&&request&&!request.current.expired&&request.current.baseControlState==='MATCHED'&&same(state.control.basis,request.snapshot.baseControl)&&!currentView.busy&&!currentView.error&&!unresolved;
+ const canPrepare=configured&&currentController(state)&&request&&!request.current.expired&&request.current.baseControlState==='MATCHED'&&same(state.control.basis,request.snapshot.baseControl)&&!currentView.busy&&!currentView.error&&!unresolved;
  const protectedSummary=currentView.protectedSummary;
  const canAccept=configured&&!!b?.reason.trim()&&!!request&&!request.current.expired&&request.current.baseControlState==='MATCHED'&&!!protectedSummary&&protectedSummary.snapshot.transferState==='READY'&&Date.parse(protectedSummary.snapshot.validUntil)>Date.now()&&protectedSummary.snapshot.targetActorRef.userId===session?.user.id&&protectedSummary.snapshot.targetClientRef.clientId===session?.clientId&&same(protectedSummary.snapshot.requestRef,request.requestRef)&&confirmedSummary===protectedSummary.ref.contentHash&&!currentView.busy&&!currentView.error&&!unresolved;
  void ticketRevision;
@@ -122,7 +128,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   </section>:null}
   <section aria-label="인수 요청 목록"><h3>인수 요청 목록</h3>
    <button type="button" disabled={!state||currentView.busy||!!currentView.error} onClick={()=>void loadList('OWN')}>내 요청 목록 조회</button>
-   <button type="button" disabled={state?.control.state!=='HELD'||state.participation!=='OWNER'||currentView.busy||!!currentView.error} onClick={()=>void loadList('CONTROLLER')}>현재 제어자 요청 목록 조회</button>
+   <button type="button" disabled={!currentController(state)||currentView.busy||!!currentView.error} onClick={()=>void loadList('CONTROLLER')}>현재 제어자 요청 목록 조회</button>
    {visibleContext.current===context.current&&navigation.current.failed?<button type="button" disabled={!configured||currentView.busy} onClick={()=>{const target=navigation.current.failed;if(target)void loadList(target.view,target.cursor,target.index,true);}}>같은 요청 목록 다시 조회</button>:null}
    {currentView.list&&navigation.current[currentView.list.view].index>0?<button type="button" disabled={currentView.busy} onClick={()=>{const list=currentView.list!,history=navigation.current[list.view],index=history.index-1;void loadList(list.view,history.cursors[index]!,index);}}>이전 요청 목록 조회</button>:null}
    {currentView.list?<><p>서버 관측 {currentView.list.observedAt} · {currentView.list.view}</p>{currentView.list.items.length===0?<p>확인된 요청이 없습니다.</p>:<ol>{currentView.list.items.map((item,index)=><li key={item.requestRef.id}><button type="button" disabled={currentView.busy} onClick={()=>void select(item.requestRef)}>요청 {index+1} 원문 확인</button> 생성 {item.createdAt} · 만료 {item.expiresAt} · {item.current.expired?'기한 경과':'관측 시점 기한 내'} · 기준 {item.current.baseControlState}</li>)}</ol>}{currentView.list.hasMore?<button type="button" disabled={currentView.busy} onClick={()=>void loadList(currentView.list!.view,currentView.list!.nextCursor,navigation.current[currentView.list!.view].index+1)}>다음 요청 목록 조회</button>:null}</>:null}
