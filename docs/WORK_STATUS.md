@@ -14007,3 +14007,13 @@ Primary71e2e4의명시105읽기선별(PL/pgSQL556함수/IF·ELSIF2973조건)은P
 
 ### 2026-11-04 IF/CASE 동일원인군10SQL 최소보정 검수
 Primary be58b8/6f2c29 정확10파일/11표현/22B·writer반환. Main438efe 메모리Git형태대조/괄호외차이0/diffcheck0·scoped C/I0. Main최초2d707f raw검수FAIL은0041/0047의기존CRLF와GitLF차이로2a7228에서분리했고설정·파일정규화0. 실제SQL구문GREEN/정의105/함수RLS/UI인수는미검증,추가실행0. 상세 docs/04_test_reports/AV3/IX01_PENDING_IF_CASE_BOUNDARY_SOURCE_RESULT_20261104.md . 다음새SQL기준R3결박.
+
+
+### 2026-11-04 동일구문 SQL checkpoint 게시·R3 최종결박 배정
+3997ac에서0a647daa66103ada3bd5e949b64f407c3e7b5687/privateexact와local main04430432/private mainf976ed5e불변을확인했다. 기존Primary에게중간R3source3의기준만새SQL0a647daa로갱신하는최종writer를배정했다. 원R1R2index보존/명시105순서09d/새합계2376139B. 정확source3범위·기존39집중/타입/Bash검수,실제R3·DB·키·서비스·Agent·P03R3실행0. 승인된R2는이미회수·정리완료/소진이며기한16:10:59Z연장이나재사용0이다.
+
+
+### 2026-11-04 R3 최종source3 독립검수
+Primary최종12459DF3/BF64EC54/D6B4B8AB로writer반환/live0. ab9be4 39PASS/skip0/395.4085ms,983f7f타입0,cd268c Bash-n0,c6b1af diff0. Main f2070c최종39PASS/skip0/405.6222ms,23278c SQL106Gitblob일치/105선택2376139B/order09d·driver결박외변경0. 최초bf2206 38P1F는sandboxBash시작3221225794·f03dae Mainindex표머리오독count실패로분리보존,제품/시험기준완화0. source결과와R3실행후보를작성했으나코드SHA동결전/PENDING_CODE·실제미승인이다. 새bootstrapHash c490086b·기존회수/관측조건유지. 실제R3/DB/권한/키/WSL/서비스/Agent/P03R3실행0,이전R1/R2실패·감사보존·전체계획미완료.
+
+- Main cb3f5d는정확6stage/diff검사뒤WORK_STATUS raw/index조회에서Node기본buffer1MiB ENOBUFS로중단했다. commit은실행전이며staged자료보존. 파일크기기준buffer로읽기검산을보완하고제품/실제QA변경없음.
