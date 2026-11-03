@@ -13837,3 +13837,31 @@ git diff --check
 
 - 같은 Primary의 caller 반환을 반영해 Main 기술 초안에 로컬 수신 준비→원 Web 명령/승인→정확 binding/ARM→기존 native POST→단발 delivery/ACK 흐름을 추가했습니다. 초안 최종 SHA0E8F41E59469C7621E6663336FC4B1D7CBC8519CBA2790FB4E8E70FCA7527A3E이며 앞3575856E는 이전 기술 snapshot입니다. binding 단계에서 일회 승인을 먼저 소비하지 않고 원 native 명령에서만 소비하는 경계를 명시했습니다. 신규 IPC/HTTP/저장/auth는 여전히 미채택입니다.
 - 같은 Primary는 원 저장량 원장·native store와 신규 receiver/binding 단발성·정리의 최소 상태표를 읽기 대조 중입니다. memory만으로 재시작/복수 process 단발성을 보장한다고 하지 않습니다. Main 후보120초/원session+registration당1/command1은 아직 사용자 채택값이 아닙니다. fn06 코드writer0·실환경0입니다.
+### 2026-11-03 native 인증·profile 지원 검토 반환과 IX01 독립 검증 착수
+- Main d1c849는 소유 문서3개만 raw/index 동일·cached diff0·보호3 불변을 확인해17351bebbbefd9b3dae5c21c3399609c8686702c(parent6b40370c)로 commit했습니다.76c6c4 정상 private push/exact SHA·private mainf976/local main044304 불변·게시 시 tracked clean/보호3 보존을 확인했습니다. 이후 이 현황과 Main 기술 초안만 새 변경입니다.
+- 같은 Primary의 상태/계상·설정 source 반환 및 PMO 한정 기술 의견을 초안에 보존했습니다. 초안 최신 SHA82E0C9660D593A42B4358AF42114FE11CAFAA869A00EFD139B18A2B48AAB008B이며364B4DC0는 PMO가 실제 대조한 이전 snapshot입니다. 신규 receiver head/event/예약은 제안일 뿐이고0071 원 authority/events·quota actual/future·예약 자기비용·역완결이 필요합니다. 표3개를 만들면 상한 증명이라고 하지 않습니다.
+- 실제 설정 source에는 native 공개 CA·profile revision/current/회수 원장이 없습니다. 기존 origin은 https://localhost:3830 제한이며 현재 검토가 이를 넓히지 않습니다. TLS key/cert는 파일 참조이며 native trust CA나 발급원 인증을 대신하지 않습니다. 실제 환경파일/키/인증서/사용자 자료 읽기0입니다.
+- PMO는 혼합 인증이 조건부 기술 후보이며 원 session 현재성 재검산·서명 purpose/route/body/nonce/IPC sender·원자 단발 OPEN·profile 최초 신뢰/발급·current/회수/후퇴 방지가 필요하다는 의견을 반환했습니다. 채택/코드 GO가 아닙니다. 새 공개/auth/profile/저장 계약은 NOT_ADOPTED/GO0로 별도 유지합니다.
+- 전체 작업은 대기시키지 않습니다. 기존 Primary에게 IX01 방법론→설계→계획→지식의 기존 handler/서비스를 연속 소비하는 독립 source-only 여정이 있는지 좁은 읽기 대조를 맡겼습니다. 실제 DB/서비스/네트워크·권한/키/Agent 없이 가능한 정상/교차project/만료/옛control세대 소비 범위를 식별하며, 완료 unit 반복이나 합성 결과의 실제 RLS/사용자 여정 PASS 승격은 하지 않습니다. 현재 IX01 코드 GO 전 조사 단계입니다.
+- 제품·시험·SQL 변경/실제 DB·권한·키·서비스·Agent/네트워크/OS/실자료0·새 branch/세션/예약0·전체 계획 미완료입니다.
+
+### 2026-11-03 IX01 실제 여정 시험 source 준비 배정
+- Main은 큰 공유 SQL fake 모델을 채택하지 않았습니다. 기존 실제 PG opt-in harness의 app.inject→ApiClient→실제 handler/저장/조회 경계를 재사용할 시험 source만 준비합니다. 이것은 새 기능 구현이나 실제 IX01 PASS가 아닙니다.
+- 같은 Primary는 기존 FN02 manifest53의 현재 raw checksum 일치0오류를 읽기 산술로 확인했습니다. 최신 source가 소비하는0042/0059/0064/0072~0074 등의 의존 폐쇄는 미확정이므로 기존53을 충분조건으로 쓰거나 모든 pending SQL을 자동 적용하지 않습니다.
+- WI docs/work_packages/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_20261103.md SHA EA01CBBA2FF07ACB3A58163E3AFBD51ADAE3629E77582170B1CE860BC7F08A0D. 같은 Primary에 신규 tests/integration/IX01/methodology-design-plan-knowledge-source.test.ts 한 경로만 writer로 배정합니다. Main은 해당 코드를 쓰지 않습니다.
+- import/기본 경로는 실제 연결·Pool/키/경로·환경 Secret 읽기보다 먼저 거절하고, 정확 manifest/격리 자원/TTL/HEAD가 없으면 실행되지 않아야 합니다. 실제 opt-in 실행은 하지 않으며 구문/root noEmit/diff만 허용합니다. 실제 TDD RED→GREEN/PG/RLS/browser/재시작·사용자 인수는 NOT_RUN입니다.
+- 실제 반환 ref로 원 방법론→설계→계획·추적→지식 소비를 잇되, 이미 만든 fixture refs를 합쳐 통합 성공으로 만들지 않습니다. 전체 흐름을 억지 scaffold로 만들 필요가 있거나 제품/다른 경로가 필요하면 Main에 먼저 반환합니다. 실제 DB/권한/키/서비스/Agent/네트워크/OS/실자료·새 자원0입니다.
+
+- IX01 Primary 작성 중 보고: 신규1파일 구문30dfea exit0. 첫 noEmit b9b77c의 필수 buffer필드/반환키3진단은 실제 prepareStoredWorkPlan 소비로 보정 중이며 실제 PG/TDD는 NOT_RUN입니다. Main5cf07f는 approvedExecution=null 영구 상수 때문에 정상 외부 입력이 없는 scaffold 위험을 확인해 writer를 잠시 보류·설명받았습니다. 정식 Developer FAILURE_REPORT가 아니며 기대값 완화0입니다.
+- Main은 WI를 r2 SHA C65067B1C10CB9814E3CC7264284D0F8777AC7CAE1E453DE090F3C0C27CFA883로 명료화했습니다. exact 공개 QA 입력/원문hash·source/SQL/소유 marker/TTL을 명시 opt-in 뒤 검산하고, 실제 실행 승인은 별도 플랫폼·실행 계획에서 받습니다. 승인마다 source 상수를 고쳐야 하는 구조를 제거하도록 같은 Primary에 정확1파일 보완 GO를 줬습니다. 실제 실행·skip시험/DB·키·권한·서비스·Agent·네트워크0을 유지합니다.
+
+- Primary은 CD37FE139837C0F7F31763A3187686B69661EB0519F69898B61D42EB7F0F885A/28221B·157행을 동결/반환했습니다. e1e29d 구문0/1.0423초·6bfcb8 root noEmit0/6.8781초·70bea4 diff0·8770cb 새 파일 공백0/끝LF입니다. 직전 쓰기+구문 호출 출력 소실은 exit UNKNOWN/회수 handle 없음으로 보존하며 후속 성공으로 소급하지 않습니다. 실제 test/skip/PG/키/서비스/Agent0입니다.
+- Main172ebd/0894fb/74559e 독립 읽기에서 source 준비 Important3을 같은 Primary에 정확1파일 REWORK로 전달했습니다. I1은 newDocument 기본 stageNodeRef:null로 저장해 적용 방법론→문서 연결이 빠진 점, I2는 app 생성/종료 오류가 나면 나머지 Pool 정리 시도가 누락될 수 있는 점, I3는 replay/거절 검산이 결과JSON 또는 명령/receipt/audit에만 한정돼 문서·계획·추적·지식 버전 footprint를 놓치는 점입니다. 양방향 traversal 반전도 작은 보강을 요청했습니다.
+- 새 시험은 아직 인수하지 않았습니다. 실제 DB RED/GREEN을 실행할 수 없어 source/TDD 실제 검증 NOT_RUN을 유지하며, 문법·타입 통과만으로 여정 PASS로 표시하지 않습니다. 같은 Primary만 writer이고 Main 코드쓰기0입니다.
+
+### 2026-11-03 IX01 시험 source 정적 인수·실제 실행 미충족 보존
+- 같은 Primary는 최종1파일 SHA7DB320AC0781F9FD10D8CA94A77E8BB06A23CCDF3704D0C02886F2D29D7B34F8/32357B·183행을 동결/반환했습니다. I1 실제 applicationRef/양식 출력 node→stage 저장·expectedStage/원 binding/필터 조회, I2 부분 생성과 모든 close/원오류·정리불명 보존, I3 도메인 행/원본문·ref의 replay/거절 불변 및 traversal 반전을 source상 보완했습니다. Pool/PoolClient 준비 진단2는 connect/finally release로 보정했고 실제 PG 실패가 아닙니다.
+- Main0e1b83 구문 exit0/0.8209초와 a51435 root noEmit exit0/5.7180초를 최종1파일에 독립 확인했습니다.851cf4 최종 지문·보완 소비선을 읽었습니다. 실제 test/skip/TDD RED/GREEN·PG/RLS/경합·정리 동작·browser/사용자 인수는 전부 NOT_RUN입니다. 새 기능이나 IX01 합격으로 계산하지 않습니다.
+- 결과 docs/04_test_reports/AV3/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_RESULT_20261103.md SHA3257BED47FC3C014A38A8813F987B52274F6D451BA4E8DFCA11405D12C2E3410. 판정 PREPARED_NOT_EXECUTED이며 Main은 시험을 실제로 실행할 수 있는 정확 manifest/격리 자원/승인 선행을 남깁니다. native 새 인증/profile/current 계약도 미채택입니다.
+- Main은 부가 읽기 e79999에서 존재를 확인하지 않은 apps/server/modules/documents/artifact-store.ts를 추정해 Get-Content 오류1을 냈습니다. 현재 작업의 경로 구성/추정 계열 오류는 fd1f92·15e35a·e79999 최소3건으로 기록합니다. 이 읽기 방식은 중단했고 후속57f675/0b0c83은 이미 확인된 실제 source 경로만 사용했습니다. 제품 변경/ACL/권한 변경0·실제 자료 읽기0이며 실패한 부가 읽기를 제품 결함으로 세지 않습니다. PMO에 범위·중단 조치를 공유합니다.
+- 다음은 같은 Primary의 실제 IX01 소비 함수/trigger/컬럼과 초기53 이후 필수 SQL delta·미확인 의존만 좁힌 읽기입니다. 완료 검증 반복0·코드writer0입니다. Main 소유 시험1+WI/결과/기술초안/계획/현황5의6경로만 기존 branch에 보존하며, 보호3·main과 실제 DB/키/권한/서비스/Agent·새 자원은 변경하지 않습니다. 전체 계획 미완료입니다.

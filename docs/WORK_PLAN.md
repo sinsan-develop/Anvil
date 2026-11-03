@@ -1915,3 +1915,9 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 직접 승인: call_38ed4cc7f50742c396f42772d7a66447의 A안 source-only. 고정 계약 [후보 r2](contracts/FN12_STORED_REVIEW_PAGES_CANDIDATE_20261103.md) SHA59B7F0E6178048AD5E5D1A3F1CF8E5B6C11B44A609B0A911182C91E1F44FF0B4, 현재 채택 binding은 [작업지시서](work_packages/FN12_STORED_REVIEW_PAGES_SOURCE_IMPLEMENTATION_20261103.md)와 WORK_STATUS를 따릅니다. 채택 전 후보 원문은 역사 바이트로 보존합니다.
 - [source 결과](04_test_reports/AV3/FN12_STORED_REVIEW_PAGES_SOURCE_RESULT_20261103.md) SHA5AC889BCBA79A372F605B02DCB68143C1010268F54F3E1936BA88FD7C40DBEB3. 정확8 구현·시험 파일과 소유문서3을 private6b40370c에 보존했고, Main 직접41PASS/메모리 build 및 재작업 근거를 기록했습니다.
 - FN12/UI05 전체는 부분 구현입니다. 실제 PG/RLS/served·사용자 인수와 검증 증거→ACCEPTED·실제 Agent 실행은 미완료입니다. 이 연결 기록은 기존 계획과 직접 승인 범위의 비의미 진행 추적이며 완료 기준을 바꾸지 않습니다.
+
+### 2026-11-03 IX01 실제 문서 여정 시험 source 준비
+- 기존 IX01 필수 실제 저장·재조회·화면 검수 조건을 유지한다. [한정 WI](work_packages/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_20261103.md) 최초 SHA EA01CBBA2FF07ACB3A58163E3AFBD51ADAE3629E77582170B1CE860BC7F08A0D → r2 C65067B1C10CB9814E3CC7264284D0F8777AC7CAE1E453DE090F3C0C27CFA883에 따라 기존 Primary가 실제 PG opt-in 소비용 시험 source1개를 준비한다.
+- 큰 SQL fake 모델·기존 fixture refs 결합으로 전체 통합을 대체하지 않는다. 실제 실행과 최신 SQL manifest·격리 자원/정리 선행은 미충족이며 IX01 통과/기능 완료가 아니다. 현재는 구문·타입 확인만 허용하고 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+
+- 2026-11-03 source 준비 반환: 위 시험1파일7DB320AC·Main 구문0/root noEmit0. [결과](04_test_reports/AV3/IX01_ACTUAL_JOURNEY_TEST_SOURCE_PREPARATION_RESULT_20261103.md) SHA3257BED47FC3C014A38A8813F987B52274F6D451BA4E8DFCA11405D12C2E3410, PREPARED_NOT_EXECUTED. 최신 SQL manifest/격리 자원·별도 실행 승인과 실제 전체 여정은 미충족이며 IX01 상태를 완료로 바꾸지 않는다.
