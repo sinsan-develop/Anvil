@@ -471,3 +471,26 @@ PMO는 이 대화에 새 native 설계방향 직접 답변이 없어 미선택�
 일반ref153·Human232·nonnull approvalRef185, UUID36/hash64/ISO24·안전정수16자리·닫힌ASCII 목적을 가정했다. status는 가장 긴 UNAVAILABLE을 사용한다. command는 객체이므로 C 안의 Unicode/escaping을 다시 escape하지 않고 sourceScopes/intent도 별도 복제하지 않는다. 따라서 앞 표의2110381/4204830 산식은 이 조건에서 유지된다.
 
 판정은 '현재 후보 열거·폭 가정 아래 계수의 조건부 독립 검산 완료'다. 실제 wrapper/parser 허용형·ReceiverPrincipal·helper 전달 선택이 바뀌면 다시 계산해야 한다. binary header/고정조회 전체·부분/거절/재연결·동시복사 buffer 총량과 실제 생산·ACK는 여전히 미정이다. 숫자 검산은 새 wire 채택·한도 확대·SOURCE_GO·EXECUTION_GO·전체 B03/Important9 해소가 아니다. 제품/시험/SQL/컴파일·키/DB/권한/서비스/Agent/제품 네트워크·실자료 실행0이다.
+## B03 후속: 분리 보호조회·delivery frame의 전송·소유 명세
+
+기존 Reviewer가 R2 §11과 위 검토의 미정 경계를 읽기 대조했다. 기존 A+C+9885 계산·시험은 재실행하지 않았다. 이 항목은 기존 B03의 상세화이며 Important 추가 계수가 아니다. 후보 원문은 수정하지 않고 미채택을 유지한다.
+
+다음 보완 단위는 분리 보호조회와 비밀 delivery frame의 정확 전송·소유 명세다. frame은 version/type/length의 정수 폭·byte order·encoding·허용 순서·개수를 고정하고 exact refs·metadata6·opaque43의 payload와 authority/offer 원문 보호조회를 분리한다. 이는 검토 권장안이지 새 wire 채택이 아니다. 기존 v1 parser 완화나 등록키의 기존 조회 권한을 전제하지 않는다.
+
+| 검수 항목 | 닫아야 할 근거 |
+|---|---|
+| frame/header | 고정 header 검산 후 bounded payload 수용, exact schema와 최대 직렬화 크기 |
+| 보호조회/helper | 원문·ref별 필요한 경계, 응답 외피·서명 요청 원형, 불필요 복사 배제 |
+| partial/backpressure | incomplete·상이 순서·중복·단절 거절, 미정착 write 중 다음 write0, write/drain과 ACK 분리 |
+| profile | 허용 목적·recipient/factory·발행/회수/후퇴와 wire 결박. 발급·회수 권위 및 보호 설치소비는 별도 미채택 경계 |
+| 동시성·정착 | 조회/helper/stream/slot별 유한 동시 소유 개수·대기열·실제 IO 정착 전 소유표 |
+
+필수 유한식은 다음과 같다. 아직 항의 최대값·소유 개수가 없으므로 새 수치 상한을 확정하지 않는다.
+
+- frame최대 = 고정 header폭 + exact payload최대.
+- window누적 = 실제 수신·송신 bytes의 합. header·부분·거절·재연결을 포함하고 같은 원 window에서 초기화하지 않는다.
+- 동시보유최대 = 각 독립 소유본의 최대 크기 × 동시 소유 개수의 합. 보호조회 raw/parse/canonical, helper 요청·응답, 수신 chunk/조립본, 미정착 write 소유본, slot 비밀 복사본을 포함한다. 동일 메모리 alias의 중복계상과 문자열/Buffer 독립 복사 누락을 구별한다.
+
+단일 stream만으로 병행 보호조회/helper와 늦은 IO의 총량이 닫히지 않는다. 최소 증거는 exact schema·직렬화 단계별 할당/복사표·유한 동시성/대기열·정착 전 소유표다. 현재 제안 64KiB/4MiB/100MiB는 증명된 cap이 아니다. 숫자를 키워 통과시키지 않는다.
+
+Main이 내부 원형·소유 상세를 보완할 수 있지만 공개 wire·새 인증 목적·profile 권위의 채택은 기술 상세 작성과 구분한다. 이번 검토로 새 승인 질문을 반복하거나 제품 구현을 시작하지 않는다. 판정 REWORK / Important9 / SOURCE_GO0 / EXECUTION_GO0 유지. 실제 키·DB·권한·서비스·Agent·제품 네트워크·실자료 조사·시험·컴파일 실행0이다.
