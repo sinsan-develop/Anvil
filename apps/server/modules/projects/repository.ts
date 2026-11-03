@@ -1,3 +1,4 @@
+import {findCurrentControlGrant} from '../control-handoff/control-grant.ts';
 import { AccessRepository, AuthFailure } from '../access/repository.ts';
 import { ProjectListCodec, projectListFilter } from './service.ts';
 import { randomUUID } from 'node:crypto';
@@ -207,7 +208,7 @@ export class ProjectsRepository {
     return this.#access.authenticated(token, null, (db, identity) => this.#detail(db, identity, projectId));
   }
   async #detail(db: PoolClient, identity: AuthenticatedIdentity, projectId: string) {
-      const row = (await db.query(`SELECT p.*,m.participation,pc.actor_id,pc.client_id,pc.generation,pc.revoked_at AS control_revoked_at,
+      const row = (await db.query(`SELECT p.*,m.participation,pc.actor_id,pc.client_id,pc.generation,pc.version AS control_version,pc.revoked_at AS control_revoked_at,
         cu.status AS controller_status,cu.revoked_at AS controller_revoked_at,cc.revoked_at AS controller_client_revoked_at,
         pp.id AS policy_id,pm.id AS application_id,pm.application_version,pm.snapshot_hash FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id
         LEFT JOIN anvil.project_control pc ON pc.project_id=p.id
@@ -216,7 +217,9 @@ export class ProjectsRepository {
         LEFT JOIN LATERAL (SELECT id,application_version,snapshot_hash FROM anvil.project_methodologies WHERE project_id=p.id ORDER BY application_version DESC LIMIT 1) pm ON true
         WHERE p.id=$1 AND m.user_id=$2 AND m.revoked_at IS NULL`, [projectId, identity.actorId])).rows[0];
       if (!row) throw new AuthFailure('NOT_FOUND', 404);
-      const activeControl = !!row.generation && !row.control_revoked_at && row.controller_status === 'ACTIVE' && !row.controller_revoked_at && !row.controller_client_revoked_at;
+      let activeControl = !!row.generation && !row.control_revoked_at && row.controller_status === 'ACTIVE' && !row.controller_revoked_at && !row.controller_client_revoked_at;
+      let missingHandoffGrant=false;
+      if(activeControl&&row.participation==='HANDOFF_ELIGIBLE'&&row.actor_id===identity.actorId&&row.client_id===identity.clientId){const grant=await findCurrentControlGrant(db,projectId,{actorId:identity.actorId,clientId:identity.clientId,generation:integer(row.generation),version:integer(row.control_version),revoked_at:null});if(!grant){missingHandoffGrant=true;activeControl=false;}}
       const sourceBinding=(await db.query('SELECT b.*,c.operation,c.actor_id,c.client_id command_client FROM anvil.project_source_declarations b JOIN anvil.commands c ON c.id=b.command_id AND c.project_id=b.project_id WHERE b.project_id=$1',[projectId])).rows[0];
       const sourceDeclaration=sourceBinding&&row.participation==='OWNER'?await readSourceDeclarationRecord(db,sourceBinding.declaration_id,integer(sourceBinding.declaration_version)):null;
       if(sourceBinding&&(sourceBinding.operation!=='createProject'||sourceBinding.actor_id!==sourceBinding.created_by||sourceBinding.command_client!==sourceBinding.client_id))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
@@ -226,7 +229,7 @@ export class ProjectsRepository {
         sourceMode:sourceBinding?'EXISTING':'EMPTY',sourceDeclaration,
         readinessIssues: [...(sourceBinding?[{code:'SOURCE_DECLARATION_UNVERIFIED'}]:[]),...(!row.application_id ? [{ code: 'METHODOLOGY_CONNECTION_PENDING' }] : []), ...(!row.policy_id ? [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }] : [])],
         viewerPermissions: ['READ_PROJECT'], participation: row.participation,
-        controlState: { actorId: row.actor_id ?? null, clientId: row.client_id ?? null, generation: row.generation ? integer(row.generation) : null, status: activeControl ? row.actor_id === identity.actorId && row.client_id === identity.clientId ? 'HELD' : 'OTHER_CLIENT' : 'UNASSIGNED' },
+        controlState: { actorId: missingHandoffGrant?null:row.actor_id ?? null, clientId: missingHandoffGrant?null:row.client_id ?? null, generation: !missingHandoffGrant&&row.generation ? integer(row.generation) : null, status: activeControl ? row.actor_id === identity.actorId && row.client_id === identity.clientId ? 'HELD' : 'OTHER_CLIENT' : 'UNASSIGNED' },
       };
   }
 }

@@ -48,7 +48,7 @@ export function verifyControlAcceptanceChain(value:unknown):ControlAcceptanceCha
  if(!sameControl(v,expected))fail();return expected;
 }
 /** 현재 권위와 과거 수락시각을 분리한다. 원 인증 Tx facade만 소비한다. */
-export async function readCurrentControlGrant(db:Pick<PoolClient,'query'>,projectId:string,control:ControlBasis&{revoked_at:null}):Promise<ControlAcceptanceChain>{
+export async function findCurrentControlGrant(db:Pick<PoolClient,'query'>,projectId:string,control:ControlBasis&{revoked_at:null}):Promise<ControlAcceptanceChain|null>{
  if(!uuidV1(projectId)||!isControlBasis({actorId:control.actorId,clientId:control.clientId,generation:control.generation,version:control.version})||control.revoked_at!==null)fail();
  const rows=(await db.query(`SELECT h.project_id,h.next_generation,h.content_hash,h.bundle_json,
  (SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash),'snapshot',e.snapshot_json) ORDER BY e.kind) FROM anvil.control_grant_events e WHERE e.project_id=h.project_id AND e.acceptance_id=h.id) AS grant_rows,
@@ -57,8 +57,27 @@ export async function readCurrentControlGrant(db:Pick<PoolClient,'query'>,projec
  (SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',a.id,'version',1,'contentHash',a.content_hash),'snapshot',a.body_json)) FROM anvil.control_handoff_acceptance_audits a WHERE a.project_id=h.project_id AND a.command_id=h.command_id) AS audit_rows,
  (SELECT count(*)::text FROM anvil.control_grant_events e WHERE e.project_id=h.project_id AND e.kind='REVOKED' AND e.basis_generation=h.next_generation) AS revoked_count
  FROM anvil.control_handoffs h WHERE h.project_id=$1 AND h.next_generation=$2 LIMIT 2`,[projectId,control.generation])).rows;
- if(rows.length!==1)fail();const row=rows[0],chain=verifyControlAcceptanceChain(row.bundle_json);
+ if(rows.length===0)return null;if(rows.length!==1)fail();const row=rows[0],chain=verifyControlAcceptanceChain(row.bundle_json);
  const expectedEvents=[chain.grant,chain.revocation].sort((a,b)=>a.snapshot.kind.localeCompare(b.snapshot.kind));
  if(!sameControl(row.grant_rows,expectedEvents)||!sameControl(row.receipt_rows,[chain.receipt])||!sameControl(row.audit_rows,[chain.audit])||!sameControl(row.command_rows,[{command:chain.command,result:chain.result,commandHash:controlHash(chain.command),resultHash:controlHash(chain.result)}])||String(row.revoked_count)!=='0')fail();
  if(row.project_id!==projectId||Number(row.next_generation)!==control.generation||row.content_hash!==chain.acceptance.ref.contentHash||chain.result.projectId!==projectId||!sameControl(chain.result.nextControl,{actorId:control.actorId,clientId:control.clientId,generation:control.generation,version:control.version}))fail();return chain;
 }
+
+/** 역사는 물리 행 완결을 검산하되 현재 세대/회수·과거 요약 TTL을 새 조건으로 만들지 않는다. */
+export async function readControlAcceptanceHistory(db:Pick<PoolClient,'query'>,projectId:string,commandId:string):Promise<ControlAcceptanceChain>{
+ if(!uuidV1(projectId)||!uuidV1(commandId))return fail();
+ const rows=(await db.query(`SELECT h.project_id,h.id,h.command_id,h.next_generation,h.content_hash,h.snapshot_json,h.bundle_json,
+ (SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash),'snapshot',e.snapshot_json) ORDER BY e.kind) FROM anvil.control_grant_events e WHERE e.project_id=h.project_id AND e.acceptance_id=h.id) AS grant_rows,
+ (SELECT jsonb_agg(jsonb_build_object('command',c.command_json,'result',c.result_json,'commandHash',c.command_hash,'resultHash',c.result_hash)) FROM anvil.control_handoff_acceptance_commands c WHERE c.project_id=h.project_id AND c.command_id=h.command_id) AS command_rows,
+ (SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),'snapshot',r.body_json)) FROM anvil.control_handoff_acceptance_receipts r WHERE r.project_id=h.project_id AND r.command_id=h.command_id) AS receipt_rows,
+ (SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',a.id,'version',1,'contentHash',a.content_hash),'snapshot',a.body_json)) FROM anvil.control_handoff_acceptance_audits a WHERE a.project_id=h.project_id AND a.command_id=h.command_id) AS audit_rows
+ FROM anvil.control_handoffs h WHERE h.project_id=$1 AND h.command_id=$2 LIMIT 2`,[projectId,commandId])).rows;
+ if(rows.length!==1)fail();const row=rows[0],chain=verifyControlAcceptanceChain(row.bundle_json),events=[chain.grant,chain.revocation].sort((a,b)=>a.snapshot.kind.localeCompare(b.snapshot.kind));
+ if(row.project_id!==projectId||row.id!==chain.acceptance.ref.id||row.command_id!==commandId||chain.command.commandId!==commandId||chain.command.projectId!==projectId||Number(row.next_generation)!==chain.result.nextControl.generation||row.content_hash!==chain.acceptance.ref.contentHash||!sameControl(row.snapshot_json,chain.acceptance.snapshot)||!sameControl(row.grant_rows,events)||!sameControl(row.receipt_rows,[chain.receipt])||!sameControl(row.audit_rows,[chain.audit])||!sameControl(row.command_rows,[{command:chain.command,result:chain.result,commandHash:controlHash(chain.command),resultHash:controlHash(chain.result)}]))fail();
+ return chain;
+}
+
+export const ordinaryDocumentOperations=['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument','uploadArtifact','linkDocumentSource','proposeDocumentSourceChange','detachDocumentSource']as const;
+export const isOrdinaryControlOperation=(operation:string):boolean=>(ordinaryDocumentOperations as readonly string[]).includes(operation)||operation==='requestApproval'||operation==='decideApproval';
+
+export async function readCurrentControlGrant(db:Pick<PoolClient,'query'>,projectId:string,control:ControlBasis&{revoked_at:null}):Promise<ControlAcceptanceChain>{const result=await findCurrentControlGrant(db,projectId,control);if(!result)return fail();return result;}

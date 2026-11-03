@@ -1,3 +1,4 @@
+import type {ProtectedHandoffSummary} from '../../../../server/modules/control-handoff/control-handoff-protected-summary.ts';
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref} from '../../shell/routes.ts';
@@ -5,8 +6,8 @@ import {ProjectAccessSummary} from '../projects/ProjectAccessSummary.tsx';
 import {ControlApi,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
 import {ControlScope,emptyControlBuffer,freezeControlCommand,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
 interface Props{client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
-interface View{state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;error:ApiError|null;busy:boolean}
-const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,error:null,busy:false});
+interface View{state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;error:ApiError|null;busy:boolean}
+const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,error:null,busy:false});
 const labels={activeExecutions:'진행 작업',pendingCommands:'미결 명령',pendingApprovals:'미결 승인',sourceCheckpointRefs:'원본·체크포인트 참조'};
 /** Default-OFF FN15 source consumer. No accept, permission mutation, collector or control transfer. */
 export function ControlAccessPage({client,projectId,session,buffer=null,onChange,scope:parentScope,onAuthenticationLost}:Props){
@@ -34,7 +35,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  async function loadState(){const t=start();setView({...emptyView(),busy:true});try{const state=await api().state();if(matches(t,null))setView({...emptyView(),state});}catch(e){fail(e,t);}}
  async function loadList(view:'OWN'|'CONTROLLER',cursor:string|null=null,index=0,retry=false){
   const t=start();navigation.current.failed={view,cursor,index};
-  setView(v=>({...v,list:null,request:null,summary:null,headNone:false}));
+  setView(v=>({...v,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));
   try{
    let state=currentView.state;
    if(retry){state=await api().state();if(!matches(t,null))return;}
@@ -44,8 +45,16 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    setView(v=>({...v,state,list,busy:false}));
   }catch(e){fail(e,t);}
  }
- async function select(requestRef:ControlRef){const t=start();setView(v=>({...v,request:null,summary:null,headNone:false}));try{const request=await api().request(requestRef);if(matches(t,null))setView(v=>({...v,request,busy:false}));}catch(e){fail(e,t);}}
- async function loadSummary(){const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,summary:null,headNone:false}));try{const head=await api().head(selected.requestRef);if(!matches(t,null))return;if(head.head.state==='NONE'){setView(v=>({...v,headNone:true,busy:false}));return;}const result=await api().summary(selected.requestRef,head.head.summaryRef,selected.snapshot.expiresAt);if(matches(t,null))setView(v=>({...v,summary:result,busy:false}));}catch(e){fail(e,t);}}
+ async function select(requestRef:ControlRef){const t=start();setView(v=>({...v,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const request=await api().request(requestRef);if(matches(t,null))setView(v=>({...v,request,busy:false}));}catch(e){fail(e,t);}}
+ async function loadSummary(){const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const head=await api().head(selected.requestRef);if(!matches(t,null))return;if(head.head.state==='NONE'){setView(v=>({...v,headNone:true,busy:false}));return;}const result=await api().summary(selected.requestRef,head.head.summaryRef,selected.snapshot.expiresAt);if(matches(t,null))setView(v=>({...v,summary:result,busy:false}));}catch(e){fail(e,t);}}
+ async function loadProtectedSummary(){
+  const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,protectedSummary:null,protectedHeadState:null}));
+  try{const head=await api().protectedHead(selected.requestRef);if(!matches(t,null))return;if(head.head.state!=='AVAILABLE'){const state=head.head.state;setView(v=>({...v,protectedHeadState:state,busy:false}));return;}
+   const summary=await api().protectedSummary(selected.requestRef,head.head.summaryRef);if(!matches(t,null))return;
+   if(!same(summary.snapshot.baseControl,selected.snapshot.baseControl)||!same(summary.snapshot.targetActorRef,selected.snapshot.targetActorRef)||!same(summary.snapshot.targetClientRef,selected.snapshot.targetClientRef)||Date.parse(summary.snapshot.validUntil)>Date.parse(selected.snapshot.expiresAt))throw new ApiError('RESPONSE_INVALID');
+   setView(v=>({...v,protectedSummary:summary,busy:false}));
+  }catch(e){fail(e,t);}
+ }
  function edit(field:'reason'|'expiresAt',value:string){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);onChange(b?.bindingId??null,{...old,[field]:value});}
  function preserve(command:Parameters<typeof freezeControlCommand>[1]){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);const next=freezeControlCommand(old,command);onChange(b?.bindingId??null,next);}
  function prepareRequest(){try{if(!session||!currentView.state||!b)return;preserve(selfRequestCommand(session,projectId,currentView.state,b.reason,b.expiresAt));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
@@ -60,7 +69,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const latest=live.current.buffer;if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding)return;
  if(!onChange(old.bindingId,{...latest,pending:{...command,status:'CONFIRMED'}}))return;
  // Re-read using fixed refs; no POST response alone grants a current permission.
- if('requestRef'in result){const request=await api().request(result.requestRef);if(matches(t,binding))setView(v=>({...v,request,summary:null,headNone:false,busy:false}));}
+ if('requestRef'in result){const request=await api().request(result.requestRef);if(matches(t,binding))setView(v=>({...v,request,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,busy:false}));}
  else{const selected=currentView.request;if(!selected||command.command.operation!=='prepareControlHandoff'||!same(selected.requestRef,command.command.payload.requestRef)){setView(v=>({...v,busy:false}));return;}const summary=await api().summary(selected.requestRef,result.summaryRef,selected.snapshot.expiresAt);if(matches(t,binding))setView(v=>({...v,summary,busy:false}));}
  }catch(e){
  // Preserve UNKNOWN in the App-owned store even after logout/navigation. Never repopulate an old screen.
@@ -106,9 +115,12 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   {request?<section aria-label="선택한 고정 요청"><h3>선택한 고정 요청</h3><p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{request.snapshot.reason}</p><p>요청 사용자·기기 {request.snapshot.requestedBy.actorId} / {request.snapshot.requestedBy.clientId}</p><p>요청 만료 {request.snapshot.expiresAt} · 서버 관측 {request.observedAt} · {request.current.expired?'기한 경과':'관측 시점 기한 내'} · 현재 기준 {request.current.baseControlState}</p>
    <button type="button" disabled={!canPrepare} onClick={prepareSummary}>미확인 요약 준비 명령 보존</button>
    <button type="button" disabled={currentView.busy||!!currentView.error} onClick={()=>void loadSummary()}>최신 요약 참조·고정 원문 조회</button>
+   <button type="button" disabled={currentView.busy||!!currentView.error} onClick={()=>void loadProtectedSummary()}>최신 보호요약 고정 원문 조회</button>
+   {currentView.protectedHeadState?<p>{currentView.protectedHeadState==='NONE'?'보관된 보호요약이 없습니다.':'현재 요청의 보호요약 기준을 확인할 수 없습니다.'}</p>:null}
    {currentView.headNone?<p>서버 관측에서 이 요청의 요약이 없음을 확인했습니다. 미연결 상태와 다릅니다.</p>:null}
   </section>:null}
   {summary&&request?<ControlSummaryView summary={summary} requestExpiresAt={request.snapshot.expiresAt}/>:null}
+  {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p><p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
   <button type="button" disabled>인수 수락 (미구현)</button>
   <a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>
  </section>;

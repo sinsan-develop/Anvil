@@ -1,3 +1,5 @@
+import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {readCurrentControlGrant,ordinaryDocumentOperations,isOrdinaryControlOperation,copyControlData} from '../control-handoff/control-grant.ts';
 import {writerOperations} from '../../../../contracts/runtime/project-writer-authority-v1.ts';
 import {environmentWriteOperations,environmentReadOperations} from '../../../../contracts/runtime/environment-configuration-v1.ts';
 import type {ProjectAssignmentConfirmations} from '../assignments/project-assignment-confirmations.ts';
@@ -68,6 +70,30 @@ export async function currentProjectController(db: PoolClient, actor: Authentica
   if (!control || control.revoked_at || control.actor_id !== actor.actorId || control.client_id !== actor.clientId) throw new AuthFailure('PROJECT_CONTROL_REQUIRED', 403);
   if (Number(control.generation) !== request.controlGeneration) throw new AuthFailure('CONTROL_GENERATION_CONFLICT', 409);
   return control;
+}
+/** 일반문서/새 일반승인에만 별도 grant 소비를 연결한다. 원 OWNER helper는 보존한다. */
+export async function currentGeneralProjectController(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand){
+ try{return await currentProjectController(db,actor,request);}catch(error){if(!isOrdinaryControlOperation(request.operation)||!(error instanceof AuthFailure)||error.message!=='PROJECT_WRITE_DENIED')throw error;}
+ const member=await projectMember(db,actor,request.projectId,true);if(member.archived_at||member.participation!=='HANDOFF_ELIGIBLE'||request.clientId!==actor.clientId)throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+ const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[request.projectId])).rows[0];
+ if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId)throw new AuthFailure('PROJECT_CONTROL_REQUIRED',403);
+ if(Number(control.generation)!==request.controlGeneration)throw new AuthFailure('CONTROL_GENERATION_CONFLICT',409);
+ await readCurrentControlGrant(db,request.projectId,{actorId:actor.actorId,clientId:actor.clientId,generation:Number(control.generation),version:Number(control.version),revoked_at:null});
+ if(request.operation==='requestApproval'){
+  const p=copyControlData(request.payload);if(!recordV1(p,['details'])||!recordV1(p.details,Object.keys(p.details??{}))||!recordV1(p.details.actionScope,Object.keys(p.details.actionScope??{})))throw new AuthFailure('PROJECT_WRITE_DENIED',403);const op=p.details.actionScope.operation;if(typeof op!=='string'||!(ordinaryDocumentOperations as readonly string[]).includes(op))throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+ }
+ if(request.operation==='decideApproval'){
+  const rows=(await db.query('SELECT action_scope_json,created_by,client_id,request_json FROM anvil.approval_requests WHERE project_id=$1 AND id=$2 FOR SHARE',[request.projectId,request.targetId])).rows;
+  if(rows.length!==1||!(ordinaryDocumentOperations as readonly string[]).includes(rows[0].action_scope_json?.operation)||rows[0].created_by!==actor.actorId||rows[0].client_id!==actor.clientId||rows[0].request_json?.controlGeneration!==request.controlGeneration)throw new AuthFailure('APPROVAL_DECIDER_DENIED',403);
+ }
+ return control;
+}
+/** 소스 후보의 준비조회 predicate다. 가짜 ProjectCommand/승인 소비를 만들지 않는다. */
+export async function currentGeneralProjectSelectionController(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,operation:string){
+ if(!(ordinaryDocumentOperations as readonly string[]).includes(operation))throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+ const member=await projectMember(db,actor,projectId,true);if(member.archived_at||!['OWNER','HANDOFF_ELIGIBLE'].includes(member.participation))throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+ const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[projectId])).rows[0];if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId)throw new AuthFailure('PROJECT_CONTROL_REQUIRED',403);
+ if(member.participation==='HANDOFF_ELIGIBLE')await readCurrentControlGrant(db,projectId,{actorId:actor.actorId,clientId:actor.clientId,generation:Number(control.generation),version:Number(control.version),revoked_at:null});return control;
 }
 export async function currentPolicy(db: PoolClient, projectId: string) {
   const row = (await db.query('SELECT p.id,p.head_version,v.rules_json,v.content_hash,v.reason,v.review_refs,v.created_at FROM anvil.permission_policies p JOIN anvil.permission_policy_versions v ON v.policy_id=p.id AND v.project_id=p.project_id AND v.version=p.head_version WHERE p.project_id=$1 FOR SHARE OF p', [projectId])).rows[0];
@@ -159,7 +185,7 @@ export class ProjectPolicyRepository {
     let notificationDeadline=Infinity,notificationPolicyDeadline=Infinity;
     try {
       const result=await this.#access.authenticated(token, csrf, async (db, actor) => {
-        await currentProjectController(db, actor, request);
+        await currentGeneralProjectController(db, actor, request);
         if (request.operation !== 'savePermissionPolicy') {
           const policy = await authorizeMaterial(db, actor, request,false,this.#documents);
           const checkExportDeadline=async()=>{if(request.operation!=='exportProject')return;const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;exportDeadline=Math.min(exportDeadline,notificationSessionDeadline(actor,at,before),before+policy.validUntil-at.getTime());if(performance.now()>=exportDeadline)throw new AuthFailure('EXPORT_TIME_LIMIT',503);};
@@ -188,6 +214,7 @@ export class ProjectPolicyRepository {
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
           if(request.operation==='exportProject'){exportStarted=true;await db.query("SELECT set_config('anvil.export_payload',$1,true)",[canonicalJson(request.payload)]);}
           const applied=await material(db, actor, policy.ref,request.operation==='exportProject'?exportDeadline:undefined);
+          if(isOrdinaryControlOperation(request.operation)){await currentGeneralProjectController(db,actor,request);const finalPolicy=await authorizeMaterial(db,actor,request,false,this.#documents);if(canonicalJson(finalPolicy.ref)!==canonicalJson(policy.ref))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);}
           await checkExportDeadline();
           await checkNotificationDeadline();await checkCheckpoint();return applied;
         }

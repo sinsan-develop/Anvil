@@ -10,3 +10,4 @@
 *.html -text
 *.svg -text
 *.docx binary
+db/migrations/0073_control_handoff_acceptance.sql.pending text eol=lf

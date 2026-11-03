@@ -149,6 +149,7 @@ export function registerControlHandoffRoutes(app: FastifyInstance, options: Cont
       const pid=validProject(request.params.projectId),c=readControlAcceptanceCommand(request.body,'prepareControlHandoff');if(c.projectId!==pid||c.payload.requestRef.id!==request.params.requestId||c.payload.requestRef.version!==exactVersion(request.params.requestVersion))fail('INPUT_INVALID',400);
       return reply.code(201).send(await acceptancePort(request,pid).prepare(c));
     });
+    scoped.get<{Params:RequestParams;Querystring:unknown}>(`${version}/protected-handoff-summaries/head`,async request=>{const pid=validProject(request.params.projectId),q=query(request.query,['requestHash']);return acceptancePort(request,pid).readHead(requestRef(request.params,q.requestHash));});
     scoped.get<{Params:SummaryParams;Querystring:unknown}>(`${version}/protected-handoff-summaries/:summaryVersion`,async request=>{
       const pid=validProject(request.params.projectId),q=query(request.query,['requestHash','summaryHash']),r=requestRef(request.params,q.requestHash),ref={id:r.id,version:summaryVersion(request.params.summaryVersion),contentHash:validHash(q.summaryHash)};return acceptancePort(request,pid).readSummary(r,ref);
     });

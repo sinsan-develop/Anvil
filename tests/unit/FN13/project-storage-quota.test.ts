@@ -107,3 +107,16 @@ test('RESERVED recheck reuses exact ID/plan/earlier deadline and rederives sourc
  await assert.rejects(f.quota.prepare('token','csrf',request(),async()=>[{...part(),id:id(99)}]),code('IDEMPOTENCY_CONFLICT'));assert.equal(f.access.state.account!.held_bytes,'10');
  f.access.now=new Date('2031-01-01T00:00:00.000Z');await assert.rejects(f.quota.prepare('token','csrf',request(),async(_d,_a,_r,old)=>old!),code('PROJECT_STORAGE_CURRENT_REQUIRED'));assert.equal(f.access.state.rows[0]!.phase,'RESERVED');
 });
+
+test('수락된 일반문서 예약은 원command 한정 account를 소비하고 public OWNER account로 우회하지 않는다',async()=>{
+ const g=await import('../../../apps/server/modules/control-handoff/control-grant.ts'),f=fixture(),ordinary={...request(),controlGeneration:2},ref={id:id(50),version:1,contentHash:'a'.repeat(64)},accept={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:id(51),projectId:id(1),clientId:actor.clientId,payload:{requestRef:ref,summaryVersion:1,reason:'수락'}};
+ const chain=g.createControlAcceptanceChain({projectId:id(1),command:accept,requestRef:ref,summaryRef:ref,before:{actorId:id(52),clientId:id(53),generation:1,version:1},targetActorId:actor.actorId,recordedAt:'2026-10-30T00:00:00.000Z',ids:{acceptance:id(54),revocation:id(55),grant:id(56),receipt:id(57),audit:id(58)}}),original=f.access.db.bind(f.access);let accountCalls=0,publicCalls=0;
+ f.access.db=()=>{const db=original();return{query:async(sql:string,args:unknown[]=[])=>{
+  if(sql.includes('FROM anvil.projects p JOIN anvil.project_members'))return{rows:[{id:id(1),archived_at:null,participation:'HANDOFF_ELIGIBLE'}]};
+  if(sql.includes('FROM anvil.project_control'))return{rows:[{actor_id:actor.actorId,client_id:actor.clientId,generation:2,version:2,revoked_at:null}]};
+  if(sql.includes('FROM anvil.control_handoffs'))return{rows:[{project_id:id(1),next_generation:2,content_hash:chain.acceptance.ref.contentHash,bundle_json:chain,grant_rows:[chain.grant,chain.revocation],command_rows:[{command:accept,result:chain.result,commandHash:g.controlHash(accept),resultHash:g.controlHash(chain.result)}],receipt_rows:[chain.receipt],audit_rows:[chain.audit],revoked_count:'0'}]};
+  if(sql.includes('fn15_ordinary_quota_account')){accountCalls++;assert.equal(args.length,5);assert.deepEqual(JSON.parse(String(args[4])),ordinary);return{rows:[structuredClone(f.access.state.account)]};}
+  if(sql.includes('anvil.quota_account(')){publicCalls++;throw new AuthFailure('NOT_FOUND',404);}return db.query(sql,args);
+ }}as ReturnType<MemoryAccess['db']>;};
+ const p=await f.quota.prepare('token','csrf',ordinary,async()=>[part()]);await f.quota.reserve('token','csrf',p);assert.equal(accountCalls,1);assert.equal(publicCalls,0);assert.equal(f.access.state.account!.held_bytes,'10');
+});

@@ -8,7 +8,7 @@ import type {VersionRef} from '../../../../contracts/generated-types.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,refV1,uuidV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
-import {persistProjectReceipt,currentProjectController,authorizeMaterial,currentPolicy,projectMember,ProjectPolicyRepository,type ProjectCommand} from '../access/project-command.ts';
+import {persistProjectReceipt,currentGeneralProjectController,currentGeneralProjectSelectionController,authorizeMaterial,currentPolicy,projectMember,ProjectPolicyRepository,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectDocuments} from './project-documents.ts';
 import {DocumentSourceLinkRecords} from './document-source-link-records.ts';
 import {prepareDocumentSourceDetach,readDocumentSourceLinkInput,type LinkInput} from './document-source-link-history.ts';
@@ -37,8 +37,7 @@ export class ProjectDocumentSourceLinks{
   const documentRef={id:documentId,version:Number(query.version),contentHash:query.contentHash},operation=query.mode==='LINK'?'linkDocumentSource':'proposeDocumentSourceChange';
   let identity:string|undefined,lease:ObservationLease|undefined=observationLease(actor,Date.now()+10000),active=true;const pending=new Set<Promise<unknown>>();
   const gate=async()=>{
-   lease?.check();const member=await projectMember(db,actor,projectId,true);lease?.check();if(member.archived_at||member.participation!=='OWNER')fail('PROJECT_WRITE_DENIED',403);
-   const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[projectId])).rows[0];lease?.check();
+   lease?.check();const control=await currentGeneralProjectSelectionController(db,actor,projectId,operation);lease?.check();
    if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId||!Number.isSafeInteger(Number(control.generation))||Number(control.generation)<1)fail('PROJECT_CONTROL_REQUIRED',403);
    const policy=await currentPolicy(db,projectId);lease?.check();if(!policy)fail('PERMISSION_POLICY_UNCONFIGURED',412);
    const rules=policy.rules.filter(r=>r.subjectRef.kind==='HUMAN'&&r.subjectRef.userId===actor.actorId&&r.operations.includes(operation)&&r.targetScopes.some(t=>t.kind==='PROJECT'&&t.projectId===projectId)&&Date.parse(r.expiresAt)>Date.now());
@@ -99,18 +98,18 @@ export class ProjectDocumentSourceLinks{
   const work=(async()=>{
    // 최초 quota의 내부 clock/query 대기 전에 원 정책의 최소기한을 고정한다.
    // 기존 동일 원명령의 실제 인가 함수를 재사용하며 새 read operation/승인 소비를 만들지 않는다.
-   await ownedAccess.authenticated(token,csrf,async(db,actor)=>{await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request,false,documents);wallEnd=Math.min(wallEnd,policy.validUntil);alive();});
+   await ownedAccess.authenticated(token,csrf,async(db,actor)=>{await currentGeneralProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request,false,documents);wallEnd=Math.min(wallEnd,policy.validUntil);alive();});
    const prepared=await quota.prepare(token,csrf,request,async(db,actor,fixed,existing)=>{
     alive();if(existing)fail('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503);
     const policy=await authorizeMaterial(db,actor,request,false,documents),lease=ownedLease(actor,policy.validUntil);
-    try{plan=await this.#prepare(db,actor,request,documents,lease,async()=>{alive();await currentProjectController(db,actor,request);const p=await authorizeMaterial(db,actor,request,false,documents);if(!same(p.ref,policy.ref))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.check();});return[plan.part];}finally{lease.close();}
+    try{plan=await this.#prepare(db,actor,request,documents,lease,async()=>{alive();await currentGeneralProjectController(db,actor,request);const p=await authorizeMaterial(db,actor,request,false,documents);if(!same(p.ref,policy.ref))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.check();});return[plan.part];}finally{lease.close();}
    });
    alive();if(prepared.replay)return ownedAccess.authenticated(token,csrf,(db,actor)=>quota.protectedReplay(db,actor,request));
    if(!plan)fail('DOCUMENT_SOURCE_OUTCOME_UNKNOWN',503);
    const started=await quota.start(token,csrf,await quota.reserve(token,csrf,prepared));
    try{return await policies.command(token,csrf,request,async(db,actor,policyRef)=>{
     const policy=await authorizeMaterial(db,actor,request,false,documents),lease=ownedLease(actor,Math.min(policy.validUntil,Date.parse(prepared.authorizedUntil)));db=this.#ownedDb(db,lease);
-    const check=async()=>{alive();await currentProjectController(db,actor,request);const current=await authorizeMaterial(db,actor,request,false,documents);if(!same(current.ref,policyRef)||!same(policy.ref,policyRef))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.narrow(new Date(current.validUntil).toISOString());};
+    const check=async()=>{alive();await currentGeneralProjectController(db,actor,request);const current=await authorizeMaterial(db,actor,request,false,documents);if(!same(current.ref,policyRef)||!same(policy.ref,policyRef))fail('DOCUMENT_SOURCE_CURRENT_CHANGED',409);lease.narrow(new Date(current.validUntil).toISOString());};
     try{await check();const final=await this.#prepare(db,actor,request,documents,lease,check,plan);if(!same(final.projection,plan!.projection)||!same(final.part,plan!.part))fail('DOCUMENT_SOURCE_OBSERVATION_CHANGED',409);
      await quota.requireStarted(db,actor,request,started,[plan!.part]);await check();return await this.#store(db,actor,request,policyRef,final,quota,started,check);
     }finally{lease.close();}

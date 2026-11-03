@@ -3,7 +3,7 @@ import {sourceEventQuotaPart} from '../documents/document-source-observation.ts'
 import type {CreationPlan} from './draft-artifacts.ts';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
-import {authorizeMaterial,currentProjectController,projectReplay,type ProjectCommand} from '../access/project-command.ts';
+import {authorizeMaterial,currentGeneralProjectController,projectMember,projectReplay,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import type {ArtifactStore,ProjectNamespaceProof} from '../../storage/artifact-store.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
@@ -99,13 +99,13 @@ export class ProjectStorageQuota{
  async #current(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,state?:PreparedState){
   if(!['uploadArtifact','proposeDocumentChange','saveCheckpoint','linkDocumentSource','proposeDocumentSourceChange'].includes(request.operation)||!uuidV1(request.projectId)||!uuidV1(request.commandId)||request.clientId!==actor.clientId)fail();
   if(state&&(state.p.actorId!==actor.actorId||state.p.request.clientId!==actor.clientId||hash(request)!==state.p.commandHash))fail('IDEMPOTENCY_CONFLICT',409);
-  await currentProjectController(db,actor,request);const policy=await authorizeMaterial(db,actor,request,false,this.#documents);
+  await currentGeneralProjectController(db,actor,request);const member=await projectMember(db,actor,request.projectId);const policy=await authorizeMaterial(db,actor,request,false,this.#documents);
   const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at,s=actor.authSession;
   if(!(at instanceof Date)||!Number.isFinite(at.getTime())||!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt)||!Number.isFinite(policy.validUntil))fail('PROJECT_STORAGE_CURRENT_REQUIRED',412);
   const deadline=Math.min(policy.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt),state?.deadline??Infinity);
   if(deadline<=at.getTime())fail('PROJECT_STORAGE_CURRENT_REQUIRED',412);
   if(state&&hash(policy.ref)!==hash(state.p.policyRef))fail('IDEMPOTENCY_CONFLICT',409);
-  return {policyRef:policy.ref,deadline,sessionId:s.id,atMs:at.getTime()};
+  return {policyRef:policy.ref,deadline,sessionId:s.id,atMs:at.getTime(),accountPurpose:member.participation==='HANDOFF_ELIGIBLE'?'FN15_ORDINARY' as const:'OWNER' as const};
  }
  async prepare(token:string,csrf:string,raw:ProjectCommand,derivePlan:(db:PoolClient,actor:AuthenticatedIdentity,request:Readonly<ProjectCommand>,existingParts?:readonly QuotaPart[])=>Promise<readonly QuotaPart[]>):Promise<PreparedQuotaCommand>{
   const request=freeze(cloneV1(raw));
@@ -156,7 +156,7 @@ export class ProjectStorageQuota{
   const state=this.#prepared.get(prepared);if(!state||prepared.replay)fail();
   let changed=false;const rows=await this.#durable(()=>this.#access.authenticated(token,csrf,async(db,actor)=>{
    const c=await this.#current(db,actor,prepared.request,state);
-   const account=(await db.query('SELECT * FROM anvil.quota_account($1,$2,$3,$4)',[c.sessionId,actor.actorId,actor.clientId,prepared.request.projectId])).rows[0];
+   const account=(await db.query(c.accountPurpose==='FN15_ORDINARY'?'SELECT * FROM anvil.fn15_ordinary_quota_account($1,$2,$3,$4,$5::jsonb)':'SELECT * FROM anvil.quota_account($1,$2,$3,$4)',[c.sessionId,actor.actorId,actor.clientId,prepared.request.projectId,...(c.accountPurpose==='FN15_ORDINARY'?[JSON.stringify(prepared.request)]:[])])).rows[0];
    if(!account||account.coverage_state!=='VERIFIED')fail('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);
    const u=quotaBytes(account.used_bytes),r=quotaBytes(account.held_bytes);if(u+r>PROJECT_STORAGE_CAP)unknown();
    const value=(await db.query('SELECT anvil.quota_reserve($1,$2,$3,$4,$5::jsonb) AS value',[c.sessionId,actor.actorId,actor.clientId,prepared.request.projectId,JSON.stringify(prepared)])).rows[0]?.value;

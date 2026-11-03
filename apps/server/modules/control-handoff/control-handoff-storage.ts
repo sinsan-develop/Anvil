@@ -26,11 +26,11 @@ export function controlPhysicalProjection(value:unknown):unknown{
  for(const [key,x]of Object.entries(row)){if(/(_at|_until)$/.test(key)&&x!==null){if(typeof x!=='string')return fail();const m=/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,6}))?(?:Z|\+00:00)$/.exec(x);if(!m||!Number.isFinite(Date.parse(x)))return fail();row[key]=m[1]+'.'+(m[2]??'').padEnd(6,'0')+'Z';}}
  return row;
 }
-export interface ControlStorageContext{projectId:string;createdAt:string}
+export interface ControlStorageContext{projectId:string;createdAt:string;command?:unknown;subject?:{actorId:string;clientId:string;sessionId:string;credentialGeneration:number}}
 export function planControlStorage(commandRef:RuntimeRefV1,values:ControlStorageRow[],context:ControlStorageContext){
  const rows=copyControlData(values);if(!refV1(commandRef)||rows.length<1||rows.length>10||!context||!uuidV1(context.projectId)||!isoV1(context.createdAt))fail();
  const seen=new Set<string>(),parts=rows.map(r=>{const key=r.table+':'+r.id;if(!controlStorageTables.includes(r.table)||!uuidV1(r.id)||seen.has(key))fail();seen.add(key);return{table:r.table,id:r.id,bytes:controlCostBytes(r.projection),projectionHash:controlHash(controlPhysicalProjection(r.projection))};});
- const payload={schemaVersion:1,purpose:'CONTROL_STORAGE_PLAN',projectId:context.projectId,commandRef:copyControlData(commandRef),createdAt:context.createdAt,rows:parts},metadataBytes=parts.reduce((n,r)=>n+r.bytes,0),planHash=controlHash(payload);
+ const payload={schemaVersion:1,purpose:'CONTROL_STORAGE_PLAN',projectId:context.projectId,commandRef:copyControlData(commandRef),createdAt:context.createdAt,rows:parts,...(context.command!==undefined?{command:copyControlData(context.command)}:{}),...(context.subject?{subject:copyControlData(context.subject)}:{})},metadataBytes=parts.reduce((n,r)=>n+r.bytes,0),planHash=controlHash(payload);
  const initial={...payload,metadataBytes,reservationBytes:0,reservedBytes:0,planHash};
  const reservationBytes=controlCostBytes(controlReservationProjection(initial,'RESERVED')),reservedBytes=metadataBytes+reservationBytes,plan={...initial,reservationBytes,reservedBytes};
  if(!Number.isSafeInteger(reservedBytes)||reservedBytes>10*1024*1024*1024||controlCostBytes(controlReservationProjection(plan,'RESERVED'))!==reservationBytes)fail();
@@ -39,10 +39,10 @@ export function planControlStorage(commandRef:RuntimeRefV1,values:ControlStorage
 export type ControlStoragePlan=ReturnType<typeof planControlStorage>;
 /** SQL actual collector가 읽는 reservation 물리열 전부와 동일한 projection이다. */
 export function controlReservationProjection(plan:ControlStoragePlan,phase:'RESERVED'|'SETTLED'|'UNKNOWN'){
- const {schemaVersion,purpose,projectId,commandRef,createdAt,rows}=plan,payload={schemaVersion,purpose,projectId,commandRef,createdAt,rows};
+ const {metadataBytes:_m,reservationBytes:_s,reservedBytes:_r,planHash:_h,...payload}=plan,{projectId,commandRef,createdAt}=plan;
  return {project_id:projectId,command_id:commandRef.id,command_ref:commandRef,plan_json:payload,plan_hash:plan.planHash,phase,metadata_bytes:plan.metadataBytes,reservation_bytes:plan.reservationBytes,reserved_bytes:plan.reservedBytes,settled_bytes:phase==='SETTLED'?plan.reservedBytes:null,created_at:createdAt,updated_at:phase==='SETTLED'?createdAt:null};
 }
 export function settleControlStorage(plan:ControlStoragePlan,rows:ControlStorageRow[]):number{
- const actual=planControlStorage(plan.commandRef,rows,{projectId:plan.projectId,createdAt:plan.createdAt});
+ const actual=planControlStorage(plan.commandRef,rows,{projectId:plan.projectId,createdAt:plan.createdAt,...(plan.command!==undefined?{command:plan.command}:{}),...(plan.subject?{subject:plan.subject}:{})});
  if(actual.planHash!==plan.planHash||actual.reservedBytes!==plan.reservedBytes||controlCostBytes(controlReservationProjection(actual,'SETTLED'))!==actual.reservationBytes)fail();return actual.reservedBytes;
 }

@@ -3,7 +3,7 @@ import {DocumentSourceLinkRecords} from './document-source-link-records.ts';
 import {ProjectStorageQuota,type StartedQuotaBundle} from '../projects/project-storage-quota.ts';
 import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AccessRepository} from '../access/repository.ts';
-import {ProjectPolicyRepository,currentProjectController,authorizeMaterial,projectReplay} from '../access/project-command.ts';
+import {ProjectPolicyRepository,currentGeneralProjectController,authorizeMaterial,projectReplay} from '../access/project-command.ts';
 import {assertArtifactBackupReadBudget,type ArtifactBackupReadBudget} from '../../storage/artifact-backup-budget-read.ts';
 import { randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -56,7 +56,7 @@ export class ProjectDocuments {
     if(prepared.replay){
       try{
         return await access.authenticated(token,csrf,async(db,actor)=>{
-          await currentProjectController(db,actor,request);await authorizeMaterial(db,actor,request,false,this);
+          await currentGeneralProjectController(db,actor,request);await authorizeMaterial(db,actor,request,false,this);
           const previous=await projectReplay(db,actor,request),p=previous?.data?.proposal;
           if(previous?.data?.status!=='PROPOSAL_RECORDED'||!p?.id)throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED',503);
           const read=await this.proposal(db,actor,request.projectId,p.id);

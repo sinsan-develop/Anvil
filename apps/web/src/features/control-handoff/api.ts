@@ -1,3 +1,5 @@
+import type {ControlAcceptCommand,ControlAcceptanceChain} from '../../../../server/modules/control-handoff/control-grant.ts';
+import type {ProtectedHandoffSummary} from '../../../../server/modules/control-handoff/control-handoff-protected-summary.ts';
 import {ApiError} from '../../api/errors.ts';
 import type {ControlRequestCommand,ControlRequestStoreResult} from '../../../../server/modules/control-handoff/control-request-store.ts';
 import type {ControlRequestReadResult,ControlRequestListResult} from '../../../../server/modules/control-handoff/control-request-read.ts';
@@ -81,7 +83,7 @@ export class ControlApi{
  constructor(transport:typeof fetch,session:ControlSession,projectId:string){this.transport=transport;this.session=session;this.projectId=projectId;}
  private base():string{if(!uuid(this.projectId)||!uuid(this.session.user.id)||!uuid(this.session.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(this.session.csrfToken))throw new ApiError('AUTH_REQUIRED',401);return '/api/v1/projects/'+this.projectId;}
  private path(request:ControlRef):string{if(!ref(request)||request.version!==1)return invalid();return this.base()+'/control-requests/'+request.id+'/versions/'+request.version;}
- private async wire(path:string,command?:ControlCommand):Promise<unknown>{
+ private async wire(path:string,command?:ControlCommand|ControlAcceptCommand):Promise<unknown>{
  const headers:Record<string,string>={Accept:'application/json','X-Anvil-CSRF':this.session.csrfToken};if(command){headers['Content-Type']='application/json';headers['Idempotency-Key']=command.commandId;}
  let response:Response;try{response=await this.transport.call(globalThis,path,{method:command?'POST':'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers,...(command?{body:browserCanonical(command)}:{})});}catch{throw new ApiError('CONNECTION_LOST');}
  // A default-OFF 404 may be a non-JSON framework response. Preserve its denial status.
@@ -113,6 +115,29 @@ export class ControlApi{
  async summary(requestRef:ControlRef,summaryRef:ControlRef,expiresAt:string):Promise<HandoffSummaryReadResult>{
  if(!ref(summaryRef)||summaryRef.id!==requestRef.id)return invalid();const v=await this.wire(this.path(requestRef)+'/handoff-summaries/'+summaryRef.version+'?requestHash='+requestRef.contentHash+'&summaryHash='+summaryRef.contentHash);
  if(!exact(v,['projectId','requestRef','summaryRef','body','observedAt','current','executionAuthorized','controlTransferred'])||v.projectId!==this.projectId||!same(v.requestRef,requestRef)||!same(v.summaryRef,summaryRef)||!iso(v.observedAt)||!current(v.current)||!flags(v))return invalid();const body=await summaryBody(v.body,requestRef,summaryRef,this.projectId,expiresAt);return {projectId:this.projectId,requestRef,summaryRef,body,observedAt:v.observedAt,current:v.current,executionAuthorized:false,controlTransferred:false};
+ }
+ /** 보호요약은 v1의 SYNTHETIC_ONLY 원형과 별도로 검산한다. 조회는 현재 권위 발급이 아니다. */
+ async prepareProtected(command:PrepareControlHandoffCommand):Promise<ProtectedHandoffSummary>{
+  if(!exact(command,['schemaVersion','operation','commandId','projectId','clientId','payload'])||command.schemaVersion!==1||command.operation!=='prepareControlHandoff'||!uuid(command.commandId)||command.projectId!==this.projectId||command.clientId!==this.session.clientId||!exact(command.payload,['requestRef'])||!ref(command.payload.requestRef))return invalid();
+  return readProtectedWire(await this.wire(this.path(command.payload.requestRef)+'/protected-handoff-summaries',command),this.projectId,command.payload.requestRef);
+ }
+ async protectedHead(requestRef:ControlRef){
+  const value=await this.wire(this.path(requestRef)+'/protected-handoff-summaries/head?requestHash='+requestRef.contentHash);
+  if(!exact(value,['schemaVersion','purpose','projectId','requestRef','observedAt','head','executionAuthorized','dispatchPerformed','controlTransferred'])||value.schemaVersion!==2||value.purpose!=='CONTROL_HANDOFF_PROTECTED_HEAD'||value.projectId!==this.projectId||!same(value.requestRef,requestRef)||!iso(value.observedAt)||!flags(value)||value.dispatchPerformed!==false||!exact(value.head,['state','summaryRef']))return invalid();
+  const h=value.head;if(h.state==='AVAILABLE'){if(!ref(h.summaryRef)||h.summaryRef.id!==requestRef.id)return invalid();}else if(!['NONE','UNKNOWN'].includes(String(h.state))||h.summaryRef!==null)return invalid();
+  return {observedAt:value.observedAt,head:h.state==='AVAILABLE'?{state:'AVAILABLE' as const,summaryRef:readRef(h.summaryRef)}:{state:h.state as 'NONE'|'UNKNOWN',summaryRef:null}};
+ }
+ async protectedSummary(requestRef:ControlRef,summaryRef:ControlRef):Promise<ProtectedHandoffSummary>{
+  if(!ref(summaryRef)||summaryRef.id!==requestRef.id)return invalid();return readProtectedWire(await this.wire(this.path(requestRef)+'/protected-handoff-summaries/'+summaryRef.version+'?requestHash='+requestRef.contentHash+'&summaryHash='+summaryRef.contentHash),this.projectId,requestRef,summaryRef);
+ }
+ private acceptInput(command:ControlAcceptCommand,summary:ProtectedHandoffSummary){
+  if(!exact(command,['schemaVersion','operation','commandId','projectId','clientId','payload'])||command.schemaVersion!==1||command.operation!=='acceptControl'||!uuid(command.commandId)||command.projectId!==this.projectId||command.clientId!==this.session.clientId||!exact(command.payload,['requestRef','summaryVersion','reason'])||!ref(command.payload.requestRef)||!positive(command.payload.summaryVersion)||typeof command.payload.reason!=='string'||!command.payload.reason.trim()||command.payload.reason.length>20000||!same(command.payload.requestRef,summary.snapshot.requestRef)||command.payload.summaryVersion!==summary.ref.version||summary.snapshot.targetActorRef.userId!==this.session.user.id||summary.snapshot.targetClientRef.userId!==this.session.user.id||summary.snapshot.targetClientRef.clientId!==this.session.clientId)return invalid();
+ }
+ async accept(command:ControlAcceptCommand,summary:ProtectedHandoffSummary):Promise<ControlAcceptanceChain['result']>{
+  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);if(fixed.snapshot.transferState!=='READY'||Date.parse(fixed.snapshot.validUntil)<=Date.now())throw new ApiError('REQUEST_FAILED',412);return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances',command),command,fixed,this.session);
+ }
+ async acceptanceResult(command:ControlAcceptCommand,summary:ProtectedHandoffSummary):Promise<ControlAcceptanceChain['result']>{
+  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances/'+command.commandId+'?commandHash='+await wireHash(command)),command,fixed,this.session);
  }
  async send(command:ControlCommand):Promise<ControlResult>{
  if(!exact(command,['schemaVersion','operation','commandId','projectId','clientId','payload'])||command.schemaVersion!==1||!uuid(command.commandId)||command.projectId!==this.projectId||command.clientId!==this.session.clientId)return invalid();
@@ -165,4 +190,20 @@ export function browserCanonical(value: unknown): string {
     } finally { active.delete(item); }
   }
   return encode(value, 0);
+}
+
+async function readProtectedWire(value:unknown,projectId:string,requestRef:ControlRef,want?:ControlRef):Promise<ProtectedHandoffSummary>{
+ if(!exact(value,['ref','snapshot'])||!ref(value.ref)||value.ref.id!==requestRef.id||want&&!same(value.ref,want)||!exact(value.snapshot,['schemaVersion','purpose','projectId','requestRef','summaryVersion','baseControl','targetActorRef','targetClientRef','observedAt','validUntil','collections','gaps','transferState','executionAuthorized','dispatchPerformed','controlTransferred']))return invalid();
+ const s=value.snapshot;if(s.schemaVersion!==2||s.purpose!=='CONTROL_HANDOFF_PROTECTED_SUMMARY'||s.projectId!==projectId||!same(s.requestRef,requestRef)||s.summaryVersion!==value.ref.version||!basis(s.baseControl)||!exact(s.targetActorRef,['userId'])||!uuid(s.targetActorRef.userId)||!exact(s.targetClientRef,['userId','clientId'])||s.targetClientRef.userId!==s.targetActorRef.userId||!uuid(s.targetClientRef.clientId)||!iso(s.observedAt)||!iso(s.validUntil)||Date.parse(s.validUntil)<=Date.parse(s.observedAt)||Date.parse(s.validUntil)-Date.parse(s.observedAt)>30000||!flags(s)||s.dispatchPerformed!==false||!exact(s.collections,categories)||!stringList(s.gaps,1000))return invalid();
+ let unknown=s.gaps.length>0,waiting=false;
+ for(const key of categories){const c=s.collections[key];if(!exact(c,['state','scope','observedAt','expiresAt','coverage','items','gaps'])||!['VERIFIED_CURRENT','WAITING','UNKNOWN'].includes(String(c.state))||!exact(c.scope,['projectId','requestRef','baseControl'])||c.scope.projectId!==projectId||!same(c.scope.requestRef,requestRef)||!same(c.scope.baseControl,s.baseControl)||!iso(c.observedAt)||!iso(c.expiresAt)||Date.parse(c.observedAt)>Date.parse(s.observedAt)||Date.parse(c.expiresAt)<Date.parse(s.validUntil)||!exact(c.coverage,['profile','sources','scopeHash','watermarkHash'])||c.coverage.profile!=='FN15_KNOWN_SOURCE_SET_V1'||!stringList(c.coverage.sources,200)||!hash(c.coverage.scopeHash)||!hash(c.coverage.watermarkHash)||c.coverage.scopeHash!==await wireHash(c.scope)||!Array.isArray(c.items)||c.items.length>200||!stringList(c.gaps,1000))return invalid();
+  for(const i of c.items){if(!exact(i,['kind','ref','observedAt','expiresAt','provenance','handoffDisposition','reasonCode'])||i.kind!==key||!ref(i.ref)||!iso(i.observedAt)||!iso(i.expiresAt)||!['SERVER_LEDGER','REGISTERED_CURRENT_PROOF','HISTORICAL_CLAIM'].includes(String(i.provenance))||!['CONTINUE_CONFIRMED','PRESERVE_BLOCKED_INPUT','BLOCKED','UNKNOWN'].includes(String(i.handoffDisposition))||typeof i.reasonCode!=='string'||i.reasonCode.length>256)return invalid();}
+  unknown ||=c.state==='UNKNOWN'||c.gaps.length>0;waiting ||=c.state==='WAITING';
+ }
+ if(s.transferState!==(unknown?'UNKNOWN':waiting?'WAITING':'READY')||await wireHash(s)!==value.ref.contentHash||new TextEncoder().encode(browserCanonical(value)).length>2*1024*1024)return invalid();return value as unknown as ProtectedHandoffSummary;
+}
+function stringList(v:unknown,max:number):v is string[]{return Array.isArray(v)&&v.length<=max&&v.every(x=>typeof x==='string'&&x.length<=256);}
+function readAcceptanceWire(value:unknown,command:ControlAcceptCommand,summary:ProtectedHandoffSummary,session:ControlSession):ControlAcceptanceChain['result']{
+ if(!exact(value,['schemaVersion','purpose','commandId','projectId','acceptanceRef','requestRef','summaryRef','previousControl','nextControl','grantRef','receiptRef','auditRef','recordedAt','executionAuthorized','dispatchPerformed','controlTransferred'])||value.schemaVersion!==1||value.purpose!=='CONTROL_ACCEPTANCE_RESULT'||value.commandId!==command.commandId||value.projectId!==command.projectId||!same(value.requestRef,command.payload.requestRef)||!same(value.summaryRef,summary.ref)||!same(value.previousControl,summary.snapshot.baseControl)||!basis(value.nextControl)||value.nextControl.actorId!==session.user.id||value.nextControl.clientId!==session.clientId||value.nextControl.generation!==summary.snapshot.baseControl.generation+1||value.nextControl.version!==summary.snapshot.baseControl.version+1||!iso(value.recordedAt)||Date.parse(value.recordedAt)<Date.parse(summary.snapshot.observedAt)||Date.parse(value.recordedAt)>=Date.parse(summary.snapshot.validUntil)||value.executionAuthorized!==false||value.dispatchPerformed!==false||value.controlTransferred!==true)return invalid();
+ const ids=new Set<string>();for(const k of ['acceptanceRef','grantRef','receiptRef','auditRef']){const r=value[k];if(!ref(r)||r.version!==1||ids.has(r.id))return invalid();ids.add(r.id);}return value as unknown as ControlAcceptanceChain['result'];
 }

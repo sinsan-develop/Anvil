@@ -8,7 +8,7 @@ import {verifiedBundle,currentAccess} from './control-request-read.ts';
 import type {ControlRequestSnapshot} from './control-request-snapshot.ts';
 import {createControlHandoffEvidenceSource,HandoffBudget,type HandoffClock,type ControlHandoffEvidenceSource,type HandoffEvidenceScope} from './control-handoff-evidence-source.ts';
 import {issueProtectedHandoffSummary,readProtectedHandoffSummary,type ProtectedHandoffSummary} from './control-handoff-protected-summary.ts';
-import {copyControlData,controlHash,sameControl,createControlAcceptanceChain,verifyControlAcceptanceChain,readCurrentControlGrant,type ControlAcceptCommand,type ControlBasis} from './control-grant.ts';
+import {copyControlData,controlHash,sameControl,createControlAcceptanceChain,verifyControlAcceptanceChain,readCurrentControlGrant,readControlAcceptanceHistory,type ControlAcceptCommand,type ControlBasis} from './control-grant.ts';
 import {planControlStorage,settleControlStorage,type ControlStorageRow,controlStorageTables} from './control-handoff-storage.ts';
 export const controlAcceptanceMigration='0073_control_handoff_acceptance';
 // 0073 완성 후 그 실제 bytes checksum으로 고정한다. 미작성 상태는 실제 연결 불가다.
@@ -30,7 +30,7 @@ export class ControlAcceptanceService{
  constructor(options:Options){this.#options={...options};this.#authenticate=options.access.authenticateInTransaction;this.#evidence=options.evidence??createControlHandoffEvidenceSource();}
  forSession(token:string,csrf:string,projectId:string){
   if(!uuidV1(projectId))fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);
-  return Object.freeze({prepare:(value:unknown)=>this.#prepare(token,csrf,projectId,value),accept:(value:unknown)=>this.#accept(token,csrf,projectId,value),readSummary:(requestRef:RuntimeRefV1,summaryRef:RuntimeRefV1)=>this.#readSummary(token,csrf,projectId,requestRef,summaryRef),readResult:(commandId:string,commandHash:string)=>this.#readResult(token,csrf,projectId,commandId,commandHash)});
+  return Object.freeze({prepare:(value:unknown)=>this.#prepare(token,csrf,projectId,value),accept:(value:unknown)=>this.#accept(token,csrf,projectId,value),readHead:(requestRef:RuntimeRefV1)=>this.#readHead(token,csrf,projectId,requestRef),readSummary:(requestRef:RuntimeRefV1,summaryRef:RuntimeRefV1)=>this.#readSummary(token,csrf,projectId,requestRef,summaryRef),readResult:(commandId:string,commandHash:string)=>this.#readResult(token,csrf,projectId,commandId,commandHash)});
  }
  async #run<T>(token:string,csrf:string,pid:string,id:string|null,work:(ctx:Context)=>Promise<T>):Promise<T>{
   const lease=new HandoffBudget(30000,this.#options.clock);let raw:PoolClient|undefined,started=false,commitStarted=false,committed=false,writes=false,discard=false;
@@ -70,7 +70,7 @@ export class ControlAcceptanceService{
  #scope(ctx:Context,request:ControlRequestSnapshot,requestRef:RuntimeRefV1):HandoffEvidenceScope{return{projectId:request.projectId,requestRef,baseControl:request.baseControl,sessionId:ctx.actor.authSession!.id,actorId:ctx.actor.actorId,clientId:ctx.actor.clientId};}
  #ids(){const allocate=this.#options.allocate??randomUUID;return{acceptance:allocate(),revocation:allocate(),grant:allocate(),receipt:allocate(),audit:allocate()};}
  async #persist(ctx:Context,command:Command,rows:ControlStorageRow[]){
-  const plan=planControlStorage({id:command.commandId,version:1,contentHash:controlHash(command)},rows,{projectId:command.projectId,createdAt:new Date(ctx.lease.at()).toISOString()});ctx.markWrite();
+  const plan=planControlStorage({id:command.commandId,version:1,contentHash:controlHash(command)},rows,{projectId:command.projectId,createdAt:new Date(ctx.lease.at()).toISOString(),command,subject:{actorId:ctx.actor.actorId,clientId:ctx.actor.clientId,sessionId:ctx.actor.authSession!.id,credentialGeneration:ctx.actor.credentialGeneration}});ctx.markWrite();
   const reserved=(await ctx.db.query('SELECT * FROM anvil.fn15_control_storage_reserve($1,$2,$3,$4,$5,$6,$7::jsonb)',[ctx.actor.authSession!.id,ctx.actor.actorId,ctx.actor.clientId,command.projectId,plan.planHash,plan.reservedBytes,canonicalJson(plan)])).rows;
   if(reserved.length!==1||reserved[0].plan_hash!==plan.planHash||Number(reserved[0].reserved_bytes)!==plan.reservedBytes)fail();
   for(const row of rows){if(!controlStorageTables.includes(row.table)||!row.projection||typeof row.projection!=='object')fail();const projection=row.projection as Record<string,unknown>,columns=Object.keys(projection);if(columns.some(c=>!/^[a-z_]+$/.test(c)))fail();const values=columns.map(c=>c.endsWith('_json')||c.endsWith('_ref')?canonicalJson(projection[c]):projection[c]);const result=await ctx.db.query(`INSERT INTO anvil.${row.table}(${columns.join(',')}) VALUES(${columns.map((c,i)=>'$'+(i+1)+(c.endsWith('_json')||c.endsWith('_ref')?'::jsonb':'')).join(',')})`,values);if(result.rowCount!==1)fail();}
@@ -93,7 +93,7 @@ export class ControlAcceptanceService{
   const command=readControlAcceptanceCommand(value,'acceptControl')as ControlAcceptCommand;if(command.projectId!==pid)fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);
   return this.#run(token,csrf,pid,command.commandId,async ctx=>{
    const prior=await this.#command(ctx,command),request=await this.#request(ctx,pid,command.payload.requestRef);this.#target(ctx,request.snapshot);
-   if(prior){const row=(await ctx.db.query('SELECT bundle_json FROM anvil.control_handoffs WHERE project_id=$1 AND command_id=$2',[pid,command.commandId])).rows;if(row.length!==1)fail();const chain=verifyControlAcceptanceChain(row[0].bundle_json);if(!sameControl(chain.command,command)||!sameControl(chain.result,prior))fail();return chain.result;}
+   if(prior){const chain=await readControlAcceptanceHistory(ctx.db,pid,command.commandId);if(!sameControl(chain.command,command)||!sameControl(chain.result,prior))fail();return chain.result;}
    this.#fresh(ctx,request.snapshot);const before=await ctx.observe();if(!sameControl(before.basis,request.snapshot.baseControl))fail('CONTROL_ACCEPTANCE_COMMAND_CONFLICT',409,command.commandId);
    const stored=await this.#summary(ctx,pid,request.requestRef,{id:request.requestRef.id,version:command.payload.summaryVersion,contentHash:''},false);ctx.lease.narrow(stored.snapshot.validUntil);if(stored.snapshot.transferState!=='READY')fail('CONTROL_HANDOFF_NOT_READY',412,command.commandId);
    const scope=this.#scope(ctx,request.snapshot,request.requestRef),evidence=await this.#evidence.collect(ctx.db,scope,ctx.lease);if(evidence.transferState!=='READY'||handoffWatermark(stored.snapshot.collections)!==handoffWatermark(evidence.collections))fail('CONTROL_HANDOFF_NOT_READY',412,command.commandId);
@@ -111,6 +111,20 @@ export class ControlAcceptanceService{
   const value=readProtectedHandoffSummary({ref:{id:requestRef.id,version:Number(rows[0].version),contentHash:rows[0].content_hash},snapshot:rows[0].body_json});if(!sameControl(value.snapshot.requestRef,requestRef))fail();return value;
  }
  async #readSummary(token:string,csrf:string,pid:string,requestRef:RuntimeRefV1,summaryRef:RuntimeRefV1){return this.#run(token,csrf,pid,null,async ctx=>{const request=await this.#request(ctx,pid,requestRef);if(request.snapshot.targetActorRef.userId!==ctx.actor.actorId||request.snapshot.targetClientRef.clientId!==ctx.actor.clientId)await this.#controller(ctx,request.snapshot,true);return this.#summary(ctx,pid,requestRef,summaryRef);});}
- async #readResult(token:string,csrf:string,pid:string,commandId:string,commandHash:string){if(!uuidV1(commandId)||!/^[0-9a-f]{64}$/.test(commandHash))fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);return this.#run(token,csrf,pid,commandId,async ctx=>{const rows=(await ctx.db.query('SELECT * FROM anvil.control_handoff_acceptance_commands WHERE project_id=$1 AND command_id=$2',[pid,commandId])).rows;if(rows.length!==1||rows[0].actor_id!==ctx.actor.actorId||rows[0].client_id!==ctx.actor.clientId||rows[0].command_hash!==commandHash||rows[0].result_hash!==controlHash(rows[0].result_json))fail('CONTROL_ACCEPTANCE_NOT_FOUND',404);return copyControlData(rows[0].result_json);});}
+ async #readHead(token:string,csrf:string,pid:string,requestRef:RuntimeRefV1){
+  if(!refV1(requestRef)||requestRef.version!==1)fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);
+  return this.#run(token,csrf,pid,null,async ctx=>{
+   const request=await this.#request(ctx,pid,requestRef);if(request.snapshot.targetActorRef.userId!==ctx.actor.actorId||request.snapshot.targetClientRef.clientId!==ctx.actor.clientId)await this.#controller(ctx,request.snapshot,true);else this.#target(ctx,request.snapshot);
+   const current=await ctx.observe(),result=(state:'NONE'|'UNKNOWN'|'AVAILABLE',summaryRef:RuntimeRefV1|null,observedAt:string)=>({schemaVersion:2 as const,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD' as const,projectId:pid,requestRef,observedAt,head:{state,summaryRef},executionAuthorized:false as const,dispatchPerformed:false as const,controlTransferred:false as const});
+   if(!sameControl(current.basis,request.snapshot.baseControl)||Date.parse(request.snapshot.expiresAt)<=ctx.lease.at())return result('UNKNOWN',null,new Date(ctx.lease.at()).toISOString());
+   ctx.lease.narrow(request.snapshot.expiresAt);
+   const rows=(await ctx.db.query('SELECT * FROM anvil.control_handoff_protected_summaries WHERE project_id=$1 AND request_id=$2 ORDER BY version DESC LIMIT 1',[pid,requestRef.id])).rows;
+   if(rows.length>1)fail();const stored=rows.length?readProtectedHandoffSummary({ref:{id:requestRef.id,version:Number(rows[0].version),contentHash:rows[0].content_hash},snapshot:rows[0].body_json}):null;
+   if(stored&&(!sameControl(stored.snapshot.requestRef,requestRef)||stored.snapshot.projectId!==pid))fail();
+   const after=await ctx.observe();if(!sameControl(after.basis,request.snapshot.baseControl))return result('UNKNOWN',null,new Date(ctx.lease.at()).toISOString());
+   return result(stored?'AVAILABLE':'NONE',stored?.ref??null,new Date(ctx.lease.at()).toISOString());
+  });
+ }
+ async #readResult(token:string,csrf:string,pid:string,commandId:string,commandHash:string){if(!uuidV1(commandId)||!/^[0-9a-f]{64}$/.test(commandHash))fail('CONTROL_ACCEPTANCE_INPUT_INVALID',400);return this.#run(token,csrf,pid,commandId,async ctx=>{const rows=(await ctx.db.query('SELECT * FROM anvil.control_handoff_acceptance_commands WHERE project_id=$1 AND command_id=$2',[pid,commandId])).rows;if(rows.length!==1||rows[0].actor_id!==ctx.actor.actorId||rows[0].client_id!==ctx.actor.clientId||rows[0].command_hash!==commandHash||rows[0].result_hash!==controlHash(rows[0].result_json))fail('CONTROL_ACCEPTANCE_NOT_FOUND',404);const chain=await readControlAcceptanceHistory(ctx.db,pid,commandId);if(!sameControl(chain.command,rows[0].command_json)||!sameControl(chain.result,rows[0].result_json)||controlHash(chain.command)!==commandHash)fail();return chain.result;});}
 }
 function handoffWatermark(collections:ProtectedHandoffSummary['snapshot']['collections']){return controlHash(Object.entries(collections).map(([key,c])=>({key,scopeHash:c.coverage.scopeHash,watermarkHash:c.coverage.watermarkHash,refs:c.items.map(i=>i.ref)})));}

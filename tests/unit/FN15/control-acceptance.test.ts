@@ -17,6 +17,7 @@ function fixture(){
   if(sql.startsWith('INSERT INTO anvil.')){const match=/INSERT INTO anvil\.(\w+)\(([^)]+)\)/.exec(sql)!;const table=match[1]!,keys=match[2]!.split(','),row=Object.fromEntries(keys.map((k,i)=>[k,k.endsWith('_json')||k.endsWith('_ref')?JSON.parse(String(args[i])):args[i]]));rows.set(table,[...(rows.get(table)??[]),row]);return{rows:[],rowCount:1};}
   if(sql.includes('fn15_control_storage_actual')){const all=[...rows.entries()].flatMap(([table,values])=>values.filter(r=>r.command_id===args[1]||r.source_command_id===args[1]).map(r=>({table,id:String(r.id??r.request_id??r.command_id),projection:r})));return{rows:[{rows_json:all}],rowCount:1};}
   if(sql.includes('fn15_control_storage_settle'))return{rows:[{settled_bytes:args[2]}],rowCount:1};
+  if(sql.includes('FROM anvil.control_handoffs')){const h=(rows.get('control_handoffs')??[]).find(r=>r.command_id===args[1]);if(!h)return{rows:[],rowCount:0};const c=(rows.get('control_handoff_acceptance_commands')??[]).filter(r=>r.command_id===args[1]);return{rows:[{...h,grant_rows:(rows.get('control_grant_events')??[]).filter(r=>r.acceptance_id===h.id).map(r=>({ref:{id:r.id,version:1,contentHash:r.content_hash},snapshot:r.snapshot_json})).sort((a,b)=>String((a.snapshot as any).kind).localeCompare(String((b.snapshot as any).kind))),command_rows:c.map(r=>({command:r.command_json,result:r.result_json,commandHash:r.command_hash,resultHash:r.result_hash})),receipt_rows:(rows.get('control_handoff_acceptance_receipts')??[]).filter(r=>r.command_id===args[1]).map(r=>({ref:{id:r.id,version:1,contentHash:r.content_hash},snapshot:r.body_json})),audit_rows:(rows.get('control_handoff_acceptance_audits')??[]).filter(r=>r.command_id===args[1]).map(r=>({ref:{id:r.id,version:1,contentHash:r.content_hash},snapshot:r.body_json}))}],rowCount:1};}
   if(sql.includes('FROM anvil.control_handoff_acceptance_commands'))return{rows:(rows.get('control_handoff_acceptance_commands')??[]).filter(r=>r.command_id===args[1]),rowCount:0};
   if(sql.includes('FROM anvil.control_handoff_protected_summaries'))return{rows:(rows.get('control_handoff_protected_summaries')??[]).filter(r=>r.request_id===args[1]&&(args.length<4||Number(r.version)===args[2]&&r.content_hash===args[3])).sort((a,b)=>Number(b.version)-Number(a.version)).slice(0,sql.includes('LIMIT 1')?1:undefined),rowCount:0};
   throw Error('UNMODELED_SQL '+sql);
@@ -67,4 +68,29 @@ test('짧은 session100ms 최소기한은 pending query 응답timer도 줄이고
  let outcome='PENDING';const command={schemaVersion:1,operation:'prepareControlHandoff',commandId:'88888888-8888-4888-8888-000000000033',projectId,clientId:controllerClient,payload:{requestRef:f.request.request.requestRef}};
  const operation=new m.ControlAcceptanceService({...f,clock:clock.clock}as never).forSession('memory-token','memory-csrf',projectId).prepare(command).catch(e=>{outcome=e.code;});await turns();assert.ok(clock.scheduled.some(ms=>ms<=100));clock.expire(101);await turns();assert.equal(outcome,'CONTROL_ACCEPTANCE_TIME_LIMIT');assert.equal(f.counts().releases,0);resolve({rows:[{id:projectId,archived_at:null}],rowCount:1});await operation;await turns();assert.equal(f.counts().releases,1);
  const g=fixture();g.lost();await assert.rejects(()=>new m.ControlAcceptanceService(g as never).forSession('memory-token','memory-csrf',projectId).prepare({...command,commandId:'88888888-8888-4888-8888-000000000034'}));assert.ok(g.releaseErrors[0] instanceof Error);
+});
+
+
+test('정확 target의 보호 head 발견은 저장 원문만 읽고 만료·다른 target은 수락 근거를 만들지 않는다',async()=>{
+ const m=await load(),f=fixture(),service=new m.ControlAcceptanceService(f as never),command={schemaVersion:1 as const,operation:'prepareControlHandoff' as const,commandId:'88888888-8888-4888-8888-000000000051',projectId,clientId:controllerClient,payload:{requestRef:f.request.request.requestRef}};
+ const stored=await service.forSession('memory-token','memory-csrf',projectId).prepare(command);f.auth.actorId=f.request.request.snapshot.targetActorRef.userId;f.auth.clientId=f.request.request.snapshot.targetClientRef.clientId;
+ const target=service.forSession('memory-token','memory-csrf',projectId),before=f.logs.filter(x=>x.includes('fn15_handoff_facts')).length;
+ const head=await target.readHead(f.request.request.requestRef);assert.equal(head.schemaVersion,2);assert.deepEqual(head.head,{state:'AVAILABLE',summaryRef:stored.ref});assert.equal(f.logs.filter(x=>x.includes('fn15_handoff_facts')).length,before);
+ f.auth.clientId='99999999-9999-4999-8999-000000000099';await assert.rejects(()=>target.readHead(f.request.request.requestRef));
+ f.auth.clientId=f.request.request.snapshot.targetClientRef.clientId;f.clock.now=()=>Date.parse(now)+21000;const expired=await target.readHead(f.request.request.requestRef);assert.deepEqual(expired.head,{state:'UNKNOWN',summaryRef:null});
+});
+
+
+test('과거 성공 GET/POST replay도 실제 물리 receipt 누락을 거절하고 현재 control로 역사를 지우지 않는다',async()=>{
+ const m=await load(),g=await import('../../../apps/server/modules/control-handoff/control-grant.ts'),f=fixture();f.auth.actorId=f.request.request.snapshot.targetActorRef.userId;f.auth.clientId=f.request.request.snapshot.targetClientRef.clientId;
+ const command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:'88888888-8888-4888-8888-000000000061',projectId,clientId:f.auth.clientId,payload:{requestRef:f.request.request.requestRef,summaryVersion:1,reason:'과거 성공 조회'}};
+ const id=(n:number)=>'99999999-9999-4999-8999-'+String(n).padStart(12,'0'),chain=g.createControlAcceptanceChain({projectId,command,requestRef:f.request.request.requestRef,summaryRef:{id:f.request.request.requestRef.id,version:1,contentHash:'a'.repeat(64)},before:baseControl,targetActorId:f.auth.actorId,recordedAt:now,ids:{acceptance:id(1),revocation:id(2),grant:id(3),receipt:id(4),audit:id(5)}});
+ f.rows.set('control_handoff_acceptance_commands',[{project_id:projectId,command_id:command.commandId,operation:'acceptControl',actor_id:f.auth.actorId,client_id:f.auth.clientId,command_hash:g.controlHash(command),command_json:command,result_hash:g.controlHash(chain.result),result_json:chain.result}]);
+ f.rows.set('control_handoffs',[{project_id:projectId,id:chain.acceptance.ref.id,command_id:command.commandId,next_generation:chain.result.nextControl.generation,content_hash:chain.acceptance.ref.contentHash,snapshot_json:chain.acceptance.snapshot,bundle_json:chain}]);
+ f.rows.set('control_grant_events',[chain.grant,chain.revocation].map(e=>({project_id:projectId,id:e.ref.id,content_hash:e.ref.contentHash,snapshot_json:e.snapshot,acceptance_id:chain.acceptance.ref.id})));
+ f.rows.set('control_handoff_acceptance_audits',[{id:chain.audit.ref.id,content_hash:chain.audit.ref.contentHash,body_json:chain.audit.snapshot,command_id:command.commandId}]);
+ const session=new m.ControlAcceptanceService(f as never).forSession('memory-token','memory-csrf',projectId);
+ await assert.rejects(()=>session.readResult(command.commandId,g.controlHash(command)));await assert.rejects(()=>session.accept(command));
+ f.rows.set('control_handoff_acceptance_receipts',[{id:chain.receipt.ref.id,content_hash:chain.receipt.ref.contentHash,body_json:chain.receipt.snapshot,command_id:command.commandId}]);
+ assert.deepEqual(await session.readResult(command.commandId,g.controlHash(command)),chain.result);assert.deepEqual(await session.accept(command),chain.result);assert.equal(f.logs.some(x=>x.includes('fn15_handoff_facts')),false);assert.equal(f.logs.some(x=>x.startsWith('INSERT')||x.startsWith('UPDATE')),false);
 });

@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { AuthFailure } from '../access/repository.ts';
-import { authorizeMaterial, currentProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
+import { authorizeMaterial, currentGeneralProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import { parseWireJson,canonicalJson,contentHash } from '../../../../contracts/canonical.ts';
 import{inspectArtifact,assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
@@ -38,7 +38,7 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
         const context = uploadContext(request.headers['x-anvil-command'], projectId);
         if (request.headers['idempotency-key'] !== undefined && request.headers['idempotency-key'] !== context.commandId) throw new AuthFailure('INPUT_INVALID', 400);
         // 큰 본문 수신 전 검사하며 실제 저장 직전에도 현재 허가를 다시 검사한다.
-        try { await options.repository.authenticated(token(request), csrf(request), async (db, actor) => { await currentProjectController(db, actor, context); await authorizeMaterial(db, actor, context); }); }
+        try { await options.repository.authenticated(token(request), csrf(request), async (db, actor) => { await currentGeneralProjectController(db, actor, context); await authorizeMaterial(db, actor, context); }); }
         catch (error) { await recordProjectDenial(options.repository, token(request), projectId, error); throw error; }
         contexts.set(request, context);
       }
@@ -54,7 +54,7 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
       if(!prepared.replay)started=await quota.start(token(request),csrf(request),await quota.reserve(token(request),csrf(request),prepared));
       let result:unknown;
       try{result = await options.repository.authenticated(token(request), csrf(request), async (db, actor) => {
-        await currentProjectController(db, actor, context); const policy = await authorizeMaterial(db, actor, context);
+        await currentGeneralProjectController(db, actor, context); const policy = await authorizeMaterial(db, actor, context);
         const previous = await projectReplay(db, actor, context);
         if (!store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
         if (previous !== undefined) {

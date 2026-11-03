@@ -13467,3 +13467,56 @@ git diff --check
 ### 2026-11-03 FN15 보호 head의 실제 component 소비 제출
 - Primary는 target 보호 head service의 행동 RED920775→b656d3 1PASS/472.4501ms, 실제 React 버튼 누락 RED74bd36→49c890 1PASS/803.5878ms를 제출했다. component→API 고정 head→고정 원문 조회와 초기IO0/UNKNOWN수락0/원buffer불변 범위이며 기존 v1 경로는 유지한다. TS closure narrowing 오류1은 const capture로 보정했고7b1298 root noEmit/diff0이다. 메모리 harness configFile:false/envDir:false/write:false이며 실제 FSQA/DB/키/서비스0이다.
 - SQL/F/EMPTY 폐쇄·역사 물리역완결·READY CAS/일반SQL/최종 수락UI는 계속 미완료다. 안정부분 전체 동결은 아직 아니므로 Main은 제출을 범위별 증거로만 보존하고 동일 검사를 반복하지 않는다. Main 소유 native 기술보고서/현황2문서만 별도 checkpoint하며 Primary 제품 변경·보호untracked3은 stage하지 않는다. 같은42코드writer는 계속 구현한다.
+### 2026-11-03 Main 文書 checkpoint·다음 FN01 참여권한 단위 준비
+- Main은029fcc에서빈index/정확branch/HEAD·privateURL·문서diff0검산후e90c96으로기술보고서+현황정확2를cbf6277689358f68c5d522eac47bb01a49adf724에commit했다. 9458c3의delta2/private기준검산뒤25b5ba로승인ref HEAD:refs/heads/codex/av3-stage-b만정상push·remote동일SHA를확인했다. private mainf976ed5e/local main04430432불변이며f11da1에서보호untracked3지문일치/index비움/제품dirty보존을확인했다. Primary의42경로writer는계속유지하며제품checkpoint/합격판정이아니다.
+- 기존Reviewer의후속준비읽기는saveProjectMembership의실제users/clients/session·member/control필드와OWNER/current/최근재인증/정확정책·기존command/approval/receipt접점을확인했다. 다음구현단위는기존사용자ref만받는OWNER전용참여권한관리이며새초대/전역사용자검색/자동제어이전은포함하지않는다. 현재controller를VIEWER로바꾸면FK만으로불일치가막히지않으므로기존FN15인계후처리·현재자격상실거절을최소권장으로반환했다. 아직WI확정/구현dispatch/새권한계약채택은없다.
+- 다음WI에서는인증/프로젝트/멤버/control잠금순서·교차사용자교착·lastOWNER동시변경·불변member버전/이력·원명령replay/승인소비를고정한다. 현재원표의RLS가저장을이미보호한다고가정하지않는다. 신규migration번호/겹치는파일writer는현재FN15종료뒤확인한다. 조회와실자료조사를혼동하지않고제품source만읽었다. 실제키/DB/권한/서비스/Agent/제품네트워크·실자료0,전체계획미완료다.
+### 2026-11-03 FN15 원 수락 역사 물리행 보완·I1 조회자 독립 잔여 검수
+- Primary는receipt물리행누락5b7f06 RED→readControlAcceptanceHistory를실제GET/POSTreplay에연결한cd22f6 1PASS/530.1395ms와root type0를제출했다. Main353385는command/acceptance/grant·revocation/receipt/audit물리행대조와두실제caller연결을읽기확인했다. 현재control/회수/옛summaryTTL을역사재조회의새조건으로넣지않는분리를유지한다. 실제PG검증은아니다.
+- Primary의일반승인목록보완05b140 RED→d8b30b 1PASS/1221.3488ms/type0는HE본인current물리grant·일반9op와특수후보/없는grant REVOKED의합성범위다. Main648091의후속읽기에서는ordinaryGrant판정이조회자HE/actor/client에기반하므로다른OWNER/VIEWER가허가된동일요청목록을읽으면아직REVOKED가될수있는잔여를확인했다. effectiveState의요청자/currentcontrol권위와조회자의기존접근허가를분리하고다른허가조회자에서도동일판정을검산하도록같은Primary에전달했다. 동일I1의잔여이며새finding/정식실패중복계수0이다.
+- SQL/F/EMPTY원공급/READY CAS·일반SQL·최종화면은계속미완료다. 단일42writer유지·Main동시제품쓰기0·실제키/DB/권한/서비스/Agent/실자료0·전체계획미완료를유지한다.
+### 2026-11-03 FN15 I1 조회자 독립 보정 제출·한정 재검토
+- 같은Primary는다른OWNER/VIEWER조회의b29e5a행동RED→11b0881PASS/1117.6652ms와rootnoEmit0를제출했다. 목록접근자는기존member검사를유지하고effectiveState는실currentcontrol의요청주체/물리grant·일반9operation으로분리했다고반환했다. 타project거절/특수backup후보·grant부재REVOKED반례도유지했다. 현재live시험/session0이다.
+- Main은같은기존Reviewer에게I1보정source와정확변경시험만읽기재검토하도록맡겼다. 미해결기한/정책/필터·cursor/특수후보경계와시작·끝지문을대조하며시험중복실행/전체인수승격0이다. Primary는I2 ordinaryquota의publicOWNER경로와별도목적소비를연결중이며단일42writer를유지한다. 실제키/DB/권한/서비스/Agent/실자료/제품네트워크0·전체계획미완료다.
+### 2026-11-03 FN15 I1 scoped 독립 재검토 C0/I0
+- 같은Reviewer는project-approvals.ts31~45의조회자membership접근과실controller/요청주체grant검산분리·일반9operation/원requester·client·gen/version한정소비를읽기확인해원I1해소/C0I0를반환했다. 특수OWNER후보·project범위·만료우선·정책hash/current·기존상태/대상필터/cursor정렬을보존했다. actual목록메서드/물리grant검산을소비하는시험의다른OWNER/VIEWER·타project·특수후보·grant부재반례를대조했으나검사를재실행하거나실SQL로승격하지않았다.
+- 시작/끝sourceSHA D450D93070FAB0DFBDB45636DBC54B2C45F5649BA57581CF94D2864C4A7BF046,시험SHA76F4DABDB5E497060C22E3A6098C14971BCA1EFD581161FB04C9BAB23F4CA0D9동일이다. I2quota/전체FN15인수판정은아니다. Main은결과를Primary에전달했고불변I1검사반복0·같은42writer의I2/SQL/F/EMPTY·READY CAS/최종UI구현을유지한다. wait_agent1회는dispatch전aborted였으나실제Reviewer완료통지를수신했으며Primary중단/재시작의근거로쓰지않았다. 실제키/DB/권한/서비스/Agent/실자료0·전체계획미완료다.
+### 2026-11-03 FN15 I2 연결 진척·EMPTY source-set 실접점 지도
+- Main a656bf는I2추가시험이실제quota.prepare/reserve와원command한정account분기를소비하며publicOWNERaccount호출시거절하는행동반례임을읽었다. 9bfde4에서는serverreserve→fn15_ordinary_quota_account와pending0073의5인자함수정의가추가됐고SQL61903B를확인했다. fa1e9c는동일quota_current의Owner/유효HE4저장op·원command/정책DENY/일회승인검산과목적제한account반환을읽었다. 시험결과·SQL적용/전체완료로승격하지않고Primary의후속증거를받는다.
+- 기존Reviewer는현재evidence-source SHA CC895CEE414EEB5C9CEC76898DF9DD1AE3A9D845AEF6BD38DA6AA664D326D531가네범주+writer를수집하지만아직EMPTY폐쇄를생산하지않음을확인했다. 필수발급집합은실행/execution_grants/usage/writer_claims/commands/outbox와recovery재발급,credential/challenge/receipt/start/instruction permit의기존grant후속발급,grant회수/instruction/stop,outbox미결·예약,writer events/head,ownership events/head/observations/anchors,native authorities/events,execution준비/이해검토/stagequeue/저장예약이다. context/assignment는존재자체실행이아니지만미결준비/예약/명령도달원행을누락하지않는다.
+- 실공유잠금접점은execution-commands의currentProjectController,challenge-store의원세션/projectFORUPDATE/currentruntime,writer의project/control/head,native-store의project잠금이다. EMPTYcollect→accept가동일project/control실잠금안전체수위/원행/고아관계를검산하고CAS해야하며미공유issuer/잠금밖선효과경로는UNKNOWN이다. 존재하지않는개별행잠금만으로INSERT차단을주장하지않는다. Main은정확지도를같은Primary에전달했고count0/SYNTHETIC/HELD무시·공급자누락을READY로승격하지않는다. 이는기술지도이며전체source-set/실PG/OS무실행증명이아니다. 코드쓰기/실환경효과0·전체계획미완료다.
+### 2026-11-03 FN15 I2 행동 GREEN·직접 인접20 제출
+- Primary는cdc59f의존재하지않는fixture command()준비오류1과9b490a actualprepare/reserve NOT_FOUND행동RED를분리했다. 원request()로준비를고친뒤HE만실member/currentgrant·원command결박5인자fn15_ordinary_quota_account로연결했고OWNER4인자경로는보존했다. bcd171신규1PASS/type0,41a491기존19+신규1=20PASS/477.7565ms/diff0를제출했다. quotaSHA E8CA4A86D68EC8209F179280CACC27D946B4D458BDAF8330C174FFB1A53459AC,시험SHA372312EA524D646D15AA0528A79694C49CA9F5230E9A827B08AD18AC29D9C67E이다.
+- pending0073은원0072quota_current정책/DENY/정확승인본문을보존하며네일반저장operation의실grant조건·별도purposeaccount를작성한상태다. 현재SQL E56BE88B…F6C5는COMMIT/F최종/reader/EMPTY미완료이며동결/적용/인수증거아니다. Main은기존Reviewer에게목적caller/원명령·Owner/saveCheckpoint특수/타operation거절/원정책보존만읽기재검토하도록맡겼다. 실제검사20재실행0·같은Primary나머지SQL구현계속·Main제품쓰기0·실제키/DB/권한/서비스/Agent·실자료0·전체계획미완료다.
+### 2026-11-03 FN15 I2 scoped 독립 재검토 C0/I0·다음 WIP 보존 경계
+- 같은Reviewer는quota102~108/159의검산된HE만원command5인자목적account소비·OWNER4인자보존,saveCheckpoint일반집합배제와0073네저장operation분리를읽기확인해원I2해소/C0I0를반환했다. 원0072 322~350대조에서원인증/project/control·정확command/gen·정책hash/DENY·기한/일회승인·동일소비replay검산을보존했다. 신규시험은actualprepare/reserve·원command일치/목적호출1/공개OWNER호출0을단언하며실PG증거아니다.
+- 시작/끝quota E8CA4A86D68EC8209F179280CACC27D946B4D458BDAF8330C174FFB1A53459AC,시험372312EA524D646D15AA0528A79694C49CA9F5230E9A827B08AD18AC29D9C67E,작성중SQL E56BE88BE7100A3967B9A75DC2DA180563C839A8A78697DF5793756B6307F6C5동일이다. 전체SQL완결/실적용/FN15인수판정0이다.
+- Main은같은Primary의다음자연경계/live·미저장0에서42경로writer를잠시반환받아WIPsource+현황복구checkpoint를만들고즉시같은writer/동일WI로재개하도록전달했다. 현재돌고있는도구/쓰기를강제중단하거나반환전Main코드쓰기를하지않는다. SQL/F/EMPTY·READY CAS/최종UI미완료와부분검증을그대로보존하고검사를반복하지않는다. 실제키/DB/권한/서비스/Agent/실자료0·전체계획미완료다.
+### 2026-11-03 FN15 세 번째 source WIP writer 반환·복구 지문
+- Primary는INCOMPLETE로42경로writer를반환했고live session/cell/미저장/실효과0을확인했다. HEADcbf62776/WI r7 15700DB2일치다. Mainb67523은허용변경20전부의rawSHA·빈index·diffcheck0·보호3지문일치를독립읽기확인했고후속Primary최종manifest20과모두일치했다. Main은제품코드를수정하지않는다.
+- 최근제출검증: node --test tests/unit/FN13/project-storage-quota.test.ts 는41a49120PASS/477.7565ms/exit0; node --test --test-name-pattern='수락된 일반승인 목록' tests/unit/FN11/approval-list.test.ts 는11b0881PASS/1117.6652ms/exit0; node --test --test-name-pattern='과거 성공 GET/POST replay' tests/unit/FN15/control-acceptance.test.ts 는cd22f61PASS/530.1395ms/exit0; 정확target의보호head선택은b656d31PASS/472.4501ms/exit0, 실제target화면선택은49c8901PASS/803.5878ms제출이다. bcd171 root node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json exit0·41a491diffcheck0이며현재안정경계지문에대응한다. Main의중복검사실행0이다.
+- Python인코딩/fixture함수명준비오류각1·UI타입오류1은보정했고같은근본정식실패3회0이다. 원최소기한PASS/앞불변검사는반복하지않았다. I1/I2는각한정보완/독립C0I0이며전체인수아니다.
+- 남은0073고정reader/F초기화·역완결/권한postflight/COMMIT,EMPTY폐쇄생산,actualREADY→수락CAS양성,후속제어조회/최종수락UI·UNKNOWN흐름과UNWRITTEN_SOURCE checksum을그대로미완료로보존한다. 실제PG/RLS/ACL·두기기·키/권한·서비스/Agent/OS·실자료검증NOT_RUN이다. 이WIP는전체GREEN/기능완료/Stage완료가아니다. source20+현황1checkpoint/private보존뒤같은Primary/동일WI42writer를즉시재개한다.
+
+| 세 번째 WIP 경로 | raw SHA256 |
+|---|---|
+| .gitattributes | 685E03BB8891E2741F9A1BF4AAF381D65DF0F40B9E05CA2D0163C0B3782C39DC |
+| apps/server/modules/access/project-command.ts | BC308AD90A12D020B9F4C601201BAA20764D810F18BF6399D8EE31E621358CEF |
+| apps/server/modules/approvals/project-approvals.ts | D450D93070FAB0DFBDB45636DBC54B2C45F5649BA57581CF94D2864C4A7BF046 |
+| apps/server/modules/control-handoff/control-acceptance.ts | DAD15E85AFA4493E6F0EA17491219CD031F4E500FDACD04AB6DDC3AA79B923B5 |
+| apps/server/modules/control-handoff/control-grant.ts | A2E5B72E2C82EE7364BE60A08D30261549FEECA5C121D64C13DF3B2D9C814CF3 |
+| apps/server/modules/control-handoff/control-handoff-storage.ts | 64AC12273C9B65D0D06D70E9313E0F2A9A8985EA7BA4E93B674592015B502724 |
+| apps/server/modules/control-handoff/routes.ts | 3123FF22697EEA075A68F27D047E6469173C5F2E8FEF854E0600297DE980386E |
+| apps/server/modules/documents/project-documents.ts | 5A59F374B27D9A9A4BFAC69E63B13E4768DA2E0D463C9F55D1B2EC6B704AF694 |
+| apps/server/modules/documents/project-files.ts | 9C35E1E22FB5D6DB2745E411A85F1A9A65FA31CCC83CC55BD1411FFF4619154F |
+| apps/server/modules/documents/project-source-links.ts | BF06F3438C58827F95EDF8EF4BF9E07F8CE1CB2ED62E437BF387043D10AFCED4 |
+| apps/server/modules/projects/project-storage-quota.ts | E8CA4A86D68EC8209F179280CACC27D946B4D458BDAF8330C174FFB1A53459AC |
+| apps/server/modules/projects/repository.ts | D1301EA39E414B93D4898133ED861E5C2240DA3A8D5256DAA44A4DFDA5E6DF89 |
+| apps/web/src/features/control-handoff/ControlAccessPage.tsx | 8A1516BD46B867F8CE8C113B8D7C7B8303A9DB261D7AC8462DF91CE270438945 |
+| apps/web/src/features/control-handoff/api.ts | 24264ED5EC1B779402CBA98D175ABF83AE02EE84435ADB73687A9726E4384C91 |
+| db/migrations/0073_control_handoff_acceptance.sql.pending | E56BE88BE7100A3967B9A75DC2DA180563C839A8A78697DF5793756B6307F6C5 |
+| tests/unit/FN11/approval-list.test.ts | 76F4DABDB5E497060C22E3A6098C14971BCA1EFD581161FB04C9BAB23F4CA0D9 |
+| tests/unit/FN13/project-storage-quota.test.ts | 372312EA524D646D15AA0528A79694C49CA9F5230E9A827B08AD18AC29D9C67E |
+| tests/unit/FN15/control-acceptance.test.ts | BA597711A55CEC61F13B06272DED22A67B621EDEBAD4D7B5F0EEE431FD5D0654 |
+| tests/unit/FN15/control-grant.test.ts | 4DDBD9992F153C0D402597486CB3936469982B8E4848556F95930312357A8F0D |
+| tests/unit/UI12/control-acceptance.test.ts | 3DC63B03E99C523BB4387F12CA937F9BDA557308AB7E3389B1A9BCD18039FF2E |
