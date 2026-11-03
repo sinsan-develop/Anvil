@@ -63,3 +63,14 @@
 - index106은 표시 목록이다. 같은0031의 .sql/.pending 중복 때문에 둘을 함께 설치하지 않는다. 실제 builder53 prefix+후행52=105 전체 후보와0065까지96 prefix는 별도 명시 후보이며, 어느 쪽도 아직 실행 허가가 아니다.
 - 0066/0073 원문은 migrator CREATEROLE을 요구한다. 현재 NOCREATEROLE bootstrap을 통과시키려고 수정/권한 상승하지 않는다. 전체105 설치 선행은 미충족이며 이 known conflict를 실제 예상 RED 반복으로 소비하지 않는다.
 - Main 독립 5766b6 신규 unit27 PASS/fail0/skip0/319.7137ms/exit0, ada30b root noEmit+Bash -n exit0, 4509c1 index106 고정 Git blob SHA/bytes 및105/96 순서 digest 대조 exit0이다. 원문 SQL 실행0이다.
+
+## r3 — 전용 빈 cluster installer 선행 source 보완 (2026-11-03)
+- source checkpoint10a00aad9b40a37f13a7a56b83d3b19824bf1833 / private79b024 exact·tracked clean·main/보호3 불변. r2 SHA55212D93438EA39BAA0EE4040048D8561C84EC1A82133EB44A510D3103466D2C는 이전 snapshot이다.
+- PMO는0066/0073 원문을 직접 대조하고, 별도 전용 빈 cluster의 installer CREATEROLE 선행을 명시한 전체105 실행 후보 준비를 권장했다. 실제 실행 승인이 아니며 신산님 최신 실제 DB·권한·키·서비스·Agent 제외를 유지한다. 96 한정안으로 최신 IX01 준비를 대신하지 않는다.
+- CREATEROLE은 DB 한정이 아니라 cluster 전체 비superuser role 변경/멤버십 위험이 있다. source에서는 실행 대상이 새 빈 격리 cluster뿐임을 그대로 고정하고, 실제 실행은 exact code·bootstrap SQL/hash·전후 role 검산·정리/UNKNOWN 범위로 한 번 별도 결정받아야 한다. 기존 DB/role/SQL guard/reader 선생성/role 자동인수0이다.
+- 기존 Primary의 이번 writer는 scripts/qa-ix01-schema-closure.sh 및 tests/unit/IX01/schema-closure-controller.test.ts 정확2개뿐이다. index106/제품/SQL/문서/설정은 변경하지 않는다. Main은 같은 코드 쓰기0이다.
+- 신규 QA bootstrap 선언을 원 SQL이 요구하는 installer에만 CREATEROLE/NOSUPERUSER/NOCREATEDB/NOBYPASSRLS로 정합하고 app·reader는 NOCREATEROLE/NOSUPERUSER/NOBYPASSRLS를 유지한다. 이는 미승인 실제 mode의 코드 준비일 뿐 실제 role 생성/GRANT0이다.
+- 실제 psql builder를 통한 bootstrap 직후 role 속성/멤버십의 비밀 없는 명시 metadata 검산을 추가한다. bootstrap/app/migrator 및 원0066/0073 reader 두 역할 이외의 새 비system role·예상 밖 superuser/BYPASSRLS/멤버십은 효과를 계속하지 않고 UNKNOWN으로 보존한다. source에 역할 허용표·검산 기준과 정확 bootstrap/revoke SQL/hash를 반환한다.
+- 정의 설치 완료 또는 명확한 SQL 거절로 정착했을 때만, 소유 cluster를 다시 확인해 installer CREATEROLE과 이 일회 설치로 생긴 reader 역할 멤버십을 정확 회수하고 전후 metadata를 확인한 뒤 기존 fullID 정상 stop/rm 경계를 따른다. 일부 설치 실패/role 미생성도 처리하되 기존 source SQL이나 검수 기대값을 완화하지 않는다. 회수/metadata/COMMIT 결과 불명은 UNKNOWN·추가 mutation/다음 slot0이다.
+- 원 기한·출력한도/비밀0·parent FD·정제 child환경·현재 role0·image/mount/network/port/log none·slot 단발/후속조건은 유지한다. 실제 host/key/runtime/DB/Docker/권한/서비스/Agent/원장 조사·생성·실행0이다.
+- 먼저 기존 비특권 bootstrap이0066 선행을 충족하지 않는 source 반례와 잘못된 role/멤버십·회수불명 음성을 작성하고, 같은 2파일만 RED→GREEN·기존27 인접보존·noEmit/Bash-n/diff 검수한다. 실제 PG parser/DDL/role/cleanup은 NOT_RUN으로 남긴다. 완료시 동결2와 index불변/자원0/handle0을 반환한다.

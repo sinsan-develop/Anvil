@@ -29,3 +29,14 @@
 - 기존 dirty/보호 untracked3/main은 변경하지 않는다. source3+Main 소유 문서만 검수 checkpoint하며 정상 private branch push를 수행한다. Git 게시 SHA/증거는 WORK_STATUS에 추가한다.
 - rollback은 source-only 신규 경로3의 후속 정상 revert이며 reset/force/사용자 파일 삭제를 하지 않는다. 실제 환경 rollback은 이번 대상0이다.
 - 실제 실행 packet은 구체적인 code SHA/선택/입력/자원/수명/정리와 별도 허가를 갖추기 전까지 NOT_READY_TO_RUN이다. FN06 신규 native 계약 미채택과 기존 계획의 다른 미완료를 유지한다.
+
+## r3 — 원 SQL의 전용 installer 선행 source 검수
+- 직접 실제 실행 제외는 유지하며 PMO 기술 권장에 따라 기존 Primary의 driver/unit 정확2경로만 보완했다. source 기준10a00aad9b40a37f13a7a56b83d3b19824bf1833, WI r3 CA669BECF46C5FE62402984C14CF6C2E3662733C7CD250209E120FC45F2CDEF0. 원 index106/DC8B5FC0·모든 SQL/제품은 불변이다.
+- 최초 RED1bdc94는 기존 bootstrap의 NOCREATEROLE이0066/0073 명시 선행과 다른 반례이다. 기존 source의 비특권 기대를 말없이 낮춘 것이 아니라 새 빈 cluster installer에만 필요한 조건과 회수·검산을 WI r3에 명시했다. 실제 해당 권한은 부여하지 않았다.
+- 최종 driver SHA4750BAD4F26616807C7325E6967AA08212E3B4BE53ADFA3527D515D469BCB6D9, unit SHA2FDCA333CC22D1DBAD856C09AF423801B42400144335E7902EBAE8F5EC635B62. 원27은 전 snapshot이며 최종은34개이다.
+- Main e4aa3d/c47b5d 독립 diff·actual psql -A/-t/builder→동일 역할 metadata parser→bootstrap 전후/정착 후 회수 전후와 기존 원SQL의 reader membership 회수 소비를 확인했다. 이 두 source의 scope/spec 정적 미해결 Critical/Important0이며 실제 PG/보안 인수를 뜻하지 않는다.
+- **Main08fb80** node --test tests/unit/IX01/schema-closure-controller.test.ts, exit0/34PASS/0FAIL/skip0/398.5456ms. 잘못된 role·superuser/BYPASS/예상밖 membership, 선생성 reader, 설치 완료/부분정착/rollback, 회수 COMMIT불명·사후 metadata차이에서 후속 mutation/정리0을 검산했다. 실제 PG가 아닌 공유 controller/builder의 fake ports이다.
+- **Main a9c9f2** root tsc --noEmit -p tsconfig.base.json 및 Git Bash --noprofile --norc -n scripts/qa-ix01-schema-closure.sh, exit0/7.276초. Primary649bf4 34PASS/327.4776ms·24efc5 noEmit0·c7d75b Bash-n0와 별도이다.
+- **Main b476d4** 동결 source에서 함수만 추출해 bootstrap/metadata/회수 SQL 원문과 hash를 독립 계산했다. a1 bootstrap496caf4e72938b8129b8b52354afc7c0a8c8db8f2c39ed598716247b758ece8c, metadata23237b193e7c863d1d2b0e1c30eb29d9c5d62fc4d93129b97e525aff499812e1. 이 계산에서 default plan 정보 actualExecuted:false만 함께 출력됐고 실제 port/DB/role은0이다.
+- source가 의도하는 설치 구간은 migrator만 CREATEROLE/NOSUPERUSER/NOCREATEDB/NOREPLICATION/NOBYPASSRLS, app/reader는 비특권이다. 원SQL정착 후 정확 새 cluster fullID/속성/멤버십을 재검산하고 CREATEROLE 및 남은 정확 reader membership을 회수한다. 불명/metadata차이는 UNKNOWN이며 추가 mutation·정리·다음slot0이다.
+- 실제 WSL/runtime/PG parser/DDL/role/GRANT/회수·DB·키·서비스·Agent·자원/원장 생성·정리0/NOT_RUN을 유지한다. 새 QA의 정확 실제 실행은 아직 NOT_APPROVED이다. 판정 SOURCE_PREPARED_ACTUAL_NOT_RUN, IX01/기능/전체 계획 미완료다.

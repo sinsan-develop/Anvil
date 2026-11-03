@@ -84,10 +84,38 @@ export function parsePsqlFailure(error){
  if(state==='42703'&&(x=message.match(new RegExp('^column "('+identifier+')"(?: of relation "'+qualified+'")? does not exist$'))))diagnostic={kind:'COLUMN',identifier:x[1]};
  return new DdlFailure(state,diagnostic);
 }
-export function buildPsqlArgs(id,db,user){return['exec','-i','--user','999:999',id,'psql','--no-psqlrc','--no-password','--quiet','--host=/var/run/postgresql','--username='+user,'--dbname='+db,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'];}
+export function buildPsqlArgs(id,db,user){return['exec','-i','--user','999:999',id,'psql','--no-psqlrc','--no-password','--quiet','--no-align','--tuples-only','--host=/var/run/postgresql','--username='+user,'--dbname='+db,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'];}
 export function buildCreateArgs(p,h,m=tmpfs){return['create','--pull','never','--name',resource(p).container,'--network','none','--user','999:999','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--log-driver','none','--pids-limit','64','--memory','512m','--cpus','1',...Object.entries(m).flatMap(([k,v])=>['--tmpfs',k+':'+v]),'--label','anvil.owner='+fixed.owner,'--label','anvil.instance='+p.instance,'--label','anvil.plan='+h,'--env','POSTGRES_USER=anvil_v3_bootstrap','--env','POSTGRES_DB='+resource(p).database,'--env','POSTGRES_HOST_AUTH_METHOD=trust','--env','POSTGRES_INITDB_ARGS=--auth-local=trust --auth-host=reject',fixed.image,'postgres','-c','listen_addresses=','-c','log_statement=none','-c','log_min_error_statement=fatal'];}
-export function bootstrapSql(database){if(!/^anvil_v3_ix01_ddl_20261103_r1_a[123]$/.test(database))fail('DATABASE');return 'BEGIN;CREATE ROLE anvil_v3_migrator LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;CREATE ROLE anvil_v3_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;REVOKE ALL ON DATABASE '+database+' FROM PUBLIC;GRANT CONNECT ON DATABASE '+database+' TO anvil_v3_migrator,anvil_v3_app;REVOKE CREATE ON SCHEMA public FROM PUBLIC;CREATE SCHEMA anvil AUTHORIZATION anvil_v3_migrator;CREATE SCHEMA anvil_qa AUTHORIZATION anvil_v3_migrator;GRANT USAGE ON SCHEMA anvil,anvil_qa TO anvil_v3_app;ALTER DEFAULT PRIVILEGES FOR ROLE anvil_v3_migrator IN SCHEMA anvil,anvil_qa GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO anvil_v3_app;COMMIT;';}
+export function bootstrapSql(database){if(!/^anvil_v3_ix01_ddl_20261103_r1_a[123]$/.test(database))fail('DATABASE');return 'BEGIN;CREATE ROLE anvil_v3_migrator LOGIN INHERIT NOSUPERUSER NOCREATEDB CREATEROLE NOREPLICATION NOBYPASSRLS;CREATE ROLE anvil_v3_app LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;REVOKE ALL ON DATABASE '+database+' FROM PUBLIC;GRANT CONNECT ON DATABASE '+database+' TO anvil_v3_migrator,anvil_v3_app;REVOKE CREATE ON SCHEMA public FROM PUBLIC;CREATE SCHEMA anvil AUTHORIZATION anvil_v3_migrator;CREATE SCHEMA anvil_qa AUTHORIZATION anvil_v3_migrator;GRANT USAGE ON SCHEMA anvil,anvil_qa TO anvil_v3_app;ALTER DEFAULT PRIVILEGES FOR ROLE anvil_v3_migrator IN SCHEMA anvil,anvil_qa GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO anvil_v3_app;COMMIT;';}
 
+
+const readerSources=Object.freeze({'anvil_v3_fn16_export_reader_owner':'db/migrations/0066_export_locked_metadata_reader.sql.pending','anvil_v3_fn15_reader_owner':'db/migrations/0073_control_handoff_acceptance.sql.pending'});
+const systemRoles=Object.freeze(['pg_database_owner','pg_read_all_data','pg_write_all_data','pg_monitor','pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables','pg_read_server_files','pg_write_server_files','pg_execute_server_program','pg_signal_backend','pg_checkpoint']);
+export function roleMetadataSql(){return "SELECT json_build_object('sessionUser',session_user,'currentUser',current_user,'roles',(SELECT COALESCE(json_agg(json_build_object('name',rolname,'superuser',rolsuper,'inherit',rolinherit,'createRole',rolcreaterole,'createDb',rolcreatedb,'replication',rolreplication,'bypassRls',rolbypassrls,'login',rolcanlogin,'validUntil',rolvaliduntil) ORDER BY rolname),'[]'::json) FROM pg_catalog.pg_roles),'memberships',(SELECT COALESCE(json_agg(json_build_object('role',r.rolname,'member',m.rolname,'grantor',g.rolname,'adminOption',a.admin_option) ORDER BY r.rolname,m.rolname),'[]'::json) FROM pg_catalog.pg_auth_members a JOIN pg_catalog.pg_roles r ON r.oid=a.roleid JOIN pg_catalog.pg_roles m ON m.oid=a.member JOIN pg_catalog.pg_roles g ON g.oid=a.grantor))::text;";}
+export function verifyRoleMetadata(raw,phase,attempted=[],completed=[]){
+ const reject=()=>fail('ROLE_METADATA');let v;
+ try{if(typeof raw!=='string'||Buffer.byteLength(raw)>16384)reject();v=JSON.parse(raw);if(raw.replace(/\s/g,'')!==JSON.stringify(v))reject();}catch{reject();}
+ if(!['PRISTINE','INSTALLER','SETTLED','REVOKED'].includes(phase)||!exact(v,['sessionUser','currentUser','roles','memberships'])||v.sessionUser!=='anvil_v3_bootstrap'||v.currentUser!=='anvil_v3_bootstrap'||!Array.isArray(v.roles)||v.roles.length>17||!Array.isArray(v.memberships)||v.memberships.length>5)reject();
+ const names=new Set(),ordinary=[],system=[];
+ for(const row of v.roles){if(!exact(row,['name','superuser','inherit','createRole','createDb','replication','bypassRls','login','validUntil'])||typeof row.name!=='string'||names.has(row.name)||row.validUntil!==null||['superuser','inherit','createRole','createDb','replication','bypassRls','login'].some(k=>typeof row[k]!=='boolean'))reject();names.add(row.name);
+  const boot=row.name==='anvil_v3_bootstrap',installer=row.name==='anvil_v3_migrator',app=row.name==='anvil_v3_app',reader=Object.hasOwn(readerSources,row.name),sys=systemRoles.includes(row.name);
+  if(!boot&&!installer&&!app&&!reader&&!sys||phase==='PRISTINE'&&!boot&&!sys||reader&&(!['SETTLED','REVOKED'].includes(phase)||!attempted.includes(readerSources[row.name])))reject();
+  const expected={superuser:boot,inherit:!reader,createRole:boot||installer&&phase!=='REVOKED',createDb:boot,replication:boot,bypassRls:boot,login:boot||installer||app};
+  for(const [key,value]of Object.entries(expected))if(row[key]!==value)reject();(sys?system:ordinary).push(row);
+ }
+ if(!names.has('anvil_v3_bootstrap')||systemRoles.some(x=>!names.has(x))||phase!=='PRISTINE'&&(!names.has('anvil_v3_migrator')||!names.has('anvil_v3_app')))reject();
+ for(const [name,path]of Object.entries(readerSources))if(completed.includes(path)&&!names.has(name))reject();
+ const privileged=[],systemMembers=[],seen=new Set();
+ for(const row of v.memberships){if(!exact(row,['role','member','grantor','adminOption'])||typeof row.adminOption!=='boolean'||[row.role,row.member,row.grantor].some(x=>!names.has(x)))reject();const key=row.role+':'+row.member;if(seen.has(key))reject();seen.add(key);
+  if(['pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables'].includes(row.role)&&row.member==='pg_monitor'&&row.grantor==='anvil_v3_bootstrap'&&!row.adminOption)systemMembers.push(row);
+  else if(Object.hasOwn(readerSources,row.role)&&row.member==='anvil_v3_migrator'&&row.grantor==='anvil_v3_migrator'&&row.adminOption&&phase==='SETTLED')privileged.push(row);
+  else reject();
+ }
+ if(systemMembers.length!==3)reject();
+ ordinary.sort((a,b)=>a.name.localeCompare(b.name));system.sort((a,b)=>a.name.localeCompare(b.name));systemMembers.sort((a,b)=>a.role.localeCompare(b.role));privileged.sort((a,b)=>a.role.localeCompare(b.role));
+ return Object.freeze({rawHash:hash(raw),systemHash:hash(JSON.stringify({roles:system,memberships:systemMembers})),roles:ordinary,memberships:privileged});
+}
+export function revokeSql(readers=[]){if(!Array.isArray(readers)||readers.length>2||new Set(readers).size!==readers.length||readers.some(x=>!Object.hasOwn(readerSources,x)))fail('ROLE_METADATA');return 'BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;'+[...readers].sort().map(x=>'REVOKE '+x+' FROM anvil_v3_migrator;').join('')+'COMMIT;';}
 export function owned(v,id,p,planHash){
  const h=v?.HostConfig,c=v?.Config,n=v?.NetworkSettings;
  if(!hex(id,64)||v?.Id!==id||v.Name!=='/'+resource(p).container||v.Image!==fixed.image||c?.User!=='999:999'||c?.Labels?.['anvil.owner']!==fixed.owner||c.Labels['anvil.instance']!==p.instance||c.Labels['anvil.plan']!==planHash)fail('OWNER');
@@ -104,21 +132,22 @@ export async function runController(input,ports){
  if(pre.daemon!==fixed.daemon||pre.image!==fixed.image||!pre.nameAbsent||!Array.isArray(pre.volumes)||pre.volumes.some(x=>!(x in tmpfs)))fail('PREFLIGHT');
  if(p.slot>1&&(!pre.previous||pre.previous.hash!==p.previousHash||pre.previous.status!=='CLEANED'||!hex(pre.previous.containerId,64)||pre.previous.sourceHead!==p.sourceHead||pre.previous.cleanup!=='CLEANED'||pre.previous.ddlStatus!=='FAILED'||!['42P01','42883','42703'].includes(pre.previous.sqlState)||pre.previous.orderHash===p.orderHash||!hex(pre.previous.planHash,64)||pre.previous.slot!==p.slot-1||pre.previous.instance===p.instance))fail('PREVIOUS');
  // 소진 O_EXCL 성공 전 Docker mutation0. 원문/순서 digest는 승인 증명이 아니다.
- await ports.claim(p,planHash);let id=null,status='UNKNOWN',stage='CREATE',cleanup='NOT_ATTEMPTED',failure=null,sqlState=null,diagnostic=null;
+ await ports.claim(p,planHash);let id=null,status='UNKNOWN',stage='CREATE',cleanup='NOT_ATTEMPTED',failure=null,sqlState=null,diagnostic=null,bootstrapDone=false,revokeHash=null;const roleEvidence={},attempted=[],completed=[];
+ const readRoles=async(phase,cleanup=false)=>{try{const snapshot=verifyRoleMetadata(await ports.roles(id,r,remaining(10000,cleanup)),phase,attempted,completed);if(roleEvidence.beforeBootstrap&&snapshot.systemHash!==roleEvidence.beforeBootstrap.systemHash)throw new UnknownOutcome();return snapshot;}catch{throw new UnknownOutcome();}};
  try{
   check();id=await ports.create(p,planHash,tmpfs,remaining(10000));if(!hex(id,64))throw new UnknownOutcome();
   owned(await ports.inspect(id,remaining(10000)),id,p,planHash);check();stage='START';await ports.start(id,remaining(10000));
   stage='READY';let ready=false;for(let n=0;n<40;n++){check();if(await ports.ready(id,r,remaining(10000))){ready=true;break;}}if(!ready)fail('NOT_READY');
-  stage='BOOTSTRAP';await ports.bootstrap(id,r,remaining(30000));
-  for(const path of p.selected){check();stage=path;const b=await ports.source(path),row=index.get(path);if(b.length!==row.bytes||hash(b)!==row.hash)fail('SOURCE');await ports.sql(id,r,b,remaining(30000));check();}
+  stage='ROLE_PRISTINE';roleEvidence.beforeBootstrap=await readRoles('PRISTINE');stage='BOOTSTRAP';await ports.bootstrap(id,r,remaining(30000));bootstrapDone=true;stage='ROLE_INSTALLER';roleEvidence.afterBootstrap=await readRoles('INSTALLER');
+  for(const path of p.selected){check();stage=path;const b=await ports.source(path),row=index.get(path);if(b.length!==row.bytes||hash(b)!==row.hash)fail('SOURCE');attempted.push(path);await ports.sql(id,r,b,remaining(30000));completed.push(path);check();}
   status='DEFINITIONS_INSTALLED';
  }catch(error){failure=error instanceof DdlFailure?'DDL_REJECTED':'OUTCOME_UNKNOWN';sqlState=error instanceof DdlFailure?error.sqlState:null;diagnostic=error instanceof DdlFailure?error.diagnostic:null;status=error instanceof DdlFailure?'FAILED':'UNKNOWN';}
  // timeout/유실은 remote 정착이 아니다. UNKNOWN에서는 자동 후속 mutation/다음 slot0.
  if(status!=='UNKNOWN'&&id){
-  try{owned(await ports.inspect(id,remaining(10000,true)),id,p,planHash);await ports.stop(id,remaining(10000,true));owned(await ports.inspect(id,remaining(10000,true)),id,p,planHash);await ports.remove(id,remaining(10000,true));if(!await ports.absent(id,remaining(10000,true)))throw new UnknownOutcome();cleanup='CLEANED';}
+  try{owned(await ports.inspect(id,remaining(10000,true)),id,p,planHash);roleEvidence.beforeRevoke=await readRoles(bootstrapDone?'SETTLED':'PRISTINE',true);if(bootstrapDone){const sql=revokeSql(roleEvidence.beforeRevoke.memberships.map(x=>x.role));revokeHash=hash(sql);await ports.revoke(id,r,sql,remaining(30000,true));roleEvidence.afterRevoke=await readRoles('REVOKED',true);}await ports.stop(id,remaining(10000,true));owned(await ports.inspect(id,remaining(10000,true)),id,p,planHash);await ports.remove(id,remaining(10000,true));if(!await ports.absent(id,remaining(10000,true)))throw new UnknownOutcome();cleanup='CLEANED';}
   catch{cleanup='UNKNOWN';}
  }
- const result={schemaVersion:1,purpose:'IX01_DDL_DIAGNOSTIC_RESULT',slot:p.slot,instance:p.instance,planHash,containerId:id,status:cleanup==='CLEANED'?'CLEANED':'UNKNOWN',ddlStatus:status,cleanup,stage,failure,sqlState,diagnostic,sourceHead:p.sourceHead,orderHash:p.orderHash,observedAt:new Date(ports.now()).toISOString(),resourceMayOutliveDeadline:cleanup!=='CLEANED',manualOwnershipReviewRequired:cleanup!=='CLEANED'};
+ const result={schemaVersion:1,purpose:'IX01_DDL_DIAGNOSTIC_RESULT',slot:p.slot,instance:p.instance,planHash,containerId:id,status:cleanup==='CLEANED'?'CLEANED':'UNKNOWN',ddlStatus:status,cleanup,stage,failure,sqlState,diagnostic,sourceHead:p.sourceHead,orderHash:p.orderHash,observedAt:new Date(ports.now()).toISOString(),bootstrapSqlHash:hash(bootstrapSql(r.database)),revokeSqlHash:revokeHash,roleEvidence,resourceMayOutliveDeadline:cleanup!=='CLEANED',manualOwnershipReviewRequired:cleanup!=='CLEANED'};
  try{await ports.record(p,result);}catch{throw new UnknownOutcome();}
  return result;
 }
@@ -150,6 +179,7 @@ async function actualPorts(p){
   claim:async(_p,h)=>exclusive(names(p.slot)+'.intent.json',{schemaVersion:1,purpose:'IX01_DDL_INTENT',slot:p.slot,instance:p.instance,planHash:h,sourceHead:p.sourceHead,executionHead:p.executionHead,orderHash:p.orderHash,expiresAt:p.slotExpiresAt}),
   create:async(_p,h,m,ms)=>docker(buildCreateArgs(p,h,m),ms),
   inspect,start:async(id,ms)=>{docker(['start',id],ms);},ready:async(id,r,ms)=>{const left=Math.min(ms,Date.parse(p.slotExpiresAt)-Date.now()-60000);if(left<=0)throw new UnknownOutcome();try{verify();execFileSync('/usr/bin/docker',dockerArgs(['exec','--user','999:999',id,'pg_isready','--host=/var/run/postgresql','--username=anvil_v3_bootstrap','--dbname='+r.database]),{env,cwd:fixed.receiptRoot+'/docker-config',stdio:['ignore','pipe','pipe'],timeout:left,maxBuffer:16384});return true;}catch(e){if(e.status===1||e.status===2){await new Promise(resolve=>setTimeout(resolve,250));return false;}throw new UnknownOutcome();}},
+  roles:async(id,r,ms)=>psql(id,r.database,'anvil_v3_bootstrap',roleMetadataSql(),ms),revoke:async(id,r,sql,ms)=>{psql(id,r.database,'anvil_v3_bootstrap',sql,ms);},
   bootstrap:async(id,r,ms)=>{psql(id,r.database,'anvil_v3_bootstrap',bootstrapSql(r.database),ms);},
   sql:async(id,r,b,ms)=>{psql(id,r.database,'anvil_v3_migrator',b,ms);},stop:async(id,ms)=>{docker(['stop','--time','5',id],ms);},remove:async(id,ms)=>{docker(['container','rm',id],ms);},absent:async(id,ms)=>docker(['container','ls','-a','--no-trunc','--filter','id='+id,'--format','{{.ID}}'],ms)==='',record:async(_p,result)=>exclusive(names(p.slot)+'.result.json',result),dispose:async()=>{sourceChain.close();receiptChain.close();},
  };

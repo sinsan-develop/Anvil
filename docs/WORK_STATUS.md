@@ -13885,3 +13885,17 @@ git diff --check
 - Main checkpoint 준비386cec은 status 출력 전체 trim으로 첫 행의 선행 공백을 지워 docs/WORK_PLAN.md를 ocs/WORK_PLAN.md로 오독해 stage 이전 거절됐다. 제품/파일/권한 오류가 아니며 변경0이다. status를 원문 NUL 필드로 파싱하도록 검수 명령만 보정한다. 동일 원인1회, Git 기준·보호 파일은 보존한다.
 
 - c71084/531a34 cached diff check는 Main 소유 문서3의 EOF 빈 줄만 지적했다(exit2). 문서 끝 개행만1개로 정정했고 source3·검증 바이트는 불변이다. 최종 WI 55212D93438EA39BAA0EE4040048D8561C84EC1A82133EB44A510D3103466D2C / 실행 후보 BE92FAE2B1F74BC827D9C6314D3B8680578D2288C94C3EE7B0792C7E6299CC31 / source 결과 F6CFA0BBFC7010C962C6E2F457947EAB5EA09F191344AC0035215586BD46A643이며 앞 지문은 빈줄 정정 전 snapshot이다. 제품 오류/기준 완화0.
+
+### 2026-11-03 IX01 전용 installer source 선행 보완 배정
+- Main79963e 정확8/rawindex동일/diff0로10a00aad commit,79b024 private exact/main/보호3 불변·tracked clean 확인. PMO는 전체105 후보의 정확 cluster 단위 CREATEROLE 위험·설치 후 회수/검산을 준비하는 기술안을 권장했으며 실제 실행은 미승인이다.
+- WI r3 CA669BECF46C5FE62402984C14CF6C2E3662733C7CD250209E120FC45F2CDEF0에 따라 같은 Primary에 기존 driver/unit 정확2파일만 source-only 보완을 배정한다. 현재 installer 비특권과0066/0073 선행의 불일치를 문서에 숨기거나 알려진 RED를 실행하지 않는다. 실제 DB/권한/키/WSL/Docker/서비스/Agent/P03R3·자원0, SQL/index/제품 변경0이다.
+
+- Main 실행 후보 r3 SHA025929393EC3FF12F20573AB4F4131EE4C9E371FC6B36B18737A09D5EF3466E6는 권장 실제 범위를 slot1 단1회/105고정원문으로 명시했다. compact selected orderHash09d2e7d5cd8715a0ff02540d4397db2d4cb8dcf818d808ce328423d7583f24ef/SQL2376107B, 기존53+후행52/중복0031 pending제외다. 실제실행 NOT_APPROVED/NOT_READY이며 code·bootstrap/회수지문 결박은 미완료다.
+- 기존 Primary는 1bdc94 source선행 RED1 뒤 b50119 33PASS/435.1206ms를 중간 보고했다. Main 독립 검수 전 WIP이고 실제 PG/DDL/권한 실행0/livehandle0이며 최종 지문·noEmit/Bash-n/정착 회수 음성 보완 반환을 기다린다. 이전 checkpoint27PASS는 그 이전 source에서만 유효하다.
+- Main은 PG15 공식 role-attributes도 읽어 CREATEROLE이 다른 role·멤버십과 고권한 predefined role까지 영향을 줄 수 있음을 확인했다. 이는 새 빈 전용 cluster 경계의 실제 결정 사유이며 특정DB에 한정된 권한이라고 설명하지 않는다. 출처 https://www.postgresql.org/docs/15/role-attributes.html. 실제 권한/환경 변경0이다.
+
+### 2026-11-03 IX01 installer source 반환·Main 독립 검수
+- 기존 Primary는 WI r3 CA669BEC…/시작10a00aad에서 코드2를4750BAD4/2FDCA333으로 동결·writer 반환/livehandle0이다. indexDC8B/SQL/제품/설정·보호3 불변이다. 실제 CREATEROLE/DB/role/GRANT/키/서비스/Agent/WSL/Docker/P03R3·자원/원장 생성0이다.
+- 원 RED1bdc94 1건 뒤 Primary649bf4 34PASS/skip0·type/Bash구문0. Main e4aa3d/c47b5d diff 소비와08fb80 신규34PASS/0FAIL/skip0/398.5456ms·a9c9f2 type+Bash구문 exit0/7.276초를 독립 확인했다. 완료 검증의 재실행이 아니라 바뀐 installer/회수 코드의 최종 검수다.
+- Main b476d4 bootstrap496caf4e/metadata23237b19 및4회수 SQL hash를 동결 source에서 독립 계산했다. 실제 SQL/role 실행0이다. PG15 CREATEROLE은 cluster 단위 위험이므로 새 일회 격리cluster에만 한정된 실제 결정이 필요하며 기존 사용자/cluster 권한 변경0이다.
+- 결과 r3 SHA942AE509C105E266C598CCFC22EFEE3872D8771AEC981DB225A974DB4DDD7D30, SOURCE_PREPARED_ACTUAL_NOT_RUN. Main은 source2+소유 문서만 checkpoint/private 게시 후 실행 후보에 exact code·SQL/role 검산·단1slot105·정리/UNKNOWN을 결박해 필요한 직접 결정을 요청한다. 전체계획/IX01/제품 기능 완료가 아니다.

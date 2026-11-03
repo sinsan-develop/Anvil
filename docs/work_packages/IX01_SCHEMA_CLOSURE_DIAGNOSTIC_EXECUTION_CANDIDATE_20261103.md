@@ -52,3 +52,130 @@
 - Node는 개발환경 과거 등록의 /opt/node-v24.22.1-linux-x64/bin/node root:root/0755/126879696B/SHA e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb를 실행 전 확인한다. 현재 WSL 존재 확인/설치0이며 부재·차이면 생성0으로 중단한다.
 - UNKNOWN이면 자동 mutation·정리·다음 slot0이다. 자원은 원기한을 넘겨 남을 수 있고 수동 소유 검토가 필요하므로 '30분 안에 무조건 정리0'으로 요청/보고하지 않는다. 실제 허가 질문에는 이 제한과 임시 QA의 정확한 종료·제거 범위를 밝힌다.
 - 현재는 PMO에0065까지96 한정안과 전체105의 역할 선행 판단을 요청했다. 이것이 신산님의 source-only/실제 DB·권한·키·서비스·Agent 제외를 해제하지 않는다. 실행 입력·원 기한·code SHA·선택안이 미정이므로 지금 실제 실행 승인 질문도 하지 않는다.
+
+## r3 — 권장 단발105 후보의 구체 범위 (source 검수 전)
+- PMO 기술 의견은② 전체 후보 준비를 권장하며 실제 실행 승인이 아니다. 이 r3의 권장 실행안은 **slot1 단 한 번**으로 좁힌다. 앞 r1의 최대3 slot 권장은 이 후보의 요청 범위가 아니다. 두 번째/세 번째 실행과 실패 후 재시도는 별도 결정 전0이다.
+- 새 빈 전용 cluster의 installer만 설치 구간 CREATEROLE을 갖는 source를 기존 Primary가 준비 중이다. CREATEROLE은 cluster의 다른 비superuser role 변경/멤버십까지 가능한 권한이며 DB 하나만의 권한이라고 설명하지 않는다. 기존 cluster/PGDATA/volume·hostsocket·network/port·기존 role/계정·키·서비스에 이 권한을 적용하지 않는다.
+- 원0066/0073의 role 생성/선행 검사는 그대로 둔다. reader 선생성·동명 role 인수·superuser/BYPASSRLS 전환0. 원 SQL 자체가 reader→installer 멤버십을 회수하는 점도 metadata로 대조하고, 정착 후 일회 installer CREATEROLE 회수·속성 검산→정확 새 QA 종료/제거를 수행할 source만 준비한다. bootstrap/회수 SQL과 metadata 기준·hash는 최종 검수 뒤 아래에 결박한다.
+- 대상은 기존 WSL-server/daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/Name SINSAN/daon UID1000, 신규 source /home/daon/anvil-ix01-ddl-20261103-r1-qa, 신규 container anvil-ix01-ddl-pg-20261103-r1-a1, 신규 DB anvil_v3_ix01_ddl_20261103_r1_a1이다. cache PG15 SHA594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f 외 pull/build/기존 image·container·volume 변경0이다.
+- 신규 원장 /home/daon/.local/share/anvil-v3-qa-receipts/ix01-ddl-20261103-r1 및 그 아래 빈 docker-config만0700·daon 소유로 준비하는 안이다. owner.json/slot-a1.intent.json/slot-a1.result.json은0600·O_EXCL·단일link·원 입력/기한 결박으로 비밀 없이 보존한다. 기존 경로·내용이면 자동인수/덮어쓰기/삭제0, 새 실제 생성도 아직0이다.
+- 준비·실행 전체 창은 최초 실제 허가 수신 뒤30분 이내이며 PG slot의 실행 예산은10분 이내다. 실행 직전 issuedAt/만료를 한 번 고정하고 instance(비밀 아닌 소유 식별값)·owner원문hash·plan원문hash를 만든 뒤 변경/재소진하지 않는다. 이 시간/소유 식별값은 위 정확 대상·순서·code/정리 범위를 넓히지 않는다. 입력hash는 사람 승인을 대신하지 않는다.
+- 허가된 원문 실행은 env -i로 시작한 Bash --noprofile --norc의 scripts/qa-ix01-schema-closure.sh --run 한 번이다. ANVIL_IX01_DDL_OPT_IN=EXACT_PLAN_APPROVED와 공개 계획 JSON/그rawSHA256만 넘긴다. Node24 과거 등록 지문·Git clean/exact executionHead·SQL baseline/index/selected SHA·원장/부모FD·daemon/image·name부재·VOLUME/격리 일치 전에는 create0이다. Node나image 부재/차이는 자동 설치·fallback 없이 중단한다.
+- 원장 의도 저장→create fullID 검산→start→ready→정확 bootstrap·role 검산→아래105 원문 순서 설치→정착 후 일회 권한 회수·검산→fullID 소유 재검산→stop --time 5→rm→별도 부재 확인 순서이다. Docker stop은5초 안에 종료되지 않으면 새 QA에 SIGKILL할 수 있다. 이 종료/제거 허가는 **정확 새 일회 container**에만 필요하며 이름만으로 다른 자원을 채택하지 않는다.
+- network none/포트0/hostbind·named·anonymous volume0/tmpfs only·read-only root·999:999·capdropALL/no-new-privileges·pids64/memory512MiB/CPU1/log-driver none을 유지한다. Unix-only local trust/host reject/listen_addresses 빈 값이며 암호·키·Secret 생성0이다.
+- UNKNOWN/신원 차이/원장·회수·COMMIT 불명에서는 후속 mutation/자동정리/재시도/다음slot0. 자원이30분 뒤 남을 수 있음을 허가 요청에 밝히고 수동 소유 검토를 요청한다. 검사하지 못한 정리를0으로 보고하지 않는다. 성공·명확 실패의 확인된 신규 source 경로만 owner/realpath/nonlink/dirty 재검산 뒤 정리하고 원장 감사는 보존한다.
+- 기존 정식/복구 DB·P03R3·원 volume·실사용자/정책·키/Secret/CA·API/Web·Agent/LLM/Oracle/ysna·운영 전부 제외한다. DDL 정의 설치만으로 문서 여정/실RLS/IX01/기능/전체 계획 PASS가 아니다.
+
+### 고정 selected105 — JSON 배열 순서
+SQL baseline d2f6ab8c74fad09f26319f77b3acb80afe3f927b, index SHA dc8b5fc0fc6fc980ec28c7c5dc367bee2cbaf1b20f877c06ff6e97851d286045, compact JSON.stringify(selected) UTF-8·개행없음5420B/orderHash09d2e7d5cd8715a0ff02540d4397db2d4cb8dcf818d808ce328423d7583f24ef. 원 SQL 총2376107B/최대181052B. 중복0031 pending1개 제외. 아래 pretty JSON 표시는 읽기용이며 hash 대상은 같은 배열의 compact 표현이다. 순서의 실제 PG 타당성은 아직 미확인이다.
+```json
+[
+  "db/migrations/0000_environment.sql",
+  "db/migrations/0001_projects_access.sql",
+  "db/migrations/0011_authorization.sql",
+  "db/migrations/0003_documents.sql",
+  "db/migrations/0002_methodologies.sql",
+  "db/migrations/0002_builtin_condition_contract.sql",
+  "db/migrations/0011_user_common_control.sql",
+  "db/migrations/0011_user_common_forms.sql",
+  "db/migrations/0011_user_common_content_reviews.sql",
+  "db/migrations/0011_user_common_method_reviews.sql",
+  "db/migrations/0011_project_creation.sql",
+  "db/migrations/0011_draft_method_reviews.sql",
+  "db/migrations/0011_project_policy_control.sql",
+  "db/migrations/0003_project_artifacts.sql",
+  "db/migrations/0003_project_documents.sql",
+  "db/migrations/0003_project_document_reviews.sql",
+  "db/migrations/0003_document_confirmations.sql",
+  "db/migrations/0003_document_imports.sql",
+  "db/migrations/0003_document_proposals.sql",
+  "db/migrations/0004_design_index.sql",
+  "db/migrations/0004_work_plan_drafts.sql",
+  "db/migrations/0004_trace_links.sql",
+  "db/migrations/0005_knowledge_drafts.sql",
+  "db/migrations/0005_conversations.sql",
+  "db/migrations/0005_knowledge_changes.sql",
+  "db/migrations/0005_knowledge_confirmation.sql",
+  "db/migrations/0005_artifact_quarantine.sql",
+  "db/migrations/0004_work_plan_confirmation.sql",
+  "db/migrations/0004_design_change_proposals.sql",
+  "db/migrations/0004_design_impact_reviews.sql",
+  "db/migrations/0004_design_impact_review_operator_fix.sql",
+  "db/migrations/0004_design_change_sources.sql",
+  "db/migrations/0004_design_change_source_binding_fix.sql",
+  "db/migrations/0011_one_time_approval_requests.sql",
+  "db/migrations/0011_one_time_approval_decisions.sql",
+  "db/migrations/0011_one_time_approval_consumption.sql",
+  "db/migrations/0005_project_constitutions.sql",
+  "db/migrations/0001_source_declarations.sql",
+  "db/migrations/0002_project_methodology_revisions.sql",
+  "db/migrations/0003_document_stage_bindings.sql",
+  "db/migrations/0006_connection_candidates.sql",
+  "db/migrations/0006_connection_candidate_guard_alias_fix.sql",
+  "db/migrations/0006_host_trust_registrations.sql",
+  "db/migrations/0006_host_trust_challenge_protocol_fix.sql",
+  "db/migrations/0008_source_root_registry.sql",
+  "db/migrations/0008_source_read_observation.sql",
+  "db/migrations/0012_assignment_drafts.sql",
+  "db/migrations/0013_assignment_confirmation.sql",
+  "db/migrations/0014_context_preparation.sql",
+  "db/migrations/0015_project_baselines.sql",
+  "db/migrations/0016_execution_preparation.sql",
+  "db/migrations/0017_execution_authority.sql",
+  "db/migrations/0031_empty_project_methodology_application.sql",
+  "db/migrations/0018_execution_observation.sql",
+  "db/migrations/0019_understanding_reviews.sql",
+  "db/migrations/0020_execution_recovery.sql",
+  "db/migrations/0021_execution_stop.sql",
+  "db/migrations/0022_execution_grant_revocation.sql",
+  "db/migrations/0024_execution_instruction_permits.sql",
+  "db/migrations/0025_result_submissions.sql",
+  "db/migrations/0026_result_review_criteria.sql",
+  "db/migrations/0027_result_reviews.sql",
+  "db/migrations/0028_result_rework_drafts.sql",
+  "db/migrations/0032_document_source_links.sql",
+  "db/migrations/0033_document_source_detach_approval.sql",
+  "db/migrations/0034_assignment_parent_drafts.sql",
+  "db/migrations/0035_work_plan_draft_approval.sql",
+  "db/migrations/0036_stage_queue.sql",
+  "db/migrations/0037_provider_session_claims.sql.pending",
+  "db/migrations/0039_ownership_authority.sql.pending",
+  "db/migrations/0040_source_content_hash.sql.pending",
+  "db/migrations/0041_control_handoff_source.sql.pending",
+  "db/migrations/0042_draft_artifact_storage.sql.pending",
+  "db/migrations/0043_project_artifact_exports.sql.pending",
+  "db/migrations/0044_project_artifact_export_approval.sql.pending",
+  "db/migrations/0045_baseline_one_time_approval.sql.pending",
+  "db/migrations/0046_context_one_time_approval.sql.pending",
+  "db/migrations/0047_stage_start_one_time_approval.sql.pending",
+  "db/migrations/0048_limit_policy_one_time_approval.sql.pending",
+  "db/migrations/0049_responsible_session_one_time_approval.sql.pending",
+  "db/migrations/0050_design_baseline_activations.sql.pending",
+  "db/migrations/0051_knowledge_share_requests.sql.pending",
+  "db/migrations/0052_approval_in_app_notifications.sql.pending",
+  "db/migrations/0053_backup_references.sql.pending",
+  "db/migrations/0054_backup_installation_resources.sql.pending",
+  "db/migrations/0055_execution_preparation_one_time_approval.sql.pending",
+  "db/migrations/0056_understanding_review_one_time_approval.sql.pending",
+  "db/migrations/0057_capability_reports_human_claim.sql.pending",
+  "db/migrations/0058_checkpoint_records.sql.pending",
+  "db/migrations/0059_project_storage_quota.sql.pending",
+  "db/migrations/0060_transfer_preparation_records.sql.pending",
+  "db/migrations/0061_child_assignment_content.sql.pending",
+  "db/migrations/0062_execution_material_registration.sql.pending",
+  "db/migrations/0063_backup_policies.sql.pending",
+  "db/migrations/0064_trace_artifact_links.sql.pending",
+  "db/migrations/0065_connection_definitions.sql.pending",
+  "db/migrations/0066_export_locked_metadata_reader.sql.pending",
+  "db/migrations/0067_definition_capability_reports.sql.pending",
+  "db/migrations/0068_registered_definition_reservations.sql.pending",
+  "db/migrations/0069_environment_configuration.sql.pending",
+  "db/migrations/0070_project_writer_authority.sql.pending",
+  "db/migrations/0071_native_preparation_authority.sql.pending",
+  "db/migrations/0072_document_source_observation.sql.pending",
+  "db/migrations/0073_control_handoff_acceptance.sql.pending",
+  "db/migrations/0074_project_membership_versions.sql.pending"
+]
+```
+
+최종 code SHA·bootstrap/회수 SQL/hash·role 검산과 Main 독립 source 검수가 아직 미결이다. **NOT_APPROVED / NOT_READY_TO_RUN**을 유지하고 현재 사용자 실행 승인 질문0이다.
