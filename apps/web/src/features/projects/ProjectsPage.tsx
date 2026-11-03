@@ -1,3 +1,4 @@
+import type {MembershipUI} from './membership-api.ts';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listProjects } from './api.ts';
@@ -8,7 +9,7 @@ import {ProjectAssignmentDrafts} from './ProjectAssignmentDrafts.tsx';
 import {ProjectMethodologyOriginal} from './ProjectMethodologyOriginal.tsx';
 import {mergeProjectListSnapshot,selectProjectListSnapshot,type ProjectListSnapshot,type ProjectListVisible} from './project-list-snapshot.ts';
 
-export function ProjectListResults({client,snapshot,pending,error,onAuthenticationLost}:{client:ApiClient;snapshot:ProjectListVisible|null;pending:boolean;error:ApiError|null;onAuthenticationLost:()=>void}){
+export function ProjectListResults({client,snapshot,pending,error,onAuthenticationLost,membership}:{client:ApiClient;snapshot:ProjectListVisible|null;pending:boolean;error:ApiError|null;onAuthenticationLost:()=>void;membership?:MembershipUI}){
   if(snapshot&&snapshot.client!==client||error&&[401,403,404].includes(error.status))snapshot=null;
   const locked=pending||!!error||!snapshot?.current;
   return <>
@@ -22,7 +23,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
       <p className="meta">목록 항목 관측: <time dateTime={snapshot.itemObservedAt[item.id]}>{new Date(snapshot.itemObservedAt[item.id]!).toLocaleString('ko-KR')}</time> · 관측 뒤 상태·권한 변경 가능</p>
       <p className="meta">현재 실행 단계·다음 행동: 미확인 · 조회 응답에 없음</p>
       {!locked?<><a href={routeHref('approvals',item.id)} aria-label={item.name+' 승인 요청 보기'}>승인 요청 화면 열기 · 건수는 별도 조회</a>{' · '}<a href={routeHref('control',item.id)} aria-label={item.name+' 작업 권한 인계 화면 열기'}>작업 권한 인계 화면 열기</a></>:null}
-      <ProjectAccessSummary key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
+      <ProjectAccessSummary membership={membership} key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectPendingApprovals key={'decisions:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectAssignmentDrafts key={'drafts:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectMethodologyOriginal key={'method:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
@@ -30,7 +31,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
   </>;
 }
 
-export function ProjectsPage({ client, onAuthenticationLost, onNewProject }: { client: ApiClient; onAuthenticationLost: () => void; onNewProject: () => boolean }) {
+export function ProjectsPage({ client, onAuthenticationLost, onNewProject, membership }: { client: ApiClient; onAuthenticationLost: () => void; onNewProject: () => boolean;membership?:MembershipUI }) {
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('projectQuery') ?? '');
   const [applied, setApplied] = useState(query);
   const [archived, setArchived] = useState(() => new URLSearchParams(location.search).get('projectArchived') === 'true');
@@ -66,7 +67,7 @@ export function ProjectsPage({ client, onAuthenticationLost, onNewProject }: { c
     <div className="project-toolbar"><form onSubmit={event => filter(event)}><label>프로젝트 검색<input value={query} onChange={event => setQuery(event.target.value)} maxLength={200} /></label><button disabled={pending}>검색</button></form><a className="button-link" href={newUrl.pathname + newUrl.search + newUrl.hash} onClick={event => { if (!onNewProject()) event.preventDefault(); }}>새 프로젝트</a><button disabled={pending} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>목록 새로고침</button></div>
     <div className="project-toolbar" role="group" aria-label="보관 필터"><button aria-pressed={!archived} onClick={() => filter(undefined, false)}>미보관</button><button aria-pressed={archived} onClick={() => filter(undefined, true)}>보관</button></div>
     <p className="meta">실행 진행·완료 단계와 다음 행동은 연결 전입니다. 대기 결정·저장 임무는 카드에서 별도로 조회하며 이 목록을 여는 것만으로 Agent를 시작하지 않습니다.</p>
-    <ProjectListResults client={client} snapshot={visible} pending={pending} error={error} onAuthenticationLost={onAuthenticationLost}/>
+    <ProjectListResults membership={membership} client={client} snapshot={visible} pending={pending} error={error} onAuthenticationLost={onAuthenticationLost}/>
     {visible?.page.hasMore ? <button disabled={pending || !!error || !visible.current} onClick={() => setCursor(visible.page.nextCursor)}>다음 프로젝트 더 보기</button> : null}
   </section>;
 }

@@ -1,7 +1,9 @@
+import {ProjectMembershipPanel} from './ProjectMembershipPanel.tsx';
+import type {MembershipUI} from './membership-api.ts';
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {readProjectAccessSummary,type ProjectAccessSummaryView} from './project-access-summary.ts';
-export function ProjectAccessSummary({client,projectId,name,disabled,onAuthenticationLost}:{client:ApiClient;projectId:string;name:string;disabled:boolean;onAuthenticationLost:()=>void}){
+export function ProjectAccessSummary({client,projectId,name,disabled,onAuthenticationLost,membership}:{client:ApiClient;projectId:string;name:string;disabled:boolean;onAuthenticationLost:()=>void;membership?:MembershipUI}){
  const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{client:ApiClient;projectId:string;revision:number;value:ProjectAccessSummaryView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const shown=!disabled&&loaded?.client===client&&loaded.projectId===projectId&&loaded.revision===revision?loaded:null,pending=revision>0&&!shown;
  useEffect(()=>{if(!revision)return;let active=true;
@@ -18,6 +20,7 @@ export function ProjectAccessSummary({client,projectId,name,disabled,onAuthentic
    <div><dt>제어 상태</dt><dd>{v.controlState.status==='HELD'?'이 로그인·기기에 제어 기록 있음':v.controlState.status==='OTHER_CLIENT'?'다른 사용자 또는 기기에 제어 기록 있음':'현재 유효한 제어 기록 없음'}</dd></div>
    {v.controlState.status!=='UNASSIGNED'?<><div><dt>제어 기록 사용자 ID</dt><dd>{v.controlState.actorId}</dd></div><div><dt>제어 기록 기기 ID</dt><dd>{v.controlState.clientId}</dd></div><div><dt>제어 세대</dt><dd>{v.controlState.generation}</dd></div></>:null}
   </dl><h3>준비 미확인 조건</h3>{v.readinessIssues.length?<ul>{v.readinessIssues.map((i,n)=><li key={n}>{i.code}</li>)}</ul>:<p>응답에 준비 미확인 코드 없음 · 전체 준비 완료 판정 아님</p>}
+  {membership?<ProjectMembershipPanel client={client} projectId={projectId} management={membership} disabled={disabled||v.participation!=='OWNER'||v.controlState.status!=='HELD'||v.controlState.actorId!==membership.session.user.id||v.controlState.clientId!==membership.session.clientId} onAuthenticationLost={onAuthenticationLost}/>:null}
   <p>실제 단계·Agent 작업·필요 결정 건수·변경 권한은 이 조회로 확인하지 않습니다. 제어권 인수·승인·Agent 시작은 수행하지 않았습니다.</p></>:null}
  </section>;
 }

@@ -11,3 +11,4 @@
 *.svg -text
 *.docx binary
 db/migrations/0073_control_handoff_acceptance.sql.pending text eol=lf
+db/migrations/0074_project_membership_versions.sql.pending text eol=lf

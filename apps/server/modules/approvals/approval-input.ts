@@ -1,3 +1,4 @@
+import {readMembershipCommand} from '../../../../contracts/runtime/project-membership-v1.ts';
 import {readUnderstandingReviewCommand} from '../executions/execution-understanding.ts';
 import {readExecutionIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
 import{AuthFailure}from'../access/repository.ts';
@@ -59,6 +60,7 @@ export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand
   const target=s.operation==='saveBaselineDraft'?c.payload.baseRef:c.payload.draftRef;
   if(!((target===null&&s.operation==='saveBaselineDraft')||isVersionRef(target))||canonicalJson(s.targetRef)!==canonicalJson(target))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  }
+ if(s.operation==='saveProjectMembership'){try{readMembershipCommand(c);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}}
  if(c.projectId!==projectId||c.commandId!==details.candidateCommandId||s.requestedSubjectRef.kind!=='HUMAN'||s.requestedSubjectRef.userId!==actorId||s.requestedSubjectRef.clientId!==c.clientId||s.controlGeneration!==c.controlGeneration||s.operation!==c.operation||s.expectedVersion!==c.expectedVersion||(s.operation!=='reviewUnderstanding'&&(s.targetRef?.id??null)!==c.targetId)||canonicalJson(s.baselineRefs)!==canonicalJson(c.baselineRefs)||s.payloadHash!==contentHash(canonicalJson(c.payload)))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
 }
 export function readApprovalDecision(value:unknown):ApprovalDecisionInput{

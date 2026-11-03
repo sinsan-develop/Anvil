@@ -1,0 +1,207 @@
+-- FN01 A안 직접 채택의 미적용 source. 실행/회원권한 변경은 이 파일 작성에 포함되지 않는다.
+BEGIN;
+LOCK TABLE anvil.projects,anvil.project_members IN SHARE ROW EXCLUSIVE MODE;
+CREATE TABLE anvil.project_membership_versions(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,user_id uuid NOT NULL REFERENCES anvil.users(id) ON DELETE RESTRICT,
+ version bigint NOT NULL CHECK(version>0),content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),snapshot_json jsonb NOT NULL,
+ event_id uuid NOT NULL UNIQUE,command_id uuid UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,user_id,version),UNIQUE(project_id,user_id,version,content_hash)
+);
+CREATE FUNCTION anvil.fn74_manager(pid uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x jsonb;s uuid;a uuid;c uuid;
+BEGIN
+ IF session_user<>'anvil_v3_app' THEN RETURN false;END IF;
+ x=current_setting('anvil.membership_context',true)::jsonb;
+ IF NOT COALESCE(anvil.checkpoint_keys(x,ARRAY['schemaVersion','purpose','sessionId','actorId','clientId','projectId']),false) OR x->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR x->>'purpose' IS DISTINCT FROM 'PROJECT_MEMBERSHIP_MANAGEMENT' OR x->>'projectId' IS DISTINCT FROM pid::text THEN RETURN false;END IF;
+ s=(x->>'sessionId')::uuid;a=(x->>'actorId')::uuid;c=(x->>'clientId')::uuid;PERFORM anvil.fn01_active(s,a,c);
+ RETURN EXISTS(SELECT 1 FROM anvil.auth_sessions t JOIN anvil.projects p ON p.id=pid JOIN anvil.project_members m ON m.project_id=p.id AND m.user_id=a JOIN anvil.project_control pc ON pc.project_id=p.id
+ WHERE t.id=s AND t.user_id=a AND t.client_id=c AND t.reauth_until>clock_timestamp() AND p.archived_at IS NULL AND m.participation='OWNER' AND m.revoked_at IS NULL AND pc.actor_id=a AND pc.client_id=c AND pc.revoked_at IS NULL)
+ AND EXISTS(SELECT 1 FROM anvil.permission_policies p JOIN anvil.permission_policy_versions v ON v.project_id=p.project_id AND v.policy_id=p.id AND v.version=p.head_version WHERE p.project_id=pid AND v.content_hash=anvil.fn01_hash(jsonb_build_object('rules',v.rules_json,'reason',v.reason,'reviewRefs',v.review_refs))
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(v.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',a) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND(r->'operations')?'saveProjectMembership' AND r->>'disposition' IN('AUTO','REQUIRE_APPROVAL') AND(r->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(v.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',a) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND(r->'operations')?'saveProjectMembership' AND r->>'disposition'='DENY' AND(r->>'expiresAt')::timestamptz>clock_timestamp()));
+EXCEPTION WHEN invalid_text_representation THEN RETURN false;
+ WHEN insufficient_privilege THEN IF SQLERRM IN('FN01_ACTIVE_SESSION_REQUIRED','FN01_APP_SESSION_REQUIRED') THEN RETURN false;END IF;RAISE;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_manager(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn74_manager(uuid) TO anvil_v3_app;
+-- 관측 anchor를 과거 HUMAN 명령의 성공 결과로 소급하지 않는다.
+CREATE FUNCTION anvil.fn74_anchor(m anvil.project_members,origin text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s jsonb;observed_at timestamptz=date_trunc('milliseconds',clock_timestamp());
+BEGIN
+ IF origin NOT IN('LEGACY_OBSERVED','PROJECT_CREATION') OR EXISTS(SELECT 1 FROM anvil.project_membership_versions WHERE project_id=m.project_id AND user_id=m.user_id) THEN RAISE EXCEPTION 'MEMBERSHIP_ANCHOR_INVALID';END IF;
+ IF origin='PROJECT_CREATION' AND NOT EXISTS(SELECT 1 FROM anvil.draft_creation_intents i JOIN anvil.commands c ON c.id=i.project_command_id AND c.project_id=i.target_project_id WHERE i.target_project_id=m.project_id AND i.actor_id=m.user_id AND i.state='COMMITTED' AND c.operation='createProject' AND c.state='APPLIED' AND c.actor_id=m.user_id AND c.client_id=i.client_id) THEN RAISE EXCEPTION 'MEMBERSHIP_CREATION_LINEAGE_REQUIRED';END IF;
+ s=jsonb_build_object('schemaVersion',1,'projectId',m.project_id,'userId',m.user_id,'version',m.version,'participation',m.participation,'revokedAt',CASE WHEN m.revoked_at IS NULL THEN 'null'::jsonb ELSE to_jsonb(to_char(m.revoked_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) END,'reason',CASE WHEN origin='PROJECT_CREATION' THEN '확인된 프로젝트 생성의 시작 관계' ELSE 'migration 시점에 관측한 관계 · 이전 명령 미검증' END,'sourceKind',origin,'previousRef',null,'commandId',null,'createdBy',null,'clientId',null,'recordedAt',to_char(observed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+ INSERT INTO anvil.project_membership_versions VALUES(m.project_id,m.user_id,m.version,anvil.fn01_hash(s),s,gen_random_uuid(),NULL,observed_at);
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_anchor(anvil.project_members,text) FROM PUBLIC,anvil_v3_app;
+DO $$DECLARE m anvil.project_members;origin text;BEGIN
+ FOR m IN SELECT * FROM anvil.project_members ORDER BY project_id,user_id FOR UPDATE LOOP
+ origin=CASE WHEN EXISTS(SELECT 1 FROM anvil.draft_creation_intents i JOIN anvil.commands c ON c.id=i.project_command_id AND c.project_id=i.target_project_id WHERE i.target_project_id=m.project_id AND i.actor_id=m.user_id AND i.state='COMMITTED' AND c.operation='createProject' AND c.state='APPLIED' AND m.version=1 AND m.participation='OWNER' AND m.revoked_at IS NULL) THEN 'PROJECT_CREATION' ELSE 'LEGACY_OBSERVED' END;
+ PERFORM anvil.fn74_anchor(m,origin);
+ END LOOP;END;$$;
+ALTER TABLE anvil.project_membership_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.project_membership_versions FORCE ROW LEVEL SECURITY;
+CREATE POLICY fn74_version_read ON anvil.project_membership_versions FOR SELECT TO anvil_v3_app USING(anvil.fn74_manager(project_id));
+CREATE POLICY fn74_version_insert ON anvil.project_membership_versions FOR INSERT TO anvil_v3_app WITH CHECK(anvil.fn74_manager(project_id));
+CREATE POLICY fn74_migrator ON anvil.project_membership_versions TO anvil_v3_migrator USING(true) WITH CHECK(true);
+REVOKE ALL ON anvil.project_membership_versions FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.project_membership_versions TO anvil_v3_app;
+REVOKE DELETE ON anvil.project_members FROM anvil_v3_app;
+GRANT INSERT ON anvil.project_members TO anvil_v3_app;
+GRANT UPDATE(participation,version) ON anvil.project_members TO anvil_v3_app;
+-- JS reason 20000 UTF16 단위를 보존한다. byte/canonical hash와 다른 한도다.
+CREATE FUNCTION anvil.fn74_payload_valid(p jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE reason text;units bigint;
+BEGIN
+ IF NOT COALESCE(anvil.checkpoint_keys(p,ARRAY['targetUserRef','participation','reason']),false) OR NOT COALESCE(anvil.checkpoint_keys(p->'targetUserRef',ARRAY['kind','userId']),false) OR p->'targetUserRef'->>'kind' IS DISTINCT FROM 'HUMAN' OR jsonb_typeof(p->'targetUserRef'->'userId') IS DISTINCT FROM 'string' OR(p->'targetUserRef'->>'userId')!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR p->>'participation' IS NULL OR p->>'participation' NOT IN('OWNER','VIEWER','HANDOFF_ELIGIBLE') OR jsonb_typeof(p->'reason') IS DISTINCT FROM 'string' THEN RETURN false;END IF;
+ reason=p->>'reason';IF length(btrim(reason,chr(9)||chr(10)||chr(11)||chr(12)||chr(13)||' '||U&'\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000\FEFF'))<1 OR length(reason)>20000 THEN RETURN false;END IF;
+ SELECT COALESCE(sum(CASE WHEN ascii(substr(reason,n,1))>65535 THEN 2 ELSE 1 END),0) INTO units FROM generate_series(1,length(reason)) n;RETURN units<=20000;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_payload_valid(jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn74_payload_valid(jsonb) TO anvil_v3_app;
+CREATE FUNCTION anvil.fn74_command_valid(pid uuid,cid uuid,s jsonb) RETURNS boolean LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;ar anvil.authorization_receipts;q jsonb;approval jsonb='null'::jsonb;used anvil.approval_consumptions;d anvil.approval_decisions;
+BEGIN
+ IF NOT anvil.fn74_manager(pid) OR NOT COALESCE(anvil.checkpoint_keys(s,ARRAY['schemaVersion','projectId','userId','version','participation','revokedAt','reason','sourceKind','previousRef','commandId','createdBy','clientId','recordedAt']),false) THEN RETURN false;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ IF c.id IS NULL OR c.operation<>'saveProjectMembership' OR c.state<>'APPLIED' OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid OR ar.id IS NULL OR ar.scope_kind<>'PROJECT' OR ar.scope_id<>pid OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) THEN RETURN false;END IF;
+ IF c.approval_consumption_id IS NOT NULL THEN SELECT * INTO used FROM anvil.approval_consumptions WHERE id=c.approval_consumption_id AND command_id=c.id;SELECT * INTO d FROM anvil.approval_decisions WHERE id=used.decision_id;IF d.id IS NULL OR ar.approval_decision_ref<>d.id THEN RETURN false;END IF;approval=jsonb_build_object('requestId',d.request_id,'decisionId',d.id,'scopeDigest',used.scope_digest);END IF;
+ q=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation',c.operation,'targetId',CASE WHEN s->'previousRef'='null'::jsonb THEN 'null'::jsonb ELSE s->'userId' END,'expectedVersion',c.expected_version,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',jsonb_build_object('targetUserRef',jsonb_build_object('kind','HUMAN','userId',s->>'userId'),'participation',s->'participation','reason',s->'reason'));
+ IF NOT anvil.fn74_payload_valid(q->'payload') OR NOT EXISTS(SELECT 1 FROM anvil.users WHERE id=(s->>'userId')::uuid AND status='ACTIVE' AND revoked_at IS NULL) THEN RETURN false;END IF;
+ RETURN COALESCE(s->'schemaVersion'='1'::jsonb AND s->>'projectId'=pid::text AND s->>'sourceKind'='HUMAN_COMMAND' AND s->'revokedAt'='null'::jsonb AND s->>'createdBy'=c.actor_id::text AND s->>'clientId'=c.client_id::text AND s->>'commandId'=c.command_id::text AND(s->>'version')::bigint=c.expected_version+1 AND c.request_hash=anvil.fn01_hash(q)
+ AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'projectId'=pid::text AND c.result_ref->>'targetId'=s->>'userId' AND c.result_ref->'version'=s->'version'
+ AND c.result_ref->'data'->>'status'='PROJECT_MEMBERSHIP_SAVED' AND c.result_ref->'data'->'snapshot'=s AND c.result_ref->'data'->'ref'=jsonb_build_object('id',s->>'userId','version',s->'version','contentHash',anvil.fn01_hash(s))
+ AND ar.scope_digest=anvil.fn01_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true) AND c.id::text=current_setting('anvil.command_id',true)
+ AND EXISTS(SELECT 1 FROM anvil.project_control pc JOIN anvil.project_members m ON m.project_id=pc.project_id AND m.user_id=pc.actor_id WHERE pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL AND m.participation='OWNER' AND m.revoked_at IS NULL)
+ AND EXISTS(SELECT 1 FROM anvil.permission_policies p JOIN anvil.permission_policy_versions pv ON pv.policy_id=p.id AND pv.project_id=p.project_id AND pv.version=p.head_version WHERE p.project_id=pid AND c.policy_ref=jsonb_build_object('id',p.id,'version',p.head_version,'contentHash',pv.content_hash)
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND(r->'operations')?'saveProjectMembership' AND(r->>'expiresAt')::timestamptz>clock_timestamp() AND(r->>'disposition'='AUTO' OR r->>'disposition'='REQUIRE_APPROVAL' AND c.approval_consumption_id IS NOT NULL))
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) r WHERE r->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND r->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND(r->'operations')?'saveProjectMembership' AND r->>'disposition'='DENY' AND(r->>'expiresAt')::timestamptz>clock_timestamp()))
+ AND(SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.operation_id=c.operation_id AND a.target_ref=c.result_ref->'data'->'ref' AND a.policy_ref=c.policy_ref AND a.scope_digest=ar.scope_digest AND a.outcome='APPLIED' AND a.reason_code='EXPLICIT_PROJECT_MEMBERSHIP' AND a.source_kind='HUMAN_COMMAND'),false);
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_command_valid(uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn74_command_valid(uuid,uuid,jsonb) TO anvil_v3_app;
+CREATE FUNCTION anvil.fn74_version_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'MEMBERSHIP_VERSION_IMMUTABLE';END IF;
+ IF NEW.content_hash IS DISTINCT FROM anvil.fn01_hash(NEW.snapshot_json) OR NEW.snapshot_json->>'projectId' IS DISTINCT FROM NEW.project_id::text OR NEW.snapshot_json->>'userId' IS DISTINCT FROM NEW.user_id::text OR NEW.snapshot_json->>'version' IS DISTINCT FROM NEW.version::text OR NEW.created_at IS DISTINCT FROM(NEW.snapshot_json->>'recordedAt')::timestamptz OR NEW.snapshot_json->>'recordedAt' IS DISTINCT FROM to_char(NEW.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') THEN RAISE EXCEPTION 'MEMBERSHIP_VERSION_INVALID';END IF;
+ IF current_user='anvil_v3_app' AND NOT anvil.fn74_command_valid(NEW.project_id,NEW.command_id,NEW.snapshot_json) THEN RAISE EXCEPTION 'MEMBERSHIP_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn74_version_guard BEFORE INSERT OR UPDATE OR DELETE ON anvil.project_membership_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn74_version_guard();
+CREATE FUNCTION anvil.fn74_member_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v anvil.project_membership_versions;pc anvil.project_control;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ IF TG_OP='INSERT' AND NEW.participation='OWNER' AND NEW.version=1 AND NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=NEW.project_id)
+ AND EXISTS(SELECT 1 FROM anvil.draft_creation_intents i WHERE i.target_project_id=NEW.project_id AND i.actor_id=NEW.user_id AND i.state='COPIES_VERIFIED' AND i.draft_id::text=current_setting('anvil.creation_draft_id',true) AND i.actor_id::text=current_setting('anvil.actor_id',true)) THEN RETURN NEW;END IF;
+ SELECT * INTO v FROM anvil.project_membership_versions WHERE project_id=NEW.project_id AND user_id=NEW.user_id AND version=NEW.version;
+ IF v.command_id IS NULL OR NOT anvil.fn74_command_valid(NEW.project_id,v.command_id,v.snapshot_json) OR v.snapshot_json->>'participation' IS DISTINCT FROM NEW.participation OR NEW.revoked_at IS NOT NULL THEN RAISE EXCEPTION 'MEMBERSHIP_CURRENT_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_OP='UPDATE' THEN
+ IF(NEW.project_id,NEW.user_id,NEW.joined_at) IS DISTINCT FROM(OLD.project_id,OLD.user_id,OLD.joined_at) OR OLD.revoked_at IS NOT NULL OR NEW.version<>OLD.version+1 OR v.snapshot_json->'previousRef' IS DISTINCT FROM(SELECT jsonb_build_object('id',user_id,'version',version,'contentHash',content_hash) FROM anvil.project_membership_versions WHERE project_id=OLD.project_id AND user_id=OLD.user_id AND version=OLD.version) THEN RAISE EXCEPTION 'MEMBERSHIP_EXACT_BASE_REQUIRED';END IF;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=NEW.project_id FOR UPDATE;
+ IF OLD.participation='OWNER' AND NEW.participation<>'OWNER' AND(OLD.user_id=pc.actor_id OR NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=NEW.project_id AND user_id<>NEW.user_id AND participation='OWNER' AND revoked_at IS NULL)) THEN RAISE EXCEPTION 'LAST_OR_CURRENT_OWNER_REQUIRED';END IF;
+ ELSE IF NEW.version<>1 OR v.snapshot_json->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'MEMBERSHIP_NEW_RELATION_REQUIRED';END IF;END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn74_member_guard BEFORE INSERT OR UPDATE ON anvil.project_members FOR EACH ROW EXECUTE FUNCTION anvil.fn74_member_guard();
+CREATE FUNCTION anvil.fn74_membership_complete(pid uuid,uid uuid) RETURNS boolean LANGUAGE sql SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.project_members m JOIN anvil.project_membership_versions v ON v.project_id=m.project_id AND v.user_id=m.user_id AND v.version=m.version WHERE m.project_id=pid AND m.user_id=uid AND v.content_hash=anvil.fn01_hash(v.snapshot_json) AND v.snapshot_json->>'participation'=m.participation AND v.snapshot_json->'revokedAt'=CASE WHEN m.revoked_at IS NULL THEN 'null'::jsonb ELSE to_jsonb(to_char(m.revoked_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) END)
+ AND NOT EXISTS(SELECT 1 FROM anvil.project_membership_versions v JOIN anvil.project_members m ON m.project_id=v.project_id AND m.user_id=v.user_id WHERE v.project_id=pid AND v.user_id=uid AND(v.version>m.version OR v.content_hash<>anvil.fn01_hash(v.snapshot_json) OR(v.snapshot_json->>'sourceKind'='HUMAN_COMMAND' AND(v.command_id IS NULL OR v.snapshot_json->'previousRef'<>'null'::jsonb AND NOT EXISTS(SELECT 1 FROM anvil.project_membership_versions old WHERE old.project_id=pid AND old.user_id=uid AND old.version=v.version-1 AND v.snapshot_json->'previousRef'=jsonb_build_object('id',uid,'version',old.version,'contentHash',old.content_hash)))))));
+$$;
+CREATE FUNCTION anvil.fn74_creation_anchor() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_membership_versions WHERE project_id=NEW.project_id AND user_id=NEW.user_id) THEN PERFORM anvil.fn74_anchor(NEW,'PROJECT_CREATION');END IF;
+ IF NOT anvil.fn74_membership_complete(NEW.project_id,NEW.user_id) THEN RAISE EXCEPTION 'MEMBERSHIP_HEAD_INCOMPLETE';END IF;RETURN NULL;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_creation_anchor() FROM PUBLIC,anvil_v3_app;
+CREATE CONSTRAINT TRIGGER fn74_member_final AFTER INSERT OR UPDATE ON anvil.project_members DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn74_creation_anchor();
+CREATE FUNCTION anvil.fn74_version_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$BEGIN IF NOT anvil.fn74_membership_complete(NEW.project_id,NEW.user_id) THEN RAISE EXCEPTION 'MEMBERSHIP_VERSION_ORPHAN';END IF;RETURN NULL;END;$$;
+CREATE CONSTRAINT TRIGGER fn74_version_final AFTER INSERT ON anvil.project_membership_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn74_version_final();
+CREATE FUNCTION anvil.fn74_command_final() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN IF NEW.operation='saveProjectMembership' AND NOT EXISTS(SELECT 1 FROM anvil.project_membership_versions v WHERE v.command_id=NEW.id AND v.project_id=NEW.project_id AND v.content_hash=anvil.fn01_hash(v.snapshot_json) AND anvil.fn74_membership_complete(v.project_id,v.user_id) AND anvil.fn74_command_valid(v.project_id,NEW.id,v.snapshot_json)) THEN RAISE EXCEPTION 'MEMBERSHIP_COMMAND_ORPHAN';END IF;RETURN NULL;END;$$;
+CREATE CONSTRAINT TRIGGER fn74_command_final AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN(NEW.operation='saveProjectMembership') EXECUTE FUNCTION anvil.fn74_command_final();
+-- 범용 승인 helper의 다른 연산은 원 함수를 그대로 호출한다.
+CREATE FUNCTION anvil.fn74_candidate_valid(pid uuid,x jsonb,s jsonb,fresh boolean) RETURNS boolean LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE q jsonb;b jsonb;target uuid;m anvil.project_members;v anvil.project_membership_versions;pc anvil.project_control;ctx jsonb;
+BEGIN
+ IF NOT anvil.fn74_manager(pid) OR NOT COALESCE(anvil.checkpoint_keys(x,ARRAY['schemaVersion','purpose','command','baseMembership']),false) OR x->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR x->>'purpose' IS DISTINCT FROM 'PROJECT_MEMBERSHIP_APPROVAL_CANDIDATE' THEN RETURN false;END IF;
+ IF NOT anvil.fn74_payload_valid(x->'command'->'payload') THEN RETURN false;END IF;
+ q=x->'command';b=x->'baseMembership';ctx=current_setting('anvil.membership_context',true)::jsonb;
+ IF NOT COALESCE(anvil.checkpoint_keys(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']),false) OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM pid::text OR q->>'operation' IS DISTINCT FROM 'saveProjectMembership' OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR octet_length(convert_to(anvil.fn01_json(q),'UTF8'))>2097152 THEN RETURN false;END IF;
+ IF NOT COALESCE(anvil.checkpoint_keys(q->'payload',ARRAY['targetUserRef','participation','reason']),false) OR NOT COALESCE(anvil.checkpoint_keys(q->'payload'->'targetUserRef',ARRAY['kind','userId']),false) OR q->'payload'->'targetUserRef'->>'kind' IS DISTINCT FROM 'HUMAN' OR q->'payload'->>'participation' NOT IN('OWNER','VIEWER','HANDOFF_ELIGIBLE') OR jsonb_typeof(q->'payload'->'reason') IS DISTINCT FROM 'string' OR length(trim(q->'payload'->>'reason'))<1 OR length(q->'payload'->>'reason')>20000 THEN RETURN false;END IF;
+ target=(q->'payload'->'targetUserRef'->>'userId')::uuid;
+ IF s IS DISTINCT FROM jsonb_build_object('operation','saveProjectMembership','targetRef',CASE WHEN b->>'kind'='NEW' THEN 'null'::jsonb ELSE b->'ref' END,'expectedVersion',q->'expectedVersion','payloadHash',anvil.fn01_hash(q->'payload'),'baselineRefs','[]'::jsonb,'environmentRef',null,'sourceScopes','[]'::jsonb,'limitsRef',null,'requestedSubjectRef',jsonb_build_object('kind','HUMAN','userId',ctx->>'actorId','clientId',ctx->>'clientId'),'controlGeneration',q->'controlGeneration') OR q->>'clientId' IS DISTINCT FROM ctx->>'clientId' THEN RETURN false;END IF;
+ IF b->>'kind'='NEW' THEN IF NOT anvil.checkpoint_keys(b,ARRAY['kind']) OR q->'targetId' IS DISTINCT FROM 'null'::jsonb OR q->'expectedVersion' IS DISTINCT FROM '0'::jsonb THEN RETURN false;END IF;
+ ELSE
+ IF NOT anvil.checkpoint_keys(b,ARRAY['kind','ref','participation']) OR b->>'kind' IS DISTINCT FROM 'EXISTING' OR q->>'targetId' IS DISTINCT FROM target::text OR q->'expectedVersion' IS DISTINCT FROM b->'ref'->'version' OR b->'ref'->>'id' IS DISTINCT FROM target::text THEN RETURN false;END IF;
+ SELECT * INTO v FROM anvil.project_membership_versions WHERE project_id=pid AND user_id=target AND version=(b->'ref'->>'version')::bigint;
+ IF v.project_id IS NULL OR b->'ref' IS DISTINCT FROM jsonb_build_object('id',target,'version',v.version,'contentHash',v.content_hash) OR v.content_hash<>anvil.fn01_hash(v.snapshot_json) OR b->'participation' IS DISTINCT FROM v.snapshot_json->'participation' OR v.snapshot_json->'revokedAt' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+ END IF;
+ IF fresh THEN
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=pid;IF q->>'clientId' IS DISTINCT FROM pc.client_id::text OR q->'controlGeneration' IS DISTINCT FROM to_jsonb(pc.generation) OR pc.revoked_at IS NOT NULL THEN RETURN false;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.users WHERE id=target AND status='ACTIVE' AND revoked_at IS NULL) THEN RETURN false;END IF;
+ SELECT * INTO m FROM anvil.project_members WHERE project_id=pid AND user_id=target;
+ IF b->>'kind'='NEW' THEN IF m.user_id IS NOT NULL THEN RETURN false;END IF;
+ ELSE IF m.user_id IS NULL OR m.revoked_at IS NOT NULL OR m.version<>v.version OR m.participation IS DISTINCT FROM b->>'participation' THEN RETURN false;END IF;
+ IF m.participation='OWNER' AND q->'payload'->>'participation'<>'OWNER' AND(m.user_id=pc.actor_id OR NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=pid AND user_id<>target AND participation='OWNER' AND revoked_at IS NULL)) THEN RETURN false;END IF;END IF;
+ END IF;RETURN true;
+EXCEPTION WHEN invalid_text_representation OR numeric_value_out_of_range THEN RETURN false;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn74_candidate_valid(uuid,jsonb,jsonb,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn74_candidate_valid(uuid,jsonb,jsonb,boolean) TO anvil_v3_app;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_membership;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,scope jsonb) RETURNS boolean LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;r jsonb;original_request jsonb;
+BEGIN
+ IF scope->>'operation' IS DISTINCT FROM 'saveProjectMembership' THEN RETURN anvil.connection_candidate_approval_target_before_membership(pid,scope);END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=nullif(current_setting('anvil.command_id',true),'')::uuid;
+ IF c.operation='requestApproval' THEN r=c.result_ref->'data'->'request';
+ original_request=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','requestApproval','targetId',null,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',null,'payload',jsonb_build_object('details',r->'details','candidatePayload',r->'membershipCandidate'->'command'->'payload'));
+ IF c.request_hash IS DISTINCT FROM anvil.fn01_hash(original_request) OR r->'membershipCandidate'->'command'->>'commandId'=c.command_id::text THEN RETURN false;END IF;
+ ELSE SELECT request_json INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=(c.result_ref->'data'->'decision'->>'requestId')::uuid;END IF;
+ RETURN r->'details'->'actionScope'=scope AND r->'membershipCandidate'->'command'->>'commandId'=r->'details'->>'candidateCommandId' AND anvil.fn74_candidate_valid(pid,r->'membershipCandidate',scope,true);
+END;$$;
+ALTER FUNCTION anvil.one_time_decision_command_authorized(uuid,uuid) RENAME TO one_time_decision_command_before_membership;
+CREATE FUNCTION anvil.one_time_decision_command_authorized(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE r anvil.approval_requests;c anvil.commands;
+BEGIN
+ IF NOT anvil.one_time_decision_command_before_membership(pid,cid) THEN RETURN false;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=(c.result_ref->'data'->'decision'->>'requestId')::uuid;
+ IF r.action_scope_json->>'operation' IS DISTINCT FROM 'saveProjectMembership' THEN RETURN true;END IF;
+ RETURN anvil.fn74_candidate_valid(pid,r.request_json->'membershipCandidate',r.action_scope_json,true);
+END;$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_membership;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE c anvil.commands;d anvil.approval_decisions;r anvil.approval_requests;q jsonb;ar anvil.authorization_receipts;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.operation IS DISTINCT FROM 'saveProjectMembership' THEN RETURN anvil.one_time_consumption_command_before_membership(pid,cid,did);END IF;
+ SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=did;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+ IF NOT anvil.fn74_candidate_valid(pid,r.request_json->'membershipCandidate',r.action_scope_json,true) THEN RETURN false;END IF;
+ q=jsonb_set(r.request_json->'membershipCandidate'->'command','{approvalRef}',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest));
+ RETURN COALESCE(c.scope_kind='PROJECT' AND c.scope_id=pid AND c.state='APPLIED' AND d.id IS NOT NULL AND r.id IS NOT NULL AND r.status='APPROVED' AND r.version=2 AND d.decision='APPROVE' AND d.request_version=1 AND d.scope_digest=r.scope_digest AND r.policy_ref=c.policy_ref AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=d.id AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND r.created_by=c.actor_id AND r.client_id=c.client_id AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND r.candidate_command_id=c.command_id AND d.control_generation=c.control_generation AND r.expires_at>clock_timestamp() AND c.approval_consumption_id IS NOT NULL AND c.request_hash=anvil.fn01_hash(q) AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',r.action_scope_json->>'payloadHash','scopeDigest',r.scope_digest)
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true),false);
+END;$$;
+REVOKE ALL ON FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_decision_command_authorized(uuid,uuid),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb),anvil.one_time_decision_command_authorized(uuid,uuid),anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) TO anvil_v3_app;
+CREATE FUNCTION anvil.fn74_approval_candidate_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.action_scope_json->>'operation'='saveProjectMembership' THEN
+ IF NOT COALESCE(anvil.checkpoint_keys(NEW.request_json,ARRAY['projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','membershipCandidate','id','version','status','createdAt']),false) OR NOT anvil.fn74_candidate_valid(NEW.project_id,NEW.request_json->'membershipCandidate',NEW.action_scope_json,true) THEN RAISE EXCEPTION 'MEMBERSHIP_APPROVAL_ORIGINAL_REQUIRED';END IF;
+ ELSIF NEW.request_json?'membershipCandidate' THEN RAISE EXCEPTION 'MEMBERSHIP_APPROVAL_WRONG_OPERATION';END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn74_approval_candidate_guard BEFORE INSERT ON anvil.approval_requests FOR EACH ROW EXECUTE FUNCTION anvil.fn74_approval_candidate_guard();
+ALTER FUNCTION anvil.fn74_manager(uuid) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn74_anchor(anvil.project_members,text) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn74_creation_anchor() OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn74_version_final() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn74_membership_complete(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn74_membership_complete(uuid,uuid) TO anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.fn74_version_guard(),anvil.fn74_member_guard(),anvil.fn74_version_final(),anvil.fn74_command_final(),anvil.fn74_approval_candidate_guard() FROM PUBLIC,anvil_v3_app;
+DO $$BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE oid='anvil.project_membership_versions'::regclass AND relrowsecurity AND relforcerowsecurity) OR pg_catalog.has_table_privilege('anvil_v3_app','anvil.project_membership_versions','UPDATE,DELETE,TRUNCATE') THEN RAISE EXCEPTION 'MEMBERSHIP_ACL_POSTFLIGHT_FAILED';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.project_members m WHERE NOT anvil.fn74_membership_complete(m.project_id,m.user_id)) THEN RAISE EXCEPTION 'MEMBERSHIP_ANCHOR_POSTFLIGHT_FAILED';END IF;
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_proc f WHERE f.oid IN('anvil.fn74_manager(uuid)'::regprocedure,'anvil.fn74_anchor(anvil.project_members,text)'::regprocedure,'anvil.fn74_creation_anchor()'::regprocedure,'anvil.fn74_version_final()'::regprocedure) AND(pg_catalog.pg_get_userbyid(f.proowner)<>'anvil_v3_migrator' OR NOT f.prosecdef OR f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']::text[] OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(f.proacl,pg_catalog.acldefault('f',f.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))) THEN RAISE EXCEPTION 'MEMBERSHIP_FUNCTION_POSTFLIGHT_FAILED';END IF;
+ IF NOT pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn74_manager(uuid)','EXECUTE') OR pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn74_anchor(anvil.project_members,text)','EXECUTE') OR pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn74_creation_anchor()','EXECUTE') OR pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn74_version_final()','EXECUTE') THEN RAISE EXCEPTION 'MEMBERSHIP_PURPOSE_EXECUTE_POSTFLIGHT_FAILED';END IF;
+END;$$;
+COMMIT;

@@ -13653,3 +13653,65 @@ git diff --check
 - 최종지문: project-command527A2770DD9C91203B0BCAF7ECFD5937D008C4928303BDB5CE6DC1ED7C0A098F; SQL0073 43898B2BBE455274975FC9A3C1C44AC216B4E203B2941F9C61C070C7E49BB2F6; serviceDF2B6818A9F7DA806236198112A942E83A3956E2597207E36352FD0F7AAE4F6D; source통합시험9C9143F97350AAC418576342E15284EFDBBE4DA00F5C79FA0C6921FA6F5AAE65; schema시험F338701D716C79CB7FE26139F609967C44719BC8EF23D4BC84BD0E53C7400600이다. 두forward는HE조건역치환시옛invoker본문이정확복원됨을검사했다. 구42501거절만false로모으고query_cancel/다른DB장애를정상거절로숨기지않는다.
 - Main45db5d의server내정책INSERT소비선은project-command하나이며materialRules의subject.userId=정책작성actor 제한과rules전체head저장이유지됨을확인했다. 다른사용자HE의명시정책을정상화면/명령으로생산할경로는별도미연결/검증대상이다. 이번양성정책fixture는유효한기존명시정책조건의합성일뿐생산경로/사용자인수가아니다. 정책작성대상범위를임의로넓히지않았다.
 - import/선택·detach·지원4승인·등록/보호source/새5승인·native최초수신·실제사용은잔여다. 정확source5는한정검수됐으나전체9op/FN15/Stage/계획완료아니다. Main은정확소유8경로(제품5+계획/현황2+부록1) checkpoint후다음독립미완료단위를계속한다. 실제DB/권한/키/서비스/Agent0·보호3/FN01준비WI보존이다.
+
+### 2026-11-03 6e3c8eb7 private checkpoint·FN01 승인 원문 계약 경계
+- 정확 제품5+Main 문서3의6e3c8eb79aae943a22bf8520039f285f41ba50b8(parent9e5cd75a)은 정상 hook/raw-index 동일 후 기존 private codex/av3-stage-b에 게시됐다. push session96851의 원 실행을635c0d로 수거해 exit0·private exact SHA·private mainf976/local main044304 불변을 확인했다. 이번 c57c90 읽기에서도 HEAD동일·tracked clean·보호untracked3와Main FN01준비WI만 보존이다. 전체Stage/계획 완료가 아니다.
+- FN01 준비WI r3 6B65E112…D7C3398의 독립 preflight는 기존11/신규11·0074충돌0을 확인했다. UI01 소비를 위해 ProjectsPage.tsx 한 경로가 필요하고, 기존 사용자 ID 직접 입력은 허용한다. Main의 이전 '수동ID/개인profile검색0' 문구는 직접ID까지 금지하려던 뜻이 아니며 전역 사용자검색/새계정 생성0으로 정정했다.
+- 새 후보 docs/contracts/FN01_MEMBERSHIP_APPROVAL_SNAPSHOT_CANDIDATE_20261103.md SHA51292CA41A0A1C762104D6FF9890FF05A06DD4402DBAE6ABAB087045D48C1BE6는 NOT_ADOPTED/코드GO0다. candidatePayload→원11키command재구성→기존승인요청불변snapshot membershipCandidate→기존GET의보호조회→ApprovalRef만붙인정확소비를 제안한다. 기존/신규 관계·역사조회/새결정의현재성·원변경이유/승인사유 구분·UNKNOWN원명령보존·Owner/현재제어/재인증/정책 유지다. 새candidate table/GET URI0이며 기존25경로 후보에 decisions/api.ts·ApprovalsPage.tsx와ProjectsPage가 포함된다.
+- 같은Primary는 후보51292 시작/끝 동일에서 읽기 C0/I0·추가필수경로0를 반환했다. 이는 채택/구현/실PG PASS가 아니다. PMO 전달 뒤 결과가 잘려 중복 전송하지 않고 compact snapshot cursor15에서 수신·완료를 확인했다. PMO는 새 공개API/데이터 계약이므로 일반위임 범위 밖 직접승인 대상이라고 판정하고 A안을 권장했다. Main은 정확후보/hash·25경로 source-only/미적용0074/합성검증만 한 번 비동기 질문했다. 답변 전 FN01코드GO0·실DB/권한/회원적용/키/서비스/Agent0다.
+- 영향 없는 FN15 importDocument/가져오기선택의 최종0072 guard와기존private목적context 연결을 같은Primary에게 읽기설계로 위임했다. 기본문서 완료분 재구현/불변검사반복0·Main제품쓰기0·새agent0. 후보권한결정과독립작업을분리해전체대기하지 않는다. 재개읽기 중 설계서 경로를 잘못전사한 오류1은 즉시 실제 한국어정본 경로로 정정했고 제품부재/제품실패근거로 사용하지 않았다.
+
+### 2026-11-03 FN01 승인 원문 A 직접 채택·단일 Primary25 착수
+- 신산님은 call_cd7f77679fd245938b7ec11c09547b7f에서 「A안 계약·source-only 구현 승인」을 직접 답변했다. 후보51292CA41A0A1C762104D6FF9890FF05A06DD4402DBAE6ABAB087045D48C1BE6의 새 입력/불변저장·보호조회/표시·정확소비와25경로코드·미적용0074·합성검증에만 적용하며 실제DB/권한·회원적용/키/서비스/Agent0다. 후보 원문 hash를 바꾸지 않고 승인 결박을 WI에 기록했다.
+- Main r4 WI SHA B495BB20888FEF3A16FD28724694A212D91B0D147CEFC7559636EED88DBD847B는 준비r3를 부모로 기존14/신규11·현재6e3기준·ProjectsPage/decisions DTO/UI3추가·candidate전체조건·기존권한/불명보존·최종검증을 고정했다. Main읽기에서 원11키/역사와현재검산·다른op호환·새실효과0 경계를 대조하고 같은Primary에게preflight뒤TDD/구현/필수검증까지지시했다. Main제품쓰기0·다른writer0·새agent/chat0다.
+- Primary import읽기는 기존5경로로 기존context에importDocument추가·save의선택INSERT/0072regular membership만forward가능, COLLECT·connector/원Artifact보존·새공개계약0으로 반환했다. 이는읽기설계완료일뿐아직제품수정/시험0이며 현재FN01단일writer를우선해후순위로남겼다. 완성된FN15기본문서/UI는다시실행하지않는다.
+- Main의현황구간복사에서CRLF를추가해diffcheck가새구간CR을공백으로탐지했다. HEAD기존바이트불변검산후소유신규구간만LF로정정,1db094diffcheck0이다. 최초git show buffer기본1MiB의ENOBUFS1은쓰기전발생했고16MiB유한buffer로정정후기존바이트검산성공했다. 제품실패/Secret문제로세지않는다. 전체작업계획은여전히미완료다.
+
+### 2026-11-03 FN01 입력 codec 검수·저장검증의 미연결 경계
+- 같은Primary cd6b5c/5cf821은WI B495/채택후보51292·HEAD6e3·exact25기존14/신규11/0074부재·제품clean/보호3·live0를확인했다. 기존14시작fullSHA를수집하고단일writer로착수했다.
+- 16a753의codec부재준비RED2→f75f47 exactpayload/원11키·NEW/EXISTING codec2PASS/138.0593ms/exit0이다. Main b21f5c는exact키·원사유·getter거절·target/ref/version/approvalRef:null을읽기검토해해당범위추가C/I없음으로반환했다. 이파싱검수는권한/현재성/물리저장성공이아니며같은시험을재실행하지않았다.
+- 다음신규service/저장시험의dd3aab정상1은SQLchecksum placeholder의NOT_CONNECTED에서아직막힌RED다. 다른음성1PASS도같은앞단부재거절이므로개별권한음성GREEN으로세지않는다. Primary는0074원장/guard·legacy/신규anchor·checksum뒤정상과각음성의실제소비선도달을구현중이다. 아직저장/조회완료아님·실DB/회원/권한·키/서비스/Agent0·live0/심사거절0/필수지원0,Main제품쓰기0다.
+### 2026-11-03 FN01 작성 중 SQL 관리 조회 권위 검수
+- Main528006/cb3253은작성중0074 SHA028E8FD7B231E39F50E2DD1E040F21E6814ECE15F4CBA85EDAD06CD1EE07E29F 시작/끝동일에서원장/guard/anchor·지연역완결을읽었다. approval forward는WRITER_INCOMPLETE표식으로아직미완료이며정상완료/적용가능으로표시하지않는다.
+- fn74_manager가현재session/재인증·Owner/control만검사하면서versions SELECT RLS에사용되고명시policy검산이없던구간을같은Primary에검토·보완초점으로전달했다. Node정책거절과SQL직접조회경계의정합을최종검수에서확인하며실PG취약성재현/전체finding완료판정을주장하지않는다. Main코드쓰기/실DB·권한·회원·키·서비스·Agent0다.
+### 2026-11-03 FN01 첫 저장 합성 검증·후속 승인/화면 계속
+- 같은Primary296da3은0074 rawchecksum결박후정상저장1·schema/DENY/자기OWNER상실/회수관계거절1·정적schema1=3PASS/1189.2885ms/exit0와rootnoEmit0을제출했다. 이는Primary제출증거이며Main최종독립시험전이다. 이전NOT_CONNECTED전방음성과달리각거절조건까지도달했다고구분했다.
+- Main검수로전달한versions조회RLS의명시정책predicate를Primary가추가했고원문/역완결·readVersion물리검산을보강중이다. 현재SQL/service는아직작성중으로동결/최종checksum완료를주장하지않는다. 실제PG/RLS·경합/전체Repo replay·승인왕복·UI는미완료이며live0/심사거절0/실효과0·exact25단일writer로계속한다.
+- Main 재개 조사 오류3(설계명 오전사/초기migration명 추정/imports폴더 추정)은 제품부재/제품실패로 세지 않았다. 추정경로읽기를 중단하고 실루트 rg --files·검색 반환경로만 사용하는 방식으로 전환·PMO에 보고했다. 실제0001 users정의·documents/project-imports.ts·0072최종guard를 확인했고 FN01 writer는 영향없이 계속한다. 다음 FN15 import부록 SHA92E5145A41BF122CC25FF6D2B39702403EBE5A0975ABA9E78455D68154095FA4는 canonical PREPARED/NOT_DISPATCHED이며 FN01 후 최신checkpoint/5hash를 다시 고정한다. 실효과0이다.
+
+- Main b97e2e은0074 DDC72BDC574A3AB056292F4313DABBDBD72BE93EA24D1ACFD8E7C343690AFE8D 시작/끝동일의fn74_manager에서현재policy head/hash·AUTO/REQUIRE_APPROVAL·만료/DENY predicate가관리조회RLS에연결됨을읽었다. 3ffb68/f79b51은원currentPolicy hash와materialRules targetScopes정확1계약을대조했다. 해당앞지적은Addressed(source read),실SQL/RLS집행/전체0074인수는아니다. 변경없는검사재실행0·현재writer는원문승인/화면을계속한다.
+
+### 2026-11-03 FN01 과거 승인 대상 fullref 검수·실제 RED 보완
+- Main5c00e0은approval-target DE1BBAED7A2B314385D7D560CD2331840091F4E51A72BC173F94642254D65529 시작/끝동일에서create의scope.targetRef↔base.ref전체검산과달리readStored의contentHash정합누락을같은Primary에전달했다. 현재head가아닌과거base/version을검산하는기본구분은보존했다.
+- Primaryed216e은원base/version정상에서scope targetHash만바꾼요청이수용되는 Missing expected rejection RED1을확인했다. 같은파일readStored에targetRef↔보관base.ref전체same을추가해c48a74 1PASS/452.373ms로보완했다. 현재generation9에서과거candidate generation4를고정조회하는정상은유지·fresh검산과혼합0,동일계보첫보정이며실제DB/권한·키·서비스·Agent0/live0다. Main최종독립검수전이며전체승인왕복/UI는계속미완료다.
+- 직전b5e2cf은actualRepo저장→exact replay→물리version/receipt/audit누락거절의신규1PASS/475.4169ms,승인scope→원후보재구성1PASS·79a374rootnoEmit0을제출했다. fakeDB테이블prefix충돌840b8f준비오류는exact table경계로보정했고제품검산완화0이다. App/UI01/UI08 source연결은작성됐으나React행동/UNKNOWN·원승인request/decision/consume왕복·0074역완결/최종음성은아직검증중이다.
+### 2026-11-03 FN01 화면 비동기·POST 원문 소비 검수와 보완
+- Main4f5cd6은membership-api SHA7DFAA1A07CEAE23C83BDD31F4FA621466E3D3F9EA6B34A29B04ECA21E610E420 시작/끝동일에서sendMembership의hash await뒤active재검산이onChange뒤에있음과POSTsnapshot의원project/user/version·원명령전체결박누락가능성을같은Primary에전달했다. 실제서버권한침해나배포취약성재현으로주장하지않고합성UI소비반례로구분했다.
+- Primaryc7edfe은hash await중문맥폐기에서stateChange1/POST0의RED를확인하고정착뒤current검산을추가해13a6c5 해당1PASS로보완했다. 같은13a6c5은타project snapshot을재hash해APPLIED로채택하는별도RED였고,exact14키·원project/user/version·HUMAN_COMMAND·원command/작성자/client·base/ref·revokedAt·시각결박뒤e0ffa7의10종변조음성1PASS/582.5885ms를제출했다. 매개음성10조건을독립10시험으로부풀리지않는다.
+- 040d72 정상명시열기→준비→별도확인→POST응답유실UNKNOWN·닫아도원명령보존은실제React합성2PASS의제출증거다. served브라우저/실서버DB·회원권한적용은아니며Main최종독립시험전이다. writer는계속작성중/전체미인수·live0·심사거절0·실효과0다.
+- Main a9be76는UI시험 CB79CF7E7110BCF7AA99B1FD53BB602A325C6CA38559CCF77B3D5DD925850777 시작/끝동일에서실제React createRoot/act·MemoryNode상태행동과helper시험을구분했다. 040d72 2PASS전체를React상태행동2건으로확대하지않으며실render1/APIhelper1이다. 첫UNKNOWN시험의unsealed가짜buffer는seals/current앞단거절이므로phase조건증거가아니다. 같은Primary에게실제prepare→응답유실로생산한sealed UNKNOWN·같은유효session에서정확에러/원ID/body·추가POST0을검증하도록보완지시했다. 최종매개변조수도현행VALID+11음성조건과독립시험수를구분한다. 제품기준완화/동일완료검사반복0이다.
+
+
+### 2026-11-03 후속 HE 일반문서 정책 생산 후보 — 미채택 분리
+- Main은실제materialRules subject=작성actor와프로젝트policy단일head/rules전체교체의공백을기준으로 docs/contracts/FN11_EXISTING_HE_DOCUMENT_POLICY_AUTHORING_CANDIDATE_20261103.md SHA D95335D6EA1AC5D037FAC89BC8E876D899884953427338F6F30C81389E2B5DC4를준비했다. 현재FN01참여자승인을타사용자정책허용으로소급하지않는다.
+- 권장A는OWNER/current/recent·서버가같은Tx에서검산한기존ACTIVE HE·일반문서9op/단일PROJECT scope에만정책작성대상을추가하는검토안이다. 관리/실행/등록source권위·새approval op·실효과를추가하지않고보류/광범위확장대안과구분했다. NOT_ADOPTED/SOURCE_GO0로PMO기술검토지원만요청했으며사용자새질문/제품수정0·현재FN01writer는계속한다. 후속정확경로/검수안을고정하기전구현하지않는다.
+- Main a9be76는UI시험 CB79CF7E7110BCF7AA99B1FD53BB602A325C6CA38559CCF77B3D5DD925850777 시작/끝동일에서실제React createRoot/act·MemoryNode상태행동과helper시험을구분했다. 040d72 2PASS전체를React상태행동2건으로확대하지않으며실render1/APIhelper1이다. 첫UNKNOWN시험의unsealed가짜buffer는seals/current앞단거절이므로phase조건증거가아니다. 같은Primary에게실제prepare→응답유실로생산한sealed UNKNOWN·같은유효session에서정확에러/원ID/body·추가POST0을검증하도록보완지시했다. 최종매개변조수도현행VALID+11음성조건과독립시험수를구분한다. 제품기준완화/동일완료검사반복0이다.
+
+- 후속정책후보는r2 SHA362AB7CEF7D9422633EF54039667DF57093887850E4C7689669DAD4784451DA9로기술미정점을추가했다. recordContentReview의공용도메인과대상역할변경후정책의미유지/재검토경계를먼저닫아야하며현재A를완결계약으로채택/구현하지않는다. 현재FN01승인에새조건소급0·제품변경0이다. Main중간안내의비한국어1회는즉시한국어로정정했고산출물/제품변경과분리한다.
+
+### 2026-11-03 FN01 WI r4 LF 비의미 정합
+- Main42a8d0은승인후보51292·후속준비문서의CR0과현재WI r4의CR3/LF101을측정했다. Main이목록23~25를추가하며혼재시킨3개CRLF만LF로정정했다. be0c35는변경전canonical/source B495BB20888FEF3A16FD28724694A212D91B0D147CEFC7559636EED88DBD847B를검산하고정확3바이트차·본문/목록/검수의미불변으로현재33C3938DF482B4C0F5B65FB08EC2AE8413B0973EE4A7D7E10ECFEA5C67BF0D2D를생산했다.
+- MAIN_RECONFIRMED_NON_SEMANTIC: 원human채택후보51292CA41A0A1C762104D6FF9890FF05A06DD4402DBAE6ABAB087045D48C1BE6→부모WI B495→같은r4 LF현재33C이다. Primary가착수/소비한B495는그대로이력증거이며현재지문과구분한다. 실제코드/25허용경로·권한/검증기준확대0·동일검사재실행/새사람승인0,Primary에수정전후를전달해계속구현하게했다.
+- Mainbfd461의읽기metadata확인PowerShell foreach직접pipe구문오류1은실행전오류였고결과를변수로수집하는f2ea75로정정했다. 제품/시험실패나자원실행으로세지않는다.
+### 2026-11-03 FN01 Primary 반환·Main 독립21·지연검사 생성 회귀 REWORK
+- Primary는허가25중실변경22를동결/반환했다. 선정8파일8ca383 31PASS/FAIL0/SKIP0/3018.185ms·883c80rootnoEmit0·5a5c8f Vite write:false 메모리build3outputs/4671686B/442.9547ms를제출했다. source-only이며실PG/권한/서비스/Agent/served/OS·사용자인수는NOT_RUN이다.
+- 646674 비승격Get-Process출력0은sandbox관측일뿐전역node0이아니다. 0a9208 승격조회에는다른Node가존재/변경0이며19dd39본인FN01 test/type명령행한정MATCHED_FN01_HANDLES=0/exit0·wall1.092s를확인했다. 절대시각은미기록이다. 원UI08 소실호출결과/exit는UNKNOWN이며후속8ca383PASS로소급하지않는다. Main의전역node0안내는확인범위를넓힌잘못된표현으로즉시정정했다.
+- Main c97d17은최종22제출hash전체일치·HEAD6e3·diff0를확인했다. 09435e는5신규파일을독립실행해21PASS/FAIL0/SKIP0/2176.8713ms/exit0이다. React상태UI01/UI08각1·codec/Repo/fakeDB/APIhelper/정적SQL을구분했고실PG집행이아니다. 기존인접3/전체회귀는반복하지않았다.
+- Main247f1c의미적용0074 source읽기에서Important1: SECURITY DEFINER fn74_creation_anchor가처음project owner version을만들어도DEFERRED fn74_version_final/closure가invoker라최초생성의membership_context/명시policy부재로FORCE RLS에서원행을못읽는회귀가능성을확인했다. PG15공식source https://raw.githubusercontent.com/postgres/postgres/REL_15_STABLE/src/backend/commands/trigger.c 의AfterTriggerSharedData(3535~3543)/AfterTriggerExecute(4122~)는호출시권한판단의근거로대조했다. 실제PG재현이아닌source/공식실행의미추론이다. 모든SQL/Stage합격으로올리지않는다.
+- 같은Primary에기존허가25안의0074/service checksum/schema시험3만REWORK위임했다. 무변경물리integrity용fn74_version_final만기존migrator/fixed path/직접EXECUTE회수의비공개목적으로닫는최소안을제안했다. 기존BEFORE권한guard/RLS·정책유지·앱권한확대/범용flag·전체trigger SD변경0·실제DB/권한실행0이다. 나머지source동결/Main제품쓰기0이며직접새반례/SQLchecksum·역차분만검수하고불변21/UI/31을기계반복하지않는다.
+### 2026-11-03 FN01 source 한정 검수·checkpoint 준비
+- 같은Primary는3경로재작업을반환/재동결했다. fn74_version_final만비공개migrator SD/fixed path·ACL/postflight로닫았고원BEFORE/member/RLS/정책은불변이다. 5d9a09정적4PASS/119.2585ms·0a8e12rootnoEmit0·실PG NOT_RUN이다. Main056b23도보완정적4PASS/FAIL0/SKIP0/147.8613ms/exit0이다. 앞Main09435e21과3개가중복돼독립25시험으로더하지않는다.
+- Main역치환기42d836/5bd269의비교실패2는postflight단편과JS replace의$$처리준비오류였다. 추가추정재시도를멈추고Primary cfdd51의정확4문자열/부모를받은뒤31ff5d에서literal callback으로6100SQL/881Bservice바이트를정확복원했다. 파일쓰기/기준완화0이다. App구문API 도구a2669e의ScriptTarget부재1은a70d08한정문자열읽기로전환했고원명령CAS/현재session·client/transport·route·buffer일치·명시복귀POST0을읽었다.
+- 최종SQL67696FDD3695199E2BE3450669D903BD286E6D87FE05361B7B2A75CE58A3EB96/33602B/CR0·service C32D51F62CE30D6D97BB4A9518E2EDDF5BBB9D527A9C05CE9C06EEFEF02DBAD0·schema시험E76387C7E3E7AA3CD7A447E547ECA392A3CD449AD44B1229FB14AE3BD9F87224다. Main0607e4는최종22·보호3·WI33C/승인51292지문일치와local/private6e3·localmain044304/private mainf976·정확developmentURL·diff0를확인했다.
+- 결과 docs/04_test_reports/AV3/FN01_PROJECT_MEMBERSHIP_SOURCE_RESULT_20261103.md SHAB8AFA7A00181536B1DAE7D5A4358198029227B09BE0823D9F6368635F97739A5. 검토구간추가미해결C/I없음의source한정이며실제DB/권한/회원·정책·키·서비스·Agent/네트워크/served·OS·사용자인수NOT_RUN·전체FN01/Stage/계획미완료다. 최초소실검사는UNKNOWN을보존한다.
+- 정확22제품/시험+Main6문서(현황/결과/WI/채택원문/FN15후속준비/미채택FN11후보)를기존branch정상checkpoint로보존한다. 보호3은비게시/무변경이고신규branch/force/main쓰기/PR/merge/배포0다. 후속준비/미채택후보의보존은제품GO/새권한승인이아니다. private exactSHA확인뒤기존FN15 import/선택source부록의기준/5지문을갱신해같은Primary에게이어가며완료분을다시실행하지않는다.
