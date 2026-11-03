@@ -306,7 +306,7 @@ BEGIN
   OR p->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(p->'request') THEN RETURN false;END IF;
  x=p->'parts'->0;
  IF NOT anvil.checkpoint_keys(x,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']) OR x->>'kind' IS DISTINCT FROM 'SOURCE_LINK_EVENT'
-  OR x->>'key' IS DISTINCT FROM CASE WHEN p->'request'->>'operation'='linkDocumentSource' THEN 'source_link' ELSE 'source_choice' END
+  OR x->>'key' IS DISTINCT FROM (CASE WHEN p->'request'->>'operation'='linkDocumentSource' THEN 'source_link' ELSE 'source_choice' END)
   OR x->>'id'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR x->>'contentHash'!~'^[0-9a-f]{64}$' OR anvil.quota_decimal(x->'settledBytes')<>0 THEN RETURN false;END IF;
  b=anvil.quota_decimal(x->'bytes');r=anvil.quota_decimal(x->'reservedBytes');d=r-b;m=2*b-r;
  RETURN m>=655360 AND r<=10737418240 AND d BETWEEN 0 AND 20971520 AND (p->'request'->>'operation'<>'linkDocumentSource' OR d=0);

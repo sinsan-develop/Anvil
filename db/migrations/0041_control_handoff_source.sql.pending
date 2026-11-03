@@ -266,9 +266,9 @@ BEGIN
   END LOOP;
   IF s.body_json->'gaps' IS DISTINCT FROM expected_gaps
    OR s.body_json->>'safetyState' IS DISTINCT FROM
-    CASE WHEN jsonb_array_length(s.body_json->'activeExecutions'->'refs')>0
+    (CASE WHEN jsonb_array_length(s.body_json->'activeExecutions'->'refs')>0
       OR jsonb_array_length(s.body_json->'pendingCommands'->'refs')>0
-      OR jsonb_array_length(s.body_json->'pendingApprovals'->'refs')>0 THEN 'WAITING' ELSE 'UNVERIFIED' END
+      OR jsonb_array_length(s.body_json->'pendingApprovals'->'refs')>0 THEN 'WAITING' ELSE 'UNVERIFIED' END)
    OR c.actor_id::text IS DISTINCT FROM c.base_control_json->>'actorId'
    OR c.client_id::text IS DISTINCT FROM c.base_control_json->>'clientId'
    OR c.base_control_json IS DISTINCT FROM r.snapshot_json->'baseControl'

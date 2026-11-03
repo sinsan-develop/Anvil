@@ -181,7 +181,7 @@ BEGIN
  OR inspection->>'method' IS DISTINCT FROM 'KNOWN_PATTERNS_RAW_BYTES' OR inspection->'complete' IS DISTINCT FROM 'false'::jsonb OR jsonb_typeof(inspection->'reasonCodes') IS DISTINCT FROM 'array'
  OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(inspection->'reasonCodes') x WHERE x NOT IN('PRIVATE_KEY_MARKER','BEARER_TOKEN_MARKER','SECRET_ASSIGNMENT_MARKER'))
  OR (SELECT count(*) FROM jsonb_array_elements_text(inspection->'reasonCodes'))<>(SELECT count(DISTINCT x) FROM jsonb_array_elements_text(inspection->'reasonCodes') x)
- OR inspection->>'state' IS DISTINCT FROM CASE WHEN jsonb_array_length(inspection->'reasonCodes')>0 THEN 'SUSPECTED' ELSE 'NO_KNOWN_MARKER' END THEN RAISE EXCEPTION 'FN01_INSPECTION_INVALID';END IF;
+ OR inspection->>'state' IS DISTINCT FROM (CASE WHEN jsonb_array_length(inspection->'reasonCodes')>0 THEN 'SUSPECTED' ELSE 'NO_KNOWN_MARKER' END) THEN RAISE EXCEPTION 'FN01_INSPECTION_INVALID';END IF;
  artifact_state=CASE WHEN inspection->>'state'='SUSPECTED' THEN 'QUARANTINED' ELSE 'READY' END;
  result=jsonb_build_object('scopeKind','DRAFT','draftId',u.draft_id,'commandId',u.external_command_id,'clientId',c,'version',u.expected_version,'status','APPLIED','data',jsonb_build_object('artifactRef',u.ref_json,'status','ARTIFACT_'||artifact_state,'inspection',inspection));
  digest=anvil.fn01_hash(jsonb_build_object('kind','DRAFT','draftId',u.draft_id,'operation','uploadProjectDraftArtifact','actorId',a,'clientId',c,'requestHash',h));

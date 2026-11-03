@@ -149,7 +149,7 @@ BEGIN
  SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
  SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
  IF c.id IS NULL OR ar.id IS NULL OR c.scope_kind<>'PROJECT' OR c.scope_id<>pid OR c.state<>'APPLIED' OR c.expected_version<>expected
- OR c.operation IS DISTINCT FROM CASE status WHEN 'REFERENCE_STORED' THEN 'saveBackupReference' WHEN 'REFERENCE_REVOKED' THEN 'revokeBackupReference' ELSE '' END
+ OR c.operation IS DISTINCT FROM (CASE status WHEN 'REFERENCE_STORED' THEN 'saveBackupReference' WHEN 'REFERENCE_REVOKED' THEN 'revokeBackupReference' ELSE '' END)
  OR ar.scope_kind<>'PROJECT' OR ar.scope_id<>pid OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) THEN RETURN false;END IF;
  IF c.approval_consumption_id IS NOT NULL THEN
   SELECT d0.* INTO d FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d0 ON d0.project_id=ac.project_id AND d0.id=ac.decision_id WHERE ac.id=c.approval_consumption_id AND ac.project_id=pid AND ac.command_id=c.id;

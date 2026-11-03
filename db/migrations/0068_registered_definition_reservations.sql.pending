@@ -145,7 +145,7 @@ BEGIN
   END IF;
   payload=s-ARRAY['definedBy','definedAt'];target='null'::jsonb;expected_version=0;
  ELSIF TG_TABLE_NAME='agent_sessions' THEN
-  IF NEW.version<>1 OR (SELECT count(*) FROM jsonb_object_keys(s))<>CASE WHEN registered THEN 7 ELSE 6 END OR s->>'state' IS DISTINCT FROM 'RESERVED' OR s->'externalSessionHandleRef' IS DISTINCT FROM 'null'::jsonb
+  IF NEW.version<>1 OR (SELECT count(*) FROM jsonb_object_keys(s))<>(CASE WHEN registered THEN 7 ELSE 6 END) OR s->>'state' IS DISTINCT FROM 'RESERVED' OR s->'externalSessionHandleRef' IS DISTINCT FROM 'null'::jsonb
    OR s->'reservedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
    OR (s->>'reservedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
    OR cmd.result_ref->'data'->'snapshot'->'sessionRef' IS DISTINCT FROM expected
@@ -175,7 +175,7 @@ BEGIN
   END IF;
   session_ref=jsonb_build_object('id',session_row.session_id,'version',session_row.version,'contentHash',session_row.content_hash);
   IF role_row.role_id IS NULL OR session_row.session_id IS NULL OR assignment.assignment_id IS NULL OR draft.draft_id IS NULL OR connection_ref IS NULL
-   OR (SELECT count(*) FROM jsonb_object_keys(s))<>CASE WHEN registered THEN 15 ELSE 14 END OR s->'generation' IS DISTINCT FROM to_jsonb(NEW.version)
+   OR (SELECT count(*) FROM jsonb_object_keys(s))<>(CASE WHEN registered THEN 15 ELSE 14 END) OR s->'generation' IS DISTINCT FROM to_jsonb(NEW.version)
    OR s->'roleRef' IS DISTINCT FROM jsonb_build_object('id',role_row.role_id,'version',role_row.version,'contentHash',role_row.content_hash)
    OR s->'assignmentRef' IS DISTINCT FROM jsonb_build_object('id',assignment.assignment_id,'version',assignment.version,'contentHash',assignment.content_hash)
    OR s->'connectionRef' IS DISTINCT FROM connection_ref

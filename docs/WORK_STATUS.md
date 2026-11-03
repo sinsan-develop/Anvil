@@ -13991,3 +13991,19 @@ Main 어울: R2승인소진. exact9c3674fa/SQL7e9ab984의105정의설치가0035�
 
 ### 2026-11-04 IX01 0035 IF/CASE 최소source보정
 기존Primary가0035:308의CASE괄호2B/1hunk만보정하고writer반환했다. Main73bed0에서최종E7CD07F1·부모역치환동일/+2B/diffcheck0을독립검수. PG15공식문법소스의THEN/parenlevel경계근거확인. R2실제42601직접원인은미확정,실제추가QA0/기존실패보존. 상세 docs/04_test_reports/AV3/IX01_0035_IF_CASE_BOUNDARY_SOURCE_RESULT_20261104.md . 다음은새SQL기준의진단실행준비를source-only로결박하며기존승인은재사용하지않는다.
+
+
+### 2026-11-04 R3 진단 source-only 준비 배정
+Main 어울: R2감사5경로3e1a87fb privateexact·최소SQL보정dc067a1c게시완료. PMO는R2FAIL·2B보정의한계와R3실행미승인을확인했다. 기존Primary에SQLdc067a1c 기준의driver/기존controller시험/신규R3index정확3파일만writer배정. 새r3 source/receipt/container/DB namespace,선택105순서불변/2376117B,기존기한·권한·UNKNOWN·보안/회수불변. 실제DB/키/권한/서비스/Agent/WSL/원장·P03R3실행0. 새실행패킷동결·직접승인전실제R3금지.
+
+
+### 2026-11-04 R3 사전 same-class 조사
+Main6a8ac7/4fb151는남은SQL에서괄호없는CASE일치를발견했다. 직접IF조건paren0인지SELECT/괄호안인지분류하기전일괄치환하지않는다. 기존Primary에R3중간source3보존·writer반환후같은원인군읽기조사를전달했다. 기존39PASS는중간SQLdc067기준준비증거이며후속SQL을포함한최종결과가아니다. 실제R3미승인/실행0. Main37931e의sandboxGit128은기존환경제약재발로기록하며같은재실행하지않는다(파일읽기만성공/소스불변).
+
+
+### 2026-11-04 IF/CASE 동일 원인군10파일 한정
+Primary71e2e4의명시105읽기선별(PL/pgSQL556함수/IF·ELSIF2973조건)은PGparser검증과분리한다. 기존7에0041:269~271/0054:246/0068:148·178추가4표현을Main06ec16/cbb602문맥대조했다. WI r2에서정확10SQL/11표현/+22B단일Primarywriter를고정,SELECT·RETURN·대입·괄호안CASE제외/권한·분기값·guard불변. 06ec16의0041잘못된이름은NO_MATCH로읽기만중단됐고실제반환경로로확인했다. Main의일본어commentary1은즉시한국어정정했으며산출물판정/승인변경0이다. R3source3중간변경과보호3보존,실제추가실행0.
+
+
+### 2026-11-04 IF/CASE 동일원인군10SQL 최소보정 검수
+Primary be58b8/6f2c29 정확10파일/11표현/22B·writer반환. Main438efe 메모리Git형태대조/괄호외차이0/diffcheck0·scoped C/I0. Main최초2d707f raw검수FAIL은0041/0047의기존CRLF와GitLF차이로2a7228에서분리했고설정·파일정규화0. 실제SQL구문GREEN/정의105/함수RLS/UI인수는미검증,추가실행0. 상세 docs/04_test_reports/AV3/IX01_PENDING_IF_CASE_BOUNDARY_SOURCE_RESULT_20261104.md . 다음새SQL기준R3결박.
