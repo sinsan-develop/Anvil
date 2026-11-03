@@ -44,3 +44,29 @@ test('정적: namespace는 오래된 snapshot 격리를 거절하고 VOLATILE lo
  const s=await sql(),body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_command_namespace_guard('),s.indexOf('CREATE FUNCTION anvil.fn15_control_transition_guard('));
  assert.ok(body.includes("current_setting('transaction_isolation')<>'read committed'"));assert.ok(body.indexOf('FN15_NAMESPACE_ISOLATION_REQUIRED')<body.indexOf('pg_advisory_xact_lock'));assert.ok(body.indexOf('pg_advisory_xact_lock')<body.indexOf('FROM anvil.control_handoff_acceptance_commands'));assert.match(body,/RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY DEFINER/);
 });
+
+
+test('정적: 문서 목적helper는 실session·고정purpose/상한·private grant를 소비하고 invoker 원조건을 보존한다',async()=>{
+ const s=await sql();assert.ok(s.includes('CREATE FUNCTION anvil.fn15_ordinary_document_command_current(pid uuid,cid uuid,op text) RETURNS boolean'));
+ const helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('CREATE OR REPLACE FUNCTION anvil.document_command_authorized('));
+ for(const part of ['SECURITY DEFINER','VOLATILE','SET search_path=pg_catalog','anvil.fn15_document_context','2097314','2097152','FN15_ORDINARY_DOCUMENT_WRITE','anvil.fn01_active(','anvil.fn15_grant_current('])assert.ok(helper.includes(part),part);
+ assert.ok(s.includes('REVOKE ALL ON FUNCTION anvil.fn15_ordinary_document_command_current(uuid,uuid,text) FROM PUBLIC;'));assert.ok(s.includes('GRANT EXECUTE ON FUNCTION anvil.fn15_ordinary_document_command_current(uuid,uuid,text) TO anvil_v3_app;'));
+ for(const name of ['document_command_authorized','guard_project_document_review']){const start=s.lastIndexOf('CREATE OR REPLACE FUNCTION anvil.'+name+'(');assert.ok(start>=0);const body=s.slice(start,s.indexOf('$$;',start)+3);assert.ok(body.includes("participation='OWNER'"));assert.ok(body.includes('anvil.fn15_ordinary_document_command_current('));assert.equal(body.includes('SECURITY DEFINER'),false);}
+});
+
+
+test('정적: 원 fn01_active의 정확 42501 거절만 false이며 query_cancel/다른DB오류는 재발생한다',async()=>{
+ const s=await sql(),body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current(')),original=await readFile(new URL('../../../db/migrations/0042_draft_artifact_storage.sql.pending',import.meta.url),'utf8');
+ const active=original.slice(original.indexOf('CREATE FUNCTION anvil.fn01_active('),original.indexOf('CREATE FUNCTION',original.indexOf('CREATE FUNCTION anvil.fn01_active(')+1));
+ assert.match(active,/FN01_APP_SESSION_REQUIRED[^;]+42501/);assert.match(active,/FN01_ACTIVE_SESSION_REQUIRED[^;]+42501/);assert.match(body,/WHEN insufficient_privilege THEN/);assert.match(body,/IF SQLERRM IN\('FN01_ACTIVE_SESSION_REQUIRED','FN01_APP_SESSION_REQUIRED'\) THEN RETURN false;END IF;\s*RAISE;/);assert.doesNotMatch(body,/WHEN (?:OTHERS|query_canceled|raise_exception)/);
+});
+
+
+test('정적: 두 forward의 HE membership delta를 역치환하면 기존 invoker 함수 원문이 정확 복원된다',async()=>{
+ const s=await sql();
+ const cases=[{name:'document_command_authorized',file:'0003_document_confirmations.sql',replacement:"(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND op IN('saveDocumentDraft','confirmDocument','proposeDocumentChange') AND anvil.fn15_ordinary_document_command_current(pid,c.id,op)))"},{name:'guard_project_document_review',file:'0003_project_document_reviews.sql',replacement:"(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,'recordContentReview')))"}];
+ for(const item of cases){const original=(await readFile(new URL('../../../db/migrations/'+item.file,import.meta.url),'utf8')).replaceAll('\r\n','\n');const begin=original.indexOf('CREATE FUNCTION anvil.'+item.name+'('),expected=original.slice(begin,original.indexOf('$$;',begin)+3);const after=s.lastIndexOf('CREATE OR REPLACE FUNCTION anvil.'+item.name+'('),body=s.slice(after,s.indexOf('$$;',after)+3);assert.equal(body.split(item.replacement).length,2);assert.equal(body.replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION').replace(item.replacement,"m.participation='OWNER'"),expected);}
+ const helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));
+ assert.ok(helper.indexOf('2097314')<helper.indexOf('context=raw::jsonb'));for(const required of ["anvil.fn01_json(context) IS DISTINCT FROM raw","c.request_hash IS DISTINCT FROM anvil.fn01_hash(q)","actual_generation IS DISTINCT FROM generation","pc.generation IS DISTINCT FROM c.control_generation","ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)"])assert.ok(helper.includes(required),required);
+ assert.doesNotMatch(helper,/GRANT|CREATE POLICY|SET ROLE/);
+});

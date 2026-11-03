@@ -7440,7 +7440,7 @@
 | B | 프로젝트·방법론·문서·지식 원본 | [2] 인증·프로젝트/방법론·공식 문서·지식의 범위 한정 API/DB와 화면을 연결. 최신 UI06 버전 비교/원문 왕복은 후보 합성 핵심 확인. 소스 관측·전체 실제 UI DB/IX01 여정 미완료 |
 | C | 실제 기존 Agent 작업 제어 | [2] FN06 후보/환경·제한 신뢰 등록의 일부 Windows→TLS/API/PG/UI11 확인, 실제 Agent/native·임무/진행/결과 회수 미완료. FN08은 합성 소유 IPC 부분 확인이며 dispatch/sourceScopes/내구 replay는 미연결 |
 | D | 도구 교체·설계 변경 통제 | [] 최소 손실 인계·실제 다른 도구/총괄 교체 미구현 |
-| E | 사람/기기 제어·백업·설치형 | [] 기능 구현·핵심 확인 미착수 |
+| E | 사람/기기 제어·백업·설치형 | [2] UI12/FN15 source·합성 연결 진행. 실제 권한/DB/OS·백업·설치형 전체 검수는 미완료이며 Stage 완료 아님 |
 | F | 1단계 전체 기능 사용 준비 | [] 선행 기능 완료 후 IX07, 현재 완료 후보 아님 |
 | G | Oracle 후보 정밀 검증 | [] IX08 미착수. 별도 이전/배포 승인·환경 선행 필요 |
 
@@ -7472,7 +7472,7 @@
 | UI09 새 세션·다른 도구 이전 | [] | S09 정적 시안 | 기록/안전→대상→이해대조→실제 재개 |
 | UI10 헌법·지식·결정 이유 | [2] | Main 어울. 대화/지식 정정·헌법 이력 actual7cf8c005는 과거 근거. 고정 문서출처 조회17b5af47 게시, 문서 명시선택→기존저장·재조회 후보browser6/unit14 핵심 확인 | 새후보 실제served/PG·다른종류 출처 직접열기·공유·임무 선별/이해 대조 |
 | UI11 Agent·환경·권한 | [2] | Main 어울. 후보 작성/조회·개정·원 명령 보존과 후보2/자료24/임무준비8의 별도 정책 작성 UI source·한정 bundle 확인. a890840a 정책/후보 actual7marker·QA잔여0 | 실제 host/credential/Agent·정식DB/served·8준비 도메인/전체 사용자 여정은 미완료·미확인 |
-| UI12 사람·클라이언트 인계 | [] | S12 정적 시안 | 요청→안전요약→수락→단독 제어 확인 |
+| UI12 사람·클라이언트 인계 | [2] | 2026-11-03 source/합성: 보호요약·명시 수락·현재 grant 후속 조회/HE 화면 연결. private 9e5cd75a, 직접 인접45·UI5·Main집중3/2·type0 | 미적용0073·실제 DB/served/OS·일반문서 SQL 잔여·사용자 인수 미완료 |
 | UI13 모바일 작업·승인 | [] | S13 정적 시안 | 실제 같은 프로젝트/요청·지시·승인·제어권 연결 |
 | UI14 설정·백업·보조 조회 | [] | S14 정적 시안 | 백업/영향·한도/알림·원화면과 같은 상태 조회 |
 
@@ -7496,7 +7496,7 @@
 | FN12 결과·검증·이상 판정 | [2] | Main 어울. 제출/목록 실제PG, 합성 검수/보완15·범위변조거절 보완. 54ad16f2 원제출+확정임무 검수source 실제PG1 PASS·UI05 조회후보 | typed기준/등록증거·검수/보완의 실제 저장·UI08·정식 DB/Agent/served 미연결·미검증 |
 | FN13 체크포인트·중지·재개 | [2] | 42671006 상세 입력/준비API/UI·13PASS/type/build·합성browser1 | 실제 불변저장/원문조회·상세참조·현재지점 파일/대조·정지확인·옛권한/중복 차단·안전재개 미완료 |
 | FN14 최소 손실 이전 | [] | 인계 절차/손실 측정안 | 실제 새세션/타도구/총괄 인계·공백/이해대조 |
-| FN15 사람·클라이언트 제어권 | [] | 단독작업/동시조회 계약 | 인수·구기기 차단·실제 권한 검수 |
+| FN15 사람·클라이언트 제어권 | [2] | 2026-11-03 source/합성: 검산된 EMPTY READY→물리 저장/CAS·원 결과 재조회·후속 HE 제어소비. SQL COMMIT/checksum·역완결 source 보완, private 9e5cd75a | 일반9op 최종 SQL Owner 제한·실제 PG/RLS/경합/OS·전체 안전 수집/사용자 인수 미완료 |
 | FN16 백업·반출·검증복원 | [] | 논리 보존/복원 설계 | 실제 manifest·별도복원·원문/관계/증거 무결성 |
 | FN17 중요 알림·모바일 전달 | [] | 중요/일반·미지원 구분 설계 | 실제 지원/허가·사건/인증요청 연결 |
 | FN18 Windows 설치형 산출물 | [] | TD-01 Electron Windows 설계 선택, 제품 구현 미착수 | 패키징/업데이트 계약 뒤 코드/산출물·같은 서버자료·안전복원 |
@@ -13634,3 +13634,22 @@ git diff --check
 - Main읽기api.ts74~75는project/현재actor/client·HELD basis일치를검산함을확인했다. 화면currentController는해당서버관측HELD/자기tuple/OWNER|HE를사용하며역할만으로열지않는다. 초기I/O0·만료/다른client/VIEWER/UNVERIFIED·폐기문맥·UNKNOWN원명령보존을검사했고기존3SSR의기능보호단언을유지했다. 옛'미구현'화면문구/버튼단언은현재채택기능에맞춰갱신했으며합격기준을삭제하지않았다.
 - Main5f476b/b0a2f7/92a5a9는server project-content-review.ts:41의직접INSERT→0003_project_document_reviews.sql:5~33의현재함수Owner JOIN을읽어HE 일반검토의실제source미연결접점을확인했다. one-time approval은0011이후0006/0050에재정의가있어옛문구만으로최종구현을단정하지않는다. 같은Primary에정확9op→직접DML→최종SQLguard의읽기표만맡겼다. 제품/SQL추가수정0·현재두UI파일동결유지·실제DB/권한/키/서비스/Agent0다.
 - Main의최초features/documents추정경로오류1은rg실목록의design-trace로정정했다. 제품실패/파일부재를기능부재증거로쓰지않았다. 전체FN15/계획미완료이며신규권한/관리·특수승인완화를임의로구현하지않는다.
+### 2026-11-03 9e5cd75a 화면 checkpoint/private 동일
+- Main054aac은직접검수된화면/시험2+현황정확3경로만raw/index동일·정상hook·diff0으로9e5cd75a8ba86e85af665998ebd4bf80b324f73e(parent96869794)에commit했다. 9ad528정상push/원격조회는기존private branch같은SHA·localmain044304/private mainf976불변이다. 보호3+MainFN01준비WI는untracked보존,당시trackedclean이다.
+- 같은Primary는현재제품쓰기권한을반환한읽기조사담당이다. 일반문서9op의최종SQL함수/alias·guard체인을대조중이며새writer0다. 완료된source체크/화면을다시구현하지않고실제미연결접점으로다음작업을고정한다. 현재실키/DB/권한/서비스/Agent·OS/실자료/제품네트워크0·native미채택/전체계획미완료를유지한다.
+### 2026-11-03 UI12/FN15 상태 등록부 비의미 정합·다음 기본문서 source 부록 준비
+- Mainb82769/a28381에서현황의UI12/FN15·StageE가미착수[]와수락미구현문구로남아실제source증거와달랐다. 22bcd1/57369d는계획2행의현재상태와현황3행만부분구현[2]로정정했다. 실제사용완료/Stage완료로올리지않았고일반SQL잔여·실PG/OS/사용자인수미검증을함께명시했다. 선행/업무범위/완료·검증기준·날짜별원기록은보존했다.
+- MAIN_RECONFIRMED_NON_SEMANTIC 상태반영: WORK_PLAN canonical변경전113B560B9E2FCDFF026132976473934380046608366EBAB2151B2270B37C5300→D8B81ED8765690A091BDB39893E91F2EFADF03ACDFE2771B9773698E6F43286A; source변경전FA39138C50FA1F470DFC17071F9CD9927AF0B213C08E981766E9AA8297F68017→245B61342C3C8AAB4C7272A6F16711363F869B116616A9B5190CF0B817A65D63. 기존승인r7의의미를바꾸지않는현재증거정합이며추가구현권한확대/새사람승인을가장하지않는다. 두원본의기존차이는전체덮어쓰기없이보존했다.
+- Primary읽기표는일반9op중uploadAUTO는동일Owner결함이아니고source link/change의등록권위는보존해야하며,기본문서helper/검토guard·import선택·detach·최종approvalalias가각각다름을확인했다. Main은기본saveDraft→DOCUMENT검토→confirm/propose의정확5source경로부록 FN15_ORDINARY_DOCUMENT_SQL_FORWARD_SOURCE_20261103.md SHA A0FD354939A27FD8FD6C9EE7D9CE4C572669B6E3F4C299AA1378DAE73EBCBAA3을준비했다.
+- 같은Primary는그부록의목적helper·EXECUTE/owner·원실제session결박·현재grant·Owner불변설계만읽기반환중이며제품writerGO0이다. 현재persistReceipt GUC에session_id가없으므로있는값으로가정하지않게했다. 실제권한/DB/키/서비스/Agent0,전체9op/계획완료로축소하지않는다. Main의추가literalglob준비오류1은문자그대로의*.ts경로를재사용하지않고파일목록→정확경로방식으로전환했으며제품쓰기0다.
+### 2026-11-03 기본문서 SQL source 부록 r2 기술 검토·같은 Primary5 위임
+- 같은Primary의읽기설계는fn15_ordinary_document_command_current(pid uuid,cid uuid,op text) boolean·기존migrator SECDEF/VOLATILE/fixed search_path·PUBLIC회수/app목적EXECUTE·원invoker guard보존,실제authSession의private context를제안했다. Main은원인증callback/receipt/GUC source와대조했고잘못된active session대체·trigger definer 우회를금지했다.
+- Main은GUC anvil.fn15_document_context/exact5키·FN15_ORDINARY_DOCUMENT_WRITE purpose를고정했다. 순수산술53d137은원command2097152B+UUID36/안전정수16자리외피162B=2097314B를계산했고TS/SQL같은분모로검수한다. 공개본문상한확대/새저장원장0·원본문/비밀새로그0·session/command/DB재사용0·Owner기존context필수화0이다.
+- 실행부록r2 SHA56244F7E95CAE94E097DF3E880A4C7BF925303FAB63CE76ABE317CBF91AC79FC(부모r1A0FD)의기술상세·다형DOCUMENT반례·최소ACL/원조건보존/원요청불변·집중명령을고정하고같은Primary에게정확5경로source TDD/검수GO를줬다. Main은관리/검수/Git만소유한다. 현재기준9e5cd75a/private동일이고Main상태문서/부록/보호자료는Primary쓰기대상이아니다.
+- 실제DB/GRANT/정책/회원/키/서비스/Agent/OS/제품네트워크·실자료0,옛SQL변경/미지원5approval추가/source등록완화0이다. 자동실행심사거절시근거/diff만반환하고우회·분할·반복0,원문서기본흐름전체/일반9op/계획완료로축소하지않는다. Mainspec읽기C/I없음은실SQL/ACL검증아니다.
+### 2026-11-03 기본문서 source5 검수·조건부 경계 보존
+- Primary는fd3869의실제Repo→DOCUMENT검토leaf→receipt목적context누락·다형검토오허용·신규SQLhelper부재3RED를확보했다. 최소구현뒤da61d0 신규2PASS/582.0202ms,6d2318의operation사후변조와원fn01_active 42501예외코드불일치2RED→3eddf9 2PASS/464.9228ms·별도context재사용/누락grant/DENY/Owner보존2PASS를제출했다. 같은근본보정실패3회는없다.
+- 최종1969f9 직접2파일17PASS/554.2464ms exit0/skip0·eccc0a rootnoEmit0/4.892s·scopeddiff0,5파일동결/writer반환/live0다. Main425bf6는실제안정5지문을전후비교하고두직접파일+인접grant를독립실행해26PASS/1518.0041ms exit0/skip0을확인했다. Mainf6187d는private목적context설치/해제·원hash검사선행·정확session·Owner/invoker보존·최소ACL·원조건/다형분기를읽기대조했고scope추가C/I없음이다. 실PG/ACL/RLS/잠금경합은NOT_RUN이다.
+- 최종지문: project-command527A2770DD9C91203B0BCAF7ECFD5937D008C4928303BDB5CE6DC1ED7C0A098F; SQL0073 43898B2BBE455274975FC9A3C1C44AC216B4E203B2941F9C61C070C7E49BB2F6; serviceDF2B6818A9F7DA806236198112A942E83A3956E2597207E36352FD0F7AAE4F6D; source통합시험9C9143F97350AAC418576342E15284EFDBBE4DA00F5C79FA0C6921FA6F5AAE65; schema시험F338701D716C79CB7FE26139F609967C44719BC8EF23D4BC84BD0E53C7400600이다. 두forward는HE조건역치환시옛invoker본문이정확복원됨을검사했다. 구42501거절만false로모으고query_cancel/다른DB장애를정상거절로숨기지않는다.
+- Main45db5d의server내정책INSERT소비선은project-command하나이며materialRules의subject.userId=정책작성actor 제한과rules전체head저장이유지됨을확인했다. 다른사용자HE의명시정책을정상화면/명령으로생산할경로는별도미연결/검증대상이다. 이번양성정책fixture는유효한기존명시정책조건의합성일뿐생산경로/사용자인수가아니다. 정책작성대상범위를임의로넓히지않았다.
+- import/선택·detach·지원4승인·등록/보호source/새5승인·native최초수신·실제사용은잔여다. 정확source5는한정검수됐으나전체9op/FN15/Stage/계획완료아니다. Main은정확소유8경로(제품5+계획/현황2+부록1) checkpoint후다음독립미완료단위를계속한다. 실제DB/권한/키/서비스/Agent0·보호3/FN01준비WI보존이다.

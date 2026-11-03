@@ -243,3 +243,67 @@ test('응답 불명은 자동 재실행하지 않고 원 commandId를 보존하�
   assert.equal(repo.transactions, transactions + 1);
   assert.equal(repo.rows.summaries.length, 2);
 });
+
+
+/** 실제 SQL을 실행하지 않는 fixed-row 대역. production Repo→검토leaf→receipt/context를 소비한다. */
+async function ordinaryDocumentFixture(role='HANDOFF_ELIGIBLE'){
+ const {ProjectPolicyRepository}=await import('../../../apps/server/modules/access/project-command.ts'),grant=await import('../../../apps/server/modules/control-handoff/control-grant.ts');
+ const uuid=(n:number)=>'aaaaaaaa-aaaa-4aaa-8aaa-'+String(n).padStart(12,'0'),ref=(n:number)=>({id:uuid(n),version:1,contentHash:'a'.repeat(64)}),actor=Object.freeze({actorId:requester,clientId:requesterClient,credentialGeneration:3,serverOwner:false,reauthUntil:null,authSession:Object.freeze({id:uuid(90),idleExpiresAt:'2099-01-01T00:00:00.000Z',absoluteExpiresAt:'2099-01-01T00:00:00.000Z'})});
+ const requestRef=ref(1),prior=grant.createControlAcceptanceChain({projectId,command:{schemaVersion:1,operation:'acceptControl',commandId:uuid(2),projectId,clientId:actor.clientId,payload:{requestRef,summaryVersion:1,reason:'앞 수락'}},requestRef,summaryRef:ref(3),before:baseControl,targetActorId:actor.actorId,recordedAt:now,ids:{acceptance:uuid(4),revocation:uuid(5),grant:uuid(6),receipt:uuid(7),audit:uuid(8)}}),control=prior.result.nextControl;
+ const form={items:[{itemId:'scope',title:'범위',reviewCriteria:'명확한 범위'}]},formRef={id:uuid(10),version:1,contentHash:contentHash(canonicalJson(form))},targetRef=ref(11),command={schemaVersion:1 as const,projectId,commandId:uuid(12),clientId:actor.clientId,controlGeneration:control.generation,operation:'recordContentReview',targetId:targetRef.id,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{targetKind:'DOCUMENT',targetRef,criteriaVersion:1,items:[{criterionId:'scope',outcome:'ACCEPTED',evidenceRefs:[],reason:'확인'}],outcome:'ACCEPTED',reason:'실제 문서 검토'}};
+ const logs:{sql:string;args:unknown[]}[]=[],contexts:unknown[]=[];let context:Record<string,unknown>|null=null,deny=false,hasGrant=true;
+ const db={query:async(sql:string,args:unknown[]=[])=>{logs.push({sql,args});
+  if(sql.includes('FROM anvil.projects p JOIN anvil.project_members'))return{rows:[{id:projectId,participation:role,archived_at:null}]};
+  if(sql.includes('FROM anvil.project_control'))return{rows:[{project_id:projectId,actor_id:actor.actorId,client_id:actor.clientId,generation:control.generation,version:control.version,revoked_at:null}]};
+  if(sql.includes('FROM anvil.control_handoffs'))return{rows:hasGrant?[{project_id:projectId,next_generation:control.generation,content_hash:prior.acceptance.ref.contentHash,bundle_json:prior,grant_rows:[prior.grant,prior.revocation],command_rows:[{command:prior.command,result:prior.result,commandHash:grant.controlHash(prior.command),resultHash:grant.controlHash(prior.result)}],receipt_rows:[prior.receipt],audit_rows:[prior.audit],revoked_count:'0'}]:[]};
+  if(sql.includes('FROM anvil.permission_policies p JOIN')){const snapshot={rules:[{ruleId:'document',subjectRef:{kind:'HUMAN',userId:actor.actorId},operations:['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange'],targetScopes:[{kind:'PROJECT',projectId}],disposition:deny?'DENY':'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}],reason:'원 명시정책',reviewRefs:[]};return{rows:[{id:uuid(20),head_version:1,rules_json:snapshot.rules,content_hash:grant.controlHash(snapshot),reason:snapshot.reason,review_refs:[],created_at:new Date(now)}]};}
+  if(sql.includes('FROM anvil.documents d JOIN'))return{rows:[{head_version:1,content_hash:targetRef.contentHash,form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,definition_json:form,author_ref_json:{kind:'HUMAN',userId:actor.actorId}}]};
+  if(sql.includes('transaction_timestamp()')||sql.includes('clock_timestamp()'))return{rows:[{at:new Date(now)}]};
+  if(sql.includes("set_config('anvil.fn15_document_context'")){const index=sql.indexOf("set_config('anvil.fn15_document_context'");const parameter=/\$(\d+)/.exec(sql.slice(index));assert.ok(parameter);context=args[Number(parameter[1])-1]?JSON.parse(String(args[Number(parameter[1])-1])):null;contexts.push(context);return{rows:[]};}
+  if(sql.startsWith('INSERT INTO anvil.content_reviews')){if(role==='HANDOFF_ELIGIBLE'){assert.ok(context,'목적 context 없이 문서 쓰기0');assert.equal(context.sessionId,actor.authSession.id);assert.equal(context.credentialGeneration,actor.credentialGeneration);assert.equal(context.purpose,'FN15_ORDINARY_DOCUMENT_WRITE');assert.deepEqual(context.request,command);}return{rows:[],rowCount:1};}
+  if(sql.includes('FROM anvil.commands')||sql.startsWith('INSERT INTO anvil.commands')||sql.startsWith('INSERT INTO anvil.authorization_receipts')||sql.startsWith('INSERT INTO anvil.audit_events')||sql.includes('set_config('))return{rows:[],rowCount:1};
+  throw Error('UNMODELED_DOCUMENT_SQL');
+ }};
+ const access={authenticated:async<T>(_token:string,_csrf:string|null,work:(db:never,actor:never)=>Promise<T>)=>work(db as never,actor as never)},repo=new ProjectPolicyRepository(access as never);
+ return{repo,db,actor,command,targetRef,logs,contexts,deny(){deny=true;},missingGrant(){hasGrant=false;}};
+}
+
+test('HE DOCUMENT는 actual Repo→검토leaf→원 receipt→실session 목적context→문서 INSERT를 연결한다',async()=>{
+ const f=await ordinaryDocumentFixture(),{writeDocumentReview}=await import('../../../apps/server/modules/documents/project-content-review.ts');
+ const result=await f.repo.command('memory-token','memory-csrf',f.command as never,(db,actor,policy)=>writeDocumentReview(db,actor,f.command as never,policy))as {status:string};assert.equal(result.status,'APPLIED');assert.equal(f.contexts.length,1);assert.equal(f.logs.filter(x=>x.sql.startsWith('INSERT INTO anvil.content_reviews')).length,1);
+});
+
+test('HE의 다형 검토는 DOCUMENT/envelope만 허용하고 다른domain·불일치는 material0, Owner 기존분기는 보존한다',async()=>{
+ const f=await ordinaryDocumentFixture();let materials=0;
+ for(const targetKind of ['METHODOLOGY','WORK_PLAN','KNOWLEDGE'])await assert.rejects(()=>f.repo.command('memory','csrf',{...f.command,payload:{...f.command.payload,targetKind}}as never,async()=>{materials++;return{};}));
+ for(const command of [{...f.command,targetId:projectId},{...f.command,expectedVersion:2},{...f.command,payload:{...f.command.payload,targetRef:{...f.targetRef,contentHash:'bad'}}}])await assert.rejects(()=>f.repo.command('memory','csrf',command as never,async()=>{materials++;return{};}));assert.equal(materials,0);
+ const owner=await ordinaryDocumentFixture('OWNER');await owner.repo.command('memory','csrf',{...owner.command,payload:{...owner.command.payload,targetKind:'METHODOLOGY'}}as never,async()=>{materials++;return{};});assert.equal(materials,1);
+});
+
+
+test('문서 목적context는 원요청/actor/session/Tx 변조·중복소비·callback 종료 재사용을 IO 전에 거절한다',async()=>{
+ const {persistProjectReceipt}=await import('../../../apps/server/modules/access/project-command.ts');
+ for(const mode of ['request','operation','actor','session','db','twice','ended','failed']){
+  const f=await ordinaryDocumentFixture();let attempted=0;
+  const persist=(db:Parameters<typeof persistProjectReceipt>[0],actor:Parameters<typeof persistProjectReceipt>[1],request:Parameters<typeof persistProjectReceipt>[2])=>persistProjectReceipt(db,actor,request,f.targetRef,{},null,'MEMORY_TEST');
+  if(mode==='ended'||mode==='failed'){
+   if(mode==='failed')await assert.rejects(f.repo.command('memory','csrf',f.command as never,async()=>{throw Error('MATERIAL_FAILED');}));
+   else await f.repo.command('memory','csrf',f.command as never,async()=>({}));
+   const before=f.logs.length;await assert.rejects(persist(f.db as never,f.actor as never,f.command as never),/DOCUMENT_CONTEXT_INVALID/);assert.equal(f.logs.length,before);continue;
+  }
+  await assert.rejects(f.repo.command('memory','csrf',f.command as never,async(db,actor)=>{
+   if(mode==='twice'){await persist(db,actor,f.command as never);const before=f.logs.length;try{await persist(db,actor,f.command as never);}finally{assert.equal(f.logs.length,before);}return{};}
+   const request=mode==='request'?{...f.command,payload:{...f.command.payload,reason:'변조'}}:mode==='operation'?{...f.command,operation:'indexDesignDocument'}:f.command;
+   const suppliedActor=mode==='actor'?{...actor}:mode==='session'?{...actor,authSession:{...actor.authSession!}}:actor;
+   const suppliedDb=mode==='db'?{query:async()=>{attempted++;throw Error('CROSS_DB_IO');}}:db;
+   const before=f.logs.length;try{await persist(suppliedDb as never,suppliedActor as never,request as never);}finally{assert.equal(f.logs.length,before);}
+   return{};
+  }),/DOCUMENT_CONTEXT_INVALID/);
+  assert.equal(attempted,0);assert.equal(f.logs.filter(x=>x.sql.startsWith('INSERT INTO anvil.commands')).length,mode==='twice'?1:0);
+ }
+});
+
+test('HE 문서의 누락물리grant/명시DENY는 material0이며 Owner 검토는 기존 세GUC와 원 INSERT를 유지한다',async()=>{
+ for(const mode of ['grant','deny']){const f=await ordinaryDocumentFixture();if(mode==='grant')f.missingGrant();else f.deny();let calls=0;await assert.rejects(f.repo.command('memory','csrf',f.command as never,async()=>{calls++;return{};}));assert.equal(calls,0);assert.equal(f.contexts.length,0);}
+ const f=await ordinaryDocumentFixture('OWNER'),{writeDocumentReview}=await import('../../../apps/server/modules/documents/project-content-review.ts');await f.repo.command('memory','csrf',f.command as never,(db,actor,policy)=>writeDocumentReview(db,actor,f.command as never,policy));assert.equal(f.contexts.length,0);assert.equal(f.logs.filter(x=>x.sql.startsWith('INSERT INTO anvil.content_reviews')).length,1);assert.ok(f.logs.some(x=>x.sql.includes("set_config('anvil.command_id'")&&!x.sql.includes('anvil.fn15_document_context')));
+});

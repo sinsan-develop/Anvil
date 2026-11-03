@@ -12,7 +12,7 @@ import {copyControlData,controlHash,sameControl,createControlAcceptanceChain,ver
 import {planControlStorage,settleControlStorage,type ControlStorageRow,controlStorageTables} from './control-handoff-storage.ts';
 export const controlAcceptanceMigration='0073_control_handoff_acceptance';
 // 미적용 0073의 raw UTF8/LF bytes checksum이다. 실제 schema 적용/검증을 대신하지 않는다.
-export const controlAcceptanceChecksum='276fe80304147c95b60493d92bb0d30df2c1dc1a31cfaa787e9f7c7d4d29bf76';
+export const controlAcceptanceChecksum='43898b2bbe455274975fc9a3c1c44ac216b4e203b2941f9c61c070c7e49bb2f6';
 export class ControlAcceptanceFailure extends AuthFailure{readonly code:string;readonly commandId:string|null;constructor(code:string,status=503,commandId:string|null=null){super(code,status);this.code=code;this.commandId=commandId;}}
 const fail=(code='CONTROL_ACCEPTANCE_INVALID',status=503,id:string|null=null):never=>{throw new ControlAcceptanceFailure(code,status,id);};
 export type ControlPrepareCommand={schemaVersion:1;operation:'prepareControlHandoff';commandId:string;projectId:string;clientId:string;payload:{requestRef:RuntimeRefV1}};

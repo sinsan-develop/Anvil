@@ -71,14 +71,37 @@ export async function currentProjectController(db: PoolClient, actor: Authentica
   if (Number(control.generation) !== request.controlGeneration) throw new AuthFailure('CONTROL_GENERATION_CONFLICT', 409);
   return control;
 }
+const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange']);
+const fn15HeActors=new WeakSet<object>();
+type Fn15DocumentContext={actor:AuthenticatedIdentity;actorId:string;clientId:string;session:AuthenticatedIdentity['authSession'];credentialGeneration:number;request:ProjectCommand;requestHash:string;used:boolean};
+const fn15DocumentContexts=new WeakMap<PoolClient,Fn15DocumentContext>();
+/** 실제 인증 callback 안에서만 생산한다. 외부 setter나 caller verified flag는 없다. */
+async function withFn15DocumentContext<T>(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,work:()=>Promise<T>):Promise<T>{
+ if(!fn15DocumentOperations.has(request.operation))return work();
+ if(fn15DocumentContexts.has(db))throw new AuthFailure('DOCUMENT_CONTEXT_CONFLICT',409);
+ const fixed=copyControlData(request,2097152),binding:Fn15DocumentContext={actor,actorId:actor.actorId,clientId:actor.clientId,session:actor.authSession,credentialGeneration:actor.credentialGeneration,request:fixed,requestHash:contentHash(canonicalJson(fixed)),used:false};
+ fn15DocumentContexts.set(db,binding);try{return await work();}finally{if(fn15DocumentContexts.get(db)===binding)fn15DocumentContexts.delete(db);}
+}
+function consumeFn15DocumentContext(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand):string|null{
+ const binding=fn15DocumentContexts.get(db);
+ if(binding&&(binding.actor!==actor||binding.requestHash!==contentHash(canonicalJson(copyControlData(request,2097152)))))throw new AuthFailure('DOCUMENT_CONTEXT_INVALID',403);
+ if(!fn15DocumentOperations.has(request.operation))return null;
+ if(!fn15HeActors.has(actor))return null;
+ const session=actor.authSession;
+ if(!binding||binding.used||binding.actor!==actor||binding.actorId!==actor.actorId||binding.clientId!==actor.clientId||binding.session!==session||binding.credentialGeneration!==actor.credentialGeneration||!session||!uuidV1(session.id)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt)||!Number.isSafeInteger(actor.credentialGeneration)||actor.credentialGeneration<1||binding.requestHash!==contentHash(canonicalJson(copyControlData(request,2097152))))throw new AuthFailure('DOCUMENT_CONTEXT_INVALID',403);
+ const wire=canonicalJson({schemaVersion:1,purpose:'FN15_ORDINARY_DOCUMENT_WRITE',sessionId:session.id,credentialGeneration:actor.credentialGeneration,request:binding.request});
+ if(Buffer.byteLength(wire,'utf8')>2097314)throw new AuthFailure('DOCUMENT_CONTEXT_INVALID',403);binding.used=true;return wire;
+}
 /** 일반문서/새 일반승인에만 별도 grant 소비를 연결한다. 원 OWNER helper는 보존한다. */
 export async function currentGeneralProjectController(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand){
  try{return await currentProjectController(db,actor,request);}catch(error){if(!isOrdinaryControlOperation(request.operation)||!(error instanceof AuthFailure)||error.message!=='PROJECT_WRITE_DENIED')throw error;}
  const member=await projectMember(db,actor,request.projectId,true);if(member.archived_at||member.participation!=='HANDOFF_ELIGIBLE'||request.clientId!==actor.clientId)throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+ if(request.operation==='recordContentReview'){const p=copyControlData(request.payload);if(!recordV1(p,['targetKind','targetRef','criteriaVersion','items','outcome','reason'])||p.targetKind!=='DOCUMENT'||!isVersionRef(p.targetRef)||p.targetRef.id!==request.targetId||p.targetRef.version!==request.expectedVersion)throw new AuthFailure('PROJECT_WRITE_DENIED',403);}
  const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[request.projectId])).rows[0];
  if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId)throw new AuthFailure('PROJECT_CONTROL_REQUIRED',403);
  if(Number(control.generation)!==request.controlGeneration)throw new AuthFailure('CONTROL_GENERATION_CONFLICT',409);
  await readCurrentControlGrant(db,request.projectId,{actorId:actor.actorId,clientId:actor.clientId,generation:Number(control.generation),version:Number(control.version),revoked_at:null});
+ fn15HeActors.add(actor);
  if(request.operation==='requestApproval'){
   const p=copyControlData(request.payload);if(!recordV1(p,['details'])||!recordV1(p.details,Object.keys(p.details??{}))||!recordV1(p.details.actionScope,Object.keys(p.details.actionScope??{})))throw new AuthFailure('PROJECT_WRITE_DENIED',403);const op=p.details.actionScope.operation;if(typeof op!=='string'||!(ordinaryDocumentOperations as readonly string[]).includes(op))throw new AuthFailure('PROJECT_WRITE_DENIED',403);
  }
@@ -133,6 +156,7 @@ export interface ActivationReceiptIds{readonly serverCommandId:string;readonly c
 const activationReservations=new WeakSet<object>();
 export function reserveActivationReceiptIds(documents?:ProjectDocuments):ActivationReceiptIds{const value=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),documents});activationReservations.add(value);return value;}
 export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string, reserved?:ActivationReceiptIds) {
+  const documentContext=consumeFn15DocumentContext(db,actor,request);
   if(reserved&&(request.operation!=='activateDesignChange'||request.approvalRef===null||!activationReservations.has(reserved)))throw new AuthFailure('ACTIVATION_RECEIPT_RESERVATION_INVALID',422);
   if(reserved)activationReservations.delete(reserved);
   const id = reserved?.serverCommandId??randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
@@ -142,7 +166,8 @@ export async function persistProjectReceipt(db: PoolClient, actor: Authenticated
   await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,$14,$15,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, consumptionId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, payloadRef?JSON.stringify(payloadRef):null, JSON.stringify(result)]);
   await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref) VALUES($1,'PROJECT',$2,$3,$4,$5,$6,$7)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest,approval?.decisionId??null]);
   await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
-  await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
+  if(documentContext!==null)await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true),set_config('anvil.fn15_document_context',$4,true)",[actor.actorId,actor.clientId,id,documentContext]);
+  else await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
   if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals(reserved?.documents).consume(db,actor,request,policyRef,id,consumptionId);}
   // 실행 봉투는 실제 저장된 receipt의 불변 scope digest를 참조한다. 일반 API result의 의미는 바꾸지 않는다.
   return { result, id, authorizationReceiptRef: {id:receiptId,version:1,contentHash:scopeDigest} };
@@ -184,7 +209,7 @@ export class ProjectPolicyRepository {
     let exportDeadline=performance.now()+30000,exportStarted=false;
     let notificationDeadline=Infinity,notificationPolicyDeadline=Infinity;
     try {
-      const result=await this.#access.authenticated(token, csrf, async (db, actor) => {
+      const result=await this.#access.authenticated(token, csrf, async (db, actor) => withFn15DocumentContext(db,actor,request,async()=>{
         await currentGeneralProjectController(db, actor, request);
         if (request.operation !== 'savePermissionPolicy') {
           const policy = await authorizeMaterial(db, actor, request,false,this.#documents);
@@ -244,7 +269,7 @@ export class ProjectPolicyRepository {
         else await db.query('UPDATE anvil.permission_policies SET head_version=$2 WHERE id=$1', [id, version]);
         await db.query('INSERT INTO anvil.permission_policy_versions(project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)', [request.projectId, id, version, JSON.stringify(rules), ref.contentHash, p.reason, '[]', actor.actorId, actor.clientId, receipt.id]);
         return receipt.result;
-      });
+      }));
       // COMMIT 뒤 기한 초과는 이미 반영됐을 수 있다. 새 명령 대신 재인증 후 원 commandId로 조정한다.
       if(request.operation==='exportProject'&&performance.now()>=exportDeadline)throw new AuthFailure('EXPORT_RESULT_UNCERTAIN',503);
       if(request.operation==='markNotificationRead'&&(performance.now()>=notificationDeadline||performance.now()>=notificationPolicyDeadline))throw new AuthFailure('NOTIFICATION_READ_RESULT_UNCERTAIN',503);

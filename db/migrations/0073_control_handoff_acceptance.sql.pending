@@ -930,6 +930,89 @@ BEGIN
 END;$fn15_forward_f_initialization$;
 
 GRANT EXECUTE ON FUNCTION anvil.fn01_json(jsonb),anvil.fn01_hash(jsonb),anvil.fn15_basis(anvil.project_control) TO anvil_v3_fn15_reader_owner;
+-- FN15 일반문서 네 연산의 현재 인증 context만 소비한다. GUC 자체는 허가/증거 boolean이 아니다.
+CREATE FUNCTION anvil.fn15_ordinary_document_command_current(pid uuid,cid uuid,op text) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE raw text;context jsonb;q jsonb;c anvil.commands;pc anvil.project_control;sid uuid;generation bigint;actual_generation bigint;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR op IS NULL OR op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange') THEN RETURN false;END IF;
+ raw=current_setting('anvil.fn15_document_context',true);
+ IF raw IS NULL OR octet_length(convert_to(raw,'UTF8'))>2097314 THEN RETURN false;END IF;
+ context=raw::jsonb;
+ IF NOT anvil.checkpoint_keys(context,ARRAY['schemaVersion','purpose','sessionId','credentialGeneration','request']) OR context->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR context->>'purpose' IS DISTINCT FROM 'FN15_ORDINARY_DOCUMENT_WRITE'
+ OR jsonb_typeof(context->'sessionId') IS DISTINCT FROM 'string' OR context->>'sessionId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+ OR jsonb_typeof(context->'credentialGeneration') IS DISTINCT FROM 'number' OR(context->>'credentialGeneration') !~ '^[1-9][0-9]{0,15}$'
+ OR anvil.fn01_json(context) IS DISTINCT FROM raw THEN RETURN false;END IF;
+ generation=(context->>'credentialGeneration')::bigint;sid=(context->>'sessionId')::uuid;q=context->'request';
+ IF generation>9007199254740991 OR octet_length(convert_to(anvil.fn01_json(q),'UTF8'))>2097152 OR NOT anvil.checkpoint_keys(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
+ OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM pid::text OR q->>'operation' IS DISTINCT FROM op OR jsonb_typeof(q->'payload') IS DISTINCT FROM 'object' THEN RETURN false;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=pid;
+ IF c.id IS NULL OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM pid OR c.state IS DISTINCT FROM 'APPLIED' OR c.operation IS DISTINCT FROM op
+ OR cid::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+ OR q->>'commandId' IS DISTINCT FROM c.command_id::text OR q->>'clientId' IS DISTINCT FROM c.client_id::text OR q->'controlGeneration' IS DISTINCT FROM to_jsonb(c.control_generation) OR q->'expectedVersion' IS DISTINCT FROM to_jsonb(c.expected_version)
+ OR c.request_hash IS DISTINCT FROM anvil.fn01_hash(q) THEN RETURN false;END IF;
+ IF op='recordContentReview' AND(q->'payload'->>'targetKind' IS DISTINCT FROM 'DOCUMENT' OR NOT anvil.checkpoint_keys(q->'payload',ARRAY['targetKind','targetRef','criteriaVersion','items','outcome','reason'])
+ OR q->'payload'->'targetRef'->>'id' IS DISTINCT FROM q->>'targetId' OR q->'payload'->'targetRef'->'version' IS DISTINCT FROM q->'expectedVersion'
+ OR c.result_ref->'data'->'ref' IS DISTINCT FROM q->'payload'->'targetRef') THEN RETURN false;END IF;
+ -- UUID는 원 AccessRepository callback에서 왔다. 다른 활성 session 하나로 바꾸지 않는다.
+ PERFORM anvil.fn01_active(sid,c.actor_id,c.client_id);
+ SELECT credential_generation INTO actual_generation FROM anvil.auth_sessions WHERE id=sid AND user_id=c.actor_id AND client_id=c.client_id;
+ IF actual_generation IS DISTINCT FROM generation THEN RETURN false;END IF;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=pid;
+ IF pc.project_id IS NULL OR pc.actor_id IS DISTINCT FROM c.actor_id OR pc.client_id IS DISTINCT FROM c.client_id OR pc.generation IS DISTINCT FROM c.control_generation OR pc.revoked_at IS NOT NULL THEN RETURN false;END IF;
+ RETURN EXISTS(SELECT 1 FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=pid AND p.archived_at IS NULL AND m.user_id=c.actor_id AND m.participation='HANDOFF_ELIGIBLE' AND m.revoked_at IS NULL)
+ AND EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.permission_policies p ON p.project_id=pid AND p.id::text=c.policy_ref->>'id' AND p.head_version::text=c.policy_ref->>'version'
+ WHERE ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id))
+ AND anvil.fn15_grant_current(pid,c.actor_id,c.client_id,pc.generation,pc.version);
+EXCEPTION
+ WHEN invalid_text_representation OR numeric_value_out_of_range OR invalid_parameter_value THEN RETURN false;
+ WHEN insufficient_privilege THEN
+  IF SQLERRM IN('FN01_ACTIVE_SESSION_REQUIRED','FN01_APP_SESSION_REQUIRED') THEN RETURN false;END IF;
+  RAISE;
+END;$$;
+ALTER FUNCTION anvil.fn15_ordinary_document_command_current(uuid,uuid,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn15_ordinary_document_command_current(uuid,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn15_ordinary_document_command_current(uuid,uuid,text) TO anvil_v3_app;
+
+CREATE OR REPLACE FUNCTION anvil.document_command_authorized(pid uuid,did uuid,v bigint,op text) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS(SELECT 1 FROM anvil.commands c
+    JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.policy_ref=c.policy_ref
+    JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+    JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND (m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND op IN('saveDocumentDraft','confirmDocument','proposeDocumentChange') AND anvil.fn15_ordinary_document_command_current(pid,c.id,op))) AND m.revoked_at IS NULL
+    JOIN anvil.permission_policies p ON p.project_id=c.project_id AND p.id::text=c.policy_ref->>'id' AND p.head_version=(c.policy_ref->>'version')::bigint
+    WHERE c.id::text=current_setting('anvil.command_id',true) AND c.project_id=pid
+      AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+      AND c.state='APPLIED' AND c.operation=op AND c.expected_version=CASE WHEN op='saveDocumentDraft' THEN v-1 ELSE v END
+      AND c.result_ref->'data'->'ref'->>'id'=did::text AND (c.result_ref->'data'->'ref'->>'version')::bigint=v);
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_project_document_review() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF current_user<>'anvil_v3_app' THEN RETURN NEW; END IF;
+  IF NEW.scope_kind<>'PROJECT' OR NEW.target_kind<>'DOCUMENT' OR NEW.source_kind<>'HUMAN_REVIEW'
+    OR NEW.reviewer_user_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true)
+    OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+    OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
+    OR NEW.reviewer_subject_ref->>'kind' IS DISTINCT FROM 'HUMAN'
+    OR NEW.reviewer_subject_ref->>'userId' IS DISTINCT FROM NEW.reviewer_user_id::text
+    OR NOT EXISTS(SELECT 1 FROM anvil.commands c
+      JOIN anvil.authorization_receipts r ON r.command_id=c.id AND r.id=c.authorization_receipt_id AND r.policy_ref=c.policy_ref
+      JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+      JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND (m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,'recordContentReview'))) AND m.revoked_at IS NULL
+      JOIN anvil.permission_policies p ON p.project_id=c.project_id AND p.id::text=c.policy_ref->>'id' AND p.head_version=(c.policy_ref->>'version')::bigint
+      JOIN anvil.documents d ON d.project_id=c.project_id AND d.id=NEW.target_id AND d.head_version=NEW.target_version
+      JOIN anvil.document_versions v ON v.project_id=d.project_id AND v.document_id=d.id AND v.version=NEW.target_version AND v.content_hash=NEW.target_hash
+      WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.actor_id=NEW.reviewer_user_id AND c.client_id=NEW.client_id
+        AND c.state='APPLIED' AND c.operation='recordContentReview' AND c.expected_version=NEW.target_version
+        AND c.result_ref->'data'->'ref'=jsonb_build_object('id',NEW.target_id,'version',NEW.target_version,'contentHash',NEW.target_hash)
+        AND c.result_ref->'data'->'reviewRef'->>'id'=NEW.id::text
+        AND c.result_ref->'data'->'reviewRef'->>'outcome'=NEW.outcome
+        AND NEW.criteria_snapshot_json->'formRef'=jsonb_build_object('id',v.form_definition_id,'version',v.form_version,'contentHash',v.form_hash)) THEN
+    RAISE EXCEPTION 'PROJECT_DOCUMENT_REVIEW_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
 REVOKE CREATE ON SCHEMA anvil FROM anvil_v3_fn15_reader_owner;
 REVOKE anvil_v3_fn15_reader_owner FROM anvil_v3_migrator;
 DO $fn15_reader_postflight$
@@ -953,5 +1036,10 @@ BEGIN
  IF EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='anvil' AND c.relname IN('project_writer_authority_events','project_writer_authority_heads') AND(NOT c.relrowsecurity OR NOT c.relforcerowsecurity))
  OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy p WHERE p.polrelid='anvil.project_writer_authority_events'::regclass AND pg_catalog.pg_get_expr(p.polqual,p.polrelid)='false')
  OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_policy p WHERE p.polrelid='anvil.project_writer_authority_heads'::regclass AND pg_catalog.pg_get_expr(p.polqual,p.polrelid)='false') THEN RAISE EXCEPTION 'FN15_WRITER_RLS_POSTFLIGHT_FAILED';END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND p.proname='fn15_ordinary_document_command_current' AND p.oid='anvil.fn15_ordinary_document_command_current(uuid,uuid,text)'::regprocedure AND pg_catalog.pg_get_userbyid(p.proowner)='anvil_v3_migrator' AND p.prosecdef AND p.provolatile='v' AND p.proconfig=ARRAY['search_path=pg_catalog']::text[]
+ AND NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(p.proacl,pg_catalog.acldefault('f',p.proowner))) ac WHERE ac.grantee=0 AND ac.privilege_type='EXECUTE'))
+ OR NOT pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn15_ordinary_document_command_current(uuid,uuid,text)','EXECUTE')
+ OR pg_catalog.has_function_privilege('anvil_v3_app','anvil.fn15_grant_current(uuid,uuid,uuid,bigint,bigint)','EXECUTE')
+ OR EXISTS(SELECT 1 FROM pg_catalog.pg_proc p WHERE p.oid IN('anvil.document_command_authorized(uuid,uuid,bigint,text)'::regprocedure,'anvil.guard_project_document_review()'::regprocedure) AND p.prosecdef) THEN RAISE EXCEPTION 'FN15_DOCUMENT_HELPER_POSTFLIGHT_FAILED';END IF;
 END;$fn15_reader_postflight$;
 COMMIT;
