@@ -76,7 +76,7 @@ test('정적 import 연결: 최종0072 regular membership delta만 forward하고
  const s=await sql(),original=(await readFile(new URL('../../../db/migrations/0072_document_source_observation.sql.pending',import.meta.url),'utf8')).replaceAll('\r\n','\n'),head='CREATE OR REPLACE FUNCTION anvil.guard_document_import_write()',start=original.lastIndexOf(head),before=original.slice(start,original.indexOf('$$;',start)+3),at=s.lastIndexOf(head);assert.ok(at>=0,'최종0072 import guard forward 없음');
  const body=s.slice(at,s.indexOf('$$;',at)+3),delta="(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND c.operation IN('importDocument','saveDocumentDraft') AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,c.operation)))";
  assert.equal(body.split(delta).length,2);assert.equal(body.replace(delta,"m.participation='OWNER'"),before);const boundary="IF current_user<>'anvil_v3_app'";assert.equal(body.slice(0,body.indexOf(boundary)),before.slice(0,before.indexOf(boundary)));assert.doesNotMatch(body,/SECURITY DEFINER/);
- const helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));assert.ok(helper.includes("op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument')"));
+ const helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));assert.ok(helper.includes("op NOT IN('saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument','uploadArtifact','requestApproval','decideApproval')"));
 });
 
 
@@ -84,4 +84,36 @@ test('정적 import 연결: 원request file/form·null/0·save 선택과 receipt
  const s=await sql(),body=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));
  for(const part of ["q->'targetId' IS DISTINCT FROM 'null'::jsonb","q->'expectedVersion' IS DISTINCT FROM '0'::jsonb","ARRAY['fileRef','intendedFormRef','sourceRefs']","q->'payload'->'sourceRefs' IS DISTINCT FROM '[]'::jsonb","q->'payload'->'fileRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'originalRef'","q->'payload'->'intendedFormRef' IS DISTINCT FROM c.result_ref->'data'->'candidate'->'intendedFormRef'","q->'payload'->'importCandidateRef' IS DISTINCT FROM c.result_ref->'data'->'importCandidateRef'"])assert.ok(body.includes(part),part);
  const at=body.indexOf("IF op='importDocument'"),end=body.indexOf('END IF;',at);assert.doesNotMatch(body.slice(at,end),/candidate[^;]*status[^;]*READY/);assert.ok(body.includes("WHEN insufficient_privilege THEN"));assert.ok(body.includes("RAISE;"));
+});
+
+
+test('정적 upload 승인 연결: request/decision/소비alias는 원Owner분기와0074 outer를 보존한다',async()=>{
+ const s=await sql();
+ const cases=[{file:'0050_design_baseline_activations.sql.pending',name:'guard_one_time_approval_request',forward:'guard_one_time_approval_request',delta:"(pm.participation='OWNER' OR(pm.participation='HANDOFF_ELIGIBLE' AND v_scope->>'operation'='uploadArtifact' AND anvil.fn15_ordinary_document_command_current(NEW.project_id,c.id,'requestApproval')))"},{file:'0011_one_time_approval_decisions.sql',name:'one_time_decision_command_authorized',forward:'one_time_decision_command_authorized',delta:"(pm.participation='OWNER' OR(pm.participation='HANDOFF_ELIGIBLE' AND anvil.fn15_ordinary_document_command_current(p_project,c.id,'decideApproval')))"},{file:'0033_document_source_detach_approval.sql',name:'one_time_consumption_command_authorized',forward:'one_time_consumption_command_before_plan',delta:"(pm.participation='OWNER' OR(pm.participation='HANDOFF_ELIGIBLE' AND c.operation='uploadArtifact' AND anvil.fn15_ordinary_document_command_current(p_project,c.id,'uploadArtifact')))"}];
+ for(const item of cases){const raw=(await readFile(new URL('../../../db/migrations/'+item.file,import.meta.url),'utf8')).replaceAll('\r\n','\n'),match=new RegExp('CREATE (?:OR REPLACE )?FUNCTION anvil\\.'+item.name+'\\(').exec(raw);assert(match);const expected=raw.slice(match.index,raw.indexOf('$$;',match.index)+3),start=s.lastIndexOf('CREATE OR REPLACE FUNCTION anvil.'+item.forward+'(');assert.ok(start>=0,item.forward+' forward 누락');const body=s.slice(start,s.indexOf('$$;',start)+3);assert.equal(body.split(item.delta).length,2);const reversed=body.replace(item.delta,"pm.participation='OWNER'").replace('anvil.'+item.forward+'(','anvil.'+item.name+'(').replace(/^CREATE OR REPLACE FUNCTION/,expected.startsWith('CREATE OR REPLACE')?'CREATE OR REPLACE FUNCTION':'CREATE FUNCTION');assert.equal(reversed,expected);assert.doesNotMatch(body,/SECURITY DEFINER/);}
+ const outer=await readFile(new URL('../../../db/migrations/0074_project_membership_versions.sql.pending',import.meta.url),'utf8');assert.ok(outer.includes("IF c.operation IS DISTINCT FROM 'saveProjectMembership' THEN RETURN anvil.one_time_consumption_command_before_membership(pid,cid,did)"));
+});
+
+
+test('정적 upload 승인 연결: 원GUC operation별 원문·scope·기한과 단발/반복검산 경계를 유지한다',async()=>{
+ const s=await sql(),helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));
+ for(const part of ["IF op='uploadArtifact' THEN","ELSIF op='requestApproval' THEN","ELSIF op='decideApproval' THEN","ARRAY['mediaType','bytes','contentHash']",'20971520',"ARRAY['details']","ARRAY['requestId','expectedVersion','scopeDigest','decision','reason']","scope->>'operation' IS DISTINCT FROM 'uploadArtifact'","approval.expires_at<=clock_timestamp()","approval.required_decider_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id)","c.request_hash IS DISTINCT FROM anvil.fn01_hash(q)",'anvil.fn01_active(sid,c.actor_id,c.client_id)','anvil.fn15_grant_current(pid,c.actor_id,c.client_id,pc.generation,pc.version)'])assert.ok(helper.includes(part),part);
+ assert.doesNotMatch(helper,/set_config|INSERT INTO|UPDATE anvil|DELETE FROM/);
+ const old=await readFile(new URL('../../../db/migrations/0072_document_source_observation.sql.pending',import.meta.url),'utf8');assert.ok(old.includes("NEW.project_id IS NULL OR NEW.draft_id IS NOT NULL OR NEW.state<>'READY'"));assert.equal(s.includes('CREATE OR REPLACE FUNCTION anvil.guard_project_artifact_insert()'),false,'QUARANTINED 기존불일치를 섞지 않는다');
+});
+
+
+test('정적 upload 승인 연결: missing/null status의 SQL UNKNOWN은 명시거절이며 두원status만 허용한다',async()=>{
+ const s=await sql(),helper=s.slice(s.indexOf('CREATE FUNCTION anvil.fn15_ordinary_document_command_current('),s.indexOf('ALTER FUNCTION anvil.fn15_ordinary_document_command_current('));
+ const closed=helper.includes("COALESCE(c.result_ref->'data'->>'status' NOT IN('ARTIFACT_READY','ARTIFACT_QUARANTINED'),true)");
+ // PostgreSQL 실행이 아닌 NOT IN/IF의 3값 논리 모델이다.
+ const reject=(status:string|null|undefined)=>{const notIn=status==null?null:!['ARTIFACT_READY','ARTIFACT_QUARANTINED'].includes(status);return closed?(notIn??true):notIn;};
+ assert.equal(reject(undefined),true,'missing status');assert.equal(reject(null),true,'null status');assert.equal(reject('OTHER'),true);assert.equal(reject('ARTIFACT_READY'),false);assert.equal(reject('ARTIFACT_QUARANTINED'),false);assert.equal(closed,true);
+});
+
+
+test('정적 upload 승인 연결: 알림 capacity/지연complete의 현재성도 upload 요청만 HE로 닫고 읽기는 OWNER를 보존한다',async()=>{
+ const s=await sql(),raw=await readFile(new URL('../../../db/migrations/0052_approval_in_app_notifications.sql.pending',import.meta.url),'utf8'),head='CREATE FUNCTION anvil.fn17_notification_current(',at=raw.indexOf(head),original=raw.slice(at,raw.indexOf('$$;',at)+3),start=s.lastIndexOf('CREATE OR REPLACE FUNCTION anvil.fn17_notification_current(');assert.ok(start>=0,'알림 현재성 forward 누락');
+ const body=s.slice(start,s.indexOf('$$;',start)+3),delta="(m.participation='OWNER' OR(m.participation='HANDOFF_ELIGIBLE' AND wanted_operation='requestApproval' AND c.result_ref->'data'->'request'->'details'->'actionScope'->>'operation'='uploadArtifact' AND anvil.fn15_ordinary_document_command_current(pid,c.id,'requestApproval')))";
+ assert.equal(body.split(delta).length,2);assert.equal(body.replace(delta,"m.participation='OWNER'").replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION'),original);assert.ok(body.includes('VOLATILE SECURITY DEFINER SET search_path=pg_catalog'));assert.ok(body.includes('FOR UPDATE OF pr,m,pc'));assert.ok(body.includes('minimum_expiry'));assert.ok(raw.includes("anvil.fn17_notification_current(NEW.project_id,NEW.command_id,'requestApproval')"));assert.ok(raw.includes("anvil.fn17_notification_current(NEW.project_id,c.id,'markNotificationRead')"));assert.equal(s.includes('CREATE OR REPLACE FUNCTION anvil.fn17_notification_complete()'),false);assert.equal(s.includes('CREATE OR REPLACE FUNCTION anvil.assert_approval_notification_capacity('),false);assert.equal(s.includes('GRANT EXECUTE ON FUNCTION anvil.fn17_notification_current'),false);
 });

@@ -72,7 +72,7 @@ export async function currentProjectController(db: PoolClient, actor: Authentica
   if (Number(control.generation) !== request.controlGeneration) throw new AuthFailure('CONTROL_GENERATION_CONFLICT', 409);
   return control;
 }
-const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument']);
+const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview','confirmDocument','proposeDocumentChange','importDocument','uploadArtifact','requestApproval','decideApproval']);
 const fn15HeActors=new WeakSet<object>();
 type Fn15DocumentContext={actor:AuthenticatedIdentity;actorId:string;clientId:string;session:AuthenticatedIdentity['authSession'];credentialGeneration:number;request:ProjectCommand;requestHash:string;used:boolean};
 const fn15DocumentContexts=new WeakMap<PoolClient,Fn15DocumentContext>();
@@ -183,6 +183,11 @@ export async function recordProjectDenial(access: AccessRepository, token: strin
 export class ProjectPolicyRepository {
   #access: AccessRepository;#documents?:ProjectDocuments;
   constructor(access: AccessRepository,documents?:ProjectDocuments) { this.#access = access;this.#documents=documents; }
+  /** 파일 handler의 원 replay/IO 순서를 보존한다. DB/actor/session은 실제 인증 callback에서만 받는다. */
+  async uploadTransaction<T>(token:string,csrf:string,request:ProjectCommand,work:(db:PoolClient,actor:AuthenticatedIdentity)=>Promise<T>):Promise<T>{
+    const fixed=copyControlData(request,2097152);if(fixed.operation!=='uploadArtifact')throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+    return this.#access.authenticated(token,csrf,(db,actor)=>withFn15DocumentContext(db,actor,fixed,()=>work(db,actor)));
+  }
   async read(token: string, projectId: string) {
     return this.#access.authenticated(token, null, async (db, actor) => { await projectMember(db, actor, projectId); const policy = await currentPolicy(db, projectId); return { configured: !!policy, policy }; });
   }

@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { AccessRoutesOptions } from '../access/routes.ts';
 import { AuthFailure } from '../access/repository.ts';
-import { authorizeMaterial, currentGeneralProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
+import { authorizeMaterial, currentGeneralProjectController, persistProjectReceipt, projectMember, projectReplay, recordProjectDenial, ProjectPolicyRepository, type ProjectCommand } from '../access/project-command.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import { parseWireJson,canonicalJson,contentHash } from '../../../../contracts/canonical.ts';
 import{inspectArtifact,assertStoredArtifactReadable}from'../../storage/sensitive-inspection.ts';
@@ -27,6 +27,7 @@ function uploadContext(raw: unknown, projectId: string): ProjectCommand {
 export function registerProjectFileRoutes(app: FastifyInstance, options: AccessRoutesOptions) {
   const store = options.artifactRoot ? new ArtifactStore(options.artifactRoot) : null, host = new URL(options.origin).host;
   const quota=new ProjectStorageQuota(options.repository,store??undefined);
+  const policies=new ProjectPolicyRepository(options.repository);
   const contexts = new WeakMap<FastifyRequest, ProjectCommand>();
   app.register(async files => {
     files.addContentTypeParser('application/octet-stream', { parseAs: 'buffer', bodyLimit: 20 * 1024 * 1024 }, (_request, body, done) => done(null, body));
@@ -53,7 +54,7 @@ export function registerProjectFileRoutes(app: FastifyInstance, options: AccessR
       let started:StartedQuotaBundle|undefined;
       if(!prepared.replay)started=await quota.start(token(request),csrf(request),await quota.reserve(token(request),csrf(request),prepared));
       let result:unknown;
-      try{result = await options.repository.authenticated(token(request), csrf(request), async (db, actor) => {
+      try{result = await policies.uploadTransaction(token(request), csrf(request), context, async (db, actor) => {
         await currentGeneralProjectController(db, actor, context); const policy = await authorizeMaterial(db, actor, context);
         const previous = await projectReplay(db, actor, context);
         if (!store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);

@@ -13729,3 +13729,33 @@ git diff --check
 - Maindc973c는최종5지문/실제diff에서Node fixedop+import·SQL원request file/form/null/0·save선택/receipt와최종0072 regular HE delta만변경됨을읽었다. 58d228은실제persistProjectReceipt의artifactRef/targetId/version:null생산과소비정합을대조했다. 목적helper/GUC상한·원session/credential/privategrant·Owner/invoker/COLLECT/등록권위·예외의미와기존FN01관리코드는보존했다.
 - 공유helper변경이영향받는직접2파일만Maind6f985가독립실행해23PASS/FAIL0/SKIP0/682.7742ms/exit0을확인했다. 이는actualRepo/ProjectDocuments/메모리reader와DB모델·정적SQL이지실제PG/RLS/ACL/경합집행아니다. 검토구간추가미해결C/I없음의한정source검수·실DB/권한·키/서비스/Agent/OS/제품네트워크/실자료0·전체FN15/계획미완료다.
 - 결과 docs/04_test_reports/AV3/FN15_IMPORT_SELECTION_SOURCE_RESULT_20261103.md SHA BF3A0956ABB0067AA12960C72E3B29173BE6FD4469305916F919440999DC139E. 실제DB/served/사용자인수와새import/save승인producer·타사용자HE정책생산·등록source권위는잔여다. 다음정확5+MainWI/현황/결과3의8경로checkpoint후detach/기존지원승인SQL체인을읽기분리한다. 보호3·FN01source/기존자료·main은보존한다.
+### 2026-11-03 0e5ae332 private 보존·detach/승인 raw 경계 읽기
+- Main908f1f은정확8경로만raw/index동일·cacheddiff0로0e5ae3327699bd93572af66a9b0cc0fba99d5ec1(parent4d517f4e)에정상commit했다. 48ec8e는기존privatebranchexact동일·localmain044304/private mainf976불변·게시당시trackedclean/보호3만보존을확인했다. PR/main병합·새branch/force·실제권한/DB/서비스/Agent0다.
+- 같은Primary는writer반환뒤다음detach와기존지원4 approval chain을읽기만조사중이다. 현재0074 before_membership outer wrapper도포함하고Nodeleaf→보호reader→SQL최종함수/alias를추적한다. 코드/시험/문서쓰기·동일검사반복0다.
+- 중간관측: directAUTO detach는0033 OWNER뿐아니라project-source-links leaf→DocumentSourceLinkRecords.read의rawAllowed Owner제한에도걸린다. 공개raw조회권한을일반HE로완화하지않고내부검산/POST결과·commands replay·approval GET의실제노출필드를분리하도록했다. 새보호계약이필요하면미채택으로반환하고원문raw가필요없는upload승인등독립경로도함께선정한다. 코드GO0·실제키/DB/권한/서비스/Agent/OS/실자료0·전체계획미완료다.
+### 2026-11-03 detach 응답 원문 경계 확인·upload 독립 조사
+- Main은 현재 HEAD 0e5ae3327699bd93572af66a9b0cc0fba99d5ec1/codex/av3-stage-b·제품 변경0·Main 소유 WORK_STATUS dirty·보호 untracked3 보존을 ffd948에서 재확인했다. 이전 FN01 직접 승인51292 범위는 private4d517 source 검수에 반영됐으므로 재구현/동일 검사 반복하지 않는다.
+- Main fe4ed3/9e5a2f의 원 detach snapshot은 sourceRootId·relativePath·sourceSnapshotRef·blobHash를 유지한다. 3a9eac에서 실제 UI source-detach-api가 rawAllowed/history를 준비 조건으로 요구하고 POST data.snapshot의 전체 hash를 검산함을 확인했다. 따라서 내부 reader만 HE에 열면 원 POST와 commands.result_ref/replay에 보호 원문이 노출된다. 16acd1의 ProjectPolicyRepository.command:239는 보관 previous를 그대로 반환한다. 일반 HE 연결을 기존 공개 계약 불변이라고 간주하지 않는다.
+- 반면 d025fb/57e070의 실제 approval GET은 consumption을 id/status/commandId/serverCommandId/requestHash/scopeDigest/policyRef/consumedAt로 투영하며 used.result_ref 전체를 직접 반환하지 않는다. POST/replay와 GET을 같은 노출이라고 주장하지 않는다. 요청 원문 actionScope/각 후보 필드는 별도 검산 대상이다. 현재 detach 공개 UI도 Owner 원문 전제여서 metadata 경로는 새 응답/소비 계약 검토가 필요하며 SOURCE_GO0다.
+- 같은 기존 Primary에게 raw 이력을 요구하지 않는 uploadArtifact의 실제 authenticated callback·정책/receipt/승인소비·원본/quota/replay/UNKNOWN과 목적 context 생산 접점을 읽기 전용으로 맡겼다. 코드/시험쓰기·실제 DB/권한/키/서비스/Agent/실자료0, 새 agent/branch0. 앞 조사 보고 언어 오류1은 한국어 재진술만 받아 정정했으며 제품 실패로 세지 않았다. Main의 추정 feature 하위 경로 읽기 오류1은 실제 apps/web/src 내용 검색 반환 경로로 정정했고 제품 변경0이다.
+- 기존 subagent 구현·Main 검수/통합 방식은 유지한다. 전체 계획은 미완료이며 원문 경계 결정과 독립 upload 연결을 분리해 계속한다.
+
+- 0f7ce7/fb0652의 실제 부모 WI r7 SHA15700DB2F63FFB6DE3F248B22142F76FBFF1B58AE30BC090EB08FAB610BDBE3F §8.2는 detach/change 특수 승인 OWNER target guard를 읽기 고정하고 HE를 위해 바꾸지 말도록 명시한다. 해당 거절은 기존 범위로 보존하며 metadata 공개 계약 확대를 현재 upload 구현의 선행으로 요구하지 않는다. upload와 그 기존 승인만 별도 최소 단위로 좁힌다. PMO cursor18은 독립 upload 계속·불완전 후보 추가 개입 없음으로 응답했다.
+
+### 2026-11-03 FN15 upload 기존 승인 내부 연결 착수
+- 같은Primary의 읽기 반환에서 actual upload의 별도 authenticated callback과 실제 원본 replay/inspection·quota/UNKNOWN 보존을 확인했다. Main은 기존 r7 §8/U4 범위의 내부 연결로 한정해 docs/work_packages/FN15_UPLOAD_APPROVAL_SQL_FORWARD_SOURCE_20261103.md SHA88CB4B79E07A8C0FEBC256108DA724E955C23CCAFE69854EB70823AD96124C19를 양쪽 정본에 고정했다. 기준0e5·정확6코드/시험·기존 단일Primary에게GO, Main동일코드쓰기0다.
+- 별도 upload 고수준 인증 wrapper는 실제callback 안의 private 목적context만 생산하고 request/decide/consume은 upload 원명령/저장request·requiredDecider·현재grant/정책을 SQL로 재검산한다. 공개API/입력/응답/승인snapshot/정책작성범위 변경0·0074/membership/다른Owner·특수승인 불변이다. detach raw확장은미채택/GO0이며실행조건으로혼합0이다.
+- 실제DB/권한/정책/키/서비스/Agent/실자료·물리FS/제품네트워크0. 격리상태QUARANTINED와기존0072 READY제한의불일치는별도잔여로보존하고이번코드에몰래수정0. 집중소비선RED/GREEN·직접인접/type/diff/역차분뒤Main이독립검수한다. 전체계획미완료·새실행/branch/agent0다.
+- Primary e8c73f/d0ed91은 HEAD0e5·WI88CB4B79·기존6 시작SHA 전부일치·신규0/본인live0·Main문서/보호3 보존으로 preflight를 반환했다. request UPDATE 때 GUC는 decideApproval/uploadArtifact로 구분하며 Node 단발 생산과 SQL 반복 검산을 분리한다. 아직 소비선 GREEN/동결은 아니며 Main이 결과 전 PASS로 표시하지 않는다.
+- Main 기록 스크립트의 TextEncoder 부재1은 파일쓰기 전에 중단돼 변경0이며 PowerShell UTF8 Append로 8cf854에 보존했다. rg의 Windows literal wildcard 경로 전달 오류는 실제 -g 필터/실루트 검색으로 정정했다(65712a/96b0a6). 제품/승인 오류·Secret 문제로 세지 않고 해당 추정 전달방식은 더 사용하지 않는다.
+- Primary a936c1은 actual upload handler의 artifact INSERT 직전 목적context 누락 RED를 확인했다. 최초43ca18의503을 같은원인 대역오류수집으로 분리했으며 별도실패로부풀리지않는다. 최소Node2 보완뒤6944ed 1PASS/1036.1966ms/exit0로 실제handler→메모리quota/receipt→artifact/settle 소비를 제출했다. 아직 전체승인/SQL/음성미완료다.
+- Main126947은 Node2 diff를 읽어 uploadTransaction의 upload-only·실제 #access.authenticated 내부 context 생산, 원 filecallback·replay 물리검사와 quota/UNKNOWN 순서 불변을 확인했다. request/decide 목적context의 SQL 최종검산은 작성중이며 현재한정검토를 전체기능PASS로승격하지않는다. Main코드쓰기0/실DB·권한·키·서비스·Agent0다.
+
+- Main f2501e/db0b23은0052 fn17_notification_current:113~127의 OWNER-only 및 capacity/지연 complete 필수호출을 확인했다. 0072~0074 forward없음이다. 앞0cc2a4 메모리알림capacity대역 성공을 실제 SQL 저장완료로 승격하지 않으며 Primary에게 정확6 내0073의 upload requestApproval 목적분기/기존잠금·정책·기한·알림10000상한/원자성·다른Owner 보존과 RED/역차분 보완을 전달했다. 작성중 누락 Important1/미해결로 기록·실PG0이며 Main독립검수로 소비선범위를 좁혔다.
+- Main의 literal wildcard를 경로 인자로 전달한 읽기 오류가 반복돼 해당 형식을 중단했다. 후속은 루트+rg -g만 사용하며 db0b23은실제검색일치0/exit1이고 경로오류가아니다. 제품/시험쓰기0·읽기오류를제품실패로세지않는다.
+
+### 2026-11-03 FN15 upload 승인 source6 독립 검수·checkpoint 준비
+- 같은Primary는정확6을동결/반환했다. e37e16직접33PASS/1524.4935ms·d56011rootnoEmit0·Owner인접2e6513 1PASS, edf5ee원함수4역차분/COMMIT1/checksum/diff0이다. live0·실제자원0다. 기존FN11인접28d0e4 2P1F/NOTIFICATION_STORAGE_FAILED는알림capacity/authSession대역누락으로분리·원FAIL보존/재실행·시험수정0이다.
+- Main01a601은최종직접2파일을독립실행해33PASS/FAIL0/SKIP0/1845.0796ms/exit0을확인했다. 23faa7최종6지문일치·SQL181052B/CR0·0072/0074불변·보호3불변/diff0다. Main지적nullstatus·알림현재성Important는보완/역차분을읽어Addressed(source)이며검토한범위추가미해결C/I없음이다. 실제PG/권한/served·사용자인수는미검증이다.
+- 결과 docs/04_test_reports/AV3/FN15_UPLOAD_APPROVAL_SOURCE_RESULT_20261103.md SHA5400EFBC747408E157578E214F5E8C128F77B9184695B753F9D29ADCE3D4F6BB. 같은branch정확6+Main WI/현황/결과3=9경로만checkpoint로보존한다. 실제DB/권한/키/서비스/Agent/OS/실자료0·PR/merge/배포0·전체계획미완료다.
+- 다음은기존r7 U4중linkDocumentSource/proposeDocumentSourceChange의원등록/observation권위·전용DBfacade와실제원command 목적context의누락접점을읽기분리한다. 원source/provider부재를완화하지않고실행불가와source연결을구분한다. native/타사용자HE정책미채택·READY/QUARANTINED불일치등기존잔여보존이다.
