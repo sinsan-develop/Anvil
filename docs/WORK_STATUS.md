@@ -14341,3 +14341,15 @@ Main8c4568은최종후보11151B/SHA F67ED5A955B88A02F75C61A0A43A1E1CAF2194833EEF
 
 ### 2026-11-04 J1 정확 새 단1회 직접 결정 요청
 c2c866 d535a90efcf7b53b40ef9dabea0fcafaa43ebaa6 local/privateexact·trackedclean/보호3을확인한뒤후보F67ED5A955B88A02F75C61A0A43A1E1CAF2194833EEFD1EE3DD51A935D8988F8/code792314b3005793b7a0c2cc1a1528fc9c42d64fec/SQL a3a12bd3의새J1 QA1회직접결정질문을비동기로1회전달했다. PMO에는최근직접제외실제효과중새QA한정예외라는차이와정확범위를공유했다. 답변은아직없고선택기본값/질문접수를승인으로보지않는다. 승인clock발급/WSL신규source/npm/PG/network/artifact/합성인증·권한/실제SQL/Agent생성실행0이다. 기존DB권한키서비스/P03R3·R9소진재사용0/원실패UNKNOWN감사/전체계획미완료유지. 새답변도착시정확packet/code/private·새자원부재/Node/npm/image/daemon을재대조하고승인된단1회새clock범위만진행한다. 반복승인질문/이미통과한불변검사재실행0이다.
+
+
+### 2026-11-04 J1 새 단1회 직접 승인·생성 전 등록
+신산님call_ada5644124f14515a6b595baaa51bc15의새J1 QA1회승인수신. Main최초관측issued2026-11-04T05:00:20.000Z/전체절대기한05:30:20.000Z(KST14:00:20~14:30:20)·PG생성부터10분·원시험90초·slot1/재실행0이다. abd02c HEADcc25b477·trackedclean/보호3·packetF67ED5A955B88A02F75C61A0A43A1E1CAF2194833EEFD1EE3DD51A935D8988F8를대조했다. 실행code792314b3005793b7a0c2cc1a1528fc9c42d64fec/SQL a3a12bd3 고정. source /home/daon/anvil-ix01-journey-20261104-j1-qa, PG anvil-ix01-journey-pg-20261104-j1-a1, network anvil-ix01-journey-net-20261104-j1-a1, DB anvil_v3_ix01_20261104_j1_a1, artifact /tmp/anvil-v3-ix01-journey-20261104-j1/artifacts, receipt /home/daon/.local/share/anvil-v3-qa-receipts/ix01-journey-20261104-j1/owner.json/slot-a1.intent.json/slot-a1.result.json/cleanup.json·docker-config/npm-cache/npm-user.conf/npm-global.conf 등록. 소유Main/daon1000·ownerIX01_JOURNEY_20261104_J1·새0700/0600·고정cachedimage/daemon/Node/npm만사용·hostpublish0·기존환경변경0. 정상확정뒤정확QA만회수/감사보존, UNKNOWN뒤추가조회mutation자동삭제재실행0/기한뒤남을수있음. 아직생성전이며부재·부모실경로/link/소유·환경신원·privatecode를확인한뒤단1회만진행한다.
+
+
+### 2026-11-04 J1 실제 단1회 OWNER/UNKNOWN·보존
+6dda65 생성전부재/부모실경로UID·daemon/image/Node·기존privateURL동일,569164/86729→75494b05:03:12.003Z Gitexact792314b3/clean/0700 준비확정.6c78b7 parent15/8row raw계획1788B/hash8ede4bb7ca4665575de9755908b3bafb63f9a3a30c45cad70d0435eabf110752를고정했다.54f0af 실제단1회exit1·05:04:37.058Z 부모정착·UNKNOWN/NOT_CONFIRMED/codeOWNER/stageCREATE/container372ceb0edf1a5c09bea21b5c20195fc35317ba9d2e2145eeaf4f3fc507f983d8/networkIdnull/completed0/roleEvidence빈값/childDiagnosticnull이다. 소유/격리검산거절로SQL설치/실여정도달증거없음·기존DB권한키서비스Agent/P03R3변경0이다. 승인소진·결과뒤WSL/QA추가조회mutation정지삭제재실행0을지켰으며모든J1자원은미확인상태로보존한다. 원격owner/intent/result는조회하지않았고캡처stdout공개결과/parent와승인계획만로컬에보존했다. 실행자원잔여0/PG정지/전체기능PASS를주장하지않는다. Main df15c5는로컬R9 owned와신규inspectContainer의Mounts개수강제차이/기존Runningtrue fixture만있음을확인했으나직접원인미확정·기존Primary에공식근거를포함한읽기전용기술조사만배정했다. 다음은정확이번QA만의metadata검산/정상정리새결정이며UNKNOWN후속조회허가전실환경동작0·전체계획미완료유지.
+
+
+### 2026-11-04 J1 UNKNOWN 확인·정리 후보와 독립 source 보완
+공개캡처기반 실제결과서와정확현재QA만의새metadata/정리후보4384B/SHA A700B2AF729C58627EAD47F1521E3A1D22C5B2029C1DD5DD824F228FEDB49F75를작성했다. 후속실행은아직미승인/조회0이다. Primary공식source읽기상--tmpfs의Tmpfs map과topMounts분리표현이강한원인후보지만현재daemon/실패inspect미확인으로직접원인확정0을유지한다. 독립로컬보완WI E8F38BF87531062C6CC69D3592F50706DD76B42E8E0947AF6CEB686B6A323A72로같은기존Primary에parser/unit2만배정할예정이며Tmpfs정확3/모든존재entry안전검산·외부mount입력거절·원보안/시간/UNKNOWN효과0을유지한다. 기존전체/승인범위를확장하거나현재QA를다시시험하지않는다.
