@@ -14268,3 +14268,11 @@ Main2ed711 actualslot1 exit1/plan226c2276/fullIDb5257d11·0074_project_membershi
 
 ### 2026-11-04 0074 회원 완결식 source3 독립 검수
 Primarya27d83 RED1→68ea7d 직접schema/input/memberships16PASS/skip0/596.4837ms·760f23 noEmit0/99bad8 SQL한문자·서비스checksumliteral외역치환부모동일/기존시험보존·오류0/writer반환/live0. Main67ac96 fresh16PASS/skip0/539.768ms/diff0·e44800 부모Git기준독립SQL1B/서버literal1개외byte변경0·기존시험prefix동일/hash확인. SQLE3DBD7FA/33601B·서비스2A2ACB15/17651B·시험4D3E3194/7221B scopedC0/I0/M0. 원현재성/권한/EXISTS/hash/ACL/정확checksum검사불변·실DB/서비스/회원정책/schema_migrations적용0·전체PG/RLS/API/UI NOT_RUN. 상세 docs/04_test_reports/AV3/IX01_MEMBERSHIP_COMPLETION_PARENTHESES_SOURCE_RESULT_20261104.md . 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R8재사용0·원실패UNKNOWN/감사/전체계획미완료보존.
+
+
+### 2026-11-04 R9 새 SQL 기준 source 준비 배정
+0074한문자/서버checksum보완SQL기준a3a12bd3e4fbf430d997c8d1c764c4de30b27ffb local/privateexact. Main WI36efae2812e2d21739f88cb28a69bf8e58a41282fda9c2e90ccfc79e7dd5a3ba로같은Primary에driver/test/newR9index3경로만namespace/SQLbaseline·직전R8cwd/baseline음성/header·0074hashbytes변경을배정. 명시105/order09d불변/새총2376141B·provider/Tx/role/권한/기한/UNKNOWN불변·부모raw역치환을검수. Main동시코드쓰기0·실제DB권한키서비스Agent/WSL/P03R3·새QA실행/시각발급0/소진R8재사용0·원실패UNKNOWN감사/전체계획미완료보존.
+
+
+### 2026-11-04 R9 source3 SQL 기준·namespace 검수
+Primary200c70 직접3PASS/skip0/163.9382ms·4af119 Bash-n0/81b4e2 index/선택/공백0·오류0/writer반환/live0. Main826ac6 driverB7B73051/시험314C7ADB namespace·SQLbaseline/직전R8음성외부모raw동일·새index4C186B4C는header/0074hashbytes만변경/106Gitblob동일·명시105/2376141B/order09d독립검산0. aadd42 변경음성1PASS/skip0/136.7425ms/diff0. 기존동일로직56/noEmit/환경50/native44/회원16재사용·중복전수0. 실제DB권한키서비스Agent/WSL/P03R3·새R9QA실행/시각발급0/소진R8재사용0·원실패UNKNOWN감사/전체계획미완료보존. 다음정확code/instance32·생산SQL10·신규전용자원/기한/UNKNOWN/정리를실행후보에동결하고새직접결정전실행금지.
