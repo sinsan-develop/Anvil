@@ -583,3 +583,17 @@ Primary가 누적 소유 28경로의 쓰기·시험을 정착시키고 pending/l
 신산님이 call_5bce820e2f5c4d7499a408630d3165cf item0에서 A안 재조회 계약·source-only 구현을 승인했다. Main c1549d는 원 후보 45BA40D3BB98D3C88F4CB852F3A02325BF9C00F430E0924EBEDF80F95426C279를 확인하고 별도 FN06_NATIVE_CONSUME_REPLAY_SOURCE_ADOPTION_20261105.md에 채택 기록과 정확 13경로를 보존했다. 원 후보 파일은 변경하지 않았다.
 
 이 delta는 SOURCE_GO다. 기존 Primary에게 현재 C# 단위의 안정 지점 뒤 순차 TDD 구현을 맡겼다. 원 STREAM 상태의 JSON 재조회와 CLOSE의 정확 CLOSED 결과를 원 proof/signature·실제 효과·현재 auth/세대·원 최소기한·실제 closure로 검산해야 한다. 통로/비밀 재전달·자동 slot/ARM/실행·적법 replay 쓰기는 0이다. ACK 입력 delta와 실제 DB·권한·키·서비스·Agent·컴파일은 이 승인에 포함되지 않는다.
+
+## 61. 최초 저장과 재조회의 구현 순서
+
+읽기 조사에서 STREAM 점유와 native CLOSE의 최초 저장 연결도 미완료임을 확인했다. 같은 승인 13경로에서 STREAM 최초 점유·원 상태 저장, native CLOSE의 실제 TERMINAL·CLOSED 저장, 원결과 재조회, client의 binary/JSON 분리 순으로 구현하도록 기존 Primary에게 전달했다. 기존 HUMAN close를 대체하거나 가짜 command·receipt·head로 성공 처리하지 않는다. 통로 대기 중 DB Tx를 유지하지 않고 미준비 frame을 만들지 않는다. Binding/Delivery 후행이 없으면 전체 수신은 부분 구현으로 남긴다. 새 계약이나 실제 실행 권한은 추가하지 않았다.
+
+## 62. C# 전용 분기의 정적 source 검수
+
+기존 Primary가 SIGN_NATIVE_FIRST_RECEIVE_PROOF 전용 dispatch와 ValidateFirstReceiveFrame, SignFirstReceiveOwned 및 기존 C# 시험 파일의 반례를 작성했다. 실제 peer/root와 REGISTERED 행·보호 keyId·helper hash·원 current·strict 원형·최소기한을 대조하고 raw canonical ReceiveProof를 원 보호키로 서명하는 source다. 기존 generic Run과 native preparation SIGN 목적은 늘리지 않았다. 바깥 10초 budget을 좁히고 proof hash를 서명 전에 단발 소진하며 byte 정리와 원 Root 복원을 보존한다.
+
+독립 읽기 검수는 C0/I0다. Main cda025/877d08도 실제 새 분기·원문 서명·기한·정리 본문을 읽었다. product SHA256은 110FE561BE44457D863D11F10C3C0306AB7A2E85D223F0498E9893AAF4A593D2, 시험 source는 2C4519B33F680EB3B78C12E1E42F262B30C94783A3181DBC69A4EAA5C78F343E이며 독립 검토 전후 같다. dispatch 본문은 17F4CC120AA1A03A9C8C2E683F1CBA8D47F3BF0D1BED465C36B3EE8CC9878E8F, strict validator는 D15E23DAFB2E0AD56C4180A0AF6DF8EE71CD033DACB98D7CB77214AA5F5685C0, 보호 서명 함수는 3C03F932959A3D60EE6F3B35BD9EF6125A85EDE5D8578B4D151BA33E350B9FFE다.
+
+판정은 구현했지만 동작 미확인이다. C# 컴파일·시험·RunAsync/helper·CNG/DPAPI·실제 키는 모두 NOT_RUN이며 정의 존재의 정적 검사와 주입 시험 source를 실제 서명 성공으로 세지 않는다. Node 소비 경계의 암호학적 검산은 앞서 확인했지만 실제 helper의 결과 증거는 아니다. 새 owner 실제 호출선·TLS/slot도 미완료다.
+
+Primary는 승인된 STREAM 최초 생산선과 CLOSE·원결과 재조회 구현으로 전환했다. 같은 단일 writer이며 Main은 정적 검수와 통합을 맡는다.
