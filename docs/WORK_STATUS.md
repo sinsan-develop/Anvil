@@ -14300,3 +14300,24 @@ R9정의설치증거7 cd0d13b3 local/private보존/기능인수아님. 기존Pri
 
 ### 2026-11-04 IX01 접속·app 재생성 source3 독립 검수
 Primary014e0f 모듈부재RED→516d1d 신규5PASS/skip0/106.35ms·101e56 noEmit0/7f5d2e역치환부모동일/guard음성replay불변·56ceb8 integration기본0PASS1SKIP NOT_RUN·오류0/writer반환/live0. Main988277 helper/unit/실소비diff읽기/fresh5PASS116.7739ms/diff0,977f32 영속문서값/목록observedAt구분확인·scopedC0/I0/M0. integration87B70EEB/35006B·helper90D4107F/694B·unit276753C9/4862B. app→pool종료정착/fresh뒤같은메모리auth설정/원token/ref재조회·물리행/원문/명령불변·소유instance캡처/closepromise1회·부분생성보존을검수. 실제PG/재접속/프로세스화면restart/IX01인수NOT_RUN. Mainc81b14후속준비읽기경로추측부재1은49217 rg로0000환경의schema_migrations생성확인·파일/환경변경0. 상세 docs/04_test_reports/AV3/IX01_APP_POOL_RECONNECT_SOURCE_RESULT_20261104.md . 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R9재사용0·제품API계약불변/원실패UNKNOWN감사/전체계획미완료보존.
+
+### 2026-11-04 IX01 실제 여정 준비기 source 배정
+Main c111a2는 HEAD c26751409eac3a3b4800e472f59ec5e5d5a624d3·tracked clean/보호 untracked3을 재확인했다. R9 단1회는 이미 소진됐으며105 정의 설치/잔여0·감사를 보존하고 재실행하지 않는다. 기존 Primary의 읽기 전용 제안에 따라 WI 5557F4FB02FE334C79DCBBD041B0358EC34681E3397F137CF9E131102D983415로 신규 준비기·합성 controller 시험·명시105 index의3경로만 배정했다. 현재 source-only이며 J1 후보 자원은 생성0·실제 승인/시각 발급0이다. 기본/plan/import effect0, 원문SQL 성공 뒤만 ledger, 불명 공백/자식 실패 뒤 조회·mutation·삭제0, 기존90초/10분·전체30분·원 역할/0037 atomic/회수와 보호 인증·네트워크 조건을 고정했다. Main 동시 코드쓰기0·실제 DB권한키서비스Agent/WSL/P03R3 실행0. 대표 actual 시험의 전체3방법론/브라우저/OS재시작 미충족은 유지하며 전체 계획 미완료다. 읽기 재개 도구 출력 초과는 범위를 좁혀 대조했고 파일/환경 변경과 구분했다.
+
+### 2026-11-04 IX01 준비기 초기 source 검토
+Primary 신규 준비기 부재 RED19302e/0PASS1FAIL을 먼저 확인했고 신규3파일을 구현 중이다. 실제 포트 미완성이므로 GREEN/준비 완료로 판정하지 않았다. Main43be2c는 childPlan.sourceFiles의 확장자 필터가 root package.json/lock을 포함해 기존 child 계약의 prefix 검사를 위반하는 Important1을 확인, 동일 Primary에 parent 검산 유지·child strict prefix 변환과 음성 시험을 보정 지시했다. 별도 PG10분 절대기한과 whole30분·child90초의 각 await 전후 검산도 명확히 전달했다. Main 동시 코드쓰기0·기존 실제 시험/SQL/driver 변경0이다. 57e8dc 보호3/기존 driver/실시험 지문 불변,471b07 lockfilev3 SHA ca586e2dd02c11c41da55a64aa4f07d3848936fe44dca1897f8586ac4fb0f1d6·원격146 전부 registry.npmjs.org/integrity존재·installScript1·root npmrc부재를 읽기 확인했으며 실제 npm 실행은0이다. 계획서에 R9 정의 설치와 원 IX01 합격 조건/후속을 연결하는 사실 기록만 추가했다. 기존 자원·실제DB권한키서비스Agent/P03R3·새QA 실행0, 전체계획 미완료 유지.
+
+### 2026-11-04 IX01 준비기 추가 검토와 공개 도구 metadata
+Main은 controller의 claim 정착 전 intent 기록 실패가 REJECTED로 오인될 수 있는 경계를 발견해 동일 Primary에 시도/정착 분리·INTENT_UNKNOWN·후속 효과0 시험을 지시했다. 아직 실제 포트 작성 중이므로 완료/GREEN 판정0이다. Main94d5f3 2026-11-04T03:40:54.769Z는 별도 읽기 전용으로 WSL 기존 공개 npm 실행기 metadata만 확인했다. npm-cli.js root:root0755/54B/SHA8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7, npm/package.json root:root0644/6597B/SHAf6478d5600180a23f73e4217610c7709a71cedb4ae13f6c3e15ecb457f5d4fd6/version11.19.1. entrypoint 지문은 npm 전체 closure 증명이 아니며 기존 사용자 자료·Secret은 읽지 않았다. npm 실행/설치·새 자원·DB/권한/키/서비스/Agent/P03R3 변경0, R9 소진 재사용0이다. 새 actual 승인/시각 발급은 하지 않았다. 실제 기능/IX01/계획은 미완료다.
+
+### 2026-11-04 IX01 준비기 실제 포트와105 목록 독립 검토
+Primary f3210e는 focused14PASS/skip0/503.4555ms를 제출했으나 최종검수 전으로 구분했다. 앞8cc8f5의8PASS1FAIL은 정상 TAP fixture의 ok1 누락 준비 오류이며 엄격 parser 기준은 유지했다. Main6914e5/c01a53/12a3d1은 실제 legacy role 검산의 systemHash 덮어쓰기, artifact 부모 디렉터리 잔류, SQL 개별 정착 영수증 누락을 확인해 같은 Primary에 보존/정리·비밀 없는105 순차 영수증 보강을 지시했다. 완료 판정0·Main 동시 코드쓰기0이다.
+Main af360a Windows working raw 비교 실패→8a8434 0041 CRLF304 확인→33cb5d 일괄 CRLF 가정이 혼합줄바꿈0050에 맞지 않음→a59c0c Git raw105 원문·R9 row 대조 완료를 분리 기록한다. 목록105/uniqueID105/2376141B/order09d2e7d5cd8715a0ff02540d4397db2d4cb8dcf818d808ce328423d7583f24ef·SHA0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd, Windows7파일은 줄바꿈 차이뿐/내용차이0이다. 비교 준비 오류2는 제품 실패가 아니며 파일 normalization/수정0이다. 실제 실행 source는 Git exact/raw hash를 그대로 검사한다. 기존 시험/SQL/driver 불변·새 실제 QA/시각/DB권한키서비스Agent/P03R3 실행0·전체 계획 미완료 유지.
+
+
+### 2026-11-04 IX01 준비기 독립20검사와 접속 준비 보완
+Primary 신규3 source 제출: script29901650/39934B·unitD78EDF35/18991B·manifest0DA3C855/15807B,54071f20PASS/skip0/209.7887ms·55b5f0 noEmit0/4985a9 Bash-n0·오류2는TAP fixture와networkId 타입 준비오류로분리. Mainfec5fd fresh20PASS/skip0/251.2347ms·실제포트/role mapper·순차영수증·부모정리·npm고정/기한·UNKNOWN 소스읽기를수행했다. 추가Important1: 원R9의finalServer뒤pg_isready가새포트에서누락되어PID1정착직후최초SQL접속경합이가능함을확인,같은Primary에게정확새PG/소켓/DB/bootstrap의bounded readiness반례TDD를지시했다. SQL재시도/실환경실행0·Main코드쓰기0·최종인수보류다. accbe5 Main문서추가구간CRLF공백오류는b89c05에서해당suffix만수정·기존prefix raw불변/diff0으로교정했다. WI줄바꿈의비의미수정도최종hash에반영한다. 원실패UNKNOWN감사/실제IX01미검증·전체계획미완료유지.
+
+
+### 2026-11-04 IX01 준비기 source3 최종 독립 검수
+Primary readiness의 실제포트행동 RED1/신규부재RED2→d1864123PASS/skip0/425.4535ms·389c99Bash-n0/원23외범위불변·writer반환/live0. Main899158 fresh23PASS/skip0/489.9279ms·최종readiness소비/기한/SQL재시도0·diff0을확인했다. 최종script15C90B77/40563B·unitE602C014/22277B·index0DA3C855/15807B. scopedC0/I0/M0 source한정이며실제npm/Docker/DB권한인증/DML/RLS/API/화면/재접속NOT_RUN이다. 자세한변경/오류/검증/한계/rollback은 IX01_ACTUAL_JOURNEY_PREPARER_SOURCE_RESULT_20261104.md에기록했다. 기존R9/실시험/SQL/보호3불변·실제DB권한키서비스Agent/P03R3변경0·원실패UNKNOWN감사/전체계획미완료유지. 다음은정확commit·새J1실행안동결후별도단1회결정이며R9소진승인은재사용하지않는다.

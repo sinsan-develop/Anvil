@@ -1940,3 +1940,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - 2026-11-04 동일JSON추출/차집합결합source2·3표현보완: [결과](04_test_reports/AV3/IX01_PENDING_JSON_PROJECTION_PRECEDENCE_SOURCE_RESULT_20261104.md) SHA3BB5C05AD7682145DE93646603B75C7F28EADF5E90EB8CD6CF4615D9C766B966, Main29PASS/역치환동일. 실제SQL/PG·권한RLS/native·IX01/계획완료는미검증/미완료이며정밀검증이월로기능누락을숨기지않는다.
 
 - 2026-11-04 IX01 r2 source 준비: [결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R2_SOURCE_RESULT_20261104.md) SHA9B829F9C77AFAD52496A95260B5057C110C9C90D2B2860BE08B24242B4D990BD. Main39PASS/type·Bash구문0·수정SQL106 지문/3파일8B 대조이며 실제 정의설치/JSON연산·RLS/문서여정·IX01/계획 완료가 아니다. 원실패·소진승인·정리/감사보존과 새실행 결정 경계를 유지한다.
+
+### 2026-11-04 IX01 R9 정의 설치와 후속 실제 여정 준비
+- [R9 실제 결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R9_SLOT1_RESULT_20261104.md): 고정 a7527b79/SQLa3a12bd3의105개 원문 정의 설치를 확인했고 전용 실행 자원은 별도 조회에서 잔여0이다. 단1회 승인은 소진됐다. 과거 실패·UNKNOWN은 보존하며 전체 기능 통과로 소급하지 않는다.
+- [접속/app 재생성 source 결과](04_test_reports/AV3/IX01_APP_POOL_RECONNECT_SOURCE_RESULT_20261104.md): 원 토큰/자료를 유지한 app·Pool 종료/새 연결·재조회 소비선을 준비했다. 집중5검사와 타입 검사는 통과했으나 실제 PG 재접속·화면/프로세스 재시작은 NOT_RUN이다.
+- 다음은 [전용 준비기 source WI](work_packages/IX01_ACTUAL_JOURNEY_PREPARER_SOURCE_IMPLEMENTATION_20261104.md)의 실제 원장·합성 인증·격리 네트워크·기존 여정 연결을 코드/합성 시험으로 준비한다. 실제 실행은 별도 정확 범위이며 현재 생성/실행0이다. IX01의 내장 종류별/3경로·화면/서비스 재시작·조기 보안 검수와 원 합격 기준은 유지한다. IX01·Stage B·전체 계획은 미완료다.
