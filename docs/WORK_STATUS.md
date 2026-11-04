@@ -9,11 +9,11 @@
 
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
-| FN06 부분 인수 | HUMAN Window/Offer/Close·보호 profile GET, 순수 frame parser, OPEN challenge, 서명 snapshot/원 Tx owner·consume, native OPEN endpoint/path/origin 및 signing-current를 source 범위로 한정 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 정확 증거는 docs/work_packages/FN06_IMPLEMENTATION_CONTROL_20261104.md의 최신 검수 절과 아래 일자별 이력에 있다 |
-| FN06 진행 중 | receive-only Session current와 STREAM/ARM/STATE/CLOSE challenge의 service/HTTP 연결, 원 desktop Session.fetch/current에서 typed key-host로 이어지는 source를 기존 Primary가 구현한다. 공개 TEST_ONLY 대역만 사용하며 실제 설치키/파일/helper는 실행하지 않는다 |
-| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase·desktop/slot source 접합은 미완료다. ACK challenge의 실제 bodyHash 입력은 미채택 delta 후보로 분리했고 다른 구현은 계속한다. 실제 PG/Pool/TLS/slot 실행 검증도 별도 미완료다 |
+| FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
+| FN06 진행 중 | ARM 실제 admission→기존 receiveOfferCurrent→원 Tx 소비, 후행 N상태/효과와 원 desktop Session→preauthority SIGN/key-host→pinned HTTPS/slot을 기존 Primary가 구현한다. STATE는 pre-native prefix만 인수했고 BOUND/ATTEMPTED 연결·stored replay는 남아 있다. 실제환경은 실행하지 않는다 |
+| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. ACK bodyHash 입력과 STREAM/CLOSE 소비 replay의 응답·terminal 현재성은 각각 미채택 후보/GO0이며 다른 구현은 계속한다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 현재 작업 branch codex/av3-stage-b의 로컬 소스 WIP checkpoint는79476dfa7f54509ab1c8facc732c8fa300cbf448이다. 15a634에서 정확 소유26경로·원문 전후 동일·index0을 확인했다. 부분 검수/미해결 상태를 복구 보존한 것이며 전체 인수본이 아니다. 제품 변경은 계속 작성 중이다. private ref는 최근 원격 장애 이후 현재 동일성을 재검증하지 못했고 인증 복구/재시도는 하지 않는다 |
+| Git 보존 | 작업 branch는 codex/av3-stage-b다. 전체 source 복구 WIP79476dfa 위에 문서c4be38aa와 검수된 adapter부분13192b8d를 로컬 보존했다. 그 뒤 phase/오류 wire 등 제품 변경은 작성 중이며 실제 인수 prefix는 파일hash로 기록한다. private 현재 동일성은 원격 장애 후 미확인이고 인증 복구/재시도·PR/병합은 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15011,3 +15011,38 @@ Main 시험명 조회2533b4는 foreach 뒤 파이프의 PowerShell 구문 오류
 - 기존 Primary의 typed 검산 공유 보완은 독립 C0/I0·이전 기한/입력 I1 ADDRESSED, Main fresh HUMAN2·owner4·메모리 build11이 각각 exit0/skip0다. 직접7 원문은 전후 동일이고 즉시 동결을 해제했다. 정확 명령·hash는 구현 통제 §46에 기록했다.
 - source 한정 부분 인수다. 실제 shell→owner·preauthority 서명/키-host·pinned HTTPS/slot과 네 phase 후행 proof/효과는 여전히 미완료이며 같은 담당자가 계속 구현한다. 실제 DB·권한·키·서비스·Agent 실행0, ACK 입력 변경만 답변 전 GO0이다.
 - Main 문서6개는 로컬 c4be38aafffef17d0d4e3eb488a89b3fabf5e2cb로 보존했다. 전체 완료·private 게시·실환경 인수가 아니며 원격 재시도는 하지 않았다.
+## 2026-11-05 FN06 부분 인수 checkpoint 후속 기록
+
+- 2cd4cb에서 검수된 adapter source3경로와 기존 기록2문서만 로컬13192b8d97ae0ae710eef65e5077006be75aa580로 보존했다. 부모c4be38aa·정확5경로·원문 전후 동일·index0이다. 즉시3경로 동결을 해제했으며 네 phase 작성·원격·실제 환경은 건드리지 않았다. 전체FN06 인수본이 아니다.
+- Main1dc224의 읽기 중 literal 경로 docs/work_packages/FN06*.md를 rg에 전달해 OS error123을 받았다. 그 조회의 개별 exit는 미수거이고 통합명령 마지막 exit0을 조회 성공으로 사용하지 않는다. 같은 조회 재실행·권한/환경 변경0이며 해당 결과는 근거에서 제외한다. 후속 경로는 실제 목록 또는 rg의 --glob 필터로만 확인한다.
+- STATE 관련 압축 전달 문장은 'nonce/ticket 단발 소비와 proof/replay·정산 필수, 비밀 재반환0·native/승인 효과0'으로 명확히 정정했다. nonce 미소비로 바꾸지 않았으며 담당자는 부모 의미대로 계속 구현한다. 구현 중 import 누락 준비 오류1은 제품 UNKNOWN과 분리해 후행 checkpoint에서 검수한다.
+## 2026-11-05 FN06 후행 proof 목적 reader 검수
+
+- 기존 A는 새 native_receive_phase_verification 본문6554B/D942D329…를 한정 C0/I0·전후 동일로 검수했다. 실제 Session current의 auth 선잠금·원 ticket/challenge·target/body·원 SPKI·STATE occurrence·최종 current/Tx 대조를 확인하고 즉시 본문 고정을 해제했다.
+- 제출 static1 PASS는 SQL형상 증거이며 Main은 이를 반복하지 않았다. 같은 Tx 후행 소비/효과·ARM admission·service/HTTP는 기존 Primary가 계속 작성 중이다. 실제 PG·권한·키·서비스·Agent 실행0, 전체 FN06 미완료다. 상세 §47을 따른다.
+## 2026-11-05 FN06 native replay 미정·기존 오류 wire 보완
+
+- STREAM 소비 재조회 응답과 CLOSE terminal 후 현재성/원결과 원형의 미정만 별도 후보로 분리했다. 원 stored result 반환 기능을 삭제하는 우회로 완료하지 않는다. 첫사용 네 phase·명시된 ARM/STATE replay는 기존 Primary가 계속 구현한다. ACK와 이 미정 경계만 채택 전 GO0이다.
+- Main b468ca/111e43는 신규 scope 오류응답이 부모의 exact {code,requestId,outcome}·고정 오류표와 일치하지 않는 것을 확인했다. 기존 승인 범위 안에서 동일 담당자가 DTO·원문 비반사·REJECTED/UNKNOWN 구분을 후행 HTTP와 함께 보완한다. 과거 오류 검사 PASS를 전체 wire 인수로 쓰지 않는다.
+- ACK 미채택 WI의 legacy 오류 이름은 Main의 부모 대조 누락으로 기록했다. 기존 hash는 보존하며 ACK 입력1개 결정 범위를 확대하지 않고, 이미 채택된 부모 오류 계약을 구현 기준으로 적용한다. 실제 DB·권한·키·서비스·Agent 실행0이다. 상세 §48을 따른다.
+## 2026-11-05 FN06 replay 한정 결정 요청·오류 wire 검수
+
+- replay 후보45BA40D3의 STREAM JSON 원결과와 CLOSE terminal현재성 상세를 독립 검토·보정한 뒤 신산님께 비동기 채택 요청하고 PMO에 전달했다. 기존13경로 source-only이며 채택 전 GO0, ACK 입력 후보와도 별개다. 최초 처리·명시된 ARM/STATE/generic owner·desktop 등 나머지 구현은 계속한다.
+- 기존 승인 오류 wire 보완에는 Proxy 예외 catch·기존 profile 만료 반례의2키 expect가 남아 Main이 source를 확인하고 같은 Primary에게 재작업을 지시했다. 잘못된 선택 pattern의 이전 PASS로 누락 반례를 숨기지 않는다. 상세 §49를 따른다.
+- 읽기 검토 B는 같은 혼합 문자 출력3회로 추가 배정을 중단하고 Main이 전달/검사를 인수했다. 코드 writer는 그대로1명이다. 실제 DB·권한·키·서비스·Agent 실행0, 전체 계획 미완료다.
+## 2026-11-05 FN06 오류 wire 직접4 검수·분류 보완
+
+- Main57f3ce는 실제 profile 만료 시험을 포함한 오류wire4개를 fresh PASS/skip0/1336.3877ms/exit0로 확인했고3원문 전후 동일·즉시 고정을 해제했다. Primary noEmit 원handle38844도exit0으로 수거됐다.
+- 독립 검수에서 Proxy가 prototype에 있는 예외의 분류 경계 I1이 남았다. Main은 세 지점의 instanceof 원인을 확인해 반사 안전 분류 helper를 공유하는 최소안을 확정하고 같은 Primary에게 보완을 맡겼다. 알려진 거절/고정 UNKNOWN·기존native/권한은 보존하며 전체 인수는 아직 하지 않는다. 실제환경 실행0, 상세 §50을 따른다.
+## 2026-11-05 FN06 오류 wire 부분 인수·다음 미완료 연결
+
+- 공유 예외 분류와 부모 오류 DTO는 독립 C0/I0·I1 ADDRESSED 및 Mainc36ee9 distinct6 PASS/skip0/1884.2079ms/exit0로 한정 인수했다. 직접3 원문 전후 동일·즉시 모든 동결 해제, 상세 §51이다.
+- 다음은 STATE service/HTTP와 ARM·후행 효과 및 desktop 원세션→키-host source 연결이다. 미완성 STATE RED2·실제 PG/RLS/TLS·키/서비스/Agent 검증은 미완료로 남기며, ACK 입력·STREAM/CLOSE replay 상세만 답변 전 GO0이다. 전체계획 완료로 승격하지 않는다.
+## 2026-11-05 FN06 STATE pre-native source 연결 부분 인수
+
+- 실제 미적용 STATE producer·Store·원 Tx/서명/단발lease·service/HTTP prefix는 독립 C0/I0와 Main fresh16/각exit0/skip0·9원문 전후 동일로 한정 인수했다. SQL형상3은 실제 PG/권한 실행 증거가 아니다. 즉시9파일과 본문 고정을 해제했다. 정확 명령·hash는 구현 통제 §52다.
+- 다음은 같은 Primary의 ARM 실제 admission→기존 current→원Tx 소비, 이후 N상태/후행·desktop 연결이다. ARM/STATE replay·BOUND/ATTEMPTED·미채택 STREAM/CLOSE/ACK 및 실제환경은 미완료다. 전체STATE/FN06/계획 완료를 선언하지 않는다.
+## 2026-11-05 FN06 ARM admission/current source 선행 인수
+
+- 실제 원 Tx lease·목적SD actor/Offer·기존 receiveOfferCurrent 재사용은 독립 C0/I0와 Main0b039c4 PASS/skip0/955.7355ms/exit0·2원문 전후 동일로 한정 인수했다. 즉시 전체2파일/본문 고정을 해제했다. 승인을 소비하거나 ARM을 저장한 결과가 아니며 상세 §53을 따른다.
+- 같은 Primary는 실제 ARM effect producer와 Store/service/HTTP 접합을 계속한다. 실제 PG·권한·키·서비스·Agent 실행0, ARM 전체·N/desktop·미채택 분기 및 전체계획은 미완료다.

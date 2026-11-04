@@ -452,3 +452,65 @@ Main은 각 Node exit를 별도 수거했다. 정확 명령/결과:
 인수는 원 Session.fetch HUMAN current·안전 입력/최종 기한·desktop 내부 adapter·메모리 runtime 조립 source에 한정한다. shell→owner·preauthority SIGN/key-host·pinned HTTPS/slot·네 phase 후행 효과는 아직 미완료다. 실제 파일 package/C# 컴파일·DB/RLS/TLS·서비스·키·Agent 실행은 NOT_RUN이다. 이미 인수한 부분의 무변경 반복 검사는 하지 않고 같은 Primary가 남은 실제 호출선을 구현한다. ACK 입력 변경은 답변 전 GO0이다.
 
 문서 전용 로컬 checkpoint c4be38aafffef17d0d4e3eb488a89b3fabf5e2cb는 WIP79476dfa의 직접 자식이며 Main 문서6경로만 포함/index0이다. 제품 작성과 원격은 변경하지 않았다.
+## 47. 네 phase proof 목적 current reader 선행 검수
+
+native_receive_phase_verification(uuid,text,jsonb,jsonb)의 동결 본문6554B/SHA256 D942D329FA3D18A977854BBEB3FC3C77E5A3BEBFE2479AA27A5F9013C7F9299A를 기존 A가 읽기 검수했고 한정 C0/I0·전후 동일이다. auth-before-product를 보완한 실제 session current → 잠근 head/ticket·SESSION/Window/저장 challenge fullref/hash/requestId/nonce → phase별 실제 target/bodyHash·STATE 저장 occurrence → 원 등록 SPKI → 최종 current exact/기한·실제 txid 반환을 확인했다. 공개 wire/원 SID 공개를 추가하지 않는다. 검수 직후 해당 함수 본문 고정을 해제했다.
+
+Primary의 node --test --test-name-pattern='네 phase proof 목적 current는' tests/unit/FN06/native-first-receive-schema.test.ts 의 부재RED1 → static1 PASS/skip0/640.7265ms/exit0는 제출 증거다. Main이 이 불변 검사를 반복하지 않았으며 실제 PG/권한/전체 phase의 증거로 사용하지 않는다. 후행 같은 Tx 소비/효과·ARM admission·service/HTTP는 계속 작성 중이다. 전체 파일은 다른 함수 작성으로 바뀔 수 있으므로 이 함수 본문 지문만 인수한다.
+## 48. native 소비 replay의 미정 경계와 기존 오류 DTO 보완
+
+B는 부모 계상의 같은 requestId/canonical 소비 replay 원칙을 challenge 발급 replay와 분리해 확인했다. STREAM은 frame/credential/opaque 재전달0이지만 native 재조회 HTTP 형식/status와 저장 resultRef 매핑이 미정이다. CLOSE도 native 소비 결과 원형·terminal 뒤 현재성 대체 조건이 완전히 정해져 있지 않다. 기존 HUMAN close의 {terminal,state}/ProjectResult와 HUMAN 고정 역사 GET을 native 계약으로 자동 이식하지 않는다. 원 stored result/audit ref 반환 요구를 삭제하거나 HUMAN GET 전용으로 축소해 완료로 표시하지 않는다.
+
+Primary의 STREAM409 후보와 CLOSE의 원 SESSION/digest/SID·auth 선잠금·현재 정책/등록/profile/writer/부모기한·원 proof/signature/terminal closure 검산 후보는 아직 미채택이며 구현하지 않았다. 이 두 경계만 분리하고 첫사용 네 phase·명시된 ARM/STATE replay 구현은 계속한다. 새 원문/서명·nonce/효과/기한 연장0, 실제 환경 실행0을 유지한다. 기존 저장 CONSUME_REPLAY의 resultCanonical/resultRef/auditRef 등으로 비밀 없는 원결과를 담을 수 있으나 미생산 응답을 replay 시점에 만들지 않는다. Main은 exact 후보를 준비해 필요한 공개/인증 변경점만 결정 요청한다.
+
+별도 관측은 기존 승인 wire 오류 DTO의 구현 누락이다. Main b468ca/111e43가 부모 wire §12와 신규 scope handler12를 대조했다. 부모 exact {code,requestId,outcome} 중 outcome이 현재 누락되고 requestId는 항상null이다. 일부 공개 code/status도 legacy 이름/400 과대파싱 처리로 남아 있다. 같은 Primary에게 후행 HTTP 묶음에서 부모 표와 일치시키는 TDD 보완을 지시했다. 모르는 예외·SQL/COMMIT/네트워크 불명은 NATIVE_RECEIVE_OUTCOME_UNKNOWN503/UNKNOWN, 효과 전이 증명된 거절만 REJECTED다. 검산된 requestId만 반영하며 commandId나 임의 원문을 requestId로 전용하지 않는다. 기존 native endpoint DTO는 변경하지 않는다. 기존 부분 인수를 오류 wire 전체 인수로 확대하지 않는다.
+
+미채택 ACK 후보/WI의 오류표는 당시 코드 allowlist를 토대로 작성해 INPUT_INVALID 등 legacy 이름이 들어간 Main의 대조 누락이었다. 고정 원문과 현재 비동기 결정 요청 hash4E2690F4는 이력으로 보존한다. 그 결정의 변경점은 ACK전용 ackBodyHash와 exact9/8뿐이며, 오류 계약을 부모와 다르게 바꾸도록 요청한 것이 아니다. 구현 지시는 이미 채택된 부모 wire §12가 우선한다. ACK 필드의 채택 전 GO0은 유지하고, 부모 준수 보완을 새 공개 계약 변경으로 재승인 요청하지 않는다.
+## 49. replay exact 후보 고정·오류 wire 재작업
+
+docs/contracts/FN06_NATIVE_CONSUME_REPLAY_COMPLETION_CANDIDATE_20261105.md를 미채택으로 작성했다. 최종 SHA45BA40D3BB98D3C88F4CB852F3A02325BF9C00F430E0924EBEDF80F95426C279, 기존57 중13경로이며 제품 쓰기 GO0이다. STREAM은 원 ReceiveState를 기존 STATE/null/resultCanonical에 저장·200 JSON metadata로만 재조회하고 최초 binary/frame 재전달0이다. native CLOSE 최초/적법 replay는 원 CLOSED ReceiveState다. 현재 인증/세대·원 등록/profile/writer·모든 부모최소기한/해당 원native10초·동일proof/signature·역완결·유한감사를 보존한다. CLOSE terminal read만 lifecycle을 정확 CLOSED closure로 대체한다. 별도 새 StreamRef/행/상한/wrapper/IPC를 만들지 않는다.
+
+최초 후보의 STREAM 첫사용 상태를 replay에도 적용할 수 있는 I1은 원 소비·점유 효과/stored result closure와 명시한 비terminal후속 상태 검사로 보정했다. B 재검수 C5F2FBB…에서 ADDRESSED/C0I0, A는 같은 보완의 보안 영향없음 및 최종45BA40D3의 원10초/UNKNOWN 제한 명확화 C0I0·전후 동일을 확인했다. 신산님께 이 새 응답/terminal현재성만 비동기 결정 요청하고 PMO에 exact 범위를 전달했다. ACK delta와 각각 별도 미채택이며 첫사용·ARM/STATE/generic owner·기존 오류 wire와 desktop 독립 구현은 계속한다.
+
+기존 승인 오류 wire 제출은 B의 한정 C0/I1 두 건으로 보완 중이다. Main95a712는 sessionChallenge catch의 Proxy 예외를 reflection 전에 거르지 않는 것을 확인했다. Main496456은 실제 '보호 profile GET은 원 정책·actual session·SD reader를 소비하고 지연 만료나 REQUIRE_APPROVAL이면 본문0이다' 안의 profile-only 구형2키 expect를 literal로 찾았다. 앞선 행 번호83은 작성 중 이동으로 잘못된 참조였고 실제71로 정정했다. 통합 출력의 표 자동서식 때문에 함께 조회한 hash가 출력되지 않아 그 조회를 hash 검산 증거로 사용하지 않는다. 제출 pattern의 'profile 최종 만료'는 실제 해당 시험을 선택하지 못했다. 동일 담당자가 Proxy trap0/고정 UNKNOWN과 부모3키 REJECTED를 보완하며 원412·기한·본문0 단언을 유지한다. 기존 제출4 PASS를 이 누락 반례까지 통과한 것으로 표시하지 않는다.
+
+B의 혼합 문자 출력이 정정 요청 후에도 같은 원인으로3회 반복돼 추가 조사 지시를 중단했다. 기술 지적2건은 Main이 source를 직접 확인했고 이후 전달문·언어 검사는 Main이 인수한다. B는 쓰기/실행 작업이 없으며 source writer는 기존 Primary 한 명으로 유지된다. 이 출력 오류를 제품 실패나 정식 Developer FAILURE_REPORT 횟수로 혼동하지 않는다.
+## 50. 오류 wire fresh4와 예외 분류의 공통 원인 보완
+
+Main57f3ce는 node --test --test-name-pattern='receive scope 오류는|receive 오류 requestId는|receive 오류는 효과 전 Pool|보호 profile GET은 원 정책·actual session·SD reader를 소비하고 지연 만료나 REQUIRE_APPROVAL이면 본문0이다' tests/unit/FN06/native-first-receive-routes.test.ts 를 실행해4 PASS/skip0/1336.3877ms/exit0을 확인했다. serviceACD259C6F395C6BF932882B9D3D22AECAA69BB88D33BD43AECC0CEE704093E47, routes2C8F2B472983599256CC59BCEC2A93390F73E1978C33A20BBBFD64E9648CCB13, 시험21B82F83BEAB70C6ACAD6E6F84CF122140E80BB4200BF17E2B908BA4F755ED95의 raw 전후 동일이며 결과 직후3파일 전체 고정을 해제했다. 실제 profile 전체 시험이 이번에는 선택됐다. Primary는 원 noEmit session38844를 재실행 없이 수거해exit0·pending0을 확인했다.
+
+A는 direct Proxy 보완은 ADDRESSED이나 일반 객체의 prototype에 Proxy가 있는 경우의 I1을 추가 확인했다. types.isProxy(error)만으로 chain의 Proxy는 막지 못하며 preEffect helper/catch/handler의 instanceof가 trap을 실행할 수 있다. Main4fbf3d도 세 지점의 같은 원인을 읽어 확인했다. direct4 PASS를 이 추가 경계까지 인수한 것으로 표시하지 않는다.
+
+Main이 원인을 재검토해 예외 분류를 service의 단일 반사 안전 helper로 공유하는 내부안을 확정했다. 각 prototype 노드에서 Proxy 여부를 먼저 확인한 뒤 getPrototypeOf로 진행하고, 체인 전체 확인 뒤 AuthFailure 동일성 및 own-data 필드만 분류한다. unknown/Proxy/getter/불명 chain은 고정 UNKNOWN이며 알려진 정상 AuthFailure와 안전한 실제 SQL42501 명확401은 유지한다. 공용Auth/기존native DTO·HTTP/IPC·runtime8 export는 바꾸지 않는다. 같은 Primary가 direct/1단계·중첩 prototype/owngetter와 정상 거절을 함께 RED→GREEN 검증하며 다른 phase 구현은 계속한다. Root는 코드 쓰기 없이 원인·범위·검수 방법을 직접 처리했다.
+## 51. 기존 오류 wire source 한정 인수
+
+A는 공유 예외 classifier·preEffect/helper/catch/handler의 최종 보완을 C0/I0, prototype Proxy I1 ADDRESSED로 확인했다. 각 prototype 노드의 Proxy를 reflection 전에 거절하고 전체 체인 확인 뒤 own-data만 분류한다. unknown은 새 고정 오류로 바꾸며 정상 Auth403/SQL42501 AUTH401·효과 전 marker·고정3키 DTO를 보존한다. classifier4782D3785069BE3E2446F8D72691BCBCECD4E8D9B47B95987B638E7B716D81E6와 관련 본문 전후 지문은 같다.
+
+Mainc36ee9의 정확 명령은 node --test --test-name-pattern='receive scope 오류는|receive 오류 requestId는|receive 오류는 효과 전 Pool|receive 예외 분류는|preEffect와 실제 등록 error handler도|보호 profile GET은 원 정책·actual session·SD reader를 소비하고 지연 만료나 REQUIRE_APPROVAL이면 본문0이다' tests/unit/FN06/native-first-receive-routes.test.ts 이다. 6 PASS/skip0/1884.2079ms/exit0, service6D59C5AE203FE377B04843E1BC11400A8E8162ECBA70879F711F195D46A6CE2B·routes16138D7CE44CDCF5B207ADC4CE8D436EFDF7488B282DDFD13C21D190A0C619CE·시험82EF643B94D222A775ADE3220B0BEBED06A77DA24DF7C680DE39C5CE827A094C의 raw 전후 동일이다. 결과 직후 전체3파일과 오류 본문 고정을 모두 해제했다. Primary의 선행5 PASS와 추가2의 중복을 더해7로 세지 않고 Main은 distinct6개만 수거했다. rootnoEmit0/7.5784초는 제출 시점 증거다.
+
+미구현 STATE service/HTTP의 RED2는 분모에서 PASS로 숨기지 않는다. 후행 phase·실제 PG/RLS/TLS·키/서비스/Agent는 미완료/NOT_RUN이다. 이미 승인된 새scope 오류 wire의 source만 한정 인수했으며 기존 native scope는 변경하지 않았다. ac685a 읽기 앞의 혼합 문자1은 중첩 실행 전 전달 검사에서 차단돼 shell/파일 실행0이었고 한국어로 고쳐 실제 이름 조회만 수행했다. 제품 오류·시험 실패로 세지 않는다.
+## 52. pre-native STATE의 실제 source 연결 부분 인수
+
+기존 A는 원 Tx owner/verify/단발 lease/Store.consumeState·실제 STATE SD·service/HTTP의 OPENED/STREAMING/OFFERED/ARMED prefix를 한정 C0/I0로 확인했다. await 전 검산 입력 복사, 원 txid의 서명 전후·lease 소비 전/SQL 대조, alias/재사용 차단, COMMIT await 뒤 query 교체·유실의 UNKNOWN 및 추가SQL/ROLLBACK/재시도0을 확인했다. 실제0076에는 proof/replay INSERT2·STATE occurrence1/2 CONSUMED CAS·역완결·정산·최종 current/txid/기한 producer가 있다. SELECT 문자열이나 fake 응답만으로 저장 source를 판정하지 않았다.
+
+동결 핵심 본문은 A 전후 동일이다. owner6B26F380F3599F0B43D1AB474E888F69AC3037D5BA4A64B7A46C888261CCD68C(5937B), verify73E15E0307AAAF5E117CBA0940AAB918358BAC1826F688862B73E1B991937369(2913B), consumeProofF23F6DF1F325E1762654226BEA19AE4BACCE7980BDCA415CA6ED4DBF6EC37EE4(462B), Store.consumeState1B349AE5ACC2DCAAC4B44230ADE99B6FE11B2BFB74F9985F04543020EC4C5693(1970B), serviceB3A19369B054C09DA6485E053F053F8BD75AB4BFEE498B78FF51CA7967A63E4A(2570B), SQLconsume80B5B37CA7D21FAD3912CB39E69E650F31C73BCEE826DEE573EB97F2013898C2(6937B)다. 메서드는 async부터 닫는 중괄호, SQL은 CREATE부터 END;$$;까지 trimEnd 기준이다.
+
+Main의 정확 명령/각 exit0:
+- node --test --test-name-pattern='보호 profile GET은 원 정책·actual session·SD reader를 소비하고 지연 만료나 REQUIRE_APPROVAL이면 본문0이다|receive scope 오류는|receive 오류 requestId는|receive 오류는 효과 전 Pool|receive 예외 분류는 direct|preEffect와 실제 등록 error handler도|네 phase 실제 proof owner는|phase owner는 COMMIT await의|STATE service는 실제 서명|STATE 전용 HTTP는|STATE HTTP는 percent' tests/unit/FN06/native-first-receive-routes.test.ts : ecae06/11 PASS/skip0/1935.723ms.
+- node --test --test-name-pattern='STATE Store는 실제 서명 lease' tests/unit/FN06/native-first-receive-store.test.ts : ae0155/1 PASS/skip0/873.5777ms.
+- node --test --test-name-pattern='네 phase proof 목적 current는|ARM admission 목적 reader는|STATE 실제 소비 SQL는|네 phase 실행 body는' tests/unit/FN06/native-first-receive-schema.test.ts tests/unit/FN06/native-first-receive-contract.test.ts : 643e05/4 PASS/skip0/796.6603ms.
+
+bb78ec→79c9fa에서 input/store/service/routes/0076 및 contract/store/schema/routes시험9 raw 전후 동일이다. 총16 중 SQL형상3은 실제 DML/PG 검증이 아니다. Primary의 rootnoEmit0/6.9818초·diff0는 제출 당시 증거이며 큰 불변 HUMAN17은 재실행하지 않았다. 분류 본문4782D378…를 기존 허용 Input에 이동해 Store의 Service 역import 없이 재사용했고 실제 Node 호출선으로 확인했다. AST hash 준비의 ScriptTarget 미노출 오류1과 최초 개별exit 미수거는 지문/타입 결과와 분리한다. 이후 고정 선언 경계의 원문 지문으로 수거했다.
+
+결과 직후9파일 전체와 모든 검수 본문 고정을 해제하고 같은 Primary가 ARM admission→기존 receiveOfferCurrent→같은 원 Tx 소비 연결을 이어가도록 했다. ARM SD 관측만으로 ARM 전체를 인수하지 않는다. ARM·STATE stored replay, STATE BOUND/ATTEMPTED의 원 N current, N 선예약/후행 효과, desktop/key-host 및 미채택 STREAM/CLOSE/ACK는 남아 있다. 실제 PG/RLS·권한·키·서비스·Agent 실행은 NOT_RUN이다. source prefix 인수를 전체STATE/FN06/계획 완료로 승격하지 않는다.
+
+Primary의 중국어 상태 전달1은 외부 전달/근거에서 제외했고 뒤의 한국어9파일 전체 고정 확인을 근거로 실행했다. 이전 정정 이력과 같은 언어 원인2회로 기록하며 모든 전달·산출물 문장의 한국어 사전 확인을 지시했다. source 코드의 정상 부분을 언어 정리 명목으로 바꾸지 않으며, 아직 정식 Developer FAILURE_REPORT와 혼동하지 않는다.
+## 53. ARM admission·기존 current 재사용 선행 source 인수
+
+기존 A는 실제 목적SD의 원 SID/HUMAN·고정 Offer 관측, 검증 ARM lease, 원 Tx의 비공개 borrowed SELECT 포트가 실제 ProjectNativePreparations.prototype.receiveOfferCurrent를 소비하는 연결을 한정 C0/I0로 확인했다. 기존 effect-only query 범위는 넓히지 않았다. 포트 수명·pending 정착·query/txid 재대조·종료 뒤 재사용0·호출 전후 actor/Offer 일치·최근 재인증 최소기한·writer/정책/승인/current/Window를 보존한다. N용 profile과 receive profile은 다른 목적이다. 이 관측 단계는 ARM 저장·승인 소비·authority 발급이 아니다.
+
+전후 본문은 readArmAdmission3A09C73FED387231A739505EDADFB91EBD2EF230541F868ACF45FDD2544E9A3D, checkArmCurrentBF02C3DFDCAA978355CAC1DBC00824B0AA471CAEEE93B5EA9FC01BEEA5674FC8, context.armCurrentC496FCF941D5F34A68EE574D2C4B402D9DC1A2C7E4C388CC09636A450237379C, context.admitArm3CAC664B6BEB1C22D20D0756132B01F6F427C5A293DE5E358C0AF545EEFE4801, SQLadmissionC89E476864335362C7F7938C8754AA04BA54B90CDD2CB44C1F48C79C1862756B로 동일하다.
+
+Main0b039c의 node --test --test-name-pattern='ARM admission은 검증된 원 Tx lease|네 phase 실제 proof owner는|phase owner는 COMMIT await의|Offer current는 기존 native source' tests/unit/FN06/native-first-receive-routes.test.ts 는4 PASS/skip0/955.7355ms/exit0이다. Store1CFED4156907E48D7B4357A63D8EF510008812C03A15448EF0F7EA3B73280505와 시험32EFD73B04AA3D731BAE619002496EBB51A89F05E5C04FD3B6165BFFE32CB5EE는 전후 동일했다. 결과 직후2파일 전체와 검수 본문 고정을 모두 해제했다. Primary의4 PASS/1321.9123ms·noEmit0/7.4671초는 별도 제출 증거이며 초기 누락 RED와 Offer 외피 보정 오류1을 보존한다.
+
+다음은 실제 ARM producer→원 Tx 소비·service/HTTP 연결이다. 실제 PG·권한/승인 소비는 NOT_RUN/미완료이고, 선행 source 인수를 전체ARM/FN06 완료로 승격하지 않는다. 같은 Primary가 계속하며 미채택 ACK/STREAM-CLOSE replay·N/desktop 미완료와 실제환경 제외를 유지한다.
