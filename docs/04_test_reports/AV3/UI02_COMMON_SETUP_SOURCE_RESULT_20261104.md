@@ -43,3 +43,7 @@ JS canonical의 Unicode key/숫자 표기와 이전 fn01_json 재직렬화 불�
 
 
 A staging 검산: Main378579의 엄격 raw 동일 검사는 신규 TS 시험2의 기존 Git CRLF→LF 필터 때문에 중단됐다. e3b1ad에서 그 두 파일은 오직 해당 줄바꿈 차이임을 확인했고 working/설정/과거 fixture를 수정하지 않았다. Git blob은 commands 시험15146B/d15822a0f4b872f85d9c091f1c33bf50cdc0413774adc3f34b9cc44d72bea6cb, schema 시험2317B/27b910a04dc04094fae326cc3981254810aad251cce71c32954ec1bf4789e1c2다. 다른 A13 source는 working/staged 완전 일치이며 고정0075 원바이트/hash도 동일하다. 이 비의미 필터 차이를 원 runtime 테스트 실패나 과거 원형 hash 변경으로 쓰지 않는다.
+
+
+### 2026-11-04 Main 입력·codec 한정 독립 검증
+Main da952f: `node --test tests/unit/FN01/common-setup-input.test.ts` exit0, 6PASS/skip0/560.8819ms. 실행 전후 runtime SHA256 `06361D84820AC70D791C4A0C14509D878E13192309BCA3564534E2836F59D83E` 동일. 원형 auto/JSON 보존·권위/추가키/getter/중복·2MiB초과 거절·outer/ref/민감입력·생략/null·NUL/key/literal/marker/Unicode/작은숫자·lexical token경계를 Node 생산함수에서 확인했다. 이는 pending SQL projection/실제 PG·원자 생성·사본 보호 GET·C 화면 통과가 아니며 해당 구간은 계속 미완료/검수 전이다.
