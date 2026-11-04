@@ -547,3 +547,39 @@ Main 0a242f는 다음 시험을 실행했다.
 BOUND/ATTEMPTED 성공 소비의 검수에는 실제 Binding/BOUND와 Delivery/ATTEMPTED 생산자 연결이 먼저 필요하다. 그 전의 current 검사와 불일치 거절은 부분 구현으로만 기록한다. 이 선행을 기존 Primary에게 전달했으며 진행 중인 등록 owner 연결은 계속한다. 읽기 조사만으로 새 코드나 실제 DB를 실행하지 않았다.
 
 Main의 이번 재개 점검 중 잘못된 skill 경로 읽기 1건과 sandbox Git status의 work tree 오류를 실제 파일·승인 실행 문맥의 읽기로 구분했다. 이후 조회 명령의 혼합 문자도 실행 전 검사에서 차단됐다. 해당 명령은 파일·환경을 변경하지 않았고, 재발 방지를 위해 경로 조회 명령은 ASCII 문자만 사용하는 방식으로 더 좁혔다.
+
+## 57. 등록 Node 서명 operation의 검수와 보완 지시
+
+기존 Primary가 createTrustOperation의 signFirstReceiveProof와 직접 시험을 제출했다. 원 REGISTERED 행·보호 keyId·등록/connector/fingerprint를 대조하고 응답의 원 공개키·requestHash·P256/P1363 서명을 재검산한다. 서명 전 proof hash를 단발 소진해 불명 응답 뒤 재호출을 막는다. 실제 owner 메소드와 C# dispatch는 아직 미구현이다.
+
+Main 230567의 node --test --test-name-pattern='REGISTERED 실제 operation은 새 OPEN|새 OPEN typed operation의|native 실제 REGISTERED→Client' tests/desktop/desktop-trust-registration.test.cjs 는 3 PASS/skip0/1044.321ms/exit0이다. owner ECA87D000D0DDAD2B09772FF3FD9F8F3B1F46AA7BADAAC5398CB7F2672258D1C, 시험 846740AE4ED96BA7EB77587E5D76148BE09CA123B372A94E85E9CF057601031A의 전후 지문은 같았다.
+
+독립 검수는 C0/I1이다. 내부 proof의 extra 키나 schemaVersion=2, issuedAt/span을 기존 strict parser로 검사하지 않아 child 전송까지 갈 수 있다. 위 3 PASS는 이 누락 반례의 합격이 아니며 해당 부분을 인수하지 않았다. 같은 Primary가 기존 runtime class의 순수 strict 검산과 현재 clock·보호 lease를 연결해 child 전송·효과·단발 소진 전에 거절하도록 보완한다. 기존 module export 8개와 SIGN 경로는 유지한다.
+
+Main 문서 checkpoint fec793a79fa7262f8e34381bebfb62b6bde7c218은 35271e99의 직접 자식이며 문서 2개만 로컬 보존했다. staged 목록 비교식의 괄호 오류로 첫 commit 전 검사가 멈췄으나, 실제 index 두 경로를 읽어 확인하고 비교식만 바로잡아 commit했다. 제품 소스·원격 변경은 없었다. 실제 DB·권한·키·서비스·Agent·helper·컴파일은 계속 NOT_RUN이다.
+
+## 58. Node typed 검산 보정의 부분 인수
+
+독립 재검토는 기존 typed 입력 I1을 ADDRESSED, 보정 범위 C0/I0로 확인했다. 기존 runtime class의 순수 static 접점이 원 Window·Challenge·Proof·body 및 RegistrationCurrent strict reader를 소비한다. 잘못된 입력은 효과·전송·단발 소진 전에 거절하고, 실제 전송 뒤의 descriptor 교체·시각 불명·만료는 UNKNOWN으로 보존한다. 새 module export는 없으며 기존 8개를 유지한다.
+
+Main 89659c의 직접 명령은 node --test --test-name-pattern='REGISTERED 실제 operation은 새 OPEN|새 OPEN typed operation의|OPEN operation은 실제 helper await|native 실제 REGISTERED→Client' tests/desktop/desktop-trust-registration.test.cjs 이며 4 PASS/skip0/974.9579ms/exit0이다. 이어 node --test --test-name-pattern='OPEN pre-authority frame producer는|desktop OPEN frame facade는|실제 Vite 메모리 CJS는 exact14 closure' tests/unit/FN06/native-first-receive-client.test.ts tests/desktop/native-first-receive-owner.test.cjs tests/desktop/native-proof-runtime-build.test.cjs 는 3 PASS/skip0/438.8612ms/exit0이다.
+
+세 제출 파일 지문은 TS client 4DDDD906C0DB1FE0142B645450CE8DD2B675AD1BDA6B8B44C029DA763CEEF34D, owner 16ACA9523FECF7B4333C35C5A2E98DB58D30BF5F888B689AA4AD4266709BAA74, registration 시험 CD1AB39A496FEBB2B72D273FF7EAD94FAE873EBD4AD6CADE8D95AD1A423C1E9B다. 직접 검사 관련 7파일과 독립 검토의 3파일 모두 전후 같았다. prepareOpenProofFrame 본문은 89D6797557070772C03826575442BF2FF01AF47F74D482B62CE80558E3B16AF9, signFirstReceiveProof는 04E9BB0D606CE014AC30F3964F4CB03584DD4968F642FFDE70F6F0B89237341D다.
+
+Primary의 fixture marker 불일치로 쓰기 전 준비가 실패한 뒤 실행된 구형 시험 2 PASS는 새 반례 근거에서 제외했다. 실제 marker 확인과 쓰기 exit 검사 뒤 수거한 최종 결과만 사용한다. noEmit 91e9be exit0은 제출 당시 증거다.
+
+Main 시험 직후 파일 고정을 해제했다. 해당 Node 경계만 source 범위에서 부분 인수하며 실제 owner 호출선·C# dispatch·실제 키/서명/서비스 인수는 아직 미완료다. 기존 Primary가 다음 허용 C# source를 작성하고 Main은 검수·통합을 계속한다.
+
+## 59. 현재 source의 로컬 WIP 보존
+
+Primary가 누적 소유 28경로의 쓰기·시험을 정착시키고 pending/live0을 확인했다. Main 853613은 부모 fec793a79fa7262f8e34381bebfb62b6bde7c218에서 실제 변경 15파일만 commit했다. 새 WIP는 5fb30d6bbb0359043d7771fb8d52bd7aff51bdf5이며 378줄 추가·49줄 삭제다. 소유 28파일 raw와 보호 미추적 3파일 지문은 전후 같고 index는 비었다.
+
+이 commit은 source 복구용 보존이며 전체 FN06 인수나 private 게시가 아니다. Main 소유 문서·미채택 후보·C# 미작성 경로는 포함하지 않았다. Git의 LF/CRLF 경고는 실제 raw 불변 확인과 구분해 기록하며 줄바꿈 설정을 변경하지 않았다. 성공 직후 Primary의 고정을 해제했다.
+
+같은 Primary가 다음 C# 전용 typed dispatch와 실제 owner 호출선을 이어간다. 실제 컴파일·키·DB·권한·서비스·Agent 실행과 private 동일성은 계속 미검증이다.
+
+## 60. STREAM·CLOSE 재조회 A안 직접 채택
+
+신산님이 call_5bce820e2f5c4d7499a408630d3165cf item0에서 A안 재조회 계약·source-only 구현을 승인했다. Main c1549d는 원 후보 45BA40D3BB98D3C88F4CB852F3A02325BF9C00F430E0924EBEDF80F95426C279를 확인하고 별도 FN06_NATIVE_CONSUME_REPLAY_SOURCE_ADOPTION_20261105.md에 채택 기록과 정확 13경로를 보존했다. 원 후보 파일은 변경하지 않았다.
+
+이 delta는 SOURCE_GO다. 기존 Primary에게 현재 C# 단위의 안정 지점 뒤 순차 TDD 구현을 맡겼다. 원 STREAM 상태의 JSON 재조회와 CLOSE의 정확 CLOSED 결과를 원 proof/signature·실제 효과·현재 auth/세대·원 최소기한·실제 closure로 검산해야 한다. 통로/비밀 재전달·자동 slot/ARM/실행·적법 replay 쓰기는 0이다. ACK 입력 delta와 실제 DB·권한·키·서비스·Agent·컴파일은 이 승인에 포함되지 않는다.

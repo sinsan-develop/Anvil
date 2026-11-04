@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | ARM 실제 admission→기존 receiveOfferCurrent→원 Tx 소비, 후행 N상태/효과와 원 desktop Session→preauthority SIGN/key-host→pinned HTTPS/slot을 기존 Primary가 구현한다. STATE는 pre-native prefix만 인수했고 BOUND/ATTEMPTED 연결·stored replay는 남아 있다. 실제환경은 실행하지 않는다 |
-| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. ACK bodyHash 입력과 STREAM/CLOSE 소비 replay의 응답·terminal 현재성은 각각 미채택 후보/GO0이며 다른 구현은 계속한다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
+| FN06 진행 중 | 등록 Node typed 서명 경계는 strict 보정 후 source 부분 인수했다. 같은 Primary가 실제 owner 호출선과 C# 전용 typed dispatch를 연결한다. 후행 Binding/Delivery 생산자와 STATE BOUND/ATTEMPTED·stored replay는 미완료이며 실제 환경은 실행하지 않는다 |
+| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 2026-11-05 직접 source-only 채택돼 기존 담당자가 순차 구현한다. ACK bodyHash 입력은 별도 미채택이다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 작업 branch는 codex/av3-stage-b다. 전체 source 복구 WIP79476dfa 위에 문서c4be38aa와 검수된 adapter부분13192b8d를 로컬 보존했다. 그 뒤 phase/오류 wire 등 제품 변경은 작성 중이며 실제 인수 prefix는 파일hash로 기록한다. private 현재 동일성은 원격 장애 후 미확인이고 인증 복구/재시도·PR/병합은 하지 않는다 |
+| Git 보존 | 작업 branch는 codex/av3-stage-b다. 최신 로컬 source WIP는 5fb30d6b이며 부모 문서 checkpoint는 fec793a7이다. 소유28 raw·보호3 불변과 index0을 확인했다. 작성 중 후속 source는 별도이며 private 동일성·PR/병합은 미확인이다. 인증 복구나 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15059,3 +15059,19 @@ Main 기록문 오류는 실행 전 검사에서 차단됐다. 같은 원인 3�
 ## 2026-11-05 FN06 후행 의존성 확인
 
 STATE BOUND/ATTEMPTED는 실제 Binding과 Delivery 생산자 연결이 선행한다. 기존 N current를 같은 receive Tx에서 재사용하는 내부 작업을 다음 서버 단위로 정하고 기존 Primary에게 전달했다. 현재 등록 owner·typed key-host 구현은 계속한다. 실제 생산자 없이 합성 head만으로 성공 소비를 완료 처리하지 않는다. 자세한 선행과 Main 읽기 명령 오류의 구분은 FN06 구현 통제 문서 §56에 기록했다.
+
+## 2026-11-05 FN06 등록 Node 서명 경계 보완 중
+
+새 operation의 직접 시험 3개는 통과했지만 독립 검수에서 내부 typed 입력 검산 I1이 남았다. 전체 인수하지 않고 같은 Primary에게 strict parser·전송 전 거절 반례 보완을 맡겼다. 실제 owner와 C# dispatch도 아직 미구현이다. Main은 코드 수정 없이 검수·통합을 계속하며 상세 증거와 로컬 문서 checkpoint fec793a7은 구현 통제 문서 §57에 기록했다.
+
+## 2026-11-05 FN06 등록 Node typed 보정 부분 인수
+
+기존 I1은 독립 재검토 C0/I0로 해소됐고 Main 직접·인접 7 PASS/skip0/exit0을 확인했다. 상세 명령·지문은 구현 통제 문서 §58에 보존한다. 이는 Node 경계의 source 부분 인수이며 실제 owner 호출선과 C# 전용 분기, 실제 키·DB·서비스·Agent 검증은 미완료다. 다음 허용 source는 같은 Primary가 계속한다.
+
+## 2026-11-05 FN06 현재 source 로컬 보존
+
+Main 853613은 기존 Primary가 정착시킨 소유 28경로 중 실제 변경 15파일을 WIP 5fb30d6bbb0359043d7771fb8d52bd7aff51bdf5로 보존했다. 부모는 fec793a7이며 소유 28파일과 보호 3파일의 raw 지문은 전후 같다. index0, 원격 변경0이다. 전체 인수와 private 게시를 주장하지 않는다. 기록 직후 writer 고정을 해제했고 같은 담당자가 C# 전용 분기와 실제 owner 호출선을 계속한다.
+
+## 2026-11-05 FN06 STREAM·CLOSE 재조회 A안 직접 승인
+
+신산님의 직접 답변으로 후보 45BA40D3…5426C279의 정확 13경로를 source-only 채택했다. 별도 채택 기록을 저장하고 기존 Primary에게 현재 C# source 안정 지점 뒤 순차 TDD 구현을 배정했다. ACK 입력 후보는 미채택을 유지한다. 실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않으며 재조회 구현은 아직 완료하지 않았다.
