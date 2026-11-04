@@ -597,3 +597,35 @@ Primary가 누적 소유 28경로의 쓰기·시험을 정착시키고 pending/l
 판정은 구현했지만 동작 미확인이다. C# 컴파일·시험·RunAsync/helper·CNG/DPAPI·실제 키는 모두 NOT_RUN이며 정의 존재의 정적 검사와 주입 시험 source를 실제 서명 성공으로 세지 않는다. Node 소비 경계의 암호학적 검산은 앞서 확인했지만 실제 helper의 결과 증거는 아니다. 새 owner 실제 호출선·TLS/slot도 미완료다.
 
 Primary는 승인된 STREAM 최초 생산선과 CLOSE·원결과 재조회 구현으로 전환했다. 같은 단일 writer이며 Main은 정적 검수와 통합을 맡는다.
+
+## 63. C# source 보존과 후속 writer 해제
+
+Main 009643은 C# source2와 현황2를 WIP 21da4ee1b749f2cbe3c8cad53d7502a07a2a4bad로 로컬 보존했다. 부모17e83cf9·정확4파일·65줄 추가/3줄 삭제·raw4 불변·index0이다. 실제 컴파일/키 동작은 NOT_RUN이다. 성공 직후 고정을 해제했고 작성 중 replay13은 포함하지 않았다. 기존 Primary가 실제 STREAM 점유부터 계속한다.
+
+## 64. STREAM 최초 저장 경계 검수와 최종 인계 보완
+
+Primary가 실제 STREAM 점유 SQL/Store와 service/native GET의 첫 연결을 작성했다. 독립 검수는 저장 경계 C0/I0다. 실제 OPENED·미점유 head와 ticket을 잠그고 proof/replay 2행·원 STREAMING State·점유/revision CAS·ticket 소비·예약 정산을 같은 Tx에서 저장한다. deferred 3종은 head·ticket·proof/challenge·저장 원문을 역검산한다. private 소유권은 COMMIT과 release 성공이 모두 정착한 뒤 단발 인계한다.
+
+기한 질문은 실제 생산선과 구분했다. Window는 auth idle/absolute/reauth·profile·등록·Writer·정책의 최소값이며 Session도 원 auth 최소값으로 좁힌다. 현재 SQL의 state 만료는 그 Session 원 만료다. 가짜 짧은 state만으로 실제 인계 만료 결함을 주장하지 않았고 불필요한 변경을 지시하지 않았다.
+
+Main 86e4e9의 정확 명령과 결과:
+- node --test --test-name-pattern='STREAM Store 최초 소비는|STREAM service는 실제 proof|STREAM HTTP는 raw GET|STREAM 최초 HTTP는 원 COMMIT|STATE service는 실제 서명|ARM admission은 검증된 원 Tx lease' tests/unit/FN06/native-first-receive-routes.test.ts : 6 PASS/skip0/2035.4767ms/exit0.
+- node --test --test-name-pattern='STREAM 최초 SQL은' tests/unit/FN06/native-first-receive-schema.test.ts : 1 PASS/skip0/625.6594ms/exit0.
+
+여기서 SQL 형상 1개는 실제 PG 실행이 아니다. binary HTTP 시험도 실제 producer/prototype을 거친 뒤 시험에서 EOF만 주어 200/0bytes를 관측한 것이며 Delivery 전달 성공이 아니다. 검사 전후 6개 raw는 같았다. Store 3D89D4C8FE3EB123B365EFC444D910C6EFCE866A9BBE03FE9D58325D4ADD3FA9, SQL 7644BCCFCD786090979939210D1D1F147157CDBFBA093DA7040996A77128FDF3, service DE0BCD72E099B90C4E770D55D21D8145679A769600126E8AD0DA53B9150B1C84, routes 02AC5F27A179E3F3073621AD663E14AB484594696B38D6F1E35EFA4E71693914, routes 시험 128E1E45559B25B594630B740FEE17D3B6E2A2C40D98E78B685BEB76D8B5D19D, schema 시험 74820897AC3D28A80D3D18FEC77A7EFF1E94DC3CA14AED2B3952C431ACB5B50B다.
+
+별도 service/broker/GET 검수는 C0/I1이다. service의 마지막 단조 시각 검사 뒤 broker가 별도 clock을 읽어 역행을 거절하지 못하고 대기 시간을 늘릴 수 있다. 같은 작업의 단조 guard를 최종 인계까지 유지하는 직접 반례 보완을 같은 Primary에게 지시했다. 7 PASS를 이 누락 반례의 합격으로 올리지 않으며 전체 STREAM은 아직 인수하지 않는다. Main 시험 직후 6파일 고정을 해제했고 검수된 Store/SQL 본문은 보존한다.
+
+Primary의 함수 경계 지문 추출 ValueError는 파일 쓰기 전 준비 오류로 분리했다. Main의 진행 설명에도 한국어가 아닌 문장이 전달돼 즉시 정정하고 PMO에 예외를 보고했다. 사용자 전달문까지 별도 문자 검사를 거쳐 전달하는 방식으로 바꿨다. 이 출력 오류로 제품·환경이 변경되지는 않았다.
+
+실제 DB·권한·키·서비스·Agent·helper·컴파일은 NOT_RUN이다. native CLOSE는 최초 OPENED/STREAMING/OFFERED/ARMED만 허용하고 BOUND 이후를 닫기 성공으로 바꾸지 않는 기존 경계를 유지한다. 같은 Primary가 인계 보정 뒤 CLOSE와 승인된 원결과 재조회를 계속한다.
+
+## 65. STREAM 최종 인계 보정과 부분 인수
+
+기존 clock 역행 I1은 같은 작업의 guarded 시각을 broker 인계까지 소비하는 최소 보완으로 해소했다. 독립 scoped 재검토는 ADDRESSED/C0/I0다. 새 필드·timeout을 추가하지 않았고 Store/SQL 본문은 변경하지 않았다. attachStream 본문 SHA256은 DF0BF8BF1688D3DE26F51CC7C21DD8BEA7C02087D19E3905036711420DC7899B, nativeStream은 79C21F4B282A4592A68CA5ECFF8B78A4270998F18206FA1DF0520E22203BCD62다.
+
+Main 083ab4는 node --test --test-name-pattern='STREAM service는 실제 proof|STREAM HTTP는 raw GET|STREAM 최초 HTTP는 원 COMMIT' tests/unit/FN06/native-first-receive-routes.test.ts 를 실행해 3 PASS/skip0/1034.4082ms/exit0을 확인했다. 관련 6파일 raw는 전후 같았다. 최종 service는 2337741A025C6364BFEC3B887F31869EBE589B4CB10EB0F460B64261C8E1FDF3, routes 시험은 6BE3274060F506F9C49BD3F5B6BDEE740608EB64297EC586544758FAF8D4E9FD다. Store/SQL/routes/schema 시험은 §64의 원 지문 그대로였다.
+
+routes 시험의 마지막에는 아직 함수가 없는 native CLOSE Store RED가 1개 추가돼 있다. 이 신규 미완료 반례는 이번 STREAM 선택 패턴에 포함되지 않았으며 전체 파일이 모두 초록이라고 보고하지 않는다. 이전에 인수한 Store/SQL·ARM/STATE를 불필요하게 재실행하지 않았다. Main 결과 수거 직후 6파일 쓰기·시험 고정을 즉시 해제했다.
+
+판정은 STREAM 최초 점유·원 저장·COMMIT/release 뒤 소유 통로 연결의 source 부분 인수다. 실제 PG/Tx/RLS·실제 TLS·Delivery frame/opaque 전달·owner 실제 호출·slot·사용자 기능 인수와 전체 FN06은 미완료다. EOF 0bytes를 Delivery 전달 성공으로 승격하지 않는다. 기존 Primary가 native CLOSE 최초 저장과 승인된 원결과 재조회를 계속한다.

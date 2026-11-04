@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 등록 Node typed 서명 경계는 strict 보정 후 source 부분 인수했다. 같은 Primary가 실제 owner 호출선과 C# 전용 typed dispatch를 연결한다. 후행 Binding/Delivery 생산자와 STATE BOUND/ATTEMPTED·stored replay는 미완료이며 실제 환경은 실행하지 않는다 |
+| FN06 진행 중 | 등록 Node typed 경계는 source 부분 인수했다. C# 전용 분기는 작성·정적 검수만 마쳤고 동작 미확인이다. 같은 Primary가 STREAM 최초 점유와 native CLOSE 저장·승인된 원결과 replay를 연결한다. 실제 owner 호출선·Binding/Delivery·STATE 후행과 실제 환경은 미완료다 |
 | FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 2026-11-05 직접 source-only 채택돼 기존 담당자가 순차 구현한다. ACK bodyHash 입력은 별도 미채택이다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 작업 branch는 codex/av3-stage-b다. 최신 로컬 source WIP는 5fb30d6b이며 부모 문서 checkpoint는 fec793a7이다. 소유28 raw·보호3 불변과 index0을 확인했다. 작성 중 후속 source는 별도이며 private 동일성·PR/병합은 미확인이다. 인증 복구나 push 재시도는 하지 않는다 |
+| Git 보존 | 작업 branch는 codex/av3-stage-b다. 최신 로컬 source WIP는 21da4ee1이며 부모는 문서 checkpoint17e83cf9, 앞선 Node/server source WIP는5fb30d6b다. C# source2와 Main 문서2의 raw 불변·index0을 확인했다. 작성 중 replay source는 별도이며 private 동일성·PR/병합은 미확인이다. 인증 복구나 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15083,3 +15083,15 @@ STREAM 점유와 native CLOSE 최초 저장부터 같은 승인 13경로에서 �
 ## 2026-11-05 FN06 C# 전용 분기 source 작성
 
 C# 전용 서명 분기와 시험 source를 작성했고 독립 읽기 검수 C0/I0를 확인했다. 상태는 구현했지만 동작 미확인이다. 컴파일·시험·helper·CNG·실제 키는 실행하지 않았다. 상세 지문과 미검증 경계는 구현 통제 §62에 있다. 기존 Primary는 승인된 STREAM 최초 저장과 CLOSE·재조회 연결을 계속한다.
+
+## 2026-11-05 FN06 C# source 보존 checkpoint
+
+Main 009643은 C# source2와 현황2를 로컬 WIP 21da4ee1b749f2cbe3c8cad53d7502a07a2a4bad에 보존했다. 부모17e83cf9, 정확4파일·raw 전후 동일·index0이다. 실제 동작 검증이나 private 게시가 아니며 성공 직후 고정을 해제했다. 같은 Primary의 STREAM 최초 연결 구현은 계속한다.
+
+## 2026-11-05 FN06 STREAM 최초 연결 검수
+
+STREAM의 실제 점유 SQL/Store 저장 경계는 독립 C0/I0다. Main 직접·인접 7 PASS/skip0/exit0과 raw6 불변을 확인했지만 최종 broker 인계의 clock 역행 I1이 남아 전체 STREAM은 인수하지 않았다. 같은 Primary에게 직접 반례 보완을 맡겼고 Main 실행 고정은 즉시 해제했다. 상세 명령·지문·실제 Delivery 미공급과 출력 오류 조치는 구현 통제 §64에 기록했다. 실제 PG·서비스·키·Agent 실행은 하지 않았다.
+
+## 2026-11-05 FN06 STREAM 최초 source 부분 인수
+
+최종 인계 clock I1은 독립 재검토 C0/I0로 해소됐고 Main 083ab4의 변경 직접 3 PASS/skip0/exit0과 raw6 불변을 확인했다. STREAM 최초 점유·저장·COMMIT/release 뒤 통로 연결만 source 부분 인수한다. 신규 native CLOSE Store RED 1개는 미완료로 유지하며 전체 시험 통과를 주장하지 않는다. 실제 PG·TLS·Delivery 전달과 전체 기능은 미확인이고 같은 Primary가 CLOSE·원결과 재조회를 계속한다. 상세는 구현 통제 §65를 따른다.
