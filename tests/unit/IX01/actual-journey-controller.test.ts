@@ -139,3 +139,24 @@ test('J2 새profile7개와 plan은 J1 소유형상을 채택하지 않는다',as
  const {raw,read}=tmpfsProjection();assert.equal(read(raw).isolated,true);
  for(const change of [(v:any)=>v.Name='/anvil-ix01-journey-pg-20261104-j1-a1',(v:any)=>v.Labels['anvil.owner']='IX01_JOURNEY_20261104_J1',(v:any)=>v.Labels['anvil.instance']='1'.repeat(32),(v:any)=>v.Networks={'anvil-ix01-journey-net-20261104-j1-a1':{}}]){const bad=structuredClone(raw);change(bad);assert.throws(()=>read(bad));}
 });
+
+
+function actualLedgerPort(output:string,commands:any[]){
+ const source=body.split('verifyLedger:async(expected,id,ms)=>')[1]!.split(',\n secureHost:')[0]!;
+ const ops={sql(id:string,user:string,sql:string,ms:number){commands.push({id,user,sql,ms});return output;}};
+ const canonical=(v:any):string=>v===null||typeof v!=='object'?JSON.stringify(v):Array.isArray(v)?'['+v.map(canonical).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';
+ return new Function('ops','readJson','canonical','UnknownOutcome','verifyLedgerProjection','return async(expected,id,ms)=>'+source)(ops,JSON.parse,canonical,c.UnknownOutcome,c.verifyLedgerProjection);
+}
+test('최종원장 actual포트는 DB순서와 무관한 정확105집합을 소비한다',async()=>{
+ const expected=c.parseManifest(manifest),values=expected.map((r:any)=>({id:r.id,checksum:r.sha256})).reverse(),raw=JSON.stringify(values),commands:any[]=[];
+ await actualLedgerPort(raw,commands)(expected,cid,123);assert.equal(commands.length,1);assert.equal(commands[0].id,cid);assert.equal(commands[0].user,'anvil_v3_migrator');assert.equal(commands[0].ms,123);assert.equal(commands[0].sql,"SELECT COALESCE(json_agg(json_build_object('id',id,'checksum',checksum) ORDER BY id),'[]'::json)::text FROM anvil.schema_migrations;");assert.equal(JSON.stringify(values),raw);
+});
+test('최종원장 strict공유검산은 누락/추가/중복/hash/shape를 거절한다',()=>{
+ const expected=c.parseManifest(manifest),values=expected.map((r:any)=>({id:r.id,checksum:r.sha256}));assert.equal(c.verifyLedgerProjection(JSON.stringify(values),expected),true);
+ const inputs=[JSON.stringify(values.slice(1)),JSON.stringify([...values,values[0]]),JSON.stringify([values[0],...values.slice(0,-1)]),JSON.stringify(values.map((r:any,i:number)=>i? r:{...r,checksum:'0'.repeat(64)})),JSON.stringify(values.map((r:any,i:number)=>i? r:{...r,extra:true})),JSON.stringify(values.map((r:any,i:number)=>i? r:{...r,id:'UNKNOWN'})),JSON.stringify(values.map((r:any,i:number)=>i? r:{...r,checksum:null})),JSON.stringify(values.map((r:any,i:number)=>i? r:[r.id,r.checksum])),JSON.stringify(values.map((r:any,i:number)=>i? r:null)),'null','{}','[]','[','x'.repeat(65537),JSON.stringify(values).replace('"id":','"id":"duplicate","id":')];
+ for(const raw of inputs)assert.throws(()=>c.verifyLedgerProjection(raw,expected),(e:any)=>e instanceof c.UnknownOutcome&&e.code==='LEDGER_UNKNOWN');
+});
+test('최종원장 actual포트 거절뒤 controller는 감사기록외 효과0이다',async()=>{
+ const expected=c.parseManifest(manifest),values=expected.map((r:any)=>({id:r.id,checksum:r.sha256}));
+ for(const raw of [JSON.stringify(values.slice(1)),JSON.stringify([...values,values[0]]),JSON.stringify([values[0],...values.slice(0,-1)]),JSON.stringify(values.map((r:any,i:number)=>i?r:{...r,checksum:'0'.repeat(64)})),JSON.stringify(values.map((r:any,i:number)=>i?r:{...r,extra:true}))]){const f=fixture(),commands:any[]=[],port=actualLedgerPort(raw,commands);f.ports.verifyLedger=async(rows:any,id:string,ms:number)=>{f.calls.push('actualLedgerVerify');return port(rows,id,ms);};const r=await c.runController(f.plan,f.ports);assert.equal(r.code,'LEDGER_UNKNOWN');assert.equal(r.status,'UNKNOWN');assert.equal(r.stage,'LEDGER_VERIFY');assert.equal(r.completed,105);assert(r.receipts.every((x:any)=>x.sql==='SETTLED'&&x.ledger==='SETTLED'));assert.equal(commands.length,1);assert.deepEqual(f.calls.slice(f.calls.indexOf('actualLedgerVerify')+1),['record']);assert(!f.calls.includes('secureHost'));assert(!f.calls.includes('revoke'));assert(!f.calls.includes('child'));assert(!f.calls.includes('remove'));}
+});
