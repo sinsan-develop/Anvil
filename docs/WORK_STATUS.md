@@ -15123,3 +15123,11 @@ client parser는 독립 C0/I0·Main직접3 PASS와 raw2 불변으로 부분 검�
 ## 2026-11-05 FN06 동일 원문 재서명 충돌 부분 인수
 
 기존 집계 producer의 동일ID/동일proof 재서명 충돌은 독립C0/I0와 Main57042f 직접3 PASS/skip0/exit0·raw6불변으로 부분 인수했다. 다른canonical/새ID 및 admitted첫DENIED는 미완료이고 같은 Primary가 계속한다. 전체거절계약·실제DB검증은 아니며 상세는 구현통제§72에 기록했다.
+
+## 2026-11-05 FN06 다른 원문·새ID 분류 부분 인수
+
+독립C0/I0·Main7f2d91 직접4 PASS/skip0/exit0·raw8불변을 확인했다. source8와 현황2를 로컬 WIPf33c6d21(부모24e592cf)에 보존했고 즉시 writer고정을 해제했다. 전체거절계약은 미완료이며 같은 Primary가 admitted첫DENIED/audit를 기존계약과 대조해 이어간다. 상세명령·지문·읽기오류는 구현통제§73에 기록했다.
+
+## 2026-11-05 FN06 최초 거절 audit 한정 결정 대기
+
+audit의 네 의미값은 PMO가 직접 채택 사항으로 확인해 독립 C0/I0 후보 DC04B47E…85DF1436의 A안을 한 번 비동기로 질문했다. 해당 저장만 미채택 GO0이며 최초 거절 RED/fixture는 보존한다. 기존 Primary는 별도의 승인된 N current 선행을 계속한다. 실제 DB·권한·키·서비스·Agent는 실행하지 않으며 상세는 구현통제§74를 따른다.

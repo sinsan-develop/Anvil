@@ -689,3 +689,27 @@ Main57042f는 node --test --test-name-pattern='consumed owner는 실제 서명|S
 명확한 충돌은 COMMIT/release 정착 뒤 private brand를 단발 수거해야만409이고 SQL/quota/COMMIT/release불명은UNKNOWN이다. 정상replay쓰기0와 원성공불변을 보존했다. consumed conflict 본문은12B0A594557B11C24A4E4959AAF6818978B54A1F2A42EEBDCD88D86559F6B6C2다. 결과 수거 직후6파일 고정을 해제했다.
 
 다른 canonical·새ID 충돌/TICKET_EXHAUSTED·admitted 첫 DENIED 감사는 후속 미완료다. 전체 거절 계약이나 전체 재조회/FN06 완료를 주장하지 않는다. 같은 Primary가 남은 분류를 이어가며 실제DB·권한·키·서비스·Agent는 실행하지 않는다.
+
+## 73. 다른 원문·새 ID 집계 부분 인수와 WIP 보존
+
+기존 독립 검수는 새 consumed admission/분류를 C0/I0로 확인했다. 원저장 proof/body로 strict current를 검산하며 변경 요청에는 집계 목적만 준다. 같은 requestId의 다른 원문은 REQUEST_CONFLICTS/bit4, 다른 requestId는 TICKET_EXHAUSTED/bit8로 구분한다. 원 성공ticket/evidence/replay를 바꾸지 않고 한PK/counterCAS·포화/성장예약·quota정산·COMMIT/release뒤 branded409를 유지한다. 시험 기대값은 원409·requestId·집계1회·정착을 명시한 것이며200으로 완화한 것이 아니다.
+
+Main7f2d91의 node --test --test-name-pattern='consumed owner는 실제 서명|STREAM·CLOSE consumed HTTP는' tests/unit/FN06/native-first-receive-routes.test.ts 는2 PASS/skip0/1145.0198ms/exit0이다. node --test --test-name-pattern='소비 원문 충돌 writer는|충돌 admission은 원 성공 proof' tests/unit/FN06/native-first-receive-schema.test.ts 는2 PASS/skip0/501.3101ms/exit0이며 실제PG아니다. 원8 raw는 전후같았다. Store6BE74F3C56CB1C494E07CE8D4226CC71864AA9ED5406AADC385E500E953A7920, service1CE45CFDF4BB2195BDB80C1281D63883530559C746431519A777AA30CB7F1E79, SQLAC4D5735738F473BB23E4B7653C53982EE13A748FF90F963F62A1D981AA71BB2, routes시험DF628B75CE3A258DFE61C2A66FA7DF2F1AAA23B86AD8884B73C977C5396FFEC8, schemaB81E089E1A53B611A06A539FC41E6D761B977590F0C0BDF56699A51BB533970A다. 나머지 routes/client2는 앞 검수값 불변이다.
+
+Main0635cd는 source8+현황2를 WIP f33c6d2196384f3bea124de4b63753634c6198f7로 보존했다. 부모24e592cf·정확10파일242추가/25삭제·raw10불변·index0이다. 성공 직후8파일 고정을 해제했다. 원격게시/전체FN06인수가 아니다.
+
+Primary의 migration wildcard 경로 읽기 OS123은 마지막 묶음exit0과 분리했다. Main8d652f는 rg --files -g로 실제0000_environment.sql·0001_projects_access.sql·0001_source_declarations.sql를 확인하고 추정 glob 재시도를 금지했다. 동일 제품/시험 실패로 세지 않는다.
+
+다음 admitted 첫 DENIED는 별도 미완료다. 기존 phase 입장과 crypto 명확거절 뒤 원Tx의 evidence/DENIED replay/audit1·ticketREJECTED·quota를 정착시키는 기존계약을 먼저 대조한다. 정상CLOSE orphan guard를 전면완화하지 않고 원REJECTED/DENIED/audit closure만 구분해야 한다. 새audit action/권한/공개의미를 임의로 만들지 않는다. 실제DB·키·서비스·Agent는 실행하지 않았다.
+
+## 74. 최초 거절 audit 의미값의 직접 결정 분리
+
+기존 evidence/DENIED replay·audit1·ticketREJECTED 의무와 별개로 audit actor_ref/target_ref/policy_ref/source_kind의 정확 값이 미정임을 수행자·독립 검수자가 확인했다. 기존 HUMAN challenge 성공이나 typed 최대형을 거절 의미로 자동 전용하지 않았다.
+
+Main이 docs/contracts/FN06_PHASE_DENIAL_AUDIT_SEMANTICS_CANDIDATE_20261105.md를 작성했다. A안은 실제 원 HUMAN 귀속·실제 Challenge fullref·Window 정책·고정 NATIVE_RECEIVE_PHASE_DENIAL이다. invalid 서명의 host 신원 입증을 주장하지 않는다. 기존NULL·scopeDigest·실제auditRowHash·최대1·PHASE_DENIAL예약을 보존하고 새표/행종류/권한을 늘리지 않는다.
+
+초안 SHA305C3380C7FF490A6BE1C7FA5D81609D089ACD172B80C90ECDFFE3BA74D4FC6E의 문구 I1은 거절 자체 TERMINAL0과 이후 정상 HUMAN closeNativeReceiveWindow의 실제 command/receipt/audit·TERMINAL/CLOSED closure 허용을 분리해 보완했다. 최종 후보 SHA는 DC04B47E7A126B015AFF0BA7005D60DE52805E25D63AA11907B6239A85DF1436이며 독립 재검토 C0/I0다. 후보는 미채택/SOURCE_GO0이다.
+
+PMO 최신 답변은 네 의미값이 직접 채택 사항임을 확인했다. 신산님에게 최종 후보의 source-only A안 채택 질문을 한 번 비동기로 보냈다. 답변 전 네 값 저장 구현은 하지 않고 최초 RED/fixture를 보존한다. 실제DB·권한·키·서비스·Agent·컴파일은 제외한다. 다른 승인 작업은 계속한다.
+
+같은 Primary는 기존 허용57 안의 NativePreparationStore 목적 reader와 기존 restore/lifecycle·ProjectNativePreparations freshHost를 원 borrowed Tx로 재사용하는 N current 선행을 TDD로 진행한다. Main50b98d도 제품/시험경로의 허용목록 포함을 확인했다. 실제 Binding/Delivery producer가 없으면 성공 전체가 아닌 current 선행 부분으로만 인수한다. fixture installationId 준비 오류는 제품 guard를 낮추지 않고 기존 config의 고정값을 명시해 정합하도록 했으며 실제 reader 부재 RED와 구분한다.
