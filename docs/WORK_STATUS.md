@@ -14321,3 +14321,11 @@ Primary 신규3 source 제출: script29901650/39934B·unitD78EDF35/18991B·manif
 
 ### 2026-11-04 IX01 준비기 source3 최종 독립 검수
 Primary readiness의 실제포트행동 RED1/신규부재RED2→d1864123PASS/skip0/425.4535ms·389c99Bash-n0/원23외범위불변·writer반환/live0. Main899158 fresh23PASS/skip0/489.9279ms·최종readiness소비/기한/SQL재시도0·diff0을확인했다. 최종script15C90B77/40563B·unitE602C014/22277B·index0DA3C855/15807B. scopedC0/I0/M0 source한정이며실제npm/Docker/DB권한인증/DML/RLS/API/화면/재접속NOT_RUN이다. 자세한변경/오류/검증/한계/rollback은 IX01_ACTUAL_JOURNEY_PREPARER_SOURCE_RESULT_20261104.md에기록했다. 기존R9/실시험/SQL/보호3불변·실제DB권한키서비스Agent/P03R3변경0·원실패UNKNOWN감사/전체계획미완료유지. 다음은정확commit·새J1실행안동결후별도단1회결정이며R9소진승인은재사용하지않는다.
+
+
+### 2026-11-04 IX01 준비기 게시 checkpoint와 후속 진단 보완
+a6ee84 exact7 commit3ef48264ac70f99f668dd0e8dd0d642383905a56·0de41c local/privateexact/trackedclean/보호3만을확인하고PMO에보고했다. 기존Primary에새J1한파일실행후보문서만배정했다. 후보검토중현source가child NONZERO외고정실패위치도버린다는한계를읽기확인했고,추가환경조회없이captured TAP에서정확시험hash범위의line/column및유한공개오류code만남기는좁은보완을Main이판단해같은Primary/script-unit2에배정했다. 기존23검수는그시점source증거이며새source검수는아직미완료다. 원문/비밀/경로출력0·힌트의인과확정0·UNKNOWN뒤조회mutation삭제재실행0·합격/timeout불변. 현재실행후보는초안이며새source기준동결/새직접결정전실행0·실제DB권한키서비스Agent/P03R3변경0·Main동시코드쓰기0·전체계획미완료유지.
+
+
+### 2026-11-04 IX01 안전 진단 r2 독립 검수
+기존Primary98d2e0 RED0P3F→361223 focused27PASS/skip0/607.8108ms·source2동결/writer반환. 마지막병렬noEmit/Bash출력소실은원결과UNKNOWN으로유지하며실행성공으로소급하지않는다. Mainfcaf0f 해당읽기검사process0 확인뒤fresh27PASS/skip0/531.5802ms·diff검토, f756ff 독립noEmit0/9.161932초. b35b5a sandbox GitBash Windows객체생성0xC0000022/exit-1073741502는환경차단이며09216b 동일-n만정상문맥에서exit0확인했다. 최종script207C073F/43795B·unit420DDF0E/27346B·원23prefix/실시험/R9driver/index불변,사전해시bounds와captured TAP의정수line/column·유한code만감사에보존/UNKNOWN뒤후속효과0·scopedC0/I0/M0이다. 실제DB권한키서비스Agent/P03R3/새QA생성0·전체계획미완료. 결과서r2에변경전후/검증/소실/차단/한계를누적했다. 새source commit/private 후그SHA로만J1후보를작성한다.

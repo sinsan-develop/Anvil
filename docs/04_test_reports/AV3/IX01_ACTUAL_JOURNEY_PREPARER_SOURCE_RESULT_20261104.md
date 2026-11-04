@@ -43,3 +43,13 @@
 기존 대표 시험1건이 통과해도 내장 방법론 종류별/3생성경로·화면/서비스 재시작·실 브라우저/전체 IX01의 나머지 조건은 남는다. 목업·합성 PASS를 해당 인수로 승격하지 않는다.
 
 rollback: 실제 실행 전 source-only 신규3 경로를 다음 일반 Git commit에서 되돌릴 수 있다. 기존 SQL/원문/실패·UNKNOWN·감사와 사용자 자료는 수정하지 않는다. 실제 자원 rollback은 아직 실행하지 않은 별도 실행안의 정확 정리/UNKNOWN 보존 절차로만 판단한다.
+
+## 후속 안전 진단 보완 r2
+
+수정 사유: 3ef48264의 child nonzero는 고정 실패 위치까지 모두 버렸으므로 UNKNOWN 뒤 추가조회 금지 상태에서 후속 검수가 막힐 수 있었다. 변경 전 classify 결과만 저장 → 변경 후 같은 classify 합격/실패 기준을 보존하고, preflight에서 원35006B/SHA87B70EEB의 bounds를 고정한 뒤 캡처 TAP에서 {line,column,code} 또는null만 감사에 남긴다. ERR_ASSERTION을 포함한 총14개 명시 코드 집합만 허용하고 임의원문·경로·메시지·SQL/body/token/DSN은 반환하지 않는다. 힌트는 실제 PG원인이나 성공 증명이 아니다. 불명 뒤 파일/DB 재조회·mutation·삭제·재실행0을 유지한다.
+
+- 최종 script43795B SHA207C073F29EEDAB7E4E21D08D50C0A317ED6BE52B1BEFCEE9B402B62F18645D6; unit27346B SHA420DDF0EF780160636609D4DD4645E6E24873D8C469F68AC9B8D162E92D1080D. 원23시험 prefix·고정 actual시험/R9driver/index는 불변이다.
+- Primary98d2e0 RED0PASS3FAIL→361223 GREEN27PASS/skip0/607.8108ms,22deaa raw/hash·범위검산0. 마지막 병렬 noEmit/Bash 출력은 소실되어 원 호출 결과 UNKNOWN으로 보존한다. 후보문서 길이준비 오류2는 쓰기 전 종료/실환경과 분리했다.
+- Mainfcaf0f 해당 읽기 검사 프로세스 수0 확인 후 독립 fresh27PASS/skip0/531.5802ms와 실제 diff 검수. 추가DB/파일조회 없는 사전bounds→공유parser→actual child포트→controller감사 소비선을 확인했다.
+- Mainf756ff 독립 noEmit exit0/9.161932초. b35b5a Git Bash sandbox는 NtCreateDirectoryObject\BaseNamedObjects의0xC0000022로 시작 실패(exit -1073741502), 스크립트 구문/제품 실패로 판정하지 않음.09216b 같은 -n만 정상 사용자 문맥으로 실행해 exit0/1.5303664초 확인. 실제 Bash본문/QA 실행0.
+- 최종 scoped C0/I0/M0·실제 npm/PG/DML/RLS/API/재접속/브라우저 NOT_RUN. r1 검수는 당시 source의 증거로 보존하며 최종 실행안은 새 code SHA로만 동결한다.

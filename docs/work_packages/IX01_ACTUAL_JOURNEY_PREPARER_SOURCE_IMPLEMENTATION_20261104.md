@@ -37,3 +37,7 @@
 - [ ] 정확 diff/hash/명령/exit/오류 횟수/미검증·writer 반환/live0을 Main에 제출한다. 미완성 adapter/TODO/효과 없는 포트를 실제 준비 완료로 보고하지 않는다.
 
 현재 실제 PG/DML/RLS/API 여정·네트워크/합성 인증·브라우저·OS process restart는 NOT_RUN이다. 기존 대표 시험의 methods[0]은 내장3방법론 전체를 증명하지 않으며 IX01/전체 계획 완료로 승격하지 않는다. 실제 실행안·정확 자원·비밀 없는 감사와 새 직접 결정은 source 검수 후 별도로 동결한다.
+
+
+## Main 후속 내부 진단 보완 — 2026-11-04
+3ef48264 source23검수/게시뒤 실제후보 검토에서 child nonzero의 TEST_NONZERO 외 실패지점을 모두 버리는 한계를 확인했다. UNKNOWN 뒤 추가조회금지 조건에서 이미 캡처한 실패 위치까지 소실되면 후속 검수가 막히므로 같은 script/unit2만 좁게 보완한다. 기존 source/실시험/제품/SQL/manifest·실환경은 보존한다. 고정 test hash의 원문 줄/열 상한 안 안전정수와 ERR_ASSERTION·명시 유한 SQLSTATE만 공유 parser→actual child포트→감사에 전달한다. raw path/message/SQL/body/token/DSN은 반환하지 않는다. 중복/모호/잘림/상한 실패는 null이고 힌트는 실제 PG원인/성공증거가 아니다. 현재 UNKNOWN 분류/후속효과0·90초·합격기준은 불변이다. RED→GREEN·기존23보존·actual포트소비·비밀음성·범위검사를 제출한뒤Main이diff/지문을독립검수한다. 실행후보최종SHA는새source게시후별도동결하며R9승인재사용/새실행시각발급0이다.

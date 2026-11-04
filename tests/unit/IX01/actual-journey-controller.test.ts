@@ -84,3 +84,28 @@ test('actual finalServer 포트 자체는 postgres PID1만으로 roles 준비를
  const port=new Function('ops','legacy','observeJourneyReady','return async(id,ms)=>'+source)(ops,legacy,c.observeJourneyReady);
  assert.equal(await port(cid,100),false);assert.equal(commands.length,2);assert(commands[1]!.includes('pg_isready'));assert(!commands.some(x=>x.includes('psql')));
 });
+
+
+const diagnosticSource=await readFile(new URL('../../../tests/integration/IX01/methodology-design-plan-knowledge-source.test.ts',import.meta.url),'utf8');
+function failedTap(code='ERR_ASSERTION',line=173,column=3){return 'TAP version 13\nnot ok 1 - 고정 여정\n  ---\n  error: PRIVATE_BODY_TOKEN_DSN\n  code: '+JSON.stringify(code)+'\n  stack: |-\n    TestContext.<anonymous> (file://'+c.fixed.source+'/'+c.fixed.test+':'+line+':'+column+')\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1\n';}
+test('고정시험 hash bounds와 캡처TAP만으로 안전정수·허용code 힌트를 만든다',()=>{
+ const bounds=c.buildChildSourceBounds(diagnosticSource),tap=failedTap();const hint=c.parseChildDiagnostic({status:1,stdout:tap,stderr:''},bounds);assert.deepEqual(hint,{line:173,column:3,code:'ERR_ASSERTION'});assert(!JSON.stringify(hint).includes('PRIVATE'));assert(!JSON.stringify(hint).includes(c.fixed.test));assert.equal(c.parseChild({status:1,stdout:tap,stderr:''},bounds).code,'TEST_NONZERO');assert.deepEqual(c.parseChild({status:1,stdout:tap,stderr:''},bounds).hint,hint);assert.throws(()=>c.buildChildSourceBounds(diagnosticSource+'\n'));assert.equal(c.parseChildDiagnostic({status:1,stdout:tap},structuredClone(bounds)),null);assert.equal(c.parseChildDiagnostic({status:1,stdout:tap},new Proxy(bounds,{get(){throw Error('GETTER');}})),null);
+ for(const code of ['23505','23503','42501','42601','42883','22P02','40001','40P01','57014'])assert.equal(c.parseChildDiagnostic({status:1,stdout:failedTap(code),stderr:''},bounds).code,code);
+});
+test('TAP의 메시지/경로/code위장·중복·과대위치·잘림·timeout는 힌트null이다',()=>{
+ const bounds=c.buildChildSourceBounds(diagnosticSource),tap=failedTap();
+ for(const stdout of [tap.replace(c.fixed.test,'other.test.ts'),tap.replace('ERR_ASSERTION','ERR_ASSERTION PRIVATE'),tap.replace('  stack: |-\n    TestContext.<anonymous>','  error2: |-\n    TestContext.<anonymous>'),tap.replace('  code: "ERR_ASSERTION"','  code: "ERR_ASSERTION"\n  code: "23505"'),tap.replace('  ...','    TestContext.<anonymous> (file://'+c.fixed.source+'/'+c.fixed.test+':173:3)\n  ...'),failedTap('ERR_ASSERTION',999999,3),failedTap('ERR_ASSERTION',173,999999),failedTap('ERR_ASSERTION',0,1),tap.replace('# duration_ms 1\n',''),tap+'# fail 1\n','x'.repeat(65537)])assert.equal(c.parseChildDiagnostic({status:1,stdout,stderr:''},bounds),null);
+ for(const error of [{status:1,code:'ENOBUFS'},{status:1,code:'ETIMEDOUT'},{status:1,signal:'SIGTERM'},{status:0}])assert.equal(c.parseChildDiagnostic({...error,stdout:tap,stderr:''},bounds),null);
+});
+test('controller UNKNOWN 감사는 안전힌트만 보존하고 반환뒤 추가조회/삭제0이다',async()=>{
+ const bounds=c.buildChildSourceBounds(diagnosticSource),f=fixture(),old=f.ports.preflight;f.ports.preflight=async(...args:any[])=>({...await old(...args),sourceBounds:bounds});f.ports.child=async()=>{f.calls.push('child');return{status:1,stdout:failedTap(),stderr:''};};let recorded:any;f.ports.record=async(value:any)=>{f.calls.push('record');recorded=value;};const r=await c.runController(f.plan,f.ports);assert.equal(r.status,'UNKNOWN');assert.equal(r.code,'TEST_NONZERO');assert.deepEqual(r.audit.childDiagnostic,{line:173,column:3,code:'ERR_ASSERTION'});assert.deepEqual(recorded.audit,r.audit);assert.deepEqual(f.calls.slice(f.calls.indexOf('child')+1),['record']);assert(!JSON.stringify(recorded).includes('PRIVATE_BODY_TOKEN_DSN'));assert(!JSON.stringify(recorded.audit).includes(c.fixed.source));
+});
+
+
+test('actual child 포트·공유parser·controller 감사는 같은 사전bounds와 캡처출력만 소비한다',async()=>{
+ const bounds=c.buildChildSourceBounds(diagnosticSource),f=fixture(),oldPreflight=f.ports.preflight;f.ports.preflight=async(...args:any[])=>({...await oldPreflight(...args),sourceBounds:bounds});
+ const expression=body.split('child:async(child,secrets,ms)=>')[1]!.split(',\n stop:')[0]!;let spawned=0;
+ const spawn=(_file:string,args:string[],options:any)=>{spawned++;f.calls.push('child');assert.deepEqual(args,c.childArgs());assert.equal(options.maxBuffer,65536);assert(!args.some(x=>x.includes('2'.repeat(64))));return{status:1,signal:null,stdout:failedTap('23505'),stderr:'discarded warning'};};
+ const actual=new Function('verify','baseEnv','fixed','hash','spawnSync','childArgs','sourceBounds','parseChildDiagnostic','return async(child,secrets,ms)=>'+expression)(()=>{}, {},c.fixed,sha,spawn,c.childArgs,bounds,c.parseChildDiagnostic);
+ let returned:any;f.ports.child=async(...args:any[])=>{returned=await actual(...args);return returned;};const result=await c.runController(f.plan,f.ports);assert.equal(spawned,1);assert.equal(result.code,'TEST_NONZERO');assert.deepEqual(returned.safeDiagnostic,{line:173,column:3,code:'23505'});assert.deepEqual(result.audit.childDiagnostic,returned.safeDiagnostic);assert.deepEqual(f.calls.slice(f.calls.indexOf('child')+1),['record']);assert(!JSON.stringify(result).includes('PRIVATE_BODY_TOKEN_DSN'));
+});
