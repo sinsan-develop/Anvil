@@ -514,3 +514,36 @@ Primary의 중국어 상태 전달1은 외부 전달/근거에서 제외했고 �
 Main0b039c의 node --test --test-name-pattern='ARM admission은 검증된 원 Tx lease|네 phase 실제 proof owner는|phase owner는 COMMIT await의|Offer current는 기존 native source' tests/unit/FN06/native-first-receive-routes.test.ts 는4 PASS/skip0/955.7355ms/exit0이다. Store1CFED4156907E48D7B4357A63D8EF510008812C03A15448EF0F7EA3B73280505와 시험32EFD73B04AA3D731BAE619002496EBB51A89F05E5C04FD3B6165BFFE32CB5EE는 전후 동일했다. 결과 직후2파일 전체와 검수 본문 고정을 모두 해제했다. Primary의4 PASS/1321.9123ms·noEmit0/7.4671초는 별도 제출 증거이며 초기 누락 RED와 Offer 외피 보정 오류1을 보존한다.
 
 다음은 실제 ARM producer→원 Tx 소비·service/HTTP 연결이다. 실제 PG·권한/승인 소비는 NOT_RUN/미완료이고, 선행 source 인수를 전체ARM/FN06 완료로 승격하지 않는다. 같은 Primary가 계속하며 미채택 ACK/STREAM-CLOSE replay·N/desktop 미완료와 실제환경 제외를 유지한다.
+## 54. ARM 소비와 OPEN 서명 준비의 부분 검수
+
+ARM 정상 연결은 Main eff7e9의 직접 시험 5개와 b3c1d8의 SQL 형상 시험 4개가 통과했다. 모두 exit0, skip0이다. SQL 형상 검사는 실제 PG 실행이 아니다. 원 Tx 소비와 서비스 연결은 source 범위의 부분 인수이며 전체 FN06 완료가 아니다.
+
+ARM 역완결의 조기 반환에 phase 조건이 빠진 I1을 보완했다. ARMED 이후에는 실제 ARM 기록이 필요하며, ARM 이전 CLOSED 경로는 보존한다. 수정 SQL SHA256은 0734D77F193963B25CC85C7D9D0B6A52D54B452CB30D325D9757F17D874D6A9F다. 독립 검토 C0/I0, Main 698d74의 직접 반례 2개 PASS/skip0/exit0이다.
+
+TS OPEN 서명 준비는 독립 검토 C0/I0이며 Main 59a25b의 직접 시험 3개와 69c342의 메모리 패키지 시험 1개가 통과했다. 실제 키 서명이나 설치형 실행 증거는 아니다. 이후 CJS 검토에서 부모 기한이 30초일 때 대기한 1초를 기존 10초 제한에서 차감하지 않는 I1을 확인했다. 같은 Primary가 기존 frame 9키를 유지하면서 TS와 CJS의 경과 시간 및 기존 lease 절대기한을 보정한다. 이 보정은 아직 인수하지 않았다.
+
+Main의 긴 기록문에 혼합 문자가 포함된 동일 오류가 세 번째 사전 검사에서 차단됐다. 해당 저장 명령은 실행되지 않았고 파일 변경도 없었다. 원문을 짧게 준비해 먼저 검사한 뒤 별도 저장하는 방식으로 바꿨다. 잘못된 signer 파일명 조회 ad56dc도 제품 실패와 분리한다. 실제 파일 목록과 import로 확인한 경로만 사용한다.
+
+실제 DB·권한·키·서비스·Agent·C# 컴파일은 실행하지 않았다. ACK 입력과 STREAM/CLOSE replay 후보는 미채택 상태를 유지하며, 기존 담당자의 독립 구현은 계속한다.
+
+## 55. OPEN의 기존 10초 제한 보정 인수
+
+기존 독립 검수자는 경과 시간 I1을 ADDRESSED, 보정 범위 C0/I0로 확인했다. TS와 CJS는 순수 입력 검산을 공유하고 원 메소드 시작 시각을 고정한다. 대기한 시간은 기존 10초에서 차감하며, CJS는 기존 보호 lease의 절대기한도 부모 기한과 함께 좁힌다. frame 9키와 서명 원문은 바꾸지 않았다. supplier가 없으면 GET 전에 거절한다.
+
+Main 0a242f는 다음 시험을 실행했다.
+- node --test --test-name-pattern='OPEN pre-authority frame producer는|HUMAN 수신 client는 원 Session|HUMAN 수신 client는 await 중' tests/unit/FN06/native-first-receive-client.test.ts : 3 PASS/skip0/253.4049ms/exit0.
+- node --test tests/desktop/native-first-receive-owner.test.cjs : 5 PASS/skip0/1130.2658ms/exit0.
+
+검사 전후 네 파일은 같았다. TS client F6B96FFCF3CD94EA7E494ADBE6BF4BB3E855BECEC3379CC3CA8232076A590CC0, CJS client DE063B3F6D30E7FECA335D3BC4D232B1E6FD0D4E7C3D328B48FCBD93C6301B03, TS 시험 273D15D029D7EA8B255818EE0923A3F210AF7A8F276BC33EFF7803FC1D823F66, CJS 시험 97D074FD69974CECE04527747E4E8C45A1FB2882A56A3849BBC6D47047206F09다. 독립 검토 전후에도 같은 지문이었다.
+
+시험 직후 Main의 파일 고정을 해제했다. 기존 Primary가 등록 owner와 보호 key-host의 source 연결을 계속한다. 실제 owner·키 서명·TLS·slot 사용 가능 여부와 전체 FN06은 미완료다. 이 결과는 source-only 부분 인수다.
+
+## 56. 후행 STATE의 실제 선행과 다음 업무
+
+기존 독립 검수자는 STATE BOUND/ATTEMPTED의 실제 호출선을 읽었다. 현재 서비스와 SQL은 OPENED/STREAMING/OFFERED/ARMED만 소비한다. 기존 N current·예약·역완결 기반은 있지만 receive 원 Tx에서 실물 Binding과 Delivery를 소비하는 연결은 없다.
+
+다음 서버 업무는 같은 원 Tx와 보호 actor로 기존 N current 검산을 재사용하는 것이다. 별도 인증과 새 Tx를 여는 공개 hostCurrent를 중첩하거나, EMPTY/RECLAIMED writer 조건인 receiveOfferCurrent로 대체하지 않는다. 원 Binding·authority·command·receipt·audit·SID·Writer lease/epoch와 서로 다른 N/receive profile을 대조해야 한다. STATE는 N 행을 새로 만들지 않는다.
+
+BOUND/ATTEMPTED 성공 소비의 검수에는 실제 Binding/BOUND와 Delivery/ATTEMPTED 생산자 연결이 먼저 필요하다. 그 전의 current 검사와 불일치 거절은 부분 구현으로만 기록한다. 이 선행을 기존 Primary에게 전달했으며 진행 중인 등록 owner 연결은 계속한다. 읽기 조사만으로 새 코드나 실제 DB를 실행하지 않았다.
+
+Main의 이번 재개 점검 중 잘못된 skill 경로 읽기 1건과 sandbox Git status의 work tree 오류를 실제 파일·승인 실행 문맥의 읽기로 구분했다. 이후 조회 명령의 혼합 문자도 실행 전 검사에서 차단됐다. 해당 명령은 파일·환경을 변경하지 않았고, 재발 방지를 위해 경로 조회 명령은 ASCII 문자만 사용하는 방식으로 더 좁혔다.

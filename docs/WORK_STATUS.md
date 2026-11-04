@@ -15046,3 +15046,16 @@ Main 시험명 조회2533b4는 foreach 뒤 파이프의 PowerShell 구문 오류
 
 - 실제 원 Tx lease·목적SD actor/Offer·기존 receiveOfferCurrent 재사용은 독립 C0/I0와 Main0b039c4 PASS/skip0/955.7355ms/exit0·2원문 전후 동일로 한정 인수했다. 즉시 전체2파일/본문 고정을 해제했다. 승인을 소비하거나 ARM을 저장한 결과가 아니며 상세 §53을 따른다.
 - 같은 Primary는 실제 ARM effect producer와 Store/service/HTTP 접합을 계속한다. 실제 PG·권한·키·서비스·Agent 실행0, ARM 전체·N/desktop·미채택 분기 및 전체계획은 미완료다.
+## 2026-11-05 FN06 ARM 부분 검수와 OPEN 시간 제한 보완
+
+기존 Primary 한 명이 구현을 계속하고 Main은 검수·통합을 맡는다. ARM 정상 source 시험 9개와 역완결 보정 반례 2개가 통과했다. TS OPEN 준비 직접 시험 3개와 메모리 패키지 시험 1개도 통과했다. 상세 증거는 FN06 구현 통제 문서 §54에 기록했다. CJS와 TS의 10초 경과 시간 보정은 진행 중이며 아직 인수하지 않았다.
+
+Main 기록문 오류는 실행 전 검사에서 차단됐다. 같은 원인 3회 뒤 긴 명령 직접 작성 방식을 중단하고 원문 사전 검사와 저장을 분리했다. 현재 로컬 문서 checkpoint는 35271e997ba3c9e924d0dfdc4b2e679ed48bda72다. 실제 DB·권한·키·서비스·Agent 실행, private 동일성 및 전체 계획 완료는 확인하지 않았다.
+
+## 2026-11-05 FN06 OPEN 시간 제한 부분 인수
+
+독립 재검토 C0/I0와 Main 직접 시험 8 PASS/skip0/exit0으로 기존 10초 경과 시간 보정을 source 범위에서 인수했다. 네 파일 지문은 검사 전후 동일하다. 상세 명령과 지문은 FN06 구현 통제 문서 §55에 있다. 기존 Primary는 등록 owner와 보호 key-host 연결을 계속하며 Main은 검수·통합한다. 실제 DB·권한·키·서비스·Agent 실행 및 전체 계획 완료는 아니다.
+
+## 2026-11-05 FN06 후행 의존성 확인
+
+STATE BOUND/ATTEMPTED는 실제 Binding과 Delivery 생산자 연결이 선행한다. 기존 N current를 같은 receive Tx에서 재사용하는 내부 작업을 다음 서버 단위로 정하고 기존 Primary에게 전달했다. 현재 등록 owner·typed key-host 구현은 계속한다. 실제 생산자 없이 합성 head만으로 성공 소비를 완료 처리하지 않는다. 자세한 선행과 Main 읽기 명령 오류의 구분은 FN06 구현 통제 문서 §56에 기록했다.
