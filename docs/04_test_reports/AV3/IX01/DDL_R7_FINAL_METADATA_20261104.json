@@ -1,0 +1,12 @@
+{
+  "containerId": "3991faeec9ae30bde62c94b661125c95d00f061e0fb1fa16f27c2f7c269ca3b6",
+  "containerAbsent": true,
+  "nameAbsent": true,
+  "sourceAbsent": true,
+  "hashes": {
+    "owner.json": "186f56c8520d999efc7182a204772687c0c965388ac977594a29886a6834c2b1",
+    "slot-a1.intent.json": "c92a72648d2e660d8043f4ee610fb169a21bfb3a0b2ea88e34b26886f6c5ade6",
+    "slot-a1.result.json": "a2a4757241ca57835924abbd68639f6593de451b6a1c7d4e321fcb269c02094f"
+  },
+  "observedAt": "2026-11-04T01:23:10.015Z"
+}
