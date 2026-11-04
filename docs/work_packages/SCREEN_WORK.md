@@ -38,7 +38,7 @@
 
 ## UI02 프로젝트 만들기·기존 소스 기준선
 
-- **2026-11-04 A 방향 직접 선택:** 본인 공통 도구·환경 원형 선택·초안 저장·새 프로젝트 설정 사본을 목표로 한다. 실제 연결/책임 session·권한키는 이월하지 않는다. [상세 계약 후보](../contracts/UI02_COMMON_SETUP_DEFINITIONS_PROJECT_COPY_CANDIDATE_20261104.md)는 미채택/미구현이며 코드 작업 전 정확 계약을 고정한다. 기존 미연결 표시는 구현 완료가 아니다.
+- **2026-11-04 A 방향 직접 선택:** 본인 공통 도구·환경 원형 선택·초안 저장·새 프로젝트 설정 사본을 목표로 한다. 실제 연결/책임 session·권한키는 이월하지 않는다. [상세 계약 후보](../contracts/UI02_COMMON_SETUP_DEFINITIONS_PROJECT_COPY_CANDIDATE_20261104.md)의 r3는 후속 직접 답변으로 source-only 구현까지 채택됐다. [작업지시서](UI02_COMMON_SETUP_DEFINITIONS_PROJECT_COPY_IMPLEMENTATION_20261104.md)의 정확 허용 범위/TDD/검수·실행 제외로 진행한다. 기존 미연결 표시는 구현 완료가 아니다.
 
 - **설계/선행:** AV3-S02, §3·11.3 / UI00,FN01,FN02,FN03. 파일 `features/project-create/`.
 - **사용자 업무:** 목적/소스→방법론/자료→총괄/환경→시작 기준을 확인하고 프로젝트를 저장한다.
