@@ -41,3 +41,89 @@ Primary가 Window 준비 시에는 원 command/intent가 아직 없다는 점을
 기존 current 주소는 native-preparation-https.ts:67의 고정 /api/v1/connector/native-preparations/{authorityId}/current이며 서버 project-native-preparations.ts:88/91은 hostSource origin host와 authority.channelProfileRef 일치를 검산한다. 보호 NativePreparationCurrentSource mapping의 binding.channelProfileRef가 current→authority/hostSource로 연결되는 실제 원 producer는 존재한다. 새 PROFILE/HEAD와 그 mapping의 대응은 아직 증명되지 않았다.
 
 S4에서는 실제 보호 producer가 정한 원 channel ref/원 CA 및 새 수신 profile의 관계를 명시적으로 검산해야 한다. 새 profile의 CA나 ref를 원 native 것으로 cast하지 않는다. 기존 HTTPS의 hostname/CA/rejectUnauthorized/agent:false를 유지하고 caller URL·범용 path를 열지 않는다. 정확 대응이 없으면 공급 포트/현재 조립의 실제 차이를 반환하며 새로운 공개 권위를 임의로 만들지 않는다. 이는 작성 중 코드의 확정 결함이나 새 endpoint 추가 지시가 아니다.
+
+## 7. S2 예약 계산 6함수 동결 읽기 검수
+
+Primary가 아래 SQL 함수 본문만 동결했다. 같은 0076 파일의 다른 목적 writer·최종 역완결·원 native 접합은 계속 작성하므로 전체 파일 지문 변경 자체를 불안정이나 결함으로 세지 않는다.
+대상 파일: db/migrations/0076_native_first_receive.sql.pending
+함수: fn76_slot_actuals, fn76_rl_remaining, fn76_native_pending, fn76_native_remaining, fn76_reservation_remaining, fn76_reservation_refresh.
+중간 제출 파일 지문907AA298CC2807BF10E50C9EDD5BABC1F63CE56056822218E08EDB3051B0246D는 시점 참고이며 이후 파일 전체의 불변 주장용이 아니다. 검토 전후 여섯 함수의 실제 본문 지문을 대조한다. 관련 기존 typed 계산은 apps/server/modules/executions/native-first-receive-store.ts에 있으나 파일 동결 대상은 아니므로 변경이 있으면 같은 시점의 상관 관계로만 판정한다.
+
+담당 A remaining_execution_dependencies: fn76_native_pending/native_remaining/reservation_remaining 중심으로 부모 typed N의8978B, CONFIRMED 뒤6474→4767→3228→0, 실제 Binding/원 authority_complete/event 순서, 단계별 수명·미발생량/자기비용·UNKNOWN hold를 검토한다. 입력 방어 cap을 예약량으로 재사용하거나 namespace ceiling−actual로 불필요 hold/조기 해제를 만드는 구체 반례만 반환한다.
+
+담당 B remaining_stage_b_dependencies: fn76_slot_actuals/rl_remaining/reservation_refresh 중심으로 물리 slot 소유·정확 project/window·원행과 불변 filled slot의 actual, 가변 head/ticket growth, 단계에서 도달 가능한 R/L remaining, 요약 actual/remaining과 회계 차분을 검토한다. 기존 사용자 자료는 읽지 않고 source만 본다.
+
+부모 기준은 FN06_PHASED_RESERVATION_INTERNAL_DETAIL_20261104.md와 채택 wire/account/WI다. 아직 없는 목적 writer·원 native private Tx 선예약·전체 deferred closure·실PG의 부재는 Primary가 미완료로 명시했으므로 이번 계산 함수의 확정 결함으로 세지 않는다. 이 함수들이 요구하는 선행을 향후 writer가 충족해야 한다는 인수 조건은 별도 반환한다. 기대 조건을 가정해 가짜 PASS로 만들지 않는다.
+쓰기/시험/PG/권한/키/서비스/Agent/컴파일/원격 조회0. 이미 완료한 codec/profile 검사를 다시 하지 않는다. 추정 경로/glob을 사용하지 않고 위의 정확한 기존 파일과 확인된 참조만 읽는다.
+## 8. 예약 계산 검토 반환과 기존 이벤트 순서 확인
+
+7절의 한정 결과는 A C0/I1, B 확정 C/I0·인수 checkpoint1이다.
+I1: 현재 fn76_native_pending은 CREATED→ATTEMPTED→CONFIRMED→CHALLENGE만 허용한다. 기존0071 history와 project-native-preparations의 hostChallenge는 CONFIRMED 선행을 요구하지 않아 CREATED/ATTEMPTED/CHALLENGE가 성립할 수 있다. 기존 authority_complete를 통과해도 새 계산기가 거절할 수 있다. 미작성 writer 부재와 다른 실제 입력 호환 차이다.
+Main 원칙은 기존 허용 순서와 legacy guard를 몰래 강화하지 않는 것이다. 순서 때문에 새 guard를 바꾸거나 기존 API를 좁히는 대신 계산기를 기존의 실제 유효 사건과 맞춰야 한다. 정확한 기존 의존·횟수 범위를 아래 읽기 지원으로 먼저 확정한다. Primary는 이 결론 전 순서 제한으로 우회하지 않으며 독립 broker/다른 writer 접합은 계속한다.
+
+담당 A remaining_execution_dependencies는 기존0071 history 및 현재 hostChallenge/hostProof/hostConsume의 정확 실제 생산 조건을 대조한다. CONFIRMED 전 허용 사건·ATTEMPTED 선행·proof/consume의 선행·kind별 반복 가능/최대 실제 발생 수를 표로 반환한다. 현재 N7와 후속5 상계가 실제 허용 생산을 덮는지도 구분한다. 같은 event-kind 중복이 가능한지를 추측으로 채우지 않는다. 기존 정상 예시와 기존 guard가 거절하는 예시를 대조하고 source 근거만 반환한다. 실제 PG실행/기존 SQL변경/새 policy 결정0.
+
+B checkpoint: fn76_rl_remaining은 개별 ticket의 stage/finished_at가 아니라 window 전체 terminal만 보므로 종료된 REJECTED/CONSUMED ticket의 불필요 growth·후속 slot을 유지할 수 있다. 목적 writer가 종료 ticket에 더 쓸 수 있는 칸과 도달 불가능한 칸을 정할 때, immutable finished ticket은 growth0이고 불가능한 미발생 slot은0인지 실제 계약으로 닫아야 한다. 아직 writer가 없으므로 완성 구현의 확정 I로 세지 않았으며 인수 조건으로 남긴다.
+새 BINDING 이전 private Tx 선확보·원행/요약 producer·양방향 deferred closure·실PG는 계속 미완료다. 현재 검토를 전체 S2 합격으로 승격하지 않는다. 추가 코드 writer0, 실제 DB/권한/키/서비스/Agent/컴파일0이다.
+## 9. N 순서 호환 I1의 Main 보완 판정
+
+8절 실제 생산 조건 조사로 기존 경로가 CONFIRMED 단일 직렬 순서가 아님을 확인했다. Main은 기존 guard/API를 강화하는 안을 채택하지 않는다. 현재 승인된 source 구현 안에서 새 예약 계산과 접합 시점을 기존 유효 생산과 맞추는 보완을 수행한다. 여섯 함수의 읽기 동결을 해제하며 동일 Primary만 수정한다.
+
+- DELIVERY_ATTEMPTED는 최대1, CONFIRMED/UNCONFIRMED는 합쳐 최대1이고 같은 deliveryId의 ATTEMPTED가 필요하다.
+- CHALLENGE는 원 bearer/current/authority/target/nonce 조건 아래 최대1이다. API/history 자체는 ATTEMPTED나 CONFIRMED 선행을 요구하지 않는다. 정상 공급자는 ATTEMPTED COMMIT 뒤 token을 전달하므로 정상 수신자가 그 뒤 CONFIRMED 저장 전에 호출할 수 있다. 그 이전 token 획득을 정상 사례로 주장하지 않는다.
+- PROOF는 별도 hostProof가 아니라 hostConsume 내부에서 challenge와 원 request/target/nonce·등록서명·기한을 검산한 뒤 생성한다. CONSUME는 같은 Tx의 바로 다음 sequence이며 proofRef/previousRef가 정확 일치한다. 각각 최대1이고 같은 소비 재조회는 REPLAY_ONLY이다.
+- 따라서 CREATED/ATTEMPTED/CHALLENGE/PROOF/CONSUME/CONFIRMED와 CREATED/ATTEMPTED/UNCONFIRMED/CHALLENGE/PROOF/CONSUME의 기존 조건 충족 사례를 새 계산기가 임의 거절하지 않아야 한다. delivery outcome이 UNCONFIRMED라는 사실만으로 아직 가능한 CHALLENGE/PROOF/CONSUME를0으로 해제하지 않는다.
+- 실제 채워진 kind와 기존 의존 관계를 기준으로 missing-slot 비용을 계산한다. 원 현재 조건이 여전히 가능한 후속은 유지한다. 종료/불가로 해제하려면 실제 소유 원행과 guard 근거가 있어야 하며 caller bool·상태명 하나로 대신하지 않는다.
+- N7/CREATED 이후5행 상계는 현재 실제 producer의 kind별 최대1에서 유지된다. 새 ACK v1인 bound window만8978B를 쓰고 legacy 일반 ACK 최대폭8993B 경로와 섞지 않는다. CONTEXT_INVALIDATED는 schema가 허용하지만 현 append producer가 확인되지 않았으므로 이번에 생산자/slot을 임의 추가하지 않는다. 미래 연결 시 별도 차분 검토가 필요하다.
+- PROOF만 있는3228B는 같은 Tx의 논리적 중간 투영일 수 있으나 정상 독립 COMMIT 상태가 아니다. 기존 producer의 pair가 만들어지는 도중 quota projection이 전체 완료 검사를 너무 일찍 요구해 유효 Tx를 깨지 않는지도 접합 시 확인한다. 최종 원 authority_complete/history와 deferred 무결성은 그대로 요구하고 불완전 pair COMMIT은 계속 거절한다. 투영 계산과 실행/저장 권위 인증을 섞지 않는다.
+
+실제 새 RED→최소 보완→GREEN에 위의 유효 interleaving과 UNCONFIRMED 뒤 유효 후속, 중복 outcome/challenge·challenge 없는 proof·깨진 pair의 거절을 포함한다. 이전 UNCONFIRMED→0 기대는 기존 실제 생산을 충분히 반영하지 못한 작성 중 가정이므로 바뀌는 기대와 source 근거를 명시한다. 테스트를 삭제하거나 원 guard·권한·최종 무결성을 낮춰 통과시키지 않는다. Main은 새 코드가 동결 제출되면 해당 수정분만 재검수한다. 실제 PG·DB·권한·키·서비스·Agent·컴파일 실행은 계속0이다.
+## 10. 종료 ticket의 미래 비용 계약 읽기 지원
+
+담당 B remaining_stage_b_dependencies는 7~8절 checkpoint를 닫기 위해 채택 문서의 ticket 종료 후 허용 변경만 읽기 대조한다.
+정확 부모 경로는 docs/contracts/FN06_NATIVE_FIRST_RECEIVE_WIRE_PROPOSAL_20261104.md, docs/contracts/FN06_NATIVE_FIRST_RECEIVE_ACCOUNTING_PROPOSAL_20261104.md, docs/contracts/FN06_PHASED_RESERVATION_INTERNAL_DETAIL_20261104.md다.
+REJECTED/CONSUMED/finished_at가 확정된 ticket에 이후 mutable 열 갱신이나 PROOF_EVIDENCE/CONSUME_REPLAY/감사 등 어느 고정 slot을 더 쓸 수 있는지 표로 반환한다. 같은 ticket의 슬롯과 다른 phase/공유 security aggregate의 실제 비용을 구분한다. OPEN 등이 실패하면 이후 phase 도달을 어떤 원형/규칙이 막는지, 명시 규칙이 없는 부분은 무엇인지 구분한다.
+현재 작성 중 목적 writer의 부재를 결함으로 단정하지 않고 부모 원문에서 확정 가능한 조건과 실제 미정인 조건만 반환한다. 새로운 공개 의미·nonce 재사용·행slot 추가를 제안 구현하지 않는다. 코드/문서/시험 수정과 실제 환경 실행은0이다. 경로 추정 없이 위 정확 파일만 읽는다. 현재 Primary의 단독 구현은 계속한다.
+## 11. N 순서 호환 수정분 재검수
+
+수행자 보고: store 시험의 유효 interleaving/UNCONFIRMED 후속2RED→2GREEN/165.8836ms/exit0, SQL 결박/중간 투영과 최종 완결 분리2RED→2GREEN/163.8882ms/exit0, root noEmit0.
+정확 명령은 node --test --test-name-pattern='CONFIRMED 뒤에도|원 native의 CONFIRMED 전' tests/unit/FN06/native-first-receive-store.test.ts 및 node --test --test-name-pattern='SQL N 순서표|N 중간 예약 투영' tests/unit/FN06/native-first-receive-schema.test.ts다. 결과 key는 fn06_native_interleaving_red/green, fn06_native_sql_interleaving_red/green, fn06_interleaving_typecheck다. 아직 Main 독립 실행이나 실제 PG 결과가 아니다.
+Primary는 fn76_native_pending/fn76_native_remaining/fn76_native_binding_final 세 본문을 다시 동결했다. 다른 함수·목적 writer·HUMAN 입력·ARM header·broker는 계속 작성한다.
+담당 A remaining_execution_dependencies는 9절 I1과 수정분의 새 손상만 읽기 재검수한다. 실제 기존 의존표·UNCONFIRMED 후속·중복/깨진 pair 거절, 비용 중간 투영과 최종 authority_complete/deferred trigger의 분리 및 bound/legacy 범위를 확인한다. 최종 pair COMMIT 실제 PG PASS를 주장하지 않는다. 전후 세 본문 지문을 대조하며 전체 파일 변화는 다른 writer 작업으로 구분한다. source/table/integrity 완성 전 부재는 명시 인수 조건으로 남기고 확정 결함과 구분한다. 쓰기·시험·실환경0.
+
+## 12. 종료 ticket 미래 비용의 Main 내부 판정
+
+부모 계상과 wire는 확정된 같은 ticket의 재사용·새 nonce·새 개별 audit를 금지하고, 성공/거절 자식행·audit의 원 Tx 완결 및 동일 요청 새행0을 요구한다. Main은 목적 writer의 열 전이를 다음처럼 닫는다.
+- REJECTED/CONSUMED와 finished_at 및 해당 분기의 실제 필요 자식행·result/evidence/replay/audit가 같은 원 Tx에서 완결된 뒤, 같은 ticket의 모든 열은 NULL까지 그대로 보존한다. 나중 NULL 보충이나 stage/result/ref/시간 덮어쓰기를 하지 않는다.
+- producer는 필요한 실제 자식행·감사와 정확 ref를 먼저 완결하고 terminal stage/finished_at를 확정한다. 최종 역완결과 효과 전 확보·append/refresh/회계 차분의 같은 Tx 조건을 유지한다.
+- 위의 확정 종료가 입증된 같은 ticket은 미래 growth0·도달 불가능한 미발생 slot remaining0이다. 필요한 실제 보관행은 actual에 그대로 남고 공간 확보를 위해 삭제하지 않는다. 미완결/오염을 종료로 가장해 해제하지 않는다.
+- UNKNOWN은 확정 종료가 아니며 원행·hold를 유지한다. 새 nonce·재시도·자동회수0이다.
+- 같은 ticket의 원결과 재조회와 종료 뒤 공격/충돌/포화 요청의 공유 security aggregate를 구분한다. 공유 actual/growth는 별도 계상하며 ticket의 해제로 지우거나 중복 산입하지 않는다.
+- 다른 phase의 가능성은 실제 필수 ref와 채택된 전이로 개별 판정한다. STATE1 실패로 STATE2나 다른 phase를 자동 금지하지 않고, CLOSE 거절을 CLOSED로 만들지 않는다. 필요한 후속 회수/정착을 일반 terminal bool로 지우지 않는다.
+이는 기존 단발/완결 정책의 내부 열 전이 상세이며 새 공개 입력·표·권한·기한·자동삭제를 추가하지 않는다. 같은 Primary가 기존 허용 파일에서 반례와 구현을 작성한다. 실제 DB 실행은0이다.
+
+## 13. 필수 회귀 시험 한 파일 delta의 읽기 확인
+
+Primary는 기존 tests/unit/UI11/preparation-policy.test.ts가 정확12 목록을 고정해 채택된 새 HUMAN3/read3와 불일치한다고 보고했다. 이 파일은 현재56 밖이므로 아직 수정하지 않는다. Main의 읽기 확인에서 파일은 tracked clean이며 SHA256 8E045C88A8EED438C59A2D39BCA6468416B7D3A7785D28B49D5DCF005F30EDB8이다.
+시험의 실제 import는 apps/web/src/features/connections/policy-editor-profile.ts다. Main은 permissions 폴더로 잘못 추정한 조회를 중단했고 재실행하지 않는다.
+담당 B remaining_stage_b_dependencies는 위 정확 source와 시험 및 채택 WI의 operation 목록만 읽어 기존12 보존·새6의 정확 이름/소비, 18목록 정합에 필요한 최소 test delta인지 확인한다. 기본 미선택·DENY·acknowledged=false, 다른 규칙 보존·각 disposition 정책 편집 왕복, 실제 실행/credential/자료의 요청0 거절을 유지하는지 구분한다. 정책을 작성하는 시험을 실제 native 권한·승인 소비 PASS로 해석하지 않는다.
+이 단계는 읽기 확인이며 추가 파일 구현 GO가 아니다. source/API/권한 기능을 새로 더하거나 기대를 줄여 통과시키는 변경은 허용하지 않는다. 실제 코드 수정과 시험은0이고 Main이 증거를 보고 내부 필수검수 delta 여부를 판정한다.
+## 14. N 수정분 인수·동결 해제와 필수 시험 delta
+
+담당 A가 11절 수정분의 기존9절 I1을 ADDRESSED·수정 범위 C0/I0로 반환했다. 세 함수 전후 본문 SHA가 동일했다.
+- fn76_native_pending: 866043FE489E5ED3E110E2E07A868CAB9872DA640E9687FAD5CB80C8595521FC
+- fn76_native_remaining: 2DD8D842E62684502A5EC23730D38A683378B3F94963485AFDB96009CECFDE28
+- fn76_native_binding_final: AAD41E17C3E7A2AAE3F99AE992321BAA69231096DCBE9B8338B8DEDAA823F91D
+기존 valid interleaving·UNCONFIRMED 뒤6474B 유지와 소비 후 미생성 outcome1106B, 중간 투영의 원 hash/bytes/sequence/previousRef 대조와 최종 deferred authority_complete/reservation 검산을 확인했다. 실제 PG의 pair COMMIT/거절은 NOT_RUN이다. 이 세 함수 동결을 해제하고 목적 writer·선예약·전체 역완결·S3~S7을 계속한다.
+
+13절 읽기 확인은 기존12 보존과 채택 HUMAN3/read3 정확6 추가가 필요한 기존 회귀 시험의 최소 정합이라고 반환했다. Main은 docs/contracts/FN06_REQUIRED_POLICY_TEST_PATH_DELTA_20261105.md SHA256 45349EE2BBF6E9E977C4FED9A5ECAAE00B67587864B712131AB047A68A39CBE8로 한 파일만 파생 허용했다. 기존56+정확시험1=57이며 제품/API/권한 의미는 추가하지 않는다. 수정 전 raw/clean 대조와 목록·시험명 외 단언 불변, 정확4개 정책 시험과 diff 증거를 제출한다. 원 source adoption의 bytes/hash는 보존한다.
+## 15. 필수 정책 회귀 시험 delta 수정분 검수
+
+2026-11-05 Primary가 파생45349EE2를 읽고 수정 전 raw8E045C88 동일을 확인했다. 정확 node --test tests/unit/UI11/preparation-policy.test.ts는 기존3P1F/595.207ms의 정확12 목록 불일치 뒤, 허용된 ops6·시험명2곳 정합 후4PASS/skip0/593.321ms/exit0와 diff check0을 제출했다. 결과 key fn06_policy_required_regression_red/green이다. 이는 정책 작성/저장 합성 검사이며 실제 권한·수신 실행이 아니다.
+
+담당 B remaining_stage_b_dependencies는 같은 정확 시험 파일의 실제 diff만 읽기 검수한다. 수정 전후 ops 기존12 이름/상대순서 보존, 정확새6·18 전체비교, 시험명2곳 외 변경0, 기존 assertion/negative/기본 DENY/acknowledged=false/다른 규칙·원문/준비POST0·명시송신POST1·ops×3=54조합이 유지됐는지 확인한다. 테스트를 다시 실행하거나 source를 수정하지 않는다. 새 제품 코드 검토로 범위를 넓히지 않는다. 수정 전 기준은 C3 HEAD의 원파일 및 파생 판정의 raw8E045C88이다. 전후 현재 파일 지문과 검토 결과를 반환한다.
+## 16. 정책 회귀 시험 delta 한정 인수
+
+Primary는 새6 목록/시험명2곳 정합 뒤 정확 node --test tests/unit/UI11/preparation-policy.test.ts의4PASS/skip0/593.321ms/exit0와 diff check0를 제출했다.
+담당 B가 현재 raw7B02263BBE551F08389152811A4E90B729D89E65C61B48C0064B2BA61274F020의 전후 동일 및 허용3지점만 역치환한 raw가 원8E045C88A8EED438C59A2D39BCA6468416B7D3A7785D28B49D5DCF005F30EDB8과 완전 일치함을 확인했다. 실제 수정분 C0/I0이며 기존12/각단언/negative/54조합은 보존됐다. 이 정확 test delta만 인수하며 실제 native 권한·전체UI11/S2/계획 인수로 확장하지 않는다.
+Primary는 기존56+파생 시험1의57범위에서 계속 구현한다. 실제 DB·권한·키·서비스·Agent·컴파일·J3/P03 R3·Git 복구 제외는 그대로다.

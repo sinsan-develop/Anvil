@@ -14813,3 +14813,65 @@ Primary가 기존 readNativeAuthority/readNativeEvent/readNativeConsumeReceipt�
 Primary가 HEAD 의존 검산·Git 작업 없음과 문서 전용 checkpoint 무충돌을 확인했다. Main 소유9문서만 로컬 커밋 대상으로 고정하며 제품 source/시험/SQL·보호 untracked3은 제외한다. 원격 장애에 대한 재시도나 인증 변경은 하지 않는다.
 
 571d17 diff 검사는 WORK_STATUS의 새 문단 끝 CRLF6개를 trailing whitespace로 지적해 exit1이었다. ef9049에서 정확 Main9문서만 대조해 WORK_STATUS6·수정지시서2·접합지시서4의 CRLF를 LF로 정리했고 나머지6문서는 변경0, diff check0이었다. 승인 부모·private digest 상세5027015a·단계 예약 상세2B7EC268의 bytes/hash는 그대로다. 가변 수정지시서 최종1232CCF5·접합지시서 C708E580으로 바뀐 것은 줄바꿈만이며 승인 범위나 검사 기준을 바꾸지 않았다. 제품 구현은 같은 단독 writer가 계속하며 전체 source/계획 완료는 미완료다.
+### 2026-11-04 원 intent 선확보 위치·다른 Stage 후속 조사
+
+Primary가 기존 native 생산 source의 ids.allocate/readNativeIntent가 실제 current와 원문으로 intent를 먼저 확정하고 그 다음 persistProjectReceipt→writer.reserveNativePreparation을 호출함을 확인했다. 따라서 intent 확정 직후·원 command/receipt/writer/credential producer 전에 같은 인증 Tx의 N 선예약을 접합할 수 있다. writer를 먼저 실행해야 intent를 얻는 순환이 아님을 확인했으며 실제 접합 코드는 아직 작성 중이다. 기존 순서·실제 반환 bytes 검산 조건은 유지한다.
+
+Main은 기존 읽기 담당 A에게 Stage C·D, B에게 Stage E·F·G의 기존 승인 독립 source 공백을 조사하도록 배정했다. 앞선 Stage B/실제 실행 접점 조사는 반복하지 않고 기존 계약/API가 있으나 호출선이 빠진 업무만 근거와 함께 찾는다. 실제 환경 검증이나 codec 추가를 기능 구현으로 대체하지 않는다. 현재 FN06 단독 writer와 제외 범위는 그대로다.
+### 2026-11-04 Stage C~G 소비선 조사·후보 최신성 확인
+
+기존 두 읽기 담당자가 Stage C~G의 기존 승인/API 소비선 누락을 대조했다. 단계 시작/대기열, 보고 부족의 basis, 보완·검수 과거 페이지, checkpoint/중지요청 조회, 변경 화면 원문, Web 이전 준비기록, 수동 백업 정책과 IN_APP 알림은 실제 소비선이 있어 재구현 대상으로 고르지 않았다. 실제 scheduler/START/Agent/관측·중지/재개/백업복원/외부 알림과 IX 인수는 별도 계약·공급자·실행 선행이 남아 있다. 조회·합성 결과를 그 기능 완료로 대체하지 않는다.
+
+담당 B의 읽기 조사에서 잘못된 Windows glob/추정 경로 명령3건·메시지4건이 발생했다. 90e829은 notifications glob의 Windows123 및 경로없음3, c76607은 추정 project-transfer-preparation-records.ts 없음2, 8f58a2는 추정 source-link-records.ts 없음2였다. 셀 최종 종료는 각각0/0/1이고 첫 두 개별 rg 종료는 수집하지 않아 미확인이다. 이 오류를 제품 누락 근거에서 제외하고 추정 조회를 중단했다. 추가 조회·수정·시험·실환경0이며 제품 정식 FAILURE_REPORT 횟수에는 포함하지 않는다.
+
+FN12 후속 계보 후보는 2026-10-24의 CHILD_DRAFT_ONLY 등 과거 가정을 포함한다. Main은 이후 승인된 하위 HUMAN 검토/확정·예약 source와 먼저 대조하도록 담당 A에게 읽기 검토를 배정했다. 현재 가능한 기존 계약 소비와 여전히 필요한 새 공개/저장 차이를 구분하기 전 새 B안 채택·구현·재승인 요청은 하지 않는다. 현재 Primary의 FN06 단독 구현은 계속한다.
+### 2026-11-04 receive 종료와 N 소비 수명·FN12 최신 대조
+
+Primary는 원 native source가 DELIVERY_CONFIRMED 이후 CHALLENGE_ISSUED→REQUEST_PROOF_ACCEPTED→CONSUME_COMMITTED를 생산하므로 R head의 CONFIRMED만으로 N 후속3의 future를 없애면 안 됨을 확인했다. Main은 R 종료와 N 소비 종료를 분리하고 해당 예약 유실 반례를 포함하도록 전달했다. SETTLED는 적격 N 후속까지 닫힌 근거가 필요하며 UNKNOWN의 자동 회수는 하지 않는다. 현재 per-slot 정산 구현은 진행 중이다.
+
+FN12 읽기 담당자는 최신 하위 HUMAN 내용검토·별도확정·과거조회와 등록 정의 책임 세션 예약이 이미 구현됐음을 확인했다. 일반 child 실행/예약 root-only 제한은 유지된다. 기존 순수 rework-successor-input/rework-origin-material도 있으므로 재구현하지 않는다. 아직 없는 부분은 원보완→고정 root draft의 내구 origin, 후속 확정/예약의 origin 강제 대조, 후속 결과의 원보완 귀속 link와 보호 조회다. 기존 후보의 오래된 source hash·child 설명·두 operation/두 GET/두 표를 그대로 최신 최소안으로 확정하지 않는다.
+
+Main은 PMO에 해당 계보 공개/저장 계약의 후속 직접 채택 근거가 있는지 결정 지원을 요청했다. 새 구현 GO나 실제 실행 승인은 만들지 않았고 현재 FN06 단독 구현은 계속한다. 전체 계획 미완료·실제 DB/권한/키/서비스/Agent/컴파일/J3/P03 R3 실행0이다.
+### 2026-11-04 S2 slot별 remaining 수행자 중간 반환·PMO 확인
+
+Primary는 fn76_reservation_remaining의 전체 ceiling−actual 방식을 실제 단계/slot별 식으로 교체 중이다. Window/Close 공통 명령의 exact 결과 예약 반례1PASS/265.212ms와 기존 quota forward 원문 보존 검사1PASS/177.2055ms를 중간 제출했다. CONFIRMED 뒤 CHALLENGE/PROOF/CONSUME 미래분 유지 반례를 다음으로 추가하며 pending handle0·같은 정식 실패 누적0이라고 보고했다. Main의 전체 S2 검수나 실제 PG 증거는 아니며 실제 PG NOT_RUN이다.
+
+PMO 회신은 인수기록4115~4119와 Anvil 현황13914가 FN12 후속 계보를 미채택으로 명시하고 별도 채택 근거를 찾지 못했다고 확인했다. Main은 최신 HUMAN source와의 최소 차이만 추후 정리하며 기존 후보 전체나 과거 API/표 개수를 자동 채택하지 않는다. 이 지원 회신은 현재 FN06 구현의 중단 사유가 아니다.
+### 2026-11-04 N 수명 반례·SQL 투영 중간 제출
+
+Primary는 순수 예약 함수 부재 RED 뒤 직접1PASS/160.1207ms/exit0를 제출했다. CREATED→ATTEMPTED→CONFIRMED 이후 N 후속3의6474B를 유지하고 실제 CHALLENGE/PROOF/CONSUME가 채워질 때4767→3228→0으로 감소하며 UNCONFIRMED는0, 순서 누락/중복/종료 뒤 추가는 거절하는 반례다. 이는 순수 투영 증거이며 SQL collector 접합 인수가 아니다.
+
+현재 fn76_slot_actuals/fn76_rl_remaining/fn76_native_pending/fn76_native_remaining/fn76_reservation_remaining에서 실제 Binding·기존 authority_complete·원 이벤트 순서를 소비하도록 작성 중이다. SQL 생산/소비 형상3PASS는 앞선 N 직접1PASS와 별도 범위이고 실제 PG 실행이 아니다. 원 native 명령/receipt 앞의 intent 예약 private Tx 결박, 원행/요약 갱신 producer, 최종 양방향 완결·목적별 SD 쓰기는 미완료다. pending handle0·제품 정식 실패 누적0으로 보고했다.
+
+Primary 보고 첫 구절에 한국어 외 문구가 섞인 작성 오류1건이 있었고 본인이 즉시 폐기·한국어 정정했다. PRIMARY_OUTBOUND_LANGUAGE_MIX=1로 분리 기록하며 제품 파일에는 쓰지 않았다고 보고했다. Main의 이전 동일 분류7건과 구분한다. 이번 오류를 제품 실패나 승인 범위 변경으로 세지 않는다. 현재 source-only 구현은 계속한다.
+### 2026-11-04 S2 예약 계산 한정 검토·순서 I1 보완 배정
+
+기존 Primary가 예약 계산6함수를 본문 단위로 동결했고 나머지 목적 writer와 broker를 계속 작성했다. 독립 A는 N 수치8978→7580→6474→4767→3228→0와 source 소유 결박을 확인했으나 기존 유효 이벤트 순서를 새 계산기가 거절하는 C0/I1을 반환했다. 독립 B는 확정 C/I0·종료 ticket의 도달 가능 remaining checkpoint1을 반환했다. 전체 파일은 다른 함수 작성으로 변할 수 있어 검토 전후 여섯 함수 본문 지문만 같음을 확인했다. 실제 PG/전체 S2 인수는 아니다.
+
+A의 기존 생산 조건 추가 대조에서 CHALLENGE는 CONFIRMED 선행을 요구하지 않고 UNCONFIRMED도 후속을 단독 차단하지 않음을 확인했다. 정상 전달은 ATTEMPTED COMMIT 뒤 token을 공급하므로 그 뒤 outcome 저장 전의 유효 호출이 가능하다. 현재 producer는 kind별 최대1이라 N7/후속5 상계는 유지된다. PROOF/CONSUME는 같은 hostConsume Tx의 인접 pair로 COMMIT되어야 하며3228B는 논리적 내부 중간값이다. 현재 CONTEXT_INVALIDATED append producer는 확인되지 않아 새 slot/생산자를 임의 추가하지 않는다.
+
+Main은 접합 지시서9절로 기존 guard/API를 강화하지 않고 새 계산기를 유효 interleaving에 맞추도록 판정했다. UNCONFIRMED→0 가정의 기대 변경은 실제 기존 source 근거와 함께 명시하고, 완료 검사 때문에 유효 pair 생성 중 Tx를 깨지 않으며 최종 원 무결성은 계속 요구하도록 했다. 여섯 함수 동결을 해제했고 같은 Primary에게 RED→GREEN 보완을 배정했다. 종료 ticket의 정확 growth/미발생 slot은 목적 writer와 함께 닫을 인수 조건으로 남는다.
+
+별도 비공개 ACK broker는 native-first-receive-service.ts에 착수했다. 원 waiter/fence와 SlotReceipt ref/hash/metadata, 후보202/중복·지연·UNKNOWN 거절을 RED2→첫 구현1P1F→reader의 snapshot/V 경계 보완 뒤2PASS/207.9486ms/exit0로 중간 제출했다. HTTP route·원 operation 전달·후행 DB COMMIT은 아직 미완료이며 broker 단독 합성 증거다. 추가 code writer·Main 제품 수정·실제 DB/권한/키/서비스/Agent/컴파일/J3/P03 R3 실행0이다.
+### 2026-11-05 Main 추정 경로 읽기 오류 재발·중단
+
+6bd77f에서 회귀 시험은 정상 읽고 tracked clean·raw8E045C88을 확인했다. 병행한 2a6387의 명령은 rg -n 'PROJECT_PREPARATION|NativeReceive|NativeChannelProfile' apps/web/src/features/permissions/policy-editor-profile.ts 이고 exit1이다. 원문 오류는 rg: apps/web/src/features/permissions/policy-editor-profile.ts: IO error for operation on apps/web/src/features/permissions/policy-editor-profile.ts: 지정된 경로를 찾을 수 없습니다. (os error 3) 이다. ACL 오류가 아니라 Main이 폴더를 추정한 오류다.
+
+앞선 같은 원인의 중단 조치에도 실제 import를 먼저 사용하지 않은 Main 오류다. 해당 추정 조회와 Main의 직접 source 경로 탐색을 중단하고 재실행·권한 변경0을 유지한다. 실제 시험 import에 적힌 connections 경로만 기존 읽기 검토자에게 전달해 필요한 delta를 확인한다. 제품·시험 파일은 수정하지 않았고 현재 단독 구현은 계속한다. PMO에 원인·영향·조치를 예외 보고한다.
+### 2026-11-05 N 순서 I1 수정분 인수·필수 회귀 시험 delta
+
+Primary의 정확 store 패턴 시험2RED→2GREEN/165.8836ms와 SQL 결박/중간 투영 분리 패턴2RED→2GREEN/163.8882ms·type0 제출 뒤, 기존 검토자가 수정분 I1 ADDRESSED·C0/I0를 반환했다. native_pending 866043FE/native_remaining2DD8D842/native_binding_finalAAD41E17의 전후 함수 본문 지문이 같았다. 기존 유효 interleaving과 UNCONFIRMED 후속을 유지하고 원 완료 검사는 최종 deferred에서 계속 요구한다. 원래의 UNCONFIRMED→0 기대를 실제 기존 source에 맞춰6474B 유지로 정정했으며 원 guard를 낮추지 않았다. Main은 해당3함수 동결을 해제했다. 전체 목적 writer·선예약·역완결·S3~S7 및 실제 PG는 미완료다.
+
+독립 B는 tracked clean·raw8E045C88의 기존 tests/unit/UI11/preparation-policy.test.ts가 정확12 목록을 고정하고, 채택된 새 HUMAN3/read3가 실제 policy-editor-profile/documentOperations와 연결되어 정확18로 맞춰야 함을 확인했다. Main은 채택 WI2절58행의 최소 추가 파일 반환 절차와 승인된 필수 검수 범위에서 이 시험1개만 파생 허용했다. 고정목록에 새6 추가·시험명2곳12→18 외 단언/negative/disposition 왕복은 그대로이며 실제권한 PASS를 뜻하지 않는다. 파생 판정 SHA45349EE2로 기존56+시험1=57을 고정했고 신산님이57개를 별도 직접 승인했다고 표현하지 않는다. Primary에게 전달했으며 아직 결과 수거 전이다. 실제 DB/권한/키/서비스/Agent/컴파일/J3/P03 R3/Git 복구 실행0이다.
+
+종료 ticket은 부모의 단발·원 Tx 완결 정책에 따라 REJECTED/CONSUMED+finished_at+필수 자식행/감사 확정 뒤 NULL까지 열 불변으로 두고 같은 ticket 미래growth/불가능slot0으로 계산하도록 내부 전이를 닫았다. UNKNOWN hold와 다른 phase·공유 security aggregate는 구분한다. 목적 writer와 최종 역완결의 실제 연결 검수는 남아 있다.
+### 2026-11-05 필수 정책 회귀 시험 1파일 수정분 인수
+
+Primary가 원 raw8E045C88을 확인한 뒤 기존 시험의 정확12 불일치3P1F/595.207ms를 재현했다. 허용된 새6 목록·시험명2곳만 정합 후 정확 node --test tests/unit/UI11/preparation-policy.test.ts는4PASS/skip0/593.321ms/exit0이며 diff check0로 보고했다. 독립 B는 현재 raw7B02263BBE551F08389152811A4E90B729D89E65C61B48C0064B2BA61274F020 전후동일 및 새6/제목2곳 역치환 시 원 raw8E045C88과 완전 일치를 확인해 해당 최소 diff C0/I0로 반환했다. 기존12 상대순서·정확18비교·기본DENY/ackfalse·다른규칙/원문·준비POST0/명시정책POST1·negative·18×3=54조합은 그대로다. 정책 작성/저장 합성 검사만 증명하며 실제 수신 실행/권한이나 전체업무 완료가 아니다.
+
+B의 읽기 Git diff2시도는 작업영역 인식 오류와 cwd Permission denied로 실패해 중단했다. 셀 최종0/1 중 첫0은 후속 git show 성공까지 포함하므로 diff 성공으로 세지 않는다. 원문 읽기와 정확 raw 역치환 hash가 판정 근거이며 권한 변경·추가 Git재시도·시험 재실행은0이다. 제품 누락 근거에 쓰지 않는다. PMO는 I1해소·기존 단언 유지의 시험1파일 보완 보고에 새 결정 요청이 없어 개입하지 않는다고 회신했다.
+
+Main은 해당 test delta를 인수하고 기존57범위의 단독 구현을 계속하도록 기록했다. 실제 DB·권한·키·서비스·Agent·컴파일·J3/P03 R3·Git 복구는 여전히0, 전체 목적 writer·사적 선예약·역완결·S3~S7과 계획 완료는 미완료다.
+### 2026-11-05 Main 문서4개 로컬 checkpoint 준비
+
+Primary가 현재 HEAD 의존 검산/Git 작업/pending handle0과 문서 checkpoint 무충돌을 확인했다. Main은 현황·접합 지시·후속 조사 지시·필수 정책 시험 경로 파생 판정의 정확4문서만 로컬 커밋한다. 제품·시험·SQL과 보호 자료는 index에서 제외하고, 원격 재시도·Git 인증/권한 변경은 하지 않는다. Source57은 작성 중이고 Window 후보 producer의 함수 부재RED1 상태를 보존하며 목적 writer·실PG·전체계획 완료로 표시하지 않는다.
