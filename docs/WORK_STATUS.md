@@ -14634,3 +14634,32 @@ Main은 신산님께 예외와 조치를 설명했고 전체 목표를 일시정
 
 ### 2026-11-04 FN06 최초 수신의 의존성별 담당 결과 수거
 Primary의실제접점5업무와별도담당의초기N7slots/자기예약/거절감사대조를수거했다. 결과는미채택최초수신초안9절에분리보존했다. 고정폭저장대안·60admission/R105/L69는채택값이아니며추가보안감사경계검토가필요하다. 후보SHA9ba08f90148976b260cf0cb0bf30a358a8c289dae8d99a29815b05f5ea12532e이며SOURCE_GO0/EXECUTION_GO0를유지한다. 코드writer0·실환경실행0, 완료한UI02검증반복0. 다음은해당미채택대안의최소성·기존감사보호와의충돌을독립검토해정확한결정사항으로좁히는것이다.
+
+
+### 2026-11-04 FN06 최소 계약 대안 확정 전 독립 대조·작성 분배
+독립검토와Main963887에서원typed/NULL/실시각을보존한계상projection대안을확인했다.32자리물리문자·가짜종료시각과임의60admission을권장후보에서제외했다. 기존401/404미감사와인증후적격거절을구분하며logger:false/requestId만으로보호로그존재를주장하지않는다. Primary는새wire제안문서1개,비용담당은새accounting제안문서1개를소유해작성하고별도담당은완료hash기준으로검토한다. 제품code writer0,실환경실행0이다. Main287e65는추정0073파일명을읽으려다없는경로오류1이났으며401c96의rg로실제0073_control_handoff_acceptance.sql.pending를찾아963887에서원문을검산했다. 권한/ACL변경·제품수정·시험재실행0이다. 다음은두상세문서의새인증/공개/저장결정경계를하나의정확패킷으로통합하는것이다.
+
+
+### 2026-11-04 FN06 계상 초안 수거·정확 원형 보완 배정
+비용 담당자가 단독 소유 문서 FN06_NATIVE_FIRST_RECEIVE_ACCOUNTING_PROPOSAL_20261104.md를21887B/SHA2ab29ba1e3c97b347a5ea677c505b6ca88ea41eaf79fcbe2c1e76e149d8dcff1로 제출했다. Main acc82d와 독립 담당자가 지문을 검산했고, 해당 고정본의 원칙 대조는 C0/I0였다. 다만 exact schema/projection·HUMAN 생성 전 admission·고정 집계 namespace·collector 접합이 미닫혀 있어 구현 GO로 판정하지 않았다. 같은 담당자에게 새 table/typed projection/생산·역완결을 권장 후보 한 가지로 구체화하는 보완을 followup_task로 배정했다. wire 담당자는 별도 원형을 계속 작성하며, 검토 담당자는 새 완료hash를 전달받기 전 작성 중 파일을 확정 판정하지 않는다.
+독립 담당자의 상태 메시지에 일본어 혼입1이 있었으나 산출물에 인용하지 않고 한국어 사용을 재지시했으며 한국어 정정을 수거했다. Main은 해당 문장을 제품/계약에 반영하지 않았다. 실제 키·DB·권한·서비스·Agent·시험 실행0, 제품 code writer0이다. 직전 goal turn은 실제 running 담당자를 확인하고 같은 작업의 완료를 기다린 verified wait이며, timeout을 종료나 실패로 해석해 재시작하지 않았다.
+
+
+### 2026-11-04 Main 추정 경로 조회 반복 중단·언어 검증 누락
+Main은287e65의추정0073파일명오류,0fb418의추정source경로오류,d3ca81의존재하지않는packages검색으로같은경로추정원인의준비오류가3회누적됐다. 해당직접source조회·산술조사를중단하고실재확인된connector/runtime와server/modules/executions경로를독립검토담당에게전달했다. 제품실패/시험실패가아니며파일/ACL/권한/서비스변경0이다. 이후새경로는정본목록이나rg --files의확인결과로만정한다.
+Main d3ca81의justification에일본어가혼입됐다. 기존MAIN_OUTBOUND_LANGUAGE_MIX4회에이은5회이며,이미만든재귀검증을해당call에적용하지않은절차누락이다. 모든tool argument문자열을호출직전에검증하는local checked wrapper를재적용하고version3으로기록했다. 제품/지침/skill/hook수정0,해당문장은계약산출물에반영하지않는다. 신산님께오류·중단·분리조치를설명했으며PMO에도근거를전달한다. 기존담당자의wire/계상작성은계속하고완료검수와구현승격을혼동하지않는다.
+
+
+### 2026-11-04 FN06 Delivery 한도 독립 검산·후속 정합
+wire 담당자가 Delivery exact snapshot에 authority 원문 필드를 포함하고 임의16KiB 제한을 제거하는 권장안으로 보완 중이다. 비용 담당자의 수기식 metadata M=312+g+G+C≤634, D0=737+M≤1371을 독립 담당자가 실제 exact 객체의 순수 메모리 canonical 산술로 검산해 일치시켰다. 신규ref v1=138B/기존ref≤153B/ISO24/g≤16에서 authorityV2097310B, Delivery snapshot2098694B, V2098852B, uint32BE4+opaque43 frame2098899B이다. 기존 authority snapshot2MiB 허용량은 보존한다. 이 산식은 추가HTTPheader/manifest/구분자·ACK/L복제·원장self를 포함하지 않으며 실제TLS/DB/브라우저 PASS가 아니다.
+신규Delivery에기존native snapshot2MiB검사를그대로적용하면1542B초과거절되므로별도typedcap을후보에명시하도록전달했다. Offer의window/공통명령외피가원native본문2MiB를감쌀때경로/파서한도와충돌하는지도검토범위에추가했다. 기존입력축소/모든경로한도완화를해결책으로쓰지않는다. OPEN signer의원binding도설치등록과미생성native권위를exact타입으로구분해선행순환을다시만들지않도록검토한다. 두문서는아직작성중이며SOURCE_GO0/EXECUTION_GO0이다.
+
+
+### 2026-11-04 FN06 wire 후보 고정본·독립 검토 배정
+Primary가신규wire후보39641B/SHA bfb77f2ff11211428f863836f04aa265efe07ff79a0c0b8da26e11ca1cd23762를동결했다. Main21bce0에서지문을검산하고정본문서위치에동일bytes를반영했다. 정확HTTP/IPC/body/proof/null/profile/binding/ACK/UNKNOWN·전달typed한도와Offer전용2293760B/strictparser가후보에포함된다. 기존모든경로bodyLimit/원command2MiB/기존목적은변경하지않는조건이다. 여전히미채택/SOURCE_GO0/EXECUTION_GO0이며제품이구현됐다는뜻이아니다.
+독립담당자에게최초OPEN권위순환·Offer원입력/파서·same-client화면/Session경계·UNKNOWN뒤실행과역사GET구분·감사/계상교차를배정했다. Primary는새소유WI후보1개의정확파일allowlist/업무순서/TDD/합성검수/실행제외를작성한다. 비용담당은별도정확schema후보를계속작성하며완료hash전최종판정하지않는다. 제품code writer0·실제DB/키/권한/서비스/Agent/QA실행0이다.
+
+
+### 2026-11-04 FN06 wire 독립 C0/I3·같은 담당자 보완
+고정bfb77f2f의 독립검토는 C0/I3이다. (1) 실제 auth sessionId를 recipient에 전혀 내보내지 않는 문장과 필수subject.humanSessionId를 포함한 기존NativeAuthority 전체Delivery가 충돌한다. Main 권장 후보는 일반Web/IPC/OPEN metadata의실제ID노출0, 같은원main의보호Delivery 안 기존authority.subject에만명시예외를두며cookie/token노출0을유지하는안이다. 신규채택범위를패킷에드러내며redaction/hash/parser완화0이다. (2) 기존native signer/current는authority를필수요구하므로OPEN전용설치REGISTERED binding+Window의exact pre-authority타입/producer를별도로정의해야한다. (3) 명령작성/승인/POST는main소유persist:anvil-web remoteSession의WebContentsView로고정하고localSession/별도Chrome·다른기기와구분해야한다. cookie복사/자동세션이전0이며교차client요구는후속미완료로남긴다.
+Primary에게wire소유보완을정식으로추가배정했고WI작성과순차진행하도록했다. 새완료hash재검수전에는I3미해소/SOURCE_GO0/EXECUTION_GO0다. 계상담당은ACK JSON을별도ACK_RECORD wrapper로바꾸지않고고정wire의SlotReceipt snapshot/ref와일치시키며proof관계는실제typed FK/역완결에두고그비용을포함한다. 가짜ref나서로다른ACK원형의동시채택0이다. 제품/시험/SQL수정과실환경실행0,일반진도/대기만으로합격판정0이다.

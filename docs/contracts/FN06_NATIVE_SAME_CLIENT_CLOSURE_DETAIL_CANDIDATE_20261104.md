@@ -117,3 +117,9 @@ Primary는 다음5단위의 실제 접점을 확인했다. (1) app/current-sourc
 ### 자기비용과 거절 감사: 아직 선택하지 않은 대안
 예약행은R actual에한번, 미생성N/R/L만Q에넣어자기비용중복을금지한다. 계획hash에는미계산self_bytes를포함하지않는다. 담당자는숫자32자리문자·동일폭phase/closed_at표현을한대안으로제시했으나이는새저장계약이며채택하지않았다. 실제종료시각의의미를바꾸지않는더단순한고정typed투영과비교검토가필요하다. 기존FN15 예약함수의operation/subject를receive에재사용하지않는다.
 기존recordProjectDenial은적격4xx마다audit를추가하여dedup/상한이없다. 신규receive의인증전무저장거절·입장후내구감사·원requestId/hash재조회·불명hold·효과시작전포화거절의경계는별도채택대상이다. 담당자의60/window·프로젝트공유rate안은새선택이다. 이를채택할경우조건부R44+거절replay60+최초project admission1=105행, 신규L성공9+거절audit60=69행이며현재R44에숨겨넣지않는다. 60이나R105/L69를확정값으로승격하지않는다. 무저장구간의보안감사영향, 기존보호로그와의역할, 최소한의유한대안을독립검토한뒤결정패킷을만든다. code enum/row shape·실제collector·역완결·예약해제불명규칙까지고정되기전구현GO0이다.
+
+
+## 10. 독립 검토 후 상세 계약 작성 경계
+Main은963887 원문 대조로0073_control_handoff_acceptance의계상codec이원bigint/NULL/시각/상태와계상표현을분리함을확인했다. 새receive 물리값을32자리문자·가짜closed_at로바꾸는안은채택후보에서제외한다. 별도폐쇄projection으로원typed값/NULL/실제종료시각을보존하는안을상세화한다. FN15 인증/operation/subject함수는전용하지않는다.
+recordProjectDenial은이미401/404제외,재인증·projectMember확인뒤적격4xx만저장한다. 진짜인증전무저장과인증후403/409/412생략을동일하게취급하지않는다. 후자는감사축소이며채택하지않았다. app logger:false와응답requestId는내구보안로그의증거가아니다. 기존로그가새공백을메운다고주장하지않는다. 임의60/window·R105/L69는더이상권장기준이아니며단계별고유ticket에서필요량을도출한다. 포화이후모든악성시도의개별내구audit와유한저장을동시에보장할수없으면불가능한부분을숨기지않고별도보안집계의선택으로남긴다.
+후속작성은서로다른문서소유로분리했다. Primary가FN06_NATIVE_FIRST_RECEIVE_WIRE_PROPOSAL_20261104.md의정확HTTP/IPC/proof/profile/binding/ACK를,비용담당이FN06_NATIVE_FIRST_RECEIVE_ACCOUNTING_PROPOSAL_20261104.md의계상projection/초기미래예약/유한입장과감사분기를작성한다. 검토담당은완료된hash를기준으로교차검토한다. 모두새계약제안이고SOURCE_GO0/EXECUTION_GO0이다. 제품code writer는0이며일부미채택을이유로UI02검수본을되돌리지않는다.
