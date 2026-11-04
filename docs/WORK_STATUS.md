@@ -14244,3 +14244,7 @@ Primaryb0dacd 신규RED1→ce872a 직접/인접44PASS/skip0/16026.664ms·2e4c9c 
 
 ### 2026-11-04 R8 source3 SQL 기준·namespace 검수
 Primaryfd3017 직접3PASS/skip0/590.1264ms·a95774 Bash-n0/11e9e4 index/선택/공백0·오류0/writer반환/live0. Main5abeb7 driverE743B0F8/시험D16A063B의namespace/SQLbaseline·직전R7음성외부모raw동일·새index0B4EC445는header/0071hashbytes만변경·106Gitblob동일/명시105·2376142B/order09d독립검산0. a17a01 변경음성1PASS/skip0/137.8831ms/diff0. 기존동일로직56/noEmit/환경50/native44재사용·중복전수0. 실제DB권한키서비스Agent/WSL/P03R3·새R8QA실행/시각발급0/소진R7재사용0/원FAILEDUNKNOWN감사보존·전체계획미완료. 다음정확code/instance32·생산SQL10/신규전용자원을실행후보에동결하고새직접결정전실행금지.
+
+
+### 2026-11-04 R8 실행 후보·source 결과 동결
+Primarye485a6 신규문서2 source결과A4129B35/초기후보DB97A4F1·생산SQL10/plan18owner6/선택105·서식검산0·오류0/writer반환/live0. Main736ef3읽기후98e9aa에서소진승인표기R6→직전R7 한문구만명확화(실행조건변경0). 최종후보C37DC25BEC6758542C8C3D08B9D1FC8971AE94BBED23F1E176D871E2B676E552/21481B,code2224224fc1b1b02776258b2db2bde4bf7dd8c309/SQLfed86a515561d3f342859367d90d94e26b530248/instance32 2224224fc1b1b02776258b2db2bde4bf·선택105/2376142B/order09d/plan18owner6·생산SQL10원문/hash전부동일/mirror검산0. bootstrap0B743F8F58F8CF01DB0C56CF980092A5B74F243F34DFDECCF4CCD1F493AE44BA. scoped문서C0/I0/M0·새R8실행NOT_APPROVED/자원생성/시각발급0. 원R7와역할/권한·Tx/격리·전체30분PG10분slot1·UNKNOWN뒤후속조회mutation삭제0동일. 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R7재사용0·원실패UNKNOWN·감사/전체계획미완료유지.
