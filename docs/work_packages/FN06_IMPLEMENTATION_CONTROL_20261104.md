@@ -438,3 +438,17 @@ Main은 개별 불량값마다 wrapper 검산을 덧붙이는 방식을 중단�
 잘못된 ref/hash와 만료지만 parse 가능한 날짜의 조합, 비정규 ISO/span, 정상 형상의 만료를 구분하는 직접 반례를 추가한다. 기존 plain/null-prototype·비순환 공유참조·깊이64는 보존한다. 새 임의8192 노드 제한은 기존 상계 근거 없이 입력 제한으로 채택하지 않는다. WIP79476의 adapter에도 stable 선검사는 있었으므로 이 메모만으로 새 hook 호출순서 계약을 만들지 않는다. Main은 소스 수정 없이 원인·범위·검수 방법을 처리하고 기존 Primary가 구현한다.
 
 B의 지원 조사 중 실제 import가 아닌 canonical-json.cjs 추정 읽기1은 통합 명령 exit1, stderr는 SilentlyContinue로 미출력이었다. 앞선 b07299와 같은 경로 추정 원인2회로 기록하고 근거에서 제외했다. 이후 실제 runtime-catalogue-profile.cjs import만 확인하고 추가 검색을 중단했다. 파일/권한/환경 변경0이다.
+## 46. HUMAN client·desktop adapter·runtime source 한정 인수
+
+공유 TS prepareWindow로 typed 검산을 재사용한 최종본을 A가 C0/I0로 재검수했고 기한·INPUT_INVALID I1 모두 ADDRESSED다. prepareWindow32303D02BA05614E1030B112DCA851B5803F9750A6937C5922BADCFE80953B36, signingCurrentF9ABA99800D9717E20EE159FAE83D178057EAE6296D35892DAE6C0F762E3C5CF, windowInputDCE386AB27B50A44D08C52849450F896750393B4C366052E490855D1A49993C3, factoryEB8AE9FE37C023A8CBEAE17AEDEA164D60B03CC6D42DB2F38FDD0419765DC856의 본문 전후 지문이 같다. 임의8192 노드 제한은 제거했고 원 깊이64·입력 허용 의미·export8개를 보존했다.
+
+Main은 각 Node exit를 별도 수거했다. 정확 명령/결과:
+- node --test --test-name-pattern='HUMAN 수신 client는' tests/unit/FN06/native-first-receive-client.test.ts : 8461cb,2 PASS/skip0/294.343ms/exit0.
+- node --test tests/desktop/native-first-receive-owner.test.cjs : 153782,4 PASS/skip0/1328.3604ms/exit0.
+- node --test tests/desktop/native-proof-runtime-build.test.cjs : eddede,11 PASS/skip0/836.1119ms/exit0.
+
+754e65→34dfa5에서 직접7경로의 원문 전후 동일을 확인하고 결과 직후 전체 시험 동결을 해제했다. 최종 connector clientBEA7C93F518755CCB7C616725E04EA60DB3914A398F952C1010C30897F84E3B8, adapterAE6D5727A36C4DC97E6227310C19A5C80DF5842FA3A44B2518DC57B26FDB0F9F, owner시험528A223D9AD042384F7269BD0FE27A1DC015FB988D72E708EF039E8CFDB01CDE다. Primary의 선행 typed순서 RED1·최종4 PASS/type0와 구분하며, 개별 Node exit가 미수거였던 앞선 TS2 제출을 이번 fresh 결과로 보완했다. 이전 중간 실패·지적 이력은 보존한다.
+
+인수는 원 Session.fetch HUMAN current·안전 입력/최종 기한·desktop 내부 adapter·메모리 runtime 조립 source에 한정한다. shell→owner·preauthority SIGN/key-host·pinned HTTPS/slot·네 phase 후행 효과는 아직 미완료다. 실제 파일 package/C# 컴파일·DB/RLS/TLS·서비스·키·Agent 실행은 NOT_RUN이다. 이미 인수한 부분의 무변경 반복 검사는 하지 않고 같은 Primary가 남은 실제 호출선을 구현한다. ACK 입력 변경은 답변 전 GO0이다.
+
+문서 전용 로컬 checkpoint c4be38aafffef17d0d4e3eb488a89b3fabf5e2cb는 WIP79476dfa의 직접 자식이며 Main 문서6경로만 포함/index0이다. 제품 작성과 원격은 변경하지 않았다.

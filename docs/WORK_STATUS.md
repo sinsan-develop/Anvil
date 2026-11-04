@@ -15006,3 +15006,8 @@ Main 시험명 조회2533b4는 foreach 뒤 파이프의 PowerShell 구문 오류
 
 - 후속 snapshot만으로 typed 검산 전 날짜 오류 분류가 남아 adapter 전체 인수는 보류했다. Main은 실제 source를 대조해 wrapper의 중복·불완전 검산이 원인임을 확인하고 기존 TS typed Window 검산을 내부 메소드로 공유하는 최소안을 같은 Primary에게 지시했다.
 - 기존 오류 코드·null prototype/공유참조·기간/깊이·runtime export8개를 유지하고 임의 입력 제한은 추가하지 않는다. 실제 실행·권한·새 공개 계약은 변경하지 않는다. 담당자는 직접 반례와 최종 await 기한 검사까지 함께 보완하고, 독립 phase 후행 구현도 계속한다. 상세 §45를 따른다.
+## 2026-11-05 FN06 HUMAN client·desktop adapter source 부분 인수
+
+- 기존 Primary의 typed 검산 공유 보완은 독립 C0/I0·이전 기한/입력 I1 ADDRESSED, Main fresh HUMAN2·owner4·메모리 build11이 각각 exit0/skip0다. 직접7 원문은 전후 동일이고 즉시 동결을 해제했다. 정확 명령·hash는 구현 통제 §46에 기록했다.
+- source 한정 부분 인수다. 실제 shell→owner·preauthority 서명/키-host·pinned HTTPS/slot과 네 phase 후행 proof/효과는 여전히 미완료이며 같은 담당자가 계속 구현한다. 실제 DB·권한·키·서비스·Agent 실행0, ACK 입력 변경만 답변 전 GO0이다.
+- Main 문서6개는 로컬 c4be38aafffef17d0d4e3eb488a89b3fabf5e2cb로 보존했다. 전체 완료·private 게시·실환경 인수가 아니며 원격 재시도는 하지 않았다.
