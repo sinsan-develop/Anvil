@@ -14153,3 +14153,11 @@ Primary한정읽기·Mainf0b511/ee4466·PG15공식근거는0039 두digest호출�
 
 ### 2026-11-04 ownership SHA256 source2 독립 검수
 Primary323ea4 의존RED1/보존PASS1→34116f 신규2+ledger7/observation4=13PASS/skip0/241.6562ms/f0b2c4 noEmit0/653573 diff0/7d2682 서식0·writer반환/live0. Main71d7da fresh13PASS/skip0/187.9215ms·두hunk읽기·원bytea/hex/nonce·guard유지검산,SQLD7ABFB41/testCF6DA8FE·원CC583507역치환byte동일·+4B 확인. scopedC0/I0/M0·실제PG함수해석/hash동등성/전체설치미검증.0039두digest만pg_catalog.sha256로교체하고확장/검색경로/권한변경0·기존적용SQL/index/manifest불변. 실제DB/키/WSL/서비스/Agent/P03R3·새QA실행0·오류0,원R5FAILED·정리잔여0/감사보존·R4FAILED/R3UNKNOWN유지. 상세 docs/04_test_reports/AV3/IX01_OWNERSHIP_BUILTIN_SHA256_SOURCE_RESULT_20261104.md . 새SQL기준/index/namespace/실행안동결·새직접승인전다음QA금지/전체계획미완료.
+
+
+### 2026-11-04 R6 새 SQL 기준 source 준비 배정
+검수된SQL기준69bdb75a1db5d3557e55daa03f2415635b100e31/private8035b1·trackedclean/보호3,0a647daa대비0039두표현+4B뿐이다. WI C0F73B92536752B103D86B76FBBE7E0018A8F77B471B25147376409F7725F16E에서같은Primary에driver/시험/R6index 정확3경로만SQLbaseline·namespace/직전R5cwd·baseline음성/indexheader·0039hashbytes결박으로배정했다.106/선택105/order09d불변·새선택총2376143,기존provider준비/Tx/권한·기한·UNKNOWN로직불변/부모byte역치환·직접집중검사만수행한다. Main동시코드write0·실제DB/권한/키/WSL/서비스/Agent/P03R3·새QA실행0. R5실행은소진/실행자원잔여0·감사보존,새정확code/실행안·새직접결정전실행금지·전체계획미완료.
+
+
+### 2026-11-04 R6 source3 SQL 기준·namespace 검수
+Primary d5f912 driver/시험역치환부모raw동일·indexheader/0039hashbytes만변경/다른105행동일/새GitSQL원문일치·선택105/2376143B/order09d 확인,af75c1 직접3PASS/skip0/169.2343ms·2e9423 Bash-n0/c0df11 diff0·writer반환/live0. Main2b29f0은새음성을object형으로가정한독립검산준비오류1로중단했고e813fb 실제tuple형추가·제목을읽어보정했다(제품수정/실환경0). Main ef6028은driver409AB3C8/시험7DAC1A7D의namespace/SQLbaseline·직전R5음성외byte동일·새index670DD8D2는headerbaseline69bd/0039 D7ABFB41·31920만변경/다른105행동일·합계2376143을독립검산0, c5d000 변경음성1PASS/156.1404ms/diff0. 원로직/타입불변으로기존56/noEmit·새SQL직접13증거재사용/중복전수0. 실제R6/DB·권한·키·WSL/서비스·Agent/P03R3실행0. 원R5FAILED/정리잔여0·감사보존·전체계획미완료. 다음실행code/instance32·생산SQL/새SQL선택기준을실행후보에고정하고새직접결정전실행금지.
