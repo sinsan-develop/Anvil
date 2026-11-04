@@ -5,11 +5,11 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 
 export interface UserCommonCommand {
-  schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm' | 'confirmMethodology';
+  schemaVersion: 1; commandId: string; operation: 'saveCommonSetupDefinition' | 'revokeCommonSetupDefinition' | 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm' | 'confirmMethodology';
   targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown>;
 }
 // 호출자는 현재 인증·client·중복 명령과 해당 도메인 소유권을 같은 transaction에서 먼저 검사한다.
-export async function persistCommonReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: UserCommonCommand, ref: VersionRef, validation: { issues: { severity: string }[] }, outcome?: { status: 'REVIEW_RECORDED' | 'CONFIRMED'; reviewRef?: unknown; confirmationId?: string }) {
+export async function persistCommonReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: UserCommonCommand, ref: VersionRef, validation: { issues: { severity: string }[] }, outcome?: { status: 'REVIEW_RECORDED' | 'CONFIRMED' | 'COMMON_SETUP_STORED' | 'COMMON_SETUP_REVOKED'; reviewRef?: unknown; confirmationId?: string; snapshot?: unknown }) {
   const commandId = randomUUID(), operationId = randomUUID(), receiptId = randomUUID(), requestHash = contentHash(canonicalJson(request));
   const receivedAt = (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
   const result = { scopeKind: 'USER_COMMON', ownerUserId: actor.actorId, operationId, commandId: request.commandId, status: 'APPLIED', targetId: ref.id, version: ref.version,

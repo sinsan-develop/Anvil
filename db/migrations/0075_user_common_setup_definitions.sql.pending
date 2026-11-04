@@ -1,0 +1,184 @@
+-- UI02 r3 직접 채택 source-only forward. 실제 적용/권한 부여/자료 변환은 미실행이다.
+BEGIN;
+DO $$BEGIN IF current_user<>'anvil_v3_migrator' OR session_user<>'anvil_v3_migrator' THEN RAISE EXCEPTION 'COMMON_SETUP_MIGRATOR_REQUIRED';END IF;END;$$;
+CREATE TABLE anvil.common_setup_heads(
+ owner_user_id uuid NOT NULL REFERENCES anvil.users(id) ON DELETE RESTRICT,id uuid NOT NULL,
+ kind text NOT NULL CHECK(kind IN('TOOL','ENVIRONMENT')),label text NOT NULL,head_version bigint NOT NULL CHECK(head_version>0),state text NOT NULL CHECK(state IN('ACTIVE','REVOKED')),
+ created_command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,PRIMARY KEY(owner_user_id,id),UNIQUE(id)
+);
+CREATE TABLE anvil.common_setup_versions(
+ owner_user_id uuid NOT NULL,definition_id uuid NOT NULL,version bigint NOT NULL CHECK(version>0),content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),snapshot_json jsonb NOT NULL,request_json jsonb NOT NULL,snapshot_canonical text NOT NULL,request_canonical text NOT NULL,result_canonical text NOT NULL,
+ command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ PRIMARY KEY(owner_user_id,definition_id,version),UNIQUE(owner_user_id,definition_id,version,content_hash),
+ FOREIGN KEY(owner_user_id,definition_id) REFERENCES anvil.common_setup_heads(owner_user_id,id) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.common_setup_revocations(
+ owner_user_id uuid NOT NULL,definition_id uuid NOT NULL,target_version bigint NOT NULL,target_hash text NOT NULL,reason text NOT NULL,request_json jsonb NOT NULL,request_canonical text NOT NULL,result_canonical text NOT NULL,
+ command_id uuid PRIMARY KEY REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ UNIQUE(owner_user_id,definition_id),FOREIGN KEY(owner_user_id,definition_id,target_version,target_hash) REFERENCES anvil.common_setup_versions(owner_user_id,definition_id,version,content_hash) ON DELETE RESTRICT
+);
+CREATE TABLE anvil.draft_common_setup_selections(
+ owner_user_id uuid NOT NULL REFERENCES anvil.users(id),draft_id uuid NOT NULL REFERENCES anvil.project_drafts(id),version bigint NOT NULL CHECK(version>0),selection_json jsonb NOT NULL,
+ command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id),PRIMARY KEY(owner_user_id,draft_id,version)
+);
+CREATE TABLE anvil.common_setup_charges(
+ owner_user_id uuid NOT NULL REFERENCES anvil.users(id),source_kind text NOT NULL,row_identity text NOT NULL,origin_command_id uuid NOT NULL REFERENCES anvil.commands(id),
+ projection_hash text NOT NULL CHECK(projection_hash~'^[a-f0-9]{64}$'),source_bytes bigint NOT NULL CHECK(source_bytes>=0),PRIMARY KEY(owner_user_id,source_kind,row_identity)
+);
+CREATE TABLE anvil.project_setup_copies(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,slot text NOT NULL CHECK(slot IN('COORDINATOR_TOOL','CODING_TOOL','ENVIRONMENT')),
+ source_owner_user_id uuid NOT NULL REFERENCES anvil.users(id),source_id uuid NOT NULL,source_version bigint NOT NULL,source_hash text NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[a-f0-9]{64}$'),snapshot_json jsonb NOT NULL,creation_command_id uuid NOT NULL REFERENCES anvil.commands(id),
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,slot),FOREIGN KEY(source_owner_user_id,source_id,source_version,source_hash) REFERENCES anvil.common_setup_versions(owner_user_id,definition_id,version,content_hash) ON DELETE RESTRICT
+);
+CREATE FUNCTION anvil.fn75_text(v jsonb,n integer,nonblank boolean DEFAULT true) RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT COALESCE(jsonb_typeof(v)='string' AND (NOT nonblank OR length(btrim(v#>>'{}'))>0) AND length(v#>>'{}')<=n AND (SELECT COALESCE(sum(CASE WHEN ascii(ch)>65535 THEN 2 ELSE 1 END),0)<=n FROM regexp_split_to_table(v#>>'{}','') ch),false);
+$$;
+CREATE FUNCTION anvil.fn75_sensitive(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE x record;t text;
+BEGIN
+ IF jsonb_typeof(v)='string' THEN t=v#>>'{}';RETURN t~*'-----BEGIN ([A-Z0-9]+ )?PRIVATE KEY-----|Bearer[[:space:]]+[A-Za-z0-9_.~+/-]{16,}|(password|passwd|api[_-]?key|access[_-]?token|token|secret)[[:space:]]*[:=][[:space:]]*["'']?[^[:space:]"'']{4,}';
+ ELSIF jsonb_typeof(v)='object' THEN FOR x IN SELECT key,value FROM jsonb_each(v) LOOP IF x.key~*'^(password|passwd|api[_-]?key|access[_-]?token|token|secret)$' OR anvil.fn75_sensitive(x.value) THEN RETURN true;END IF;END LOOP;
+ ELSIF jsonb_typeof(v)='array' THEN FOR x IN SELECT value FROM jsonb_array_elements(v) LOOP IF anvil.fn75_sensitive(x.value) THEN RETURN true;END IF;END LOOP;END IF;RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn75_host(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT COALESCE(anvil.checkpoint_keys(v,ARRAY['label','platform','pathHint']) AND anvil.fn75_text(v->'label',200) AND v->>'platform' IN('WINDOWS','LINUX','OTHER') AND (v->'pathHint'='null'::jsonb OR anvil.fn75_text(v->'pathHint',4096)),false);
+$$;
+CREATE FUNCTION anvil.fn75_definition_valid(k text,v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE x jsonb;a text;n bigint;
+BEGIN
+ IF octet_length(convert_to(anvil.fn01_json(v),'UTF8'))>2097152 OR anvil.fn75_sensitive(v) THEN RETURN false;END IF;
+ IF k='TOOL' THEN RETURN COALESCE(anvil.checkpoint_keys(v,ARRAY['label','toolProduct','toolVersion','adapterKind','modelOptions']) AND anvil.fn75_text(v->'label',200) AND anvil.fn75_text(v->'toolProduct',200) AND anvil.fn75_text(v->'toolVersion',200) AND anvil.fn75_text(v->'adapterKind',200) AND jsonb_typeof(v->'modelOptions')='object',false);END IF;
+ IF k<>'ENVIRONMENT' OR NOT anvil.checkpoint_keys(v,ARRAY['label','executionHost','targetHosts','sourceRoots','commandProfiles','executionUserHint']) OR NOT anvil.fn75_text(v->'label',200) OR NOT anvil.fn75_host(v->'executionHost') OR (v->'executionUserHint'<>'null'::jsonb AND NOT anvil.fn75_text(v->'executionUserHint',200)) THEN RETURN false;END IF;
+ FOREACH a IN ARRAY ARRAY['targetHosts','sourceRoots','commandProfiles'] LOOP
+ IF jsonb_typeof(v->a) IS DISTINCT FROM 'array' OR jsonb_array_length(v->a)>200 THEN RETURN false;END IF;
+ SELECT count(DISTINCT btrim(value->>'label')) INTO n FROM jsonb_array_elements(v->a);IF n<>jsonb_array_length(v->a) THEN RETURN false;END IF;
+ FOR x IN SELECT value FROM jsonb_array_elements(v->a) LOOP
+ IF a='targetHosts' THEN IF NOT anvil.fn75_host(x) THEN RETURN false;END IF;
+ ELSIF a='sourceRoots' THEN IF NOT anvil.checkpoint_keys(x,ARRAY['label','pathHint','requestedAccess']) OR NOT anvil.fn75_text(x->'label',200) OR NOT anvil.fn75_text(x->'pathHint',4096) OR COALESCE(x->>'requestedAccess' NOT IN('READ','READ_WRITE'),true) THEN RETURN false;END IF;
+ ELSE IF NOT anvil.checkpoint_keys(x,ARRAY['label','purpose','commandText']) OR NOT anvil.fn75_text(x->'label',200) OR NOT anvil.fn75_text(x->'purpose',20000) OR NOT anvil.fn75_text(x->'commandText',20000) THEN RETURN false;END IF;END IF;
+ END LOOP;END LOOP;RETURN true;
+END;$$;
+CREATE FUNCTION anvil.common_setup_context(s uuid,a uuid,c uuid) RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF session_user<>'anvil_v3_app' THEN RAISE EXCEPTION 'COMMON_SETUP_SESSION_REQUIRED' USING ERRCODE='42501';END IF;PERFORM anvil.fn01_active(s,a,c);
+ PERFORM set_config('anvil.fn75_session',s::text,true);PERFORM set_config('anvil.fn75_actor',a::text,true);PERFORM set_config('anvil.fn75_client',c::text,true);PERFORM set_config('anvil.actor_id',a::text,true);
+END;$$;
+CREATE FUNCTION anvil.fn75_owner(o uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s uuid;a uuid;c uuid;
+BEGIN
+ IF session_user<>'anvil_v3_app' THEN RETURN false;END IF;s=NULLIF(current_setting('anvil.fn75_session',true),'')::uuid;a=NULLIF(current_setting('anvil.fn75_actor',true),'')::uuid;c=NULLIF(current_setting('anvil.fn75_client',true),'')::uuid;
+ IF a IS DISTINCT FROM o OR s IS NULL OR c IS NULL THEN RETURN false;END IF;PERFORM anvil.fn01_active(s,a,c);RETURN true;
+EXCEPTION WHEN invalid_text_representation THEN RETURN false;WHEN insufficient_privilege THEN IF SQLERRM IN('FN01_APP_SESSION_REQUIRED','FN01_ACTIVE_SESSION_REQUIRED') THEN RETURN false;END IF;RAISE;
+END;$$;
+CREATE FUNCTION anvil.common_setup_version_complete(o uuid,d uuid,n bigint) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v anvil.common_setup_versions;h anvil.common_setup_heads;c anvil.commands;r anvil.authorization_receipts;a anvil.user_common_audit_events;q jsonb;s jsonb;ref jsonb;digest text;
+BEGIN
+ IF session_user='anvil_v3_app' AND NOT anvil.fn75_owner(o) THEN RETURN false;END IF;
+ SELECT * INTO v FROM anvil.common_setup_versions WHERE owner_user_id=o AND definition_id=d AND version=n;IF NOT FOUND THEN RETURN false;END IF;
+ SELECT * INTO h FROM anvil.common_setup_heads WHERE owner_user_id=o AND id=d;SELECT * INTO c FROM anvil.commands WHERE id=v.command_id;
+ SELECT * INTO r FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id;SELECT * INTO a FROM anvil.user_common_audit_events WHERE owner_user_id=o AND command_id=c.id;
+ s=v.snapshot_json;q=v.request_json;ref=jsonb_build_object('id',d,'version',n,'contentHash',v.content_hash);
+ digest=anvil.fn01_hash(jsonb_build_object('scopeKind','USER_COMMON','ownerUserId',o,'clientId',c.client_id,'requestHash',c.request_hash,'targetRef',ref));
+ IF NOT anvil.checkpoint_keys(s,ARRAY['id','version','kind','definition','reason','createdBy']) OR s->>'id' IS DISTINCT FROM d::text OR s->>'version' IS DISTINCT FROM n::text OR s->>'kind' IS DISTINCT FROM h.kind OR s->>'createdBy' IS DISTINCT FROM o::text OR NOT anvil.fn75_text(s->'reason',20000) OR NOT anvil.fn75_definition_valid(h.kind,s->'definition') OR v.snapshot_canonical::jsonb IS DISTINCT FROM s OR v.request_canonical::jsonb IS DISTINCT FROM q OR v.result_canonical::jsonb IS DISTINCT FROM c.result_ref OR v.content_hash IS DISTINCT FROM encode(pg_catalog.sha256(convert_to(v.snapshot_canonical,'UTF8')),'hex') THEN RETURN false;END IF;
+ IF NOT anvil.checkpoint_keys(q,ARRAY['schemaVersion','commandId','clientId','operation','targetId','expectedVersion','payload']) OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'operation' IS DISTINCT FROM 'saveCommonSetupDefinition' OR q->>'clientId' IS DISTINCT FROM c.client_id::text OR q->>'commandId' IS DISTINCT FROM c.command_id::text OR q->>'expectedVersion' IS DISTINCT FROM (n-1)::text OR (n=1 AND q->'targetId' IS DISTINCT FROM 'null'::jsonb) OR (n>1 AND q->>'targetId' IS DISTINCT FROM d::text) OR NOT anvil.checkpoint_keys(q->'payload',ARRAY['kind','definition','reason']) OR q->'payload' IS DISTINCT FROM jsonb_build_object('kind',s->'kind','definition',s->'definition','reason',s->'reason') OR anvil.fn75_sensitive(q) THEN RETURN false;END IF;
+ IF c.scope_kind IS DISTINCT FROM 'USER_COMMON' OR c.scope_id IS DISTINCT FROM o OR c.actor_id IS DISTINCT FROM o OR c.operation IS DISTINCT FROM 'saveCommonSetupDefinition' OR c.state IS DISTINCT FROM 'APPLIED' OR c.request_hash IS DISTINCT FROM encode(pg_catalog.sha256(convert_to(v.request_canonical,'UTF8')),'hex') OR c.expected_version IS DISTINCT FROM n-1 OR c.result_ref->'data'->'ref' IS DISTINCT FROM ref OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'COMMON_SETUP_STORED' OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM s THEN RETURN false;END IF;
+ IF r.command_id IS DISTINCT FROM c.id OR r.scope_kind IS DISTINCT FROM 'USER_COMMON' OR r.scope_id IS DISTINCT FROM o OR r.policy_ref IS NOT NULL OR r.approval_decision_ref IS NOT NULL OR r.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',o,'clientId',c.client_id) OR r.scope_digest IS DISTINCT FROM digest OR a.command_id IS DISTINCT FROM c.id OR a.operation_id IS DISTINCT FROM c.operation_id OR a.client_id IS DISTINCT FROM c.client_id OR a.operation IS DISTINCT FROM c.operation OR a.target_ref IS DISTINCT FROM ref OR a.outcome IS DISTINCT FROM 'APPLIED' OR (SELECT count(*) FROM anvil.user_common_audit_events WHERE owner_user_id=o AND command_id=c.id)<>1 THEN RETURN false;END IF;
+ IF n>1 AND NOT EXISTS(SELECT 1 FROM anvil.common_setup_versions p WHERE p.owner_user_id=o AND p.definition_id=d AND p.version=n-1) THEN RETURN false;END IF;RETURN true;
+END;$$;
+CREATE FUNCTION anvil.fn75_projection(o uuid) RETURNS TABLE(source_kind text,row_identity text,origin_command_id uuid,projection jsonb) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH ids AS(SELECT command_id id FROM anvil.common_setup_versions WHERE owner_user_id=o UNION SELECT command_id FROM anvil.common_setup_revocations WHERE owner_user_id=o UNION SELECT command_id FROM anvil.draft_common_setup_selections WHERE owner_user_id=o)
+ SELECT 'HEAD',h.id::text,h.created_command_id,to_jsonb(h) FROM anvil.common_setup_heads h WHERE h.owner_user_id=o
+ UNION ALL SELECT 'VERSION',v.definition_id::text||':'||v.version::text,v.command_id,to_jsonb(v) FROM anvil.common_setup_versions v WHERE v.owner_user_id=o
+ UNION ALL SELECT 'REVOCATION',r.command_id::text,r.command_id,to_jsonb(r) FROM anvil.common_setup_revocations r WHERE r.owner_user_id=o
+ UNION ALL SELECT 'DRAFT_SELECTION',d.draft_id::text||':'||d.version::text,d.command_id,to_jsonb(d) FROM anvil.draft_common_setup_selections d WHERE d.owner_user_id=o
+ UNION ALL SELECT 'COMMAND',c.id::text,c.id,to_jsonb(c)||jsonb_build_object('_canonical_result_ref',COALESCE(v.result_canonical,r.result_canonical)) FROM ids JOIN anvil.commands c ON c.id=ids.id LEFT JOIN anvil.common_setup_versions v ON v.command_id=c.id LEFT JOIN anvil.common_setup_revocations r ON r.command_id=c.id
+ UNION ALL SELECT 'RECEIPT',r.id::text,c.id,to_jsonb(r) FROM ids JOIN anvil.commands c ON c.id=ids.id JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id
+ UNION ALL SELECT 'AUDIT',a.event_id::text,a.command_id,to_jsonb(a) FROM ids JOIN anvil.user_common_audit_events a ON a.command_id=ids.id AND a.owner_user_id=o;
+$$;
+-- canonical_pairs: JSONB 값의 재직렬화를 원형/원명령 비용에 사용하지 않는다.
+-- 실제 text 열은 일반 행의 일부로 계상하고 병행 JSONB 열은 검증된 동일 원문 bytes로 한 번 더 계상한다.
+-- _canonical_result_ref는 물리 command의 result_ref 비용용 내부 projection으로 실제 저장 열 비용을 추가하지 않는다.
+CREATE FUNCTION anvil.fn75_cost(v jsonb) RETURNS bigint LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE rest jsonb:=v;names text[]:=ARRAY['snapshot_json','request_json','result_ref'];texts text[]:=ARRAY['snapshot_canonical','request_canonical','_canonical_result_ref'];raw text;extra bigint:=0;fields integer:=0;i integer;
+BEGIN
+ FOR i IN 1..3 LOOP
+ IF v?names[i] AND v?texts[i] THEN
+ raw=v->>texts[i];IF raw IS NULL OR raw::jsonb IS DISTINCT FROM v->names[i] THEN RAISE EXCEPTION 'COMMON_SETUP_CANONICAL_MISMATCH';END IF;
+ rest=rest-names[i];IF left(texts[i],1)='_' THEN rest=rest-texts[i];END IF;
+ extra=extra+octet_length(convert_to(to_jsonb(names[i])::text,'UTF8'))+1+octet_length(convert_to(raw,'UTF8'));fields=fields+1;
+ END IF;END LOOP;
+ RETURN octet_length(convert_to(anvil.fn01_json(rest),'UTF8'))+extra+CASE WHEN fields=0 THEN 0 WHEN rest='{}'::jsonb THEN fields-1 ELSE fields END;
+END;$$;
+CREATE FUNCTION anvil.common_setup_complete(o uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x record;z anvil.common_setup_charges;h anvil.common_setup_heads;r anvil.common_setup_revocations;c anvil.commands;q jsonb;ref jsonb;n bigint;used bigint;
+BEGIN
+ IF session_user='anvil_v3_app' AND NOT anvil.fn75_owner(o) THEN RETURN false;END IF;
+ IF (SELECT count(*) FROM anvil.common_setup_heads WHERE owner_user_id=o)>1000 OR (SELECT count(*) FROM anvil.common_setup_versions WHERE owner_user_id=o)>10000 OR (SELECT count(*) FROM anvil.draft_common_setup_selections WHERE owner_user_id=o)>10000 THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.actor_id=o AND c.scope_kind='USER_COMMON' AND
+ ((c.operation='saveCommonSetupDefinition' AND NOT EXISTS(SELECT 1 FROM anvil.common_setup_versions v WHERE v.owner_user_id=o AND v.command_id=c.id)) OR
+ (c.operation='revokeCommonSetupDefinition' AND NOT EXISTS(SELECT 1 FROM anvil.common_setup_revocations r WHERE r.owner_user_id=o AND r.command_id=c.id)))) THEN RETURN false;END IF;
+ FOR h IN SELECT * FROM anvil.common_setup_heads WHERE owner_user_id=o LOOP
+ SELECT count(*) INTO n FROM anvil.common_setup_versions WHERE owner_user_id=o AND definition_id=h.id;IF n<>h.head_version OR NOT EXISTS(SELECT 1 FROM anvil.common_setup_versions WHERE owner_user_id=o AND definition_id=h.id AND version=1 AND command_id=h.created_command_id) OR NOT EXISTS(SELECT 1 FROM anvil.common_setup_versions WHERE owner_user_id=o AND definition_id=h.id AND version=h.head_version AND snapshot_json->'definition'->>'label'=h.label) OR (h.state='REVOKED') IS DISTINCT FROM EXISTS(SELECT 1 FROM anvil.common_setup_revocations WHERE owner_user_id=o AND definition_id=h.id AND target_version=h.head_version) THEN RETURN false;END IF;
+ END LOOP;
+ FOR x IN SELECT definition_id,version FROM anvil.common_setup_versions WHERE owner_user_id=o LOOP IF NOT anvil.common_setup_version_complete(o,x.definition_id,x.version) THEN RETURN false;END IF;END LOOP;
+ FOR r IN SELECT * FROM anvil.common_setup_revocations WHERE owner_user_id=o LOOP
+ SELECT * INTO c FROM anvil.commands WHERE id=r.command_id;q=r.request_json;ref=jsonb_build_object('id',r.definition_id,'version',r.target_version,'contentHash',r.target_hash);
+ IF NOT anvil.checkpoint_keys(q,ARRAY['schemaVersion','commandId','clientId','operation','targetId','expectedVersion','payload']) OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'commandId' IS DISTINCT FROM c.command_id::text OR q->>'clientId' IS DISTINCT FROM c.client_id::text OR q->>'targetId' IS DISTINCT FROM r.definition_id::text OR q->>'expectedVersion' IS DISTINCT FROM r.target_version::text OR q->>'operation' IS DISTINCT FROM 'revokeCommonSetupDefinition' OR NOT anvil.checkpoint_keys(q->'payload',ARRAY['targetRef','reason']) OR q->'payload'->'targetRef' IS DISTINCT FROM ref OR q->'payload'->>'reason' IS DISTINCT FROM r.reason OR NOT anvil.fn75_text(to_jsonb(r.reason),20000) OR anvil.fn75_sensitive(q) OR c.scope_kind IS DISTINCT FROM 'USER_COMMON' OR c.scope_id IS DISTINCT FROM o OR c.actor_id IS DISTINCT FROM o OR c.state IS DISTINCT FROM 'APPLIED' OR c.operation IS DISTINCT FROM 'revokeCommonSetupDefinition' OR r.request_canonical::jsonb IS DISTINCT FROM q OR r.result_canonical::jsonb IS DISTINCT FROM c.result_ref OR c.request_hash IS DISTINCT FROM encode(pg_catalog.sha256(convert_to(r.request_canonical,'UTF8')),'hex') OR c.expected_version IS DISTINCT FROM r.target_version OR c.result_ref->'data'->'ref' IS DISTINCT FROM ref OR c.result_ref->'data'->>'status' IS DISTINCT FROM 'COMMON_SETUP_REVOKED' OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM (SELECT snapshot_json FROM anvil.common_setup_versions WHERE owner_user_id=o AND definition_id=r.definition_id AND version=r.target_version) THEN RETURN false;END IF;
+ IF (SELECT count(*) FROM anvil.authorization_receipts a WHERE a.id=c.authorization_receipt_id AND a.command_id=c.id AND a.scope_kind='USER_COMMON' AND a.scope_id=o AND a.policy_ref IS NULL AND a.approval_decision_ref IS NULL AND a.subject_ref=jsonb_build_object('kind','HUMAN','userId',o,'clientId',c.client_id) AND a.scope_digest=anvil.fn01_hash(jsonb_build_object('scopeKind','USER_COMMON','ownerUserId',o,'clientId',c.client_id,'requestHash',c.request_hash,'targetRef',ref)))<>1 OR (SELECT count(*) FROM anvil.user_common_audit_events a WHERE a.owner_user_id=o AND a.command_id=c.id AND a.client_id=c.client_id AND a.operation=c.operation AND a.operation_id=c.operation_id AND a.target_ref=ref AND a.outcome='APPLIED')<>1 THEN RETURN false;END IF;
+ END LOOP;
+ FOR x IN SELECT * FROM anvil.fn75_projection(o) LOOP SELECT * INTO z FROM anvil.common_setup_charges WHERE owner_user_id=o AND source_kind=x.source_kind AND row_identity=x.row_identity;IF NOT FOUND OR z.origin_command_id IS DISTINCT FROM x.origin_command_id OR z.projection_hash IS DISTINCT FROM anvil.fn01_hash(x.projection) OR z.source_bytes IS DISTINCT FROM anvil.fn75_cost(x.projection) THEN RETURN false;END IF;END LOOP;
+ IF EXISTS(SELECT 1 FROM anvil.common_setup_charges z WHERE z.owner_user_id=o AND NOT EXISTS(SELECT 1 FROM anvil.fn75_projection(o) x WHERE x.source_kind=z.source_kind AND x.row_identity=z.row_identity)) THEN RETURN false;END IF;
+ SELECT COALESCE(sum(z.source_bytes+anvil.fn75_cost(to_jsonb(z))),0) INTO used FROM anvil.common_setup_charges z WHERE owner_user_id=o;RETURN used<=67108864;
+END;$$;
+CREATE FUNCTION anvil.common_setup_charge(o uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE x record;
+BEGIN
+ IF NOT anvil.fn75_owner(o) THEN RAISE EXCEPTION 'COMMON_SETUP_OWNER_REQUIRED' USING ERRCODE='42501';END IF;PERFORM 1 FROM anvil.users WHERE id=o FOR UPDATE;
+ IF NOT EXISTS(SELECT 1 FROM anvil.fn75_projection(o) WHERE origin_command_id=cid) THEN RAISE EXCEPTION 'COMMON_SETUP_COMMAND_REQUIRED';END IF;
+ IF (SELECT count(*) FROM anvil.common_setup_heads WHERE owner_user_id=o)>1000 OR (SELECT count(*) FROM anvil.common_setup_versions WHERE owner_user_id=o)>10000 OR (SELECT count(*) FROM anvil.draft_common_setup_selections WHERE owner_user_id=o)>10000 THEN RAISE EXCEPTION 'COMMON_SETUP_QUOTA_EXCEEDED';END IF;
+ FOR x IN SELECT * FROM anvil.fn75_projection(o) LOOP
+ INSERT INTO anvil.common_setup_charges VALUES(o,x.source_kind,x.row_identity,x.origin_command_id,anvil.fn01_hash(x.projection),anvil.fn75_cost(x.projection)) ON CONFLICT(owner_user_id,source_kind,row_identity) DO UPDATE SET projection_hash=EXCLUDED.projection_hash,source_bytes=EXCLUDED.source_bytes WHERE anvil.common_setup_charges.origin_command_id=EXCLUDED.origin_command_id;
+ END LOOP;IF NOT anvil.common_setup_complete(o) THEN RAISE EXCEPTION 'COMMON_SETUP_STORAGE_INTEGRITY_FAILED';END IF;RETURN true;
+END;$$;
+CREATE FUNCTION anvil.common_setup_account(o uuid) RETURNS TABLE(heads bigint,versions bigint,draft_versions bigint,used_bytes bigint) LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT anvil.fn75_owner(o) THEN RAISE EXCEPTION 'COMMON_SETUP_OWNER_REQUIRED' USING ERRCODE='42501';END IF;
+ IF NOT anvil.common_setup_complete(o) THEN RAISE EXCEPTION 'COMMON_SETUP_STORAGE_INTEGRITY_FAILED';END IF;
+ RETURN QUERY SELECT (SELECT count(*) FROM anvil.common_setup_heads WHERE owner_user_id=o),(SELECT count(*) FROM anvil.common_setup_versions WHERE owner_user_id=o),(SELECT count(*) FROM anvil.draft_common_setup_selections WHERE owner_user_id=o),(SELECT COALESCE(sum(z.source_bytes+anvil.fn75_cost(to_jsonb(z))),0)::bigint FROM anvil.common_setup_charges z WHERE z.owner_user_id=o);
+END;$$;
+CREATE FUNCTION anvil.fn75_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ IF current_user<>'anvil_v3_app' OR NOT anvil.fn75_owner(NEW.owner_user_id) THEN RAISE EXCEPTION 'COMMON_SETUP_OWNER_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_OP='UPDATE' AND (TG_TABLE_NAME<>'common_setup_heads' OR (to_jsonb(OLD)-ARRAY['head_version','label','state']) IS DISTINCT FROM (to_jsonb(NEW)-ARRAY['head_version','label','state']) OR OLD.state='REVOKED' OR NEW.head_version NOT IN(OLD.head_version,OLD.head_version+1) OR NEW.state NOT IN('ACTIVE','REVOKED')) THEN RAISE EXCEPTION 'COMMON_SETUP_APPEND_ONLY';END IF;RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.fn75_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN IF NOT anvil.common_setup_complete(NEW.owner_user_id) THEN RAISE EXCEPTION 'COMMON_SETUP_STORAGE_INTEGRITY_FAILED';END IF;RETURN NULL;END;$$;
+CREATE FUNCTION anvil.fn75_command_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NEW.scope_kind='USER_COMMON' AND NEW.operation IN('saveCommonSetupDefinition','revokeCommonSetupDefinition') AND NOT anvil.common_setup_complete(NEW.actor_id) THEN RAISE EXCEPTION 'COMMON_SETUP_STORAGE_INTEGRITY_FAILED';END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn75_command_complete AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn75_command_final();
+DO $$DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['common_setup_heads','common_setup_versions','common_setup_revocations','draft_common_setup_selections','common_setup_charges'] LOOP
+ EXECUTE format('ALTER TABLE anvil.%I ENABLE ROW LEVEL SECURITY',t);EXECUTE format('ALTER TABLE anvil.%I FORCE ROW LEVEL SECURITY',t);
+ EXECUTE format('CREATE POLICY fn75_owner ON anvil.%I TO anvil_v3_app USING(anvil.fn75_owner(owner_user_id)) WITH CHECK(anvil.fn75_owner(owner_user_id))',t);
+ EXECUTE format('CREATE POLICY fn75_migrator ON anvil.%I TO anvil_v3_migrator USING(true) WITH CHECK(true)',t);
+ EXECUTE format('REVOKE ALL ON anvil.%I FROM PUBLIC,anvil_v3_app',t);EXECUTE format('GRANT SELECT ON anvil.%I TO anvil_v3_app',t);
+ IF t<>'common_setup_charges' THEN EXECUTE format('GRANT INSERT ON anvil.%I TO anvil_v3_app',t);EXECUTE format('CREATE TRIGGER fn75_owner_guard BEFORE INSERT OR UPDATE ON anvil.%I FOR EACH ROW EXECUTE FUNCTION anvil.fn75_guard()',t);END IF;
+ EXECUTE format('CREATE CONSTRAINT TRIGGER fn75_complete AFTER INSERT OR UPDATE ON anvil.%I DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn75_final()',t);
+ END LOOP;
+END;$$;
+GRANT UPDATE(head_version,label,state) ON anvil.common_setup_heads TO anvil_v3_app;
+-- 사본/초안 producer·project quota forward는 B 연결에서 같은 미적용 파일에 완결한다. 현재 사본 권한은 닫아 둔다.
+ALTER TABLE anvil.project_setup_copies ENABLE ROW LEVEL SECURITY;ALTER TABLE anvil.project_setup_copies FORCE ROW LEVEL SECURITY;
+CREATE POLICY fn75_copy_migrator ON anvil.project_setup_copies TO anvil_v3_migrator USING(true) WITH CHECK(true);
+REVOKE ALL ON anvil.project_setup_copies FROM PUBLIC,anvil_v3_app;
+DO $$DECLARE f record;BEGIN
+ FOR f IN SELECT p.oid::regprocedure AS name FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND (p.proname LIKE 'fn75_%' OR p.proname IN('common_setup_context','common_setup_account','common_setup_charge','common_setup_complete','common_setup_version_complete')) LOOP
+ EXECUTE format('ALTER FUNCTION %s OWNER TO anvil_v3_migrator',f.name);EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anvil_v3_app',f.name);
+ END LOOP;
+END;$$;
+GRANT EXECUTE ON FUNCTION anvil.common_setup_context(uuid,uuid,uuid),anvil.fn75_owner(uuid),anvil.common_setup_account(uuid),anvil.common_setup_charge(uuid,uuid),anvil.common_setup_complete(uuid),anvil.common_setup_version_complete(uuid,uuid,bigint) TO anvil_v3_app;
+DO $$BEGIN IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND p.proname LIKE 'fn75_%' AND p.prosecdef AND p.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']) THEN RAISE EXCEPTION 'COMMON_SETUP_FUNCTION_POSTFLIGHT';END IF;END;$$;
+COMMIT;

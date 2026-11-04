@@ -1,3 +1,4 @@
+import {registerCommonSetupRoutes} from './modules/user-common-setup/routes.ts';
 import type {DocumentSourceObservationPort} from './modules/documents/document-source-observation.ts';
 import {registerDesktopRuntimeCatalogue,type RuntimeCatalogueReadSource} from './modules/runtime-catalogue/desktop-runtime-catalogue-routes.ts';
 import {registerNativePreparationRoutes,type NativePreparationRoutesOptions} from './modules/executions/native-preparation-routes.ts';
@@ -31,7 +32,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   });
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(writerAuthority?.enabled===true)registerWriterAuthorityRoutes(app,writerAuthority,access);

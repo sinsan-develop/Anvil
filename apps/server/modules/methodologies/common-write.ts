@@ -1,3 +1,4 @@
+import {writeCommonSetupDefinition} from '../user-common-setup/write.ts';
 import { randomUUID } from 'node:crypto';
 import { canonicalJson, contentHash, parseWireJson } from '../../../../contracts/canonical.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
@@ -24,6 +25,7 @@ export class CommonMethodologyWriter {
   async execute(token: string, csrf: string, request: CommonCommand) {
     return this.access.authenticated(token, csrf, async (db, actor) => {
       if (request.clientId !== actor.clientId) throw new AuthFailure('CLIENT_SCOPE_MISMATCH', 403);
+      if(request.operation==='saveCommonSetupDefinition'||request.operation==='revokeCommonSetupDefinition')return writeCommonSetupDefinition(db,actor,request);
       const requestHash = contentHash(canonicalJson(request));
       const previous = (await db.query("SELECT request_hash,result_ref,client_id FROM anvil.commands WHERE scope_kind='USER_COMMON' AND actor_id=$1 AND command_id=$2", [actor.actorId, request.commandId])).rows[0];
       if (previous) {
@@ -86,7 +88,7 @@ export function registerCommonMethodologyWrites(app: FastifyInstance, options: A
     });
     routes.post<{ Body: CommonCommand }>('/api/v1/user-common/commands', { schema: { body: { type: 'object', additionalProperties: false,
       required: ['schemaVersion', 'commandId', 'operation', 'targetId', 'expectedVersion', 'clientId', 'payload'], properties: {
-        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['copyMethodology', 'saveMethodologyDraft', 'copyForm', 'saveFormDraft', 'recordContentReview', 'confirmForm', 'confirmMethodology'] }, targetId: { anyOf: [id, { type: 'null' }] },
+        schemaVersion: { const: 1 }, commandId: id, operation: { enum: ['saveCommonSetupDefinition','revokeCommonSetupDefinition','copyMethodology', 'saveMethodologyDraft', 'copyForm', 'saveFormDraft', 'recordContentReview', 'confirmForm', 'confirmMethodology'] }, targetId: { anyOf: [id, { type: 'null' }] },
         expectedVersion: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER }, clientId: id, payload: { type: 'object' },
       } } } }, request => writer.execute(sessionToken(request), csrfToken(request), request.body));
   });

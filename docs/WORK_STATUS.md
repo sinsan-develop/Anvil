@@ -14477,3 +14477,29 @@ PMO에기술검토/변경/미결범위를전달했다. 첫PMO보고의타언어�
 
 ### 2026-11-04 UI02 r3 계약·source-only 구현 직접 채택 / 단일 writer 준비
 신산님call_190a168be3ae4b5783502f5243c8e116의r3계약·source-only구현채택수신. 정확55759195/18511B 원문은보존하고별도직접채택기록을작성했다. 직전게시5dbd76e42bccf9dac5404f8367cabf454ea31ea8 local/privateexact·보호3·main불변을원실행handle g8:347→529092로수거했으며동일push재실행0이다. Main은구현계획/위임스킬을기존WORK_STATUS/업무카드에서적용해WI3f3b85b95064363f83077c0a559cc221fbc176640bb639a759698c179d136d3e를작성했다. A원형/명령조회·pending0075→B초안/생성사본/비용→C화면/보호조회순서와닫힌허용경로·실제소비/TDD/합성검수/legacy호환·Main독립검수·실행제외를고정한다. 기존Primary에게preflight후A부터단일writer로진행하게배정하며Main동일코드쓰기0이다. 새실DB권한키서비스Agent/J3/P03R3/실자료조사0·전체계획미완료. Main48df8c의contracts/schemas경로읽기오류1은실제목록으로정정·제품오류0이다.
+
+
+### 2026-11-04 UI02 A 구현 A 구간 실제 TDD 착수
+기존Primary287d14에서계약/WI·HEAD354aa73a·신규15경로부재/0075충돌0/보호3을검산한뒤7a850f로 tests/unit/FN01/common-setup-input.test.ts 작성·cf35f0 최초module부재RED0P1F/exit1/114.5044ms를실제관측했다. 현재portable TOOL/ENV·exact USER_COMMON 명령 parser를허용경로에서구현중이며실제행동RED/GREEN은아직미수거/미완료다. Main동일제품쓰기0·writerPrimary1/현재실행handle0·실DB권한키서비스Agent/J3/P03R3/실자료조사0. Primaryca5024 sandboxGit not-a-worktree128은환경준비오류1로분리·escalated읽기검산으로보완했고동일sandbox반복/설정ACL변경0이다. Main15861c 신규module아직부재rg메시지는작성전시점의읽기결과/제품오류0이다. 전체계획미완료이며A→B→C구간진행·Main검수/통합을계속한다.
+
+
+### 2026-11-04 UI02 A 구간 입력 동작 독립 확인
+Primary09271b 실제행동RED3P1F/178.8126ms의민감옵션/사유거절누락을기존known-sensitive검사로보완한뒤8db759신규4PASS/154.1633ms. Main1afa24동일허용신규4freshPASS/skip0/155.519ms·runtime/input source를r3와대조한한정C0/I0다. 모델옵션/auto·경로명령원문보존,권위ref/추가키/형식/중복/2MiB·명령outer/ref/비밀·선택생략/null경계를확인했다. 아직A본인영속저장/목록·고정조회/0075/B생성사본/C화면은미완료이며전체PASS로확대하지않는다. 단독Primary가다음cursor/본인writer/원장producer와0075를이어구현중·Main동일code쓰기0·실DB권한키서비스Agent/J3/P03R3실자료조사0이다.
+
+
+### 2026-11-04 UI02 A cursor 검수·입력형 보정
+Primary78d4dc cursormodule부재RED→fea3f3 입력/cursor합계7PASS/214.8085ms를수거했고Main484372cursor3freshPASS/149.0339ms에서공유filter의String(kind)강제변환이배열/객체를허용하는한정I1을찾았다. 동일Primary f6c0d7 badscalar행동RED0P1F/133.5916ms→0463da1PASS/138.3794ms·typeof string선검사로보정했다. Main576528변경된cursor직접4만freshPASS/skip0/143.2074ms/diff0로재검수해해소확인·불변입력검사재실행0이다. Primary7d65b5는실제PoolClient를소비하는repository/write/storage·commonreceipt2op호환을작성중이며0075물리guard/계상·checksum/route소비는아직미완료로보고했다. placeholder를PASS로세지않으며A전체·UI/B/C·실제DB인수는미완료다. Main동시code쓰기0·실환경0.
+
+
+### 2026-11-04 UI02 A 실제 명령 소비·저장 codec 검수
+Primary 신규메모리시험은실제USER_COMMON dispatcher→command/receipt/audit→원형/version→charge를소비했다. 4ef588 AuthFailure비교형식준비오류1은분리했고afb27b invalid-date세션허용행동RED를유한기한검산으로보완해c60d4c 신규4PASS/skip0/284.2712ms로수거했다. actualSQL/RLS집행PASS아니며0075역완결/정적검사·B/C는미완료다.
+Main d92337/d1a8fd/562693 읽기검토에서새0075가원형/명령해시검산에과거fn01_json/hash(C key정렬/jsonb scalartext)를직접사용해JS canonical의UTF16 key정렬/숫자표기와불일치할수있는한정중요문제를제시했다. 동일Primary가새snapshot/request/result canonical UTF8 text를내부보관하고 text::jsonb↔실물 JSONB/command동일성·SHA·TS reader재계산·고정charge projection으로결박하는보완을진행중이다. 원modelOptions/Unicode를좁히거나globalcanonical/과거SQL수정0·한도/기준완화0이다. 아직실제PG/보완완료PASS를주장하지않는다. 단독writer구현계속·Main제품동시쓰기0·실DB권한키서비스Agent/J3/P03R3실자료조사0.
+
+
+### 2026-11-04 UI02 A 서버 원형 구간 한정 검수·B/C 계속
+Main47389e가보정완료보고와다른0075 bare달러를확인한후동일Primarya9128e실제5줄RED→e94425 callbackliteral보정/직접2PASS. 최초생성/보정실패2회·실바이트보정지문을분리하고원실패소급PASS0이다. 최종A SQL27235B/C77B0101384AB91DAE7474DCDF8BC48881807C8ECE9B18E321D1E792012696CB·storagechecksum일치·bareDollarfalse(Main2883dd). schema형상검사를실PG문법/RLS로승격하지않는다.
+Primary실제app.inject9PASS·schema4와원형/명령/원장·canonicaltext보완을Main6e40d6 최종직접13PASS/skip0/596.558ms로독립확인했다. 앞서불변input4+수정cursor4를따로검사한것과합해총21행동/형상검사이며하나의21suite를실행했다고주장하지않는다. Primary3906a8정확tsc끝exit전파로rootnoEmit0/4.2461초를수거(588ce7의Bfixture타입진단은PASS아님). A한정source검수C0/I0·actualPG/DDL/RLS/ACL/경쟁·실사용은미검증이다. 결과서 UI02_COMMON_SETUP_SOURCE_RESULT_20261104.md를누적작성하고A15소스+Main기록만checkpoint로보존한뒤공유경로를해제해동일Primary가B/C까지계속구현한다. 전체업무/계획미완료·Main동시code쓰기0·실DB권한키서비스Agent/J3/P03R3실자료조사0.
+
+
+### 2026-11-04 A checkpoint staging 바이트 검산
+Mainf5fa75 A15+docs2만stage·B진행파일/보호3제외. 378579 raw검산은신규commands/schema시험2의기존Git줄바꿈필터차이로중단했고e3b1ad에서각CRLF→LF외차이0을검증했다. Gitblobcommands15146B/d15822a0...·schema2317B/27b910a0...,다른A13 working/staged원바이트동일·0075C77B0101동일. 설정/working/과거fixture/보호3변경0·불변검사재실행0이며원검산중단을제품실패로세지않는다. 이checkpoint는A원형서버source한정이며B/C계속·실PG미검증/전체계획미완료다.
