@@ -14236,3 +14236,11 @@ Main90d8c2 actualslot1 exit1/plan6f96cc33/fullID3991faee·0071_native_preparatio
 
 ### 2026-11-04 0071 감사식 source2 독립 검수
 Primaryb0dacd 신규RED1→ce872a 직접/인접44PASS/skip0/16026.664ms·2e4c9c noEmit0/aeac03 1hunk1B·역삽입부모동일/diff0·writer반환/live0·준비오류0. Main194866/60473→8e4af9 fresh동일44PASS/skip0/19287.6634ms·37dd58 diff/신규시험읽기·e2621c 부모Git기준독립한문자삭제동일/hash검산0. SQL B2F68701/40917B·시험DBD783A5/1794B scopedC0/I0/M0·원11DCE811복원·감사필드/hash/guard/ACL불변. 실제PG/전체105/함수RLS/API/UI NOT_RUN. 상세 docs/04_test_reports/AV3/IX01_NATIVE_AUDIT_PARENTHESES_SOURCE_RESULT_20261104.md . 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R7재사용0·원실패UNKNOWN감사보존·전체계획미완료.
+
+
+### 2026-11-04 R8 새 SQL 기준 source 준비 배정
+0071한문자보완SQL기준fed86a515561d3f342859367d90d94e26b530248 local/privateexact. Main WI91e87f6837319f3eb1bdee7c32c026095cb07f6e73636960bf5c3bf615888130로같은Primary에driver/test/신규R8index3경로만namespace/SQLbaseline·직전R7cwd/baseline음성/header·0071hash/bytes변경을배정했다. 명시105/order09d불변·새총2376142B·기존provider/Tx/권한/기한/UNKNOWN로직불변·부모raw역치환검수. Main동시코드쓰기0·실제DB권한키서비스Agent/WSL/P03R3·새QA실행/시각발급0·소진R7재사용0·원실패UNKNOWN감사/전체계획미완료유지.
+
+
+### 2026-11-04 R8 source3 SQL 기준·namespace 검수
+Primaryfd3017 직접3PASS/skip0/590.1264ms·a95774 Bash-n0/11e9e4 index/선택/공백0·오류0/writer반환/live0. Main5abeb7 driverE743B0F8/시험D16A063B의namespace/SQLbaseline·직전R7음성외부모raw동일·새index0B4EC445는header/0071hashbytes만변경·106Gitblob동일/명시105·2376142B/order09d독립검산0. a17a01 변경음성1PASS/skip0/137.8831ms/diff0. 기존동일로직56/noEmit/환경50/native44재사용·중복전수0. 실제DB권한키서비스Agent/WSL/P03R3·새R8QA실행/시각발급0/소진R7재사용0/원FAILEDUNKNOWN감사보존·전체계획미완료. 다음정확code/instance32·생산SQL10/신규전용자원을실행후보에동결하고새직접결정전실행금지.
