@@ -14252,3 +14252,11 @@ Primarye485a6 신규문서2 source결과A4129B35/초기후보DB97A4F1·생산SQL
 
 ### 2026-11-04 R8 새 단1회 직접 결정 요청
 45e806 tailc1734aaa16f3b5f642a495e9e2a4b1e39b319bbf local/privateexact·trackedclean/보호3만을확인한후packetC37DC25BEC6758542C8C3D08B9D1FC8971AE94BBED23F1E176D871E2B676E552/code2224224fc1b1b02776258b2db2bde4bf7dd8c309/SQLfed86a51의새R8 QA1회직접결정질문을비동기로1회전달했다. 원R7는소진/FAILED·회수/정리잔여0·감사보존이다. 한문자source보완/44개검수는실PG재설치PASS아니며새R8는미승인·자원생성/시각발급0. 원R7와역할/권한·Tx/격리·whole30분PG10분slot1·UNKNOWN뒤후속조회mutation삭제0동일. Main/기존Primary writer반환/live0·기존DB권한키서비스Agent/P03R3변경0. 새직접답변도착시정확packet/code/private·신규자원부재/환경을대조하고새clock의slot1만진행한다. 반복질문/소진R7재사용0·과거실패UNKNOWN/감사/전체계획미완료유지.
+
+
+### 2026-11-04 R8 새 단1회 직접 승인·생성 전 등록
+신산님call_973de86f96f6435b9534ebd69389f061 ‘새 R8 QA 1회 승인’ 수신. Main 최초관측 issued2026-11-04T01:39:56.000Z/전체절대기한02:09:56.000Z·PG10분·slot1·재실행0. b22cdc HEADca8696eb local/privateexact·trackedclean/보호3·packetC37DC25BEC6758542C8C3D08B9D1FC8971AE94BBED23F1E176D871E2B676E552확인. 실행code2224224fc1b1b02776258b2db2bde4bf7dd8c309/SQLfed86a515561d3f342859367d90d94e26b530248 고정. 사전등록source /home/daon/anvil-ix01-ddl-20261104-r8-qa,receipt /home/daon/.local/share/anvil-v3-qa-receipts/ix01-ddl-20261104-r8/빈docker-config/owner.json/slot-a1.intent.json/slot-a1.result.json,PG anvil-ix01-ddl-pg-20261104-r8-a1/DB anvil_v3_ix01_ddl_20261104_r8_a1/ownerIX01_DDL_20261104_R8. Main단일실행소유·0700/0600·image594290/daemon e3349f1d·networknone/port0/tmpfs·고정역할/Tx/회수정리. UNKNOWN뒤후속조회mutation삭제재실행0/감사보존. 기존DB권한키서비스Agent/P03R3변경0. 현재생성전·신규부재/부모owner/realpath/등록runtime/image를확인하고새slot1만진행. 원R7FAILED/잔여0·과거실패UNKNOWN·전체계획미완료유지.
+
+
+### 2026-11-04 R8 실제0074 구문 실패·정리 잔여0
+Main2ed711 actualslot1 exit1/plan226c2276/fullIDb5257d11·0074_project_membership_versions.sql.pending/42601/diagnosticnull/문장끝110·FAILED/CLEANED.0071이후진행했지만전체105/함수RLS/API/UI PASS아님. 최종migratorCREATEROLEfalse/회원0/systemHash불변·회수정리확정.67bc8e proc232match0·exactowner/nonlink/clean뒤source만정리,5aac01 01:44:14.320Z별도ID/name/source부재·감사3동일·실행자원잔여0. 감사3/metadata2raw보존/mirror. 사전docker/dev/null config경고3분리/실제보호빈config사용. R8승인소진·추가실행0/기존DB권한키서비스Agent/P03R3변경0. Primary읽기와Main0db214/625d82는0074:109닫기1과다·해당SQLraw67696FDD/33602B/서비스checksum결박을확인(실오류직접원인단정0). 선택105함수748개괄호대응한정읽기는추가확정0/전체parserPASS아님. 상세 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R8_SLOT1_RESULT_20261104.md . 원실패UNKNOWN/감사/전체계획미완료보존.
