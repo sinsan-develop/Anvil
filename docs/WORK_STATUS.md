@@ -14276,3 +14276,7 @@ Primarya27d83 RED1→68ea7d 직접schema/input/memberships16PASS/skip0/596.4837m
 
 ### 2026-11-04 R9 source3 SQL 기준·namespace 검수
 Primary200c70 직접3PASS/skip0/163.9382ms·4af119 Bash-n0/81b4e2 index/선택/공백0·오류0/writer반환/live0. Main826ac6 driverB7B73051/시험314C7ADB namespace·SQLbaseline/직전R8음성외부모raw동일·새index4C186B4C는header/0074hashbytes만변경/106Gitblob동일·명시105/2376141B/order09d독립검산0. aadd42 변경음성1PASS/skip0/136.7425ms/diff0. 기존동일로직56/noEmit/환경50/native44/회원16재사용·중복전수0. 실제DB권한키서비스Agent/WSL/P03R3·새R9QA실행/시각발급0/소진R8재사용0·원실패UNKNOWN감사/전체계획미완료보존. 다음정확code/instance32·생산SQL10·신규전용자원/기한/UNKNOWN/정리를실행후보에동결하고새직접결정전실행금지.
+
+
+### 2026-11-04 R9 실행 후보·source 결과 동결
+Primary488a54 신규문서2 source초기55569CA4/후보2B81C6EF·생산SQL10/plan18owner6/선택105/order·서식검산0·writer반환/live0. 자체오기1회는c4428e에서직전소진R8표기로정정·실행조건변경0. Mainbe50bb읽기후da0cc4에서source결과의Main aadd42실행시간137.8831→실측136.7425ms 한오기만정정했다. 최종source결과F8EB2ED9ACD1A1ACC7A852E9F3D3EF455C65BF30B9A4BA926ADE40105663E124/4786B·후보2B81C6EF3C07B362309ABEAAD03C69BBA85B1084F3780D699F5A805CC2A5C72B/21763B. codea7527b79b3d4db38f82838abdbbf03ded103205e/SQLa3a12bd3e4fbf430d997c8d1c764c4de30b27ffb/instance32 a7527b79b3d4db38f82838abdbbf03de·선택105/2376141B/order09d·생산SQL10원문/hash전부동일·plan18owner6/mirror검산0. bootstrapBAF71CBC29CCF796EA1898D3DCB4686764D85F85834E08D95623678252729594. scoped문서C0/I0/M0·새R9실행NOT_APPROVED/자원생성·시각발급0·원R8와role/권한/Tx/격리·whole30분PG10분slot1·UNKNOWN뒤후속조회mutation삭제0동일. 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R8재사용0·원실패UNKNOWN/감사/전체계획미완료보존.
