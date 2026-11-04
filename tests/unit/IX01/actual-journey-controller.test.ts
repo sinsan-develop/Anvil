@@ -52,7 +52,7 @@ test('actual 공유run 경계는 명령 정착 뒤 기한을 재검사하고 std
 test('actual inspect formatter는 Env를 조회하지 않고 정확 격리 metadata만 소유로 읽는다',()=>{
  const f=fixture(),format=c.inspectArgs(cid).join(' ');assert(!format.includes('.Env'));assert(format.includes('.Config.Labels'));
  const tmpfs={'/var/lib/postgresql/data':'rw,noexec,nosuid,size=268435456,uid=999,gid=999','/var/run/postgresql':'rw,noexec,nosuid,size=16777216,uid=999,gid=999','/tmp':'rw,noexec,nosuid,size=16777216,uid=999,gid=999'};
- const raw={Id:cid,Name:'/'+c.fixed.container,Image:c.fixed.image,State:{Running:true},Labels:{'anvil.owner':c.fixed.owner,'anvil.instance':f.plan.instance,'anvil.plan':f.metadata.planHash},User:'999:999',HostConfig:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,Tmpfs:tmpfs},Mounts:Object.keys(tmpfs).map(Destination=>({Type:'tmpfs',Destination})),Networks:{none:{}}};
+ const raw={Id:cid,Name:'/'+c.fixed.container,Image:c.fixed.image,State:{Running:true},Labels:{'anvil.owner':c.fixed.owner,'anvil.instance':f.plan.instance,'anvil.plan':f.metadata.planHash},User:'999:999',HostConfig:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,Tmpfs:tmpfs},Mounts:Object.keys(tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''})),Networks:{none:{}}};
  assert.equal(c.inspectContainer(JSON.stringify(raw),f.plan,f.metadata.planHash,cid).isolated,true);
  for(const mutate of [(v:any)=>v.HostConfig.Privileged=true,(v:any)=>v.HostConfig.LogConfig.Type='fluentd',(v:any)=>v.User='0:0',(v:any)=>v.Mounts[0].Type='bind',(v:any)=>v.Labels['anvil.owner']='OTHER']){const bad=structuredClone(raw);mutate(bad);assert.throws(()=>c.inspectContainer(JSON.stringify(bad),f.plan,f.metadata.planHash,cid));}
 });
@@ -108,4 +108,25 @@ test('actual child 포트·공유parser·controller 감사는 같은 사전bound
  const spawn=(_file:string,args:string[],options:any)=>{spawned++;f.calls.push('child');assert.deepEqual(args,c.childArgs());assert.equal(options.maxBuffer,65536);assert(!args.some(x=>x.includes('2'.repeat(64))));return{status:1,signal:null,stdout:failedTap('23505'),stderr:'discarded warning'};};
  const actual=new Function('verify','baseEnv','fixed','hash','spawnSync','childArgs','sourceBounds','parseChildDiagnostic','return async(child,secrets,ms)=>'+expression)(()=>{}, {},c.fixed,sha,spawn,c.childArgs,bounds,c.parseChildDiagnostic);
  let returned:any;f.ports.child=async(...args:any[])=>{returned=await actual(...args);return returned;};const result=await c.runController(f.plan,f.ports);assert.equal(spawned,1);assert.equal(result.code,'TEST_NONZERO');assert.deepEqual(returned.safeDiagnostic,{line:173,column:3,code:'23505'});assert.deepEqual(result.audit.childDiagnostic,returned.safeDiagnostic);assert.deepEqual(f.calls.slice(f.calls.indexOf('child')+1),['record']);assert(!JSON.stringify(result).includes('PRIVATE_BODY_TOKEN_DSN'));
+});
+
+
+function tmpfsProjection(){
+ const f=fixture(),args=c.buildCreateArgs(f.metadata.planHash,f.plan.instance),tmpfs:Record<string,string>={};
+ for(let i=0;i<args.length;i++)if(args[i]==='--tmpfs'){const value=args[i+1]!,at=value.indexOf(':');tmpfs[value.slice(0,at)]=value.slice(at+1);}
+ assert.equal(Object.keys(tmpfs).length,3);
+ const raw:any={Id:cid,Name:'/'+c.fixed.container,Image:c.fixed.image,State:{Status:'created',Running:false},Labels:{'anvil.owner':c.fixed.owner,'anvil.instance':f.plan.instance,'anvil.plan':f.metadata.planHash},User:'999:999',HostConfig:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,Mounts:[],VolumesFrom:null,Tmpfs:tmpfs},Mounts:[],Networks:{none:{}}};
+ return{f,raw,read:(v:any)=>c.inspectContainer(JSON.stringify(v),f.plan,f.metadata.planHash,cid)};
+}
+test('tmpfs 선언3과 빈 Mounts는 created/running/stopped에서 실제parser가 소비한다',()=>{
+ const {raw,read}=tmpfsProjection();
+ for(const [Status,Running]of [['created',false],['running',true],['exited',false]]as const){raw.State={Status,Running};const parsed=read(raw);assert.equal(parsed.isolated,true);assert.equal(parsed.running,Running);}
+});
+test('tmpfs 실제projection은 존재entry strict검산과 외부선언 거절을 함께 보존한다',()=>{
+ const {raw,read}=tmpfsProjection();raw.Mounts=Object.keys(raw.HostConfig.Tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''}));assert.equal(read(raw).isolated,true);
+ const edits=[(v:any)=>delete v.HostConfig.Tmpfs['/tmp'],(v:any)=>v.HostConfig.Tmpfs['/tmp']='rw',(v:any)=>v.HostConfig.Mounts=[{Type:'bind',Source:'/private',Target:'/tmp'}],(v:any)=>v.HostConfig.VolumesFrom=['other'],(v:any)=>v.HostConfig.Binds=['/private:/tmp'],(v:any)=>v.Mounts[0].RW=false,(v:any)=>delete v.Mounts[0].RW,(v:any)=>v.Mounts[0].Source='/private',(v:any)=>v.Mounts[0].Type='bind',(v:any)=>v.Mounts[0].Type='volume',(v:any)=>v.Mounts[0].Destination='/other',(v:any)=>v.Mounts.push({...v.Mounts[0]}),(v:any)=>v.Labels['anvil.owner']='OTHER',(v:any)=>v.Image='OTHER',(v:any)=>v.Networks={bridge:{}}];
+ for(const edit of edits){const bad=structuredClone(raw);edit(bad);assert.throws(()=>read(bad));}
+});
+test('tmpfs actualparser 최초거절은 controller start/SQL/roles/cleanup을 열지 않는다',async()=>{
+ for(const mode of ['RW','DECLARATION']){const {f,raw,read}=tmpfsProjection();raw.Mounts=Object.keys(raw.HostConfig.Tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''}));if(mode==='RW')raw.Mounts[0].RW=false;else raw.HostConfig.VolumesFrom=['other'];f.ports.inspect=async()=>{f.calls.push('actualInspect');return read(raw);};const result=await c.runController(f.plan,f.ports);assert.equal(result.status,'UNKNOWN');assert.equal(result.code,'OWNER');assert.equal(result.stage,'CREATE');assert.equal(result.completed,0);assert.deepEqual(f.calls.slice(f.calls.indexOf('actualInspect')+1),['record']);assert(!f.calls.includes('start'));assert(!f.calls.some(x=>x.startsWith('sql:')||x.startsWith('roles:')));assert(!f.calls.includes('stop'));assert(!f.calls.includes('remove'));}
 });

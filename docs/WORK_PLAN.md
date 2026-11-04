@@ -1945,3 +1945,8 @@ IX08은 Oracle에서 수행할 검증 범위를 정의한다. 실제 이전·서
 - [R9 실제 결과](04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R9_SLOT1_RESULT_20261104.md): 고정 a7527b79/SQLa3a12bd3의105개 원문 정의 설치를 확인했고 전용 실행 자원은 별도 조회에서 잔여0이다. 단1회 승인은 소진됐다. 과거 실패·UNKNOWN은 보존하며 전체 기능 통과로 소급하지 않는다.
 - [접속/app 재생성 source 결과](04_test_reports/AV3/IX01_APP_POOL_RECONNECT_SOURCE_RESULT_20261104.md): 원 토큰/자료를 유지한 app·Pool 종료/새 연결·재조회 소비선을 준비했다. 집중5검사와 타입 검사는 통과했으나 실제 PG 재접속·화면/프로세스 재시작은 NOT_RUN이다.
 - 다음은 [전용 준비기 source WI](work_packages/IX01_ACTUAL_JOURNEY_PREPARER_SOURCE_IMPLEMENTATION_20261104.md)의 실제 원장·합성 인증·격리 네트워크·기존 여정 연결을 코드/합성 시험으로 준비한다. 실제 실행은 별도 정확 범위이며 현재 생성/실행0이다. IX01의 내장 종류별/3경로·화면/서비스 재시작·조기 보안 검수와 원 합격 기준은 유지한다. IX01·Stage B·전체 계획은 미완료다.
+
+
+### 2026-11-04 IX01 J1 첫 실제 여정 준비·정리
+- [J1 실제 결과](04_test_reports/AV3/IX01_ACTUAL_JOURNEY_J1_RESULT_20261104.md): 새 단1회는 최초 container 검산 OWNER/UNKNOWN으로 SQL·기능여정 전 중단했다. 후속 별도 정리 승인으로 exact QA잔여0/감사보존을 확인했으며 원 결과를 PASS로 바꾸지 않는다.
+- [tmpfs 표현 보완](04_test_reports/AV3/IX01_TMPFS_INSPECT_PROJECTION_SOURCE_RESULT_20261104.md): 실제29.1.3의 Tmpfs3/Mounts0 metadata와 원 parser 반증을 바탕으로 선언/표시를 분리하고 외부mount·RW/source 음성을 보존했다. Main30집중 PASS는 source범위이며 새실제여정·내장3종/3경로·실화면/서비스재시작·원IX01합격기준은 미충족이다.

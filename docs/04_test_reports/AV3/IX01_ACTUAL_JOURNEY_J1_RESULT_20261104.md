@@ -24,3 +24,14 @@
 공식근거: https://github.com/docker/cli/blob/v28.5.1/cli/command/container/opts.go / https://github.com/moby/moby/blob/v28.5.1/daemon/inspect.go / https://github.com/moby/moby/blob/v28.5.1/container/container_unix.go / https://github.com/moby/moby/blob/v28.5.1/daemon/create_unix.go .
 
 현재 QA의 metadata 확인·정상 정리는 새 한정 직접 결정 전 하지 않는다. 독립적인 로컬 source 검토/수정은 승인된 내부 범위에서 계속하며 기존 gate·SQL·실패/UNKNOWN 감사를 보존한다.
+
+## 새 직접 승인으로 확인·정리한 후속 증거
+
+신산님 call_38ed011470c340689eb51f668887a236의 정확 J1 한정 정리 승인(후보A700B2AF)을 별도로 받았다. 새 clock2026-11-04T05:13:23Z~05:43:23Z이며 원 실행 grant를 재사용하지 않았다.
+
+- e3276e05:15:41.656Z: daemon29.1.3/ID동일, exact container/image/labels·created/PID0/Runningfalse/StartedAt영시각, HostConfig.Tmpfs3·Mounts0, network/artifact부재·source792 exact/clean/owner 및 감사3원문을 확인했다. Config.Env·SQL·DB·컨테이너내부exec는 읽지 않았다.
+- b8a988: 수거 metadata의 원792 parser 순수 replay는 OWNER, 가정 Mounts3만 넣은 반증은 수용했다. 이는 부정확한 Mounts 개수 가정을 확인하는 소스/metadata 증거이며 실제 기능 여정 재실행이 아니다.
+-5e26f1 05:18:28.313Z: 미기동이라 stop생략, exact fullID rm1회 및 부재 확인.32d24f/20657→98bcbe: process269/errors0/matches0·9681files1106dirs13내부links를 소유/실경로/범위 검산한 뒤 source와 임시4만 정리했다. 감사3/새cleanup.json0600은 보존했다.
+-181eea05:21:08.642Z 별도 SSH 최종조회: 등록 fullID/name/network/source/임시4/artifact부재·감사4hash동일. 실행자원잔여0, 보존감사root는 잔여0 분모와 구분한다.
+
+원격감사 raw는 J1_REMOTE_owner_json_20261104.json(382B/b17a0832...), J1_REMOTE_slot-a1_intent_json_20261104.json(287B/4eb297c9...), J1_REMOTE_slot-a1_result_json_20261104.json(536B/40a305ae...), J1_REMOTE_cleanup_json_20261104.json(737B/d89d23c7...)에 보존했다. stdout캡처 결과에는 LF1B가 있어537B/4f719aec이며 remote result 원문과 저장형식을 구분한다. J1_CLEANUP_FIRST_METADATA_20261104.json·J1_CLEANUP_FINAL_METADATA_20261104.json·J1_CONTAINER_REMOVAL_20261104.json도 보존했다. 원 J1 UNKNOWN/NOT_CONFIRMED는 소급 PASS하지 않으며 SQL/기능 여정은 NOT_RUN이다. 새 정리 승인도 소진됐고 이후 추가 실행0이다.
