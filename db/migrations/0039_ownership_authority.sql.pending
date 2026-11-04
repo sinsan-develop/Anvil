@@ -96,7 +96,7 @@ ALTER TABLE anvil.execution_ownership_events
   REFERENCES anvil.execution_ownership_observations(project_id,execution_id,execution_generation,observation_id,version,content_hash) DEFERRABLE INITIALLY DEFERRED;
 
 CREATE FUNCTION anvil.ownership_content_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE STRICT AS $$
- SELECT encode(digest(convert_to(anvil.execution_authority_canonical(v),'UTF8'),'sha256'),'hex')
+ SELECT encode(pg_catalog.sha256(convert_to(anvil.execution_authority_canonical(v),'UTF8')),'hex')
 $$;
 
 -- SOURCE-ONLY shape checks, not authenticated authority or signature validation.
@@ -247,7 +247,7 @@ BEGIN
   OR report-'factsHash'-'observedAt' IS DISTINCT FROM (requested.snapshot_json->'payload'->'request')||jsonb_build_object('requestRef',request_ref)
   OR report->'factsHash' IS DISTINCT FROM to_jsonb(anvil.ownership_content_hash(NEW.snapshot_json->'facts'))
   OR NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(NEW.snapshot_json)
-  OR NEW.nonce_digest IS DISTINCT FROM encode(digest(decode(translate(report->>'nonce','-_','+/')||'=','base64'),'sha256'),'hex')
+  OR NEW.nonce_digest IS DISTINCT FROM encode(pg_catalog.sha256(decode(translate(report->>'nonce','-_','+/')||'=','base64')),'hex')
   OR (report->>'expiresAt')::timestamptz<=clock_timestamp()
   OR (report->>'observedAt')::timestamptz>(accepted.snapshot_json->>'at')::timestamptz
   OR (accepted.snapshot_json->>'at')::timestamptz>=(report->>'expiresAt')::timestamptz
