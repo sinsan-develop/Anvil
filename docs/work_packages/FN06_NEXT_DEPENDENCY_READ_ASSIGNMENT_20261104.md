@@ -38,3 +38,12 @@ remaining_execution_dependencies는 이 기존 후보 전체와 최신 관련 so
 - 새 Source 구현 허용목록이나 migration 번호는 아직 확정하지 않는다. 현재 FN06이 수정 중인 project-command 등 공통 파일의 baseline을 미래 고정본인 것처럼 쓰지 않는다. 실제 제품 source/문서는 변경하지 않는다.
 
 이는 현재 미채택 후보의 최신성 정리이며 새로운 B안 선택·계약 채택·제품 구현 GO가 아니다. Main은 반환을 검토한 뒤 필요한 정확 결정만 별도 상정한다. 새 인터뷰를 반복하거나 이미 합의된 제품 목적/방법론을 다시 정의하지 않는다. 코드·문서·SQL 쓰기/시험/DB/권한/키/서비스/Agent/컴파일/실자료/원격 실행은0이다. 경로는 실제 목록과 기존 확인 경로만 사용한다.
+## 2026-11-05 FN12 미채택 B안 기술 정합의 후행 읽기 준비
+
+담당 A remaining_execution_dependencies에게 r2 사실 정정과 별개인 B 제안 자체의 기술 정합 검토를 배정한다. 대상은 docs/contracts/FN12_REWORK_SUCCESSOR_LINEAGE_CANDIDATE.md의 두 operation/계보 GET, 원본 계보·연결 임무 guard·공유 잠금/원자성·현재성/replay와 고정 초안 개정 제한이다. 기존 승인된 root/child HUMAN 내용·등록 정의 예약·순수 재료를 다시 구현하지 않고 후속 임무→새 제출 연결 공백의 필요/최소 계약과 순환·우회·검수 불가능 조건을 구분한다.
+
+기존 r2 사실 검수·Stage 전체 소비 survey는 반복하지 않는다. 필요한 기존 source는 실제 참조/import 경로로만 확인하며 추정 조회하지 않는다. 결과는 채택 전 수정 쟁점·기술상 유지 가능 항목·사람 결정점으로 반환한다. 코드/SQL/문서 쓰기·시험·Git·실제 DB/권한/키/서비스/Agent 실행0이다. 새 source GO0과 미채택을 유지하고 FN06 단일 Primary의 승인 구현은 계속한다.
+## 2026-11-05 FN12 기술 쟁점 수거와 후행 유한 접점 분배
+
+A의 채택 전 기술 검토를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md(SHA256 2C09AD4B3E1C60D0653846EABFDE7843C23A9974E1A583EDEC4E8BA50D751CA3)에 보존했다. 검증 전용 missingItem의 빈 acceptance 도출과 기존 확정 충돌, REGISTERED_DEFINITION 잠금 분기 누락, 물리 저장/collector·domain guard 상세 미정이 쟁점이다. 기존 제품 결함이나 Source 구현 GO로 판정하지 않고 B 미채택을 유지한다.
+A는 origin/link 논리 기록·기존 draft/result/command/receipt/audit의 실제 저장/collector를 일대일 매핑한다. B는 후보4.1의 실제 변경 producer·권위 head·잠금 모드/순서·동일 Tx·직접 DML 보호를 유한 접점표로 반환한다. 기존 재사용/새 조정/미정을 구분하고 신규 물리표·열·숫자·상한·공개 계약을 선택하지 않는다. 완료된 사실 검수/Stage 소비 survey와 FN06 parser 검사는 반복하지 않는다. 모두 읽기만 하며 파일/SQL 쓰기·시험/Git·실제 DB/권한/키/서비스/Agent 실행0이다. FN06 단일 Primary의 기존 구현을 계속하고 FN12 SOURCE_GO0을 유지한다.

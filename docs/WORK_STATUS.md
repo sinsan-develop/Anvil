@@ -1,5 +1,22 @@
 # Anvil 재설계 작업현황
 
+<!-- CURRENT_WORK_ENTRY_START -->
+## 현재 작업 진입점 — 2026-11-05
+
+- 전체 목표: docs/WORK_PLAN.md의 모든 미완료 업무와 검증 완료. 현재 전체계획은 미완료이며 목표는 계속 진행한다. 아래 과거 이력의 WAIT/BLOCKED/PASS를 현재 상태로 상속하지 않는다.
+- 수행: 기존 Primary 한 명이 코드·시험·미적용 SQL을 작성한다. Main 어울은 업무 분배·독립 검수·직접 최소 검증·통합·현황 기록을 맡는다. 완료한 부분은 다시 구현하지 않는다.
+- 현재 개발 경계: 승인된 source-only 범위. 실제 DB·권한 부여·키·서비스·Agent 실행·C# 컴파일·J3/P03 R3·Git 복구는 제외한다. 합성 시험·정적 SQL 검산을 실제 PG/Tx/RLS·TLS·브라우저·Agent 인수로 승격하지 않는다.
+
+| 구분 | 현재 근거와 다음 행동 |
+|---|---|
+| FN06 부분 인수 | HUMAN Window/Offer/Close·보호 profile GET, 순수 frame parser, OPEN challenge, 서명 snapshot/원 Tx owner·consume, native OPEN endpoint/path/origin 및 signing-current를 source 범위로 한정 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 정확 증거는 docs/work_packages/FN06_IMPLEMENTATION_CONTROL_20261104.md의 최신 검수 절과 아래 일자별 이력에 있다 |
+| FN06 진행 중 | receive-only Session current와 STREAM/ARM/STATE/CLOSE challenge의 service/HTTP 연결, 원 desktop Session.fetch/current에서 typed key-host로 이어지는 source를 기존 Primary가 구현한다. 공개 TEST_ONLY 대역만 사용하며 실제 설치키/파일/helper는 실행하지 않는다 |
+| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase·desktop/slot source 접합은 미완료다. ACK challenge의 실제 bodyHash 입력은 미채택 delta 후보로 분리했고 다른 구현은 계속한다. 실제 PG/Pool/TLS/slot 실행 검증도 별도 미완료다 |
+| FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
+| Git 보존 | 현재 작업 branch codex/av3-stage-b의 로컬 소스 WIP checkpoint는79476dfa7f54509ab1c8facc732c8fa300cbf448이다. 15a634에서 정확 소유26경로·원문 전후 동일·index0을 확인했다. 부분 검수/미해결 상태를 복구 보존한 것이며 전체 인수본이 아니다. 제품 변경은 계속 작성 중이다. private ref는 최근 원격 장애 이후 현재 동일성을 재검증하지 못했고 인증 복구/재시도는 하지 않는다 |
+
+최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
+<!-- CURRENT_WORK_ENTRY_END -->
 ## 2026-10-31 FN16 수동 백업 정책 저장 r2 A 직접승인 재개
 - UI7部分동결 AppEE1DE470/decisionsapi3A7C2E34/ApprovalsPageE8A2A64D/policyprofile0EB31A56/policyapi13977B96/Panel3CB48C3A/approvalapiA1CF5B67를기존Reviewer에독립검수배정했다. 1bada9 신규UI3시험14PASS/type0·a08a12원생성보호GET8/명시4선택→전체profile412/POST0·95dffd UI08별도결정/복귀·자동소비0는메모리증거다.
 - 자체tuple반례9dfec1은잘못된operation에도IO1을재현해5571d1에서operation/project/client/target/expected+body동반변경IO0/type0로보완했다. API A4130B4AB6CBC487F8B0C161BDF5B1EF61E22172693A4C1DCE5FA3285A69235D의tuple보완은독립Addressed다. UI나머지6/23번째기존operation시험78CE371C도추가C/I없음이나POST APPLIED후fixedGET403/404/412를REJECTED로분류해원명령수정이가능한Important1이남아동일API/시험에phase분리·UNKNOWN보존반례보정을지시했다.
@@ -14910,3 +14927,82 @@ Primary가 대상6 파일 전체의 짧은 동결과 live handle0을 확인한 �
 
 ### 2026-11-05 Main 문서 전용 두 번째 로컬 checkpoint
 Primary가 HEAD 의존 검산·Git 작업·pending handle0과 문서 checkpoint 무충돌을 확인했다. HEAD46B3CDBA 직접 자식으로 현황·구현 통제·후속 조사 지시·FN12 미채택 사실 정정의 정확4문서만 보존한다. index는 비어 있었고 보호 untracked3 raw는 기존값과 동일했다. 두 I1의 독립 검수·Main 합성 결과를 기록하며 제품/시험/SQL은 stage하지 않는다. 원격 인증 실패 이후 재시도·키/권한 변경은 하지 않고 local-only를 유지한다. 전체 FN06과 작업계획은 미완료다.
+
+### 2026-11-05 FN06 수신 frame parser 중간 제출·검수 분배
+
+Main 문서 전용 checkpoint는10D3B7BA9E8BFB0F239F64BA3B72226EFD409482이며 직접 부모46B3CDBA, 정확4문서·index empty·해당 문서 clean을3331f1에서 확인했다. 제품/시험/SQL·보호3과 원격 push는 제외했다.
+Primary의 최초 OPEN parser2RED→2PASS/163.7456ms 뒤 prefix 상한·높은 비트 credential·취소/기한·순수 Delivery frame 확장이 추가됐다. 최신 fn06_receive_delivery_frame_green은6PASS/174.3798ms/exit0이며 client raw338D8DF9285711D707502B638683DBA1DEA05965DF0E68C2236601D4350878BA·시험77D1DEB1A7DC21218105BE466250EAEF604C097EB2CEF3DB924210383903A8C3이다. 최초2 지문을 최신 구현 증거로 사용하지 않는다. 새 확장 뒤 typecheck는 아직 수거 전이다. 현재 OPEN/기존2시험 본문 동결을 확인하고 B에게 실제 import·허용 경로·현재 순수 parser와6반례 읽기 검수를 맡겼다. 실제 pinned HTTPS·slot·발급/Delivery 소비 연결은 미완료다. Main은 검수·통합을 맡고 같은 Primary만 다른 목적 writer 구현을 계속한다. 실제 DB·권한·키·서비스·Agent 실행0이다.
+2026-11-05 추가 검수: OPEN·Delivery parser C0/I1. Window는 유효하나 frame 자체가 마지막 반환 전에 만료되는 반례를 Main이 정확 함수 읽기로 확인했다. 구현 통제22절로 같은 Primary에게 최소 RED→GREEN 보완을 배정하고 해당 본문 동결을 해제한다. 기존6PASS는 이 반례를 증명하지 않으며 실제 TLS/slot 소비와 전체계획은 미완료다. 실제 실행0.
+
+2026-11-05 frame 최종 기한 I1 인수: 독립 B ADDRESSED·수정범위 C0/I0, Main dc5d6b의 parser9PASS/skip0/167.3075ms/exit0·client/test/runtime3raw동일을 통제23절에 기록했다. 해당 순수 parser만 인수·동결 해제했고 다음 source 소비 연결은 같은 Primary가 계속한다. 실제 HTTPS/slot/OPEN 발급·PG·전체계획은 미완료/미검증이다.
+
+2026-11-05 후행 읽기 분배: FN06은 기존 단일 Primary가 구현을 계속한다. Main은 A에게 FN12 미채택 B안 자체의 API/계보/원자성·재조회 기술 정합을 별도 읽기 준비로 배정했다. 완료한 r2 사실 검수와 Stage 소비 survey는 반복하지 않는다. 채택 전 쟁점만 수거하며 FN12 SOURCE_GO0·쓰기/시험/실행0을 유지한다.
+
+2026-11-05 OPEN challenge 작성 중: 단일 Primary는 실제 SD query builder의 원 session/정책/Window commitment·단발 후보1RED→1PASS와 SQL의 OPEN ticket CAS·불변 자식3행/발급 audit·예약 차분 정산 형상1RED→1PASS를 중간 보고했다. 현재 service/전용 HTTP·보호 replay·지연 만료·자식 누락 거절 소비를 연결 중이며 최종 제출/독립 인수 전이다. pending handle0·agent running을 확인했다. N 효과 전 선예약·pinned HTTPS/slot·OPEN consume와 실제 PG는 미완료/미검증이다. 이미 인수한 parser 검사는 반복하지 않는다.
+
+2026-11-05 FN12 채택 전 기술 검토 수거: 검증 전용 보완의 확정 불가 도출 충돌·등록 정의 잠금 분기·저장/계상/guard 미정 쟁점을 Main 검토 문서2C09AD4B에 보존했다. B안은 여전히 미채택/SOURCE_GO0이다. A에게 저장-collector 일대일 매핑, B에게 변경 producer-공유 잠금 유한 접점표를 읽기 분배했다. 제품 수정/시험/실행0이며 FN06 단일 Primary 구현은 계속한다.
+
+### 2026-11-05 OPEN challenge 성공 발급 한정 인수
+
+Primary의48PASS/skip0/5640.7736ms와 원 type session80544의 exit0 회수를 수거했다. 독립 A/B는 현재 성공 발급 범위 C0/I0·8본문/제출 raw동일로 반환했다. Main은 fb0178의 직접4PASS/fail0/skip0/1078.4902ms/exit0·7파일 raw전후동일을 확인해 통제25절에 해당 source 묶음만 인수하고 전체 동결을 해제했다. 실제 PG/경쟁/COMMIT/TLS/slot과 consume·N 선예약·다른 phase는 미완료/미검증이며 같은 단일 Primary가 계속한다.
+Main 시험명 조회2533b4는 foreach 뒤 파이프의 PowerShell 구문 오류로 읽기 실행 전에 중단됐다.34e553에서 배열 수집 구문으로 바로잡아 정확 시험명을 읽었고 제품·기준·권한 변경0이다. 준비 오류1을 제품 실패/정식 FAILURE_REPORT나 시험 PASS로 숨기지 않는다.
+후행 FN12의 저장-collector 및 실제 producer-잠금 표는 Main 검토 기록에 보존했고 현재 문서SHA256은8B49A263DB0AA43A20A2B222BE75DC8D5E383827CF8E16E7F0F69626EED6109C다. 일반 저장을 목적별 collector가 자동 계상하지 않으며 신규 편입의 exact 분모/동일Tx/실복제·중복 구분이 필요하다. 등록 정의는 불변 head/project mutex를 사용하므로 앱 UPDATE 권한이나 기계적 SHARE를 추가하지 않는다. FN12 B 미채택·SOURCE_GO0을 유지하고 현재 FN06을 막지 않는다. B의 추정 파일명2개 조회1건 exit1/OS error2 원문은 검토 기록에 보존·근거 제외했고 이후 검수를 알려진 정확 경로만으로 제한했다. 실제 실행0이다.
+2026-11-05 S3 다음 단위: 같은 Primary가 OPEN 등록키 서명 검증→원 db의 단발 비공개 proof lease→consume 목적 writer를 연결한다. 공개 TEST_ONLY RFC6979 A.2.5 P-256 상수를 기존 tests/desktop/desktop-trust-registration.test.cjs에서 읽기 재사용하며 원 fixture 수정·실제 설치키/파일/키 생성/helper 실행0을 유지한다. caller verified:true 대신 Window/Challenge/ref/target/body/nonce/기한과 Node verify를 통과한 private lease만 저장 메소드가 소비하도록 작성 중이다. OPEN endpoint/COMMIT/secret 전달은 아직 미완료이며 새 checkpoint로 구분한다. source-only·단일 writer·기존 허용 범위와 실제 DB/권한/키/서비스/Agent 실행 제외를 유지한다.
+
+2026-11-05 S3 작성 중간: Primary는 공개 TEST_ONLY P-256 OPEN 검증·단발 private proof lease2RED→2PASS를 구현했다고 보고했다. 같은 db 객체만으로 원 Tx를 대신하지 않는 자체 반례를 추가하여 목적 current 조회의 txid·owned query·문맥 수명에 결박했고 Tx 문맥1RED→1PASS/1206.7667ms/exit0를 제출했다. 원 crypto2시험의 실제 문맥 정합과 native_receive_open_verification SD reader·consume writer 같은Tx 소비는 아직 연결 중이며 최종 지문/독립 인수 전이다. live/pending0, 실제 설치키/키 생성/DB/서비스/helper 실행0이다. 기존 OPEN challenge/parser 인수 검사는 반복하지 않았다. Main은 현재 진입점 추가 뒤5b1e14에서 문서 지문 일치·marker1·checkpoint 이후 삭제행0·공백검산0을 확인했다.
+
+2026-11-05 S3 서명/Tx proof 독립 검수 배정: Primary가 실제 공개 P-256 검증→목적 current/txid→원문맥 단발 private lease의3PASS/skip0/631.671ms/type0와5raw를 제출했다. 통제26절로 A의 원 Tx/권위·borrowed query 검수, B의 crypto/bytes·변조/비노출 검수를 분배한다. 실패를 TypeError만으로 통과시킨 최초 음성은 준비 오류로 제외했고 실제RED를 보존했다. consume writer/endpoint/Pool COMMIT/secret 전달은 미완료이며 실제 실행0이다.
+
+2026-11-05 S3 proof 검수 I1: B crypto/bytes C0/I0, A 실제 원 Tx 보장 C0/I1. 같은 db/query·active와 처음 캡처한 txid만으로 원 Tx 지속을 입증하지 못하며 원 db closure의 COMMIT→BEGIN 또는 autocommit을 구별하지 않는다. Main이95c277로 현재 순서를 읽어 확인하고 통제27절에서 같은 Primary에게 비공개 owner 문맥·실제 Tx 재대조 및 후행 SD expected txid 조건을 보완하도록 배정한다. 현재 capsule을 원 Tx 완료로 인수하지 않고 실제 실행0/정식실패0·기존 범위를 유지한다.
+
+2026-11-05 원 Tx I1 작성 중간: 같은 Primary가 비공개 owner entry 없는 진입 거절과 OPEN 전용 Pool 소유 BEGIN/COMMIT·실제 txid 목적 대조·발급 전/후 Tx 교체 반례를 추가해 신규1RED→crypto3+owner1=4PASS/skip0/1230.8691ms/exit0(fn06_open_tx_owner_green_initial)를 제출했다. consume store는 별도2RED→2PASS/1073.1579ms로 digest 전달·위조응답/만료/유실의 추가효과0을 보고했다. 같은 효과 SQL의 txid 검산·추가 autocommit 반례·최종 타입과 source지문은 아직 조립 중이므로27절 I1 인수 전이다. 실제 Pool/DB 연결0·pending0이며 Main은 owner COMMIT 불명에서 성공/자동재시도·확인 query로 승격하지 않는 기존 UNKNOWN 경계를 유지하도록 전달했다.
+
+2026-11-05 원 Tx owner/consume 재검수 배정: Primary가 OPEN 전용 private owner·실제 txid 재대조·같은효과SD검사와 consume digest/VSession 검산의8PASS/skip0/844.8604ms/type0를 제출했고, 이후 재hash credentialId 위조응답 강화1PASS는 별도분모다. 현재5raw와8동결 본문을 통제28절에 기록해 A의27절 I1/Tx·SQL 재검수와 B의crypto/기한·consume 응답/비노출 검수를 분배한다. native HTTP·secret frame/N선예약 등과 실제 PG/Tx/RLS는 미완료/NOT_RUN, 새 실제 실행0이다.
+
+2026-11-05 추가 I1: A는27절 원 Tx I1 ADDRESSED·owner/consume C0/I0이나 B는 async txid await 뒤 원 raw.signature 등을 재독해해 실제 검증한 값과 payload가 달라질 수 있는 bytes I1을 확인했다. Main도c0f4c4로 순서를 확인하고 통제29절의 비공개 입력 snapshot/동등 재검산과 실제 await 변조 RED→GREEN을 같은 Primary에게 배정한다. 전체28절 인수 전이며 source-only·실제 실행0·정식실패0을 유지한다. A의 혼입 문단은 한국어로 정정됐고 과거 함수 지문 차이는 서로 다른 추출 끝 경계를 확인해 기록했다. native endpoint 조립은 보호 Profile.origin 대응·최종검증이 남은 별도 작성 중이다.
+
+2026-11-05 async 입력 snapshot 재검수: 실제 서명 뒤 Tx await의 signature/전체 alias 변조 RED→8PASS/skip0/827.1058ms/type0를 수거해 통제30절로 B 수정분 재검수에 배정한다. 새 owner/SD 효과 인수와 구분한다.31절은 보호 current profileOrigin1값을 private SD→context→service/고정 서버 origin 비교로 전달하는 최소 내부 상세를 판정했으며, snapshot 검수·Main 최소 확인 후 관련2본문만 순차 구현한다. 공개 wire/권한/표/Secret/한도 변경0·실제 환경0을 유지한다. Primary의 미확인 경로1개 읽기 오류는 별도 준비 오류로 수거 예정이며 기술 근거에 쓰지 않는다.
+
+2026-11-05 source 한정 인수: A 원Tx I1 ADDRESSED와 B snapshot I1 ADDRESSED/C0/I0 뒤 Main7cc639의현재 직접9PASS/fail0/skip0/830.8461ms/exit0·8raw전후동일을 통제32절에 기록했다. 원Tx/snapshot/consume source만 인수하고31절 보호 profileOrigin→서버 Host 내부 연결을 진행하도록 동결을 해제했다. signing-current codec 부재RED1과 nativeHTTP/secret frame·N/다른phase·실PG/TLS/slot은 미완료/인수 전이다. Primary의미확인 registration-scope 조회OS error2는 외곽exec0/개별rg exit미수거와 구분·근거 제외하고 재실행/권한변경0을 기록했다.
+
+2026-11-05 origin/native OPEN endpoint 검수 배정: 보호 profileOrigin→private context→서버 설정 origin exact 비교와 실제 default app wiring을 연결한13PASS/skip0/1580.7287ms/type0, SQL형상3PASS·header codec1PASS를 수거했다. 통제33절에8raw와동결본문을 기록해 A의origin/원Pool/효과·취소/UNKNOWN, B의HTTP/header/binary frame·비노출 읽기 검수를 분배한다. close 반례는 LIGHT_ECONNRESET의 응답 부재를 유지하며 실제 Pool/TLS/PG/slot/N/후행phase는 미완료/NOT_RUN이다. 해당 묶음은 아직 Main 인수 전이다.
+
+2026-11-05 native ingress 경로 I1: A는33절 origin/owner/취소 한정 C0/I0이나 B는 decoded UUID만 검사해 실제 raw URL과 서명 target.path가 결박되지 않는1개 I1을 반환했다. Main이 고정wire actual method/path 조건과handler7dfff0을 읽어 확인하고 통제34절로 기존 route/직접시험의 최소 RED→GREEN을 같은 Primary에게 배정한다. 실제 인증 우회 실행 증거로 과장하지 않고 전체 endpoint 인수는 보류한다. 다른 승인 source 구현·실제 환경0을 유지한다.33절 Main 경로 슬래시 축약은 실제8경로 목록으로 정정해 오독을 방지했다.
+
+2026-11-05 path 보완/후행 current 검수: 실제percent URL200→exact gate뒤6PASS/1119.1676ms를 수거해 통제35절로 B 재검수를 준비한다. 추가4조건의 Substring 교체는 기존 시험 tail 삭제 위험으로 자동심사가 실행 전 거절해 쓰기0이었다. 기존percent를 보존하고 남은조건은 전체 prefix SHA불변의 별도 append만 허용하는 안전 대안을 전달하며 거절시 우회하지 않는다. 최초RED진단에 합성frame이 출력된 오류는 실제Secret0과 구분·재출력방지로 기록한다. 별도 signing-current coherent source6PASS/1295.6306ms/type0·9raw를36절에 기록해 A의원Tx/legacy권위·B의codec/비노출/GET 검수를 분배한다. 실제 환경0·전체FN06미완료다.
+
+2026-11-05 ACK 공개입력 경계: challenge8키에 실제 local SlotReceipt/전체ACKbody commitment가 없어 ACK target.bodyHash를 정할 수 없는 공백을 Primary와 Main이 확인했다. 원 부모3문서hash동일을f4a6e3에서 대조·보존하고 delta후보98300AA2를DRAFT/NOT_ADOPTED·ACK SOURCE_GO0로 작성했다. A의비용/원Tx 가시성·B의typed hash/실제 receipt/nonce 독립 검토를 준비하며 exact패킷 전 사람채택을 요구하지 않는다. ACK만 보류하고 STREAM/ARM/STATE/CLOSE·나머지source는 계속한다. 안전append3조건은 기존78152B/prefix E1BE불변·시험명중복0 뒤3PASS/1765.5577ms로 수거했다. 기존path I1은B ADDRESSED/C0/I0이며 추가3조건의읽기/현재직접실행은별도로확인한다. 실제환경0이다.
+
+2026-11-05 native OPEN/path/origin·signing-current 한정 인수: A/B의새소비C0/I0·path ADDRESSED 및 원prefix/safeappend3검수 뒤 Main1cde33의현재17PASS/fail0/skip0/1164.5068ms/exit0·11raw전후동일을38절에기록했다. 후행새phase2RED와actualPG/TLS/slot/N·ACK미채택은별도미완료다. 전체파일동결해제를통지하고같은Primary가네phase service/HTTP와desktop source연결을계속한다. Main의검증후해제통지지연1은관리오류로기록하고이후검사직후먼저해제하도록순서를바꾼다. 실제환경/중복writer0이다.
+
+2026-11-05 동시성 후보 검토: Primary가 기존 HUMAN auth→project와 새 native SD의 project/account→auth 역순 가능성을 반환했다. 통제39절로 A에게 실제 identity/fn01_active와 새open/session current/consume의 직접·간접 잠금을 읽기 대조하도록 배정한다. 무잠금 불변 SID 관측→기존auth→project/account/head와 최종tuple 재검산의 최소안을 검토하며 전역Auth/이전SQL/권한 변경은 하지 않는다. 실제PG 재현/무교착PASS는없고 다른source는계속한다.
+
+2026-11-05 auth/project 순서 I1 확정: A가 기존 HUMAN auth→project와 새 native SD project/account→auth의 역순 edge를 C0/I1로 확인했다. 통제40절로 기존 auth family를 먼저 확보하고 product/head 잠금 뒤 원 immutable tuple을 다시 검산하는 최소 내부 보완을 같은 Primary에게 배정한다. direct consume의 선행 잠금도 포함하며 fn76_human_scope 전체 이동·이전SQL/AccessRepository/권한/공개형식/timeout 변경은 하지 않는다. 실제 PG 교착/무교착은NOT_RUN, 다른 승인source는계속한다.
+
+## 2026-11-05 FN06 잠금 순서 보완 검수·계속 구현
+
+- 단계·담당: FN06 source-only, 기존 Primary 단일 writer. Main 어울은 검수·통합·문서 기록을 수행한다. 최신 직접 지시의 실제 DB·권한·키·서비스·Agent 실행 제외를 유지한다.
+- 변경: 새 0076의 verification/current는 원 tuple 무잠금 관측 후 기존 auth family를 먼저 잠그고 product/locked tuple을 다시 검산한다. 직접 consume의 역순 선행 잠금을 제거했다. 공개 계약·이전 SQL·인증 공통 코드는 변경하지 않았다.
+- 검수: 기존 A C0/I0 / I1 ADDRESSED. Main 517f34 관련 static/schema6 PASS, fail0·skip0·539.3479ms·exit0, SQL/시험 전후 hash 동일. 정확 명령과 본문 hash는 FN06_IMPLEMENTATION_CONTROL_20261104.md §41에 기록했다. 검사 직후 동결을 해제했다.
+- 오류: 담당자 tuple 타입 추론 준비 오류1은 as const 후 type0으로 해소했다. 미생성 파일 읽기와 wildcard rg 경로 오류는 준비 오류로 분리하며 실패 조회를 성공 증거로 쓰지 않는다. Main 제품 코드 쓰기0, 실제 환경 실행0이다.
+- 미검증·다음: 실제 PG 무교착/RLS·TLS·slot·전체 FN06은 미확인이다. 네 phase challenge 발급 제출본은 별도 검수하고, 기존 Primary는 desktop 원 Session.fetch→typed key-host와 후행 phase source를 계속 구현한다. ACK 입력 delta는 아직 미채택이며 나머지 구현을 중지시키지 않는다. 전체 작업계획은 미완료다.
+## 2026-11-05 FN06 네 phase 발급 source 검수와 남은 연결
+
+- 기존 Primary 제출의 Session current·STREAM/ARM/STATE/CLOSE challenge 발급은 독립 C0/I0 및 Main25b898 합성8 PASS/skip0/1940.8192ms/exit0로 한정 검수됐다. 제출9 raw hash는 전후 같으며 시험 직후 동결을 해제했다.
+- 후행 proof 소비/효과·N 선예약·desktop/slot·실제 PG/RLS/TLS는 미완료다. 원 Session.fetch HUMAN signing-current client/desktop adapter/runtime export의 새 checkpoint7은 읽기 검수 중이며 shell→owner·서명/키-host 전체 연결 완료가 아니다.
+- ACK 실제 bodyHash 입력 공백은 한정 WI4E2690F4의 기존22경로 source-only A안으로 직접 결정 요청했다. 독립 C0/I0이나 채택 전 GO0이며 나머지 구현은 계속한다. 실제 DB·권한·키·서비스·Agent 실행0이다. 상세 §42를 따른다.
+- 복구 보존: 제품 WIP26경로 목록을 Primary가 제출했다. 보호 사용자3경로 hash는 a24aab에서 원문과 동일, index0이다. 미검수·미구현을 완료로 표시하지 않는 복구용 로컬 checkpoint를 writer 정지 확인 후 준비한다. 원격 push·인증 복구는 하지 않는다.
+## 2026-11-05 FN06 소스 복구 보존·desktop 최종 기한 보완
+
+- Main15a634는 Primary 전체 쓰기 정지 확인 후 소유26경로만 WIP79476dfa7f54509ab1c8facc732c8fa300cbf448로 로컬 보존했다. 부모10d3b7ba·정확26·원문 전후 동일·index0, 보호 사용자3·Main 문서/후보 제외다. 원격 게시나 전체 검수본이 아니며 직후 writer 정지를 해제했다.
+- 기존 A는 새 desktop adapter await 복귀에서 응답의 더 짧은 기한을 다시 확인하지 않는 I1을 찾았다. Main91c026으로 source를 확인하고 기존 Primary에게 직접 반례 RED→GREEN 최소 보완을 맡겼다. 이전 client/runtime 제출 PASS로 이 문제를 숨기지 않는다.
+- 현재 다음은 해당 I1 보완·재검수, 원 Session→typed key-host와 네 phase 후행 proof/효과·N 예약 구현이다. ACK 입력 변경만 비동기 결정 대기이고 다른 승인 작업은 계속한다. 실제 DB·권한·키·서비스·Agent 실행은 하지 않았다. 전체 계획은 미완료다.
+## 2026-11-05 FN06 desktop 기한 보완 검사·입력 호환 재작업
+
+- Main c1b7f8의 desktop owner2 PASS/skip0/870.7013ms·원문 hash 전후 동일과 A 재검수로 최종 만료 I1은 해소했다. 검사 직후 동결을 해제했다.
+- adapter 전체는 아직 인수하지 않았다. undefined/함수/순환 입력의 기존 INPUT_INVALID 보존과 Proxy reflection 부작용 차단에 신규 I1이 있어 같은 Primary에게 허용 adapter/직접시험 보완을 지시했다. 기대값·기존 guard·공용 canonical은 완화하지 않는다. 상세는 FN06 구현 통제 §44다.
+- 네 phase 후행 proof·효과와 원 main→키-host 연결은 계속 미완료이며 ACK 입력 변경만 결정 대기다. 실제 DB·권한·키·서비스·Agent 실행0, 전체 계획 미완료를 유지한다.
+## 2026-11-05 FN06 입력 호환 원인 재검토
+
+- 후속 snapshot만으로 typed 검산 전 날짜 오류 분류가 남아 adapter 전체 인수는 보류했다. Main은 실제 source를 대조해 wrapper의 중복·불완전 검산이 원인임을 확인하고 기존 TS typed Window 검산을 내부 메소드로 공유하는 최소안을 같은 Primary에게 지시했다.
+- 기존 오류 코드·null prototype/공유참조·기간/깊이·runtime export8개를 유지하고 임의 입력 제한은 추가하지 않는다. 실제 실행·권한·새 공개 계약은 변경하지 않는다. 담당자는 직접 반례와 최종 await 기한 검사까지 함께 보완하고, 독립 phase 후행 구현도 계속한다. 상세 §45를 따른다.
