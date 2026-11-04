@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 등록 Node typed 경계는 source 부분 인수했다. C# 전용 분기는 작성·정적 검수만 마쳤고 동작 미확인이다. 같은 Primary가 STREAM 최초 점유와 native CLOSE 저장·승인된 원결과 replay를 연결한다. 실제 owner 호출선·Binding/Delivery·STATE 후행과 실제 환경은 미완료다 |
+| FN06 진행 중 | STREAM·CLOSE 최초 source와 client 역사 JSON parser를 부분 검수했다. 정상 consumed 재조회와 동일 원문 재서명 충돌 집계의 부분 증거가 있으며 다른 원문/새ID·첫 DENIED 감사를 같은 Primary가 구현한다. 실제 N current·owner/transport·Binding/Delivery·후행STATE와 실환경은 미완료다 |
 | FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 2026-11-05 직접 source-only 채택돼 기존 담당자가 순차 구현한다. ACK bodyHash 입력은 별도 미채택이다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 작업 branch는 codex/av3-stage-b다. 최신 로컬 source WIP는 21da4ee1이며 부모는 문서 checkpoint17e83cf9, 앞선 Node/server source WIP는5fb30d6b다. C# source2와 Main 문서2의 raw 불변·index0을 확인했다. 작성 중 replay source는 별도이며 private 동일성·PR/병합은 미확인이다. 인증 복구나 push 재시도는 하지 않는다 |
+| Git 보존 | 기존 codex/av3-stage-b에서 최신 로컬 문서 checkpoint24e592cf와 source WIP64d57caf를 보존했다. 그 뒤 재조회·client·거절 집계 변경은 작성/검수 중이다. private 동일성과 PR/병합은 미확인으로 유지하고 인증 복구·push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15119,3 +15119,7 @@ Main b9d556 직접·인접4 PASS와 raw6 불변을 확인했지만 독립 검수
 ## 2026-11-05 FN06 client 응답 분류 부분 검수
 
 client parser는 독립 C0/I0·Main직접3 PASS와 raw2 불변으로 부분 검수를 마쳤다. 실제 transport/owner 연결은 아직 미완료다. 기존 Primary는 거절 고정집계의 실제 producer와 정산을 구현하며 정상 replay 쓰기0·원성공 보존을 유지한다. 상세는 구현 통제 §71에 기록했다.
+
+## 2026-11-05 FN06 동일 원문 재서명 충돌 부분 인수
+
+기존 집계 producer의 동일ID/동일proof 재서명 충돌은 독립C0/I0와 Main57042f 직접3 PASS/skip0/exit0·raw6불변으로 부분 인수했다. 다른canonical/새ID 및 admitted첫DENIED는 미완료이고 같은 Primary가 계속한다. 전체거절계약·실제DB검증은 아니며 상세는 구현통제§72에 기록했다.

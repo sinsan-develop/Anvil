@@ -679,3 +679,13 @@ SQL 실물 ticket 분기·별도 readonly lease·원서명/원문/closure·최�
 Main46788b의 node --test --test-name-pattern='recipient는 STREAM JSON|recipient 응답 분기는|Delivery frame는 기존 authority' tests/unit/FN06/native-first-receive-client.test.ts 는3 PASS/skip0/179.5749ms/exit0이다. clientD89FDEC6AD62AD508B0A21475D8C95FBCAD17A7F91936319FF13885431A4D7D4·시험E1211F5C5FD779CB1A21BC59A75E458A63AC6694EEB3446F6CB223F1E9DCF702는 Main 및 독립 검토 전후 동일했다. parser본문78A3EE1025F05C9E6027FCA646FFE4C65D53710732229645B49D0FC854DF06B2다. 검사 직후 고정을 해제했다.
 
 거절 지도는 기존 표·collector·quota·역완결만 존재하고 실제 유한 writer가 없음을 확인했다. 같은 Primary에게 원 인증/등록 귀속을 검산한 소비 요청 충돌을 기존 고정집계 REQUEST_CONFLICTS 조건으로 생산하고 actual/future 정산·명확 COMMIT 뒤 거절을 반환하도록 맡겼다. TICKET_EXHAUSTED와 혼용하지 않으며 원 성공ticket/evidence/replay를 수정하지 않는다. 정상 replay 읽기전용을 쓰기로 넓히지 않고 별도 목적을 사용한다. admitted 첫거절 DENIED replay/audit도 별도 후속 미완료다. 새 수치·행종류·권한이나 실제 환경 실행은 추가하지 않았다.
+
+## 72. 동일 원문 재서명 충돌 집계 부분 인수
+
+동일 ID·동일 proof의 다른 유효 signature 충돌은 기존 독립 검수 C0/I0로 부분 인수했다. 실제 crypto 뒤 원 signature 불일치에서만 private 허가를 만들고 목적 SQL은 원 CONSUMED ticket·인증·등록 requested_by/client/session·creation basis를 재검산한다. 원 성공행은 보존하고 기존 project/registration 집계의 REQUEST_CONFLICTS만 갱신한다. 최초 M admission·R/project 한도·포화 bit4·actual/future 차분을 소비하며 새 ticket/개별감사는 추가하지 않는다.
+
+Main57042f는 node --test --test-name-pattern='consumed owner는 실제 서명|STREAM·CLOSE consumed HTTP는' tests/unit/FN06/native-first-receive-routes.test.ts 로2 PASS/skip0/1061.2476ms/exit0을 확인했다. node --test --test-name-pattern='소비 원문 충돌 writer는' tests/unit/FN06/native-first-receive-schema.test.ts 는1 PASS/skip0/501.0635ms/exit0이다. 뒤1개는 미적용 SQL 형상이며 실제PG가 아니다. 원6 raw는 전후 같았다. StoreC8DFDC5D98C5CBF3D4BEB96B1D3B28059DA3C848DAC205DF1F99E09B54919EBF, serviceBDA25CDE66CF3E723AA2F891A61AB4D5EAF2925398231F997D7D46A9C7AB9200, SQL34B653E0EB555447291F34793777783BD777F5AAA50ACEF8FE91B4E336411FA6, routes시험DD4B84A5FF7B17C99C188AC65E2A4B4265BB8311E867B2DDD52D70261539ECD0, schemaA56C632817347E9AFBB5EA39B7A7ACC399909C614CF8A2921A218D2542C5519D이며 routes는 원31671D01 그대로다.
+
+명확한 충돌은 COMMIT/release 정착 뒤 private brand를 단발 수거해야만409이고 SQL/quota/COMMIT/release불명은UNKNOWN이다. 정상replay쓰기0와 원성공불변을 보존했다. consumed conflict 본문은12B0A594557B11C24A4E4959AAF6818978B54A1F2A42EEBDCD88D86559F6B6C2다. 결과 수거 직후6파일 고정을 해제했다.
+
+다른 canonical·새ID 충돌/TICKET_EXHAUSTED·admitted 첫 DENIED 감사는 후속 미완료다. 전체 거절 계약이나 전체 재조회/FN06 완료를 주장하지 않는다. 같은 Primary가 남은 분류를 이어가며 실제DB·권한·키·서비스·Agent는 실행하지 않는다.
