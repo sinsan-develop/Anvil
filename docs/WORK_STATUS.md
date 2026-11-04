@@ -14248,3 +14248,7 @@ Primaryfd3017 직접3PASS/skip0/590.1264ms·a95774 Bash-n0/11e9e4 index/선택/�
 
 ### 2026-11-04 R8 실행 후보·source 결과 동결
 Primarye485a6 신규문서2 source결과A4129B35/초기후보DB97A4F1·생산SQL10/plan18owner6/선택105·서식검산0·오류0/writer반환/live0. Main736ef3읽기후98e9aa에서소진승인표기R6→직전R7 한문구만명확화(실행조건변경0). 최종후보C37DC25BEC6758542C8C3D08B9D1FC8971AE94BBED23F1E176D871E2B676E552/21481B,code2224224fc1b1b02776258b2db2bde4bf7dd8c309/SQLfed86a515561d3f342859367d90d94e26b530248/instance32 2224224fc1b1b02776258b2db2bde4bf·선택105/2376142B/order09d/plan18owner6·생산SQL10원문/hash전부동일/mirror검산0. bootstrap0B743F8F58F8CF01DB0C56CF980092A5B74F243F34DFDECCF4CCD1F493AE44BA. scoped문서C0/I0/M0·새R8실행NOT_APPROVED/자원생성/시각발급0. 원R7와역할/권한·Tx/격리·전체30분PG10분slot1·UNKNOWN뒤후속조회mutation삭제0동일. 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R7재사용0·원실패UNKNOWN·감사/전체계획미완료유지.
+
+
+### 2026-11-04 R8 새 단1회 직접 결정 요청
+45e806 tailc1734aaa16f3b5f642a495e9e2a4b1e39b319bbf local/privateexact·trackedclean/보호3만을확인한후packetC37DC25BEC6758542C8C3D08B9D1FC8971AE94BBED23F1E176D871E2B676E552/code2224224fc1b1b02776258b2db2bde4bf7dd8c309/SQLfed86a51의새R8 QA1회직접결정질문을비동기로1회전달했다. 원R7는소진/FAILED·회수/정리잔여0·감사보존이다. 한문자source보완/44개검수는실PG재설치PASS아니며새R8는미승인·자원생성/시각발급0. 원R7와역할/권한·Tx/격리·whole30분PG10분slot1·UNKNOWN뒤후속조회mutation삭제0동일. Main/기존Primary writer반환/live0·기존DB권한키서비스Agent/P03R3변경0. 새직접답변도착시정확packet/code/private·신규자원부재/환경을대조하고새clock의slot1만진행한다. 반복질문/소진R7재사용0·과거실패UNKNOWN/감사/전체계획미완료유지.
