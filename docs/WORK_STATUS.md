@@ -14206,3 +14206,7 @@ Primary65eb54 직접3PASS/skip0/519.7572ms·35ca7b Bash-n0·f7b65f index/선택/
 
 ### 2026-11-04 R7 실행 후보·source 결과 동결
 Primarye258d0 신규문서2 source결과05E5A05A/초기후보39FCEE13·생산SQL10/선택105·fence검산0·writer반환/live0. 문서생성6677d3절제목불일치준비오류1은쓰기전종료/18b78e정정과분리했다. Maince96d8 읽기에서owner7키오기발견후e57c0a 실제원계약6키로문구만정정·소진승인표기를직전R6으로명확화(실행조건변경0). 최종후보6BF26D149AAC755D3E34F8B260E086429753D8B5EABA317AC81C17444926C20F/20936B,code41f037571dfa256e903f422785883d2b228df07d/SQL7adc72b43063c875120124c7c3828633c55c35c7/instance32 41f037571dfa256e903f422785883d2b·선택105/2376143B/order09d·생산SQL10전부원문/hash일치·mirror검산0. bootstrap9EF637EFEE0A5D2B7537F9B1FB82B250B8274CCAE84FC6314F8ADE19BA740FCE. scoped문서C0/I0/M0·실행R7 NOT_APPROVED/자원생성/시각발급0. role/권한·Tx/격리·whole30분/PG10분·UNKNOWN뒤조회mutation삭제0은원R6와동일. 원R6FAILED/실행자원잔여0/감사와과거실패UNKNOWN보존·전체계획미완료. 새직접결정전실제DB권한키서비스Agent/WSL/P03R3실행0.
+
+
+### 2026-11-04 R7 새 단1회 직접 결정 요청
+399161 tailf56f3fe864339d95c56823e99eb7f94e0d2be72b local/privateexact·trackedclean/보호untracked3만을확인한뒤고정packet6BF26D149AAC755D3E34F8B260E086429753D8B5EABA317AC81C17444926C20F/code41f037571dfa256e903f422785883d2b228df07d/SQL7adc72b4의새R7 QA단1회직접결정질문을비동기로1회전달했다. 원R6는소진/FAILED·회수정리잔여0·감사보존이며새R7는아직미승인/자원생성·시각발급0. 함수·권한내용불변인0069두블록순서보완과새전용namespace/기준선외role/Tx/격리/whole30분PG10분slot1/UNKNOWN뒤후속조회mutation삭제0은동일하다. Main/기존Primary writer반환/live0·기존DB권한키서비스Agent/P03R3변경0. 새직접답변도착시고정code/packet/private·자원부재/환경신원을재대조해새clock의slot1만진행한다. 반복질문/소진R6재사용0/과거실패UNKNOWN·전체계획미완료유지.
