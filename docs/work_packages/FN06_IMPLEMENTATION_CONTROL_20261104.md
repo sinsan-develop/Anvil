@@ -127,3 +127,50 @@ Primary는 기존 tests/unit/UI11/preparation-policy.test.ts가 정확12 목록�
 Primary는 새6 목록/시험명2곳 정합 뒤 정확 node --test tests/unit/UI11/preparation-policy.test.ts의4PASS/skip0/593.321ms/exit0와 diff check0를 제출했다.
 담당 B가 현재 raw7B02263BBE551F08389152811A4E90B729D89E65C61B48C0064B2BA61274F020의 전후 동일 및 허용3지점만 역치환한 raw가 원8E045C88A8EED438C59A2D39BCA6468416B7D3A7785D28B49D5DCF005F30EDB8과 완전 일치함을 확인했다. 실제 수정분 C0/I0이며 기존12/각단언/negative/54조합은 보존됐다. 이 정확 test delta만 인수하며 실제 native 권한·전체UI11/S2/계획 인수로 확장하지 않는다.
 Primary는 기존56+파생 시험1의57범위에서 계속 구현한다. 실제 DB·권한·키·서비스·Agent·컴파일·J3/P03 R3·Git 복구 제외는 그대로다.
+## 17. Window·Offer·Close Node 저장 묶음 검수
+
+2026-11-05 제출. 정확 node --test tests/unit/FN06/native-first-receive-routes.test.ts tests/unit/FN06/native-first-receive-store.test.ts tests/unit/FN06/native-first-receive-schema.test.ts 결과 key fn06_three_command_checkpoint_tests는36PASS/skip0/831.3303ms/exit0, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json의 fn06_three_command_checkpoint_type은exit0다. 이후 새 전용 routes/app 등록의 app.inject3반례 RED→3PASS/1256.0981ms를 추가 제출했으나 이전36과 합산하지 않는다. 메모리 DB port와 실제 Node/HTTP handler 소비·SQL 형상 증거이며 SQL 본문/실PG/RLS/실제 서비스 기동 증거가 아니다.
+
+정확 대상:
+- apps/server/modules/executions/native-first-receive-service.ts: withNativeReceiveCommand, NativeFirstReceiveService.command
+- apps/server/modules/executions/native-first-receive-input.ts: readNativeReceiveHumanCommand, receiveHumanCommandCanonical
+- apps/server/modules/executions/native-first-receive-store.ts: prepareWindow/readCommandWindow/prepareOffer/insertOffer/prepareClose/insertClose/insertWindow, readOfferValue/readCloseValue
+- apps/server/modules/executions/project-native-preparations.ts: ProjectNativePreparations.receiveOfferCurrent
+위 본문은 Primary가 동결했다. 같은 파일의 다른 native/SQL 목적 writer는 계속 작성한다. 검토 전후 대상 본문 지문을 대조하고 전체 파일 변화 자체를 동결 위반으로 세지 않는다.
+제출시점 raw: service09AD236E2FB1B9C0DCE5458D99FA30C6F609764806CA12E1E015756092DBE642, inputFAE7B50286E0EC53E34094BF05C556C283DC37445ED6D9B7E7C6EA8B548241BF, store19D16D15183BACA32A38C62EDF8B5F1559C04CF293B50DB893A242BE2A5C5C3A, 원adapterFF55DADC385C9D50B73AB7B8CE3F48F138705F3CEE3C657590C86023903B1ABA. 참고 시점값이고 전체 파일 영구 불변 주장은 아니다.
+새 HUMAN 전용 routes는 apps/server/modules/executions/native-first-receive-routes.ts다. 앱 등록 경로는 채택 WI2절의 실제 목록/현재 import에서 확인하고 추정하지 않는다. 아직 작성 중 native OPEN/STREAM/ARM/ACK 경로나 나머지 목적 저장/전체 deferred의 부재는 이번 묶음의 확정 finding으로 세지 않는다.
+
+담당 A remaining_execution_dependencies: 실제 currentGeneralProjectController/authorizeMaterial→보호 replay→begin→공통 persistProjectReceipt→목적 저장→end 소비의 현재 인증·정책·control·같은 actor/session·기한/await 경계·같은 원 Tx를 검토한다. 새 준비3의 REQUIRE_APPROVAL 거절과 원 기능 보존, caller 선언을 권위로 바꾸지 않는 private scope/brand lease, 늦은 실패/재조회에서 새 저장·효과가 생기지 않는지 확인한다. 호출된 SQL 목적 함수의 실제 원형과 Node 인자/actor 결박을 대조하되 실PG 권위 PASS를 주장하지 않는다. 최종 deferred가 ephemeral begin/end 상태에 잘못 의존하는 등 실제 호출선 반례가 있으면 반환한다.
+
+담당 B remaining_stage_b_dependencies: exact HUMAN 입력/unknown·중복키/크기·원 native parser/commandHash·전용 Offer2293760·원 canonical/한도 불변, 대형 Offer의 공통 명령/결과/재조회 보존, close의 부모 전이·발급/종료 현재성 조건, replay의 정확 원문·기존 snapshot/hash·비밀 비노출을 검토한다. HUMAN 전용 route와 app 등록이 기존 인증/다른 API를 넓히지 않는지 확인한다. native 경로의 미래 구현 부재를 현재 통과로도 결함으로도 만들지 않는다.
+
+공통: Primary 제출·기존 통과 기록을 현재 구현 증거로 자동 승격하지 않는다. 실제 반례·파일/함수·근거·최소 보완을 반환하며 작성 중 후행 의존은 인수 조건으로 구분한다. 읽기만 수행하고 파일/시험/SQL 수정·시험 재실행·Git 시도·실제 DB/권한/키/서비스/Agent/컴파일/원격 실행은0이다. 이전 math/profile/정책 시험을 반복하지 않는다. 경로는 위 실제 파일과 목록에서 확인한 것만 사용한다.
+## 18. 최근 재인증 I1 보완 지시
+
+2026-11-05 담당 A의 17절 검수는 C0/I1, 담당 B의 입력·재조회 검수는 C0/I0다. A는 HUMAN3 저장 경로의 최근 재인증 만료 검사가 빠졌다고 반환했다. Main은 고정 wire 13줄의 기존 최근 재인증 검사 유지와 231줄의 부모 재인증 기한 최솟값 조건을 실제 대조했다. 기존 36PASS와 HTTP 합성 통과를 이 결함의 면제나 전체 인수로 사용하지 않는다.
+
+같은 Primary만 기존57 허용 경로에서 보완한다. withNativeReceiveCommand/command 및 직접 연결된 목적 SQL의 필요한 동결을 이 보완에 한해 해제한다. 기존 actor의 실제 재인증 기한과 원 등록의 최근 재인증 계약을 확인하여 HUMAN Window·Offer·Close의 권위 진입, await 후 다음 효과 전, 부모 최소 기한에 반영한다. 다른 인증·정책·OWNER/control·현재 등록·profile·writer·DENY·원 native 일회 승인 검사는 유지한다. AccessRepository나 일반 인증 구조를 바꾸거나 읽기 전용 API 전체에 새 조건을 임의 추가하지 않는다. SQL fn76_human_scope와 Window 후보의 connector_basis_current 호출 및 expires 계산도 해당 HUMAN 쓰기 조건을 보존하도록 대조한다. 작성 중 SQL은 실제 PG 검증으로 표현하지 않는다.
+
+반례는 다른 조건이 모두 유효하지만 최근 재인증만 만료된 진입, await 중 만료되어 다음 저장 전에 거절되는 경우, 유효 기한의 정상 흐름, 보호 재조회가 권위 검사를 우회하지 않는 경우다. 원 실패 RED와 보완 GREEN의 정확 명령·출력·코드·지문을 제출한다. 동일 근본 원인의 첫 독립 검수 보완이며 정식 FAILURE_REPORT 횟수는0이다. 담당 A가 수정 본문을 독립 재검수하고 Main이 인수한다. 나머지 native 목적 저장·HTTP·소비 연결 구현은 계속하되 이번 결함을 감춘 채 완료로 선언하지 않는다.
+
+Primary의 추가 profile GET 제출은 readProfile 부재/GET404 RED 뒤 HTTP·기한4PASS/1377.1498ms/exit0, key fn06_profile_get_http_green이다. REQUIRE_APPROVAL 조회0과 지연 만료 본문0은 합성 범위 증거이며 아직 Main 독립 인수 전이다. 원 command 동결 본문 보존 보고와 구분한다.
+
+실제 DB·권한 부여·키·서비스·Agent·C# 컴파일·J3/P03 R3·Git 복구 제외를 유지한다.
+## 19. profile GET 오류 의미 I1 보완
+
+2026-11-05 담당 B의 새 profile GET 한정 검수는 C0/I1이다. 기존 profile reader가 최종 profile 만료 때 생산하는 NATIVE_RECEIVE_PROFILE_UNAVAILABLE/412가 새 전용 route의 known 목록에 없어503 NATIVE_RECEIVE_SOURCE_UNAVAILABLE로 바뀐다. 본문 비노출은 유지되나 채택된 오류 의미가 다르므로 기존 기대를 낮추지 않고 보완한다.
+같은 Primary가 전용 route의 정확 code/status 한 항목을 연결하고, auth session은 유효하나 profile만 최종 만료되는 실제 GET 합성 반례의412·본문0을 RED→GREEN으로 검증한다. 다른 오류를 일반 허용하거나 상세 오류·비밀을 응답에 추가하지 않는다. 기존57 범위, 실제 실행 제외와 단일 writer를 유지한다. 검수 시 readProfile 본문8EF776D55E23317E14D53D6A6527FA831F8A934C69E171ED7EF014F0DEBE694A, routes C80EB41BF521C68E0EB7E8BD33A75F04A2A655B07B14F14B0BCF9C3C495EDA3A는 전후 동일했다. 수정 후 담당 B 독립 재검수를 받는다.
+## 20. I1 수정분 제출과 독립 재검수
+
+19절 담당 B는 I1 ADDRESSED·수정 범위 C0/I0를 반환했다. 정확 known 매핑 NATIVE_RECEIVE_PROFILE_UNAVAILABLE:412, 최종 freshness 만료 GET의412 및 exact code/requestId:null만 반환하는 검사를 확인했다. reader/readProfile 불변, REQUIRE_APPROVAL 조회0과 다른 만료·SELECT만 수행 기대를 유지했다. 전후 대상 지문 동일: known F856CCC2, readProfile8EF776D5, reader0D570D22, 시험B3413008. 시험 재실행/쓰기/Git/실환경0의 읽기 검수다.
+
+18절 Primary는 실제 만료 거절 누락RED(exit1) 뒤 Node GREEN, SQL 형상 누락RED(exit1) 뒤 조건 보완을 제출했다. 정확 명령은 node --test --test-name-pattern='HUMAN3 SQL만 실제 최근 재인증' tests/unit/FN06/native-first-receive-schema.test.ts 및 node --test --test-name-pattern='HUMAN 세 명령은 최근 재인증|유효한 짧은 재인증|실제 HUMAN command scope|Window service는|Offer·Close service는' tests/unit/FN06/native-first-receive-routes.test.ts 이다. fn06_reauth_sql_and_direct_green: SQL1PASS/443.6819ms·Node5PASS/524.8976ms/exit0, fn06_reauth_type_exact_exit:noEmit exit0, diff check0이다. HUMAN3에만 실제 최근 재인증·basis true·Window least(a.reauth_until)를 연결하고 read3 확장은0이라고 보고했다.
+
+제출 raw: service FAC7BA2B472D425F5A9567BA3314A50A88D1FAD14EDF0CF98694A8B0E2995637; route210CBD057DDEF6E6C478011914B163B5BA67D33CCD91F5818A266E0D47B30548; SQLF748AF0F6297EED471C13C16A1D6C92A81042297112C2476F4E6A54C4A8BC2F9; routes시험B3413008A18DE6E81C53F7341D31D5C4D3C35004F9ABEC2638A071F97C4280FC; schema시험B1CA074E581A1B8C692C912E9E2DE266850E2C5333D4C08E4F7C03564D4AB91B. Main은 A에게 정확 보완 본문·반례 읽기 재검수를 배정했다. 실제 PG 검증은0이고 S2/S3 목적 writer·N 선예약·S4~S7은 아직 미완료다. Main의 최소 직접 검증을 위한 짧은 대상 파일 동결을 요청했고 다른 허용 파일 구현은 계속한다.
+## 21. 최근 재인증·profile 오류 보완 한정 인수와 동결 해제
+
+담당 A가18절 I1 ADDRESSED·수정 범위 C0/I0를 반환했다. 실제 reauthUntil Date의 기한·객체 동일성·getTime 보존을 command entry/controller·policy await/replay/효과 전과 owned query IO 전후에서 유지하고, 부모 deadline 최솟값과 짧은 유효 기한 정상 흐름을 확인했다. SQL HUMAN3만 최근 재인증을 요구하며 Window basis recent=true와 expires reauth_until이 연결되고 profile/read3 일반 읽기 조건은 확대하지 않았다. 전후 대상 본문 지문은 with scope E1B04211DF4061E7236000B368F4471F5C9DE7BF8907C87D8D0DCFB09DD54EA3, command5CFFE408F71C5FA810BCE0DD56F9F10AF082DEEAE2F43B61AD2561E3328554CF, SQL HUMAN scope0C8D0EA13375729A52D47677A94B47A4B7CDA9E425FBC780472C341B3F75B58A, SQL Window candidateBE363D10690670574B2002DFBE0D1A4247138D37ED98580C33AF0A7A141A2BE8로 동일했다.
+
+Main은 A/B 독립 수정분 C0/I0와83e279의 직접6PASS/871.8023ms·SQL형상1PASS/450.0471ms/모두skip0/exit0 및6파일 전후동일을 대조해18·19절 두 보완만 인수한다. 관련 본문 동결을 모두 해제하고 기존 단일 Primary가 S2/S3 목적 proof writer·N 효과 전 선예약·native 수신 후행 연결의 다음 미완료 단위를 계속한다. 이미 인수한 codec/profile/math/policy 최소 검사를 반복하지 않는다.
+
+이는 source-only 구현·합성 검증 인수이며 실PG/Tx/RLS/native desktop/브라우저/Agent·전체계획 인수가 아니다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·J3/P03 R3·Git 복구 제외를 유지한다. 정식 FAILURE_REPORT0이다.

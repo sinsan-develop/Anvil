@@ -14875,3 +14875,38 @@ Main은 해당 test delta를 인수하고 기존57범위의 단독 구현을 계
 ### 2026-11-05 Main 문서4개 로컬 checkpoint 준비
 
 Primary가 현재 HEAD 의존 검산/Git 작업/pending handle0과 문서 checkpoint 무충돌을 확인했다. Main은 현황·접합 지시·후속 조사 지시·필수 정책 시험 경로 파생 판정의 정확4문서만 로컬 커밋한다. 제품·시험·SQL과 보호 자료는 index에서 제외하고, 원격 재시도·Git 인증/권한 변경은 하지 않는다. Source57은 작성 중이고 Window 후보 producer의 함수 부재RED1 상태를 보존하며 목적 writer·실PG·전체계획 완료로 표시하지 않는다.
+### 2026-11-05 Window Node 저장 연속 소비선 중간 제출
+
+Primary는 NativeFirstReceiveService.command의 기존 currentGeneralProjectController→authorizeMaterial→보호 projectReplay→사적 begin→후보 SQL→기존 persistProjectReceipt command/receipt/audit→Window 목적 저장→end 소비를 조립했다고 보고했다. 새 서비스 반례 함수부재RED1→1PASS/446.0493ms, query의 매 await 전후 기한/동일 actor/session을 검사하는 owned facade 접합 뒤 직접영향2PASS/760.9909ms를 제출했다. replay는 보호 SQL 원행 증명 뒤 새 저장0이며, 메모리 DB port에서 실제 Node 함수 소비를 확인한 범위다. SQL 본문·실제 Tx/PG/RLS 증거가 아니다.
+
+Main은 다음 검수 단위를 Window·Offer·Close 세 명령의 Node→공통원장→목적저장→보호 replay 흐름으로 묶도록 했다. Primary가 동의했고 현재 Window의 receipt producer 내부 await가 기한을 넘으면 다음 INSERT를 막는 경계를 확인한 뒤 Offer/Close를 연결한다. 기존 scope57·단일 writer를 유지하며 새 승인 경계/pending handle0이라고 보고했다. S2 전체 역완결·종료 ticket 상세·N 효과 전 선예약·Offer/Close·HTTP/desktop와 실제 PG는 아직 미완료다. 앞서 인수한 계산/정책 시험을 재실행하거나 전체 기능 완료로 승격하지 않는다.
+### 2026-11-05 FN12 미채택 후보 r2 사실 정정·문서 검수
+
+Main은 원후보 raw5181E6EFA143642CF2E95D72DD09F58B9BD76CBC7FFA2CADC3666BC0BC25FA9B/33181B를 양쪽 정본에서 대조한 뒤 본문의 오래된 사실10줄과 설명5곳을 정정했다. 하위 HUMAN 내용 기능·root-only 실행/예약, 등록 정의 예약, 기존 순수 재료를 구분하고 과거 source/DB 상태를 이력으로 남겼다. 기존 B 타입·인터페이스·수치·물리 배치는 미채택 제안이며 새 상한/필드/권한을 선택하지 않았다.
+
+독립 A는 r2 36626B/raw9C0E226BBFC129CDD1F2833B3F01EB8BC1139C02B54B519FC4E9CF54C278AD66 전후동일·사실 정정/미채택 경계 C0/I0를 반환했다. 권장 Minor1에 따라 제외 범위의 모호한 일반 child 확정/실행 표현을 기존 child HUMAN 내용 기능 확대·child 예약/실행 제외로만 좁혔다. 최종후보 raw B460F98FDE8360BD532DF73D8E49CC8613AD007DC67CD360B953BA3169FE2B5B이다. 문서 사실 정정이며 B안 채택이나 새 Source 구현 GO가 아니다. 제품·SQL·DB/권한/키/서비스/Agent 실행0이고 현재 FN06 단독 구현은 계속한다.
+
+첫 Minor 치환은 검토자의 요약 문구와 실제 문구가 달라718bd3 MINOR_MATCH_COUNT로 쓰기 전에 중단됐다. 이어진 원문 확인 호출1건은 functions JS 구문 분석에서 실패해 shell 실행0이었다. 정확한 원문을 d5f489에서 읽은 뒤 한 곳만 수정했다. 두 준비 오류로 파일을 부분 변경하거나 오류를 PASS로 숨기지 않았다.
+
+### 2026-11-05 FN06 최근 재인증 검수 보완
+담당 A C0/I1: HUMAN3의 최근 재인증 만료 검사 누락. 고정 wire13/231 조건을 Main 대조 후 구현 통제18절로 같은 Primary에게 RED→GREEN 보완을 배정한다. 담당 B 입력·재조회 C0/I0는 한정 결과다. 실제 DB/권한/키/서비스/Agent 실행0, 전체 FN06과 작업계획 미완료. 정식 실패0. 수정 후 독립 재검수·Main 인수 예정.
+
+2026-11-05 추가: profile GET 한정 C0/I1. 기존 reader의 profile 만료412가 새 route에서503으로 바뀌는 분기를 통제19절로 같은 Primary에게 보완 배정. 본문0 유지, 실제 실행0, 전체 미완료.
+
+### 2026-11-05 FN06 두 I1의 보완 중간 제출
+
+Primary의19절 제출 fn06_profile_final_expiry_mapping_green_fixed는 정확 오류 매핑1개 보완 뒤 최종 decode/freshness 만료1PASS/740.4762ms/exit0이다. 처음 fixture의 DB 반환 즉시 만료는 기존 원문검산 오류에 먼저 도달했고, 두 호출 사이 clock arm 누수도 있었다. 두 준비 오류 결과는 보존하고 최종 profile 만료 분기와 구분한다. 기존 reader 변경이나 기대값 완화로 맞추지 않았다. 해당 정확 매핑·반례만 B 읽기 재검수에 배정했으며 아직 Main 인수 전이다.
+
+18절은 만료 진입·정책 await 중 만료·만료 replay RED 뒤 Node 반례1PASS/562.425ms/exit0(key fn06_human_reauth_green_attempt) 중간 제출이다. SQL HUMAN3의 조건부 재인증·basis true·Window 부모 최소기한과 유효 단축 기한 반례는 아직 마무리 중이다. Main은 이를 전체18절 완료로 세지 않는다. Primary live handle0·agent running을 확인했고 단일 writer 구현을 유지한다. 실제 DB·권한·키·서비스·Agent 실행0이다.
+### 2026-11-05 Main 재인증·profile 직접 검증
+
+Primary가 대상6 파일 전체의 짧은 동결과 live handle0을 확인한 뒤 Main이 정확 최소 합성 검사를 실행했다. 83e279 exit0: node --test --test-name-pattern='HUMAN 세 명령은 최근 재인증|유효한 짧은 재인증|실제 HUMAN command scope|Window service는|Offer·Close service는|보호 profile GET은' tests/unit/FN06/native-first-receive-routes.test.ts 는6PASS/fail0/skip0/871.8023ms다. node --test --test-name-pattern='HUMAN3 SQL만 실제 최근 재인증' tests/unit/FN06/native-first-receive-schema.test.ts 는1PASS/fail0/skip0/450.0471ms다. 실제 Node command·메모리 DB port·Fastify app.inject 및 SQL 텍스트 형상 범위이며 실제 DB/Tx/RLS·native desktop·Agent 실행 증거가 아니다.
+
+전후6 raw 동일: serviceFAC7BA2B472D425F5A9567BA3314A50A88D1FAD14EDF0CF98694A8B0E2995637; routes210CBD057DDEF6E6C478011914B163B5BA67D33CCD91F5818A266E0D47B30548; profile0D570D22CB92F710862AC526A7C4A189EF45FE733DD52FB9B26F398019DBADC4; SQLF748AF0F6297EED471C13C16A1D6C92A81042297112C2476F4E6A54C4A8BC2F9; routes시험B3413008A18DE6E81C53F7341D31D5C4D3C35004F9ABEC2638A071F97C4280FC; schema시험B1CA074E581A1B8C692C912E9E2DE266850E2C5333D4C08E4F7C03564D4AB91B이다.
+
+19절은 독립 B의 ADDRESSED·한정 C0/I0와 Main 직접 반례를 확인했다. 18절은 독립 A 재검수 결과를 기다리며 해당 보완 본문만 동결한다. Main 실행용 파일 전체 동결은 해제하여 같은 Primary가 다른 승인 소비 연결을 계속한다. 실제 실행 제외와 단일 writer는 유지하고 전체 FN06·작업계획은 미완료다.
+2026-11-05 추가 인수: 최근 재인증 I1도 독립 A ADDRESSED·수정범위 C0/I0. Main6+SQL1 합성 통과/대상6 raw동일 및 B의 profile 오류 보완 검수를 대조해 통제21절에 두 보완 한정 인수·동결 해제를 기록했다. 단일 Primary가 목적 writer·선예약·native 후행 연결을 계속한다. 실제 PG/서비스/Agent와 전체계획 완료는 미검증·미완료다.
+
+
+### 2026-11-05 Main 문서 전용 두 번째 로컬 checkpoint
+Primary가 HEAD 의존 검산·Git 작업·pending handle0과 문서 checkpoint 무충돌을 확인했다. HEAD46B3CDBA 직접 자식으로 현황·구현 통제·후속 조사 지시·FN12 미채택 사실 정정의 정확4문서만 보존한다. index는 비어 있었고 보호 untracked3 raw는 기존값과 동일했다. 두 I1의 독립 검수·Main 합성 결과를 기록하며 제품/시험/SQL은 stage하지 않는다. 원격 인증 실패 이후 재시도·키/권한 변경은 하지 않고 local-only를 유지한다. 전체 FN06과 작업계획은 미완료다.
