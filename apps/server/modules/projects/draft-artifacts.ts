@@ -1,3 +1,4 @@
+import {resolveDraftSetupSelection} from './draft-common-setup.ts';
 import {ArtifactStore,type ProjectNamespaceProof} from '../../storage/artifact-store.ts';
 import {ProjectStorageQuota} from './project-storage-quota.ts';
 import { randomUUID } from 'node:crypto';
@@ -9,7 +10,7 @@ import { projectMember } from '../access/project-command.ts';
 import { inspectArtifact, assertStoredArtifactReadable } from '../../storage/sensitive-inspection.ts';
 import { StoredDraftArtifactFiles, type DraftArtifactFilePort, type DraftFileSpec, type DraftCopySpec } from './draft-artifact-files.ts';
 
-interface DraftRow { id: string; owner_user_id: string; client_id: string; version: string | number; consumed_project_id: string | null; input_json: { artifactRefs?: unknown[] } }
+interface DraftRow { id: string; owner_user_id: string; client_id: string; version: string | number; consumed_project_id: string | null; input_json: { artifactRefs?: unknown[]; setupSelection?: unknown } }
 interface UploadIntent { id: string; draft_id: string; actor_id: string; client_id: string; external_command_id: string; expected_version: number; request_hash: string; request_json: DraftUploadCommand; ref_json: DraftArtifactRef; state: string; server_command_id: string; operation_id: string; receipt_id: string; attempt: number; result_json: DraftUploadReceipt | null }
 interface ArtifactRow { id: string; draft_id: string | null; project_id: string | null; bytes: string | number; content_hash: string; media_type: string; state: string; inspection_json: unknown; storage_key: string; command_id: string; upload_intent_id: string }
 export interface VerifiedDraftSelection { draftId: string; version: number; refs: DraftArtifactRef[]; entries: { ref: DraftArtifactRef; uploadId: string }[] }
@@ -174,6 +175,7 @@ export class DraftArtifacts {
       const old = (await db.query('SELECT * FROM anvil.draft_creation_intents WHERE draft_id=$1 AND actor_id=$2 AND client_id=$3 AND external_command_id=$4 FOR UPDATE', [draft.id, actor.actorId, actor.clientId, request.commandId])).rows[0] as CreationPlan | undefined;
       if (old) { if (old.request_hash !== requestHash) fail('IDEMPOTENCY_CONFLICT'); await this.guardSnapshot(db, actor, draft.id, { artifactRefs: old.refs_json }); if (old.state === 'COMMITTED') { await projectMember(db, actor, old.target_project_id); return old; } }
       this.#current(draft, request.draftVersion);
+      if(draft.input_json.setupSelection!==undefined){await resolveDraftSetupSelection(db,actor,draft.input_json.setupSelection);if(!this.files?.beginNamespace||!this.files.verifyNamespace)fail('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);}
       const refs = readDraftArtifactRefs(draft.input_json.artifactRefs ?? []); if (refs.length) this.#storage();
       await this.guardSnapshot(db, actor, draft.id, draft.input_json);
       if (old) return old;
@@ -210,10 +212,10 @@ export class DraftArtifacts {
     if(this.#namespaceProofs.has(plan))return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);
     throw error;
   }
-  async adoptProjectQuota(db:PoolClient,actor:AuthenticatedIdentity,plan:CreationPlan,projectCommandId:string){
+  async adoptProjectQuota(db:PoolClient,actor:AuthenticatedIdentity,plan:CreationPlan,projectCommandId:string,requireVerified=false){
     const proof=this.#namespaceProofs.get(plan);
     // 원래 root 없는 metadata 생성은 보존하되 검증 계정으로 승격하지 않는다.
-    if(!proof)return;
+    if(!proof){if(requireVerified)fail('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);return;}
     await this.#quota.adoptCreation(db,actor,plan,{serverCommandId:projectCommandId},proof);
   }
   async completeCreation(db: PoolClient, actor: AuthenticatedIdentity, plan: CreationPlan, result: unknown) {

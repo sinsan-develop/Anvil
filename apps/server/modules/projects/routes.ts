@@ -1,3 +1,4 @@
+import {ProjectSetupCopies} from './project-setup-copies.ts';
 import {ProjectMemberships} from './project-memberships.ts';
 import type {DocumentSourceObservationPort} from '../documents/document-source-observation.ts';
 import {ProjectEnvironments} from '../connections/project-environments.ts';
@@ -91,7 +92,7 @@ import {ProjectObservationJournal} from '../checkpoints/project-observation-jour
 import {ProjectStopRequestHistory} from '../checkpoints/project-stop-request-history.ts';
 
 const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
-const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' } };
+const inputProperties = { name: { type: 'string', maxLength: 2 * 1024 * 1024 }, purpose: { type: 'string', maxLength: 2 * 1024 * 1024 }, desiredOutcome: { type: 'string', maxLength: 2 * 1024 * 1024 }, sourceMode: { enum: ['EMPTY', 'EXISTING'] }, methodologySelection: { type: ['object', 'null'] }, artifactRefs: { type: 'array', maxItems: 200 }, sourceDeclaration: { type: 'object' }, setupSelection:{type:'object',additionalProperties:false,required:['coordinatorToolRef','codingToolRef','environmentRef'],properties:Object.fromEntries(['coordinatorToolRef','codingToolRef','environmentRef'].map(k=>[k,{anyOf:[{type:'null'},{type:'object',additionalProperties:false,required:['id','version','contentHash'],properties:{id:idSchema,version:{type:'integer',minimum:1,maximum:Number.MAX_SAFE_INTEGER},contentHash:{type:'string',pattern:'^[a-f0-9]{64}$'}}}]}]))} };
 function object(properties: Record<string, unknown>, required = Object.keys(properties)) { return { type: 'object', properties, required, additionalProperties: false }; }
 function csrf(request: FastifyRequest) { const value = request.headers['x-anvil-csrf']; if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(value)) throw new AuthFailure('CSRF_INVALID', 403); return value; }
 
@@ -100,6 +101,7 @@ function token(request: FastifyRequest): string {
   return cookies.length === 1 ? cookies[0]!.slice('__Host-anvil.sid='.length) : '';
 }
 export function registerProjectRoutes(app: FastifyInstance, options: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, documentObservation?:DocumentSourceObservationPort) {
+  app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/setup-copies/:id/versions/1',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},async(request,reply)=>{if(request.headers.host!==new URL(options.origin).host)throw new AuthFailure('ORIGIN_INVALID',403);reply.header('cache-control','no-store');return options.repository.authenticated(token(request),null,(db,actor)=>new ProjectSetupCopies().read(db,actor,request.params.projectId,request.params.id,1));});
   if(syntheticExecution!==undefined)checkSyntheticHumanExecutionPorts(syntheticExecution);
   const environments=new ProjectEnvironments(options.repository),environmentResources=new ProjectEnvironmentResources(options.repository),environmentCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('ENVIRONMENT_CONFIGURATION:'+value));
   const notifications=new ProjectNotifications(),notificationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('FN17_APPROVAL_IN_APP:'+value));

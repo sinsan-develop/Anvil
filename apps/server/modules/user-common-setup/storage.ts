@@ -1,7 +1,7 @@
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 export const commonSetupMigration='0075_user_common_setup_definitions';
-export const commonSetupChecksum='c77b0101384ab91dae7474dcdf8bc48881807c8ece9b18e321d1e792012696cb';
+export const commonSetupChecksum='f9dd6b1730da8d5428c6ccb66b3169758baa0c0a5ecc789f7c426559171f472c';
 export async function commonSetupContext(db:PoolClient,actor:AuthenticatedIdentity,lock=false){
  const s=actor.authSession,until=s?Math.min(Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt)):NaN;if(!s||!Number.isFinite(until)||until<=Date.now())throw new AuthFailure('AUTH_REQUIRED',401);
  const rows=(await db.query('SELECT id,checksum FROM anvil.schema_migrations WHERE id=$1',[commonSetupMigration])).rows;

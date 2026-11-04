@@ -79,3 +79,7 @@ Main 소유: 승인 계약·이 WI·설계·WORK_PLAN/SCREEN_WORK/WORK_STATUS·�
 - [ ] Main은 r3와 source/SQL/실제 소비 경로·직접 fresh 검사를 독립 대조한다. Important/Critical은 동일 Primary가 보정하고 Main이 재검수한다. 동일 근본 원인 정식 실패3회에만 Main 인수 규칙 적용.
 - [ ] Main이 WORK_STATUS/계획 상태·결과·정확 commit/private SHA를 기록한다. 일반 stage branch의 승인 source-only checkpoint만 게시, main/PR/merge/DB/서비스/Agent/J3/P03R3 실행0.
 - [ ] 완료라 부를 범위는 이 source-only 업무 단위의 실제 연결/합성 증거뿐이다. 실제 DB 적용/브라우저/현환경·후속 FN06/FN09/전체 UI02·작업계획서 완료와 구분한다.
+
+
+## 2026-11-04 Main 내부 기술 보완 — 신규 SQL 원바이트 보존
+기준 WI SHA256 3f3b85b95064363f83077c0a559cc221fbc176640bb639a759698c179d136d3e의 구현 목적·공개 계약·권한·실행 제외는 그대로다. 신규 0075 SQL의 Git checkout 이후 checksum 불일치를 방지하는 필수 내부 보완으로 Primary 허용 경로에 `.gitattributes` 한 파일을 추가한다. 기존0073/0074 exact LF 규칙과 같은 방식으로 `db/migrations/0075_user_common_setup_definitions.sql.pending text eol=lf` 한 줄만 추가한다. 기존 규칙/과거 SQL/현재0075 원바이트·Git 설정을 바꾸거나 전역 pending glob/renormalize를 실행하지 않는다. 이 보완은 r3 승인 계약 55759195fb6c8b4045ecc7a54b933d32f6551e677ae38a2c061034183456d747 안의 동일 신규 파일 검증지문 보존이며 새 기능·공개 API·데이터 의미·권한·실환경 변경이 아니다. Main 비의미 재확정으로 기록하며 새 사람 승인 범위로 확대하지 않는다.

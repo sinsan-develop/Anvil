@@ -1,3 +1,5 @@
+import {writeProjectSetupCopies,settleProjectSetupCopies,readProjectSetupCopyRefs,type ProjectSetupCopyRef} from './project-setup-copies.ts';
+import {resolveDraftSetupSelection,recordDraftSetupSelection,assertDraftSetupHistory,chargeDraftSetupConsumption} from './draft-common-setup.ts';
 import {findCurrentControlGrant} from '../control-handoff/control-grant.ts';
 import { AccessRepository, AuthFailure } from '../access/repository.ts';
 import { ProjectListCodec, projectListFilter } from './service.ts';
@@ -13,7 +15,7 @@ import { draftMethodologyState, requireDraftConfirmation, writeDraftReview, type
 import{readSourceDeclaration}from'./source-declaration.ts';
 import{sourceDeclarationView,storeSourceDeclaration,readSourceDeclarationRecord}from'./source-declaration-records.ts';
 
-export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY' | 'EXISTING'; methodologySelection?: unknown; artifactRefs?: unknown[]; sourceDeclaration?: unknown }
+export interface DraftInput { name: string; purpose: string; desiredOutcome: string; sourceMode: 'EMPTY' | 'EXISTING'; methodologySelection?: unknown; artifactRefs?: unknown[]; sourceDeclaration?: unknown; setupSelection?: unknown }
 export interface DraftCreate extends DraftInput { schemaVersion: 1; commandId: string; clientId: string; targetId: null; expectedVersion: 0 }
 export interface DraftSave { schemaVersion: 1; commandId: string; clientId: string; expectedVersion: number; step: number; input: DraftInput }
 export interface ProjectCreate { schemaVersion: 1; commandId: string; clientId: string; draftId: string; draftVersion: number }
@@ -28,12 +30,13 @@ export class ProjectsRepository {
   #cursor: ProjectListCodec;
   readonly artifacts: DraftArtifacts;
   constructor(access: AccessRepository, artifacts = new DraftArtifacts(access)) { this.artifacts = artifacts; this.#access = access; this.#cursor = new ProjectListCodec(value => access.signProjectCursor(value)); }
-  async #draftInput(db: PoolClient, owner: string, input: DraftInput, artifactRefs: DraftArtifactRef[] = []) {
+  async #draftInput(db: PoolClient, identity: AuthenticatedIdentity, input: DraftInput, artifactRefs: DraftArtifactRef[] = []) {
+    const owner=identity.actorId,setup=await resolveDraftSetupSelection(db,identity,input.setupSelection);
     if(!['EMPTY','EXISTING'].includes(input.sourceMode)||input.sourceMode==='EMPTY'&&input.sourceDeclaration!==undefined)throw new AuthFailure('SOURCE_DECLARATION_INPUT_INVALID',422);
     const sourceDeclaration=input.sourceMode==='EXISTING'?readSourceDeclaration(input.sourceDeclaration):null;
     if (canonicalJson(readDraftArtifactRefs(input.artifactRefs ?? [])) !== canonicalJson(artifactRefs)) throw new AuthFailure('DRAFT_ARTIFACT_REFS_INVALID', 422);
     const methodologySelection = await selectDraftMethodology(db, owner, input.methodologySelection);
-    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode,...(sourceDeclaration?{sourceDeclaration}:{}),methodologySelection, artifactRefs };
+    return { name: input.name, purpose: input.purpose, desiredOutcome: input.desiredOutcome, sourceMode: input.sourceMode,...(sourceDeclaration?{sourceDeclaration}:{}),methodologySelection, artifactRefs,...(setup?{setupSelection:setup.selection}:{}) };
   }
   #draftView(row: { id: string; version: string; step: number; input_json: unknown }) { return { draftId: row.id, version: integer(row.version), step: row.step, input: row.input_json }; }
   async #draftCommand(db: PoolClient, identity: AuthenticatedIdentity, draftId: string, operation: string, request: DraftCreate | DraftSave | ProjectCreate | DraftOperation, result: unknown) {
@@ -49,6 +52,7 @@ export class ProjectsRepository {
     await db.query("INSERT INTO anvil.draft_audit_events(draft_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,operation,outcome,reason_code) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,'APPLIED','OWNED_DRAFT_ONLY' FROM anvil.draft_audit_events WHERE draft_id=$1", [draftId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: identity.actorId }), identity.clientId, id, operationId, operation]);
     if(declaration)await storeSourceDeclaration(db,identity,draftId,declaration.ref.version,declaration.declaration,id);
     if (['createProjectDraft','saveProjectDraft'].includes(operation)) await this.artifacts.snapshot(db, identity, draftId, draftResult.version!, id, receiptId, draftResult.input?.artifactRefs ?? []);
+    if(['createProjectDraft','saveProjectDraft'].includes(operation))await recordDraftSetupSelection(db,identity,draftId,draftResult.version!,draftResult.input?.setupSelection as any,id,request,result);
     return result;
   }
   async createDraft(token: string, csrf: string, request: DraftCreate) {
@@ -61,7 +65,7 @@ export class ProjectsRepository {
         if (previous.request_hash !== contentHash(canonicalJson(request))) throw new AuthFailure('IDEMPOTENCY_CONFLICT', 409);
         return previous.result_ref;
       }
-      const input = await this.#draftInput(db, identity.actorId, request), id = randomUUID();
+      const input = await this.#draftInput(db, identity, request), id = randomUUID();
       const row = (await db.query('INSERT INTO anvil.project_drafts(id,owner_user_id,client_id,step,input_json) VALUES($1,$2,$3,1,$4) RETURNING *', [id, identity.actorId, identity.clientId, JSON.stringify(input)])).rows[0];
       return this.#draftCommand(db, identity, id, 'createProjectDraft', request, { ...this.#draftView(row), methodologyState: await draftMethodologyState(db, row) });
     });
@@ -71,6 +75,7 @@ export class ProjectsRepository {
       const row = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2', [draftId, identity.actorId])).rows[0];
       if (!row) throw new AuthFailure('NOT_FOUND', 404);
       await this.artifacts.guardSnapshot(db, identity, draftId, row.input_json);
+      await assertDraftSetupHistory(db,identity,draftId,integer(row.version),row.input_json);
       const declaration=row.input_json?.sourceMode==='EXISTING'?await readSourceDeclarationRecord(db,row.id,integer(row.version)):null;
       if(declaration&&canonicalJson(declaration.declaration)!==canonicalJson(row.input_json.sourceDeclaration))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
       return { ...this.#draftView(row), storedArtifacts: await this.artifacts.projection(db, identity, draftId), ...(declaration?{sourceDeclaration:declaration}:{}),editable: row.client_id === identity.clientId && !row.consumed_project_id, consumedProjectId: row.consumed_project_id, methodologyState: await draftMethodologyState(db, row) };
@@ -104,7 +109,7 @@ export class ProjectsRepository {
       if (row.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 412);
       if (integer(row.version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
       const refs = await this.artifacts.validateSelection(db, identity, row, request.input.artifactRefs ?? [], verified);
-      const input = await this.#draftInput(db, identity.actorId, request.input, refs);
+      const input = await this.#draftInput(db, identity, request.input, refs);
       const updated = (await db.query('UPDATE anvil.project_drafts SET version=version+1,step=$2,input_json=$3,updated_at=now() WHERE id=$1 RETURNING *', [draftId, request.step, JSON.stringify(input)])).rows[0];
       return this.#draftCommand(db, identity, draftId, 'saveProjectDraft', request, { ...this.#draftView(updated), methodologyState: await draftMethodologyState(db, updated) });
     });
@@ -129,7 +134,7 @@ export class ProjectsRepository {
   async createProject(token: string, csrf: string, raw: ProjectCreate) {
     const request=JSON.parse(canonicalJson(raw)) as ProjectCreate;
     const creation = await this.artifacts.prepareCreation(token, csrf, request);
-    if (creation.state === 'COMMITTED') return creation.result_json;
+    if (creation.state === 'COMMITTED') {const result=creation.result_json as any;if(result?.setupCopyRefs!==undefined)await this.#access.authenticated(token,csrf,(db,identity)=>readProjectSetupCopyRefs(db,identity,result.id,result.setupCopyRefs));return result;}
     const created = await this.#access.authenticated(token, csrf, async (db, identity) => {
       await this.artifacts.lockOwner(db, identity);
       const draft = (await db.query('SELECT * FROM anvil.project_drafts WHERE id=$1 AND owner_user_id=$2 FOR UPDATE', [request.draftId, identity.actorId])).rows[0];
@@ -144,7 +149,7 @@ export class ProjectsRepository {
       if (draft.consumed_project_id) throw new AuthFailure('DRAFT_ALREADY_CONSUMED', 409);
       if (integer(draft.version) !== request.draftVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
       await this.artifacts.guardSnapshot(db, identity, draft.id, draft.input_json);
-      const input = await this.#draftInput(db, identity.actorId, draft.input_json, creation.refs_json);
+      const input = await this.#draftInput(db, identity, draft.input_json, creation.refs_json);
       const declaration=input.sourceMode==='EXISTING'?await readSourceDeclarationRecord(db,draft.id,integer(draft.version)):null;
       if(declaration&&canonicalJson(declaration.declaration)!==canonicalJson(input.sourceDeclaration))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
       if (![input.name, input.purpose, input.desiredOutcome].every(value => typeof value === 'string' && !!value.trim())) throw new AuthFailure('PROJECT_PURPOSE_REQUIRED', 422);
@@ -171,14 +176,16 @@ export class ProjectsRepository {
       }
       await db.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,1,$3,$4,$5,$6,$7,$8)', [applicationId, projectId, ref.id, ref.version, ref.contentHash, JSON.stringify(snapshot), snapshotHash, identity.actorId]);
       await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,outcome,reason_code,scope_digest,source_kind) VALUES($1,1,$2,$3,$4,$5,$6,$7,'APPLIED','FIRST_PROJECT_FROM_OWNED_DRAFT',$8,'HUMAN_COMMAND')", [projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: identity.actorId }), identity.clientId, commandId, operationId, JSON.stringify(targetRef), scopeDigest]);
+      const setupCopyRefs=input.setupSelection!==undefined?await writeProjectSetupCopies(db,identity,projectId,commandId,input.setupSelection):undefined;
       await this.artifacts.commitCreation(db, identity, creation, commandId);
       await db.query('UPDATE anvil.project_drafts SET consumed_project_id=$2,updated_at=now() WHERE id=$1', [draft.id, projectId]);
       if(declaration)await db.query('INSERT INTO anvil.project_source_declarations(project_id,declaration_id,declaration_version,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6)',[projectId,declaration.ref.id,declaration.ref.version,identity.actorId,identity.clientId,commandId]);
-      const result = await this.#detail(db, identity, projectId);
+      const result = await this.#detail(db, identity, projectId,setupCopyRefs);
       await db.query('UPDATE anvil.commands SET result_ref=$2 WHERE id=$1', [commandId, JSON.stringify(result)]);
       const completed = await this.#draftCommand(db, identity, draft.id, 'createProject', request, result);
       await this.artifacts.completeCreation(db, identity, creation, completed);
-      await this.artifacts.adoptProjectQuota(db,identity,creation,commandId);
+      if(setupCopyRefs!==undefined){await settleProjectSetupCopies(db,identity,projectId,commandId);await chargeDraftSetupConsumption(db,identity,draft.id,request.commandId);}
+      await this.artifacts.adoptProjectQuota(db,identity,creation,commandId,setupCopyRefs!==undefined);
       return completed;
     }).catch(error=>this.artifacts.creationFailure(creation,error));
     await this.artifacts.reclaim(token, csrf, creation);
@@ -207,10 +214,12 @@ export class ProjectsRepository {
   async detail(token: string, projectId: string) {
     return this.#access.authenticated(token, null, (db, identity) => this.#detail(db, identity, projectId));
   }
-  async #detail(db: PoolClient, identity: AuthenticatedIdentity, projectId: string) {
+  async #detail(db: PoolClient, identity: AuthenticatedIdentity, projectId: string,creationRefs?:ProjectSetupCopyRef[]) {
       const row = (await db.query(`SELECT p.*,m.participation,pc.actor_id,pc.client_id,pc.generation,pc.version AS control_version,pc.revoked_at AS control_revoked_at,
         cu.status AS controller_status,cu.revoked_at AS controller_revoked_at,cc.revoked_at AS controller_client_revoked_at,
-        pp.id AS policy_id,pm.id AS application_id,pm.application_version,pm.snapshot_hash FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id
+        pp.id AS policy_id,pm.id AS application_id,pm.application_version,pm.snapshot_hash,
+        (SELECT count(*) FROM anvil.commands sc WHERE sc.project_id=p.id AND sc.operation='createProject' AND sc.result_ref?'setupCopyRefs') AS setup_copy_records,
+        (SELECT jsonb_agg(sc.result_ref->'setupCopyRefs') FROM anvil.commands sc WHERE sc.project_id=p.id AND sc.operation='createProject' AND sc.result_ref?'setupCopyRefs') AS setup_copy_candidates FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id
         LEFT JOIN anvil.project_control pc ON pc.project_id=p.id
         LEFT JOIN anvil.users cu ON cu.id=pc.actor_id LEFT JOIN anvil.clients cc ON cc.id=pc.client_id AND cc.user_id=pc.actor_id
         LEFT JOIN anvil.permission_policies pp ON pp.project_id=p.id
@@ -223,11 +232,14 @@ export class ProjectsRepository {
       const sourceBinding=(await db.query('SELECT b.*,c.operation,c.actor_id,c.client_id command_client FROM anvil.project_source_declarations b JOIN anvil.commands c ON c.id=b.command_id AND c.project_id=b.project_id WHERE b.project_id=$1',[projectId])).rows[0];
       const sourceDeclaration=sourceBinding&&row.participation==='OWNER'?await readSourceDeclarationRecord(db,sourceBinding.declaration_id,integer(sourceBinding.declaration_version)):null;
       if(sourceBinding&&(sourceBinding.operation!=='createProject'||sourceBinding.actor_id!==sourceBinding.created_by||sourceBinding.command_client!==sourceBinding.client_id))throw new AuthFailure('SOURCE_DECLARATION_INTEGRITY_FAILED',503);
+      if(Number(row.setup_copy_records??0)>1)throw new AuthFailure('PROJECT_SETUP_INTEGRITY_FAILED',503);
+      const setupCopyRefs=creationRefs!==undefined?creationRefs:await readProjectSetupCopyRefs(db,identity,projectId,Number(row.setup_copy_records??0)===1?row.setup_copy_candidates?.[0]:undefined);
       return {
         id: row.id, name: row.name, purpose: row.purpose, desiredOutcome: row.desired_outcome, version: integer(row.version),
         createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(), currentMethodologyRef: row.application_id ? { id: row.application_id, version: integer(row.application_version), contentHash: row.snapshot_hash } : null, baselineRef: null,
+        ...(setupCopyRefs!==undefined?{setupCopyRefs}:{}),
         sourceMode:sourceBinding?'EXISTING':'EMPTY',sourceDeclaration,
-        readinessIssues: [...(sourceBinding?[{code:'SOURCE_DECLARATION_UNVERIFIED'}]:[]),...(!row.application_id ? [{ code: 'METHODOLOGY_CONNECTION_PENDING' }] : []), ...(!row.policy_id ? [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }] : [])],
+        readinessIssues: [...(setupCopyRefs!==undefined?[{code:'PROJECT_SETUP_UNBOUND'},{code:'PROJECT_SETUP_PROTECTED_READ_REQUIRED'}]:[]),...(sourceBinding?[{code:'SOURCE_DECLARATION_UNVERIFIED'}]:[]),...(!row.application_id ? [{ code: 'METHODOLOGY_CONNECTION_PENDING' }] : []), ...(!row.policy_id ? [{ code: 'PERMISSION_POLICY_UNCONFIGURED' }] : [])],
         viewerPermissions: ['READ_PROJECT'], participation: row.participation,
         controlState: { actorId: missingHandoffGrant?null:row.actor_id ?? null, clientId: missingHandoffGrant?null:row.client_id ?? null, generation: !missingHandoffGrant&&row.generation ? integer(row.generation) : null, status: activeControl ? row.actor_id === identity.actorId && row.client_id === identity.clientId ? 'HELD' : 'OTHER_CLIENT' : 'UNASSIGNED' },
       };

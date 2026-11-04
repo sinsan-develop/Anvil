@@ -1,7 +1,8 @@
+import {canonicalJson} from '../../../contracts/canonical.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readCommonSetupDefinition,readSetupSelection} from '../../../contracts/runtime/user-common-setup-v1.ts';
-import {readCommonSetupCommand} from '../../../apps/server/modules/user-common-setup/input.ts';
+import {commonSetupHash,readCommonSetupCommand} from '../../../apps/server/modules/user-common-setup/input.ts';
 const id='11111111-1111-4111-8111-111111111111',client='22222222-2222-4222-8222-222222222222';
 const tool=()=>({label:'내 도구',toolProduct:'Codex',toolVersion:'0.161',adapterKind:'표시 원형',modelOptions:{model:'auto',temperature:0,enabled:false}});
 const env=()=>({label:'개발 설정',executionHost:{label:'로컬',platform:'WINDOWS',pathHint:null},targetHosts:[],sourceRoots:[{label:'소스',pathHint:'D:/NotRead',requestedAccess:'READ_WRITE'}],commandProfiles:[{label:'시험',purpose:'유한 검증',commandText:'npm test'}],executionUserHint:null});
@@ -19,3 +20,8 @@ test('본인 명령은 outer대상/버전만권위이며 비밀과revoke불일�
  const revoke={...request(),operation:'revokeCommonSetupDefinition',targetId:id,expectedVersion:1,payload:{targetRef:{id,version:1,contentHash:'a'.repeat(64)},reason:'신규 사용 회수'}};assert.deepEqual(readCommonSetupCommand(revoke),revoke);assert.throws(()=>readCommonSetupCommand({...revoke,expectedVersion:2}));
 });
 test('세slot은생략과명시null을구분하고TOOL중복선택은보존한다',()=>{assert.equal(readSetupSelection(undefined),undefined);assert.deepEqual(readSetupSelection({coordinatorToolRef:null,codingToolRef:null,environmentRef:null}),{coordinatorToolRef:null,codingToolRef:null,environmentRef:null});const ref={id,version:1,contentHash:'a'.repeat(64)};assert.deepEqual(readSetupSelection({coordinatorToolRef:ref,codingToolRef:ref,environmentRef:null}),{coordinatorToolRef:ref,codingToolRef:ref,environmentRef:null});assert.throws(()=>readSetupSelection({coordinatorToolRef:ref}));assert.throws(()=>readSetupSelection({coordinatorToolRef:null,codingToolRef:null,environmentRef:null,ready:true}));});
+
+import {encodeCommonSetupProjection,decodeCommonSetupProjection} from '../../../contracts/runtime/user-common-setup-v1.ts';
+test('DB options slot은 NUL/literal/사용자 marker/한글·astral·작은 숫자를 한번만 복원한다',()=>{for(const options of [{'\u0000':'\u0000','\\u0000':'\\u0000','한글':'\u{10000}',small:1e-7},{fn75ModelOptionsCanonical:'{"literal":"사용자 원문"}'},{modelOptions:{fn75ModelOptionsCanonical:'내부키도 원값'}}]){const value={kind:'TOOL',definition:{modelOptions:options}},encoded=encodeCommonSetupProjection(value,canonicalJson),decoded=decodeCommonSetupProjection(encoded,canonicalJson);assert.deepEqual(decoded,value);assert.equal(canonicalJson(decoded),canonicalJson(value));assert.equal(commonSetupHash(decoded),commonSetupHash(value));assert.equal(encoded.definition.modelOptions.fn75ModelOptionsCanonical,canonicalJson(options));}assert.throws(()=>decodeCommonSetupProjection({modelOptions:{fn75ModelOptionsCanonical:' {"x":1}'}},canonicalJson));});
+
+test('lexical encoder는 문자열 안 modelOptions·escaped quote·중첩 괄호를 key 경계로 오인하지 않는다',()=>{const value={note:'"modelOptions": {"가짜": "값"}',definition:{modelOptions:{x:'\\"}]} "modelOptions": {"x":"\\u0000"} \\\\',nested:[{z:'{["\\"]}'}]}}};const encoded=encodeCommonSetupProjection(value,canonicalJson);assert.deepEqual(decodeCommonSetupProjection(encoded,canonicalJson),value);assert.equal(encoded.note,value.note);assert.equal(encoded.definition.modelOptions.fn75ModelOptionsCanonical,canonicalJson(value.definition.modelOptions));});

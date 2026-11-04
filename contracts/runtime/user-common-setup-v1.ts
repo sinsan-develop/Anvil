@@ -30,3 +30,22 @@ export function readCommonSetupDefinition(kind:unknown,raw:unknown):CommonSetupD
 }
 export function readSetupSelection(value:unknown):SetupSelection|undefined{if(value===undefined)return undefined;const v=copyCommonSetupData(value);if(!setupRecord(v,['coordinatorToolRef','codingToolRef','environmentRef'])||![v.coordinatorToolRef,v.codingToolRef,v.environmentRef].every(r=>r===null||setupRef(r)))bad();return v as unknown as SetupSelection;}
 export function setupSlots(value:SetupSelection){return [['COORDINATOR_TOOL',value.coordinatorToolRef],['CODING_TOOL',value.codingToolRef],['ENVIRONMENT',value.environmentRef]] as const;}
+
+/** DB 전용 표현. modelOptions는 언제나 외피 하나로 감싸므로 사용자 marker object와도 충돌하지 않는다. */
+/** 원 JSON 문법 검산 뒤 문자열 token과 중첩 구분자만 읽는다. options 내부 key/value를 해석하기 전에 opaque slot으로 치환한다. */
+export function projectCommonSetupCanonical(raw:string):any{
+ JSON.parse(raw);let out='',cursor=0,i=0;
+ const stringEnd=(at:number)=>{let j=at+1;for(;j<raw.length;j++){if(raw[j]==='\\'){j++;continue;}if(raw[j]==='"')return j;}return bad();};
+ while(i<raw.length){if(raw[i]!=='"'){i++;continue;}const end=stringEnd(i),token=raw.slice(i,end+1);let colon=end+1;while(/\s/.test(raw[colon]??'')&&colon<raw.length)colon++;
+ if(token!=='"modelOptions"'||raw[colon]!==':'){i=end+1;continue;}
+ let first=colon+1;while(/\s/.test(raw[first]??'')&&first<raw.length)first++;if(raw[first]!=='{')return bad();let depth=0,last=first;
+ for(;last<raw.length;last++){const char=raw[last];if(char==='"'){last=stringEnd(last);continue;}if(char==='{'||char==='[')depth++;else if(char==='}'||char===']'){depth--;if(depth===0)break;}}
+ if(depth!==0||last>=raw.length)return bad();out+=raw.slice(cursor,first)+JSON.stringify({fn75ModelOptionsCanonical:raw.slice(first,last+1)});cursor=last+1;i=cursor;
+ }
+ return JSON.parse(out+raw.slice(cursor));
+}
+export function encodeCommonSetupProjection(value:unknown,canonical:(v:unknown)=>string):any{return projectCommonSetupCanonical(canonical(value));}
+export function decodeCommonSetupProjection(value:unknown,canonical:(v:unknown)=>string):any{
+ const walk=(v:any):any=>Array.isArray(v)?v.map(walk):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([key,item])=>{if(key!=='modelOptions')return[key,walk(item)];if(!setupRecord(item,['fn75ModelOptionsCanonical'])||typeof item.fn75ModelOptionsCanonical!=='string')return bad();const raw=JSON.parse(item.fn75ModelOptionsCanonical),copied=copyCommonSetupData(raw);if(!copied||typeof copied!=='object'||Array.isArray(copied)||canonical(copied)!==item.fn75ModelOptionsCanonical)return bad();return[key,copied];})):v;
+ return walk(value);
+}
