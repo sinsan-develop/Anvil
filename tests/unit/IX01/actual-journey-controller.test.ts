@@ -130,3 +130,12 @@ test('tmpfs 실제projection은 존재entry strict검산과 외부선언 거절�
 test('tmpfs actualparser 최초거절은 controller start/SQL/roles/cleanup을 열지 않는다',async()=>{
  for(const mode of ['RW','DECLARATION']){const {f,raw,read}=tmpfsProjection();raw.Mounts=Object.keys(raw.HostConfig.Tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''}));if(mode==='RW')raw.Mounts[0].RW=false;else raw.HostConfig.VolumesFrom=['other'];f.ports.inspect=async()=>{f.calls.push('actualInspect');return read(raw);};const result=await c.runController(f.plan,f.ports);assert.equal(result.status,'UNKNOWN');assert.equal(result.code,'OWNER');assert.equal(result.stage,'CREATE');assert.equal(result.completed,0);assert.deepEqual(f.calls.slice(f.calls.indexOf('actualInspect')+1),['record']);assert(!f.calls.includes('start'));assert(!f.calls.some(x=>x.startsWith('sql:')||x.startsWith('roles:')));assert(!f.calls.includes('stop'));assert(!f.calls.includes('remove'));}
 });
+
+
+test('J2 새profile7개와 plan은 J1 소유형상을 채택하지 않는다',async()=>{
+ const expected={source:'/home/daon/anvil-ix01-journey-20261104-j2-qa',receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-journey-20261104-j2',artifact:'/tmp/anvil-v3-ix01-journey-20261104-j2/artifacts',container:'anvil-ix01-journey-pg-20261104-j2-a1',network:'anvil-ix01-journey-net-20261104-j2-a1',database:'anvil_v3_ix01_20261104_j2_a1',owner:'IX01_JOURNEY_20261104_J2'};
+ for(const [key,value]of Object.entries(expected))assert.equal(c.fixed[key],value,key);
+ let factories=0;for(const args of [[],['--plan']]){const plan=await c.main(args,{},()=>{factories++;throw Error('FORBIDDEN');});assert.equal(plan.source,expected.source);assert.equal(plan.actualExecuted,false);}assert.equal(factories,0);
+ const {raw,read}=tmpfsProjection();assert.equal(read(raw).isolated,true);
+ for(const change of [(v:any)=>v.Name='/anvil-ix01-journey-pg-20261104-j1-a1',(v:any)=>v.Labels['anvil.owner']='IX01_JOURNEY_20261104_J1',(v:any)=>v.Labels['anvil.instance']='1'.repeat(32),(v:any)=>v.Networks={'anvil-ix01-journey-net-20261104-j1-a1':{}}]){const bad=structuredClone(raw);change(bad);assert.throws(()=>read(bad));}
+});
