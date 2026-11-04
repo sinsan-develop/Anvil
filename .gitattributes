@@ -13,3 +13,4 @@
 db/migrations/0073_control_handoff_acceptance.sql.pending text eol=lf
 db/migrations/0074_project_membership_versions.sql.pending text eol=lf
 db/migrations/0075_user_common_setup_definitions.sql.pending text eol=lf
+db/migrations/0076_native_first_receive.sql.pending text eol=lf

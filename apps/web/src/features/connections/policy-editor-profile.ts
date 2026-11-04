@@ -12,6 +12,7 @@ export const policyEditorOperations={
   ['copyMethodology','방법론 복사'],['saveMethodologyDraft','방법론 초안 저장'],['confirmMethodology','방법론 확정'],['applyMethodology','방법론 별도 적용'],['markNotificationRead','알림 읽음 표시'],['saveBackupReference','보호참조 작성·개정'],['saveBackupPolicy','수동 백업 정책 저장'],['revokeBackupReference','보호참조 신규 사용 회수'],['manageBackupResource','설치 자원·이식키 관리']
  ],
  PROJECT_PREPARATION:[
+  ['prepareNativeReceiveWindow','최초 수신 창 준비'],['offerNativeReceiveCommand','최초 수신 원명령 제안 저장'],['closeNativeReceiveWindow','최초 수신 창 닫기'],['readNativeChannelProfile','보호 수신 프로필 조회'],['readNativeReceiveWindow','최초 수신 창 조회'],['readNativeReceiveOffer','최초 수신 제안 원문 조회'],
   ['prepareAssignment','임무 초안 저장'],['reviewAssignmentContent','임무 내용 검토'],['confirmAssignment','임무 별도 확정'],['buildTaskContext','임무 맥락 구성'],
   ['defineProjectRole','프로젝트 책임 역할 정의'],['bindResponsibleSession','책임 세션 예약'],['prepareExecution','실행 준비 기록'],['reviewUnderstanding','임무 이해 검토'],['createTransferPreparationRecord','인계 준비기록 저장'],['readTransferPreparationRecord','인계 준비기록 고정 조회'],['prepareNativeBoundary','실행 경계 준비 원명령 저장'],['readNativePreparationAuthority','실행 경계 준비 고정 조회']
  ],

@@ -1,3 +1,5 @@
+import {registerNativeFirstReceiveRoutes,type NativeFirstReceiveRoutesOptions} from './modules/executions/native-first-receive-routes.ts';
+import {NativeFirstReceiveService} from './modules/executions/native-first-receive-service.ts';
 import {registerCommonSetupRoutes} from './modules/user-common-setup/routes.ts';
 import type {DocumentSourceObservationPort} from './modules/documents/document-source-observation.ts';
 import {registerDesktopRuntimeCatalogue,type RuntimeCatalogueReadSource} from './modules/runtime-catalogue/desktop-runtime-catalogue-routes.ts';
@@ -21,7 +23,7 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -35,6 +37,8 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
+  if(nativeReceive?.enabled===true)registerNativeFirstReceiveRoutes(app,nativeReceive,access);
+  else if(access)registerNativeFirstReceiveRoutes(app,{enabled:true,service:new NativeFirstReceiveService(access.repository,undefined,Date.now,nativePreparation?.preparations??null,undefined,access.origin)},access);
   if(writerAuthority?.enabled===true)registerWriterAuthorityRoutes(app,writerAuthority,access);
   if (controlHandoff?.enabled === true) registerControlHandoffRoutes(app, controlHandoff);
   if (webRoot) {
