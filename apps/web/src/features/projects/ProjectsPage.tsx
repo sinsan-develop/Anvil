@@ -1,3 +1,4 @@
+import {ProjectSetupCopies} from '../project-create/ProjectSetupCopies.tsx';
 import type {MembershipUI} from './membership-api.ts';
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
@@ -26,6 +27,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
       <ProjectAccessSummary membership={membership} key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectPendingApprovals key={'decisions:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectAssignmentDrafts key={'drafts:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
+      {membership?<ProjectSetupCopies client={client} session={membership.session} projectId={item.id} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>:null}
       <ProjectMethodologyOriginal key={'method:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
     </li>)}</ul>
   </>;

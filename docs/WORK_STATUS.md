@@ -14575,3 +14575,54 @@ Primary의기존WI밖 .gitattributes요청은현재0073/0074 exactLF규칙과새
 Main 독립 c02e47의 6개 직접·인접 파일 44PASS/skip0/2061.5229ms와 변경scope18 전후지문 동일을 확인했다. Primary B25경로의 최종 noEmit·diff0을 수거했고, SQL 최종refs반환 직전 scope재검산·Node 최종session기한을 확인해 읽기/메모리 범위의 미해결 Critical/Important는 없다. 실제 PG문법·DDL·수치식·RLS/ACL/경합·실FS/served/browser는 NOT_RUN이며 C 화면/전체UI02·계획 완료가 아니다.
 Main81798a는 B변경20경로+Main문서3 정확23만stage, C진행파일/보호3 제외를확인했다. 새0075 Gitblob SHA256 f9dd6b1730da8d5428c6ccb66b3169758baa0c0a5ecc789f7c426559171f472c는workingraw와동일하다. 기존*.ts LF규칙에따라다음9파일만CRLF→LF외차이0을검산했고working파일/기존규칙/과거fixture를바꾸지않았다. 해당Git정규화는실제원격QA실행증거가아니다.
 정규화검산: [{"path":"contracts/runtime/user-common-setup-v1.ts","workingBytes":7836,"gitBytes":7835,"gitSha256":"20aa810591d3e65bdc9764d55941e8c1de512577416b8dba29b4296037460e57"},{"path":"apps/server/modules/projects/draft-common-setup.ts","workingBytes":4980,"gitBytes":4976,"gitSha256":"f3a20c4c844eb4d1daaa9e6bd5b8edcc3d57bd06be866b09efaa947aebaf6094"},{"path":"apps/server/modules/projects/project-setup-copies.ts","workingBytes":6807,"gitBytes":6804,"gitSha256":"cc0f06a56d9bc10b6cdc13b56b2ae7b8a9049976f11d953523bfa52a0099ce23"},{"path":"tests/unit/FN01/common-setup-input.test.ts","workingBytes":5753,"gitBytes":5751,"gitSha256":"44da6f1934417ea7213763d158369ec0b71fdc483a53aca270464011a6519c7d"},{"path":"tests/unit/FN01/common-setup-commands.test.ts","workingBytes":17055,"gitBytes":17051,"gitSha256":"be5d33110fa1efc6348dd20bb784025c9e981512e77426113c7ab9f1ea29fd07"},{"path":"tests/unit/FN01/common-setup-schema.test.ts","workingBytes":2867,"gitBytes":2865,"gitSha256":"db4f92b7448741fe55114d31b992f489d0c6433225b2e65ac143473358a7b2ac"},{"path":"tests/unit/FN01/draft-setup-selection.test.ts","workingBytes":7918,"gitBytes":7915,"gitSha256":"6850193d59e96f0fe7df5cacb01c760ecccbf392efe8f66c2cc1de922895e1a5"},{"path":"tests/unit/FN01/project-setup-copies.test.ts","workingBytes":10540,"gitBytes":10534,"gitSha256":"c8d51730c7d2fc591721686397b98d3b7beb9843d9eb3faf6165fa3e9ae2dc92"},{"path":"tests/integration/FN01/common-setup-synthetic.test.ts","workingBytes":18433,"gitBytes":18432,"gitSha256":"76b404485bdaebb28db828db4ed110aa3c39060e7695b91c930c129ddead2b64"}]
+
+
+### 2026-11-04 B checkpoint 게시 대조·계획 상태 갱신
+Maincf0f60 Bsource20+Main문서3정확23을f6b32773246bac965d8c5cafe2d27a45cd9a30a9로보존했고092dbe에서local/privateexact·mainf976ed5e불변을확인했다. 보호3/C진행파일미포함·source/정상기능되돌림0. WORK_PLAN UI02행에B source-only44PASS·실PG/served미검증·C미완료를사실갱신했으며완료조건/계약/업무순서변경0이다. 같은Primary는C API/선택상태→실제selector/editor→초안buffer/생성/프로젝트재진입연결순으로진행중이다. 다음FN06최초수신상세계약의검토가능한같은client후보초안을읽기담당에게병렬준비배정했으며채택/코드/실행0이다. 전체목표active·현재차단없음·실행제외불변이다.
+
+
+### 2026-11-04 Main 동일 유형 메시지 오류 3회 예외·한정 재개
+Main 지시문에 한국어 외 문자가 세 번째 혼입되어 MAIN_OUTBOUND_LANGUAGE_MIX 누적3회로 분류했다. 앞선 두 회는 작업현황에 기록돼 있으며 이번은 644109 대조 결과를 Primary에 전달하는 첫 문장에서 발생했다. 확인된 원인은 혼합 문구를 발송 전 검사 없이 도구 인자로 전달한 Main 작성·검수 누락이다. 제품 코드/계약 문구 변경이나 기능 검수 실패와 구별한다.
+Main은 추가 자유형 지시 발송을 즉시 중단하고 신산님께 예외를 보고했다. 이후 정정문342자의 일본어·한자 계열 문자 부재를 도구로 검사해 PASS를 확인하고 같은 문구만 전달했다. 해당 작업 방식은 임시 발송 전 검사이며 AGENTS/스킬/훅/권한/제품 설정은 변경하지 않았다. 잘못된 앞문구를 폐기하고 범위가 같은 한국어 정정 지시를 전달한 뒤 해당 한정 지시 업무를 재개한다. 기존 Primary의 승인된 단독 구현과 Main 읽기 검수는 중단 대상이 아니며 전체 목표는 active다. 재발 시 같은 지시 발송을 다시 중단·보고하고 본 제품 작업의 완료로 숨기지 않는다.
+
+### 2026-11-04 C API 제출·서버 결과 깊이 후속 반례
+Primary는 C API 신규5를 0b037c 준비RED→2e0ba6 hash-await POST 차단 등 행동RED→57ff7d 5PASS/454.982ms로 제출했다. 독립 읽기 검수는 새 API의 상대경로/일곱키 원명령/본인 원형과 사본 원문·hash·UNBOUND/비동기 문맥 경계를 한정C0/I0로 대조했고 상태/컴포넌트 소비는 아직 미구현이다. Main932eeb/644109도 원명령 인자가 API에서 보존되고 snapshot 단위 hash를 검산함을 확인했다.
+추가로 Primary842252는 허용 입력과 snapshot이 통과하나 서버 소유 result 외피가 한 층 더해져 공용 canonical 깊이64에서 거절되는 반례를 보고했다. f6b32773은 그 경계가 포함된 과거 부분 checkpoint이며 후속 보완 미완료로 보존한다. 입력 깊이/한도를 줄이거나 공용 canonical·기존 일곱 연산을 바꾸지 않고 새 두 연산의 서버 소유 결과 직렬화만 보완하도록 같은 Primary에게 배정했다. C의 독립 상태/화면 구현은 계속하며 실제 DB/권한/키/서비스/제품Agent/실자료/J3/P03R3 제외는 변하지 않는다.
+
+
+### 2026-11-04 깊이 후속·C API 독립21검수
+Primary가9c1d7d의정상Unicode직렬화/최대깊이저장·영수증·재전송조회·고정GET2PASS를제출하고후속5파일을동결했다. 그사이추가인접시험의원출력은소실·실행handle부재로결과미확정이며이를소급PASS로바꾸지않는다. Main은새수정에대한필수독립검증으로b0a6c0에서명령13(기존일곱연산의낮은수준receipt보존1조건묶음포함)+실제생성합성3+C API5=21freshPASS/skip0/1024.7601ms를확인했다. source11전후지문773e5503114132d17dc4d467475d46fa156166ecdf6e94defbb185dec3977fed동일이다. 이는서버/메모리/API의한정검증이며일곱연산각각의전체실사용여정·실DB·C화면완료로승격하지않는다. 공용canonical·원입력깊이/상한·SQL/runtime·기존일곱분기변경0,새두연산의서버소유결과외피직렬화만보완했다.
+C API새5개시험은독립읽기C0/I0와Main직접통과가있으나선택helper/컴포넌트/생성buffer·프로젝트재진입소비는아직미완료다. 같은Primary가계속구현하며Main동시제품쓰기0·전체목표active다.
+
+### 2026-11-04 FN06 최초수신 초안 보존·잔여 분모 사실 대조
+읽기담당반환을Main이FN06_NATIVE_SAME_CLIENT_CLOSURE_DETAIL_CANDIDATE_20261104.md(8578B/965288705a4209c4c08e6c3c342e806eb05bfc355205fce8264c1c2130c59c37)에미채택초안으로보존했다. 같은client한명령·별도profile권위·정확입력/위임·ACK소유·유한저장과실행제외를분리했고바이트식미완성/sourceGO0를명시했다. 현재UI02구현과무관하게후속계약을준비한것이며기능완료로계산하지않는다.
+추가실제소스대조결과현재NativePreparationStore/native_preparation_capacity는현재authority/event actual만계상하며재사용할native미래예약producer가없다. 현재성공생산선은authority1+event6=7행으로typed상한을만들수있지만시작시Q_N/잔여event slot예약과append동Tx차감은새계약접합이다. ACK/binding본문을receive에보관하면기존native ackRef원형/행수는유지가능하나새교차완결증거는필요하다. 공통persistProjectReceipt는성공명령당command/receipt/audit3행,새HUMAN세연산의성공분은최대9행이나4xx거절audit는별도dedup이없어전체공통분모를9행으로닫을수없다. 기존native result_ref의commandSnapshot/intent복제도실제기존분모에남는다. 이두미완료예약/거절분모를숨기지않고상세화를이어가며새인증·권한·DB·실행채택0을유지한다.
+
+
+### 2026-11-04 Main 메시지 오류 재발·전달문 전체 검사 보완
+Main의 실행 설명에서 한국어 외 문자가 다시 혼입돼 MAIN_OUTBOUND_LANGUAGE_MIX 누적4회로 기록했다. 이전 조치가 지시문 본문만 검사하고 도구 실행 설명을 빠뜨린 것이 원인이다. 추가 자유형 지시 발송을 한정 중단하고 신산님께 재발을 보고했다. 제품 코드/승인 계약/실행 명령의 기능은 변경되지 않았고13c55c의21검사 결과도 별개 증거로 보존한다.
+Main은 도구 인자의 모든 문자열을 재귀 검사한 뒤 실행하는 방식으로 범위를 넓혔다. 금지 문자로 만든 실행 설명이 도구 실행 전 거절되고 한국어/ASCII 문구는 통과하는 자체 음성/정상 검사를 확인했다. 이후 실행 설명·명령에 삽입하는 Main 문서·외부 보고를 포함해 같은 검사를 거치며 정정 지시만 재개한다. 이는 임시 Main 발송 절차이며 제품/AGENTS/스킬/훅/권한/설정 변경이 아니다. 기존 단독 Primary 구현과 영향 없는 읽기·검수는 계속한다.
+
+### 2026-11-04 C API·선택·기존 생성 독립21검수
+독립 검수가 발견한 생성 응답의 optional setupCopyRefs 검산 누락을 Primary5e868c 실제RED→166e6c 직접1PASS로 보완했다. Main13c55c에서 C API7+선택3와 기존 초안/생성·변경잠금/단계 이동11을 6파일로 실행해21freshPASS/skip0/277.2625ms를 확인했다. source6 전후지문 a83a1ea29b8dfcc3063d76d08a9f6b1e14f73c31a314c24e4064047e0482487d 동일이다. 잘못된 ID/버전/hash/중복slot 거절·유효ref복사·생략legacy·원미확인명령 보존을 포함하되 전체UI/실브라우저·DB 검증으로 승격하지 않는다. 실제 컴포넌트와 buffer/프로젝트 재진입 연결은 같은 Primary가 계속 구현 중이다.
+
+
+### 2026-11-04 C 실제 화면 제출·마지막 입력 보존 반례
+Primary는 생성3단계/생성후/기존 목록에 컴포넌트3을 연결하고 ee7851 SSR 미연결RED→34ba87 초기IO0/목록/선택2PASS,1daeb7 원형저장UNKNOWN재확인·ABA늦은401·사본403/refs3PASS를 제출했다. 독립 C읽기 C0/I2의 닫기세대·현재403조회잔존은1292d9 실제2RED→705b09 2PASS로보완했고 재검수는C0/I0로해소했다. 별도현재401코드의존누락4bdf9e RED는private errorStatus로보완했다. 기존초안PATCH/GET1·ENV/개정/회수2도직접통과보고가있으며POST/PATCH fixture가정준비오류1은분리한다.
+최종649418 화면12+상태3=15PASS/skip0/786.244ms·rootnoEmit0,3995dc product메모리build3출력/2722793B·writefalse/envDirfalse·diff0을수거했다. 그전aa42f1의화면11+인접19=30PASS는보완전증거라혼합하지않는다. 같은B SQLF9DD6B17/64651B·보호3는불변이며Primary가C15+깊이후속5경로를반환했다.
+Main f416b3 읽기에서잘못된modelOptions JSON원문이textarea defaultValue/로컬오류에만있어화면이탈/복원시사라질수있는입력보존반례를추가확인했다. 같은Primary에게편집기·private buffer타입·직접화면시험만재현/보완을배정했으며해당후속이끝나기전C전체검수합격/완료를선언하지않는다. 서버wire추가/원입력한도변경0이고그밖의C지문은동결유지한다. Main은보완후화면·직접인접/타입/메모리build를한번독립수거하며같은기존검사나원20지문보고를반복시키지않는다.
+
+### 2026-11-04 FN06 typed 미래량 독립 수치 대조
+읽기담당은현재native 생산선의고정 authority/ref와typed width로후속5event wrapper최대를계산했다. Main5c73f5는기존readNativeEvent·nativeHash/nativeBytes를사용해최대scalar 합성객체를검산하여1398/1121/1707/1539/3228B·합계8993B/5slots를독립확인했다. DB/키/파일생성·source쓰기0이며이계산은기존미래예약구현의증거가아니다. 별도Q_N/collector·초기생산과공통분모·거절admission의미는아직미채택계약이다. 새ACKv1의조건부8978B와일반ref최대8993B를분리해최초수신검토초안r2에보존했다. 후보96528870→b26607b73afb6dc6a47e9644e1b116ff2128ab67f2c7ad2a757603b1af70d73a/11455B이며여전히SOURCE_GO0/EXECUTION_GO0다. 전체목표active·단독writer·기존guard와실행제외는변하지않는다.
+
+
+### 2026-11-04 종료된 담당자 후속 배정 누락 발견·실제 재개
+Main이 Primary 상태를 조회한 결과 앞선 C20경로 반환 후 completed였고, 모델 옵션 입력 보존 보완은 send_message로만 전달되어 새 작업을 시작하지 않은 상태였다. 작업 의도/메시지를 실행 중 상태로 오인한 Main 배정 오류1(IDLE_AGENT_MESSAGE_NOT_DISPATCH)로 기록한다. 앞선 처리중 표현은 실제 실행이 아니라 전달 대기였으므로 정정했다. 관측 timeout만으로 재시작한 것이 아니라 completed 상태를 확인한 뒤 기존 담당자에게 같은 세 경로 보완을 followup_task로 정식 배정했고, 별도 list_agents에서 running을 확인했다. 새 담당자/동시 writer/권한·실환경 변경0이다.
+Main은 신산님께 예외와 조치를 설명했고 전체 목표를 일시정지로 바꾸지 않았다. 종료된 담당자에게 새 실행이 필요한 경우에는 followup_task 후 실제 상태를 확인하고, 실행 중 담당자의 진행 안내에만 send_message를 사용한다. source 검수·다음 계약의 수치 계산은 그동안 실제 수행된 별도 진전이며 해당 보완을 완료했다고 주장하지 않는다. 이후 source diff와 직접 검수 결과를 수거해 통합한다.
+
+
+### 2026-11-04 UI02 C source-only 최종 검수·후속 업무 분리
+단계B/UI02, 구현 Primary·검수/통합 Main. 모델 JSON 원문 보존3경로의1eafbf RED→04f5f6 1PASS를 수거하고 독립 읽기 재검수C0/I0를 확인했다. Main92138b 직접/인접8시험파일43PASS/fail0/skip0/2048.4231ms, root 타입 e74229→동일handle66e445 exit0,8a5f21 메모리 Vite build exit0/3출력/2723261B를 확인했다.20경로 source지문7cc2ee5a3cab92bdc1160cdcf51f23e3fa0c3d584977148f9fd8d01198717609는 검증 전후/타입종료후 동일하다. 메모리 React·합성transport이며 실제PG/DDL/RLS/ACL·동시성·실파일·served/브라우저·Agent는 미실행이다. source-only 승인 구간을 검수했으며 전체UI02/작업계획 완료는 아니다.
+단독writer는 반환됐고 새 코드쓰기권한0. 기존 담당자에게 다음미완료FN06의 파일/함수/시험단위 읽기준비, 별도담당에게 초기권위/자기예약/거절감사 계약대조, 검토담당에게 마지막JSON3경로 독립재검수를 분배했다. 미채택native후보는SOURCE_GO0/EXECUTION_GO0이며 실제키/DB/권한/서비스/Agent/J3/P03R3 제외를 유지한다. Main은UI02의정확20경로와자신의검수문서만통합하고보호3미추적/별도미채택후보를분리보존한다.
+
+통합 준비721cfb의 검산은 WORK_STATUS가 기본1MiB 출력 버퍼를 넘어 ENOBUFS로 중단됐다. git add는 이미23경로만 완료됐으므로 반복하지 않고 읽기 버퍼만8MiB로 늘린66890b에서 정확23경로·내용 동일(11경로는 기존속성의CRLF→LF만)·cached diff check0을 확인했다. 제품 실패/시험실패가 아니며 권한·설정 변경0, 오류1을 기록한다. 보호3·승인계약·pending0075 지문도 불변이다.

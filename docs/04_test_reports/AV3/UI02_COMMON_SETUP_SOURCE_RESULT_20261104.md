@@ -3,7 +3,7 @@
 날짜: 2026-11-04 / Main 어울 / 승인 call_190a168be3ae4b5783502f5243c8e116.
 기준 r3 SHA55759195fb6c8b4045ecc7a54b933d32f6551e677ae38a2c061034183456d747, WI3f3b85b95064363f83077c0a559cc221fbc176640bb639a759698c179d136d3e.
 
-판정: **부분 구현·A 서버 공통 원형 구간 source 한정 검수. B 초안/생성 사본·비용 및 C 화면 미완료. 실제 사용/전체 UI02·계획 완료 아님.**
+현재 판정: **r3 공통 정의·초안 선택·독립 사본·화면 연결의 source-only 구현과 합성 검수 범위는 충족했다. 실제 PG/DDL/RLS/ACL·동시성·실파일·served API·실제 브라우저·Agent 검증은 미실행이며 전체 UI02·작업계획 완료가 아니다.** 아래 A/B 기록은 각 당시의 부분 결과 이력이다.
 
 ## A에서 연결한 것
 
@@ -64,3 +64,11 @@ Primary가 신규 tests/integration/FN01/common-setup-synthetic.test.ts의5178e4
 Main 독립 c02e47의 6개 직접·인접 파일 44PASS/skip0/2061.5229ms와 변경scope18 전후지문 동일을 확인했다. Primary B25경로의 최종 noEmit·diff0을 수거했고, SQL 최종refs반환 직전 scope재검산·Node 최종session기한을 확인해 읽기/메모리 범위의 미해결 Critical/Important는 없다. 실제 PG문법·DDL·수치식·RLS/ACL/경합·실FS/served/browser는 NOT_RUN이며 C 화면/전체UI02·계획 완료가 아니다.
 Main81798a는 B변경20경로+Main문서3 정확23만stage, C진행파일/보호3 제외를확인했다. 새0075 Gitblob SHA256 f9dd6b1730da8d5428c6ccb66b3169758baa0c0a5ecc789f7c426559171f472c는workingraw와동일하다. 기존*.ts LF규칙에따라다음9파일만CRLF→LF외차이0을검산했고working파일/기존규칙/과거fixture를바꾸지않았다. 해당Git정규화는실제원격QA실행증거가아니다.
 정규화검산: [{"path":"contracts/runtime/user-common-setup-v1.ts","workingBytes":7836,"gitBytes":7835,"gitSha256":"20aa810591d3e65bdc9764d55941e8c1de512577416b8dba29b4296037460e57"},{"path":"apps/server/modules/projects/draft-common-setup.ts","workingBytes":4980,"gitBytes":4976,"gitSha256":"f3a20c4c844eb4d1daaa9e6bd5b8edcc3d57bd06be866b09efaa947aebaf6094"},{"path":"apps/server/modules/projects/project-setup-copies.ts","workingBytes":6807,"gitBytes":6804,"gitSha256":"cc0f06a56d9bc10b6cdc13b56b2ae7b8a9049976f11d953523bfa52a0099ce23"},{"path":"tests/unit/FN01/common-setup-input.test.ts","workingBytes":5753,"gitBytes":5751,"gitSha256":"44da6f1934417ea7213763d158369ec0b71fdc483a53aca270464011a6519c7d"},{"path":"tests/unit/FN01/common-setup-commands.test.ts","workingBytes":17055,"gitBytes":17051,"gitSha256":"be5d33110fa1efc6348dd20bb784025c9e981512e77426113c7ab9f1ea29fd07"},{"path":"tests/unit/FN01/common-setup-schema.test.ts","workingBytes":2867,"gitBytes":2865,"gitSha256":"db4f92b7448741fe55114d31b992f489d0c6433225b2e65ac143473358a7b2ac"},{"path":"tests/unit/FN01/draft-setup-selection.test.ts","workingBytes":7918,"gitBytes":7915,"gitSha256":"6850193d59e96f0fe7df5cacb01c760ecccbf392efe8f66c2cc1de922895e1a5"},{"path":"tests/unit/FN01/project-setup-copies.test.ts","workingBytes":10540,"gitBytes":10534,"gitSha256":"c8d51730c7d2fc591721686397b98d3b7beb9843d9eb3faf6165fa3e9ae2dc92"},{"path":"tests/integration/FN01/common-setup-synthetic.test.ts","workingBytes":18433,"gitBytes":18432,"gitSha256":"76b404485bdaebb28db828db4ed110aa3c39060e7695b91c930c129ddead2b64"}]
+
+
+## C 최종 Main 독립 검수와 현재 범위
+2026-11-04. Primary의 C15경로와 서버 결과 깊이 보완5경로를 합한20경로를 동결했다. 마지막 잘못된 모델 JSON 원문 보존은 직접 RED→GREEN 이후 독립 읽기 재검수 C0/I0이며 로컬 buffer만 추가하고 서버 wire/원입력 한도를 유지한다.
+Main92138b: UI02 common-setup-screen/common-setup-api/common-setup-selection/draft-api/draft-wizard/draft-wizard-screen/draft-mutation-gate/finalize-api의 node --test 결과43PASS/fail0/skip0/2048.4231ms. React는 메모리 DOM 및 합성 transport이며 실제 브라우저가 아니다. 전체 명령은 위8경로에 tests/unit/UI02/ 접두사와 .test.ts 확장자를 사용했다.
+Main e74229의 root tsc --noEmit -p tsconfig.base.json은 같은 session32030의66e445 종료를 확인하여 exit0이다. Main8a5f21 제품 Vite 빌드는 기존 config를 읽되 write:false/envDir:false/envPrefix:[]/publicDir:false로 실행했고 exit0, 출력3개/2723261B였다. JS2711778B, CSS11129B, HTML354B이며 파일 출력·환경값 주입·서비스 변경0이다.
+검증 전후 및 타입 종료 뒤7c00c3의20경로 raw snapshot은7cc2ee5a3cab92bdc1160cdcf51f23e3fa0c3d584977148f9fd8d01198717609로 동일하다. 마지막 모델 입력3경로 독립검토는 C0/I0이며 실제 브라우저 입력·전체 App 이동·탭 복원은 미확인이다. 과거 B44 및 앞선 중간 검사와43을 합산한 전체 회귀 숫자를 주장하지 않는다.
+구현 경로는 생성3단계의 본인 공통 도구/환경 작성·선택/해제·초안 재조회, 생성 결과/프로젝트 목록의 설정 사본 참조·보호 조회다. UNKNOWN 원명령 재확인·늦은 응답 차단·401/403·입력 보존을 유지한다. 실제 DB·권한·키·서비스·Agent 실행0, pending0075 미적용, 전체 UI02·계획 인수는 미완료다.

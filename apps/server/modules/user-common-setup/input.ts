@@ -16,3 +16,10 @@ export function readCommonSetupCommand(raw:unknown):CommonSetupCommand{
  else throw Error();assertCommonSetupSafe(v);return v as unknown as CommonSetupCommand;
  }catch(error){if(error instanceof AuthFailure)throw error;throw new AuthFailure('COMMON_SETUP_INPUT_INVALID',422);}
 }
+
+/** 새 두 연산의 서버 소유 결과 외피만 조합한다. 입력/snapshot canonical 규약과 한도는 바꾸지 않는다. */
+export function commonSetupReceiptCanonical(value:unknown):string{
+ if(!setupRecord(value,['scopeKind','ownerUserId','operationId','commandId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])||value.scopeKind!=='USER_COMMON'||value.status!=='APPLIED'||!setupRecord(value.data,['ref','validation','status','snapshot'])||!['COMMON_SETUP_STORED','COMMON_SETUP_REVOKED'].includes(value.data.status))throw new AuthFailure('COMMON_SETUP_INTEGRITY_FAILED',503);
+ const data='{'+Object.keys(value.data).sort().map(key=>JSON.stringify(key)+':'+canonicalJson(value.data[key])).join(',')+'}';
+ return'{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+(key==='data'?data:canonicalJson(value[key]))).join(',')+'}';
+}

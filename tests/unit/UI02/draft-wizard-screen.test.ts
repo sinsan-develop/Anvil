@@ -28,8 +28,8 @@ test('생성 전·결과 미확인과 다른 사용자 초안에는 생성 후 �
  const f=fixture(4);f.pendingAction={kind:'create',draftId:did,body:{schemaVersion:1,commandId:did,clientId:did,draftId:did,draftVersion:2}};
  for(const b of [fixture(4),f,{...f,ownerUserId:did,createdProject:{id:did}}]){const before=structuredClone(b),html=render(b);assert.doesNotMatch(html,/href="#\/projects\/[^"]+\/connections"/);assert.deepEqual(b,before);assert.doesNotMatch(html,/문서 화면에서 가져오기 준비/);assert.doesNotMatch(html,new RegExp(`href="#/projects/${did}/documents"`));}
 });
-test('3단계는 실제 환경·총괄을 만들지 않고 준비 필요·선택 미구현을 표시한다',()=>{
- const html=render(fixture(3));assert.match(html,/<li aria-current="step">총괄·환경/);assert.match(html,/총괄·환경 준비 상태/);assert.match(html,/선택 미구현/);assert.match(html,/준비 필요 상태로 저장/);assert.match(html,/disabled/);assert.ok(createButton(html).includes('disabled'));assert.match(html,/생성 전 확인으로 다음/);
+test('3단계는 고정 원형 선택을 제공하고 실제 환경·총괄은 준비 필요로 표시한다',()=>{
+ const html=render(fixture(3));assert.match(html,/<li aria-current="step">총괄·환경/);assert.match(html,/총괄·환경 준비 상태/);assert.match(html,/본인 원형 목록 조회/);assert.match(html,/새 도구 원형 작성/);assert.match(html,/새 환경 원형 작성/);assert.match(html,/준비 필요 상태로 저장/);assert.match(html,/disabled/);assert.ok(createButton(html).includes('disabled'));assert.match(html,/생성 전 확인으로 다음/);
 });
 test('4단계는 원입력·선택 참조·저장 상태를 검토하고 생성≠실행을 표시한다',()=>{
  const html=render(fixture(4));assert.match(html,/<li aria-current="step">생성 전 확인/);assert.match(html,/생성 전 입력 확인/);assert.match(html,/&lt;script&gt;원목적&lt;\/script&gt;/);assert.doesNotMatch(html,/<script>/);assert.match(html,/기대 결과/);assert.match(html,/확정 참조 선택/);assert.match(html,/생성은 Agent 실행이 아닙니다/);assert.equal(createButton(html).includes('disabled'),false);assert.match(html,/총괄·환경으로 이전/);
@@ -58,5 +58,5 @@ test('고정 참조·미선택 방법론의 준비 요구는 조회 없이 합�
  const selected=fixture(3),empty=fixture(3);empty.input.methodologySelection=null;
  assert.match(render(selected),/고정 방법론의 요구 정의는 이 화면에서 아직 조회하지 않았습니다/);
  assert.match(render(empty),/방법론 선택 전이므로 요구 정의 미확인/);
- for(const f of [selected,empty]){const html=render(f);assert.doesNotMatch(html,/방법론 초안의 준비 요구/);assert.match(html,/선택 미구현/);}
+ for(const f of [selected,empty]){const html=render(f);assert.doesNotMatch(html,/방법론 초안의 준비 요구/);assert.match(html,/본인 원형 목록 조회/);assert.match(html,/새 도구 원형 작성/);assert.match(html,/새 환경 원형 작성/);}
 });

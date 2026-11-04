@@ -14,3 +14,9 @@ export async function listProjects(client: ApiClient, query: string, archived: b
       || typeof item.name !== 'string' || typeof item.purpose !== 'string' || !Number.isSafeInteger(item.version) || item.version < 1 || !Number.isFinite(Date.parse(item.updatedAt)))) throw new ApiError('RESPONSE_INVALID');
   return value;
 }
+
+import {readSetupCopyRefs,type SetupCopyRef} from '../project-create/common-setup-api.ts';
+export async function readProjectSetupRefs(client:ApiClient,projectId:string,active:()=>boolean=()=>true):Promise<SetupCopyRef[]|undefined>{
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(projectId))throw new ApiError('CLIENT_PATH_INVALID');const transport=client.transport;
+ const current=()=>{if(!active()||transport!==client.transport)throw new ApiError('COMMON_SETUP_CONTEXT_CHANGED',412);};current();const value=await client.get<any>('/api/v1/projects/'+projectId);current();if(!value||value.id!==projectId)throw new ApiError('RESPONSE_INVALID');return Object.hasOwn(value,'setupCopyRefs')?readSetupCopyRefs(value.setupCopyRefs):undefined;
+}
