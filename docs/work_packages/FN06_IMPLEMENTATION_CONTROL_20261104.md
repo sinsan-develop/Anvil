@@ -629,3 +629,53 @@ Main 083ab4는 node --test --test-name-pattern='STREAM service는 실제 proof|S
 routes 시험의 마지막에는 아직 함수가 없는 native CLOSE Store RED가 1개 추가돼 있다. 이 신규 미완료 반례는 이번 STREAM 선택 패턴에 포함되지 않았으며 전체 파일이 모두 초록이라고 보고하지 않는다. 이전에 인수한 Store/SQL·ARM/STATE를 불필요하게 재실행하지 않았다. Main 결과 수거 직후 6파일 쓰기·시험 고정을 즉시 해제했다.
 
 판정은 STREAM 최초 점유·원 저장·COMMIT/release 뒤 소유 통로 연결의 source 부분 인수다. 실제 PG/Tx/RLS·실제 TLS·Delivery frame/opaque 전달·owner 실제 호출·slot·사용자 기능 인수와 전체 FN06은 미완료다. EOF 0bytes를 Delivery 전달 성공으로 승격하지 않는다. 기존 Primary가 native CLOSE 최초 저장과 승인된 원결과 재조회를 계속한다.
+
+## 66. 재개 확인과 STREAM·CLOSE 로컬 보존
+
+재개 시 기존 담당자 handle이 목록에 없어 같은 담당자에게 followup으로 연결했다. 중복 writer는 만들지 않았고 live/pending0·쓰기 정착을 확인했다. Main 60c10f의 원 session8047을 9b168e로 수거해 로컬 WIP64d57caf85d35e774d73bdd62e8552a77e1206e9를 보존했다. 부모21da4ee1·정확8파일·234줄 추가/10줄 삭제·raw8 불변·index0이다. 성공 직후 고정을 해제했다.
+
+이 WIP에는 부분 인수한 STREAM과 미검수 native CLOSE Store/SQL가 함께 보존됐다. CLOSE 직접1·SQL형상1 RED→GREEN은 제출 증거이며 실제 PG·service/HTTP·broker 회수·최종 타입 검증은 아직 미완료다. 기존 검수자에게 CLOSE 저장 본문만 읽기 검수를 맡겼고 같은 Primary는 나머지 연결을 계속한다. 실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않았다.
+
+Main의 재개 명령 justification이 한국어가 아닌 한 글자로 전달된 오류와 한국어 파일명을 ASCII 검사로 거절한 준비 오류를 분리한다. 첫 명령은 읽기만 실행됐고 두 번째는 shell 실행 전 차단됐다. 이후 도구 인자 전체를 문자 검사하며 한국어 파일명은 허용하되 다른 언어 문자는 거절한다. 이 오류로 제품 소스나 환경이 변경되지는 않았다.
+
+## 67. CLOSE 저장 역완결 보완 지시
+
+기존 검수자의 CLOSE Store/SQL 최초 저장 경계 판정은 C0/I1이다. 정상 producer는 phase_verification으로 원 proof를 검산하나 fn76_close_complete에 실제 ticket CLOSE CHALLENGE의 fullref·serverNonce·requestId 대조가 없다. proof를 바꾸고 evidence/replay/ticket의 hash와 canonical을 일관되게 재계산한 저장 반례를 역완결이 검출하지 못한다. 정상 생산자의 서명 우회라고 과장하지 않는다.
+
+같은 Primary에게 실제 CHALLENGE의 fullref·nonce·requestId·target·원 시각 포함 관계를 결박하고 source 반례로 보완하도록 지시했다. Store/current와 기존 STREAM은 불필요하게 바꾸지 않는다. service/HTTP·broker 회수는 작성 중이며 이번 저장 finding의 범위와 구분한다. 실제 PG·권한·키·서비스·Agent·컴파일은 실행하지 않았다.
+
+## 68. native CLOSE 최초 연결의 부분 인수
+
+CLOSE 저장 역완결 I1은 실제 CHALLENGE fullref·nonce·requestId·target·원 시각 포함 대조로 보완돼 독립 ADDRESSED/C0/I0다. fn76_close_complete 본문은 CE25D4F90AA5D86F59B397B3A48DB05851EECD4F40609795A4A6FACCB01E4707이다. 실제 deferred 실행이 아닌 source 검수다.
+
+나머지 service/broker/POST도 scoped C0/I0다. 실제 원 Tx/서명/Store 소비→COMMIT/release 정착 뒤 같은 broker·Window/Session·operationFence의 통로만 회수한다. 같은 guarded clock과 abort/기한/원 Pool 동일성을 유지하고 불명에서는 회수로 진행하지 않는다. 공개 응답은 raw CLOSED State다. finishClose 본문은 0DADE52496D47114423B483529D16C04FAB197B4BB23FDDB4E5496ABA6DA8BC3, nativeClose는 2F1D21D04BE557682D1419E9508F92990A6D5888D2E61E84D801587438C66D6B, POST는 608D0858CBDC3C785A33FBA210436069B320AF379820319B14671608DB860043이다.
+
+Main c4f54a는 node --test --test-name-pattern='native CLOSE Store는 첫사용|native CLOSE service는 원 Tx|native CLOSE HTTP는 고정|native CLOSE는 같은 service' tests/unit/FN06/native-first-receive-routes.test.ts 로 4 PASS/skip0/1440.9117ms/exit0을 확인했다. node --test --test-name-pattern='native CLOSE 최초 SQL은 실제|CLOSE 역완결은 재hash된' tests/unit/FN06/native-first-receive-schema.test.ts 는 2 PASS/skip0/726.3848ms/exit0이다. 뒤 2개는 SQL 형상 검사이며 실제 PG가 아니다.
+
+원 6파일 raw는 전후 같다. Store64FDA1DF2571474CD28489877B2A4498A1920A936675F3BB098AB564E74A0591, serviceC052F9E2F06307FE7CE1A0BDF6BA169D34EBA662626534245D48EF8707B79AB8, routesEBF11CE1E928EDD681C5EF46E5F7FEBA585F8A88B84F829477840363E7CAAFEB, SQL39C9072E5A3AA913242A6EF4B7E617C6C26894ECB7527CBA2BEBD209AE5E0054, routes시험E978DD8939B6CAD15215DC51F426919574EAACF17B929BB251072370FF47B86A, schema7B8B1EF9A99B86078D66394B3405C8CE887404A6188304765273245F073F5517다. Main 수거 직후 고정을 해제했다.
+
+판정은 최초 CLOSE source 연결의 부분 인수다. 실제 PG/동시성/TLS·사용자 기능은 미검증이며 consumed replay·전체 FN06은 미완료다. 같은 Primary가 실제 ticket으로 first/consumed를 구분하고 별도 읽기 전용 context·원 서명/원문·효과 closure·최종current를 검산하는 승인 재조회를 계속한다. 효과 SELECT는 읽기 전용 목적에서 차단한다. Main의 전달문 혼합 문자 표기 1건은 즉시 한국어로 정정했으며 source 판정에 사용하지 않는다.
+
+## 69. 승인된 재조회 읽기 경로 연결 중
+
+기존 Primary는 consumed owner의 별도 읽기 전용 context·효과 SELECT 차단·실제 crypto/lease 소비·원 canonical 조회의 직접 반례 1개를 함수 부재 RED 뒤 GREEN으로 작성했다. 아직 SQL 실물 결과·최종 current·원 signature bytes 동일성·HTTP dispatch는 미완료이며 해당 1 PASS를 전체 재조회로 인수하지 않는다.
+
+함수형 선언 문자열의 잘못된 첫 치환으로 OPEN 선언에 적용된 준비 오류를 실제 함수 경계 확인 후 복원했다는 보고를 받았다. Main은 원 checkpoint와 OPEN 선언/본문 diff를 대조하고 안정 제출 시 원 Tx 직접 1사례로 인접 회귀를 확인하도록 지시했다. 기대값을 바꾸거나 불변 전체 검사를 반복하지 않는다. live/pending0이며 같은 Primary가 실제 SQL 연결을 계속한다. 실제 DB·권한·키·서비스·Agent는 실행하지 않는다.
+
+## 70. consumed 원결과 조회의 부분 증거와 감사 미연결
+
+Main b9d556는 node --test --test-name-pattern='consumed owner는 실제 서명|STREAM·CLOSE consumed HTTP는|OPEN Tx owner는 비소유' tests/unit/FN06/native-first-receive-routes.test.ts 로 3 PASS/skip0/1037.3451ms/exit0을 확인했다. node --test --test-name-pattern='consumed SQL 목적은 실제 ticket' tests/unit/FN06/native-first-receive-schema.test.ts 는 1 PASS/skip0/465.8733ms/exit0이다. 마지막 1개는 SQL 형상 검사다. 원 6 raw는 전후 같았고 수거 직후 고정을 해제했다. OPEN 원 Tx 인접 사례는 통과했으며 부모64d57caf의 OPEN 본문0677EB600D11182E65B4982DC873449AE4444763344968F0C31E21E30FBC6498 복원 지문은 수행자 제출 증거다.
+
+독립 검수는 pre-native/CLOSED 정상 replay 연결을 확인했으나 C0/I1이다. 유효한 다른 P256 서명은 실제 crypto를 통과한 뒤 원 signature bytes 불일치로 거절되지만 기존 유한 security aggregate/audit producer에 지속 기록하는 호출선이 없다. 정상 replay의 쓰기0과 위조·충돌의 유한 거절 기록은 별개이며 후자의 누락을 완료로 숨기지 않는다. 같은 Primary에게 기존 계상/감사 계약의 필수 미완료로 유지하도록 전달했다. 새 행·수치·권한을 임의로 만들지 않는다.
+
+현재 제출 지문은 Store4CABC8317BC6A829DDF5302ABA9614FC06ECF6ACFFBC7199378501B1D7038137, service540EB72AD09415C995EA6A0C3F98DC50C170354F76A91A2E5E816C25392169B4, routes31671D0183A926CDA5D1AF9E78707A797B7354C6DE0F03D676C580883FEC9099, SQL20B390692C5A1698D5D69BB09062C616E5A576165A5D473571186ACC9A83D0EB, routes시험210AF1B19354B6B627FB4D427F3BEFE2F582CD4FCB7EEE3BF1DEA64B73E45E42, schema009DD5E307FD08DA33AFC6E5B8438CE84B399AEB43F7C243C43D5E9C045AB6BC다.
+
+SQL 실물 ticket 분기·별도 readonly lease·원서명/원문/closure·최종current를 거쳐 원 상태를 반환하며 broker 효과를 만들지 않는 정상 source 경로만 확인됐다. BOUND/ATTEMPTED의 실제 N current·ARM/STATE replay·client JSON 비권위 분류와 거절 계상은 미완료다. 실제 DB·권한·키·서비스·Agent는 실행하지 않았다. 검수 전달문 시험 경로 앞 혼합 문자 표기 1건은 즉시 한국어로 정정했으며 전체 인자 사전 검사 절차를 계속 적용한다.
+
+## 71. client 역사 응답 parser 부분 검수와 거절 생산선
+
+기존 FrameDecoder의 finishHttpResponse는 독립 parser 한정 C0/I0다. binary STREAM은 원 decoder를 재사용하고 JSON은 exact canonical·ReceiveState·원 Window/session·phase·기한을 검산해 HISTORICAL_METADATA만 반환한다. MIME 문자열 타입을 먼저 검사해 객체 변환 trap을 호출하지 않고 단발·buffer wipe를 유지한다. 실제 HTTPS/desktop owner의 호출선은 미연결이므로 전체 사용 가능 판정은 아니다.
+
+Main46788b의 node --test --test-name-pattern='recipient는 STREAM JSON|recipient 응답 분기는|Delivery frame는 기존 authority' tests/unit/FN06/native-first-receive-client.test.ts 는3 PASS/skip0/179.5749ms/exit0이다. clientD89FDEC6AD62AD508B0A21475D8C95FBCAD17A7F91936319FF13885431A4D7D4·시험E1211F5C5FD779CB1A21BC59A75E458A63AC6694EEB3446F6CB223F1E9DCF702는 Main 및 독립 검토 전후 동일했다. parser본문78A3EE1025F05C9E6027FCA646FFE4C65D53710732229645B49D0FC854DF06B2다. 검사 직후 고정을 해제했다.
+
+거절 지도는 기존 표·collector·quota·역완결만 존재하고 실제 유한 writer가 없음을 확인했다. 같은 Primary에게 원 인증/등록 귀속을 검산한 소비 요청 충돌을 기존 고정집계 REQUEST_CONFLICTS 조건으로 생산하고 actual/future 정산·명확 COMMIT 뒤 거절을 반환하도록 맡겼다. TICKET_EXHAUSTED와 혼용하지 않으며 원 성공ticket/evidence/replay를 수정하지 않는다. 정상 replay 읽기전용을 쓰기로 넓히지 않고 별도 목적을 사용한다. admitted 첫거절 DENIED replay/audit도 별도 후속 미완료다. 새 수치·행종류·권한이나 실제 환경 실행은 추가하지 않았다.

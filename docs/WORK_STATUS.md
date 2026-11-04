@@ -15095,3 +15095,27 @@ STREAM의 실제 점유 SQL/Store 저장 경계는 독립 C0/I0다. Main 직접�
 ## 2026-11-05 FN06 STREAM 최초 source 부분 인수
 
 최종 인계 clock I1은 독립 재검토 C0/I0로 해소됐고 Main 083ab4의 변경 직접 3 PASS/skip0/exit0과 raw6 불변을 확인했다. STREAM 최초 점유·저장·COMMIT/release 뒤 통로 연결만 source 부분 인수한다. 신규 native CLOSE Store RED 1개는 미완료로 유지하며 전체 시험 통과를 주장하지 않는다. 실제 PG·TLS·Delivery 전달과 전체 기능은 미확인이고 같은 Primary가 CLOSE·원결과 재조회를 계속한다. 상세는 구현 통제 §65를 따른다.
+
+## 2026-11-05 FN06 재개와 로컬 WIP 보존
+
+기존 담당자를 같은 handle로 복구해 단일 writer를 유지했다. source WIP64d57caf는 STREAM 부분 인수와 미검수 CLOSE Store/SQL를 보존하며 부모21da4ee1·raw8 불변·index0이다. Main은 고정을 즉시 해제했고 기존 검수자는 CLOSE 저장 경계를 확인한다. Primary는 service/HTTP·통로 회수·재조회를 계속한다. 실제 환경과 전체 계획은 미완료다. 상세는 구현 통제 §66을 따른다.
+
+## 2026-11-05 FN06 CLOSE 저장 검수 I1
+
+CLOSE 최초 저장은 독립 C0/I1이다. 정상 producer와 별개로 저장 역완결의 원 challenge 결박을 보완하도록 기존 Primary에게 지시했다. 전체 CLOSE는 아직 인수하지 않았고 service/HTTP·회수·재조회 구현은 계속한다. 상세는 구현 통제 §67을 따른다.
+
+## 2026-11-05 FN06 CLOSE 최초 source 부분 인수
+
+CLOSE 저장 I1과 service/HTTP·broker 연결은 독립 C0/I0로 확인했고 Main c4f54a 직접4+SQL형상2 PASS/skip0/exit0 및 raw6 불변을 수거했다. 실제 DB나 서비스 동작 검증은 아니다. 같은 Primary가 승인된 원결과 재조회를 계속하며 상세는 구현 통제 §68에 기록했다.
+
+## 2026-11-05 FN06 consumed 재조회 연결 중
+
+최초 CLOSE source 부분 인수 뒤 승인된 consumed 읽기 경로를 구현 중이다. 별도 읽기 전용 capability의 직접1 PASS는 부분 증거이며 SQL 원결과·최종 현재성·HTTP는 미완료다. 실제 환경 실행 없이 같은 담당자가 계속하며 상세와 OPEN 복원 검증 요구는 구현 통제 §69에 기록했다.
+
+## 2026-11-05 FN06 consumed 재조회 검수 I1
+
+Main b9d556 직접·인접4 PASS와 raw6 불변을 확인했지만 독립 검수 C0/I1이다. 정상 원결과 읽기와 별개로 적격 충돌의 유한 감사·집계 생산선이 미연결이므로 전체 재조회는 인수하지 않았다. 같은 Primary가 client 분류와 후속 필수 연결을 계속한다. 실제 N current·실제 환경·전체 FN06은 미완료이며 상세는 구현 통제 §70에 기록했다.
+
+## 2026-11-05 FN06 client 응답 분류 부분 검수
+
+client parser는 독립 C0/I0·Main직접3 PASS와 raw2 불변으로 부분 검수를 마쳤다. 실제 transport/owner 연결은 아직 미완료다. 기존 Primary는 거절 고정집계의 실제 producer와 정산을 구현하며 정상 replay 쓰기0·원성공 보존을 유지한다. 상세는 구현 통제 §71에 기록했다.
