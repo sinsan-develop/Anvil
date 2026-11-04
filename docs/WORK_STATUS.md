@@ -14194,3 +14194,11 @@ R6감사7 e22028093f5634c4df29aef0f062a3dcf4bceb8e local/privateexact. 기존Pri
 
 ### 2026-11-04 0069 함수 순서 source2 독립 검수
 Primary3a35cf 순서RED1→f40ca7 직접/인접50PASS/skip0/5716.9251ms·898c9c noEmit0·b17c30역이동부모raw동일/기존시험보존·writer반환/live0. Main568997 fresh50PASS/skip0/5080.289ms/diff0,416690공백삽입위치가정준비오류1→68be51실경계읽기→3dfd55부모독립재배열byte동일·원함수/ACL불변/130509B유지. SQL5BF84DAD/시험3B457BA1 scopedC0/I0/M0. Primary최초type-p누락준비오류1은제품오류와분리. 실제DB/권한/키/서비스/Agent/WSL/P03R3·새QA실행0·원R6FAILED/정리잔여0/감사·과거UNKNOWN보존. 상세 docs/04_test_reports/AV3/IX01_ENVIRONMENT_FUNCTION_ORDER_SOURCE_RESULT_20261104.md . 새SQL기준과실행안결박전/새직접결정전실QA금지·전체계획미완료.
+
+
+### 2026-11-04 R7 새 SQL 기준 source 준비 배정
+0069순서보완SQL기준7adc72b43063c875120124c7c3828633c55c35c7 local/privateexact. Main WIba082b6bf7f63304a418cd8aefda7decf564d54c3602f81ea2bdffd15ae98a6e에서같은Primary에driver/시험/신규R7index3경로만namespace·SQLbaseline/직전R6cwd·baseline음성/header·0069hash변경을배정했다. 총2376143B/명시105/order09d불변·기존provider/Tx/역할·기한/UNKNOWN로직불변·부모raw역치환을검수. Main동시코드쓰기0·실제DB권한키서비스Agent/WSL/P03R3·새QA실행/시각발급0. 소진R6재사용0/원실패UNKNOWN·감사보존·전체계획미완료.
+
+
+### 2026-11-04 R7 source3 SQL 기준·namespace 검수
+Primary65eb54 직접3PASS/skip0/519.7572ms·35ca7b Bash-n0·f7b65f index/선택/공백검산0·writer반환/live0. 준비UTF8미지정cp949오류ad6e1b1회는제품실패와분리했다. Main42af3e driver1558E08F/시험6225E88C의namespace·SQLbaseline/직전R6음성추가외부모raw동일·새index5C70D5B2 header/0069hash만변경·106Gitblob동일/명시105·2376143B/order09d를독립검산0. dda56b 변경음성1PASS/skip0/141.5312ms/diff0. 기존동일로직56/noEmit·새0069 50재사용/중복전수0. 실제DB/권한/키/서비스/Agent/WSL/P03R3·새R7QA실행/시각발급0·소진R6재사용0/원FAILEDUNKNOWN·감사/정리이력보존·전체계획미완료. 다음정확code/instance32·생산SQL10/새전용자원을실행후보로동결하고새직접결정전실행금지.
