@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {Pool} from 'pg';
+import {registerJourneyClose,closeJourneyContext,type JourneyOwnedResource} from './journey-context-lifecycle.ts';
 import {AccessRepository} from '../../../apps/server/modules/access/repository.ts';
 import {hashPassword} from '../../../apps/server/modules/access/service.ts';
 import {type ProjectCommand} from '../../../apps/server/modules/access/project-command.ts';
@@ -86,11 +87,18 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
  if(!/^[a-f0-9]{64}$/.test(password)||!/^[a-f0-9]{64}$/.test(migratorPassword))throw Error('IX01_QA_CREDENTIAL_FORMAT_INVALID');fresh();
  const config={host:binding.host,port:5432,database:binding.database,connectionTimeoutMillis:3000,statement_timeout:5000};
  // 반환받은 자원은 생성 즉시 소유한다. 후속 생성/close 실패도 이미 소유한 자원 회수를 막지 않는다.
- const owned:{name:string;close:()=>Promise<unknown>}[]=[];let failed=false,failure:unknown;
+ const owned:JourneyOwnedResource[]=[];let failed=false,failure:unknown;
  try{
-  const rawPool=new Pool({...config,user:'anvil_v3_app',password,max:3});owned.push({name:'appPool',close:()=>rawPool.end()});const pool=fenceResultQaPool(rawPool,fresh);
-  const rawAdmin=new Pool({...config,user:'anvil_v3_migrator',password:migratorPassword,max:2});owned.push({name:'migratorPool',close:()=>rawAdmin.end()});const admin=fenceResultQaPool(rawAdmin,fresh);
-  const access=new AccessRepository(pool,{installationId:randomUUID(),key:randomBytes(32)}),app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830',artifactRoot:binding.artifactRoot});owned.push({name:'app',close:()=>app.close()});
+  const rawAdmin=new Pool({...config,user:'anvil_v3_migrator',password:migratorPassword,max:2});registerJourneyClose(owned,'migratorPool',()=>rawAdmin.end());const admin=fenceResultQaPool(rawAdmin,fresh);
+  const authConfiguration={installationId:randomUUID(),key:randomBytes(32)};let contextGeneration=0;
+  const createContext=()=>{
+   fresh();const generation=++contextGeneration,rawPool=new Pool({...config,user:'anvil_v3_app',password,max:3});
+   const closePool=registerJourneyClose(owned,'appPool:'+generation,()=>rawPool.end()),pool=fenceResultQaPool(rawPool,fresh);fresh();
+   const access=new AccessRepository(pool,authConfiguration);fresh();
+   const app=buildApp({},undefined,{repository:access,origin:'https://localhost:3830',artifactRoot:binding.artifactRoot});
+   const closeApp=registerJourneyClose(owned,'app:'+generation,()=>app.close());fresh();return{pool,access,app,closePool,closeApp};
+  };
+  let current=createContext(),{pool,access,app}=current;
   same((await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows,[{db:binding.database,role:'anvil_v3_app',rolsuper:false,rolbypassrls:false}]);
   // 원장 집합 일치는 실제 적용 순서의 증거가 아니다. 순서/의존의 채택은 외부 실행 계획 소유다.
   same((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,binding.migrations.map(({id,checksum})=>({id,checksum})).toSorted((a,b)=>a.id.localeCompare(b.id)));
@@ -157,8 +165,23 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   const allBeforeReplay=await domainState();same(await success(planRequest),saved);assert(trace.pending);same((await success(trace.pending)).data.edge,linked);assert(knowledge.pending?.save);same((await success(knowledge.pending.save)).data.ref,knowledgeRef);same(await domainState(),allBeforeReplay);
   const freshDocuments=new ProjectDocuments(binding.artifactRoot),freshPlans=new ProjectWorkPlans(freshDocuments),freshKnowledge=new ProjectKnowledge(freshDocuments),freshTraces=new ProjectTraces(freshDocuments),freshMethods=new ProjectMethodologies();
   await access.authenticated(who.token,null,async(db,a)=>{same((await freshPlans.read(db,a,pid,plan.ref.id,plan.ref.version)).ref,plan.ref);same((await freshKnowledge.read(db,a,pid,knowledgeRef.id,knowledgeRef.version)).ref,knowledgeRef);same((await freshMethods.readApplication(db,a,pid)).applicationRef,applicationRef);assert((await freshTraces.read(db,a,pid,{designId:design.ref.id,version:String(design.ref.version),direction:'FORWARD'},new ProjectListCodec(s=>access.signProjectCursor(s)))).edges.some(e=>e.id===linked.id));});
-  for(const path of ['/documents/'+design.ref.id+'/versions/'+design.ref.version,'/work-plans/'+plan.ref.id+'/versions/'+plan.ref.version,'/knowledge/'+knowledgeRef.id+'/versions/'+knowledgeRef.version]){const r=await app.inject({method:'GET',url:'/api/v1/projects/'+other.id+path,headers});assert.equal(r.statusCode,404);assert(!r.body.includes('IX01 원문'));}
+  // 같은 PG의 원 app/Pool을 종료하고 재생성한다. 실제 프로세스/화면 재시작 검수가 아니다.
   const count=async()=> (await admin.query("SELECT (SELECT count(*) FROM anvil.commands WHERE project_id=$1) commands,(SELECT count(*) FROM anvil.authorization_receipts WHERE scope_id=$1) receipts,(SELECT count(*) FROM anvil.audit_events WHERE project_id=$1) audits",[pid])).rows;
+  const beforeReconnect=await domainState(),commandsBeforeReconnect=await count();
+  const documentsBeforeReconnect=await Promise.all([design,screen,planDoc].map(value=>readDocument(client,pid,value.ref.id,value.ref.version,{expectedContentHash:value.ref.contentHash})));
+  const planBeforeReconnect=await readWorkPlan(client,pid,plan.ref),knowledgeBeforeReconnect=await readKnowledge(client,pid,knowledgeRef);
+  await closeJourneyContext(current,fresh);fresh();current=createContext();({pool,access,app}=current);
+  assert.equal(contextGeneration,2);same((await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows,[{db:binding.database,role:'anvil_v3_app',rolsuper:false,rolbypassrls:false}]);fresh();
+  for(const [i,value]of [design,screen,planDoc].entries()){
+   const readback=await readDocument(client,pid,value.ref.id,value.ref.version,{expectedContentHash:value.ref.contentHash});
+   same(readback.document,documentsBeforeReconnect[i]!.document);assert.equal(readback.body,documentsBeforeReconnect[i]!.body);
+  }
+  const planAfterReconnect=await readWorkPlan(client,pid,plan.ref),knowledgeAfterReconnect=await readKnowledge(client,pid,knowledgeRef);
+  same(planAfterReconnect.ref,plan.ref);same(planAfterReconnect.tasks,planBeforeReconnect.tasks);same(planAfterReconnect.dependencies,planBeforeReconnect.dependencies);same(knowledgeAfterReconnect.entry,knowledgeBeforeReconnect.entry);
+  await access.authenticated(who.token,null,async(db,a)=>{same((await new ProjectMethodologies().readApplication(db,a,pid)).applicationRef,applicationRef);});
+  for(const direction of ['FORWARD','REVERSE']as const){const view=await readTrace(client,pid,design.ref,direction,null),edge=view.edges.find(e=>e.id===linked.id),walk=view.traversal.find(t=>t.edgeId===linked.id);assert(edge&&walk);same(edge,linked);same(walk.from,direction==='FORWARD'?linked.from:linked.to);same(walk.to,direction==='FORWARD'?linked.to:linked.from);}
+  same(await domainState(),beforeReconnect);same(await count(),commandsBeforeReconnect);
+  for(const path of ['/documents/'+design.ref.id+'/versions/'+design.ref.version,'/work-plans/'+plan.ref.id+'/versions/'+plan.ref.version,'/knowledge/'+knowledgeRef.id+'/versions/'+knowledgeRef.version]){const r=await app.inject({method:'GET',url:'/api/v1/projects/'+other.id+path,headers});assert.equal(r.statusCode,404);assert(!r.body.includes('IX01 원문'));}
   const unchanged=async(c:ProjectCommand)=>{const before=await count(),domainBefore=await domainState(),r=await send(c);assert(r.statusCode>=400);same(await count(),before);same(await domainState(),domainBefore);};
   await unchanged({...structuredClone(planRequest),commandId:randomUUID(),controlGeneration:2});
   await unchanged({...structuredClone(planRequest),commandId:randomUUID(),payload:{...planRequest.payload,designRef:{...design.ref,contentHash:'f'.repeat(64)}}});

@@ -14292,3 +14292,11 @@ ceef28 tail4b6e3f67141eff033332b0fb64705bf964380aaa local/privateexact·trackedc
 
 ### 2026-11-04 R9 실제105 정의 설치 완료·정리 잔여0
 Mainf296d6 actualslot1 exit0/plan0dbaf98e/fullIDec7f6de6·DEFINITIONS_INSTALLED/CLEANED·최종0074·failure/sqlstate진단문장끝모두null. 고정codea7527b79/SQLa3a12bd3/index4C186B4C/명시105·2376141B/order09d의순차설치완료한정이며함수/DML/RLS/API/UI/IX01 PASS아님. provider임시회원1→0/최종migratorCREATEROLEfalse/systemHash불변·회수정리확정. e7bf70 proc227match0·exactowner/nonlink/clean뒤source만정리,cfb564 03:03:41.743Z별도ID/name/source부재·감사3hash동일·실행자원잔여0. 감사3/metadata2raw보존/mirror·사전config경고3분리. R9승인소진/추가실행0/기존DB권한키서비스Agent/P03R3변경0. 기존Primary에게정본IX01다음실여정의source/harness/ledger/seed·승인범위읽기대조배정·Main동시코드쓰기0. 상세 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R9_SLOT1_RESULT_20261104.md . 원R1~R8실패UNKNOWN·감사/전체계획미완료유지.
+
+
+### 2026-11-04 IX01 접속·app 재생성 source 준비 배정
+R9정의설치증거7 cd0d13b3 local/private보존/기능인수아님. 기존Primary읽기와Main51a9db/d3c1a8은실여정pg.Pool/AccessRepository/app.inject소비와기존158~159의서비스객체만재생성공백을확인. Main은기승인IX01의내부검증보완으로WI0448f5784d2c9e96bdc5785795489975fa4b2c6052457715dde6bd88b5f34e60를발행해같은Primary에기존integration/newlifecyclehelper/newunit3경로만TDD배정한다. 원auth메모리설정/token/ref·PG/admin/root유지·app/pool종료정착뒤새문맥·원자료재조회/물리불변·closepromise1회/부분소유·원음성/timeout/guards보존을검수. Main동시코드쓰기0·제품API/권한계약변경0·실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R9재사용0. 원실패UNKNOWN감사/전체계획미완료보존.
+
+
+### 2026-11-04 IX01 접속·app 재생성 source3 독립 검수
+Primary014e0f 모듈부재RED→516d1d 신규5PASS/skip0/106.35ms·101e56 noEmit0/7f5d2e역치환부모동일/guard음성replay불변·56ceb8 integration기본0PASS1SKIP NOT_RUN·오류0/writer반환/live0. Main988277 helper/unit/실소비diff읽기/fresh5PASS116.7739ms/diff0,977f32 영속문서값/목록observedAt구분확인·scopedC0/I0/M0. integration87B70EEB/35006B·helper90D4107F/694B·unit276753C9/4862B. app→pool종료정착/fresh뒤같은메모리auth설정/원token/ref재조회·물리행/원문/명령불변·소유instance캡처/closepromise1회·부분생성보존을검수. 실제PG/재접속/프로세스화면restart/IX01인수NOT_RUN. Mainc81b14후속준비읽기경로추측부재1은49217 rg로0000환경의schema_migrations생성확인·파일/환경변경0. 상세 docs/04_test_reports/AV3/IX01_APP_POOL_RECONNECT_SOURCE_RESULT_20261104.md . 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R9재사용0·제품API계약불변/원실패UNKNOWN감사/전체계획미완료보존.
