@@ -14186,3 +14186,11 @@ Main 어울: 직전 turn은 중단된 승인질문 기록을 복구하고 WORK_S
 
 ### 2026-11-04 R6 실제0069 함수 참조 실패·정리 잔여0
 Main 55d128 실제slot1 exit1/plan2b7a50ad/fullID5dbd92e5·0069_environment_configuration.sql.pending/42883/FUNCTION anvil.environment_approval_scope/문장끝227·FAILED/CLEANED. 원0039 정의 이후 진행했으나 전체105/함수RLS/API/UI PASS아니다. 최종migratorCREATEROLEfalse·systemHash불변/회원0·회수정리확정.8c0820 proc240/matches0·exact owner/nonlink/clean 뒤 source만정리, c07b3e 00:52:23.435Z 별도ID/name/source부재·감사hash동일로실행자원잔여0. 감사3과metadata2를raw보존/mirror했다. 생성전docker config 경고3은분리보존하며실제실행은보호빈config사용. R6단1회소진/재실행0·기존DB권한키서비스Agent/P03R3변경0. 같은Primary에0069함수정의/참조순서읽기전용조사배정·Main동시코드쓰기0. 상세 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R6_SLOT1_RESULT_20261104.md . 원R1~R5실패/UNKNOWN·전체계획미완료유지.
+
+
+### 2026-11-04 0069 함수 정의 순서 source 보완 배정
+R6감사7 e22028093f5634c4df29aef0f062a3dcf4bceb8e local/privateexact. 기존Primary읽기조사와Main0f28b3/489964/d8ce70은0069 wrapper225가scope761보다앞서고scope의후보표466/current-owner453/target696 선행·ACL442~443 동반이동필요를확인했다. 선택105 SQL언어192개한정이름/순서조사추가확정0(완전성/실PG증명아님). WIc7079bf6a214d87615dd7f8f942fd19c876e0456da13c3adf125062e6f89a3af로같은Primary에0069+기존schema시험2경로만원블록/ACL의뒤이동TDD배정·Main동시코드쓰기0. 함수/권한/guard/입력/선택불변·역이동부모동일을검수한다. 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R6재사용0·원FAILED/UNKNOWN/감사/잔여0보존·전체계획미완료.
+
+
+### 2026-11-04 0069 함수 순서 source2 독립 검수
+Primary3a35cf 순서RED1→f40ca7 직접/인접50PASS/skip0/5716.9251ms·898c9c noEmit0·b17c30역이동부모raw동일/기존시험보존·writer반환/live0. Main568997 fresh50PASS/skip0/5080.289ms/diff0,416690공백삽입위치가정준비오류1→68be51실경계읽기→3dfd55부모독립재배열byte동일·원함수/ACL불변/130509B유지. SQL5BF84DAD/시험3B457BA1 scopedC0/I0/M0. Primary최초type-p누락준비오류1은제품오류와분리. 실제DB/권한/키/서비스/Agent/WSL/P03R3·새QA실행0·원R6FAILED/정리잔여0/감사·과거UNKNOWN보존. 상세 docs/04_test_reports/AV3/IX01_ENVIRONMENT_FUNCTION_ORDER_SOURCE_RESULT_20261104.md . 새SQL기준과실행안결박전/새직접결정전실QA금지·전체계획미완료.

@@ -24,3 +24,27 @@ test('후속 quota_account는 원4열·잠금·ACL을 유지하고 인증된 환
 
 
 test('환경 승인 후보의 raw DB microsecond는 보존하고 공개 요청 시각 비교만 millisecond로 맞춘다',async()=>{const {readFile}=await import('node:fs/promises'),sql=await readFile(new URL('../../../db/migrations/0069_environment_configuration.sql.pending',import.meta.url),'utf8'),raw='2026-11-02T03:04:05.123456Z',wire=new Date(raw).toISOString();assert.equal(wire,'2026-11-02T03:04:05.123Z');assert.notEqual(raw,wire);const start=sql.indexOf('CREATE FUNCTION anvil.environment_approval_complete('),body=sql.slice(start,sql.indexOf('END;$$;',start));assert.match(body,/r\.created_at=date_trunc\('milliseconds',b\.created_at\)/);assert(!body.includes('r.created_at=b.created_at'));assert.match(sql,/created_at timestamptz NOT NULL DEFAULT transaction_timestamp\(\)/);});
+
+
+test('환경 승인 SQL wrapper는 scope 정의 뒤에 alias·동일 ACL과 함께 설치된다',async()=>{
+ const {readFile}=await import('node:fs/promises'),{createHash}=await import('node:crypto');
+ const sql=await readFile(new URL('../../../db/migrations/0069_environment_configuration.sql.pending',import.meta.url),'utf8');
+ const scope=sql.indexOf('CREATE FUNCTION anvil.environment_approval_scope('),alias=sql.indexOf('ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_environment;'),wrapper=sql.indexOf('CREATE FUNCTION anvil.connection_candidate_approval_target_valid('),quota=sql.indexOf('CREATE OR REPLACE FUNCTION anvil.quota_account(');
+ assert(scope>=0&&alias>scope,'scope가 SQL wrapper의 alias/정의보다 먼저 설치되어야 한다');
+ const scopeGrant=sql.indexOf('GRANT EXECUTE ON FUNCTION anvil.environment_approval_scope(uuid,jsonb) TO anvil_v3_app;');
+ assert(scopeGrant>scope&&alias>scopeGrant&&wrapper>alias&&quota>wrapper);
+ const movedWrapper=sql.match(/^ALTER FUNCTION anvil\.connection_candidate_approval_target_valid\(uuid,jsonb\) RENAME TO connection_candidate_approval_target_before_environment;\nCREATE FUNCTION anvil\.connection_candidate_approval_target_valid\([^\n]+\n[^\n]+\n\$\$;\n/m)?.[0];
+ const movedAcl=sql.match(/^REVOKE ALL ON FUNCTION anvil\.environment_configuration_target\(uuid,jsonb\)[^\n]+\nGRANT EXECUTE ON FUNCTION anvil\.environment_configuration_target\(uuid,jsonb\)[^\n]+\n/m)?.[0];
+ assert(movedWrapper&&movedAcl,'원 alias/wrapper와 ACL 두 문장 전체가 필요하다');
+ assert(sql.includes(movedWrapper+movedAcl),'alias/wrapper 직후 원 ACL을 같은 함수에 적용한다');
+ assert(sql.indexOf(movedAcl)>wrapper&&sql.indexOf(movedAcl)<quota);
+ const once=(text:string,needle:string,replacement:string)=>{assert.equal(text.split(needle).length,2);return text.replace(needle,()=>replacement);};
+ let parent=once(sql,movedWrapper+movedAcl,'');
+ const beforeWrapper='ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_environment;';
+ parent=once(parent,beforeWrapper,movedWrapper+beforeWrapper);
+ const beforeAcl='\n-- 현재 인증 문맥은 서버 authenticated가 반환한 세션/actor/client를 같은 Tx에서만 결박한다.';
+ parent=once(parent,beforeAcl,movedAcl+beforeAcl);
+ assert.equal(createHash('sha256').update(parent,'utf8').digest('hex'),'398a67744ce47ba543e38d2af55f5b68a4effa67162e340cff8eb81673b1781d','역이동은 모든 함수/ACL/guard 및 줄바꿈을 부모 raw 그대로 복원한다');
+ assert.equal(Buffer.byteLength(parent),Buffer.byteLength(sql));
+ assert.equal((sql.match(/^BEGIN;/gm)||[]).length,1);assert.equal((sql.match(/^COMMIT;/gm)||[]).length,1);assert(sql.endsWith('COMMIT;\n'));
+});
