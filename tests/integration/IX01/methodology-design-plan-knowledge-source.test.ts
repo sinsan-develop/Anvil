@@ -6,6 +6,7 @@ import {resolve} from 'node:path';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {Pool} from 'pg';
 import {registerJourneyClose,closeJourneyContext,type JourneyOwnedResource} from './journey-context-lifecycle.ts';
+import {assertJourneyLedgerProjection} from './journey-ledger-projection.ts';
 import {AccessRepository} from '../../../apps/server/modules/access/repository.ts';
 import {hashPassword} from '../../../apps/server/modules/access/service.ts';
 import {type ProjectCommand} from '../../../apps/server/modules/access/project-command.ts';
@@ -101,7 +102,7 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   let current=createContext(),{pool,access,app}=current;
   same((await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows,[{db:binding.database,role:'anvil_v3_app',rolsuper:false,rolbypassrls:false}]);
   // 원장 집합 일치는 실제 적용 순서의 증거가 아니다. 순서/의존의 채택은 외부 실행 계획 소유다.
-  same((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,binding.migrations.map(({id,checksum})=>({id,checksum})).toSorted((a,b)=>a.id.localeCompare(b.id)));
+  assertJourneyLedgerProjection((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,binding.migrations.map(({id,checksum})=>({id,checksum})));
   assert.equal((await admin.query('SELECT count(*)::int n FROM anvil.users')).rows[0].n,0,'전용 빈 격리만 허용');
   const forms=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url))),methods=buildBuiltinMethodologies(await readFile(new URL('../../../docs/design/기본방법론_상세검토안.md',import.meta.url)),forms.forms);
   const seed=await admin.connect();try{await seed.query('BEGIN');await seedOfficialForms(seed,forms);await seedBuiltinMethodologies(seed,methods,forms.forms);await seed.query('COMMIT');}catch(e){await seed.query('ROLLBACK');throw e;}finally{seed.release();}

@@ -132,12 +132,12 @@ test('tmpfs actualparser 최초거절은 controller start/SQL/roles/cleanup을 �
 });
 
 
-test('J2 새profile7개와 plan은 J1 소유형상을 채택하지 않는다',async()=>{
- const expected={source:'/home/daon/anvil-ix01-journey-20261104-j2-qa',receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-journey-20261104-j2',artifact:'/tmp/anvil-v3-ix01-journey-20261104-j2/artifacts',container:'anvil-ix01-journey-pg-20261104-j2-a1',network:'anvil-ix01-journey-net-20261104-j2-a1',database:'anvil_v3_ix01_20261104_j2_a1',owner:'IX01_JOURNEY_20261104_J2'};
+test('J3 새profile7개와 plan은 J2/J1 소유형상을 채택하지 않는다',async()=>{
+ const expected={source:'/home/daon/anvil-ix01-journey-20261104-j3-qa',receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-journey-20261104-j3',artifact:'/tmp/anvil-v3-ix01-journey-20261104-j3/artifacts',container:'anvil-ix01-journey-pg-20261104-j3-a1',network:'anvil-ix01-journey-net-20261104-j3-a1',database:'anvil_v3_ix01_20261104_j3_a1',owner:'IX01_JOURNEY_20261104_J3'};
  for(const [key,value]of Object.entries(expected))assert.equal(c.fixed[key],value,key);
  let factories=0;for(const args of [[],['--plan']]){const plan=await c.main(args,{},()=>{factories++;throw Error('FORBIDDEN');});assert.equal(plan.source,expected.source);assert.equal(plan.actualExecuted,false);}assert.equal(factories,0);
  const {raw,read}=tmpfsProjection();assert.equal(read(raw).isolated,true);
- for(const change of [(v:any)=>v.Name='/anvil-ix01-journey-pg-20261104-j1-a1',(v:any)=>v.Labels['anvil.owner']='IX01_JOURNEY_20261104_J1',(v:any)=>v.Labels['anvil.instance']='1'.repeat(32),(v:any)=>v.Networks={'anvil-ix01-journey-net-20261104-j1-a1':{}}]){const bad=structuredClone(raw);change(bad);assert.throws(()=>read(bad));}
+ for(const change of [(v:any)=>v.Name='/anvil-ix01-journey-pg-20261104-j2-a1',(v:any)=>v.Labels['anvil.owner']='IX01_JOURNEY_20261104_J2',(v:any)=>v.Networks={'anvil-ix01-journey-net-20261104-j2-a1':{}},(v:any)=>v.Name='/anvil-ix01-journey-pg-20261104-j1-a1',(v:any)=>v.Labels['anvil.owner']='IX01_JOURNEY_20261104_J1',(v:any)=>v.Labels['anvil.instance']='1'.repeat(32),(v:any)=>v.Networks={'anvil-ix01-journey-net-20261104-j1-a1':{}}]){const bad=structuredClone(raw);change(bad);assert.throws(()=>read(bad));}
 });
 
 
@@ -159,4 +159,23 @@ test('최종원장 strict공유검산은 누락/추가/중복/hash/shape를 거�
 test('최종원장 actual포트 거절뒤 controller는 감사기록외 효과0이다',async()=>{
  const expected=c.parseManifest(manifest),values=expected.map((r:any)=>({id:r.id,checksum:r.sha256}));
  for(const raw of [JSON.stringify(values.slice(1)),JSON.stringify([...values,values[0]]),JSON.stringify([values[0],...values.slice(0,-1)]),JSON.stringify(values.map((r:any,i:number)=>i?r:{...r,checksum:'0'.repeat(64)})),JSON.stringify(values.map((r:any,i:number)=>i?r:{...r,extra:true}))]){const f=fixture(),commands:any[]=[],port=actualLedgerPort(raw,commands);f.ports.verifyLedger=async(rows:any,id:string,ms:number)=>{f.calls.push('actualLedgerVerify');return port(rows,id,ms);};const r=await c.runController(f.plan,f.ports);assert.equal(r.code,'LEDGER_UNKNOWN');assert.equal(r.status,'UNKNOWN');assert.equal(r.stage,'LEDGER_VERIFY');assert.equal(r.completed,105);assert(r.receipts.every((x:any)=>x.sql==='SETTLED'&&x.ledger==='SETTLED'));assert.equal(commands.length,1);assert.deepEqual(f.calls.slice(f.calls.indexOf('actualLedgerVerify')+1),['record']);assert(!f.calls.includes('secureHost'));assert(!f.calls.includes('revoke'));assert(!f.calls.includes('child'));assert(!f.calls.includes('remove'));}
+});
+
+
+const ledgerHelperPath='tests/integration/IX01/journey-ledger-projection.ts';
+const ledgerHelperBytes=await readFile(new URL('../../../tests/integration/IX01/journey-ledger-projection.ts',import.meta.url));
+test('새integration 원문hash/35067 bounds만 허용하고 구35006 원문은 거절한다',()=>{
+ assert.equal(Buffer.byteLength(diagnosticSource),35067);assert.equal(c.fixed.testHash,'31ef540312f4741253205ade066d634942659ee40d47a56646a00d6f50e638f4');assert.equal(c.buildChildSourceBounds(diagnosticSource).sourceHash,c.fixed.testHash);
+ const old=diagnosticSource.replace("import {assertJourneyLedgerProjection} from './journey-ledger-projection.ts';\n",'').replace("assertJourneyLedgerProjection((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,binding.migrations.map(({id,checksum})=>({id,checksum})));","same((await admin.query('SELECT id,checksum FROM anvil.schema_migrations ORDER BY id')).rows,binding.migrations.map(({id,checksum})=>({id,checksum})).toSorted((a,b)=>a.id.localeCompare(b.id)));");assert.equal(Buffer.byteLength(old),35006);assert.equal(sha(old),'87b70eebefe3d18ecb203a35956d3bf9f25063e8555de281e0537cced866f25e');assert.throws(()=>c.buildChildSourceBounds(old));
+});
+test('실제preflight source loop는 helper누락/호출자hash와함께오염을 거절한다',async()=>{
+ assert(c.requiredSources.includes(ledgerHelperPath));assert.equal(ledgerHelperBytes.length,1018);assert.equal(sha(ledgerHelperBytes),'24ba5578602e9b2826ecaab0f8cf28bd76f8e9ca4df9b1945861dc018209e5ef');
+ const missing=fixture();missing.plan.sourceFiles=missing.plan.sourceFiles.filter((r:any)=>r.path!==ledgerHelperPath);assert.throws(()=>c.validatePlan(missing.plan,now));
+ const loop='for(const row of p.sourceFiles){'+body.split('for(const row of p.sourceFiles){')[1]!.split('if(!sourceBounds)')[0]!;
+ const actualLoop=new Function('p','fixed','ordinary','readFile','hash','reject','buildChildSourceBounds','verifyJourneySourceFile','return async()=>{let sourceBounds=null;'+loop+"if(!sourceBounds)reject('SOURCE');return sourceBounds;}");
+ for(const corrupt of [false,true]){const f=fixture(),files=new Map<string,Buffer>();for(const row of f.plan.sourceFiles){const bytes=row.path===c.fixed.test?Buffer.from(diagnosticSource):row.path===ledgerHelperPath?Buffer.from(ledgerHelperBytes):Buffer.from('SYNTHETIC:'+row.path);files.set(c.fixed.source+'/'+row.path,bytes);row.sha256=sha(bytes);}if(corrupt){const bad=Buffer.concat([ledgerHelperBytes,Buffer.from('\n')]);files.set(c.fixed.source+'/'+ledgerHelperPath,bad);f.plan.sourceFiles.find((r:any)=>r.path===ledgerHelperPath)!.sha256=sha(bad);}
+ const run=actualLoop(f.plan,c.fixed,async()=>{},async(path:string)=>{assert(files.has(path));return files.get(path);},sha,(code:string)=>{throw Error(code);},c.buildChildSourceBounds,c.verifyJourneySourceFile);if(corrupt)await assert.rejects(run(),{message:'SOURCE'});else assert.equal((await run()).sourceHash,c.fixed.testHash);}
+});
+test('필수helper는 부모계획에서 child sourceFiles로 같은지문을 전달한다',async()=>{
+ const f=fixture();assert(c.requiredSources.includes(ledgerHelperPath));f.plan.sourceFiles.find((r:any)=>r.path===ledgerHelperPath)!.sha256=sha(ledgerHelperBytes);f.metadata.planHash=sha(JSON.stringify(f.plan));let observed=false;const original=f.ports.child;f.ports.child=async(plan:any,...rest:any[])=>{observed=true;assert.deepEqual(plan.sourceFiles.find((r:any)=>r.path===ledgerHelperPath),{path:ledgerHelperPath,sha256:sha(ledgerHelperBytes)});return original(plan,...rest);};assert.equal((await c.runController(f.plan,f.ports)).journey,'PASSED');assert(observed);
 });
