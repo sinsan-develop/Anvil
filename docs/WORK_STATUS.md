@@ -14202,3 +14202,7 @@ Primary3a35cf 순서RED1→f40ca7 직접/인접50PASS/skip0/5716.9251ms·898c9c 
 
 ### 2026-11-04 R7 source3 SQL 기준·namespace 검수
 Primary65eb54 직접3PASS/skip0/519.7572ms·35ca7b Bash-n0·f7b65f index/선택/공백검산0·writer반환/live0. 준비UTF8미지정cp949오류ad6e1b1회는제품실패와분리했다. Main42af3e driver1558E08F/시험6225E88C의namespace·SQLbaseline/직전R6음성추가외부모raw동일·새index5C70D5B2 header/0069hash만변경·106Gitblob동일/명시105·2376143B/order09d를독립검산0. dda56b 변경음성1PASS/skip0/141.5312ms/diff0. 기존동일로직56/noEmit·새0069 50재사용/중복전수0. 실제DB/권한/키/서비스/Agent/WSL/P03R3·새R7QA실행/시각발급0·소진R6재사용0/원FAILEDUNKNOWN·감사/정리이력보존·전체계획미완료. 다음정확code/instance32·생산SQL10/새전용자원을실행후보로동결하고새직접결정전실행금지.
+
+
+### 2026-11-04 R7 실행 후보·source 결과 동결
+Primarye258d0 신규문서2 source결과05E5A05A/초기후보39FCEE13·생산SQL10/선택105·fence검산0·writer반환/live0. 문서생성6677d3절제목불일치준비오류1은쓰기전종료/18b78e정정과분리했다. Maince96d8 읽기에서owner7키오기발견후e57c0a 실제원계약6키로문구만정정·소진승인표기를직전R6으로명확화(실행조건변경0). 최종후보6BF26D149AAC755D3E34F8B260E086429753D8B5EABA317AC81C17444926C20F/20936B,code41f037571dfa256e903f422785883d2b228df07d/SQL7adc72b43063c875120124c7c3828633c55c35c7/instance32 41f037571dfa256e903f422785883d2b·선택105/2376143B/order09d·생산SQL10전부원문/hash일치·mirror검산0. bootstrap9EF637EFEE0A5D2B7537F9B1FB82B250B8274CCAE84FC6314F8ADE19BA740FCE. scoped문서C0/I0/M0·실행R7 NOT_APPROVED/자원생성/시각발급0. role/권한·Tx/격리·whole30분/PG10분·UNKNOWN뒤조회mutation삭제0은원R6와동일. 원R6FAILED/실행자원잔여0/감사와과거실패UNKNOWN보존·전체계획미완료. 새직접결정전실제DB권한키서비스Agent/WSL/P03R3실행0.
