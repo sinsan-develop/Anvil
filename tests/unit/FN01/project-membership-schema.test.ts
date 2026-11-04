@@ -25,3 +25,19 @@ test('정적 역할폐쇄: 최초 policy없는 생성/legacy의 지연 version f
  assert.equal(closure(false,true,1,1,true),true,'firstCreateNoPolicy');assert.equal(closure(false,true,5,5,true),true,'LEGACY');
  assert.equal(closure(false,false,1,1,true),false,'missing physical version');assert.equal(closure(false,true,2,1,true),false,'forged member head');assert.equal(closure(false,true,1,1,false),false,'wrong snapshot hash');
 });
+
+
+test('정적: 회원 완결 SQL의 중첩 EXISTS 식은 문자열 밖 괄호가 대응한다',async()=>{
+ const sql=await readFile(new URL('../../../db/migrations/0074_project_membership_versions.sql.pending',import.meta.url),'utf8');
+ const from=sql.indexOf('CREATE FUNCTION anvil.fn74_membership_complete('),end=sql.indexOf('$$;',from);assert(from>=0&&end>from);
+ const body=sql.slice(sql.indexOf('AS $$',from)+5,end).replace(/'(?:''|[^'])*'/g,"''");let depth=0;
+ for(const char of body){if(char==='(')depth++;else if(char===')')depth--;assert(depth>=0,'회원 완결식에 대응하는 열기 없는 닫는 괄호가 있다');}
+ assert.equal(depth,0);
+});
+
+test('정적: 회원 완결 SQL 한 문자 역삽입은 원 필드·guard·ACL 전체를 복원한다',async()=>{
+ const raw=await readFile(new URL('../../../db/migrations/0074_project_membership_versions.sql.pending',import.meta.url)),sql=raw.toString('utf8'),fixed="'contentHash',old.content_hash))))));";
+ assert.equal(sql.split(fixed).length,2);const parent=sql.replace(fixed,()=>"'contentHash',old.content_hash)))))));");
+ assert.equal(raw.length,33601);assert.equal(Buffer.byteLength(parent),33602);
+ assert.equal(createHash('sha256').update(parent,'utf8').digest('hex'),'67696fdd3695199e2be3450669d903bd286e6d87fe05361b7b2a75ce58a3eb96');
+});

@@ -14260,3 +14260,11 @@ Primarye485a6 신규문서2 source결과A4129B35/초기후보DB97A4F1·생산SQL
 
 ### 2026-11-04 R8 실제0074 구문 실패·정리 잔여0
 Main2ed711 actualslot1 exit1/plan226c2276/fullIDb5257d11·0074_project_membership_versions.sql.pending/42601/diagnosticnull/문장끝110·FAILED/CLEANED.0071이후진행했지만전체105/함수RLS/API/UI PASS아님. 최종migratorCREATEROLEfalse/회원0/systemHash불변·회수정리확정.67bc8e proc232match0·exactowner/nonlink/clean뒤source만정리,5aac01 01:44:14.320Z별도ID/name/source부재·감사3동일·실행자원잔여0. 감사3/metadata2raw보존/mirror. 사전docker/dev/null config경고3분리/실제보호빈config사용. R8승인소진·추가실행0/기존DB권한키서비스Agent/P03R3변경0. Primary읽기와Main0db214/625d82는0074:109닫기1과다·해당SQLraw67696FDD/33602B/서비스checksum결박을확인(실오류직접원인단정0). 선택105함수748개괄호대응한정읽기는추가확정0/전체parserPASS아님. 상세 docs/04_test_reports/AV3/IX01_SCHEMA_CLOSURE_DIAGNOSTIC_R8_SLOT1_RESULT_20261104.md . 원실패UNKNOWN/감사/전체계획미완료보존.
+
+
+### 2026-11-04 0074 회원 완결식 source 보완 배정
+원R8감사7 3868a400 local/privateexact·FAILED/CLEANED/별도잔여0. 기존Primary와Main0db214/625d82가0074:109닫기1과다·raw67696FDD/33602B·서비스membershipChecksum정확결박을확인. WI8476f5c473e939fbb8470a8ad779a971d8e8868595fa68474b64cfc03c89c5ea로같은Primary에0074/서비스checksumliteral/기존schema시험3경로만TDD배정·Main동시코드쓰기0. 원SQL한문자/서버literal외내용·guard/ACL불변·원hash복원/정확새raw값결박검수. 선택105함수748개한정괄호조사추가확정0은전체PG PASS아님. 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R8재사용0·원실패UNKNOWN감사/전체계획미완료보존.
+
+
+### 2026-11-04 0074 회원 완결식 source3 독립 검수
+Primarya27d83 RED1→68ea7d 직접schema/input/memberships16PASS/skip0/596.4837ms·760f23 noEmit0/99bad8 SQL한문자·서비스checksumliteral외역치환부모동일/기존시험보존·오류0/writer반환/live0. Main67ac96 fresh16PASS/skip0/539.768ms/diff0·e44800 부모Git기준독립SQL1B/서버literal1개외byte변경0·기존시험prefix동일/hash확인. SQLE3DBD7FA/33601B·서비스2A2ACB15/17651B·시험4D3E3194/7221B scopedC0/I0/M0. 원현재성/권한/EXISTS/hash/ACL/정확checksum검사불변·실DB/서비스/회원정책/schema_migrations적용0·전체PG/RLS/API/UI NOT_RUN. 상세 docs/04_test_reports/AV3/IX01_MEMBERSHIP_COMPLETION_PARENTHESES_SOURCE_RESULT_20261104.md . 실제DB권한키서비스Agent/WSL/P03R3·새QA실행0/소진R8재사용0·원실패UNKNOWN/감사/전체계획미완료보존.

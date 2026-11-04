@@ -7,7 +7,7 @@ import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember,currentPolicy,persistProjectReceipt,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectListCodec} from './service.ts';
 export const membershipMigration='0074_project_membership_versions';
-export const membershipChecksum='67696fdd3695199e2be3450669d903bd286e6d87fe05361b7b2a75ce58a3eb96';
+export const membershipChecksum='e3dbd7fa537705c94cb34bc5d93aa643d6ca4b7e4c6e6c5155f186ee88416941';
 function fail(code='PROJECT_MEMBERSHIP_INTEGRITY_FAILED',status=503):never{throw new AuthFailure(code,status);}
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 export interface MembershipSnapshot{schemaVersion:1;projectId:string;userId:string;version:number;participation:MembershipRole;revokedAt:string|null;reason:string;sourceKind:'LEGACY_OBSERVED'|'PROJECT_CREATION'|'HUMAN_COMMAND';previousRef:MembershipRef|null;commandId:string|null;createdBy:string|null;clientId:string|null;recordedAt:string}
