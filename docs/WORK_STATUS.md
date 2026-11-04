@@ -14663,3 +14663,24 @@ Primary가신규wire후보39641B/SHA bfb77f2ff11211428f863836f04aa265efe07ff79a0
 ### 2026-11-04 FN06 wire 독립 C0/I3·같은 담당자 보완
 고정bfb77f2f의 독립검토는 C0/I3이다. (1) 실제 auth sessionId를 recipient에 전혀 내보내지 않는 문장과 필수subject.humanSessionId를 포함한 기존NativeAuthority 전체Delivery가 충돌한다. Main 권장 후보는 일반Web/IPC/OPEN metadata의실제ID노출0, 같은원main의보호Delivery 안 기존authority.subject에만명시예외를두며cookie/token노출0을유지하는안이다. 신규채택범위를패킷에드러내며redaction/hash/parser완화0이다. (2) 기존native signer/current는authority를필수요구하므로OPEN전용설치REGISTERED binding+Window의exact pre-authority타입/producer를별도로정의해야한다. (3) 명령작성/승인/POST는main소유persist:anvil-web remoteSession의WebContentsView로고정하고localSession/별도Chrome·다른기기와구분해야한다. cookie복사/자동세션이전0이며교차client요구는후속미완료로남긴다.
 Primary에게wire소유보완을정식으로추가배정했고WI작성과순차진행하도록했다. 새완료hash재검수전에는I3미해소/SOURCE_GO0/EXECUTION_GO0다. 계상담당은ACK JSON을별도ACK_RECORD wrapper로바꾸지않고고정wire의SlotReceipt snapshot/ref와일치시키며proof관계는실제typed FK/역완결에두고그비용을포함한다. 가짜ref나서로다른ACK원형의동시채택0이다. 제품/시험/SQL수정과실환경실행0,일반진도/대기만으로합격판정0이다.
+
+
+### 2026-11-04 FN06 wire I3 해소·계상 교차 C0/I0·profile 권위 후속
+Primary의wire fec6d8917af33125ccec1170766695b832dd90af26a905074790e03b376416c7/45221B와계상2a6a325bf749231cf66917c04ca56e933ef2f9a33e0870ef6c70d25c689e3c5e/53745B를Main501488과독립담당자가고정대조했다. 기존I3는문서계약범위해소이며교차C0/I0다. R54=records45+head1+ticket7+reservation1,등록당집계1별도,신규L19와원native3/승인소비최대1을더한L23을구분했다. ACK SlotReceipt/hash·candidate202와COMMIT구분·UNKNOWN뒤HUMAN고정GET만허용을확인했다. 이결과를실제DB/권한/컴파일/TLS/브라우저/Agent PASS로확대하지않는다.
+profile 보호repository의실제표/PK/fullref unique·허용producer/EXECUTE·packageanchor무결성/하한·R의물리FK는아직남아있다. Main은가짜provider가아닌새보호DB원장을명시후보로두는최소안을선정해Primary의구현WI 후보절에정확두표/불변·CAS·회수이력/보호publisher를작성하도록했고,비용담당에게같은공유물리행과현재/미래계상·collector역완결을대조보완하도록followup_task를배정했다. windowR54에공유profile을숨겨넣지않으며새저장·권한계약임을채택패킷에드러낸다. sourceGO0/실행GO0와실제키/DB/권한/서비스/Agent/QA제외는유지된다.
+출력언어checked wrapper가불필요한외국문자검색토큰을실제tool호출전에OUTBOUND_SCRIPT_REJECTED로차단했고,해당검색문자는제거한501488만실행했다. 새외부전달/파일변경오류로승격하지않으며검증절차가호출전에동작한사실로기록한다.
+
+
+### 2026-11-04 FN06 profile 정확 계상 검수·WI C0/I1 보완
+계상최종103e6a173afd121280cb5be4d245452196cebb54d691e8d0d39d028ead80f4ba/68810B를Main13f1a7과독립담당자가대조했고§14한정C0/I0다. PROFILE/HEAD불변versions+heads CAS와현재ACTIVE당REVOKED한행선예약/포화회수·동일Tx used/held 정산을확인했다. receive record의profileFK3열은v1 154B/행·최대169B/행으로records45행최대7605B추가이며R54전체에곱하지않는다. 실제DDL/권한/collector/RLS/COMMIT은미검증이다.
+Primary WI35553B/SHA87fb8590975b7f684ae1a6b99945fc531d9f2466758214a27f9f5315876ef470의교차검토는C0/I1이다. §3.3첫문장의receive head profile_content_hash는profile_hash와불일치하므로Primary에게최소정정을followup_task로맡겼다. versions내profile_content_hash와대상content_hash는유지한다. package검수기대sourceSHA/manifestHash/anchorHash를별도승인된보호실행계획의typed입력·실제verifier호출선으로고정하는보완도같은WI소유에배정했다. 기대값을package자기선언/HTTP/renderer/Agent에서얻지않으며실행계획공급자부재는미구성거절이다. 새로운키/승인서비스·외부사람승인의암호학적증명을몰래도입하지않는다.
+WI의기존installationId는실재필드임을독립담당자가source경로로확인했으므로실제auth.json읽기/변경0이며추가auth설정변경이필요하다고추정하지않는다. 새WI완료hash재검수전I1미해소·모든문서미채택/SOURCE_GO0/EXECUTION_GO0를유지한다. 제품/시험/SQL변경과실환경실행0이다.
+
+
+### 2026-11-04 FN06 source 채택 패킷 준비·PMO 결정 지원 요청
+WI87fb8590의I1와publisher기대값typed공급을2714a640d2ac3843989d7a53d39cd6099892b41bce08d5bf01bfde6da45cccd4/40550B에서보완했고독립한정재검수C0/I0를수거했다. receive head/records profile_hash정정과독립보호계획Expected/Artifact/constructor·미구성무효과·app publisher접근0·사람승인의암호학적증명주장0을확인했다. 실제artifact/intent/DDL/권한/TLS/Agent검증은미실행이다.
+Main이세고정본을채택패킷 FN06_NATIVE_FIRST_RECEIVE_ADOPTION_PACKET_20261104.md/5967B/SHA9ff658a010cbd13dc85c64ef5fecd62de762e95679602bd2877952442f6e4d84로묶고정본경로에동일bytes를보존했다. 신규OPEN서명/수신자격·보호profile발행원장/역할·공개경로·유한감사집계가새결정임을명시했다. PMO에위임범위내source-only채택처리가능여부를요청했으며범위밖이면신산님께정확패킷으로1회직접요청할예정이다. 이는PMO의다음일감배정을기다리는것이아니라새인증/공개/저장경계의결정지원이다. sourceGO0/실행GO0·제품writer0·실제키/DB/권한/서비스/Agent/컴파일/QA실행0을유지한다. 일반미완료계획과교차client/실사용/전체인수는계속미완료다.
+
+
+### 2026-11-04 FN06 문서 mixed CRLF 비의미 정리
+7ff101의정확5문서stage/raw대조는성공했으나cached diff check가세후보의CRLF5곳을trailing whitespace로거절해commit전중단했다. 검사기준/Git설정완화0,제품/SQL/시험변경0이며세문서의CRLF→LF만정리해부모hash/현재hash/bytes/제거CR수를채택패킷6절에기록했다. 기존C0/I0의원형/수치/allowlist/실행제외의미는동일하다. PMO에는부모9ff658a0로sourceGO를발행하지말고새파생고정본을기다리도록알렸다. 실제코드dispatch와실환경실행0이다.
