@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 수신·제어와 실제 slot 영수증 생산은700e4fc1에서 source 한정 검수했다. 원 command waiter/단발 공급은 §171에서 scoped 보완 후 직접/독립 검수로 소스 한정 인수했다. 공통 COMMIT 응답 검사는3bbff6ea로 별도 소스 인수했고 전체 FN06/실환경은 미완료다 |
-| FN06 남은 연결 | shell receiver/currentSource 조립·UI controller 접합, 미채택 ACK bodyHash와 후행 terminal/확정, OPEN 감사 잔여 및 실제 PG/Pool/TLS/OS·Agent 검증이 남았다 |
+| FN06 진행 중 | HUMAN/Challenge는8b1714e5, 설치형 원 Session→Window/OPEN/STREAM/ARM→private currentSource/slot은68f954a4에 소스 한정 보존했다. 실제 OS/DB/키/Agent 인수는 아니며 다음 S5 Web5를 기존 Primary 단일 writer가 §185대로 진행한다 |
+| FN06 남은 연결 | Web 원 명령·활성 Window·Offer/ARM 연결을 구현 중이다. 미채택 ACK bodyHash·후행 terminal/확정, OPEN 감사 미결과 실제 PG/Pool/TLS/OS/키/Agent 검증은 남아 있다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 FN06 소스700e4fc1·공통 완료 검사3bbff6ea를 기존 branch에 보존했다. 원 waiter 소스5+현황2는97261f6c에 보존했다. 설치형 receiver/currentSource·설정 연결은 §172에서 같은 Primary가 진행한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
+| Git 보존 | 최신 소스68f954a4를 기존 branch에 보존했다. 보호 비추적3을 유지하고 다음 Web5 착수 기록만 별도 보존한다. private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15564,3 +15564,17 @@ Primary 신규2 RED9b63b0→1f1032 2 PASS/1000.5322ms, ARM유실/E/ABA·lateUNKN
 | tests/desktop/shell-policy.test.cjs | 5022 | A56127CE75888533A917B814A6EE96A03F6A0BAB605600DF4ADEBEC336216614 |
 실제 설치형 OS/브라우저·HTTPS/키/보호 저장·PG/Pool/Tx/RLS·서비스·Agent/C#/실자료/J3/P03 R3·미채택 ACK/영속 terminal/사용자 인수는 미실행/미완료다. slot 수용은 코드 연결의 휘발 증거이며 전체 FN06/Stage/작업계획 완료가 아니다. private동일성·push/PR/main병합은 미확인·인증복구/재시도0이다. source-only 수신 조립을 인수하고 다음§180 Web5의 원 명령/Offer/ARM 연결로 이어간다.
 정확 Main 보정 명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^서버 ARM 정착 뒤 Delivery가|^slot 수용의 짧은 E는 refresh의|^먼저 도착한 Delivery는|^STREAM metadata UNKNOWN 뒤|^실제 settings→preload→shell은|^settings 명시 CLOSE는|^shell Delivery current의' tests/desktop/desktop-trust-registration.test.cjs, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, node --check apps/desktop/src/shell.cjs, git diff --check다.
+
+## 185. S5 Web 원 명령·Window/Offer/ARM 연결 착수
+설치형 source10+현황2는68f954a405e6dc628816132eec58920bbd373605(8b1714e5 직접자식)에 보존했다. 실제 tracked clean·보호 비추적3만 잔존을 확인했고 private 동일성/재push/인증복구0이다. 다음은 부모 S5·§180의 이미 승인된 Web 연결로 같은 Primary 한 명만 작성한다. 새 branch/agent/chat/권한/API/서버/DB 변경0이다.
+허용5와 시작 지문은 다음과 같다. 마지막 시험은 현재 부재이며 기존 WI가 허용한 새 시험이다. Main은 제품/시험을 쓰지 않고 App/ConnectionsPage·공용 canonical·설치형/서버/source13·다른시험은 수정하지 않는다. 추가경로가 꼭 필요하면 정확한 기존 소비 제약을 먼저 보고한다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/web/src/features/connections/native-boundary-preparation-api.ts | 29894 | 096A02F9E3C17A1FD68CFD20CA688FC5799304547FE490D59502FD3AF76848E9 |
+| apps/web/src/features/connections/NativeBoundaryPreparationPanel.tsx | 8630 | 9D292B7D5B289C521FB3CF84ED44CCF99CE94D6E7F5CDD7D6D12FFD97F721AF6 |
+| tests/unit/UI11/native-boundary-preparation.test.ts | 41433 | 772D09355DDD64D31D158C6E92BDF47B2228E70A63720B690E2D359BCE8CE62D |
+| tests/unit/UI11/native-boundary-preparation-app.test.ts | 25149 | D5A93F7CBA09387FF4448994B2C8794FD35D026AFF8D726B186B1B5727E892A6 |
+| tests/unit/UI11/native-first-receive-flow.test.ts | 0 | NOT_CREATED |
+§180의 상세를 실행 기준으로 삼는다. 기존 원command/최종 approvalRef·body/hash·buffer CAS/소유와 승인복귀를 유지해 명시 등록/Window 선택→Offer 준비/저장→설치형ARM 뒤 보호 State/Offer 재조회→같은 원native POST에 Ref header만 추가한다. 서버는 재구현하지 않고 Web이 Window/OPEN/ARM서명·키·slot을 생산하지 않는다. 최초 ARMED 확인과 원명령 UNKNOWN/역사 결과 재확인은 분리하며 유실/주체전환/지연에서 원body/header/외피ID를 보존·자동효과 재전달0이다. headerless legacy를 보존한다.
+원command2MiB/깊이64와Offer2293760B를 유지하며 검산된 원body와 외피 직렬화를 분리해 공용 canonical을 바꾸지 않는다. receive 오류3/native 오류2·공통거절DTO를 구별하고 등록/fullref/hash/기한·current/명시정책과 기존 CSRF/same-origin을 유지한다. 화면은 기존UI11 표현/12px·명시동작·정보아이콘 방식과 합의시안을 따른다. 상시 기술설명/새화면·도구/구조개편으로 범위를 늘리지 않는다.
+실제 Panel/App/transport를 소비하는 정상 AUTO/기존승인왕복과 교차등록/Window/Offer/ARM/hash·승인전Offer·만료/주체/CSRF/transport·지연/유실·재전달0·깊이/한도·오류3/2의 직접 반례를 RED→GREEN으로 검증한다. 메모리DOM/합성transport·env읽기없는 메모리bundle/기존type/build만 허용하고 실제서비스/listener/DB/권한/키/Agent·실자료/J3/P03 R3/C#/미채택ACK/영속terminal/CONFIRMED·실사용인수0이다. 독립검수/Main선택검증·안정5 전 인수/통합0, 전체계획 목표는 계속 ACTIVE다.
