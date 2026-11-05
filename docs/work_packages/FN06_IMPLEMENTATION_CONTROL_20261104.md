@@ -2046,3 +2046,41 @@ Main0a81d1의Client20+owner11 고유31 PASS와이번추가1을합쳐현재제품
 | tests/unit/FN08/execution-client.test.ts | 26792 | 0F5DAF19D5E89A084CE625004AD2166C2661AB628763C2EB2D35DC3606DEDC23 |
 | tests/unit/FN08/synthetic-observation-delivery-owner.test.ts | 18778 | 8CC3ED7689BDD7541386D0DE89CF4E128BAE2A3373E7A38A73755C01ACBD5151 |
 Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN08/synthetic-observation-delivery-owner.test.ts tests/unit/FN08/execution-client.test.ts, 같은node --test --test-name-pattern='^HTTPS 생성자 입력 거절도' tests/unit/FN08/synthetic-observation-delivery-owner.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다.
+
+## 201. FN07 SDK 소비 owner의 내부 기술안 준비
+기준5ca6489bf8b10478313beb21c75c3f5e6f823f57이다. §200 관측source4는local checkpoint로보존했고제품tracked clean·보호비추적3만유지한다. 전체계획은미완료이며다음미구현은기존FN07 codec을실제SDK호출소유자와잇는private소비선이다. 기존codec/SDK정규화와§197결박분석을다시구현하지않는다.
+기존Primary가읽기전용으로정확기술안을준비한다. FUNCTION_WORK FN07·INTERFACES12.3/CAPABILITIES와기존secondary codec/capture를대조해,고정SDK query/streamInput/iterator/interrupt/close를소비하는최소소유단위를정의한다. Main이이미확인한SDK0.3.224의query·spawnClaudeCodeProcess/SpawnedProcess·grace2초근거를참고하되SDK를재조회/설치/import/query실행하지않는다. 현재NativeOwnerHandle은SDK SpawnedProcess의stdin/stdout을제공하지않으므로같다고꾸미지않는다.
+반환할것은원Anvil 업무/context·원입력준비물·원SDK세션/iterator·입출력상관·호출전검산/기한/예산·permission결정/중단/UNKNOWN·수명과회수의생산자/소비자표다. 내부SDK소비만으로닫히는코드단위와실제보호process/permit/서명/서버claim producer없어서닫히지않는부분을구분한다. CODEX claim/THREAD·TURN을확장하거나callerbool/SDKresult를현재권위·실행허가·업무완료로승격하지않는다. 새SDK옵션으로권한검사를우회하거나기본외부실행을켜지않는다.
+새공개API/auth/서명/영속원형을전제하지않는private소비코드가가능하면정확최소파일과기존승인근거·정상/실패반례를제안한다. 보호공급자가없으면가짜성공wrapper를만들지말고그미구현을명시한다. 신규상관식이새저장·공개claim을요구하면그지점만구체입증해별도결정준비자료로반환한다. 이단계는제품/시험/문서쓰기·실행/외부조회0이며Main코드GO0이다. 실제DB·권한·키·서비스·Agent/계정·SDK/CLI실행·컴파일·실자료조사·J3/P03R3·Git복구제외는불변이다.
+
+## 202. FN07의 기존 Query 입력·관측 소비 소스 지시 초안
+§201 Primary읽기기술안을Main이대조했다. 먼저기존에관측된SDK Query/session을명시공급받는입력·iterator소유단위로좁힌다. 최초query생성/startSession·실제보호process/permit·서버Claude claim을구현했다고하지않는다. expectedSessionId를임의발명하거나첫입력전init순서를가정하지않는다. 기존codec/schema는불변이다.
+정확신규2는 apps/connector/adapters/secondary/sdk-session-owner.ts 와 tests/unit/FN07/claude-sdk-session-owner.test.ts다. 기존Primary단일writer·Main코드쓰기0이다. source-only는기존FN07카드의입력/관측/중단소비이며새공개HTTP/DB/서명목적/권한계약이아니다. 기본SDK import/query/spawn·설치/실환경실행/기존SDK검색반복0이다. 합성전용owner명칭과SYNTHETIC_ONLY표시를사용하고명시합성SDK Query 포트를필수로한다. 실제SDK/Agent사용가능제품으로승격하지않는다.
+owner는고정Anvil context·이미관측된expectedSessionId·동일Query포트/단일iterator·현재성검사/부모기한·유한메시지/정체성상한을소유한다. 입력작성은기존codec.prepareUser의동기capture에만있는깊은불변preparedUser를private슬롯으로받아동일원문만원streamInput에단1회공급한다. 반환digest에서원문을재구성하거나외부공급자가다른preparedUser를주입하지못한다. 같은instruction/같은원문은기존결과/불명만읽고다른원문은거절한다. 전송시도/불명은새ID/자동재시도로우회하지않는다. capture는메모리준비일뿐원문영속receipt/실제전달ACK가아니다.
+수신은그동일Query의단일iterator를소유해기존codec.normalize를실제로소비한다. SDK출력raw/원사용자본문/설정/인증자료를일반반환/오류에노출하지않고정규화된digest/코드/공급자주장만반환한다. 동일session이라는이유로출력을마지막instruction에귀속하지않는다. 명확한입력상관근거가없으면세션관측으로남기며,SDKresult/EOF를Anvil완료/서버ACK/실제writer회수로해석하지않는다.
+현재성은명시합성공급이며실제보호producer부재를유지한다. 원scope/context/query/portidentity·입력digest와현재검산기한/원caller기한중최단을효과직전/await뒤검사한다. 새공개permit/비용기록을만들거나callerbool을실제권위로쓰지않는다. SDK의permission설정은Anvil승인이아니며새tool자동허용/decision전송0이다. 이owner가이미생성된Query의과거permission설정까지통제했다고주장하지않고미지원/미검증으로분리한다.
+interrupt/close는원Query메서드의요청·정착만관측하며실제process exit/하위writer회수를확정하지않는다. 원caller기한을매await마다늘리지않고unknown/timeout/close뒤외부약속을유한정착시키되underlying작업이남으면점유/BUSY를보존한다. 원작업정착뒤자기점유만회수하고늦은응답을성공/새효과로돌리지않는다. 같은instruction·동일iterator의중복동시소비와close/stop경합을원소유자에서직렬화/명시거절한다. SDK grace2초는Anvil의즉시중단/종료보장이아니다.
+기존 flags actualExecutionVerified:false/executionAuthorized:false/workAccepted:false/ownership UNVERIFIED를유지하며새6능력VERIFIED/원Anvil세션ACTIVE 승격0이다. 정상 source시험은실제codec/capture→단일streamInput공급·동일iterator→normalize와원입력불변/기존session대조를연결한다. 실패는중복/다른본문·다른session·uuid충돌·capture불명·원current만료/교체·delay/timeout/close·iteratorEOF/error·interrupt/close HOLD·기본SDK포트부재·raw비밀오류누출을검산한다. 실패를성공으로꾸미거나기존codec검수만다시돌리지않는다.
+현재는지시초안이다. 독립읽기검수와Primary의정확메서드/포트·수명/결과표를수거한뒤Main TEST_ONLY GO를별도로전달한다. 두파일외수정/새dependency·실제DB/키/권한/서비스/SDK/Agent/실자료조사/컴파일0이며진행중제품write0이다. 실제최초세션/보호current/서버claim·공통6능력제품factory와실제통합검수는별도미완료로남는다.
+
+§202 독립초안 C0/I0와Primary 정확메서드/포트/결과표를수령해Main이내부계약을채택했다. sendInstruction/observe/requestStop/close는명시합성Query포트만소비한다. send1+observe1은streaming에필요해허용하고각lane의중복은BUSY다. 실제streamInput호출뒤UNKNOWN 또는입력소비미확인이남으면owner수명내새instruction도차단하고observe/stop/close만허용한다. 같은ID뿐아니라새ID로원불명을우회하지않으며이메모리규칙을재시작내구성보장으로부르지않는다. control/close경합에서close는먼저새입력/관측을막고원SDKclose를호출했는지/아직요청못했는지를명확히구분하며미정착control을종료됐다고하지않는다. 실제호출이없는데REQUESTED/완료를반환하지않는다. private결과는기존flags false/UNVERIFIED·원문비노출을유지한다. 정확신규2의TEST_ONLY GO를전달해모듈부재와실제codec/SDK소비반례를구분한다. 제품쓰기는첫RED·정확시작상태수거뒤PRODUCT_GO로만이어간다.
+
+§202 TEST_ONLY df8a54는신규owner export부재2 FAIL/skip0/exit1이며SDK소비행동의실패로계산하지않는다. 기준HEAD5ca6489b·신규source부재, 시험6284B/8B68B49C240962909D11AF887A8CD11EAC0E1817657578F96A6FB4C7BB7E428A를수거했다. 기존codec7305B/BD3F367BD3724D66BB8690CE019B5770692DA3049337D8B6ABFD9C424CD921F7·schemas8249B/CD501E069D03BE0D089D7F08CD3F02129063E2C39BA98F0917B07C301B4F1AAF 불변이다. Main은신규2 PRODUCT_GO를전달했으며5ba15c에서시험이실제codec/capture·깊은불변원문·원Query receiver/단일iterator·send1+observe1을소비하는것을읽기확인했다. 제품인수/실제SDK/Agent실행0·원claim/권한변경0이다.
+
+## 203. FN07 SDK owner 초기화 전 lane 회수 보완
+Primary706ffe 신규10 PASS/skip0·300.5438ms,6cbb76 기존codec 직접인접17 PASS/skip0·326.4965ms,7d1ff2타입0/9b5cf2diff0은부분증거다. 기존codec/schema는시작지문불변이며신규2만작성했다. 초기6181b6 타입오류는생성자초기화/객체좁힘표기로보정했고실패기준완화0이다.
+독립최종은C0/I1/M0다. #run이lane을점유한뒤#arm의clock이NaN/역행으로throw하면underlying Promise생성전인데underlyingDone=false라release가점유를해제하지못한다. 원clock복구뒤current/SDK호출0인REJECTED에도새instruction이BUSY인정적반례다. 실제HOLD미정착작업의점유보존과초기화전실패의점유회수를분리해야한다.
+Main은동일신규2만동결해제해실제RED→최소보완을기존Primary에지시했다. 동결전지문source13461B/7E273EC042BC30CD5BC94EDF6C090E2E6A96E15409DA39676D3EF4070AF660C9·시험14530B/4245B95601C2CA220A3DC0BC125B7443C9E1E7B5749C9D957ECC3280FB51EF47은이력으로보존하며최종인수0이다. Main직접fresh검사는보완뒤로미뤄불필요한반복을피한다.
+Main의진행확인메시지1은외국어로잘못전달돼즉시한국어로정정했으며새지시/권한이아니다. 이후collaboration전달값전체를한국어문자검사후동일값으로전달하는절차를적용한다. 제품/시험변경이나공통정책수정의권한으로해석하지않는다. 실제SDK/Agent/DB/키/권한/서비스0·Main코드쓰기0이며전체계획은미완료다.
+
+## 204. FN07 기존 Query 소비 owner의 소스 한정 인수
+§203 I1은실제RED86ce6a로확인해작업생성전underlyingDone=true·실제Promise생성뒤false로전환하고취소Promise거절을즉시관측하는최소보완으로해소했다. 원HOLD점유는기존대로양쪽정착뒤에만회수한다. 독립scoped최종 C0/I0/M0이며원제품본문역치환지문이보완전7E273EC0와동일해나머지검수는재사용했다.
+Main b9bc30은최종신규owner11 PASS/fail0/skip0·371.9946ms/exit0,dfc252타입0/e866f8diff0을직접수거했다. 기존codec17 PASS는Primary결과로구분하고합성SDK포트검증을실제SDK실행/사용가능기능으로승격하지않는다. d6cc10→27bcb3 신규2동일·기존codec/schema와보호비추적3 불변·빈index를확인했다. Main fff70e의foreach파이프구문오류1은실제실행전ParserError로파일변경0이며결과배열변수대입으로한정보정했다.
+원입력은기존codec의동기private capture가준불변사본만단발streamInput에공급하고,이미관측된Query의단일iterator를기존normalize로소비한다. 같은ID/다른본문·불명뒤새ID입력0,원current/port/최소기한·입력1+관측1/동일laneBUSY·underlying미정착점유·stop/close의실제호출여부와늦은결과비채택을확인했다. 출력은SESSION_ONLY이며SDKresult/EOF를마지막instruction완료/전달ACK로쓰지않고raw원문/인증자료를반환하지않는다.
+신규source/test2와Main현황2만기존branch의local checkpoint로보존한다. 기존codec/schema·CODEX claim·SQL·등록/서비스설정·사용자자료0이다. 복구는이번신규2추가의source revert이며실제계정/세션/데이터삭제가아니다. private동일성/push/PR/main병합은미확인·인증복구/재시도0이다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/adapters/secondary/sdk-session-owner.ts | 13515 | DBE89D575671910F9FFFBDFFE9D94CED656619B189D5EA17F85ABF675450A2FF |
+| tests/unit/FN07/claude-sdk-session-owner.test.ts | 15122 | AEB8149E0715181F5272E959CE5DD6B721EBAD7863B6DB19B95C58FC7E67B914 |
+정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN07/claude-sdk-session-owner.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다. SDK import/query/spawn/실제Agent/DB/키/권한/서비스·컴파일·실자료조사0이고종료live/pending0이다.
+최초SDK Query생성·이미관측된session의실제보호공급자/permit·permission통제·Claude서버claim/지속조회·공통6능력제품factory와실제OS/계정/Agent사용자인수는여전히미구현/미실행이다. 이번합성소비단위를두Agent실제지원/전체FN07/계획완료로보고하지않는다. 전체계획목표는ACTIVE이며다음실제누락의정확내부계약을이어간다.
