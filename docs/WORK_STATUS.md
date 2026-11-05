@@ -15448,3 +15448,8 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 ## 2026-11-05 FN06 공급 전 완료 응답 내부 보완 편입
 - 판정:공통 완료 응답 후보 E35A8EA6은 독립 기술·범위 C0/I0이며 Main77c9af 메모리 RED로 기존 확정 요구의 불충족을 확인했다. Main은 A의 source1/기존 시험1만 필수 내부 보완으로 §168에 편입했다. 새 로그인/권한/공개 API/DB 실행 승인이나 실제 권한 변경이 아니다.
 - 단일 Primary의 허용은 제품4/시험4 정확8이다. 기존 COMMIT/rollback/release·감사 후 업무상 거절·원 Tx 인증5를 보존하며 정상/실패 완료 tag와 원 오류를 직접 검수한다. 실제 DB·키·서비스·Agent/실자료/C#/J3/P03 R3·ACK/후행 terminal은 제외한다. 최종 검수 전 PASS0, 기존 waiter 구현과 함께 계속한다.
+
+
+## 2026-11-05 공통 COMMIT 완료 응답 오류 소스 검수
+- 공통 source1/시험1은 Main auth9 PASS·실제 repository 메모리 RED→GREEN·raw 일치·타입/diff0·독립 C0/I0로 한정 인수한다. 정상 COMMIT만 반환하고 rollback/누락은 후속 marker0이며 기존 감사 후 거절과 원 오류를 보존한다. 실제 DB/권한/키/서비스 실행0이다.
+- 이 공통2+Main 현황2만 먼저 보존한다. 별도 waiter 원 명령은 Main25 전체 통과/skip0이나 begin 거절 뒤 스트림 소유 정리를 추가 한정 검토 중이라 전체 S5/계획 PASS로 올리지 않는다. 실제 hang/실패를 관측한 것은 아니며 상세는 구현 통제 §169다.

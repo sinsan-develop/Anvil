@@ -76,7 +76,7 @@ export class AccessRepository {
     const db = await this.pool.connect();
     let result: Result<T>;
     let committing = false, releaseError: Error | undefined;
-    try { await db.query('BEGIN'); result = await body(db); committing = true; await db.query('COMMIT'); committing = false; }
+    try { await db.query('BEGIN'); result = await body(db); committing = true; const completion = await db.query('COMMIT'); if (completion?.command !== 'COMMIT') throw Error('TRANSACTION_STATE_UNKNOWN'); committing = false; }
     catch (error) {
       if (committing) releaseError = error instanceof Error ? error : Error('TRANSACTION_STATE_UNKNOWN');
       try { await db.query('ROLLBACK'); } catch (rollbackError) { releaseError ??= rollbackError instanceof Error ? rollbackError : Error('TRANSACTION_STATE_UNKNOWN'); }

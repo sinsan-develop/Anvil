@@ -48,3 +48,26 @@ test('이전 인증 결과를 캐시하지 않고 같은 transaction에서도 �
  const f=fixture(),first=await f.access.authenticateInTransaction(f.db,token,csrf);f.row.current_generation=3;
  await assert.rejects(f.access.authenticateInTransaction(f.db,token,csrf),/AUTH_REQUIRED/);assert.equal(first.credentialGeneration,2);
 });
+
+
+function ownedTransactionFixture(){
+ const row=fixture().row,queries:string[]=[],releases:(Error|undefined)[]=[],callbackError=new AuthFailure('NATIVE_PURPOSE_DENIED',403),commitError=Error('SYNTHETIC_COMMIT_LOST'),rollbackError=Error('SYNTHETIC_ROLLBACK_LOST'),releaseError=Error('SYNTHETIC_RELEASE_LOST');let commitResponse:unknown={command:'COMMIT',rows:[]},fault='';
+ const db={query:async(sql:string)=>{queries.push(sql);if(sql==='BEGIN')return{command:'BEGIN',rows:[]};if(sql==='COMMIT'){if(fault==='commit')throw commitError;return commitResponse;}if(sql==='ROLLBACK'){if(fault==='rollback')throw rollbackError;return{command:'ROLLBACK',rows:[]};}if(sql==="SELECT pg_advisory_xact_lock(hashtext('anvil-auth-attempts'))")return{rows:[]};if(sql.includes('FROM anvil.auth_sessions'))return{rows:[row]};if(sql.includes('FROM anvil.auth_attempt_windows'))return{rows:[{blocked_until:new Date('2099-01-01T00:00:00.000Z')}]};if(sql.startsWith('INSERT INTO anvil.auth_audit_events'))return{rows:[],rowCount:1};throw Error('UNEXPECTED_TRANSACTION_QUERY');},release:(error?:Error)=>{queries.push('RELEASE');releases.push(error);if(fault==='release')throw releaseError;}},pool={connect:async()=>db},access=new AccessRepository(pool as unknown as Pool,{installationId:'44444444-4444-4444-8444-444444444444',key:Buffer.alloc(32,7)});
+ return{access,queries,releases,callbackError,commitError,rollbackError,releaseError,setResponse(value:unknown){commitResponse=value;},fault(value:string){fault=value;}};
+}
+
+test('공통 transaction은 정확 COMMIT tag와 Pool release 뒤에만 정상값과 undefined를 반환한다',async()=>{
+ for(const value of [{accepted:false},undefined]){const f=ownedTransactionFixture();let marker=0;assert.equal(await f.access.authenticated(token,csrf,async()=>value).then(result=>{assert.equal(f.queries.at(-1),'RELEASE');marker++;return result;}),value);assert.equal(marker,1);assert.equal(f.queries.filter(q=>q==='COMMIT').length,1);assert.equal(f.queries.includes('ROLLBACK'),false);assert.deepEqual(f.releases,[undefined]);}
+});
+
+test('COMMIT 응답 누락과 다른 tag는 정상 반환·후속 marker0이며 rollback과 연결 폐기를 유지한다',async()=>{
+ for(const response of [undefined,null,{}, {command:'ROLLBACK'}, {command:'SELECT'}, {command:'commit'}]){const f=ownedTransactionFixture();f.setResponse(response);let marker=0;await assert.rejects(f.access.authenticated(token,csrf,async()=>({accepted:false})).then(value=>{marker++;return value;}),/TRANSACTION_STATE_UNKNOWN/);assert.equal(marker,0);assert.equal(f.queries.filter(q=>q==='COMMIT').length,1);assert.deepEqual(f.queries.slice(-2),['ROLLBACK','RELEASE']);assert.equal(f.releases.length,1);assert.equal(f.releases[0]?.message,'TRANSACTION_STATE_UNKNOWN');}
+});
+
+test('공통 transaction은 callback·COMMIT·rollback·release 실패의 원 오류와 정리 순서를 보존한다',async()=>{
+ for(const fault of ['callback','commit','rollback','release']){const f=ownedTransactionFixture();f.fault(fault);const expected=fault==='commit'?f.commitError:fault==='release'?f.releaseError:f.callbackError;let marker=0;await assert.rejects(f.access.authenticated(token,csrf,async()=>{if(fault==='callback'||fault==='rollback')throw f.callbackError;return undefined;}).then(value=>{marker++;return value;}),error=>error===expected);assert.equal(marker,0);assert.equal(f.releases.length,1);assert.equal(f.queries.at(-1),'RELEASE');assert.equal(f.queries.includes('ROLLBACK'),fault!=='release');assert.equal(f.queries.includes('COMMIT'),fault==='commit'||fault==='release');assert.equal(f.releases[0],fault==='commit'?f.commitError:fault==='rollback'?f.rollbackError:undefined);}
+});
+
+test('감사 뒤 Result failure의 업무상 거절은 정상 COMMIT 후 원429이며 미확정 완료는 UNKNOWN으로 구분한다',async()=>{
+ for(const confirmed of [true,false]){const f=ownedTransactionFixture();if(!confirmed)f.setResponse({command:'ROLLBACK'});await assert.rejects(f.access.login('source-test','합성 입력','합성 클라이언트','source-only'),error=>confirmed?error instanceof AuthFailure&&error.message==='AUTH_RATE_LIMITED'&&error.statusCode===429:error instanceof Error&&error.message==='TRANSACTION_STATE_UNKNOWN');const audit=f.queries.findIndex(q=>q.startsWith('INSERT INTO anvil.auth_audit_events'));assert.ok(audit>=0);assert.ok(audit<f.queries.indexOf('COMMIT'));assert.equal(f.queries.includes('ROLLBACK'),!confirmed);assert.equal(f.queries.at(-1),'RELEASE');assert.equal(f.releases.length,1);assert.equal(f.releases[0]?.message,confirmed?undefined:'TRANSACTION_STATE_UNKNOWN');}
+});
