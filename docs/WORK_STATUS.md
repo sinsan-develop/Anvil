@@ -15372,3 +15372,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 상태: 인계 메소드 부재 RED와 실제 기존 owner/원 STREAM frame까지의 소비선을 확인하고 구현 중이다. fixture body를 STATE 형식으로 둔 준비 오류1은 제품 실패와 분리했다. 실제 슬롯 연결 인수는 아직 아니다.
 - 내부 출처: 임의 등록이 가능한 class static mutator 초안은 같은 담당자가 자기 변경만 제거했고 임시 GREEN은 제외했다. 실제 owner factory만 채우는 private WeakMap과 main CJS의 목적 한정 read-only 검산1개를 Main이 기존 승인 연결의 내부 배치로 고정했다. 새 권한/공개 제품 API·HTTP/IPC/runtime entry·ACK 계약0이다.
 - 검증/다음: 실제 기존 receiver/slot의 단발 수용·위조/교차/부재·기한/ABA/취소·JSON/replay/UNKNOWN 재전달0·비밀 byte/참조 정리를 검산한 안정6을 독립 검수한다. 실제 DB·권한·키·서비스·Agent·HTTPS·컴파일과 actual shell 조립/UI/ACK는 미완료·제외 경계로 남긴다.
+
+## 2026-11-05 FN06 STREAM 내부 인계 소스 한정 검수
+- 담당: 기존 Primary 구현·Main 어울 직접 검증/통합·기존 독립 읽기 검수. 정확6경로를 검수했다.
+- 결과: Main fresh16 PASS/fail0/skip0·타입/문법2/diff0·raw6 불변, 독립 C0/I0다. 같은 Client의 private frame을 실제 owner/current/proof/slot에 단발 연결하고 위조/교차/JSON/replay/UNKNOWN·기한/취소/ABA·비밀 byte/참조 해제를 확인했다.
+- 경계: 인계는 void이고 ACK/SlotReceipt/CONFIRMED·실행 허가를 만들지 않았다. 대기 정착은 확인했으나 underlying 실제 작업 완전 중지나 OS/HTTPS·키/DB/권한/서비스/Agent/C# 인수 증거가 아니다.
+- 다음: 부모 S4의 이미 채택된 SlotReceipt adapter가 실제 slot·authority/current·단발 수용·잔여기한을 검산해 생산하는지 먼저 읽기 확인한다. ACK bodyHash 미채택 때문에 이 요구를 제외하지 않는다. shell/UI와 전체계획도 미완료다. 상세 통제 §155.

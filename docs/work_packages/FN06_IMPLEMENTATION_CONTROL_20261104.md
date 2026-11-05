@@ -1569,3 +1569,28 @@ Primary의 첫 static registerReceiveDeliveryReceiver 방식은 임의 호출자
 owner 모듈 private WeakMap은 실제 createNativeFirstReceiveReceiver factory만 채운다. CJS facade가 고정 내부 검산 함수1개로 receiver identity·동일 원 Window·원 owner epoch/현재 guard·캡처한 accept/dispose descriptor를 대조한다. 조회는 호출자가 새 등록/수명/권위를 만들지 못하며 boolean/고정 오류 외 raw 상태·비밀·credential·frame을 반환하지 않는다. 입력 Proxy/getter는 trap0으로 거절하고 저장/효과/외부IO0이다.
 이 목적 함수는 main CJS 내부 import에만 연결한다. renderer/preload/Web/HTTP/IPC/runtime entry에 추가 노출하지 않고 일반 getter나 등록 mutator로 재사용하지 않는다. TS 내부 frame 이동은 신뢰된 assembly port로만 소비되며 그 void 반환 자체가 실제 slot 수용/ACK/receipt 권위가 아니라는 경계를 유지한다. 실제 기존 receiver/slot 연결 시험으로 별도 검산한다.
 새 raw frame 인자·사용자 선언 trust·fake 기본 공급자0이며 source부재는 계속 거절한다. 기존6 밖 파일·runtime export 증가·새 권한/SIGN/ACK 계약이 필요하면 쓰기 전에 Main에 반환한다. 실제 키/DB/서비스/Agent/HTTPS/컴파일 제외는 유지한다.
+
+## 155. STREAM 내부 인계 소스 한정 검수
+Main fresh acb827 실제 receiver/slot7 PASS/3746.4733ms·cbb99a CJS/OPEN2 PASS/801.0647ms·b9f8a0 unit6 PASS/416.337ms·25697c 메모리 package1 PASS/524.0454ms다. 고유16/fail0/skip0이며 타입964543·문법c5a3a8/d39307·diffed42dd exit0, raw6 전후 동일이다. 독립 읽기 C0/I0·시작/종료 지문 동일로 한정 소스 검수했다.
+원 private binary→실제 원 receiver→보호 current/proof→기존 slot의 소비를 연결했다. frame은 수용 전에 private 참조에서 단발 분리하고 finally에 소유 byte를 지운다. receiver는 slot 수명 동안 보관하고 dispose/failure에서 해제한다. 불변 JS 문자열의 참조 해제와 byte 덮어쓰기를 구분하며 전체 메모리 소거를 주장하지 않는다.
+private WeakMap은 실제 owner factory만 생산하고 고정 CJS 조회는 identity/Window/epoch·guard/descriptor를 읽는다. 임의 등록 mutator·raw secret/cap getter0이다. TS 신뢰 assembly port와 CJS 원 출처 보장을 구분한다. JSON/미수신/중복/replay/UNKNOWN 재공급0·다른 원 권위·기한/취소/ABA·늦은 current slot 개방0을 반증했다.
+실제 source 대기 취소·owner ABA 대기 미정착 RED를 기존 private AbortSignal로 보완했다. 이는 대기의 정착/늦은 수용 차단이며 underlying 실제 작업의 완전 중지 증거가 아니다. 실제 DB/helper/OS는 실행하지 않았다. fixture body·모듈 인스턴스·비밀 관측 범위 준비 오류를 제품 RED와 분리했다. 앞 static 등록 초안의 임시 GREEN은 인수 근거0이다.
+정확 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^STREAM 원 Client→REGISTERED|^STREAM owner 인계는|^STREAM 실제 보호 current|^STREAM owner epoch ABA|^STREAM CJS readonly|^REGISTERED 첫 수신 receiver|^REGISTERED owner→원 OPEN Client' tests/desktop/desktop-trust-registration.test.cjs
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^desktop 첫 수신 HUMAN adapter|^CJS OPEN 수신 facade' tests/desktop/native-first-receive-owner.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^STREAM 인계는 Client|^STREAM private frame|^non-OPEN 최초 소비|^non-OPEN 원결과 조회|^non-OPEN UNKNOWN|^직접 Client의 future proof' tests/unit/FN06/native-first-receive-client.test.ts
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+8. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 48634 | AC674EE723F654BCD40DC79D9DD37BA2228CC34025A2B9698784D2CAE6A7C133 |
+| apps/desktop/src/native-first-receive-client.cjs | 15712 | 4B945AADF75FC0374893EED766E86F107BC9DC6B68341941A18700EC245C8467 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 74013 | B9CA59E33F0705A72489ADAF585CCFE27CA554F68F9C84EFF2EF2C5672D22566 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 64147 | 5A44FBD92F410AC6BB74F0FD0ACE6C10F989FF12D27CBE48083353C5175BA731 |
+| tests/desktop/native-first-receive-owner.test.cjs | 29559 | 72D9E6926937070A9A35A2B2D7E921A9E5BCC363FAAB3B9A7E6D2DD2180A964D |
+| tests/desktop/desktop-trust-registration.test.cjs | 134248 | 8A5B28D4897A16AC83EABCAC1C5F9E3EA6B36A6E135BCC2BDD2E9EA173FF658F |
+기존 OPEN/authority·CJS exact8+고정1/runtime8/closure14/builtin3·HTTP/IPC/SIGN 범위는 보존했다. LF/CRLF 예정 경고4는 별도·설정/정규화0이다. 이6경로만 보존 대상으로 분리하며 다른 소스/보호 원문은 포함하지 않는다. 복구는6경로 한정 revert다.
+void 인계는 ACK/receipt/CONFIRMED/실행 허가가 아니다. 부모 S4의 실제 slot 검산 SlotReceipt adapter 존재/미구현을 다음 우선 읽기로 고정했다. ACK bodyHash 미채택과 그 기존 receipt 생산 요구를 혼동해 제외하지 않는다. 이후 shell receiver/currentSource 조립·UI controller도 남는다. 실제 HTTPS/키/DB/권한/서비스/Agent/C#·사용자 인수/전체 FN06·계획은 미완료다.
