@@ -15277,3 +15277,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - REGISTERED owner에서 OPEN 수신까지, 별도 Delivery에서 보호 source와 slot까지 실제 소스 호출선을 합성으로 확인했다. 전체 STREAM·ARM·ACK·실제 TLS/키/helper·DB는 미완료다.
 - 같은 Primary는 기존 S5 화면 연결을 준비하고 Main은 보호 current의 정확한 공개 delta 후보를 준비한다. 새 계약은 아직 채택하지 않았다.
 - 화면 문맥 도구는 manifest 대상 확인에서 실행 전 중단됐다. 새 도구 다운로드나 실행 없이 기존 설계와 화면 코드를 직접 읽는 방식으로 진행했다. 제품 변경0이며 필수 개발 검증 실패와 분리한다.
+
+## 2026-11-05 보호 조회 구현과 공개 current 후보 검토
+- 기존 Primary가 보호 GET3의 BOUND metadata를 연결 중이다. 실제 원 N read/#restore/#lifecycle·writer projection을 소비한 직접 합성1의6모드는 통과했으나 전체 GET3와 실제 DB/TLS는 미완료다.
+- 별도 공개 phase current 후보는 독립 C0/I0와 typed frame 최대8572B/body332B를 확인했다. 기존 상한은 그대로이며 후보는 미채택/SOURCE_GO0이다. ProfileRead 전체 응답은 별도2MiB cap을 유지한다.
+- Main은 후보·통제·현황만 기록한다. 제품 코드는 기존 단일 Primary가 작성하며 실제 DB·권한·키·서비스·Agent·컴파일 실행과 Git 인증 복구는 하지 않는다.
+- 초기 sandbox Git 조회의 접근 오류는 elevated 읽기로 구분했다. 실제 HEAD5f468a25와 진행 중 변경을 보존하고 완료한 OPEN·독립 수신 시험은 반복하지 않았다.

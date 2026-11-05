@@ -1147,3 +1147,69 @@ Main 2ef28a의 안정7 직접/인접·종단·memory package 합성은 2+2+3+1=8
 | tests/unit/FN06/native-first-receive-client.test.ts | 27073 | 3D534C33D416B8C8A03DB9649AE8F955E7EAE32D06B77AAA7E243BCA0E9B7730 |
 이전 noEmit 오류는 OPEN WIP의 req 미구성 거절과 시험 타입의 최소 보완으로 닫았다. 철회된 DISPOSED 부활 지적은 검토 오류로 분리했다. 기존 실패를 통과로 소급하지 않는다.
 다음은 §112의 기존 S5 화면 연결과 별도로 준비하는 보호 current 후보다. 후보 방향 A는 PMO가 준비에 이견 없다고 했지만 공개 delta 채택이나 Source GO는 아니다.
+
+## 114. 기존 보호 GET3의 실제 생산선
+같은 Primary가 원 wire §4의 이미 채택된 보호 GET3을 먼저 구현한다. 새 계약 결정이나 재승인 대상이 아니다. 이후 Web 연결의 선행이며 화면 mock만 추가하지 않는다.
+허용 제품은 native-first-receive Store/Service/routes와 0076 미적용 SQL이다. 기존 승인57의 store/routes/schema 시험을 확장한다. Main 문서·index·Git·보호 자료와 과거 SQL은 수정하지 않는다.
+활성 Window 조회는 GET /api/v1/projects/:projectId/native-receive-windows, exact query registrationId/registrationVersion/registrationHash다. 원 SID/client/control과 정확 등록의 활성 slot1을 검산하고 부모의 정확 nullable Window 응답을 반환한다. 임의 최신 pending을 고르지 않는다.
+고정 Window GET은 query/body0의 기존 ReceiveState를 반환한다. 고정 Offer GET도 query/body0의 exact V<Offer>를 반환한다. Offer 원문과 Ref/hash·Window 결박을 재검산하고 기존 2MiB 원명령과 Offer cap을 유지한다.
+현재 HUMAN login/member/OWNER/control과 명시 read 정책을 유지한다. readNativeReceiveWindow와 readNativeReceiveOffer의 AUTO/DENY를 실제 소비하고 REQUIRE_APPROVAL은 계획대로 거절한다. 정책이나 사용자 권한을 실제로 부여하지 않는다.
+활성 조회는 원 auth SID까지 같아야 한다. 고정 역사 조회는 부모대로 같은 user/client의 현재 로그인과 read 권한을 허용하되 원 SID가 다르면 Window State의 current.reason=SESSION_CHANGED/current.usable=false다. 다른 사용자/client의 원문은 공개하지 않는다.
+Offer 응답은 exact V<Offer>를 유지하고 임의 current 필드를 붙이지 않는다. 새 권위로 사용하기 전 고정 Window State의 current와 실제 같은 Offer/ARM을 별도 검산한다. 역사 데이터와 현재 사용 가능 여부를 섞지 않는다.
+조회는 nonce·credential·slot·Offer·ARM·Binding·terminal을 생산하거나 기한을 갱신하지 않는다. 실제 보호 목적 SD와 해시/역완결을 소비하며 raw 앱 권한을 추가하지 않는다. source가 불명이면 current를 참으로 만들지 않는다.
+TDD는 실제 Store/Service/route 포트의 정상·nullable·다른 query/추가키/권한/교차user-client·원 SID 변경·저장 오염·원문 cap·불명과 효과0을 확인한다. SQL 형상은 실행 증거와 구분한다. actual PG·키·권한·서비스·Agent·컴파일 실행은 없다.
+필수 미정이 나타나면 그 정확 부분만 Main에 반환하고 가능한 GET과 기존 승인 작업은 계속한다. 다음 Web/Panel 단위는 기존 승인 S5로 이어간다.
+
+## 115. A안 current 후보의 실제 필드 근거
+PMO가 원 HUMAN 인증을 유지하는 A 방향의 후보 준비를 허용했다. 공개 delta 채택이나 구현 GO는 아니다. 기존 읽기 검토자는 후보에 필요한 실제 필드 근거를 반환한다.
+기존 signingCurrent의 실제 read 정책명과 owner/SID/control·등록 검산, Phase/Challenge/Session의 현재성 생산자, phase별 허용 head 상태를 현재 코드와 부모 wire에서 확인한다.
+Window의 원 writerHeadRef와 BOUND 이후 Native authority의 실제 writerHeadRef가 어떻게 달라지는지 확인한다. 기존 OPEN 전용 current를 복제해 current라고 부르지 않는다.
+STREAM/ARM/STATE/CLOSE의 실제 current 근거와 원 최소기한을 표로 정리한다. ACK는 미채택 입력과 분리한다. 새 endpoint·응답 원형을 선택하거나 구현하지 않는다.
+기존 signing frame/control·ProfileRead·응답의 상한도 정확한 상수와 출처로 확인한다. 실제 데이터 조사·DB·키·서비스·Agent·컴파일·파일 수정·시험은 하지 않는다.
+
+## 116. 고정 STATE의 BOUND current 내부 접합
+§114 구현 중 BOUND/ATTEMPTED의 current=true 근거를 읽기 지원한다. 같은 Primary는 나머지 GET과 역사 반환을 계속한다.
+기존 읽기 검토자는 실제 Native current의 private 소비선을 찾는다. readNativeReceiveWindow로 허용된 같은 원 HUMAN 문맥의 metadata 읽기에 추가 readNativePreparationAuthority나 native credential/서명을 요구하지 않고, 실제 N current·RESERVED writer를 검산할 수 있는 최소 내부 접점을 반환한다.
+기존 receiveBoundCurrent/#freshHost와 readonly cap/borrowed Tx의 생산·소비, 실제 Actor/SID·Window/Binding/N ref·기한·권한 검산을 정확한 함수로 매핑한다. 새 공개 endpoint/정책을 선택하거나 코드 수정·시험·실환경 실행은 하지 않는다.
+실제 producer가 미구성이면 current=false가 맞다. 그러나 단지 접합이 미구현이라는 이유로 정상 구성까지 항상 OWNER_UNAVAILABLE로 처리한 채 완료로 보지는 않는다. 원 SID가 다른 역사는 SESSION_CHANGED/false를 유지한다.
+이 작업은 새 phase-signing-current 후보와 다른 기존 STATE 읽기 구현의 내부 검증이다. 저장 digest로 native 인증을 꾸미거나 성공 proof/cap을 만들지 않는다. 반환은 기존 metadata만이며 원 권위를 복구하지 않는다.
+
+## 117. BOUND metadata current의 최소 내부 보완
+§116의 실제 호출선에 따라 기존 고정 STATE 읽기의 정상 BOUND/ATTEMPTED current를 완성한다. 공개 응답·입력·readNativeReceiveWindow의 권한 범위는 부모와 같으므로 새로운 사용자 결정으로 돌리지 않는다.
+같은 Primary가 원 HUMAN read 정책/OWNER/controller·원 SID와 실제 Window/Binding/N fullref·Tx·기한을 검산한 한정 readonly 경계를 만든다. 원 SID가 다른 역사에는 이 경계를 만들지 않고 SESSION_CHANGED/false를 반환한다.
+기존 Native 원문/ledger/lifecycle 복원과 RESERVED writer·mapping/current의 실제 검산을 재사용한다. receive proof/credential 인증과 별도 Native read 정책의 소비를 물리 current 검산과 최소한으로 분리한다. 기존 native/POST/GET 경로의 정책을 생략하지 않는다.
+새 metadata 경계를 기존 성공 proof나 effect lease로 위장하지 않는다. 저장 digest를 native bearer 소지 증명으로 넣지 않는다. readonly 경계가 credential/예약/consume/실행을 생산하는 방법에 사용되지 않음을 음성 시험으로 확인한다.
+Normal source/options·writer.nativePreparationOptions·nativePreparationRecord의 기존 정책은 default 그대로 유지한다. 한정 metadata 전용 소비선에서만 이미 검산한 Window read 목적을 전달한다. caller bool이나 임의 command.operation만으로 검산을 통과시키지 않는다.
+실제 txid와 Actor/session·query 수명·pending 정착을 SELECT 전후 재검산하고 원 최소기한과 capability 폐기를 지킨다. actual source 부재는 OWNER_UNAVAILABLE/false, 정상 구성은 실제 검산을 거친 true여야 한다.
+필요 파일이 기존 승인57 밖이면 정확 파일·호출선·최소 diff와 이유를 쓰기 전에 Main에 반환한다. 그 부분 외 기존 GET 구현은 계속한다. 큰 공통화나 전역 인증 변경은 하지 않는다.
+정상/미구성·원 SID 변경·다른ref/Actor/Tx·추가 GET 정책 요구 없음·effect 시도 거절·폐기/기한을 실제 기존 포트의 합성 TDD로 확인한다. 실제 DB·권한·키·서비스·Agent 실행은 하지 않는다.
+
+## 118. 기존 STATE current 구현의 정확 추가 경로
+분류: MAIN_INTERNAL_IMPLEMENTATION_SCOPE_ADDENDUM. 새 공개 API·응답·정책·실행 권한 추가가 아니라 부모 readNativeReceiveWindow의 current 검산을 완성하는 내부 파일 배치 보완이다.
+원 WI §2.2의 추가 파일 사전 반환 절차로 Primary가 요청했고 Main이 실제 :152~158의 두 native projection 진입과 호출선을 읽었다. 기존57 밖의 추가 허용은 apps/server/modules/executions/project-writer-authority.ts 한 파일에 한정한다.
+수정 전 SHA256은 C2EFB591F08A2D66C0C58326EE4AC0C373555CCC7A1CB4B9259FA1E4991737FD이다. 다른 경로 추가는 별도 사전 반환한다. Parent 패킷과 GET3의 원 wire는 변경하지 않는다.
+허용 변경은 원 SD/Node 경계가 검산한 Window metadata readonly capability를 두 native projection 소비선에 연결하는 최소 delta다. 기존 default nativePreparationOptions/nativePreparationCurrent와 다른 operation의 authorize 검사는 그대로 둔다.
+임의 bool·가짜 command·저장 digest를 권한 증명으로 쓰지 않는다. metadata capability는 원 Actor/SID·project/Window/Binding/N fullref·실제 Tx·기한과 readNativeReceiveWindow 검산을 보유하고 readonly 소비에만 유효하다.
+credential 발급·예약·consume·실행/lease 생산으로 전용하지 못하게 별도 목적과 수명을 검산한다. SELECT 전후 실제 Tx와 원 문맥을 검사하고 범위 밖 ref/폐기/시간에 거절한다.
+기존57의 CurrentSource·N/RStore·Preparations·등록 reader 접합과 이 추가 파일만 최소 수정한다. 큰 refactor나 전역 정책 skip은 금지한다. 정상 구성 true·실제 source 미구성 false·추가 Native read 정책 없는 경로·effect 거절을 직접 시험한다.
+실제 DB/GRANT/정책/키/서비스/Agent 실행은 없다. 미적용 source와 합성만이며 Main은 검수·통합한다. 새 공개 current 후보는 여전히 별도 SOURCE_GO0이다.
+
+## 119. A안 공개 current 후보의 독립 검토
+대상은 docs/contracts/FN06_POST_OPEN_PHASE_CURRENT_HUMAN_CANDIDATE_20261105.md, SHA256 9E40BC11ADCB1A5FE33AFF60C84C6C510A2286420C4370B52131B7303C919B87이다. DRAFT/NOT_ADOPTED/SOURCE_GO0이며 이번 검토는 채택이나 코드 구현이 아니다.
+기존 읽기 검토자는 부모 OPEN 전용 계약과 새 HUMAN POST/CSRF·입력·phase current 원형의 정확한 delta를 대조한다. 원 SID/권한·session/challenge·관측/최소기한·두 writer ref·공개 비밀0·조회 저장효과0과 native 인증 가장 금지를 확인한다.
+phase별 첫사용/nullable ref와 native proof의 기존 null 표를 혼동하지 않는지, typed frame current 분기와 기존64KiB/응답2MiB/control/CA 한도에서 실제 typed 최대값이 맞는지 확인한다. 정확한 수치는 부모의65536B frame cap을 따른다.
+같은 Challenge의 unknown을 새 current/frame/source로 재서명하는 우회가 없는 계약인지 본다. replay/terminal 예외를 fresh current에 옮기지 않는다.
+모호하거나 빠진 조건과 Critical/Important를 반환하고 직접 endpoint나 권한을 채택하지 않는다. 문서·코드 수정·시험·실제 DB/키/서비스/Agent 실행은 하지 않는다. 기존 GET3 구현은 계속한다.
+
+## 120. 공개 current 후보 독립 검토 수거
+§119 후보의 원 본문10467B·SHA256 9E40BC11ADCB1A5FE33AFF60C84C6C510A2286420C4370B52131B7303C919B87을 검토 전후 동일하게 확인한 독립 C0/I0를 수거했다. 후보 §9에 typed 최대량과 두 구현 경계를 추가했다.
+key-host 외피·개행 포함 최대는 ARM8572B, control body332B다. 기존65536B/8192B를 높이지 않는다. ProfileRead 전체 응답은 별도2MiB 강제 cap이며 frame 최대량으로 대신하지 않는다.
+HUMAN 읽기에 native digest/proof lease를 합성하지 않고 실제 검산 근거만 목적 한정 재사용한다. 후보는 미채택/SOURCE_GO0이며 코드 지시가 아니다. 같은 검토자는 추가 §9의 일치 여부만 읽기 검토한다.
+기존 Primary는 §117/118의 BOUND metadata 연결을 계속한다. 원 N read/#restore/#lifecycle·writer projection의 직접 합성1은6모드 GREEN을 제출했으나 전체 GET3 검수는 아직 미완료다.
+Main의 초기 sandbox git status는 work tree 접근 오류였고 elevated 실제 조회로 branch와 HEAD5f468a25·진행 중 제품 소스와 시험의 현재 작업을 확인했다. 제품 실패와 분리하고 다른 branch·이력·보호 비추적은 변경하지 않았다.
+
+## 121. 공개 current 후보의 직접 결정 요청
+최종 후보12016B·SHA256 011C3C221E5DDB8086D7FB8A11214C29C0EAC9E6C956840E1BC5325CE53C281C에 추가 §9 scoped 독립 C0/I0를 수거했다. typed 최대·HTTP cap 분리·HUMAN 읽기 목적과 native proof 가장 금지·NOT_ADOPTED/SOURCE_GO0을 대조했다.
+PMO에 정확 후보와 공개 delta를 보고하고 신산님께 A안 계약·source-only 구현의 비동기 직접 결정을 한 번 요청했다. 부모의 OPEN 전용 current와 새 non-OPEN current를 구분하는 결정이며 기존 STREAM signer를 재승인받는 것이 아니다.
+응답 전 후보 코드·SQL을 작성하지 않는다. ACK bodyHash의 별도 미채택 상태를 이 결정에 포함하지 않는다. 기존 GET3와 Web 연결 등 이미 승인된 구현은 계속한다.
+이번 Main 문서 추가의 CRLF 경계로 diff check가 trailing whitespace를 지적했다. 추가 절과 접점 줄바꿈만 LF로 보정해 재검사 exit0을 확인했다. 제품·시험 파일과 Git 설정은 변경하지 않았으며 준비 오류1로 분리했다.
