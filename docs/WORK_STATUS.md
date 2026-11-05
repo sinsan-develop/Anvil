@@ -13,7 +13,7 @@
 | FN06 진행 중 | 역사 조회·단발 Delivery와 OPEN/독립 수신 연결을 Main 합성·문법/타입·지문과 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 기존 S5 화면 연결을 준비한다. 전체 여정과 실환경은 미완료다 |
 | FN06 남은 연결 | STREAM 이후 보호 current·typed signer와 transport/후행 phase·UI controller의 전체 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint f8b689fccda26ebf1bb50eaa478e6d6a3034986d에 단발 Delivery source6과 현황2를 보존했다. 같은 Primary가 다음 수신 연결을 작성한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint fb0c097280223ae8aecbb67e9313a49abb7b981a에 OPEN·수신 source7과 현황2를 보존했다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15276,3 +15276,4 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - Main 합성8 PASS/skip0, 문법4·타입/diff0, raw7 전후 동일과 독립 C0/I0를 대조했다. 명령·지문·시간은 구현통제 §113에 있다.
 - REGISTERED owner에서 OPEN 수신까지, 별도 Delivery에서 보호 source와 slot까지 실제 소스 호출선을 합성으로 확인했다. 전체 STREAM·ARM·ACK·실제 TLS/키/helper·DB는 미완료다.
 - 같은 Primary는 기존 S5 화면 연결을 준비하고 Main은 보호 current의 정확한 공개 delta 후보를 준비한다. 새 계약은 아직 채택하지 않았다.
+- 화면 문맥 도구는 manifest 대상 확인에서 실행 전 중단됐다. 새 도구 다운로드나 실행 없이 기존 설계와 화면 코드를 직접 읽는 방식으로 진행했다. 제품 변경0이며 필수 개발 검증 실패와 분리한다.
