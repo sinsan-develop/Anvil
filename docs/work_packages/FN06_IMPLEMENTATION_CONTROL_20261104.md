@@ -2084,3 +2084,67 @@ Main b9bc30은최종신규owner11 PASS/fail0/skip0·371.9946ms/exit0,dfc252타�
 | tests/unit/FN07/claude-sdk-session-owner.test.ts | 15122 | AEB8149E0715181F5272E959CE5DD6B721EBAD7863B6DB19B95C58FC7E67B914 |
 정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN07/claude-sdk-session-owner.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다. SDK import/query/spawn/실제Agent/DB/키/권한/서비스·컴파일·실자료조사0이고종료live/pending0이다.
 최초SDK Query생성·이미관측된session의실제보호공급자/permit·permission통제·Claude서버claim/지속조회·공통6능력제품factory와실제OS/계정/Agent사용자인수는여전히미구현/미실행이다. 이번합성소비단위를두Agent실제지원/전체FN07/계획완료로보고하지않는다. 전체계획목표는ACTIVE이며다음실제누락의정확내부계약을이어간다.
+
+## 205. FN07 최초 세션의 고정 SDK sessionId 입력 근거
+Main67ee0c는새질문인최초세션ID선택에한정해고정공개SDK0.3.224원문을메모리에서읽었다. 기존codec/메시지검증을다시실행한것이아니다. archive1110841B·기존SHA512 integrity일치, sdk.d.ts SHA256 556277033B15112811922D84EC8DC846D446CCE7BD9AA27765C52A9C09869575 일치를확인했다. 파일저장/설치/SDK import/query실행·실계정/키/서비스/사용자자료조회0이다.
+공식tarball https://registry.npmjs.org/@anthropic-ai/claude-agent-sdk/-/claude-agent-sdk-0.3.224.tgz 의 sdk.d.ts1809는Options.sessionId?를제공한다. 새conversation의자동생성ID대신유효UUID를명시할수있으며continue/resume과는forkSession일때만함께쓸수있다. sdk.mjs는실제로options.sessionId를--session-id에결박한다. d.ts2610의streamInput은AsyncIterable<SDKUserMessage>를받는Promise<void>다. SDK의ID입력지원은실제CLI호환·현재permit·계정·process소유의증명이아니다.
+따라서‘최초session ID는항상init관측뒤에만알수있다’는가정을일반화하지않는다. SDK에명시한계획UUID와실제system/init의확인ID를구분하면private초기query준비를검토할수있다. 계획ID를관측/보호claim/Agent실행성공으로표시하지않는다. §204의이미관측된Query owner선행은그대로보존하며조용히계획ID로대체하지않는다.
+후속기술안은새conversation한정으로검토하고continue/resume/fork·기존계정세션/파일가져오기·삭제를추가하지않는다. 기존SDK옵션전체를caller에게열거나기본spawn/권한우회/자동tool허용을만들지않고명시보호process포트의미구현의존성을유지한다. 이근거만으로코드GO/실제실행승인/새공개claim채택을추정하지않는다.
+Main9487c9는현황신규1줄CRLF삽입이diff check에서거절된문서형식오류1이며90be48에서그신규줄만LF로고쳐통과했다. 본문전체줄바꿈변환/제품변경0이다.
+
+## 206. FN07 최초 Query의 다음 내부 기술안 준비
+기준6c1b938684bdbba667b66ddda2a4de5d15441f0b이다. 기존Primary가§205의고정SDK sessionId 지원을추가근거로첫Query소비의기술안을읽기전용으로준비한다. 이미관측된Query owner를다시구현하지않고계획UUID/SDK요청시도/실제init관측/기존owner인계의서로다른상태를정의한다. 계획UUID를관측ID/보호claim으로속이지않는다.
+원codec.prepareUser의원입력보존, SDKquery의prompt/Options/abortController/spawnClaudeCodeProcess공급, 단일Query/iterator와init전후관측보존·원기한·중복방지/불명·cleanup의생산자/소비자를대조한다. init이항상첫입력전에오거나항상첫메시지라는공식보장없는순서를가정하지않는다. 기존owner에넘길때동일SDKiterator/앞서소비한관측이조용히유실·중복되지않아야한다. rawSDK/frame·본문/설정·비밀을일반결과로노출하지않는다.
+특히코드로이미공급가능한원Anvil context/환경정의/도구선택·현재permit·예산·고정로컬실행파일/프로세스소유원문과아직없는producer를구분한다. SDK기본spawn이나caller임의options를열거나permissionMode/도구허용을Anvil승인으로전용하지않는다. 기존NativeOwnerHandle은stdin/stdout이없으므로실제SDK SpawnedProcess라고대입하지않는다. 실제SDK도구설정/permission중재가미정이면그정확결정점을반환하고임시tools[]/성공대역으로코딩Agent기능을완성했다고하지않는다.
+새공개API/auth/서명목적/영속원형을추가하지않는private최소코드단위가실제소비누락을줄일수있으면정확파일과기존승인근거·검수표를제안한다. 기존합성계층만한번더감싸는단위는제안하지않는다. 보호process/permit/SDK옵션정책·Claude서버claim이없어닫히지않으면필요논리자료·출처·소비/한도/실패/변경영향과권장안을정확히반환한다. Main은그뒤내부판단/새결정경계를분리하며이단계코드GO0이다.
+제품/시험/문서쓰기·SDK/CLI실행/추가외부조회·실제DB/권한/키/서비스/Agent·실자료조사·컴파일·Git복구0이다. 전체계획목표는ACTIVE이고계획순서와미구현우선원칙을유지한다.
+
+## 207. FN07 최초 Query의 실제 선행 분리와 Options 계약 대조
+§206 Primary읽기는계획UUID/INPUT_PREPARED/QUERY_ATTEMPTED/INIT_OBSERVED/동일Query·iterator·codec식별/관측인계를구분했다. 정확공급미진은SDK Options변환·실제permit/예산·SpawnedProcess stdin/stdout/종결·tool결정·Claude서버claim이다. 기존Context/원START journal과MaterialReceiver.startOptions의원bytes/hash/receipt·환경/CommandProfile metadata는존재하지만보호실행원문이나SDK Options그자체가아니다. 추가합성wrapper를실제최초Query연결로세지않는다.
+다음은기존startOptions/descriptor·Options material wire·primary threadStartParams전용분기를읽어,새Claude parser/변환이기존opaque adapter-specific내부계약으로가능한지또는새공개/저장/권한계약을요구하는지정확대조한다. 기존producer와consumer가닫힌원형·정확field·권한/비용영향·미구현분기와최소검수를표로반환한다. SDK Options전체forwarding·defaultspawn/permission우회·tools[]대체0,없는보호producer를선언DI로꾸미지않는다. 이작업은읽기/정확후보준비이며코드GO0이다.
+Main의추정modules/environments경로조회1은실제목록054c37의connections/project-environments로정정한조회오류이며실환경/제품실패가아니다. 실제DB/키/권한/SDK/Agent/서비스/실자료조사·추가외부조회0, 기존단일writer/기존branch와전체계획ACTIVE를유지한다.
+
+§207 Main native읽기91efa1/649e9b: repository에파이프primitive가전혀없는것은아니다. CodexHandshakeHost.cs의QA전용경로는CreatePipe3/정확HANDLE_LIST·JOB_LIST/CREATE_SUSPENDED/STARTF_USESTDHANDLES와고정Codex app-server인자를사용한다. 반면OwnershipEvidenceProcessStartupSource의일반준비source는InheritHandles=false·표준handle0이고현재NativeOwnerHandle의state/query/close에는SDKstdin/stdout포트가없다. QA고정helper를SDK일반SpawnedProcess나제품factory로자동전용하지않으며이차이를정확계약대조에포함한다. 모든조사는제품source읽기이며컴파일/PInvoke/process실행0이다.
+
+## 208. START material 등록 producer의 미구현 선행 우선 대조
+§207 결과로SDK전용Options parser는기존opaque material내부계약으로좁힐수있지만,실제START context/options원문의등록producer가없음이확인됐다. 이는모든Agent의최초실행소비선에앞서는실제누락이므로SDK합성wrapper를추가하기보다이선행을먼저대조한다. 계획FN06/FN07/FN08의의존성해소이며기능범위변경/완료승격이아니다.
+기존Primary는기존SEND material 등록r2A 계약·구현·미적용SQL과ProjectInitialExecutionQueue의START optionsRef/contextBundleRef·resolver를읽는다. 정확registered source/descriptor/part·receipt/command·현재로그인/제어/정책/예산/일회승인·source검산의현재guard를대조해START producer를기존승인계약안에별도private경로로구현할수있는지판단자료를반환한다. SEND만허용하는literal/새영속purpose/공개API·입력/권한을변경해야하면그정확delta와승인근거를입증하며조용히union을넓히지않는다.
+기존START봉투ref가있다는사실과실제원문등록/보호조회가있다는사실을구분한다. 기존합성resolver를다시감싸거나sender가원source/receipt를선언하는성공대역은금지한다. 구현가능하면실제원stored source→등록→descriptor/부분보호조회→기존수신startOptions의정상/중요음성·단일작성/원불명/한도검수와최소파일을제안한다. 부족하면새로닫아야할계약·출처·선택지·영향을정확히반환한다.
+이단계는source읽기와기술안반환뿐이며제품/시험/문서쓰기·SQL/DB·권한/키/SDK/Agent/서비스실행·실자료조사·외부조회/컴파일0,코드GO0이다. 현재local source기준6c1b9386·보호3과기존소스인수를보존한다.
+
+## 209. START 등록의 별도 계약 후보 기술자료 준비
+§208은기존SEND r2A WI가START/STOP자동확대를명시제외하고0062가SEND단일payload·명령당manifest1개·SENDproof/역완결에고정됨을입증했다. START의contextBundleRef와optionsRef 두그룹지속등록은새영속descriptor/SQLguard의미delta다. 기존공개START입력·부분GET wire유지는가능하지만이를근거로r2A승인을확대하지않는다.
+Main권장방향은기존SEND/0062를보존하고명령당START descriptor1개안에두고정payload그룹을두는별도forward source계약후보다. 정확source/Ref/hash/부분·기한/접근·명령/receipt/envelope/outbox·proof/일회소비/역완결을같은Tx에서검산하고전체누적상한은SEND와START를합산해야한다. replay추가과금0과UNKNOWN보존·기본app활성화0·실제DB/권한/키/서비스/Agent실행제외를유지한다.
+기존Primary는위후보의exact내부descriptor/두그룹/등록순서/SQL완결/상한/거절과기존source보존의기술안을반환한다. 아직Main의채택이아니며제품/시험/문서쓰기0이다. 기존독립담당자는별도로contextBundleRef/optionsRef의실제원문source·저장/raw/hash·현재보호reader가어디까지있는지만대조한다. declaring resolver/ref를실물producer로세지않고새구현이필요한지점을정확히반환한다. 두읽기는분리하며같은파일수정/실행0이다.
+Main은두결과를대조해검토가능한고정후보와영향·대안/권장안·필요한정확결정을PMO에전달한다. PMO의다음작업배정을기다리려는것이아니며Main이계약준비와다른영향없는승인작업을주도한다. 새데이터의미를조용히가정한코드GO/SQL확대/실행은금지한다.
+
+## 210. START 후보 독립 검수와 필요한 결정 전달
+docs/contracts/FN08_START_MATERIAL_REGISTRATION_CANDIDATE_20261106.md r1 12178B/SHA256 8AE16D6CAB5334FAC4548688777AE44560997BB0D0C78816CB340A114A7E4384를Main이작성하고독립C0/I0를수거했다. 새START두source합계2MiB는명시새정책제안이고기존합산quota를새정책으로포장하지않았다. 후보는NOT_ADOPTED/SOURCE_GO0이다.
+Main은PMO에이정확영속의미delta를위임범위에서채택할수있는지/신산님직접결정이필요한지요청했다. 공개START/GET유지와실제Options/원문source미구현·실제DB/권한/키/서비스/Agent실행제외를명시했다. 기존계획전체재승인/다음작업배정을기다리는것이아니다.
+독립읽기는ContextBundle의실제저장/보호HUMANreader·본문비복제manifest와executor자료권위를분리했고,optionsRef의실제옵션원문저장/reader부재를확인했다. START등록source인수만으로그producer가생겼다고보고하지않는다. 실제source연결·Options작성/저장계약은별도정확대조대상이다.
+Main7a198e는별도의미정데이터옵션3에한정해같은고정SDK0.3.224공개archive를메모리로읽었다. 동일archive1110841B/integrity/d.ts SHA55627703…69575이며Options1322 안의model?:string(1713),maxTurns?:number(1678),maxBudgetUsd?:number(1683)를확인했다. SDKturn은user+assistant한쌍이며Anvil호출횟수와같지않다. SDK maxBudgetUsd는초과시중단응답을하는요청값이지Anvil비용예약/청구hard ceiling보장이아니다. 설치/파일저장/SDK실행/비용발생0이며기존검사반복으로진도를세지않는다.
+
+## 211. 미채택 START 등록과 독립적인 Claude 데이터 옵션 parser 초안
+§207에서입증한기존opaque START material의adapter전용소비범위안에서private데이터parser를준비한다. 새로운publicAPI/등록schema·permission/실행권위가아니며START등록후보채택을가정하지않는다. 정확신규2는 apps/connector/adapters/secondary/start-options.ts 와 tests/unit/FN07/claude-start-options.test.ts 다. 기존primary parser/receiver/codec/schema·SDK owner·SQL·package/lock은불변이다.
+입력원문exactJSON은 {claudeQueryParams:{model:string,maxTurns?:number,maxBudgetUsd?:number}} 다. model은필수·정상UTF-16·공백만아님·최대200문자·제어문자없음이며임의alias/auto를특정provider예외로블랙리스트하지않는다. 이는모델지원/등록검증을뜻하지않는다. maxTurns는지정시양의safe integer, maxBudgetUsd는지정시0이상MAX_SAFE_INTEGER이하finite number다. 누락값에SDK/Anvil기본값을적용하지않고명시null·추가키·중복키·오염prototype/UTF-8·JSON상한초과는거절한다. raw sessionId/resume/continue/fork·abortController/spawn·cwd/env/실행파일·permission/tool·플러그인/hook·일반SDK options는입력하지못한다.
+parser는원START envelope와기존SyntheticMaterialReceiver.startOptions의exact결과를소비한다. 원scope/명령/envelopeHash/contextBundleRef/optionsRef/materialReceiptRef·bytes/utf8Bytes/contentHash와기한을대조한뒤원bytes의JSON에서위데이터만선택한다. optionsRef.contentHash를bytesSHA와같다고가정하지않고원byte SHA와선택데이터의canonical hash를구분한다. materialReceiptRef는원수신journal의근거일뿐실제서버commit/보호원문/현재permit증거가아니다.
+결과는private데이터후보와원참조/해시·SYNTHETIC_ONLY/false표시만반환한다. actualExecutionVerified/executionAuthorized/dispatched/workAccepted·modelVerified/costAuthorized/permissionVerified는false이고누락기본값적용0이다. 모델/회수/예산/권한/실행파일·query호출인자는완성되지않았으므로실제SDK Options/호출준비완료로노출하지않는다. 원request limits를Anvil승인예산이나호출50회로해석하지않고실제factory는원current/permit/예산/permission공급이없으면계속차단한다.
+목표는실제기존수신모듈이검산한원bytes→닫힌Claude데이터선택을연결하는코드이며새합성전송wrapper가아니다. 시험은실제receiver의두payload/부분수신→startOptions→parser를메모리에서연결하고추가SDK옵션/다른fullref·명령/receipt/bytes/hash·누락부분·중복JSON·용량/유니코드·지정0/소수USD·alias auto·부작용/원문오류노출0을검산한다. 입력이없는성공기본값/SDK호출/새등록producer/실원문접근은금지한다.
+현재는초안이고독립검토와기존Primary의exact함수/시작지문·TDD안을받기전코드GO0이다. 기존Primary단일writer·Main검수/기록만담당하며실제DB/권한/키/서비스/SDK/Agent/실자료조사·컴파일/외부조회0을유지한다. START후보의새영속의미결정은이privateparser로우회하지않는다.
+
+§210 PMO turn01a1ad35-d1d0-7662-9325-9218e74e5b23는후보전문/해시일치를읽고새START두그룹필수저장·완결/합계2MiB가신산님직접결정사항이라고판정했다. PMO대화에서A권장과정확후보의채택질문을이미전달했다. 후속01a1ad3a-04a6-7250-92b2-c8ea025931a3는새답변없음·질문반복/범위확대금지를확인했다. Main은중복질문하지않고START SOURCE_GO0을유지하며독립§211을계속한다. PMO의다른프로젝트F06 SSE보고는Anvil지시로적용하지않았다.
+
+§211 독립초안 C0/I0와Primary 3472e7 시작지문을수거했다. Main은함수 readClaudeStartOptions(receiver,rawEnvelope,{clock,check})의private소비안을채택한다. caller가성공수신결과를직접주입하지않고실제SyntheticMaterialReceiver의원startOptions를소비한다. 동일instance/원메서드·원scope/기한을검산하고override성공대역으로실제수신검사를생략하지않는다. await뒤check/원기한·exact수신tuple/bytes복사/hash/UTF-8·닫힌JSON을대조한다. 원bytehash/ref/contenthash와선택데이터canonicalhash를구분한다. 신규2부재·receiver93BFF021F05DDFCF4D0BC708342287CC80353579C3001FBFDF7E5B272E443F8A/primary8E526B16ACE60C2FF77D95A4286D9DE5BB5786BA8612D81E71FC847F8C7EFA98 불변을기준으로시험1 TEST_ONLY GO를전달한다. START후보채택/새원문등록/SDK호출/비용승인/제품GO는아니다.
+
+## 212. Claude 데이터 옵션 parser의 소스 한정 인수
+§211은1a9476 export부재RED2·c62075 기존수신누락/교차ref거절뒤export부재RED와제품행동을구분했다. 같은반환직전기한반례b99a52가실제RED였고aa050d에서최종check뒤now를읽도록한정보완했다. Main8d8ac2의같은후보는중복새finding/실행으로세지않는다. c57c4e 시험인덱스타입표기는6ade09에서정합했고기대값완화0이다.
+독립최종동결2 C0/I0/M0와Main e74272 신규9 PASS/fail0/skip0·468.5366ms/exit0,593415타입0/7cc977diff0을수거했다. 3cab25→03a943 source2지문동일·receiver/primary·START후보해시/보호비추적3 불변·빈index를확인했다. 기존receiver21 PASS/마지막폐기영향2 PASS는Primary결과로구분하고고유합계에중복산입하지않는다.
+실제record두payload→원prototype startOptions→원scope/명령/refs/수신receipt/bytehash→닫힌claudeQueryParams를소비했다. 선택model/maxTurns/maxBudgetUsd는데이터요청이며누락기본값/추가SDK옵션/자동provider예외/권한/비용승인0이다. optionsRef hash와원bytesSHA·선택데이터canonicalhash를구분했다. 최종check뒤원기한을다시검산하고원receiver가반환한사본·parser소유사본만finally에서지우며저장부분은보존한다.
+신규source/test2·검토용START후보1·Main현황2를기존branch의local checkpoint로보존한다. START후보8AE16D6C…E4384는미채택/SOURCE_GO0이며문서보존이채택/구현승인이아니다. PMO직접결정질문은반복하지않는다. private동일성/push/PR/main병합미확인·인증복구/재시도0,기존source/SQL/사용자자료0이다. rollback은신규source2추가의정상revert이며실제자료삭제가아니다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/adapters/secondary/start-options.ts | 5620 | 7C25908126195726F529F9FD1ADC19D061201A4C669D8AB5494B98E7C9CC598E |
+| tests/unit/FN07/claude-start-options.test.ts | 11601 | F632DADCA1F9B47DDB6BCBDEC7364332F46AD05BB44C89B6F15DFE04C0F08FFF |
+정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN07/claude-start-options.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다. 실제SDK/Agent·DB/키/권한/서비스·원문조사·비용/컴파일0,종료live/pending0이다.
+Primary진행문외국어2회는즉시정정했지만재발방지를위해수동긴문장전달방식을중단하고검사된한국어문안을notify/동일문구로전달하도록Main이지시했다. 제품finding/시험실패와구분해기록하며코드인수/정책예외로전용하지않는다.
+START영속등록·실제Options원문/보호source producer·현재permit/예산/permission·SDK최초Query/process/stdio·Claude서버claim·공통6능력제품factory/실환경/사용자인수는여전히미구현/미실행이다. 데이터후보검산을실제실행준비/전체FN07/계획완료로보고하지않고전체목표ACTIVE를유지한다.
