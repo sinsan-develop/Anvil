@@ -2148,3 +2148,56 @@ parser는원START envelope와기존SyntheticMaterialReceiver.startOptions의exac
 정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN07/claude-start-options.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다. 실제SDK/Agent·DB/키/권한/서비스·원문조사·비용/컴파일0,종료live/pending0이다.
 Primary진행문외국어2회는즉시정정했지만재발방지를위해수동긴문장전달방식을중단하고검사된한국어문안을notify/동일문구로전달하도록Main이지시했다. 제품finding/시험실패와구분해기록하며코드인수/정책예외로전용하지않는다.
 START영속등록·실제Options원문/보호source producer·현재permit/예산/permission·SDK최초Query/process/stdio·Claude서버claim·공통6능력제품factory/실환경/사용자인수는여전히미구현/미실행이다. 데이터후보검산을실제실행준비/전체FN07/계획완료로보고하지않고전체목표ACTIVE를유지한다.
+
+## 213. 실제 Options 원문 producer의 기존 artifact 경로 재사용 가설
+§209에서optionsRef에대응하는불변원문producer가없음을확인했다. Main은새API/저장계약을곧바로추가하는대신,기존프로젝트uploadArtifact/보호조회가생성한불변JSON artifact Ref를START의opaque optionsRef로쓸수있는지먼저읽기대조한다. 가설이지채택/구현GO가아니다.
+의도는UI05의명시작업으로§211의닫힌Claude데이터JSON을만들어기존업로드/일회승인/보호조회흐름으로보관하고,검산된artifact fullref를기존START초안에명시선택하는실제원문생산이다. 새공식산출물종류·새API/DB·권한/비용/실행승인은추가하지않는경로가실제로가능한지만본다. artifactRef가그대로optionsRef의의미·hash·조회범위에맞는지입증해야하며다른의미의ref/등록source를조용히전용하지않는다.
+기존독립담당자는generic업로드의exact body·MIME/귀속/불변ref/정책/일회승인·보호GET·START자료ref호환과금지조건을읽는다. 기존Primary는현재UI05 optionsRef작성/초안버퍼와기존upload클라이언트/승인복귀모듈의실제소비접점을읽어신규공개/저장/권한변경없이연결가능한지최소파일/정상·실패검수를제안한다. 두읽기는분리하고제품/시험/문서수정·실자료조회/파일생성·DB/SDK/Agent/서비스실행·외부조회0이다.
+가능해도artifact생성을START등록/자료접근grant/SDK실행준비로승격하지않는다. START영속후보는여전히미채택이고실제EXECUTION원문bridge/permission·process소유는별도미완료다. 새blob작성/opaqueRef의범위가다르면그정확delta를반환하고임시가짜OptionsRef를만들지않는다.
+
+## 214. artifact 재사용 가설 해소와 기존 실행 준비의 Options 공급 대조
+§213의직접재사용가설은현재계약과맞지않는다. uploadArtifact는application/json을허용하지않고artifact응답은{artifactId,contentHash,bytes,mediaType}이며RuntimeRef{id,version,contentHash}가아니다. text/plain JSON보관만으로START_OPTIONS JSON MIME/ref를생산할수없다. 임의version1추가/MIME재표시0이다. 현재Web에START_SESSION/optionsRef작성버퍼도없으며기존버퍼는startStage/prepareExecution용이다. 새수동업로드화면을구현하지않고가설을보류한다.
+다음읽기는기존prepareExecution/원책임세션·ConnectionDefinition/EnvironmentVersion의입출력·불변저장값에서SDK데이터옵션원문을서버내부로공급할수있는지대조한다. 사용자가UUID나원문파일을직접만들게하는새흐름을임의로추가하지않는다. 이미선택한도구/환경/모델옵션에서닫힌데이터를컴파일하는경로를우선검토하되Ref 의미/생산·불변source/저장/hash/현재권위가없는부분은선언으로메우지않는다.
+기존Primary는정확prepareExecution 입력/result·선택된definition/env/profile/sourceRefs와resolver/STARTqueue소비까지읽어최소private생산이가능한지또는새공개/영속/권한delta가필수인지반환한다. projectionRef/deterministicID/원본artifact변환을독단채택하지않고실제존재하는근거만제시한다. 제품/시험/문서쓰기·DB/권한/키/서비스/SDK/Agent/실자료조사/외부조회0·코드GO0이다. START후보직접결정대기와별개로이정확선행자료를준비한다.
+
+§214 Primary읽기는ProjectConnectionDefinitions에불변definition/modelOptions producer가있으나ProjectExecutionPreparations.save가connectionKind존재를거절하고CANDIDATE_ONLY만허용함을확인했다. ResponsibleSessions의REGISTERED_DEFINITION예약과실행준비의지원범위가다르다. 준비snapshot의Options bytes/ref결박과실제START resolver는없다. 기존metadata를임의projectionRef로바꾸거나준비authority로승격하지않는다. 다음은기존직접채택FN09/등록정의/native준비계약이이경로를이미포함하는지정확대조해미구현버그인지새공개/영속의미인지판정자료를모은다. 직접결정요청을반복하기전부족한실제delta를먼저입증한다.
+
+## 215. 등록 정의 실행 준비의 명시 제외 확인과 다음 작업 분리
+
+§214 독립 대조는 등록 정의 책임 세션 예약 A의 후보 SHA256 81E87C515C35D3689859C15259B464238F4B0BDBE10DDC6AAB21D848A11DD759 §4와 구현 WI SHA256 4DA9F311ABCCE98FB1E9D052D3A39B8B453753FBFE691DE5D433A8B8474131C1에서 prepareExecution 후속 확장을 명시 제외했음을 확인했다. 현재 CANDIDATE_ONLY 거절은 해당 승인에 맞는 보호 동작이며 미구현 버그로 제거하지 않는다. 기존 예약·일회 승인 왕복·native 준비의 채택을 다시 승인 대기로 바꾸지 않는다.
+
+기존 Primary에게 선택된 도구·환경에서 실제 준비로 이어질 최소 보완의 기술 자료를 배정했다. 원 definition/environment fullref·현재성·명령/일회 승인·예산·능력·불변 준비 snapshot과 Options 원문/ref/보호 reader를 한 흐름으로 정리하고 기존 필드와 새 의미를 구분한다. START 등록 후보 의존성과 정상/중요 실패 검수를 포함하며 파일 수정·코드 GO·실행은 없다. 새 수동 업로드 화면·가짜 ref·성공 wrapper를 만들지 않는다.
+
+기존 독립 담당자는 별도로 FN06~FN17의 다음 미완료 사용자 기능 중 현재 source-only 승인으로 연결 가능한 단위를 실제 caller와 채택 근거로 선정한다. 완료된 구현의 반복 검증을 진도로 세지 않는다. Main은 검수·통합·기록을 담당하고 동시 code writer 0, 실제 DB·권한·키·서비스·Agent·실자료 조사·외부조회 0을 유지한다. HEAD a7a5bfd4와 기존 보호 비추적3을 보존하며 전체 계획은 미완료다.
+
+§215 Primary 기술안은 기존 prepareExecution 입력에 REGISTERED_DEFINITION 명시 분기를 추가하고 원 definition/environment·role binding·현재 head/정책을 검산하는 방향이다. 일반 modelOptions를 그대로 SDK Options로 전달하지 않고 닫힌 Claude 데이터 원형만 해석해야 한다. 원 Options bytes와 그 bytes hash·source snapshot hash를 구분한 별도 불변 source, 준비 snapshot의 정확 optionsRef와 역완결·원 command/receipt 원자 저장이 필요하다. 원 준비 id를 먼저 고정해 source에 결박한 뒤 준비 hash를 계산하는 순서로 순환 참조를 피할 수 있다.
+
+이 기술안은 채택되지 않았다. 새 등록 준비 입력/승인 후보·Options 저장/비용·보호 reader 의미와 capability 보고의 환경 결박이 아직 고정되지 않아 코드 GO0이다. capability의 HUMAN 보고를 effectiveForExecution으로 승격하지 않고 환경 원문/Secret에서 SDK 인자를 추정하지 않는다. START 등록 채택과 Options 원문 공급 채택은 별개다. 다음은 기존 독립 담당자의 승인 내 미완료 단위 선정을 수거하고, 위 보완안은 공개·저장·권한 변화만 좁혀 PMO 결정 자료로 정리한다. 실제 실행/원문/SDK 검증은 계속 미실행이다.
+
+§215 독립 FN06~FN17 재대조에서는 새 source-only 사용자 기능 단위를 확정하지 못했다. 전체 계획 소진 판정이 아니다. FN06 ACK/OPEN 감사·보호 producer, FN07 최초 Query/Options/process·permission/claim, FN08 START 등록, FN09 등록 정의 준비, FN10 HUMAN 결정, FN12 후속 계보, FN13 실제 중지/회수, FN14 실제 이전, FN15 실제 두 기기/coverage, FN16 실제 snapshot/복원, FN17 모바일 전달은 각각 미채택 의미 또는 실제 공급/실행 선행을 남긴다. 기존 FN11 승인 소비선·FN14 준비 Web·FN15 수락·FN17 알림 producer는 실제 caller가 있어 재구현하지 않는다.
+
+현재 기록은 승인 범위의 코드 소진과 전체 기능 완료를 구분하기 위한 것이다. Main은 Primary의 등록 정의 준비 보완을 최소 저장 구조로 좁히는 기술 검토를 계속하며 새 공개/영속/권한 의미의 채택 없이 코드를 열지 않는다. 이전 미연결 문구나 합성 PASS를 근거로 실제 사용자 기능을 완료로 승격하지 않는다. 실제 환경 변경0, 전체 계획 미완료다.
+
+§215 Main 조회 e74a55는 rg에 wildcard 파일 인자와 추정 storage 경로를 전달해 OS123/OS2가 발생했다. 실제 파일 목록으로 찾은 0016_execution_preparation.sql·projects/project-storage-quota.ts를 16d1b7에서 읽었다. 마지막 quota 이름 필터 무일치 exit1은 설치/제품 실패가 아니다. 이 도구 준비 오류를 시험 실패·기능 진도로 계산하지 않고 코드/권한/환경 변경0을 유지한다.
+
+§215 Main 파일 조회 오류가 같은 원인으로 3회 누적됐다. e74a55의 추정 경로/wildcard 인자, 722129의 apps/contracts 추정 경로, 538e3b의 존재하지 않는 provider-adapter-v1.ts 인자다. 실제 경로 목록을 먼저 고정하지 않은 준비 오류이며 제품 실패/정식 Developer 실패는 아니다. Main은 추정 경로의 추가 조회를 중단하고 기존 담당자가 실제 파일 목록·읽기 결과로 반환한 계약 자료만 검수한다. 제품 수정·실제 환경 변경·권한 우회0이다.
+
+## 216. 등록 정의 준비·Options 보관의 최소 계약 후보 검토
+
+Main은 Primary의 기술 반증에 따라 별도 Options 표가 필수라는 초안을 채택하지 않았다. 기존 execution_preparations.snapshot_json에 Options body와 bytes/hash를 저장하고 실제 preparationRef를 후행 목적 참조로 쓰면 자기 참조/hash 순환 없이 새 표를 피할 수 있다. 기존 exact9/intent11 분기를 보존하고 등록 분기 exact10/intent13만 제안한다. capability/budget 공급자는 기존 미검증으로 남기고 실행 권위를 만들지 않는다.
+
+후보 docs/contracts/FN09_REGISTERED_PREPARATION_OPTIONS_CANDIDATE_20261106.md 11268B/SHA256 6BAE9CA74CD0CE77E5C895C728A7B5BEA5EB8A355C1A8F230C6B6A88A90AD61F를 작성했다. DRAFT/NOT_ADOPTED/SOURCE_GO0이며 새 준비·원문/목적조회·저장계상의 의미 delta를 명시했다. 별도 새 상한·권한 부여·실행은 없다. 기존 단일 Primary는 구현 가능성/정확 최소 파일을, 기존 독립 담당자는 승인·guard·원문 조회/계상·UNKNOWN 경계를 검수한다. 수정은 Main 문서3만이고 제품/시험/SQL 변경0·실제 DB/권한/키/서비스/Agent 실행0이다.
+
+§216 Primary 구현 가능성 검수에서 중요한 두 미정이 발견됐다. 현재 준비 read는 projectMember만 검사하고 state 집계·history·저장/replay receipt가 전체 snapshot을 반환한다. Options body를 추가하면 원 definition/environment 읽기 정책보다 넓게 노출될 수 있으므로 UI 숨김으로 해결하지 않는다. 등록 분기의 모든 원문 반환 경로에 원 자료의 보호 읽기를 적용하는 정확 정책/호출선·거절 동작을 후보에 고정해야 한다.
+
+현재 quota reserve(token,csrf)는 별도 authenticated Tx다. 이를 준비 callback 안에 중첩해도 같은 Tx가 되지 않는다. 새 목적의 part kind/key/id·plan/projection/hash·FN76 base_used/예약 자기비용·rollback/UNKNOWN가 아직 미정이다. Main은 이 두 경계와 adapterKind/format 대응을 기존 Primary에게 정확 기술 보완으로 맡겼고 독립 담당자에게 같은 사실을 전달했다. 후보는 아직 6BAE9CA7 초안 그대로이며 승인 요청·코드 GO·권한/실환경 변경0이다. 이 발견은 아직 배포/적용하지 않은 후보의 문제이며 현재 제품의 신규 노출 사고를 뜻하지 않는다.
+
+§216 독립 검수는 C0/I2/M1이다. I1은 원 definition 읽기 정책보다 넓은 준비 본문 노출, I2는 새 계상 목적의 실제 원자 예약·중복/자기비용·FN76 base 귀속 미정, M1은 일반 문자열 adapterKind와 format의 대응 미정이다. 후보 시작/종료 11268B·6BAE9CA7 동일이며 수정/실행0이다. 후보를 승인 요청 가능한 확정안이나 제품 구현으로 승격하지 않고 Primary의 정확 보완안을 기다려 같은 문서에 반영한다.
+
+§216 독립 FN01~FN05/UI01~UI10 대조도 승인된 새 미연결 소비선 1건을 확정하지 못했다. 방법론 적용·설계 변경 적용·지식 공유 요청 보관·공통 설정 사본 등의 현재 caller는 이미 존재한다. 실제 baseline/문서 관측·대상 공유·실행 producer의 부족을 화면 누락으로 재분류하지 않는다. 전체 계획 완료/소진 판정은 아니며 Main은 최소 준비 보완 계약을 닫는 작업을 계속 주도한다.
+
+§216 r2는 기존 I1/I2/M1을 보완한 미채택 후보 17521B/SHA256 BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3다. 등록 분기 저장/replay/GET/state/page의 원 자료 보호 읽기와 동일 Tx replay hook, canonical-pair P/C/A/U/K/R 비용·유한 고정점·FN76 base 단일 귀속·승인 최초비용 proof 부재 거절을 명시했다. 도구 대응값 Claude Code/CLAUDE_AGENT_SDK는 기존 enum이 아니라 새 후보다. 별도 Options 표·실행 권위·새 상한0이며 독립 재검수 전 채택/코드 GO0이다.
+
+§216 r2 독립 재검수는 문서 한정 C0/I0/M0다. I1은 저장/replay/GET/state/page의 원 자료 보호 읽기와 목적 한정 동일 Tx replay hook, I2는 실제 P/C/A/U/K/R 집합·원자 예약/정산·유한 자기비용·base 단일 귀속, M1은 새 exact 도구 대응으로 해소했다. 시작/종료 17521B·BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3 동일이다. 실제 projection 상계·고정점·SQL deferred closure·replay hook은 구현하지 않았으므로 실제 동작 PASS가 아니다.
+
+현재 변경은 Main 문서3뿐이며 제품/시험/SQL 수정0·실제 DB/권한/키/서비스/SDK/Agent/실자료 조사0이다. 기존 코드 검증을 재실행하지 않고 문서 diff/지문·정본 미러와 보호3 보존을 확인한다. 문서 checkpoint 후 PMO에 정확 후보의 채택 경계만 전달한다. 기존 START 질문은 반복하지 않는다. 신산님 채택 전 NOT_ADOPTED/SOURCE_GO0이며 전체 계획은 여전히 미완료다.
