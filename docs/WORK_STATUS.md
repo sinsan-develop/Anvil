@@ -11,7 +11,7 @@
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
 | FN06 진행 중 | STREAM·CLOSE 재조회·충돌 집계, N current 원 Tx·원결과 만료, desktop 원 Session/REGISTERED owner의 최초 서명 연결을 소스 범위로 부분 검수했다. 같은 Primary가 승인 ARM header→원 native 명령 Tx의 선예약·N CREATED/R Binding·BOUND 생산을 구현한다. 실제 Delivery·transport/slot·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 첫 DENIED 감사 네 의미값과 ACK bodyHash 입력은 별도 직접 답변 전 GO0이다. 적격 거절·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 직접 source-only 채택됐으며 상세 부분 검수와 미완료는 구현 통제 최신 절을 따른다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
+| FN06 남은 연결 | 최초 DENIED 감사 A안은 직접 채택돼 Binding 안정화 뒤 같은 Primary가 기존13경로에 순차 구현한다. ACK bodyHash 입력만 미채택 GO0이다. N 효과 전 선예약·후행 phase/desktop/slot 접합과 실제 PG/RLS/Pool/TLS/slot 검증은 미완료다. STREAM/CLOSE replay와 감사 A안의 세부 범위는 각 채택 기록·구현 통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
 | Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIPab4cae4a3b29f94cca047ff2441ba0f2bad67110는 desktop 소스3·문서2를 보존하며 앞선80dd의 N current/만료와 감사 RED도 유지한다. raw5·보호3 불변/index0을 확인하고 같은 Primary가 다음 source를 작성한다. private 동일성과 PR/병합은 미확인으로 유지하고 인증 복구·push 재시도는 하지 않는다 |
 
@@ -15159,3 +15159,11 @@ N current 선행은 독립 C0/I1이며 material 뒤 실제 Tx 유지 보장이 �
 ## 2026-11-05 FN06 ARM 원 Tx 생산 연결 착수
 
 desktop 소스는 WIPab4cae4a에 보존했고 같은 Primary가 채택된 ARM header→원 native 명령 Tx의 선예약·N CREATED/R Binding·BOUND 연결을 시작했다. parser 존재를 실제 연결 완료로 세지 않으며 새 payload/API/권한은 추가하지 않는다. 실제 환경과 Delivery/ACK는 범위 밖으로 유지한다. 상세는 구현통제 §82다.
+
+## 2026-11-05 FN06 Binding 저장량 접합 지원
+
+원 native L은 FN15 포함 집합 밖이며 Binding 뒤 FN76 차분에 처음 편입됨을 실제 collector 본문으로 확인해 기존 Primary에게 전달했다. 잘못된 FN15 차감·중복 합산 없이 선예약/Binding 생산을 계속한다. 현재 정상 저장은 미완료이며 중간 합성 거절 결과를 인수로 올리지 않는다. 실제 환경 실행0, 상세는 구현통제 §83이다.
+
+## 2026-11-05 FN06 최초 거절 감사 A안 승인 반영
+
+직접 답변 call_0c2cf3bd25cd47cebea0ae87888fafc4로 감사 네 의미값의 source-only 구현이 채택됐다. 원 후보DC04B47E와 새 채택기록5268A3DF를 독립C0/I0로 결박했다. 진행 중 Binding 안정화 뒤 같은 Primary가 첫DENIED 저장/재조회를 순차 구현한다. ACK 입력 GO0·실환경 제외는 유지한다. 상세는 구현통제 §84다.

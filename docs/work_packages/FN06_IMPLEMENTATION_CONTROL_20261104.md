@@ -814,3 +814,25 @@ Web header 공급·Delivery/ATTEMPTED·broker frame·ACK/CONFIRMED는 이 단위
 후속 실행 기록: 실제 HUMAN route에 불량 ARM header를 보내도 N CREATED/APPLIED가 생기는 RED를 수행자가 확인했다(87df3a, exit1/1761.8939ms). 기존 strict parser를 route에서 소비한 뒤 같은 반례는400/INPUT_INVALID·N/이벤트0으로 통과했다(6f6d9c, exit0/1552.1944ms). 정상 ARM은 아직 SOURCE_UNAVAILABLE로 닫힌 미완료 상태이며 이 중간 거절을 Binding 완료로 세지 않는다. Main은 중복 실행하지 않고 정상 생산 단위 안정 후 직접 검증한다.
 
 같은 AccessRepository/원 store/service/broker 실제 조립에 필요한 apps/server/app.ts·apps/server/main.ts는 기존 WI §2.2 허용 경로임을 Main896b49가 확인했다. 필요한 최소 내부 접합은 이번 단위에 포함하되 기존 optional/native 경로·host/port/TLS·실행 금지를 유지한다. 새 승인 범위 확대가 아니다.
+
+## 83. Binding 구현의 L 계상 읽기 지원
+
+현재 기존 Primary는 원 authenticated Tx의 admission SQL와 원 actor/ARM/Tx·시계 이상 검산을 작성 중이다. 제출한 중간 합성 결과는 admission 접점 도달/명확 거절을 증명할 뿐 정상 선예약·Binding 생산 완료가 아니다. Main은 안정된 정상 생산 제출 전 중간 검사를 반복하지 않는다.
+
+Primary가 요청한 L/base_used 대조를 기존 읽기 검수자에게 맡겼다. 실제 db/migrations/0073_control_handoff_acceptance.sql.pending의 fn15_storage_actual(192~195)은 anchors(source+anchor)·FN15 reservation·handoff 전용 실제량만 합산하고, fn15_control_storage_actual(173~182)/fn15_legacy_projection(184~190)도 일반 native command/receipt/audit를 포함하지 않는다. 별도 native 제외 predicate는 없고 애초 포함 집합 밖이다.
+
+0076_native_first_receive.sql.pending의 fn76_l_rows(352~358)는 Binding EXISTS 뒤 원 command·receipt·선택적 승인소비·audit를 L에 편입한다. fn76_project_quota_settle(642~648)은 base_used=기존 SETTLED예약합+FN15actual+FN75actual, 기존 account.used=base_used+before_actual, used_delta=현재FN76actual-before_actual를 검산한다. Binding 전 FN76소계와 같은Tx의 원 실물/Binding 정착으로 L증가를 한 번 계상하며 FN15 차감·별도 L 재가산을 가정하지 않도록 Primary에게 전달했다. 실제 SQL 실행 증거가 아니다.
+
+검수자의 추정 wildcard 준비 조회1회 실패는 실제 근거에서 제외했다. 실제 목록을 먼저 확인하고 exact 경로만 읽도록 정정했으며 제품/시험 실패로 세지 않는다. Main의 사전 문자 검사는 부적합 메시지 초안을 발송 전에 차단했다. 실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않았고 source 단일 writer는 유지한다.
+
+계상 추가 대조: 0059_project_storage_quota.sql.pending(19~21,216~218)와 최종 확장0072_document_source_observation.sql.pending(315~317)의 SETTLED operation에는 prepareNativeBoundary가 없다. 0075_user_common_setup_definitions.sql.pending(261~268,276~277)의 FN75actual은 setup 사본과 실제 createProject/생성intent 원장에 한정되고 선택적 승인소비 분기도 없다. 따라서 이 두 base 항목에서도 native L을 차감하지 않는 근거를 확인해 Primary에게 전달했다. 실제 DB 행 조회는 아니다.
+
+Primary는 새 표/열·GUC·caller flag 없이 원 ARMED Window/Offer·원 command/HUMAN/SID·writer/policy의 fixed-intent 비용 형상으로 선예약을 구현 중이다. 비용의 미지 고정폭 상계와 실제 intent 생산을 구분하고, transient N 예약이 Binding 없이 commit되지 않도록 역완결을 연결한다. 현재 설계 방향이며 정상 생산 완료·검수 합격으로 세지 않는다.
+
+## 84. 최초 거절 감사 A안 직접 채택
+
+신산님이 call_0c2cf3bd25cd47cebea0ae87888fafc4 item0에 A안 감사 의미값·source-only 구현을 직접 승인했다. Main b7ec64는 원 후보 DC04B47E7A126B015AFF0BA7005D60DE52805E25D63AA11907B6239A85DF1436의 현재 파일 일치를 확인했다. 후보 원문의 DRAFT/GO0 표기는 승인 전 이력으로 보존했다.
+
+새 채택 기록 docs/contracts/FN06_PHASE_DENIAL_AUDIT_SEMANTICS_SOURCE_ADOPTION_20261105.md SHA5268A3DF0844ABFA96BC354BB5C80ABD8AB2FF8446398974298A1B7722B4B06F는 독립 C0/I0·시작/종료 지문 동일이다. 원 HUMAN 귀속·원 Challenge fullref·Window 정책·고정 source_kind, 최초 적격 P256 명확 거절, 같은Tx evidence/DENIED replay/audit1/ticketREJECTED와 정상 HUMAN close 보존을 기존13경로에 결박한다. 이 의미값만 SOURCE_GO로 전환했다.
+
+현재 Binding 단위를 중간 전환하지 않고 안정 제출한 뒤 기존 Primary가 남겨둔 첫 DENIED RED/fixture부터 순차 구현하도록 전달했다. 같은 파일의 동시 writer는 없다. ACK bodyHash 입력은 여전히 미채택 GO0이며 실제 DB·권한 부여·키·서비스·Agent·컴파일·J3/P03 R3·배포는 제외한다. 승인 기록은 구현/실환경 합격이나 전체 계획 완료가 아니다.
