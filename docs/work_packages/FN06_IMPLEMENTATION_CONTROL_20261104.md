@@ -1653,3 +1653,28 @@ Resource는 원 부모/Window/서버Session/profile와 실제Delivery/slot 만�
 CLOSE는 실제 전송 전 CAS의 raw CLOSED 원결과가 있어야 자기 호출의 종료로 확인한다. stream 종료/transport 오류만으로 CLOSED/receipt/ACK를 만들지 않는다. 기존 UNKNOWN 시도의 이력은 success로 덮지 않고 새 서명/재전송을 발급하지 않는다. 이미 진행 중인 자기 요청의 알려진 원결과와 새 요청을 구분하며, 구현에 새 외부 의미가 필요하면 근거를 반환한다.
 실제 원 Client/REGISTERED source·고정 transport/parser의 deferred STREAM→합법 offer/current→원 ARM→Binding/Delivery→실제 slot 흐름을 합성으로 반증한다. STREAM은 ARM 전까지 body를 완료하지 않아야 하며 미리 주어진 frame으로 deadlock을 숨기지 않는다. pending STATE·전송 전 CLOSE·중복/교차/부재·기한/UNKNOWN·늦은 actor 결과·원 frame 단발/JSON0을 직접 영향 범위에서 확인한다. fake HTTP/FSM 검증을 실제 PG/Tx/broker/HTTPS 인수로 부르지 않는다.
 기존 Source부재 거절·CJS/runtime키/closure/builtin·서명/target/body/cap·원 OPEN/authority 경계를 유지하고 성공 stub·guard/기준 완화·새 timeout0이다. 단일 writer·TDD·독립 검토·Main 직접 최소 검증·안정 지문 전 인수0, 실제 DB/권한/키/서비스/Agent/HTTPS/C# 및 ACK delta 제외를 유지한다.
+
+
+## 160. 대기 STREAM·명시 제어 접합의 소스 한정 검수
+기준 HEAD f2201af38c8894601fd9abf9d41c02d690081512에서 기존 Primary가 §159의 같은6경로 중4만 변경했다. STREAM reader1과 제어1을 분리해 ARM 전 대기하는 실제 reader→REGISTERED owner→ARM→Delivery parser→기존 slot의 합성 호출선을 연결했다. 중복 STREAM/제어2는 current·SIGN·native 전에 차단한다. 각 호출의 기한과 finally는 다른 호출을 해제하거나 원 STREAM3초를 늘리지 않는다.
+Main fresh 371333 등록7 PASS/2451.1625ms, 34ef62 unit10 PASS/515.244ms, 6b619a owner2 PASS/1144.8058ms, 25ef06 메모리 runtime1 PASS/558.1525ms로 고유20/fail0/skip0이다. 타입 abca1e·문법 c3621a/398532·diff607d83 모두 exit0이다. raw6의 Main 전후5778ea/30bdd1와 독립 읽기 시작/종료 지문이 일치했다. 독립 판정 Critical0/Important0이며 reviewer는 수정·시험 실행을 하지 않았다.
+실제 Delivery6초·ABA·사용자 dispose와 늦은 결과 차단을 보존했다. STREAM UNKNOWN은 성공으로 덮지 않고 새 서명/재전송을 막으며, 이미 진행 중인 제어의 자기 원결과와 구분한다. CLOSED는 검산된 raw CLOSE 결과로만 확인하고 JSON은 slot을 만들지 않는다. Primary의 dispose 뒤 늦은 catch가 FAILED로 덮는 반례1은 같은 단위에서 보완했다. Main 직접 제품/시험 수정0이다.
+정확 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^pending STREAM 실제 reader|^pending STREAM과 제어1|^pending STREAM 중 STATE|^새 control의 긴 호출|^STREAM Delivery의 실제 자원6초|^pending STREAM·control의 원 owner|^pending STREAM의 JSON' tests/desktop/desktop-trust-registration.test.cjs
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^non-OPEN 원결과 조회|^non-OPEN UNKNOWN|^직접 Client의 future proof|^짧은 OPEN/STATE 호출 완료|^OPEN Decoder 생성의 원 guard|^handoff budget 초기검사|^각 pending reader/control|^user dispose는 진행 중 OPEN/control|^known current3초|^non-OPEN SIGN 대기' tests/unit/FN06/native-first-receive-client.test.ts
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^desktop 첫 수신 HUMAN adapter|^CJS OPEN 수신 facade' tests/desktop/native-first-receive-owner.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+8. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 53762 | 10C5E2BA2CC3C7FBCEEA30E51C3FFC8D0F39D954C9DA926F63D5F497140FED9D |
+| apps/desktop/src/native-first-receive-client.cjs | 15967 | 0283871BA93CE25488E6E96C15046C6927F8853CB6FB2D3B3ADBFF8F8DD28925 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 74013 | B9CA59E33F0705A72489ADAF585CCFE27CA554F68F9C84EFF2EF2C5672D22566 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 74614 | EADA4C75173E0D3969F7ED61401B36BC5D4BB334EA7B4A4F3DE37A3346741839 |
+| tests/desktop/native-first-receive-owner.test.cjs | 29559 | 72D9E6926937070A9A35A2B2D7E921A9E5BCC363FAAB3B9A7E6D2DD2180A964D |
+| tests/desktop/desktop-trust-registration.test.cjs | 151187 | 7E06AAC8F75623C42E0E2A9266DED1EE48837CED9A82C7BB4F557466912E815A |
+실제 변경은 TS/CJS Client·unit·등록 시험4이며 owner/desktop owner 시험2는 불변이다. 변경4와 Main 현황2만 보존한다. 보호 비추적3은 제외하고 LF/CRLF 예정 경고2는 별도·설정/정규화0이다. 복구는 해당 변경4 한정 revert다. private 동일성·PR·병합은 미확인이고 인증 복구/push 재시도0이다.
+다음은 부모 S4의 실제 slot 검산 SlotReceipt 생산 접점이다. 같은 Primary에게 원 private Session·실제 slot 수용·기존 snapshot13 및 broker.begin/candidate의 만료식을 읽기 대조하도록 배정했다. void/identity만으로 receipt를 만들거나 production begin 부재를 실제 만료 불일치로 단정하지 않는다. 쓰기 범위는 검토 후 고정한다. shell/UI·ACK bodyHash 미채택 GO0·OPEN 감사 잔여·실제 서버/DB/Tx/broker/TLS/OS/키/helper·Agent/C#·사용자 인수·전체 계획은 여전히 미완료다.

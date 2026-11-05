@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 OPEN 이후 phase current·Node/CJS/owner·C# validator·후속 전송과 private slot 인계를 소스 범위로 연결했다. 대기 STREAM·제어 접합·SlotReceipt 생산·shell/UI·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 대기 STREAM·제어 phase 접합, 실제 slot 검산 SlotReceipt 생산·shell receiver/currentSource 조립·UI controller 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
+| FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 OPEN 이후 phase current·Node/CJS/owner·C# validator·후속 전송과 private slot 인계를 소스 범위로 연결했다. 대기 STREAM·제어 접합은 소스 검수했으며 SlotReceipt 생산·shell/UI·전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | 실제 slot 검산 SlotReceipt 생산·shell receiver/currentSource 조립·UI controller 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint 687f35fb62a82a63b1443feabdadd00a659a400d에 자원 수명/호출 예산 변경4와 현황2를 보존했다. 같은 Primary가 대기 STREAM·제어 phase의 기존 흐름을 접합한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint 687f35fb62a82a63b1443feabdadd00a659a400d에 자원 수명/호출 예산 변경4와 현황2를 보존했다. 대기 STREAM·제어 phase 접합은 §160에서 fresh20/독립 C0/I0로 한정 검수했고 다음 SlotReceipt 생산 접점을 대조한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15397,3 +15397,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 근거/범위: source687f35fb의 수명/예산 보완은 검수 보존했다. 공통 controller 때문에 pending STREAM과 ARM/STATE/CLOSE가 진행하지 못하는 Client 제한을 부모의 stream_owned/Binding 선행과 대조했다. 기존 승인 흐름의 내부 접합이며 Agent 병렬 실행을 새로 허용하는 변경이 아니다.
 - 담당: 기존 Primary의 같은6경로·Main 어울 검수/통합. 통제 §159에서 stream reader1+명시 제어1, 중복/동시 제어2 효과0·원 signer/supplier 단일성을 고정했다.
 - 검증/다음: STREAM body를 ARM 전까지 보류한 실제 source/transport/parser 합성 흐름부터 RED→GREEN으로 확인하고, STATE/CLOSE·기한/UNKNOWN/late/단발 비밀 폐기를 검수한다. 아직 미검증이며 receipt/서버 producer·shell/UI/ACK·실제 환경과 전체계획은 미완료다.
+
+
+## 2026-11-05 FN06 대기 STREAM과 명시 제어 접합 소스 검수
+- 판정: §159 실제 변경4를 Main fresh20 PASS/fail0/skip0·타입/문법2/diff exit0·raw6 전후 동일·독립 Critical0/Important0로 한정 검수했다. source-only이며 실제 DB/Tx/broker/TLS/OS/Agent 인수가 아니다.
+- 근거: 원 STREAM을 ARM 전에 완료하지 않는 deferred reader→실제 REGISTERED owner/ARM→Delivery parser/기존 slot 합성 흐름, 중복 효과0·기한/UNKNOWN/ABA·dispose/late·JSON slot0을 확인했다. 원 호출별 finally와 실제 만료를 보존한다. 정확 명령·지문·오류1 보완은 구현 통제 §160에 기록했다.
+- 조치: 변경4+Main 현황2만 같은 branch에 보존한다. 보호 비추적3·불변 owner2를 유지하고 private 동일성/PR/병합 미확인·push/인증 복구0이다. 기존 Primary에 다음 SlotReceipt 실제 생산 접점의 읽기 대조를 맡겼다. 미채택 ACK 변경과 실제 DB·권한·키·서비스·Agent 실행은 하지 않는다. shell/UI와 전체 계획은 미완료다.
