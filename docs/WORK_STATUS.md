@@ -15293,3 +15293,8 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 ## 2026-11-05 BOUND metadata 검수 보완
 - 기존 담당자는 GET3와 실제 current 소비의 합성 검증을 제출했다. 독립 검수에서 readonly query의 SELECT INTO 전달 I1을 확인해 합성 RED와 최소 보완을 같은 담당자에게 맡겼다.
 - 실제 DB 실행은 없었다. I1 해소·독립 재검수·Main 직접 검증 전 인수나 후속 단위 전환은 하지 않는다.
+
+## 2026-11-05 보호 GET3·BOUND metadata 소스 부분 인수
+- Main fresh 합성9 PASS/skip0·타입/diff0·raw14 전후 동일과 독립 C0/I0를 대조했다. SELECT INTO I1은 원 query 전달 RED 뒤 효과 전 거절로 해소했다. 정확 명령과 지문은 구현통제 §125에 있다.
+- 활성 Window·고정 State/Offer의 보호 조회와 실제 current 소비선을 합성으로 연결했다. source 미구성은 false, 원 SID 변경은 현재 권위를 발행하지 않는다. 실제 DB/SQL/Tx/RLS·TLS·OS·브라우저·Agent는 미검증이다.
+- 검증된14경로를 분리 보존하고 같은 Primary가 직접 승인된 OPEN 이후 phase current WI26경로를 이어간다. 전체 FN06·작업계획서는 미완료다.

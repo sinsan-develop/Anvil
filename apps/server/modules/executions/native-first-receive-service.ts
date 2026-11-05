@@ -111,6 +111,25 @@ export class NativeFirstReceiveService{
    }finally{active=false;}
   });if(finalCheck===null)denied();(finalCheck as ()=>void)();return result;
  }
+ /** 역사 원문 기한과 현재 조회 권한의 기한을 분리한다. COMMIT/release 뒤에도 본문 반환 전 재검산한다. */
+ async readHuman(token:string,pid:string,kind:'ACTIVE'|'STATE'|'OFFER',target:unknown){
+  if(!receiveUuid(pid)||!['ACTIVE','STATE','OFFER'].includes(kind)||(kind==='ACTIVE'?!receiveRef(target):!receiveUuid(target)))throw new AuthFailure('INPUT_INVALID',400);
+  let finalCheck:(()=>void)|null=null;
+  const result=await this.#access.authenticated(token,null,async(db,actor)=>{
+   const session=actor.authSession;if(!session||!receiveUuid(session.id))throw new AuthFailure('AUTH_REQUIRED',401);const query=db.query,tuple=[actor.actorId,actor.clientId,actor.credentialGeneration,session.id,session.idleExpiresAt,session.absoluteExpiresAt];let limit=Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt)),last=-Infinity;
+   const check=()=>{const at=this.#now();if(db.query!==query||actor.authSession!==session||!receiveSame(tuple,[actor.actorId,actor.clientId,actor.credentialGeneration,session.id,session.idleExpiresAt,session.absoluteExpiresAt])||!Number.isFinite(at)||!Number.isFinite(limit)||at<last||at>=limit)throw new AuthFailure('NATIVE_RECEIVE_EXPIRED',412);last=at;};finalCheck=check;check();
+   const member=await projectMember(db,actor,pid,true);check();if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);
+   const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[pid])).rows[0];check();if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId||!Number.isSafeInteger(Number(control.generation))||Number(control.generation)<1)throw new AuthFailure('PROJECT_CONTROL_REQUIRED',403);
+   const command:ProjectCommand={schemaVersion:1,projectId:pid,commandId:pid,clientId:actor.clientId,controlGeneration:Number(control.generation),operation:kind==='OFFER'?'readNativeReceiveOffer':'readNativeReceiveWindow',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{}};
+   const policy=await authorizeMaterial(db,actor,command,true);check();if(policy.approvalRequired)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);limit=Math.min(limit,policy.validUntil);check();
+   const out=await this.#store.readHuman(db,actor,pid,kind,target,this.#access.installationId,Number(control.generation),check);check();limit=Math.min(limit,Date.parse(out.expiresAt));check();
+   if(kind==='STATE'&&['BOUND','ATTEMPTED'].includes(out.value.phase)&&out.value.current.reason==='OWNER_UNAVAILABLE'&&this.#preparations!==null){
+    try{const current=await Reflect.apply(ProjectNativePreparations.prototype.receiveWindowMetadataCurrent,this.#preparations,[db,actor,pid,target,limit,check]);check();if(!receiveSame(current.windowRef,out.value.windowRef)||!receiveSame(current.bindingRef,out.value.bindingRef)||!receiveSame(current.current.authorityRef,out.value.authorityRef)||current.current.phase!=='RESERVED')denied();limit=Math.min(limit,Date.parse(current.expiresAt));check();out.value.current={checkedAt:current.current.checkedAt,usable:true,reason:'CURRENT'};out.value.observedAt=current.current.checkedAt;out.value.expiresAt=new Date(Math.min(Date.parse(out.value.expiresAt),limit)).toISOString();}
+    catch(error){const failure=nativeReceiveClassifyFailure(error);if(!failure.safe||failure.authCode===null||!['NATIVE_SOURCE_UNAVAILABLE','NATIVE_CONTEXT_CHANGED','NATIVE_SOURCE_EXPIRED'].includes(failure.authCode))throw error;out.value.current={...out.value.current,usable:false,reason:failure.authCode==='NATIVE_SOURCE_EXPIRED'?'EXPIRED':'OWNER_UNAVAILABLE'};}
+   }
+   check();return out.value;
+  });if(finalCheck===null)denied();(finalCheck as ()=>void)();return result;
+ }
  async readProfile(token:string,pid:string){
   if(!receiveUuid(pid))throw new AuthFailure('INPUT_INVALID',400);let finalCheck:(()=>void)|null=null;
   const result=await this.#access.authenticated(token,null,async(db,actor)=>{

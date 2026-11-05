@@ -1230,3 +1230,33 @@ docs/work_packages/FN06_POST_OPEN_PHASE_CURRENT_SOURCE_WI_20261105.md SHA256 94A
 독립 I1: readonly query가 SELECT INTO를 차단하지 않아 원 query로 전달한다. 실제 DB 실행은 없었다. 같은 Primary에게 합성 RED와 효과 전 거절의 최소 보완을 지시했다.
 안정14의 기존 제출은 보존하되 이 I1 해소 전 인수하거나 후속 구현으로 전환하지 않는다. 정상 CurrentSource·등록·writer·N 복원과 원 기한/정착·default 정책을 유지하고 정확 명령과 raw 지문을 다시 받는다.
 후속 WI 목록 보정은 scoped C0/I0다. 현재 최종 WI A3FA8841·26경로이며 후보011C3C22와 직접 승인 범위는 불변이다.
+
+## 125. 보호 GET3와 BOUND metadata 소스 검증
+기준 HEAD1c24908a0050bfc738d949883f032a9d8fab53c5. 기존 GET3 본문과 metadata 소비선의 독립 검토를 수거했고 SELECT INTO I1은 보완 범위 C0/I0로 해소했다. 나머지 불변 본문의 검토를 유지한다.
+Main fresh 실행은 아래4+1+3+1=9시험 PASS/skip0, 타입/diff exit0이다. 실제 PostgreSQL/DDL/Tx/RLS·TLS·키/helper·브라우저·Agent 인수는 NOT_RUN이다.
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^보호 GET3|^보호 profile GET은 원 정책' tests/unit/FN06/native-first-receive-routes.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^Window metadata 전용 current는' tests/unit/FN06/native-preparation-store.test.ts
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^보호 GET3|^Window metadata SD는' tests/unit/FN06/native-first-receive-schema.test.ts
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^보호 Offer GET Store는' tests/unit/FN06/native-first-receive-store.test.ts
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+실행 증거: e696fe routes4/2259.846ms,409015 metadata1/6980.137ms,de64c8 schema3/1655.978ms,c93c58 Store1/1436.5189ms,164d68 type0,492de4 diff0이다. schema 시험은 실제 SQL 실행이 아니라 형상 검산이다.
+raw14는 검증 전후 동일했다. 후조회 JSON이 출력 상한에 잘려 첫 파싱이 실패한 준비 오류1은 출력량만 보정해 재조회했다. 시험 재실행이나 제품 변경은 없었다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/server/modules/executions/native-first-receive-store.ts | 134315 | 08F395D93B6AF119878B748854F822D6F112F07812BB593A24BC8798E22BCD10 |
+| apps/server/modules/executions/native-first-receive-service.ts | 61116 | 8EB7E93600CA208987BA2F307A6F54C4C329AADE2EC959CD2D5A1D26B1515C97 |
+| apps/server/modules/executions/native-first-receive-routes.ts | 24486 | 722A424B3FE7FF66B10AFBAF428CFDB710FFF300FB10656428F2B0FBCEA7212A |
+| db/migrations/0076_native_first_receive.sql.pending | 498041 | 2A5D7F1EC8541F804C641246BB8841E1A27685E8BA44FE2694019B7EB7319F07 |
+| tests/unit/FN06/native-first-receive-store.test.ts | 39153 | 74C24E88EBFD1B43DD7D9D2943E6F2BBE75046A24A7384499CFCD54055B5BD80 |
+| tests/unit/FN06/native-first-receive-routes.test.ts | 175494 | A3D5A9ACC57E029593A9F4A8982DD60DB2D601136B202AFAEF0B72CA6CB850EE |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 49123 | F6A996D945EC6A6062E506A9F253C008A999CFFBA9739E10CB8C1FED823EC9EF |
+| apps/server/modules/executions/project-native-preparations.ts | 65755 | C8B7E9F935E055FFF42D849BE9EC6299A9EEF545598481DEAE7772167C9D35DC |
+| apps/server/modules/executions/native-preparation-store.ts | 28962 | 01C5B36777A36C06F7C957D5B468E5D54021D78A15976ECA6C096669779A565E |
+| apps/server/modules/executions/native-preparation-current-source.ts | 17760 | 2317620F12F4CD904F5D7937986021CFE355A5A06B985F62CCEEA29DCF582564 |
+| apps/server/modules/connections/project-registration-reads.ts | 13827 | EC5A50A3B35AAC67EAAAD4C50A8C5AD4AAF72A200BDF334791A4EE6F99174B18 |
+| apps/server/modules/executions/project-writer-authority.ts | 78957 | CF415E8A249147D8E4D017F16262A01680ACD9CCB0866AD5C79BA7EB3F1956FD |
+| tests/unit/FN06/native-preparation-store.test.ts | 136445 | BB6ADDBC17719F296218D95465A25E1BDDB53A90D343B7C146C9B2C6394FADD1 |
+| tests/unit/FN06/native-preparation-current-source.test.ts | 57715 | C159B2B85ED08433B27BC8F250AB5570C8AA77B6A5C65A2DDDCFA1E9772AEE40 |
+SELECT INTO·TEMPORARY·UNLOGGED·효과 함수·쓰기 CTE·다중문의 실제 원 query 전달0 반례를 보존했다. 기존 정상 Concrete CurrentSource/등록/writer/N 복원·BOUND current=true와 미구성 false·원 SID 변경·기한/재인증/폐기/정착을 합성으로 확인했다.
+index에는 검증한14경로만 먼저 분리 보존했다. LF 정규화 예정 경고는 별도이며 Git 설정·원 보안 기준을 바꾸지 않았다. Main 현황2와 함께 안전 checkpoint로 보존하고 후속 승인 WI26경로를 같은 담당자에게 순차 배정한다.
+복구는 이14경로의 한정 revert이며 기존 dirty/untracked·과거 SQL·실제 DB/runtime은 보존한다. 전체 FN06·계획 완료나 실제 사용 가능을 선언하지 않는다.

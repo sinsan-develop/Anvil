@@ -1,3 +1,4 @@
+import {readNativeReceiveMetadataContext} from '../executions/project-native-preparations.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {readNativePreparationCommand} from '../executions/native-preparation-input.ts';
 import type {ProjectCommand} from '../access/project-command.ts';
@@ -49,10 +50,11 @@ export class ProjectRegistrationReads{
  }
  /** 원 native 정책 아래 같은 row 검산을 소비한다. 기존 public read의 등록 정책은 바꾸지 않는다. */
  async nativePreparationRecord(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,command:ProjectCommand|null){
-  if(!actor.authSession||!uuid.test(id))throw new AuthFailure('AUTH_REQUIRED',401);
+  const metadata=readNativeReceiveMetadataContext(db,actor,pid);if(metadata&&metadata.registrationRef?.id!==id)throw new AuthFailure('NATIVE_CONTEXT_CHANGED',409);if(!actor.authSession||!uuid.test(id))throw new AuthFailure('AUTH_REQUIRED',401);
   const member=await projectMember(db,actor,pid,true);if(member.participation!=='OWNER'||member.archived_at)throw new AuthFailure('NOT_FOUND',404);
   const control=(await db.query('SELECT * FROM anvil.project_control WHERE project_id=$1 FOR UPDATE',[pid])).rows[0];if(!control||control.revoked_at||control.actor_id!==actor.actorId||control.client_id!==actor.clientId)throw new AuthFailure('PROJECT_CONTROL_REQUIRED',403);
-  if(command){const exact=readNativePreparationCommand(command);if(exact.projectId!==pid||exact.clientId!==actor.clientId||exact.controlGeneration!==Number(control.generation))throw new AuthFailure('NATIVE_CONTEXT_CHANGED',409);await authorizeMaterial(db,actor,exact,true);}
+  if(metadata){if(command&&contentHash(canonicalJson(command))!==metadata.commandHash)throw new AuthFailure('NATIVE_CONTEXT_CHANGED',409);await authorizeMaterial(db,actor,{schemaVersion:1,projectId:pid,commandId:pid,clientId:actor.clientId,controlGeneration:Number(control.generation),operation:'readNativeReceiveWindow',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{}});}
+  else if(command){const exact=readNativePreparationCommand(command);if(exact.projectId!==pid||exact.clientId!==actor.clientId||exact.controlGeneration!==Number(control.generation))throw new AuthFailure('NATIVE_CONTEXT_CHANGED',409);await authorizeMaterial(db,actor,exact,true);}
   else await authorizeMaterial(db,actor,{schemaVersion:1,projectId:pid,commandId:pid,clientId:actor.clientId,controlGeneration:Number(control.generation),operation:'readNativePreparationAuthority',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{}});
   const r=await this.#record(db,actor,pid,id),basis=(await db.query('SELECT anvil.connector_basis_current($1,false) ok',[id])).rows;
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0]?.at,observedMono=performance.now();if(!(now instanceof Date))throw new AuthFailure('NATIVE_SOURCE_UNAVAILABLE',503);
