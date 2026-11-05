@@ -15350,3 +15350,19 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 변경: 원 REGISTERED/validator·보호 원키 호출선에 새4phase의 exact current/head/null·원 참조/기한을 연결했다. 효과 전 단발 key를 원 keyId/Window/Challenge fullref로 결박해 proof 시각/hash 변경 우회를 차단한다. OPEN/authority·일반 SIGN/예산/cap은 보존한다.
 - 오류: Node 형상 RED2→GREEN2, CRLF suffix 가정의 시험 삽입 준비 오류1을 분리 보존했다. 기준 완화·skip 승격0이다.
 - 다음: 같은 Primary가 기존 원 Session/credential의 non-OPEN HTTPS 소비 최소 범위를 읽기 확인한다. 실제 DB·권한·키·서비스·Agent·컴파일·ACK 변경·Git 복구 제외 유지, 전체계획 미완료다. 상세 통제 §147.
+
+## 2026-11-05 FN06 원 세션 후속 전송 구현 진행
+- 담당: 기존 Primary 단일 writer, Main 어울 범위 관리·검수·통합. 문서 checkpoint4452ee27 이후 통제 §148의6경로에 §149의 기존 owner1을 추가한 정확7경로다. 원 WI 허용목록 안의 내부 기한 전달이며 새 공개/권한 계약0이다.
+- 상태: 실제 미구현 반례 f91c93 RED/exit1을 확인했다. OPEN credential이 없는 경우 서명/전송 없이 거절해야 하나 기존 메소드 부재 TypeError였으며 현재 제품 소비선을 구현한다. 아직 GREEN/검수 완료가 아니다.
+- 기술 보완: owner가 유일하게 관측한 더 짧은 phase current 기한을 원 소비 Client에 min-only로 전달한다. 중복 current 조회·기한 확대·서명5키 응답 변경을 피하고 전달 누락 시 native 전송0을 유지한다.
+- 오류/조치: Main 중간 문구의 한국어 외 짧은 출력1은 즉시 한국어로 바로잡고 PMO에 알렸다. 제품/실행 대상 영향0이며 이후 전송 문구와 도구 인자 전체를 사전 언어 검산한다.
+- 다음: 실제 owner/Session→합성 전송→원 parser 정상·중요 음성/UNKNOWN 검증, 안정7 지문·독립 검토·Main 검증으로 이어간다. 실제 DB·권한·키·서비스·Agent·HTTPS·컴파일·ACK 변경·Git 복구 제외이며 전체계획은 미완료다.
+
+- 후속 검수 갱신: Main 직접21 PASS/skip0·타입/문법2/diff0·raw7 불변이나 독립 C0/I1로 아직 인수하지 않았다. TS 직접 소비의 첫 check 실패가 phaseController를 남길 수 있어 같은 Primary의 기존 TS 제품/시험2만 재작업한다. CJS 정상 호출선은 선행검사/실패 abort로 보호되므로 영향 범위를 확대하지 않는다. 통제 §151과 실제 RED→GREEN·scoped 재검토로 닫는다.
+
+## 2026-11-05 FN06 후속 전송 소스 한정 검수
+- 담당: 기존 Primary 구현, Main 어울 직접 검증·통합, 기존 독립 검토자 읽기 검수. 통제 §148–152의 정확7경로다.
+- 결과: 독립 첫C0/I1의 직접 TS controller 정리를 실제 RED→GREEN으로 보완했고 scoped 재검토C0/I0다. Main 수정후 fresh13 PASS/skip0·타입/diff0·raw7 불변, 불변 영역9시험과 문법2의 직전 실행을 재사용해 고유22시험 근거다. 모든22를 보완 후 새로 실행했다고 주장하지 않는다.
+- 기능: 같은 수신 인스턴스의 보호 credential로 STREAM/ARM/STATE/CLOSE 고정 전송·실제 parser·확인된 원결과 조회·UNKNOWN HUMAN 고정 조회를 소스/합성으로 연결했다. phase current1/SIGN1·min-only/timer 취소·위조 신호/선행 거절 정리를 검산했다.
+- 미검증: 실제 HTTPS/키·DB/권한/서비스/Agent·OS/helper·C#·사용자 인수는 NOT_RUN이다. 실제 slot handoff·ACK와 UI controller/전체계획은 미완료이며 빈 처리나 테스트 이월로 숨기지 않는다.
+- 다음: 같은 Primary에게 STREAM decoder의 private frame→기존 원 owner slot의 단발 handoff를 기존 승인6경로로 분리 배정한다. ACK bodyHash 미채택과 actual 실행 제외는 그대로다. 보호 비추적3은 SHA 불변으로 보존한다.

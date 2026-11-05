@@ -1494,3 +1494,54 @@ C# validator 소스3+Main 현황2는64bed2e634e490582de84705f12b7da2dcbd8234에 
 원 OPEN Session/credential·Window/Session fullref·source·신원/generation·기한/ABA를 효과 전에 검산한다. TLS pin/redirect/header/MIME/cap/절단·await 뒤 최소기한과 UNKNOWN sticky를 유지한다. STREAM JSON으로 frame/slot/ARM을 만들지 않는다. 같은 proof/signature 결과 조회와 fresh 서명을 구분하고 UNKNOWN 뒤 자동 native 재전송·재서명0이다. 허용된 기존 HUMAN 고정 GET만 결과 확인에 사용한다.
 정상/중요 음성의 실제 원 Session→owner SIGN→합성 transport→parser 호출선으로 TDD하고 큰 fixture 복제·성공 메소드 대역·기준 완화·새 테스트 도구 도입0이다. runtime export8/closure14/builtin3과 기존 OPEN/authority는 보존한다. 불변 package 시험은 필요한 선택 실행만 한다.
 실제 HTTPS·키·DB·권한·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 제외한다. Node fake transport 합성은 실제 TLS/OS/사용자 인수로 올리지 않는다. 이 단위 이후 controller/전체 여정은 다시 실제 남은 호출선으로 판단한다. Main은 제품/시험 쓰기0이다.
+
+## 149. 원 phase 관측 기한의 내부 최소값 전달 보완
+§148 단일 조회 원칙을 지키면 fresh phase current는 owner.signPhase만 읽는다. 기존 exact 서명5키 반환에는 그 관측으로 좁힌 owner endWall을 원 소비 Client에 전달할 자리가 없다. Client가 current를 다시 읽거나 처음 기한을 쓰면 각각 중복 조회 또는 더 짧은 관측 기한 누락이 된다.
+따라서 기존 WI 안의 apps/desktop/src/trust-enrollment-owner.cjs 한 경로를 §148의6에 추가해 정확7경로로 고정한다. 별도 사용자 데이터/공개 API·HTTP·IPC·권한·키 계약이 아니라 기존 승인 기한을 줄이는 내부 전달 접점이다. Main은 제품 쓰기0이다.
+phase 전용 private 최소기한 콜백은 원 Client가 소유하고 유효한 안전 정수 시각의 min 축소만 허용한다. 관측 검산 뒤 SIGN 전·응답 반환 전 실제 owner 최소기한을 연결하고, 콜백/await 뒤 원 문맥과 기한을 다시 검사한다. 소비 경로에서 이 전달을 확인할 수 없으면 native 전송0이며 선언된 성공값/늘어난 기한을 채택하지 않는다.
+OPEN의 기존 signOpen 인자·서명5키 응답·authority signer는 보존한다. phase source도 exact {signPhase}이며 raw current/credential/새 성공 능력을 반환하지 않는다. Proxy/getter·외부 콜백 부작용은 기존 보호 snapshot/문맥 검산으로 거절하고 parent/원 작업10초·proof·Window/Session/owner 기한을 늘리지 않는다.
+반례는 current3초·SIGN/반환/전송 전후 지연, 전달 누락/오염·콜백 뒤 문맥 변경·UNKNOWN 재요청0을 실제 owner→Client 소비선에서 검산한다. 겉보기 통과를 위한 중복 조회·fixture 기한 확대·guard 생략0이다. 기존6의 독립 transport 구현은 이 보완과 함께 계속한다. 실제 효과와 ACK delta 제외는 그대로다.
+
+## 150. phase 신호 타입과 정리의 중간 검토 보완
+작성 중 owner diff b49673에서 기존 signal.aborted boolean 검사 뒤 새 EventTarget 메소드가 실제 brand를 요구함을 확인했다. add가 throw한 뒤 finally의 remove도 throw하면 후속 controller/cancel/operation/active 회수가 건너뛰어질 수 있는 source 접점이다. 이 시점 실제 owner 잔류 재현은 아직 미확인이며 합격/실패를 확정하지 않는다.
+Main24dc5b의 메모리 Node builtin 대조는 {aborted:false}에 addEventListener/removeEventListener를 호출하면 모두 ERR_INVALID_THIS임을 확인했다. 제품/키/서비스 호출0이며 이 검산을 owner 전체 재현이나 기능 PASS로 세지 않는다.
+같은 Primary에게 실제 입력 반례와 SIGN/IO0·busy 잔류0을 검산하고 active 변경 전 거절 또는 listener 실패와 ticket 회수를 분리하도록 지시했다. 기존 OPEN 보존·정확7경로·실제 실행 제외는 그대로다. 사전 언어 검산에서 한국어 외 짧은 초안2건을 전송 전에 차단했으며 제품/파일/명령 영향0이다.
+
+## 151. HTTPS 소비 안정7 직접 검증과 TS 정리 I1
+Main b29741/4062a7 raw7 전후 동일이며9e7175 unit10 PASS/679.2581ms·d6d14a owner6 PASS/1929.4395ms·a13c17 CJS4 PASS/2075.0303ms·771523 메모리 package1 PASS/1362.8104ms다. 고유21시험/fail0/skip0, 타입46a94c·문법3ab26a/2d4b9f·diff e6d5c8 exit0이다. 실제 HTTPS/키/OS/DB 인수는 아니다.
+독립 읽기 안정7은C0/I1다. 직접 TS consumeReceivePhase가 phaseController 설정 뒤 try 밖 첫 check에서 거절되면 finally 미진입으로 controller를 남긴다. 정상 OPEN 뒤 미래 proof.issuedAt 입력 거절→정상 proof 재호출이 영향을 받는 경계다. CJS 선행 fresh/실패 abort가 보호하므로 CJS 정상 경로 문제로 확대하지 않는다. runtime TS 직접 소비도 이번 지원 범위이므로 제외하거나 완료 처리하지 않는다.
+같은 Primary가 기존 TS client·unit 시험2경로 안에서 실제 RED→GREEN으로 보완한다. 첫 검사와 controller 수명을 기존 정리 경계 안에 두고 SIGN/native0·정상 후속 호출을 검산한다. 다른 안정5는 쓰기0으로 유지하며 원 guard/시간·오류/권한을 낮추지 않는다. 보완 뒤 scoped 독립 재검토와 Main fresh 영향 시험 전 인수0이다.
+그 외 원 credential/profile·current1/SIGN1·고정 transport/parser·원 결과/UNKNOWN 구분·min-only/timer/위조 신호 정리·기존 authority/runtime/키 수는 추가C/I0이나 전체 slot handoff/ACK/실환경은 미완료다. 후속 slot 인계 읽기 결과는 기존6경로의 내부 생산/소비 공백이며 이번 I1을 닫은 뒤 별도 최소 단위로 이어간다.
+사전 문구 언어 검산의 동일 초안 오류가3회 차단돼 해당 자유 초안 생성 방식을 중단하고 검산된 한국어 고정 문구를 재사용한다. 전송·제품 영향0이며 Main 검수·실행 인자는 계속 사전 검산한다.
+
+## 152. HTTPS 소비 소스 한정 검수
+§151 I1의 실제 future proof 거절→정상 후속 호출 RED→GREEN을 같은 Primary가 수거했다. scoped 독립 재검토는 I1 해소·추가C0/I0이며 TS 보완 역치환이 이전45662B/881DD745와 같고 시험 앞60791B도 기존6C4F1080과 같음을 확인했다. 기존 UNKNOWN·효과·오류/기한 본문을 바꾸지 않은 정리 보완이다.
+Main 수정후 fd35af의 unit11 PASS/481.8848ms,fe0735 실제 owner 연결1 PASS/1243.9599ms,913cd7 메모리 package1 PASS/902.1397ms를 확인했다. fresh13/fail0/skip0, 타입536769·diff673d5a exit0,raw7 전후 동일이다. 같은 입력검사/원 결과/UNKNOWN/기한 핵심을 재검증했고 불변 owner 나머지5·CJS4는 §151의 실제 실행 결과를 재사용했다. 총 고유22시험 근거이며 이전21+이번13을34로 합산하지 않는다. CJS 문법2는 소스 불변이라3ab26a/2d4b9f exit0을 재사용했다.
+최초 정상4phase·원 credential 부재 RED f91c93/440380과 proof3초 취소·위조 신호·§151 정리 반례를 각각 보완했다. wrapper 설치시점 fixture 오류1·쓰기 전 marker/assert 오류는 제품 실패와 구분했다. cap8192 literal의 타입 추론은 number 주석으로 보정했으며 실제 상한을 높이지 않았다.
+직접 검증 명령(보완 전, 불변 영역의 재사용 근거):
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^non-OPEN|^known current3초|phase 순수|phase typed' tests/unit/FN06/native-first-receive-client.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='위조 AbortSignal|REGISTERED owner→원 OPEN Client|REGISTERED phase current의 SIGN|REGISTERED phase의 current3초|^REGISTERED owner의 첫 OPEN|^native 실제 REGISTERED→Client' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^desktop 첫 수신 HUMAN adapter|^CJS OPEN 수신 facade|^CJS phase' tests/desktop/native-first-receive-owner.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+8. git diff --check
+정리 보완 후 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^직접 Client의 future proof|^non-OPEN|^known current3초|phase 순수|phase typed' tests/unit/FN06/native-first-receive-client.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='REGISTERED owner→원 OPEN Client' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+5. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-preparation-https.ts | 39492 | B3A87CD927E57578BF387E1B90523117196773C6D5F809734B724123B42B2045 |
+| apps/connector/runtime/native-first-receive-client.ts | 45676 | D5AC57D82A6B1B47906D329A537932969ED9585581ABDEF0DBCBF9F7063AEDF3 |
+| apps/desktop/src/native-first-receive-client.cjs | 14728 | DB57D920512923FBEEF766875A980618E75DD39863E057CFDC3EF76E8D692931 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 72549 | 40077152667FE41DEF32AFB5FB5E73DC0CC2EB3DBD4BBC8B7FEF7B2CBCD7A198 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 61633 | 4C9298DAB630CC392668C5158A70161AB6401EFCFD79E742A9113AACFE43DBC8 |
+| tests/desktop/native-first-receive-owner.test.cjs | 29536 | 9E0B20D9FDA594C0B616CB89FDD2B9CF9321D36FDED94F47709A616CAE33C86D |
+| tests/desktop/desktop-trust-registration.test.cjs | 123460 | 04D282E1A02548DCA6C8293E7851EA55262BA8922EE9C99BAA3F184A3B690653 |
+같은 OPEN 인스턴스의 보호 Session/credential/profile→current1회·SIGN1회→고정 phase transport→실제 decoder/parser를 합성으로 연결했다. 확인된 원결과는 같은 canonical proof/signature만 사용하고 UNKNOWN은 native 재전송·재서명0·기존 HUMAN 고정 GET으로 구분한다. STREAM JSON은 비권위 역사이며 새 frame/slot/자동 ARM을 만들지 않는다.
+짧아진 current/proof·작업 기한은 min-only relay와 기존 timer/AbortSignal로 진행 중 helper/body까지 취소한다. 입력 brand/getter/trap0·owner busy 회수와 직접 TS 선행 거절의 controller 회수를 검산했다. CJS exact8/runtime8/closure14/builtin3·authority transport·서명5키/OPEN을 보존했다.
+이7경로만 보존 대상으로 분리한다. Main3ed043은 보호 비추적3 SHA 불변·index 비어 있음을 확인했다. LF/CRLF 예정 경고4는 별도이며 설정/정규화0이다. 실제 HTTPS/키/OS/helper·DB/권한/서비스/Agent·C# 실행·slot 인계·ACK·전체 FN06/계획은 미완료다. ACK delta와 Git 복구·push 재시도0을 유지한다. 복구는 이7경로의 한정 revert다.
