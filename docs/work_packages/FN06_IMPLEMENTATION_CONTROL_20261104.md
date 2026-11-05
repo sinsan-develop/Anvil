@@ -1364,3 +1364,35 @@ Main 021f0c의 순수2+기존 OPEN1=3 PASS/402.3133ms,1fe950의 실제 메모리
 & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^non-OPEN typed frame|^OPEN pre-authority' tests/unit/FN06/native-first-receive-client.test.ts
 & 'C:\Program Files\nodejs\node.exe' --test --test-name-pattern='^실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
 순수 메소드는 IO/clock/lease 없이 strict typed 검산만 수행한다. CSRF POST·원 owner/child·C#/HTTPS·UNKNOWN의 Challenge 단위 차단은 아직 미완료다. 전체 client 시험 파일이나 실제 서명 인수로 올리지 않는다.
+
+## 138. 서버 checkpoint와 후속 원 Session 소비 배정
+서버 생산선 source11+Main 현황2는38d232ba6bd16c0764d9cd9166f13a0903cf9de7에 보존했다. source5b164413 이후 문서 ee510f39의 직접 자식이다. 실제 PG/TLS/키/Agent와 전체 FN06/계획 완료는 아니다. private 동일성·PR/병합은 미확인이다.
+기존 Primary가 남은 client2 WIP를 이어간다. 순수 typed 제품AB9A0B98와 시험 앞7AE8은 검수됐지만 전체 시험9AD07482에는 후속 IO 미구현 RED2가 있으므로 원문을 삭제·skip·기대값 완화하지 않는다.
+직접 채택 후보011C3C22·WI A3FA8841·§127/129의 정확 허용범위에서 §135의 기존 Session GET을 원 Session.fetch로 private 소비해 CSRF POST를 구현한다. cookie/token 추출·새 인증 API/DTO·renderer source 주입·새 IPC·실제 endpoint 호출은 없다.
+원 user/client·fetch/current/lease/owner·기한·응답 cap을 검산하며 같은 원 예산 안에서 GET과 POST를 수행한다. 정상 auth bookkeeping의 idle 갱신으로 Window/Challenge/원10초를 늘리지 않는다. 기존 OPEN에는 불필요한 새 요청을 추가하지 않는다.
+기존 RED2와 불량 Session/CSRF·다른 문맥·지연·오염/UNKNOWN·비밀 반사0을 확인하고 같은 pure helper와 실제 POST 소비를 연결한다. 이후 CJS/owner/key-host/C# typed 소비는 같은 승인 WI 안에서 순차 TDD로 이어간다. §134의 Challenge 단위 UNKNOWN 객체교체 반례를 잊지 않는다.
+Main은 검수·직접 최소검증·통합만 맡고 제품 쓰기0이다. 새 파일/권한 경계는 쓰기 전 정확 근거를 반환하며 그 외 독립 구현은 계속한다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 없다.
+
+## 139. 원 Session 소비의 최소기한 I1과 보완
+독립 C0/I1은 frame의 proof3초가 내부 current GET/POST에 전달되지 않아 GET4초 뒤 POST가 가능한 source 경계다. 서명/키 효과 발생 주장과 구분한다. 같은 Primary가64836d 실제 POST1 RED→544dc1 POST0 GREEN을 수거했다.
+frame 원 proof/Window/Challenge/원10초 checker를 공유 private read의 GET/body await 뒤·POST 직전·최종 반환에 결박했다. public current 두 인자·HTTP DTO·OPEN·기존 guard/timeout은 그대로다. body4초 POST0과 GET2초/잔여1000 양성도 추가했다.
+새 TS33775B/4733B503560478BAA68802FE07451B0432A60D04728D74CCB2034D69E69F030D와 시험42454B/6672415EC63C5245E42ED2BD3C6BAB58FB8A2C55DE1E7A6B80048BD28D807C72의 scoped 독립 C0/I0로 I1을 해소했다. 미구현 owner lease를 기한 누락의 근거로 쓰지 않았다.
+## 140. 원 Session 소비·Node operation 소스 부분 인수
+Main fresh cc0870의 client9 PASS/426.7861ms,0a06fd의 operation5 PASS/1143.4448ms,51c98f의 메모리 package1 PASS/546.5032ms다. 고유15시험·skip0이며 타입7c6046·문법09f6d9/abf2fe·diff7fd7aa exit0, raw4 전후 동일이다.
+정확 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase current client|^phase signing frame|^phase current의 GET|^phase frame의 원 proof3초|^non-OPEN typed frame|^OPEN pre-authority|^HUMAN 수신 client는 원 Session.fetch' tests/unit/FN06/native-first-receive-client.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^REGISTERED phase operation|^phase operation UNKNOWN|^REGISTERED 실제 operation은 새 OPEN|^새 OPEN typed operation|^OPEN operation은 실제 helper' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --test --test-name-pattern='^실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+5. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+6. & 'C:\Program Files\nodejs\node.exe' --check tests/desktop/desktop-trust-registration.test.cjs
+Node operation은 새 phase에 순수 typed validator를 연결하고 원 등록/key/lease·고정 driver·응답 crypto 검산을 유지했다. [원 keyId,Window fullref,Challenge fullref] 단발 key로 operation 수명에서 UNKNOWN 뒤 다른 proof timestamp/hash의 추가 child write0을 검산했다. Node2의 독립 C0/I0이며 owner/source/client 객체 교체 장벽 전체를 인수한 것은 아니다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 33775 | 4733B503560478BAA68802FE07451B0432A60D04728D74CCB2034D69E69F030D |
+| tests/unit/FN06/native-first-receive-client.test.ts | 42454 | 6672415EC63C5245E42ED2BD3C6BAB58FB8A2C55DE1E7A6B80048BD28D807C72 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 70417 | BFD1D57C8E1AD704FC070550418EC49218D551563945630A1AC1CDDC6BCECDC5 |
+| tests/desktop/desktop-trust-registration.test.cjs | 106055 | 43A60930F0327C87F04F09CFED208F3FE090DCFB45A12EE236FF0D018E83886B |
+새 CSRF GET→POST와 같은 pure frame 소비는 코드·합성으로 연결했다. 기존 Session DTO를 바꾸거나 cookie를 추출하지 않았고 비밀·CA를 frame에 내보내지 않는다. 새 body transport 오류도 고정 UNKNOWN·추가 요청0이다.
+이4경로만 index에 분리 보존했다. 앞선 IO 미구현 RED2는 이 단위에서 구현됐으며 삭제/skip로 숨기지 않았다. class의 다음 순수 preparePhaseSigningFrame 위임, CJS facade/REGISTERED owner 수명 장벽·C# source/실HTTPS·전체 FN06/계획은 아직 미완료다.
+실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 없다. LF/CRLF 예정 경고는 별도이며 원 설정과 raw 파일은 바꾸지 않았다. 복구는 검증한4경로의 한정 revert다.

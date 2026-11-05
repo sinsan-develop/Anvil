@@ -13,7 +13,7 @@
 | FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 직접 채택된 OPEN 이후 phase current·typed signer 연결을 구현한다. 전체 여정과 실환경은 미완료다 |
 | FN06 남은 연결 | STREAM 이후 보호 current·typed signer와 transport/후행 phase·UI controller의 전체 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint 5b164413a84ff8107e84cfe1a50541a35b1c9351에 phase current strict3과 현황2를 보존했다. 보호 GET3/current는 선행4642ab12에 있다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint 38d232ba6bd16c0764d9cd9166f13a0903cf9de7에 HUMAN phase 생산선 source11과 현황2를 보존했다. client2는 후속 IO RED가 있는 WIP로 분리했다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15320,3 +15320,8 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 순수 typed2는 선택3+메모리 package1과 독립 C0/I0로 부분 확인했다. 후속 CSRF IO 미구현 RED2가 같은 시험 뒤에 있어 client2는 commit에서 제외하고 WIP로 보존한다. 기존 Session GET의 CSRF를 내부 재사용하는 정확 공급선을 확인했다.
 - source11만 분리 보존하고 같은 Primary가 후속 CSRF POST·owner/typed signer 소비를 이어간다. 실제 DB·서비스·키·Agent·컴파일과 ACK delta·Git 복구는 실행하지 않는다.
 - 준비 읽기에서 Main의 추정 contracts.ts 경로1과 Primary의 contracts/access.ts 경로1이 부재했다. 실제 repository/routes/INTERFACES만 근거로 사용했으며 해당 경로 수정이나 제품 실패는 없다.
+
+## 2026-11-05 원 Session 소비·Node operation 소스 부분 인수
+- proof 최소기한 I1을 실제 POST1 RED→0 GREEN과 독립 C0/I0로 보완했다. Main fresh15 PASS/skip0·타입/문법2/diff0·raw4 전후 동일을 대조했다. 명령·지문은 구현통제 §139~140이다.
+- 원 Session의 기존 CSRF GET→새 current POST→순수 typed frame과 Node operation의 원 등록/key/driver/crypto·operation 단발 key를 합성으로 확인했다. owner/source/client 객체 교체 장벽·C#·실HTTPS·실제 DB/키/Agent·전체 FN06/계획은 미완료다.
+- 검증한 source4와 Main 기록2만 보존하고 기존 Primary가 다음 CJS facade/REGISTERED owner 소비를 순차 구현한다. 기존 OPEN·다른 SIGN·공개 DTO·실제 실행 제외는 유지한다.
