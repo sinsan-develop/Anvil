@@ -13,7 +13,7 @@
 | FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 직접 채택된 OPEN 이후 phase current·typed signer 연결을 구현한다. 전체 여정과 실환경은 미완료다 |
 | FN06 남은 연결 | STREAM 이후 보호 current·typed signer와 transport/후행 phase·UI controller의 전체 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint ebf4ddc820af732b52f906e8ef09474286e6acef에 원 Session 소비·Node operation source4와 현황2를 보존했다. 같은 Primary가 CJS/REGISTERED owner 후속 접합을 진행한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint cdad42e4e15398b0b1e34bc455529acd629d1d6d에 CJS/등록 owner 접합 source6와 현황2를 보존했다. 같은 Primary가 C# source/HTTPS 후속 접합을 준비한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->

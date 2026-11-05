@@ -1445,3 +1445,7 @@ UNKNOWN 뒤 같은 owner의 새 current/frame/source/client supplier에서도 �
 | tests/desktop/native-proof-runtime-build.test.cjs | 6658 | 9A3484498140C7788E1AE4E915CEEDBF4F6CEE9737546DB84FCF558834AED33D |
 변경6경로만 소스 보존 대상으로 삼고 runtime-build 시험은 불변 증거로만 유지한다. LF/CRLF 예정 경고4는 별도이며 설정·원문 정규화0이다. 이번 Main 읽기에서 존재하지 않는 apps/desktop/native 경로 rg1건은 준비 오류이며 WI의 실제 apps/connector/native 경로로 바로잡았다. 제품 실패·검증 PASS로 세지 않는다.
 실제 C#/HTTPS·키·서비스·Agent·DB·권한·컴파일·사용자 인수와 전체 FN06/계획은 미완료다. ACK delta·Git 복구·실제 실행0, 복구는 변경6경로의 한정 revert다. 다음 C# validator/기존 HTTPS 접합은 같은 승인 WI의 source-only 범위에서 기존 Primary가 이어간다.
+
+## 145. 부분 checkpoint와 다음 source 접합
+source6+Main 현황2는 cdad42e4e15398b0b1e34bc455529acd629d1d6d에 보존했다. ebf4ddc8의 직접 자식이며 commit 직후 tracked clean·보호 비추적3을 유지했다. private 동일성·PR·병합은 미확인이고 인증 복구·push 재시도0이다.
+다음 C# source/HTTPS 호출선은 기존 Primary가 읽기 확인 중이다. WI의 tests/native/FN06/NativeFirstReceiveHostSourceTests.cs는 실제 미작성 경로임을 구분했고 기존 파일로 읽기 성공했다고 세지 않는다. 읽기 묶음 오류는 준비 오류이며 제품 실패가 아니다.
