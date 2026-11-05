@@ -15432,3 +15432,19 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 기준:700e4fc189761bb62ffa7624d731919d0d2c4cff, tracked clean·보호 비추적3 지문 동일. 기존 Binding/ATTEMPTED SQL·Store와 원 command의 COMMIT 뒤 deliver는 이미 있으므로 재구현하지 않는다.
 - 다음 단위:동기 공급 후 즉시 반환하는 원 operation에 private capability 기반 waiter 준비→단발 공급→원 signal/남은 기한의 유한 대기를 연결한다. 제품3/기존 시험2 정확5는 구현 통제 §165에 고정했다. 같은 Primary만 TDD·Main은 독립 검수/직접 검증/통합을 맡는다.
 - 제외/미검증:ACK bodyHash/영속 terminal·CONFIRMED·실제 waiter E/PG/Tx/TLS/OS/키/서비스/Agent/C#/실자료/J3/P03 R3·전체 여정은 별도 미완료다. 실제 실행/기준 완화/재전달0. 준비·관리 오류와 정정은 §165에 기록했다.
+
+
+## 2026-11-05 FN06 원 command fixture 검증 범위 보완
+- 부모57 안의 기존 native-preparation-store.test.ts1을 추가해 제품3/시험3 정확6으로 고정했다. 원 private fixture를 재사용하여 COMMIT/Pool 반환·원 waiter 대기를 검산하고 기존 정상/실패·legacy 단언은 유지한다. 시작 지문은 구현 통제 §166이다.
+- sandbox PermissionError로 새 반례가 쓰이지 않은 뒤 나온 파일 단위 Node1PASS는 폐기했다. 실제 제품 RED나 합격이 아니다. ACL/권한 변경 없이 정확 허용 파일의 기존 플랫폼 escalation으로 진행하며 새 case 수집/이름/개수부터 확인한다. live/pending0 보고, 실제 DB·권한·키·서비스·Agent 실행0이다.
+
+
+## 2026-11-05 FN06 공급 전 공통 트랜잭션 완료 응답 검산
+- Main77c9af 메모리 반례에서 현재 AccessRepository가 ROLLBACK/누락 COMMIT tag도 정상 반환함을 확인했다. 실제 DB/공급0·source 변경0이며 확정 COMMIT gate는 미충족으로 남긴다.
+- source1/시험1의 최소 보완 후보 E35A8EA6을 작성해 독립 기술 검토 중이다. 새 로그인/권한/API/실DB 변경은 없으며 아직 추가 파일 구현 GO는 아니다. 기존6의 waiter/단발/정리는 계속한다.
+- 미관측 query 실패는 정상 callback 성공만 차단하고 기존 명확한 거절을 보존하도록 직접 반례를 추가한다. fixture 시계의 잘못된 진단/반례·명령 준비 오류와 폐기는 구현 통제 §167에 분리 기록했다. 전체 대기/전체 계획 완료0이다.
+
+
+## 2026-11-05 FN06 공급 전 완료 응답 내부 보완 편입
+- 판정:공통 완료 응답 후보 E35A8EA6은 독립 기술·범위 C0/I0이며 Main77c9af 메모리 RED로 기존 확정 요구의 불충족을 확인했다. Main은 A의 source1/기존 시험1만 필수 내부 보완으로 §168에 편입했다. 새 로그인/권한/공개 API/DB 실행 승인이나 실제 권한 변경이 아니다.
+- 단일 Primary의 허용은 제품4/시험4 정확8이다. 기존 COMMIT/rollback/release·감사 후 업무상 거절·원 Tx 인증5를 보존하며 정상/실패 완료 tag와 원 오류를 직접 검수한다. 실제 DB·키·서비스·Agent/실자료/C#/J3/P03 R3·ACK/후행 terminal은 제외한다. 최종 검수 전 PASS0, 기존 waiter 구현과 함께 계속한다.

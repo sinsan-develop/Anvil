@@ -1745,3 +1745,25 @@ WAITING 원 E 만료/원 operation abort·공급 실패·불명은 유한하게 
 RED/핵심 검수는 COMMIT/Pool 반환 전 공급0·waiter 준비 전 공급0·진행 중 원 command 미반환/DB 보유0·같은 검산 E 후보만 원 waiter 정착·경쟁/fence/digest/재사용 거절·기한/abort/불명 뒤 late 공급/후보/재전달0·terminal 표식의 E 전 중복 거절/E 뒤 유한 회수다. 실제 in-process handler/기존 Store와 broker를 소비하는 합성 시험으로 연결하며 성공 대역·임의 tuple로 원 생산을 대신하지 않는다. 변경된 call signature와 직접 영향 인접만 검증하고 완료한 검사를 전수 반복하지 않는다.
 검산된 후보의 도착은 ACK 영속행/후행 terminal·CONFIRMED/Agent 실행 성공이 아니다. 이번 단위에 ACK input/bodyHash·nonce/terminal SQL·새 권한/서비스/실행을 넣지 않으며 전체 S5 완료를 주장하지 않는다. 실제 DB/권한/키/서비스/Agent/실자료/C#/J3/P03 R3/Git 복구0·독립 검토/Main 직접 검증/안정5 전 인수0이다.
 준비 오류는 제품 실패와 분리한다. Primary의 잘못된 경로 rg1은 실제 목록으로 정정했다. Main의 추정 helper 파일2 OS오류도 실제 symbol 검색으로 nativeWorkBudget가 기존 파일 안 함수임을 확인했다. Main 전달 언어 오류1은 한국어 정본을 검증 후 재전달했고 코드/권한 변경0이다. idle 담당자에게 send_message만 보낸 후속 확인은 실행을 시작하지 않으므로 followup_task로 명시 재개한다. 이 관리·준비 오류를 제품 실패나 PASS로 세지 않고 이후 지시는 검증된 한국어와 실제 목록만 사용한다.
+
+
+## 166. 원 operation 실제 fixture 시험1경로 추가와 준비 오류 분리
+Main22971f는 기존 tests/unit/FN06/native-preparation-store.test.ts의 nativeFixture/persistenceFixture와174행 원 ARM 정상 여정이 실제 command/Pool 회수·COMMIT 불명 반례를 보유함을 확인했다. 부모57의75행에도 포함된 시험이다. 이를 복제하거나 시험 모듈 전체를 import하지 않고 이 기존1경로만 §165에 추가한다. 시작147955B/SHA256 D6CEC63495211EF1411B9AE5587318A7A6133BF8FC9258D8B8D868574C5F3E3A, 허용 총6(제품3·시험3)이다. 기존 fixture에 원 waiter 대기/확정 COMMIT·Pool 반환·불명 카운터와 후보/만료 반례만 최소 추가하고 legacy 및 기존 실패 단언은 보존한다. 실제 broker의 후보 검산으로 대기를 확인하는 것과 실제 slot/ACK의 외부 증거는 구분한다. 임의 성공 deliver 대역으로 원 대기를 건너뛰지 않는다.
+Primary의 최초 새 RED 쓰기는 sandbox PermissionError로 미작성이다. 그 뒤 새 case가 없는 Node 파일 단위1PASS는 검증 근거에서 폐기했다. 제품 RED/실패/합격으로 세지 않는다. 권한·ACL을 바꾸지 않고 기존 승인 경로의 정확 source/test mutation에만 플랫폼 escalation을 사용한다. 실제 새 반례가 수집·실행됐는지 이름/개수/실패 사유를 확인한 뒤 RED→GREEN을 기록한다. 다른 제외/단일 writer·실환경0·독립 검수 조건은 §165 그대로다.
+
+
+## 167. 공급 전 공통 COMMIT 완료 응답의 미충족 검산
+독립 읽기는 AccessRepository.authenticated가 callback 뒤 COMMIT await·동기 Pool release 후 반환함을 확인했다. 미정착 query 수거는 AccessRepository 자체가 아니라 nativeWorkBudget.own의 callback finally가 담당한다. 메서드 이름이나 releaseNativeDelivery 호출 자체를 확정 증명으로 쓰지 않는다.
+Main77c9af는 실제 repository.ts와 메모리 Pool에서 COMMIT/ROLLBACK/응답 tag 누락 모두 정상 반환·release1·후속 marker1인 반례를 확인했다. ROLLBACK 후 marker0 요구가 exit1로 실패했다. 실제 DB/SQL 접속·공급·계정·실제 키/서비스 실행0이며 제품/시험 파일 변경0이다. PostgreSQL15 공식 utility.c의 실패 완료 tag 경계와 node-pg QueryResult.command를 대조했다. 이 모델 결과를 실제 PG 재현/인수로 승격하지 않는다.
+정확한 공통 보완은 별도 docs/work_packages/FN06_COMMIT_COMPLETION_SOURCE_ADDENDUM_CANDIDATE_20261105.md E35A8EA6AE4439B969ED6BB96E73A5A664BCA24B9F51752AA9A7852FED8BDEE0에 source1/기존 시험1·A/B/C·영향/검수/복구를 구체화했다. 독립 기술·범위 검토 중이며 아직 추가2 제품 쓰기 GO는 아니다. 원 #transaction의 정상 COMMIT 응답 확인이 권장안이며 새 로그인·권한 정책·입력/API·실DB 변경을 제안하지 않는다. 영향을 받지 않는 §165/166 waiter 구현은 계속한다.
+기존 허용 source의 미관측 raw query 실패는 private 표시로 정상 callback 반환/COMMIT을 차단하되, 이미 전파 중인 명확한 AuthFailure/SQL 거절을 UNKNOWN으로 덮지 않도록 반례를 추가한다. 단순 allSettled 수거를 의미적 성공으로 주장하지 않는다.
+Primary의 fixture 시계 진단은 정정됐다. clockDate는 이미 epoch+performance 경과분이며, commit30ms 지연만으로 예산 밖이라는 준비 반례 가정은 틀렸다. 해당 반례를 폐기하고 고정 시계의 E10000/remaining9999 실제 경계를 검산한다. guard/기한/합격 기준 완화0이다. LF 앵커 준비 ValueError2·noEmit -p 누락 help/exit1은 제품 RED와 분리·정확 -p 후 type0이다. Main의 복수 Get-FileHash 위치 인자 오류1도 foreach로 바로잡았으며 해당 실패 출력은 지문 증거0이다.
+
+
+## 168. COMMIT 완료 응답 보완의 내부 범위 편입
+후보 E35A8EA6의 독립 기술·범위 검토 C0/I0와 Main77c9af 실제 source 메모리 RED를 대조했다. A안은 이미 승인된 확정 COMMIT 뒤 반환/공급의 내부 오류 보완이며 새 로그인 방식·사용자 허용·권한 정책·공개 입력/API·저장 계약을 추가하지 않는다. 작업계획 FN11/원자성 및 부모 S5의 기존 요구를 충족하기 위한 source 범위로 Main이 A를 채택한다. 후보의 과거 TECHNICAL_REVIEW_CANDIDATE 원문/지문은 보존하고 이 절을 내부 통제 binding으로 둔다. 실제 DB·권한·키·서비스 실행 승인이 아니다.
+기존 §165/166의6경로에 apps/server/modules/access/repository.ts(3DC7A52FE977245BAEEBF2FAAAD3D328E54188984035D0CE0E443A1468103052)와 tests/unit/FN01/auth-transaction.test.ts(29476AECDEF6CCB4E615FF0B35CA2F67D11F8F909A921D733EA0B5CA121A28D0)를 추가해 총8(제품4·시험4)만 같은 Primary가 작성한다. 부모57 밖의 이2는 기존 확정 의미를 실제로 확인하는 필수 내부 보완이며 다른 auth source/정책·새 공개 연산·설정·schema는 추가하지 않는다. Main 제품/시험 쓰기0이다.
+정확 delta는 기존 #transaction의 COMMIT 반환 command가 정확 COMMIT인지 검사한 뒤에만 committing=false로 바꾸는 것이다. 불일치/누락/비정상 응답은 committing=true인 기존 catch·보수적 오류/release 경계를 거치며 정상 result/후속 공급0·재COMMIT/새 연결/재시도0이다. raw 응답을 오류/로그에 반사하지 않고 기존 고정 TRANSACTION_STATE_UNKNOWN 의미를 사용한다. BEGIN/body·원 인증/CSRF·회수/자격/기한·callback 예외·rollback/release 순서는 보존한다.
+공통 종료 함수이므로 영향은 FN06만이 아니다. 정상 COMMIT+release1 뒤 결과/marker1과 undefined 정상 반환, ROLLBACK/누락/다른 tag의 marker0, callback 예외/COMMIT reject/rollback 실패/release throw의 원 오류·연결 폐기 의미를 직접 검산한다. 기존 원 Tx 인증5개는 보존한다. 특히 감사 뒤 Result.failure로 끝나는 업무상 거절은 정상 COMMIT 후 기존 AuthFailure 코드/상태로 반환하며, callback 예외로 바꿔 감사/실패 횟수까지 rollback하지 않는다. 실패 완료에서는 감사가 확정 저장됐다고 주장하지 않는다. 같은 파일의 실제 AccessRepository 기반 합성 반례로 검산하며 실제 DB는 열지 않는다.
+§165 source 내부 미관측 query 실패 보완은 정상 callback 반환일 때만 pending 수거 후 차단하고, 이미 전파 중인 명확한 NATIVE_PURPOSE_DENIED403/rollback/공급0은 유지하는 직접 RED→GREEN 보고를 받았다. 최종 독립 source 검수 전 합격은 아니다. wall clock 역행/terminal 정리는 기존 원 E·재begin 차단을 유지하는 같은 허용 service/시험 안의 반례로 닫는다.
+독립 검토·Main fresh 직접 검증·안정8·추가 source 지문 전후 확인 전 통합0, 실제 PG/Pool/TLS/OS/키/서비스/Agent/C#/실자료/J3/P03 R3·ACK delta/영속 terminal/전체 인수0이다. 이 내부 조치와 정확 영향/제외를 PMO에 보고하고, PMO의 다음 작업 배정을 기다리며 독립 구현을 멈추지 않는다.
