@@ -15343,3 +15343,10 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 시작 지문: DesktopTrustKeyHostSource.cs 38823B/110FE561BE44457D863D11F10C3C0306AB7A2E85D223F0498E9893AAF4A593D2, 기존 C# 시험45972B/2C4519B33F680EB3B78C12E1E42F262B30C94783A3181DBC69A4EAA5C78F343E, Node schema 시험50691B/3979406E51CBC5C4A5949C14A7083AE3A2C826175ECD2D637696360EF6D8D989다.
 - OPEN 고정 validator와 proof hash 단발 key를 승인된 phase/ref/null/원 Challenge 범위로 연결한다. 기존 driver/HTTPS는 이번 수정에서 제외하며 다음 접합으로 남긴다. 새 파일과 새 공개 목적/권한은 추가하지 않는다.
 - C# 컴파일·실행은 제외한다. Node 형상 시험은 source 검산만 증명하며 C# 동작/crypto/OS 증거가 아니다. 실제 DB·권한·키·서비스·Agent·ACK 변경·Git 복구0을 유지한다.
+
+## 2026-11-05 FN06 C# phase validator 소스 한정 검수
+- 담당: 기존 Primary 구현, Main 어울 직접 형상/타입/diff 검증, 기존 독립 검토자 읽기 검수. 실제 승인 WI의 기존3경로만 수정했다.
+- 결과: Main 형상2 PASS/fail0/skip0, 타입·diff exit0·raw3 불변·독립 C0/I0다. C# 컴파일·RunAsync·CNG/키·OS 동작 시험은 NOT_RUN이며 C# 기능 인수가 아니다.
+- 변경: 원 REGISTERED/validator·보호 원키 호출선에 새4phase의 exact current/head/null·원 참조/기한을 연결했다. 효과 전 단발 key를 원 keyId/Window/Challenge fullref로 결박해 proof 시각/hash 변경 우회를 차단한다. OPEN/authority·일반 SIGN/예산/cap은 보존한다.
+- 오류: Node 형상 RED2→GREEN2, CRLF suffix 가정의 시험 삽입 준비 오류1을 분리 보존했다. 기준 완화·skip 승격0이다.
+- 다음: 같은 Primary가 기존 원 Session/credential의 non-OPEN HTTPS 소비 최소 범위를 읽기 확인한다. 실제 DB·권한·키·서비스·Agent·컴파일·ACK 변경·Git 복구 제외 유지, 전체계획 미완료다. 상세 통제 §147.

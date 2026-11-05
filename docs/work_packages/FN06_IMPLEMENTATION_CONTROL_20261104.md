@@ -1461,3 +1461,21 @@ C# 시험은 미래 실행용 원형과 source 검토 근거다. 컴파일/로�
 HTTPS transport·전체 UI controller 접합은 다음 순서로 남기며 이번 C# 입력 보완으로 완료 처리하지 않는다. 실제 DB·권한·키·서비스·Agent·컴파일·ACK delta·Git 복구 제외 유지다.
 
 §146 후속 실제 호출선 검토: 기존 DesktopTrustKeyHostSourceTests.cs의 MemoryStore/FirstReceiveFrame/FirstReceiveSourceChecks를 확장하면 신규 NativeFirstReceiveHostSourceTests.cs가 필요 없다. 실제3경로는 제품 DesktopTrustKeyHostSource.cs·기존 DesktopTrustKeyHostSourceTests.cs·기존 tests/unit/FN06/native-first-receive-schema.test.ts로 좁힌다. schema 시험은 같은 WI의18~20 범위 안이다. 신규 파일 생성0이며 앞 사전 허용3번은 이번 쓰기에서 제외한다. 기존 Node 형상 검사로 미연결 RED를 확인하고 미래 C# 정상/음성 시험 원형을 보완하되 C# 실제 실행으로 표시하지 않는다.
+
+§146 진행 메모: Node 형상 반례2 RED73354e는 실제 validator의 새 phase 소비 누락과 Dispatch proof-hash 단발 경계를 확인했다. 제품 보완 뒤 중간1PASS/1FAIL은 미래 C# 시험의 미작성 호출선이며 원 C# 동작 실패로 확대하지 않는다. 시험 삽입의 CRLF suffix 가정 assert4109eb는 쓰기 전 준비 오류1로 보존한다. Main의 문서 보존 실행08003f에서 설명 인자에 한국어 외 한 글자가 들어간 오류1이 있었으며 명령·대상·제품 소스에는 영향이 없었다. 이후 중첩 실행 인자 전체의 언어 검산을 적용한다. 이 메모는 구현 완료나 C# 실행 PASS가 아니다.
+
+## 147. C# phase validator 소스 한정 검수
+기존 Primary의 형상 반례73354e RED→b2b4d8 GREEN을 제출받았다. Main fresh def35b는 형상2 PASS/fail0/skip0/644.5643ms이며 타입 c7ec0f·diff d274ed exit0, raw3 전후 동일이다. C# 컴파일/동작 시험을 실행한 결과가 아니다.
+독립 읽기 C0/I0는 실제 Dispatch→validator→원 최소기한→Challenge key 효과 전 소진→보호 원키 순서를 확인했다. 새4phase exact current/head/null/두 writer·원 human/등록/ref/hash/target/body를 검산하며 STATE/CLOSE proof optional ref는 current 메타데이터와 구분해 null을 유지한다.
+단발 key는 원 keyId+Window fullref+Challenge fullref이며 proof timestamp/hash 변경으로 같은 Challenge를 다시 서명하지 않는다. 기존 authority dispatch·공통 helper·ProtectedStore·RunAsync/peer/root·예산/cap·일반 SIGN allowlist 본문은 기준과 같다는 독립 검토다.
+정확 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^C# phase validator 형상|^C# Challenge 단발 형상' tests/unit/FN06/native-first-receive-schema.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+3. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/native/DesktopTrustKeyHostSource.cs | 43409 | 292EB75CDA97548DBF913092082563CA3CA5093A46726AB6561B6D675A2DFC17 |
+| tests/native/FN06/DesktopTrustKeyHostSourceTests.cs | 53930 | B4DF65B850A6C814E8D1DA59AB4932F8AE8D26563B1861FA28D0B6B625FFC6D8 |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 55833 | CD6E270B5C7CEF78230B790486AB3B0A751CA3EB8AF205B298912500D522DA9C |
+미래 C# 시험은 실제 Dispatch를 호출하는 정상4phase·STATE BOUND/ATT·중요 음성·같은 Challenge 변경 proof·기한/효과0 원형을 작성했다. 이는 NOT_COMPILED/NOT_RUN이며 Node 형상 PASS로 C# crypto/OS/키 검증을 대체하지 않는다. LF/CRLF 예정 경고3은 별도이고 설정 변경0이다.
+승인3경로만 보존 대상으로 분리한다. 신규 NativeFirstReceiveHostSourceTests.cs 생성0이며 같은 기존 시험을 확장했다. 실제 DB·권한·키·서비스·Agent·HTTPS·컴파일·ACK delta·Git 복구0이다. 다음 실제 non-OPEN HTTPS 소비와 전체 UI controller/FN06/계획은 미완료다. 복구는 변경3경로 한정 revert다.
