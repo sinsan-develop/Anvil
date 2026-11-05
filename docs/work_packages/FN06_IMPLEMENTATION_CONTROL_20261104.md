@@ -1019,3 +1019,48 @@ GET 권한 혼용 I1은 현재 POST 전용 helper로 보정했다. 독립 SQL �
 | tests/unit/FN06/native-preparation-store.test.ts | 119964 | B3C2D61AAA7C5CE6A6F06FBA8E3AB7363C9FF29C596A5B8F69DC0BEAECDB5CD7 |
 준비 오류는 JSON 키 순서 비교1·가짜 인증 만료 응답 가정1·fixture 시계와 실제 시계 혼동1이다. 제품 RED와 분리했고 기존 실패를 통과로 소급하지 않았다.
 - 최종 Node 본문 두 지문도 이전 검토와 같았다. 독립 최종 판정은 I1 해소·한정 C0/I0이다. Delivery와 전체 최초수신은 포함하지 않는다.
+
+## 99. Delivery 직접 검증과 반환 문맥 추가 확인
+Main 직접 여정/인접2 PASS/skip0/8244.9645ms, SQL 형상3 PASS/skip0/720.9824ms, 타입/diff exit0이다. 실행키0462e3·310984이며 안정6 전후 지문은 같다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+같은 담당자는 쓰기 고정을 해제하고 postCommit 문맥 접점만 실제 반례로 확인한다. 반환과 회수 사이 원 actor/session의 객체나 tuple이 바뀌면 frame0이어야 한다. 현재 cap의 기한·단발 검산만으로 이 조건을 지키는지 확인한다. 아직 실제 RED를 수거한 것은 아니다.
+누락이 입증되면 DB 쿼리가 없는 비공개 원 문맥 검산을 단발 cap에 결박한다. 닫힌 callback의 DB lease를 재사용하거나 새 권한을 만들지 않는다. 실제 SQL·키·서비스·Agent 실행은 금지한다. Main의 직접 코드 수정은 없다.
+소유 범위는 기존 승인57 중 현재 전달 source와 시험이다. Main 문서·index·Git·보호 자료는 수정하지 않는다. 반례와 최소 보완 뒤 안정 지문을 제출한다. 원 전달의 현재성·기한·broker/fence·COMMIT 뒤 공급·재전달0과 기존 legacy를 유지한다.
+이 추가 접점이 닫히기 전 전달 전체를 소스 인수로 올리지 않는다. SQL3와 비밀 복사 보완의 독립 C0/I0, 직접 검사5는 각각 확인한 부분의 근거로 보존한다.
+
+## 100. 다음 수신 연결의 읽기 준비
+기존 읽기 검토자는 현재 desktop/Node 수신 client와 slot의 실제 함수와 호출선을 확인한다. Delivery를 넘길 미연결 지점과 기존 승인 S4 안에서 재사용할 검산만 반환한다.
+이미 확인한 parser 본문은 반복 검토하지 않는다. 새 설계·문서 쓰기·시험·실환경 실행은 하지 않는다. 현재 Primary의 §99 코드 수정과 별개인 읽기 조사다.
+
+## 101. 반환 문맥 보완의 독립 검토
+기존 읽기 검토자는 §99 보완의 ownerCheck와 release/take 호출만 확인한다. 원 actor/session과 재인증 문맥이 바뀌면 frame0이어야 하며 DB 쿼리나 닫힌 lease 호출이 없어야 한다.
+원 actor의 지역 참조와 불변 snapshot만 보관하고 닫힌 DB 문맥을 불필요하게 보유하지 않는지도 본다. 변경 본문 지문 전후를 비교하며 다른 동일 본문은 반복 검토하지 않는다. 수정·시험·실환경 실행은 하지 않는다.
+## 102. 다음 기존 S4 수신 연결
+동일 Primary가 §99 보완 안정 제출과 Main 검증 뒤 이어갈 업무다. 기존 승인57과 원 WI S4 범위만 사용한다. 실제 DB·키·권한·서비스·Agent·컴파일 실행은 하지 않는다.
+기존 desktop client의 원 Session receiver·origin/current·await 뒤 기한 검산, 원 등록 owner의 OPEN 서명 source, runtime decoder, credential slot과 authority 기반 보호 source의 실제 호출선을 연결한다.
+OPEN 서명을 STREAM에 재사용하지 않는다. parent wire의 phase별 원문·target·목적·기한을 준수한다. 새 공개 입력·IPC·module export·권한·인증 계약을 만들지 않는다. 미정 접점은 정확한 원문 근거와 함께 Main에 반환한다.
+Delivery의 실제 authority와 동일 등록·profile·원 문맥의 보호 source로만 slot을 만든다. OPEN 전에 authority나 slot을 만들어 우회하지 않는다. 실제 decoder를 거친 metadata와 opaque43을 단발 수용하고 중복·오염·기한·폐기를 직접 시험한다.
+slot.accept의 void 반환을 SlotReceipt나 ACK 성공으로 표시하지 않는다. ACK 입력 delta는 미채택이며 그 경계를 넘지 않는다. mock의 true나 parser 단독 통과를 실제 제품 연결로 대체하지 않는다.
+다른 담당자가 Main 문서와 index를 관리하므로 수정하지 않는다. 기존 정상 연결과 runtime export8·closure14를 보존하고 source-only 반례와 최소 회귀를 제출한다.
+
+## 103. 단발 Delivery 소스 검증
+반환 문맥 보완 뒤 Main 직접/인접2 PASS/skip0/9110.4507ms, 타입과 diff exit0이다. 실행키b9bd3a·3ff886이며 최종 raw6 전후가 같다.
+SQL과 형상 시험 파일은 앞선0462e3·310984의 지문과 같았다. 따라서 그때 실제 수거한 SQL 형상3 PASS/skip0/720.9824ms를 재사용하고 같은 검사를 반복하지 않았다.
+확장 여정은 Delivery8·역사10·기존8 내부모드와 반환 문맥3모드를 포함한다. 이 모드를 별도 시험 개수로 합산하지 않는다. 원 COMMIT/release 뒤 frame1, 역사 재전달0, 오류·문맥 변경 뒤 frame0을 구분한다.
+독립 검토는 SQL3와 비밀 복사 보완 C0/I0, 최종 원 문맥 보완 C0/I0이다. 복사본 I1과 반환 문맥 RED는 각각 보완했으며 실제 PostgreSQL·TLS·slot·ACK·전체 FN06 인수는 아니다.
+SQL 본문 지문: complete5879/D3D4EEDDD635E6E58D9090E4F6610807584116982C441859AA85F21140EE3FBB; consume9263/046826ADAFE965328AC3A231F564B1C53398080A9D8CF76090FE7A975F0CBD4F; final610/61670D3991E9785DCB08421266A257651BF2FC9E2B6FC1B8736B37B5620BD24F.
+원 문맥 본문 지문: ownerCheck529/8B70DA912615B609512B41A257235B75FC339AB1C0ED218107FF65FFA661E80D; release373/DC37ECA459A97A03F51AB269FB5901C353A6BAE1BBE7EA672886B4252EC30BA1; take626/A1A7C15B36FC957B8DAFE3A470C5BFFFBB8BF2676C3A26562DCAEA2479F7A1A9.
+직접 명령:
+`node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^ARM header 정상 여정|^B issuer의 보호 비밀은' tests/unit/FN06/native-preparation-store.test.ts`
+`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json` 및 `git diff --check`.
+재사용한 형상 명령:
+`node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^Delivery producer는|^native 역사 재조회는 GET|^같은 ARM의 native 원명령 역사' tests/unit/FN06/native-first-receive-schema.test.ts`
+Node 경로는 C:/Program Files/nodejs/node.exe이다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
+| 경로 | bytes | SHA256 |
+|---|---:|---|
+| apps/server/modules/executions/native-first-receive-service.ts | 57306 | 5BADA3B2F483BF6D784F4CE5719655AF7284E9A5FEF35112C631FDFED11AD660 |
+| apps/server/modules/executions/native-first-receive-store.ts | 130071 | B92BF7741DC26DCC74D15714D2C3762D33D9383B05EE360BF8BAC36F600EB0F5 |
+| apps/server/modules/executions/project-native-preparations.ts | 59038 | 260EDBE703ADBC9EA06276A95B072660A921E7A41D8996DF6A699E608D4F4FB3 |
+| db/migrations/0076_native_first_receive.sql.pending | 471564 | 04469997B2A27700008D05D4153A8438141101DF5F9A6DA8F6B744A9A163FE91 |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 47178 | 12A8CE2727E68CD0E867486DF5CD273ABFD377C6E405BA05B29CD784BC0F431C |
+| tests/unit/FN06/native-preparation-store.test.ts | 126450 | 4BA9B989FB4F6E723DAAB5F1FBFE71C44E9063E42A771F35AC04247EAD78E21E |
+검토자의 지문 수거 구문 오류1은 읽기 준비 오류로 분리했다. COMMIT 주입 대역이 실제 query를 보내지 않던 오류도 확정 반환 경계로 바로잡았으며 제품 RED를 통과로 소급하지 않았다. 다음 업무는 §102의 실제 수신 연결이다.

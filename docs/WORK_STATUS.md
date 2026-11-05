@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 같은 명령과 ARM의 역사 조회는 Main 직접4·타입/diff0와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 단발 Delivery를 구현한다. 전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 실제 R Delivery/후행 phase/desktop/slot 접합과 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN은 현행 거절·새 효과0을 유지하고 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
+| FN06 진행 중 | 역사 조회와 단발 Delivery는 Main 직접 합성·타입·지문과 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 기존 S4의 실제 수신과 slot 연결을 진행한다. 전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | desktop/Node 수신과 slot·후행 phase 접합, 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN 감사의 잔여 요구를 보존하고 ACK bodyHash 입력은 미채택 GO0이다. 자세한 범위는 구현통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 로컬8c65821dcf566b2b5dee6388206e206abb0c03e4에 감사·재조회/전달 차단 source7과 현황2를 보존했다. 보호 비추적3 지문·index0을 확인했다. 같은 Primary가 다음 역사 조회를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint b9d4de3bc970e4f600bde288ec348622767f18ec에 역사 조회 source6과 현황2를 보존했다. 같은 Primary가 다음 Delivery를 작성한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15230,3 +15230,23 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 별도 GET 권한을 요구하던 I1은 POST 전용 검산으로 보정했다. SQL 독립 재검토 C0/I0이며 최종 Node 지문을 확인한다. 실제 SQL 실행이나 전체 인수는 아니다.
 - 소스6은 index에 분리 보존했다. 같은 Primary가 기존 승인 S4/S5의 단발 Delivery를 구현한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
 - 최종 Node 본문 두 지문도 이전 검토와 같았다. 독립 최종 판정은 I1 해소·한정 C0/I0이다. Delivery와 전체 최초수신은 포함하지 않는다.
+
+## 2026-11-05 단발 전달 구현 착수
+- 같은 Primary가 실제 메모리 원 명령 여정에서 첫 RED를 수거했다. 선택 경로는 현재 503/UNKNOWN이며 ATTEMPTED 기록과 frame이 없었다. 실행키 delivery_first_path_red, exit1이다.
+- 원 Binding 뒤 같은 callback에서 N ATTEMPTED와 R Delivery를 정착하고 COMMIT과 반환 확인 뒤 원 broker가 비공개 단발 권한을 소비하도록 구현한다. 기존 legacy 전달은 재사용하지 않는다.
+- cp949 출력 준비 오류1은 소스 무변경으로 분리했고 UTF8 읽기로 완료했다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+
+## 2026-11-05 전달 비밀 복사본 보완
+- Delivery Node 독립 검토는 C0/I1이다. Main이 새 Buffer 복사본의 명시 폐기 누락을 두 함수에서 확인했다. 외부 유출을 관측한 것은 아니다.
+- 같은 담당자에게 불필요한 복사 제거 또는 소유한 가변 복사본의 폐기를 지시했다. 수신 전에 정상 frame을 지우는 방식은 사용하지 않는다.
+- 원 COMMIT 이후 공급과 단발 권한·broker/fence 결박은 부분 확인이며 SQL 생산과 전체 전달은 아직 미완료다. 실제 DB·키·권한·서비스·Agent 실행은 없다.
+
+## 2026-11-05 전달 반환 문맥 반례
+- 같은 담당자가 원 인증 정착 직후 사용자 세대가 바뀌어도 frame과 200이 반환되는 실제 RED를 수거했다. 실행키 delivery_postcommit_context_red, exit1이다.
+- 세션 객체 교체와 tuple 변경도 시험하며, 닫힌 DB lease를 쓰지 않는 원 문맥 비교를 비공개 단발 권한에 결박한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+- Main의 직접 전달 문장 오류는 즉시 정정하고 PMO에 보고했다. 상세 지시는 문자 검사를 통과한 통제 문서에 남기고 직접 메시지는 절 참조로 제한한다.
+
+## 2026-11-05 단발 Delivery 소스 부분 인수
+- Main 최종 직접/인접2 PASS·타입/diff0·raw6 전후 동일이다. SQL 형상3은 동일 지문을 확인해 이전 실제 결과를 재사용했다. 명령과 지문은 구현통제 §103에 있다.
+- 독립 SQL/비밀 복사 보완과 원 문맥 보완은 C0/I0이다. 실제 PostgreSQL·HTTPS·slot·ACK·전체 FN06은 미검증·미완료다.
+- 소스6은 index에 분리 보존했다. 기존 Primary는 다음 §102의 수신 연결을 진행한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
