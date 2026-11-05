@@ -1604,3 +1604,42 @@ Main689262는 서버 Session 만료식이 head/auth 재인증·idle/absolute의 
 진행 중 proof3초 만료의 fetch/body/helper 취소·대기 정착·SIGN/native0 또는 효과 후 UNKNOWN·소유 byte 폐기를 유지한다. UNKNOWN 뒤 자원/객체를 교체해 재서명·native 재전송을 여는 보완0이다. 부모/선언된 만료·회수/ABA·사용자 종료의 즉시 폐기, 원 OPEN/authority·CJS/entry 키·RPC·서명5키를 보존한다. 잘못된 영구 축소 기대값이 있으면 정본 근거와 실제 RED를 남기고 동등한 진행 중 기한 음성/효과0으로 대체하며 보안 검사를 삭제하거나 느슨하게 하지 않는다.
 후속 SlotReceipt adapter와 waiter 만료는 아직 별개다. 실제 클래스 이름은 NativeFirstReceiveBroker(native-first-receive-service.ts:24)이고 begin은 raw.expiresAt/remainingMs를 보관·candidate는 receipt.expiresAt 동일성을 검사한다(Main448ae3). production begin 호출이 없으므로 현재 실제 만료 불일치를 확정하지 않는다. 이번 보완에서 서버 동일성·wire·SQL·broker는 변경0이며 원 resource/작업 구분을 닫은 뒤 실제 생산식과 receipt를 대조한다.
 실제 DB·권한·키·서비스·Agent·HTTPS·C#·ACK delta·Git 복구는 제외한다. Main 제품/시험 쓰기0·단일 writer·TDD/직접 영향/독립 검수·안정6 전 인수0을 유지한다.
+
+## 157. 수명 분리 안정6 검수의 정리 I1
+Main06a35a/1ea524 raw6 전후 동일, 781d04 unit11 PASS/648.7165ms·d75fa3 receiver/owner7 PASS/3581.5079ms·4b7e85 늦은 이전 CJS1 PASS/2038.6461ms·86de69 CJS4 PASS/1105.6553ms·e282bf 메모리 package1 PASS/1691.3576ms다. 고유24/fail0/skip0, 타입5668b2·문법7f2e45/928025·diff001fbf exit0이다. 이 결과만으로 인수하지 않았다.
+독립 읽기C0/I1은 새 budget 취득 주변 두 정리 경계다. OPEN은 budget·OPENING/controller 취득 뒤 try 밖 Decoder 생성의 check throw가 call.close/정리를 건너뛴다. handoff는 frame/secret을 local로 분리한 뒤 try 밖 budget 생성 throw가 byte wipe를 건너뛴다. phase는 budget을 controller/attempt 취득 전에 만들고 이후 check를 try 안에 둬 §151 반례를 다시 열지 않았다. helper 자체는 schedule/initial check 실패를 catch→close로 회수한다.
+현재 §156 단위의 첫 독립I1 재작업이며 두 위치는 같은 취득/throw/정리 패턴이다. 같은 Primary가 기존 TS Client·unit 시험2만 실제 RED→GREEN으로 보완한다. 각 자원의 최초 취득부터 대응 finally를 먼저 형성하고 잠재 throw인 Decoder/budget 생성·초기검사를 그 안에 넣는다. budget 생성 실패도 이미 이동한 frame/secret은 반드시 폐기하고, OPEN setup 실패도 타이머/listener/controller를 남기지 않는다. 이전 §151과 유사한 패턴을 기록하되 다른 단위/해결 이력을 동일 단위3연속 실패로 합산하지 않는다.
+나머지 안정4 지문은 고정하고 guard/오류·기한/UNKNOWN/자원 수명 의미를 바꾸지 않는다. 실제 소유 byte와 timer/listener·SIGN/native 효과0을 공개 시험 port로 반증한다. 보완 후 scoped 재검토·Main 직접 영향 검증 전 인수0이다. 새로운 slot/receipt/서버/wire/권한 변경은 이번 재작업에 넣지 않는다.
+
+## 158. 수신 수명·호출 예산 정합 소스 한정 검수
+§157 I1은 같은 Primary가 Decoder 생성 guard 실패의 timer1 잔류와 handoff 초기검사 실패의 이동 byte 미폐기를 실제 RED2→GREEN으로 닫았다. scoped 독립 재검토C0/I0는 두 정리 변경 역치환이 이전51822B/87C8A5FD와 정확히 같음을 확인했다. helper 회수·phase 정리·guard/오류/UNKNOWN·CJS until 의미는 불변이다.
+Main 수정후 a0f6a3 unit13 PASS/627.0352ms·15c12d 실제 slot1 PASS/958.7269ms·65bbcd 늦은 이전CJS1 PASS/885.0402ms·519e5d 메모리 package1 PASS/586.7876ms다. fresh16/fail0/skip0, 타입4247a9·diff8bc3bb exit0·raw6 전후 동일이다. 불변 영역의 직전 owner 나머지6·CJS4 및 문법2를 재사용해 총 고유26시험 근거다. 앞24+이번16을40으로 합산하거나 모든26을 보완 후 새로 실행했다고 주장하지 않는다.
+Resource는 원 부모/Window/서버Session/profile와 실제Delivery/slot 만료 안에 남기고, proof/Challenge/current·호출 원10초는 별도 checker/timer/Signal로만 줄였다. 원 부모를 narrow했다 되돌리지 않는다. 정상 완료 후4초 fresh phase와 진행 중3초 취소·UNKNOWN 재요청0·원30초/실제Delivery6초 폐기를 구분한다. CJS는 원 Window/Challenge canonical 또는 receiver별 until을 읽어 새 호출이 늦은 이전 결과의 기한을 대신하지 못한다.
+기존 부모 영구3초 축소 기대값은 실제 RED와 정본의 자원/처리 구분에 따라 부모 보존+호출3초 취소로 교체했다. SIGN/native0·byte 폐기·UNKNOWN·재전송0 검사는 보존했고 독립 검토로 확인했다. 시험 undefined 타입1·blank 공백 diff1 준비 오류는 제품 RED와 구분했다.
+보완 전 Main 명령(불변 영역 재사용):
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^짧은 OPEN/STATE 호출 완료|^OPEN proof3초의 지연|^30초 원 수신 자원도|^non-OPEN min-only|^known current3초|^non-OPEN SIGN 대기|^non-OPEN UNKNOWN|^non-OPEN 원결과 조회|^직접 Client의 future proof|^STREAM private frame|^non-OPEN 최초 소비' tests/unit/FN06/native-first-receive-client.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^REGISTERED owner→원 OPEN Client|^REGISTERED phase current의 SIGN|^REGISTERED phase의 current3초|^STREAM 원 Client→REGISTERED|^STREAM owner 인계는|^STREAM 실제 보호 current|^STREAM owner epoch ABA' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^새 fresh phase가 완료돼도' tests/desktop/desktop-trust-registration.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^CJS OPEN 수신 facade|^CJS phase frame facade|^CJS phase facade|^desktop 첫 수신 HUMAN adapter' tests/desktop/native-first-receive-owner.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+6. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+8. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+9. git diff --check
+정리 보완 후 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^OPEN Decoder 생성의 원 guard|^handoff budget 초기검사|^짧은 OPEN/STATE 호출 완료|^OPEN proof3초의 지연|^30초 원 수신 자원도|^non-OPEN min-only|^known current3초|^non-OPEN SIGN 대기|^non-OPEN UNKNOWN|^non-OPEN 원결과 조회|^직접 Client의 future proof|^STREAM private frame|^non-OPEN 최초 소비' tests/unit/FN06/native-first-receive-client.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^STREAM 원 Client→REGISTERED' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^새 fresh phase가 완료돼도' tests/desktop/desktop-trust-registration.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. git diff --check
+| 파일 | 구분 | bytes | SHA256 |
+|---|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 변경 | 51984 | AC62C49536956C9A6B7BC0DADEF01DE6125EF18E2BF5316B03403A0902F9A7B8 |
+| apps/desktop/src/native-first-receive-client.cjs | 변경 | 15997 | A10A66F89351A77BA5866670C051B68F164AAA6F319312FC8D603E8B01A77769 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 불변 | 74013 | B9CA59E33F0705A72489ADAF585CCFE27CA554F68F9C84EFF2EF2C5672D22566 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 변경 | 71492 | 3B717887F7871F68A8945C75A5E1B37BDAAA0CAF1BEBAF32E5663104E8DD9AD3 |
+| tests/desktop/native-first-receive-owner.test.cjs | 불변 | 29559 | 72D9E6926937070A9A35A2B2D7E921A9E5BCC363FAAB3B9A7E6D2DD2180A964D |
+| tests/desktop/desktop-trust-registration.test.cjs | 변경 | 136653 | 22A71E81DD2F1BE2B8EDAA39352C7DCDBFA7EC6333684D6E596EFAF79BCF8A7F |
+실제 변경4경로와 Main 현황2만 보존 대상으로 분리한다. 불변2는 인접 근거이고 보호 원문은 stage하지 않는다. LF/CRLF 예정 경고2는 별도·설정/정규화0이다. 복구는 변경4경로 한정 revert다.
+별도 미완료를 숨기지 않는다. 현재 공통 phaseController는 pending STREAM 동안 ARM/STATE/CLOSE를 막는다. 서버 ARM이 OFFERED+stream_owned를 요구하고 Binding/Delivery는 열린 stream에 의존하므로 STREAM 완료 후 ARM으로 순서를 바꿔 해결할 수 없다. 이는 broker.begin production 미연결과 별개의 Client 진행 제한이다. 다음은 이 기존 승인 흐름을 연결하는 범위를 고정하고 SlotReceipt/waiter 생산·shell/UI/ACK도 계속 남긴다. 실제 DB/권한/키/서비스/Agent/HTTPS/C#·사용자 인수/전체계획은 미완료다.

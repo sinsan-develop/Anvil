@@ -15384,3 +15384,11 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 담당/범위: 기존 Primary의 같은6경로, Main 관리·검수·통합. 통제 §156에서 resource declared expiry/원 부모를 늘리지 않고 호출 전용 최소 예산을 분리하도록 고정했다. 원 source/실제 만료·UNKNOWN/재서명 금지는 보존한다.
 - 검증/다음: 정상 짧은 OPEN/phase 완료 후 유효한 fresh phase와, 진행 중3초 만료/부모만료·ABA·사용자종료/UNKNOWN 효과0을 직접 TDD·독립 검수한다. 이미 만료/폐기된 객체를 되살리지 않는다. 아직 새 보완은 미검증이다.
 - 잔여: SlotReceipt adapter는 미구현이다. NativeFirstReceiveBroker.begin의 production 호출도 없으므로 실제 waiter와 slot 만료가 불일치한다고 단정하거나 동일성/guard를 바꾸지 않는다. receipt/대기자 생산·shell/UI·ACK·전체계획은 미완료이며 실제 실행 제외를 유지한다.
+
+- §156 검수 갱신: Main fresh24 PASS/skip0·타입/문법2/diff0·raw6 불변이나 독립C0/I1로 인수하지 않았다. OPEN의 budget 취득 후 Decoder 생성, handoff의 byte 이동 후 budget 생성이 정리 try 밖인 두 경계를 기존 TS 제품/시험2로 재작업한다. 현재 단위 독립I1 1차이며 guard/기한/의미는 유지한다. 통제 §157.
+
+## 2026-11-05 FN06 수신 수명·호출 예산 소스 한정 검수
+- 담당: 기존 Primary 구현·Main 어울 직접 검증/통합·기존 독립 읽기 검수. 실제 변경4·불변2를 구분했다.
+- 결과: 첫 독립I1의 OPEN/handoff 정리 경계를 실제 RED2→GREEN으로 보완하고 scoped C0/I0다. Main 수정후 fresh16 PASS/skip0·타입/diff0·raw6 불변, 불변10시험·문법2의 직전 실제 실행을 재사용해 총 고유26시험 근거다.
+- 동작: 원 부모/선언 자원 만료를 늘리지 않고 호출 proof/current/원10초의 취소 예산을 분리했다. 정상 짧은 호출 뒤4초 fresh phase·진행 중3초 취소·UNKNOWN 차단·원30초/실제Delivery6초 만료와 늦은 이전CJS 기한을 검산했다.
+- 잔여: pending STREAM이 공통 controller를 점유해 같은 Client의 ARM/STATE/CLOSE를 막는 별도 진행 제한이 확인됐다. 기존 서버 stream_owned 선행 때문에 직렬 순서로 대체할 수 없다. 이 연결·SlotReceipt/waiter 생산·shell/UI/ACK·실제 환경과 전체계획은 미완료다. 상세 통제 §158.
