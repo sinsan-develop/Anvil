@@ -11,9 +11,9 @@
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
 | FN06 진행 중 | Binding 첫사용은 부분 인수했고 최초 DENIED 감사·원문 재조회·선택 legacy 전달 차단은 Main 합성10/타입0·SQL5본문 독립C0I0로 한정 확인했다. 같은 Primary가 원 명령+ARM 역사 재조회 §92를 이어간다. 실제 R Delivery·desktop/slot·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 원 명령+ARM 재조회, 실제 R Delivery/후행 phase/desktop/slot 접합, 전체 Node 독립 검토와 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN은 현행 거절·새 효과0을 유지하며 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
+| FN06 남은 연결 | 원 명령+ARM 재조회, 실제 R Delivery/후행 phase/desktop/slot 접합, 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. 감사 Node 독립 검토는 고정8c65821d 한정 C0/I0이다. OPEN은 현행 거절·새 효과0을 유지하며 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIPa2f0ce809ddadc7c6e01d763d17ab60b4614529f는 Binding 첫사용 source9·현황2를 보존했다. raw11·보호3 불변/index0 확인 후 같은 Primary가 감사 source를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
+| Git 보존 | 로컬8c65821dcf566b2b5dee6388206e206abb0c03e4에 감사·재조회/전달 차단 source7과 현황2를 보존했다. 보호 비추적3 지문·index0을 확인했다. 같은 Primary가 다음 역사 조회를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15204,3 +15204,8 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 담당: 기존 Primary 구현, Main 검수·통합, 기존 독립 검토자 SQL5본문. Main 직접 합성4+인접4+형상2 PASS/skip0, 타입·diff0, raw7 전후 동일. 자세한 명령·지문은 구현통제 §96이다. 실제 DB·권한·키·서비스·Agent 실행0이다.
 - 미완료: 원 명령+ARM 역사 재조회 임시409, R Delivery 실제 producer와 desktop/slot 연결, ACK 입력 미채택, OPEN 감사의 별도 적격 요구 및 전체 실환경 검증. OPEN 현재 거절·새 효과0은 PMO가 기존 A안 한정 적용으로 확인했다. 현재 producer 적용 밖을 영구 제외나 완료로 표시하지 않는다.
 - 오류: 선택 legacy fallback 접점은 합성 반례 후 차단했고 기존 전달은 유지했다. 최초 감사/BOUND/replay의 이전 반례와 패턴 선택0은 과거 기록대로 보존하며 PASS로 소급하지 않는다. 다음 구현은 같은 Primary의 §92 역사 조회다.
+
+## 2026-11-05 FN06 감사 A안 소스 부분 인수
+- 고정8c65821d의 Node 독립 C0/I0와 SQL5본문 C0/I0, Main 직접 합성10/타입·diff0을 대조해 해당 감사/재조회·selected fallback 차단만 소스 부분 인수했다. 실제 DB·전달·전체 FN06·전체계획 완료가 아니다. 통제 §96~97 참조.
+- 로컬 source7+현황2 WIP와 보호 비추적3·index0을 확인했다. PowerShell 보호 확인 구문 오류1은 실행 전 실패 후 읽기 명령만 보정했다. 원격 재시도/복구·PR/병합0이다.
+- 다음: 같은 Primary가 §92의 저장된 원 명령+ARM 역사 조회를 작성한다. 이후 기존 WI S4/S5의 실제 Delivery producer와 단발 공급을 연결한다. Main은 관리·검수·통합, 실제 환경 경계는 그대로다.

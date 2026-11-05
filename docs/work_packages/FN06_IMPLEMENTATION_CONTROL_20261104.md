@@ -988,3 +988,13 @@ Primary live/pending0·변경7 고정 뒤 Main bc4c81에서 직접 감사4PASS/1
 | tests/unit/FN06/native-preparation-store.test.ts | 116182 | 2D2AB8910966941243CE7FEDFB35360A202FCDD79C3B1DBB4ECFF3851F2B1008 |
 
 같은 원 요청/서명 DENIED는 원403·감사/nonce/효과0, 다른 서명/요청은 기존 유한 충돌, SQL/COMMIT/release 불명은 UNKNOWN을 유지한다. 후속 정상 HUMAN 종료는 별도 원장으로 보존한다. selected ARM은 실제 R Delivery가 없을 때 기존 legacy 전달을0으로 막고 정착된 원 기록을 UNKNOWN으로 보존한다. header없는 legacy 인접 흐름은 유지했다. 전달 성공으로 표시하지 않는다. 다음은 §92의 저장된 원 명령+ARM 역사 조회이며 같은 Primary가 준비 중이다. 실제 R Delivery·desktop/slot·ACK 미채택 입력·OPEN 잔여 요구와 전체 계획 미완료는 유지한다.
+
+## 97. 고정 commit Node 독립 검토와 다음 연결
+
+독립 검토자는 8c65821dcf566b2b5dee6388206e206abb0c03e4의 부모 대비 Node 변경만 git 고정 본문으로 검토해 C0/I0를 반환했다. Store276의 실제 P256 false 뒤 private cap, 110~118/261의 성공 proof와 분리된 readonly cap 및 finally 폐기, 113~122/269~273의 실제 DENIED 원문/서명·현재성·최소기한·충돌/UNKNOWN, Service84/88/92/96의 BOUND 최소기한, Prep110의 selected legacy 전달 전 UNKNOWN을 확인했다. 행 번호는 고정 commit 기준이다. 기존 header없는 legacy 전달은 유지하며 실제 PG/키/helper/서비스/Agent·전체 전달 완료 판정은 아니다.
+
+소스7+Main 문서2만 해당 로컬 WIP에 보존했고 index0이었다. e27dc9에서 보호 비추적3 지문은 기존 FACFB938/CFB2969C/AE1B34C2와 같았다. 앞선262017 보호 확인 명령은 PowerShell foreach 뒤 파이프 구문 오류로 실행 전에 실패했고, 배열 수집으로 바로잡은 읽기 명령만 실행했다. 제품·파일·권한 변경0, 같은 구문 오류1회로 기록한다. 기존 CRLF 정규화 경고는 별도이며 자동 설정/정규화0이다. 원격 게시/인증 복구/PR/병합0이다.
+
+§92 구현 뒤 다음 기존 승인 단위는 원 WI S4/S5의 실제 Delivery 연결이다. 현재 broker.attachStream/requireBindingStream은 실제 원 통로와 fence·기한을 확인하지만 Delivery를 생산하거나 bytes를 공급하는 함수가 아니다. Binding 첫사용이나 selected fallback 차단으로 전달 완료를 주장하지 않는다. 같은 Primary만 기존 허용57 안에서 N ATTEMPTED·R Delivery의 원 Tx와 반대 closure, 확정 COMMIT/release 뒤 같은 broker·fence·원 최소기한의 단발 frame 공급, 실패/반환 유실 뒤 재전달0을 연결한다. 기존 command/receipt/authority·raw body·권한·예약/상한을 보존한다. ACK 입력은 미채택이며 ACK/CONFIRMED 성공으로 우회하지 않는다. 실제 transport/slot 접합은 해당 source 후속으로 이어간다.
+
+검증은 실제 기존 producer/Store/service/broker 포트를 메모리 fixture에서 소비하는 정상1·broker 부재/다른 fence·전송 전 실패·COMMIT 불명·전송 후 결과 유실·원 요청 재조회/재전송0·기한 경계를 직접 반증한다. 새 interpreter나 무조건 true current·빈 EOF를 실제 전달 증거로 쓰지 않는다. 실제 DB·권한·키·서비스·Agent·컴파일·외부 실행은 제외하며 Main은 code writer가 아니다.
