@@ -15250,3 +15250,24 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - Main 최종 직접/인접2 PASS·타입/diff0·raw6 전후 동일이다. SQL 형상3은 동일 지문을 확인해 이전 실제 결과를 재사용했다. 명령과 지문은 구현통제 §103에 있다.
 - 독립 SQL/비밀 복사 보완과 원 문맥 보완은 C0/I0이다. 실제 PostgreSQL·HTTPS·slot·ACK·전체 FN06은 미검증·미완료다.
 - 소스6은 index에 분리 보존했다. 기존 Primary는 다음 §102의 수신 연결을 진행한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+
+## 2026-11-05 S4 수신 연결 선행
+- 기존 담당자가 decoder에서 실제 Delivery를 받아 보호 source와 slot으로 연결하는 독립 단위에 착수했다.
+- OPEN 전용 current와 서명을 STREAM에 재사용하지 않는다. 단계별 signer/current의 부모 채택 근거를 따로 대조하고 PMO에 지원을 요청했다.
+- 전체 OPEN→STREAM·TLS·ACK는 미완료다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
+
+## 2026-11-05 수신 연결 반례
+- 기존 담당자가 decoder에서 실제 Delivery를 받아 보호 source와 slot으로 연결하는 RED 뒤 직접 합성1 PASS를 수거했다. owner와 기존 desktop 시험만 변경했다.
+- 비동기 source 처리 중 wall 시각은 고정되고 monotonic 시각이 6001ms 흐른 경우를 아직 수용하는 실제 RED를 추가로 확인했다. 기존 최소기한 계산으로 보완한다.
+- 전체 OPEN→STREAM·TLS·ACK 완료는 아니다. 기존 signer 구현은 계속하며 보호 current의 출처를 별도로 대조한다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
+
+## 2026-11-05 수신 대기 중 비밀 폐기 보완
+- 독립 검토 C0/I1: 실제 decoder의 secret이 source read 대기 중 즉시 폐기되지 않았다. 정상 owner CLOSE도 receiver 폐기를 바로 호출하지 않는 접점이 있었다.
+- 같은 담당자에게 dispose·invalidate·정상 CLOSE·원 기한/abort와 늦은 완료의 반례를 고정하도록 지시했다. 기존 timeout과 정상 수용 기준은 유지한다.
+- 직접 합성2 통과를 전체 인수로 올리지 않는다. 실제 DB·키·권한·서비스·Agent·컴파일 실행은 없다.
+
+## 2026-11-05 OPEN 비밀 기한 반례
+- OPEN 정상 성공 뒤 원 signal을 abort해도 비공개 credential이 남는 실제 RED를 수거했다. 실행키 s4_open_credential_lifetime_red, exit1이다. 후속 호출 없이 측정했다.
+- 같은 담당자가 원 lease·Window·current·profile·ReceiveSession의 최소기한과 abort/dispose에 자동 폐기를 연결한다. 새 timeout이나 재발급은 없다.
+- 수신 owner2의 이전 I1은 독립 C0/I0로 해소됐다. OPEN 소비선3과 CJS 종단은 별도 미완료다. 잘못 제시된 DISPOSED 부활 지적은 철회했고 제품 실패로 세지 않는다.
+- 현재 owner/desktop 시험2와 OPEN 소비선3은 미커밋 작업으로 보존한다. Main 문서만 별도 checkpoint에 기록하며 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.

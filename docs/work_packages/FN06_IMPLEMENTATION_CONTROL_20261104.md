@@ -1064,3 +1064,49 @@ Node 경로는 C:/Program Files/nodejs/node.exe이다. 실제 DB·권한·키·�
 | tests/unit/FN06/native-first-receive-schema.test.ts | 47178 | 12A8CE2727E68CD0E867486DF5CD273ABFD377C6E405BA05B29CD784BC0F431C |
 | tests/unit/FN06/native-preparation-store.test.ts | 126450 | 4BA9B989FB4F6E723DAAB5F1FBFE71C44E9063E42A771F35AC04247EAD78E21E |
 검토자의 지문 수거 구문 오류1은 읽기 준비 오류로 분리했다. COMMIT 주입 대역이 실제 query를 보내지 않던 오류도 확정 반환 경계로 바로잡았으며 제품 RED를 통과로 소급하지 않았다. 다음 업무는 §102의 실제 수신 연결이다.
+
+## 104. S4 단계별 서명 선행 대조
+현재 signOpen과 C# ValidateFirstReceiveFrame은 OPEN/null만 허용한다. native_receive_signing_current도 WINDOW_PREPARED와 session NULL만 반환한다. 이를 STREAM에 재사용하거나 OPEN 전에 authority를 발급하지 않는다.
+같은 Primary는 독립 가능한 decoder에서 Delivery authority/metadata를 확인하고 같은 등록의 보호 source로 slot을 단발 수용하는 연결을 계속한다. 전체 OPEN→STREAM·TLS·ACK 완료로 표시하지 않는다.
+기존 읽기 검토자는 부모 패킷과 wire·원 WI S4, 현재 signer/current 원형을 대조한다. phase별 보호 current와 STREAM typed signer가 기존 채택 원형의 미구현인지, 정확한 공개 필드·정책·인증 의미의 미정 delta인지 근거 절과 함께 반환한다.
+이미 확인한 decoder 본문은 반복 검토하지 않는다. 새 설계·제품/문서 수정·시험·실환경 실행은 하지 않는다. PMO에는 같은 범위의 원문 근거 지원을 요청했다.
+전체 계획과 실제 연결 목표는 유지한다. 수신 단위의 부분 구현을 전체 흐름 완료로 대체하지 않는다.
+
+## 105. STREAM signer의 기존 범위와 보호 current 접합
+PMO 회신 turn 01a1a9ef-41fe-74d1-9351-91113e26a7f8는 STREAM typed signer 자체를 기존 S4의 미구현으로 확인했다. wire §6의 phase6종·null 표와 SIGN_NATIVE_FIRST_RECEIVE_PROOF, WI S4의 builder/validator 연결이 근거다. 이 구현을 다시 승인 대기로 돌리지 않는다.
+OPEN 전용 signing-current만으로 새 endpoint·응답 필드·인증 방식·허용 상태 확대를 채택한 것으로 보지는 않는다. 기존 비공개 포트와 채택 원형으로 session/challenge·원 tuple/current 근거를 연결할 수 있는지 먼저 매핑한다.
+기존 읽기 검토자는 실제 private current 포트의 생산자와 소비자, 필요한 필드의 기존 출처를 좁혀 확인한다. 오래된 OPEN current를 새 current로 복제하거나 authority 기반 SIGN을 전용하는 방안은 제외한다. 새 설계·수정·시험·실환경 실행은 하지 않는다.
+그 안의 signer와 검산은 기존 승인으로 진행할 수 있다. 부족한 경우 새로 필요한 current 생산·반환 조건만 정확한 delta로 구체화한다. Primary는 독립 수신 연결을 계속하며 전체 S4를 대기하지 않는다.
+
+## 106. 독립 수신 연결 검토
+기존 읽기 검토자는 createNativeFirstReceiveReceiver와 직접 바뀐 owner 수명 코드를 확인한다. 실제 decoder에서 같은 Delivery authority/metadata와 보호 source를 거쳐 실제 slot으로 연결되는지 본다.
+원 등록·profile·문맥과 await 뒤 wall/monotonic 최소기한, 단발 수용·중복·폐기·비밀 보존 범위를 확인한다. void 수용을 영수증이나 ACK 성공으로 올리지 않아야 한다.
+기존 동일 parser와 source 본문은 반복 검토하지 않는다. 본문 전후 지문을 남기고 수정·시험·실환경 실행은 하지 않는다.
+## 107. 다음 기존 OPEN 수신 소비선
+Primary는 §106 대상의 안정 제출과 Main 직접 검증 뒤 이 기존 S4 단위를 이어간다. 실제 원 Session current와 기존 signOpen, 고정 CA/profile HTTPS와 실제 OPEN decoder를 연결하고 receive-only credential을 main 비공개 수명에만 보관한다.
+원 wire의 endpoint·header·phase·키계약과 기존 허용 파일만 사용한다. 새 export·IPC·권한을 만들지 않는다. source가 없으면 거절하고 OPEN 재서명·자동 HTTP 재호출을 하지 않는다.
+권위가 없는 OPEN에서 authority 기반 channel이나 slot을 먼저 만들지 않는다. 같은 허용 모듈 안의 고정 OPEN builder/driver 접점을 사용한다. cookie/bearer 없는 native OPEN과 HUMAN challenge 요청을 구분한다.
+HTTPS의 원 origin·CA·인증서 검산과 요청/응답 cap·현재성·최소기한을 유지한다. redirect·TLS 검산 생략·다른 host 전송을 허용하지 않는다. 실제 네트워크나 키/helper를 실행하지 않고 기존 fake socket과 실제 parser를 소비한다.
+STREAM의 보호 current 공급과 ACK 입력은 별도 미완료로 유지한다. 이 단위의 source 합성을 전체 OPEN→STREAM·실환경 완료로 표시하지 않는다. Main 문서·index·Git·보호 자료는 수정하지 않는다.
+
+## 108. 수신 비밀의 대기 중 폐기 보완
+§106 독립 검토는 C0/I1이다. decoder.finish가 반환한 secret이 async 지역 변수에만 있고 protection.read 대기 중 dispose가 이를 지우지 못한다. source가 정착하지 않으면 finally도 지연된다.
+같은 Primary가 기존 owner와 시험2 안에서 이 반례를 실제로 고정하고 보완한다. receiver.dispose와 owner.invalidate, 정상 trust-act/CLOSE에서 이미 수용한 slot과 대기 중 secret을 즉시 폐기해야 한다.
+실제 decoder가 만든 비밀을 소유하는 참조를 폐기 경계에 연결한다. 대기 중 abort나 원 최소기한 도달에도 같은 폐기가 이뤄져야 한다. source가 신호를 무시해도 비밀을 계속 보유하지 않는다. 새로운 timeout 수치는 만들지 않는다.
+보호 source가 나중에 정착해도 disposed receiver가 slot이나 비밀을 다시 만들면 안 된다. 기존 중복·문맥·wall/monotonic·authority/profile 검산을 유지한다. 정상 frame 수신 전 비밀을 지워 양성을 깨뜨리지 않는다.
+실제 decode 뒤 source 대기를 제어하는 합성 반례에서, 종료 직후 비밀0·slot 폐기·뒤늦은 완료 거절을 확인한다. 전체 heap 소거를 주장하지 않는다.
+새 공개 입력·IPC·export·키·권한·DB·서비스·Agent 실행은 없다. Main 문서와 index는 수정하지 않는다. §107의 다음 OPEN 소비선은 이 단위 안정화 뒤 이어간다.
+
+## 109. 동결한 OPEN 소비선3의 한정 검토
+Primary가 §108 보완 전에 작성한 기존 OPEN 소비선3은 보존한다. 파일은 apps/connector/runtime/native-first-receive-client.ts, apps/connector/runtime/native-preparation-https.ts, tests/unit/FN06/native-first-receive-client.test.ts이다. 현재 이3은 동결하고 owner/desktop 시험2의 폐기 보완을 우선한다.
+기존 읽기 검토자는 이3의 실제 변경을 원 wire와 대조한다. 원 Session/current·signOpen·고정 origin/CA/profile과 실제 OPEN builder/Node driver/decoder, 비공개 receive credential 수명과 오류·재시도 금지·최소기한을 확인한다.
+새 endpoint/header/export/키계약이나 OPEN 이전 authority/slot 우회가 없어야 한다. CJS facade와 실제 owner 종단이 아직 없다는 미완료 범위도 구분한다. default source 부재를 성공으로 바꾸지 않는다.
+본문 전후 지문을 남기고 수정·시험·실환경 실행은 하지 않는다. 이 읽기 검토는 현재 code writer의 §108 보완과 충돌하지 않는다. source3의 보존은 구현 인수나 전체 OPEN 완료를 뜻하지 않는다.
+
+## 110. OPEN credential의 성공 뒤 폐기 수명
+§109 검토는 C0/I1이다. 성공한 receive credential이 비공개 필드에 보관되지만 명시 dispose와 실패 외에는 원 abort·Session/최소기한의 자동 폐기가 없다.
+같은 Primary는 §108 보완의 안정 제출 뒤 동결한 OPEN 소비선3에서 이 반례를 고정하고 보완한다. 원 lease·Window·ReceiveSession의 기존 기한과 abort/dispose에 비밀 보관을 결박한다. 새로운 기한 수치를 만들거나 원 허용 기한을 임의로 줄이지 않는다.
+성공 뒤 아무 후속 호출이 없어도 원 기한이나 abort에서 비밀을 폐기해야 한다. listener와 timer를 정리하고 늦은 응답이 재보관하거나 새 요청을 만들지 못하게 한다. 재발급·재서명·자동 HTTP 재호출은 없다.
+검토 중 제시된 dispose 뒤 OPENED 부활 지적은 철회됐다. 기존 공통 check의 DISPOSED 검사가 이미 차단하므로 그 부분은 불필요하게 다시 수정하지 않는다. 이는 검토 준비 오류이며 제품 실패로 세지 않는다.
+기존 native OPEN 원문과 origin/CA/profile·서명·cap·최소기한을 유지한다. 새 인증·공개 필드·IPC·export·실제 키·DB·서비스·Agent 실행은 없다.
+CJS facade와 실제 owner의 OPEN 종단은 이 Core 보완 이후에도 별도 미완료다. Main 문서·index·Git·보호 자료는 수정하지 않는다.
