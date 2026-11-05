@@ -1774,3 +1774,36 @@ Main 직접65df60 auth9 PASS/204.2303ms와 원 메모리 반례77c9af→aa96e9 e
 추가 공통2의 실제 지문은 repository33662B/62FEE4DCD555BABA24A3E2E0838E728A4B73DAF083183781AE3E0961D0BC5B1C, auth 시험9239B/2075840FE05066331531B72D0DBB237D5F9DC97E68DEA59B26C5437D801D2BCC다. source 변경은 COMMIT 응답을 받아 정확 command 확인 뒤 committing=false로 전환하는1지점뿐이다. 새로운 인증/권한/공개입력/실DB·키·서비스 실행0이다. 이 별도 오류 보완2와 Main 현황2만 먼저 보존하며 다른 waiter source는 stage하지 않는다. 복구도 공통2 한정 revert다.
 S5 전체 인수는 아직 아니다. Main broker8c3388 5 PASS/1731.0726ms·원 native 명령 session98219(시작322b06/최종3b750c)11 PASS/22865.9067ms로 합계 고유25/fail0/skip0은 실행됐지만, supplyDelivery의 begin이 try 밖에서 거절될 때 원 스트림의 소유 정리가 어떻게 닫히는지 한정 질문을 독립 검토 중이다. 실제 hang/실패라고 주장하지 않으며 아직 새 회수 반례는 없다. waiter source 인수를 잠정 보류하되 공통 종료 오류의 독립 인수와 다음 조치를 막지 않는다.
 정확 Main 공통 검증 명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN01/auth-transaction.test.ts와 같은 node의 --input-type=module 메모리 실제 repository 반례다. 메모리 Pool의 COMMIT/ROLLBACK/MISSING 태그3만 비교하고 원 token/키/세션 원문은 출력하지 않았다. 실제 PG/Pool/TLS/OS/helper/권한/키/서비스/Agent/C#/ACK/영속 terminal·전체 계획 인수는 미실행 또는 미완료다.
+
+
+## 170. 동기 raw query 거절의 scoped 보완과 유한 스트림 소유 판정
+공통 완료 응답의 소스2+현황2는3bbff6ea14dca161a064578a66211ea5d9c3b512(09d12f33 직접 자식)에 보존했다. 다른 원 waiter 변경5는 아직 미통합이다. Main 전체 직접25 PASS/fail0/skip0·모델 반례3 GREEN·타입/diff0·raw8 전후 동일은 보완 전 근거로 보존한다.
+begin이 try 밖에서 거절될 때의 원 스트림 질문은 추가 독립 읽기로 닫았다. 남는 entry/abort listener/timer는 attachStream의 원 소유자가 STREAM signal abort/close 또는 min(Window,Session,STREAM proof) 만료에 유한 회수한다. 새 frame/비밀은 생성 전이고 capability는 소진돼 재공급0이다. 즉시 close 시점은 정본 요구가 아니므로 실제 hang/무한 누수/I1로 확정하지 않으며 이에 대한 제품 보완·추가 gate를 만들지 않는다. Main23초 여정 PASS를 실패로 바꾸지 않는다.
+다만 Main9ab5b1은 새 queryFailed가 raw Promise reject에만 있고 wrapper catch의 동기 raw.query throw에는 없음을 직접 확인했다. 동기 throw가 rejected Promise로 반환돼 정상 callback에서 무시되면 실패 표시 없이 COMMIT으로 갈 수 있는 미관측 거절 경계다. 실제 caller 경로의 non-async raw wrapper 반례로 RED→GREEN을 확인하도록 같은 Primary에게 기존 Prep/기존 native-preparation-store 시험2만 scoped 보완 배정했다. 다른 안정6 지문은 고정하며 Promise.reject/async throw로 동기 반례를 대체하지 않는다.
+최소 catch의 실패 표시로 정상 반환만 차단하고 원 비동기 실패·관측/변환된403·정상 대기/rollback·공급0을 보존한다. 리팩터링·범위/권한/API/원 E 변경0이다. 현재 단위의 첫 scoped Main 거절 경계 보완이며 과거 해결·준비 오류를 같은 정식 실패3회로 합산하지 않는다. 독립 scoped 검토와 직접 영향 fresh 검증 전 원 waiter 전체 인수0이다.
+
+
+## 171. 원 operation waiter·단발 공급의 소스 한정 인수
+§170의 실제 non-async raw.query 동기 throw는 afa83b의 APPLIED200 RED를 기존 catch에 실패 표시17bytes 추가로 닫았다. 직접3 PASS 보고88144d 뒤 최종 응답만 모델 capacity 오류로 중단됐으며, 이 인프라 오류를 제품 실패/정식 FAILURE_REPORT/합격으로 취급하지 않았다. Main은 실제 파일과 직접 검증·독립 source로 인수했고 기존 동일 담당자는 재실행 없이 다음 읽기 전용 작업으로 재개됐다. 계정/모델/agent 교체0이다.
+Main 수정 후52aaca에서 정상 실제 waiter·기존 비동기 미관측/관측403·새 genuine 동기 throw 미관측/관측403의3시험 PASS/4131.8404ms·타입0653df/diff6b2508 exit0이다. pre179426/post ff76f1 raw8 동일·다른6 불변이다. 독립 scoped C0/I0는17bytes 역치환이 이전67473B/5DA9E17A와 정확히 같고, 새 non-async 시험이 기존153254B/E60A631D 전체 prefix 뒤에 추가됐음을 확인했다. fixture에 없는 ROLLBACK 문자열 대신 data/approval snapshot 원복·COMMIT0/공급0을 검산한 것은 기준 완화가 아니다.
+보완 전 Main65df60 auth9 PASS·8c3388 broker5 PASS·원 session98219의322b06→3b750c native11 PASS/22865.9067ms·타입6878e0/diff2f252d0은 불변 영향 근거로 보존한다. 보완 후 fresh3와 중복2를 제외한 불변23을 합쳐 고유26/fail0/skip0이며 모든26을 보완 후 새로 실행했다고 주장하지 않는다. 실제 repository 메모리 marker3 RED→GREEN aa96e9는 별도 보조 근거로 합산하지 않는다.
+동일 원 operation의 COMMIT 완료 tag·Pool 반환 뒤 private 소진 capability로 waiter 준비→frame 단발 공급→원 signal/남은 budget 내 후보 대기를 연결했다. 기다림 중 원 DB/락/Tx를 유지하거나 후속 SQL로 성공을 만들지 않는다. 고정 E·ref/hash/fence/digest·actor/capability 재검산을 보존하며 receipt E가 더 짧으면 기존 exact 비교로 거절한다. terminal은 listener/closure를 회수하고 원 E 표식·유한 timer/clock floor로 역행 재begin과 재전달을 차단한다. 후보는 CANDIDATE_ONLY/confirmed:false로, 후행 ACK 영속/CONFIRMED/Agent 성공이 아니다. legacy header 부재·원 bytes/hash·기존 응답/역사·false flags는 보존했다.
+정확 Main 직접/영향 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN01/auth-transaction.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^비공개 ACK broker|^다른 fence/ref|^원 waiter는 E timer|^waiter E는|^원 E timer 종료' tests/unit/FN06/native-first-receive-routes.test.ts
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^원 selected command|^원 command는 미관측|^ARM header 정상 여정|^ARM Binding은 실제 broker|^Binding admission Store|^fixed intent 선예약|^원 native HUMAN route|^ARM header의 원 Ref|^실제 HUMAN 원명령과 receipt|^B issuer timeout|^B delivery timeout' tests/unit/FN06/native-preparation-store.test.ts
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^원 selected command|^원 command는 미관측|^원 command의 non-async' tests/unit/FN06/native-preparation-store.test.ts
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. git diff --check
+| 파일 | 구분 | bytes | SHA256 |
+|---|---|---:|---|
+| apps/server/modules/executions/project-native-preparations.ts | 현재 변경 | 67490 | 190E8FBD041EEB417DA4E4EAF9CA5225E9DF6FF598A1A62854D1A6C228B57002 |
+| apps/server/modules/executions/native-first-receive-service.ts | 현재 변경 | 66617 | 0BD3F8E72F4B1C729268B6204182F6DD0D5DA02A717DFC1365E120577185F875 |
+| apps/server/modules/executions/native-first-receive-store.ts | 현재 변경 | 144708 | 5A7453109014309BB65FAF9C19FAA3221EC87191A761C7ADB09C257A047D52BD |
+| tests/unit/FN06/native-first-receive-routes.test.ts | 현재 변경 | 194299 | A4A3A56FD519763EFF87B55B98239299880E58833ED9A9CA56D2555AB6AB98AA |
+| tests/unit/FN06/native-first-receive-store.test.ts | 불변 | 39153 | 74C24E88EBFD1B43DD7D9D2943E6F2BBE75046A24A7384499CFCD54055B5BD80 |
+| tests/unit/FN06/native-preparation-store.test.ts | 현재 변경 | 154971 | B67698B4E49B427B2B2C30576B6FDA0DFA98CE8C3073040450A05CB20F1D7706 |
+| apps/server/modules/access/repository.ts | 3bbff6ea보존 | 33662 | 62FEE4DCD555BABA24A3E2E0838E728A4B73DAF083183781AE3E0961D0BC5B1C |
+| tests/unit/FN01/auth-transaction.test.ts | 3bbff6ea보존 | 9239 | 2075840FE05066331531B72D0DBB237D5F9DC97E68DEA59B26C5437D801D2BCC |
+공통2는3bbff6ea에 이미 보존했고 receive-store 시험1은 불변이다. 현재 실제 변경5(제품3/시험2)+Main 현황2만 통합 대상으로 분리한다. 보호 비추적3은 포함하지 않고 CRLF→LF 예정 경고1은 별도·설정/정규화0이다. 복구는 현재 source5 한정 revert이며 공통 완료 검사·사용자/보호 자료를 되돌리지 않는다. private 동일성·push/PR/병합은 미확인·인증 복구/재시도0이다.
+남은 것은 실제 shell receiver/currentSource·설정/화면 조립, 미채택 ACK 입력/bodyHash와 후행 nonce/terminal/확정, OPEN 감사 잔여 및 실제 PG/Pool/Tx/RLS/TLS/OS/helper/키/권한/서비스/Agent/C#/사용자 인수다. 실제 owner receipt와 server waiter의 공통 E가 실제 환경에서 일치하는지는 이 source 모델만으로 인수하지 않는다. 같은 Primary가 부모 S4/S5·shell/preload/policy/main의 다음 미완료 호출선을 읽기 대조하며 전체 FN06·Stage/계획 완료를 주장하지 않는다.

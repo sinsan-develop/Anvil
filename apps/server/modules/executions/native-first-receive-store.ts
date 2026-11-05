@@ -89,6 +89,8 @@ export class NativeFirstReceiveStore{
  /** AccessRepository.authenticated의 확정 COMMIT/release 뒤 원 command만 호출하며 SQL은 실행하지 않는다. */
  releaseNativeDelivery(capability:unknown,check:()=>void){const c=capability&&typeof capability==='object'?nativeDeliveryCapabilities.get(capability):undefined;if(!c||c.released||c.used)proofDenied();check();c.ownerCheck();const at=this.now();if(!Number.isFinite(at)||at<c.last||at>=c.deadline)throw new AuthFailure('NATIVE_OUTCOME_UNKNOWN',503);c.last=at;c.released=true;}
  static takeDeliveryOwnership(capability:unknown,brokerId:string,opaque:Uint8Array,now:number){const c=capability&&typeof capability==='object'?nativeDeliveryCapabilities.get(capability):undefined;if(!c||!c.released||c.used||c.value.brokerInstanceId!==brokerId||!(opaque instanceof Uint8Array)||opaque.length!==43)proofDenied();c.used=true;c.ownerCheck();if(!Number.isFinite(now)||now<c.last||now>=c.deadline||!opaque.every(byte=>byte>=48&&byte<=57||byte>=65&&byte<=90||byte>=97&&byte<=122||byte===45||byte===95)||contentHash(opaque)!==c.digest)throw new AuthFailure('NATIVE_OUTCOME_UNKNOWN',503);return receiveCopy(c.value);}
+ /** 소진된 원 capability의 현재 actor·부모기한만 재검산하며 재공급 권한을 만들지 않는다. */
+ static checkDeliveryOwnership(capability:unknown,brokerId:string,now:number){const c=capability&&typeof capability==='object'?nativeDeliveryCapabilities.get(capability):undefined;if(!c||!c.released||!c.used||c.value.brokerInstanceId!==brokerId)proofDenied();c.ownerCheck();if(!Number.isFinite(now)||now<c.last||now>=c.deadline)throw new AuthFailure('NATIVE_OUTCOME_UNKNOWN',503);c.last=now;}
 
  private readonly uuid:()=>string;private readonly now:()=>number;private readonly nonce:()=>string;
  /** 현재 HUMAN 읽기 목적 SD만 사용한다. 역사 값에 현재 기한을 덮어쓰지 않는다. */

@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 OPEN 이후 phase current·Node/CJS/owner·C# validator·후속 전송과 private slot 인계를 소스 범위로 연결했다. 대기 STREAM·제어와 실제 SlotReceipt 생산은 소스 검수했으며 shell/UI·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | production waiter/원 native Tx·shell receiver/currentSource 조립·UI controller 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
+| FN06 진행 중 | 수신·제어와 실제 slot 영수증 생산은700e4fc1에서 source 한정 검수했다. 원 command waiter/단발 공급은 §171에서 scoped 보완 후 직접/독립 검수로 소스 한정 인수했다. 공통 COMMIT 응답 검사는3bbff6ea로 별도 소스 인수했고 전체 FN06/실환경은 미완료다 |
+| FN06 남은 연결 | shell receiver/currentSource 조립·UI controller 접합, 미채택 ACK bodyHash와 후행 terminal/확정, OPEN 감사 잔여 및 실제 PG/Pool/TLS/OS·Agent 검증이 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint 687f35fb62a82a63b1443feabdadd00a659a400d에 자원 수명/호출 예산 변경4와 현황2를 보존했다. 수신·제어 접합 §160과 실제 SlotReceipt 생산 §164는 각 Main fresh20/독립 C0/I0로 소스 한정 검수했다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 FN06 소스700e4fc1·공통 완료 검사3bbff6ea를 기존 branch에 보존했다. 원 waiter 관련 변경은 같은 Primary 소유로 미통합이다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15453,3 +15453,14 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 ## 2026-11-05 공통 COMMIT 완료 응답 오류 소스 검수
 - 공통 source1/시험1은 Main auth9 PASS·실제 repository 메모리 RED→GREEN·raw 일치·타입/diff0·독립 C0/I0로 한정 인수한다. 정상 COMMIT만 반환하고 rollback/누락은 후속 marker0이며 기존 감사 후 거절과 원 오류를 보존한다. 실제 DB/권한/키/서비스 실행0이다.
 - 이 공통2+Main 현황2만 먼저 보존한다. 별도 waiter 원 명령은 Main25 전체 통과/skip0이나 begin 거절 뒤 스트림 소유 정리를 추가 한정 검토 중이라 전체 S5/계획 PASS로 올리지 않는다. 실제 hang/실패를 관측한 것은 아니며 상세는 구현 통제 §169다.
+
+
+## 2026-11-05 원 waiter 검수의 동기 query 실패 scoped 보완
+- 공통 COMMIT 완료 보완은3bbff6ea로 소스2+현황2를 보존했다. 원 waiter 여정은 Main25 PASS/skip0·타입/diff0이지만 새 실패 표시의 동기 raw.query throw 누락을 실제 caller 반례로 확인·보완 중이다.
+- Prep/기존 native-preparation-store 시험2만 같은 Primary가 수정하고 안정6은 고정한다. 정상 callback만 차단·기존403/rollback/비동기 거절은 보존한다. begin 전 거절의 스트림은 원 proof 수명/abort 소유자가 유한 회수하므로 무한 누수나 실제 hang으로 판정하지 않았다. 상세 §170, 실제 DB/권한/키/서비스/Agent/ACK 변경0이다.
+
+
+## 2026-11-05 FN06 원 operation waiter·단발 공급 소스 검수
+- 판정:정상 callback의 동기 raw query throw도 차단하는 scoped 보완을 Main fresh3/타입/diff0·지문8동일·독립 C0/I0로 한정 인수했다. 보완 후3+불변23으로 고유26이며 전부26을 새로 실행한 것은 아니다. 모델 capacity로 개발자 마지막 응답이 실패한 사실은 실제 source/직접 검증·검토와 분리했다.
+- 원 COMMIT 완료·Pool 반환 뒤 waiter 준비/단발 공급/원기한 대기, E/fence/소진·UNKNOWN/미관측 실패·역행/유한 회수·legacy/원 bytes/false flags를 소스 범위로 검수했다. 공통 완료2는3bbff6ea에 별도 보존, 현재 waiter 변경5+현황2를 통합한다. 상세 §171이다.
+- 미완료:실제 shell/currentSource/UI·미채택 ACK/후행 terminal/확정·OPEN 감사·실제 DB/권한/키/TLS/OS/서비스/Agent/C#/실자료/J3/P03 R3·전체 인수다. 같은 기존 Primary가 다음 연결을 읽기 대조하며 전체 계획은 계속 진행한다. Git private/PR/병합 미확인·인증 복구/재시도0이다.

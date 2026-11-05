@@ -339,3 +339,23 @@ test('HUMAN current source owner는 발급되지 않은 객체·원 응답 gette
  const used=await read();await f.store.checkPhaseSigningSources(f.db,used,f.native.preparations,()=>{});const usedBefore=f.calls.length;await assert.rejects(f.store.checkPhaseSigningSources(f.db,used,f.native.preparations,()=>{}));assert.equal(f.calls.length,usedBefore);assert.deepEqual(f.native.state.steps,['native-options','native-current']);
  }finally{await f.close();}
 });
+
+
+test('원 waiter는 E timer에서 UNKNOWN으로 정착하고 terminal listener를 회수하되 E 전 재begin은 차단한다',async()=>{
+ const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+ for(const terminal of ['expiry','abort','candidate']){const f=fixture();let now=Date.parse(at),next=0;const tasks=new Map<number,{fn:()=>void;delay:number}>(),timers={schedule:(fn:()=>void,delay:number)=>{const key=++next;tasks.set(key,{fn,delay});return key;},cancel:(key:number)=>{tasks.delete(key);}};const controller=new AbortController();let listeners=0;const add=controller.signal.addEventListener.bind(controller.signal),remove=controller.signal.removeEventListener.bind(controller.signal);controller.signal.addEventListener=((...args:any[])=>{listeners++;return add(...args as [any,any,any]);})as any;controller.signal.removeEventListener=((...args:any[])=>{listeners--;return remove(...args as [any,any,any]);})as any;
+  const broker=new (NativeFirstReceiveBroker as any)(id(20),()=>now,timers),handle=broker.begin(f.binding,controller.signal,()=>{},10000),wait=handle.wait();assert.equal(tasks.size,1,'WAITING은 원 E에 유한 timer를 소유한다');assert.equal(listeners,1);
+  if(terminal==='abort'){controller.abort();await assert.rejects(wait,/OUTCOME_UNKNOWN/);}else if(terminal==='candidate'){assert.equal(broker.candidate(f.binding.windowRef.id,f.binding.operationFence,f.receipt).confirmed,false);assert.deepEqual(await wait,f.receipt);}if(terminal!=='expiry'){assert.equal(listeners,0);assert.throws(()=>broker.begin(f.binding,new AbortController().signal,()=>{},10000));assert.equal(tasks.size,1,'원 E까지 terminal 표식만 유지한다');}
+  now=Date.parse(end);const callbacks=[...tasks.values()];tasks.clear();for(const task of callbacks)task.fn();if(terminal==='expiry')await assert.rejects(wait,/OUTCOME_UNKNOWN/);assert.equal(listeners,0);assert.equal(tasks.size,0);const nextBinding={...f.binding,expiresAt:new Date(now+1000).toISOString()},nextController=new AbortController(),nextWait=broker.begin(nextBinding,nextController.signal,()=>{},1000).wait();nextController.abort();await assert.rejects(nextWait,/OUTCOME_UNKNOWN/);now+=1000;const clean=[...tasks.values()];tasks.clear();for(const task of clean)task.fn();assert.equal(tasks.size,0);
+ }
+});
+
+
+test('waiter E는 원 remaining 밖이면 입장 전에 거절하고 후보의 더 짧은 E에 맞춰 고치지 않는다',async()=>{
+ const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),f=fixture(),controller=new AbortController();let scheduled=0;const broker=new NativeFirstReceiveBroker(id(20),()=>Date.parse(at),{schedule:()=>{scheduled++;return 1;},cancel:()=>{}});assert.throws(()=>broker.begin(f.binding,controller.signal,()=>{},9999));assert.equal(scheduled,0);const handle=broker.begin(f.binding,controller.signal,()=>{},10000),short=structuredClone(f.receipt);short.snapshot.expiresAt=new Date(Date.parse(end)-1).toISOString();short.ref.contentHash=receiveHash(short.snapshot);assert.throws(()=>broker.candidate(f.binding.windowRef.id,f.binding.operationFence,short));assert.equal(f.binding.expiresAt,end);controller.abort();await assert.rejects(handle.wait(),/OUTCOME_UNKNOWN/);
+});
+
+
+test('원 E timer 종료 뒤 wall clock 역행으로 같은 Window를 다시 열지 않고 원 E 이후에만 유한 표식을 회수한다',async()=>{
+ const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),f=fixture();let now=Date.parse(at);const tasks:(()=>void)[]=[],broker=new NativeFirstReceiveBroker(id(20),()=>now,{schedule:(fn)=>{tasks.push(fn);return fn;},cancel:()=>{}}),signal=new AbortController(),handle=broker.begin(f.binding,signal.signal,()=>{},10000);now=Date.parse(end)-1;tasks.shift()!();await assert.rejects(handle.wait(),/OUTCOME_UNKNOWN/);assert.throws(()=>broker.begin(f.binding,new AbortController().signal,()=>{},10000),'timer가 관측한 원 E보다 이전인 wall 시각에서 재입장0');now=Date.parse(end);const next=broker.begin({...f.binding,expiresAt:new Date(now+1000).toISOString()},signal.signal,()=>{},1000);signal.abort();await assert.rejects(next.wait(),/OUTCOME_UNKNOWN/);now+=1000;tasks.shift()!();assert.equal(tasks.length,0);
+});
