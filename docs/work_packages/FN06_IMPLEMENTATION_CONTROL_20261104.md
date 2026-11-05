@@ -952,3 +952,39 @@ Main 전송 절차 보완: 사전 검사한 장문을 도구 인수로 다시 �
 후속 정상 HUMAN close 메모리 연결1PASS/746.5238ms는 denial1/terminal0 뒤 별도 HUMAN command/receipt/audit·TERMINAL/CLOSED 연결 제출이다. Session fixture의 exact7키 밖 추가 metadata 오류는 추가필드 제거만으로 정합했다. 아직 Main 직접 전체 감사 검증은 하지 않았다.
 
 DENIED 원문 재조회는 현재 작성 중이다. 기존 entry가 REJECTED를 first verification으로 보내던 공백을 실제 REJECTED ticket의 별도 readonly DENIED 분기로 구분한다(내부 두키 유지·공개HTTP/DTO변경0). 원 proof/body/requestHash/서명 bytes·감사 closure·현재 접근/원 모든기한을 검산해 원403만 재구성하며 정상동일원문의 새감사/nonce/효과0을 보존한다. 성공 replay를 느슨하게 하거나 다른서명/원문을 같은결과로 받아들이지 않는다. 실제 PG·권한·전체 감사/FN06·계획 완료는 미확인이다.
+
+## 94. selected 전달 fallback과 OPEN 적격성 경계 분리
+
+Source finding FN06_SELECTED_LEGACY_DELIVERY_FALLBACK는 selected ARM 경로의 pendingCredential이 기존 command 말미 #deliverPrepared/legacy host.deliver로 갈 수 있는 접점이다. R Delivery/ATTEMPTED·원 broker frame producer가 아직 없어 이를 첫수신 전달로 사용하면 안 된다. 기존 승인57 안에서 header없는 legacy 전달은 보존하고 selected+legacy 구성 반례·legacy전달0·원 정착 보존 UNKNOWN을 별도 delta로 보완한다. a2f0 첫사용 소스 증거로 전체 전달/출시를 합격 처리하지 않는다. 실제 전송·서비스 사고를 실행 관측한 것은 아니다.
+
+OPEN 최초 거절은 별도 인증 적격성 미정이다. 독립 읽기 대조에서 감사 A안 §3은 receive credential/SID 뒤 crypto 실패로 한정하지만 wire164/181의 OPEN은 receiveSessionRef=null·cookie/bearer0이고 credential은 성공 CAS/COMMIT 뒤 처음 발급됨을 확인했다. 원 OPEN verification이 Window의 HUMAN SID/current를 조회하는 것은 요청자의 receive credential 제시나 실패한 host 서명의 신원 증거가 아니다. 예약 슬롯 존재만으로 인증 예외를 추론하지 않는다. 이 부분의 새 OPEN denial 코드는 GO0이다.
+
+Main은 기존 채택 원문에 OPEN 적격성 근거가 더 있는지 PMO에 한정 지원 요청했다. 없다면 그 인증 자료/원인 귀속·ticket REJECTED/audit 효과만 설계 선택으로 구체화한다. 새 설계 준비에 brainstorming 절차를 읽었으나 현재는 근거 대조 단계이며 새 인증을 구현하지 않는다. 이 지원을 이유로 전체를 대기시키지 않고 같은 Primary의 나머지 감사·역사 재확인과 fallback guard는 계속한다. 실제 DB·권한·키·서비스·Agent·컴파일 제외를 유지한다.
+
+PMO 회신 turn 01a1a9ab-2c12-72e0-aa76-4f4e69e073ed는 별도 OPEN 적격 근거를 찾지 못했고, 유효 challenge를 아는 제3자의 잘못된 서명이 정상 OPEN ticket을 소진할 위험까지 한정 후보에서 다루도록 확인했다. Main은 인증되지 않은 OPEN의 ticket/감사 무변경 유지와 별도 사전 인증 자료 도입을 비교하고 전자를 권장하는 범위 판단을 요청했다. 아직 새 계약 채택·OPEN 구현·직접 승인 질문은 없다.
+
+## 95. OPEN 현행 거절 유지의 승인 범위 판단
+
+PMO turn 01a1a9b2-e09d-7731-a554-ca1dd803d3c4, message msg_0c09b62823129b7a016aebf47812808191ab81cf6e55c84c5c는 A를 기존 감사 A안의 한정 적용으로 판단했다. 채택문14행의 원 credential/SID 검산 뒤 P256 실패 조건을 충족하지 않는 OPEN은 기존 거절을 유지하고 ticket·audit·예약 효과를 새로 만들지 않는다. 최대7행은 모든 실패의 저장 의무가 아니며 이 처리를 위한 재승인은 필요하지 않다. Main은 같은 Primary에게 이 범위를 전달했다.
+
+이는 OPEN 감사 요구의 영구 제외나 전체 완료가 아니다. 이번 producer 적용 대상 밖으로 남기고 부모 계획의 잔여 요구를 유지한다. 별도 사전 인증 자료 발급·소진은 새 직접 결정 대상이므로 구현하지 않는다. 그 새 계약을 기다리며 기존 승인 후행 감사·재조회·전달 연결을 중단하지 않는다. 현재 source-only 경계는 불변이다.
+
+## 96. 승인 감사 A안과 selected legacy 차단의 Main 최소 검증
+
+Primary live/pending0·변경7 고정 뒤 Main bc4c81에서 직접 감사4PASS/1297.7181ms/skip0/exit0, a72338에서 선택 ARM 여정과 기존 legacy 전달 인접4PASS/4194.5369ms/skip0/exit0 및 SQL 형상2PASS/650.0389ms/skip0/exit0를 확인했다. tsc --noEmit -p tsconfig.base.json과 git diff --check는 exit0이다. 메모리 DB·Fastify app.inject만 사용했고 실제 DB·권한·키·서비스·Agent 실행0이다. 시험 전후 raw7은 같았다. 검증 직후 고정을 해제했다.
+
+직접 명령: node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^admitted 첫 crypto|^최초 DENIED|^이미 DENIED|^DENIED 최초' tests/unit/FN06/native-first-receive-routes.test.ts; 같은 Node 옵션에 --test-name-pattern='^ARM header 정상 여정|^B issuer의 보호 비밀|^B delivery 응답 유실|^B delivery timeout' tests/unit/FN06/native-preparation-store.test.ts; 같은 Node 옵션에 --test-name-pattern='^최초 phase DENIED|^DENIED 재조회' tests/unit/FN06/native-first-receive-schema.test.ts. Node 실행 파일은 C:/Program Files/nodejs/node.exe이다. 기존 여정의 추가 모드를 별도 시험 개수로 늘려 세지 않았다.
+
+독립 검토는 SQL5본문 한정 C0/I0이며 전후 지문 동일이다: phase_denial8478/0DBFA1C2662E4E8CC9731C7D87613197242BFD66B9C4A98FE271E083415FC8B6, complete7650/5DE1B29684FAE07504A4C42EF766605244EF409555269D3B0AB80490B19D92F3, audit_final926/493BC05F6250E61F335C4978ADE24C8493527981FD63E8EFB11FE783A846DBF6, denial_replay3256/DC1171C0125C851FDE658325A80BB65480A17E3788F1BA68F913999167803A72, phase_entry1228/C5E6152D6B25268BF4D9FFAA637FF47D95D5DAFB19B9485E7FEC0601CF9AF39D. Node 변경 전체의 독립 최종 검토는 별도이며 실제 PG 구문·RLS·경합·전체 감사/FN06 합격이 아니다.
+
+| 변경 raw 경로 | bytes | SHA256 |
+|---|---:|---|
+| apps/server/modules/executions/native-first-receive-service.ts | 55409 | 95BB3E5541944E4883269C17248C1A17B54BCDD86B0D0844EA455EB000FB76A5 |
+| apps/server/modules/executions/native-first-receive-store.ts | 119928 | 7B7A82758805351BD2C59D3B39AFDF2401A1DC06D116EC6EDC705DAF91A56148 |
+| apps/server/modules/executions/project-native-preparations.ts | 57080 | DFCA9B218EF3AE99A782E22FADC08ECC301461056C3EEA40AE252FD5F2EF21FD |
+| db/migrations/0076_native_first_receive.sql.pending | 445582 | 3B216032E8E0E58FCA5D311CC4A81E6CBF825FDD28EF9A46238858142B664A5F |
+| tests/unit/FN06/native-first-receive-routes.test.ts | 166762 | 5C915CB4DF6218D0A2E9DE41F7E03237B2B0E1F23525029A87AABE44546855A4 |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 44575 | 9E6B08B9F509976B409BC7A9AADC013C431D57D0402311B98B618A80552E2D89 |
+| tests/unit/FN06/native-preparation-store.test.ts | 116182 | 2D2AB8910966941243CE7FEDFB35360A202FCDD79C3B1DBB4ECFF3851F2B1008 |
+
+같은 원 요청/서명 DENIED는 원403·감사/nonce/효과0, 다른 서명/요청은 기존 유한 충돌, SQL/COMMIT/release 불명은 UNKNOWN을 유지한다. 후속 정상 HUMAN 종료는 별도 원장으로 보존한다. selected ARM은 실제 R Delivery가 없을 때 기존 legacy 전달을0으로 막고 정착된 원 기록을 UNKNOWN으로 보존한다. header없는 legacy 인접 흐름은 유지했다. 전달 성공으로 표시하지 않는다. 다음은 §92의 저장된 원 명령+ARM 역사 조회이며 같은 Primary가 준비 중이다. 실제 R Delivery·desktop/slot·ACK 미채택 입력·OPEN 잔여 요구와 전체 계획 미완료는 유지한다.

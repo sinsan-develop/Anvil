@@ -10,8 +10,8 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | Binding 첫사용의 header→원 Tx 선예약/N CREATED/R Binding·BOUND·원 복원은 Main8+형상5/독립C0I0로 소스 부분 인수했다. 같은 Primary가 직접 채택된 최초 DENIED 감사 A안을 구현한다. 같은ARM 원명령 재조회는 임시409 미완료이며 기존 역사 계약 경계를 대조한다. Delivery·transport/slot·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 최초 DENIED의 실제 SQL/감사·역완결/원문 replay·BOUND current 적격성, 원명령+ARM 재조회, Delivery/후행 phase/desktop/slot 접합은 미완료다. ACK bodyHash 입력은 미채택 GO0이며 실제 PG/RLS/Pool/TLS/slot 검증도 남았다. 채택 범위와 미완료는 구현 통제 최신 절을 따른다 |
+| FN06 진행 중 | Binding 첫사용은 부분 인수했고 최초 DENIED 감사·원문 재조회·선택 legacy 전달 차단은 Main 합성10/타입0·SQL5본문 독립C0I0로 한정 확인했다. 같은 Primary가 원 명령+ARM 역사 재조회 §92를 이어간다. 실제 R Delivery·desktop/slot·전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | 원 명령+ARM 재조회, 실제 R Delivery/후행 phase/desktop/slot 접합, 전체 Node 독립 검토와 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN은 현행 거절·새 효과0을 유지하며 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
 | Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIPa2f0ce809ddadc7c6e01d763d17ab60b4614529f는 Binding 첫사용 source9·현황2를 보존했다. raw11·보호3 불변/index0 확인 후 같은 Primary가 감사 source를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
 
@@ -15195,3 +15195,12 @@ PMO는 원 명령·같은 ARM의 저장 결과 재확인을 기존 승인된 POS
 ## 2026-11-05 FN06 감사 후속 연결 진행
 
 감사 pre-native SQL3을 독립C0/I0로 검토하고 고정을 해제했다. 같은 Primary가 별도 readonly capability로 BOUND/ATTEMPTED current를 연결하고 정상 HUMAN close 메모리 반례를 제출했으며 DENIED 원문 replay를 작성 중이다. producer 변경 전 prefix 검토를 새 전체본에 상속하지 않는다. 실제PG·전체감사·계획완료는 미확인이며 상세는 구현통제 §93이다.
+
+## 2026-11-05 FN06 추가 전달 guard·OPEN 적격성 분리
+
+selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보완한다. OPEN은 credential 발급 전 적격성이 감사 A안에 명시되지 않아 그 부분만 GO0으로 두고 PMO에 원문 근거를 요청했다. 다른 승인 감사/재조회 구현은 같은 Primary가 계속한다. 이 두 항목을 기존 첫사용 증거로 숨기지 않으며 상세는 구현통제 §94다.
+
+## 2026-11-05 FN06 승인 감사·재조회와 selected 전달 차단 검수
+- 담당: 기존 Primary 구현, Main 검수·통합, 기존 독립 검토자 SQL5본문. Main 직접 합성4+인접4+형상2 PASS/skip0, 타입·diff0, raw7 전후 동일. 자세한 명령·지문은 구현통제 §96이다. 실제 DB·권한·키·서비스·Agent 실행0이다.
+- 미완료: 원 명령+ARM 역사 재조회 임시409, R Delivery 실제 producer와 desktop/slot 연결, ACK 입력 미채택, OPEN 감사의 별도 적격 요구 및 전체 실환경 검증. OPEN 현재 거절·새 효과0은 PMO가 기존 A안 한정 적용으로 확인했다. 현재 producer 적용 밖을 영구 제외나 완료로 표시하지 않는다.
+- 오류: 선택 legacy fallback 접점은 합성 반례 후 차단했고 기존 전달은 유지했다. 최초 감사/BOUND/replay의 이전 반례와 패턴 선택0은 과거 기록대로 보존하며 PASS로 소급하지 않는다. 다음 구현은 같은 Primary의 §92 역사 조회다.
