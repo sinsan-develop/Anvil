@@ -1594,3 +1594,13 @@ private WeakMap은 실제 owner factory만 생산하고 고정 CJS 조회는 ide
 | tests/desktop/desktop-trust-registration.test.cjs | 134248 | 8A5B28D4897A16AC83EABCAC1C5F9E3EA6B36A6E135BCC2BDD2E9EA173FF658F |
 기존 OPEN/authority·CJS exact8+고정1/runtime8/closure14/builtin3·HTTP/IPC/SIGN 범위는 보존했다. LF/CRLF 예정 경고4는 별도·설정/정규화0이다. 이6경로만 보존 대상으로 분리하며 다른 소스/보호 원문은 포함하지 않는다. 복구는6경로 한정 revert다.
 void 인계는 ACK/receipt/CONFIRMED/실행 허가가 아니다. 부모 S4의 실제 slot 검산 SlotReceipt adapter 존재/미구현을 다음 우선 읽기로 고정했다. ACK bodyHash 미채택과 그 기존 receipt 생산 요구를 혼동해 제외하지 않는다. 이후 shell receiver/currentSource 조립·UI controller도 남는다. 실제 HTTPS/키/DB/권한/서비스/Agent/C#·사용자 인수/전체 FN06·계획은 미완료다.
+
+## 156. 수신 자원 수명과 호출 예산의 내부 정합 보완
+Main689262는 서버 Session 만료식이 head/auth 재인증·idle/absolute의 최소값임을 직접 대조했다. phase proof 기한을 Session 원문에 덮어쓰지 않는다. 현재 Client는 OPEN 작업 deadline을 수신 수명으로 저장하고 phase의 proof/Challenge/current/start+10초 최소값을 원 부모 lease와 receiveDeadline에 영구 적용한다. 정상 완료한 짧은 작업이 이후 별도 fresh phase까지 막는 결합이다.
+독립 읽기는 wire231의 Window/Session120초·Challenge30초·native 원10초 구분과 부모 S4에 근거해 같은 승인 의미 안의 내부 정합 보완임을 확인했다. 새 권한·만료 연장·공개 계약을 만들지 않는다. 이미 축소됐거나 폐기된 부모/자원을 복구하지 않고 변경 후 새 여정에서 처음부터 분리한다.
+기준은 검수 source b06d33f0c1ffc42f1082865efbb53cc446af55aa이며 기존 Primary만 §153의 같은6경로를 수정한다. TS Client/CJS Client/trust owner와 대응 unit/desktop owner/desktop trust-registration 시험이다. 다른 파일은 쓰기 전 정확 근거를 반환한다.
+자원 수명은 원 부모 lease·Window·실제 서버 Session·보호 profile의 선언된 만료를 넘지 않는다. Delivery/NativeAuthority/slot의 실제 만료도 각 자원에서 그대로 보존한다. 각 호출은 그 안에서 proof/Challenge/관측 current/원 시작+10초의 추가 min을 적용한 호출 전용 checker·signal·유한 timer를 사용한다. 원 부모를 매번 검사하되 장기 부모를 줄였다가 되돌리거나 더 늦게 설정하지 않는다. 새 timeout 상한·무한 timer·갱신/재발급0이다.
+정상 완료 뒤 원 자원/부모가 여전히 유효하고 별도 ticket/current 조건을 만족한 fresh phase는 이전 호출 proof 만료만으로 막지 않는다. 대표 반례는 긴 부모/Session에서 짧은 OPEN 또는 STATE가3초 안에 완료된 뒤4초의 새 유효 phase다. 기존 요청/Challenge/signature를 재사용하거나 자동 새 nonce를 발급하는 반례가 아니다.
+진행 중 proof3초 만료의 fetch/body/helper 취소·대기 정착·SIGN/native0 또는 효과 후 UNKNOWN·소유 byte 폐기를 유지한다. UNKNOWN 뒤 자원/객체를 교체해 재서명·native 재전송을 여는 보완0이다. 부모/선언된 만료·회수/ABA·사용자 종료의 즉시 폐기, 원 OPEN/authority·CJS/entry 키·RPC·서명5키를 보존한다. 잘못된 영구 축소 기대값이 있으면 정본 근거와 실제 RED를 남기고 동등한 진행 중 기한 음성/효과0으로 대체하며 보안 검사를 삭제하거나 느슨하게 하지 않는다.
+후속 SlotReceipt adapter와 waiter 만료는 아직 별개다. 실제 클래스 이름은 NativeFirstReceiveBroker(native-first-receive-service.ts:24)이고 begin은 raw.expiresAt/remainingMs를 보관·candidate는 receipt.expiresAt 동일성을 검사한다(Main448ae3). production begin 호출이 없으므로 현재 실제 만료 불일치를 확정하지 않는다. 이번 보완에서 서버 동일성·wire·SQL·broker는 변경0이며 원 resource/작업 구분을 닫은 뒤 실제 생산식과 receipt를 대조한다.
+실제 DB·권한·키·서비스·Agent·HTTPS·C#·ACK delta·Git 복구는 제외한다. Main 제품/시험 쓰기0·단일 writer·TDD/직접 영향/독립 검수·안정6 전 인수0을 유지한다.
