@@ -15473,3 +15473,21 @@ wire10 exact5 IPC·metadata10·오류7과 local sender/frame/URL 검사, await �
 기존 helper를 재사용하고 실제 settings 동작→preload→shell→원 Session→기존 프로토콜→receiver/current→slot의 합성 호출선을 검산한다. subject/SID/등록/profile/epoch 불일치·늦은 응답·만료·누락 current·재귀0·byte 회수·IPC 비밀0과 정상 흐름을 RED→GREEN으로 확인한다. 실제 DB·권한·키·서비스/listener·Agent·C#·실자료/J3/P03 R3·ACK bodyHash 변경·영속 terminal/전체 완료0을 유지한다. 독립 검수와 Main 최소 fresh 검증 후 소스 단위로만 통합한다.
 
 §172 기록 준비의 Main JS에서 TextEncoder 미제공 오류1이 발생했으며 파일 쓰기 전 중단됐다. UTF-8 문자열 직접 전달로 보정해 동일 기록을 1회 저장했다. 제품/시험/권한 변경이나 실패 검증 PASS 승격0이다.
+
+## 173. 원 수신 조립의 첫 RED와 OPEN 감사 잔여 분리
+기존 Primary의 a129cf exit1/1시험은 실제 원 OPEN→STREAM 소비 뒤 createDeliveryCurrentSource 생산자 부재를 재현했다. 아직 GREEN·구현 완료가 아니며 허용12 안의 private currentSource·수명 조립을 계속한다. 실제 환경 실행0이다.
+독립 읽기에서 Session DTO에는 user/client/CSRF/기한만 있고 SID/control/project OWNER를 선언하지 않음을 확인했다. receive profileRef와 native authority.channelProfileRef는 다른 목적이고 동일성 계약이 없다. current용 base protection은 slot을 재귀 호출하지 않으며 원 Delivery opaque43으로 기존 고정 native current를 소비한다. 담당자에게 기존 계약 불변식으로 전달했다.
+OPEN 감사는 기존 감사 A의 단순 미연결 호출로 분류하지 않는다. 채택 원문은 원 credential/SID·현재 귀속 검산 후 최초 P256 실패만 허용하고 OPEN은 credential 발급 이전이다. §95와 채택 기록대로 기존 거절·ticket/audit 새 효과0을 유지한다. 사전 인증 자료 발급/소진·어느 실패를 내구 거절로 삼을지는 미결 계약이며 영구 제외나 완료가 아니다. 새로운 권위 없이 정상 OPEN ticket을 제3자 오서명으로 소진시키지 않는다. 이번 OPEN 감사 수정 배정0·전체 FN06 인수0이며 독립 진행 가능한 설치형 조립은 계속한다.
+
+## 174. currentSource 선행 검증과 응답 한도 보완
+Primary a129cf RED 뒤 부분 동결2에서 a68f73 신규2 PASS/exit0·타입ab9ba0 exit0을 제출했다. Main3a23ea가 같은 선택 명령으로2 PASS/fail0/skip0·344.6453ms, b7a7a4 타입 exit0, f2b615 지문/차이 검사 exit0을 확인했다. TS63724B/9E1A433DC9CAA5EAD6474D1A8035F27CC60B9344942EA6A1D7358373966D339D·unit80962B/A72BBAFAB58255FE0AF73630ABEDB7D510602177F2FFC7F669C8E2D96F635E3A에서의 부분 근거이며 전체 연결 합격이 아니다.
+독립 읽기 I1 후보는 신규 profile GET이 기본 control8192를 사용해 기존 보호 응답2097152/CA65536 허용을 축소하는 문제다. Main74888f가 실제 기본값과 기존cap을 대조했다. 같은 Primary에게 유효한8192 초과 원 profile 반례 RED→GREEN과 기존 cap 소비 한정 보완을 지시했다. 다른 control 상한을 늘리거나 원 guard를 완화하지 않는다. abort 대기 쟁점은 추가 읽기 중이며 확정 전 실패로 승격하지 않는다. 다른 설치형 연결은 계속 구현 중이다.
+Main이 독립 담당자에게 보낸 짧은 메시지1에 한국어 외 언어를 사용한 오류가 있어 즉시 한국어로 정정했다. 제품/시험 변경은 없고 이후 전달문은 도구의 문자 검산을 통과한 뒤 발송한다. 이 오류를 제품 실패나 구현자의 정식 실패 횟수로 계산하지 않는다.
+다음 독립 UI11 단위는 기존 패널/API의 활성 Window 명시 선택·Offer 저장·ARM 보호 확인·같은 원 명령/header 제출이다. 부모 S5와 기존 서버 계약 안이며 현재 설치형12의 writer 작업이 끝난 뒤 배정한다. 서버 재구현·자동 Window/ARM·승인 소비/원 body 변형0, 전체 FN06/실환경/계획 인수0이다.
+
+## 175. private currentSource 선행의 scoped 소스 인수
+기존 I1/I2는 보완 후 독립 C0/I0/M0·모두 ADDRESSED다. 실제 source는 고정 profile GET에 기존2097152B cap을 소비하고 caller abort/loan close/Client dispose가 소유43B wipe→진행중 controller→profile fetch/body 대기의 정착에 연결된다. 실제 underlying IO 종료나 실제 TLS/키 검증은 주장하지 않는다.
+Primary RED b6f632(유효 CA10000B의 WIRE_LIMIT)·11f149(profile FETCH ABORT 미정착)는 exit1로 보존하고, 2b148e 신규2+기존2 4 PASS/626.9506ms·e28ba4 타입0은 보정 근거다. Main b24eef는 새4+직접 영향 handoff/UNKNOWN/dispose/receipt4의 고유8 PASS/fail0/skip0·683.805ms, cfc56a 타입 exit0, 0d368d 지문/diff exit0을 직접 확인했다. 보정 전 Main2를 추가 합산해10건이라 주장하지 않는다.
+부분 인수 파일2는 apps/connector/runtime/native-first-receive-client.ts64085B/3C189DC8E712C21CDBB699DD5A48407AC63789EA3D81BDD3BE9F866E7072E1FD와 tests/unit/FN06/native-first-receive-client.test.ts84661B/3DA1AF73E87CA950179C2AD6EFE5077CE31F411D51B130EB161B1C50F43160A2다. 독립 시작/종료와 Main 실제 지문은 같다. 원 private Delivery/Session/STREAM·보호 Profile의 출처, native/receive refs 구별·단발 발급·원 E 최소·기초 current 재귀0을 보존한다.
+이 source2와 Main 현황2만 별도 checkpoint로 보존한다. 나머지 설치형 경로는 같은 Primary 작성 중이며 stage/합격으로 포함하지 않는다. 이후 같은 TS/unit의 HUMAN 생산 연결을 §172 허용 안에서 이어가고 기존 factory 보장과 시험은 유지한다. Main 제품/시험 쓰기0, 실제 DB·권한·키·서비스·Agent/C#/실자료/J3/P03 R3·미채택 ACK/전체 FN06/계획 인수0이다. CRLF 예정 경고는 별도이며 설정·전체 정규화0이다.
+Main 직접 명령: node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^currentSource 보호 ProfileRead는|^currentSource의 profile FETCH/BODY|^실제 private STREAM Delivery의 currentSource|^private currentSource는|^STREAM 인계는|^STREAM private frame|^user dispose는|^SlotReceipt private' tests/unit/FN06/native-first-receive-client.test.ts 및 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다.
