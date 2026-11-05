@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | STREAM·CLOSE 최초 source와 client 역사 JSON parser를 부분 검수했다. 정상 consumed 재조회와 동일 원문 재서명 충돌 집계의 부분 증거가 있으며 다른 원문/새ID·첫 DENIED 감사를 같은 Primary가 구현한다. 실제 N current·owner/transport·Binding/Delivery·후행STATE와 실환경은 미완료다 |
-| FN06 남은 연결 | 적격 거절/집계·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 2026-11-05 직접 source-only 채택돼 기존 담당자가 순차 구현한다. ACK bodyHash 입력은 별도 미채택이다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
+| FN06 진행 중 | STREAM·CLOSE 최초 처리·역사 JSON·동일 원문/다른 원문/새ID 충돌 집계와 N current 원 Tx·원결과 만료 연결을 소스 범위로 부분 검수했다. 같은 Primary가 desktop의 원 로그인 세션·REGISTERED owner에서 최초 서명으로 이어지는 호출선을 구현한다. 실제 Binding/Delivery 생산·transport/slot·전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | 첫 DENIED 감사 네 의미값과 ACK bodyHash 입력은 별도 직접 답변 전 GO0이다. 적격 거절·N 효과 전 선예약·후행 phase/desktop/slot 접합은 미완료다. STREAM/CLOSE replay A안은 직접 source-only 채택됐으며 상세 부분 검수와 미완료는 구현 통제 최신 절을 따른다. 실제 PG/RLS/Pool/TLS/slot 검증도 미완료다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 기존 codex/av3-stage-b에서 최신 로컬 문서 checkpoint24e592cf와 source WIP64d57caf를 보존했다. 그 뒤 재조회·client·거절 집계 변경은 작성/검수 중이다. private 동일성과 PR/병합은 미확인으로 유지하고 인증 복구·push 재시도는 하지 않는다 |
+| Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIP80dd24341b52110fff8081fdf572056ddceada52는 소스8·문서2의 N current/만료 보완과 별도 감사 RED를 보존한다. raw10·보호3 불변, index0을 확인한 뒤 같은 Primary의 다음 source 작성을 재개했다. private 동일성과 PR/병합은 미확인으로 유지하고 인증 복구·push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15151,3 +15151,7 @@ N current 선행은 독립 C0/I1이며 material 뒤 실제 Tx 유지 보장이 �
 ## 2026-11-05 FN06 원결과 만료 보완 부분 인수
 
 원결과 만료 I1은 독립 C0/I0와 Main e210d4 직접4 PASS/skip0/exit0·raw4 불변으로 해소했다. 저장 원문 불변·최종 반환 기한을 유지한다. 현재 소스8·문서2만 WIP 보존하며 전체 시험·실제 Binding/Delivery·전체 계획 완료로 올리지 않는다. 같은 Primary가 desktop 사전권한 호출선을 이어가고 실제 DB·권한·키·서비스·Agent는 실행하지 않는다. 상세는 구현통제 §79다.
+
+## 2026-11-05 FN06 desktop 최초수신 서명 부분 인수
+
+원 Session·REGISTERED owner의 전용 OPEN 서명 연결은 Main 신규3/인접2=5 PASS·문법0·raw3불변·독립C0/I0로 소스 한정 인수했다. private 소진 hash의 만료 후 수명은 후속 관측으로 남긴다. 실제 UI/HTTPS/slot과 Binding/Delivery는 미완료이며 같은 Primary가 승인 ARM header→원 명령 Tx의 Binding 생산을 이어간다. 실제 DB·권한·키·서비스·Agent 실행0, 상세는 구현통제 §81이다.

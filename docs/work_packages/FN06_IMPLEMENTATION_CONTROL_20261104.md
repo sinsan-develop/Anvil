@@ -776,3 +776,27 @@ Main e210d4는 node --test --test-name-pattern='receive phase owner는 material 
 수행자 실제 RED는 원결과 T5·현재 N T8·proof T9의 T6 조회가 거절되지 않은 반례다. 보완 뒤 직접시험 1개 14모드와 COMMIT/release 뒤 만료 UNKNOWN을 확인했다. 수행자 noEmit/diff0은 제출 증거다. TS7 ScriptTarget export 지문 준비 오류는 제품·시험 실패와 분리하고 같은 AST 준비 방법을 중단했다.
 
 현재 허용 소스8경로와 Main 문서2경로만 WIP checkpoint로 보존한다. 별도 미채택 감사 RED는 남아 있어 전체 시험 합격을 주장하지 않는다. 보호 untracked3·원문·기존 이력은 유지하고 private 게시·실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않는다. 다음은 같은 Primary가 기존 Session/등록·원 lease 경계의 desktop 사전권한 서명 호출선을 연결하는 작업이다. 감사 네 의미값과 ACK 입력 변경은 직접 답변 전 각각 GO0이다.
+
+## 80. 보존 기준선과 다음 구현 단위
+
+WIP80dd24341b52110fff8081fdf572056ddceada52는 dd9d6089 직접 자식이며 정확 소스8·문서2, 220추가/27삭제다. commit 전후 raw10·보호3 불변/index0을 확인하고 즉시 writer 고정을 해제했다. 현황 진입점의 오래된 기준선3줄을 현재 부분 검수·진행·미채택 경계로 갱신했다. 문서 EOF의 새 빈 줄/CR 경고는 추가한 끝 바이트만 LF로 맞춰 diff check0으로 보완했다. 제품 실패가 아니다.
+
+기존 Primary는 desktop 원 remoteSession·REGISTERED owner의 전용 최초수신 서명 호출선을 TDD로 진행한다. 실제 메모리 등록 상태에서 전용 접점 부재 RED1/exit1/862.4178ms를 확인했다. 기존 authority-dependent signer·공개 export/API/IPC와 원 Session 경계를 보존한다. 실제 키/서비스/native 실행은 없다.
+
+독립 읽기 지도에서 N CREATED/DELIVERY_ATTEMPTED 소비선은 있지만 R Binding/Delivery 생산·BOUND/ATTEMPTED 전이·STREAM frame 공급은 없는 것으로 확인했다. 다음 생산 단위의 원 Window/Offer/ARM 입력이 기존 채택 계약에 있는지 추가 대조한다. ACK/최초 거절 감사의 미채택 부분을 근거 없이 진행하거나 전체 작업을 대기시키지 않는다.
+
+PMO는 만료 보완과 후속 연결 보고를 확인했고 추가 개입·새 결정 요청은 없었다. Main의 도구 설명에 혼합 언어가 다시 들어간 오류는 소스/시험 실패와 구분하며 이후 전체 도구 인수의 사전 문자 검사를 강제한다. 실제 DB·권한·키·서비스·Agent·컴파일·J3/P03 R3·Git 복구는 계속 실행하지 않는다.
+
+## 81. desktop 원 Session의 최초수신 서명 소스 부분 인수
+
+기존 Primary가 shell의 원 remoteSession/view/origin/generation/authEpoch와 REGISTERED owner의 원 binding/pendingKey/fullref를 최초수신 typed OPEN 서명에 연결했다. 기존 authority-dependent source는 부모80dd와 raw10794B/A5F841B1524D2A726FFD052677A11E8A363F9AEA18CC86C7F8A470E3982182CE로 byte 일치하며 trimEnd10792B/40FDD9AE6EC1BFF946AF375AF1796DD9E5976DA1CFEFD7C3C79E3DA6BFBB8FB3도 같다. 차이는 마지막 개행2B의 채취 경계다.
+
+Main e5a6e7은 node --check apps/desktop/src/trust-enrollment-owner.cjs 및 shell.cjs 문법 검사0, node --test --test-name-pattern='REGISTERED owner의 첫 OPEN 전용 source는|첫 OPEN owner source는 fractional|shell 첫수신 supplier는|native 실제 REGISTERED→Client/slot/HTTPS|native 별도 bundle의 실제 발급' tests/desktop/desktop-trust-registration.test.cjs 를 실행해 신규3·인접2=5 PASS/skip0/1033.6537ms/exit0을 확인했다. 독립 검수 C0/I0이며 원 Session/등록·기한·UNKNOWN 동일/새source 재서명0을 한정 인수한다. 실제 TLS/키 실행 증거가 아니다.
+
+수거 전후 owner6245EF1AC25784D485A3F130F7CA7B5A74199DDCF2BE82770C79842DD8FFFF9B, shell43C2FCCE15E270BAB1E80CA197AC6B9F82B1A6E6A4EE0452394D38A8DD5794DB, 시험AD5137FE165D736C490494AA707E786CBF4FA02D94F3D19BFECB355902AE45FD는 동일했다. 원 접점 부재·소수 monotonic 경과 RED를 보완했고 fixture의 교차등록ID/응답 외피 준비 오류는 제품 실패와 구분했다.
+
+별도 수명 관측: owner private firstReceiveSignedRequests는 invalidate 때만 비워져 만료된 hash가 등록 수명 동안 누적된다. 확정 기능 반례나 채택된 전용 숫자 상한은 없어 I1을 발명하지 않으며 후속 수명 보완으로 남긴다. 원 proof 소진/UNKNOWN 보호를 약화하거나 임의 숫자를 추가하지 않는다. 실제 UI/controller→OPEN HTTPS/credential/slot·Binding/Delivery·전체 FN06는 미완료다.
+
+다음은 이미 채택된 ARM header를 원 native 명령 Tx에 연결해 N CREATED와 R Binding/BOUND·비용/역완결을 같은 Tx에 생산하는 단위다. 새 payload/API/권한은 추가하지 않는다. ACK/최초DENIED 네 의미값은 직접 답변 전 GO0이며 실제 DB·권한·키·서비스·Agent·컴파일은 제외한다.
+
+Main 문서 추가 명령의 구문 오류1은 파싱 단계에서 변경0이었고 변수로 분리해 저장/diff0을 확인했다. Main 발송 언어 오류 재발은 직접 작성 발송 방식을 중단하고 메시지를 사전 문자 검사한 뒤 전달하는 방식으로 전환했다. 제품/시험 실패와 구분한다.
