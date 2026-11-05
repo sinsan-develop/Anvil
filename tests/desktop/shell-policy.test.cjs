@@ -30,3 +30,9 @@ test('FN18 SDK fixed source rejects mirrors credentials query and HTTP without d
 test('FN18 exact local frame URL rejects query fragment and remote frame identity',()=>{
  for(const url of ['anvil-local://shell/settings.html?x=1','anvil-local://shell/settings.html#x','https://example.test','null']){const mainFrame={url};const owner={mainFrame};assert.throws(()=>assertIpc({sender:owner,senderFrame:mainFrame},owner,'get-state',null),/IPC_SENDER_DENIED/);}
 });
+
+
+test('첫 수신 exact5 IPC는 원 local sender·epoch·등록 attempt와 고정 ARM Ref·확인만 허용한다',()=>{
+ const {assertTrustIpc}=require('../../apps/desktop/src/policy.cjs'),id='11111111-1111-4111-8111-111111111111',frame={url:'anvil-local://shell/settings.html'},owner={mainFrame:frame},event={sender:owner,senderFrame:frame},ref={id,version:1,contentHash:'a'.repeat(64)};
+ for(const action of ['begin','status','refresh','arm','close']){const input={...(action==='status'?{}:{requestId:id}),attemptId:id,epoch:1,...(action==='arm'?{offerRef:ref,confirmed:true}:action==='close'?{confirmed:true}:{})},name='native-receive-'+action;assert.deepEqual(assertTrustIpc(event,owner,name,input),input);assert.throws(()=>assertTrustIpc(event,owner,name,{...input,projectId:id}));assert.throws(()=>assertTrustIpc(event,owner,name,{...input,epoch:0}));assert.throws(()=>assertTrustIpc({sender:{},senderFrame:frame},owner,name,input));if(action==='arm'||action==='close')assert.throws(()=>assertTrustIpc(event,owner,name,{...input,confirmed:false}));if(action==='arm')assert.throws(()=>assertTrustIpc(event,owner,name,{...input,offerRef:{...ref,version:2}}));}
+});

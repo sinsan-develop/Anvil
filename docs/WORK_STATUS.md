@@ -15518,3 +15518,49 @@ Main7d04ae 신규/정상8 PASS/fail0/skip0·583.691ms와7c25ab 타입 exit0을 �
 Primary 원10초 재시작 추가RED01ea07→a30fd5 관련12 PASS/524.796ms, fixture null 추론 보정·fetch/body6모드 확장 뒤 c0bca6 단일시험 PASS/411.2142ms·2433f6 타입0·6de844 diff0을 확인했다. dc7327의 기존3 RED와 b4b730 준비 타입오류는 이력으로 보존하며 통과로 소급하지 않는다. 실제 underlying IO/TLS/키/PG·권한·서비스/Agent·OS/C#/실자료/J3/P03 R3·ACK/영속 terminal/전체 FN06·계획 인수0이다.
 이 소스3와 Main 현황2만 별도 checkpoint에 보존한다. 다른 설치형 변경은 같은 Primary 소유로 남기며 stage하지 않는다. 해당3의 부분 동결을 해제해 §172/176 기존13 안의 owner 보호basis→CJS→shell exact5→설정 조립을 이어간다. 단일writer/Main제품수정0·원ref/승인/기한/원command/비밀 폐기 보존이다. 복구는 이 source3 한정 revert이며 이전 currentSource 인수와 보호 자료를 되돌리지 않는다. private 동일성·push/PR/merge는 미확인·인증복구/재시도0이다.
 정확 Main 명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^HUMAN Window는 관측한|^HUMAN CLOSE 유실은|^HUMAN OPEN Challenge는|^HUMAN 관측 Session 최소기한은|^HUMAN CLOSE의 명확|^HUMAN Window의 Session9초|^원 HUMAN bootstrap은|^원 Client는 receive-only Challenge를' tests/unit/FN06/native-first-receive-client.test.ts, 같은 node의 --test-name-pattern='^currentSource 보호 ProfileRead는|^currentSource의 profile FETCH/BODY|^실제 private STREAM Delivery의 currentSource|^private currentSource는' 시험과 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json이다.
+
+## 180. 다음 S5 Web 연결 업무 대기열 — 현재 설치형 이후
+읽기 전용 대조로 다음 미완료를 확정했다. UI11 원 명령/기존 UI08 승인복귀→선택 등록 fullref의 활성 Window 명시조회/선택→최종 approvalRef까지 결박된 원 명령의 Offer 준비/저장→설치형 ARM 뒤 보호 State 명시재조회→동일 원 native POST에 ARM Ref header만 추가하는 한 단위다. 아직 code GO/동시 writer를 부여하지 않으며 현재 설치형13의 검수 후 같은 Primary에게 배정한다. 서버/App/설치형 재구현0·새 공개 계약/권한0이다.
+허용 후보5는 apps/web/src/features/connections/native-boundary-preparation-api.ts, NativeBoundaryPreparationPanel.tsx, tests/unit/UI11/native-boundary-preparation.test.ts, native-boundary-preparation-app.test.ts, native-first-receive-flow.test.ts다. 마지막 시험은 기존 WI 허용 경로이지만 현재 파일 부재다. 원 명령/외피 commandId는 별개로 고정하고 원 body/hash/원2MiB/깊이64·Offer 전체2293760B를 보존한다. 원 명령 직렬화와 Offer 외피를 분리해 깊이 허용을 암묵 축소하지 않는다.
+활성 GET은 기존 native-receive-windows의 registrationId/registrationVersion/registrationHash exact3 필터다. Window State/Offer GET은 query/body0이며 응답은 각각 원 ReceiveState와 V<Offer>다. 활성 응답 exact projectId/registrationRef/window/observedAt/executionAuthorized:false를 검산한다. Offer POST는 ProjectCommand11·operation offerNativeReceiveCommand·target windowRef.id·expectedVersion1·baselineRefs[]·approvalRef null·payload windowRef/최종원command다. ProjectResult10과 NATIVE_RECEIVE_OFFERED·ref/offer·내부 canonical/hash를 검산하며 Offer용 AUTO/DENY·REQUIRE_APPROVAL 거절을 원 native 일회 승인으로 대체하지 않는다.
+최초 제출은 현재 ARMED·같은 window/session/offer·armRef를 확인하고 X-Anvil-Native-Receive-Arm에 Ref canonical UTF8의 canonical base64url만 추가한다. 원 body를 바꾸지 않고 Web은 Window/OPEN/ARM 서명/키를 생산하지 않는다. receive 오류 exact3 code/requestId/outcome과 기존 native exact2/공통거절 DTO를 혼용하지 않는다.
+추가 상태는 기존 NativeBuffer의 소유/CAS·project/client/CSRF/transport 수명에 묶고 승인왕복을 보존한다. 선택변경/만료/currentfalse/SESSION_CHANGED는 첫 제출을 차단하고 늦은 응답을 버린다. Offer 유실은 원 외피ID/body/내부명령 UNKNOWN hold로 보존하고 새 Window/Offer로 우회하지 않는다. 최초 ARM 검사와 원 명령 결과 재확인은 분리해 역사 조회/UNKNOWN 재확인에 새 ARM·새 body를 요구하지 않는다. 조회 실패를 저장실패로 바꾸지 않으며 원 receipt/body/header와 headerless legacy를 유지한다.
+최소 검수는 실제 Panel/App/transport 호출선의 AUTO/기존 승인왕복 정상, 등록/Window/Offer/ARM/hash 불일치·승인전 Offer·만료/주체/CSRF/transport 교체·지연/유실·재전달0·원깊이/상한·오류3/2 경계를 포함한다. 실제 DB/권한/키/서비스/Agent/ACK/영속확정/실사용 인수는 제외/미완료로 유지한다.
+
+Main 언어 오류 예외: 이번 관리 진행에서 한국어 외 안내문이 반복됐고 직전 사용자 진행 안내에도1건 발생해 즉시 한국어로 정정했다. 같은 유형 누적3 이상으로 수동 비검산 전달을 중단한다. 이후 사용자 commentary와 담당자/PMO 전달문은 모두 Han/Hiragana/Katakana 문자 검산을 통과한 고정 문구만 그대로 사용한다. 제품/시험 writer는 여전히 기존 Primary이며 이 오류로 승인된 구현을 중단하거나 인수하지 않는다. Main이 생성한 안내 오류를 개발자의 정식 실패로 세지 않는다. §180 저장 뒤 전체 diffcheck04bf9f의 exit1은 작성중 등록시험380행 말단공백1이며 담당자에게 제출 전 정리를 전달했다. 현황 기록 자체 실패나 제품 동작 실패로 바꾸지 않는다.
+
+## 181. 설치형 설정→slot 단일 합성 여정의 진행 근거
+Primary는 실제 settings→preload→shell→보호 owner/HUMAN Window→OPEN→pending STREAM→ARM→private Delivery currentSource→실제 owner slot의 단일 합성 여정6eaf92 1 PASS를 제출했다. slot6초 최소값이 화면 metadata10초로 남는0c10bb RED 뒤 원 자동 SlotReceipt의 E를 내부 소비하고 status의 실제 slot guard를 연결해49b325 1 PASS/skip0·726.7295ms/exit0을 제출했다. status network0·UI/IPC 비밀0·ACK/CONFIRMED0을 검사했으며 실제 OS/HTTPS/키/DB·서비스·Agent 인수는 아니다.
+시험 clock은 shell dependency 캡처 전에 주입해야 하는 준비 정합1과 작성중 말단공백1은 제품실패와 구분했다. Maincc6092 diffcheck exit0으로 말단공백 정리를 확인했다. 현재 UNKNOWN 재요청0·ABA/교차·원기한·정리의 중요 음성을 작성 중이고 live0이다. 전체13 최종 동결/독립검수/Main fresh 전 인수0·전체계획 미완료를 유지한다.
+
+Main 안내 오류 후속: 사전 검산한 한국어 문자열과 실제 사용자 commentary가 달라지는 같은 오류1이 재발했다. 이를 즉시 한국어로 정정했고 수동 commentary 재생성을 중단한다. 이후 중간 안내는 검산한 문자열을 functions notify로 직접 전달해 수동 재작성 경로를 제거한다. 제품/시험/승인·단일writer를 바꾸지 않으며 같은 수동 방식의 추가 시도0이다.
+
+## 182. 설치형10 최종 제출과 Main 직접 검증 — 독립 인수 전
+Primary가 제품7/시험3의 쓰기·시험을 동결하고 live/pending0을 제출했다. 정상 통합49b325 이후 불변 정상여정 반복0, UNKNOWN replay REDb167a0→dad04c, sender오류 RED0fe32a→2b5ea5·517.302ms, 소유43B폐기2e1dd8·1176.3325ms, CLOSE/ARM/current음성·facade346dc2·policy73b565·type893046·syntax6 a0f9ba·diff920c31을 구분 제출했다. 묶음b167a0 exit1 속 개별 미구성 음성 PASS는 개별 exit0으로 승격하지 않았다. AST 지문 준비 namespace오류2는 제품/시험과 분리했고 PowerShell raw10/원 signer 선언경계 불변을 수거했다.
+Main0eaad3는 실제 settings/preload/shell·보호 owner/HUMAN·Window/OPEN/pending STREAM/ARM·Delivery/current/slot과 중요음성의 고유9 PASS/fail0/skip0·2540.4924ms를 직접 실행했다. effa24 IPC policy6 PASS/131.1515ms,253b48 원 facade1 PASS/675.109ms로 고유16이며 이전 prefix/개별결과를 중복 합산하지 않는다. bfd48b 타입0·df28b2 문법6각0,4587cc/2481cf→ec720f raw10 동일을 확인했다. 10개 지문은 최종 인수 시 표로 보존한다. 현재 독립 읽기 검수 중이며 source10 통합/전체 설치형/실환경 인수0이다.
+담당자는10 동결을 유지하며 다음§180 Web5를 읽기만 준비한다. 새 code GO/동시writer0·Main제품쓰기0·실제 DB/권한/키/서비스/Agent/ACK 변경0이다. Main의 도구 실행 설명에 한국어 외 표기1이 남은 것을 확인해 모든 생성 tool argument JSON에도 문자 검산을 적용한다. 명령/제품·권한 실행 의미는 바뀌지 않았고 수동 안내 재생성은 재개하지 않는다.
+
+## 183. 설치형 독립 검수의 응답 순서·표시 기한 보완
+동결10 읽기 최종은 C0/I1/M1·시작/종료 지문 동일이다. I1은 서버 ARM 정착 후 ARM HTTP 응답보다 Delivery가 먼저 오면 shell58의 armRef 부재가 UNKNOWN을 만들고 늦은 ARM66이 표시를 ARMED로 덮는 정상 응답 경합이다. 정상시험은 ARMED 표시 뒤 Delivery를 보내 이 순서를 다루지 않았다. M1은 refresh59가 SlotReceipt의 짧은 E를 WindowState의 긴 E로 덮는 표시 문제이며 원 slot/Client 만료 guard가 유지돼 실행권한 연장으로 판정하지 않는다. Main d9ffff가 실제 접점을 읽기 확인했다.
+같은 Primary에게 shell.cjs·desktop-trust-registration.test.cjs 두 경로만 scoped 해제해 실제 응답 역전·ARM 유실/불명/ABA·유한 원budget 및 수신후refresh/min-E 반례 RED→GREEN을 지시했다. 새 Challenge/SIGN/native/효과 재시도·임의delay/timeout연장·원 E 조작·ACK/확정 승격0이다. 늦은 ARM은 UNKNOWN을 성공으로 덮지 않고 원metadata·비밀폐기를 보존한다. 나머지8은 동결·기존13 한정 단일writer다. 설치형 source10 인수/통합0, Main 직접16 PASS는 발견 전 지문의 실행 범위 근거로 보존한다.
+다음 Web5는 Primary 실제 소스 읽기에서도 새 계약/추가경로 없이 §180 가능으로 확인했다. 기존 App/buffer CAS·승인왕복/공용 canonical 재구현0·최초 ARMED와 원명령 역사재확인 분리다. Web 쓰기GO0, 실제 DB/권한/키/서비스/Agent/C#/실자료/J3/P03 R3·미채택 ACK·전체계획 인수0이다. Main 직전 기록 준비1은 tool argument의 문자 검산이 한국어 외 표기를 차단해 명령/파일쓰기 전에 중단됐다. 설명만 바로잡아 동일 기록을1회 저장한다.
+
+## 184. 설치형 수신 조립의 scoped 소스 인수
+2026-11-06 독립 재검수는 I1/M1 모두 ADDRESSED·잔여 C0/I0/M0다. 같은 Window/Offer의 원 armWork.promise에만 선행 private Delivery를 결박하고 원 budget/취소 안에서 실제 ARM Ref/hash가 정착한 뒤 인계한다. 유실/만료/ABA/STREAM UNKNOWN 뒤 늦은 ARM은 상태를 되살리지 않고 Client dispose로 원 frame/43B 회수에 연결한다. Delivery/receipt/기존metadata/refresh E는 min-only다. 새로운 효과/nonce/SIGN/native 재시도·기한 연장·ACK/CONFIRMED 승격0이다.
+Primary 신규2 RED9b63b0→1f1032 2 PASS/1000.5322ms, ARM유실/E/ABA·lateUNKNOWN2 8a0d26 2 PASS/1148.8872ms, 직접영향3 43a922 3 PASS/2796.0676ms, type1e7f3f/syntax4617ff/diff1256d5 각0을 제출했다. 삽입marker불일치1은 저장 전 중단한 준비 오류다. Main18746a는 신규4+정상/CLOSE/current실패3 고유7 PASS/fail0/skip0·3303.2388ms, aa6fbb 타입0·8a51d5 shell문법/diff0을 직접 확인했다. f24238은 변경2만 새지문이며 나머지8 불변을 확인했고 독립 전후도 같다.
+이전 Main0eaad3/effa24/253b48의16 PASS는 보정 전 지문의 근거로 보존한다. 보정 후 fresh7과 이전16 중 중복3을 단순합산하지 않는다. 누적 고유20의 기록이 있지만 최종20을 모두 새로 실행했다고 주장하지 않으며 실제 보정 영향7/불변 나머지 근거를 구분한다. 기존 정상등록·sender/epoch·CJS facade/정책과 비밀비반사 보호를 유지한 scoped 검수다.
+다음 소유10의 최종 지문만 Main 현황2와 함께 기존 branch에 보존한다. 기존 인수 HUMAN/Challenge3은8b1714e5에 있고 새source3변경0이다. 다른 보호비추적3/사용자자료/다른worktree는 포함하지 않는다. 복구는 이번 소유10 한정 revert이며 기존자료/서버/DB를 되돌리거나 권한을 바꾸지 않는다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/desktop/src/shell.cjs | 24280 | F7D23B41FF0FED9EA326E09E2642FC409EBB2674D67050D39B8EBFBE3CF53578 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 81293 | E34618745C2F5EF1592C089DF0F5E615A57F4A75D4D5697347AEC92B56677105 |
+| apps/desktop/src/native-first-receive-client.cjs | 22687 | 1C3DD47490E5197767D9F785FC16ACE782E81E36D08FB9DA1CDDD61AA410D2C6 |
+| apps/desktop/src/preload.cjs | 2373 | 9094B6136BF47B2C57AF8EB4FEA325D628948DAEFAFC4A001A4D94C652EB9279 |
+| apps/desktop/src/policy.cjs | 5799 | 6FF675B8D56A03770D0A6894E52D92248891645F81B6AF37AFC6F59082335F22 |
+| apps/desktop/src/settings.html | 4712 | 2257F3B3DF4EEB98FBAD0BA928C3D7C376C2FDB74BA3A9648B366A2D9B9E5527 |
+| apps/desktop/src/settings.js | 18448 | 29915F923C2A6FDCADDA6D193E9F0F9132CF29A404E66A8AFBF89D179BB2E1E5 |
+| tests/desktop/desktop-trust-registration.test.cjs | 198086 | 73903D8DC7229094114E02AB3D05711B2B700F039DE943BBBC9C08BF904ED27F |
+| tests/desktop/native-first-receive-owner.test.cjs | 29701 | 9BE6BE4F65C9B0A41223D895DD8BD5017B6B76A21A2E08D7FAD032D15F617D92 |
+| tests/desktop/shell-policy.test.cjs | 5022 | A56127CE75888533A917B814A6EE96A03F6A0BAB605600DF4ADEBEC336216614 |
+실제 설치형 OS/브라우저·HTTPS/키/보호 저장·PG/Pool/Tx/RLS·서비스·Agent/C#/실자료/J3/P03 R3·미채택 ACK/영속 terminal/사용자 인수는 미실행/미완료다. slot 수용은 코드 연결의 휘발 증거이며 전체 FN06/Stage/작업계획 완료가 아니다. private동일성·push/PR/main병합은 미확인·인증복구/재시도0이다. source-only 수신 조립을 인수하고 다음§180 Web5의 원 명령/Offer/ARM 연결로 이어간다.
+정확 Main 보정 명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^서버 ARM 정착 뒤 Delivery가|^slot 수용의 짧은 E는 refresh의|^먼저 도착한 Delivery는|^STREAM metadata UNKNOWN 뒤|^실제 settings→preload→shell은|^settings 명시 CLOSE는|^shell Delivery current의' tests/desktop/desktop-trust-registration.test.cjs, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, node --check apps/desktop/src/shell.cjs, git diff --check다.

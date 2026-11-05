@@ -2,6 +2,11 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('anvilDesktop',Object.freeze({
  getState:()=>ipcRenderer.invoke('anvil:get-state',null),
+ nativeReceiveBegin:(requestId,attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-begin',{requestId,attemptId,epoch}),
+ nativeReceiveStatus:(attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-status',{attemptId,epoch}),
+ nativeReceiveRefresh:(requestId,attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-refresh',{requestId,attemptId,epoch}),
+ nativeReceiveArm:(requestId,attemptId,epoch,offerRef,confirmed)=>ipcRenderer.invoke('anvil:native-receive-arm',{requestId,attemptId,epoch,offerRef,confirmed}),
+ nativeReceiveClose:(requestId,attemptId,epoch,confirmed)=>ipcRenderer.invoke('anvil:native-receive-close',{requestId,attemptId,epoch,confirmed}),
  /** @param {string|null} attemptId @param {number|null} epoch */
  trustStatus:(attemptId,epoch)=>ipcRenderer.invoke('anvil:trust-status',{attemptId,epoch}),
  /** @param {string} requestId @param {number} epoch @param {string} label @param {boolean} confirmNewKey */
