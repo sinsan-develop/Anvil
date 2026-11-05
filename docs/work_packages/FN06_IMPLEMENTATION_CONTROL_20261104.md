@@ -1562,3 +1562,10 @@ Main 수정후 fd35af의 unit11 PASS/481.8848ms,fe0735 실제 owner 연결1 PASS
 ACK bodyHash 미채택·actual shell의 receiver/currentSource 조립·UI controller는 별도 남은 경계다. ACK/receipt/CONFIRMED를 임의 생성하지 않는다. 실제 DB·권한·키·서비스·Agent·HTTPS·C# 실행·Git 복구 제외를 유지하고 Main은 제품/시험 쓰기0이다. 독립 검수·Main 직접 영향 검증·안정6 지문 전 인수0이다.
 
 추가 기록: 문구 언어 사전 검산에서 같은 짧은 초안1건을 추가 차단해 누계4다. 전송/제품 영향0이고 해당 한 단어 자유 초안 방식을 중단했다. PMO에 누계와 조치를 보고했으며 검산된 문구/도구 인자 확인으로 검수·통합을 계속한다.
+
+## 154. receiver 출처 검산의 내부 조회 경계
+Primary의 첫 static registerReceiveDeliveryReceiver 방식은 임의 호출자가 등록할 수 있어 실제 owner 출처를 증명하지 못한다. Main 확인 전에 작성된 해당 제품/호출 추가는 같은 담당자가 자기 변경만 제거했고 owner 원문은 c93c1085의40077152와 byte 동일이다. 임시 GREEN은 인수 근거로 사용하지 않는다.
+기존 부모 구현안7bbbb0의 경계를 대조했다. 원격 Web의 cookie/키/credential/frame getter0·고정 runtime8/closure14/builtin3·HTTP/IPC를 보존하면서, 기존 main CJS 두 모듈 사이 목적 한정 read-only identity 검산은 승인된 slot 연결의 내부 구현 배치다. 새 사용자 권한/성공 capability·공개 제품 API·데이터 wire 변경이 아니므로 Main이 같은6경로 안에서 허용한다.
+owner 모듈 private WeakMap은 실제 createNativeFirstReceiveReceiver factory만 채운다. CJS facade가 고정 내부 검산 함수1개로 receiver identity·동일 원 Window·원 owner epoch/현재 guard·캡처한 accept/dispose descriptor를 대조한다. 조회는 호출자가 새 등록/수명/권위를 만들지 못하며 boolean/고정 오류 외 raw 상태·비밀·credential·frame을 반환하지 않는다. 입력 Proxy/getter는 trap0으로 거절하고 저장/효과/외부IO0이다.
+이 목적 함수는 main CJS 내부 import에만 연결한다. renderer/preload/Web/HTTP/IPC/runtime entry에 추가 노출하지 않고 일반 getter나 등록 mutator로 재사용하지 않는다. TS 내부 frame 이동은 신뢰된 assembly port로만 소비되며 그 void 반환 자체가 실제 slot 수용/ACK/receipt 권위가 아니라는 경계를 유지한다. 실제 기존 receiver/slot 연결 시험으로 별도 검산한다.
+새 raw frame 인자·사용자 선언 trust·fake 기본 공급자0이며 source부재는 계속 거절한다. 기존6 밖 파일·runtime export 증가·새 권한/SIGN/ACK 계약이 필요하면 쓰기 전에 Main에 반환한다. 실제 키/DB/서비스/Agent/HTTPS/컴파일 제외는 유지한다.

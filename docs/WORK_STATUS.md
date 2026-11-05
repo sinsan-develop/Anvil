@@ -15366,3 +15366,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 기능: 같은 수신 인스턴스의 보호 credential로 STREAM/ARM/STATE/CLOSE 고정 전송·실제 parser·확인된 원결과 조회·UNKNOWN HUMAN 고정 조회를 소스/합성으로 연결했다. phase current1/SIGN1·min-only/timer 취소·위조 신호/선행 거절 정리를 검산했다.
 - 미검증: 실제 HTTPS/키·DB/권한/서비스/Agent·OS/helper·C#·사용자 인수는 NOT_RUN이다. 실제 slot handoff·ACK와 UI controller/전체계획은 미완료이며 빈 처리나 테스트 이월로 숨기지 않는다.
 - 다음: 같은 Primary에게 STREAM decoder의 private frame→기존 원 owner slot의 단발 handoff를 기존 승인6경로로 분리 배정한다. ACK bodyHash 미채택과 actual 실행 제외는 그대로다. 보호 비추적3은 SHA 불변으로 보존한다.
+
+## 2026-11-05 FN06 STREAM 내부 slot 인계 착수
+- 담당/기준: 기존 Primary 단일 writer·Main 검수/통합, source c93c1085·범위 문서674d7415 및 통제 §153–154. 기존6경로만 수정한다.
+- 상태: 인계 메소드 부재 RED와 실제 기존 owner/원 STREAM frame까지의 소비선을 확인하고 구현 중이다. fixture body를 STATE 형식으로 둔 준비 오류1은 제품 실패와 분리했다. 실제 슬롯 연결 인수는 아직 아니다.
+- 내부 출처: 임의 등록이 가능한 class static mutator 초안은 같은 담당자가 자기 변경만 제거했고 임시 GREEN은 제외했다. 실제 owner factory만 채우는 private WeakMap과 main CJS의 목적 한정 read-only 검산1개를 Main이 기존 승인 연결의 내부 배치로 고정했다. 새 권한/공개 제품 API·HTTP/IPC/runtime entry·ACK 계약0이다.
+- 검증/다음: 실제 기존 receiver/slot의 단발 수용·위조/교차/부재·기한/ABA/취소·JSON/replay/UNKNOWN 재전달0·비밀 byte/참조 정리를 검산한 안정6을 독립 검수한다. 실제 DB·권한·키·서비스·Agent·HTTPS·컴파일과 actual shell 조립/UI/ACK는 미완료·제외 경계로 남긴다.
