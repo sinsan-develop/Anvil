@@ -15167,3 +15167,7 @@ desktop 소스는 WIPab4cae4a에 보존했고 같은 Primary가 채택된 ARM he
 ## 2026-11-05 FN06 최초 거절 감사 A안 승인 반영
 
 직접 답변 call_0c2cf3bd25cd47cebea0ae87888fafc4로 감사 네 의미값의 source-only 구현이 채택됐다. 원 후보DC04B47E와 새 채택기록5268A3DF를 독립C0/I0로 결박했다. 진행 중 Binding 안정화 뒤 같은 Primary가 첫DENIED 저장/재조회를 순차 구현한다. ACK 입력 GO0·실환경 제외는 유지한다. 상세는 구현통제 §84다.
+
+## 2026-11-05 FN06 선예약 SQL 한정 검토
+
+고정한 선예약6본문은 독립 C0/I0·지문 동일로 대조했고 즉시 읽기 고정을 해제했다. 제출 형상3PASS를 실제 PG나 정상 Binding 완료로 올리지 않는다. 같은 Primary가 원 명령 callback의 예약 소비와 Binding 생산을 이어가며 Main은 완성 제출 뒤 직접 검증한다. 상세는 구현통제 §85다.

@@ -836,3 +836,17 @@ Primary는 새 표/열·GUC·caller flag 없이 원 ARMED Window/Offer·원 comm
 새 채택 기록 docs/contracts/FN06_PHASE_DENIAL_AUDIT_SEMANTICS_SOURCE_ADOPTION_20261105.md SHA5268A3DF0844ABFA96BC354BB5C80ABD8AB2FF8446398974298A1B7722B4B06F는 독립 C0/I0·시작/종료 지문 동일이다. 원 HUMAN 귀속·원 Challenge fullref·Window 정책·고정 source_kind, 최초 적격 P256 명확 거절, 같은Tx evidence/DENIED replay/audit1/ticketREJECTED와 정상 HUMAN close 보존을 기존13경로에 결박한다. 이 의미값만 SOURCE_GO로 전환했다.
 
 현재 Binding 단위를 중간 전환하지 않고 안정 제출한 뒤 기존 Primary가 남겨둔 첫 DENIED RED/fixture부터 순차 구현하도록 전달했다. 같은 파일의 동시 writer는 없다. ACK bodyHash 입력은 여전히 미채택 GO0이며 실제 DB·권한 부여·키·서비스·Agent·컴파일·J3/P03 R3·배포는 제외한다. 승인 기록은 구현/실환경 합격이나 전체 계획 완료가 아니다.
+
+## 85. Binding 선예약 SQL 여섯 본문의 한정 검토
+
+기존 Primary의 요청으로 원 선예약 SQL 여섯 본문만 잠시 유지하고 기존 검수자가 읽기 대조했다. 한정 C0/I0이며 시작/종료 본문 지문은 같다. 실제 ARM/Window/Session/Offer·원 command·원 Tx/부모기한을 소비해 N7을 선확보하며, 고정폭은 비용 계산만 하고 가짜 실물을 저장하지 않는다. Binding 전에는 원 자료에서 N7을 재도출하고 Binding 뒤에는 실제 N/남은 slot을 나눠 중복 future를 남기지 않는다. N 예약만 있고 Binding이 없으면 deferred guard가 COMMIT을 거절하는 소스다.
+
+경계 CREATE FUNCTION~END;$$;의 제출/검토 지문:
+- binding_reserve4506B: 745CA8B1A3D8871901998A5E0623484FD29A867F3B2382B6506DC4DE4C6715AC
+- native_remaining5250B: 684F95C397A2E86E85ACD05A5648D4C7260A1B3899EA70D2F31E9484028AD40B
+- native_intent_event_max3592B: C39C6B3068040C8A4B0FBAFC605A26B7826F9A909A80E794262BD52B6719D514
+- native_intent_bounds2087B: 40B62290EAB7A5EB8A184C6BC74177C533DC23DF7D83C34D63A9C4D1D550699D
+- native_cost_intent1928B: D750B44B9CF07EC9C3F3FD2159E1C2D570D1A29AA40F1D195F14814240FCF490
+- binding_stage_final815B: F1C85FDB3BED010A04ECDCC4C5D90CB1CE101475C0F486AFD205949E72E89C2A
+
+수행자 node --test --test-name-pattern='fixed intent N 상계 SQL은|native 선예약 producer는|native Binding 입장은' tests/unit/FN06/native-first-receive-schema.test.ts 의 3PASS/skip0/552.5389ms/exit0과 noEmit318a7c exit0는 제출 증거이며 실제 SQL 실행이 아니다. Main은 정상 Binding 단위가 안정된 뒤 직접 영향 검증을 수거한다. 6본문 읽기 고정을 즉시 해제했고 같은 Primary는 원 callback reserve 호출·예약 소유 prospective credit·N CREATED→R Binding/BOUND·실비용/remaining 정산을 계속한다. 현재 정상 생산/전체 Binding/실제 PG는 미완료다.
