@@ -10,8 +10,8 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | Binding 첫사용은 부분 인수했고 최초 DENIED 감사·원문 재조회·선택 legacy 전달 차단은 Main 합성10/타입0·SQL5본문 독립C0I0로 한정 확인했다. 같은 Primary가 원 명령+ARM 역사 재조회 §92를 이어간다. 실제 R Delivery·desktop/slot·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 원 명령+ARM 재조회, 실제 R Delivery/후행 phase/desktop/slot 접합, 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. 감사 Node 독립 검토는 고정8c65821d 한정 C0/I0이다. OPEN은 현행 거절·새 효과0을 유지하며 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
+| FN06 진행 중 | 같은 명령과 ARM의 역사 조회는 Main 직접4·타입/diff0와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 단발 Delivery를 구현한다. 전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | 실제 R Delivery/후행 phase/desktop/slot 접합과 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN은 현행 거절·새 효과0을 유지하고 감사 적격 잔여 요구를 보존한다. ACK bodyHash 입력은 미채택 GO0이다. 세부 범위는 구현 통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
 | Git 보존 | 로컬8c65821dcf566b2b5dee6388206e206abb0c03e4에 감사·재조회/전달 차단 source7과 현황2를 보존했다. 보호 비추적3 지문·index0을 확인했다. 같은 Primary가 다음 역사 조회를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
 
@@ -15209,3 +15209,24 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 고정8c65821d의 Node 독립 C0/I0와 SQL5본문 C0/I0, Main 직접 합성10/타입·diff0을 대조해 해당 감사/재조회·selected fallback 차단만 소스 부분 인수했다. 실제 DB·전달·전체 FN06·전체계획 완료가 아니다. 통제 §96~97 참조.
 - 로컬 source7+현황2 WIP와 보호 비추적3·index0을 확인했다. PowerShell 보호 확인 구문 오류1은 실행 전 실패 후 읽기 명령만 보정했다. 원격 재시도/복구·PR/병합0이다.
 - 다음: 같은 Primary가 §92의 저장된 원 명령+ARM 역사 조회를 작성한다. 이후 기존 WI S4/S5의 실제 Delivery producer와 단발 공급을 연결한다. Main은 관리·검수·통합, 실제 환경 경계는 그대로다.
+
+## 2026-11-05 원 명령 재조회 반례
+- 기존 담당자가 같은 명령과 ARM 재조회 시험의 RED를 수거했다. 만료 후 원 저장 결과 200 대신 임시 409로 실패했다. 공급자 호출과 기존 기록 변경은 없었다.
+- 현재 담당자는 저장 이력 조회를 구현한다. 실제 DB·권한·키·서비스·Agent 실행은 하지 않는다.
+- Main의 긴 문서 초안 문자 오류는 파일 쓰기 전에 차단됐다. 같은 유형의 반복으로 긴 초안 갱신을 중단하고 PMO에 예외를 보고했다. 짧은 기록과 구조화된 결과를 검사해서 사용한다.
+
+## 2026-11-05 후행 의존성 확인
+- 기존 검토자가 FN08의 실제 실행 허가 전환은 기존 writer와 준비 승인에 포함되지 않았음을 원문과 부모 지문으로 확인했다. 실제 fact·grant·permit과 발급자·회수 예산의 상세 계약이 남았다. 전체 작업 중단 사유로 사용하지 않는다.
+- Delivery는 기존 N ATTEMPTED와 R DELIVERY 슬롯을 사용하지만 생산·정착·단발 공급 연결은 아직 없다. 원 명령 종료 뒤 지워지는 비밀을 후행 조회에서 복원하지 않는다.
+- Main은 이 근거를 PMO와 기존 담당자에게 전달했다. 담당자는 먼저 같은 명령과 ARM의 역사 재조회를 구현한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+
+## 2026-11-05 역사 조회 검토 보완
+- 독립 검토 쟁점 1개를 Main이 실제 SQL에서 확인했다. 원 POST 재조회에 GET 조회 정책을 추가로 요구하고 있었다. 기존 승인 경계와 달라 Important 1로 보완한다.
+- 기존 POST만 허용된 정상 재조회 반례를 추가하고 현재 POST 권한·DENY·기한은 유지하도록 같은 담당자에게 지시했다. GET 조회 정책 자체를 완화하지 않는다.
+- 현재 정상 합성 시험의 부분 통과를 전체 인수로 처리하지 않는다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+
+## 2026-11-05 원 명령과 ARM 재조회 검증
+- Main 직접 여정/인접2와 SQL 형상2 PASS, 타입/diff0, 안정6 지문 전후 동일이다. 정확 명령과 지문은 구현통제 §98에 기록했다.
+- 별도 GET 권한을 요구하던 I1은 POST 전용 검산으로 보정했다. SQL 독립 재검토 C0/I0이며 최종 Node 지문을 확인한다. 실제 SQL 실행이나 전체 인수는 아니다.
+- 소스6은 index에 분리 보존했다. 같은 Primary가 기존 승인 S4/S5의 단발 Delivery를 구현한다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+- 최종 Node 본문 두 지문도 이전 검토와 같았다. 독립 최종 판정은 I1 해소·한정 C0/I0이다. Delivery와 전체 최초수신은 포함하지 않는다.

@@ -998,3 +998,24 @@ Primary live/pending0·변경7 고정 뒤 Main bc4c81에서 직접 감사4PASS/1
 §92 구현 뒤 다음 기존 승인 단위는 원 WI S4/S5의 실제 Delivery 연결이다. 현재 broker.attachStream/requireBindingStream은 실제 원 통로와 fence·기한을 확인하지만 Delivery를 생산하거나 bytes를 공급하는 함수가 아니다. Binding 첫사용이나 selected fallback 차단으로 전달 완료를 주장하지 않는다. 같은 Primary만 기존 허용57 안에서 N ATTEMPTED·R Delivery의 원 Tx와 반대 closure, 확정 COMMIT/release 뒤 같은 broker·fence·원 최소기한의 단발 frame 공급, 실패/반환 유실 뒤 재전달0을 연결한다. 기존 command/receipt/authority·raw body·권한·예약/상한을 보존한다. ACK 입력은 미채택이며 ACK/CONFIRMED 성공으로 우회하지 않는다. 실제 transport/slot 접합은 해당 source 후속으로 이어간다.
 
 검증은 실제 기존 producer/Store/service/broker 포트를 메모리 fixture에서 소비하는 정상1·broker 부재/다른 fence·전송 전 실패·COMMIT 불명·전송 후 결과 유실·원 요청 재조회/재전송0·기한 경계를 직접 반증한다. 새 interpreter나 무조건 true current·빈 EOF를 실제 전달 증거로 쓰지 않는다. 실제 DB·권한·키·서비스·Agent·컴파일·외부 실행은 제외하며 Main은 code writer가 아니다.
+
+## 98. 원 명령과 ARM의 역사 조회 검증
+Main은 안정6에서 직접 여정과 기존 명령 인접2 PASS/skip0/7666.8829ms, SQL 형상2 PASS/skip0/799.2697ms를 확인했다. 타입과 diff 검사는 exit0이다. 실행키는 6f1049·6fba88이며 전후 raw6은 같았다.
+기존 여정 안의 역사10모드와 기존8모드는 별도 시험18개로 세지 않는다. 다른 ARM/SID·Binding 누락·조회/COMMIT 불명·현재 기한 만료·반환 오염·POST DENY/만료를 구분한다. 원 결과를 반환하고 새 공급·예약·생산 효과를 만들지 않는다.
+GET 권한 혼용 I1은 현재 POST 전용 helper로 보정했다. 독립 SQL 재검토는 C0/I0이다. helper2672/AFFDFCBA3DD3355C4717DEAB61435AACFAB82C305A04C0767C83C911022C9626, reader5425/9917554D0CE9754726F0C413669A341D936711FC7196E27B49893A2D16FD839E이다. GET 정책 자체는 유지했다.
+실제 PostgreSQL 구문·권한 집행과 Delivery·전체 FN06은 미검증·미완료다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다. 같은 담당자는 다음 기존 S4/S5의 단발 전달 구현을 시작한다.
+직접 명령:
+`node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^ARM header 정상 여정|^실제 HUMAN 원명령과 receipt' tests/unit/FN06/native-preparation-store.test.ts`
+`node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^native 역사 재조회는 GET|^같은 ARM의 native 원명령 역사' tests/unit/FN06/native-first-receive-schema.test.ts`
+`node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json` 및 `git diff --check`.
+실행 파일은 C:/Program Files/nodejs/node.exe이다.
+| 경로 | bytes | SHA256 |
+|---|---:|---|
+| apps/server/modules/executions/native-first-receive-service.ts | 55595 | 2C58D4FBF659D9760CB85DD1C209608D8EC0EF13EA5FC855A2F73604D976FCE6 |
+| apps/server/modules/executions/native-first-receive-store.ts | 124047 | C7DB8194AE692B2BF4CA9BBBD78BB2AC862FCA38184B50B76ADD1C67B8B622D3 |
+| apps/server/modules/executions/project-native-preparations.ts | 57846 | 2007DBD478F059215BD25C8439486A64E0CDB4BD589E77370664FF1F13B8AB12 |
+| db/migrations/0076_native_first_receive.sql.pending | 454446 | 48BE993EDB7ED631D60CF3659C70E5804D765EC5AFFFD00C703D8AA24452DC5D |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 46060 | 743BA2493E1651835BC343F021E064C11A3B7C832B0A7F2A0F623EF2728511BB |
+| tests/unit/FN06/native-preparation-store.test.ts | 119964 | B3C2D61AAA7C5CE6A6F06FBA8E3AB7363C9FF29C596A5B8F69DC0BEAECDB5CD7 |
+준비 오류는 JSON 키 순서 비교1·가짜 인증 만료 응답 가정1·fixture 시계와 실제 시계 혼동1이다. 제품 RED와 분리했고 기존 실패를 통과로 소급하지 않았다.
+- 최종 Node 본문 두 지문도 이전 검토와 같았다. 독립 최종 판정은 I1 해소·한정 C0/I0이다. Delivery와 전체 최초수신은 포함하지 않는다.

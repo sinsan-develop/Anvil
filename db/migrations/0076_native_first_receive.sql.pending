@@ -2034,3 +2034,53 @@ END;$$;
 ALTER FUNCTION anvil.native_receive_phase_denial_replay(uuid,jsonb) OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.native_receive_phase_denial_replay(uuid,jsonb) FROM PUBLIC,anvil_v3_app;
 GRANT EXECUTE ON FUNCTION anvil.native_receive_phase_denial_replay(uuid,jsonb) TO anvil_v3_app;
+
+
+-- expiresAt는 현재 HUMAN 조회권한의 처리기한이다. 원 Native grant/Binding의 기한을 갱신하지 않는다.
+-- 원 POST의 현재 허용만 검산한다. 역사 결과에 GET/재인증/새 승인을 요구하지 않는다.
+CREATE FUNCTION anvil.fn76_native_history_scope(p uuid,sid uuid,input jsonb) RETURNS timestamptz LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a anvil.auth_sessions%ROWTYPE;policy record;rule jsonb;matched boolean:=false;requires_approval boolean:=false;post_until timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR input->>'operation' IS DISTINCT FROM 'prepareNativeBoundary' OR input->>'projectId' IS DISTINCT FROM p::text THEN RETURN NULL;END IF;
+ SELECT * INTO a FROM anvil.auth_sessions WHERE id=sid;IF NOT FOUND THEN RETURN NULL;END IF;PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);
+ PERFORM 1 FROM anvil.projects pr JOIN anvil.project_members m ON m.project_id=pr.id AND m.user_id=a.user_id WHERE pr.id=p AND pr.archived_at IS NULL AND m.participation='OWNER' AND m.revoked_at IS NULL FOR SHARE OF pr,m;IF NOT FOUND THEN RETURN NULL;END IF;
+ PERFORM 1 FROM anvil.project_control pc WHERE pc.project_id=p AND pc.actor_id=a.user_id AND pc.client_id=a.client_id AND pc.generation=(input->>'controlGeneration')::bigint AND pc.revoked_at IS NULL FOR SHARE;IF NOT FOUND THEN RETURN NULL;END IF;
+ SELECT v.rules_json,v.reason,v.review_refs,v.content_hash INTO policy FROM anvil.permission_policies ph JOIN anvil.permission_policy_versions v ON v.project_id=ph.project_id AND v.policy_id=ph.id AND v.version=ph.head_version WHERE ph.project_id=p FOR SHARE OF ph;
+ IF NOT FOUND OR jsonb_typeof(policy.rules_json) IS DISTINCT FROM 'array' OR policy.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',policy.rules_json,'reason',policy.reason,'reviewRefs',policy.review_refs)) THEN RETURN NULL;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(policy.rules_json) LOOP
+ IF rule->'subjectRef'->>'kind'='HUMAN' AND rule->'subjectRef'->>'userId'=a.user_id::text AND rule->'operations'?'prepareNativeBoundary' AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') scopes(scope) WHERE scopes.scope->>'kind'='PROJECT' AND scopes.scope->>'projectId'=p::text) AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+  IF rule->>'disposition'='DENY' OR COALESCE(rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL'),true) THEN RETURN NULL;END IF;
+  matched:=true;requires_approval:=requires_approval OR rule->>'disposition'='REQUIRE_APPROVAL';post_until:=least(post_until,(rule->>'expiresAt')::timestamptz);
+ END IF;END LOOP;
+ IF NOT matched OR (requires_approval AND input->'approvalRef'='null'::jsonb) OR (NOT requires_approval AND input->'approvalRef' IS DISTINCT FROM 'null'::jsonb) THEN RETURN NULL;END IF;
+ RETURN least(post_until,a.idle_expires_at,a.absolute_expires_at);
+END;$$;
+ALTER FUNCTION anvil.fn76_native_history_scope(uuid,uuid,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn76_native_history_scope(uuid,uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.native_receive_binding_history(p uuid,sid uuid,arm_ref jsonb,input jsonb,expected text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a anvil.auth_sessions%ROWTYPE;c anvil.commands%ROWTYPE;b anvil.native_receive_records%ROWTYPE;h anvil.native_receive_heads%ROWTYPE;n anvil.native_preparation_authorities%ROWTYPE;read_until timestamptz;expires timestamptz;request_hash text;preparation_ref jsonb;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected IS DISTINCT FROM txid_current()::text OR NOT anvil.fn76_ref(arm_ref,true) OR NOT anvil.fn76_exact(input,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) OR input->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR input->>'operation' IS DISTINCT FROM 'prepareNativeBoundary' OR input->>'projectId' IS DISTINCT FROM p::text THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO a FROM anvil.auth_sessions WHERE id=sid;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);
+ IF input->>'clientId' IS DISTINCT FROM a.client_id::text OR anvil.fn76_native_history_scope(p,sid,input) IS NULL OR NOT EXISTS(SELECT 1 FROM anvil.project_control pc WHERE pc.project_id=p AND pc.actor_id=a.user_id AND pc.client_id=a.client_id AND pc.generation=(input->>'controlGeneration')::bigint AND pc.revoked_at IS NULL) THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=p FOR SHARE;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=p AND actor_id=a.user_id AND client_id=a.client_id AND command_id=(input->>'commandId')::uuid FOR SHARE;
+ request_hash:=anvil.fn76_hash_text(anvil.fn01_json(input));
+ IF NOT FOUND OR c.operation<>'prepareNativeBoundary' OR c.scope_kind<>'PROJECT' OR c.scope_id<>p OR c.state<>'APPLIED' OR c.control_generation IS DISTINCT FROM(input->>'controlGeneration')::bigint OR c.request_hash IS DISTINCT FROM request_hash OR c.result_ref->'data'->'commandSnapshot' IS DISTINCT FROM input OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM p::text OR c.result_ref->>'serverReceivedAt' IS DISTINCT FROM to_char(c.received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ IF (SELECT count(*) FROM anvil.native_receive_records WHERE project_id=p AND record_kind='BINDING' AND native_command_id=c.id)<>1 THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ SELECT * INTO b FROM anvil.native_receive_records WHERE project_id=p AND record_kind='BINDING' AND native_command_id=c.id;
+ SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=p AND window_id=b.window_id FOR SHARE;
+ IF NOT FOUND OR h.original_session_id<>sid OR h.actor_id<>a.user_id OR h.client_id<>a.client_id OR h.credential_generation<>a.credential_generation OR h.control_generation<>c.control_generation OR h.binding_record_id IS DISTINCT FROM b.record_id OR h.arm_record_id IS DISTINCT FROM b.arm_record_id OR arm_ref IS DISTINCT FROM anvil.fn76_receive_record_ref(p,b.window_id,b.arm_record_id,'ARM') OR b.record_json->'armRef' IS DISTINCT FROM arm_ref THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ PERFORM anvil.fn76_binding_complete(p,b.window_id);
+ SELECT * INTO n FROM anvil.native_preparation_authorities WHERE project_id=p AND id=b.native_authority_id AND server_command_id=c.id;
+ IF NOT FOUND OR n.snapshot_json->'subject'->>'humanSessionId' IS DISTINCT FROM sid::text OR n.snapshot_json->'subject'->>'userId' IS DISTINCT FROM a.user_id::text OR n.snapshot_json->'subject'->>'clientId' IS DISTINCT FROM a.client_id::text OR n.snapshot_json->'subject'->'credentialGeneration' IS DISTINCT FROM to_jsonb(a.credential_generation) OR n.intent_json IS DISTINCT FROM c.result_ref->'data'->'preparationIntent' THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ preparation_ref:=jsonb_build_object('id',n.intent_id,'version',1,'contentHash',n.intent_hash);IF c.result_ref->'data'->'ref' IS DISTINCT FROM preparation_ref THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ read_until:=anvil.fn76_native_history_scope(p,sid,input);IF read_until IS NULL THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;expires:=least(read_until,a.idle_expires_at,a.absolute_expires_at);
+ PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);IF expires<=clock_timestamp() OR expected IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED' USING ERRCODE='23514';END IF;
+ RETURN jsonb_build_object('preparationRef',preparation_ref,'bindingRef',anvil.fn76_receive_record_ref(p,b.window_id,b.record_id,'BINDING'),'operationId',c.operation_id,'requestHash',c.request_hash,'transactionId',expected,'expiresAt',to_char(expires AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+EXCEPTION WHEN insufficient_privilege THEN IF SQLERRM IN('FN01_APP_SESSION_REQUIRED','FN01_ACTIVE_SESSION_REQUIRED') THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;RAISE;
+END;$$;
+ALTER FUNCTION anvil.native_receive_binding_history(uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_receive_binding_history(uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_receive_binding_history(uuid,uuid,jsonb,jsonb,text) TO anvil_v3_app;
