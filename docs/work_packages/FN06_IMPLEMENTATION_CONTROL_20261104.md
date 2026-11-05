@@ -1449,3 +1449,15 @@ UNKNOWN 뒤 같은 owner의 새 current/frame/source/client supplier에서도 �
 ## 145. 부분 checkpoint와 다음 source 접합
 source6+Main 현황2는 cdad42e4e15398b0b1e34bc455529acd629d1d6d에 보존했다. ebf4ddc8의 직접 자식이며 commit 직후 tracked clean·보호 비추적3을 유지했다. private 동일성·PR·병합은 미확인이고 인증 복구·push 재시도0이다.
 다음 C# source/HTTPS 호출선은 기존 Primary가 읽기 확인 중이다. WI의 tests/native/FN06/NativeFirstReceiveHostSourceTests.cs는 실제 미작성 경로임을 구분했고 기존 파일로 읽기 성공했다고 세지 않는다. 읽기 묶음 오류는 준비 오류이며 제품 실패가 아니다.
+
+## 146. C# phase validator 후속 단위 사전 고정
+기준 checkpoint c50c8cf8356b0fd327d4cd62daae80ae58257f77에서 같은 승인 후보011C3C22·WI A3FA8841의 다음 미완료 접점은 C# ValidateFirstReceiveFrame의 OPEN 전용 검사다. 기존 Primary 한 명만 아래3경로를 순차 수정할 수 있다.
+1. apps/connector/native/DesktopTrustKeyHostSource.cs
+2. tests/native/FN06/DesktopTrustKeyHostSourceTests.cs
+3. tests/native/FN06/NativeFirstReceiveHostSourceTests.cs
+3번은 기존 WI에 허용됐지만 실제 미작성 경로다. 새 업무/공개 계약이 아니라 기존 승인 phase 입력의 검증·음성 시험으로 작성한다. 원 OPEN/authority signer·REGISTERED/root/peer/key·고정 목적·기한/cap/단발 소비를 보존한다.
+STREAM/ARM/STATE/CLOSE의 exact current·Challenge·proof·target/null/ref/hash·원 human/registration·최소기한을 후보 표에 맞춰 연결한다. STATE/CLOSE optional proof ref를 current 값으로 채우지 않는다. UNKNOWN은 같은 Window/Challenge의 다른 proof hash/timestamp로 우회하지 않는다. 실제 효과 앞 검증과 소진을 보존한다.
+C# 시험은 미래 실행용 원형과 source 검토 근거다. 컴파일/로드/실행0이며 실행하지 않은 RunAll/crypto/OS를 PASS로 쓰지 않는다. 허용 범위 밖 JS source 형상 시험이 꼭 필요하면 정확 파일·최소 이유를 쓰기 전에 반환한다. Main은 제품/시험 쓰기0, 기존 정상22시험은 소스 영향이 없으면 반복하지 않는다.
+HTTPS transport·전체 UI controller 접합은 다음 순서로 남기며 이번 C# 입력 보완으로 완료 처리하지 않는다. 실제 DB·권한·키·서비스·Agent·컴파일·ACK delta·Git 복구 제외 유지다.
+
+§146 후속 실제 호출선 검토: 기존 DesktopTrustKeyHostSourceTests.cs의 MemoryStore/FirstReceiveFrame/FirstReceiveSourceChecks를 확장하면 신규 NativeFirstReceiveHostSourceTests.cs가 필요 없다. 실제3경로는 제품 DesktopTrustKeyHostSource.cs·기존 DesktopTrustKeyHostSourceTests.cs·기존 tests/unit/FN06/native-first-receive-schema.test.ts로 좁힌다. schema 시험은 같은 WI의18~20 범위 안이다. 신규 파일 생성0이며 앞 사전 허용3번은 이번 쓰기에서 제외한다. 기존 Node 형상 검사로 미연결 RED를 확인하고 미래 C# 정상/음성 시험 원형을 보완하되 C# 실제 실행으로 표시하지 않는다.

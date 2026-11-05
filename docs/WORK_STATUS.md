@@ -15337,3 +15337,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 변경: 제품3·시험3. 별도 exact signPhase source로 OPEN exact signOpen을 유지하고 metadata 부모 TTL과 작업10초를 분리했다. UNKNOWN 후 새 source/client 재서명 차단은 owner 수명 범위이며 등록 복구/OS 재시작 보장은 미확인이다.
 - 오류: 구현 중 CJS 부재 RED·TTL 혼동·과거 키 개수 fixture 불일치는 통제 §142–143대로 보완했다. Main 추정 경로 읽기 오류1은 준비 오류로 분리했다. 전체 시험 반복·기준 완화·skip 승격0이다.
 - 다음: C# validator·기존 HTTPS 소비 접합을 같은 Primary에게 위임한다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK 변경·Git 복구 제외를 유지한다. 전체 작업계획 완료가 아니다.
+
+## 2026-11-05 FN06 C# phase 입력 source 구현 착수
+- 앞선 소스6+현황2는 cdad42e4, checkpoint 현황2는 c50c8cf8에 보존했다. 현재 기존 Primary 한 명에게 통제 §146의 기존3경로를 배정했다. Main은 제품/시험을 쓰지 않는다.
+- 시작 지문: DesktopTrustKeyHostSource.cs 38823B/110FE561BE44457D863D11F10C3C0306AB7A2E85D223F0498E9893AAF4A593D2, 기존 C# 시험45972B/2C4519B33F680EB3B78C12E1E42F262B30C94783A3181DBC69A4EAA5C78F343E, Node schema 시험50691B/3979406E51CBC5C4A5949C14A7083AE3A2C826175ECD2D637696360EF6D8D989다.
+- OPEN 고정 validator와 proof hash 단발 key를 승인된 phase/ref/null/원 Challenge 범위로 연결한다. 기존 driver/HTTPS는 이번 수정에서 제외하며 다음 접합으로 남긴다. 새 파일과 새 공개 목적/권한은 추가하지 않는다.
+- C# 컴파일·실행은 제외한다. Node 형상 시험은 source 검산만 증명하며 C# 동작/crypto/OS 증거가 아니다. 실제 DB·권한·키·서비스·Agent·ACK 변경·Git 복구0을 유지한다.
