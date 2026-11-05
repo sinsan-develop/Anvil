@@ -1325,3 +1325,42 @@ Store의2MiB cap과 strict 반환·고정 폭 기한 축소를 대조했다. 현
 원 Window/current 최소기한·wall/monotonic·abort·await 뒤 동일성과 원 view/origin/세대/contextEpoch/등록 결박을 유지한다. STATE의 current Binding/Authority/Delivery refs를 proof의 null 필드에 채우지 않는다. 두 writer ref의 역할도 구분한다.
 기존 owner/operation/C# 단발 소진은 canonical proof hash 기준이다. 같은 Challenge UNKNOWN 뒤 frame/current/source/client 객체 교체의 재서명 금지는 이 장벽만으로 충족했다고 주장할 수 없다. 이 새 채택 요구를 실제 TDD로 반증해 연결한다. 아직 구현 결함 판정이나 완료가 아닌 후속 미구현 접점이다.
 기존 TS client 시험·CJS owner 시험·desktop 등록/operation 시험·C# source 검사·runtime build 시험을 필요한 범위만 사용한다. C# 컴파일·실제 키/서비스/Agent는 실행하지 않는다. Primary에게 현재 서버 작업을 계속하며 다음 signer TDD에 이 조건을 포함하도록 전달했다.
+
+## 135. 기존 CSRF 공급선의 내부 재사용
+Main이 실제 access/routes.ts:33·repository.ts:169~177과 P02 INTERFACES.md:828을 확인했다. GET /api/v1/session은 원 유효 cookie에서 기존 exact SessionView {user,clientId,csrfToken,expiresAt,absoluteExpiresAt,reauthUntil}를 반환한다. 새 인증 API·Session DTO 확장이나 cookie/token 추출은 필요하지 않다.
+기존 NativeFirstReceiveHumanClient의 원 Session.fetch로 이 고정 경로를 private 조회해 원 user/client와 응답 원형·기한을 검산하고 CSRF를 새 HUMAN current POST에만 연결한다. source/current/frame의 renderer 주입이나 새 IPC/getter·로그·공개 반환은 없다. 같은 원 fetch/current/lease/owner를 await 전후 검산한다.
+기존 인증의 last_seen/idle 갱신은 정상 bookkeeping이다. 이를 원 Window/Challenge/10초 예산 갱신으로 전용하지 않고 모든 최소기한을 유지한다. SID/세대 원 결박은 실제 phase POST가 검산하며 기존 Session DTO에 새 필드를 추가하지 않는다.
+이 내부 재사용은 직접 채택된 후보의 원 Session·CSRF 소비를 기존 계약으로 구현하는 방법이다. 실제 endpoint/DB/계정/키/서비스 호출은 하지 않고 코드·합성만 진행한다. Primary에게 전달했다.
+
+## 136. phase HUMAN 생산선 소스 부분 인수
+기준 source5b164413·문서 checkpoint ee510f39의 서버11을 검수했다. 생산선·공개 route/error·시험의 독립 C0/I0를 수거했다. 최소 결합 시험도 실제 CurrentSource/Prep를 새 공개 Service에 주입해 BOUND/ATTEMPTED 각각 원 호출의 mapping.read 증가를 검산하는 C0/I0다.
+Main fresh edf130의 routes7 PASS/2157.7478ms와 c5db6c의 SQL형상2 PASS/738.3413ms는 변경 없는 지문으로 재사용했다. 갱신된 N 시험은 c1a644→session15668→41e7d4에서1 PASS/13602.0005ms, 타입9775f1 exit0이다. 고유 서버10시험·skip0이며 같은 N 시험의 이전 실행을 더해11로 세지 않는다.
+정확 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^HUMAN phase current|^HUMAN ARM current|^HUMAN current source owner|^보호 GET3' tests/unit/FN06/native-first-receive-routes.test.ts
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase signing current SD는|^새 phase Native material은' tests/unit/FN06/native-first-receive-schema.test.ts
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^Window metadata 전용 current는' tests/unit/FN06/native-preparation-store.test.ts
+4. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+N 시험147009B/825494C7에서 새 최소 결합 반례 cb92c1 RED→35a213 GREEN을 수거했다. 중간6ada0d의 예산 거절을 담당자가 2bb57a의 stage/잔여시간으로 합성 기한 소진에 좁혔고 guard/timeout은 변경하지 않았다. 이 실행 원인 설명과 독립 정적 검토는 구분한다.
+Main 최초13 raw 전후 동일이며 서버11 중 변한 것은 이 N 시험 한 파일뿐이다. 제품 본문·route/schema 시험이 같아 검증을 무작정 반복하지 않았다. source11만 index에 분리했고 후속 client2/WIP와 보호 비추적3은 포함하지 않는다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/server/modules/connections/project-registration-reads.ts | 13824 | D7B67C3C837036EDBC01643F78B6F056FBEE7871E08E5BE312D20115CE1A6633 |
+| apps/server/modules/executions/native-first-receive-routes.ts | 25163 | 0FA841E3AEDA335B8FF7465CBEF2646C35925C159E805F6E50CE645B5DE7B837 |
+| apps/server/modules/executions/native-first-receive-service.ts | 64440 | 534F2C0490ED7C0D7C14F8FB4DF1316F2729BB5B137DC0AA06F3561B3C1AB26B |
+| apps/server/modules/executions/native-first-receive-store.ts | 144192 | 29656FF62BC4256DFA7D2FE32DCD44EE48909868C71E0B24E495AAF4C64B50FB |
+| apps/server/modules/executions/native-preparation-current-source.ts | 17757 | 3DA03BE9724480F519386236F51C9AB0D443F9A41E1AD053D5CF36FD05585F84 |
+| apps/server/modules/executions/project-native-preparations.ts | 67173 | 241D288E4AC42093CCE6B496A8182F242D1548D4D9E790D471D43BF9A45FF6F3 |
+| apps/server/modules/executions/project-writer-authority.ts | 78951 | 29A9062EF58F309994E413DB435EA6BFA54684A5EF5A459BB3EB0DB2CAAF31A7 |
+| db/migrations/0076_native_first_receive.sql.pending | 529020 | A8DC4CCDF2A603888DFB993F22712CF74677DB59104FC59BE80E0442C6BA1BA9 |
+| tests/unit/FN06/native-first-receive-routes.test.ts | 189921 | B9BB2DE2C2ABB621D4B82F5ABE671081EFAE5CDCC9E9367605FBF48A0617AB68 |
+| tests/unit/FN06/native-first-receive-schema.test.ts | 50691 | 3979406E51CBC5C4A5949C14A7083AE3A2C826175ECD2D637696360EF6D8D989 |
+| tests/unit/FN06/native-preparation-store.test.ts | 147955 | D6CEC63495211EF1411B9AE5587318A7A6133BF8FC9258D8B8D868574C5F3E3A |
+이 증거는 목적 SD를 합성한 실제 Node 함수 소비선이다. 실제 PG/DDL/Tx/RLS·권한·키·TLS·desktop/Agent와 전체 서명 흐름은 미검증·미완료다. 실제 서비스 변경과 Git 복구는 없다. 복구는 검증한11경로의 한정 revert이며 다른 WIP/원문은 보존한다.
+
+## 137. 순수 typed2와 후속 IO WIP의 분리
+TS client26884B/AB9A0B989E5438E3D27C689D057161D833E4F7E0523D373BCC1EF80F2794CB72의 phase 입력/static 본문은 독립 C0/I0다. 시험의 앞31789B도 제출7AE8C39C1B1B027A96B4A703950F0CC936EFEFA5754CA21FFF6E5410CBEBE65C와 같음을 검토자가 확인했다.
+후속 CSRF IO 미구현 RED2가 append돼 전체 시험은36596B/9AD074825F7442B1CD88290B662C48B83055FBA78318F9B8D5ED351BA97A860E다. 그 추가분은 pure2 판정과 PASS/commit에서 제외하고 WIP로 보존한다.
+Main 021f0c의 순수2+기존 OPEN1=3 PASS/402.3133ms,1fe950의 실제 메모리 package1 PASS/869.7058ms와 타입9775f1 exit0을 확인했다. exact14 closure/8exports/builtin3·import 효과0은 실행 범위만 증명한다.
+& 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^non-OPEN typed frame|^OPEN pre-authority' tests/unit/FN06/native-first-receive-client.test.ts
+& 'C:\Program Files\nodejs\node.exe' --test --test-name-pattern='^실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+순수 메소드는 IO/clock/lease 없이 strict typed 검산만 수행한다. CSRF POST·원 owner/child·C#/HTTPS·UNKNOWN의 Challenge 단위 차단은 아직 미완료다. 전체 client 시험 파일이나 실제 서명 인수로 올리지 않는다.
