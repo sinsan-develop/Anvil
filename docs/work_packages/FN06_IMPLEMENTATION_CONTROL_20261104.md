@@ -1687,3 +1687,42 @@ Main fresh 371333 등록7 PASS/2451.1625ms, 34ef62 unit10 PASS/515.244ms, 6b619a
 owner의 기존 boolean identity helper와 receiver shape3(accept/getChannel/dispose)는 보존한다. 별도 main 내부 readonly acceptance helper는 private 실제 수용/현재 slot·원 Window/Delivery를 검산한 receiptId/acceptedAt/expiresAt만 반환하며 raw slot·opaque·보호 source를 내보내지 않는다. CJS의 기존 원 handoff 성공 직후 private 원 Session과 이 근거를 대조해 기존 exact13 snapshot 및 canonical V를 한 번 생산·보관한다. handoff 반환은 void를 유지한다. 내부 main facade에 readSlotReceipt(receiver) 한 키만 추가해 이미 생산한 동일 V만 조회한다. exact9 시험은 이 계획된 내부 키10과 비밀/미지원 키 부재를 함께 검산하며 runtime export8/closure14/builtin3·HTTP/IPC/C# 키는 불변이다.
 만료는 실제 owner/slot·원 부모/Window/서버 Session·Delivery/Authority/metadata 자원의 유효 상계 안에 둔다. 호출 proof/current/Challenge/start+10초를 자원 수명으로 덮지 않고 기존 receipt parser의 양의 기간/최대 native10초를 그대로 만족해야 한다. 기록은 원 수용시각과 canonical 값으로 고정하며 이후 조회/기한 변화로 다시 만들거나 기간을 늘리지 않는다. 이후 현재 guard/만료/ABA/종료/UNKNOWN은 새 생산·현재 유효 조회를 차단하고 과거 수용 증거를 현재 실행 허가로 승격하지 않는다. broker.begin production 호출은 아직 없으므로 실제 waiter 기한 불일치를 확정하지 않으며 후보 동일성 검사는 변경하지 않는다. 실제 접합에서 공통 만료식을 충족하지 못하면 fail-closed로 남기고 근거를 반환한다.
 정상 실제 slot 수용→자동 단발 생산→같은 V 조회, 원 Session/Delivery/metadata hash·receipt ref/hash 결박을 TDD로 확인한다. void-only/위조 receiver·다른 Session/Delivery·수용 전/중복·만료/ABA·취소/UNKNOWN은 생산0, 원 frame/secret 폐기·guard·기한·동일 signature/재전송0을 보존한다. standalone builder·unused 메서드만으로 완료를 주장하지 않는다. 실제 DB/권한/키/서비스/Agent·실자료·C#·J3/P03 R3·Git 복구0, 독립 검토와 Main 직접 영향 검증 전 인수0이다.
+
+
+## 162. FN13/FN14 후속 업무의 한정 읽기 대조
+기존 독립 검토자가 FUNCTION_WORK의 FN13/FN14와 현재 source를 읽었다. FN13의 남은 실제 중지 관측→상태 대조→사용자 재개는 execution-stop.ts의 SYNTHETIC_ONLY current/store와 execution-recovery.ts의 합성 회수 계획만으로 완성되지 않는다. fact/grant/permit·회수 권위의 채택·생산 근거를 확인하지 못했으며 실제로 연결하거나 임시 성공으로 채우지 않는다. 이미 검수한 checkpoint/과거 중지 페이지를 다시 구현하지 않는다.
+FN14의 과거 target reader 미연결 문구는 현재와 다르다. preparation-record-source-adapter.ts:61의 ProjectConnectionDefinitions.read와 projects/routes.ts:201 주입은 이미 있으므로 중복 구현/재승인 대상으로 삼지 않는다. UNVERIFIED는 실제 대상 기능 검사·세션 시작·이전 허가가 아니다. 남은 manifest/이해 대조·이전 확정/새 역할·재개는 현재 준비전용 저장/조회보다 넓고 상세 채택·완결 producer 근거는 이번 읽기에서 확인하지 못했다.
+이는 FN13/FN14 전체 완료·전체 작업 중단 판정이 아니다. 읽기만 수행했고 수정·시험·실환경 실행0이다. 기존 Primary는 §161 실제 SlotReceipt 생산 TDD를 계속하며 독립 다음 업무 후보는 FN09/FN10의 기존 채택 누락 호출선으로 한정해 대조한다.
+
+
+## 163. FN09/FN10 한정 대조와 FN10 결정·지원 분리
+독립 읽기로 FN09 bindResponsibleSession/prepareExecution의 routes 연결·등록 정의 RESERVED/externalSessionHandleRef null·하위 HUMAN 검토/확정과 FN10 WAITING/일회 승인/한도정책 연결을 확인했다. 완료한 source를 다시 배정하지 않는다. 하위 HUMAN 결과를 실제 downstream 역할/context/prepare/grant/writer 권위로 바꾸거나 WAITING의 assignmentRef null/실행 false를 제거하는 것은 기존 한정 승인에서 제외한 의미다.
+FN10_HUMAN_DECISION_CANDIDATE.md는 시작/종료16681B/SHA256 4DC5269C1D3A77073AF07DD19E15B736A6D60638C58DDFEBB70173530668807B로 동일하고, 조사 범위에서 recordNodeDecision/revokeNodeDecision/readNodeDecisions의 후속 채택·동등 제품/SQL 구현을 확인하지 못했다. 공개 명령2/보호 조회·노드별 결정 불변 원장/CAS·별도 HUMAN OWNER 정책이 정확한 FN10 결정 delta다. 평가/소비·분기/자동전이·실행까지 포함하지 않는다.
+오래된 후보의 기준/문서 reader 부재 설명은 현재 사실과 다르다. ProjectBaselineActivations.current/read·assertCandidateCurrent와 ProjectDocuments.version/격리·무결성 reader는 이미 존재하므로 재구현/재승인하지 않는다. FN10 basisRef의 기존 activation 결박과 별도 조회 정책·모든 출처의 최신 적합 검토·replay/GET 응답 보호/변경 직렬화는 미연결이다. 후보의 FN14 A 미채택 문구도 과거 설명이다.
+Main은 이 정확한 미채택 delta와 기존 질문/위임 결정 확인·전달 지원을 PMO에 요청했다. 오래된 후보를 그대로 새 구현 기준으로 삼거나 중복 사용자 질문을 만들지 않는다. FN06 §161의 실제 생산 구현/음성 반례는 계속하며 전체 계획 대기로 일반화하지 않는다. 이 조사에서 수정·시험·실환경 실행0이다.
+
+
+## 164. 실제 SlotReceipt 자동 생산의 소스 한정 검수
+기준854c90084324b58aa26772a50e4742cba1a8a383에서 같은 Primary가 §161의 정확6경로를 변경했다. 실제 원 Client/STREAM→handoff→owner의 실제 slot.accept/guard/getChannel 성공 후 단발 ID/수용시각을 고정하고 CJS가 private 원 Session/전체 Delivery와 결합해 exact13 snapshot/V를 자동 생산·보관한다. void-only나 공개 metadata 재입력은 생산 근거가 아니다. readonly helper/조회는 기존 facts/V만 복사하며 새 uuid/시각/영수증을 만들지 않는다.
+Main fresh81b185 등록9 PASS/2458.2722ms·2823dd unit6 PASS/421.5469ms·53fd9f owner4 PASS/1323.5469ms·09f262 메모리 package1 PASS/761.5823ms, 고유20/fail0/skip0이다. 타입89ab32·문법be94fc/53ad0f·diff69e4db 모두 exit0이다. pre2fa8db/post a81c62의 raw6와 독립 시작/종료가 동일하다. 독립 source/spec 한정 Critical0/Important0이며 reviewer의 수정·시험·실환경 실행0이다. Primary 직접14 결과를 Main20에 추가 합산하지 않는다.
+수용 전/void-only/위조·교차 receiver/Proxy trap0·공개 alias 변이·단발 UUID/metadata6/ref hash·원 current4초/부모2초 min·UUID 실패/취소/ABA/UNKNOWN·늦은 CJS await 복귀 거절을 직접 검산했다. 기존 비밀 byte 폐기·timer/listener/receiver 정리·미확인 재전송0을 보존한다. 실제 handoff 뒤 생산/조회 부재 RED1→GREEN으로 구현했고 추가 환경 오류/미해결 제품 실패 보고0·live/pending0이다. Main 제품/시험 수정0이다.
+만료는 Native current/authority를 포함한 실제 owner/slot과 원 Client 자원/Window/Session/Delivery/metadata의 최소 상계다. 처리3초·긴 명목 profile로 대체하지 않는다. 고정 후 현재 상계가 좁아지면 원 V를 고쳐쓰지 않고 조회를 거절한다. receiver3·내부 main facade10·runtime export8/closure14/builtin3·HTTP/IPC/C#/ACK 입력은 보존했다. 내부 조회키 추가는 부모 S4의 실제 생산을 연결한 것으로, renderer의 성공 권위나 Agent 실행 허가를 만들지 않는다.
+정확 Main 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^실제 slot handoff|^SlotReceipt|^실제 slot 수용 뒤 CJS|^pending STREAM 실제 reader|^pending STREAM의 JSON|^STREAM owner epoch ABA|^STREAM CJS readonly' tests/desktop/desktop-trust-registration.test.cjs
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^SlotReceipt private 문맥|^STREAM private frame|^handoff budget 초기검사|^non-OPEN UNKNOWN|^user dispose는|^각 pending reader/control' tests/unit/FN06/native-first-receive-client.test.ts
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^desktop 첫 수신 HUMAN adapter|^CJS OPEN 수신 facade|^CJS phase frame facade|^CJS phase facade' tests/desktop/native-first-receive-owner.test.cjs
+4. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+8. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 55760 | 23C40D9BCE67EF82E6E5C7846529A19E869FDA17D5F39191EABD2550B3E78D9B |
+| apps/desktop/src/native-first-receive-client.cjs | 19598 | 593A1F91CDAC0F84F35CB349A080FFA195F7E4C04C668E1A04A2A4308E06956C |
+| apps/desktop/src/trust-enrollment-owner.cjs | 75568 | 44FF0EEFD4D5F4AB1CA846C685E5F9A88F7C873D1846917CCDF1E113DD8E058D |
+| tests/unit/FN06/native-first-receive-client.test.ts | 75609 | AA4976F84C95930B79E8FDEDBEFDEB52A99D11018CE329DA166F6B259F2B420A |
+| tests/desktop/native-first-receive-owner.test.cjs | 29575 | 4E65C947E67ABEFBAE443175649A49629AD86FDCA49E25FC32720D74B943B2D0 |
+| tests/desktop/desktop-trust-registration.test.cjs | 161456 | 92AEC9496601DA110A23E7F272B0EA4F39FF2A927AA7F3B33CD7A6264004CA30 |
+변경6과 Main 현황2만 보존 대상으로 분리한다. 보호 비추적3은 제외하고 LF/CRLF 예정 경고4는 별도·설정/정규화0이다. 복구는 소스6 한정 revert이며 현황/보호 원문을 일괄 복구하지 않는다. private 동일성/PR/병합은 미확인·push/인증 복구0이다.
+미완료를 분리한다. production waiter.begin은 아직 없고 서버 candidate의 원 ref/hash/metadataHash/expiresAt exact equality는 변경하지 않았다. 향후 원 operation의 검증 E와 receipt E를 같은 근거로 닫거나 불일치를 거절해야 한다. 이번 source 결과는 그 실제 동일성·ACK/후행 CONFIRMED·실제 DB/Tx/TLS/OS/helper/키/서비스/Agent/C#·shell/UI/전체 FN06·사용자 인수/전체 계획의 완료 증거가 아니다. 같은 Primary에게 부모 S5 원 native producer/동일 Tx Binding/ATTEMPTED COMMIT/broker Delivery의 기존 선행과 최소 접점을 읽기 대조하도록 배정했고 동결6 쓰기는 유지한다.

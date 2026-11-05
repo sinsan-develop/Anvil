@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 OPEN 이후 phase current·Node/CJS/owner·C# validator·후속 전송과 private slot 인계를 소스 범위로 연결했다. 대기 STREAM·제어 접합은 소스 검수했으며 SlotReceipt 생산·shell/UI·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 실제 slot 검산 SlotReceipt 생산·shell receiver/currentSource 조립·UI controller 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
+| FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 OPEN 이후 phase current·Node/CJS/owner·C# validator·후속 전송과 private slot 인계를 소스 범위로 연결했다. 대기 STREAM·제어와 실제 SlotReceipt 생산은 소스 검수했으며 shell/UI·전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | production waiter/원 native Tx·shell receiver/currentSource 조립·UI controller 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint 687f35fb62a82a63b1443feabdadd00a659a400d에 자원 수명/호출 예산 변경4와 현황2를 보존했다. 대기 STREAM·제어 phase 접합은 §160에서 fresh20/독립 C0/I0로 한정 검수했고 다음 SlotReceipt 생산 접점을 대조한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint 687f35fb62a82a63b1443feabdadd00a659a400d에 자원 수명/호출 예산 변경4와 현황2를 보존했다. 수신·제어 접합 §160과 실제 SlotReceipt 생산 §164는 각 Main fresh20/독립 C0/I0로 소스 한정 검수했다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15409,3 +15409,20 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 기준:37c88ebe8ec405a2ca7e0a96df33cc9ba191b985. 직전 대기 수신/제어 접합의 반복 구현·시험은 하지 않는다. source4+현황2 commit 후 tracked clean·보호 비추적3이다.
 - 범위:부모 S4/wire §8의 기존 exact13 SlotReceipt를 실제 handoff/slot 검산 뒤 같은 원 Client의 private Session에 연결해 단발 생산·보관한다. 기존6경로·단일 Primary, 내부 main helper/조회 키만 한정하며 renderer/IPC/runtime entry·ACK/서버/SQL 변경0이다. 상세와 반례는 구현 통제 §161이다.
 - 미검증:아직 생산 구현·신규 시험·독립 검수가 완료되지 않았다. 실제 DB/권한/키/서비스/Agent/C#/실자료/J3/P03 R3 및 Git 복구는 제외한다. waiter production·shell/UI·OPEN 감사·미채택 ACK·전체 여정과 계획은 미완료다.
+
+
+## 2026-11-05 FN13/FN14 한정 후속 대조
+- 독립 읽기로 FN14 target reader/주입이 이미 구현됐음을 확인해 재구현하지 않는다. FN13 실제 중지/회수·재개와 FN14 실제 이전 확정은 합성/준비기록과 구분된 미완료이며 이번 읽기에서 새 생산 권위의 채택 근거를 확인하지 못했다. 전체 대기나 완료로 판정하지 않는다.
+- §161은 기존 Primary가 실제 handoff 성공 뒤 자동 receipt 생산의 RED부터 진행한다. Main 판단 필요0·실제 DB/권한/키/서비스/Agent/실자료 실행0, 다른 제품 동시 writer0이다. 상세는 구현 통제 §162다.
+
+
+## 2026-11-05 FN09/FN10 기존 연결과 결정 후보 분리
+- 이미 연결된 책임 세션/prepare·HUMAN 검토/확정·WAITING/일회 승인/한도정책은 재구현하지 않는다. 하위 HUMAN을 downstream 실행 권위로 전환하거나 WAITING의 실행 false를 해제하지 않는다.
+- FN10 사람 결정 저장/철회 후보4DC5269C는 조사 범위에서 미채택이며, 기존 기준·문서 보호 reader는 이미 있으나 FN10 결박/별도 정책/응답 직렬화는 미연결이다. 기존 질문·위임 결정 여부와 정확 delta 전달을 PMO에 지원 요청했다. 상세는 구현 통제 §163이다.
+- 전체 대기가 아니다. 기존 Primary는 §161 actual handoff 자동 생산의 직접 RED→GREEN1 제출 뒤 음성 반례를 작성 중이며 아직 Main/독립 최종 검수 전이다. 실제 DB·권한·키·서비스·Agent·실자료 실행0이다.
+
+
+## 2026-11-05 FN06 실제 slot 수용 영수증 생산 소스 검수
+- 판정: 기존6경로의 실제 handoff 자동 SlotReceipt 생산/보관·동일 V 조회를 Main fresh20 PASS/fail0/skip0·타입/문법2/diff exit0·raw6 전후 동일·독립 Critical0/Important0로 한정 검수했다. Primary14와 중복 합산하지 않는다.
+- 근거:private 원 OPEN Session/실제 STREAM Delivery와 owner actual slot의 단발 수용 facts를 결합한다. void-only/alias 변이/위조/교차·기한 min/축소·UUID 실패/취소/ABA/UNKNOWN/늦은 복귀를 거절하며 ID/시각/V 재생산0이다. 상세 명령·지문·RED1 및 제외는 구현 통제 §164에 있다.
+- 조치:소스6+Main 현황2만 기존 branch에 보존한다. 실제 waiter 동일 E·ACK/후행 확정·shell/UI·실환경/전체 계획은 미완료다. 동일 Primary는 원 native Tx와 broker 공급의 다음 선행을 읽기 대조한다. 실제 DB·권한·키·서비스·Agent·실자료/C#/J3/P03 R3와 Git 복구/재시도는 하지 않는다.
