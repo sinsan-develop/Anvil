@@ -10,8 +10,8 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | 역사 조회와 단발 Delivery는 Main 직접 합성·타입·지문과 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 기존 S4의 실제 수신과 slot 연결을 진행한다. 전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | desktop/Node 수신과 slot·후행 phase 접합, 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN 감사의 잔여 요구를 보존하고 ACK bodyHash 입력은 미채택 GO0이다. 자세한 범위는 구현통제 최신 절을 따른다 |
+| FN06 진행 중 | 역사 조회·단발 Delivery와 OPEN/독립 수신 연결을 Main 합성·문법/타입·지문과 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 기존 S5 화면 연결을 준비한다. 전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | STREAM 이후 보호 current·typed signer와 transport/후행 phase·UI controller의 전체 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
 | Git 보존 | 최근 소스 checkpoint f8b689fccda26ebf1bb50eaa478e6d6a3034986d에 단발 Delivery source6과 현황2를 보존했다. 같은 Primary가 다음 수신 연결을 작성한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
@@ -15271,3 +15271,8 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 같은 담당자가 원 lease·Window·current·profile·ReceiveSession의 최소기한과 abort/dispose에 자동 폐기를 연결한다. 새 timeout이나 재발급은 없다.
 - 수신 owner2의 이전 I1은 독립 C0/I0로 해소됐다. OPEN 소비선3과 CJS 종단은 별도 미완료다. 잘못 제시된 DISPOSED 부활 지적은 철회했고 제품 실패로 세지 않는다.
 - 현재 owner/desktop 시험2와 OPEN 소비선3은 미커밋 작업으로 보존한다. Main 문서만 별도 checkpoint에 기록하며 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
+
+## 2026-11-05 OPEN·독립 수신 연결 소스 부분 인수
+- Main 합성8 PASS/skip0, 문법4·타입/diff0, raw7 전후 동일과 독립 C0/I0를 대조했다. 명령·지문·시간은 구현통제 §113에 있다.
+- REGISTERED owner에서 OPEN 수신까지, 별도 Delivery에서 보호 source와 slot까지 실제 소스 호출선을 합성으로 확인했다. 전체 STREAM·ARM·ACK·실제 TLS/키/helper·DB는 미완료다.
+- 같은 Primary는 기존 S5 화면 연결을 준비하고 Main은 보호 current의 정확한 공개 delta 후보를 준비한다. 새 계약은 아직 채택하지 않았다.

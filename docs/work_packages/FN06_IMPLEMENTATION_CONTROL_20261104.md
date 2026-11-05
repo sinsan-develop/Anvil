@@ -1110,3 +1110,40 @@ Primary가 §108 보완 전에 작성한 기존 OPEN 소비선3은 보존한다.
 검토 중 제시된 dispose 뒤 OPENED 부활 지적은 철회됐다. 기존 공통 check의 DISPOSED 검사가 이미 차단하므로 그 부분은 불필요하게 다시 수정하지 않는다. 이는 검토 준비 오류이며 제품 실패로 세지 않는다.
 기존 native OPEN 원문과 origin/CA/profile·서명·cap·최소기한을 유지한다. 새 인증·공개 필드·IPC·export·실제 키·DB·서비스·Agent 실행은 없다.
 CJS facade와 실제 owner의 OPEN 종단은 이 Core 보완 이후에도 별도 미완료다. Main 문서·index·Git·보호 자료는 수정하지 않는다.
+
+## 111. OPEN 수신7의 최종 한정 검토
+기존 읽기 검토자는 §110 보완 뒤 Core의 성공 credential 자동 폐기와 CJS facade, 추가된 실제 REGISTERED owner 종단 시험을 확인한다. 앞선 receiver I1 해소와 동일 본문은 반복 검토하지 않는다.
+원 abort·lease/Window/current/profile/ReceiveSession 최소기한과 timer/listener 정리, source/원 Session과 await 뒤 현재성·기한, 재서명·자동 HTTP 재호출0을 확인한다. 원 wire와 default 거절을 유지해야 한다.
+추가 owner 시험은 실제 기존 signOpen/typed driver/CJS/Core/HTTPS driver/decoder를 소비하는지 확인한다. 합성 fake socket을 실제 TLS나 키/helper 실행으로 승격하지 않는다.
+CJS facade와 Core의 module export·IPC·공개 원형을 넓히지 않아야 한다. 본문 전후 지문을 수거하고 수정·시험·실환경 실행은 하지 않는다.
+Main은 안정 source7에서 직접·인접·memory package·문법/타입/diff를 검증한다. Primary는 이 고정 중 제품과 시험을 쓰지 않는다. 이후 다음 미완료 단계는 Main이 전달한다.
+
+## 112. 검증본 보존과 다음 기존 S5 화면 연결 준비
+Main이 source7의 직접/인접·종단·memory package 합성8 PASS/skip0, 문법4·타입·diff exit0과 전후 지문 동일을 확인했다. 독립 최종 C0/I0이며 source7은 index에 분리 보존했다. Primary의 제품 쓰기 고정은 해제한다.
+같은 Primary는 다음 원 WI S5의 NativeBoundaryPreparationPanel.tsx와 native-boundary-preparation-api.ts를 읽기 대조한다. 현재 Window 선택·보호 GET·Offer·ARM ref 확인과 원 최종 command/header의 미연결 지점을 확인한다.
+부모 wire와 승인 화면 기준 안에서 바로 구현할 단위와 정확한 기존 시험을 반환한다. 새 current 계약을 기다리며 전체를 멈추지 않는다. 기존 legacy와 원 command/approval hash, UNKNOWN 보존을 유지해야 한다.
+이전 Core 수신 단위의 새 IPC 금지는 그 내부 helper 범위다. 원 wire §10에 이미 채택된 local IPC5종을 전체 S4에서 금지하는 것으로 확대하지 않는다. 그 원형 밖의 IPC나 필드는 만들지 않는다.
+현재 준비는 읽기만 하며 Main 문서·index·Git·보호 자료는 수정하지 않는다. 실제 DB·권한·키·서비스·Agent 실행은 없다.
+
+## 113. OPEN과 독립 수신 연결의 소스 검증
+Main 2ef28a의 안정7 직접/인접·종단·memory package 합성은 2+2+3+1=8 PASS, skip0, exit0이다. 그룹 시간은 288.6166/561.8936/1412.3026/389ms이다. CJS 문법4와 타입·diff도 exit0이다.
+검사 전후 raw7은 같았다. 독립 §108과 §111은 각 I1 해소·한정 C0/I0이다. 실제 REGISTERED source부터 원 Session·CJS/Core·HTTPS driver·decoder로 연결했고, 별도 Delivery decoder에서 보호 source·실제 slot으로 연결했다.
+대기 중·성공 후 secret은 abort/종료/원 최소기한에 폐기한다. 늦은 source나 응답은 비밀과 slot을 되살리지 않는다. 원 재서명/HTTP 자동 재호출0과 모듈 closure14/export8/builtin3을 유지한다.
+합성 fake socket과 시험 키 재료만 사용했다. 실제 TLS·C# helper·계정 키·DB·서비스·Agent 실행 증거가 아니다. 전체 OPEN→STREAM→ARM→Delivery→slot·ACK 인수는 미완료다.
+직접 명령은 공통 Node 경로 C:/Program Files/nodejs/node.exe에서 실행했다.
+`--experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^원 Session OPEN 수신은|^OPEN pre-authority' tests/unit/FN06/native-first-receive-client.test.ts`
+`--test --test-name-pattern='^CJS OPEN 수신 facade는|^desktop OPEN frame facade는' tests/desktop/native-first-receive-owner.test.cjs`
+`--experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^REGISTERED 첫 수신 receiver는|^native 실제 REGISTERED→Client|^실제 REGISTERED OPEN source와' tests/desktop/desktop-trust-registration.test.cjs`
+`--test --test-name-pattern='^실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs`
+`--check` 대상은 owner·CJS facade·위 desktop 시험2다. 타입은 `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json`이며 `git diff --check`도 실행했다.
+| 경로 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 22718 | 0A70A384B1E8081D2F962457C75299557D1BD1B5D559808134353F3151784D05 |
+| apps/connector/runtime/native-preparation-https.ts | 29411 | 0C47BB1E8AB5997BCBB40AB844D6A88B46A0F64E6EEAE2030B7405DEDEEC2AF8 |
+| apps/desktop/src/native-first-receive-client.cjs | 8333 | A9BE97188BDDBAAD0D34360747AA1BCD841ADA422E40661359A475FB1817E45A |
+| apps/desktop/src/trust-enrollment-owner.cjs | 69953 | 730FC447A1FB8DA1021687DD5FABF6A7E01B646C12FD55D19E5D4A0C47123CA5 |
+| tests/desktop/desktop-trust-registration.test.cjs | 100794 | 69E918694B17CEF9F44C4F2EC5BC4DC256DB070817C927105F01751F82C0B721 |
+| tests/desktop/native-first-receive-owner.test.cjs | 22423 | 95B566B47DFF78B82F55C429B89BB1CEA2956419659F99A238BF267F3C67D325 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 27073 | 3D534C33D416B8C8A03DB9649AE8F955E7EAE32D06B77AAA7E243BCA0E9B7730 |
+이전 noEmit 오류는 OPEN WIP의 req 미구성 거절과 시험 타입의 최소 보완으로 닫았다. 철회된 DISPOSED 부활 지적은 검토 오류로 분리했다. 기존 실패를 통과로 소급하지 않는다.
+다음은 §112의 기존 S5 화면 연결과 별도로 준비하는 보호 current 후보다. 후보 방향 A는 PMO가 준비에 이견 없다고 했지만 공개 delta 채택이나 Source GO는 아니다.
