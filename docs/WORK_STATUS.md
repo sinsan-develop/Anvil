@@ -15283,3 +15283,13 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 별도 공개 phase current 후보는 독립 C0/I0와 typed frame 최대8572B/body332B를 확인했다. 기존 상한은 그대로이며 후보는 미채택/SOURCE_GO0이다. ProfileRead 전체 응답은 별도2MiB cap을 유지한다.
 - Main은 후보·통제·현황만 기록한다. 제품 코드는 기존 단일 Primary가 작성하며 실제 DB·권한·키·서비스·Agent·컴파일 실행과 Git 인증 복구는 하지 않는다.
 - 초기 sandbox Git 조회의 접근 오류는 elevated 읽기로 구분했다. 실제 HEAD5f468a25와 진행 중 변경을 보존하고 완료한 OPEN·독립 수신 시험은 반복하지 않았다.
+
+## 2026-11-05 OPEN 이후 보호 current A 직접 채택
+- 신산님이 후보011C3C22의 A안 계약·source-only 구현을 직접 채택했다. 정확27경로의 후속 WI94A89E2F에 결박했고 기존 담당자가 현재 GET3 단위 뒤 순차 구현한다.
+- 기존 GET3의 입력·명시 정책·고정 역사·Offer·저장효과0은 함수 지문 동일의 독립 C0/I0다. BOUND metadata는 구현 중이며 별도 검수 전까지 전체 완료가 아니다.
+- 실제 DB·권한·키·서비스·Agent·C# 컴파일과 별도 ACK 변경은 제외한다. 새 승인을 실제 사용 가능·실환경 검증으로 승격하지 않는다.
+- Main이 존재하지 않는 C# 경로 한 곳을 추정해 읽지 못한 준비 오류1은 rg 파일 목록으로 바로 확인했다. 해당 경로 수정이나 제품 실패는 없었다.
+
+## 2026-11-05 BOUND metadata 검수 보완
+- 기존 담당자는 GET3와 실제 current 소비의 합성 검증을 제출했다. 독립 검수에서 readonly query의 SELECT INTO 전달 I1을 확인해 합성 RED와 최소 보완을 같은 담당자에게 맡겼다.
+- 실제 DB 실행은 없었다. I1 해소·독립 재검수·Main 직접 검증 전 인수나 후속 단위 전환은 하지 않는다.

@@ -1213,3 +1213,20 @@ Main의 초기 sandbox git status는 work tree 접근 오류였고 elevated 실�
 PMO에 정확 후보와 공개 delta를 보고하고 신산님께 A안 계약·source-only 구현의 비동기 직접 결정을 한 번 요청했다. 부모의 OPEN 전용 current와 새 non-OPEN current를 구분하는 결정이며 기존 STREAM signer를 재승인받는 것이 아니다.
 응답 전 후보 코드·SQL을 작성하지 않는다. ACK bodyHash의 별도 미채택 상태를 이 결정에 포함하지 않는다. 기존 GET3와 Web 연결 등 이미 승인된 구현은 계속한다.
 이번 Main 문서 추가의 CRLF 경계로 diff check가 trailing whitespace를 지적했다. 추가 절과 접점 줄바꿈만 LF로 보정해 재검사 exit0을 확인했다. 제품·시험 파일과 Git 설정은 변경하지 않았으며 준비 오류1로 분리했다.
+
+## 122. OPEN 이후 보호 current A 직접 채택
+신산님이 call_e9d657ed2c54493786f052abe63e8297 item0에 A안 계약·source-only 구현 채택으로 답했다. 후보011C3C221E5DDB8086D7FB8A11214C29C0EAC9E6C956840E1BC5325CE53C281C를 그대로 보존하고 새 작업지시서에 채택을 결박했다.
+docs/work_packages/FN06_POST_OPEN_PHASE_CURRENT_SOURCE_WI_20261105.md SHA256 94A89E2FD40AFC7EC174D312944DE7ED25D0948871E6BAB3BCFDD63460F7087B, 정확27경로·기존 부모 부분집합이다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 제외한다.
+기존 Primary는 현재 GET3와 metadata를 먼저 안정 검수·분리 보존한 뒤 같은 writer로 이 단위를 이어간다. 시작 commit은 그 실제 검증본을 Main이 결박한다. Main은 구현하지 않는다.
+기존 GET3의 route/입력·정책·고정 역사·Offer·효과0은 함수 시작/종료 동일 지문의 독립 C0/I0다. BOUND metadata 로직은 아직 이 판정에서 제외한다. 전체 GET3 완료로 올리지 않는다.
+같은 검토자는 새 WI의 승인 후보 일치·허용목록·제외·TDD 순서만 읽기 검토한다. 제품 수정이나 실제 실행은 없다.
+
+## 123. 후속 WI의 허용목록 한정 보정
+독립 WI 검토 C0/I1은 선택한 tests/desktop/desktop-trust-key-host-build.test.cjs가 부모 목록에 없다는 한 건이다. 그 불필요 선택 시험을 제외해 정확26경로로 좁혔다. 제품·공개 계약·검수 기준은 바꾸지 않았다.
+현재 WI SHA256 A3FA88411E2DA2614CBD2CF7B5CA698E2AE08066B5AB27B8F51B1EA755157DB0다. §122의27경로·94A89E2F는 보정 전 이력으로 보존한다. 승인 후보011C3C22는 불변이며 추가 권한을 요청하지 않는다.
+기존 검토자는 목록 보정만 scoped 재검토한다. 현재 Primary의 GET3 구현은 계속하며 후속 단위는 원 순서대로 검수·분리 보존 후 착수한다.
+
+## 124. BOUND metadata 검수 보완
+독립 I1: readonly query가 SELECT INTO를 차단하지 않아 원 query로 전달한다. 실제 DB 실행은 없었다. 같은 Primary에게 합성 RED와 효과 전 거절의 최소 보완을 지시했다.
+안정14의 기존 제출은 보존하되 이 I1 해소 전 인수하거나 후속 구현으로 전환하지 않는다. 정상 CurrentSource·등록·writer·N 복원과 원 기한/정착·default 정책을 유지하고 정확 명령과 raw 지문을 다시 받는다.
+후속 WI 목록 보정은 scoped C0/I0다. 현재 최종 WI A3FA8841·26경로이며 후보011C3C22와 직접 승인 범위는 불변이다.
