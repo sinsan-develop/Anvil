@@ -1281,3 +1281,15 @@ Main 명령: node --experimental-transform-types --disable-warning=ExperimentalW
 contracts/runtime/native-first-receive-v1.ts 25365B/11D8A9A161C8E70666D19251F761B596F9ACE6A130674213502BE7578C381B28, apps/server/modules/executions/native-first-receive-input.ts 14245B/8C9BD676163D58D75EA3BB119671EEC651D52B31240E96F398481AFF0D62AC90, tests/unit/FN06/native-first-receive-contract.test.ts 20217B/F33C37C58A6B2C05756632FD33910C8CA603E4E2ED650CF26AE6FA1DD4704857이다.
 exact 입력/current·phase/head/null·원 tuple/profile·2MiB cap·Proxy trap0과 기존 OPEN 분리만 이 단위에서 인수했다. 새로운 공개 endpoint의 실제 오류·SD/current 생산·typed 서명/HTTPS 소비 전체는 아직 미완료다.
 이3경로만 index에 분리했고 Main 기록2와 보존한다. 같은 Primary는 실제 HUMAN route/SD/current 생산선을 계속 작성한다. Main 코드 쓰기·실제 DB/권한/키/서비스/Agent/컴파일·ACK delta는 없다.
+
+## 129. BOUND 목적 분리의 직접 영향 시험 추가
+Primary가 작성 전 tests/unit/FN06/native-preparation-store.test.ts 한 경로를 요청했다. 이 파일은 원 부모57 안에 있고 현재 SHA256 BB6ADDBC17719F296218D95465A25E1BDDB53A90D343B7C146C9B2C6394FADD1을 실제 확인했다.
+Main은 기존 nativeFixture·실제 CurrentSource/등록/writer/N 복원 시험의 새 NativeRead 목적 검산만 최소 확장하도록 허용한다. 기존 GET3/default guard·기한·정착·거절 단언을 그대로 유지한다. 대형 fixture 복제나 실제 소비 함수를 성공 대역으로 바꾸지 않는다.
+후속 WI26과 §127 제품 추가1·이 시험 추가1이 현재 정확 허용범위다. 새 공개 계약·정책·실제 권한을 추가하는 변경이 아니며 필요한 직접 영향 검증이다. 같은 Primary 단일 writer와 실제 DB·키·서비스·Agent·컴파일 제외를 유지한다.
+
+## 130. phase HUMAN 읽기 생산선의 부분 본문 검토
+기존 검토자에게 새 SQL3와 Store 읽기 본문만 독립 검토로 배정했다. Node ARM/BOUND 공급 검산은 아직 미완료이며 전체 endpoint나 실제 SQL 인수가 아니다.
+SQL 경계는 CREATE FUNCTION부터 END;$$; 포함·뒤 LF 제외다. fn76_phase_read_until 1639B/1F5B48C4C948F84B4AB6CBB372A0E894410C91EF5D146989FD313B0AB560E748, fn76_phase_profile 1996B/200117FE58CDA12AD8084C00F481BDE277C2D63618F167E27CCF238BDEAF7515, native_receive_phase_signing_current 15722B/CD97EC727983B4A38C99E080FA576D4E87CB6A09DB9B254B0D89EB79695397AC이다.
+Store.readPhaseSigningCurrent는5057B/5D3076C94510F45B832FA34B10D1548D7C988E5D4113FB16FC33E707C67910F1이다. NativeRead/원 SID·원 fullref·미소비 ticket·원 closure·기한·효과0과 strict 반환/Tx를 대조한다.
+Primary는 다른 접점 구현을 계속하며 이 본문을 유지한다. 안정 본문 검토를 실제 PG/Tx/RLS·전체 서명 흐름 합격으로 올리지 않는다. 실제 실행은 없다.
+§130의 SQL3·Store 읽기 본문 독립 판정은 시작/종료 지문 동일의 C0/I0다. Store5057B 지문은 메소드 뒤 LF 포함 기준이며 SQL은 지정한 경계를 따른다. NativeRead·원 SID/fullref·미소비 ticket·phase 첫사용·등록/profile/writer·Binding/N/Delivery 역완결·기한·조회 효과0을 확인했다. Node ARM/BOUND 공급 검산·전체 endpoint·실제 PG/권한 검증은 이 판정에 포함하지 않았다.
