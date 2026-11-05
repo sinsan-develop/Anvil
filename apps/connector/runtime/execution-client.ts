@@ -6,26 +6,34 @@ import {ClientFailure,clientBase64,clientHash,clientReject,clientSame,readClient
 export interface SyntheticClientAuthority{transport:'SYNTHETIC_ONLY';current(request:{scope:ClientScope;requestKey:string;target:unknown}):Promise<unknown>}
 type Purpose='EXECUTION_CHALLENGE_REQUEST'|'EXECUTION_RECOVERY_CHALLENGE_REQUEST'|'EXECUTION_REQUEST_PROOF'|'EXECUTION_RECOVERY_REQUEST_PROOF';
 export interface SyntheticClientSigner{transport:'SYNTHETIC_ONLY';sign(purpose:Purpose,bytes:Buffer,signal:AbortSignal):Promise<string>}
+export interface SyntheticClientInvocation{scope:ClientScope;requestKey:string;target:unknown;request:unknown;operation:unknown;issued:unknown;deadline:number}
 export interface SyntheticClientTransport{
  transport:'SYNTHETIC_ONLY';
- challenge(scope:ClientScope,request:unknown,signature:string,signal:AbortSignal):Promise<unknown>;
+ challenge(scope:ClientScope,request:unknown,signature:string,signal:AbortSignal,invocation?:SyntheticClientInvocation):Promise<unknown>;
  /** MATERIAL은 bytes 대신 sync한 partReceipt, COMMANDS는 고정 page, STOP_INSTRUCTION은 회수 중지 봉투/null이다.
   * 읽기의 bodyRaw는 내부 metadata다. wire body는 null이며 COMMANDS만 afterCursor/waitMs query를 보낸다. */
- perform(scope:ClientScope,operation:{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS'|'STOP_INSTRUCTION';commandId:string|null},challengeRef:unknown,proof:unknown,signature:string,bodyRaw:string,signal:AbortSignal):Promise<unknown>;
+ perform(scope:ClientScope,operation:{kind:'PERMIT'|'OBSERVATIONS'|'MATERIAL'|'COMMANDS'|'STOP_INSTRUCTION';commandId:string|null},challengeRef:unknown,proof:unknown,signature:string,bodyRaw:string,signal:AbortSignal,invocation?:SyntheticClientInvocation):Promise<unknown>;
 }
 class StorageFailure extends Error{}
 /** P1 요청 전송 기록 연결이다. 실제 키/token/HTTP·OS/Agent 기본값이 없고 UNKNOWN은 자동 재전송하지 않는다.
  * 결과 ACK는 보존만 하며 전체 spool 감사·삭제나 writer 회수/실행 완료를 확정하지 않는다. */
 export class SyntheticExecutionClient{
  readonly store:SyntheticClientStore;readonly authority:SyntheticClientAuthority;readonly signer:SyntheticClientSigner;readonly transport:SyntheticClientTransport;readonly clock:()=>number;readonly timeoutMs:number;
- constructor(store:SyntheticClientStore,authority:SyntheticClientAuthority,signer:SyntheticClientSigner,transport:SyntheticClientTransport,options:{clock:()=>number;timeoutMs:number}){
-  this.store=store;this.authority=authority;this.signer=signer;this.transport=transport;if(!options||typeof options.clock!=='function'||!Number.isSafeInteger(options.timeoutMs)||options.timeoutMs<1||options.timeoutMs>10000)clientReject('CLIENT_CONFIG_INVALID');this.clock=options.clock;this.timeoutMs=options.timeoutMs;this.#ports();
+ #parentSignal:AbortSignal|undefined;#parentDeadline:number;
+ constructor(store:SyntheticClientStore,authority:SyntheticClientAuthority,signer:SyntheticClientSigner,transport:SyntheticClientTransport,options:{clock:()=>number;timeoutMs:number;signal?:AbortSignal;deadline?:number}){
+  this.store=store;this.authority=authority;this.signer=signer;this.transport=transport;if(!options||typeof options.clock!=='function'||!Number.isSafeInteger(options.timeoutMs)||options.timeoutMs<1||options.timeoutMs>10000)clientReject('CLIENT_CONFIG_INVALID');if(options.signal!==undefined&&!(options.signal instanceof AbortSignal)||options.deadline!==undefined&&!Number.isSafeInteger(options.deadline))clientReject('CLIENT_CONFIG_INVALID');this.#parentSignal=options.signal;this.#parentDeadline=options.deadline??Infinity;this.clock=options.clock;this.timeoutMs=options.timeoutMs;this.#ports();
  }
  #ports(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.exclusive!=='function'||this.authority?.transport!=='SYNTHETIC_ONLY'||typeof this.authority.current!=='function'||this.signer?.transport!=='SYNTHETIC_ONLY'||typeof this.signer.sign!=='function'||this.transport?.transport!=='SYNTHETIC_ONLY'||typeof this.transport.challenge!=='function'||typeof this.transport.perform!=='function')clientReject('SYNTHETIC_CLIENT_PORTS_REQUIRED');}
  #now(){const n=this.clock();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime()))return clientReject('CLIENT_CLOCK_INVALID');return n;}
+ #lifetime(deadline:number){if(this.#parentSignal?.aborted)clientReject('CLIENT_REQUEST_CANCELLED');if(this.#now()>=Math.min(deadline,this.#parentDeadline))clientReject('CLIENT_REQUEST_EXPIRED');}
  async #bounded<T>(work:(signal:AbortSignal)=>Promise<T>,deadline:number){
-  const wait=Math.min(this.timeoutMs,deadline-this.#now());if(wait<=0)return clientReject('CLIENT_REQUEST_EXPIRED');const controller=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined;
-  try{return await Promise.race([Promise.resolve().then(()=>{if(this.#now()>=deadline)return clientReject('CLIENT_REQUEST_EXPIRED');return work(controller.signal);}),new Promise<never>((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new ClientFailure('CLIENT_REQUEST_TIMEOUT'));},wait);})]);}finally{if(timer)clearTimeout(timer);}
+  deadline=Math.min(deadline,this.#parentDeadline);this.#lifetime(deadline);
+  const wait=Math.min(this.timeoutMs,deadline-this.#now()),controller=new AbortController();let timer:ReturnType<typeof setTimeout>|undefined,rejectAbort:((e:Error)=>void)|undefined;
+  const abort=()=>{controller.abort();rejectAbort?.(new ClientFailure('CLIENT_REQUEST_CANCELLED'));};
+  try{const cancelled=new Promise<never>((_,reject)=>{rejectAbort=reject;this.#parentSignal?.addEventListener('abort',abort,{once:true});});
+   const value=await Promise.race([Promise.resolve().then(()=>{this.#lifetime(deadline);return work(controller.signal);}),new Promise<never>((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new ClientFailure('CLIENT_REQUEST_TIMEOUT'));},wait);}),cancelled]);
+   if(this.#parentSignal!==undefined||this.#parentDeadline!==Infinity)this.#lifetime(deadline);return value;
+  }finally{if(timer)clearTimeout(timer);this.#parentSignal?.removeEventListener('abort',abort);if(this.#parentSignal!==undefined||this.#parentDeadline!==Infinity)controller.abort();}
  }
  async #current(scope:ClientScope,requestKey:string,target:unknown,ceiling=Infinity){
   this.#ports();const c=cloneV1(await this.#bounded(()=>this.authority.current({scope:cloneV1(scope),requestKey,target:cloneV1(target)}),Math.min(ceiling,this.#now()+this.timeoutMs))),now=this.#now();
@@ -72,7 +80,7 @@ export class SyntheticExecutionClient{
     if(last==='PREPARED'){
      if(this.#now()>=Math.min(Date.parse(p.request.issuedAt)+30000,Date.parse(p.authorityExpiresAt)))return unknown('REQUEST_EXPIRED');
      const deadline=await this.#current(scope,key.requestKey,p.target,Math.min(Date.parse(p.authorityExpiresAt),Date.parse(p.request.issuedAt)+30000));await append('CHALLENGE_ATTEMPTED',null);
-     try{this.#ports();const response=await this.#bounded(signal=>{this.#ports();return this.transport.challenge(cloneV1(scope),cloneV1(p!.request),p!.signature,signal);},deadline);readClientChallenge(response,p,this.#now());await append('CHALLENGE_RECEIVED',response);}
+     try{this.#ports();const response=await this.#bounded(signal=>{this.#ports();return this.transport.challenge(cloneV1(scope),cloneV1(p!.request),p!.signature,signal,cloneV1({scope,requestKey:key.requestKey,target:p!.target,request:p!.request,operation:p!.operation,issued:null,deadline:Math.min(deadline,this.#parentDeadline)}));},deadline);readClientChallenge(response,p,this.#now());await append('CHALLENGE_RECEIVED',response);}
      catch(error){if(error instanceof StorageFailure)throw error;return unknown(error instanceof ClientFailure&&error.message==='CLIENT_RESPONSE_INVALID'?'INVALID_RESPONSE':'CHALLENGE_UNCERTAIN');}
     }
     last=events.at(-1)!.snapshot.state;if(last!=='CHALLENGE_RECEIVED'||!issued||!p)return clientReject('CLIENT_LEDGER_INVALID');
@@ -80,7 +88,7 @@ export class SyntheticExecutionClient{
     try{
      let deadline=await this.#current(scope,key.requestKey,p.target,Math.min(Date.parse(issued.challenge.expiresAt),Date.parse(p.authorityExpiresAt)));const proof={requestId:p.request.requestId,...p.target,grantRef:cloneV1(scope.grantRef),credentialGeneration:scope.credentialGeneration,serverNonce:issued.challenge.serverNonce};
      const signature=await this.#sign(scope,'REQUEST_PROOF',proof,deadline);deadline=await this.#current(scope,key.requestKey,p.target,deadline);readClientProof({proof,signature},p,issued);await append('REQUEST_ATTEMPTED',{proof,signature});this.#ports();
-     const response=await this.#bounded(signal=>{this.#ports();return this.transport.perform(cloneV1(scope),{kind:p!.operation.kind,commandId:p!.operation.commandId},cloneV1(issued.ref),cloneV1(proof),signature,p!.operation.bodyRaw,signal);},deadline);if(p.operation.kind==='MATERIAL'&&this.#now()>=deadline)clientReject('CLIENT_REQUEST_EXPIRED');readClientResponse(response,p,issued,this.#now());await append('RESPONSE_RECORDED',response);return this.#result(events);
+     const response=await this.#bounded(signal=>{this.#ports();return this.transport.perform(cloneV1(scope),{kind:p!.operation.kind,commandId:p!.operation.commandId},cloneV1(issued.ref),cloneV1(proof),signature,p!.operation.bodyRaw,signal,cloneV1({scope,requestKey:key.requestKey,target:p!.target,request:p!.request,operation:p!.operation,issued,deadline:Math.min(deadline,this.#parentDeadline)}));},deadline);if(p.operation.kind==='MATERIAL'&&this.#now()>=deadline)clientReject('CLIENT_REQUEST_EXPIRED');readClientResponse(response,p,issued,this.#now());if(this.#parentSignal!==undefined||this.#parentDeadline!==Infinity)this.#lifetime(deadline);await append('RESPONSE_RECORDED',response);return this.#result(events);
     }catch(error){if(error instanceof StorageFailure)throw error;return unknown(error instanceof ClientFailure&&error.message==='CLIENT_RESPONSE_INVALID'?'INVALID_RESPONSE':error instanceof ClientFailure&&error.message==='CLIENT_REQUEST_EXPIRED'?'REQUEST_EXPIRED':'REQUEST_UNCERTAIN');}
    });
   }catch(error){if(error instanceof ClientFailure)throw error;return clientReject('CLIENT_STORAGE_UNAVAILABLE');}

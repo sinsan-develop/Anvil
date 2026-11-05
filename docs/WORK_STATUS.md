@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | HUMAN/Challenge는8b1714e5, 설치형 원 Session→Window/OPEN/STREAM/ARM→private currentSource/slot은68f954a4에 소스 한정 보존했다. 실제 OS/DB/키/Agent 인수는 아니며 다음 S5 Web5를 기존 Primary 단일 writer가 §185대로 진행한다 |
-| FN06 남은 연결 | Web 원 명령·활성 Window·Offer/ARM 연결을 구현 중이다. 미채택 ACK bodyHash·후행 terminal/확정, OPEN 감사 미결과 실제 PG/Pool/TLS/OS/키/Agent 검증은 남아 있다 |
+| FN06 진행 중 | HUMAN/Challenge8b1714e5·설치형68f954a4·S5 Web4fd0a23f와 §200 관측 원 문맥/명시 합성 owner 소스를 한정 인수했다. 실제 Agent 연결 완료가 아니며 다음 실제 소비·보호 producer 의존성을 이어간다 |
+| FN06 남은 연결 | 미채택 ACK bodyHash/후행 terminal·확정·OPEN 감사 미결, 공통6능력 제품 factory/registry와 실행 권위·보호 producer의 미구현이 남아 있다. 실제 PG/Pool/TLS/OS/키/Agent 검증도 미실행이다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최신 소스68f954a4를 기존 branch에 보존했다. 보호 비추적3을 유지하고 다음 Web5 착수 기록만 별도 보존한다. private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
+| Git 보존 | S5 Web4fd0a23f 이후 관측 소비 source4·현황2를 기존 branch의 local checkpoint로 보존한다. 보호 비추적3 유지·private 동일성/PR/병합 미확인, 인증 복구/push 재시도0이다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15651,3 +15651,55 @@ Main1efba4 flow15 PASS/fail0/skip0·390.3984ms,5bbe28 직접영향Panel15+실제
 | tests/unit/UI11/native-first-receive-flow.test.ts | 22011 | 68B950AE052AC90F438D69A60FF8E5001769AA383653F92F2D459AA7742BF476 |
 S5 전달준비의설치형/서버/Web 소스호출선을연결했으나전체FN06/FN08완료가아니다. 미채택ACK bodyHash·후행terminal/확정·OPEN감사미결, §187공통6능력 제품factory/registry와실행권위/보호producer의미구현, FN07실제Claude결박/소비·실제DB/OS/TLS/키/Agent·사용자인수는남아있다. 이를정밀검증이월이나완료로숨기지않는다. 전체작업계획목표는ACTIVE이며다음기존범위내소비선의정확내부계약을주도해준비한다.
 정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/UI11/native-first-receive-flow.test.ts 와같은node의 --test tests/unit/UI11/native-boundary-preparation.test.ts tests/unit/UI11/native-boundary-preparation-app.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다.
+
+## 195. 다음 관측 소비 owner의 내부 계약 기술안 준비 지시
+기존Primary가읽기전용기술안을준비한다. 기준은4fd0a23fe3d549cd00b1c1f3f8dcafc68c5ef2d0이며S5 Web5는소스인수완료·재구현0이다. §187/189의관측spool→client→HTTPS미연결에대해 실제 execution-observation-spool.ts, execution-client.ts/ledger, execution-observation-https.ts와 execution-observation-http-v1.ts·원증빙/보호current/signer/store source를읽어정확한내부소유/공급/수명계약과최소파일을도출한다. 선언된DI를실제보호producer처럼꾸미거나단순wrapper를전체제품완료로세지않는다.
+구체적으로challenge(request/signature)와perform에원request·issued challenge·operation·proof·signature·requestExpiresAt을어느동일owner/식별로보관·대조/복구할지닫는다. 원journal 재시작·이미시도/UNKNOWN/기록결과의재발행0, 원scope/generation/requestKey/target·현재권위·credential/signer/부모기한·동시성·await취소/close/회수를대조한다. store exclusive중재진입deadlock이나원요청과다른challenge를사용하는설계를하지않는다. caller가선언한current/보호credential을실물권위로올리지않고실제존재하는producer/없는producer를명시한다.
+기존SyntheticExecutionClient의SYNTHETIC_ONLY와false/NOT_AUTHORIZED를그대로보존하고새기본실HTTP/권한/키생성·자동등록·실제Agent/DB/서비스/OS를추가하지않는다. 필요포트가새공개DTO/인증/서명목적·영속원형변경인지, 기존승인안의private조립/파일배치인지구분한다. 내부Source계약으로닫히는경우에는코드로실제spool소비선을잇는한업무단위와직접정상/중요실패검수를제안한다. 아직보호producer가없으면미구현의존으로남기고실제제품완료주장0이다.
+이단계는제품/시험/문서쓰기·실행/SDK조회/설치0이다. 정확한심볼/필드·소유자/수명/오류/재시작의결정표와최소허용파일후보·기존승인근거·새결정필요사항을Main에게반환한다. Main이기술안검토·정확범위기록을마치기전코드GO0이며작업계획전체는ACTIVE로유지한다. Main5a44a7의추정contract경로부재1은목록32fafa로정정한조회오류이며제품실패로세지않는다.
+
+## 196. 관측 원 문맥 전달과 명시 합성 조립의 내부 한정 지시
+기준4fd0a23f, §195 Primary 기술안과 독립 검수 경계를 Main이 대조했다. 기존 spool.sync→client.execute는 이미 연결되어 재구현하지 않는다. 현재 누락은 원 journal callback이 소유한 request/전체 issued/operation/최소기한을 전송 소비자에 전달하는 내부 접점이다. transport가 같은 store.exclusive/readRecorded에 재진입하거나 휘발 Map의 이전 challenge만으로 재시작하지 않는다.
+Main 판단: 새 공개 HTTP/인증/서명목적/영속 원형 변경 없이 검산된 invocation 문맥을 추가하고 명시 합성 driver로 기존 실제 HTTPS 코드까지 소비하는 한정 조립은 기존 P1·관측 HTTPS source 승인 안이다. 이는 실제 Agent 제품 factory나 보호 producer 구현을 대신하지 않는 합성 연결 검수용 소스다. SYNTHETIC_ONLY 포트에 실제 기본 HTTPS를 연결하는 것은 금지한다. 새 owner는 합성 표시와 request 함수를 필수로 명시받고 기본 driver/환경 fallback이 없어야 한다. 기존 ExecutionObservationHttpsClient의 실제 driver 코드는 변경하거나 성공 대역으로 대체하지 않는다.
+허용 source/test4는 apps/connector/runtime/execution-client.ts(기존), apps/connector/runtime/synthetic-observation-delivery-owner.ts(신규), tests/unit/FN08/execution-client.test.ts(기존), tests/unit/FN08/synthetic-observation-delivery-owner.test.ts(신규)다. ledger/spool/HTTPS/http계약/SQL·다른source와보호비추적3은불변이다. Main은코드/시험수정0이고기존Primary만단일writer다.
+Client의 기존호출은호환보존하며 challenge/perform의 선택적 내부 invocation 문맥에 원 scope/requestKey/target/request/operation/전체issued와현재최소기한을 같은exclusive에서복제결박한다. challenge에는issued null, perform에는원전체issued필수다. callable문맥이별도authority나영속자료가아니다. owner는원고정scope·원operation OBSERVATIONS/null command·동일request와issued/proof/target/hash를검산한private포트만client에공급하고외부에transport를노출하지않는다. CHALLENGE_RECEIVED재시작은원journal복원문맥을소비한다. 기록된UNKNOWN/RESPONSE_RECORDED는원결과만반환하고새current/sign/challenge/perform0, 시도기록은기존UNKNOWN정착을보존한다.
+owner는고정scope/credential기한·명시합성current/signer/store와명시requestdriver를받아실제spool.sync→client→ExecutionObservationHttpsClient.challenge/observations→원decoder/ledger를소비한다. caller가원request/challenge를별도인자로주입하거나다른owner문맥을사용하지못하게한다. HTTP관측응답에없는SYNTHETIC_ONLY표식이client모델에필요하면합성driver조립경계에서만명시적으로부가하며그표식은원서버인증/내구성/실제Agent사실의증거가아니다. 실제서버응답원형을변경하거나권위true를제거해합격시키지않는다.
+종료/취소는owner의원lifetime으로수렴한다. 필요한Client옵션의선택적parent signal/deadline은이번owner호출에만공급하고기존호출기본의의미를바꾸지않는다. 각await뒤와효과직전원최소기한/원port identity/close를검산하며late응답이성공journal로돌아오지못하게한다. 진행중실송신시도는기존UNKNOWN으로보존하고자동재시도0, 종료된owner는새작업0이다. source-only의원body/credential문자열GC·실OS소거를보증하지않고소유buffer/timer/listener회수만검수한다.
+TDD: 먼저신규소비export/정상실제spool→원장→fake Node HTTP serializer/decoder경로RED를확인한다. 정상challenge/observation정확body/header·원서명과ACKprefix내용대조, CHALLENGE_RECEIVED재시작의challenge0·같은issued, UNKNOWN/기록결과재조회효과0, 다른scope/target/request/issued/current기한·port교체, append실패/불명, 중복동시sync·close/abort/기한/늦은응답을검산한다. 재진입대역은동일lock재호출시즉시실패해deadlock을숨기지않는다. 입력실패와최초전송뒤불명을구분한다. 실제SDK/Agent·socket/listener/DB/키/서비스/파일QA0이며시험은메모리만이다.
+Primary는먼저이정확4의시작상태/해시와작은TDD계획을보고하고구현한다. 실행은Node집중검사/직접인접기존client·spool·HTTPS/타입·diff범위이며전체회귀반복0이다. 변경diff/실제명령/exit/RED→GREEN/미실행/해시·live정리를반환한다. 코드완료뒤독립C/I검수와Main직접최소검증전인수0이다. 실제보호current/signer/실행credentialproducer·제품registry/수신등록·실제전송활성화/ACKterminal/전체계획은여전히미완료다.
+
+§196 사전 독립 검수는 C0/I0이며 실제 제품 검수가 아니다. Main ba733c의 시작 지문은 Client FEF66DEC8C2AD6A3186FA94B4BD33FF63408FDAF000E5466A67472004B931251, 기존 client시험 B5DC92C4DB446F3C524A3A3A689AB8AE5937833A32C54B3D468BACA6AC8D992C·신규2 부재다. Primary e918fa도 같은상태를확인해시험2 TEST_ONLY GO를전달했다. 원 HTTPS/ledger/spool을수정하지않는정상소비·재시작반례부터실제RED를확인한뒤제품GO를판단한다. Main의btoa미제공1은실제명령전준비오류로파일변경0이고PowerShell단일인용here-string으로보정해지시저장/diff0·문서mirror동일을확인했다. glob을경로인자로전달한rg오류는정확목록/-g로보정하며제품실패나검증PASS로세지않는다.
+
+§196 TDD 선행: Primary ff857b는 기존 정상Client 결과뒤 선택 invocation undefined인신규1 FAIL/exit1을수거했고, f0c85f는신규owner export부재2 FAIL/exit1이다. 후자는serializer/재시작검증실행이아니다. 제품Client FEF66DEC 불변·owner source미생성, 시험시작후 지문은 기존시험238C7F2BD3504D62D0D4911363AA836688A52035DFF6132BEDCE155CA9899C35/신규FCA95D42A13DB1D587C6ECEC31220B191799B04E17D56DB3307895E29D767635다. Main은정확4 PRODUCT_GO를전달했고다른source/실환경제외는불변이다. 원부모기한고정·복제문맥·underlying콜백강제종료보장0을추가명확화했다. Primary의btoa미제공1은쓰기전준비오류로분리했다.
+
+## 197. FN07 후속 의존성의 읽기 대조
+기존 remaining_execution_dependencies가 현재 codec·CODEX claim/server validator를읽어후속최소자료를정리했다. CODEX claim의원assignment/agentSession/responsibleBinding fullref·원command/envelope/HUMAN SID·sourceScopes/budget/contextBundle·permit/시도/OS근거검산은보존한다. Claude session_id/uuid를THREAD/TURN에넣거나contextDigest만으로현재권위를대체하지않는다.
+미구현은실제SDK소유호출/응답→private session capture, 원입력/command/digest/시도→실제전달상관, 실제iterator출력/session/message/digest→원입력관계, Claude보호handle writer/current reader와수명/회수/UNKNOWN경계다. 기존codec의prepareUser/capture성공은실제전달receipt가아니며result성공은ACK/서버저장/업무인수가아니다. 실제보호producer없음을유지한다.
+내부owner의불변준비/관측상관은private source계약으로좁힐수있다. 서버제출/지속/조회에는별도Claude exact claim/검증·저장계약이필요하며현재공개분기는CODEX고정이다. 새로운인증/서명목적이반드시필요하다고미리단정하지않고원EXECUTION증명재사용가능성은정확claim/current validator와함께판단한다. 이읽기표는채택/구현GO가아니며새API/SQL/권한/SDK실행0이다. §196단일writer를중단시키지않는다.
+
+§196 Main 내부 보완판정: fresh sync와만료뒤보관조회는분리한다. 같은owner의명시 readRecorded(afterSequence)는기존spool.prepareBatch에서선택한정확OBSERVATIONS operation만기존Client.readRecorded로읽는다. 원scope/port identity·close를검사하되credential만료나새current/sign/HTTP/append를요구하지않는다. 조회전용private transport는호출되면고정거절하고실제로호출하지않는다. 배치가달라졌거나원기록이없으면과거결과로꾸미지않는다. readOnly/currentAuthorityVerified:false·원불명/원결과를보존하며fresh sync는만료후거절한다. §196의sync소비원칙은새송신경로제한이며이기존역사reader소비까지막는뜻이아니다. 정확4/HTTP·영속원형·권한·실환경제외는불변이다. Primary의만료뒤UNKNOWN/기록결과조회효과0 반례를허용한다.
+
+## 198. 관측 owner 저장 대기 종료 I1 보완
+Primary owner9집중1f6a91 PASS/skip0·407.2033ms/typecec064 exit0와직접인접Client20/spool18/HTTPS8 exit0은부분증거다. 최종store HOLD→close반례0c56fb exit1에서sync외부Promise가STILL_PENDING인I1을확인했고독립담당자도같은원인을읽기확인했다. 원spool/store await전체가Client의bounded진입전미정착하면controller.abort만으로caller가끝나지않는다. 이원인1건은동일4에서보완하며현재인수0이다.
+Main은owner바깥유한race로외부약속정착·late성공/추가효과차단을지시했다. underlying저장포트강제종료/삭제는보장하지않고이미시작한append/원journal을보존한다. 외부Promise가끝나도원work가남은동안점유를숨기거나새sync중첩을허용하지않으며원work정착뒤에만점유회수한다. 원store불명은결과0/재전송허가가아니다.
+독립보관조회timeout가설은finally abort→늦은check로해소돼finding으로세지않는다. Main b5d00e4지문은보완전이력이며최종지문으로승격하지않는다. Primary가owner시험15601B부터동일HOLD반례를추가한prefix는독립검산불변이다. 실제환경/SDK/키/DB/권한/서비스/Agent0·Main코드쓰기0·범위확대0이다.
+
+## 199. 관측 owner 최종 검수의 초기화 오류 보완
+Main0a81d1의동결4 직접집중검사는Client20+owner11 고유31 PASS/fail0/skip0·616.077ms/exit0,1c25a9타입0/211ea5diff0이다. 이는be8420의보완전지문근거이며이후변경의최종PASS가아니다. 직접인접spool18/HTTPS8은Primary검증으로구분하고중복합산하지않는다.
+독립최종4는HOLD I1 Addressed를확인했으나별도초기화I1로C0/I1/M0다. sync의cancelled Promise생성후race연결전HTTPS생성자가잘못된CA/origin/credential로throw하면finally abort가미처리거절을남길수있다. 최소정적반례는ca빈문자열이며실행재현전source finding이다. 원sync오류를catch해도별도cancelled거절이남는경계다.
+Main은같은owner source/test2만동결해제해실제RED→최소보정·원고정오류/HTTP0/미처리거절0/점유회수반례를지시했다. Client2지문AB6C9E1A/0F5DAF19는동결유지하고HOLD점유보완·원journal·기존guard를보존한다. 초기화I1은HOLD와다른원인이며같은실패3회로합산하지않는다. 실제환경실행0·Main코드쓰기0·전체인수0이다.
+
+## 200. 관측 원 문맥·명시 합성 owner의 소스 한정 인수
+§199의초기화I1은제품보정으로해소한오류가아니라독립검수오판으로철회됐다. 원finally가listener제거뒤abort하므로생성자거절에서cancelled가reject되지않는다. Primary9ee686 신규1 PASS/skip0/exit0와Main65feaa 같은1 PASS/skip0·227.1758ms/exit0으로원오류/IO0·미처리거절0·재호출을확인했다. 제품B380F1BF 불변·추가시험1만보존하며임의guard/refactor0이다. 독립최종 C0/I0/M0, 기존HOLD I1 Addressed다.
+Main0a81d1의Client20+owner11 고유31 PASS와이번추가1을합쳐현재제품지문에서고유32를검증했다. 모두한번에다시실행한fresh32라고부르지않으며Primary반복결과를합산하지않는다. 추가시험후132027 타입exit0·66c71d diffexit0·aa7f6c 최종4지문과보호비추적3 불변·빈index를확인했다. 직접인접spool18/HTTPS8 PASS는Primary결과로구분한다.
+이번source는원journal exclusive에서검산한request/전체issued/operation·최소기한을선택invocation으로복제전달하고,명시SYNTHETIC_ONLY driver를필수로하는owner가실제spool→Client→기존HTTPS serializer/decoder를소비한다. 기본실HTTP/환경fallback0·원journal재진입0·CHALLENGE_RECEIVED복원·시도기록UNKNOWN/보관결과의재발행0·만료뒤명시readRecorded의효과0을확인했다. 기존무옵션Client성공signal 비abort·원문맥변조격리도보존했다.
+원HOLD/timeout때외부약속은유한정착하지만underlying저장작업은강제종료하지않는다. 원work가남으면sync/readRecorded BUSY를유지하고실제정착handler만자기점유를회수한다. 이미시작한append/원journal을보존하며late외부성공/새전송0이다. 시험은메모리store/fakeNode요청만사용하고시험종료live/pending0을수거했다.
+실제보호current/signer/실행credential producer·공통6능력제품factory/registry·실제전송활성화와서버등록은미구현이다. 실제DB/Tx/RLS/TLS/OS/키/Agent/사용자인수는미실행이며합성조립을완성제품이나실제관측으로승격하지않는다. ACK/후행terminal/확정·OPEN감사미결도유지한다. 전체계획은ACTIVE/미완료다.
+정확4 source/test와Main현황2만기존branch에local checkpoint로보존한다. private동일성/push/PR/main병합미확인·인증복구/재시도0, 보호비추적3/다른source·사용자자료0이다. 복구는이번소유4 delta한정revert이며원journal자료reset/삭제가아니다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/execution-client.ts | 14024 | AB6C9E1ADFC77CD6EC634356839804BB2CED4ED58BC24B7335BE35C37BD2BC93 |
+| apps/connector/runtime/synthetic-observation-delivery-owner.ts | 9595 | B380F1BF7EBFFD6F990369AC0D6F8C511E8E6DC12CCE4720BFDB992F550F1D86 |
+| tests/unit/FN08/execution-client.test.ts | 26792 | 0F5DAF19D5E89A084CE625004AD2166C2661AB628763C2EB2D35DC3606DEDC23 |
+| tests/unit/FN08/synthetic-observation-delivery-owner.test.ts | 18778 | 8CC3ED7689BDD7541386D0DE89CF4E128BAE2A3373E7A38A73755C01ACBD5151 |
+Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/FN08/synthetic-observation-delivery-owner.test.ts tests/unit/FN08/execution-client.test.ts, 같은node --test --test-name-pattern='^HTTPS 생성자 입력 거절도' tests/unit/FN08/synthetic-observation-delivery-owner.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다.

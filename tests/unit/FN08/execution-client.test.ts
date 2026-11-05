@@ -109,3 +109,23 @@ test('자료 receipt의 다른 봉투·원 bytes 혼입·회수 scope는 완료/
  for(const fault of ['receiptTamper','rawBytes']){const f=fixture();f.fault(fault);const out=await f.make().execute(f.scope,f.material);assert.equal(out.state,'UNKNOWN');assert.equal(out.reason,'INVALID_RESPONSE');assert.deepEqual(await f.make().execute(f.scope,f.material),out);assert.equal(f.counts()[1],1);}
  const f=fixture('RECOVERY');await assert.rejects(f.make().execute(f.scope,f.material));assert.deepEqual(f.counts(),[0,0,0]);
 });
+
+
+test('관측 transport의 선택 invocation 문맥은 같은 journal의 원request·전체issued·최소기한을 전달한다',async()=>{
+ const f=fixture(),originalChallenge=f.transport.challenge,originalPerform=f.transport.perform;let challengeContext:any,performContext:any;
+ f.transport.challenge=async(...args:any[])=>{challengeContext=args[4];return originalChallenge(...args);};
+ f.transport.perform=async(...args:any[])=>{performContext=args[7];return originalPerform(...args);};
+ const result=await f.make().execute(f.scope,f.observations),events=[...f.streams.values()][0]!,prepared=events[0].snapshot.payload,issued=events[2].snapshot.payload;
+ assert.equal(result.state,'RESPONSE_RECORDED');assert(challengeContext,'challenge는 원journal invocation을 전달해야 한다');assert(performContext,'perform은 전체issued 복원문맥을 전달해야 한다');
+ for(const c of [challengeContext,performContext]){assert.deepEqual(c.scope,f.scope);assert.equal(c.requestKey,events[0].snapshot.requestKey);assert.deepEqual(c.request,prepared.request);assert.deepEqual(c.operation,prepared.operation);assert.deepEqual(c.target,prepared.target);assert(Number.isSafeInteger(c.deadline));assert(c.deadline<=Date.parse(prepared.authorityExpiresAt));}
+ assert.equal(challengeContext.issued,null);assert.deepEqual(performContext.issued,issued);assert(performContext.deadline<=Date.parse(issued.challenge.expiresAt));assert.deepEqual(f.counts(),[1,1,2]);
+});
+
+
+test('기존 parent 없는 Client 성공은 signer·transport signal을 새로 abort하지 않으며 invocation 변조는 원 journal을 바꾸지 않는다',async()=>{
+ const f=fixture(),signals:AbortSignal[]=[],challenge=f.transport.challenge,perform=f.transport.perform,signer=f.signer.sign;
+ f.signer.sign=async(...args:any[])=>{signals.push(args[2]);return signer(...args);};
+ f.transport.challenge=async(...args:any[])=>{signals.push(args[3]);const c=args[4];assert(c);c.request.requestId=randomUUID();c.operation.bodyRaw='{}';c.scope.executionGeneration=99;c.deadline=0;return challenge(...args);};
+ f.transport.perform=async(...args:any[])=>{signals.push(args[6]);const c=args[7];assert(c);c.issued.challenge.serverNonce='changed';c.request.target.path='/wrong';return perform(...args);};
+ const result=await f.make().execute(f.scope,f.observations);assert.equal(result.state,'RESPONSE_RECORDED');assert.equal(signals.length,4);assert(signals.every(s=>s.aborted===false));const rows=[...f.streams.values()][0]!;assert.equal(rows[0].snapshot.payload.scope.executionGeneration,1);assert.equal(rows[0].snapshot.payload.operation.bodyRaw,f.observations.bodyRaw);assert.notEqual(rows[2].snapshot.payload.challenge.serverNonce,'changed');assert.deepEqual(f.counts(),[1,1,2]);
+});
