@@ -102,3 +102,8 @@ test('phase frame의 원 proof3초는 GET·body4초 뒤 실제 current POST를 �
  if(mode==='valid'){const result=await work;assert.equal(result.remainingMs,1000);assert.equal(posts,1);}else{await assert.rejects(work);assert.equal(posts,0,mode+'에서 원 proof 만료 뒤 POST0');}
  }
 });
+
+test('phase metadata30초는 부모 상계 안에서 원형 그대로이고 원 작업10초·부모 초과 거절은 별도다',async()=>{
+ const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts');
+ for(const overflow of [false,true]){const f=phaseProofFrame('STATE'),until=new Date(Date.parse(at)+30000).toISOString();f.challenge.snapshot.expiresAt=until;f.challenge.ref.contentHash=receiveHash(f.challenge.snapshot);f.request.expiresAt=until;const value={window:f.window,registration:{...f.current,expiresAt:new Date(Date.parse(until)+(overflow?1:0)).toISOString()},profile:humanCurrent().profile,observedAt:at,expiresAt:new Date(Date.parse(until)+(overflow?1:0)).toISOString()},view={user:{id:f.window.snapshot.human.userId,displayName:'합성 사용자',serverOwner:true},clientId:f.window.snapshot.human.clientId,csrfToken:'C'.repeat(43),expiresAt:end,absoluteExpiresAt:end,reauthUntil:end};let now=Date.parse(at),calls=0;const session={fetch:async()=>{calls++;now+=500;return new Response(receiveCanonical(calls===1?view:value),{status:200,headers:{'content-type':'application/json'}});}},client=new Client(session,'https://anvil.example',{signal:new AbortController().signal,check:()=>{}},()=>{},()=>now),work=client.phaseSigningCurrent(f.window,f.challenge);if(overflow)await assert.rejects(work,/NATIVE_RECEIVE_CURRENT_UNAVAILABLE/);else{const result=await work;assert.deepEqual(result,value);assert.equal(result.expiresAt,until);}assert.equal(calls,2);}
+});

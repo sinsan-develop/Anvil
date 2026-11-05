@@ -1396,3 +1396,52 @@ Node operation은 새 phase에 순수 typed validator를 연결하고 원 등록
 새 CSRF GET→POST와 같은 pure frame 소비는 코드·합성으로 연결했다. 기존 Session DTO를 바꾸거나 cookie를 추출하지 않았고 비밀·CA를 frame에 내보내지 않는다. 새 body transport 오류도 고정 UNKNOWN·추가 요청0이다.
 이4경로만 index에 분리 보존했다. 앞선 IO 미구현 RED2는 이 단위에서 구현됐으며 삭제/skip로 숨기지 않았다. class의 다음 순수 preparePhaseSigningFrame 위임, CJS facade/REGISTERED owner 수명 장벽·C# source/실HTTPS·전체 FN06/계획은 아직 미완료다.
 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 없다. LF/CRLF 예정 경고는 별도이며 원 설정과 raw 파일은 바꾸지 않았다. 복구는 검증한4경로의 한정 revert다.
+
+## 141. 소비 checkpoint와 CJS/REGISTERED owner 접합 배정
+검증한 소비 source4+Main 현황2는 ebf4ddc820af732b52f906e8ef09474286e6acef에 보존했다. parent38d232ba의 직접 자식이다. commit 직후 tracked clean·보호 비추적3을 확인했고 private 동일성/PR/병합은 미확인이다.
+기존 Primary가 다음 정확7경로를 같은 WI 안에서 순차 구현한다. 다른 파일은 쓰기 전 정확 근거를 반환한다.
+1. apps/connector/runtime/native-first-receive-client.ts
+2. apps/desktop/src/native-first-receive-client.cjs
+3. apps/desktop/src/trust-enrollment-owner.cjs
+4. tests/unit/FN06/native-first-receive-client.test.ts
+5. tests/desktop/native-first-receive-owner.test.cjs
+6. tests/desktop/desktop-trust-registration.test.cjs
+7. tests/desktop/native-proof-runtime-build.test.cjs
+class 내부 순수 preparePhaseSigningFrame의 기존 private typed 함수 위임은 내부 구현 접점으로 허용한다. 기존 OPEN·runtime export8/closure14/builtin3·외피9·공개 HTTP/IPC·SIGN 목적을 늘리지 않는다. clock/lease/IO 전에 raw 안전 snapshot을 검산한다.
+CJS facade는 고정 class/method descriptor와 원 Session/current/lease·await 뒤 동일성을 확인하고, REGISTERED owner는 실제 phase current/typed frame→원 operation을 연결한다. 원 등록/key/contextEpoch·최소기한을 보존한다.
+operation의 단발 결과를 owner/source/client 객체교체 전체 보장으로 확대하지 않는다. 같은 Window/Challenge UNKNOWN 뒤 새 frame/current/source/client와 invalidate/recreate의 장벽을 실제 반례로 검산한다. 기존 유한 예산·원 기한·효과 전 소비/폐기를 유지하고 새 영속/권한 계약을 임의로 만들지 않는다.
+실제 C#/HTTPS·desktop·Agent·DB/권한·키/서비스·컴파일과 ACK delta는 이번 실행0이다. 다음 C# source 접합은 현재7경로의 결과를 검수·보존한 뒤 기존 승인 WI 안에서 이어간다. Main은 같은 제품/시험을 수정하지 않는다.
+
+## 142. CJS baseline 형상과 OPEN 호환 보완
+Primary는 baseline5658fd에서 실제 client 반환4키(signingCurrent/openSigningFrame/openReceive/disposeReceive)를 과거시험이2키로 기대하는 기존 불일치를 확인했다. 새 phase1을 연결할 때 기존 실제4+새1을 exact 비교하며 includes/부분집합/skip로 바꾸지 않는다. IO0·cookie/runtime 노출0·기존 행동 단언은 유지한다.
+기존 source는 exact {signOpen}이고 TS/CJS openReceive도 exact1을 검사하므로 같은 source 객체에 signPhase를 추가하지 않는다. Main은 기존 factory/shape를 보존하는 별도 main 전용 createNativeFirstReceivePhaseProofSource→exact {signPhase}를 내부 접합으로 허용했다. 공통 생산자는 비공개·factory 고정 목적 literal이며 caller mode/일반 SIGN·module export/HTTP/IPC/renderer 경로를 추가하지 않는다.
+초기 읽기의 추정 함수 marker ValueError e90b40은 파일 쓰기 전 준비 오류1이며 실제 rg 기호로 전환했다. 제품 실패나 새 기능 RED로 세지 않는다.
+## 143. metadata TTL과 작업 예산의 분리 반례
+CJS 부재 RED94d498 뒤 연결 f7c820에서 유효한30초 current가 client read의 value.expiresAt>end에 거절됨을 확인했다. end에는 작업10초가 들어 있어 관측 metadata 부모 TTL과 실제 작업 예산을 혼동한 source 접점이다.
+Main은 metadata 부모 상계(Window/Challenge/Session/reauth·strict profile)와 작업 end(원 시작10초·외부 proof checker)를 별도로 유지하도록 지시했다. metadata30초 양성을 원형대로 수용하고 부모 상계를 넘는 값은 여전히 거절한다. remainingMs와 모든 await/최종 반환은 원 작업 예산·경과분 min이다.
+fixture를10초로 맞추거나 작업 end를30초로 늘리지 않는다. proof3초/GET4초 POST0 회귀도 유지한다. 이 보완 전30초 정상 연결과 전체 owner 흐름은 미완료이며 이전15 PASS의 범위를 확대하지 않는다. 같은 Primary가 원인 반례와 최소 보완을 계속한다.
+
+## 144. CJS·등록 owner 접합 소스 부분 인수
+Main fresh 27114d CJS8 PASS/1327.7851ms,19319a owner6 PASS/1354.0752ms,4ff6a9 TS7 PASS/335.8478ms,99e799 메모리 package1 PASS/406.8974ms다. 고유22시험·fail0·skip0이며 타입577e92·문법1a0251/68d0b9·diff468517 exit0을 확인했다. raw7 전후 동일이다.
+독립 읽기 검토 C0/I0는 순수 phase frame→고정 CJS descriptor→별도 exact {signPhase} source→기존 operation 연결과 OPEN exact {signOpen} 보존을 확인했다. metadata 부모 TTL과 원 작업10초를 분리하고 부모 초과 거절·proof3초 초과 POST0을 유지했다.
+UNKNOWN 뒤 같은 owner의 새 current/frame/source/client supplier에서도 추가 조회·서명0을 검산했다. invalidate의 원 epoch 거절과 새 owner 기본 미등록 거절은 등록 복구/OS 재시작 보장이 아니다. 기존 authority signer·IPC·operation 본문 불변과 runtime8/closure14/builtin3·외피9·SIGN 목적 보존을 확인했다.
+정확 명령:
+1. & 'C:\Program Files\nodejs\node.exe' --test tests/desktop/native-first-receive-owner.test.cjs
+2. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^REGISTERED phase source|^phase source UNKNOWN|^phase owner는|^REGISTERED owner의 첫 OPEN|^첫 OPEN owner source는|^shell 첫수신 supplier는' tests/desktop/desktop-trust-registration.test.cjs
+3. & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase current client|^phase signing frame|^phase current의 GET|^phase frame의 원 proof3초|^phase metadata30초|^OPEN pre-authority' tests/unit/FN06/native-first-receive-client.test.ts
+4. & 'C:\Program Files\nodejs\node.exe' --test --test-name-pattern='^실제 Vite 메모리 CJS는 exact14' tests/desktop/native-proof-runtime-build.test.cjs
+5. & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json
+6. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/native-first-receive-client.cjs
+7. & 'C:\Program Files\nodejs\node.exe' --check apps/desktop/src/trust-enrollment-owner.cjs
+8. git diff --check
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/connector/runtime/native-first-receive-client.ts | 34184 | 238D4809326B2DCF319F63D0A67A4A3478A2C3487291D175078C0D67D8D81225 |
+| apps/desktop/src/native-first-receive-client.cjs | 11648 | 1E0D6035D1D26F171A3DA9503B4A2250E699ADD5AFCEB345AAB237961BE82804 |
+| apps/desktop/src/trust-enrollment-owner.cjs | 71440 | 8BC6869CE2E346832FDB3DD6A3B9AE746ACF5B4403B4170D7D18600AAD169453 |
+| tests/unit/FN06/native-first-receive-client.test.ts | 43990 | ACA63F0FC565B7D69D57F4DD7BE6E6B113048B8FA1240DE9F15E6741C206BB0F |
+| tests/desktop/native-first-receive-owner.test.cjs | 29470 | 8391F21278C69C0F998E74324558E84846C579CE71D0C312B0C61285C4C28E00 |
+| tests/desktop/desktop-trust-registration.test.cjs | 114012 | A88931572E66FAFDAEE3916022FE8833BB5B7DDC427044D48EC618F385BB92DE |
+| tests/desktop/native-proof-runtime-build.test.cjs | 6658 | 9A3484498140C7788E1AE4E915CEEDBF4F6CEE9737546DB84FCF558834AED33D |
+변경6경로만 소스 보존 대상으로 삼고 runtime-build 시험은 불변 증거로만 유지한다. LF/CRLF 예정 경고4는 별도이며 설정·원문 정규화0이다. 이번 Main 읽기에서 존재하지 않는 apps/desktop/native 경로 rg1건은 준비 오류이며 WI의 실제 apps/connector/native 경로로 바로잡았다. 제품 실패·검증 PASS로 세지 않는다.
+실제 C#/HTTPS·키·서비스·Agent·DB·권한·컴파일·사용자 인수와 전체 FN06/계획은 미완료다. ACK delta·Git 복구·실제 실행0, 복구는 변경6경로의 한정 revert다. 다음 C# validator/기존 HTTPS 접합은 같은 승인 WI의 source-only 범위에서 기존 Primary가 이어간다.

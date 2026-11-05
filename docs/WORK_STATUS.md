@@ -13,7 +13,7 @@
 | FN06 진행 중 | 보호 GET3·BOUND current를 Main 합성9·타입/diff·raw14와 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 직접 채택된 OPEN 이후 phase current·typed signer 연결을 구현한다. 전체 여정과 실환경은 미완료다 |
 | FN06 남은 연결 | STREAM 이후 보호 current·typed signer와 transport/후행 phase·UI controller의 전체 접합이 남았다. OPEN 감사 잔여 요구와 ACK bodyHash 미채택 GO0을 보존한다. 실제 PG/RLS/Pool/TLS/slot 검증도 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint 38d232ba6bd16c0764d9cd9166f13a0903cf9de7에 HUMAN phase 생산선 source11과 현황2를 보존했다. client2는 후속 IO RED가 있는 WIP로 분리했다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint ebf4ddc820af732b52f906e8ef09474286e6acef에 원 Session 소비·Node operation source4와 현황2를 보존했다. 같은 Primary가 CJS/REGISTERED owner 후속 접합을 진행한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15325,3 +15325,15 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - proof 최소기한 I1을 실제 POST1 RED→0 GREEN과 독립 C0/I0로 보완했다. Main fresh15 PASS/skip0·타입/문법2/diff0·raw4 전후 동일을 대조했다. 명령·지문은 구현통제 §139~140이다.
 - 원 Session의 기존 CSRF GET→새 current POST→순수 typed frame과 Node operation의 원 등록/key/driver/crypto·operation 단발 key를 합성으로 확인했다. owner/source/client 객체 교체 장벽·C#·실HTTPS·실제 DB/키/Agent·전체 FN06/계획은 미완료다.
 - 검증한 source4와 Main 기록2만 보존하고 기존 Primary가 다음 CJS facade/REGISTERED owner 소비를 순차 구현한다. 기존 OPEN·다른 SIGN·공개 DTO·실제 실행 제외는 유지한다.
+
+## 2026-11-05 CJS·owner 접합 반례 보완 중
+- 기존 형상시험의2키 기대와 실제4키 불일치 baseline5658fd를 새 기능 RED와 구분했다. 기존4+새 phase1을 exact 검산하며 행동/보안 단언은 유지한다.
+- 기존 exact {signOpen} 호환을 위해 별도 main 전용 phase source의 exact {signPhase}를 내부 고정 목적 생산자로 연결한다. module export/HTTP/IPC·renderer 경로는 추가하지 않는다.
+- 유효 metadata30초를 작업10초 상계로 거절하는 f7c820을 확인해 두 상계를 분리 중이다. 원10초·proof 최소기한·부모 overflow 거절은 유지하고 fixture/timeout을 맞춰 통과시키지 않는다. 전체 owner 소비와 실제 C#/HTTPS·DB/키/Agent는 미완료다.
+
+## 2026-11-05 FN06 CJS·등록 owner 접합 한정 검수
+- 담당: 기존 Primary 구현, Main 어울 검수·통합, 기존 독립 검토자 읽기 검수. 후보011C3C22·WI A3FA8841·통제 §141–144를 적용했다.
+- 상태: 소스 부분 인수. CJS8+owner6+TS7+메모리 package1=22 PASS/fail0/skip0, 타입·문법2·diff exit0, 독립 C0/I0·raw7 불변이다. 실제 Session 소비와 기존 key operation의 합성 연결이며 실제 키/HTTPS 실행은 아니다.
+- 변경: 제품3·시험3. 별도 exact signPhase source로 OPEN exact signOpen을 유지하고 metadata 부모 TTL과 작업10초를 분리했다. UNKNOWN 후 새 source/client 재서명 차단은 owner 수명 범위이며 등록 복구/OS 재시작 보장은 미확인이다.
+- 오류: 구현 중 CJS 부재 RED·TTL 혼동·과거 키 개수 fixture 불일치는 통제 §142–143대로 보완했다. Main 추정 경로 읽기 오류1은 준비 오류로 분리했다. 전체 시험 반복·기준 완화·skip 승격0이다.
+- 다음: C# validator·기존 HTTPS 소비 접합을 같은 Primary에게 위임한다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK 변경·Git 복구 제외를 유지한다. 전체 작업계획 완료가 아니다.
