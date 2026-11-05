@@ -15859,3 +15859,13 @@ Main은 Primary의 기술 반증에 따라 별도 Options 표가 필수라는 �
 §216 r2 독립 재검수는 문서 한정 C0/I0/M0다. I1은 저장/replay/GET/state/page의 원 자료 보호 읽기와 목적 한정 동일 Tx replay hook, I2는 실제 P/C/A/U/K/R 집합·원자 예약/정산·유한 자기비용·base 단일 귀속, M1은 새 exact 도구 대응으로 해소했다. 시작/종료 17521B·BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3 동일이다. 실제 projection 상계·고정점·SQL deferred closure·replay hook은 구현하지 않았으므로 실제 동작 PASS가 아니다.
 
 현재 변경은 Main 문서3뿐이며 제품/시험/SQL 수정0·실제 DB/권한/키/서비스/SDK/Agent/실자료 조사0이다. 기존 코드 검증을 재실행하지 않고 문서 diff/지문·정본 미러와 보호3 보존을 확인한다. 문서 checkpoint 후 PMO에 정확 후보의 채택 경계만 전달한다. 기존 START 질문은 반복하지 않는다. 신산님 채택 전 NOT_ADOPTED/SOURCE_GO0이며 전체 계획은 여전히 미완료다.
+
+## 217. FN09 후보의 직접 채택 질문 전달과 현재 경계
+
+문서 checkpoint 2fc1461acd325a63c86c58f915257c041edf4602는 a7a5bfd4 직접 자식 정확 문서3이며 제품/시험/SQL 변경0이다. tracked clean·보호 비추적3 보존과 후보 r2 SHA256 BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3·정본 미러를 확인했다. private push/인증 복구·PR/병합0이다.
+
+PMO turn01a1ad75-d4c8-7dc1-8a8e-304126fe6893는 후보 전문/지문과 이전 명시 제외를 읽고 새 prepareExecution 지원·Options 저장/반환/보호 조회·계상의 데이터 계약 변경은 신산님 직접 채택 사항이라고 판정했다. PMO 대화에서 r2 A 권장 질문을 전달했으며 Main은 같은 질문을 반복하지 않는다. 기존 START 후보도 별도 미채택이다. 최신 postOPEN HUMAN A 승인을 이 두 후보의 승인으로 전용하지 않는다.
+
+현재 코드 GO0인 부분은 FN09 등록 정의 준비/Options 원문과 FN08 START 등록의 새 의미다. 기존 승인된 구현을 대기 상태로 소급하지 않으며 완료한 코드/검사를 반복하지 않는다. FN01~FN17 대조에서 현재 승인만으로 추가할 독립 사용자 기능을 확정하지 못한 근거는 §215~216에 남겼다. 전체 계획 완료나 사용자 인수 상태가 아니다.
+
+다음 재개 조건은 신산님의 정확 후보 채택 또는 PMO의 위임 범위 내 새로운 결정 근거다. 채택되면 기존 단일 Primary의 정확 허용 파일/WI·TDD→독립 검수→Main fresh 검증·통합으로 이어간다. 실제 DB·권한·키·서비스·Agent·실자료 조사·J3/P03 R3 실행은 계속 제외한다. 답변 전 새 구현/실행·기존 질문 재전달0이며 현재 담당자들의 live/pending0이다.
