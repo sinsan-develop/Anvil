@@ -1545,3 +1545,20 @@ Main 수정후 fd35af의 unit11 PASS/481.8848ms,fe0735 실제 owner 연결1 PASS
 같은 OPEN 인스턴스의 보호 Session/credential/profile→current1회·SIGN1회→고정 phase transport→실제 decoder/parser를 합성으로 연결했다. 확인된 원결과는 같은 canonical proof/signature만 사용하고 UNKNOWN은 native 재전송·재서명0·기존 HUMAN 고정 GET으로 구분한다. STREAM JSON은 비권위 역사이며 새 frame/slot/자동 ARM을 만들지 않는다.
 짧아진 current/proof·작업 기한은 min-only relay와 기존 timer/AbortSignal로 진행 중 helper/body까지 취소한다. 입력 brand/getter/trap0·owner busy 회수와 직접 TS 선행 거절의 controller 회수를 검산했다. CJS exact8/runtime8/closure14/builtin3·authority transport·서명5키/OPEN을 보존했다.
 이7경로만 보존 대상으로 분리한다. Main3ed043은 보호 비추적3 SHA 불변·index 비어 있음을 확인했다. LF/CRLF 예정 경고4는 별도이며 설정/정규화0이다. 실제 HTTPS/키/OS/helper·DB/권한/서비스/Agent·C# 실행·slot 인계·ACK·전체 FN06/계획은 미완료다. ACK delta와 Git 복구·push 재시도0을 유지한다. 복구는 이7경로의 한정 revert다.
+
+## 153. STREAM 내부 단발 slot 인계 배정
+후속 전송 source7+Main 현황2는 c93c1085d945e7d6b68c0f1764ba85fac6661dbd에 보존했다. 문서4452ee27의 직접 자식이고 commit 직후 tracked clean·보호 비추적3이다. private 동일성/PR/병합은 미확인·Git 복구/push 재시도0이다.
+다음 미구현 호출선은 sendReceivePhase→Client phaseValue→실제 Delivery decoder→private deliverySecret 보관과 기존 owner createNativeFirstReceiveReceiver().accept→보호 currentSource.read→createNativeProofSource→NativePreparationCredentialSlot.accept/getChannel 사이의 내부 인계다. 부모57 S4·기존 WI26 안의 연결이며 새 protocol/API/권한 계약이 아니다.
+기존 Primary만 다음6경로를 순차 수정한다. 다른 파일은 쓰기 전 정확 최소 근거를 반환한다.
+1. apps/connector/runtime/native-first-receive-client.ts
+2. apps/desktop/src/native-first-receive-client.cjs
+3. apps/desktop/src/trust-enrollment-owner.cjs
+4. tests/unit/FN06/native-first-receive-client.test.ts
+5. tests/desktop/native-first-receive-owner.test.cjs
+6. tests/desktop/desktop-trust-registration.test.cjs
+같은 Client의 private decoded frame을 실제 원 owner receiver가 단 한 번 수용하도록 연결한다. 호출자가 raw frame/credential을 주입하거나 공개 반환/renderer로 비밀을 받지 못한다. 기존 accept(void)를 ACK·SlotReceipt·CONFIRMED·실행 허가로 취급하지 않고 새 성공 DTO를 임의로 만들지 않는다. getter/trap과 고정 descriptor·등록/profile/authority·current·기한/문맥을 원 계약대로 검산한다.
+수용 전 단발 사용을 결박하고 await 중 취소·ABA·원 작업10초/더 짧은 부모 기한을 유지한다. 성공/실패/UNKNOWN에 소유 byte 폐기와 참조 해제를 구분해 기록하며 JS 전체 메모리 소거를 주장하지 않는다. 중복/binary replay·STREAM JSON·UNKNOWN 재전달0이다. 공급자/보호 source가 없으면 그대로 거절하고 fake 등록/current를 제품 기본값으로 만들지 않는다.
+기존 실제 Slot/receiver/current proof 소비선을 합성 정상·중요 음성으로 연결한다. 성공 메소드 stub·큰 fixture 복제·기준 완화/전수 반복0이다. CJS 기존 exact8에 필요한 고정 내부 접점만 exact 비교하며 runtime export8/closure14/builtin3·기존 OPEN/authority transport·HTTP/IPC는 그대로다.
+ACK bodyHash 미채택·actual shell의 receiver/currentSource 조립·UI controller는 별도 남은 경계다. ACK/receipt/CONFIRMED를 임의 생성하지 않는다. 실제 DB·권한·키·서비스·Agent·HTTPS·C# 실행·Git 복구 제외를 유지하고 Main은 제품/시험 쓰기0이다. 독립 검수·Main 직접 영향 검증·안정6 지문 전 인수0이다.
+
+추가 기록: 문구 언어 사전 검산에서 같은 짧은 초안1건을 추가 차단해 누계4다. 전송/제품 영향0이고 해당 한 단어 자유 초안 방식을 중단했다. PMO에 누계와 조치를 보고했으며 검산된 문구/도구 인자 확인으로 검수·통합을 계속한다.
