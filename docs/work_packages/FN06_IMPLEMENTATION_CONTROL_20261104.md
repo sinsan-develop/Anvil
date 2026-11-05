@@ -800,3 +800,17 @@ Main e5a6e7은 node --check apps/desktop/src/trust-enrollment-owner.cjs 및 shel
 다음은 이미 채택된 ARM header를 원 native 명령 Tx에 연결해 N CREATED와 R Binding/BOUND·비용/역완결을 같은 Tx에 생산하는 단위다. 새 payload/API/권한은 추가하지 않는다. ACK/최초DENIED 네 의미값은 직접 답변 전 GO0이며 실제 DB·권한·키·서비스·Agent·컴파일은 제외한다.
 
 Main 문서 추가 명령의 구문 오류1은 파싱 단계에서 변경0이었고 변수로 분리해 저장/diff0을 확인했다. Main 발송 언어 오류 재발은 직접 작성 발송 방식을 중단하고 메시지를 사전 문자 검사한 뒤 전달하는 방식으로 전환했다. 제품/시험 실패와 구분한다.
+
+## 82. ARM header의 원 Tx Binding 생산 착수
+
+최신 WIP ab4cae4a3b29f94cca047ff2441ba0f2bad67110는 80dd 직접 자식 desktop소스3·문서2, 78추가/8삭제다. raw5·보호3 불변/index0을 확인하고 같은 Primary의 다음 단일 writer 단위를 시작했다. private 게시·전체 기능 인수는 아니다.
+
+채택 wire108~110은 기존 native POST의 X-Anvil-Native-Receive-Arm에 ARM fullref canonical UTF8/base64url을 전달하도록 정한다. parser는 이미 있으나 route/command가 소비하지 않았다. 새 payload 필드를 만들지 않고 별도 내부 Ref로 원 authenticated Tx에 전달해 실제 ARM 관계·current와 고정 intent 선예약을 검산하고 N CREATED·R Binding/BOUND를 원자적으로 생산한다. header 없는 legacy를 유지한다.
+
+기존 단계별 예약 상세와 독립 읽기 대조의 불변식은 Binding 전 remaining0을 예약완료로 오인하지 않는 것, 원 command/receipt/writer 효과 전 선예약, N행과 R Binding 역방향 완결, actual+현재remaining 정산·충전slot future0, N/R/L 중복계상0과 COMMIT불명 보존이다. 임의 reserved:true·가짜Binding·plan ceiling 덮어쓰기·새 공개 입력/권한은 금지한다. 담당자는 이 범위의 실제 route 행동 RED부터 TDD한다.
+
+Web header 공급·Delivery/ATTEMPTED·broker frame·ACK/CONFIRMED는 이 단위 완료로 세지 않는다. 미채택 ACK/최초 거절 감사는 GO0이며 실제 DB·SQL 실행·권한·키·서비스·Agent·컴파일·J3/P03 R3는 제외한다. PMO는 후속 통합 보고를 확인했고 추가 결정 요청 없이 진행을 유지했다.
+
+후속 실행 기록: 실제 HUMAN route에 불량 ARM header를 보내도 N CREATED/APPLIED가 생기는 RED를 수행자가 확인했다(87df3a, exit1/1761.8939ms). 기존 strict parser를 route에서 소비한 뒤 같은 반례는400/INPUT_INVALID·N/이벤트0으로 통과했다(6f6d9c, exit0/1552.1944ms). 정상 ARM은 아직 SOURCE_UNAVAILABLE로 닫힌 미완료 상태이며 이 중간 거절을 Binding 완료로 세지 않는다. Main은 중복 실행하지 않고 정상 생산 단위 안정 후 직접 검증한다.
+
+같은 AccessRepository/원 store/service/broker 실제 조립에 필요한 apps/server/app.ts·apps/server/main.ts는 기존 WI §2.2 허용 경로임을 Main896b49가 확인했다. 필요한 최소 내부 접합은 이번 단위에 포함하되 기존 optional/native 경로·host/port/TLS·실행 금지를 유지한다. 새 승인 범위 확대가 아니다.
