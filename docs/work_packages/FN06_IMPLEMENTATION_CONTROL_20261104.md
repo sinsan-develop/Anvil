@@ -1479,3 +1479,18 @@ HTTPS transport·전체 UI controller 접합은 다음 순서로 남기며 이�
 | tests/unit/FN06/native-first-receive-schema.test.ts | 55833 | CD6E270B5C7CEF78230B790486AB3B0A751CA3EB8AF205B298912500D522DA9C |
 미래 C# 시험은 실제 Dispatch를 호출하는 정상4phase·STATE BOUND/ATT·중요 음성·같은 Challenge 변경 proof·기한/효과0 원형을 작성했다. 이는 NOT_COMPILED/NOT_RUN이며 Node 형상 PASS로 C# crypto/OS/키 검증을 대체하지 않는다. LF/CRLF 예정 경고3은 별도이고 설정 변경0이다.
 승인3경로만 보존 대상으로 분리한다. 신규 NativeFirstReceiveHostSourceTests.cs 생성0이며 같은 기존 시험을 확장했다. 실제 DB·권한·키·서비스·Agent·HTTPS·컴파일·ACK delta·Git 복구0이다. 다음 실제 non-OPEN HTTPS 소비와 전체 UI controller/FN06/계획은 미완료다. 복구는 변경3경로 한정 revert다.
+
+## 148. 원 수신 세션의 non-OPEN HTTPS 소비 배정
+C# validator 소스3+Main 현황2는64bed2e634e490582de84705f12b7da2dcbd8234에 보존했다. a2d1e0e1의 직접 자식이고 commit 직후 tracked clean·보호 비추적3이다. private 동일성/PR/병합 미확인·Git 복구와 push 재시도0이다.
+다음은 같은 승인 후보011C3C22·WI A3FA8841 §2/4 및 부모 wire·채택된 STREAM/CLOSE 재조회 A안의 기존 HTTPS 소비 접합이다. 원 Client.openReceive의 Session·private receiveSecret/receiveSession·timer/lease를 같은 인스턴스에서 재사용한다. 별도 authority bearer 프로토콜의 #send를 전용하지 않는다.
+기존 Primary만 다음6경로를 수정한다. 다른 제품/시험·새 파일·C#/driver/SQL·HTTP/IPC/권한/ACK 변경0이다.
+1. apps/connector/runtime/native-preparation-https.ts
+2. apps/connector/runtime/native-first-receive-client.ts
+3. apps/desktop/src/native-first-receive-client.cjs
+4. tests/unit/FN06/native-first-receive-client.test.ts
+5. tests/desktop/native-first-receive-owner.test.cjs
+6. tests/desktop/desktop-trust-registration.test.cjs
+원 phase current→실제 owner exact {signPhase}→고정 non-OPEN transport→기존 decoder/ARM/STATE parser 소비를 연결한다. STREAM은 기존 GET/body 없음·hash{}·200 binary/JSON 분기를 따르고 ARM/STATE/CLOSE의 고정 target/body와 raw CLOSED State 응답을 보존한다. 서버/API·새 nonce·credential 공급 계약을 만들지 않는다.
+원 OPEN Session/credential·Window/Session fullref·source·신원/generation·기한/ABA를 효과 전에 검산한다. TLS pin/redirect/header/MIME/cap/절단·await 뒤 최소기한과 UNKNOWN sticky를 유지한다. STREAM JSON으로 frame/slot/ARM을 만들지 않는다. 같은 proof/signature 결과 조회와 fresh 서명을 구분하고 UNKNOWN 뒤 자동 native 재전송·재서명0이다. 허용된 기존 HUMAN 고정 GET만 결과 확인에 사용한다.
+정상/중요 음성의 실제 원 Session→owner SIGN→합성 transport→parser 호출선으로 TDD하고 큰 fixture 복제·성공 메소드 대역·기준 완화·새 테스트 도구 도입0이다. runtime export8/closure14/builtin3과 기존 OPEN/authority는 보존한다. 불변 package 시험은 필요한 선택 실행만 한다.
+실제 HTTPS·키·DB·권한·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 제외한다. Node fake transport 합성은 실제 TLS/OS/사용자 인수로 올리지 않는다. 이 단위 이후 controller/전체 여정은 다시 실제 남은 호출선으로 판단한다. Main은 제품/시험 쓰기0이다.
