@@ -15578,3 +15578,76 @@ Primary 신규2 RED9b63b0→1f1032 2 PASS/1000.5322ms, ARM유실/E/ABA·lateUNKN
 §180의 상세를 실행 기준으로 삼는다. 기존 원command/최종 approvalRef·body/hash·buffer CAS/소유와 승인복귀를 유지해 명시 등록/Window 선택→Offer 준비/저장→설치형ARM 뒤 보호 State/Offer 재조회→같은 원native POST에 Ref header만 추가한다. 서버는 재구현하지 않고 Web이 Window/OPEN/ARM서명·키·slot을 생산하지 않는다. 최초 ARMED 확인과 원명령 UNKNOWN/역사 결과 재확인은 분리하며 유실/주체전환/지연에서 원body/header/외피ID를 보존·자동효과 재전달0이다. headerless legacy를 보존한다.
 원command2MiB/깊이64와Offer2293760B를 유지하며 검산된 원body와 외피 직렬화를 분리해 공용 canonical을 바꾸지 않는다. receive 오류3/native 오류2·공통거절DTO를 구별하고 등록/fullref/hash/기한·current/명시정책과 기존 CSRF/same-origin을 유지한다. 화면은 기존UI11 표현/12px·명시동작·정보아이콘 방식과 합의시안을 따른다. 상시 기술설명/새화면·도구/구조개편으로 범위를 늘리지 않는다.
 실제 Panel/App/transport를 소비하는 정상 AUTO/기존승인왕복과 교차등록/Window/Offer/ARM/hash·승인전Offer·만료/주체/CSRF/transport·지연/유실·재전달0·깊이/한도·오류3/2의 직접 반례를 RED→GREEN으로 검증한다. 메모리DOM/합성transport·env읽기없는 메모리bundle/기존type/build만 허용하고 실제서비스/listener/DB/권한/키/Agent·실자료/J3/P03 R3/C#/미채택ACK/영속terminal/CONFIRMED·실사용인수0이다. 독립검수/Main선택검증·안정5 전 인수/통합0, 전체계획 목표는 계속 ACTIVE다.
+
+## 186. FN07 후속 선행의 읽기 대조
+계획 FUNCTION_WORK의 FN07은 두 번째 실제 Agent·6능력·계정 교체가 미완료다. 기존 ClaudeSdkMessageCodec prepareUser/normalize·보호capture·불변 준비물·중복/UNKNOWN은 구현돼 재작업하지 않는다. 실제 제품 codec 소비선은 없으며 현재 provider-session-claim은 CODEX_APP_SERVER/0.161.0·THREAD/TURN·고정RPC에 한정돼 Claude session_id/uuid를 대입할 수 없다.
+기존 정규화 WI FN07_CLAUDE_SDK_MESSAGE_NORMALIZATION_IMPLEMENTATION_20261101.md 지문 C69DF128D2A66F3AB5C8373DE2482D7A22E5B3153714FA571B00644E654FB8AE는 신규3만 허용하며 transport/공통DTO/서버/SQL 변경을 제외한다. 이 근거로 실제 연결을 임의 wrapper/화면으로 포장하지 않는다. Claude claim 원형·요청/결과 상관식·보호handle 및 SDK/CLI 소비 기준의 정확한 기존 직접채택이 있는지 PMO에 확인 지원을 요청했다. 실제 인증/키/계정/비용/서비스/Agent 실행 승인을 요청한 것이 아니며 FN06 Web5 단일writer는 계속한다.
+이번 읽기만으로 FN07 전체 차단·제외/완료를 판정하지 않는다. 현재 FN07 즉시 소스 배정 경로0이며 미결 계약을 선택하지 않았다. 준비 wildcard 파일인자 오류1은 rg -g로 보정한 조회 오류로 제품/시험 실패와 구분했다. 파일수정/시험/실환경 실행0이다.
+
+§185 Web 첫 실제 RED는ce018f exit1의 readNativeReceiveWindow 소비 부재다. ee6b74는 기존 정책GET의 configured/policy 외피 누락이라는 fixture 준비 오류이며 외피만 정합해 제품 RED와 분리했다. 같은 Primary가 기존 NativeBuffer 소유/CAS·별도 receive 작업의 API를 작성 중이며 live/pending0·새 계약/추가경로 차단0이다.
+§186 추가 읽기: 실제 Claude 소비의 최소 미결은 원session 출처/Anvil assignment·generation 결박, command/instruction/part와 SDK호출·선택uuid/result 상관식, 보호handle/reader·회수, result/iterator/EOF/stop/자식writer종료의 증거 구분, 전송·생성·중지 UNKNOWN의 원요청/조회·재발행 금지, INTERFACES12.3의6능력 매핑이다. SDK0.3.224 객체검사와 CLI stream-json framing/부분UTF8/EOF/제어·process수명은 별개다. capture RECORDED/codec결과는 내구저장/전달/Agent실행/StopReceipt가 아니며 기존 false/UNVERIFIED를 유지한다. CAPABILITIES4의 미결 경계를 참고하고 새계약/transport/공통DTO를 기존 허용3의 내부보완으로 바꾸지 않는다. 외부검색/SDK·CLI실행/파일수정/시험0의 읽기 결과다.
+
+§186 PMO 원문회신 turn01a1acab-d689-7b62-a859-7c95c5844273을 확인했다. PMO 원장/FN07 WI/최신현황에서 Claude전용claim·상관식·보호handle·실제소비선 별도채택을 찾지 못했고,11월1일 관측HTTPS/FN14Web 직접승인을 이범위로 확대할 근거가 없다고 했다. 과거전체대화 전수확인은 미수행이다. 기존codec재작업0·정확후보/영향/검증/rollback 준비, 현재FN06Web5 계속이라는 회신을 적용한다. PMO의 다음작업 배정을 기다리며 멈추지 않는다.
+
+§186 고정 SDK 원문 읽기 보완: Context7의 공식문서 https://code.claude.com/docs/en/agent-sdk/typescript 는 참고이며 최신문서를0.3.224 증거로 대체하지 않았다. web 도구의 registry URL 접근불가1은 도구 읽기 문제로 분리했고, Main91c7c2의 공개 HTTPS GET으로 고정 metadata3818B/0.3.224를 확인했다. dist tarball https://registry.npmjs.org/@anthropic-ai/claude-agent-sdk/-/claude-agent-sdk-0.3.224.tgz 는1110841B, metadata의sha512 무결성과e6ac15/4d0137 메모리 검산이 일치했다. sdk.d.ts333809B/SHA256556277033B15112811922D84EC8DC846D446CCE7BD9AA27765C52A9C09869575는 기존 WI와 같고 sdk.mjs1145192B/SHA25670E00A3EE54A88382CA606893AC3C4ACDD9BB83A9E11A9D3E803FA0B63389ED5도 확인했다.
+고정선언의spawnClaudeCodeProcess(2096)/SpawnOptions(6997)/SpawnedProcess(6945)와 실제hook호출은 존재한다. query(2640)/streamInput(2610)/initializationResult(2435)/supportedCommands(2458)/supportedModels(2464)/interrupt(2346)/close(2637)/canUseTool(206)/resume(1803)/pathToClaudeCodeExecutable(1730) 접점을 확인했다. callback의forwarded signal은callerabort와 같지 않고 stdinEOF+약2초grace뒤다. SDKinterrupt/close/result는 실제 child/writer회수 증거가 아니며 기존 NativeOwnerHandle(state/query/close)을 그대로 SpawnedProcess로 대입하지 않는다.
+두 번째 원문 읽기는 첫 추출이 type만 찾아 interface 정의를 빠뜨린 것을 좁혀 SpawnOptions/SpawnedProcess·도구결정·중지형상을 추가확인한 것이다. 같은검증을 진도로 반복한 것이 아니며 설치/SDKimport·query/CLI·Agent·계정/키·실서비스/파일추출저장0, 메모리자료만읽었다. 이 사실을 독립 담당자에게 전달해 후속 source계약 후보의 기술근거를 준비하지만 새계약채택/구현GO/능력PASS로 승격하지 않는다. 현재 FN06 Web5는 별도 계속한다.
+
+## 187. 공통 Agent 제품 소비선의 미구현과 실제 검증 미실행 구분
+추가 실제 소스 대조에서 Primary Codex도 공통6능력 factory/registry→제품 실행이 완성된 것은 아님을 확인했다. dispatch.inspectDispatchPreconditions는 구조/snapshot 비교와 미연결/false를 반환한다. execution-start-receiver.start, Primary start-transport, execution-command-admission SEND/STOP은 실제 내부 호출이 있으나 SYNTHETIC_ONLY 주입 포트이고 STOP은 구체 SyntheticPrimaryStopTransport다. 공통 provider registry의 실제 선택/생성 경로가 아니다.
+start-protected-capture-bridge·provider-handle-protocol-capture·provider-reader-factory·provider-bound-wire·provider-handle-reader의 보호 준비/읽기/전송 호출은 존재한다. 그러나 reader factory는6능력factory가 아니고, 주입pipe/구현부가 실제OS보호·제품실행을 스스로 증명하지 않는다. server execution-routes의 claim수신은 합성router이며 app.ts에 실제연결된 것은 HUMAN claim역사GET이다. probeCapabilities/observe/submitToolDecision까지 포함한 제품factory/registry 조립은 이번 한정소스에서 찾지 못했다.
+이것은 단순한 실제Agent/OS검증미실행이 아니라 제품소비선 자체의 미구현/부분구현이다. 설치형68f954a4와현재Web5는 NATIVE_PREPARATION_ONLY의전달준비/slot연결이며 실제codingAgent실행완료를 뜻하지 않는다. 이미 인수된 source를 재구현하지 않고 FN06/FN08 공통실행선의다음최소승인단위를 먼저좁혀 FN07의새provider결박과구분한다. CODEXclaim형상/false·SYNTHETIC_ONLY를조용히완화하거나서버/실권한을임의연결하지 않는다. 실제 source범위와새공개계약/권한이필요한차이만정확히도출하고 현재Web5는계속한다. 전체계획은미완료다.
+근거심볼은 apps/connector/runtime/dispatch.ts inspectDispatchPreconditions, execution-start-receiver.ts start, adapters/primary/start-transport.ts, runtime/execution-command-admission.ts, start-protected-capture-bridge.ts, provider-handle-protocol-capture.ts, adapters/primary/provider-reader-factory.ts/provider-bound-wire.ts/provider-handle-reader.ts, apps/server/modules/executions/execution-routes.ts/provider-session-claims.ts와app.ts다. 독립읽기이며실행/수정0, 추정경로부재1은조회준비오류로분리했다.
+
+## 188. Web API/flow 부분 검증과 실제 App에서 발견한 보완
+Primary가 API48840B/6BF9435B2925610429A7BC95E91C80316632C3DB6D4060E1EA17D29CDF61F347와 flow19724B/974958542864AF6941196DBABEC534F2ECC193A4F5DF9FEA124986E7279C0FE1을 부분 동결했다. 95532e 고유13 PASS/skip0·507.7752ms·type34b18b/diff7347e7 exit0, 실제App AUTO/기존승인복귀→최종Offer/ARM/원body/header 저장5cae4f 1 PASS/1932.1238ms를 제출했다. Main704dd0도 flow13 PASS/fail0/skip0·425.2314ms·raw2 동일을 직접 확인했다. 범용깊이64/2MiB codec시험을 정상닫힌native parser 최대입력 PASS로 확대하지 않는다.
+독립2 C0/I1/M0: verifyNativeReceiveArm 마지막 최소기한검산 후 sendNative await복귀→첫POST직전에 until검사가 없다. check=true이고 이경계에 만료되면 첫POST가 가능하다. 서버만료거절 우회가 아니라 Web의 만료후첫송신0 경계다. 첫검산의정확deadline을private결과와결박해 첫효과직전에재검사하고 UNKNOWN/역사재확인에는새current/ARM을요구하지않는 한정보완을지시했다.
+동시에 Primary 실제App DOM REDfbe43b는 Offer POST 뒤다른화면/늦은응답에서ownerguard가CAS를막지만 inactive Panel이 failOffer를호출하지않아 원packet uncertain=false가남는문제다. 이후재확인전만료로원실제POST불명이PREPARED가될수있다. beforeSend부터private 원Offer객체에전송/불명을기록하고 markUnknown/failOffer가그원기록을소비하는내부보완을채택했다. active/callerboolean에의존하지않고 원외피ID/body·최종command·정책·명확한첫전송전거절을보존한다.
+같은API/flow2만 scoped동결해제해두반례RED→GREEN·재동결을지시했다. 나머지Panel/App3은동일Primary가계속하며전체Web5인수/통합0·실환경/권한/키/서비스/Agent/ACK0이다. 기존6f4440/93d3ff/990012/a1c80a의불명/역사보완은부분진전이며새App반례를대신하지않는다. 독립준비조회의잘못된경로1건은정확목록으로보정한조회오류다.
+
+## 189. 공통6능력 후속 최소업무의 읽기 지시
+담당은 기존 remaining_execution_dependencies이며 읽기전용이다. §187 공통제품소비선에 대해 FN06/FN08 기존승인P1·INTERFACES12.3/CAPABILITIES·정확source WI와실제코드를대조한다. 새공개DTO/실권한/true승격/실제Agent실행 없이 factory/selector 또는 probe/observe/도구결정 소비 중 이미계약이닫힌미구현1건을찾는다. 기존완료START/SEND/STOP/capture를새wrapper로포장하거나SYNTHETIC_ONLY/NOT_AUTHORIZED를자동해제하지않는다. 가능하면생산자/소비자/최소파일/선행·검수/승인근거를반환하고, 미정이면부족한구체계약을입증한다. 일반provider registry개편·제품/문서수정·시험/외부조회/실자료/실환경0이며현재Web5와충돌하지않는다.
+이 지시는 읽기 결과 준비이며 실제 구현GO가 아니다. Main의 긴 전달문 후반이 검산문과다른언어로변경되는전달오류1을확인해, 이후 subagent 프롬프트는 상세지시를복제하지않고 이와같은저장된지시절을가리키는짧은한국어실행문만쓴다. 도구내문자검산/사용자notify직접전달은유지한다. 기존제품/시험·권한·writer범위변경0이다.
+
+## 190. Web API/flow 보정2의 scoped 재검수 지시
+담당은 기존 remaining_execution_dependencies, 읽기전용이다. API49650B/A42063EF2A7B65E16B7E46D308270020AFCE14695EE9AFF248BFA75D1A815BC0와 flow22011B/68B950AE052AC90F438D69A60FF8E5001769AA383653F92F2D459AA7742BF476이 재동결됐다. 경로는§185 API와새flow시험이다. 기존 독립I1의최종ARM검산await→첫POST직전 정확privateuntil검사와PrimaryApp RED의실제Offer beforeSend이력/원receiveWork identity·inactive caller의catch생략/늦은응답/후속만료 UNKNOWN hold를검수한다. 최초정상·명확전송전거절·기존정책/외피ID/body·원nativebody/header·역사재확인에새GET/ARM0을보존하고새공개API/권한/상한변경0을확인한다. 작성중Panel/App3은이prefixfinding에포함하지않는다.
+Primary REDb290d3는 inactive Offer전송이력 소실과최종ARM await만료후POST1이다. 278405 신규2+최초송신/UNKNOWN역사인접2 고유4 PASS/skip0·398.0526ms/exit0, 실제App화면전환·늦은응답·후속만료003428 1 PASS/1490.3329ms·pendingFetch/listeners/roots0, type833d14/diff3c8bb0 exit0을제출했다. Main새실행은전체5최종동결뒤필요범위와합쳐선택하고같은코드검사를불필요하게반복하지않는다. 현재부분증거는전체Web인수가아니다.
+정확선택명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^Offer 실제 beforeSend 이력은|^최종 ARM 검산 await 복귀에서|^Web 최초 native 제출은|^선택 ARM으로 전송한 native UNKNOWN은' tests/unit/UI11/native-first-receive-flow.test.ts 와 같은node의 --test-name-pattern='^실제 App은 Offer POST 중 화면을 옮긴' tests/unit/UI11/native-boundary-preparation-app.test.ts다. 독립담당자는실행/수정하지않고시작·종료지문·ADDRESSED/잔여C/I/M/정확근거를반환한다. 실제환경/키/DB/권한/서비스/Agent/ACK0이다.
+
+## 191. S5 Web 최종5 독립 검수 지시와 제출
+담당 remaining_execution_dependencies는읽기검수만수행한다. §185의허용5 전체가다음지문으로동결됐으며Main문서2는별도소유다. 기존§190 scopedI1과실제App전환/Offer실송신UNKNOWN 보완을포함해§180/185의전체사용자흐름·기존계약에대조한다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/web/src/features/connections/native-boundary-preparation-api.ts | 49650 | A42063EF2A7B65E16B7E46D308270020AFCE14695EE9AFF248BFA75D1A815BC0 |
+| apps/web/src/features/connections/NativeBoundaryPreparationPanel.tsx | 11761 | 876755B9E67BC7668334466375B0BA1540D1484ADE1504501330EA12EF46F172 |
+| tests/unit/UI11/native-boundary-preparation.test.ts | 41833 | 6F1229EB663B4C0D8BDFBC71FAD30B27A50E66FD1B20F1DBFA06510750E0006F |
+| tests/unit/UI11/native-boundary-preparation-app.test.ts | 36573 | 0B45683470898565AB67941D41E26E5F1299751154D2EB1E5CA1120F8F5B89D3 |
+| tests/unit/UI11/native-first-receive-flow.test.ts | 22011 | 68B950AE052AC90F438D69A60FF8E5001769AA383653F92F2D459AA7742BF476 |
+검수는원buffer 소유/CAS·project/client/CSRF/ApiClient/transport와승인복귀, 최종approvalRef/원command·body/hash, exact등록Window→원STREAM Session·Offer→같은ARM/header·첫실송신private기록과정확최소기한, UNKNOWN/역사재확인·명확전송전거절·원외피ID/body/header hold, legacy, 오류3/2·상한/깊이분리직렬화·same-origin/비밀0을포함한다. Panel의명시조회/선택/Offer/ARM확인/저장·버튼대기/만료/늦은응답/화면이동과기존App실제소비를대조한다. 코드·시험에없는연결을성공대역으로뛰어넘거나slot/ACK/Agent성공으로표시하지않는지확인한다. 새로운API/권한/공용canonical/App/서버개편을요구하지않는다.
+Primary112146 flow15 PASS/skip0·526.1537ms, f99e38 실제App3 PASS/skip0·1874.2347ms(AUTO/승인복귀·화면전환/늦은응답/만료·유실후명시원문재확인), d7a7f5 type0/d5dd22 diff0을제출했다. 9bf959의개별App유실1은최종3에포함되므로중복합산하지않는다. 기존Panel1/legacy5·App2도직접영향근거로제출했다. 아직Main 최종실행/독립최종인수전이다.
+독립담당자는코드/시험/SDK/DB/서비스등실행·수정0, 시작/종료5 지문과 C/I/M·정확file:line/영향/최소반례를반환한다. §190도이번범위에합쳐중복검수하지않는다. 실제브라우저/OS/DB/TLS/키/Agent·ACK/terminal/CONFIRMED·전체FN06인수는제외/미완료다.
+
+## 192. Main 추가 확인 — Offer 불명 뒤 작성 버퍼 초기화 가설
+독립§191 C0/I0/M0는 수령했다. Maina3fcba/4fffee의실제Panel/App읽기에서추가사용자경로를확인한다. Panel의실행경계작성닫기·선택지조회/reset조건과App.changeNative의null허용은원native pending만검사한다. Offer가실제전송뒤UNKNOWN이지만원native pending이null인경우, 작성닫기나선택지재조회로원Offer외피ID/body/private이력을포함한buffer가초기화될가능성이있다. 현재정적가설이며실제실패로확정하지않는다.
+기존Primary는허용5 중native-boundary-preparation-app.test.ts에실제App경로반례1을먼저추가한다. 서버Offer실물생산뒤응답유실또는화면이동/늦은응답으로불명인원buffer에서작성닫기와선택지재조회를명시했을때원외피ID/body/UNKNOWN이보존되고새Offer/native효과0인지확인한다. 단순접힘/화면이동은허용하되원요청기록을지우는reset과구별한다. 전송전명확거절/알려진완료의기존편집·닫기정상은보존한다.
+현재제품API/Panel등은동결하고먼저실제PASS/RED·정확원인/최소접점을보고한다. Main이확정전새finding/전체실패로세지않는다. 기존5밖App/서버/공용코드변경·실제환경/권한/키/Agent/ACK0, Main제품/시험쓰기0이다. 필요한경로추가가증명되면정확기존소비제약과최소변경을먼저보고한다. 최종Main검사는이경로판정뒤같은지문으로선택해중복반복을피한다.
+
+## 193. Main 추가 가설 해소 — 제품 변경 없음
+§192의실제App경로는96bac1 1 PASS/fail0/skip0·986.4123ms/exit0이다. Offer서버실물생산뒤응답유실에도원native pending PREPARED가존재해작성초기화/선택지재조회가disabled였고, 접힘/재열기뒤원UNKNOWN/외피ID/body가보존됐다. 새Offer/native0·명시동일원문재확인만가능·pendingFetch/listeners/roots0을확인했다. nativePreparedCommand는pending실물을필수로하고prepareOffer는PREPARED/BOUND에서만생산하므로‘Offer UNKNOWN인데native pending null’이라는Main가정은현재생산선에서성립하지않았다. Main570302도실제Buffer/prepareNative/nativePreparedCommand를읽기확인했다.
+가설을확정finding/제품결함으로세지않고철회한다. 기존Panel22/36·App155가보호하며제품수정0·경로추가0이다. 추가실제App시험1만유지해App시험38968B/BFE80002B0EF4C253BC9F61C4D3257D34A605827B48F593E5002AEB4E35D4225로동결됐다. 나머지4는§191그대로다. bf1aee diff0·live/pending0이다. 같은반례/불변검사를추가반복하지않는다.
+최종Main선택검증은새flow15와공유API/Panel의직접영향기존Panel15·실제App6을한번대조하고타입/메모리build·diff·전후지문을확인한다. 이것은전체프로젝트회귀나실제브라우저/DB/Agent인수가아니며 SDK/서비스/키/권한/ACK실행0이다. 독립§191의제품C0/I0/M0는제품지문불변범위에유지하고시험추가를새제품수정으로포장하지않는다.
+
+## 194. S5 Web 원 명령·Offer/ARM 연결의 소스 한정 인수
+2026-11-06 독립§191의제품검수 C0/I0/M0와I1/Offer실송신UNKNOWN 보완해소를확인했다. 이후§192가설확인은제품변경없이닫혔고추가App시험1만포함했다. 제품API/Panel과기존검수원형은불변이며추가시험은Main이직접검증했다. 원buffer/CAS·승인복귀·최종approvalRef/원command/body/hash·별도Offer ID·원STREAM Session/같은ARM/ref/header·실제송신private기록과최소기한·UNKNOWN/역사재확인을보존한다. Web은Window/OPEN/ARM서명/slot/ACK/Agent권한을생산하지않는다.
+Main1efba4 flow15 PASS/fail0/skip0·390.3984ms,5bbe28 직접영향Panel15+실제App6 고유21 PASS/fail0/skip0·2143.3414ms로합계고유36이다. 이전Main13/Primary개별/모드반복을추가합산하지않는다. ca0eb4 타입exit0,b14673 diffexit0,cc6b75→0c75e0 raw5 동일을확인했다. DOM시험은configFile:false/envDir:false/write:false의메모리Vite build와실제ReactDOM/App/Panel/API를소비하고APP_MEMORY_CLEANUP pendingFetch/listeners/roots0·ownedChannels closed/globals restored를확인했다. 실제브라우저레이아웃/보안·OS·servedAPI/DB/TLS/키/Agent 검증은아니다.
+원command2MiB/깊이64와Offer2293760B의분리직렬화·오류3/2·headerless legacy·same-origin/CSRF·전송전명확거절과효과후불명은유지했다. 범용깊이/용량 codec시험을정상닫힌native parser최대입력으로승격하지않는다. 원명령·결과불명은다른Window/새외피ID로우회하지않고명시동일원문재확인만한다. Offer용정책을native일회승인으로대체하지않는다.
+다음소유5와Main현황2만기존branch에보존한다. 보호비추적3/다른source·사용자자료·다른worktree/실서비스0,복구는이번소유5 delta한정revert다. private동일성/push/PR/main병합은미확인·인증복구/재시도0이다.
+| 파일 | bytes | SHA256 |
+|---|---:|---|
+| apps/web/src/features/connections/native-boundary-preparation-api.ts | 49650 | A42063EF2A7B65E16B7E46D308270020AFCE14695EE9AFF248BFA75D1A815BC0 |
+| apps/web/src/features/connections/NativeBoundaryPreparationPanel.tsx | 11761 | 876755B9E67BC7668334466375B0BA1540D1484ADE1504501330EA12EF46F172 |
+| tests/unit/UI11/native-boundary-preparation.test.ts | 41833 | 6F1229EB663B4C0D8BDFBC71FAD30B27A50E66FD1B20F1DBFA06510750E0006F |
+| tests/unit/UI11/native-boundary-preparation-app.test.ts | 38968 | BFE80002B0EF4C253BC9F61C4D3257D34A605827B48F593E5002AEB4E35D4225 |
+| tests/unit/UI11/native-first-receive-flow.test.ts | 22011 | 68B950AE052AC90F438D69A60FF8E5001769AA383653F92F2D459AA7742BF476 |
+S5 전달준비의설치형/서버/Web 소스호출선을연결했으나전체FN06/FN08완료가아니다. 미채택ACK bodyHash·후행terminal/확정·OPEN감사미결, §187공통6능력 제품factory/registry와실행권위/보호producer의미구현, FN07실제Claude결박/소비·실제DB/OS/TLS/키/Agent·사용자인수는남아있다. 이를정밀검증이월이나완료로숨기지않는다. 전체작업계획목표는ACTIVE이며다음기존범위내소비선의정확내부계약을주도해준비한다.
+정확Main명령은 node --experimental-transform-types --disable-warning=ExperimentalWarning --test tests/unit/UI11/native-first-receive-flow.test.ts 와같은node의 --test tests/unit/UI11/native-boundary-preparation.test.ts tests/unit/UI11/native-boundary-preparation-app.test.ts, node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json, git diff --check다.
