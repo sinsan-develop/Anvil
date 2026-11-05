@@ -15307,3 +15307,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 기존 Primary는 실제 route 부재404 RED ab846e 뒤 STREAM 합성1 GREEN8974a7, 미적용 SD 부재 RED80f80f 뒤 producer 형상1 GREEN74b430을 제출했다. 이는 중간 제출 증거이며 Main 최종 검증·실제 SQL 실행 결과가 아니다.
 - ARM의 Offer/current와 BOUND의 NativeRead 목적 N-current 소비 연결은 아직 SOURCE_UNAVAILABLE인 미완료다. 성공 대역으로 대체하지 않고 같은 담당자가 음성 조건과 실제 소비 연결을 계속 구현한다.
 - 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다. 전체 endpoint·서명·FN06·계획 완료는 아니다.
+
+## 2026-11-05 ARM actual source 접합 중간 제출
+- Primary는 ARM source 미연결503 RED d3c0b5 뒤 실제 receiveOfferCurrent와 원 Store txid의 readonly owner를 소비한 HTTP 합성1 GREEN f63185를 제출했다. 기술 미정·승인 대기·live/pending은0으로 보고했다.
+- NativeRead 목적 N current와 phase_bound_material의 선행 반례에 이어 owner 위조·객체/query 교체·폐기·다른 Tx·효과 음성 및 공개 BOUND 정상 소비를 마무리 중이다. Main 직접 최종 검증과 전체 endpoint 인수는 아직 아니다.
+- 메소드 끝 marker 읽기의 ValueError1은 준비 오류로 분리하고 제품 guard나 기대값을 완화하지 않았다. 실제 DB·권한·키·서비스·Agent·컴파일은 미실행이다.
+- Main 문서 초안 문자 검사 거절1은 파일 쓰기 전에 차단했다. 짧은 고정 문장으로 보완했고 제품·시험·승인 원문 변경은 없었다. 준비 오류로 분리한다.

@@ -1277,7 +1277,7 @@ Main은 현재 구현을 직접 쓰지 않는다. 같은 Primary가 이 한정 �
 
 ## 128. phase current 입력·응답 strict3 소스 부분 인수
 기준 source4642ab12와 문서 checkpoint5a394b39에서 기존 Primary가 정확3경로를 제출했다. 독립 C0/I0, Main fresh5b3658의3PASS/skip0/940.8162ms·23727a 타입0·436a36 diff0, raw3 전후 동일이다.
-Main 명령: node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase current|^pre-authority signing current' tests/unit/FN06/native-first-receive-contract.test.ts. 타입은 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json이다.
+Main 실제 PowerShell 명령: & 'C:\Program Files\nodejs\node.exe' --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase current|^pre-authority signing current' tests/unit/FN06/native-first-receive-contract.test.ts. 타입 명령: & 'C:\Program Files\nodejs\node.exe' node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json. 앞선 node 약칭을 실제 실행 경로로 구체화한 기록 보완이며 시험 재실행은 없다.
 contracts/runtime/native-first-receive-v1.ts 25365B/11D8A9A161C8E70666D19251F761B596F9ACE6A130674213502BE7578C381B28, apps/server/modules/executions/native-first-receive-input.ts 14245B/8C9BD676163D58D75EA3BB119671EEC651D52B31240E96F398481AFF0D62AC90, tests/unit/FN06/native-first-receive-contract.test.ts 20217B/F33C37C58A6B2C05756632FD33910C8CA603E4E2ED650CF26AE6FA1DD4704857이다.
 exact 입력/current·phase/head/null·원 tuple/profile·2MiB cap·Proxy trap0과 기존 OPEN 분리만 이 단위에서 인수했다. 새로운 공개 endpoint의 실제 오류·SD/current 생산·typed 서명/HTTPS 소비 전체는 아직 미완료다.
 이3경로만 index에 분리했고 Main 기록2와 보존한다. 같은 Primary는 실제 HUMAN route/SD/current 생산선을 계속 작성한다. Main 코드 쓰기·실제 DB/권한/키/서비스/Agent/컴파일·ACK delta는 없다.
@@ -1293,3 +1293,35 @@ SQL 경계는 CREATE FUNCTION부터 END;$$; 포함·뒤 LF 제외다. fn76_phase
 Store.readPhaseSigningCurrent는5057B/5D3076C94510F45B832FA34B10D1548D7C988E5D4113FB16FC33E707C67910F1이다. NativeRead/원 SID·원 fullref·미소비 ticket·원 closure·기한·효과0과 strict 반환/Tx를 대조한다.
 Primary는 다른 접점 구현을 계속하며 이 본문을 유지한다. 안정 본문 검토를 실제 PG/Tx/RLS·전체 서명 흐름 합격으로 올리지 않는다. 실제 실행은 없다.
 §130의 SQL3·Store 읽기 본문 독립 판정은 시작/종료 지문 동일의 C0/I0다. Store5057B 지문은 메소드 뒤 LF 포함 기준이며 SQL은 지정한 경계를 따른다. NativeRead·원 SID/fullref·미소비 ticket·phase 첫사용·등록/profile/writer·Binding/N/Delivery 역완결·기한·조회 효과0을 확인했다. Node ARM/BOUND 공급 검산·전체 endpoint·실제 PG/권한 검증은 이 판정에 포함하지 않았다.
+
+## 131. 새 NativeRead 소비 연결과 Store 검토 범위 갱신
+Primary가 실제 CurrentSource/등록/writer/N fixture에서 WindowRead를 제거한 RED ac5bf0 뒤 NativeRead 목적 GREEN b5d80b를 제출했다. 새 phase_bound_material SD의 부재 RED9a3854 뒤 형상 GREENdeeddc도 제출했다. Main 최종 실행이나 실제 SQL 검증은 아직 아니다.
+Service의 ARM/BOUND를 Store 관측의 실제 txid에 결박하기 위해 readPhaseSigningCurrent 반환부에 private WeakMap provenance를 추가한다. 공개 응답·고정 SQL3와 원 정책·기한·효과0을 보존하는 기존 내부 접합이다.
+이전 Store5057B/5D3076C9의 C0/I0는 변경 전 본문에 한정한다. 새 반환부·issuer와 source 소비선은 안정 지문·정확 delta 및 위조/다른 Tx/폐기/효과 음성을 받아 독립 재검수한다. SQL3 불변 검토는 유지하되 자동으로 새 접합의 합격으로 올리지 않는다.
+기존 단일 Primary가 계속 구현한다. 실제 DB·권한·키·서비스·Agent·컴파일과 ACK delta는 없다.
+
+## 132. owner/provenance 안정 본문의 독립 검토
+기존 검토자에게 새 본문7과 #readPolicy/#freshHost·CurrentSource·등록 reader의 변경된 목적 소비선을 배정했다. Primary는 이 본문을 유지하며 BOUND fixture를 계속한다. TS 경계는 시작 줄 space·다음 시작 직전 LF 포함이고 SQL은 CREATE FUNCTION부터 END;$$; 포함이다.
+| 본문 | bytes | SHA256 |
+|---|---:|---|
+| RStore phaseSigningReads private 블록 | 682 | 272BC46308866BBD898BF3EEBED62A56C8D429E9A6C446D14C3D2AA48551B106 |
+| RStore readPhaseSigningCurrent | 5634 | C1D96E4ECDD58A5DBAF4A2B8FC1EA52D4CE171C266518093C099F213E4434524 |
+| RStore checkPhaseSigningSources | 3495 | 27171DC2561183A5B6EBFFF5C20A1D6ACEB4166552ED536CE511D66F03956281 |
+| Service phaseSigningCurrent | 3289 | 535D7B7B5AFB15F46EE72E926FC00960D71470914C0AEC6EA74734DA8912EDA6 |
+| Prep metadata wrapper2와 private issuer | 6916 | 3F11EFA1F2304623D18E1A4B41C5BE1B12294B1D4800D8E6C52767C73B01ADFC |
+| Writer nativePreparationOptions/Current | 1361 | 6D1EFF93AA27B8671208C31C2C1CEBBA8CF77D2FF372ACADF3CA06F245923B93 |
+| SQL native_receive_phase_bound_material | 10494 | 31C7EC48B0CE2B06356BEB847B809A8B214EA9EC09A85923D3F9D18E05DE298F |
+원 관측 DB/Tx·Actor/Session/Challenge·기한·WeakMap 출처·위조/getter/객체/query 교체·효과0·정착/폐기와 NativeRead/WindowRead의 private issuer 목적 구분을 대조한다. 기존 GET3/default 권한은 유지한다.
+Primary의 실제 ARM 정상과 owner 음성2 GREEN7ae15f 및 getter 반례4e43f8 RED→a80ef3 GREEN은 중간 제출이며 Main 최종 검증은 아직이다. SQL3 불변 검토를 유지하되 새 endpoint/BOUND·서명 전체나 실제 SQL/권한 인수로 올리지 않는다.
+§132의 owner/provenance·목적 접합은 지정7본문과 추가 소비선 지문 동일의 독립 C0/I0다. 실제 반환 객체의 단발 출처·원 Tx/문맥·기한·효과0·정착/폐기와 기존 GET3/default 정책을 확인했다. 공개 BOUND fixture·전체 endpoint·실제 PG·서명은 제외했다. 새 POST route와 공개 오류 wire는 별도 읽기 검토에 배정했다.
+
+## 133. 새 phase POST와 공개 오류의 한정 검토
+독립 C0/I0다. 기존 HUMAN cookie/CSRF/origin·혼합 인증 거절·query0·exact body·8192B, 성공/오류 no-store, 고정 code/requestId/outcome과 오류 원문 반사0을 확인했다. 이 읽기 POST의 requestId는 null이며 미분류 오류는 UNKNOWN/503이다.
+새 handler641B/2D817E585555257232D819D9EBBB8D273150653D1634E3C762855FF3314A0C50, 오류 handler1156B/D136A99378E54951FA193F572FA5960267EE1AC5BBBF699BF790DA65AB973466은 시작/종료 동일하다. 기존 HUMAN 본문1698B/79428BCAC2B8C0FAEF37FA32D4060EE626FBA9BB81E3023258CEF14CB18DA0EA도 불변이다.
+Store의2MiB cap과 strict 반환·고정 폭 기한 축소를 대조했다. 현재 BOUND 공급 검산·전체 endpoint·서명·실제 PG/권한 인수는 이 검토에 포함하지 않는다. 수정·시험·실제 실행은 없었다.
+
+## 134. 후속 typed signer 소비선의 읽기 조사
+현재 TS client·CJS facade·trust owner의 source/operation과 C# ValidateFirstReceiveFrame은 OPEN 전용이다. 이미 채택된 네 phase의 typed/current/target/null 분기를 이 실제 소비선에 연결한다. key-host의 기존 SIGN_NATIVE_FIRST_RECEIVE_PROOF와 외피65536B·sequence64·UNKNOWN sticky driver를 재사용하며 새 일반 SIGN 목적이나 runtime module export가 필요하다는 근거는 없다.
+원 Window/current 최소기한·wall/monotonic·abort·await 뒤 동일성과 원 view/origin/세대/contextEpoch/등록 결박을 유지한다. STATE의 current Binding/Authority/Delivery refs를 proof의 null 필드에 채우지 않는다. 두 writer ref의 역할도 구분한다.
+기존 owner/operation/C# 단발 소진은 canonical proof hash 기준이다. 같은 Challenge UNKNOWN 뒤 frame/current/source/client 객체 교체의 재서명 금지는 이 장벽만으로 충족했다고 주장할 수 없다. 이 새 채택 요구를 실제 TDD로 반증해 연결한다. 아직 구현 결함 판정이나 완료가 아닌 후속 미구현 접점이다.
+기존 TS client 시험·CJS owner 시험·desktop 등록/operation 시험·C# source 검사·runtime build 시험을 필요한 범위만 사용한다. C# 컴파일·실제 키/서비스/Agent는 실행하지 않는다. Primary에게 현재 서버 작업을 계속하며 다음 signer TDD에 이 조건을 포함하도록 전달했다.
