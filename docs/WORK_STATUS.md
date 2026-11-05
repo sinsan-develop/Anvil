@@ -13,7 +13,7 @@
 | FN06 진행 중 | 수신·제어와 실제 slot 영수증 생산은700e4fc1에서 source 한정 검수했다. 원 command waiter/단발 공급은 §171에서 scoped 보완 후 직접/독립 검수로 소스 한정 인수했다. 공통 COMMIT 응답 검사는3bbff6ea로 별도 소스 인수했고 전체 FN06/실환경은 미완료다 |
 | FN06 남은 연결 | shell receiver/currentSource 조립·UI controller 접합, 미채택 ACK bodyHash와 후행 terminal/확정, OPEN 감사 잔여 및 실제 PG/Pool/TLS/OS·Agent 검증이 남았다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 FN06 소스700e4fc1·공통 완료 검사3bbff6ea를 기존 branch에 보존했다. 원 waiter 관련 변경은 같은 Primary 소유로 미통합이다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
+| Git 보존 | 최근 FN06 소스700e4fc1·공통 완료 검사3bbff6ea를 기존 branch에 보존했다. 원 waiter 소스5+현황2는97261f6c에 보존했다. 설치형 receiver/currentSource·설정 연결은 §172에서 같은 Primary가 진행한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인, 인증 복구/push 재시도0이다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15464,3 +15464,12 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 판정:정상 callback의 동기 raw query throw도 차단하는 scoped 보완을 Main fresh3/타입/diff0·지문8동일·독립 C0/I0로 한정 인수했다. 보완 후3+불변23으로 고유26이며 전부26을 새로 실행한 것은 아니다. 모델 capacity로 개발자 마지막 응답이 실패한 사실은 실제 source/직접 검증·검토와 분리했다.
 - 원 COMMIT 완료·Pool 반환 뒤 waiter 준비/단발 공급/원기한 대기, E/fence/소진·UNKNOWN/미관측 실패·역행/유한 회수·legacy/원 bytes/false flags를 소스 범위로 검수했다. 공통 완료2는3bbff6ea에 별도 보존, 현재 waiter 변경5+현황2를 통합한다. 상세 §171이다.
 - 미완료:실제 shell/currentSource/UI·미채택 ACK/후행 terminal/확정·OPEN 감사·실제 DB/권한/키/TLS/OS/서비스/Agent/C#/실자료/J3/P03 R3·전체 인수다. 같은 기존 Primary가 다음 연결을 읽기 대조하며 전체 계획은 계속 진행한다. Git private/PR/병합 미확인·인증 복구/재시도0이다.
+
+## 172. 설치형 원 수신 controller와 private currentSource 조립 착수
+2026-11-06 인수 시 기존 codex/av3-stage-b HEAD97261f6c64601cbab245eb3b00f21dff1e79b24f와 tracked clean·보호 비추적3을 실제 확인했다. 비승격 shell에서 git status가 work tree 오류를 반환했으므로 해당 결과를 clean 근거로 사용하지 않았고 승인된 작업공간의 읽기 재확인으로 구분했다. 다른 worktree는 목록만 확인하고 변경하지 않았다. private 동일성·push/인증 복구0이다.
+신산님의 post-OPEN A 채택과 부모 S4/S5·wire10 안에서 기존 Primary 한 명에게 다음 소스 업무를 배정한다. 제품8은 apps/desktop/src/shell.cjs, trust-enrollment-owner.cjs, native-first-receive-client.cjs, preload.cjs, policy.cjs, settings.html, settings.js 및 apps/connector/runtime/native-first-receive-client.ts다. 시험4는 tests/desktop/desktop-trust-registration.test.cjs, shell-policy.test.cjs, native-first-receive-owner.test.cjs 및 tests/unit/FN06/native-first-receive-client.test.ts다. Main은 제품/시험을 쓰지 않으며 새 파일·다른 source는 정확한 필요 근거 확인 전 수정하지 않는다.
+기존 원 등록 record·remoteSession·HUMAN subject와 실제 session DTO를 대조해 Window/OPEN/pending STREAM을 생산한다. 원 private Delivery/opaque·OPEN Session·STREAM attempt·보호 profile에서 currentSource exact3을 만드는 내부 factory와 유한 lifetime 접점을 연결한다. current 전용 HTTPS reader의 base protection은 slot/currentSource를 재귀 호출하지 않는다. 소유43B는 owner dispose/ABA/abort/실패/만료에 폐기하고 원 resource E를 늘리지 않는다. 짧은 처리 budget을 resource E로 전용하거나 receipt/waiter E equality를 완화하지 않는다.
+wire10 exact5 IPC·metadata10·오류7과 local sender/frame/URL 검사, await 전후 epoch를 유지한다. 원 attemptId와 main 생성 localReceiveAttemptId를 구별한다. status 네트워크0·refresh 새 nonce/시도0, ARM은 같은 Offer 원문 재조회와 current/hash 검산, close 명시 확인을 따른다. UNKNOWN은 알려진 metadata와 미확정 hold를 보존한다. CLOSED는 실제로 생성된 metadata만 보존하며 OFFERED/ARMED의 필수 필드를 임의로 만들어 채우지 않는다. slot 수용은 CONFIRMED/ACK/Agent 성공이 아니다.
+기존 helper를 재사용하고 실제 settings 동작→preload→shell→원 Session→기존 프로토콜→receiver/current→slot의 합성 호출선을 검산한다. subject/SID/등록/profile/epoch 불일치·늦은 응답·만료·누락 current·재귀0·byte 회수·IPC 비밀0과 정상 흐름을 RED→GREEN으로 확인한다. 실제 DB·권한·키·서비스/listener·Agent·C#·실자료/J3/P03 R3·ACK bodyHash 변경·영속 terminal/전체 완료0을 유지한다. 독립 검수와 Main 최소 fresh 검증 후 소스 단위로만 통합한다.
+
+§172 기록 준비의 Main JS에서 TextEncoder 미제공 오류1이 발생했으며 파일 쓰기 전 중단됐다. UTF-8 문자열 직접 전달로 보정해 동일 기록을 1회 저장했다. 제품/시험/권한 변경이나 실패 검증 PASS 승격0이다.
