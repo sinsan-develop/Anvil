@@ -1260,3 +1260,17 @@ raw14는 검증 전후 동일했다. 후조회 JSON이 출력 상한에 잘려 �
 SELECT INTO·TEMPORARY·UNLOGGED·효과 함수·쓰기 CTE·다중문의 실제 원 query 전달0 반례를 보존했다. 기존 정상 Concrete CurrentSource/등록/writer/N 복원·BOUND current=true와 미구성 false·원 SID 변경·기한/재인증/폐기/정착을 합성으로 확인했다.
 index에는 검증한14경로만 먼저 분리 보존했다. LF 정규화 예정 경고는 별도이며 Git 설정·원 보안 기준을 바꾸지 않았다. Main 현황2와 함께 안전 checkpoint로 보존하고 후속 승인 WI26경로를 같은 담당자에게 순차 배정한다.
 복구는 이14경로의 한정 revert이며 기존 dirty/untracked·과거 SQL·실제 DB/runtime은 보존한다. 전체 FN06·계획 완료나 실제 사용 가능을 선언하지 않는다.
+
+## 126. 채택한 phase current의 순차 구현 배정
+GET3 검증 소스 checkpoint는4642ab12978f6e06075d10d66d5b402559ae22f7이며 부모1c24908a의 직접 자식이다. 정확 source14와 Main 현황2를 보존했고 tracked clean·보호 비추적3을 확인했다. private 동일성·PR/병합은 미확인이다.
+신산님 직접 채택 후보011C3C22와 최종 WI A3FA88411E2DA2614CBD2CF7B5CA698E2AE08066B5AB27B8F51B1EA755157DB0를 이 시작 commit에 결박한다. 독립 WI의 목록 보정은 C0/I0이며 정확26경로다.
+기존 fn16_primary_recovered 한 명에게 WI 순서의 RED→GREEN 구현을 배정한다. 공개 HUMAN read·실제 current 생산·strict 응답·typed non-OPEN frame·원 owner/key-host/HTTPS 소비를 연결한다. 이미 검증한 GET3·OPEN·Delivery를 재구현하지 않는다.
+Main과 다른 agent는 제품/시험을 수정하지 않는다. 다른 파일이 필요하면 쓰기 전에 정확 호출선·최소 delta를 Main에 반환한다. 실제 DB·권한·키·서비스·Agent·C# 컴파일·ACK delta·Git 복구는 제외한다.
+
+## 127. 새 phase current의 내부 writer 접합 추가 경로
+Primary가 쓰기 전 정확 경로와 소비선을 반환했다. 기존 WI의 추가 파일 사전 반환 절차에 따라 Main이 내부 배치 보완으로 채택한다. 새 공개 입력/응답·인증·정책·실행 권한을 추가하는 변경이 아니다.
+추가 파일은 apps/server/modules/executions/project-writer-authority.ts 한 개다. 시작4642ab12의 실제 SHA256 CF415E8A249147D8E4D017F16262A01680ACD9CCB0866AD5C79BA7EB3F1956FD를 기준으로 nativePreparationOptions/current 두 metadata 소비선만 최소 보완한다. 기존 WI26+이 파일1이며 기존 GET3의 정확 Window read와 default native 권한은 그대로 유지한다.
+이미 채택된 새 phase HUMAN read는 readNativePreparationAuthority AUTO를 요구한다. 실제 해당 목적 SD/Node가 검산한 비공개 cap만 이 목적을 두 소비선에 전달한다. 기존 GET3 cap은 readNativeReceiveWindow를 그대로 소비한다. 호출자가 고른 문자열/boolean·임의 command나 저장 digest로 목적을 가장하지 않는다.
+cap의 목적은 private issuer provenance·원 Actor/SID/Tx·Window/Session/Challenge·N fullref·최소기한과 함께 검산한다. read 권한을 credential 발급/예약/consume/실행으로 전용하지 않는다. NativeRead cap으로 WindowRead의 다른 공개 경로를 우회하지 못하게 목적별 음성을 확인한다.
+Main은 현재 구현을 직접 쓰지 않는다. 같은 Primary가 이 한정 추가를 적용하고 직접 TDD와 default/GET3 회귀를 제출한다. 독립 검토자는 내부 파일 추가의 승인 범위 일치와 목적 구분을 먼저 읽기 검토한다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
+§127의 내부 경로·목적 구분안은 독립 C0/I0다. writer 전체78957B·CF415E8A와 두 소비선1366B·93E6F976이 시작/종료 동일했다. 이는 범위 타당성 검토이며 새 목적 분리 코드의 완료 판정은 아니다.
