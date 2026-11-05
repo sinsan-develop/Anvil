@@ -15131,3 +15131,23 @@ client parser는 독립 C0/I0·Main직접3 PASS와 raw2 불변으로 부분 검�
 ## 2026-11-05 FN06 최초 거절 audit 한정 결정 대기
 
 audit의 네 의미값은 PMO가 직접 채택 사항으로 확인해 독립 C0/I0 후보 DC04B47E…85DF1436의 A안을 한 번 비동기로 질문했다. 해당 저장만 미채택 GO0이며 최초 거절 RED/fixture는 보존한다. 기존 Primary는 별도의 승인된 N current 선행을 계속한다. 실제 DB·권한·키·서비스·Agent는 실행하지 않으며 상세는 구현통제§74를 따른다.
+
+## 2026-11-05 FN06 N current 조사 방식 정정
+
+wildcard/추정명 조회 오류를 제품실패와 분리하고 실제 파일목록·정의명에 근거하도록 바꿨다. 기존 reader 직접GREEN 제출은 보존하며 SD/bound current는 미완료다. 같은 Primary가 독립구현을 계속하고 실제환경은 실행하지 않는다. 상세 오류·정정 경로는 구현통제§75에 기록했다.
+
+## 2026-11-05 FN06 N current 원 Tx 검수 I1
+
+N current 선행은 독립 C0/I1이며 material 뒤 실제 Tx 유지 보장이 미완료다. 원 phase owner의 borrowed 조회 전후 assertTx와 실제 교체 반례로 닫도록 기존 Primary에게 지시했다. helper를 단독 완료로 인수하지 않으며 안정 보완 뒤 Main 검사를 수거한다. 실제 환경 실행 0과 감사 네 값의 GO0을 유지한다. 상세는 구현 통제 §76에 기록했다.
+
+## 2026-11-05 FN06 원 phase owner N current 부분 인수
+
+원 Tx I1은 독립 C0/I0로 해소됐고 Main2cebce 직접·인접4와 SQL형상2 PASS/skip0/exit0·raw6 불변을 확인했다. 고정을 즉시 해제했으며 같은 Primary가 이를 공개 STATE/재조회 분기에 연결한다. 실제 Binding/Delivery와 전체 여정은 미완료다. 상세는 구현 통제 §77을 따른다.
+
+## 2026-11-05 FN06 공개 current 재조회 만료 I1
+
+공개 current 직접·인접6 PASS와 raw8 불변을 확인했지만 독립 C0/I1로 원 결과 expiresAt의 최종 재조회 검사가 빠져 있다. 같은 Primary에게 저장 원문 불변을 유지하며 기한을 결박하도록 보완을 맡겼다. 아직 공개 연결을 인수하지 않았고 실제 생산자·환경은 미완료다. 상세 명령과 준비 오류 구분은 구현 통제 §78에 기록했다.
+
+## 2026-11-05 FN06 원결과 만료 보완 부분 인수
+
+원결과 만료 I1은 독립 C0/I0와 Main e210d4 직접4 PASS/skip0/exit0·raw4 불변으로 해소했다. 저장 원문 불변·최종 반환 기한을 유지한다. 현재 소스8·문서2만 WIP 보존하며 전체 시험·실제 Binding/Delivery·전체 계획 완료로 올리지 않는다. 같은 Primary가 desktop 사전권한 호출선을 이어가고 실제 DB·권한·키·서비스·Agent는 실행하지 않는다. 상세는 구현통제 §79다.

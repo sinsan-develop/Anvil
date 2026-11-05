@@ -713,3 +713,66 @@ Main이 docs/contracts/FN06_PHASE_DENIAL_AUDIT_SEMANTICS_CANDIDATE_20261105.md�
 PMO 최신 답변은 네 의미값이 직접 채택 사항임을 확인했다. 신산님에게 최종 후보의 source-only A안 채택 질문을 한 번 비동기로 보냈다. 답변 전 네 값 저장 구현은 하지 않고 최초 RED/fixture를 보존한다. 실제DB·권한·키·서비스·Agent·컴파일은 제외한다. 다른 승인 작업은 계속한다.
 
 같은 Primary는 기존 허용57 안의 NativePreparationStore 목적 reader와 기존 restore/lifecycle·ProjectNativePreparations freshHost를 원 borrowed Tx로 재사용하는 N current 선행을 TDD로 진행한다. Main50b98d도 제품/시험경로의 허용목록 포함을 확인했다. 실제 Binding/Delivery producer가 없으면 성공 전체가 아닌 current 선행 부분으로만 인수한다. fixture installationId 준비 오류는 제품 guard를 낮추지 않고 기존 config의 고정값을 명시해 정합하도록 했으며 실제 reader 부재 RED와 구분한다.
+
+## 75. N current 준비 조회 오류와 조사 방식 정정
+
+Primary의 wildcard 경로 조회 OS123이 같은 준비 원인2회로 재발했다. Main9da4e7은 rg --files -g로 실제0059_project_storage_quota.sql.pending·0070_project_writer_authority.sql.pending를 확인했다. writer_authority_head_complete exact검색은 실제migration전체 일치0이며 확인된 함수는 head_guard/snapshot·writer_authority_final과 heads_complete trigger다. 없는 함수명을 구현 근거로 삼지 않도록 했다.
+
+Main도0071의 파일명을 추정한 조회1회에서 OS2를 냈다(da5d8c). 그 방법을 중단하고 fdf8ec의 실제목록으로0071_native_preparation_authority.sql.pending를 확인했다. 앞선 exact검색 일치0과 파일없음은 구분하며 오류를 제품/시험실패나 정식FAILURE_REPORT로 세지 않는다. 기존 reader의 직접GREEN/noEmit0 제출은 보존하되 실제SD/bound current 연결은 미완료다.
+
+담당자는 이미 확인된 정확 경로만 읽고 누락 지도는 Main에 요청한다. Main도 실제 목록을 먼저 확인한 경로만 도구에 전달한다. 실제DB·권한·키·서비스·Agent는 실행하지 않았고 같은 Primary가 N current의 기존원Tx선행을 계속한다.
+
+## 76. N current 선행의 원 Tx 보장 미완료
+
+기존 Primary가 N 자료의 목적 reader와 기존 restore/lifecycle/freshHost 재사용 코드를 제출했다. 원 receive SID·Binding/N fullref·부모 command/receipt/audit·RESERVED writer를 검산하는 source다. 별도 공개 hostCurrent·raw GRANT·0071은 변경하지 않았다. 실제 phase owner admission·Binding/Delivery producer·공개 BOUND/ATTEMPTED는 아직 미연결이다.
+
+독립 검수는 C0/I1이다. material SD는 expected txid를 입출구에서 확인하지만, 그 뒤 restore/freshHost/최종 time은 query 동일성과 외부 check에 의존한다. 같은 query 함수의 underlying Tx가 material 반환 뒤 교체되는 반례를 helper 단독으로 검출하지 못한다. 시험의 tx 모드는 material 응답 ID 변조만 다뤘다. helper를 단독 same-Tx 완료로 인수하지 않는다.
+
+Main은 원 phase owner의 borrowed SELECT 전후 assertTx에 원 expected txid를 결박하고 실제 교체 반례를 닫도록 지시했다. 실제 연결과 반례 통과 전 I1은 열린 상태다. 검수 본문 고정을 해제했고 보완이 안정된 뒤 Main 직접 검사를 한 번 수거한다. 현재 직접 3개를 불필요하게 반복하지 않는다.
+
+제출 raw 5개는 독립 검수 전후 같았다.
+- N Store: BCE6E76A94B4B5CB8D679745A2464C6D25D0FE7E8ACEB9604F2022FF728B4E8A
+- Preparations: B3E51F8E763767824E48E900CB3320627023ADBFCCCCE923954B80925680AB54
+- N Store 시험: C8325E4AA2D360995E150EF37FD3DCB29CB413032FC2513083DE63BBB2F3F827
+- SQL: 703266F65405C77A85565F8CA55F22DF8F8EE20C3B189C2A8CD4D66F1EA6E83A
+- schema 시험: A28E70A13F51E49F4943E3191A25874B93A1581FCC05EC4BACA9C9EB51C8F970
+
+readForReceive 본문은 2323C1A90CA1E2FCA62AE8DEA6D634ABB9A2A67342F4419614AB20920E8F0AEE, receiveBoundCurrent는 42CC3827BBAD74D5C03B1DC6DE548A1FE0A88740C438B834E91EB53F37EFF1AD다. 수행자의 직접 3개·SQL 형상 1개/noEmit0은 제출 시점 증거이며 실제 PG 증거가 아니다. 실제 DB·권한·키·서비스·Agent는 실행하지 않았다. 감사 네 값은 직접 답변 전 GO0으로 분리하고 같은 Primary가 원 owner 연결을 계속한다.
+
+## 77. 원 phase owner의 N current 연결 부분 인수
+
+원 Tx I1은 기존 phase owner의 borrowed SELECT 전후 assertTx와 최종 admission 재대조로 보완했다. 독립 scoped 재검수는 ADDRESSED/C0/I0다. material 반환 뒤 같은 query 객체의 actual txid가 바뀌면 다음 업무 조회와 COMMIT 전에 거절한다. 원 actor/session·재인증·Binding/준비 ref·RESERVED Writer lease/epoch·부모 command/receipt/audit·승인과 N/receive profile 구분은 기존 검산을 소비한다.
+
+Main2cebce의 정확 명령과 결과:
+- node --test --test-name-pattern='receive phase owner는 material 뒤|receive 목적 N reader는|receive Bound current는|실제 HUMAN 원명령과 receipt 감사' tests/unit/FN06/native-preparation-store.test.ts : 4 PASS/skip0/4817.0566ms/exit0.
+- node --test --test-name-pattern='Bound admission producer는 실제|BOUND N material SD는' tests/unit/FN06/native-first-receive-schema.test.ts : 2 PASS/skip0/506.5402ms/exit0. 실제 PG 실행은 아니다.
+
+원 6파일 raw는 전후 같다. ReceiveStore2079F320BC22BA86AA7CC5CA09B0859D219EA6289DF0FB7E3F631E534C9D0B5C, NstoreBCE6E76A94B4B5CB8D679745A2464C6D25D0FE7E8ACEB9604F2022FF728B4E8A, PreparationsB3E51F8E763767824E48E900CB3320627023ADBFCCCCE923954B80925680AB54, SQL65AFE18088937AD8861D2A800741ADC168E9B525657D560C9B498448EEAE7F2A, N시험3D6175F17F0E374569DA772ED452046F9CDAB954007B1F65CFA39C2197CB178E, schema23B55FC1D5B4259A99B57F0F34644441071F5AF89F646E7C04ECCC4CDAA75600다. owner 본문은 B58C5A999461FCC8B46637C0513AAC5FDAB7109D613E3C423C63FBCF39089A63이다.
+
+Main 수거 직후 파일 고정과 검수 본문 고정을 해제했다. 다음은 실제 private current 완료·최소기한을 공개 STATE/consumed 분기의 후속 await·최종 반환까지 연결하는 작업이다. helper를 건너뛴 효과/replay 조회는 허용하지 않는다. 실제 Binding/Delivery 생산과 공개 BOUND/ATTEMPTED 전체 성공은 여전히 미완료다. 실제 DB·권한·키·서비스·Agent는 실행하지 않았고 감사 네 값은 답변 전 GO0으로 분리한다.
+
+## 78. 공개 N current 소비의 직접 증거와 원결과 만료 I1
+
+기존 Primary는 private current 완료·최소기한을 BOUND/ATTEMPTED의 STATE 효과와 consumed 조회에 결박하고 service 후속 await·최종 반환까지 연결했다. 첫 STATE의 기존 expiresAt는 검산된 최소값으로 생산하며 replay 원 canonical은 바꾸지 않는다. 실제 Binding/Delivery 생산은 여전히 미연결이다.
+
+Main c6780e의 정확 명령:
+- node --test --test-name-pattern='receive phase owner는 material 뒤 같은 query의 Tx 교체|STATE service는 실제 서명|consumed owner는 실제 서명' tests/unit/FN06/native-preparation-store.test.ts tests/unit/FN06/native-first-receive-routes.test.ts : 3 PASS/skip0/4422.652ms/exit0.
+- node --test --test-name-pattern='BOUND STATE producer는|consumed SQL 목적은|Bound admission producer는 실제' tests/unit/FN06/native-first-receive-schema.test.ts : 3 PASS/skip0/549.5382ms/exit0. 뒤 3개는 실제 SQL 실행이 아니다.
+
+관련 8 raw는 전후 같았고 수거 직후 고정을 해제했다. 새 제출 핵심 지문은 ReceiveStore597F112107985F502D3F77EE74C4067EB2A1566D2D734157A0F66C41C9F7746E, service1ECA272C64930DE8D409DF1D2571309721C67D0AB4E5EB8FA6F0B25EAA05BD14, SQL03B77E602E4BAA67D619BE40D2F0E69DB0BBFDDC7B0FC137BE8E88CB8423DD7B, N시험D138BE4D57FEDEDE067DDAE65AB97C43D2B1E1E52A89AA46C269BEDBC1DBB79E, schema2BC746C858A44DD819E039DD7EC70A7EF53B30D530D58ED4D3AA9347DC50ED1B다. 기존 Nstore/Preparations는 §77과 같았다. routes 시험은 별도 감사 RED를 포함한 8C38648E45A6477A243BC47A5E7B667CF8858B9905E9CB143F17FA52AB00F2E8이며 전체 초록으로 보고하지 않는다.
+
+독립 검수는 C0/I1이다. readConsumedPhase가 저장 State의 원 expiresAt를 현재/최종 반환 최소기한에 포함하지 않고 nativeState consumed 즉시 반환이 state 변수 검사를 건너뛴다. 원 결과 T5·현재 N T8·proof T9일 때 T6 반환을 막지 못하는 계약 반례다. 실제 Binding/Delivery 운영 발생을 입증한 것은 아니다. Main은 저장 canonical을 고치지 않고 원 결과 기한을 후속 await·COMMIT/release 뒤 검사에 포함해 반례로 보완하도록 같은 Primary에게 지시했다. 직접 6 PASS를 이 누락 반례 합격으로 올리지 않으며 공개 연결을 아직 인수하지 않는다.
+
+정상 service UNKNOWN 1건은 fixture UUID supplier가 같은 값만 반환한 준비 오류로 확인돼 순차 ID만 정합했다. 제품 유일성 기준은 유지했고 12모드 직접 시험 1개로 정착했다. SQL delimiter의 넓은 정규식은 기존 named dollar tag를 오탐한 준비 검사로 분리한다. 독립 검수 첫 줄 혼합 언어 표기는 즉시 한국어로 정정하도록 했고 판정 의미와 제품 코드를 바꾸지 않았다.
+
+실제 DB·권한·키·서비스·Agent는 실행하지 않았다. 감사 네 값은 직접 답변 전 GO0이며 다른 source 작업은 계속한다.
+
+## 79. 원결과 만료 보완 검수와 소스 보존
+
+기존 Primary의 원 State/ARM snapshot expiresAt 최소기한 보완은 독립 재검수 C0/I0로 I1을 해소했다. Store의 private replayDeadline과 Service operationExpires를 줄여 후속 await·COMMIT/release 뒤·최종 반환을 검사하며 저장 canonical은 바꾸지 않는다. 충돌 집계와 첫 STATE 생산은 유지한다.
+
+Main e210d4는 node --test --test-name-pattern='receive phase owner는 material 뒤|STATE service는 실제 서명|consumed owner는 실제 서명|STREAM·CLOSE consumed HTTP는' tests/unit/FN06/native-preparation-store.test.ts tests/unit/FN06/native-first-receive-routes.test.ts 를 실행해 4 PASS/skip0/4252.1356ms/exit0을 확인했다. Store A13FC57893E9940F098EAEDDB32266190E38EE9C814C07275B8887FA90D8B5F9, Service DD348F95DFC9A742D984D5BA1CBA7961796EC13E5DA7E7BB7205CFDB061DEA4F, N 시험 30546853938A070560472DCB3033ABDEACDA0E5083B08C2524213795BD8FBA69, routes 시험 8C38648E45A6477A243BC47A5E7B667CF8858B9905E9CB143F17FA52AB00F2E8은 전후 동일했다. 해당 만료·current 연결 소스만 부분 인수하며 실제 Binding/Delivery 생산과 전체 기능 완료는 아니다.
+
+수행자 실제 RED는 원결과 T5·현재 N T8·proof T9의 T6 조회가 거절되지 않은 반례다. 보완 뒤 직접시험 1개 14모드와 COMMIT/release 뒤 만료 UNKNOWN을 확인했다. 수행자 noEmit/diff0은 제출 증거다. TS7 ScriptTarget export 지문 준비 오류는 제품·시험 실패와 분리하고 같은 AST 준비 방법을 중단했다.
+
+현재 허용 소스8경로와 Main 문서2경로만 WIP checkpoint로 보존한다. 별도 미채택 감사 RED는 남아 있어 전체 시험 합격을 주장하지 않는다. 보호 untracked3·원문·기존 이력은 유지하고 private 게시·실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않는다. 다음은 같은 Primary가 기존 Session/등록·원 lease 경계의 desktop 사전권한 서명 호출선을 연결하는 작업이다. 감사 네 의미값과 ACK 입력 변경은 직접 답변 전 각각 GO0이다.
