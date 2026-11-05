@@ -1643,3 +1643,13 @@ Resource는 원 부모/Window/서버Session/profile와 실제Delivery/slot 만�
 | tests/desktop/desktop-trust-registration.test.cjs | 변경 | 136653 | 22A71E81DD2F1BE2B8EDAA39352C7DCDBFA7EC6333684D6E596EFAF79BCF8A7F |
 실제 변경4경로와 Main 현황2만 보존 대상으로 분리한다. 불변2는 인접 근거이고 보호 원문은 stage하지 않는다. LF/CRLF 예정 경고2는 별도·설정/정규화0이다. 복구는 변경4경로 한정 revert다.
 별도 미완료를 숨기지 않는다. 현재 공통 phaseController는 pending STREAM 동안 ARM/STATE/CLOSE를 막는다. 서버 ARM이 OFFERED+stream_owned를 요구하고 Binding/Delivery는 열린 stream에 의존하므로 STREAM 완료 후 ARM으로 순서를 바꿔 해결할 수 없다. 이는 broker.begin production 미연결과 별개의 Client 진행 제한이다. 다음은 이 기존 승인 흐름을 연결하는 범위를 고정하고 SlotReceipt/waiter 생산·shell/UI/ACK도 계속 남긴다. 실제 DB/권한/키/서비스/Agent/HTTPS/C#·사용자 인수/전체계획은 미완료다.
+
+## 159. 대기 STREAM과 제어 phase의 기존 흐름 접합 배정
+수명/예산 보완의 실제 변경4+Main 현황2는687f35fb62a82a63b1443feabdadd00a659a400d에 보존했다. 문서65411aaf의 직접 자식이며 commit 직후 tracked clean·보호 비추적3이다. private 동일성/PR/병합은 미확인·Git 복구/push 재시도0이다.
+다음 확인된 진행 제한은 공통 phaseController가 STREAM body 대기 동안 ARM/STATE/CLOSE를 막는 것이다. 서버 ARM은 OFFERED+stream_owned를 요구하고 Delivery는 ARM/Binding 뒤 열린 stream에 공급되므로 직렬 대체나 미리 완료된 STREAM fixture로 해결할 수 없다. 부모 S4/S5의 기존 수신·명시 제어를 연결하는 내부 구현이며 새 Agent 병렬 실행 정책/권한이 아니다.
+기존 Primary만 §153의같은6경로(TS/CJS Client·trust owner·대응 unit/desktop owner/desktop trust-registration 시험)를 수정한다. 최소 필요한 파일만 바꾸고 다른 파일은 쓰기 전 정확 근거를 반환한다. 서버/wire/SQL/broker·ACK/receipt·실제 shell/UI·새 IPC는 이번 변경0이다.
+동일 Window/Session의 원 STREAM reader1개가 대기하는 동안 명시적 ARM/STATE/CLOSE 제어1개가 기존 phase/current·ticket 조건에 따라 진행되게 한다. 중복 STREAM과 동시 제어2개·중복 SIGN/동일 Challenge 재사용은 계속 효과 전 거절한다. 실제 외부 실행/supplier 단발·owner signer 단일성·원 actor/control/등록 binding은 확대하지 않는다.
+각 호출의 원 proof/Challenge/current/원10초 최소기한과 resource/NativeAuthority/Delivery/slot 실제 만료를 보존한다. ARM 시작/새 결과가 기존 STREAM의 기다림·기한을 초기화하거나 늘리지 않는다. 역할/호출별 controller·until·정리를 결박해 늦은 한 호출이 다른 작업을 해제/교체하거나 새 기한을 빌리지 못한다. actor/parent 종료·ABA·사용자 dispose는 모두 닫고 비밀을 회수한다.
+CLOSE는 실제 전송 전 CAS의 raw CLOSED 원결과가 있어야 자기 호출의 종료로 확인한다. stream 종료/transport 오류만으로 CLOSED/receipt/ACK를 만들지 않는다. 기존 UNKNOWN 시도의 이력은 success로 덮지 않고 새 서명/재전송을 발급하지 않는다. 이미 진행 중인 자기 요청의 알려진 원결과와 새 요청을 구분하며, 구현에 새 외부 의미가 필요하면 근거를 반환한다.
+실제 원 Client/REGISTERED source·고정 transport/parser의 deferred STREAM→합법 offer/current→원 ARM→Binding/Delivery→실제 slot 흐름을 합성으로 반증한다. STREAM은 ARM 전까지 body를 완료하지 않아야 하며 미리 주어진 frame으로 deadlock을 숨기지 않는다. pending STATE·전송 전 CLOSE·중복/교차/부재·기한/UNKNOWN·늦은 actor 결과·원 frame 단발/JSON0을 직접 영향 범위에서 확인한다. fake HTTP/FSM 검증을 실제 PG/Tx/broker/HTTPS 인수로 부르지 않는다.
+기존 Source부재 거절·CJS/runtime키/closure/builtin·서명/target/body/cap·원 OPEN/authority 경계를 유지하고 성공 stub·guard/기준 완화·새 timeout0이다. 단일 writer·TDD·독립 검토·Main 직접 최소 검증·안정 지문 전 인수0, 실제 DB/권한/키/서비스/Agent/HTTPS/C# 및 ACK delta 제외를 유지한다.
