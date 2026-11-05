@@ -15426,3 +15426,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 판정: 기존6경로의 실제 handoff 자동 SlotReceipt 생산/보관·동일 V 조회를 Main fresh20 PASS/fail0/skip0·타입/문법2/diff exit0·raw6 전후 동일·독립 Critical0/Important0로 한정 검수했다. Primary14와 중복 합산하지 않는다.
 - 근거:private 원 OPEN Session/실제 STREAM Delivery와 owner actual slot의 단발 수용 facts를 결합한다. void-only/alias 변이/위조/교차·기한 min/축소·UUID 실패/취소/ABA/UNKNOWN/늦은 복귀를 거절하며 ID/시각/V 재생산0이다. 상세 명령·지문·RED1 및 제외는 구현 통제 §164에 있다.
 - 조치:소스6+Main 현황2만 기존 branch에 보존한다. 실제 waiter 동일 E·ACK/후행 확정·shell/UI·실환경/전체 계획은 미완료다. 동일 Primary는 원 native Tx와 broker 공급의 다음 선행을 읽기 대조한다. 실제 DB·권한·키·서비스·Agent·실자료/C#/J3/P03 R3와 Git 복구/재시도는 하지 않는다.
+
+
+## 2026-11-05 FN06 원 operation waiter·단발 공급 연결 착수
+- 기준:700e4fc189761bb62ffa7624d731919d0d2c4cff, tracked clean·보호 비추적3 지문 동일. 기존 Binding/ATTEMPTED SQL·Store와 원 command의 COMMIT 뒤 deliver는 이미 있으므로 재구현하지 않는다.
+- 다음 단위:동기 공급 후 즉시 반환하는 원 operation에 private capability 기반 waiter 준비→단발 공급→원 signal/남은 기한의 유한 대기를 연결한다. 제품3/기존 시험2 정확5는 구현 통제 §165에 고정했다. 같은 Primary만 TDD·Main은 독립 검수/직접 검증/통합을 맡는다.
+- 제외/미검증:ACK bodyHash/영속 terminal·CONFIRMED·실제 waiter E/PG/Tx/TLS/OS/키/서비스/Agent/C#/실자료/J3/P03 R3·전체 여정은 별도 미완료다. 실제 실행/기준 완화/재전달0. 준비·관리 오류와 정정은 §165에 기록했다.

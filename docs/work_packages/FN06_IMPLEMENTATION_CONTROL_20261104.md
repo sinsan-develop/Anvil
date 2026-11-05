@@ -1726,3 +1726,22 @@ Main fresh81b185 등록9 PASS/2458.2722ms·2823dd unit6 PASS/421.5469ms·53fd9f 
 | tests/desktop/desktop-trust-registration.test.cjs | 161456 | 92AEC9496601DA110A23E7F272B0EA4F39FF2A927AA7F3B33CD7A6264004CA30 |
 변경6과 Main 현황2만 보존 대상으로 분리한다. 보호 비추적3은 제외하고 LF/CRLF 예정 경고4는 별도·설정/정규화0이다. 복구는 소스6 한정 revert이며 현황/보호 원문을 일괄 복구하지 않는다. private 동일성/PR/병합은 미확인·push/인증 복구0이다.
 미완료를 분리한다. production waiter.begin은 아직 없고 서버 candidate의 원 ref/hash/metadataHash/expiresAt exact equality는 변경하지 않았다. 향후 원 operation의 검증 E와 receipt E를 같은 근거로 닫거나 불일치를 거절해야 한다. 이번 source 결과는 그 실제 동일성·ACK/후행 CONFIRMED·실제 DB/Tx/TLS/OS/helper/키/서비스/Agent/C#·shell/UI/전체 FN06·사용자 인수/전체 계획의 완료 증거가 아니다. 같은 Primary에게 부모 S5 원 native producer/동일 Tx Binding/ATTEMPTED COMMIT/broker Delivery의 기존 선행과 최소 접점을 읽기 대조하도록 배정했고 동결6 쓰기는 유지한다.
+
+
+## 165. 원 operation 대기·단발 공급의 내부 접합 범위
+§164 소스6+현황2는700e4fc189761bb62ffa7624d731919d0d2c4cff에 보존했고 tracked clean·보호 비추적3 지문 동일이다. 실제 SlotReceipt 생산은 source 한정 검수이며 전체 FN06/계획 인수가 아니다.
+읽기 대조로 command→동일 Tx admission/선예약→N CREATED/R Binding→N ATTEMPTED/R Delivery→authenticated 반환 뒤 deliver는 이미 연결된 것을 확인했다. 기존 Store/0076 SQL 생산자나 metadata/current reader를 재구현하지 않는다. 누락은 connectNativeCommand의 동기 deliver가 releaseNativeDelivery→supplyDelivery 후 바로 반환하고 원 operation이 broker.begin/wait를 소유하지 않는 접점이다.
+기존 Primary만 아래 정확5경로를 TDD로 수정한다. 부모57 허용목록에 모두 있으며 실제 SQL/DB·새 공개 API/권한/ACK bodyHash 변경은 없다. Main 제품/시험 쓰기0·동시 code writer1명이다.
+| 파일 | 시작 bytes | 시작 SHA256 |
+|---|---:|---|
+| apps/server/modules/executions/project-native-preparations.ts | 67173 | 241D288E4AC42093CCE6B496A8182F242D1548D4D9E790D471D43BF9A45FF6F3 |
+| apps/server/modules/executions/native-first-receive-service.ts | 64440 | 534F2C0490ED7C0D7C14F8FB4DF1316F2729BB5B137DC0AA06F3561B3C1AB26B |
+| apps/server/modules/executions/native-first-receive-store.ts | 144192 | 29656FF62BC4256DFA7D2FE32DCD44EE48909868C71E0B24E495AAF4C64B50FB |
+| tests/unit/FN06/native-first-receive-routes.test.ts | 189921 | B9BB2DE2C2ABB621D4B82F5ABE671081EFAE5CDCC9E9367605FBF48A0617AB68 |
+| tests/unit/FN06/native-first-receive-store.test.ts | 39153 | 74C24E88EBFD1B43DD7D9D2943E6F2BBE75046A24A7384499CFCD54055B5BD80 |
+원 nativeWorkBudget의 signal·check·유한 remainingMs를 같은 operation의 내부 포트로 전달한다. 실제 AccessRepository.authenticated callback/미정착 query 수거·확정 COMMIT/Pool 반환이 끝난 뒤에만 원 private Delivery capability로 waiter를 준비하고 frame을 단1회 공급하며 유한 대기를 await한다. callback 반환/메서드 이름/releaseNativeDelivery 호출만을 독립 COMMIT 증거로 꾸미지 않고 실제 원 호출선의 확정 반환 순서와 연결한다. waiter 기다림 동안 DB Tx/연결/락을 보유하거나 재조회하지 않는다. legacy header 없는 경로와 기존 원 command bytes/hash·응답/역사 조회 의미는 보존한다.
+waiter binding은 private capability의 검산된 원 Window/Session/Binding/ARM/Delivery/authority fullref·command/metadata hash·operation fence·원 E에서만 얻는다. caller의 raw binding/기한/성공 true를 생산 근거로 쓰지 않는다. 원 E가 같은 operation의 남은 예산 안에 들지 않으면 공급 전 거절하며 E를 늦추거나 조회한 receipt에 맞춰 고쳐 쓰지 않는다. owner/slot receipt E가 더 짧아 기존 equality를 만족하지 못하면 후보를 거절/UNKNOWN으로 남긴다. 공통 E의 실제 경합/환경 인수는 별도이며 broker equality를 완화하지 않는다.
+WAITING 원 E 만료/원 operation abort·공급 실패·불명은 유한하게 정착하고 후속 공급/재서명/재전달0이다. UNKNOWN/후보 직후 Map을 단순 삭제해 아직 유효한 같은 Window의 재begin을 허용하지 않는다. 원 고정 E까지만 유지하는 유한 terminal 표식과 실제 DB CAS/소진 capability에 정합한 최소 정리로 listener·대기 timer/자원을 회수한다. 새 갱신/retention 정책·무한 타이머·새 공개 상태0이다. 필요한 내부 clock/timer 시험 포트는 같은 service/시험 파일 안에서만 고정하고 실제 서비스/OS timer 변경0이다.
+RED/핵심 검수는 COMMIT/Pool 반환 전 공급0·waiter 준비 전 공급0·진행 중 원 command 미반환/DB 보유0·같은 검산 E 후보만 원 waiter 정착·경쟁/fence/digest/재사용 거절·기한/abort/불명 뒤 late 공급/후보/재전달0·terminal 표식의 E 전 중복 거절/E 뒤 유한 회수다. 실제 in-process handler/기존 Store와 broker를 소비하는 합성 시험으로 연결하며 성공 대역·임의 tuple로 원 생산을 대신하지 않는다. 변경된 call signature와 직접 영향 인접만 검증하고 완료한 검사를 전수 반복하지 않는다.
+검산된 후보의 도착은 ACK 영속행/후행 terminal·CONFIRMED/Agent 실행 성공이 아니다. 이번 단위에 ACK input/bodyHash·nonce/terminal SQL·새 권한/서비스/실행을 넣지 않으며 전체 S5 완료를 주장하지 않는다. 실제 DB/권한/키/서비스/Agent/실자료/C#/J3/P03 R3/Git 복구0·독립 검토/Main 직접 검증/안정5 전 인수0이다.
+준비 오류는 제품 실패와 분리한다. Primary의 잘못된 경로 rg1은 실제 목록으로 정정했다. Main의 추정 helper 파일2 OS오류도 실제 symbol 검색으로 nativeWorkBudget가 기존 파일 안 함수임을 확인했다. Main 전달 언어 오류1은 한국어 정본을 검증 후 재전달했고 코드/권한 변경0이다. idle 담당자에게 send_message만 보낸 후속 확인은 실행을 시작하지 않으므로 followup_task로 명시 재개한다. 이 관리·준비 오류를 제품 실패나 PASS로 세지 않고 이후 지시는 검증된 한국어와 실제 목록만 사용한다.
