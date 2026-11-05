@@ -1274,3 +1274,10 @@ Primary가 쓰기 전 정확 경로와 소비선을 반환했다. 기존 WI의 �
 cap의 목적은 private issuer provenance·원 Actor/SID/Tx·Window/Session/Challenge·N fullref·최소기한과 함께 검산한다. read 권한을 credential 발급/예약/consume/실행으로 전용하지 않는다. NativeRead cap으로 WindowRead의 다른 공개 경로를 우회하지 못하게 목적별 음성을 확인한다.
 Main은 현재 구현을 직접 쓰지 않는다. 같은 Primary가 이 한정 추가를 적용하고 직접 TDD와 default/GET3 회귀를 제출한다. 독립 검토자는 내부 파일 추가의 승인 범위 일치와 목적 구분을 먼저 읽기 검토한다. 실제 DB·권한·키·서비스·Agent·컴파일 실행은 없다.
 §127의 내부 경로·목적 구분안은 독립 C0/I0다. writer 전체78957B·CF415E8A와 두 소비선1366B·93E6F976이 시작/종료 동일했다. 이는 범위 타당성 검토이며 새 목적 분리 코드의 완료 판정은 아니다.
+
+## 128. phase current 입력·응답 strict3 소스 부분 인수
+기준 source4642ab12와 문서 checkpoint5a394b39에서 기존 Primary가 정확3경로를 제출했다. 독립 C0/I0, Main fresh5b3658의3PASS/skip0/940.8162ms·23727a 타입0·436a36 diff0, raw3 전후 동일이다.
+Main 명령: node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^phase current|^pre-authority signing current' tests/unit/FN06/native-first-receive-contract.test.ts. 타입은 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json이다.
+contracts/runtime/native-first-receive-v1.ts 25365B/11D8A9A161C8E70666D19251F761B596F9ACE6A130674213502BE7578C381B28, apps/server/modules/executions/native-first-receive-input.ts 14245B/8C9BD676163D58D75EA3BB119671EEC651D52B31240E96F398481AFF0D62AC90, tests/unit/FN06/native-first-receive-contract.test.ts 20217B/F33C37C58A6B2C05756632FD33910C8CA603E4E2ED650CF26AE6FA1DD4704857이다.
+exact 입력/current·phase/head/null·원 tuple/profile·2MiB cap·Proxy trap0과 기존 OPEN 분리만 이 단위에서 인수했다. 새로운 공개 endpoint의 실제 오류·SD/current 생산·typed 서명/HTTPS 소비 전체는 아직 미완료다.
+이3경로만 index에 분리했고 Main 기록2와 보존한다. 같은 Primary는 실제 HUMAN route/SD/current 생산선을 계속 작성한다. Main 코드 쓰기·실제 DB/권한/키/서비스/Agent/컴파일·ACK delta는 없다.
