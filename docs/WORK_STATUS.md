@@ -15403,3 +15403,9 @@ selected 경로의 legacy 전달 fallback은 별도 필수 source guard로 보�
 - 판정: §159 실제 변경4를 Main fresh20 PASS/fail0/skip0·타입/문법2/diff exit0·raw6 전후 동일·독립 Critical0/Important0로 한정 검수했다. source-only이며 실제 DB/Tx/broker/TLS/OS/Agent 인수가 아니다.
 - 근거: 원 STREAM을 ARM 전에 완료하지 않는 deferred reader→실제 REGISTERED owner/ARM→Delivery parser/기존 slot 합성 흐름, 중복 효과0·기한/UNKNOWN/ABA·dispose/late·JSON slot0을 확인했다. 원 호출별 finally와 실제 만료를 보존한다. 정확 명령·지문·오류1 보완은 구현 통제 §160에 기록했다.
 - 조치: 변경4+Main 현황2만 같은 branch에 보존한다. 보호 비추적3·불변 owner2를 유지하고 private 동일성/PR/병합 미확인·push/인증 복구0이다. 기존 Primary에 다음 SlotReceipt 실제 생산 접점의 읽기 대조를 맡겼다. 미채택 ACK 변경과 실제 DB·권한·키·서비스·Agent 실행은 하지 않는다. shell/UI와 전체 계획은 미완료다.
+
+
+## 2026-11-05 FN06 실제 slot 수용 영수증 생산 연결 착수
+- 기준:37c88ebe8ec405a2ca7e0a96df33cc9ba191b985. 직전 대기 수신/제어 접합의 반복 구현·시험은 하지 않는다. source4+현황2 commit 후 tracked clean·보호 비추적3이다.
+- 범위:부모 S4/wire §8의 기존 exact13 SlotReceipt를 실제 handoff/slot 검산 뒤 같은 원 Client의 private Session에 연결해 단발 생산·보관한다. 기존6경로·단일 Primary, 내부 main helper/조회 키만 한정하며 renderer/IPC/runtime entry·ACK/서버/SQL 변경0이다. 상세와 반례는 구현 통제 §161이다.
+- 미검증:아직 생산 구현·신규 시험·독립 검수가 완료되지 않았다. 실제 DB/권한/키/서비스/Agent/C#/실자료/J3/P03 R3 및 Git 복구는 제외한다. waiter production·shell/UI·OPEN 감사·미채택 ACK·전체 여정과 계획은 미완료다.
