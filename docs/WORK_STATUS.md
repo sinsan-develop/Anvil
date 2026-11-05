@@ -13,7 +13,7 @@
 | FN06 진행 중 | 역사 조회와 단발 Delivery는 Main 직접 합성·타입·지문과 독립 C0/I0로 소스 부분 인수했다. 같은 Primary가 기존 S4의 실제 수신과 slot 연결을 진행한다. 전체 여정과 실환경은 미완료다 |
 | FN06 남은 연결 | desktop/Node 수신과 slot·후행 phase 접합, 실제 PG/RLS/Pool/TLS/slot 검증이 남았다. OPEN 감사의 잔여 요구를 보존하고 ACK bodyHash 입력은 미채택 GO0이다. 자세한 범위는 구현통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 최근 소스 checkpoint b9d4de3bc970e4f600bde288ec348622767f18ec에 역사 조회 source6과 현황2를 보존했다. 같은 Primary가 다음 Delivery를 작성한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
+| Git 보존 | 최근 소스 checkpoint f8b689fccda26ebf1bb50eaa478e6d6a3034986d에 단발 Delivery source6과 현황2를 보존했다. 같은 Primary가 다음 수신 연결을 작성한다. 보호 비추적3을 유지하며 private 동일성·PR/병합은 미확인이다. 인증 복구와 push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
