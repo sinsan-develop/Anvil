@@ -881,3 +881,74 @@ native_insert_capacity/native_create/Binding_consume의 실제 SQL와 역완결�
 - binding_head_final223B: 38097BAE8BCEB9FE19D73AE2E42B68D97FA3C95B206F33A624A7CC555BBFC37E
 
 읽기 고정을 즉시 해제했다. Primary는 실제 broker 소유권 상실·COMMIT 불명 등 중요 실패 반례를 계속 확인하며, 안정 최종 제출 뒤 Main 직접 영향 검증과 통합을 수행한다. 정의 부재 schema RED1→형상 GREEN1PASS/666.8477ms/exit0는 수행자 제출 증거이고 실제 SQL 설치/PG·권한 집행·전체 정상 저장을 증명하지 않는다. 실제 환경 실행0과 전체 계획 미완료를 유지한다.
+
+## 89. 선택 raw N 권한 충돌 보완
+
+Source I1 FN06_BINDING_SELECTED_RAW_N_READ를 확인했다. capacity는 선택 context 전에 N두표 canonical_bytes를 raw SELECT하고 최종 read도 원 authority/event를 raw SELECT했다. 원0071의 FORCE RLS/false 정책·앱권한 회수와 충돌하는 소스이며 실제 PG 오류를 실행한 것은 아니다. raw 조회만 생략하면 원 한도 검사도 빠지므로 통합 필수 보완으로 처리했다.
+
+같은 SID/ARM/intent/실제 Binding/expectedTx의 목적 SD 집계·material로 선택 경로만 연결했다. N10000행/64MiB·project10GiB와 정확 자기예약 credit을 보존하고 credential_digest는 반환하지 않는다. 고정 read/#restore/#lifecycle의 최초 두 N조회만 정확 SQL/인자/순서로 한 번씩 공급하고 나머지 원장조회 전후·최종 actualtxid/query/actor/기한/수명을 검산한다. legacy/원0071/rawGRANT는 변경하지 않았다. 관측 보완 한정 C0/I0로 I1을 해소했고 Source9 최종 첫사용 검수에서도 재사용했다.
+
+바뀐 SQL 본문은 native_insert_material5371B/839B63FC1CF269B80FB6D096CCA3D16F17864EBC9EAF7B2AC90D3E0BC6CF69E5와 binding_material3579B/D62342E8F779EFC2FAD703759BE54A34082943CC77A27DC6CC53E12A85DBCD64다. 관측 NStore27189B/A8AE79B43B2CDAAE12A780FFA06F79EFA29B114A7868358E60E39CF17EAD3514, capacity3831B/2181FEDB24B98A025E05EE8114C5A0207982B4B27F406B0FC7DAA671EE2AE60E, readCreated2395B/D1F6E8D0C8B3FEA32C6F814DA89A77C0DED7C2A8CA180768A9FB8FDCBF2A6E9D는 전후 동일했다. 앞선 제출 NStore8A16F074와 차이는 capacity quota 분류 보완이며 전체 제출본을 동일하다고 주장하지 않았다.
+
+## 90. Binding 첫사용 직접 검증·보존과 감사 구현 진행
+
+Main5f2326이 제출9의 SHA를 먼저 검산하고 다음을 실제 메모리/소스 범위에서 실행했다.
+- node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='^실제 HUMAN 원명령과 receipt|^COMMIT 불명은 원결과|원 native HUMAN route는 채택 ARM|ARM header의 원 Ref|Binding admission Store|fixed intent 선예약 Store|ARM header 정상 여정|실제 broker 통로 소유권이 없으면' tests/unit/FN06/native-preparation-store.test.ts : 8PASS/skip0/6299.8974ms/exit0. 정상 여정 시험1개 내부7모드를 별도7시험으로 세지 않는다.
+- node --experimental-transform-types --disable-warning=ExperimentalWarning --test --test-name-pattern='native Binding 입장은|fixed intent N 상계 SQL|native 선예약 producer|선택 N writer와 Binding producer|선택 N 집계는' tests/unit/FN06/native-first-receive-schema.test.ts : 형상5PASS/skip0/632.4002ms/exit0. 실제 PG 설치·RLS·정산 증거가 아니다.
+
+독립 첫사용 통합 C0/I0는 실제 동일 broker/fence/통로 기한의 reserve 전후 검사, 원 callback 정착 뒤 COMMIT/release UNKNOWN, 명확 quota 분류·선택 rawN 차단·actualTx 교체 차단을 확인했다. 일반 SQL23514가 아니라 정확 code/message 쌍만 분류함을 Main63c4ba/4ecd7d에서도 읽기 확인했다. 시험 직후 고정을 해제하고 바로 보존용 짧은 고정으로 source9+현황2 WIPa2f0ce809ddadc7c6e01d763d17ab60b4614529f를 만들었다(부모1f76c593·정확11경로·413추가/20삭제). raw11·보호3 불변/index0 확인 후 모든 고정을 해제했다. private 게시·PR/병합은 하지 않았다.
+
+검증 전후 동일했던 source9:
+- apps/server/app.ts: 33D8425E41C8A3B03F6444FDED940E5594B41C7D094D955C98E8AB2E4DE343C0
+- apps/server/modules/executions/native-preparation-routes.ts: 60FD69F90867313350CAE2ADCAC77EFE6B5E6E90295F77B5A6313A8B2F72A75C
+- apps/server/modules/executions/project-native-preparations.ts: 440785BAB8879059D81BBDF2120F638B40F21AF1EB65B6B7C73314A89F96AB70
+- apps/server/modules/executions/native-preparation-store.ts: A8AE79B43B2CDAAE12A780FFA06F79EFA29B114A7868358E60E39CF17EAD3514
+- apps/server/modules/executions/native-first-receive-store.ts: 1744486A77D9E8B0B5B1B8A0337BC16D31FBDCFF3827248CE209DAC8DE691007
+- apps/server/modules/executions/native-first-receive-service.ts: 2E6DB5E6E80D09F665766BD72EE68F159C5DECC58D3A98D1A4C99B1E07F54B33
+- db/migrations/0076_native_first_receive.sql.pending: E24DC9580C791721505BEBCEA7B02C8734AC8F0DA81DA88652A35E5909CACE69
+- tests/unit/FN06/native-preparation-store.test.ts: 60CD63B360F8BDB86280D4EA2BCC8890E83C45E77EBCF81AA1BDC54A032B534F
+- tests/unit/FN06/native-first-receive-schema.test.ts: 4382F424A03A165E18332866A3140867802A3F4C412D1BF1953163FF5B172AC3
+
+같은 원 command+ARM 재조회는 임시409로 미완료다. 기존 직접 승인 R2 작업지시서 FN06_NATIVE_PREPARATION_AUTHORITY_SOURCE_IMPLEMENTATION_20261102.md 업무A는 current 접근 검사 뒤 역사 replay를 fresh phase/사업 기한 전에 원결과로 반환하도록 한다. projectReplay150~154는 project/actor/commandId·operation/원 hash를 검산해 저장 result_ref만 반환한다. 부모 header/S5는 단발 결박을 정하지만 새 receive lifecycle 조합을 모두 열거하지 않는다. Main은 기존 역사 POST 보존+정확 같은SID/actor/command/ARM의 실제 Binding 검산·신규효과0을 내부 접합으로 볼 수 있는지 근거를 PMO에 요청했다. 새 조건을 임의 구현하지 않았고 GET 조건을 POST에 자동 전용하지 않는다.
+
+기존 Primary는 직접 채택된 감사 A안5268A3DF의 기존 RED부터 구현을 시작했다. 첫 admitted failed-crypto의 private capability→원 Tx denial 목적→COMMIT/release 뒤403 Node 연결만 제출됐고(내부4모드 시험1PASS/831.9075ms), 실제 denial SQL·감사 네필드/역완결·정상 HUMAN close·DENIED 원문 replay·BOUND/ATTEMPTED의 실제N current 적격성은 아직 미완료다. 일반 PURPOSE_DENIED/SQL예외를 DENIED로 전용하지 않는다. 후속은 이 source-only13경로를 단일 writer로 계속하며 ACK 입력 GO0·실제 DB/권한/키/서비스/Agent/컴파일 제외를 유지한다. Binding 첫사용 소스 부분 인수는 전체 FN06·계획 완료가 아니다.
+
+Main 전송 절차 보완: 사전 검사한 장문을 도구 인수로 다시 적는 과정에서 혼합 문자1개가 들어간 것을 즉시 한국어로 정정했다. 의미·제품·시험 변경0이다. 장문 직접 재작성 발송을 중단하고, 이후 긴 위임/검수 지시는 검증해 저장한 문서를 짧은 참조 메시지로 전달한다. 직접 실행 도구의 전체 인수 사전 문자 검사는 계속한다.
+
+## 91. 진행 중 감사 prefix의 읽기 검수 지시
+
+담당: 기존 읽기 검수자. 승인 근거는 §84와 감사 source 채택 기록5268A3DF다. Primary가 유지하는 SQL CREATE FUNCTION~END;$$; 본문3을 한정 검토한다.
+- native_receive_phase_denial7720B/73556D740FB21EB06943CC533388820C8C243CB60989E4A1963147F983F4C018
+- fn76_phase_denial_complete7650B/5DE1B29684FAE07504A4C42EF766605244EF409555269D3B0AB80490B19D92F3
+- fn76_phase_denial_audit_final926B/493BC05F6250E61F335C4978ADE24C8493527981FD63E8EFB11FE783A846DBF6
+
+원 credential/SID·ticket/Challenge·원문/서명hash·현재 auth/member/control/등록/profile/writer/기한과 실제 P256 verify=false private capability의 적격성을 검산한다. 원 Tx의 실제 evidence/DENIED replay/audit1/REJECTED CAS·quota 정산, 네 의미값·정확 scope/row hash·같은 시각, orphan 역방향, native 성공/TERMINAL/N효과0과 이후 별도 정상 HUMAN close 허용을 확인한다. 임의 PURPOSE_DENIED/일반 SQL/timeout을 DENIED로 바꾸지 않아야 한다.
+
+현재 pre-native prefix이며 BOUND/ATTEMPTED 실제 N current·OPEN 최초 거절·DENIED 원문 replay·정상 HUMAN close 메모리 여정은 미완료다. 이 알려진 공백을 전체 구현 완료로 덮지 말고 새 확정 반례와 본문 전후 지문·한정 C/I를 반환한다. 실제 PG·역할 집행·전체 FN06 판정은 하지 않는다. source 읽기만 수행하고 수정/시험/실환경 실행0을 유지한다. 같은 SQL의 다른 후속 본문은 작성 중이다.
+
+## 92. 원 명령·같은 ARM 역사 재확인의 기존 계약 접합
+
+판정: MAIN_CLASSIFIED_EXISTING_CONTRACT_INTEGRATION / source-only. PMO의 2026-11-05 기존 범위 판단(turn01a1a986-7c95-7051-9539-e7726a585dfa/message msg_0c09b62823129b7a016aebe92dfaec81919ec06d52e1e291b4)은 재승인 없이 기존 POST 역사 replay 보존으로 처리할 수 있다고 확인했다. PMO 최신 heartbeat가 이 판단을 가려 Main이 최근2turn을 한정 읽어 실제 답변을 확인했다. 새 승인/권한을 발급하는 결정이 아니다.
+
+근거: 직접 채택된 native 권위 r2 A 작업지시서(20261102) 업무A의 역사 replay는 current 접근 검사 뒤 fresh phase/사업 기한보다 먼저 원결과를 반환한다. project-command.ts150~154는 project/actor/commandId·operation·원 canonical hash를 검산해 저장 result_ref를 반환한다. 기존 native 원장 data는 RECORDED/intent/원 commandSnapshot·Agent권한false이며 수신 credential/새 permit을 담지 않는다. 부모 wire108~110과 S5의 header는 command body/hash를 바꾸지 않고 ARM/원 command/실제 Binding을 한 번 결박한다.
+
+구현 책임: 기존 Primary 한 명이 현재 감사 단위를 안정시킨 뒤 같은 승인57의 필요한 최소 내부 경로에서 수행한다. 대상은 project-native-preparations.ts, native-first-receive-store.ts/service.ts, 0076 미적용 SQL, 기존 FN06 native-preparation-store/schema 시험이다. 실제 조립에 필요하면 기존 app/main 접점만 최소 연결한다. 공개 command/body/hash/result·HTTP/IPC·정책 literal·권한/한도/timeout·legacy header 생략은 바꾸지 않는다.
+
+필수 경계:
+1. 기존 current HUMAN 접근·프로젝트/actor/client/control·정책 검사를 그대로 통과한 projectReplay 결과에만 접합한다. SID는 실제 authenticated actor에서 읽는다. 동일 원 SID/actor/project/command/ARM과 실제 저장 Binding·원 ledger의 fullref/hash 관계를 목적 한정 보호 조회로 검산한다. caller current=true나 새 source 선언을 권위로 쓰지 않는다.
+2. 원 저장 result_ref만 반환하고 그 원문·server 시각·기한/의미를 새 값으로 바꾸지 않는다. fresh 발급의 phase/사업 기한·fresh 재인증·stream/current 복구 조건을 역사 반환에 덧씌우지 않는다. GET 역사 조회 규칙을 새 POST 권한으로 전용하지 않는다. 기존 요청 처리 시간/현재 인증·정책 기한은 보존한다.
+3. 정상 재확인의 새 예약/명령/receipt/Binding/credential/nonce/frame/slot/Writer/N효과/Agent 실행은0이다. 새 authority나 fresh native 성공을 표시하지 않는다. 원 명령 replay에 새 효과를 덧붙이지 않는다.
+4. 다른 ARM/SID/원문, Binding 없는 옛 legacy 명령에 ARM 덧붙이기, 불일치/변조 Binding은 거절한다. 조회 불명에는 원 id/hash를 보존하고 header를 버려 legacy 성공으로 fallback하지 않는다. 기존 거절/유한 감사 계약을 임의 변경하지 않는다.
+5. 원 wire233의 결과불명 후 HUMAN 고정 GET 원칙과 자동 POST 재시도 금지를 유지한다. 이번은 서버의 동일 요청 멱등 처리 누락 보완이며 UI/client의 새 재시도·자동 재전송 허가가 아니다.
+
+검증은 원 저장 결과의 정확 동일 재반환·원 fresh 기한/phase 변경 뒤 역사 의미 보존·현재 접근 거절·다른 ARM/SID/원문/누락 또는 변조 관계 거절·보호 조회 불명·모든 새 native 효과0과 legacy 불변을 직접 기존 포트/fixture로 확인한다. 실제 PG/권한/키/서비스/Agent·C# 컴파일·J3/P03 R3·배포는 제외한다. 현재 임시409는 이 단위가 끝나기 전 미완료이며 첫사용 소스 부분 인수나 감사 구현으로 숨기지 않는다.
+
+## 93. 감사 prefix 검토와 후속 연결 진행
+
+§91의 pre-native SQL3은 독립 한정 C0/I0·본문 전후 지문 동일이었다. 실제 verification/원 credential/SID·ticket/Challenge/proof/body/hash/최소기한/원Tx 재검산 뒤 evidence/DENIED replay/audit1/REJECTED CAS·정산과 네 의미값/NULL/scope/row hash/시각·역방향을 확인했다. 일반 PURPOSE_DENIED만으로 감사 저장하지 않고 성공/N/TERMINAL 효과를 만들지 않는 소스다. 읽기 고정을 즉시 해제했다.
+
+기존 Primary는 별도 readonly failed-crypto WeakMap capability로 BOUND/ATTEMPTED의 원 readBoundAdmission/checkBoundCurrent/N helper·같은Tx·최소기한을 연결했다. 이 cap은 성공효과용 phaseProofLeases에 넣지 않는다. Node 반례2모드를 기존 단일시험에 추가해 UNKNOWN RED→1PASS/5916.0534ms, 관련 SQL형상1PASS/659.1314ms를 제출했다. 처음 잘못된 이름패턴의 선택0/container PASS는 증거에서 제외하고 정확 시험명으로 별도 RED/GREEN을 수거했다. 기존 SQL3 중 producer1이 이 확장으로 변경돼 이전 prefix 판정을 새 전체본에 상속하지 않는다.
+
+후속 정상 HUMAN close 메모리 연결1PASS/746.5238ms는 denial1/terminal0 뒤 별도 HUMAN command/receipt/audit·TERMINAL/CLOSED 연결 제출이다. Session fixture의 exact7키 밖 추가 metadata 오류는 추가필드 제거만으로 정합했다. 아직 Main 직접 전체 감사 검증은 하지 않았다.
+
+DENIED 원문 재조회는 현재 작성 중이다. 기존 entry가 REJECTED를 first verification으로 보내던 공백을 실제 REJECTED ticket의 별도 readonly DENIED 분기로 구분한다(내부 두키 유지·공개HTTP/DTO변경0). 원 proof/body/requestHash/서명 bytes·감사 closure·현재 접근/원 모든기한을 검산해 원403만 재구성하며 정상동일원문의 새감사/nonce/효과0을 보존한다. 성공 replay를 느슨하게 하거나 다른서명/원문을 같은결과로 받아들이지 않는다. 실제 PG·권한·전체 감사/FN06·계획 완료는 미확인이다.

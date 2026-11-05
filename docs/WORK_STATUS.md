@@ -10,10 +10,10 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
-| FN06 진행 중 | STREAM·CLOSE 재조회·충돌 집계, N current 원 Tx·원결과 만료, desktop 원 Session/REGISTERED owner의 최초 서명 연결을 소스 범위로 부분 검수했다. 같은 Primary가 승인 ARM header→원 native 명령 Tx의 선예약·N CREATED/R Binding·BOUND 생산을 구현한다. 실제 Delivery·transport/slot·전체 여정과 실환경은 미완료다 |
-| FN06 남은 연결 | 최초 DENIED 감사 A안은 직접 채택돼 Binding 안정화 뒤 같은 Primary가 기존13경로에 순차 구현한다. ACK bodyHash 입력만 미채택 GO0이다. N 효과 전 선예약·후행 phase/desktop/slot 접합과 실제 PG/RLS/Pool/TLS/slot 검증은 미완료다. STREAM/CLOSE replay와 감사 A안의 세부 범위는 각 채택 기록·구현 통제 최신 절을 따른다 |
+| FN06 진행 중 | Binding 첫사용의 header→원 Tx 선예약/N CREATED/R Binding·BOUND·원 복원은 Main8+형상5/독립C0I0로 소스 부분 인수했다. 같은 Primary가 직접 채택된 최초 DENIED 감사 A안을 구현한다. 같은ARM 원명령 재조회는 임시409 미완료이며 기존 역사 계약 경계를 대조한다. Delivery·transport/slot·전체 여정과 실환경은 미완료다 |
+| FN06 남은 연결 | 최초 DENIED의 실제 SQL/감사·역완결/원문 replay·BOUND current 적격성, 원명령+ARM 재조회, Delivery/후행 phase/desktop/slot 접합은 미완료다. ACK bodyHash 입력은 미채택 GO0이며 실제 PG/RLS/Pool/TLS/slot 검증도 남았다. 채택 범위와 미완료는 구현 통제 최신 절을 따른다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
-| Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIPab4cae4a3b29f94cca047ff2441ba0f2bad67110는 desktop 소스3·문서2를 보존하며 앞선80dd의 N current/만료와 감사 RED도 유지한다. raw5·보호3 불변/index0을 확인하고 같은 Primary가 다음 source를 작성한다. private 동일성과 PR/병합은 미확인으로 유지하고 인증 복구·push 재시도는 하지 않는다 |
+| Git 보존 | 기존 codex/av3-stage-b의 최신 로컬 WIPa2f0ce809ddadc7c6e01d763d17ab60b4614529f는 Binding 첫사용 source9·현황2를 보존했다. raw11·보호3 불변/index0 확인 후 같은 Primary가 감사 source를 작성한다. private 동일성과 PR/병합은 미확인이며 인증 복구·push 재시도는 하지 않는다 |
 
 최신 동작과 미완료 항목은 이 진입점·구현 통제 문서와 맨 아래 최신 일자별 이력을 함께 확인한다. 이전 구현·검토 원문은 삭제하지 않는다.
 <!-- CURRENT_WORK_ENTRY_END -->
@@ -15183,3 +15183,15 @@ desktop 소스는 WIPab4cae4a에 보존했고 같은 Primary가 채택된 ARM he
 ## 2026-11-05 FN06 Binding SQL 생산 한정 검토
 
 N 실제 저장/R Binding·CAS·정산·역완결의 SQL7본문을 독립C0/I0·지문 동일로 대조하고 읽기 고정을 해제했다. 같은 Primary가 broker 소유권·COMMIT 불명 반례를 마무리하며 Main은 안정 제출 뒤 직접 검증한다. 실제 PG/권한 집행·저장 전체·계획 완료는 미확인이다. 상세는 구현통제 §88이다.
+
+## 2026-11-05 FN06 Binding 첫사용 소스 부분 인수·감사 구현 진행
+
+선택 rawN 권한 충돌 I1은 목적 SD 집계/material와 원 복원 재사용으로 해결했다. Main직접8·형상5 PASS/skip0/exit0·raw9불변·독립 첫사용C0/I0를 확인하고 source9/현황2를 WIPa2f0ce80에 보존했다. 같은ARM 원명령 재조회409는 미완료이며 PMO에 기존 역사 계약 경계를 지원 요청했다. 같은 Primary는 승인된 최초 DENIED 감사 A안을 구현 중이고 실제환경/전체FN06/계획 완료는 아니다. 상세는 구현통제 §89~90이다.
+
+## 2026-11-05 FN06 역사 재확인 범위 확인·감사 prefix 검수 준비
+
+PMO는 원 명령·같은 ARM의 저장 결과 재확인을 기존 승인된 POST 역사 replay 보존의 내부 접합으로 판단했다. 새 권한/결과형/효과 없이 같은 SID·actor·command·ARM/실제Binding을 검산하고 원결과만 반환하는 지시를 구현통제 §92에 기록했다. 현재 감사 단위는 계속 진행하며 그 prefix SQL3은 §91 범위로 독립 읽기 검토한다. 실제 환경 실행0·전체 미완료를 유지한다.
+
+## 2026-11-05 FN06 감사 후속 연결 진행
+
+감사 pre-native SQL3을 독립C0/I0로 검토하고 고정을 해제했다. 같은 Primary가 별도 readonly capability로 BOUND/ATTEMPTED current를 연결하고 정상 HUMAN close 메모리 반례를 제출했으며 DENIED 원문 replay를 작성 중이다. producer 변경 전 prefix 검토를 새 전체본에 상속하지 않는다. 실제PG·전체감사·계획완료는 미확인이며 상세는 구현통제 §93이다.
