@@ -850,3 +850,34 @@ Primary는 새 표/열·GUC·caller flag 없이 원 ARMED Window/Offer·원 comm
 - binding_stage_final815B: F1C85FDB3BED010A04ECDCC4C5D90CB1CE101475C0F486AFD205949E72E89C2A
 
 수행자 node --test --test-name-pattern='fixed intent N 상계 SQL은|native 선예약 producer는|native Binding 입장은' tests/unit/FN06/native-first-receive-schema.test.ts 의 3PASS/skip0/552.5389ms/exit0과 noEmit318a7c exit0는 제출 증거이며 실제 SQL 실행이 아니다. Main은 정상 Binding 단위가 안정된 뒤 직접 영향 검증을 수거한다. 6본문 읽기 고정을 즉시 해제했고 같은 Primary는 원 callback reserve 호출·예약 소유 prospective credit·N CREATED→R Binding/BOUND·실비용/remaining 정산을 계속한다. 현재 정상 생산/전체 Binding/실제 PG는 미완료다.
+
+## 86. 원 명령 Node 연결 제출과 실제 저장 생산 미완료
+
+기존 Primary는 실제 STREAM broker 통로를 연 뒤 원 native route를 호출하는 메모리 여정의 최초503 미연결 RED를 관측했다. 원 callback의 reserve·private prospective credit·같은Tx N create 목적·Binding consume 목적 호출을 연결한 뒤 1PASS/2444.6924ms/exit0을 제출했다. 이 결과는 Node/목적 포트 한정이며 실제 미적용 SQL producer나 PG 실행 합격이 아니다. 정확 최종 명령과 Main 직접 검증은 완성 제출 시 수거한다.
+
+native_insert_capacity/native_create/Binding_consume의 실제 SQL와 역완결은 현재 작성 중이다. 따라서 정상 저장 전체는 아직 인수하지 않는다. Main은 중간 여정을 중복 실행하지 않고 같은 Binder의 실제 생산을 마무리하도록 했다. 그 뒤 직접 승인된 최초 DENIED 감사 A안, 후속 Delivery/STREAM 단발 공급으로 순차 진행한다.
+
+중간 UNKNOWN2회는 fixture Binding 응답이 proposed.expiresAt보다 긴 intent.expiresAt를 반환한 같은 준비 원인이다. 실제 응답기한 초과 거절은 유지하고 fixture를 검산된 proposed로 정합했다. 제품 guard/합격 기준 완화0이며 현재 해당 준비 오류는 해소됐다는 제출이다. 정상 producer의 실제 기한·Tx·계상은 최종 검수에서 별도 확인한다. 실제 DB·권한·키·서비스·Agent·컴파일은 실행하지 않았다.
+
+## 87. Node 선예약 호출 순서의 한정 검토
+
+독립 검수는 Node 순서 한정 C0/I0다. 실제 command는 고정 intent 구성→await bindingSource.reserve→원 command/receipt→Writer RESERVED→실제 source.credential→N 저장 순서다. 고정 intent용 UUID 할당은 실제 credential 생산과 구분한다. Store는 intent·원 Tx/기한·N7 반환과 await 전후를 검사하고 불명은 UNKNOWN으로 전파하며 command가 이를 삼키고 후속 효과로 진행하는 분기는 없었다. ARM header 없는 legacy는 admission/reserve/complete0 및 기존 replay/capacity 분기를 유지한다.
+
+관측 시작/종료 본문은 동일했다(선행 선언 공백 포함·끝 공백 제거): command9505B/62AA5FBDCDF469A3083E7AA0F6D16C003F99B5CA4FADEB9A866FC3F3D4AAE25A, reserveNativeBinding2709B/94D2B73469FC29482E0620BC4425C7D965F7F3CD30FF26BD3C06AA9315EA36A5, nativeInsertCapacity540B/E9383B72C4393DC603F241B140337933833EC67C67E1D45CFDF58995C85F9BC4, connectNativeCommand810B/EB540C0A84695CE9835C7455F2512A591FB0D057D154B35D1CDA2C93E3774C51.
+
+작성 중인 실제 SQL writer/전체 정상 생산은 이번 판정 밖이다. Primary의 native_receive_native_insert_capacity 정의 부재 schema RED1도 실제 SQL 실행 오류가 아닌 소스 정의 누락 반례로 구분한다. Main은 이 한정 검토를 전달했고 이미 동일한 순서 검사는 반복하지 않는다. 실제 DB·권한·키·서비스·Agent·컴파일 실행0이며 전체 계획은 계속 미완료다.
+
+## 88. Binding 실제 SQL 생산 본문의 한정 검토
+
+기존 검수자는 안정된 생산 SQL7본문과 기존 final의 reverse 호출선을 읽기 대조해 한정 C0/I0를 반환했다. 실제 SID/auth·project/account 잠금·원 ARM/Offer/command·등록/profile/정책, 같은 intent의 실제 RESERVED writer를 검산한다. N authority/CREATED 두 행과 원 N 완결 검사, R Binding INSERT·ARMED→BOUND CAS·예약 refresh/차분 settle, 새 binding_complete의 원 참조/기한 역검산과 N/record/head deferred 호출을 확인했다. 내부 helper 앱 직접 실행은 회수하고 목적 함수만 허용하는 소스다.
+
+제출 당시 전체 SQL415532B/4786A210EA0365D37D70589E3904BAF092CBDAD15FE7D2757F256C47ACD66009이며, 아래 CREATE FUNCTION~END;$$; 본문 지문은 검수 시작/종료 동일했다.
+- binding_write_scope8792B: D734F83D9D2D9C4116A7A3EDA2CB43E122959098F504C8AA826887B20B6FDD0A
+- native_insert_material3436B: 9140A7AF41B58BD348F634A92C056335C68F084F348278CF7504C9FA3C97B74F
+- native_insert_capacity578B: 4CD1DCBF182329FC5F9D3AE4FB02C5CA70EAD528DB6BAA8C8B522093E9723328
+- native_create1893B: 5942BE9C8080E4FB25D029480FD5E67BEA5509AF126565219B1B54140F0B854F
+- binding_consume5766B: EDBB7E242F87721026528882F2313225652B3EE5281067CAF01B1366D18EC25C
+- binding_complete6130B: 0AA6483071D8E5B02ABB9276FA06E8769F6ACD82D8A0B9BD0A5CEFF4836DED87
+- binding_head_final223B: 38097BAE8BCEB9FE19D73AE2E42B68D97FA3C95B206F33A624A7CC555BBFC37E
+
+읽기 고정을 즉시 해제했다. Primary는 실제 broker 소유권 상실·COMMIT 불명 등 중요 실패 반례를 계속 확인하며, 안정 최종 제출 뒤 Main 직접 영향 검증과 통합을 수행한다. 정의 부재 schema RED1→형상 GREEN1PASS/666.8477ms/exit0는 수행자 제출 증거이고 실제 SQL 설치/PG·권한 집행·전체 정상 저장을 증명하지 않는다. 실제 환경 실행0과 전체 계획 미완료를 유지한다.

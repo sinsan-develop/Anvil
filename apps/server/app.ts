@@ -37,8 +37,8 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
-  if(nativeReceive?.enabled===true)registerNativeFirstReceiveRoutes(app,nativeReceive,access);
-  else if(access)registerNativeFirstReceiveRoutes(app,{enabled:true,service:new NativeFirstReceiveService(access.repository,undefined,Date.now,nativePreparation?.preparations??null,undefined,access.origin)},access);
+  if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}
+  else if(access){const service=new NativeFirstReceiveService(access.repository,undefined,Date.now,nativePreparation?.preparations??null,undefined,access.origin);if(nativePreparation?.preparations)service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,{enabled:true,service},access);}
   if(writerAuthority?.enabled===true)registerWriterAuthorityRoutes(app,writerAuthority,access);
   if (controlHandoff?.enabled === true) registerControlHandoffRoutes(app, controlHandoff);
   if (webRoot) {
