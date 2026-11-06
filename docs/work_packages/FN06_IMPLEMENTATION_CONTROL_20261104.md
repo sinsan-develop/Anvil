@@ -2939,3 +2939,33 @@ Main은FN07_SDK_QUERY_CREATION_HANDOFF_SOURCE_IMPLEMENTATION_20261106.md 12253B/
 Main은PMO의내부범위분류와계획FN07을부모로WI1DA9D3580ACC60CB743579F05396F97F15B9EEBE78DA40BCD783D8D353B46673의정확신규2경로에SOURCE_GO를발행한다. 원ownerDBE89D57/options7C259081·신규2부재/보호3·시작Git를재검산해문서3을보존한뒤기존Primary에게구현을맡긴다. WI의이전PRODUCT_GO0표시는사전검수원형으로보존하고이Main기술GO와content hash를결박한다. 새외부/사용자재승인질문은없다.
 
 Main은동일제품을수정하지않고실제SDK/CLI import/install/query·OSchild·유료/Agent/DB/권한/키/서비스/실자료/파일artifact/native실행·public/저장변경0을유지한다. 초기promptproducer나원SID를성공대역으로메우지않고문맥소스/실제보호process미완료를분리한다. 결과는내부소스/합성조립이며실제firstQuery/FN07/계획완료아니다. 목표active다.
+
+
+## 298. FN07 내부 생성 정상 첫 제출·미완료 검수
+
+기존Primary는신규2경로에서실receiver→Options→명시driver create1→prefix/init→기존owner/codec인계정상1PASS를보고했다. 정확명령/exit/raw최종증거는제출대기이며MainfreshPASS로올리지않는다. 최초export부재는구조적RED로만구분한다. 현재중요음성/cleanup과신규definite-assignment·임시facade타입오류를동일허용2안에서보완중이다. 실제SDK/OS0·live/pending0보고다.
+
+최초논리D경로의source부재읽기1은실source기준으로정정한준비오류이며제품실패가아니다. Main은같은제품을수정하지않고기존읽기담당자에게향후native준비permit과genericSTART grant의구분만선행한정으로추적하도록배정했다. 이전stdio/SDK선언조사를반복하거나QA Codex helper를제품으로전용하지않는다. 내부구현을과잉재승인으로분류하지않고새권위필요만근거로판단한다. 현재제품writer1·실제DB/권한/키/서비스/Agent/실자료0·목표active다.
+
+
+## 299. 준비permit과일반START경계의후속읽기지원
+
+기존읽기담당자는native준비NATIVE_PREPARATION_AUTHORITY의CHECK_NATIVE_PREPARATION_CURRENT/CONSUME_NATIVE_PREPARATION·codingAgentExecutionAuthorized:false와일반START grant의SYNTHETIC_PLAN/permit SYNTHETIC_CONSUMED_NO_AUTHORITY를실소비코드로구분했다. 준비owner채널은OPEN_EMPTY/QUERY_EMPTY/CLOSE_OWNER만허용하고SDK입출력/도구실행목적이아니다. 원일반START command/envelope/grant/credential/source/osOwnershipRef/proof의결박도실행권위를새로발행하지않는다.
+
+재사용가능한것은원객체/함수정체성·단발·최소기한·UNKNOWN·소유정리방식이다. 실제coding child에는원일반START와process/Query/입출력소유접합·실행/회수프로토콜·mode/정책/예산별도구중재공급이필요하다. CONTEXT_REVIEW의실제무변경을보장하지못하면bootstrap도차단한다는원계약을보존한다. 이것이기존실행목적을다시승인받으라는뜻은아니며새허용/prompt권위/실제활성화변경이필요할때만정확차이를분리한다.
+
+Main은이경계를현재Primary에게전달했고현재privatefactory는기존falseflags/명시합성포트범위에서계속한다. 후속읽기수정/시험/실제환경0·원준비permit전용0·Main제품쓰기0·목표active다. 모듈타입/핵심이안정된부분동결시지문을받아독립검수를병행한다.
+
+
+## 300. FN07 최초 생성 독립 검수 보완
+
+기존 Primary는 신규 2파일의 합성 검증 34 PASS와 typecheck·diff check exit0을 제출했다. 독립 검토는 source 15709B/31A50723에서 C0/I1/M0를 확인했다. open 진입에서 검산한 가변 call 객체를 microtask에서 다시 읽어 원 signal 취소를 놓칠 수 있고, close의 listener 제거도 다른 signal을 참조할 수 있다는 문제다. Main은 실제 63~75행과 113~132행을 읽어 확인했다. 이 제출은 합격으로 올리지 않는다.
+
+동일 Primary에게 신규 2파일만 재위임했다. 호출 진입에서 검산한 signal·expiresAt을 불변 값으로 고정하고, 별칭 변경·접근자 교체·close listener 반례를 RED→GREEN으로 보완한 뒤 독립 재검수한다. 원 owner/options/codec 변경과 실제 SDK·DB·권한·키·서비스·Agent 실행은 하지 않는다. Main은 제품 코드를 수정하지 않으며 전체 작업계획 목표는 계속 진행 중이다.
+
+
+## 301. FN07 내부 Query 생성·인계 소스 인수
+
+기존 Primary의 I1 보완본 신규2는 source16133B/ACACF14D·test21438B/0ABFA471로 동결됐다. 독립 재검토 C0/I0/M0이며 Main 93de26→8f690f→cd8054에서 지문 불변과 신규16/직접 인접20의 고유36 PASS·fail/skip0·542.0223ms·exit0을 확인했다. 213456의 typecheck와 diff check도 exit0이다. 원 owner/options는 불변이고 보호3은 제외한다. Primary 중간·최종 시험 횟수는 중복 합산하지 않는다.
+
+결과는 docs/04_test_reports/AV3/FN07_SDK_QUERY_CREATION_HANDOFF_SOURCE_RESULT_20261106.md에 기록했다. 한 인스턴스의 단발 생성·UNKNOWN 재생성 금지·원 iterator/prefix/init 보존·기존 owner 인계·취소/최단기한·동일 소유 정리의 합성 동작을 인수한다. 실제 SDK/process/SID/current·도구 권위·첫 입력·실제 Agent/DB/권한/키/서비스는 미검증이며 전체 FN07/Stage/계획 완료가 아니다. 기존 Primary는 writer를 반환했고 Main이 정확 신규2와 결과/현황/통제 문서3만 로컬 checkpoint로 보존한다. private push/PR/main/배포0이다. 다음 미완료 공급 경계를 읽기 전용으로 좁힌다.
