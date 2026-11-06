@@ -3345,3 +3345,23 @@ Primary계상대조는기존FN09동일Tx예약/정산에NODE_DECISION내부목�
 전체저장접합과독립적으로기존validator를소비하는선언ENUM추출/봉인·record/revoke/외피순수검증은신규2만으로가능하다는Primary기술확인을받았다. Main은docs/work_packages/FN10_NODE_DECISION_INPUT_SOURCE_IMPLEMENTATION_20261106.md 5919B/78C47D4C923F4A9533C57CFCF008021AEBD2942541F68883121176E2E3A0D98A를발행하고정확신규2에SOURCE_GO를결박한다. 기존Primary만TDD구현하며Main은동일제품을쓰지않는다. 기존reader/graph·route/SQL/auth/quota/Web변경0이다.
 
 이단위는FN10실제사용자기능의입력선행일부이며저장/current/권한/계상/화면완료가아니다. 전체기능을이일부로축소하지않고후속원source/저장/최종보호/SQL/화면으로이어간다. 실제DB/권한/키/서비스/SDK/Agent실행0·전체목표active다. 읽기담당자의한줄미완성반환1은폐기후이미확인한한국어결과로정정했고제품실패나정식실패횟수로세지않는다.
+
+
+## 343. FN10 입력 첫 동결 검수와 C1 제어문자 보완
+
+Primary는source9928B/2A17F6E5·시험14901B/EA7037D7을동결하고신규17+인접26=43PASS/type/diff0을제출했다. Main5ce699는동결source를읽었고독립검수C0/I0/M1은실제기존validator/원snapshot형상·제한ENUM/봉인·외피검산을확인했다. M1은숫자/bool조건을후보가412미지원으로썼지만기존graphvalidator는422로거절하는오류분류차이다. Main은원validator기준을유지하고유효graph의IS_PRESENT-only미지원412와구분하도록문구를정합화할것이며guard를완화하지않는다.
+
+Main은원exact11에issuedAt/expiresAt이없음을Primary보고로확인했다. WI의기한형식문구때문에새키를추가하지않고실제Session/policy/call최단기한은후속source에남긴다. 571556의추정project-creation-store.ts경로부재1은읽기준비오류로구분하고실제application-snapshot.ts를3a7330에서확인했다. 제품실패/정식실패횟수로세지않는다.
+
+추가한정읽기는C1 U+0080~009F가현재C0/DEL정규식에서통과함을확인했다. A\u0085B는기존graphvalidator·canonical·비밀표식검사를통과해선언값에포함되므로후보의제어문자거절과불일치한다. Main은같은신규2에서선언/재봉인record수락실제RED→C1포함최소보완을기존Primary에재위임했다. 기존graphvalidator나Cf등다른문자범위를임의변경하지않는다. 이전43PASS는최종인수가아니다.
+
+후속저장기술은docs/work_packages/FN10_NODE_DECISION_STORAGE_INTEGRATION_TECHNICAL_20261106.md 8020B/E4016AE354EF146B5F49A685C8DA28ADDF463573C5F35B95469810B645E13951에보존했다. head차분의역사재현I1은version1/previousRef불변원행과sealed headProjections로재현해설계상닫지만구현검증은아직이다. 실제DB/권한/키/서비스/SDK/Agent0·단일writer·전체목표active다.
+
+
+## 344. FN10 순수 입력 최종 소스 인수
+
+C1 실제RED56aeaf의2FAIL을최소정규식보완뒤ee9d9d3PASS로닫았다. 최종source9935B/6A7221E2·시험16254B/BC2C83C0는독립C0/I0/M0이며Main13384d의직접3파일46PASS/499.7232ms·type/diff0·exit0을확인했다. 5cd406은지문불변/보호3/indexempty를검산했다. 이전43과Primary최종46은중복합산하지않는다.
+
+Main은후보의숫자/bool오류문구만원validator의422와정합화했다. fd5811의새후보37860B/7DF8D313은부모462BD405·신산님직접방향을보존한MAIN_RECONFIRMED_NON_SEMANTIC이다. 실행WI78C47D4C는이력으로유지하며원exact11의존재하지않는기한키를추가하지않는보정도기록한다. 결과서작성전메모리제목초안준비1은제품/파일쓰기0으로분리하고한국어최종본만저장한다.
+
+결과 docs/04_test_reports/AV3/FN10_NODE_DECISION_INPUT_SOURCE_RESULT_20261106.md에정확검사·RED/준비오류·현재/저장/화면미구현을기록했다. Main은같은제품을쓰지않았고Primary는writer를반환했다. 정확신규2·후보/기술/결과/현황/통제문서만인수checkpoint로보존한다. 다음은원보호source·같은Tx저장/계상·후행보호조회·미적용SQL·화면연결이며전체목표active·실환경0이다.

@@ -20,7 +20,7 @@
 - nodeRef는 {applicationRef:{id,version,contentHash},nodeId} 전체 참조다. source definition ref가 아니라 현재 적용 snapshot ref를 쓴다. projectId는 외부 경로와 인증 범위에서 결정한다.
 - decisionType은 ENUM_STRING_V1이다. 대상 노드에서 나가는 BRANCH edge의 제한 조건식 중 fieldRef={nodeId:대상,field:USER_DECISION}인 EQ/NE의 string 값과 IN의 string[] 원소를 수집한다. all/any/not 내부도 같은 제한 AST 순회만 허용한다.
 - 공백만인 값·제어 문자·위장 prototype key·유효하지 않은 Unicode·비밀 표식은 거절한다. 각 값 1~200 UTF-8 bytes, 중복 제거 후 1~32개, 코드포인트 순 정렬로 고정한다. 입력값을 trim/casefold해 다른 값으로 바꾸지 않는다. 허용값 집합과 대상 edge/조건 전체는 서버 canonical hash로 결박한다.
-- IS_PRESENT만 있거나 값 목록을 도출할 수 없는 노드, 숫자/bool·임의 문장·다른 노드 값은 412 NODE_DECISION_DECLARATION_UNSUPPORTED다. 문자열 코드를 eval하지 않는다. 새 graph schema·새 내장 enum·기존 validator 완화0.
+- 유효 graph에서 IS_PRESENT만 있거나 해당 노드의 유한 값 목록을 도출할 수 없으면 412 NODE_DECISION_DECLARATION_UNSUPPORTED다. 숫자/bool 등 기존 graph schema를 위반한 조건은 원 validator 기준의 422 INPUT_INVALID를 유지한다. 기록 입력이 선언된 허용값/노드와 맞지 않아도 422 INPUT_INVALID다. 문자열 코드를 eval하지 않는다. 새 graph schema·새 내장 enum·기존 validator 완화0.
 - 이 제한은 기존 graph 전체를 무효로 만들지 않는다. 해당 결정 저장/평가만 미지원으로 표시하고 다른 기능은 유지한다.
 
 ## 3. 정확 기준·입력·출처
