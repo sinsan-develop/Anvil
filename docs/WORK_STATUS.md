@@ -16458,3 +16458,21 @@ Main은후보작성지연중Primary를한번중단했으나02c8c5에서이미문
 PMO는새직렬화/Ref/전달목적은기존승인제외로직접결정대상이라고확인했다. 일반재승인/전체대기는만들지않는다. 같은Primary는후보1만r2로보완한다. 명시선택된사용자지시의내부보호reader예외·원fact.intent의논리자료scope·두그룹Ref3목적·별도bodySHA·현재접근/최단허가수명을새제안으로구체화하고DD166F endpoint/UI·실제원문/권한/키/DB/서비스/Agent실행제외를유지한다. 이단계는미채택문서이며제품/시험쓰기0이다.
 
 한정FN16/FN17후속조사는기존정책/보호참조/이력·앱내알림화면이실제caller에연결됨을확인했다. 미정실제백업/외부전달을화면누락으로바꿔재구현하지않는다. Main직접협업검토메시지의외국어연결문자1혼입은보고작성오류로추가분리한다. 검증기준/제품/권한영향0이며후속문장은한국어로정정했고외부본문검사적용을유지한다. 전체계획미완료·목표active·기존source12동결/보호3보존이다.
+
+
+## 279. context 후보 문서 편집 인수와 r2 독립 검토
+
+기존Primary의r2저장전문안검사/지연이반복돼Main은문서편집만인수했다. 제품구현인수나Developer정식실패3회판정이아니다. 6a1d96은r1원형32DED6A6불변을확인했고f7423a는반려후보+WORK_STATUS/control정확3문서를로컬df7776ad1ece873d4aba7ccca846f81419c2b139(부모16be50b4)에보존했다. private/PR/main/배포0이다.
+
+독립기술검토는기존보호Context/Options reader로bytes재현이가능하지만원bundle의선택USER_INSTRUCTION예외·양그룹Ref목적·현재정의/환경·원fact와Tx/최단기한을정확히채택해야한다고확인했다. source가VERIFIED_CURRENT/checkedAt을새로생산하거나역사NOT_RECHECKED를현재로승격하지않는다.
+
+Main6ac0f7은후보r2 15093B/D8AC4D28F9D2C6B27F54D45489DFA86C180CF2AD5E1375D161F3369401338395만작성했다. 원fact의exact bundle/preparation을논리자료범위로해석하는새의미·선택지시의내부reader예외·두그룹Ref3목적·최단허가수명을직접결정대상으로명시하고DD166F endpoint/UI·실제자료조회/전송·DB/권한/키/서비스/Agent실행은제외한다. 아직DRAFT/NOT_ADOPTED/SOURCE_GO0이며기존읽기전용담당자에게r2독립검토를맡겼다. 실제코드/시험수정0·기존source12동결·단일writer유지·전체계획미완료/목표active다.
+
+
+## 280. context r2 정합 검토 통과·직접 채택 질문1회
+
+기존독립담당자는r2 15093B/D8AC4D28F9D2C6B27F54D45489DFA86C180CF2AD5E1375D161F3369401338395의시작/종료raw동일에서C0/I0/M0를반환했다. 원선택USER_INSTRUCTION 내부reader예외·Options양쪽Ref3·실보호read/재컴파일/현재정의·환경검사로r1 I1/I2를해소했다. 정상합성종단은실제보호클래스와명시합성current로가능하며실제공급진위/실행증거가아니다. 원Tx/각await·최단기한/동일resolve의metadata/text·current부재거절은조건부WI에구체화한다.
+
+Main은이정확후보·지문을PMO에공유했고기존PMO의직접결정경계에따라신산님께async채택질문1회를보냈다. 아직답변없음·NOT_ADOPTED/SOURCE_GO0이다. 새의미는원bundle선택지시의내부재구성·원fact의exact논리자료범위·두그룹Ref목적·고정body/최단허가수명이며실제사용자원문조회/전송·DB/권한부여/키/서비스/Agent실행·일반대화원문API는제외한다. 기존START등록승인을이번공급계약승인으로확대하지않는다.
+
+답변과무관한준비로기존Primary에게조건부WI후보1문서만배정했다. docs/work_packages/FN08_START_CONTEXT_SOURCE_IMPLEMENTATION_CANDIDATE_20261106.md는DRAFT/WAITING_ADOPTION/PRODUCT_GO0이며현재HEAD/허용목록/원raw/실제caller·RED/GREEN/보호3/메모리검증계약만준비한다. 승인으로추정해제품/시험을수정하지않는다. 현재소스동결·실제실행0·목표active·전체계획미완료다.
