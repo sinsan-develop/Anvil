@@ -15935,3 +15935,28 @@ Main은 이 내부 시험 준비 보완만 FN08 WI r2에 반영해 허용10→11
 FN12 result-submission-isolated와 FN06 provider-claim-data-case 통합 fixture의 registrar 미구성도 향후 여정 실행 전 보강 대상으로 확인했지만 이번 source-only에 자동 추가하지 않는다. 해당 통합/실환경은 NOT_RUN이며 기존 전체 회귀 통과를 주장하지 않는다.
 
 §225 FN08 WI r2 변경 절의 독립 재검수는 C0/I0/M0다. 시작/종료10655B·51F8FE9E78BB8E0FF3ED449B1C4B8A1236808E31FA269A7AB17AA271C554AC21와 기존 ledger 시험16747B·1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7 동일을 확인했다. fixture 근거 보강과 기존 단언·실행 제외 보존이며 실제 START 구현/검수 PASS가 아니다. FN09 기존 Primary의 허용29 PRODUCT_GO는 계속 유효하고 FN08 GO0이다.
+
+## 226. FN09 WIP11 인계 수거와 동일 Primary 즉시 계속
+
+Primary는 전체 FN09를 INCOMPLETE로 명시하고 WIP11을 제출했다. e91f8f replay/실제 receipt3 PASS·1039.5368ms,6588cc quota 포트 모델2 PASS·1070.1481ms,5835a7 기존 후보/승인소비 인접2 PASS·2964.5671ms는 각각 skip0/exit0이고70a150 type0/315b1c diff0이다. quota 시험은 합성 SD 응답의 Node 포트만 증명한다. 0077은 7341B 비용/검산 prefix이며 실제 reserve/settle·고정점·역완결·승인 최초비용 producer·보호 reader 통합 음성·UI 왕복은 미완료다. 이를 완료본/실제 DB/기능 PASS로 세지 않는다.
+
+제출 시 WIP11 지문:
+| 경로 | SHA256 |
+|---|---|
+| contracts/runtime/execution-intent-v1.ts | 6CE04FA707920A86B1F67B62B1D85380CE3DA4DC51B333182B2B277E07483736 |
+| apps/server/modules/executions/preparation-input.ts | DD72F944E9F8C2CEA475C262024A385F9ECFE1C39ED8829DC60F6729F9C42FA3 |
+| apps/server/modules/approvals/execution-preparation-approval-candidate.ts | B96803F04AEFA43AE1F1332833057FD2A7E5B949AFC73468EDC5B26E334A9445 |
+| apps/server/modules/executions/project-execution-preparations.ts | 6DB36788A633E0111BD33D5EC9607C79EE28A006E38220FA90AEA82F249D43B8 |
+| apps/server/modules/access/project-command.ts | 332217190634723D8877C94E8B56079DEE6671F49E764B9D7D0B348A85884FED |
+| apps/server/modules/projects/routes.ts | 86C86539C01E20214060681602BD66F51F09FEDA2380AA3DF45842F7C92C9B23 |
+| apps/server/modules/projects/project-storage-quota.ts | 972D6261B1FAC0A5C60BDB1093DA2D5E6CFCBA39C9EBB15550578D65868CD2DE |
+| db/migrations/0077_registered_execution_preparation_options.sql.pending | A133BBF73BBDD096F8080740C61386959CF60DBE975D720B12DD9846C6C0DB79 |
+| tests/unit/FN08/execution-preparation.test.ts | FCC4367BC88458241F4C595510F11642C13AF6630B10EC59774599877E3A5174 |
+| tests/unit/FN09/execution-preparation-approval.test.ts | 2EA50760D431AF307355FA3855C50CD8D630F329709EA5E12E4766AADC0E36AE |
+| tests/unit/FN13/project-storage-quota.test.ts | DF4832A6E5DDE43698AECA9EF5B90930C568965DAE36993BE12301248E38B84F |
+
+공유 fixture2의 필수 CANDIDATE_ONLY 근거만 보완했고 기존 기대값/제품 guard는 보존했다. 최초 prefix 불변 증거와 이후 허용된 fixture 보강은 별도 이력이다. 이번 INCOMPLETE는 정식 FAILURE_REPORT가 아니며 Main 코드 인수/실패3회 규칙을 발동하지 않는다.
+
+Main은 같은 기존 Primary에 followup_task로 즉시 계속 지시했다. WI383BA061/허용29 PRODUCT_GO는 유효하고 우선 실제 P/C/A/U/K/R 예약·정산/역완결 및 승인 최초비용 producer, 다음 보호 reader 통합 음성·UI 왕복을 완성한다. 완료 reader/포트 검사를 불필요하게 반복하지 않는다. 새 사용자 승인·PMO 다음 작업 배정을 기다리지 않는다. 현재 제출 지문은 역사 WIP이며 계속 작성 중 파일의 최종 동결 지문이 아니다.
+
+후속 목표 턴은 실제 agent 상태를 확인해 running이면 같은 task를 기다리고 중복 지시/새 agent/동시 writer를 만들지 않는다. terminal 결과일 때만 다음 정확 미완료를 followup한다. 전체 목표 active·FN08 후행 GO0·Main 코드 write0·실제 DB/권한/키/서비스/SDK/Agent/실자료 조사0을 유지한다.
