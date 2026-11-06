@@ -2800,3 +2800,23 @@ Main6ac0f7은후보r2 15093B/D8AC4D28F9D2C6B27F54D45489DFA86C180CF2AD5E1375D161F
 Main은이정확후보·지문을PMO에공유했고기존PMO의직접결정경계에따라신산님께async채택질문1회를보냈다. 아직답변없음·NOT_ADOPTED/SOURCE_GO0이다. 새의미는원bundle선택지시의내부재구성·원fact의exact논리자료범위·두그룹Ref목적·고정body/최단허가수명이며실제사용자원문조회/전송·DB/권한부여/키/서비스/Agent실행·일반대화원문API는제외한다. 기존START등록승인을이번공급계약승인으로확대하지않는다.
 
 답변과무관한준비로기존Primary에게조건부WI후보1문서만배정했다. docs/work_packages/FN08_START_CONTEXT_SOURCE_IMPLEMENTATION_CANDIDATE_20261106.md는DRAFT/WAITING_ADOPTION/PRODUCT_GO0이며현재HEAD/허용목록/원raw/실제caller·RED/GREEN/보호3/메모리검증계약만준비한다. 승인으로추정해제품/시험을수정하지않는다. 현재소스동결·실제실행0·목표active·전체계획미완료다.
+
+
+## 281. 조건부WI의 메모리 원문 검증 수단 확인
+
+기존Primary가실ArtifactStore의filesystem필수소비와ProjectDocuments instanceof검사때문에제품seam추가가능성을보고했다. Main은새승인/제품변경으로승격하지않고기존Node내장module mock의OS포트대역가능성을좁혔다. 50f1b1에서Node의--experimental-test-module-mocks를확인했으며추정modules/artifacts경로부재1은준비오류로구분했다. 78a82b는실storage/artifact-store.ts의lstat/realpath/open·길이/SHA/close검사를읽었다. Primary도기존quota시험의fs대역패턴과로컬types를확인하고추가제품seam제안을철회했다. 별도추정파일조회실패1은제품실패가아니다.
+
+Main6c0dc9는격리Node의순수메모리probe1회exit0이다. fs/promises의명시가상root/파일만대역화한후원ArtifactStore를dynamic import하여정상bytes와틀린SHA의ARTIFACT_INTEGRITY_FAILED를확인했다. lstat8/realpath6/open2/read2/close2/write0·제품성공메서드override0·실ArtifactIO0이다. 소스모듈로딩은허용제품읽기이며전체OS파일읽기0이라고주장하지않는다. 임시실파일/DB/키/서비스/Agent/실자료조사0이다.
+
+namedExports deprecation경고1은보존했고향후시험은현재types의exports옵션을사용한다. 같은probe를반복하지않으며이결과는가상FS포트가능성만증명한다. ProjectDocuments/Conversations/Context/registrar전체종단은아직미실행이다. 기존Primary의조건부WI문서1에이검증안을넣고추가제품seam/사용자재질문0을유지한다. r2직접채택답변전PRODUCT_GO0·전체계획미완료/목표active다.
+
+
+## 282. 조건부WI 검수 완료·정확한 직접 결정 대기
+
+기존Primary의조건부WI저장이계속되지않아Main은문서편집만인수했다. 코드구현인수/정식실패3회판정은아니다. Main696c91은정확제품4/시험4의원raw와신규2부재를확인했다. 8e321c는조건부WI docs/work_packages/FN08_START_CONTEXT_SOURCE_IMPLEMENTATION_CANDIDATE_20261106.md 10529B/4DAA728B7A4324ABC79A2850F13AF9C418AED6D0C05440A09CECD0D076B4F680를저장했고, 독립담당자는시작/종료raw동일에서C0/I0/M0를반환했다. 원r2직접채택과Main GO전제품쓰기금지·기존보호/current/Tx·동일resolve·양그룹목적/수명·실ArtifactStore와메모리FS조립·성공override0·실제실행제외를대조했다. 실제구현/종단시험은아직없다.
+
+7f534c는기존6파일원raw동일/신규2부재·diff check0를확인했다. 앞선6c0dc9메모리OS포트probe를전체종단PASS로세지않는다. 현재제품/시험/SQL수정0·실제DB/권한/키/서비스/Agent/실자료조사0이며보호3도보존한다.
+
+r2질문을보낸원turn과후속2goal turn에서같은직접채택미응답경계가유지됐다. 그동안원문재구성기술조사·메모리포트반증·조건부WI작성/독립검수까지가능한준비를완료했다. PMO최신관측도새채택답변/범위변경없음이며대신승인하지않았다. 다음제품구현은후보D8AC4D28F9D2C6B27F54D45489DFA86C180CF2AD5E1375D161F3369401338395의직접채택또는새명시방향결정이필요하다. 원질문1회를유지하고추가승인질문·같은검사반복·새코드/실제실행으로우회하지않는다.
+
+기존제한조사에서FN16/FN17기존승인source-only의새미연결업무도확인되지않았으며완료화면을다시구현하지않는다. 이판정은전체계획완료/작업소진이아니라현재순서의입력대기다. 전체목표는미달성이고완료로승격하지않는다. 현재진행가능준비를보존한뒤동일경계3turn의blocked기준을적용하며신산님답변후이조건부WI를재대조해기존Primary에배정한다.
