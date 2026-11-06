@@ -16050,3 +16050,19 @@ Primary는 JavaScript replacement 문자열의 달러 기호와 작은따옴표 
 독립 재검토 C0/I0/M0는 helper3502B/38C6D4E852C392CC507C97A1389ABC9D6477543C460BF3E052378DC32097CD4F와 snapshot_valid7900B/849A74B28EF1EE052FF46D0255E0887D3FA99CE7CE40B60F11C8F52F2AC57F6F의 시작/종료 동일을 확인했다. 정규식 종단·닫힘과 plan.actorId 원 cmd.actor_id exact 비교가 추가돼 직전 두 finding은 해소됐다. 전체 SQL/tail 합격은 제외한다.
 
 Primary는 역사/현재 비용 목적을 분리하기 위해 기존 actual을 core7413B/3D069F2A5B309B9AF0FE6531E7593439985372A69510770BA29A8923B5114A02와 true/false 고정 wrapper로 옮겼다. Main은 원 current 보호 유지·역사 원 관계·승인 최초 비용·직접 EXECUTE 제한을 다음 읽기 전용 검수 범위로 지정했다. writer는 동일 Primary이며 원 승인 producer/settle/후행 guard/UI 미완료를 계속한다. Main 코드 수정0·실제 DB/권한/키/서비스/Agent/실자료 조사0, 전체 목표 active다.
+
+## 236. 역사 비용 core 한정 검수와 수정 요청 결정 회귀
+
+독립 읽기는 현재 core7678B/DD04AE335A561FDDF7D1B1D05D91C29FF7B807C9A2DA7B6AEEBA96515F65FFD9와 actual251B/F5C626F4727D1E7282FCEB80C6449017B5679A1A8DC35A5595098ED0F67A0D27, stored259B/C9CBF515C3FC6831A096A9D5D2E8A6E0E879B8F6111AB10F8A1BD58736582D28의 시작/종료 동일에서 C0/I0/M0를 반환했다. true는 기존 현재 승인 검사를 유지하고 false는 원 P/C/A/U/K 및 최초비용 proof를 검산한 bigint만 제공한다. body 조회/실행 권위가 아니며 역사 wrapper 후행 연결은 아직 미완료다. 이전7413B 제출본은 후속 주체/세대 결박 전의 역사 지문으로 남긴다.
+
+다음 승인 최초비용 세 함수 검수는 C0/I1/M0다. request_actual2294B/52964C912905F3EFCC991590602B47CAB565359BFE79A7F901DD5F89049932B0, decision_actual6514B/2D9A579E3E05A9B7D126A08AE9E22979B7744F7D4B4AAE2CD164FC5BDE9EFA12, cost_complete1907B/BC021523C7114D72E66B2657256B812D7B1D0E8E3869C9599FFC52DAEF2C38EB는 시작/종료 동일이었다. 기존 REQUEST_CHANGE는 CHANGE_REQUESTED/version2로 저장되지만 최초비용 함수는 이를 배제하고 APPROVE 외를 모두 REJECTED로 복원했다. 실제 세 결정의 기존 정상 동작과 공유행 비용을 보존하도록 같은 Primary에게 보완 지시했다. cost_complete의 후행 실행용 APPROVE 전용 조건은 그대로 유지한다. 새 결정/공개 계약이 아니며 실제 PG 행동 검증은 아니다.
+
+Main은 제품/시험/SQL 작성 없이 검수·현황·통합을 맡고 원 승인 producer/settle/후행 완결/UI는 동일 writer가 이어간다. §§233~235의 현황 문서 두 개만162a223c로 보존했고 제품 WIP/보호 untracked는 stage하지 않았다. 실제 DB/권한/키/서비스/Agent/실자료 조사0이며 전체 계획 완료가 아니다.
+
+## 237. 기존 수정 요청 결정 보존 보정 수거
+
+Primary는 request_actual에 CHANGE_REQUESTED/version2를 포함하고 decision_actual의 공유행 복원을 기존 세 결정의 정확 매핑으로 보정했다. f8f0ae 형상1FAIL 뒤3285ab의 보완/문자열2PASS(284.7117ms/exit0), 실제 기존 승인 클래스의 원 후보 REQUEST_CHANGE 저장 af8fb3의1PASS(1292.5951ms/exit0)를 수거했다. 해당 Node 정상은 실제 ProjectPolicyRepository/ProjectApprovals의 CHANGE_REQUESTED/version2와 준비/consumption0을 확인한 것이며 새 등록 최초비용 producer나 실제 PG 완료가 아니다.
+
+독립 재검토 C0/I0/M0에서 request_actual2313B/A4015A23F308224BE4C00C05FC5EA3583F12729771F27CEEF3FD8C0A73BAC5FC, decision_actual6642B/BEF50A2E8D8E476646D77B5EA9ACD62B908942F49FDD0E23A38C2D44061D9AD6, 불변 cost_complete1907B/BC021523C7114D72E66B2657256B812D7B1D0E8E3869C9599FFC52DAEF2C38EB의 시작/종료 동일을 확인했다. 후행 소비의 APPROVE 전용은 유지한다. 전체 producer/tail·source 업무 인수는 제외했다.
+
+현재 FN09 최초비용 실제 생산자·후행 정산/역완결·UI 연결은 같은 Primary가 계속 구현 중이고 Main은 제품 write0을 유지한다. FN08 WI r2의 TEST_ONLY/PRODUCT_GO는 아직 발행하지 않았다. FN09 선행 검수 후 같은 담당자가 순차 착수한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
