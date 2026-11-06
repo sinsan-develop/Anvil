@@ -16588,3 +16588,30 @@ Primary가허용8을동결했고실제변경은제품2/신규시험1이다. Main
 b9ab22 최종type0와허용8/보호3raw불변·HEADe73fb87e/index빈상태를확인했다. 878afc diff0·ProjectContexts CRLF예정경고만보존했다. 독립최종시험44490B/C42A8D6B검토는C0/I0/M0이며기존source2 I1/I2도해소·C0/I0다. 실제보호클래스/원queue/두그룹/구체P256/proof/receiver H3/E1·UNKNOWN명시재조회/만료역사효과0을합성범위로인수한다.
 
 결과 docs/04_test_reports/AV3/FN08_START_CONTEXT_SOURCE_RESULT_20261106.md에정확명령/raw8·RED/오류·합성포트/PG모델·NOT_RUN을기록한다. 실제DB/권한/키/서비스/Agent/실사용자원문·실자료0·private/PR/main0이며전체FN08/Stage/계획완료아니다. 다음승인된미완료는새로변한선행만대조해선정하며목표active다.
+
+
+## 295. r2 로컬 checkpoint 검산과 다음 선행 선정
+
+8c5702는검수된실변경3+결과/WORK_STATUS/control3정확6경로를로컬cd70081690aceea400897cd6bd4d4bd77f89692c(부모e73fb87e)에505추가/1삭제로보존했다. 78ff41은commit경로정확6·허용8/보호3raw불변·tracked clean/index빈상태와결과SHA A45BCB963FCEE4445C325ADE73EAF1907E56120B080C16475D82C02EA8766E3C를확인했다. private/PR/main/배포0·기존보호미추적3보존이다.
+
+Main은PMO에정확검수/미검증/로컬checkpoint를공유했고기존Primary의이번제품쓰기소유를종료했다. 추가코드/시험반복0을유지하고같은기존읽기전용담당자가이번공급구현으로변한WORK_PLAN선행만대조해다음승인미완료1을좁힌다. 새wrapper/완료조회재구현을진도로삼지않고실제current/기본공급/Agent미연결을숨기지않는다. 전체계획미완료·목표active다.
+
+
+## 296. FN07 내부 최초 생성 분류와 사전검수
+
+기존담당자둘은새r2가Options수신/원문선행만해소했고기본current/credential/앱공급은제외이며SdkSessionOwner는주입Query를소비할뿐첫Query생성caller가없음을확인했다. Main f5034a는owner/options실코드를읽었고c24c6f는기존도구중재/실행계약공백과정확native런타임경로를대조했다. d32d74의초기glob검색은권위근거로사용하지않았고e3190a의추정native경로부재1은준비오류다. 실제SDK/원격/프로세스실행0이다.
+
+PMO turn01a1afd8-04f2-76f3-b682-c1c5f0037a2d/cursor18은단발생성·UNKNOWN재생성0·동일Query/iterator·init전관측보존·기존owner인계를명시SYNTHETIC_ONLY/falseflags·실SDK/OS0으로검증하면기존계획안내부구현으로진행가능하다고확인했다. private factory라는이유만으로재승인대상으로삼지않는다. 새실행permit/도구승인·prompt전달권위·원SID출처·공개/저장변경이필수일때만그정확차이를분리한다.
+
+Main은FN07_SDK_QUERY_CREATION_HANDOFF_SOURCE_IMPLEMENTATION_20261106.md 12253B/1DA9D3580ACC60CB743579F05396F97F15B9EEBE78DA40BCD783D8D353B46673를신규제품1/시험1·원owner/options불변범위로작성했다. 기존읽기담당자의시작/종료동일사전검수는C0/I0/M0이며새public/저장/실행권한확대없이구현가능한내부단위라고확인했다. 아직PRODUCT_GO0이고기존Primary가읽기전용기술가능성을대조중이다. 실제firstQuery/코딩Agent완료가아닌내부생성lifecycle단위임을유지하며목표active다.
+
+이현황문자열최초메모리초안은한국어외문자검사1회차단으로도구쓰기0이었고한국어수정후저장한다. 제품오류/정식Developer실패로세지않는다. 제품/시험쓰기0·외부SDKfetch/import/실행·DB/권한/키/서비스/실자료0을유지한다.
+
+
+## 297. FN07 내부 생성·인계 소스 GO 준비
+
+기존Primary의정확WI전문기술대조는신규2경로만으로실receiver/Options고정·단발create·단일Query/iterator와prefix/init인계·불명/late cleanup/최단기한을구현가능하다고확인했다. 기존owner/codec변경이나새권위추정모순은없고실제SID출처/prompt권위/process/current는제외다. 기존독립사전검토C0/I0/M0와일치한다.
+
+Main은PMO의내부범위분류와계획FN07을부모로WI1DA9D3580ACC60CB743579F05396F97F15B9EEBE78DA40BCD783D8D353B46673의정확신규2경로에SOURCE_GO를발행한다. 원ownerDBE89D57/options7C259081·신규2부재/보호3·시작Git를재검산해문서3을보존한뒤기존Primary에게구현을맡긴다. WI의이전PRODUCT_GO0표시는사전검수원형으로보존하고이Main기술GO와content hash를결박한다. 새외부/사용자재승인질문은없다.
+
+Main은동일제품을수정하지않고실제SDK/CLI import/install/query·OSchild·유료/Agent/DB/권한/키/서비스/실자료/파일artifact/native실행·public/저장변경0을유지한다. 초기promptproducer나원SID를성공대역으로메우지않고문맥소스/실제보호process미완료를분리한다. 결과는내부소스/합성조립이며실제firstQuery/FN07/계획완료아니다. 목표active다.
