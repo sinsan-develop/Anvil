@@ -2644,3 +2644,10 @@ Main4094a3의 최종 직접11파일은 106PASS/fail0/skip0/cancelled0·4238.1582
 결과 docs/04_test_reports/AV3/FN08_START_MATERIAL_REGISTRATION_SOURCE_RESULT_20261106.md는12456B/D6E05880E47A53EC1AD279E1023FB3EE5762610BCC4E08967F20405A50539193로 문서 사본과 동일하다. 원14 ledger 기대값 보존·신규등록/역사 replay·실제 P256 및 구체 wrapper 세대1/세대3제한·bytes cap/rollback·SQL모델과 실제PG미실행을 구분했다. 원문 supplier/실행 권위·기본 app·세대3 구체 전달과 통합 fixture는 여전히 미완료이며 실제 기능은 부분 구현이다. source 인수를 실제DB/Agent·전체FN08/Stage/계획 완료로 올리지 않는다.
 
 Main은 정확 허용11+결과/현황3문서만 기존 branch의 local checkpoint에 보존한다. private push/원격 동일성·PR/main·서비스/DB반영은 하지 않는다. 같은 범위 검사 반복 대신 다음 미완료 선행과 독립 구현 가능 범위를 대조한다. 실제DB/권한/키/서비스/Agent/실자료 조사0·전체목표active다.
+
+
+## 263. FN08 local source checkpoint 확인과 다음 의존성 대조
+
+Main은 정확11+결과/현황3의14경로만 b0f22d00dd441d521390388e3e7b8db525f8a2c8에 local 통합했다. 직접 부모는2663dea72a609a02f81d468682a02b7b9d41576a이며1134추가/8삭제다. 765d9b에서 허용11·보호3의raw 불변과 tracked clean·보호비추적3만 남음을 확인했다. 결과 지문은D6E05880E47A53EC1AD279E1023FB3EE5762610BCC4E08967F20405A50539193로 같다. Git 줄바꿈 경고2는 보존했고 설정·원격·PR/main·실제환경을 바꾸지 않았다.
+
+기존 Primary의 writer 반환과 다음 지시 전 제품쓰기0을 확인했다. Main은 기존 읽기 전용 담당자에게 계획/업무카드·최신상태·실제소스에서 다음 승인된 독립source 단위와 새 Options/START등록으로 풀린 선행을 대조하도록 맡겼다. 완료된 부분 재작업·새계약 창작·실제DB/권한/키/서비스/Agent/J3/P03R3 실행은 제외한다. 다음 수행 책임은 Main에게 있으며 PMO 다음 배정을 기다리지 않는다. 전체 작업계획은 미완료·목표active다.
