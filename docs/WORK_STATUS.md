@@ -1,7 +1,7 @@
 # Anvil 재설계 작업현황
 
 <!-- CURRENT_WORK_ENTRY_START -->
-## 현재 작업 진입점 — 2026-11-06
+## 현재 작업 진입점 — 2026-11-07
 
 - 전체 목표: docs/WORK_PLAN.md의 모든 미완료 업무와 검증 완료. 전체 계획은 미완료이며 목표는 active다. 과거 WAIT/BLOCKED/PASS를 현재 상태로 상속하지 않는다.
 - 수행: 기존 Primary 한 명이 제품·시험·미적용 SQL을 작성한다. Main 어울은 분배·검수·최소 직접 검증·통합·현황 기록을 맡는다. 같은 파일의 동시 writer를 두지 않는다.
@@ -17219,3 +17219,27 @@ Main569b0a는 CURRENT_WORK_ENTRY가 현재FN10과 인수된 bootstrap/profile �
 - Mainc95797은 제품dependency/해당localSDK3경로부재를,7e278e/6f947d는 기존통제의훅이름 확인기록을 찾았다. SDK추가조회0. 남은 callback전체서명·반환동기성·실제hook/argv-env변환만 추가근거 대상이다.
 - 공개읽기추가1 후보 FN07_PINNED_SDK_HOOK_CONTRACT_READ_CANDIDATE_20261106.md는5542B/2296F0EF이며 독립C0/I0다. 고정HTTPSGET1·retry/redirect0·절대/socket10초·도구30초·길이/무결성/SHA·메모리16MiB·SDK실행/파일저장0과 같은메모리의유한후속추출을 고정했다. 후보작성만했고실행0이다.
 - 기존직접승인읽기1회소진을 명시해 PMO에 추가1회의 결정권한/직접결정 경계를 요청했다. 제품/권한/실행계약승인과 분리하며 회신전조회0. 제품/시험은fc45abea로보존하고 전체계획미완료/목표active다.
+
+## 368. 추가 공개 읽기 직접 승인 선행 — 첫 차단 대조
+
+문서5 checkpoint43ffc89d342655da06217ee5e5e57263e844b761(parentfc45abea)는693a36에서 정확경로·trackedclean/indexempty·보호비추적3만남음을확인했다. SDK새조회·제품GO·실행승인으로 승격하지 않는다.
+
+PMO turn01a1b149-67ef-7d12-a6ee-aabe01e495d3은 기존공개읽기1회소진과과거자동심사범위를근거로 일반위임으로추가읽기를허가하지않고 신산님직접승인을요청했다. Main은 같은질문을중복발송하지않으며 SDK추가조회0을유지한다. 정확대상은2296F0EF의추가공개읽기1이고 실제SDK/Agent/키/DB/서비스실행승인이 아니다.
+
+현재두subagent는모두COMPLETED·live/pending0이다. FN10저장producer는충족됐지만평가소비는실제current/선행provider부재로412이며, FN07actual생성은미확인SDK규약과새관측/생성목적의미가SOURCE_GO0다. 그밖의337잔여와실환경제외는유지한다. 완료된검사/화면·항상412래퍼를독립구현진도로대체하지않는다. 첫차단대조로기록하며전체계획완료/goal blocked 처리0·목표active다.
+
+## 369. SDK 대기와 독립인 START 원자료 producer 선정
+
+기존Primary의 실제source 대조는 확정assignment·role binding/Anvil논리sessionRef·등록preparation·WAITING stageRequest가 이미저장됨을 확인했다. 빈접점은 assignmentRef:null인요청과원준비/논리세션·실행식별·token없는E사전예약의불변결박이다. 실제SDK SID·발급E/token·OS writer허가와구분해정상원자료저장/조회업무를구성할수있다.
+
+Main은 FN09_EXECUTION_START_ORIGIN_CANDIDATE_20261106.md 후보1을 같은Primary에게배정했다. 새목적/정책·현재보호reader·비순환ID/hash/후행예약·취소/중복/세대·같은Tx저장량·UI와필수검수를완결안으로작성한다. token발급·WAITING→RUNNING·SDK/dispatch·실행권위는생산하지않고SOURCE_GO0이다. 앞지시의비한국어문자오타1은즉시‘부모증빙은준비자료관계이며실제생성허가가아님’으로정정했고제품효과0이다.
+
+368의SDK추가조회직접승인선행은그항목에유지하되, 독립producer계약상세화는계속한다. 전체목표를blocked/complete로전환하지않고 현재계약조사결과를대조해진행한다. 제품/시험/SQL쓰기·실제키/DB/권한/서비스/Agent/추가공개조회0이다.
+
+## 370. 2026-11-07 START 원자료 후보 독립 통과·PMO 채택 요청
+
+FN09 원본 후보30875B/4F11F353은 독립C0/I0/M0이며 f45231로 공식사본에 동일반영했다. 실제보호stageRequest/확정assignment/등록prep/binding·논리session자료를S→originRef→Q→자기receipt/audit로 생산할수있다. 기존synthetic E/grant/challenge/FK/reader는 그대로보존한다. PMO에는 새목적/정책·단발귀속·취소/중복·미발급예약·새요청/새ID재등록·S/Q현재/역사 의미의 source-only채택을 요청했다. 실제키/DB/권한/SDK/Agent실행0이다.
+
+SDK추가조회승인과독립적으로 Main은 최소WI/실제허용경로·같은Tx reader·UI선택·0081/계상접합을 준비한다. 아직계약/제품GO0이며 새정상 source자료생산을 실행권위로 승격하지 않는다.
+
+Main 긴직접위임문에서 비한국어문자혼입3회를 확인해 해당전달방식을중단하고 PMO에 예외보고했다. 제품/권한/실행대상변경0·각각한국어정정완료다. 이후긴지시는 검증된통제/WI문서에기록하고 짧은전달문으로참조한다. 기존실제문서/소스의문자검사·지문은유지하며 유효한읽기조사범위는계속한다. 같은전달오류를제품실패횟수나새승인으로취급하지않는다.
