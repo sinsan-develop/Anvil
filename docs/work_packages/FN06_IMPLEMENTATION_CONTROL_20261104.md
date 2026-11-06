@@ -3016,3 +3016,55 @@ Main은 bridge 이전에 같은 owner가 직접 동일 commandId/동일 user를 
 신규 WI docs/work_packages/FN07_SESSION_COORDINATOR_SOURCE_IMPLEMENTATION_20261106.md 10841B/B24F090895249D4B31ED3428AAD05BAC83A10969204F8CCAB1883834F292AA9F는 사전검토 C0/I0/M0와 기존 Primary의 신규2 구현 가능 확인을 받았다. 원 START 단발·owner 단발 인계·SEND/관측의 같은 owner·단절/close 및 늦은 반환 상태 덮어쓰기 차단을 실제 내부 조정 동작으로 구현한다. 인계 전 중지는 원 START 취소와 같은 factory.close만 소비하며 실제 provider 중지/회수 성공으로 만들지 않는다.
 
 Main은 최종 WI hash에 SOURCE_GO를 결박한다. 머리의 GO0은 사전검수 원형으로 보존하고 이 기록과 문서3 checkpoint 뒤 기존 Primary에게 정확 신규 session-coordinator.ts/claude-session-coordinator.test.ts만 배정한다. 원 factory/owner/bridge와 서버/SQL/공개 계약은 수정하지 않는다. 선언 sessionBindingRef와 기대 SID는 합성 일관성 값이며 실제 보호 증거나 새 SessionRef가 아니다. Main은 같은 제품을 수정하지 않고 독립 검수·직접 검증·통합을 맡는다. 실제 DB/권한/키/서비스/Agent/SDK·실자료 실행0, 전체 목표는 진행 중이다.
+
+
+## 307. FN07 세션 조정 준비 실패3·Main 원인 대조와 재개
+
+이번 목표 턴 시작 6b7d4f는 HEAD fae44a45·tracked/index clean과 보호3만 남은 상태를 확인했다. 이전 목표 턴은 factory/bridge의 실제 소스 checkpoint 74f70196/5e677acf와 검증 증거를 추가한 진행이었다. 현재 기존 Primary의 실행 상태를 도구로 확인하고 신규2의 작업만 이어간다. PMO 최신 회신은 새 실패/결정 요청에 중복 개입하지 않는다는 내용이며 별도 변경 지시는 없었다.
+
+Primary는 같은 자료 수신 준비 경계 MATERIAL_RECEIVE_UNAVAILABLE를 1831a1/d95144/dc2d19에서 세 번 관측했다. Main은 추가 재실행·해당 시험 편집을 중단시키고 부분 동결을 요청했다. 요청 수신 직전에 Primary의 원인 대조·fixture 보강이 끝나 정상1 PASS/skip0/175.9184ms/exit0(063124)이 수거됐고 이후 즉시 동결했다. 제품13360B/96AA3134·시험7804B/2CE1A311였으며 전체 구현·타입·음성 검증 완료가 아니었다.
+
+원인은 시험의 context.sourceScopes=[]였다. 원 readSourceScopesV1는 빈 목록을 금지하고 readDispatchEnvelope에서 검산하며, receiver.record는 저장 포트 진입 전에 그 예외를 고정 오류로 바꾼다. Main 7e422f에서 원 조건과 scope1 보강을 직접 읽고, 4674cd의 실제 메모리 대조에서 빈 scope의 SOURCE_SCOPE_INVALID와 적합 scope1 수락·exit0을 확인했다. 제품/guard/기존 모듈 수정0이다. 이 원인을 제품 RED나 정식 Developer 실패3회 인수로 승격하지 않는다.
+
+Main은 원인 대조 뒤 같은 Primary에게 신규2의 남은 구현/음성/타입 검증을 재개하도록 했다. Main의 제품 쓰기 인수는 없고 단일 writer를 유지한다. 실제 DB/권한/키/서비스/Agent/SDK·실자료 실행0·live/pending0이며 전체 목표는 진행 중이다. 이후 부분/최종 동결본에서 코드 검수와 Main fresh 검증을 수행한다.
+
+
+## 308. 담당 subagent 권한 철회 중단·현재본 보존
+
+기존 Primary는 application network permission was revoked 오류로 종료됐다. Main은 collaboration 상태에서 errored를 확인했으며 권한 복구·우회·다른 writer 교체·재실행 dispatch는 하지 않았다. 사용자 중지 지시로 추정하지 않고 관측된 실행 환경 오류로 분리한다.
+
+Main dc072a에서 HEAD fae44a45, 신규 coordinator13360B/96AA3134·시험7804B/2CE1A311가 앞선 동결본과 같음을 확인했다. 미커밋 신규2와 Main 현황/통제2 및 관련 없는 보호3을 보존한다. 최종 제출/음성 검증/독립 코드 인수는 미완료다.
+
+Main은 중단 뒤 남은 소스만 읽고 현재 정상 시험1을 bd179b에서 fresh 확인했다: node --test tests/unit/FN07/claude-session-coordinator.test.ts, 1 PASS/fail0/skip0/252.4361ms/exit0. 16b04a의 npm run typecheck도 exit0이다. 정상1과 타입 통과를 전체 조정 기능 완료로 올리지 않는다. 실제 DB/권한/키/서비스/Agent·SDK 실행0이다.
+
+기존 담당자의 실행 권한이 복구되기 전 추가 구현 배정은 막혀 있다. Main은 같은 제품을 대신 수정하지 않고 읽기 검수와 증거 보존을 계속한다. 신산님에게 권한 철회 오류와 필요한 앱 권한 확인을 알리며 목표는 완료하지 않는다.
+
+
+## 309. 세션 조정 중간 검수 범위와 권한 오류 재확인
+
+기존 Primary의 errored 상태를 다시 도구로 확인했다. 이번 목표 턴은 권한 문제의 두 번째 연속 확인이며 자동 재dispatch/권한 복구/담당 교체는 하지 않는다. 이전 턴은 Main 정상1/타입 증거와 중단 기록을 추가한 진행이었다. 같은 검사는 반복하지 않고 c10c7c에서 현재 시험의 실제 커버리지를 읽어 정상1 외 경합/음성이 미실행임을 분리했다.
+
+docs/04_test_reports/AV3/FN07_SESSION_COORDINATOR_INTERIM_REVIEW_20261106.md에 WI별 인수 증거와 남은 검수를 기록했다. 이는 인수 PASS가 아니며 구현 결함을 추정 확정한 문서도 아니다. START HOLD/늦은 Query, SEND UNKNOWN, 교차 세션, 입력·관측 병행, 취소/기한/포트와 종료 경합을 기존 담당자의 다음 구현·검수 목록으로 남긴다. 제품 파일 수정0·실제 환경0·전체 목표 진행 중이다.
+
+
+## 310. 외부 권한 차단 3회 확인·목표 차단 판정
+
+기존 Primary의 application network permission was revoked 오류가 최초 중단 턴과 두 자동 계속 턴에서 연속 세 번 확인됐다. 현재 collaboration 상태도 errored이며 살아 있는 작업을 기다리는 상황이 아니다. b0ecbc는 HEAD fae44a45·신규2의 96AA3134/2CE1A311 불변·index 비어 있음을 확인했다. 미커밋 신규2·중간 검수서·Main 현황/통제2와 관련 없는 보호3을 보존한다.
+
+정상1/타입 검증과 읽기 검수·누락 조건 기록까지 수행했으나 남은 구현·음성 검증은 기존 담당자의 실행 권한 복구 없이는 진행할 수 없다. Main의 직접 구현·다른 writer 교체는 승인된 운영 방식과 달라 우회하지 않는다. 동일 오류의 자동 재dispatch·권한 변경·프로세스 재실행은 하지 않았다. 기존 제품 기능 자체의 실패나 실제 DB/서비스 장애로 분류하지 않는다.
+
+목표는 전체 완료가 아니라 외부 권한 문제로 BLOCKED 판정한다. 필요한 재개 조건은 기존 담당자 실행을 막은 앱 네트워크 권한 문제의 해소와 사용자 재개 지시다. 재개 후 최초로 실제 상태·지문을 확인하고 같은 신규2의 남은 WI 음성 검수부터 이어간다. 이전 PASS를 반복하거나 미실행을 합격으로 올리지 않는다. 실제 SDK/DB/권한/키/서비스/Agent·실자료 실행0·commit/push/배포0이다.
+
+
+## 311. 사용자 목표 재개·동일 담당자 실행 복귀
+
+신산님이 목표를 active로 다시 설정했다. Main d1e1a7은 HEAD fae44a45·신규2 지문96AA3134/2CE1A311·WI B24F0908 불변을 확인했고, 같은 Primary에게 기존 허용 신규2의 미완료 구현·음성 검수만 재개하도록 전달했다. collaboration 상태는 running으로 바뀌었다. 권한 설정을 변경하거나 우회한 사실은 없으며 실제 작업 가능성은 후속 도구 결과로 확인한다. 이전 권한 차단의 연속 횟수는 이번 재개에서 새로 센다.
+
+중간 검수서의 누락 조건을 전달했고 기존 정상1·타입 검사를 완료 증거로 반복 소비하지 않는다. Main 문서/보호3과 기존 모듈은 보존하며 실제 SDK/DB/권한/키/서비스/Agent 실행0·단일 writer를 유지한다. 목표는 미완료 상태로 계속 진행한다.
+
+
+## 312. FN07 세션 조정 최종 소스 인수
+
+기존 Primary의 재개 후 실제 도구 실행이 정상으로 돌아왔고 신규2 최종 동결과 음성 검수를 제출했다. 제품13360B/96AA3134는 정상1 이후 불변이며 시험15889B/119D5700은 신규11로 확대됐다. 최종 독립 읽기 C0/I0/M0, Main d4c3aa의 직접6파일84 PASS·fail/skip0·1586.7872ms·exit0과 8a9785 type/diff0을 확인했다. 신규11+인접73이며 선택/중간·이전 결과는 더하지 않는다.
+
+결과 docs/04_test_reports/AV3/FN07_SESSION_COORDINATOR_SOURCE_RESULT_20261106.md와 중간 검수서를 함께 보존한다. 원 의존3 불변·Main 제품쓰기0·관련 없는 보호3 보존이다. 정확 신규2+결과/중간검수/현황/통제4를 로컬 checkpoint로 인수한다. 실제 SDK/process/도구 권위/SESSION claim·서버/화면/사용자 인수는 미완료며 실제 DB/권한/키/서비스/Agent 실행0·push/PR/main/배포0이다. 다음은 실제 생성·process 소유·도구 결정의 상세 계약 근거를 좁히며 목표는 계속 진행 중이다.
