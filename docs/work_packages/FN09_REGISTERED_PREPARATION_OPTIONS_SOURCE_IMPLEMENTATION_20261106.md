@@ -1,6 +1,6 @@
 # FN09 등록 정의 실행 준비·Options 보관 r2 구현 지시서
 
-2026-11-06 / Main 어울 / r4 / 단일 기존 Primary / source-only.
+2026-11-06 / Main 어울 / r5 / 단일 기존 Primary / source-only.
 
 ## 1. 승인과 기준
 
@@ -11,7 +11,7 @@
 
 현재 단계는 로컬·WSL 기능 구현의 source-only 부분이다. 목표는 실제 선택한 등록 도구/환경에서 준비·승인왕복·저장·고정조회가 연결되는 코드이며 단순 성공 wrapper나 기존 기능 재구현이 아니다. 실제 DB·권한·키·서비스·SDK/Agent 실행·실자료 조사·C# 컴파일·J3/P03 R3·기존 프로젝트 차단 해제는 제외한다.
 
-## 2. 역할과 허용32
+## 2. 역할과 허용33
 
 기존 Primary만 코드/시험/미적용 SQL을 작성한다. Main은 문서·검수·fresh 검증·Git 통합, 기존 독립 담당자는 read-only 검수다. 다른 담당자의 변경을 되돌리거나 관련 없는 dirty/untracked를 건드리지 않는다. 새 agent/chat/branch/자동화0, Main 동시 코드 write0.
 
@@ -59,9 +59,10 @@
 
 이3경로는 Main1cf35a에서 지문을 확인했다. 기존15제품/12시험의 시작 지문은 위 표 그대로이며 과거 TEST_ONLY/PRODUCT_GO 이력은 그때의 허용29에 해당한다.
 
-신규2:
+신규3:
 - db/migrations/0077_registered_execution_preparation_options.sql.pending
 - tests/unit/UI04/registered-preparation-options-flow.test.ts
+- tests/unit/UI04/registered-preparation-options-fixture.ts
 
 신규 SQL0078은 후행 FN08에 예약돼 있다. 허용목록 외 경로가 필요하면 정확 원인·최소 diff를 Main에게 반환하며 기술 파일 배치 보완은 Main이 판단한다. 이를 사용자 재승인 대기로 만들지 않는다. package/lock·기존 SQL·AGENTS·SEND/0062·완료 parser/SDK owner·원 정의/환경 보호 reader·보호 비추적3은 불변이다.
 
@@ -103,7 +104,7 @@ Editor→고정 명령→승인 요청/결정→명시 복귀→저장→receipt
 
 첫 단계는 허용 시험15만 작성한다. 실제 기존 parser/클래스/route/UI를 소비해 등록 분기 미지원과 원문 보호/replay·계상 미연결의 행동 RED를 입증한다. module 부재/추정 fixture/환경 실패를 제품 RED로 꾸미지 않는다. 새 fixture는 원 관계/정책/receipt·승인 근거를 적합하게 구성하며 기존 기대값·기준·보안 음성을 낮추지 않는다.
 
-Main이 제품16/SQL 부재 지문과 실제 RED·독립 WI 검토를 확인한 후 PRODUCT_GO를 발행한다. 이후 같은 허용32만 구현한다. 완료한 기존 검사를 전수 재실행하지 않고 신규/직접 인접과 필요한 type/build를 선택한다.
+Main이 제품16/SQL 부재 지문과 실제 RED·독립 WI 검토를 확인한 후 PRODUCT_GO를 발행한다. 이후 같은 허용33만 구현한다. 완료한 기존 검사를 전수 재실행하지 않고 신규/직접 인접과 필요한 type/build를 선택한다.
 
 필수 사례:
 1. 기존 후보 정상/거절 보존, 등록 exact13 discriminator/format·닫힌 옵션·전체2MiB·bytes/hash 구분.
@@ -155,3 +156,15 @@ ProjectApprovals.request와 기존0055 fn09_prepare_candidate_valid는 prepareEx
 다른 approval operation은 기존 origin 함수에 위임한다. 원0052/0055 파일·알림 cap/권한·원 명령/receipt/audit·준비 실행 미허가는 유지한다. 후보11 알림 origin 복원은 비용 정책 확대가 아니며 등록 목적 최초비용 proof/후행 준비 계상과 구분한다. 기존 후보의 새 실비/한도 정책을 추가하지 않는다.
 
 허용0077과 기존 schema 시험에서 양쪽 원형의 적합 복원·누락/변조 거절·다른 operation 보존을 검수한다. source 형상 검사를 실제 PG 행동 재현으로 주장하지 않는다. 별도 사용자 재승인·기존 승인 전체 대기는 필요하지 않다.
+
+## 10. r5 내부 시험 fixture 배치 보완
+
+부모 WI r4 SHA256 3124F9A2446781346FA7B04EB761ECDF3335006D8B2A4AD76432B8642F6E72D2, 원 직접 승인 C82C16EB/채택 r2 BA7FD5B3의 의미를 유지하는 MAIN_RECONFIRMED_NON_SEMANTIC 배치 보완이다. 새 제품/API/권한/SQL 의미나 검수 기준을 추가·완화하지 않는다.
+
+추가 허용1: tests/unit/UI04/registered-preparation-options-fixture.ts. Main의 r5 작성 직전 이 파일은 부재였고 원 execution-preparation-api.test.ts는 SHA256 5D181ED50A62A7EC3A96D4C68BCCA7EA15233F2D3629583D9AB8BEEF41E9B2D6였다. 이 시점은 작성 중 UI의 관측이며 최초 승인 전 지문을 대체하지 않는다.
+
+기존 API 시험의 private seed/clientFixture와 그 순수 의존 자료를 내용 보존해 이 helper로 옮기고, 기존 API 시험 및 이미 허용한 registered-preparation-options-flow.test.ts가 import한다. 상대 import 경로·필요한 export/import 외의 동작·기대값·음성/guard·실제 제품 소비는 보존한다. 시험 module을 import해 기존 test를 중복 등록하거나 큰 fixture를 복제하는 방법을 피하기 위한 최소 내부 배치다.
+
+helper는 import 시 시험 등록·파일/네트워크/DB·listener/서비스·키·Agent 실행·global 환경 변경을 하지 않는다. 새 의존성/package/lock 변경0이며 각 호출의 seed/client 상태와 변경 가능한 자료를 분리한다. 공유 object를 오염시켜 다른 시험의 guard나 기대값을 낮추지 않는다. 내용 보존·원 API 직접 회귀·새 실제 Editor DOM/승인 명시 왕복·UNKNOWN/지연/receipt 보존을 검수한다.
+
+총 허용은 제품16+기존 시험14+신규 SQL/flow시험/helper3=33이다. 실행 대상 시험 파일15는 helper를 별도 시험1로 부풀리지 않는다. Main 독립 r5 검토 후에만 이 추가 helper 작성 GO를 발행하며 기존 허용32의 승인 구현은 계속한다. 같은 Primary만 작성하고 Main은 검수·통합을 맡는다. 실제 DB/권한/키/서비스/Agent/실자료·기존 프로젝트 차단 해제 제외는 그대로다.

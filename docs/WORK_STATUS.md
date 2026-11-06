@@ -16176,3 +16176,13 @@ UI capabilityRef는 채택r2/WI대로 기존 providedHumanReportRef를 같은 pr
 SQL 직접 source 범위만 부분 인수했고 실제 설치/trigger 순서/RLS/COMMIT·전체제품/사용자 인수는 미검증이다. 같은 writer가 UI·최종 통합을 이어간다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 후속 GO0·전체 목표 active를 유지한다.
 
 추가 source 연결 감사도 raw156908B/E14BC22ABDFA9BDB55D55D993F2AA439E05796613A2A301210630A977B1A0608의 시작/종료 동일에서 C0/I0/M0다. 신규 인자/반환·기존 composite/collector·4 rename 위임·owner/ACL·정확 앱6 RPC·BEFORE/deferred 및 기존0072 CHECK 이름에 확정 누락을 찾지 못했다. 이는 설치 가능/실제 동작 판정이 아니며 같은 담당자는 UI를 계속 작성한다. Main은 변경 없는 Node13/SQL형상21을 불필요하게 재실행하지 않는다.
+
+## 247. UI 연결 진전과 r5 공유 fixture1 내부 배치 GO
+
+Primary는 snapshot10/history·승인 exact13 decoder의 실제 RED→GREEN과 기존 회귀, 등록 보호 definition/environment→원13 명령→snapshot10 GET, 확정 receipt 선보존의 RED→GREEN을 제출했다.028137의 API/승인 직접14PASS/skip0/639.9317ms와 type824496 exit0, cb70c8의 실제 UI 승인 API 요청/결정·strict 조회·명시 결박1PASS/37.031ms를 수거했다. 모드·파일 wrapper를 별도 시험 수로 부풀리지 않으며 Main 최종 fresh 증거와 구분한다. UI08의 공유 ref.version 오염 fixture는 payload 깊은 복사로만 분리해 기대값/guard를 보존했다. Editor DOM 통합은 아직 미완료다.
+
+중복 fixture를 피하고 이미 허용한 flow 시험에서 실제 Editor를 소비하기 위해 Main은 기존 API 시험의 private seed/clientFixture를 순수 공유 helper1로 내용 보존 이동하는 내부 배치를 선택했다. 새 제품/공개 API/권한/SQL 의미·검증 기준 변경이 아니므로 사용자 재승인을 요청하지 않았다. r4 SHA3124F9A2446781346FA7B04EB761ECDF3335006D8B2A4AD76432B8642F6E72D2를 부모로 MAIN_RECONFIRMED_NON_SEMANTIC한 WI r5는22838B/SHA256 56F197EFEB4500FD87DA0090AFFFFDE153CC07FDBF434567FB1E5B20372EE57B다. 원 직접 승인 C82C16EB/채택BA7FD5B3는 불변이다.
+
+추가 허용은 tests/unit/UI04/registered-preparation-options-fixture.ts 하나다. 제품16+기존시험14+신규SQL/flow/helper3=33이며 실행 시험 파일은15개로 helper를 시험1로 세지 않는다. r5 직전 helper 부재와 기존 API 시험5D181ED50A62A7EC3A96D4C68BCCA7EA15233F2D3629583D9AB8BEEF41E9B2D6를 관측했다. 새§10은 import시시험등록/IO/global변경0·각seed분리·기존기대값/guard/원제품소비/내용보존·새의존성0을 요구한다. 독립 r5 검토 C0/I0/M0·시작/종료지문 동일과 helper 부재를 확인한 뒤 같은 Primary에게 추가1 작성 GO를 발행했다.
+
+등록 UI capabilityRef는 기존 제공 원ref의 명시선택/미검증 의미를 유지한다. 없으면 SOURCE_REQUIRED이며 가짜ref/별도supplier/실행허가를 만들지 않는다. Main은 코드 수정 없이 문서·검수·통합을 맡고 같은 담당자가 Editor DOM·승인/UNKNOWN·receipt 검증과 전체33 제출을 이어간다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
