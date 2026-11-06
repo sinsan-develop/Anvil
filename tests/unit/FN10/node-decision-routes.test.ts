@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {nodeDecisionFixture,installNodeDecisionMemoryFS} from './node-decision-fixture.ts';
+await installNodeDecisionMemoryFS();
+const {materialRules}=await import('../../../apps/server/modules/access/project-command.ts');
+const id=(n:number)=>`10000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+test('사람 판단의 명시 정책3개는 원 material 정책 parser를 통과한다',()=>{
+ const rules=[{ruleId:'decision',subjectRef:{kind:'HUMAN',userId:id(1)},operations:['recordNodeDecision','revokeNodeDecision','readNodeDecisions'],targetScopes:[{kind:'PROJECT',projectId:id(2)}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}];
+ assert.deepEqual(materialRules(rules,id(2),id(1)),rules);
+});
+test('사람 판단 정책이 새 runtime 실행 권한을 허용하지 않는다',()=>{
+ const rules=[{ruleId:'decision',subjectRef:{kind:'HUMAN',userId:id(1)},operations:['recordNodeDecision','authorizeExecution'],targetScopes:[{kind:'PROJECT',projectId:id(2)}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}];
+ assert.throws(()=>materialRules(rules,id(2),id(1)),/POLICY_SCOPE_NOT_READY/);
+});
+test('실제 project command·GET2 route는 원 인증/CSRF·service·저장·후행 보호에 연결된다',async()=>{const f=await nodeDecisionFixture(),{buildApp}=await import('../../../apps/server/app.ts'),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root});const headers={host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};try{const c=f.command(),r=await app.inject({method:'POST',url:`/api/v1/projects/${f.pid}/commands`,headers,payload:c});assert.equal(r.statusCode,200,r.body);const saved=r.json();assert.equal(saved.data.humanDecisionRecorded,true);const fixed=`/api/v1/projects/${f.pid}/node-decisions/${saved.targetId}/versions/1`;const view=await app.inject({method:'GET',url:fixed,headers});assert.equal(view.statusCode,200,view.body);assert.equal(view.headers['cache-control'],'no-store');assert.equal(view.json().executionAuthorized,false);const query=new URLSearchParams({applicationId:f.applicationRef.id,applicationVersion:'1',applicationHash:f.applicationRef.contentHash,nodeId:'choose'}),page=await app.inject({method:'GET',url:`/api/v1/projects/${f.pid}/node-decisions?${query}`,headers});assert.equal(page.statusCode,200,page.body);assert.equal(page.json().items.length,1);const before=f.state.effects.length;const anonymous=await app.inject({method:'GET',url:fixed,headers:{host:headers.host}});assert.equal(anonymous.statusCode,401);const extra=await app.inject({method:'GET',url:fixed+'?value=GO',headers});assert.equal(extra.statusCode,400);const noCSRF=await app.inject({method:'POST',url:`/api/v1/projects/${f.pid}/commands`,headers:{host:headers.host,origin:headers.origin,cookie:headers.cookie},payload:f.command()});assert.equal(noCSRF.statusCode,403);assert.equal(f.state.effects.length,before);}finally{await app.close();}assert.equal(f.active(),false);assert.deepEqual(f.state.unsupported,[]);});

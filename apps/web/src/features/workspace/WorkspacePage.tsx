@@ -1,3 +1,4 @@
+import {NodeDecisionPanel,type NodeDecisionStorage} from './NodeDecisionPanel.tsx';
 import type {MobilePane} from '../mobile/MobileNavigation.tsx';
 import type {Ref} from '../connections/api.ts';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
@@ -17,7 +18,7 @@ import type {PlanTaskSelection} from '../../shell/routes.ts';
 import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
 import type {DocumentBuffer} from '../design-trace/editor-api.ts';
 
-export function WorkspacePage({mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
+export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
@@ -39,6 +40,7 @@ export function WorkspacePage({mobilePane,providedHumanReportRef, client, projec
         <section className="status-card" aria-label="개발 절차" hidden={mobilePane!==undefined&&mobilePane!=='steps'}><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
           <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={setSelectedStage} />
+          {nodeDecisions&&selectedStage&&project.currentMethodologyRef&&selectedStage.applicationId===project.currentMethodologyRef.id?<NodeDecisionPanel key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId,project.controlState.generation])} client={client} projectId={projectId} session={session} applicationRef={project.currentMethodologyRef} nodeId={selectedStage.nodeId} participation={project.participation} controlState={project.controlState} storage={nodeDecisions} onAuthenticationLost={onAuthenticationLost}/>:null}
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업" hidden={mobilePane!==undefined&&mobilePane!=='chat'}><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>

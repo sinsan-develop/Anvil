@@ -1,0 +1,321 @@
+-- FN10 사람 판단 저장·계상 / 미적용 forward. 실제 PG·GRANT·경합 검증 NOT_RUN.
+BEGIN;
+CREATE TABLE anvil.node_decision_heads(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),stream_id uuid NOT NULL,
+ application_ref jsonb NOT NULL,node_id text NOT NULL,head_version bigint NOT NULL CHECK(head_version BETWEEN 1 AND 9007199254740991),
+ head_hash text NOT NULL CHECK(head_hash~'^[0-9a-f]{64}$'),created_at timestamptz NOT NULL,updated_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,stream_id),UNIQUE(project_id,application_ref,node_id)
+);
+CREATE TABLE anvil.node_decision_versions(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),stream_id uuid NOT NULL,version bigint NOT NULL CHECK(version BETWEEN 1 AND 9007199254740991),
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,
+ basis_json jsonb NOT NULL,basis_hash text NOT NULL CHECK(basis_hash~'^[0-9a-f]{64}$'),
+ server_command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id),recorded_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,stream_id,version),
+ FOREIGN KEY(project_id,stream_id) REFERENCES anvil.node_decision_heads(project_id,stream_id) DEFERRABLE INITIALLY DEFERRED
+);
+ALTER TABLE anvil.node_decision_heads ADD CONSTRAINT node_decision_head_version_fk FOREIGN KEY(project_id,stream_id,head_version) REFERENCES anvil.node_decision_versions(project_id,stream_id,version) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE anvil.node_decision_heads OWNER TO anvil_v3_migrator;
+ALTER TABLE anvil.node_decision_versions OWNER TO anvil_v3_migrator;
+REVOKE ALL ON anvil.node_decision_heads,anvil.node_decision_versions FROM PUBLIC,anvil_v3_app;
+GRANT SELECT,INSERT,UPDATE ON anvil.node_decision_heads TO anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.node_decision_versions TO anvil_v3_app;
+
+-- 기존 목적의 조합 CHECK는 보존하고 새 조합만 추가한다.
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_operation_check;
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_operation_check CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject','linkDocumentSource','proposeDocumentSourceChange','prepareExecution','requestApproval','decideApproval','recordNodeDecision','revokeNodeDecision'));
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_part_kind_check;
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_part_kind_check CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION','SOURCE_LINK_EVENT','PREPARATION_OPTIONS','PREPARATION_APPROVAL_REQUEST','PREPARATION_APPROVAL_DECISION','NODE_DECISION'));
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT node_decision_purpose_pair CHECK(
+ (operation NOT IN('recordNodeDecision','revokeNodeDecision') AND part_kind<>'NODE_DECISION') OR
+ (operation IN('recordNodeDecision','revokeNodeDecision') AND part_kind='NODE_DECISION' AND part_key='node_decision'));
+
+CREATE FUNCTION anvil.fn10_node_decision_context(s uuid,a uuid,c uuid,p uuid,q jsonb,policy jsonb,expected_tx text) RETURNS timestamptz LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE pc anvil.project_control;m anvil.project_members;pv anvil.permission_policy_versions;session_row anvil.auth_sessions;rule jsonb;found_rule boolean=false;until_at timestamptz;
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ IF expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN';END IF;
+ PERFORM id FROM anvil.projects WHERE id=p AND archived_at IS NULL FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ SELECT * INTO m FROM anvil.project_members WHERE project_id=p AND user_id=a AND revoked_at IS NULL FOR UPDATE;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=p FOR UPDATE;
+ IF m.participation IS DISTINCT FROM 'OWNER' OR pc.actor_id IS DISTINCT FROM a OR pc.client_id IS DISTINCT FROM c OR pc.revoked_at IS NOT NULL THEN RAISE EXCEPTION 'PROJECT_WRITE_DENIED';END IF;
+ IF NOT COALESCE(anvil.execution_json_shape(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']),false)
+ OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text OR q->>'controlGeneration' IS DISTINCT FROM pc.generation::text
+ OR q->>'operation' NOT IN('recordNodeDecision','revokeNodeDecision') OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'NODE_DECISION_INPUT_INVALID';END IF;
+ SELECT * INTO session_row FROM anvil.auth_sessions WHERE id=s;until_at=LEAST(session_row.idle_expires_at,session_row.absolute_expires_at);
+ SELECT v.* INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=p FOR SHARE OF h;
+ IF pv.policy_id IS NULL OR policy IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash) OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN RAISE EXCEPTION 'POLICY_INTEGRITY_FAILED';END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',a) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p)) AND rule->'operations' ? (q->>'operation') AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF rule->>'disposition' IS DISTINCT FROM 'AUTO' THEN RAISE EXCEPTION 'PROJECT_OPERATION_DENIED';END IF;found_rule=true;until_at=LEAST(until_at,(rule->>'expiresAt')::timestamptz);
+  END IF;
+ END LOOP;
+ IF NOT found_rule OR until_at<=clock_timestamp() THEN RAISE EXCEPTION 'PROJECT_OPERATION_DENIED';END IF;RETURN until_at;
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_snapshot_valid(p uuid,q jsonb,ref jsonb,s jsonb,b jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','projectId','nodeRef','declarationHash','basisRef','decisionType','value','reason','sourceDocumentRefs','previousRef','status','actor','commandId','recordedAt']),false)
+ OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['schemaVersion','purpose','id','version','projectId','applicationRef','designRef','planRef','planDocumentRef','actor','commandId','recordedAt']),false)
+ OR NOT COALESCE(anvil.execution_json_shape(s->'actor',ARRAY['kind','userId','clientId','credentialGeneration','controlGeneration']),false)
+ OR NOT COALESCE(anvil.execution_json_shape(s->'nodeRef',ARRAY['applicationRef','nodeId']),false)
+ OR NOT COALESCE(anvil.execution_json_shape(q->'payload'->'basisSelection',ARRAY['applicationRef','designRef','planRef']),false)
+ OR s->'schemaVersion'<>'1'::jsonb OR b->'schemaVersion'<>'1'::jsonb OR b->'version'<>'1'::jsonb OR s->>'purpose'<>'HUMAN_NODE_DECISION' OR b->>'purpose'<>'HUMAN_NODE_DECISION_BASIS'
+ OR s->>'projectId' IS DISTINCT FROM p::text OR b->>'projectId' IS DISTINCT FROM p::text OR s->>'commandId' IS DISTINCT FROM q->>'commandId' OR b->>'commandId' IS DISTINCT FROM q->>'commandId'
+ OR s->'actor' IS DISTINCT FROM b->'actor' OR s->'actor'->>'kind'<>'HUMAN' OR s->'actor'->>'clientId' IS DISTINCT FROM q->>'clientId' OR s->'actor'->'controlGeneration' IS DISTINCT FROM q->'controlGeneration'
+ OR s->'actor'->>'credentialGeneration' !~ '^[1-9][0-9]{0,15}$' OR (s->'actor'->>'credentialGeneration')::numeric>9007199254740991
+ OR s->'nodeRef'->'applicationRef' IS DISTINCT FROM b->'applicationRef' OR b->'applicationRef' IS DISTINCT FROM q->'payload'->'basisSelection'->'applicationRef' OR b->'designRef' IS DISTINCT FROM q->'payload'->'basisSelection'->'designRef' OR b->'planRef' IS DISTINCT FROM q->'payload'->'basisSelection'->'planRef'
+ OR NOT COALESCE(anvil.execution_preparation_ref_valid(ref),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(b->'applicationRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(b->'designRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(b->'planRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(b->'planDocumentRef'),false)
+ OR s->>'decisionType'<>'ENUM_STRING_V1' OR s->>'declarationHash' !~ '^[0-9a-f]{64}$' OR jsonb_typeof(s->'value') IS DISTINCT FROM 'string' OR jsonb_typeof(s->'reason') IS DISTINCT FROM 'string' OR length(btrim(s->>'reason'))=0
+ OR s->>'reason' IS DISTINCT FROM q->'payload'->>'reason' OR s->>'recordedAt' IS DISTINCT FROM b->>'recordedAt' OR jsonb_typeof(s->'sourceDocumentRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'sourceDocumentRefs') NOT BETWEEN 1 AND 20 THEN RETURN false;END IF;
+ IF q->>'operation'='recordNodeDecision' THEN
+  RETURN COALESCE(anvil.execution_json_shape(q->'payload',ARRAY['nodeRef','declarationHash','basisSelection','decisionBaseRef','value','reason','sourceDocumentRefs']) AND s->>'status'='ACTIVE' AND s->'nodeRef'=q->'payload'->'nodeRef' AND s->'value'=q->'payload'->'value' AND s->'sourceDocumentRefs'=q->'payload'->'sourceDocumentRefs' AND s->'declarationHash'=q->'payload'->'declarationHash' AND s->'previousRef'=q->'payload'->'decisionBaseRef',false);
+ END IF;
+ RETURN COALESCE(q->>'operation'='revokeNodeDecision' AND anvil.execution_json_shape(q->'payload',ARRAY['decisionRef','basisSelection','reason']) AND s->>'status'='REVOKED' AND s->'previousRef'=q->'payload'->'decisionRef',false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- 선언의 정확 원 BRANCH/값을 원 적용본에서 재구성한다. 실행·평가를 하지 않는다.
+CREATE FUNCTION anvil.fn10_node_decision_declaration(p uuid,app jsonb,node text) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_methodologies;branches jsonb;values_json jsonb;body jsonb;bad boolean;
+BEGIN
+ SELECT * INTO r FROM anvil.project_methodologies x WHERE x.project_id=p AND x.id::text=app->>'id' AND x.application_version::text=app->>'version';
+ IF r.id IS NULL OR r.snapshot_hash IS DISTINCT FROM app->>'contentHash' OR anvil.fn01_hash(r.snapshot_json) IS DISTINCT FROM r.snapshot_hash
+ OR (SELECT count(*) FROM jsonb_array_elements(r.snapshot_json->'graph'->'nodes') n WHERE n->>'nodeId'=node AND n->>'kind' IN('HUMAN','DECISION') AND n->>'role'='USER')<>1 THEN RAISE EXCEPTION 'NODE_DECISION_DECLARATION_UNSUPPORTED';END IF;
+ SELECT COALESCE(jsonb_agg(e ORDER BY e->>'edgeId' COLLATE "C"),'[]'::jsonb) INTO branches FROM jsonb_array_elements(r.snapshot_json->'graph'->'edges') e WHERE e->>'fromNodeId'=node AND e->>'kind'='BRANCH';
+ WITH RECURSIVE conditions(v) AS (
+  SELECT b->'condition' FROM jsonb_array_elements(branches) b
+  UNION ALL SELECT child FROM conditions c CROSS JOIN LATERAL (
+   SELECT value child FROM jsonb_array_elements(CASE WHEN c.v?'all' THEN c.v->'all' WHEN c.v?'any' THEN c.v->'any' ELSE '[]'::jsonb END)
+   UNION ALL SELECT c.v->'not' WHERE c.v?'not') q
+ ),selected(v) AS(SELECT v FROM conditions WHERE v->'fieldRef'->>'nodeId'=node AND v->'fieldRef'->>'field'='USER_DECISION'),choice(v) AS(
+ SELECT v->'value' FROM selected WHERE v->>'operator' IN('EQ','NE') UNION ALL SELECT x FROM selected CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN v->>'operator'='IN' THEN v->'value' ELSE '[]'::jsonb END)x
+ ) SELECT jsonb_agg(to_jsonb(t) ORDER BY t COLLATE "C"),bool_or(length(t)=0 OR octet_length(convert_to(t,'UTF8'))>200 OR t~'[\x01-\x1f\x7f-\x9f]' OR t IN('__proto__','prototype','constructor')) INTO values_json,bad FROM (SELECT DISTINCT v#>>'{}' t FROM choice WHERE jsonb_typeof(v)='string')d;
+ IF bad OR values_json IS NULL OR jsonb_array_length(values_json)>32 THEN RAISE EXCEPTION 'NODE_DECISION_DECLARATION_UNSUPPORTED';END IF;
+ body=jsonb_build_object('schemaVersion',1,'purpose','HUMAN_NODE_DECISION_DECLARATION','applicationRef',app,'nodeId',node,'decisionType','ENUM_STRING_V1','values',values_json,'outgoingBranches',branches);RETURN body||jsonb_build_object('declarationHash',anvil.fn01_hash(body));
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_source(p uuid,snapshot jsonb,basis jsonb) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE app anvil.project_methodologies;wp anvil.work_plan_versions;w anvil.work_plans;d record;f jsonb;selected jsonb;decl jsonb;plan_doc jsonb;last_review text;
+BEGIN
+ SELECT * INTO app FROM anvil.project_methodologies x WHERE x.project_id=p AND x.id::text=basis->'applicationRef'->>'id' AND x.application_version::text=basis->'applicationRef'->>'version';
+ IF app.id IS NULL OR app.snapshot_hash IS DISTINCT FROM basis->'applicationRef'->>'contentHash' OR EXISTS(SELECT 1 FROM anvil.project_methodologies x WHERE x.project_id=p AND x.application_version>app.application_version) THEN RETURN false;END IF;
+ SELECT * INTO wp FROM anvil.work_plan_versions x WHERE x.project_id=p AND x.plan_id::text=basis->'planRef'->>'id' AND x.version::text=basis->'planRef'->>'version';
+ SELECT * INTO w FROM anvil.work_plans x WHERE x.project_id=p AND x.id=wp.plan_id;
+ IF wp.plan_id IS NULL OR wp.content_hash IS DISTINCT FROM basis->'planRef'->>'contentHash' OR w.head_version IS DISTINCT FROM wp.version OR w.confirmed_version IS DISTINCT FROM wp.version OR wp.version_json->'designRef' IS DISTINCT FROM basis->'designRef' THEN RETURN false;END IF;
+ plan_doc=wp.version_json->'documentRef';IF plan_doc IS DISTINCT FROM basis->'planDocumentRef' THEN RETURN false;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.work_plan_confirmations x WHERE x.project_id=p AND x.plan_id=wp.plan_id AND x.version=wp.version AND x.target_hash=wp.content_hash AND x.validation_json->'validForConfirmation'='true'::jsonb) THEN RETURN false;END IF;
+ FOR selected IN SELECT value FROM jsonb_array_elements(jsonb_build_array(basis->'designRef',plan_doc)||snapshot->'sourceDocumentRefs') LOOP
+  SELECT v.*,h.head_version,h.confirmed_version INTO d FROM anvil.document_versions v JOIN anvil.documents h ON h.project_id=v.project_id AND h.id=v.document_id WHERE v.project_id=p AND v.document_id::text=selected->>'id' AND v.version::text=selected->>'version';
+  IF NOT FOUND OR d.content_hash IS DISTINCT FROM selected->>'contentHash' OR d.head_version IS DISTINCT FROM d.version OR d.confirmed_version IS DISTINCT FROM d.version OR d.validation_json->'validForConfirmation' IS DISTINCT FROM 'true'::jsonb THEN RETURN false;END IF;
+  SELECT definition_json INTO f FROM anvil.form_versions x WHERE x.definition_id=d.form_definition_id AND x.version=d.form_version AND x.content_hash=d.form_hash;
+  IF selected=basis->'designRef' AND f->>'formCode'<>'AF02' OR selected=plan_doc AND f->>'formCode'<>'AF04' THEN RETURN false;END IF;
+  IF NOT EXISTS(SELECT 1 FROM anvil.artifacts x WHERE x.project_id=p AND x.id::text=d.content_json->'body'->>'artifactId' AND x.content_hash=d.content_json->'body'->>'contentHash' AND x.bytes::text=d.content_json->'body'->>'bytes' AND x.state='READY') THEN RETURN false;END IF;
+  SELECT r.outcome INTO last_review FROM anvil.content_reviews r JOIN anvil.audit_events a ON a.project_id=r.project_id AND a.command_id=r.command_id WHERE r.project_id=p AND r.target_kind='DOCUMENT' AND r.target_id=d.document_id AND r.target_version=d.version AND r.target_hash=d.content_hash ORDER BY a.server_sequence DESC LIMIT 1;
+  IF last_review IS DISTINCT FROM 'ACCEPTED' THEN RETURN false;END IF;
+ END LOOP;
+ SELECT r.outcome INTO last_review FROM anvil.content_reviews r JOIN anvil.audit_events a ON a.project_id=r.project_id AND a.command_id=r.command_id WHERE r.project_id=p AND r.target_kind='WORK_PLAN' AND r.target_id=wp.plan_id AND r.target_version=wp.version AND r.target_hash=wp.content_hash ORDER BY a.server_sequence DESC LIMIT 1;
+ IF last_review IS DISTINCT FROM 'ACCEPTED' THEN RETURN false;END IF;
+ decl=anvil.fn10_node_decision_declaration(p,basis->'applicationRef',snapshot->'nodeRef'->>'nodeId');RETURN COALESCE(decl->>'declarationHash'=snapshot->>'declarationHash' AND decl->'values' ? (snapshot->>'value'),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+-- JSON 숫자 원문은 pairs로 따로 보존하며 DB 시각/정수 열만 기존 projection을 쓴다.
+CREATE FUNCTION anvil.fn10_node_decision_cost(v jsonb,pairs jsonb,mapping jsonb DEFAULT '{}'::jsonb) RETURNS bigint LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE item record;raw text;rest jsonb=v;extra bigint=0;
+BEGIN
+ IF jsonb_typeof(v)<>'object' THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ FOR item IN SELECT key,value#>>'{}' pair_key FROM jsonb_each(mapping) LOOP
+  raw=pairs->>item.pair_key;
+  IF raw IS NULL OR NOT(rest?item.key) OR raw::jsonb IS DISTINCT FROM rest->item.key THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+  rest=rest-item.key;extra=extra+octet_length(convert_to(to_jsonb(item.key)::text,'UTF8'))+1+octet_length(convert_to(raw,'UTF8'));
+ END LOOP;
+ RETURN octet_length(convert_to(anvil.fn01_json(rest),'UTF8'))+extra+CASE WHEN (SELECT count(*) FROM jsonb_object_keys(mapping))=0 THEN 0 ELSE (SELECT count(*) FROM jsonb_object_keys(mapping))-CASE WHEN rest='{}'::jsonb THEN 1 ELSE 0 END END;
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_head(v anvil.node_decision_versions) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE first_at timestamptz;
+BEGIN
+ SELECT recorded_at INTO first_at FROM anvil.node_decision_versions x WHERE x.project_id=v.project_id AND x.stream_id=v.stream_id AND x.version=1;
+ RETURN jsonb_build_object('project_id',v.project_id,'stream_id',v.stream_id,'application_ref',v.snapshot_json->'nodeRef'->'applicationRef','node_id',v.snapshot_json->'nodeRef'->>'nodeId','head_version',v.version,'head_hash',v.content_hash,'created_at',to_char(COALESCE(first_at,v.recorded_at) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'updated_at',to_char(v.recorded_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_actual(p uuid,cid uuid,pairs jsonb,projection jsonb) RETURNS bigint LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v anvil.node_decision_versions;prev anvil.node_decision_versions;cmd anvil.commands;ar anvil.authorization_receipts;au anvil.audit_events;before_head jsonb;after_head jsonb;amount numeric;
+BEGIN
+ SELECT * INTO v FROM anvil.node_decision_versions x WHERE x.project_id=p AND x.server_command_id=cid;
+ SELECT * INTO cmd FROM anvil.commands x WHERE x.project_id=p AND x.id=cid;
+ SELECT * INTO ar FROM anvil.authorization_receipts x WHERE x.id=cmd.authorization_receipt_id AND x.command_id=cmd.id;
+ SELECT * INTO au FROM anvil.audit_events x WHERE x.project_id=p AND x.command_id=cid AND x.outcome='APPLIED';
+ IF v.stream_id IS NULL OR cmd.id IS NULL OR ar.id IS NULL OR au.event_id IS NULL OR (SELECT count(*) FROM anvil.audit_events x WHERE x.project_id=p AND x.command_id=cid AND x.outcome='APPLIED')<>1
+ OR cmd.operation NOT IN('recordNodeDecision','revokeNodeDecision') OR cmd.state<>'APPLIED' OR cmd.approval_consumption_id IS NOT NULL OR cmd.payload_ref IS NOT NULL
+ OR cmd.result_ref->'data'->'ref' IS DISTINCT FROM jsonb_build_object('id',v.stream_id,'version',v.version,'contentHash',v.content_hash)
+ OR v.snapshot_json->'actor'->>'userId' IS DISTINCT FROM cmd.actor_id::text OR v.snapshot_json->'actor'->>'clientId' IS DISTINCT FROM cmd.client_id::text OR v.snapshot_json->'actor'->>'controlGeneration' IS DISTINCT FROM cmd.control_generation::text
+ OR cmd.result_ref->'data'->'snapshot' IS DISTINCT FROM v.snapshot_json OR cmd.result_ref->'data'->'basisSnapshot' IS DISTINCT FROM v.basis_json
+ OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id,'clientId',cmd.client_id)
+ OR ar.policy_ref IS DISTINCT FROM cmd.policy_ref OR au.scope_digest IS DISTINCT FROM ar.scope_digest OR au.target_ref IS DISTINCT FROM cmd.result_ref->'data'->'ref'
+ OR au.actor_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id) OR au.client_ref IS DISTINCT FROM cmd.client_id
+ OR au.operation_id IS DISTINCT FROM cmd.operation_id OR au.policy_ref IS DISTINCT FROM cmd.policy_ref OR au.approval_ref IS NOT NULL OR au.correction_of IS NOT NULL
+ OR au.source_kind IS DISTINCT FROM 'HUMAN_COMMAND' OR au.reason_code IS DISTINCT FROM 'EXPLICIT_HUMAN_NODE_DECISION'
+ OR ar.scope_digest IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('projectId',p,'actorId',cmd.actor_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,'requestHash',cmd.request_hash,'policyRef',cmd.policy_ref,'targetRef',cmd.result_ref->'data'->'ref'))
+ THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ after_head=anvil.fn10_node_decision_head(v);before_head='null'::jsonb;
+ IF v.version>1 THEN SELECT * INTO prev FROM anvil.node_decision_versions x WHERE x.project_id=p AND x.stream_id=v.stream_id AND x.version=v.version-1;
+  IF prev.stream_id IS NULL OR v.snapshot_json->'previousRef' IS DISTINCT FROM jsonb_build_object('id',prev.stream_id,'version',prev.version,'contentHash',prev.content_hash) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;before_head=anvil.fn10_node_decision_head(prev);
+ ELSIF v.snapshot_json->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ IF projection IS DISTINCT FROM jsonb_build_object('before',before_head,'after',after_head) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ amount=anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(to_jsonb(v)),pairs,'{"snapshot_json":"snapshot","basis_json":"basis"}')
+  +anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(to_jsonb(cmd)),pairs,'{"result_ref":"result"}')
+  +anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(to_jsonb(ar)),NULL)
+  +anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(to_jsonb(au)),NULL)
+  +anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(after_head),NULL)
+  -CASE WHEN before_head='null'::jsonb THEN 0 ELSE anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(before_head),NULL) END;
+ IF amount<0 OR amount>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;RETURN amount::bigint;
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_maximum(p uuid,a uuid,c uuid,q jsonb,ref jsonb,snapshot jsonb,basis jsonb,projection jsonb,policy jsonb,ids jsonb,pairs jsonb,until_at timestamptz,generation bigint,s uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cid uuid=(ids->>'serverCommandId')::uuid;opid uuid=(ids->>'operationId')::uuid;arid uuid=(ids->>'authorizationReceiptId')::uuid;stamp timestamptz=transaction_timestamp();digest text;v jsonb;cmd jsonb;ar jsonb;au jsonb;plan jsonb;template jsonb;amount numeric;
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(pairs,ARRAY['snapshot','basis','result']),false) OR (pairs->>'snapshot')::jsonb IS DISTINCT FROM snapshot OR (pairs->>'basis')::jsonb IS DISTINCT FROM basis OR encode(sha256(convert_to(pairs->>'snapshot','UTF8')),'hex') IS DISTINCT FROM ref->>'contentHash'
+ OR snapshot->'basisRef' IS DISTINCT FROM jsonb_build_object('id',basis->>'id','version',1,'contentHash',encode(sha256(convert_to(pairs->>'basis','UTF8')),'hex'))
+ OR NOT COALESCE(anvil.fn10_node_decision_snapshot_valid(p,q,ref,snapshot,basis),false)
+ OR (pairs->>'result')::jsonb IS DISTINCT FROM jsonb_build_object('operationId',opid,'commandId',q->>'commandId','projectId',p,'status','APPLIED','targetId',ref->>'id','version',ref->'version','data',jsonb_build_object('ref',ref,'snapshot',snapshot,'basisRef',snapshot->'basisRef','basisSnapshot',basis,'humanDecisionRecorded',true,'completionAccepted',false,'runtimeStateVerified',false,'automaticTransitionPerformed',false,'executionAuthorized',false,'dispatchPerformed',false),'evidenceRefs','[]'::jsonb,'warnings','[]'::jsonb,'serverReceivedAt',snapshot->>'recordedAt') THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ digest=anvil.fn01_hash(jsonb_build_object('projectId',p,'actorId',a,'clientId',c,'controlGeneration',q->'controlGeneration','requestHash',anvil.fn01_hash(q),'policyRef',policy,'targetRef',ref));
+ v=to_jsonb(jsonb_populate_record(NULL::anvil.node_decision_versions,jsonb_build_object('project_id',p,'stream_id',ref->>'id','version',ref->'version','content_hash',ref->>'contentHash','snapshot_json',snapshot,'basis_json',basis,'basis_hash',snapshot->'basisRef'->>'contentHash','server_command_id',cid,'recorded_at',date_trunc('milliseconds',stamp))));
+ cmd=to_jsonb(jsonb_populate_record(NULL::anvil.commands,jsonb_build_object('id',cid,'scope_kind','PROJECT','scope_id',p,'project_id',p,'draft_id',NULL,'actor_id',a,'client_id',c,'operation',q->>'operation','command_id',q->>'commandId','request_hash',anvil.fn01_hash(q),'operation_id',opid,'state','APPLIED','authorization_receipt_id',arid,'approval_consumption_id',NULL,'expected_version',q->'expectedVersion','control_generation',q->'controlGeneration','policy_ref',policy,'payload_ref',NULL,'result_ref',(pairs->>'result')::jsonb,'received_at',stamp,'completed_at',stamp)));
+ ar=to_jsonb(jsonb_populate_record(NULL::anvil.authorization_receipts,jsonb_build_object('id',arid,'scope_kind','PROJECT','scope_id',p,'command_id',cid,'subject_ref',jsonb_build_object('kind','HUMAN','userId',a,'clientId',c),'policy_ref',policy,'scope_digest',digest,'approval_decision_ref',NULL,'authorized_at',stamp)));
+ au=to_jsonb(jsonb_populate_record(NULL::anvil.audit_events,jsonb_build_object('project_id',p,'server_sequence',9223372036854775807,'event_id',ids->>'auditEventId','actor_ref',jsonb_build_object('kind','HUMAN','userId',a),'client_ref',c,'command_id',cid,'operation_id',opid,'target_ref',ref,'policy_ref',policy,'approval_ref',NULL,'outcome','APPLIED','reason_code','EXPLICIT_HUMAN_NODE_DECISION','scope_digest',digest,'recorded_at',stamp,'source_kind','HUMAN_COMMAND','correction_of',NULL)));
+ amount=anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(v),pairs,'{"snapshot_json":"snapshot","basis_json":"basis"}')+anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(cmd),pairs,'{"result_ref":"result"}')+anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(ar),NULL)+anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(au),NULL)+anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(projection->'after'),NULL)-CASE WHEN projection->'before'='null'::jsonb THEN 0 ELSE anvil.fn10_node_decision_cost(anvil.fn09_registered_cost_projection(projection->'before'),NULL) END;
+ IF amount<0 OR amount>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ plan=jsonb_build_object('request',q,'actorId',a,'sessionId',s,'parts',jsonb_build_array(jsonb_build_object('key','node_decision','kind','NODE_DECISION','id',ref->>'id','bytes','0','contentHash',ref->>'contentHash','reservedBytes','0','settledBytes','0')),'commandHash',anvil.fn01_hash(q),'policyRef',policy,'authorizedUntil',to_char(until_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'replay',false,'canonicalPairs',pairs,'headProjections',projection,'planHash',repeat('0',64),'coverageGeneration',generation::text);
+ template=to_jsonb(jsonb_populate_record(NULL::anvil.project_storage_reservations,jsonb_build_object('id',cid,'project_id',p,'actor_id',a,'client_id',c,'external_command_id',q->>'commandId','operation',q->>'operation','command_hash',anvil.fn01_hash(q),'part_key','node_decision','part_kind','NODE_DECISION','plan_json',plan,'plan_hash',repeat('0',64),'reserved_bytes',0,'settled_bytes',0,'phase','RESERVED','start_fence',0,'authorized_until',until_at,'created_at',stamp)));
+ RETURN jsonb_build_object('baseBytes',amount::bigint,'template',template);
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_reserve(s uuid,a uuid,c uuid,p uuid,q jsonb,ref jsonb,snapshot jsonb,basis jsonb,projection jsonb,policy jsonb,ids jsonb,pairs jsonb,expected_tx text,parent_end timestamptz)
+ RETURNS TABLE(reservation_id uuid,transaction_id text,record_hash text,plan_hash text,reserved_bytes text,authorized_until text) LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE until_at timestamptz;ac anvil.project_storage_accounts;maximum jsonb;template jsonb;plan jsonb;part jsonb;amount bigint;sealed text;used numeric;held numeric;other_bytes numeric;rid uuid=(ids->>'serverCommandId')::uuid;old_head anvil.node_decision_heads;before_head jsonb;after_head jsonb;v anvil.node_decision_versions;
+BEGIN
+ until_at=date_trunc('milliseconds',LEAST(parent_end,anvil.fn10_node_decision_context(s,a,c,p,q,policy,expected_tx)));
+ IF NOT COALESCE(anvil.execution_json_shape(ids,ARRAY['serverCommandId','consumptionId','operationId','authorizationReceiptId','auditEventId','transactionId']),false) OR ids->>'transactionId' IS DISTINCT FROM expected_tx OR rid IS NULL OR (ref->>'version')::bigint<>(q->>'expectedVersion')::bigint+1
+ OR snapshot->>'projectId' IS DISTINCT FROM p::text OR snapshot->>'commandId' IS DISTINCT FROM q->>'commandId' OR snapshot->'actor' IS DISTINCT FROM basis->'actor'
+ OR basis->'actor' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',a,'clientId',c,'credentialGeneration',(SELECT credential_generation FROM anvil.users WHERE id=a),'controlGeneration',q->'controlGeneration')
+ OR basis->>'recordedAt' IS DISTINCT FROM to_char(transaction_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') OR snapshot->>'recordedAt' IS DISTINCT FROM basis->>'recordedAt' OR NOT COALESCE(anvil.fn10_node_decision_source(p,snapshot,basis),false) THEN RAISE EXCEPTION 'NODE_DECISION_SOURCE_CONFLICT';END IF;
+ SELECT * INTO old_head FROM anvil.node_decision_heads h WHERE h.project_id=p AND h.application_ref=basis->'applicationRef' AND h.node_id=snapshot->'nodeRef'->>'nodeId' FOR UPDATE;
+ IF old_head.stream_id IS NULL THEN before_head='null'::jsonb;IF q->'targetId'<>'null'::jsonb OR q->'expectedVersion'<>'0'::jsonb OR snapshot->'previousRef'<>'null'::jsonb THEN RAISE EXCEPTION 'VERSION_CONFLICT';END IF;
+ ELSE SELECT * INTO v FROM anvil.node_decision_versions x WHERE x.project_id=p AND x.stream_id=old_head.stream_id AND x.version=old_head.head_version;before_head=anvil.fn10_node_decision_head(v);
+  IF old_head.stream_id::text IS DISTINCT FROM ref->>'id' OR q->>'targetId' IS DISTINCT FROM ref->>'id' OR old_head.head_version::text IS DISTINCT FROM q->>'expectedVersion' OR snapshot->'previousRef' IS DISTINCT FROM jsonb_build_object('id',old_head.stream_id,'version',old_head.head_version,'contentHash',old_head.head_hash) THEN RAISE EXCEPTION 'VERSION_CONFLICT';END IF;
+  IF q->>'operation'='revokeNodeDecision' AND (v.snapshot_json->>'status'<>'ACTIVE' OR snapshot->'value' IS DISTINCT FROM v.snapshot_json->'value' OR snapshot->'sourceDocumentRefs' IS DISTINCT FROM v.snapshot_json->'sourceDocumentRefs' OR snapshot->'nodeRef' IS DISTINCT FROM v.snapshot_json->'nodeRef' OR snapshot->'declarationHash' IS DISTINCT FROM v.snapshot_json->'declarationHash') THEN RAISE EXCEPTION 'VERSION_CONFLICT';END IF;
+ END IF;
+ v=jsonb_populate_record(NULL::anvil.node_decision_versions,jsonb_build_object('project_id',p,'stream_id',ref->>'id','version',ref->'version','content_hash',ref->>'contentHash','snapshot_json',snapshot,'recorded_at',date_trunc('milliseconds',transaction_timestamp())));after_head=anvil.fn10_node_decision_head(v);
+ IF projection IS DISTINCT FROM jsonb_build_object('before',before_head,'after',after_head) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ SELECT * INTO ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;IF ac.project_id IS NULL OR ac.coverage_state<>'VERIFIED' THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.id=rid OR x.project_id=p AND x.actor_id=a AND x.external_command_id::text=q->>'commandId') OR EXISTS(SELECT 1 FROM anvil.commands x WHERE x.id=rid OR x.project_id=p AND x.actor_id=a AND x.command_id::text=q->>'commandId') THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;
+ SELECT COALESCE(sum(x.settled_bytes) FILTER(WHERE x.phase='SETTLED'),0),COALESCE(sum(x.reserved_bytes) FILTER(WHERE x.phase IN('RESERVED','IO_STARTED','UNKNOWN')),0) INTO used,held FROM anvil.project_storage_reservations x WHERE x.project_id=p;
+ used=used+anvil.fn15_storage_actual(p)+anvil.fn75_project_storage_actual_bytes(p)+anvil.fn76_storage_actual(p);held=held+anvil.fn15_storage_future(p)+anvil.fn75_project_storage_future(p)+anvil.fn76_storage_future(p);
+ IF used IS DISTINCT FROM ac.used_bytes OR held IS DISTINCT FROM ac.held_bytes THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ maximum=anvil.fn10_node_decision_maximum(p,a,c,q,ref,snapshot,basis,projection,policy,ids,pairs,until_at,ac.generation,s);template=maximum->'template';amount=anvil.fn09_registered_reservation_fixed_point((maximum->>'baseBytes')::bigint,template,NULL);other_bytes=anvil.fn09_registered_other_bytes(p);
+ IF used+held+amount+other_bytes>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ plan=template->'plan_json';part=plan->'parts'->0;part=part||jsonb_build_object('bytes',amount::text,'reservedBytes',amount::text,'settledBytes',amount::text);plan=jsonb_set(plan,'{parts,0}',part);sealed=anvil.fn01_hash(plan-'planHash');plan=plan||jsonb_build_object('planHash',sealed);
+ IF clock_timestamp()>=until_at THEN RAISE EXCEPTION 'PROJECT_STORAGE_CURRENT_REQUIRED';END IF;
+ INSERT INTO anvil.project_storage_reservations(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until) VALUES(rid,p,a,c,(q->>'commandId')::uuid,q->>'operation',anvil.fn01_hash(q),'node_decision','NODE_DECISION',plan,sealed,amount,0,'RESERVED',0,until_at);
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes+amount,updated_at=clock_timestamp() WHERE project_id=p;
+ UPDATE anvil.project_storage_reservations SET phase='IO_STARTED',start_fence=1,started_at=clock_timestamp() WHERE id=rid AND phase='RESERVED';
+ RETURN QUERY SELECT rid,expected_tx,ref->>'contentHash',sealed,amount::text,to_char(until_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_settle(s uuid,a uuid,c uuid,p uuid,external_id uuid,rid uuid,sealed text,result jsonb,expected_tx text)
+ RETURNS TABLE(status text,reservation_id uuid,transaction_id text,settled_bytes text) LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations;cmd anvil.commands;ac anvil.project_storage_accounts;actual bigint;amount bigint;used numeric;held numeric;other_bytes numeric;
+BEGIN
+ SELECT * INTO ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
+ SELECT * INTO r FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=rid FOR UPDATE;
+ PERFORM anvil.fn10_node_decision_context(s,a,c,p,r.plan_json->'request',r.plan_json->'policyRef',expected_tx);
+ IF r.id IS NULL OR NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.id=r.id AND x.xmin::text=txid_current()::text) OR r.actor_id IS DISTINCT FROM a OR r.client_id IS DISTINCT FROM c OR r.external_command_id IS DISTINCT FROM external_id OR r.part_kind<>'NODE_DECISION' OR r.phase<>'IO_STARTED' OR r.start_fence<>1 OR r.plan_hash IS DISTINCT FROM sealed OR r.authorized_until<=clock_timestamp() OR ac.coverage_state<>'VERIFIED' OR ac.generation::text IS DISTINCT FROM r.plan_json->>'coverageGeneration' THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN';END IF;
+ SELECT * INTO cmd FROM anvil.commands x WHERE x.id=rid AND x.project_id=p;
+ IF cmd.id IS NULL OR cmd.result_ref IS DISTINCT FROM result OR cmd.actor_id IS DISTINCT FROM a OR cmd.client_id IS DISTINCT FROM c OR cmd.command_id IS DISTINCT FROM external_id OR cmd.request_hash IS DISTINCT FROM r.command_hash OR result IS DISTINCT FROM (r.plan_json->'canonicalPairs'->>'result')::jsonb THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ actual=anvil.fn10_node_decision_actual(p,rid,r.plan_json->'canonicalPairs',r.plan_json->'headProjections');amount=anvil.fn09_registered_reservation_fixed_point(actual,to_jsonb(r),r.reserved_bytes);
+ SELECT COALESCE(sum(x.settled_bytes) FILTER(WHERE x.phase='SETTLED'),0),COALESCE(sum(x.reserved_bytes) FILTER(WHERE x.phase IN('RESERVED','IO_STARTED','UNKNOWN')),0) INTO used,held FROM anvil.project_storage_reservations x WHERE x.project_id=p;
+ used=used+anvil.fn15_storage_actual(p)+anvil.fn75_project_storage_actual_bytes(p)+anvil.fn76_storage_actual(p);held=held+anvil.fn15_storage_future(p)+anvil.fn75_project_storage_future(p)+anvil.fn76_storage_future(p);other_bytes=anvil.fn09_registered_other_bytes(p);
+ IF used IS DISTINCT FROM ac.used_bytes OR held IS DISTINCT FROM ac.held_bytes OR amount>r.reserved_bytes OR used+amount+held-r.reserved_bytes+other_bytes>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ UPDATE anvil.project_storage_reservations SET phase='SETTLED',settled_bytes=amount,server_command_id=cmd.id,authorization_receipt_id=cmd.authorization_receipt_id,scope_digest=(SELECT scope_digest FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id),settled_at=clock_timestamp() WHERE id=rid AND phase='IO_STARTED' AND plan_hash=sealed;
+ IF NOT FOUND THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN';END IF;
+ UPDATE anvil.project_storage_accounts SET used_bytes=used_bytes+amount,held_bytes=held_bytes-r.reserved_bytes,updated_at=clock_timestamp() WHERE project_id=p;
+ RETURN QUERY SELECT 'SETTLED'::text,rid,expected_tx,amount::text;
+END;$$;
+
+ALTER FUNCTION anvil.quota_plan_valid(jsonb) RENAME TO quota_plan_before_node_decisions;
+CREATE FUNCTION anvil.quota_plan_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE part jsonb;
+BEGIN
+ IF v->'request'->>'operation' NOT IN('recordNodeDecision','revokeNodeDecision') THEN RETURN anvil.quota_plan_before_node_decisions(v);END IF;
+ IF NOT COALESCE(anvil.execution_json_shape(v,ARRAY['request','actorId','sessionId','parts','commandHash','policyRef','authorizedUntil','replay','canonicalPairs','headProjections','planHash','coverageGeneration']),false) OR v->>'planHash' IS DISTINCT FROM anvil.fn01_hash(v-'planHash') OR v->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(v->'request') OR v->'replay' IS DISTINCT FROM 'false'::jsonb OR v->>'coverageGeneration' !~ '^[1-9][0-9]{0,15}$' OR (v->>'coverageGeneration')::numeric>9007199254740991 OR jsonb_array_length(v->'parts')<>1 THEN RETURN false;END IF;
+ part=v->'parts'->0;RETURN COALESCE(anvil.execution_json_shape(part,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']) AND part->>'kind'='NODE_DECISION' AND part->>'key'='node_decision' AND anvil.quota_decimal(part->'bytes')=anvil.quota_decimal(part->'reservedBytes') AND anvil.quota_decimal(part->'bytes')=anvil.quota_decimal(part->'settledBytes') AND anvil.execution_json_shape(v->'canonicalPairs',ARRAY['snapshot','basis','result']) AND anvil.execution_json_shape(v->'headProjections',ARRAY['before','after']),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_reservation_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cmd anvil.commands;v anvil.node_decision_versions;maximum jsonb;ids jsonb;actual bigint;
+BEGIN
+ SELECT * INTO cmd FROM anvil.commands x WHERE x.id=r.server_command_id AND x.project_id=r.project_id;
+ SELECT * INTO v FROM anvil.node_decision_versions x WHERE x.server_command_id=cmd.id AND x.project_id=r.project_id;
+ IF v.stream_id IS NULL OR cmd.id IS NULL OR r.id IS DISTINCT FROM cmd.id OR r.phase<>'SETTLED' OR r.part_kind<>'NODE_DECISION' OR r.part_key<>'node_decision' OR r.start_fence<>1 OR r.operation IS DISTINCT FROM cmd.operation OR r.actor_id IS DISTINCT FROM cmd.actor_id OR r.client_id IS DISTINCT FROM cmd.client_id OR r.external_command_id IS DISTINCT FROM cmd.command_id OR r.command_hash IS DISTINCT FROM cmd.request_hash OR r.plan_json->>'actorId' IS DISTINCT FROM cmd.actor_id::text OR r.plan_json->'policyRef' IS DISTINCT FROM cmd.policy_ref OR r.plan_hash IS DISTINCT FROM r.plan_json->>'planHash' OR NOT COALESCE(anvil.quota_plan_valid(r.plan_json),false) OR r.started_at>=r.authorized_until OR r.settled_at>=r.authorized_until OR r.plan_json->'parts'->0->>'id' IS DISTINCT FROM v.stream_id::text OR r.plan_json->'parts'->0->>'contentHash' IS DISTINCT FROM v.content_hash OR r.authorization_receipt_id IS DISTINCT FROM cmd.authorization_receipt_id THEN RETURN false;END IF;
+ IF r.reserved_bytes IS DISTINCT FROM anvil.quota_decimal(r.plan_json->'parts'->0->'reservedBytes') OR (r.plan_json->>'authorizedUntil')::timestamptz IS DISTINCT FROM r.authorized_until OR r.scope_digest IS DISTINCT FROM (SELECT scope_digest FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id) OR NOT COALESCE(anvil.fn10_node_decision_snapshot_valid(r.project_id,r.plan_json->'request',cmd.result_ref->'data'->'ref',v.snapshot_json,v.basis_json),false) THEN RETURN false;END IF;
+ actual=anvil.fn10_node_decision_actual(r.project_id,cmd.id,r.plan_json->'canonicalPairs',r.plan_json->'headProjections');
+ ids=jsonb_build_object('serverCommandId',cmd.id,'consumptionId','00000000-0000-4000-8000-000000000001','operationId',cmd.operation_id,'authorizationReceiptId',cmd.authorization_receipt_id,'auditEventId',(SELECT event_id FROM anvil.audit_events WHERE command_id=cmd.id AND project_id=r.project_id AND outcome='APPLIED'),'transactionId','1');
+ maximum=anvil.fn10_node_decision_maximum(r.project_id,cmd.actor_id,cmd.client_id,r.plan_json->'request',cmd.result_ref->'data'->'ref',v.snapshot_json,v.basis_json,r.plan_json->'headProjections',cmd.policy_ref,ids,r.plan_json->'canonicalPairs',r.authorized_until,(r.plan_json->>'coverageGeneration')::bigint,(r.plan_json->>'sessionId')::uuid);
+ RETURN COALESCE(r.reserved_bytes=anvil.fn09_registered_reservation_fixed_point((maximum->>'baseBytes')::bigint,maximum->'template',NULL) AND r.settled_bytes=anvil.fn09_registered_reservation_fixed_point(actual,to_jsonb(r),r.reserved_bytes),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+ALTER FUNCTION anvil.quota_settled_complete(anvil.project_storage_reservations) RENAME TO quota_settled_before_node_decisions;
+CREATE FUNCTION anvil.quota_settled_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN IF r.part_kind='NODE_DECISION' THEN RETURN anvil.fn10_node_decision_reservation_complete(r);END IF;RETURN anvil.quota_settled_before_node_decisions(r);END;$$;
+
+CREATE FUNCTION anvil.fn10_node_decision_write_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations;s jsonb;b jsonb;v anvil.node_decision_versions;
+BEGIN
+ IF TG_OP='DELETE' OR TG_TABLE_NAME='node_decision_versions' AND TG_OP<>'INSERT' THEN RAISE EXCEPTION 'NODE_DECISION_IMMUTABLE';END IF;
+ IF TG_TABLE_NAME='node_decision_versions' THEN
+  SELECT x.* INTO r FROM anvil.project_storage_reservations x WHERE x.id=NEW.server_command_id AND x.project_id=NEW.project_id;
+  s=NEW.snapshot_json;b=NEW.basis_json;
+  IF r.id IS NULL OR r.part_kind<>'NODE_DECISION' OR r.phase<>'IO_STARTED' OR NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.id=r.id AND x.xmin::text=txid_current()::text) OR s IS DISTINCT FROM (r.plan_json->'canonicalPairs'->>'snapshot')::jsonb OR b IS DISTINCT FROM (r.plan_json->'canonicalPairs'->>'basis')::jsonb OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(r.plan_json->'canonicalPairs'->>'snapshot','UTF8')),'hex') OR NEW.basis_hash IS DISTINCT FROM encode(sha256(convert_to(r.plan_json->'canonicalPairs'->>'basis','UTF8')),'hex') OR s->'basisRef' IS DISTINCT FROM jsonb_build_object('id',b->>'id','version',1,'contentHash',NEW.basis_hash) OR NEW.recorded_at IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+  PERFORM anvil.fn10_node_decision_context((r.plan_json->>'sessionId')::uuid,r.actor_id,r.client_id,r.project_id,r.plan_json->'request',r.plan_json->'policyRef',txid_current()::text);
+  IF NOT COALESCE(anvil.fn10_node_decision_source(NEW.project_id,s,b),false) THEN RAISE EXCEPTION 'NODE_DECISION_SOURCE_CONFLICT';END IF;
+ ELSE
+  IF TG_OP='UPDATE' AND (NEW.project_id IS DISTINCT FROM OLD.project_id OR NEW.stream_id IS DISTINCT FROM OLD.stream_id OR NEW.application_ref IS DISTINCT FROM OLD.application_ref OR NEW.node_id IS DISTINCT FROM OLD.node_id OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.head_version<>OLD.head_version+1) THEN RAISE EXCEPTION 'VERSION_CONFLICT';END IF;
+  SELECT * INTO v FROM anvil.node_decision_versions x WHERE x.project_id=NEW.project_id AND x.stream_id=NEW.stream_id AND x.version=NEW.head_version;
+  IF v.stream_id IS NULL OR NEW.head_hash IS DISTINCT FROM v.content_hash OR to_jsonb(NEW)-'created_at'-'updated_at' IS DISTINCT FROM anvil.fn10_node_decision_head(v)-'created_at'-'updated_at' OR NEW.updated_at IS DISTINCT FROM v.recorded_at OR NEW.created_at IS DISTINCT FROM (SELECT recorded_at FROM anvil.node_decision_versions x WHERE x.project_id=v.project_id AND x.stream_id=v.stream_id AND x.version=1) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER node_decision_version_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.node_decision_versions FOR EACH ROW EXECUTE FUNCTION anvil.fn10_node_decision_write_guard();
+CREATE TRIGGER node_decision_head_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.node_decision_heads FOR EACH ROW EXECUTE FUNCTION anvil.fn10_node_decision_write_guard();
+
+CREATE FUNCTION anvil.fn10_node_decision_complete(p uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations;
+BEGIN
+ IF EXISTS(SELECT 1 FROM anvil.node_decision_versions v WHERE v.project_id=p) AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts a WHERE a.project_id=p AND a.coverage_state='VERIFIED') THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.project_id=p AND c.operation IN('recordNodeDecision','revokeNodeDecision') AND NOT EXISTS(SELECT 1 FROM anvil.node_decision_versions v WHERE v.project_id=p AND v.server_command_id=c.id)) THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.node_decision_versions v WHERE v.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.id=v.server_command_id AND r.phase='SETTLED' AND r.part_kind='NODE_DECISION')) THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.node_decision_heads h WHERE h.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.node_decision_versions v WHERE v.project_id=p AND v.stream_id=h.stream_id AND v.version=h.head_version AND v.content_hash=h.head_hash AND anvil.fn10_node_decision_head(v)=jsonb_build_object('project_id',h.project_id,'stream_id',h.stream_id,'application_ref',h.application_ref,'node_id',h.node_id,'head_version',h.head_version,'head_hash',h.head_hash,'created_at',to_char(h.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'updated_at',to_char(h.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))) OR EXISTS(SELECT 1 FROM anvil.node_decision_versions n WHERE n.project_id=p AND n.stream_id=h.stream_id AND n.version>h.head_version)) THEN RETURN false;END IF;
+ FOR r IN SELECT * FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.part_kind='NODE_DECISION' LOOP IF NOT COALESCE(anvil.fn10_node_decision_reservation_complete(r),false) THEN RETURN false;END IF;END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.fn10_node_decision_final_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE value jsonb=COALESCE(to_jsonb(NEW),to_jsonb(OLD));p uuid;
+BEGIN p=CASE WHEN TG_TABLE_NAME='authorization_receipts' THEN (value->>'scope_id')::uuid ELSE (value->>'project_id')::uuid END;
+ IF p IS NOT NULL AND NOT COALESCE(anvil.fn10_node_decision_complete(p),false) THEN RAISE EXCEPTION 'NODE_DECISION_INTEGRITY_FAILED';END IF;RETURN NEW;END;$$;
+DO $fn10_deferred$
+DECLARE name text;
+BEGIN FOREACH name IN ARRAY ARRAY['node_decision_heads','node_decision_versions','commands','authorization_receipts','audit_events','project_storage_reservations','project_storage_accounts'] LOOP
+ EXECUTE format('CREATE CONSTRAINT TRIGGER node_decision_final AFTER INSERT OR UPDATE OR DELETE ON anvil.%I DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_node_decision_final_guard()',name);
+END LOOP;END;$fn10_deferred$;
+
+-- 다른 목적은 원 함수로 위임한다. 공개 quota_current/reserve/start의 allowlist는 넓히지 않는다.
+DO $fn10_acl$
+DECLARE f record;
+BEGIN FOR f IN SELECT p.oid::regprocedure AS name FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND (p.proname LIKE 'fn10_node_decision_%' OR p.proname IN('quota_plan_valid','quota_plan_before_node_decisions','quota_settled_complete','quota_settled_before_node_decisions')) LOOP
+ EXECUTE format('ALTER FUNCTION %s OWNER TO anvil_v3_migrator',f.name);EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC,anvil_v3_app',f.name);
+END LOOP;END;$fn10_acl$;
+GRANT EXECUTE ON FUNCTION anvil.fn10_node_decision_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb,jsonb,text,timestamptz),anvil.fn10_node_decision_settle(uuid,uuid,uuid,uuid,uuid,uuid,text,jsonb,text) TO anvil_v3_app;
+COMMIT;
