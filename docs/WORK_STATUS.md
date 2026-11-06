@@ -15960,3 +15960,43 @@ Primary는 전체 FN09를 INCOMPLETE로 명시하고 WIP11을 제출했다. e91f
 Main은 같은 기존 Primary에 followup_task로 즉시 계속 지시했다. WI383BA061/허용29 PRODUCT_GO는 유효하고 우선 실제 P/C/A/U/K/R 예약·정산/역완결 및 승인 최초비용 producer, 다음 보호 reader 통합 음성·UI 왕복을 완성한다. 완료 reader/포트 검사를 불필요하게 반복하지 않는다. 새 사용자 승인·PMO 다음 작업 배정을 기다리지 않는다. 현재 제출 지문은 역사 WIP이며 계속 작성 중 파일의 최종 동결 지문이 아니다.
 
 후속 목표 턴은 실제 agent 상태를 확인해 running이면 같은 task를 기다리고 중복 지시/새 agent/동시 writer를 만들지 않는다. terminal 결과일 때만 다음 정확 미완료를 followup한다. 전체 목표 active·FN08 후행 GO0·Main 코드 write0·실제 DB/권한/키/서비스/SDK/Agent/실자료 조사0을 유지한다.
+
+## 227. 새 준비 원형의 다른 소비자 영향 검수 착수
+
+직전 목표 턴은 코드 WIP·부분 시험·검수 증거와 동일 Primary 후속 구현이라는 실제 진전이었다. 이번 재개에서는 실제 agent running을 확인하고 중복 지시/재시작 없이 같은 작업을 기다렸다. Main은 새 intent13/snapshot10의 허용29 밖 FN12/14/16·inventory/export/일반 결과 소비를 기존 독립 담당자에게 제품 source만 읽게 했다. 실제 자료/백업 파일 조사·DB/권한/키/서비스/Agent 실행0이다.
+
+독립 중간 결과로 context-preparation-inventory.ts의 exact9/후보 전용 missingConditions 검산이 새 등록 snapshot10을 거절해 준비 inventory 전체 무결성 오류가 나는 소비선을 확인했다. 현재 body 누출 증거는 아니며 fail-closed 호환 미진이다. 실제 caller와 최소 보완/시험 범위를 최종 수거한 뒤 Main이 동일 채택 의미의 필수 내부 호환 보완으로 분류한다. 새 기능/권한으로 확대하거나 근거 없이 승인 대기로 만들지 않는다. 기존 Primary의 FN09 구현은 계속 진행하며 전체 기능 인수는 아직 아니다.
+
+## 228. FN09 WI r2 필수 호환32·알림 최초비용 귀속
+
+허용29 밖 확정 영향은 context-preparation-inventory의 후보 exact9/사유 전용 검산이었다. composition이 실제 호출해 전체 PROJECT_INVENTORY_FAILED를 전달하며 현재 body 누출은 확인되지 않았다. 등록10을 수용할 때는 OWNER뿐 아니라 원 definition/environment 보호 읽기를 같은 관측 db/actor로 검사해야 body 반환 우회가 없다. 일반 command inventory는 derivedMetadataHash만 반환하고, 조사한 FN12/14는 직접 소비를 확인하지 못했다.
+
+Main은 제품 inventory1과 기존 시험2를 필수 내부 호환 보완으로 추가해 FN09 WI r2 허용32로 고정했다. 추가3 지문은1cf35a로 검산했고 WI r2는17033B/SHA256 6B32AEA3A1273CE53B2F9F0275FDDC824DB0984CD84618694E5C79BF61E86D88이다. 부모 직접 승인 C82C16EB/채택BA7FD5B3와 기능·공개/권한·한도는 불변이다. 이는 새 백업 기능이나 실제 자료/반출 실행이 아니라 새 준비 원형의 기존 소비 보존이다. 추가 시험2 TEST_ONLY→기존 collector의 정상 등록 거절 RED→Main 추가 제품1 GO 순서이며 기존29 PRODUCT_GO는 계속한다.
+
+독립 알림 비용 대조는 승인 요청 producer가 같은 Tx에서 notifications1행을 생성하지만 fn15/fn75/fn76/SETTLED에 계상하지 않음을 확인했다. 기존0052의10000행 cap은 bytes 계상이 아니다. source_command_id=원 승인 요청 receipt.id이며 요청 생성 최초비용 상계/actual에 해당 실제14열·원 project/source command/request/recipient·origin/FK/유일/current를 한 번 결박한다. 준비 P/C/A/U/K/R와 후행 결정/읽음 명령에 중복 귀속하지 않는다. 기존0052는 보존하고0077/허용 ProjectApprovals/quota에 연결한다. 이는 이미 승인된 최초비용 proof 구현의 실제 저장 누락 보완이며 새 알림/권한/비용 한도가 아니다.
+
+Main은 같은 Primary에 정확 결과와 WI r2를 전달하고 기존 독립 담당자에게 변경 절 검수를 맡긴다. 실제 DB·권한·키·서비스·Agent·실자료/백업 조사0, Main 제품 write0·전체 계획 active를 유지한다.
+
+§228 WI r2 변경 절 독립 검수는 C0/I0/M0이며 시작/종료17033B·6B32AEA3A1273CE53B2F9F0275FDDC824DB0984CD84618694E5C79BF61E86D88 동일이다. 추가3 실제 지문이 WI와 일치하고 기존 보호/부모 승인 의미·알림 최초비용 단일 귀속·기존29 계속/추가2 시험우선 순서를 확인했다. 코드/실제 실행 인수는 아니다. 현재 Primary의 기존29 구현과 추가 시험2 준비를 같은 task에서 계속하며 새 담당자/동시 writer0이다.
+
+## 229. inventory 실제 RED와 RR/RO 보호 읽기 접합 보완
+
+Primary4f86b2는 후보9/원 승인 원장 수집 성공 후 등록 binding·intent13/snapshot10에서 실제 collector503 거절 2FAIL/skip0/1421.6763ms를 제출했다. Mainbc5876은 추가 제품43387B/2DA3E8F1와 시험32114B/7B14F062·승인시험42024B/BAB5DFC7 지문을 대조한 뒤 같은 실제 시험2를 fresh 실행해 exit1·2FAIL/skip0·993.0804ms와 원 무결성 오류503을 확인했다. 준비/환경 fixture 실패와 원형 미지원의 행동 RED를 구분한다.
+
+Main5e8ec2는 기존 collector가 RR READ ONLY이고 기본 보호 reader의 currentPolicy FOR SHARE와 충돌하는 호출선을 발견했다. 독립 대조는 I1을 확인하고 앞선 WI 검수에서 놓쳤음을 명시했다. 실제 PG 실행 오류가 아니라 source의 잠금/Tx 제약이며 제품은 아직 미작성이다. RO 해제·authorize=false·정책 잠금 삭제·새 권위 proof로 우회하지 않는다.
+
+Main은 기존 START_AND_END_READ_COMMITTED 경계를 사용하도록 WI r3를 고정했다. 시작 인증 RC에서 한도 내 등록 준비/원 fullrefs를 수거하고 같은 db/실제 actor의 기본 보호 reader로 검산한다. RR/RO 역사 closure의 반환집합이 그 원 집합에 포함되는지 대조하고, RR rollback/release 뒤 종료 인증 RC에서 실제 반환 refs와 원 정의 도출 Options body/hash를 다시 보호 검산한다. 동일 identity·기한·취소를 통과한 뒤에만 body를 반환한다. 전역 현재 권한/실행 검증으로 승격하지 않는다.
+
+WI r3는18836B/SHA256 CC64E85B77DDE3880094FDF6C1199EFF045C40032BADDA873D1117E92BD21DF9이며 허용32/부모 C82C16EB/BA7FD5B3·기존29 구현은 유지된다. 변경 절 독립 검수 후 추가 inventory 제품1 GO를 발행한다. 실제 DB·권한·키·서비스·Agent/실자료 조사0이다.
+
+## 230. 추가 inventory 제품 GO와 코드 경계 보완
+
+WI r3 변경 절 독립 검수는 C0/I0/M0이며18836B/CC64E85B77DDE3880094FDF6C1199EFF045C40032BADDA873D1117E92BD21DF9 시작/종료 동일이다. I1은 문서 수준 해소이며 실제 PG 검증이 아니다. Main3a4e06에서 추가 제품43387B·2DA3E8F1 불변을 재확인했고 기존bc5876 실제 RED2와 함께 추가 inventory 제품1 PRODUCT_GO를 발행한다. 허용32의 나머지 구현은 계속한다.
+
+Primary38780e는 다른 원 발급 command ID의 quota 응답을 허용하는 실제 반례1FAIL을 수거했고 최소 응답 동일성 보완4767c6은 신규1+원 직접2의3PASS/skip0/exit0이었다. 이 증거는 Node 포트의 원 command 결박이며 실제 SQL 생산 완료가 아니다.
+
+Primary의0055/0075 추정 파일명 읽기 OS2 두 건은 제품 실패가 아니다. 이전 추정 경로 준비 오류와 같은 원인이므로 추정 basename 조회 방식을 중단한다. Main이3a4e06의 실제 rg --files 목록으로 db/migrations/0055_execution_preparation_one_time_approval.sql.pending 및0075_user_common_setup_definitions.sql.pending을 고정해 전달한다. 이후 파일명은 먼저 실제 목록에서 찾으며 실패한 추정 경로를 재시도하지 않는다. 정식 코드 FAILURE_REPORT/직접 코드 인수로 세지 않고 Main은 읽기 경로 지원만 담당한다.
+
+실제 DB·권한·키·서비스·Agent·실자료/백업 조사0, 새 담당자/동시 writer0을 유지한다.
+
+§230 추가 inventory r3 접합 코드는 한정 C0/I0/M0다. 제품46723B/SHA256 097F0140041B1C84932BB7BF543D70863232CF014A5C44D2E2B27F62FC1D22FE 시작/종료 동일에서 RC 원 db/실제 actor의 기본 보호 reader·시작 refs/input/Options 봉인·RR/RO 역사/집합 검산·rollback/release 뒤 종료 RC 재대조·identity/기한/취소·전체 거절/body0을 확인했다. 기존 후보9 및 전역 NOT_PERFORMED/false는 보존한다. 정상 실제 원장 fixture GREEN과 실제 PG/권한은 이 판정 밖이며 Primary가 계속 구현/시험 중이다.

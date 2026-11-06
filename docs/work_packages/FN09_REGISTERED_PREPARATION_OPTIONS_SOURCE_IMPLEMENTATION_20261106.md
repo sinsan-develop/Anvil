@@ -1,6 +1,6 @@
 # FN09 등록 정의 실행 준비·Options 보관 r2 구현 지시서
 
-2026-11-06 / Main 어울 / 단일 기존 Primary / source-only.
+2026-11-06 / Main 어울 / r3 / 단일 기존 Primary / source-only.
 
 ## 1. 승인과 기준
 
@@ -11,11 +11,11 @@
 
 현재 단계는 로컬·WSL 기능 구현의 source-only 부분이다. 목표는 실제 선택한 등록 도구/환경에서 준비·승인왕복·저장·고정조회가 연결되는 코드이며 단순 성공 wrapper나 기존 기능 재구현이 아니다. 실제 DB·권한·키·서비스·SDK/Agent 실행·실자료 조사·C# 컴파일·J3/P03 R3·기존 프로젝트 차단 해제는 제외한다.
 
-## 2. 역할과 허용29
+## 2. 역할과 허용32
 
 기존 Primary만 코드/시험/미적용 SQL을 작성한다. Main은 문서·검수·fresh 검증·Git 통합, 기존 독립 담당자는 read-only 검수다. 다른 담당자의 변경을 되돌리거나 관련 없는 dirty/untracked를 건드리지 않는다. 새 agent/chat/branch/자동화0, Main 동시 코드 write0.
 
-제품15:
+제품16:
 | 경로 | 시작 SHA256 |
 |---|---|
 | contracts/runtime/execution-intent-v1.ts | 323F846F50B34B39689FF3736B72F238ACFE71B1750EBF4DAC1F3222C06F3265 |
@@ -34,7 +34,7 @@
 | apps/web/src/features/session-detail/PreparationHistory.tsx | DE479DFE31884986B2C774EBF55CBB52A7E9B782EE7CF6B60CCBA3B93991BFEA |
 | apps/web/src/features/workspace/responsible-session-api.ts | 0DBFF8CC4E29E4B4B5E9C5808E7816112B267F8416237F263F0C4CC55FE41E9A |
 
-기존 시험12:
+기존 시험14:
 | 경로 | 시작 SHA256 |
 |---|---|
 | tests/unit/FN08/execution-preparation.test.ts | 13B438A0AF589981960FCC96AB63F9F8FF699FCFDFC6D728DF0006F384AE0115 |
@@ -49,6 +49,15 @@
 | tests/unit/UI04/responsible-session-approval-api.test.ts | E8F74FAB782200D271099268E31D7EA373648A2EFA2F89019C801F6D1FB69132 |
 | tests/unit/UI08/execution-preparation-approval-api.test.ts | C6E11E598A6BC697C1DAF73CBD7F2EF55BC345FFC0BE63D89CB05F4DE9FEE185 |
 | tests/unit/UI05/preparation-history-api.test.ts | 02B13C107C0F91BAAAE66CC4AB9A03C6E08AECABE3A4B45E8335CEDFC7469766 |
+
+추가 필수 호환 제품1/시험2 시작 지문:
+| 경로 | 시작 SHA256 |
+|---|---|
+| apps/server/modules/backups/context-preparation-inventory.ts | 2DA3E8F146084A3EE768A0E519BF05EB249F392BC2EB881493675A1400B90B88 |
+| tests/unit/FN16/context-preparation-inventory.test.ts | F082B39B311F5E7370508721CB2318393EE0CBF6F8F81F9B1E66D2ACAB765588 |
+| tests/unit/FN16/context-preparation-approval-inventory.test.ts | 938FA64AD56CC8921AEEF1F2C06F8947843FA44CB2269FEFD669DD4C18DD2EC7 |
+
+이3경로는 Main1cf35a에서 지문을 확인했다. 기존15제품/12시험의 시작 지문은 위 표 그대로이며 과거 TEST_ONLY/PRODUCT_GO 이력은 그때의 허용29에 해당한다.
 
 신규2:
 - db/migrations/0077_registered_execution_preparation_options.sql.pending
@@ -92,9 +101,9 @@ Editor→고정 명령→승인 요청/결정→명시 복귀→저장→receipt
 
 ## 6. TDD와 검수
 
-첫 단계는 허용 시험13만 작성한다. 실제 기존 parser/클래스/route/UI를 소비해 등록 분기 미지원과 원문 보호/replay·계상 미연결의 행동 RED를 입증한다. module 부재/추정 fixture/환경 실패를 제품 RED로 꾸미지 않는다. 새 fixture는 원 관계/정책/receipt·승인 근거를 적합하게 구성하며 기존 기대값·기준·보안 음성을 낮추지 않는다.
+첫 단계는 허용 시험15만 작성한다. 실제 기존 parser/클래스/route/UI를 소비해 등록 분기 미지원과 원문 보호/replay·계상 미연결의 행동 RED를 입증한다. module 부재/추정 fixture/환경 실패를 제품 RED로 꾸미지 않는다. 새 fixture는 원 관계/정책/receipt·승인 근거를 적합하게 구성하며 기존 기대값·기준·보안 음성을 낮추지 않는다.
 
-Main이 제품15/SQL 부재 지문과 실제 RED·독립 WI 검토를 확인한 후 PRODUCT_GO를 발행한다. 이후 같은 허용29만 구현한다. 완료한 기존 검사를 전수 재실행하지 않고 신규/직접 인접과 필요한 type/build를 선택한다.
+Main이 제품16/SQL 부재 지문과 실제 RED·독립 WI 검토를 확인한 후 PRODUCT_GO를 발행한다. 이후 같은 허용32만 구현한다. 완료한 기존 검사를 전수 재실행하지 않고 신규/직접 인접과 필요한 type/build를 선택한다.
 
 필수 사례:
 1. 기존 후보 정상/거절 보존, 등록 exact13 discriminator/format·닫힌 옵션·전체2MiB·bytes/hash 구분.
@@ -112,3 +121,27 @@ Main이 제품15/SQL 부재 지문과 실제 RED·독립 WI 검토를 확인한 
 변경 파일별 지문/diff·정확 명령/exit/실제 결과·RED와 fixture 오류 구분·미실행/잔여·live/pending·rollback을 반환한다. 동일 근본원인의 정식 실패3회는 Main에게 증거로 인계하고 임의 우회/기준 완화0이다. 도구/경로 오류는 별도 기록한다.
 
 신산님과 PMO에 코드 완료를 직접 주장하거나 merge하지 않는다. Main 독립 검수·fresh 검증·필요 보완 후 통합한다. FN09 단위 인수 후 후행 FN08 START WI로 즉시 이어가며 전체 계획 완료로 승격하지 않는다.
+
+## 8. r2 필수 소비자 호환·승인 알림 비용 보완
+
+부모 직접 승인 C82C16EB/채택 계약 BA7FD5B3의 의미·공개 API·권한·한도는 그대로다. 독립 영향 검수에서 새 원형 때문에 기존 준비 inventory 전체가 실패함을 확인해 최소 내부 호환3만 추가했다. 새 백업 기능·실제 자료 조사·반출·복구를 추가하지 않는다.
+
+context-preparation-inventory.ts의 기존 후보 snapshot9/사유 검산은 보존하고 등록 snapshot10/intent13/options·등록 사유·원 bytes/hash/canonical/원 command·receipt/audit·승인 관계를 별도 검산한다. 현재 collector는 OWNER를 검사하지만 snapshot도 반환하므로 등록 분기에 원 definition/environment 보호 읽기가 필수다. 다만 기존 관측은 RR/READ ONLY이고 보호 reader의 currentPolicy FOR SHARE를 그 안에서 호출하면 충돌한다. RR을 RW로 바꾸거나 authorize=false/잠금 제거/가짜 성공 proof로 우회하지 않는다.
+
+기존 START_AND_END_READ_COMMITTED 인증 경계를 그대로 활용한다.
+1. 시작 boundary의 기존 인증 RC callback 안에서 한도 내 등록 준비 fullref·원 definition/environment fullrefs를 수거하고 형태/해시 관계를 검사한다. 그 같은 RC db와 실제 actor로 기본 보호 reader를 호출해 OWNER/정책·승인미연결 검사를 보존한다. 시작 검산 집합은 immutable in-memory 자료이며 새 권위/서명 ticket이 아니다.
+2. 원 RR/READ ONLY에서는 기존 역사 closure/hash를 검산한다. 반환할 등록 준비와 원 refs/hash가 시작 RC 검산 집합에 정확히 포함되는지 확인한다. 중간 추가/다른 ref를 조용히 포함하거나 누락시키지 않고 전체 거절한다.
+3. RR rollback·release 뒤 기존 종료 boundary의 인증 RC callback에서 실제 반환 대상의 동일 fullrefs를 기본 보호 reader로 다시 검산한다. 원 불변 정의에서 도출한 Options body/bytes/hash도 RR snapshot과 대조한다. 최신 head로 역사 원문을 다시 만들지 않는다.
+4. 마지막 RC 성공·동일 identity·기한/취소 검사 후에만 전체 결과/body를 반환한다. 어느 경계든 실패하면 전체 거절/body0이다. 종료 검사만으로 시작 검사까지 했다고 주장하지 않는다.
+
+각 보호 read는 해당 기존 인증 RC의 원 db/actor를 사용하며 새 Pool/별도 임의 인증 트랜잭션을 만들지 않는다. RR의 snapshot을 현재 권한 snapshot이라고 부르지 않고 기존 currentPermissionVerification 및 현재성/실행 효력의 미검증·false를 보존한다. exact 키만 늘려 body를 노출하지 않는다.
+
+추가 시험2에는 실제 collector의 등록 정상·원문/ref/hash/원 승인 관계 변조·시작/종료 RC 각각 보호 읽기 거절·RR 집합 불일치·동일 identity/기한/취소·RR에서 잠금 SQL 금지·후보 기존원형 보존을 추가한다. composition은 현재 호출 구조를 재사용하는 방향이며 제품 수정 없이 직접 인접 영향 검수만 한다. 실제 wiring 때문에 추가 경로가 필수면 정확 근거를 Main에 반환한다. 타입/원 hash를 무시하거나 새 snapshot을 누락해 성공시키지 않는다.
+
+이 추가3은 시험2 TEST_ONLY부터 시작해 실제 기존 collector의 정상 등록10 거절 RED를 Main에게 제출한다. 기존 허용29의 PRODUCT_GO 구현은 계속하고 이3 때문에 전체를 멈추지 않는다. Main이 RED를 확인하면 추가 제품1 GO를 발행한다.
+
+승인 최초비용 proof에서는 기존 recordApprovalRequestNotification의 실제 notifications 1행도 원 요청 생성 명령에 귀속한다. source_command_id는 원 승인 요청 receipt.id이며 외부 commandId나 후행 prepare/결정 명령이 아니다. 현재 fn15/fn75/fn76 actual·SETTLED에 이 행을 포함하는 producer가 없고 0052의 프로젝트10000행 cap은 bytes 계상이 아니다.
+
+등록 준비 requestApproval 최초비용 상계/actual에 notification 전체 실제14열을 한 번 포함한다. 같은 승인 생성 Tx에서 project_id+source_command_id+approval_request_id+recipient의 원 행·origin/FK/유일/current를 검산하고 누락/불일치/비용 proof 부재면 원 요청 전체를 거절한다. 기존0052 파일/cap/권한은 변경하지 않고0077 forward와 허용 ProjectApprovals/quota에만 연결한다. 준비 P/C/A/U/K/R에 알림을 추가/재계상하지 않는다. notification_reads는 후속 별도 읽음 명령이므로 이번 생성 비용과 혼합하지 않는다.
+
+이 항목은 이미 채택한 승인 최초비용의 실제 저장 귀속을 정확히 하는 내부 구현 보완이며 새 알림 채널·전송·권한·비용 한도를 만들지 않는다.
