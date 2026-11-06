@@ -2514,3 +2514,23 @@ Primary는 snapshot10/history·승인 exact13 decoder의 실제 RED→GREEN과 �
 추가 허용은 tests/unit/UI04/registered-preparation-options-fixture.ts 하나다. 제품16+기존시험14+신규SQL/flow/helper3=33이며 실행 시험 파일은15개로 helper를 시험1로 세지 않는다. r5 직전 helper 부재와 기존 API 시험5D181ED50A62A7EC3A96D4C68BCCA7EA15233F2D3629583D9AB8BEEF41E9B2D6를 관측했다. 새§10은 import시시험등록/IO/global변경0·각seed분리·기존기대값/guard/원제품소비/내용보존·새의존성0을 요구한다. 독립 r5 검토 C0/I0/M0·시작/종료지문 동일과 helper 부재를 확인한 뒤 같은 Primary에게 추가1 작성 GO를 발행했다.
 
 등록 UI capabilityRef는 기존 제공 원ref의 명시선택/미검증 의미를 유지한다. 없으면 SOURCE_REQUIRED이며 가짜ref/별도supplier/실행허가를 만들지 않는다. Main은 코드 수정 없이 문서·검수·통합을 맡고 같은 담당자가 Editor DOM·승인/UNKNOWN·receipt 검증과 전체33 제출을 이어간다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
+
+## 248. 최종 동결 인수 요청과 Main 직접15의 실제7실패
+
+Primary는 source-only COMPLETED와 허용33 동결/변경29(수정26·신규3), live/pending0을 제출했다. 이는 Main 통합 합격이 아니다. Main 실제 Git837f316d8ff30ca7eb8847ca4d65eed8f2a04a70/기존 branch·빈 index·허용 밖 변경0·새 비추적은0077/flow/helper3뿐임을 확인했다.33의 실제 검증 전 지문은 도구 메모리에 고정했다. 첫 메타데이터 파서는 native Git CRLF 경고를 JSON과 혼동해1회 실패했고, 설정/파일 변경 없이 경고와 구조 JSON 줄을 분리해 보정했다. 두 번째 원출력도 보존했고 경고10개를 숨겨서 합격시키지 않았다.
+
+Main f4caba의 변경/직접영향15파일 실행은200시험 중193PASS/7FAIL/skip0·5287.2883ms/exit1이다.7개는 불변 project-storage-quota-writers.test.ts235/236/237/238/242/250/251의 생성·첨부 계열이며 AccessRepository.#transaction79의 TRANSACTION_STATE_UNKNOWN으로 실패했다. 한 음성은 기대 PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN과 다른 오류였다. 이7을 예상 RED·PASS·무관한 환경 문제로 확정하지 않았다. 같은 Primary를 재개해 현재 코드 회귀/기존 baseline/fixture 원자료 누락을 먼저 대조하고, 허용 범위에서 원 기대값/보안 기준을 보존해 보완하도록 했다. 새 branch/worktree·실제 DB/서비스·전체 검사 반복은 하지 않는다.
+
+최종 UI3/API·Editor/승인 helper와 fixture/flow5의 독립 읽기는 제출 지문 시작/종료 동일에서 한정 C0/I0/M0다. POST0 명확 DENY 분류, 기존 UNKNOWN 보존, receipt 선보존·후속 GET 실패시 원ref만 조회/본문 숨김/새명령·승인0, 등록 원ref 미검증·부재차단, 실제 Editor/App CAS/API 소비와 상태 분리를 확인했다. 이동 전 원문 전체의 byte 보존은 Primary 재구성 지문 근거이며 독립 읽기로 그 과거 byte를 새로 확정하지 않았다.
+
+영향 없는 Main Web build1612e3는513모듈·501ms/exit0이다. 기존 큰 chunk 경고는 보존하며 기준/분할 설정을 바꾸지 않았다. 실제 브라우저·DB·PG문법·RLS/trigger/COMMIT·서비스·Agent 인수는 여전히 미검증/미실행이다. 타입·최종 지문 재대조 및 통합 합격은7실패 진단 후 이어간다. Main 제품 write0·실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 GO0·전체 목표 active다.
+
+## 249. FN09 source-only 최종 인수와 다음 FN08
+
+같은 HEAD baseline에서도 동일7이 재현됐고 정상 COMMIT tag의 합성 원자료 누락임을 구분했다. Main도 불변 AccessRepository의 command==='COMMIT' 요구와 support fixture의 rows/rowCount 반환을 직접 읽었다. 같은 Primary는 허용 writer 시험1의 생성 전용 정상 exact 응답만 보강하고 undefined·명시 wrong/undefined tag·raw 거절·유실을 그대로 거절했다. 기존 test 본문/기대값 변경0과 추가 음성1/4모드는 Main diff 및 독립 source C0/I0/M0로 교차 확인했다. 검토 담당자의 Git diff 도구 접근 오류는 별도 미실행으로 유지한다.
+
+Main e4361d의 최종 변경·직접영향15파일은201PASS/fail0/skip0/6136.7871ms/exit0이다. 타입189e18 exit0, Web1612e3는513모듈/501ms/exit0이며 이후 제품16 지문 불변으로 재빌드하지 않았다. 기존 큰 chunk/CRLF 경고는 그대로 보존하고 기준을 바꾸지 않았다. 변경된 것은 writer시험66729B/401A93A00B87D6DC202AF41EBDDBAB1F3F6DEDA51B3539404B1C0276729D4F25 하나이며 다른32는 불변이다. 최종33·WI r5·보호3·빈 index·diff exit0을 다시 확인했다.
+
+승인 source-only 코드/UI/미적용SQL/합성검증 범위만 인수한다. 실제 기능 상태는 '구현했지만 동작 미확인'이며 정식DB/SQL설치·RLS/권한/trigger/COMMIT·served/브라우저시각·실Agent/비용·사용자인수는 NOT_RUN이다. 원 capability/budget/source 권위는 미검증/실행false를 유지하고 기존정의의 극소수 숫자 canonical PG왕복도 미검증이다. 전체FN09/Stage/작업계획 완료나 PR/main/배포 합격은 아니다.
+
+결과 docs/04_test_reports/AV3/FN09_REGISTERED_PREPARATION_OPTIONS_SOURCE_RESULT_20261106.md에 실제 변경30(수정27/신규3)·명령/실패·직접증거·최종33manifest·미실행/rollback을 기록한다. Main은 안전한 local source checkpoint로 통합한 뒤 같은 Primary에게 기존 승인 FN08 WI r2의 TEST_ONLY를 순차 전달한다. 사용자 재승인·PMO 다음작업배정 대기는 필요 없다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer·전체 목표 active를 유지한다.

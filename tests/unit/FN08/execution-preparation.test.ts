@@ -35,7 +35,7 @@ function fixture() {
   const actor: any = { actorId: pid, clientId: pid, serverOwner: false, credentialGeneration: 1, reauthUntil: null };
   const assignment: any = { projectId: pid, ref, snapshot: { draftRef: ref, definition: { allowedScopes: [scope()], taskRef: { applicationRef: ref, nodeId: 'IMPLEMENT' } }, contentConfirmed: true, ready: false, executionAuthorized: false, dispatchPerformed: false } };
   const draft: any = { projectId: pid, ref, snapshot: { basis: { planRef: ref, designRef: ref, applicationRef: ref } } };
-  const binding: any = { projectId: pid, ref, snapshot: { assignmentRef: ref, roleRef: ref, connectionRef: ref, sessionRef: ref, state: 'RESERVED', externalSessionHandleRef: null, executionAuthorized: false, dispatchPerformed: false } };
+  const binding: any = { projectId: pid, ref, snapshot: { assignmentRef: ref, roleRef: ref, connectionRef: ref, sessionRef: ref, state: 'RESERVED', connectionReadiness: 'CANDIDATE_ONLY', externalSessionHandleRef: null, executionAuthorized: false, dispatchPerformed: false } };
   const context: any = { projectId: pid, ref, manifest: { assignmentRef: ref, missingRequired: ['LATEST_INSTRUCTIONS'], constitutionRef: ref, latestInstructionRefs: [], baselineRefs: [ref], ready: false, executionAuthorized: false, dispatchPerformed: false }, currentCheck: { state: 'MATCHED_METADATA', issues: [] } };
   const candidate: any = { ref, expired: false, candidate: { kind: 'CONNECTION_CANDIDATE' } };
   let latestBinding = ref, stale = false;
@@ -111,4 +111,107 @@ test('준비 저장·조회는 기존 로그인 gate와 no-store를 소비하며
     const read=await app.inject({method:'GET',url:`/api/v1/projects/${pid}/execution-preparations/${pid}/versions/1`,headers:{host:'localhost:3830'}});
     assert.equal(read.statusCode,401,read.body);assert.equal(read.headers['cache-control'],'no-store');assert.equal(pool.totalCount,0);
   }finally{await app.close();await pool.end();}
+});
+
+test('등록 정의 준비 exact13은 준비 전용 reader가 복제하고 실행 reader에는 유입하지 않는다', async () => {
+  const { readExecutionPreparationInput } = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  const candidate = intent();
+  assert.deepEqual(readExecutionPreparationInput(candidate), candidate);
+  const registered = { ...candidate, connectionKind: 'REGISTERED_DEFINITION', optionsFormat: 'CLAUDE_QUERY_DATA_V1' };
+  assert.throws(() => read(registered), /EXECUTION_INTENT_INVALID/);
+  const output = readExecutionPreparationInput(registered);
+  assert.deepEqual(output, registered);
+  assert.notEqual(output, registered);
+  registered.sourceScopes[0]!.targets[0]!.relativePath = 'changed-after-prepare.ts';
+  assert.equal(output.sourceScopes[0]!.targets[0]!.relativePath, 'src/main.ts');
+  assert.equal(Object.hasOwn(output, 'executionAuthorized'), false);
+});
+
+test('기존 후보 준비 exact11과 불변 snapshot9는 등록 분기 추가 전후에도 원형을 보존한다', async () => {
+  const { readExecutionPreparationInput } = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  const candidate = intent();
+  assert.deepEqual(readExecutionPreparationInput(candidate), candidate);
+  assert.deepEqual(Object.keys(read(candidate)).sort(), [
+    'projectId', 'assignmentRef', 'roleBindingRef', 'contextBundleRef', 'connectionRef', 'environmentRef',
+    'capabilityRef', 'budgetPolicyRef', 'sourceScopes', 'mode', 'reason',
+  ].sort());
+  const q = fixture();
+  q.binding.snapshot.connectionReadiness = 'CANDIDATE_ONLY';
+  const result = await q.store.save(q.db, q.actor, q.command(candidate), ref);
+  assert.deepEqual(Object.keys(result.data.snapshot).sort(), [
+    'intent', 'basisRefs', 'latestInstructionRefs', 'checkedAt', 'missingConditions',
+    'authorizationState', 'preparedBy', 'executionAuthorized', 'dispatchPerformed',
+  ].sort());
+  assert.deepEqual(result.data.snapshot.intent, candidate);
+  assert.equal(result.data.snapshot.authorizationState, 'NOT_AUTHORIZED');
+  assert.equal(result.data.snapshot.executionAuthorized, false);
+  assert.equal(result.data.snapshot.dispatchPerformed, false);
+  for (const code of ['RESPONSIBLE_SESSION_RESERVED', 'CONNECTION_CANDIDATE_ONLY', 'ENVIRONMENT_CANDIDATE_ONLY',
+    'CAPABILITY_UNVERIFIED', 'BUDGET_POLICY_UNVERIFIED', 'SOURCE_AUTHORIZATION_UNVERIFIED', 'HOST_OS_FENCE_UNVERIFIED']) {
+    assert(result.data.snapshot.missingConditions.includes(code), code);
+  }
+  const stored = await q.store.read(q.db, q.actor, pid, result.data.ref.id, 1);
+  assert.deepEqual(stored.snapshot, result.data.snapshot);
+  assert.equal(contentHash(canonicalJson(stored.snapshot)), stored.ref.contentHash);
+  assert.equal(q.rows.length, 1);
+});
+test('등록 준비 discriminator는 명시 null·혼합키·getter를 거절하고 기존 실행 guard를 넓히지 않는다', async () => {
+  const { readExecutionPreparationInput } = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  const registered = () => ({...intent(), connectionKind:'REGISTERED_DEFINITION', optionsFormat:'CLAUDE_QUERY_DATA_V1'});
+  for (const patch of [{connectionKind:null},{optionsFormat:null},{connectionKind:'CONNECTION_CANDIDATE'},
+    {optionsFormat:'OTHER'},{executionAuthorized:true},{sourceScopes:[]},{unexpected:'value'}]) {
+    const input = {...registered(), ...patch};
+    assert.throws(() => readExecutionPreparationInput(input), /EXECUTION_INTENT_INVALID/);
+    assert.throws(() => read(input), /EXECUTION_INTENT_INVALID/);
+  }
+  for (const key of ['connectionKind','optionsFormat']) {
+    const missing:any = registered(); delete missing[key];
+    assert.throws(() => readExecutionPreparationInput(missing), /EXECUTION_INTENT_INVALID/);
+  }
+  let getterCalls=0;
+  const getter:any = registered();
+  Object.defineProperty(getter,'connectionKind',{enumerable:true,get(){getterCalls++;return 'REGISTERED_DEFINITION';}});
+  assert.throws(() => readExecutionPreparationInput(getter), /EXECUTION_INTENT_INVALID/);
+  assert.equal(getterCalls,0);
+});
+test('등록 준비 Options는 원 정의의 닫힌 데이터만 canonical bytes로 도출하고 실제 preparation hash와 구분한다', async () => {
+  const {compileExecutionPreparationOptions} = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  for (const params of [{model:'auto'},{model:'선택 모델',maxTurns:2,maxBudgetUsd:0.125},{model:'원 모델',maxBudgetUsd:0}]) {
+    const definition={adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:params}},before=canonicalJson(definition);
+    const options=compileExecutionPreparationOptions(definition);
+    assert.deepEqual(Object.keys(options).sort(),['format','mediaType','body','utf8Bytes','contentHash'].sort());
+    assert.deepEqual(options,{format:'CLAUDE_QUERY_DATA_V1',mediaType:'application/json',body:canonicalJson(definition.modelOptions),
+      utf8Bytes:Buffer.byteLength(canonicalJson(definition.modelOptions),'utf8'),contentHash:contentHash(canonicalJson(definition.modelOptions))});
+    assert.equal(canonicalJson(definition),before);
+    assert.deepEqual(JSON.parse(options.body),definition.modelOptions);
+    assert.notEqual(options.contentHash,contentHash(canonicalJson({intent:intent(),options})));
+    assert.equal(Object.hasOwn(JSON.parse(options.body).claudeQueryParams,'maxTurns'),Object.hasOwn(params,'maxTurns'));
+  }
+});
+
+test('등록 준비 Options는 다른 도구·alias·권한/SDK 추가키·불량 숫자를 허용하지 않는다', async () => {
+  const {compileExecutionPreparationOptions} = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  const definition=()=>({adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:{model:'선택 모델'}}});
+  const bad:any[]=[{adapterKind:'claude_agent_sdk'},{adapterKind:'CODEX'},{toolProduct:'Claude Code '},{toolProduct:'Codex'},
+    ...[null,{}, {claudeQueryParams:null},{claudeQueryParams:{}},{claudeQueryParams:{model:null}},
+      {claudeQueryParams:{model:' '}},{claudeQueryParams:{model:'x\u0000'}},{claudeQueryParams:{model:'\ud800'}},
+      {claudeQueryParams:{model:'x',maxTurns:0}},{claudeQueryParams:{model:'x',maxTurns:1.5}},
+      {claudeQueryParams:{model:'x',maxTurns:null}},{claudeQueryParams:{model:'x',maxBudgetUsd:-1}},
+      {claudeQueryParams:{model:'x',maxBudgetUsd:Infinity}},{claudeQueryParams:{model:'x',maxBudgetUsd:null}},
+      {claudeQueryParams:{model:'x',permissionMode:'bypassPermissions'}},{claudeQueryParams:{model:'x',resume:'old'}},
+      {claudeQueryParams:{model:'x'},executionAuthorized:true}].map(modelOptions=>({modelOptions}))];
+  for(const patch of bad)assert.throws(()=>compileExecutionPreparationOptions({...definition(),...patch}),/EXECUTION_PREPARATION_OPTIONS_INVALID/);
+});
+
+test('등록 준비 Options는 getter와 Proxy를 실행하지 않고 원문 자료를 폐기하거나 변조하지 않는다', async () => {
+  const {compileExecutionPreparationOptions} = await import('../../../apps/server/modules/executions/preparation-input.ts');
+  let traps=0;
+  const proxy=new Proxy({},{get(){traps++;throw Error('trap');},getPrototypeOf(){traps++;throw Error('trap');},ownKeys(){traps++;throw Error('trap');}});
+  for(const raw of [proxy,{adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:proxy},
+    {adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:proxy}}]) {
+    assert.throws(()=>compileExecutionPreparationOptions(raw),/EXECUTION_PREPARATION_OPTIONS_INVALID/);
+  }
+  const params:any={model:'x'};Object.defineProperty(params,'maxTurns',{enumerable:true,get(){traps++;return 1;}});
+  assert.throws(()=>compileExecutionPreparationOptions({adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:params}}),/EXECUTION_PREPARATION_OPTIONS_INVALID/);
+  assert.equal(traps,0);
 });

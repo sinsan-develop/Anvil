@@ -1,3 +1,4 @@
+import {preparationIntentValid,preparationMissingConditions,preparationOptionsValid} from '../session-detail/preparation-history-api.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { documentControl, postDocumentCommand, type DocumentSession, type DocumentWrite } from '../design-trace/editor-api.ts';
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
@@ -52,10 +53,10 @@ export async function readResponsibleSessionState(client:ApiClient,confirmed:Con
   }
   if(new Set(v.bindings.map(r=>r.snapshot.roleRef.id)).size!==v.bindings.length)throw new ApiError('RESPONSE_INVALID');
   for(const preparation of v.preparations){await record(preparation,pid);const s=preparation.snapshot,i=s.intent;
-    if(preparation.ref.version!==1||!exact(s,['intent','basisRefs','latestInstructionRefs','checkedAt','missingConditions','authorizationState','preparedBy','executionAuthorized','dispatchPerformed'])
-      ||!exact(i,['projectId','assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef','capabilityRef','budgetPolicyRef','sourceScopes','mode','reason'])||i.projectId!==pid||!same(i.assignmentRef,a)||!['CONTEXT_REVIEW','WORK'].includes(i.mode)||!text(i.reason)||!scopesWithin(i.sourceScopes,confirmed.snapshot.definition.allowedScopes)||!['assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef','capabilityRef','budgetPolicyRef'].every(k=>ref(i[k]))
+    if(preparation.ref.version!==1||!exact(s,['intent','basisRefs','latestInstructionRefs','checkedAt','missingConditions','authorizationState','preparedBy','executionAuthorized','dispatchPerformed',...(i?.connectionKind==='REGISTERED_DEFINITION'?['options']:[])])
+      ||!preparationIntentValid(i)||i.projectId!==pid||!same(i.assignmentRef,a)||!['CONTEXT_REVIEW','WORK'].includes(i.mode)||!text(i.reason)||!scopesWithin(i.sourceScopes,confirmed.snapshot.definition.allowedScopes)||!['assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef','capabilityRef','budgetPolicyRef'].every(k=>ref(i[k]))
       ||!Array.isArray(s.basisRefs)||s.basisRefs.length>200||!s.basisRefs.every(ref)||!Array.isArray(s.latestInstructionRefs)||s.latestInstructionRefs.length>200||s.latestInstructionRefs.some((r:any)=>!exact(r,['kind','id','contentHash'])||r.kind!=='CONVERSATION'||!uuid(r.id)||!/^[a-f0-9]{64}$/.test(r.contentHash))
-      ||!Array.isArray(s.missingConditions)||s.missingConditions.length>10||new Set(s.missingConditions).size!==s.missingConditions.length||s.missingConditions.some((c:any)=>!conditionCodes.includes(c))||unresolved.some(code=>!s.missingConditions.includes(code))
+      ||!preparationMissingConditions(s.missingConditions,i?.connectionKind==='REGISTERED_DEFINITION')||i?.connectionKind==='REGISTERED_DEFINITION'&&!await preparationOptionsValid(s.options)
       ||!date(s.checkedAt)||!person(s.preparedBy)||s.authorizationState!=='NOT_AUTHORIZED'||s.executionAuthorized!==false||s.dispatchPerformed!==false)throw new ApiError('RESPONSE_INVALID');
   }
   if(new TextEncoder().encode(ordered(v)).length>2*1024*1024)throw new ApiError('RESPONSE_INVALID');

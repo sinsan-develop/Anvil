@@ -16,3 +16,20 @@ export function readExecutionIntentV1(value: unknown): ExecutionIntentV1 {
   try { readSourceScopesV1(value.sourceScopes); if (Buffer.byteLength(canonicalJson(value),'utf8') > 2*1024*1024) return fail(); return cloneV1(value) as unknown as ExecutionIntentV1; }
   catch { return fail(); }
 }
+
+
+/** 준비 저장 전용. 실행 권위 소비자는 기존 exact11 reader를 계속 사용한다. */
+export interface RegisteredExecutionPreparationIntentV1 extends ExecutionIntentV1 {
+  connectionKind: 'REGISTERED_DEFINITION'; optionsFormat: 'CLAUDE_QUERY_DATA_V1';
+}
+export type ExecutionPreparationIntentV1 = ExecutionIntentV1 | RegisteredExecutionPreparationIntentV1;
+export function readExecutionPreparationIntentV1(value: unknown): ExecutionPreparationIntentV1 {
+  const keys = ['projectId','assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef',
+    'capabilityRef','budgetPolicyRef','sourceScopes','mode','reason','connectionKind','optionsFormat'];
+  if (!recordV1(value, keys)) return readExecutionIntentV1(value);
+  if (value.connectionKind !== 'REGISTERED_DEFINITION' || value.optionsFormat !== 'CLAUDE_QUERY_DATA_V1') throw Error('EXECUTION_INTENT_INVALID');
+  const copied = cloneV1(value);
+  if (Buffer.byteLength(canonicalJson(copied), 'utf8') > 2*1024*1024) throw Error('EXECUTION_INTENT_INVALID');
+  const {connectionKind: _kind, optionsFormat: _format, ...base} = copied;
+  return {...readExecutionIntentV1(base), connectionKind: 'REGISTERED_DEFINITION', optionsFormat: 'CLAUDE_QUERY_DATA_V1'};
+}

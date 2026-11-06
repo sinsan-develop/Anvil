@@ -1,3 +1,4 @@
+import {ProjectStorageQuota} from '../projects/project-storage-quota.ts';
 import {createMembershipApprovalCandidate,readStoredMembershipCandidate,assertCurrentMembershipCandidate,membershipCandidateCurrent,verifyMembershipApprovalRequest} from './project-membership-approval-target.ts';
 import {copyControlData,findCurrentControlGrant,ordinaryDocumentOperations} from '../control-handoff/control-grant.ts';
 import {recordV1,refV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -12,8 +13,8 @@ import {ProjectLimitPolicies} from '../executions/runtime-policy.ts';
 import {assertResponsibleSessionApprovalTarget} from '../assignments/responsible-sessions.ts';
 import{randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
-import{AuthFailure,type AuthenticatedIdentity}from'../access/repository.ts';
-import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,type ProjectCommand}from'../access/project-command.ts';
+import{AuthFailure,type AuthenticatedIdentity,type AccessRepository}from'../access/repository.ts';
+import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,reserveRegisteredPreparationApprovalRequestReceiptIds,reserveRegisteredPreparationApprovalDecisionReceiptIds,type ProjectCommand}from'../access/project-command.ts';
 import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate,readApprovalListQuery}from'./approval-input.ts';
 import type{ProjectListCodec}from'../projects/service.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
@@ -27,7 +28,7 @@ import {DesignActivationApprovalCandidates} from './design-activation-approval-c
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
 export const consumableOperations = ['saveProjectMembership','prepareNativeBoundary','establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'linkDocumentSource', 'proposeDocumentSourceChange', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
- #documents?:ProjectDocuments;constructor(documents?:ProjectDocuments){this.#documents=documents;}
+ #documents?:ProjectDocuments;readonly #registeredQuota?:ProjectStorageQuota;constructor(documents?:ProjectDocuments,registeredAccess?:AccessRepository){this.#documents=documents;this.#registeredQuota=registeredAccess?new ProjectStorageQuota(registeredAccess):undefined;}
  async list(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){
   const member=await projectMember(db,actor,pid);const input=readApprovalListQuery(q),filter={query:canonicalJson({projectId:pid,status:input.status,targetId:input.targetId}),archived:false,limit:input.limit};
   let pos:{at:string;id:string}|null=null;if(input.cursor!==undefined){try{pos=codec.read(input.cursor,actor.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}}
@@ -104,10 +105,15 @@ export class ProjectApprovals{
   if(plan)await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,details.actionScope,p.candidatePayload);
   if(backupPolicy)await new BackupPolicyApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload);
   if(preparation)await new ExecutionPreparationApprovalCandidates().assertCurrent(db,actor,c.projectId,details.actionScope,p.candidatePayload);
+  const registeredPreparation=preparation&&(p.candidatePayload as any)?.connectionKind==='REGISTERED_DEFINITION';
+  if(registeredPreparation&&!this.#registeredQuota)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+  const registeredSource=registeredPreparation?await this.#registeredQuota!.prepareRegisteredPreparationApprovalSource(db,actor,p.candidatePayload):null;
   if((await db.query('SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2',[c.projectId,details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_REQUESTED',409);
   if((await db.query("SELECT 1 FROM anvil.commands WHERE project_id=$1 AND actor_id=$2 AND command_id=$3",[c.projectId,actor.actorId,details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_APPLIED',409);
   const id=randomUUID(),scopeDigest=contentHash(canonicalJson(details.actionScope)),snapshot={projectId:c.projectId,details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:actor.actorId},policyRef,requestedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},controlGeneration:c.controlGeneration,...(environment?{candidateKind:'ENVIRONMENT_DEFINITION'}:{}),...(membershipCandidate?{membershipCandidate}:{})},ref={id,version:1,contentHash:contentHash(canonicalJson(snapshot))},request={id,version:1,status:'PENDING',...snapshot,createdAt:(await db.query('SELECT transaction_timestamp() at')).rows[0].at.toISOString()};
-  const receipt=await persistProjectReceipt(db,actor,c,ref,{status:'APPROVAL_REQUESTED',request},policyRef,'EXPLICIT_ONE_TIME_APPROVAL_REQUEST');
+  const registeredIds=registeredPreparation?reserveRegisteredPreparationApprovalRequestReceiptIds():undefined;
+  const registeredLease=registeredIds?await this.#registeredQuota!.reserveRegisteredPreparationApprovalRequest(db,actor,c,ref,request,policyRef,registeredIds,registeredSource!):null;
+  const receipt=await persistProjectReceipt(db,actor,c,ref,{status:'APPROVAL_REQUESTED',request},policyRef,'EXPLICIT_ONE_TIME_APPROVAL_REQUEST',registeredIds);
   if(environment)await new EnvironmentApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   await db.query("INSERT INTO anvil.approval_requests(id,project_id,version,candidate_command_id,action_scope_json,scope_digest,details_json,required_decider_ref,status,expires_at,created_by,client_id,command_id,policy_ref,content_hash,request_json,created_at) VALUES($1,$2,1,$3,$4,$5,$6,$7,'PENDING',$8,$9,$10,$11,$12,$13,$14,$15)",[id,c.projectId,details.candidateCommandId,JSON.stringify(details.actionScope),scopeDigest,JSON.stringify(details),JSON.stringify(snapshot.requiredDecider),details.expiresAt,actor.actorId,actor.clientId,receipt.id,JSON.stringify(policyRef),ref.contentHash,JSON.stringify(request),request.createdAt]);
   if(activation)await new DesignActivationApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
@@ -116,6 +122,7 @@ export class ProjectApprovals{
   if(backupPolicy)await new BackupPolicyApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   if(preparation)await new ExecutionPreparationApprovalCandidates().capture(db,actor,{command:c,requestId:id,serverCommandId:receipt.id,policyRef,details,payload:p.candidatePayload});
   await recordApprovalRequestNotification(db,actor,{command:c,request,receipt,initialPolicyValidUntil:initialRequestPolicy.validUntil});
+  if(registeredLease)await this.#registeredQuota!.settleRegisteredPreparationApproval(db,actor,registeredLease,receipt);
   return receipt.result;
  }
  async decide(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
@@ -132,11 +139,16 @@ export class ProjectApprovals{
   if(r.details.actionScope.operation==='activateDesignChange')await new DesignActivationApprovalCandidates().assertCurrent(db,actor,c.projectId,r.details.actionScope,view.candidateActivation?.payload,this.#documents);
   if(r.details.actionScope.operation==='saveWorkPlanDraft')await new WorkPlanApprovalCandidates().assertCurrent(db,c.projectId,r.details.actionScope,view.candidatePlan?.payload);
   if(r.details.actionScope.operation==='saveProjectMembership')await assertCurrentMembershipCandidate(db,actor,c.projectId,r.details,r.membershipCandidate);
+  const registeredPreparation=r.details.actionScope.operation==='prepareExecution'&&(view.candidatePreparation?.payload as any)?.connectionKind==='REGISTERED_DEFINITION';
+  if(registeredPreparation&&!this.#registeredQuota)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+  const registeredSource=registeredPreparation?await this.#registeredQuota!.prepareRegisteredPreparationApprovalSource(db,actor,view.candidatePreparation!.payload,view.requestRef):null;
   const snapshot={requestId:p.requestId,requestVersion:p.expectedVersion,requestRef:view.requestRef,scopeDigest:p.scopeDigest,decision:p.decision,reason:p.reason,decidedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},controlGeneration:c.controlGeneration,policyRef},ref={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(snapshot))},decision={id:ref.id,...snapshot,decidedAt:(await db.query('SELECT transaction_timestamp() at')).rows[0].at.toISOString()};
-  const receipt=await persistProjectReceipt(db,actor,c,ref,{status:'APPROVAL_DECIDED',decision},policyRef,'EXPLICIT_HUMAN_APPROVAL_DECISION');
+  const registeredIds=registeredPreparation?reserveRegisteredPreparationApprovalDecisionReceiptIds():undefined;
+  const registeredLease=registeredIds?await this.#registeredQuota!.reserveRegisteredPreparationApprovalDecision(db,actor,c,ref,decision,policyRef,registeredIds,r.details.expiresAt,registeredSource!):null;
+  const receipt=await persistProjectReceipt(db,actor,c,ref,{status:'APPROVAL_DECIDED',decision},policyRef,'EXPLICIT_HUMAN_APPROVAL_DECISION',registeredIds);
   await db.query('INSERT INTO anvil.approval_decisions(id,project_id,request_id,request_version,scope_digest,decision,reason,decided_by,client_id,control_generation,decided_at,command_id,content_hash,decision_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',[ref.id,c.projectId,p.requestId,p.expectedVersion,p.scopeDigest,p.decision,p.reason,actor.actorId,actor.clientId,c.controlGeneration,decision.decidedAt,receipt.id,ref.contentHash,JSON.stringify(decision)]);
   const status={APPROVE:'APPROVED',REJECT:'REJECTED',REQUEST_CHANGE:'CHANGE_REQUESTED'}[p.decision];
-  const updated=await db.query('UPDATE anvil.approval_requests SET status=$3,version=version+1 WHERE project_id=$1 AND id=$2 AND version=$4 AND status=\'PENDING\'',[c.projectId,p.requestId,status,p.expectedVersion]);if(updated.rowCount!==1)throw new AuthFailure('VERSION_CONFLICT',409);return receipt.result;
+  const updated=await db.query('UPDATE anvil.approval_requests SET status=$3,version=version+1 WHERE project_id=$1 AND id=$2 AND version=$4 AND status=\'PENDING\'',[c.projectId,p.requestId,status,p.expectedVersion]);if(updated.rowCount!==1)throw new AuthFailure('VERSION_CONFLICT',409);if(registeredLease)await this.#registeredQuota!.settleRegisteredPreparationApproval(db,actor,registeredLease,receipt);return receipt.result;
  }
  async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   return this.#read(db,actor,pid,id,consumableOperations);

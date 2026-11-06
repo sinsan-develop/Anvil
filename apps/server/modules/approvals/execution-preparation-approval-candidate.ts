@@ -3,14 +3,14 @@ import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember,type ProjectCommand} from '../access/project-command.ts';
 import type {ApprovalDetails,ApprovalScope} from './approval-input.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
-import type {ExecutionIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
+import type {ExecutionPreparationIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
 import {readExecutionPreparationInput} from '../executions/preparation-input.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const unavailable=()=>new AuthFailure('EXECUTION_PREPARATION_APPROVAL_INTEGRITY_FAILED',503);
 export interface ExecutionPreparationApprovalMeta{serverCommandId:string;createdBy:string;clientId:string;controlGeneration:number;policyRef:VersionRef;details:ApprovalDetails}
-export function readExecutionPreparationApprovalPayload(value:unknown,expectedHash:string):ExecutionIntentV1{
- let payload:ExecutionIntentV1;try{payload=readExecutionPreparationInput(value);}catch{throw new AuthFailure('APPROVAL_INPUT_INVALID',422);}
+export function readExecutionPreparationApprovalPayload(value:unknown,expectedHash:string):ExecutionPreparationIntentV1{
+ let payload:ExecutionPreparationIntentV1;try{payload=readExecutionPreparationInput(value);}catch{throw new AuthFailure('APPROVAL_INPUT_INVALID',422);}
  if(!/^[a-f0-9]{64}$/.test(expectedHash)||contentHash(canonicalJson(payload))!==expectedHash)throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  return payload;
 }

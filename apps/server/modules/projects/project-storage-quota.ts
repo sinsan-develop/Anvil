@@ -3,10 +3,13 @@ import {sourceEventQuotaPart} from '../documents/document-source-observation.ts'
 import type {CreationPlan} from './draft-artifacts.ts';
 import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
-import {authorizeMaterial,currentGeneralProjectController,projectMember,projectReplay,type ProjectCommand} from '../access/project-command.ts';
+import {authorizeMaterial,currentGeneralProjectController,projectMember,projectReplay,isRegisteredPreparationReceiptIds,isRegisteredPreparationApprovalReceiptIds,type RegisteredPreparationReceiptIds,type ProjectCommand} from '../access/project-command.ts';
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import type {ArtifactStore,ProjectNamespaceProof} from '../../storage/artifact-store.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {compileExecutionPreparationOptions,readExecutionPreparationInput} from '../executions/preparation-input.ts';
+import {ProjectConnectionDefinitions} from '../connections/project-connection-definitions.ts';
+import {ProjectEnvironments} from '../connections/project-environments.ts';
 import {cloneV1,recordV1,arrayV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 export const PROJECT_STORAGE_CAP=10737418240n;
 function fail(code='PROJECT_STORAGE_QUOTA_INPUT_INVALID',status=422):never{throw new AuthFailure(code,status);}
@@ -23,6 +26,7 @@ export interface PreparedQuotaCommand{readonly request:Readonly<ProjectCommand>;
 export interface QuotaReservationBundle{readonly request:Readonly<ProjectCommand>;readonly ids:readonly string[];readonly planHash:string}
 export interface StartedQuotaBundle extends QuotaReservationBundle{readonly fences:readonly string[]}
 export interface QuotaReceiptFacts{readonly serverCommandId:string;readonly authorizationReceiptId:string;readonly scopeDigest:string}
+interface RegisteredPreparationQuotaState {db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;actorId:string;clientId:string;sessionId:string;credentialGeneration:number;request:ProjectCommand;ref:RuntimeRefV1;snapshot:unknown;transactionId:string;reservationId:string;planHash:string;reservedBytes:bigint;receiptIds:RegisteredPreparationReceiptIds;resultHash:string;until:number;phase:'RESERVED'|'SETTLING'|'CLOSED'}
 interface PreparedState{p:PreparedQuotaCommand;deadline:number}
 interface BundleState extends PreparedState{rows:Record<string,any>[]}
 function parts(raw:readonly QuotaPart[],operation:string):readonly QuotaPart[]{
@@ -92,10 +96,125 @@ export function sourceEventQuotaAccounting(operation:string,part:QuotaPart,proje
 /** 내부 bundle은 호출 제한 데이터다. 매 단계 실제 인증·현재 정책·원장 검산을 대체하지 않는다. */
 export class ProjectStorageQuota{
  readonly #access:AccessRepository;readonly #documents?:ProjectDocuments;readonly #store?:ArtifactStore;
+ readonly #registeredPreparations=new WeakMap<object,RegisteredPreparationQuotaState>();
+ readonly #registeredApprovals=new WeakMap<object,RegisteredPreparationQuotaState&{purpose:'REQUEST'|'DECISION'}>();
+ readonly #registeredApprovalSources=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;actorId:string;clientId:string;sessionId:string;credentialGeneration:number;transactionId:string;until:number;inputHash:string;requestRef:RuntimeRefV1|null;phase:'OBSERVED'|'CONSUMED'}>();
  readonly #published=new WeakSet<object>();
  readonly #sourceWrites=new WeakMap<object,{phase:'ENTERED'|'PUBLISHED'|'UNKNOWN';ref:SourceDiffRef;projectionHash:string}>();
  readonly #prepared=new WeakMap<object,PreparedState>();readonly #reserved=new WeakMap<object,BundleState>();readonly #started=new WeakMap<object,BundleState>();
  constructor(access:AccessRepository,store?:ArtifactStore,documents?:ProjectDocuments){this.#access=access;this.#store=store;this.#documents=documents;}
+ async #registeredTx(db:PoolClient,query:PoolClient['query'],expected?:string,until=Infinity):Promise<string>{
+  if(db.query!==query)unknown();
+  const rows=(await Reflect.apply(query,db,['SELECT txid_current()::text AS transaction_id,clock_timestamp() AS observed_at'])).rows;
+  const transactionId=rows.length===1?rows[0]?.transaction_id:undefined;
+  if(db.query!==query||typeof transactionId!=='string'||!/^[1-9][0-9]{0,18}$/.test(transactionId)||expected!==undefined&&transactionId!==expected)unknown();
+  const observed=rows[0]?.observed_at;
+  if(!(observed instanceof Date)||!Number.isFinite(observed.getTime())||!(until>observed.getTime()))unknown();
+  return transactionId;
+ }
+ /** 원 준비 callback 전용. caller의 reserved 선언이나 공개 prepare/reserve wire를 소비하지 않는다. */
+ async reserveRegisteredPreparation(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawSnapshot:unknown,policyRef:RuntimeRefV1,receiptIds:RegisteredPreparationReceiptIds):Promise<object>{
+  return this.#durable(async()=>{
+  if(!isRegisteredPreparationReceiptIds(receiptIds))fail();
+  const request=cloneV1(rawRequest),ref=cloneV1(rawRef),snapshot=cloneV1(rawSnapshot) as Record<string,any>,input=readExecutionPreparationInput(request.payload),session=actor.authSession;
+  if(!('connectionKind' in input)||request.operation!=='prepareExecution'||request.projectId!==input.projectId||request.clientId!==actor.clientId||!uuidV1(session?.id)||!recordV1(ref,['id','version','contentHash'])||!uuidV1(ref.id)||ref.version!==1||!hashV1(ref.contentHash)||hash(snapshot)!==ref.contentHash||!recordV1(snapshot,['intent','basisRefs','latestInstructionRefs','checkedAt','missingConditions','authorizationState','preparedBy','executionAuthorized','dispatchPerformed','options'])||hash(snapshot.intent)!==hash(input)||snapshot.authorizationState!=='NOT_AUTHORIZED'||snapshot.executionAuthorized!==false||snapshot.dispatchPerformed!==false)fail();
+  const actorId=actor.actorId,clientId=actor.clientId,sessionId=session.id,credentialGeneration=actor.credentialGeneration;
+  const originalParent=Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt));
+  const checkIdentity=()=>{if(actor.actorId!==actorId||actor.clientId!==clientId||actor.authSession?.id!==sessionId||actor.credentialGeneration!==credentialGeneration)unknown();};
+  const query=db.query,transactionId=await this.#registeredTx(db,query,undefined,originalParent);checkIdentity();
+  const expectedResult={operationId:receiptIds.operationId,commandId:request.commandId,projectId:request.projectId,status:'APPLIED',targetId:ref.id,version:1,data:{ref,status:'EXECUTION_PREPARED',snapshot},evidenceRefs:[],warnings:[],serverReceivedAt:snapshot.checkedAt};
+  const canonicalPairs={preparationSnapshot:canonicalJson(snapshot),resultRef:canonicalJson(expectedResult)};
+  const result=await Reflect.apply(query,db,['SELECT * FROM anvil.fn09_registered_prepare_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10::jsonb,$11)',[session.id,actor.actorId,actor.clientId,request.projectId,canonicalJson(request),canonicalJson(ref),canonicalJson(snapshot),canonicalJson(policyRef),canonicalJson(receiptIds),canonicalJson(canonicalPairs),transactionId]]);
+  const row=result.rows.length===1?result.rows[0]:undefined;
+  if(!row||!uuidV1(row.reservation_id)||row.reservation_id!==receiptIds.serverCommandId||row.transaction_id!==transactionId||row.preparation_hash!==ref.contentHash||!hashV1(row.plan_hash)||!isoV1(row.authorized_until))unknown();
+  const reservedBytes=quotaBytes(row.reserved_bytes),until=Date.parse(row.authorized_until);
+  if(reservedBytes>PROJECT_STORAGE_CAP)unknown();
+  const parentUntil=Math.min(until,originalParent);
+  await this.#registeredTx(db,query,transactionId,parentUntil);checkIdentity();
+  const lease=Object.freeze({});
+  this.#registeredPreparations.set(lease,{db,query,actor,actorId,clientId,sessionId,credentialGeneration,request,ref,snapshot,transactionId,reservationId:row.reservation_id,planHash:row.plan_hash,reservedBytes,receiptIds,resultHash:hash(expectedResult),until:parentUntil,phase:'RESERVED'});
+  return lease;
+  });
+ }
+ async settleRegisteredPreparation(db:PoolClient,actor:AuthenticatedIdentity,lease:object,rawReceipt:{id:string;result:any;authorizationReceiptRef:RuntimeRefV1}):Promise<void>{
+  const state=this.#registeredPreparations.get(lease);
+  if(!state||state.phase!=='RESERVED'||state.db!==db||state.actor!==actor||state.actorId!==actor.actorId||state.clientId!==actor.clientId||state.sessionId!==actor.authSession?.id||state.credentialGeneration!==actor.credentialGeneration||db.query!==state.query)unknown();
+  state.phase='SETTLING';
+  try{
+   const receipt=cloneV1(rawReceipt),session=actor.authSession;
+   if(!uuidV1(session?.id)||receipt.id!==state.receiptIds.serverCommandId||receipt.authorizationReceiptRef?.id!==state.receiptIds.authorizationReceiptId||hash(receipt.result)!==state.resultHash||receipt.result?.projectId!==state.request.projectId||receipt.result?.commandId!==state.request.commandId||receipt.result?.status!=='APPLIED'||receipt.result?.data?.status!=='EXECUTION_PREPARED'||hash(receipt.result.data.ref)!==hash(state.ref)||hash(receipt.result.data.snapshot)!==hash(state.snapshot))unknown();
+   await this.#registeredTx(db,state.query,state.transactionId,state.until);
+   if(state.actorId!==actor.actorId||state.clientId!==actor.clientId||state.sessionId!==actor.authSession?.id||state.credentialGeneration!==actor.credentialGeneration)unknown();
+   const result=await Reflect.apply(state.query,db,['SELECT * FROM anvil.fn09_registered_prepare_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)',[session.id,actor.actorId,actor.clientId,state.request.projectId,state.request.commandId,state.reservationId,state.planHash,receipt.id,canonicalJson(receipt.result),state.transactionId]]);
+   await this.#registeredTx(db,state.query,state.transactionId,state.until);
+   if(state.actorId!==actor.actorId||state.clientId!==actor.clientId||state.sessionId!==actor.authSession?.id||state.credentialGeneration!==actor.credentialGeneration)unknown();
+   const row=result.rows.length===1?result.rows[0]:undefined;
+   if(!row||row.status!=='SETTLED'||row.reservation_id!==state.reservationId||row.transaction_id!==state.transactionId||quotaBytes(row.settled_bytes)>state.reservedBytes)unknown();
+  }catch{return unknown();}finally{state.phase='CLOSED';}
+ }
+ async prepareRegisteredPreparationApprovalSource(db:PoolClient,actor:AuthenticatedIdentity,rawInput:unknown,requestRef:RuntimeRefV1|null=null):Promise<object>{
+  return this.#durable(async()=>{
+   const input=readExecutionPreparationInput(rawInput),session=actor.authSession,actorId=actor.actorId,clientId=actor.clientId,sessionId=session?.id,credentialGeneration=actor.credentialGeneration,query=db.query;
+   if(!('connectionKind'in input)||!uuidV1(sessionId)||requestRef!==null&&(!uuidV1(requestRef.id)||!Number.isSafeInteger(requestRef.version)||requestRef.version<1||!hashV1(requestRef.contentHash)))fail();
+   const until=Math.min(Date.parse(session!.idleExpiresAt),Date.parse(session!.absoluteExpiresAt));if(!Number.isFinite(until))fail();
+   const identity=()=>{if(db.query!==query||actor.actorId!==actorId||actor.clientId!==clientId||actor.authSession?.id!==sessionId||actor.credentialGeneration!==credentialGeneration)unknown();};
+   const transactionId=await this.#registeredTx(db,query,undefined,until);identity();let live=true;
+   const check=async()=>{if(!live)unknown();identity();await this.#registeredTx(db,query,transactionId,until);identity();if(!live)unknown();};
+   const borrowed={query:async(sql:string,values?:unknown[])=>{await check();const result=await Reflect.apply(query,db,[sql,values]);await check();return result;}} as unknown as PoolClient;
+   try{
+    const definitions=new ProjectConnectionDefinitions(this.#access),environments=new ProjectEnvironments(this.#access);
+    const definition=await ProjectConnectionDefinitions.prototype.read.call(definitions,borrowed,actor,input.projectId,input.connectionRef.id,input.connectionRef.version);await check();
+    if(hash(definition.ref)!==hash(input.connectionRef)||definition.currentStatus.configurationCurrent!==true||hash(definition.definition.environmentRef)!==hash(input.environmentRef))fail('SOURCE_VERIFIER_NOT_CONNECTED',412);
+    const environment=await ProjectEnvironments.prototype.read.call(environments,borrowed,actor,input.projectId,input.environmentRef.id,input.environmentRef.version);await check();
+    if(hash(environment.ref)!==hash(input.environmentRef)||environment.current.configurationCurrentness!=='MATCHED')fail('SOURCE_VERIFIER_NOT_CONNECTED',412);
+    compileExecutionPreparationOptions(definition.definition);await check();const proof=Object.freeze({});
+    this.#registeredApprovalSources.set(proof,{db,query,actor,actorId,clientId,sessionId:sessionId!,credentialGeneration,transactionId,until,inputHash:hash(input),requestRef:requestRef===null?null:freeze(cloneV1(requestRef)),phase:'OBSERVED'});return proof;
+   }finally{live=false;}
+  });
+ }
+ async reserveRegisteredPreparationApprovalRequest(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,ref:RuntimeRefV1,snapshot:unknown,policyRef:RuntimeRefV1,ids:RegisteredPreparationReceiptIds,source:object):Promise<object>{return this.#reserveRegisteredApproval('REQUEST',db,actor,request,ref,snapshot,policyRef,ids,source);}
+ async reserveRegisteredPreparationApprovalDecision(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,ref:RuntimeRefV1,snapshot:unknown,policyRef:RuntimeRefV1,ids:RegisteredPreparationReceiptIds,requestExpiresAt:string,source:object):Promise<object>{return this.#reserveRegisteredApproval('DECISION',db,actor,request,ref,snapshot,policyRef,ids,source,requestExpiresAt);}
+ async #reserveRegisteredApproval(purpose:'REQUEST'|'DECISION',db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawSnapshot:unknown,policyRef:RuntimeRefV1,receiptIds:RegisteredPreparationReceiptIds,source:object,requestExpiresAt?:string):Promise<object>{
+  return this.#durable(async()=>{
+   if(!isRegisteredPreparationApprovalReceiptIds(receiptIds,purpose))fail();
+   const observed=this.#registeredApprovalSources.get(source);if(!observed||observed.phase!=='OBSERVED'||observed.db!==db||observed.actor!==actor||observed.query!==db.query||observed.actorId!==actor.actorId||observed.clientId!==actor.clientId||observed.sessionId!==actor.authSession?.id||observed.credentialGeneration!==actor.credentialGeneration)unknown();
+   const request=cloneV1(rawRequest),ref=cloneV1(rawRef),snapshot=cloneV1(rawSnapshot) as Record<string,any>,session=actor.authSession;
+   const isRequest=purpose==='REQUEST',keys=isRequest?['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','createdAt']:['id','requestId','requestVersion','requestRef','scopeDigest','decision','reason','decidedBy','controlGeneration','policyRef','decidedAt'];
+   if(request.operation!==(isRequest?'requestApproval':'decideApproval')||request.clientId!==actor.clientId||!uuidV1(session?.id)||!recordV1(ref,['id','version','contentHash'])||!uuidV1(ref.id)||ref.version!==1||!hashV1(ref.contentHash)||!recordV1(snapshot,keys)||snapshot.id!==ref.id||hash(snapshot.policyRef)!==hash(policyRef))fail();
+   const body=Object.fromEntries(Object.entries(snapshot).filter(([key])=>!(isRequest?['id','version','status','createdAt']:['id','decidedAt']).includes(key)));
+   if(hash(body)!==ref.contentHash)fail();
+   if(isRequest){
+    const input=readExecutionPreparationInput(request.payload.candidatePayload);
+    if(!('connectionKind'in input)||snapshot.projectId!==request.projectId||snapshot.version!==1||snapshot.status!=='PENDING'||snapshot.requestedBy?.userId!==actor.actorId||snapshot.requestedBy?.clientId!==actor.clientId||hash(snapshot.details)!==hash(request.payload.details)||snapshot.scopeDigest!==hash(snapshot.details.actionScope))fail();
+   }else if(snapshot.decidedBy?.userId!==actor.actorId||snapshot.decidedBy?.clientId!==actor.clientId||snapshot.requestId!==request.targetId||snapshot.requestVersion!==1||snapshot.requestVersion!==request.expectedVersion||!isoV1(requestExpiresAt))fail();
+   if(isRequest?(observed.requestRef!==null||observed.inputHash!==hash(request.payload.candidatePayload)):(observed.requestRef===null||hash(observed.requestRef)!==hash(snapshot.requestRef)))unknown();
+   const sourceEnd=Date.parse(isRequest?snapshot.details.expiresAt:requestExpiresAt!),originalParent=Math.min(observed.until,sourceEnd,Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt));
+   if(!Number.isFinite(originalParent))fail();
+   const actorId=actor.actorId,clientId=actor.clientId,sessionId=session.id,credentialGeneration=actor.credentialGeneration,query=db.query;
+   const identity=()=>{if(actor.actorId!==actorId||actor.clientId!==clientId||actor.authSession?.id!==sessionId||actor.credentialGeneration!==credentialGeneration)unknown();};
+   observed.phase='CONSUMED';const transactionId=await this.#registeredTx(db,query,observed.transactionId,originalParent);identity();
+   const expectedResult={operationId:receiptIds.operationId,commandId:request.commandId,projectId:request.projectId,status:'APPLIED',targetId:ref.id,version:1,data:{ref,status:isRequest?'APPROVAL_REQUESTED':'APPROVAL_DECIDED',[isRequest?'request':'decision']:snapshot},evidenceRefs:[],warnings:[],serverReceivedAt:isRequest?snapshot.createdAt:snapshot.decidedAt};
+   const sql=isRequest?'SELECT * FROM anvil.fn09_registered_approval_request_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10)':'SELECT * FROM anvil.fn09_registered_approval_decision_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10)';
+   const rows=(await Reflect.apply(query,db,[sql,[sessionId,actorId,clientId,request.projectId,canonicalJson(request),canonicalJson(ref),canonicalJson(snapshot),canonicalJson(policyRef),canonicalJson(receiptIds),transactionId]])).rows,row=rows.length===1?rows[0]:undefined;
+   if(!row||row.reservation_id!==receiptIds.serverCommandId||row.transaction_id!==transactionId||row.record_hash!==ref.contentHash||!hashV1(row.plan_hash)||!isoV1(row.authorized_until))unknown();
+   const reservedBytes=quotaBytes(row.reserved_bytes),until=Math.min(originalParent,Date.parse(row.authorized_until));if(reservedBytes>PROJECT_STORAGE_CAP)unknown();
+   await this.#registeredTx(db,query,transactionId,until);identity();const lease=Object.freeze({});
+   this.#registeredApprovals.set(lease,{purpose,db,query,actor,actorId,clientId,sessionId,credentialGeneration,request,ref,snapshot,transactionId,reservationId:row.reservation_id,planHash:row.plan_hash,reservedBytes,receiptIds,resultHash:hash(expectedResult),until,phase:'RESERVED'});return lease;
+  });
+ }
+ async settleRegisteredPreparationApproval(db:PoolClient,actor:AuthenticatedIdentity,lease:object,rawReceipt:{id:string;result:any;authorizationReceiptRef:RuntimeRefV1}):Promise<void>{
+  const state=this.#registeredApprovals.get(lease);
+  if(!state||state.phase!=='RESERVED'||state.db!==db||state.query!==db.query||state.actor!==actor||state.actorId!==actor.actorId||state.clientId!==actor.clientId||state.sessionId!==actor.authSession?.id||state.credentialGeneration!==actor.credentialGeneration)unknown();state.phase='SETTLING';
+  try{
+   const receipt=cloneV1(rawReceipt),check=()=>{if(state.actorId!==actor.actorId||state.clientId!==actor.clientId||state.sessionId!==actor.authSession?.id||state.credentialGeneration!==actor.credentialGeneration)unknown();};
+   if(receipt.id!==state.receiptIds.serverCommandId||receipt.authorizationReceiptRef?.id!==state.receiptIds.authorizationReceiptId||hash(receipt.result)!==state.resultHash)unknown();
+   await this.#registeredTx(db,state.query,state.transactionId,state.until);check();
+   const sql=state.purpose==='REQUEST'?'SELECT * FROM anvil.fn09_registered_approval_request_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)':'SELECT * FROM anvil.fn09_registered_approval_decision_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)';
+   const rows=(await Reflect.apply(state.query,db,[sql,[state.sessionId,state.actorId,state.clientId,state.request.projectId,state.request.commandId,state.reservationId,state.planHash,receipt.id,canonicalJson(receipt.result),state.transactionId]])).rows;
+   await this.#registeredTx(db,state.query,state.transactionId,state.until);check();const row=rows.length===1?rows[0]:undefined;
+   if(!row||row.status!=='SETTLED'||row.reservation_id!==state.reservationId||row.transaction_id!==state.transactionId||quotaBytes(row.settled_bytes)>state.reservedBytes)unknown();
+  }catch{return unknown();}finally{state.phase='CLOSED';}
+ }
  async #current(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,state?:PreparedState){
   if(!['uploadArtifact','proposeDocumentChange','saveCheckpoint','linkDocumentSource','proposeDocumentSourceChange'].includes(request.operation)||!uuidV1(request.projectId)||!uuidV1(request.commandId)||request.clientId!==actor.clientId)fail();
   if(state&&(state.p.actorId!==actor.actorId||state.p.request.clientId!==actor.clientId||hash(request)!==state.p.commandHash))fail('IDEMPOTENCY_CONFLICT',409);

@@ -4,7 +4,7 @@ import type {PoolClient} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../../../apps/server/modules/access/repository.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import type {ProjectCommand} from '../../../apps/server/modules/access/project-command.ts';
-import {ProjectStorageQuota,quotaBytes,type QuotaPart} from '../../../apps/server/modules/projects/project-storage-quota.ts';
+import {PROJECT_STORAGE_CAP,ProjectStorageQuota,quotaBytes,type QuotaPart} from '../../../apps/server/modules/projects/project-storage-quota.ts';
 const id=(n:number)=>`00000000-0000-4000-8000-${n.toString().padStart(12,'0')}`;
 const h=(v:unknown)=>contentHash(canonicalJson(v));
 const request=():ProjectCommand=>({schemaVersion:1,projectId:id(1),commandId:id(2),clientId:id(3),controlGeneration:1,operation:'uploadArtifact',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{bytes:5,contentHash:h('body'),mediaType:'application/octet-stream'}});
@@ -120,3 +120,53 @@ test('수락된 일반문서 예약은 원command 한정 account를 소비하고
  }}as ReturnType<MemoryAccess['db']>;};
  const p=await f.quota.prepare('token','csrf',ordinary,async()=>[part()]);await f.quota.reserve('token','csrf',p);assert.equal(accountCalls,1);assert.equal(publicCalls,0);assert.equal(f.access.state.account!.held_bytes,'10');
 });
+
+import {reserveRegisteredPreparationReceiptIds} from '../../../apps/server/modules/access/project-command.ts';
+function registeredQuotaPortFixture(){
+ const rawRef={id:id(82),version:1,contentHash:'a'.repeat(64)},at=new Date('2026-11-06T00:00:00.000Z');
+ const who:AuthenticatedIdentity={...actor,reauthUntil:new Date('2026-11-06T00:01:00.000Z'),authSession:{id:id(83),idleExpiresAt:'2026-11-06T00:01:00.000Z',absoluteExpiresAt:'2026-11-06T00:01:00.000Z'}};
+ const input={projectId:id(1),assignmentRef:rawRef,roleBindingRef:rawRef,contextBundleRef:rawRef,connectionRef:rawRef,environmentRef:rawRef,capabilityRef:rawRef,budgetPolicyRef:rawRef,
+  sourceScopes:[{sourceRootRef:rawRef,mappingRef:null,observationRef:rawRef,baselineRef:rawRef,targets:[{relativePath:'src/file.ts',kind:'FILE',access:'READ',recursive:false}]}],mode:'CONTEXT_REVIEW',reason:'예약 목적 포트 검산',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'};
+ const command:ProjectCommand={...request(),operation:'prepareExecution',payload:input};
+ const body=canonicalJson({claudeQueryParams:{model:'선택 모델'}}),snapshot={intent:input,basisRefs:[],latestInstructionRefs:[],checkedAt:at.toISOString(),missingConditions:['CAPABILITY_UNVERIFIED','BUDGET_POLICY_UNVERIFIED'],authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:who.actorId},executionAuthorized:false,dispatchPerformed:false,
+  options:{format:'CLAUDE_QUERY_DATA_V1',mediaType:'application/json',body,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)}};
+ const prepRef={id:id(84),version:1,contentHash:h(snapshot)},policy={...rawRef,id:id(85)};
+ const receiptIds=reserveRegisteredPreparationReceiptIds();
+ const result={operationId:receiptIds.operationId,projectId:command.projectId,commandId:command.commandId,status:'APPLIED',targetId:prepRef.id,version:1,data:{status:'EXECUTION_PREPARED',ref:prepRef,snapshot},evidenceRefs:[],warnings:[],serverReceivedAt:snapshot.checkedAt};
+ const receipt={id:receiptIds.serverCommandId,result,authorizationReceiptRef:{...rawRef,id:receiptIds.authorizationReceiptId}};
+ const modelPlan={request:command,actorId:who.actorId,parts:[{key:'registered_options',kind:'PREPARATION_OPTIONS',id:prepRef.id,bytes:'10000',contentHash:prepRef.contentHash,reservedBytes:'10000',settledBytes:'10000'}],commandHash:h(command),policyRef:policy,authorizedUntil:'2026-11-06T00:00:03.000Z',replay:false,canonicalPairs:{preparationSnapshot:canonicalJson(snapshot),resultRef:canonicalJson(result)},coverageGeneration:'1'},modelPlanHash=h(modelPlan);
+ let rejectOther=false,tx='901',clock=at,changeAfterReserve=false,wrongReservation=false,settleError=false,expireAfterSettle=false,accessCalls=0,reserves=0,settles=0;
+ const db:any={query:async(sql:string,args:any[])=>{
+  if(sql.startsWith('SELECT txid_current()'))return{rows:[{transaction_id:tx,observed_at:clock}]};
+  if(sql.includes('fn09_registered_prepare_reserve')){reserves++;if(rejectOther){const u=PROJECT_STORAGE_CAP-20n,held=0n,amount=10n,other=11n;assert(u+held+amount<=PROJECT_STORAGE_CAP);assert(u+held+amount+other>PROJECT_STORAGE_CAP);throw Object.assign(Error('PROJECT_STORAGE_LIMIT_EXCEEDED'),{code:'P0001'});}assert.equal(args[10],tx);assert.deepEqual(JSON.parse(args[8]),receiptIds);assert.equal(JSON.parse(args[9]).resultRef,canonicalJson(result));assert.equal(args[0],who.authSession!.id);assert.deepEqual(JSON.parse(args[4]),command);assert.deepEqual(JSON.parse(args[6]),snapshot);const original=tx;if(changeAfterReserve)tx='902';return{rows:[{reservation_id:wrongReservation?id(88):receiptIds.serverCommandId,transaction_id:original,preparation_hash:prepRef.contentHash,plan_hash:modelPlanHash,reserved_bytes:'10000',authorized_until:'2026-11-06T00:00:03.000Z'}]};}
+  if(sql.includes('fn09_registered_prepare_settle')){settles++;assert.equal(args[9],tx);assert.equal(args[6],modelPlanHash);if(settleError)throw Error('정산 응답 유실');if(expireAfterSettle)clock=new Date('2026-11-06T00:00:03.000Z');return{rows:[{status:'SETTLED',reservation_id:wrongReservation?id(88):receiptIds.serverCommandId,transaction_id:tx,settled_bytes:'9999'}]};}
+  throw Error('UNEXPECTED_REGISTERED_QUOTA_SQL');
+ }};
+ const quota=new ProjectStorageQuota({authenticated:async()=>{accessCalls++;throw Error('별도 인증 트랜잭션 금지');}} as any);
+ return{db,who,command,prepRef,snapshot,policy,receipt,receiptIds,quota,modelPlan,modelPlanHash,rejectOther(){rejectOther=true;},get reserves(){return reserves;},get settles(){return settles;},get accessCalls(){return accessCalls;},wrongReservation(){wrongReservation=true;},replaceTx(){tx='902';},switchDuringReserve(){changeAfterReserve=true;},failSettle(){settleError=true;},expireSettle(){expireAfterSettle=true;}};
+}
+
+test('등록 준비 quota 내부 포트는 같은 원 Pool·actor·실제 txid의 private lease만 단발 정산한다',async()=>{
+ const q=registeredQuotaPortFixture(),lease=await q.quota.reserveRegisteredPreparation(q.db,q.who,q.command,q.prepRef,q.snapshot,q.policy,q.receiptIds);
+ assert.deepEqual(Object.keys(lease),[]);assert(Object.isFrozen(lease));
+ await assert.rejects(q.quota.settleRegisteredPreparation(q.db,q.who,Object.freeze({}),q.receipt),/PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN/);
+ await q.quota.settleRegisteredPreparation(q.db,q.who,lease,q.receipt);
+ await assert.rejects(q.quota.settleRegisteredPreparation(q.db,q.who,lease,q.receipt),/PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN/);
+ assert.equal(q.reserves,1);assert.equal(q.settles,1);assert.equal(q.accessCalls,0);
+});
+
+test('등록 준비 quota 포트의 Tx교체·교차actor·정산유실/기한은 재정산이나 별도Tx로 성공시키지 않는다',async()=>{
+ const swapped=registeredQuotaPortFixture();swapped.switchDuringReserve();await assert.rejects(swapped.quota.reserveRegisteredPreparation(swapped.db,swapped.who,swapped.command,swapped.prepRef,swapped.snapshot,swapped.policy,swapped.receiptIds),/PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN/);assert.equal(swapped.settles,0);
+ for(const mode of ['tx','actor','lost','expiry']){
+  const q=registeredQuotaPortFixture(),lease=await q.quota.reserveRegisteredPreparation(q.db,q.who,q.command,q.prepRef,q.snapshot,q.policy,q.receiptIds);
+  if(mode==='tx')q.replaceTx();if(mode==='lost')q.failSettle();if(mode==='expiry')q.expireSettle();
+  await assert.rejects(q.quota.settleRegisteredPreparation(q.db,mode==='actor'?{...q.who}:q.who,lease,q.receipt));
+  assert.equal(q.settles,mode==='lost'||mode==='expiry'?1:0);assert.equal(q.accessCalls,0);
+  if(mode!=='actor'){await assert.rejects(q.quota.settleRegisteredPreparation(q.db,q.who,lease,q.receipt));assert.equal(q.settles,mode==='lost'||mode==='expiry'?1:0);}
+ }
+});
+test('등록 준비 quota 예약은 원 발급 command 식별과 다른 예약 응답을 거절한다',async()=>{const q=registeredQuotaPortFixture();q.wrongReservation();await assert.rejects(q.quota.reserveRegisteredPreparation(q.db,q.who,q.command,q.prepRef,q.snapshot,q.policy,q.receiptIds),/PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN/);assert.equal(q.reserves,1);assert.equal(q.settles,0);assert.equal(q.accessCalls,0);});
+
+test('등록 준비 Node 포트는 별도 O 초과 거절과 coverage 봉인 hash를 정산까지 보존한다',async()=>{const rejected=registeredQuotaPortFixture();rejected.rejectOther();await assert.rejects(rejected.quota.reserveRegisteredPreparation(rejected.db,rejected.who,rejected.command,rejected.prepRef,rejected.snapshot,rejected.policy,rejected.receiptIds),(e:any)=>e.message==='PROJECT_STORAGE_LIMIT_EXCEEDED'&&e.statusCode===429);assert.equal(rejected.reserves,1);assert.equal(rejected.settles,0);const q=registeredQuotaPortFixture();assert.notEqual(h({...q.modelPlan,coverageGeneration:'2'}),q.modelPlanHash);const lease=await q.quota.reserveRegisteredPreparation(q.db,q.who,q.command,q.prepRef,q.snapshot,q.policy,q.receiptIds);await q.quota.settleRegisteredPreparation(q.db,q.who,lease,q.receipt);assert.equal(q.settles,1);assert.equal(q.accessCalls,0);});
+
+test('등록 준비 quota는 원 Session·정책이 유효하면 별도 재인증을 요구하지 않는다',async()=>{for(const reauthUntil of [null,new Date('2000-01-01T00:00:00.000Z')]){const q=registeredQuotaPortFixture();Object.assign(q.who,{reauthUntil});const lease=await q.quota.reserveRegisteredPreparation(q.db,q.who,q.command,q.prepRef,q.snapshot,q.policy,q.receiptIds);await q.quota.settleRegisteredPreparation(q.db,q.who,lease,q.receipt);assert.equal(q.reserves,1);assert.equal(q.settles,1);}});

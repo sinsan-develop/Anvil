@@ -1,3 +1,4 @@
+import {ProjectStorageQuota} from './project-storage-quota.ts';
 import {ProjectSetupCopies} from './project-setup-copies.ts';
 import {ProjectMemberships} from './project-memberships.ts';
 import type {DocumentSourceObservationPort} from '../documents/document-source-observation.ts';
@@ -207,7 +208,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/results/:id/reworks',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReworks.list(db,actor,request.params.projectId,request.params.id));});
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/result-reworks/:id',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>resultReworks.read(db,actor,request.params.projectId,request.params.id));});
   app.post<{Params:{projectId:string};Body:Record<string,unknown>}>('/api/v1/projects/:projectId/result-reworks/prepare',{schema:{params:object({projectId:idSchema}),querystring:object({}),body:object({resultRef:{type:'object'},reviewRef:{type:'object'},responsibleBindingRef:{type:'object'},missingItems:{type:'array',maxItems:100},sourceScopes:{type:'array',maxItems:200},reason:{type:'string',maxLength:20000}})}},request=>{if(request.headers.host!==host||request.headers.origin!==options.origin)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),csrf(request),(db,actor)=>resultReworkPreparation.prepare(db,actor,request.params.projectId,request.body));});
-  const executionPreparations = new ProjectExecutionPreparations(assignmentConfirmations, assignments, responsibleSessions, contexts, connectionCandidates);
+  const executionPreparations = new ProjectExecutionPreparations(assignmentConfirmations, assignments, responsibleSessions, contexts, connectionCandidates,{definitions:connectionDefinitions,environments,quota:new ProjectStorageQuota(options.repository)});
   const limitPolicies = new ProjectLimitPolicies();
   const budgetUsage=new ProjectExecutionBudget(limitPolicies);
   app.get<{Params:{projectId:string;id:string;version:string};Querystring:{contentHash:string}}>('/api/v1/projects/:projectId/limit-policies/:id/versions/:version/usage',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}}),querystring:object({contentHash:{type:'string',pattern:'^[a-f0-9]{64}$'}})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>budgetUsage.readUsage(db,actor,request.params.projectId,{id:request.params.id,version:Number(request.params.version),contentHash:request.query.contentHash}));});
@@ -217,7 +218,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const registrationReads=new ProjectRegistrationReads(options.repository.installationId),registrationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('HOST_TRUST_REGISTRATIONS:'+value));
   const connectionCandidateCodec = new ProjectListCodec(value => options.repository.signProjectCursor('CONNECTION_CANDIDATES:' + value));
   const designChanges=new ProjectDesignChanges(documents);
-  const approvals=new ProjectApprovals(documents),baselineActivations=new ProjectBaselineActivations(documents);
+  const approvals=new ProjectApprovals(documents,options.repository),baselineActivations=new ProjectBaselineActivations(documents);
   const approvalCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('APPROVALS:'+value));
   const conversationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATIONS:'+value)),messageCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('CONVERSATION_MESSAGES:'+value));
   registerProjectDocumentReads(app, options, documents,sourceLinks);
@@ -342,7 +343,7 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
       if (request.body.operation === 'revokeLimitPolicy') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => limitPolicies.revoke(db, actor, request.body, policyRef));
       if (request.body.operation === 'defineProjectRole') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => responsibleSessions.define(db, actor, request.body, policyRef));
       if (request.body.operation === 'bindResponsibleSession') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => responsibleSessions.bind(db, actor, request.body, policyRef));
-      if (request.body.operation === 'prepareExecution') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => executionPreparations.save(db, actor, request.body, policyRef));
+      if (request.body.operation === 'prepareExecution') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => executionPreparations.save(db, actor, request.body, policyRef),(db,actor,command,result)=>ProjectExecutionPreparations.prototype.verifyRegisteredReplay.call(executionPreparations,db,actor,command,result));
       if (request.body.operation === 'submitResult') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => results.submit(db, actor, request.body, policyRef));
       if (request.body.operation === 'saveResultCriteria') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultCriteria.save(db, actor, request.body, policyRef));
       if (request.body.operation === 'evaluateResult') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultReviews.save(db, actor, request.body, policyRef));

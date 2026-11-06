@@ -156,17 +156,42 @@ export async function projectReplay(db: PoolClient, actor: AuthenticatedIdentity
 export interface ActivationReceiptIds{readonly serverCommandId:string;readonly consumptionId:string;readonly documents?:ProjectDocuments}
 const activationReservations=new WeakSet<object>();
 export function reserveActivationReceiptIds(documents?:ProjectDocuments):ActivationReceiptIds{const value=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),documents});activationReservations.add(value);return value;}
+export interface RegisteredPreparationReceiptIds extends ActivationReceiptIds {readonly operationId:string;readonly authorizationReceiptId:string;readonly auditEventId:string}
+const registeredPreparationReceiptReservations=new WeakSet<object>();
+/** 서버 내부 식별자 선점이다. 권한/승인/저장 성공을 발급하지 않는다. */
+export function reserveRegisteredPreparationReceiptIds():RegisteredPreparationReceiptIds{
+  const ids=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),operationId:randomUUID(),authorizationReceiptId:randomUUID(),auditEventId:randomUUID()});
+  registeredPreparationReceiptReservations.add(ids);return ids;
+}
+export function isRegisteredPreparationReceiptIds(value:unknown):value is RegisteredPreparationReceiptIds{
+  return !!value&&typeof value==='object'&&registeredPreparationReceiptReservations.has(value);
+}
+const registeredApprovalReceiptReservations=new WeakMap<object,'REQUEST'|'DECISION'>();
+function reserveRegisteredApprovalReceiptIds(purpose:'REQUEST'|'DECISION'):RegisteredPreparationReceiptIds{
+ const ids=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),operationId:randomUUID(),authorizationReceiptId:randomUUID(),auditEventId:randomUUID()});registeredApprovalReceiptReservations.set(ids,purpose);return ids;
+}
+export const reserveRegisteredPreparationApprovalRequestReceiptIds=()=>reserveRegisteredApprovalReceiptIds('REQUEST');
+export const reserveRegisteredPreparationApprovalDecisionReceiptIds=()=>reserveRegisteredApprovalReceiptIds('DECISION');
+export function isRegisteredPreparationApprovalReceiptIds(value:unknown,purpose:'REQUEST'|'DECISION'):value is RegisteredPreparationReceiptIds{return !!value&&typeof value==='object'&&registeredApprovalReceiptReservations.get(value)===purpose;}
 export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string, reserved?:ActivationReceiptIds) {
   const documentContext=consumeFn15DocumentContext(db,actor,request);
-  if(reserved&&(request.operation!=='activateDesignChange'||request.approvalRef===null||!activationReservations.has(reserved)))throw new AuthFailure('ACTIVATION_RECEIPT_RESERVATION_INVALID',422);
-  if(reserved)activationReservations.delete(reserved);
-  const id = reserved?.serverCommandId??randomUUID(), operationId = randomUUID(), receiptId = randomUUID();
+  const registeredPurpose=isRegisteredPreparationReceiptIds(reserved)?'PREPARE':isRegisteredPreparationApprovalReceiptIds(reserved,'REQUEST')?'REQUEST':isRegisteredPreparationApprovalReceiptIds(reserved,'DECISION')?'DECISION':null;
+  const registeredIds=registeredPurpose?reserved as RegisteredPreparationReceiptIds:null;
+  if(registeredIds){
+    const valid=registeredPurpose==='PREPARE'?request.operation==='prepareExecution'&&request.payload.connectionKind==='REGISTERED_DEFINITION'&&request.payload.optionsFormat==='CLAUDE_QUERY_DATA_V1':registeredPurpose==='REQUEST'?request.operation==='requestApproval'&&(request.payload.candidatePayload as any)?.connectionKind==='REGISTERED_DEFINITION'&&(request.payload.details as any)?.actionScope?.operation==='prepareExecution':request.operation==='decideApproval';
+    if(!valid)throw new AuthFailure('EXECUTION_PREPARATION_RECEIPT_RESERVATION_INVALID',422);
+    registeredPreparationReceiptReservations.delete(registeredIds);registeredApprovalReceiptReservations.delete(registeredIds);
+  }else{
+    if(reserved&&(request.operation!=='activateDesignChange'||request.approvalRef===null||!activationReservations.has(reserved)))throw new AuthFailure('ACTIVATION_RECEIPT_RESERVATION_INVALID',422);
+    if(reserved)activationReservations.delete(reserved);
+  }
+  const id = reserved?.serverCommandId??randomUUID(), operationId = registeredIds?.operationId??randomUUID(), receiptId = registeredIds?.authorizationReceiptId??randomUUID();
   const approval=request.approvalRef===null?null:readApprovalRef(request.approvalRef),consumptionId=approval?(reserved?.consumptionId??randomUUID()):null,payloadRef=approval?{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(request.payload)),scopeDigest:approval.scopeDigest}:null;
   const result = { operationId, commandId: request.commandId, projectId: request.projectId, status: 'APPLIED', targetId: 'id' in ref ? ref.id : ref.artifactId, version: 'version' in ref ? ref.version : null, data: { ...('id' in ref ? { ref } : { artifactRef: ref }), ...data }, evidenceRefs: [], warnings: [], serverReceivedAt: (await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString() };
   const scopeDigest = contentHash(canonicalJson({ projectId: request.projectId, actorId: actor.actorId, clientId: actor.clientId, controlGeneration: request.controlGeneration, requestHash: contentHash(canonicalJson(request)), policyRef, targetRef: ref }));
   await db.query("INSERT INTO anvil.commands(id,scope_kind,scope_id,project_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,completed_at) VALUES($1,'PROJECT',$2,$2,$3,$4,$5,$6,$7,$8,'APPLIED',$9,$10,$11,$12,$13,$14,$15,now())", [id, request.projectId, actor.actorId, actor.clientId, request.operation, request.commandId, contentHash(canonicalJson(request)), operationId, receiptId, consumptionId, request.expectedVersion, request.controlGeneration, policyRef ? JSON.stringify(policyRef) : null, payloadRef?JSON.stringify(payloadRef):null, JSON.stringify(result)]);
   await db.query("INSERT INTO anvil.authorization_receipts(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref) VALUES($1,'PROJECT',$2,$3,$4,$5,$6,$7)", [receiptId, request.projectId, id, JSON.stringify({ kind: 'HUMAN', userId: actor.actorId, clientId: actor.clientId }), policyRef ? JSON.stringify(policyRef) : null, scopeDigest,approval?.decisionId??null]);
-  await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
+  await db.query("INSERT INTO anvil.audit_events(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,source_kind) SELECT $1,COALESCE(MAX(server_sequence),0)+1,$2,$3,$4,$5,$6,$7,$8,$9,'APPLIED',$10,$11,'HUMAN_COMMAND' FROM anvil.audit_events WHERE project_id=$1", [request.projectId, registeredIds?.auditEventId??randomUUID(), JSON.stringify({ kind: 'HUMAN', userId: actor.actorId }), actor.clientId, id, operationId, JSON.stringify(ref), policyRef ? JSON.stringify(policyRef) : null, approval?JSON.stringify(approval):null,reasonCode, scopeDigest]);
   if(documentContext!==null)await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true),set_config('anvil.fn15_document_context',$4,true)",[actor.actorId,actor.clientId,id,documentContext]);
   else await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true),set_config('anvil.command_id',$3,true)", [actor.actorId, actor.clientId, id]);
   if(approval&&consumptionId){if(!policyRef)throw new AuthFailure('APPROVAL_POLICY_REQUIRED',412);await new ProjectApprovals(reserved?.documents).consume(db,actor,request,policyRef,id,consumptionId);}
@@ -211,7 +236,7 @@ export class ProjectPolicyRepository {
       await check();return result;
     });}catch(error){await recordProjectDenial(this.#access,token,original.projectId,error);throw error;}
   }
-  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>) {
+  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>, registeredPreparationReplay?: (db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,result:unknown)=>Promise<void>) {
     let exportDeadline=performance.now()+30000,exportStarted=false;
     let notificationDeadline=Infinity,notificationPolicyDeadline=Infinity;
     try {
@@ -241,7 +266,13 @@ export class ProjectPolicyRepository {
             if(!Number.isFinite(notificationPolicyDeadline)||performance.now()>=notificationPolicyDeadline)throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
           };
           await checkNotificationDeadline();
-          if (previous !== undefined){await checkCheckpoint();if(request.operation==='saveProjectMembership')await new ProjectMemberships().verifyReplay(db,actor,request,previous);return previous;}
+          if (previous !== undefined){await checkCheckpoint();if(request.operation==='saveProjectMembership')await new ProjectMemberships().verifyReplay(db,actor,request,previous);
+            if(request.operation==='prepareExecution' && request.payload.connectionKind==='REGISTERED_DEFINITION'){
+              if(!registeredPreparationReplay)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+              const result=await registeredPreparationReplay(db,actor,JSON.parse(canonicalJson(request)),JSON.parse(canonicalJson(previous)));
+              if(result!==undefined)throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
+            }
+            return previous;}
           if (request.baselineRefs.length&&(request.operation!=='activateDesignChange'||request.baselineRefs.length!==1||!isVersionRef(request.baselineRefs[0]))) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
           if (!material) throw new AuthFailure('PROJECT_OPERATION_NOT_READY', 412);
           if(request.operation==='exportProject'){exportStarted=true;await db.query("SELECT set_config('anvil.export_payload',$1,true)",[canonicalJson(request.payload)]);}
