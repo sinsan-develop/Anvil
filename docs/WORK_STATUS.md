@@ -16769,3 +16769,21 @@ Main은 docs/contracts/FN07_CLAUDE_DRIVER_PROCESS_TOOL_BOUNDARY_CANDIDATE_202611
 후보§5.2에 이 사실과 기존 별도 SEND를 첫 생성 입력으로 연결하는 최소 방향을 추가했다. 최신10335B/73DB7121FBE3D9F4184B25D1F41E0DCEC35B351DEB24013D7BF14DAFDD719C92는 사실 절 한정 독립 C0/I0/M0다. 앞선§5.1의C0/I0도 실제 생성원형 채택이 아니라 미정선행의정직한보완이다. 기존 실제 current/permit 소비가 Codex 전용인지 Primary가 읽기 설계 대조 중이며 코드GO0이다.
 
 Main은 후보/현황/통제 정확3 문서를 로컬로 보존하고, 외부SDK재조회·제품/시험쓰기·실제DB/권한/키/서비스/Agent 실행·push/PR/main/배포는 하지 않는다. 전체 작업계획 목표는 진행 중이며 실제 생성 연결의 부족을 합성 자료로 숨기지 않는다.
+
+
+## 316. 첫 입력 bootstrap의 내부 구현 분류·사전검수
+
+Main 2a914b/3d1825는 실제 공통 instruction permit·clientauthority의 current/consume과 기존 exact source/OS/proof/기한 검산을 읽었다. 기존 client.consume은 Codex thread/claim/RPC를 검사하지 않지만 이 사실이 init 전 실제 세션 권위를 확보했다는 뜻은 아니다. Primary의 최초 비한국어 설계 반환은 사용자 문서에 복사하지 않고 한국어 정정을 요청했다. 내부 설계의 실제 yield 근거와 owner장부 인계만 기술 참고로 반영한다.
+
+PMO turn01a1b037-8fb4-7052-ad82-28f65d63c70b는 제한된 private 생성·입력 순서의 WI 발행이 기존 계획 범위라고 확인했다. 단발 yield 근거는 원 생성/SEND/같은owner 재공급 방지에만 사용하고 INPUT_YIELDED_ONLY를 입력완료/응답/실행허가로 올리지 않으며, 명시 합성 current가 없으면 거절·실SDK/새permit/publicAPI/SQL/실권위생산은 제외한다는 조건이다.
+
+Main은 docs/work_packages/FN07_INSTRUCTION_BOOTSTRAP_SOURCE_IMPLEMENTATION_20261106.md 12630B/164B898C4885F12A1B33C520519290360B58ED7250B9479C424D97C0BE2A2684를 작성·미러했다. 신규2와 기존 factory/owner/coordinator 각source/test의 정확8경로만 예정하고, actual receiver/clientauthority/fact/공통permit을 소비하며 실제next의 단발yield근거로 owner에 원command/userdigest를 인계하는 범위다. 이 단계는 독립 사전검토/기술가능성 확인 중이며 SOURCE_GO0·제품/시험쓰기0이다. 실제 SDK/DB/권한/키/서비스/Agent 실행0·전체 목표 진행 중이다.
+
+
+## 317. 첫 입력 bootstrap 비순환·관측순서 검수 후 소스 GO
+
+최초 WI 사전검토 C0/I1/M0는 localAttemptRef/current/bindingHash의 순환 가능성을 지적했다. Main은 §3.1의 exact snapshot/ref·current 관측필드 제외·bindingHash 입력과 선보존→current→consume→yield/인계 순서를 고정했다. 860AEBA0은 해당 보완 C0/I0/M0와 기존 Primary의 기술 가능 확인을 받았다. consume에 없는 필드는 가짜 반환으로 채우지 않는다.
+
+init선도착은 같은Query/init/prefix를 보존해 기존최소기한내실제yield를 기다리는 정상순서로 취급하고, 끝내미yield이면UNKNOWN·재생성0으로 닫도록 보완했다. 최종 WI15949B/27E3A41B92FE9CE498FFCB12877BB88BB96F3E386608C9B4687CA182B5C4E8E2는 한정 독립 C0/I0/M0와 정확8 구현 가능 확인을 받았다. 단지 순서가 다르다고 정상기능을 쉬운 거절로 대체하지 않는다.
+
+Main 98377b는 시작HEAD ffc19dff·기존6 source/test+불변bridge·보호3의 지문과 신규2부재·index 비어 있음을 확인했다. PMO의 내부 분류를 부모로 Main SOURCE_GO를 최종WI해시에 결박한다. WI머리GO0은 사전검토 원형으로 보존하고 이 기록·문서3 checkpoint 뒤 기존 Primary만 정확8을 구현한다. Main은 같은 제품을 수정하지 않는다. 실제SDK/DB/권한/키/서비스/Agent 실행·새public/SQL/실권위생산0·전체목표진행중이다.
