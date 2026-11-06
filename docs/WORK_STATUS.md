@@ -10,11 +10,11 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN10 현재 구현 | 저장·정정·철회·보호 조회와 Workbench 연결의 정확19를 fc45abea에 소스·합성 인수했다. 조건평가·소비 후보는 준비됐으나 실제 현재 실행·선행 공급자가 미완료다. 실제 환경과 전체 FN10은 미완료다 |
-| FN09 다음 구현 | 원자료 계약 r2 65765A0B와 구현 WI 907FE547의 독립 검토를 마쳐 ebbfb211에 보존했다. 새 등록·보호 GET2·미발급 예약의 계약 채택 결정 대기이며 SOURCE_GO0다. 기존 담당자 둘 모두 작업 반환 상태다 |
+| FN09 다음 구현 | 원자료 계약 r2 65765A0B와 구현 WI 907FE547의 독립 검토를 마쳐 ebbfb211에 보존했다. 최신 직접 승인으로 새 등록·보호 GET2·미발급 예약 SOURCE_GO를 발행했고 기존 Primary 한 명이 정확23 TDD 중이다 |
 
 | FN10 화면 보완 | 기록·정정·철회/고정 이력과 실제 App CAS를 소스·합성 범위에서 인수했다. 신규37/불변인접69·Main build/type/diff와 독립 C0/I0를 확인했다. 실제 DB/서비스/브라우저 인수와 단계 조건평가·소비/실제 전이는 미완료이며 다음 정확 계약을 준비한다 |
 | FN07 인수된 선행 | bootstrap35247729/Main110과 보호 profile selector f9b78821/Main69를 소스 범위에서 인수했다. 완료 검사는 반복하지 않는다. 실제 SDK 수락·OS process·SESSION claim·도구 권위와 서버/화면 연결 완료가 아니다 |
-| SDK 공개 읽기 | 고정0.3.224 공개 원문 읽기1회는a840aa로 완료·소진됐다. 추가 조회/설치/import/query0이다. SpawnedProcess의 별도 stderr 부재와 지연 신호 주석을 확인했으나 즉시 취소·실제 회수 보장으로 바꾸지 않는다 |
+| SDK 공개 읽기 | 고정0.3.224 공개 원문 읽기1회는a840aa로 완료·소진됐다. 추가1회는 DNS 오류로 실패·소진됐고 원문 수거/재시도/설치/import/query0이다(§378). SpawnedProcess의 별도 stderr 부재와 지연 신호 주석을 확인했으나 즉시 취소·실제 회수 보장으로 바꾸지 않는다 |
 | FN07 다음 선행 | 기존 authorizeExecution/START의 정책·예산·ref와 selector 선언만으로 검산된 executable/cwd/argv/env·원 생성 허가가 생산되지는 않는다. 구체 보호 생산/소비 계약을 닫아야 하며 새 공개 API/표가 필수라고 단정하지 않는다. 준비 false나 합성 factory를 실행 권위로 바꾸지 않는다 |
 | 다른 미완료 | 전체44업무 잔여는 이력337과 WORK_PLAN/업무 카드에 남아 있다. FN06 실제 보호 producer, FN12 successor, FN13~17 실제 회수/이전/백업·전달과 P03/IX 실제 검증을 완료로 바꾸지 않는다. 일부 선행 때문에 진행 가능한 FN10까지 멈추지 않는다 |
 | Git 보존 | 마지막 제품 checkpoint fc45abea98fedf12d4b56d7be1cbd43a67b4ac07·branch codex/av3-stage-b다. 사후 제품/시험 지문과 보호3 불변을 확인했다. Main 후속 현황/통제와 후보문서를 보존한다. private 동일성/PR/병합 미확인·인증 복구/push 재시도0·main 변경0이다 |
@@ -17303,3 +17303,35 @@ d00e05에서 HEAD ebbfb211, tracked 변경은 Main 현황/통제2뿐이고 부�
 별도 기존 읽기 담당자만 2296F0EF805EB2F03D52E5FD30DD776AB1F45B14953BEC3D532FF51AB63236E9의 고정 URL·버전·크기·SHA·메모리·10초·redirect/retry0로 추가 GET1을 수행한다. 이 배정으로 승인1회를 해당 담당자에게 전용 예약하며 Main/다른 담당자는 같은 요청0이다. 같은 지속 Node 메모리에 verified dts/mjs를 문자열로 유지해 후속 유한 발췌는 네트워크0으로 수행한다. 최초 요청 시 attempted를 먼저 고정하고 실패/불명에도 재시도하지 않는다. SDK 설치/import/query/eval·파일 저장·키/사용자자료 접근0이다.
 
 읽기 담당자는 실행 전에 후보 코드의 tar NUL 제거·메모리 파싱·시간 제한을 정적으로 확인한다. 문서의 문자열 escape가 잘못됐다면 같은 허용 범위의 내부 파싱만 정정해 네트워크 전에 정확 변경을 보고한다. 대상·크기/무결성·횟수·제외 범위는 바꾸지 않는다. callback 전체 서명·반환 동기성·hook 호출 인수/argv/env 변환의 정확 근거와 남은 불확실을 수거한다. 결과 기록 소유는 신규 docs/04_test_reports/AV3/FN07_PINNED_SDK_HOOK_READ2_RESULT_20261107.md 한 파일이며 공개 근거 발췌/위치·무결성·소진·실행0만 기록한다. 제품/계약 후보 수정0이다.
+
+
+## 378. SDK 추가 읽기 DNS 실패·독립 FN09 구현 진행
+
+기존 읽기 담당자는 §377의 고정 추가 GET1을 시도했으나 getaddrinfo ENOTFOUND registry.npmjs.org로 DNS 단계 실패했다. attempted=true/FAILED_OR_UNKNOWN·source/packed 없음이며 HTTP 응답/원문·무결성 검산0, 재시도/대체 URL/설치/import/query0이다. 신규 결과 FN07_PINNED_SDK_HOOK_READ2_RESULT_20261107.md는 3375B/E782BA55C3B849D65F383476C074A795F01726FFB3E514455EB2E2F76D936090이며 Main12fefa로 정확 원 오류·기대hash와 실측 구분을 읽기 검수했다. 이번 승인 시도는 소진됐고 callback 전체 서명/동기성·argv/env는 계속 미확인이다. 기존 성공1회 근거를 소급 변경하지 않는다.
+
+Main은 이 오류를 PMO에 전달했고 독립 구현은 중단하지 않았다. Primary3d8299는 시작 HEAD df594061·기존8 raw·신규15/0081 부재를 확인했다. 실제 정책 연산2개를 기존 materialRules에 넣은 행동 시험은 dd7a4c에서 POLICY_SCOPE_NOT_READY 412로 실패해 2PASS/1FAIL/skip0·exit1이며 기존 prepareExecution/실행권한 거절은 유지됐다. 이는 모듈/fixture 오류와 구분되는 RED다. 같은 Primary가 WI 정확23의 구현·TDD를 계속하며 Main 동시 code write0이다. 전체 계획/실제 기능 사용/DB·권한·키·서비스·Agent 검증 완료 주장은 하지 않는다.
+
+
+## 379. FN09 입력 부분 동결 검수·필수 음성 보완
+
+Primary의 입력2 동결은 source7727B/872CEF68B0AC957D16BAAE348ED0279DC755E2C786CE4908F96A865E71C19547, 시험5540B/629DE790F0CC53338E5CEFD3ED137FE30119C140AB3F593FCFE7434F8194ECD4다. 모듈 부재 a93b12는 구조 RED로만, 실제 S 관측/ref 누락105215와 정책 dd7a4c는 행동 RED로 구분했고 fd059f 입력4+정책3=7PASS/skip0·535.2898ms/type0를 제출했다. Main c6d07d 읽기와 독립 C0/I0/M1에서 Q 추가키·세대/true/기한 역전의 직접 음성 시험 누락을 확인해 동일 T01만 동결 해제·보완 지시했다. 제품 입력의 새 결함은 없으며 작성 중 다른 파일은 검수 범위에 넣지 않았다.
+
+Primary는 같은 정확23에서 실제 StageQueue/등록 준비의 보호 source·fixture 연결을 계속한다. 82375c는 index empty·보호3 raw 불변과 허용 제품/시험 외 변경 없음만 확인했고 작성 중 본문은 읽지 않았다. 전체 저장·0081·UI 및 최종 fresh 검증은 미완료다.
+
+SDK 결과의 원 도구는 mcp__node_repl__js(isError:true, 별도 실행 ID 없음)이며 네트워크 없는 상태 확인은 isError:false·attempted true·FAILED_OR_UNKNOWN/원문0이었다. 결과 지문/문자 최종 검사는 674784 exit0이다. 추가 조회/재시도0이다.
+
+
+## 380. Q 음성 보완 인수·Main 한정 검증
+
+T01은 Q 추가키·E/lifecycle 세대·true3·잘못된 state·동일/역전/불량 시각 음성을 추가해 6793B/9D90838C88C86985C85DF08EC1915D333331B43D238B9AAEBFB7700B03CA212D로 재동결했다. 제품 입력7727B/872CEF68은 불변이다. Primary4c2732 선택1PASS/317.0962ms와 독립 M1 해소 C0/I0/M0, Main8b6f80의 node --test --test-name-pattern '미발급 Q는' tests/unit/FN09/execution-start-origin-input.test.ts 1PASS/0FAIL/0skip/244.6183ms·exit0를 구분해 보존한다. 같은 시험을 고유 검수 수에 중복 합산하지 않는다. 이 한정 결과는 실제 보호 source·저장/계상·0081·UI 전체 인수가 아니다.
+
+Primary의 P05/P06 내부 접점 구조/type0 ffbc4f는 실제 보호 종단 정상과 구분하며 계속 작성 중이다. 기존 파일의 광범위 문자 정규식 편집은 자동심사가 실행 전에 거절했고 실제 쓰기0, 새 주석 한 줄의 exact patch로 정정했다. 현재 추가 허용 경로·중요 의미 변경은 없다. Main의 직전 안내에 중국어가 출력된 오류1은 곧바로 한국어로 정정했고 제품/대상/권한 효과0이다. 이후 긴 안내도 발신 전 문자 검사를 적용한다. 실제 DB·권한·키·서비스·Agent·SDK 재조회0을 유지한다.
+
+
+## 381. 실제 방법론 snapshot 원자료 조립 지원
+
+Primary는 실제 보호 source·등록 준비 원자료 조립 단계다. fs mock 설치 전 정적 import의 ENOENT 준비 오류1은 해소했고, 방법론 snapshot 무결성 차이는 별도 첫 원인으로 좁혔다. 기존 guard 변경·추가 경로 요구·실행 handle은 없다. Main은 기존 읽기 담당자에게 df594061 변경 전 원문/기존 시험만 조사하게 했고 작성 중 FN09 본문은 읽지 않았다.
+
+읽기 결과는 실제 readApplication의 회원→적용 행→readApplicationSnapshot 호출선과 정확 snapshot {name,purpose,graph,sourceRef}(생성 초안만 draftConfirmationRef 추가), graph source_hash와 전체 snapshot_hash·행 sourceRef 동일성이다. application-read.test.ts의 실제 보호 읽기 원행 패턴과 application-snapshot.ts14~26, project-methodologies.ts19~23/122~137, project repository151~177을 근거로 Primary에게 전달했다. row/read를 override하는 기존 빈 프로젝트 시험은 정상 보호 생산 증거로 전용하지 않는다. 임무/실행 자료가 생긴 뒤 방법론 apply로 사후 보충하지 않는다. 조사는 읽기뿐이며 제품/시험 실행0·성공 guard 대역0이다.
+
+입력2 부분 인수 이후 전체 원자료 정상·저장/계상·GET2/UI05는 아직 미완료다. 같은 단일 writer가 정확23에서 계속하고 Main은 검수·통합을 맡는다. SDK 추가 읽기 실패/소진·실제 DB/권한/키/서비스/Agent 제외는 유지한다.
