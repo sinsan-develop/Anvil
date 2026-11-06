@@ -1,6 +1,6 @@
 # FN09 등록 정의 실행 준비·Options 보관 r2 구현 지시서
 
-2026-11-06 / Main 어울 / r3 / 단일 기존 Primary / source-only.
+2026-11-06 / Main 어울 / r4 / 단일 기존 Primary / source-only.
 
 ## 1. 승인과 기준
 
@@ -145,3 +145,13 @@ context-preparation-inventory.ts의 기존 후보 snapshot9/사유 검산은 보
 등록 준비 requestApproval 최초비용 상계/actual에 notification 전체 실제14열을 한 번 포함한다. 같은 승인 생성 Tx에서 project_id+source_command_id+approval_request_id+recipient의 원 행·origin/FK/유일/current를 검산하고 누락/불일치/비용 proof 부재면 원 요청 전체를 거절한다. 기존0052 파일/cap/권한은 변경하지 않고0077 forward와 허용 ProjectApprovals/quota에만 연결한다. 준비 P/C/A/U/K/R에 알림을 추가/재계상하지 않는다. notification_reads는 후속 별도 읽음 명령이므로 이번 생성 비용과 혼합하지 않는다.
 
 이 항목은 이미 채택한 승인 최초비용의 실제 저장 귀속을 정확히 하는 내부 구현 보완이며 새 알림 채널·전송·권한·비용 한도를 만들지 않는다.
+
+## 9. 원 준비 승인 알림 origin 복원 회귀 보완
+
+ProjectApprovals.request와 기존0055 fn09_prepare_candidate_valid는 prepareExecution의 후보11에도 exact {details,candidatePayload}를 원 request payload로 사용한다. 0052 fn17_notification_origin_valid는 해당 분기가 없어 details만 복원하므로 적합 후보11도 원 hash와 맞지 않는다. 이는 현재 승인된 입력의 구현 누락이며 새 공개/권한 계약이 아니다. 등록13만 고치고 후보11을 기존 함수로 위임해 이 누락을 남기지 않는다.
+
+0077 forward의 prepareExecution 전용 분기는 후보11/등록13을 모두 다룬다. 원 execution_preparation_approval_candidates의 project/request/server command·candidate command·payloadHash·actor/client/controlGeneration/policy 관계와 기존/등록 fn09_prepare_payload_valid를 검산한다. 원 request는 {details:r.details_json,candidatePayload:b.payload_json}로 복원한다. 등록 discriminator를 필수로 요구하는 조건만 제거하고 candidate 누락·불량·원 관계/hash 불일치는 false다. details-only fallback은 하지 않는다.
+
+다른 approval operation은 기존 origin 함수에 위임한다. 원0052/0055 파일·알림 cap/권한·원 명령/receipt/audit·준비 실행 미허가는 유지한다. 후보11 알림 origin 복원은 비용 정책 확대가 아니며 등록 목적 최초비용 proof/후행 준비 계상과 구분한다. 기존 후보의 새 실비/한도 정책을 추가하지 않는다.
+
+허용0077과 기존 schema 시험에서 양쪽 원형의 적합 복원·누락/변조 거절·다른 operation 보존을 검수한다. source 형상 검사를 실제 PG 행동 재현으로 주장하지 않는다. 별도 사용자 재승인·기존 승인 전체 대기는 필요하지 않다.

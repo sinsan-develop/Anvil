@@ -2328,3 +2328,23 @@ Primary의0055/0075 추정 파일명 읽기 OS2 두 건은 제품 실패가 아�
 실제 DB·권한·키·서비스·Agent·실자료/백업 조사0, 새 담당자/동시 writer0을 유지한다.
 
 §230 추가 inventory r3 접합 코드는 한정 C0/I0/M0다. 제품46723B/SHA256 097F0140041B1C84932BB7BF543D70863232CF014A5C44D2E2B27F62FC1D22FE 시작/종료 동일에서 RC 원 db/실제 actor의 기본 보호 reader·시작 refs/input/Options 봉인·RR/RO 역사/집합 검산·rollback/release 뒤 종료 RC 재대조·identity/기한/취소·전체 거절/body0을 확인했다. 기존 후보9 및 전역 NOT_PERFORMED/false는 보존한다. 정상 실제 원장 fixture GREEN과 실제 PG/권한은 이 판정 밖이며 Primary가 계속 구현/시험 중이다.
+
+## 231. inventory 직접21 통과와 기존 준비 알림 origin 회귀 보완
+
+Main040276은 동결 inventory3 지문 전후 동일을 확인하고 두 직접 영향 시험 파일 전체를 fresh 실행했다.21PASS/fail0/skip0·2212.3493ms/exit0이다. 원 제품097F0140·시험39DDE620/940F794F와 부분 코드 C0/I0/M0를 한정 근거로 수거하며 실제 PG/ACL·전체 FN09 인수가 아니다. Primary901e2f 등록/음성4·기존 인접/회수4 및 f54c4a type0/141214diff0과 구분한다. 원 RR 취소 주입 fixture를 새 RC 단계와 구분해 보강한 것과 실제 선택0의 파일 wrapper PASS를 제외한 이력도 보존한다.
+
+독립 대조는0055/ProjectApprovals.request의 기존 후보11도 {details,candidatePayload}를 원 hash로 쓰지만0052 origin은 prepareExecution 분기 없이 details만 복원하는 누락을 확인했다. Main은 이미 승인된11/13 원문 복원의 구현 버그로 분류해0077 prepareExecution 전용 forward에 양쪽을 포함하도록 지시했다. candidate 누락/불량/원 관계·hash 불일치는 false·details-only fallback0, 다른 operation 위임·원0052/0055·cap/권한/receipt/audit는 보존한다. 새 공개/권한 계약이나 후보11 비용 정책 확대가 아니다.
+
+WI r4는20657B/SHA256 3124F9A2446781346FA7B04EB761ECDF3335006D8B2A4AD76432B8642F6E72D2이며 허용32와 부모 C82C16EB/BA7FD5B3는 유지된다. Primary ced64d의 후보11 배제 형상1FAIL→88cd11의 보완/인접2PASS·skip0/146.6412ms/exit0을 수거했다. 이는 source 형상 반례이며 실제 SQL 행동 RED/PG 검증으로 승격하지 않는다. 새 fn17 origin 본문은6380B/SHA256 3A6221EAF1C8F1D2503DFD5043E39882CFE8D4166EC372B2C566EC4677F53ECE(CREATE OR REPLACE~END;$$; 뒤 LF제외)이며 이전8A0B820B는 역사다.
+
+Primary가 제출한 비용 관련 나머지 부분 읽기 범위는 fn09_registered_prepare_actual5473B/FF6B1BDB6ADE573375627B202F1F47DDE2A3CBA2B9336A53BC2CC543E71629DC와 fn09_registered_request_notification1738B/61C838A6831EC2E3E69D002AD9D89F7C4DA8C0110ECB8927048206D8F620ED4B다. reserve/settle·승인 최초비용 producer·UI는 여전히 미완료다. 최초 함수 채취에서 ALTER를 CREATE로 오인한 메타데이터 범위는 폐기하고 정확 CREATE 경계만 쓴다.
+
+Main의 외부 전송 전 문안 스크립트1은 SyntaxError로 실행 전 실패해 메시지/파일 변경0이었고, 이후 한국어 JSON 검사를 통과한 동일 문안만 전달했다. 이 도구 문안 오류를 제품 실패/Developer 정식 실패로 세지 않는다. 실제 DB·권한·키·서비스·Agent·실자료/백업 조사0·전체 목표 active다.
+
+## 232. SQL 부분 읽기 결과와 실제 지문 정합
+
+독립 검수는 WI r4 §9 및 일치한 origin6380B/3A6221EA·notification1738B/61C838A6에 한정 C0/I0/M0를 반환했다. 준비11/13 원 candidate/actor/client/세대/policy·원 전체 payload 복원·invalid false·다른 operation 위임과 원 request server command의 실제 알림14열 단일 귀속을 확인했다. 실제 PG/전체 producer 검증은 아니다.
+
+prepare_actual은 실측5500B/SHA256 7839BA423C6628F546C2AB025D0754E5F321AF641ABE5F805A3FB810AFBF2156으로 이전5473B/FF6B와 달랐다. 독립 관측은 시작/종료5500B 동일에서 추가 확정 반례를 찾지 못했지만 이전 동결본과 동일하다고 인수하지 않았다. Primary는7894ad에서 snapshot.checkedAt 밀리초와 ep.created_at 마이크로초를 기존0016/0055 규칙에 맞춰 date_trunc('milliseconds',ep.created_at)으로 비교하는 정밀도 보완을 했고 갱신 통지를 놓쳤음을 확인했다. 실제 원문과 새 지문을 우선하고 이전FF6B는 역사로 유지한다. 부모 기한/기능 변경이나 정식 Developer 실패3회가 아니다.
+
+현재 실제 완성된 부분은 준비 입력/Options 변환·replay/receipt·inventory의 source 한정 연결과 직접21 검증이며, 핵심 reserve/settle·전체 승인 최초비용 producer·미적용 SQL 완결·UI 왕복은 여전히 미완료다. 같은 기존 Primary가 실행 중이며 Main은 중복 재시작 없이 현재 task를 확인한다. 다른 환경/새 세션·새 agent·Main code write·실제 DB/권한/키/서비스/Agent/실자료 조사0이다. 전체 목표 active·전체 완료보고0을 유지한다.
