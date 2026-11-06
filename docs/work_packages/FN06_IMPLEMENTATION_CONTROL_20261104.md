@@ -2219,3 +2219,13 @@ PMO turn01a1ad75-d4c8-7dc1-8a8e-304126fe6893는 후보 전문/지문과 이전 �
 정확 승인 기록은 docs/work_packages/FN08_FN09_START_PREPARATION_SOURCE_DIRECT_APPROVAL_20261106.md다. 대상 FN08 8AE16D6CAB5334FAC4548688777AE44560997BB0D0C78816CB340A114A7E4384, FN09 r2 BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3의 실제 지문 일치를 2a5123에서 확인했다. 원 후보 파일은 변경하지 않는다.
 
 현재 HEAD 6f1b00364ca502efb67fa0f049aaba8329546345·tracked clean·보호 비추적3에서 재개한다. 기존 Primary는 FN09 정확 파일/지문·TDD preflight, 기존 독립 담당자는 후행 FN08 WI용 실제 파일/검수 표를 읽기만 준비한다. 동시 writer0이고 Main은 제품/시험을 직접 쓰지 않는다. 선행 FN09→후행 FN08 순서로 단일 writer를 유지한다. 실제 환경 변경·코드 GO0이며 preflight 수거 후 정확 WI/TEST_ONLY를 발행한다.
+
+## 221. FN09 정확 허용29와 시험 우선 착수
+
+승인 기록 checkpoint 8daff43d7f1365336d7b2de8559cd065733a1177와 실제 제품/시험27 시작 지문·신규2 부재를 1e9f35에서 확인했다. Main은 docs/work_packages/FN09_REGISTERED_PREPARATION_OPTIONS_SOURCE_IMPLEMENTATION_20261106.md 13353B/SHA256 383BA061D099E4ADE87BE0BB59061466F1627DA2E0B18A84A2320A35F49D03B5를 작성했다. 제품15·기존 시험12·신규 시험1/미적용 SQL0077의 정확29경로다. SQL0078은 후행 FN08에 예약한다.
+
+기존 Primary에게 허용 시험13 TEST_ONLY를 발행한다. 우선 현재 실제 preparation parser의 exact13 미지원 행동 RED와 기존 후보 보존을 입증한다. 제품15/신규 SQL은 이 단계 write0이며 Main이 RED·지문/독립 WI 검수를 확인한 뒤 PRODUCT_GO를 발행한다. 독립 담당자는 별도로 WI와 채택 계약의 일치·replay/계상/원문 읽기·기존 runtime guard 보존을 검수한다. Main 제품 write0, 실제 DB·권한·키·서비스·Agent/SDK·실자료 조사·WSL QA0이다.
+
+후행 FN08의 실제 queue에는 아직 registrar 호출이 없고 SEND 원형은 전용임을 독립 읽기로 확인했다. 분리 START input/store/parts/basis와0078·원 Tx prepare→receipt/envelope→등록·proof/합산한도를 FN09 다음에 연결한다. 기존receiver.startOptions 존재를 서버 producer 완료로 보지 않는다.
+
+§221 독립 WI 검수는 C0/I0/M0이며 시작/종료 13353B·383BA061D099E4ADE87BE0BB59061466F1627DA2E0B18A84A2320A35F49D03B5 동일이다. 승인 기록 C82C16EB와 허용29·준비 목적 reader 분리·원문 보호/replay·계상/승인 proof·기존 의미 보존을 확인했다. 현재 Primary는 TEST_ONLY 작성 중이며 제품15/SQL0077은 아직 GO0이다. 이 검수는 실제 구현 인수/DB 실행 증거가 아니다.
