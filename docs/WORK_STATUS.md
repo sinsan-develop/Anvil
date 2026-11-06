@@ -16952,3 +16952,25 @@ Main은 기존 driver 후보의 낡은 상태 문단만 bootstrap35247729/profil
 Main은 사람 판단 기준을 활성화된 실행 기준에만 제한할지, 확정된 설계/계획의 정확 버전을 명시 선택한 별도 묶음에 고정할지 신산님께 비동기 설계 결정을 요청했다. 권장안은 후자이며 실제 Agent 실행 전 판단 기록과 실행 활성화를 분리한다. 별도 묶음의 발급/보관·현재성·잠금/감사 의미는 선택 후 정확 계약으로 구체화하며 지금 임의 채택하지 않는다. 판단 기록은 완료/분기/Agent 실행 허가가 아니다.
 
 이번 질문은 기존 계획 전체 재승인이 아니라 후보4DC5269C의 미정 basisRef 의미 결정이다. SDK 원문 조회 질문과 별개이며 실제 DB/권한/키/서비스/Agent 실행0·제품 writer0·전체 목표 진행 중이다. 기존 Primary의 정확 파일/미적용 SQL·화면 재사용 대조는 계속한다.
+
+
+## 337. FN10 기술 검토 보존과 전체 독립 구현 대조
+
+Main은 docs/work_packages/FN10_HUMAN_DECISION_TECHNICAL_REVIEW_20261106.md에 기준 선택2안·실제 reader/빈 producer·잠금/응답 보호·후보 파일을 기록했다. Primary 사실 검토 C0/I0/M1의 documentReviews 정의 위치를 project-content-review.ts로 정정하고 policy-editor의 정확 경로도 기입했다. 최종6422B/2D52B8EC040319A92AF2EE3649FA3A28C6710FA6042797DE153B61AE3A81880E이며 채택/코드GO0이다.
+
+다른 기존 담당자는44업무 등록부와 최신 현황·필요 source를 읽고 기존 승인만으로 지금 독립 배정할 source-only 사용자 기능1을 확인하지 못했다. 이는 전체 완료나 남은 기능 없음이 아니다.
+
+| 남은 묶음 | 정확 선행/경계 |
+|---|---|
+| FN01~05와 UI01~03/06/07/10 | 실행 요약 producer·실행 이력 있는 전환·실제 기준 활성화/관측·전달 |
+| FN06~09와 UI04/05/11 | 실제 current/credential/실행 producer·process/도구/SESSION 의미; 준비 false를 권위로 변경 불가 |
+| FN10 | 사람 판단 명령/저장/정책 및 basisRef 설계 선택 |
+| FN11 | 기존 요청/결정/소비는 연결; 미완료 실행 연산의 실제 producer 선행 |
+| FN12~14와 UI05/08/09 | successor 계보/계상, 실제 회수/재개/이전, 명시 제외된 quota producer |
+| FN15~17와 UI12/13/14 | 실제 두 기기 인계·전체 백업/복원·외부 전달 의미와 실환경 검증 |
+| FN18/UI00/13 | 산출물은 존재; 실제 연결/재시작·설치/업데이트 인수 선행 |
+| P03·IX01~08 | J3·실제 Agent/기기/복원·통합/배포 실행 경계 |
+
+근거는 WORK_PLAN 등록부·FUNCTION_WORK/INTEGRATION_WORK와 현재 baseline-activations/project-execution-preparations/project-checkpoints/App 연결이다. 불변 완료 화면/알림/설치·합성 wrapper를 재구현하거나 실제 미검증을 PASS/EXCLUDED로 바꾸지 않는다.
+
+현재 사용자 결정이 필요한 FN10 기준 선택과 고정 SDK 공개 원문 읽기 질문은 답변 전이다. 다른 승인 구현을 막지 않도록 대조했으나 현재 추가 코드 배정 근거는 확인되지 않았다. 첫 차단 대조로 기록하고 목표를 완료/blocked 처리하지 않는다. 실제 DB/권한/키/서비스/Agent 실행0·제품 writer0·전체 계획 미완료다.
