@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {readStartMaterialDescriptor,readPreparedStartMaterial} from '../../../apps/server/modules/executions/execution-start-material-registration-input.ts';
+const id=(n:number)=>'bf080078-1111-4111-8111-'+String(n).padStart(12,'0'),hash=(v:unknown)=>contentHash(canonicalJson(v)),ref=(n:number)=>({id:id(n),version:1,contentHash:hash({n})});
+function descriptor(){return{schemaVersion:1,purpose:'START_CONTEXT_OPTIONS_MATERIAL_V1',id:id(1),sourceKind:'SYNTHETIC_REFERENCE_ONLY_V1',scope:{mode:'EXECUTION',projectId:id(2),connectorId:id(3),executionId:id(4),executionGeneration:1,grantRef:ref(5),credentialGeneration:2},commandId:id(6),payload:{contextBundleRef:ref(7),optionsRef:ref(8)},groups:[{kind:'CONTEXT_BUNDLE',payloadRef:ref(7),source:{sourceRef:ref(9),bodyRef:ref(10),originRef:ref(11),contentHash:contentHash('가'),sourceBytes:3,mediaType:'text/plain'},parts:[{materialId:id(12),partIndex:1,byteOffset:0,utf8Bytes:3,contentHash:contentHash('가')}]},{kind:'START_OPTIONS',payloadRef:ref(8),source:{sourceRef:ref(8),bodyRef:ref(14),originRef:ref(15),contentHash:contentHash('{}'),sourceBytes:2,mediaType:'application/json'},parts:[{materialId:id(16),partIndex:1,byteOffset:0,utf8Bytes:2,contentHash:contentHash('{}')}]}],expiresAt:'2030-01-01T00:00:00.000Z'};}
+test('START descriptor는 두 원 payload 그룹과 canonical manifest 한 개를 고정한다',()=>{const d=descriptor(),p=readStartMaterialDescriptor(d);assert.deepEqual(p.descriptor,d);assert.deepEqual(p.manifestRef,{id:d.id,version:1,contentHash:hash(d)});assert.deepEqual(readPreparedStartMaterial(p),p);assert.deepEqual(readStartMaterialDescriptor(canonicalJson(d)),p);d.groups[0]!.source.sourceBytes=4;assert.equal(p.descriptor.groups[0].source.sourceBytes,3);});
+test('START descriptor는 순서·교차 ref·중복 부분·offset·추가키·오염 원형을 거절한다',()=>{const mutations:((d:any)=>void)[]=[d=>d.groups.reverse(),d=>d.payload.optionsRef=d.payload.contextBundleRef,d=>d.groups[1].payloadRef=d.payload.contextBundleRef,d=>d.groups[1].parts[0].materialId=d.groups[0].parts[0].materialId,d=>d.groups[0].parts[0].byteOffset=1,d=>d.groups[0].parts[0].utf8Bytes=2,d=>d.groups[1].source.mediaType='text/plain',d=>d.groups[0].source.path='원문 경로',d=>d.extra=true,d=>Object.setPrototypeOf(d,{})];for(const mutate of mutations){const d=descriptor();mutate(d);assert.throws(()=>readStartMaterialDescriptor(d));}const p=readStartMaterialDescriptor(descriptor());p.manifestRef.contentHash='f'.repeat(64);assert.throws(()=>readPreparedStartMaterial(p));});
+test('START descriptor는 합산 bytes·전체 부분 상한과 중복 JSON 키를 거절한다',()=>{const d=descriptor();for(const g of d.groups){g.source.sourceBytes=1048577;g.parts[0]!.utf8Bytes=1048577;}assert.throws(()=>readStartMaterialDescriptor(d));const many=descriptor();for(const [i,g] of many.groups.entries()){g.source.sourceBytes=101;g.parts=Array.from({length:101},(_,j)=>({materialId:id(100+i*101+j),partIndex:j+1,byteOffset:j,utf8Bytes:1,contentHash:contentHash('a')}));}assert.throws(()=>readStartMaterialDescriptor(many));assert.throws(()=>readStartMaterialDescriptor(canonicalJson(descriptor()).replace('{','{"schemaVersion":1,')));});
+test('START descriptor의 Proxy와 getter 입력은 trap 실행 없이 거절한다',()=>{let traps=0;const p=new Proxy(descriptor(),{getPrototypeOf(){traps++;throw Error();},ownKeys(){traps++;throw Error();}});assert.throws(()=>readStartMaterialDescriptor(p));const d=descriptor();Object.defineProperty(d.groups[0]!.source,'contentHash',{enumerable:true,get(){traps++;throw Error();}});assert.throws(()=>readStartMaterialDescriptor(d));assert.equal(traps,0);});
+
+test('START descriptor는 오염 배열 원형의 getter와 빈 iterator로 그룹·부분 검사를 우회하지 못한다',()=>{
+ let traps=0;
+ for(const which of ['groups','parts'])for(const empty of [false,true]){
+  const d=descriptor(),items=which==='groups'?d.groups:d.groups[0]!.parts;
+  const proto=Object.create(Array.prototype);Object.defineProperty(proto,'entries',{get(){traps++;return empty?function*(){}:Array.prototype.entries;}});
+  Object.setPrototypeOf(items,proto);if(empty&&which==='groups')d.groups=[{},{}] as any,Object.setPrototypeOf(d.groups,proto);
+  assert.throws(()=>readStartMaterialDescriptor(d));
+ }
+ assert.equal(traps,0);
+});

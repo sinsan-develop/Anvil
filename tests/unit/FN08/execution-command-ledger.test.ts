@@ -3,6 +3,8 @@ import test from 'node:test';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { AccessRepository, AuthFailure } from '../../../apps/server/modules/access/repository.ts';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
+import {SyntheticPgStartMaterialRegistration} from '../../../apps/server/modules/executions/execution-start-material-registration-store.ts';
+import {compileExecutionPreparationOptions} from '../../../apps/server/modules/executions/preparation-input.ts';
 import { ProjectExecutionBudget } from '../../../apps/server/modules/executions/execution-budget.ts';
 const queue:any=await import('../../../apps/server/modules/executions/execution-commands.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 const pid='11111111-1111-4111-8111-111111111111',eid='22222222-2222-4222-8222-222222222222',cid='33333333-3333-4333-8333-333333333333',other='44444444-4444-4444-8444-444444444444';
@@ -12,13 +14,13 @@ const intent=()=>({projectId:pid,assignmentRef:ref,roleBindingRef:ref,contextBun
 function fixture(){
  assert.equal(typeof queue.ProjectInitialExecutionQueue,'function');
  const token='t'.repeat(43),csrf='c'.repeat(43),tables:Record<string,any[]>={};
- for(const t of ['commands','authorization_receipts','audit_events','executions','execution_grants','execution_commands','usage_reservations','writer_claims','delivery_outbox'])tables[t]=[];
+ for(const t of ['commands','authorization_receipts','audit_events','executions','execution_grants','execution_commands','usage_reservations','writer_claims','delivery_outbox','execution_material_manifests','execution_materials','execution_material_proof_bindings'])tables[t]=[];
  let checkpoint:any=null,failAt='',revoked=false,control=2,basisCalls=0,currentCalls=0,mode='CURRENT',sequence=Promise.resolve(),clock=new Date(at);
  const rules=[eid,other].map(executionId=>({ruleId:executionId,subjectRef:{kind:'HUMAN',userId:pid},operations:['authorizeExecution','queueExecutionCommand'],targetScopes:[{kind:'EXECUTION',projectId:pid,executionId,executionGeneration:1,sourceScopes:scopes()}],disposition:'AUTO',limitPolicyRef:ref,expiresAt:until}));
  const policy=()=>({rules,reason:'합성 현재 정책',reviewRefs:[]}),policyRef=()=>({id:pid,version:1,contentHash:contentHash(canonicalJson(policy()))});
  const db:any={query:async(sql:string,p:any[]=[])=>{
   if(sql==='BEGIN'){checkpoint=structuredClone(tables);return{rows:[]};}
-  if(sql==='COMMIT'){checkpoint=null;return{rows:[]};}
+  if(sql==='COMMIT'){checkpoint=null;return{command:'COMMIT',rows:[]};}
   if(sql==='ROLLBACK'){for(const k of Object.keys(tables))tables[k]=checkpoint[k];checkpoint=null;return{rows:[]};}
   if(sql.startsWith('SELECT s.*,u.id AS uid'))return{rows:[{id:other,uid:pid,client_id:cid,current_generation:3,credential_generation:3,user_status:'ACTIVE',user_revoked_at:null,client_revoked_at:null,revoked_at:null,idle_expires_at:new Date(mode==='SESSION_SOON'?Date.parse(at)+300000:Date.parse(until)+3600000),absolute_expires_at:new Date('2099-01-01T00:00:00.000Z'),csrf_digest:createHash('sha256').update(csrf).digest('hex'),reauth_until:null,server_owner:false}]};
   if(sql.startsWith('SELECT p.id,p.archived_at'))return{rows:[{id:pid,participation:'OWNER',archived_at:null}]};
@@ -31,12 +33,27 @@ function fixture(){
   if(sql.includes('FROM anvil.writer_claims'))return{rows:tables.writer_claims!.filter(r=>r.project_id===p[0]&&!r.reclaimed_at)};
   if(sql.includes('FROM anvil.executions'))return{rows:tables.executions!.filter(r=>r.project_id===p[0]&&r.id===p[1])};
   if(sql.includes('FROM anvil.usage_reservations'))return{rows:tables.usage_reservations!.filter(r=>r.project_id===p[0]).sort((a,b)=>a.server_sequence-b.server_sequence)};
+
+  if(sql==='SELECT txid_current()::text AS transaction_id')return{rows:[{transaction_id:'1'}]};
+  if(sql==='SELECT id FROM anvil.projects WHERE id=$1::uuid FOR UPDATE')return{rows:[{id:pid}]};
+  if(sql.includes(') all_rows')){const all=['execution_material_manifests','execution_materials','execution_material_proof_bindings'].flatMap(n=>tables[n]!),own=all.filter(r=>r.grant_id===p[1]);return{rows:[{project_count:all.length,project_bytes:all.reduce((n,r)=>n+Buffer.byteLength(canonicalJson(r.snapshot_json)),0),grant_count:own.length,grant_bytes:own.reduce((n,r)=>n+Buffer.byteLength(canonicalJson(r.snapshot_json)),0)}]};}
+  if(sql.startsWith('SELECT snapshot_json FROM anvil.execution_grants'))return{rows:tables.execution_grants!.filter(r=>r.project_id===p[0]&&r.id===p[1]&&r.version===p[2]&&r.content_hash===p[3])};
+  if(sql.startsWith('SELECT d.snapshot_json,d.content_hash FROM anvil.execution_material_manifests')){const e=tables.execution_commands!.find(e=>e.project_id===p[0]&&e.id===p[1]&&e.version===p[2]&&e.content_hash===p[3]);return{rows:e?tables.execution_material_manifests!.filter(d=>d.project_id===p[0]&&d.created_command_id===e.params[11]):[]};}
+  if(sql.startsWith('SELECT count(*)::bigint AS count FROM anvil.execution_materials'))return{rows:[{count:tables.execution_materials!.filter(r=>r.project_id===p[0]&&r.manifest_id===p[1]).length}]};
+  if(sql.startsWith('SELECT content_hash,snapshot_json FROM anvil.execution_commands'))return{rows:tables.execution_commands!.filter(r=>r.project_id===p[0]&&r.id===p[1])};
+  if(sql.startsWith('SELECT m.*,d.content_hash')){const matches=tables.execution_materials!.filter(r=>r.project_id===p[0]&&(sql.includes('m.command_id=$2')?r.command_id===p[1]&&r.id===p[2]:r.id===p[1]&&r.version===p[2]&&r.content_hash===p[3]));return{rows:matches.map(r=>{const d=tables.execution_material_manifests!.find(d=>d.id===r.manifest_id)!,e=tables.execution_commands!.find(e=>e.id===r.command_record_id)!,g=tables.execution_grants!.find(g=>g.id===r.grant_id)!;return{...r,manifest_hash:d.content_hash,descriptor:d.snapshot_json,command_record_hash:e.content_hash,command_snapshot:e.snapshot_json,grant_hash:g.content_hash,grant_snapshot:g.snapshot_json};})};}
+  if(sql.startsWith('SELECT anvil.fn08_start_material_complete')){const c=tables.commands!.find(c=>c.project_id===p[0]&&c.id===p[1]),d=tables.execution_material_manifests!.find(d=>d.created_command_id===p[1]),e=tables.execution_commands!.find(e=>e.params[11]===p[1]);return{rows:[{complete:!!c&&!!d&&!!e&&d.command_id===e.snapshot_json.envelope.commandId&&c.result_ref.data.ref.contentHash===e.content_hash&&d.content_hash===contentHash(canonicalJson(d.snapshot_json))&&tables.execution_materials!.filter(m=>m.manifest_id===d.id).length===d.snapshot_json.groups.reduce((n:number,g:any)=>n+g.parts.length,0)}]};}
+
   if(sql.startsWith('SELECT set_config'))return{rows:[]};
   if(sql.startsWith('INSERT INTO')){
    const table=/INSERT INTO anvil\.([a-z_]+)/.exec(sql)![1]!;if(failAt===table)throw new AuthFailure('SYNTHETIC_STORAGE_UNAVAILABLE',503);
    assert(tables[table],`UNKNOWN_TABLE ${table}`);let row:any={params:structuredClone(p)};
    if(table==='commands')row={id:p[0],project_id:p[1],actor_id:p[2],client_id:p[3],operation:p[4],command_key:p[5],request_hash:p[6],result_ref:JSON.parse(p[14])};
    if(table==='usage_reservations')row={project_id:p[0],reservation_id:p[1],version:p[2],server_sequence:p[3],command_id:p[4],content_hash:p[5],snapshot_json:JSON.parse(p[6])};
+   if(table==='execution_grants')row={...row,project_id:p[0],id:p[1],version:p[2],content_hash:p[5],snapshot_json:JSON.parse(p[6])};
+   if(table==='execution_commands')row={...row,project_id:p[0],id:p[1],version:p[2],content_hash:p[7],snapshot_json:JSON.parse(p[9])};
+   if(table==='execution_material_manifests')row={...row,project_id:p[0],id:p[1],version:1,execution_id:p[2],generation:p[3],grant_id:p[4],grant_version:p[5],credential_generation:p[6],command_id:p[7],created_command_id:p[8],content_hash:p[9],snapshot_json:JSON.parse(p[10])};
+   if(table==='execution_materials')row={...row,project_id:p[0],id:p[1],version:1,manifest_id:p[2],execution_id:p[3],generation:p[4],grant_id:p[5],grant_version:p[6],credential_generation:p[7],command_id:p[8],command_record_id:p[9],created_command_id:p[10],content_hash:p[11],snapshot_json:JSON.parse(p[12])};
    if(table==='writer_claims')row={...row,project_id:p[0],reclaimed_at:null};
    if(table==='executions')row={...row,project_id:p[0],id:p[1]};
    tables[table]!.push(row);return{rows:[],rowCount:1};
@@ -51,6 +68,17 @@ function fixture(){
   if(mode==='BUDGET_REVOKED')throw new AuthFailure('LIMIT_POLICY_REVOKED',412);
   return{projectId:pid,ref,snapshot:{state:'APPLIED',scope,limits:{maxAttempts:3,maxElapsedMs:7200000,maxCalls:50,maxConcurrentAssignments:1,maxSpoolBytes:1024,maxOfflineMs:0},decidedAt:at,expiresAt:until}};
  }};
+
+ const options=compileExecutionPreparationOptions({adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:{model:'auto',maxTurns:2}}}),contextBody=Buffer.from('합성 첫 세션 맥락','utf8');
+ const preparation=()=>({intent:{...intent(),connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'},basisRefs:[ref],latestInstructionRefs:[],checkedAt:at,missingConditions:['RESPONSIBLE_SESSION_RESERVED','CONNECTION_DEFINITION_ONLY','ENVIRONMENT_DEFINITION_ONLY','CAPABILITY_UNVERIFIED','BUDGET_POLICY_UNVERIFIED','SOURCE_AUTHORIZATION_UNVERIFIED','HOST_OS_FENCE_UNVERIFIED'],authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:pid},executionAuthorized:false,dispatchPerformed:false,options});
+ const optionsRef=()=>({id:'55555555-5555-4555-8555-555555555555',version:1,contentHash:contentHash(canonicalJson(preparation()))});
+ let materialFact:any;const source:any={transport:'SYNTHETIC_ONLY',
+  async describe(_db:any,actor:any,scope:any,request:any,fact:any){assert.equal(actor.actorId,pid);materialFact=structuredClone(fact);const groups=[{kind:'CONTEXT_BUNDLE',payloadRef:ref,body:contextBody,mediaType:'text/plain'},{kind:'START_OPTIONS',payloadRef:optionsRef(),body:Buffer.from(options.body),mediaType:'application/json'}].map((g,i)=>({kind:g.kind,payloadRef:g.payloadRef,source:{sourceRef:g.payloadRef,bodyRef:{...ref,id:i?'77777777-7777-4777-8777-777777777777':'66666666-6666-4666-8666-666666666666',contentHash:contentHash(g.body)},originRef:ref,contentHash:contentHash(g.body),sourceBytes:g.body.length,mediaType:g.mediaType},parts:[{materialId:randomUUID(),partIndex:1,byteOffset:0,utf8Bytes:g.body.length,contentHash:contentHash(g.body)}]}));return{schemaVersion:1,purpose:'START_CONTEXT_OPTIONS_MATERIAL_V1',id:randomUUID(),sourceKind:'SYNTHETIC_REFERENCE_ONLY_V1',scope,commandId:request.commandId,payload:request.payload.payload,groups,expiresAt:new Date(Math.min(...Object.values(fact.expires).map(v=>Date.parse(v as string)))).toISOString()};},
+  async inspect(_db:any,scope:any,descriptor:any,basis:any){return{scope,descriptorHash:contentHash(canonicalJson(descriptor)),basis,fact:structuredClone(materialFact),preparation:{projectId:pid,ref:optionsRef(),snapshot:preparation(),currentness:'NOT_RECHECKED'},access:'READ',quarantined:false,superseded:false,excluded:false,checkedAt:clock.toISOString(),expiresAt:until};},
+  async readBody(_db:any,_scope:any,selection:any){return new Uint8Array(selection.group.kind==='START_OPTIONS'?Buffer.from(options.body):contextBody);}
+ };
+ const materials=new SyntheticPgStartMaterialRegistration(source);
+
  const provider:any={transport:'SYNTHETIC_ONLY',basis:async(_db:any,actor:any,request:any)=>{
   basisCalls++;assert.equal(actor.actorId,pid);
   const claim={projectId:pid,executionId:request.payload.executionId,executionGeneration:1,commandId:request.commandId,assignmentRef:ref,stageRef:{applicationRef:ref,nodeId:'개발'},policyRef:ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:32,cost:null,costStatus:'VERIFIED_NO_CHARGE'}};
@@ -58,10 +86,10 @@ function fixture(){
  },current:async(_db:any,actor:any,request:any,basis:any,reservation:any)=>{
   currentCalls++;const checks=Object.fromEntries(['subject','session','registration','permissionPolicy','basis','context','capability','source','osFence','budget','storage','understanding'].map(name=>[name,{state:name==='understanding'?'NOT_REQUIRED':'VERIFIED_CURRENT',evidenceRefs:name==='understanding'?[]:name==='budget'?[reservation.record.ref]:[ref]}]));
   checks.permissionPolicy={state:'VERIFIED_CURRENT',evidenceRefs:[policyRef()]};if(mode==='UNVERIFIED_OS')checks.osFence={state:'UNVERIFIED',evidenceRefs:[]};
-  return{schemaVersion:1,purpose:'SERVER_EXECUTION_CURRENTNESS',transport:'SYNTHETIC_ONLY',projectId:pid,executionId:request.payload.executionId,executionGeneration:1,subject:{userId:pid,clientId:cid,humanSessionId:mode==='WRONG_SESSION'?pid:actor.authSession.id,controlGeneration:2,credentialGeneration:3},agentSession:{sessionRef:ref,roleBindingRef:ref,credentialGeneration:4},registration:{ref,connectorId:pid,generation:5,hostPublicKeyFingerprint:'b'.repeat(64)},intent:basis.intent,preparationRef:ref,permissionPolicyRef:policyRef(),budgetReservationRef:reservation.record.ref,basisRefs:[ref],latestInstructionRefs:[],understandingReviewRef:null,checks,writerState:'NONE',expires:{humanSession:until,permissionPolicy:until,registration:until,budget:until,automaticScope:until},checkedAt:at,executionAuthorized:false,dispatchPerformed:false};
+  return{schemaVersion:1,purpose:'SERVER_EXECUTION_CURRENTNESS',transport:'SYNTHETIC_ONLY',projectId:pid,executionId:request.payload.executionId,executionGeneration:1,subject:{userId:pid,clientId:cid,humanSessionId:mode==='WRONG_SESSION'?pid:actor.authSession.id,controlGeneration:2,credentialGeneration:3},agentSession:{sessionRef:ref,roleBindingRef:ref,credentialGeneration:4},registration:{ref,connectorId:pid,generation:5,hostPublicKeyFingerprint:'b'.repeat(64)},intent:basis.intent,preparationRef:optionsRef(),permissionPolicyRef:policyRef(),budgetReservationRef:reservation.record.ref,basisRefs:[ref],latestInstructionRefs:[],understandingReviewRef:null,checks,writerState:'NONE',expires:{humanSession:until,permissionPolicy:until,registration:until,budget:until,automaticScope:until},checkedAt:at,executionAuthorized:false,dispatchPerformed:false};
  }};
- const repo=new queue.ProjectInitialExecutionQueue(access,provider,new ProjectExecutionBudget(policies),policies);
- const request=()=>({schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:cid,controlGeneration:2,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{preparationRef:ref,executionId:eid,executionGeneration:1,permissionPolicyRef:policyRef(),budgetPolicyRef:ref,operation:'START_SESSION',payload:{contextBundleRef:ref,optionsRef:ref}}});
+ const repo=new queue.ProjectInitialExecutionQueue(access,provider,new ProjectExecutionBudget(policies),policies,materials);
+ const request=()=>({schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:cid,controlGeneration:2,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{preparationRef:optionsRef(),executionId:eid,executionGeneration:1,permissionPolicyRef:policyRef(),budgetPolicyRef:ref,operation:'START_SESSION',payload:{contextBundleRef:ref,optionsRef:optionsRef()}}});
  return{tables,rules,request,provider,run:(r=request())=>repo.command(token,csrf,r),fail:(table:string)=>{failAt=table;},revoke:()=>{revoked=true;},stale:()=>{control=3;},mode:(value:string)=>{mode=value;},advance:(ms:number)=>{clock=new Date(Date.parse(at)+ms);},calls:()=>({basisCalls,currentCalls})};
 }
 const domain=['commands','authorization_receipts','executions','execution_grants','execution_commands','usage_reservations','writer_claims','delivery_outbox'];
@@ -133,4 +161,9 @@ test('직렬 DB 경계에서 같은 프로젝트의 동시 첫 요청은 한 wri
 test('외부 transport fallback·caller fact와 미지원 명령을 허용하지 않는다',async()=>{
  const f=fixture();for(const patch of [{operation:'SEND_INSTRUCTION'},{ready:true},{fact:{}},{executionGeneration:0},{permissionPolicyRef:{...ref,version:2}}]){const r=f.request();Object.assign(r.payload,patch);await assert.rejects(f.run(r));}
  f.provider.transport='CODEX';await assert.rejects(f.run(),/SYNTHETIC_PROVIDER_REQUIRED/);for(const table of domain)assert.equal(f.tables[table]!.length,0);
+});
+
+test('START 실제 등록 fixture는 원 두 payload를 구분하고 등록 중간 실패의 세 표를 원 graph와 함께 rollback한다',async()=>{
+ const good=fixture(),request=good.request();assert.notDeepEqual(request.payload.payload.contextBundleRef,request.payload.payload.optionsRef);await good.run(request);assert.equal(good.tables.execution_material_manifests!.length,1);assert.equal(good.tables.execution_materials!.length,2);assert.equal(good.tables.execution_material_proof_bindings!.length,0);
+ for(const table of ['execution_material_manifests','execution_materials']){const f=fixture();f.fail(table);await assert.rejects(f.run(),/SYNTHETIC_STORAGE_UNAVAILABLE/);for(const name of [...domain,'execution_material_manifests','execution_materials','execution_material_proof_bindings'])assert.equal(f.tables[name]!.length,0,table+'→'+name);}
 });

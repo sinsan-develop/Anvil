@@ -1,0 +1,234 @@
+-- FN08 START 두 그룹 등록 A안. 미적용 source 전용이며 실행/원문 권위를 새로 발급하지 않는다.
+-- 기존 SEND/0062 원문·표·이력은 보존하고 고정 START 분기만 forward로 추가한다.
+ALTER FUNCTION anvil.material_descriptor_valid(jsonb) RENAME TO material_descriptor_valid_send_0062;
+ALTER FUNCTION anvil.material_registration_complete(uuid,uuid) RENAME TO material_registration_complete_send_0062;
+ALTER FUNCTION anvil.material_target_required(uuid,uuid) RENAME TO material_target_required_send_0062;
+
+CREATE FUNCTION anvil.fn08_start_material_descriptor_valid(d jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE sc jsonb;g jsonb;s jsonb;p jsonb;v jsonb;ix integer=0;part_ix integer;off_bytes bigint;n numeric;total_bytes bigint=0;total_parts integer=0;ids uuid[]=ARRAY[]::uuid[];
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(d,ARRAY['schemaVersion','purpose','id','sourceKind','scope','commandId','payload','groups','expiresAt']),false)
+ OR d->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR d->>'purpose' IS DISTINCT FROM 'START_CONTEXT_OPTIONS_MATERIAL_V1'
+ OR d->>'sourceKind' IS DISTINCT FROM 'SYNTHETIC_REFERENCE_ONLY_V1' OR jsonb_typeof(d->'id') IS DISTINCT FROM 'string'
+ OR jsonb_typeof(d->'commandId') IS DISTINCT FROM 'string' OR NOT COALESCE(anvil.execution_iso_valid(d->'expiresAt'),false)
+ OR octet_length(anvil.execution_authority_canonical(d))>2097152 THEN RETURN false;END IF;
+ PERFORM (d->>'id')::uuid,(d->>'commandId')::uuid;sc=d->'scope';
+ IF NOT COALESCE(anvil.execution_json_shape(sc,ARRAY['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration']),false)
+ OR sc->>'mode' IS DISTINCT FROM 'EXECUTION' OR NOT COALESCE(anvil.execution_preparation_ref_valid(sc->'grantRef'),false) THEN RETURN false;END IF;
+ FOREACH v IN ARRAY ARRAY[sc->'projectId',sc->'connectorId',sc->'executionId'] LOOP
+  IF jsonb_typeof(v) IS DISTINCT FROM 'string' THEN RETURN false;END IF;PERFORM(v#>>'{}')::uuid;
+ END LOOP;
+ FOREACH v IN ARRAY ARRAY[sc->'executionGeneration',sc->'credentialGeneration'] LOOP
+  IF jsonb_typeof(v) IS DISTINCT FROM 'number' THEN RETURN false;END IF;n=(v#>>'{}')::numeric;
+  IF n<>trunc(n) OR n<1 OR n>9007199254740991 THEN RETURN false;END IF;
+ END LOOP;
+ IF NOT COALESCE(anvil.execution_json_shape(d->'payload',ARRAY['contextBundleRef','optionsRef']),false)
+ OR NOT COALESCE(anvil.execution_preparation_ref_valid(d->'payload'->'contextBundleRef'),false)
+ OR NOT COALESCE(anvil.execution_preparation_ref_valid(d->'payload'->'optionsRef'),false)
+ OR d->'payload'->'contextBundleRef'=d->'payload'->'optionsRef'
+ OR jsonb_typeof(d->'groups') IS DISTINCT FROM 'array' OR jsonb_array_length(d->'groups')<>2 THEN RETURN false;END IF;
+ FOR g IN SELECT value FROM jsonb_array_elements(d->'groups') LOOP
+  ix=ix+1;
+  IF NOT COALESCE(anvil.execution_json_shape(g,ARRAY['kind','payloadRef','source','parts']),false)
+  OR g->>'kind' IS DISTINCT FROM CASE ix WHEN 1 THEN 'CONTEXT_BUNDLE' ELSE 'START_OPTIONS' END
+  OR g->'payloadRef' IS DISTINCT FROM d->'payload'->(CASE ix WHEN 1 THEN 'contextBundleRef' ELSE 'optionsRef' END) THEN RETURN false;END IF;
+  s=g->'source';
+  IF NOT COALESCE(anvil.execution_json_shape(s,ARRAY['sourceRef','bodyRef','originRef','contentHash','sourceBytes','mediaType']),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(s->'sourceRef'),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(s->'bodyRef'),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(s->'originRef'),false)
+  OR jsonb_typeof(s->'contentHash') IS DISTINCT FROM 'string' OR NOT COALESCE(s->>'contentHash'~'^[0-9a-f]{64}$',false)
+  OR jsonb_typeof(s->'mediaType') IS DISTINCT FROM 'string' OR NOT COALESCE(s->>'mediaType' IN('text/plain','application/json'),false)
+  OR ix=2 AND s->>'mediaType' IS DISTINCT FROM 'application/json'
+  OR jsonb_typeof(s->'sourceBytes') IS DISTINCT FROM 'number' THEN RETURN false;END IF;
+  n=(s->>'sourceBytes')::numeric;IF n<>trunc(n) OR n<1 OR n>2097152 THEN RETURN false;END IF;total_bytes=total_bytes+n;
+  IF jsonb_typeof(g->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(g->'parts') NOT BETWEEN 1 AND 200 THEN RETURN false;END IF;
+  total_parts=total_parts+jsonb_array_length(g->'parts');IF total_bytes>2097152 OR total_parts>200 THEN RETURN false;END IF;
+  part_ix=0;off_bytes=0;
+  FOR p IN SELECT value FROM jsonb_array_elements(g->'parts') LOOP
+   part_ix=part_ix+1;
+   IF NOT COALESCE(anvil.execution_json_shape(p,ARRAY['materialId','partIndex','byteOffset','utf8Bytes','contentHash']),false)
+   OR jsonb_typeof(p->'materialId') IS DISTINCT FROM 'string' OR (p->>'materialId')::uuid=ANY(ids)
+   OR jsonb_typeof(p->'contentHash') IS DISTINCT FROM 'string' OR NOT COALESCE(p->>'contentHash'~'^[0-9a-f]{64}$',false)
+   OR p->'partIndex' IS DISTINCT FROM to_jsonb(part_ix) OR p->'byteOffset' IS DISTINCT FROM to_jsonb(off_bytes)
+   OR jsonb_typeof(p->'utf8Bytes') IS DISTINCT FROM 'number' THEN RETURN false;END IF;
+   n=(p->>'utf8Bytes')::numeric;IF n<>trunc(n) OR n<1 OR n>2097152 THEN RETURN false;END IF;
+   off_bytes=off_bytes+n;ids=array_append(ids,(p->>'materialId')::uuid);
+  END LOOP;
+  IF off_bytes<>(s->>'sourceBytes')::bigint THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.material_descriptor_valid(d jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT CASE WHEN d ? 'purpose' THEN anvil.fn08_start_material_descriptor_valid(d) ELSE anvil.material_descriptor_valid_send_0062(d) END;
+$$;
+
+-- 현재 HUMAN GUC/생성용 check_initial_execution_graph를 요구하지 않는 역사 구조 검산이다.
+-- 현재 원문 접근·grant/credential/정책 검산은 기존 보호 wrapper/current 및 INSERT guard에 남긴다.
+CREATE FUNCTION anvil.fn08_start_material_complete(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE d anvil.execution_material_manifests%ROWTYPE;x anvil.execution_commands%ROWTYPE;c anvil.commands%ROWTYPE;
+ g anvil.execution_grants%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;ep anvil.execution_preparations%ROWTYPE;pc anvil.commands%ROWTYPE;
+ e anvil.executions%ROWTYPE;u anvil.usage_reservations%ROWTYPE;w anvil.writer_claims%ROWTYPE;o anvil.delivery_outbox%ROWTYPE;m anvil.execution_materials%ROWTYPE;
+ sc jsonb;q jsonb;env jsonb;f jsonb;grp jsonb;part jsonb;expected jsonb;request jsonb;auth_ref jsonb;prep_ref jsonb;cnt bigint;parts_count integer=0;opt jsonb;
+BEGIN
+ SELECT * INTO d FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=cid;
+ SELECT * INTO x FROM anvil.execution_commands WHERE project_id=pid AND created_command_id=cid;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO e FROM anvil.executions WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO u FROM anvil.usage_reservations WHERE project_id=pid AND created_command_id=cid;
+ SELECT * INTO w FROM anvil.writer_claims WHERE project_id=pid AND created_command_id=cid;
+ SELECT * INTO o FROM anvil.delivery_outbox WHERE project_id=pid AND command_id=cid;
+ IF d.id IS NULL OR x.id IS NULL OR c.id IS NULL OR g.id IS NULL OR e.id IS NULL OR u.reservation_id IS NULL OR w.id IS NULL OR o.id IS NULL
+ OR NOT COALESCE(anvil.fn08_start_material_descriptor_valid(d.snapshot_json),false)
+ OR (SELECT count(*) FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=cid)<>1
+ OR (SELECT count(*) FROM anvil.execution_commands WHERE project_id=pid AND created_command_id=cid)<>1
+ OR (SELECT count(*) FROM anvil.execution_grants WHERE project_id=pid AND command_id=cid)<>1
+ OR (SELECT count(*) FROM anvil.usage_reservations WHERE project_id=pid AND created_command_id=cid)<>1
+ OR (SELECT count(*) FROM anvil.writer_claims WHERE project_id=pid AND created_command_id=cid)<>1
+ OR (SELECT count(*) FROM anvil.delivery_outbox WHERE project_id=pid AND command_id=cid)<>1 THEN RETURN false;END IF;
+ sc=d.snapshot_json->'scope';q=x.snapshot_json-'envelope';env=x.snapshot_json->'envelope';f=g.snapshot_json->'binding';
+ IF NOT COALESCE(anvil.execution_json_shape(q,ARRAY['transport','executionId','executionGeneration','state','grantRef','reservationRef','executorRegistrationRef','operation','payload','humanSessionId','sourceScopes','budgetPolicyRef','queuedAt','executionAuthorized','dispatchPerformed']),false)
+ OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM pid OR c.operation IS DISTINCT FROM 'queueExecutionCommand' OR c.state IS DISTINCT FROM 'APPLIED'
+ OR c.command_id IS DISTINCT FROM d.command_id OR c.expected_version<>0 OR c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL
+ OR q->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY' OR q->>'state' IS DISTINCT FROM 'SYNTHETIC_QUEUED' OR q->>'operation' IS DISTINCT FROM 'START_SESSION'
+ OR q->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR q->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+ OR d.snapshot_json->>'id' IS DISTINCT FROM d.id::text OR d.snapshot_json->>'commandId' IS DISTINCT FROM d.command_id::text
+ OR d.content_hash IS DISTINCT FROM anvil.execution_json_hash(d.snapshot_json) OR x.content_hash IS DISTINCT FROM anvil.execution_json_hash(q)
+ OR x.envelope_hash IS DISTINCT FROM anvil.execution_json_hash(env-'envelopeHash') OR env->>'envelopeHash' IS DISTINCT FROM x.envelope_hash
+ OR d.snapshot_json->'payload' IS DISTINCT FROM q->'payload' OR env->'payload' IS DISTINCT FROM q->'payload'
+ OR sc->>'projectId' IS DISTINCT FROM pid::text OR sc->>'executionId' IS DISTINCT FROM d.execution_id::text OR sc->'executionGeneration' IS DISTINCT FROM to_jsonb(d.generation)
+ OR q->>'executionId' IS DISTINCT FROM d.execution_id::text OR q->'executionGeneration' IS DISTINCT FROM to_jsonb(d.generation)
+ OR x.version<>1 OR d.version<>1 OR g.version<>1 OR g.created_by IS DISTINCT FROM c.actor_id OR g.client_id IS DISTINCT FROM c.client_id
+ OR d.execution_id IS DISTINCT FROM x.execution_id OR d.generation IS DISTINCT FROM x.generation OR d.grant_id IS DISTINCT FROM x.grant_id OR d.grant_version IS DISTINCT FROM x.grant_version
+ OR d.execution_id IS DISTINCT FROM g.execution_id OR d.generation IS DISTINCT FROM g.generation OR d.grant_id IS DISTINCT FROM g.id OR d.grant_version IS DISTINCT FROM g.version
+ OR sc->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash) OR sc->'grantRef' IS DISTINCT FROM q->'grantRef'
+ OR sc->>'connectorId' IS DISTINCT FROM f->'registration'->>'connectorId' OR sc->'credentialGeneration' IS DISTINCT FROM to_jsonb(d.credential_generation)
+ OR sc->'credentialGeneration' IS DISTINCT FROM f->'subject'->'credentialGeneration'
+ OR g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json) OR g.snapshot_json->>'factHash' IS DISTINCT FROM anvil.execution_json_hash(f)
+ OR g.snapshot_json->>'scopeDigest' IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('binding',f,'allowedOperations',g.snapshot_json->'allowedOperations','expiresAt',g.snapshot_json->'expiresAt'))
+ OR g.snapshot_json->>'kind' IS DISTINCT FROM 'EXECUTION' OR g.snapshot_json->>'transport' IS DISTINCT FROM 'SYNTHETIC_ONLY' OR g.snapshot_json->>'state' IS DISTINCT FROM 'SYNTHETIC_PLAN'
+ OR g.snapshot_json->'allowedOperations' IS DISTINCT FROM '["START_SESSION","SEND_INSTRUCTION","REQUEST_STOP"]'::jsonb
+ OR g.snapshot_json->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR g.snapshot_json->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+ OR g.snapshot_json->'plannedAt' IS DISTINCT FROM q->'queuedAt'
+ OR f->>'projectId' IS DISTINCT FROM pid::text OR f->>'executionId' IS DISTINCT FROM d.execution_id::text OR f->'executionGeneration' IS DISTINCT FROM to_jsonb(d.generation)
+ OR f->'subject'->>'userId' IS DISTINCT FROM c.actor_id::text OR f->'subject'->>'clientId' IS DISTINCT FROM c.client_id::text
+ OR f->'subject'->'controlGeneration' IS DISTINCT FROM to_jsonb(c.control_generation) OR f->'subject'->'humanSessionId' IS DISTINCT FROM q->'humanSessionId'
+ OR f->'intent'->'contextBundleRef' IS DISTINCT FROM q->'payload'->'contextBundleRef' OR f->'preparationRef' IS DISTINCT FROM q->'payload'->'optionsRef'
+ OR f->'permissionPolicyRef' IS DISTINCT FROM c.policy_ref OR f->'budgetReservationRef' IS DISTINCT FROM q->'reservationRef'
+ OR f->'registration'->'ref' IS DISTINCT FROM q->'executorRegistrationRef'
+ OR f->'intent'->'sourceScopes' IS DISTINCT FROM q->'sourceScopes' OR f->'intent'->'budgetPolicyRef' IS DISTINCT FROM q->'budgetPolicyRef'
+ OR NOT COALESCE(anvil.execution_iso_valid(d.snapshot_json->'expiresAt'),false)
+ OR (d.snapshot_json->>'expiresAt')::timestamptz>(g.snapshot_json->>'expiresAt')::timestamptz THEN RETURN false;END IF;
+ request=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('preparationRef',f->'preparationRef','executionId',d.execution_id,'executionGeneration',d.generation,'permissionPolicyRef',c.policy_ref,'budgetPolicyRef',q->'budgetPolicyRef','operation','START_SESSION','payload',q->'payload'));
+ IF c.request_hash IS DISTINCT FROM anvil.execution_json_hash(request) OR c.result_ref->>'status' IS DISTINCT FROM 'APPLIED'
+ OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM pid::text
+ OR c.result_ref->'data' IS DISTINCT FROM jsonb_build_object('ref',jsonb_build_object('id',x.id,'version',x.version,'contentHash',x.content_hash),'status','SYNTHETIC_QUEUE_STORED','snapshot',q,'executionAuthorized',false,'dispatchPerformed',false) THEN RETURN false;END IF;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=cid;
+ auth_ref=jsonb_build_object('id',ar.id,'version',1,'contentHash',ar.scope_digest);
+ IF ar.id IS NULL OR ar.scope_kind IS DISTINCT FROM 'PROJECT' OR ar.scope_id IS DISTINCT FROM pid OR ar.policy_ref IS DISTINCT FROM c.policy_ref
+ OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR ar.approval_decision_ref IS NOT NULL
+ OR ar.scope_digest IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ OR x.authorization_ref IS DISTINCT FROM auth_ref
+ OR env IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',d.command_id,'issuedAt',q->'queuedAt','expiresAt',g.snapshot_json->'expiresAt','executorRegistrationRef',q->'executorRegistrationRef','operation','START_SESSION','payload',q->'payload','context',jsonb_build_object('projectId',pid,'assignmentId',f->'intent'->'assignmentRef'->'id','executionId',d.execution_id,'executionGeneration',d.generation,'connectionRef',f->'intent'->'connectionRef','environmentRef',f->'intent'->'environmentRef','authorizationReceiptRef',auth_ref,'capabilityRef',f->'intent'->'capabilityRef','budgetRef',q->'reservationRef','sourceScopes',q->'sourceScopes'),'envelopeHash',x.envelope_hash) THEN RETURN false;END IF;
+ SELECT count(*) INTO cnt FROM anvil.audit_events WHERE project_id=pid AND command_id=cid;
+ IF cnt<>1 OR NOT EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=cid AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.policy_ref=c.policy_ref AND a.approval_ref IS NULL AND a.target_ref=c.result_ref->'data'->'ref' AND a.scope_digest=ar.scope_digest) THEN RETURN false;END IF;
+ IF e.id IS DISTINCT FROM d.execution_id OR e.generation IS DISTINCT FROM d.generation OR e.transport IS DISTINCT FROM 'SYNTHETIC_ONLY' OR e.state IS DISTINCT FROM 'SYNTHETIC_QUEUED' OR e.created_by IS DISTINCT FROM c.actor_id OR e.client_id IS DISTINCT FROM c.client_id
+ OR q->'reservationRef' IS DISTINCT FROM jsonb_build_object('id',u.reservation_id,'version',u.version,'contentHash',u.content_hash)
+ OR u.content_hash IS DISTINCT FROM anvil.execution_json_hash(u.snapshot_json) OR u.command_id IS DISTINCT FROM d.command_id OR u.snapshot_json->>'state' IS DISTINCT FROM 'RESERVED'
+ OR u.snapshot_json->'claim'->>'commandId' IS DISTINCT FROM d.command_id::text OR u.snapshot_json->'claim'->>'operation' IS DISTINCT FROM 'START_SESSION'
+ OR u.snapshot_json->'claim'->>'executionId' IS DISTINCT FROM d.execution_id::text OR u.snapshot_json->'claim'->'executionGeneration' IS DISTINCT FROM to_jsonb(d.generation)
+ OR w.execution_id IS DISTINCT FROM d.execution_id OR w.generation IS DISTINCT FROM d.generation OR w.grant_id IS DISTINCT FROM d.grant_id OR w.grant_version IS DISTINCT FROM d.grant_version
+ OR w.scope_json IS DISTINCT FROM q->'sourceScopes' OR w.ownership_state IS DISTINCT FROM 'SYNTHETIC_CLAIM' OR w.expires_at IS DISTINCT FROM (g.snapshot_json->>'expiresAt')::timestamptz
+ OR o.kind IS DISTINCT FROM 'EXECUTION_SYNTHETIC_ONLY' OR o.state IS DISTINCT FROM 'HELD_SYNTHETIC_ONLY' OR o.scope_digest IS DISTINCT FROM g.snapshot_json->>'scopeDigest'
+ OR o.payload_ref IS DISTINCT FROM jsonb_build_object('commandRef',c.result_ref->'data'->'ref','grantRef',q->'grantRef','envelopeHash',x.envelope_hash)
+ OR o.destination_ref IS DISTINCT FROM jsonb_build_object('transport','SYNTHETIC_ONLY','registrationRef',q->'executorRegistrationRef','executionId',d.execution_id,'generation',d.generation) THEN RETURN false;END IF;
+ -- Options 원문 bytes/hash는 metadata fullref와 분리한다. 기존 준비 snapshot/receipt를 다시 결박한다.
+ prep_ref=q->'payload'->'optionsRef';
+ SELECT * INTO ep FROM anvil.execution_preparations WHERE project_id=pid AND id::text=prep_ref->>'id' AND version::text=prep_ref->>'version' AND content_hash=prep_ref->>'contentHash';
+ SELECT * INTO pc FROM anvil.commands WHERE project_id=pid AND id=ep.command_id;
+ opt=ep.snapshot_json->'options';
+ IF ep.id IS NULL OR pc.id IS NULL OR pc.operation IS DISTINCT FROM 'prepareExecution' OR pc.state IS DISTINCT FROM 'APPLIED'
+ OR ep.created_by IS DISTINCT FROM c.actor_id OR ep.client_id IS DISTINCT FROM c.client_id
+ OR ep.content_hash IS DISTINCT FROM anvil.execution_json_hash(ep.snapshot_json)
+ OR pc.result_ref->'data'->'ref' IS DISTINCT FROM prep_ref OR pc.result_ref->'data'->'snapshot' IS DISTINCT FROM ep.snapshot_json
+ OR ep.snapshot_json->'intent'-'connectionKind'-'optionsFormat' IS DISTINCT FROM f->'intent'
+ OR ep.snapshot_json->'basisRefs' IS DISTINCT FROM f->'basisRefs' OR ep.snapshot_json->'latestInstructionRefs' IS DISTINCT FROM f->'latestInstructionRefs'
+ OR ep.snapshot_json->>'authorizationState' IS DISTINCT FROM 'NOT_AUTHORIZED' OR ep.snapshot_json->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR ep.snapshot_json->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+ OR NOT COALESCE(anvil.execution_json_shape(opt,ARRAY['format','mediaType','body','utf8Bytes','contentHash']),false)
+ OR opt->>'format' IS DISTINCT FROM 'CLAUDE_QUERY_DATA_V1' OR opt->>'mediaType' IS DISTINCT FROM 'application/json' OR jsonb_typeof(opt->'body') IS DISTINCT FROM 'string'
+ OR octet_length(convert_to(opt->>'body','UTF8'))::numeric IS DISTINCT FROM (opt->>'utf8Bytes')::numeric
+ OR encode(sha256(convert_to(opt->>'body','UTF8')),'hex') IS DISTINCT FROM opt->>'contentHash'
+ OR d.snapshot_json->'groups'->1->'source'->'sourceRef' IS DISTINCT FROM prep_ref
+ OR d.snapshot_json->'groups'->1->'source'->'contentHash' IS DISTINCT FROM opt->'contentHash'
+ OR d.snapshot_json->'groups'->1->'source'->'sourceBytes' IS DISTINCT FROM opt->'utf8Bytes' THEN RETURN false;END IF;
+ FOR grp IN SELECT value FROM jsonb_array_elements(d.snapshot_json->'groups') LOOP
+  FOR part IN SELECT value FROM jsonb_array_elements(grp->'parts') LOOP
+   parts_count=parts_count+1;SELECT * INTO m FROM anvil.execution_materials WHERE project_id=pid AND id=(part->>'materialId')::uuid AND version=1;
+   expected=jsonb_build_object('projectId',pid,'executionId',d.execution_id,'executionGeneration',d.generation,'commandId',d.command_id,'envelopeHash',x.envelope_hash,'payloadRef',grp->'payloadRef','sourceRef',grp->'source'->'sourceRef','partIndex',part->'partIndex','partCount',jsonb_array_length(grp->'parts'),'byteOffset',part->'byteOffset','sourceBytes',grp->'source'->'sourceBytes','utf8Bytes',part->'utf8Bytes','contentHash',part->'contentHash','mediaType',grp->'source'->'mediaType');
+   IF m.id IS NULL OR m.snapshot_json IS DISTINCT FROM expected OR m.content_hash IS DISTINCT FROM anvil.execution_json_hash(expected)
+   OR m.manifest_id IS DISTINCT FROM d.id OR m.command_id IS DISTINCT FROM d.command_id OR m.created_command_id IS DISTINCT FROM cid OR m.command_record_id IS DISTINCT FROM x.id
+   OR m.execution_id IS DISTINCT FROM d.execution_id OR m.generation IS DISTINCT FROM d.generation OR m.grant_id IS DISTINCT FROM d.grant_id OR m.grant_version IS DISTINCT FROM d.grant_version OR m.credential_generation IS DISTINCT FROM d.credential_generation THEN RETURN false;END IF;
+  END LOOP;
+ END LOOP;
+ SELECT count(*) INTO cnt FROM anvil.execution_materials WHERE project_id=pid AND manifest_id=d.id;
+ RETURN cnt=parts_count;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.material_registration_complete(pid uuid,cid uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.execution_material_manifests d WHERE d.project_id=pid AND d.created_command_id=cid AND d.snapshot_json ? 'purpose')
+ OR EXISTS(SELECT 1 FROM anvil.execution_commands q WHERE q.project_id=pid AND q.created_command_id=cid AND (q.snapshot_json->>'state'='SYNTHETIC_QUEUED' OR q.snapshot_json->'envelope'->>'operation'='START_SESSION'))
+ THEN anvil.fn08_start_material_complete(pid,cid) ELSE anvil.material_registration_complete_send_0062(pid,cid) END;
+$$;
+CREATE FUNCTION anvil.material_target_required(pid uuid,rid uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT anvil.material_target_required_send_0062(pid,rid) OR EXISTS(
+ SELECT 1 FROM anvil.execution_receipts r JOIN anvil.execution_challenges ch ON ch.project_id=r.project_id AND ch.id=r.challenge_id AND ch.version=1
+ JOIN anvil.execution_grants g ON g.project_id=r.project_id AND g.id=r.grant_id AND g.version=r.grant_version
+ JOIN anvil.execution_commands q ON q.project_id=g.project_id AND q.grant_id=g.id AND q.grant_version=g.version
+ WHERE r.project_id=pid AND r.id=rid AND r.version=1 AND q.snapshot_json->'envelope'->>'operation'='START_SESSION'
+ AND left(ch.snapshot_json->'request'->'target'->>'path',length('/api/v1/connectors/'||(g.snapshot_json->'binding'->'registration'->>'connectorId')||'/executions/'||q.execution_id::text||'/commands/'||(q.snapshot_json->'envelope'->>'commandId')||'/materials/'))='/api/v1/connectors/'||(g.snapshot_json->'binding'->'registration'->>'connectorId')||'/executions/'||q.execution_id::text||'/commands/'||(q.snapshot_json->'envelope'->>'commandId')||'/materials/');
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.material_registration_reverse() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;q anvil.execution_commands%ROWTYPE;rid uuid;ch uuid;row_json jsonb;candidate record;is_material boolean=false;
+BEGIN
+ row_json=CASE WHEN TG_OP='DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END;pid=(row_json->>'project_id')::uuid;
+ IF TG_TABLE_NAME='authorization_receipts' THEN IF row_json->>'scope_kind' IS DISTINCT FROM 'PROJECT' THEN RETURN NULL;END IF;pid=(row_json->>'scope_id')::uuid;END IF;
+ IF TG_TABLE_NAME IN('execution_material_manifests','execution_materials') THEN cid=(row_json->>'created_command_id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_commands' THEN cid=(row_json->>'created_command_id')::uuid;
+ ELSIF TG_TABLE_NAME='commands' THEN cid=(row_json->>'id')::uuid;
+ ELSIF TG_TABLE_NAME IN('authorization_receipts','audit_events','executions','execution_grants','delivery_outbox') THEN cid=(row_json->>'command_id')::uuid;
+ ELSIF TG_TABLE_NAME IN('usage_reservations','writer_claims') THEN cid=(row_json->>'created_command_id')::uuid;
+ END IF;
+ IF cid IS NOT NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=cid) OR EXISTS(SELECT 1 FROM anvil.execution_materials WHERE project_id=pid AND created_command_id=cid) THEN
+   IF NOT COALESCE(anvil.material_registration_complete(pid,cid),false) THEN RAISE EXCEPTION 'MATERIAL_REGISTRATION_ATOMIC_REQUIRED';END IF;
+  ELSE
+   SELECT * INTO q FROM anvil.execution_commands WHERE project_id=pid AND created_command_id=cid;
+   IF q.id IS NOT NULL AND (q.snapshot_json->'envelope'->>'operation' IN('SEND_INSTRUCTION','START_SESSION') OR q.snapshot_json->>'state' IN('SYNTHETIC_INSTRUCTION_QUEUED','SYNTHETIC_QUEUED')) THEN RAISE EXCEPTION 'MATERIAL_REGISTRATION_MISSING';END IF;
+  END IF;
+ END IF;
+ IF TG_TABLE_NAME='execution_material_proof_bindings' THEN rid=(row_json->>'proof_result_id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_receipts' THEN rid=(row_json->>'id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_challenges' THEN ch=(row_json->>'id')::uuid;SELECT id INTO rid FROM anvil.execution_receipts WHERE project_id=pid AND challenge_id=ch;
+ END IF;
+ IF rid IS NOT NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_material_proof_bindings WHERE project_id=pid AND proof_result_id=rid) THEN
+   IF NOT COALESCE(anvil.material_binding_complete(pid,rid),false) THEN RAISE EXCEPTION 'MATERIAL_BINDING_ATOMIC_REQUIRED';END IF;
+  ELSE
+   IF COALESCE(anvil.material_target_required(pid,rid),false) THEN RAISE EXCEPTION 'MATERIAL_BINDING_MISSING';END IF;
+  END IF;
+ END IF;RETURN NULL;
+END;$$;
+
+-- 기존 0062의 세 표 합산·project lock·INSERT current/불변 guard와 proof 완결은 그대로 소비한다.
+-- 추가 원 graph 행에도 양방향 deferred 완결을 연결한다. 기존 trigger를 disable/drop하지 않는다.
+DO $$ DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['executions','execution_grants','usage_reservations','writer_claims','delivery_outbox'] LOOP
+  EXECUTE format('CREATE CONSTRAINT TRIGGER fn08_start_material_reverse AFTER INSERT OR UPDATE OR DELETE ON anvil.%I DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.material_registration_reverse()',t);
+ END LOOP;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn08_start_material_descriptor_valid(jsonb),anvil.fn08_start_material_complete(uuid,uuid),anvil.material_descriptor_valid(jsonb),anvil.material_registration_complete(uuid,uuid),anvil.material_target_required(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.fn08_start_material_descriptor_valid(jsonb),anvil.fn08_start_material_complete(uuid,uuid),anvil.material_descriptor_valid(jsonb),anvil.material_registration_complete(uuid,uuid),anvil.material_target_required(uuid,uuid) TO anvil_v3_app;

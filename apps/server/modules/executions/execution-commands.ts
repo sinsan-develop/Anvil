@@ -11,6 +11,7 @@ import { currentProjectController, persistProjectReceipt, projectReplay, recordP
 import { ProjectExecutionBudget, type BudgetClaim } from './execution-budget.ts';
 import { authorizeRuntimePolicy, ProjectLimitPolicies } from './runtime-policy.ts';
 import { planSyntheticExecutionGrant } from './execution-grants.ts';
+import { SyntheticPgStartMaterialRegistration } from './execution-start-material-registration-store.ts';
 
 type Reservation = Awaited<ReturnType<ProjectExecutionBudget['planReservation']>>;
 interface QueueBasis { intent: ExecutionIntentV1; claim: BudgetClaim }
@@ -52,9 +53,10 @@ export class ProjectInitialExecutionQueue {
   readonly resolver: SyntheticQueueResolver;
   readonly budgets: ProjectExecutionBudget;
   readonly policies: Pick<ProjectLimitPolicies,'resolveCurrent'>;
-  constructor(access:AccessRepository,resolver:SyntheticQueueResolver,budgets=new ProjectExecutionBudget(),policies:Pick<ProjectLimitPolicies,'resolveCurrent'>=new ProjectLimitPolicies()) {
+  readonly materials:SyntheticPgStartMaterialRegistration|undefined;
+  constructor(access:AccessRepository,resolver:SyntheticQueueResolver,budgets=new ProjectExecutionBudget(),policies:Pick<ProjectLimitPolicies,'resolveCurrent'>=new ProjectLimitPolicies(),materials?:SyntheticPgStartMaterialRegistration) {
     if(!resolver||resolver.transport!=='SYNTHETIC_ONLY'||typeof resolver.basis!=='function'||typeof resolver.current!=='function')throw new AuthFailure('SYNTHETIC_PROVIDER_REQUIRED',412);
-    this.access=access;this.resolver=resolver;this.budgets=budgets;this.policies=policies;
+    this.access=access;this.resolver=resolver;this.budgets=budgets;this.policies=policies;this.materials=materials;
   }
   async command(token:string,csrf:string,request:ProjectCommand) {
     const p=input(request);
@@ -75,7 +77,8 @@ export class ProjectInitialExecutionQueue {
         // 초기 queue는 authorizeExecution과 queue의 명시 범위를 모두 요구한다. 새 권한을 문자열 AUTO로 암묵 발급하지 않는다.
         let executionPolicy=await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution'},policyInput,this.policies);
         let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);
-        const replay=await projectReplay(db,actor,request);if(replay!==undefined)return replay;
+        if(!(this.materials instanceof SyntheticPgStartMaterialRegistration))throw new AuthFailure('MATERIAL_REGISTRATION_REQUIRED',412);
+        const materials=this.materials,replay=await projectReplay(db,actor,request);if(replay!==undefined){await SyntheticPgStartMaterialRegistration.prototype.assertReplay.call(materials,db,actor,request,replay);return replay;}
         // 만료만으로 미확인 writer를 회수하지 않는다. project 잠금 아래 보수적으로 한 실행만 저장한다.
         // 같은 project 행은 currentProjectController가 이미 잠갔다. 불변 이력의 UPDATE 권한은 열지 않는다.
         if((await db.query('SELECT id FROM anvil.writer_claims WHERE project_id=$1 AND reclaimed_at IS NULL',[request.projectId])).rows.length)throw new AuthFailure('EXECUTION_WRITER_UNAVAILABLE',409);
@@ -94,6 +97,7 @@ export class ProjectInitialExecutionQueue {
         fact.expires.permissionPolicy=new Date(Math.min(Date.parse(fact.expires.permissionPolicy),executionPolicy.validUntil,policy.validUntil)).toISOString();
         fact.expires.humanSession=new Date(Math.min(Date.parse(fact.expires.humanSession),Date.parse(actor.authSession.idleExpiresAt),Date.parse(actor.authSession.absoluteExpiresAt))).toISOString();
         const grant=planSyntheticExecutionGrant(fact,at.toISOString());
+        const materialPlan=await SyntheticPgStartMaterialRegistration.prototype.prepare.call(materials,db,actor,request,fact,grant);
         // receipt → envelope → receipt hash 순환을 만들지 않는다. 불변 queue intent를 먼저 저장하고,
         // 실제 receipt id/scope hash로 봉투를 만든 뒤 같은 transaction의 execution_commands에 결박한다.
         const queueIntent={transport:'SYNTHETIC_ONLY',executionId:p.executionId,executionGeneration:p.executionGeneration,state:'SYNTHETIC_QUEUED',grantRef:grant.ref,
@@ -122,6 +126,7 @@ export class ProjectInitialExecutionQueue {
         await db.query('INSERT INTO anvil.delivery_outbox(id,project_id,command_id,kind,destination_ref,payload_ref,state,scope_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
           [randomUUID(),request.projectId,receipt.id,'EXECUTION_SYNTHETIC_ONLY',JSON.stringify({transport:'SYNTHETIC_ONLY',registrationRef:fact.registration.ref,executionId:p.executionId,generation:p.executionGeneration}),
             JSON.stringify({commandRef,grantRef:grant.ref,envelopeHash:envelope.envelopeHash}),'HELD_SYNTHETIC_ONLY',grant.snapshot.scopeDigest]);
+        await SyntheticPgStartMaterialRegistration.prototype.register.call(materials,db,materialPlan,{ref:commandRef,snapshot},receipt.id);
         return receipt.result;
       });
     } catch(error) { await recordProjectDenial(this.access,token,request.projectId,error);throw error; }

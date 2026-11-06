@@ -16216,3 +16216,107 @@ Main은 승인 source 변경30과 결과/현황3문서만 기존 branch의81f92b
 같은 Primary에게 TEST_ONLY를 발행한다. 쓰기 허용은 신규 tests/unit/FN08/execution-start-material-registration.test.ts, execution-start-material-registration-store.test.ts, execution-start-material-registration-schema.test.ts, execution-start-material-registration-flow.test.ts의4파일뿐이다. 실제 기존 ProjectInitialExecutionQueue의 적합 START가 두 그룹 자료를 등록하지 않는 행동 RED와 기존 queue/권한 결과 보존을 확인한다. module/export 부재·부적합 fixture를 제품 RED로 꾸미지 않는다. 원 products/기존 ledger/새 source4·0078 쓰기는 PRODUCT_GO 전0이다.
 
 Main이 실제 RED/불변 지문을 확인한 뒤 동일 담당자에게 WI 허용11의 PRODUCT_GO를 발행한다. 기본 source 미구성 거절·실제자료/실행 권위 미완성·SYNTHETIC_ONLY·같은 Tx와 누적 한도·replay/UNKNOWN 계약을 유지한다. 새 branch/agent/자동화·Main 제품 쓰기·실제 DB/권한/키/서비스/Agent/실자료 조사0, 전체 작업계획 완료 목표 active다.
+
+
+## 251. FN08 행동 RED 독립 재현과 허용11 PRODUCT_GO
+
+2026-11-06 Main은 기존 Primary의 신규 flow11429B/C11F0B39EA7FEA4588E01739487C08E3CFB9FC99E46D8A11A22E08511BEA9BF7을 직접 읽고 040f7c에서 실제 ProjectInitialExecutionQueue를 재실행했다. 2시험 중1PASS/1FAIL/skip0·616.421ms·시험 exit1이다. 적합 START가 등록 없이 APPLIED/queue 저장으로 반환되어 Missing expected rejection이 발생했고 기존 DENY는 domain 저장 전에 거절됐다. 신규 module 부재나 fixture 준비 오류를 RED로 간주하지 않았다.
+
+기존 queue14271B/A77EE9D8EA0CFB30EF2646F21F2259253F4E67A6996ED671CD87F0A03B76464A, ledger16747B/1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7 및 WI r2 10655B/51F8FE9E78BB8E0FF3ED449B1C4B8A1236808E31FA269A7AB17AA271C554AC21는 시작값과 동일하고 diff check0이다. 현재 HEAD2663dea72a609a02f81d468682a02b7b9d41576a이며 제품 변경0·보호3 보존이다.
+
+Main은 같은 Primary에게 WI의 정확 허용11 PRODUCT_GO를 발행한다. 실제 등록 모듈·같은 원 Tx·두 그룹 descriptor/부분/proof·전체이력 합산·replay/UNKNOWN·미구성 source 거절과 기존 guard/기대값을 보존한다. Main 제품 쓰기0·독립 검수 후 최소 직접 검증·통합을 이어간다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·미적용 SQL만 허용·전체 작업계획 미완료를 유지한다.
+
+
+## 252. FN08 parser 부분 제출과 독립 I1 보완
+
+Primary는 parser4840B/4D045BA3EA446D2C373DB83639C40975C8593AFA0569DEC1FE00D149E0E2BD28과 시험3818B/ABE8BC28B6046EA5E1BB01E116F4F940D1F6F5808E71F7880BA705EE8372B762, 직접4PASS/type exit0을 부분 제출했다. 실제 source/store/proof/DB는 미완료이며 최종 인수가 아니다. 지문 읽기의 보안환경 생성 오류0x80070020은 플랫폼 escalation 후 해결한 도구 오류로 분리한다.
+
+Main 실제 stdin1f68d6는 유효 descriptor의 groups custom Array prototype entries getter를 호출해 trap1/acceptedtrue를 확인했다. 독립 source 검수 C0/I1/M0는 빈 entries iterator로 groups=[{},{}] 검산이 0회인 우회와 parts 동일 접점을 확인했다. reviewer 반례는 미실행 source 추론, Main getter 반례는 실제 실행이며 구분한다.
+
+같은 Primary에게 허용 parser/test2 안의 오염 배열 원형 거절·검산된 own index 순회·getter trap0/빈 iterator/parts 음성 RED→GREEN을 지시했다. 공통 validation/기존 합격 기준·허용11 확대0, 정식 FAILURE_REPORT횟수0이다. Main 제품 write0·실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
+
+
+## 253. FN08 parser I1 해소와 등록 저장 구현 계속
+
+같은 Primary는 신규 배열 원형 반례의4PASS/1FAIL·Missing expected exception·218.1929ms/exit1 후 최소 보완5PASS·182.9952ms/exit0을 제출했다. Main049456은 같은 시험을 독립 실행해5PASS/fail0/skip0·199.1945ms/exit0과 parser4887B/30678AD817D5488CF361232C1588CD84E9E4D323AD71573497F00CA9E1F6B416, 시험4477B/5FE0F3335D7E3B23F0BBD2125E360C4C991619E3E67465BD0738F636E56D9B76를 직접 확인했다.
+
+독립 재검수는 동일 시작/종료 지문에서 기존I1해소·추가C0/I0/M0다. 배열 원형의 정확 Array.prototype 제한과 검산된 own index 순회가 inherited entries getter/빈 iterator를 막으며 기존 형상·두 그룹·부분/한도/hash 기준은 유지된다. 신규 반례는 그룹/부분 각각 getter/빈 iterator 네 조합의 거절과trap0을 단언한다. 이 판정은 parser 묶음만이며 아직 작성 중인 등록 store/basis/proof/SQL·실제환경 인수가 아니다.
+
+같은 Primary가 원 Tx 등록 저장·START 전용 보호 부분/basis 접합을 계속한다. 제품 write는 기존 단일 writer만, Main은 검수/통합만 수행한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
+
+
+## 254. FN08 등록 여정 부분 진행과 준비 오류 구분
+
+Primary는 실제 정상 등록/동일 replay와 source 변조·접근 거절·Tx 교체·원문 유실 flow4PASS/exit0/1012.0349ms를 중간 제출했다. Main fresh 인수가 아니며 store 완결 SQL은 아직 메모리 응답 모델,0078 본문은 작성 중이다. queue/store/parts/basis의 안정 묶음 지문 제출 후 독립 읽기 검수를 겹쳐 진행한다.
+
+신규 rollback 시험은 기존 명확 거절 감사의 별도 정착을 audit 전체0으로 가정해 준비 오류가 발생했다. domain rollback과 기존 denial audit를 구분하되 기존 guard/기대값을 완화하지 않도록 지시했다.0077 basename 추정 읽기는 OS2/exit1 1회 후 반복하지 않고 rg --files의 실제0077_registered_execution_preparation_options.sql.pending로 고정했다. 도구/fixture 준비 오류이며 제품 실패·실제SQL증거·정식FAILURE_REPORT로 세지 않는다. 허용11 밖 쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체 목표active다.
+
+
+## 255. FN08 등록 저장 묶음 독립 I2와 보완 지시
+
+Primary는 queue15062B/E4DC8AEE49E7D40406D2413DD74BC986307C4754A4A92D8E734581E5B532C94F, store25266B/BA2DEF95F8DE81A8707044BDA61B95E2CF2DD177A365441DCE578F3855B0A9B1, parts5046B/E2350947F7D67B8ADE9E3BF6B6E29DB03F05E0DFA1E8586CD67270E49ADF5C8B, basis6309B/F9308ECBB2FBB8CA543B2608843D3E8DEDC5EDBF924D16A04146F7B5C11FE143를 동결 제출했다. Main 실제diff/접점 읽기와 독립 시작/종료동일 source검수에서 C0/I2/M0다.
+
+I1:store102는 project+외부commandId만으로 manifest1행을 요구한다. 기존commands의 actor/op별 동일외부ID 허용과 manifest 내부created_command_id 유일성에 비해 넓어 다른actor의 적합이력2를 거절한다. 원 내부명령/receipt·grant/fullscope로 결박하고 반례를 추가하도록 지시했다. I2:assertReplay→assertRegistered→parts.current/readPart→readStartQueueRecord(now)의 봉투 만료 및 source/current가 역사결과 재조회까지 차단한다. 채택§5/§6의 불변 원증빙·역사replay와 fresh부분/source/proof권위를 분리하며 원등록누락거절·새등록/charge0·현재 전달의 만료검사는 유지하도록 했다.
+
+이는 source판정이며 실제DB/실행은 미실행이다. 미완료0078·proof종단·ledger fixture부재는 완성 결함으로 세지 않았다. 같은 Primary가 허용11 내에서 RED→GREEN을 보완하고 새 지문을 제출하며 Main 제품쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체 목표active를 유지한다.
+
+
+## 256. FN08 두 회귀 보정 확인과 역사 세대 잔여 보완
+
+Primary는 같은 선택2의 실제 RED0PASS/2FAIL(ENVELOPE_EXPIRED·MATERIAL_REGISTRATION_INTEGRITY)/1130.3499ms/exit1→보정2PASS/1016.7385ms/exit0 및 type8a6344 exit0을 제출했다. Main32a89c는 두 신규반례2PASS/fail0/skip0·775.6004ms/exit0과 store25677B/0243F970620C500A3B2CC4F767E9CEC70CCC29D827C78EB90B2747B6BB176C87을 확인했다. 원내부 commandfullref/created_command_id join과 역사replay의source/body0·fresh부분기한거절은독립source에서해소됐고 다른제품3지문은불변이다.
+
+추가한정읽기는 같은I2의 잔여Important1을 확인했다. store101의 fresh=false scope도 현재actor.credentialGeneration을 쓰고103에서옛descriptor.scope와같음을요구해, 같은actor/client의새세대로그인시 기존projectReplay가허용하던원결과조회를거절한다. 앞선C0/I0판정은만료/source분리부분에한정하고 전체인수로올리지않는다. 같은Primary에게 원저장grant/descriptor의역사세대검산과 fresh현재세대분리를지시했다. 현재로그인/controller/policy·원client/command검사와새부분권한은유지하며 세대변경역사성공/fresh거절·다른주체/변조음성 RED→GREEN을추가한다.
+
+원I2범위한정보완이며새계약/재승인사유가아니다. store동결만해제해새지문을받고 재검수한다. 작성중SQL/flow전체는아직미인수·실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·전체목표active다.
+
+
+## 257. FN08 역사 세대 잔여 해소·SQL 검수 준비
+
+Primary는 같은actor/client 새credential 역사결과/fresh거절과 타actor/client·원payload변조 거절의 신규2를 RED1/PASS1·1522.7765ms/exit1→2PASS·1189.3971ms/exit0으로 보완했다. Main c5812d 직접2PASS/fail0/skip0·859.4363ms/exit0, store25954B/D9E9AD4A6619029661C1E6F0A09FBC3F5791C96080AB0DE6C67BD427DAA26C0F를 확인했다. 독립 source는 시작/종료동일에서 역사I2세대잔여해소·한정C0/I0/M0다.
+
+역사scope는 원grant fullref의저장binding에서복원하고 현재세대는fresh에서만비교한다. 원주체/client·내부명령/fullref·payload·등록결박·현재로그인/controller/policy는 유지하며 역사source/body·등록/charge0과fresh권한/기한거절을분리한다. 다른제품3지문불변·미완료0078/proof종단/전체인수는미검증이다. SQL초안/형상3PASS는Primary중간결과이며정식제출/실PG증거가아니다. 같은담당자가SQL자기대조·나머지시험/ledger를계속하고 Main검수·통합을이어간다. 실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+
+## 258. FN08 미적용 SQL 의존성 검수와 보정 인수 범위
+
+Primary는0078 초안27076B/2BE06ED9F0365B92A5959912E14FA7424D18DB7496E694078CA1AD0868F4FC58를제출했다. Main 실제본문·0062 proof/guard·0077 SHA접점을읽고 독립검수 C0/I1/M0와대조했다. I1은Options본문SHA의public.digest 호출에현재migration의선행정의가없다는source의존누락이다. 실제DB의함수부재나설치실패로단정하지않았다. 기존0077 내장sha256을재사용하도록같은Primary에게지시했다.
+
+Primary 신규음성1RED/137.1945ms/exit1→한곳보정후형상4PASS/146.517ms/exit0이다. Main155917은정적형상4PASS/fail0/skip0·126.0355ms/exit0과최종27060B/7A1B7EA71198E59B589A2DF3356D8F6488FE0C4A9615DAA4A135589D4A3D91FC를확인했다. 독립재검수는한곳역치환시이전27076B/2BE06ED9지문과정확히같아다른본문/권한불변·I1해소·한정C0/I0/M0다.
+
+기존SEND3함수rename위임·세표전체이력합산guard·proof완결·INVOKER/표권한보존·원graph/Options/material관계와추가deferred접점은source읽기범위만확인했다. 실제SQL구문설치/RLS/권한/trigger순서/COMMIT·원문/Agent는미실행이며형상PASS를실제DB인수로승격하지않는다. Primary는실제registrar연결의기존ledger14PASS를중간제출했으나Main최종회귀/기대값보존검수·proof종단은아직미완료다. 같은단일writer가허용11내나머지를계속한다. 실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+
+## 259. FN08 보호 종단의 기존 구체 adapter 세대 제한
+
+Primary는기존execution-challenge-store의readScope가credentialGeneration1만허용하며START/SEND등록scope는원HUMANgrantSubject세대를결박한다고보고했다. Main308375/4103ef의실제정의읽기로20행제한과기존SEND같은결박을확인했다. Main545c6c는실제SyntheticPgInstructionMaterialStore에세대3과메모리spy를넣어DBconnect0·callback0의사전거절을관측했다. 오류객체에code속성이없어해당문자열은출력못했고,171b1f에서AuthFailure는message/statusCode를쓴다는정의만확인했다. 실제DB/키조회/서비스0이다.
+
+이것을단순미검증이나새START부분의완료로숨기지않는다. Main은공통wrapper2재사용이라는WI조건을유지하며,구조포트의세대3합성종단과구체adapter의세대3거절을분리하고가능하면세대1의정상fixture에서실제공통Pgwrapper→P256proof→parts/results→receiver를메모리Tx로소비하도록지시했다. 세대1만되는시험을전체세대지원으로승격하지않는다. 원문supplier·실행권위부재도그대로남는다.
+
+공통credential계약/허용밖파일/실제키·DB·권한·서비스·Agent변경0이다. 현허용11에서구체wrapper연결이불가능하면정확미완료와최소필요접점을반환하고추상포트성공으로대체인수하지않는다. 단일기존Primary가나머지ledger/proof시험을계속하며Main검수·통합과전체목표active를유지한다.
+
+
+## 260. FN08 기존 ledger 기대값 보존 검수
+
+기존ledger 동결24315B/CAA88794B36B42183974F9AEEE63B5E1ED05B12A0318DFECEC8075D51897214C를검수했다. Main91e2da actualdiff38추가/5삭제와 cb9034 기준2663dea의원const domain~14시험본문을현재추가시험직전과메모리LF정규화비교하여각7680B/SHA256 7FC97B997FFF9D96152F6727DB73BC6EF6F0BD6340682E928E70BA7730644F38 완전동일을확인했다. 원14시험/기대값은그대로이고신규rollback1만추가다.
+
+독립읽기는시작/종료같은raw에서한정C0/I0/M0다. 실제registrar/Optionscompiler·서로다른refs·등록3표동일Tx·정상COMMITtag보강이며성공registrar메소드대역0,정책/세션/동시성/replay·원optionsversion1→2·실패기대값을보존했다. SQLcomplete는메모리응답모델일뿐실제SQL인수가아니다. reviewer의canonical사본삭제diff와출력없는gitshow exit1은비교근거에서제외하고Main실행증거와구분했다. 새Git반복없이현재fixture독립읽기로검수를닫았다.
+
+Main의중간메시지초안1은잘못된도구필드로dispatch전schema거절돼전송0이며한국어정상메시지로보정했다. 제품실패/정식FAILURE_REPORT로세지않는다. Primary실행원14PASS/신규rollback1PASS는중간제출이며Main최종11파일회귀는종단완료후수행한다. 실제DB/권한/키/서비스/Agent/실자료조사0·단일writer·전체목표active다.
+
+
+## 261. FN08 종단 검수와 최종 필수 음성 보완
+
+Primary는 허용 11경로를 동결하고 cfe464의 직접 104 PASS, fail0/skip0, 3169.2608ms, exit0 및 460ccd 타입 exit0, 7cb3cb diff exit0을 제출했다. Main 최종 fresh 인수 전이며, 독립 검수는 flow 41569B/B5119474947A3AAA5B07024339732C00D501362AE878181F58A0441FF3AE14B8 및 store 시험 1901B/F040ED97335D194D6CAE5EA5C9FE2B0A7313BB0340222E2B782519E3585980E4 관측본에 한정 C0/I0/M0다. 실제 공통 wrapper·P256·새 basis/parts/results·기존 receiver 소비와 세대 1 정상/세대 3 구체 거절을 구분했다. 타입 연결은 실제 동일 basis 인스턴스의 시험 조립 한 곳이며 공통 제품 타입·guard 변경은 없다.
+
+필수 음성 중 신규 START의 다른 proof target/grant와 실제 registrar bytes 합산 admission은 새 여정에서 확인하지 못했다. 기존 공통 검사와 직접 한도 함수 시험만으로 새 등록 경로의 종단 검증까지 합격시키지 않는다. 같은 Primary에게 flow 한 파일만 동결 해제해 유효 서명 기준의 다른 target/grant 거절·효과0, 기존 SEND/옛 grant 버전·만료 이력을 포함한 프로젝트/grant bytes 경계의 rollback을 최소 보완하도록 했다. 제품 동결·기존 기대값·허용 11은 유지하며 변경 없는 104 전체 반복은 피한다.
+
+Main 문서 초안 1건은 문자 검증에서 쓰기 전에 거절됐다(2fb139). 실제 파일 쓰기0이며 한국어 초안으로 보정한다. 실제 DB·권한·키·서비스·Agent·실자료 조사0, 작업계획 전체 미완료·목표 active를 유지한다.
+
+
+## 262. FN08 source 한정 인수와 local checkpoint 준비
+
+Main4094a3의 최종 직접11파일은 106PASS/fail0/skip0/cancelled0·4238.1582ms/exit0이다. a18e55 타입 exit0,243d6e diff exit0이며 검증 전 c41704와 검증 후 허용11·보호3·WI raw가 동일하고 index는 비어 있다. 기존 공통 wrapper2와0062도 불변이다. 독립 최종 음성2 검수는 flow45440B/7DDAABF7DC8CA6755BD6154270375F7C115BB5B0173CD7339740301644ABAED4 시작/종료 동일에서 C0/I0/M0다. Primary는 live/pending0으로 writer를 반환했다. Main 제품 수정0이다.
+
+결과 docs/04_test_reports/AV3/FN08_START_MATERIAL_REGISTRATION_SOURCE_RESULT_20261106.md는12456B/D6E05880E47A53EC1AD279E1023FB3EE5762610BCC4E08967F20405A50539193로 문서 사본과 동일하다. 원14 ledger 기대값 보존·신규등록/역사 replay·실제 P256 및 구체 wrapper 세대1/세대3제한·bytes cap/rollback·SQL모델과 실제PG미실행을 구분했다. 원문 supplier/실행 권위·기본 app·세대3 구체 전달과 통합 fixture는 여전히 미완료이며 실제 기능은 부분 구현이다. source 인수를 실제DB/Agent·전체FN08/Stage/계획 완료로 올리지 않는다.
+
+Main은 정확 허용11+결과/현황3문서만 기존 branch의 local checkpoint에 보존한다. private push/원격 동일성·PR/main·서비스/DB반영은 하지 않는다. 같은 범위 검사 반복 대신 다음 미완료 선행과 독립 구현 가능 범위를 대조한다. 실제DB/권한/키/서비스/Agent/실자료 조사0·전체목표active다.
