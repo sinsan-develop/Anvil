@@ -16645,3 +16645,21 @@ Main은이경계를현재Primary에게전달했고현재privatefactory는기존f
 기존 Primary의 I1 보완본 신규2는 source16133B/ACACF14D·test21438B/0ABFA471로 동결됐다. 독립 재검토 C0/I0/M0이며 Main 93de26→8f690f→cd8054에서 지문 불변과 신규16/직접 인접20의 고유36 PASS·fail/skip0·542.0223ms·exit0을 확인했다. 213456의 typecheck와 diff check도 exit0이다. 원 owner/options는 불변이고 보호3은 제외한다. Primary 중간·최종 시험 횟수는 중복 합산하지 않는다.
 
 결과는 docs/04_test_reports/AV3/FN07_SDK_QUERY_CREATION_HANDOFF_SOURCE_RESULT_20261106.md에 기록했다. 한 인스턴스의 단발 생성·UNKNOWN 재생성 금지·원 iterator/prefix/init 보존·기존 owner 인계·취소/최단기한·동일 소유 정리의 합성 동작을 인수한다. 실제 SDK/process/SID/current·도구 권위·첫 입력·실제 Agent/DB/권한/키/서비스는 미검증이며 전체 FN07/Stage/계획 완료가 아니다. 기존 Primary는 writer를 반환했고 Main이 정확 신규2와 결과/현황/통제 문서3만 로컬 checkpoint로 보존한다. private push/PR/main/배포0이다. 다음 미완료 공급 경계를 읽기 전용으로 좁힌다.
+
+
+## 302. Main 문구 오류 예외와 다음 내부 연결 사전검토
+
+Main의 한국어 외 문자 혼입이 반복돼 신규 WI 작성 작업을 중단하고 PMO에 보고했다. §296의 메모리 초안 검사 차단, 이번 읽기 검색어 검사 차단, 기존 Primary 메시지 첫 단어 혼입·즉시 한국어 정정의 세 건이다. 앞의 두 건은 실행 전 차단됐고 마지막 건은 메시지 문구만 영향받았다. 제품/실제 환경 변경과 74f70196의 검증 증거 영향은 없다.
+
+PMO 회신 turn 01a1affa-dd11-7a72-aadf-70492dd0b5d5는 발송 전 문구 확인으로 통제를 좁히고, 수정된 WI가 확인되면 Main 판단으로 기존 승인 배정을 계속하도록 했다. 새 제품 gate·전체 중단·사용자 재승인은 요구하지 않았다. Main의 메모리 음성3/수정본3 확인에서 혼입은 차단되고 수정본은 허용됐다. 첫 과거 초안 원문 바이트는 미보존이므로 세 번째 음성은 같은 문자군 대체 표본이며, 과거 원문 세 건의 정확 재현으로 주장하지 않는다. 문서/명령/PMO 메시지는 도구 전 전문 검사를 유지하고 담당자 메시지는 검산된 파일 참조로 짧게 전달한다.
+
+기존 읽기 담당자와 Primary는 원 SEND 자료→기존 secondary owner 입력의 내부 연결이 다음 미완료 단위라고 확인했다. Primary 전용 admission guard·Codex claim/journal은 수정하지 않고, 실제 receiver와 owner를 잇는다. 원 owner의 private context/SID를 대조하는 boolean 검사 하나와 같은 owner/command의 ref/hash 충돌 보존이 필요하다. 신규 WI docs/work_packages/FN07_SECONDARY_INSTRUCTION_BRIDGE_SOURCE_IMPLEMENTATION_20261106.md 10197B/EC84E35C를 작성·미러하고 두 담당자에게 독립 사전검토/기술 가능성 읽기만 맡겼다. 아직 SOURCE_GO0·제품 writer0이며 실제 DB/권한/키/서비스/Agent 실행0이다. 전체 목표는 진행 중이다.
+
+
+## 303. FN07 원 SEND·secondary owner 연결 소스 GO
+
+새 WI의 최초 사전검토 C0/I1/M0는 receiver 반환의 잘못된 exact10 계수를 지적했다. 실제 9키로 정정한 60E610BF는 C0/I0/M0로 재검토됐다. Primary의 private 만료 숫자 미공개 보완을 반영한 최종 WI10549B/50493D2135C1E95D04020D5B39000BAC65664ACDA162A1B48294F077A2EDB5AD도 독립 C0/I0/M0이며 같은 허용4의 구현 가능성을 확인했다. 앞선 잘못된 계수는 정상 반환 계약을 바꾸는 대신 문서만 수정했다.
+
+Main 4f9891은 owner13515B/DBE89D57·기존 owner 시험15122B/AEB8149E·factory16133B/ACACF14D 불변, 신규 bridge/시험 부재·index 비어 있음을 확인했다. Main은 기존 FN07 승인 범위의 내부 연결로 최종 WI 해시에 SOURCE_GO를 발행한다. WI 머리의 GO0은 사전검토 원형으로 보존하고 이 기록과 정확 해시를 결박한다. docs3 로컬 checkpoint 후 기존 Primary만 지정 신규2/기존2를 구현한다. 기존 owner 변경은 boolean identity 검사 추가이며 입력·관측·중지·정리 알고리즘은 유지한다.
+
+동일 owner/command의 원 envelope/ref/grant/본문 hash 충돌, pending/UNKNOWN 재공급 금지, 원 bytes 보존·소유본 지움, 원 기한·취소를 검산한다. primary admission·claim/journal·공개 API·SQL·실제 SDK/DB/권한/키/서비스/Agent는 변경/실행하지 않는다. Main은 같은 제품을 수정하지 않고 독립 검수·직접 검증·통합을 소유한다. 전체 목표는 진행 중이며 실제 코딩 Agent 연결 완료가 아니다.
