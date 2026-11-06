@@ -3181,3 +3181,21 @@ Primary는정확8을최종동결했고Main2b994f에서source4 7C08935E/45CAC09A/
 결과는docs/04_test_reports/AV3/FN07_INSTRUCTION_BOOTSTRAP_SOURCE_RESULT_20261106.md에기록했다. 원START/실factory·Query/SID/선언ref/인스턴스상한의반례다섯과TDZ기본경로회귀를보완했다. 첫결과서메모리초안의문자검사차단1은실행전도구쓰기0으로분리하고한국어수정본만저장한다. 기존Primary는writer를반환했고Main은정확제품/시험8+결과/현황/통제3을로컬checkpoint로보존한다.
 
 actual receiver/client/공통permit을소비했지만proof/current/저장포트는합성모델이다. 실제SDK/process·도구권위/SESSION claim·서버/화면/사용자인수·DB/권한/키/서비스/Agent실행은미완료/미실행이며push/PR/main/배포0이다. 다음은실제driver/process구성·도구결정공급의미정만구체화하며전체목표는진행중이다.
+
+
+## 326. 보호 process profile selector 사전검수
+
+ba4e2b는HEAD35247729·tracked/indexclean·보호3과계획AC6BF508/설계1346F624/환경D6496CC2의현재지문을확인했다. PMO최근조회중다른작업맥락의단위/Go-PG회신은Anvil지시나실행권한으로적용하지않았다.
+
+기존Primary는COMMAND_PROFILE_METADATA exact9키와actual definitions/environments/resources reader를확인했고,환경.references(fresh=true)가직접선언·보호snapshot·identityRef의root/host/등록·secret관계를기존public보호reader로닫는다고확인했다. Main30410a/0c22f1/3af20b는원메서드와등록evidence의SELECT/메모리수집을읽었다. 긴출력일부잘림은전체검수로주장하지않는다.
+
+신규WI docs/work_packages/FN07_PROCESS_PROFILE_SELECTOR_SOURCE_IMPLEMENTATION_20261106.md 10433B/4C0A2C5F471EC4ED5F6C1FD701EE093959D28253F2E25687AB7C99F1467CDCD9를작성·미러하고기존담당자둘에독립사전검토/기술대조를맡겼다. 신규2의actual보호reader기반명시ref데이터선택이며program/template/논리cwd·ref만보존한다. role/program/argv/env/secret용도의실행변환은미정으로남기고후보를actual실행지원/권위로승격하지않는다. 코드GO0·제품/시험수정0·실제DB/권한/키/서비스/Agent/SDK실행0·전체목표진행중이다.
+
+
+## 327. profile selector 사전 보완·소스 GO
+
+사전독립검토C0/I0/M1은toolRequirements가단일객체가아닌최대20개배열임을확인했다. Main은Claude Code정확항목하나이상과전체다른요구/버전문자열보존으로명확히했고모든도구일치를요구해정상복수profile을거절하지않는다. private definition access는새로공개하지않고하나의기존access로실제readers를내부구성한다. snapshot관측실제경로와원program선언보존도구분했다.
+
+최종WI10780B/96DDDB842D3ACF497B727B69D4FA1A0F7BAD7D17D2F1D8AC2E1A28CEAD46C9FB는보완절한정독립C0/I0/M0와기존Primary의신규2가능확인을받았다. 7f4d85는시작HEAD35247729·원definitions74EF6C95/environments7F6D7137/resourcesA9294C98와신규2부재/indexempty를확인했다. Main은정확WI해시에SOURCE_GO를결박하고머리GO0은사전검토원형으로보존한다. 문서3로컬checkpoint뒤기존Primary만신규2를구현한다.
+
+명시profile의보호데이터선택은기존계획내부구현이며새실행역할/argv/env/Secret값/권위·publicAPI/SQL을추가하지않는다. Main같은제품쓰기0·실제SDK/DB/권한/키/서비스/Agent실행0·전체목표진행중이다.
