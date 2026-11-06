@@ -2229,3 +2229,19 @@ PMO turn01a1ad75-d4c8-7dc1-8a8e-304126fe6893는 후보 전문/지문과 이전 �
 후행 FN08의 실제 queue에는 아직 registrar 호출이 없고 SEND 원형은 전용임을 독립 읽기로 확인했다. 분리 START input/store/parts/basis와0078·원 Tx prepare→receipt/envelope→등록·proof/합산한도를 FN09 다음에 연결한다. 기존receiver.startOptions 존재를 서버 producer 완료로 보지 않는다.
 
 §221 독립 WI 검수는 C0/I0/M0이며 시작/종료 13353B·383BA061D099E4ADE87BE0BB59061466F1627DA2E0B18A84A2320A35F49D03B5 동일이다. 승인 기록 C82C16EB와 허용29·준비 목적 reader 분리·원문 보호/replay·계상/승인 proof·기존 의미 보존을 확인했다. 현재 Primary는 TEST_ONLY 작성 중이며 제품15/SQL0077은 아직 GO0이다. 이 검수는 실제 구현 인수/DB 실행 증거가 아니다.
+
+## 222. FN09 행동 RED 확인과 허용29 제품 구현 착수
+
+Primary 15e353의 등록 exact13 미지원 RED는 실제 preparation reader의 EXECUTION_INTENT_INVALID 422였다. 같은 실행의 후보 fixture CANDIDATE_ONLY 누락은 시험 준비 오류로 분리했고 신규 fixture만 보완했다. d311db는 기존 후보 save/read·exact11/snapshot9·미검증7/false/hash·준비1행 보존 1PASS/exit0을 확인했다.
+
+Main424080은 제품15 시작 지문 동일·0077 부재와 시험 원 prefix 보존/추가43행·시험14074B SHA256 6FED9356F5D36CA57D26ECFB69DE3FFD310AA95E6490B274354E349D5D335E8E를 확인했다. 그 명령의 잘못된 비한국어 test filter는 실제 선택0의 file wrapper만 통과했으므로 PASS 증거로 세지 않는다. Main6b10b6이 정확 한국어 test-name-pattern으로 신규 등록 시험1을 fresh 실행해 exit1·1FAIL/skip0·1357.2605ms·실제 preparation-input.ts:8의 422를 확인했다. 제품 실패와 도구 필터 오류를 구분한다.
+
+독립 WI C0/I0/M0와 위 실제 RED·제품/SQL 불변을 근거로 기존 Primary에게 허용29 PRODUCT_GO를 발행한다. 제품15·시험13·미적용 SQL0077만 구현하며 기존 실행 reader·후보 준비·SEND/0062·원문 보호·단일 Tx 계상/일회 승인·UNKNOWN/false를 유지한다. Main은 동일 코드 write0이다. 실제 DB/권한/키/서비스/SDK/Agent·실자료 조사·WSL QA0이며 합성/정적 검수 후 독립 코드 검수와 Main fresh 검증으로 이어간다.
+
+## 223. FN09 준비 reader 첫 연결과 후행 FN08 WI 준비
+
+Primary는 준비 전용 reader/type를 추가하고 기존 실행 reader의 원 exact11 prefix·등록13 거절을 보존했다. 2a9ca1 직접3 PASS/skip0·3757.638ms/exit0, c90260→65166 수거121ff5 type0,5ffb3b diff0을 제출했다. 변경4 지문은 execution-intent 6CE04FA7·preparation-input 5E12AA55·approval-candidate B96803F0·FN08준비시험0469BEF5다. 아직 원문 저장/보호 replay/계상/승인 최초비용/UI 미연결이며 단위 전체 인수가 아니다. 기존 Primary가 허용29 내 후속 구현을 계속한다.
+
+Main은 후행 docs/work_packages/FN08_START_MATERIAL_REGISTRATION_SOURCE_IMPLEMENTATION_20261106.md 9616B/SHA256 566B7A52AEE530C253CE68336F34FE15FB9C54ECCF98C37D7406895B56FC5CA9를 준비했다. 기존execution-commands 수정1+신규 parser/store/parts/basis/0078/시험4의 정확10경로다. 기존 공통 Tx/proof wrapper 두 파일은 구조적 포트로 재사용하고 SEND/0062·14필드 wire·receiver·기본 미주입을 보존한다. 이 WI는 후행 준비이며 FN09 작성 중 FN08 시험/제품 write0이다. 독립 WI 검수 뒤 FN09 인수 후 같은 Primary에게 순차 GO한다.
+
+§223 후행 FN08 WI 독립 검수는 C0/I0/M0이며 시작/종료9616B·566B7A52AEE530C253CE68336F34FE15FB9C54ECCF98C37D7406895B56FC5CA9 동일이다. 정확 허용10·원 Tx/등록/proof·합산 한도·원문/실행 권위 구분과 공통 wrapper 보존을 확인했다. FN09 단일 writer가 계속 구현 중이므로 FN08 TEST_ONLY/PRODUCT_GO는 아직0이다. 기본 검증 명령은 현재 package.json의 typecheck/빌드를 확인했고 실제 실행은 동결 제출 뒤 변경 범위에 맞춰 수행한다.
