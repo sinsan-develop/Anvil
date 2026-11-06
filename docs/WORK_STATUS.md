@@ -16925,3 +16925,30 @@ Main a1bc10은 해당 생성자가 UUID installationId를 요구하지만 기존
 기존 fixture repository의 installationId 누락을 합성 id(90) 한 필드로 보완하도록 Main이 내부 SOURCE_GO를 발행했다. 시작24683B/AFD89EA6→최종24705B/DA915257이며 기존 단언·제품 guard·SQL 변경0이다. Primary11PASS 뒤 Main5c9855→세션53198→a19a3a는 동일5파일69개 dot 통과·type/diff0·최종exit0을 확인했다. 이전7dd6a0의68PASS/1FAIL은 보존하고 합산하거나 소급하지 않는다.
 
 최종 신규2 B7E4DBA1/65C53A52의 독립 C0/I0/M0와 실제 currentHost RED 해소를 확인했다. 결과 docs/04_test_reports/AV3/FN07_PROCESS_PROFILE_SELECTOR_SOURCE_RESULT_20261106.md에 원문 hash·변경3·검증·오류·미실행을 기록한다. 추가 fixture 독립 검토 뒤 정확 소유 파일만 checkpoint로 통합한다. 실제 DB/권한/키/서비스/SDK/Agent 실행0·전체 계획 미완료·목표 진행 중이다.
+
+
+## 334. profile selector 로컬 checkpoint 검산과 다음 선행
+
+최종 fixture 추가도 독립 C0/I0/M0이며 원 문자열 제거 시 시작24683B/AFD89EA6와 정확히 일치한다. Main은 결과서에 이를 반영한 B82EAFD9 지문과 실제 Main69/type/diff0을 근거로 f9b7882103fa2ee81b0755756963538904a8b787(parent96fdb7fb)에 정확6을 통합했다. 2ecb57은 tracked/indexclean·최종 제품/시험3 지문불변·보호3 보존을 확인했다. CRLF 안내는 오류와 분리한다. PMO에 결과·실제 미검증·전체 계획 미완료를 공유했다.
+
+기존 Primary의 읽기 대조는 다음 FN07 미완료가 원 START·선택 profile과 실제 process 생성 입력/소유 결박 계약임을 확인했다. 실제 program 정체성·argv/env/Secret 슬롯·cwd mapping/current·child identity 의미는 미채택이다. 이미 구현된 factory/bootstrap/owner/UNKNOWN을 다시 포장하지 않는다. 도구 결정과 SESSION claim은 별도 미정이고 Codex 전용 claim을 재사용하지 않는다.
+
+Main은 SDK 원문 재조회 답변 전 해당 조회를 재시도하지 않으며, 같은 담당자에게 전체 계획에서 이 결정과 독립인 승인 미완료 구현을 읽기 전용 대조하도록 맡겼다. 실제 DB/권한/키/서비스/SDK/Agent 실행0·새 writer0·전체 목표 진행 중이다.
+
+
+## 335. FN10 사람 판단의 미채택 선행 검토 착수
+
+기존 Primary는 FN10/FN12/FN14/FN16의 실제 미완료와 승인 경계를 대조했다. FN10 결정 저장·철회는 새 명령/head/정책 미채택, FN12 successor는 순수 도출 뒤 origin/link·계상/잠금 미채택, FN14 준비 source/route/Web은 이미 연결됐으나 실제 확정/새 역할은 정지·회수/이해 확인 선행, FN16 파일 엔진은 있으나 전체 묶음/DB snapshot/키 복원 의미가 미채택이다. 이를 전체 완료나 즉시 실행 가능으로 바꾸지 않는다.
+
+Main bd1f43/52144d는 가장 앞선 docs/contracts/FN10_HUMAN_DECISION_CANDIDATE.md 4DC5269C 지문·현재 NOT_ADOPTED 범위를 읽었다. 기존 담당자 둘에 실제 basisRef/출처 보호/직렬화 producer의 실현성과 정확 파일·미적용 SQL·화면 변경만 읽기 전용으로 나눴다. 평가는 후보 범위 밖이며 성공대역/항상412를 구현 완료로 삼지 않는다. 새 writer·제품/시험 수정0이다.
+
+Main은 기존 driver 후보의 낡은 상태 문단만 bootstrap35247729/profile selector f9b78821의 실제 인수 상태로 갱신했다. 774194의 새 hash35714E9B51901C777B37EFCB9D7C9C8E5D9525D28050F204BE921A928A0911E6이며 신규 계약 채택/SOURCE_GO0은 그대로다. 실제 SDK 원문 질문 답변 전 재조회하지 않으며 실제 DB/권한/키/서비스/Agent0·전체 목표 진행 중이다.
+
+
+## 336. FN10 현재 기준 묶음의 실제 미결정 확인
+
+기존 읽기 담당자는 활성화 current가 설계/계획 ref를 읽지만 실제 활성화 생산은 안전 선행 미연결로 차단돼 있음을 확인했다. work-plans/document/관계 reader는 확정·검토·무결성 검산을 재사용할 수 있으나 후보 basisRef의 별도 묶음 생산과 잠금/현재 선택·출처 전체 보호·응답 직전 검산까지 보장하지 않는다. persistProjectReceipt만으로 원문 보호가 완결되지 않는다.
+
+Main은 사람 판단 기준을 활성화된 실행 기준에만 제한할지, 확정된 설계/계획의 정확 버전을 명시 선택한 별도 묶음에 고정할지 신산님께 비동기 설계 결정을 요청했다. 권장안은 후자이며 실제 Agent 실행 전 판단 기록과 실행 활성화를 분리한다. 별도 묶음의 발급/보관·현재성·잠금/감사 의미는 선택 후 정확 계약으로 구체화하며 지금 임의 채택하지 않는다. 판단 기록은 완료/분기/Agent 실행 허가가 아니다.
+
+이번 질문은 기존 계획 전체 재승인이 아니라 후보4DC5269C의 미정 basisRef 의미 결정이다. SDK 원문 조회 질문과 별개이며 실제 DB/권한/키/서비스/Agent 실행0·제품 writer0·전체 목표 진행 중이다. 기존 Primary의 정확 파일/미적용 SQL·화면 재사용 대조는 계속한다.

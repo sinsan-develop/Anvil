@@ -6,7 +6,7 @@
 
 ## 1. 확인된 현재 상태
 
-실제 receiver→Options→factory→owner→SEND bridge→coordinator의 메모리 조립은 구현됐다. b68fa9f5의 직접84 PASS와 독립 C0/I0는 이 내부 범위만 증명한다. 실제 SDK driver/process 공급·원 SID 보호 결박·도구 결정·서버/화면 연결·계정 교체는 미완료다. 추가 내부 래퍼로 이를 대체하지 않는다.
+실제 receiver→Options→factory→owner→SEND bridge→coordinator의 메모리 조립과 별도 선택된 첫 SEND의 bootstrap 결박은 구현됐다(35247729, Main 직접110). 보호 profile 선언 선택도 실제 reader의 메모리 검증으로 인수했다(f9b78821, Main 직접69). 각 수치는 서로 다른 단위이며 합산하지 않는다. 첫 입력의 실제 yield와 같은 START/Query/SID/선언 ref·입력 상한을 검산하지만 실제 SDK 수락·OS process·도구 권위는 증명하지 않는다. 실제 SDK driver/process 공급·원 SID의 실제 생성/보호 claim·도구 결정·서버/화면 연결·계정 교체는 미완료다. 추가 내부 래퍼로 이를 대체하지 않는다.
 
 기존 START envelope/실행 fact는 context·H/E·등록·정책·예산·현재성의 근거를 제공한다. 원 Options는 model/maxTurns/maxBudgetUsd만 제공한다. 환경과 command profile의 program/argsTemplate/workingDirectory/secretSlots는 선언이며 검증된 실행파일·실경로·env 허용이 아니다. 기존 NativeOwnerHandle과 준비 authority는 실제 SDK SpawnedProcess·coding 실행 permit이 아니다.
 
