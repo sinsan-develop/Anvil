@@ -17001,3 +17001,23 @@ Main b7ebfb는 HEAD392674b1·tracked/indexclean·기술 검토2D52B8EC와 보호
 SpawnOptions는command/args/cwd?/env/signal이며SpawnedProcess는stdin/stdout·kill·exit/error listener로서별도stderr필드가없다. signal의주석상지연취소를즉시caller취소나회수보장으로바꾸지않고기존기한도늘리지않는다. 결과 docs/04_test_reports/AV3/FN07_PINNED_SDK_SPAWN_SOURCE_READ_20261106.md에기록했다.
 
 공개조회승인은소진됐으며같은담당자는추가조회없이기존로컬역사/driver·factory·selector와남은process생산/소유·stderr/취소경계를읽기대조한다. 기존Primary는FN10별도확정묶음상세를계속하며실제DB/권한/키/서비스/Agent0·전체목표active다.
+
+
+## 341. FN10 별도 선택 상세 후보 동결·내부 미정 기술 검수
+
+기존 Primary는 후보1을37667B/462BD4057DB00D566831A6D13B700BC6E2BEE8438516257526C4795A47261C7F로 동결·반환했다. 기존 record/revoke 같은Tx의 basisSelection 검산→불변 basis 발급→decision/receipt 보관이며 별도 발급API/전역pointer·새cap/유료정책/실제권한자동부여0이다. Main72c8eb는diff132추가/3삭제와정확원형/잠금/응답/계상미정의범위를읽었다.
+
+Main은확정방향을후보문서에기록한것과제품GO를구분한다. 기존읽기담당자는실제reader/producer·정상저장·잠금/최종응답보호·기존저장량계약의실현성을독립검토한다. 기존Primary는본문을다시쓰지않고미정quota/projection/동일Tx예약식을실제기존account/FN02/FN09경로와읽기대조한다. 이것은가능한내부기술접합을사용자선택으로돌리지않기위한검토이며새상한/외부비용/계정정책을만들지않는다.
+
+SDK조회1회는소진됐고결과/driver사실/현황4의checkpoint는ebe775979d0647ace993375b377b7f872ee9056a(parent392674b1)다. 실제DB/권한/키/서비스/SDK/Agent실행0·제품writer0·전체목표active다. 완료된bootstrap/profile/기존화면검사는반복하지않는다.
+
+
+## 342. FN10 내부 기술 접합 확인·순수 입력 신규2 소스 GO
+
+독립 후보 검토 C0/I0/M0는462BD405의비순환basis생산과원보호reader조립이가능함을확인했고완결WI/PASS로승격하지않았다. 후속공유잠금대조는기존문서/계획/방법론/정책/회원/제어producer가같은project잠금을먼저소비하므로새FN10도그경계를소비하면현재범위에서기존writer수정이필수는아님을확인했다. artifact격리상태변경producer를새로가정하지않고원보호조회로검산한다. 후행보호는원COMMIT/release확정뒤같은repository/token의새authenticated로원actor/session/client·기한과모든출처보호를대조한다. 이전PoolClient가같다고가정하지않는다.
+
+Primary계상대조는기존FN09동일Tx예약/정산에NODE_DECISION내부목적1을추가하는접합을제안했다. B=version전체행(decision+basis+관계)+command+receipt+audit+head차분,예약은기존고정점/R자기비용을포함하고같은account잠금의실제used/held·coverage를검산한다. FN10은SETTLED reservation합에이미들어가별도actual소계를중복더하지않으며기존10GiB/원분모·상한을바꾸지않는다. 원문body복제0·알림/승인소비0·replay신규비용0이다. 새유료정책/임의cap을신산님결정으로돌리지않고Main이기존계약과상세식을기술검토한다.
+
+전체저장접합과독립적으로기존validator를소비하는선언ENUM추출/봉인·record/revoke/외피순수검증은신규2만으로가능하다는Primary기술확인을받았다. Main은docs/work_packages/FN10_NODE_DECISION_INPUT_SOURCE_IMPLEMENTATION_20261106.md 5919B/78C47D4C923F4A9533C57CFCF008021AEBD2942541F68883121176E2E3A0D98A를발행하고정확신규2에SOURCE_GO를결박한다. 기존Primary만TDD구현하며Main은동일제품을쓰지않는다. 기존reader/graph·route/SQL/auth/quota/Web변경0이다.
+
+이단위는FN10실제사용자기능의입력선행일부이며저장/current/권한/계상/화면완료가아니다. 전체기능을이일부로축소하지않고후속원source/저장/최종보호/SQL/화면으로이어간다. 실제DB/권한/키/서비스/SDK/Agent실행0·전체목표active다. 읽기담당자의한줄미완성반환1은폐기후이미확인한한국어결과로정정했고제품실패나정식실패횟수로세지않는다.
