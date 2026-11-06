@@ -2442,3 +2442,13 @@ Main c6816d는 실제 승인·quota의 동일 두 시험 파일에서 신규/직
 기존 독립 담당자는6경로의 변경·fixture 적합성을 시작/종료 동일에서 C0/I0/M0로 반환했다. 실제 class와 protected reader 소비, 원 요청 r.details.expiresAt, repository 공급·목적 replay, 단발 ID·UNKNOWN, 후보11의 기존 기준을 확인했고 성공 메서드 대역/skip/only로 판정 기준을 낮춘 부분을 찾지 못했다. SD는 명시 메모리 모델이며 실제 SQL 비용·원자성·전체 API/COMMIT/UI는 판정 밖이다.
 
 Main은 이 Node 직접 범위만 source 부분 인수하고 담당자의 검토 중 고정을 해제했다. 이후6에 필요한 변경이 있으면 이유/새 지문과 영향 검증을 다시 수거한다. 동일 writer는 SQL 승인 최초비용 생산자·최종 역완결/ACL·UI를 계속 구현한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 GO0·전체 계획 미완료/목표 active다.
+
+## 243. 남은 SQL 생산자와 완결 연결의 정확 대조
+
+독립 읽기는 현재 Node가 요청/결정 reserve·settle4 RPC를 호출하지만0077에는 아직 그4 생산 함수가 정의되지 않았음을 확인했다. 기존 actual/cost/complete helper만으로 원 SQL 생산이 연결됐다고 주장하지 않는다. reserve는 원 SID/actor/client/project·command/ref/snapshot/policy/receipt IDs/txid와6반환 필드, settle은 원 외부 명령/예약/봉인/server command/result/txid와4반환 필드에 정확히 대응해야 한다.
+
+남은 최소 접점은 기존 operation/part_kind CHECK의 새 목적 한정 forward, 공개 quota_plan_valid/current/reserve/start의 내부 목적 계속 거절, quota_settled_complete의 새 역사 actual/complete 연결, 실제 준비·요청/candidate·결정/알림과 R의 양방향 deferred 완결, 정확 앱 진입4 RPC만의 호출 ACL이다. 기존 SETTLED/held 합에는 kind 필터가 없어 별도 승인 subtotal을 중복 추가하지 않으며 O는 U/H 밖 admission에만 한 번 포함한다. 기존 quota_immutable의 IO_STARTED→SETTLED와 봉인 필드 금지는 보존할 수 있다. 이는 작성 중 미완료 목록이지 새 결함/승인 대기나 전체 SQL 합격이 아니다.
+
+Main은 이 정확 목록을 같은 Primary에게 전달했다. 새 분기의 고정 wrapper 뒤 공통 내부 구현 공유는 허용하되 caller가 내부 목적을 선택하는 공개 통로·기존 quota 전체 리팩토링은 추가하지 않는다. 담당자는 source-only 범위에서 계속 구현 중이다.
+
+검토 담당자의 첫 결과가 한국어 작성 지침을 위반해 동일 결과의 한국어 정정만 지시했고 새 조사/시험/수정 없이 바로잡았다. 이 보고 오류1은 제품/정식 Developer 실패나 코드 인수 횟수로 세지 않는다. Main 제품 쓰기0·실제 DB/권한/키/서비스/Agent/실자료 조사0이며 전체 목표 active다.
