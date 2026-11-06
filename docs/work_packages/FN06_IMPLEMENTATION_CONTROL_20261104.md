@@ -2245,3 +2245,21 @@ Primary는 준비 전용 reader/type를 추가하고 기존 실행 reader의 원
 Main은 후행 docs/work_packages/FN08_START_MATERIAL_REGISTRATION_SOURCE_IMPLEMENTATION_20261106.md 9616B/SHA256 566B7A52AEE530C253CE68336F34FE15FB9C54ECCF98C37D7406895B56FC5CA9를 준비했다. 기존execution-commands 수정1+신규 parser/store/parts/basis/0078/시험4의 정확10경로다. 기존 공통 Tx/proof wrapper 두 파일은 구조적 포트로 재사용하고 SEND/0062·14필드 wire·receiver·기본 미주입을 보존한다. 이 WI는 후행 준비이며 FN09 작성 중 FN08 시험/제품 write0이다. 독립 WI 검수 뒤 FN09 인수 후 같은 Primary에게 순차 GO한다.
 
 §223 후행 FN08 WI 독립 검수는 C0/I0/M0이며 시작/종료9616B·566B7A52AEE530C253CE68336F34FE15FB9C54ECCF98C37D7406895B56FC5CA9 동일이다. 정확 허용10·원 Tx/등록/proof·합산 한도·원문/실행 권위 구분과 공통 wrapper 보존을 확인했다. FN09 단일 writer가 계속 구현 중이므로 FN08 TEST_ONLY/PRODUCT_GO는 아직0이다. 기본 검증 명령은 현재 package.json의 typecheck/빌드를 확인했고 실제 실행은 동결 제출 뒤 변경 범위에 맞춰 수행한다.
+
+## 224. FN09 reader/데이터 변환 선행 검수
+
+기존 독립 담당자는 execution-intent-v1.ts 2779B/SHA256 6CE04FA707920A86B1F67B62B1D85380CE3DA4DC51B333182B2B277E07483736, preparation-input.ts 3233B/SHA256 DD72F944E9F8C2CEA475C262024A385F9ECFE1C39ED8829DC60F6729F9C42FA3의 시작/종료 동일에서 한정 C0/I0/M0를 반환했다. 기존 실행 exact11·getter/원형/한도·복제를 보존하고 준비 exact13만 분리했으며 Options compiler의 도구/adapter·닫힌 데이터·bytes hash 구분을 확인했다. 저장/계상/UI 전체 인수는 아니다.
+
+Main630536의 현재 tracked 변경8은 모두 FN09 허용 범위 안이다. 기존 Primary가 원문 저장·원 replay 보호·계상/승인 proof·미적용 SQL·UI를 계속 구현한다. Main 동일 코드 write0·실제 DB/권한/키/서비스/Agent 실행0이고 최종 동결 뒤 직접 인접 시험·type/build·독립 전체 검수로 이어간다.
+
+§224 후속 replay 포트/route 독립 검수도 한정 C0/I0/M0다. project-command.ts 38037B/F74BD624F4BDB50BC34BF891FD9C5F61050A3317F111F15E4DABA7DAE498D68A와 routes.ts 86466B/AFFC0E0F838770AF3A38A626CE7260942F853CDCD9B88B38EEA43FD77CD4C632 시작/종료 동일에서 등록 준비 replay만 같은 db/actor의 void verifier를 요구하고, 원 결과 교체·복사본 변조 반영을 막으며 다른 operation/후보 replay를 보존함을 확인했다. verifier 내부 저장/원문 보호/계상은 아직 이 판정 밖이다. Primary 보고 입력3·Options검산3·replay2와 마지막9c450b type0는 해당 중간 범위만 증명하며 전체 완료가 아니다. 현재 기존 Primary가 허용29 구현을 계속하고 live/pending 시험0·실환경0이다.
+
+## 225. FN08 필수 등록에 맞춘 기존 성공 fixture 보강
+
+독립 읽기는 execution-command-ledger.test.ts의 registrar 부재·context/options 같은 fullref·등록 세 표/rollback 미구성을 확인했다. 채택된 두 그룹 START 등록을 구현하면 기존 성공 fixture가 적합하지 않으므로 실제 registrar/명시 합성 source·서로 다른 fullrefs/bytes/hash·원 fake Tx 등록 상태를 보강해야 한다. 기존 queue 성공·권한·세션·writer·동시성·replay 단언과 version1→2 관계는 낮추지 않는다.
+
+Main은 이 내부 시험 준비 보완만 FN08 WI r2에 반영해 허용10→11로 조정했다. 기존 시험1 시작16747B/SHA256 1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7, WI r2 10655B/SHA256 51F8FE9E78BB8E0FF3ED449B1C4B8A1236808E31FA269A7AB17AA271C554AC21이다. 부모 직접 승인 C82C16EB/채택8AE16D6C와 기능·권한·상한·결과 의미는 불변이며 사용자 재승인이 필요한 확장이 아니다. 현재 FN09 단일 writer가 구현 중이고 FN08 GO0은 유지한다.
+
+FN12 result-submission-isolated와 FN06 provider-claim-data-case 통합 fixture의 registrar 미구성도 향후 여정 실행 전 보강 대상으로 확인했지만 이번 source-only에 자동 추가하지 않는다. 해당 통합/실환경은 NOT_RUN이며 기존 전체 회귀 통과를 주장하지 않는다.
+
+§225 FN08 WI r2 변경 절의 독립 재검수는 C0/I0/M0다. 시작/종료10655B·51F8FE9E78BB8E0FF3ED449B1C4B8A1236808E31FA269A7AB17AA271C554AC21와 기존 ledger 시험16747B·1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7 동일을 확인했다. fixture 근거 보강과 기존 단언·실행 제외 보존이며 실제 START 구현/검수 PASS가 아니다. FN09 기존 Primary의 허용29 PRODUCT_GO는 계속 유효하고 FN08 GO0이다.

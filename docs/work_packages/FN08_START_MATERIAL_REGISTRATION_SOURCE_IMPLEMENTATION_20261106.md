@@ -1,6 +1,6 @@
 # FN08 START 두 자료 등록 A안 source 구현 지시서
 
-2026-11-06 / Main 어울 / 후행 준비. 이 문서만으로 동시 작성·시험/제품 GO가 생기지 않는다.
+2026-11-06 / Main 어울 / r2 / 후행 준비. 이 문서만으로 동시 작성·시험/제품 GO가 생기지 않는다.
 
 ## 승인·선행
 
@@ -10,13 +10,19 @@
 
 목표는 같은 START 명령에 context/options 두 그룹 자료를 원 Tx·봉투·영수증·등록·부분 보호조회/proof와 결박하는 실제 source 연결이다. 선언된 ref·합성 resolver 성공만으로 원문 producer나 실행 권위가 완성됐다고 하지 않는다.
 
-## 단일 writer와 허용10
+## 단일 writer와 허용11
 
 기존 Primary만 코드·시험·미적용 SQL을 작성한다. Main은 문서/검수/통합, 기존 독립 담당자는 read-only다. FN09 작성 중 이 작업의 코드 write0이며 별도 Main GO 후 시작한다. 다른 담당자의 변경·보호 비추적3을 되돌리지 않는다. 새 agent/chat/branch/자동화0.
 
-기존 수정1:
+기존 제품 수정1:
 - apps/server/modules/executions/execution-commands.ts
 - 시작14271B/SHA256 A77EE9D8EA0CFB30EF2646F21F2259253F4E67A6996ED671CD87F0A03B76464A.
+
+기존 시험 fixture 보강1:
+- tests/unit/FN08/execution-command-ledger.test.ts
+- 시작16747B/SHA256 1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7.
+- 현재 constructor는 registrar가 없고 두 payload refs가 동일하다. 실제 새 registrar·명시 합성 source/current와 서로 다른 적합 refs/원 bytes/부분 hash를 조립하고 fake Tx의 등록 세 표·rollback을 보강한다. registrar 성공 대역0, 기존 queue 성공/정책/세션/writer/동시성/replay 단언과 options version1→2 관계는 보존한다. 등록 누락 거절·부수효과 단언은 추가한다.
+- 이 보강은 기존 검증 기준을 낮추는 변경이 아니라 직접 채택된 두 그룹 등록에 맞춘 fixture 준비다.
 
 신규9:
 - apps/server/modules/executions/execution-start-material-registration-input.ts
@@ -73,7 +79,7 @@ SYNTHETIC_REFERENCE_ONLY/SYNTHETIC_ONLY의 명시 포트를 통해 실제 등록
 
 ## TDD/결과
 
-Main TEST_ONLY GO 전에는 시험도 쓰지 않는다. 첫 단계 신규 시험4에서 실제 기존 ProjectInitialExecutionQueue가 적합 START를 등록하지 않는 행동 RED와 기존 queue 결과/권한 guard 보존을 확인한다. 신규 module/export 부재·fixture 오류를 기능 RED로 꾸미지 않는다. Main이 행동 RED/기존 지문·WI 검수를 확인한 후 허용10 PRODUCT_GO를 발행한다.
+Main TEST_ONLY GO 전에는 시험도 쓰지 않는다. 첫 단계 신규 시험4에서 실제 기존 ProjectInitialExecutionQueue가 적합 START를 등록하지 않는 행동 RED와 기존 queue 결과/권한 guard 보존을 확인한다. 신규 module/export 부재·fixture 오류를 기능 RED로 꾸미지 않는다. Main이 행동 RED/기존 지문·WI 검수를 확인한 후 허용11 PRODUCT_GO를 발행한다.
 
 정상/중요 음성:
 - 그룹 순서/교환·동일 ref·중복 materialId·offset 공백/중첩·추가키/불량 bytes/hash.
@@ -84,6 +90,6 @@ Main TEST_ONLY GO 전에는 시험도 쓰지 않는다. 첫 단계 신규 시험
 - 동일 replay 추가 등록/charge0·다른 원문 conflict·COMMIT 불명 보존.
 - 실제 새 등록 모듈→공통 Tx/보호 GET/proof→기존 receiver.startOptions 종단 및 SEND 직접 인접 회귀.
 
-기존 시험 execution-command-ledger.test.ts, execution-material-registration-schema.test.ts, execution-materials.test.ts, execution-material-receiver.test.ts는 직접 인접 읽기/선택 실행만 허용하고 기대값을 고치지 않는다. 전수 회귀를 반복하지 않는다. 기존 node/TypeScript/build 도구와 메모리 합성만 사용하며 실제 listener/네트워크/DB/권한/키/서비스/SDK/Agent·실자료·dependency 설치0이다.
+execution-command-ledger.test.ts는 위 fixture 근거만 보강하고 원 단언을 보존한다. 기존 execution-material-registration-schema.test.ts, execution-materials.test.ts, execution-material-receiver.test.ts는 직접 인접 읽기/선택 실행만 허용하고 기대값을 고치지 않는다. 실제 FN06/FN12 통합 여정의 직접 constructor fixture도 후속 호환 보강이 필요하다고 확인했지만, 이번 범위에서 자동 수정/실행하지 않고 영향·재개 조건으로 기록한다. 전수 회귀를 반복하지 않는다. 기존 node/TypeScript/build 도구와 메모리 합성만 사용하며 실제 listener/네트워크/DB/권한/키/서비스/SDK/Agent·실자료·dependency 설치0이다.
 
 정확 변경 지문/diff·실행 명령/exit·RED와 준비 오류·미실행/잔여·live/pending·rollback을 Main에게 반환한다. Main 독립 코드/SQL 검수·fresh 최소 검증 뒤 통합하며 source-only를 실제 PG/TLS/OS/Agent·전체 FN08/계획 완료로 승격하지 않는다.
