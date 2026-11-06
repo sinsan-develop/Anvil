@@ -16974,3 +16974,30 @@ Main은 docs/work_packages/FN10_HUMAN_DECISION_TECHNICAL_REVIEW_20261106.md에 �
 근거는 WORK_PLAN 등록부·FUNCTION_WORK/INTEGRATION_WORK와 현재 baseline-activations/project-execution-preparations/project-checkpoints/App 연결이다. 불변 완료 화면/알림/설치·합성 wrapper를 재구현하거나 실제 미검증을 PASS/EXCLUDED로 바꾸지 않는다.
 
 현재 사용자 결정이 필요한 FN10 기준 선택과 고정 SDK 공개 원문 읽기 질문은 답변 전이다. 다른 승인 구현을 막지 않도록 대조했으나 현재 추가 코드 배정 근거는 확인되지 않았다. 첫 차단 대조로 기록하고 목표를 완료/blocked 처리하지 않는다. 실제 DB/권한/키/서비스/Agent 실행0·제품 writer0·전체 계획 미완료다.
+
+
+## 338. 같은 결정 선행의 두 번째 차단 대조
+
+Main b7ebfb는 HEAD392674b1·tracked/indexclean·기술 검토2D52B8EC와 보호 untracked3 보존을 확인했다. 두 기존 담당자는 완료 상태이며 실행 중 작업이 없고, 독립 구현 조사 결과는 §337과 같다. PMO 최신 회신도 기존 기준 선택/SDK 조회 질문 유지·새 구현GO0·반복 질문0으로 선행 미충족을 구분했다. 신산님 직접 답변은 현재 대화에 추가되지 않았다.
+
+동일한 설계/조회 결정 선행의 두 번째 대조이며 새 코드·검사·실제 환경 실행0이다. 전체 완료나 미실행 PASS로 바꾸지 않고 목표active를 유지한다. 답변 전 SDK 조회 우회·미채택 계약 쓰기는 하지 않는다.
+
+
+## 339. 최신 직접 승인으로 FN10 상세화와 고정 SDK 읽기 재개
+
+신산님은 FN10 기준을 확정 문서 묶음 별도 선택으로 결정하고, 고정 SDK 공개 원문 읽기1회를 직접 승인했다. 실제 DB/권한/키/서비스/Agent 실행 제외와 기존 subagent 위임은 유지한다. 목표도 사용자에 의해active로 재개됐다. Main b1ed47은 HEAD392674b1·기존338 현황/통제dirty·보호3을 확인하고 기존 변경을 보존했다.
+
+직전 목표 도구의blocked 반환과 사용자의 상태표시 승인은 이력이다.339 기록의앞선두명령은자동심사에서실행전거절돼파일쓰기0이었으며이번정본339는최신재개승인을기록한다. 과거실패/미검증을PASS로바꾸지않는다.
+
+기존 Primary는 FN10 후보4DC5269C 한 문서의 단일 writer로 별도 확정 묶음의 refs/발급/현재성/잠금·응답 보호를 상세화한다. 활성화 pointer·실제 Agent 선행으로 대체하거나 판단을 완료/분기/실행권위로 승격하지 않는다. 아직 제품/SQL/시험 쓰기GO0이며 Main은현황/통제만소유한다.
+
+기존 읽기 담당자는고정0.3.224metadata/tar1110841B와dts333809B/55627703·mjs1145192B/70E00A3E를메모리에서대조하는공개원문읽기1회만소유한다. SpawnOptions/SpawnedProcess두타입을확인하며설치/SDKimport/query·파일저장·계정/키·Agent실행0이다. Main중복조회0·자동재시도0이고오류/거절은소진여부와분리해보고한다. 전체계획은미완료이며완료항목의검사반복없이이어간다.
+
+
+## 340. 고정 SDK 공개 원문 읽기1회 완료·소진
+
+기존 읽기 담당자의 a840aa는 metadata1/tarball1·재시도0·exit0으로 고정0.3.224를 메모리 대조했다. tar1110841B·dts333809B/55627703·mjs1145192B/70E00A3E가 일치하며 두 타입 전체/주석 출력잘림0이다. Main은중복조회하지않았고원SDK파일저장·설치/import/query·실환경실행0이다.
+
+SpawnOptions는command/args/cwd?/env/signal이며SpawnedProcess는stdin/stdout·kill·exit/error listener로서별도stderr필드가없다. signal의주석상지연취소를즉시caller취소나회수보장으로바꾸지않고기존기한도늘리지않는다. 결과 docs/04_test_reports/AV3/FN07_PINNED_SDK_SPAWN_SOURCE_READ_20261106.md에기록했다.
+
+공개조회승인은소진됐으며같은담당자는추가조회없이기존로컬역사/driver·factory·selector와남은process생산/소유·stderr/취소경계를읽기대조한다. 기존Primary는FN10별도확정묶음상세를계속하며실제DB/권한/키/서비스/Agent0·전체목표active다.

@@ -31,6 +31,16 @@ process-profile 자료에는 선택된 원 profileRef/버전과 연결·환경·
 
 이 후보는 새로운 실행 permit을 임의 발급하는 안이 아니다. 실제 생성 시도의 원 허가/비용·process source 근거가 없는 경우 실행 연결은 거절한다. SDK default spawn·준비 helper·고정 QA launcher로 우회하지 않는다. 소스 검증에서는 명시 메모리 공급자를 쓸 수 있지만 그 결과는 false/UNVERIFIED이며 실제 process가 아니다.
 
+
+
+### 3.1 고정 공개 포트 확인과 실제 수명 경계 — 2026-11-06
+
+신산님 직접 승인 공개읽기1회의 a840aa는0.3.224 metadata/tarball과sdk.d.ts55627703/sdk.mjs70E00A3E 지문을 메모리 대조했다. SpawnOptions의원필드는command/args/cwd?/env/signal이고,SpawnedProcess는stdin/stdout·killed/exitCode/signalCode?·kill·exit/error on/once/off이다. 별도stderr필드는없다. 결과는docs/04_test_reports/AV3/FN07_PINNED_SDK_SPAWN_SOURCE_READ_20261106.md에있다. 역사sessionId→--session-id의구현근거는이번조회에서재검토하지않았다.
+
+hook signal은즉시caller취소와같지않고stdin EOF·약2초정상종료유예뒤전달된다는주석을확인했다. 원caller취소/기한도달시입력차단·외부약속정착, SDK정상종료요청, 늦은child소유보존·실제exit확인을분리해야한다. 이확인으로Anvil의기존기한을늘리거나즉시kill/회수성공으로간주하지않는다.
+
+원child의stderr는SDK반환포트에없는별도소유접점에서수집상한/비밀제거/종결을처리해야하며exit만으로수집완료를추정하지않는다. 실제child와Query/iterator/원시도의같은소유를검산하는producer는미연결이다. profile선언→실행파일/cwd/argv/env·Secret의현재성/허가생산도여전히미정이다. 이번형상확인만으로코드GO/실행권위/SESSION claim을만들지않고SDK원문을추가조회하지않는다.
+
 ## 4. 도구 요청과 Anvil 결정의 미정 대응
 
 실제 SDK 도구 요청은 tool 이름/원 입력·tool/session/item의 원 식별·원 생성/실행 context와 최소기한에 결박돼야 한다. 결정 producer는 다음 대응을 명시해야 한다.
