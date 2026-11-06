@@ -3068,3 +3068,28 @@ docs/04_test_reports/AV3/FN07_SESSION_COORDINATOR_INTERIM_REVIEW_20261106.md에 
 기존 Primary의 재개 후 실제 도구 실행이 정상으로 돌아왔고 신규2 최종 동결과 음성 검수를 제출했다. 제품13360B/96AA3134는 정상1 이후 불변이며 시험15889B/119D5700은 신규11로 확대됐다. 최종 독립 읽기 C0/I0/M0, Main d4c3aa의 직접6파일84 PASS·fail/skip0·1586.7872ms·exit0과 8a9785 type/diff0을 확인했다. 신규11+인접73이며 선택/중간·이전 결과는 더하지 않는다.
 
 결과 docs/04_test_reports/AV3/FN07_SESSION_COORDINATOR_SOURCE_RESULT_20261106.md와 중간 검수서를 함께 보존한다. 원 의존3 불변·Main 제품쓰기0·관련 없는 보호3 보존이다. 정확 신규2+결과/중간검수/현황/통제4를 로컬 checkpoint로 인수한다. 실제 SDK/process/도구 권위/SESSION claim·서버/화면/사용자 인수는 미완료며 실제 DB/권한/키/서비스/Agent 실행0·push/PR/main/배포0이다. 다음은 실제 생성·process 소유·도구 결정의 상세 계약 근거를 좁히며 목표는 계속 진행 중이다.
+
+
+## 313. 실제 driver/process/tool 공급의 최소 상세 후보 검토
+
+b68fa9f5 인수 뒤 e96f34에서 정확6·최종 신규2 지문·tracked/index clean을 확인했다. 기존 담당자의 읽기 결과에 따라 실제 Query 생성의 원 허가/예산·검산된 실행파일/cwd/env/argv·동일 child 입출력/종결·원 tool 요청과 일회 receipt의 대응이 상세 미정임을 좁혔다. command profile 선언과 sourceScopes를 실제 process/권한 증거로 바꾸지 않는다.
+
+Main은 docs/contracts/FN07_CLAUDE_DRIVER_PROCESS_TOOL_BOUNDARY_CANDIDATE_20261106.md 7353B/F09C1BAF44253AEE480857B6E8D1353EEC45896F94841ACB0BA1E357E8EC49B1를 양쪽 정본에 작성했다. 이는 결정지원 초안이며 SOURCE_GO0·실제 실행0이다. 기존 담당자 둘에게 원 공급자·기존 승인 범위·새 의미·실제 구현 가능성/구체성의 읽기 검토를 요청했다. 추상 문서나 추가 래퍼를 진도로 대신하지 않고, 구체 코드로 가기 위해 필요한 최소 차이만 정한다. 제품/시험 수정0·실제 SDK/DB/권한/키/서비스/Agent 실행0이며 전체 목표는 진행 중이다.
+
+
+## 314. driver 후보 최초 입력·SID 순서 보완
+
+후보 첫 독립 검토 C0/I1/M0는 생성 전 기대 SID와 init 뒤 owner 인계 사이에 최초 입력 공급 순서가 빠졌음을 확인했다. Main fe8429는 기존 통제§205/2090의 고정 SDK sessionId UUID 지정·--session-id 결박 근거를 대조했다. 계획UUID 기술지원과 실제 init 관측/보호 claim을 분리하며 기존 공개 Options에 새 필드를 임의 추가하지 않는다.
+
+후보 항목4/§5.1에 최초 입력의 원 자료·명시 호출/허가·공급 시점, 신규/기존 SID 출처, 입력전init미도착·다른SID·불명의 재생성금지를 명시했다. 최신8857B/36660587EFCD880D6AB4319E151560A5C155321B2FF6D3CCB530BEB5AA28A702는 변경 절 한정 C0/I0/M0다. 코드GO용 생성 계약의 구체성이 아직 부족하다는 잔여는 유지한다.
+
+기존 Primary는 원 START 실행 선택/permit·환경 reader의 실제 자료를 읽었고 선언 command profile을 검증된 실행구성으로 쓸 수 없음을 확인했다. 추가 조사 범위는 기존 CONTEXT_REVIEW 첫 SEND producer와 START/init/sessionBinding 생산 순서 한 건으로 좁혔다. 새 prompt·성공current·준비init으로 실제 미구현을 채우지 않는다. 제품/시험 수정0·실제 SDK/DB/권한/키/서비스/Agent 실행0·목표 진행 중이다.
+
+
+## 315. 첫 SEND·START 생산 순서의 실제 빈 연결
+
+기존 Primary는 START payload의 contextBundleRef/optionsRef와 별도 HUMAN의 SEND 지시 refs/현재 agentSession.sessionRef·grant/writer/정책/예산 검산을 확인했다. 자료 등록/CONTEXT_REVIEW가 첫 문장을 자동 생성하지 않으며 admission도 저장된 SEND의 명시 선택만 수행한다. 현재 factory/coordinator의 START→init→READY→SEND와 실제 SDK의 첫 입력 요구 가능성 사이에 빈 연결이 있다. 서버 SEND 자체가 init을 필수로 요구한다고 일반화하지 않는다.
+
+후보§5.2에 이 사실과 기존 별도 SEND를 첫 생성 입력으로 연결하는 최소 방향을 추가했다. 최신10335B/73DB7121FBE3D9F4184B25D1F41E0DCEC35B351DEB24013D7BF14DAFDD719C92는 사실 절 한정 독립 C0/I0/M0다. 앞선§5.1의C0/I0도 실제 생성원형 채택이 아니라 미정선행의정직한보완이다. 기존 실제 current/permit 소비가 Codex 전용인지 Primary가 읽기 설계 대조 중이며 코드GO0이다.
+
+Main은 후보/현황/통제 정확3 문서를 로컬로 보존하고, 외부SDK재조회·제품/시험쓰기·실제DB/권한/키/서비스/Agent 실행·push/PR/main/배포는 하지 않는다. 전체 작업계획 목표는 진행 중이며 실제 생성 연결의 부족을 합성 자료로 숨기지 않는다.
