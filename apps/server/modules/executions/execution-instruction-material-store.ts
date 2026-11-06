@@ -9,6 +9,7 @@ import type {SyntheticAuthenticatedMaterialStore} from './execution-authenticate
 import type {SyntheticPgInstructionMaterialBasis} from './execution-instruction-material-basis.ts';
 import {executionTarget} from './execution-proof.ts';
 import {assertNoStoredExecutionStop} from './execution-stop-fence.ts';
+import {readMaterialCredentialBasis} from './execution-material-credential-basis.ts';
 
 type Joint=Parameters<Parameters<SyntheticAuthenticatedMaterialStore['transaction']>[1]>[0];
 type Binding=Parameters<Joint['results']['bind']>[1];
@@ -46,9 +47,19 @@ export class SyntheticPgInstructionMaterialStore implements SyntheticAuthenticat
    this.#ports();const scope=cloneV1(rawScope);let selected:PoolClient|undefined;
    const pool={connect:async()=>{this.#ports();selected=await this.pool.connect();return selected;}};
    return await new SyntheticPgChallengeStore(pool,this.keys).transaction(cloneV1(scope),async challenges=>{
-    if(!selected)return reject();const db=selected;
+    if(!selected||typeof challenges.currentReadOnly!=='function')return reject();const db=selected,query=db.query,readOnly=challenges.currentReadOnly;
+    const txid=async()=>{if(db.query!==query)return reject();const rows=(await db.query('SELECT txid_current()::text AS transaction_id')).rows;if(db.query!==query||rows.length!==1||typeof rows[0]?.transaction_id!=='string'||!/^[1-9][0-9]*$/.test(rows[0].transaction_id))return reject();return rows[0].transaction_id as string;},originalTx=await txid();
+    let fixed:Awaited<ReturnType<typeof readMaterialCredentialBasis>>|undefined;
+    const checked=async()=>{
+     this.#ports();if(await txid()!==originalTx)return reject();const raw=cloneV1(await readOnly.call(challenges)),context:any=raw.context;
+     if(!Object.keys(scope).every(k=>same(context?.[k],(scope as any)[k]))||!isoV1(context?.grantExpiresAt))return reject();
+     const mapped=await readMaterialCredentialBasis(db,cloneV1(scope),'EXECUTION'),now=await challenges.clock();this.#ports();
+     if(await txid()!==originalTx||fixed&&!same(fixed,mapped)||!isoV1(now)||Date.parse(context.grantExpiresAt)<=Date.parse(now)||mapped.fact.registration.hostPublicKeyFingerprint!==context.publicKeyFingerprint)return reject();
+     return{raw,mapped};
+    };
+    const first=await checked();fixed=first.mapped;
     const current=async(commandId:string,materialId:string)=>{
-     this.#ports();const before=await challenges.current(),context:any=before.context;
+     this.#ports();const before=(await checked()).raw,context:any=before.context;
      if(!Object.keys(scope).every(k=>same(context[k],(scope as any)[k]))||!isoV1(context.grantExpiresAt))return reject();
      await assertNoStoredExecutionStop(db,{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration});
      const grants=(await db.query('SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1::uuid AND id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2',[scope.projectId,scope.grantRef.id,scope.grantRef.version,scope.grantRef.contentHash])).rows;
@@ -57,11 +68,23 @@ export class SyntheticPgInstructionMaterialStore implements SyntheticAuthenticat
      if(rows.length!==1)return reject();const s=rows[0];
      if(s.id!==subject.humanSessionId||s.user_id!==subject.userId||s.client_id!==subject.clientId||Number(s.credential_generation)!==subject.credentialGeneration||!(s.idle_expires_at instanceof Date)||!(s.absolute_expires_at instanceof Date)||!Number.isFinite(s.idle_expires_at.getTime())||!Number.isFinite(s.absolute_expires_at.getTime()))return reject();
      const actor:AuthenticatedIdentity={actorId:subject.userId,clientId:subject.clientId,credentialGeneration:subject.credentialGeneration,serverOwner:false,reauthUntil:null,authSession:{id:subject.humanSessionId,idleExpiresAt:s.idle_expires_at.toISOString(),absoluteExpiresAt:s.absolute_expires_at.toISOString()}};
-     const basis=cloneV1(await this.basis.current(db,actor,cloneV1(scope),commandId,materialId)),after=await challenges.current(),end:any=after.context,now=await challenges.clock();this.#ports();
+     const basis=cloneV1(await this.basis.current(db,actor,cloneV1(fixed!.materialScope),commandId,materialId)),after=(await checked()).raw,end:any=after.context,now=await challenges.clock();this.#ports();
      if(!recordV1(basis,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','material','sourceState'])||!same(context,end)||!isoV1(now)||Date.parse(end.grantExpiresAt)<=Date.parse(now)||basis.fact.registration.hostPublicKeyFingerprint!==end.publicKeyFingerprint)return reject();
      basis.fact.expires.humanSession=new Date(Math.min(Date.parse(basis.fact.expires.humanSession),Date.parse(context.grantExpiresAt),Date.parse(end.grantExpiresAt))).toISOString();return basis;
     };
-    const result=await body({challenges,materials:{clock:challenges.clock,current,readPart:async ref=>{this.#ports();if(!refV1(ref)||ref.version!==1)return reject();const bytes=await this.parts.readPart(db,cloneV1(scope),cloneV1(ref));this.#ports();if(!(bytes instanceof Uint8Array)||bytes.byteLength>2097152)return reject();return new Uint8Array(bytes);}},results:{bind:async(ref,binding)=>{this.#ports();if(!refV1(ref)||ref.version!==1)return reject();await this.results.bind(db,cloneV1(scope),cloneV1(ref),readBinding(scope,binding));this.#ports();},read:async ref=>{this.#ports();if(!refV1(ref)||ref.version!==1)return reject();const value=await this.results.read(db,cloneV1(scope),cloneV1(ref));this.#ports();return value===null?null:readBinding(scope,value);}}});this.#ports();return result;
+    const readCurrent=async()=>(await checked()).raw;
+    const result=await body({challenges:{...challenges,current:readCurrent,currentReadOnly:readCurrent},materials:{clock:challenges.clock,current,readPart:async ref=>{
+     this.#ports();if(!refV1(ref)||ref.version!==1)return reject();await checked();
+     const bytes=await this.parts.readPart(db,cloneV1(fixed!.materialScope),cloneV1(ref));await checked();
+     if(!(bytes instanceof Uint8Array)||bytes.byteLength>2097152)return reject();return new Uint8Array(bytes);
+    }},results:{bind:async(ref,binding)=>{
+     this.#ports();if(!refV1(ref)||ref.version!==1)return reject();await checked();
+     await this.results.bind(db,cloneV1(fixed!.materialScope),cloneV1(ref),readBinding(scope,binding));await checked();
+    },read:async ref=>{
+     this.#ports();if(!refV1(ref)||ref.version!==1)return reject();await checked();
+     const value=await this.results.read(db,cloneV1(fixed!.materialScope),cloneV1(ref));await checked();
+     return value===null?null:readBinding(scope,value);
+    }}});await checked();this.#ports();return result;
    });
   }catch{return reject();}
  }

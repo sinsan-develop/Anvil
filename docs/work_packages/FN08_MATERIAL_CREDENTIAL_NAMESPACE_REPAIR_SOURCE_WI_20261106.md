@@ -1,6 +1,6 @@
 # FN08 자료·실행 credential namespace 내부 연결 복구 작업지시서
 
-2026-11-06 / r1 / Main 어울 / 내부 구현 보완 / TEST_ONLY 및 PRODUCT_GO 전 source 쓰기0
+2026-11-06 / r2 / Main 어울 / 내부 구현 보완 / TEST_ONLY 및 PRODUCT_GO 전 source 쓰기0
 
 > 기존 Primary만 구현하고 Main은 관리·검수·통합한다. subagent-driven-development 방식으로 같은 담당자에게 순차 배정한다. 이 문서는 실제 DB·권한·키·서비스·Agent 실행 승인이 아니다.
 
@@ -24,7 +24,7 @@
 
 독립 WI 검토에서 새 공개/승인/인증 허용·저장 의미가 실제로 추가돼야 한다는 근거가 나오면 정확 차이만 Main에게 반환한다. 후보를 승인으로 전용하거나 사용자 재승인 대기를 먼저 만들지 않는다. 제품 GO 전 이 판단과 허용 파일을 재검토한다.
 
-## 단일 writer·정확 허용11
+## 단일 writer·정확 허용12
 
 기존 Primary만 아래 경로를 작성한다. Main은 이 경로의 제품/시험/SQL을 쓰지 않는다. 타인의 변경·보호 비추적3·Main 문서는 되돌리지 않는다. 새 agent/chat/branch/worktree/자동화0. Primary commit/push0.
 
@@ -116,3 +116,22 @@ CREATE OR REPLACE로 기존 anvil.material_binding_complete(uuid,uuid)의 signat
 실제 DB/DDL/GRANT·권한/정책/회원·키/Secret/certificate·서비스/listener·SDK/Agent/유료 호출·파일/실자료 조사·C#컴파일·J3/P03R3·Oracle/운영·기존 프로젝트 차단 해제·Git 인증 복구는 제외한다. 메모리 합성만 허용하고 source-only 결과를 실제 원문 supplier·기본 app/실행 준비·전체 FN06/FN08/계획 완료로 올리지 않는다.
 
 복구는 정확 허용 경로의 정상 Git revert만이며 실제 데이터/키/서비스 복구는 수행하지 않는다. Main은 독립 검수와 최소 fresh 검증 후 기존 branch local checkpoint를 보존하고 원격/Stage gate는 별도 실제 증거로 판단한다.
+
+
+## r2 내부 보완 — 직접 영향 SEND 시험1 추가
+
+부모 r1은13410B/SHA256 491F654EB94F4D040A80EED72949E7B0640AE66411BCD4C918C36183C094BA3E다. Main은 같은 namespace 복구의 직접 영향 시험 준비를 보강하는 내부 배치로 이 r2를 확정한다. 새 제품·공개·권한·저장 의미는 추가하지 않는다.
+
+추가 허용12:
+- tests/unit/FN08/execution-instruction-queue.test.ts — 123329B/SHA256 EFC66D603D6DA00452185637FA7D1AA748D9D2DB847EE52BDD72334E6B0AB5EC.
+
+Main e2b7c4의 직접 caller3은 원 queue의 COMMIT 준비에서0PASS/3FAIL·2218.9182ms/exit1이었다. Main/독립 읽기는 정상 COMMIT tag 누락과 임의 scopeDigest/plannedAt 누락·원 예약 tuple 미구성을 확인했다. 기존원문과actual stack의 근거이며 baseline시험을 새로 실행했다고 하지 않는다. 기존 fixture 미구성으로 신규 제품 검사를 생략하거나 전체검수 PASS로 바꾸지 않는다.
+
+보강 범위:
+1. 기존 fixture의 정상 COMMIT literal에만 command:'COMMIT'을 명시한다. raw 거절/throw·응답 유실·명시 불량/undefined·ROLLBACK 경로는 성공으로 바꾸지 않는다. 필요한 중요한 실패 음성을 같은 파일에서 보존·추가한다.
+2. 기존 material 경로의 grant는 원 fact의 초기 writerState:NONE 형태와 실제 planSyntheticExecutionGrant를 소비해 유효 plannedAt/scopeDigest/최종 hash·최소기한을 만든다. 실시간 SEND fact의 OWNED·원 actor/client/H·원명령/예약은 유지하고 가짜 hash 성공 대역은 없다.
+3. 기존 예약 모델은 project/grant/version/E 열·canonical snapshot/hash를 갖추고 exact grant SELECT·동일 txid를 실제 요청 tuple에 맞게 응답한다. 모든 SELECT에 임의 성공·빈 결과를 주지 않는다.
+4. 자료 소비 전 setup에서 기존 일반 PgChallengeStore의 실제 current 생산자로 E1을 정착시킨다. 측정 대상 자료 operation의 connect/release/key/trace·nonce·binding 효과는 setup과 분리하여 원 한 연결/rollback/단발 단언을 유지한다. 자료 currentReadOnly가 예약을 생산하는 fallback은 금지한다.
+5. basis/parts/results의 내부 scope 단언은 삭제하지 않고, 원 저장 grant에서 도출한 H3 materialScope에 대해 exact deepEqual한다. 외부 proof/Store의 E1 단언은 그대로다. 기존 E를 내부 자료 scope로 기대하던 표현을 H로 바로잡는 것은 명시한 namespace 복구이며 비교를 느슨하게 하는 변경이 아니다.
+6. 기존 SEND queue/permit basis와 각 시험의 읽기 횟수·rollback·성공false·단발·원명령 불일치 거절을 유지한다. 새 START 성공으로 SEND 검증을 대체하지 않는다. 기존 본문/기대값 중 실제 바뀐 것은 정확히 diff로 제출하고, 불변이라고 과장하지 않는다.
+7. 실제 schema/DB·키/권한·서비스·Agent·실자료 조사0, 제품 허용5경로는 r1과 같고 전체 허용은12다. Main이 r2 독립 검토·추가1 GO를 전달하기 전 이 기존 시험을 수정하지 않는다.

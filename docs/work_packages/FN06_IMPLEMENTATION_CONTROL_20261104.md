@@ -2669,3 +2669,96 @@ Main은 기존 두 namespace 계약의 내부 복구를 FN08_MATERIAL_CREDENTIAL
 7eb760에서 신규6경로 부재, 기존 제품3/시험2 시작 지문과 보호3 보존을 확인했다. 기존 Primary에게 TEST_ONLY를 발행한다. 허용은 기존 START flow와 신규 unit/schema/integration 시험 및 순수 fixture의5경로만이다. 정상 HUMAN H=3/기존 실행 예약 E=1·원 정책/등록·유효 proof를 실제 구체 wrapper에 연결해 현재 실패를 재현하고, 기존H1/E1 정상·외부E3거절을 보존한다. 현재 사용자를1로 바꾸거나 module 부재/fixture 누락을 기능 RED로 세지 않는다. 제품3·새helper/0079·기존SEND시험 쓰기는 PRODUCT_GO 전0이다.
 
 기존 challenge request snapshot에 없는 credentialGeneration 필드를 추가하는 의미는 아니다. 실행 E는 실제 예약·binding/publicChallenge 및 기존 원 request/proof 관계에서 검산하고, 저장 request/target·서명·응답 원형은 보존한다. Main은 실제 RED/원지문과 사전검토를 확인한 뒤 같은 담당자에게 정확허용11 PRODUCT_GO를 발행한다. 실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·단일writer·전체목표active다.
+
+
+## 266. namespace 실제 행동 RED 재현과 허용11 PRODUCT_GO
+
+Primary9f8140은 H1/E1 정상·외부E3 사전거절 PASS와 신규H3/E1 실패의3시험2PASS/1FAIL·1481.5663ms/exit1을 제출했다. Main a4f57b는 같은 원 실제 소비선을 직접 실행해2PASS/1FAIL/skip0·1279.3663ms/시험exit1 및 AUTHENTICATED_MATERIAL_REJECTED 412를 확인했다. 원 정책·queue/registrar의H3, 일반 challenge 생산자의 기존E1 예약과 유효P256을 거쳐 원 material lookup에 도달했으며 unsupportedSql=[]·receipt/binding/nonce소비0을 검산했다. 현재사용자를1로 바꾸거나 module/fixture 누락을 RED로 세지 않았다.
+
+flow49386B/C254007CE11ACF6C753C5048F03E3B3BA7716FFA25B5DDE9C43D389335CCBCC5, 기존제품3(8000B/84B9842D,18301B/20C915CB,25954B/D9E9AD4A)과 WI13410B/491F654EB94F4D040A80EED72949E7B0640AE66411BCD4C918C36183C094BA3E는 제출값과 일치한다. Main은 사전검토C0/I0/M0와 실제행동RED를 근거로 같은 Primary에게 WI 정확허용11 PRODUCT_GO를 발행한다. 같은grant의실제예약E·원H별도검산·예약없는읽기거절·기존public형태/hash/권한/현재성/nonce순서와 전체이력한도를 보존한다. Main제품쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+Main의 도구 사유 문구에 한국어 외 표현1이 나갔다(bb1b99). 대상 명령은 승인된 읽기 전용 상태 확인이며 제품/실자료 변경0이다. 이전 dispatch/write 전 차단2와 같은 출력 검증 누락 계열로 분류하고 검증 없는 자유작성 경로를 중단했다. 이후 도구 사유는 고정 한국어를 사용하고 호출 args 전체를 문자검증한 뒤 실행한다. 지침 예외나 승인 확대를 적용하지 않으며 이 보고 오류를 Developer 제품 실패로 세지 않는다.
+
+
+## 267. namespace 원 행동 GREEN 중간 제출
+
+Primary는 제품 연결 뒤 원 H3/E1 RED와 기존 H1/E1·외부E3 대조의3PASS/exit0·2049.9751ms 및 type ba8c92 exit0을 중간 제출했다. Main fresh 최종 인수는 아직 아니다. helper/공통 wrapper는 기존 예약의 currentReadOnly를 callback 전·각 await 뒤 읽고, 양쪽 registrar proof는 H/E를 각각 검산하도록 작성 중이다. query.call overload의 타입 준비 오류는 직접 Promise query 호출로 정합했으며 제품 동작 실패와 구분한다.
+
+같은 writer는 새 helper 음성·SEND fixture의 원 grant/예약 보강을 계속한다. 기존 START fixture를 허용된 순수 support 파일로 이동했다고 보고했고 내용 보존 전체 지문은 최종 제출 뒤 Main/독립 검수로 대조한다. 미제출 prefix 지문을 확정 manifest로 쓰지 않는다. 현재 Primary live/pending0 보고이며 작업 handle은 계속 running으로 확인했다. 실제DB/권한/키/서비스/Agent/실자료조사0·허용11·Main제품쓰기0·전체목표active를 유지한다.
+
+
+## 268. namespace helper·소비선 부분 동결 검수
+
+Primary는 helper4041B/0D06AF6C3378958C47AA1E49BB38CBB49594F4EE35459BE89FE9B99795874286, 공통store9652B/EACE07F05B802C765CE77B76E17FC484C8C7140902F2EBC7DF4CB8C69EC7BC99, SENDstore18745B/354B3EBF46676137DA405EC4D4B00A9C95ABB94281734622B322B00765D144B6, STARTstore26398B/863A915F302231825DF174C89E2F679371EBF43747BA9513F37AC51AB8D3F459를 부분 동결했다. helper 직접4PASS/1697.207ms/exit0 및 type7ba7e9 exit0은 Primary 결과이며 Main 전체 fresh 인수와 구분한다.
+
+Main821bcf는 실제 helper와 제품3 diff를 읽었다. 독립 담당자는 제품4의 시작/종료 동일 지문에서 C0/I0/M0를 반환했다. 같은 Tx/query·원 grant fullref/snapshot/hash·H·기존 E1 예약을 SELECT만 검산하며 callback 전에 H를 고정한다. 필수 currentReadOnly와 각 소비 전후·최종 매핑/기한/Tx 재검사를 유지하고 외부 proof에는 E·자료 포트에는 H를 전달한다. 두 registrar는 원 receipt/target/hash/consumed2·resultRef/previousRef·proofHash·H snapshot/할당량 생산을 보존한다. 예약 생산 fallback과 성공 기본값은 없다.
+
+작성 중0079·SEND 종단 fixture·실제 PG/권한/COMMIT·전체 인수는 미확인이다. 보조 helper시험5084B/144FF4C65A2CB59F2DABFBE0FAF83562BC2ED10670CAB27CD63C9CBA4150BD8E와 순수 fixture26018B/6520B5F323A3A2BB603F9FFE4F66D6992AF6BF678AF7E9829ECB3E4C69B4378F도 부분 제출이며 최종 fixture 이동/기대값 보존은 별도 대조한다. 같은 Primary가 허용11의 나머지를 계속하고 Main 제품쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active를 유지한다.
+
+
+## 269. 원 challenge 뒤의 예약 사후 수선 차단 보완
+
+Primary는0079 역사 완결 대조 중 현재 읽기시각까지만 검산한 E예약이 원 publicChallenge.issuedAt 뒤에 생긴 경우를 추가로 닫아야 함을 확인했다. Main은 WI의 기존예약/사후보충0 범위로 판단하고, 두 registrar #proof에서 원 issuedAt·예약 reservedAt과 hash의 관계를 검산하며 정상 이전/동일시각과 후행예약 거절을 최소시험으로 고정하도록 했다. 기존예약을 재작성하거나 현재시각으로 과거를 재허가하지 않는다. 새 필드·권한·수치·예약 생산은 없다.
+
+제품4 중 SEND/START proof 부분의 동결만 갱신하며 helper0D06AF6C·공통storeEACE07F0는 유지한다. 이전 C0/I0 판정은 당시 지문 범위이고 새 proof/0079는 새 지문 뒤 재검수한다. 같은 writer가 계속하며 Main 제품쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+
+## 270. namespace 미적용0079 부분 검수
+
+Primary는0079 7776B/4297C897E32C8141B03D6C9741C7217A4CDADBDA6FAF39ABC521E9F551592DEB와 schema 신규3PASS/170.7323ms/exit0(dbd44e)을 제출했다. Main bc13cf는 실제 SQL/형상 시험을 읽었고, 독립 source 검수는 시작/종료 동일 지문에서 C0/I0/M0다. 추가 선언·H/E 검산 블록과 포함식 분리만 역치환하면 원0062 함수본문과 byte동일함도 독립 확인했다.
+
+같은 grant fullref·원 fact/H·자료 세대, 기존 E1 예약 snapshot/hash·false flags, request/publicChallenge/binding의 E와 reservedAt<=원 issuedAt을 분리 검산한다. 원 material/descriptor·receipt·challenge1/consumed2·target/resultRef/previousRef/proofHash·기존 hash와 credential 이외 scope 포함식은 유지된다. NULL/missing·불량시각은 거절하며 현재시각/HUMAN GUC 재인가·DML·표/열/owner/ACL/trigger·SECURITY DEFINER·권한 확대는 추가하지 않는다.
+
+실제PG 설치·권한·trigger·COMMIT 동작은 미검증이다. 후행예약 시각을 보완한 두 registrar의 새 지문/음성 및 SEND 종단/최종회귀는 아직 제출 대기이며 같은 writer가 계속한다. Main 제품쓰기0·실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+
+## 271. 두 proof 소비자의 원 예약 시각 보완 검수
+
+최신 SEND18945B/527C361160276B8CB664C4F237E8AE3E62B09D2FA4B265D60F70E6ED613C7CF4, START26598B/493A3A09CA91DBE6F6BE3A070046F63F06E4D3748183109BC803C0680EF339A1를 부분 동결했다. Main a97c1b는 해당 검산과 diff를 읽었고, 독립 scoped 검수는 시작/종료 동일에서 C0/I0/M0다. 추가 한 줄을 역치환하면 이전동결354B3EBF/863A915F 원문이 정확히 복원되며 hash/target/consumed 역완결·권한·기존 형태는 불변이다.
+
+원 publicChallenge.issuedAt ISO와 기존 예약 reservedAt<=issuedAt만 추가했다. 현재시각으로 과거를 재허가하거나 새 예약/필드·H/E치환은 없다. 시간 정상/후행 음성·실제 SEND queue/등록/PermitBasis/MaterialBasis→구체 wrapper의 통합시험은 아직 작성 중이다. pg overload 준비 오류는 앞서 보정한1종이며 반복 오류/미정착 handle은 없다고 Primary가 보고했다. 실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·전체목표active다.
+
+
+## 272. 직접 영향 기존 SEND 시험의 준비 실패 발견
+
+Main은 cdafd4/d96b8b의 실제 caller 읽기에서 기존 execution-instruction-queue.test.ts가 공통 PgMaterialStore를 직접 소비함을 확인했다. e2b7c4의 이름 패턴 SEND자료 PGstore|동일challenge연결|구체PG자료 선택3시험은0PASS/3FAIL/skip0·2218.9182ms/exit1이었다. 모두 permitBasisFixture의 원 HUMAN SEND queue→AccessRepository79 TRANSACTION_STATE_UNKNOWN이며 새 namespace proof 소비 전 실패다. 이3을 예상RED/PASS·제품 회귀로 확정하지 않았다.
+
+Main345e45는 기존 fixture의 COMMIT 반환이 rows만 있고 정상 command tag가 없음을 확인했다. AccessRepository79는 정상COMMIT tag를 요구하며 두 파일은 현HEAD부터 변경0이다. 기존 시험 raw는EFC66D603D6DA00452185637FA7D1AA748D9D2DB847EE52BDD72334E6B0AB5EC다. baseline 실행을 별도로 수행한 것으로 보고하지 않으며 현재 코드/원문·실제 stack의 준비 불일치를 구분한다. 같은3실패는 한 번 실행의 같은 준비 원인이며 Developer 정식 실패3회가 아니다.
+
+Primary와 읽기 전용 담당자에게 원 기대값·정상/유실/거절 COMMIT 구분·실제 grant/예약 근거를 보존할 최소 보강 접점을 요청했다. 기존 시험은 현재 허용밖이므로 수정0이며, writer는 승인된 새 SEND 종단을 계속한다. 필요하면 Main이 시험 fixture 한정 WI 개정과 독립 검토를 처리하고 제품 검산을 느슨하게 하거나 가짜 grant 성공 대역으로 우회하지 않는다. 실제DB/권한/키/서비스/Agent/실자료조사0·전체목표active다.
+
+
+## 273. r2 직접 영향 fixture1 추가 GO
+
+Primary 최소안과 독립 source 대조가 일치해 Main은 namespace WI r2를 내부 보완했다. 부모 r1 13410B/491F654E에서 허용11→12와 말미r2절만 추가했고, 최종16493B/F20976B0424B2BC1D8FB0BBC915261612BE68AE296B801500803026C8245F81B다. 독립 사전검토는 시작/종료 동일에서 C0/I0/M0다. 제품5·공개/저장/권한·실제 실행 제외는 불변이며 추가는 tests/unit/FN08/execution-instruction-queue.test.ts 한 파일이다.
+
+정상 COMMIT literal만 tag를 보강하고 거절/유실/불량/누락·ROLLBACK은 보존한다. 실제 planSyntheticExecutionGrant로 초기 NONE grant의 plannedAt/scopeDigest/hash를 만들며 후속 OWNED·원 actor/client/H와 원 예약은 별도로 유지한다. exact grant/예약 tuple·txid 모델, 일반 challenge 생산자의 setup 예약과 측정 대상 currentReadOnly의 효과0·계측 분리를 고정했다. 내부 port의 E기대 표현은 원 H3 materialScope exact단언으로 명시 보정하고 외부 E1 단언은 그대로다. 기존 단언을 삭제/느슨하게 하거나 기대값 변경을 숨기지 않는다.
+
+Main은 같은 Primary에게 추가1 GO를 발행한다. 원 시작123329B/EFC66D603D6DA00452185637FA7D1AA748D9D2DB847EE52BDD72334E6B0AB5EC를 보존 근거로 두고 실제 diff/반례를 검수한다. 제품 guard/새helper를 가짜 grant에 맞춰 낮추거나 다른 제품 파일을 추가하지 않는다. 이는 동일 복구의 직접 검증 준비이며 사용자 재승인을 요구할 새 범위가 아니다. 실제DB/권한/키/서비스/Agent/실자료조사0·단일writer·Main제품쓰기0·전체목표active다.
+
+
+## 274. START 시각 반증·SEND 실제 생산/소비 중간 결과
+
+Primary는 실제 구체 START의 예약시각 이전/동일 정상과 원 issuedAt 뒤 예약 거절2를1adf5a에서2PASS/2079.7391ms/exit0으로 제출했다. 새 guard 한 줄을 메모리 loader에서 제거한 이전 분기는6ee022에서1FAIL/Missing expected rejection·1224.711ms/exit1이었다. 제품 파일을 되돌린 실험이 아니며 메모리 반증으로 구분한다. 첫 dataURI apostrophe escaping SyntaxError1은 준비 오류로 기록하고 %27 보정 후 반증했다. Main의 새 제품 RED나 실제PG 증거로 세지 않는다.
+
+신규통합6은aaf8f7의6PASS/3509.5664ms/exit0(START·예약부재 callback0·손상/다른HUMAN·late Tx/current·COMMIT불명)이다. 실제 SEND queue/PgInstructionQueueStore/등록→PermitBasis/MaterialBasis→구체wrapper H3/E1 정상·후행예약 거절2는d2b356의2PASS/1690.3413ms/exit0이다. 앞선0PASS/2FAIL은 복합quota SELECT를 usage 이력으로 오분류한 fixture 준비1이며 고정 budget SELECT만 매칭해 제품 guard 변경 없이 보정했다. 기존 SEND store 시험의 descriptor clone 재봉인 누락1도 strict parser로 전체 plan을 정합해 b75617 해당1PASS로 구분했다.
+
+이 결과는 Primary 중간 제출이며 Main fresh 최종 인수는 아직 아니다. 현재 writer는 r2 허용 추가 instruction-queue 시험1의 COMMIT/실제 grant/기존 예약 setup을 보강 중이다. 기존 기대값의 정확 namespace 보정·오류/유실 경로·원 SEND 단발/rollback은 보존하고, 안정된 integration/기존SEND시험 묶음 지문을 받아 독립 검수한다. 실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·전체목표active다.
+
+
+## 275. 시험 묶음 검수와 SEND 정상 scopeDigest 정합 보완
+
+Primary가 동결한 기존 SEND-store시험27845B/468CBAA3B2C0E6518DF88BA888D96CC6B3375C2AD88D2CD2466E5D18FCCBFE81, 신규integration16498B/B9C7124A2F34AC7AC20DC4193FF85791B1AE9B8341FAB08E26831AAA5BB9C5F5, 순수fixture30147B/2E8EFC8613D0D3E2FA2B4BDA896C12096FD9D5F432969258AE410B4AF47ED1DD를 Main2fd449가 읽고 독립 검수와 대조했다. 실제 START/SEND 구체 호출선·H/E·예약없음·손상/late/UNKNOWN·pure fixture 분리는 현재조립 범위 C0/I0다. 신규integration 자체는 반환bytes까지만이며 receiver 호출과 원 factory 전체byte이동 보존은 별도 flow/원지문 검증 전 미확인으로 남긴다.
+
+추가 원자료 대조에서 독립 I1이 나왔다. 기존 SEND-store P256 joint context.scopeDigest의 임의64자 값은 실제 계산한 grantSnapshot.scopeDigest와 달라0079의 역사 완결 관계를 만족하지 않는다. Main은 같은 허용시험1에서 원 p.f.grantSnapshot.scopeDigest를 사용하고 기존 challenge 생산자가 hash/서명을 만들도록 지시했다. 제품 guard·기존 실패 단언은 변경하지 않는다. 이1곳 동결을 갱신하고 신규지문/직접반례 뒤 재검수한다. 구조적 포트 시험의 성공을 SQL 완결성으로 확대하지 않는다.
+
+추가 instruction-queue 직접선택3은 Primary553f14에서3PASS/fail0/skip0·1956.1043ms/exit0으로 보정 제출됐다. import 단수 파일명 준비1·예약INSERT literal E1 인자위치 정합1은 제품RED가 아니며, Main최종fresh와구분한다. writer는 원 실패/유실 wrapper와 단언을 보존해 직접인접·남은 START 구조포트 정합을 계속한다. 실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·전체목표active다.
+
+
+## 276. namespace 최종 소스 검수와 직접 인접138 확인
+
+기존 Primary의 허용12 최종 제출을 Main이 인수 검수했다. a0f397은 변경6+직접인접3에서138PASS/fail0/skip0·8927.5331ms/exit0, 2a2bb2 type0, e1e761 diff0이다. START flow CRLF→LF 예정 경고1은 설정 변경 없이 보존한다. 이전 Primary108/선택1·1을 이138에 중복 합산하지 않는다. 독립 최종 scoped C0/I0/M0에서 SEND scopeDigest I1 해소와 원 COMMIT/유실/rollback·외부E1/내부H3 검산을 확인했다.
+
+구조적 receiver 여정과 구체 Store 부분 조회를 구분하며 실제PG 전체종단으로 합치지 않는다. factory 전체추출 byte보존은 독립 미확인이다. e71f18은 허용12/WI/보호3 전후raw동일·HEAD34eadf0c·index빈상태를 확인했다. Main7afc59의 D package.json 부재1은808e2a의 실제source기준읽기로 정정했고 파일생성0이다. 결과 docs/04_test_reports/AV3/FN08_MATERIAL_CREDENTIAL_NAMESPACE_REPAIR_SOURCE_RESULT_20261106.md에 정확명령/지문/오류·NOT_RUN을 기록한다.
+
+실제DB/권한/키/서비스/Agent/실자료조사0·새QA0·제품소스Main쓰기0다. 이단위소스검수만완료이며전체FN08/Stage/계획은미완료·목표active다. 현재복구로바뀐선행만다음미완료선정에반영하고기존읽기전용담당자가후속단위를대조한다. private재시도/PR/main/배포0, 보호3보존·단일writer원칙유지다.
