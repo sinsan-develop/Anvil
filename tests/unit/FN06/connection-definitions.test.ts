@@ -15,7 +15,7 @@ function fixture(){
   if(sql.includes('FROM anvil.permission_policies p JOIN anvil.permission_policy_versions')){assert.deepEqual(values,[pid]);return{rows:[],rowCount:0};}
   throw Error('UNMODELED_SYNTHETIC_SQL');
  }} as unknown as PoolClient;
- const repository={
+ const repository={installationId:id(90),
   async authenticated<T>(token:string,csrf:string|null,body:(db:PoolClient,actor:any)=>Promise<T>):Promise<T>{authenticated.push({token,csrf});if(token!=='synthetic-current-session')throw new AuthFailure('AUTH_REQUIRED',401);return await body(db,actor);},
   signProjectCursor(_value:string){throw Error('UNSELECTED_CURSOR_SIGNING');},
  };

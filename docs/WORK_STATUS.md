@@ -16875,3 +16875,53 @@ ba4e2b는HEAD35247729·tracked/indexclean·보호3과계획AC6BF508/설계1346F6
 최종WI10780B/96DDDB842D3ACF497B727B69D4FA1A0F7BAD7D17D2F1D8AC2E1A28CEAD46C9FB는보완절한정독립C0/I0/M0와기존Primary의신규2가능확인을받았다. 7f4d85는시작HEAD35247729·원definitions74EF6C95/environments7F6D7137/resourcesA9294C98와신규2부재/indexempty를확인했다. Main은정확WI해시에SOURCE_GO를결박하고머리GO0은사전검토원형으로보존한다. 문서3로컬checkpoint뒤기존Primary만신규2를구현한다.
 
 명시profile의보호데이터선택은기존계획내부구현이며새실행역할/argv/env/Secret값/권위·publicAPI/SQL을추가하지않는다. Main같은제품쓰기0·실제SDK/DB/권한/키/서비스/Agent실행0·전체목표진행중이다.
+
+
+## 328. profile selector 실제 보호 reader 정상 첫 제출
+
+기존Primary는신규selector의실제저장command→정의/환경/resources/root보호read→references(fresh=true)→전후read 정상1PASS/417.1414ms/exit0(d522e0)을제출했다. 원9키·Claude/Node복수요구·선언program원문·false후보·추가명령0을확인했다고보고했으며Mainfresh/최종인수는아니다. 최초모듈부재RED9d0e14는구조적준비이고실제guard준비오류0이다.
+
+현재snapshot정상/중요음성은구성중이다. 언어혼입주석1은저장전검사/한국어정정으로제품검증과분리한다. Main은타입/핵심안정후source부분동결을요청했고쓰는중인시험은읽지않는다. 단일writer·신규2·실제환경0·목표진행중을유지한다.
+
+
+## 329. 고정 SDK 선언 재조회 실행심사 차단·영향 분리
+
+후속 실제driver 계약의 command/args/env 필드를 구체화하기 위해 기존 고정0.3.224의 SpawnOptions/SpawnedProcess 선언을 메모리에서 읽는 준비 명령을 구성했다. public registry web open은 접근불가였고, 별도 Node HTTPS/source해시대조 명령은 실행 전 자동안전심사에서 거절됐다. 거절 이유는 기존source-only의SDK재조회제외와충돌하고명시사용자승인이없다는것이다. 해당명령의Node/네트워크실행·파일쓰기·설치/SDKimport/query는수행되지않았다.
+
+Main은거절뒤우회/다른도구재시도하지않고신산님에게정확공개0.3.224tarball1110841B의sdk.d.ts/sdk.mjs 메모리읽기1회·기존지문대조·필드확인만비동기로요청했다. 계정/키/비용/Agent/파일저장·실제SDK실행은제외한한정질문이며답변전재조회하지않는다. 역사에기록된bytes/hash를이번현재검증으로주장하지않는다.
+
+이차단은후속driver의정확선언대조에만영향을준다. 현재승인된profile selector의보호source/메모리검증은같은Primary에서계속하며실제DB/권한/키/서비스/Agent실행0을유지한다. 전체목표를완료/전체대기로바꾸지않는다.
+
+
+## 330. profile selector 부분 검수의 하위 현재성 교체 누락
+
+기존 Primary는 source1 11588B/9CB2EC406AE3F424126DA407AAE60EFA084E214848487D47949A7B5A48FC6568을 부분 동결하고 실제 보호 reader의 직접 root와 snapshot/identity 정상2 PASS(d8f9d7), type0(844a69)을 제출했다. 시험은 중요 음성 작성 중이므로 Main은 읽거나 인수하지 않았다.
+
+독립 소스 검토 C0/I1/M0는 selector의 원형 검산에서 실제 하위 currentHost/currentMetadata/currentSource/host가 빠져 있음을 확인했다. 특히 currentHost를 빈 issues 함수로 바꾸면 등록 회수와 정책 변경의 현재성 검사를 생략할 수 있고 fresh host 증거 수집은 이를 대신 거절하지 않는다. Main은 같은 신규2 안에서 실제 교체 RED와 필요한 하위 함수 정체성의 전후 검산 보완을 기존 Primary에 지시했다. 원 보호 reader나 권한 의미는 수정하지 않는다.
+
+sourceRoots는 선언 ref와 상대 범위이며 관측 보고서의 실제 경로를 새로 노출하지 않는 것으로 독립 확인됐다. 최종 동결·독립 재검토·Main 직접 검증은 미완료다. SDK 공개 원문 재조회 승인은 아직 확인되지 않아 재시도하지 않았고 실제 DB/권한/키/서비스/Agent 실행0·단일 writer·전체 목표 진행 중을 유지한다.
+
+
+## 331. 동일 Primary 외부 권한 오류 후 현재본 재개
+
+기존 Primary의 턴은 application network permission was revoked로 실패했다. Main은 동일 담당자에게 followup으로 현재 실행 가능성 확인을 요청했고 최초 읽기5f72a3 exit0을 받아 재개를 확인했다. 권한 설정 변경·우회·담당 교체는 없었다.
+
+Main b00c48은 source11588B/9CB2EC40과 시험20249B/9B5BB0F4가 보존됐고 I1 보완은 아직 저장되지 않았음을 확인했다. 기존 Primary가 currentHost 교체 실제 RED부터 같은 신규2에서 이어간다. 이 외부 턴 실패는 제품 실패나 정식 Developer FAILURE_REPORT 횟수로 세지 않는다. PMO에 예외·복구 사실을 공유했고 실제 환경 실행0·단일 writer·전체 목표 진행 중을 유지한다.
+
+
+## 332. profile selector 최종 검수와 기존 인증 fixture 실패
+
+Primary는 currentHost 교체의 실제 RED fe0f91을 최소6 함수 정체성 검산으로 보완했다. 최종 source12427B/B7E4DBA10BCF44F95CC5B086DAEFD3F1AD2D3ADCA6F3139CC2E41BEADA05C6EF·시험22048B/65C53A5259C1CE316ACD447A5866FE3ED53DEA0DD871F37B2B587D5F8554B900을 동결하고 writer를 반환했다. 독립 최종 읽기 C0/I0/M0는 I1 해소·원 보호 read 소비·실제 경로 비반사·false flags를 확인했다.
+
+Main7dd6a0의 직접5파일은69개 중68PASS/1FAIL/skip0/6234.5034ms/exit1이다. 신규16은 모두 통과했지만 기존 connection-definitions의 익명401 시험이 buildApp→NativeFirstReceiveService 생성의 NATIVE_RECEIVE_OWNER_UNAVAILABLE에서 실패했다. 합격으로 제외하거나 기대값을 낮추지 않는다. Main6b38ac의 typecheck/diff는0이며 긴 소스 출력 일부 잘림은 전체 검수로 사용하지 않는다.
+
+Main a1bc10은 해당 생성자가 UUID installationId를 요구하지만 기존 시험 repository fixture에는 값이 없음을 읽었다. app/test의 selector import0·기존 코드 diff0을 확인했고 같은 Primary에게 읽기 전용 원인 확인과 최소 fixture 보완 검토를 맡겼다. 그 조사 턴의 외부 앱 권한 철회1은 동일 담당자 재개 가능성을 확인 중이며 제품 실패와 구분한다. Main의 한국어가 아닌 subagent 단문1은 즉시 폐기 지시하고 한국어 상세 지시로 교체했으며 제품 변경0이다.
+
+전체 인접 합격·단위 최종 인수·commit은 아직0이다. 실제 DB/권한/키/서비스/SDK/Agent 실행0·전체 목표 진행 중이다.
+
+
+## 333. profile selector 최종 직접 검증과 fixture 최소 보완
+
+기존 fixture repository의 installationId 누락을 합성 id(90) 한 필드로 보완하도록 Main이 내부 SOURCE_GO를 발행했다. 시작24683B/AFD89EA6→최종24705B/DA915257이며 기존 단언·제품 guard·SQL 변경0이다. Primary11PASS 뒤 Main5c9855→세션53198→a19a3a는 동일5파일69개 dot 통과·type/diff0·최종exit0을 확인했다. 이전7dd6a0의68PASS/1FAIL은 보존하고 합산하거나 소급하지 않는다.
+
+최종 신규2 B7E4DBA1/65C53A52의 독립 C0/I0/M0와 실제 currentHost RED 해소를 확인했다. 결과 docs/04_test_reports/AV3/FN07_PROCESS_PROFILE_SELECTOR_SOURCE_RESULT_20261106.md에 원문 hash·변경3·검증·오류·미실행을 기록한다. 추가 fixture 독립 검토 뒤 정확 소유 파일만 checkpoint로 통합한다. 실제 DB/권한/키/서비스/SDK/Agent 실행0·전체 계획 미완료·목표 진행 중이다.
