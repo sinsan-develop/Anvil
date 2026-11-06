@@ -2452,3 +2452,55 @@ Main은 이 Node 직접 범위만 source 부분 인수하고 담당자의 검토
 Main은 이 정확 목록을 같은 Primary에게 전달했다. 새 분기의 고정 wrapper 뒤 공통 내부 구현 공유는 허용하되 caller가 내부 목적을 선택하는 공개 통로·기존 quota 전체 리팩토링은 추가하지 않는다. 담당자는 source-only 범위에서 계속 구현 중이다.
 
 검토 담당자의 첫 결과가 한국어 작성 지침을 위반해 동일 결과의 한국어 정정만 지시했고 새 조사/시험/수정 없이 바로잡았다. 이 보고 오류1은 제품/정식 Developer 실패나 코드 인수 횟수로 세지 않는다. Main 제품 쓰기0·실제 DB/권한/키/서비스/Agent/실자료 조사0이며 전체 목표 active다.
+
+## 244. 승인 SQL 현재성3 및 Options3 한정 대조와 새 생산자7 작성
+
+독립 읽기는 새 approval_context9335B/E1B3AB61A5BC8CB83B76299B467F292EC0029B2D4C8211568A9899846EFF55C4, request_cost_complete963B/253385C485770C9C4D4B635789BF1BA579F542401532EFE6146E9F165BB3AAA8, decision_cost_complete968B/C8265FE993E829772D63E46E1973D4CEC9BC9A0ED0F2BDD9060CD308B15622B1의 시작/종료 동일에서 한정 C0/I0/M0를 반환했다. 원 Session/OWNER/제어·현재 정책/ref·목적/Tx·원 후보/요청·3결정·최단기한, 기존0069 proof의 REGISTERED_CONNECTION/ENVIRONMENT_VERSION rootKind와 정확 시그니처·rootRef/verified·내부 EXECUTE 회수를 확인했다. 두 역사 비용 wrapper는 REJECT/REQUEST_CHANGE도 보존하고 실행용 APPROVE 전용과 구분된다.
+
+Options 신규3과 Node compiler 대조도 한정 C0/I0/M0다. options_data_valid1368B/822BAA8D243DF6733FDB5F61EB8D102893B3A4C8B20D53EE552145C970F4E588, model_options_text1610B/84180EFD83D9BE2008433E0C6E450D5B7E6ABA624C2462BDE4D7A45F44F44B12, options_valid1108B/6D1A503334F1AA5EA28D6E4F4E1239D3E5B484FE5FAED8CF21BBE9A404B79CB2 및 preparation-input3233B/DD72F944E9F8C2CEA475C262024A385F9ECFE1C39ED8829DC60F6729F9C42FA3가 시작/종료 동일이다. UTF16 길이·닫힌 값·auto 허용·원 canonical modelOptions 추출/본문 bytes/hash가 대응한다. 이 helper를 독립 원문 등록 validator로 인수하지 않으며 중복키 등 기존 보호 정의 생산자 선행을 유지한다.
+
+별도 미확인: 기존0065/0076의 definition 원문 fn01_json(JSONB numeric::text) 비교와 Node 보호 reader canonical 비교가1e-7 같은 허용 숫자의 최초 정의 저장에 함께 부합하는지는 실제 PG로 확인하지 않았다. 신규 Options 함수가 지수를 소수로 재표현하는 결함이나 적합 저장행에서 발생한 오류로 확정하지 않는다. 작은 소수/최소 양수/지수/음수0의 실제 PG 왕복은 미검증이다. 입력 범위 축소·반올림·별칭 차단·기존 SQL/global canonical 임의 변경은 하지 않고 현재 승인 구현을 계속한다.
+
+Primary는 실제 상계/예약/정산의 새7본문을 작성했다.382f9f의4 RPC 부재 형상1FAIL→7787f1의 신규1/문자열·중복꼬리 인접2=3PASS/skip0/191.5573ms/exit0을 수거했다. 실제 PG RED/GREEN이 아니다. 새 raw0077은116099B/D5C91FF879349481808489D5BBFB46AB7F32812552DF4A8B419EF30853F5F75C이고 Main도 실제 함수 경계/지문을 읽었다.7본문은 다음 한정 독립 검토로 넘겼으며 전체 CHECK/guard·역완결/ACL·UI는 미완료다.
+
+등록 전용 BEFORE의 owner 고정 검산과 기존 invoker/RLS 나머지 분기 보존 배치를 같은 승인 내 내부 구현으로 진행한다. app 설정 가능 GUC/boolean을 검산 완료 권위로 쓰지 않고 원 NEW를 변조 없이 검산하며 새 양방향 deferred 관계를 유지한다. 기존 guard 전체의 DEFINER 승격/trigger 무력화/실제 권한 적용은 하지 않는다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer/전체 목표 active다.
+
+## 245. 새 승인 예약·정산 SQL7 한정 검수 수거
+
+독립 검토는 새7본문의 시작/종료 지문과 제출값이 모두 같음을 확인하고 한정 C0/I0/M0를 반환했다. Node10인자·reserve6/settle4 반환과 REQUEST/DECISION 고정 wrapper 목적이 대응한다. 요청 Q/B/N+C/A/U, 결정 실물/공유행 차분, R 최소 고정점·U/H/O 단일 계상, 원 Tx/xmin/주체·명령/ref/결과/봉인·원 상계/실비/CAS/최단기한 대응에 새 확정 반례를 찾지 못했다.
+
+fn09_registered_approval_ 접미사별 정확 CREATE~최초 달러 본문 종단 포함·뒤 LF 제외 지문:
+- maximum10448B/11FC3C960C176690DC2F1CEAC92B23B4CF8F40FD8FE9F790C797A32A77717E59
+- reserve_internal4238B/710E78B9F31649F7EA531873C8B86B4C5226032D8B7E002A8C704C29E6EABCE5
+- settle_internal7613B/F45B8E713A426F743E7BD5C3D71C5CABE73118F8DD131914137E43309D1B14F7
+- request_reserve490B/AB131195CE2C62DC35FCB6C18EA28D401A8B36049B7FDBD4DD8DCAC071A0E8AD
+- decision_reserve492B/62CE24B55E1E682A6B700C6D3B88C71DAA5259A2FAB6CFA79F460985B7EAE4C6
+- request_settle471B/26496929CCD0C5EA16730B43CF49BB0B0FDB4EB642C669572777DC79436BF642
+- decision_settle473B/861E6E44E312AC21490DDE4F34D467A77A5C15BA2C6F5C263F925CD3F71A7344
+
+모두 아직 app/PUBLIC 직접 실행 회수 상태다. 최종 앱 진입 ACL·CHECK/양방향 완결·전체 producer/PG 원자성·UI 정상 경로 인수는 이 판정에 포함하지 않는다. 실제 SQL/PG 실행을 하지 않았고 형상3PASS를 그 증거로 올리지 않는다.
+
+Main은7본문의 검토 중 고정을 해제하고 후속 연결에 필요한 변경이 있으면 이유/새 지문·영향 증거를 다시 수거하도록 했다. 같은 Primary가 남은 guard·공개 내부 목적 차단·역완결/ACL·UI를 계속 작성한다. Main 제품 write0·실제 DB/권한/키/서비스/Agent/실자료 조사0이며 전체 목표 active다.
+
+## 246. SQL guard/역완결 source 검수와 Main 형상21
+
+Primary는 등록 전용 guard·CHECK·역완결/ACL 선언을 작성하고344655의 schema21PASS/skip0/223.8714ms/exit0을 제출했다. Main212027도 같은 직접 형상/보존 파일 전체21PASS/fail0/skip0/175.2832ms/exit0을 fresh 확인했다. raw0077 E14BC22ABDFA9BDB55D55D993F2AA439E05796613A2A301210630A977B1A0608와 schema시험8E3B74044B7EC097896570B49EB909F86A10AB0B4C09D5371DF21A5E6C92FF5F의 실행 전후 지문은 동일하다. 실제 SQL 설치·PG 트랜잭션/권한/trigger 실행 증거가 아니다.
+
+독립 guard7/꼬리 검수는 제출 지문 시작/종료 동일에서 한정 C0/I0/M0다. 기존 invoker guard에서 등록 조기 반환 한 줄을 빼면0055 본문과 byte 동일하고, 새 등록 BEFORE는 동일 NEW·원 command/receipt/snapshot/hash·현재 source·같은 Tx IO_STARTED 예약/봉인/세대/기한을 검산한다. 사용자 GUC/boolean 하나를 완료 권위로 쓰지 않는다. 역사 예약 완결은 stored_actual을 소비하며 현재 권위를 역사 비용에 전용하지 않는다.11표의 deferred 원/역방향은 실제 등록 준비/명령/승인후보/결정/알림과 정산 R을 결박한다. 기존 CHECK/public quota_current 목적 제한을 보존하고 내부 helper는 닫은 채 정확 앱 RPC6개만 EXECUTE를 선언한다. 테이블/RLS 권한 확대 선언은 없다.
+
+정확 CREATE~달러 본문 종단/뒤 LF 제외 지문:
+- guard_execution_preparation10665B/E4333693565CFCB7DDA6B9D4A3D2799C8CC4858F5C7EF63F338BCA48C3B622FA
+- fn09_registered_preparation_guard13289B/E40E5FA559955CE166761BE131B51C58E35061EC2E35BE506A9DA2A49966951B
+- quota_plan_valid2958B/D67E0FE56EB8CED6D6DFBF4F2E26AD28797B28FAEB9972A706AD535748E9D09D
+- prepare_reservation_complete3268B/8F3B89DDED76505304BBAA4FCC48E1768EEA08DDC9E9D209AE151732B68E6806
+- quota_settled_complete1151B/B3B8D85D5D6950EE3AFF1FBEA1133D4D1B71678328B340313E836923C6DA4E0D
+- registered_quota_complete3850B/237BE446C57D515D31D09C8583DDF9822A974E54E447665935FC39C5431EF91C
+- final_guard559B/7FAB0F7435E8D261651D1B9B6B47E8A2142C2D475429D2B1B0F957D11140F4D9
+
+작성 도구 오류는 원 LF를 CRLF로 가정해 쓰기 전 차단1, JS replacement 달러 토큰 축약2번째 원인 발견·국소 복원, 중간 복원 regex 불일치 쓰기 전 차단1로 구분한다. 실제 PG 실패/정식 Developer 실패로 꾸미지 않는다. Main은 이후 도구 literal 삽입에 반환 callback만 사용해 동일 원인의 재발을 막도록 지시했다. 제품의 기존 String.replace를 일괄 수정하지 않는다.
+
+UI capabilityRef는 채택r2/WI대로 기존 providedHumanReportRef를 같은 project/주체/선택 문맥에서 명시 선택·고정한 원 입력으로만 보존하고 미검증 표시한다. 등록 분기만 후보 전용 report/claim을 실제 능력 증명으로 요구하지 않으며 후보의 기존 검사는 유지한다. 제공 ref 부재는 SOURCE_REQUIRED이고 임의UUID/다른ref 전용/새 supplier·API·실행 승격은 추가하지 않는다. Main은 실제 서버 입력 계약·기존 UI·WI를 대조해 이 내부 연결을 결정했다.
+
+SQL 직접 source 범위만 부분 인수했고 실제 설치/trigger 순서/RLS/COMMIT·전체제품/사용자 인수는 미검증이다. 같은 writer가 UI·최종 통합을 이어간다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 후속 GO0·전체 목표 active를 유지한다.
+
+추가 source 연결 감사도 raw156908B/E14BC22ABDFA9BDB55D55D993F2AA439E05796613A2A301210630A977B1A0608의 시작/종료 동일에서 C0/I0/M0다. 신규 인자/반환·기존 composite/collector·4 rename 위임·owner/ACL·정확 앱6 RPC·BEFORE/deferred 및 기존0072 CHECK 이름에 확정 누락을 찾지 못했다. 이는 설치 가능/실제 동작 판정이 아니며 같은 담당자는 UI를 계속 작성한다. Main은 변경 없는 Node13/SQL형상21을 불필요하게 재실행하지 않는다.
