@@ -3566,3 +3566,41 @@ FN09 원본 후보30875B/4F11F353은 독립C0/I0/M0이며 f45231로 공식사본
 SDK추가조회승인과독립적으로 Main은 최소WI/실제허용경로·같은Tx reader·UI선택·0081/계상접합을 준비한다. 아직계약/제품GO0이며 새정상 source자료생산을 실행권위로 승격하지 않는다.
 
 Main 긴직접위임문에서 비한국어문자혼입3회를 확인해 해당전달방식을중단하고 PMO에 예외보고했다. 제품/권한/실행대상변경0·각각한국어정정완료다. 이후긴지시는 검증된통제/WI문서에기록하고 짧은전달문으로참조한다. 기존실제문서/소스의문자검사·지문은유지하며 유효한읽기조사범위는계속한다. 같은전달오류를제품실패횟수나새승인으로취급하지않는다.
+
+## 371. START 원자료 이력 발견 경계 보완 지시
+
+Owner는 기존 Primary다. 다른 Main/검토자의 변경을 되돌리지 않는다. 허용 쓰기는 docs/contracts/FN09_EXECUTION_START_ORIGIN_CANDIDATE_20261106.md 한 문서뿐이며 DRAFT/SOURCE_GO0/ACTUAL_EXECUTION0을 유지한다. r1 4F11F353은869eefe4에 보존됐다. SDK/제품/시험/SQL/실환경 실행과 기존자료 변경은 하지 않는다.
+
+1. 현재 exact origin GET1만으로는 재접속·취소된 요청의 이력 ref를 찾을 수 없다는 실제 공백을 적고, assignment 고정버전 범위의 보호목록1을 정상 UI05 조회에 포함하는 r2를 작성한다. 제안 경로는 GET /api/v1/projects/:projectId/assignments/:id/versions/:version/execution-start-origins 이며 기존 preparation-history의 fullref/hash·20건·서명 cursor 계약을 재사용해 정확 query/응답·오류·읽기 정책을 고정한다.
+2. 투영은 origin ref·선택 stageRequestRef·recordedAt 등 필요한 메타데이터만으로 제한한다. 추가 공개 조회 의미는 채택 delta에 명시한다. 기존 책임/준비 응답 DTO에 몰래 키를 추가하지 않는다. 새 권한 부여나 총계/다른 사용자 공개를 하지 않는다.
+3. cursor는 project/assignment fullref·actor/client/H/Session·limit·목적을 결박하고 실제 반환 마지막 행의 결정적 순서로 다음쪽을 정한다. 기존 만료/byte 한도를 유지한다. 위조·다른 범위·추가 query를 거절한다.
+4. 신규 등록/사용의 fresh WAITING·최신 binding·원 준비 검산과 역사 접근을 분리한다. 취소/만료/제어·binding 변경 뒤에도 현재 읽기 권한과 보관 관계 검산을 통과한 역사 ref를 찾을 수 있어야 한다. 이를 현재 사용 가능·실제 E/token·실행 권위로 승격하지 않는다. 과거 source를 새 snapshot으로 재계산하지 않는다.
+5. 실제 최초 선택 API와 SessionDetailPage 장착·같은 Tx readRequest/readStartOriginSources 접점, 제품15+시험/fixture8 최소경계와 빈0081 번호를 기술계획에 적는다. 예산 ref는 단계 queue의 프로젝트 한도와 등록 준비의 budgetPolicyRef 목적을 대조하며 근거 없이 같은 종류라고 단정하지 않는다. 기존 synthetic 예약/실행FK·reader·공개quota allowlist는 보존한다.
+6. 원 S/Q의 단일 row·C/A/U/R 실제 비용/원분모·양방향 완결, token 없는 새 목적과 회전 없는 새 요청/새 ID 규칙은 유지한다. 추가 history 정상·취소/재접속·권한 거절·cursor 범위·원 fixed GET 왕복을 필수 검수에 포함한다.
+
+완료 시 새 지문과 r1 대비 공개 delta를 반환하고 writer를 돌려준다. 아직 계약 채택이나 코드 GO가 아니다. Main은 독립 검수 후 정확 후보를 PMO에 전달한다.
+
+
+## 372. START 원자료 r2 독립 검수 지시
+
+Owner는 기존 읽기 검토자다. docs/contracts/FN09_EXECUTION_START_ORIGIN_CANDIDATE_20261106.md의 동결42007B/SHA256 65765A0B36DEDEEDF188575632535882C19477F6E3B02C8DEC29F168B43105AE를 읽기만 한다. 제품·문서 수정/시험/SDK/실환경 실행을 하지 않는다. 시작·종료 지문을 확인한다.
+
+기존r1 C0/I0의 S/Q 비순환·token 미발급·기존synthetic E/grant/challenge/reader 보존은 유지하고, 추가 공개 delta인 assignment 고정버전의 보호 이력 목록 GET1을 중심으로 검수한다. exact path/query/응답·현재 read 정책·20건/서명cursor의 project/assignment fullref·actor/client/H/Session/limit 결박·전체 응답 byte상한·마지막 실제 반환행 순서를 대조한다. 취소된요청/만료·binding/제어변경의 역사발견과 고정GET 왕복이 fresh WAITING/CAS 재검사에 잘못 막히지 않는지, 대신 현재사용가능·권한을 과거자료로 증명하지 않는지 확인한다. 거절 시 원문/다른scope/총계 누출과 자동POST가 없어야 한다.
+
+실제 UI05 선택API·SessionDetailPage·readRequest/readStartOriginSources 접합과 최소제품15+시험fixture8이 충분한지, stage budgetRef와 preparation budgetPolicyRef의 목적 차이를 원source로 다루는지 확인한다. 같은Tx quota의 원분모·C/A/U/R·양방향완결/ACL은 기존범위를 유지한다. 이미검수한r1을전수재실행하거나 새gate를추가하지 않는다. C/I/M과확정된추가의미만반환하며 채택/제품GO/실환경PASS로 승격하지 않는다.
+
+
+## 373. 2026-11-07 원자료 계약 r2 검수와 구현 지시 준비
+
+FN09 후보 r2는 42007B/SHA256 65765A0B36DEDEEDF188575632535882C19477F6E3B02C8DEC29F168B43105AE이며 공식 사본 일치와 독립 C0/I0/M0를 확인했다. PMO의 최신 회신은 해당 계약 채택과 SDK 추가 읽기를 각각 결정 대기로 유지한다. 추가 질문이나 조회를 반복하지 않는다.
+
+기존 Primary에게 FN09_EXECUTION_START_ORIGIN_SOURCE_IMPLEMENTATION_20261107.md 하나의 초안 작성을 맡겼다. 제품15·시험/fixture8의 정확 목록·기준선·0081 부재·TDD·반환 조건을 준비하며 DRAFT/SOURCE_GO0다. 계약 채택 전 제품·시험·SQL 수정은 하지 않는다. Main은 검수·통합을 맡고 완료된 FN10 검사와 소진된 SDK 읽기는 반복하지 않는다. 실제 DB·권한·키·서비스·Agent/SDK 실행0, 전체 계획 미완료·목표 active를 유지한다.
+
+Main 기록 명령의 첫 구성은 JavaScript 구문 오류로 도구 실행 전에 거절됐다. 파일/환경 변경0이며 문자열 구성을 고쳐 기록한다.
+
+
+## 374. FN09 구현 지시서 준비·독립 검토 종료
+
+기존 Primary의 조건부 WI FN09_EXECUTION_START_ORIGIN_SOURCE_IMPLEMENTATION_20261107.md는 27841B/SHA256 907FE5472E18AAE381B8479330C1E34AF6907BE99217CE0458EC39823E0DBB12로 동결했다. 부모 r2 65765A0B, 제품15·시험/fixture8의 정확23 목록·기존8 raw·0081 부재·실제 보호 호출선·S/Q 비순환 계상·GET2/UI05·행동 TDD·반환/미검증 조건을 고정했다. 독립 기술 C0/I0에서 문서 M1은 내부 실행 경로 한 줄을 공식 상대 경로 기준으로 바꿔 해소했고 delta 재검토 C0/I0/M0다. 최초 A0BACA3C와 보정 7cea09 및 원문 역치환 동일성은 제출 증거로 남긴다.
+
+이 결과는 구현 준비이며 제품 기능 완료가 아니다. DRAFT/WAITING_ADOPTION/SOURCE_GO0/PRODUCT_GO0/ACTUAL_EXECUTION0을 유지한다. 정확 부모 계약 채택 전 제품·시험·SQL 쓰기0이다. 두 기존 담당자 모두 writer 반환·live/pending0이며 Main은 문서 checkpoint와 PMO 결정 연결을 소유한다. SDK 추가 읽기 직접 결정도 별개로 대기하며 기존 1회 승인은 재사용하지 않는다. 현재 제품 기준 fc45abea를 보존하고 실제 DB·권한·키·서비스·Agent/SDK 실행0이다. 전체 계획 미완료·목표 active다.

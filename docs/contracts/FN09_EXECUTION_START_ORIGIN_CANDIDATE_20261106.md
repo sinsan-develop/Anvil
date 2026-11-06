@@ -4,6 +4,7 @@
 - 작성 시 문서 HEAD: 43ffc89d342655da06217ee5e5e57263e844b761. 실제 관련 source 기준은 FN10 통합 fc45abea98fedf12d4b56d7be1cbd43a67b4ac07 이후 현재 원문이다.
 - 목적: 기존 실제 보호 저장자료에서 stage 요청·확정 임무·등록 준비·Anvil 논리 세션을 교차검산하고, 서버 실행 식별과 token 없는 credential 예약을 불변 원자료로 생산·보호 조회한다. SDK init/child/OS writer/실제 생성 허가 없이 앞선 provenance 공백을 닫는 기능이다.
 - 이 문서1만 소유한다. 기존 계약·제품·시험·SQL·현황·타인/보호 자료 변경0. 실제 DB/SQL/GRANT·키·권한·서비스·SDK/Agent·실파일/사용자자료 조사·공개 SDK 재조회·실행0. 제안 literal과 원형은 채택 전이며 기존 승인의 유일한 해석이 아니다.
+- r2 이력: 원 r1 30875B/4F11F35305AFBAC076FDB130D9933C03B5092C27F3C8BAAA05FDB69F266F6EEC는869eefe4에 보존됐다. 통제 §371에 따라 재접속·취소 이력의 ref 발견 공백과 assignment 고정버전 보호목록1을 추가한다. SOURCE_GO0/ACTUAL_EXECUTION0 유지이며 새 조회 의미도 채택 전이다.
 
 ## 1. 기존 생산으로 확보되는 원자료
 
@@ -41,13 +42,40 @@ reason은 기존 안전 문자열·2MiB/canonical 깊이 계약을 재사용한�
 
 명시 정책 제안은 HUMAN OWNER의 registerExecutionStartOrigin, 별도 readExecutionStartOrigins다. 기존 record/prepare/startStage/authorizeExecution 정책을 자동 전용하지 않고 정책 편집 목록에도 선택지로만 추가한다. 읽기 정책은 반환에 포함되는 assignment/context/정의/환경·원 source의 현재 보호 조회를 대체하지 않는다. 신규 일회 승인 연결은 이번 최소안에 포함하지 않으므로 REQUIRE_APPROVAL/approvalRef는 효과 전 명확412이며 AUTO 정상 경로는 실제 저장까지 제공한다. 사용자 정책 자동 부여0이다.
 
-새 URI가 필수인 기술 원리는 없으나, 원본 선택·UNKNOWN 뒤 exact 재조회가 가능하도록 최소안에서는 보호 GET1을 고정한다.
+새 URI가 필수인 기술 원리는 없으나, 기존 응답의 exact DTO를 보존하면서 원본 선택·UNKNOWN 뒤 exact 재조회와 재접속 뒤 이력 발견을 제공하는 최소안에서는 보호 GET2를 고정한다.
 
 ```text
 GET /api/v1/projects/:projectId/execution-start-origins/:id/versions/:version
+GET /api/v1/projects/:projectId/assignments/:id/versions/:version/execution-start-origins
 ```
 
-query/body 없음·HUMAN 세션 쿠키·현재 host·Bearer 거절·same-origin/no-store, 추가 query/익명/타프로젝트 비노출을 기존 원칙으로 집행한다. 별도 목록은 첫 기능에 필수 아님. UI05는 기존 queue/assignment/준비 목록과 신규 원 영수증의 정확 ref로 선택/재조회한다. GET·명령의 공개 의미는 신규 채택 대상이며 현재 등록된 API로 보고하지 않는다.
+exact version GET은 query/body 없음이다. 목록 GET은 아래 §2.1의 cursor 하나만 허용한다. 둘 다 HUMAN 세션 쿠키·현재 host·Bearer 거절·same-origin/no-store·익명/타프로젝트 비노출을 집행한다. GET2·명령의 공개 의미는 신규 채택 대상이며 현재 등록된 API로 보고하지 않는다. 기존 책임/준비 응답에 origin 키를 몰래 넣지 않는다.
+
+### 2.1 assignment 고정버전의 보호 이력 발견
+
+실제 현재 queue GET은 WAITING_ONLY이고 취소 이력을 제외한다. 기존 preparation/responsible-session 응답에는 originRef가 없다. 따라서 exact origin GET1과 메모리 receipt만으로는 재접속 뒤 취소된 요청의 origin ID를 찾을 수 없다. 새 목록1은 이 공백을 닫기 위한 **추가 공개 조회 의미**다. 총계·다른 사용자 전용 자료·다른 assignment의 자료를 열지 않는다.
+
+목록 params exact는 `{projectId:UUID,id:UUID,version:양의 안전정수 문자열}`이며 id/version은 assignment의 정확 버전이다. query exact는 `{cursor?:string}`다. cursor 생략은 첫 페이지, 빈 문자열·추가 query·배열/중복 값·불량 길이/형상은400이다. pageSize는 기존 preparation-history와 같은20으로 고정하며 caller limit/sort/filter를 받지 않는다. body 없음이다. cursor는 기존 상한4096자와 기존 ProjectListCodec의 유한 만료를 재사용하고 기한을 연장하지 않는다.
+
+response exact 제안:
+
+```text
+{projectId,assignmentRef:VersionRef,
+ items:[{ref:VersionRef,stageRequestRef:VersionRef,recordedAt:ISO8601}],
+ nextCursor:string|null,currentness:"NOT_RECHECKED",
+ credentialIssued:false,executionAuthorized:false,dispatchPerformed:false,
+ writerReservationPerformed:false}
+```
+
+원 assignmentRef는 실제 보호 reader가 읽은 원 confirmed fullref이며 route의 id/version과 exact다. 각 ref는 원 origin S의 hash/ref, stageRequestRef/recordedAt은 같은 원 S의 저장값이다. Q/token/실행 current·reason/Options body·secret를 목록에 추가하지 않는다. 다른 assignment의 origin을 섞거나 현재 자료로 원 snapshot/ref를 다시 계산하지 않는다. NOT_RECHECKED는 origin의 현재 사용 가능성을 인증하지 않는다는 뜻이다. 항목의 원 저장 관계/현재 읽기 보호는 검사한다.
+
+현재 `readExecutionPreparationPage`와 브라우저 `readPreparationHistoryPage`의 fullref/hash 대조·20건·서명 cursor 방식을 재사용한다. origin 고유 purpose 도메인은 `EXECUTION_START_ORIGIN_HISTORY_V1`로 제안하고, ProjectListCodec 서명 입력/필터에는 projectId·assignment **전체 ref**·현재 actorId/clientId/H credentialGeneration/humanSessionId·pageSize20·`recorded_at DESC,origin_id DESC`·이 purpose를 결박한다. 권한/정책은 페이지마다 실제로 다시 검사하며 cursor 자체를 읽기 권위로 쓰지 않는다. 제어 변경 뒤에도 현재 읽기권이 있으면 역사를 찾을 수 있도록 원 쓰기 제어 세대를 새 조회 권위로 요구하지 않는다. 현재 로그인/H/Session이 바뀌면 옛 cursor는 CURSOR_INVALID400이고 새 첫 페이지부터 읽는다.
+
+원 정렬은 DB의 `(recorded_at,origin_id)` 내림차순이며 같은 시각은 origin_id로 결정한다. 다음 페이지 조건은 원 tuple보다 작은 값이다. SQL은 기존 방식으로21행을 관측해 다음쪽 존재를 판정하되, 최대20개의 **실제 반환 항목**만 보호 검산·투영한다. 원 timestamp의 SQL cursor 위치를 정확 보존하며 ISO 문자열로의 임의 반올림으로 위치를 바꾸지 않는다. nextCursor는 마지막 실제 반환 행의 tuple을 사용한다. 전체 canonical response의 외피·구분자·nextCursor까지2MiB를 검산하고, byte 한도로 항목을 줄이면 cursor 역시 마지막 실제 반환 행으로 다시 만든다. 항목 자체를 반환할 수 없는 오염/과대 자료는 기존 준비 목록 오류 원칙에 맞춰503 PAGE_TOO_LARGE로 거절하고 빈 성공으로 숨기지 않는다. 빈 정상 집합만 items=[]/nextCursor=null이다.
+
+목록은 CANCELLED 요청·원본/Q 만료·옛 제어·옛 binding을 **현재성 이유로 필터링하지 않는다**. 같은 assignment의 원 저장 관계가 유효하고 현재 readExecutionStartOrigins 및 원 assignment/preparation/책임·출처 보호가 허용되면 역사 ref를 발견할 수 있다. 신규 등록/후속 사용용 fresh WAITING·최신 binding·원 작성자의 현재 H/Session 일치를 역사 목록에 소급하지 않는다. 현재 조회 권한/출처 접근이 거절되거나 무결성이 깨지면 페이지 전체를 비노출 오류로 거절하며 item skip·부분 성공·총계로 존재를 누설하지 않는다. 실제 소유 관계에 따른 조회 범위를 넓혀 다른 사용자/프로젝트를 공개하지 않는다.
+
+위조/다른 purpose·project/assignment ref·actor/client/H/Session·만료 cursor는 CURSOR_INVALID400이다. 잘못된 params/query는400, 무인증401, 현재 읽기/출처 보호는 기존403/404 비노출 의미, 원 hash/관계 오염은503 고정 오류다. 목록 노출이 exact GET의 보호를 대신하지 않으며 선택 시 원 ref/hash를 들고 exact GET을 다시 소비한다. 보호 GET 거절 때 앞 목록/원문을 성공 원본으로 재사용하지 않는다.
 
 ## 3. 불변 원본과 token 없는 E 사전예약
 
@@ -112,7 +140,7 @@ expiresAt은 발급 당시 원 HUMAN Session idle/absolute·현재 명시 정책
 | 순서/공유 잠금 | 실제 함수·필수 검산 | 실패 경계 |
 |---|---|---|
 | 인증·project/member/control→정책 | AccessRepository.authenticated/currentProjectController/currentPolicy와 새 명시 연산 정책. 원 Session/H·현재 제어·반환 read 보호 | 정책보다 project 잠금 먼저, 다른 operation/로그인·재인증 규칙 변경0 |
-| 원 명령 replay | projectReplay 뒤 origin/Q/receipt/audit·원 보호 조회 | 동일 hash 원 결과만, 새 R/ID/credential 예약0. 원 head CAS를 역사 replay에 새로 부과하지 않음 |
+| 원 명령 replay | projectReplay 뒤 origin/Q/receipt/audit·원 보호 조회 | 동일 hash 원 결과만, 새 R/ID/credential 예약0. 원 head CAS·fresh WAITING/최신 binding을 역사 replay에 새로 부과하지 않음 |
 | stage 요청 exact 최신 잠금 | ProjectStageQueue의 기존 #view 검산을 재사용하는 목적 한정 readRequest(db,actor,pid,ref) 추가 후보 | 현재 read는 WAITING 목록 요약이므로 임의 summary를 원 snapshot으로 신뢰0. 취소/다른 ref/head 거절 |
 | 임무·binding·준비 | ProjectAssignmentConfirmations.read+decision/drafts.current, ResponsibleSessions.readBinding/role head, ProjectExecutionPreparations.read | 같은 assignment/connection/context/application/node·root 임무 지원범위·등록분기·RESERVED·externalSessionHandleRef=null 검산 |
 | 원 정의/환경·context/source/기준 | 실제 ProjectConnectionDefinitions/ProjectEnvironments·ProjectContexts와 원 보호 documents/plans/methodology/source readers | 현재 head/MATCHED와 원 ref/hash, 계획/기준/검토·원 source 접근·격리·sourceScopes 포함관계 재검산. stale metadata를 참으로 채우지 않음 |
@@ -122,7 +150,13 @@ expiresAt은 발급 당시 원 HUMAN Session idle/absolute·현재 명시 정책
 
 현재 ResponsibleSessions/준비 reader의 주입 가능한 Pick을 그대로 성공 대역으로 써서는 안 된다. 신규 service는 하나의 실제 access·원 routes 구성으로 실제 보호 클래스들을 만들고 필요한 prototype/own-data 함수·query 포트·actor/세대·txid를 캡처/검산한다. 외부 call/선택 refs는 getter/Proxy를 실행하기 전에 안전 사본으로 고정한다. 유한 취소/타이머는 외부 Promise 정착과 실제 DB work·Pool 회수 시점을 구분하며 pending이 남으면 새 중첩 work를 자동 허용하지 않는다.
 
-교차 검산의 제안 exact 관계는 stage.input.methodologyApplicationRef/startNodeRef와 assignment.definition.taskRef.applicationRef/nodeId 동일, preparation.intent.assignmentRef/roleBindingRef와 선택 refs 동일, preparation.intent.connectionRef와 binding.connectionRef 동일, sessionBindingRef와 그 원 binding.sessionRef 동일다. stage.input.budgetRef와 preparation.intent.budgetPolicyRef는 같은 현재 프로젝트 한도정책 ref인지 원 producer 목적을 확인한 뒤 exact 대조한다. stage baselineRefs는 각각 assignment.definition.baselineRefs 및 preparation.basisRefs에 실제 포함돼야 하며 서로 다른 목적의 VersionRef를 임의 동치로 만들지 않는다. 현재 등록 준비의 options hash/bytes는 보호 정의에서 재도출한 원 Options와 동일해야 한다. 이 관계가 기존 유효 입력에서 성립하지 않으면 성공fixture로 메우지 않고 해당 의미 차이를 WI 전에 좁혀 보고한다.
+현재 ProjectStageQueue에는 readRequest가 없고 read()는 목록 요약뿐이다. 기존 private #view의 원 command/receipt/audit 검산을 재사용하는 `readRequest(db,actor,pid,ref)`를 같은 파일에 목적 한정 추가해 원 snapshot/최신 head를 반환한다. 신규 등록과 사용은 WAITING/head exact를 검사하고, 역사 관계 읽기는 원 version/저장 관계만 읽는다. 이를 위해 새 공개 stage GET을 추가할 필요는 없다.
+
+현재 ProjectExecutionPreparations.read는 원 snapshot/등록 Options 보호를 수행하나 NOT_RECHECKED로 반환하며 내부 #registeredOptions(...,false)는 역사 대조다. 같은 파일의 목적 한정 `readStartOriginSources(db,actor,pid,ref,mode,guard)` 접점을 제안한다. mode=FRESH에서는 실제 원 read와 #registeredOptions(...,true), assignment/draft·binding head/context/정의·환경의 전후 관측을 소비한다. mode=HISTORY에서는 원 불변 준비/Options와 현재 보호 접근을 검사하되 최신 binding/current definition head를 원 저장 관계로 치환하지 않는다. 새 metadata를 원 준비 snapshot에 넣지 않으며 성공 proof boolean·private field 공개·authorize=false로 우회하지 않는다. 정확 signature의 mode/반환 형상은 이 의미 안에서 WI의 내부 기술 배치로 고정한다.
+
+교차 검산의 제안 exact 관계는 stage.input.methodologyApplicationRef/startNodeRef와 assignment.definition.taskRef.applicationRef/nodeId 동일, preparation.intent.assignmentRef/roleBindingRef와 선택 refs 동일, preparation.intent.connectionRef와 binding.connectionRef 동일, sessionBindingRef와 그 원 binding.sessionRef 동일다. stage baselineRefs는 각각 assignment.definition.baselineRefs 및 preparation.basisRefs에 실제 포함돼야 하며 서로 다른 목적의 VersionRef를 임의 동치로 만들지 않는다. 현재 등록 준비의 options hash/bytes는 보호 정의에서 재도출한 원 Options와 동일해야 한다. 이 관계가 기존 유효 입력에서 성립하지 않으면 성공fixture로 메우지 않고 해당 의미 차이를 WI 전에 좁혀 보고한다.
+
+예산 참조는 별도 목적 대조가 필수다. stage-queue.start는 input.budgetRef를 ProjectLimitPolicies.resolveCurrent(...,{kind:PROJECT,projectId})로 읽는다. 등록 준비의 intent.budgetPolicyRef는 원 입력·확정 임무의 budgetRef에서 보존되며 원 준비는 BUDGET_POLICY_UNVERIFIED를 남긴다. 따라서 UUID/필드명만 보고 이미 같은 종류라고 단정하지 않는다. FRESH 원자료 producer는 두 원 ref를 실제 한도정책 reader로 각각 해소해 현재 PROJECT 범위/APPLIED·원 subject/정책·만료/실제 fullref를 검산하고, **같은 목적임이 검증된 뒤** 이 요청/준비의 예산 정책 일관성을 exact 대조한다. 다른 목적/미연결이면 명확 source mismatch/미검증으로 거절하며 참조를 자동 바꾸지 않는다. 적합 같은 프로젝트 한도 원자료의 정상 경로는 실제 producer/reader로 검수한다. 역사 조회는 원 ref/hash·현재 접근 보호를 유지하되 옛 예산이 지금도 APPLIED/미만료여야 한다는 조건을 소급하지 않는다. 실행 사용량 예약·실제 지불 허가는 여전히 별개다.
 
 ## 6. 최소 저장 구조·계상과 미적용 SQL
 
@@ -138,7 +172,9 @@ canonical-pair 비용과 최소 유한 고정점 r >= P+C+A+U+costR(r)를 같은
 
 ## 7. UI05 실제 사용자 흐름과 오류 보존
 
-UI05에서 현재 프로젝트의 WAITING 요청을 명시 조회/선택하고, 그 application/node에 맞는 기존 확정 임무→등록 준비→책임 binding을 기존 보호 목록/정확 GET으로 선택한다. binding 화면이 가진 sessionRef를 별도 표시하며 원 reserved 논리 세션을 SDK SID라고 표기하지 않는다. 실제 경로/secret/새 UUID/새 실행 세대 입력0이다. 선택 출처가 준비되지 않으면 해당 기존 저장 화면으로 이동하고 자동 fake ref를 만들지 않는다.
+UI05에서 작업 화면의 기존 선택 임무로 SessionDetailPage에 들어와 실제 확정 GET의 confirmed ref를 공급한다. 새 Panel은 `readStageQueue`의 requestRef/순번/이유에서 WAITING 요청을 명시 선택한다. 현 목록에는 application/node 원문이 없으므로 선택 시점에는 ‘임무 연결 미검산’으로 표시하고 저장 전 같은 Tx readRequest에서 실제 교차검산한다. summary만으로 같은 node라고 꾸미지 않는다.
+
+등록 준비는 기존 `readPreparationHistoryPage`의 assignment 고정버전 페이지(20건/서명 cursor)에서 ref를 선택하고 `readPreparationOriginal`의 exact GET으로 원 body/hash·등록 분기를 확인한다. role binding은 `readResponsibleSessionState`의 bindings와 기존 exact role-binding GET으로 선택/대조한다. sessionRef는 원 binding에서만 도출해 별도로 표시하며 SDK SID라고 표기하지 않는다. 기존 `listAssignmentDrafts`는 확정 임무 목록이 아니므로 그것만으로 confirmed를 만들지 않는다. 현재 확정 임무·기존 준비/책임 source를 재사용하므로 새 freeform UUID 입력이나 새 범용 assignment 목록 API는 필요 없다. 실제 경로/secret/새 UUID/새 실행 세대 입력0이다. 선택 출처가 준비되지 않으면 해당 기존 저장 화면으로 이동하고 자동 fake ref를 만들지 않는다.
 
 ‘START 원자료 등록 준비’는 선택/현재 ref를 고정하고, ‘명시 저장’이 실제 command 한 건을 보낸다. 저장 후 원 executionId·최초 generation/E예약 ID·원본 hash/원 선택 관계와 미검증 조건을 보여준다. 문구는 ‘원자료 저장·credential 미발급’이며 WAITING→RUNNING/실제 실행·writer확보/준비완료 표시는 바꾸지 않는다. 기존 StageStart/StageQueue와 임무·등록 준비 화면에 최소 연결하되 실행/SDK 버튼은 추가하지 않는다.
 
@@ -146,15 +182,19 @@ App은 project/user/client/Session/control/transport·선택 request/임무별 �
 
 취소는 원 stage request의 기존 cancelQueuedRequest를 명시 실행한다. 새 등록 명령이 먼저 잠금을 얻어 저장됐다 해도 취소 확정 뒤 원본의 후속 사용은 실패해야 한다. 원본을 삭제하거나 token/OS를 회수했다고 표시하지 않는다. 역사 GET은 정확 ref와 현재 보호를 통과할 때만 허용한다.
 
+재접속/취소 뒤에는 같은 assignment 고정버전의 신규 보호 이력 목록을 명시 조회해 원 originRef를 선택하고 exact GET으로 S/Q를 다시 읽는다. 원 receipt를 메모리에 보유했을 때만 가능한 우회가 아니라 실제 저장 목록→원 고정조회 왕복이다. 옛 요청이 WAITING 목록에서 사라져도 이 경로로 역사를 찾는다. 앞 페이지/새 페이지·assignment/actor/client/H/Session/transport 전환 및 보호 거절 때 목록과 본문을 숨기고, 새 보호 관측 전 cached origin을 현재 자료로 표시하지 않는다. 목록 cursor 만료/주체 변경은 새 첫 페이지 조회로만 복구하며 명령을 다시 보내지 않는다.
+
 ## 8. 최소 영향 후보·필수 검수
 
 다음은 구현 가능한 최소 역할 배치 제안이며 이 문서가 writer 권한을 발급하지 않는다.
 
 - 신규 server: `apps/server/modules/executions/execution-start-origin-input.ts`, `execution-start-origin-sources.ts`, `execution-start-origin-store.ts`, `project-execution-start-origins.ts`. sources는 실제 보호 reader와 원 현재성·세대/교차 refs, store/service는 같은 Tx S/Q·후행 보호를 소유한다. helper 함수가 적으면 적합한 내부 합침은 Main의 기술 선택이다.
-- 기존 server: `apps/server/modules/scheduling/stage-queue.ts`의 exact 내부 readRequest, `apps/server/modules/access/project-command.ts`의 새 목적 한정 ID/정책 분류, `apps/server/modules/projects/project-storage-quota.ts`, `apps/server/modules/projects/routes.ts`. 원 repository/control-grant/synthetic START/기존 SQL은 수정하지 않는 안이다.
+- 기존 server5: `apps/server/modules/scheduling/stage-queue.ts`의 exact 내부 readRequest, `apps/server/modules/executions/project-execution-preparations.ts`의 같은 Tx readStartOriginSources, `apps/server/modules/access/project-command.ts`의 새 목적 한정 ID/정책 분류, `apps/server/modules/projects/project-storage-quota.ts`, `apps/server/modules/projects/routes.ts`. 원 repository/control-grant/synthetic START/기존 SQL은 수정하지 않는 안이다.
 - 신규 SQL: 위0081 forward1. 실행을 위한 새 표/권한을 실제 적용하는 작업과 분리한다.
-- Web 후보: 신규 `apps/web/src/features/session-detail/execution-start-origin-api.ts`, `ExecutionStartOriginPanel.tsx`; 기존 `StageQueuePanel.tsx`, `apps/web/src/App.tsx`, `apps/web/src/features/connections/policy-editor-profile.ts`에서 명시 진입·원 command buffer·정책 옵션을 연결한다. 임무/준비의 기존 API를 재사용하며 공용 API helper를 넓히지 않는다. 실제 App의 페이지 구성상 추가 연결 경로가 꼭 필요하면 WI 전에 근거로 고정한다.
-- 시험 후보: `tests/unit/FN09/execution-start-origin-input.test.ts`, `execution-start-origin-sources.test.ts`, `execution-start-origin-store.test.ts`, `execution-start-origin-routes.test.ts`, `execution-start-origin-quota.test.ts`, `execution-start-origin-schema.test.ts`, `tests/unit/UI05/execution-start-origin-flow.test.ts`. 원자료가 크면 신규 순수 fixture1만 별도 허용하고 기존 시험 import로 test 등록을 일으키지 않는다.
+- Web 후보: 신규 `apps/web/src/features/session-detail/execution-start-origin-api.ts`, `apps/web/src/features/session-detail/ExecutionStartOriginPanel.tsx`; 기존 `apps/web/src/features/session-detail/SessionDetailPage.tsx`, `apps/web/src/App.tsx`, `apps/web/src/features/connections/policy-editor-profile.ts`에서 실제 UI05 장착·선택 confirmed 공급·원 command buffer·정책 옵션을 연결한다. SessionDetailPage는 실제 장착에 필요한 기존 경로다. origin storage는 별도 prop으로 전달해 공용 CriteriaEditorProps를 넓히지 않는 안이다. 기존 StageQueuePanel은 취소 UI로 그대로 병행하고 새 Panel이 기존 stage-queue-api를 소비하므로 해당 파일 수정은 필수 아니다. 임무/준비/책임·preparation-history의 기존 API와 DTO는 변경하지 않는다.
+- 시험 후보7: `tests/unit/FN09/execution-start-origin-input.test.ts`, `tests/unit/FN09/execution-start-origin-sources.test.ts`, `tests/unit/FN09/execution-start-origin-store.test.ts`, `tests/unit/FN09/execution-start-origin-routes.test.ts`, `tests/unit/FN09/execution-start-origin-quota.test.ts`, `tests/unit/FN09/execution-start-origin-schema.test.ts`, `tests/unit/UI05/execution-start-origin-flow.test.ts`. 신규 순수 메모리 fixture1은 `tests/unit/FN09/execution-start-origin-fixture.ts`로 제안한다. 기존 시험 import로 test 등록을 일으키지 않고 각 factory의 DB/행/버퍼 상태를 분리한다.
+
+위 경계는 **제품15(신규7/기존8) + 시험/fixture8 = 총23 제안 경로**다. server 신규4+기존5, SQL신규1, Web신규2+기존3으로 제품15다. 위 실제 경로 집합을 정본으로 삼고 WI에서 중복/생략 없이 manifest를 고정한다. 새 목록은 같은 신규 service/store/API/Panel 안에 구현하므로 별도 제품 파일을 추가하지 않는다.
 
 정상은 실제 startStage 저장→실제 확정 assignment/registered prepare/binding producer→새 sources·같은 Tx command/S/Q/계상→COMMIT 후 새 보호조회→실제 UI05/App의 원 packet 저장과 exact GET이다. 실제 ArtifactStore는 OS fs import만 격리 메모리 대역으로 공급하고 ProjectDocuments/ProjectContexts/정의·환경 등 보호 메서드 성공 override0이다. 실제 새 origin 생산을 기존 prepare 응답 대역으로 대신하지 않는다.
 
@@ -167,12 +207,14 @@ App은 project/user/client/Session/control/transport·선택 request/임무별 �
 - S→Q→자기 receipt 관계의 hash 순환/누락·같은 비용 다른 actor/op·예산 정책/저장량 projection/plan 세대/ID/actual·역완결·app ACL 목적 검산.
 - 원 query HOLD/abort의 외부 UNKNOWN과 늦은 Pool 회수·COMMIT tag/응답 유실 뒤 성공 반환/후행 auth/자동 명령0, receipt 뒤 GET 보호 거절의 원행 보존.
 - UI 실제 App CAS·선택 refs/주체/control/transport 이탈·복귀403/늦은 응답 본문0·원 command/receipt 선보존·동일 ref 재조회·추가 POST0.
+- 재접속 뒤 목록→원 originRef 선택→exact GET의 실제 저장 왕복, 취소/만료/옛 제어·새 binding 뒤에도 현재 역사 읽기권으로 ref 발견·현재 사용은 STALE, 과거 S/Q hash 불변.
+- origin 목록의20건/끝 페이지/같은 recordedAt의 ID 정렬·실제 마지막 행 cursor, 전체 response byte 상한, 위조·다른 purpose/project/assignment 전체ref/actor/client/H/Session/만료 cursor·추가 query 거절, 권한/출처 회수 시 목록·본문/부분 결과0·총계0.
 
 형상/메모리 SQL·DOM·type/build PASS는 실제 PG 설치/trigger/RLS/잠금/COMMIT·실 HTTP/served 브라우저·권한·Agent 검증과 분리한다. 이 후보는 아직 제품/시험 실행을 하지 않는다.
 
 ## 9. 필요한 결정과 이 기능 뒤 남는 것
 
-PMO/source-only 채택 결정은 다음 **새 데이터/권한 의미**를 묶어 판단할 수 있다: registerExecutionStartOrigin/readExecutionStartOrigins와 HUMAN OWNER·명시 정책, stage request와 원본의 단발 association, token 없는 새 E 사전예약 목적, 이 단위에서 rotation 없이 취소/만료 후 새 요청만 허용하는 규칙, 원 보호 snapshot/S/Q·GET의 정확 공개·보관 의미. 동시 명령·취소·원명령/receipt·출처 보호를 기존 계약보다 완화하지 않는다.
+PMO/source-only 채택 결정은 다음 **새 데이터/권한 의미**를 묶어 판단할 수 있다: registerExecutionStartOrigin/readExecutionStartOrigins와 HUMAN OWNER·명시 정책, stage request와 원본의 단발 association, token 없는 새 E 사전예약 목적, 이 단위에서 rotation 없이 취소/만료 후 새 요청만 허용하는 규칙, 원 보호 snapshot/S/Q·exact GET와 **assignment 고정버전 역사 발견 목록 GET1 추가**의 정확 공개·보관 의미. r1 대비 새 공개 delta는 이 목록이며 기존 책임/준비 응답/권한·실행 의미는 넓히지 않는다. 동시 명령·취소·원명령/receipt·출처 보호를 기존 계약보다 완화하지 않는다.
 
 새 임의 상한·유료정책·실제 token 발급·writer/OS권위·실제 SDK 생성 승인·전역 active pointer는 이 결정에 포함하지 않는다. 같은 Tx quota/ID·단일 row S/Q 배치·forward 함수/ACL·파일 합침·시험 포트는 그 의미 안에서 Main이 고정할 내부 기술 선택이다. 원본문/관계·원 비용에 맞추는 과정은 새 사용자 비용정책을 묻는 일이 아니다.
 
