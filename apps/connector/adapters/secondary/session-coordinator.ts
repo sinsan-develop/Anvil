@@ -1,3 +1,4 @@
+import {SyntheticClaudeInstructionBootstrap} from './instruction-bootstrap.ts';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {recordV1,refV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -8,7 +9,7 @@ import {SyntheticClaudeSdkSessionOwner} from './sdk-session-owner.ts';
 import {SyntheticClaudeInstructionBridge} from './instruction-bridge.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId} from './schemas.ts';
 type Call={signal:AbortSignal;expiresAt:string};
-type Options={transport:'SYNTHETIC_ONLY';receiver:SyntheticMaterialReceiver;envelope:unknown;expectedSessionId:string;sessionBindingRef:unknown;driver:any;current:any;clock:()=>number;expiresAt:string;timeoutMs:number;maxMessageBytes:number;maxIdentities:number};
+type Options={bootstrap?:SyntheticClaudeInstructionBootstrap;transport:'SYNTHETIC_ONLY';receiver:SyntheticMaterialReceiver;envelope:unknown;expectedSessionId:string;sessionBindingRef:unknown;driver:any;current:any;clock:()=>number;expiresAt:string;timeoutMs:number;maxMessageBytes:number;maxIdentities:number};
 type Selection={receiver:SyntheticMaterialReceiver;envelope:unknown;grantRef:unknown;expiresAt:string};
 type Task={controller:AbortController};
 type SendEntry={binding:string;bridge:SyntheticClaudeInstructionBridge;pending:Promise<any>|null;result:any;called:boolean};
@@ -29,10 +30,10 @@ export class SyntheticClaudeSessionCoordinator{
  #attempt:string|null=null;#startPending:Promise<any>|null=null;#startResult:any=null;#sends=new Map<string,SendEntry>();#observing=false;#stopPending:Promise<any>|null=null;#stopResult:any=null;#closePending:Promise<any>|null=null;#closeResult:any=null;
  constructor(raw:Options){
   try{
-   if(!raw||isProxy(raw)||!recordV1(raw,['transport','receiver','envelope','expectedSessionId','sessionBindingRef','driver','current','clock','expiresAt','timeoutMs','maxMessageBytes','maxIdentities'])||raw.transport!=='SYNTHETIC_ONLY'||!sdkOpaqueId(raw.expectedSessionId)||!refV1(raw.sessionBindingRef)||!isoV1(raw.expiresAt)||typeof raw.clock!=='function'||!Number.isSafeInteger(raw.timeoutMs)||raw.timeoutMs<1||raw.timeoutMs>10000)return fail();
+   if(!raw||isProxy(raw)||!recordV1(raw,['transport','receiver','envelope','expectedSessionId','sessionBindingRef','driver','current','clock','expiresAt','timeoutMs','maxMessageBytes','maxIdentities',...(Object.hasOwn(raw,'bootstrap')?['bootstrap']:[])])||raw.transport!=='SYNTHETIC_ONLY'||!sdkOpaqueId(raw.expectedSessionId)||!refV1(raw.sessionBindingRef)||!isoV1(raw.expiresAt)||typeof raw.clock!=='function'||!Number.isSafeInteger(raw.timeoutMs)||raw.timeoutMs<1||raw.timeoutMs>10000)return fail();
    this.#session=raw.expectedSessionId;this.#bindingRef=freeze(boundedSdkObject(raw.sessionBindingRef,65536).value);this.#clock=raw.clock;this.#timeout=raw.timeoutMs;this.#driver=raw.driver;this.#source=raw.current;this.#create=member(raw.driver,'create');this.#current=member(raw.current,'current');
    const now=this.#now();this.#envelope=freeze(readDispatchEnvelopeV1(boundedSdkObject(raw.envelope,maxSdkObjectBytes).value,now));if(this.#envelope.operation!=='START_SESSION')return fail();this.#until=Math.min(Date.parse(raw.expiresAt),Date.parse(this.#envelope.expiresAt));this.#sessionEnd=this.#until;
-   this.#factory=new SyntheticClaudeSdkQueryFactory({transport:'SYNTHETIC_ONLY',receiver:raw.receiver,envelope:this.#envelope,expectedSessionId:this.#session,driver:this.#driver,current:this.#source,clock:()=>this.#now(),expiresAt:new Date(this.#until).toISOString(),timeoutMs:this.#timeout,maxMessageBytes:raw.maxMessageBytes,maxIdentities:raw.maxIdentities});this.#ports();
+   this.#factory=new SyntheticClaudeSdkQueryFactory({...(raw.bootstrap!==undefined?{bootstrap:raw.bootstrap,sessionBindingRef:this.#bindingRef}:{}),transport:'SYNTHETIC_ONLY',receiver:raw.receiver,envelope:this.#envelope,expectedSessionId:this.#session,driver:this.#driver,current:this.#source,clock:()=>this.#now(),expiresAt:new Date(this.#until).toISOString(),timeoutMs:this.#timeout,maxMessageBytes:raw.maxMessageBytes,maxIdentities:raw.maxIdentities});this.#ports();
   }catch{return fail();}
  }
  #ports(){

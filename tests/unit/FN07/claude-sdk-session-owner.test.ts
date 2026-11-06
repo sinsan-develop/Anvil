@@ -73,3 +73,6 @@ test('bridge boolean identity는 원 context/SID·private 기한·brand만 검�
 test('bridge 미사용 command boolean은 실제 원 입력 점유를 읽기만 하고 기존 중복 알고리즘을 바꾸지 않는다',async()=>{
  const f=fixture(),owner=f.make(),until=at+1000;assert.equal(owner.matchesIdentity(hash(f.fixed),hash(session),until,id(61)),true);const result=await owner.sendInstruction(id(61),user(),f.call());assert.equal(result.state,'INPUT_METHOD_SETTLED');assert.equal(owner.matchesIdentity(hash(f.fixed),hash(session),until,id(61)),false);assert.equal(owner.matchesIdentity(hash(f.fixed),hash(session),until,id(62)),true);assert.equal(owner.matchesIdentity(hash(f.fixed),hash(session),until),true);assert.deepEqual(await owner.sendInstruction(id(61),user(),f.call()),result);assert.equal(f.calls.streamInput,1);await owner.close(f.call());
 });
+test('위조 bootstrap 성공값은 owner 장부에 과거 입력을 만들지 않고 기존 새 입력을 보존한다',async()=>{
+ const f=fixture(),owner=f.make();assert.throws(()=>owner.adoptBootstrap({consumeForOwner:()=>({commandId:id(61),user:user(),state:'BOOTSTRAP_INPUT_YIELDED_ONLY'})},{}),/BOOTSTRAP_INVALID/);assert.equal(owner.matchesIdentity(hash(f.fixed),hash(session),at+1000,id(61)),true);assert.equal((await owner.sendInstruction(id(61),user(),f.call())).state,'INPUT_METHOD_SETTLED');assert.equal(f.calls.streamInput,1);await owner.close(f.call());
+});

@@ -1,3 +1,4 @@
+import {SyntheticClaudeInstructionBootstrap,consumeBootstrapForOwner} from './instruction-bootstrap.ts';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -78,6 +79,15 @@ export class SyntheticClaudeSdkSessionOwner{
  matchesIdentity(contextDigest:string,sessionDigest:string,deadline:number,unusedCommandId?:string):boolean{
   try{this.#ports();const now=this.#now();return !this.#closed&&!this.#stopping&&!this.#inputBlocked&&contextDigest===this.#contextDigest&&sessionDigest===this.#sessionDigest&&Number.isSafeInteger(deadline)&&now<deadline&&deadline<=this.#until&&(unusedCommandId===undefined||sdkOpaqueId(unusedCommandId)&&!this.#instructions.has(unusedCommandId));}catch{return false;}
  }
+ /** 실제 bootstrap yield 근거를 원 Query와 이 owner 장부에 단 한 번 인계한다. */
+ adoptBootstrap(source:SyntheticClaudeInstructionBootstrap,identity:object,startEnvelopeHash:string){
+  this.#ports();if(this.#closed||this.#now()>=this.#until||isProxy(source)||Object.getPrototypeOf(source)!==SyntheticClaudeInstructionBootstrap.prototype)fail('SDK_OWNER_BOOTSTRAP_INVALID');
+  const proof=consumeBootstrapForOwner(source,this.#contextDigest,this.#sessionDigest,identity,this.#query,startEnvelopeHash,this);
+  if(this.#instructions.has(proof.commandId))fail('SDK_OWNER_INSTRUCTION_CONFLICT');this.#capturing=proof.commandId;this.#slot=null;let prepared:any;
+  try{prepared=this.#codec.prepareUser(proof.commandId,proof.user);}finally{this.#capturing=null;this.#slot=null;}
+  if(prepared.kind!=='USER_PREPARED'||prepared.payloadDigest!==proof.userDigest)fail('SDK_OWNER_BOOTSTRAP_INVALID');
+  const result=output('BOOTSTRAP_INPUT_YIELDED_ONLY',{instructionDigest:hash(proof.commandId),payloadDigest:proof.userDigest});this.#instructions.set(proof.commandId,{digest:proof.userDigest,user:null,result,attempted:true});return result;
+ }
  async sendInstruction(instructionId:string,rawUser:unknown,call:Call){
   this.#ports();if(this.#closed)fail('SDK_OWNER_CLOSED');if(!sdkOpaqueId(instructionId))fail('SDK_OWNER_INSTRUCTION_INVALID');
   const input=boundedSdkObject(rawUser,this.#bytes),prior=this.#instructions.get(instructionId);
@@ -122,4 +132,11 @@ export class SyntheticClaudeSdkSessionOwner{
   try{await this.#run('control',call,async task=>{this.#guard(task,true);this.#closeAttempted=true;await Reflect.apply(this.#close,this.#query,[]);this.#guard(task,true);},true,true);this.#closeResult=output('REQUEST_SETTLED',{methodInvoked:true});}
   catch{this.#closeResult=output('UNKNOWN',{methodInvoked:this.#closeAttempted,code:'SDK_OWNER_CLOSE_UNCONFIRMED'});}return this.#closeResult;
  }
+}
+
+const originalOwnerBootstrapAdoption=SyntheticClaudeSdkSessionOwner.prototype.adoptBootstrap;
+export function ownerBootstrapMethodCurrent():boolean{return SyntheticClaudeSdkSessionOwner.prototype.adoptBootstrap===originalOwnerBootstrapAdoption;}
+/** 원 private owner에만 소비 근거를 인계한다. 모듈 초기화 시 다른 클래스 값을 읽지 않는다. */
+export function adoptOwnerBootstrap(owner:SyntheticClaudeSdkSessionOwner,source:SyntheticClaudeInstructionBootstrap,factory:object,startHash:string){
+ if(isProxy(owner)||Object.getPrototypeOf(owner)!==SyntheticClaudeSdkSessionOwner.prototype||member(owner,'adoptBootstrap')!==originalOwnerBootstrapAdoption||!ownerBootstrapMethodCurrent())fail('SDK_OWNER_BOOTSTRAP_INVALID');return Reflect.apply(originalOwnerBootstrapAdoption,owner,[source,factory,startHash]);
 }

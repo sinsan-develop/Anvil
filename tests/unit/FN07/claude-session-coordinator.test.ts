@@ -62,3 +62,6 @@ test('원 START 작업기한을 넘긴 새 SEND는 긴 caller 기한으로 세�
 test('receiver HOLD timeout은 외부 결과를 유한 정착시키되 늦은 원문을 공급하지 않는다',async()=>{
  const f=await fixture(),c=f.make({timeoutMs:60});await c.start(id(80),f.call());f.send.hold();const call=f.call(),pending=c.send(f.selected(),call);for(let n=0;n<100&&!f.send.entered();n++)await new Promise(r=>setImmediate(r));assert(f.send.entered());const result=await pending;assert.notEqual(result.state,'INPUT_METHOD_SETTLED');safe(result);assert.equal(getEventListeners(call.signal,'abort').length,0);f.send.release();await new Promise(r=>setImmediate(r));assert.equal(f.calls.input,0);safe(await c.close(f.call()));assert.equal(f.calls.close,1);
 });
+test('coordinator는 caller의 위조 bootstrap 성공 선언으로 원 세션을 활성화하지 않는다',async()=>{
+ const f=await fixture();assert.throws(()=>f.make({bootstrap:{prepare:async()=>({input:[],expiresAt:f.call().expiresAt})}}),/UNAVAILABLE/);assert.equal(f.calls.create,0);assert.equal(f.calls.input,0);assert.equal(f.calls.iterate,0);
+});

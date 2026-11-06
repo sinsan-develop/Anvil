@@ -1,14 +1,15 @@
+import {SyntheticClaudeInstructionBootstrap,prepareBootstrap,waitBootstrapYield,bootstrapOutcomeUnknown} from './instruction-bootstrap.ts';
 import {isProxy,isPromise} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {recordV1,refV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readDispatchEnvelopeV1} from '../../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {SyntheticMaterialReceiver} from '../../runtime/execution-material-receiver.ts';
 import {readClaudeStartOptions} from './start-options.ts';
-import {SyntheticClaudeSdkSessionOwner} from './sdk-session-owner.ts';
+import {SyntheticClaudeSdkSessionOwner,adoptOwnerBootstrap,ownerBootstrapMethodCurrent} from './sdk-session-owner.ts';
 import {ClaudeSdkMessageCodec} from './codec.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId} from './schemas.ts';
 type Call={signal:AbortSignal;expiresAt:string};
-type Options={transport:'SYNTHETIC_ONLY';receiver:SyntheticMaterialReceiver;envelope:unknown;expectedSessionId:string;driver:any;current:any;clock:()=>number;expiresAt:string;timeoutMs:number;maxMessageBytes:number;maxIdentities:number};
+type Options={sessionBindingRef?:unknown;bootstrap?:SyntheticClaudeInstructionBootstrap;transport:'SYNTHETIC_ONLY';receiver:SyntheticMaterialReceiver;envelope:unknown;expectedSessionId:string;driver:any;current:any;clock:()=>number;expiresAt:string;timeoutMs:number;maxMessageBytes:number;maxIdentities:number};
 const flags=Object.freeze({actualExecutionVerified:false,executionAuthorized:false,dispatched:false,workAccepted:false,ownership:'UNVERIFIED' as const});
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=(code='SDK_FACTORY_INVALID'):never=>{throw Error(code);};
@@ -26,20 +27,20 @@ function freeze<T>(v:T):T{if(v&&typeof v==='object'){for(const child of Object.v
 export class SyntheticClaudeSdkQueryFactory{
  readonly transport='SYNTHETIC_ONLY' as const;
  #receiver!:SyntheticMaterialReceiver;#envelope:any;#session!:string;#driver:any;#source:any;#create!:Function;#current!:Function;#clock!:()=>number;#last=-Infinity;#until!:number;#timeout!:number;#bytes!:number;#identities!:number;#contextDigest!:string;#sessionDigest!:string;
- #attempt:string|null=null;#pending:Promise<any>|null=null;#result:any=null;#attempted=false;#closed=false;#controller:AbortController|null=null;#cancel:(()=>void)|null=null;
+ #bootstrap:SyntheticClaudeInstructionBootstrap|null=null;#bootstrapSessionBindingHash:string|null=null;#bootstrapInput:AsyncIterable<unknown>|null=null;#facade:object|null=null;#attempt:string|null=null;#pending:Promise<any>|null=null;#result:any=null;#attempted=false;#closed=false;#controller:AbortController|null=null;#cancel:(()=>void)|null=null;
  #query:any=null;#iterator:any=null;#methods:{stream:Function;iterate:Function;next:Function;interrupt:Function;close:Function}|null=null;
  #prefix:any[]=[];#owner:SyntheticClaudeSdkSessionOwner|null=null;#taken=false;#closePending:Promise<any>|null=null;#closeResult:any=null;
  constructor(raw:Options){
   try{
-   if(!raw||isProxy(raw)||!recordV1(raw,['transport','receiver','envelope','expectedSessionId','driver','current','clock','expiresAt','timeoutMs','maxMessageBytes','maxIdentities'])||raw.transport!=='SYNTHETIC_ONLY'||!iso(raw.expiresAt)||typeof raw.clock!=='function'||!sdkOpaqueId(raw.expectedSessionId)||!Number.isSafeInteger(raw.timeoutMs)||raw.timeoutMs<1||raw.timeoutMs>10000)return fail();
-   this.#receiver=raw.receiver;this.#session=raw.expectedSessionId;this.#driver=raw.driver;this.#source=raw.current;this.#clock=raw.clock;this.#timeout=raw.timeoutMs;this.#bytes=raw.maxMessageBytes;this.#identities=raw.maxIdentities;this.#until=Date.parse(raw.expiresAt);
+   if(!raw||isProxy(raw)||!recordV1(raw,['transport','receiver','envelope','expectedSessionId','driver','current','clock','expiresAt','timeoutMs','maxMessageBytes','maxIdentities',...(Object.hasOwn(raw,'bootstrap')?['bootstrap',...(Object.hasOwn(raw,'sessionBindingRef')?['sessionBindingRef']:[])]:[])])||raw.transport!=='SYNTHETIC_ONLY'||!iso(raw.expiresAt)||typeof raw.clock!=='function'||!sdkOpaqueId(raw.expectedSessionId)||!Number.isSafeInteger(raw.timeoutMs)||raw.timeoutMs<1||raw.timeoutMs>10000)return fail();
+   if(raw.bootstrap!==undefined){if(!refV1(raw.sessionBindingRef))return fail();this.#bootstrapSessionBindingHash=hash(boundedSdkObject(raw.sessionBindingRef,65536).value);if(isProxy(raw.bootstrap)||Object.getPrototypeOf(raw.bootstrap)!==SyntheticClaudeInstructionBootstrap.prototype)return fail();this.#bootstrap=raw.bootstrap;}this.#receiver=raw.receiver;this.#session=raw.expectedSessionId;this.#driver=raw.driver;this.#source=raw.current;this.#clock=raw.clock;this.#timeout=raw.timeoutMs;this.#bytes=raw.maxMessageBytes;this.#identities=raw.maxIdentities;this.#until=Date.parse(raw.expiresAt);
    this.#create=member(this.#driver,'create');this.#current=member(this.#source,'current');this.#ports();
    const now=this.#now();this.#envelope=freeze(readDispatchEnvelopeV1(boundedSdkObject(raw.envelope,maxSdkObjectBytes).value,now));if(this.#envelope.operation!=='START_SESSION')return fail();
    this.#until=Math.min(this.#until,Date.parse(this.#envelope.expiresAt));this.#contextDigest=hash(this.#envelope.context);this.#sessionDigest=hash(this.#session);this.#codec();
   }catch{return fail('SDK_FACTORY_CONFIG_INVALID');}
  }
  #codec(){return new ClaudeSdkMessageCodec({context:this.#envelope.context,expectedSessionId:this.#session,maxMessageBytes:this.#bytes,maxIdentities:this.#identities},{capture:()=>({state:'RECORDED'})});}
- #ports(){if(member(this.#driver,'transport')!=='SYNTHETIC_ONLY'||member(this.#source,'transport')!=='SYNTHETIC_ONLY'||member(this.#driver,'create')!==this.#create||member(this.#source,'current')!==this.#current||typeof this.#create!=='function'||typeof this.#current!=='function')fail('SDK_FACTORY_CONTEXT_CHANGED');}
+ #ports(){if(this.#bootstrap&&!ownerBootstrapMethodCurrent())return fail('SDK_FACTORY_CONTEXT_CHANGED');if(member(this.#driver,'transport')!=='SYNTHETIC_ONLY'||member(this.#source,'transport')!=='SYNTHETIC_ONLY'||member(this.#driver,'create')!==this.#create||member(this.#source,'current')!==this.#current||typeof this.#create!=='function'||typeof this.#current!=='function')fail('SDK_FACTORY_CONTEXT_CHANGED');}
  #now(){const n=this.#clock();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime())||n<this.#last)return fail('SDK_FACTORY_CLOCK_INVALID');this.#last=n;return n;}
  #call(call:Call,cleanup=false){
   if(!call||isProxy(call)||!recordV1(call,['signal','expiresAt']))return fail();
@@ -81,7 +82,8 @@ export class SyntheticClaudeSdkQueryFactory{
      await this.#fresh(controller.signal,end,arm);
      const options=await readClaudeStartOptions(this.#receiver,this.#envelope,{clock:()=>this.#now(),check:()=>{this.#guard(controller.signal,end);return true;}});this.#guard(controller.signal,end);
      await this.#fresh(controller.signal,end,arm);
-     const request=freeze({transport:'SYNTHETIC_ONLY',options,context:this.#envelope.context,expectedSessionId:this.#session,contextDigest:this.#contextDigest,sessionDigest:this.#sessionDigest,attemptDigest:hash(this.#attempt),expiresAt:new Date(Math.min(end,this.#until)).toISOString(),...flags});
+     const first=this.#bootstrap?await prepareBootstrap(this.#bootstrap,this.#attempt!,this,Object.freeze({signal:controller.signal,expiresAt:new Date(Math.min(end,this.#until)).toISOString()}),this.#envelope):null;if(first){this.#bootstrapInput=first.input;this.#until=Math.min(this.#until,Date.parse(first.expiresAt));arm();this.#guard(controller.signal,end);}
+     const request=freeze({...(first?{input:first.input}:{}),transport:'SYNTHETIC_ONLY',options,context:this.#envelope.context,expectedSessionId:this.#session,contextDigest:this.#contextDigest,sessionDigest:this.#sessionDigest,attemptDigest:hash(this.#attempt),expiresAt:new Date(Math.min(end,this.#until)).toISOString(),...flags});
      this.#guard(controller.signal,end);this.#attempted=true;
      const created=Reflect.apply(this.#create,this.#driver,[request,controller.signal]);if(isProxy(created))return fail();const query=isPromise(created)?await created:created;
      // 늦은 원 Query도 cleanup 대상을 잃지 않는다. 일반 결과에는 절대 내보내지 않는다.
@@ -103,8 +105,9 @@ export class SyntheticClaudeSdkQueryFactory{
      const mux={async next(){factory.#queryPorts();if(factory.#prefix.length)return{done:false,value:factory.#prefix.shift()};const pendingStep=Reflect.apply(factory.#methods!.next,factory.#iterator,[]);if(isProxy(pendingStep))return fail();const step=isPromise(pendingStep)?await pendingStep:pendingStep;factory.#queryPorts();return step;}};
      const facade={transport:'SYNTHETIC_ONLY',async streamInput(input:AsyncIterable<unknown>){factory.#queryPorts();const value=await Reflect.apply(factory.#methods!.stream,factory.#query,[input]);factory.#queryPorts();return value;},[Symbol.asyncIterator](){if(iterated)return fail('SDK_FACTORY_ITERATOR_REUSED');iterated=true;return mux;},async interrupt(){factory.#queryPorts();const value=await Reflect.apply(factory.#methods!.interrupt,factory.#query,[]);factory.#queryPorts();return value;},close(){return factory.#closeRaw();}};
      // 같은 underlying Query에 this를 보존한다. facade의 함수와 원 iterator는 고정된다.
+     this.#facade=facade;if(this.#bootstrap){await waitBootstrapYield(this.#bootstrap,this,facade,this.#envelope.envelopeHash);this.#guard(controller.signal,end);this.#queryPorts();}
      this.#owner=new SyntheticClaudeSdkSessionOwner({transport:'SYNTHETIC_ONLY',context:this.#envelope.context,expectedSessionId:this.#session,query:Object.freeze(facade),current:this.#source,clock:()=>this.#now(),expiresAt:new Date(Math.min(end,this.#until)).toISOString(),timeoutMs:this.#timeout,maxMessageBytes:this.#bytes,maxIdentities:this.#identities});
-     this.#guard(controller.signal,end);this.#queryPorts();return output('OWNER_AVAILABLE');
+     if(this.#bootstrap)adoptOwnerBootstrap(this.#owner,this.#bootstrap,this,this.#envelope.envelopeHash);this.#guard(controller.signal,end);this.#queryPorts();return output('OWNER_AVAILABLE');
     }finally{
      if(controller.signal.aborted||this.#closed){this.#prefix.length=0;void this.#cleanup();}
     }
@@ -112,8 +115,17 @@ export class SyntheticClaudeSdkQueryFactory{
    void work.catch(()=>{});
    this.#result=await Promise.race([work,cancelled]);this.#guard(controller.signal,end);return this.#result;
   }catch{
-   this.#result=output(this.#attempted?'UNKNOWN':'REJECTED');this.#prefix.length=0;controller.abort();void this.#cleanup();return this.#result;
+   this.#result=output(this.#attempted||this.#bootstrap&&bootstrapOutcomeUnknown(this.#bootstrap)?'UNKNOWN':'REJECTED');this.#prefix.length=0;controller.abort();void this.#cleanup();return this.#result;
   }finally{if(timer)clearTimeout(timer);EventTarget.prototype.removeEventListener.call(call.signal,'abort',cancel);this.#controller=null;this.#cancel=null;}
+ }
+ /** 내부 bootstrap의 원 생성 출처를 읽기만 한다. raw 자원·권위·새 상태를 반환하지 않는다. */
+ verifyBootstrap(source:object,attemptDigest:string,startHash:string,contextDigest:string,sessionDigest:string,sessionBindingHash:string,stage:string,input?:object,target?:object,owner?:object,userBytes?:number):boolean{
+  try{this.#ports();if(this.#closed||this.#controller?.signal.aborted||this.#bootstrap!==source||this.#attempt===null||hash(this.#attempt)!==attemptDigest||this.#envelope.envelopeHash!==startHash||this.#contextDigest!==contextDigest||this.#sessionDigest!==sessionDigest||this.#bootstrapSessionBindingHash!==sessionBindingHash||this.#now()>=this.#until)return false;
+   if(stage==='INPUT')return Number.isSafeInteger(userBytes)&&Number(userBytes)>0&&Number(userBytes)<=this.#bytes;
+   if(stage==='PREPARE')return !this.#attempted&&this.#query===null;
+   if(stage==='ACTIVE')return this.#result===null||this.#result.state==='OWNER_AVAILABLE';
+   if(stage!=='HANDOFF'&&stage!=='ADOPT')return false;this.#queryPorts();return this.#attempted&&this.#query!==null&&this.#bootstrapInput===input&&this.#facade===target&&(stage!=='ADOPT'||this.#owner===owner);
+  }catch{return false;}
  }
  takeOwner(){if(this.#taken||this.#closed||this.#result?.state!=='OWNER_AVAILABLE')return null;this.#ports();this.#queryPorts();if(this.#now()>=this.#until)return fail('SDK_FACTORY_EXPIRED');this.#taken=true;return this.#owner;}
  #rawCloseCalled=false;#rawClosePromise:Promise<any>|null=null;
@@ -135,4 +147,10 @@ export class SyntheticClaudeSdkQueryFactory{
    }catch{this.#closeResult=output('UNKNOWN');return this.#closeResult;}finally{if(timer)clearTimeout(timer);EventTarget.prototype.removeEventListener.call(call.signal,'abort',abort);}
   })();return this.#closePending;
  }
+}
+
+const originalBootstrapVerifier=SyntheticClaudeSdkQueryFactory.prototype.verifyBootstrap;
+/** 같은 내부 모듈들의 읽기 전용 출처 검사다. 임의 등록·상태 변경은 없다. */
+export function verifyBootstrapFactory(factory:object,source:object,attemptDigest:string,startHash:string,contextDigest:string,sessionDigest:string,sessionBindingHash:string,stage:string,input?:object,target?:object,owner?:object,userBytes?:number):boolean{
+ try{if(isProxy(factory)||Object.getPrototypeOf(factory)!==SyntheticClaudeSdkQueryFactory.prototype||member(factory,'verifyBootstrap')!==originalBootstrapVerifier||SyntheticClaudeSdkQueryFactory.prototype.verifyBootstrap!==originalBootstrapVerifier)return false;return Reflect.apply(originalBootstrapVerifier,factory,[source,attemptDigest,startHash,contextDigest,sessionDigest,sessionBindingHash,stage,input,target,owner,userBytes]);}catch{return false;}
 }
