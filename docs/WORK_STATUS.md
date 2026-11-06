@@ -16438,3 +16438,23 @@ Primary가 동결한 기존 SEND-store시험27845B/468CBAA3B2C0E6518DF88BA888D96
 구조적 receiver 여정과 구체 Store 부분 조회를 구분하며 실제PG 전체종단으로 합치지 않는다. factory 전체추출 byte보존은 독립 미확인이다. e71f18은 허용12/WI/보호3 전후raw동일·HEAD34eadf0c·index빈상태를 확인했다. Main7afc59의 D package.json 부재1은808e2a의 실제source기준읽기로 정정했고 파일생성0이다. 결과 docs/04_test_reports/AV3/FN08_MATERIAL_CREDENTIAL_NAMESPACE_REPAIR_SOURCE_RESULT_20261106.md에 정확명령/지문/오류·NOT_RUN을 기록한다.
 
 실제DB/권한/키/서비스/Agent/실자료조사0·새QA0·제품소스Main쓰기0다. 이단위소스검수만완료이며전체FN08/Stage/계획은미완료·목표active다. 현재복구로바뀐선행만다음미완료선정에반영하고기존읽기전용담당자가후속단위를대조한다. private재시도/PR/main/배포0, 보호3보존·단일writer원칙유지다.
+
+
+## 277. namespace 로컬 checkpoint 보존과 다음 원문 공급 경계 조사
+
+b37e39는 정확 허용12+결과/WI/WORK_STATUS/control4의16경로만 stage했고 staged diff check0이었다. f6ec08은 로컬16be50b474d43338968d6fcc120cae5e08b54ec9(부모34eadf0c)로720추가/112삭제를 보존했다. 추가 LF/CRLF 경고는0079/순수fixture/STARTflow에서만 관측했으며 설정을 바꾸지 않았다. 9858db는 commit경로정확16·원12/WI/보호3raw동일·index빈상태·tracked clean을 확인했다. 보호untracked3은그대로이며private push/PR/main/배포0다.
+
+기존 읽기전용 담당자는 이번복구로변한선행의추가독립구현을확정하지못했다. 이를전체계획소진으로판정하지않는다. 기존Primary는FN05 원HUMAN 보호reader로개별원문을재구성할수있지만START의단일bytes직렬화·VersionRef3목적·원executor접근·불완전bundle처리는기존계약미정임을확인했다. Main709f0d에서도context저장/manifest/textplan/보호resolve와채택START의제외를읽고대조했다. b9e860 추정source basename부재1은해당읽기준비오류이며제품실패가아니다. Primary의wildcard경로/추정SQLbasename준비오류2도실제제품오류와구분하고반복실행하지않았다.
+
+Main은PMO에구체새전달원형/참조목적의위임판단범위를요청했고다음배정을기다리지않는다. 기존Primary는docs/contracts/FN08_START_CONTEXT_SOURCE_CANDIDATE_20261106.md 한후보문서만작성한다(DRAFT/NOT_ADOPTED/SOURCE_GO0). 동시에기존읽기전용담당자는FN16/FN17의기존승인source-only안에서남은미연결1건을한정대조한다. 새제품/시험쓰기0·단일writer유지·실제DB/권한/키/서비스/Agent/실자료조사0·전체계획미완료/목표active다.
+
+
+## 278. context 공급 후보 r1 독립 반려와 r2 문서 보완
+
+기존Primary의후보18601B/32DED6A6036AF7C2748FE12ED0575AA77CBA0EF3B2DA8A8B0791DF8F7968E282를Main aa042d/885c24와독립담당자가검수해C0/I2/M0로반려했다. LATEST_INSTRUCTIONS는USER_INSTRUCTION만가능한필수슬롯이므로전면제외+모든required INCLUDED는양성불가능이다. Options Ref2·원문권위/수명을미정으로남기고두그룹정상등록/receiver를완료조건으로삼은점도모순이다. 기존검사/제외를몰래낮추거나합성성공값으로메우지않으며사용자채택질문/제품GO0이다.
+
+Main은후보작성지연중Primary를한번중단했으나02c8c5에서이미문서저장18601B를확인했다. 이후동결확인과모순검토를같은담당자에게전달했고제품구현Main인수/정식실패3회로세지않는다. Primary도정상bundle불가능을확인했다. 885c24의한정rg일치0 exit1은직접확인한입력/intent읽기와구분하며제품시험실패가아니다.
+
+PMO는새직렬화/Ref/전달목적은기존승인제외로직접결정대상이라고확인했다. 일반재승인/전체대기는만들지않는다. 같은Primary는후보1만r2로보완한다. 명시선택된사용자지시의내부보호reader예외·원fact.intent의논리자료scope·두그룹Ref3목적·별도bodySHA·현재접근/최단허가수명을새제안으로구체화하고DD166F endpoint/UI·실제원문/권한/키/DB/서비스/Agent실행제외를유지한다. 이단계는미채택문서이며제품/시험쓰기0이다.
+
+한정FN16/FN17후속조사는기존정책/보호참조/이력·앱내알림화면이실제caller에연결됨을확인했다. 미정실제백업/외부전달을화면누락으로바꿔재구현하지않는다. Main직접협업검토메시지의외국어연결문자1혼입은보고작성오류로추가분리한다. 검증기준/제품/권한영향0이며후속문장은한국어로정정했고외부본문검사적용을유지한다. 전체계획미완료·목표active·기존source12동결/보호3보존이다.
