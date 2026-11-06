@@ -16020,3 +16020,33 @@ Main의 외부 전송 전 문안 스크립트1은 SyntaxError로 실행 전 실�
 prepare_actual은 실측5500B/SHA256 7839BA423C6628F546C2AB025D0754E5F321AF641ABE5F805A3FB810AFBF2156으로 이전5473B/FF6B와 달랐다. 독립 관측은 시작/종료5500B 동일에서 추가 확정 반례를 찾지 못했지만 이전 동결본과 동일하다고 인수하지 않았다. Primary는7894ad에서 snapshot.checkedAt 밀리초와 ep.created_at 마이크로초를 기존0016/0055 규칙에 맞춰 date_trunc('milliseconds',ep.created_at)으로 비교하는 정밀도 보완을 했고 갱신 통지를 놓쳤음을 확인했다. 실제 원문과 새 지문을 우선하고 이전FF6B는 역사로 유지한다. 부모 기한/기능 변경이나 정식 Developer 실패3회가 아니다.
 
 현재 실제 완성된 부분은 준비 입력/Options 변환·replay/receipt·inventory의 source 한정 연결과 직접21 검증이며, 핵심 reserve/settle·전체 승인 최초비용 producer·미적용 SQL 완결·UI 왕복은 여전히 미완료다. 같은 기존 Primary가 실행 중이며 Main은 중복 재시작 없이 현재 task를 확인한다. 다른 환경/새 세션·새 agent·Main code write·실제 DB/권한/키/서비스/Agent/실자료 조사0이다. 전체 목표 active·전체 완료보고0을 유지한다.
+
+## 233. 선예약 부분 검수 I2 보완 지시
+
+직전 목표 턴은 inventory 직접21·기존 준비 알림 원문 복원·source 부분 검수라는 실제 진전이었다. 이번 재개는 기존 Primary running과 현재 Git9f998b82/WI r4/실제 변경을 확인해 중복 재시작 없이 이어갔다. Primary는 원 준비 선예약 상계/고정점/account/예약행 생산을 작성했고 실제 승인 class가 최초비용 source 없이 반환하는 RED797e27(Missing expected rejection·1FAIL/1334.4385ms/exit1)을 수거했다. 실제 reserve/settle·최초비용 producer·후행 guard·미적용 호출 ACL/UI는 아직 미완료이며 실제 PG0이다.
+
+독립 선예약 함수3 검수는 C0/I2/M0다. cost1922B/F0F29D3A29C9799F14DF5D1620044F5EBBDB03AC23A08C0AA5C9EE9846A9FD84, fixedpoint1183B/95864531626DBB9F3FF4389134447400E548A856B9DDDC08B601685E55B703BD, prepare_reserve4838B/38E959DF5A93511850D221C03696BF4583600FAA7AA47D57ACB3FA1E521AB675의 시작/종료 동일을 확인했다.
+
+I1은 U+H+r만10GiB와 비교해 기존0076의 connection/report·environment·native authority/event 별도 other_bytes O를 admission에서 누락한 것이다. U+H+r<=cap<U+H+r+O인 요청을 허용하므로 같은 잠금/Tx에 기존 별도 소계를 포함하고 계정 U와 중복 계상하지 않아야 한다. 새 한도 정책이 아니라 기존 총량 보존이다.
+
+I2는 sealed_hash가 planHash와 coverageGeneration을 모두 제외해 채택 r2의 planHash만 제외한 전체 plan 봉인과 달랐다. 등록 목적의 봉인·검산·Node 모델에 coverageGeneration을 포함하도록 보완한다. 다른 목적의 기존 plan은 변경하지 않는다. source/수식 반례를 실제 SQL 행동/PG 실행으로 주장하지 않는다.
+
+Main은 두 항목을 같은 Primary에게 즉시 보완 지시했고 원 미완료 producer/정산/UI도 계속하도록 했다. 새 사용자 승인·전체 대기·Main 코드 인수는 없다. '실행권 연결'은 기존 SQL 호출권/ACL의 미적용 선언·검산만 허용하며 Anvil 실행 grant·실제 GRANT·Agent 실행을 추가하지 않는다. 실제 DB·권한·키·서비스·Agent·실자료 조사0·전체 목표 active다.
+
+## 234. 선예약 I2 해소와 승인 예약 완결의 새 I2
+
+Primaryf6c302의 수식/형상2FAIL→183df2의2PASS/skip0/170.7741ms, fd0fcf 실제 Node 포트 모델1PASS/skip0/806.8872ms를 수거했다. Node 모델은 O 초과 SD 거절429에서 lease미발급/settle0과 coverage 포함 봉인 hash의 실제 settle 인자 동일성을 검산한다. 0f5d9b의 기존quota3PASS/새모델 import 누락1FAIL은 f118f9의 명시 import 보완으로 분리했다. 실제 SQL/PG RED가 아니다. type34bccb0/diff22affd0/live0이며 원 producer/settle/UI는 계속 미완료다.
+
+독립 재검수는 기존 O 누락/세대 봉인 I1/I2가 해소됐음을 확인했다. reserve4915B/067F14FF268417DEECE2F7668698CDA2DAD5F2F103B9A7DDECA90E377DFB89A8, other_bytes813B/BC3086FB98B6DD4AD39BF0D22923292114AC19F2760A06892FAA011C4CCCB06C는 시작/종료 동일이고 기존6표 O를 U/H 밖에서 admission에 한 번 더하며 H(plan-planHash)를 사용한다. cost/fixedpoint 기존 지문도 불변이다.
+
+새 fn09_registered_approval_reservation_complete3444B/76D1A7B4B15A8B8D1C2BE8E360A90A6FCE5ED3BB8520675210F57BC788E3CBD0에는 별개 C0/I2/M0가 남았다. coverageGeneration 정규식의 닫는 작은따옴표/종단 $ 누락으로 source 문법이 완결되지 않았고, plan.actorId와 원 cmd.actor_id의 exact 결박이 없었다. plan actor만 바꾸고 hash/자기비용을 맞춘 원형을 helper가 배제하지 못하는 반례다. 실제 PG 실행 없이 확인한 본문 결함이며 미완성 파일끝 tail로 이 검사를 대신하지 않는다.
+
+Main은 두 새 항목을 같은 Primary에게 즉시 보완 지시했다. 이미 해소된 O/세대와 다른 lineage의 finding이며 정식 같은 실패3회/코드 인수로 세지 않는다. 요청 최초비용 Q/B/C/A/U/N 귀속과 결정/공유행 차분 분리·준비 P 재산입 금지는 유지한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer/목표 active를 유지한다.
+
+## 235. 승인 예약 보정 재검수와 부분 SQL 작성 지속
+
+Primary는 JavaScript replacement 문자열의 달러 기호와 작은따옴표 조합이 suffix 삽입 토큰으로 해석돼 정규식 문자열과 꼬리가 손상된 원인을 확인했다. 반환 콜백 방식으로 정규식 두 곳을 보정하고 첫 COMMIT 뒤 새 고유 함수가 없는 중복 꼬리만 제거했다. 원문은 도구 메모리에서 비교했고 기존 검수 origin/notification/cost/fixedpoint 본문은 불변이었다. 형상 c270d2의1FAIL 후8d2b34의3PASS, dec5d9의 actor/regex·열린 문자열/중복꼬리2PASS(193.9299ms/exit0)를 수거했다. 실제 PG 문법·행동 검증은 아니다.
+
+독립 재검토 C0/I0/M0는 helper3502B/38C6D4E852C392CC507C97A1389ABC9D6477543C460BF3E052378DC32097CD4F와 snapshot_valid7900B/849A74B28EF1EE052FF46D0255E0887D3FA99CE7CE40B60F11C8F52F2AC57F6F의 시작/종료 동일을 확인했다. 정규식 종단·닫힘과 plan.actorId 원 cmd.actor_id exact 비교가 추가돼 직전 두 finding은 해소됐다. 전체 SQL/tail 합격은 제외한다.
+
+Primary는 역사/현재 비용 목적을 분리하기 위해 기존 actual을 core7413B/3D069F2A5B309B9AF0FE6531E7593439985372A69510770BA29A8923B5114A02와 true/false 고정 wrapper로 옮겼다. Main은 원 current 보호 유지·역사 원 관계·승인 최초 비용·직접 EXECUTE 제한을 다음 읽기 전용 검수 범위로 지정했다. writer는 동일 Primary이며 원 승인 producer/settle/후행 guard/UI 미완료를 계속한다. Main 코드 수정0·실제 DB/권한/키/서비스/Agent/실자료 조사0, 전체 목표 active다.
