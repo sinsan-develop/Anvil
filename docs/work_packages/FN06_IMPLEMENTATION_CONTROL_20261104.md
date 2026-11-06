@@ -3007,3 +3007,12 @@ Main은 bridge 이전에 같은 owner가 직접 동일 commandId/동일 user를 
 객체 외피 상한과 과거 입력 오귀속 I1을 실제 RED→GREEN으로 보완했다. 선택적 unusedCommandId는 같은 boolean 검사에서만 확인하고 원 owner 입력 알고리즘은 유지한다. 실제 receiver→원 문장/refs/hash→공식 user→기존 owner/codec의 명시 합성 공급을 인수하며, 결과는 docs/04_test_reports/AV3/FN07_SECONDARY_INSTRUCTION_BRIDGE_SOURCE_RESULT_20261106.md에 기록했다. 원 factory는 ACACF14D로 불변이다.
 
 기존 Primary는 writer를 반환했다. Main이 정확 제품/시험4+결과/현황/통제3을 로컬 checkpoint로 보존하며 private push/PR/main/배포0, 보호3 보존이다. 실제 SDK/사용자 원문 전달/DB/권한/키/서비스/Agent·SID 보호 생산자·permit·도구 권위는 미검증이다. 다음은 SESSION 관측과 원 생성 근거/Anvil 책임 세션 결박의 정확 미채택 차이를 분리한다. 전체 FN07/Stage/계획은 완료가 아니며 목표는 진행 중이다.
+
+
+## 306. FN07 동일 세션 내부 조정 사전검수·소스 GO
+
+5e677acf5025dc73494d24369a2384fb3b2885dd는 입력 연결 단위의 정확7 로컬 checkpoint이며 4b68ec에서 tracked/index clean과 최종4 지문 불변을 확인했다. 관련 없는 보호3은 남겨 두었고 push/PR/main/배포0이다. 기존 담당자 둘은 제품 apps에 factory→원 owner→bridge→관측/중지/정리를 하나의 원 세션 수명으로 소유하는 caller가 없다고 확인했다. 시험 조립을 실제 제품 호출부 구현과 혼동하지 않는다.
+
+신규 WI docs/work_packages/FN07_SESSION_COORDINATOR_SOURCE_IMPLEMENTATION_20261106.md 10841B/B24F090895249D4B31ED3428AAD05BAC83A10969204F8CCAB1883834F292AA9F는 사전검토 C0/I0/M0와 기존 Primary의 신규2 구현 가능 확인을 받았다. 원 START 단발·owner 단발 인계·SEND/관측의 같은 owner·단절/close 및 늦은 반환 상태 덮어쓰기 차단을 실제 내부 조정 동작으로 구현한다. 인계 전 중지는 원 START 취소와 같은 factory.close만 소비하며 실제 provider 중지/회수 성공으로 만들지 않는다.
+
+Main은 최종 WI hash에 SOURCE_GO를 결박한다. 머리의 GO0은 사전검수 원형으로 보존하고 이 기록과 문서3 checkpoint 뒤 기존 Primary에게 정확 신규 session-coordinator.ts/claude-session-coordinator.test.ts만 배정한다. 원 factory/owner/bridge와 서버/SQL/공개 계약은 수정하지 않는다. 선언 sessionBindingRef와 기대 SID는 합성 일관성 값이며 실제 보호 증거나 새 SessionRef가 아니다. Main은 같은 제품을 수정하지 않고 독립 검수·직접 검증·통합을 맡는다. 실제 DB/권한/키/서비스/Agent/SDK·실자료 실행0, 전체 목표는 진행 중이다.
