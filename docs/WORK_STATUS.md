@@ -17041,3 +17041,14 @@ C1 실제RED56aeaf의2FAIL을최소정규식보완뒤ee9d9d3PASS로닫았다. �
 Main은후보의숫자/bool오류문구만원validator의422와정합화했다. fd5811의새후보37860B/7DF8D313은부모462BD405·신산님직접방향을보존한MAIN_RECONFIRMED_NON_SEMANTIC이다. 실행WI78C47D4C는이력으로유지하며원exact11의존재하지않는기한키를추가하지않는보정도기록한다. 결과서작성전메모리제목초안준비1은제품/파일쓰기0으로분리하고한국어최종본만저장한다.
 
 결과 docs/04_test_reports/AV3/FN10_NODE_DECISION_INPUT_SOURCE_RESULT_20261106.md에정확검사·RED/준비오류·현재/저장/화면미구현을기록했다. Main은같은제품을쓰지않았고Primary는writer를반환했다. 정확신규2·후보/기술/결과/현황/통제문서만인수checkpoint로보존한다. 다음은원보호source·같은Tx저장/계상·후행보호조회·미적용SQL·화면연결이며전체목표active·실환경0이다.
+
+
+## 345. FN10 저장·보호 조회·UI04 전체 연결 사전검수와 소스 GO
+
+Main은backendID예약/receipt와Web기존조회/브라우저codec을기존담당자둘에나눠대조했다. Primary는원serverCommandId를reserve전에고정하는FN10private목적분기와같은ID의persist·같은Txquota·역사application원행/실helper를정확제품12/시험fixture7내로연결가능하다고확인했다. ordinaryDocumentOperations에는넣지않아OWNER기준을유지하고control-grant/repository/옛SQL변경0이다. 준비중논리경로/기준선불일치는실제위치로정정했고제품실패로세지않는다.
+
+Web읽기는기존application/문서/form/plan/confirmation GET과wireHash/browserCanonical로준비할수있어별도발급/선언API가필요없음을확인했다. Main은UI05임무진입을필수로만들지않도록WorkspacePage의선택단계아래Panel로배치를정정했다. 실제graph는별도컴포넌트내부이므로Panel이동일fullref의기존보호GET을재조회하고kind/role을확인한다. App/WorkspacePage/policy-editor와신규workspace API/Panel만수정한다. POST후403/412를미저장으로오판하거나GET실패때새명령을발행하지않는다.
+
+전체WI docs/work_packages/FN10_NODE_DECISION_STORAGE_WEB_SOURCE_IMPLEMENTATION_20261106.md는17739B/387DA079C1C0CD393C6DBBFEE8A9A837F076442E74B532686DB7DB5461F9F0D9이며명령2/GET2·공개exact/현재와역사조건·sameTx/후행auth·저장량/head역완결·UI04·검수/제외를고정했다. 메모리초안의불필요한한줄과목록개수표기는저장전정정하고최종문자검사본만저장했다. 독립사전C0/I0/M0·Primary정확19가능확인을받았으며새필수결정/추가경로는없다.
+
+Main은정확WI해시에SOURCE_GO를결박한다. 머리SOURCE_GO0은사전검토원형이며이번기록뒤checkpoint후기존Primary만정확19를TDD구현한다. Main같은제품쓰기0·기존입력2불변·실제DB/권한/키/서비스/SDK/Agent0·새세션/branch/worktree/자동화0이다. 전체사용자기능의원source→저장/계상→후행보호→화면연결로진행하며합성PASS를실제PG/운영인수로승격하지않는다.
