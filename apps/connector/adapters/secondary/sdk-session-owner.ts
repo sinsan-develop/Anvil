@@ -74,6 +74,10 @@ export class SyntheticClaudeSdkSessionOwner{
   if(!recordV1(c,['transport','contextDigest','sessionDigest','operation','instructionDigest','checkedAt','expiresAt'])||c.transport!=='SYNTHETIC_ONLY'||c.contextDigest!==expected.contextDigest||c.sessionDigest!==expected.sessionDigest||c.operation!==operation||c.instructionDigest!==instructionDigest||!iso(c.checkedAt)||!iso(c.expiresAt)||Date.parse(c.checkedAt)>this.#now()||Date.parse(c.expiresAt)<=this.#now())fail('SDK_OWNER_CURRENT_INVALID');
   this.#shrink(Date.parse(c.expiresAt));this.#guard(task,operation==='INTERRUPT');
  }
+ /** 내부 bridge의 기대 identity/고정 기한만 비교한다. 현재 권위·새 수명·SDK 효과는 만들지 않는다. */
+ matchesIdentity(contextDigest:string,sessionDigest:string,deadline:number,unusedCommandId?:string):boolean{
+  try{this.#ports();const now=this.#now();return !this.#closed&&!this.#stopping&&!this.#inputBlocked&&contextDigest===this.#contextDigest&&sessionDigest===this.#sessionDigest&&Number.isSafeInteger(deadline)&&now<deadline&&deadline<=this.#until&&(unusedCommandId===undefined||sdkOpaqueId(unusedCommandId)&&!this.#instructions.has(unusedCommandId));}catch{return false;}
+ }
  async sendInstruction(instructionId:string,rawUser:unknown,call:Call){
   this.#ports();if(this.#closed)fail('SDK_OWNER_CLOSED');if(!sdkOpaqueId(instructionId))fail('SDK_OWNER_INSTRUCTION_INVALID');
   const input=boundedSdkObject(rawUser,this.#bytes),prior=this.#instructions.get(instructionId);

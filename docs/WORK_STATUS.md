@@ -16663,3 +16663,23 @@ PMO 회신 turn 01a1affa-dd11-7a72-aadf-70492dd0b5d5는 발송 전 문구 확인
 Main 4f9891은 owner13515B/DBE89D57·기존 owner 시험15122B/AEB8149E·factory16133B/ACACF14D 불변, 신규 bridge/시험 부재·index 비어 있음을 확인했다. Main은 기존 FN07 승인 범위의 내부 연결로 최종 WI 해시에 SOURCE_GO를 발행한다. WI 머리의 GO0은 사전검토 원형으로 보존하고 이 기록과 정확 해시를 결박한다. docs3 로컬 checkpoint 후 기존 Primary만 지정 신규2/기존2를 구현한다. 기존 owner 변경은 boolean identity 검사 추가이며 입력·관측·중지·정리 알고리즘은 유지한다.
 
 동일 owner/command의 원 envelope/ref/grant/본문 hash 충돌, pending/UNKNOWN 재공급 금지, 원 bytes 보존·소유본 지움, 원 기한·취소를 검산한다. primary admission·claim/journal·공개 API·SQL·실제 SDK/DB/권한/키/서비스/Agent는 변경/실행하지 않는다. Main은 같은 제품을 수정하지 않고 독립 검수·직접 검증·통합을 소유한다. 전체 목표는 진행 중이며 실제 코딩 Agent 연결 완료가 아니다.
+
+
+## 304. FN07 입력 연결 부분 검수와 보완
+
+기존 Primary는 실제 receiver/owner fixture와 신규 직접7 PASS·typecheck exit0을 제출했고 owner14003B/D3217F15·bridge11786B/8C387519를 부분 동결했다. Main 479e8b/b72567은 소스와 기존 owner diff를 읽었다. owner 변경은 boolean 검사 한 메서드 추가이며 기존 입력 알고리즘은 보존됐다. 읽기 담당자의 첫 소스 한정 C0/I0/M0는 최종 인수가 아니다.
+
+Primary는 공식 user 외피를 포함하면 원문이 2MiB 이하라도 기존 codec 상한을 넘는 실제 반례 4a760b를 확인했다. 입력0인 입구 예외를 UNKNOWN으로 처리하던 부분을 owner 호출 전 기존 상한 검산으로 REJECTED 처리하도록 보완 중이다. 상한을 늘리거나 기존 codec을 바꾸지 않는다.
+
+Main은 bridge 이전에 같은 owner가 직접 동일 commandId/동일 user를 처리한 경우 과거 INPUT_METHOD_SETTLED가 새 envelope/refs/영수증으로 귀속될 수 있는 반례를 제기했다. 기존 읽기 담당자가 원 owner의 캐시 반환과 bridge 장부로 I1을 확인했고 Primary가 실제 RED를 검산 중이다. 같은 허용4의 기존 boolean 검사에서 원 command 점유를 최종 공급 직전에 확인해 출처 불명 과거 성공을 새 공급으로 채택하지 않는 최소 보완을 검토한다. 아직 이 보완의 GREEN/최종 합격은 주장하지 않는다.
+
+후속 읽기 담당자의 저장 제약 설명은 한국어 지침을 위반해 사용자 문서에 복사하지 않았고, 해당 추가 조사를 종료했다. 현재 코드 검수는 한국어 요약과 지문 검산으로 한정한다. Main의 최초 permit 검색에서 glob 입력은 유효 읽기 증거로 쓰지 않았고, rg로 확인한 정확 execution-permits.ts/execution-permit-store.ts의 실제 줄로 정정했다. 실제 DB/SQL·SDK·권한·키·서비스·Agent 실행0·단일 제품 writer1·전체 목표 진행 중이다.
+
+
+## 305. FN07 원 SEND·secondary 입력 연결 소스 인수
+
+최종 허용4는 bridge11992B/760336AC·신규시험16952B/EA83439D·owner14130B/1F032A5B·owner시험16861B/EDC71C88로 동결됐다. 최종 독립 C0/I0/M0와 Main 82e2af→2aa9e4→8de013의 지문 불변을 확인했다. Main 직접5파일73 PASS·fail/skip0·1889.7263ms·exit0, b57a78의 typecheck/diff check0이다. CRLF 안내는 별도이며 Primary 중간/보강 시험과 이전 factory36을 합산하지 않는다.
+
+객체 외피 상한과 과거 입력 오귀속 I1을 실제 RED→GREEN으로 보완했다. 선택적 unusedCommandId는 같은 boolean 검사에서만 확인하고 원 owner 입력 알고리즘은 유지한다. 실제 receiver→원 문장/refs/hash→공식 user→기존 owner/codec의 명시 합성 공급을 인수하며, 결과는 docs/04_test_reports/AV3/FN07_SECONDARY_INSTRUCTION_BRIDGE_SOURCE_RESULT_20261106.md에 기록했다. 원 factory는 ACACF14D로 불변이다.
+
+기존 Primary는 writer를 반환했다. Main이 정확 제품/시험4+결과/현황/통제3을 로컬 checkpoint로 보존하며 private push/PR/main/배포0, 보호3 보존이다. 실제 SDK/사용자 원문 전달/DB/권한/키/서비스/Agent·SID 보호 생산자·permit·도구 권위는 미검증이다. 다음은 SESSION 관측과 원 생성 근거/Anvil 책임 세션 결박의 정확 미채택 차이를 분리한다. 전체 FN07/Stage/계획은 완료가 아니며 목표는 진행 중이다.
