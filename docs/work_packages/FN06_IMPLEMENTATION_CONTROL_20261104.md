@@ -2420,3 +2420,25 @@ Primary3ba673은 원797e27의 등록 source 부재 거절과 기존 실제 승�
 Main은 실제 ProjectPolicyRepository.command의 재인증 필수가 saveProjectMembership·savePermissionPolicy에 한정되고 기존 quota current는 Session idle/absolute·현재 정책의 최솟값임을 대조했다. 채택 FN09/WI의 재인증 추가 근거 검색은 일치0이었다. 새 Node quota와0077 context/settle에 임의로 추가된 재인증 필수/기한 산입은 승인 계약을 넘어 정상 요청을 막는 구현 오류다. 같은 Primary가 신규 분기만 원 조건으로 보정한다. 기존 로그인/Session·정책/기한·정확 제어·protected read와 membership/policy 편집의 재인증을 완화하지 않으며 시험에 재인증 값을 임의로 넣어 통과시키지 않는다.
 
 앞선 Node/SQL 부분 C0 판정은 해당 호출·관계 범위의 증거로 보존하지만 이 계약 회귀를 포함한 전체 기능 인수가 아니었다. 영향 본문은 보정 지문·정상/중요 거절 증거로 다시 대조한다. 같은 근본 원인의 정식 실패3회나 Main 코드 인수로 세지 않는다. 남은 SQL 최초비용/역완결·UI는 계속 미완료, 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer/목표 active다.
+
+## 241. 등록 정상 class 여정 도달과 재인증 보정 재검수
+
+독립 읽기는 재인증 보정 영향 quota45942B/0A3B2CC56648567D88347EFCFB300B3395C5FB09BB23D16F0094D2304F2A8E9A와0077 raw78904B/14D958A0DC41BEEC81D446E7D9003B6714FA441ADDE161C273587203408E20C6의 시작/종료 동일에서 한정 C0/I0/M0를 반환했다. 신규 재인증 요구만 제거됐고 기존 membership/policy 편집 재인증, 활성 로그인·Session 최소기한·OWNER/제어·현재 정책/ref·승인 만료·원 txid·보호 조회는 유지된다. 이 전체 파일 지문은 해당 부분 검토 시점의 관측이며 작성 중 최종 SQL/UI 동결본이 아니다.
+
+Primary9fc821은 등록 최초비용 producer의 실제 승인/quota/보호 definition/environment/metadata/source-root 클래스를 사용하는 정상 시험1개를 통과했다(세 결정 모드·904.3807ms/skip0/exit0). 모드3을 시험3으로 올리지 않는다. 원 요청 notification ID 뒤 정산·각 결정 version2 뒤 정산·중첩 authenticated0·요청/결정별 원 definition 공급1을 단언했다. SQL history-proof/비용 SD의 응답은 메모리 모델이므로 실제 SQL/PG 생산 증거가 아니다.
+
+정상 도달 과정은 b14c40의 신규 재인증 과잉 제품 오류, ebb430의 fixture 원 저장 열 HUMAN_COMMAND/correction/scope 누락,868295의 신규 전달부 r.expiresAt 참조 오류를 구분한다. 실제 요청 원문 r.details.expiresAt으로89b0b1 보정 후 정상 GREEN이며 guard/expiry/기대값 완화는 없다. Main은 시험 원문이 실제 제품 class를 소비하고 SD는 모델 응답임을 대조했다. 거절·Tx 교체·만료·정산 유실 반례는 작성 중이다.
+
+같은 Primary가 Node 직접 시험 후 부분 지문을 제출하면 Main fresh 검증을 진행하고, SQL 실제 source 생산자/역완결·최종 ACL·UI는 같은 writer가 이어간다. FN08 GO는 선행 FN09 검수 후 발행한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 계획 미완료/목표 active를 유지한다.
+
+## 242. Node 승인 생산자6 부분 인수와 Main fresh13
+
+Primary는 Node 승인 생산자6경로를 부분 동결하고9b6e49의 승인 신규/직접인접8PASS(2047.7336ms), cfd42f의 quota 직접5PASS(1647.3482ms), type8fd64d/diff1e4fd6 exit0을 제출했다. Main f2772f의 정상 선택1PASS/883.3447ms는 이후 c6816d의 직접13에 포함되는 부분 집합이며 합계14로 세지 않는다.
+
+Main c6816d는 실제 승인·quota의 동일 두 시험 파일에서 신규/직접인접13PASS/fail0/skip0/942.8896ms/exit0을 fresh 확인했다. 등록 정상3결정 모드는 시험1, 중요한 거절10모드도 시험1로 계상했다. 원 정책 거절·Tx/주체 교체·기한·잘못된 예약·알림/정산 유실·목적별 receipt ID·원 요청 보존·기존 후보 회귀와 재인증 과잉 제거를 검산한다. 전후6 지문은 불변이다.
+
+동결6: approvals53103B/8D9BFB36F2A3A85B2D834C1F57B4D32BD0485949E8EEA53039CA33B4A97531DC, quota45942B/0A3B2CC56648567D88347EFCFB300B3395C5FB09BB23D16F0094D2304F2A8E9A, command40985B/DB1F40FDCE2617BC3173F1BA85088E94F3C20D362E57F4D35B692ED4908DBDCC, routes86599B/305969D2EF35D76A218BC3E1D4A8DADB85FEE7807DCB46C23484CEEBC123C8EB, FN09시험47017B/53E2638E2347D738FD16E179BB884354D5A4C01D728A78CAF4175802F7525D51, quota시험31293B/1FE017AD0553F733FCD7546E0E032DFFB11501F4A306CA1DE80651112ABCF0EB다.
+
+기존 독립 담당자는6경로의 변경·fixture 적합성을 시작/종료 동일에서 C0/I0/M0로 반환했다. 실제 class와 protected reader 소비, 원 요청 r.details.expiresAt, repository 공급·목적 replay, 단발 ID·UNKNOWN, 후보11의 기존 기준을 확인했고 성공 메서드 대역/skip/only로 판정 기준을 낮춘 부분을 찾지 못했다. SD는 명시 메모리 모델이며 실제 SQL 비용·원자성·전체 API/COMMIT/UI는 판정 밖이다.
+
+Main은 이 Node 직접 범위만 source 부분 인수하고 담당자의 검토 중 고정을 해제했다. 이후6에 필요한 변경이 있으면 이유/새 지문과 영향 검증을 다시 수거한다. 동일 writer는 SQL 승인 최초비용 생산자·최종 역완결/ACL·UI를 계속 구현한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 GO0·전체 계획 미완료/목표 active다.
