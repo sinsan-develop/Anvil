@@ -3517,3 +3517,28 @@ Main569b0a는 CURRENT_WORK_ENTRY가 현재FN10과 인수된 bootstrap/profile �
 - 고유 신규37(Main36+추가1)과 불변 인접69(Primary)는106개이며 중복 실행을 합산하지 않는다. 결과 docs/04_test_reports/AV3/FN10_NODE_DECISION_STORAGE_WEB_SOURCE_RESULT_20261106.md는9127B/EBC10F4DE39EEA4BB1E2E0FD8D4CE52785928E3221336626F6EB7085340280BE다.
 - 소스·합성 핵심 동작을 인수하며 실제DB/권한/계상/trigger/경합·HTTP/브라우저·SDK/Agent·배포 인수는 미검증이다. 전체FN10·Stage·계획완료가 아니다. 정확19와 Main결과/현황/통제3만 localcheckpoint로 보존하고 보호3·다른자료는 stage하지 않는다.
 - 새 판단/basis producer는 실제로 충족됐다. 다음FN10 조건평가/소비는 기존synthetic평가기·완료기준과 형상이 달라 별도 정확명령/소비·잠금/공개 저장 의미를 정해야 한다. 과거337의판단producer부재를 계속 원인으로 들지 않고 상세 기술 후보를 준비한다. 실제환경 제외는 유지한다.
+
+## 364. FN10 소스 checkpoint 확정·후속 조건평가 후보 착수
+
+7dab3a는 fc45abea98fedf12d4b56d7be1cbd43a67b4ac07(parent0231ddbf)에 정확22경로를 commit했다.23871f가 경로집합·raw19/보호3 불변·trackedclean을 사후검산했다. push/PR/병합·실환경 실행0이며 PMO에 결과/제외/다음 선행을 보고했다. 줄바꿈 정규화 안내는 유지하고 제품 파일을 다시 쓰지 않았다.
+
+같은Primary는 docs/contracts/FN10_DECISION_EVALUATION_CONSUMPTION_CANDIDATE_20261106.md 초안1만 소유한다. 새로생긴판단/basis producer와원조건식·설계/계획을 대조해 정확평가/소비·원ref/정책/잠금/저장/조회/화면과전체다음단계의경계를 닫는다. DRAFT/SOURCE_GO0이며 완료/전이/실행권위를 임의추가하거나 소비후정정차단정책을 채택근거없이 확정하지 않는다. 현재제품/시험writer0·새실행권한0·전체계획미완료다.
+
+## 365. FN10 평가/소비 후보의 실제 실행·선행 공급 공백
+
+- 후보1 초안20117B/CE5A36C5는 DRAFT/SOURCE_GO0이며 공식사본 반영 전 독립 C0/I1/M0다. decision/basis/head·문서는 실제 공급되지만 현재실행/선행/평가대상 fullref의 보호provider 없이 정상소비를 제시한 공백이다. 부모§6 의미를 유지해 부재시소비412·RECORD_ONLY부분기능을 구분하도록 같은문서만 보완 지시했다. workflow와무관한결정잠금/미리보기로 전체자동진행목표를 대체하지 않는다.
+- Main20b258/d15a1c는 부모§6 전체가 이번저장채택밖인 미래요구임을 확인했다. 소비후정정/철회409도 이미구현승인된정책으로 상속하지 않는다. 다음실질현재상태/완료provider와FN06/07실제생성producer 선행을비교해 계획순서로 선정한다. 제품/시험/SQL쓰기0·실환경0이다.
+- 직전읽기 준비오류는 추정 docs/INTERFACES.md 부재(os error2), apps/server/modules/execution/execution-observations.ts 부재(os error3), Windows docs/FUNCTION_WORK* glob경로오류(os error123)다. 실제파일목록으로정정했으며실패명령재실행/권한변경0·제품실패와분리한다. 전체계획미완료/목표active다.
+
+## 366. 평가 후보의 선행 정정·실제 Agent 연결 계약 상세화
+
+- FN10후보r2 26493B/270B7D96는 부모의현재실행/선행/평가대상provider부재시소비412를 명시해 독립I1해소·C0/I0/M0다.7357bb로 공식사본에 동일 바이트를 반영했다. 채택/제품GO0이며 RECORD_ONLY를전체목표대체진도로 세지 않는다.
+- 기존Native/HUMAN은 원등록/current·공개키지문/논리refs를, 환경/profile은 DECLARED/MATCHED·program/LITERAL/SECRET_SLOT/논리cwd를 보호한다. 실제exe/hash/cwd/닫힌env/원생성허가를 생산하지 않는다. 준비helper의빈argv/SystemRoot·WINDIR·자기디렉터리 실행과codingAgentExecutionAuthorized:false는 실제coding허가가 아니다.
+- 같은Primary가 FN07_CLAUDE_EXECUTION_ADMISSION_PRODUCER_CANDIDATE_20261106.md 초안1만 소유해 실제관측/원허가→공식hook/첫지시·SID로이어지는 최소실질업무를 상세화한다. 합성뿐인START/current/fact는선행에서숨기지않고 새중요의미와내부기술선택을구분한다. 기존키새목적/argv-env-secret허용·생성효과는미정이며 실제관측/실행허가0·SDK재조회0·제품/시험/SQL쓰기0이다.
+
+## 367. FN07 admission 후보 정합화·추가 공개 근거 결정 요청
+
+- admissionr2 40887B/41251174는 확정부모START증빙→payload/hash→자기receipt/audit후행관계로 순환I1을 닫고 선행Anvil논리binding/후행SDK SID를 분리했다. 기존훅이름 확인M1도 정정해 독립C0/I0/M0이며 c5c386으로 공식사본 일치확인. 실제producer/새서명목적·argv/env/Secret등 미정과SOURCE_GO0는유지한다.
+- Mainc95797은 제품dependency/해당localSDK3경로부재를,7e278e/6f947d는 기존통제의훅이름 확인기록을 찾았다. SDK추가조회0. 남은 callback전체서명·반환동기성·실제hook/argv-env변환만 추가근거 대상이다.
+- 공개읽기추가1 후보 FN07_PINNED_SDK_HOOK_CONTRACT_READ_CANDIDATE_20261106.md는5542B/2296F0EF이며 독립C0/I0다. 고정HTTPSGET1·retry/redirect0·절대/socket10초·도구30초·길이/무결성/SHA·메모리16MiB·SDK실행/파일저장0과 같은메모리의유한후속추출을 고정했다. 후보작성만했고실행0이다.
+- 기존직접승인읽기1회소진을 명시해 PMO에 추가1회의 결정권한/직접결정 경계를 요청했다. 제품/권한/실행계약승인과 분리하며 회신전조회0. 제품/시험은fc45abea로보존하고 전체계획미완료/목표active다.
