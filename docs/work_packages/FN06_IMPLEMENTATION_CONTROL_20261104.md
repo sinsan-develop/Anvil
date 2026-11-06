@@ -2651,3 +2651,21 @@ Main은 정확 허용11+결과/현황3문서만 기존 branch의 local checkpoin
 Main은 정확11+결과/현황3의14경로만 b0f22d00dd441d521390388e3e7b8db525f8a2c8에 local 통합했다. 직접 부모는2663dea72a609a02f81d468682a02b7b9d41576a이며1134추가/8삭제다. 765d9b에서 허용11·보호3의raw 불변과 tracked clean·보호비추적3만 남음을 확인했다. 결과 지문은D6E05880E47A53EC1AD279E1023FB3EE5762610BCC4E08967F20405A50539193로 같다. Git 줄바꿈 경고2는 보존했고 설정·원격·PR/main·실제환경을 바꾸지 않았다.
 
 기존 Primary의 writer 반환과 다음 지시 전 제품쓰기0을 확인했다. Main은 기존 읽기 전용 담당자에게 계획/업무카드·최신상태·실제소스에서 다음 승인된 독립source 단위와 새 Options/START등록으로 풀린 선행을 대조하도록 맡겼다. 완료된 부분 재작업·새계약 창작·실제DB/권한/키/서비스/Agent/J3/P03R3 실행은 제외한다. 다음 수행 책임은 Main에게 있으며 PMO 다음 배정을 기다리지 않는다. 전체 작업계획은 미완료·목표active다.
+
+
+## 264. 다음 미완료의 세대 namespace 연결 대조
+
+기존 읽기 전용 담당자는 FN09/START source 추가 후에도 즉시 배정할 독립 구현1건을 확정하지 못했다. 이는 전체계획 소진/완료가 아니다. 실제 supplier/기본 app·최초 Query/process 권위·FN10 HUMAN/FN12 successor 미채택·FN06 ACK delta·실제 중지/이전/복원/모바일 등의 선행은 별도다. Main은 조용히 대기하지 않고 다음 최소 결정지원 읽기로 HUMAN과 실행 credential의 의미·생산자·검산 접점을 대조한다.
+
+원 INTERFACES831/847과 repository164/222~223의 HUMAN 자격 세대는 사용자/로그인 자료다. 실행 dispatch 계약79~81/96~100과 proof79~84의 세대는 원 grant에 예약된 별도 실행 credential이다.0018 및 challenge/reservation reader는 현재 SYNTHETIC_RESERVED_NO_TOKEN 세대1만 연결한다. 숫자1 자체를 별도 사용자 인증정책으로 승인한 문구는 이번 읽기에서 미확인이나, 두 namespace를 같게 하라는 계약도 없다. SEND/START 자료 scope는 HUMAN 세대에 결박하고 기존 proof/binding은 자료scope와 실행scope 전체동등을 요구해 HUMAN3이 구체 adapter에서 막힌다. 원문/실제credential발급을 완료한 것으로 보지 않는다.
+
+Main은 기존 descriptor/hash·public shape·원 HUMAN current를 보존하고 같은 grant의 실제 실행 예약 세대를 별도로 검산하는 내부 매핑의 정확한 호출선/SQL 완결 변경 목록을 추가 읽기로 고정하고 있다. 고정1 단순 완화나 실행 세대를 HUMAN에 맞추는 확장은 지시하지 않았다. 새 허용/인증/저장 의미가 필요한지 기존 계약의 버그복구인지 먼저 근거로 구분한 뒤 Main이 정확 WI/결정지원 범위를 정한다. 구현 GO·코드 수정·실제DB/권한/키/서비스/Agent/실자료 조사는0이며 전체목표active다.
+
+
+## 265. 다음 내부 복구 WI 사전검토와 TEST_ONLY
+
+Main은 기존 두 namespace 계약의 내부 복구를 FN08_MATERIAL_CREDENTIAL_NAMESPACE_REPAIR_SOURCE_WI_20261106.md r1로 고정했다(13410B/491F654EB94F4D040A80EED72949E7B0640AE66411BCD4C918C36183C094BA3E). 공개 원형/operation·기존 자료/hash·영속 열·권한/발급은 유지하며, 같은 원 grant의 실제 실행 예약 E와 HUMAN H를 각각 검산하는 보완이다. 숫자1 단순 완화·예약 생산·전체 scope 포함식 삭제만의 우회는 제외한다. 독립 사전검토는 시작/종료 동일 지문에서 C0/I0/M0이며 실제 새 권한/공개/저장 의미를 추가해야 한다는 차이를 찾지 못했다. Main은 기존 승인 계획의 내부 버그복구로 진행하며 재승인을 요청하지 않는다.
+
+7eb760에서 신규6경로 부재, 기존 제품3/시험2 시작 지문과 보호3 보존을 확인했다. 기존 Primary에게 TEST_ONLY를 발행한다. 허용은 기존 START flow와 신규 unit/schema/integration 시험 및 순수 fixture의5경로만이다. 정상 HUMAN H=3/기존 실행 예약 E=1·원 정책/등록·유효 proof를 실제 구체 wrapper에 연결해 현재 실패를 재현하고, 기존H1/E1 정상·외부E3거절을 보존한다. 현재 사용자를1로 바꾸거나 module 부재/fixture 누락을 기능 RED로 세지 않는다. 제품3·새helper/0079·기존SEND시험 쓰기는 PRODUCT_GO 전0이다.
+
+기존 challenge request snapshot에 없는 credentialGeneration 필드를 추가하는 의미는 아니다. 실행 E는 실제 예약·binding/publicChallenge 및 기존 원 request/proof 관계에서 검산하고, 저장 request/target·서명·응답 원형은 보존한다. Main은 실제 RED/원지문과 사전검토를 확인한 뒤 같은 담당자에게 정확허용11 PRODUCT_GO를 발행한다. 실제DB/권한/키/서비스/Agent/실자료조사0·Main제품쓰기0·단일writer·전체목표active다.
