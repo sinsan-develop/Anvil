@@ -12,7 +12,7 @@
 | FN06 부분 인수 | HUMAN Window/Offer/Close·profile, frame parser·OPEN challenge/서명snapshot/원Tx/consume·native OPEN/path/origin/signing-current, receive-only current·네 phase challenge 발급, HUMAN client/desktop adapter/runtime·오류 wire와 pre-native STATE의 실제 미적용 SQL→Store→service/HTTP prefix를 source 범위로 부분 인수했다. 실제 PG/Pool/TLS 인수가 아니다. 상세는 구현 통제 최신 검수 절을 따른다 |
 | FN06 진행 중 | HUMAN/Challenge8b1714e5·설치형68f954a4·S5 Web4fd0a23f와 §200 관측 원 문맥/명시 합성 owner 소스를 한정 인수했다. 실제 Agent 연결 완료가 아니며 다음 실제 소비·보호 producer 의존성을 이어간다 |
 | FN06 남은 연결 | 미채택 ACK bodyHash/후행 terminal·확정·OPEN 감사 미결, 공통6능력 제품 factory/registry와 실행 권위·보호 producer의 미구현이 남아 있다. 실제 PG/Pool/TLS/OS/키/Agent 검증도 미실행이다 |
-| FN07 소스 부분 인수 | §204 Query 입력/관측 owner와 §212 데이터 옵션 parser를 소스 한정 인수했다. 실제 Query 생성·보호 source/Options producer·permission·Claude 서버 claim·제품 연결은 미구현이며 START 저장 후보는 미채택이다 |
+| FN07 소스 부분 인수 | §204 Query 입력/관측 owner와 §212 데이터 옵션 parser를 소스 한정 인수했다. 실제 Query 생성·보호 source/Options producer·permission·Claude 서버 claim·제품 연결은 미구현이며 START 등록/FN09 준비 원문은 §220 직접 채택으로 구현을 재개했다 |
 | FN12 후행 준비 | B안은 미채택/SOURCE_GO0이다. 검증 전용 보완의 도출-확정 충돌, 실제 잠금 분기와 저장/collector·목적 guard 상세를 docs/work_packages/FN12_REWORK_SUCCESSOR_TECHNICAL_REVIEW_20261105.md에 읽기 결과로 보존했다. FN06을 중단시키는 gate로 사용하지 않는다 |
 | Git 보존 | S5 Web4fd0a23f 이후 관측 소비 source4·현황2를 기존 branch의 local checkpoint로 보존한다. 보호 비추적3 유지·private 동일성/PR/병합 미확인, 인증 복구/push 재시도0이다 |
 
@@ -15883,3 +15883,11 @@ PMO turn01a1ad75-d4c8-7dc1-8a8e-304126fe6893는 후보 전문/지문과 이전 �
 원 직접 결정 경계 턴과 §218 및 이번 재개를 합해 동일 차단 조건 3회가 충족됐다. FN08 START 등록·FN09 등록 준비/Options 원문 후보의 직접 채택 없이 남은 실행 연결을 구현하면 명시 제외된 공개/영속 의미를 확대하게 된다. §215~217의 전체 FN01~FN17 대조에서도 승인 내 독립 추가 단위를 찾지 못했고 완료한 기능/검사 재실행은 진도가 아니다. 현재는 사용자 결정 또는 승인 외부 상태 변경 없이는 의미 있는 다음 작업을 진행할 수 없는 impasse다.
 
 이에 전체 목표를 complete/paused가 아니라 blocked로 전환 요청한다. 전체 작업계획서의 미완료·실환경/인수 미검증은 그대로 보존한다. PMO에 이미 전달된 정확 후보 질문은 반복하지 않는다. 신산님이 재개하면 새 blocked 감사로 시작하고, 채택된 범위만 기존 Primary에게 정확 WI/TDD로 맡긴다. 실제 DB·권한·키·서비스·Agent·실자료 조사·P03 R3/J3 실행은 계속 제외한다.
+
+## 220. 신산님 직접 채택으로 FN08·FN09 구현 재개
+
+신산님이 FN08 START 등록 A와 FN09 등록 정의 실행 준비·Options 보관 r2 A를 모두 직접 승인하고 기존 subagent 구현·Main 검수/통합·계획 완료까지 계속 진행을 지시했다. 실제 DB·권한·키·서비스·Agent 실행 제외는 유지한다. 목표 active 전환을 확인했으며 §217~219의 미채택/blocked는 승인 전 이력이다.
+
+정확 승인 기록은 docs/work_packages/FN08_FN09_START_PREPARATION_SOURCE_DIRECT_APPROVAL_20261106.md다. 대상 FN08 8AE16D6CAB5334FAC4548688777AE44560997BB0D0C78816CB340A114A7E4384, FN09 r2 BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3의 실제 지문 일치를 2a5123에서 확인했다. 원 후보 파일은 변경하지 않는다.
+
+현재 HEAD 6f1b00364ca502efb67fa0f049aaba8329546345·tracked clean·보호 비추적3에서 재개한다. 기존 Primary는 FN09 정확 파일/지문·TDD preflight, 기존 독립 담당자는 후행 FN08 WI용 실제 파일/검수 표를 읽기만 준비한다. 동시 writer0이고 Main은 제품/시험을 직접 쓰지 않는다. 선행 FN09→후행 FN08 순서로 단일 writer를 유지한다. 실제 환경 변경·코드 GO0이며 preflight 수거 후 정확 WI/TEST_ONLY를 발행한다.

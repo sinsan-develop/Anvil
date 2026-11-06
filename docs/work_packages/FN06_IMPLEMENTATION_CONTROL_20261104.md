@@ -2211,3 +2211,11 @@ PMO turn01a1ad75-d4c8-7dc1-8a8e-304126fe6893는 후보 전문/지문과 이전 �
 현재 코드 GO0인 부분은 FN09 등록 정의 준비/Options 원문과 FN08 START 등록의 새 의미다. 기존 승인된 구현을 대기 상태로 소급하지 않으며 완료한 코드/검사를 반복하지 않는다. FN01~FN17 대조에서 현재 승인만으로 추가할 독립 사용자 기능을 확정하지 못한 근거는 §215~216에 남겼다. 전체 계획 완료나 사용자 인수 상태가 아니다.
 
 다음 재개 조건은 신산님의 정확 후보 채택 또는 PMO의 위임 범위 내 새로운 결정 근거다. 채택되면 기존 단일 Primary의 정확 허용 파일/WI·TDD→독립 검수→Main fresh 검증·통합으로 이어간다. 실제 DB·권한·키·서비스·Agent·실자료 조사·J3/P03 R3 실행은 계속 제외한다. 답변 전 새 구현/실행·기존 질문 재전달0이며 현재 담당자들의 live/pending0이다.
+
+## 220. 신산님 직접 채택으로 FN08·FN09 구현 재개
+
+신산님이 FN08 START 등록 A와 FN09 등록 정의 실행 준비·Options 보관 r2 A를 모두 직접 승인하고 기존 subagent 구현·Main 검수/통합·계획 완료까지 계속 진행을 지시했다. 실제 DB·권한·키·서비스·Agent 실행 제외는 유지한다. 목표 active 전환을 확인했으며 §217~219의 미채택/blocked는 승인 전 이력이다.
+
+정확 승인 기록은 docs/work_packages/FN08_FN09_START_PREPARATION_SOURCE_DIRECT_APPROVAL_20261106.md다. 대상 FN08 8AE16D6CAB5334FAC4548688777AE44560997BB0D0C78816CB340A114A7E4384, FN09 r2 BA7FD5B34BDFF9CFF26D2CA23C74AAFF685E8850054A27CE711827FCDC66DAD3의 실제 지문 일치를 2a5123에서 확인했다. 원 후보 파일은 변경하지 않는다.
+
+현재 HEAD 6f1b00364ca502efb67fa0f049aaba8329546345·tracked clean·보호 비추적3에서 재개한다. 기존 Primary는 FN09 정확 파일/지문·TDD preflight, 기존 독립 담당자는 후행 FN08 WI용 실제 파일/검수 표를 읽기만 준비한다. 동시 writer0이고 Main은 제품/시험을 직접 쓰지 않는다. 선행 FN09→후행 FN08 순서로 단일 writer를 유지한다. 실제 환경 변경·코드 GO0이며 preflight 수거 후 정확 WI/TEST_ONLY를 발행한다.
