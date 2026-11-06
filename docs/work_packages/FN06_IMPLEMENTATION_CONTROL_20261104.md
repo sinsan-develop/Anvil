@@ -2534,3 +2534,13 @@ Main e4361d의 최종 변경·직접영향15파일은201PASS/fail0/skip0/6136.78
 승인 source-only 코드/UI/미적용SQL/합성검증 범위만 인수한다. 실제 기능 상태는 '구현했지만 동작 미확인'이며 정식DB/SQL설치·RLS/권한/trigger/COMMIT·served/브라우저시각·실Agent/비용·사용자인수는 NOT_RUN이다. 원 capability/budget/source 권위는 미검증/실행false를 유지하고 기존정의의 극소수 숫자 canonical PG왕복도 미검증이다. 전체FN09/Stage/작업계획 완료나 PR/main/배포 합격은 아니다.
 
 결과 docs/04_test_reports/AV3/FN09_REGISTERED_PREPARATION_OPTIONS_SOURCE_RESULT_20261106.md에 실제 변경30(수정27/신규3)·명령/실패·직접증거·최종33manifest·미실행/rollback을 기록한다. Main은 안전한 local source checkpoint로 통합한 뒤 같은 Primary에게 기존 승인 FN08 WI r2의 TEST_ONLY를 순차 전달한다. 사용자 재승인·PMO 다음작업배정 대기는 필요 없다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer·전체 목표 active를 유지한다.
+
+## 250. FN09 local checkpoint 확인과 FN08 TEST_ONLY 발행
+
+Main은 승인 source 변경30과 결과/현황3문서만 기존 branch의81f92bf341659f93d0dd2c20694bcbecd2c503ce에 통합했다(33실변경 경로·2434추가/99삭제). commit 후 허용33 raw는 최종 검증값과 모두 같고 tracked clean·보호 비추적3만 남는다. 결과 문서 raw12466B/DD6543450BBBCFAED04BC1B8913A7D662CD1FF13A610B4E282B0E10708136934다. Git 줄바꿈 경고는 보존했으며 설정 변경·private push/원격 동일성·PR/main·WSL/서비스/DB 반영은 하지 않았다.
+
+다음 승인 FN08 WI r2 SHA256 51F8FE9E78BB8E0FF3ED449B1C4B8A1236808E31FA269A7AB17AA271C554AC21, 채택8AE16D6CAB5334FAC4548688777AE44560997BB0D0C78816CB340A114A7E4384, 직접승인C82C16EB를 재대조했다. execution-commands.ts A77EE9D8EA0CFB30EF2646F21F2259253F4E67A6996ED671CD87F0A03B76464A와 기존 ledger시험1A69EB4A60C3A7A491D85BFBE22E1BBFBAD5E0E16FB74DEF823EF3499DA9C1D7도 같고 신규9경로는 모두 부재다. 기존 독립 WI r2 C0/I0/M0는 같은 내용으로 유지된다.
+
+같은 Primary에게 TEST_ONLY를 발행한다. 쓰기 허용은 신규 tests/unit/FN08/execution-start-material-registration.test.ts, execution-start-material-registration-store.test.ts, execution-start-material-registration-schema.test.ts, execution-start-material-registration-flow.test.ts의4파일뿐이다. 실제 기존 ProjectInitialExecutionQueue의 적합 START가 두 그룹 자료를 등록하지 않는 행동 RED와 기존 queue/권한 결과 보존을 확인한다. module/export 부재·부적합 fixture를 제품 RED로 꾸미지 않는다. 원 products/기존 ledger/새 source4·0078 쓰기는 PRODUCT_GO 전0이다.
+
+Main이 실제 RED/불변 지문을 확인한 뒤 동일 담당자에게 WI 허용11의 PRODUCT_GO를 발행한다. 기본 source 미구성 거절·실제자료/실행 권위 미완성·SYNTHETIC_ONLY·같은 Tx와 누적 한도·replay/UNKNOWN 계약을 유지한다. 새 branch/agent/자동화·Main 제품 쓰기·실제 DB/권한/키/서비스/Agent/실자료 조사0, 전체 작업계획 완료 목표 active다.
