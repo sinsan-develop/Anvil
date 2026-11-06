@@ -60,7 +60,7 @@ export class ProjectContexts {
    return { manifest: structuredClone(manifest), ref };
   } catch { throw new AuthFailure('CONTEXT_INTEGRITY_FAILED', 503); }
  }
- async read(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
+ async #load(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
   await projectMember(db, actor, projectId);
   if (!uuid(id) || version !== 1) throw new AuthFailure('INPUT_INVALID', 400);
   const rows = (await db.query(select + 'WHERE b.project_id=$1 AND b.id=$2 AND b.version=$3', [projectId, id, version])).rows;
@@ -69,6 +69,10 @@ export class ProjectContexts {
   const stored = await this.#stored(db,actor,rows[0]);
   const items = (await db.query('SELECT item_id,category,required,source_ref,source_hash,included_state,reason,delivery_parts,issue FROM anvil.context_items WHERE project_id=$1 AND bundle_id=$2 AND bundle_version=$3 ORDER BY item_id', [projectId, id, version])).rows;
   if (items.length !== stored.manifest.items.length || new Set(items.map(item => item.item_id)).size !== items.length || items.some(item => !stored.manifest.items.some(expected => same(expected, { itemId: item.item_id, category: item.category, required: item.required, sourceRef: item.source_ref, sourceHash: item.source_hash, includedState: item.included_state, reason: item.reason, deliveryParts: item.delivery_parts, issue: item.issue })))) throw new AuthFailure('CONTEXT_INTEGRITY_FAILED', 503);
+  return stored;
+ }
+ async read(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
+  const stored=await this.#load(db,actor,projectId,id,version);
   let currentCheck: { state: 'MATCHED_METADATA' | 'CHANGED' | 'UNAVAILABLE'; issues: string[] };
   try {
    const current = await this.sources.resolve(db, actor, projectId, stored.manifest.preparationInput), currentManifest = buildContextManifest(id, projectId, current);
@@ -78,6 +82,16 @@ export class ProjectContexts {
    currentCheck = { state: 'UNAVAILABLE', issues: ['CURRENT_SOURCE_OR_BASIS_UNAVAILABLE'] };
   }
   return { projectId, ...stored, currentCheck, ready: false, executionAuthorized: false, dispatchPerformed: false, observedAt: new Date().toISOString() };
+ }
+ /** START 내부 source 전용. 공개 read DTO는 그대로 두며 같은 재구성의 metadata/text만 돌려준다. */
+ async readStartSource(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,ref:VersionRef) {
+  if(!isVersionRef(ref)||ref.version!==1)throw new AuthFailure('INPUT_INVALID',400);
+  const query=db.query,stored=await this.#load(db,actor,projectId,ref.id,ref.version);
+  if(db.query!==query||!same(stored.ref,ref))throw new AuthFailure('CONTEXT_INTEGRITY_FAILED',503);
+  const prepared=await this.sources.resolve(db,actor,projectId,stored.manifest.preparationInput),rebuilt=buildContextManifest(ref.id,projectId,prepared);
+  if(db.query!==query||!same(rebuilt.ref,ref)||!same(rebuilt.manifest,stored.manifest))throw new AuthFailure('CONTEXT_SOURCE_MISMATCH',409);
+  if(stored.manifest.missingRequired.length||stored.manifest.excluded.length||stored.manifest.items.some(i=>i.includedState!=='INCLUDED'||i.issue!==null))throw new AuthFailure('CONTEXT_SOURCE_UNAVAILABLE',412);
+  return {projectId,ref:structuredClone(ref),manifest:stored.manifest,prepared};
  }
  async list(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, query: Record<string, unknown>) {
   await projectMember(db, actor, projectId);
