@@ -16066,3 +16066,29 @@ Primary는 request_actual에 CHANGE_REQUESTED/version2를 포함하고 decision_
 독립 재검토 C0/I0/M0에서 request_actual2313B/A4015A23F308224BE4C00C05FC5EA3583F12729771F27CEEF3FD8C0A73BAC5FC, decision_actual6642B/BEF50A2E8D8E476646D77B5EA9ACD62B908942F49FDD0E23A38C2D44061D9AD6, 불변 cost_complete1907B/BC021523C7114D72E66B2657256B812D7B1D0E8E3869C9599FFC52DAEF2C38EB의 시작/종료 동일을 확인했다. 후행 소비의 APPROVE 전용은 유지한다. 전체 producer/tail·source 업무 인수는 제외했다.
 
 현재 FN09 최초비용 실제 생산자·후행 정산/역완결·UI 연결은 같은 Primary가 계속 구현 중이고 Main은 제품 write0을 유지한다. FN08 WI r2의 TEST_ONLY/PRODUCT_GO는 아직 발행하지 않았다. FN09 선행 검수 후 같은 담당자가 순차 착수한다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·전체 목표 active다.
+
+## 238. 동일 writer 확인과 정산·화면 검수 준비
+
+이번 목표 재개는 직전의 회귀 보정·독립 검수와 현황 보존을 진전으로 분류한다. 새 시작 Git f1bccc0a46d32fb4d248c007619f2b6ce59ff00e와 Primary running을 직접 확인했고 중복 dispatch/재시작하지 않았다. 보호 untracked3의 원 지문은 그대로이며 Main 제품 쓰기0이다.
+
+Primary의 승인 생성/결정 내부 연결은 원 AccessRepository를 기존 routes 인스턴스에서 공급하고, 등록 분기의 원 보호 definition/environment prototype 조회와 같은 db/actor/txid 목적 예약·정산을 연결하는 단계다. 공급자 부재는 효과 전 거절하며 기존 후보11/default constructor·다른 operation을 보존한다. 목적별 receipt ID factory를 분리하는 내부 배치를 WI r4 안에서 허용했다. 새 API/권한/wire/표/실행 권위는 추가하지 않는다. 실제 producer 완결·화면은 아직 미완료다.
+
+독립 화면 대조는 후보/등록 조회 분기, exact11/13 및 snapshot9/10·options bytes/hash, 승인 명시 복귀, POST 성공 receipt의 선보존과 후속 GET 재조회, UNKNOWN/늦은 응답·주체 전환 보존을 담당자에게 전달했다. 이는 구현 전 검수 준비이며 화면 PASS가 아니다.
+
+작성된 prepare reserve4915B/067F14FF268417DEECE2F7668698CDA2DAD5F2F103B9A7DDECA90E377DFB89A8와 settle6314B/C71702943EBDEC600B8C0A2B408E9D83D5CE5CF7C624A096982064A642F39325는 시작/종료 동일에서 한정 C0/I0/M0다. 동일 Tx 예약/명령·현재 권한/최단기한·실비 고정점/원 상계·U/H/O/CAS 대응에 새 반례를 찾지 못했다. 최종 guard/ACL/tail·Node COMMIT UNKNOWN·실제 PG 원자성은 판정 제외다. 실제 DB/권한/키/서비스/Agent/실자료 조사0·FN08 후속 GO0·전체 목표 active를 유지한다.
+
+## 239. 승인 요청·결정의 실제 Node producer 작성 확인
+
+직전 목표 턴은 reserve/settle 독립 읽기 검수와 같은 Primary running 관측을 바탕으로 한 verified wait였다. 이번에는 실제 ProjectApprovals.request/decide에 등록 source 관측→목적 quota→원 receipt/요청·알림 또는 결정/공유행 저장→같은 Tx settle 호출이 작성된 것을 새 원문으로 확인했다. 계획 설명만 있던 상태와 구분하지만 실행 검증·최종 인수는 아직 아니다.
+
+독립 사전 읽기는 실제 세 파일의 시작/종료 동일에서 한정 C0/I0/M0다. project-approvals53095B/79D69DC9DCFAE45A1D51F55439518BD08E49738AD9D4DF881AEA71154125CC16, quota46044B/41B4C11E48919AAE7580C3FBDB74B005115889E16169BB23456ADE34BF9B207B, command40985B/DB1F40FDCE2617BC3173F1BA85088E94F3C20D362E57F4D35B692ED4908DBDCC를 기준으로 한다. 보호 definition/environment 원 reader·원 query/actor/session/기한/txid 전후 대조, WeakMap source/lease와 목적별 단발 receipt ID·원 payload/requestRef 결박, 요청 알림 뒤 같은 요청 정산과 UNKNOWN/자동재시도0을 확인했다. 기존 후보11/다른 operation은 새 quota 분기 밖에 보존된다.
+
+실제 Node 클래스의 신규 정상/거절·원 RED 검증, SQL 최초비용 producer/guard/최종 ACL·COMMIT 통합·화면 왕복은 계속 미완료이며 동일 Primary가 이어간다. 새 담당자/자동화/branch·Main 코드 작성·실제 DB/권한/키/서비스/Agent/실자료 조사0이다. 목표는 전체 작업계획서 완료로 유지하고 부분 C0를 전체 완료로 승격하지 않는다.
+
+## 240. 실제 승인 class 검증과 신규 재인증 과잉 조건 발견
+
+Primary3ba673은 원797e27의 등록 source 부재 거절과 기존 실제 승인 class·REQUEST_CHANGE를 합계3PASS/skip0/1647.5674ms/exit0으로 검증했고 type4be389 exit0을 수거했다. 이는 실제 등록 정상 저장 완료 증거가 아니다. 정상 등록 시험 b14c40은 새 source 메서드의 reauthUntil 누락을 NaN으로 처리하는 신규 조건에서 INPUT_INVALID422로 실패했다. 후속 source row/정산 검증에는 아직 도달하지 못했으며 이를 fixture 오류로 바꾸지 않는다.
+
+Main은 실제 ProjectPolicyRepository.command의 재인증 필수가 saveProjectMembership·savePermissionPolicy에 한정되고 기존 quota current는 Session idle/absolute·현재 정책의 최솟값임을 대조했다. 채택 FN09/WI의 재인증 추가 근거 검색은 일치0이었다. 새 Node quota와0077 context/settle에 임의로 추가된 재인증 필수/기한 산입은 승인 계약을 넘어 정상 요청을 막는 구현 오류다. 같은 Primary가 신규 분기만 원 조건으로 보정한다. 기존 로그인/Session·정책/기한·정확 제어·protected read와 membership/policy 편집의 재인증을 완화하지 않으며 시험에 재인증 값을 임의로 넣어 통과시키지 않는다.
+
+앞선 Node/SQL 부분 C0 판정은 해당 호출·관계 범위의 증거로 보존하지만 이 계약 회귀를 포함한 전체 기능 인수가 아니었다. 영향 본문은 보정 지문·정상/중요 거절 증거로 다시 대조한다. 같은 근본 원인의 정식 실패3회나 Main 코드 인수로 세지 않는다. 남은 SQL 최초비용/역완결·UI는 계속 미완료, 실제 DB/권한/키/서비스/Agent/실자료 조사0·단일 writer/목표 active다.
