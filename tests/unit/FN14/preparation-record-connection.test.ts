@@ -15,7 +15,7 @@ function fixture(){
   if(sql.includes('FROM anvil.permission_policies p JOIN anvil.permission_policy_versions')){assert.deepEqual(values,[pid]);return{rows:[],rowCount:0};}
   throw Error('UNMODELED_SYNTHETIC_SQL');
  }} as unknown as PoolClient;
- const repository={
+ const repository={installationId:id(99),
   async authenticated<T>(token:string,csrf:string|null,body:(db:PoolClient,actor:any)=>Promise<T>):Promise<T>{authenticated.push({token,csrf});if(token!=='synthetic-current-session')throw new AuthFailure('AUTH_REQUIRED',401);return await body(db,actor);},
   signProjectCursor(_value:string){throw Error('UNSELECTED_CURSOR_SIGNING');},
  };
@@ -202,7 +202,7 @@ test('preparationConnection 현재 보호의 새 client 역사GET·OWNER/작성�
 });
 test('preparationConnection 실제 앱 fixedGET 정상·raw query거절·POST route는 기존인증Tx를한번만소비한다',async()=>{
  const f=await connectedFixture(),r=await f.save(),seen:string[]=[];
- const access={...f.access,signProjectCursor:()=>{throw Error('UNSELECTED_SIGNER');},authenticated:async<T>(t:string,csrf:string|null,fn:(db:PoolClient,a:AuthenticatedIdentity)=>Promise<T>)=>{seen.push(t);return f.access.authenticated(t,csrf,fn);}};
+ const access={...f.access,installationId:id(99),signProjectCursor:()=>{throw Error('UNSELECTED_SIGNER');},authenticated:async<T>(t:string,csrf:string|null,fn:(db:PoolClient,a:AuthenticatedIdentity)=>Promise<T>)=>{seen.push(t);return f.access.authenticated(t,csrf,fn);}};
  const app=buildApp({},undefined,{repository:access as any,origin});try{
   const url=`/api/v1/projects/${pid}/transfer-preparations/${r.targetId}/versions/1`,headers={host:'anvil-synthetic.invalid',cookie:'__Host-anvil.sid=SYNTHETIC'};
   const view=await app.inject({method:'GET',url,headers});assert.equal(view.statusCode,200,view.body);assert.equal(view.json().ref.contentHash,r.data.ref.contentHash);assert.equal(seen.length,1);

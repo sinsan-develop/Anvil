@@ -16,9 +16,10 @@ Web transfers/preparation-record-api.ts의 readPreparationBinding은 snapshot ex
 ## 정확 소유
 
 - 제품: apps/web/src/features/transfers/preparation-record-api.ts 한 파일.
-- 시험: tests/unit/UI09/preparation-record-ui.test.ts 기존 한 파일.
+- 화면 시험: tests/unit/UI09/preparation-record-ui.test.ts 기존 한 파일.
+- 필수 인접 시험 정합화: tests/unit/FN14/preparation-record-connection.test.ts의 buildApp용 합성 repository 두 객체에 기존 UUID 생산자의 installationId:id(99)만 추가한다. 실제 설치 ID·키를 읽지 않으며 native owner/current 검증을 성공값으로 우회하지 않는다. 기존 시험 기대값·본문·실패 조건은 바꾸지 않는다.
 
-그 외 제품/서버/SQL/화면 구조·export는 수정하지 않는다. Main은 이 지시서/WORK_STATUS/결과 문서만 쓴다. 다른 파일이 필요하면 사유와 정확 diff를 먼저 반환한다.
+위 인접 시험의 두 필수 합성 metadata 필드 외에는 그 파일을 수정하지 않는다. 그 외 제품/서버/SQL/화면 구조·export는 수정하지 않는다. Main은 이 지시서/WORK_STATUS/결과 문서만 쓴다. 다른 파일이 필요하면 사유와 정확 diff를 먼저 반환한다.
 
 ## 수행과 검수
 
