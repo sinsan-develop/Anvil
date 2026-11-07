@@ -1,5 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
@@ -83,7 +84,14 @@ for(const mode of ['NORMAL','SENSITIVE','MISMATCH','CANCEL','LATE']as const)test
  expect(f.unknown).toEqual([]);
 });
 async function fixture(page:Page,deny=false,stored=false,issuesOnly=false){
-  await installWorkspaceBundle(page);
+  const qaDist=process.env.ANVIL_UI06_QA_DIST;
+  if(qaDist){
+    await page.route(/^https:\/\/localhost:3830\/(?:assets\/index-[A-Za-z0-9_-]+\.(?:js|css))?$/,async route=>{
+      if(route.request().method()!=='GET')return route.abort();
+      const path=new URL(route.request().url()).pathname;
+      return route.fulfill({contentType:path==='/'?'text/html':path.endsWith('.css')?'text/css':'text/javascript',body:await readFile(join(qaDist,path==='/'?'index.html':path.slice(1)))});
+    });
+  }else await installWorkspaceBundle(page);
   const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url))),at='2026-10-16T05:00:00Z',documents=new Map<string,any>(),bodies=new Map<string,string>(),writes:any[]=[],unknown:string[]=[];
   for(const [id,title,body,form]of [[designId,'설계 원문','# D01 원문 보존',catalog.forms[1]!],[planId,'작업계획 원문','# FN01 문서 저장',catalog.forms[3]!]]as const){
     const artifactId=crypto.randomUUID(),bytes=Buffer.from(body),content={body:{artifactId,bytes:bytes.length,contentHash:createHash('sha256').update(bytes).digest('hex'),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]};bodies.set(artifactId,body);
@@ -241,9 +249,56 @@ test('보관 업무의 추적 연결은 단절/거절/화면 이동에도 같은
  await page.evaluate(()=>{location.hash='#/runs';});await page.getByRole('heading',{name:'아직 연결되지 않은 화면',exact:true}).waitFor();await page.evaluate(p=>{location.hash='#/projects/'+p+'/documents';},project);await page.getByRole('button',{name:'같은 추적 연결 명령 결과 확인',exact:true}).click();await expect(page.getByRole('alert')).toContainText('PROJECT_OPERATION_DENIED');await expect(page.getByRole('button',{name:'업무 추적 연결 닫기',exact:true})).toBeDisabled();await page.getByRole('button',{name:'같은 추적 연결 명령 결과 확인',exact:true}).click();await expect(page.getByText('업무 추적 연결 저장 확인 · 구현/시험 완료 아님',{exact:true})).toBeVisible();expect(writes).toHaveLength(3);expect(writes[0]).toEqual(writes[1]);expect(writes[0]).toEqual(writes[2]);expect(s.unknown).toEqual([]);
 });
 
-test('작업계획은 실제 연결 화면의 최신 내용검토를 명시 선택하고 단절 후 같은 참조를 저장한다',async({page})=>{
+async function screenReviewFixture(page:Page){
  const f=await fixture(page),form=f.catalog.forms[2]!,screenId='a6f30000-0000-4000-8000-000000000098',artifactId=crypto.randomUUID(),body='# S01 화면 원문',at='2026-10-16T05:00:00Z',content={body:{artifactId,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]},base={title:'화면 검토 원문',formRef:form.ref,stageNodeRef:null,content},screenRef={id:screenId,version:1,contentHash:contentHash(canonicalJson(base))},reviewRef={id:crypto.randomUUID(),targetRef:screenRef,criteriaVersion:1,outcome:'ACCEPTED'},review={ref:reviewRef,items:form.definition.items.map(i=>({criterionId:i.itemId,outcome:'ACCEPTED',reason:'화면을 직접 검토한 합성 근거'})),reviewer:{kind:'HUMAN',userId:user,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'실제 인수 아닌 합성 검토',reviewedAt:at,serverSequence:1};
  f.documents.set(screenId,{...base,id:screenId,version:1,contentHash:screenRef.contentHash,confirmed:false,validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:{criteriaVersion:1,formRef:form.ref,items:form.definition.items.map(i=>({criterionId:i.itemId,title:i.title,reviewCriteria:i.reviewCriteria}))},contentReviews:[review]});f.bodies.set(artifactId,body);
  await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`,r=>r.fulfill({json:{...form,authoringStandard:{ref:f.catalog.standard.ref,content:f.catalog.standard.body.toString('utf8')},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}}}));const region={designItemId:itemId,screenCode:'S01',documentRef:screenRef,artifactRef:content.body,anchor:'line:1'};await page.route(`**/api/v1/projects/${project}/design-index?*`,r=>r.fulfill({json:{documentRef:f.documentRef,items:[f.item],screenRegions:[{id:regionId,...region,regionHash:contentHash(canonicalJson(region))}],status:'INDEXED',observedAt:at}}));
+ return {f,screenId,reviewRef,at};
+}
+
+
+for(const mode of ['UNLINK','REMOVE_TASK'] as const)test('WORK_PLAN_ORPHAN_SCREEN_REVIEW_'+mode+' 마지막 화면 연결 해제 뒤 고아 검토 없이 저장한다',async({page})=>{
+ const {f,screenId,reviewRef,at}=await screenReviewFixture(page);
+ const reviewBefore=JSON.stringify(f.documents.get(screenId).contentReviews),writes:any[]=[];
+ let result:any=null,reads=0;
+ await page.route(`**/api/v1/projects/${project}/commands`,route=>{
+  const command=route.request().postDataJSON();writes.push(command);
+  expect(command.operation).toBe('saveWorkPlanDraft');
+  const payload=command.payload,screenRefs=payload.tasks.flatMap((task:any)=>task.screenRefs),reviewed=new Set<string>();
+  for(const review of payload.screenReviewRefs){
+   const key=review.targetRef.id+':'+review.targetRef.version;
+   if(reviewed.has(key)||!screenRefs.some((link:any)=>canonicalJson(link.versionRef)===canonicalJson(review.targetRef)))return route.fulfill({status:422,json:{code:'SCREEN_REVIEW_REFERENCE_INVALID'}});
+   reviewed.add(key);
+  }
+  const analysis=analyzeWorkPlanCards(payload.tasks),snapshot={...payload,tasks:analysis.tasks,dependencies:analysis.dependencies,issues:[...analysis.issues,{code:'DESIGN_NOT_CONFIRMED',location:'designRef',message:'설계가 미확정입니다.'}],relationalProjection:'STORED'};
+  const ref={id:savedId,version:1,contentHash:contentHash(canonicalJson(snapshot))};result={ref,status:'DRAFT',...snapshot};
+  return route.fulfill({json:{operationId:itemId,commandId:command.commandId,projectId:project,status:'APPLIED',targetId:savedId,version:1,data:{ref,status:'WORK_PLAN_DRAFT_SAVED',workPlan:result},serverReceivedAt:at}});
+ });
+ await page.route(`**/api/v1/projects/${project}/work-plans/${savedId}/versions/1`,route=>{reads++;return route.fulfill({json:{...result,executionEvidence:'NOT_CONNECTED',observedAt:at}});});
+ await fill(page);
+ await page.getByRole('button',{name:'업무 추가',exact:true}).click();
+ await page.getByLabel('업무 2 코드',{exact:true}).fill('FN02');await page.getByLabel('업무 2 제목',{exact:true}).fill('두 번째 연결 업무');
+ const firstLink=page.getByLabel('업무 1 화면 S01',{exact:true}),lastLink=page.getByLabel('업무 2 화면 S01',{exact:true});
+ await firstLink.check();await lastLink.check();
+ await page.getByRole('button',{name:'연결 화면 내용검토 확인',exact:true}).click();
+ await page.getByLabel('화면 화면 검토 원문 v1 최신 적합 검토 선택',{exact:true}).check();
+ const selection=page.getByText('선택 검토 '+reviewRef.id,{exact:false});
+ await expect(selection).toBeVisible();
+ await firstLink.uncheck();await expect(selection).toBeVisible();
+ if(mode==='UNLINK')await lastLink.uncheck();
+ else{
+  await page.getByRole('button',{name:'업무 2 제거',exact:true}).click();
+  await page.getByRole('button',{name:'영향 확인 후 업무 제거',exact:true}).click();
+ }
+ await page.getByRole('button',{name:'작업계획 초안 저장',exact:true}).click();
+ await expect(page.getByText('작업계획 초안 저장 확인 · 실행/완료 아님',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'저장한 작업계획 재조회',exact:true}).click();
+ await expect(page.getByText('저장한 버전 재조회 확인',{exact:true})).toBeVisible();
+ expect(writes).toHaveLength(1);expect(writes[0].payload.screenReviewRefs).toEqual([]);expect(reads).toBe(1);
+ expect(JSON.stringify(f.documents.get(screenId).contentReviews)).toBe(reviewBefore);expect(f.unknown).toEqual([]);
+});
+
+test('작업계획은 실제 연결 화면의 최신 내용검토를 명시 선택하고 단절 후 같은 참조를 저장한다',async({page})=>{
+ const {f,reviewRef}=await screenReviewFixture(page);
  await fill(page);await page.getByLabel('업무 1 화면 S01',{exact:true}).check();await page.getByRole('button',{name:'연결 화면 내용검토 확인',exact:true}).click();const choice=page.getByLabel('화면 화면 검토 원문 v1 최신 적합 검토 선택',{exact:true});await expect(choice).not.toBeChecked();await choice.check();await page.getByRole('button',{name:'작업계획 초안 저장',exact:true}).click();await expect(page.getByRole('alert')).toContainText('CONNECTION_LOST');await page.getByRole('button',{name:'같은 작업계획 명령 결과 확인',exact:true}).click();await expect(page.getByText('작업계획 초안 저장 확인 · 실행/완료 아님',{exact:true})).toBeVisible();expect(f.writes).toHaveLength(2);expect(f.writes[0].payload.screenReviewRefs).toEqual([reviewRef]);expect(f.writes[0]).toEqual(f.writes[1]);expect(f.unknown).toEqual([]);
 });

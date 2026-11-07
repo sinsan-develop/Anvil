@@ -11,9 +11,9 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const [importLoading, setImportLoading] = useState(true), [proposalLoading, setProposalLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState<ApiError | null>(null);
   const [importView, setImportView] = useState<StoredImportView | null>(null), [proposalView, setProposalView] = useState<ProposalComparison | null>(null), [acknowledged, setAcknowledged] = useState(false);
   const [forms, setForms] = useState<FormSummary[]>([]), [selectedForm, setSelectedForm] = useState('');
-  type Scope = { client: ApiClient; projectId: string; userId: string; clientId: string };
-  const scopeRef = useRef<Scope>({ client, projectId, userId: session.user.id, clientId: session.clientId });
-  if (scopeRef.current.client !== client || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId) scopeRef.current = { client, projectId, userId: session.user.id, clientId: session.clientId };
+  type Scope = { client: ApiClient; transport: ApiClient['transport']; projectId: string; userId: string; clientId: string };
+  const scopeRef = useRef<Scope>({ client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId });
+  if (scopeRef.current.client !== client || scopeRef.current.transport !== client.transport || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId) scopeRef.current = { client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId };
   const scope = scopeRef.current;
   const [importScope, setImportScope] = useState<Scope | null>(null);
   const shownImport = importScope === scope ? importView : null;
@@ -21,7 +21,7 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const [proposalScope, setProposalScope] = useState<Scope | null>(null);
   const shownProposal = proposalScope === scope ? proposalView : null;
   const signature = shownProposal ? JSON.stringify({ proposal: shownProposal.proposal, base: { id: shownProposal.base.document.id, version: shownProposal.base.document.version, contentHash: shownProposal.base.document.contentHash, title: shownProposal.base.document.title, formRef: shownProposal.base.document.formRef, stageNodeRef: shownProposal.base.document.stageNodeRef } }) : '';
-  const latest = useRef({ scope, view: shownProposal, signature, importView: shownImport, importSignature, onAuthenticationLost }); latest.current = { scope, view: shownProposal, signature, importView: shownImport, importSignature, onAuthenticationLost };
+  const latest = useRef({ scope, view: shownProposal, signature, importView: shownImport, importSignature }); latest.current = { scope, view: shownProposal, signature, importView: shownImport, importSignature };
   const selectionGeneration = useRef(0), resultGeneration = useRef(0);
   type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
   const [result, setResult] = useState<ResultBinding | null>(null);
@@ -33,25 +33,53 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const selectedVersion = shownProposal ? selectedProposalVersion(shownProposal) : null;
   const mounted = useRef(true), running = useRef(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  function failed(cause: unknown) { if (!mounted.current) return; const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(e); if ([401,403,404].includes(e.status)) { setImportView(null); setProposalView(null); setImports(null); setProposals(null); if (e.status === 401) onAuthenticationLost(); } }
+  // 후보와 제안은 같은 보호 접근을 관측하되 각 목록의 페이지 요청은 따로 관리한다.
+  const accessGeneration = useRef(0), deniedScope = useRef<Scope | null>(null);
+  function observeAccess() {
+    const generation = accessGeneration.current;
+    return () => mounted.current && scopeRef.current === scope && scope.client.transport === scope.transport
+      && deniedScope.current !== scope && generation === accessGeneration.current;
+  }
+  function failed(cause: unknown) {
+    if (!mounted.current) return;
+    const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+    setError(e);
+    if (![401,403,404].includes(e.status)) return;
+    accessGeneration.current++; deniedScope.current = scope;
+    setImportView(null); setProposalView(null); setResult(null); setUsage(null);
+    setImports(null); setProposals(null); setImportLoading(false); setProposalLoading(false);
+    if (e.status === 401) onAuthenticationLost();
+  }
+  function detailAccessLost(error: ApiError) {
+    // 문서 조회의 NOT_FOUND는 프로젝트 접근 상실과 대상 부재를 구분하지 않는다.
+    const missingAccess = error.status === 404 && (error.code === 'NOT_FOUND' || error.code === 'PROJECT_NOT_FOUND');
+    if (error.status !== 401 && !missingAccess) return false;
+    failed(error);
+    return true;
+  }
   useEffect(() => {
+    const accessCurrent = observeAccess();
+    if (!accessCurrent()) return;
     let current = true; setImportLoading(true);
-    listDocumentMaterials(client,projectId,'imports',importCursor,importStatus).then(value => { if (current) setImports(old => importCursor && old ? { ...value, items: [...new Map([...old.items,...value.items].map(v => [v.id,v])).values()] } : value); }).catch(e => { if (current) failed(e); }).finally(() => { if (current) setImportLoading(false); });
+    listDocumentMaterials(client,projectId,'imports',importCursor,importStatus).then(value => { if (current && accessCurrent()) setImports(old => importCursor && old ? { ...value, items: [...new Map([...old.items,...value.items].map(v => [v.id,v])).values()] } : value); }).catch(e => { if (current && accessCurrent()) failed(e); }).finally(() => { if (current && accessCurrent()) setImportLoading(false); });
     return () => { current = false; };
-  }, [client,projectId,importCursor,importStatus,reload]);
+  }, [scope,importCursor,importStatus,reload]);
   useEffect(() => {
+    const accessCurrent = observeAccess();
+    if (!accessCurrent()) return;
     let current = true; setProposalLoading(true);
-    listDocumentMaterials(client,projectId,'proposals',proposalCursor,proposalStatus).then(value => { if (current) setProposals(old => proposalCursor && old ? { ...value, items: [...new Map([...old.items,...value.items].map(v => [v.id,v])).values()] } : value); }).catch(e => { if (current) failed(e); }).finally(() => { if (current) setProposalLoading(false); });
+    listDocumentMaterials(client,projectId,'proposals',proposalCursor,proposalStatus).then(value => { if (current && accessCurrent()) setProposals(old => proposalCursor && old ? { ...value, items: [...new Map([...old.items,...value.items].map(v => [v.id,v])).values()] } : value); }).catch(e => { if (current && accessCurrent()) failed(e); }).finally(() => { if (current && accessCurrent()) setProposalLoading(false); });
     return () => { current = false; };
-  }, [client,projectId,proposalCursor,proposalStatus,reload]);
+  }, [scope,proposalCursor,proposalStatus,reload]);
   async function open(kind: 'IMPORT' | 'PROPOSAL', id: string) {
-    if (running.current) return;
+    const accessCurrent = observeAccess();
+    if (running.current || !accessCurrent()) return;
     const generation = ++selectionGeneration.current, openedScope = scope;
-    const active = () => mounted.current && scopeRef.current === openedScope && selectionGeneration.current === generation;
+    const active = () => accessCurrent() && selectionGeneration.current === generation;
     resultGeneration.current++; setResult(null); setProposalScope(null); usageGeneration.current++; setUsage(null); setImportScope(null);
     running.current = true; setBusy(true); setError(null); setAcknowledged(false); setImportView(null); setProposalView(null); setForms([]); setSelectedForm('');
     try {
-      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id,{active}); const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setImportScope(openedScope); setForms(options); } }
+      if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id,{active}); if (!active()) return; const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setImportScope(openedScope); setForms(options); } }
       else { const view = await readStoredProposal(client,projectId,id); if (active()) { setProposalView(view); setProposalScope(openedScope); } }
     } catch (e) { if (active()) failed(e); } finally { if (selectionGeneration.current === generation) { running.current = false; if (mounted.current) setBusy(false); } }
   }
@@ -59,7 +87,9 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     const view = shownProposal;
     if (!view || !selectedVersion || visibleResult?.loading) return;
     const binding = { scope, view, signature }, generation = ++resultGeneration.current;
-    const active = () => mounted.current && scopeRef.current === binding.scope && resultGeneration.current === generation && latest.current.view === binding.view && latest.current.signature === binding.signature;
+    const accessCurrent = observeAccess();
+    if (!accessCurrent()) return;
+    const active = () => accessCurrent() && resultGeneration.current === generation && latest.current.view === binding.view && latest.current.signature === binding.signature;
     setResult({ ...binding, value: null, loading: true, error: null });
     try {
       const value = await readSelectedProposalDocument(client, projectId, view, active);
@@ -67,15 +97,17 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     } catch (cause) {
       if (!active()) return;
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if (detailAccessLost(error)) return;
       setResult({ ...binding, value: null, loading: false, error });
-      if (error.status === 401) latest.current.onAuthenticationLost();
     }
   }
   async function readUsage(selection: ImportUsageSelection) {
     const view = shownImport;
     if (!view) return;
     const binding = { scope, view, signature: importSignature, selection }, generation = ++usageGeneration.current;
-    const active = () => mounted.current && scopeRef.current === binding.scope && usageGeneration.current === generation && latest.current.importView === binding.view && latest.current.importSignature === binding.signature;
+    const accessCurrent = observeAccess();
+    if (!accessCurrent()) return;
+    const active = () => accessCurrent() && usageGeneration.current === generation && latest.current.importView === binding.view && latest.current.importSignature === binding.signature;
     setUsage({ ...binding, value: null, loading: true, error: null });
     try {
       const value = await readImportUsageDocument(client, projectId, view, selection, active);
@@ -83,27 +115,28 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     } catch (cause) {
       if (!active()) return;
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if (detailAccessLost(error)) return;
       setUsage({ ...binding, value: null, loading: false, error });
-      if (error.status === 401) latest.current.onAuthenticationLost();
     }
   }
   async function prepare(kind: 'IMPORT' | 'PROPOSAL') {
-    if (!canPrepare || !acknowledged || running.current) return;
+    const accessCurrent = observeAccess();
+    if (!canPrepare || !acknowledged || running.current || !accessCurrent()) return;
     running.current = true; setBusy(true); onBusy(true); setError(null);
     try {
       let value: DocumentBuffer;
       if (kind === 'IMPORT' && shownImport) value = await prepareStoredImport(client,projectId,shownImport,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
       else if (kind === 'PROPOSAL' && shownProposal && !shownProposal.proposal.selections.length) value = await resumeStoredProposal(client,projectId,shownProposal.proposal.id,session);
       else throw new ApiError('MATERIAL_SELECTION_REQUIRED');
-      if (mounted.current) onPrepared(value);
-    } catch (e) { failed(e); } finally { running.current = false; onBusy(false); if (mounted.current) setBusy(false); }
+      if (accessCurrent()) onPrepared(value);
+    } catch (e) { if (accessCurrent()) failed(e); } finally { running.current = false; onBusy(false); if (mounted.current) setBusy(false); }
   }
   return <section className="status-card" aria-label="보관한 후보·제안"><h2>보관한 후보·제안</h2><p className="meta">목록은 저장 당시 상태입니다. 원문을 열 때 파일을 다시 확인하며, 보기만 해서는 문서를 변경하지 않습니다.</p>
-    <button disabled={busy || importLoading || proposalLoading} onClick={() => { setError(null); setImportCursor(null); setProposalCursor(null); setReload(n => n + 1); }}>보관 자료 새로고침</button>
+    <button disabled={busy || importLoading || proposalLoading} onClick={() => { deniedScope.current = null; setError(null); setImportCursor(null); setProposalCursor(null); setReload(n => n + 1); }}>보관 자료 새로고침</button>
     {error ? <p role="alert">{error.message} · {error.code}</p> : null}
-    <label htmlFor="stored-import-status">보관 후보 상태</label><select id="stored-import-status" disabled={busy} value={importStatus} onChange={e => { setImports(null); setImportCursor(null); setImportStatus(e.target.value); }}><option value="">모두</option><option value="READY">본문 확인 가능</option><option value="UNSUPPORTED">형식 미지원</option><option value="FAILED">본문 확인 실패</option></select>
+    <label htmlFor="stored-import-status">보관 후보 상태</label><select id="stored-import-status" disabled={busy || deniedScope.current === scope} value={importStatus} onChange={e => { setImports(null); setImportCursor(null); setImportStatus(e.target.value); }}><option value="">모두</option><option value="READY">본문 확인 가능</option><option value="UNSUPPORTED">형식 미지원</option><option value="FAILED">본문 확인 실패</option></select>
     {importLoading ? <p role="status">후보 조회 중</p> : null}<ul>{imports?.items.map(v => <li key={v.id}><button disabled={busy} aria-label={`가져오기 후보 ${v.id} 열기`} onClick={() => { void open('IMPORT',v.id); }}>가져온 원본 · {v.status} · {new Date(v.createdAt).toLocaleString('ko-KR')}</button></li>)}</ul>{imports && !importLoading && !imports.items.length ? <p>보관한 후보가 없습니다.</p> : null}{imports?.hasMore ? <button disabled={busy || importLoading} onClick={() => setImportCursor(imports.nextCursor)}>다음 후보 더 보기</button> : null}
-    <label htmlFor="stored-proposal-status">보관 제안 상태</label><select id="stored-proposal-status" disabled={busy} value={proposalStatus} onChange={e => { setProposals(null); setProposalCursor(null); setProposalStatus(e.target.value); }}><option value="">모두</option><option value="PENDING">미반영</option><option value="SELECTED">반영됨</option></select>
+    <label htmlFor="stored-proposal-status">보관 제안 상태</label><select id="stored-proposal-status" disabled={busy || deniedScope.current === scope} value={proposalStatus} onChange={e => { setProposals(null); setProposalCursor(null); setProposalStatus(e.target.value); }}><option value="">모두</option><option value="PENDING">미반영</option><option value="SELECTED">반영됨</option></select>
     {proposalLoading ? <p role="status">제안 조회 중</p> : null}<ul>{proposals?.items.map(v => <li key={v.id}><button disabled={busy} aria-label={`보관 제안 ${v.id} 열기`} onClick={() => { void open('PROPOSAL',v.id); }}>{v.title} · 기준 {v.baseRef.version} · {v.status === 'SELECTED' ? '반영됨' : '미반영'}</button></li>)}</ul>{proposals && !proposalLoading && !proposals.items.length ? <p>보관한 제안이 없습니다.</p> : null}{proposals?.hasMore ? <button disabled={busy || proposalLoading} onClick={() => setProposalCursor(proposals.nextCursor)}>다음 제안 더 보기</button> : null}
     {!canPrepare ? <p>기존 편집·검토·확정 작업을 먼저 닫으면 이 자료로 새 작업을 준비할 수 있습니다. 조회는 계속 가능합니다.</p> : null}
     {shownImport ? <section aria-label="보관 후보 원문 확인"><h3>가져오기 후보 {shownImport.candidate.status}</h3><p>원본 SHA256 {shownImport.candidate.originalRef.contentHash}</p><a href={`/api/v1/projects/${projectId}/files/${shownImport.candidate.originalRef.artifactId}`} download>보관한 원본 다운로드</a>{shownImport.candidate.issues.map((i,n) => <p key={n}>{i.code} · {i.message}</p>)}

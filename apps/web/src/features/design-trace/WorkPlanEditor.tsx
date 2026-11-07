@@ -10,7 +10,7 @@ import type {TaskCard,PlanTraceRef} from '../../../../server/modules/traceabilit
 import{newTaskTrace,newPlanDocumentTrace}from'./trace-api.ts';
 import{TaskTraceEditor}from'./TaskTraceEditor.tsx';
 import{PlanDocumentTraceEditor}from'./PlanDocumentTraceEditor.tsx';
-import{readWorkPlanScreenReviews,selectWorkPlanScreenReview,type ScreenReviewChoice}from'./work-plan-screen-reviews.ts';
+import{readWorkPlanScreenReviews,removeOrphanedScreenReviews,selectWorkPlanScreenReview,type ScreenReviewChoice}from'./work-plan-screen-reviews.ts';
 import{readWorkPlanDecision,newWorkPlanDecision}from'./work-plan-decision-api.ts';
 import{WorkPlanDecisionEditor}from'./WorkPlanDecisionEditor.tsx';
 import{canReopenRejectedWorkPlan,reopenRejectedWorkPlan}from'./rejected-work-plan.ts';
@@ -40,7 +40,7 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
   }
   function removeTask(captured:WorkPlanBuffer,index:number){
     if(moveLocked||running.current||captured!==s)return;
-    try{const next=removePlanTask(captured,index,true);setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===captured?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
+    try{const removed=removePlanTask(captured,index,true),next={...removed,input:removeOrphanedScreenReviews(removed.input,captured.input.tasks[index]!.screenRefs)};setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===captured?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
   }
   function update(change:(s:WorkPlanBuffer)=>WorkPlanBuffer,dirty=true){onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState?.bindingId===s.bindingId?{...b,workPlanState:change(b.workPlanState),dirty:dirty||b.dirty}:b);}
   function input(change:(s:WorkPlanBuffer['input'])=>WorkPlanBuffer['input']){if(!locked)update(v=>({...v,input:change(v.input),failure:null}));}
@@ -65,8 +65,14 @@ export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthe
   async function prepareDecision(kind:'REVIEW'|'CONFIRM'){if(running.current||!s.result||s.decision||s.traceLink)return;running.current=true;setBusy(true);try{const target=await readWorkPlanDecision(client,buffer.projectId,s.result),decision=newWorkPlanDecision(buffer.projectId,target,session,buffer.controlGeneration,kind);if(mounted.current)update(v=>({...v,decision,failure:null}),false);}catch(e){failure(e);}finally{running.current=false;if(mounted.current)setBusy(false);}}
   function link(n:number,kind:PlanTraceRef['kind'],id:string,checked:boolean){
     if(!s.designIndex)return;const item=kind==='DESIGN_ITEM'?s.designIndex.items.find(i=>i.id===id):s.designIndex.screenRegions.find(i=>i.id===id);if(!item)return;
-    const link:PlanTraceRef={kind,id,versionRef:item.documentRef,localCode:kind==='DESIGN_ITEM'?'localCode'in item?item.localCode:'':'screenCode'in item?item.screenCode:'',anchor:item.anchor},field=kind==='DESIGN_ITEM'?'designRefs':'screenRefs',t=s.input.tasks[n]!;
-    task(n,{[field]:checked?[...t[field],link]:t[field].filter(i=>i.id!==id)});
+    const link:PlanTraceRef={kind,id,versionRef:item.documentRef,localCode:kind==='DESIGN_ITEM'?'localCode'in item?item.localCode:'':'screenCode'in item?item.screenCode:'',anchor:item.anchor},field=kind==='DESIGN_ITEM'?'designRefs':'screenRefs';
+    setScreenChoices([]);
+    input(v=>{
+      const t=v.tasks[n];if(!t)return v;
+      const links=checked?[...t[field],link]:t[field].filter(i=>i.id!==id);
+      const next={...v,tasks:v.tasks.map((task,index)=>index===n?{...task,[field]:links}:task)};
+      return kind==='SCREEN_REGION'&&!checked?removeOrphanedScreenReviews(next,t.screenRefs.filter(i=>i.id===id)):next;
+    });
   }
   const traceLinkWork=s.traceLink,decisionWork=s.decision,canClose=!s.approval?.request.uncertain&&!s.approval?.request.pending&&!s.uncertain&&(!s.pending||!!s.result||isKnownDocumentRejection(s.failure))&&(!traceLinkWork||!traceLinkWork.uncertain&&(!traceLinkWork.pending||!!traceLinkWork.result||isKnownDocumentRejection(traceLinkWork.failure)))&&(!decisionWork||!decisionWork.uncertain&&(!decisionWork.pending||!!decisionWork.savedId||isKnownDocumentRejection(decisionWork.failure)));
   return <section className="status-card definition-editor" aria-label="작업계획 작성"><h2>작업계획 작성</h2><p>{buffer.title} · 원문 v{s.input.documentRef.version}</p><p className="meta">원문은 바꾸지 않습니다. 화면·기능·연결·준비 업무를 구분하고 착수 선행과 검수 선행을 따로 작성합니다. 계획 저장은 확정·실행·완료가 아닙니다. 허용 파일은 계획 선언이며 실제 접근 권한이 아닙니다.</p><pre aria-label="계획 기준 원문" className="document-original">{buffer.body}</pre>

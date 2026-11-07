@@ -1,13 +1,22 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installWorkspaceBundle } from '../UI04/bundle.ts';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { buildOfficialForms } from '../../../apps/server/modules/documents/forms.ts';
 const project = '51c0439f-791e-4bb5-8471-70938d6afaf1', user = '32b5f276-13e6-4d8a-b93f-27a15d21c788', candidateId = 'a6f30000-0000-4000-8000-000000000090', proposalId = 'a6f30000-0000-4000-8000-000000000091', documentId = 'a6f30000-0000-4000-8000-000000000092';
 const at = '2026-10-16T05:00:00.000Z', importedText = '\uFEFF# 보관 원문\r\n<script>window.STORED_EXECUTED=1</script>  \r\n', baseText = '# 기존 문서\n기존 원문', proposedText = '# 보관 제안\n명시 선택 후 반영';
-async function fixture(page: Page, viewer = false) {
-  if (process.env.ANVIL_UI04_QA_DIST === 'apps/web/dist') await installWorkspaceBundle(page);
+async function fixture(page: Page, viewer = false, used = false) {
+  const dist = process.env.ANVIL_UI06_QA_DIST;
+  if (dist) {
+    await page.route(/^https:\/\/localhost:3830\/(?:assets\/index-[A-Za-z0-9_-]+\.(?:js|css))?$/, async route => {
+      if (route.request().method() !== 'GET') return route.abort();
+      const path = new URL(route.request().url()).pathname;
+      const contentType = path === '/' ? 'text/html' : path.endsWith('.css') ? 'text/css' : 'text/javascript';
+      return route.fulfill({ contentType, body: await readFile(join(dist, path === '/' ? 'index.html' : path.slice(1))) });
+    });
+  } else if (process.env.ANVIL_UI04_QA_DIST === 'apps/web/dist') await installWorkspaceBundle(page);
   const catalog = buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md', import.meta.url)), await readFile(new URL('../../../docs/design/문서작성_공통기준.md', import.meta.url))), form = catalog.forms[0]!;
   const files = new Map<string, Buffer>();
   const file = (text: string, mediaType = 'text/markdown;charset=utf-8') => { const artifactId = crypto.randomUUID(), bytes = Buffer.from(text); files.set(artifactId,bytes); return { artifactId, bytes: bytes.length, contentHash: createHash('sha256').update(bytes).digest('hex'), mediaType }; };
@@ -23,7 +32,7 @@ async function fixture(page: Page, viewer = false) {
   await page.route(`**/api/v1/projects/${project}/documents?*`, r => r.fulfill({ json: { items: [{ id: documentId, title: '기존 문서', headVersion: saved?.targetId === documentId ? 2 : 1, confirmedVersion: null, updatedAt: at }], hasMore: false, nextCursor: null, observedAt: at } }));
   await page.route(`**/api/v1/projects/${project}/imports?*`, r => r.fulfill({ json: { items: [{ ...candidate, createdAt: at, integrity: 'NOT_RECHECKED' }], hasMore: false, nextCursor: null, observedAt: at } }));
   await page.route(`**/api/v1/projects/${project}/proposals?*`, r => r.fulfill({ json: { items: [{ ...proposal, title: '기존 문서', createdAt: at, integrity: 'NOT_RECHECKED' }], hasMore: false, nextCursor: null, observedAt: at } }));
-  await page.route(`**/api/v1/projects/${project}/imports/${candidateId}`, r => r.fulfill({ json: { ...candidate, createdAt: at, selections: [] } }));
+  await page.route(`**/api/v1/projects/${project}/imports/${candidateId}`, r => r.fulfill({ json: { ...candidate, createdAt: at, selections: used ? [{documentId,version:1,selectedBy:user,at}] : [] } }));
   await page.route(`**/api/v1/projects/${project}/proposals/${proposalId}`, r => r.fulfill({ json: { ...proposal, proposedContent, proposedBy: user, reason: '보관해 둔 수정 제안', createdAt: at, selections: [] } }));
   await page.route(`**/api/v1/forms/${form.ref.id}/versions/1`, r => r.fulfill({ json: { ...form, authoringStandard: { ref: catalog.standard.ref, content: catalog.standard.body.toString('utf8') }, validation: { formatOnly: true, contentReview: 'NOT_PERFORMED', userAcceptance: 'NOT_PERFORMED' } } }));
   await page.route(`**/api/v1/projects/${project}/files/*`, r => r.fulfill({ contentType: 'application/octet-stream', body: files.get(new URL(r.request().url()).pathname.split('/').pop()!)! }));
@@ -33,6 +42,102 @@ async function fixture(page: Page, viewer = false) {
   await page.route(`**/api/v1/projects/${project}/documents/*/versions/*`, r => { const parts = new URL(r.request().url()).pathname.split('/'), id = parts[6]!, version = Number(parts[8]), content = version === 1 && id === documentId ? baseContent : saved.payload.content, title = version === 1 && id === documentId ? '기존 문서' : saved.payload.title; return r.fulfill({ json: { id, version, title, formRef: form.ref, stageNodeRef: null, content, contentHash: contentHash(canonicalJson({ title, formRef: form.ref, stageNodeRef: null, content })), confirmed: false, validation: { validForConfirmation: false, issues: [] }, statusHistory: [], contentReviewCriteria: { criteriaVersion: 1, formRef: form.ref, items: form.definition.items.map(i => ({ criterionId: i.itemId, title: i.title, reviewCriteria: i.reviewCriteria })) }, contentReviews: [] } }); });
   return { requests, uploads, unknown, original, files, controlReads: () => controlReads };
 }
+test('MATERIAL_ACCESS_RACE 권한 상실 뒤 지연된 후보는 숨기고 명시 재조회로 복구한다', async ({ page }) => {
+  const state = await fixture(page);
+  let entered = false, allowed = false, importReads = 0, proposalReads = 0, release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const imports = `**/api/v1/projects/${project}/imports?*`, proposals = `**/api/v1/projects/${project}/proposals?*`;
+  await page.route(imports, async route => {
+    if (++importReads === 1) { entered = true; await gate; }
+    await route.fallback();
+  });
+  await page.route(proposals, route => {
+    proposalReads++;
+    return allowed ? route.fallback() : route.fulfill({ status: 404, json: { code: 'PROJECT_NOT_FOUND' } });
+  });
+  await page.goto(`/#/projects/${project}/documents`);
+  await page.getByRole('button', { name: '보관한 후보·제안 조회', exact: true }).click();
+  const library = page.getByRole('region', { name: '보관한 후보·제안', exact: true });
+  const candidate = library.getByRole('button', { name: `가져오기 후보 ${candidateId} 열기`, exact: true });
+  const proposal = library.getByRole('button', { name: `보관 제안 ${proposalId} 열기`, exact: true });
+  const refresh = library.getByRole('button', { name: '보관 자료 새로고침', exact: true });
+  try {
+    await expect.poll(() => entered).toBe(true);
+    await expect(library.getByRole('alert')).toContainText('PROJECT_NOT_FOUND');
+    await expect(candidate).toHaveCount(0);
+  } finally {
+    const settled = page.waitForResponse(response => response.status() === 200 && new URL(response.url()).pathname.endsWith('/imports'));
+    release();
+    await (await settled).finished();
+  }
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect(refresh).toBeEnabled();
+  await expect(library.getByRole('alert')).toContainText('PROJECT_NOT_FOUND');
+  await expect(candidate).toHaveCount(0); await expect(proposal).toHaveCount(0);
+  expect([importReads, proposalReads]).toEqual([1, 1]);
+  allowed = true;
+  await refresh.click();
+  await expect(candidate).toBeEnabled(); await expect(proposal).toBeEnabled();
+  await expect(library.getByRole('alert')).toHaveCount(0);
+  expect([importReads, proposalReads]).toEqual([2, 2]);
+  expect(state.requests).toEqual([]); expect(state.uploads).toEqual([]); expect(state.controlReads()).toBe(0); expect(state.unknown).toEqual([]);
+});
+
+for (const code of ['NOT_FOUND', 'ARTIFACT_READ_FAILED'] as const) {
+  test('MATERIAL_DETAIL_ACCESS_' + code + ' 사용 문서 조회 오류의 범위를 구분한다', async ({ page }) => {
+    const state = await fixture(page, false, true);
+    let entered = false, release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    await page.route(`**/api/v1/projects/${project}/proposals?*`, async route => {
+      if (new URL(route.request().url()).searchParams.get('status') === 'PENDING') {
+        entered = true;
+        await gate;
+      }
+      await route.fallback();
+    });
+    if (code === 'NOT_FOUND') {
+      await page.route(`**/api/v1/projects/${project}/documents/${documentId}/versions/1`, route =>
+        route.fulfill({ status: 404, json: { code } }));
+    } else {
+      let artifactReads = 0;
+      await page.route(`**/api/v1/projects/${project}/files/${state.original.artifactId}`, route =>
+        ++artifactReads === 1 ? route.fallback() : route.fulfill({ status: 403 }));
+    }
+    await page.goto(`/#/projects/${project}/documents`);
+    await page.getByRole('button', { name: '보관한 후보·제안 조회', exact: true }).click();
+    const library = page.getByRole('region', { name: '보관한 후보·제안', exact: true });
+    const candidate = library.getByRole('button', { name: `가져오기 후보 ${candidateId} 열기`, exact: true });
+    const proposal = library.getByRole('button', { name: `보관 제안 ${proposalId} 열기`, exact: true });
+    const candidateBody = library.getByLabel('보관 후보 원문', { exact: true });
+    await candidate.click();
+    await expect(candidateBody).toBeVisible();
+    await expect(proposal).toBeEnabled();
+    await library.getByLabel('보관 제안 상태', { exact: true }).selectOption('PENDING');
+    try {
+      await expect.poll(() => entered).toBe(true);
+      await library.getByRole('button', { name: `사용 문서 ${documentId} 버전 1 원문 보기`, exact: true }).click();
+      await expect(library.getByRole('alert')).toContainText(code);
+    } finally {
+      const settled = page.waitForResponse(response => {
+        const url = new URL(response.url());
+        return response.status() === 200 && url.pathname.endsWith('/proposals') && url.searchParams.get('status') === 'PENDING';
+      });
+      release();
+      await (await settled).finished();
+    }
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(library.getByRole('button', { name: '보관 자료 새로고침', exact: true })).toBeEnabled();
+    await expect(library.getByRole('alert')).toContainText(code);
+    if (code === 'NOT_FOUND') {
+      await expect(candidate).toHaveCount(0); await expect(candidateBody).toHaveCount(0); await expect(proposal).toHaveCount(0);
+    } else {
+      await expect(candidate).toBeEnabled(); await expect(candidateBody).toBeVisible(); await expect(proposal).toBeEnabled();
+      await expect(library.getByRole('region', { name: '보관 후보 원문 확인', exact: true }).getByRole('alert')).toContainText(code);
+    }
+    expect(state.requests).toEqual([]); expect(state.uploads).toEqual([]); expect(state.controlReads()).toBe(0); expect(state.unknown).toEqual([]);
+  });
+}
+
 test('보관 후보를 다시 찾아 원문 확인·명시 새 문서 준비 후 저장하되 후보를 재생성하지 않는다', async ({ page }) => {
   const s = await fixture(page); await page.goto(`/#/projects/${project}/documents`); await page.getByRole('button',{ name: '보관한 후보·제안 조회', exact: true }).click(); await page.getByRole('button',{ name: `가져오기 후보 ${candidateId} 열기`, exact: true }).click();
   await expect(page.getByLabel('보관 후보 원문',{ exact: true })).toContainText('<script>'); expect(s.requests).toHaveLength(0); expect(s.uploads).toHaveLength(0); expect(await page.evaluate(() => (window as any).STORED_EXECUTED)).toBeUndefined();

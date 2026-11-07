@@ -34,13 +34,41 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   useEffect(()=>{selectionAlive.current=true;return()=>{selectionAlive.current=false;selectionSequence.current++;};},[]);
   const [overflow,setOverflow]=useState<{owner:typeof selectionContext;lookup:MethodLookup}|null>(null),[showOverflow,setShowOverflow]=useState(false);
   const [nodeId, setNodeId] = useState('');
-  const [appliedRef, setAppliedRef] = useState<VersionRef | null | undefined>(undefined);
+  const [applied, setApplied] = useState<{ owner: typeof selectionContext; ref: VersionRef | null } | null>(null);
+  const appliedRef = applied?.owner === selectionContext ? applied.ref : undefined;
+  const latestApplied = useRef<{ owner: typeof selectionContext; ref: VersionRef } | null>(null);
+  const authorityRevision = useRef(0), callbackAuthority = authorityRevision.current;
+  function observeApplied(ref: VersionRef | null) {
+    const latest = latestApplied.current?.owner === selectionContext ? latestApplied.current.ref : null;
+    if (latest && (!ref || ref.version < latest.version)) return;
+    if (latest && ref && ref.version === latest.version && (ref.id !== latest.id || ref.contentHash !== latest.contentHash)) {
+      setApplied(null);
+      return;
+    }
+    if (ref) latestApplied.current = { owner: selectionContext, ref };
+    setApplied({ owner: selectionContext, ref });
+  }
+  function confirmApplied(ref: VersionRef) {
+    if (!selectionAlive.current || selectionOwner.current !== selectionContext || client.transport !== selectionContext.transport || authorityRevision.current !== callbackAuthority) return;
+    observeApplied(ref);
+  }
   function failed(cause: unknown) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if ([401, 403, 404].includes(failure.status)) { setSource(null); setPage(null); setCatalog(null); if (failure.status === 401) onAuthenticationLost(); } }
   useEffect(() => {
-    let current = true; setLoading(true); setError(null);
-    Promise.all([listProjectMethods(client, projectId, navigation.own.cursor), listMethods(client, { ...(navigation.catalog.cursor ? { cursor: navigation.catalog.cursor } : {}) }), readMethodApplicationRef(client, projectId)]).then(([own, common, applied]) => { if (current) { setPage(own); setCatalog(common); setAppliedRef(applied); setPosition(navigation); } }).catch(cause => { if (current) { setAppliedRef(undefined); failed(cause); } }).finally(() => { if (current) setLoading(false); });
-    return () => { current = false; };
-  }, [client, projectId, revision, navigation]);
+    let active = true;
+    const current = () => active && selectionOwner.current === selectionContext && client.transport === selectionContext.transport;
+
+    setLoading(true); setError(null);
+    Promise.all([listProjectMethods(client, projectId, navigation.own.cursor), listMethods(client, { ...(navigation.catalog.cursor ? { cursor: navigation.catalog.cursor } : {}) }), readMethodApplicationRef(client, projectId)]).then(([own, common, ref]) => {
+      if (!current()) return;
+      setPage(own); setCatalog(common); setPosition(navigation);
+      observeApplied(ref);
+    }).catch(cause => {
+      if (!current()) return;
+      if (cause instanceof ApiError && [401, 403, 404].includes(cause.status)) authorityRevision.current++;
+      setApplied(null); failed(cause);
+    }).finally(() => { if (current()) setLoading(false); });
+    return () => { active = false; };
+  }, [client, projectId, revision, navigation, selectionContext]);
   function navigate(list: keyof ListNavigation, back: boolean) {
     if (loading || error) return;
     const current = position[list];
@@ -83,6 +111,6 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
     <CommonMethodEditor client={client} projectId={projectId} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => resetLists(false)} />
     {!loading && !error && source?.scope === 'PROJECT' ? <MethodReviewPanel client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
-    <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error} buffer={buffer} onChange={onChange} onApplied={setAppliedRef} onAuthenticationLost={onAuthenticationLost}/>
+    <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error} buffer={buffer} onChange={onChange} onApplied={confirmApplied} onAuthenticationLost={onAuthenticationLost}/>
   </>;
 }

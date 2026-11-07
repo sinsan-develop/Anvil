@@ -1,5 +1,7 @@
 import {test,expect,type Page} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
+import {join} from 'node:path';
+import type {VersionRef} from '../../../contracts/generated-types.ts';
 import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
 import {buildBuiltinMethodologies} from '../../../apps/server/modules/methodologies/builtins.ts';
 import {validateMethodologyGraph} from '../../../apps/server/modules/methodologies/service.ts';
@@ -10,14 +12,14 @@ const pid='a6f20000-0000-4000-8000-000000000090',uid='a6f20000-0000-4000-8000-00
 const ref={id:mid,version:1,contentHash:builtin.contentHash},reviewRef={id:rid,criteriaVersion:1,targetRef:ref,outcome:'ACCEPTED'};
 const criteria=['METHOD_PURPOSE_SCOPE','METHOD_FLOW_CONTROL','METHOD_INPUT_OUTPUT','METHOD_COMPLETION_APPROVAL','METHOD_RECORD_LIMITS'];
 const method={projectId:pid,ref,name:'별도 적용 절차',purpose:'확정과 적용 분리',scope:'PROJECT',systemCode:null,graph:builtin.graph,headVersion:1,applicationTransition:'EXECUTION_STATE_UNVERIFIED',reason:'합성 확정 원문',createdAt:'2026-10-20T00:00:00.000Z',runtimeReadiness:'PROJECT_BINDINGS_REQUIRED',validation:validateMethodologyGraph(builtin.graph,forms.forms.map(f=>f.ref)),contentReviewCriteria:{criteriaVersion:1,items:criteria.map(criterionId=>({criterionId,title:criterionId}))},contentReviews:[{ref:reviewRef,items:criteria.map(criterionId=>({criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'합성 검수'})),reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'합성 검수',reviewedAt:'2026-10-20T00:00:00.000Z',serverSequence:1}],confirmation:{id:rid,decision:'CONFIRMED',decided_at:'2026-10-20T00:00:00.000Z',decidedBy:uid,reviewRefs:[reviewRef]}};
-async function setup(page:Page){
+async function setup(page:Page,initialApplication:VersionRef|null=null){
  await page.addInitScript(({projectUrl})=>{
   const original=Response.prototype.json;
   Response.prototype.json=async function(){const value=await original.call(this);if(this.url===projectUrl)(window as any).__fn02ProjectBodies=((window as any).__fn02ProjectBodies??0)+1;if(this.url===projectUrl+'/commands')(window as any).__fn02CommandBodies=((window as any).__fn02CommandBodies??0)+1;return value;};
  },{projectUrl:'https://localhost:3830/api/v1/projects/'+pid});
- const state={requests:[] as any[],unexpected:[] as string[],errors:[] as string[],lose:false,expire:false,deny:false,userId:uid,clientId:cid,failReadback:false,readbackFailures:0,holdPrepare:false,release:null as null|(()=>Promise<void>),held:false,holdPost:false,releasePost:null as null|(()=>Promise<void>),applicationRef:null as any,receipt:null as any};
+ const state={requests:[] as any[],unexpected:[] as string[],errors:[] as string[],lose:false,expire:false,deny:false,userId:uid,clientId:cid,failReadback:false,readbackFailures:0,holdPrepare:false,release:null as null|(()=>Promise<void>),held:false,holdPost:false,releasePost:null as null|(()=>Promise<void>),applicationRef:initialApplication,receipt:null as any,holdApplyCommit:false,releaseApplyCommit:null as null|(()=>Promise<void>),projectDenied:false};
  page.on('pageerror',e=>state.errors.push(e.message));
- await page.route('https://localhost:3830/**',async route=>{const path=new URL(route.request().url()).pathname;if(path.startsWith('/api/'))return route.fallback();if(route.request().method()!=='GET'||path!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(path))return route.abort();const name=path==='/'?'index.html':path.slice(1);return route.fulfill({body:await readFile(new URL('../../../apps/web/dist/'+name,import.meta.url)),contentType:name.endsWith('.html')?'text/html':name.endsWith('.css')?'text/css':'application/javascript'});});
+ await page.route('https://localhost:3830/**',async route=>{const path=new URL(route.request().url()).pathname;if(path.startsWith('/api/'))return route.fallback();if(route.request().method()!=='GET'||path!=='/'&&!/^\/assets\/[A-Za-z0-9_.-]+$/.test(path))return route.abort();const name=path==='/'?'index.html':path.slice(1);return route.fulfill({body:await readFile(process.env.ANVIL_UI03_QA_DIST?join(process.env.ANVIL_UI03_QA_DIST,name):new URL('../../../apps/web/dist/'+name,import.meta.url)),contentType:name.endsWith('.html')?'text/html':name.endsWith('.css')?'text/css':'application/javascript'});});
  await page.route('**/api/v1/**',route=>{state.unexpected.push(route.request().url());return route.fulfill({status:503,json:{code:'UNEXPECTED_QA_API'}});});
  await page.route('**/api/v1/session',r=>r.fulfill({json:{user:{id:state.userId,displayName:'방법론 적용 QA'},clientId:state.clientId,csrfToken:'A'.repeat(43)}}));
  await page.route('**/api/v1/auth/setup',r=>r.fulfill({json:{setupRequired:false,policyVersion:1}}));
@@ -25,7 +27,9 @@ async function setup(page:Page){
  await page.route(/\/api\/v1\/methodologies(?:\?.*)?$/,r=>r.fulfill({json:{items:[],observedAt:new Date().toISOString(),nextCursor:null,hasMore:false,baselineVersion:null}}));
  await page.route('**/api/v1/forms',r=>r.fulfill({json:{items:[],observedAt:new Date().toISOString(),nextCursor:null,hasMore:false,baselineVersion:null}}));
  await page.route('**/api/v1/projects/'+pid,async r=>{
-  const response=()=>r.fulfill({json:{id:pid,currentMethodologyRef:state.applicationRef,participation:'OWNER',controlState:{actorId:state.userId,clientId:state.clientId,generation:3,status:'HELD'}}});
+  if(state.projectDenied)return r.fulfill({status:403,json:{code:'PROJECT_READ_DENIED'}});
+  const body={id:pid,currentMethodologyRef:state.applicationRef,participation:'OWNER',controlState:{actorId:state.userId,clientId:state.clientId,generation:3,status:'HELD'}};
+  const response=()=>r.fulfill({json:body});
   if(state.holdPrepare){state.holdPrepare=false;state.held=true;state.release=response;return;}
   if(state.readbackFailures){state.readbackFailures--;return r.fulfill({status:503,json:{code:'SYNTHETIC_READBACK_UNAVAILABLE'}});}return response();
  });
@@ -34,9 +38,15 @@ async function setup(page:Page){
  await page.route('**/api/v1/projects/'+pid+'/commands',r=>{
   const request=r.request().postDataJSON();state.requests.push(request);if(request.operation!=='applyMethodology')state.unexpected.push(request.operation);
   if(state.deny)return r.fulfill({status:409,json:{code:'METHODOLOGY_ALREADY_APPLIED'}});
-  const snapshot={name:method.name,purpose:method.purpose,graph:method.graph,sourceRef:ref};
-  state.applicationRef={id:aid,version:1,contentHash:contentHash(canonicalJson(snapshot))};
-  state.receipt??={operationId:rid,commandId:request.commandId,projectId:pid,status:'APPLIED',targetId:aid,version:1,data:{ref:state.applicationRef,status:'METHODOLOGY_APPLIED',snapshot,reason:request.payload.reason,previousApplicationRef:null},serverReceivedAt:'2026-10-20T00:00:00.000Z'};
+  const commit=()=>{
+   if(state.receipt)return;
+   const snapshot={name:method.name,purpose:method.purpose,graph:method.graph,sourceRef:ref},previousApplicationRef=state.applicationRef;
+   const version=(previousApplicationRef?.version??0)+1;
+   state.applicationRef={id:aid,version,contentHash:contentHash(canonicalJson(snapshot))};
+   state.receipt={operationId:rid,commandId:request.commandId,projectId:pid,status:'APPLIED',targetId:aid,version,data:{ref:state.applicationRef,status:'METHODOLOGY_APPLIED',snapshot,reason:request.payload.reason,previousApplicationRef},serverReceivedAt:'2026-10-20T00:00:00.000Z'};
+  };
+  if(state.holdApplyCommit){state.holdApplyCommit=false;state.releaseApplyCommit=()=>{commit();return r.fulfill({json:state.receipt});};return;}
+  commit();
   if(state.holdPost){state.holdPost=false;state.releasePost=()=>r.fulfill({status:503,json:{code:'SYNTHETIC_RECEIPT_UNAVAILABLE'}});return;}
   if(state.expire){state.expire=false;return r.fulfill({status:401,json:{code:'AUTH_REQUIRED'}});}
   if(state.lose){state.lose=false;return r.fulfill({status:503,json:{code:'SYNTHETIC_RECEIPT_UNAVAILABLE'}});}
@@ -52,6 +62,61 @@ test('명시 적용은 자동 실행하지 않고 503 뒤 화면 이동 후에�
  await page.evaluate(()=>{location.hash='#/projects';});await expect(page.getByRole('heading',{name:'프로젝트',exact:true})).toBeVisible();await page.evaluate(()=>{location.hash='#/projects/'+ 'a6f20000-0000-4000-8000-000000000090'+'/methodologies';});
  const recheck=page.getByRole('button',{name:'같은 적용 명령 결과 확인',exact:true});await expect(recheck).toBeVisible();expect(s.requests).toHaveLength(1);await recheck.click();
  await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 1',{exact:true})).toBeVisible();expect(s.requests).toHaveLength(2);expect(s.requests[0]).toEqual(s.requests[1]);expect(s.requests[0].targetId).toBe(pid);expect(s.requests[0].payload.methodologyRef).toEqual(ref);expect(s.errors).toEqual([]);expect(s.unexpected).toEqual([]);
+});
+test('늦은 목록 조회가 먼저 검증된 적용 참조를 덮지 않는다',async({page})=>{
+ const previous={id:aid,version:1,contentHash:'a'.repeat(64)},s=await setup(page,previous);
+ const applied=page.getByRole('region',{name:'고정 적용본 조회'}),refresh=page.getByRole('button',{name:'전용 방법론 목록 갱신',exact:true});
+ await expect(applied.getByText('적용 세대 1',{exact:true})).toBeVisible();
+ s.holdApplyCommit=true;await begin(page);await expect.poll(()=>!!s.releaseApplyCommit).toBe(true);
+ s.holdPrepare=true;await refresh.click();await expect.poll(()=>s.held).toBe(true);
+ expect(s.applicationRef).toEqual(previous);
+ await s.releaseApplyCommit!();
+ await expect(applied.getByText('적용 세대 2',{exact:true})).toBeVisible();
+ await expect(refresh).toBeDisabled();
+ await s.release!();
+ await expect(refresh).toBeEnabled();
+ await expect(applied.getByText('적용 세대 2',{exact:true})).toBeVisible();
+ await expect(applied.getByText('적용 세대 1',{exact:true})).toHaveCount(0);
+ await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 2',{exact:true})).toBeVisible();
+ const latest={id:aid,version:3,contentHash:'b'.repeat(64)};
+ s.applicationRef=latest;await refresh.click();
+ await expect(applied.getByText('적용 세대 3',{exact:true})).toBeVisible();
+ s.projectDenied=true;await refresh.click();
+ await expect(applied.getByText('적용본 조회 미확인',{exact:true})).toBeVisible();
+ await expect(applied.getByText('적용 세대 3',{exact:true})).toHaveCount(0);
+ expect(s.requests).toHaveLength(1);expect(s.requests[0].expectedVersion).toBe(1);expect(s.unexpected).toEqual([]);expect(s.errors).toEqual([]);
+});
+for(const order of ['목록 먼저','적용 재조회 먼저','권한 거절 먼저'])test('교차 적용 조회는 최신 보호 결과를 유지한다 · '+order,async({page})=>{
+ const previous={id:aid,version:1,contentHash:'a'.repeat(64)},s=await setup(page,previous);
+ const applied=page.getByRole('region',{name:'고정 적용본 조회'}),refresh=page.getByRole('button',{name:'전용 방법론 목록 갱신',exact:true});
+ const pending=page.getByText('명시 적용과 서버 재조회를 확인하고 있습니다.',{exact:true});
+ s.holdApplyCommit=true;await begin(page);await expect.poll(()=>!!s.releaseApplyCommit).toBe(true);
+ s.holdPrepare=true;await s.releaseApplyCommit!();await expect.poll(()=>s.held).toBe(true);
+ const releaseApplyReadback=s.release!;
+ expect(s.applicationRef?.version).toBe(2);
+ s.applicationRef={id:rid,version:3,contentHash:'b'.repeat(64)};
+ if(order==='적용 재조회 먼저'){s.held=false;s.holdPrepare=true;}
+ if(order==='권한 거절 먼저')s.projectDenied=true;
+ await refresh.click();
+ if(order==='적용 재조회 먼저'){
+  await expect.poll(()=>s.held).toBe(true);
+  const releaseNewList=s.release!;
+  await releaseApplyReadback();
+  await expect(applied.getByText('적용 세대 2',{exact:true})).toBeVisible();
+  await releaseNewList();
+ }else{
+  const expected=order==='권한 거절 먼저'?'적용본 조회 미확인':'적용 세대 3';
+  await expect(applied.getByText(expected,{exact:true})).toBeVisible();
+  await releaseApplyReadback();
+ }
+ await expect(refresh).toBeEnabled();
+ await expect(pending).toHaveCount(0);
+ const expected=order==='권한 거절 먼저'?'적용본 조회 미확인':'적용 세대 3';
+ await expect(applied.getByText(expected,{exact:true})).toBeVisible();
+ if(order!=='권한 거절 먼저')await expect(applied.getByText(s.applicationRef.id+' · '+s.applicationRef.contentHash,{exact:true})).toBeVisible();
+ await expect(applied.getByText('적용 세대 2',{exact:true})).toHaveCount(0);
+ expect(s.requests).toHaveLength(1);expect(s.requests[0].expectedVersion).toBe(1);
+ expect(s.unexpected).toEqual([]);expect(s.errors).toEqual([]);
 });
 test('적용 준비 GET 대기 중 화면을 떠나면 늦은 응답으로 POST하지 않는다',async({page})=>{
  const s=await setup(page);s.holdPrepare=true;await begin(page);await expect.poll(()=>s.held).toBe(true);await page.evaluate(()=>{location.hash='#/projects';});await expect(page.getByRole('heading',{name:'프로젝트',exact:true})).toBeVisible();const consumed=await page.evaluate(()=>(window as any).__fn02ProjectBodies??0);await s.release!();await page.waitForFunction(before=>((window as any).__fn02ProjectBodies??0)>before,consumed);

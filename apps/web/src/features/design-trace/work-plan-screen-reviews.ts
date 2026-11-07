@@ -1,4 +1,4 @@
-import{ApiClient,ApiError}from'../../api/client.ts';import{readDocument,type DocumentVersion}from'./api.ts';import{getPinnedForm}from'../methodologies/forms-api.ts';import type{TaskCard}from'../../../../server/modules/traceability/work-plan-card.ts';import type{WorkPlanInput,PlanRef}from'./work-plan-api.ts';
+import{ApiClient,ApiError}from'../../api/client.ts';import{readDocument,type DocumentVersion}from'./api.ts';import{getPinnedForm}from'../methodologies/forms-api.ts';import type{TaskCard,PlanTraceRef}from'../../../../server/modules/traceability/work-plan-card.ts';import type{WorkPlanInput,PlanRef}from'./work-plan-api.ts';
 type Review=DocumentVersion['contentReviews'][number];
 export interface ScreenReviewChoice{documentRef:PlanRef;title:string;latestReview:Review|null;available:boolean;reasonCode:'LATEST_ACCEPTED'|'LATEST_NOT_ACCEPTED'|'NO_REVIEW'}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,ref=(r:any):r is PlanRef=>!!r&&Object.keys(r).sort().join(',')==='contentHash,id,version'&&uuid.test(r.id)&&Number.isSafeInteger(r.version)&&r.version>0&&/^[0-9a-f]{64}$/.test(r.contentHash),key=(r:PlanRef)=>r.id+':'+r.version+':'+r.contentHash;
@@ -12,6 +12,14 @@ export async function readWorkPlanScreenReviews(client:ApiClient,pid:string,task
   const latestReview=reviews[0]??null,available=latestReview?.ref.outcome==='ACCEPTED';choices.push({documentRef:{...expected},title:v.document.title,latestReview:latestReview?structuredClone(latestReview):null,available,reasonCode:available?'LATEST_ACCEPTED':latestReview?'LATEST_NOT_ACCEPTED':'NO_REVIEW'});
  }
  return choices;
+}
+export function removeOrphanedScreenReviews(input:WorkPlanInput,removed:readonly PlanTraceRef[]):WorkPlanInput{
+ if(!removed.length||!input.screenReviewRefs.length)return input;
+ const unlinked=new Set(removed.filter(link=>link.kind==='SCREEN_REGION'&&ref(link.versionRef)).map(link=>key(link.versionRef)));
+ for(const task of input.tasks)for(const link of task.screenRefs)if(link.kind==='SCREEN_REGION'&&ref(link.versionRef))unlinked.delete(key(link.versionRef));
+ if(!unlinked.size)return input;
+ const screenReviewRefs=input.screenReviewRefs.filter(review=>!review||typeof review!=='object'||!('targetRef' in review)||!ref(review.targetRef)||!unlinked.has(key(review.targetRef)));
+ return screenReviewRefs.length===input.screenReviewRefs.length?input:{...input,screenReviewRefs};
 }
 export function selectWorkPlanScreenReview(input:WorkPlanInput,choice:ScreenReviewChoice,selected:boolean):WorkPlanInput{
  const refs=linked(input.tasks),r=choice.latestReview?.ref;if(!ref(choice.documentRef)||!refs.has(key(choice.documentRef))||!Array.isArray(input.screenReviewRefs)||input.screenReviewRefs.length>200)throw new ApiError('SCREEN_REVIEW_INPUT_INVALID');

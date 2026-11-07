@@ -4,6 +4,7 @@ import{isConfirmedArtifactQuarantine,documentFailure,documentMutationUncertain}f
 import {DocumentUploadApprovalEditor} from './DocumentUploadApprovalEditor.tsx';
 import {matchesDocumentSaveInput} from './document-upload-approval.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
 import { adoptDocumentConflict, canCompareDocumentConflict, canPrepareManualConflict, compareDocumentConflict, type DocumentConflictComparison } from './conflict-api.ts';
@@ -15,7 +16,7 @@ import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentAttachments} from './DocumentAttachments.tsx';
 import {DocumentFormEntry} from './DocumentFormEntry.tsx';
 
-export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (id: string, version: number, title: string) => void; onAuthenticationLost: () => void }) {
+export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (ref: VersionRef) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
   const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
   const prior=context.current;
@@ -40,7 +41,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
       const ref = await continueDocumentSave(client, pending, session, value => managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), active);
       if(!active())return;
       managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null,saveUncertain:false } : previous);
-      onSaved(ref.id, ref.version, buffer.title);
+      onSaved(ref);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
       if(!active())return;
@@ -91,7 +92,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
       proposalCheckpoint(state);
       const ref = await applyDocumentProposal(client, state, session, () => mounted.current), completed = { ...state, savedRef: ref, uncertain: false, failure: null }, content = state.comparison!.proposal.proposedContent;
       onChange(b => b?.proposalState?.bindingId === completed.bindingId ? { ...b, proposalState: completed, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: state!.comparison!.base.document.title, baseStageNodeRef: structuredClone(state!.comparison!.base.document.stageNodeRef as StageNodeRef | null), body: state!.comparison!.proposedBody, mediaType: content.body.mediaType, content: { attachments: structuredClone(content.attachments), sections: structuredClone(content.sections), sourceRefs: [] }, dirty: false, savedRef: ref } : b);
-      if (mounted.current) onSaved(ref.id, ref.version, buffer.title);
+      if (mounted.current) onSaved(ref);
     } catch (cause) { proposalFailure(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
   }
   const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));

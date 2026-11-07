@@ -1,5 +1,6 @@
 import type {SourceLinkBuffer,SourceLinkChange} from './source-link-command-api.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listDocuments, readDocument, type DocumentPage, type DocumentSummary, type DocumentVersion } from './api.ts';
 import { documentControl, editDocument, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
@@ -48,6 +49,11 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
   const downloadIdentity = [client, client.transport, projectId, session.user.id, session.clientId, stageFilter, cursor, refresh, requestedDocument] as const;
   const downloadScope = useRef(downloadIdentity), downloadLive = useRef(true);
   if (downloadIdentity.some((value, index) => value !== downloadScope.current[index])) downloadScope.current = downloadIdentity;
+  // 저장 직후의 원문은 목록 페이지가 아닌 정확한 저장 결과에 결박한다.
+  const savedIdentity = [client, client.transport, projectId, session.user.id, session.clientId, session.csrfToken, stageFilter, requestedDocument] as const;
+  const savedScope = useRef(savedIdentity);
+  if (savedIdentity.some((value, index) => value !== savedScope.current[index])) savedScope.current = savedIdentity;
+  const saveScope = savedScope.current, saveGeneration = generation.current;
   type DownloadRead = { document: DocumentVersion; scope: typeof downloadIdentity; generation: number };
   const downloadRead = useRef<DownloadRead | null>(null);
   const downloadView = useRef({ opened, version, selected, reading, readError, loading, listError });
@@ -105,6 +111,34 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     try { const value = await readDocument(client, projectId, item.id, requested); if (request === generation.current) { if(stageFilter&&!sameStageRef(value.document.stageNodeRef,stageFilter.ref))throw new ApiError('DOCUMENT_STAGE_CHANGED');recordDownload(value.document,request,scope);setOpened(value); } }
     catch (cause) { if (request !== generation.current) return; const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setReadError(error); if (error.status === 401) onAuthenticationLost(); }
     finally { if (request === generation.current) setReading(false); }
+  }
+  async function openSaved(ref: VersionRef) {
+    const sameScope = () => downloadLive.current && saveScope === savedScope.current && client.transport === saveScope[1];
+    if (!sameScope() || saveGeneration !== generation.current) return;
+    const request = ++generation.current;
+    const active = () => sameScope() && request === generation.current;
+    setCursor(null); setRefresh(value => value + 1);
+    setScreenOrigin(null); setShowSourceLinks(false); setRegisteredView(null); setAnchorSelection(null);
+    setShowComparison(false); setShowDesignIndex(false); setSelected(null); setOpened(null); setReadError(null); setReading(true);
+    try {
+      const value = await readDocument(client, projectId, ref.id, ref.version, { expectedContentHash: ref.contentHash, active });
+      if (!active()) return;
+      const document = value.document;
+      if (!stageFilter || sameStageRef(document.stageNodeRef, stageFilter.ref)) {
+        setSelected({ id: document.id, title: document.title, headVersion: document.version, confirmedVersion: null, updatedAt: document.createdAt ?? new Date().toISOString() });
+        recordDownload(document, request, downloadScope.current);
+      } else {
+        setRegisteredView({ code: '저장한 문서', kind: '문서' });
+      }
+      setVersion(String(document.version)); setOpened(value);
+    } catch (cause) {
+      if (!active()) return;
+      const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      setReadError(error);
+      if (error.status === 401) onAuthenticationLost();
+    } finally {
+      if (downloadLive.current && request === generation.current) setReading(false);
+    }
   }
   async function openScreen(sourceRef:ScreenRegion['documentRef'],region:ScreenRegion){
     if(!opened||reading||starting||opened.document.id!==sourceRef.id||opened.document.version!==sourceRef.version||opened.document.contentHash!==sourceRef.contentHash)return;
@@ -282,7 +316,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
       {!choosingForm&&!confirming&&!reviewing&&buffer?.ownerUserId===session.user.id&&buffer.projectId===projectId&&buffer.workPlanState?<WorkPlanEditor key={buffer.workPlanState.bindingId} client={client} session={session} buffer={buffer} documents={page?.items??[]} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
       {!choosingForm&&!confirming&&!reviewing&&buffer?.ownerUserId===session.user.id&&buffer.projectId===projectId&&buffer.designDependencyState?<DesignDependencyEditor key={buffer.designDependencyState.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
       {!choosingForm&&!confirming&&!reviewing&&buffer?.ownerUserId===session.user.id&&buffer.projectId===projectId&&buffer.designIndexState?<DesignIndexEditor key={buffer.designIndexState.bindingId} client={client} session={session} buffer={buffer} documents={page?.items??[]} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
-      {!choosingForm && !confirming && !reviewing && buffer?.ownerUserId === session.user.id && buffer.projectId === projectId && !buffer.designIndexState && !buffer.workPlanState && !buffer.designDependencyState ? <DocumentEditor createdOriginal={createdOriginal} preparationGate={preparationGate} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={(id, nextVersion, title) => { setCursor(null); setRefresh(value => value + 1); void open({ id, title, headVersion: nextVersion, confirmedVersion: null, updatedAt: new Date().toISOString() }, nextVersion); }} /> : null}
+      {!choosingForm && !confirming && !reviewing && buffer?.ownerUserId === session.user.id && buffer.projectId === projectId && !buffer.designIndexState && !buffer.workPlanState && !buffer.designDependencyState ? <DocumentEditor createdOriginal={createdOriginal} preparationGate={preparationGate} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} onSaved={ref => { void openSaved(ref); }} /> : null}
     </section>
   </section>;
 }
