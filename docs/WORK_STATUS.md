@@ -10,7 +10,9 @@
 | 구분 | 현재 근거와 다음 행동 |
 |---|---|
 | FN10 현재 구현 | 저장·정정·철회·보호 조회와 Workbench 연결의 정확19를 fc45abea에 소스·합성 인수했다. 조건평가·소비 후보는 준비됐으나 실제 현재 실행·선행 공급자가 미완료다. 실제 환경과 전체 FN10은 미완료다 |
-| FN09 현재 구현 | 원자료 r2의 정확23·결과/현황3을 bbd20aa5에 소스·합성 인수 보존했다. 신규 고유48·build/type/diff·독립 C0/I0/M0이며 실제 실행 인수는 아니다. 인접 fixture1 보완도 5bac8073에 보존했고 Main10PASS·기대값 불변·독립 C0/I0/M0다. 다음 미완료 업무를 기존 담당자가 읽기 전용으로 대조 중이며 §409~411을 따른다 |
+| FN09 현재 구현·결정 | 원자료 bbd20aa5·인접 시험5bac8073·합성 basis9c1530e0는 소스/해당 합성 범위만 검수했다. 실제 START 정착·발급은 미완료다. P1 원자료 증거와 후속 P2 정책을 분리할 패킷5579A6E9는 미채택이며 기존 PMO 요청을 유지한다. 실제 실행/권한 변경0 |
+| FN03 현재 구현 | 서명 수학 검산2는1867bdcd에 보존·Main49/type·독립C0/I0/M0다. 현재 기존 Primary 한 명이 native 내용hash 소스/시험2를 WI1FAB2935대로 작성 중이다. C#컴파일/하네스/OS/PInvoke/파일IO는 NOT_RUN, I/O 소유의 구현 검수·실제 보호 관측/현재 권위·LINK는 미완료다. §429~433 참조 |
+| UI00 현재 구현 | 상단의 명시 보호GET·참여/제어 기록·수신시각 조회를10a12f1a에 보존했다. Main신규5/이전인접17·독립M1해소, UNKNOWN 원명령 직접여정/실제브라우저·서비스·DB는 미검증이다. 전체UI00/계획 완료는 아니다 |
 
 | FN10 화면 보완 | 기록·정정·철회/고정 이력과 실제 App CAS를 소스·합성 범위에서 인수했다. 신규37/불변인접69·Main build/type/diff와 독립 C0/I0를 확인했다. 실제 DB/서비스/브라우저 인수와 단계 조건평가·소비/실제 전이는 미완료이며 다음 정확 계약을 준비한다 |
 | FN07 인수된 선행 | bootstrap35247729/Main110과 보호 profile selector f9b78821/Main69를 소스 범위에서 인수했다. 완료 검사는 반복하지 않는다. 실제 SDK 수락·OS process·SESSION claim·도구 권위와 서버/화면 연결 완료가 아니다 |
@@ -17712,3 +17714,38 @@ PMO에 해당 통합과 다음 D4DCBC7F §4의 정책 A/B 선택 근거를 전�
 Main35ac89는 정확 신규/직접인접4파일 고유49PASS/0fail/0cancel/0skip/0todo·378.2511ms·exit0, 63636b typecheck exit0, bc6f61/39b663 raw2·diff0를 확인했다. 최초7bb2c9 export 부재10FAIL은 구조적 RED, 16f3b9 10PASS/da7095 신규12·dbd118 인접37은 별도 Primary 증거다. 시험 literal/배열 타입3진단은 fixture scope reader로 좁힌 준비 오류1로 해결했다. Primary Git worktree 오류는 Main 실제 Git 대조로 분리했다. 메모리 합성 key만 사용·저장/실키/실환경/외부0·live0다.
 
 결과 FN03_SOURCE_CONTENT_SIGNATURE_SOURCE_RESULT_20261107.md에 정확2·검증/미검증·복구를 기록한다. 이 단위는 서명 수학만 인수하고 registration/observation/current authority/execution/LINK false를 유지한다. DocumentSourceObservationPort의 실제 producer·현재 등록/permit/nonce·관측 검증 receipt는 여전히 미완료이며 FN09 A정책 결정을 대체하지 않는다. 전체 목표 active/미완료다.
+
+
+## 431. 추가 조사 범위 정정·native 내용 해시 소스 착수
+
+앞선 §427의 ‘진행 가능한 독립 단위 없음’은 화면/기존API 조립 대조 범위의 판정이었다. 더 좁힌 보호 관측 내부 조사에서 서명 검산2와 native 내용 hash core가 빠져 있음을 발견해 그 판정을 전체 소스의 완전한 감사로 이월하지 않는다. 서명2는1867bdcd에 검수·보존됐고, 기존 SourceReadObserver.cs는 metadata만 읽으며 raw byte·SHA256·EOF·첫실패 중단은 구현되지 않았다. Main139fc8·Primary 및 독립 검토는 채택 B §5/§11 안의 신규 native2가 source-only 범위임을 확인했다.
+
+사전검토 C0/I1은 취소 후 pending I/O 자원 소유/회수 미정이다. Main 내부 방침은 관측/새작업·채택의 고정30초 상한과 실제 OS정착/반환을 구분하고, 같은 owner가 정확 취소 요청 뒤 buffer/OVERLAPPED/IOSB/event/file/ancestor pins를 실제 완료까지 보유하는 것이다. I1은 지시서 반영만으로 해소로 표시하지 않고 실제 source 검수한다. Main은 Microsoft CancelIoEx/NtCreateFile 공식 문서를 별도로 읽어 취소 요청과 completion·상대열기/sync 옵션을 확인했다. 이는 SDK 추가 읽기1 재시도가 아니며 SDK 원문/계정·실제 환경 조회0이다. ReOpenFile은 원 CreateFile 조건 때문에 기존 NT상대handle에 근거 없이 적용하지 않는다.
+
+FN03_NATIVE_CONTENT_OBSERVER_SOURCE_WI_20261107.md의 신규 SourceContentObserver.cs와 SourceContentObserverSourceTests.cs 정확2를 같은 Primary에게 맡긴다. 컴파일/테스트하네스/PInvoke/실제 파일IO는 실행하지 않고 시험 작성도 NOT_RUN으로 기록한다. 소스 작성·검수와 실제 기능/지원·안전 검증을 구분하며 현재 권위/등록/키/LINK/Agent0이다. 전체 목표 active/미완료·FN09 A요청 별도 유지다.
+
+
+## 432. native pending open의 미확증 취소 ABI 제외
+
+기존 Primary가 async NtCreateFile의 정확 IOSB 취소 ABI를 질의했다. Main은 Microsoft NtCancelIoFileEx devnotes를 별도 읽었지만 Win32식2인자 문구로 3인자 NT ABI를 확증할 수 없어 해당 import/호출을 작성하지 않도록 결정했다. 대신 pending open은 취소/기한 뒤 same owner가 모든 unmanaged args/IOSB/handle/ancestor pins를 실제 완료까지 보유하고 늦은 결과를 폐기·데이터read0로 닫는다. OS 취소/유한반환 미지원은 숨기지 않는다. ReadFile pending은 공식 CancelIoEx의 정확 OVERLAPPED와 completion 회수 계약을 따른다. 소스/시험 실행0이며 I1은 실제 source검수 전 미해소다. Native WI에 부모4EA0D7B2를 보존한 내부 상세 부록을 추가한다.
+
+
+## 433. native I/O 상세 사전검수·작성 도구 경계
+
+독립 담당자는 WI1FAB2935 부록의 pending open/read 분리·same owner 자원보유·actual completion 회수·late폐기/후속동작0을 C0/I0/M0로 검토했다. 앞선 I1의 설계 미정만 해소됐고 실제 신규 source의 보유/정착 판독·예외 정리는 구현 검수 전 미검증이다. compiler/하네스/OS/실파일0 유지다.
+
+기존 Primary의 apply_patch가 신규 tests/native/FN03 디렉터리 생성에서1회 실패해 당시 신규2 저장0이었다. Main은 경로 우회/ACL·설정 변경 없이 동일 승인 worktree의 정확 디렉터리/파일에 require_escalated 플랫폼 검토를 쓰도록 안내했다. 가역적 신규 폴더 생성 외 범위 확장은 없고 코드 write 소유는 Primary 한 명이다. 거절 시 별도 경로로 우회하지 않고 정확 사유를 반환한다. 이 도구 문제를 native 기능 실패나 실제 I/O 실행으로 세지 않는다.
+
+
+## 434. native source 부분 동결·실제 완료 오류 정착 I1
+
+e2192b는 기존 writer running과 신규 source 경로 생성을 확인했고 Main은 작성 중 본문을 읽지 않았다. Primary가 source37543B/87DD2649를 부분 동결한 뒤 독립/ Main6c0f62·baeba4가 I/O 소유/해제 경로를 읽었다. 사전 I1의 설계가 반영됐지만 구현 정적 C0/I1/M0: NativeRead.TryComplete481~490이 원 OVERLAPPED가 terminal이며 GetOverlappedResult도 완료 CRC오류23을 반환해도 EOF38/abort995/access5 외는 계속 false로 남겨 drain/회수가 끝나지 않는다. 이는 아직 미정착한 OS의 유한종료 미지원과 다른 이미 정착한 실패 분류 결함이다.
+
+Main은 같은 정확2에서 NativeRead가 소비하는 순수 completion 분류와 시험 반례를 보완하도록 재배정했다. CRC·일반 I/O terminal은 UNVERIFIED/OBSERVER_UNAVAILABLE, 실제access5·cancel995·EOF38은 분리하며 STATUS_PENDING/IO_INCOMPLETE·invalidhandle/불명조회는 안전 완료로 채우지 않는다. 공유 분류를 합성 시험 소스가 직접 소비하고 drain/해제순서를 작성하지만 compiler/하네스/OS/PInvoke/실파일은 NOT_RUN이다. 기존 source87DD 동결은 재배정 전까지 보존했고 reviewer 최종 반환 뒤 수정 GO를 보냈다. 현재권위/등록/키/DB/서비스/Agent/외부0·실행PASS 주장0이다. Main은 GetOverlappedResult 공식 문서의 같은 handle/OVERLAPPED·미정착 IO_INCOMPLETE·완료event 관계도 읽기 확인했다.
+
+
+## 435. native source/시험 작성·정적 I1 보완 검수 보존
+
+기존 Primary가 source39004B/C714C4C1·시험17557B/8806E2A7의 신규2를 동결·writer 반환했다. NativeRead가 공유 완료 분류를 실제 소비해 terminal CRC/일반오류를 정착·고정실패로 회수하고 pending/불명은 보유하는 I1 보완을 독립 재검수 C0/I0/M0로 확인했다. Main0ac495 지문/분류/실제 소비·diff0와 a226d4 core/시험·entry 미등록을 대조했다. 이전87DD의 I1은 정적 반례이며 실행 RED/PASS가 아니다. 시험 소스는 공유분류→실제 core drain·후속open0/READ→FILE→ROOT 회수를 단언하지만 아직 실행하지 않았다.
+
+FN03_NATIVE_CONTENT_OBSERVER_SOURCE_RESULT_20261107.md에 정확2·부분/최종지문·도구오류1/해소·공식문서·미검증을 기록한다. 판정은 소스 구현/시험 작성·정적 검수이며 ‘구현했지만 동작 미확인’이다. compiler/RunAll/하네스/OS/PInvoke/실제파일/ABI/취소·회수·writablemapping/악성ABA/실지원은 NOT_RUN·실행PASS분모0이다. pending open OS 취소/유한반환 보장없음, 실제 observer/current receipt/host/LINK·키/DB/권한/서비스/Agent/SDK·원격0을 유지한다. Main은 이전 현재 진입점도 최신 source-only/미실행 상태로 교정했다. PMO 보고의 외국어 혼입 한 표현은 즉시 한국어로 정정했고 기술 판정은 불변이다.
