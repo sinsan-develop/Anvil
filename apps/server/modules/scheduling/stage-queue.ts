@@ -11,6 +11,7 @@ import {ProjectLimitPolicies} from '../executions/runtime-policy.ts';
 import {assertKnowledgeTextSafe} from '../knowledge/knowledge-entry.ts';
 import type {MethodologyGraph} from '../../../../contracts/methodologies.ts';
 import {validateMethodologyGraph} from '../methodologies/service.ts';
+import {copyControlData} from '../control-handoff/control-grant.ts';
 export const stageQueueOperations=['startStage','cancelQueuedRequest'] as const;
 type NodeRef={applicationRef:RuntimeRefV1;nodeId:string};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
@@ -26,6 +27,14 @@ const query=`SELECT q.*,c.result_ref,c.operation,c.operation_id command_operatio
 export class ProjectStageQueue{
  readonly applications:Pick<ProjectMethodologies,'readApplication'>;readonly budgets:Pick<ProjectLimitPolicies,'resolveCurrent'>;
  constructor(ports:{applications?:Pick<ProjectMethodologies,'readApplication'>;budgets?:Pick<ProjectLimitPolicies,'resolveCurrent'>}={}){this.applications=ports.applications??new ProjectMethodologies();this.budgets=ports.budgets??new ProjectLimitPolicies();}
+ /** START 원자료 내부 접점. 기존 목록 DTO를 넓히지 않고 원 불변 version과 현재 head를 분리한다. */
+ async readRequest(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,rawRef:unknown){
+  const ref=copyControlData(rawRef,8192);if(!uuidV1(projectId)||!refV1(ref))fail('INPUT_INVALID',400);await projectMember(db,actor,projectId,true);
+  const rows=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 AND q.version=$3',[projectId,ref.id,ref.version])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);
+  const value=await this.#view(db,actor,rows[0],projectId);if(!same(value.ref,ref))fail('VERSION_CONFLICT',409);
+  const heads=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[projectId,ref.id])).rows;if(heads.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);const current=await this.#view(db,actor,heads[0],projectId);await projectMember(db,actor,projectId,true);
+  return{projectId,...value,currentRef:current.ref,currentState:current.snapshot.state};
+ }
  async #clock(db:PoolClient){const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))fail('STAGE_QUEUE_CLOCK_INVALID',503);return at.toISOString();}
  async #authorize(db:PoolClient,actor:AuthenticatedIdentity,r:ProjectCommand,expected:RuntimeRefV1){
   if(!refV1(expected)||r.baselineRefs.length)fail('STAGE_QUEUE_INPUT_INVALID');

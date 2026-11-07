@@ -17433,3 +17433,133 @@ P02 10959B/12A763D13E1B5AA756954D68C1FE61D6B7756BD9C1624B2B59BA33171F781423, P04
 독립 검토는 P02 결과 직후 정체성 검사→known→publish로 정책/한도의 새 최소 기한을 후속 DB guard 이전에 단조 타이머로 전달함을 확인해 §391 잔여 I1 해소·C0/I0/M0를 반환했다. P02 10959B/12A763D13E1B5AA756954D68C1FE61D6B7756BD9C1624B2B59BA33171F781423·P04 8CDB5D32 불변이며 HISTORY에 과거 한도 만료 소급0·기한 연장0이다. 수정/시험/실환경/SDK 실행 없는 scoped 검토로서 실제 SQL·전체 기능 인수와 구분한다.
 
 Main은 같은 Primary에게 동결 유지와0081/목록/route/UI 연속 구현을 전달하고 PMO에 해소/미완료·실환경제외를 보고했다. 최종 전체 동결 뒤 필요한 Main fresh를 수행하며 완료된 시험의 무조건 반복0이다. 제품/시험은 writer 소유로 유지하고 이번 checkpoint는 Main 현황/통제 문서2만 보존한다.
+
+
+## 394. 미적용0081 부분 검수·원 미검증 목록 보존 I1
+
+SQL51869B/C986F8E1FFB6FC765CF59D517F54C7C4890CF434E8C5ABF50F1121B68926D474와 T064292B/70EBAA4F329A51A6F8C852449DCCEEB61C13D6A6166296D8D86EFF548DB2C468를 부분 동결했다. Primaryfa3a83 형상5PASS/0fail/0skip·141.1105ms·exit0,1ccaae diff/문자/정의구분자0이며 실제 PG 구문/설치/권한/trigger/COMMIT은 미검증이다. 자체대조의 마지막 source 함수가 ACL/COMMIT 뒤인 순서 오류는 정의 뒤로 꼬리를 이동하고 형상 반례로 보완했다. Main4769f7/3afa59는 함수·ACL·계상/원자료 함수를 읽었다.
+
+독립 C0/I1/M0는 S.unresolvedChecks에 새 필수3만 확인하고 원 preparation.missingConditions와의 보존 관계가 SQL에 없음을 확정했다. 직접 reserve RPC에서 원 BUDGET_POLICY_UNVERIFIED 등을 삭제한 뒤 S/ref/Q/pairs/result를 일관 재봉인하면 현재 source/valid식이 검출하지 못한다. Node builder의 정상 보존과 별개의 DB 검산 공백이며 앞선 형상5PASS를 이 항목의 증거로 쓰지 않는다. 최종 검수 뒤 SQL/T06만 한정 해제해 원 missingConditions+필수3의 정확 집합을 결박하고 삭제/추가 위조의 재봉인 반례 RED→GREEN·새 지문을 요구했다. 실제 SQL/DB 실행0이다.
+
+이력 목록 구현을 위해 P03/P04만 후속 동결 해제했으며 원 tuple/21행·고정 assignment 보호·fullref/H/Session/purpose cursor·각 원문 보호·전체2MiB를 동일 서비스/store에 연결한다. SQL 검토자는 작성 중 이 두 파일을 읽지 않았고 기존 동결 RPC 근거만 사용했다. 단일 Primary가 순차 수행하며 route/UI·전체 기능/계획 완료는 아직 아니다. 보호3/indexempty와 승인 경로는 ff4e72에서 확인했다.
+
+
+## 395. SQL 미검증 목록 보존 I1 해소·Main 한정 검증
+
+0081은52539B/470BFAD065F3D7775E3F9580013CE8BCC375CF26C6C45732A478CC764FBBB2FB, T06은5813B/FDBC245E8F953E7F5E3982B3BD5ED5BE27BAD4DA8D9AAF3AB5D55F0BE230715A로 재동결했다. 원 missingConditions와 새 필수3의 중복 제거 집합에 S.unresolvedChecks의 양방향 포함·배열 길이를 결박해 삭제/추가/중복 위조를 검출한다. Primaryf92a54 source 관계 부재 RED→1de57d schema6PASS/0fail/0skip·114.0096ms·diff0를 보존한다. 독립 scoped 재검수 C0/I0/M0로 기존 I1 해소·비용/ACL 판정 유지다.
+
+Main175a08은 추가 검산식과 모델 범위를 읽고 ba6171의 node --test --test-name-pattern '원 준비 missingConditions' tests/unit/FN09/execution-start-origin-schema.test.ts 선택1PASS/0fail/0skip·123.3341ms·exit0를 확인했다. 실제 PG 실행 증거가 아니라 원문 형상·순수 집합/재봉인 모델 검증이며 설치/trigger/COMMIT·실권한은 미검증이다. Primary의 목록 실제 service 정상1 d67364 제출도 최종 목록/route/UI 동결·인수 전 부분 증거로만 보존한다. 동일 writer가 남은 연결을 계속하고 전체 기능/계획 완료로 표시하지 않는다.
+
+
+## 396. 이력 목록·route 부분 검수 I1와 다음 페이지 재현 지시
+
+P03 store12501B/4AD096DB5877447E58DF73107F6F9B68C4488199B13646F3B7DD53E2A5D7F1EA, P04 service14654B/61BB1B937EC8FFC8FA80E544B7F31DD55754DB8BB3E43E6B385574739B86E1E0, P09 routes91065B/B33645CD3F00943746B107F46F5A0C4D4BA406760AD87650F1421A0A17AD0F1C를 재동결했다. 실제 App 명령/GET2 e0000c enum미연결400 RED→ccab00 선택1PASS·1757.9843ms, 목록d67364 1PASS·1317.5849ms, timestamp/purpose/H cursor219e31 1PASS·1249.0433ms,5d2645 type/diff/문자0 제출을 부분 증거로 보존한다. 시험/fixture·Web은 작성 소유이며 Main a40f85는 동결 제품/route diff만 읽었다.
+
+독립 C0/I1/M0는 route가 fast-querystring의 별도 Empty 원형인 비어 있지 않은 request.query를 그대로 서비스 copyStartOrigin에 넘겨 정상 다음 페이지 cursor가 INPUT_INVALID로 거절됨을 정적 확정했다. 첫 빈 query/직접 service cursor 시험만으로 실제 다음 HTTP 페이지를 검증했다고 하지 않는다. Main은 P09만 해제해 own query를 일반 객체로 옮기고 strict 서비스 검산을 유지하며 실제 App.inject 두번째 페이지 RED→GREEN을 수거하도록 지시했다. P03/P04는 추가 finding 없이 동결 유지한다. 실제 HTTP 재현 결과는 제출 전 미확인이다.
+
+Primary의 이전 보고 한자1과 Main의 일본어 안내1은 각각 즉시 한국어로 정정했으며 제품·대상·권한 효과0이다. 발신 문구의 한국어 준수 검사를 유지한다. 전체 저장·화면·실환경 인수/계획 완료는 아직 아니며 실제 DB·권한·키·서비스·Agent/SDK 실행0이다.
+
+
+## 397. 실제 두번째 HTTP 페이지 I1 해소
+
+Primary7572a0는 실제21개 queue/SQ→첫20 원 cursor→두번째 App GET에서 INPUT_INVALID422 RED를 재현했다. route 한 곳 query를 Object.fromEntries(Object.entries(...))로 옮겨 서비스 strict 검산을 보존한 뒤 d90797 선택1PASS/0fail/0skip·9342.7044ms·exit0다. 정확 명령은 node --experimental-test-module-mocks --test --test-name-pattern '첫20건 cursor' tests/unit/FN09/execution-start-origin-routes.test.ts이며 T04는 작성 소유5127B/BABAF6FE1E6FBD6C201F0E28F62FFB1B612EE298815B258AB5482EBC4BC0111B다.4eeead diff0·P03/P04와 다른 제품 불변이다.
+
+P09는91101B/2FA07AED309CC7B6A46E59EC2790841A093607A9C3F23BF7B99B605C0F8D12E6로 재동결했다. Main963319 정확 지문/한 접점 읽기와 독립 scoped C0/I0/M0로 I1 해소·추가 query/cursor 형상/서비스 거절 보존을 확인했다. 앱 페이지 결과는 담당자 제출이며 최종 T04 동결 뒤 Main fresh와 별개다. Primary는 남은 Web5/실제 App CAS 흐름을 계속한다. 실제 DB/권한/키/서비스/Agent/SDK 실행0·전체 기능/계획 완료0이다.
+
+
+## 398. Web5 연결·실제 App 시험 준비 오류 분리
+
+Primary는 Web5 API/Panel/SessionDetail/App/정책 옵션 연결과 da0098/de892a type0를 제출했고 실제 App의 ref별 packet CAS→SessionDetail→Panel 진입을 작성했다. 최초 Web API→실제 App 정상 시험은 기존 documentControl 프로젝트 GET의 STORAGE_FAILED503에서 멈춰 메모리 SQL 원자료 누락을 좁히는 중이다. 실제 제품 저장/화면 정상 PASS로 세지 않는다. 같은 준비 오류2회가 관측돼 Main은 전체 시험 반복을 중단하고 정확 누락 SQL/원자료를 먼저 대조하도록 전달했다. 기존 guard/보호 메서드 성공 대역·권한 기준을 완화하지 않는다. 세 번째 같은 원인 전에 정확 원인/경로를 반환하고 허용 T07/F01 안에서 정합화한다.
+
+현재 Web 묶음은 동결 전이며 Main/검토자는 작성 중 본문을 읽지 않았다. 실행 handle은 종료·live/pending0, 기존 담당자 running을 확인해 재시작/중복 writer0이다. 앞선 상태가 functions.exec notify로만 전달된 점을 확인해 협업 메시지로 직접 반환하도록 지시했다. 실제 DB·권한·키·서비스·Agent/SDK 실행0·최종 fresh/전체 계획 미완료를 유지한다.
+
+
+## 399. 실제 프로젝트 조회 원자료 정합·Web API 정상 제출
+
+Primary는 세 번째 전체 정상 시험 전 기존 projects/repository.ts217~234의 상세 SELECT/참여자·제어와 project_source_declarations JOIN 두 SQL이 F01에 없음을 읽기 확정했다. source 보호 projectMember만 모델링했던 시험 원자료 공백이며 같은 pid/uid/OWNER/control과 sourceBinding0행을 추가했다. 제품 detail/guard/성공 override0이다. project-setup-copies.ts37의 선택 expected undefined 때 추가 RPC0도 대조했다.
+
+0e3818 Web API 정상 선택1PASS/0fail/0skip·1913.2136ms·exit0는 실제 저장·receipt 선보존·S/Q hash/false 검산·역사 발견·중복 POST0까지 연결했다. efc450의 잔여 실패는 한국어 ApiError.message를 코드 정규식으로 비교한 시험 오류이며 code 속성 검산으로 정합했다. 이는 실제 React DOM/전체 Web·브라우저 인수와 별개다. Primary는 DOM/App CAS 왕복을 계속 작성하고 안정된 Web API/정책 옵션부터 부분 동결하도록 요청했다. 실제 DB/권한/키/서비스/Agent/SDK 실행0·전체 계획 미완료다.
+
+
+## 400. Web API2 부분 검수·예약 외피 exact I1
+
+P11 API13771B/E77000D36F437B198EB11DA92EE178E5EA7F335930D4999347475AF747C561E8·P15 정책5518B/5637BD7394F5893429ECFE18FC3CDF2DD617DC4C8ADC3C4E600DB20671639562를 부분 동결했다. Primary의4c83bd POST유실/확정뒤GET거절1PASS와86a1e0 동시packet/transport교체1PASS·1764.603ms는 실제 클래스/메모리SQL 기반이다. 단일 PoolClient 병렬 BEGIN 충돌은 inject직렬화로 시험 원자료를 정합했고 제품 guard를 바꾸지 않았다.9e2b8f type0·89c8da diff0, 그 이전 시험 배열 nonempty 표기 누락 type1은 준비 오류로 구분한다.
+
+Main7d96f9와 독립 C0/I1/M0는 reservation.ref/snapshot은 검산하지만 reservation 자체 exact{ref,snapshot}가 없어 정상 S/Q·hash에 reservation.token 같은 추가키를 얹으면 GET 반환·POST receipt 보존/콜백에 도달할 수 있음을 확인했다. Main은 P11만 해제해 외피 exact와 GET/POST 반례 RED→GREEN을 요구했다. P15는 자동 권한 부여 없이 두 정책 선택지 추가로 동결 유지한다. API의 전송 중 transport 후행 검산은 active() 의존이므로 작성 중 Panel/App의 교체·복귀·늦은 응답 본문0 검수에서 확인한다. 아직 해당 화면을 읽지 않아 충족을 추정하지 않는다.
+
+다른 nested 형상도 최종 exact 계약 대조에 포함하되 새 기능·권한으로 확장하지 않는다. Panel/App/SessionDetail·시험은 같은 Primary 작성 소유다. 실제 DB/권한/키/서비스/Agent/SDK 실행0·전체 기능/계획 완료0이다.
+
+
+## 401. 예약 외피 I1 해소·DOM 시험 준비 오류 분리
+
+Primaryd14e2e는 정상 S/Q hash에 reservation.token만 추가한 GET/POST 두 모드에서 Missing expected rejection RED를 확인했고104869 선택 고유1PASS/0fail/0skip·2342.1294ms·exit0로 보완했다. 정확 명령은 node --experimental-test-module-mocks --test --test-name-pattern 'reservation 외피 추가' tests/unit/UI05/execution-start-origin-flow.test.ts다. P11 공통 snapshot 진입에 reservation exact{ref,snapshot} 검사1을 추가해 오염 POST callback0/UNKNOWN·GET반환0/이전 정상receipt 보존을 검산했다.
+
+P11 13828B/7FB3617C885A5A6A0B0B7BD39F1473633E9126C0878EAA2D850B28EAE4FB01DA 재동결·P15 불변이다. Main e71a2b의 정확 지문/검사 읽기와 독립 scoped C0/I0/M0로 기존 I1을 해소했다. 시험 두 모드 결과는 담당자 제출이며 전체 최종 fresh와 구분한다.
+
+DOM/App CAS 첫 실행96a51d는 Vite virtual entry의 절대화 이름을 exact 비교한 준비 오류다. 기존 endsWith 패턴에 정합했고 실제 DOM 정상 검산은 아직 작성 중이다. 제품/권한 기준 완화·실서비스/SDK실행0이며 이 준비 오류를 DOM 제품 RED/PASS로 부르지 않는다. 같은 Primary가 계속하고 전체 계획은 미완료다.
+
+
+## 402. DOM 실제 진입 ref 준비 오류·쓰기 실패 뒤 낡은 시험 구분
+
+실제 App DOM은 인증/진입 뒤 상세 원본 RESPONSE_INVALID로 멈췄다. Primary는 기존 AssignmentContentDecision.tsx73이 sessionDetailHref(draft.projectId,draft.ref)를 공급하고 readSessionDetail이 첫 draft 응답 ref와 경로를 exact 대조함을 확인했다. T07만 confirmed.ref의 다른 hash를 경로에 넣은 be14ee 준비 오류1이며 제품/decoder는 유지하고 실제 snapshot.draftRef로 시험 경로만 정합한다. DOM 정상/CAS PASS로 보고하지 않는다.
+
+a0eb86 T07 WriteAllText는 Access denied로 미변경인데 PowerShell 비종료 예외 뒤 낡은 시험이 이어져 같은 RESPONSE_INVALID를 다시 관측했다. 새 제품 반례가 아니며 Main은 ErrorActionPreference Stop·수정 뒤 정확 hash/diff 확인을 통과한 경우에만 시험하도록 지시했다. 승인된 T07 단일 경로의 플랫폼 검토만 요청하고 ACL/설정/우회는 하지 않는다. 정확 거절 종류/원문·전후 지문을 반환한다. 현재 실행 handle0이며 기존 Primary는 단일 writer다. Main7ae3df는 승인 경로/indexempty만 확인했다. 전체 DOM/실제 DB/권한/서비스/Agent·계획 완료는 미확인으로 남긴다.
+
+
+## 403. 플랫폼 승인 단일 시험 수정·집계 SQL 준비 공백
+
+b868dd 플랫폼 검토는 승인/exit0으로 T07 한 문자열의 confirmed.ref→confirmed.snapshot.draftRef 수정만 완료했고 raw45D8B6B76E5552A1AB2921F5D922D280E986A1FEB79703D7C514F795C41CCE48를 확인했다. ACL/설정 변경0이다. 이후a04b79는 다음 단계 CONNECTION_LOST로 실패했으며 앞선 ref 오류와 분리했다.
+
+Primaryd9a705는 project-execution-state.ts18의 역할 목록 SELECT를 비롯한 역할/최신 binding/준비 목록 SQL3이 F01에 없음을 읽기 확정했다. 같은 원인2회 관측 뒤 세 번째 반복 전에 원인을 분리했고 실제 저장 행에서 집계하도록 시험 원자료만 보강한다. Main은 보완 hash/diff 확인 후에만 전체 시험·제품 집계/guard 유지·추정 경로 대신 rg --files의 확인 경로만 사용하도록 지시했다. 추가 추정 경로 오류2건은 제품 실패와 분리해 정확 대상/오류를 최종 목록에 반환한다.
+
+실제 DOM 정상·CAS 완료는 아직 미검증이다. 기존 Primary running을 확인해 같은 작업을 이어가며 Main 동시 code write/중복 실행0·실제 DB/권한/키/서비스/Agent/SDK 실행0·전체 계획 미완료다.
+
+
+## 404. 반복 fixture 공백의 Main 직접 진단·정상 DOM 재검증 재개
+
+프로젝트 detail·준비 집계·자동 결과 목록의 SQL 누락을 같은 실제 App 배경 조회 fixture 미완결 원인으로 묶어 전체 반복을 중지하고 Main이 직접 진단했다. T07 16960B/FAF9D511F7A6AB19ACC33AA456AD5BE4FDF6C6F5403B672B64530D1DE7B5E2C6·F01 36395B/EEC04FE1F2202BC280AC49564A55CA089E4E6E0A19133204DBC9EDF44D406B74를 a90846로 진단 동결했고 live/pending0이었다.21ce7f는 사용자 저장·보호 원문·이력 단언을 지나 마지막 unsupported=[]에서 자동 result_submissions 목록 SQL1만 미지원이었다. 중지 도착 전c14cc7 보완은 저장됐으나 미재검증으로 보존했다.
+
+Main e95c1d/152eab/c79fde는 실제 readSessionDetail의 draft→decision→confirmed→책임상태와 SessionResults의 자동 결과 목록 effect를 대조했다. F01의 마지막 SELECT는 pid/실제 confirmed fullref를 검사하고 결과 미생산 상황의 빈 행을 반환하므로 정상 조회 모델로 적합하다. Main의 추정 session-detail-api.ts 부재1은 실제 import api.ts로 정정했고 제품/권한/파일 변경0이다.
+
+Main은 T07/F01 동결을 해제해 현 보완본의 정상 DOM 선택1 검증 후 이탈/복귀·늦은 응답·UNKNOWN/App CAS 시험을 이어가도록 같은 Primary에게 반환했다. unsupported=[]·실제 보호 클래스/decoder·기존 기준은 유지한다. 코드 writer 인수나 새 경로·실환경 실행 승인은 아니다. 실제 DB·권한·키·서비스·Agent/SDK 실행0·전체 계획 미완료다.
+
+
+## 405. 실제 App 정상·이탈 UNKNOWN 제출·Web3 정적 인수
+
+Primary74a2e8은 실제 App→SessionDetail→Panel의 명시 선택·원 packet CAS·저장·보호 원문·이력 전환 선택1PASS/0fail/0skip·3401.5178ms·exit0와 unsupported=[]를 제출했다.22a46e 신규2PASS/0fail/0skip·3752.1821ms·exit0는 POST 정착 뒤 응답 HOLD→이탈/복귀→늦은 성공의 UNKNOWN·본문0, 응답 유실 UNKNOWN→복귀 원명령 보존·POST1을 실제 App 이벤트로 검산했다. 실제 브라우저/DB 증거는 아니다.
+
+Web3는 Panel10784B/7FE940A4E80803A970658B31C09C2D46F5F35C967D127334787C63E1FD1541BF, SessionDetail28264B/3225EFEA114DC03894B4D4FF7EB1E91421820EC83AE5457D358A01A1182EB096, App70892B/2A60F33AA286B583646909428316D2934CAE8E7430093C5B5E46B23FB4CC61C2로 부분 동결했다. Main bdd696은 Panel과 App 접합 diff를 읽었고 출력이 긴 JSX에서 잘린 부분을 전체 확인으로 주장하지 않는다. 독립 C0/I0/M0는 실제 목록/원문 선택·고정/명시POST·동기 원장 CAS·receipt 선보존·후행 GET 거절/복귀 보호·active의 transport/session/client 이탈 차단을 확인했다. API 단계의 transport 의존성은 실제 소비선에서 확인된 범위이며 실행/credential 발급 의미를 추가하지 않았다.
+
+시험은 계속 작성 소유라 정적 검수와 실제 DOM 결과를 분리한다. Main은 후행GET 거절·주체/포트 이탈 음성 마무리 후 정확23 최종지문·고유 직접/인접 결과·미실행·오류·live0를 반환하도록 요청했다. 그 뒤 Main fresh/최종 시험 검수와 통합을 수행한다. 전체 계획/실환경 인수는 미완료다.
+
+
+## 406. 신규46 제출·인접6FAIL 원인 대조
+
+실제 App 후행 보호 GET403→이탈/복귀 SAVED·원 명령/receipt 보존→원 ref GET만 재조회는 b495d7/dd538c 선택1PASS·type0다.311bfc/b9250a의 ACTOR/TRANSPORT 늦은 응답 비귀속 선택1PASS는 실제 Panel+명시 Host 경계 두 모드이며 앞선 App CAS2와 구분한다. 제품5 동결 불변이다.
+
+최종 신규7파일 실행8ebf11/session91709는 원 handle을7d0bd5로 회수해 고유46PASS/0fail/0skip·11374.8738ms·exit0를 제출했다. 같은 신규46은 반복하지 않는다. 확인된 직접인접5는 FN10/stage-queue.test.ts, FN09/registered-definition-responsible-session.test.ts, FN09/execution-preparation-approval.test.ts, UI05/stage-queue-api.test.ts, UI05/preparation-history-api.test.ts다.
+
+인접624f93은48중42PASS/6FAIL/0skip·1002.2016ms·exit1이다.6개는 불변 registered-definition-responsible-session.test.ts의 registeredFixture102→ProjectConnectionDefinitions.command41에서 CONNECTION_OUTCOME_UNKNOWN으로 origin 호출 전에 실패했다. Main은 추가 전체 실행/수정을 멈추고 변경 전1ffbe2b5의 최소 인과·원 COMMIT/선행자료만 대조하도록 지시했다. 시험 기대값/기준 완화·범위 밖 수정0이며 기존 FAIL을 PASS로 숨기지 않는다. 신규46 결과도 최종 Main fresh/인수·전체 계획 완료와 별개다.
+
+
+## 407. 인접 기존 fixture FAIL의 최소 기준선 인과 확인
+
+Primary841843의 메모리 loader 선택 대조는 CURRENT1FAIL/exit1·470.3618ms와 BASELINE1FAIL/exit1·498.1649ms에서 정확 같은 ‘미모델 SQL SELECT * FROM anvil.environment_configuration_account($1,$2,$3,$4)’를 확인했다. BASELINE은1ffbe2b5의 변경 전 command/quota/preparations/queue4만 메모리 공급·파일 변경0이며 d964af의 원 시험/정의 producer/repository diff0도 대조했다. 이번 origin 호출 전의 기존 fixture 누락으로 구분하되 인접6은 여전히 FAIL이고 전체 인접 PASS로 올리지 않는다.
+
+Main8c8ff0/8c1cb6은 원 fixture의 quota_account만 존재하고 실제 assertEnvironmentConfigurationCapacity가 환경 계상 account9필드를 소비함을 읽었다. 추정 environment-storage-quota.ts 부재1은 디렉터리 실제 검색으로 정정했고 파일/권한 변경0이다. Main은 현재 정확23 작업에서 허용 밖 시험을 고치지 말고 최종 raw/build/type/diff·신규46/인접42+6FAIL·오류/미검증·live0를 제출·writer 반환하도록 했다. 기존 fixture 보완은 별도 한정 업무로 원 검사 의미를 유지해 정리하며 이번 결과의 실패를 숨기지 않는다. 전체 기능/계획 인수·PR/병합·실환경 완료는 아직 아니다.
+
+
+## 408. Main 직접46/build 검증·최종 시험 검수 I2 보완
+
+최종23 writer 반환 뒤 Main47b854/session47956→b6b5f4는 신규7 정확 명령을 독립 실행해46PASS/0fail/0cancel/0skip/0todo·10030.577ms·exit0를 확인했다.636b41 npm run build는 포함 type0·517modules/470ms·chunk 경고1이며 기존 큰 bundle 경고를 설정 완화로 없애지 않았다.1a2f16은 WI의 정확23을 파싱해 모두 제출 raw와 동일·diff0/indexempty를 확인했다. 같은 시험의 Primary46과 Main46을 고유92로 가산하지 않는다.
+
+최종 독립 시험 검수는 C0/I2로 필수 증거 누락을 확인했다. I1은 실제 cancelQueuedRequest 뒤 fresh 거절·목록→exact GET의 원 S/Q 보존이 시험되지 않았고 정의 head 변경만 확인했다. I2는 origin read 정책 회수와 달리 origin 읽기권이 남아 있을 때 원 정의/환경 sourceAllowed 회수의 GET/목록 전체 비노출을 검증하지 않았다. 환경/예약RPC 모델·SQL형상은 실비/trigger/권한/DB 원자성을 증명하지 않는다는 한계도 유지한다.
+
+Main은 기존 fixture 보완안 읽기는 짧게 반환하고 T03/F01만 원 WI 안에서 동결 해제해 이 두 필수 여정을 먼저 보완하도록 같은 Primary에게 전달했다. 기존46 기대값과 제품 동결은 유지하며 실제 DB/권한 실행은 하지 않는다. 원23 소스단위도 최종 인수 전이며 결과서/commit/PR/병합·전체 계획 완료로 승격하지 않는다.
+
+
+## 409. FN09 원자료 source-only 단위 인수·결과 보존
+
+최종 시험 검수 I1/I2는 실제 queue.cancel/원 sourceAllowed 회수의 추가2로 해소돼 scoped C0/I0/M0다. T03은24400B/F0F7F4E3EFEC8A5105CAC87CDB1CEA7AC10B0F4FFF0B9F3B835A0B3836928598이며 기존20271B prefix8AB520F3 불변·F01 EEC04FE1 불변이다. Mainb246d1 추가2PASS/0fail/0skip·1617.958ms·exit0를 확인했다. 앞선 Main46/build/type/diff와 결합한 고유 신규48은 통과했고 인접6은 기존 fixture FAIL로 보존한다.
+
+Main은 신규 FN09_EXECUTION_START_ORIGIN_SOURCE_RESULT_20261107.md에 정확23 manifest·독립 검수/직접 검증·기존 인접 실패·미검증·복구/다음 업무를 기록했다. 판정은 승인된 source-only 구현·핵심 합성 검증 단위 인수이며 전체 FN09/Stage/계획·실제 사용환경 완료가 아니다. 현재23과 결과/현황2의 로컬 checkpoint만 준비하고 원격/PR/병합/배포는 하지 않는다. 다음은 기존 인접 fixture1의 정확 환경계상 SQL 응답 보완이며 제품/정책 기준을 낮추지 않는다.

@@ -16,6 +16,11 @@ import type { ExecutionPreparationIntentV1 } from '../../../../contracts/runtime
 import { ProjectConnectionDefinitions } from '../connections/project-connection-definitions.ts';
 import { ProjectEnvironments } from '../connections/project-environments.ts';
 import { ProjectStorageQuota } from '../projects/project-storage-quota.ts';
+import {copyControlData} from '../control-handoff/control-grant.ts';
+import {ProjectEnvironmentResources} from '../connections/project-environment-resources.ts';
+import {ProjectSourceRoots} from '../connections/project-source-roots.ts';
+import {SourceReadRecords} from '../connections/source-read-records.ts';
+import {ProjectRegistrationReads} from '../connections/project-registration-reads.ts';
 
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const select='SELECT p.*,c.result_ref,c.operation,c.state,c.actor_id command_actor,c.client_id command_client FROM anvil.execution_preparations p JOIN anvil.commands c ON c.project_id=p.project_id AND c.id=p.command_id ';
@@ -62,6 +67,34 @@ export class ProjectExecutionPreparations {
     if (raw?.data?.status!=='EXECUTION_PREPARED' || !refV1(raw.data.ref)) throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
     const original=await this.read(db,actor,request.projectId,raw.data.ref.id,raw.data.ref.version);
     if (!same(original.ref,raw.data.ref) || !same(original.snapshot,raw.data.snapshot) || !same(original.snapshot.intent,input)) throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
+  }
+  /** 기존 보호 원문을 같은 Tx에서 재검산하는 내부 전용 접점이다. */
+  async readStartOriginSources(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,rawRef:unknown,mode:'FRESH'|'HISTORY',guard:()=>Promise<void>){
+    const ref=copyControlData(rawRef,8192);if(!refV1(ref)||!['FRESH','HISTORY'].includes(mode)||typeof guard!=='function')throw new AuthFailure('INPUT_INVALID',422);
+    const ports=()=>{
+      const fail=()=>{throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);};
+      const own=(object:object,key:string)=>{const d=Object.getOwnPropertyDescriptor(object,key);if(!d||!('value'in d))return fail();return d.value;};
+      const check=(object:object|null,prototype:object)=>{if(!object||Object.getPrototypeOf(object)!==prototype)return fail();for(const p of originalStartOriginProtectedMethods.filter(v=>v.prototype===prototype))if(Object.hasOwn(object,p.name))fail();};
+      for(const p of originalStartOriginProtectedMethods){const d=Object.getOwnPropertyDescriptor(p.prototype,p.name);if(!d||!('value'in d)||d.value!==p.fn)fail();}
+      check(this.#registeredDefinitions,ProjectConnectionDefinitions.prototype);check(this.#registeredEnvironments,ProjectEnvironments.prototype);
+      const environment=this.#registeredEnvironments!;check(own(environment,'resources'),ProjectEnvironmentResources.prototype);check(own(environment,'roots'),ProjectSourceRoots.prototype);check(own(environment,'observations'),SourceReadRecords.prototype);
+      const access=own(environment,'access');if(own(own(environment,'resources'),'access')!==access||own(own(environment,'roots'),'access')!==access)fail();
+    };
+    const step=async<T>(work:()=>Promise<T>)=>{ports();await guard();ports();const result=await work();ports();await guard();ports();return result;};
+    const preparation=await step(()=>originalStartOriginPreparationRead.call(this,db,actor,projectId,ref.id,ref.version));
+    if(!same(preparation.ref,ref)||!('connectionKind' in preparation.snapshot.intent))throw new AuthFailure('EXECUTION_PREPARATION_SOURCE_MISMATCH',409);
+    const input=preparation.snapshot.intent;
+    const assignment=await step(()=>this.assignments.read(db,actor,projectId,input.assignmentRef.id,input.assignmentRef.version));
+    const binding=await step(()=>this.sessions.readBinding(db,actor,projectId,input.roleBindingRef.id,input.roleBindingRef.version));
+    const context=await step(()=>this.contexts.read(db,actor,projectId,input.contextBundleRef.id,input.contextBundleRef.version));
+    if(!same(assignment.ref,input.assignmentRef)||assignment.snapshot.contentConfirmed!==true||!same(binding.ref,input.roleBindingRef)||!same(binding.snapshot.assignmentRef,input.assignmentRef)||!same(binding.snapshot.connectionRef,input.connectionRef)||binding.snapshot.connectionKind!=='REGISTERED_DEFINITION'||binding.snapshot.state!=='RESERVED'||binding.snapshot.externalSessionHandleRef!==null||!same(context.ref,input.contextBundleRef)||!same(context.manifest.assignmentRef,input.assignmentRef))throw new AuthFailure('EXECUTION_PREPARATION_SOURCE_MISMATCH',409);
+    const draft=mode==='FRESH'?await step(()=>this.drafts.current(db,actor,projectId,assignment.snapshot.draftRef)):null;
+    if(mode==='FRESH'){
+      const head=(await step(()=>db.query('SELECT binding_id,version,content_hash FROM anvil.role_bindings WHERE project_id=$1 AND role_id=$2 ORDER BY version DESC LIMIT 1',[projectId,binding.snapshot.roleRef.id]))).rows[0];
+      if(!head||!same(input.roleBindingRef,{id:head.binding_id,version:Number(head.version),contentHash:head.content_hash})||context.currentCheck.state!=='MATCHED_METADATA')throw new AuthFailure('EXECUTION_PREPARATION_SOURCE_NOT_CURRENT',412);
+    }
+    const options=await step(()=>this.#registeredOptions(db,actor,input,mode==='FRESH'));if(!same(options,preparation.snapshot.options))throw new AuthFailure('EXECUTION_PREPARATION_SOURCE_MISMATCH',409);
+    ports();await guard();ports();return{preparation,assignment,binding,context,draft};
   }
   async save(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef) {
     if(request.operation!=='prepareExecution'||request.targetId!==null||request.expectedVersion!==0)throw new AuthFailure('VERSION_CONFLICT',409);
@@ -152,3 +185,10 @@ export class ProjectExecutionPreparations {
     return original;
   }
 }
+const originalStartOriginPreparationRead=ProjectExecutionPreparations.prototype.read;
+const originalStartOriginProtectedPorts=[
+  [ProjectConnectionDefinitions.prototype,['read']], [ProjectEnvironments.prototype,['read','history','references']],
+  [ProjectEnvironmentResources.prototype,['read','host','currentHost','currentMetadata','currentSource']],
+  [ProjectSourceRoots.prototype,['read']], [SourceReadRecords.prototype,['readSnapshot','load']], [ProjectRegistrationReads.prototype,['read']],
+] as const;
+const originalStartOriginProtectedMethods=originalStartOriginProtectedPorts.flatMap(([prototype,names])=>names.map(name=>({prototype,name,fn:Object.getOwnPropertyDescriptor(prototype,name)?.value})));

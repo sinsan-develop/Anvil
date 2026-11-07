@@ -1,4 +1,6 @@
 import {isNodeDecisionReceiptIds,type NodeDecisionReceiptIds} from '../access/project-command.ts';
+import {isExecutionStartOriginReceiptIds,type ExecutionStartOriginReceiptIds} from '../access/project-command.ts';
+import {readExecutionStartOriginSnapshot,readExecutionStartOriginReservation,originSame,originActor} from '../executions/execution-start-origin-input.ts';
 import {types} from 'node:util';
 import {sourceEventQuotaPart} from '../documents/document-source-observation.ts';
 import type {CreationPlan} from './draft-artifacts.ts';
@@ -104,6 +106,25 @@ export class ProjectStorageQuota{
  readonly #sourceWrites=new WeakMap<object,{phase:'ENTERED'|'PUBLISHED'|'UNKNOWN';ref:SourceDiffRef;projectionHash:string}>();
  readonly #prepared=new WeakMap<object,PreparedState>();readonly #reserved=new WeakMap<object,BundleState>();readonly #started=new WeakMap<object,BundleState>();
  readonly #nodeDecisions=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:NodeDecisionReceiptIds;tx:string;hash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
+ readonly #startOrigins=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:ExecutionStartOriginReceiptIds;tx:string;planHash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
+ async reserveExecutionStartOrigin(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawValue:unknown,policyRef:RuntimeRefV1,ids:ExecutionStartOriginReceiptIds,rawResult:unknown,until:number):Promise<object>{
+  return this.#durable(async()=>{
+   const request=cloneV1(rawRequest),value:any=cloneV1(rawValue),result:any=cloneV1(rawResult),s=readExecutionStartOriginSnapshot(value.snapshot),q=readExecutionStartOriginReservation(value.reservation.snapshot);
+   if(!isExecutionStartOriginReceiptIds(ids,db,actor,request)||request.operation!=='registerExecutionStartOrigin'||!Number.isFinite(until)||until>Date.parse(s.expiresAt)||hash(s)!==value.ref.contentHash||!originSame(value.ref,q.originRef)||hash(q)!==value.reservation.ref.contentHash||!originSame(s.observedPolicyRef,policyRef)||!originSame(result.data,{...value,originRecorded:true,credentialIssued:false,executionAuthorized:false,dispatchPerformed:false,writerReservationPerformed:false})||result.operationId!==ids.operationId||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED'||result.targetId!==value.ref.id||result.version!==1)fail();
+   const query=db.query,identity=originActor(actor),tx=await this.#registeredTx(db,query,ids.transactionId,until),pairs={originSnapshot:canonicalJson(s),credentialReservation:canonicalJson(q),resultRef:canonicalJson(result)};
+   const rows=(await Reflect.apply(query,db,['SELECT * FROM anvil.fn09_execution_start_origin_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10::jsonb,$11::jsonb,$12,$13)',[actor.authSession!.id,actor.actorId,actor.clientId,request.projectId,canonicalJson(request),canonicalJson(value.ref),canonicalJson(s),canonicalJson(q),canonicalJson(policyRef),canonicalJson(ids),canonicalJson(pairs),tx,new Date(until).toISOString()]])).rows;
+   await this.#registeredTx(db,query,tx,until);if(originActor(actor)!==identity||!isExecutionStartOriginReceiptIds(ids,db,actor,request))unknown();const r=rows.length===1?rows[0]:null;
+   if(!r||r.reservation_id!==ids.serverCommandId||r.transaction_id!==tx||r.record_hash!==value.ref.contentHash||!hashV1(r.plan_hash)||!isoV1(r.authorized_until)||Date.parse(r.authorized_until)>until)unknown();
+   const reserved=quotaBytes(r.reserved_bytes),end=Math.min(until,Date.parse(r.authorized_until));if(reserved>PROJECT_STORAGE_CAP)unknown();await this.#registeredTx(db,query,tx,end);const lease=Object.freeze({});this.#startOrigins.set(lease,{db,query,actor,identity,request,ids,tx,planHash:r.plan_hash,reserved,until:end,resultHash:hash(result),phase:'RESERVED'});return lease;
+  });
+ }
+ async settleExecutionStartOrigin(db:PoolClient,actor:AuthenticatedIdentity,lease:object,rawReceipt:{id:string;result:unknown;authorizationReceiptRef:RuntimeRefV1}):Promise<void>{
+  const s=this.#startOrigins.get(lease);if(!s||s.phase!=='RESERVED'||s.db!==db||s.actor!==actor||s.query!==db.query)unknown();s.phase='CLOSED';
+  await this.#durable(async()=>{const receipt=cloneV1(rawReceipt);if(originActor(actor)!==s.identity||receipt.id!==s.ids.serverCommandId||receipt.authorizationReceiptRef.id!==s.ids.authorizationReceiptId||hash(receipt.result)!==s.resultHash)unknown();await this.#registeredTx(db,s.query,s.tx,s.until);
+   const rows=(await Reflect.apply(s.query,db,['SELECT * FROM anvil.fn09_execution_start_origin_settle($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9)',[actor.authSession!.id,actor.actorId,actor.clientId,s.request.projectId,s.request.commandId,s.ids.serverCommandId,s.planHash,canonicalJson(receipt.result),s.tx]])).rows;
+   await this.#registeredTx(db,s.query,s.tx,s.until);if(originActor(actor)!==s.identity)unknown();const r=rows.length===1?rows[0]:null;if(!r||r.status!=='SETTLED'||r.reservation_id!==s.ids.serverCommandId||r.transaction_id!==s.tx||quotaBytes(r.settled_bytes)>s.reserved)unknown();
+  },()=>true);
+ }
  async reserveNodeDecision(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,ref:RuntimeRefV1,snapshot:unknown,basis:unknown,headProjections:unknown,policyRef:RuntimeRefV1,ids:NodeDecisionReceiptIds,result:unknown,until:number):Promise<object>{
   return this.#durable(async()=>{
    if(!isNodeDecisionReceiptIds(ids,db,actor,request)||!['recordNodeDecision','revokeNodeDecision'].includes(request.operation)||hash(snapshot)!==ref.contentHash||!Number.isFinite(until))fail();
