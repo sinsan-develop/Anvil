@@ -1,6 +1,39 @@
 import {canonicalJson as canonicalSourceModel,contentHash as hashSourceModel} from '../../../contracts/canonical.ts';
 import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';
 const sql=()=>readFileSync(new URL('../../../db/migrations/0059_project_storage_quota.sql.pending',import.meta.url),'utf8');
+
+test('원자료 요청 예약은 정확11/10인자와 R 자기비용·C/A/U/최초 알림만 같은 거래에서 계상한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ for(const text of ['fn09_origin_reuse_request_reserve(s uuid,a uuid,c uuid,p uuid,q jsonb,ref jsonb,record jsonb,policy jsonb,ids jsonb,expected_tx text,observed_until timestamptz)',
+ 'fn09_origin_reuse_request_settle(s uuid,a uuid,c uuid,p uuid,external_id uuid,rid uuid,sealed_hash text,cid uuid,result jsonb,expected_tx text)',
+ "'ORIGIN_REUSE_APPROVAL_REQUEST'","'origin_reuse_request'",'fn09_registered_cost_projection','fn09_registered_reservation_fixed_point','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','other_bytes','10737418240','REVOKE ALL','anvil_v3_migrator','SET search_path=pg_catalog'])assert(s.includes(text),text);
+ const reserve=s.slice(s.indexOf('CREATE FUNCTION anvil.fn09_origin_reuse_request_reserve('),s.indexOf('CREATE FUNCTION anvil.fn09_origin_reuse_request_settle('));
+ assert(reserve.includes("ids->>'serverCommandId'"));assert(reserve.includes("expected_tx IS DISTINCT FROM txid_current()::text"));
+ const grants=s.match(/^GRANT EXECUTE[^;]*;/gm)||[];assert.equal(grants.length,1);assert(grants[0]!.includes('fn09_origin_reuse_request_reserve'));assert(grants[0]!.includes('fn09_origin_reuse_request_settle'));
+ assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.quota_reserve('));
+});
+
+test('요청0082 ACL은 migrator의 내부 함수만 두고 app에는 고정 RPC 두 개만 추가한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const grant=s.match(/^GRANT EXECUTE[^;]*;/gm);assert.equal(grant?.length,1);
+ assert.equal(grant![0],"GRANT EXECUTE ON FUNCTION anvil.fn09_origin_reuse_request_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,jsonb,text,timestamptz),anvil.fn09_origin_reuse_request_settle(uuid,uuid,uuid,uuid,uuid,uuid,text,uuid,jsonb,text) TO anvil_v3_app;");
+ const acl=s.slice(s.indexOf('DO $origin_request_acl$'));for(const token of ["LIKE 'fn09_origin_reuse_request_%'","ALTER FUNCTION %s OWNER TO anvil_v3_migrator","REVOKE ALL ON FUNCTION %s FROM PUBLIC,anvil_v3_app"])assert(acl.includes(token));
+ assert(!/GRANT EXECUTE[^;]*fn09_origin_reuse_request_(?:source|context|rows|actual|maximum|complete|record_valid)/.test(s));
+ assert(s.includes('RETURN anvil.quota_plan_before_origin_reuse_request(v)'));assert(s.includes('RETURN anvil.quota_settled_before_origin_reuse_request(r)'));
+});
+
+test('요청0082 최초 비용의 다섯 원행·불변 시각과 예약 고정점은 역사에도 재현된다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const slice=(name:string)=>{const start=s.indexOf('CREATE FUNCTION anvil.'+name+'('),end=s.indexOf('END;$$;',start);assert(start>=0&&end>start);return s.slice(start,end);};
+ const maximum=slice('fn09_origin_reuse_request_maximum');
+ assert(maximum.includes("stamp timestamptz=(record->>'createdAt')::timestamptz"));assert(!maximum.includes('transaction_timestamp()'));
+ assert(!maximum.includes('execution_preparation_approval_candidates'));assert(!maximum.includes('execution_start_origins'));
+ assert.equal((maximum.match(/fn09_registered_cost_projection\(domain\)/g)||[]).length,1);
+ for(const row of ['notification','cmd','ar','au'])assert.equal((maximum.match(new RegExp('fn09_registered_cost_projection\\('+row+'\\)','g'))||[]).length,1,row);
+ const settle=slice('fn09_origin_reuse_request_settle');assert(settle.includes('anvil.fn09_origin_reuse_request_actual(p,cid)'));
+ assert.equal((settle.match(/fn09_registered_reservation_fixed_point\(actual_base,to_jsonb\(r\),r.reserved_bytes\)/g)||[]).length,1);
+ assert(settle.includes('actual_bytes>r.reserved_bytes'));assert(settle.includes('used_bytes=used_bytes+actual_bytes'));assert(settle.includes('held_bytes=held_bytes-r.reserved_bytes'));
+});
 test('quota pending SQL has two protected tables and durable phase/coverage constraints',()=>{const s=sql();assert.equal((s.match(/CREATE TABLE /g)||[]).length,2);for(const token of ['project_storage_accounts','project_storage_reservations','IO_STARTED','UNKNOWN','10737418240','external_command_id','start_fence','coverage_state','FOR UPDATE','SECURITY DEFINER','REVOKE ALL'])assert(s.includes(token),token);assert(!/UPDATE anvil\.projects SET|INSERT INTO anvil\.project_storage_accounts\s+SELECT/i.test(s));});
 test('quota SQL guards both account totals and exact command receipt audit material settlement',()=>{const s=sql();for(const token of ['DEFERRABLE INITIALLY DEFERRED','authorization_receipts','HUMAN_COMMAND','scope_digest','command_hash','request_hash','checkpoint_records','artifacts','fn01_active','quota_reserve','quota_start','quota_require_started','quota_settle','IS DISTINCT FROM'])assert(s.includes(token),token);assert(!/DELETE FROM anvil\.project_storage_reservations/.test(s));});
 test('checkpoint settlement separates planned preparedHash from canonical final snapshot H',()=>{const s=sql();assert(s.includes("k.snapshot_json->>'preparedHash'=x->>'contentHash' AND k.content_hash=anvil.checkpoint_hash(k.snapshot_json)"));assert(s.includes('AND anvil.checkpoint_complete(cmd.id)'));});

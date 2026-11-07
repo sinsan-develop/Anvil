@@ -26,3 +26,43 @@ test('START0078 역사 완결은 원 receipt·등록·Options bytes·부분과 �
 });
 
 test('START0078 Options 원문 SHA는 기존 내장 sha256 경로만 쓰고 미정 pgcrypto 의존을 만들지 않는다',()=>{assert(!/public\.digest\(/.test(body(sql,'fn08_start_material_complete')));assert(body(sql,'fn08_start_material_complete').includes("encode(sha256(convert_to(opt->>'body','UTF8')),'hex')"));});
+
+test('원자료 요청0082는 보존 A0·P2 문법과 목적 한정 원장/알림 완결을 함께 설치하는 소스다',()=>{
+ const source=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ for(const name of ['environment_configuration_commit','execution_policy_deadline','fn09_origin_reuse_request_context','fn09_origin_reuse_request_rows','fn09_origin_reuse_request_reserve','fn09_origin_reuse_request_settle','fn09_origin_reuse_request_complete'])assert(source.includes('FUNCTION anvil.'+name+'('),name);
+ assert(source.includes('PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;'));
+ const complete=body(source,'fn09_origin_reuse_request_complete');
+ const closure=complete+body(source,'fn09_origin_reuse_request_actual')+body(source,'fn09_origin_reuse_request_notification')+body(source,'fn09_origin_reuse_request_record_valid')+body(source,'fn09_origin_reuse_request_rows');
+ for(const name of ['approval_requests','commands','authorization_receipts','audit_events','notifications','project_storage_reservations'])assert(closure.includes('anvil.'+name),name);
+ assert(complete.includes('fn09_origin_reuse_request_actual'));assert(body(source,'fn09_origin_reuse_request_actual').includes('fn09_origin_reuse_request_notification'));
+ assert(complete.includes("r.phase IS DISTINCT FROM 'SETTLED'"));assert(complete.includes("r.part_kind IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_REQUEST'"));
+ assert(source.includes('DEFERRABLE INITIALLY DEFERRED'));assert(!/CREATE TABLE|GRANT (?:SELECT|INSERT|UPDATE|DELETE|ALL) ON/i.test(source));
+ assert(!source.includes('CREATE OR REPLACE FUNCTION anvil.one_time_decision_command_authorized('));
+});
+
+test('요청0082 보존 A0/C0/C1 원바이트와 일반 승인 invoker 본문은 한정 추가 밖에서 동일하다',async()=>{
+ const {createHash}=await import('node:crypto');
+ const raw=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url));
+ assert.equal(raw.subarray(0,7).toString(),'BEGIN;\n');
+ assert.equal(createHash('sha256').update(raw.subarray(7,7+16423)).digest('hex'),'2a568dcd02be60817a5ec977e234dd4b555da07c0bdcf9a097775ad9b6bca203');
+ const text=raw.toString(),original=readFileSync(new URL('../../../db/migrations/0073_control_handoff_acceptance.sql.pending',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+ const current=body(text,'guard_one_time_approval_request'),old=body(original,'guard_one_time_approval_request');
+ const start=current.indexOf("\n IF NEW.action_scope_json->>'operation'='queueExecutionCommand'"),end=current.indexOf("\n IF TG_OP='UPDATE'",start);
+ assert(start>=0&&end>start);assert.equal(current.slice(0,start)+current.slice(end),old);
+ const declaration=text.slice(text.indexOf('CREATE OR REPLACE FUNCTION anvil.guard_one_time_approval_request('),text.indexOf('AS $$',text.indexOf('CREATE OR REPLACE FUNCTION anvil.guard_one_time_approval_request(')));
+ assert(!declaration.includes('SECURITY DEFINER'));assert(!declaration.includes('SET search_path'));
+ assert(current.includes("TG_OP<>'INSERT'"));assert(current.includes('ORIGIN_REUSE_REQUEST_INVALID'));
+});
+
+test('요청0082 원 source·최단기한과 단일 R의 양방향 완결은 caller JSON이나 GUC만으로 합격하지 않는다',()=>{
+ const text=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const context=body(text,'fn09_origin_reuse_request_context'),source=body(text,'fn09_origin_reuse_request_source');
+ for(const token of ['anvil.fn01_active(s,a,c)','expected_tx IS DISTINCT FROM txid_current()::text','anvil.project_members','anvil.project_control','anvil.permission_policies','anvil.permission_policy_versions','anvil.connector_registrations','anvil.connectors','auth.reauth_until','anvil.fn09_origin_reuse_request_source(p,e,true)','anvil.execution_policy_deadline','reuseExecutionStartOrigin',"record->'details'->>'expiresAt'"])assert(context.includes(token),token);
+ assert(context.indexOf('anvil.fn01_active(s,a,c)')<context.indexOf('FROM anvil.projects'));
+ assert(context.indexOf('FROM anvil.projects')<context.indexOf('anvil.environment_configuration_heads'));
+ for(const token of ['anvil.execution_start_origins','anvil.fn09_execution_start_origin_source(p,s,false)','anvil.environment_configuration_snapshot_root','anvil.environment_configuration_source_ref','anvil.environment_configuration_metadata_ref','e->\'dependencies\' IS DISTINCT FROM expected'])assert(source.includes(token),token);
+ const complete=body(text,'fn09_origin_reuse_request_complete'),actual=body(text,'fn09_origin_reuse_request_actual');
+ assert(complete.includes('anvil.fn09_registered_reservation_fixed_point(actual_base,to_jsonb(r),r.reserved_bytes)'));
+ assert(actual.includes('anvil.fn09_origin_reuse_request_rows(p,cid)'));assert(!actual.includes('execution_start_origins'));
+ for(const table of ['approval_requests','commands','notifications','project_storage_reservations','project_storage_accounts'])assert(body(text,'fn09_origin_reuse_request_final_guard').includes('anvil.'+table));
+});

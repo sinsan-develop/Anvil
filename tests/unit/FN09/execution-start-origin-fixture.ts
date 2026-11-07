@@ -4,7 +4,7 @@ import {nodeDecisionFixture,H,id,artifactCalls} from '../FN10/node-decision-fixt
 export {H,id,artifactCalls};
 export {installNodeDecisionMemoryFS as installExecutionStartOriginMemoryFS} from '../FN10/node-decision-fixture.ts';
 /** 기존 순수 fixture의 실제 ArtifactStore/문서·계획을 재사용한다. 성공 보호 메서드는 바꾸지 않는다. */
-export async function executionStartOriginFixture(options:{unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean}={}){
+export async function executionStartOriginFixture(options:{unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean}={}){
  const f=await nodeDecisionFixture(),{db,access,documents,pid,uid,cid}=f,raw=db.query;
  if(options.clockOffsetMs)f.advance(options.clockOffsetMs);
  const {documentOperations,persistProjectReceipt,currentPolicy,ProjectPolicyRepository}=await import('../../../apps/server/modules/access/project-command.ts');
@@ -22,7 +22,8 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const constitutionContext=richContext&&options.constitutionContext===true;
  if(constitutionContext)Object.assign(tables,{constitutions:[],constitutionApplications:[]});
  const modes={readAllowed:true,sourceAllowed:true,sourceHead:1,commit:'NORMAL',settle:'NORMAL',tx:1,policyVersion:1,
-  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
+  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],originReadDisposition:'AUTO' as 'AUTO'|'REQUIRE_APPROVAL'|'DENY',requestQuota:'VERIFIED',requestFault:'NORMAL',requestUsed:0,requestHeld:0,requestOther:0,requestReserveCalls:0,requestSettleCalls:0,hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
+ let savedReceipts:typeof receipts,savedAudits:typeof audits,savedRequestUsed=0,savedRequestHeld=0;
  const reauthUntil=options.connectorEnvironment?new Date(f.actor.authSession.absoluteExpiresAt):null;
  let registration:{row:Record<string,any>;connector:Record<string,any>}|undefined;
  let snapshotEvidence:{grant:Record<string,unknown>;snapshot:Record<string,unknown>;credential:Record<string,unknown>;audit:readonly unknown[]}|undefined;
@@ -31,7 +32,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const policy=()=>{
   const rules=documentOperations.filter(op=>modes.sourceAllowed||!['readConnectionDefinition','readEnvironmentVersion'].includes(op))
    .filter(op=>modes.readAllowed||op!=='readExecutionStartOrigins').filter(op=>modes.registrationAllowed||op!=='registerExecutionStartOrigin')
-   .map(op=>({ruleId:op,subjectRef:{kind:'HUMAN',userId:uid},operations:[op],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:approvedContext&&modes.policyVersion===1&&op==='buildTaskContext'?'REQUIRE_APPROVAL':'AUTO',limitPolicyRef:null,
+   .map(op=>({ruleId:op,subjectRef:{kind:'HUMAN',userId:uid},operations:[op],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:op==='readExecutionStartOrigins'?modes.originReadDisposition:approvedContext&&modes.policyVersion===1&&op==='buildTaskContext'?'REQUIRE_APPROVAL':'AUTO',limitPolicyRef:null,
     expiresAt:op==='registerExecutionStartOrigin'&&modes.registrationUntil?modes.registrationUntil:f.actor.authSession.idleExpiresAt})).concat(modes.runtimeRules);
   const reason=modes.policyVersion===1?'명시 원자료 정책':'명시 후속 실행 정책';
   return{id:id(50),head_version:modes.policyVersion,rules_json:rules,reason,review_refs:[],created_at:new Date(),content_hash:H({rules,reason,reviewRefs:[]})};
@@ -41,7 +42,68 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const rows=(values:any[])=>({rows:values,rowCount:values.length});
  db.query=async(sql:string,a:any[]=[])=>{
   trace.push(sql);modes.hook?.(sql);
-  if(sql==='BEGIN'){saved=structuredClone(tables);modes.tx++;return raw(sql,a);}if(sql==='COMMIT'&&modes.commit==='LOST')throw Error('COMMIT_LOST');if(sql==='ROLLBACK'){for(const k of Object.keys(tables))tables[k]!.splice(0,tables[k]!.length,...(saved?.[k]??[]));return raw(sql,a);}
+  if(sql.startsWith('SELECT n.*,nr.read_at,nr.command_id read_command_id')){
+   assert.equal(a[0],pid);assert.equal(a[1],uid);
+   let selected=(tables.notifications??[]).filter(n=>n.project_id===a[0]&&n.recipient_user_id===a[1]);
+   if(sql.includes('AND n.id=$3')){assert.equal(a.length,3);selected=selected.filter(n=>n.id===a[2]);}
+   else{assert.equal(a.length,6);assert(['ALL','READ','UNREAD'].includes(a[2]));if(a[2]==='READ')selected=[];if(a[3]!==null)selected=selected.filter(n=>n.created_at<new Date(a[3])||n.created_at.getTime()===new Date(a[3]).getTime()&&n.id<a[4]);selected.sort((x,y)=>y.created_at-x.created_at||y.id.localeCompare(x.id));selected=selected.slice(0,a[5]);}
+   return rows(selected.map(n=>({...n,read_at:null,read_command_id:null,read_content_hash:null,read_client_id:null,cursor_at:n.created_at.toISOString()})));
+  }
+  if(sql.startsWith('SELECT r.*,c.operation,c.scope_kind,c.state,c.project_id command_project')){
+   assert.equal(a.length,2);return rows((tables.approvalRequests??[]).filter(r=>r.project_id===a[0]&&r.id===a[1]).flatMap(r=>{
+    const c=f.commands.get(r.command_id);return c&&c.project_id===r.project_id?[{...r,operation:c.operation,scope_kind:c.scope_kind,state:c.state,command_project:c.project_id,actor_id:c.actor_id,command_client:c.client_id,source_control_generation:c.control_generation,caller_command_id:c.command_id,caller_request_hash:c.request_hash,result_ref:c.result_ref}]:[];
+   }));
+  }
+  if(sql.startsWith('SELECT c.*, (SELECT jsonb_agg(to_jsonb(a)) FROM anvil.authorization_receipts')){
+   assert.equal(a.length,2);const c=f.commands.get(a[1]);
+   return rows(c&&c.project_id===a[0]?[{...c,reuse_receipts:receipts.has(c.id)?[receipts.get(c.id)]:[],reuse_audits:audits.has(c.id)?[audits.get(c.id)]:[],reuse_notifications:(tables.notifications??[]).filter(n=>n.project_id===a[0]&&n.source_command_id===c.id)}]:[]);
+  }
+  if(sql.startsWith('SELECT pg_current_xact_id_if_assigned()::text AS transaction_id, clock_timestamp() AS ')){
+   const at=(await raw('SELECT clock_timestamp() AS at',[])).rows[0].at;
+   return rows([{transaction_id:String(modes.tx),...(sql.endsWith('auth_observed_at')?{auth_observed_at:at}:{at})}]);
+  }
+  if(sql.includes('fn09_origin_reuse_request_reserve')){
+   modes.requestReserveCalls++;
+   if(!options.originRequestStorage||modes.requestQuota==='UNVERIFIED')throw Object.assign(Error('PROJECT_STORAGE_QUOTA_UNVERIFIED'),{code:'P0001'});
+   assert.equal(a.length,11);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+   const request=JSON.parse(a[4]),ref=JSON.parse(a[5]),record=JSON.parse(a[6]),p2=JSON.parse(a[7]),ids=JSON.parse(a[8]);
+   assert.deepEqual(Object.keys(ids).sort(),['serverCommandId','operationId','authorizationReceiptId','auditEventId'].sort());
+   assert.equal(request.operation,'requestApproval');assert.equal(record.id,ref.id);assert.equal(record.status,'PENDING');
+   const {id:_id,version:_version,status:_status,createdAt:_createdAt,...snapshot}=record;assert.equal(H(snapshot),ref.contentHash);
+   assert.deepEqual(record.details,request.payload.details);assert.deepEqual(record.originReuseEvidence.candidatePayload,request.payload.candidatePayload);
+   assert.equal(record.originReuseEvidence.candidatePayloadHash,H(request.payload.candidatePayload));assert.deepEqual(record.policyRef,p2);
+   assert.equal(record.originReuseEvidence.p2Ref.version,2);assert.equal(Date.parse(record.details.expiresAt)<=Date.parse(a[10]),true);
+   assert(!tables.reservations!.some(row=>row.id===ids.serverCommandId));assert(!tables.approvalRequests!.some(row=>row.candidate_command_id===record.details.candidateCommandId));
+   const reserved=1_000_000;
+   if(modes.requestUsed+modes.requestHeld+modes.requestOther+reserved>10737418240)throw Object.assign(Error('PROJECT_STORAGE_LIMIT_EXCEEDED'),{code:'P0001'});
+   const until=new Date(Math.min(Date.parse(a[10]),Date.parse(record.details.expiresAt))).toISOString();
+   const plan={request,record,ref,ids,policyRef:p2,authorizedUntil:until,coverageGeneration:'1',purpose:'ORIGIN_REUSE_APPROVAL_REQUEST'},planHash=H(plan);
+   tables.reservations!.push({id:ids.serverCommandId,part_kind:'ORIGIN_REUSE_APPROVAL_REQUEST',part_key:'origin_reuse_request',actor_id:uid,client_id:cid,phase:'IO_STARTED',start_fence:1,plan_json:plan,plan_hash:planHash,transaction_id:String(modes.tx),reserved_bytes:reserved,settled_bytes:0});
+   modes.requestHeld+=reserved;
+   const transaction_id=String(modes.tx);if(modes.requestFault==='XID_AFTER_RESERVE')modes.tx++;
+   return rows([{reservation_id:ids.serverCommandId,transaction_id,record_hash:ref.contentHash,plan_hash:planHash,reserved_bytes:String(reserved),authorized_until:until}]);
+  }
+  if(sql.includes('fn09_origin_reuse_request_settle')){
+   modes.requestSettleCalls++;assert.equal(a.length,10);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+   const r=tables.reservations!.find(row=>row.id===a[5]),command=f.commands.get(a[7]),receipt=receipts.get(a[7]),audit=audits.get(a[7]);
+   assert(r&&command&&receipt&&audit);assert.equal(r.transaction_id,String(modes.tx));assert.equal(r.part_kind,'ORIGIN_REUSE_APPROVAL_REQUEST');assert.equal(r.phase,'IO_STARTED');assert.equal(r.start_fence,1);assert.equal(r.plan_hash,a[6]);assert.equal(command.command_id,a[4]);assert.equal(command.id,r.id);
+   assert.deepEqual(JSON.parse(a[8]),command.result_ref);assert.equal(receipt.id,r.plan_json.ids.authorizationReceiptId);assert.equal(audit.event_id,r.plan_json.ids.auditEventId);
+   const requests=tables.approvalRequests!.filter(row=>row.command_id===command.id),notifications=tables.notifications!.filter(row=>row.source_command_id===command.id);
+   assert.equal(requests.length,1);assert.equal(notifications.length,1);assert.deepEqual(requests[0]!.request_json,r.plan_json.record);
+   assert.equal(command.actor_id,uid);assert.equal(command.client_id,cid);assert.equal(notifications[0]!.recipient_user_id,uid);
+   if(modes.settle==='LOST')throw Error('SETTLE_LOST');
+   const {canonicalJson}=await import('../../../contracts/canonical.ts');
+   const actual=Buffer.byteLength(canonicalJson(JSON.parse(JSON.stringify([requests[0],command,receipt,audit,notifications[0],r]))));assert(actual<=r.reserved_bytes);
+   r.phase='SETTLED';r.settled_bytes=actual;modes.requestUsed+=actual;modes.requestHeld-=r.reserved_bytes;
+   return rows([{status:'SETTLED',reservation_id:r.id,transaction_id:String(modes.tx),settled_bytes:String(modes.requestFault==='OVERSIZED_SETTLE'?r.reserved_bytes+1:actual)}]);
+  }
+  if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'SERVER_DENIAL'")){
+   assert.equal(a.length,6);assert.equal(a[0],pid);assert.deepEqual(JSON.parse(a[2]),{kind:'HUMAN',userId:uid});
+   assert.equal(a[3],cid);assert.deepEqual(JSON.parse(a[4]),{id:pid});assert.equal(typeof a[5],'string');
+   (tables.denialAudits??=[]).push({project_id:a[0],event_id:a[1],actor_ref:JSON.parse(a[2]),client_ref:a[3],target_ref:JSON.parse(a[4]),outcome:'DENIED',reason_code:a[5],source_kind:'SERVER_DENIAL'});
+   return rows([]);
+  }
+  if(sql==='BEGIN'){saved=structuredClone(tables);savedReceipts=structuredClone(receipts);savedAudits=structuredClone(audits);savedRequestUsed=modes.requestUsed;savedRequestHeld=modes.requestHeld;modes.tx++;return raw(sql,a);}if(sql==='COMMIT'&&modes.commit==='LOST')throw Error('COMMIT_LOST');if(sql==='ROLLBACK'){for(const k of Object.keys(tables))tables[k]!.splice(0,tables[k]!.length,...(saved?.[k]??[]));for(const[map,before]of[[receipts,savedReceipts],[audits,savedAudits]] as const){map.clear();for(const[key,value]of before)map.set(key,value);}modes.requestUsed=savedRequestUsed;modes.requestHeld=savedRequestHeld;return raw(sql,a);}
   if(options.connectorEnvironment&&sql.startsWith('SELECT s.*,u.id AS uid')){
    const result=await raw(sql,a);
    return rows(result.rows.map((row:any)=>({...row,reauth_until:reauthUntil})));
@@ -155,6 +217,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
    if(sql==='SELECT anvil.assert_approval_notification_capacity($1)'){assert.deepEqual(a,[pid]);return rows([{}]);}
    if(sql.startsWith('INSERT INTO anvil.notifications(')){
     const request=tables.approvalRequests!.find(r=>r.project_id===a[1]&&r.id===a[3]);assert(request&&request.command_id===a[2]&&request.content_hash===a[5]);
+    if(options.originRequestStorage&&modes.requestFault==='MISSING_NOTIFICATION'&&request.action_scope_json.operation==='queueExecutionCommand')return rows([]);
     tables.notifications!.push({id:a[0],project_id:a[1],source_command_id:a[2],approval_request_id:a[3],request_version:a[4],request_content_hash:a[5],recipient_user_id:a[6],event_kind:a[7],channel:a[8],severity:a[9],reason_code:a[10],delivery_state:a[11],created_at:new Date(a[12]),content_hash:a[13]});return rows([]);
    }
   }

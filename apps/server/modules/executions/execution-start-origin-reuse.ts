@@ -49,6 +49,7 @@ const readContextApproval=ProjectApprovals.prototype.readContextConsumption;
 const readKnowledge=ProjectKnowledge.prototype.read;
 const readConversation=ProjectConversations.prototype.readMessage;
 const readResponsibleSessionConsumption=ProjectApprovals.prototype.readResponsibleSessionConsumption;
+const requestApproval=ProjectApprovals.prototype.request,readApproval=ProjectApprovals.prototype.read;
 const readEnvironment=ProjectEnvironments.prototype.history;
 const readDefinition=ProjectConnectionDefinitions.prototype.read;
 const readReferences=ProjectEnvironments.prototype.readOriginReuseReferences;
@@ -116,6 +117,15 @@ declare const originReuseApprovalBrand:unique symbol;
 export type OriginReuseApprovalCapability={readonly [originReuseApprovalBrand]:true};
 type OriginReuseAssignmentReaders={drafts:ProjectAssignmentDrafts;confirmations:ProjectAssignmentConfirmations;protectedDrafts?:ProjectAssignmentDrafts;protectedContexts?:ProjectContexts};
 const approvalComposers=new WeakMap<object,{access:AccessRepository;queue:ProjectInitialExecutionQueue;sessions?:ResponsibleSessions;assignments?:OriginReuseAssignmentReaders;protectedPlanDocuments?:ProjectDocuments}>();
+export interface OriginReuseRequestSource {readonly evidence:Readonly<Record<string,any>>;readonly until:number;readonly transactionId:string}
+const requestSources=new WeakMap<object,{access:AccessRepository;db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;requestHash:string}>();
+/** 원 보호관측이 같은 인증 콜백에서 만든 출처만 인정한다. 구조적 데이터는 권위가 아니다. */
+export function matchesOriginReuseRequestSource(value:unknown,db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand):value is OriginReuseRequestSource {
+ if(!value||typeof value!=='object')return false;
+ const source=requestSources.get(value);
+ return !!source&&source.db===db&&source.query===db.query&&source.actor===actor&&source.identity===originActor(actor)
+  &&source.requestHash===originHash(request)&&matchesOriginReuseObservationContext(source.access,db,actor,request,(value as OriginReuseRequestSource).transactionId);
+}
 
 function originalAssignmentDrafts(sessions:ResponsibleSessions):ProjectAssignmentDrafts|undefined{
  const port=Object.getOwnPropertyDescriptor(sessions,'drafts');
@@ -254,7 +264,7 @@ async function observationTransaction(db:PoolClient,actor:AuthenticatedIdentity,
   unchanged();
   return result;
  };
- return {guarded,clock,step};
+ return {guarded,clock,step,transactionId:()=>transactionId!};
 }
 
 /** 실제 인증 콜백과 저장 S/Q가 선택한 환경의 증거만 소비하는 내부 관측이다. */
@@ -270,7 +280,7 @@ export async function observeOriginReuseRegistration(access:AccessRepository,tok
 }
 
 /** 기존 승인 명령의 인증 콜백 안에서만 관측한다. 관측의 결과는 외부로 반환하지 않는다. */
-export async function observeOriginReuseApprovalRequest(capability:OriginReuseApprovalCapability|undefined,access:AccessRepository,db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:RuntimeRefV1):Promise<void>{
+export async function observeOriginReuseApprovalRequest(capability:OriginReuseApprovalCapability|undefined,access:AccessRepository,db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:RuntimeRefV1,previous?:unknown):Promise<unknown>{
  const closed=()=>new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
  const assertContext=(transactionId?:string)=>{if(!matchesOriginReuseObservationContext(access,db,actor,request,transactionId))throw closed();};
  assertContext();
@@ -287,10 +297,26 @@ export async function observeOriginReuseApprovalRequest(capability:OriginReuseAp
  assertBinding();
  const sessions=composer?.sessions,assignments=composer?.assignments;
  if(!sessions||!assignments||!originSame(policyRef,candidate.permissionPolicyRef))throw closed();
+ if(previous!==undefined){
+  const result=copyStartOrigin(previous) as any,ref=result?.data?.ref;
+  if(!refV1(ref)||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED')throw closed();
+  const view=await readApproval.call(new ProjectApprovals(),db,actor,request.projectId,ref.id);
+  assertBinding();
+  if(!originSame(view.requestRef,ref)||view.storedStatus!=='PENDING'||view.decision!==null||view.consumption!==null
+   ||!originSame(view.request,result.data.request)||!originSame(view.request.details,details)
+   ||!originSame((view.request as any).originReuseEvidence?.candidatePayload,candidate))throw closed();
+  return result;
+ }
  const {originRef,reservationRef}=candidate.originReuse;
+ let storing=false;
  try{
-  await observeOriginReuseInTransaction(access,db,actor,{projectId:request.projectId,originRef,reservationRef,permissionPolicyRef:policyRef},{assertBinding,sessions,assignments,candidate,candidateCommandId:details.candidateCommandId,request,expiresAt:Date.parse(details.expiresAt)});
- }catch(error){if(!(error instanceof AuthFailure))throw error;}
+  const observed=await observeOriginReuseInTransaction(access,db,actor,{projectId:request.projectId,originRef,reservationRef,permissionPolicyRef:policyRef},{assertBinding,sessions,assignments,candidate,candidateCommandId:details.candidateCommandId,request,expiresAt:Date.parse(details.expiresAt)});
+  const source=observed.requestSource;
+  if(!source||!matchesOriginReuseRequestSource(source,db,actor,request))throw closed();
+  storing=true;
+  try{return await requestApproval.call(new ProjectApprovals(undefined,access),db,actor,request,policyRef,source);}
+  finally{requestSources.delete(source);}
+ }catch(error){if(storing||!(error instanceof AuthFailure))throw error;}
  throw closed();
 }
 
@@ -481,5 +507,19 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
  assertObservationAccess(access);
  if(!Number.isFinite(until)||at>=until)return reject();
  checkRequestDeadline(at,until);
- return{...selected,observedAt:new Date(at).toISOString(),expiresAt:new Date(until).toISOString(),executionAuthorized:false as const};
+ let requestSource:OriginReuseRequestSource|undefined;
+ if(approval&&contextMatched&&dependencies){
+  const unique=new Map(dependencies.map(entry=>[entry.kind+':'+entry.ref.id,entry]));
+  const evidence=copyStartOrigin({purpose:'FN09_ORIGIN_REUSE_SYNTHETIC_START_V1',projectId,originRef,reservationRef,
+   originCommand:{serverCommandId:stored.serverCommandId,commandId:stored.request.commandId,requestHash:originHash(stored.request)},
+   subject:s.subject,execution:s.execution,p1Ref:s.observedPolicyRef,p2Ref:permissionPolicyRef,stageRequestRef:s.stageRequestRef,
+   assignmentRef:s.assignmentRef,roleBindingRef:s.roleBindingRef,sessionBindingRef:s.sessionBindingRef,preparationRef:s.preparationRef,
+   connectionRef:s.connectionRef,environmentRef:s.environmentRef,contextBundleRef:s.contextBundleRef,optionsRef:s.preparationRef,
+   sourceScopes:s.sourceScopes,budgetPolicyRef:s.budgetPolicyRef,dependencies:[...unique.keys()].sort().map(key=>unique.get(key)!),
+   candidateCommandId:approval.candidateCommandId,candidatePayloadHash:originHash(approval.candidate),candidatePayload:approval.candidate});
+  const freeze=(v:any):any=>{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;};
+  requestSource=Object.freeze({evidence:freeze(evidence),until,transactionId:tx.transactionId()});
+  requestSources.set(requestSource,{access,db,query:db.query,actor,identity:originActor(actor),requestHash:originHash(approval.request)});
+ }
+ return{...selected,observedAt:new Date(at).toISOString(),expiresAt:new Date(until).toISOString(),executionAuthorized:false as const,...(requestSource?{requestSource}:{})};
 }

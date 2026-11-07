@@ -778,7 +778,7 @@ test('연결기 환경 원자료는 P2의 원 등록과 최종 시계를 관측�
     if(variant==='TAMPERED_PREPARATION_OPTIONS')f.tables.preparations!.find(row=>row.id===snapshot.preparationRef.id)!.snapshot_json.options.body=originalOptionsBody;
    });
    assert.equal(result.statusCode,412,result.body);
-   assert.equal(result.json().code,'ORIGIN_REUSE_APPROVAL_NOT_CONNECTED');
+   assert.equal(result.json().code,variant==='CURRENT'?'PROJECT_STORAGE_QUOTA_UNVERIFIED':'ORIGIN_REUSE_APPROVAL_NOT_CONNECTED');
    assert(!Object.hasOwn(result.json(),'dependencies'));
    assert(!result.body.includes(storedEnv.commandProfileRefs[0].ref.contentHash));
    assert(!result.body.includes(registration.connector.public_key_spki));
@@ -975,4 +975,85 @@ test('원자료 재사용 정책 전용 연산은 정확한 EXECUTION 범위만 
  assert.deepEqual(materialRules([rule],projectId,actorId),[rule]);
  const mixed={...rule,operations:[operation,...runtime.operations]};
  assert.deepEqual(materialRules([mixed],projectId,actorId),[mixed]);
+});
+
+test('원 보호관측 뒤 재사용 요청 PENDING을 같은 거래에 계상하고 원 ID로만 보호 재조회한다',async t=>{
+ const f=await executionStartOriginFixture({connectorEnvironment:true,richContext:true,environmentDependencies:true,constitutionContext:true,approvedContext:true,snapshotRoot:true,originRequestStorage:true});
+ const {buildApp}=await import('../../../apps/server/app.ts');
+ const {ProjectDocuments}=await import('../../../apps/server/modules/documents/project-documents.ts');
+ const {ProjectInitialExecutionQueue}=await import('../../../apps/server/modules/executions/execution-commands.ts');
+ const {createOriginReuseApprovalCapability}=await import('../../../apps/server/modules/executions/execution-start-origin-reuse.ts');
+ const config={repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root};
+ const headers={host:'anvil-synthetic.invalid',origin:config.origin,cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
+ const forbidden=async()=>{throw Error('UNEXPECTED_EXECUTION');};
+ const queue=new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
+ const cap=createOriginReuseApprovalCapability(f.access,queue,f.sessions,new ProjectDocuments(f.root,undefined,'FN09_PLAN_PROOF'));
+ const app=buildApp({},undefined,config,{transport:'SYNTHETIC_ONLY',queue,originReuseApproval:cap,stop:{command:forbidden},recovery:{command:forbidden},understanding:{command:forbidden}});
+ try{
+  const url='/api/v1/projects/'+f.pid+'/commands';
+  const origin=await app.inject({method:'POST',url,headers,payload:f.originCommand()});assert.equal(origin.statusCode,200,origin.body);
+  const {ref,snapshot,reservation}=origin.json().data;
+  f.modes.policyVersion=2;f.modes.runtimeRules=originRuntimeRules(f,snapshot);
+  const p2=f.policy(),policyRef={id:p2.id,version:p2.head_version,contentHash:p2.content_hash};
+  const input=await reuseApprovalInput(f.actor.actorId,f.actor.clientId,new Date());
+  Object.assign(input.candidatePayload,{preparationRef:snapshot.preparationRef,executionId:snapshot.execution.executionId,executionGeneration:1,
+   permissionPolicyRef:policyRef,budgetPolicyRef:snapshot.budgetPolicyRef,payload:{contextBundleRef:snapshot.contextBundleRef,optionsRef:snapshot.preparationRef},originReuse:{originRef:ref,reservationRef:reservation.ref}});
+  input.details.actionScope.payloadHash=(await approvalHash())(input.candidatePayload);
+  const command={...f.originCommand(),operation:'requestApproval',payload:input};
+  const notifications=f.tables.notifications!.length,decisions=f.tables.approvalDecisions!.length,consumptions=f.tables.approvalConsumptions!.length;
+  const rawQuery=f.db.query;let queryFailure='';
+  f.db.query=(async(sql:string,args:unknown[])=>{try{return await rawQuery.call(f.db,sql,args);}catch(error){queryFailure=(error as Error).message+' '+sql;throw error;}}) as typeof f.db.query;
+  const response=await app.inject({method:'POST',url,headers,payload:command});assert.equal(response.statusCode,200,response.body+' '+JSON.stringify(f.state.unsupported)+' '+queryFailure);
+  const value=response.json();assert.equal(value.status,'APPLIED');assert.equal(value.data.request.status,'PENDING');
+  assert.deepEqual(value.data.request.originReuseEvidence.candidatePayload,input.candidatePayload);
+  assert.equal(f.tables.notifications!.length,notifications+1);assert.equal(f.tables.approvalDecisions!.length,decisions);assert.equal(f.tables.approvalConsumptions!.length,consumptions);
+  const fetched=await app.inject({method:'GET',url:`/api/v1/projects/${f.pid}/approvals/${value.data.ref.id}`,headers});assert.equal(fetched.statusCode,200,fetched.body);
+  assert.deepEqual(fetched.json().requestRef,value.data.ref);assert.equal(fetched.json().storedStatus,'PENDING');assert.equal(fetched.json().executionAuthorized,false);
+  const replay=await app.inject({method:'POST',url,headers,payload:command});assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),value);
+  assert.equal(f.tables.notifications!.length,notifications+1);assert.equal(f.modes.requestReserveCalls,1);assert.equal(f.modes.requestSettleCalls,1);
+  const duplicate=await app.inject({method:'POST',url,headers,payload:{...command,commandId:id(909)}});assert.equal(duplicate.statusCode,409,duplicate.body);
+  assert.equal(f.tables.notifications!.length,notifications+1);assert.deepEqual(f.state.unsupported,[]);
+  await t.test('실제 새 PENDING 알림은 기존 목록과 상세에서 봉인된 목적만 소비한다',async()=>{
+   const list=await app.inject({method:'GET',url:`/api/v1/projects/${f.pid}/notifications`,headers});assert.equal(list.statusCode,200,list.body);
+   const notification=f.tables.notifications!.find(n=>n.approval_request_id===value.data.ref.id);assert(notification);
+   assert(list.json().items.some((n:any)=>n.id===notification.id));
+   const detail=await app.inject({method:'GET',url:`/api/v1/projects/${f.pid}/notifications/${notification.id}`,headers});assert.equal(detail.statusCode,200,detail.body);
+   assert.equal(detail.json().authenticatedTarget.approvalRequestId,value.data.ref.id);assert(!detail.body.includes('candidatePayload'));
+  });
+  await t.test('저장 요청 읽기의 현재 REQUIRE_APPROVAL은 원문과 영수증을 반환하지 않는다',async()=>{
+   f.modes.originReadDisposition='REQUIRE_APPROVAL';f.modes.policyVersion=3;
+   try{const denied=await app.inject({method:'GET',url:`/api/v1/projects/${f.pid}/approvals/${value.data.ref.id}`,headers});assert.equal(denied.statusCode,412,denied.body);assert(!denied.body.includes('originReuseEvidence'));}
+   finally{f.modes.originReadDisposition='AUTO';f.modes.policyVersion=2;}
+  });
+  await t.test('현재 원자료 읽기 DENY와 실제 저장 감사 변조는 보호 원문을 숨긴다',async()=>{
+   const readUrl=`/api/v1/projects/${f.pid}/approvals/${value.data.ref.id}`;
+   f.modes.originReadDisposition='DENY';f.modes.policyVersion=3;
+   try{const denied=await app.inject({method:'GET',url:readUrl,headers});assert.equal(denied.statusCode,403);assert(!denied.body.includes('originReuseEvidence'));}
+   finally{f.modes.originReadDisposition='AUTO';f.modes.policyVersion=2;}
+   const row=f.tables.approvalRequests!.find(r=>r.id===value.data.ref.id),audit=row&&f.audits.get(row.command_id);assert(audit);
+   const before=structuredClone(audit);audit.actor_ref={kind:'HUMAN',userId:id(950)};
+   try{const corrupt=await app.inject({method:'GET',url:readUrl,headers});assert.equal(corrupt.statusCode,503);assert(!corrupt.body.includes('originReuseEvidence'));}
+   finally{Object.assign(audit,before);}
+  });
+  for(const [mode,status]of[['UNVERIFIED',412],['CAP',429],['MISSING_NOTIFICATION',503],['SETTLE_LOST',503],['XID_AFTER_RESERVE',503],['OVERSIZED_SETTLE',503]] as const)await t.test('요청 저장 실패 '+mode+'는 C/A/U/요청/알림/R을 원자적으로 되돌린다',async()=>{
+   const pending={...structuredClone(command),commandId:id(920+['UNVERIFIED','CAP','MISSING_NOTIFICATION','SETTLE_LOST','XID_AFTER_RESERVE','OVERSIZED_SETTLE'].indexOf(mode))};
+   // 요청과 실행 후보의 ID는 서로 달라야 하며 후보 중복도 만들지 않는다.
+   pending.payload.details.candidateCommandId=id(930+['UNVERIFIED','CAP','MISSING_NOTIFICATION','SETTLE_LOST','XID_AFTER_RESERVE','OVERSIZED_SETTLE'].indexOf(mode));
+   const counts={commands:f.commands.size,receipts:f.receipts.size,audits:f.audits.size,requests:f.tables.approvalRequests!.length,notifications:f.tables.notifications!.length,reservations:f.tables.reservations!.length,used:f.modes.requestUsed,held:f.modes.requestHeld};
+   f.modes.requestFault=mode;f.modes.requestQuota=mode==='UNVERIFIED'?'UNVERIFIED':'VERIFIED';if(mode==='CAP')f.modes.requestOther=10737418240;if(mode==='SETTLE_LOST')f.modes.settle='LOST';
+   try{const rejected=await app.inject({method:'POST',url,headers,payload:pending});assert.equal(rejected.statusCode,status,mode+':'+rejected.statusCode);assert(!rejected.body.includes('originReuseEvidence'));}
+   finally{f.modes.requestFault='NORMAL';f.modes.requestQuota='VERIFIED';f.modes.requestOther=0;f.modes.settle='NORMAL';}
+   assert.deepEqual({commands:f.commands.size,receipts:f.receipts.size,audits:f.audits.size,requests:f.tables.approvalRequests!.length,notifications:f.tables.notifications!.length,reservations:f.tables.reservations!.length,used:f.modes.requestUsed,held:f.modes.requestHeld},counts);
+  });
+  await t.test('COMMIT 불명은 원 packet을 보존하고 자동 재예약·재발행·후행 조회를 하지 않는다',async()=>{
+   const pending={...structuredClone(command),commandId:id(970)};pending.payload.details.candidateCommandId=id(971);
+   const original=structuredClone(pending),before=f.modes.requestReserveCalls;f.modes.commit='LOST';const start=f.trace.length;
+   let uncertain;
+   try{uncertain=await app.inject({method:'POST',url,headers,payload:pending});}finally{f.modes.commit='NORMAL';}
+   assert.equal(uncertain.statusCode,503);assert.deepEqual(pending,original);assert.equal(f.modes.requestReserveCalls,before+1);
+   const trace=f.trace.slice(start),commit=trace.indexOf('COMMIT');assert(commit>=0);assert(!trace.slice(commit+1).some(sql=>sql.startsWith('SELECT')||sql.startsWith('INSERT')||sql.startsWith('BEGIN')));
+   assert.equal(uncertain.json().retryDisposition,'reconcile-first');
+  });
+ }finally{await app.close();}
+ assert.equal(f.active(),false);
 });

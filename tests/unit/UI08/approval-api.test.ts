@@ -19,3 +19,12 @@ test('서버로 재대조한 승인 결박만 원 후보 명령에 추가하고 
  const api=new ApiClient(async(_url,init)=>{if(init!.method==='GET')return Response.json(view);posts++;const c=JSON.parse(init!.body as string),input=c.payload,candidate={kind:input.kind,input,readiness:{state:'NOT_READY',executionAuthorized:false,missingRequirements:[]},capabilities:['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'].map(code=>({code,documentation:null,measurement:{state:'UNVERIFIED',toolVersion:null,environmentRef:null,executionRef:null,evidenceRefs:[]},controlLevel:'UNVERIFIED',limitations:['HOST_NOT_TRUSTED','NO_AGENT_MEASUREMENT','NOT_EXECUTABLE_CANDIDATE']}))},ref={id,version:1,contentHash:hash(candidate)};return Response.json({operationId:id,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:id,version:1,serverReceivedAt:new Date().toISOString(),data:{status:'CANDIDATE_STORED',ref,candidate,previousRef:null}});});
  const bound=await bindCandidateApproval(api,b,id,session);assert.equal(posts,0);assert.equal(bound.pending!.commandId,b.pending!.commandId);await sendCandidate(api,bound,session);assert.equal(posts,1);
 });
+
+// 범용 제작 포트의 허용 목적을 readonly 원자료 요청으로 확대하지 않는다.
+test('원자료 재사용은 범용 승인 제작·전송에 queue 목적을 추가하지 않는다',async()=>{
+ const{w}=await requestWork();w.candidate.operation='queueExecutionCommand';w.candidate.payload={};
+ await assert.rejects(prepareApprovalRequest(w,session),{code:'APPROVAL_CANDIDATE_MISMATCH'});
+ let posts=0;const api=new ApiClient(async()=>{posts++;throw Error('전송 금지');});
+ const{w:normal}=await requestWork();const command=await prepareApprovalRequest(normal,session);(command.payload.details.actionScope as any).operation='queueExecutionCommand';
+ await assert.rejects(sendApprovalCommand(api,command,session),{code:'APPROVAL_BINDING_INVALID'});assert.equal(posts,0);
+});
