@@ -17957,3 +17957,13 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 - Primary 준비 조사에서 store 경로 유실에 따른 상위 위치 읽기1·추정 파일 부재1·PowerShell wildcard 미지원1이 있었고 코드/시험은 정확 대상에서 수행했다. Main 읽기에서도 추정된 service/workflow 파일 경로 각1 부재가 확인돼 실제 경로로 대조했다. WORK_STATUS 추가 suffix CRLF 형식 경고1은 추가 부분 LF로 보정했고 이후 diff check0. 같은 근본 원인의 구현 실패 반복0.
 
 - 독립 검수 exact2 C0/I0/M0, 집중 실제 라우트 합성1 PASS/skip0. writer 반환·허용3경로만 게시한다. 공개 API·SQL·정책 변경0.
+
+
+### IX01 현 TC01 실행안 구체화
+
+- FN13 query 소비 경계 PR58은 검수 head 9d6619abf907964e3bc96eb3cccae08841d426af에서 main 6123654bd7d0961d28f39fceb040a5455290a523로 병합됐다. Broker42396044236 성공·부모/트리 일치·종료 branch/요청tag/추적ref 정리, merged-main의 실제 인증 목록 합성 smoke1 PASS/skip0를 확인했다. main 로컬/원격 ahead/behind0/0.
+- 이어서 main에서 codex/av3-ix01-current-execution-plan을 생성·즉시 게시했다. 작업 branch/main 각각 원격과0/0, SHA6123654b로 일치한다. 기존 Primary 단일 writer에게 신규 docs/work_packages/IX01_CURRENT_TC01_EXECUTION_CANDIDATE_20261108.md만 배정했고 Main은 기록·검수·통합을 맡는다. 제품 코드·실행 approval/plan 파일·실환경 변경0.
+- IX01 현 실행기/자식의 고정 namespace·112SQL·requiredSources14·수명/소진·UNKNOWN·정리와 실제 실행의 정확 범위를 구체화한다. 현재 CurrentPlan의 gitHash/dockerHash 실측, 새 승인ID/issuedAt/expiresAt 및 실제 WSL 접속은 미확인이다. 역사 J3의 고정105SQL/옛코드/원장/횟수 승인을 새 IX01_CURRENT_TC01_RUN_APPROVAL로 재사용하지 않는다. 이번은 실행 후보 작성·독립 검수이며 실제 SSH/QA/DB/권한/키/서비스/Agent 미실행. 착수 오류0.
+
+- 실행 후보 최종18257B SHA256 A05880F5B405A57517FDFEDE78C46AC152B7760FCC606D7F959702815CD6185D. 독립 C0/I0/M0, Main도 Git blob14개·문서21행·SQL112 원바이트 총3264065B·순서838aca96…05a·ledger15b818ef…0119를 직접 검산했다. J3 횟수 확대 지시는 인정하며 현 소스/스키마/신규 프로필 차이만 남긴다. 문서작성 JS 문자열 구문오류1·EOF 공백1은 보정했고 Main 임시 검사기의 숫자 쉼표 처리 오류1은 같은 기준의 정확 수치 비교로 보정 후 exit0이다. 제품 변경/실환경 실행0.
+- 후보는 DRAFT/NOT_APPROVED다. gitHash/dockerHash·현재 호스트/경로 부재·새 approvalId/issuedAt/expiresAt은 미확인·미발급으로 남겼다. 직접 CLI timeout은 원격 SQL 정착을 증명하지 않고 정상 cleanup도 PG/network만 제거한다. source/node_modules·npm cache·artifact·감사·승인 형제 파일은 보존하며 UNKNOWN에 자동 재실행/후속조회/삭제 권한을 부여하지 않는다. 다음은 게시 후보를 PMO에 전달해 WSL 회복의 정확 지원 근거와 이 신규 실제 실행 범위 결정을 요청하는 것이다.
