@@ -4079,3 +4079,18 @@ Main은 같은 정확2에서 NativeRead가 소비하는 순수 completion 분류
 기존 Primary가 source39004B/C714C4C1·시험17557B/8806E2A7의 신규2를 동결·writer 반환했다. NativeRead가 공유 완료 분류를 실제 소비해 terminal CRC/일반오류를 정착·고정실패로 회수하고 pending/불명은 보유하는 I1 보완을 독립 재검수 C0/I0/M0로 확인했다. Main0ac495 지문/분류/실제 소비·diff0와 a226d4 core/시험·entry 미등록을 대조했다. 이전87DD의 I1은 정적 반례이며 실행 RED/PASS가 아니다. 시험 소스는 공유분류→실제 core drain·후속open0/READ→FILE→ROOT 회수를 단언하지만 아직 실행하지 않았다.
 
 FN03_NATIVE_CONTENT_OBSERVER_SOURCE_RESULT_20261107.md에 정확2·부분/최종지문·도구오류1/해소·공식문서·미검증을 기록한다. 판정은 소스 구현/시험 작성·정적 검수이며 ‘구현했지만 동작 미확인’이다. compiler/RunAll/하네스/OS/PInvoke/실제파일/ABI/취소·회수·writablemapping/악성ABA/실지원은 NOT_RUN·실행PASS분모0이다. pending open OS 취소/유한반환 보장없음, 실제 observer/current receipt/host/LINK·키/DB/권한/서비스/Agent/SDK·원격0을 유지한다. Main은 이전 현재 진입점도 최신 source-only/미실행 상태로 교정했다. PMO 보고의 외국어 혼입 한 표현은 즉시 한국어로 정정했고 기술 판정은 불변이다.
+
+
+## 436. native 로컬 보존·컴파일 요청 전 검토 가능한 실행체 준비
+
+ade32a는 native source/test2+문서4 정확6을93bca154cdc64527d320d2a7b9aad1b7d381f75a에 로컬 보존했다. 부모1867bdcd·raw2 불변·tracked clean/보호3 보존, LF/CRLF Git 경고는 raw 변경과 분리한다. 결과A195CE29의 실제 compiler/하네스/ABI/OS/PInvoke/실파일 NOT_RUN·동작 미확인은 그대로다. 현재 진입점 한 행은 cb9e03으로 갱신했다.
+
+Primary가 compile-only 후보 01203E64를 동결했다. 고정 source2와 새 QA/marker·기존 csc/BCL3/argv·최대1회/15초/16KiB·DLL 미실행/RunAll0이다. Main9ebf78은 지정 Windows compiler/참조4의 현재 지문과 역사값 일치·TrustedInstaller·상위/leaf nonreparse·정확 QA/marker 부재만 확인했다. 3724ad는 기존 pwsh.exe7.6.9/301360B/2A6769A3 지문을 관측했다. 같은 명령의 서명 기록 문자열 검색이 미일치였고 현재 새 Authenticode 서명 검증/외부조회는 하지 않았다. 실제 launcher/실행 commit·수집기는 미확정이다.
+
+독립 후보 C0/I2는 FN03 고정 실행체와 외부 결과 인수 전 보존을 요구했다. Main은 기존 exact12/FN06·A3 실행기를 우회하지 않고 기존 Primary에게 신규 scripts/run-fn03-native-content-compile-only.ps1 한 파일의 검토용 source 작성만 맡겼다. 실제 사용자 승인 결박/해시/단발 marker·원 Process 양 pipe 유한 수집·durable result 기록과 인수 전 자동정리0·불명/late 보존을 먼저 검토 가능하게 한다. 자동 kill/삭제/재실행0, 실제 script/compile/하네스/OS/키/DB/권한/서비스/Agent/SDK/외부 실행0이다. 후보 DRAFT/NOT_APPROVED/EXECUTION_GO0을 유지하며 사용자가 승인할 실행체가 고정되기 전 반복 요청을 하지 않는다. 전체 목표 active·미완료다.
+
+## 437. FN03 단발 컴파일 실행체 정적 검수와 결정안 동결
+
+기존 Primary가 실행체 한 파일을 작성했다. 초판 AF1329E8의 독립 검수 C0/I2/M0에서 서명 선행과 호스트 호출 결박이 빠졌다. 같은 담당자가 현재 동일 바이트와 역사 서명 근거의 명시 채택, 실제 호스트 argv 7개 검산을 보완했다. 최종 원본은 30,518B/SHA256 ED564C5CB4DFB5AE4C11306AA05175B15967679926756C19E0857C970CC3ACD2다. Main 정적 ParseFile 9bf671과 독립 재검토 C0/I0/M0에서 구문 오류0·컴파일러 시작 지점1을 확인했다. 새 서명 조회와 실행은 미검증이다.
+
+Main 고정 결정안 docs/work_packages/FN03_NATIVE_CONTENT_COMPILE_ONLY_FIXED_PACKET_20261107.md 7325 B/SHA256 9F219AD943BB87D8F8F86571D402C7144CC851702DB8D437FA56914EA9E49685. 독립 패킷 검수 C0/I0/M1의 종료 코드0·단일 stdout/빈 stderr·내구 결과 일치 조건을 명시했다. 30분 승인 창, 실제 csc 최대1회, 15초 관측, 종료 불명 시 원 소유 유지와 QA/marker 보존이다. 기존 B 채택에는 실제 컴파일이 없으므로 정확 로컬 커밋을 고정한 뒤 PMO에 이 단발 실행 결정만 전달한다. 승인 레코드·QA·marker·DLL 생성0, 컴파일·시험 실행·실제 DB/권한/키/서비스/Agent0. 제품 C# 원본과 보호 비추적3 변경0, 정식 실패보고0. 전체 계획 미완료다.
