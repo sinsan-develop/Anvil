@@ -18217,3 +18217,18 @@ npm run typecheck
 
 - 최종scope수정독립재검수73151d는C0/I0/M0이며SQL4cbc/T05d505해시직접일치·앞ACL역할분리와합쳐미해결C/I0이다. cd0552의동일정적2파일전체는39PASS/skip0/exit0(285.3765ms)이며실SQL실행아니다. SQL1/T05/FN13schema3파일을Primary가동결했고Main은이정확3+현황만부분복구checkpoint로게시한다. 최종인접/원10초/type/build·소비전체인수/병합전이다.
 - 현재3d9b45/session69642(PID143680)는유일live이며COMMIT후응답폐기+후행새Tx원문loan거절이31821.9587ms PASS로출력됐고별도2APPROVE의동일executionID경쟁사례가동일handle진행중이다. 부분출력을전체terminal결과로승격하거나재시작하지않는다.
+
+- 부분복구checkpoint5fddd52f4cb65edf78a60bd82d4f154065f28ae0는SQL1/시험2/현황정확4이며privatepush af41b8 exit0다. Main93b21f에서tracking0/0·미커밋fixture/routes정확2를확인했다.
+- 3d9b45/session69642→동일poll0134b9는terminal2PASS/skip0/exit0(총65957.6339ms,마지막동일실행ID사례33170.2828ms)다. 합성COMMIT후응답폐기/GETv3/원packet/명시replay·같은PoolClient새Tx원문loan거절과별도2APPROVE의동일executionID writer409/추가예약0을확인했다. 합성직렬경쟁이며실PG동시성/잠금증거아니다. session69642재시작0이다.
+- 3d675b/session97911→a53ffd는호출만료·내장preabort의own-shadow getter0·실await중abort의4PASS/skip0/exit0이다. 현재유일live는c15d7e/session70190(PID142972)의첫producer lease clock실패후같은DB재시도·신규quota/COMMIT불명음성묶음이다. 현재진행중결과를PASS로승격하지않고같은handle종료를회수한다. backend10/UI3동결·실DB/권한/키/서비스/Agent0·최종회귀/type/build미완료를유지한다.
+
+- session70190 동일poll1c197e는계속진행중이며첫producer lease clock실패뒤자체폐기/같은DB새거래소비PASS(29899.5876ms),quota UNVERIFIED/CAP/SETTLE_LOST하위3PASS출력을확인했다. OVERSIZED_SETTLE/COMMIT전LOST는동일handle종료대기이며전체PASS아니다. 최소인접3파일은Primary,최종type/메모리build는Main,원Context10000ms전체파일단독1회는Main검사종료뒤Primary가담당해중복/동시부하를피한다.
+- 기존coverage지적4접점의독립재검토는한정C0/I0/M0이며fixture시작끝105128B/SHA141fc64b172ffe9825a15f5507108be0f32da6100e6e82e2c469df2ee9b47c3f일치다. proof포함3표정확SQL/2인자·project/grant/조회인자/내부createdCommand/8domain tuple를검산하는보완을읽었다. 메모리SQL coverage확인이지실SQL고정점/trigger/COMMIT/잠금증거아니며독립시험실행0이다.
+
+- Main4023d7에서미게시변경은현황+fixture/routes정확3이며제품10/UI3/SQL은게시본동결임을확인했다. 담당자의session70190최종관측을요청중이고Main의직접poll1회는Unknown process id로실패했다. 에이전트별도구범위차이일수있어이응답만으로담당자프로세스부재/종료를단정하지않으며재실행·추가poll0이다. 최종exit/전체결과는담당자의동일handle회수전미확인으로유지한다.
+
+- 담당자최종회수로session70190은1258de에서7PASS/skip0/exit0(156676.6097ms)로확정됐다. 이후최소인접3실행3a71e3/session77555는instruction-queue import의root:37 ProjectLimitPolicies TDZ실패를출력했으나컨텍스트절단뒤동일handle이없어전체exit/집계는미확인으로보존한다. 무변경재실행0이며동결제품의신규정적import순환을조사중이다. Main94a788의옛PID142972결과0은종료코드증거로쓰지않는다.
+- Main의최종 npm run typecheck(7c9842/session14981→동일pollf0232a)는exit0, write:false Vite build(b41e26)는exit0/518modules/714ms다. 타입/빌드만의PASS이며runtime TDZ를상쇄하지않는다. Main e2ec9f는quota의신규origin-reuse정적값import와async소비메서드사용선을읽었다. Primary와독립읽기담당자가순환graph/최소보완안을대조중이며quota1은아직동결이다. 지연import후보는새await전후원pins/권위/거래/기한검산을보존해야하며구현GO전정확안을확인한다. 원Context10000ms는TDZ보완/인접검증후단독실행하고불필요한타입/빌드반복은하지않는다.
+
+- TDZ독립graph읽기는runtime-policy→approvals/quota→origin-reuse→runtime-policy와root37원prototype pin접근을확인했다. Primary는command의동기guard값import까지추가3edge임을대조했다. Main3925c0/3ca57d는root129의queue전용transaction분기·root287의request관측전용·command의request/decision context생산/fn15 queue제외를확인했다. 기존pin을첫사용시점mutable재캡처하는우회는금지한다.
+- 허용3파일(command/approvals/quota)만동결해제했다. async소비메서드지연import의새await전후원query/actor/request/현재Tx검산을보존하고command동기receipt판정은진짜lease/캡처matcher를기존private상태에보관해검산한다. 새공개setter/검증callback/모듈/권한0이다. 유효생산이없는observationContext queue절만정리하고원request/decision은보존한다. 기존TDZ import반례·위조/clone/회수/새await중교체/인접시험뒤독립재검수하며현재제품수정전GO범위를기록했다. 이전타입exit0는수정전기준이며이3파일변경후최종타입은별도로필요하다. UI메모리build는UI불변이면재사용한다.
