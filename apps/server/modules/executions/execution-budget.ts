@@ -55,6 +55,8 @@ function readClaim(value: unknown): BudgetClaim {
     ||(input.demand.costStatus==='VERIFIED_NO_CHARGE'?input.demand.cost!==null:input.demand.costStatus!=='FINITE_CAP'||input.demand.cost===null))return fail('BUDGET_INPUT_INVALID',422);
   return input as BudgetClaim;
 }
+export {readClaim as readExecutionBudgetClaim};
+
 function checkedPolicy(policy: CheckedPolicy, at: string, claim?: BudgetClaim, requireActive=true) {
   if(!isoV1(at)||!uuidV1(policy?.projectId)||!refV1(policy?.ref)||!isoV1(policy?.snapshot?.decidedAt)||!isoV1(policy?.snapshot?.expiresAt))return fail('BUDGET_POLICY_INVALID',422);
   const p=policy.snapshot;

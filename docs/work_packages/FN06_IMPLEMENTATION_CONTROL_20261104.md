@@ -3911,3 +3911,48 @@ Main은 신규 FN09_EXECUTION_START_ORIGIN_SOURCE_RESULT_20261107.md에 정확23
 Primary940361 선택1PASS·3ac658 해당파일10PASS/0fail/0skip·1086.6014ms·type/diff0 뒤 Main f3ff93은 같은 파일 전체를 독립 실행해10PASS/0fail/0cancel/0skip/0todo·575.7019ms·exit0와 diff0/최종hash를 확인했다. 앞선 인접6FAIL은 과거 결과로 유지하며 이번 보완 후 해당파일 결과만 별도로 통과다. 신규 FN09 48·다른 인접4·build는 변경이 없어 반복하지 않았다. 실제 DB/SQL·권한·키·서비스·SDK/Agent·실자료 조사0이며 실제 환경계상/SQL 원자성·전체 FN09/Stage/계획 완료를 뜻하지 않는다.
 
 역치환 진단의 줄바꿈 처리 오류1은 정정해 원지문을 확인했고 제품/시험 실패와 분리했다. writer는 반환됐으며 Main은 정확 시험1+부록/현황3의 로컬 checkpoint를 준비한다. 다음 승인 범위의 독립 미완료 업무를 기존 담당자가 읽기 전용으로 선별 중이다. PMO는 앞선 bbd20aa5 보고를 접수했음을 compact 조회로 확인했고 중복 전송하지 않았다. 원격/PR/병합/배포0이다.
+
+
+## 412. 다음 FN09 발급·현재 사실 연결의 계약 후보 구체화
+
+기존 Primary의 읽기 전용 대조는 S/Q 생산 선행이 해소됐음을 확인했으며 과거 producer 부재를 그대로 이월하지 않았다. 그러나 RESERVED_NOT_ISSUED/credentialIssued:false를 실제 START/grant/E/current 권위로 바꿀 계약은 아직 채택되지 않았다. FN10 평가 공급자·FN12 후속 계보·FN16 snapshot/복원 후보도 미채택이며 FN13 quota/FN14 reader처럼 이미 연결한 소스를 신규 누락으로 재작업하지 않는다.
+
+Main은 새 FN09_ORIGIN_ISSUANCE_CURRENT_FACT_CANDIDATE_20261107.md 한 문서만 기존 Primary에게 맡겨 식별 계보·목적·세대/현재성·단발/회수·불명 재시도 금지·실제 근거 공급자·재사용과 정확 delta·인수 시나리오를 구체화하도록 했다. 독립 담당자는 같은 경계를 읽기 전용으로 검수한다. 후보는 DRAFT/NOT_ADOPTED/SOURCE_GO0이며 새 권한/발급/VERIFIED_CURRENT 구현을 허가하지 않는다. 실제 DB/권한/키/서비스/Agent/SDK 추가 읽기0이다. Main은 다음 결정·지원의 정확 차이만 PMO에 전달하고 승인과 무관한 계약 준비를 계속한다. 현재 진입점의 과거 TDD 중 문구는 5bac8073/최신 인수 사실로 한 행 교정했다.
+
+
+## 413. 원자료 기반 합성 START 입력의 한정 구현 배정
+
+기존 담당자가 동결한 발급 후보 30273B/97B35B96은 §4~9 미채택·SOURCE_GO0을 유지한다. 독립 §3.1 검토 C0/I0/M1은 기존 순수 검산과 보호 읽기로 정확3경로의 합성 {intent,claim} 생산이 가능하다고 확인했다. M1의 실제 CANCELLED/원 출처 권한 회수는 이번 지시서 검수에 명시했다. Main은 registrar exact13→11과 private readClaim을 대조했고, 추정 시험 경로 오류1은 실제 검색으로 tests/unit/FN08/execution-command-ledger.test.ts에 정정했다. 새 공개/저장/권한 의미를 만들지 않는 내부 단위를 기존 Primary에게만 배정한다. 실제 발급/current/grant/E/소비/예약과 DB·권한·키·서비스·SDK/Agent 실행0이다.
+
+
+## 414. 발급 후보의 미결정 3개 분리·내부 합성 구현 RED
+
+동결 후보 97B35B96의 §4~9 독립 검토는 C0/I3/M0다. I1 발급 전 독립 준비 증빙/실행예산 ref와 SDK 생성 뒤 Query/SID/writer 증빙의 분리, I2 COMMIT→보호 채널 단발 전달→사용 개시 및 전달 전 중단/응답 유실/회수, I3 첫 HUMAN SEND와 같은 Query init 선후가 미정이다. 권장 보완 순서는 발급 전/후 증빙 분리→단발 귀속/비순환 봉인→전달/사용/회수 불명 상태→SDK 근거에 따른 첫 SEND 순서다. 기존 native/합성 권위를 새 목적으로 전용하지 않는다. Main은 PMO에 필요한 결정 순서 검토만 전달했고 현재 실제 발급/API/데이터 변경을 채택하지 않았다. 기존 SDK 읽기2의 ENOTFOUND/소진과 재시도0 유지다.
+
+이 판단과 별개로 기존 Primary는 981850DA 정확3 내부 단위에서 857978의 실제 메모리 S/Q 저장 뒤 basis 생산자 부재로 초기 RED 1FAIL/0SKIP·exit1을 확보했다. 취소/만료 후 늦은 결과 반환을 막되 남은 읽기가 정착하기 전 바깥 Tx를 해제하지 않도록 구현 중이다. Main은 같은 파일을 쓰지 않는다. 실제 DB/권한/키/서비스/SDK/Agent 실행0이며 전체 계획 미완료다.
+
+
+## 415. 발급·전달 후보 보완과 내부 합성 신규·인접 검사
+
+PMO는 발급 전 증빙과 발급 후 사용 검사 분리→단발 귀속→전달/회수/불명 명시의 순서를 확인했다. 기존 검토 담당자가 FN09_ISSUANCE_DELIVERY_PHASES_ADDENDUM_CANDIDATE_20261107.md 6611B/6DEDA579를 작성·동결했다. Main은 부모 hash·귀속 COMMIT과 전달 선점 소진·수용/사용·회수/UNKNOWN 구분을 대조했다. 실제 issuer/채널/수신 증빙·사용/회수 검사점·발급 전 관측 및 예산 입력은 미정이고 I3의 SDK init/첫 SEND 순서도 미검증이다. DRAFT/NOT_ADOPTED/SOURCE_GO0이며 실제 발급·서비스 변경이나 검증을 승인하지 않는다.
+
+합성 basis 구현은 기존 Primary가 7c9adf에서 신규8+기존 ledger15=고유23PASS/0FAIL/0SKIP·6384.2229ms·exit0, 261b3d typecheck exit0를 제출했다. 동결 actor 직접 변경을 시도한 음성 시험 준비 오류1은 분리 사본 사용으로 해결했다. 이 기록은 Primary 제출이며 Main 검수·최종 지문과 독립 실행 전에는 단위 인수로 승격하지 않는다. 실제 DB/권한/키/서비스/Agent/SDK 실행0이다.
+
+
+## 416. 합성 basis 최종24 직접 검증·취소 신호 독립 I1
+
+동결 제출은 basis10632B/FB04667B, budget20198B/D17202FB, 시험10955B/2883883C였다. Primary63da7b 신규9+인접15=24PASS/0fail/0skip·7275.3545ms·exit0, 5d3b64 typecheck와 391d1c diff0를 확인했다. Main6fb4ae raw3/diff0·기존 budget의 순수 별칭만과 f83cac 독립24PASS/0fail/0cancel/0skip/0todo·6558.9922ms·exit0를 확인했다. 최초RED857978→e938d9, 시계 역행8221f8→df01a5는 기록을 보존한다.
+
+독립 검토 C0/I1/M0: 실제 AbortSignal에 own aborted:false/getter를 두면 instanceof 검사를 통과하고 일반 속성 접근으로 원 취소를 가릴 수 있다. Main e120ad의 순수 메모리 재현은 nominal=true, ordinary=false, intrinsic=true다. 단위는 인수 전이다. 981850DA 안에서 basis와 신규 시험2만 같은 Primary의 보완 범위이며 budget 별칭과 기존 기대값은 동결한다. 원 intrinsic getter를 고정해 브랜드/원 상태를 검산하고 Proxy/가짜/가려진 취소·HOLD 중 실제 취소·getter 미실행을 검증한다. 외부 조기 반환 금지와 underlying 정착은 그대로다. 새 권한/계약·DB/서비스/키/SDK/Agent 실행0이다.
+
+
+## 417. 취소 경계 해소·합성 START 입력 단위 인수
+
+§416 I1은 실제 사전 취소 가림·HOLD 중 getter·가짜/Proxy의 24fbc9 3RED→11e7fd 3GREEN과 최종 독립 C0/I0/M0로 해소했다. 기존 시험 prefix 2883883C·budget D17202FB는 불변이다. Main4a5b28 최종 신규12PASS/0fail/0cancel/0skip/0todo·7784.5745ms·exit0, Primary715670 신규12/type/diff0, 앞선 직접 인접15 통과를 구분한다. 정확3과 실행·미검증은 FN09_ORIGIN_QUEUE_BASIS_SOURCE_RESULT_20261107.md에 기록한다. 기존 합성 입력 생산만 인수하며 실제 큐 정착/current/grant/E·실환경/전체 계획 인수는 아니다.
+
+후속 실제 소비의 선행 충돌: 기존 S는 서버 생성 executionId와 원 등록 정책을 봉인한다. 기존 START는 그 정확 ID/세대/범위별 두 runtime 규칙을 현재 정책에서 요구하며 사후 추가 시 지문이 달라진다. 실행ID의 기존 lock/PK·명령 replay는 중복 저장 차단이며 원 origin의 영속 소비 영수증은 아니다. 후보 부록 D4DCBC7F §4는 원 등록 역사와 별도 명시 최신 실행 정책의 A 또는 origin 전 승인 식별 B를 비교한다. Main은 실제 runtime-policy/원 store를 확인했고, 후보는 미채택 유지하며 PMO에 필요한 A/B 판단만 요청했다. 실제 DB/권한/키/서비스/SDK/Agent와 기존 정책 변경0이다.
+
+
+## 418. 후보 문서 끝 공백 비의미 정리
+
+로컬 stage 뒤 diff 검사 9f0259가 미채택 발급 후보의 마지막 빈 CRLF 줄 1곳을 지적했다. 실제 suffix 0A0D0A와 양쪽 30273B/97B35B96을 확인하고 마지막 0D0A 두 바이트만 제거했다. 30271B/A5080F5C5A0B7AAEC812352B6F19FA981A1037B6BB0F29C88BF0DDA15E1FBD21 이며 원 본문/제품/시험/WI/결정안은 불변이다. 원 지문은 검토 당시 증거로 남기며 두 바이트를 되붙이면 복원된다. Main 비의미 재확인만 했고 DRAFT/NOT_ADOPTED/SOURCE_GO0과 실제 실행 제외를 유지한다.
