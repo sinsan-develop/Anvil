@@ -74,3 +74,14 @@ git diff --check
 ## 복구와 후속
 
 최종 통합 전에는 같은 브랜치의 게시 checkpoint와 기준 main으로 변경 hunk를 비교한다. 정상 통합 후 복구는 해당 PR revert를 사용한다. 미적용 SQL이므로 실제 DB 복구·권한 변경은 수행하지 않는다. 최종 commit·PR·병합 후 smoke·정리와 다음 미완료 업무는 WORK_STATUS에서 이어간다.
+
+## Git 통합 확인
+
+- PR #63: https://github.com/sinsan-develop/Anvil/pull/63
+- 검수·게시 head: `ab7bdb2c551f5937da93030348478e0e458967ec`.
+- merged main: `44dfca069f0e1aacf3556eec4e11b4d30cdc258a`, 직접 부모는 기준 main `7d51ce10594df663ddf13cba4a65e860d838d1e2`.
+- source/merge 동일 tree: `afabe91427a892347f3b745ae69bc3c1ccb49b2f`.
+- Broker `42424290668` 종료 success/exit0.
+- merged-main smoke `326101/session49723→4c3142`: 직접 import·동일 exact8 replay·GET v3·읽기 전용 화면의 4 PASS/skip0/exit0.
+- smoke 종료 뒤 원격 branch/요청 tag 부재와 PR 복구 ref를 확인하고 완료 local branch/추적 ref만 정상 정리했다.
+- 실제 DB·권한·Agent·배포/사용자 인수와 전체 계획 완료는 이 통합에 포함하지 않는다.
