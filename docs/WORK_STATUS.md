@@ -17932,3 +17932,16 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 - 지정 daon@SINSAN 읽기 전용 SSH는 다시 banner exchange: Connection to UNKNOWN port -1: Connection refused(exit1). 실제 신규/역사 IX01 자원·승인 사용·SQL은 0이다. 실제 환경 선행과 별개로 승인된 소스 업무를 진행한다.
 
 - 마지막 M1은 시험만 3초로 보완했다. 최종 시험 SHA256 3DB410DB…B51786, Primary·Main 집중1 PASS/skip0, 제품/자식/manifest 동결본 유지. 앞선 독립 I1 해소 및 직접/인접20과 구분한다. 이 소스 검수를 실제 WSL·Docker·PostgreSQL·TC01 증거로 승격하지 않는다.
+
+### FN11/UI08 등록 실행 준비 승인 복귀 착수
+
+- IX01 격리 TC01 실행기 소스 PR56은 검수 head e397f882에서 main 572b0370으로 병합됐다. Broker 42393561326 성공, 부모·트리 일치 및 종료 브랜치·요청 태그·로컬 추적 ref 정리 확인. 새 codex/av3-ui08-preparation-return과 로컬 main은 원격과 각각 ahead/behind 0/0. 실제 IX01·WSL·DB는 미실행.
+- 등록 실행 준비 승인 WI의 기존 편집기→결정→명시 복귀 흐름에서 고정 요청 이동과 정확 원 버퍼의 복귀가 빠진 것을 확인했다. 기존 Primary 단일 writer에게 App.tsx, ExecutionPreparationEditor.tsx, ApprovalsPage.tsx, 기존 registered-preparation-options-flow.test.ts만 배정했다. 일치하는 현재 프로젝트/주체/기기/요청·명령·임무에서만 이동을 표시하고 기존 별도 결박·저장·실행 보호를 유지한다. 착수 오류0.
+- 공개 API·DB·키·권한·서비스·Agent 변경0. 합성 검수로 실제 통합 완료를 표시하지 않는다.
+
+- 병합 기준선 572b0370의 IX01 합성 순서 smoke 1 PASS/skip0.
+
+- 다음 Stage C 소비선 읽기 대조에서 기존 UI05의 등록 준비 원자료 예약은 이미 연결돼 있음을 확인했다. 실제 START에는 같은 인증 거래의 현재 실행 증빙 공급자가 필요하고 기존 합성 intent/claim은 그 권위가 아니다. 원래 FRESH 412와 실제 Agent 미실행을 유지하고, 이번 UI08 복귀 작업을 그 경계와 분리한다.
+
+- FN09 등록 준비 UI08 복귀 동결. Editor DD91E691…956C50, App B0775D09…B58720, ApprovalsPage 0C5CD355…4FCA6A, 화면 시험 A4877091…B7AB5B. 최초 기존 일반 링크·복귀 미표시 RED 2건, Primary 직접7 PASS, Main 직접/인접18 PASS/skip0·typecheck·Vite 메모리 build 517·diff check exit0, 독립 C0/I0/M0. 착수 후 제품 검증 오류0.
+- 저장된 승인 요청으로만 이동하고, 같은 계정·기기·프로젝트의 원명령/임무·현재 유효한 미소비 승인이 일치할 때만 작업공간 복귀를 표시한다. 이동만으로 원 입력 복원·임무 선택·결박·저장·소비·실행은 시작하지 않는다. 실제 App 전환·타이머 경과·브라우저/DB는 미검증이다.
