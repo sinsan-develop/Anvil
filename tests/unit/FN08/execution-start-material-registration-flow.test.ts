@@ -157,3 +157,93 @@ test('START H3/E1의 원 등록 자료는 기존 구체 wrapper에서 원 실행
  assert.deepEqual(Buffer.from(result.material.bytes),f.contextBytes);assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);assert.equal(f.tables.execution_credentials!.length,1);
  assert.equal(f.tables.execution_material_manifests![0]!.snapshot_json.scope.credentialGeneration,3);assert.equal(f.tables.execution_material_proof_bindings![0]!.snapshot_json.scope.credentialGeneration,3);
 });
+
+
+async function concreteObservationFixture(){
+ const keys=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=keys.publicKey.export({format:'der',type:'spki'}).toString('base64url'),f=fixture(true,0,publicKeyFingerprint(spki));await f.prepareConcretePolicy(3);await f.run();
+ const descriptor=f.tables.execution_material_manifests![0]!.snapshot_json,material=f.tables.execution_materials![0]!,scope={...structuredClone(descriptor.scope),credentialGeneration:1},host={transport:'SYNTHETIC_ONLY' as const,key:async()=>spki};
+ const target=executionTarget('GET','/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands/'+descriptor.commandId+'/materials/'+material.id,[],null),request={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:scope.grantRef,credentialGeneration:1,target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:f.clock()};
+ const issued=await new SyntheticExecutionChallenges(new SyntheticPgChallengeStore(f.pool as any,host)).issue(scope,request,sign('sha256',executionChallengeRequestBytes('EXECUTION',request),{key:keys.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url'));
+ const proof={requestId:request.requestId,...target,grantRef:scope.grantRef,credentialGeneration:1,serverNonce:issued.challenge.serverNonce},signature=sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:keys.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
+ return{f,spki,scope,descriptor,material,issued,proof,signature,read:(store=concreteMaterialStore(f,spki))=>new SyntheticAuthenticatedMaterials(store).read(scope,descriptor.commandId,material.id,issued.ref,proof,signature)};
+}
+test('구체 START 관측 결합은 각 materialFor에서 before/body/fresh-after만 소비한다',async()=>{
+ const c=await concreteObservationFixture(),start=c.f.trace.length,result=await c.read(),trace=c.f.trace.slice(start);
+ assert.equal(trace.filter(q=>q==='SOURCE_BODY').length,2,'최초와 최종 materialFor의 진짜 body는 각각 읽는다');
+ assert.equal(trace.filter(q=>q==='SOURCE_INSPECT').length,4,'각 materialFor의 새 before/after inspect 한 번씩');
+ assert.deepEqual(Buffer.from(result.material.bytes),c.f.contextBytes);assert.equal(result.executionAuthorized,false);assert.equal(c.f.tables.execution_receipts!.length,1);assert.equal(c.f.tables.execution_material_proof_bindings!.length,1);
+});
+
+
+test('구체 START 관측의 fresh-after는 expiry 연장·축소와 writerState 변경을 거절한다',async()=>{
+ for(const fault of ['EXTEND','SHORTEN','WRITER']){const c=await concreteObservationFixture(),source=c.f.source as any,inspect=source.inspect,body=source.readBody;let read=false;
+  source.inspect=async function(...args:any[]){const out:any=await Reflect.apply(inspect,this,args);if(read){if(fault==='WRITER')out.fact.writerState=out.fact.writerState==='NONE'?'OWNED':'NONE';else{const at=Date.parse(out.fact.expires.permissionPolicy);out.fact.expires.permissionPolicy=new Date(at+(fault==='EXTEND'?1000:-1000)).toISOString();}}return out;};
+  source.readBody=async function(...args:any[]){const out=await Reflect.apply(body,this,args);read=true;return out;};
+  const saved=structuredClone(c.f.tables),start=c.f.trace.length;await assert.rejects(c.read());assert.equal(read,true);assert.deepEqual(c.f.tables,saved);assert.equal(c.f.trace.slice(start).filter(q=>q==='SOURCE_BODY').length,1);
+ }
+});
+test('구체 START ticket은 caller callback·위조 transaction·종료 뒤 재진입을 인정하지 않는다',async()=>{
+ const {visitConcreteStartRead,concreteStartReadFor}=await import('../../../apps/server/modules/executions/execution-instruction-material-store.ts');let callbacks=0;
+ await assert.rejects(visitConcreteStartRead({},async()=>{callbacks++;},'BEFORE'));assert.equal(callbacks,0);
+ const c=await concreteObservationFixture(),store=concreteMaterialStore(c.f,c.spki);assert.equal(concreteStartReadFor({},c.scope,c.descriptor.commandId,c.material.id),null);
+ let held:any;await store.transaction(c.scope,async tx=>{held=concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id);assert(held);});
+ const at=c.f.trace.length;await assert.rejects(held.before());assert.equal(c.f.trace.length,at,'원 Tx 종료 뒤 보호 조회도 시작하지 않는다');
+});
+
+
+test('구체 START 원 source 메서드 교체와 교차 pair는 fallback 성공을 만들지 않는다',async()=>{
+ for(const fault of ['INSPECT','BODY','PROTOTYPE','PAIR']){const c=await concreteObservationFixture(),source=c.f.source as any,parts=new SyntheticStartMaterialParts(c.f.registrar!),basis=new SyntheticStartMaterialBasis(parts),host={transport:'SYNTHETIC_ONLY' as const,key:async()=>c.spki};
+  const other=new SyntheticStartMaterialParts(c.f.registrar!),store=new SyntheticPgInstructionMaterialStore(c.f.pool as any,host,basis as any,fault==='PAIR'?other:parts,c.f.registrar!);
+  let forged=0;const original=source.inspect,body=source.readBody,proto=Object.getPrototypeOf(source);
+  if(fault==='INSPECT')source.inspect=async function(...args:any[]){forged++;source.inspect=original;return Reflect.apply(original,this,args);};
+  if(fault==='BODY')source.readBody=async function(...args:any[]){forged++;source.readBody=body;return Reflect.apply(body,this,args);};
+  if(fault==='PROTOTYPE')Object.setPrototypeOf(source,{});
+  const start=c.f.trace.length,saved=structuredClone(c.f.tables);try{await assert.rejects(c.read(store));assert.equal(forged,0);assert.equal(c.f.trace.slice(start).filter(q=>q==='SOURCE_BODY').length,0);assert.deepEqual(c.f.tables,saved);}finally{source.inspect=original;source.readBody=body;Object.setPrototypeOf(source,proto);}
+ }
+});
+
+
+test('구체 START 단발 phase 실패·메서드 가림은 같은 ticket 재시도를 닫는다',async()=>{
+ const {concreteStartReadFor}=await import('../../../apps/server/modules/executions/execution-instruction-material-store.ts');const c=await concreteObservationFixture(),store=concreteMaterialStore(c.f,c.spki);
+ await store.transaction(c.scope,async tx=>{const read=concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id)!;assert(read);const at=c.f.trace.length;await assert.rejects(read.body({id:c.material.id,version:1,contentHash:c.material.content_hash}));await assert.rejects(read.before());assert.equal(c.f.trace.length,at);
+  const original=Object.getOwnPropertyDescriptor(tx.materials,'current')!;let calls=0;Object.defineProperty(tx.materials,'current',{configurable:true,get(){calls++;return original.value;}});try{assert.throws(()=>concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id));assert.equal(calls,0);}finally{Object.defineProperty(tx.materials,'current',original);}
+ });
+});
+test('구체 START body 중 회수·기한·query 교체는 bytes와 원 nonce 결과를 반환하지 않는다',async()=>{
+ for(const fault of ['SOURCE','EXPIRED','SESSION','QUERY']){const c=await concreteObservationFixture(),source=c.f.source as any,body=source.readBody,query=c.f.db.query;source.readBody=async function(...args:any[]){const out=await Reflect.apply(body,this,args);if(fault==='SOURCE')c.f.mode('DENY_SOURCE');if(fault==='EXPIRED')c.f.advance(7200000);if(fault==='SESSION')c.f.credential(4);if(fault==='QUERY')c.f.db.query=async(...args:any[])=>Reflect.apply(query,c.f.db,args);return out;};
+  const saved=structuredClone(c.f.tables),start=c.f.trace.length;try{await assert.rejects(c.read());assert.equal(c.f.trace.slice(start).filter(q=>q==='SOURCE_BODY').length,1);assert.deepEqual(c.f.tables,saved);}finally{c.f.db.query=query;source.readBody=body;}
+ }
+});
+test('구체 START의 inherited source 메서드 own shadow는 getter 실행 없이 거절한다',async()=>{
+ const c=await concreteObservationFixture(),source=c.f.source as any,original=Object.getOwnPropertyDescriptors(source),proto=Object.getPrototypeOf(source),methods=Object.fromEntries(['describe','inspect','readBody'].map(k=>[k,original[k]!]));
+ const inherited=Object.create(proto,Object.fromEntries(Object.entries(methods).map(([key,descriptor])=>[key,{...descriptor,configurable:true}])));for(const key of Object.keys(methods))delete source[key];Object.setPrototypeOf(source,inherited);
+ let getter=0;try{const store=concreteMaterialStore(c.f,c.spki);Object.defineProperty(source,'inspect',{configurable:true,get(){getter++;return methods.inspect!.value;}});const at=c.f.trace.length;await assert.rejects(c.read(store));assert.equal(getter,0);assert.equal(c.f.trace.slice(at).filter(q=>q==='SOURCE_BODY').length,0);}finally{Object.setPrototypeOf(source,proto);Object.defineProperties(source,original);}
+});
+
+
+test('구체 START guard의 마지막 txid await 중 getter 가림은 반환 직전 거절하고 getter0이다',async()=>{
+ const {concreteStartReadFor}=await import('../../../apps/server/modules/executions/execution-instruction-material-store.ts');
+ const run=async(at:number)=>{const c=await concreteObservationFixture(),query=c.f.db.query;let calls=0,getters=0,parts:any,original:PropertyDescriptor|undefined;
+  c.f.db.query=async(...args:any[])=>{const out=await Reflect.apply(query,c.f.db,args);if(args[0]==='SELECT txid_current()::text AS transaction_id'){calls++;if(at&&calls===at){original=Object.getOwnPropertyDescriptor(parts,'readPart');Object.defineProperty(parts,'readPart',{configurable:true,get(){getters++;return SyntheticStartMaterialParts.prototype.readPart;}});}}return out;};
+  const store=concreteMaterialStore(c.f,c.spki);parts=store.parts;let rejected=false,last=0;try{await store.transaction(c.scope,async tx=>{calls=0;const task=concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id)!;try{await task.before();}catch{rejected=true;}last=calls;if(original)Object.defineProperty(parts,'readPart',original);else Reflect.deleteProperty(parts,'readPart');task.close();});assert.equal(getters,0);assert.equal(rejected,!!at,'같은 원 guard 마지막 await에서 가린 메서드는 반환 전에 거절');return last;}finally{if(original)Object.defineProperty(parts,'readPart',original);else Reflect.deleteProperty(parts,'readPart');c.f.db.query=query;}
+ };
+ const last=await run(0);assert(last>0);await run(last);
+});
+
+
+test('구체 START 성공·명시 close 뒤 보관한 모든 closure는 재조회와 body를 다시 시작하지 않는다',async()=>{
+ const {concreteStartReadFor}=await import('../../../apps/server/modules/executions/execution-instruction-material-store.ts');const c=await concreteObservationFixture(),store=concreteMaterialStore(c.f,c.spki);
+ for(const finish of ['SUCCESS','CLOSE'])await store.transaction(c.scope,async tx=>{const task=concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id)!;assert(task);const before:any=await task.before();if(finish==='SUCCESS'){const bytes=await task.body(before.material.ref);assert.deepEqual(Buffer.from(bytes),c.f.contextBytes);await task.after();}else task.close();
+  const at=c.f.trace.length;for(const invoke of [()=>task.before(),()=>task.body(before.material.ref),()=>task.after()])await assert.rejects(invoke());task.close();assert.equal(c.f.trace.length,at,'남은 closure로 원 query/source/body 재시작0');
+ });
+});
+
+
+test('구체 START 진행 중 close는 before/body/after 결과와 frame의 재사용을 막는다',async()=>{
+ const {concreteStartReadFor}=await import('../../../apps/server/modules/executions/execution-instruction-material-store.ts');
+ for(const phase of ['BEFORE','BODY','AFTER']){const c=await concreteObservationFixture(),source=c.f.source as any,inspect=source.inspect,body=source.readBody;let reached!:()=>void,release!:()=>void,observations=0,returned=false;const entered=new Promise<void>(r=>reached=r),hold=new Promise<void>(r=>release=r);
+  source.inspect=async function(...args:any[]){const out=await Reflect.apply(inspect,this,args);observations++;if(phase==='BEFORE'&&observations===1||phase==='AFTER'&&observations===2){reached();await hold;}return out;};
+  source.readBody=async function(...args:any[]){const out=await Reflect.apply(body,this,args);if(phase==='BODY'){reached();await hold;}return out;};
+  const store=concreteMaterialStore(c.f,c.spki);try{await store.transaction(c.scope,async tx=>{const task=concreteStartReadFor(tx.materials,c.scope,c.descriptor.commandId,c.material.id)!;let current:any,pending:Promise<unknown>;if(phase==='BEFORE')pending=task.before();else{current=await task.before();if(phase==='BODY')pending=task.body(current.material.ref);else{await task.body(current.material.ref);pending=task.after();}}await entered;task.close();release();try{await pending;returned=true;}catch{}const at=c.f.trace.length;await assert.rejects(task.before());await assert.rejects(task.body({id:c.material.id,version:1,contentHash:c.material.content_hash}));await assert.rejects(task.after());assert.equal(c.f.trace.length,at);});assert.equal(returned,false,phase+' close 뒤 진행 중 결과 반환0');}finally{release();source.inspect=inspect;source.readBody=body;}
+ }
+});
