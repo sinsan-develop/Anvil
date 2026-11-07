@@ -18101,3 +18101,18 @@ npm run typecheck
 - 반복SQL단계계측이찾은receiver구간에한정해V8CPU샘플1회(10000합성query후profile종료,원10초유지)64009f→3915b7를수행했다. canonical.ts encode·GC·합성query본문이상위표본이며프로세스PID168128/statusnull/SIGTERM/ETIMEDOUT10038ms로원시험PASS는아니다. 이는변경없는전체시험재실행이아닌pure encode할당가설의원인계측이고실DB/키/서비스0이다. 값/권한/현재성캐시나검사생략대신canonicalJson의map/parts배열할당을줄이는순수출력동치후보만읽기/단발메모리비교로검토시켰다. 후보가출력/거절/관측순서동치와유의한개선근거를못내면제품쓰기GO하지않는다. 실제수정은UI4반환뒤별도WI/단일writer로만진행한다.
 
 - backend10동결·독립source검수와전체gate1FAIL을구분해동일branch의복구용WIPcheckpoint로backend10+현황만게시한다. UI4현재변경은stage하지않고같은Primary가계속소유한다. raw10정렬972795f5는불변이고HEAD변경만발생한다. 필수gate미충족에서main병합/전체완료주장0을유지한다.
+
+- 복구checkpoint94846aad95b51079718d02c4ea5af00a2aa1b46f는기존작업branch에private게시·local/remote0/0(062c02)이며main497e8b41는불변이다. 미게시UI4는동일Primary소유로남기고backend10만보존했다. 전체파일clean/전체gatePASS/병합완료로보고하지않는다.
+- 성능보완WI docs/work_packages/FN08_START_CONTEXT_CANONICAL_ALLOCATION_PERFORMANCE_WI_20261108.md5273B/SHAaa85d77e30937bdad577eecf7dcb343bf6ca3b44e28dfa833a8c83f8e2ba052f를작성·자가대조했고독립읽기C0/I0/M0·hash일치640c99를확인했다. 기존PrimaryUI4반환후에만canonical.ts/직접시험2파일순차GO한다. 메모리비교89동치/Proxy2동치·ratio0.82~0.98는소폭개선근거일뿐원10초해결보장이아니며, 원종단1회실패시해결채택0·guard/출력/cache금지·소유hunkrollback을명시했다. PMO에checkpoint와정확WI를전달했다.
+
+- UI4직접93c256은23PASS/skip0이며Mainfresh동일파일23PASS/skip0/exit0(7f481f)를확인했다. 실제Page세결정·재봉인부모/P2/control오염·UNKNOWN원packet확인·POST뒤GET403영수증보존·control/hash/POST/응답scope이탈과언마운트를포함한다. 초기queued updater순서회귀는9b19ea에서보정후포함됐으며완료/최종동결전이다.
+- UI인접9파일d2ca4a의63PASS/1FAIL은지연목록401시험이새scope GET시작횟수만보고본문/hash/React publish완료전에단언한시험동기화경계다. 같은시험파일에서새본문실제관측후이전401을풀도록보강하며본문/인증/POST기대값유지·강화, 제품3변경0이다. 정확사례단독확인과최종type/build/hash를회수한뒤판정하며전체재실행은불필요하게반복하지않는다.
+
+- UI4조기독립읽기에서publish(next)의FUP가previous.decision!==prior로저장을거부해도호출자는expected=next/active()로sender전진할수있는후보를발견했다. 동일project/owner/selectedId/readScope에서부모decision교체/삭제·updater거부를실React로재현한뒤pending선보존/POST0를검수한다. 현재는확정runtimefinding전이며기존23PASS를이반례의증거로쓰지않는다.
+- 같은Primary가UI4안에서실제committed부모work관측/전송진입결박을보강한다. 시간sleep으로commit추정·backend10수정·추가파일/권한0, 현재UI최종동결과writer반환은이검수해소후로보류한다. 다른기능을전수재검사하지않고정확변경경계·UNKNOWN/receipt보존·기존generic행동을확인한다.
+
+- UI4부모commit후보는06c318에서실제RED로확정됐다. 부모pending거부/교체2개와control대기중부모삭제모두기대POST0/실제1이며부모집계포함4FAIL/exit1이다. 원packet선보존과명시입력변경중단의Important보완대상으로처리한다. 같은Primary가Page한파일에서layout effect의committed부모work관측과pending실제commit확인뒤sender전진을결박한다. 현재handle0·backend10불변·실제서비스POST/DB/Agent실행0, 앞23PASS는이신규반례를포함하지않은증거로남긴다.
+
+- UI4최종동결정렬manifest697d430a9d9b240b16d9864581445107fda52c97a01035068d957d7fcdd9c599를Main도직접확인(daecae)했다. 최종Page59792B/d65162d1…5f5632·api32157B/da3bf0de…b55aae·helper14147B/03fbabe0…845224·시험40215B/b71b2f22…4ce7c4다. 부모CAS 반례06c318 RED4→ae0666 GREEN4,직접UI27+기존UI04 7의34PASS/skip0(8d9084)·type0f3fe4/diff7c1577exit0·writer반환을인수했다. queued updater순서와지연401시험동기화오류는앞선출력과분리보존한다.
+- MainfreshUI27PASS/skip0/exit0(a42b10)·Vite메모리build518modules/3outputs exit0(ccc359),독립최종C0/I0/M0·신규27PASS/skip0/exit0(a68fc3)·최종4지문일치d309ca/backend10정렬972795f5불변·diff0b1cf1 exit0를확인했다. Important1은실제committed부모work/private복사·CAS·flushSync뒤commit일치후POST로해소됐다. 메모리React/transport증거이며served/실DB/키/권한/서비스/Agent0,전체gatelegacytimeout1FAIL미해소·병합0유지다.
+- UI4반환후같은Primary에검토완료WI AA85D77E…BA052F의canonical.ts/직접시험2파일만순차GO했다. backend10/UI4는동결하고Main은현황/지시서만쓴다. 현2파일작업은마이크로개선의종단효과를보장하지않으며출력/거절/관측순서/guard불변·원10초시험변경후1회·실패시해결채택0·추가반복/범위확대0를유지한다. UI4+WI/현황만후속복구checkpoint로게시하며진행중2파일은stage하지않는다.
