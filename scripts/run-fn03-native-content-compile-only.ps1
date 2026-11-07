@@ -9,7 +9,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
-$candidate = 'FN03_NATIVE_CONTENT_COMPILE_ONLY_20261107_01'
+$candidate = 'FN03_NATIVE_CONTENT_COMPILE_ONLY_20261107_02'
 $repository = 'C:\Users\cyhuh\.codex\worktrees\av3-stage-b\Anvil'
 $gitRoot = 'D:\Project\Anvil\.git'
 $worktreeMetadata = Join-Path $gitRoot 'worktrees\Anvil'
@@ -18,15 +18,18 @@ $sourceCheckpoint = '93bca154cdc64527d320d2a7b9aad1b7d381f75a'
 $planPath = Join-Path $repository 'docs\work_packages\FN03_NATIVE_CONTENT_COMPILE_ONLY_EXECUTION_CANDIDATE_20261107.md'
 $planHash = '01203E641DA2BC4DA720E3EA5F7143D0718661CF9702927D83B1148B71366285'
 $launcherPath = Join-Path $repository 'scripts\run-fn03-native-content-compile-only.ps1'
-$approvalPath = Join-Path $repository 'docs\approvals\FN03_NATIVE_CONTENT_COMPILE_ONLY_20261107_01.json'
+$approvalPath = Join-Path $repository 'docs\approvals\FN03_NATIVE_CONTENT_COMPILE_ONLY_20261107_02.json'
 $hostPath = 'C:\Program Files\PowerShell\7\pwsh.exe'
 $hostHash = '2A6769A3330DC1084D0154BFDE7D164AB750CA7F700F313F9D417C1BE78B2233'
 $hostBytes = 301360
 $hostVersion = '7.6.9'
+$hostAssemblyPath = 'C:\Program Files\PowerShell\7\pwsh.dll'
+$hostAssemblyHash = '682C403FD13E667FF9C67F28750C8FEDEC8AD60F962662D83642B48A6C3F2154'
+$hostAssemblyBytes = 157480
 $ownerName = 'SINSAN\cyhuh'
 $qaParent = 'D:\Project\Anvil\.av3-data'
-$qaRoot = Join-Path $qaParent 'fn03-content-compile-20261107-01'
-$markerPath = Join-Path $qaParent 'fn03-content-compile-20261107-01.consumed.json'
+$qaRoot = Join-Path $qaParent 'fn03-content-compile-20261107-02'
+$markerPath = Join-Path $qaParent 'fn03-content-compile-20261107-02.consumed.json'
 $sourceDirectory = Join-Path $qaRoot 'src'
 $binaryDirectory = Join-Path $qaRoot 'bin'
 $tempDirectory = Join-Path $qaRoot 'temp'
@@ -168,13 +171,17 @@ function Assert-Commit([string]$Commit) {
 
 function Assert-Host {
     if (!$IsWindows -or [Environment]::ProcessPath -cne $hostPath -or $PSVersionTable.PSVersion.ToString() -cne $hostVersion) { Fail 'HOST_IDENTITY_UNVERIFIED' }
-    $expected = @($hostPath, '-NoProfile', '-NonInteractive', '-File', $launcherPath, '-ApprovalSha256', $ApprovalSha256)
+    # ProcessPath는 실행 호스트이고 관리 코드의 argv[0]은 별도 어셈블리다.
+    $expected = @($hostAssemblyPath, '-NoProfile', '-NonInteractive', '-File', $launcherPath, '-ApprovalSha256', $ApprovalSha256)
     $actual = [Environment]::GetCommandLineArgs()
     if ($actual.Count -ne $expected.Count) { Fail 'HOST_ARGUMENTS_UNVERIFIED' }
     for ($index = 0; $index -lt $expected.Count; $index++) {
         if ($actual[$index] -cne $expected[$index]) { Fail 'HOST_ARGUMENTS_UNVERIFIED' }
     }
-    Assert-File $hostPath $hostBytes $hostHash
+    try { Assert-File $hostPath $hostBytes $hostHash }
+    catch { Fail 'HOST_EXECUTABLE_UNVERIFIED' }
+    try { Assert-File $hostAssemblyPath $hostAssemblyBytes $hostAssemblyHash }
+    catch { Fail 'HOST_ASSEMBLY_UNVERIFIED' }
 }
 
 function Read-Approval {
@@ -201,11 +208,16 @@ function Read-Approval {
         $approval.decisionSourceRef -isnot [string] -or $approval.decisionSourceRef -cnotmatch '^(call|turn)_[A-Za-z0-9_-]{1,128}$' -or
         $approval.executionCommit -isnot [string] -or $approval.executionCommit -cnotmatch '^[0-9a-f]{40}$' -or
         $approval.launcherSha256 -isnot [string] -or $approval.launcherSha256 -cnotmatch '^[0-9A-F]{64}$') { Fail 'APPROVAL_BINDING_INVALID' }
-    Assert-Keys $approval.host @('path','bytes','sha256','version')
+    Assert-Keys $approval.host @('path','bytes','sha256','version','commandLineAssembly')
     Assert-Text $approval.host.path $hostPath
     Assert-Number $approval.host.bytes $hostBytes
     Assert-Text $approval.host.sha256 $hostHash
     Assert-Text $approval.host.version $hostVersion
+    $hostAssembly = $approval.host.commandLineAssembly
+    Assert-Keys $hostAssembly @('path','bytes','sha256')
+    Assert-Text $hostAssembly.path $hostAssemblyPath
+    Assert-Number $hostAssembly.bytes $hostAssemblyBytes
+    Assert-Text $hostAssembly.sha256 $hostAssemblyHash
     Assert-Text $approval.qaRoot $qaRoot
     Assert-Text $approval.consumedMarker $markerPath
     Assert-Text $approval.cwd $qaRoot
@@ -428,8 +440,10 @@ $qaOwned = $false
 $consumptionAttempted = $false
 $launchAttempted = $false
 $serialized = $null
+$preflightStage = 'HOST'
 try {
     Assert-Host
+    $preflightStage = 'APPROVAL'
     $approval = Read-Approval
     $result.historicalSignatureApprovalBound = $true
     $result.approvalSha256 = $ApprovalSha256
@@ -442,6 +456,7 @@ try {
     $durationMs = ($expiresAt - $issuedAt).TotalMilliseconds
     if ($durationMs -le 0 -or $durationMs -gt $maximumWindowMs) { Fail 'APPROVAL_TIME_INVALID' }
     Assert-Window
+    $preflightStage = 'PREFLIGHT'
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     try {
         if ($identity.Name -cne $ownerName) { Fail 'QA_OWNER_UNVERIFIED' }
@@ -552,6 +567,14 @@ try {
 } catch {
     # 원 예외/원 path/진단본문을 출력하지 않는다. 소비 시도 뒤 실패도 재실행 근거가 아니다.
     if ($consumptionAttempted) { $result.status = 'UNKNOWN' }
+    else {
+        $code = $_.Exception.Message
+        if ($code -cin @('HOST_IDENTITY_UNVERIFIED','HOST_ARGUMENTS_UNVERIFIED','HOST_EXECUTABLE_UNVERIFIED',
+            'HOST_ASSEMBLY_UNVERIFIED','APPROVAL_BINDING_REQUIRED','APPROVAL_HASH_MISMATCH','APPROVAL_SHAPE_INVALID',
+            'APPROVAL_BINDING_INVALID','APPROVAL_TIME_INVALID','APPROVAL_WINDOW_EXPIRED')) { $result.reason = $code }
+        elseif ($preflightStage -ceq 'HOST') { $result.reason = 'HOST_IDENTITY_UNVERIFIED' }
+        elseif ($preflightStage -ceq 'APPROVAL') { $result.reason = 'APPROVAL_RECORD_UNVERIFIED' }
+    }
     if ($pipes.Count -eq 2) {
         try { Record-Capture $pipes $result } catch { $result.diagnostics = @() }
     }
