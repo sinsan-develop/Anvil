@@ -24,7 +24,7 @@ class MemoryNode{
 let ui:any;const saved=new Map<string,PropertyDescriptor|undefined>(),channels:MessageChannel[]=[];let document:any;
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/workspace/ExecutionPreparationEditor.tsx',import.meta.url)),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)),approval=fileURLToPath(new URL('../../../apps/web/src/features/decisions/api.ts',import.meta.url)),assignment=fileURLToPath(new URL('../../../apps/web/src/features/workspace/assignment-api.ts',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:registered-preparation',name:'RegisteredPreparationFlow',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'registered-preparation-memory',resolveId(id){if(id.endsWith('virtual:registered-preparation'))return '\0registered-preparation';},load(id){if(id==='\0registered-preparation')return "import * as React from 'react';import{createRoot}from'react-dom/client';import{ExecutionPreparationEditor}from"+JSON.stringify(entry)+";import{ApiClient}from"+JSON.stringify(api)+";import{readApproval,prepareApprovalDecision,sendApprovalCommand}from"+JSON.stringify(approval)+";import{applyExecutionPreparationBuffer}from"+JSON.stringify(assignment)+";export{React,createRoot,ExecutionPreparationEditor,ApiClient,readApproval,prepareApprovalDecision,sendApprovalCommand,applyExecutionPreparationBuffer};";}}]});
+ const result:any=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:registered-preparation',name:'RegisteredPreparationFlow',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'registered-preparation-memory',resolveId(id){if(id.endsWith('virtual:registered-preparation'))return '\0registered-preparation';},load(id){if(id==='\0registered-preparation')return "import * as React from 'react';import{createRoot}from'react-dom/client';import{ExecutionPreparationEditor}from"+JSON.stringify(entry)+";import{ApiClient}from"+JSON.stringify(api)+";import{readApproval,prepareApprovalDecision,sendApprovalCommand}from"+JSON.stringify(approval)+";import{applyExecutionPreparationBuffer}from"+JSON.stringify(assignment)+";import{ApprovalsPage}from"+JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/decisions/ApprovalsPage.tsx',import.meta.url)))+";export{React,createRoot,ExecutionPreparationEditor,ApiClient,readApproval,prepareApprovalDecision,sendApprovalCommand,applyExecutionPreparationBuffer,ApprovalsPage};";}}]});
  document=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
  const NativeChannel=globalThis.MessageChannel;class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
@@ -62,8 +62,78 @@ test('공유 fixture는 호출별 자료와 transport 상태를 분리하고 imp
 
 test('실제 Editor의 등록 준비는 별도 승인 요청·결정·복귀 뒤 동일 원 명령만 저장한다',async()=>{
  const h=await mount();h.q.setPolicy('REQUIRE_APPROVAL');try{await h.freeze();const original=structuredClone(h.buffer().pending);await h.click('준비본 보관 승인 요청 준비');await h.wait(()=>!!h.buffer().approval?.request);await h.change('준비 승인 이유','등록 준비 보관만');for(const key of ['data','security','cost','interruption','unverified'])await h.change('준비 승인 위험 '+key,'원문 보존·미검증');await h.change('준비 승인 복구방법','원 기록 유지');await h.change('준비 승인 복구한계','실행 허가 아님');await h.change('준비 승인 기한',new Date(Date.now()+1800000).toISOString());await h.click('준비 승인 요청 명시 보관');await h.wait(()=>!!h.buffer().approval?.requestId);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);
- const requestId=h.buffer().approval.requestId;await ui.React.act(async()=>{const view=await ui.readApproval(h.props.client,h.f.confirmed.projectId,requestId),command=await ui.prepareApprovalDecision(h.f.confirmed.projectId,view,'APPROVE','준비 저장만 명시 결정',h.f.session,1);await ui.sendApprovalCommand(h.props.client,command,h.f.session);});assert.equal(h.q.calls.filter(v=>v.method==='POST').length,2);await h.click('별도 결정을 같은 준비 원명령에 결박');await h.wait(()=>!!h.buffer().pending?.approvalRef);assert.equal(h.buffer().pending.commandId,original.commandId);assert.deepEqual(h.buffer().pending.payload,original.payload);await h.click('준비본 보관');await h.wait(()=>!!h.buffer().result);const posted=h.q.calls.filter(v=>v.method==='POST').map(v=>JSON.parse(String(v.body)));assert.deepEqual(posted.map(v=>v.operation),['requestApproval','decideApproval','prepareExecution']);assert.equal(posted[2].commandId,original.commandId);assert.deepEqual(posted[2].payload,original.payload);assert.equal(h.buffer().result.snapshot.executionAuthorized,false);assert.equal(h.buffer().result.snapshot.dispatchPerformed,false);
+ const requestId=h.buffer().approval.requestId;
+ const links=()=>{const walk=(node:MemoryNode):MemoryNode[]=>[node,...node.childNodes.flatMap(walk)];return walk(h.container).filter(n=>n.tagName==='A'&&n.textContent==='UI08에서 별도 결정');};
+ const href='#/projects/'+h.f.confirmed.projectId+'/approvals/requests/'+requestId;
+ assert.deepEqual(links().map(n=>n.getAttribute('href')),[href]);
+ await h.change('준비 결정 요청ID',h.f.otherProject);
+ assert.deepEqual(links().map(n=>n.getAttribute('href')),[href]);
+ await h.change('준비 결정 요청ID',requestId);
+ await ui.React.act(async()=>{const view=await ui.readApproval(h.props.client,h.f.confirmed.projectId,requestId),command=await ui.prepareApprovalDecision(h.f.confirmed.projectId,view,'APPROVE','준비 저장만 명시 결정',h.f.session,1);await ui.sendApprovalCommand(h.props.client,command,h.f.session);});assert.equal(h.q.calls.filter(v=>v.method==='POST').length,2);await h.click('별도 결정을 같은 준비 원명령에 결박');await h.wait(()=>!!h.buffer().pending?.approvalRef);assert.equal(h.buffer().pending.commandId,original.commandId);assert.deepEqual(h.buffer().pending.payload,original.payload);await h.click('준비본 보관');await h.wait(()=>!!h.buffer().result);const posted=h.q.calls.filter(v=>v.method==='POST').map(v=>JSON.parse(String(v.body)));assert.deepEqual(posted.map(v=>v.operation),['requestApproval','decideApproval','prepareExecution']);assert.equal(posted[2].commandId,original.commandId);assert.deepEqual(posted[2].payload,original.payload);assert.equal(h.buffer().result.snapshot.executionAuthorized,false);assert.equal(h.buffer().result.snapshot.dispatchPerformed,false);
  }finally{await h.close();}
 });
 
 test('실제 Editor의 POST 전 현재 DENY는 명확 거절이며 UNKNOWN hold로 바뀌지 않는다',async()=>{const h=await mount();try{await h.freeze();const original=structuredClone(h.buffer().pending);h.q.setPolicy('DENY');await h.click('준비본 보관');await h.wait(()=>!!h.buffer().failure);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);assert.equal(h.buffer().failure.code,'PROJECT_OPERATION_DENIED');assert.equal(h.buffer().uncertain,false);assert.equal(h.buffer().savedReceipt,undefined);assert.deepEqual(h.buffer().pending,original);}finally{await h.close();}});
+
+test('실제 UI08은 같은 승인 요청과 현재 원 준비만 작업공간 복귀 링크로 제공한다',async()=>{
+ const h=await mount();h.q.setPolicy('REQUIRE_APPROVAL');
+ const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
+ const findReturn=()=>{const walk=(node:MemoryNode):MemoryNode[]=>[node,...node.childNodes.flatMap(walk)];return walk(container).find(n=>n.tagName==='A'&&n.textContent==='원 준비를 이어갈 작업공간으로 돌아가기');};
+ const projectId=h.f.confirmed.projectId,session=h.f.session;
+ let preparation:any=null,wire:any=null,requestId='';
+ const client=new ui.ApiClient(async(url:string|URL|Request,init?:RequestInit)=>{
+  assert.equal(init?.method,'GET');
+  const path=String(url);
+  if(path==='/api/v1/projects/'+projectId+'/approvals/'+requestId)return Response.json(wire);
+  if(path.startsWith('/api/v1/projects/'+projectId+'/approvals?'))return Response.json({projectId,items:[],hasMore:false,nextCursor:null,observedAt:h.f.at});
+  throw Error('UNEXPECTED_APPROVAL_VIEW_GET');
+ });
+ function Host(){
+  const [buffer,setBuffer]=ui.React.useState(null);
+  return ui.React.createElement(ui.ApprovalsPage,{client,projectId,session,requestId,buffer,onChange:setBuffer,candidate:null,onCandidateChange:()=>assert.fail('후보 변경 금지'),executionPreparation:preparation,onAuthenticationLost:()=>assert.fail('인증 전환 없음')});
+ }
+ const render=async(key:string)=>{await ui.React.act(async()=>root.render(ui.React.createElement(Host,{key})));};
+ try{
+  await h.freeze();await h.click('준비본 보관 승인 요청 준비');await h.wait(()=>!!h.buffer().approval?.request);
+  await h.change('준비 승인 이유','현재 보관 후보만 승인');
+  for(const key of ['data','security','cost','interruption','unverified'])await h.change('준비 승인 위험 '+key,'원문 보존');
+  await h.change('준비 승인 복구방법','원 자료 유지');await h.change('준비 승인 복구한계','실행 권위 없음');
+  await h.change('준비 승인 기한',new Date(Date.now()+1800000).toISOString());
+  await h.change('준비 결정 요청ID',h.f.otherProject);
+  assert.doesNotMatch(h.container.textContent,/UI08에서 별도 결정/);
+  await h.click('준비 승인 요청 명시 보관');await h.wait(()=>!!h.buffer().approval?.request?.resultId);
+  const original=structuredClone(h.buffer());requestId=original.approval.requestId;preparation=original;
+  wire=await ui.readApproval(h.props.client,projectId,requestId);
+  await render('PENDING');await h.wait(()=>container.textContent.includes('현재 v1 · 저장 PENDING'));
+  assert.equal(findReturn(),undefined);
+  const command=await ui.prepareApprovalDecision(projectId,wire,'APPROVE','보관만 결정',session,1);
+  await ui.sendApprovalCommand(h.props.client,command,session);
+  const approved=await ui.readApproval(h.props.client,projectId,requestId);
+  wire=approved;await render('APPROVED');await h.wait(()=>container.textContent.includes('현재 v2 · 저장 APPROVED'));
+  const link=findReturn();assert.ok(link);
+  assert.equal(link.getAttribute('href'),'#/projects/'+projectId+'/workspace');
+  await ui.React.act(async()=>assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true}),true));
+  assert.equal(container.textContent.includes(original.assignmentRef.contentHash),true);
+  const variants=[
+   ['NO_SOURCE',null],['PROJECT',{...original,projectId:h.f.otherProject}],['USER',{...original,ownerUserId:h.f.otherUser}],['CLIENT',{...original,ownerClientId:h.f.otherClient}],
+   ['VERSION',{...original,assignmentRef:{...original.assignmentRef,version:original.assignmentRef.version+1}}],
+   ['COMMAND',{...original,pending:{...original.pending,commandId:h.f.otherClient}}],
+   ['HASH',{...original,payloadHash:'0'.repeat(64)}],
+   ['REQUEST',{...original,approval:{...original.approval,request:{...original.approval.request,resultId:h.f.otherProject}}}],
+   ['UNKNOWN',{...original,uncertain:true}],
+  ] as const;
+  for(const [kind,value] of variants){
+   preparation=value;await render('APPROVED');
+   assert.equal(findReturn(),undefined,kind);
+   assert.match(container.textContent,/복귀할 수 있는 원 실행 준비/);
+  }
+  preparation=original;
+  const consumption={id:h.f.otherUser,status:'CONSUMED',commandId:original.pending.commandId,serverCommandId:h.f.otherClient,requestHash:'c'.repeat(64),scopeDigest:approved.request.scopeDigest,policyRef:approved.request.policyRef,consumedAt:h.f.at};
+  for(const [kind,value] of [['EXPIRED',{...approved,expired:true,effectiveState:'EXPIRED'}],['REVOKED',{...approved,basisCurrent:false,effectiveState:'REVOKED'}],['CONSUMED',{...approved,consumption,currentVersion:3,storedStatus:'CONSUMED',effectiveState:'CONSUMED'}]] as const){
+   wire=value;await render(kind);await h.wait(()=>container.textContent.includes('· '+kind));
+   assert.equal(findReturn(),undefined,kind);
+  }
+  assert.deepEqual(h.buffer(),original);
+  assert.deepEqual(h.q.calls.filter(v=>v.method==='POST').map(v=>JSON.parse(String(v.body)).operation),['requestApproval','decideApproval']);
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);await h.close();}
+});
