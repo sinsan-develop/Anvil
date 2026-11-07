@@ -1,0 +1,65 @@
+-- FN16 r2 A / SOURCE ONLY·미적용. 단독 승인 migration transaction 전체로만 적용한다.
+-- 실제 role/GRANT/DDL/DB 실행은 이번 source 작업에서 하지 않는다.
+BEGIN;
+DO $fn16_export_reader_preflight$
+DECLARE migrator pg_catalog.pg_roles%ROWTYPE;
+BEGIN
+ SELECT * INTO migrator FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_migrator';
+ IF CURRENT_USER<>'anvil_v3_migrator' OR migrator.oid IS NULL OR NOT (migrator.rolcreaterole OR migrator.rolsuper) THEN RAISE EXCEPTION 'FN16_EXPORT_READER_MIGRATOR_REQUIRED' USING ERRCODE='42501';END IF;
+ -- 동명 role/함수는 자동 수정·인수하지 않는다. 전체 transaction이 rollback되어야 한다.
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_fn16_export_reader_owner')
+ OR pg_catalog.to_regprocedure('anvil.fn16_export_artifact_metadata_locked(uuid,uuid,text,bigint,text,uuid,uuid,uuid)') IS NOT NULL THEN RAISE EXCEPTION 'FN16_EXPORT_READER_ALREADY_EXISTS' USING ERRCODE='42501';END IF;
+END;
+$fn16_export_reader_preflight$;
+CREATE ROLE anvil_v3_fn16_export_reader_owner NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+GRANT anvil_v3_fn16_export_reader_owner TO anvil_v3_migrator WITH ADMIN OPTION;
+GRANT USAGE,CREATE ON SCHEMA anvil TO anvil_v3_fn16_export_reader_owner;
+GRANT SELECT(id,project_id,content_hash,bytes,media_type,storage_key,state,inspection_json),UPDATE(id) ON anvil.artifacts TO anvil_v3_fn16_export_reader_owner;
+GRANT SELECT(id) ON anvil.projects TO anvil_v3_fn16_export_reader_owner;
+GRANT SELECT(project_id,user_id,revoked_at) ON anvil.project_members TO anvil_v3_fn16_export_reader_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn01_active(uuid,uuid,uuid) TO anvil_v3_fn16_export_reader_owner;
+CREATE FUNCTION anvil.fn16_export_artifact_metadata_locked(
+ p_project uuid,p_artifact uuid,p_hash text,p_bytes bigint,p_media_type text,p_session uuid,p_actor uuid,p_client uuid
+) RETURNS TABLE(id uuid,project_id uuid,content_hash text,bytes bigint,media_type text,storage_key text,state text,inspection_json jsonb)
+LANGUAGE plpgsql SECURITY DEFINER VOLATILE PARALLEL UNSAFE SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+ IF session_user<>'anvil_v3_app' THEN RAISE EXCEPTION 'FN16_EXPORT_APP_SESSION_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM anvil.fn01_active(p_session,p_actor,p_client);
+ IF NOT EXISTS(SELECT 1 FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=p_project AND m.user_id=p_actor AND m.revoked_at IS NULL) THEN RAISE EXCEPTION 'FN16_EXPORT_PROJECT_MEMBER_REQUIRED' USING ERRCODE='42501';END IF;
+ -- 같은 외부 transaction에 잠금을 남긴다. 격리행/state/inspection을 숨기지 않는다.
+ -- 역사 조회에는 OWNER/control·미보관·새 APPLIED command/GUC를 요구하지 않는다.
+ RETURN QUERY SELECT a.id,a.project_id,a.content_hash,a.bytes,a.media_type,a.storage_key,a.state,a.inspection_json
+ FROM anvil.artifacts a WHERE a.project_id=p_project AND a.id=p_artifact AND a.content_hash=p_hash AND a.bytes=p_bytes AND a.media_type=p_media_type
+ AND EXISTS(SELECT 1 FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id WHERE p.id=p_project AND m.user_id=p_actor AND m.revoked_at IS NULL)
+ FOR SHARE OF a;
+END;
+$$;
+REVOKE ALL ON FUNCTION anvil.fn16_export_artifact_metadata_locked(uuid,uuid,text,bigint,text,uuid,uuid,uuid) FROM PUBLIC;
+ALTER FUNCTION anvil.fn16_export_artifact_metadata_locked(uuid,uuid,text,bigint,text,uuid,uuid,uuid) OWNER TO anvil_v3_fn16_export_reader_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn16_export_artifact_metadata_locked(uuid,uuid,text,bigint,text,uuid,uuid,uuid) TO anvil_v3_app;
+REVOKE CREATE ON SCHEMA anvil FROM anvil_v3_fn16_export_reader_owner;
+REVOKE anvil_v3_fn16_export_reader_owner FROM anvil_v3_migrator;
+DO $fn16_export_reader_postflight$
+DECLARE r pg_catalog.pg_roles%ROWTYPE;f pg_catalog.pg_proc%ROWTYPE;col record;
+BEGIN
+ SELECT * INTO r FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_fn16_export_reader_owner';
+ SELECT * INTO f FROM pg_catalog.pg_proc WHERE oid='anvil.fn16_export_artifact_metadata_locked(uuid,uuid,text,bigint,text,uuid,uuid,uuid)'::regprocedure;
+ IF r.oid IS NULL OR r.rolcanlogin OR r.rolinherit OR r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls
+ OR EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.roleid=r.oid OR m.member=r.oid)
+ OR pg_catalog.pg_has_role('anvil_v3_app',r.oid,'MEMBER') OR pg_catalog.has_schema_privilege(r.oid,'anvil','CREATE')
+ OR f.proowner IS DISTINCT FROM r.oid OR NOT f.prosecdef OR f.provolatile<>'v' OR f.proparallel<>'u'
+ OR f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog, pg_temp']::text[]
+ OR EXISTS(SELECT 1 FROM pg_catalog.pg_class t WHERE t.oid='anvil.artifacts'::regclass AND t.relowner=r.oid)
+ OR pg_catalog.has_table_privilege(r.oid,'anvil.artifacts','UPDATE') OR pg_catalog.has_table_privilege(r.oid,'anvil.artifacts','INSERT,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+ OR NOT pg_catalog.has_column_privilege(r.oid,'anvil.artifacts','id','UPDATE')
+ OR NOT pg_catalog.has_function_privilege('anvil_v3_app',f.oid,'EXECUTE')
+ OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(f.proacl,pg_catalog.acldefault('f',f.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE')
+ THEN RAISE EXCEPTION 'FN16_EXPORT_READER_POSTFLIGHT_FAILED' USING ERRCODE='42501';END IF;
+ FOR col IN SELECT a.attname FROM pg_catalog.pg_attribute a WHERE a.attrelid='anvil.artifacts'::regclass AND a.attnum>0 AND NOT a.attisdropped LOOP
+  IF col.attname<>'id' AND pg_catalog.has_column_privilege(r.oid,'anvil.artifacts',col.attname,'UPDATE') THEN RAISE EXCEPTION 'FN16_EXPORT_READER_EXCESS_UPDATE' USING ERRCODE='42501';END IF;
+  IF col.attname NOT IN('id','project_id','content_hash','bytes','media_type','storage_key','state','inspection_json') AND pg_catalog.has_column_privilege(r.oid,'anvil.artifacts',col.attname,'SELECT') THEN RAISE EXCEPTION 'FN16_EXPORT_READER_EXCESS_SELECT' USING ERRCODE='42501';END IF;
+ END LOOP;
+ -- 기존 artifacts RLS/정책은 변경하지 않는다. 정책 부족은 적용 후에도 fail-closed다.
+END;
+$fn16_export_reader_postflight$;
+COMMIT;

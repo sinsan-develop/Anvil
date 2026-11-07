@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI02_ROUND2_FIXED_SYNTHETIC_DOM_GREEN",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T10:59:54.3303264Z",
+    "expiresAtUtc": "2026-10-26T11:29:54.3303264Z"
+  },
+  "source": {
+    "documentImportSha256": "6D0B9AED0B743CA843AB4A1DD4D7773299BEC9D25435474244F076C768E9E4FA",
+    "specSha256": "6ED058975689514BFC3EBBCDD04DB482057F7FC7B7B4D93B4E1DE7D8DEFAE6F8"
+  },
+  "execution": {
+    "startTool": "d05d1c",
+    "completionTool": "fc015d",
+    "exitCode": 0,
+    "tests": 12,
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "totalDurationMs": 13119.6472,
+    "command": "node --test tests/browser/UI06/created-original-import.spec.ts"
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "removedAtUtc": "2026-10-26T11:00:45.7539913Z",
+    "files": 600,
+    "directories": 193,
+    "bytes": 45412974,
+    "owner": "SINSAN\\cyhuh",
+    "links": 0,
+    "processes": 0,
+    "rootExists": false
+  },
+  "independentObservation": {
+    "checkedAtUtc": "2026-10-26T11:00:58.0099029Z",
+    "rootExists": false,
+    "relatedProcessCount": 0
+  },
+  "review": {
+    "round": 2,
+    "status": "SCOPED_SOURCE_ACCEPT",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "resolved": "I3_INITIAL_PREPARATION_LOCK_AFTER_SCOPE_DISPOSAL"
+  },
+  "actualDb": "NOT_RUN",
+  "servedApplication": "NOT_RUN",
+  "agentExecution": "NOT_RUN"
+}

@@ -1,0 +1,27 @@
+import assert from'node:assert/strict';import{test}from'node:test';import{canonicalJson,contentHash}from'../../../contracts/canonical.ts';
+const user='a6f30000-0000-4000-8000-000000000081',client='a6f30000-0000-4000-8000-000000000082',project='a6f30000-0000-4000-8000-000000000083',candidateId='a6f30000-0000-4000-8000-000000000084',now=new Date('2026-10-16T00:00:00.000Z');
+const context={actorId:user,clientId:client,controlGeneration:1,allowedOperations:['saveDocumentDraft'],now},payload={title:'사용자가 직접 확인할 초안'},scope={operation:'saveDocumentDraft',targetRef:null,expectedVersion:0,payloadHash:contentHash(canonicalJson(payload)),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:user,clientId:client},controlGeneration:1};
+const details={reason:'합성 초안 한 건만 별도 승인 요청',risks:{data:'새 초안 추가',security:'현재 명시 정책 유지',cost:'외부 호출 없음',interruption:'서비스 교체 없음',unverified:'내용의 의미 검수는 별도'},rollback:{method:'기존 버전 보존·필요하면 새 개정',limitations:'저장 이력 삭제는 하지 않음',evidenceRefs:[]},expiresAt:'2026-10-16T00:10:00.000Z',actionScope:scope,candidateCommandId:candidateId};
+
+test('연결 해제 승인은 현재 링크 v1 전체 참조와 동일한 원 payload만 소비한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts'),link={id:project,version:1,contentHash:'4'.repeat(64)},payload={sourceLinkRef:link,reason:'파일/원문 보존·연결만 분리'},d={...details,actionScope:{...scope,operation:'detachDocumentSource',targetRef:link,expectedVersion:1,payloadHash:contentHash(canonicalJson(payload))}},ctx={...context,allowedOperations:['detachDocumentSource']};
+ const checked=m.readApprovalDetails(d,ctx),command={schemaVersion:1 as const,projectId:project,commandId:candidateId,clientId:client,controlGeneration:1,operation:'detachDocumentSource',targetId:project,expectedVersion:1,baselineRefs:[],approvalRef:null,payload};assert.doesNotThrow(()=>m.assertApprovalCandidate(checked,command,user,project));
+ for(const bad of [{...d,actionScope:{...d.actionScope,targetRef:null,expectedVersion:0}},{...d,actionScope:{...d.actionScope,targetRef:{...link,version:2},expectedVersion:2}}])assert.throws(()=>m.readApprovalDetails(bad,ctx));
+ const wrong={...checked,actionScope:{...checked.actionScope,targetRef:{...link,contentHash:'5'.repeat(64)}}};assert.throws(()=>m.assertApprovalCandidate(wrong,command,user,project),/APPROVAL_CANDIDATE_MISMATCH/);
+});
+test('일회 승인 요청은 내용·현재 주체·유한 기한을 보존하고 자기 승인권을 받지 않는다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts').catch(()=>null);assert.ok(m,'일회 승인 입력 검사 필요');const before=structuredClone(details),read=m.readApprovalDetails(details,context);assert.deepEqual(read,before);assert.deepEqual(details,before);assert.notEqual(read,details);
+ for(const invalid of [{...details,requiredDecider:{kind:'HUMAN',userId:user}},{...details,expiresAt:now.toISOString()},{...details,risks:{...details.risks,unverified:''}},{...details,actionScope:{...scope,requestedSubjectRef:{...scope.requestedSubjectRef,userId:project}}},{...details,actionScope:{...scope,controlGeneration:2}},{...details,actionScope:{...scope,operation:'executeAgent'}}])assert.throws(()=>m.readApprovalDetails(invalid,context));
+});
+test('승인 범위는 후보 명령/본문/대상/기기/세대가 정확할 때만 일치한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts').catch(()=>null);assert.ok(m,'승인 후보 대조 필요');const checked=m.readApprovalDetails(details,context),c={schemaVersion:1 as const,projectId:project,commandId:candidateId,clientId:client,controlGeneration:1,operation:'saveDocumentDraft',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};assert.doesNotThrow(()=>m.assertApprovalCandidate(checked,c,user,project));
+ for(const bad of [{...c,commandId:user},{...c,projectId:user},{...c,clientId:user},{...c,controlGeneration:2},{...c,expectedVersion:1},{...c,payload:{...payload,title:'승인 뒤 다른 내용'}}])assert.throws(()=>m.assertApprovalCandidate(checked,bad,user,project));
+});
+test('승인 결정은 정확 요청/버전/범위와 명시 판단·이유만 받고 승인권 위장을 거절한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts');assert.equal(typeof m.readApprovalDecision,'function','사람 결정 입력 검사 필요');const p={requestId:candidateId,expectedVersion:1,scopeDigest:'2'.repeat(64),decision:'APPROVE',reason:'한 후보의 정확 내용을 사람이 확인했다'};
+ assert.deepEqual(m.readApprovalDecision(p),p);for(const invalid of [{...p,decision:'ALLOW_ALL'},{...p,scopeDigest:'x'},{...p,expectedVersion:0},{...p,reason:''},{...p,decidedBy:user}])assert.throws(()=>m.readApprovalDecision(invalid));
+});
+test('소비 참조는 정확 요청·결정·범위 hash만 받고 승인=true나 추가 권한을 거절한다',async()=>{
+ const m=await import('../../../apps/server/modules/approvals/approval-input.ts');assert.equal(typeof m.readApprovalRef,'function','일회 소비 참조 검사 필요');const ref={requestId:candidateId,decisionId:project,scopeDigest:'3'.repeat(64)};assert.deepEqual(m.readApprovalRef(ref),ref);
+ for(const invalid of [null,true,{approved:true},{...ref,scopeDigest:'x'},{...ref,allow:true},{...ref,requestId:'wrong'}])assert.throws(()=>m.readApprovalRef(invalid));
+});

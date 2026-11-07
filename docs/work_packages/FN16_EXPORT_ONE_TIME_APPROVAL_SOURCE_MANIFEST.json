@@ -1,0 +1,117 @@
+{
+  "kind": "FN16_EXPORT_ONE_TIME_APPROVAL_SOURCE_MANIFEST",
+  "baseline": "76129721c9640ae67b32cbd943436388eea7571a",
+  "workInstructionSha256": "12936919673E1A3BDC16D95E5E49BC07233E6C169EB6243CF75E2250A16A2BA1",
+  "files": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "sha256": "64CE298CC3750BD51E84D479588379D00D7CE89BEF7F19D5FC315C0C26732289",
+      "gitBlobSha256": "64CE298CC3750BD51E84D479588379D00D7CE89BEF7F19D5FC315C0C26732289",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "sha256": "D563020A4ABE7A6B23B72B9AA73B444382B349D66E8E905AC4DAEE46CC0F1C66",
+      "gitBlobSha256": "D563020A4ABE7A6B23B72B9AA73B444382B349D66E8E905AC4DAEE46CC0F1C66",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "sha256": "1C31A683F27DE6A00D5141EFAD8ACB6566E7FA7FD991D12BBF5663702F5E9240",
+      "gitBlobSha256": "1C31A683F27DE6A00D5141EFAD8ACB6566E7FA7FD991D12BBF5663702F5E9240",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/backups/project-backups.ts",
+      "sha256": "E1BE0569FE6925CE6B88965C0AF98FBD88FF72CCF45CBFDE8F54121497824A4B",
+      "gitBlobSha256": "E1BE0569FE6925CE6B88965C0AF98FBD88FF72CCF45CBFDE8F54121497824A4B",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/backups/project-backups-api.ts",
+      "sha256": "44616FC8333850878292650726C812F7C620EA3BC4ED0E5DDDE1EF782B7EE058",
+      "gitBlobSha256": "44616FC8333850878292650726C812F7C620EA3BC4ED0E5DDDE1EF782B7EE058",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/backups/ProjectBackupsPanel.tsx",
+      "sha256": "0359A536CC54385888C6AE7537E7BC6FE4D4BA236259F23084765E054FADCBAF",
+      "gitBlobSha256": "0359A536CC54385888C6AE7537E7BC6FE4D4BA236259F23084765E054FADCBAF",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/backups/export-approval.ts",
+      "sha256": "DF894FDFA67A0F65B49410C18F813E2C4A28639824DD32A6D823A98794501D29",
+      "gitBlobSha256": "DF894FDFA67A0F65B49410C18F813E2C4A28639824DD32A6D823A98794501D29",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/backups/ExportApprovalPanel.tsx",
+      "sha256": "DAB437ABE365270CC2DC08218385FAC990F154DDD64518265FD36670D7264A2B",
+      "gitBlobSha256": "DAB437ABE365270CC2DC08218385FAC990F154DDD64518265FD36670D7264A2B",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "sha256": "7DD369DD6D2C5416F045575903358FB1298DF5F36B9984458DB487B5EDE6E9AE",
+      "gitBlobSha256": "7DD369DD6D2C5416F045575903358FB1298DF5F36B9984458DB487B5EDE6E9AE",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "sha256": "296BE7C8DA37A3670210E29FDE945721FBE4AA0400572A1FDCF34E3CF8B740ED",
+      "gitBlobSha256": "296BE7C8DA37A3670210E29FDE945721FBE4AA0400572A1FDCF34E3CF8B740ED",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "db/migrations/0044_project_artifact_export_approval.sql.pending",
+      "sha256": "DB3D9FD22EA5DE70DB8B68D047F40687B32F1DBD2E9682A6C8A87D3502E296D0",
+      "gitBlobSha256": "DB3D9FD22EA5DE70DB8B68D047F40687B32F1DBD2E9682A6C8A87D3502E296D0",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN16/export-approval-input.test.ts",
+      "sha256": "A44D50CB86BED26DB1A7536BBB220A9C3C774ACACEB944AEA1E0116B68553DFA",
+      "gitBlobSha256": "A44D50CB86BED26DB1A7536BBB220A9C3C774ACACEB944AEA1E0116B68553DFA",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN16/export-approval-consumption.test.ts",
+      "sha256": "027FCD05FA84D6E225BD7D56C9B2DCD4B4094960601BDA29B0B0D72CA503F47D",
+      "gitBlobSha256": "027FCD05FA84D6E225BD7D56C9B2DCD4B4094960601BDA29B0B0D72CA503F47D",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/FN16/export-approval-api.test.ts",
+      "sha256": "3D9192AA7D837A3AAC7F2A5DD145B3BB300C8B8B2073025AAB6B66778DB307A3",
+      "gitBlobSha256": "3D9192AA7D837A3AAC7F2A5DD145B3BB300C8B8B2073025AAB6B66778DB307A3",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/browser/UI14/project-export-approval.spec.ts",
+      "sha256": "9C39C6978BE7DE277DC75AF3F67D21AB40C4C50175AAE3A236F5AA9415AD1188",
+      "gitBlobSha256": "9C39C6978BE7DE277DC75AF3F67D21AB40C4C50175AAE3A236F5AA9415AD1188",
+      "normalization": "EXACT"
+    }
+  ],
+  "verification": {
+    "mainFocusedPassed": 33,
+    "followupApiPassed": 9,
+    "finalAll34SingleRun": false,
+    "browserInitial": {
+      "passed": 3,
+      "failed": 2
+    },
+    "browserCorrectedFailures": {
+      "passed": 2,
+      "failed": 0
+    },
+    "finalAll5SingleRun": false,
+    "independentProduct": "C0/I0/M0",
+    "sqlFindings": "I1/I2_ADDRESSED",
+    "fixtureFinding": "I1_ADDRESSED",
+    "actualSqlPg": "NOT_RUN",
+    "served": "NOT_RUN",
+    "userAcceptance": "NOT_RUN"
+  }
+}

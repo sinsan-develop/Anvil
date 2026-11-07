@@ -1,0 +1,109 @@
+import assert from 'node:assert/strict';import {test} from 'node:test';import {existsSync} from 'node:fs';
+import {AuthFailure,type AccessRepository} from '../../../apps/server/modules/access/repository.ts';import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+const id=(n:number)=>`ae000000-0000-4000-8000-${String(n).padStart(12,'0')}`,pid=id(1),actor=id(2),client=id(3),session=id(4),past=id(5),pastClient=id(6),token='z'.repeat(43),now=new Date('2098-01-02T00:00:00.000Z'),marker='public-private-driver-detail',at='2025-01-01T00:00:00.000Z',expiry='2026-01-01T00:00:00.000Z';
+const clone=<T>(v:T):T=>structuredClone(v),hash=(v:unknown)=>contentHash(canonicalJson(v)),ref=(n:number)=>({id:id(n),version:1,contentHash:String(n%10).repeat(64)}),policy=ref(7);
+async function collector(){const u=new URL('../../../apps/server/modules/backups/approval-history-inventory.ts',import.meta.url),m:any=existsSync(u)?await import(u.href):{};assert.equal(typeof m.collectApprovalHistoryInventory,'function','승인 저장상태 수집 미구현');return m.collectApprovalHistoryInventory;}
+const rejected=(status:number)=>(e:any)=>e instanceof AuthFailure&&e.statusCode===status&&!e.cause&&!JSON.stringify(e).includes(marker)&&!String(e.stack).includes(marker)&&!/SELECT|blobs\//.test(e.message);
+function fixture(statuses=['PENDING'],scopePatch:Record<string,unknown>={}){
+ const input={projectId:pid,limits:{metadataBytes:16777216,inputBytes:1,fileCount:1,deadlineMs:10000}},abort=new AbortController(),tables:Record<string,any[]>={approval_requests:[],approval_decisions:[],approval_consumptions:[],commands:[],authorization_receipts:[],audit_events:[]},t=(n:string)=>tables[n]!;
+ const state={auth:0,rc:0,rr:0,releases:0,rollbacks:0,owner:'OWNER',changed:false,failTable:'',failBegin:false,failRollback:false,cancelCommit:false,bigRow:false,preserveDates:false,overRows:false,beforeAuth:null as null|((phase:number)=>void),afterCommit:null as null|((phase:number)=>void),afterQuery:null as null|((s:string)=>void),sessionMs:5000},trace:Array<{scope:string;sql:string;values:any[]}>=[],errors:unknown[]=[];let serial=100;const next=()=>id(serial++);
+ function evidence(operation:string,target:any,data:any,expectedVersion=0,approval:any=null,when=at){const c:any={id:next(),command_id:next(),scope_kind:'PROJECT',scope_id:pid,project_id:pid,state:'APPLIED',operation,actor_id:past,client_id:pastClient,control_generation:2,expected_version:expectedVersion,policy_ref:policy,result_ref:null,authorization_receipt_id:next(),approval_consumption_id:null,payload_ref:null,received_at:when,completed_at:when,operation_id:next(),request_hash:hash({originalPayloadNotStored:serial})};c.result_ref={operationId:c.operation_id,commandId:c.command_id,projectId:pid,status:'APPLIED',targetId:target.id??target.artifactId,version:target.version??null,data:{...(target.artifactId?{artifactRef:target}:{ref:target}),...data},evidenceRefs:[],warnings:[],serverReceivedAt:when};const a:any={id:c.authorization_receipt_id,scope_kind:'PROJECT',scope_id:pid,command_id:c.id,subject_ref:{kind:'HUMAN',userId:past,clientId:pastClient},policy_ref:policy,scope_digest:'',approval_decision_ref:approval?.decisionId??null,authorized_at:when},e:any={project_id:pid,server_sequence:t('audit_events').length*2+1,event_id:next(),actor_ref:{kind:'HUMAN',userId:past},client_ref:pastClient,command_id:c.id,operation_id:c.operation_id,target_ref:target,policy_ref:policy,approval_ref:approval,outcome:'APPLIED',reason_code:operation==='requestApproval'?'EXPLICIT_ONE_TIME_APPROVAL_REQUEST':operation==='decideApproval'?'EXPLICIT_HUMAN_APPROVAL_DECISION':'EXPLICIT_ARTIFACT_UPLOAD',scope_digest:'',recorded_at:when,source_kind:'HUMAN_COMMAND',correction_of:null};t('commands').push(c);t('authorization_receipts').push(a);t('audit_events').push(e);const item={c,a,e};sealEvidence(item);return item;}
+ function sealEvidence(x:any){const c=x.c,target=c.result_ref.data.ref??c.result_ref.data.artifactRef,digest=hash({projectId:pid,actorId:c.actor_id,clientId:c.client_id,controlGeneration:c.control_generation,requestHash:c.request_hash,policyRef:c.policy_ref,targetRef:target});x.a.scope_digest=x.e.scope_digest=digest;x.e.target_ref=clone(target);}
+ function add(status:string){const rid=next(),candidate=next(),details:any={reason:'명시 승인 이유',risks:{data:'자료',security:'보호',cost:'한도',interruption:'중단',unverified:'미확인'},rollback:{method:'원상복구',limitations:'한계',evidenceRefs:[]},expiresAt:expiry,actionScope:{operation:'uploadArtifact',targetRef:null,expectedVersion:0,payloadHash:hash({unpersistedCandidate:true}),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:past,clientId:pastClient},controlGeneration:2,...scopePatch},candidateCommandId:candidate},scopeDigest=hash(details.actionScope),body={projectId:pid,details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:past},policyRef:policy,requestedBy:{kind:'HUMAN',userId:past,clientId:pastClient},controlGeneration:2},rr:any={id:rid,project_id:pid,version:status==='CONSUMED'?3:['APPROVED','REJECTED','CHANGE_REQUESTED'].includes(status)?2:1,candidate_command_id:candidate,action_scope_json:details.actionScope,scope_digest:scopeDigest,details_json:details,required_decider_ref:body.requiredDecider,status,expires_at:expiry,created_by:past,created_at:at,client_id:pastClient,command_id:null,policy_ref:policy,content_hash:hash(body),request_json:{id:rid,version:1,status:'PENDING',...body,createdAt:at}},rref={id:rid,version:1,contentHash:rr.content_hash},rq=evidence('requestApproval',rref,{status:'APPROVAL_REQUESTED',request:rr.request_json});rr.command_id=rq.c.id;t('approval_requests').push(rr);let dr:any=null,de:any=null,ac:any=null,used:any=null;
+ if(['APPROVED','REJECTED','CHANGE_REQUESTED','CONSUMED'].includes(status)){const did=next(),decision=status==='REJECTED'?'REJECT':status==='CHANGE_REQUESTED'?'REQUEST_CHANGE':'APPROVE',db={requestId:rid,requestVersion:1,requestRef:rref,scopeDigest,decision,reason:'검토한 결정',decidedBy:{kind:'HUMAN',userId:past,clientId:pastClient},controlGeneration:2,policyRef:policy},ds={id:did,...db,decidedAt:at};dr={id:did,project_id:pid,request_id:rid,request_version:1,scope_digest:scopeDigest,decision,reason:db.reason,decided_by:past,client_id:pastClient,control_generation:2,decided_at:at,command_id:null,content_hash:hash(db),decision_json:ds};de=evidence('decideApproval',{id:did,version:1,contentHash:dr.content_hash},{status:'APPROVAL_DECIDED',decision:ds},1);dr.command_id=de.c.id;t('approval_decisions').push(dr);
+ if(status==='CONSUMED'){const approval={requestId:rid,decisionId:did,scopeDigest},artifact={artifactId:next(),bytes:12,contentHash:'a'.repeat(64),mediaType:'text/plain;charset=utf-8'};used=evidence('uploadArtifact',artifact,{status:'ARTIFACT_STORED'},0,approval,'2024-12-31T23:59:59.000Z');used.c.command_id=candidate;used.c.result_ref.commandId=candidate;ac={id:next(),project_id:pid,decision_id:did,command_id:used.c.id,scope_digest:scopeDigest,policy_id:policy.id,policy_version:policy.version,consumed_at:'2024-12-31T23:59:59.000Z'};used.c.approval_consumption_id=ac.id;used.c.payload_ref={kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:details.actionScope.payloadHash,scopeDigest};sealEvidence(used);t('approval_consumptions').push(ac);}}
+ return{rr,rq,dr,de,ac,used};}
+ const records=statuses.map(add);
+ async function query(scope:string,sql:string,values:any[]=[]):Promise<any>{trace.push({scope,sql,values:clone(values)});assert(!/\b(?:INSERT|UPDATE|DELETE|TRUNCATE|CREATE|DROP|GRANT)\b/i.test(sql));if(/^BEGIN/.test(sql)){assert.equal(scope,'RR');if(state.failBegin)throw Error(marker);return{rows:[]};}if(/^ROLLBACK/.test(sql)){state.rollbacks++;if(state.failRollback)throw Error(marker);return{rows:[]};}assert(!/^COMMIT/.test(sql));if(/set_config/.test(sql))return{rows:[]};if(/current_setting|clock_timestamp|pg_current_snapshot/.test(sql)&&!/FROM anvil\./.test(sql))return{rows:[{isolation:scope==='RR'?'repeatable read':'read committed',read_only:scope==='RR'?'on':'off',snapshot:'1:99:',at:now}]};if(/FROM anvil\.projects\b/.test(sql))return{rows:[{id:pid,participation:state.owner,archived_at:null}]};const table=/FROM anvil\.([a-z_]+)/.exec(sql)?.[1];assert(table&&Object.hasOwn(tables,table));assert.equal(scope,'RR');assert(values.includes(pid));assert(!/SELECT\s+\*/i.test(sql));if(state.failTable===table)throw Error(marker);let rows=clone(t(table));const selected=values.flatMap(v=>Array.isArray(v)?v:[]);if(selected.length)rows=rows.filter(r=>selected.includes(table==='commands'?r.id:r.command_id));const keys=table==='audit_events'?['server_sequence']:['id'];const compare=(a:any,b:any)=>{for(const k of keys){if(a[k]<b[k])return-1;if(a[k]>b[k])return 1;}return 0;};rows.sort(compare);const cursors=values.slice(1,-1).filter(v=>!Array.isArray(v));if(cursors.length)rows=rows.filter(r=>compare(r,Object.fromEntries(keys.map((k,i)=>[k,cursors[i]])))>0);rows=rows.slice(0,200);if(state.overRows&&rows.length)rows=Array.from({length:201},()=>clone(rows[0]));const projection=/WITH inventory_row AS \(SELECT ([\s\S]*?) FROM anvil\./.exec(sql)?.[1]?.split(',').map(c=>c.trim().replace(/^[a-z]+\./,''));if(projection)rows=rows.map(r=>Object.fromEntries(projection.map(k=>[k,r[k]])));const cap=Number(values.at(-1));state.afterQuery?.(sql);return{rows:rows.map(r=>{const json=JSON.stringify(r),row_bytes=state.bigRow?cap+1:Buffer.byteLength(json);return{inventory_data:row_bytes>cap?null:state.preserveDates?clone(r):JSON.parse(json),row_bytes};})};}
+ const access={pool:{async connect(){assert.equal(state.rc,0);state.rr++;return{query:(s:string,v?:any[])=>query('RR',s,v),release(e?:unknown){state.rr--;state.releases++;errors.push(e);}};}},async authenticated(given:string,csrf:string|null,body:any){assert.equal(given,token);assert.equal(csrf,null);assert.equal(state.rr,0);const phase=++state.auth;state.beforeAuth?.(phase);state.rc++;const a:any={actorId:actor,clientId:client,credentialGeneration:1,serverOwner:false,reauthUntil:null,authSession:{id:state.changed&&phase===2?id(99):session,idleExpiresAt:new Date(now.getTime()+state.sessionMs).toISOString(),absoluteExpiresAt:new Date(now.getTime()+100000).toISOString()}};try{const result=await body({query:(s:string,v?:any[])=>query('RC',s,v)},a);state.rc--;if(phase===2&&state.cancelCommit)abort.abort();state.afterCommit?.(phase);return result;}finally{state.rc=0;}}}as unknown as AccessRepository;
+ return{input,abort,access,tables,t,state,trace,errors,records,add,sealEvidence,run:async()=>{const fn=await collector();return fn(access,token,input,abort.signal);}};
+}
+
+
+import {ProjectApprovals} from '../../../apps/server/modules/approvals/project-approvals.ts';
+const criteria=['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'];
+// 실제 request/candidate/receipt/notification producer이며 DB/current policy/auth는 합성 포트다.
+async function produced(generation=3){
+ const f=fixture([]),actor:any={actorId:past,clientId:pastClient,credentialGeneration:1,serverOwner:false,reauthUntil:null,authSession:{id:session,idleExpiresAt:'2099-01-01T00:00:00.000Z',absoluteExpiresAt:'2099-01-01T00:00:00.000Z'}};
+ const rules=[{ruleId:'review',subjectRef:{kind:'HUMAN',userId:past},operations:['reviewUnderstanding'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'},{ruleId:'approval',subjectRef:{kind:'HUMAN',userId:past},operations:['requestApproval','decideApproval'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}];
+ const policyBody={rules,reason:'합성 현재정책',reviewRefs:[]},policyRow={id:policy.id,head_version:1,rules_json:rules,reason:policyBody.reason,review_refs:[],created_at:new Date(at),content_hash:hash(policyBody)},policyRef={id:policy.id,version:1,contentHash:policyRow.content_hash};
+ const payload={bundleRef:ref(10),responseRef:ref(11),subjectBindingRef:ref(12),criteriaVersion:1,items:criteria.map(code=>({code,sourceRefs:[ref(40)],responsePartRefs:[ref(42)],judgement:'MATCH',reason:'원문 응답 대조'})),reason:'별도 사람 판단'};
+ const candidate:any={schemaVersion:1,projectId:pid,commandId:id(30),clientId:pastClient,controlGeneration:2,operation:'reviewUnderstanding',targetId:id(70),expectedVersion:generation,baselineRefs:[],approvalRef:null,payload};
+ const scope={operation:'reviewUnderstanding',targetRef:null,expectedVersion:generation,payloadHash:hash(payload),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:past,clientId:pastClient},controlGeneration:2};
+ const details={candidateCommandId:candidate.commandId,actionScope:scope,reason:'준비본 이해검토 승인',risks:{data:'원문 보존',security:'실권한 없음',cost:'외부호출 없음',interruption:'없음',unverified:'합성 원자료'},rollback:{method:'현재 작업 원상복구',limitations:'실제 실행 아님',evidenceRefs:[]},expiresAt:'2098-01-01T00:00:00.000Z'};
+ const request:any={...candidate,commandId:id(31),operation:'requestApproval',targetId:null,expectedVersion:0,payload:{details,candidatePayload:candidate}},candidates:any[]=[],notifications:any[]=[],writes:string[]=[];
+ const rows=(r:any[])=>({rows:r,rowCount:r.length});
+ const db:any={query:async(sql:string,p:any[]=[])=>{
+  if(sql.startsWith('SELECT p.id,p.archived_at'))return rows(p[0]===pid&&p[1]===past?[{id:pid,participation:'OWNER',archived_at:null}]:[]);
+  if(sql.includes('FROM anvil.permission_policies p JOIN'))return rows([policyRow]);
+  if(sql.startsWith('SELECT transaction_timestamp')||sql.startsWith('SELECT clock_timestamp'))return rows([{at:new Date(at)}]);
+  if(sql.startsWith('SELECT set_config')||sql==='SELECT anvil.assert_approval_notification_capacity($1)')return rows([]);
+  if(sql.startsWith('SELECT 1 FROM anvil.approval_requests'))return rows(f.t('approval_requests').filter(r=>r.project_id===p[0]&&r.candidate_command_id===p[1]));
+  if(sql.startsWith('SELECT 1 FROM anvil.commands'))return rows(f.t('commands').filter(c=>c.project_id===p[0]&&c.actor_id===p[1]&&c.command_id===p[2]));
+  const table=/^INSERT INTO anvil\.([a-z_]+)/.exec(sql)?.[1];if(table)writes.push(table);
+  if(table==='commands'){f.t(table).push({id:p[0],command_id:p[5],scope_kind:'PROJECT',scope_id:p[1],project_id:p[1],state:'APPLIED',operation:p[4],actor_id:p[2],client_id:p[3],control_generation:p[11],expected_version:p[10],policy_ref:JSON.parse(p[12]),result_ref:JSON.parse(p[14]),authorization_receipt_id:p[8],approval_consumption_id:p[9],payload_ref:p[13]===null?null:JSON.parse(p[13]),received_at:at,completed_at:at,operation_id:p[7],request_hash:p[6]});return rows([]);}
+  if(table==='authorization_receipts'){f.t(table).push({id:p[0],scope_kind:'PROJECT',scope_id:p[1],command_id:p[2],subject_ref:JSON.parse(p[3]),policy_ref:JSON.parse(p[4]),scope_digest:p[5],approval_decision_ref:p[6],authorized_at:at});return rows([]);}
+  if(table==='audit_events'){f.t(table).push({project_id:p[0],server_sequence:f.t(table).length+1,event_id:p[1],actor_ref:JSON.parse(p[2]),client_ref:p[3],command_id:p[4],operation_id:p[5],target_ref:JSON.parse(p[6]),policy_ref:JSON.parse(p[7]),approval_ref:p[8]===null?null:JSON.parse(p[8]),outcome:'APPLIED',reason_code:p[9],scope_digest:p[10],recorded_at:at,source_kind:'HUMAN_COMMAND',correction_of:null});return rows([]);}
+  if(table==='approval_requests'){f.t(table).push({id:p[0],project_id:p[1],version:1,candidate_command_id:p[2],action_scope_json:JSON.parse(p[3]),scope_digest:p[4],details_json:JSON.parse(p[5]),required_decider_ref:JSON.parse(p[6]),status:'PENDING',expires_at:p[7],created_by:p[8],client_id:p[9],command_id:p[10],policy_ref:JSON.parse(p[11]),content_hash:p[12],request_json:JSON.parse(p[13]),created_at:p[14]});return rows([]);}
+  if(table==='understanding_review_approval_candidates'){candidates.push({projectId:p[0],requestId:p[1],requestCommandId:p[2],candidateCommandId:p[3],payloadHash:p[4],command:JSON.parse(p[5]),createdBy:p[6],clientId:p[7],controlGeneration:p[8],policyRef:JSON.parse(p[9]),commandHash:p[10]});return rows([]);}
+  if(table==='notifications'){notifications.push(p);return rows([]);}
+  throw Error('UNMODELLED_REQUEST_SQL');
+ }};
+ const result:any=await new ProjectApprovals().request(db,actor,request,policyRef);
+ return{...f,result,request,candidate,candidates,notifications,writes,rr:f.t('approval_requests')[0]!};
+}
+
+test('실제 이해검토 승인요청은 target null/실행generation3·제어generation2로 과거 수집된다',async()=>{
+ const f=await produced(),r=await f.run();assert.equal(f.rr.request_json.details.actionScope.expectedVersion,3);assert.equal(f.rr.request_json.controlGeneration,2);
+ assert.equal(r.requests.length,1);assert.equal(r.requests[0].structureVerification,'SUPPORTED_STORED_SHAPE');assert.equal(r.requests[0].originalSnapshotVerification,'HASH_AND_COLUMNS_MATCH');
+ assert.equal(r.requests[0].details.actionScope.targetRef,null);assert.equal(r.requests[0].details.actionScope.expectedVersion,3);assert.equal(r.requests[0].details.actionScope.controlGeneration,2);
+ assert.deepEqual(r.requests[0].requestRef,f.result.data.ref);assert.equal(f.candidates.length,1);assert.deepEqual(f.candidates[0].command,f.candidate);assert.equal(f.notifications.length,1);
+ assert.deepEqual(f.writes,['commands','authorization_receipts','audit_events','approval_requests','understanding_review_approval_candidates','notifications']);
+ assert.equal(r.effectiveState,'NOT_EVALUATED');assert.equal(r.requestReconstructionVerification,'NOT_PERFORMED');assert.equal(r.domainArtifactVerification,'NOT_PERFORMED');
+ for(const k of ['fullProjectCoverage','restorable','approvalEffective','authorizationRestoration','executionAuthorized','dispatchPerformed'])assert.equal(r[k],false);
+ assert(Date.parse(r.requests[0].expiresAt)<Date.parse(r.observation.finishedAt));assert.equal(r.requests[0].storedStatus,'PENDING');assert.equal(f.state.rr,0);assert.equal(f.state.releases,1);
+});
+
+
+test('실제 producer의 실행generation 안전정수 1/MAX는 제어generation2와 독립 보존된다',async()=>{
+ for(const generation of [1,Number.MAX_SAFE_INTEGER]){const f=await produced(generation),r=await f.run();assert.equal(r.requests[0].details.actionScope.expectedVersion,generation);assert.equal(r.requests[0].details.actionScope.controlGeneration,2);assert.deepEqual(r.requests[0].requestRef,f.result.data.ref);}
+});
+
+test('독립 원장 생성시 null/잘못된 generation 또는 nonnull 이해검토 target은 거절한다',async()=>{
+ // 아래는 실제 producer 결과를 재봉인하지 않는다. 독립 불량 원장을 처음 만들 때
+ // scope/body/hash/proof를 함께 생성해 앞선 hash 불일치가 구조 반례를 가리지 않게 한다.
+ for(const patch of [{expectedVersion:0},{expectedVersion:-1},{expectedVersion:'3'},{expectedVersion:3.5},{expectedVersion:null},{targetRef:ref(8),expectedVersion:1}]){
+  const f=fixture(['PENDING'],Object.assign({operation:'reviewUnderstanding',targetRef:null,expectedVersion:3},patch));
+  await assert.rejects(f.run(),rejected(503));assert.equal(f.state.rr,0);assert.equal(f.state.releases,1);
+ }
+});
+
+test('NaN/Infinity/unsafe generation은 원장 canonical hash 생성 단계부터 거절된다',()=>{for(const expectedVersion of [NaN,Infinity,-Infinity,Number.MAX_SAFE_INTEGER+1])assert.throws(()=>fixture(['PENDING'],{operation:'reviewUnderstanding',targetRef:null,expectedVersion}),/INPUT_INVALID/);});
+
+test('다른 operation의 기존 null0/ref.version 의미는 그대로이고 null양수는 거절한다',async()=>{
+ for(const patch of [{operation:'uploadArtifact',targetRef:null,expectedVersion:0},{operation:'saveWorkPlanDraft',targetRef:ref(8),expectedVersion:1}]){const f=fixture(['PENDING'],patch),r=await f.run();assert.equal(r.requests[0].structureVerification,'SUPPORTED_STORED_SHAPE');assert.deepEqual(r.requests[0].details.actionScope.targetRef,patch.targetRef);}
+ for(const patch of [{operation:'uploadArtifact',targetRef:null,expectedVersion:3},{operation:'saveWorkPlanDraft',targetRef:ref(8),expectedVersion:2}])await assert.rejects(fixture(['PENDING'],patch).run(),rejected(503));
+});
+
+test('원형 없는 legacy 미지원 scope는 원문/hash 검증 성공이나 새503으로 승격하지 않는다',async()=>{
+ const f=fixture(['PENDING'],{operation:'reviewUnderstanding',targetRef:null,expectedVersion:0}),rr=f.records[0]!.rr;
+ for(const key of ['client_id','command_id','policy_ref','content_hash','request_json'])rr[key]=null;
+ const r=await f.run();assert.equal(r.requests[0].requestRef,null);assert.equal(r.requests[0].originalSnapshotVerification,'NOT_PERFORMED');assert.equal(r.requests[0].structureVerification,'NOT_PERFORMED');assert.equal(r.requests[0].details.kind,'UNSUPPORTED_STORED_SHAPE');assert(r.issues.some((x:any)=>x.code==='SOURCE_REQUEST_EVIDENCE_MISSING'));assert.equal(r.evidence.length,0);assert.equal(r.fullProjectCoverage,false);
+});
+
+test('실제 이해검토 요청 원문·scopehash·receipt·audit 누락/변조는 여전히 닫힌다',async()=>{
+ for(const mode of ['request','scope','requestHashColumn','receipt','audit','auditDuplicate','digest','otherProject']){
+  const f=await produced();if(mode==='request')f.rr.request_json.details.reason='변조';if(mode==='scope')f.rr.action_scope_json.expectedVersion=4;
+  if(mode==='requestHashColumn')f.rr.content_hash='0'.repeat(64);if(mode==='receipt')f.tables.authorization_receipts=[];if(mode==='audit')f.tables.audit_events=[];
+  if(mode==='auditDuplicate')f.t('audit_events').push({...clone(f.t('audit_events')[0]),event_id:id(999),server_sequence:2});
+  if(mode==='digest')f.t('authorization_receipts')[0]!.scope_digest='0'.repeat(64);if(mode==='otherProject')f.rr.project_id=id(99);
+  await assert.rejects(f.run(),rejected(503));assert.equal(f.state.rr,0);
+ }
+});
+
+test('실제 이해검토 요청도 현재OWNER/양끝신원·유한metadata·취소를 우회하지 않는다',async()=>{
+ for(const mode of ['owner','session','limit','cancel']){
+  const f=await produced();if(mode==='owner')f.state.owner='VIEWER';if(mode==='session')f.state.changed=true;if(mode==='limit')f.input.limits.metadataBytes=1;if(mode==='cancel')f.state.cancelCommit=true;
+  await assert.rejects(f.run(),rejected(mode==='owner'?404:mode==='session'?401:mode==='limit'?413:409));assert.equal(f.state.rr,0);
+ }
+});

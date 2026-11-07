@@ -1,7 +1,20 @@
 import { get } from 'node:https';
 import { readFileSync } from 'node:fs';
+import {resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {assertRecoveryNativeExecution} from './development-recovery-entry.ts';
 
-const ca = readFileSync('D:/Project/Anvil/.av3-data/dev-tls/ca.cert.pem');
+export function getDevelopmentTlsCaPath(recoveryTls=false):string {
+  return recoveryTls?'D:/Project/Anvil/.av3-data/dev-tls-20261025-01/ca.cert.pem':'D:/Project/Anvil/.av3-data/dev-tls/ca.cert.pem';
+}
+export function assertDevelopmentTlsExecution(recoveryTls:boolean):void {
+  if(recoveryTls)assertRecoveryNativeExecution();
+}
+export async function checkDevelopmentHttps(args:string[]){
+if(args.length>1||(args.length===1&&args[0]!=='--recovery-tls'))throw Error('DEVELOPMENT_HTTPS_ARGUMENT_INVALID');
+const recoveryTls=args[0]==='--recovery-tls';
+assertDevelopmentTlsExecution(recoveryTls);
+const ca = readFileSync(getDevelopmentTlsCaPath(recoveryTls));
 await new Promise<void>(resolve => {
   const request = get({ hostname: '127.0.0.1', port: 3830, path: '/api/v1/health', ca, rejectUnauthorized: true, agent: false }, response => {
     let body = '';
@@ -24,3 +37,5 @@ await new Promise<void>(resolve => {
     resolve();
   });
 });
+}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url))await checkDevelopmentHttps(process.argv.slice(2));

@@ -1,0 +1,120 @@
+-- FN09 하위 HUMAN 내용 사실만 허용한다. 미적용 source이며 실행/배정 차단은 보존한다.
+-- 0013 원 guard/immutable 검사와 0034 root_reference·downstream 10개 trigger는 변경하지 않는다.
+CREATE FUNCTION anvil.guard_child_human_content() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE d anvil.assignment_draft_versions%ROWTYPE; n jsonb=to_jsonb(NEW); rid uuid; v bigint; r jsonb;
+BEGIN
+ rid=COALESCE(n->>'draft_id',n->>'assignment_id')::uuid;v=COALESCE(n->>'draft_version',n->>'version')::bigint;
+ SELECT * INTO d FROM anvil.assignment_draft_versions WHERE project_id=NEW.project_id AND draft_id=rid AND version=v;
+ IF d.draft_id IS NULL THEN RAISE EXCEPTION 'ASSIGNMENT_CONTENT_EXACT_CURRENT_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ r=d.version_json->'definition'->'parentAssignmentRef';
+ IF r='null'::jsonb THEN RETURN NEW;END IF;
+ -- 이 BEFORE trigger는 기존 assignment_* guard보다 먼저 실행해 부모→child 순서로 잠근다.
+ IF anvil.assignment_parent_current(NEW.project_id,rid,d.version_json) IS NOT TRUE THEN
+  RAISE EXCEPTION 'ASSIGNMENT_PARENT_NOT_CURRENT' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+DROP TRIGGER child_assignment_draft_only_assignment_content_reviews ON anvil.assignment_content_reviews;
+DROP TRIGGER child_assignment_draft_only_assignment_versions ON anvil.assignment_versions;
+CREATE TRIGGER a_child_human_content_review BEFORE INSERT ON anvil.assignment_content_reviews FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_content();
+CREATE TRIGGER a_child_human_content_version BEFORE INSERT ON anvil.assignment_versions FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_content();
+
+-- 현재 효력 검사는 쓰기 transaction에서만 한다. 과거 기록 검산에는 새 부모 head/정책 기한을 적용하지 않는다.
+CREATE FUNCTION anvil.child_human_complete(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands%ROWTYPE; d anvil.assignment_draft_versions%ROWTYPE; ar anvil.authorization_receipts%ROWTYPE;
+ a anvil.audit_events%ROWTYPE; n jsonb; s jsonb; ref jsonb; payload jsonb; req jsonb; digest text; row_at timestamptz; total bigint; reviews_count bigint; versions_count bigint; expected_op text;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL THEN RETURN false;END IF;
+ SELECT count(*) INTO reviews_count FROM anvil.assignment_content_reviews WHERE command_id=cid;
+ SELECT count(*) INTO versions_count FROM anvil.assignment_versions WHERE command_id=cid;
+ IF reviews_count+versions_count=0 THEN
+  RETURN c.operation NOT IN('reviewAssignmentContent','confirmAssignment');
+ END IF;
+ IF reviews_count+versions_count<>1 THEN RETURN false;END IF;
+ -- operation 역시 가변 command 필드이므로 원행 종류를 먼저 확정한다.
+ IF reviews_count=1 THEN
+  expected_op='reviewAssignmentContent';
+  SELECT to_jsonb(r) INTO n FROM anvil.assignment_content_reviews r WHERE r.command_id=cid;
+  SELECT * INTO d FROM anvil.assignment_draft_versions WHERE project_id=pid AND draft_id=(n->>'draft_id')::uuid AND version=(n->>'draft_version')::bigint;
+ ELSE
+  expected_op='confirmAssignment';
+  SELECT to_jsonb(v) INTO n FROM anvil.assignment_versions v WHERE v.command_id=cid;
+  SELECT * INTO d FROM anvil.assignment_draft_versions WHERE project_id=pid AND draft_id=(n->>'assignment_id')::uuid AND version=(n->>'version')::bigint;
+ END IF;
+ IF d.draft_id IS NULL THEN RETURN false;END IF;
+ IF d.version_json->'definition'->'parentAssignmentRef'='null'::jsonb THEN RETURN true;END IF;
+ IF c.operation IS DISTINCT FROM expected_op OR c.state IS DISTINCT FROM 'APPLIED' THEN RETURN false;END IF;
+ IF NOT COALESCE(anvil.execution_preparation_ref_valid(d.version_json->'definition'->'parentAssignmentRef'),false) THEN RETURN false;END IF;
+ IF c.operation='reviewAssignmentContent' THEN
+  SELECT count(*) INTO total FROM anvil.assignment_content_reviews WHERE project_id=pid AND command_id=cid;
+  IF total<>1 THEN RETURN false;END IF;
+  SELECT to_jsonb(r),r.review_json,r.created_at INTO n,s,row_at FROM anvil.assignment_content_reviews r WHERE r.project_id=pid AND r.command_id=cid;
+  ref=jsonb_build_object('id',n->'review_id','version',1,'contentHash',n->'content_hash');
+  payload=s-ARRAY['reviewedBy','reviewedAt','independence'];
+  IF anvil.assignment_content_review_valid(s) IS NOT TRUE OR s->'reviewedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+   OR n->>'draft_hash' IS DISTINCT FROM d.content_hash OR s->>'reviewedAt' IS DISTINCT FROM c.result_ref->>'serverReceivedAt' THEN RETURN false;END IF;
+ ELSE
+  SELECT count(*) INTO total FROM anvil.assignment_versions WHERE project_id=pid AND command_id=cid;
+  IF total<>1 THEN RETURN false;END IF;
+  SELECT to_jsonb(v),v.version_json,v.created_at INTO n,s,row_at FROM anvil.assignment_versions v WHERE v.project_id=pid AND v.command_id=cid;
+  ref=jsonb_build_object('id',n->'assignment_id','version',n->'version','contentHash',n->'content_hash');
+  payload=jsonb_build_object('draftRef',s->'draftRef','reviewRefs',s->'reviewRefs','reason',s->'reason','acknowledged',true);
+  IF s->'definition' IS DISTINCT FROM d.version_json->'definition' OR s->'readinessIssues' IS DISTINCT FROM d.version_json->'readinessIssues'
+   OR s->'confirmedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+   OR s->'contentConfirmed' IS DISTINCT FROM 'true'::jsonb OR s->'ready' IS DISTINCT FROM 'false'::jsonb OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+   OR s->>'confirmedAt' IS DISTINCT FROM c.result_ref->>'serverReceivedAt' OR n->>'confirmation_id' IS DISTINCT FROM c.result_ref->'data'->>'confirmationId' THEN RETURN false;END IF;
+ END IF;
+ IF c.scope_kind<>'PROJECT' OR c.scope_id IS DISTINCT FROM pid OR c.actor_id::text IS DISTINCT FROM n->>'created_by' OR c.client_id::text IS DISTINCT FROM n->>'client_id'
+  OR c.expected_version IS DISTINCT FROM d.version OR c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL
+  OR s->'draftRef' IS DISTINCT FROM jsonb_build_object('id',d.draft_id,'version',d.version,'contentHash',d.content_hash)
+  OR n->>'content_hash' IS DISTINCT FROM anvil.execution_json_hash(s) OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM s OR c.result_ref->'data'->'ref' IS DISTINCT FROM ref
+  OR c.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR c.result_ref->>'projectId' IS DISTINCT FROM pid::text OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text
+  OR c.result_ref->>'targetId' IS DISTINCT FROM ref->>'id' OR c.result_ref->'version' IS DISTINCT FROM ref->'version'
+  OR date_trunc('milliseconds',row_at) IS DISTINCT FROM (c.result_ref->>'serverReceivedAt')::timestamptz
+  OR row_at IS DISTINCT FROM c.received_at OR row_at IS DISTINCT FROM c.completed_at THEN RETURN false;END IF;
+ req=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation',c.operation,'targetId',d.draft_id,'expectedVersion',d.version,'baselineRefs','[]'::jsonb,'approvalRef','null'::jsonb,'payload',payload);
+ IF c.request_hash IS DISTINCT FROM anvil.execution_json_hash(req) THEN RETURN false;END IF;
+ digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+ IF (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=cid)<>1 OR (SELECT count(*) FROM anvil.audit_events WHERE command_id=cid)<>1 THEN RETURN false;END IF;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE command_id=cid;
+ SELECT * INTO a FROM anvil.audit_events WHERE command_id=cid;
+ IF ar.id IS DISTINCT FROM c.authorization_receipt_id OR ar.scope_kind IS DISTINCT FROM 'PROJECT' OR ar.scope_id IS DISTINCT FROM pid OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+  OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.scope_digest IS DISTINCT FROM digest OR ar.approval_decision_ref IS NOT NULL OR ar.authorized_at IS DISTINCT FROM row_at
+  OR a.project_id IS DISTINCT FROM pid OR a.operation_id IS DISTINCT FROM c.operation_id OR a.actor_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  OR a.client_ref IS DISTINCT FROM c.client_id OR a.target_ref IS DISTINCT FROM ref OR a.policy_ref IS DISTINCT FROM c.policy_ref OR a.approval_ref IS NOT NULL OR a.outcome IS DISTINCT FROM 'APPLIED' OR a.source_kind IS DISTINCT FROM 'HUMAN_COMMAND'
+  OR a.scope_digest IS DISTINCT FROM digest OR a.recorded_at IS DISTINCT FROM row_at OR a.server_sequence<1 OR a.server_sequence>9007199254740991 THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+CREATE FUNCTION anvil.guard_child_human_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n jsonb; cid uuid; pid uuid; c anvil.commands%ROWTYPE; d anvil.assignment_draft_versions%ROWTYPE; at timestamptz;
+BEGIN
+ IF TG_OP='DELETE' THEN n=to_jsonb(OLD);ELSE n=to_jsonb(NEW);END IF;
+ cid=CASE WHEN TG_TABLE_NAME='commands' THEN (n->>'id')::uuid ELSE (n->>'command_id')::uuid END;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.assignment_content_reviews WHERE command_id=cid) OR EXISTS(SELECT 1 FROM anvil.assignment_versions WHERE command_id=cid) THEN RAISE EXCEPTION 'ASSIGNMENT_CONTENT_INCOMPLETE' USING ERRCODE='42501';END IF;
+  RETURN NULL;
+ END IF;
+ pid=c.project_id;
+ IF anvil.child_human_complete(pid,cid) IS NOT TRUE THEN RAISE EXCEPTION 'ASSIGNMENT_CONTENT_INCOMPLETE' USING ERRCODE='42501';END IF;
+ -- 새 child 기록은 잠금 대기 뒤 최종 clock에서도 현재 세션/정책/부모가 유효해야 한다.
+ IF c.operation='reviewAssignmentContent' THEN
+  SELECT dv.* INTO d FROM anvil.assignment_draft_versions dv JOIN anvil.assignment_content_reviews r ON r.project_id=dv.project_id AND r.draft_id=dv.draft_id AND r.draft_version=dv.version WHERE r.project_id=pid AND r.command_id=cid;
+ ELSE
+  SELECT dv.* INTO d FROM anvil.assignment_draft_versions dv JOIN anvil.assignment_versions v ON v.project_id=dv.project_id AND v.assignment_id=dv.draft_id AND v.version=dv.version WHERE v.project_id=pid AND v.command_id=cid;
+ END IF;
+ IF d.draft_id IS NOT NULL AND d.version_json->'definition'->'parentAssignmentRef' IS DISTINCT FROM 'null'::jsonb THEN
+  at=clock_timestamp();
+  IF anvil.assignment_content_authorized(pid,c.operation) IS NOT TRUE OR anvil.assignment_parent_current(pid,d.draft_id,d.version_json) IS NOT TRUE THEN RAISE EXCEPTION 'ASSIGNMENT_PARENT_NOT_CURRENT' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER child_human_commands_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_complete();
+CREATE CONSTRAINT TRIGGER child_human_reviews_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.assignment_content_reviews DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_complete();
+CREATE CONSTRAINT TRIGGER child_human_versions_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.assignment_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_complete();
+CREATE CONSTRAINT TRIGGER child_human_receipts_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_complete();
+CREATE CONSTRAINT TRIGGER child_human_audits_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.guard_child_human_complete();

@@ -1,0 +1,1 @@
+export function QuarantinedOriginalNotice({failure}:{failure:{quarantinedArtifactId?:string}|null|undefined}){const id=failure?.quarantinedArtifactId;return typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)?<p role="status">원문 격리 확인 · 원문 ID {id} · 후속 저장/전달 차단</p>:null;}

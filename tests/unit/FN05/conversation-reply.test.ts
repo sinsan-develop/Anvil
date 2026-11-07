@@ -1,0 +1,27 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {ApiClient,ApiError} from '../../../apps/web/src/api/client.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import * as api from '../../../apps/web/src/features/knowledge/conversation-api.ts';
+const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',aid='33333333-3333-4333-8333-333333333333',cid='44444444-4444-4444-8444-444444444444',mid='55555555-5555-4555-8555-555555555555',replyId='66666666-6666-4666-8666-666666666666',at='2026-10-22T00:00:00Z',session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)};
+function view(){const body='원 발언 유지',message={kind:'USER_MESSAGE' as const,bodyRef:{artifactId:aid,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/plain;charset=utf-8' as const},attachmentRefs:[],replyTo:null,supersedesInstructionRef:null,effectiveScope:{projectId:pid,stageRefs:[],taskRefs:[]}},authorRef={kind:'HUMAN' as const,userId:uid},snapshot={conversationId:cid,targetRoleRef:null,message,sourceRefs:[],serverSequence:1,authorRef};return{sourceRef:{kind:'CONVERSATION' as const,id:mid,contentHash:contentHash(canonicalJson(snapshot))},conversationId:cid,serverSequence:1,authorRef,message,body,deliveryState:'STORED',redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',recordedAt:at};}
+test('고정 원 발언을 다시 읽어 답글을 준비하고 동일 명령·원문 hash로 저장/재조회한다',async()=>{
+ const prepare=(api as any).prepareConversationReply;assert.equal(typeof prepare,'function');const original=view(),writes:any[]=[],reads:string[]=[];let saved:any;
+ const client=new ApiClient(async(url,init)=>{if(!init?.method||init.method==='GET'){reads.push(String(url));return Response.json(String(url).endsWith('/'+mid)?original:saved);}
+ const upload=String(url).endsWith('/files'),c=upload?JSON.parse(new Headers(init.headers).get('x-anvil-command')!):JSON.parse(String(init.body));writes.push(c);
+ if(upload)return Response.json(receipt(c,{status:'ARTIFACT_READY',artifactRef:{artifactId:aid,...c.payload}},aid,null));
+ const snapshot={conversationId:cid,targetRoleRef:null,message:c.payload.message,sourceRefs:[],serverSequence:2,authorRef:original.authorRef},sourceRef={kind:'CONVERSATION',id:replyId,contentHash:contentHash(canonicalJson(snapshot))};saved={...original,sourceRef,serverSequence:2,message:c.payload.message,body:'원 발언에 답함'};if(writes.length===2)throw Error('lost');return Response.json(receipt(c,{status:'CONVERSATION_STORED',sourceRef,conversationId:cid,serverSequence:2,deliveryState:'STORED',message:snapshot},replyId,1));});
+ const b=await prepare(client,pid,session,1,cid,1,original.sourceRef);assert.deepEqual(b.replyTo,original.sourceRef);assert.equal(b.body,'');assert.equal(b.kind,'USER_MESSAGE');assert.equal(b.supersedesInstructionRef,null);b.body='원 발언에 답함';b.pending=await api.prepareConversation(b,session);
+ await assert.rejects(api.sendConversation(client,b,session,p=>b.pending=p,()=>true),ApiError);const result=await api.sendConversation(client,b,session,p=>b.pending=p,()=>true);assert.deepEqual(writes[1],writes[2]);assert.deepEqual(writes[1].payload.message.replyTo,original.sourceRef);assert.equal(writes[1].expectedVersion,1);const read=await api.readConversationMessage(client,pid,cid,result.sourceRef);assert.deepEqual(read.message.replyTo,original.sourceRef);assert.equal(read.body,'원 발언에 답함');assert.equal(writes.length,3);assert.equal(reads.length,2);assert.equal(original.body,'원 발언 유지');
+ const altered=structuredClone(b);altered.replyTo={...original.sourceRef,contentHash:'0'.repeat(64)};let calls=0;await assert.rejects(api.sendConversation(new ApiClient(async()=>{calls++;throw Error();}),altered,session,()=>{},()=>true),ApiError);assert.equal(calls,0);
+});
+test('다른 대화·변조 원문·관측보다 뒤 순번은 답글 입력을 만들지 않는다',async()=>{
+ const prepare=(api as any).prepareConversationReply;assert.equal(typeof prepare,'function');const original=view();for(const bad of [{...original,conversationId:pid},{...original,body:'변조'}, {...original,serverSequence:2}])await assert.rejects(prepare(new ApiClient(async()=>Response.json(bad)),pid,session,1,cid,1,original.sourceRef),ApiError);
+ const later={...original,serverSequence:2};later.sourceRef={...later.sourceRef,contentHash:contentHash(canonicalJson({conversationId:cid,targetRoleRef:null,message:later.message,sourceRefs:[],serverSequence:2,authorRef:later.authorRef}))};await assert.rejects(prepare(new ApiClient(async()=>Response.json(later)),pid,session,1,cid,1,later.sourceRef),{code:'CONVERSATION_REPLY_INVALID'});
+});
+function receipt(c:any,data:any,targetId:string,version:number|null){return{operationId:mid,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId,version,data,serverReceivedAt:at};}
+
+test('이전 replyTo 필드 없는 원명령 입력은 일반 발언으로 보존하고 새 대화의 답글 참조는 거절한다',async()=>{
+ const b=api.newConversation(pid,session,1);b.body='이전 입력 보존';b.pending=await api.prepareConversation(b,session);delete b.replyTo;delete b.pending.snapshot.replyTo;const original=structuredClone(b);let calls=0;
+ await assert.rejects(api.sendConversation(new ApiClient(async()=>{calls++;throw Error('lost');}),b,session,()=>{},()=>true),{code:'CONNECTION_LOST'});assert.equal(calls,1);assert.deepEqual(b,original);
+ b.pending=null;b.replyTo=view().sourceRef;await assert.rejects(api.prepareConversation(b,session),{code:'CONVERSATION_BINDING_INVALID'});
+});

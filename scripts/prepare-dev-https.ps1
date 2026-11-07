@@ -1,7 +1,17 @@
-param([Parameter(Mandatory=$true)][string]$DataRoot)
+param([Parameter(Mandatory=$true)][string]$DataRoot,[switch]$RecoveryTls)
 $ErrorActionPreference = 'Stop'
+function Get-DevelopmentTlsDirectory([string]$Root,[bool]$Recovery) {
+  if ([IO.Path]::GetFullPath($Root) -ne 'D:\Project\Anvil\.av3-data') { throw 'DEVELOPMENT_TLS_ROOT_INVALID' }
+  return Join-Path 'D:\Project\Anvil\.av3-data' $(if($Recovery){'dev-tls-20261025-01'}else{'dev-tls'})
+}
+function Assert-DevelopmentTlsExecution([bool]$Recovery) {
+  if ($Recovery) { throw 'DEVELOPMENT_TLS_RECOVERY_PROTECTION_UNVERIFIED' }
+}
 $expected = [IO.Path]::GetFullPath('D:\Project\Anvil\.av3-data')
-if ([IO.Path]::GetFullPath($DataRoot) -ne $expected -or (Test-Path -LiteralPath $DataRoot)) { throw 'HTTPS_TARGET_NOT_NEW' }
+if (!$RecoveryTls -and ([IO.Path]::GetFullPath($DataRoot) -ne $expected -or (Test-Path -LiteralPath $DataRoot))) { throw 'HTTPS_TARGET_NOT_NEW' }
+$tlsDirectory = Get-DevelopmentTlsDirectory $DataRoot ([bool]$RecoveryTls)
+# 새 child의 경로 결박만 준비했다. 보호 선행·실제 생성 승인을 대신하지 않는다.
+Assert-DevelopmentTlsExecution ([bool]$RecoveryTls)
 $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
 $directory = New-Item -ItemType Directory -Path $DataRoot
 $acl = [Security.AccessControl.DirectorySecurity]::new()
@@ -10,7 +20,7 @@ $acl.SetAccessRuleProtection($true,$false)
 $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($sid,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))
 $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new('S-1-5-18'),'FullControl','ContainerInherit,ObjectInherit','None','Allow'))
 Set-Acl -LiteralPath $directory.FullName -AclObject $acl
-$tls = New-Item -ItemType Directory -Path (Join-Path $DataRoot 'dev-tls')
+$tls = New-Item -ItemType Directory -Path $tlsDirectory
 $now = [DateTimeOffset]::UtcNow
 $expires = $now.AddDays(7)
 $caKey = [Security.Cryptography.RSA]::Create(3072)

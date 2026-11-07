@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+const m:any=await import('../../../scripts/policy-editor-qa-budget.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+test('시험은 정리120초를 먼저 예약하고 남은 허용창 안의 최대90초만 사용한다',()=>{assert.equal(typeof m.policyQaWorkBudget,'function');assert.equal(m.policyQaWorkBudget(300000,1000),90000);assert.equal(m.policyQaWorkBudget(161000,1000),40000);for(const until of [120999,121000,1000,0,NaN,Infinity])assert.throws(()=>m.policyQaWorkBudget(until,1000));});
+test('정리는 시험창과 독립인 유한60초이며 개별 호출은 남은 시간 내30초 상한이다',()=>{assert.equal(typeof m.policyQaCleanupDeadline,'function');const end=m.policyQaCleanupDeadline(300001);assert.equal(end,360001);assert.equal(m.policyQaCallBudget(end,300001),30000);assert.equal(m.policyQaCallBudget(end,359001),1000);assert.throws(()=>m.policyQaCallBudget(end,end));});

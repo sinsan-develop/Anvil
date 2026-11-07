@@ -1,0 +1,244 @@
+-- FN10/FN11/UI11 forward-only 후보. 실제 PG compile/DML/COMMIT/RLS/경합 NOT_RUN.
+-- 기존 0017 유한 한도/scope/state/head/출처 검사와 0047 wrapper chain 보존.
+CREATE FUNCTION anvil.fn10_limit_policy_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(anvil.execution_json_shape(s,ARRAY['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])
+ AND s->>'operation' IN('applyLimitPolicy','revokeLimitPolicy')
+ AND s->>'payloadHash' ~ '^[a-f0-9]{64}$' AND s->'baselineRefs'='[]'::jsonb AND s->'sourceScopes'='[]'::jsonb AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb
+ AND ((s->>'operation'='applyLimitPolicy' AND s->'targetRef'='null'::jsonb AND s->'expectedVersion'='0'::jsonb)
+ OR ((s->>'expectedVersion')::bigint>0 AND EXISTS(SELECT 1 FROM anvil.limit_policy_versions v WHERE v.project_id=pid
+ AND s->'targetRef'=jsonb_build_object('id',v.policy_id,'version',v.version,'contentHash',v.content_hash) AND s->'expectedVersion'=to_jsonb(v.version)
+ AND (s->>'operation'='applyLimitPolicy' OR v.snapshot_json->>'state'='APPLIED')))),false);
+$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_limit_policy;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation' IN('applyLimitPolicy','revokeLimitPolicy') THEN anvil.fn10_limit_policy_approval_target_valid(pid,s) ELSE anvil.connection_candidate_approval_target_before_limit_policy(pid,s) END;
+$$;
+CREATE FUNCTION anvil.fn10_limit_policy_approval_execution_valid(pid uuid,cid uuid,did uuid,consumed boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE payload jsonb;op text;target jsonb;expected bigint;snapshot jsonb;
+BEGIN
+ SELECT c.operation,c.expected_version,c.result_ref->'data'->'snapshot' INTO op,expected,snapshot FROM anvil.commands c WHERE c.project_id=pid AND c.id=cid;
+ IF op NOT IN('applyLimitPolicy','revokeLimitPolicy') OR snapshot IS NULL THEN RETURN false;END IF;
+ target=snapshot->'previousRef';
+ payload=jsonb_build_object('scope',snapshot->'scope','reason',snapshot->'reason','policyBaseVersion',snapshot->'policyBaseVersion');
+ IF op='applyLimitPolicy' THEN payload=payload||jsonb_build_object('limits',snapshot->'limits');END IF;
+ IF nullif(current_setting('anvil.limit_policy_payload',true),'')::jsonb IS DISTINCT FROM payload THEN RETURN false;END IF;
+ RETURN EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=did
+ JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=did AND d.decision='APPROVE' AND d.request_version=1
+ JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id AND r.scope_digest=d.scope_digest AND r.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=pid AND p.archived_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=pid AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=pid AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.project_id=pid AND c.id=cid AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation=op AND c.state='APPLIED'
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND expected=(snapshot->>'policyBaseVersion')::bigint AND expected>=0
+ AND r.status=CASE WHEN consumed THEN 'CONSUMED' ELSE 'APPROVED' END AND r.version=CASE WHEN consumed THEN 3 ELSE 2 END
+ AND r.expires_at>clock_timestamp() AND c.approval_consumption_id IS NOT NULL AND c.expected_version=expected
+ AND c.command_id=r.candidate_command_id AND c.actor_id=r.created_by AND c.client_id=r.client_id
+ AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND r.request_json->>'controlGeneration'=c.control_generation::text AND r.action_scope_json->>'controlGeneration'=c.control_generation::text
+ AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND r.action_scope_json->>'operation'=op AND r.action_scope_json->'targetRef'=target AND r.action_scope_json->'expectedVersion'=to_jsonb(expected)
+ AND anvil.fn10_limit_policy_approval_target_valid(pid,r.action_scope_json) AND r.scope_digest=anvil.execution_json_hash(r.action_scope_json)
+ AND r.action_scope_json->>'payloadHash'=anvil.execution_json_hash(payload)
+ AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation
+ AND d.decision_json->'policyRef'=c.policy_ref
+ AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.execution_json_hash(payload),'scopeDigest',r.scope_digest)
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'operation',op,'targetId',target->>'id','expectedVersion',expected,'baselineRefs','[]'::jsonb,
+ 'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',payload))
+ AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'projectId'=pid::text
+ AND c.result_ref->>'status'='APPLIED'
+ AND c.result_ref->'data'->>'status'=CASE WHEN op='applyLimitPolicy' THEN 'LIMIT_POLICY_APPLIED' ELSE 'LIMIT_POLICY_REVOKED' END
+ AND snapshot->>'state'=CASE WHEN op='applyLimitPolicy' THEN 'APPLIED' ELSE 'REVOKED' END
+ AND snapshot->'scope'=jsonb_build_object('kind','PROJECT','projectId',pid)
+ AND anvil.limit_policy_limits_valid(snapshot->'limits') AND snapshot->'executionAuthorized'='false'::jsonb AND snapshot->'dispatchPerformed'='false'::jsonb
+ AND snapshot->'decidedBy'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND c.result_ref->>'operationId'=c.operation_id::text
+ AND (SELECT count(*) FROM anvil.authorization_receipts x WHERE x.command_id=cid)=1
+ AND c.result_ref->'data'->'ref'->>'id'=c.result_ref->>'targetId' AND c.result_ref->'data'->'ref'->'version'=c.result_ref->'version'
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id
+ AND a.outcome='APPLIED' AND a.scope_digest=ar.scope_digest AND a.policy_ref=c.policy_ref AND a.target_ref=c.result_ref->'data'->'ref'
+ AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.source_kind='HUMAN_COMMAND'
+ AND a.approval_ref=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest))
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+ WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+ AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='REQUIRE_APPROVAL' AND rule->'limitPolicyRef'='null'::jsonb AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (NOT consumed OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac
+ WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.decision_id=did
+ AND ac.scope_digest=r.scope_digest AND ac.policy_id=pp.id AND ac.policy_version=pp.head_version)));
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_limit_policy;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=did JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE c.project_id=pid AND c.id=cid AND (c.operation IN('applyLimitPolicy','revokeLimitPolicy') OR r.action_scope_json->>'operation' IN('applyLimitPolicy','revokeLimitPolicy')))
+ THEN anvil.fn10_limit_policy_approval_execution_valid(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_limit_policy(pid,cid,did) END;
+$$;
+
+ALTER FUNCTION anvil.limit_policy_authorized(uuid,text) RENAME TO limit_policy_authorized_before_approval;
+CREATE FUNCTION anvil.limit_policy_authorized(pid uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT anvil.limit_policy_authorized_before_approval(pid,op) OR (op IN('applyLimitPolicy','revokeLimitPolicy') AND EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id WHERE c.project_id=pid AND c.operation=op AND c.id::text=current_setting('anvil.command_id',true) AND anvil.fn10_limit_policy_approval_execution_valid(pid,c.id,ar.approval_decision_ref,true)));
+$$;
+CREATE OR REPLACE FUNCTION anvil.guard_limit_policy_version() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cmd anvil.commands%ROWTYPE;previous anvil.limit_policy_versions%ROWTYPE;s jsonb;scope jsonb;ref jsonb;previous_ref jsonb;payload jsonb;op text;status text;target jsonb;approval jsonb;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'LIMIT_POLICY_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ s=NEW.snapshot_json;scope=s->'scope';
+ IF jsonb_typeof(s) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(s))<>11
+  OR NOT(s ?& ARRAY['limits','scope','reason','policyBaseVersion','state','previousRef','decidedBy','decidedAt','expiresAt','executionAuthorized','dispatchPerformed'])
+  OR scope IS DISTINCT FROM jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)
+  OR NOT COALESCE(anvil.limit_policy_limits_valid(s->'limits'),false) OR NOT anvil.limit_policy_state_valid(s->'state')
+  OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+  OR jsonb_typeof(s->'reason') IS DISTINCT FROM 'string' OR NOT COALESCE(anvil.assignment_content_reason(s->>'reason'),false)
+  OR jsonb_typeof(s->'decidedAt') IS DISTINCT FROM 'string' OR jsonb_typeof(s->'expiresAt') IS DISTINCT FROM 'string'
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_INPUT_INVALID' USING ERRCODE='42501';END IF;
+ op=(CASE WHEN s->>'state'='APPLIED' THEN 'applyLimitPolicy' ELSE 'revokeLimitPolicy' END);
+ status=(CASE WHEN s->>'state'='APPLIED' THEN 'LIMIT_POLICY_APPLIED' ELSE 'LIMIT_POLICY_REVOKED' END);
+ ref=jsonb_build_object('id',NEW.policy_id,'version',NEW.version,'contentHash',NEW.content_hash);
+ SELECT * INTO cmd FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);
+ IF NOT COALESCE(anvil.limit_policy_authorized(NEW.project_id,op),false) OR cmd.id IS NULL OR NEW.command_id IS DISTINCT FROM cmd.id
+  OR cmd.project_id IS DISTINCT FROM NEW.project_id OR NEW.created_by IS DISTINCT FROM cmd.actor_id OR NEW.client_id IS DISTINCT FROM cmd.client_id
+  OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.execution_authority_canonical(s),'UTF8')),'hex') OR octet_length(anvil.execution_authority_canonical(s))>2097152
+  OR cmd.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR cmd.result_ref->>'projectId' IS DISTINCT FROM NEW.project_id::text
+  OR cmd.result_ref->'targetId' IS DISTINCT FROM to_jsonb(NEW.policy_id) OR cmd.result_ref->'version' IS DISTINCT FROM to_jsonb(NEW.version)
+  OR cmd.result_ref->'data'->>'status' IS DISTINCT FROM status OR cmd.result_ref->'data'->'ref' IS DISTINCT FROM ref OR cmd.result_ref->'data'->'snapshot' IS DISTINCT FROM s
+  OR s->'decidedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+  OR (s->>'decidedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_EXACT_CURRENT_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ -- BEFORE trigger에서 생성열 NEW.scope_json은 아직 없으므로 검증된 JSON local scope만 쓴다.
+ SELECT * INTO previous FROM anvil.limit_policy_versions v WHERE v.project_id=NEW.project_id AND v.scope_json=scope ORDER BY v.version DESC LIMIT 1;
+ IF previous.policy_id IS NULL THEN
+  IF NEW.version<>1 OR s->>'state' IS DISTINCT FROM 'APPLIED' OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb
+   OR EXISTS(SELECT 1 FROM anvil.limit_policy_versions v WHERE v.project_id=NEW.project_id AND v.policy_id=NEW.policy_id)
+   THEN RAISE EXCEPTION 'LIMIT_POLICY_INITIAL_VERSION_REQUIRED' USING ERRCODE='42501';END IF;
+  target='null'::jsonb;
+ ELSE
+  previous_ref=jsonb_build_object('id',previous.policy_id,'version',previous.version,'contentHash',previous.content_hash);
+  IF NEW.policy_id IS DISTINCT FROM previous.policy_id OR NEW.version<>previous.version+1 OR s->'previousRef' IS DISTINCT FROM previous_ref
+   OR (s->>'state'='REVOKED' AND (previous.snapshot_json->>'state' IS DISTINCT FROM 'APPLIED' OR s->'limits' IS DISTINCT FROM previous.snapshot_json->'limits'
+    OR s->'expiresAt' IS DISTINCT FROM previous.snapshot_json->'expiresAt')) THEN RAISE EXCEPTION 'LIMIT_POLICY_BASE_VERSION_CONFLICT' USING ERRCODE='42501';END IF;
+  target=to_jsonb(previous.policy_id);
+ END IF;
+ IF s->'policyBaseVersion' IS DISTINCT FROM to_jsonb(NEW.version-1) OR cmd.expected_version IS DISTINCT FROM NEW.version-1
+  OR (s->>'state'='APPLIED' AND (s->>'expiresAt')::timestamptz IS DISTINCT FROM (s->>'decidedAt')::timestamptz+((s->'limits'->>'maxElapsedMs')::bigint*interval '1 millisecond'))
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_FINITE_VERSION_REQUIRED' USING ERRCODE='42501';END IF;
+ payload=jsonb_build_object('scope',scope,'reason',s->'reason','policyBaseVersion',s->'policyBaseVersion');
+ IF s->>'state'='APPLIED' THEN payload=payload||jsonb_build_object('limits',s->'limits');END IF;
+ approval='null'::jsonb;
+ IF cmd.approval_consumption_id IS NOT NULL THEN
+  SELECT jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest) INTO approval
+  FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.id=ac.decision_id AND d.project_id=ac.project_id JOIN anvil.approval_requests r ON r.id=d.request_id AND r.project_id=d.project_id
+  WHERE ac.project_id=NEW.project_id AND ac.id=cmd.approval_consumption_id AND ac.command_id=cmd.id
+  AND r.action_scope_json->'targetRef'=COALESCE(previous_ref,'null'::jsonb);
+  IF approval IS NULL THEN RAISE EXCEPTION 'LIMIT_POLICY_APPROVAL_BASE_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ IF cmd.request_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.execution_authority_canonical(jsonb_build_object(
+  'schemaVersion',1,'projectId',NEW.project_id,'commandId',cmd.command_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,
+  'operation',op,'targetId',target,'expectedVersion',NEW.version-1,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',payload)),'UTF8')),'hex')
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_REQUEST_HASH_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE FUNCTION anvil.fn10_limit_policy_command_related(pid uuid,cid uuid,key uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(op IN('applyLimitPolicy','revokeLimitPolicy')
+ OR EXISTS(SELECT 1 FROM anvil.limit_policy_versions v WHERE v.project_id=pid AND v.command_id=cid)
+ OR EXISTS(SELECT 1 FROM anvil.approval_requests r WHERE r.project_id=pid AND r.candidate_command_id=key AND r.action_scope_json->>'operation' IN('applyLimitPolicy','revokeLimitPolicy'))
+ OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=ar.approval_decision_ref JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id WHERE ar.command_id=cid AND r.action_scope_json->>'operation' IN('applyLimitPolicy','revokeLimitPolicy'))
+ OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id WHERE ac.command_id=cid AND r.action_scope_json->>'operation' IN('applyLimitPolicy','revokeLimitPolicy'))
+ OR EXISTS(SELECT 1 FROM anvil.audit_events a JOIN anvil.approval_requests r ON r.project_id=pid AND r.id::text=a.approval_ref->>'requestId' WHERE a.command_id=cid AND r.action_scope_json->>'operation' IN('applyLimitPolicy','revokeLimitPolicy')),false);
+$$;
+CREATE FUNCTION anvil.fn10_limit_policy_approval_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;c anvil.commands;did uuid;b anvil.limit_policy_versions;approved boolean;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_TABLE_NAME='commands' THEN pid=NEW.project_id;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN pid=NEW.scope_id;cid=NEW.command_id;
+ ELSE pid=NEW.project_id;cid=NEW.command_id;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=pid;
+ IF anvil.fn10_limit_policy_command_related(pid,cid,c.command_id,c.operation) THEN
+  SELECT * INTO b FROM anvil.limit_policy_versions WHERE project_id=pid AND command_id=cid;
+  IF c.id IS NULL OR c.operation NOT IN('applyLimitPolicy','revokeLimitPolicy') OR c.state IS DISTINCT FROM 'APPLIED' OR b.policy_id IS NULL
+  OR (SELECT count(*) FROM anvil.limit_policy_versions WHERE project_id=pid AND command_id=cid)<>1
+  OR b.created_by IS DISTINCT FROM c.actor_id OR b.client_id IS DISTINCT FROM c.client_id
+  OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text
+  OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM b.snapshot_json OR b.content_hash IS DISTINCT FROM anvil.execution_json_hash(b.snapshot_json)
+  OR c.result_ref->'data'->'ref' IS DISTINCT FROM jsonb_build_object('id',b.policy_id,'version',b.version,'contentHash',b.content_hash)
+  OR (SELECT count(*) FROM anvil.authorization_receipts ar WHERE ar.command_id=cid)<>1
+  OR (SELECT count(*) FROM anvil.audit_events a WHERE a.command_id=cid)<>1
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_COMMAND_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  -- 승인 여부와 무관하게 정확 receipt/audit 전체 원열을 검증한다. 읽기 503으로 COMMIT 보호를 대체하지 않는다.
+  IF NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.audit_events a ON a.project_id=pid AND a.command_id=cid
+   WHERE ar.id=c.authorization_receipt_id AND ar.command_id=cid AND ar.scope_kind='PROJECT' AND ar.scope_id=pid
+   AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND ar.policy_ref=c.policy_ref
+   AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+    'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+   AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id
+   AND a.target_ref=c.result_ref->'data'->'ref' AND a.policy_ref=c.policy_ref AND a.scope_digest=ar.scope_digest
+   AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND'
+   AND ((c.approval_consumption_id IS NULL AND ar.approval_decision_ref IS NULL AND a.approval_ref IS NULL)
+    OR (c.approval_consumption_id IS NOT NULL AND ar.approval_decision_ref IS NOT NULL AND a.approval_ref->>'decisionId'=ar.approval_decision_ref::text)))
+  THEN RAISE EXCEPTION 'LIMIT_POLICY_COMMON_RECEIPT_AUDIT_REQUIRED' USING ERRCODE='42501';END IF;
+  approved=c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL
+   OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=cid AND ar.approval_decision_ref IS NOT NULL)
+   OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.command_id=cid)
+   OR EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.command_id=cid AND a.approval_ref IS NOT NULL);
+  IF approved THEN
+   SELECT decision_id INTO did FROM anvil.approval_consumptions WHERE project_id=pid AND id=c.approval_consumption_id AND command_id=cid;
+   IF did IS NULL OR anvil.fn10_limit_policy_approval_execution_valid(pid,cid,did,true) IS DISTINCT FROM true THEN RAISE EXCEPTION 'LIMIT_POLICY_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSIF anvil.limit_policy_authorized_before_approval(pid,c.operation) IS DISTINCT FROM true THEN
+   RAISE EXCEPTION 'LIMIT_POLICY_AUTO_AUTHORIZATION_REQUIRED' USING ERRCODE='42501';
+  END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER fn10_limit_policy_commands_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_complete();
+CREATE CONSTRAINT TRIGGER fn10_limit_policy_authorization_receipts_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_complete();
+CREATE CONSTRAINT TRIGGER fn10_limit_policy_approval_consumptions_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_complete();
+CREATE CONSTRAINT TRIGGER fn10_limit_policy_audit_events_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_complete();
+CREATE CONSTRAINT TRIGGER fn10_limit_policy_limit_policy_versions_complete AFTER INSERT ON anvil.limit_policy_versions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_complete();
+CREATE FUNCTION anvil.fn10_limit_policy_approval_command_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE protected_old boolean;protected_new boolean=false;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN
+  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+ END IF;
+ protected_old=anvil.fn10_limit_policy_command_related(OLD.project_id,OLD.id,OLD.command_id,OLD.operation);
+ IF TG_OP='UPDATE' THEN
+  protected_new=anvil.fn10_limit_policy_command_related(NEW.project_id,NEW.id,NEW.command_id,NEW.operation);
+ END IF;
+ IF COALESCE(protected_old,false) OR COALESCE(protected_new,false)
+ THEN RAISE EXCEPTION 'LIMIT_POLICY_APPROVAL_COMMAND_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn10_limit_policy_approval_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_command_immutable();
+
+-- 최종 command의 소비/receipt/감사를 나중에 수정하거나 지우는 우회도 차단한다.
+CREATE FUNCTION anvil.fn10_limit_policy_approval_link_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE old_command uuid;new_command uuid;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;END IF;
+ old_command=OLD.command_id;IF TG_OP='UPDATE' THEN new_command=NEW.command_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id IN(old_command,new_command) AND anvil.fn10_limit_policy_command_related(c.project_id,c.id,c.command_id,c.operation))
+ THEN RAISE EXCEPTION 'LIMIT_POLICY_APPROVAL_LINK_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn10_limit_policy_consumption_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_link_immutable();
+CREATE TRIGGER fn10_limit_policy_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_link_immutable();
+CREATE TRIGGER fn10_limit_policy_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn10_limit_policy_approval_link_immutable();

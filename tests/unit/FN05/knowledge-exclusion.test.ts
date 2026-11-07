@@ -1,0 +1,14 @@
+import assert from'node:assert/strict';import{test}from'node:test';import{canonicalJson,contentHash}from'../../../contracts/canonical.ts';import{ApiClient,ApiError}from'../../../apps/web/src/api/client.ts';
+const load=()=>import('../../../apps/web/src/features/knowledge/exclusion-api.ts').catch(()=>null);
+const pid='11111111-1111-4111-8111-111111111111',uid='22222222-2222-4222-8222-222222222222',aid='33333333-3333-4333-8333-333333333333',kid='44444444-4444-4444-8444-444444444444',session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)};
+function view(){const body='원문은 보존한다',entry={kind:'FACT',title:'과거 관측',contentRef:{artifactId:aid,bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/plain;charset=utf-8'},sourceRefs:[],reason:'당시 근거',scope:{projectId:pid,stageRefs:[],taskRefs:[]},relatedRefs:[]};return{ref:{id:kid,version:1,contentHash:contentHash(canonicalJson(entry))},entry,body,state:'PROPOSED',headVersion:1,supersedesRef:null,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:aid,kind:'PROPOSED',reason:entry.reason,actorRef:{kind:'HUMAN',userId:uid},recordedAt:'2026-10-16T05:00:00Z'}]};}
+test('사용 제외는 확인한 정확 버전/사유만 별도 명령으로 전송하고 원문을 업로드/삭제하지 않는다',async()=>{
+ const m=await load();assert.ok(m,'지식 제외 연결이 필요하다');const b=m.newKnowledgeExclusion(pid,view() as any,session,1);b.reason='다음 임무 기본 선택에서 제외한다';b.pending=await m.prepareKnowledgeExclusion(b,session);const command=structuredClone(b.pending);
+ const client=new ApiClient(async(input,init)=>{assert.equal(String(input),`/api/v1/projects/${pid}/commands`);assert.equal(init?.method,'POST');const c=JSON.parse(String(init?.body));assert.deepEqual(c,command);assert.equal(c.operation,'excludeKnowledge');return new Response(JSON.stringify({operationId:kid,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:kid,version:1,data:{status:'EXCLUDED',ref:b.target.ref,reason:b.reason,eventId:aid},evidenceRefs:[],warnings:[],serverReceivedAt:'2026-10-16T05:00:00Z'}),{headers:{'content-type':'application/json'}});});
+ assert.equal((await m.sendKnowledgeExclusion(client,b,session,()=>true)).eventId,aid);assert.deepEqual(b.pending,command);assert.equal(b.target.body,view().body);
+ let calls=0;const never=new ApiClient(async()=>{calls++;throw Error();});await assert.rejects(m.sendKnowledgeExclusion(never,b,session,()=>false),ApiError);await assert.rejects(m.sendKnowledgeExclusion(never,b,{...session,clientId:aid},()=>true),ApiError);assert.equal(calls,0);
+});
+test('제외 대상으로 읽은 원문/버전이 변조됐거나 이미 제외됐다면 새 명령을 준비하지 않는다',async()=>{
+ const m=await load();assert.ok(m);const b=m.newKnowledgeExclusion(pid,view() as any,session,1);b.reason='명시 제외';b.target.body='변조';await assert.rejects(m.prepareKnowledgeExclusion(b,session),ApiError);
+ assert.throws(()=>m.newKnowledgeExclusion(pid,{...view(),state:'EXCLUDED'}as any,session,1),ApiError);
+});

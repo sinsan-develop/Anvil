@@ -1,0 +1,35 @@
+-- 미실행 verification append 계보 SOURCE 반례. 현재 verifier·실계보/서명·권한·COMMIT 증거가 아니다.
+-- typed row의 snapshot은 형식/hash만 검사하는 불투명 합성값이며 공식 receipt 의미 검수가 아니다.
+BEGIN;
+DO $$
+DECLARE a anvil.source_content_verifications;b anvil.source_content_verifications;n anvil.source_content_verifications;
+BEGIN
+ a.project_id='81000000-0000-4000-8000-000000000001';a.id='81000000-0000-4000-8000-000000000002';a.version=1;
+ a.observation_id='81000000-0000-4000-8000-000000000003';a.observation_version=1;a.observation_hash=repeat('a',64);a.target_index=0;a.relative_path='src/a.ts';
+ a.document_id='81000000-0000-4000-8000-000000000004';a.document_version=1;a.document_hash=repeat('b',64);a.observer_implementation_ref=jsonb_build_object('id','81000000-0000-4000-8000-000000000005','version',1,'contentHash',repeat('c',64));
+ a.decision='ACCEPTED';a.verified_at='2026-10-23T22:00:00.000Z';a.expires_at=a.verified_at+interval '30 seconds';a.previous_ref='null';a.snapshot_json='{"uninterpreted":true}';a.content_hash=anvil.source_read_hash(a.snapshot_json);
+ ASSERT anvil.source_content_verification_row_shape(a) IS TRUE,'LINEAGE_BASE_PROJECTION';
+ ASSERT anvil.source_content_verification_lineage_shape(NULL,a) IS TRUE,'LINEAGE_FIRST_POSITIVE_NOT_AUTHORITY';
+ ASSERT anvil.source_content_verification_lineage_shape(a,a) IS FALSE,'LINEAGE_FIRST_REQUIRES_ABSENT_PREDECESSOR';
+ b=a;b.version=2;b.decision='REVOKED';b.verified_at=a.verified_at+interval '1 second';b.expires_at=b.verified_at+interval '30 seconds';b.previous_ref=jsonb_build_object('id',a.id,'version',a.version,'contentHash',a.content_hash);b.snapshot_json='{"revokedCandidate":true}';b.content_hash=anvil.source_read_hash(b.snapshot_json);
+ ASSERT anvil.source_content_verification_lineage_shape(a,b) IS TRUE,'LINEAGE_REVOKE_EXACT_PREDECESSOR';
+ n=b;n.version=3;n.decision='INVALID';n.previous_ref=jsonb_build_object('id',b.id,'version',b.version,'contentHash',b.content_hash);n.snapshot_json='{"invalidCandidate":true}';n.content_hash=anvil.source_read_hash(n.snapshot_json);
+ ASSERT anvil.source_content_verification_lineage_shape(b,n) IS TRUE,'LINEAGE_INVALID_AFTER_REVOKE_NO_REACCEPT';
+ n=b;n.decision='ACCEPTED';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_NO_REACCEPT';
+ n=b;n.previous_ref=jsonb_set(n.previous_ref,'{contentHash}',to_jsonb(repeat('f',64)));ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_WRONG_PREDECESSOR_HASH';
+ n=b;n.version=3;n.previous_ref=jsonb_set(n.previous_ref,'{version}','2');ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_NO_VERSION_GAP';
+ n=b;n.project_id='81000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_PROJECT_IMMUTABLE';
+ n=b;n.observation_id='81000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_OBSERVATION_IMMUTABLE';
+ n=b;n.observation_hash=repeat('f',64);ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_OBSERVATION_HASH_IMMUTABLE';
+ n=b;n.target_index=1;ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_TARGET_INDEX_IMMUTABLE';
+ n=b;n.relative_path='src/b.ts';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_PATH_IMMUTABLE';
+ n=b;n.document_id='81000000-0000-4000-8000-000000000099';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_DOCUMENT_IMMUTABLE';
+ n=b;n.document_version=2;ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_DOCUMENT_VERSION_IMMUTABLE';
+ n=b;n.document_hash=repeat('f',64);ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_DOCUMENT_HASH_IMMUTABLE';
+ n=b;n.observer_implementation_ref=jsonb_set(n.observer_implementation_ref,'{contentHash}',to_jsonb(repeat('f',64)));ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_IMPLEMENTATION_IMMUTABLE';
+ n=b;n.verified_at=a.verified_at-interval '1 ms';n.expires_at=n.verified_at+interval '30 seconds';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_TIME_NOT_REVERSED';
+ n=b;n.expires_at=n.verified_at+interval '30001 milliseconds';ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_TTL_CAP';
+ n=b;n.content_hash=repeat('f',64);ASSERT anvil.source_content_verification_lineage_shape(a,n) IS FALSE,'LINEAGE_SNAPSHOT_HASH';
+ n=b;n.version=9007199254740992;ASSERT anvil.source_content_verification_row_shape(n) IS FALSE,'LINEAGE_SAFE_VERSION';
+END;$$;
+ROLLBACK;

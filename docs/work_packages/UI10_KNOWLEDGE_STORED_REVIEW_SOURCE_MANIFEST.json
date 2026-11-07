@@ -1,0 +1,65 @@
+{
+  "baseCommit": "e1a1f49171dc54f2e7a26bcb5407003836e2218b",
+  "scope": "UI10_STORED_REVIEW_SOURCE_ONLY",
+  "entries": [
+    {
+      "workingSha256": "A2A582F4123DBFF851F5F7D466346C51EB4F644BE2FC1B48598DBC47C8DC0729",
+      "path": "apps/web/src/features/knowledge/KnowledgePage.tsx",
+      "bytes": 26544,
+      "gitBlobSha256": "E3428BDEC6AA5F28EB13BDA394B11EE9DDB6E1C69306C0C69B0F7F9957382B10",
+      "gitBlobObjectId": "ebc49a0de14668dddd3b44ed1d0c2fd3b011c86d",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "workingSha256": "2E1735D721A0A543800B1D7D6F0318B86174AB1D0BCF66A85D030C4B713FF006",
+      "path": "apps/web/src/features/knowledge/KnowledgeStoredReviewDetails.tsx",
+      "bytes": 1997,
+      "gitBlobSha256": "2751D932C942558D189F6DB3B22C7A0C7F1C0A611373CF53712EBDE05F92DE45",
+      "gitBlobObjectId": "0787742b84959141a74b243fab1c33a527f2ba69",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "workingSha256": "3BFB5FC05D716BD871A15385C5021F3261C197FA841B1D4EED83EA4ED4621BD7",
+      "path": "tests/unit/FN05/knowledge-stored-review-details.test.ts",
+      "bytes": 4096,
+      "testedWorkingSha256": "E6296C1FA84C6717F30EA3F94486F7A0D7D783B65B8B2E9D3457FFBA425F63D8",
+      "testedBytes": 4101,
+      "nonSemanticAdjustment": "EOF_BLANK_LINES_ONLY_EXECUTABLE_PREFIX_UNCHANGED",
+      "gitBlobSha256": "3BFB5FC05D716BD871A15385C5021F3261C197FA841B1D4EED83EA4ED4621BD7",
+      "gitBlobObjectId": "65dabeb7c21ee2c25789038ccc3b8b7eee47e3fc",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "workingSha256": "66DC4EF3EE76FDBBE433F08075E3D38EAF018D46D0931B67BDBD186687F12F0F",
+      "path": "tests/browser/UI10/knowledge-stored-review-details.spec.ts",
+      "bytes": 5735,
+      "gitBlobSha256": "FE48074943C8C81B107AB0D2A775DCA731172BBE8CA8CD244711BCCA3473C5E6",
+      "gitBlobObjectId": "c2f12f314721e1d869120e259a41d1be4ae73233",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "workingSha256": "9AC867F4F54356BFA29273AD29470CFABC070CF3C4C2387F6E7318694170D29F",
+      "path": "tests/browser/UI10/knowledge-stored-review-details-harness.tsx",
+      "bytes": 1887,
+      "gitBlobSha256": "A66C98E2B43DCDFB41DE27ACC07371A48A1BCDB1C71C7840E29E9D3BBA3079B1",
+      "gitBlobObjectId": "60f65a7f7f9a92ec56bda45b4022183251c152ca",
+      "gitBlobDiffersOnlyByCrLf": true
+    }
+  ],
+  "schemaVersion": 1,
+  "served": "NOT_RUN",
+  "review": {
+    "minor": 0,
+    "status": "SCOPED_ACCEPT",
+    "important": 0,
+    "critical": 0
+  },
+  "gitCheckoutRuntime": "NOT_RUN",
+  "actualDb": "NOT_RUN",
+  "workInstructionSha256": "C33D2229A65CFE73E7137359F746DD4AEFE44B1D47ABC7FEA2CAA63E33C96720",
+  "publication": {
+    "indexAudit": "PASS",
+    "attributesChanged": false,
+    "gitCheckoutRuntime": "NOT_RUN"
+  }
+}

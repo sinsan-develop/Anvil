@@ -1,16 +1,46 @@
+import {registerNativeFirstReceiveRoutes,type NativeFirstReceiveRoutesOptions} from './modules/executions/native-first-receive-routes.ts';
+import {NativeFirstReceiveService} from './modules/executions/native-first-receive-service.ts';
+import {registerCommonSetupRoutes} from './modules/user-common-setup/routes.ts';
+import type {DocumentSourceObservationPort} from './modules/documents/document-source-observation.ts';
+import {registerDesktopRuntimeCatalogue,type RuntimeCatalogueReadSource} from './modules/runtime-catalogue/desktop-runtime-catalogue-routes.ts';
+import {registerNativePreparationRoutes,type NativePreparationRoutesOptions} from './modules/executions/native-preparation-routes.ts';
+import {registerWriterAuthorityRoutes,type WriterAuthorityRoutesOptions} from './modules/executions/project-writer-authority-routes.ts';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import { readFile } from 'node:fs/promises';
 import type { ServerOptions as HttpsOptions } from 'node:https';
+import { registerAccessRoutes, type AccessRoutesOptions } from './modules/access/routes.ts';
+import { AuthFailure } from './modules/access/repository.ts';
+import { registerProjectRoutes } from './modules/projects/routes.ts';
+import { registerDocumentRoutes } from './modules/documents/routes.ts';
+import { registerMethodologyRoutes } from './modules/methodologies/routes.ts';
+import { registerCommonMethodologyWrites } from './modules/methodologies/common-write.ts';
+import { registerProjectFileRoutes } from './modules/documents/project-files.ts';
+import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
+import { registerConnectorRegistrationRoutes } from './modules/connections/registration-routes.ts';
+import { registerSourceReadRoutes } from './modules/connections/source-read-routes.ts';
+import type {SyntheticHumanExecutionPorts} from './modules/executions/project-runtime-commands.ts';
+import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-session-claim-history-routes.ts';
+import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
+import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL) {
-  const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024 });
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions) {
+  const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
+  app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('cache-control', 'no-store');
     reply.header('x-content-type-options', 'nosniff');
     reply.header('content-security-policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     return payload;
   });
+  registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
+  if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
+  if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}
+  else if(access){const service=new NativeFirstReceiveService(access.repository,undefined,Date.now,nativePreparation?.preparations??null,undefined,access.origin);if(nativePreparation?.preparations)service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,{enabled:true,service},access);}
+  if(writerAuthority?.enabled===true)registerWriterAuthorityRoutes(app,writerAuthority,access);
+  if (controlHandoff?.enabled === true) registerControlHandoffRoutes(app, controlHandoff);
   if (webRoot) {
     app.get('/', async (_request, reply) => reply.type('text/html; charset=utf-8').send(await readFile(new URL('index.html', webRoot))));
     app.get<{ Params: { name: string } }>('/assets/:name', async (request, reply) => {
@@ -30,7 +60,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     const declared = typeof error === 'object' && error !== null && 'statusCode' in error ? Number(error.statusCode) : 0;
     const status = declared >= 400 && declared < 500 ? declared : 503;
     return reply.code(status).send({
-      code: status === 413 ? 'PAYLOAD_TOO_LARGE' : status >= 500 ? 'STORAGE_FAILED' : 'INPUT_INVALID',
+      code: error instanceof AuthFailure ? error.message : status === 413 ? 'PAYLOAD_TOO_LARGE' : status >= 500 ? 'STORAGE_FAILED' : 'INPUT_INVALID',
       message: '요청을 처리하지 못했습니다', requestId: request.id, targetId: null,
       retryDisposition: status >= 500 ? 'reconcile-first' : 'not-retryable', details: {},
     });

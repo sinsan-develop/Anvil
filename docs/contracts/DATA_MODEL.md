@@ -1,5 +1,114 @@
 # P02 데이터 관계·보존 계약 초안
 
+## FN06 D1 새 권한 원장 후보 — 2026-10-23
+
+정적 검토 M1: deferred 관측 기한 trigger는 `SET CONSTRAINTS ... IMMEDIATE`로 검사를 앞당긴 뒤 만료 후 COMMIT하는 경우의 최종 기한을 보장하지 않는다. 현재는 모든 DML이 차단돼 실행 가능한 권한 우회는 아니지만, 활성화 전에 이 반례와 transaction 종료 경계를 해결·검증해야 한다. 현재 SQL 후보를 적용 가능한 완료본으로 승격하지 않는다.
+
+새 `execution_ownership_events/observations/anchors/bindings/heads` 정확5표만 `0039_ownership_authority.sql.pending`에 정의한다. 사건은 실행별 sequence와 프로젝트 전체 준비 slot 순서용 project_sequence를 구분하고 추가 slot 표는 만들지 않는다. 원 REQUESTED row의 후보 anchor 보조 JSON은 snapshot 안의 원 anchor fullref/hash로 대조한다. observation→원 request/accepted·anchor→prep/adopt·head→anchor/current event의 full scope/id/version/hash FK는 deferred이며 원 수용 사건→observation 역참조도 별도로 묶는다. 미래 자기 ref를 snapshot hash에 포함하지 않는다. observations의 project/request unique는 같은 원 요청의 소비를 1회로 제한하는 저장 계약 후보다.
+
+head는 동일 ID/실행 세대에서 +1 CAS 계획이며 기존 head를 갱신하기 전 fullref·anchor·기한/terminal 단조 조건을 확인한다. 이력 row는 수정/삭제하지 않는다. 실제 SQL 문법/경합·FK/trigger 동작·commit 시각·내구성은 미검증이고 완전한 인증 guard도 미완성이다. 기본 RLS/DML 전면 차단·실행 manifest 미등록을 유지한다. 새 schema 적용·GRANT/정책·backfill·원문/키 저장·실제 DB 변경은 하지 않았다.
+
+## FN01 기능 분류 시작 기준선 후보 — 2026-10-18
+
+신산님 직접 승인 A안(부모 FN01_BASELINE_GAP_AND_PROPOSAL SHA256 C7C5B6D39C4889A156246B94C0073C1EBDFFE2680B7B9849B94B5F58D33E44E0)의 후보 구현이다. 상세 wire·허용 범위는 [FN01 카드](../work_packages/FN01_BASELINE_IMPLEMENTATION.md)를 따른다. 실제 적용/PG 시험/서비스·실사용자 정책/Agent 승인이 아니다.
+
+- forward `0015_project_baselines.sql`은 baseline_drafts/head·baseline_draft_versions/불변 초안·baseline_content_reviews/불변 검토·baseline_heads/명시 채택 pointer를 추가하는 후보다. 기존 project_baselines를 재생성하지 않고 FEATURE_STATUS_V1용 nullable draft/command/client/source-version/hash metadata와 guard/FK만 추가한다. 모든 기존 SQL/행을 보존하고 backfill·빈 표 추정0이다.
+- 기존 source_snapshot_ref의 NOT NULL 해제는 source 종류/정확 version1/hash·프로젝트/ref 검사를 함께 요구하는 새 계약이다. NONE_SELECTED/DECLARATION_ONLY는 null, ATTRIBUTE_REPORT는 실제 source_snapshots의 READ_ATTRIBUTES·CONNECTOR_REPORTED/OS UNVERIFIED 참조다. 이 보고 hash는 파일 내용/Git hash가 아니다. 아래 기존 source/dirty snapshot 개괄을 실제 이 표의 필드로 해석하지 않는다.
+- 채택은 매번 새 id·기존 legacy를 포함한 project MAX(version)+1을 프로젝트 잠금 안에서 기록한다. legacy metadata 없는 옛행은 LEGACY_UNVERIFIED·본문 비공개로만 조회하고 자동 head/확정본으로 만들지 않는다. 현재 pointer는 새 명시 채택만 가리킨다.
+- 초안·검토·채택의 불변 snapshot/hash와 command/receipt/audit를 대조하며 contentConfirmed(분류 기록 채택)와 currentContentReviewValid(최신 선택 검토/근거 가용성), sourceAuthorizationVerified/coverageVerified/executionAuthorized/dispatchPerformed=false를 구별한다. 실제 바이트·현재 접근은 서버 보호 reader, 의미 판정은 사용자 내용 검토 책임이다. SQL 후보의 실제 문법·COMMIT/동시성/직접 DML 거절은 미검증이다.
+
+## FN09 임무 초안 후보 — 미적용
+
+AV3-FN09-ASSIGNMENT-DRAFT의 새 assignment_drafts(project/id·head·최초actor/client·생성/수정시각)와 assignment_draft_versions(project/draft/version·snapshot JSON/hash·actor/client/command·생성시각) 2표 forward0012 후보를 작성했다. head FK는deferred, 명령/project·client FK·정확base/불변이력·명시AUTO/DENY우선·현재세대/활성세션/정확현재확정계획·설계/적용node를 receipt/감사와 결박하는 guard 후보다. DRAFT/ready=false/executionAuthorized=false/dispatchPerformed=false만 허용하며 확정/실행 상태나 outbox를 만들지 않는다. 기존46 SQL·정식DB표/권한 적용0, 실제문법/COMMIT/거절/동시성·hash 동등성은 아직 미검증이고 후보 검수/격리시험 뒤 별도정식적용결정이 필요하다.
+
+## A-3 제안 저장 계약 — 미생성·미적용
+
+상세 r2의 scope_json에는 exact source snapshot에서 서버가 파생한 pathHintHash를 포함한다. permit은 원 snapshot·고정 scope의 보호 projection으로 만들고 별도 경로 원문 표를 추가하지 않는다. source_snapshots의 observed_at/finished_at은 connector 주장, received_at은 서버 값이며 §5의 시각 관계를 SQL/Node 양쪽에서 검사할 예정이다. 신규4표/46번째 SQL의 코드·DDL 생성/적용은 아직 승인되지 않았다.
+
+상세설계는 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md) §6이다. 제안46번째0008_source_read_observation은 새 source_read_grants/source_read_challenges/source_read_credentials/source_snapshots 4표의 권한/정확 scope·기한·서명 보고/불변 이력 책임을 구분한다. 현재는45migration이며 이 표는 존재/적용/허가된 credential로 표시하지 않는다. 기존 source_roots 선언·connector_credentials의 REGISTRATION_STATUS_ONLY CHECK와45SQL은 보존한다. source_snapshots의 r2 수신 등급은 CONNECTOR_REPORTED/OS UNVERIFIED·baseline/dispatch false다.
+
+## A-2R 원본·버전 관계 — forward 0008 후보
+- 신규 source_roots: (project_id,id)PK/head_version/created_by/client_id/created_at, project·멤버·사용자client FK, head→정확version deferred FK. 신규 source_root_versions: (project_id,root_id,version)PK/content_hash/declaration_json/status/authority/readiness/reason/actor/client/command/nullableconnector/time, 같은project root/command/connector FK·user/client FK·project+command 고유.
+- 기존44 SQL/자료는 수정/이동/재분류하지 않음. 불변version UPDATE/DELETE 및root DELETE0; head는 current command/auth/session/policy/control/audit·정확result와 이전ref 아래1 증가만. 선택connector는 같은project 현재TRUSTED 등록 확인이며 파일 권한이 아니다.
+- 서버와 SQL은 고정키 canonical snapshot SHA256을 대조한다. root 철회는 이전decl을 새REVOKED버전에 복사하며 과거ref/원문/actor 이력을 삭제하지 않는다. 보호참조는 자신의id/version에만 결박된다.
+- 정식 적용은 SOURCE_ROOT_REGISTRY_ONLY로 기존44checksum 대조 후 새SQL1/새checksum1행만, seed0/실사용자·QA행0·신규2표0행. 기존logical schema/행수·서버내 자료fingerprint를 전후 확인한다. 승인새FK의 엔진 내부RI trigger는 참조 추가의 필연 효과이며 기존사용자trigger/열/허가변경과 구분한다.
+- QA는 별도 새PG15의 실제COMMIT 후 전체소유 tmpfs container/network 폐기, 불변행의 관리자DELETE/trigger해제/외부rollback 은폐0. 실제적용/PASS는 WORK_STATUS 증거 전까지 주장하지 않는다.
+
+
+## FN08-CONTRACT-A1의 로컬 비권위 수신 기록
+
+2026-10-17 직접 승인 A-1은 정식DB table/SQL 추가·수정·적용0이다. 기존44 migration·delivery_outbox/사용자·자료/권한은 그대로다. §9의 source_roots/source_snapshots/executions/receipts/observations/ACK/writer_claims는 후속 A-2의 데이터 모델이며 이번 구현 테이블이라고 표시하지 않는다. 새 mapping/baseline/명령의 table 분해·정확 FK/migration 파일명은 미정이다.
+
+A-1 파일은 INTERFACES의 DispatchReceiptV1 중 RECORDED/duplicate=false/두 실행false 값의 canonical JSON+LF만 보관한다. key SHA256 파일명, 수신시각·key·봉투hash만 포함하며 외부 원문·실경로·명령·credential을 보관하지 않는다. 별도 실행기 원본/암호화된 제품 journal의 대체가 아니다. 실제 보호 root/ACL·키 결박은 미정/미생성이다. 부분기록/기존 불명 lock은 보존/UNKNOWN이며 자동 덮기·초기화·stale lock 삭제0, 정상 완료의 자신이 연 lock만 파일정체성 대조 후 제거한다. 명령 receipt 자동삭제0·quota 소진 시 새 수신 거절, 합성 QA 정리는 Main이 등록된 시험 root에서만 한다.
+
+
+최신 FN06: PMO 허용 최소 corrective44 `0006_host_trust_challenge_protocol_fix.sql`은 challenge 함수의 protocolVersion 조건만 JSONB `IS DISTINCT FROM '1'::jsonb`로 교정했다. dba582b6 exact WSL 적용·checksum a57c5432f0eff9152889b4dd7e23409e8dbc1cadd8b34426e0a6b3b012b15f3c/기존43 전부 불변·새 표/권한0이다. 실제 app 역할·유효 ENROLLED 컨텍스트에서 음성6종은42501 거절/숫자1 INSERT 정상 후 rollback, HTTP 정상 핵심/회수1 PASS·QA45표0을 확인했다. 독립 원Minor1과 ba5c96fd RED를 지우지 않으며 아래 미수정 기록은 교정 전 이력이다.
+
+FN06 독립 검수 Minor1(미수정): 적용43 challenge guard의 `payload_json->>'protocolVersion'<>'1'`은 null/누락에 SQL NULL, 문자열1에 false여서 DB 숫자1 계약을 완전히 강제하지 못한다. 현재 공개 HTTP는 정확8필드·숫자1을 선검사하며 공개 API 우회는 확인되지 않았다. 실제 PG SELECT 비교만 확인했고 guard INSERT 재현은 미실행이다. 적용43을 고치지 않으며 후속 승인된 forward에서 `payload_json->'protocolVersion' IS DISTINCT FROM '1'::jsonb`와 null/누락/문자열 DB 거절을 보완할 후보로 남긴다. 신규44 작성/적용0, 최종 부분 수용은 PMO 판단이다.
+
+FN06 적용43은8a7cb985 이후 불변이며4ecb2e39/0282713e 실제 신뢰/필요 일회 승인 소비/만료·회수/재발급 금지와 기존 자료·후보 소비의 인접을 확인했다. 실제 사용자 자료0·종료 QA45표0, 범위 밖 grant/Agent 등5표는 미생성이다. SQL 현재 제어·이력 guard와 Node 서명/Windows DPAPI 증거를 구분하며 독립 OS attestation/실제 Agent 연결을 주장하지 않는다.
+
+FN06 `AV3-PMO-FN06-TRUST-QA-01`의 forward43 `0006_host_trust_registrations.sql`은 `connectors,connector_registrations,connector_registration_challenges,connector_credentials` 네 테이블만 추가했다. 8a7cb985 exact WSL에서 checksum3027636015d284462a4f974ad792175851ef28f05c73117fd4a813853e329020 적용·이전42 불변이다. `connector_grants`/환경/Agent/실행 테이블은 생성하지 않는다. 등록·challenge·credential의 정확 scope/공개키 지문·정책/현재 HUMAN session ID·제어·세대·버전·기한·nonce/proof digest·소비/실패 횟수·회수와 비밀 없는 감사/명령 receipt를 결박한다. code/token은 digest만 저장하고 private key는 서버에 저장하지 않는다. 등록 목적은 상태조회 전용이고 grants[]이며 완료된 7필드 계약은 불변이다. 실제 부분8a7cb985/d8ec41e6과 QA45표0은 WORK_STATUS에서 구분한다. SQL은 현재 허가/receipt·상태 전이/감사를 검사하고 P-256 서명 자체는 Node가 검사한다. DB guard를 독립 암호/OS 증명으로 주장하지 않는다.
+
+UI08은 기존 FN11 승인 요청/결정/소비 및 후보41/42를 그대로 소비했다. 실제36fa3e51에서 서로 다른 요청의 APPROVE/REJECT/REQUEST_CHANGE·경합효과1·실제 만료·원 후보 소비max1/단절 재확인·회수를 확인했고 신규 migration/SQL 수정0이다. 원 요청/결정 이력과 불변 후보 버전은 UI 입력을 명시 닫아도 삭제하지 않는다. QA는 소유 UUID만 정리·독립 잔여0이며 실제 사용자 자료/정책은 변경하지 않았다.
+
+UI11은 기존 후보41/42의 저장·불변 버전을 소비했으며 새 migration/table/완성형 연결은 만들지 않았다. 환경 후보 개정에서 미제공과 명시 빈 목록을 실제 보존하고 과거 버전/정확 ref·명령 재확인 효과1을747c6f37 same-client actual로 검증했다. 브라우저 입력 상태는 서버의 실행 허가·host 신뢰 저장소가 아니며 실제 계정/키 발급을 대신하지 않는다.
+
+후보41 적용 후 환경 개정 guard의 SELECT alias `old`가 PL/pgSQL OLD와 충돌한42702는 새 forward42 `0006_connection_candidate_guard_alias_fix`에서 `prior_version`으로만 보정했다. 적용41 checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d와42 checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0는 고정하며 이미 적용한 SQL을 고치지 않는다. 코드350b2e30의 실제 v1/v2·불변/현재 권한/일회 소비·인접 업로드 검증은 WORK_STATUS를 따른다. 이 후보 테이블을 완성형 connector/환경/실측으로 승격하지 않는다.
+
+FN06 새 forward41 `0006_connection_candidates`는 완성형 연결/환경 테이블을 대신 만들지 않고 connection_candidates(project/id/kind/head_version)와 connection_candidate_versions(project/candidate/version/kind/snapshot/hash/actor/client/command/기한)의 후보 전용 원본·불변 버전을 추가한다. head FK는 지연 검사하고 app의 head 변경은 exact receipt/이전 ref·현재 제어/최근 재인증·현 정책/필요 일회 소비로 보호한다. version UPDATE/DELETE·identity DELETE는 app에 허용하지 않는다. snapshot의 NOT_READY/executionAuthorized=false·6능력 UNVERIFIED는 서버/DB에서 강제한다. 기존 업로드의 승인 guard 조건은 유지한 새 함수 정의로 후보 두 연산의 일회 소비만 추가한다. connector 신뢰/credential/grant/실행 schema를 활성화하지 않는다. 기존40 SQL은 불변이며 적용 여부/체크섬은 WORK_STATUS를 따른다.
+
+FN03 단계 연결(직접 승인 call_1553fd04d9e64a098d20ba83a7e7525c): forward40 `0003_document_stage_bindings`는 기존 nullable stage_ref_json을 `{applicationId,nodeId}` 정확 참조로 보호한다. generated stage_application_id와 (project_id,stage_application_id) 복합 FK로 다른 프로젝트 적용본을 차단하고, 새 불변 버전 INSERT는 현재 명령/receipt·최신 고정 적용 snapshot·노드의 입력/산출 양식 exact ref를 대조한다. 문서 canonical hash에 단계 참조를 포함한다. 과거 조회는 당시 고정 적용본을 읽으며 현재 적용 전환으로 과거 문서를 바꾸지 않는다. 제안 선택도 기준 문서의 단계 참조를 보존한다. checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1 적용 이후 이 SQL은 불변이다. 실제 검증과 남은 사용자 브라우저 인수는 WORK_STATUS로 구분한다.
+
+실제 FN11 검증: forward34~36은 eb4f1d97 exact actual2 PASS/13084ms에서 원문 업로드의 요청/3종 결정/일회 소비·동시 명령/내용 위장·실제 만료/회수·감사/불변 이력을 확인했다. 기존31종 QA/시험원문 root의 독립 잔여0·migrations36이며 실제 사용자 자료/서비스는 변경하지 않았다. 적용34/35/36을 이후 수정하지 않고 필요하면 새 forward로 보완한다. UI08/다른 연산의 실제 승인 소비와 전체 인수는 후속이다.
+
+FN11 forward36 후보는 기존 소비 표의 미연결 INSERT guard를 현재 명령/정책·기한·APPROVE 결정·주체/기기/세대·정확 후보/hash로 교체하고 요청 UPDATE는 APPROVED/version2→CONSUMED/version3·같은 소비 사건일 때만 허용한다. 기존 request/decision JSON·SQL34/35는 보존한다. commands.approval_consumption_id·payload_ref의 비밀 없는 범위/hash, authorization_receipts.approval_decision_ref, audit.approval_ref를 같은 transaction에서 연결한다. 소비의 command_id는 서버 행 ID이고 후보 commandId는 commands.command_id로 별도 대조한다. 현재 uploadArtifact만 지원하며 파일과 DB의 완전한 분산 원자성을 새로 보장하지 않는다(보호 파일 보존/고아 정리 계약은 별도). exact QA 파일은 기존 전용 root의 finally 정리 대상이다.
+
+FN11 forward35 후보는 기존 approval_decisions에 nullable command_id/content_hash/decision_json을 추가하고 현재 명령/정책·HUMAN/기기/세대·pending exact 요청/서버 기한/범위와 불변 receipt를 결박한다. 기존 요청의 UPDATE guard는 동일 metadata 유지·새 결정 사건과 같은 명령일 때만 status/version1→2를 허용한다. 초기 request_json·옛 SQL34를 수정하지 않는다. 소비 표의 fail-closed guard는 유지하며 승인 결정이 업무 실행이나 범위 확대를 허가하지 않는다.
+
+FN11 forward34 후보: 기존 approval_requests에 nullable client_id/command_id/policy_ref/content_hash/request_json을 추가하고 app 신규 요청만 정확 원자 영수증·현재 OWNER/control·AUTO 요청/REQUIRE_APPROVAL 후보 정책과 결박한다. 기존 행을 자동 검증 완료로 분류하지 않는다. 신규 metadata가 있는 후보는 project/candidate_command_id 유일하다. 요청 payload/현재 기준·원문은 바꾸지 않고 초기 요청 snapshot/version1·확정 해석과 현재 상태/만료/회수를 분리한다. 아직 미연결 결정/소비 표의 app INSERT와 요청 status/version 직접 갱신은 fail-closed guard로 막으며 후속 검증 전 실행 권한으로 쓰지 않는다. 기존33 SQL·실제 사용자 정책/Secret은 보존한다.
+
+후속 실제 적용: 사람 검토v2/v3·출처4종은 df2f81ff exact actual1 PASS/9215ms로 확인했다. forward31은 SQL30의 JSON 포함 비교식 양쪽 괄호만, forward33은 SQL32의 kind 변수명만 교정한다. 적용 SQL30/32를 덮어쓰지 않았고 현재33개 지문을 보존한다. 오류가 있었던 최초 실행은 별도 FAIL 이력으로 남긴다. 출처/사람 판단 확인과 의미적 정답·기준 활성화·사용자 인수는 서로 다른 사실이다.
+
+FN04 출처 forward32 후보는 design_changes.change_json.sourceRefs의 기존 구조 안에서만 기존4종을 보존한다. 새 표/기준 pointer/사용자 권한을 추가하지 않고 현재 요청 guard의 [] 전용 조건을 같은 프로젝트 문서 버전/hash·READY 텍스트 원본·실제 대화/지시 metadata 검사로 교체한다. 서버는 보호 파일 바이트까지 재검사한다. 기존 요청/영향 snapshot/hash와 SQL29~31은 불변, 과거 지시는 출처 이력이지 현재 적용 지시가 아니다.
+
+FN04 forward30 후보는 기존 design_change_impacts의 v1/MECHANICAL-only CHECK를 새 명시 조건으로 확장하되 기존 행은 그대로 보존한다. HUMAN_REVIEW v>1은 base_version=v-1/base_hash와 동일 id/project/version/hash composite FK로 부모를 고정하고, 새 command/receipt·현재 정책/control/OWNER·최신 base·HUMAN 작성자·대상/공백 보존·UNAFFECTED의 실제 같은 프로젝트 문서 근거 guard를 요구한다. UPDATE/DELETE 권한은 추가하지 않고 현재 설계·계획 pointer를 수정하지 않는다. 적용 SQL29와 기존 이력은 불변이며 적용 여부는 WORK_STATUS를 따른다.
+
+FN04 forward29 후보: design_changes는 exact before 문서 composite FK·실제 proposal FK·project/제안 유일성·초기 요청 v1 JSON/hash·사람/client/command를 append-only 저장한다. design_change_impacts는 해당 change hash/FK와 초기 MECHANICAL_TRACE v1 snapshot/hash·확인 시점·제한된 입력 계획 ref/공백을 보존한다. app UPDATE/DELETE 권한0·현재 control/policy/receipt와 원문 확정/최신 검토·미선택 proposal를 DB guard에서 결박한다. 기존 설계/계획 pointer·원문/선택·적용28 SQL은 변경하지 않는다. 사람 검토 버전/기준 적용은 후속 미구현이며 이 초기 저장 구조를 실행 허가로 쓰지 않는다.
+
+FN04 forward28 후보: `work_plan_confirmations`는 project/plan/version/hash·선택 review_refs·현재 검증 snapshot·사람/client/command를 append-only 보존하며 버전당1건이다. 기존 version_json/DRAFT/hash는 변경하지 않고 work_plans.confirmed_version만 정확 receipt·현재 control/policy/head/원문/최신 검토와 결박해 변경한다. 직접 pointer 변경·확정 삭제는 거절한다. 이후 최신 REWORK/원문 미준비/새 head는 과거 확정을 지우지 않고 현재 유효성을 false로 표시한다. 확정은 기준 활성화/실행이 아니다.
+
+원문 격리 forward27은 artifacts의 기존 QUARANTINED 상태에 nullable inspection_json을 추가한다. 기존 행은 null(미검사)로 보존하며 안전 판정을 소급하지 않는다. 새 업로드는 policyVersion1/method KNOWN_PATTERNS_RAW_BYTES/complete=false/state SUSPECTED 또는 NO_KNOWN_MARKER/reasonCodes를 정확 업로드 receipt와 결박한다. 의심 원문 파일/hash는 불변, 비밀값/일치 구간 저장0·자동 삭제/해제0. 기존 제안의 서버 diff는 기존 정확 guard/READY 경로를 유지한다. 사용자 권한 확대·이전 SQL 변경은 하지 않는다.
+
+FN05 forward26 후보 `0005_knowledge_confirmation`은 기존 content_reviews의 PROJECT/KNOWLEDGE만 현재 명령/정책·제어·exact 버전/hash·HUMAN 작성자로 보호하고, knowledge_events의 CONFIRMED에 review_refs를 추가한다. 버전별 확정1개·최신 ACCEPTED 검토 포함을 강제하며 이전 사건/원문/적용25 SQL은 보존한다. 이후 검토가 보완 필요면 과거 확정은 남고 현재 유효성은 false다. 지식 확정은 헌법 적용 pointer나 Agent 실행 허가가 아니다. 승인/실제 적용은 WORK_STATUS로 구분한다.
+
+## 2026-10-16 실제 자료 정책·원본·문서 버전 보완
+
+복합 충돌·검토/확정 대상 교체는 SQL 추가 없이 기존 불변 version/review/confirmation과 현재 head/hash gate를 소비한다. 브라우저의 거절 snapshot/명령 이력은 사용자·프로젝트별 App 버퍼이며 영속 checkpoint나 서버 완료 기록이 아니다. 새 대상의 판단/확인·명령은 새로 만들고 옛 서버 문서/확정 사건은 그대로 재조회한다(actual ae2c3fd5 1/3017ms). 자동 완료·기준 적용·실제 Agent dispatch0이다.
+
+보관 자료 목록/재개 후속은 새 SQL 없이 기존 imports/proposals/선택을 소비한다. 목록 integrity=NOT_RECHECKED는 저장 metadata 검사만 의미하고 상세 선택 시 실제 원문을 재검증한다. 후보 재개는 기존 candidate/original link를 새 문서에 보존하고 후보를 재생성하지 않는다. 저장 제안 재개는 과거 명령이 아닌 읽기 binding이며 명시 save만 새 선택/version을 만든다. actual exact4997e732 1 PASS/2712ms와 독립 합성 잔여0을 확인했다. 아래 이전 목록 재개 미구현 문구는 후속 전 이력이며 source/draft-scope/전체 browser DB 미완료는 유지한다.
+
+forward19 `document_proposals`는 exact base document/version/hash·업로드한 proposed body·서버 diff artifact·전체 proposedContent·reason·실제 주체/client/command를 불변 저장한다. `document_proposal_selections`는 사용자 명시 saveDocumentDraft의 새 version과 같은 프로젝트 proposal을 한 번 결박하며 현재 제어/정책/receipt·정확 content를 검사한다. 생성 상태 PENDING은 불변 원 기록이고 GET selections가 실제 반영 여부/문서 version/주체/시각 이력이다. 제안만으로 head/확정 변경0, 본문과 무관한 제목/양식 변경을 제안 반영으로 위장하면409다. 기존 artifacts.command_id UNIQUE와 원 업로드 guard는 유지하고 같은 propose 명령에서 서버 diff JSON1개만 정확 receipt metadata로 INSERT를 허용한다. 과거18 SQL·원문·확정본은 보존하며 자동 삭제/DB·FS 완전 원자성은 주장하지 않는다.
+
+새 forward18 `0003_document_imports`는 직접 승인된 범위에서 적용했다. `document_imports`는 PROJECT 원본 artifact/nullable 고정 양식·parser/status/losses/issues·candidate canonical hash·실제 사용자/client/command를 불변으로 저장한다. `document_import_selections`는 같은 프로젝트 candidate→실제 문서 version·선택 사용자/client/command를 append-only로 보존하며 현재 APPLIED save receipt의 candidate ID/문서 version·원본 link가 있어야 한다. candidate 생성은 문서/head/확정본을 만들거나 바꾸지 않는다. 성공 파서 UTF8_IDENTITY_1은 원본과 같은 artifact의 무변환 참조이며 별도 추출 파일 생성으로 주장하지 않는다. 본문 상한/유효 UTF-8 실패나 미지원도 원본 artifact를 유지한다. 실제 FN03/FN11 2 PASS와 독립 후보/선택 포함 합성 잔여0, app 직접 UPDATE/DELETE 불허를 확인했다. 제안/diff·draft-scope import·소스 연결/후보 목록 재개는 미구현이다. 기존17 SQL/과거 이력은 유지한다.
+
+후속17 `0003_document_confirmations`는 project/document/version/hash의 불변 확정과 formRef/reviewRefs/형식 검사·실제 HUMAN/client/command를 저장한다. 현재 OWNER/제어 세대·정책 head·APPLIED confirmDocument/receipt·최신 ACCEPTED가 있어야 INSERT/pointer UPDATE가 된다. 과거 version/link/draft-event guard는 유지하고 document head는 새 초안 때 confirmed pointer를 보존한다. 과거 SQL16/행을 고치지 않았으며 app의 확정 row UPDATE/DELETE는 금지다. 최신 actual2에서 직접 pointer 쓰기42501·확정/replay1·후속 초안/충돌 조정 뒤 구확정 보존과 독립 합성 잔여0을 확인했다.
+
+본문 확정 검사는 현재 파일의 고정 form과 필수 TEXT/RECORDS 범위를 재검사한다. TEXT 목차/빈값/TODO, 중복 위치, 반복 표 필수 열/행/빈 셀과 코드 속 가짜 표는 확정 불가이며 선택 항목을 필수로 바꾸지 않는다. 반복 자료의 현재 지원 표현은 Markdown 표(고정 필드 ID 또는 명칭)이며 임의 코드/문서 명령을 실행하지 않는다. 이는 사실·독립 검수·사용자 인수/Agent 실행 합격이 아니다. 읽기 응답은 새 검사를 제공하지만 기존 저장 시점 validation snapshot은 불변이다.
+
+UI06 내용검토 작성 연결도 현재16개 schema를 유지한다. 기존 PROJECT/DOCUMENT/HUMAN_REVIEW를 현재 OWNER/client/제어 세대·명시 정책·exact head/hash/기준에 결박하고 같은 command replay는 실제 row1을 반환한다. 이번 actual1에서 새 클라이언트로 검토 저장·재조회/실제 사용자·동일 작성자 여부·confirmed=false·실행 outbox0을 확인했다. 화면 fixture10/단위48은 별도 증거다. 새 confirmed pointer/행위는 아직 연결하지 않았으며 단순 section anchor 존재를 필수 내용/반복 필드 검수 합격으로 승격하지 않는다.
+
+UI06 작성/편집 연결은 새 schema를 만들지 않는다. 현재16개 그대로 기존 PROJECT 명시 uploadArtifact/saveDocumentDraft·원문과 불변 버전/감사를 소비한다. 새 문서는 targetId=null/expectedVersion0, 개정은 정확 documentId/head 기준이며 오래된 입력은409로 보존한다. 응답 단절의 각 upload/save command는 탭 상위 버퍼로 보존하고 확인된 업로드 후 JSON 저장 재확인은 새 파일을 만들지 않는다. 성공은 서버 exact ref/hash·새 버전 재조회로 확인하며 사용자 확정/내용검토·실행 사건으로 변경하지 않는다.
+
+후속16 `0003_project_document_reviews`는 기존 append-only content_reviews의 PROJECT/DOCUMENT 경로만 현재 OWNER/client/control·정책 head·APPLIED recordContentReview/receipt exact ref·문서 head/hash·고정 양식 ref에 결박한다. criteria_snapshot_json은 그 양식 버전의 itemId/title/reviewCriteria, reviewer_subject_ref는 서버에서 결정한 HUMAN/동일 작성자 여부다. DRAFT/USER_COMMON 분기는 유지하고 과거 review UPDATE/DELETE는 금지다. 실제3 PASS/skip0을 확인했지만 document confirmed pointer/실행 권한은 바꾸지 않았다.
+
+아래 초기 P02 미실행 문구는 작성 시점 이력이다. 신산님 FN11/FN03 직접 승인 후 새 forward13~15를 개발 DB에 적용했고 WSL exact `dc42b29c4d24d24dc4f6f8f1737ac289023ae09c`의 actual2 PASS로 현재 좁은 연결을 확인했다. 전체 표의 계획 기능/미구현 테이블까지 적용됐다는 뜻은 아니다.
+
+- 정책13: 현재 owner/client/control·최근 재인증의 명시 저장, 정책/version/command/receipt/audit exact 결박·불변 과거 버전. 현재 HUMAN 본인/해당 PROJECT/자료 연산·유한 기한만 지원한다. 자동 정책·Agent grant·일회 승인 소비는 없다.
+- 원본14: project/draft 소유 정확히 하나, 현재 app INSERT는 PROJECT READY만 현재 uploadArtifact 명령·receipt·정책/control/hash/크기에 결박. UPDATE/DELETE 금지. 원본을 파일로 독립 보존하며 전역 hash 또는 임의 storage 경로로 접근하지 않는다. 파일 성공/DB 실패의 orphan은 보존·복구 대상으로 분리하며 DB/FS 완전 원자성은 주장하지 않는다.
+- 문서15: `documents` head와 nullable confirmed pointer, 정확 form version/hash·같은 project artifact FK의 `document_versions`, BODY/ATTACHMENT links·DRAFT_SAVED events. 현재 saveDocumentDraft만 허용하며 title/content/source/author/validation은 해당 버전에 불변 저장한다. 새 버전이 구버전 제목/본문을 바꾸지 않는다. 정책/권한·명령/receipt/audit와 같은 DB transaction, app UPDATE/DELETE로 과거 version/event 수정 불가.
+- 현재 텍스트 본문≤2MiB·필수 양식 항목의 `line:N` 원문 위치 연결만 형식 검사. 빈 필수항목/미연결은 초안 저장 가능하지만 사용자 확정/내용검수로 승격하지 않는다. stage/import/source/proposal·내용검토/확정과 더 넓은 parser는 미연결이며 요청 시 fail-closed다. 원본 자체 업로드는≤20MiB지만 이 사실이 모든 형식 추출 지원을 의미하지 않는다.
+
 상태: **P02 논리·물리 저장 책임 상세화 / SQL·DB 실행 미검증**. 2026-10-16 Main 어울. 설계 r8 §4~10, 계획 r7, 승인 공식 산출물 양식·UI/FN 업무 카드를 기준으로 한다. TD-01 PostgreSQL/파일 선택은 유지한다. 표는 저장 책임/관계 제안이며 DB 생성·migration·실데이터 변경 지시가 아니다. 특정 테이블/타입/인덱스/암호화 구현과 P02 합격을 선언하지 않는다.
 
 ## 1. 공통 규칙
@@ -97,10 +206,12 @@ EXISTING 소스 root 등록/관측 테이블의 호스트/실경로·권한/정�
 
 ### 6.3 FN02 — 공통 원본과 프로젝트 적용본
 
+2026-10-17 승인 후속 실제39: `methodology_reviews.project_id`(nullable/FK projects)를 추가해 프로젝트 확정 사건을 공통본과 분리한다. PROJECT 개정은 기존 methodology_definitions/versions에 새 불변 버전으로만 저장하고 정확 command receipt에 이름/목적/graph/출처/이유 snapshot을 결박한다. 읽기에서 graph hash·snapshot/receipt를 대조하며 v1 최초 생성은 기존 고정 적용 snapshot을 대조한다. PROJECT METHODOLOGY 사람 내용 검토는 기존 content_reviews에 METHOD5/정확 ref·판정/이유를 append-only로 저장하며 확정 직전 현재 head·최신 ACCEPTED 검토·준비된 양식 버전을 다시 확인한다. 초기 생성/USER_COMMON guard는 유지한다. `project_methodologies` 적용 INSERT guard/이력은 변경하지 않았으며 신규 적용 전환은 실행 상태/영향 근거가 없어 아직 열지 않는다.
+
 | 테이블 / migration 소유 | 열·키·인덱스와 무결성 |
 |---|---|
 | `methodology_definitions` / 0002·FN02 | `id PK, scope SYSTEM/USER_COMMON/PROJECT, owner_user_id?,project_id?,system_code?,name,purpose,head_version,created_at`. scope에 맞는 소유자 조합 CHECK, SYSTEM은 SYS-M01~03 출처 식별·사용자 직접 쓰기 금지. 접근 가능한 소유 scope 내 목록 인덱스 |
-| `methodology_versions` / 0002·FN02 | `(definition_id,version) PK, graph_json,content_hash,origin_ref_json?,reason,created_by,created_at`. FK definition. 내용을 UPDATE하지 않음. origin은 읽기 권한/정확 버전·hash를 검증한 복사 출처이며 원본을 교체/삭제해도 보존 |
+| `methodology_versions` / 0002·FN02 | `(definition_id,version) PK, name,purpose,graph_json,content_hash,origin_ref_json?,reason,created_by,created_at`. 이름/목적도 해당 버전에 보존, definition 값은 현재 목록 projection. FK definition. 내용을 UPDATE하지 않음. origin은 읽기 권한/정확 버전·hash를 검증한 복사 출처이며 원본을 교체/삭제해도 보존. SYSTEM 생성은 실제 사용자/사람 확정을 날조하지 않으며 source 승인과 제품 인수 분리 |
 | `methodology_reviews` / 0002·FN02 | `id PK,definition_id,version,target_hash,validation_json,review_refs,decision,decided_by,decided_at`. 버전 FK. validation과 사용자 확정 사건을 구분. 같은 내용 hash의 확정 근거만 적용에 사용 |
 | `project_methodologies` / 0002·FN02 | `(project_id,id) UNIQUE, id PK, application_version, source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by,created_at`. `(project_id,application_version)` UNIQUE. 확정한 공통/전용본을 허가 확인 후 프로젝트에 고정 복사. 공통본 개정 시 pointer 자동 변경 금지 |
 
@@ -110,6 +221,7 @@ EXISTING 소스 root 등록/관측 테이블의 호스트/실경로·권한/정�
 
 | 테이블 / migration 소유 | 열·키·인덱스와 무결성 |
 |---|---|
+| `authoring_standard_versions` / 0003·FN03 | 공식 양식이 실제로 소비하는 공통 작성 기준의 `(id,version) PK,content_hash,body_utf8,source_approval_json,created_at`; 정확 `(id,version,content_hash)` UNIQUE. source 승인 지문과 제품 문서 검수/사용자 확정은 분리하며 미래 지식 저장소의 가짜 참조를 만들지 않는다. app 읽기 전용. 첫0003은 catalog 저장에 한정, 문서 원본/본문/제안 표는 후속 forward-only migration으로 구현한다 |
 | `form_definitions` / 0003·FN03 | `id PK, scope,owner_user_id?,project_id?,form_code,name,head_version,created_at`. SYSTEM AF01~08·사용자 공통/전용 scope와 접근 분리. 공식코드/종류 매핑 불변 |
 | `form_versions` / 0003·FN03 | `(definition_id,version) PK, definition_json,content_hash,authoring_standard_ref,origin_ref_json?,created_by,created_at`. 필수 항목ID·작성/검수/확정 역할·출처를 저장. 문서/방법론에 사용한 버전은 덮지 않음 |
 | `artifacts` / 0003·FN03 | `id PK,project_id?,draft_id?,bytes bigint,content_hash,media_type,storage_key,state:STAGING/READY/QUARANTINED/FAILED,created_by,created_at`. 소유 project/draft 중 정확히 하나. `(project_id,id)`와 `(draft_id,id)` UNIQUE, bytes>=0. storage_key는 서버 생성값, 외부 입력 경로가 아님. 전역 hash만으로 읽기/존재 조회 금지 |
@@ -168,6 +280,8 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 
 ### 7.2 FN04 설계·계획·추적·변경
 
+2026-10-16 forward20 `0004_design_index`만 실제 적용: design_items는 AF02 exact document id/version/hash·localCode/title/line anchor·item_json/item_hash·현재 actor/client/command를, screen_regions는 같은 프로젝트 design_item과 AF03 exact source version/hash/body artifact·screenCode/anchor·region_json/hash를 불변 저장한다. 현재 제어/명시 policy/APPLIED exact receipt guard와 app SELECT/INSERT만 허용하고 UPDATE/DELETE는 불허한다. 기존19 SQL 불변, actual FN03/FN11 2 PASS/3368ms·독립 두 신규 표 포함15종 QA 잔여0이다. 아래 work_plan/trace/change 표는 아직 미구현이며 schema 정의를 실제 완료로 세지 않는다.
+
 | 테이블 | 필수 열·참조·고유 조건 |
 |---|---|
 | `design_items` | `(project_id,id) UNIQUE,id PK,design_document_id,document_version,local_code,title,anchor,item_hash`. document version 복합 FK, `(project_id,design_document_id,document_version,local_code)` UNIQUE. 같은 코드의 과거 버전 보존 |
@@ -185,6 +299,10 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 
 ### 7.3 FN05 원문·헌법·지식·맥락
 
+승인된 forward37 후보 `0005_project_constitutions`는 constitution_applications(projectId/적용 세대 PK·정확 지식/확정·snapshot/hash·이전 적용 ref·주체/client/command/time)의 append-only 이력과 project_constitutions의 guarded 현재 pointer만 추가한다. 현재 정책/제어·명령 receipt·최신 적합 검토/원문 버전을 결박하며 app 이력 UPDATE/DELETE·pointer DELETE는 불허한다. 기존 knowledge 원문/확정과36개 적용 SQL은 수정하지 않는다. 실제 checksum/적용/검증은 WORK_STATUS로 분리한다.
+
+2026-10-16 FN04 적용 후보 `0004_work_plan_drafts`(forward21): work_plans/head와 불변 work_plan_versions·plan_tasks·plan_dependencies를 추가한다. 정확 AF04/AF02 문서 버전/hash·현재 actor/client/control·명시 policy/receipt 및 task/dependency snapshot을 결박한다. app은 SELECT/INSERT와 guarded head/updated_at 변경만 가능하고 confirmed_version·불변 버전/카드의 UPDATE/DELETE는 허용하지 않는다. 관계 모호성이 있는 초안은 version_json에 원 카드/문제 전체를 보존하되 관계 테이블에는 투영하지 않는 ISSUES_ONLY다. 기존20 SQL·원문/확정 pointer는 변경하지 않는다. 실제 적용 결과는 WORK_STATUS에 별도 기록한다.
+
 | 테이블 | 필수 열·참조·고유 조건 |
 |---|---|
 | `conversations` | `(project_id,id) UNIQUE,id PK,target_role_ref,created_at`. 특정 외부 Agent 계정의 thread가 원본 PK가 아님 |
@@ -193,10 +311,18 @@ audit와 UI event의 수신순번은 각각 프로젝트별 카운터/직렬화�
 | `knowledge_versions` | `(project_id,entry_id,version) PK,title,content_artifact_id,content_hash,source_refs,reason,scope_json,related_refs,supersedes_version?,created_by,created_at`. source 실제 버전·권한·사실/가설 출처 검사 |
 | `knowledge_events` | `id PK,project_id,entry_id,version,kind:PROPOSED/CONFIRMED/CORRECTED/EXCLUDED/SHARED,reason,actor_ref,approval_ref?,target_refs?,recorded_at`. 같은 지식 버전 FK·정확 공유 대상/승인 참조. EXCLUDED는 삭제 아님 |
 | `project_constitutions` | `project_id PK,entry_id,version,applied_by,applied_at`. knowledge version composite FK·kind 검사. 임무별 적용본은 당시 version 고정, 새 헌법이 기존 실행 허가를 넓히지 않음 |
-| `context_bundles` | `(project_id,id) UNIQUE,id PK,version,assignment_ref,baseline_refs,budget_ref,manifest_json,content_hash,created_at`. assignment/기준은 실제 저장 ref 검사, 생성만으로 전달/이해 완료 아님 |
+| `context_bundles` | `(project_id,id) UNIQUE,id PK,version,assignment_ref,baseline_refs,budget_ref,manifest_json,request_payload,content_hash,created_at`. assignment/기준은 실제 저장 ref 검사, request_payload는 정규화 전 원 명령 metadata이며 원문 평문 아님. 생성만으로 전달/이해 완료 아님 |
 | `context_items` | `(project_id,bundle_id,bundle_version,item_id) PK,category,required,source_ref,source_hash,included_state,reason`. 원본 hash/허가 대조, MISSING/REDACTED/EXCLUDED 보존. source 관계 검색의 임의 깊이 제한으로 필수 이유 누락 금지 |
 | `context_deliveries` | `(project_id,id) UNIQUE,id PK,bundle_ref,connection_ref,external_session_ref,instruction_id,part_manifest_json,receipt_refs,state,created_at`. 수신/실패/미확인과 마지막 순번 보존, 실제 어댑터 수신 근거 전 DONE 금지 |
 | `understanding_reviews` | `(project_id,id) UNIQUE,id PK,bundle_ref,response_source_ref,subject_binding_ref,reviewer_ref,items_json,outcome,created_at`. 6항목 각각 기준/응답/판정/근거 저장. 총괄/단계 교체의 최종 확인 주체를 FN09/14가 검증 |
+
+FN05 후속 후보 `0014_context_preparation.sql`은 version1 불변 context_bundles/context_items를 추가한다. bundle은 assignment_id/version/hash·assignment_ref/baseline_refs/budget_ref·manifest_json/hash와 작성자/client/command를 함께 보존하며 exact 같은 프로젝트 assignment_versions/command/clients FK를 갖는다. 항목은 category/required/source_ref/hash/state/reason·delivery_parts/issue를 manifest와 대조하고 deferred 항목 완전성을 검사한다. 새 app 역할은 SELECT/INSERT만, UPDATE/DELETE는 허용하지 않는다. 현재 OWNER/제어 세대/세션·명시 AUTO 정책/기한·receipt/requesthash/감사·현재 draft basis를 검사하고 REQUIRE_APPROVAL은 미지원 거절이다. 원문/부분 평문은 DB에 넣지 않고 기존 보호 reader가 바이트/hash·현재 접근을 확인한다. SQL의 source/부분 검사는 DB metadata 대조이며 실제 파일 내용이나 Agent 수신/의미를 증명하지 않는다. 적용/실제 PG guard·동시성 증거는 아직0이고 기존0012/0013과 기존 정식 DB를 변경하지 않았다.
+
+FN05 첫 forward23 후보 `0005_knowledge_drafts`는 knowledge_entries/knowledge_versions/knowledge_events의 새 PROPOSED만 허용한다. entry_json과 정규 열·동일 프로젝트 artifact·정확 현재 command/client/control/명시 policy·receipt를 결박하며 head FK는 transaction 끝에 검사한다. app SELECT/INSERT만 부여하고 UPDATE/DELETE·확정/공유 사건은 차단한다. 기존22 SQL·원문·확정 pointer를 수정하지 않으며 정정/제외 등은 후속 새 forward로 보완한다. 적용 여부·checksum은 WORK_STATUS 실측을 따른다.
+
+후속 forward24 후보 `0005_conversations`: conversations에 head_sequence/created_by/last_client_id/last_command_id/updated_at을 두고 현재 exact 허가 아래 1씩만 전진한다. conversation_messages는 불변 message_json/content_hash·현재 author/client/receipt·같은 프로젝트 보호 artifact와 같은 대화 reply/정정 복합 FK를 결박한다. app SELECT/INSERT와 guarded head 관련 열 UPDATE만 허용하고 발언 UPDATE/DELETE·Agent 주체 위조는 거절한다. 기존23 SQL/원문을 수정하지 않는다.
+
+정정/제외 forward25 후보 `0005_knowledge_changes`: knowledge_events에 base_ref/change_sources를 추가하고 버전별 EXCLUDED1개만 허용한다. 기존 guard를 forward로 보완해 새 정정 버전/출처/원문·사건과 exact 현재 명령/허가·원 base/hash를 결박하고 guarded head_version 증가만 추가 허용한다. 기존 원문·불변 version/event UPDATE/DELETE와 확정/공유 사건은 계속 차단한다. 적용 SQL23/24 자체를 수정하거나 자동 downgrade하지 않는다.
 
 검색은 원문/지식의 project·접근·사용 제외/대체 상태를 먼저 제한한다. 인덱스/랭킹 구현은 FN05가 자료량에 맞는 PostgreSQL/파일 계약 안에서 선택하며 별도 외부 벡터 서비스·학습 엔진을 자동 추가하지 않는다. 임무 자동 선택에서 제외된 지식도 허가된 과거 조회로는 확인 가능하다. 민감 의심으로 격리된 artifact는 검색 snippet·context 전달에서도 차단한다.
 
@@ -267,6 +393,9 @@ INTERFACES §13~14와 FILE_MAP의 FN09~18 소유 migration을 연결한다. 공�
 | FN10 `limit_policy_versions`/`usage_reservations` | 정책 ID/version·유한 한도/범위/기한/hash, 예약은 project/run/command/실행·정확 단위/통화·관측/추정·누적/해제 사건. 예약/누적과 명령 발행 원자 검사, 새 세션으로 누적 초기화0 |
 | FN12 `result_submissions` | `(project_id,id) UNIQUE,id PK,assignment_ref,execution_ref,manifest_ref,manifest_hash,submission_state,submitted_by,submitted_at`. 주장/직접 관측/시험 산출/검수자 출처 구별, 제출만으로 완료 상태 갱신0 |
 | FN12 `result_reviews`/`verification_items` | review는 결과/기준 version·검수자/독립성·조건별 결과/미검증/이유·시각, item은 test/criterion·정확 환경/원문 evidence/hash·기대/실제·판정. 단위/실제 DB/Agent/브라우저 범위 구별, 과거 FAIL/미실행 덮기0 |
+| FN12 `result_reviews` 최초 물리화(0027) | 결과ID·기준ID/version FK·불변 snapshot/hash·HUMAN 작성자/client/command/time. snapshot에 조건별 REWORK/BLOCKED 이유·고정 resultRef/criteriaRef·동일제출자 여부·미검증 false flags를 함께 보존한다. verification_items의 실제 증거/ACCEPTED와 formal failure 집계는 미연결이며 현재 저장으로 대체하지 않는다. 기존 공용 guard 교체0·정식 자동 적용0 |
+| FN12 `result_rework_drafts` (0028 후보) | 원제출·검수·예약ID/version FK·불변 input/scope/조건선택·잔여/같은session·HUMAN 요청자/client/시각/hash·command/receipt/audit를 연결한다. 새 실제 임무/worker·dispatch·실패집계로 승격하지 않고 현재예약/권한은 조회 때 미확인이다. 신규 전용 guard/역결박·현재계획 확인은 격리PG에서 한정 확인했으며 정식 자동 적용/전체완료 금지다. |
+| FN12 `result_criteria_versions` (기준 ref 물리화) | `(project_id,criteria_id,version)` PK, exact 확정 assignment_ref/FK·criteria_json/hash·전체 원조건의 input_json/source binding·created_by/client/command/time. criteria hash는 기존 수집기가 소비하는 assignmentRef/baselineRefs/items snapshot을 고정하고 입력/이유/원조건 대응은 정확 request hash·영수증/감사와 불변 행으로 결박한다. 직전 baseRef 새 버전만, 자동 적용/검수/완료/실행0. 새0026 전용 guard/역방향 원자 검증, 기존 공유 guard 교체0·정식 자동 적용0 |
 | FN12 `execution_issues`/`failure_attempts` | issue 원인 분류/확인 사실·미확인·영향/정확 선택, attempt는 assignment/실패 fingerprint/lineage·정식 제출/검토 근거·순번. quota/권한/환경/단순 중단을 기능 실패 횟수에 혼합하지 않음 |
 | FN13 `checkpoints` | `(project_id,id) UNIQUE,id PK,assignment_ref,execution_refs,baseline_refs,state_ref,state_hash,record_file_ref,local/server_sequence,created_at`. 책임자 파일/서버 snapshot·실제 상태 차이 보존 |
 | FN13 `stop_requests`/`reconciliations` | stop은 명시 scope/하위·차단 시점·요청/공식 응답/실제 ownership facts·상태, reconcile은 checkpoint/현재 snapshot·source/process/receipt diff·공백·재개 준비/차단 근거·version. 요청≠회수, 자동 replay0 |
@@ -288,10 +417,34 @@ project_drafts.input_json의 방법론 선택은 confirmed reference 또는 새 
 
 `content_reviews`는 FN11 0011의 공통 주체/감사 기반에 둔다. 필수 열은 `id PK,scope_kind:PROJECT/DRAFT,scope_id,target_kind,target_id,target_version,target_hash,criteria_version,items_json,outcome,reviewer_subject_ref,source_kind,reason,created_at`다. scope는 NOT NULL·존재/소유·대상별 exact version/hash를 검사한다. 다른 도메인 검토를 같은 ID로 바꿔 쓰지 않으며 domain service가 확정 시 그 기준/종류·현재 내용과 대조한다. 수행자의 result_reviews와 서로 대체하지 않는다.
 
+2026-10-16 본인 공통 자료 보완 직접 승인에 따라 `0011_user_common_control`은 commands/authorization_receipts의 USER_COMMON을 추가한다. scope_id=actor_id이며 project/draft/control/policy/approval consumption은 null이다. 사용자+command_id 유일성은 연산 간에도 적용한다. `user_common_audit_events`는 owner·현재 client·같은 scope command FK·소유자별 순서·정확 targetRef를 갖는 append-only 이력이다. 현재 METHOD 정의/버전 쓰기는 transaction-local 인증 actor와 owner를 SQL trigger로 대조하며 SYSTEM/PROJECT는 거절한다. 이전 버전 UPDATE/DELETE와 본인 외 owner 변경 권한은 열지 않는다. 양식 쓰기/content_reviews/확정 집행은 후속 migration·도메인 구현 전 미구현이다. 기존 적용0001/0011/0002/0003 SQL은 수정하지 않는다.
+
+후속 `0011_user_common_forms`는 같은 승인으로 USER_COMMON 양식의 INSERT·현재 head/name/code 개정만 허용하고 인증 actor/owner를 trigger에서 대조한다. SYSTEM·PROJECT·표준 원문·과거 version UPDATE/DELETE는 계속 금지한다. 양식 origin_ref_json에 COPY/REVISION 부모 exact ref와 변경 이유를 보존한다. 검토/확정 사건은 이 migration이 생성하지 않는다.
+
+후속 `0011_user_common_content_reviews`의 content_reviews는 계획된 scope/대상/기준/항목/결과에 실제 reviewer_user_id/client_id·기준 snapshot·source_kind·정확 scope command FK를 더한다. DB app의 INSERT guard는 현재 USER_COMMON/FORM/본인/HUMAN_REVIEW만 허용하며 PROJECT/DRAFT/다른 도메인은 후속 집행 전 사용할 수 없다. form_reviews는 정의/버전/hash triple FK·실제 확정자/client·confirmForm command FK·구조검사/ReviewRef 이력이다. 두 테이블 UPDATE/DELETE는 app에 금지하고 기존 SQL/기존 버전·사람 확정 사건을 변경하지 않는다.
+
 승인 기본8종 catalog/저장 schema는 FN03 0003이 소유하고 방법론 저장 검증이 그 정확 버전을 소비한다. 실제 migration DAG는 0001/0011 공통 기반→0003 catalog/document storage→0002 방법론→0004 추적/계획, 0005 지식은 필요한 0003/0011 뒤라는 방향으로 P03에서 SQL 참조/seed와 함께 고정한다. 임무/실행·미검증 source 참조는 실제 자료가 생기기 전 성공 관계로 꾸미지 않는다. 이는 모듈을 번호순으로 개발하라는 뜻이 아니며 FN02/FN03의 기본/연결 검수는 각각 유지한다.
 
 ### 11.1 독립 검토 보완 — 최초 소스와 문서 링크 이력
 
 - `source_declarations`(0001·FN01): `id PK,draft_id?,project_id?,version,declared_by,host_label,display_name,path_hint_protected_ref,origin_root_ref?,reason,authority:USER_DECLARED,created_at`. draft/project 소유 정확히 하나와 각 복합 UNIQUE·FK. 초안 생성/수정과 원자 저장·project 생성 때 정확 선언 version을 귀속, 관측 authority 자동 승격0. FN06/08이 별도 source_roots/source_snapshots를 실제 검증해 연결하며 선언 ID를 실제 root ID로 혼용하지 않는다. 입력 pathHint의 저장·조회는 소유 범위와 비밀 마스킹을 지키며 파일 접근 명령으로 실행하지 않는다.
+
+FN01 직접 승인 후속 forward38의 실제 저장 구분: 초기0001 source_declarations identity는 최초 선언 ID/작성자/최초 metadata와 path_hint_protected_ref=`db-source-declaration-version:<id>:<version>`를 보존한다. 새 source_declaration_versions(id/version PK·정확 draft/version·declaration_json/hash·주체/client/command)는 보호 DB의 불변 payload를 보존하고 project_source_declarations는 생성 transaction의 정확 선언 버전만 귀속한다. app UPDATE/DELETE는 불허하며 이전37 SQL과 기존 행을 삭제/변환하지 않는다. 실제 root/관측/검증 권한은 만들지 않는다. 이는 FN05 지식 payload와 다른 FN01 저장이며 실제 적용/증거는 WORK_STATUS를 따른다.
 - `document_source_links`(0003·FN03)에 `link_version,state:ACTIVE/DETACHED,current_event_id?`를 추가한다. 문서 확정본과 소스 연결의 변경 세대는 분리한다. `document_source_link_events`는 `id PK,project_id,link_id,link_version,kind:LINKED/OBSERVED/KEEP_SERVER/PROPOSAL_CREATED/DETACHED,snapshot_ref?,observed_blob_hash?,comparison:MATCH/DRIFT/UNVERIFIED,proposal_ref?,reason,actor_ref,created_at`를 append한다. event FK는 불변 `(project_id,link_id)`만 참조하고 link_version은 당시 세대값으로 불변 기록한다. 현재 링크 version의 CAS와 event append를 원자 처리하며 이후 세대 증가가 과거 event FK를 바꾸지 않는다. 당시 snapshot/원문/제안 참조 유지·타 프로젝트 참조 거절. 아직 FN08 관측이 없으면 UNVERIFIED이며 임의 MATCH/원문 import 성공을 만들지 않는다.
 - COLLECT_PROPOSAL의 원본/추출/제안은 기존 artifacts/document_imports/document_proposals를 소비한다. 파일 성공/DB 실패는 staging 복구 대상으로 남기고 링크를 성공으로 바꾸지 않는다. FN08이 생기기 전 FN03은 저장·버전/본문 검수를 진행하되 실제 소스 드리프트 확인은 미검증으로 기록한다.
+
+2026-10-16 방법론 검토 연결: 새 forward `0011_user_common_method_reviews`는 methodology_reviews에 nullable client_id/command_id를 추가해 기존 자료를 보존하고, 새로운 app INSERT는 owner USER_COMMON·현재 actor/client·같은 APPLIED command/operation·expected version·receipt exact ref를 trigger로 검사한다. content_reviews의 같은 보호는 FORM/METHODOLOGY만 허용한다. review/confirmation은 append-only이며 기존 적용9개 SQL 불변, 실제 프로젝트 권한·정책/승인 소비는 만들지 않는다.
+
+2026-10-16 생성 초안 보완 직접 승인 후 `0011_project_creation`은 첫 생성의 project_methodologies INSERT만 현재 인증 actor/owner/client·미소비 draft/OWNER/control1·APPLIED createProject/receipt와 묶는다. 기존 snapshot UPDATE/DELETE 금지다. `0011_draft_method_reviews`의 append-only 확정 행은 `id PK,draft_id,version,graph_hash,graph_json,review_refs,validation_json,decided_by,client_id,command_id UNIQUE,decided_at`이며 `(draft_id,version,graph_hash,id)` UNIQUE다. content_reviews의 USER_COMMON guard는 유지하고 DRAFT_METHODOLOGY 전용 guard를 나눠 current draft/client·exact ref/command/receipt를 검사한다. 초안 검토 target_id는 실제 draft_id이고 아직 없는 project_id를 만들지 않는다. 첫 PROJECT 정의/버전1 INSERT만 같은 최초 생성의 context로 허용하며 후속 개정·실행 권한은 열지 않는다. 생성 실패는 초안 소비·프로젝트/멤버/제어/전용 원본·snapshot/명령/receipt/audit 모두 rollback한다. 기존10개 SQL과 공통/공식 원본·기존 버전은 보존한다.
+
+
+## 2026-10-28 FN05 A안 출발측 공유요청 원장 — 미적용0051
+
+0051_knowledge_share_requests.sql.pending는직접승인F60EEE63 A안의source-only후보다. 기존migration/적용manifest/knowledge_events·공유guard를바꾸지않았고실제SQLcompile/DML/RLS/경합은NOT_RUN이다. 새표 anvil.knowledge_share_requests는(project_id,id)PK·version1/RECORDED_ONLY 고정,content_hash/snapshot_json/request_json·created_by/client_id/control_generation/policy_ref/command_id/created_at을보존한다. command_id unique·project/command와actor/client의deferred참조,본인paging색인·불변guard·정확command/receipt/audit/snapshot검사를정의한다.
+
+현재검사currentCheck는저장하지않는다. 원문bytes/대상명·수신자료를복제하지않고선택exactrefs와당시targetversion·목적만보관한다. SELECT는인증actor의transaction-local문맥+본인범위로제한하며서비스도현재출발/대상/원문을대조한다. 신규표의guard용정의는pending안에만있고이번보완에서기존불변표의UPDATE권한·추가definer/GRANT/기존guard를넓히지않았다. 실제공유/원문이전/승인소비·대상쓰기모델로사용하지않는다. privileged외부DB/파일동시변경의원자성은미실증이다.
+
+
+## 2026-10-28 FN17 알림 저장 source 후보
+
+직접 승인 D2DCD9B8…/결정 BAA454FC…의 source-only 저장 정의는 db/migrations/0052_approval_in_app_notifications.sql.pending에 있다. notifications의 원request/receipt·본인수신자/불변본문·중복방지와 notification_reads의 최초읽음/원명령 결박을 새 forward source로 정의한다. 기존 SQL·적용 목록은 불변이며 실제PG구문/trigger/DML/COMMIT/RLS/권한·경합/xidwrap/subtransaction은 미검증이다. guard/현재성·전체project10000cap/현재transaction 신규원행 결박의 정적검수를 실제DB 준비/전체FN17완료로 표시하지 않는다.

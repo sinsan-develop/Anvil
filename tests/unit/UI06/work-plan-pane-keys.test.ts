@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
+test('UI06 검색·관계 형제 영역은 서로 다른 key namespace를 사용함(정적source검사)',async()=>{const text=await readFile(new URL('../../../apps/web/src/features/design-trace/WorkPlanLibrary.tsx',import.meta.url),'utf8'),keys=['StoredPlanTasks','StoredPlanTaskRelations'].map(name=>text.match(new RegExp('<'+name+' key=\\{([^\\n]*?)\\} (?:tasks|view)='))?.[1]);assert(keys.every(Boolean));assert.notEqual(keys[0],keys[1]);assert(keys[1]!.startsWith("'plan-relations:'+"));});

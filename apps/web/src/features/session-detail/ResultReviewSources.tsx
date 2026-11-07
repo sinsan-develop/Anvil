@@ -1,0 +1,263 @@
+import {useEffect,useRef,useState} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
+import type {SubmittedResultView} from './result-api.ts';
+import {readResultReviewSources,type ResultReviewSourcesView} from './result-review-api.ts';
+import {ResultCriteriaEditor,type CriteriaEditorProps} from './ResultCriteriaEditor.tsx';
+import {readStoredCriteriaList,readStoredCriteria,type StoredCriteriaList,type StoredCriteriaSummary,type RegisteredCriteria} from './result-criteria-api.ts';
+import {readReportedCoverage,type ReportedCoverageView} from './reported-coverage-api.ts';
+import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
+import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
+import {prepareResultReviewWrite,saveResultReviewWrite,ReviewReadbackUnconfirmed,resultReviewBufferKey,type ResultReviewBuffer,type ResultReviewBuffers,type ReviewOutcome} from './result-review-write-api.ts';
+import {storedReviewRootCursor,readStoredResultReviewPage,readStoredResultReview,type StoredResultReviewPage,type StoredReviewSummary} from './stored-result-reviews-api.ts';
+import type {RecordedResultReview} from './result-review-write-api.ts';
+import type {ResponsibleSessionState} from '../workspace/responsible-session-api.ts';
+import {ordered} from '../knowledge/review-view.ts';
+import {prepareResultReworkDraft,type ResultReworkDraft} from './result-rework-api.ts';
+import {prepareResultReworkWrite,saveResultReworkWrite,ReworkReadbackUnconfirmed,type ResultReworkBuffer,type ResultReworkBuffers} from './result-rework-write-api.ts';
+import {StoredResultReworkHistory} from './StoredResultReworkHistory.tsx';
+import {resultReworkFormKey,type ResultReworkFormDraft} from './result-rework-form.ts';
+import {ReviewCriteriaOriginal} from './ReviewCriteriaOriginal.tsx';
+import {readResultExecutionSource,type ResultExecutionSourceView} from './result-execution-source-api.ts';
+import {StoredUnderstandingHistory} from './StoredUnderstandingHistory.tsx';
+import {readResultArtifactText,type ResultArtifactTextView} from './result-artifact-api.ts';
+import {resolveReportedChangeDiff} from './reported-change-diff.ts';
+import {resolveReportedCommandOutput} from './reported-command-output.ts';
+import type {PlanRef} from '../design-trace/work-plan-api.ts';
+import {ReportedEvidenceFiles} from './ReportedEvidenceFiles.tsx';
+import {reportedCompletionGap} from './reported-completion-gap.ts';
+import {NextActionBasisPanel} from './NextActionBasisPanel.tsx';
+import {ReportedCommandEvidenceFiles} from './ReportedCommandEvidenceFiles.tsx';
+import {ResultArtifactDownloads} from './ResultArtifactDownloads.tsx';
+const labels:Record<string,string>={TYPED_CRITERIA_NOT_REGISTERED:'시험 기준 미연결',RESULT_BASELINES_MISMATCH:'제출 기준 불일치',ENVIRONMENT_NOT_DEFINED:'환경 미정',ACCEPTANCE_CRITERIA_MISSING:'완료 조건 누락',VERIFICATION_REQUIREMENTS_MISSING:'검증 조건 누락'};
+function HistoricalExecutionSource({client,result,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{key:string;value:ResultExecutionSourceView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
+ const key=[result.snapshot.scope.projectId,result.ref.id,result.ref.contentHash,revision].join(':'),shown=loaded?.key===key?loaded:null;
+ useEffect(()=>{if(!revision)return;let active=true;readResultExecutionSource(client,result,()=>active).then(value=>{if(active&&value)setLoaded({key,value,error:null});}).catch(cause=>{if(!active)return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_EXECUTION_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_EXECUTION_RESPONSE_INVALID';setLoaded({key,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();});return()=>{active=false;};},[client,result,key,revision]);
+ return <section className="status-card" aria-label="원실행 고정 결박"><h5>원실행 고정 결박</h5><button type="button" disabled={revision>0&&!shown} onClick={()=>setRevision(v=>v+1)}>{revision?'원실행 결박 다시 조회':'원실행 결박 조회'}</button><p>선택 제출과 결박된 원명령의 저장 참조만 읽습니다. 명령 전달/수행·현재 허가·실제 Agent 관측은 확인하지 않습니다.</p>
+  {revision>0&&!shown?<p role="status">원실행 고정참조 대조 중 · 이전 원문은 숨깁니다.</p>:null}{shown?.error?<p role="alert">{shown.error} · 원실행 결박 미확인. 다른 실행으로 대체하지 않습니다.</p>:null}
+  {shown?.value?<article aria-label="원실행 결박 원문"><h5>원명령 저장 참조 · 현재 실행/Agent 관측 아님</h5><p>실행 {shown.value.execution.scope.executionRef.id} · 세대 {shown.value.execution.scope.executionRef.version}</p><p>원 START {shown.value.execution.snapshot.initialCommandRef.id} · grant {shown.value.execution.snapshot.grantRef.id}</p><p>권한영수증 참조 {shown.value.execution.snapshot.authorizationReceiptRef.id}</p><p>현재 권한·관측·writer 회수·업무 완료·정식 실패집계 미확인입니다. 관측 원문은 조회하지 않았고 중단/실패 원인을 추론하지 않습니다.</p><details><summary>원실행·임무·봉투hash·영수증 고정 결박 전체</summary><pre>{JSON.stringify(shown.value,null,2)}</pre></details></article>:null}
+ </section>;
+}
+export function ResultArtifactTexts({client,result,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ const [selected,setSelected]=useState<PlanRef|null>(null),[revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{key:string;value:ResultArtifactTextView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
+ const refs:PlanRef[]=result.snapshot.manifest.artifactRefs,key=[result.ref.id,result.ref.contentHash,selected?.id,selected?.contentHash,revision].join(':'),shown=loaded?.key===key?loaded:null;
+ useEffect(()=>{if(!selected)return;let active=true;readResultArtifactText(client,result,selected,()=>active).then(value=>{if(active&&value)setLoaded({key,value,error:null});}).catch(cause=>{if(!active)return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_ARTIFACT_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_ARTIFACT_RESPONSE_INVALID';setLoaded({key,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();});return()=>{active=false;};},[client,result,selected,key]);
+ return <section className="status-card" aria-label="제출 산출물 원문"><h5>제출 산출물 원문</h5><p>원제출에 선언된 프로젝트 보관 파일만 명시 조회합니다. UTF-8 텍스트/Markdown 2MiB 이내를 지원하며 PDF·이미지·그 외 형식은 미지원입니다. 원문을 읽어도 수행자 주장이나 시험 PASS가 검증된 것은 아닙니다.</p>
+  <h6>변경 파일의 diff 참조</h6><p>제출자가 연결한 등록 원문만 읽습니다. 실제 Git diff·현재 파일 변경과의 일치는 미확인입니다. 표시 경로로 파일에 접근하지 않습니다.</p><ul>{result.snapshot.manifest.changes.map((change:any,index:number)=>{const reference=resolveReportedChangeDiff(change,refs);return <li key={index}>{typeof change?.path==='string'?change.path:'경로 미확인'}<button type="button" disabled={!reference} onClick={()=>{if(!reference)return;setLoaded(null);setRevision(v=>v+1);setSelected(reference);}}>변경 diff {index+1} 원문 보기</button>{!reference?<p>동일 제출의 단일 등록 diff 참조 미확인 · 다른 파일로 대체하지 않음</p>:<p>v{reference.version} · SHA256 {reference.contentHash}</p>}</li>;})}</ul>
+  <h6>명령 보고의 출력 참조</h6><p>제출 원실행과 같은 명령 보고의 등록 출력만 읽습니다. exit·실제 명령 수행/성공은 미확인이며 명령을 실행하지 않습니다.</p><ul>{result.snapshot.manifest.commandResults.map((command:unknown,index:number)=>{const reference=resolveReportedCommandOutput(command,refs,result.snapshot.scope.executionRef);return <li key={index}><button type="button" disabled={!reference} onClick={()=>{if(!reference)return;setLoaded(null);setRevision(v=>v+1);setSelected(reference);}}>명령 출력 {index+1} 원문 보기</button>{!reference?<p>같은 원실행의 단일 등록 출력 참조 미확인 · 다른 출력으로 대체하지 않음</p>:<p>v{reference.version} · SHA256 {reference.contentHash}</p>}</li>;})}</ul>
+  {refs.length?<ul>{refs.map(r=><li key={ordered(r)}><button type="button" disabled={r.version!==1} onClick={()=>{setLoaded(null);setRevision(v=>v+1);setSelected(r);}}>텍스트 원문 {r.id}</button><p>v{r.version} · {r.contentHash}{r.version!==1?' · 파일 버전 미지원':''}</p></li>)}</ul>:<p>선언된 산출물 참조 없음 · 산출물이 없다고 확정하지 않습니다.</p>}
+  {selected?<button type="button" disabled={!shown} onClick={()=>setRevision(v=>v+1)}>선택 산출물 다시 조회</button>:null}{selected&&!shown?<p role="status">산출물 bytes·hash·현재 조회 권한 대조 중 · 이전 원문은 숨깁니다.</p>:null}{shown?.error?<p role="alert">{shown.error} · 산출물 원문 미확인. 다른 파일로 대체하지 않습니다.</p>:null}
+  {shown?.value?<article aria-label="선택 산출물 텍스트"><h5>보관 bytes 일치 · 시험 PASS/Agent 수행 증명 아님</h5><p>{shown.value.artifactRef.id} · {shown.value.bytes} bytes · {shown.value.mediaType}</p><pre>{shown.value.text}</pre><p>증거 출처·환경·명령/exit·검수/완료는 별도 확인 대상입니다.</p></article>:null}
+ </section>;
+}
+function ReportedCompletionGap({coverage}:{coverage:ReportedCoverageView}){
+ let value:ReturnType<typeof reportedCompletionGap>;try{value=reportedCompletionGap(coverage);}catch{return <p role="alert">RESULT_COMPLETION_GAP_INVALID · 완료 주장 점검 미확인. 합격이나 정상으로 표시하지 않습니다.</p>;}
+ const gaps={NOT_REPORTED:'미보고',REPORTED_NOT_EXECUTED:'보고된 미실행',UNVERIFIED_EVIDENCE:'출처/실제 시험 미검증',DECLARATION_MISMATCH:'보고 결박 불일치'};
+ return <section className="status-card" aria-label="완료 주장 점검"><h5>완료 주장 점검 · 검수 전</h5><p>{value.claimedComplete?'COMPLETED는 수행자 주장입니다. 완료 근거는 아직 확인되지 않았습니다.':value.submissionState+'는 제출자 상태 보고입니다. 작업 원인·완료를 확정하지 않습니다.'}</p><ul>{value.conditions.map(i=><li key={i.criterionId}>{i.criterionId} · {i.testId} · {i.requiredKind} · {gaps[i.gap]}</li>)}</ul><p>현재 중단 원인 미확인 · 공급자/OS 관측 미조회. 오류/거부/대기/쿼터로 추정하지 않습니다.</p><details><summary>선택 결과·기준/미확인 사실</summary><p>제출 {value.resultRef.id} · v{value.resultRef.version} · {value.resultRef.contentHash}</p><p>기준 {value.criteriaRef.id} · v{value.criteriaRef.version} · {value.criteriaRef.contentHash}</p><p>명령/exit·정확 commit·현재 환경은 미확인입니다. 파일 bytes 일치가 실제 시험 출처 검증은 아닙니다.</p></details><p>필요한 조건의 근거를 확인한 후 별도 검수하세요. 이 표시는 문제 사건·검수/완료·실패집계·재실행·writer 회수를 만들지 않습니다.</p></section>;
+}
+function ResultReworkEditor({client,assignment,result,review,responsibleState,session,reworks,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;review:RecordedResultReview;responsibleState?:ResponsibleSessionState|null;session:DocumentSession;reworks?:ResultReworkBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ const [localForms,setLocalForms]=useState<Record<string,ResultReworkFormDraft|null>>({}),[prepared,setPrepared]=useState<ResultReworkDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),attempt=useRef(0),live=useRef(true),working=useRef(false);
+ const formKey=resultReworkFormKey({userId:session.user.id,clientId:session.clientId,projectId:assignment.projectId,assignmentRef:assignment.ref,resultRef:result.ref,reviewRef:review.ref}),emptyForm:ResultReworkFormDraft={selected:[],files:[],bindingId:'',reason:''},form=reworks?.form,values=(form?form.drafts[formKey]:localForms[formKey])??emptyForm,{selected,files,bindingId,reason}=values;
+ function setField<K extends keyof ResultReworkFormDraft>(field:K,value:ResultReworkFormDraft[K]|((previous:ResultReworkFormDraft[K])=>ResultReworkFormDraft[K])){const update=(current:ResultReworkFormDraft|null)=>{const previous=current??emptyForm;return{...previous,[field]:typeof value==='function'?value(previous[field]):value};};if(form)form.onChange(formKey,update);else setLocalForms(previous=>({...previous,[formKey]:update(previous[formKey]??null)}));}
+ const setSelected=(value:string[]|((previous:string[])=>string[]))=>setField('selected',value),setFiles=(value:string[]|((previous:string[])=>string[]))=>setField('files',value),setBindingId=(value:string)=>setField('bindingId',value),setReason=(value:string)=>setField('reason',value);
+ useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+ const task=assignment.snapshot.definition.taskRef,scopes=assignment.snapshot.definition.allowedScopes,bindings=(responsibleState?.bindings??[]).filter(b=>ordered(b.snapshot.assignmentRef)===ordered(assignment.ref)&&responsibleState?.roles.some(r=>ordered(r.ref)===ordered(b.snapshot.roleRef)&&r.snapshot.kind==='STAGE_OWNER'&&ordered(r.snapshot.stageRef)===ordered({applicationRef:task.applicationRef,nodeId:task.nodeId}))),binding=bindings.find(b=>b.ref.id===bindingId);
+ const changed=()=>{attempt.current++;setPrepared(null);setBusy(false);setError(null);};
+ const toggle=(values:string[],key:string)=>values.includes(key)?values.filter(v=>v!==key):[...values,key];
+ const bufferKey=[session.user.id,session.clientId,assignment.projectId,ordered(result.ref),ordered(review.ref)].join(':'),buffer=reworks?.buffers[bufferKey]??null;
+ const bound=buffer&&buffer.pending.ownerUserId===session.user.id&&buffer.pending.command.clientId===session.clientId&&buffer.pending.command.projectId===assignment.projectId&&ordered(buffer.pending.prepared.scope)===ordered(result.snapshot.scope)&&ordered(buffer.pending.command.payload.resultRef)===ordered(result.ref)&&ordered(buffer.pending.command.payload.reviewRef)===ordered(review.ref)?buffer:null;
+ const change=(value:ResultReworkBuffer)=>reworks?.onChange(bufferKey,current=>current?.bindingId===value.bindingId?value:current);
+ const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();return{e,code};};
+ async function write(mode:'PREPARE'|'SAVE'){
+  if(working.current||!reworks)return;working.current=true;setBusy(true);setError(null);const b=bound,turn=++attempt.current,active=()=>live.current&&attempt.current===turn;
+  try{
+   if(mode==='PREPARE'){
+    if(buffer||!prepared)return;const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
+    const pending=await prepareResultReworkWrite(prepared,session,generation);if(active())reworks.onChange(bufferKey,current=>current??{bindingId:crypto.randomUUID(),pending,stored:null,uncertain:false,dirty:true,failure:null});return;
+   }
+   if(!b||b.stored)return;change({...b,uncertain:true,failure:null});
+   const stored=await saveResultReworkWrite(client,b.pending,session,active);if(active()&&stored)change({...b,stored,dirty:false,uncertain:false,failure:null});
+  }catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';
+   if(b)change({...b,failure:{code,status:e.status},uncertain:b.uncertain||e instanceof ReworkReadbackUnconfirmed||!isKnownDocumentRejection(e)});failure(e);
+  }finally{working.current=false;if(active())setBusy(false);}
+ }
+ function editRejected(){
+  if(!bound||bound.uncertain||bound.stored||working.current||!isKnownDocumentRejection(bound.failure))return;
+  const p=bound.pending.prepared;setPrepared(p);setSelected([...p.missingItems]);setBindingId(p.responsibleBindingRef.id);setReason(p.reason);setError(null);
+  setFiles(scopes.flatMap((s,index)=>s.targets.flatMap((t,n)=>p.sourceScopes.some(a=>ordered(a.sourceRootRef)===ordered(s.sourceRootRef)&&a.targets.some(v=>ordered(v)===ordered(t)))?[index+':'+n]:[])));
+  reworks?.onChange(bufferKey,current=>current?.bindingId===bound.bindingId?null:current);
+ }
+ async function prepare(){if(!binding||!selected.length||!files.length||!reason.trim())return;const turn=++attempt.current,active=()=>live.current&&attempt.current===turn;setPrepared(null);setBusy(true);setError(null);
+  const sourceScopes=scopes.map((s,index)=>({...s,targets:s.targets.filter((_,n)=>files.includes(index+':'+n))})).filter(s=>s.targets.length);
+  try{const value=await prepareResultReworkDraft(client,assignment,result,review,binding,{resultRef:result.ref,reviewRef:review.ref,responsibleBindingRef:binding.ref,missingItems:selected,sourceScopes,reason},session,active);if(active()&&value)setPrepared(value);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();}finally{if(active())setBusy(false);}
+ }
+ if(buffer)return <section className="status-card" aria-label="보완 초안 준비"><h5>보완 초안 명시 저장</h5><p>원제출·검수·같은 Anvil 예약 세션의 보완 초안만 보관합니다. 실제 배정·Agent 실행·업무 완료·실패 집계를 하지 않습니다.</p>
+  {!bound?<p role="alert">RESULT_REWORK_BINDING_INVALID · 다른 주체/자료의 명령으로 대체하지 않습니다.</p>:<>
+   {!bound.stored?<><details><summary>보완 초안 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void write('SAVE')}>{bound.uncertain||bound.failure?'같은 보완 명령 재확인':'보완 초안 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={editRejected}>확인된 거절 이후 보완 입력 수정</button>:null}</>:null}
+   {bound.uncertain?<p role="status">보완 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
+   {bound.stored?<article aria-label="보완 저장 원문"><h5>보완 초안 고정 원문 확인 완료 · 실제 배정/실행 아님</h5><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 보완 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
+  </>}
+  {error||bound?.failure?<p role="alert">{error??bound?.failure?.code} · 보완 저장 완료로 표시하지 않습니다.</p>:null}{busy?<p role="status">보완 명령·고정 원문 확인 중</p>:null}<p className="meta">화면왕복 준비 명령/미확인 결과는 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.</p>
+ </section>;
+ return <section className="status-card" aria-label="보완 초안 준비"><h5>부족 조건만 같은 단계 세션에 연결</h5><p>아직 미저장·실제 배정·Agent 실행 없음 · {form?'저장 명령 준비 전 입력도 같은 주체·정확 자료의 화면왕복 동안 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.':'저장 명령 준비 전 입력은 화면 이탈 시 사라집니다.'} 현재 예약/권한·OS 경로를 확인한 실행 허가가 아닙니다.</p>
+  <fieldset><legend>보완할 부족 조건</legend>{review.snapshot.input.items.map(i=><label key={i.criterionId}><input type="checkbox" aria-label={'보완 조건 '+i.criterionId} checked={selected.includes(i.criterionId)} onChange={()=>{changed();setSelected(v=>toggle(v,i.criterionId));}}/>{i.criterionId} · {i.outcome==='REWORK'?'보완 필요':'차단'} · {i.reason}</label>)}</fieldset>
+  <label>보완 대상 예약 세션<select aria-label="보완 대상 예약 세션" value={bindingId} onChange={e=>{changed();setBindingId(e.target.value);}}><option value="">명시 선택</option>{bindings.map(b=><option key={b.ref.id} value={b.ref.id}>{b.ref.id} v{b.ref.version} · Anvil 세션 {b.snapshot.sessionRef.id}</option>)}</select></label>{bindings.length?null:<p>같은 확정 임무·단계책임자의 확인된 예약 없음 · 다른 세션으로 대체하지 않습니다.</p>}
+  <fieldset><legend>허용된 파일 중 보완 범위 선택</legend>{scopes.map((s,index)=><div key={s.sourceRootRef.id}><p>소스 {s.sourceRootRef.id}</p>{s.targets.map((t,n)=><label key={t.relativePath}><input type="checkbox" aria-label={'보완 파일 '+t.relativePath} checked={files.includes(index+':'+n)} onChange={()=>{changed();setFiles(v=>toggle(v,index+':'+n));}}/>{t.relativePath} · {t.access}</label>)}</div>)}</fieldset>
+  <label>보완 요청 이유<textarea aria-label="보완 요청 이유" maxLength={20000} value={reason} onChange={e=>{changed();setReason(e.target.value);}}/></label><button type="button" disabled={busy||!binding||!selected.length||!files.length||!reason.trim()} onClick={()=>void prepare()}>보완 초안 명시 준비</button>
+  {busy?<p role="status">선택 원문과 범위 대조 중 · 이전 초안은 숨깁니다.</p>:null}{error?<p role="alert">{error} · 준비 미확인. 입력은 보존하며 다른 세션/범위로 대체하지 않습니다.</p>:null}
+  {prepared?<article aria-label="준비한 보완 초안"><h5>보완 초안 · 미저장/미실행</h5><p>선택 부족 조건: {prepared.missingItems.join(', ')}</p><p>남은 부족 조건: {prepared.remainingMissingItems.join(', ')||'없음 · 충족/완료 판정 아님'}</p><p>같은 Anvil 예약 세션: {prepared.stageSessionRef.id}</p><p>저장·실제 배정·Agent 실행 없음 · 실제 영향/OS·최신 예약·권한 미검증</p><details><summary>정확 원제출·검수·예약/범위 전체</summary><pre>{JSON.stringify(prepared,null,2)}</pre></details>{reworks?<button type="button" disabled={busy} onClick={()=>void write('PREPARE')}>보완 저장 명령 준비</button>:null}</article>:null}
+ </section>;
+}
+/** 선택 원제출의 보관 검수 목록/원문만 읽는다. 최신 자동선택·기준 적용·실제 증거 검증은 없다. */
+function StoredResultReviewHistory({client,result,assignment,session,responsibleState,reworks,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;assignment:ConfirmedAssignmentView;session:DocumentSession;responsibleState?:ResponsibleSessionState|null;reworks?:ResultReworkBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ type Owner={key:string;client:ApiClient;transport:typeof fetch};
+ type Target={owner:Owner;cursor:string|null;index:number;offset:number;history:(string|null)[];revision:number;window:StoredResultReviewPage['window']|null};
+ const ownerKey=JSON.stringify([session,result.snapshot.scope.projectId,result.ref,assignment.projectId,assignment.ref]),owner=useRef<Owner>({key:ownerKey,client,transport:client.transport});
+ if(owner.current.key!==ownerKey||owner.current.client!==client||owner.current.transport!==client.transport)owner.current={key:ownerKey,client,transport:client.transport};
+ const scope=owner.current,mounted=useRef(true),sequence=useRef(0),detailSequence=useRef(0),flight=useRef<Target|null>(null),latest=useRef<Target|null>(null);
+ const [rawTarget,setTarget]=useState<Target|null>(null),[position,setPosition]=useState<{owner:Owner;history:(string|null)[];index:number;offset:number}|null>(null),[loaded,setLoaded]=useState<{target:Target;value:StoredResultReviewPage|null;error:string|null}|null>(null),[selection,setSelection]=useState<{target:Target;item:StoredReviewSummary;attempt:number}|null>(null),[original,setOriginal]=useState<{selection:NonNullable<typeof selection>;value:RecordedResultReview|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
+ const target=rawTarget?.owner===scope?rawTarget:null;latest.current=target;
+ const shown=target&&loaded?.target===target?loaded:null,busy=!!target&&!shown,nav=position?.owner===scope?position:null,pageNumber=(nav?.offset??0)+(nav?.index??0)+1;
+ const selected=selection?.target===target&&shown?.value?selection.item:null,itemKey=selected&&selection?String(target!.revision)+':'+selection.attempt+':'+selected.ref.id:null,detail=selection&&selected&&original?.selection===selection?original:null;
+ const current=(o:Owner)=>mounted.current&&owner.current===o&&client.transport===o.transport;
+ const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_HISTORY_RESPONSE_INVALID';if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();return code;};
+
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;sequence.current++;detailSequence.current++;};},[]);
+ function load(cursor:string|null,index:number,history:(string|null)[],offset=0,window:StoredResultReviewPage['window']|null=null){if(!current(scope)||flight.current?.owner===scope&&latest.current===flight.current)return;const next={owner:scope,cursor,index,history,offset,window,revision:++sequence.current};flight.current=next;setSelection(null);setOriginal(null);setTarget(next);}
+ function select(item:StoredReviewSummary){if(!target||!shown?.value||busy||!current(scope))return;setOriginal(null);setSelection({target,item,attempt:++detailSequence.current});}
+ useEffect(()=>{if(!target)return;let active=true;const controller=new AbortController(),check=()=>active&&current(target.owner)&&latest.current===target;
+  readStoredResultReviewPage(client,result,target.cursor,check,controller.signal).then(value=>{if(check()&&value){if(target.window&&ordered(value.window)!==ordered(target.window))throw new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');const history=[...target.history.slice(0,target.index),target.cursor??(value.nextCursor?storedReviewRootCursor(value.nextCursor):null)],drop=Math.max(0,history.length-101);setPosition({owner:target.owner,history:history.slice(drop),index:target.index-drop,offset:target.offset+drop});setLoaded({target,value,error:null});}}).catch(cause=>{if(check())setLoaded({target,value:null,error:failure(cause)});}).finally(()=>{if(flight.current===target)flight.current=null;if(mounted.current&&owner.current===target.owner&&latest.current===target&&client.transport!==target.owner.transport){setSelection(null);setOriginal(null);setTarget(null);}});return()=>{active=false;controller.abort();};
+ },[target]);
+ useEffect(()=>{if(!selection||!selected||!target||!shown?.value)return;let active=true;const check=()=>active&&current(target.owner)&&latest.current===target&&detailSequence.current===selection.attempt;
+  readStoredResultReview(client,result,selected,check).then(value=>{if(check()&&value)setOriginal({selection,value,error:null});}).catch(cause=>{if(check())setOriginal({selection,value:null,error:failure(cause)});}).finally(()=>{if(mounted.current&&owner.current===target.owner&&latest.current===target&&client.transport!==target.owner.transport){setSelection(null);setOriginal(null);setTarget(null);}});return()=>{active=false;};
+ },[selection,shown?.value]);
+ return <section className="status-card" aria-label="보관 검수 이력"><h5>보관 검수 이력</h5><button type="button" disabled={busy} onClick={()=>load(null,0,[null])}>{target?'보관 검수 목록 다시 조회':'보관 검수 목록 조회'}</button><p>보관된 판정의 기록만 조회합니다. 최신 자동선택·현재 합격/완료 적용을 하지 않습니다. 새 저장·지연 저장은 처음부터 다시 조회해야 찾을 수 있습니다.</p>
+  {busy?<p role="status">보관 검수 목록 조회 중 · 이전 원문은 숨깁니다.</p>:null}{shown?.error?<p role="alert">{shown.error} · 검수 이력 미확인</p>:null}
+  {nav&&nav.offset>0?<p>이전 위치는 최근100개만 보존합니다. 더 오래된 위치는 처음부터 다시 조회하세요.</p>:null}
+  {shown?.value?<><p>보관 검수 {pageNumber}페이지 · {shown.value.items.length}개 · 현재 판정 미선택</p><p>조회창 <time>{shown.value.window.startedAt}</time> ~ <time>{shown.value.window.expiresAt}</time> · 고정 DB snapshot이 아닙니다.</p>{shown.value.items.length?<ul>{shown.value.items.map(i=><li key={i.ref.id}><button type="button" aria-pressed={selected?.ref.id===i.ref.id} onClick={()=>select(i)}>보관 검수 원문 {i.ref.id}</button><p>{i.outcome==='REWORK'?'보완 필요':'차단'} · 검수자 {i.reviewedBy.userId} · {i.sameAsSubmitter?'동일 제출자':'다른 주체 · 독립성 인증 아님'} · <time dateTime={i.reviewedAt}>{i.reviewedAt}</time></p><p>기준 {i.criteriaRef.id} v{i.criteriaRef.version}</p></li>)}</ul>:<p>이 페이지의 보관 검수 없음 · 전체 부재/정상/완료로 판단하지 않습니다.</p>}{shown.value.nextCursor?<button type="button" disabled={busy} onClick={()=>load(shown.value!.nextCursor,nav!.index+1,nav!.history,nav!.offset,shown.value!.window)}>더 이전 검수 목록 조회</button>:null}</>:null}
+  {nav&&nav.index>0?<button type="button" disabled={busy} onClick={()=>load(nav.history[nav.index-1]!,nav.index-1,nav.history,nav.offset,shown?.value?.window??target?.window??null)}>더 최근 검수 목록 조회</button>:null}
+  {shown?.error&&target?<button type="button" disabled={busy} onClick={()=>load(target.cursor,target.index,target.history,target.offset,target.window)}>같은 검수 목록 다시 조회</button>:null}
+  {selected&&!detail?<p role="status">선택 검수 고정 원문 대조 중 · 이전 원문은 숨깁니다.</p>:null}{detail?.error?<p role="alert">{detail.error} · 검수 원문 미확인</p>:null}
+  {detail?.value?<article aria-label="보관 검수 원문"><h5>보관 검수 원문 · 현재 기준 적용·실제 증거 검증 아님</h5><p>{detail.value.ref.id} · {detail.value.ref.contentHash}</p><p>{detail.value.snapshot.input.reason}</p><ul>{detail.value.snapshot.input.items.map(i=><li key={i.criterionId}>{i.criterionId} · {i.outcome==='REWORK'?'보완 필요':'차단'} · {i.reason}</li>)}</ul><p>기준 원조건의 coverage/실제 증거를 재검증하지 않은 보관 기록입니다. 검수 합격·업무 완료·정식 실패집계·보완 실행은 하지 않습니다.</p><details><summary>고정 판정·작성자·기준/원제출 참조 전체</summary><pre>{JSON.stringify(detail.value,null,2)}</pre></details><ReviewCriteriaOriginal key={[itemKey,assignment.ref.id,assignment.ref.version,assignment.ref.contentHash].join(':')} client={client} assignment={assignment} review={detail.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/><NextActionBasisPanel key={JSON.stringify([session.user.id,session.clientId,itemKey,assignment.ref])} client={client} result={result} assignment={assignment} review={detail.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/><ResultReworkEditor key={itemKey} client={client} assignment={assignment} result={result} review={detail.value} responsibleState={responsibleState} session={session} reworks={reworks} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/></article>:null}
+ </section>;
+}
+/** 부모는 선택 원문/조회 세대로 key를 지정한다. 재조회 중에는 앞선 원문을 노출하지 않는다. */
+export function ResultReviewSources({client,projectId,result,assignment,onAuthenticationLost,onAccessUnavailable,criteria,responsibleState}:{client:ApiClient;projectId:string;result:SubmittedResultView;assignment:ConfirmedAssignmentView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void;criteria:CriteriaEditorProps;responsibleState?:ResponsibleSessionState|null}){
+ const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{revision:number;value:ResultReviewSourcesView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
+ const shown=loaded?.revision===revision?loaded:null,pending=revision>0&&!shown;
+ useEffect(()=>{if(!revision)return;let active=true;
+  readResultReviewSources(client,projectId,result,assignment,()=>active).then(value=>{if(active&&value)setLoaded({revision,value,error:null});}).catch(cause=>{if(!active)return;const error=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_SOURCE_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(error.code)?error.code:'RESULT_REVIEW_SOURCE_RESPONSE_INVALID';setLoaded({revision,value:null,error:code});if([401,403,404].includes(error.status))unavailable.current(code);if(error.status===401)lost.current();});
+  return()=>{active=false;};
+ },[client,projectId,result,assignment,revision]);
+ const d=shown?.value?.assignment.snapshot.definition;
+ return <section aria-label="검수 기준 원문"><h4>검수 기준 원문</h4><button type="button" disabled={pending} onClick={()=>setRevision(v=>v+1)}>{revision?'검수 기준 원문 다시 조회':'검수 기준 원문 조회'}</button>
+  <p>확정 임무의 완료·검증 조건과 선택 제출을 대조해 조회합니다. 조회는 검수 합격이나 현재 기준 적용 확인이 아닙니다.</p>
+  {pending?<p role="status">선택 제출·확정 임무 원문 대조 중 · 이전 조회 자료는 숨깁니다.</p>:null}
+  {shown?.error?<p role="alert">{shown.error} · 검수 기준 원문 미확인. 다른 자료로 대체하지 않습니다.</p>:null}
+  {shown?.value&&d?<div><p>확정 임무: {shown.value.assignment.ref.id} · v{shown.value.assignment.ref.version} · {shown.value.assignment.ref.contentHash}</p><h5>완료 조건 원문</h5><ul>{d.acceptanceCriteria.map((v,i)=><li key={i}>{v}</li>)}</ul><h5>검증 조건 원문</h5><ul>{d.verificationRequirements.map((v,i)=><li key={i}>{v}</li>)}</ul><h5>아직 확인되지 않은 항목</h5><ul>{shown.value.issues.map(code=><li key={code}>{labels[code]}</li>)}</ul><details><summary>확정 기준·환경 참조 원문</summary><pre>{JSON.stringify({baselineRefs:d.baselineRefs,environmentRef:d.environmentRef},null,2)}</pre></details><p>보완·차단 검수 기록 연결 / 합격 판정·보완 배정 미연결 · 원 제출의 실패/미실행은 유지됩니다.</p></div>:null}
+  <HistoricalExecutionSource key={'execution:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+<StoredUnderstandingHistory review={criteria.understanding?{session:criteria.session,storage:criteria.understanding}:undefined} key={'understanding:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <ResultArtifactDownloads client={client} result={result} session={criteria.session} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <ResultArtifactTexts key={'artifacts:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <ReportedCommandEvidenceFiles key={'command-evidence:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <StoredResultReviewHistory key={result.ref.id+':'+result.ref.contentHash} client={client} result={result} assignment={assignment} session={criteria.session} responsibleState={responsibleState} reworks={criteria.reworks} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  <StoredResultReworkHistory key={'reworks:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} assignment={assignment} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
+  {shown?.value?<ResultCriteriaEditor key={revision} client={client} assignment={shown.value.assignment} {...criteria} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+  {shown?.value?<StoredCriteria key={'stored:'+revision} client={client} assignment={shown.value.assignment} result={shown.value.result} session={criteria.session} reviews={criteria.reviews} editor={criteria} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+ </section>;
+}
+/** 별도 명시 목록/원문 조회다. 조회한 버전을 프로젝트의 활성 기준으로 적용하지 않는다. */
+export function StoredCriteria({client,assignment,result,session,reviews,editor,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;session:DocumentSession;reviews?:ResultReviewBuffers;editor?:CriteriaEditorProps;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{revision:number;value:StoredCriteriaList|null;error:string|null}|null>(null),[selected,setSelected]=useState<StoredCriteriaSummary|null>(null),[attempt,setAttempt]=useState(0),[original,setOriginal]=useState<{key:string;value:RegisteredCriteria|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
+ const shown=loaded?.revision===revision?loaded:null,key=selected?[revision,selected.ref.id,selected.ref.version,selected.ref.contentHash,attempt].join(':'):null,detail=key&&original?.key===key?original:null;
+ const [preparing,setPreparing]=useState(false),[revisionError,setRevisionError]=useState<string|null>(null),working=useRef(false),alive=useRef(true);
+ const epoch=useRef(0),identity=useRef<{client:ApiClient;key:string}|null>(null),identityKey=ordered([session.user.id,session.clientId,assignment.projectId,assignment.ref,key]);
+ if(identity.current?.client!==client||identity.current.key!==identityKey){epoch.current++;identity.current={client,key:identityKey};}
+ const latest=useRef({client,assignment,session,editor,key,detail});latest.current={client,assignment,session,editor,key,detail};
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ const replaceable=!!editor&&(!editor.buffer||!!editor.buffer.stored&&!editor.buffer.dirty&&!editor.buffer.uncertain&&editor.buffer.ownerUserId===session.user.id&&editor.buffer.ownerClientId===session.clientId&&ordered(editor.buffer.assignmentRef)===ordered(assignment.ref));
+ async function beginRevision(){
+  if(working.current||!replaceable||!detail?.value||!selected||!editor)return;
+  const captured=latest.current,requestEpoch=epoch.current,chosen=selected,previous=editor.buffer,original=detail.value;
+  const active=()=>{const now=latest.current;return alive.current&&epoch.current===requestEpoch&&now.client===captured.client&&now.session.user.id===captured.session.user.id&&now.session.clientId===captured.session.clientId&&ordered(now.assignment)===ordered(captured.assignment)&&now.key===captured.key&&now.detail?.value===original&&now.editor?.buffer===previous;};
+  working.current=true;setPreparing(true);setRevisionError(null);
+  try{
+   const base=await readStoredCriteria(client,assignment,chosen,active);if(!active()||!base)return;
+   const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
+   const savedHistory=previous?.stored?[...(previous.savedHistory??[]),structuredClone(previous.stored)]:[];
+   const next={bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,assignmentRef:structuredClone(assignment.ref),controlGeneration:generation,rows:[],base:structuredClone(base),items:structuredClone(base.input.items),reason:base.input.reason,pending:null,stored:null,dirty:false,uncertain:false,failure:null,...(savedHistory.length?{savedHistory}:{})};
+   editor.onChange(current=>active()&&ordered(current)===ordered(previous)?next:current);
+  }catch(cause){if(active())setRevisionError(failure(cause));}
+  finally{working.current=false;if(alive.current)setPreparing(false);}
+ }
+ const [coverageAttempt,setCoverageAttempt]=useState(0),[coverage,setCoverage]=useState<{key:string;value:ReportedCoverageView|null;error:string|null}|null>(null);
+ const coverageKey=detail?.value&&coverageAttempt?[key,result.ref.id,result.ref.version,result.ref.contentHash,coverageAttempt].join(':'):null,comparison=coverageKey&&coverage?.key===coverageKey?coverage:null;
+ const failure=(cause:unknown)=>{const error=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(error.code)?error.code:'RESULT_CRITERIA_RESPONSE_INVALID';if([401,403,404].includes(error.status))unavailable.current(code);if(error.status===401)lost.current();return code;};
+ useEffect(()=>{if(!revision)return;let active=true;readStoredCriteriaList(client,assignment,()=>active).then(value=>{if(active&&value)setLoaded({revision,value,error:null});}).catch(cause=>{if(active)setLoaded({revision,value:null,error:failure(cause)});});return()=>{active=false;};},[client,assignment,revision]);
+ useEffect(()=>{if(!key||!selected||!shown?.value)return;let active=true;readStoredCriteria(client,assignment,selected,()=>active).then(value=>{if(active&&value)setOriginal({key,value,error:null});}).catch(cause=>{if(active)setOriginal({key,value:null,error:failure(cause)});});return()=>{active=false;};},[client,assignment,selected,key,shown?.value]);
+ useEffect(()=>{if(!coverageKey||!detail?.value)return;let active=true;readReportedCoverage(client,result,detail.value,()=>active).then(value=>{if(active&&value)setCoverage({key:coverageKey,value,error:null});}).catch(cause=>{if(active)setCoverage({key:coverageKey,value:null,error:failure(cause)});});return()=>{active=false;};},[client,result,detail?.value,coverageKey]);
+ return <section className="status-card" aria-label="보관된 검수 기준"><h5>보관된 검수 기준</h5><button type="button" disabled={revision>0&&!shown} onClick={()=>{epoch.current++;setCoverage(null);setCoverageAttempt(0);setSelected(null);setOriginal(null);setRevision(v=>v+1);}}>{revision?'보관 기준 목록 다시 조회':'보관 기준 목록 조회'}</button><p>현재 임무에 등록된 불변 버전을 조회합니다. 최신 자동선택·기준 적용·검수 합격은 하지 않습니다.</p>
+  {revision>0&&!shown?<p role="status">보관 기준 목록 조회 중 · 이전 원문은 숨깁니다.</p>:null}
+  {shown?.error?<p role="alert">{shown.error} · 보관 기준 미확인</p>:null}
+  {shown?.value?<><p>저장된 기준 {shown.value.items.length}개 · 활성 기준 미선택</p>{shown.value.items.length?<ul>{shown.value.items.map(item=><li key={item.ref.id+':'+item.ref.version}><button type="button" aria-pressed={selected?.ref.id===item.ref.id&&selected.ref.version===item.ref.version} onClick={()=>{epoch.current++;setCoverage(null);setCoverageAttempt(0);setOriginal(null);setAttempt(v=>v+1);setSelected(item);}}>보관 기준 원문 {item.ref.id} v{item.ref.version}</button><p>조건 {item.conditionCount}개 · 작성자 {item.createdBy} · <time dateTime={item.registeredAt}>{item.registeredAt}</time></p></li>)}</ul>:<p>등록된 보관 기준 없음 · 정상/완료로 판단하지 않습니다.</p>}{shown.value.hasMore?<p>최근20개 버전만 조회했습니다. 오래된 추가 이력은 이 목록에서 미연결입니다.</p>:null}</>:null}
+  {selected&&!detail?<p role="status">선택한 고정 버전 원문 대조 중 · 이전 원문은 숨깁니다.</p>:null}
+  {detail?.error?<p role="alert">{detail.error} · 선택 기준 원문 미확인</p>:null}
+  {detail?.value?<article aria-label="보관 기준 원문"><h5>조회한 기준 · 활성/검수 합격 아님</h5><p>{detail.value.ref.id} · v{detail.value.ref.version} · {detail.value.ref.contentHash}</p><p>{detail.value.input.reason}</p><ul>{detail.value.snapshot.items.map(i=><li key={i.criterionId}>{i.criterionId} · {i.testId} · {i.kind} · 필수</li>)}</ul><details><summary>기준·원조건 연결·환경 전체 원문</summary><pre>{JSON.stringify(detail.value,null,2)}</pre></details><p>이 조회를 검수 저장·업무 완료·실행 허가로 사용하지 않습니다.</p></article>:null}
+  {detail?.value&&editor?<><button type="button" disabled={preparing||!replaceable} onClick={()=>void beginRevision()}>선택 원문으로 검수 기준 개정</button>{!replaceable?<p>기존 입력·고정 명령·미확인 결과를 보존 중입니다. 다른 기준으로 덮어쓰지 않습니다.</p>:null}</>:null}
+  {preparing?<p role="status">선택 원문·현재 제어를 다시 확인 중</p>:null}{revisionError?<p role="alert">{revisionError} · 개정 입력을 만들지 않았습니다.</p>:null}
+  {detail?.value?<button type="button" disabled={!!coverageKey&&!comparison} onClick={()=>{epoch.current++;setCoverage(null);setCoverageAttempt(v=>v+1);}}>{coverageAttempt?'선택 기준으로 제출 보고 다시 대조':'선택 기준으로 제출 보고 대조'}</button>:null}
+  {coverageKey&&!comparison?<p role="status">선택 기준·제출 보고 대조 중 · 이전 대조는 숨깁니다.</p>:null}
+  {comparison?.error?<p role="alert">{comparison.error} · 보고 대조 미확인</p>:null}
+  {comparison?.value?<article aria-label="조건별 보고 대조"><h5>조건별 보고 대조 · 실제 검수·완료 판정 아님</h5><p>수행자 보고만 대조했습니다. 증거의 실제 관측·원본 바이트·합격 여부는 미검증입니다.</p><p>기준 {comparison.value.criteriaRef.id} v{comparison.value.criteriaRef.version} · 제출 {comparison.value.resultRef.id}</p><ul>{comparison.value.items.map(i=><li key={i.criterionId}><p>{i.criterionId} · {i.testId} · 필요 시험 {i.requiredKind}</p><strong>{({NOT_REPORTED:'미보고',REPORTED_NOT_EXECUTED:'보고된 미실행',REPORTED_ONLY:'수행자 보고만 있음',MISMATCH:'보고 불일치'})[i.state]}</strong><p>수행자 보고 상태: {i.reportedStatus??'없음'} · 증거 미검증</p><details><summary>조건별 이유·보고 원문</summary><pre>{JSON.stringify(i,null,2)}</pre></details></li>)}</ul><details><summary>등록 기준 밖 보고 · {comparison.value.unmapped.length}건</summary><pre>{JSON.stringify(comparison.value.unmapped,null,2)}</pre></details><p>대조 경고: {comparison.value.issues.join(', ')||'없음 · 합격 의미 아님'}</p><p>검수 저장·완료 인정·정식 실패 집계·실행 허가를 하지 않았습니다.</p></article>:null}
+  {comparison?.value?<ReportedCompletionGap key={'gap:'+coverageKey} coverage={comparison.value}/>:null}
+  {detail?.value&&comparison?.value?<ReportedEvidenceFiles key={coverageKey} client={client} result={result} criteria={detail.value} coverage={comparison.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+  {detail?.value&&reviews?<ResultReviewEditor key={resultReviewBufferKey(session,result,detail.value)} client={client} result={result} criteria={detail.value} session={session} reviews={reviews} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+ </section>;
+}
+/** 별도 명시 보완/차단 기록. 미확인 명령은 App 메모리에서 화면 이탈 뒤에도 같은 ID로 남긴다. */
+function ResultReviewEditor({client,result,criteria,session,reviews,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;criteria:RegisteredCriteria;session:DocumentSession;reviews:ResultReviewBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+ const key=resultReviewBufferKey(session,result,criteria),buffer=reviews.buffers[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),live=useRef(true),working=useRef(false);useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+ const bound=buffer&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&JSON.stringify(buffer.resultRef)===JSON.stringify(result.ref)&&JSON.stringify(buffer.criteriaRef)===JSON.stringify(criteria.ref)?buffer:null;
+ const latest=useRef({key,buffer,bound,busy,session,result,criteria});latest.current={key,buffer,bound,busy,session,result,criteria};
+ const change=(v:ResultReviewBuffer)=>reviews.onChange(key,current=>current?.bindingId===v.bindingId?v:current);
+ const edit=(v:ResultReviewBuffer)=>{if(!bound||bound.pending||bound.stored||working.current)return;setError(null);change({...v,dirty:true,failure:null});};
+ async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'){
+  if(working.current)return;working.current=true;setBusy(true);setError(null);const b=bound;let attempted=false;
+  try{const generation=await documentControl(client,result.snapshot.scope.projectId,session);if(!live.current)return;
+   if(mode==='CREATE'){if(b)return;const next:ResultReviewBuffer={bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,resultRef:structuredClone(result.ref),criteriaRef:structuredClone(criteria.ref),controlGeneration:generation,rows:criteria.snapshot.items.map(i=>({criterionId:i.criterionId,outcome:'',reason:''})),outcome:'',reason:'',pending:null,stored:null,dirty:false,uncertain:false,failure:null};reviews.onChange(key,current=>current??next);return;}
+   if(mode==='REBIND'){if(!b||b.pending||b.stored||b.uncertain)throw new ApiError('RESULT_REVIEW_BINDING_INVALID');change({...b,controlGeneration:generation,failure:null});return;}
+   if(!b||b.stored||b.controlGeneration!==generation)throw new ApiError('PROJECT_CONTROL_CHANGED',409);
+   if(mode==='PREPARE'){if(b.pending||b.uncertain)return;const pending=await prepareResultReviewWrite(result,criteria,{resultRef:result.ref,criteriaRef:criteria.ref,outcome:b.outcome,items:b.rows.map(i=>({...i,evidenceRefs:[]})),reason:b.reason},session,generation);if(live.current)change({...b,pending,failure:null});return;}
+   if(!b.pending)return;attempted=true;change({...b,uncertain:true,failure:null});const stored=await saveResultReviewWrite(client,b.pending,session,()=>live.current);if(live.current&&stored)change({...b,stored,dirty:false,uncertain:false,failure:null});
+  }catch(cause){if(!live.current)return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_INPUT_INVALID';setError(code);if(b)change({...b,failure:{code,status:e.status},uncertain:b.uncertain||attempted&&(e instanceof ReviewReadbackUnconfirmed||!isKnownDocumentRejection(e))});if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();}
+  finally{working.current=false;if(live.current)setBusy(false);}
+ }
+ const frozen=busy||!!bound?.pending||!!bound?.stored;
+ function releaseUnsentPreparation(){
+  if(!bound?.pending||bound.uncertain||bound.stored||bound.failure||busy||working.current||!live.current)return;
+  const chosen=bound,pending=bound.pending,command=pending.command,fingerprint=ordered(chosen),owner=session.user.id,clientId=session.clientId,projectId=result.snapshot.scope.projectId,resultRef=ordered(result.ref),criteriaRef=ordered(criteria.ref);
+  const currentUnsent=(value:ResultReviewBuffer|null)=>{
+   const now=latest.current;
+   return live.current&&!working.current&&!now.busy&&now.key===key&&now.buffer===chosen&&now.bound===chosen&&value===chosen&&value.pending===pending&&pending.command===command&&ordered(value)===fingerprint
+    &&now.session.user.id===owner&&now.session.clientId===clientId&&now.result.snapshot.scope.projectId===projectId&&now.criteria.projectId===projectId&&ordered(now.result.ref)===resultRef&&ordered(now.criteria.ref)===criteriaRef
+    &&value.ownerUserId===owner&&value.ownerClientId===clientId&&ordered(value.resultRef)===resultRef&&ordered(value.criteriaRef)===criteriaRef&&!value.uncertain&&!value.stored&&!value.failure
+    &&pending.ownerUserId===owner&&command.clientId===clientId&&command.projectId===projectId&&command.controlGeneration===value.controlGeneration&&pending.result.snapshot.scope.projectId===projectId&&pending.criteria.projectId===projectId&&ordered(pending.result.ref)===resultRef&&ordered(pending.criteria.ref)===criteriaRef&&ordered(command.payload)===ordered({resultRef:value.resultRef,criteriaRef:value.criteriaRef,outcome:value.outcome,items:value.rows.map(i=>({...i,evidenceRefs:[]})),reason:value.reason});
+  };
+  if(!currentUnsent(chosen)||!confirm('미전송 검수 저장 준비만 해제하고 입력 수정으로 돌아갈까요? 서버 저장 취소나 승인 회수가 아니며, 전송한 명령은 취소하지 않습니다.')||!currentUnsent(chosen))return;
+  reviews.onChange(key,current=>currentUnsent(current)?{...current!,pending:null,dirty:true}:current);
+ }
+ return <section className="status-card" aria-label="결과 검수 기록"><h5>보완·차단 검수 기록</h5><p>실제 증거 검증/합격은 미연결입니다. 보완/차단 이유만 기록하며 원제출을 변경하거나 업무 완료·실패 집계·보완 실행을 하지 않습니다.</p>
+  {!bound?<button type="button" disabled={busy||!!buffer} onClick={()=>void run('CREATE')}>검수 판정 작성</button>:<>
+   <label>검수 총판정<select aria-label="검수 총판정" disabled={frozen} value={bound.outcome} onChange={e=>edit({...bound,outcome:e.target.value as ReviewOutcome|''})}><option value="">직접 선택</option><option value="REWORK">보완 필요</option><option value="BLOCKED">차단</option></select></label>
+   {bound.rows.map((row,index)=><fieldset key={row.criterionId} disabled={frozen}><legend>{row.criterionId}</legend><label>조건 판정 {index+1}<select aria-label={'조건 판정 '+(index+1)} value={row.outcome} onChange={e=>edit({...bound,rows:bound.rows.map((r,i)=>i===index?{...r,outcome:e.target.value as ReviewOutcome|''}:r)})}><option value="">직접 선택</option><option value="REWORK">보완 필요</option><option value="BLOCKED">차단</option></select></label><label>조건 판정 이유 {index+1}<textarea maxLength={20000} value={row.reason} onChange={e=>edit({...bound,rows:bound.rows.map((r,i)=>i===index?{...r,reason:e.target.value}:r)})}/></label></fieldset>)}
+   <label>검수 총판정 이유<textarea disabled={frozen} maxLength={20000} value={bound.reason} onChange={e=>edit({...bound,reason:e.target.value})}/></label>
+   {!bound.pending&&!bound.stored?<><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('PREPARE')}>검수 기록 저장 준비</button><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('REBIND')}>현재 제어로 미전송 검수 입력 재결박</button></>:null}
+   {bound.pending&&!bound.stored?<><details><summary>검수 기록 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void run('SAVE')}>{bound.uncertain||bound.failure?'같은 검수 기록 명령 재확인':'검수 기록 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={()=>change({...bound,pending:null,dirty:true,failure:null})}>확인된 거절 이후 검수 입력 수정</button>:null}</>:null}
+   {bound.pending&&!bound.stored&&!bound.uncertain&&!bound.failure?<button type="button" disabled={busy} onClick={releaseUnsentPreparation}>미전송 검수 저장 준비 해제</button>:null}
+   {bound.uncertain?<p role="status">검수 기록 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
+   {bound.stored?<article aria-label="검수 기록 원문"><h5>검수 기록 원문 확인 완료 · 업무 완료/실행 허가 아님</h5><p>검수자와 제출자: {bound.stored.snapshot.sameAsSubmitter?'동일 주체 · 독립 검수 아님':'다른 주체 · 독립성 인증은 아님'}</p><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 검수 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
+  </>}
+  {error||bound?.failure?<p role="alert">{error??bound?.failure?.code} · 검수 기록 완료로 표시하지 않습니다.</p>:null}{busy?<p role="status">현재 제어·고정 명령·원문 확인 중</p>:null}<p className="meta">화면왕복 입력/미확인 명령은 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.</p>
+ </section>;
+}

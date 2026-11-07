@@ -1,5 +1,28 @@
 # P02 기술 선택 — TD-01·TD-02·TD-03 승인·상세 계약
 
+## A-3 설계 기준 결정 — 실행 승인 아님
+
+후속 PMO AV3-PMO-A3-LOCAL-IMPLEMENTATION 13:47:32Z는13:34:33Z 요청완료 후12분59초·후속답변/중지 부재를 대조한 정확 권장A 적용이다. 기존 r2 hash095B5FEF…4D035로 code/새SQL1초안/명시UI11·로컬합성 QA까지만 작성한다. 실제PG/정식DB·실credential/키/native파일/OS·source/Agent/서비스/Oracle/main은 제외다. 내부 구현 순서는 A3_SOURCE_READ_IMPLEMENTATION.md에서 Main이 관리하며 별도 PMO 다음배정을 기다리지 않는다. N1 순수 codec/서명 후보만 검증됐으며 기존45SQL/상태token/등록parser는 변경하지 않았다.
+
+독립 문서검수 최초 C0/I1/M1을 접수했다. exact root의 인증 전달 누락(I1)은 상태token/OWNER 조회를 넓히지 않는 별도 보호 permit과 서버 snapshot→scope pathHintHash→connector 단일입력으로 보정했다. 시각 관계 미정(M1)은 주장 시각/서버 수신 분리·오차30초·순서/구간 검사·서버 기한 무관용으로 명시했다. 이 보정은 문서 범위이며 실제 OS 경로 안전·키/보고 실행·DB 검증을 뜻하지 않는다. 보정 scoped 검토 결과는 WORK_STATUS의 실제 수신 기록으로만 판정한다.
+
+PMO AV3-PMO-A3-READ-OBSERVATION-DESIGN 2026-10-17T13:07:30Z는 원 요청12:56:17Z 이후11분13초·후속 중지/거절 부재를 대조한 정확 권장A 적용 결정이다. 승인 범위는 문서 상세설계뿐이며 [SOURCE_READ_OBSERVATION_A3.md](SOURCE_READ_OBSERVATION_A3.md)에 payload/endpoint·별도 P-256 purpose/nonce 교환·신규4표 제안·보호/검증/복구를 기록한다. 정책 변경으로 기존 등록 기준이 달라지면 옛 binding을 자동 재확정하지 않는다. 등록token 확대·SQL/키/ACL/native/파일·Agent·서비스 실행0이다. 실제 code/SQL hash와 유한 자원은 후속 승인에서 대조한다.
+
+## A-2R 한정 실행·미확인 경계
+- PMO11:57:30Z의 정확 권장안 결정과 Main 선정 실행계획 A2R_SOURCE_REGISTRY.md를 따른다. caller의local SHA/환경binding은 실행 승인 원문 자체가 아니며 플랫폼 직접승인 요구/거절을 우회하지 않는다.
+- source root는 USER_DECLARED/UNVERIFIED 위치선언으로만 취급한다. 현재root 실제읽기/쓰기·관측/baseline/grant·Agent/비용/외부전송/OS helper·제품service/Oracle/main은 별도 경계다.
+- 정식data보존을 위해 기존 migrate-development의 noarg catalog/fixture 동작과 고정 schema-only 모드를 분리한다. 임의SQL경로/과거SQL개정/재시드0. commit전 실패ROLLBACK, commit후 문제는 신규자료보존·기능닫기/forward보정; 자동DROP/reset0.
+- QA-only 비밀은 메모리·자식환경/SQL stdin 범위이며 원문로그/Git0, 기존Credential/CA/권한파일 재사용/변경0. 별도 PG15 container tmpfs 한곳만, 실제HTTP socket 대신 Fastify.inject와 실제PG 각 transaction COMMIT으로 한정한다. actualSocketHttp/servedBrowser는 UNVERIFIED로 유지.
+- SQL hash 상호운용(Unicode/따옴표/backslash/CRLF), 실제rollback/멱등/CAS·구권한/VIEWER·철회이력·정확QA정리/정식oldfingerprint는 해당실행 전까지 미검증이다. unit/build만으로 소급PASS하지 않는다.
+
+
+## FN08-CONTRACT-A1 한정 결정 — 2026-10-17
+
+신산님 직접 승인 A-1은 참조 전용 SourceScope/dispatch envelope·receipt와 비권위 수신함 코드·격리 합성시험이다. 기존1GiB spool/2시간 자동 범위 상한 안에서 첫 수신함은 명시 maxBytes≤1GiB·maxEntries≤1024·record≤4096bytes, scope 전체 targets≤200·경로UTF-8≤1024bytes로 유한화한다. 상한을 높이거나 실제 Agent를 실행하는 권한이 아니다. 새로운 의존성/설치/서비스·실제 source/정식DB/ACL/키/계정/CS1504 nativehelper 변경0이다.
+
+단일 수신 lock+wx 불변 파일·file.sync를 선택했다. 프로세스 재시작 재수신의 중복 기록은 막지만 전원손실 directory metadata·악의적 같은 사용자·OS 경로교체/보호·다중기기/서버ACK·전체 exactly-once를 보장하지 않는다. 미확인 lock/부분 파일은 UNKNOWN으로 보존하며 자동복구/새 부작용0이다. 실제 보호 journal의 저장 위치/ACL·키는 이번 결정에서 미정이며 합성 시험root로 대체하지 않는다. 기존 runtime·서비스·실패근거를 보존한다. rollback은 신규 코드의 일반 revert이며 SQL/사용자자료 reset이나 자동kill은 없다.
+
+
 상태: **TD-01 A안·TD-02 Anvil 전용 로그인·TD-03 유한 기본 정책 설계 승인 / P02 종료 대조**. 2026-10-16 Main 어울. 상위 계약은 설계 r8, 작업계획 r7 P02(r3 승인 유지), 승인 P01 REVIEW-02다. 설계 선택 승인은 실제 환경 변경 승인이 아니다. 미확정 정책/자원/Agent 사용권을 임의 확정하지 않는다.
 
 ## 1. 선택 기준

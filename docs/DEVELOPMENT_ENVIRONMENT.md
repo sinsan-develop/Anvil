@@ -1,6 +1,317 @@
+## 2026-10-27 12:31 KST 복구 전제 추가 관측 — 기존 네트워크도 없음
+
+## 2026-10-27 20:02 KST P03 RO 구조조사·일회 자원 회수
+
+- 새직접승인 exact20a807dd/planC996/controllerB071/shell1568으로구조metadata조사1회를수행했다. 32858a exit0/complete=true·image594290e9·원volume anvil-v3-development-pgdata RO/nocopy/원identity일치, rootUID999/GID999/mode700·1873항목/1846파일/27dir·symlink/special0·logical75529846/allocated75739136을확인했다. 파일명/원내용/hash출력0·PG기동/SQL/복구/서비스/Secret/권한/Agent0이다.
+- 09e2f6 exact sourceQA2755files175dirs·51618912bytes개별회수후7d1c3b 11:02:17.542Z(20:02:17 KST) 별도조회에서QA/helper name/fullID부재·원volumeidentity/소비자0을확인했다. /home/daon/.local/share/anvil-v3-pgdiscovery-20261027-r2 0700원장의0600 grant/consumed/receipt3개는의도보존·단발소진이다. 상세 P03_PG_DISCOVERY_METADATA_R2_ACTUAL_RESULT_20261027.md·WORK_STATUS를따른다.
+- 구조사실만확인했으며DB무결성/현재schema·실제복구/환경ready는미검증이다. 원본RO→보호사본복제/전후·사본지문검증,사본PG기동/정식전환은각별도정확효과검토·결정이필요하다. 이번metadata승인/UID1001잔여위험수락은재사용하지않는다.
+
+
+- 9ba767의 등록 anvil-v3-development network inspect는 not-found다. 과거 network ID d3253166...를 현재 신원/허가로 재사용하지 않는다. PG 컨테이너 복구 외에 새 네트워크 생성/연결 정의의 정확 결정도 필요하며 자동 생성하지 않았다.
+- 같은 읽기에서 원 named volume은 local·CreatedAt2026-10-16T03:53:33+09:00·project=v3/owner=P03/instance=dc22a0629e79f259dcd935845e88e58e를 보존했다. 이 볼륨을 참조하는 컨테이너 목록도0이다. 메타데이터 일치가 DB 내용/무결성 증명은 아니다.
+- 기존 보호 root는 디렉터리0700/uid1000/gid1000, bootstrap-password는 일반파일0600/uid1000/gid1000·실경로가 등록 경로와 같다. 값/비밀번호/DSN은 읽거나 출력하지 않았다.
+- 캐시 이미지의 선택적 User 필드가 없어 초기 format 조회는 실패했다. 2784ae가 optional index로03:31:03.294Z 재조회해 User=null(명시 사용자 없음), Entrypoint=[docker-entrypoint.sh], Cmd=[postgres], 선언VOLUME=/var/lib/postgresql/data를 확인했다. 앞선 metadata QA UID999는 정식 실행 정의가 아니다.
+- 최초 provision-development.ts는 신규 자원/Secret/역할·schema 생성 전용으로, 기존 network/volume/root 존재를 거절한다. 기존 볼륨 복구에 --create를 재실행하거나 guard를 제거하지 않는다. 정상 PG 시작/중지에는 WAL·제어/통계파일 등 원볼륨 쓰기 가능성이 있어 바이트 불변 rollback을 약속하지 않는다.
+- 추가 SQL/DB 연결·원본문·Secret·권한/서비스·자원 생성/변경0이다. 복구 실행은 현재 볼륨 보존·이미지/entrypoint/UID·네트워크·보호 참조·기한·실패시 정상정지/잔여보존·새 소유 표식이 고정된 별도 판단 후에만 가능하다.
+
+## 2026-10-27 12:21 KST 정식 개발 환경 읽기 갱신 — PG 컨테이너 없음/볼륨 metadata만 확인
+
+- Windows3830/5546 LISTEN0(0dc5fc,03:08:29.715Z). WSL Docker daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e/NAME SINSAN은 기존 기록과 같고, 등록 anvil-v3-development-pg inspect는 no-such-object였다. Anvil 이름 필터의 컨테이너는0개(cf1f46/89ce36)다. 삭제 주체·원인은 미확정이다.
+- 등록 named volume anvil-v3-development-pgdata와 driver local, 캐시 PG15 이미지 sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f는 존재한다(4ad1c0). 볼륨 이름 존재만으로 자료 무결성·DB/schema 상태를 확인했다고 하지 않는다.
+- 사전등록 일회 anvil-v3-pgmeta-20261027-r1의 ID2ea8ad20938c7ba3d59cd073ba92e6ce37058aa7cd74bc032e7d5bf53d7f1bc4는 위 캐시 이미지/pull=never·network none·read-only rootfs·uid/gid999·capdropALL/no-new-privileges·pids16/memory32MiB/CPU0.2, named volume을 /var/lib/postgresql/data에 readonly/volume-nocopy로 연결했다. 이미지 선언 VOLUME1과 mount1/원볼륨RO를 시작 전 확인했다. postgres/초기화 entrypoint는 실행하지 않고 shell이 regular/nonlink/8바이트 이하 PG_VERSION의 숫자 major만 읽었다.
+- e52b9e의03:19:40.866~03:19:41.468Z 생성/관측/회수에서 **PG_MAJOR=15 / PG_VERSION_BYTES=3**만 확인했다. DB 연결·SQL/본문·Secret/키 읽기·원볼륨 쓰기0. 데이터 무결성/현재 migration·실DB ready·복구/서비스 정상 증거가 아니다.
+- QA 컨테이너는 즉시 제거했고 별도89ce36(03:21:19.865Z)에서 QA0/Anvil container0/원 named volume 보존을 확인했다. 이미지/원볼륨/네트워크/정식 서비스 변경0이다.
+- 정식 WSL Git HEAD는 ff0fcd13695ae0affa2fd773dc96667e1d7c88f8(567e13)다. 새 branch 소스는 private6a5840c0에 게시됐지만 정식 checkout 전환/서비스 반영은 하지 않았다. 새 schema/자료·현재 TLS/신뢰는 이번에 조회하지 않았다.
+- 오래된 최초 PG 생성/단1회start/TLS 전환 허가를 재사용하지 않는다. 복구는 기존 볼륨 보존과 현재 배포 정의·보호 참조·네트워크/이미지·실행 영향·rollback의 새 정확 판단을 받은 뒤 수행한다. PMO에 필요한 결정/지원만 보고하고 독립 소스/계약 작업은 계속한다.
+- 원격 stdin EOF와 PowerShell의 Go-format 인자 전달 실패는 도구 오류로 WORK_STATUS에 분리했다. 형식 없는 Docker 목록과 정적 Node ssh argv로 교정했으며 초기 오류를 컨테이너/이미지 부재로 오인하지 않는다.
+
 # Anvil 재설계 개발환경
 
+- 2026-10-25 07:25 KST 새 직접승인P1: exactf8fe81e5/기존probe의정식anvil_v3_development/anvil_v3_app READ ONLY1회a02537 exit0, PG150018·migration46·0012~0017/0031미적용·고정8객체중project_methodologies만/r/application_command_columnfalse를확인했다. 스키마/제품자료/계정·Secret/TLS/서비스변경0, 전용신규Git/npm102/cache는fe1ced정리/4e9a6a별도SSH부재확인. PG는유지한다. 이는현재metadata관측만이고웹/기능복구증거가아니다. 보호source후보는준비중·native NOT_COMPILED/NOT_OS_VERIFIED이며실행차단을유지한다.
+
+- 2026-10-25 05:47 KST P0 새 직접승인 단독 기동: 기존 PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f를 1회 시작했다. StartedAt2026-10-24T20:47:32.321123587Z, 20:47:46.405713Z 관측 running/RestartCount0/OOMfalse·이후 ready marker1로 개발용 유지한다. 판정 RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED이며 DB접속/SQL·TLS·API/Web/relay 변경0이다. 아래 과거 exited 기록은 이력이며 현재 PG 상태가 아니다. 원출력 d8381e/b02f1e/d9d468·단발 허가 소진은 WORK_STATUS에 기록했다. 다음 P1 metadata/새TLS/source/launcher/schema는 별도 범위로 남는다.
+
+- 2026-10-25 보충: CurrentUser Root의 기존지문 Matches0은 해당 실행문맥의 읽기 결과만 의미한다. sandbox/실사용자 차이를 확인하지 않았으므로 호스트 신뢰 삭제·실사용자 신뢰 부재로 단정하지 않는다. FN05 관련성 시험의 등록 QA 두 경로는 각각 exact 정리·독립부재 확인했고 실제 DB/서비스/인증서·신뢰 변경은 없다.
+
+## 2026-10-25 02:39 KST 실제 사용 선행 재확인 — 서비스 중지·개발 인증서 만료
+
+- 기존 fullID PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba / API8bd8af7bfed0f98e02c0248f21dba62736c63dcd0ce8e7fdca2aa01f2726fc2c / Web677a9ceb499e92a728560e882942edfcb80a7a30aedec69d69ae25567c008a0c 모두 exited. image·StartedAt은 기존10/22 metadata와 같고 시작/중지명령0이다. Windows3830/5546 LISTEN0, WSL Gitff0fcd13695ae0affa2fd773dc96667e1d7c88f8 tracked clean을 새 읽기 확인했다. DB본문/현재schema는 조회하지 않았다.
+- 공개파일의 기존 CA thumbprint498348218A4015B341A90B10FF4FE176987D4424는2026-10-22T18:29:02Z(10/23 03:29:02KST), leaf047CD961EB4B376350A1119C46185FB6D8721F14는18:29:01Z 만료다. 개인키/Secret·현재사용자/LocalMachine신뢰 변경0. TLS우회/옛허가 재사용/자동갱신0, 정확 신규개발CA/leaf·CurrentUser신뢰 갱신 결정은 PMO에 요청했다.
+- 증거2909e9/d1bf14/940774는 현재 읽기 관측이며 서비스복구·인증/스키마·사용가능PASS가 아니다. 서비스/정식DB의 기존 특정거절과 소진 단발 범위는 유지한다.
+
+
+## 2026-10-22 09:02 KST 정식 서비스 제한 metadata — 실제 사용 선행 미충족
+
+- 새 SSH 읽기1회에서 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f/StartedAt2026-10-20T11:21:54.792276193Z, API8bd8af7bfed0f98e02c0248f21dba62736c63dcd0ce8e7fdca2aa01f2726fc2c/image sha256:6c5edefa5fc3d4038e51aa7140b4b53a9294414875af73f9d9bcd5e3aa54ac17/StartedAt2026-10-14T12:39:20.431439158Z, Web677a9ceb499e92a728560e882942edfcb80a7a30aedec69d69ae25567c008a0c/image sha256:949aaeabd0daf44caa9341b1b2c8ddfb8409e4c2b3a8e1da0aeb3784bd0627fc/StartedAt2026-10-14T12:39:21.758759563Z 모두 exited다. fullID/image/StartedAt은 앞선 관측과 같다.
+- Windows3830/5546 LISTEN0. 이번 조회는 서비스 시작/중지·실DB접속/SQL·본문/Secret·새자원0이며 정지 원인/주체·현재schema는 확인하지 않았다. 과거46 migration metadata·이전격리QA PASS를 현재 정식환경 증거로 쓰지 않는다.
+- 기존0012실행 특정거절·N4복구 PATH_GUARD/소진 단발 범위와 FN06 providerhandle r2 구현미채택은 유지한다. 새우회 runner/경로를 만들지 않으며 PMO에 기존미결의정확지원/결정처리를 요청했다. 이는 기능진도가 아닌 IX01 실제사용선행의 현재사실 기록이다. 실제복구·스키마반영·served여정은 미실행이며 전체Stage B/계획완료를 선언하지 않는다.
+
+## 2026-10-21 14:34 KST FN03 격리 QA 후속 관측
+
+- 신규 일회 FN03 Git exact2034a4d1/PG15·Node/internal net 검증은 WORKFLOW_DONE/exit0. 등록 QA 두 경로와 owner container/network/해당 Node process는 별도 SSH exit0으로 잔여0을 확인했다. 새 tmpfs DB/합성 원문·config는 폐기했고 정식 자원/기존 Secret 변경0이다. 상세 `04_test_reports/AV3/FN03_ISOLATED_DOCUMENT_RESULT.md`.
+- 정식PG metadata만 읽은 결과: fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba·현재 **exited**·StartedAt2026-10-20T11:21:54.792276193Z·restart0·image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f. ID/StartedAt/image는 아래10/20 기록과 같으나 과거running과현재상태는다르다. 이번시험시작전정식PG상태관측은없으므로중지시점/원인미확정이며자동재기동하지않는다. 이번QA명령의정식PG시작/중지/DB접속0. API/Web·현재정식schema/실화면은다시조회하지않았으므로아래기록을신규관측으로취급하지않는다.
+
+## 2026-10-20 20:22~20:23 KST 정식 PG metadata 관측 — API/Web는 중단
+
+- 이후20:57:38~21:07:38KST의새단발범위에서source95086727 migrator READ ONLY metadata1회exit0/정상close:DB18505063bytes·다른접속각집계0·표81/소유불일치·SELECT불가·RLS집계각0을확인했다. source46manifest를다시읽지않았고dump/복원/DDL·서비스0이다. 등록일회두경로는정확회수/독립부재·PG같은StartedAt/running·3830=0/5546=1/backup경로부재확인,이번양성관측은미래writer0/덤프권한·복원인증아니다. 상세BACKUP_READINESS_METADATA_RESULT/WORK_STATUS를따른다.
+
+- 후속20:48KST 도구·filesystem만새허가로확인:같은PG running/동일StartedAt·pg_dump/pg_restore15.18·보호root가용550560096256bytes/UID1000·0700/nonlink,제안backup/복원container부재. 이후DBschema/본문은조회하지않았고version프로세스각1회외새resource/서비스0이다. 향후migrator읽기caller후보는별도source/검토이며아직실DB실행0이다.
+
+- PMO 새 exact 판정 아래 기존 PG 한 개를 단1회 기동했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9·StartedAt2026-10-20T11:21:54.792276193Z/ready marker1·정상 개발용 보존이다. 아래10/19 exited는 과거 관측으로 삭제하지 않는다. 현재 항목 역시 해당 시점의 관측이며 매번 자동 재접속한 기록은 아니다.
+- exact a6682968 READ ONLY probe exit0에서 app-role anvil_v3_app/PG15.18·migration46/고정8개중project_methodologies만존재를확인했다. 신규0012~0017/0031은미적용, API/Web3830 listener0·PG5546 listener1이다. 화면/기능 복구나 전체객체 인증은아니다. 정식DB 본문/DDL·서비스반영/Secret/Agent변경0.
+- 일회Git/cache 두경로는exact 회수 후별도SSH에서부재확인했다. 정의rawhash1eb/a721은Docker Mounts두항목배열순서차이로계산대응했고원raw차이를결과서에보존했다. 기존 ID/image/network/volume/port/labels/마운트필드의변경명령0. 상세/46 ID-checksum은docs/04_test_reports/AV3/FN02/FORMAL_SCHEMA_METADATA_RESULT.md와WORK_STATUS를따른다.
+
+## 2026-10-19 FN12 source QA 별도 종료 관측 — 정식 PG 정지/원인 미확정
+
+- 별도 읽기에서 기존 정식 PG e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290은 exited다. StartedAt2026-10-18T15:25:12.085069883Z·FinishedAt2026-10-19T12:56:52.490883698Z·ExitCode0·OOMKilledfalse·RestartCount0을 관측했다. 종료 원인/주체는 미확정이고 담당자의 시작/중지·정식DB/서비스/설정 변경은 없다. 아래 00:25 running 기록은 과거 관측이며 현재 기능 PASS가 아니다.
+- exact54ad16f2 신규 FN12 검수 source 격리 QA1 PASS 뒤 등록 PG/network/Git경로를 회수해 독립 잔여0을 확인했다. 정식 API/Web·SQL접속·자료/사용자 인수는 이 격리 시험으로 확인되지 않았다.
+
+## 2026-10-19 00:25 KST PG 단독 기동 관측 — DB접속/API 미검증
+
+- 신산님 HUMAN_DIRECT_REPLY를 PMO에서 전달받아 고정1199CC1E 최소안/runId PG_ONLY_START_ONCE_20261019_002239의 기존 PG 한 개만 단1회 start했다. fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f·daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e 불변, StartedAt2026-10-18T15:25:12.085069883Z/restart0/running·ready-log marker count1이다. 원문로그는 WSL에서 축약해 전송하지 않았다.
+- 기존 pgdata volume/readonly비밀bind/networkID d3253166…/127.0.0.1:5546→5432 정의 불변. 동일PG를 개발용보존하고 start1회소진/stop0·retry0이다. healthcheck가 없어 판정은 RUNNING_WITH_READY_LOG / DB_ACCESS_UNVERIFIED이며 SQL·migration/논리지문·인증/접속·API/Web/사용자 기능은 미검증이다.
+- API/relay/계정/Secret/cert/권한·schema/SQL/Agent는 변경0이다. 아래 정지관측은 당시이력이며 현재PG정지로해석하지 않는다. 실제화면복구로승격하지 않는다.
+
+
+## 2026-10-19 00:08~00:10 KST 읽기 재확인 — 여전히 개발 서비스 중단
+
+- Windows listener 조회는 성공했고3830/5546 각0이다. 기존 WSL 개발 PG fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba/image594290e9…는 exited255·Finished2026-10-18T05:12:28.197325125Z·restart0이다. 원인·중지주체는 미확정이다.
+- 기존127.0.0.1:5546→5432와 anvil-v3-development-pgdata·read-only 비밀 mount 정의는 유지돼 있다. 비밀값/DB본문은 읽지 않았으며 현재 SQL/논리지문·migration은 미검증이다. 정식 Git ff0fcd13695ae0affa2fd773dc96667e1d7c88f8 clean이다.
+- 시작/중지·서비스/설정/계정/권한/Secret/cert·SQL쓰기0이다. Main은 PMO에 기존 동일 PG의 최소 새 복구 결정을 요청하며 옛 N4 전환 허가/만료 window·옛 PID를 재사용하지 않는다. API/Web·relay·새 migration/QA/Agent 실행은 이번 요청에 포함하지 않는다. 과거 PASS는 현재 서비스 PASS가 아니다.
+
+## 2026-10-18 06:54 UTC 읽기 재확인 — 개발 서비스 중단 관측
+
+- 후속 별도 읽기에서 Windows3830/5546 모두 LISTEN0·Node exe hash9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE 일치, 실제 SINSAN\\cyhuh CurrentUser Root의 지정 CA498348218A4015B341A90B10FF4FE176987D4424 신뢰1을 확인했다. sandbox의 CIM 접근 거부·trust0은 실행격리 결과이며 실제 인증서 제거/권한 오류로 승격하지 않는다. 인증서/신뢰/포트·환경 변경0이다.
+- Windows Node54212/relay26052 부재·3830 LISTEN0은 Main/PMO 독립 읽기 관측이다. 기존 개발 PG는 동일 fullID e6f798c3a2a3bdb2be533dd4c024d76f34d19fcfbbe4bf2acbe0437fb0cf32ba·image sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f이나 현재 exited/exitCode255, finished2026-10-18T05:12:28.197325125Z·OOMKilled=false·restart0이다. 원인/중지 주체는 미확정이고 이번 Main의 시작/중지/재시작0이다.
+- WSL Git exact ff0fcd13695ae0affa2fd773dc96667e1d7c88f8·tracked clean. 보호11파일 hash·현재 사용자 owner/nonlink는 기존과 일치했다. 공개 leaf 만료는2026-10-22T18:29:01Z. 인증서 첫 조회의 CreateFromPemFile API오용은 공개cert전용 CreateFromPem으로 정정했으며 키/인증서 변경0이다. DB SQL 연결·현재 논리지문·원문root·실제HTTP는 재검증하지 않았다.
+- 아래 N4 PASS는 과거 실행 증거이며 현재 서비스 PASS가 아니다. N4/rollback Git 객체는 존재하지만 현재 build는 새 후보로 바뀌었고 N4 exact 정적 asset3종을 즉시 재사용할 수 없다. 소진/만료된 전환 승인·옛 PID/relay 전제의 명령을 다시 실행하지 않는다. 복구는 정확 source/build·기존PG/relay/API 재개 대상·새 유한 허가·실패 rollback과 검증을 별도 판단한 뒤에만 가능하며 새 후보 배포·migration·Secret/포트 변경으로 확대하지 않는다. PMO에는 실제 상태/지원만 전달하고 영향받지 않는 계획 구현은 계속한다.
+
+## UI04 적용본 조회 정식 PG 핵심 확인 — 2026-10-18
+
+- 정식 WSL Git /home/daon/deploy/anvil-v3는 private exact8c539c7a206bc5be1bf221d55f44ede3b5adb5b7·detached clean으로 옮겨 신규조회 Fastify.inject→정식PG/실Web함수의 직접1건10조건 PASS를 확인했다. 새서비스 배포나 실제 servedBrowser 증거가 아니다. 기존 Windows Node54212의 source6781703a·exe/start·단일3830/relay26052는 그대로다.
+- 기존 PG fullID/image/StartedAt/restart0·migration46/전체 ID-checksum과 보호app/migrator설정hash를 보존, 사전등록 합성QA8표를 정확정리하고 별도 READ ONLY 조회에서 잔여0을 확인했다. 새migration·실사용자/권한·Secret/certificate·Agent·추가compiler0, 실제 서비스 반영/로그인 브라우저 여정·RLS전체/전체UI04는 미확인이다. 명령·시각·조건·한계는 UI04_CONTEXT_PREP_RESULT와 WORK_STATUS를 따른다.
+
+## 최신 실제 개발 서비스 — 2026-10-18 N4 직접 승인 전환
+
+- 실제 실행 source **6781703a8fd7d258aa7f972bb5f81acaf5c3d388**, Windows Node **54212** / C:\Program Files\nodejs\node.exe / 시작 UTC2026-10-17T19:08:16.5819440Z / 단일127.0.0.1:3830이다. 직접 서비스 교체 승인 아래 원23836을 종료해 새 API·Web을 반영했고 아래23836은 과거 시점이다.
+- 기존 CA 엄격TLS·새 index/JS/CSS 해시·health200/새보호API익명401·익명Edge기본페이지를 확인했다. DB46/81표 전후 READ ONLY fingerprint동일·보호10hash/relay26052/PGmetadata 불변이다. 원6환경/ANVIL_ARTIFACT_ROOT 미설정은 유지해 원문 저장 가능/실제Agent·로그인업무 완료로 승격하지 않는다.
+- 새 .av3-data/runtime-ui11-n4-01의 receipt/server.out.log/server.err.log와 성공개발PID·구indexbackup/원asset은 복구용 보존. 일회성 candidate-02/profile은 정확정리·별도부재0. 실제 명령/동결단1회·원JSON/후검사·미검증은 04_test_reports/AV3/FN08/UI11_N4_SERVICE_TRANSITION_RESULT.md다.
+
+## A-3 정식 개발 schema-only 반영 — 2026-10-18
+
+- 현재 정식 WSL 개발 DB는 **46 migrations**다. exact dbbdf0493e40ae74e713926ec1f0148355100fe5의 0008_source_read_observation.sql(SHA256 26A7B7828481689D7017836C1ECE2FC5E9F644CB9B8200122EE013E7F52DB185)만 별도 승인된 단1회로 적용했고 기존45 SQL/77표 논리구조·권한·행수·지문을 보존했다. 새4표는0행·seed/계정생성0이며 개발용으로 보존한다. 새함수/guard·기존app역할의새표한정권한은승인된효과다.
+- 별도 READ ONLY 후검사46/새checksum·4표0행, 기존PG fullID/image/StartedAt/restart·migrator보호hash·Git exact clean 및 Windows보호10hash/Node23836/relay26052/loopback3830 불변을 확인했다. 명령·원JSON·실행창/단1회소진·미검증은 FN08/A3_FORMAL_SCHEMA_01_RESULT.md에 있다.
+- 기존 API·Web bundle/프로세스는 교체하지 않았다. 새 API/실제 served 화면·HUMAN grant/보고·OS/Agent 연결·사용자 인수는 미완료다. 아래 A-2R의45개 상태는 당시 이력이며 현재46을 대신하지 않는다.
+- 보존 검사의 데이터 예외: schema_migrations는 새1행 증가를 허용하므로 전체 row fingerprint 불변 검사에서 제외했다. 정확45 기존 ID/checksum·전체46 대조 및 옛77표 구조/권한·나머지76표 행수/지문 동일을 확인한 것이며 과거 적용시각 열의 개별 실측 불변까지 주장하지 않는다.
+
+## A-2R 소스 선언 registry DB 반영 — 2026-10-17
+
+- Git exact b5c3c74debae4b2e09d51e7b3916428dfe13cc96의 신규0008_source_root_registry.sql(SHA256 d9d27d2c92e31e6c5e50bf18762786d2cad2b47a28905bc8f0f15fa2cec72403)만 정식 개발 DB에 schema-only 적용했다. 기존44 migration 보존·현재45개, 신규 source_roots/source_root_versions 각0행·seed0이다. 기존75표의 논리구조/권한·행수·fingerprint를 적용 전후 대조했으며 실제 계정/권한·정책·서비스는 변경하지 않았다.
+- 같은 SQL의 새 빈 PG15 격리 QA에서 11범주 정상/거절·실제COMMIT/rollback을 확인했으나 transport는 Fastify.inject→PG다. 실제 socketHTTP/servedBrowser·정식 사용자 여정·Agent/파일관측은 미검증이다. QA container/network/tmpfs/5547와 Windows a2r-registry-01의9파일/7dir는 정확정리·별도잔여0, 원실패 ui06-served-01은 보존한다.
+- 기존 Windows Node23836/CIM2026-10-17T10:02:29.448747Z/127.0.0.1:3830·보호8hash는 적용 후 불변이다. 현재 서비스에 새 SourceRootsPanel을 게시/재시작한 것은 아니다. DB 반영 성공만으로 사용자 기능 전체 완료로 판정하지 않는다.
+
+## 최신 실제 runtime — 2026-10-17 10:02~10:05 UTC
+
+- UI06 actual run4d321f60-64f3-4f41-95c6-41ec95cd9eab는 보조 script 파일 교체 인자 오류로 FAIL, 자동 rollback도 동일 경계에서 FAIL이다. 아래 PREPARED/null manifest는 당시 준비 이력이며 현재 실제 상태가 아니다. 새 UI06 실제 로그인/DB/browser/UNC 여정은 시작하지 않았다.
+- 원 정식 index/JS/CSS 3hash가 보존되어 파일 재교체 없이 원6환경·동일 API를 새 Node **23836**, executable `C:\Program Files\nodejs\node.exe`, CIM UTC **2026-10-17T10:02:29.4487470Z**, listener **127.0.0.1:3830**으로 복구했다. `ANVIL_ARTIFACT_ROOT` 없는 원 상태이며 원문 저장 가능으로 판정하지 않는다. strict TLS health exit0와 listener 소유를 별도 확인했다.
+- 기존 relay26052/보호7hash는 불변, 원19960은 종료됐고 원 runtime receipt/log는 보존한다. 신규 `.av3-data/runtime-ui06-served-01/receipt.json`은 원 실패·자동복구 실패·새 process identity·manualRecoveryConfirmed를 함께 기록한다. 해당 server.out/err.log는 복구 process 로그이며 삭제하지 않는다.
+- 실패 지원 root `D:\tmp\anvil-v3-stage-b\browser\ui06-served-01`과 미참조 후보 JS는 근거 보존 중이다. profile/임시 staged index/QA browser는0, 독립 읽기에서 DB74표/66표0·기존8표/44파일checksum·raw empty/inode3913339/uid1000/0700 불변을 확인했다. QA root 전체 정리0 또는 UI06 실제 검증 PASS로 표현하지 않는다. 동결 코드·기존 run의 actual 재시도/연장은 하지 않는다.
+
+## UI06 실제 화면 반영 준비 — AV3-PMO-UI06-SERVED-PREP-01
+
+준비 검수 후속: 독립 원 C0/I1/M1의 수집 회귀는 PMO 허용 UI00·기존 UI06 두 시험의 후보 env 검사를 실행 시점으로만 이동해 Main 보완했다. 수집 RED→기존 인증4건 --list GREEN, env 미설정 실제2건은 명확 FAIL/skip0·fallback0, 동일 후보 기존 로그인6+UI06기존7 PASS와 만료 CLAIM 음성1 PASS를 확인했다. 만료 음성 최초 selector/문구 기대 오류1은 WORK_STATUS에 보존한다. 실제 auth/CLAIM/PG/서비스/UNC 변경0, 준비 QA60파일/14dir는 정확 제거·독립 잔여0이다. 원 검수와 Main 보완을 구분하며 새 독립 C0/I0·실서비스 반영 완료로 승격하지 않는다.
+
+2026-10-17 PMO 권장 A는 **기존계정 로그인 진입 UI·후속 전환 절차 준비**만 허용한다. 정식 bundle 게시·PID 종료/재시작·실제 로그인/계정/PG QA·UNC 쓰기·CLAIM/Secret/TLS 변경은 실행하지 않았다. 준비 후보의 정확 SHA는 Git/WORK_STATUS와 PMO 최종 패킷에서 대조하며, 아래 비활성 manifest를 실제 실행 승인으로 쓰지 않는다.
+
+### 최소안과 실행 불가 경계
+
+- AuthForm의 `setupRequired`는 서버 사실이며 그대로 둔다. 초기등록 화면의 ‘기존 계정 로그인’은 보기 모드만 변경해 기존 login API를 소비한다. 기본 초기등록·setup=false 복구/초대·pending/비밀 정리는 유지한다. 존재하지 않는 계정·만료 CLAIM은 성공으로 꾸미지 않는다.
+- 현재 Windows API는 9bade63e3d3959a16f015ff89bc0c6a0baddaa1b에서 시작했으며 이후 서버/DB/package/launcher·비vendor 계약의 소비 코드는 같다. static handler는 매 요청 `readFile`/`no-store`이므로 UI만은 정적 게시 가능하지만 launcher가 원문 root를 전달하지 않는 상태에서는 원문 기능을 사용 가능으로 판정할 수 없다. 실제 upload412를 이번 준비에서 실행하지 않았다.
+- **절차만 준비:** 기존 `scripts/start-development.ps1`/Fn08 guard는 변경하지 않는다. 현재 고정 runtime이 존재하고 Fn08는 artifactRoot 설정을 금지하므로 그 명령에 임의 옵션/환경을 주입해 재실행하지 않는다. 새 UI06 실행 entry나 승인 parser도 이번에 만들지 않는다. 따라서 아래 승인이 비어 있으면 수행할 실행 명령 자체가 없다. 이는 후속 승인용 운영 절차이며 기계적 실행 gate를 구현·검증한 것이 아니다.
+
+### 잠정 비활성 전환 manifest
+
+| 필드 | 고정/미확정 값 |
+|---|---|
+| kind / state | ANVIL_V3_UI06_SERVED_RUNTIME / PREPARED_NOT_AUTHORIZED |
+| candidateCommit / authorizationRef / issuedAt / expiresAt | **모두 null**. PMO가 실제 exact SHA·승인 원문·유한 창을 고정하기 전 실행 금지 |
+| source | 현재19960 명령/receipt로 대조한 실행 source의 승인 Git commit만. 자료/소스 복사 배포0 |
+| originalProcess | PID19960 · C:\Program Files\nodejs\node.exe · CIM UTC2026-10-17T04:02:09.6293870Z · SHA256 9A4EB5F1C29C6A2E93852EAD46B999E284A6A5CA8BAB4D4E241D587D025A52DE |
+| originalReceipt | D:\Project\Anvil\.av3-data\runtime-fn08-20261017\receipt.json · SHA256 38DFAB5AE73B92B9770AAE82B132810999B985008B06425C890E8C2F77ACD701. 원본/기존 로그 보존 |
+| relay / listener | PID26052 · C:\Program Files\WSL\wslrelay.exe · CIM UTC2026-10-15T12:28:17.5262970Z · 127.0.0.1:3830 현재소유19960. relay 종료/교체0 |
+| proposed runtime | D:\Project\Anvil\.av3-data\runtime-ui06-served-01의 신규 receipt.json/server.out.log/server.err.log만. 현재 생성0 |
+| approved raw root / tentative native ref | /home/daon/.local/share/anvil-v3-development/artifacts / \\wsl.localhost\Ubuntu\home\daon\.local\share\anvil-v3-development\artifacts. 기존 동일 inode3913339·Linux uid1000/0700·Windows realpath/nonlink/empty 읽기만 확인. **쓰기/owner·mode 호환 미검증** |
+| proposed served QA | D:\tmp\anvil-v3-stage-b\browser\ui06-served-01/{dist,results,temp,profile} 및 qa-ui06-served-<승인 새runId> 사용자1/프로젝트1. 현재 생성0 |
+| preserved references | 기존 auth.json/db-app.json/dev-tls key·cert·CA/옛 runtime receipt 등 보호7hash를 직전 증거와 대조. 키/설정 원문은 기록하지 않음 |
+
+### 후속 승인 뒤의 순서·중단·복구 (현재 미실행)
+
+1. PMO가 candidateCommit/승인 원문/유한30분 창·새runId·정확 manifest를 채우고 private/WSL Git exact·clean·44 migration checksum·QA/새runtime 부재·보호7hash/원PID exe·CIM·listener·owner/nonlink를 재대조한다. 일치하지 않으면 실행하지 않는다. 마지막120초 새 시험·자동 연장·묵시 승계0이다.
+2. 등록 QA dist에만 exact 후보 build/hash를 준비한다. 원 제품 `apps/web/dist/index.html`과 hashed asset을 복구 원본으로 보존한다. 신규 hash asset만 추가하고 동일 이름은 동일 hash일 때만 재사용한다. 검증한 새 index를 같은 volume의 staged 파일에서 원본 backup을 남기는 atomic 방식으로 게시한다. 정식 dist 게시/백업 생성 자체도 별도 실행 승인 대상이다.
+3. 현재19960의 정확 소유/시각/exe/3830을 확인한 뒤 그 Node 하나만 교체한다. 기존 TLS/auth/db 참조·host127.0.0.1/3830을 유지하고 후속 명시 절차에서만 기존 WSL 원문 root의 UNC 참조를 child env로 지정한다. 기존 Fn08 명령/guard는 우회하거나 완화하지 않는다. 새 Node는 Hidden·새 runtime의 별도 로그/receipt를 사용하며 원 receipt/log를 덮지 않는다. 기존 로그 공유잠금은 강제로 열지 않고 정확 종료 후에만 필요한 hash를 읽는다.
+4. 최초 쓰기는 허용된 본인 합성 QA에만 한다. SSH에서 실제 WSL uid1000·dir0700/file0600·내용 hash와 동일 원문 저장소를 확인한다. UNC/소유·mode가 다르면 새 저장소/권한 수리/chmod/복사 우회 없이 실패로 보고하고 새 Node만 정확 회수·원상 복구한다. 이 gate 전 실제 사용자 자료 저장 가능으로 승격0이다.
+5. 실패 복구는 새 PID/start/exe/receipt를 검증해 해당 새 Node만 종료하고 원 index/원 hashed asset·원6개환경참조(artifactRoot 미설정)로 같은 API byte hash의 실행을 새 PID로 복원·strict TLS health/old bundle hash를 확인한다. 옛 PID가 부활하거나 과거 Git 전체를 reset한 것으로 보고하지 않는다. source mismatch면 추정 실행하지 않는다. 기존 원문/DB/CLAIM/7보호파일/relay는 그대로 남긴다.
+6. 성공한 새 runtime은 후속 개발용으로 보존하고 rollback 원본/기존 receipt/log는 다음 정상 checkpoint 확정까지 유지한다. 최초 정상 QA1회·자동재시도0이며 오류/새계약은 PMO에 정확 보고한다. 현재 준비 승인으로 이 순서를 실행하지 않는다.
+
+### 후속 실제 servedbrowser→PG/원문 여정 (현재 미실행)
+
+- 계정1/프로젝트1은 식별 가능한 합성 비server_owner만, 암호는 메모리/격리 profile에만 둔다. 기존 CLAIM·bootstrap·실사용자·server_owner 권한은 변경하지 않는다. 새 실제 소유자 onboarding/만료 초기등록 갱신은 별도 결정이다.
+- 전용 Edge profile/기존 CA·TLS검사 유지, route interception/APImock/trace/video/비밀 screenshot0. 실제 AuthForm→기존login cookie/CSRF→본인 재인증→해당 QA client의 제어 세대1·정책3연산(uploadArtifact/saveDocumentDraft/indexDesignDocument), 한 project·30분으로 결박한다.
+- QA 준비는 기존 same-origin API로 AF02/AF03/Sxx 정확 index를 저장하고 receipt id/version/hash를 메모리에 보관한다. 본 시험은 화면에서 정확 AF02→Sxx→AF03 원문/명시편집/이유/새 버전→v2·과거v1·indexv1 재조회다. Network의 origin/status/비밀 없는 ref·hash 및 JS오류만 기록하고 사용자 비밀/자동 확정/Agent 호출0이다.
+- finally는 소유 manifest UUID의 문서/원문·정책/명령/세션/계정/감사만 기존 공식 FK순서로 정리한다. 원문 root 전체삭제0. logout/세션회수·소유 profile/browser/temp 정리 뒤 독립74표의 기존8표 행수/66표0·44 checksum·보호원문 empty/보호7hash/runtime·listener를 확인한다. fixture/후보 browser와 이 실제 여정을 혼동하지 않는다.
+
+### 원 bundle의 정확 복구 목록 (읽기 관측)
+
+| 제품 상대 파일 | bytes / SHA256 |
+|---|---|
+| apps/web/dist/index.html | SHA256 39BD2923BF898FA1D23AAC96385CDC890EA7C55167D5AB864FB897BF455BC9F5 |
+| apps/web/dist/assets/index-DCxasc0L.js | 675995 / 150B3D211B349A4464126DD079E9071FB11A2CEFA7C0F9AD82E5680D2ACF1C69 |
+| apps/web/dist/assets/index-C3a7Hrx0.css | 9631 / 034435504A3650CD6024E9AF5C9BE6797EFBB4CAA2C3587CC287F778DB5E9A56 |
+
+현재 후보 asset/검증 결과는 WORK_STATUS·Git의 준비 checkpoint로 남긴다. 이번 문서가 실제 bundle 배포·Node 교체·로그인/PG QA·CLAIM 변경 승인을 대신하지 않는다.
+
+FN08-DISPATCH-PRECONDITION-01은 내부 순수 보고2파일·집중4 PASS/typecheck만 추가했으며 실제 spawn/Agent/native/DB/API·파일자료쓰기/스풀·서비스/Windows runtime/보호자료 변경0이다. 항상 executionAuthorized:false이며 caller snapshot/참조가 실제 서버·현재 제어·소유·실경로/예산 검증을 대신하지 않는다. sourceScopes/envelope/durable 중복 결과의 미정 계약을 확정하거나 source 경로를 조회하지 않았다. 기존202/QA-02 실제 검수는 반복하지 않고 그 증거와 현재 준비 코드를 구별한다.
+
+QA-02 실제 한정 결과: bbb239dd4573a08d81066f428adfcc3f3c707d00·run8c10a7c8-bfa8-458c-a24b-1f0578119407의 승인 단1회가 **1 PASS/71523.4163ms·FAIL0/SKIP0·exit0**이었다. 04:26:19Z gate 이후 새 r2 root/고정 compiler·helper1f9a3d03/worker1cdcd954의 launch 전 fullhash marker를 기록하고 정상4세대·PREPARED취소/EOF/idle/최종UNKNOWN 거절·정확취소를 확인했다. finally 정확 파일/빈폴더 정리 후04:28:10Z 독립 r2 root/합성exe0·현재19960/relay26052·단일loopback3830·보호7파일hash 불변 확인. 원 Node40744 복원이나 전체 FN08/Agent 지원 증거가 아니다. 최초 외부 UTC cast 읽기 오류1은 actual0에서 PMO 지시 DateTimeOffset 정정했으며 기한 연장/추가actual0이다. Ref 이전 fault/native 초과·부분EOF/실제만료·EOF뒤 독립Job0 등 미검증은 WORK_STATUS에 남겼다.
+
+QA-02 준비 전용: run8c10a7c8-bfa8-458c-a24b-1f0578119407·2026-10-17 13:25~13:55KST·새 `D:\tmp\anvil-v3-fn08-ownership-qa-r2/{bin,source,results}`/lease만 코드에 결박했다. actual 승인 전 compile/root/helper/FORCE 실행0이며 schema-export/DB/Agent/TLS/runtime 변경은 제외한다. 보존 대상은 현재 Node19960/CIM04:02:09.6293870Z·relay26052/CIM2026-10-15T12:28:17.5262970Z·127.0.0.1:3830 소유19960 하나다. 최초 종료5분 전부터 새 전체시험 금지·각 준비120초 여유·정리 여유를 유지하고 자동 연장0이다. IPC16KiB/정상EOF·부분EOF·sticky 준비는 순수11/unit202/typecheck만 확인했으며 실제 native/Ref 이전 주입 검증은 미실행이다. QA-01 실패/보존미확정은 별도 이력이다.
+
+2026-10-17 13:03KST 실제 전환: 승인된 launcher source **9bade63e3d3959a16f015ff89bc0c6a0baddaa1b**, Windows Node19960/UTC04:02:09.6293876Z·loopback127.0.0.1:3830 하나, 새 runtime-fn08-20261017의 receipt/log3개를 보호 생성했다. exact PID/UTC ticks/exe/hash·source/receipt·nonlink/현사용자SYSTEM ACL·READY1줄/err0 및 strict CA health exit0 확인. 기존 relay26052/옛receipt·auth/db-app/dev-tls6파일 hash 불변·새 tunnel0이다. 개발 프로세스/TLS 확인만이며 실제 사용자/원문 보관소/Agent/FN08 OS 지원은 미확인이다. FN08 최초13:01:53은 종료/연장0·QA root/합성exe0, native actual/schema-export는 재개하지 않는다. 후속 문서 commit과 실제 실행 source9bade63e를 구분한다.
+
+AV3-PMO-WINDOWS-RUNTIME-01 승인: 기존 Windows relay5546 app역할 read-only SELECT 단1회/최대5초가 2026-10-17T03:58:07.173Z·223ms exit0이었다. 정확 새 `.av3-data/runtime-fn08-20261017`(receipt.json/server.out.log/server.err.log)·loopback127.0.0.1:3830의 신규 Node만 준비하며 기존 runtime/relay/auth/db-app/dev-tls는 불변이다. `scripts/start-development.ps1 -UseVerifiedWslRelay -Fn08Runtime`은 새 경로·현사용자/SYSTEM 보호·검증 Node/고정 relay·child env를 사용한다. safe private exact SHA 게시 후 실제 결과를 별도 기록하며 현재는 실행 전이다. 계정/bootstrap 갱신·Windows 원문 보관소 연결·FN08 실제/스키마 export 승인은 포함하지 않는다.
+
+FN08 단일 검수 C0/I3/M2 REWORK 뒤 Main 안전 코드 보완: 미resume 본인 합성 retained handle의 정확 취소·종결 확인, 원 PID/시각/3830 실제 존재 gate, 최초 run/절대 기한·정리 여유120초·부모/자식 같은 종료점, sticky UNKNOWN 후 새 writer 차단을 추가했다. M2는 Main Important로 재분류했고 M1 누적 line buffer 상한은 잔여다. 순수7/unit197/typecheck/syntax만 확인했으며 C# 컴파일·OS 실제 검수·schema-export는 미실행이다. 원 Node 부재·QA root/process0과 추가 실행 금지는 유지하며 새 Windows runtime은 PMO 별도 승인 판정 전 변경하지 않는다. 이 한시 QA를 새 run/상대기한으로 다시 열지 않는다.
+
+2026-10-17 FN08 A 한정 QA: run2897e501-cbe9-491c-bd72-28b996f0499b·12:31:53~13:01:53KST 고정30분의 `D:\tmp\anvil-v3-fn08-ownership-qa/{bin,source,results,schema}`만 사용했다. 기존compiler build/합성소유 actual3FAIL·conhost 진단59575e32 exit1/DIAGNOSTIC_ONLY_NOT_ACCEPTANCE, 정확root/합성process는0이다. DETACHED 합성후보는 순수3/unit193/typecheck만 확인했고 actual/schema-export·실제Agent/계정조회·DB/TLS/서비스 변경0이다. 원Node40744·Windows3830은12:40부재/소실시각·원인미확정, relay26052는존재·2026-10-15T12:28:17.5262970Z 시작이다. 과거11:59 Node관측 이후전체기간불변주장은취소·보존UNVERIFIED다. PMO는 필수보존gate를 완화하지 않고 추가actual미실행 부분제출을 지시했다. 새Windowsruntime 전환안은 후속 read-only 제안이며 옛40744 exact복원이 아니다.
+
+동일 HTTPS-QA의 독립검수는0d9c1dec..e07312d3 C0/I2/M0이고 Main은 최초deadline을 server active 시작에도 고정·만료후 본인정리 보존, TLS stage전 타이머/신호·직렬 중단/메모리 소유 부분정리를 보완했다. 보완 뒤 순수집중7 PASS·전체unit190 PASS/2808.8414ms·typecheck0이며 **실제 OS 신호/부분파일 실패·HTTPS actual 재실행은 없다**. e07312d3의 실제 PASS와 수정 후 순수 근거를 구분하고 제한수용은 PMO 판정에 남긴다. 새 자원/복제·DB/서비스 변경0이다.
+
+2026-10-17 FN06 HTTPS-QA 제한 실제: e07312d38344fdaf42344ca3390a8d2b1456e13e local/private/WSL exact의 Windows native→strict TLS→WSL 정식 PG44→동일 UI11 정상/발급본문유실2건은1 PASS/36923.3338ms·skip0이며 시험 자체 정리까지 PASS다. Edge155.0.4283.45/소유PID6·page off-origin0, 실제 AuthForm 버튼은 미검증(browser login HTTP→설정 재인증 사용)이다. 한시 Windows r1/WSL https-qa-r1·private172.27.253.53:3830·등록/credential만 사용했고 최초deadline12:29:30.227KST를 연장하지 않았다. 별도 읽기에서 두root/3830·DPAPI/helper/소유Edge0·QA45표각0/44checksum일치/제외5표없음·원문empty를 확인했다. 원TLS3 hash·원Node40744/relay26052 시작시각·기존claims1 보존, 새CA/제품설정·SQL/운영 변경0이다. 과거2 actual FAIL/수동정리는 WORK_STATUS에 보존하며 영구PC·실제 Agent/사용자 인수·기존 혼재 runtime 사용가능 판정과 구별한다. 신선한 제한독립검수/PMO 최종수용은 후속이다.
+
+UI11 최종 같은client actual: 4508e15d71b1cbaf62ad083229550818097d48b7 local/private/WSL exact·clean에서1 PASS/8095.240855ms(기능7823.974251)/SKIP0, 직후 독립 QA45표0·44 checksum 전부 일치·제외5표 부재·PG15.18/비관리자2·시험root[]/원문0700·empty다. 합성 브라우저27 PASS와 실제 Fastify 주입/정식 PG는 서로 다른 증거이며 실제 사용자 browser↔DB·Windows↔WSL HTTPS·영구 PC/Agent·배포 인수는 아니다. DB/서비스/키 변경0이다.
+
+UI11 제한 검수 보완(2026-10-17): 2f94636c exact의 같은 Web 함수/API·정식 PG actual1 PASS/9645.392576ms·QA45표0·44 checksum 일치, 독립 읽기 C0/I0/M0이다. Main은 별도 지연 POST 음성 RED로 새 입력 덮어쓰기 Important1을 발견해 주체/원 명령/승인 대기 CAS로 보완했다. 보완 후 unit180/타입·build100/신뢰13+인접14 합성 browser27 PASS, 기존 chunk 경고 유지다. 첫 browser 재검사는 새 build 누락으로 이전 산출물 FAIL1→정상 build 뒤 음성 GREEN이며 성공으로 소급하지 않는다. 서비스·DB schema/권한·키·실제 PC/Agent 변경0, 실제 사용자 browser↔DB/Windows↔WSL HTTPS·전체 연결은 여전히 미완료다. 이 보완의 exact 게시본 actual/정리 결과는 WORK_STATUS에 후속 기록한다.
+
+UI11 HUMAN 신뢰관리 부분: 기존 정식 PG/44를 변경하지 않고 GET2·현재상태/지문·기존3명령·각 별도승인(UI08)을 같은 Web 함수/API·PG에서 b4af490b actual1 PASS/5927.605ms·QA45표0으로 확인했다. 최종 로컬 unit179/타입·Web100 build(JS675.38kB/gzip173.35,CSS9.63kB/gzip2.60)/새 신뢰 합성browser12/직접인접14 PASS·기존chunk경고다. 1920 합성 화면은 code/token 없는 상태로만 보존/육안 확인했다. 기존 localhost3830의 backend/Web 혼재·만료bootstrap/relay·실사용자/Secret·CA·서비스는 교체/수정하지 않았고 실제 사용자browser↔DB/Windows↔WSL HTTPS/영구PC/Agent/Oracle 인수는 미완료다. 마지막 exact actual 보강·독립 부분검수는 WORK_STATUS에서 구분한다.
+
+최신 FN06 제한 검수: dba582b62d645d14777e6e954aa5a1a24bfb81a3 exact WSL에서 PMO 허용 corrective44 `0006_host_trust_challenge_protocol_fix`(a57c5432f0eff9152889b4dd7e23409e8dbc1cadd8b34426e0a6b3b012b15f3c) 적용 exit0, 직접 app DB 음성6/숫자1 정상·등록/일회 발급·상태조회/회수1 PASS/2132.299ms·skip0이다. 독립45표0·44 checksum 일치·제외5표 부재·기존 PG15.18/비관리자2·시험root[]/보호원문 empty·Windows QAroot없음. 독립 원C0/I0/M1의 finding은 Main 보완/실행 근거로 연결했고 새 독립 재검수로 주장하지 않는다. 기존43/Windows/인접3 불변으로 반복0,서비스/키/실제 사용자/Agent 변경0이다. 아래44 미승인/미수정은 추가 PMO 지시 전 이력이다.
+
+FN06 독립 검수는C0/I0/M1·제한 scope 수용 가능, 최종 부분 수용은 PMO 판단이다. Minor1은 적용43 protocolVersion의 SQL NULL/문자열1 방어층 누락이며 실제 PG SELECT 비교만 확인했다(자료 변경0/INSERT 재현 아님). 공개 HTTP 정확8필드·숫자1 거절은 유지된다. 적용43/43종 checksum을 수정하거나 미승인 forward44를 추가하지 않았고 후속 보완 후보로 기록했다. 제품/시험 불변에 대한 기존 실행 근거를 유지하며 새 테스트·서비스/권한 변경으로 포장하지 않는다.
+
+FN06 최종 후보 검수:4ecb2e39 WSL exact의 신뢰+기존 문서/후보/정책 actual4 PASS/18684.758ms,0282713e의 추가 purpose/첫 발급 본문 미사용 검수 포함 신뢰 actual1 PASS/18831.163ms·skip0이다. 제품/43은8a7cb985 이후 불변, native/서명은13ecba26 이후 불변이다. 독립45표0/43 checksum 전부 일치/범위 밖5표 부재·임시root[]/보호원문 empty·Windows QAroot없음을 확인했다. 실제 Windows→WSL HTTPS/영구 등록·Agent/유료호출·서비스 교체·UI11 신뢰 화면은 이번 한정 검수와 구별한다. PMO 최종 부분 수용 대조 중이다.
+
+FN06 최신 실제 상태: 새43 `0006_host_trust_registrations` checksum3027636015d284462a4f974ad792175851ef28f05c73117fd4a813853e329020을8a7cb985 exact WSL에서 적용했다(이전42 불변·fixtures7·실제사용자0). 첫 actual1 PASS/2266.835ms, d8ec41e6 exact의 시도5회/등록 실제 만료·격리/제어·HUMAN3연산 별도 승인 소비 보강1 PASS/6629.197ms·skip0, 독립45표0/시험root[]·보호원문 empty이다. 아래 ‘미적용/미실행’은 당시 이력이다. Windows→WSL HTTPS·영구 PC/Agent·사용자 browser 인수/기존 서비스 변경은 미검증/미변경이다.
+
+FN06 서버 실제 RED는6377a8fb private/WSL exact clean에서1 FAIL/953.892ms·skip0(POLICY_SCOPE_NOT_READY412, 등록 미도달)이다. finally 뒤 독립41표0·신뢰4표 NOT_PRESENT·migrations42·임시root[]/보호원문 empty를 확인했다. 이후 서버/forward43 후보는 로컬 작성 중이며 아직 DB 미적용이다. 다음 적용 전 private exact/WSL Git·이전42 checksum·자원 정리를 다시 대조한다. 신규 QA는 qa-connector-trust-UUID의 합성 자료/메모리 키만이고 서비스/포트·실제 사용자/CA/relay 변경0이다.
+
+FN06 제한 신뢰 등록 합성 Windows 부분(2026-10-17): 신규 `D:\tmp\anvil-v3-fn06-registration-qa\{bin,protected,results}`만 현재 사용자/SYSTEM 보호로 만들고 기존 Framework64 csc4.8.9221로 빌드했다. helper SHA256 1E5689552F058C47E5D0112BD26C9CBE024869BE0DBF634E2A9F2B69CDC46055, 실제 CurrentUser DPAPI·CNG↔Node 공개 서명/변조 거절1 PASS/2157ms·skip0. exact owner/nonlink/tree/hash/process 검사 뒤 일회 자원은 모두 제거(root없음/helper0); source/공개 고정벡터만 Git 후보로 보존한다. 기존 부모 ACL·.av3-data/계정/CA·service/relay 불변이다. 서버 등록·신규43 적용/WSL 실제·Windows→WSL HTTPS·다른 OS 사용자·영구 PC/Agent/유료 호출은 미검증이며 로컬 단위와 혼동하지 않는다.
+
+UI08 FN11 승인 소비의 실제 검증은36fa3e511c01282ca647ab8882de4a0d044d3d00 private/WSL exact clean에서 same-client1 PASS/3208.980059ms/skip0이다. 독립 QA41종 잔여0·migration42·시험root[]·원문0700/nonlink/실경로 동일/empty. Web 함수/HTTP 주입/정식 PG를 확인했으며 실제 사용자 로그인 브라우저·Agent·배포 인수는 아니다. 이후 차이는 화면 내부 목록 sequence·시험/캡처·문서뿐이고 승인/후보 API client·서버/DB 시험은 불변이다. Windows old backend/relay HOLD/만료 bootstrap·Secret·실제 사용자/권한·운영은 그대로다.
+
+UI08 최초 화면/client 구현은 로컬 unit164·UI08/UI11 fixture20/type/build로만 확인했고 아직 UI08 same-client 실제 API/PG 소비·실제 사용자 브라우저 인수는 미실행이다. 기존 FN11/후보 DB·migration42/서비스/relay/Secret은 변경하지 않는다. 실제 검증 전 생성 자원은 별도 사전등록과 exact SHA 게시/WSL Git 대조를 거친다.
+
+UI11 후보 same-client 실제 검증은747c6f37cb1de34436f63b3eb4fa7cc0f4e1ff72 private/WSL exact clean에서 새 UI11 시험1 PASS/865.862153ms/skip0이다. Web 함수→Fastify HTTP 주입→기존 정식 PG를 사용하며 실제 로그인 브라우저/네트워크 배포 인수는 아니다. QA41종/시험root 각0·원문 보관소 보호/empty·migration42·새 SQL/실제 사용자/서비스/Secret 변경0이다. 이후 변경은 UI11 scoped CSS·class/import·화면시험/캡처·문서이며 같은 Web API client/서버/DB 시험 내용은 불변이다. 현재 Windows old backend/relay/만료 bootstrap은 그대로라 사용자에게 전체 사용 가능으로 안내하지 않는다.
+
+최신 FN06 검증 코드는350b2e3017012ea1774dab28209643066c6db7a3이다. 기존 WSL 정식 checkout에서 동일 private SHA·clean을 확인한 뒤 후보 내부/HTTP·기존 문서 업로드 승인·현 정책/제어 actual3 PASS/15530.534987ms/skip0을 실행했다. 이후 문서-only 기록은 이 실제 코드 SHA와 구분한다. 독립 DB41종 QA 각0·migrations42·시험root[]·원문 root uid1000/0700/nonlink/실경로 동일/empty이다. 실제 host/credential/Agent·서비스/relay/Secret 변경0이며 UI11/실제 사용자 로그인 browser 인수가 아니다. 로컬 unit150/typecheck/diff 통과는 해당 실행 범위만 증명한다.
+
+FN06 내부 후보 저장에 사용자/PMO 승인으로 forward41 `0006_connection_candidates` checksum327af229e0a2f88f1e763e83ddebd3c522cf3cda2d2d43e9355ef2c8bc8b280d, 개정 guard alias 보정42 `0006_connection_candidate_guard_alias_fix` checksum b9642ef359ea0ed71bb0d65551feeac9a287930a2ec81ed643f3e327d0204aa0 적용 exit0·이전40/41 불변·fixtures7·실제 사용자0. d6f24ab3 exact WSL 내부+신규 HTTP actual1 PASS/1259ms/skip0이며 후보 원본2테이블만 사용한다. 실제 host/grant/credential/Agent·서비스/relay/Secret·사용자 browser DB 인수는 미변경/미검증이다. 이후 이 두 적용 SQL은 수정하지 않고 추가 보완은 새 forward를 사용한다.
+
+FN03 고정 방법론 단계 연결 forward40 `0003_document_stage_bindings` checksum5ec9965d55ad7968d5dac7a2cf90f388b6e3bf6e1a1e74913d32bb8d1c4041e1는 직접 승인 아래 기존 개발 DB에 적용됐다. 6cdb21cb exact WSL actual 단계1 PASS/1199ms(기능952ms)/skip0·기존 문서 인접1 PASS/14585ms(기능14288ms)/skip0, 독립 DB39종 count0·시험root[]·지속원문 uid1000/0700/link0/실경로 동일/empty·migrations40이다. 기존39 SQL·서비스/relay·실제 사용자/권한·Secret은 변경하지 않았다. 실제 같은 Web 함수/API/PG 검증이며 현재 Windows old backend/만료 bootstrap/relay HOLD를 교체한 사용자 browser↔DB 인수는 아니다.
+
+FN02 프로젝트 전용 개정/사람 검토/확정 forward39 `0002_project_methodology_revisions` checksumf816147a1454b428af090b0feb93e496b60cb4eaba7f5979fccdf919fc353e68가 직접 승인 아래 기존 개발 DB에 적용됐다. 이전38 SQL 불변·fixtures7·실제 사용자 생성0, 19ce2bb7 exact WSL의 FN02 same-client/최초 생성 actual2 PASS/1485ms/skip0·독립 DB39종/시험root 잔여0·지속원문 보호/empty. 새 개정/확정만 구현했으며 적용 전환은 실행 상태/영향 근거 부재로412다. Windows backend/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB/Agent 인수는 미확인이다.
+
+FN01 기존 소스 사용자 선언은 직접 승인 아래 forward38 `0001_source_declarations` checksum246fd20284f998ac8d1c1cbea1570372f7d6a204dad885ea41112eeda5b3c025를 적용했다. 초기0001의 source_declarations identity와 원37 SQL은 보존하고 새 source_declaration_versions/project_source_declarations만 연결한다. 0ba2fd49 actual2 PASS/1178ms·UI02 same-client d8128157 actual1 PASS/1184ms/skip0, 독립 DB39종/등록 시험경로 잔여0. 입력 pathHint를 실제 경로로 읽거나 허가하지 않았고 새 서비스·실제 사용자/Secret·실제 소스 파일 변경0이다. 사용자용 mixed runtime/만료 bootstrap/relay HOLD는 그대로이므로 실제 browser↔DB 인수는 미확인이다.
+
+FN05 헌법 적용/이력 forward37 `0005_project_constitutions` checksum71f4674b279ffea063e3291c392ac822ab4367a0393834079b79caeea29dd765가 직접 승인 아래 기존 개발 DB에 적용됐다. 기존36 SQL 불변·fixtures7·실제 사용자 생성0. 서버045d6996 actual2 PASS/14708ms와 UI10 same-client7cf8c005 actual1 PASS/15068ms/skip0, 독립 DB33종 각0·등록 시험root[]·지속root 보호/empty. 헌법 pointer는 프로젝트별 정확 적용 세대로만 전환하며 기존 원문/지식·확정 이력을 보존한다. Windows 서비스/relay/만료 bootstrap·CA·Secret은 교체하지 않았고 실제 사용자 browser↔DB 인수·Agent 전달/준수 판정은 미확인이다.
+
+FN11 목록 후속 `835b9a50a7cf08855a183ec868305f57437d351d` exact private/WSL clean actual1 PASS/12553ms/skip0, SQL36 재실행0·새 DB/schema/권한/자원 생성0. 독립 DB31종 각0·시험root[]·지속root 보호/empty·migrations36 확인. 현재 Windows 실행본/relay·Secret은 그대로 보존하며 이 API 실측을 실제 사용자 브라우저 인수로 승격하지 않는다.
+
+FN11 최신 저장 검증 `eb4f1d97c9b914a9dbd17a71d6c2e5f705d74e18` exact private/WSL clean: 같은 직접 승인 범위의 forward34/35/36으로 요청·사람 결정·원문 업로드 후보의 일회 소비를 연결했다. migration36 checksum9eab1fcba2586bf87f202cefc39f300e152e1415c8339692438074b3b800b29d, 이전 SQL 불변·fixtures7·실제 사용자 생성0. actual2 PASS/13084ms/skip0·독립 DB31종 각0/시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 실제 사용자/정책·Secret·서비스/Agent·설계 기준 변경0이며 기존 Node40744/receipt commit000d0088·relay26052는 보존했다. 새 UI browser↔DB/인수는 미검증이다.
+
+FN04 최신 저장 검증 `df2f81ff28c0a2832dff24b87dd7dc0646a57c7c` exact private/WSL clean: 동일 승인 범위 forward30~33으로 사람 영향 버전·요청4종 출처를 추가했다. migration33 checksum1ec0d32d45a770998be2da36d2eab7cd557f16314ee41618676bcefea704b95a, 이전 SQL checksum 불변. actual1 PASS/9215ms/skip0·독립 DB28종 각0/시험root[]·지속root uid1000/0700/link0/실경로 동일/empty. 현재 기준·실제 계정·권한·Secret·서비스 변경0. Windows backend000d0088/Web 혼합 runtime·만료 bootstrap·relay HOLD는 그대로이며 실제 사용자 브라우저↔DB 인수가 아니다. 아래 초기29/이전 검증 문장은 해당 시점 이력이다.
+
+FN04 초기 변경 요청 `d672450d004af3b9cda723557cb64be271f24eb9` exact private/WSL clean, 승인 forward29 `0004_design_change_proposals` checksum2cafd54f19dade5780c0f9dab652999c65ed1b072bafe3e64b701935ea7b7d70 적용/이전28 불변. actual2 PASS/8830ms/skip0·독립 DB28종 각0/시험root0·지속root 보호/empty. 변경 요청·초기 기계 영향 저장이며 원문/확정 기준·서비스/계정/Secret·실제 Agent 변경0. SQL29는 이후 수정하지 않고 같은 승인 범위의 후속 저장 보완도 새 forward만 사용한다.
+
+UI06/FN04 `827f812ff1299f692830423cc6091e5405ba9877` same Web exact private/WSL clean actual1 PASS/8168ms/skip0·DB26종/시험root0·지속root 보호/empty·migrations28 불변. 현재 사용자용 Windows service는 교체하지 않았고 DB/화면 fixture·same-client 실측을 실제 browser↔DB 로그인/사용자 인수로 승격하지 않는다. 다음 설계 변경/영향 저장 DB 보완은 별도 질문 중이며 아직 미승인/미적용이다.
+
+FN04 확정 저장 `a7d6851f28433ab9756d68431ffb09d2c4d88103` exact private/WSL clean actual1 PASS/8110ms/skip0. 승인 forward28 `0004_work_plan_confirmation` checksum8c899de2c7c5e673a8915fd2ebd83e78b32e0d87d4828b50cd76dd499b03a249 적용, 이전27 불변. 독립 DB26종/시험root0·지속root uid1000/0700/link0/실경로 동일/empty. 사용자용 Windows backend는 이전 버전·Web build만 갱신된 mixed runtime이며 로그인/실제 browser DB 인수를 주장하지 않는다. 기존 서비스·계정·Secret·CA·relay 재시작/갱신0. 화면 연결은 별도 후속이며 아래 이전 ‘미작성/미적용’은 과거 시점 이력이다.
+
+FN04 화면 검토 선택 `ec2692212b5d4ad93d6ab5a27cd28105916840cf` exact private/WSL clean actual1 PASS/7739ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL27 재적용0·새 DB/schema/서비스/실제 사용자·Secret 변경0. 다음 계획 검토/확정 forward는 승인됐으나 아직 미작성/미적용이다.
+
+격리 UI 동일 Web `391a1d6c7ec8d6e5550df48f54421fb946899a6d` exact private/WSL clean actual1 PASS/6753ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL27 재적용0, 실제 사용자/Secret·CA·서비스 변경0. 원문 격리는 실제 보관 성공과 사용 차단이며 사용자용 mixed runtime/실제 browser DB 인수 완료가 아니다.
+
+원문 격리 `891cfd3135e5f0bcb4baab7b17c4615bbbe58e52` exact private/WSL clean에서 새 forward27 `0005_artifact_quarantine` checksum27480ec2d09bc14bf88196e7d45104bfac107f7fa362760246d0b49eaf043ad5 적용·기존26 불변. actual2 PASS/6327ms/skip0·독립 DB25종/시험root 잔여0·지속root 보호/empty. 첫27 후보는 구문 오류로 전체 롤백/열0을 확인했고 원문/기존 적용본을 수정하지 않았다. 실제 사용자·Secret·CA·서비스 변경0이다.
+
+UI10 동일 Web 판단 client `6e9da43c320737479516f142d6d268b1b724db87` exact private/WSL clean actual1 PASS/6638ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. 적용26 재실행0, 실제 사용자/Secret·서비스·Agent 변경0. 기존 Windows backend와 새 Web dist의 mixed runtime이므로 사용자용 exact-SHA 통합/인수 완료로 표시하지 않는다.
+
+FN05 검토·확정 서버 `498d1a6fa4442a5843307108aea8de4ef2c1e513` exact private/WSL clean에서 승인 forward26 `0005_knowledge_confirmation` checksum35bd5b9a3f6109881f0f22b1a06957114ea714556e03700678c7e1ba3d353766 적용·기존25 불변. actual2 PASS/6283ms/skip0·독립 DB25종/시험root 잔여0·지속원문 보호/empty. 실제 사용자 정책·Secret·CA·서비스·초기 등록/relay는 변경하지 않았다. UI10 후보의 actual은 후속이며 mixed runtime/미검증 경계는 유지한다.
+
+정정 UI 동일 Web client `c2b1b75cad5c895c4f1e0c324936865b728237c9` exact private/WSL clean actual1 PASS/5951ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·원문/지시/이유·앞1 보존과 새2/멱등을 확인했고 사용자용 서비스/Secret·실제 사용자/Agent는 변경하지 않았다.
+
+사용 제외 UI 동일 Web client `9a9526255cb108a6c62d07633384826ea310a4bf` exact private/WSL clean actual1 PASS/7346ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·원문 artifact 개수 불변·서비스/Secret/실제 사용자/Agent 변경0. 전체 기능/실제 사용자 browser DB 검수는 미완료다.
+
+지식 상태/이력 동일 Web client `eda65c855695ebb80dff5e7f6958bf455f0d16b8` exact private/WSL clean actual1 PASS/5775ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL25 재적용0·합성 event 정정사유 변조는 finally에서 복원했고 실제 사용자 데이터/서비스/Secret는 변경하지 않았다.
+
+FN05 정정/제외 서버 `4ce865e800be2591c5ab6b2e5121bba0155e04d1` private/WSL exact/clean에 승인 forward25 `0005_knowledge_changes` checksum03dc6518781e35af3a06c28d7ee18d05936b2ebc9e513cbc0b100495b36c24fe만 적용·기존24 불변. actual2 PASS/6012ms/skip0·독립 DB25종/시험root 잔류0·지속 원문 보호/empty. 새 사용자/권한·Secret·서비스·Agent 전달 변경0이다.
+
+대화 UI 동일 Web client 후속 `2c123a45758d83dc8a7ce5c56cf3ca9c22eac91e` exact private/WSL clean actual1 PASS/5561ms/skip0·독립 DB25종/시험root0·지속원문 보호/empty. 기존24 SQL 재적용0·사용자용 backend/relay/초기 비밀·CA/서비스 변경0. 실제 사용자 browser DB와 전체 기능 검수는 미완료다.
+
+대화 원문→지식 출처 후속 `2710f1d1182fd56a92f872017e17fa75e66575c9` exact private/WSL clean actual1 PASS/5399ms/skip0·독립 DB25종/시험root0·지속root 보호/empty. SQL24 재적용0, 사용자용 runtime/relay HOLD/만료 bootstrap·CA/Secret/서비스는 불변이다.
+
+FN05 대화 서버 `13a6fad444ba0ec2ad767a1bb6ba1f7acc0b8ad9` private/WSL exact/clean에서 승인 forward24 `0005_conversations` checksum8241d4e6321d8798ecc8e78d83eae1147a3c8ff7110cdd86370cab3b73be98dc만 적용·기존23 불변. actual2 PASS/5465ms/skip0·독립 DB25종/시험root 잔류0·지속 원문 보호/empty. 저장은 STORED이고 Agent전달/실행0·사용자용 서비스/Secret 변경0이다.
+
+UI10 동일 Web client 실제 연결 후속 `579ce2dc2da4a05f8031bded1ff00e00037696bd` private/WSL exact/clean actual1 PASS/5569ms/skip0·독립 DB23종/시험root 잔류0·지속root uid1000/0700/link0/실경로 동일/empty. SQL23 재적용0·기존 runtime/relay/Secret 불변. 실제 사용자 browser DB·전체 후보 사용 준비와 구별한다.
+
+2026-10-16 FN05 `2b8a24227c57aa06394f21dc983de2c7849f59a1` private/WSL exact/clean에 승인된 새 forward23 `0005_knowledge_drafts` checksum42efe15b4ebe3a860364ef85d92631fcf85c71f7143738026155e5814893153a 적용·기존22 불변. actual FN03/FN04/FN05+FN11 2 PASS/5631ms·독립 DB23종/시험root 잔여0·지속root 보호/empty. UI10후속 Web73/fixture3·단위85와 실제 browser DB 여정은 별개이며 사용자용 backend/relay/초기 비밀·CA/서비스는 변경0이다.
+
+2026-10-16 추적 서버 후속: private/WSL exact `cca0899053859ba8184535eac6645bea236e5284` clean에서 승인 forward22 `0004_trace_links`(SHA256 `31b8f7525bf8e07c4e6e13644ea97715b39e57cb9400a7fece8cbaccf1d0d51c`) 적용·기존21 지문 불변. 실제 FN03/FN04+FN11 2 PASS/4532ms/skip0·독립 DB20종/임시 경로 잔여0·지속 원문 보호/empty. 사용자용 Node/relay·초기 비밀·CA·실제 계정/정책은 변경0이며 실제 browser↔DB·전체 exact runtime은 여전히 미검증이다.
+
+2026-10-16 UI06 계획 client 후속: private/WSL Git exact `cefa3fb9dd85caad2ac07adad7f33abac4443834` clean의 prepare/send/readWorkPlan actual1 PASS/4151ms/skip0·독립 DB19종/시험root 잔여0. 기존21 SQL 재적용0·사용자용 Node/relay·Secret 변경0. Windows Web67(JS473.43kB/gzip127.38)/단위76/UI06 fixture34 증거와 실제 browser↔DB·사용자 인수는 구분한다.
+
+2026-10-16 FN04 후속: 지정 private Git exact `b43b26671f7b0bc5aa87d1353b4edeaf0c5ca55b` WSL clean에서 forward21 `0004_work_plan_drafts`(SHA256 `9ea544780d61cf7b5914b9db597eadba2291fb487f42a373d695f053b8e8610e`) 적용·기존20 checksum 불변. 실제 FN03/FN04+FN11 2 PASS/3818ms/skip0, 독립 DB19종·시험 경로 잔여0·지속 원문 uid1000/0700/link0/실경로 동일/empty. Node40744/relay26052·만료 bootstrap·Secret·서비스는 변경하지 않았고 actual browser DB/전체 exact runtime은 미검증이다.
+
 ## 현재 단계와 정본
+
+FN04 저장 첫 후속 `98b3504dcf6bc2387f317a0acfcb9eb642657044` 지정 private/WSL exact clean actual FN03/FN11 2 PASS/3368ms/skip0. 승인된 forward20 `0004_design_index` checksum `d0d6ef9221a46c96c4e6f033d6a14e22cc07b26a8bcb1949d67dbb8e574aea6a` 적용·기존19 불변, fixture7/실제 사용자0. 독립 design_items/screen_regions 포함15표 각0·시험root[]·지속원문 uid1000/0700/link0/empty. 설계 추적 조회 UI는 현재 local 단위71/fixture29·Web64/type/build이며 최신 actual Web client 검수는 게시 후다. 사용자용 runtime·relay/초기 등록·CA/Secret/서비스는 변경하지 않았다.
+
+현재 코드 `ae2c3fd5001f90af17995929aa9abfba6ec8559e` local/private·WSL exact clean actual FN03 1 PASS/3017ms/skip0. 복합 충돌 조정·검토/확정 거절 보관/명시 새 대상까지 동일 Web client와 실제 API/DB/FS로 확인했다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty, SQL19·계정·권한/Secret·서비스 불변. 단위65/UI06 fixture27·Web62/type/build는 별도이며 Windows backend 혼재/relay HOLD/만료 bootstrap·CA 경계·실제 browser DB 여정 미검증은 유지한다.
+
+보관 자료 재개 후속 코드 `4997e732f6bebfca92812cc6d7a5680dcbb71664` 지정 private/WSL exact clean의 같은 Web client FN03 actual1 PASS/2712ms/skip0. 새 schema/실제 계정/권한·Secret·서비스 변경0, SQL19 불변이다. 독립 DB13종 각0·시험root[]·지속원문 uid1000/0700/link0/empty. Windows unit61/UI06 fixture20+추가 음성2·Web61/type/build PASS는 실제 browser DB 여정이 아니다. 기존 혼재 backend/relay HOLD/만료 bootstrap/CA 경계는 유지하며 아래 이전 목록 재개 미완료 문구만 후속 전 이력으로 본다.
+
+제안 후속 `d05c3df31f7112f0cd761ea3e771d3830d42b94c` local/private·WSL exact/clean의 동일 Web client FN03 actual1 PASS/2756ms/skip0, 서버/권한 인접은 직전9198a9bc actual2/2343ms. 새 forward19 `0003_document_proposals` checksum `93cb063a0214f2197afca309ed3d4482a0ea8bac765b9e72f42b110bdb6f542a`만 적용(기존18 불변), 제안/명시 반영/서버 diff·구버전 보존을 확인했다. Windows unit61/UI06 fixture16/13.8초·Web59/type PASS는 실제 사용자용 runtime 전환과 다르다. 기존 Node/relay·CA/bootstrap·실제 계정/Secret/서비스 변경0, 목록 재개·actual browser↔DB·Agent/Oracle는 여전히 남는다.
+
+최종 화면 경계 보정 `73373f08ac5306e12c5f87fa84226ebd636abfb2` local/private·WSL exact/clean의 실제 FN03 1 PASS/2443ms/skip0. 기존 FN11·서버/SQL18은 바로 아래6a7a3c26 actual2 증거가 유지되므로 재적용/반복하지 않았다. 파일 준비 경합·확정 거절/결과 미확인 구분·재시도 화면 재진입은 같은 범위 독립 검토 후 보정, Windows unit59/UI06 fixture15/11.4초·최종 집중1/3.3초·Web58/type PASS. 최종 실제 시험 뒤 독립 DB11종0·시험 root[]·지속 artifacts uid1000/0700/link0/empty·migration18. 실제 사용자용 runtime 교체는 여전히0이며 아래 backend 혼재/relay HOLD/bootstrap·CA 경계는 그대로다.
+
+2026-10-16 가져오기 후보·명시 선택 후속: 코드 `6a7a3c262bbd189448a07558066d12f5390f814f` local/private·WSL exact/clean에서 actual FN03/FN11 2 PASS/1963ms/skip0. 직접 승인된 새 forward18 `0003_document_imports` checksum `c9ffa0c09d8597e410a9b85ead5b1aad3413df82e7f6efa2169ad514fa001afb`만 추가했고 기존17 불변이다. 최초 미적용18의 CASE 문법 오류1은 전부 rollback된 별도 실패 이력이며 소급 PASS 아님. 독립 DB 사용자/프로젝트/문서/확정/후보/선택/검토/원본/정책/명령0·시험 root[]·지속 artifacts uid1000/0700/link0/empty. Windows unit58/UI06 fixture15/11.6초·Web58/타입은 별도다. Node40744/relay26052 같은 시작 시각을 확인했고 기존 backend000d0088/새 Web 혼재·relay HOLD·만료 bootstrap·CA/실제 계정/Secret/서비스는 변경하지 않았다. 최신 실제 사용자용 exact-SHA runtime·browser↔DB 여정·제안/서버 diff·후보 목록 재개·Agent/Oracle는 미완료다. forward18 자동 downgrade/삭제는 하지 않는다.
+
+2026-10-16 별도 확정·명확한 저장 버전 충돌 조정 후속: 최종 코드 `3f4601b8a39839240aa94884d898ead1ef8d0168` local/private 동일·WSL exact clean, 같은 클라이언트의 FN03/FN11 actual2 PASS/1714ms/skip0. 승인된 새 forward17 `0003_document_confirmations` checksum `58ebdd39cddb67cbbf4fa2f21bea42848dfa7e0851297bd7592f8b3ce36e9fd5` 1개만 적용했고 기존16 불변이다. 실제 확인 후 합성 사용자/프로젝트/문서/확정/검토/원본/정책 각0·임시 root[]·지속 artifacts root uid1000/0700/link0/empty. Windows 단위56·UI06 fixture14/10.8초·최종 Web56(JS393.07kB/gzip109.63)/타입 PASS는 실제 browser↔DB 여정과 별개다. Node40744·relay26052 같은 PID/시작 시각 보존, 만료 bootstrap/CA·기존 서비스/설정/Secret 변경0. 최신 사용자용 실행환경·실제 화면 DB 통합·Agent/Oracle는 미완료이며, 아래 이전16개/확정 미연결 관측은 이력이다. SQL17은 자동 downgrade/삭제하지 않는다.
+
+2026-10-16 UI06 내용 검토 작성/저장 연결: 최종 코드 `6ca25abf30f4595d37aebd9fc8d2c62fac14c387` local/private 동일·WSL exact/clean, actual FN03 1 PASS/860ms/skip0. 같은 클라이언트의 현재 정책/제어·고정 문서/hash→사람 검토 기록/replay·실제 1건/재조회·미확정 유지·outbox0을 확인했다. 독립 users/projects/documents/versions/reviews/artifacts/policies0·임시 root[]·원문 root uid1000/0700/link0/empty, migration16 불변. Windows unit48·UI06 fixture10/8.6초·타입/Web53 PASS는 별도이며 실제 browser↔DB는 미검증이다. 기존 Node40744의 backend000d0088/새 Web 혼재·relay26052 HOLD·만료 bootstrap·CA·계정·Secret·서비스 설정은 변경하지 않았다. 최신 사용자용 exact-SHA runtime은 아직 준비 전이며 검토/별도 확정·Agent 실행은 구분한다.
+
+2026-10-16 UI06 신규/편집 저장 연결: WSL exact `05da735cf241f09376b094819ea5e6b003183bd7`/clean의 actual FN03 1 PASS/1024ms/skip0. 화면과 같은 클라이언트로 신규v1·개정v3/재조회·원문 BOM/CRLF·원래 텍스트 형식·같은 저장 replay를 확인했지만 실제 브라우저↔DB 통합은 아니다. migration16 불변·DB/파일 합성 잔여0/지속 원문 root0700/empty를 독립 확인했다. Windows 단위46/UI06 fixture6·Web51(JS371.33kB/gzip105.67)/타입 PASS. 현재 원래 Node40744 backend000d0088·새 Web 혼재·relay26052 HOLD·만료 초기 등록 비밀·CA는 변경하지 않았다. 계정/키·서비스 설정·신규 migration·Agent/Oracle 변경0, 사용자용 최신 exact-SHA runtime 준비는 미완료다.
+
+2026-10-16 후속 문서 내용검토: exact `7a7841a12c6f20f7c4a991be0d34be8d469eae54`에서 actual3 PASS/skip0(FN03·FN11·인접 공통 METHOD). 새 forward16 `0003_project_document_reviews` checksum `f1ba53b79b95a02867822743748ead6f6dafff039a506651a26368d7b922de75`만 추가, 이전15개 불변. 현재 개발 DB 총16개다. 새 역할/계정·Secret/서비스 설정·원문 root·relay/CA 변경0이며 검토 기록을 확정/제품 인수로 세지 않는다.
+
+2026-10-16 FN11·FN03 직접 보완 승인과 신규 원문 위치 승인을 적용했다. WSL exact `dc42b29c4d24d24dc4f6f8f1737ac289023ae09c`/clean의 자료 정책·원문 보존/불변 문서 버전·목록 actual2 PASS/skip0. migration15개(정책13·원문14·문서15), 기존 SQL 불변. 원문14 checksum `78a0457fda6c394605ca46a7b6aec761aec6de0a84f47450b9cda326dac9ccd8`, 문서15 `748e8f07ffa2b1093e1141504e8a5134332518a9bf56ec04584e59e84e7a4292`. 독립 DB 조회에서 합성 프로젝트/문서/원본/정책·해당 사용자0, 임시 시험 root0. 새 지속 `/home/daon/.local/share/anvil-v3-development/artifacts`는 daon(uid1000)0700/link0/empty로 만들고 보존한다. 서버가 소비하는 선택 설정은 `ANVIL_ARTIFACT_ROOT`이며 실제 서비스 설정/재시작은 아직 하지 않았다. Windows Web48·unit43·UI06 fixture2는 실제 화면 DB 연동과 구분한다. 기존 Node40744의 backend000d0088·relay26052/재접속 HOLD·만료 bootstrap·CA·계정·Secret·기존 서비스는 변경하지 않았다. 사용자용 새 런타임 준비나 전체 기능 완료가 아니다. 아래 과거 관측은 삭제하지 않고 이력으로 유지한다.
+
+2026-10-16 최신 직접 ‘승인해 계속하자’로 DRAFT/PROJECT 경계를 해소했다. WSL Git exact `ef88dfd965cedc97ee42e0545d0a79f40009b2c8`/clean의 최초 생성·검토·확정·고정 snapshot·감사 실패 rollback 및 인접 실제4 PASS/skip0. 새 `0011_project_creation` SHA256 `0ad0e1e9d429afe65014492d1cb07e629df56c081d3643233c3f32ba5ff3fb95`와 `0011_draft_method_reviews` SHA256 `a7aad194c8dff3a29ec502f1e94b0e4728bb5c087aba02390f11a75c3765efaf`만 추가해12개, 이전10개 불변. 독립 QA 조회에서 고유 생성 사용자/초안 검토·확정/프로젝트 잔여0을 확인했다. Windows unit43·UI02/03 fixture23·마지막 핵심2·Web46(JS344.96kB/gzip98.72)·타입은 별도 증거다. Node40744/원래 KST05:25:42 backend000d0088·relay26052를 교체/재접속하지 않았고 실제 사용자/Secret·expired bootstrap·CA·서비스 변경0이므로 actual UI DB 제품 준비/인수 PASS는 아니다. 이전 blocked·10개 SQL 관측은 당시 이력이다.
+
+2026-10-16 방법론 목록 페이지 관측: WSL exact `b7d64b894a49876c77f30ff88729bfcd5169e85d`/clean의 실제 본인 확정 상태 필터1 PASS/465ms, 선행 `7eda0b69`에서 내장3종 페이지·변조/조건/격리1 PASS/339ms. 기존10개 SQL/권한 변경0·QA 정리. Windows unit42·UI02/03 합성20 및 검색/페이지 핵심2 PASS, Web45(JS333.32kB/gzip96.34). 새 실제 UI DB 통합/제품 인수는 미검증이다. 현재 DRAFT/PROJECT 보완 승인 경계로 goal blocked를 기록하며 소유 서비스/relay·Secret·CA·실제 계정/Agent는 변경하지 않는다.
+2026-10-16 프로젝트 전용 초안 후속 관측: WSL Git exact `72cd43affe6a738a342df3a3ca0e2e79b2e5c7de`/clean에서 기존10개 SQL/DB 권한 그대로 실제1 PASS/486ms/skip0, 직접 작성2단계·음수/양수 좌표·조건/원본 ref 저장·GET 재조회 및 잘못된 실행 속성422·고유 QA 정리 확인. Windows Web45모듈(JS330.19kB/gzip95.49)·타입/단위41·UI02 합성7 PASS는 별도 증거다. backend000d0088·relay hold·인증서/초기 비밀 경계 불변, actual 새 UI DB 통합은 미검증. DRAFT/PROJECT 새 권한 보완은 승인 응답 전0.
+2026-10-16 방법론 검토/초안 선택 최신 관측: WSL exact `29d70cf0795d8593b8f6e7951e43bf7eab4e2424` actual1 PASS/455ms·정확 합성 QA 정리. 새 `0011_user_common_method_reviews` checksum `9e480e3bd4da152befdbb2bca8a2f5e1b3cdf0ed43336c5b210090f7ff02fea2`를 포함해 적용10개이며 이전9개 불변. Windows44모듈 Web build/단위41·UI03 fixture12/UI02 fixture5와 실제 API/DB는 분리한다. 소유 Node40744의 원래 시작UTC2026-10-15T20:25:42.3705853Z·backend000d0088은 교체하지 않았고 Web만 새 빌드다. 전체 exact-SHA runtime/actual UI DB 여정은 미검증. 초기 비밀 만료·CA7일·relay26052 hold 유지, 재접속/실제 사용자/Secret/Agent/Oracle 변경0. 다음 DRAFT/PROJECT 권한 보완은 USER_COMMON 승인과 별도 경계로 기록했다.
+2026-10-16 본인 공통 검토 최신 관측: WSL exact `34805ebedd2781eb23119d6d79648b1ecc585e8f` 실제 양식 검토/확정/새 개정·최신 보완/위조 증거 거절1 PASS·정확 QA 정리. 추가 migration `0011_user_common_content_reviews` checksum `0009cfe2c02b92a4e930d538ce5c0c5d67215c6d89aca6c1a4345868ccbc4f01`, 이전8개 SQL/checksum 불변. Windows Web37/단위41·인접 UI03 fixture9 증거와 실제 API/DB는 분리한다. Node40744 backend000d0088·relay26052/5546·bootstrap 만료·CA7일 경계는 변경하지 않았고 새 사용자 인수/실제 UI DB 여정/Agent/Oracle는 미검증이다.
+
+2026-10-16 본인 공통 자료 최신 관측: 직접 승인 범위의 `0011_user_common_control`을 forward 적용(checksum `ea3043a71f4d1557bf9620ac06f88274ed7227629fe2b1bfab00e7409d16563c`), 기존6개 checksum 불변. WSL exact `0f072bb93f1a454432f8e97e3ca7a574eca1320b`의 실제 복사/개정·owner/client·멱등/감사1 PASS·합성 QA 정리. 기존 잘못된 정리 순환 FK 실패1은 정확 QA만 보정/정리했다. 코드/양식/방법론 v1 보존. Windows UI03 fixture7 PASS/4.6초·unit39·Web34모듈 통과, Node backend는000d0088 그대로이므로 actual UI/DB E2E 아님. Windows relay timeout3회 중단·초기 비밀 만료/자동 재발급0 유지. 실제 Agent/Oracle 미실행.
+
+2026-10-16 방법론 후속 관측: WSL exact `7590d3584fb4971b67f1c4d6fd7aace749a37504`/clean, 계획0002 적용·내장3종 실제 저장/조회·소유 격리1 PASS. checksum `0453854b9925f5ff2eeed15babfb5dda8446fbb751b3e7caf0378a98d6dbcd34`, 기존0000/0001/0011/0003 불변. Windows Web32·방법론/양식 fixture4 PASS, Node backend는 이전 소스이므로 새 실제 UI/DB 통합 PASS 아님. 사용자 공통 쓰기 계약 보완은 별도 승인 응답 전 적용0.
+
+2026-10-16 최신 catalog 관측: WSL Git exact `148684772ca863cc99dee5c359148b4aa1f58669`/clean에서0003 catalog를 적용하고 실제 API/DB1 PASS, app 읽기 전용·QA 사용자/양식 정리를 확인했다. 기존0000/0001/0011 SQL/checksum 불변. Windows Web은30모듈 신규 양식 조회 빌드·fixture Edge2 및 공통 탐색 포함7 PASS이나 Node40744 backend는000d008 당시 소스이며 전체 exact-SHA runtime이 아니다. 실제 Windows DB relay 접속/새 키/초기 비밀 재발급0.
+
+2026-10-16 후속 관측: WSL Git exact5a88d5eb에서 auth/허가 프로젝트 조회·초안 저장을 실제 DB/HTTP로 확인했다. migration0000/0001/0011 적용, checksum은 WORK_STATUS. Windows 실제 DB relay timeout 누적3회로 그 경로를 중단했고 새 브라우저 검수는 모든 API fixture 격리다. Windows Node40744는 시작 당시000d008 backend를 계속 보유하며, 개발 Web dist는 후속 UI 빌드로 바뀌었다. 따라서 이를 현재 branch 전체 exact-SHA runtime/제품 ready라고 보고하지 않는다. 기존 초기화1/실제 사용자0·승인 key/CA는 보존, bootstrap은30분 기한이며 자동 재발급하지 않는다.
+
+2026-10-16 현재 사실 갱신: Stage A는 PR41/main `f976ed5e` 통합·smoke·정리 완료, Stage B `codex/av3-stage-b`에서 UI00/FN01을 구현 중이다. 아래 초기 설계/정리 기록은 당시 관측이며 현재 구현 상태를 대신하지 않는다. 전용 WSL checkout은 `/home/daon/deploy/anvil-v3`/Git exact `246007f2`, PG `anvil-v3-development-pg`의 DB `anvil_v3_development`와 app 역할·loopback5546을 사용한다. 0000/0001 적용, 이후 migration은 별도 계약/승인 대조 후 forward-only다.
+
+신규 인증 참조는 직접 승인 `call_74c28acfc6424f6fb3e31ef55262a333`로 `D:\Project\Anvil\.av3-data\auth.json`(서버 key/설치ID)·`bootstrap.json`(30분 일회 초기 등록 비밀)을 배타 생성했다. 파일/키 원문을 Git·로그·보고서에 넣지 않는다. root/파일은 current user/SYSTEM만 접근, 실제 소유자는 자동 생성하지 않았다. 최초 등록 기한은 KST 2026-10-16 05:51:14.749이며 만료를 자동 연장하지 않는다. 생성 도구는 기존 파일/계정/초기화행이 있으면 실패하고 `--check`는 읽기 전용이다. 정상 launcher는 auth.json을 선택적으로 서버에 전달한다. 현재 소유 Node3830은 실행 전이며 공유 wslrelay26052/5546은 변경·종료 금지다. 후속 실제 실행 때 receipt로 갱신한다.
 
 현재는 상세 설계 r8·작업계획 r7에 검토 보완을 본문 통합하고 P02 상세 계약을 작성하는 단계다. 작업계획 r3 승인·P01 시안/양식 승인·TD-01 A안·TD-02 Anvil 전용 로그인 설계 선택을 유지하되 P02/P03 선행과 실제 실행 승인 경계는 별도로 대조한다. TD-02는 설계 선택이며 실제 사용자·DB·Secret·인증서 변경이 아니다. 제품 구현과 신규 배포는 시작하지 않았다. 새 작업의 기준은 AGENTS.md, docs/design/Anvil_설계서_v3_초안.md, docs/design/Anvil_v3_인터뷰_합의사항.md, docs/design/문서작성_공통기준.md, docs/WORK_PLAN.md와 연결된 업무 카드, docs/WORK_STATUS.md다. 예전 개발환경 문서와 실행 도구는 Backup/Anvil/legacy-20261015-1420에 보관했다.
 
@@ -91,3 +402,76 @@ CurrentUser Root 신뢰 저장소에 새 CA의 정확 thumbprint1개를 넣는 �
 - 전환 시 `.av3-data/runtime/receipt.json`의 kind·commit·PID/start/exe·3830을 다시 대조해 해당 소유 Node만 중지한다. 다른 Node나 wslrelay를 일괄 종료하지 않는다. 인증서는 후속 HTTPS 개발 검수 동안만 유지하고 2026-10-23 03:29:02 KST 또는 검수 종료 때 지문498348218A4015B341A90B10FF4FE176987D4424의 CurrentUser Root1개만 회수한다.
 - 임시 Windows npm-cache/P03-browser·WSL 등록 npm-cache 정리/부재 확인0, QA Edge0·DB probe0. 새 개발 DB/volume/보호 설정·CA·현재 소유 개발 Node는 보존 대상이다. 기존 .pytest_cache ACL 문제는 별도 보존하며 재실행/권한 변경0이다.
 - 불변 소스의 기존 DB/브라우저 증거는 재사용한다. Stage A 통합 전 unit13·typecheck·Web14·schema 생성 일치·diff check를 fresh exit0 확인했다. 실제 Agent/제품 기능/Oracle·전체 회귀는 미실행이며 해당 UI/FN/IX에서 검증한다.
+
+## 2026-10-27 FN16 집중 검수 환경 범위
+
+실제 파일 manifest/bundle 검수는 Windows의 등록 D:/tmp QA·PowerShell7 owner 확인 전용이다. 전체 npm test 및 Linux/WSL 실행은 이번 미실행이며 교차 OS PASS가 아니다. 저장소 CI workflow는 현재 조사에서 없고, 기존 FN06/FN08도 Windows 전용 조건이 있다. 환경별 실행 대상은 향후 실제 Gate에 맞춰 명시하며 이 기록으로 skip/기준 완화를 채택하지 않는다. 제품 Node 모듈의 Linux 동작·정식 WSL 서비스/DB 상태는 이 집중 검수로 새 확인하지 않았다.
+
+
+## 2026-10-27 17:42 KST P03 host 실행 전 읽기 대조
+
+Main74bfc1(UTC08:42:13.098Z) 고정ssh/Node의읽기전용조회exit0/stderr0이다. daemon e3349f1d-dbfc-478a-96d9-295bf6c6839e·image594290e9·원volume/local/CreatedAt2026-10-16T03:53:33+09:00/기존labels·optionsEmpty 일치,지정helper0/원volume소비자0,새source/ledger후보경로부재를확인했다. 원파일내용·Secret·PG_VERSION을읽거나새mount/자원을생성하지않았다.
+기존Node /opt/node-v24.21.0-linux-x64/bin/node는실uid1000환경에서파일uid1001/mode755/nonlink/realpath동일/hash7fde7b8afa198da66257f42ee2001d874c7355631e6d1579a5fb5ef1f246df4c다. 이는현재controller의미실측uid0조건과다르며실행불가상태다. UID1001신뢰채택/OS권한변경은자동처리하지않고PMO지원요청했다.
+실image의PATH는 /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/15/bin 이며GOSU_VERSION1.19/LANGen_US.utf8/PG_MAJOR15/PG_VERSION15.18-1.pgdg13+1/PGDATA고정·unknownEnv0,EXPOSE5432/tcp1개·선언VOLUME1개다. 기존후보PATH는실제와달라거절되며값을느슨하게수락하지않는다. Docker실행파일uid0/mode755/nonlink/hash7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b,Gituid0/mode755/nonlink/hasheb54b535467e0975c1284d4c4d08eea779aeb248a5d34b02e2ee171382e22201을읽었다. 실제OS/도구의전체신뢰를이metadata만으로증명하지않는다.
+조회는자원변경0·원volume내용/mount/PG/DB/서비스/Agent0이다. 과거실측을이번실측으로소급하지않으며다음은정확신뢰후보/관측profile국소보완과별도실행효과대조다.
+
+
+## 2026-10-27 17:49 KST Node 소유 조회·고정 경로 ACL 최소 대조
+
+Maine94e53(UTC08:49:41.186Z) 고정단일getent passwd1001은exit2/errornull/stderr0이므로NOT_FOUND다. 전체계정목록/암호정보를조회하지않았다. numericUID1001은현재계정명에귀속되지않으며악성/안전어느쪽도단정하지않는다.
+이미설치된 /usr/bin/python3→/usr/bin/python3.12(root소유0755)를-I고정읽기로만사용했다.신규설치0이다. Node및 /·/opt·/opt/node-v24.21.0-linux-x64·bin 고정5경로에서POSIX ACL access/default xattr은모두ENODATA(파일default는NOT_APPLICABLE)·현재uid1000의effective쓰기false였다. mode755만으로ACL을검증했다고한것이아니며별도xattr관측이다.
+ba0213(08:45:34.659Z)은 /·/opt uidgid0:0/755, versionroot/bin/node1001:1001/755/nonlink/realpath동일, node dev2096/inode724935/nlink1 및현재/proc/self/exe동일을관측했다. getfacl없음으로당시ACL미검증이었으며이후e94e53로이관측범위만보완했다. 실행uid1000의쓰기불가와ownerUID1001/향후계정할당·privileged주체의교체가능성은별개다. hash확인전후/실행중교체·loader/공유라이브러리신뢰전체는증명하지않는다.
+PMO는기존Nodepath/hash/UID1001고정source-only후보준비와관측imagePATH교정을채택했다. 소유주체미해결잔여위험을명시한정확외부실행결정전actual0이다. 설치/chown/ACL변경/다른runtime탐색/새도구연쇄준비/원volume읽기·mount/PG/DB/서비스0. source에grant문자열이있어도외부사람승인을인증하지않는다.
+
+
+## 2026-10-28 P03 단발 보호복제 실패·보존 상태
+
+- 새직접승인 결정337E26…/packetC2B1…의 fixed367d9d49 controller605FB846/shell04FE0C3F 1회 실행은create-volume/COPY_VOLUME_IDENTITY로NOT_COMPLETE였다. consumed=true/copyCreated=true/helpers={}·cp/PG/SQL미도달이며 같은승인재실행0. 결과 docs/04_test_reports/AV3/P03_LIMITED_COPY_ONCE_20261028_RESULT.md(SHA7E365AC6…).
+- 원volume anvil-v3-development-pgdata(instance dc22a0629e79f259dcd935845e88e58e,CreatedAt2026-10-16T03:53:33+09:00)는metadata동일/소비자0으로관측됐다. 원내용무결성·타writer부재·시점일관성을새로검증한것은아니다. 새volume anvil-v3-pgdata-recovery-20261027-r1(instance cef316aec47f84f6d3e0f27f1e1c939a,CreatedAt2026-10-28T11:44:26+09:00)은우리복사미도달상태로보존/소비자0이며삭제하지않는다.
+- ledger /home/daon/.local/share/anvil-v3-pgcopy-20261027-r1은uid1000/0700,grant·consumed·receipt는0600/nlink1로보존한다. grantSHA263864d5ea021ef9a1f124492a7c65225a410514ea068ee28e281e847dc21c1f,consumed42b273c87648af15973c18bb081b03ce0f971e34bc42863d37c4f6648dcbe898,receiptb34eb206d02ac657107634c630e65eda99c36a837b4744926b626cc95872c1c5. 비밀원문·개별파일을Git/출력으로옮기지않았다.
+- 승인전용QA /home/daon/anvil-v3-pgcopy-20261027-r1-src만정상종료/clean exactGit/소유·링크·PID대조후회수했다. 별도SSH1fa379(02:48:02Z)에서QA부재/helper3부재·양volume/ledger보존을확인했다. 보존자원은자동삭제/복구rollback대상이아니다.
+- 원인은Docker의정상+09시간표현을grant용UTC문자열동등성검사로거절한source버그다. 별도source보완의48PASS/type0은실Docker재실행·복제수용·DB/API/Web복구가아니다. 新실행은새exactsource/resource/기한/승인전NOT_RUN. 기존Secret·인증서·권한·서비스/Oracle/Agent변경0이다.
+
+
+## 2026-10-28 R2 고정 대상 소스 검수 범위
+
+R2 후보467A5FFF는 sourceRoot /home/daon/anvil-v3-pgcopy-20261028-r2-src, ledgerRoot /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2, copyVolume anvil-v3-pgdata-recovery-20261028-r2 및 tools/init/copy의20261028-r2이름을고정한다. 이번에는소스와합성검수만진행했고실제부재/owner/link/공간을새조회하거나grant/nonce·QA·volume/helper를생성하지않았다. Main집중111PASS/type/문법0·독립C0/I0은실제복제/PG복구증거가아니다. 기존R1volume/원장/실패는그대로보존하며새exactcommit/controller/shell·대상·위험·수명을결박한별도실행안과새직접actual승인이필요하다.
+
+## 2026-10-28 R2 실제 1회 실패·보존 및 정확 helper 정리
+
+- 직접 승인 FD568644…의 exact8e9292d8/controller53262107/shellCF6B604C R2 실행은 create-tools/IDENTITY_UNKNOWN, NOT_COMPLETE·consumed=true였다. 시작 전 tools 관측에서 HostConfig.Mounts key부재/runtimeMounts[]로 기존 보호검사를 통과하지 못했으며 cp/PG/DB는 미도달이다. 새실행·승인재사용0.
+- 원 volume과 R1 보존에 더해 R2 anvil-v3-pgdata-recovery-20261028-r2(instance06c4c4d535836be65745a7de63822a8c/CreatedAt2026-10-28T14:22:01+09:00), 보호원장 /home/daon/.local/share/anvil-v3-pgcopy-20261028-r2를 보존한다. R2원장grant83e7333ec47938fe507682102834189afd0298677306d22697fa08832b6c5706, consumedf3e349a8aea1069cc4d6a11fda73a55453e8280678b797b2b896384407ad637d, receipt103252b959f1898b7e3cbe90af2df400fe884845dedf4ec4b95724e7344f2604.
+- PMO 별도 exact정리승인42A51EC0 후 tools fullID852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35의 전체신원을 직전재확인하고 normalrm1. Main독립 b3e337(05:35:24.402016Z)에서 QA/helper0, 원/R1/R2volume·ledger보존과volume소비자0 확인. 자동삭제할보존자원이 아니다. 세부 docs/04_test_reports/AV3/P03_R2_LIMITED_COPY_ONCE_20261028_RESULT.md(84326C26…) 참조.
+
+## 2026-10-29 FN16 native 후속 검증안의 읽기 전용 환경 확인
+
+Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount ext4. stat -f의 ext2/ext3 표시는 findmnt의 ext4로 보완했으며 서로 다른 파일시스템이라고 오인하지 않는다. /usr/local/bin/node는 현재 /opt/node-v24.22.1-linux-x64/bin/node로 연결되고, version directory/bin/node는 uidgid0:0·0755, node 일반파일126879696bytes·SHA256 e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb다. 기존 /opt/node-v24.21.0-linux-x64는 별도 과거 경로이며 이번에 변경하지 않았다.
+
+24.22.1 include/node/node_api.h는 root:root0644/10370bytes/SHA256 2d4560831e525b47b060ec8a0864ab73993df9e20215ce9f0fe7b24cd31af32a. /usr/bin/cc는 /usr/bin/x86_64-linux-gnu-gcc-13으로 연결되며 해당 일반파일은 root:root0755/1023032bytes다. binary hash/전체 부모 보호·ACL·동적loader 신뢰나 실제 컴파일·native로드·OS 경쟁/내구성을 이 metadata로 PASS 선언하지 않는다. 실제 도구 실행·설치/권한 변경·QA파일/키/catalog·DB·서비스 생성0. 다음 exact 실행안에서 현재성/도구/보호/자원·수명을 다시 결박한다.
+## 2026-10-29 FN16 native 공개 합성 검증 갱신
+앞선 metadata-only 기록 이후 exact7fc087b2를 신규 격리 Git checkout에서 빌드·로드했다. Node24.22.1/NAPI8/gcc13/ext4/proc, 고정 source20DC3C14/binary0aa2058440133d45d8853aa5ae697d52bbdd176cd2b7ac517b0c0339425fc9ea에서 실제 공개fixture15PASS279.856159ms/skip0. 최초QA 바이너리groupwrite 사전조건 실패는자기QA0700/umask077 보완후동일source/binary로재확인했고원실패기록유지. 신규 /home/daon/anvil-v3-fn16-native-qa-20261029-01은190.322초내정리·별도SSH잔여0. 실제키/설치catalog·DB·서비스·사용자사용/TLS·전원손실/강제할당실패는미확인또는제외다. native연산의시험범위를모든설치/파일시스템/보호보장으로확대하지않는다. 상세결과 WORK_STATUS/FN16_INSTALLATION_RESOURCE_RESULT_20261028.md.
+## 2026-10-30 FN18 Windows 개발 Shell 한정 환경
+
+- 현재 1단계 개발이다. Electron45.1.0/Forge CLI8.0.1의 별도 desktop lock과 SDK를 사용하며 root 의존성·DB·키·기존 서비스는 변경하지 않았다. SDK ZIP 55eaba17…과 실제 exe C579ACAA…의 entry별 검산 뒤 격리 native QA를 수행했다.
+- 최초 r2 생성 당시 개발 패키지는 승인 branch의 `apps/desktop/out/Anvil-win32-x64`, 검토 사본은 `D:/Project/Anvil/.av3-data/v3-development/fn18-shell-20261030-01`이다. 후자는 새 부모/leaf만 생성·owner SINSAN/cyhuh·nonlink, 기존 형제 자료·ACL 변경 없음. 73파일/374007453bytes, packaged PE8E41878F/asar3B322BA1, 정본 r2 manifest A83FB6A7…를 대조했다.
+- NOT_RELEASE/UNSIGNED_DEV. 실제 Windows 설치·OS 등록·서명·업데이트·정상 packaged main-entry 기동·실서버/TLS/로그인·DB·실행기 회수는 미검증 또는 미구현이다. 같은 SDK에서 제품 Shell을 사용한 메모리 HTTPS QA가 실제 서버 검증을 대신하지 않는다.
+- `D:/tmp/anvil-v3-stage-b/fn18-shell-qa-20261030-01`은 각 실행 종료/stdio·정확SDKprocess0 뒤 정리했다. 별도 toolchain `D:/tmp/anvil-v3-stage-b/fn18-shell-toolchain-20261030-01`도 원marker/owner/realpath/link·CIM사용0 재검사 후 bb08c2로 제거했다. SDK cache/node_modules/out/검토사본은 후속 개발용으로 보존하며 합계1326725357bytes<2GiB다. 키·계정·사용자 설정은 포함하지 않는다.
+- 실행방법·미지원은 `docs/desktop/README.md`, 실제 명령·결과·미실행·복구는 `docs/04_test_reports/AV3/FN18_DESKTOP_SHELL_RESULT_20261030.md`를 따른다. 기존 실패/소급 PASS 금지, 실제 서비스를 켜거나 사용자 설치를 대신하지 않는다.
+### FN18 LF 정규화 후 현재 검토본 r3
+
+게시 전 같은 staged 검사에서 발견한4 EOF 형식만 비의미 보완했다. 현재 검토본은 `.av3-data/v3-development/fn18-shell-20261030-01-r3`, 73파일/374007452bytes·PE F5139421/asar068801D5/manifest B68E97CE다. 기존 r2 경로/73파일/manifest는 그대로 보존한다. 서로 다른 input/산출물 지문을 섞지 않는다. 세대2 toolchain도7c5f2a에서 정확 marker/UTC/owner/link/사용0 재검사 후 정리했고 임시 QA·SDK/packaged 프로세스0을 확인했다. 보존합1700857278bytes<2GiB이며 실제 packaged main-entry/설치/서명/업데이트/실서버/DB/Agent는 여전히 미실행이다.
+
+### 2026-10-31 FN18 정상entry 시도 후
+정상 packaged entry는 1회 시도했으나 숨김 launch 옵션과 창 미표시로 INCOMPLETE입니다. 앞선 NOT_RUN은 그 이전 시점의 이력이며 화면 PASS로 승격하지 않습니다. 정확 시험 root/PID/소유감독기·정리승인 대기와 최신 live 관측은 WORK_STATUS·FN18 결과서36718F62를 대조합니다. 제품/보존 artifact/실DB키서비스Agent는 불변입니다.
+
+
+### 2026-10-31 승인된 시험 앱 정리 결과
+등록 QA 폴더 fn18-packaged-ui-20261030-01과시험본체/자식3·감독기는직접승인후정리됐다. Main7ae955에서QA부재·대상프로세스0·exactexe0을확인했고보존r3exe/manifest/receipt전지문은불변이다. 실제DB·키서비스Agent·제품source/SDK·새시험변경0,정상entry화면검수는INCOMPLETE를유지한다. 이전live/정리대기문구는원시점이력이다.
+
+
+### 2026-10-31 정상 GUI 02 권한 대기
+새등록QA fn18-packaged-ui-20261031-02/session91041·앱37448/감독기67496이기동됐고Main은정확Anvil창1개를발견했다. ComputerUse앱승인시간만료로내용/물리UI조작은미실행이다. 원구시험정리완료와구분하며30분128MiB·samehandle관측/no force/불명보존·권한준비또는정상수동종료질문답변대기다. source/r3/SDK·실DB키서비스Agent변경0·권한경계미변경시새시험기동0이다.
+
+
+### 2026-10-31 후속 UI 확인·02 QA 정리
+현재지시후속검수에서local초기화면/invalidHTTP차단·입력보존/설정미생성을확인했고신산님이직접확인을수락해app37448 exit0·stdio/잔여0을수집했다. 감독기exit1/원만료UNKNOWN은별도다. 정확02QA는정리됐고Main51e31c에서QA부재/대상0·r3전지문불변을확인했다. 취소동작·전체시각검수/실서버/설치/회수는미확인/미완료이며실DB키서비스Agent·source/SDK변경0이다.

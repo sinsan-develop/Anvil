@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "status": "DIRECT_USER_APPROVED_SOURCE_SAVE_ONLY",
+  "source": "send_user_message_question_reply",
+  "questionCallId": "call_9739f65e1ba34ccfa6a172c79e774caf",
+  "questionIndex": 0,
+  "answer": "위 범위 어댑터 코드 저장 승인",
+  "workInstructionPath": "docs/work_packages/P03_PG_COPY_LIMITED_RISK_SOURCE_WI_20261028.md",
+  "workInstructionSha256": "C0ABA0F2C3F854CAEF52918DCFC4E5563F7AE6E9F77A9513D343DE6F29A70F1B",
+  "allowedPath": "scripts/pg-recovery-copy.sh",
+  "payloadBytes": 5398,
+  "payloadSha256": "A1FE8953C9C21805F0DBA68B8D8904CEB3CA0FBADF52DC61F0AC9B98DEC3E25D",
+  "priorFileSha256": "390489CB817BD27CC780819BCC12F5A88AEA81D4910BE9B53916349747144FB3",
+  "priorFileBytes": 29979,
+  "allowedEffects": [
+    "동일 payload source 저장",
+    "정확 Git Bash 문법 검사 -n"
+  ],
+  "purpose": "미래 고정 PG 사본 복제·원 cp PID/부모/시작지문 대조·TERM최대1/wait/timer/FD 회수 코드 구현",
+  "notExecutionGrant": true,
+  "excluded": [
+    "함수 실제호출",
+    "실제copy/TERM/프로세스신호",
+    "컨테이너/probe/init",
+    "실grant작성·소비",
+    "PG/DB/서비스/Agent",
+    "다른payload/파일/권한확대"
+  ],
+  "priorReviewRejections": 2
+}

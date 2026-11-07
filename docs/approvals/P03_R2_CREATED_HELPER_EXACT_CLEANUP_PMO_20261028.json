@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "PMO_DELEGATED_EXACT_CLEANUP_APPROVED",
+  "recordedAt": "2026-10-28T05:34:28.431Z",
+  "authority": "user delegated PMO decisions for Anvil; PMO current P03 support",
+  "sourceThread": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "evidence": "exec-8880253c-fe84-4b78-bf11-c2a14af83e15 / 2026-10-28T05:28:21.767566Z / exit0",
+  "containerId": "852c2c92cb99a14b365154f9e7ab36f27e03714e5dc69761cd0f72c5d3db8f35",
+  "name": "anvil-v3-pgcopy-tools-20261028-r2",
+  "nonce": "06c4c4d535836be65745a7de63822a8c",
+  "created": "2026-10-28T05:22:02.108511656Z",
+  "scope": "Immediately recheck complete exact identity and never-started created/Pid0 state, then one normal docker rm without force/-v; independent absence and preserved original/R1/R2 volumes/ledgers/consumers check.",
+  "excluded": [
+    "start",
+    "signal",
+    "force",
+    "volume deletion",
+    "new grant",
+    "copy retry",
+    "DB",
+    "service"
+  ],
+  "copyResult": "NOT_COMPLETE; approval consumed; unchanged"
+}

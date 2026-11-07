@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "round": 1,
+  "baseManifestPath": "docs/work_packages/FN04_ACTIVATION_SERVER_CANDIDATE_MANIFEST.json",
+  "baseManifestSha256": "02144303032D2941D79B170BE4031815060D8650BB9D4497E9B527F939D980A4",
+  "changedFiles": [
+    {
+      "path": "db/migrations/0050_design_baseline_activations.sql.pending",
+      "sha256": "824B1695CB77E8330C8CDBEB6D3FED28AF4E9CEC76433234DD4CD16EB579E855"
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-read.test.ts",
+      "sha256": "78C946778073A1A3E8ABDEB227949C8B81020530A5ADEB37E21BD3DEF8247517"
+    }
+  ],
+  "other11RawUnchanged": true,
+  "sqlReverseTwoHeaderDeclarationsEqualsPriorRaw": true,
+  "actualPgExecuted": false
+}

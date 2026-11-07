@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "status": "EXISTING_SCOPE_SOURCE_SYNTHETIC_CONFIRMED",
+  "recordedAt": "2026-10-29T04:31:57+09:00",
+  "authority": "USER_DELEGATED_PMO_SCOPE_DETERMINATION",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "messageEvidence": "현 대화로 수신한 FN16 내부 수집기 범위 판단 회신. PMO는 기존 상세화·source 구현 범위이며 사용자 재승인 불필요로 판단했다.",
+  "userTransmissionAuthorization": {
+    "turnId": "01a18175-9208-7473-89bc-18de2acd7b09",
+    "userMessageId": "01a18175-92f0-7a51-8359-88da68a1605c"
+  },
+  "contractPath": "docs/contracts/FN16_DOCUMENT_INVENTORY_SOURCE_CANDIDATE_20261029.md",
+  "contractSha256": "25E4F29C7D925BABD6919DFC5C446696B3D7A0920B758C3E4C1AD759730DD17E",
+  "baseline": "35cf7d049002bc901c29ef7cd468f155fbd8e819",
+  "branch": "codex/av3-stage-b",
+  "scope": [
+    "호출선 없는 내부 문서 이력 SELECT source 2개와 시험 3개",
+    "정확 허용 열·정렬·원 hash와 투영 hash의 WI 고정",
+    "기존 authenticated RC 현재권한과 단일 RO RR 자료 관측 분리",
+    "단독 기존 primary TDD·독립 검수·집중 합성 검증·통합"
+  ],
+  "requiredLimits": [
+    "DOCUMENT_HISTORY_ONLY",
+    "blobVerification=NOT_PERFORMED",
+    "fullProjectCoverage=false",
+    "restorable=false",
+    "08EA3478 A8 전체 정책/job coverage 차단 유지"
+  ],
+  "excluded": [
+    "공개 API·archive·복원 형식과 새로운 권한",
+    "영속 schema·SQL migration·실제 DB 접속/실행",
+    "실제 파일·키·서비스·job 연결·Agent 실행",
+    "P03 재실행과 전체 백업 완료 판정"
+  ]
+}

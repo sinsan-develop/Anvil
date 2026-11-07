@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "task": "FN04_ACTIVATION_APPROVAL_POINTER",
+  "sourceBaseline": "0def97b7ee2abfa403e282d748548930f845da2f",
+  "branch": "codex/av3-stage-b",
+  "approvalRecordSha256": "CF12C71774F38F062B275A3890B6D8C2E18B3DA3A27A348C32F640717352F046",
+  "allowed": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "initialSha256": "6C35A7226623FAF31208B1A75D333CB28182AB39749791FD6FCE73EE1F4F1C09"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "initialSha256": "820FA080E30C0CABE17FFB8A509BDA0AF941FB667EB2845436F0F0E30F8A4911"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "initialSha256": "87DF4E44553F41FD0AAB164115E5B9EDDE9FAC724F8F7CC5E7331447A1716855"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "initialSha256": "DF7833CC56076A112BB873C5149467339D084B780669ABFFD0C56BFE453AEBAE"
+    },
+    {
+      "path": "apps/server/modules/traceability/baseline-activation-record.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "apps/server/modules/traceability/baseline-activations.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "apps/server/modules/approvals/design-activation-approval-candidate.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "db/migrations/0050_design_baseline_activations.sql.pending",
+      "initialSha256": null
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "initialSha256": "A57447CCCC007BC85252FFCE21EB8BED82AD10EB8FBB8A6DEC1FDE385141E3F9"
+    },
+    {
+      "path": "apps/web/src/features/design-change/DesignChangesPage.tsx",
+      "initialSha256": "0A9D86518BF0F5F93C87DA2BF9EACF3DEBE9549D56BDE5BDBA086BF60DE40689"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "initialSha256": "7793206A07C53319944CFCB819B5B9C77BEC60B481529D812F7D03FCEE77D05D"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "initialSha256": "561830A5B74DE777F523CF86DDDD1234654975BF0677B588E545288718144247"
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "initialSha256": "3808F7A678C7C7A5D9C275D1938D2EE7C146C95827A39D4360182999C0593EB4"
+    },
+    {
+      "path": "apps/web/src/features/design-change/activation-api.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "apps/web/src/features/design-change/DesignActivationPanel.tsx",
+      "initialSha256": null
+    },
+    {
+      "path": "apps/web/src/features/decisions/design-activation-approval-api.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-fixture.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activations.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-read.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/FN04/baseline-activation-routes.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/FN11/design-activation-approval.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/UI07/design-activation-api.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/unit/UI08/design-activation-approval-api.test.ts",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/browser/UI07/design-activation-approval-dom-harness.tsx",
+      "initialSha256": null
+    },
+    {
+      "path": "tests/browser/UI07/design-activation-approval-dom.test.ts",
+      "initialSha256": null
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ]
+}

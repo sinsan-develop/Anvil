@@ -1,0 +1,140 @@
+# FN16 설치 자원·이식키 source-only 구현 결과
+
+2026-10-28 · Primary fn16_primary · Main 최종 검수·QA 회수 기록 추가 전
+
+## 판정
+
+승인된 계약의 서버·미적용 SQL·웹 metadata/승인 연결 및 합성 전용 Secret 화면을 구현했다. 현재 제출은 **source-only 검수 후보**다. 실제 설치 adapter·키·DB·TLS 검증 및 전체 FN16/작업계획서 완료를 뜻하지 않는다. Secret 입력은 실제 App에 제공하지 않으며 별도 합성 컴포넌트로만 시험한다.
+
+## 기준과 변경 범위
+
+- branch: `codex/av3-stage-b`; 최초 승인 baseline `282e2d15b5af359323ba2db02ce3b9ba72dd9704`.
+- 직접 승인: `docs/approvals/FN16_INSTALLATION_RESOURCE_DIRECT_APPROVAL_20261028.json`, SHA256 `3FAD0CE959F9972E0DA1C131FFA5FB07521B2381343D3D590A6957BCFE33CBDF`.
+- 계약: `docs/contracts/FN16_INSTALLATION_RESOURCE_PORTABLE_KEY_CANDIDATE.md`, SHA256 `5A6819E626F2FF4104862988C07230A00676D07F06A25658BC9344746335D053`.
+- 지시서 `docs/work_packages/FN16_INSTALLATION_RESOURCE_IMPLEMENTATION.md` r5 및 동명 SOURCE_MANIFEST의 허용28경로. Main이 관리하며 사용자 자료·보호8경로를 수정하지 않았다.
+- 단일 writer가 DTO/codec/provider/store/route, 기존 auth·명령·R2 소비선, 미적용0054, UI14·App·승인 화면과 정확 시험을 연결했다. 기존 export/retention, 원 ENROLL 귀속과 과거 envelope/receipt를 보존했다.
+
+## 구현 내용과 검수된 checkpoint
+
+| 단위 | 구현·핵심 조건 | 검수 checkpoint |
+|---|---|---|
+| 키 상태·보관 확인·해제·자기 재잠금 | 원 승인 소비 귀속, 현재 인증/제어/정책·최단기한, cold restart LOCKED, 실제 메모리 lease 1개, 먼저 평문 소거·감사 불명 구분 | `ea883146685b7b53e012a955be43fe60b1e0c1db` |
+| 이식 | 같은 origin/key 정체성, 새 설치 descriptor LOCKED·복사 미확인, 첫 제출 소진·원 intent 재실행 금지, 파일 효과 불명 UNKNOWN | `2b49bd9688e90a7a5faf10bf4d7131d3caef828d` |
+| 비밀번호 변경·자료 키 교체 | 불변 최대 version+1, 기존 envelope 보존, wrapping별 상태·프로젝트 단일 lease, 정확 보관 확인 후 head 전진·역행 금지, R2 자동 선택 금지 | `cba813e5bb8fe23543c17fca71e873e16d28fe89` |
+| UI14·R2 | metadata 작성→원명령→별도 일회 승인→원명령 복귀·명시 실행, 조회/암호문 다운로드/자기 재잠금, 고정 R2 ref 명시 선택 | 현재 미커밋 검수 후보 |
+| 합성 Secret 컴포넌트 | 6개 action 계약 필드, 제출 전 입력 제거·이탈/transport 변경 제거, 파일 16KiB·fatal UTF8·canonical/hash·owner/선택 세대 검사 | 실제 App 미연결, 최종 DOM 검수 진행 중 |
+
+## 실제 확인한 증거
+
+아래 Main 수치는 독립 실행 회신이며 Primary의 재실행으로 중복 주장하지 않는다. 명령·상세 이력은 `WORK_STATUS.md` 및 각 Main 실행 기록에 누적했다.
+
+- lifecycle: Main226707 keyLife22 PASS, type/diff0. IMPORT: Main19d4da9 PASS1736.9695ms, 공통 ENROLL 직접3 PASS1454.0111ms. 각 독립 C0/I0.
+- evolution: Main0752b0 신규7 PASS1774ms/type/diff0, Main7a262d 직접34 PASS5943ms + 기존 R2 server16 PASS1566ms. 동결 backend 독립 C0/I0. 실제 PG/trigger 검증은 아니다.
+- UI client: `node --test tests/unit/UI14/installation-resource-api.test.ts` 7 PASS360.1021ms(2717b8). 원 정책29개 + 승인 연산1개를 검사하는 기존 R2 시험9 PASS202.1183ms(f6ac24), 독립 Mainb764b9 9 PASS194.0256ms.
+- 실제 App 합성 browser: Mainf7550f 3 PASS5.8s. 승인 왕복·원명령 결박/별도 TARGET 실행, 자기 재잠금 감사 UNKNOWN/암호문 다운로드, 화면 ABA 후 원 UNKNOWN 보존. route.fulfill 기반이므로 실제 서버/DB/키 성공을 뜻하지 않는다.
+- 재인증 수정: Main44ae6f RED 후 현재 csrf별 메모리 slot을 분리하여 옛 UNKNOWN을 보존했다. 독립 C0/I0; Mainf0543f 재인증과 Secret 제출 소거/이탈2 PASS.
+- 최신 제품 타입: `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json` exit0(72c904). Panel SHA256 `60E527C224EE5009F8234F63761CF3E06211CAD23DB76E94DCA6220E502A3E86`; browser spec `9431B44CBB718AB1F7FC10312CA042684829B2AFEC5CA6AEA15BB68984389370`.
+- 최종 6개 action·늦은 A/B·transport 소거 브라우저, 최종 diff/통합, QA 정리·독립 잔여0는 Main 확인 예정이다. 미실행을 PASS에 포함하지 않는다.
+
+## 실패와 보완 구분
+
+1. 제품: 첫 IMPORT의 hash/origin 검사가 claim 전이라 READY 재사용 가능 → 유효 귀속 확인 후 첫 제출 소진으로 보완. 틀린 envelope 뒤 같은 intent 재제출 반례 포함.
+2. 제품: 재인증 csrf 교체 뒤 옛 UI buffer 때문에 새 작성 차단 → 인증 세대별 내부 slot으로 분리. 옛 원명령 보존·자동 재전송0.
+3. 제품: Secret A 늦은 finally가 새 B 입력 ref를 지움, 동일 client transport 교체에서 effect 소거 누락 → captured secret만 해제하고 owner revision별 소거. Main3107d0/07b409/dbd188에서 각 RED 확인 후 보완했다.
+4. 제품 미구현: 파일 입력 부재 → 승인 hash에 결박된 bounded 파일 선택 연결. 대표 IMPORT RED 뒤 3개 action 공통 경로 구현.
+5. 시험/환경: 최초 재인증 posts[0] 관측 경쟁, component React alias 누락, action query route 누락으로 ERR_CONNECTION_REFUSED는 제품 원인과 별개다. 관측 poll·정확 alias·등록 URL route/미등록 abort로 보완했다. timeout·retry·기대값 완화는 하지 않았다.
+6. 원 테스트 bytes의 Windows 줄바꿈, 편집 script 오류는 실제 기능 오류와 구분했다. LF 복구 및 기존 prefix 보존을 Main이 확인했고 Git config는 변경하지 않았다.
+
+## 미검증·남은 작업
+
+- native 안전 handle adapter 및 실제 설치 catalog 연결 미구현. 실제 파일·Secret 작업은 UNCONFIGURED/UNVERIFIED 경계를 유지한다.
+- 실제 App Secret 입력은 미제공. TLS·서버/프록시 로그 보호 검증 없이 활성화하지 않았다.
+- 실제 키 생성/이식/해제, DB migration/RLS/trigger·실 COMMIT, 실제 backup/restore, 권한 부여, 서비스/Agent/Oracle 실행: **NOT_RUN / 승인 제외**.
+- 합성 codec·DB facade·DOM 성공을 실제 설치·사용자 인수 성공으로 승격하지 않는다.
+- Main은 최종 UI 증거·자원 회수·정확 Git 통합을 덧붙인다. 이후 실제 연결 선행은 별도 계획 상태와 대조한다.
+
+## 복구·기록
+
+소스 rollback은 해당 허용 변경만 검토하여 revert한다. 기존 키·DB·원문·과거 이력 삭제/초기화는 없다. Primary는 commit/push/관리 문서를 변경하지 않았고 Main이 WORK_STATUS 및 checkpoint를 소유한다. 전용 QA root는 Main 등록 `D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-01`, 기한23:08:43 KST이며 최종 정리 판정은 아직 기재하지 않았다.
+
+## 제출 후 집중 보완 이력
+
+- Main9a4a0b 합성 Secret9 PASS6.1s 및 aa4363/107198 실제 App 합성3 PASS5.8s/type/build/diff0, 비밀 없는 화면 screenshot 시각 확인을 회신받았다. 실제 서비스 연결 증거는 아니다.
+- 파일 입력 독립 I1: 기본 TextDecoder가 UTF8 BOM을 제거하여 원 선택 파일과 다른 canonical bytes의 hash를 표시할 수 있었다. 새 BOM 반례9830E070에서 Main59cefe 1 RED7.39s(기대 INPUT_INVALID 없음) 후 decoder의 `ignoreBOM:true` 1줄로 원 BOM을 보존하고 기존 JSON/canonical 검사가 거절하도록 수정했다. 정상 파일 검사·기대값 완화0.
+- 최신 Panel SHA256 `AC55CB58FBC1B453FF7CA6A19845E7DE578241DF86A1C8456397EAD62F4BF1EB`, spec SHA256 `9830E0706CAD6A936821B980805D8738BCD8A758CA57C995696E271122E23DF5`. `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json` 및 `git diff --check` exit0(d518c3).
+- BOM와 IMPORT/VERIFY/UNLOCK 파일 입력3개 합계4개의 최종 Main DOM 검증 및 QA 회수는 기록 시점에 진행 예정이다. 나머지 불변 성공 검사를 다시 실행하지 않았다.
+
+
+## 2026-10-28 FN16/UI14 설치 자원 source 최종 검수
+
+- 판정: 직접 승인 3FAD0CE9 / 계약 5A6819E6 / WI r5 허용28경로의 서버·화면·미적용 SQL·합성검증 단위를 검수했다. 전체 FN16 또는 작업계획서 완료 판정은 아니다. 구현 담당 fn16_primary, 독립 검토 fn16_review, 관리·검수·통합 Main 어울.
+- UI14 metadata→원명령→별도 일회 승인→원명령 복귀·명시 실행, 보호 조회/암호문 다운로드/자기 재잠금, 기존 R2의 정확 TARGET/KEY 선택을 연결했다. 실제 App에서는 검증되지 않은 TLS/로그 경계 때문에 Secret 입력을 제공하지 않는다. 합성 전용 Secret 컴포넌트는 6 action과 원 파일 bounded/canonical 검사를 구현했다.
+- Main 최종 영향 검증: aa4363/107198 실제 App 합성 API 3 PASS(5.8초), type/build/diff exit0; 동일 App 재인증 증거 599adc/f0543f 보존. 9a4a0b 합성 Secret 9 PASS(6.1초), 이후 BOM 반례 59cefe RED 후 1c8405 BOM·IMPORT/VERIFY/UNLOCK 4 PASS(3.3초), build0. 이는 범위별 실행 증거이며 한 번에 전체14건을 실행했다고 주장하지 않는다. 기존 R2 unit9 PASS(b764b9), 새 client7 PASS(2717b8). 변경 없는 전체 회귀를 반복하지 않았다.
+- 독립 검토의 재인증, 지연 응답/transport 소거, UTF8 BOM 지적은 각각 반례와 최소 수정 후 ADDRESSED/C0I0. 최종 Panel AC55CB58FBC1B453FF7CA6A19845E7DE578241DF86A1C8456397EAD62F4BF1EB, browser9830E0706CAD6A936821B980805D8738BCD8A758CA57C995696E271122E23DF5, App EC383A2650D681E4E20B750768C07E3F73F1521427F5D1C93784B8DD71FFD96D. 최종 author type/diff0 d518c3. 실패 원인·환경 오류는 앞선 기록을 보존하며 같은 정식 실패3회에 따른 인수는 없었다.
+- QA: 등록 root D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-01, SINSAN\cyhuh 소유. 22:38:43 생성→23:03:58 KST 정확 realpath/link0/process0 확인 후 파일11·디렉터리7 정리(c7ac57), 약25분15초로30분 이내. 별도 Main9676c7 Test-Path=False로 잔여0 확인. 서버 listener/실제키·DB·서비스 생성0. 화면 시각 확인은 앞선 PNG 관측 기록이며 QA 이미지도 등록 범위와 함께 회수했다.
+- 남은 구현: 실제 native 안전 handle adapter/설치 catalog 공급자와 실제 App Secret 활성화 연결. 기본 UNCONFIGURED/UNVERIFIED로 닫는다. 실제 DB migration/RLS/trigger/COMMIT, OS 파일 내구성/TLS/로그, 실제 키·백업/복원·서비스·사용자 인수는 NOT_RUN 또는 승인 제외이며 합성 성공으로 대체하지 않는다.
+- 기존 보호14경로는5485c4 raw 불변 확인. 원 승인·계약과 기존 검사 기준 보존. rollback은 이번 source 변경의 검토된 revert이며 기존 자료/키/DB 삭제·초기화는 없다. 정확 허용 파일만 기존 branch checkpoint로 보존하고 PMO에 source 한정 결과·남은 선행을 전달한다.
+
+
+## 2026-10-28 FN16 새 wrapping 보관 확인 연결 보완
+
+- 판정: 같은 승인 계약§6.2/6.6 안의 소비선 누락을 보완했다. REWRAP 성공의 정확 resultRef를 명시 선택하여 고정본 보호 조회·암호문 다운로드·별도 VERIFY 원명령 준비로 연결한다. 보관 확인 전에 기본 wrapping을 바꾸지 않으며 자동 승인/fulfill/R2 선택0이다.
+- 변경 전: 새 wrapping은 server head 목록에 없어 prepare가409로거절하고Panel은결과문자만표시했다. 변경 후: VERIFY에한해고정버전GET의닫힌DTO/ref/hash/kind/current.eligible와파일canonical/hash를재검사한다. 다른UNLOCK/REWRAP/ROTATE의기존head조건은유지한다. 원intent action/resource를원명령과대조하고현재buffer/문맥/403/이탈/UNKNOWN보존검사를유지한다. 제품2·시험2,새API/SQL/계약0.
+- Main063774 직접1RED RESOURCE_VERSION_CONFLICT409(182.2174ms), cc2447 보호조회/거절누락2RED·head보존1PASS 뒤431da4 unit11PASS213.5437ms/type/build0. 독립fn16_review 읽기검수C0I0. 마지막BOM274.5396ms1PASS(54860d)는이미반영된ignoreBOM:true의직접음성이며새제품결함/RED라고주장하지않는다. Main의이전출력기반누락추정은최신source대조로정정했다.
+- Main eac465 실제App합성2=기존다운로드1PASS/새REWRAP1FAIL. 새명령은DOM에존재했으나닫힌details.innerText가빈값인시험관측오류였다(928e5b). summary명시클릭·본문visible검사만보완후cb68df 신규1PASS4.2초. 기존assertion/timeout/retry보존,제품불변,기존성공재실행0. 실제Secret입력/실DB/서비스성공이아니다.
+- QA02: 등록root D:/Project/Anvil/.av3-data/ui14-installation-resource-20261028-02, SINSAN\cyhuh. 23:21:29 생성→23:26:08 정확경로/owner/link0/process0확인후파일12·디렉터리8회수(54860d), 약4분40초. 별도70e244 Exists=false. 실제키/DB/서비스/Agent변경0.
+- 최종API8A8705C321A7674D85EDD7EE58BABA85AAC4CC60930278B4B3AC941E71E58211, PanelD174A7A9B6A9F9BE58383806AD58FBFC491FA07C70248B4FD640F6EDC3B5D5C4, unitEEB0C6153A8B28C8EC453536E35A23FF3BD46E9C611DDD76652B69E488A736F6, browserFB8EFAA0DFC76CD680CB52A486B883AAB8EAAD047B24CF03C79D63C52A3C93E8. rollback은이소스변경검토revert이며과거키/원문/DB변경0. 실제adapter/Secret입력활성화/DB적용/사용자인수·전체FN16/작업계획은미완료다.
+
+- FN16 probe 소비선 보완 검수: Main2a62c7 신규4+직접영향targetFulfill7=11PASS1683.3357ms/skip0, type/diff0. 독립fn16_review C0I0. 제품은 store clean의 close위치1줄만 변경했고 시험58줄append·원prefix보존. store C4A3CB7C8AD6D43A9715FAC14B4D3DCB2A56D54BBB6C9106053F419170BDF7E7, test6F773EE5487DD9291310AD535C8AAB8891B7283CBA8598258706FBE51EB2A506. remove/fsync/close불명은UNKNOWN·원intent재실행0·기존파일보존. 실제native경쟁/FS/키/DB/서비스NOT_RUN. 이는native연결전필수소비선정합이며전체FN16완료아님.
+
+## 2026-10-29 FN16 관리 handle adapter 소스 검수
+- Main d68570 adapter20·종료2·직접영향probe4=26PASS1331.5189ms/skip0, type/diff0. 독립 round1 C0I0: root tuple정규화·native오류새객체/poison·미반환자기cap단발회수3건 ADDRESSED. 최초15GREEN만으로 합격하지 않았으며 추가5RED/보완결과를 보존한다.
+- opaque native-port의 root/file소유·현재관측/세대·bounded bytes복사/소거·동시변경/불명재시도차단·dispose drain을 구현했다. store는 registry즉시잠금 후 catalog단발회수를 await하며 새503으로 원오류상세를 배제한다. 기본catalog는 실제공급자없이 UNCONFIGURED/UNVERIFIED를 유지한다. 실제 native연산/loader는 아직 미구현이다.
+- exact source: posix11F95CD0B4A3FE9EF69133453A5DAB698C16552469C1C958B3D854083346D85A, catalog3061D3A54C4DA30E3B5AC75E0D1D444ACAB5288249D9A7F739EAF69CEF932253, store6CFC5BDEDFDD2FE8A3308B6728A60E497638E9A44ED4F122E57C16AFEF9A5075; 시험CBA8C2A17A1F8E047C8A014C00598B50DBE9419E78BA355C26BBE02E57A55F4C/DC5EAF679D9131FD9AD869F1115F8CF04448EA20BFF32FC65A2EDBD0312F2AA7. 기존store시험213312prefix보존.
+- WI B519 정확5코드/시험, 공개API/SQL/권한/수치변경0. 실제nativecompile/load/FS·키/catalog/DB/서비스·사용자인수NOT_RUN, 새실행자원0. 다음은 NativePort12연산의 Linux소스와 build/검증경계를 구현한다. rollback은 허용source 검토revert이며 자료/키/DB삭제0. 전체FN16/작업계획 완료가 아니다.
+- Main 기록명령의 JavaScript SyntaxError는 도구 호출 전 오류로 파일/Git효과0이었다. 명령 문자열을 바로잡았으며 제품 실패와 구분한다.
+
+## 2026-10-29 FN16 native 파일 처리기 실제 합성 검증
+- 판정: 기능 단위 구현·핵심 합성 동작 확인. 전체 FN16/계획/실제 설치 catalog·키 사용 완료는 아니다.
+- source7fc087b2f80daeb245d275330fbaa82b637ff787(기존 branch exact10경로), private8970d8동일·main f976불변. native20DC3C14/BUILD0E60317B/gyp23717159/test14252DC4, adapter1D614D04/unit235D0B1D. 독립sourceC0/I0, Mainded9be adapter22/type/diff0.
+- WSL107dfa 고정gcc13 compile0, binary SHA2560aa2058440133d45d8853aa5ae697d52bbdd176cd2b7ac517b0c0339425fc9ea. misleading-indentation warning1(line327)은 남은 소스 가독성 항목이며 warning0이라고 주장하지 않는다. 최초 시험은 바이너리groupwrite 준비오류로공통before에서15FAIL/0PASS138.625625ms, native실행0. Main이자기QA파일정확hash/owner확인후0700제한·부모umask077보완,source/binarybytes/검사기준불변으로1회재확인했다.
+- Mainc97736 실제native15PASS/0FAIL/0SKIP279.856159ms, exit0. create/sync/read/remove, 같은inode exclusivepublish+tmp제거,선점/위조/닫힌handle/타root/경로·부모교체/symlink/FIFO거절·기존파일보존,dispose와선행read drain,닫힌filecap300/rootcap65보유후정상조회/회수검증. 강제GC/할당실패주입/전원손실/다른UID공격·운영설치보호는NOT_RUN.
+- 사전등록 QA /home/daon/anvil-v3-fn16-native-qa-20261029-01은daon1000:1000/0700·identity2096:8835152. 51f2b1 exactGitclean/owner/mount0/process0 확인후생성190.322초이내파일2987·디렉터리220·내부시험symlink2포함정리. 별도c91c20 QA_ABSENT/OWNED_GROUPS_ZERO. compiler1468886/첫Node1468978/보완Node1475975 그룹잔여0.
+- 실제키/운영catalog/DB/권한/Secret/서비스/Agent/P03변경0. 현재 제품default는UNCONFIGURED/UNVERIFIED유지. 다음은native factory→관리adapter/catalog의명시dependency 연결을기존승인source·합성범위로대조한다. rollback은이번소스의검토된revert이며자료/키삭제나DB초기화없음.
+## 2026-10-29 FN16 설치 catalog 조합 소스 검수
+- 판정: 내부 공급자 조합 구현·핵심 합성 동작 확인. 기본 공급자와 실제 설치 활성화는 변경하지 않았다.
+- 신규 provider/unit2경로. 고정 snapshot→필수 현재성 verifier→단일 native factory/관리 adapter→기존 보호 목록/준비 주입을 연결했다. 목적·현재 root/공간·admission32·단발 drain/dispose를 검사하고 근거 회수 관측 후 기존 handle 신규 사용도 막는다. 운영 verifier/native loader는 아직 미제공이며 합성 VERIFIED를 실제 설치 검증으로 취급하지 않는다.
+- Main ed90bd 최초14/default2/type/diff0 뒤 독립 I1 native 입력 상한3개와 Main profileRef key순서 결함을 확인했다. author a19d58 4RED143.9635ms→ba3260 18GREEN188.1187ms. Main c8bca7 최종18PASS169.2919ms/skip0·type/diff0; scoped 독립 C0/I0. 최초 성공 뒤 발견한 결함/원 실패를 보존하고 기존14기대 삭제·완화0. author14602c 시험TS2532는 test non-null 표기만 보완 후type0, 별도 환경/제품 실패로 합산하지 않는다.
+- provider SHA256 A4BA3AEE7594A68EF9EBAD0431ED0C1AAE54B384DF450CAC08094BFD3B563F45, unit5408808EDAF36924F76B38F6CC7FF9BE14A4D2ED7B829E9A90FFF5EC4003387E, WI43E78003. 실제 native15는 소스불변으로 재실행하지 않았다. 새 QA 자원·실제 catalog/키/DB/Secret/서비스/Agent/P03 변경0.
+- 변경 전 내부 catalog 조합 부재, 변경 후 명시 dependency가 있을 때만 보호 목록·준비 가능. rollback은 신규 provider 주입 소스 revert이며 기존 자료/키/DB 삭제0. 실제 설치 loader·보호 verifier·App Secret 활성화와 DB 적용/사용자 인수·전체 FN16/계획은 미완료다. 다음은 기존 계약의 미연결 경계를 좁게 확인한다.
+## 2026-10-29 FN16 보호 설치파일 reader 소스 검수
+- 판정: 신규 reader 구현·핵심 메모리 합성 동작 확인. 실제 Linux 설치 파일/경합/native loader·키·DB·서비스는 미검증·미실행이다.
+- Main42c0fd 동결 source CD969B8C2EE050ADFE03F0C02AA2592DED2EC852CF17681BA56A46F87846694B/test BB12623626D13C5EDD96611FAB1DD352A4347FF9839DE4B7D842141F773F6CFE: `node --test tests/unit/FN16/installation-resource-protected-files.test.ts` 17PASS/0FAIL/0SKIP256.5785ms, `npm run typecheck`/`git diff --check` exit0. 독립 scoped C0/I0, mount I1 해소.
+- 이전 구현은 설치 파일 reader 부재였고, 현재는 기본 Node fs 읽기 본문·보호된 root부터 동일FD 성분 열기·owner/mode/identity/현재 mount·bytes/hash 대조·목적별 catalog 복사/artifact pin·단일 작업/drain/단발회수를 제공한다. 실제 installer 보호 증거를 대신하거나 default catalog를 활성화하지 않는다.
+- 원실패 이력 유지: Main59b62b 신규 mount2 RED; authorf388fc 보완16PASS/1FAIL은 새 임시FD를 장기보유FD 역순 대상으로 함께 센 시험 관측 오류1이었다. helper만 최초 보유FD로 좁히고 기존 기대값·모든FD 단발/잔여0는 유지했으며 author81195d 해당1PASS/type/diff0 후 Main 전체17로 확인했다. 기존15·native15 검증기준 완화0, 변경없는 native15 반복0.
+- 실제 QA 생성/키/DB/서비스/P03 변경0, 기존 보호8경로 보존. rollback은 신규 reader/source의 검토된 revert이며 자료 삭제나 권한 변경0. 다음은 기존 provider snapshot 검증 재사용과 동일 artifact FD 로더의 최소 내부 bootstrap 연결이다. 전체 FN16/작업계획 완료가 아니다.
+- Main377783 rg Windows glob 조회 실패는6df919 디렉터리+-g필터로 정정했으며 파일/환경 영향0.
+## 2026-10-29 FN16 보호 설치 bootstrap 소스 검수
+- 판정: 내부 catalog reader→고정 artifact loader→기존 catalog/provider 연결의 source·핵심 합성 검수 완료. 실제 설치 검증기/활성화·키·DB·서비스 및 FN16 전체/계획 완료는 아니다.
+- 정확 source3: 신규 installation-resource-bootstrap.ts E36F695FA0CC3EC7922273C34C014AC2A26AE87434B0B65DBC42ED238380DC77, 신규 bootstrap unit8B10723873D1701C2DB01F393A95D932A6744E577DD3D40595BC167B5E8DCD37, 기존provider0C2E0E6763AB4DAE8AC992420B62C83F9064C8309B6532061F787E68CD9F9623. provider는validator namedexport/호출명2줄만변경했다. WI2AC42008·부모70e56a2c.
+- 변경전 내부bootstrap부재, 변경후 보호catalog의boundedUTF8/중복키/원hash/기존snapshot검증→필수installer현재성→sameheldartifactFD 단발loader→reader후검사→provider 생성이 연결된다. default loader는process.dlopen본문을제공하지만이번시험은모두load/openFile/runtime합성이며실제호출0. module수명시도1·자동reload/unload주장0,wrapper active1/중첩409·drain후provider/artifact/catalog 단발회수·원오류비노출이다.
+- Mainb21cd9 첫동결32PASS186.5134ms/type/diff0 뒤정적검수에서초기input reflection의원오류정규화I1을발견했다. Main2c14ae 추가2RED156.405ms→같은primary source보완·기존32기대유지→author c73ffe34PASS304.4149ms/type/diff0. Mainc27170 최종신규16PASS204.4534ms/0FAIL/0SKIP·type/diff0, scoped독립I1해소C0/I0. 불변provider18은Mainb21증거와author최종34로보존하며Main재반복0. reader17/native15도소스불변으로반복0.
+- 합성결과를실제OS/installer 보호/키/DB/서비스지원으로올리지않는다. 필수installer검증기는아직실제제공0이며App Secret/defaultUNCONFIGURED·미적용0054는그대로다. 새QA/실제FS/native/키DB서비스/P03실행0. 보호8경로보존,rollback은신규bootstrap과provider export의검토된revert이며실자료삭제/권한변경없음.
+- 다음은같은승인source범위에서남은독립연결을read-only대조한다. actual설치/키DB서비스가필요한지점과미구현source를구분하며자동활성화나전체완료주장을하지않는다.
+## 2026-10-29 FN16 선택 파일 검증 프로필 source 검수
+- 판정: 승인 후보08EA3478·승인D1ED7A7F·WI C9687B02의 제품8/시험5를 구현하고 핵심 합성 흐름을 확인했다. 실제 프로필 설정 발급·DB/정책·키·서비스·Agent·전체 백업/복원은 미실행이며 전체 FN16/계획 완료가 아니다.
+- 변경 전 VERIFICATION 저장은 공급 부재412로 차단됐고, 변경 후 명시 주입된 프로필만 OWNER 조회→검사3/한도7·정확ref 선택→원명령·별도 승인 결박→저장/replay·현재성 조회로 연결된다. 기본 실제 공급은 계속 UNCONFIGURED다. 새 SQL0/기존 미적용0054 보존, 과거 snapshot parser·원명령·권한·일회 소비·감사 기준 유지.
+- Main 신규공급12 PASS211.848ms(8617c9); 수정 후 서버/입력/Web 인접57 PASS2407.4312ms/skip0(e27c40); 최종type/diff0(b55ae6). 실제 App 합성 Edge2 PASS3.8s(b5f410)는 프로필 명시선택/준비 POST0, 별도 승인·정확 원명령 재개·저장·재조회, 선택 뒤 회수/늦은 목록 이탈을 확인했다. same-origin 합성 응답이며 실제 서버/DB 검증이 아니다. 현재 App build473modules/403ms exit0, 기존 chunk500KiB 경고1은 별도 보존했다.
+- 최초 provider12 미구현 RED, 서버7 RED, Web4 RED, App 미연결1 RED를 보존한다. 서버 인접 첫42PASS/1FAIL은 기존 KEY 미구성 공급자도 조회하던 경계로 확인해 명시 UNCONFIGURED만412 선행 반환했다. 신규 duplicate checks422는 추가1RED 후 신규 저장에서만400으로 보완했다. App 첫 연결2FAIL은 계약상 제목 누락으로 선택 전 멈췄고 Panel 제목1개만 추가하여 동일 기대를 통과했다. 시험 삭제/기준 완화0.
+- 독립 scoped 최종 C0/I0/M0: 중복 checks I1·제목 M1 해소. provider/currentness/cursor·저장 전후 회수·replay·OWNER/context/UNKNOWN를 대조했다. 주요 SHA: store A86CC16149DCA20BAD84A14C03453ED08E993C94C1C00495FD0F300A37AB6C38, API5AF522EF873B888753B10837CF66D449409AFB613F217904EB062E1ECA9D7C54, Panel4070C1FE9F2EF154F677ABDB2CC8FF5819072D06AD1F703BFD31DB0835D76706.
+- 등록 Windows QA ui14-verification-profile-20261029-01은 owner SINSAN/cyhuh·link0·process0 확인 후 생성604.03초에 파일6/디렉터리4만 회수(d5c78a). 독립0cd638 Test-Path False. 첫sandbox CIM 접근 불가(b28e3e)는 elevated 정확 조회로 해결했으며 제품 실패/프로세스 없음으로 오인하지 않았다. 실패 PNG는 일회 자원과 폐기, 텍스트 실패와 source 시험 보존.
+- rollback은 이번 신규 optional 공급/연결의 검토된 revert이며 기존 자료·키·DB 삭제0. Main은 소유13경로와 현황·계획·결과만 checkpoint로 보존하고 다음 독립 미완료의 계약/호출선을 기존primary 읽기 조사로 확인한다. 실제 배포·사용자 인수 완료는 주장하지 않는다.
+
+## 2026-10-29 FN16 로컬 이식키 파일 지문 입력 검수
+- 판정: 기존 승인5A6819E6 §4.1/§5/§6의 입력 편의 연결을 WI1C34B9F1 정확 제품2/시험2로 구현·핵심 합성 확인했다. 파일 내용/이름은 command·App buffer/state에 보존하지 않고 SHA256만 기존 envelopeHash에 입력한다. 실제 키 인증/보관 확인·Secret 제출·DB·서비스·전체FN16 완료는 아니다.
+- 변경 전 hash 수동 입력만 가능, 변경 후 공개 합성 암호화 파일 선택→1~16KiB/UTF8/canonical/닫힌 고정형식·동일project/원byteshash 대조→hash만 입력·범위확인 해제. 기존 수동입력/SecretForm/download/parser/App는 보존한다. 읽기 중 수동편집·action/화면 ABA·인증세대 변화는 원buffer/ticket CAS로 늦은 반영을 막는다.
+- Maina65d86 신규6 미구현RED172.4338ms→9ea2cc 신규6+기존12=18PASS289.8952ms/skip0, 독립 helper C0/I0/M0. Mainc45ea0 실제App 첫1은 파일input부재15초RED. Panel 연결 후fc3677 App build473modules/411ms exit0·합성Edge5PASS5.8s; 제품불변에서 추가UNKNOWN1만278298 1PASS2.6s. 총범위5+1 별도 실행이며6한번실행으로주장하지 않는다. 최종56aea0 type/diff0·독립Panel/추가시험 C0/I0/M0.
+- 정상 파일의 hash만 정확 IMPORT 원명령에 반영/POST0, 파일명·본문·ciphertext·비밀번호입력 부재, BOM실패/취소 원값보존, 수동/action/화면ABA 지연결과 폐기, 원command 송신유실UNKNOWN 후 파일입력/새명령 차단·원body보존을 확인했다. 실제 서버적용·사용자키·TLS·DB 검증으로 확대하지 않는다.
+- 지문: API325783347A55691F6392C85FC859173CD013BC1D2A7469B7D55D476AA2B1F6A2, PanelFAE21D224332DEEB3DEB74952A3077924FB09E97BE2B28FA52E0D89882670B88, unit867281786E808DF5B1A8DA1EDD7D50D532C2CCD68BA7AEAF796B4F59A0D4DA52, browserAE7A90E0015674E9DC5D088438693081267CBA6E2FF36BA175AE577CD1926968. 동일불변 native/crypto/DB 시험반복0, 기준완화0.
+- 등록QA ui14-local-envelope-hash-20261029-01은 현재owner/link0/process0 확인 후258.883초내 파일6/dir5만정리(6de2fb), 별도71609d 부재. 실제키/DB/서비스/P03 변경0. JS 지역 bytes소거는best-effort이며OS완전소거주장0. rollback은신규helper/입력연결의검토된revert이며원파일삭제0.
+- 남은 경계: 실제App Secret입력은TLS·로그보호 입증 전 금지, 설치 verifier의 실제 근거 발급/현재성 미제공, 전체 백업 수집·policy/job·암호화bundle/복원은 미완료다. 현재 기능을 전체백업 완료로 보고하지 않는다.

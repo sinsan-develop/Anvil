@@ -1,0 +1,96 @@
+{
+  "sourcePaths": [
+    {
+      "path": "apps/server/modules/backups/project-backups-input.ts",
+      "sha256": "83379BBE6EBE7D12BD93B9374416B0E7A6030BEF8889D9D6E66C68CAA0A4B660"
+    },
+    {
+      "path": "apps/server/modules/backups/project-backups.ts",
+      "sha256": "A58A25225C23B618AB065D3AC83AC1F2EB9D0CC1225D0335CD670CAFF9BD4D7D"
+    },
+    {
+      "path": "apps/server/modules/backups/project-export-store.ts",
+      "sha256": "2F3F23CF0EAAD7BF246DC4A88573526BE1F5E17749C5E0BDCBAB329CB17D244C"
+    },
+    {
+      "path": "db/migrations/0043_project_artifact_exports.sql.pending",
+      "sha256": "F83F256A479B0AE484F67B538B4763CED884173654D3692BA537C645FDAD0D5E"
+    },
+    {
+      "path": "apps/web/src/features/backups/project-backups-api.ts",
+      "sha256": "D7C35C9BEE9E66D987E4B0810299D4B14BDAA1F8E8CDB7A3C6371B159AD1F4B3"
+    },
+    {
+      "path": "apps/web/src/features/backups/ProjectBackupsPanel.tsx",
+      "sha256": "B1682DD5BA6BDD33A33865BB05369A72C232950D54A37247FF0A5D0E5F9F3020"
+    },
+    {
+      "path": "tests/unit/FN16/project-backups.test.ts",
+      "sha256": "696229EA0E020284536E503FFF48AB3B3396C268E5CB69BE133744D1C633A793"
+    },
+    {
+      "path": "tests/unit/FN16/project-backups-fixture.ts",
+      "sha256": "B10854024BA9F1280761ACC9CD2917476E2F15BFED5369927B7BCF15194E94C5"
+    },
+    {
+      "path": "tests/browser/UI14/project-backups.spec.ts",
+      "sha256": "47E4335606928315C538F6AF9F250E32D34D423509E6A0F5B3EB5539A0F28764"
+    },
+    {
+      "path": "tests/integration/FN16/project-artifact-export-pg.ts",
+      "sha256": "5FECF35183B5A0C8228B72C9B6C8D29DED406309BB533FD4C23B3D95912E20D6"
+    },
+    {
+      "path": "apps/server/modules/access/routes.ts",
+      "sha256": "D0689E0926FE58307820834A3F51003370036E78AAECB6B6F8420EF8BF01936A"
+    },
+    {
+      "path": "apps/server/main.ts",
+      "sha256": "144E8BAD2BA2657F998BE0D8FFF0F76C863A2EE2C05DC7CF46BD53E990124486"
+    },
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "sha256": "42769E95FCA40C195AED3FA083D1977AED5A8ED31C2B083DEC78C47E1E55BFDD"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "sha256": "DF7833CC56076A112BB873C5149467339D084B780669ABFFD0C56BFE453AEBAE"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "sha256": "13009092A51A9C8819BE2926B74D07B241438503474DF4151EA7067A9B901BD1"
+    },
+    {
+      "path": "apps/web/src/shell/AccountSecurity.tsx",
+      "sha256": "32CF85F4F5E1CBCE1215224C36CF12B78FC4930D86E396F5BA714E7BA9C03E39"
+    },
+    {
+      "path": "apps/web/src/features/settings/SettingsSourceLinks.ts",
+      "sha256": "7C225CBD26F9866919FC17F433B2890247350391762EB84EE45AE6758806B376"
+    },
+    {
+      "path": "apps/web/src/features/connections/policy-editor-profile.ts",
+      "sha256": "3808F7A678C7C7A5D9C275D1938D2EE7C146C95827A39D4360182999C0593EB4"
+    },
+    {
+      "path": "apps/web/src/features/connections/CandidatePolicyPanel.tsx",
+      "sha256": "C38BDAE775DA2BA8652E4D0D78B4EC22803BCB8A504910C626D3BBA8AB6F58E1"
+    }
+  ],
+  "review": {
+    "ui": "C0/I0/M0 scoped",
+    "backend": "C0/I0/M0 scoped"
+  },
+  "workInstructionSha256": "94AC6CE1ABADAB9AAF42A4832FD95BB0C10E090BC007FE26681E16534CD2BF98",
+  "branch": "codex/av3-stage-b",
+  "kind": "FN16_SELECTED_ARTIFACT_EXPORT_SOURCE",
+  "parent": "cfcf40af6b91a9d0131294ddd627259824fba46e",
+  "validation": {
+    "realService": "NOT_RUN",
+    "realPostgres": "NOT_RUN",
+    "mainUnit": 13,
+    "nativeDownload": "NOT_RUN",
+    "mainAppBrowser": 11,
+    "mainAdjacent": 21
+  }
+}

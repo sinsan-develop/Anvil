@@ -1,0 +1,80 @@
+{
+  "baseCommit": "1407c9c879b0b929ad54a15f0f09c60bc656c5d9",
+  "workInstructionSha256": "658BFE3671FCAA10D75DF59FF56C14AA69B5443A44BA841E2E14A81C59571E3E",
+  "entries": [
+    {
+      "bytes": 16834,
+      "workingSha256": "7CA334C21296A394FA13FBBBBF20FF19F351E3C0AD639D64C9FCE479306323D1",
+      "path": "apps/web/src/features/design-trace/import-api.ts",
+      "gitBlobSha256": "7CA334C21296A394FA13FBBBBF20FF19F351E3C0AD639D64C9FCE479306323D1",
+      "gitBlobObjectId": "768470b40a84c9ef17d3e390e938b94f86e12ab5",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "bytes": 24697,
+      "workingSha256": "DCC953A5405CB2DF5557E2FA1E50608EDED396761C0F4167AED4F9C1285DD201",
+      "path": "apps/web/src/features/design-trace/DocumentImport.tsx",
+      "gitBlobSha256": "DCC953A5405CB2DF5557E2FA1E50608EDED396761C0F4167AED4F9C1285DD201",
+      "gitBlobObjectId": "72d829267748c2ee63463ec2ef0f4ed732bd2036",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "bytes": 10638,
+      "workingSha256": "63857327D6213983AA2A43F2F243A5BA6217232F527926E49F15236F9606EE0F",
+      "path": "apps/web/src/features/design-trace/import-upload-approval.ts",
+      "gitBlobSha256": "63857327D6213983AA2A43F2F243A5BA6217232F527926E49F15236F9606EE0F",
+      "gitBlobObjectId": "f401000d6b76c08e29da873ae708fbad6e814d49",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "bytes": 9141,
+      "workingSha256": "20D72202813E08CDE79AD91B461D608981228648F7D2AF8B00C9B2A10AE9EBB0",
+      "path": "apps/web/src/features/design-trace/ImportUploadApprovalEditor.tsx",
+      "gitBlobSha256": "20D72202813E08CDE79AD91B461D608981228648F7D2AF8B00C9B2A10AE9EBB0",
+      "gitBlobObjectId": "1846d30303b2e765456a945e0f28c3be038636fe",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "bytes": 12784,
+      "workingSha256": "73733003C843CA38274613812FC20BA114359E986491DBA91B4001AB13A85B25",
+      "path": "tests/unit/UI06/import-upload-approval.test.ts",
+      "gitBlobSha256": "E32CA1031BD7248C3E3344777BDD1C8C4364BBAB9D4AC615F8A3CA25A537F8DB",
+      "gitBlobObjectId": "8e4e9887c91057185e4c5a04fdbdc28d10b21dce",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "bytes": 21892,
+      "workingSha256": "75D4E6A97E2EE64CE72296E6454CC33DBFB3F43732D33ABA28EF8647224B8545",
+      "path": "tests/browser/UI06/import-upload-approval.spec.ts",
+      "gitBlobSha256": "75D4E6A97E2EE64CE72296E6454CC33DBFB3F43732D33ABA28EF8647224B8545",
+      "gitBlobObjectId": "356430ccb16a0cfd9138289ae09c241f8129216a",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "bytes": 10077,
+      "workingSha256": "01AEBFCE936E15F83B12BDD12E10ED663BA3E6FD9002112DC2647B3E69158DFA",
+      "path": "tests/browser/UI06/import-upload-approval-harness.tsx",
+      "gitBlobSha256": "01AEBFCE936E15F83B12BDD12E10ED663BA3E6FD9002112DC2647B3E69158DFA",
+      "gitBlobObjectId": "d083a22c6015c2fe027c86aeae19573c7fbd5e3c",
+      "gitBlobDiffersOnlyByCrLf": false
+    }
+  ],
+  "actualDb": "NOT_RUN",
+  "actualAgent": "NOT_RUN",
+  "scope": "UI06_IMPORT_UPLOAD_APPROVAL_SOURCE_SYNTHETIC_ONLY",
+  "gitCheckoutRuntime": "NOT_RUN",
+  "review": {
+    "round": 1,
+    "important": 0,
+    "status": "SCOPED_ACCEPT",
+    "critical": 0,
+    "minor": 0
+  },
+  "schemaVersion": 1,
+  "served": "NOT_RUN",
+  "publication": {
+    "indexAudit": "PASS",
+    "attributesChanged": false,
+    "gitCheckoutRuntime": "NOT_RUN"
+  }
+}

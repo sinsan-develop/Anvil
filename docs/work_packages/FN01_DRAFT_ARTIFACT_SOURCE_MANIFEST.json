@@ -1,0 +1,597 @@
+{
+  "schemaVersion": 1,
+  "status": "SCOPED_SOURCE_AND_SYNTHETIC_QA_COMPLETE_DB_NOT_APPLIED",
+  "baseCommit": "9c9e4ff5a3a8c5fd9b0f6604cc82e42bfe57b192",
+  "contractSha256": "F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0",
+  "workInstructionSha256": "C5785F57EC898547818BDC42C3DD772626A66F306C8043D9B208831560CAB494",
+  "observedAt": "2026-10-26T06:56:57.371Z",
+  "actualDbApplicationAuthorized": false,
+  "agentExecutionAuthorized": false,
+  "entries": [
+    {
+      "path": "apps/server/modules/projects/repository.ts",
+      "bytes": 25547,
+      "sha256": "44BA4DE269695B17335D07BF04BCB7148BC9628DDCC05E6378DB127185889A41",
+      "priorSha256": "D771047F73B132A76031EA0D029D87374EE9E1F1E341CB0422CE68FE120B24AD",
+      "eofOnlyRemovedBytes": 3,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "44BA4DE269695B17335D07BF04BCB7148BC9628DDCC05E6378DB127185889A41",
+      "gitBlobObjectId": "08dd2235f59bb4636f1aa2951245feadf755f9d9",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "bytes": 56685,
+      "sha256": "9B0B8D6B953EBF7F93BDA1B39774F32337B6210ABFF882D1AA3251AF82FED515",
+      "priorSha256": "A8EE19D955812139622D0F69ADEC8765D54FEBFF5EB19D5A1C9B6C947408EA24",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "9B0B8D6B953EBF7F93BDA1B39774F32337B6210ABFF882D1AA3251AF82FED515",
+      "gitBlobObjectId": "e0a685c906c4fa62284518dbccf4b99b01c3d030",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/server/storage/artifact-store.ts",
+      "bytes": 12679,
+      "sha256": "37695BBC4AA691CD2011DC2346F78EBA9181D1EA2BB64EF40D1DEC66274AD01D",
+      "priorSha256": "EB9C41BE5A0BC920BE11091EFAC6FE03DBD67A91FCAC90FAC78CEBADF1EDF683",
+      "eofOnlyRemovedBytes": 4,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "37695BBC4AA691CD2011DC2346F78EBA9181D1EA2BB64EF40D1DEC66274AD01D",
+      "gitBlobObjectId": "796442d3259e07d61d57dcc4b472595dac0d8f16",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "bytes": 36378,
+      "sha256": "58C650C2D5BFF31AE6E990630EE9C4D68AEC989FDEC63CB998D44012BF75BAB0",
+      "priorSha256": "3FD610391DA1A062A0A1D2A3D6CD1FB9EF755D177732C1592478A9967D235DE1",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "58C650C2D5BFF31AE6E990630EE9C4D68AEC989FDEC63CB998D44012BF75BAB0",
+      "gitBlobObjectId": "63045b5428d97641367c1047ffdbbfd93d44a91d",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/DraftWizardReview.ts",
+      "bytes": 5023,
+      "sha256": "C64D3468E4099AC036999B1F26BE8FFA2374D138577E18B8ACEEE74DEF2C406B",
+      "priorSha256": "CAF87835C81F9CDE1B61662960F053D7F4497330C7ABC75D537709DB4B785923",
+      "eofOnlyRemovedBytes": 4,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "C64D3468E4099AC036999B1F26BE8FFA2374D138577E18B8ACEEE74DEF2C406B",
+      "gitBlobObjectId": "8d4193eedb9cca00f698949ecc53a464a02069b4",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/ProjectCreatePage.tsx",
+      "bytes": 27652,
+      "sha256": "4A1FD959B86E96B681395C70127B15657BD3F4FF315F13835BD8EBA873391C2A",
+      "priorSha256": "024F85059B621D084DC8D2C3780887D50D0FF8B0328308E233D5D12B821C8E8D",
+      "eofOnlyRemovedBytes": 6,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "4A1FD959B86E96B681395C70127B15657BD3F4FF315F13835BD8EBA873391C2A",
+      "gitBlobObjectId": "8242324aadc5483297d380056c31c0ba1096a38e",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/api.ts",
+      "bytes": 15737,
+      "sha256": "611920FFA9F4227E07F2C7785071AE11D31BEF09949F868A0FA694A8A18B9E76",
+      "priorSha256": "43CB9058EB2DD6252A9CBA31733E1017B7A9FAE9111899A4AA91ABBD1CD70E80",
+      "eofOnlyRemovedBytes": 4,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "611920FFA9F4227E07F2C7785071AE11D31BEF09949F868A0FA694A8A18B9E76",
+      "gitBlobObjectId": "b9ee9a289e508d8e6f5f3e9013b5e4aac5245583",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "apps/web/src/features/project-create/draft-wizard.ts",
+      "bytes": 978,
+      "sha256": "34568A6DF8EBBEEA28DDE59BED96DBBD4ADFE5FE7383E5CC2781032862153914",
+      "priorSha256": "CC9C0385159A7ED633F20BE8CD807C3AA11839A1A2DF32FFE668A89127DE5269",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "34568A6DF8EBBEEA28DDE59BED96DBBD4ADFE5FE7383E5CC2781032862153914",
+      "gitBlobObjectId": "8460f4eaffec46ff5acb497b6e4566909641bd3c",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "contracts/draft-artifacts.ts",
+      "bytes": 3519,
+      "sha256": "D33E299929915CC72240FDD2EAB9032D11ECF85A19E54C5D9007572129EE0AD5",
+      "priorSha256": "D33E299929915CC72240FDD2EAB9032D11ECF85A19E54C5D9007572129EE0AD5",
+      "eofOnlyRemovedBytes": 0,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "B36BA3CE4C80EDC57949DA697DCF1E7ED6A88960B71291B80AA6A637FBFEB0FB",
+      "gitBlobObjectId": "2a9f76c880b147604409daf5191fe3806b06fb0f",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/server/modules/projects/draft-artifacts.ts",
+      "bytes": 20541,
+      "sha256": "D7E2572F8083796FF291CFC6E0683BF63511E2B4457C10421CD7A78388F22141",
+      "priorSha256": "51CE628EA5D05C34D855E715C2CC9A287B0BE595F5F59088EB0A4890F3006BCA",
+      "eofOnlyRemovedBytes": 10,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "4EC99F8EF8CB9F01E39DCE53B32F079880519C9392A39238EC72ADED4B033954",
+      "gitBlobObjectId": "80a3cdc793223f207ae8bc95e5b013332f2ef46c",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/server/modules/projects/draft-artifact-routes.ts",
+      "bytes": 4203,
+      "sha256": "574B945D08907E3C9472ACBBF6EAC59F37409CBAA8BE70508CF9AB33BAE4E09E",
+      "priorSha256": "47B3A75AE917EE7F53CE9A911F50F6E7DF689970DA1AAAA09397D6D64D30D5F8",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "353A39E772202B18A818AC9FA40DE4678014E0F2D1F36915F7487654305CCBDF",
+      "gitBlobObjectId": "575a12a69d62037f6a14fdf9ec38c7847b088851",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/server/modules/projects/draft-artifact-files.ts",
+      "bytes": 1787,
+      "sha256": "73CC68FC43431DE035C929D2A99B4C99F4939BFCAAA874C66331E69FDD675CE8",
+      "priorSha256": "73CC68FC43431DE035C929D2A99B4C99F4939BFCAAA874C66331E69FDD675CE8",
+      "eofOnlyRemovedBytes": 0,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "5B6667307E34288B1D75A63B09D60D5741AB9F51A97D345DD6FAED1B09AA2DB2",
+      "gitBlobObjectId": "542f50c51a32e5ea79640d665ed6a4a27ee10483",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/web/src/features/project-create/draft-artifact-api.ts",
+      "bytes": 6703,
+      "sha256": "B467B5C8A51DC381F3257BC1E714D5F15CCCA08CA33E4D5041661D12CFE3451D",
+      "priorSha256": "9B4C5F0C75323BCE8405AA8E063A6BA1B0D56603F2920B560A8F7036963D2605",
+      "eofOnlyRemovedBytes": 4,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "0AA2BB3F11EDEA78AE6F9F448E31C8CBA64AA70C0B5730A12B9D5AFDEBC663F6",
+      "gitBlobObjectId": "93d130107d471db6c866ed5e1960d0ded64b7ced",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "apps/web/src/features/project-create/DraftArtifactsPanel.tsx",
+      "bytes": 12946,
+      "sha256": "CF5234CB27B00F74B5DE43BF40BB772B184AF63C66FFE3CC0028722C1C7A507A",
+      "priorSha256": "3C459B11DAEFF5C974C6670CDB668CB57F1B4E38CCD0B17A4C39619382160771",
+      "eofOnlyRemovedBytes": 10,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "7E077BA552509B08D60B0EB8D85565D5D6361A988F89E9575DA92E2E2DA3D69C",
+      "gitBlobObjectId": "846fdea7c828d406649775ba8988d557dafbb47e",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "db/migrations/0042_draft_artifact_storage.sql.pending",
+      "bytes": 44395,
+      "sha256": "76D16C972339359B839ADA8A27A466C1F60873B5734FC37303F042B75C2CAA87",
+      "priorSha256": "C75EE6247C792EDDF3778245491B02B657B95E89DDA7B68DD31CBCCEC67B7CD3",
+      "eofOnlyRemovedBytes": 3,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "76D16C972339359B839ADA8A27A466C1F60873B5734FC37303F042B75C2CAA87",
+      "gitBlobObjectId": "17ba2de720959c2ea1552b86dab29e1b8103c3fd",
+      "gitBlobDiffersOnlyByCrLf": false
+    },
+    {
+      "path": "tests/unit/FN01/draft-artifact-input.test.ts",
+      "bytes": 2142,
+      "sha256": "F222AD479C59D1F29802FF2FE44080045D31AB0965A627204A7A07E2ABD5FDB0",
+      "priorSha256": "F222AD479C59D1F29802FF2FE44080045D31AB0965A627204A7A07E2ABD5FDB0",
+      "eofOnlyRemovedBytes": 0,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "E70AABE63F49CD6EA2EB34D63CA7F1A17F8EDCFEACFE6B31E3D9B1729AF8CA9B",
+      "gitBlobObjectId": "2a255436dc261d6b8576ffadb4c95b1c561d461d",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/unit/FN01/draft-artifact-service.test.ts",
+      "bytes": 12942,
+      "sha256": "77E878192CC2DE339B8C8FAA763FD2CB8BBF65ECBE4B9C7A9B375710438F4F2F",
+      "gitBlobSha256": "40A147CA0FDF0D49C7BADC94571880195D373E10400595128D0D078BA4141487",
+      "gitBlobObjectId": "fc6c832c0c0fa8b64ca292659867a58df8ab62cc",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/integration/FN01/draft-artifact-files.test.ts",
+      "bytes": 2533,
+      "sha256": "92D589CD1C4D97E32AB8126785354C650D6044875B77BB913E16C13EB5E98A5A",
+      "priorSha256": "2036478DDB7B0CC504C5DD68E8A747F2294C435F0AD1A36ECB62B0E5D4F586F9",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "BE9006EAFB993B453BDC01B441E917771E5DCCEFF45B12F69C2EDB1BE129E9D2",
+      "gitBlobObjectId": "c94ef62780e56f00eb835c61e1abed176885d7b4",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/support/draft-artifact-fixture.ts",
+      "bytes": 18118,
+      "sha256": "061613D02F456CEFC36B0F9637E5E280835C579FDE843C1A2ED9F8061E620F44",
+      "changeKind": "ADDITIONAL_FIRST_DRAFT_SAVE_TEST_COVERAGE",
+      "previousSha256": "2D9BAEB156AB4ADB5DE8F615695E1490703141F4584D531FFBD4C8F998EEB8FE",
+      "gitBlobSha256": "E38E0D918EC90CDC47E3762DFBD4AC734E925A983102795E322DDDFD48438A5E",
+      "gitBlobObjectId": "49c615b006d2e0a193e43216918631516ff72f38",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/integration/FN01/draft-artifact-synthetic.test.ts",
+      "bytes": 6246,
+      "sha256": "21C4626439C422E69293F03F008BCBF0688E5DC96C2183DAC8411D53E1241CCF",
+      "priorSha256": "1864E324DEF9A7D772F2595E37668ED7CEE1FCE60B2B42F8BC66367AE93F8CA2",
+      "eofOnlyRemovedBytes": 2,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "6647D5E5D808654C537C48AC05FDFF35D7749EAE68DC1EC928DB477D1702334E",
+      "gitBlobObjectId": "671579bf75e0b29b001875acd56683dc96f2d43b",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/unit/UI02/draft-artifact-api.test.ts",
+      "bytes": 6163,
+      "sha256": "16FAF8F88B6C27F4D17A2446D192967081BF596512919E0766EF0291C640DB89",
+      "priorSha256": "16FAF8F88B6C27F4D17A2446D192967081BF596512919E0766EF0291C640DB89",
+      "eofOnlyRemovedBytes": 0,
+      "priorBodyVerified": true,
+      "gitBlobSha256": "8E82C8A7585E37F8E8F6F41817FACDB9D890773812E045886EC77F82A2744200",
+      "gitBlobObjectId": "8565856c5919cbbcb41f0632214bb3eeb67ae145",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/browser/UI02/draft-artifact.spec.ts",
+      "bytes": 23857,
+      "sha256": "25AD0C9556E6E6CFC276450AD00186BAE5D585039DC074FDA0EDD8F4E49907E2",
+      "changeKind": "ADDITIONAL_FIRST_DRAFT_SAVE_TEST_COVERAGE",
+      "previousSha256": "D0F46477D990C5B9EA6689B6EE9265C368C160857BB9D91FC6CB3FF139E107D7",
+      "gitBlobSha256": "15FA5BCD7D5CC4BCD385BFB910974CBD94DD4BC9309A11BACCA2FC34E7FFD907",
+      "gitBlobObjectId": "12cbf7098789ffe3253e41bd53431343a6218467",
+      "gitBlobDiffersOnlyByCrLf": true
+    },
+    {
+      "path": "tests/browser/UI02/draft-artifact-harness.tsx",
+      "bytes": 1457,
+      "sha256": "1DEAEC66249E72AE41ABB3FEF42A32B847B37BE9604D08044E1E59179DA0E843",
+      "changeKind": "ADDITIONAL_FIRST_DRAFT_SAVE_TEST_COVERAGE",
+      "previousSha256": "6E3A0D0E2835B6184ABA4ACA3A281C9B657BE618D325DE75811A1EC28ED3E95D",
+      "gitBlobSha256": "CFB646F4F02C0FC7AB9254841CD273F02B97977E1762E92D950CFAC0BC32140B",
+      "gitBlobObjectId": "24d92c0a182dbbfe94217e275f1eaa56e7872d52",
+      "gitBlobDiffersOnlyByCrLf": true
+    }
+  ],
+  "previousSnapshots": [
+    {
+      "manifestSha256": "1A5AEA82751879504291FB8CB8A23E2DF88472176BA17174A3550D82D3BAB835",
+      "snapshot": {
+        "schemaVersion": 1,
+        "status": "FROZEN_FOR_FINAL_VERIFICATION",
+        "baseCommit": "9c9e4ff5a3a8c5fd9b0f6604cc82e42bfe57b192",
+        "contractSha256": "F4E734B396485E574A8119AECA1731D4F38C2114B15AB285EF18DA1EABC584D0",
+        "workInstructionSha256": "C5785F57EC898547818BDC42C3DD772626A66F306C8043D9B208831560CAB494",
+        "observedAt": "2026-10-26T06:34:44.889Z",
+        "actualDbApplicationAuthorized": false,
+        "agentExecutionAuthorized": false,
+        "entries": [
+          {
+            "path": "apps/server/modules/projects/repository.ts",
+            "bytes": 25547,
+            "sha256": "44BA4DE269695B17335D07BF04BCB7148BC9628DDCC05E6378DB127185889A41",
+            "priorSha256": "D771047F73B132A76031EA0D029D87374EE9E1F1E341CB0422CE68FE120B24AD",
+            "eofOnlyRemovedBytes": 3,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/server/modules/projects/routes.ts",
+            "bytes": 56685,
+            "sha256": "9B0B8D6B953EBF7F93BDA1B39774F32337B6210ABFF882D1AA3251AF82FED515",
+            "priorSha256": "A8EE19D955812139622D0F69ADEC8765D54FEBFF5EB19D5A1C9B6C947408EA24",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/server/storage/artifact-store.ts",
+            "bytes": 12679,
+            "sha256": "37695BBC4AA691CD2011DC2346F78EBA9181D1EA2BB64EF40D1DEC66274AD01D",
+            "priorSha256": "EB9C41BE5A0BC920BE11091EFAC6FE03DBD67A91FCAC90FAC78CEBADF1EDF683",
+            "eofOnlyRemovedBytes": 4,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/App.tsx",
+            "bytes": 36378,
+            "sha256": "58C650C2D5BFF31AE6E990630EE9C4D68AEC989FDEC63CB998D44012BF75BAB0",
+            "priorSha256": "3FD610391DA1A062A0A1D2A3D6CD1FB9EF755D177732C1592478A9967D235DE1",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/DraftWizardReview.ts",
+            "bytes": 5023,
+            "sha256": "C64D3468E4099AC036999B1F26BE8FFA2374D138577E18B8ACEEE74DEF2C406B",
+            "priorSha256": "CAF87835C81F9CDE1B61662960F053D7F4497330C7ABC75D537709DB4B785923",
+            "eofOnlyRemovedBytes": 4,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/ProjectCreatePage.tsx",
+            "bytes": 27652,
+            "sha256": "4A1FD959B86E96B681395C70127B15657BD3F4FF315F13835BD8EBA873391C2A",
+            "priorSha256": "024F85059B621D084DC8D2C3780887D50D0FF8B0328308E233D5D12B821C8E8D",
+            "eofOnlyRemovedBytes": 6,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/api.ts",
+            "bytes": 15737,
+            "sha256": "611920FFA9F4227E07F2C7785071AE11D31BEF09949F868A0FA694A8A18B9E76",
+            "priorSha256": "43CB9058EB2DD6252A9CBA31733E1017B7A9FAE9111899A4AA91ABBD1CD70E80",
+            "eofOnlyRemovedBytes": 4,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/draft-wizard.ts",
+            "bytes": 978,
+            "sha256": "34568A6DF8EBBEEA28DDE59BED96DBBD4ADFE5FE7383E5CC2781032862153914",
+            "priorSha256": "CC9C0385159A7ED633F20BE8CD807C3AA11839A1A2DF32FFE668A89127DE5269",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "contracts/draft-artifacts.ts",
+            "bytes": 3519,
+            "sha256": "D33E299929915CC72240FDD2EAB9032D11ECF85A19E54C5D9007572129EE0AD5",
+            "priorSha256": "D33E299929915CC72240FDD2EAB9032D11ECF85A19E54C5D9007572129EE0AD5",
+            "eofOnlyRemovedBytes": 0,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/server/modules/projects/draft-artifacts.ts",
+            "bytes": 20541,
+            "sha256": "D7E2572F8083796FF291CFC6E0683BF63511E2B4457C10421CD7A78388F22141",
+            "priorSha256": "51CE628EA5D05C34D855E715C2CC9A287B0BE595F5F59088EB0A4890F3006BCA",
+            "eofOnlyRemovedBytes": 10,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/server/modules/projects/draft-artifact-routes.ts",
+            "bytes": 4203,
+            "sha256": "574B945D08907E3C9472ACBBF6EAC59F37409CBAA8BE70508CF9AB33BAE4E09E",
+            "priorSha256": "47B3A75AE917EE7F53CE9A911F50F6E7DF689970DA1AAAA09397D6D64D30D5F8",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/server/modules/projects/draft-artifact-files.ts",
+            "bytes": 1787,
+            "sha256": "73CC68FC43431DE035C929D2A99B4C99F4939BFCAAA874C66331E69FDD675CE8",
+            "priorSha256": "73CC68FC43431DE035C929D2A99B4C99F4939BFCAAA874C66331E69FDD675CE8",
+            "eofOnlyRemovedBytes": 0,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/draft-artifact-api.ts",
+            "bytes": 6703,
+            "sha256": "B467B5C8A51DC381F3257BC1E714D5F15CCCA08CA33E4D5041661D12CFE3451D",
+            "priorSha256": "9B4C5F0C75323BCE8405AA8E063A6BA1B0D56603F2920B560A8F7036963D2605",
+            "eofOnlyRemovedBytes": 4,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "apps/web/src/features/project-create/DraftArtifactsPanel.tsx",
+            "bytes": 12946,
+            "sha256": "CF5234CB27B00F74B5DE43BF40BB772B184AF63C66FFE3CC0028722C1C7A507A",
+            "priorSha256": "3C459B11DAEFF5C974C6670CDB668CB57F1B4E38CCD0B17A4C39619382160771",
+            "eofOnlyRemovedBytes": 10,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "db/migrations/0042_draft_artifact_storage.sql.pending",
+            "bytes": 44395,
+            "sha256": "76D16C972339359B839ADA8A27A466C1F60873B5734FC37303F042B75C2CAA87",
+            "priorSha256": "C75EE6247C792EDDF3778245491B02B657B95E89DDA7B68DD31CBCCEC67B7CD3",
+            "eofOnlyRemovedBytes": 3,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/unit/FN01/draft-artifact-input.test.ts",
+            "bytes": 2142,
+            "sha256": "F222AD479C59D1F29802FF2FE44080045D31AB0965A627204A7A07E2ABD5FDB0",
+            "priorSha256": "F222AD479C59D1F29802FF2FE44080045D31AB0965A627204A7A07E2ABD5FDB0",
+            "eofOnlyRemovedBytes": 0,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/unit/FN01/draft-artifact-service.test.ts",
+            "bytes": 12942,
+            "sha256": "77E878192CC2DE339B8C8FAA763FD2CB8BBF65ECBE4B9C7A9B375710438F4F2F"
+          },
+          {
+            "path": "tests/integration/FN01/draft-artifact-files.test.ts",
+            "bytes": 2533,
+            "sha256": "92D589CD1C4D97E32AB8126785354C650D6044875B77BB913E16C13EB5E98A5A",
+            "priorSha256": "2036478DDB7B0CC504C5DD68E8A747F2294C435F0AD1A36ECB62B0E5D4F586F9",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/support/draft-artifact-fixture.ts",
+            "bytes": 17673,
+            "sha256": "2D9BAEB156AB4ADB5DE8F615695E1490703141F4584D531FFBD4C8F998EEB8FE"
+          },
+          {
+            "path": "tests/integration/FN01/draft-artifact-synthetic.test.ts",
+            "bytes": 6246,
+            "sha256": "21C4626439C422E69293F03F008BCBF0688E5DC96C2183DAC8411D53E1241CCF",
+            "priorSha256": "1864E324DEF9A7D772F2595E37668ED7CEE1FCE60B2B42F8BC66367AE93F8CA2",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/unit/UI02/draft-artifact-api.test.ts",
+            "bytes": 6163,
+            "sha256": "16FAF8F88B6C27F4D17A2446D192967081BF596512919E0766EF0291C640DB89",
+            "priorSha256": "16FAF8F88B6C27F4D17A2446D192967081BF596512919E0766EF0291C640DB89",
+            "eofOnlyRemovedBytes": 0,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/browser/UI02/draft-artifact.spec.ts",
+            "bytes": 14552,
+            "sha256": "D0F46477D990C5B9EA6689B6EE9265C368C160857BB9D91FC6CB3FF139E107D7",
+            "priorSha256": "9CB44A6DCCBC22E4086E8EE4E2369F42D8ED541CCA4C07A04704A3F91D38BAFE",
+            "eofOnlyRemovedBytes": 8,
+            "priorBodyVerified": true
+          },
+          {
+            "path": "tests/browser/UI02/draft-artifact-harness.tsx",
+            "bytes": 1433,
+            "sha256": "6E3A0D0E2835B6184ABA4ACA3A281C9B657BE618D325DE75811A1EC28ED3E95D",
+            "priorSha256": "1C5F1A582649E8883F9579F7DE026414D251DD6A204A42A2AD3326C15739737A",
+            "eofOnlyRemovedBytes": 2,
+            "priorBodyVerified": true
+          }
+        ]
+      }
+    }
+  ],
+  "additionalCoverage": {
+    "scope": "새 초안 첫 POST 저장에서 반환 ID GET·업로드·선택 저장·보호 조회까지",
+    "existingDomCasePrefixBytes": 14552,
+    "existingDomCasePrefixSha256": "D0F46477D990C5B9EA6689B6EE9265C368C160857BB9D91FC6CB3FF139E107D7",
+    "productFilesUnchanged": 15,
+    "newCaseRuntime": "PASS_914794"
+  },
+  "verificationParentManifestSha256": "232399167720978C18A8B2E183E1695598F161122F009C2296B799F496D8A730",
+  "verifiedAt": "2026-10-26T07:12:45.115Z",
+  "runtimeEvidence": {
+    "unitAndSource": {
+      "evidence": "aa1e89",
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0,
+      "sqlDefinitionAssertions": 1,
+      "realPg": false
+    },
+    "typecheck": {
+      "evidence": "aa1e89",
+      "exitCode": 0
+    },
+    "productBuild": {
+      "evidence": "10009f",
+      "exitCode": 0,
+      "productFilesUnchangedAfterBuild": 15,
+      "warning": "EXISTING_CHUNK_OVER_500KB"
+    },
+    "realFiles": {
+      "evidence": [
+        "614c56",
+        "7a9a55"
+      ],
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "database": "FAKE_TRANSACTION_MODEL",
+      "beforeNonSemanticEofCleanup": true
+    },
+    "browser": {
+      "evidence": "914794",
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "pageErrors": 0,
+      "pageOffOriginRequests": 0,
+      "transport": "NATIVE_FETCH_TO_APP_INJECT",
+      "files": "ACTUAL_ARTIFACT_STORE",
+      "database": "FAKE_TRANSACTION_MODEL"
+    },
+    "independentReview": {
+      "openCritical": 0,
+      "openImportant": 0,
+      "actualSqlExecuted": false
+    },
+    "cleanup": {
+      "evidence": "968a68",
+      "qaRootsAbsent": true,
+      "relatedProcesses": 0
+    }
+  },
+  "excludedOrUnverified": [
+    "실제 PostgreSQL 적용·구문/제약·권한·직접 DML·경합·COMMIT",
+    "정식 원문 root/계정·Secret·서비스·실제 Agent 실행",
+    "실제 socket abort·OS crash·디렉터리 fsync 내구성·악성 symlink 반례",
+    "실제 로그인·TLS·served 사용자 인수·Stage 전체 완료"
+  ],
+  "publication": {
+    "existingGitPolicyObserved": true,
+    "configurationChanged": false,
+    "hashMeaning": {
+      "sha256": "실제 검증한 Windows 작업 파일 원문",
+      "gitBlobSha256": "현재 index의 Git 저장 바이트",
+      "gitBlobObjectId": "현재 index의 Git object ID"
+    },
+    "codeFiles": 23,
+    "gitEolNormalizedCodeFiles": 14,
+    "allBlobDifferencesOnlyCrLfToLf": true,
+    "workingProductOrTestFilesChanged": false,
+    "gitCheckoutRuntimeVerification": "NOT_RUN",
+    "newMainJsonLfNormalization": [
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_A1_INVENTORY.json",
+        "beforeSha256": "ED3FE2ED906024F5CA93C74281A0D4D9AD5D87803B61CF5B4AE8D94444486891",
+        "afterSha256": "95EAF869F488E1E19CE480E0C6049D501A9C2C62DA78C71AD274E5AC6D645630",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_A2_INVENTORY.json",
+        "beforeSha256": "09DC379585B30A1C0108CDA1E1DD46C56E621271D073DABA2598AE9EB9303436",
+        "afterSha256": "6E8FABC61293E76C9C8D22B857DFA399359289D76DFDEF6D2A7D540C0EFECDF9",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_A2_RESOURCE.json",
+        "beforeSha256": "EAE8E3AE83E271A5993F01AA2AF9B1F676584703F8C4DC71531A6FB9A338F477",
+        "afterSha256": "DB12F7FF065295E8D86154BF7CC16EABD5795F71C9C9B001F5F467737BCB51A1",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B1_INVENTORY.json",
+        "beforeSha256": "9C45102B73C8DC613E8555ADC9A8589D16194C56D1337BF414449BE823F21922",
+        "afterSha256": "589C4CD3C4F2774550D019F68C9C20D1C030BAECB0A07A6E75238154170FBE88",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B1_RESOURCE.json",
+        "beforeSha256": "FD9124ACB690F3874A102EDE29973633171123D0BBF444547C6ADA611F95FA8E",
+        "afterSha256": "A63DFB0EEBC6B9A974395DD5138FD967AE65970F8BD9797C9A38C08438ECCC1E",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B2_INVENTORY.json",
+        "beforeSha256": "D3FDCEAB278F63D0FEE92157D31E39D2D763B6ED8614DB010FD1361A2C38582A",
+        "afterSha256": "C5C1C904D907B89F3AEA094FB8A4D99E386548A1849BCC323235005F47DF40F2",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B2_RESOURCE.json",
+        "beforeSha256": "272E9A4E84DCDB93D8A57BD24B5AE6F84561E839FE91B635BF340937781F8087",
+        "afterSha256": "E536E6320F83C864C56FDD2383F96E013445A1D660491556CB058DD0A6C1E760",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B3_INVENTORY.json",
+        "beforeSha256": "200E3639869A3EBD2C32A37E96FAF9CCB46824DB7894B9D0487856D0D9F5ABF2",
+        "afterSha256": "C74A0A25C7431DF4EEF9B7E12AB57FDF2DF4E924837A3669468FE462AB07217A",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/04_test_reports/AV3/FN01_DRAFT_ARTIFACT_QA_B3_RESOURCE.json",
+        "beforeSha256": "5FAA5351AB9A730B289BD578E7C0D5371EE92E2B3A084A7ADFCE1354CE9626A2",
+        "afterSha256": "5506CA625C3927F6C9803CC8053FB9429A57CFBB6C2401B0381500906428114C",
+        "jsonValuesUnchanged": true
+      },
+      {
+        "path": "docs/work_packages/FN01_DRAFT_ARTIFACT_MIGRATION_SOURCE_MANIFEST.json",
+        "beforeSha256": "C0553A56526BFAA1CCDFB4A124423F72E6DE8A1828FBFFE6A3360FDF985DC6DD",
+        "afterSha256": "16B69CA89A7FD49329C05BF38CAACF5A13F7D6156CC035C5ABB45B55B7EDBD82",
+        "jsonValuesUnchanged": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+-- 미실행 digest 함수 반례 SOURCE. 실제 UPDATE/CAS·경합·COMMIT 증거가 아니다.
+-- typed projection은 완전한 FK/서명/현재 권위 fixture가 아니며 기본 거절 trigger를 해제하지 않는다.
+BEGIN;
+DO $$
+DECLARE b anvil.source_content_requests;n anvil.source_content_requests;tag text;
+BEGIN
+ b.project_id='77000000-0000-4000-8000-000000000001';b.id='77000000-0000-4000-8000-000000000002';b.version=1;
+ b.created_at='2026-10-23T17:00:00.000Z';b.updated_at=b.created_at;b.expires_at=b.created_at+interval '10 minutes';b.state='CREATED';b.exchange_failures=0;
+ tag=anvil.source_content_request_cas_digest(b);
+ ASSERT tag ~ '^[0-9a-f]{64}$','CAS_DIGEST_FORMAT';
+ ASSERT tag=anvil.source_content_request_cas_digest(b),'CAS_IDENTICAL_PROJECTION';
+ n=b;n.id='77000000-0000-4000-8000-000000000003';ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_IMMUTABLE_ID';
+ n=b;n.state='UNKNOWN';ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_STATE_SAME_MS';
+ n=b;n.exchange_failures=1;ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_COUNTER_SAME_MS';
+ n=b;n.proof_signature=repeat('A',86);ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_PROOF_SAME_MS';
+ n=b;n.observation_nonce_digest=repeat('c',64);ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_NONCE_SAME_MS';
+ n=b;n.report_consumed_command_id='77000000-0000-4000-8000-000000000004';ASSERT tag<>anvil.source_content_request_cas_digest(n),'CAS_CONSUMPTION_SAME_MS';
+ PERFORM set_config('TimeZone','Asia/Seoul',true);
+ ASSERT tag=anvil.source_content_request_cas_digest(b),'CAS_TIMEZONE_INDEPENDENT';
+END;$$;
+ROLLBACK;

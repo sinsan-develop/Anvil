@@ -1,0 +1,108 @@
+import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import {readDocument,type DocumentSummary} from './api.ts';
+import {getPinnedForm} from '../methodologies/forms-api.ts';
+import type {DocumentBuffer,DocumentSession} from './editor-api.ts';
+import {readDesignIndex} from './design-index-api.ts';
+import {blankPlanTask,prepareWorkPlan,sendWorkPlan,readWorkPlan,type WorkPlanBuffer} from './work-plan-api.ts';
+import {documentMutationUncertain,isKnownDocumentRejection} from './mutation-result.ts';
+import type {TaskCard,PlanTraceRef} from '../../../../server/modules/traceability/work-plan-card.ts';
+import{newTaskTrace,newPlanDocumentTrace}from'./trace-api.ts';
+import{TaskTraceEditor}from'./TaskTraceEditor.tsx';
+import{PlanDocumentTraceEditor}from'./PlanDocumentTraceEditor.tsx';
+import{readWorkPlanScreenReviews,removeOrphanedScreenReviews,selectWorkPlanScreenReview,type ScreenReviewChoice}from'./work-plan-screen-reviews.ts';
+import{readWorkPlanDecision,newWorkPlanDecision}from'./work-plan-decision-api.ts';
+import{WorkPlanDecisionEditor}from'./WorkPlanDecisionEditor.tsx';
+import{canReopenRejectedWorkPlan,reopenRejectedWorkPlan}from'./rejected-work-plan.ts';
+import {WorkPlanApprovalEditor} from './WorkPlanApprovalEditor.tsx';
+import {PlanTaskCodeRename} from './PlanTaskCodeRename.tsx';
+import {movePlanTask} from './plan-task-order.ts';
+import {removePlanTask} from './plan-task-removal.ts';
+import {PlanTaskRemoval} from './PlanTaskRemoval.tsx';
+import {planIssueTaskTarget} from './plan-issue-target.ts';
+import {ordered} from '../knowledge/review-view.ts';
+import {WorkPlanDraftFile} from './WorkPlanDraftFile.tsx';
+import {PlanPrerequisiteSelection} from './PlanPrerequisiteSelection.tsx';
+
+const listFields=[['inputs','입력'],['outputs','출력'],['included','포함 범위'],['excluded','제외 범위'],['allowedFileRefs','허용 파일'],['startPrerequisites','착수 선행'],['acceptancePrerequisites','검수 선행'],['steps','수행 절차'],['acceptanceCriteria','검수 조건'],['evidenceRequirements','증거 요구']]as const;
+const lines=(s:string)=>s===''?[]:s.split('\n');
+export function WorkPlanEditor({client,session,buffer,documents,onChange,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:DocumentBuffer;documents:DocumentSummary[];onChange:Dispatch<SetStateAction<DocumentBuffer|null>>;onAuthenticationLost:()=>void}){
+  const s=buffer.workPlanState!,[busy,setBusy]=useState(false),[reread,setReread]=useState(false),mounted=useRef(true),running=useRef(false);
+  const[screenChoices,setScreenChoices]=useState<ScreenReviewChoice[]>([]);
+  const taskLocations=useRef<(HTMLElement|null)[]>([]);
+  const issueTasksMatch=!!s.result&&ordered(s.input.tasks)===ordered(s.result.tasks);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+  const locked=busy||!!s.pending||!!s.result;
+  const moveLocked=locked||!!s.uncertain||!!s.sent||!!s.approval||!!s.decision||!!s.traceLink;
+  function moveTask(index:number,direction:-1|1){
+    if(moveLocked||running.current)return;
+    try{const next=movePlanTask(s,index,direction);if(next===s)return;setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===s?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
+  }
+  function removeTask(captured:WorkPlanBuffer,index:number){
+    if(moveLocked||running.current||captured!==s)return;
+    try{const removed=removePlanTask(captured,index,true),next={...removed,input:removeOrphanedScreenReviews(removed.input,captured.input.tasks[index]!.screenRefs)};setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===captured?{...b,dirty:true,workPlanState:next}:b);}catch(e){failure(e);}
+  }
+  function update(change:(s:WorkPlanBuffer)=>WorkPlanBuffer,dirty=true){onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState?.bindingId===s.bindingId?{...b,workPlanState:change(b.workPlanState),dirty:dirty||b.dirty}:b);}
+  function input(change:(s:WorkPlanBuffer['input'])=>WorkPlanBuffer['input']){if(!locked)update(v=>({...v,input:change(v.input),failure:null}));}
+  function task(n:number,patch:Partial<TaskCard>){setScreenChoices([]);input(v=>({...v,tasks:v.tasks.map((t,k)=>k===n?{...t,...patch}:t)}));}
+  function failure(cause:unknown,mutation=false){const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');update(v=>({...v,failure:{code:e.code,status:e.status},uncertain:mutation?documentMutationUncertain(v.uncertain,e):v.uncertain}),false);if(mounted.current&&e.status===401)onAuthenticationLost();}
+  async function loadDesign(){
+    if(locked||running.current)return;
+    if(s.input.tasks.some(t=>t.designRefs.length||t.screenRefs.length)){failure(new ApiError('WORK_PLAN_DESIGN_LINKS_PRESENT',422));return;}
+    if(!s.designDocumentId||!/^[1-9][0-9]{0,14}$/.test(s.designVersion)){failure(new ApiError('WORK_PLAN_INPUT_INVALID',422));return;}
+    running.current=true;setBusy(true);const id=s.designDocumentId,version=s.designVersion;
+    try{const d=await readDocument(client,buffer.projectId,id,Number(version)),form=await getPinnedForm(client,d.document.formRef);if(form.definition.formCode!=='AF02')throw new ApiError('DESIGN_DOCUMENT_KIND_INVALID',422);const ref={id,version:Number(version),contentHash:d.document.contentHash},index=await readDesignIndex(client,buffer.projectId,ref);if(mounted.current)update(v=>v.designDocumentId===id&&v.designVersion===version?{...v,designIndex:index,input:{...v.input,designRef:ref},failure:null}:v);}
+    catch(e){failure(e);}finally{running.current=false;if(mounted.current)setBusy(false);}
+  }
+  async function save(){
+    if(running.current||s.result)return;running.current=true;setBusy(true);let next=s;
+    try{if(!next.pending){next={...next,pending:prepareWorkPlan(buffer,session),sent:true,failure:null};const captured=next;update(()=>captured);}else{const commandId=next.pending.commandId;next={...next,sent:true,uncertain:next.sent?true:next.uncertain,failure:null};const captured=next;update(v=>v.pending?.commandId===commandId?captured:v,false);}const result=await sendWorkPlan(client,{...buffer,workPlanState:next},session,()=>mounted.current),id=next.pending!.commandId;onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState?.pending?.commandId===id?{...b,dirty:false,workPlanState:{...b.workPlanState,result,failure:null,uncertain:false}}:b);}
+    catch(e){failure(e,!!next.pending);}finally{running.current=false;if(mounted.current)setBusy(false);}
+  }
+  async function loadScreenReviews(){if(locked||running.current)return;running.current=true;setBusy(true);setScreenChoices([]);try{const choices=await readWorkPlanScreenReviews(client,buffer.projectId,s.input.tasks);if(mounted.current)setScreenChoices(choices);}catch(e){failure(e);}finally{running.current=false;if(mounted.current)setBusy(false);}}
+  function chooseScreenReview(choice:ScreenReviewChoice,selected:boolean){if(locked)return;try{const next=selectWorkPlanScreenReview(s.input,choice,selected);input(()=>next);}catch(e){failure(e);}}
+  async function reload(){if(running.current||!s.result)return;running.current=true;setBusy(true);setReread(false);try{const value=await readWorkPlan(client,buffer.projectId,s.result.ref);if(mounted.current){update(v=>({...v,result:value,failure:null}),false);setReread(true);}}catch(e){failure(e);}finally{running.current=false;if(mounted.current)setBusy(false);}}
+  async function prepareDecision(kind:'REVIEW'|'CONFIRM'){if(running.current||!s.result||s.decision||s.traceLink)return;running.current=true;setBusy(true);try{const target=await readWorkPlanDecision(client,buffer.projectId,s.result),decision=newWorkPlanDecision(buffer.projectId,target,session,buffer.controlGeneration,kind);if(mounted.current)update(v=>({...v,decision,failure:null}),false);}catch(e){failure(e);}finally{running.current=false;if(mounted.current)setBusy(false);}}
+  function link(n:number,kind:PlanTraceRef['kind'],id:string,checked:boolean){
+    if(!s.designIndex)return;const item=kind==='DESIGN_ITEM'?s.designIndex.items.find(i=>i.id===id):s.designIndex.screenRegions.find(i=>i.id===id);if(!item)return;
+    const link:PlanTraceRef={kind,id,versionRef:item.documentRef,localCode:kind==='DESIGN_ITEM'?'localCode'in item?item.localCode:'':'screenCode'in item?item.screenCode:'',anchor:item.anchor},field=kind==='DESIGN_ITEM'?'designRefs':'screenRefs';
+    setScreenChoices([]);
+    input(v=>{
+      const t=v.tasks[n];if(!t)return v;
+      const links=checked?[...t[field],link]:t[field].filter(i=>i.id!==id);
+      const next={...v,tasks:v.tasks.map((task,index)=>index===n?{...task,[field]:links}:task)};
+      return kind==='SCREEN_REGION'&&!checked?removeOrphanedScreenReviews(next,t.screenRefs.filter(i=>i.id===id)):next;
+    });
+  }
+  const traceLinkWork=s.traceLink,decisionWork=s.decision,canClose=!s.approval?.request.uncertain&&!s.approval?.request.pending&&!s.uncertain&&(!s.pending||!!s.result||isKnownDocumentRejection(s.failure))&&(!traceLinkWork||!traceLinkWork.uncertain&&(!traceLinkWork.pending||!!traceLinkWork.result||isKnownDocumentRejection(traceLinkWork.failure)))&&(!decisionWork||!decisionWork.uncertain&&(!decisionWork.pending||!!decisionWork.savedId||isKnownDocumentRejection(decisionWork.failure)));
+  return <section className="status-card definition-editor" aria-label="작업계획 작성"><h2>작업계획 작성</h2><p>{buffer.title} · 원문 v{s.input.documentRef.version}</p><p className="meta">원문은 바꾸지 않습니다. 화면·기능·연결·준비 업무를 구분하고 착수 선행과 검수 선행을 따로 작성합니다. 계획 저장은 확정·실행·완료가 아닙니다. 허용 파일은 계획 선언이며 실제 접근 권한이 아닙니다.</p><pre aria-label="계획 기준 원문" className="document-original">{buffer.body}</pre>
+    {s.planRef&&!s.result?<p>같은 계획의 새 개정 · 기준 v{s.planRef.version}</p>:s.planRef&&s.result?<p>보관된 계획의 업무 연결 · v{s.result.ref.version}</p>:null}
+    {s.failure?<p role="alert">{new ApiError(s.failure.code,s.failure.status).message} · {s.failure.code} · 입력/명령 보존, 조회 실패 시 앞선 결과는 과거 자료입니다.</p>:null}
+<fieldset disabled={locked}><legend>설계 기준</legend><label htmlFor="plan-design-document">기준 설계 문서</label><select id="plan-design-document" value={s.designDocumentId} onChange={e=>{const d=documents.find(i=>i.id===e.target.value);update(v=>({...v,designDocumentId:e.target.value,designVersion:String(d?.headVersion??1)}));}}><option value="">문서 선택</option>{documents.map(d=><option key={d.id} value={d.id}>{d.title} · v{d.headVersion}</option>)}</select><label>기준 설계 버전<input type="number" min="1" value={s.designVersion} onChange={e=>update(v=>({...v,designVersion:e.target.value}))}/></label><button onClick={()=>{void loadDesign();}}>기준 설계 항목 확인</button>{s.input.designRef?<p>고정 설계 {s.input.designRef.id} · v{s.input.designRef.version} · SHA256 {s.input.designRef.contentHash}</p>:null}<p className="meta">다른 설계 기준으로 교체하려면 기존 D/S 선택을 먼저 명시 해제하세요. 화면 검토는 아래에서 명시 선택하며 저장 후 계획 내용검토·별도 확정을 진행하며 배정은 아직 미연결입니다. 부족 조건은 초안 문제로 남습니다.</p></fieldset>
+    <fieldset disabled={locked}><legend>연결한 화면의 내용 검토</legend><button type="button" disabled={!s.input.tasks.some(t=>t.screenRefs.length)} onClick={()=>void loadScreenReviews()}>연결 화면 내용검토 확인</button><p className="meta">원문·양식·정확 버전과 최신 검토를 다시 읽습니다. 자동 선택이나 검토 합격·계획 확정을 만들지 않습니다.</p>
+      {screenChoices.map(c=><section key={c.documentRef.id+':'+c.documentRef.version}><label><input type="checkbox" aria-label={`화면 ${c.title} v${c.documentRef.version} 최신 적합 검토 선택`} disabled={!c.available||locked} checked={!!c.latestReview&&s.input.screenReviewRefs.some((r:any)=>r?.id===c.latestReview!.ref.id)} onChange={e=>chooseScreenReview(c,e.target.checked)}/>{c.title} · v{c.documentRef.version} · {c.available?'최신 검토 적합':c.latestReview?'최신 검토 미적합':'검토 없음'}</label>{c.latestReview?<p>검토 이유: {c.latestReview.reason} · 실제 사람 검토 기록 · 독립 사용자 인수 보증 아님</p>:null}</section>)}
+      <ul>{s.input.screenReviewRefs.map((r:any,n)=><li key={n}>선택 검토 {typeof r?.id==='string'?r.id:'형식 미확인'} · <button type="button" onClick={()=>input(v=>({...v,screenReviewRefs:v.screenReviewRefs.filter((_,k)=>k!==n)}))}>선택 검토 {n+1} 해제</button></li>)}</ul>
+    </fieldset>
+    <WorkPlanDraftFile key={[session.user.id,session.clientId,buffer.projectId,s.bindingId].join(':')} buffer={buffer} session={session} disabled={moveLocked} onApply={(captured,next)=>{setScreenChoices([]);onChange(current=>current===captured&&current.ownerUserId===session.user.id&&current.projectId===buffer.projectId?next:current);}}/>
+    {s.input.tasks.map((t,n)=><section key={n} tabIndex={-1} aria-label={'업무 '+(n+1)+' 카드 위치'} ref={element=>{taskLocations.current[n]=element;}}><fieldset disabled={locked}><legend>업무 {n+1}</legend>
+      <button type="button" disabled={moveLocked||n===0} onClick={()=>moveTask(n,-1)}>업무 {n+1} 위로</button><button type="button" disabled={moveLocked||n===s.input.tasks.length-1} onClick={()=>moveTask(n,1)}>업무 {n+1} 아래로</button>
+      <label>업무 {n+1} 코드<input maxLength={64} value={t.taskCode} onChange={e=>task(n,{taskCode:e.target.value})}/></label><label htmlFor={'plan-type-'+n}>업무 {n+1} 유형</label><select id={'plan-type-'+n} value={t.type} onChange={e=>task(n,{type:e.target.value as TaskCard['type']})}><option value="SCREEN">화면</option><option value="FUNCTION">기능</option><option value="INTEGRATION">연결·통합</option><option value="PREPARATION">준비</option></select>
+      <PlanTaskCodeRename key={[s.bindingId,n,t.taskCode].join(':')} state={s} index={n} locked={locked} onApply={next=>{setScreenChoices([]);onChange(b=>b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===s?{...b,dirty:true,workPlanState:next}:b);}}/>
+      <PlanPrerequisiteSelection key={['prerequisites',s.bindingId,n,t.taskCode].join(':')} state={s} index={n} locked={moveLocked} onApply={(captured,next)=>{setScreenChoices([]);onChange(b=>b===buffer&&b.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.workPlanState===captured?{...b,dirty:true,workPlanState:next}:b);}}/>
+      {([['title','제목'],['purpose','목적'],['ownerRole','책임 역할']]as const).map(([k,label])=><label key={k}>업무 {n+1} {label}<input maxLength={k==='title'?200:20_000} value={t[k]} onChange={e=>task(n,{[k]:e.target.value})}/></label>)}
+      <div>실제 설계·화면 위치 연결{s.designIndex?.items.map(i=><label key={i.id}><input type="checkbox" checked={t.designRefs.some(r=>r.id===i.id)} aria-label={`업무 ${n+1} 설계 ${i.localCode}`} onChange={e=>link(n,'DESIGN_ITEM',i.id,e.target.checked)}/>{i.localCode} · {i.title} · {i.anchor}</label>)}{s.designIndex?.screenRegions.map(i=><label key={i.id}><input type="checkbox" checked={t.screenRefs.some(r=>r.id===i.id)} aria-label={`업무 ${n+1} 화면 ${i.screenCode}`} onChange={e=>link(n,'SCREEN_REGION',i.id,e.target.checked)}/>{i.screenCode} · v{i.documentRef.version} · {i.anchor}</label>)}</div>
+      {listFields.map(([k,label])=><div key={k}><label htmlFor={`plan-${n}-${k}`}>업무 {n+1} {label}</label><textarea id={`plan-${n}-${k}`} aria-describedby={`plan-${n}-${k}-help`} maxLength={20_000} value={t[k].join('\n')} onChange={e=>task(n,{[k]:lines(e.target.value)})}/><small id={`plan-${n}-${k}-help`}>한 줄에 한 항목{k==='startPrerequisites'||k==='acceptancePrerequisites'?' · 같은 계획의 업무 코드':''}</small></div>)}
+      <h3>검증 계획</h3>{t.testCases.map((c,k)=><section key={k}><label>업무 {n+1} 시험 {k+1} 코드<input value={c.id} maxLength={64} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,id:e.target.value}:v)})}/></label><label htmlFor={`plan-case-${n}-${k}`}>업무 {n+1} 시험 {k+1} 구분</label><select id={`plan-case-${n}-${k}`} value={c.kind} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,kind:e.target.value as typeof c.kind}:v)})}><option value="NORMAL">정상</option><option value="IMPORTANT_FAILURE">중요 실패</option><option value="DIRECT_IMPACT">직접 영향</option></select>{(['steps','expected','environment']as const).map(f=><label key={f}>업무 {n+1} 시험 {k+1} {f==='steps'?'절차':f==='expected'?'기대 결과':'환경'}<textarea value={f==='steps'?c.steps.join('\n'):c[f]} maxLength={20_000} onChange={e=>task(n,{testCases:t.testCases.map((v,j)=>j===k?{...v,[f]:f==='steps'?lines(e.target.value):e.target.value}:v)})}/></label>)}<button onClick={()=>task(n,{testCases:t.testCases.filter((_,j)=>j!==k)})}>업무 {n+1} 시험 {k+1} 제거</button></section>)}<button disabled={t.testCases.length>=200} onClick={()=>task(n,{testCases:[...t.testCases,{id:'',kind:'NORMAL',steps:[],expected:'',environment:''}]})}>업무 {n+1} 시험 추가</button>
+      <label>업무 {n+1} 복구 방법<textarea value={t.rollback} maxLength={20_000} onChange={e=>task(n,{rollback:e.target.value})}/></label><label>업무 {n+1} 재개 유의사항<textarea value={t.recoveryNotes} maxLength={20_000} onChange={e=>task(n,{recoveryNotes:e.target.value})}/></label><PlanTaskRemoval state={s} index={n} locked={moveLocked} onRemove={removeTask}/>
+    </fieldset></section>)}<button disabled={locked||s.input.tasks.length>=200} onClick={()=>input(v=>({...v,tasks:[...v.tasks,blankPlanTask()]}))}>업무 추가</button>
+    <label>작업계획 저장 이유<textarea value={s.input.reason} readOnly={locked} maxLength={20_000} onChange={e=>input(v=>({...v,reason:e.target.value}))}/></label>
+    {!s.result?<WorkPlanApprovalEditor client={client} session={session} buffer={buffer} disabled={busy} update={update} onAuthenticationLost={onAuthenticationLost}/>:null}
+    <button disabled={busy||!!s.result||!!s.approval&&!s.approval.commandHash} onClick={()=>{void save();}}>{s.pending?'같은 작업계획 명령 결과 확인':'작업계획 초안 저장'}</button><button disabled={busy||!canClose} onClick={()=>{if(!buffer.dirty||confirm('미저장 작업계획 입력을 버리고 닫을까요?'))onChange(b=>b?.workPlanState?.bindingId===s.bindingId?null:b);}}>작업계획 작성 닫기</button>
+    {canReopenRejectedWorkPlan(buffer,buffer.projectId,session)?<button type="button" disabled={busy} onClick={()=>{if(busy||running.current)return;if(!confirm('명확히 거절된 작업계획 명령을 확인했습니다. 업무·원문·설계 기준을 보존해 수정하고 별도 명령으로 저장할까요?'))return;try{const captured=buffer,next=reopenRejectedWorkPlan(captured,captured.projectId,session);onChange(current=>current===captured?next:current);setScreenChoices([]);setReread(false);}catch(e){failure(e);}}}>거절 확인 후 작업계획 계속 작성</button>:null}
+    {s.result?<section aria-label="저장한 작업계획"><p role="status">작업계획 초안 저장 확인 · 실행/완료 아님</p><p>계획 {s.result.ref.id} v{s.result.ref.version} · SHA256 {s.result.ref.contentHash}</p><button disabled={busy} onClick={()=>{void reload();}}>저장한 작업계획 재조회</button>{reread?<p>저장한 버전 재조회 확인</p>:null}<ul>{s.result.issues.map((i,n)=>{const target=issueTasksMatch?planIssueTaskTarget(s.result!.tasks,i.location):null;return <li key={n}>{i.message} · {i.code} · {i.location}{target!==null?<button type="button" disabled={busy} onClick={()=>{const element=taskLocations.current[target];if(element){element.scrollIntoView({block:'center'});element.focus();}}}>오류 업무 {target+1} 보기: {i.location}</button>:<span> · 연결할 업무 위치 미확인</span>}</li>;})}</ul><p>실제 실행/시험 증거: 미연결</p>{!s.decision&&!s.traceLink&&s.result.relationalProjection==='STORED'?s.result.tasks.map(t=><button key={t.taskCode} disabled={busy||s.result!.tasks.filter(v=>v.taskCode===t.taskCode).length!==1||!t.designRefs.length&&!t.screenRefs.length&&!s.result!.tasks.some(v=>v.taskCode!==t.taskCode&&s.result!.tasks.filter(w=>w.taskCode===v.taskCode).length===1)} onClick={()=>{try{const traceLink=newTaskTrace(buffer,t.taskCode);update(v=>({...v,traceLink}));}catch(e){failure(e);}}}>업무 {t.taskCode} 추적 연결 준비</button>):null}</section>:null}
+    {s.result&&!s.decision?<div className="project-toolbar"><button disabled={busy||!!s.traceLink} onClick={()=>void prepareDecision('REVIEW')}>작업계획 내용검토 작성</button><button disabled={busy||!!s.traceLink} onClick={()=>void prepareDecision('CONFIRM')}>작업계획 별도 확정 준비</button></div>:null}
+    {s.decision?<WorkPlanDecisionEditor key={s.bindingId+':'+s.decision.kind} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
+    {s.result&&!s.decision&&!s.traceLink&&['STORED','ISSUES_ONLY'].includes(s.result.relationalProjection)?<button disabled={busy} onClick={()=>{try{const traceLink=newPlanDocumentTrace(buffer);update(v=>({...v,traceLink}));}catch(e){failure(e);}}}>계획 원문 상세화 연결 준비</button>:null}
+    {s.traceLink?s.traceLink.input.from.kind==='DOCUMENT_VERSION'?<PlanDocumentTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:<TaskTraceEditor key={s.traceLink.bindingId} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>:null}
+  </section>;
+}

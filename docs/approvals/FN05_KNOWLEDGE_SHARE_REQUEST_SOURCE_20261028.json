@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "decision": "HUMAN_APPROVED_SOURCE_ONLY",
+  "questionCallId": "call_84af3084e4294486a1514f370614dbb3",
+  "item": 0,
+  "answer": "A안 계약·source-only 구현 승인",
+  "specPath": "docs/contracts/FN05_KNOWLEDGE_SHARE_REQUEST_CANDIDATE.md",
+  "specSha256": "F60EEE63D28E65949B41BEA1F67D5B70F61767F84141E67A9F1CCBAC8A226B47",
+  "scope": [
+    "A안 상세 계약",
+    "요청 metadata 저장·본인 보호 목록/고정 재조회 코드·화면",
+    "미적용 forward SQL",
+    "합성 검증"
+  ],
+  "excluded": [
+    "실제 공유·전송·대상 쓰기",
+    "승인 생성/소비",
+    "실제 DB 적용·정책 부여",
+    "서비스·Secret·Agent 실행"
+  ],
+  "p03CopyAuthorized": false,
+  "notExecutionGrant": true
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI02_ROUND1_FIXED_SYNTHETIC_DOM_GREEN",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T10:32:55.1347086Z",
+    "expiresAtUtc": "2026-10-26T11:02:55.1347086Z",
+    "fileCount": 0,
+    "profiles": [
+      "browser",
+      "browser-round1"
+    ],
+    "phase": "ROUND1_GREEN_EMPTY_TEMP"
+  },
+  "source": {
+    "documentImportSha256": "D43445D8203AB78E010A922399D8888CC10D6D7F5AD67D879566EBC12271FB34",
+    "specSha256": "A3F00C4E35BB6B6251B876F022AA8E741B45E969C344D4152B80248BCA91E4F3",
+    "originalPrefixSha256": "EF3FDBC0D924484AEC12EB03C3CBCC2BD258081DA4B93F73A413F175D1114235"
+  },
+  "execution": {
+    "startTool": "34c29d",
+    "completionTool": "bc72a2",
+    "command": "node --test tests/browser/UI06/created-original-import.spec.ts",
+    "exitCode": 0,
+    "tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "totalDurationMs": 15233.4198,
+    "originalPositiveMs": 9654.5576,
+    "round1ParentMs": 4988.9134,
+    "scenarios": [
+      "FIRST_409",
+      "FIRST_422",
+      "LOSS_THEN_409",
+      "SAME_VALUE_CLONE",
+      "DELAYED_OBJECT_ABA"
+    ]
+  },
+  "uncoveredNewFinding": "I3_INITIAL_PREPARATION_LOCK_AFTER_SCOPE_DISPOSAL",
+  "overallAcceptance": "REWORK_NOT_COMPLETE",
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "inventoryAtUtc": "2026-10-26T10:36:42.2172716Z",
+    "files": 410,
+    "directories": 135,
+    "bytes": 30454906,
+    "topLevelEntries": [
+      "browser",
+      "browser-round1",
+      "temp"
+    ],
+    "links": 0,
+    "relatedProcesses": 0,
+    "cleanupCompletedAtUtc": "2026-10-26T10:36:43.2103553Z",
+    "rootExists": false
+  },
+  "independentObservation": {
+    "toolChunk": "d5a434",
+    "atUtc": "2026-10-26T10:36:50.6332342Z",
+    "rootExists": false,
+    "relatedProcesses": 0,
+    "cimReadSucceeded": true
+  },
+  "actualDbServicesAgentExecuted": false
+}

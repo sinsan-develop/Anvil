@@ -1,0 +1,21 @@
+# FN16 승인 저장상태 내부 조합 연결 작업지시서 — 2026-10-29
+
+기준 codex/av3-stage-b a653d4c3ebaf22efe51d6d419b5683c8a58f3e96. 승인현재저장상태 collector DFC5E555는Main15PASS/독립C0I0로게시했다. 기존20뒤이collector를21번째로연결해요청/결정원ref의정확존재/부재/충돌을검사한다. 현재승인효력/권한/원형복원·새정책/API/SQL/실키DB서비스는변경하지않는다. Main관리검수통합/Primary단독writer/독립읽기. preflight전GO아님.
+
+## 정확 허용4경로
+apps/server/modules/backups/project-inventory-composition.ts, tests/unit/FN16/project-inventory-composition.test.ts, tests/unit/FN16/project-inventory-composition-schema.test.ts, tests/unit/FN16/project-inventory-artifact-verification.test.ts.
+기존approval/policycollector·원문helper/normalizer/원문schema시험·SQL/다른source변경0. 보호8/사용자자료보존·Git은Main만/실제DB·키·서비스·Agent·파일IO0.
+
+## 연결 계약
+1. 실제 collectApprovalHistoryInventory를ApprovalHistory명시name으로기존20뒤정확1회호출한다. 고정순서/신원·최소기한·전체metadata/파일합집합·반납/회수불명503우선·false계약은유지한다. 원hash는H({kind,projectId,requests,decisions,consumptions,evidence,issues,externalDependencies}) 고정8필드다. rawchild전체resultDigest와원scope/제약/미검증/미수집·issues·rowcounts를보존한다.
+2. 요청은requests[].requestRef,결정은decisions[].decisionRef의nonnull원형만각각APPROVAL_REQUEST/APPROVAL_DECISION provider로명시추가한다. row.currentVersion이나projectionHash/derivedMetadataHash로원ref를합성하지않는다. refnull은해당row.originalSnapshotVerification NOT_PERFORMED 및SOURCE_REQUEST_EVIDENCE_MISSING(requestId) 또는SOURCE_DECISION_EVIDENCE_MISSING(decisionId)가같은id에명시돼있을때만원ref등록을하지않는다. row/issue는삭제하지않고원hash/요약에남긴다. null을가짜version/hash로대체하거나원형있음을인수하지않는다.
+3. 같은namespace/project/id/version+같은원hash는출처를합치고EXACT_REFERENCE_PRESENT,원provider수집후ref없음은COLLECTED_REFERENCE_ABSENT,같은key다른원hash는전체503 REFERENCE_CONFLICT. 기존선택approval증빙/notification참조와도동일원ref를사용하며redactedprojection끼리다름을원hash충돌로착각하지않는다. ID-only승인소비/단순currentstatus는해소대상으로승격하지않는다. consumption에는원VersionRef가없으므로provider를추가하지않는다.
+3.1. 실제 기존 child는 요청/결정 provider를 내보내지만 해당 namespace의 externalDependencies 자체를 발급하지 않는다. 따라서 결과를 외부 주입하지 않고 ApprovalHistory의 실제 저장 관계 2경로만 명시 소비한다: decisions[].declaredRequestRef nonnull→{kind:APPROVAL_REQUEST,ref,verification:NOT_PERFORMED,sourceRowId:decision.id}, consumptions[].decisionRef nonnull→{kind:APPROVAL_DECISION,ref,verification:NOT_PERFORMED,sourceRowId:consumption.id}. 조합 dependencies에 source:ApprovalHistory와 origin:STORED_RELATION을 명시해 원 externalDependencies와 출처를 구분하고 기존 동일 namespace/project/key/hash 존재·부재·충돌 규칙을 적용한다. 원 foreignref null은 dependency/ref를 발명하지 않고 원 issue/미검증·rowcounts로 남긴다. sourceRowId는 사용자/client가 아닌 저장 row UUID다. 원child.externalDependencies·원hash/선언을 바꾸지 않으며 그 밖의 재귀 ref 탐색/ID로 hash 추정/추가 경로는 금지한다. 이 두 관계는 provider를 추가하지 않는다. nullable 원요청 행이 있어도 원ref를 확인할 수 없으면 COLLECTED_REFERENCE_ABSENT는 원ref 공급 미확인만 뜻하며 row 소실·손상 판정이 아니다. 이 관계 검사는 현재 효력·권한·소비 재실행 허가가 아니다.
+4. 새child의effectiveState NOT_EVALUATED/stateTransitionHistory NOT_RECORDED_BY_CURRENT_SCHEMA를명시허용해component.declarations에보존한다. 기존NOT_PERFORMED/NOT_COLLECTED/false선언을그대로보존하며임의모든문자열반환으로범위를넓히지않는다. 저장7상태·초기v1ref와현재head·nullable미검증이요약/hash에서사라지지않도록원issues/선언/rowcounts를유지한다. rawrequests/decisions/body/actor/client를조합결과에반환하지않는다.
+5. 고정notCollected WHOLE_APPROVAL_COMMAND_AUTH_AUDIT는WHOLE_COMMAND_AUTH_AUDIT_AND_UNRECORDED_APPROVAL_TRANSITIONS로한정보정한다. 이것은승인3표현재저장metadata수집사실만뜻한다. 전체전상태/원형복원이나전체명령·감사/인증원장을수집했다는주장0,scope PROJECT_APPROVAL_STORED_STATE_ONLY/effectiveState미판정·approvalEffective/권한복원/전체coverage/restorable/atomicfalse유지. 158E10후보미채택/API/READY/저장허가우회0.
+6. 새21번째실패/지연/끝신원·최소만료/누적metadata/회수불명은동일한전체실패. 새caller별deadline·상한증가/재시도/불명결과skip0. 기존20순서·중간Context26/28/Observation32/34·Policy40/41관측은유지하고최종조합auth42→44,원문현재메시지45→47/IO전46→48만실제21수집에맞춰문맥한정수정한다. 숫자무차별치환/기존반례삭제·느슨화0.
+
+## TDD·검수
+신규연결시험먼저RED→source연결GREEN. 실기존Context또는Notification의선택request/decision원ref와새approval전체현재저장원형을메모리SQL로함께수집하여정확해소·출처합집합/원제약보존정상. nullable원ref없는행정상·issue존재/ref발명0,독립재봉인한원hash충돌503,수집했으나ref부재,source/candidate업무양형식·선택6표증거를최소실nonempty로확인한다. 원형없음때projection/derivedhash를provider로등록하면실패하는반례를명시한다. 실제collector를외부결과주입으로대체하지않는다.
+기존20+원문연결33개기대유지(수정된호출수/최종auth만정확변경),21번째실수집실패/종료신원·총한도반례. Mainfresh는composition행동/schema+원문연결행동/schema 직접영향4시험과type/diff/최종4지문만. approval15/policy11/다른collector는source불변이면재실행0. 독립C/I0뒤Main이허용4+WI/결과/WORK_STATUS/WORK_PLAN 정확8경로만checkpoint한다.
+실제DB/RLS/동시변화/키/서비스·원문FS/전체원장/원승인·권한복원·archive/restore/UI인수 NOT_RUN. rollback은21번째연결/관련시험의검토된revert,자료/승인/백업삭제0·전체WORK_PLAN미완료.

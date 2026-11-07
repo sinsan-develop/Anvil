@@ -1,0 +1,301 @@
+-- FN04 승인 두 계약의 source 후보. 실제 PG compile/DML/COMMIT/경합 NOT_RUN, 정식 migration manifest 미등록.
+-- 0049까지의 기존 forward 체인을 전제로 한다. 기존 파일/행/사용자 정책을 변경하지 않는다.
+CREATE TABLE anvil.design_activation_approval_candidates(
+ project_id uuid NOT NULL,request_id uuid NOT NULL,request_command_id uuid NOT NULL UNIQUE,candidate_command_id uuid NOT NULL,
+ payload_hash text NOT NULL CHECK(payload_hash ~ '^[a-f0-9]{64}$'),payload_json jsonb NOT NULL,target_ref jsonb NOT NULL,baseline_refs jsonb NOT NULL,
+ created_by uuid NOT NULL,client_id uuid NOT NULL,control_generation bigint NOT NULL CHECK(control_generation BETWEEN 1 AND 9007199254740991),policy_ref jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT transaction_timestamp(),PRIMARY KEY(project_id,request_id),UNIQUE(project_id,candidate_command_id),
+ FOREIGN KEY(project_id,request_id) REFERENCES anvil.approval_requests(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,request_command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id)
+);
+CREATE TABLE anvil.baseline_activations(
+ project_id uuid NOT NULL,id uuid NOT NULL,generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
+ content_hash text NOT NULL CHECK(content_hash ~ '^[a-f0-9]{64}$'),snapshot_json jsonb NOT NULL,previous_activation_id uuid,
+ command_id uuid NOT NULL UNIQUE,approval_consumption_id uuid NOT NULL UNIQUE,created_by uuid NOT NULL,client_id uuid NOT NULL,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,generation),UNIQUE(project_id,id,generation,content_hash),UNIQUE(project_id,previous_activation_id),
+ FOREIGN KEY(project_id,previous_activation_id) REFERENCES anvil.baseline_activations(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(approval_consumption_id) REFERENCES anvil.approval_consumptions(id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id),CHECK((generation=1)=(previous_activation_id IS NULL))
+);
+CREATE TABLE anvil.baseline_activation_current(
+ project_id uuid PRIMARY KEY REFERENCES anvil.projects(id),activation_id uuid NOT NULL,activation_ref jsonb NOT NULL,
+ FOREIGN KEY(project_id,activation_id) REFERENCES anvil.baseline_activations(project_id,id) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE TABLE anvil.baseline_activation_rechecks(
+ project_id uuid NOT NULL,activation_id uuid NOT NULL,plan_id uuid NOT NULL,plan_version bigint NOT NULL,plan_hash text NOT NULL,task_code text NOT NULL,impact_ref jsonb NOT NULL,
+ PRIMARY KEY(project_id,activation_id,plan_id,plan_version,task_code),
+ FOREIGN KEY(project_id,activation_id) REFERENCES anvil.baseline_activations(project_id,id) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,plan_id,plan_version,plan_hash) REFERENCES anvil.work_plan_versions(project_id,plan_id,version,content_hash),
+ FOREIGN KEY(project_id,plan_id,plan_version,task_code) REFERENCES anvil.plan_tasks(project_id,plan_id,plan_version,task_code)
+);
+REVOKE ALL ON anvil.design_activation_approval_candidates,anvil.baseline_activations,anvil.baseline_activation_current,anvil.baseline_activation_rechecks FROM anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.design_activation_approval_candidates,anvil.baseline_activations,anvil.baseline_activation_rechecks TO anvil_v3_app;
+GRANT SELECT,INSERT,UPDATE ON anvil.baseline_activation_current TO anvil_v3_app;
+CREATE FUNCTION anvil.fn04_activation_payload_valid(p jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(anvil.execution_json_shape(p,ARRAY['changeRef','impactRef','approvedDesignRef','confirmedPlanRef','reason'])
+ AND anvil.result_text_valid(p->'reason',20000) AND anvil.work_plan_text_present(p->>'reason')
+ AND (p->>'reason') !~* '-----BEGIN ([A-Z0-9]+ )?PRIVATE KEY-----|\yBearer[[:space:]]+[A-Za-z0-9_.~+/-]{16,}|\y(password|passwd|api[_-]?key|access[_-]?token|token|secret)[[:space:]]*[:=][[:space:]]*["'']?[^[:space:]"'']{4,}'
+ AND (SELECT bool_and(anvil.execution_json_shape(p->k,ARRAY['id','version','contentHash']) AND (p->k->>'id') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND (p->k->>'version') ~ '^[1-9][0-9]*$' AND (p->k->>'version')::numeric<=9007199254740991 AND (p->k->>'contentHash') ~ '^[a-f0-9]{64}$') FROM unnest(ARRAY['changeRef','impactRef','approvedDesignRef','confirmedPlanRef']) k),false);
+$$;
+CREATE FUNCTION anvil.fn04_activation_pointer_matches(pid uuid,refs jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(jsonb_typeof(refs)='array' AND (
+ (refs='[]'::jsonb AND NOT EXISTS(SELECT 1 FROM anvil.baseline_activation_current WHERE project_id=pid) AND NOT EXISTS(SELECT 1 FROM anvil.baseline_activations WHERE project_id=pid))
+ OR (jsonb_array_length(refs)=1 AND EXISTS(SELECT 1 FROM anvil.baseline_activation_current p JOIN anvil.baseline_activations a ON a.project_id=p.project_id AND a.id=p.activation_id WHERE p.project_id=pid AND refs=jsonb_build_array(p.activation_ref) AND p.activation_ref=jsonb_build_object('id',a.id,'version',a.generation,'contentHash',a.content_hash)))),false);
+$$;
+CREATE FUNCTION anvil.fn04_activation_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(s->>'operation'='activateDesignChange' AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb AND s->'sourceScopes'='[]'::jsonb
+ AND anvil.fn04_activation_pointer_matches(pid,s->'baselineRefs') AND EXISTS(SELECT 1 FROM anvil.design_changes c WHERE c.project_id=pid AND s->'targetRef'=jsonb_build_object('id',c.id,'version',c.version,'contentHash',c.content_hash) AND s->'expectedVersion'=to_jsonb(c.version)),false);
+$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_activation;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation'='activateDesignChange' THEN anvil.fn04_activation_target_valid(pid,s) ELSE anvil.connection_candidate_approval_target_before_activation(pid,s) END;
+$$;
+-- 저장 당시 귀속만 검사한다. 현재 소유/포인터/정책 변경은 과거 이력의 손상이 아니다.
+CREATE FUNCTION anvil.fn04_activation_candidate_valid(pid uuid,rid uuid) RETURNS boolean LANGUAGE sql STABLE AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.design_activation_approval_candidates b
+ JOIN anvil.approval_requests r ON r.project_id=b.project_id AND r.id=b.request_id
+ JOIN anvil.commands c ON c.project_id=b.project_id AND c.id=b.request_command_id AND c.id=r.command_id
+ JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id
+ JOIN anvil.audit_events audit ON audit.command_id=c.id AND audit.project_id=pid
+ WHERE b.project_id=pid AND b.request_id=rid AND r.action_scope_json->>'operation'='activateDesignChange'
+ AND c.operation='requestApproval' AND c.state='APPLIED' AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.expected_version=0
+ AND c.actor_id=b.created_by AND c.client_id=b.client_id AND c.control_generation=b.control_generation
+ AND c.approval_consumption_id IS NULL AND c.payload_ref IS NULL AND ar.approval_decision_ref IS NULL
+ AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',b.created_by,'clientId',b.client_id)
+ AND ar.policy_ref=b.policy_ref AND c.policy_ref=b.policy_ref AND r.policy_ref=b.policy_ref
+ AND r.created_by=b.created_by AND r.client_id=b.client_id AND r.candidate_command_id=b.candidate_command_id
+ AND r.request_json->>'controlGeneration'=b.control_generation::text AND r.action_scope_json->>'controlGeneration'=b.control_generation::text
+ AND r.action_scope_json->'requestedSubjectRef'=ar.subject_ref AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',b.created_by)
+ AND b.target_ref=b.payload_json->'changeRef' AND b.target_ref=r.action_scope_json->'targetRef' AND b.baseline_refs=r.action_scope_json->'baselineRefs'
+ AND b.payload_hash=r.action_scope_json->>'payloadHash' AND b.payload_hash=anvil.execution_json_hash(b.payload_json)
+ AND anvil.fn04_activation_payload_valid(b.payload_json)
+ AND r.scope_digest=anvil.execution_json_hash(r.action_scope_json)
+ AND r.content_hash=anvil.execution_json_hash(r.request_json-ARRAY['id','version','status','createdAt'])
+ AND r.created_at=date_trunc('milliseconds',c.completed_at) AND c.result_ref->>'serverReceivedAt'=to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND c.result_ref->'data'->'request'=r.request_json AND c.result_ref->'data'->>'status'='APPROVAL_REQUESTED'
+ AND c.result_ref->'data'->'ref'=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',b.client_id,'controlGeneration',b.control_generation,'operation','requestApproval','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('details',r.details_json,'candidatePayload',b.payload_json)))
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND audit.actor_ref=jsonb_build_object('kind','HUMAN','userId',b.created_by) AND audit.client_ref=b.client_id AND audit.policy_ref=b.policy_ref AND audit.target_ref=c.result_ref->'data'->'ref' AND audit.outcome='APPLIED' AND audit.source_kind='HUMAN_COMMAND' AND audit.operation_id=c.operation_id AND audit.scope_digest=ar.scope_digest
+ AND (SELECT count(*) FROM anvil.audit_events WHERE command_id=c.id)=1 AND (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=c.id)=1);
+$$;
+-- 현재 후보의 실제 자료 관계. §6의 실행/시험 완전성 또는 OS writer 안전 판정이 아니다.
+CREATE FUNCTION anvil.fn04_activation_sources_current(pid uuid,p jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.design_changes ch
+ JOIN anvil.design_change_impacts i ON i.project_id=ch.project_id AND i.change_id=ch.id
+ JOIN anvil.document_proposals proposal ON proposal.project_id=ch.project_id AND proposal.id=ch.proposal_id
+ JOIN anvil.document_proposal_selections selected ON selected.project_id=proposal.project_id AND selected.proposal_id=proposal.id
+ JOIN anvil.documents d ON d.project_id=ch.project_id AND d.id=ch.before_id
+ JOIN anvil.document_versions v ON v.project_id=d.project_id AND v.document_id=d.id AND v.version=d.head_version
+ JOIN anvil.form_versions form ON form.definition_id=v.form_definition_id AND form.version=v.form_version AND form.content_hash=v.form_hash
+ JOIN anvil.artifacts artifact ON artifact.project_id=v.project_id AND artifact.id=v.body_artifact_id AND artifact.state='READY'
+ JOIN anvil.work_plans plan ON plan.project_id=ch.project_id
+ JOIN anvil.work_plan_versions pv ON pv.project_id=plan.project_id AND pv.plan_id=plan.id AND pv.version=plan.head_version
+ JOIN anvil.work_plan_confirmations confirmed ON confirmed.project_id=pv.project_id AND confirmed.plan_id=pv.plan_id AND confirmed.version=pv.version AND confirmed.target_hash=pv.content_hash
+ WHERE ch.project_id=pid AND p->'changeRef'=jsonb_build_object('id',ch.id,'version',ch.version,'contentHash',ch.content_hash)
+ AND p->'impactRef'=jsonb_build_object('id',i.id,'version',i.version,'contentHash',i.content_hash)
+ AND i.version=(SELECT max(version) FROM anvil.design_change_impacts WHERE project_id=pid AND change_id=ch.id)
+ AND selected.document_id=d.id AND selected.version=v.version AND (SELECT count(*) FROM anvil.document_proposal_selections WHERE project_id=pid AND proposal_id=proposal.id)=1
+ AND p->'approvedDesignRef'=jsonb_build_object('id',d.id,'version',v.version,'contentHash',v.content_hash) AND d.confirmed_version=d.head_version
+ AND proposal.document_id=ch.before_id AND proposal.base_version=ch.before_version AND proposal.base_hash=ch.before_hash AND v.version=ch.before_version+1
+ AND form.definition_json->>'formCode'='AF02' AND v.content_json=proposal.content_json
+ AND EXISTS(SELECT 1 FROM anvil.content_reviews review JOIN anvil.audit_events observed ON observed.project_id=review.project_id AND observed.command_id=review.command_id WHERE review.scope_kind='PROJECT' AND review.project_id=pid AND review.target_kind='DOCUMENT' AND review.target_id=d.id AND review.target_version=v.version AND review.target_hash=v.content_hash AND review.outcome='ACCEPTED' AND NOT EXISTS(SELECT 1 FROM anvil.content_reviews newer JOIN anvil.audit_events newer_event ON newer_event.project_id=newer.project_id AND newer_event.command_id=newer.command_id WHERE newer.scope_kind='PROJECT' AND newer.project_id=pid AND newer.target_kind='DOCUMENT' AND newer.target_id=d.id AND newer.target_version=v.version AND newer.target_hash=v.content_hash AND newer_event.server_sequence>observed.server_sequence))
+ AND p->'confirmedPlanRef'=jsonb_build_object('id',pv.plan_id,'version',pv.version,'contentHash',pv.content_hash) AND plan.confirmed_version=plan.head_version
+ AND p->'approvedDesignRef'=jsonb_build_object('id',pv.design_id,'version',pv.design_version,'contentHash',pv.design_hash)
+ AND confirmed.validation_json->>'validForConfirmation'='true'
+ AND EXISTS(SELECT 1 FROM anvil.document_versions plan_doc JOIN anvil.form_versions plan_form ON plan_form.definition_id=plan_doc.form_definition_id AND plan_form.version=plan_doc.form_version AND plan_form.content_hash=plan_doc.form_hash JOIN anvil.artifacts plan_artifact ON plan_artifact.project_id=pid AND plan_artifact.id=plan_doc.body_artifact_id AND plan_artifact.state='READY' WHERE plan_doc.project_id=pid AND plan_doc.document_id=pv.document_id AND plan_doc.version=pv.document_version AND plan_doc.content_hash=pv.document_hash AND plan_form.definition_json->>'formCode'='AF04')
+ AND EXISTS(SELECT 1 FROM anvil.content_reviews review JOIN anvil.audit_events observed ON observed.project_id=review.project_id AND observed.command_id=review.command_id WHERE review.scope_kind='PROJECT' AND review.project_id=pid AND review.target_kind='WORK_PLAN' AND review.target_id=pv.plan_id AND review.target_version=pv.version AND review.target_hash=pv.content_hash AND review.outcome='ACCEPTED' AND NOT EXISTS(SELECT 1 FROM anvil.content_reviews newer JOIN anvil.audit_events newer_event ON newer_event.project_id=newer.project_id AND newer_event.command_id=newer.command_id WHERE newer.scope_kind='PROJECT' AND newer.project_id=pid AND newer.target_kind='WORK_PLAN' AND newer.target_id=pv.plan_id AND newer.target_version=pv.version AND newer.target_hash=pv.content_hash AND newer_event.server_sequence>observed.server_sequence)))
+ AND (NOT EXISTS(SELECT 1 FROM anvil.baseline_activation_current WHERE project_id=pid) OR EXISTS(SELECT 1 FROM anvil.baseline_activation_current current JOIN anvil.baseline_activations previous ON previous.project_id=current.project_id AND previous.id=current.activation_id JOIN anvil.design_changes ch ON ch.project_id=pid AND ch.id::text=p->'changeRef'->>'id' WHERE current.project_id=pid AND previous.snapshot_json->'approvedDesignRef'=ch.change_json->'beforeRef'));
+$$;
+-- 실제 공급자는 미정이다. source/합성 count/사용자 flag로 생산 적용을 열지 않는다.
+CREATE FUNCTION anvil.fn04_activation_new_ready(pid uuid,p jsonb) RETURNS boolean LANGUAGE sql AS $$ SELECT false; $$;
+CREATE FUNCTION anvil.fn04_activation_execution_valid(pid uuid,cid uuid,did uuid,consumed boolean) RETURNS boolean LANGUAGE sql AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id
+ JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=did AND d.decision='APPROVE'
+ JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id
+ JOIN anvil.design_activation_approval_candidates b ON b.project_id=r.project_id AND b.request_id=r.id
+ JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.permission_policies policy ON policy.project_id=pid AND policy.id::text=c.policy_ref->>'id' AND policy.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=policy.id AND pv.version=policy.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ JOIN anvil.project_members member ON member.project_id=pid AND member.user_id=c.actor_id AND member.participation='OWNER' AND member.revoked_at IS NULL
+ WHERE c.project_id=pid AND c.id=cid AND c.operation='activateDesignChange' AND c.state='APPLIED' AND c.scope_kind='PROJECT' AND c.scope_id=pid
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND c.policy_ref=r.policy_ref AND c.policy_ref=ar.policy_ref AND c.command_id=b.candidate_command_id AND c.actor_id=b.created_by AND c.client_id=b.client_id AND c.control_generation=b.control_generation
+ AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation AND d.request_version=1 AND d.scope_digest=r.scope_digest
+ AND ar.approval_decision_ref=d.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.subject_ref=r.action_scope_json->'requestedSubjectRef'
+ AND r.status=CASE WHEN consumed THEN 'CONSUMED' ELSE 'APPROVED' END AND r.version=CASE WHEN consumed THEN 3 ELSE 2 END AND r.expires_at>clock_timestamp()
+ AND c.approval_consumption_id IS NOT NULL AND c.expected_version=(b.target_ref->>'version')::bigint
+ AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',b.payload_hash,'scopeDigest',r.scope_digest)
+ AND anvil.fn04_activation_candidate_valid(pid,r.id) AND anvil.fn04_activation_pointer_matches(pid,b.baseline_refs)
+ AND anvil.fn04_activation_sources_current(pid,b.payload_json) AND anvil.fn04_activation_new_ready(pid,b.payload_json)
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=ar.subject_ref- 'clientId' AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND rule->'operations' ? 'activateDesignChange' AND rule->>'disposition'='REQUIRE_APPROVAL' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=ar.subject_ref- 'clientId' AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND rule->'operations' ? 'activateDesignChange' AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','activateDesignChange','targetId',b.target_ref->'id','expectedVersion',c.expected_version,'baselineRefs',b.baseline_refs,'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',b.payload_json)));
+$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_activation;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands WHERE project_id=pid AND id=cid AND operation='activateDesignChange') THEN anvil.fn04_activation_execution_valid(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_activation(pid,cid,did) END;
+$$;
+-- 불변 이력 전체의 관계/해시를 지원 DB가 확인한다. 현재 head/현재 정책/OS 안전과 혼동하지 않는다.
+CREATE FUNCTION anvil.fn04_activation_history_valid(pid uuid,aid uuid) RETURNS boolean LANGUAGE sql STABLE AS $$
+ SELECT EXISTS(SELECT 1 FROM anvil.baseline_activations a JOIN anvil.commands c ON c.project_id=a.project_id AND c.id=a.command_id
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ JOIN anvil.approval_consumptions used ON used.project_id=pid AND used.id=a.approval_consumption_id AND used.command_id=c.id
+ JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=used.decision_id AND d.decision='APPROVE'
+ JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id
+ JOIN anvil.design_activation_approval_candidates b ON b.project_id=pid AND b.request_id=r.id
+ JOIN anvil.audit_events audit ON audit.project_id=pid AND audit.command_id=c.id
+ WHERE a.project_id=pid AND a.id=aid AND a.content_hash=anvil.execution_json_hash(a.snapshot_json)
+ AND anvil.execution_json_shape(a.snapshot_json,ARRAY['schemaVersion','purpose','projectId','activationId','generation','previousActivationRef','changeRef','impactRef','approvedDesignRef','confirmedPlanRef','candidatePayloadHash','approvalRef','approvalConsumptionId','commandId','policyRef','controlGeneration','recordedBy','activatedAt'])
+ AND a.snapshot_json->>'schemaVersion'='1' AND a.snapshot_json->>'purpose'='DESIGN_BASELINE_ACTIVATION' AND a.snapshot_json->>'projectId'=pid::text AND a.snapshot_json->>'activationId'=a.id::text AND a.snapshot_json->>'generation'=a.generation::text
+ AND a.snapshot_json->>'approvalConsumptionId'=used.id::text AND c.approval_consumption_id=used.id AND c.operation='activateDesignChange' AND c.state='APPLIED' AND c.scope_kind='PROJECT' AND c.scope_id=pid
+ AND a.snapshot_json->>'commandId'=c.command_id::text AND a.snapshot_json->>'candidatePayloadHash'=b.payload_hash
+ AND a.snapshot_json->'policyRef'=c.policy_ref AND c.policy_ref=r.policy_ref AND c.policy_ref=ar.policy_ref AND c.policy_ref=d.decision_json->'policyRef'
+ AND a.snapshot_json->'recordedBy'=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND a.created_by=c.actor_id AND a.client_id=c.client_id
+ AND a.created_at=date_trunc('milliseconds',c.completed_at) AND c.result_ref->>'serverReceivedAt'=to_char(date_trunc('milliseconds',c.completed_at) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND a.snapshot_json->>'controlGeneration'=c.control_generation::text AND a.snapshot_json->>'activatedAt'=to_char(a.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+ AND a.snapshot_json->'approvalRef'=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest)
+ AND a.snapshot_json->'changeRef'=b.payload_json->'changeRef' AND a.snapshot_json->'impactRef'=b.payload_json->'impactRef' AND a.snapshot_json->'approvedDesignRef'=b.payload_json->'approvedDesignRef' AND a.snapshot_json->'confirmedPlanRef'=b.payload_json->'confirmedPlanRef'
+ AND ar.approval_decision_ref=d.id AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation
+ AND used.scope_digest=r.scope_digest AND used.policy_id::text=c.policy_ref->>'id' AND used.policy_version::text=c.policy_ref->>'version'
+ AND r.status='CONSUMED' AND r.version=3 AND d.request_version=1 AND d.scope_digest=r.scope_digest AND b.created_by=c.actor_id AND b.client_id=c.client_id AND b.candidate_command_id=c.command_id
+ AND c.result_ref->'data'->'snapshot'=a.snapshot_json AND c.result_ref->'data'->'ref'=jsonb_build_object('id',a.id,'version',a.generation,'contentHash',a.content_hash) AND c.result_ref->'data'->>'status'='DESIGN_BASELINE_ACTIVATED'
+ AND c.result_ref->'data'->'executionAuthorized'='false'::jsonb AND c.result_ref->'data'->'dispatchPerformed'='false'::jsonb
+ AND anvil.fn04_activation_candidate_valid(pid,r.id)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','activateDesignChange','targetId',b.target_ref->'id','expectedVersion',c.expected_version,'baselineRefs',b.baseline_refs,'approvalRef',a.snapshot_json->'approvalRef','payload',b.payload_json))
+ AND ((a.generation=1 AND a.previous_activation_id IS NULL AND a.snapshot_json->'previousActivationRef'='null'::jsonb AND b.baseline_refs='[]'::jsonb)
+ OR EXISTS(SELECT 1 FROM anvil.baseline_activations previous WHERE previous.project_id=pid AND previous.id=a.previous_activation_id AND previous.generation=a.generation-1 AND a.snapshot_json->'previousActivationRef'=jsonb_build_object('id',previous.id,'version',previous.generation,'contentHash',previous.content_hash) AND b.baseline_refs=jsonb_build_array(a.snapshot_json->'previousActivationRef') AND previous.snapshot_json->'approvedDesignRef'=(SELECT change_json->'beforeRef' FROM anvil.design_changes WHERE project_id=pid AND id::text=b.target_ref->>'id')))
+ AND d.content_hash=anvil.execution_json_hash(d.decision_json-ARRAY['id','decidedAt']) AND d.decision_json->'requestRef'=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash) AND d.decision_json->>'scopeDigest'=r.scope_digest AND d.decision_json->>'decision'='APPROVE'
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND audit.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND audit.client_ref=c.client_id AND audit.policy_ref=c.policy_ref AND audit.target_ref=c.result_ref->'data'->'ref' AND audit.approval_ref=a.snapshot_json->'approvalRef' AND audit.scope_digest=ar.scope_digest AND audit.operation_id=c.operation_id AND audit.outcome='APPLIED' AND audit.source_kind='HUMAN_COMMAND'
+ AND (SELECT count(*) FROM anvil.audit_events WHERE command_id=c.id)=1 AND (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=c.id)=1 AND (SELECT count(*) FROM anvil.approval_consumptions WHERE command_id=c.id)=1)
+ AND NOT EXISTS(SELECT 1 FROM anvil.baseline_activations a LEFT JOIN anvil.baseline_activations previous ON previous.project_id=a.project_id AND previous.id=a.previous_activation_id WHERE a.project_id=pid AND (a.content_hash<>anvil.execution_json_hash(a.snapshot_json) OR (a.generation>1 AND (previous.id IS NULL OR previous.generation<>a.generation-1))))
+ AND EXISTS(SELECT 1 FROM anvil.baseline_activation_current current JOIN anvil.baseline_activations latest ON latest.project_id=current.project_id AND latest.id=current.activation_id WHERE current.project_id=pid AND latest.generation=(SELECT max(generation) FROM anvil.baseline_activations WHERE project_id=pid) AND current.activation_ref=jsonb_build_object('id',latest.id,'version',latest.generation,'contentHash',latest.content_hash));
+$$;
+CREATE FUNCTION anvil.fn04_activation_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;aid uuid;c anvil.commands%ROWTYPE;r anvil.approval_requests%ROWTYPE;b anvil.design_activation_approval_candidates%ROWTYPE;i jsonb;
+BEGIN
+ IF TG_TABLE_NAME='authorization_receipts' THEN pid=NEW.scope_id;ELSE pid=NEW.project_id;END IF;
+ IF TG_TABLE_NAME='commands' THEN cid=NEW.id;
+ ELSIF TG_TABLE_NAME='design_activation_approval_candidates' THEN cid=NEW.request_command_id;
+ ELSIF TG_TABLE_NAME IN('baseline_activation_current','baseline_activation_rechecks') THEN SELECT command_id INTO cid FROM anvil.baseline_activations WHERE project_id=pid AND id=NEW.activation_id;
+ ELSE cid=NEW.command_id;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF c.operation='requestApproval' THEN SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND command_id=cid;
+ ELSIF c.operation='decideApproval' THEN SELECT rq.* INTO r FROM anvil.approval_decisions d JOIN anvil.approval_requests rq ON rq.project_id=d.project_id AND rq.id=d.request_id WHERE d.project_id=pid AND d.command_id=cid;
+ END IF;
+ IF c.operation IN('requestApproval','decideApproval') AND (r.action_scope_json->>'operation'='activateDesignChange' OR c.result_ref->'data'->'request'->'details'->'actionScope'->>'operation'='activateDesignChange') THEN
+  IF r.id IS NULL OR NOT COALESCE(anvil.fn04_activation_candidate_valid(pid,r.id),false) THEN RAISE EXCEPTION 'ACTIVATION_CANDIDATE_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  SELECT * INTO b FROM anvil.design_activation_approval_candidates WHERE project_id=pid AND request_id=r.id;
+  IF c.id::text=current_setting('anvil.command_id',true) AND (NOT COALESCE(anvil.fn04_activation_target_valid(pid,r.action_scope_json),false) OR NOT COALESCE(anvil.fn04_activation_sources_current(pid,b.payload_json),false)) THEN RAISE EXCEPTION 'ACTIVATION_CANDIDATE_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSIF c.operation='activateDesignChange' THEN
+  SELECT id INTO aid FROM anvil.baseline_activations WHERE project_id=pid AND command_id=cid;
+  IF aid IS NULL OR NOT COALESCE(anvil.fn04_activation_history_valid(pid,aid),false) THEN RAISE EXCEPTION 'ACTIVATION_MATERIAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  SELECT impact_json INTO i FROM anvil.design_change_impacts WHERE project_id=pid AND id::text=c.result_ref->'data'->'snapshot'->'impactRef'->>'id' AND version::text=c.result_ref->'data'->'snapshot'->'impactRef'->>'version' AND content_hash=c.result_ref->'data'->'snapshot'->'impactRef'->>'contentHash';
+  IF i IS NULL OR EXISTS((SELECT item->'targetRef' FROM jsonb_array_elements(i->'items') item WHERE item->>'state'='AFFECTED' AND item->'targetRef'->>'kind'='PLAN_TASK') EXCEPT (SELECT jsonb_build_object('kind','PLAN_TASK','id',plan_id,'versionRef',jsonb_build_object('id',plan_id,'version',plan_version,'contentHash',plan_hash),'localCode',task_code) FROM anvil.baseline_activation_rechecks WHERE project_id=pid AND activation_id=aid))
+  OR EXISTS((SELECT jsonb_build_object('kind','PLAN_TASK','id',plan_id,'versionRef',jsonb_build_object('id',plan_id,'version',plan_version,'contentHash',plan_hash),'localCode',task_code) FROM anvil.baseline_activation_rechecks WHERE project_id=pid AND activation_id=aid) EXCEPT (SELECT item->'targetRef' FROM jsonb_array_elements(i->'items') item WHERE item->>'state'='AFFECTED' AND item->'targetRef'->>'kind'='PLAN_TASK'))
+  OR EXISTS(SELECT 1 FROM anvil.baseline_activation_rechecks WHERE project_id=pid AND activation_id=aid AND impact_ref IS DISTINCT FROM c.result_ref->'data'->'snapshot'->'impactRef')
+  THEN RAISE EXCEPTION 'ACTIVATION_RECHECK_EXACT_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE FUNCTION anvil.fn04_activation_write_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE c anvil.commands%ROWTYPE;previous jsonb;
+BEGIN
+ IF TG_OP='DELETE' OR (TG_OP='UPDATE' AND TG_TABLE_NAME<>'baseline_activation_current') THEN RAISE EXCEPTION 'ACTIVATION_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=NEW.project_id AND id::text=current_setting('anvil.command_id',true);
+ IF c.id IS NULL OR c.actor_id::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR c.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RAISE EXCEPTION 'ACTIVATION_EXACT_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='design_activation_approval_candidates' THEN
+  IF c.operation<>'requestApproval' OR c.id<>NEW.request_command_id OR c.actor_id<>NEW.created_by OR c.client_id<>NEW.client_id THEN RAISE EXCEPTION 'ACTIVATION_CANDIDATE_REQUEST_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSE
+  IF c.operation<>'activateDesignChange' OR NOT anvil.fn04_activation_new_ready(NEW.project_id,c.result_ref->'data'->'snapshot') THEN RAISE EXCEPTION 'DESIGN_ACTIVATION_NOT_READY' USING ERRCODE='42501';END IF;
+  IF TG_TABLE_NAME='baseline_activation_current' THEN
+   SELECT snapshot_json->'previousActivationRef' INTO previous FROM anvil.baseline_activations WHERE project_id=NEW.project_id AND id=NEW.activation_id AND command_id=c.id;
+   IF previous IS NULL OR (TG_OP='INSERT' AND previous<>'null'::jsonb) OR (TG_OP='UPDATE' AND previous IS DISTINCT FROM OLD.activation_ref) THEN RAISE EXCEPTION 'ACTIVATION_POINTER_CAS_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE FUNCTION anvil.fn04_activation_link_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;pid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN cid=OLD.id;pid=OLD.project_id;ELSIF TG_TABLE_NAME='authorization_receipts' THEN cid=OLD.command_id;pid=OLD.scope_id;ELSE cid=OLD.command_id;pid=OLD.project_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.project_id=pid AND c.id=cid AND (c.operation='activateDesignChange' OR EXISTS(SELECT 1 FROM anvil.design_activation_approval_candidates b WHERE b.project_id=pid AND b.request_command_id=cid))) THEN RAISE EXCEPTION 'ACTIVATION_LINK_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+
+-- 0006 최종 요청 guard의 기존 분기는 그대로 보존하고 activate baselineRefs만 한정 연결한다.
+CREATE OR REPLACE FUNCTION anvil.guard_one_time_approval_request() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_result jsonb;v_snapshot jsonb;v_scope jsonb;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_OP='UPDATE' THEN
+  IF OLD.version=2 AND OLD.status='APPROVED' AND NEW.version=3 AND NEW.status='CONSUMED' THEN
+   IF (to_jsonb(NEW)-ARRAY['status','version']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','version'])
+   OR NOT EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id
+    WHERE ac.project_id=OLD.project_id AND d.request_id=OLD.id AND ac.scope_digest=OLD.scope_digest AND ac.command_id::text=current_setting('anvil.command_id',true) AND anvil.one_time_consumption_command_authorized(ac.project_id,ac.command_id,ac.decision_id))
+   THEN RAISE EXCEPTION 'APPROVAL_EXACT_CONSUMPTION_REQUIRED' USING ERRCODE='42501';END IF;
+   RETURN NEW;
+  END IF;
+  IF (to_jsonb(NEW)-ARRAY['status','version']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','version']) OR OLD.version<>1 OR OLD.status<>'PENDING' OR NEW.version<>2
+  OR NOT EXISTS(SELECT 1 FROM anvil.approval_decisions d JOIN anvil.commands c ON c.id=d.command_id AND c.project_id=d.project_id
+    WHERE d.project_id=OLD.project_id AND d.request_id=OLD.id AND d.request_version=OLD.version AND d.scope_digest=OLD.scope_digest AND d.decided_by=OLD.created_by AND d.client_id=OLD.client_id
+    AND d.command_id::text=current_setting('anvil.command_id',true) AND anvil.one_time_decision_command_authorized(d.project_id,d.command_id)
+    AND c.result_ref->'data'->>'status'='APPROVAL_DECIDED' AND c.result_ref->'data'->'decision'=d.decision_json
+    AND NEW.status=CASE d.decision WHEN 'APPROVE' THEN 'APPROVED' WHEN 'REJECT' THEN 'REJECTED' WHEN 'REQUEST_CHANGE' THEN 'CHANGE_REQUESTED' END)
+  THEN RAISE EXCEPTION 'APPROVAL_EXACT_DECISION_REQUIRED' USING ERRCODE='42501';END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.command_id IS NULL OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) THEN RAISE EXCEPTION 'APPROVAL_REQUEST_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT c.result_ref->'data' INTO v_result FROM anvil.commands c WHERE c.id=NEW.command_id AND c.scope_kind='PROJECT' AND c.project_id=NEW.project_id AND c.scope_id=c.project_id AND c.actor_id=NEW.created_by AND c.client_id=NEW.client_id AND c.operation='requestApproval' AND c.expected_version=0 AND c.state='APPLIED';
+ v_snapshot=v_result->'request';v_scope=v_snapshot->'details'->'actionScope';
+ IF v_result IS NULL OR v_snapshot IS NULL OR NEW.version<>1 OR NEW.status<>'PENDING' OR NEW.request_json IS DISTINCT FROM v_snapshot
+ OR v_result->>'status' IS DISTINCT FROM 'APPROVAL_REQUESTED' OR v_result->'ref' IS DISTINCT FROM jsonb_build_object('id',NEW.id,'version',1,'contentHash',NEW.content_hash)
+ OR v_snapshot->>'id' IS DISTINCT FROM NEW.id::text OR v_snapshot->>'version' IS DISTINCT FROM '1' OR v_snapshot->>'status' IS DISTINCT FROM 'PENDING' OR v_snapshot->>'projectId' IS DISTINCT FROM NEW.project_id::text
+ OR v_snapshot->'details' IS DISTINCT FROM NEW.details_json OR v_snapshot->'policyRef' IS DISTINCT FROM NEW.policy_ref OR v_snapshot->>'scopeDigest' IS DISTINCT FROM NEW.scope_digest OR v_snapshot->'requiredDecider' IS DISTINCT FROM NEW.required_decider_ref
+ OR NEW.required_decider_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',NEW.created_by)
+ OR v_snapshot->'requestedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',NEW.created_by,'clientId',NEW.client_id)
+ OR v_scope IS DISTINCT FROM NEW.action_scope_json OR NOT ((v_scope->>'operation'='uploadArtifact' AND v_scope->'targetRef'='null'::jsonb AND v_scope->>'expectedVersion'='0') OR anvil.connection_candidate_approval_target_valid(NEW.project_id,v_scope))
+ OR v_scope->'requestedSubjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',NEW.created_by,'clientId',NEW.client_id)
+ OR (v_scope->>'operation'<>'activateDesignChange' AND v_scope->'baselineRefs' IS DISTINCT FROM '[]'::jsonb) OR (v_scope->>'operation'='activateDesignChange' AND NOT COALESCE(anvil.fn04_activation_pointer_matches(NEW.project_id,v_scope->'baselineRefs'),false)) OR v_scope->'sourceScopes' IS DISTINCT FROM '[]'::jsonb OR v_scope->'environmentRef' IS DISTINCT FROM 'null'::jsonb OR v_scope->'limitsRef' IS DISTINCT FROM 'null'::jsonb
+ OR v_snapshot->'details'->>'candidateCommandId' IS DISTINCT FROM NEW.candidate_command_id::text OR v_snapshot->'details'->>'expiresAt' IS NULL OR NEW.expires_at IS DISTINCT FROM (v_snapshot->'details'->>'expiresAt')::timestamptz OR NEW.expires_at<=clock_timestamp()
+ OR NEW.created_at IS DISTINCT FROM (v_snapshot->>'createdAt')::timestamptz
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id AND ar.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.project_members pm ON pm.project_id=c.project_id AND pm.user_id=c.actor_id AND pm.participation='OWNER' AND pm.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version=(c.policy_ref->>'version')::bigint
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.id=NEW.command_id AND c.policy_ref=NEW.policy_ref AND v_snapshot->>'controlGeneration'=pc.generation::text AND v_scope->>'controlGeneration'=pc.generation::text
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) AS rules(rule) WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND (rule->'operations') ? 'requestApproval' AND rule->>'disposition'='AUTO' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) AS rules(rule) WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND (rule->'operations') ? (v_scope->>'operation') AND rule->>'disposition'='REQUIRE_APPROVAL' AND (rule->>'expiresAt')::timestamptz>=NEW.expires_at)
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) AS rules(rule) WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND ((rule->'operations') ? (v_scope->>'operation') OR (rule->'operations') ? 'requestApproval') AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp()))
+ THEN RAISE EXCEPTION 'APPROVAL_REQUEST_EXACT_CURRENT_SCOPE_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER fn04_activation_commands_complete AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_authorization_receipts_complete AFTER INSERT OR UPDATE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_audit_events_complete AFTER INSERT OR UPDATE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_approval_consumptions_complete AFTER INSERT OR UPDATE ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_approval_requests_complete AFTER INSERT OR UPDATE ON anvil.approval_requests DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_approval_decisions_complete AFTER INSERT OR UPDATE ON anvil.approval_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_design_activation_approval_candidates_complete AFTER INSERT OR UPDATE ON anvil.design_activation_approval_candidates DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_baseline_activations_complete AFTER INSERT OR UPDATE ON anvil.baseline_activations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_baseline_activation_current_complete AFTER INSERT OR UPDATE ON anvil.baseline_activation_current DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE CONSTRAINT TRIGGER fn04_activation_baseline_activation_rechecks_complete AFTER INSERT OR UPDATE ON anvil.baseline_activation_rechecks DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_complete();
+CREATE TRIGGER fn04_activation_design_activation_approval_candidates_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.design_activation_approval_candidates FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_write_guard();
+CREATE TRIGGER fn04_activation_baseline_activations_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.baseline_activations FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_write_guard();
+CREATE TRIGGER fn04_activation_baseline_activation_current_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.baseline_activation_current FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_write_guard();
+CREATE TRIGGER fn04_activation_baseline_activation_rechecks_write BEFORE INSERT OR UPDATE OR DELETE ON anvil.baseline_activation_rechecks FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_write_guard();
+CREATE TRIGGER fn04_activation_commands_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_link_immutable();
+CREATE TRIGGER fn04_activation_authorization_receipts_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_link_immutable();
+CREATE TRIGGER fn04_activation_audit_events_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_link_immutable();
+CREATE TRIGGER fn04_activation_approval_consumptions_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn04_activation_link_immutable();

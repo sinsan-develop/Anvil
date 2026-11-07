@@ -1,0 +1,137 @@
+import type {DocumentPreparationGate} from './document-preparation-gate.ts';
+import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
+import{isConfirmedArtifactQuarantine,documentFailure,documentMutationUncertain}from'./mutation-result.ts';
+import {DocumentUploadApprovalEditor} from './DocumentUploadApprovalEditor.tsx';
+import {matchesDocumentSaveInput} from './document-upload-approval.ts';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import type { VersionRef } from '../../../../../contracts/generated-types.ts';
+import { ApiClient, ApiError } from '../../api/client.ts';
+import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
+import { adoptDocumentConflict, canCompareDocumentConflict, canPrepareManualConflict, compareDocumentConflict, type DocumentConflictComparison } from './conflict-api.ts';
+import { DocumentImport } from './DocumentImport.tsx';
+import { DocumentStageSelector } from './DocumentStageSelector.tsx';
+import { sameStageRef, type StageNodeRef } from './stage-api.ts';
+import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposal, prepareDocumentProposal, prepareProposalApplication, type DocumentProposalBuffer } from './proposal-api.ts';
+import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
+import {DocumentAttachments} from './DocumentAttachments.tsx';
+import {DocumentFormEntry} from './DocumentFormEntry.tsx';
+
+export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (ref: VersionRef) => void; onAuthenticationLost: () => void }) {
+  const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
+  const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
+  const prior=context.current;
+  if(prior.client!==client||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration||!known.current.has(buffer)){epoch.current++;known.current=new Set([buffer]);}
+  latest.current=buffer;context.current={client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration};
+  const managedChange:Dispatch<SetStateAction<DocumentBuffer|null>>=edit=>onChange(previous=>{const next=typeof edit==='function'?edit(previous):edit;if(next)known.current.add(next);return next;});
+  const [comparison, setComparison] = useState<DocumentConflictComparison | null>(null), [acknowledged, setAcknowledged] = useState(false), [comparisonError, setComparisonError] = useState<ApiError | null>(null);
+  const [manualAcknowledged, setManualAcknowledged] = useState(false);
+  const [proposalAcknowledged, setProposalAcknowledged] = useState(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const locked = busy || !!buffer.pending || !!buffer.importState || !!buffer.importPreparationId || !!buffer.proposalState;
+  function change(patch: Partial<DocumentBuffer>) { if (!locked) onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, ...patch, dirty: true, savedRef: null, failure: null } : previous); }
+  async function save() {
+    if (running.current || approvalBusy || buffer.proposalState || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id) return;
+    const release=preparationGate?.acquire();if(preparationGate&&!release)return;
+    running.current = true; setBusy(true);
+    let pending = buffer.pending;
+    const requestEpoch=epoch.current,active=()=>mounted.current&&requestEpoch===epoch.current&&known.current.has(latest.current)&&latest.current.ownerUserId===session.user.id&&(!pending?latest.current===buffer:matchesDocumentSaveInput(latest.current,pending,session));
+    try {
+      if (!pending) { pending = await prepareDocumentSave(buffer, session); if (!active()) return; const prepared = pending; managedChange(previous => active()&&previous === buffer && !previous.designDependencyState && previous.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
+      const command = pending.upload.commandId;
+      const ref = await continueDocumentSave(client, pending, session, value => managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), active);
+      if(!active())return;
+      managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null,saveUncertain:false } : previous);
+      onSaved(ref);
+    } catch (cause) {
+      const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if(!active())return;
+      managedChange(previous => active()&&!previous?.designDependencyState && previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, failure: documentFailure(error),saveUncertain:error.code==='SAVE_CONTINUATION_PAUSED'?previous.saveUncertain:documentMutationUncertain(previous.saveUncertain,error) } : previous);
+      if (error.status === 401) onAuthenticationLost();
+    } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function compare() {
+    if (running.current) return; running.current = true; setBusy(true); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); setComparisonError(null);
+    try { const value = await compareDocumentConflict(client, buffer, session); if (mounted.current) setComparison(value); }
+    catch (cause) { if (mounted.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setComparisonError(error); if (error.status === 401) onAuthenticationLost(); } }
+    finally { running.current = false; if (mounted.current) setBusy(false); }
+  }
+  function adopt(resolution: 'KEEP_INPUT' | 'LATEST_METADATA' = 'KEEP_INPUT') {
+    if (!comparison || busy) return;
+    try { const next = adoptDocumentConflict(buffer, comparison, session, resolution === 'LATEST_METADATA' ? manualAcknowledged : acknowledged, resolution); onChange(previous => previous?.pending?.saveCommandId === comparison.rejectedCommandId && canCompareDocumentConflict(previous) ? next : previous); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); }
+    catch (cause) { setComparisonError(cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID')); }
+  }
+  function proposalCheckpoint(value: DocumentProposalBuffer) { onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.proposalState?.bindingId === value.bindingId && !b.pending && !b.importState && !b.importPreparationId ? { ...b, proposalState: value } : b); }
+  function proposalFailure(cause: unknown, mutation = true) {
+    const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+    onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId ? { ...b, ...(b.proposalState ? { proposalState: { ...b.proposalState, uncertain: isConfirmedArtifactQuarantine(e)?false:b.proposalState.uncertain || mutation && (e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED'), failure: documentFailure(e) } } : { failure: documentFailure(e) }) } : b);
+    if (mounted.current && e.status === 401) onAuthenticationLost();
+  }
+  async function propose() {
+    if (running.current || buffer.pending || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id || buffer.proposalState?.proposal) return;
+    const release=preparationGate?.acquire();if(preparationGate&&!release)return;
+    running.current = true; setBusy(true); setProposalAcknowledged(false);
+    try {
+      let state = buffer.proposalState;
+      if (!state) { state = await prepareDocumentProposal(buffer, session); const prepared = state; onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId && b.baseVersion === buffer.baseVersion && !b.pending && !b.importState && !b.importPreparationId && !b.proposalState ? { ...b, proposalState: prepared } : b); }
+      state = { ...state, failure: null }; proposalCheckpoint(state);
+      proposalCheckpoint(await continueDocumentProposal(client, state, session, proposalCheckpoint, () => mounted.current));
+    } catch (cause) { proposalFailure(cause); } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function compareProposal() {
+    const state = buffer.proposalState; if (!state?.proposal || running.current) return;
+    running.current = true; setBusy(true); setProposalAcknowledged(false);
+    try { const value = await compareDocumentProposal(client, state, session); proposalCheckpoint({ ...state, comparison: value, failure: null }); }
+    catch (cause) { proposalFailure(cause, false); } finally { running.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function applyProposal() {
+    let state = buffer.proposalState; if (!state?.comparison || running.current || state.savedRef || !state.applyCommand && !proposalAcknowledged) return;
+    running.current = true; setBusy(true);
+    try {
+      if (!state.applyCommand) state = { ...state, applyCommand: await prepareProposalApplication(client, state, session, proposalAcknowledged), failure: null };
+      else state = { ...state, failure: null };
+      proposalCheckpoint(state);
+      const ref = await applyDocumentProposal(client, state, session, () => mounted.current), completed = { ...state, savedRef: ref, uncertain: false, failure: null }, content = state.comparison!.proposal.proposedContent;
+      onChange(b => b?.proposalState?.bindingId === completed.bindingId ? { ...b, proposalState: completed, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: state!.comparison!.base.document.title, baseStageNodeRef: structuredClone(state!.comparison!.base.document.stageNodeRef as StageNodeRef | null), body: state!.comparison!.proposedBody, mediaType: content.body.mediaType, content: { attachments: structuredClone(content.attachments), sections: structuredClone(content.sections), sourceRefs: [] }, dirty: false, savedRef: ref } : b);
+      if (mounted.current) onSaved(ref);
+    } catch (cause) { proposalFailure(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
+  }
+  const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));
+  return <section className="status-card definition-editor" aria-label="문서 초안 편집">
+    <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
+    {buffer.ownerUserId === session.user.id ? <section aria-label="문서 작성 고정 양식"><p className="meta" style={{ overflowWrap: 'anywhere' }}>양식 {buffer.formRef.id} · v{buffer.formRef.version} · {buffer.formRef.contentHash}</p><PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, buffer.projectId, buffer.documentId, buffer.baseVersion, buffer.formRef])} client={client} formRef={buffer.formRef} onAuthenticationLost={onAuthenticationLost} /></section> : null}
+    <DocumentStageSelector key={buffer.projectId + ':' + buffer.formRef.id + ':' + buffer.formRef.version + ':' + buffer.formRef.contentHash} client={client} projectId={buffer.projectId} formRef={buffer.formRef} value={buffer.stageNodeRef ?? null} disabled={locked} onChange={value => change({ stageNodeRef: value })} onAuthenticationLost={onAuthenticationLost} />
+    {!buffer.importCandidateRef ? <DocumentImport createdOriginal={createdOriginal} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}
+    {buffer.importCandidateRef ? <p className="meta">가져오기 후보 {buffer.importCandidateRef} · 원본을 첨부로 보존합니다. 아직 별도 저장/확정 전이면 다음 동작을 직접 선택하세요.</p> : null}
+    {buffer.savedRef ? <p role="status">초안 버전 {buffer.savedRef.version} 저장 확인</p> : null}
+    <QuarantinedOriginalNotice failure={buffer.failure}/>{buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}
+    {buffer.pending ? <p>저장 결과 확인 전에는 입력을 바꾸거나 새 명령을 만들지 않습니다. 자동 재전송하지 않습니다.</p> : null}
+    {proposal ? <section className="status-card" aria-label="문서 수정 제안"><h3>별도 수정 제안</h3><p>이 기록만으로 현재 문서나 확정본은 바뀌지 않습니다.</p>
+      <QuarantinedOriginalNotice failure={proposal.failure}/>{proposal.failure ? <p role="alert">{proposal.failure.code} · 입력과 같은 명령을 보존했습니다.</p> : null}
+      {!proposal.proposal ? <button disabled={busy} onClick={() => { void propose(); }}>같은 제안 명령 결과 확인</button> : <><p role="status">수정 제안 저장 확인 · {proposal.proposal.id}</p><button disabled={busy || !!proposal.applyCommand} onClick={() => { void compareProposal(); }}>제안 차이 비교</button></>}
+      {proposal.comparison ? <><p>기준 버전 {proposal.baseRef.version} · 변경 시작 줄 {proposal.comparison.diff.startLine}</p><pre className="document-original" aria-label="제안 기준 원문">{proposal.comparison.base.body}</pre><pre className="document-original" aria-label="제안 새 원문">{proposal.comparison.proposedBody}</pre><pre aria-label="서버 생성 변경 구간">{JSON.stringify(proposal.comparison.diff, null, 2)}</pre><pre aria-label="제안 첨부와 항목 비교">{JSON.stringify({ before: { attachments: proposal.comparison.base.document.content.attachments, sections: proposal.comparison.base.document.content.sections }, after: { attachments: proposal.comparison.proposal.proposedContent.attachments, sections: proposal.comparison.proposal.proposedContent.sections } }, null, 2)}</pre>
+        {!proposal.savedRef ? <><label><input type="checkbox" disabled={busy || !!proposal.applyCommand} checked={proposalAcknowledged} onChange={e => setProposalAcknowledged(e.target.checked)} />원문·첨부·항목 차이를 확인했고 이 제안을 새 초안으로 반영하겠습니다</label><button disabled={busy || !proposal.applyCommand && !proposalAcknowledged || !!proposal.comparison.proposal.selections.length} onClick={() => { void applyProposal(); }}>{proposal.applyCommand ? '같은 제안 반영 명령 결과 확인' : '이 제안으로 새 초안 저장'}</button></> : <p role="status">제안 반영 버전 {proposal.savedRef.version} 저장 확인 · 별도 확정 전</p>}
+      </> : null}
+      {proposalCanClose ? <button disabled={busy} onClick={() => onChange(b => b?.proposalState?.bindingId === proposal.bindingId ? { ...b, proposalState: null } : b)}>제안 작업 닫기</button> : null}
+    </section> : null}
+    {buffer.reconciliation ? <p className="meta">충돌 비교 후 기준 {buffer.reconciliation.fromVersion}→{buffer.reconciliation.toVersion} · 이전 거절 명령 {buffer.reconciliation.rejectedCommandId} · 아직 새 초안 저장 전이면 별도로 저장하세요.</p> : null}
+    {buffer.reconciliation?.rejectedSnapshot ? <details><summary>거절된 저장 입력 보관</summary><pre className="document-original" aria-label="거절된 원래 저장 입력">{JSON.stringify({ title: buffer.reconciliation.rejectedSnapshot.title, body: buffer.reconciliation.rejectedSnapshot.body, formRef: buffer.reconciliation.rejectedSnapshot.formRef, content: buffer.reconciliation.rejectedSnapshot.content, mediaType: buffer.reconciliation.rejectedSnapshot.upload.payload.mediaType, reason: buffer.reconciliation.rejectedSnapshot.reason, commandId: buffer.reconciliation.rejectedSnapshot.saveCommandId }, null, 2)}</pre></details> : null}
+    {canCompareDocumentConflict(buffer) ? <button disabled={busy} onClick={() => { void compare(); }}>최신 버전과 비교</button> : null}
+    {comparisonError ? <p role="alert">{comparisonError.message} · {comparisonError.code} · 기존 입력과 명령을 유지했습니다.</p> : null}
+    {comparison ? <section className="status-card" aria-label="문서 버전 충돌 비교"><h3>기준 {comparison.baseVersion} → 서버 {comparison.latest.document.version}</h3><p>내 제목·본문·항목 위치로 새 초안을 준비합니다. 서버 최신본은 구버전으로 보존되며 자동 합치기/저장은 하지 않습니다.</p><p>서버 제목: {comparison.latest.document.title} · 내 제목: {buffer.title}</p><pre aria-label="서버 최신 원문" className="document-original">{comparison.latest.body}</pre><pre aria-label="내 미저장 원문" className="document-original">{buffer.body}</pre>
+      {!comparison.compatible ? <p role="alert">양식·첨부·원문 형식 또는 연결 자료가 달라 수동 조정이 필요합니다. 자동 채택하지 않습니다.</p> : null}
+      <pre aria-label="충돌 양식·첨부·항목 비교">{JSON.stringify({ server: { formRef: comparison.latest.document.formRef, mediaType: comparison.latest.document.content.body.mediaType, attachments: comparison.latest.document.content.attachments, sections: comparison.latest.document.content.sections }, input: { formRef: buffer.formRef, mediaType: buffer.mediaType, attachments: buffer.content.attachments, sections: buffer.content.sections } }, null, 2)}</pre>
+      <label><input type="checkbox" disabled={busy || !comparison.compatible} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />양쪽 내용을 비교했고 내 입력을 새 초안으로 저장하겠습니다</label><button disabled={busy || !comparison.compatible || !acknowledged} onClick={() => adopt()}>내 입력으로 새 기준 초안 준비</button>
+      {!comparison.compatible && canPrepareManualConflict(comparison) ? <><p>최신 양식·첨부·본문 형식을 유지한 편집 초안을 열 수 있습니다. 내 제목·본문은 유지하고, 달라진 본문의 항목 위치는 비워 직접 다시 지정합니다. 거절된 원래 입력과 명령은 보관하며 자동 저장·합치기·확정은 하지 않습니다.</p><label><input type="checkbox" disabled={busy} checked={manualAcknowledged} onChange={e => setManualAcknowledged(e.target.checked)} />최신 양식·첨부·형식을 유지하고 내 원문을 조정하며 항목 위치를 다시 지정하겠습니다</label><button disabled={busy || !manualAcknowledged} onClick={() => adopt('LATEST_METADATA')}>최신 양식·첨부로 수동 조정 초안 준비</button></> : null}
+    </section> : null}
+    <label>문서 제목<input value={buffer.title} maxLength={200} readOnly={locked} onChange={event => change({ title: event.target.value })} /></label>
+    <DocumentFormEntry key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.formRef])} client={client} session={session} buffer={buffer} locked={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>
+    <label htmlFor={'document-body-' + buffer.documentId}>문서 본문 편집</label><textarea id={'document-body-' + buffer.documentId} value={buffer.body} rows={14} readOnly={locked||!!buffer.formEntry} onChange={event => change({ body: event.target.value })} />
+    <fieldset disabled={locked||!!buffer.formEntry}><legend>양식 항목의 원문 위치</legend>{buffer.criteria.map(item => <label key={item.criterionId}>{item.title} 시작 줄<input type="number" min="1" value={buffer.content.sections.find(section => section.itemId === item.criterionId)?.anchor.slice(5) ?? ''} onChange={event => { const kept = buffer.content.sections.filter(section => section.itemId !== item.criterionId); change({ content: { ...buffer.content, sections: event.target.value ? [...kept, { itemId: item.criterionId, anchor: 'line:' + event.target.value }] : kept } }); }} /></label>)}</fieldset>
+    <DocumentAttachments key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.baseVersion])} client={client} session={session} buffer={buffer} locked={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>
+    <label htmlFor={'document-reason-' + buffer.documentId}>문서 변경 이유</label><textarea id={'document-reason-' + buffer.documentId} value={buffer.reason} rows={2} maxLength={20_000} readOnly={locked} onChange={event => change({ reason: event.target.value })} />
+    <DocumentUploadApprovalEditor key={epoch.current} client={client} session={session} buffer={buffer} disabled={busy} onChange={managedChange} onBusy={setApprovalBusy} onAuthenticationLost={onAuthenticationLost}/>
+    <div className="project-toolbar"><button disabled={busy || approvalBusy || !!buffer.pending?.uploadApproval&&!buffer.pending.uploadApproval.commandHash || !!buffer.proposalState || !!buffer.importState || !!buffer.importPreparationId || !buffer.pending && (!buffer.dirty || !buffer.title.trim() || !buffer.reason.trim())} onClick={() => { void save(); }}>{buffer.pending?.uploadApproval?.commandHash&&!buffer.pending.save&&!buffer.saveUncertain?'승인 결박된 원문으로 같은 저장 재개':buffer.pending ? '같은 저장 명령 결과 확인' : '새 초안 버전 저장'}</button>
+      {buffer.documentId && !proposal ? <button disabled={locked || !buffer.dirty || !buffer.reason.trim() || buffer.title !== buffer.baseTitle || !sameStageRef(buffer.stageNodeRef ?? null, buffer.baseStageNodeRef ?? null)} onClick={() => { void propose(); }}>수정 제안으로 저장</button> : null}
+      <button disabled={locked} onClick={() => { if (!buffer.dirty || confirm('이 문서의 미저장 편집 입력을 버릴까요?')) onChange(previous => previous === buffer ? null : previous); }}>편집 닫기</button></div>
+  </section>;
+}

@@ -1,0 +1,38 @@
+{
+  "kind": "UI03_HISTORICAL_COMMON_METHOD_COPY_SOURCE",
+  "mainValidation": {
+    "served": "UNVERIFIED",
+    "actualDatabase": "UNVERIFIED",
+    "browserPassed": 9,
+    "browserDurationMs": 16308.569,
+    "typecheck": 0,
+    "diffcheck": 0
+  },
+  "parent": "c8765d5265416c53285b2b70cd92842ea2ff08c1",
+  "review": {
+    "critical": 0,
+    "minor": 1,
+    "deferred": "POST accepted then copy GET failure case not run",
+    "important": 0
+  },
+  "workInstructionSha256": "C437F9018E8F88A07BFAD1BBC420607D55C4F3AAC4F65F1E89495C98E369E8C0",
+  "branch": "codex/av3-stage-b",
+  "files": [
+    {
+      "sha256": "368E03A54DE45F2B80ED0C9A5494F75474287CAF23140460B58381F80C744F63",
+      "path": "apps/web/src/features/methodology-editor/CommonMethodVersionComparison.tsx"
+    },
+    {
+      "sha256": "396CDB3D1BB094D0CE116465A95C1FE9C404D337F69F3FDE28FF25AB483EBDBD",
+      "path": "apps/web/src/features/methodology-editor/MethodologyEditorPage.tsx"
+    },
+    {
+      "sha256": "57AFDE38BAF7E99598F5576BD93427C399820EB07A6C645B3D2BFE1B3DFE0464",
+      "path": "apps/web/src/features/methodology-editor/CommonMethodEditor.tsx"
+    },
+    {
+      "sha256": "E695761295E65D5B47E924E3B59F18C1FCFB8D576E681917C4E72E6D0C5176E3",
+      "path": "tests/browser/UI03/historical-method-copy.spec.ts"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "kind": "CONFIGFILE_OPTION_PROBE_ONLY",
+  "sourceCommit": "b15050e7779047bf5f81b0a6891b1c50bf362a83",
+  "notAnvilArtifact": true,
+  "applicationAllowed": false,
+  "installationPerformed": false,
+  "toolSha256": "61704F7DBE233980992F2A00EF9BAACF64A8B157D688A4A4BE6B7A2EAEA02828",
+  "state": "BASELINE_FAILED",
+  "results": [
+    {
+      "label": "VALID_CONFIG",
+      "pid": 85876,
+      "state": "CLOSED",
+      "exit": 1,
+      "exitSeen": true,
+      "closeSeen": true,
+      "stdoutBytes": 0,
+      "stderrBytes": 32,
+      "configIssue": false,
+      "package": null,
+      "events": [],
+      "reason": null,
+      "outputFiles": []
+    }
+  ],
+  "inputsUnchanged": true,
+  "startedAt": "2026-11-01T02:30:36.742Z",
+  "endedAt": "2026-11-01T02:30:37.841Z",
+  "liveChild": null,
+  "ownerId": "fcbc0c60-e700-4632-9794-214e28e97641",
+  "environmentKeys": [
+    "SystemRoot",
+    "WINDIR",
+    "COMSPEC",
+    "PATHEXT",
+    "PROCESSOR_ARCHITECTURE",
+    "NUMBER_OF_PROCESSORS",
+    "USERDOMAIN",
+    "PATH",
+    "TEMP",
+    "TMP",
+    "HOME",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+    "NUGET_PACKAGES",
+    "NUGET_HTTP_CACHE_PATH",
+    "NUGET_PLUGINS_CACHE_PATH",
+    "NUGET_CREDENTIALPROVIDERS_PATH",
+    "NUGET_PLUGIN_PATHS",
+    "CI"
+  ],
+  "finalResources": {
+    "files": 7,
+    "bytes": 11896,
+    "items": [
+      {
+        "path": "NuGet.invalid.Config",
+        "bytes": 31
+      },
+      {
+        "path": "NuGet.valid.Config",
+        "bytes": 73
+      },
+      {
+        "path": "owner.json",
+        "bytes": 957
+      },
+      {
+        "path": "payload/probe.txt",
+        "bytes": 38
+      },
+      {
+        "path": "probe.mjs",
+        "bytes": 9247
+      },
+      {
+        "path": "probe.nuspec",
+        "bytes": 297
+      },
+      {
+        "path": "receipt.json",
+        "bytes": 1253
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+-- 미실행 SQL 반례 SOURCE. 실행 manifest/runner 미등록. 실제 PG/원 제품 detach PASS가 아니다.
+-- 향후 별도 승인된 빈 PG15 QA에서만 실행하며 session-local 임시 객체를 ROLLBACK한다.
+BEGIN;
+CREATE TEMP TABLE fn03_generated_before_case (
+ id integer PRIMARY KEY,proof jsonb NOT NULL,proof_id text GENERATED ALWAYS AS(proof->>'id') STORED,counter integer NOT NULL
+) ON COMMIT DROP;
+CREATE FUNCTION pg_temp.fn03_before_shape() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF (to_jsonb(NEW)-'counter') IS DISTINCT FROM (to_jsonb(OLD)-'counter') THEN
+  RAISE EXCEPTION 'FN03_BEFORE_ROW_SHAPE' USING ERRCODE='42501';
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER fn03_generated_before BEFORE UPDATE ON fn03_generated_before_case FOR EACH ROW EXECUTE FUNCTION pg_temp.fn03_before_shape();
+INSERT INTO fn03_generated_before_case(id,proof,counter) VALUES(1,'{"id":"proof-1"}',1);
+DO $$DECLARE denied boolean=false;BEGIN
+ BEGIN UPDATE fn03_generated_before_case SET counter=2 WHERE id=1;
+ EXCEPTION WHEN insufficient_privilege THEN denied=true;END;
+ IF NOT denied THEN RAISE EXCEPTION 'FN03_GENERATED_BEFORE_REPRO_NOT_OBSERVED';END IF;
+END;$$;
+
+CREATE TEMP TABLE fn03_plain_before_case (
+ id integer PRIMARY KEY,proof jsonb NOT NULL,proof_id text NOT NULL,counter integer NOT NULL,
+ CHECK((proof->>'id'=proof_id) IS TRUE)
+) ON COMMIT DROP;
+CREATE TRIGGER fn03_plain_before BEFORE UPDATE ON fn03_plain_before_case FOR EACH ROW EXECUTE FUNCTION pg_temp.fn03_before_shape();
+INSERT INTO fn03_plain_before_case(id,proof,proof_id,counter) VALUES(1,'{"id":"proof-1"}','proof-1',1);
+UPDATE fn03_plain_before_case SET counter=2 WHERE id=1;
+DO $$DECLARE denied boolean=false;BEGIN
+ IF (SELECT counter FROM fn03_plain_before_case WHERE id=1) IS DISTINCT FROM 2 THEN RAISE EXCEPTION 'FN03_PLAIN_BEFORE_CONTROL_FAILED';END IF;
+ BEGIN UPDATE fn03_plain_before_case SET proof_id='other' WHERE id=1;
+ EXCEPTION WHEN insufficient_privilege THEN denied=true;END;
+ IF NOT denied THEN RAISE EXCEPTION 'FN03_PROVENANCE_CHANGE_NOT_DENIED';END IF;
+END;$$;
+ROLLBACK;
+-- 생성열/일반열 대조만의 미래 반례다. 0033 전체 auth/approval/event/FK·제품 실제 detach는 별도 미검증이다.

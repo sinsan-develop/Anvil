@@ -1,0 +1,125 @@
+{
+  "root": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01",
+  "owner": "SINSAN\\cyhuh",
+  "createdAt": "2026-10-26T05:38:24.7839376Z",
+  "deadline": "2026-10-26T06:08:24.7839376Z",
+  "observedAt": "2026-10-26T14:41:43.1707039+09:00",
+  "qaProcesses": 0,
+  "testResult": "FAILED_EPERM_FSYNC",
+  "entries": [
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-staging",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-staging\\af010000-0000-4000-8000-000000000081",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-staging\\af010000-0000-4000-8000-000000000081\\af010000-0000-4000-8000-000000000082",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-staging\\af010000-0000-4000-8000-000000000081\\af010000-0000-4000-8000-000000000082\\body",
+      "directory": false,
+      "bytes": 27,
+      "sha256": "B92A85404FB3B68873A3A67B5CCD9AC99CBA9BB3BEC012A6EF208B72B842EBF5",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-blobs",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-blobs\\af010000-0000-4000-8000-000000000081",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\file-cases\\draft-blobs\\af010000-0000-4000-8000-000000000081\\af010000-0000-4000-8000-000000000080",
+      "directory": false,
+      "bytes": 27,
+      "sha256": "B92A85404FB3B68873A3A67B5CCD9AC99CBA9BB3BEC012A6EF208B72B842EBF5",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-staging",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-staging\\af010000-0000-4000-8000-000000000003",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-staging\\af010000-0000-4000-8000-000000000003\\a407e812-b5ee-411d-93ec-8673ee67f603",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-staging\\af010000-0000-4000-8000-000000000003\\a407e812-b5ee-411d-93ec-8673ee67f603\\body",
+      "directory": false,
+      "bytes": 75,
+      "sha256": "7FF2D10134D72C5D437E974E4EA45BA6DCEC1C123801F22631A6F4A63971C8B6",
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-blobs",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-blobs\\af010000-0000-4000-8000-000000000003",
+      "directory": true,
+      "bytes": 0,
+      "sha256": null,
+      "owner": "SINSAN\\cyhuh"
+    },
+    {
+      "path": "D:\\tmp\\anvil-v3-stage-b\\fn01-draft-artifact-storage-20261026-01\\draft-blobs\\af010000-0000-4000-8000-000000000003\\fc7e808d-94ad-4d68-afb8-9de926df2829",
+      "directory": false,
+      "bytes": 75,
+      "sha256": "7FF2D10134D72C5D437E974E4EA45BA6DCEC1C123801F22631A6F4A63971C8B6",
+      "owner": "SINSAN\\cyhuh"
+    }
+  ],
+  "cleanedAt": "2026-10-26T05:42:54.5296447+00:00",
+  "rootAbsentAfterCleanup": true
+}

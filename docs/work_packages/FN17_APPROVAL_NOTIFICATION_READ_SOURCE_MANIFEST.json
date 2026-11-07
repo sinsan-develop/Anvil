@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "task": "FN17_APPROVAL_NOTIFICATION_READ_SOURCE",
+  "date": "2026-10-27",
+  "branch": "codex/av3-stage-b",
+  "baseCommit": "672af50cea3eb6c4de32fc9f959bb9bfd6b67f97",
+  "wiSha256": "6323849260870EA5FAC48DE22A20E3E5FA5830F2C7DB64F30CDFD018B5675150",
+  "status": "SOURCE_ONLY_REVIEWED",
+  "entries": [
+    {
+      "path": "apps/server/modules/notifications/notification-input.ts",
+      "workingSha256": "B7CAA0F024E01426FB089D520FBDEE55F72C0E598737B9D6BA58158087AA4FC6",
+      "bytes": 4081,
+      "indexSha256": "B7CAA0F024E01426FB089D520FBDEE55F72C0E598737B9D6BA58158087AA4FC6",
+      "indexBytes": 4081,
+      "indexObjectId": "dd99dceee584090e9ac604986be24387d2275094",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "apps/server/modules/notifications/project-notifications.ts",
+      "workingSha256": "32639105513E2CAE58FB0D1EFDE8C8B982397664BA3D9C2131933E835E6A9966",
+      "bytes": 9523,
+      "indexSha256": "32639105513E2CAE58FB0D1EFDE8C8B982397664BA3D9C2131933E835E6A9966",
+      "indexBytes": 9523,
+      "indexObjectId": "35a90767a477c97166a227895f1a5a37b53df038",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "workingSha256": "5BBAD923D8C69AF3B19835853FA33B6EA9A6C08DC87E29DBFCC7B92E8DFA79A9",
+      "bytes": 22813,
+      "indexSha256": "5BBAD923D8C69AF3B19835853FA33B6EA9A6C08DC87E29DBFCC7B92E8DFA79A9",
+      "indexBytes": 22813,
+      "indexObjectId": "ce9609e6039bc36d7fadb55867cfa472b8b87a8e",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "apps/server/modules/projects/routes.ts",
+      "workingSha256": "6A1B5E8A0C939BE0A8541E5591438D2E1151204D036D68AF016FFC9950D8EDB9",
+      "bytes": 58701,
+      "indexSha256": "6A1B5E8A0C939BE0A8541E5591438D2E1151204D036D68AF016FFC9950D8EDB9",
+      "indexBytes": 58701,
+      "indexObjectId": "65f75cd8a0fc969aa321d78aa1c0e37d000a3b34",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "tests/unit/FN17/notification-input.test.ts",
+      "workingSha256": "58CAA83A2E5C41D8C3917B09D73B15A7142B782F5EA99FCFACD04990900B854D",
+      "bytes": 1579,
+      "indexSha256": "58CAA83A2E5C41D8C3917B09D73B15A7142B782F5EA99FCFACD04990900B854D",
+      "indexBytes": 1579,
+      "indexObjectId": "c23b9985130c6c38ec464b98031e8d35e43d4878",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "tests/unit/FN17/project-notifications.test.ts",
+      "workingSha256": "1BB24D686ACDF15495E923824D747E5733493C6B03301144884DF18392BB5181",
+      "bytes": 12096,
+      "indexSha256": "85135C02F39A7D4B95E1882EBCE117D5A9569562FF1C8400F5C9E6DF15EADC52",
+      "indexBytes": 12095,
+      "indexObjectId": "a0757a73b6477c98d77cbe93a27e8ac172f3a157",
+      "indexRelation": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN17/notification-routes.test.ts",
+      "workingSha256": "3533AE6657CE71F5CD699402BD6047D0A666D86D18F08DA76BE523D5986E2C90",
+      "bytes": 2240,
+      "indexSha256": "3533AE6657CE71F5CD699402BD6047D0A666D86D18F08DA76BE523D5986E2C90",
+      "indexBytes": 2240,
+      "indexObjectId": "2b5fda92d545236df543c36fdfc4160e3559f4bc",
+      "indexRelation": "RAW_IDENTICAL"
+    },
+    {
+      "path": "tests/unit/FN17/notification-fixture.ts",
+      "workingSha256": "9547A34DA4053C69B768E3AF9D4A03843FCF0DB7E14F63841EFA423D29C9AF53",
+      "bytes": 7041,
+      "indexSha256": "9547A34DA4053C69B768E3AF9D4A03843FCF0DB7E14F63841EFA423D29C9AF53",
+      "indexBytes": 7041,
+      "indexObjectId": "4d6ff614a4814d2257cb85d28e31239aecf5c208",
+      "indexRelation": "RAW_IDENTICAL"
+    }
+  ],
+  "verification": {
+    "developerScopedTests": 40,
+    "mainFocusedTests": 16,
+    "mainDurationMs": 942.4431,
+    "mainTool": "529c4c",
+    "typecheck": "developer exit0",
+    "review": "C0/I0/M0",
+    "actualDb": "NOT_RUN",
+    "servedBrowser": "NOT_RUN",
+    "publisher": "NOT_IMPLEMENTED",
+    "sql": "NOT_WRITTEN"
+  },
+  "limitations": [
+    "실제 DB schema/guard/role 미적용",
+    "원 승인 publisher/원자 rollback/10000행 상한 미채택",
+    "미래 DDL/실 PG 경쟁·served/사용자 인수 미검증"
+  ]
+}

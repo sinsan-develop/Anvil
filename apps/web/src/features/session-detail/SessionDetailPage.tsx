@@ -1,0 +1,152 @@
+import {ArtifactTaskTracePanel} from './ArtifactTaskTracePanel.tsx';
+import type {ArtifactTaskTraceStorage,ArtifactTraceDetail} from './artifact-task-trace-api.ts';
+import {useEffect,useRef,useState} from 'react';
+import {ApiClient,ApiError} from '../../api/client.ts';
+import {routeHref,transferPreparationHref} from '../../shell/routes.ts';
+import type {ResultIssueSelection} from '../decisions/ReportedResultIssue.tsx';
+import type {PlanRef} from '../design-trace/work-plan-api.ts';
+import {readSessionDetail,type SessionDetail} from './api.ts';
+import {readAssignmentResultPage,readAssignmentResult,type AssignmentResultPage,type ResultSummary,type SubmittedResultView} from './result-api.ts';
+import {initialResultPagePosition,olderResultPage,newerResultPage} from './result-page-position.ts';
+import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
+import {ResultReviewSources} from './ResultReviewSources.tsx';
+import type {CriteriaEditorProps} from './ResultCriteriaEditor.tsx';
+import {readStoredBudgetUsage,type BudgetUsageView} from './budget-usage-api.ts';
+import {CheckpointEditor} from './CheckpointEditor.tsx';
+import type {CheckpointBuffers} from './CheckpointEditor.tsx';
+import {CheckpointFileReader} from './CheckpointFileReader.tsx';
+import {StoredObservationJournal} from './StoredObservationJournal.tsx';
+import {StoredStopRequests} from './StoredStopRequests.tsx';
+import {ReportedTestResults} from './ReportedTestResults.tsx';
+import {ReportedFileChanges} from './ReportedFileChanges.ts';
+import {UnexecutedReports} from './UnexecutedReports.tsx';
+import {ReportedCommandResults} from './ReportedCommandResults.tsx';
+import {ResultSubmissionEditor} from './ResultSubmissionEditor.tsx';
+import {AssignmentEnvironmentOriginal} from './AssignmentEnvironmentOriginal.tsx';
+import {AssignmentPlanOriginal} from './AssignmentPlanOriginal.tsx';
+import {StageQueuePanel} from './StageQueuePanel.tsx';
+import {StageStartPanel} from './StageStartPanel.tsx';
+import {PreparationHistory} from './PreparationHistory.tsx';
+import {ExecutionStartOriginPanel} from './ExecutionStartOriginPanel.tsx';
+import type {OriginStorage} from './execution-start-origin-api.ts';
+
+import {CheckpointJournalComparison} from './CheckpointJournalComparison.tsx';
+import type {CheckpointFileInspection} from './checkpoint-journal-comparison.ts';
+import {checkpointBufferKey} from './checkpoint-api.ts';
+import {emptyCheckpointForm,isEmptyCheckpointForm} from './checkpoint-form-restore.ts';
+type ReadScope={key:string;client:ApiClient;transport:typeof fetch};
+type Loaded={owner:ReadScope;key:string;revision:number;value:SessionDetail|null;error:string|null};
+export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria,checkpoint,onIssueSelect,artifactTraces,startOrigins}:{client:ApiClient;startOrigins?:OriginStorage;artifactTraces?:ArtifactTaskTraceStorage;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps;checkpoint:CheckpointBuffers;onIssueSelect?:(value:ResultIssueSelection)=>void}){
+ const [loaded,setLoaded]=useState<Loaded|null>(null),[revision,setRevision]=useState(0),[fileInspection,setFileInspection]=useState<{owner:ReadScope;key:string;value:CheckpointFileInspection}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
+ const id=assignmentRef?.id,version=assignmentRef?.version,hash=assignmentRef?.contentHash,key=[projectId,id,version,hash].join(':');
+ const scopeKey=JSON.stringify([key,criteria?.session?.user.id,criteria?.session?.clientId,criteria?.session?.csrfToken]),scopeRef=useRef<ReadScope>({key:scopeKey,client,transport:client.transport});
+ if(scopeRef.current.key!==scopeKey||scopeRef.current.client!==client||scopeRef.current.transport!==client.transport)scopeRef.current={key:scopeKey,client,transport:client.transport};
+ const mounted=useRef(true),currentRevision=useRef(revision);currentRevision.current=revision;
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const scope=scopeRef.current,scopeCurrent=()=>mounted.current&&scopeRef.current===scope&&currentRevision.current===revision&&client.transport===scope.transport,[_transportRevision,setTransportRevision]=useState(0);
+ const shown=loaded?.owner===scope&&loaded.key===key&&loaded.revision===revision?loaded:null,pending=!!assignmentRef&&!shown;
+ const fileKey=key+':'+revision,checkpointFile=fileInspection?.owner===scope&&fileInspection.key===fileKey?fileInspection.value:null;
+ const authLost=()=>{if(scopeCurrent())lost.current();};
+ const unavailable=(code:string)=>{if(!scopeCurrent())return;setLoaded({owner:scope,key,revision,value:null,error:code});if(code==='AUTH_REQUIRED')authLost();};
+ useEffect(()=>{
+  if(!id||!version||!hash)return;let active=true;const current=()=>active&&scopeCurrent();
+  readSessionDetail(client,projectId,{id,version,contentHash:hash},current).then(value=>{if(current()&&value)setLoaded({owner:scope,key,revision,value,error:null});}).catch((cause:unknown)=>{
+   if(!current())return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
+   setLoaded({owner:scope,key,revision,value:null,error:/^[A-Z_]{1,80}$/.test(error.code)?error.code:'RESPONSE_INVALID'});if(error.status===401)authLost();
+  }).finally(()=>{if(active&&scopeRef.current===scope&&client.transport!==scope.transport)setTransportRevision(n=>n+1);});return()=>{active=false;};
+ },[scope,revision]);
+ return <section aria-label="단계책임자·실행 상세" lang="ko">
+  {assignmentRef?<a href={transferPreparationHref(projectId,assignmentRef)}>읽기 인계 준비</a>:null}
+  <div className="project-toolbar"><a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>{assignmentRef?<button type="button" disabled={pending} onClick={()=>setRevision(v=>v+1)}>상세 원본 새로고침</button>:null}</div>
+  {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
+  {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
+  {shown?.error?<p role="alert">{shown.error} · 상세 원본을 확인하지 못했습니다. 이전 조회 결과를 현재 상태로 표시하지 않습니다.</p>:null}
+  {shown?.value?.confirmed&&criteria.stageStart?<StageStartPanel key={JSON.stringify(['start',criteria.session.user.id,criteria.session.clientId,key,revision])} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={criteria.stageStart} onUnavailable={unavailable}/>:null}
+  {shown?.value?.confirmed&&criteria.stageQueue?<StageQueuePanel key={JSON.stringify(['queue',criteria.session.user.id,criteria.session.clientId,key,revision])} client={client} projectId={projectId} session={criteria.session} storage={criteria.stageQueue} onUnavailable={unavailable}/>:null}
+  {shown?.value?.confirmed&&startOrigins?<ExecutionStartOriginPanel key={JSON.stringify(['origin',criteria.session.user.id,criteria.session.clientId,key,revision])} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={startOrigins} onUnavailable={unavailable}/>:null}
+  {shown?.value?.confirmed?<AssignmentPlanOriginal key={JSON.stringify([criteria.session.user.id,criteria.session.clientId,key,revision,shown.value.confirmed.ref,shown.value.draft.ref])} client={client} detail={shown.value} onAuthenticationLost={authLost}/>:null}
+  {shown?.value?.confirmed?.snapshot.definition.environmentRef?<AssignmentEnvironmentOriginal key={JSON.stringify([criteria.session.user.id,criteria.session.clientId,key,revision,shown.value.confirmed.ref,shown.value.confirmed.snapshot.definition.environmentRef])} client={client} projectId={projectId} assignmentRef={shown.value.confirmed.ref} environmentRef={shown.value.confirmed.snapshot.definition.environmentRef} onAuthenticationLost={authLost}/>:null}
+{shown?.value?<><SessionDetailContent detail={shown.value}/>{shown.value.confirmed?<PreparationHistory client={client} confirmed={shown.value.confirmed} session={criteria.session} onAuthenticationLost={authLost}/>:null}<StoredBudgetUsage key={'budget:'+key+':'+revision} client={client} projectId={projectId} reference={shown.value.draft.snapshot.definition.budgetRef} onUnavailable={unavailable}/>{shown.value.confirmed?<><CheckpointEditor key={'checkpoint:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} storage={checkpoint} onUnavailable={unavailable}/><CheckpointFileReader currentForm={checkpoint.buffers[checkpointBufferKey(criteria.session,projectId,shown.value.confirmed.ref)]??null} onRestore={form=>{if(scopeCurrent())checkpoint.onChange(checkpointBufferKey(criteria.session,projectId,shown.value!.confirmed!.ref),previous=>isEmptyCheckpointForm(previous)?form:previous??emptyCheckpointForm());}} onInspection={value=>{if(scopeCurrent())setFileInspection(previous=>value?{owner:scope,key:fileKey,value}:previous?.owner===scope&&previous.key===fileKey?null:previous);}} key={'checkpoint-file:'+key+':'+revision} client={client} assignment={shown.value.confirmed} session={criteria.session} onUnavailable={unavailable}/><SessionResults artifactTraces={artifactTraces} traceDetail={shown.value} onIssueSelect={value=>{if(scopeCurrent())onIssueSelect?.(value);}} checkpointFile={checkpointFile} onCheckpointUnavailable={unavailable} key={key+':'+revision} client={client} projectId={projectId} confirmed={shown.value.confirmed} onAuthenticationLost={authLost} criteria={criteria} responsibleState={shown.value.state}/></>:null}</>:null}
+ </section>;
+}
+function StoredBudgetUsage({client,projectId,reference,onUnavailable}:{client:ApiClient;projectId:string;reference:PlanRef|null;onUnavailable:(code:string)=>void}){
+ const [attempt,setAttempt]=useState(0),[loaded,setLoaded]=useState<{key:string;value:BudgetUsageView|null;error:string|null}|null>(null),unavailable=useRef(onUnavailable);unavailable.current=onUnavailable;
+ const key=[projectId,reference?.id,reference?.version,reference?.contentHash,attempt].join(':'),shown=loaded?.key===key?loaded:null;
+ useEffect(()=>{if(!attempt||!reference)return;let active=true;readStoredBudgetUsage(client,projectId,reference,()=>active).then(value=>{if(active&&value)setLoaded({key,value,error:null});}).catch(cause=>{if(!active)return;const e=cause instanceof ApiError?cause:new ApiError('BUDGET_USAGE_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'BUDGET_USAGE_RESPONSE_INVALID';setLoaded({key,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(e.status===401?'AUTH_REQUIRED':code);});return()=>{active=false;};},[client,projectId,reference,key,attempt]);
+ const v=shown?.value;
+ return <section className="status-card" aria-label="선택 예산 보관 원장"><h3>선택 예산 · 보관 원장 조회</h3><p>현재 정책·실제 공급자 과금·실행 허가 미검증</p>{reference?<><Reference label="고정 임무의 예산 참조" value={reference}/><button type="button" disabled={!!attempt&&!shown} onClick={()=>{setLoaded(null);setAttempt(n=>n+1);}}>{attempt?'예산 원장 다시 조회':'예산 원장 조회'}</button></>:<p>임무 예산 참조 미연결 · 기본값/무제한으로 추정하지 않습니다.</p>}
+  {attempt&&!shown?<p role="status">선택 정책과 보관 원장 조회 중 · 이전 값 숨김</p>:null}{shown?.error?<p role="alert">{shown.error} · 예산 상태 미확인</p>:null}
+  {v?<><p>프로젝트 전체 정책의 누적 원장 · 특정 임무만의 사용량이 아닙니다.</p><p>조회 시각: <time dateTime={v.observedAt}>{v.observedAt}</time> · 원장 {v.ledgerRowCount}행</p><p>보관된 정산 호출: {v.summary.used.calls} · 예약 호출: {v.summary.reserved.calls}</p><p>사용량 미확인 예약: {v.summary.unknownReservations}</p><p>보관 원장상 진행/미확인 실행: {v.summary.liveExecutions} · 실제 Agent 가동 관측 아님</p><p>선택 정책 상태: {v.policy.snapshot.state} · {v.summary.policyIssues.join(', ')||'조회시각 기준 만료/회수 표식 없음 · 현재 적용 인증 아님'}</p><details><summary>한도·사용량·예약 비용 원문</summary><pre>{JSON.stringify({selectedPolicy:v.policy,used:v.summary.used,reserved:v.summary.reserved,ledgerLastRef:v.ledgerLastRef},null,2)}</pre></details><p>관측/예약 원장 보관값이며 공급자 청구서·OS 실행·새 호출 허가로 검증하지 않았습니다. UNKNOWN을 0으로 지우거나 정책/세션 변경으로 누적을 초기화하지 않습니다.</p></>:null}
+ </section>;
+}
+const errorCode=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'RESULT_RESPONSE_INVALID';
+function SessionResults({artifactTraces,traceDetail,client,projectId,confirmed,onAuthenticationLost,criteria,responsibleState,checkpointFile,onCheckpointUnavailable,onIssueSelect}:{artifactTraces?:ArtifactTaskTraceStorage;traceDetail:ArtifactTraceDetail;client:ApiClient;projectId:string;confirmed:ConfirmedAssignmentView;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps;responsibleState:SessionDetail['state'];checkpointFile:CheckpointFileInspection|null;onCheckpointUnavailable:(code:string)=>void;onIssueSelect?:(value:ResultIssueSelection)=>void}){
+ const assignmentRef=confirmed.ref;
+ const [page,setPage]=useState<AssignmentResultPage|null>(null),[position,setPosition]=useState(initialResultPagePosition),[error,setError]=useState<string|null>(null),[revision,setRevision]=useState(0),[selected,setSelected]=useState<ResultSummary|null>(null),[attempt,setAttempt]=useState(0),[original,setOriginal]=useState<{key:string;value:SubmittedResultView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
+ const cursor=position.cursors[position.index]??null,pageNumber=position.index+1;
+ const {id,version,contentHash}=assignmentRef,scopeKey=[projectId,id,version,contentHash,revision,cursor].join(':'),[pageKey,setPageKey]=useState(''),itemKey=selected?scopeKey+':'+selected.ref.id+':'+selected.ref.contentHash+':'+attempt:null,shown=original?.key===itemKey?original:null,currentPage=pageKey===scopeKey?page:null;
+ useEffect(()=>{let active=true;setError(null);
+  readAssignmentResultPage(client,projectId,{id,version,contentHash},cursor,()=>active).then(value=>{if(active&&value){setPage(value);setPageKey(scopeKey);}}).catch(cause=>{if(active){setError(errorCode(cause));setPage(null);setOriginal(null);setSelected(null);if(cause instanceof ApiError&&cause.status===401)lost.current();}});return()=>{active=false;};
+ },[client,projectId,id,version,contentHash,revision,scopeKey,cursor]);
+ useEffect(()=>{if(!selected||!itemKey||!currentPage)return;let active=true;
+  readAssignmentResult(client,projectId,{id,version,contentHash},selected,()=>active).then(value=>{if(active&&value)setOriginal({key:itemKey,value,error:null});}).catch(cause=>{if(active){setOriginal({key:itemKey,value:null,error:errorCode(cause)});if(cause instanceof ApiError&&cause.status===401){setPage(null);setSelected(null);setError('AUTH_REQUIRED');lost.current();}}});return()=>{active=false;};
+ },[client,projectId,id,version,contentHash,selected,itemKey,currentPage]);
+ return <section className="status-card" aria-label="제출 결과" lang="ko"><div className="project-toolbar"><h3>제출 결과 · 검수 전</h3><button type="button" onClick={()=>{setSelected(null);setOriginal(null);setPage(null);setError(null);setPosition(initialResultPagePosition());setRevision(v=>v+1);}}>결과 목록 새로고침</button></div>
+  <button type="button" disabled={position.index===0||!currentPage&&!error||error==='AUTH_REQUIRED'} onClick={()=>{if(position.index===0||!currentPage&&!error||error==='AUTH_REQUIRED')return;setSelected(null);setOriginal(null);setPage(null);setError(null);setPosition(newerResultPage(position));}}>더 최근 제출 보기</button>
+  <p>제출자 주장과 실제 관측·검수는 다릅니다. 기록이 없거나 제출 상태가 COMPLETED여도 Anvil의 완료 판정이 아닙니다.</p>
+  {criteria.submissions?<ResultSubmissionEditor key={'submit:'+projectId+':'+id+':'+version+':'+contentHash} client={client} assignment={confirmed} session={criteria.session} storage={criteria.submissions} onAuthenticationLost={onAuthenticationLost} onStored={()=>{setPosition(initialResultPagePosition());setSelected(null);setOriginal(null);setPage(null);setError(null);setRevision(v=>v+1);}}/>:null}
+  {error?<p role="alert">{error} · 결과 조회 미확인. 이전 결과를 현재 자료로 표시하지 않습니다.</p>:!currentPage?<p role="status">정확 임무의 제출 결과 조회 중</p>:<><p>제출 이력 {pageNumber}페이지 · 조회 시각: <time dateTime={currentPage.observedAt}>{currentPage.observedAt}</time></p>{currentPage.items.length?<ul>{currentPage.items.map(item=><li key={item.ref.id}><button type="button" aria-pressed={selected?.ref.id===item.ref.id} onClick={()=>{setOriginal(null);setAttempt(v=>v+1);setSelected(item);}}>제출 원문 {item.ref.id}</button><p>{item.submissionState} · 제출자 주장 · 검수 전 · <time dateTime={item.submittedAt}>{item.submittedAt}</time></p></li>)}</ul>:<p>확인된 제출 결과 없음 · 작업 미수행/정상/완료로 추정하지 않습니다.</p>}{currentPage.hasMore&&currentPage.nextCursor?<button type="button" onClick={()=>{setSelected(null);setOriginal(null);setPage(null);setError(null);setPosition(olderResultPage(position,currentPage.nextCursor!));}}>더 이전 제출 보기</button>:<p>조회된 범위의 더 이전 제출 없음 · 프로젝트 완료 판정 아님</p>}</>}
+  {currentPage&&selected&&!shown?<p role="status">선택 제출의 고정 원문 조회 중</p>:null}
+  {currentPage&&shown?.error?<p role="alert">{shown.error} · 원문 미확인. 다른 제출로 대체하지 않습니다.</p>:null}
+{currentPage&&shown?.value?<><ResultContent value={shown.value}/>{artifactTraces?<ArtifactTaskTracePanel key={'artifact-task:'+itemKey} client={client} session={criteria.session} detail={traceDetail} result={shown.value} storage={artifactTraces} onAuthenticationLost={onAuthenticationLost}/>:null}{onIssueSelect&&selected?<a href={routeHref('approvals',projectId)} onClick={()=>onIssueSelect({assignmentRef:structuredClone(assignmentRef),returnDraftRef:structuredClone(confirmed.snapshot.draftRef),item:structuredClone(selected)})}>승인·문제 화면에서 이 보고 확인</a>:null}<StoredObservationJournal key={'observations:'+itemKey} client={client} result={shown.value} onUnavailable={code=>{setOriginal(null);setSelected(null);setPage(null);setError(code);if(code==='AUTH_REQUIRED')lost.current();}}/><StoredStopRequests key={'stop-requests:'+itemKey} client={client} result={shown.value} session={criteria.session} onUnavailable={code=>{setOriginal(null);setSelected(null);setPage(null);setError(code);if(code==='AUTH_REQUIRED')lost.current();}}/><CheckpointJournalComparison key={'comparison:'+itemKey+':'+(checkpointFile?.prepared.recordFile.contentHash??'none')} client={client} file={checkpointFile} result={shown.value} onUnavailable={onCheckpointUnavailable}/><ResultReviewSources key={itemKey} client={client} projectId={projectId} result={shown.value} assignment={confirmed} onAuthenticationLost={onAuthenticationLost} criteria={criteria} responsibleState={responsibleState} onAccessUnavailable={code=>{setOriginal(null);setSelected(null);setPage(null);setError(code);}}/></>:null}
+ </section>;
+}
+export function ResultContent({value}:{value:SubmittedResultView}){
+ const s=value.snapshot,m=s.manifest;
+ return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
+  <ReportedFileChanges key={JSON.stringify([s.scope,value.ref])} changes={m.changes} artifacts={m.artifactRefs}/>
+  <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
+  <ReportedCommandResults key={JSON.stringify([s.scope,value.ref])} commands={m.commandResults} executionRef={s.scope.executionRef}/>
+  <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
+  <ReportedTestResults key={JSON.stringify([s.scope,value.ref])} tests={m.testResults}/>
+  <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
+  <UnexecutedReports key={JSON.stringify([s.scope,value.ref])} unexecuted={m.unexecuted} tests={m.testResults}/>
+  <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
+  <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>
+  <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>등록 산출물 텍스트·변경 diff/명령 출력 참조는 별도 명시 조회로 확인합니다. 보관 bytes/hash 일치는 실제 Git diff·명령/시험 출처의 증명이 아니며, 보완 초안 저장은 실제 재작업·검수 합격이 아닙니다. 실제 중지·쓰기 회수/이전 처리는 미확인입니다.</p>
+ </article>;
+}
+function Reference({label,value}:{label:string;value:PlanRef|null}){return <div><dt>{label}</dt><dd>{value?<>{value.id} · v{value.version}<br/>{value.contentHash}</>:'미연결'}</dd></div>;}
+function Tool({detail,reference}:{detail:SessionDetail;reference:PlanRef}){
+ const tool=detail.tools.find(t=>t.connectionRef.id===reference.id&&t.connectionRef.version===reference.version&&t.connectionRef.contentHash===reference.contentHash);
+ if(!tool?.value)return <p>도구 후보 원문 미확인{tool?.error?' · '+tool.error:''} · 다른 후보로 대체하지 않습니다.</p>;
+ const c=tool.value.candidate.input.candidate;
+ return <div><p>{c.label} · 사용자 등록 후보</p><p>제품: {typeof c.toolProduct==='string'&&c.toolProduct?c.toolProduct:'미기재'} · 버전: {typeof c.toolVersion==='string'&&c.toolVersion?c.toolVersion:'미기재'} · 유형: {typeof c.adapterKind==='string'&&c.adapterKind?c.adapterKind:'미기재'}</p><p>{tool.value.expired?'조회상 기한 경과':'조회상 기한 이내'} · 능력·실제 연결·가동 미확인</p></div>;
+}
+export function SessionDetailContent({detail}:{detail:SessionDetail}){
+ const d=detail.draft.snapshot.definition,s=detail.state;
+ return <>
+  <header><h2>{d.goal||'임무 목표 미입력'}</h2><p>{d.taskRef.taskCode} · {d.taskRef.nodeId}</p><p className="meta">고정 원문 조회 · 현재 실행 미확인 · 조회만으로 Agent를 호출하거나 허가하지 않습니다.</p></header>
+  <section className="status-card" aria-label="고정 임무와 완료 조건"><h3>임무·기준</h3><p>{d.purpose}</p><p>책임 역할: {d.ownerRole||'미입력'}</p><p>통합 책임: {d.integrationResponsibility||'미입력'}</p>
+   <h4>완료 조건</h4>{d.acceptanceCriteria.length?<ul>{d.acceptanceCriteria.map((v,i)=><li key={i}>{v}</li>)}</ul>:<p>완료 조건 미입력</p>}
+   <h4>검증 조건</h4>{d.verificationRequirements.length?<ul>{d.verificationRequirements.map((v,i)=><li key={i}>{v}</li>)}</ul>:<p>검증 조건 미입력</p>}
+   <dl><Reference label="선택 초안" value={detail.draft.ref}/><Reference label="내용 확정본" value={detail.confirmed?.ref??null}/><Reference label="작업계획" value={d.taskRef.planRef}/><Reference label="설계" value={detail.draft.snapshot.basis.designRef}/><Reference label="방법론 적용본" value={d.taskRef.applicationRef}/><Reference label="환경" value={d.environmentRef}/><Reference label="예산" value={d.budgetRef}/></dl>
+   <p>{detail.confirmed?'과거 내용 확정 원문 있음':'내용 확정 원문 없음'} · {detail.decision.latestReviewAccepted&&!detail.decision.currentIssue?'저장된 최신 내용 검토 적합':'재검토 필요'} · 실행 허가 아님</p>
+   <details><summary>허용 의도·제외 범위·입출력 원문</summary><h4>포함 범위</h4><ul>{d.included.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>제외 범위</h4><ul>{d.excluded.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>입력</h4><ul>{d.inputs.map((v,i)=><li key={i}>{v}</li>)}</ul><h4>산출물</h4><ul>{d.outputs.map((v,i)=><li key={i}>{v}</li>)}</ul><pre>{JSON.stringify(d.allowedScopes,null,2)}</pre><p>저장된 의도이며 현재 파일 접근·실행 권한은 미확인입니다.</p></details>
+  </section>
+  <section className="status-card" aria-label="책임 도구와 세션"><h3>책임 역할·예약 세션</h3>
+   {s===null?<><p>책임 역할 미조회 · 역할이 없다는 판정이 아닙니다.</p><p>세션 예약 미조회 · 실제 외부 세션 유무는 미확인입니다.</p></>:<>
+   {s?.roles.length?<ul>{s.roles.map(r=><li key={r.ref.id}>{r.snapshot.kind==='COORDINATOR'?'총괄':'단계책임자'} · {r.ref.id} · v{r.ref.version}</li>)}</ul>:<p>확인된 책임 역할 없음</p>}
+   {s?.bindings.length?<ul>{s.bindings.map(b=><li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label="도구 연결 후보" value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><Tool detail={detail} reference={b.snapshot.connectionRef}/><p>세대 {b.snapshot.generation} · 후보 연결이며 실제 가동 상태가 아닙니다.</p></li>)}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
+   </>}
+   <p>현재 권한·OS 소유·외부 도구 상태 미재검사</p>
+  </section>
+  <section className="status-card" aria-label="실행 준비 이력"><h3>저장된 실행 준비 이력</h3>
+   {s===null?<p>실행 준비 이력 미조회 · 준비 기록이 없다는 판정이 아닙니다.</p>:<>
+   {s?.preparations.length?<ul>{s.preparations.map(p=><li key={p.ref.id}><dl><Reference label="준비 원본" value={p.ref}/></dl><p>{p.snapshot.intent.mode==='WORK'?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p><p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p></li>)}</ul>:<p>확인된 실행 준비 기록 없음</p>}
+   </>}
+   {s?.hasMorePreparations?<p>최근 20건 요약입니다. 전체 준비 이력에서 이전 기록을 명시적으로 조회할 수 있습니다.</p>:null}
+  </section>
+  <section className="status-card" aria-label="실제 결과와 누락 증거"><h3>보관 조회·보고 검토와 미확인 범위</h3><p>제출 변경·명령·시험 보고와 현황 파일 대조·보관 관측/중지 요청 이력은 별도로 명시 조회합니다. 제출자 주장·합성 실행 기록·초안/요청 저장과 실제 수행은 구분합니다. 실제 Agent 수행·증거 출처·쓰기 회수·안전 재개/이전은 미확인입니다. 기록 부재를 대기·정상·완료로 판단하지 않습니다.</p><p>보완 초안/중지 요청 이력이 실제 재작업·중지 확인은 아닙니다. 이 조회 화면에는 실행 버튼이나 임의 명령 입력을 제공하지 않습니다.</p></section>
+ </>;
+}

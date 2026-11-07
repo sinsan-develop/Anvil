@@ -1,0 +1,11 @@
+{
+  "at": "2026-11-03T23:36:19.225Z",
+  "containerFullIdAbsent": true,
+  "containerNameAbsent": true,
+  "sourceAbsent": true,
+  "auditRetained": {
+    "owner.json": "e38fc39d2759a8c8b9dd1300e4aba98b139554cb1a7b28fdb81237bbbbf3c311",
+    "slot-a1.intent.json": "a6a0806734a344077812fbf0ab9624093ccd99e534fa7af85855449dece75447",
+    "slot-a1.result.json": "71f719757d0c9e9a9b7b06afc56be86ccc6df8b1dbdf4bfa5740574f2f504940"
+  }
+}

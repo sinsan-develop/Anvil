@@ -1,0 +1,14 @@
+{
+  "containerId": "5dbd92e5451b894eebb70d29e8832c2ca724dcdee44cf879c67b567493da8fe4",
+  "containerAbsent": true,
+  "nameAbsent": true,
+  "sourceAbsent": true,
+  "sourceHead": "435300939597162654f89ab3c85823dd25f31f4b",
+  "sourceClean": true,
+  "processes": {
+    "scanned": 240,
+    "matches": 0
+  },
+  "receiptPreserved": true,
+  "observedAt": "2026-11-04T00:51:55.185Z"
+}

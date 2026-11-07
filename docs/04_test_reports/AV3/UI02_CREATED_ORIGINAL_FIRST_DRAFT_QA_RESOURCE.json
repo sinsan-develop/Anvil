@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "scope": "SYNTHETIC_DOM_FIRST_EMPTY_DOCUMENT_FLOW",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-first-draft-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T09:28:55.0215629Z",
+    "expiresAtUtc": "2026-10-26T09:58:55.0215629Z",
+    "fileCount": 0,
+    "phase": "EMPTY_WITH_TEMP"
+  },
+  "execution": {
+    "toolChunk": "b7520b",
+    "sourceProductManifest": "docs/work_packages/UI02_CREATED_ORIGINAL_IMPORT_SOURCE_MANIFEST.json",
+    "sourceProductChanged": false,
+    "implementationFilesWritten": false,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "testDurationMs": 1944.1132,
+    "totalDurationMs": 1948.1451,
+    "verified": [
+      "UI02_CURRENT_PROTECTED_LINK",
+      "EMPTY_DOCUMENT_BUFFER",
+      "OFFICIAL_FORM_CURRENT_CONTROL",
+      "EXACT_ORIGINAL_PROTECTED_READ",
+      "IMPORT_DOCUMENT_ONLY_NO_REUPLOAD",
+      "SEPARATE_EXPLICIT_ADOPTION",
+      "NO_AUTOMATIC_SAVE_OR_CONFIRM"
+    ],
+    "actualApiDbFileStorage": false
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-first-draft-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "inventoryAtUtc": "2026-10-26T09:31:44.7096989Z",
+    "files": 186,
+    "directories": 58,
+    "bytes": 14644612,
+    "links": 0,
+    "relatedProcesses": 0,
+    "cleanupCompletedAtUtc": "2026-10-26T09:31:45.0402125Z",
+    "rootExists": false
+  },
+  "independentObservation": {
+    "toolChunk": "53e8ed",
+    "atUtc": "2026-10-26T09:31:52.4850847Z",
+    "rootExists": false,
+    "relatedProcesses": 0,
+    "cimReadSucceeded": true
+  }
+}

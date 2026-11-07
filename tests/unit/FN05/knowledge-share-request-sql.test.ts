@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {readFile} from 'node:fs/promises';
+const candidate=new URL('../../../db/migrations/0051_knowledge_share_requests.sql.pending',import.meta.url);
+async function sql(){const source=await readFile(candidate,'utf8').catch(()=>null);assert.ok(source,'0051은 미적용 forward SQL 후보로 작성되어야 한다');return source;}
+// 문자열 검수는 SQL compile/trigger/DML/RLS 실행 증거가 아니다.
+test('새 요청 SQL 후보는 불변 전용표·RLS·본인 source 격리 및 변경거절을 정의한다',async()=>{const s=await sql();assert.match(s,/CREATE TABLE anvil\.knowledge_share_requests\s*\(/i);assert.match(s,/RECORDED_ONLY/);assert.match(s,/ENABLE ROW LEVEL SECURITY/i);assert.match(s,/FORCE ROW LEVEL SECURITY/i);assert.match(s,/CREATE POLICY[\s\S]*created_by[\s\S]*anvil\.actor_id/i);assert.match(s,/BEFORE UPDATE OR DELETE|BEFORE (UPDATE|DELETE)[\s\S]*BEFORE (UPDATE|DELETE)/i);assert.match(s,/RAISE EXCEPTION/i);assert.doesNotMatch(s,/ALTER TABLE anvil\.knowledge_(entries|versions|events)|UPDATE anvil\.knowledge_|INSERT INTO anvil\.knowledge_events/i);});
+test('요청 guard 후보는 exact command·actor/client/control·snapshot hash·receipt/감사를 결박하고 승인/전송효과를 배제한다',async()=>{const s=await sql();for(const pattern of [/requestKnowledgeShare/,/request_hash/,/content_hash/,/execution_json_hash/,/authorization_receipts/,/audit_events/,/created_by/,/client_id/,/control_generation/,/policy_ref/,/approval_consumption_id\s+IS\s+NULL/i,/approval_decision_ref\s+IS\s+NULL/i,/DEFERRABLE INITIALLY DEFERRED/i])assert.match(s,pattern);assert.doesNotMatch(s,/INSERT INTO anvil\.(approval_requests|approval_consumptions)|CREATE TABLE anvil\.(incoming|shared)|SHARED['"]/i);});

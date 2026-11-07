@@ -1,1 +1,1 @@
-export const contractFiles = ['common/refs.schema.json'] as const;
+export const contractFiles = ['common/refs.schema.json','connector.schema.json'] as const;

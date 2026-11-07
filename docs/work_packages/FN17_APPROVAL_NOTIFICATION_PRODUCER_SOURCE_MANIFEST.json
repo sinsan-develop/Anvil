@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "task": "FN17_APPROVAL_NOTIFICATION_PRODUCER",
+  "base": "a2ff8802ad648445b8c0869535efebb428dbf349",
+  "baseEvidence": "Main 전달 기준. 이 담당자의 Git 실행0",
+  "branch": "codex/av3-stage-b",
+  "packetSha256": "BAA454FCA8C900DF0A44F704190BBC808D05B5F54ED1602CA49F3D9A4A2A3709",
+  "approvalSha256": "D2DCD9B8F8772EAB6789EBEF5855303AE3F05BD04F1B3D572A261A89B835F03D",
+  "candidateSha256": "041B1AC3E210D210C157AE2936DFD7241162AFC7897F8DF91F2509C6071CCF1D",
+  "workInstructionSha256": "E890D96FB1EAC0FB75051B7C927B968F255E17E65D10672AB955B916402A85A9",
+  "writer": "MAIN_TO_ASSIGN_AFTER_FN03",
+  "mainProductWrite": false,
+  "currentState": "DOCUMENT_PREPARATION_ONLY_FN03_SINGLE_WRITER_ACTIVE",
+  "allowed": [
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "existing": true,
+      "rawSha256": "98AC59FC1241BDB0A2E6208E5AC83D1827B464DDB6FEA5BE6BDBCFF3EF8E0002"
+    },
+    {
+      "path": "apps/server/modules/notifications/project-notifications.ts",
+      "existing": true,
+      "rawSha256": "32639105513E2CAE58FB0D1EFDE8C8B982397664BA3D9C2131933E835E6A9966"
+    },
+    {
+      "path": "apps/server/modules/notifications/approval-notification-producer.ts",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "db/migrations/0052_approval_in_app_notifications.sql.pending",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "tests/unit/FN17/approval-notification-producer.test.ts",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "tests/unit/FN17/approval-notification-request-transaction.test.ts",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "tests/unit/FN17/approval-notification-reader-operations.test.ts",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "tests/unit/FN17/approval-notification-sql.test.ts",
+      "existing": false,
+      "rawSha256": null
+    },
+    {
+      "path": "docs/04_test_reports/AV3/FN17_APPROVAL_NOTIFICATION_PRODUCER_RESULT.md",
+      "existing": false,
+      "rawSha256": null
+    }
+  ],
+  "protectedExisting": [
+    {
+      "path": "scripts/p03-pg-discovery-host.ts",
+      "sha256": "B071A57A1EA1DF44A1F93213BBFFEC8EB6D626755BC7FB8E543029BEAB8BFCF7"
+    },
+    {
+      "path": "scripts/pg-recovery-discovery-readonly.sh",
+      "sha256": "156867EF53948C2A18CF439EBA8DB46ECF461AB11FD86116239B2E5FEC9A480B"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-host.test.ts",
+      "sha256": "207D7A4CD8EFB5B51A36D01C7976D1464F94136251034F4561CAFDE47146D32E"
+    },
+    {
+      "path": "tests/unit/P03/pg-recovery-discovery-preparation.test.ts",
+      "sha256": "B90F8D8799ABF4DB877227BDEBE48CBAD5CBDF80BA7F015EB1AD13EE7E8A96FB"
+    }
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "excludedFn03Products": [
+    "apps/web/src/features/design-trace/api.ts",
+    "apps/web/src/features/design-trace/DocumentsPage.tsx"
+  ],
+  "sqlNumberObservation": {
+    "observedMaximumPrefix": "0051",
+    "unusedCandidatePrefix": "0052",
+    "reserved": false,
+    "recheckBeforeSourceWrite": true,
+    "newSqlWritten": false
+  },
+  "existingSqlAndMigrationApplicationManifestWrite": false,
+  "existingTestsWrite": false,
+  "actualEffectsAuthorized": false,
+  "actualDbSqlGrantServiceAgentExecution": false,
+  "testOnlyGoIssued": false,
+  "productGoIssued": false,
+  "revision": 2,
+  "parentWorkInstructionSha256": "9999C38C630F347A09F8F39FF42D85E83AD08DE52F0C45D89C7089766499C7B1",
+  "parentManifestSha256": "13BAD0C0A779320BE6EDFD3018AE6B21021CB2D2C07A410FD9619D5447DF8547",
+  "revisionReason": "기존 허용 project-notifications.ts에서 최초 RLS SELECT 전 인증 actor/client local GUC 설정·새 transaction 반례 명시. 허용9/승인/원 baseline 불변"
+}

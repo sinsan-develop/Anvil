@@ -1,0 +1,29 @@
+export type PolicyEditorProfile='CANDIDATE'|'PROJECT_MATERIAL'|'PROJECT_PREPARATION'|'PROJECT_RESULTS'|'PROJECT_LIMITS'|'PROJECT_SOURCE_DECLARATIONS'|'PROJECT_SOURCE_OBSERVATIONS'|'PROJECT_BASELINES'|'PROJECT_HOST_TRUST'|'PROJECT_ENVIRONMENT';
+export const policyEditorOperations={
+ CANDIDATE:[['registerConnection','도구 후보·별도 연결 정의 저장'],['readConnectionDefinition','연결 정의 고정 조회'],['saveEnvironment','환경 후보 저장'],['recordCapabilityReport','사람 능력보고 보관']],
+ PROJECT_ENVIRONMENT:[['saveEnvironmentHostDeclaration','환경 host 선언 저장·개정'],['revokeEnvironmentHostDeclaration','환경 host 선언 신규 사용 회수'],['saveCommandProfileMetadata','명령 profile 저장·개정'],['revokeCommandProfileMetadata','명령 profile 신규 사용 회수'],['saveSecretReferenceMetadata','비밀 참조 metadata 저장·개정'],['revokeSecretReferenceMetadata','비밀 참조 metadata 신규 사용 회수'],['saveEnvironment','환경 구성 저장·개정'],['readEnvironmentHostDeclaration','환경 host 선언 목록·고정 조회'],['readCommandProfileMetadata','명령 profile 목록·고정 조회'],['readSecretReferenceMetadata','비밀 참조 metadata 목록·고정 조회'],['readEnvironmentVersion','환경 구성 목록·고정 조회']],
+ PROJECT_MATERIAL:[
+  ['recordNodeDecision','사람 판단 기록·정정'],['revokeNodeDecision','사람 판단 철회'],['readNodeDecisions','사람 판단 보호 조회'],
+  ['saveProjectMembership','프로젝트 참여권한 저장'],['readProjectSetupCopy','선택한 도구·환경 사본 고정 조회'],
+  ['exportProject','선택 문서 원본 1개 반출'],['uploadArtifact','원문 파일 보관'],['saveDocumentDraft','문서 초안 저장'],['recordContentReview','내용 검토 기록'],['confirmDocument','문서 확정'],
+  ['proposeDocumentChange','문서 수정 제안'],['importDocument','문서 가져오기'],['detachDocumentSource','문서 소스 연결 해제'],['linkDocumentSource','문서 소스 연결'],['proposeDocumentSourceChange','소스 관측·드리프트 선택'],['indexDesignDocument','설계 항목 연결'],['saveWorkPlanDraft','작업계획 초안 저장'],
+  ['confirmWorkPlan','작업계획 확정'],['proposeDesignChange','설계 변경 요청'],['reviewChangeImpact','변경 영향 검토'],['activateDesignChange','설계 변경 별도 적용'],['linkTrace','추적 연결'],
+  ['requestKnowledgeShare','지식 공유 요청 보관'],['saveKnowledge','헌법·지식 초안 저장'],['appendConversation','대화 원문 보관'],['correctKnowledge','지식 정정'],['excludeKnowledge','지식 제외'],
+  ['confirmKnowledge','헌법·지식 확정'],['applyConstitution','헌법 별도 적용'],['requestApproval','일회 승인 요청'],['decideApproval','일회 승인 결정'],
+  ['copyMethodology','방법론 복사'],['saveMethodologyDraft','방법론 초안 저장'],['confirmMethodology','방법론 확정'],['applyMethodology','방법론 별도 적용'],['markNotificationRead','알림 읽음 표시'],['saveBackupReference','보호참조 작성·개정'],['saveBackupPolicy','수동 백업 정책 저장'],['revokeBackupReference','보호참조 신규 사용 회수'],['manageBackupResource','설치 자원·이식키 관리']
+ ],
+ PROJECT_PREPARATION:[
+  ['registerExecutionStartOrigin','START 원자료 명시 저장'],['readExecutionStartOrigins','START 원자료 보호 조회·이력'],
+  ['prepareNativeReceiveWindow','최초 수신 창 준비'],['offerNativeReceiveCommand','최초 수신 원명령 제안 저장'],['closeNativeReceiveWindow','최초 수신 창 닫기'],['readNativeChannelProfile','보호 수신 프로필 조회'],['readNativeReceiveWindow','최초 수신 창 조회'],['readNativeReceiveOffer','최초 수신 제안 원문 조회'],
+  ['prepareAssignment','임무 초안 저장'],['reviewAssignmentContent','임무 내용 검토'],['confirmAssignment','임무 별도 확정'],['buildTaskContext','임무 맥락 구성'],
+  ['defineProjectRole','프로젝트 책임 역할 정의'],['bindResponsibleSession','책임 세션 예약'],['prepareExecution','실행 준비 기록'],['reviewUnderstanding','임무 이해 검토'],['createTransferPreparationRecord','인계 준비기록 저장'],['readTransferPreparationRecord','인계 준비기록 고정 조회'],['prepareNativeBoundary','실행 경계 준비 원명령 저장'],['readNativePreparationAuthority','실행 경계 준비 고정 조회']
+ ],
+ PROJECT_LIMITS:[['applyLimitPolicy','한도 정책 작성·개정'],['revokeLimitPolicy','한도 정책 회수']],
+ PROJECT_SOURCE_DECLARATIONS:[['saveSourceRoot','위치 선언 등록'],['reviseSourceRoot','위치 선언 개정'],['revokeSourceRoot','위치 선언 철회']],
+ PROJECT_SOURCE_OBSERVATIONS:[['requestSourceReadObservation','읽기 관측 허가 요청'],['revokeSourceReadObservation','읽기 관측 허가 회수']],
+ PROJECT_BASELINES:[['saveBaselineDraft','시작 기준선 초안 저장'],['reviewBaselineContent','시작 기준선 내용 검토'],['confirmBaseline','시작 기준선 별도 확정']],
+ PROJECT_HOST_TRUST:[['registerConnector','신뢰 등록 요청'],['confirmConnectorRegistration','신뢰 지문 승인·거절'],['revokeConnector','신뢰 등록 회수']],
+ PROJECT_RESULTS:[
+  ['submitResult','결과 제출 등록'],['saveResultCriteria','결과 검수 기준 저장'],['evaluateResult','결과 검토 기록'],['requestRework','보완 요청 기록']
+ ]
+} as const;

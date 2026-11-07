@@ -1,0 +1,57 @@
+import {ApiClient,ApiError} from '../../api/client.ts';
+import {ordered} from '../knowledge/review-view.ts';
+import type {SubmittedResultView} from './result-api.ts';
+import type {RecordedResultReview} from './result-review-write-api.ts';
+export type StoredReviewSummary=Pick<RecordedResultReview,'ref'|'reviewStored'|'completionAccepted'|'formalFailureCounted'|'evidenceProvenanceVerified'|'executionAuthorized'|'dispatchPerformed'>&Pick<RecordedResultReview['snapshot'],'reviewedBy'|'sameAsSubmitter'|'reviewedAt'>&{criteriaRef:RecordedResultReview['snapshot']['input']['criteriaRef'];outcome:'REWORK'|'BLOCKED'};
+export interface StoredResultReviews{projectId:string;resultRef:SubmittedResultView['ref'];items:StoredReviewSummary[];hasMore:boolean;selectionState:'NOT_SELECTED';observedAt:string}
+const exact=(v:any,k:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...k].sort().join(','),same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v),ref=(v:any)=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash),date=(v:unknown)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v,text=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=20000,flagKeys=['completionAccepted','formalFailureCounted','evidenceProvenanceVerified','executionAuthorized','dispatchPerformed'];
+const flags=(v:any)=>flagKeys.every(key=>v?.[key]===false),reviewer=(v:any)=>exact(v,['kind','userId','clientId'])&&v.kind==='HUMAN'&&uuid(v.userId)&&uuid(v.clientId);
+function fail():never{throw new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');}
+async function hash(v:unknown){const bytes=new TextEncoder().encode(ordered(v));if(bytes.length>2*1024*1024)fail();return[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
+async function result(r:SubmittedResultView){if(!uuid(r?.snapshot?.scope?.projectId)||!ref(r.ref)||r.ref.version!==1||await hash(r.snapshot)!==r.ref.contentHash)fail();}
+function summary(v:any,r:SubmittedResultView){return exact(v,['ref','criteriaRef','outcome','reviewedBy','sameAsSubmitter','reviewedAt','reviewStored',...flagKeys])&&ref(v.ref)&&v.ref.version===1&&ref(v.criteriaRef)&&['REWORK','BLOCKED'].includes(v.outcome)&&reviewer(v.reviewedBy)&&v.sameAsSubmitter===(v.reviewedBy.userId===r.snapshot.submittedByRef.id)&&date(v.reviewedAt)&&Date.parse(v.reviewedAt)>=Date.parse(r.snapshot.submittedAt)&&v.reviewStored===true&&flags(v);}
+/** 보관 이력 원문 조회다. 현재 기준 적용이나 실제 증거/판정을 다시 검증하지 않는다. */
+export async function readStoredResultReviews(client:ApiClient,original:SubmittedResultView,active:()=>boolean):Promise<StoredResultReviews|null>{
+ const r=structuredClone(original);await result(r);if(!active())return null;const v=await client.get<StoredResultReviews>(`/api/v1/projects/${r.snapshot.scope.projectId}/results/${r.ref.id}/reviews`);if(!active())return null;
+ if(!exact(v,['projectId','resultRef','items','hasMore','selectionState','observedAt'])||v.projectId!==r.snapshot.scope.projectId||!same(v.resultRef,r.ref)||!Array.isArray(v.items)||v.items.length>20||new Set(v.items.map(i=>i.ref?.id)).size!==v.items.length||typeof v.hasMore!=='boolean'||v.hasMore&&v.items.length!==20||v.selectionState!=='NOT_SELECTED'||!date(v.observedAt)||v.items.some(i=>!summary(i,r)||Date.parse(i.reviewedAt)>Date.parse(v.observedAt)))fail();
+ for(let n=1;n<v.items.length;n++){const a=v.items[n-1]!,b=v.items[n]!;if(a.reviewedAt<b.reviewedAt||a.reviewedAt===b.reviewedAt&&a.ref.id<=b.ref.id)fail();}return active()?structuredClone(v):null;
+}
+export async function readStoredResultReview(client:ApiClient,original:SubmittedResultView,item:StoredReviewSummary,active:()=>boolean):Promise<RecordedResultReview|null>{
+ const r=structuredClone(original),selected=structuredClone(item);await result(r);if(!summary(selected,r))fail();if(!active())return null;const v=await client.get<RecordedResultReview>(`/api/v1/projects/${r.snapshot.scope.projectId}/result-reviews/${selected.ref.id}`);if(!active())return null;
+ return verifyStoredReview(v,r,selected,active);
+}
+/** 보완 원문에 고정된 exact ref/criteria로 직접 읽는다. 목록의 최근20건 범위를 조회권한으로 대체하지 않는다. */
+export async function readStoredResultReviewReference(client:ApiClient,original:SubmittedResultView,reviewRef:StoredReviewSummary['ref'],criteriaRef:StoredReviewSummary['criteriaRef'],active:()=>boolean):Promise<RecordedResultReview|null>{
+ const r=structuredClone(original),expected=structuredClone(reviewRef),criteria=structuredClone(criteriaRef);await result(r);if(!ref(expected)||expected.version!==1||!ref(criteria))fail();if(!active())return null;
+ const v=await client.get<RecordedResultReview>(`/api/v1/projects/${r.snapshot.scope.projectId}/result-reviews/${expected.id}`);if(!active())return null;
+ const s=v?.snapshot,selected:StoredReviewSummary={ref:expected,criteriaRef:criteria,outcome:s?.input?.outcome,reviewedBy:s?.reviewedBy,sameAsSubmitter:s?.sameAsSubmitter,reviewedAt:s?.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+ if(!summary(selected,r))fail();return verifyStoredReview(v,r,selected,active);
+}
+/** 추가 GET 없이 이미 선택한 원문을 동일한 보관 검수 계약으로 검증한다. */
+export async function validateStoredResultReview(original:SubmittedResultView,raw:RecordedResultReview){
+ const r=structuredClone(original),v=structuredClone(raw);await result(r);const s=v?.snapshot;
+ const selected:StoredReviewSummary={ref:v?.ref,criteriaRef:s?.input?.criteriaRef,outcome:s?.input?.outcome,reviewedBy:s?.reviewedBy,sameAsSubmitter:s?.sameAsSubmitter,reviewedAt:s?.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+ if(!summary(selected,r))fail();return verifyStoredReview(v,r,selected,()=>true);
+}
+async function verifyStoredReview(v:RecordedResultReview,r:SubmittedResultView,selected:StoredReviewSummary,active:()=>boolean):Promise<RecordedResultReview|null>{
+ const s=v?.snapshot,input=s?.input;
+ if(!exact(v,['projectId','ref','snapshot','reviewStored',...flagKeys,'observedAt'])||v.projectId!==r.snapshot.scope.projectId||!same(v.ref,selected.ref)||v.reviewStored!==true||!flags(v)||!date(v.observedAt)||Date.parse(v.observedAt)<Date.parse(selected.reviewedAt)||!exact(s,['scope','input','reviewedBy','sameAsSubmitter','reviewedAt',...flagKeys])||!same(s.scope,r.snapshot.scope)||!same(s.reviewedBy,selected.reviewedBy)||s.sameAsSubmitter!==selected.sameAsSubmitter||s.reviewedAt!==selected.reviewedAt||!flags(s)||await hash(s)!==selected.ref.contentHash||!exact(input,['resultRef','criteriaRef','outcome','items','reason'])||!same(input.resultRef,r.ref)||!same(input.criteriaRef,selected.criteriaRef)||input.outcome!==selected.outcome||!text(input.reason)||!Array.isArray(input.items)||!input.items.length||input.items.length>100||new Set(input.items.map(i=>i.criterionId)).size!==input.items.length||input.items.some(i=>!exact(i,['criterionId','outcome','evidenceRefs','reason'])||typeof i.criterionId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/.test(i.criterionId)||!['REWORK','BLOCKED'].includes(i.outcome)||!same(i.evidenceRefs,[])||!text(i.reason))||!input.items.some(i=>i.outcome===input.outcome))fail();return active()?structuredClone(v):null;
+}
+
+export interface StoredResultReviewPage extends StoredResultReviews{nextCursor:string|null;pageSize:20;window:{startedAt:string;expiresAt:string}}
+/** 고정20개 보관 metadata. 원문/명령/자동선택을 조회하지 않는다. */
+export async function readStoredResultReviewPage(client:ApiClient,original:SubmittedResultView,cursor:string|null,active:()=>boolean,signal?:AbortSignal):Promise<StoredResultReviewPage|null>{
+ const r=structuredClone(original),transport=client.transport,current=()=>active()&&client.transport===transport&&!signal?.aborted;await result(r);if(!current())return null;
+ if(cursor!==null&&(typeof cursor!=='string'||!cursor||cursor.length>4096||new TextEncoder().encode(cursor).length>4096))fail();
+ const path=`/api/v1/projects/${r.snapshot.scope.projectId}/results/${r.ref.id}/review-pages`+(cursor===null?'':'?cursor='+encodeURIComponent(cursor));let response:Response;
+ try{response=await transport.call(globalThis,path,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json'},signal});}catch{if(!current())return null;throw new ApiError('CONNECTION_LOST');}if(!current())return null;
+ let v:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))fail();const reader=response.body?.getReader();if(!reader)fail();let size=0;const chunks:Uint8Array[]=[];try{while(true){if(!current())return null;const part=await reader.read();if(!current())return null;if(part.done)break;size+=part.value.byteLength;if(size>65536)fail();chunks.push(part.value);}const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}v=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}finally{void reader.cancel().catch(()=>{});reader.releaseLock();}}catch(cause){if(!current())return null;if(cause instanceof ApiError)throw cause;fail();}
+ if(!current())return null;if(!response.ok)throw new ApiError(typeof v?.code==='string'&&/^[A-Z_]{1,64}$/.test(v.code)?v.code:'REQUEST_FAILED',response.status);
+ if(!exact(v,['projectId','resultRef','items','hasMore','nextCursor','selectionState','observedAt','pageSize','window'])||v.projectId!==r.snapshot.scope.projectId||!same(v.resultRef,r.ref)||!Array.isArray(v.items)||v.items.length>20||new Set(v.items.map((i:any)=>i.ref?.id)).size!==v.items.length||typeof v.hasMore!=='boolean'||v.hasMore&&v.items.length!==20||v.selectionState!=='NOT_SELECTED'||v.pageSize!==20||!date(v.observedAt)||!exact(v.window,['startedAt','expiresAt'])||!date(v.window.startedAt)||!date(v.window.expiresAt)||Date.parse(v.window.startedAt)>Date.parse(v.observedAt)||Date.parse(v.window.expiresAt)<=Date.parse(v.observedAt)||Date.parse(v.window.expiresAt)>Date.parse(v.window.startedAt)+1800000||(v.hasMore?typeof v.nextCursor!=='string'||!v.nextCursor||v.nextCursor.length>4096||new TextEncoder().encode(v.nextCursor).length>4096:v.nextCursor!==null)||v.items.some((i:any)=>!summary(i,r)||Date.parse(i.reviewedAt)>Date.parse(v.observedAt)||Date.parse(i.reviewedAt)>Date.parse(v.window.startedAt)))fail();
+ if(v.nextCursor!==null)storedReviewRootCursor(v.nextCursor);
+ for(let n=1;n<v.items.length;n++){const a=v.items[n-1],b=v.items[n];if(a.reviewedAt<b.reviewedAt||a.reviewedAt===b.reviewedAt&&a.ref.id<=b.ref.id)fail();}return current()?structuredClone(v):null;
+}
+
+export function storedReviewRootCursor(cursor:string){
+ if(typeof cursor!=='string'||cursor.length>4096||new TextEncoder().encode(cursor).length>4096)fail();const parts=cursor.split('.');if(parts.length!==4||parts.some((p,i)=>!(i%2?/^[a-f0-9]{64}$/:/^[A-Za-z0-9_-]+$/).test(p)))fail();return parts.slice(0,2).join('.');
+}

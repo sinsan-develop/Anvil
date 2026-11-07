@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "status": "DIRECT_USER_APPROVED_REMAINING_SOURCE_AND_SCOPED_REWORK",
+  "questionCallId": "call_fdbf857397d643229bdef3f913d404ee",
+  "questionIndex": 0,
+  "answer": "남은 source 묶음·필수 검수 보완 승인",
+  "packetPath": "docs/work_packages/P03_LIMITED_REMAINING_SOURCE_APPROVAL_PACKET_20261028.md",
+  "packetSha256": "D962DE64196FAAC0AA1CABCD588E4E1AC02DB72DECB499D4181086FF4695B41E",
+  "workInstructionPath": "docs/work_packages/P03_PG_COPY_LIMITED_RISK_SOURCE_WI_20261028.md",
+  "workInstructionSha256": "C0ABA0F2C3F854CAEF52918DCFC4E5563F7AE6E9F77A9513D343DE6F29A70F1B",
+  "allowed": [
+    "scripts/p03-pg-copy-host.ts",
+    "scripts/pg-recovery-copy.sh",
+    "tests/unit/P03/pg-recovery-copy-host.test.ts",
+    "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+    "docs/work_packages/P03_PG_COPY_EXECUTION_PLAN_20261027.md"
+  ],
+  "proposedShellBytes": 54922,
+  "proposedShellSha256": "04FE0C3F958DFE5378F60A99D4EF5422F99C543DB66D24157A73BCBADD375FDC",
+  "proposalHashEvidence": "작성자 메모리 계산값; 실제 저장 후 Main 독립 대조",
+  "priorShellBytes": 35378,
+  "priorShellSha256": "682F141DC23795BA1E00585E43218AE9699C692B6EFDB6BA76D8ECC7CC4F06E7",
+  "preserveAdapterBytes": 5398,
+  "preserveAdapterSha256": "A1FE8953C9C21805F0DBA68B8D8904CEB3CA0FBADF52DC61F0AC9B98DEC3E25D",
+  "preserveStrictCriteria": true,
+  "allowedEffects": [
+    "지정5 안의 남은 source 연결 저장",
+    "동일계약 범위 필수 검수 보완",
+    "실제 cp/PID 신호 없는 합성검증·type·Bash-n"
+  ],
+  "notExecutionGrant": true,
+  "actualExecutionAuthorized": false,
+  "excluded": [
+    "실제cp/PID신호/컨테이너/volume",
+    "실grant작성·소비/실위험수락",
+    "PG/DB/서비스/Secret/Agent",
+    "strict 자동limited전환/기준완화",
+    "임의대상/새helper/설치/권한확대"
+  ]
+}

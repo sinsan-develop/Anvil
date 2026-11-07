@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "workPackage": "FN09_RESPONSIBLE_SESSION_ONE_TIME_APPROVAL",
+  "baseHead": "658951cc5f3e76e2968cf7d77b9113f1874cba01",
+  "branch": "codex/av3-stage-b",
+  "createdAt": "2026-10-27T02:33:34.867Z",
+  "workInstruction": {
+    "path": "docs/work_packages/FN09_RESPONSIBLE_SESSION_ONE_TIME_APPROVAL_IMPLEMENTATION.md",
+    "sha256": "73DD668F29B3F20B3B52F6FC892F4AA84513029E803B800785FDC0764077B447"
+  },
+  "approval": {
+    "kind": "HUMAN_DIRECT_REPLY",
+    "questionId": "call_ecd59c3833a144098f6830a55ecaa65c/0",
+    "scope": "허용18의 코드·화면·미적용 SQL·시험; 실제 DB/정책권한/서비스/Secret/Agent 제외"
+  },
+  "sourceFiles": [
+    {
+      "path": "apps/server/modules/access/project-command.ts",
+      "rawSHA256": "6C35A7226623FAF31208B1A75D333CB28182AB39749791FD6FCE73EE1F4F1C09",
+      "gitBlobSHA256": "6C35A7226623FAF31208B1A75D333CB28182AB39749791FD6FCE73EE1F4F1C09",
+      "gitObjectId": "9f48f9d56a187230109ba1fb3e7a6df6ba6cd35b",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/approval-input.ts",
+      "rawSHA256": "820FA080E30C0CABE17FFB8A509BDA0AF941FB667EB2845436F0F0E30F8A4911",
+      "gitBlobSHA256": "820FA080E30C0CABE17FFB8A509BDA0AF941FB667EB2845436F0F0E30F8A4911",
+      "gitObjectId": "4095e0cd4119d766aedbf95ddcfc53f344d41eae",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/approvals/project-approvals.ts",
+      "rawSHA256": "87DF4E44553F41FD0AAB164115E5B9EDDE9FAC724F8F7CC5E7331447A1716855",
+      "gitBlobSHA256": "87DF4E44553F41FD0AAB164115E5B9EDDE9FAC724F8F7CC5E7331447A1716855",
+      "gitObjectId": "241610379d50227053f8b876d20fee3a4fa8b0e5",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/server/modules/assignments/responsible-sessions.ts",
+      "rawSHA256": "3AA13069F5A40CD2E4C093421969353CE0FE6211C30CCFE95CE9ACE6BD01EF6E",
+      "gitBlobSHA256": "3AA13069F5A40CD2E4C093421969353CE0FE6211C30CCFE95CE9ACE6BD01EF6E",
+      "gitObjectId": "fc6dbadea9d41e8c3669253ec638fc1c8b022c92",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/App.tsx",
+      "rawSHA256": "A57447CCCC007BC85252FFCE21EB8BED82AD10EB8FBB8A6DEC1FDE385141E3F9",
+      "gitBlobSHA256": "D4AAE82B29D6B53066368B69E9FB177F66D6DE5D7BEEC8043F43DF1ACF0C88F4",
+      "gitObjectId": "f69b7959720d1b5a84d2a6b0bd6633daa6132601",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/decisions/ApprovalsPage.tsx",
+      "rawSHA256": "0D8EDD05C5F936A18F9FCF762A9545F64C46E4D10EA0B7BF8C98AEA5A5C86E0D",
+      "gitBlobSHA256": "A76910081005EF3ECE8526E07C86A3A9CCC384EDCB79899FA146230471ECDF77",
+      "gitObjectId": "f4e17cbe22dfd1185e14c8bc2c5d571d88b41813",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/decisions/api.ts",
+      "rawSHA256": "7793206A07C53319944CFCB819B5B9C77BEC60B481529D812F7D03FCEE77D05D",
+      "gitBlobSHA256": "6472E3973F72C875A10D495BEAA50A98ACC6CA90D2F5FA14EF37CA73EC6DC4F9",
+      "gitObjectId": "86b43c565dfad0e827017331086751c168620733",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/workspace/ResponsibleSessionApprovalEditor.tsx",
+      "rawSHA256": "D643F57BA997D25621722C56A95274F5AB00414E8371A0799F3EFD3EF4AFAC3B",
+      "gitBlobSHA256": "A1C93D56442944BE8464E67D32E0A55DD4F664755B1CE74556E0261679EC0A6D",
+      "gitObjectId": "f3a6bf891bb52fffe020edb640005b624c923ef7",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx",
+      "rawSHA256": "0E175A7E97C01508F5D7C40FD3772FAFBED103EAB80A497405ADC37B9DFC978D",
+      "gitBlobSHA256": "0E175A7E97C01508F5D7C40FD3772FAFBED103EAB80A497405ADC37B9DFC978D",
+      "gitObjectId": "d5edcdb884bae0bce8b8ce9a5ff25069298d0f15",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/workspace/responsible-session-api.ts",
+      "rawSHA256": "EF7A791F1D1F5B930FBE9A0481DB5E64C8DBEF4021B9C4C4EE44F9EF86B9076F",
+      "gitBlobSHA256": "EF7A791F1D1F5B930FBE9A0481DB5E64C8DBEF4021B9C4C4EE44F9EF86B9076F",
+      "gitObjectId": "a5948961e08445f68b7ccd7514f2494c996a981e",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "apps/web/src/features/workspace/responsible-session-approval.ts",
+      "rawSHA256": "9B4044004F1766AC61FA822B4F61FE1D5FCAB9C6601031806CCF90F57D37825E",
+      "gitBlobSHA256": "7F7997D69299409D5482A73A75487A251823650D556B5A5B3C271C7AF0FB144E",
+      "gitObjectId": "57fcdd90d9a6050b81a13fb13a4e14bf317d41c9",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "db/migrations/0049_responsible_session_one_time_approval.sql.pending",
+      "rawSHA256": "9AE757B30F78F730124932935A7F6462AD48E538AB1A22D9FA75A2B0AC6A73B0",
+      "gitBlobSHA256": "D64BB24A92E7BCA6A3ECFFA3CF3E92C342722E34E558F5640B417429C8E9EE9E",
+      "gitObjectId": "1d5f1edb2346eeffb9f154a6c8563617f9e9ec33",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/browser/UI04/responsible-session-one-time-approval.spec.ts",
+      "rawSHA256": "7CED62667EC18834FD2FD0B0A3F1DC0014DF98B83E6EF44ABCBA46F20E5CE1CA",
+      "gitBlobSHA256": "0FE056B6FAE1846303BA02B1DD0978CA0915365653DA6F8DB40DF0CBAB20BAEF",
+      "gitObjectId": "7cb1a913c73669bc5fda85cd2d875de85ebf1fb4",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN09/responsible-session-approval-consumption.test.ts",
+      "rawSHA256": "650909D8C3BB0D0532C3C8DFFB115B214ED37B72F1899390B7EB9DECBF87734D",
+      "gitBlobSHA256": "BBFFED21E34498CB318D71012AEAF945FB7EE67A3F95EF519EDAC72BC3353501",
+      "gitObjectId": "8d28ec22522eaf0c2fcdee9966851b15c70fae49",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN09/responsible-session-approval-input.test.ts",
+      "rawSHA256": "C728179CEB1FDC2BC08D9371A1F22BB0D2B2F817EDB1E7A91751091D0C6E3777",
+      "gitBlobSHA256": "249A986E26694E14213D56AFCDC0316BD164226C2A2646EF24EA6798312742BF",
+      "gitObjectId": "5f12ecebd52326aba901c70552a0ebda22ee32b5",
+      "normalization": "CRLF_TO_LF_ONLY"
+    },
+    {
+      "path": "tests/unit/FN09/responsible-sessions.test.ts",
+      "rawSHA256": "2EA77E63E978EFD00B82BC4C289EADA8CEB73D4CC203DCC0E1E5697781271EC7",
+      "gitBlobSHA256": "2EA77E63E978EFD00B82BC4C289EADA8CEB73D4CC203DCC0E1E5697781271EC7",
+      "gitObjectId": "76822292e8a60f7056e31a257f5cc7e12096c592",
+      "normalization": "EXACT"
+    },
+    {
+      "path": "tests/unit/UI04/responsible-session-approval-api.test.ts",
+      "rawSHA256": "E8F74FAB782200D271099268E31D7EA373648A2EFA2F89019C801F6D1FB69132",
+      "gitBlobSHA256": "1A70E77A289E6FB6ECF437B767D5FDF3540DF41D4FCB5A34FCCDB015B3F314D9",
+      "gitObjectId": "08de83356b5934968cdc2de7d302f4a3b4b1e90f",
+      "normalization": "CRLF_TO_LF_ONLY"
+    }
+  ],
+  "unchangedAllowedPaths": [
+    "tests/unit/FN09/responsible-session-web.test.ts"
+  ],
+  "protectedUntracked": [
+    {
+      "path": "apps/server/modules/checkpoints/checkpoint-record.ts",
+      "sha256": "84ADDFF33D4688194FD2640590A6771314D45E10C6C3A27895B83ADFAE91C461"
+    },
+    {
+      "path": "apps/server/modules/checkpoints/project-checkpoints.ts",
+      "sha256": "48B65C94FB40A1B06CBE33FB1ECE938F1EFAC46E76849CD1A347799B832737D0"
+    },
+    {
+      "path": "docs/contracts/FN06_NATIVE_COMPILE_ONLY_CANDIDATE.md",
+      "sha256": "FACFB93816ED7DA02640E86127D9244209E1482C24D9D94219E2FF0F0E9D85B8"
+    },
+    {
+      "path": "tests/unit/FN04/design-change-conversation-source.test.ts",
+      "sha256": "CFB2969C615EC551A5C83515932F262FE1319B44EB24F36EFC76ADD91C0FB6EF"
+    },
+    {
+      "path": "tests/unit/FN10/stage-queue-assignment.test.ts.pending",
+      "sha256": "AE1B34C2A592BCDF232D322C5F2205F240DEBF8C54B21D322D7850B3C86FACB6"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-fixture.ts",
+      "sha256": "78704FA07D67A21F9CC955B11554B00A1C9E4382FC440FA7B997A5A951D3D368"
+    },
+    {
+      "path": "tests/unit/FN13/checkpoint-record.test.ts",
+      "sha256": "02FAFB578D9E2EC6D06D3FF45B13F50A29A6E5055399582F5DFEF09417BB8732"
+    },
+    {
+      "path": "tests/unit/FN13/project-checkpoints.test.ts",
+      "sha256": "489C69E5BB3EACB5A30CE8776A14DD09C708947E6516893EA4C5CE98527891E6"
+    }
+  ],
+  "verification": {
+    "mainFocused": "718c7c: 77 PASS / d652da: 보정후25 PASS",
+    "browser": "4ac30e: FLOW1 PASS; 251dfc: 후속8 PASS; bba002: late-response 보강1 PASS (분리 실행)",
+    "productJsSHA256": "A5F6F218A69B127CB2F59DFBDC2C49226DD713900275E226582405573DF1EC97",
+    "actualSql": "NOT_RUN",
+    "formalDbServiceAgent": "NOT_RUN",
+    "stageAcceptance": "INCOMPLETE"
+  }
+}

@@ -1,0 +1,33 @@
+-- 실제 실행 승인 전 실행하지 않는 미래 phase-only SQL 반례 SOURCE. PG/구문/REDGREEN 모두 NOT_RUN.
+-- 아래 typed row는 완전한 table fixture가 아니다. FK/current·중첩 payload·서명/nonce·단계간전이/CAS/COMMIT를 증명하지 않는다.
+BEGIN;
+DO $$
+DECLARE g anvil.source_content_requests;n anvil.source_content_requests;
+BEGIN
+ g.state='CREATED';g.created_at='2026-10-23T15:00:00.000Z';g.updated_at=g.created_at;g.expires_at=g.created_at+interval '10 minutes';g.exchange_failures=0;
+ ASSERT anvil.source_content_request_phase_shape(g) IS TRUE,'PHASE_CREATED_ONLY';
+ n=g;n.state='ISSUED';ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_ISSUE_WITHOUT_FACTS';
+ n=g;n.updated_at=g.created_at-interval '1 ms';ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_BACKDATED';
+ n=g;n.exchange_failures=1;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_COUNTER_WITHOUT_CHALLENGE';
+ g.state='CHALLENGED';g.updated_at=g.created_at+interval '1 second';g.preflight_json='{}';g.preflight_digest=repeat('a',64);g.challenge_json='{}';g.challenge_issued_at=g.updated_at;g.challenge_expires_at=g.updated_at+interval '60 seconds';
+ ASSERT anvil.source_content_request_phase_shape(g) IS TRUE,'PHASE_CHALLENGED_PROJECTION_ONLY';
+ n=g;n.preflight_json=NULL;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_INCOMPLETE_CHALLENGE';
+ n=g;n.challenge_expires_at=g.challenge_expires_at+interval '1 ms';ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_CHALLENGE_LIMIT';
+ n=g;n.exchange_failures=5;ASSERT anvil.source_content_request_phase_shape(n) IS TRUE,'PHASE_FIFTH_FAILURE';
+ n=g;n.exchange_failures=6;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_SIXTH_FAILURE';
+ g.state='ISSUED';g.updated_at=g.created_at+interval '2 seconds';g.credential_token_digest=repeat('b',64);g.credential_scope='SOURCE_DOCUMENT_CONTENT_HASH_ONLY';g.credential_issued_at=g.updated_at;g.credential_expires_at=g.updated_at+interval '60 seconds';g.proof_signature=repeat('A',86);
+ g.observation_request_ref='{}';g.observation_nonce_digest=repeat('c',64);g.permit_json=jsonb_build_object('issuedAt','2026-10-23T15:00:02.000Z','observeBefore','2026-10-23T15:01:02.000Z');
+ ASSERT anvil.source_content_request_phase_shape(g) IS TRUE,'PHASE_ISSUED_PROJECTION_ONLY';
+ n=g;n.proof_signature=NULL;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_MISSING_PROOF';
+ n=g;n.exchange_failures=5;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_ISSUE_AFTER_LIMIT';
+ n=g;n.permit_json=jsonb_set(n.permit_json,'{observeBefore}','"2026-10-23T15:01:02.001Z"');ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_OBSERVE_LIMIT';
+ g.state='REPORTED';g.updated_at=g.created_at+interval '3 seconds';g.report_consumed_at=g.updated_at;g.report_consumed_command_id='74000000-0000-4000-8000-000000000001';
+ ASSERT anvil.source_content_request_phase_shape(g) IS TRUE,'PHASE_REPORTED_PROJECTION_ONLY';
+ n=g;n.report_consumed_at=NULL;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_REPORT_PAIR';
+ n=g;n.updated_at=g.credential_expires_at;n.report_consumed_at=n.updated_at;ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_CONSUME_AFTER_EXPIRY';
+ n=g;n.state='REVOKED';ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_REVOKE_WITHOUT_FACTS';
+ n=g;n.state='REVOKED';n.revoked_at=g.updated_at;n.revoke_command_id='74000000-0000-4000-8000-000000000002';ASSERT anvil.source_content_request_phase_shape(n) IS TRUE,'PHASE_REVOKED_PRESERVES_CONSUMPTION';
+ n=g;n.state='EXPIRED';ASSERT anvil.source_content_request_phase_shape(n) IS FALSE,'PHASE_EARLY_EXPIRED';
+ n=g;n.state='EXPIRED';n.updated_at=g.credential_expires_at;ASSERT anvil.source_content_request_phase_shape(n) IS TRUE,'PHASE_EXPIRED_PRESERVES_CONSUMPTION';
+END;$$;
+ROLLBACK;

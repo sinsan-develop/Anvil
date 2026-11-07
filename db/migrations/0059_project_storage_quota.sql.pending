@@ -1,0 +1,368 @@
+-- 저장량·지속예약 A / 미적용 forward. 실제 PostgreSQL·GRANT·FS 검증은 NOT_RUN.
+-- 기존 프로젝트 backfill/usage=0 초기화 및 UNKNOWN 자동 해제는 하지 않는다.
+CREATE TABLE anvil.project_storage_accounts(
+ project_id uuid PRIMARY KEY REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ schema_version integer NOT NULL CHECK(schema_version=1),coverage_state text NOT NULL CHECK(coverage_state IN('UNVERIFIED','VERIFIED')),
+ creation_intent_id uuid NOT NULL UNIQUE REFERENCES anvil.draft_creation_intents(id) ON DELETE RESTRICT,
+ creation_command_id uuid NOT NULL UNIQUE REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ initial_manifest_json jsonb NOT NULL CHECK(jsonb_typeof(initial_manifest_json)='object'),
+ initial_manifest_hash text NOT NULL CHECK(initial_manifest_hash~'^[0-9a-f]{64}$'),
+ used_bytes bigint NOT NULL CHECK(used_bytes BETWEEN 0 AND 10737418240),
+ held_bytes bigint NOT NULL CHECK(held_bytes BETWEEN 0 AND 10737418240),
+ generation bigint NOT NULL CHECK(generation BETWEEN 1 AND 9007199254740991),
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(),updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ CHECK(used_bytes+held_bytes<=10737418240)
+);
+CREATE TABLE anvil.project_storage_reservations(
+ id uuid PRIMARY KEY,project_id uuid NOT NULL REFERENCES anvil.project_storage_accounts(project_id) ON DELETE RESTRICT,
+ actor_id uuid NOT NULL,client_id uuid NOT NULL,external_command_id uuid NOT NULL,
+ operation text NOT NULL CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject')),
+ command_hash text NOT NULL CHECK(command_hash~'^[0-9a-f]{64}$'),
+ part_key text NOT NULL CHECK(part_key~'^[A-Za-z0-9_-]{1,64}$'),part_kind text NOT NULL CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION')),
+ plan_json jsonb NOT NULL CHECK(jsonb_typeof(plan_json)='object'),plan_hash text NOT NULL CHECK(plan_hash~'^[0-9a-f]{64}$'),
+ reserved_bytes bigint NOT NULL CHECK(reserved_bytes BETWEEN 0 AND 10737418240),settled_bytes bigint NOT NULL CHECK(settled_bytes BETWEEN 0 AND reserved_bytes),
+ phase text NOT NULL CHECK(phase IN('RESERVED','IO_STARTED','SETTLED','CANCELLED','UNKNOWN')),
+ start_fence bigint NOT NULL DEFAULT 0 CHECK(start_fence BETWEEN 0 AND 1),authorized_until timestamptz NOT NULL,
+ server_command_id uuid REFERENCES anvil.commands(id) ON DELETE RESTRICT,
+ authorization_receipt_id uuid REFERENCES anvil.authorization_receipts(id) ON DELETE RESTRICT,
+ scope_digest text CHECK(scope_digest~'^[0-9a-f]{64}$'),
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(),started_at timestamptz,settled_at timestamptz,
+ FOREIGN KEY(actor_id,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ UNIQUE(project_id,actor_id,external_command_id,part_key),
+ CHECK((phase='SETTLED')=(server_command_id IS NOT NULL AND authorization_receipt_id IS NOT NULL AND scope_digest IS NOT NULL AND settled_at IS NOT NULL)),
+ CHECK((start_fence=0 AND started_at IS NULL AND phase IN('RESERVED','CANCELLED')) OR(start_fence=1 AND started_at IS NOT NULL AND phase IN('IO_STARTED','SETTLED','UNKNOWN'))),
+ CHECK(phase='SETTLED' OR settled_bytes=0)
+);
+REVOKE ALL ON anvil.project_storage_accounts,anvil.project_storage_reservations FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.quota_error(message text) RETURNS void LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION '%',message USING ERRCODE='P0001';END;$$;
+CREATE FUNCTION anvil.quota_decimal(v jsonb) RETURNS numeric LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'string' OR (v#>>'{}')!~'^(0|[1-9][0-9]{0,18})$' THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INPUT_INVALID';END IF;
+ IF (v#>>'{}')::numeric>9223372036854775807 THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INPUT_INVALID';END IF;
+ RETURN (v#>>'{}')::numeric;
+END;$$;
+-- bool/GUC는 인증·coverage 권위가 아니다. 고정 실세션·현재 프로젝트/정책을 잠근다.
+CREATE FUNCTION anvil.quota_current(s uuid,a uuid,c uuid,p uuid,q jsonb) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE pv anvil.permission_policy_versions%ROWTYPE;pc anvil.project_control%ROWTYPE;m anvil.project_members%ROWTYPE;rule jsonb;matched boolean=false;approval boolean=false;
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ PERFORM id FROM anvil.projects WHERE id=p AND archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN PERFORM anvil.quota_error('NOT_FOUND');END IF;
+ SELECT * INTO m FROM anvil.project_members WHERE project_id=p AND user_id=a AND revoked_at IS NULL FOR UPDATE;
+ SELECT * INTO pc FROM anvil.project_control WHERE project_id=p FOR UPDATE;
+ IF m.participation IS DISTINCT FROM 'OWNER' OR pc.actor_id IS DISTINCT FROM a OR pc.client_id IS DISTINCT FROM c OR pc.revoked_at IS NOT NULL THEN PERFORM anvil.quota_error('PROJECT_WRITE_DENIED');END IF;
+ IF NOT anvil.checkpoint_keys(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text OR jsonb_typeof(q->'controlGeneration') IS DISTINCT FROM 'number' OR q->>'controlGeneration' IS DISTINCT FROM pc.generation::text OR jsonb_typeof(q->'operation') IS DISTINCT FROM 'string' OR q->>'operation' NOT IN('uploadArtifact','proposeDocumentChange','saveCheckpoint') THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ SELECT v.* INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=p FOR SHARE OF h;
+ IF pv.policy_id IS NULL OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN PERFORM anvil.quota_error('POLICY_INTEGRITY_FAILED');END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',a) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p)) AND rule->'operations' ? (q->>'operation') AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF jsonb_typeof(rule->'disposition') IS DISTINCT FROM 'string' OR rule->>'disposition'='DENY' OR rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') THEN PERFORM anvil.quota_error('PROJECT_OPERATION_DENIED');END IF;
+   matched=true;approval=approval OR rule->>'disposition'='REQUIRE_APPROVAL';
+  END IF;
+ END LOOP;
+ IF NOT matched THEN PERFORM anvil.quota_error('PROJECT_OPERATION_DENIED');END IF;
+ IF approval THEN
+  IF q->>'operation'='saveCheckpoint' THEN PERFORM anvil.quota_error('CHECKPOINT_APPROVAL_NOT_CONNECTED');END IF;
+  IF NOT EXISTS(SELECT 1 FROM anvil.approval_requests r JOIN anvil.approval_decisions d ON d.project_id=r.project_id AND d.request_id=r.id
+   WHERE r.project_id=p AND r.id::text=q->'approvalRef'->>'requestId' AND d.id::text=q->'approvalRef'->>'decisionId' AND d.decision='APPROVE' AND ((r.status='APPROVED' AND r.version=2 AND r.expires_at>clock_timestamp() AND NOT EXISTS(SELECT 1 FROM anvil.approval_consumptions ac WHERE ac.decision_id=d.id)) OR(r.status='CONSUMED' AND r.version=3 AND EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.commands used ON used.id=ac.command_id AND used.project_id=ac.project_id WHERE ac.project_id=p AND ac.decision_id=d.id AND used.actor_id=a AND used.client_id=c AND used.command_id::text=q->>'commandId' AND used.request_hash=anvil.fn01_hash(q) AND used.approval_consumption_id=ac.id AND used.state='APPLIED')))
+   AND r.created_by=a AND r.client_id=c AND r.candidate_command_id::text=q->>'commandId' AND r.scope_digest=q->'approvalRef'->>'scopeDigest' AND d.scope_digest=r.scope_digest
+   AND r.scope_digest=anvil.fn01_hash(r.action_scope_json) AND r.action_scope_json->>'operation'=q->>'operation' AND r.action_scope_json->>'payloadHash'=anvil.fn01_hash(q->'payload')
+   AND r.action_scope_json->'expectedVersion'=q->'expectedVersion' AND r.action_scope_json->'controlGeneration'=q->'controlGeneration' AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',a,'clientId',c) AND r.action_scope_json->'baselineRefs'=q->'baselineRefs' AND r.action_scope_json->'environmentRef'='null'::jsonb AND r.action_scope_json->'sourceScopes'='[]'::jsonb AND r.action_scope_json->'limitsRef'='null'::jsonb AND COALESCE(r.action_scope_json->'targetRef'->>'id','')=COALESCE(q->>'targetId','') AND r.policy_ref=jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash)
+   ) THEN PERFORM anvil.quota_error('APPROVAL_NOT_USABLE');END IF;
+ ELSE IF q->'approvalRef' IS DISTINCT FROM 'null'::jsonb THEN PERFORM anvil.quota_error('APPROVAL_NOT_REQUIRED');END IF;END IF;
+END;$$;
+CREATE FUNCTION anvil.quota_account(s uuid,a uuid,c uuid,p uuid) RETURNS TABLE(coverage_state text,generation text,used_bytes text,held_bytes text) LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ PERFORM p0.id FROM anvil.projects p0 JOIN anvil.project_members m ON m.project_id=p0.id WHERE p0.id=p AND m.user_id=a AND m.revoked_at IS NULL AND m.participation='OWNER' AND p0.archived_at IS NULL FOR UPDATE OF p0,m;
+ IF NOT FOUND THEN PERFORM anvil.quota_error('NOT_FOUND');END IF;
+ RETURN QUERY SELECT x.coverage_state,x.generation::text,x.used_bytes::text,x.held_bytes::text FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
+END;$$;
+CREATE FUNCTION anvil.quota_plan_valid(p jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE x jsonb;b numeric;r numeric;z numeric;
+BEGIN
+ IF NOT anvil.checkpoint_keys(p,ARRAY['request','actorId','parts','commandHash','policyRef','authorizedUntil','replay','planHash']) OR p->'replay' IS DISTINCT FROM 'false'::jsonb OR jsonb_typeof(p->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(p->'parts')<>1 OR jsonb_typeof(p->'planHash') IS DISTINCT FROM 'string' OR p->>'planHash' IS DISTINCT FROM anvil.fn01_hash(p-'planHash') OR p->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(p->'request') THEN RETURN false;END IF;
+ x=p->'parts'->0;
+ IF NOT anvil.checkpoint_keys(x,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']) OR jsonb_typeof(x->'key') IS DISTINCT FROM 'string' OR x->>'key'!~'^[A-Za-z0-9_-]{1,64}$' OR jsonb_typeof(x->'id') IS DISTINCT FROM 'string' OR x->>'id'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' OR jsonb_typeof(x->'contentHash') IS DISTINCT FROM 'string' OR x->>'contentHash'!~'^[0-9a-f]{64}$' THEN RETURN false;END IF;
+ b=anvil.quota_decimal(x->'bytes');r=anvil.quota_decimal(x->'reservedBytes');z=anvil.quota_decimal(x->'settledBytes');
+ IF p->'request'->>'operation'='uploadArtifact' AND (jsonb_typeof(p->'request'->'payload'->'bytes') IS DISTINCT FROM 'number' OR p->'request'->'payload'->>'bytes' IS DISTINCT FROM x->>'bytes' OR p->'request'->'payload'->>'contentHash' IS DISTINCT FROM x->>'contentHash') THEN RETURN false;END IF;
+ RETURN COALESCE((x->>'kind'='ARTIFACT' AND p->'request'->>'operation' IN('uploadArtifact','proposeDocumentChange') AND b<=20971520 AND r=2*b AND z=b) OR(x->>'kind'='CHECKPOINT' AND p->'request'->>'operation'='saveCheckpoint' AND b<=2097152 AND r=b AND z=b),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.quota_rows(p uuid,a uuid,e uuid) RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT COALESCE(jsonb_agg(to_jsonb(r)||jsonb_build_object('reserved_bytes',r.reserved_bytes::text,'settled_bytes',r.settled_bytes::text,'start_fence',r.start_fence::text,'generation',r.plan_json->>'coverageGeneration') ORDER BY r.part_key),'[]'::jsonb)
+ FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.actor_id=a AND r.external_command_id=e;
+$$;
+-- 동일 원명령 RESERVED 재확인만 허용한다. 원래 기한/part를 새 명령으로 바꾸지 않는다.
+CREATE FUNCTION anvil.quota_existing(s uuid,a uuid,c uuid,p uuid,q jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;r anvil.project_storage_reservations%ROWTYPE;n bigint;v jsonb;pv jsonb;cmd anvil.commands%ROWTYPE;
+BEGIN
+ PERFORM anvil.quota_current(s,a,c,p,q);
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ SELECT count(*) INTO n FROM anvil.project_storage_reservations WHERE project_id=p AND actor_id=a AND external_command_id=(q->>'commandId')::uuid;
+ SELECT * INTO cmd FROM anvil.commands WHERE scope_kind='PROJECT' AND project_id=p AND actor_id=a AND command_id=(q->>'commandId')::uuid;
+ IF cmd.id IS NOT NULL AND (cmd.state IS DISTINCT FROM 'APPLIED' OR cmd.operation IS DISTINCT FROM q->>'operation' OR cmd.client_id IS DISTINCT FROM c OR cmd.request_hash IS DISTINCT FROM anvil.fn01_hash(q)) THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF n=0 THEN
+  IF cmd.id IS NOT NULL AND ac.coverage_state='VERIFIED' THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+  RETURN NULL;
+ END IF;
+ IF n<>1 THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ SELECT * INTO r FROM anvil.project_storage_reservations WHERE project_id=p AND actor_id=a AND external_command_id=(q->>'commandId')::uuid ORDER BY part_key FOR UPDATE;
+ IF r.client_id IS DISTINCT FROM c OR r.command_hash IS DISTINCT FROM anvil.fn01_hash(q) OR r.operation IS DISTINCT FROM q->>'operation' THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF cmd.id IS NOT NULL THEN
+  IF r.phase IS DISTINCT FROM 'SETTLED' OR r.server_command_id IS DISTINCT FROM cmd.id OR NOT anvil.quota_plan_valid(r.plan_json-'coverageGeneration') OR NOT anvil.quota_settled_complete(r) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+  RETURN jsonb_build_object('replay',true);
+ END IF;
+ IF r.phase IN('IO_STARTED','UNKNOWN','SETTLED') THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN');END IF;
+ IF r.phase<>'RESERVED' OR r.start_fence<>0 OR r.started_at IS NOT NULL THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF ac.project_id IS NULL OR ac.coverage_state<>'VERIFIED' OR ac.generation::text IS DISTINCT FROM r.plan_json->>'coverageGeneration' THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_UNVERIFIED');END IF;
+ v=r.plan_json-'coverageGeneration';
+ SELECT jsonb_build_object('id',h.id,'version',h.head_version,'contentHash',z.content_hash) INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions z ON z.project_id=h.project_id AND z.policy_id=h.id AND z.version=h.head_version WHERE h.project_id=p;
+ IF NOT anvil.quota_plan_valid(v) OR v->'request' IS DISTINCT FROM q OR v->>'planHash' IS DISTINCT FROM r.plan_hash OR v->>'actorId' IS DISTINCT FROM a::text OR v->'policyRef' IS DISTINCT FROM pv OR v->'parts'->0->>'key' IS DISTINCT FROM r.part_key OR v->'parts'->0->>'kind' IS DISTINCT FROM r.part_kind OR anvil.quota_decimal(v->'parts'->0->'reservedBytes') IS DISTINCT FROM r.reserved_bytes OR (v->>'authorizedUntil')::timestamptz IS DISTINCT FROM r.authorized_until THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ IF r.authorized_until<=clock_timestamp() THEN PERFORM anvil.quota_error('PROJECT_STORAGE_CURRENT_REQUIRED');END IF;
+ RETURN v;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.quota_existing(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.quota_existing(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+CREATE FUNCTION anvil.quota_reserve(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;old anvil.project_storage_reservations%ROWTYPE;x jsonb;amount bigint;pv jsonb;
+BEGIN
+ IF NOT anvil.quota_plan_valid(v) OR v->>'actorId' IS DISTINCT FROM a::text THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ PERFORM anvil.quota_current(s,a,c,p,v->'request');
+ IF (v->>'authorizedUntil')::timestamptz<=clock_timestamp() THEN PERFORM anvil.quota_error('PROJECT_STORAGE_CURRENT_REQUIRED');END IF;
+ SELECT jsonb_build_object('id',h.id,'version',h.head_version,'contentHash',z.content_hash) INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions z ON z.project_id=h.project_id AND z.policy_id=h.id AND z.version=h.head_version WHERE h.project_id=p;
+ IF pv IS DISTINCT FROM v->'policyRef' THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands cmd WHERE cmd.project_id=p AND cmd.actor_id=a AND cmd.command_id::text=v->'request'->>'commandId') THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF ac.project_id IS NULL OR ac.coverage_state<>'VERIFIED' THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_UNVERIFIED');END IF;
+ SELECT * INTO old FROM anvil.project_storage_reservations WHERE project_id=p AND actor_id=a AND external_command_id=(v->'request'->>'commandId')::uuid FOR UPDATE;
+ IF old.id IS NOT NULL THEN
+  IF old.client_id IS DISTINCT FROM c OR old.command_hash IS DISTINCT FROM v->>'commandHash' OR old.plan_hash IS DISTINCT FROM v->>'planHash' OR old.phase IS DISTINCT FROM 'RESERVED' OR old.plan_json->>'coverageGeneration' IS DISTINCT FROM ac.generation::text THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+  RETURN anvil.quota_rows(p,a,old.external_command_id);
+ END IF;
+ x=v->'parts'->0;amount=anvil.quota_decimal(x->'reservedBytes');
+ IF ac.used_bytes+ac.held_bytes+amount>10737418240 THEN PERFORM anvil.quota_error('PROJECT_STORAGE_LIMIT_EXCEEDED');END IF;
+ INSERT INTO anvil.project_storage_reservations(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until)
+ VALUES(gen_random_uuid(),p,a,c,(v->'request'->>'commandId')::uuid,v->'request'->>'operation',v->>'commandHash',x->>'key',x->>'kind',v||jsonb_build_object('coverageGeneration',ac.generation::text),v->>'planHash',amount,0,'RESERVED',0,(v->>'authorizedUntil')::timestamptz);
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes+amount,updated_at=clock_timestamp() WHERE project_id=p;
+ RETURN anvil.quota_rows(p,a,(v->'request'->>'commandId')::uuid);
+END;$$;
+CREATE FUNCTION anvil.quota_check_bundle(s uuid,a uuid,c uuid,p uuid,v jsonb,expected_phase text) RETURNS anvil.project_storage_reservations LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;r anvil.project_storage_reservations%ROWTYPE;
+BEGIN
+ PERFORM anvil.quota_current(s,a,c,p,v->'request');
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF ac.project_id IS NULL OR ac.coverage_state<>'VERIFIED' THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_UNVERIFIED');END IF;
+ IF jsonb_typeof(v->'ids') IS DISTINCT FROM 'array' OR jsonb_array_length(v->'ids')<>1 THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ SELECT * INTO r FROM anvil.project_storage_reservations WHERE id=(v->'ids'->>0)::uuid AND project_id=p FOR UPDATE;
+ IF r.id IS NULL OR r.actor_id IS DISTINCT FROM a OR r.client_id IS DISTINCT FROM c OR r.external_command_id::text IS DISTINCT FROM v->'request'->>'commandId' OR r.command_hash IS DISTINCT FROM anvil.fn01_hash(v->'request') OR r.plan_hash IS DISTINCT FROM v->>'planHash' OR r.phase IS DISTINCT FROM expected_phase OR r.plan_json->>'coverageGeneration' IS DISTINCT FROM ac.generation::text THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN');END IF;
+ IF r.plan_json->'policyRef' IS DISTINCT FROM (SELECT jsonb_build_object('id',h.id,'version',h.head_version,'contentHash',pv.content_hash) FROM anvil.permission_policies h JOIN anvil.permission_policy_versions pv ON pv.project_id=h.project_id AND pv.policy_id=h.id AND pv.version=h.head_version WHERE h.project_id=p) THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF r.authorized_until<=clock_timestamp() THEN PERFORM anvil.quota_error('PROJECT_STORAGE_CURRENT_REQUIRED');END IF;
+ IF expected_phase='IO_STARTED' AND (v->'fences' IS DISTINCT FROM jsonb_build_array(r.start_fence::text) OR r.start_fence<>1) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN');END IF;
+ RETURN r;
+END;$$;
+CREATE FUNCTION anvil.quota_start(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations%ROWTYPE;
+BEGIN
+ r=anvil.quota_check_bundle(s,a,c,p,v,'RESERVED');
+ UPDATE anvil.project_storage_reservations SET phase='IO_STARTED',start_fence=1,started_at=clock_timestamp() WHERE id=r.id AND phase='RESERVED' AND start_fence=0;
+ IF NOT FOUND THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN');END IF;
+ RETURN anvil.quota_rows(p,a,r.external_command_id);
+END;$$;
+CREATE FUNCTION anvil.quota_require_started(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN PERFORM anvil.quota_check_bundle(s,a,c,p,v,'IO_STARTED');RETURN true;END;$$;
+-- 원장 정산은 현재 효력 검사가 아닌 과거 원자료 완결 검사에도 재사용한다.
+-- 초기 coverage는 새 생성 intent/PROJECT 명령/선택/adoption의 불변 계보에만 귀속된다.
+CREATE FUNCTION anvil.quota_creation_complete(p uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;i anvil.draft_creation_intents%ROWTYPE;c anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;ref jsonb;item jsonb;b anvil.artifacts%ROWTYPE;ad anvil.draft_artifact_adoptions%ROWTYPE;n bigint;total numeric=0;manifest jsonb;
+BEGIN
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p;
+ SELECT * INTO i FROM anvil.draft_creation_intents WHERE id=ac.creation_intent_id;
+ SELECT * INTO c FROM anvil.commands WHERE id=ac.creation_command_id AND project_id=p;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id AND scope_kind='PROJECT' AND scope_id=p;
+ IF ac.project_id IS NULL OR i.id IS NULL OR c.id IS NULL OR ar.id IS NULL OR i.state IS DISTINCT FROM 'COMMITTED' OR i.target_project_id IS DISTINCT FROM p OR i.project_command_id IS DISTINCT FROM c.id OR c.operation IS DISTINCT FROM 'createProject' OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM p OR c.state IS DISTINCT FROM 'APPLIED' OR c.command_id IS DISTINCT FROM i.external_command_id OR c.actor_id IS DISTINCT FROM i.actor_id OR c.client_id IS DISTINCT FROM i.client_id OR c.request_hash IS DISTINCT FROM i.request_hash OR c.request_hash IS DISTINCT FROM anvil.fn01_hash(i.request_json) OR c.expected_version<>0 OR c.control_generation<>1 OR c.policy_ref IS NOT NULL OR c.approval_consumption_id IS NOT NULL OR c.result_ref IS NULL OR c.result_ref IS DISTINCT FROM i.result_json OR ar.approval_decision_ref IS NOT NULL OR ar.policy_ref IS NOT NULL OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',i.actor_id,'clientId',i.client_id) THEN RETURN false;END IF;
+ manifest=ac.initial_manifest_json;
+ IF NOT anvil.checkpoint_keys(manifest,ARRAY['schemaVersion','projectId','creationId','artifactRefs','bytes']) OR manifest->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR manifest->>'projectId' IS DISTINCT FROM p::text OR manifest->>'creationId' IS DISTINCT FROM i.id::text OR manifest->'artifactRefs' IS DISTINCT FROM i.refs_json OR ac.initial_manifest_hash IS DISTINCT FROM anvil.fn01_hash(manifest) THEN RETURN false;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.draft_artifact_selection_versions v WHERE v.draft_id=i.draft_id AND v.draft_version=i.expected_version AND v.refs_json=i.refs_json AND v.snapshot_hash=i.selection_hash) OR NOT EXISTS(SELECT 1 FROM anvil.fn01_project_quota q WHERE q.project_id=p AND q.creation_intent_id=i.id AND q.reserved_bytes=anvil.quota_decimal(manifest->'bytes')) THEN RETURN false;END IF;
+ ref=jsonb_build_object('id',p,'version',1);
+ IF ar.scope_digest IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('operation','createProject','draftId',i.draft_id,'draftVersion',i.expected_version,'projectId',p,'actorId',i.actor_id,'clientId',i.client_id,'requestHash',i.request_hash)) THEN RETURN false;END IF;
+ SELECT count(*) INTO n FROM anvil.audit_events e WHERE e.project_id=p AND e.server_sequence=1 AND e.command_id=c.id AND e.operation_id=c.operation_id AND e.target_ref=ref AND e.source_kind='HUMAN_COMMAND' AND e.outcome='APPLIED' AND e.scope_digest=ar.scope_digest AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',i.actor_id) AND e.client_ref=i.client_id;
+ IF n<>1 OR NOT EXISTS(SELECT 1 FROM anvil.commands d JOIN anvil.authorization_receipts da ON da.command_id=d.id AND da.id=d.authorization_receipt_id AND da.scope_kind='DRAFT' AND da.scope_id=i.draft_id JOIN anvil.draft_audit_events de ON de.command_id=d.id AND de.draft_id=i.draft_id AND de.operation='createProject' AND de.outcome='APPLIED' WHERE d.draft_id=i.draft_id AND d.actor_id=i.actor_id AND d.client_id=i.client_id AND d.command_id=i.external_command_id AND d.operation='createProject' AND d.request_hash=i.request_hash AND d.state='APPLIED' AND d.result_ref=i.result_json) THEN RETURN false;END IF;
+ IF (SELECT count(*) FROM anvil.draft_artifact_adoptions WHERE creation_intent_id=i.id)<>jsonb_array_length(i.refs_json) OR (SELECT count(*) FROM anvil.project_storage_reservations WHERE project_id=p AND operation='createProject' AND part_kind='ADOPTION')<>jsonb_array_length(i.refs_json) THEN RETURN false;END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(i.refs_json) LOOP
+  SELECT * INTO b FROM anvil.artifacts WHERE id=(item->>'artifactId')::uuid AND project_id=p;
+  SELECT * INTO ad FROM anvil.draft_artifact_adoptions WHERE artifact_id=b.id AND creation_intent_id=i.id;
+  IF b.id IS NULL OR ad.artifact_id IS NULL OR b.draft_id IS NOT NULL OR b.state IS DISTINCT FROM 'READY' OR anvil.fn01_ref(b) IS DISTINCT FROM item OR ad.ref_json IS DISTINCT FROM item OR ad.create_command_id IS DISTINCT FROM c.id OR ad.original_command_id IS DISTINCT FROM b.command_id OR ad.project_id IS DISTINCT FROM p OR ad.draft_id IS DISTINCT FROM i.draft_id OR ad.draft_version IS DISTINCT FROM i.expected_version OR ad.actor_id IS DISTINCT FROM i.actor_id OR ad.client_id IS DISTINCT FROM i.client_id OR b.storage_key IS DISTINCT FROM ad.target_key OR ad.target_key IS DISTINCT FROM 'blobs/'||p::text||'/'||b.id::text THEN RETURN false;END IF;
+  PERFORM anvil.fn01_assert_upload_provenance(ad.upload_intent_id);
+  IF NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.operation='createProject' AND r.part_kind='ADOPTION' AND r.phase='SETTLED' AND r.server_command_id=c.id AND r.authorization_receipt_id=ar.id AND r.scope_digest=ar.scope_digest AND r.external_command_id=i.external_command_id AND r.command_hash=i.request_hash AND r.actor_id=i.actor_id AND r.client_id=i.client_id AND r.reserved_bytes=b.bytes AND r.settled_bytes=b.bytes AND r.plan_json->'parts'->0->>'id'=b.id::text AND r.plan_json->'parts'->0->>'contentHash'=b.content_hash AND r.plan_json->'parts'->0->>'bytes'=b.bytes::text) THEN RETURN false;END IF;
+  total=total+b.bytes;
+ END LOOP;
+ RETURN total=anvil.quota_decimal(manifest->'bytes') AND total<=10737418240;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.quota_adoption_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;x jsonb;c anvil.commands%ROWTYPE;
+BEGIN
+ IF NOT anvil.quota_creation_complete(r.project_id) THEN RETURN false;END IF;
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=r.project_id;
+ SELECT * INTO c FROM anvil.commands WHERE id=ac.creation_command_id;x=r.plan_json->'parts'->0;
+ RETURN COALESCE(r.phase='SETTLED' AND r.start_fence=1 AND r.server_command_id=c.id AND r.command_hash=c.request_hash AND r.external_command_id=c.command_id AND r.actor_id=c.actor_id AND r.client_id=c.client_id AND r.plan_hash=anvil.fn01_hash(r.plan_json-'coverageGeneration') AND r.plan_json->>'creationId'=ac.creation_intent_id::text AND r.part_key=x->>'key' AND x->>'kind'='ADOPTION' AND r.reserved_bytes=anvil.quota_decimal(x->'reservedBytes') AND r.settled_bytes=anvil.quota_decimal(x->'settledBytes'),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.quota_settled_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cmd anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;x jsonb;target jsonb;n bigint;
+BEGIN
+ IF r.part_kind='ADOPTION' THEN RETURN anvil.quota_adoption_complete(r);END IF;
+ IF r.phase<>'SETTLED' OR NOT anvil.quota_plan_valid(r.plan_json-'coverageGeneration') OR r.plan_hash IS DISTINCT FROM r.plan_json->>'planHash' OR r.command_hash IS DISTINCT FROM r.plan_json->>'commandHash' OR r.project_id::text IS DISTINCT FROM r.plan_json->'request'->>'projectId' OR r.actor_id::text IS DISTINCT FROM r.plan_json->>'actorId' OR r.client_id::text IS DISTINCT FROM r.plan_json->'request'->>'clientId' THEN RETURN false;END IF;
+ SELECT * INTO cmd FROM anvil.commands WHERE id=r.server_command_id AND project_id=r.project_id;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=r.authorization_receipt_id AND command_id=cmd.id AND scope_kind='PROJECT' AND scope_id=r.project_id;
+ IF cmd.id IS NULL OR ar.id IS NULL OR cmd.scope_kind IS DISTINCT FROM 'PROJECT' OR cmd.scope_id IS DISTINCT FROM r.project_id OR cmd.state IS DISTINCT FROM 'APPLIED' OR cmd.operation IS DISTINCT FROM r.operation OR cmd.actor_id IS DISTINCT FROM r.actor_id OR cmd.client_id IS DISTINCT FROM r.client_id OR cmd.command_id IS DISTINCT FROM r.external_command_id OR cmd.request_hash IS DISTINCT FROM r.command_hash OR cmd.authorization_receipt_id IS DISTINCT FROM ar.id OR ar.scope_digest IS DISTINCT FROM r.scope_digest OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',r.actor_id,'clientId',r.client_id) OR ar.policy_ref IS DISTINCT FROM cmd.policy_ref OR r.plan_json->'policyRef' IS DISTINCT FROM cmd.policy_ref THEN RETURN false;END IF;
+ x=r.plan_json->'parts'->0;
+ IF r.part_key IS DISTINCT FROM x->>'key' OR r.part_kind IS DISTINCT FROM x->>'kind' OR r.reserved_bytes IS DISTINCT FROM anvil.quota_decimal(x->'reservedBytes') THEN RETURN false;END IF;
+ IF r.part_kind='ARTIFACT' THEN
+  IF NOT EXISTS(SELECT 1 FROM anvil.artifacts b WHERE b.project_id=r.project_id AND b.id::text=x->>'id' AND b.command_id=cmd.id AND b.bytes=anvil.quota_decimal(x->'bytes') AND b.content_hash=x->>'contentHash' AND b.storage_key='blobs/'||r.project_id::text||'/'||b.id::text AND b.state IN('READY','QUARANTINED')) THEN RETURN false;END IF;
+  IF r.operation='uploadArtifact' THEN target=cmd.result_ref->'data'->'artifactRef';IF target->>'artifactId' IS DISTINCT FROM x->>'id' OR target->>'bytes' IS DISTINCT FROM x->>'bytes' OR target->>'contentHash' IS DISTINCT FROM x->>'contentHash' THEN RETURN false;END IF;
+  ELSE
+   IF NOT EXISTS(SELECT 1 FROM anvil.document_proposals dp WHERE dp.project_id=r.project_id AND dp.command_id=cmd.id AND dp.diff_artifact_id::text=x->>'id' AND dp.proposal_json=cmd.result_ref->'data'->'proposal') THEN RETURN false;END IF;
+   target=cmd.result_ref->'data'->'proposal'->'baseRef';
+  END IF;
+ ELSE IF r.part_kind='CHECKPOINT' THEN
+  IF NOT EXISTS(SELECT 1 FROM anvil.checkpoint_records k WHERE k.project_id=r.project_id AND k.command_id=cmd.id AND k.id::text=x->>'id' AND k.snapshot_json->>'preparedHash'=x->>'contentHash' AND k.content_hash=anvil.checkpoint_hash(k.snapshot_json) AND octet_length(anvil.checkpoint_canonical(k.snapshot_json))+octet_length(k.record_text)=anvil.quota_decimal(x->'bytes') AND anvil.checkpoint_complete(cmd.id)) THEN RETURN false;END IF;
+  target=cmd.result_ref->'data'->'ref';
+ ELSE RETURN false;END IF;END IF;
+ IF r.settled_bytes IS DISTINCT FROM anvil.quota_decimal(x->'settledBytes') OR cmd.result_ref->>'commandId' IS DISTINCT FROM cmd.command_id::text OR cmd.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR cmd.result_ref->>'projectId' IS DISTINCT FROM r.project_id::text OR cmd.result_ref->>'operationId' IS DISTINCT FROM cmd.operation_id::text THEN RETURN false;END IF;
+ IF ar.scope_digest IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('projectId',r.project_id,'actorId',r.actor_id,'clientId',r.client_id,'controlGeneration',cmd.control_generation,'requestHash',cmd.request_hash,'policyRef',cmd.policy_ref,'targetRef',target)) THEN RETURN false;END IF;
+ SELECT count(*) INTO n FROM anvil.audit_events e WHERE e.project_id=r.project_id AND e.command_id=cmd.id AND e.operation_id=cmd.operation_id AND e.outcome='APPLIED' AND e.source_kind='HUMAN_COMMAND' AND e.scope_digest=ar.scope_digest AND e.target_ref=target AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',r.actor_id) AND e.client_ref=r.client_id AND e.policy_ref IS NOT DISTINCT FROM cmd.policy_ref;
+ RETURN n=1;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.quota_settle(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r anvil.project_storage_reservations%ROWTYPE;charge bigint;cmd anvil.commands%ROWTYPE;
+BEGIN
+ -- 승인 소비 뒤에는 원승인의 현재 APPROVED 상태로 되돌리지 않는다.
+ -- 현재 주체/제어/정책은 운영 caller가 검사하며 여기서는 소비된 원명령을 결박한다.
+ PERFORM anvil.quota_current(s,a,c,p,v->'request');
+ PERFORM project_id FROM anvil.project_storage_accounts WHERE project_id=p AND coverage_state='VERIFIED' FOR UPDATE;
+ IF NOT FOUND THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_UNVERIFIED');END IF;
+ SELECT * INTO r FROM anvil.project_storage_reservations WHERE project_id=p AND id=(v->'ids'->>0)::uuid FOR UPDATE;
+ IF r.id IS NULL OR r.phase<>'IO_STARTED' OR r.actor_id IS DISTINCT FROM a OR r.client_id IS DISTINCT FROM c OR r.command_hash IS DISTINCT FROM anvil.fn01_hash(v->'request') OR r.plan_hash IS DISTINCT FROM v->>'planHash' OR v->'fences' IS DISTINCT FROM jsonb_build_array(r.start_fence::text) OR jsonb_array_length(v->'ids')<>1 OR r.plan_json->>'coverageGeneration' IS DISTINCT FROM (SELECT generation::text FROM anvil.project_storage_accounts WHERE project_id=p) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN');END IF;
+ IF r.plan_json->'policyRef' IS DISTINCT FROM (SELECT jsonb_build_object('id',h.id,'version',h.head_version,'contentHash',pv.content_hash) FROM anvil.permission_policies h JOIN anvil.permission_policy_versions pv ON pv.project_id=h.project_id AND pv.policy_id=h.id AND pv.version=h.head_version WHERE h.project_id=p) THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ IF r.authorized_until<=clock_timestamp() THEN PERFORM anvil.quota_error('PROJECT_STORAGE_CURRENT_REQUIRED');END IF;
+ charge=anvil.quota_decimal(r.plan_json->'parts'->0->'settledBytes');
+ r.phase='SETTLED';r.settled_bytes=charge;r.server_command_id=(v->'facts'->>'serverCommandId')::uuid;r.authorization_receipt_id=(v->'facts'->>'authorizationReceiptId')::uuid;r.scope_digest=v->'facts'->>'scopeDigest';r.settled_at=clock_timestamp();
+ IF NOT anvil.quota_settled_complete(r) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ UPDATE anvil.project_storage_reservations SET phase=r.phase,settled_bytes=r.settled_bytes,server_command_id=r.server_command_id,authorization_receipt_id=r.authorization_receipt_id,scope_digest=r.scope_digest,settled_at=r.settled_at WHERE id=r.id;
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes-r.reserved_bytes,used_bytes=used_bytes+charge,updated_at=clock_timestamp() WHERE project_id=p;
+ RETURN true;
+END;$$;
+-- 2표의 합계 및 자료→원장과 원장→자료를 COMMIT 시 양방향 대조한다.
+CREATE FUNCTION anvil.quota_complete(p uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ac anvil.project_storage_accounts%ROWTYPE;u numeric;r numeric;x anvil.project_storage_reservations%ROWTYPE;
+BEGIN
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p;
+ IF ac.project_id IS NULL THEN RETURN false;END IF;
+ IF ac.initial_manifest_hash IS DISTINCT FROM anvil.fn01_hash(ac.initial_manifest_json) THEN RETURN false;END IF;
+ IF NOT anvil.quota_creation_complete(p) THEN RETURN false;END IF;
+ SELECT COALESCE(sum(settled_bytes) FILTER(WHERE phase='SETTLED'),0),COALESCE(sum(reserved_bytes) FILTER(WHERE phase IN('RESERVED','IO_STARTED','UNKNOWN')),0) INTO u,r FROM anvil.project_storage_reservations WHERE project_id=p;
+ IF ac.used_bytes<>u OR ac.held_bytes<>r OR u+r>10737418240 THEN RETURN false;END IF;
+ FOR x IN SELECT * FROM anvil.project_storage_reservations WHERE project_id=p LOOP
+  IF x.phase='SETTLED' AND NOT anvil.quota_settled_complete(x) THEN RETURN false;END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM anvil.artifacts b WHERE b.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations z WHERE z.project_id=p AND z.phase='SETTLED' AND z.plan_json->'parts'->0->>'id'=b.id::text)) OR EXISTS(SELECT 1 FROM anvil.checkpoint_records k WHERE k.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations z WHERE z.project_id=p AND z.phase='SETTLED' AND z.server_command_id=k.command_id AND z.part_kind='CHECKPOINT')) THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands cmd WHERE cmd.project_id=p AND cmd.operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint') AND cmd.state='APPLIED' AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_reservations z WHERE z.project_id=p AND z.phase='SETTLED' AND z.server_command_id=cmd.id)) THEN RETURN false;END IF;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.quota_final_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;
+BEGIN
+ IF TG_TABLE_NAME='draft_creation_intents' THEN p=COALESCE(NEW.target_project_id,OLD.target_project_id);
+ ELSIF TG_TABLE_NAME IN('project_storage_accounts','project_storage_reservations') THEN p=COALESCE(NEW.project_id,OLD.project_id);
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN IF COALESCE(NEW.scope_kind,OLD.scope_kind)<>'PROJECT' THEN RETURN NULL;END IF;p=COALESCE(NEW.scope_id,OLD.scope_id);
+ ELSE p=COALESCE(NEW.project_id,OLD.project_id);END IF;
+ IF p IS NULL THEN RETURN NULL;END IF;
+ IF TG_TABLE_NAME NOT IN('project_storage_accounts','project_storage_reservations') AND NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts WHERE project_id=p) THEN RETURN NULL;END IF;
+ IF NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED' USING ERRCODE='23514';END IF;RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER quota_account_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.project_storage_accounts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_reservation_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.project_storage_reservations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_artifact_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.artifacts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_checkpoint_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.checkpoint_records DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_command_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_receipt_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_audit_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE FUNCTION anvil.quota_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ IF TG_OP IN('DELETE','TRUNCATE') THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_IMMUTABLE';END IF;
+ IF TG_TABLE_NAME='project_storage_accounts' THEN
+  IF (to_jsonb(NEW)-ARRAY['used_bytes','held_bytes','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['used_bytes','held_bytes','updated_at']) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_IMMUTABLE';END IF;
+ ELSE
+  IF (to_jsonb(NEW)-ARRAY['phase','start_fence','started_at','settled_bytes','server_command_id','authorization_receipt_id','scope_digest','settled_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['phase','start_fence','started_at','settled_bytes','server_command_id','authorization_receipt_id','scope_digest','settled_at']) OR NOT ((OLD.phase='RESERVED' AND NEW.phase IN('IO_STARTED','CANCELLED')) OR(OLD.phase='IO_STARTED' AND NEW.phase IN('SETTLED','UNKNOWN'))) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_IMMUTABLE';END IF;
+ END IF;RETURN NEW;
+END;$$;
+CREATE TRIGGER quota_account_immutable BEFORE UPDATE OR DELETE ON anvil.project_storage_accounts FOR EACH ROW EXECUTE FUNCTION anvil.quota_immutable();
+CREATE TRIGGER quota_reservation_immutable BEFORE UPDATE OR DELETE ON anvil.project_storage_reservations FOR EACH ROW EXECUTE FUNCTION anvil.quota_immutable();
+CREATE TRIGGER quota_account_no_truncate BEFORE TRUNCATE ON anvil.project_storage_accounts FOR EACH STATEMENT EXECUTE FUNCTION anvil.quota_immutable();
+CREATE TRIGGER quota_reservation_no_truncate BEFORE TRUNCATE ON anvil.project_storage_reservations FOR EACH STATEMENT EXECUTE FUNCTION anvil.quota_immutable();
+REVOKE ALL ON FUNCTION anvil.quota_error(text),anvil.quota_decimal(jsonb),anvil.quota_current(uuid,uuid,uuid,uuid,jsonb),anvil.quota_plan_valid(jsonb),anvil.quota_rows(uuid,uuid,uuid),anvil.quota_check_bundle(uuid,uuid,uuid,uuid,jsonb,text),anvil.quota_settled_complete(anvil.project_storage_reservations),anvil.quota_complete(uuid),anvil.quota_final_guard(),anvil.quota_immutable() FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.quota_account(uuid,uuid,uuid,uuid),anvil.quota_reserve(uuid,uuid,uuid,uuid,jsonb),anvil.quota_start(uuid,uuid,uuid,uuid,jsonb),anvil.quota_require_started(uuid,uuid,uuid,uuid,jsonb),anvil.quota_settle(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.quota_account(uuid,uuid,uuid,uuid),anvil.quota_reserve(uuid,uuid,uuid,uuid,jsonb),anvil.quota_start(uuid,uuid,uuid,uuid,jsonb),anvil.quota_require_started(uuid,uuid,uuid,uuid,jsonb),anvil.quota_settle(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+-- Q3의 실제 creation namespace/adoption 인계 및 0058 quota-only guard 대체 전까지 신규 계정 생성 경로는 없다.
+CREATE FUNCTION anvil.quota_adopt_creation(s uuid,a uuid,c uuid,p uuid,v jsonb) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE i anvil.draft_creation_intents%ROWTYPE;cmd anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;manifest jsonb;total bigint;item jsonb;part jsonb;plan jsonb;expires timestamptz;current_xid xid;
+BEGIN
+ PERFORM anvil.fn01_active(s,a,c);
+ PERFORM id FROM anvil.projects WHERE id=p FOR UPDATE;
+ IF NOT FOUND OR NOT anvil.checkpoint_keys(v,ARRAY['creationId','requestHash','serverCommandId','manifest','manifestHash']) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ SELECT * INTO i FROM anvil.draft_creation_intents WHERE id=(v->>'creationId')::uuid FOR UPDATE;
+ SELECT * INTO cmd FROM anvil.commands WHERE id=(v->>'serverCommandId')::uuid AND project_id=p;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id AND command_id=cmd.id AND scope_kind='PROJECT' AND scope_id=p;
+ IF i.id IS NULL OR cmd.id IS NULL OR ar.id IS NULL OR i.actor_id IS DISTINCT FROM a OR i.client_id IS DISTINCT FROM c OR i.target_project_id IS DISTINCT FROM p OR i.state IS DISTINCT FROM 'COMMITTED' OR i.project_command_id IS DISTINCT FROM cmd.id OR i.request_hash IS DISTINCT FROM v->>'requestHash' OR cmd.operation IS DISTINCT FROM 'createProject' OR cmd.state IS DISTINCT FROM 'APPLIED' OR cmd.actor_id IS DISTINCT FROM a OR cmd.client_id IS DISTINCT FROM c OR cmd.command_id IS DISTINCT FROM i.external_command_id OR cmd.request_hash IS DISTINCT FROM i.request_hash OR cmd.request_hash IS DISTINCT FROM anvil.fn01_hash(i.request_json) OR cmd.result_ref IS DISTINCT FROM i.result_json OR cmd.result_ref IS NULL OR NOT EXISTS(SELECT 1 FROM anvil.project_members m JOIN anvil.project_control pc ON pc.project_id=m.project_id WHERE m.project_id=p AND m.user_id=a AND m.participation='OWNER' AND m.revoked_at IS NULL AND pc.actor_id=a AND pc.client_id=c AND pc.generation=1 AND pc.revoked_at IS NULL) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ -- 현재 실제 생성 producer의 plain transaction만 인계한다. xmin 단독/시각 단독 판정은 하지 않는다.
+ current_xid=pg_current_xact_id()::xid;
+ IF NOT EXISTS(SELECT 1 FROM anvil.projects fresh WHERE fresh.id=p AND fresh.xmin=current_xid AND fresh.created_at=transaction_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM anvil.commands fresh WHERE fresh.id=cmd.id AND fresh.xmin=current_xid AND fresh.received_at=transaction_timestamp() AND fresh.completed_at=transaction_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts fresh WHERE fresh.id=ar.id AND fresh.xmin=current_xid AND fresh.authorized_at=transaction_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM anvil.draft_creation_intents fresh WHERE fresh.id=i.id AND fresh.xmin=current_xid AND fresh.state='COMMITTED' AND fresh.project_command_id=cmd.id)
+ OR EXISTS(SELECT 1 FROM anvil.draft_artifact_adoptions fresh WHERE fresh.creation_intent_id=i.id AND fresh.xmin IS DISTINCT FROM current_xid)
+ OR NOT EXISTS(SELECT 1 FROM anvil.audit_events fresh WHERE fresh.project_id=p AND fresh.command_id=cmd.id AND fresh.server_sequence=1 AND fresh.source_kind='HUMAN_COMMAND' AND fresh.outcome='APPLIED' AND fresh.xmin=current_xid AND fresh.recorded_at=transaction_timestamp()) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_UNVERIFIED');END IF;
+ IF EXISTS(SELECT 1 FROM anvil.project_storage_accounts WHERE project_id=p) THEN PERFORM anvil.quota_error('IDEMPOTENCY_CONFLICT');END IF;
+ manifest=v->'manifest';
+ IF NOT anvil.checkpoint_keys(manifest,ARRAY['schemaVersion','projectId','creationId','artifactRefs','bytes']) OR manifest->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR manifest->>'projectId' IS DISTINCT FROM p::text OR manifest->>'creationId' IS DISTINCT FROM i.id::text OR manifest->'artifactRefs' IS DISTINCT FROM i.refs_json OR v->>'manifestHash' IS DISTINCT FROM anvil.fn01_hash(manifest) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ total=anvil.quota_decimal(manifest->'bytes');IF total>10737418240 THEN PERFORM anvil.quota_error('PROJECT_STORAGE_LIMIT_EXCEEDED');END IF;
+ SELECT LEAST(idle_expires_at,absolute_expires_at) INTO expires FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;
+ INSERT INTO anvil.project_storage_accounts(project_id,schema_version,coverage_state,creation_intent_id,creation_command_id,initial_manifest_json,initial_manifest_hash,used_bytes,held_bytes,generation) VALUES(p,1,'VERIFIED',i.id,cmd.id,manifest,v->>'manifestHash',0,0,1);
+ FOR item IN SELECT value FROM jsonb_array_elements(i.refs_json) LOOP
+  part=jsonb_build_object('key','adoption_'||(item->>'artifactId'),'kind','ADOPTION','id',item->>'artifactId','bytes',item->>'bytes','contentHash',item->>'contentHash','reservedBytes',item->>'bytes','settledBytes',item->>'bytes');
+  plan=jsonb_build_object('creationId',i.id,'requestHash',i.request_hash,'parts',jsonb_build_array(part));
+  INSERT INTO anvil.project_storage_reservations(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,started_at,settled_at)
+  VALUES(gen_random_uuid(),p,a,c,i.external_command_id,'createProject',i.request_hash,part->>'key','ADOPTION',plan||jsonb_build_object('coverageGeneration','1'),anvil.fn01_hash(plan),(item->>'bytes')::bigint,(item->>'bytes')::bigint,'SETTLED',1,expires,cmd.id,ar.id,ar.scope_digest,clock_timestamp(),clock_timestamp());
+ END LOOP;
+ UPDATE anvil.project_storage_accounts SET used_bytes=total,updated_at=clock_timestamp() WHERE project_id=p;
+ IF NOT anvil.quota_complete(p) THEN PERFORM anvil.quota_error('PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED');END IF;
+ RETURN true;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.quota_creation_complete(uuid),anvil.quota_adoption_complete(anvil.project_storage_reservations) FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.quota_adopt_creation(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.quota_adopt_creation(uuid,uuid,uuid,uuid,jsonb) TO anvil_v3_app;
+CREATE OR REPLACE FUNCTION anvil.checkpoint_insert_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ IF NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) OR NOT EXISTS(
+ SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=c.project_id AND p.archived_at IS NULL
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ JOIN anvil.auth_sessions au ON au.user_id=c.actor_id AND au.client_id=c.client_id AND au.id::text=current_setting('anvil.checkpoint_session_id',true) AND au.revoked_at IS NULL AND au.idle_expires_at>clock_timestamp() AND au.absolute_expires_at>clock_timestamp()
+ JOIN anvil.users u ON u.id=au.user_id AND u.status='ACTIVE' AND u.revoked_at IS NULL AND au.credential_generation=u.credential_generation
+ JOIN anvil.clients cl ON cl.user_id=au.user_id AND cl.id=au.client_id AND cl.revoked_at IS NULL
+ WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.operation='saveCheckpoint' AND c.state='APPLIED' AND c.approval_consumption_id IS NULL AND ar.approval_decision_ref IS NULL
+ AND anvil.checkpoint_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs))=pv.content_hash
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',c.project_id)) AND rule->'operations' ? 'saveCheckpoint' AND rule->>'disposition'='AUTO' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',c.project_id)) AND rule->'operations' ? 'saveCheckpoint' AND rule->>'disposition' IN('DENY','REQUIRE_APPROVAL') AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ ) THEN RAISE EXCEPTION 'CHECKPOINT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ -- 원래 현재성 검산을 보존하고 이 기록의 실제 시작 예약만 허용한다.
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts ac JOIN anvil.project_storage_reservations r ON r.project_id=ac.project_id JOIN anvil.commands c ON c.id=NEW.command_id AND c.project_id=NEW.project_id WHERE ac.project_id=NEW.project_id AND ac.coverage_state='VERIFIED' AND r.phase='IO_STARTED' AND r.operation='saveCheckpoint' AND r.part_kind='CHECKPOINT' AND r.actor_id=NEW.created_by AND r.client_id=NEW.client_id AND r.external_command_id=c.command_id AND r.command_hash=c.request_hash AND r.start_fence=1 AND r.authorized_until>clock_timestamp() AND r.plan_json->>'coverageGeneration'=ac.generation::text AND r.plan_json->'parts'->0->>'id'=NEW.id::text AND r.plan_json->'parts'->0->>'contentHash'=NEW.snapshot_json->>'preparedHash' AND anvil.quota_decimal(r.plan_json->'parts'->0->'bytes')=octet_length(anvil.checkpoint_canonical(NEW.snapshot_json))+octet_length(NEW.record_text) AND r.reserved_bytes=anvil.quota_decimal(r.plan_json->'parts'->0->'reservedBytes') AND r.plan_hash=anvil.fn01_hash((r.plan_json-'coverageGeneration')-'planHash') AND ac.used_bytes+ac.held_bytes<=10737418240) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END;$$;
+CREATE CONSTRAINT TRIGGER quota_creation_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.draft_creation_intents DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();
+CREATE CONSTRAINT TRIGGER quota_adoption_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.draft_artifact_adoptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.quota_final_guard();

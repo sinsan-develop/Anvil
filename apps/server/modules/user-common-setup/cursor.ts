@@ -1,0 +1,12 @@
+import {timingSafeEqual} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {setupRecord,setupUuid,type CommonSetupKind} from '../../../../contracts/runtime/user-common-setup-v1.ts';
+import {AuthFailure} from '../access/repository.ts';
+export interface CommonSetupFilter{kind:CommonSetupKind;name:string;status:'ACTIVE';limit:20}
+const fail=():never=>{throw new AuthFailure('COMMON_SETUP_CURSOR_OR_FILTER_INVALID',400);};
+export function readCommonSetupFilter(v:Record<string,unknown>):CommonSetupFilter{if(!v||Object.keys(v).some(k=>!['kind','name','cursor'].includes(k))||typeof v.kind!=='string'||!['TOOL','ENVIRONMENT'].includes(v.kind)||v.name!==undefined&&(typeof v.name!=='string'||!v.name.isWellFormed()||v.name.length>200)||v.cursor!==undefined&&(typeof v.cursor!=='string'||!v.cursor.length||v.cursor.length>4096))fail();return{kind:v.kind as CommonSetupKind,name:v.name as string??'',status:'ACTIVE',limit:20};}
+export class CommonSetupCursor{
+ readonly sign:(v:string)=>string;constructor(sign:(v:string)=>string){this.sign=v=>sign('COMMON_SETUP_LIST:'+v);}
+ create(actorId:string,clientId:string,filter:CommonSetupFilter,lastId:string,now=Date.now()){if(!setupUuid(actorId)||!setupUuid(clientId)||!setupUuid(lastId)||!Number.isSafeInteger(now))fail();const encoded=Buffer.from(canonicalJson({schemaVersion:1,purpose:'COMMON_SETUP_LIST',actorId,clientId,filterHash:contentHash(canonicalJson(filter)),lastId,expiresAt:now+1800000})).toString('base64url');return encoded+'.'+this.sign(encoded);}
+ read(token:string,actorId:string,clientId:string,filter:CommonSetupFilter,now=Date.now()):string{try{if(typeof token!=='string'||token.length>4096)fail();const parts=/^([A-Za-z0-9_-]+)\.([a-f0-9]{64})$/.exec(token);if(!parts)return fail();if(!timingSafeEqual(Buffer.from(parts[2]!,'hex'),Buffer.from(this.sign(parts[1]!),'hex')))fail();const bytes=Buffer.from(parts[1]!,'base64url');if(bytes.toString('base64url')!==parts[1])fail();const raw=bytes.toString('utf8'),v=JSON.parse(raw);if(!setupRecord(v,['schemaVersion','purpose','actorId','clientId','filterHash','lastId','expiresAt'])||canonicalJson(v)!==raw||v.schemaVersion!==1||v.purpose!=='COMMON_SETUP_LIST'||v.actorId!==actorId||v.clientId!==clientId||!setupUuid(actorId)||!setupUuid(clientId)||v.filterHash!==contentHash(canonicalJson(filter))||!setupUuid(v.lastId)||!Number.isSafeInteger(v.expiresAt)||v.expiresAt<=now)fail();return v.lastId;}catch{return fail();}}
+}

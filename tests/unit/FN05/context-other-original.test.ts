@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {ApiClient} from '../../../apps/web/src/api/client.ts';
+import {contextOtherOriginalFixture} from '../../fixtures/context-original.ts';
+import * as source from '../../../apps/web/src/features/workspace/context-original.ts';
+function method(kind:string){const m:any=source;const fn=kind==='DOCUMENT_VERSION'?m.readContextDocumentOriginal:m.readContextInstructionOriginal;assert.equal(typeof fn,'function');return fn;}
+for(const kind of ['DOCUMENT_VERSION','USER_INSTRUCTION'] as const)test(kind+' 저장 선택을 재조회하고 정확 원문·본문hash를 GET만으로 읽는다',async()=>{
+ const f=contextOtherOriginalFixture(kind),before=structuredClone(f),calls:string[]=[],client=new ApiClient(async(p,i)=>{assert.equal(i?.method,'GET');const path=String(p);calls.push(path);if(path.includes('/context/'))return Response.json(f.view);if(path.includes('/documents/'))return Response.json(f.document);if(path.includes('/files/'))return new Response(f.body,{headers:{'content-type':'application/octet-stream'}});return Response.json(f.conversation);});
+ const v=await method(kind)(client,f.projectId,f.view.ref,f.assignmentRef,f.itemId,()=>true);assert.equal(v.body,f.body);assert.equal(v.executionAuthorized,false);assert.equal(v.dispatchPerformed,false);assert.equal(calls.length,kind==='DOCUMENT_VERSION'?3:2);assert.deepEqual(f,before);
+});
+test('원 종류/문서hash·지시kind·본문 변조와 응답후 이탈을 다른 원문으로 대체하지 않는다',async()=>{
+ for(const kind of ['DOCUMENT_VERSION','USER_INSTRUCTION'] as const){const f=contextOtherOriginalFixture(kind);for(const altered of ['SOURCE','BODY']){const selected=kind==='USER_INSTRUCTION'&&altered==='SOURCE'?contextOtherOriginalFixture(kind,undefined,undefined,'USER_MESSAGE'):f;const client=new ApiClient(async p=>{const path=String(p);if(path.includes('/context/'))return Response.json(selected.view);if(path.includes('/documents/'))return Response.json(altered==='SOURCE'?{...selected.document,contentHash:'f'.repeat(64)}:selected.document);if(path.includes('/files/'))return new Response(altered==='SOURCE'?selected.body:'다른 본문',{headers:{'content-type':'application/octet-stream'}});return Response.json(altered==='SOURCE'?selected.conversation:{...selected.conversation,body:'다른 지시'});});await assert.rejects(method(kind)(client,selected.projectId,selected.view.ref,selected.assignmentRef,selected.itemId,()=>true),{code:altered==='SOURCE'?'CONTEXT_SOURCE_UNAVAILABLE':kind==='DOCUMENT_VERSION'?'ARTIFACT_INTEGRITY_FAILED':'CONVERSATION_INTEGRITY_FAILED'});}
+ let active=true,calls=0;const paused=new ApiClient(async()=>{calls++;active=false;return Response.json(f.view);});assert.equal(await method(kind)(paused,f.projectId,f.view.ref,f.assignmentRef,f.itemId,()=>active),null);assert.equal(calls,1);
+ }
+});
+test('문서 raw·지시 성공 응답 중 이탈하면 결과를 표시하지 않는다',async()=>{
+ for(const kind of ['DOCUMENT_VERSION','USER_INSTRUCTION'] as const){const f=contextOtherOriginalFixture(kind);let active=true,originals=0;const client=new ApiClient(async p=>{const path=String(p);if(path.includes('/context/'))return Response.json(f.view);if(path.includes('/documents/'))return Response.json(f.document);originals++;active=false;return path.includes('/files/')?new Response(f.body,{headers:{'content-type':'application/octet-stream'}}):Response.json(f.conversation);});assert.equal(await method(kind)(client,f.projectId,f.view.ref,f.assignmentRef,f.itemId,()=>active),null);assert.equal(originals,1);}
+});

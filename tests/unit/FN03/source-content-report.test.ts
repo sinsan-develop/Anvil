@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import {createHash} from 'node:crypto';
+import {canonicalJson} from '../../../contracts/canonical.ts';
+const m=await import(new URL('../../../contracts/runtime/source-content-report-v1.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+const id=(n:number)=>`20000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
+const at=(ms:number)=>new Date(Date.parse('2026-10-23T05:00:00.000Z')+ms).toISOString();
+const hash=(v:unknown)=>createHash('sha256').update(canonicalJson(v)).digest('hex');
+function rehash(v:any){const {signature,reportHash,...unsigned}=v;return {...v,reportHash:hash(unsigned)};}
+function fixture(){
+ const blobHash=createHash('sha256').update(Buffer.from([13,10])).digest('hex');
+ const scope={protocolVersion:1,purpose:'SOURCE_DOCUMENT_CONTENT_HASH',installationId:id(1),projectId:id(2),sourceRootRef:ref(3),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),hostFingerprint:'c'.repeat(64),pathHintHash:createHash('sha256').update('D:\\Synthetic').digest('hex'),userId:id(7),clientId:id(8),credentialGeneration:2,controlGeneration:3,basePolicyRef:ref(9),contentPolicyRef:ref(10),targets:[{relativePath:'src/main.ts',documentRef:ref(11),documentBlobRef:{artifactId:id(12),bytes:2,contentHash:blobHash,mediaType:'text/plain'}}],limits:{maxFiles:200,maxFileBytes:2097152,maxTotalBytes:20971520,maxObservationMs:30000,maxReportBytes:1048576},requestedAt:at(0),expiresAt:at(600000),reason:'합성 요청'};
+ const context={scope,declaredPathHint:'D:\\Synthetic',requestRef:{id:id(13),version:1,contentHash:hash(scope)},observationRequestRef:ref(14),observationNonce:Buffer.alloc(32,7).toString('base64url'),issuedAt:at(1000),observeBefore:at(61000),receivedAt:at(4000)};
+ const facts={kind:'REGULAR_FILE',volumeSerialHex:'0000000000000001',fileIdHex:'1'.repeat(32),reparse:false,linkCountDecimal:'1',sizeBytesDecimal:'2',lastWriteFileTimeDecimal:'134056692030000000'};
+ const report=rehash({protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT',commandId:id(15),installationId:scope.installationId,projectId:scope.projectId,requestRef:context.requestRef,scopeDigest:context.requestRef.contentHash,observationRequestRef:context.observationRequestRef,observationNonce:context.observationNonce,connectorRef:scope.connectorRef,registrationRef:scope.registrationRef,observerRef:scope.observerRef,hostFingerprint:scope.hostFingerprint,observedAt:at(2000),finishedAt:at(3000),root:{state:'OBSERVED',facts:{declaredRootRef:scope.sourceRootRef,kind:'DIRECTORY',canonicalPath:'D:\\Synthetic',volumeSerialHex:'0000000000000001',fileIdHex:'2'.repeat(32),reparse:false},reasonCode:null},files:[{relativePath:'src/main.ts',documentRef:ref(11),state:'HASHED',facts:{...facts,blobHash,bytesReadDecimal:'2',eof:true,identityBeforeHash:hash(facts),identityAfterHash:hash(facts)},reasonCode:null}],localEvidence:{kind:'NATIVE_CONTENT_HASH_REPORT',observerRef:scope.observerRef,ownedProcessRef:ref(16),observationRequestRef:context.observationRequestRef,completed:true},reportHash:'',signature:Buffer.alloc(64,5).toString('base64url')});
+ return {scope,context,report};
+}
+function fn(name:string){assert.equal(typeof m[name],'function','새 목적 codec 미구현');return m[name];}
+function badReport(v:unknown,c:unknown){assert.throws(()=>fn('readSourceContentReportV1')(v,c),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);}
+
+const proofConsumer=await import(new URL('../../../apps/server/modules/connections/source-content-report-proof-input.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
+function reportInput(){assert.equal(typeof proofConsumer.readSourceContentReportProofInputCandidate,'function','보고 서명 입력 소비 미구현');return proofConsumer.readSourceContentReportProofInputCandidate;}
+function fromPermit(){assert.equal(typeof proofConsumer.readSourceContentReportProofFromPermitCandidate,'function','원 요청/관측 ref의 proof 소비 연결 미구현');return proofConsumer.readSourceContentReportProofFromPermitCandidate;}
+function permitFixture(){
+ const f=fixture(),c=f.context;
+ const expected={scope:f.scope,requestRef:c.requestRef,observationRequestRef:c.observationRequestRef,observationNonce:c.observationNonce,credentialIssuedAt:c.issuedAt,credentialExpiresAt:c.observeBefore,issuedAt:c.issuedAt,observeBefore:c.observeBefore};
+ const permit={protocolVersion:1,purpose:'SOURCE_CONTENT_PERMIT',scope:f.scope,requestRef:c.requestRef,scopeDigest:c.requestRef.contentHash,root:{sourceRootRef:f.scope.sourceRootRef,pathHint:c.declaredPathHint,pathHintHash:f.scope.pathHintHash},credential:{scope:'SOURCE_DOCUMENT_CONTENT_HASH_ONLY',issuedAt:c.issuedAt,expiresAt:c.observeBefore},observationRequestRef:c.observationRequestRef,observationNonce:c.observationNonce,issuedAt:c.issuedAt,observeBefore:c.observeBefore,serverNow:c.issuedAt,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false};
+ return {...f,expected,permit};
+}
+test('원 permit basis의 요청·관측 ref를 proof 입력까지 보존하지만 저장·권위를 열지 않는다',()=>{
+ const f=permitFixture(),out=fromPermit()(f.report,f.permit,f.expected,f.context.receivedAt);
+ const bytes=out.candidate.proofBytes;assert.equal(bytes.subarray(0,Buffer.byteLength('ANVIL_SOURCE_CONTENT_REPORT_V1\0')).toString(),'ANVIL_SOURCE_CONTENT_REPORT_V1\0');
+ const proof=JSON.parse(bytes.subarray(Buffer.byteLength('ANVIL_SOURCE_CONTENT_REPORT_V1\0')).toString());
+ assert.deepEqual(proof.requestRef,f.context.requestRef);assert.deepEqual(proof.observationRequestRef,ref(14));assert.equal(proof.observationNonce,f.context.observationNonce);assert.equal(proof.reportHash,f.report.reportHash);
+ for(const key of ['permitAuthenticated','signatureVerified','currentAuthorityVerified','storageMutationPerformed','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'SIGNATURE_VERIFIER_UNAVAILABLE');assert.equal(Object.hasOwn(out,'credential'),false);
+});
+test('원 basis 불일치·만료·추가 권위는 보고를 소비하기 전에 거절한다',()=>{
+ const f=permitFixture(),read=fromPermit();let reportReads=0;
+ const report=new Proxy({},{ownKeys(){reportReads++;throw Error('보고를 먼저 읽으면 안 됨');}});
+ for(const expected of [{...f.expected,requestRef:ref(99)},{...f.expected,observationRequestRef:ref(99)},{...f.expected,observationNonce:Buffer.alloc(32,9).toString('base64url')},{...f.expected,authenticated:true}])assert.throws(()=>read(report,f.permit,expected,f.context.receivedAt),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);
+ assert.throws(()=>read(report,f.permit,f.expected,f.context.observeBefore),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);assert.equal(reportReads,0);
+});
+test('permit과 일치하지 않는 재해시 보고는 서명 입력으로 반환하지 않는다',()=>{
+ const f=permitFixture(),read=fromPermit();
+ for(const patch of [{requestRef:ref(99)},{observationRequestRef:ref(99)},{observationNonce:Buffer.alloc(32,8).toString('base64url')},{scopeDigest:'f'.repeat(64)}])assert.throws(()=>read(rehash({...f.report,...patch}),f.permit,f.expected,f.context.receivedAt),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);
+});
+test('보고 서명 입력은 검증된 보고 hash와 새 domain만 전달하고 진위는 미확인이다',()=>{
+ const f=fixture(),out=reportInput()(f.report,f.context);
+ const proof={protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT_PROOF',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:f.context.requestRef,scopeDigest:f.context.requestRef.contentHash,observationRequestRef:ref(14),observationNonce:Buffer.alloc(32,7).toString('base64url'),reportHash:f.report.reportHash};
+ assert.deepEqual(out.candidate.proofBytes,Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_REPORT_V1\0','ascii'),Buffer.from(canonicalJson(proof),'utf8')]));
+ assert.deepEqual(out.candidate.signatureBytes,Buffer.alloc(64,5));assert.equal(out.status,'UNVERIFIED');assert.equal(out.reason,'SIGNATURE_VERIFIER_UNAVAILABLE');
+ for(const key of ['signatureVerified','currentAuthorityVerified','executionAuthorized','linkAuthorized'])assert.equal(out[key],false);
+ assert.equal(out.candidate.proofBytes.includes(Buffer.from('canonicalPath')),false);
+});
+test('보고 서명 입력은 재해시한 다른 nonce·metadata 목적·잘못된 서명을 거절한다',()=>{
+ const f=fixture(),read=reportInput();
+ for(const patch of [{observationNonce:Buffer.alloc(32,8).toString('base64url')},{purpose:'SOURCE_READ_REPORT'},{signature:Buffer.alloc(64,5).toString('base64')}])assert.throws(()=>read(rehash({...f.report,...patch}),f.context));
+ assert.throws(()=>read({...f.report,reportHash:'f'.repeat(64)},f.context));
+});
+test('보고 서명 입력은 context를 한 번 복사하고 getter를 실행하지 않는다',()=>{
+ const f=fixture(),read=reportInput();let reads=0;
+ const changing=new Proxy(f.context,{getOwnPropertyDescriptor(target,key){const d=Reflect.getOwnPropertyDescriptor(target,key);if(key==='scope'&&d){reads++;return {...d,value:reads===1?f.scope:{...f.scope,projectId:id(99)}};}return d;}});
+ const out=read(f.report,changing);assert.equal(reads,1);assert.equal(out.signatureVerified,false);
+ let calls=0;const report={...f.report};Object.defineProperty(report,'signature',{enumerable:true,get(){calls++;return f.report.signature;}});
+ assert.throws(()=>read(report,f.context));assert.equal(calls,0);
+});
+test('scope는 정확 목적·원 요청과 불변 복사·10분을 유지한다',()=>{const f=fixture(),out=fn('readSourceContentScopeV1')(f.scope);f.scope.targets[0]!.relativePath='changed';assert.equal(out.targets[0].relativePath,'src/main.ts');assert.equal(out.purpose,'SOURCE_DOCUMENT_CONTENT_HASH');});
+test('scope는 metadata 목적·권위 필드·누락/잘못된 세대·10분 초과를 거절한다',()=>{const read=fn('readSourceContentScopeV1'),f=fixture();for(const patch of [{purpose:'SOURCE_READ_OBSERVATION'},{executionAuthorized:true},{controlGeneration:0},{credentialGeneration:1.1},{basePolicyRef:null},{expiresAt:at(600001)}])assert.throws(()=>read({...f.scope,...patch}),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);});
+test('보고 구조·원 scope/fullref/hash를 보존하되 권위나 현재검증 필드는 만들지 않는다',()=>{const f=fixture(),out=fn('readSourceContentReportV1')(f.report,f.context);f.report.files[0].facts.blobHash='f'.repeat(64);assert.equal(out.files[0].facts.blobHash,createHash('sha256').update(Buffer.from([13,10])).digest('hex'));assert.equal(Object.hasOwn(out,'verified'),false);assert.equal(Object.hasOwn(out,'executionAuthorized'),false);});
+test('다른 project/세대·nonce·관측 ref·원 request digest·문서 ref·순서·보고 hash를 거절한다',()=>{const f=fixture();for(const patch of [{projectId:id(999)},{observationNonce:Buffer.alloc(32,8).toString('base64url')},{observationRequestRef:ref(999)},{connectorRef:{...ref(4),version:2}},{files:[]},{files:[{...f.report.files[0],documentRef:ref(999)}]},{files:[{...f.report.files[0],relativePath:'other'}]}])badReport(rehash({...f.report,...patch}),f.context);badReport({...f.report,reportHash:'f'.repeat(64)},f.context);badReport(f.report,{...f.context,scope:{...f.scope,controlGeneration:4}});});
+test('보고는 원문·서버 검증 주장·metadata facts·잘못된 signature 형식을 거절한다',()=>{const f=fixture();for(const patch of [{body:'forbidden'},{verified:true},{signature:'AA'},{signature:Buffer.alloc(64,5).toString('base64')},{files:[{...f.report.files[0],facts:{...f.report.files[0].facts,body:'forbidden'}}]}])badReport(rehash({...f.report,...patch}),f.context);});
+test('동일 identity 전후 hash·길이·EOF·link수·volume·uint64 상한을 대조한다',()=>{const f=fixture();for(const patch of [{identityBeforeHash:'f'.repeat(64)},{identityBeforeHash:'f'.repeat(64),identityAfterHash:'f'.repeat(64)},{bytesReadDecimal:'1'},{eof:false},{linkCountDecimal:'2'},{sizeBytesDecimal:'02'},{lastWriteFileTimeDecimal:'18446744073709551616'},{volumeSerialHex:'f'.repeat(16)}])badReport(rehash({...f.report,files:[{...f.report.files[0],facts:{...f.report.files[0].facts,...patch}}]}),f.context);});
+test('root declared ref·실패 root 뒤 성공 file·reparse를 거절한다',()=>{const f=fixture();for(const patch of [{declaredRootRef:ref(999)},{reparse:true}])badReport(rehash({...f.report,root:{...f.report.root,facts:{...f.report.root.facts,...patch}}}),f.context);badReport(rehash({...f.report,root:{state:'UNVERIFIED',facts:null,reasonCode:'OBSERVER_UNAVAILABLE'}}),f.context);});
+test('실패 보고는 고정 이유·null facts로 보관하며 completed 성공 주장과 섞지 않는다',()=>{const f=fixture(),partial=rehash({...f.report,files:[{...f.report.files[0],state:'CHANGED',facts:null,reasonCode:'IDENTITY_CHANGED'}],localEvidence:{...f.report.localEvidence,completed:false}});assert.equal(fn('readSourceContentReportV1')(partial,f.context).files[0].state,'CHANGED');badReport(rehash({...partial,localEvidence:{...partial.localEvidence,completed:true}}),f.context);badReport(rehash({...partial,files:[{...partial.files[0],reasonCode:'raw exception'}]}),f.context);});
+test('주장시각 오차는 서버만료를 늘리지 않고 순서·30초·60초 관측기한을 지킨다',()=>{const f=fixture();for(const patch of [{observedAt:at(4000),finishedAt:at(3000)},{observedAt:at(-4001)},{finishedAt:at(9001)},{observedAt:at(-4000),finishedAt:at(26001)}])badReport(rehash({...f.report,...patch}),f.context);for(const c of [{...f.context,receivedAt:f.context.observeBefore},{...f.context,observeBefore:at(61001)},{...f.context,receivedAt:at(0)}])badReport(f.report,c);});
+test('localEvidence도 원 observer/관측 ref·process ref exact 결박을 유지한다',()=>{const f=fixture();for(const patch of [{observerRef:ref(999)},{observationRequestRef:ref(999)},{ownedProcessRef:null},{completed:'true'},{verified:true}])badReport(rehash({...f.report,localEvidence:{...f.report.localEvidence,...patch}}),f.context);});
+test('보고 크기·getter·중복 wire키는 읽기 전에 거절한다',()=>{const f=fixture(),getter={...f.report};let calls=0;Object.defineProperty(getter,'root',{enumerable:true,get(){calls++;return f.report.root;}});badReport(getter,f.context);assert.equal(calls,0);badReport(f.report,{...f.context,scope:{...f.scope,limits:{...f.scope.limits,maxReportBytes:10}}});const parse=fn('parseSourceContentWireV1');assert.throws(()=>parse('{"protocolVersion":1,"protocolVersion":1}'),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);assert.throws(()=>parse(' '.repeat(1048577)),/^Error: SOURCE_CONTENT_INPUT_INVALID$/);assert.deepEqual(parse('{"x":1}'),{x:1});});
+test('서명 바이트는 새 NUL domain과 서버 원 context 및 보고 hash만 결박한다',()=>{const f=fixture(),bytes=fn('sourceContentReportProofBytesV1')(f.report,f.context);const proof={protocolVersion:1,purpose:'SOURCE_CONTENT_REPORT_PROOF',installationId:id(1),projectId:id(2),connectorRef:ref(4),registrationRef:ref(5),observerRef:ref(6),requestRef:f.context.requestRef,scopeDigest:f.context.requestRef.contentHash,observationRequestRef:ref(14),observationNonce:Buffer.alloc(32,7).toString('base64url'),reportHash:f.report.reportHash};assert.deepEqual(bytes,Buffer.concat([Buffer.from('ANVIL_SOURCE_CONTENT_REPORT_V1\0','ascii'),Buffer.from(canonicalJson(proof),'utf8')]));assert.equal(bytes.includes(Buffer.from('canonicalPath')),false);assert.equal(bytes.includes(Buffer.from('ANVIL_V3_SOURCE_READ_RESULT\n')),false);});
+test('서명 조립은 검증한 context를 다시 caller에서 읽어 바꾸지 않는다',()=>{const f=fixture();let reads=0;const changing=new Proxy(f.context,{getOwnPropertyDescriptor(target,key){const d=Reflect.getOwnPropertyDescriptor(target,key);if(key==='scope'&&d){reads++;return {...d,value:reads===1?f.scope:{...f.scope,projectId:id(999)}};}return d;}});const bytes=fn('sourceContentReportProofBytesV1')(f.report,changing);const proof=JSON.parse(bytes.subarray(Buffer.byteLength('ANVIL_SOURCE_CONTENT_REPORT_V1\0')).toString('utf8'));assert.equal(proof.projectId,id(2));assert.equal(reads,1);});
+test('파일 실패 뒤에는 미시도 항목만 허용하고 후속 성공 보고를 거절한다',()=>{const f=fixture(),second={...f.scope.targets[0]!,relativePath:'src/second.ts',documentRef:ref(99)},scope={...f.scope,targets:[...f.scope.targets,second]},requestRef={...f.context.requestRef,contentHash:hash(scope)},context={...f.context,scope,requestRef};const first={...f.report.files[0],state:'CANCELLED',facts:null,reasonCode:'CANCEL_REQUESTED'},later={...f.report.files[0],relativePath:second.relativePath,documentRef:second.documentRef};const report=rehash({...f.report,requestRef,scopeDigest:requestRef.contentHash,files:[first,later],localEvidence:{...f.report.localEvidence,completed:false}});badReport(report,context);assert.equal(fn('readSourceContentReportV1')(rehash({...report,files:[first,{...later,state:'UNVERIFIED',facts:null,reasonCode:'NOT_ATTEMPTED'}]}),context).files[1].reasonCode,'NOT_ATTEMPTED');});
+test('원 선언 hash와 handle canonical path 주장을 혼동하지 않는다',()=>{const f=fixture(),canonicalPath='\\\\?\\D:\\Synthetic',report=rehash({...f.report,root:{...f.report.root,facts:{...f.report.root.facts,canonicalPath}}});assert.equal(fn('readSourceContentReportV1')(report,f.context).root.facts.canonicalPath,canonicalPath);badReport(f.report,{...f.context,declaredPathHint:'D:\\Other'});});

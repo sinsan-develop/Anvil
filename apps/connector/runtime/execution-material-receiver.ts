@@ -1,0 +1,113 @@
+import {randomUUID} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
+import {receiptKeyV1,type ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
+import {arrayV1,cloneV1,recordV1,refV1,uuidV1,hashV1,isoV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
+type Material={ref:RuntimeRefV1;snapshot:{projectId:string;executionId:string;executionGeneration:number;commandId:string;envelopeHash:string;payloadRef:RuntimeRefV1;sourceRef:RuntimeRefV1;partIndex:number;partCount:number;byteOffset:number;sourceBytes:number;utf8Bytes:number;contentHash:string;mediaType:string}};
+type Entry={ref:RuntimeRefV1;snapshot:{sequence:number;scope:ReceiptKeyV1;envelopeHash:string;manifestHash:string;materialRef:RuntimeRefV1;recordedAt:string;previousRef:RuntimeRefV1|null}};
+export interface SyntheticMaterialInboxTransaction{
+ read():Promise<{complete:boolean;events:Entry[]}>;
+ readPart(receiptRef:RuntimeRefV1):Promise<Uint8Array>;
+ /** bytes와 metadata를 함께 sync한다. 불명 기록을 incomplete로 보존하고 callback 실패로 삭제/rollback하지 않는다. */
+ appendAndSync(entry:Entry,bytes:Uint8Array):Promise<void>;
+}
+export interface SyntheticMaterialInbox{transport:'SYNTHETIC_ONLY';exclusive<T>(scope:ReceiptKeyV1,body:(tx:SyntheticMaterialInboxTransaction)=>Promise<T>):Promise<T>}
+const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),positive=(v:unknown)=>Number.isSafeInteger(v)&&Number(v)>0;
+class ReceiveFailure extends Error{}
+const fail=(code:string):never=>{throw new ReceiveFailure(code);};
+/** 합성 자료·저장 port만 소비한다. 등록 부분 수신은 필수 맥락·현재 서버 권한·이해·실행 허가가 아니다. */
+export class SyntheticMaterialReceiver{
+ readonly store:SyntheticMaterialInbox;#expected:{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1};#materials:Material[];#manifestHash:string;#clock:()=>number;
+ constructor(store:SyntheticMaterialInbox,expected:{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1},materials:unknown,options:{maxBytes:number;maxParts:number;clock:()=>number}){
+  this.store=store;this.#port();if(!recordV1(expected,['context','executorRegistrationRef'])||!refV1(expected.executorRegistrationRef)||!options||typeof options.clock!=='function'||!positive(options.maxBytes)||options.maxBytes>1024*1024*1024||!positive(options.maxParts)||options.maxParts>200||!arrayV1(materials,options.maxParts)||!materials.length)fail('MATERIAL_RECEIVER_CONFIG_INVALID');this.#clock=options.clock;this.#expected=cloneV1(expected);this.#materials=cloneV1(materials) as Material[];this.#manifestHash=hash(this.#materials);
+  const ids=new Set<string>(),groups=new Map<string,Material[]>();let total=0;
+  for(const m of this.#materials){const d=m?.snapshot;if(!recordV1(m,['ref','snapshot'])||!refV1(m.ref)||m.ref.contentHash!==hash(d)||ids.has(m.ref.id)||!recordV1(d,['projectId','executionId','executionGeneration','commandId','envelopeHash','payloadRef','sourceRef','partIndex','partCount','byteOffset','sourceBytes','utf8Bytes','contentHash','mediaType'])||!uuidV1(d.projectId)||!uuidV1(d.executionId)||!positive(d.executionGeneration)||!uuidV1(d.commandId)||!hashV1(d.envelopeHash)||!refV1(d.payloadRef)||!refV1(d.sourceRef)||!positive(d.partIndex)||!positive(d.partCount)||d.partCount>options.maxParts||d.partIndex>d.partCount||!Number.isSafeInteger(d.byteOffset)||d.byteOffset<0||!positive(d.sourceBytes)||!positive(d.utf8Bytes)||d.utf8Bytes>2*1024*1024||!hashV1(d.contentHash)||!['text/plain','application/json'].includes(d.mediaType))fail('MATERIAL_MANIFEST_INVALID');ids.add(m.ref.id);total+=d.utf8Bytes;const key=canonicalJson({payloadRef:d.payloadRef,sourceRef:d.sourceRef}),group=groups.get(key)??[];group.push(m);groups.set(key,group);}
+  if(total>options.maxBytes)fail('MATERIAL_RECEIVER_QUOTA');
+  for(const group of groups.values()){group.sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);let offset=0;const first=group[0]!.snapshot;for(const [i,m]of group.entries()){const d=m.snapshot;if(d.partIndex!==i+1||d.partCount!==group.length||d.byteOffset!==offset||d.sourceBytes!==first.sourceBytes||d.mediaType!==first.mediaType)fail('MATERIAL_MANIFEST_INVALID');offset+=d.utf8Bytes;}if(offset!==first.sourceBytes)fail('MATERIAL_MANIFEST_INVALID');}
+ }
+ #port(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.exclusive!=='function')fail('SYNTHETIC_MATERIAL_INBOX_REQUIRED');}
+ #now(){const n=this.#clock();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime()))return fail('MATERIAL_RECEIVER_CLOCK_INVALID');return n;}
+ #safe(bytes:Buffer){const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  // 서버와 같은 알려진 비밀 표식을 수신 경계에서도 거절한다. 완전한 비밀 탐지가 아니다.
+  if(/-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----|\bBearer\s+[A-Za-z0-9_.~+\/-]{16,}|\b(?:password|passwd|api[_-]?key|access[_-]?token|token|secret)\s*[:=]\s*["']?[^\s"']{4,}/i.test(text))fail('MATERIAL_PART_SENSITIVE');return bytes;
+ }
+ #bytes(raw:unknown,m:Material){if(!(raw instanceof Uint8Array)||raw.byteLength!==m.snapshot.utf8Bytes)fail('MATERIAL_PART_INVALID');const bytes=Buffer.from(raw as Uint8Array);if(contentHash(bytes)!==m.snapshot.contentHash)fail('MATERIAL_PART_INVALID');return this.#safe(bytes);}
+ async #journal(tx:SyntheticMaterialInboxTransaction,scope:ReceiptKeyV1,envelopeHash:string){
+  const raw=await tx.read();if(!recordV1(raw,['complete','events'])||raw.complete!==true||!arrayV1(raw.events,this.#materials.length)||Buffer.byteLength(canonicalJson(raw))>2*1024*1024)fail('MATERIAL_INBOX_INCOMPLETE');const events:Entry[]=cloneV1(raw.events),seen=new Set<string>(),parts=new Map<string,Buffer>();let last=-Infinity;
+  for(const [i,e]of events.entries()){const s=e?.snapshot,m=this.#materials.find(m=>same(m.ref,s?.materialRef));if(!recordV1(e,['ref','snapshot'])||!refV1(e.ref)||e.ref.version!==1||e.ref.contentHash!==hash(s)||!recordV1(s,['sequence','scope','envelopeHash','manifestHash','materialRef','recordedAt','previousRef'])||s.sequence!==i+1||!same(s.scope,scope)||s.envelopeHash!==envelopeHash||s.manifestHash!==this.#manifestHash||!m||seen.has(m.ref.id)||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)<last||Date.parse(s.recordedAt)>this.#now()||!same(s.previousRef,events[i-1]?.ref??null))fail('MATERIAL_INBOX_INVALID');parts.set(m!.ref.id,this.#bytes(await tx.readPart(cloneV1(e.ref)),m!));seen.add(m!.ref.id);last=Date.parse(s.recordedAt);}
+  const groups=new Map<string,Material[]>();for(const m of this.#materials){const key=canonicalJson({payloadRef:m.snapshot.payloadRef,sourceRef:m.snapshot.sourceRef}),group=groups.get(key)??[];group.push(m);groups.set(key,group);}for(const group of groups.values())if(group.every(m=>parts.has(m.ref.id))){group.sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);this.#safe(Buffer.concat(group.map(m=>parts.get(m.ref.id)!)));}
+  return events;
+ }
+ #result(events:Entry[]){const received=new Set(events.map(e=>e.snapshot.materialRef.id)),missing=this.#materials.filter(m=>!received.has(m.ref.id));return{transport:'SYNTHETIC_ONLY' as const,state:missing.length?'PARTIAL' as const:'REGISTERED_PARTS_RECEIVED' as const,manifestHash:this.#manifestHash,receivedMaterialRefs:this.#materials.filter(m=>received.has(m.ref.id)).map(m=>cloneV1(m.ref)),missingMaterialIds:missing.map(m=>m.ref.id),completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false};}
+ /** 재시작 뒤 기존 수신/누락을 읽기만 한다. 만료된 봉투도 역사로 조회하며 현재 허가나 필수 맥락 충족은 만들지 않는다. */
+ async readStatus(rawEnvelope:unknown){
+  try{
+   this.#port();const raw=cloneV1(rawEnvelope),envelope=readDispatchEnvelopeV1(raw,Date.parse((raw as any)?.issuedAt)),scope=receiptKeyV1(envelope);
+   if(envelope.operation==='REQUEST_STOP'||Date.parse(envelope.issuedAt)>this.#now()||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_STATUS_ENVELOPE_INVALID');
+   const payloadRefs=envelope.operation==='START_SESSION'?[envelope.payload.contextBundleRef,envelope.payload.optionsRef]:[envelope.payload.instructionRef,envelope.payload.partsRef];
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||!payloadRefs.some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{this.#port();return this.#result(await this.#journal(tx,scope,envelope.envelopeHash));});this.#port();const now=this.#now();
+   return{...result,readOnly:true as const,envelopeTimeState:now>=Date.parse(envelope.expiresAt)?'EXPIRED' as const:'WITHIN_ENVELOPE_WINDOW' as const,observedAt:new Date(now).toISOString(),currentAuthorityVerified:false as const};
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_STATUS_UNAVAILABLE');}
+ }
+ /** 내구 부분 inbox의 읽기 전용 SEND 자료 연결. 이 ref는 현재 서버 허가/이해 판정을 대신하지 않는다. */
+ instructionSource(){return{transport:'SYNTHETIC_ONLY' as const,read:(envelope:DispatchEnvelopeV1)=>this.instruction(envelope)};}
+ async instruction(rawEnvelope:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);if(envelope.operation!=='SEND_INSTRUCTION'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_INSTRUCTION_ENVELOPE_INVALID');
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||![envelope.payload.instructionRef,envelope.payload.partsRef].some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const instruction=this.#materials.filter(m=>same(m.snapshot.payloadRef,envelope.payload.instructionRef)).sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);
+   if(!instruction.length||new Set(instruction.map(m=>canonicalJson(m.snapshot.sourceRef))).size!==1||instruction.reduce((sum,m)=>sum+m.snapshot.utf8Bytes,0)>2*1024*1024)fail('MATERIAL_INSTRUCTION_SOURCE_INVALID');
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
+    readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash);if(this.#result(events).missingMaterialIds.length)fail('MATERIAL_REQUIRED_PART_MISSING');
+    const parts:Buffer[]=[];for(const m of instruction){const entry=events.find(e=>same(e.snapshot.materialRef,m.ref));if(!entry)return fail('MATERIAL_REQUIRED_PART_MISSING');parts.push(this.#bytes(await tx.readPart(cloneV1(entry.ref)),m));}
+    const bytes=this.#safe(Buffer.concat(parts));this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+    return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(scope),envelopeHash:envelope.envelopeHash,instructionRef:cloneV1(envelope.payload.instructionRef),partsRef:cloneV1(envelope.payload.partsRef),materialReceiptRef:cloneV1(events.at(-1)!.ref),utf8Bytes:bytes.byteLength,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes)};
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_INSTRUCTION_UNAVAILABLE');}
+ }
+ /** 내구 수신된 START 옵션의 읽기 전용 연결. 기본 옵션/실제 Agent/현재 권한을 만들지 않는다. */
+ startSource(){return{transport:'SYNTHETIC_ONLY' as const,read:(envelope:DispatchEnvelopeV1)=>this.startOptions(envelope)};}
+ async startOptions(rawEnvelope:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);
+   if(envelope.operation!=='START_SESSION'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef)||same(envelope.payload.contextBundleRef,envelope.payload.optionsRef))return fail('MATERIAL_START_ENVELOPE_INVALID');
+   for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||![envelope.payload.contextBundleRef,envelope.payload.optionsRef].some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   const options=this.#materials.filter(m=>same(m.snapshot.payloadRef,envelope.payload.optionsRef)).sort((a,b)=>a.snapshot.partIndex-b.snapshot.partIndex);
+   if(!this.#materials.some(m=>same(m.snapshot.payloadRef,envelope.payload.contextBundleRef))||!options.length||new Set(options.map(m=>canonicalJson(m.snapshot.sourceRef))).size!==1||options.some(m=>m.snapshot.mediaType!=='application/json')||options.reduce((sum,m)=>sum+m.snapshot.utf8Bytes,0)>2*1024*1024)fail('MATERIAL_START_SOURCE_INVALID');
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
+    readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash);if(this.#result(events).missingMaterialIds.length)fail('MATERIAL_REQUIRED_PART_MISSING');
+    const parts:Buffer[]=[];for(const m of options){const entry=events.find(e=>same(e.snapshot.materialRef,m.ref));if(!entry)return fail('MATERIAL_REQUIRED_PART_MISSING');parts.push(this.#bytes(await tx.readPart(cloneV1(entry.ref)),m));}
+    const bytes=this.#safe(Buffer.concat(parts));this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+    return{transport:'SYNTHETIC_ONLY' as const,key:cloneV1(scope),envelopeHash:envelope.envelopeHash,contextBundleRef:cloneV1(envelope.payload.contextBundleRef),optionsRef:cloneV1(envelope.payload.optionsRef),materialReceiptRef:cloneV1(events.at(-1)!.ref),utf8Bytes:bytes.byteLength,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes)};
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_START_UNAVAILABLE');}
+ }
+ /** client 원장에는 본문 대신 이 정확 수신 영수증만 전달한다. 부분 수신은 전체 맥락/현재 허가가 아니다.
+  * 기존 record 뒤 재잠금 재조회 실패도 원 bytes/영수증을 삭제하거나 자동 재수신하지 않는다. */
+ async recordReceipt(rawEnvelope:unknown,response:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);
+   if(!recordV1(response,['transport','materialId','materialRef','sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType','bytes','cacheControl','completeContextVerified','executionAuthorized','dispatchPerformed'])||!refV1(response.materialRef))return fail('MATERIAL_RESPONSE_INVALID');
+   const selected=cloneV1(response.materialRef);await this.record(envelope,response);this.#port();readDispatchEnvelopeV1(envelope,this.#now());
+   const receipt=await this.store.exclusive(cloneV1(scope),async tx=>{
+    this.#port();readDispatchEnvelopeV1(envelope,this.#now());const events=await this.#journal(tx,scope,envelope.envelopeHash),matches=events.filter(e=>same(e.snapshot.materialRef,selected));
+    if(matches.length!==1)return fail('MATERIAL_RECEIPT_NOT_RECORDED');this.#port();readDispatchEnvelopeV1(envelope,this.#now());return cloneV1(matches[0]!);
+   });this.#port();readDispatchEnvelopeV1(envelope,this.#now());return receipt;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_RECEIPT_UNAVAILABLE');}
+ }
+ async record(rawEnvelope:unknown,response:unknown){
+  try{
+   this.#port();const envelope=readDispatchEnvelopeV1(rawEnvelope,this.#now()),scope=receiptKeyV1(envelope);if(envelope.operation==='REQUEST_STOP'||!same(envelope.context,this.#expected.context)||!same(envelope.executorRegistrationRef,this.#expected.executorRegistrationRef))return fail('MATERIAL_ENVELOPE_MISMATCH');
+   const payloadRefs=envelope.operation==='START_SESSION'?[envelope.payload.contextBundleRef,envelope.payload.optionsRef]:[envelope.payload.instructionRef,envelope.payload.partsRef];for(const m of this.#materials){const d=m.snapshot;if(d.projectId!==scope.projectId||d.executionId!==scope.executionId||d.executionGeneration!==scope.executionGeneration||d.commandId!==scope.commandId||d.envelopeHash!==envelope.envelopeHash||!payloadRefs.some(r=>same(r,d.payloadRef)))fail('MATERIAL_MANIFEST_MISMATCH');}
+   if(!recordV1(response,['transport','materialId','materialRef','sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType','bytes','cacheControl','completeContextVerified','executionAuthorized','dispatchPerformed'])||response.transport!=='SYNTHETIC_ONLY'||response.cacheControl!=='no-store'||response.completeContextVerified!==false||response.executionAuthorized!==false||response.dispatchPerformed!==false) return fail('MATERIAL_RESPONSE_INVALID');
+   const material=this.#materials.find(m=>m.ref.id===response.materialId);if(!material||!same(material.ref,response.materialRef)||!['sourceRef','partIndex','partCount','byteOffset','sourceBytes','contentHash','mediaType'].every(k=>same((material.snapshot as any)[k],response[k])))fail('MATERIAL_RESPONSE_INVALID');const bytes=this.#bytes(response.bytes,material!);
+   const result=await this.store.exclusive(cloneV1(scope),async tx=>{
+    readDispatchEnvelopeV1(envelope,this.#now());this.#port();const events=await this.#journal(tx,scope,envelope.envelopeHash);this.#port();readDispatchEnvelopeV1(envelope,this.#now());if(events.some(e=>same(e.snapshot.materialRef,material!.ref)))return this.#result(events);
+    readDispatchEnvelopeV1(envelope,this.#now());const snapshot={sequence:events.length+1,scope:cloneV1(scope),envelopeHash:envelope.envelopeHash,manifestHash:this.#manifestHash,materialRef:cloneV1(material!.ref),recordedAt:new Date(this.#now()).toISOString(),previousRef:events.at(-1)?.ref??null},entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(cloneV1(entry),new Uint8Array(bytes));this.#port();const saved=await this.#journal(tx,scope,envelope.envelopeHash);if(!same(saved,[...events,entry]))fail('MATERIAL_INBOX_INCOMPLETE');readDispatchEnvelopeV1(envelope,this.#now());return this.#result(saved);
+   });
+   // 잠금 종료도 비동기 경계다. 이미 sync된 부분은 보존하되 늦은 성공은 반환하지 않는다.
+   this.#port();readDispatchEnvelopeV1(envelope,this.#now());return result;
+  }catch(error){if(error instanceof ReceiveFailure)throw error;return fail('MATERIAL_RECEIVE_UNAVAILABLE');}
+ }
+}

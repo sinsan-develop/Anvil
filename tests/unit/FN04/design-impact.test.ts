@@ -1,0 +1,10 @@
+import assert from'node:assert/strict';import{test}from'node:test';
+const before={id:'a6f30000-0000-4000-8000-000000000090',version:1,contentHash:'1'.repeat(64)},plan={id:'a6f30000-0000-4000-8000-000000000091',version:1,contentHash:'2'.repeat(64)};
+const task=(code:string,designRefs:any[]=[],dependencies:any[]=[])=>({ref:{kind:'PLAN_TASK',id:plan.id,versionRef:plan,localCode:code},designRefs,dependencies});
+test('설계 변경 영향은 exact 기준 참조와 의존 방향만 전파하고 미연결을 영향 없음으로 만들지 않는다',async()=>{
+ const m=await import('../../../apps/server/modules/traceability/design-impact.ts').catch(()=>null);assert.ok(m,'기계 추적 기반 영향 계산 필요');const a=task('FN01',[before]),b=task('UI01',[],[a.ref]),c=task('IX01',[],[b.ref]),unlinked=task('FN02'),targets=[a,b,c,unlinked],copy=structuredClone(targets);
+ const result=m.calculateDesignImpact(before,targets,false);assert.deepEqual(targets,copy);assert.deepEqual(result.items.map(i=>i.state),['AFFECTED','AFFECTED','AFFECTED','UNKNOWN']);assert.equal(result.items.some(i=>String(i.state)==='UNAFFECTED'),false);assert.equal(result.sourceKind,'MECHANICAL_TRACE');assert.equal(result.requiresReview,true);assert.ok(result.coverageGaps.some(g=>g.code==='EXECUTION_SOURCE_NOT_CONNECTED'));assert.ok(result.coverageGaps.some(g=>g.code==='TEST_EVIDENCE_SOURCE_NOT_CONNECTED'));assert.equal('activatedAsBaseline'in result,false);
+});
+test('다른 hash·찾지 못한 선행·범위 잘림·중복 target을 숨기거나 일부 계산을 전체 확인으로 승격하지 않는다',async()=>{
+ const m=await import('../../../apps/server/modules/traceability/design-impact.ts').catch(()=>null);assert.ok(m,'불완전 영향 범위 검사 필요');const a=task('FN01',[{...before,contentHash:'3'.repeat(64)}]),b=task('UI01',[],[task('MISSING').ref]),result=m.calculateDesignImpact(before,[a,b],true);assert.deepEqual(result.items.map(i=>i.state),['UNKNOWN','UNKNOWN']);assert.ok(result.coverageGaps.some(g=>g.code==='IMPACT_SCOPE_TRUNCATED'));assert.ok(result.coverageGaps.some(g=>g.code==='DEPENDENCY_SOURCE_MISSING'));assert.throws(()=>m.calculateDesignImpact(before,[a,a],false));assert.throws(()=>m.calculateDesignImpact(before,[{...a,ref:{...a.ref,completed:true}}],false));
+});

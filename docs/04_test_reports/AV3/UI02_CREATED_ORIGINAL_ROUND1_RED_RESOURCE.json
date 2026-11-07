@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "scope": "UI02_ROUND1_PRE_FIX_SYNTHETIC_DOM_RED",
+  "instance": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "createdAtUtc": "2026-10-26T10:15:04.0574433Z",
+    "expiresAtUtc": "2026-10-26T10:45:04.0574433Z",
+    "fileCount": 0,
+    "profiles": [
+      "browser-round1"
+    ],
+    "phase": "ROUND1_RED_EMPTY_TEMP"
+  },
+  "source": {
+    "specSha256": "A3F00C4E35BB6B6251B876F022AA8E741B45E969C344D4152B80248BCA91E4F3",
+    "originalPrefixBytes": 11063,
+    "originalPrefixSha256": "EF3FDBC0D924484AEC12EB03C3CBCC2BD258081DA4B93F73A413F175D1114235",
+    "productBeforeFix": "DocumentImport.tsx 12C463176123CF13C96D724D0F5ED6AC0AB356A8DDBF4E21B1CF16452A40B512",
+    "otherProductUnitHarnessHashesVerified": 12
+  },
+  "execution": {
+    "startTool": "dd4ed3",
+    "completionTool": "d70ff5",
+    "command": "node --test --test-name-pattern round1 tests/browser/UI06/created-original-import.spec.ts",
+    "exitCode": 1,
+    "tests": 6,
+    "passed": 1,
+    "failed": 5,
+    "skipped": 0,
+    "totalDurationMs": 9056.0503,
+    "parentDurationMs": 6703.5588,
+    "originalPositive": "NOT_SELECTED_NOT_PASS_INHERITED",
+    "scenarios": {
+      "FIRST_409": "FAIL_2_ASSERTIONS",
+      "FIRST_422": "FAIL_2_ASSERTIONS",
+      "LOSS_THEN_409": "PASS",
+      "SAME_VALUE_CLONE": "FAIL_8_ASSERTIONS",
+      "DELAYED_OBJECT_ABA": "FAIL_4_ASSERTIONS"
+    },
+    "classification": "EXPECTED_RED_NOT_ACCEPTANCE"
+  },
+  "cleanup": {
+    "root": "D:\\tmp\\anvil-v3-stage-b\\ui02-created-original-dom-20261026-01",
+    "owner": "SINSAN\\cyhuh",
+    "inventoryAtUtc": "2026-10-26T10:17:08.7426313Z",
+    "files": 186,
+    "directories": 58,
+    "bytes": 14722085,
+    "topLevelEntries": [
+      "browser-round1",
+      "temp"
+    ],
+    "links": 0,
+    "relatedProcesses": 0,
+    "cleanupCompletedAtUtc": "2026-10-26T10:17:09.4226725Z",
+    "rootExists": false
+  },
+  "independentObservation": {
+    "toolChunk": "147ee0",
+    "atUtc": "2026-10-26T10:17:18.3751831Z",
+    "rootExists": false,
+    "relatedProcesses": 0,
+    "cimReadSucceeded": true
+  },
+  "actualDbServicesAgentExecuted": false
+}

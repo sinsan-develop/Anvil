@@ -1,0 +1,9 @@
+import{useEffect,useState}from'react';import type{WorkPlanBuffer}from'./work-plan-api.ts';import{planTaskRemovalImpact}from'./plan-task-removal.ts';
+export function PlanTaskRemoval({state,index,locked,onRemove}:{state:WorkPlanBuffer;index:number;locked:boolean;onRemove:(state:WorkPlanBuffer,index:number)=>void}){
+ const[preview,setPreview]=useState<{state:WorkPlanBuffer;index:number;impact:ReturnType<typeof planTaskRemovalImpact>}|null>(null),[error,setError]=useState(false);
+ useEffect(()=>{setPreview(null);},[state,index,locked]);
+ const shown=preview?.state===state&&preview.index===index&&!locked?preview.impact:null;
+ return<div><button type="button" disabled={locked} onClick={()=>{if(locked)return;setError(false);try{setPreview({state,index,impact:planTaskRemovalImpact(state,index)});}catch{setPreview(null);setError(true);}}}>업무 {index+1} 제거</button>
+ {error?<p role="alert">제거 영향을 확인하지 못했습니다. 업무와 입력은 보존했습니다.</p>:null}
+ {shown?<section aria-label="업무 제거 영향 확인" className="status-card"><h4>{shown.taskCode||'코드 미입력'} · {shown.title||'제목 미입력'} 제거 전 확인</h4><p>현재 초안의 이 카드만 제외합니다. 저장된 버전·문서·추적 이력은 삭제하지 않습니다.</p><p>이 카드에서 빠지는 정의: 설계 참조 {shown.designRefs}건 · 화면 참조 {shown.screenRefs}건 · 시험 {shown.tests}건</p><h5>자동 수정하지 않고 남기는 선행 참조 {shown.retainedReferences.length}건</h5><ul>{shown.retainedReferences.map(r=><li key={r.index+':'+r.phase}>업무 {r.index+1} · {r.taskCode||'코드 미입력'} · {r.phase==='START'?'착수 선행':'검수 선행'}</li>)}</ul><p>남은 선행·화면 검토 선택과 의미상 영향은 직접 정정하고 저장 후 기존 구조 검사·내용 검토로 확인하세요. 참조 없음은 전체 영향 없음이 아닙니다.</p><button type="button" disabled={locked} onClick={()=>{if(locked||preview?.state!==state||preview.index!==index)return;onRemove(state,index);setPreview(null);}}>영향 확인 후 업무 제거</button><button type="button" onClick={()=>setPreview(null)}>업무 제거 취소</button></section>:null}</div>;
+}

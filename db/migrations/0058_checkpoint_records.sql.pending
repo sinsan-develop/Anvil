@@ -1,0 +1,96 @@
+-- FN13 r2 A 미적용 후보. 실제 DB/GRANT 실행 승인이 아니며 loader에 등록하지 않는다.
+-- 전역 프로젝트 10GiB 예약 공급자가 없으므로 신규 INSERT는 항상 거절한다.
+CREATE TABLE anvil.checkpoint_records(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,id uuid NOT NULL,
+ assignment_id uuid NOT NULL,assignment_version bigint NOT NULL CHECK(assignment_version BETWEEN 1 AND 9007199254740991),assignment_hash text NOT NULL CHECK(assignment_hash~'^[0-9a-f]{64}$'),
+ previous_id uuid,previous_hash text,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),snapshot_json jsonb NOT NULL,record_text text NOT NULL,
+ created_by uuid NOT NULL,client_id uuid NOT NULL,command_id uuid NOT NULL UNIQUE,created_at timestamptz NOT NULL,
+ PRIMARY KEY(project_id,id),UNIQUE(project_id,command_id),
+ FOREIGN KEY(project_id,assignment_id,assignment_version) REFERENCES anvil.assignment_versions(project_id,assignment_id,version) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,previous_id) REFERENCES anvil.checkpoint_records(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,created_by) REFERENCES anvil.project_members(project_id,user_id) ON DELETE RESTRICT,
+ FOREIGN KEY(created_by,client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ CHECK((previous_id IS NULL AND previous_hash IS NULL) OR(previous_id IS NOT NULL AND previous_hash IS NOT NULL AND previous_hash~'^[0-9a-f]{64}$')),
+ CHECK(previous_id IS DISTINCT FROM id)
+);
+CREATE UNIQUE INDEX checkpoint_single_successor ON anvil.checkpoint_records(project_id,assignment_id,assignment_version,assignment_hash,previous_id) NULLS NOT DISTINCT;
+REVOKE ALL ON anvil.checkpoint_records FROM PUBLIC;
+REVOKE UPDATE,DELETE,TRUNCATE ON anvil.checkpoint_records FROM anvil_v3_app;
+GRANT SELECT,INSERT ON anvil.checkpoint_records TO anvil_v3_app;
+CREATE FUNCTION anvil.checkpoint_canonical(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT anvil.assignment_draft_canonical(v); $$;
+CREATE FUNCTION anvil.checkpoint_hash(v jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$ SELECT encode(sha256(convert_to(anvil.checkpoint_canonical(v),'UTF8')),'hex'); $$;
+CREATE FUNCTION anvil.checkpoint_keys(v jsonb,keys text[]) RETURNS boolean LANGUAGE sql IMMUTABLE AS $$
+ SELECT COALESCE(jsonb_typeof(v)='object' AND(SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(v) k)=(SELECT array_agg(k ORDER BY k) FROM unnest(keys) k),false);
+$$;
+CREATE FUNCTION anvil.checkpoint_complete(cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE r anvil.checkpoint_records%ROWTYPE;c anvil.commands%ROWTYPE;ar anvil.authorization_receipts%ROWTYPE;a anvil.audit_events%ROWTYPE;prev anvil.checkpoint_records%ROWTYPE;
+ ref jsonb;original jsonb;prepared jsonb;input jsonb;s jsonb;prefix text;seq bigint;previous_seq bigint;n bigint;b numeric;
+BEGIN
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL OR c.operation IS DISTINCT FROM 'saveCheckpoint' OR c.state IS DISTINCT FROM 'APPLIED' OR c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM c.project_id OR c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL THEN RETURN false;END IF;
+ SELECT * INTO r FROM anvil.checkpoint_records WHERE command_id=cid AND project_id=c.project_id;
+ IF r.id IS NULL THEN RETURN false;END IF;
+ SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=cid AND scope_kind='PROJECT' AND scope_id=r.project_id;
+ IF ar.id IS NULL OR ar.approval_decision_ref IS NOT NULL OR ar.policy_ref IS DISTINCT FROM c.policy_ref OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',r.created_by,'clientId',r.client_id) OR c.actor_id IS DISTINCT FROM r.created_by OR c.client_id IS DISTINCT FROM r.client_id OR c.expected_version IS DISTINCT FROM r.assignment_version THEN RETURN false;END IF;
+ s=r.snapshot_json;input=s->'input';ref=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash);
+ IF NOT anvil.checkpoint_keys(s,ARRAY['schemaVersion','projectId','input','preparedHash','recordFile','recordedBy','recordedAt','sourceAssurance','gaps','checkpointStored','recordFileStored','currentFactsVerified','writerReleaseVerified','resumeAuthorized','completionAccepted','executionAuthorized','dispatchPerformed']) OR s->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR s->>'projectId' IS DISTINCT FROM r.project_id::text OR s->>'sourceAssurance' IS DISTINCT FROM 'HUMAN_RECORDED_CLAIMS_NOT_VERIFIED' OR s->'checkpointStored' IS DISTINCT FROM 'true'::jsonb THEN RETURN false;END IF;
+ IF EXISTS(SELECT 1 FROM unnest(ARRAY['recordFileStored','currentFactsVerified','writerReleaseVerified','resumeAuthorized','completionAccepted','executionAuthorized','dispatchPerformed']) k WHERE s->k IS DISTINCT FROM 'false'::jsonb) THEN RETURN false;END IF;
+ IF NOT anvil.checkpoint_keys(input,ARRAY['baseRef','state','reason']) OR jsonb_typeof(input->'reason') IS DISTINCT FROM 'string' OR NOT anvil.checkpoint_keys(input->'state',ARRAY['assignmentRef','executionRefs','baselineRefs','currentPosition','completedItems','inProgress','remaining','sourceSnapshotRefs','changedFiles','verificationRefs','errorFingerprints','attemptCounts','lastLocalSequence','lastServerAck','untransmittedRefs','pendingDecisions','nextAction','forbiddenActions','recordFileRef']) THEN RETURN false;END IF;
+ IF s->'recordedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',r.created_by,'clientId',r.client_id) OR s->>'recordedAt' IS DISTINCT FROM to_char(r.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') OR r.created_at IS DISTINCT FROM date_trunc('milliseconds',r.created_at) OR input->'state'->'assignmentRef' IS DISTINCT FROM jsonb_build_object('id',r.assignment_id,'version',r.assignment_version,'contentHash',r.assignment_hash) THEN RETURN false;END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.assignment_versions av WHERE av.project_id=r.project_id AND av.assignment_id=r.assignment_id AND av.version=r.assignment_version AND av.content_hash=r.assignment_hash) THEN RETURN false;END IF;
+ prefix=E'# Anvil 작업현황 · 기록 초안\n\n이 기록은 수행자 선언이며 실제 파일/중지/회수·완료/재개를 인증하지 않습니다.\n\n';
+ IF left(r.record_text,length(prefix)) IS DISTINCT FROM prefix THEN RETURN false;END IF;
+ prepared=substring(r.record_text FROM length(prefix)+1)::jsonb;
+ IF prepared IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'projectId',r.project_id,'input',input,'sourceAssurance','CALLER_DECLARED_STATE_NOT_VERIFIED','gaps',s->'gaps','checkpointStored',false,'recordFileStored',false,'currentFactsVerified',false,'writerReleaseVerified',false,'resumeAuthorized',false,'completionAccepted',false,'executionAuthorized',false,'dispatchPerformed',false) OR s->>'preparedHash' IS DISTINCT FROM anvil.checkpoint_hash(prepared) OR s->'recordFile' IS DISTINCT FROM jsonb_build_object('bytes',octet_length(r.record_text),'contentHash',encode(sha256(convert_to(r.record_text,'UTF8')),'hex'),'mediaType','text/plain;charset=utf-8') OR r.content_hash IS DISTINCT FROM anvil.checkpoint_hash(s) OR octet_length(anvil.checkpoint_canonical(s))+octet_length(r.record_text)>2097152 THEN RETURN false;END IF;
+ original=jsonb_build_object('schemaVersion',1,'projectId',r.project_id,'commandId',c.command_id,'clientId',r.client_id,'controlGeneration',c.control_generation,'operation','saveCheckpoint','targetId',r.assignment_id,'expectedVersion',r.assignment_version,'baselineRefs','[]'::jsonb,'approvalRef',null,'payload',input);
+ IF c.request_hash IS DISTINCT FROM anvil.checkpoint_hash(original) OR ar.scope_digest IS DISTINCT FROM anvil.checkpoint_hash(jsonb_build_object('projectId',r.project_id,'actorId',r.created_by,'clientId',r.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref)) OR c.result_ref->>'commandId' IS DISTINCT FROM c.command_id::text OR c.result_ref->>'operationId' IS DISTINCT FROM c.operation_id::text OR c.result_ref->>'projectId' IS DISTINCT FROM r.project_id::text OR c.result_ref->>'targetId' IS DISTINCT FROM r.id::text OR c.result_ref->'version' IS DISTINCT FROM '1'::jsonb OR c.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR c.result_ref->>'serverReceivedAt' IS DISTINCT FROM s->>'recordedAt' OR c.result_ref->'data' IS DISTINCT FROM jsonb_build_object('ref',ref,'status','CHECKPOINT_RECORDED','snapshot',s,'checkpointStored',true,'recordFileStored',false,'currentFactsVerified',false,'writerReleaseVerified',false,'resumeAuthorized',false,'completionAccepted',false,'executionAuthorized',false,'dispatchPerformed',false) THEN RETURN false;END IF;
+ SELECT count(*),min(server_sequence) INTO n,seq FROM anvil.audit_events WHERE project_id=r.project_id AND command_id=cid AND operation_id=c.operation_id AND outcome='APPLIED' AND source_kind='HUMAN_COMMAND' AND scope_digest=ar.scope_digest AND target_ref=ref;
+ IF n<>1 OR seq NOT BETWEEN 1 AND 9007199254740991 THEN RETURN false;END IF;
+ IF r.previous_id IS NULL THEN IF input->'baseRef' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+ ELSE
+  SELECT * INTO prev FROM anvil.checkpoint_records WHERE project_id=r.project_id AND id=r.previous_id AND assignment_id=r.assignment_id AND assignment_version=r.assignment_version AND assignment_hash=r.assignment_hash;
+  IF prev.id IS NULL OR prev.content_hash IS DISTINCT FROM r.previous_hash OR input->'baseRef' IS DISTINCT FROM jsonb_build_object('id',prev.id,'version',1,'contentHash',prev.content_hash) THEN RETURN false;END IF;
+  SELECT min(a.server_sequence) INTO previous_seq FROM anvil.audit_events a JOIN anvil.commands pc ON pc.id=prev.command_id JOIN anvil.authorization_receipts pa ON pa.id=pc.authorization_receipt_id AND pa.command_id=pc.id WHERE a.project_id=r.project_id AND a.command_id=pc.id AND a.operation_id=pc.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=pa.scope_digest AND a.target_ref=jsonb_build_object('id',prev.id,'version',1,'contentHash',prev.content_hash);
+  IF previous_seq IS NULL OR previous_seq>=seq THEN RETURN false;END IF;
+ END IF;
+ SELECT count(*),COALESCE(sum(octet_length(anvil.checkpoint_canonical(snapshot_json))+octet_length(record_text)),0) INTO n,b FROM anvil.checkpoint_records WHERE project_id=r.project_id;
+ RETURN n<=10000 AND b<=1073741824;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.checkpoint_insert_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ IF NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true) OR NOT EXISTS(
+ SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ JOIN anvil.project_members m ON m.project_id=c.project_id AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=c.project_id AND p.archived_at IS NULL
+ JOIN anvil.project_control pc ON pc.project_id=c.project_id AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=c.project_id AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pp.project_id AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ JOIN anvil.auth_sessions au ON au.user_id=c.actor_id AND au.client_id=c.client_id AND au.id::text=current_setting('anvil.checkpoint_session_id',true) AND au.revoked_at IS NULL AND au.idle_expires_at>clock_timestamp() AND au.absolute_expires_at>clock_timestamp()
+ JOIN anvil.users u ON u.id=au.user_id AND u.status='ACTIVE' AND u.revoked_at IS NULL AND au.credential_generation=u.credential_generation
+ JOIN anvil.clients cl ON cl.user_id=au.user_id AND cl.id=au.client_id AND cl.revoked_at IS NULL
+ WHERE c.id=NEW.command_id AND c.project_id=NEW.project_id AND c.operation='saveCheckpoint' AND c.state='APPLIED' AND c.approval_consumption_id IS NULL AND ar.approval_decision_ref IS NULL
+ AND anvil.checkpoint_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs))=pv.content_hash
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',c.project_id)) AND rule->'operations' ? 'saveCheckpoint' AND rule->>'disposition'='AUTO' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',c.project_id)) AND rule->'operations' ? 'saveCheckpoint' AND rule->>'disposition' IN('DENY','REQUIRE_APPROVAL') AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ ) THEN RAISE EXCEPTION 'CHECKPOINT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ -- 현재 사용량/예약 공급자 없는 상태에서 GUC 또는 호출자 bool로 전역 권위를 발급하지 않는다.
+ RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED' USING ERRCODE='23514';
+END;$$;
+CREATE TRIGGER checkpoint_insert_guard BEFORE INSERT ON anvil.checkpoint_records FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_insert_guard();
+CREATE FUNCTION anvil.checkpoint_final_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN IF NEW.operation<>'saveCheckpoint' THEN RETURN NEW;END IF;cid=NEW.id;
+ ELSE cid=NEW.command_id;IF NOT EXISTS(SELECT 1 FROM anvil.commands WHERE id=cid AND operation='saveCheckpoint') THEN RETURN NEW;END IF;END IF;
+ IF NOT COALESCE(anvil.checkpoint_complete(cid),false) THEN RAISE EXCEPTION 'CHECKPOINT_COMPLETE_RECEIPT_REQUIRED' USING ERRCODE='23514';END IF;RETURN NEW;
+END;$$;
+CREATE CONSTRAINT TRIGGER checkpoint_command_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_final_guard();
+CREATE CONSTRAINT TRIGGER checkpoint_record_complete AFTER INSERT ON anvil.checkpoint_records DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_final_guard();
+CREATE CONSTRAINT TRIGGER checkpoint_receipt_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_final_guard();
+CREATE CONSTRAINT TRIGGER checkpoint_audit_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_final_guard();
+CREATE FUNCTION anvil.checkpoint_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'CHECKPOINT_IMMUTABLE' USING ERRCODE='42501';END;$$;
+CREATE TRIGGER checkpoint_immutable BEFORE UPDATE OR DELETE ON anvil.checkpoint_records FOR EACH ROW EXECUTE FUNCTION anvil.checkpoint_immutable();
+CREATE TRIGGER checkpoint_no_truncate BEFORE TRUNCATE ON anvil.checkpoint_records FOR EACH STATEMENT EXECUTE FUNCTION anvil.checkpoint_immutable();

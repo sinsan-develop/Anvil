@@ -1,0 +1,78 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {randomUUID} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {readSyntheticInstructionQueueRecord} from '../../../apps/server/modules/executions/execution-instruction-queue.ts';
+import {SyntheticPgInstructionMaterialBasis} from '../../../apps/server/modules/executions/execution-instruction-material-basis.ts';
+import {SyntheticExecutionMaterials} from '../../../apps/server/modules/executions/execution-materials.ts';
+import {executionTarget} from '../../../apps/server/modules/executions/execution-proof.ts';
+const mod:any=await import('../../../apps/server/modules/executions/execution-instruction-material-parts.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+const hash=(v:unknown)=>contentHash(canonicalJson(v)),at='2026-10-25T12:00:00.000Z',until='2026-10-25T12:00:20.000Z';
+function fixture(){
+ const ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)}),r=ref(),pid=randomUUID(),eid=randomUUID(),cid=randomUUID(),commandId=randomUUID(),materialId=randomUUID();
+ const scope:any={mode:'EXECUTION',projectId:pid,connectorId:cid,executionId:eid,executionGeneration:1,grantRef:ref(),credentialGeneration:1},small={projectId:pid,executionId:eid,executionGeneration:1};
+ const subject={userId:randomUUID(),clientId:randomUUID(),humanSessionId:randomUUID(),controlGeneration:1,credentialGeneration:1},actor:any={actorId:subject.userId,clientId:subject.clientId,credentialGeneration:1,serverOwner:false,reauthUntil:null,authSession:{id:subject.humanSessionId,idleExpiresAt:until,absoluteExpiresAt:until}};
+ const fact:any={schemaVersion:1,purpose:'SERVER_EXECUTION_CURRENTNESS',transport:'SYNTHETIC_ONLY',...small,subject,agentSession:{sessionRef:r,roleBindingRef:r,credentialGeneration:1},registration:{ref:r,connectorId:cid,generation:1,hostPublicKeyFingerprint:'b'.repeat(64)},intent:{projectId:pid,assignmentRef:r,roleBindingRef:r,contextBundleRef:r,connectionRef:r,environmentRef:r,capabilityRef:r,budgetPolicyRef:r,sourceScopes:[{sourceRootRef:r,mappingRef:null,observationRef:r,baselineRef:r,targets:[{relativePath:'synthetic.txt',kind:'FILE',access:'READ',recursive:false}]}],mode:'CONTEXT_REVIEW',reason:'합성 자료 시험'},preparationRef:r,permissionPolicyRef:r,budgetReservationRef:r,basisRefs:[r],latestInstructionRefs:[],understandingReviewRef:null,checks:Object.fromEntries(['subject','session','registration','permissionPolicy','basis','context','capability','source','osFence','budget','storage','understanding'].map(n=>[n,{state:n==='understanding'?'NOT_REQUIRED':'VERIFIED_CURRENT',evidenceRefs:n==='understanding'?[]:[r]}])),writerState:'OWNED',expires:Object.fromEntries(['humanSession','permissionPolicy','registration','budget','automaticScope'].map(n=>[n,until])),checkedAt:at,executionAuthorized:false,dispatchPerformed:false};
+ const instructionRef=ref(),partsRef=ref(),manifestRef=ref(),reservationRef=ref(),{checkedAt:_,...savedFact}=fact;
+ const reservationSnapshot={sequence:1,claim:{...small,commandId,assignmentRef:r,stageRef:{applicationRef:r,nodeId:'합성'},policyRef:r,operation:'SEND_INSTRUCTION',demand:{attempts:0,calls:1,spoolBytes:12,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},state:'RESERVED',usage:null,previousRef:null,checkedAt:at,evidenceRef:null,executionAuthorized:false,dispatchPerformed:false};reservationRef.contentHash=hash(reservationSnapshot);const reservation={ref:reservationRef,snapshot:reservationSnapshot};
+ const binding={transport:'SYNTHETIC_ONLY',scope:small,grantRef:scope.grantRef,grantKind:'EXECUTION',grantState:'ACTIVE',grantExpiresAt:until,grantSubject:subject,grantAllowedOperations:['SEND_INSTRUCTION'],sessionBindingRef:r,instructionRef,partsRef,materialManifestRef:manifestRef,turnState:'IDLE',fact:savedFact};
+ const request={schemaVersion:1,projectId:pid,commandId,clientId:subject.clientId,controlGeneration:1,operation:'queueExecutionCommand',targetId:eid,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{grantRef:scope.grantRef,sessionBindingRef:r,instructionRef,partsRef,permissionPolicyRef:r,budgetPolicyRef:r,reason:'합성 자료 시험'}};
+ const unsigned={schemaVersion:1,commandId,issuedAt:at,expiresAt:until,executorRegistrationRef:r,context:{projectId:pid,assignmentId:r.id,executionId:eid,executionGeneration:1,connectionRef:r,environmentRef:r,authorizationReceiptRef:r,capabilityRef:r,budgetRef:reservationRef,sourceScopes:fact.intent.sourceScopes},operation:'SEND_INSTRUCTION',payload:{sessionBindingRef:r,instructionRef,partsRef}},envelope={...unsigned,envelopeHash:hash(unsigned)};
+ const intent={transport:'SYNTHETIC_ONLY',state:'SYNTHETIC_INSTRUCTION_QUEUED',scope:small,requestHash:hash(request),currentBinding:binding,reservationRef,reason:request.payload.reason,queuedAt:at,expiresAt:until,executionAuthorized:false,dispatchPerformed:false};
+ const command:any={ref:{id:randomUUID(),version:1,contentHash:hash(intent)},snapshot:{...intent,request,envelope}};
+ readSyntheticInstructionQueueRecord(command,small);
+ const body=Buffer.from('가나다ABC'),source={sourceRef:ref(),bodyRef:ref(),partsRef,originRef:ref(),contentHash:contentHash(body),sourceBytes:body.length,mediaType:'text/plain'};
+ const parts=[{materialId,partIndex:1,byteOffset:0,utf8Bytes:6,contentHash:contentHash(Buffer.from('가나'))},{materialId:randomUUID(),partIndex:2,byteOffset:6,utf8Bytes:6,contentHash:contentHash(Buffer.from('다ABC'))}];
+ const descriptor={...small,commandId,envelopeHash:envelope.envelopeHash,payloadRef:partsRef,sourceRef:source.sourceRef,partIndex:1,partCount:2,byteOffset:0,sourceBytes:body.length,utf8Bytes:6,contentHash:parts[0]!.contentHash,mediaType:'text/plain'},material={ref:{id:materialId,version:1,contentHash:hash(descriptor)},snapshot:descriptor};
+ const registration:any={scope:structuredClone(scope),command,material,manifestRef:structuredClone(manifestRef),source,parts,registeredAt:at,expiresAt:until};
+ const basis={subject,permissionPolicyRef:fact.permissionPolicyRef,basisRefs:fact.basisRefs,latestInstructionRefs:fact.latestInstructionRefs,instructionRef};
+ const state:any=structuredClone({scope,commandRef:command.ref,manifestRef,source,basis,access:'READ',quarantined:false,superseded:false,excluded:false,checkedAt:at,expiresAt:until});
+ let clock=at,bodyReads=0,lookups=0,sourceReads=0,bodyValue:Uint8Array=body,afterBody=()=>{},afterSource=()=>{};
+ const db:any={query:async(sql:string)=>{assert.equal(sql,'SELECT clock_timestamp() AS at');return{rows:[{at:new Date(clock)}]};}};
+ const repository:any={transport:'SYNTHETIC_ONLY',clock:async(tx:any)=>{assert.equal(tx,db);return clock;},findByCommand:async(tx:any,s:any,id:string,mid:string)=>{assert.equal(tx,db);lookups++;return id===commandId&&mid===materialId?structuredClone(registration):null;},findByRef:async(tx:any,s:any,r:any)=>{assert.equal(tx,db);lookups++;return canonicalJson(r)===canonicalJson(material.ref)?structuredClone(registration):null;}};
+ const sourcePort:any={transport:'SYNTHETIC_ONLY',current:async(tx:any,s:any,selection:any)=>{assert.equal(tx,db);assert.deepEqual(s,scope);assert.deepEqual(selection,{commandRef:command.ref,manifestRef,source,basis});sourceReads++;const out=structuredClone(state);afterSource();return out;},readBody:async(tx:any,s:any,selection:any)=>{assert.equal(tx,db);assert.deepEqual(s,scope);assert.deepEqual(selection,{commandRef:command.ref,manifestRef,source,basis});bodyReads++;afterBody();return new Uint8Array(bodyValue);}};
+ const make=()=>{assert.equal(typeof mod.SyntheticInstructionMaterialParts,'function');return new mod.SyntheticInstructionMaterialParts(repository,sourcePort);},current=()=>make().current(db,actor,scope,command,materialId),read=()=>make().readPart(db,scope,material.ref);
+ return{scope,actor,command,commandId,materialId,material,registration,reservation,state,source,parts,repository,sourcePort,db,fact,body,make,current,read,counts:()=>({bodyReads,lookups,sourceReads}),clock:(v:string)=>clock=v,bodyValue:(v:Uint8Array)=>bodyValue=v,afterBody:(fn:()=>void)=>afterBody=fn,afterSource:(fn:()=>void)=>afterSource=fn,rebind:()=>material.ref.contentHash=hash(material.snapshot)};
+}
+test('등록 exact 조회와 합성 source를 기존 current/readPart 소비 경계에 연결하고 원등록을 보존한다',async()=>{
+ const f=fixture(),adapter=f.make(),original=structuredClone(f.registration);
+ assert.deepEqual(await adapter.current(f.db,f.actor,f.scope,f.command,f.materialId),{material:f.material,sourceState:'AVAILABLE'});
+ assert.deepEqual(Buffer.from(await adapter.readPart(f.db,f.scope,f.material.ref)),Buffer.from('가나'));
+ assert.deepEqual(await f.current(),{material:f.material,sourceState:'AVAILABLE'});assert.deepEqual(f.registration,original);assert.equal(f.counts().bodyReads,1);
+ const permitBasis:any={transport:'SYNTHETIC_ONLY',current:async()=>({transport:'SYNTHETIC_ONLY',record:f.command,reservation:f.reservation,fact:f.fact,grantRef:f.scope.grantRef,grantExpiresAt:until,authorizationReceiptRef:f.command.snapshot.envelope.context.authorizationReceiptRef,turnState:'IDLE'})},currentBasis=new SyntheticPgInstructionMaterialBasis(permitBasis,adapter);
+ const checked=await currentBasis.current(f.db,f.actor,f.scope,f.commandId,f.materialId);assert.deepEqual(checked.material,f.material);
+ // 기존 basis의 예약 검사는 이 adapter가 생략/대체하지 않는다.
+ permitBasis.current=async()=>({transport:'SYNTHETIC_ONLY',record:f.command,reservation:null,fact:f.fact,grantRef:f.scope.grantRef,grantExpiresAt:until,authorizationReceiptRef:f.command.snapshot.envelope.context.authorizationReceiptRef,turnState:'IDLE'});await assert.rejects(currentBasis.current(f.db,f.actor,f.scope,f.commandId,f.materialId),/INSTRUCTION_MATERIAL_BASIS_REJECTED/);
+ const proof={kind:'SYNTHETIC_VERIFIED_REQUEST_PROOF',ref:f.material.ref,target:executionTarget('GET','/api/v1/connectors/'+f.scope.connectorId+'/executions/'+f.scope.executionId+'/commands/'+f.commandId+'/materials/'+f.materialId,[],null),grantRef:f.scope.grantRef,credentialGeneration:1,publicKeyFingerprint:'b'.repeat(64),verifiedAt:at,challengeExpiresAt:until};
+ const resolver=new SyntheticExecutionMaterials({transport:'SYNTHETIC_ONLY',transaction:async(_s,fn)=>fn({clock:async()=>at,current:async()=>({fact:f.fact,grantRef:f.scope.grantRef,grantExpiresAt:until,commandRef:f.command.ref,commandSnapshot:f.command.snapshot,authorizationReceiptRef:f.command.snapshot.envelope.context.authorizationReceiptRef,...await adapter.current(f.db,f.actor,f.scope,f.command,f.materialId),proof}),readPart:r=>adapter.readPart(f.db,f.scope,r)})});
+ const out=await resolver.read(f.scope,f.commandId,f.materialId);assert.deepEqual(Buffer.from(out.bytes),Buffer.from('가나'));assert.equal(out.executionAuthorized,false);assert.equal(out.dispatchPerformed,false);assert.equal(out.completeContextVerified,false);
+});
+test('미등록·다른 명령과 caller 경로/bytes/AVAILABLE 주장은 등록 근거가 아니다',async()=>{
+ for(const raw of [null,{sourceState:'AVAILABLE',bytes:[1],path:'caller.txt'}]){const f=fixture();f.repository.findByCommand=async()=>raw;await assert.rejects(f.current(),/INSTRUCTION_MATERIAL_PARTS_REJECTED/);assert.equal(f.counts().bodyReads,0);}
+ const f=fixture();await assert.rejects(f.make().current(f.db,f.actor,f.scope,f.command,randomUUID()));await assert.rejects(f.make().readPart(f.db,f.scope,{...f.material.ref,id:randomUUID()}));await assert.rejects(f.make().readPart(f.db,f.scope,{...f.material.ref,path:'caller.txt'}));assert.equal(f.counts().bodyReads,0);
+});
+test('교차 command·grant·generation·manifest·주체 결박은 현재와 직접 readPart 모두 거절한다',async()=>{
+ for(const mutate of [(f:any)=>f.registration.scope.grantRef.version++,(f:any)=>f.registration.scope.executionGeneration++,(f:any)=>f.registration.manifestRef.version++,(f:any)=>f.material.snapshot.commandId=randomUUID(),(f:any)=>f.material.snapshot.payloadRef=f.command.snapshot.envelope.payload.sessionBindingRef,(f:any)=>f.actor.actorId=randomUUID()]){const f=fixture();mutate(f);f.rebind();await assert.rejects(f.current());assert.equal(f.counts().bodyReads,0);}
+ for(const field of ['projectId','executionId','executionGeneration','grantRef','credentialGeneration','connectorId','mode']){const f=fixture(),scope={...f.scope,[field]:field==='mode'?'RECOVERY':field==='grantRef'?{...f.scope.grantRef,version:2}:field.endsWith('Generation')?2:randomUUID()};await assert.rejects(f.make().readPart(f.db,scope,f.material.ref));assert.equal(f.counts().bodyReads,0);}
+});
+test('source/body/parts/origin과 현재 basis 변경·접근회수·격리·정정·제외·만료는 fail-closed다',async()=>{
+ for(const mutate of [(f:any)=>f.state.source.sourceRef.version++,(f:any)=>f.state.source.bodyRef.version++,(f:any)=>f.state.source.partsRef.version++,(f:any)=>f.state.source.originRef.version++,(f:any)=>f.state.basis.instructionRef.version++,(f:any)=>f.state.basis.permissionPolicyRef.version++,(f:any)=>f.state.access='NONE',(f:any)=>f.state.quarantined=true,(f:any)=>f.state.superseded=true,(f:any)=>f.state.excluded=true,(f:any)=>f.state.expiresAt=at,(f:any)=>f.state.checkedAt='2026-10-25T11:59:00.000Z']){const f=fixture();mutate(f);await assert.rejects(f.read());assert.equal(f.counts().bodyReads,0);}
+});
+test('등록 부분 순서·연속 범위·크기·hash와 UTF8 경계를 실제 bytes에서 검증한다',async()=>{
+ for(const mutate of [(f:any)=>f.parts.reverse(),(f:any)=>f.parts[1].byteOffset=7,(f:any)=>f.parts[1].utf8Bytes=5,(f:any)=>f.parts[1].materialId=f.materialId,(f:any)=>f.parts[1].contentHash='c'.repeat(64),(f:any)=>f.bodyValue(Buffer.from('가나다ABD')),(f:any)=>{f.parts[0].utf8Bytes=5;f.parts[1].byteOffset=5;f.parts[1].utf8Bytes=7;f.parts[0].contentHash=contentHash(f.body.subarray(0,5));f.parts[1].contentHash=contentHash(f.body.subarray(5));f.material.snapshot.utf8Bytes=5;f.material.snapshot.contentHash=f.parts[0].contentHash;f.rebind();}]){const f=fixture();mutate(f);await assert.rejects(f.read(),/INSTRUCTION_MATERIAL_PARTS_REJECTED/);}
+});
+test('조회 도중 등록·source·기한·port 변경과 비공개 오류는 부분을 반환하지 않는다',async()=>{
+ for(const action of [(f:any)=>f.registration.source.originRef.version++,(f:any)=>f.state.excluded=true,(f:any)=>f.clock(until),(f:any)=>f.sourcePort.transport='REAL',(f:any)=>{throw Error('PRIVATE_BODY');}]){const f=fixture();f.afterBody(()=>action(f));await assert.rejects(f.read(),(e:Error)=>e.message==='INSTRUCTION_MATERIAL_PARTS_REJECTED');assert.equal(f.counts().bodyReads,1);}
+ const f=fixture();let n=0;f.afterSource(()=>{if(++n===1)f.state.excluded=true;});await assert.rejects(f.current());
+});
+test('등록과 source 수명이 남아도 원 command/grant/fact의 최단기한이 지나면 bytes를 읽지 않는다',async()=>{
+ const f=fixture();f.registration.expiresAt='2026-10-25T12:01:00.000Z';f.state.expiresAt='2026-10-25T12:01:00.000Z';f.clock('2026-10-25T12:00:25.000Z');await assert.rejects(f.read());assert.equal(f.counts().bodyReads,0);
+});
+test('최초 source 조회 중 원 command/grant/fact의 기한이 지나면 본문 읽기를 시작하지 않는다',async()=>{
+ const f=fixture();f.registration.expiresAt='2026-10-25T12:01:00.000Z';f.state.expiresAt='2026-10-25T12:01:00.000Z';f.afterSource(()=>f.clock(until));await assert.rejects(f.read(),/INSTRUCTION_MATERIAL_PARTS_REJECTED/);assert.equal(f.counts().bodyReads,0);
+});
+test('필수 합성 port 부재·REAL·초과 필드와 provider scope 변조를 거절한다',async()=>{
+ const f=fixture();for(const port of [undefined,{...f.repository,transport:'REAL'}])assert.throws(()=>new mod.SyntheticInstructionMaterialParts(port,f.sourcePort));
+ const g=fixture(),find=g.repository.findByCommand;g.repository.findByCommand=async(tx:any,s:any,c:any,m:any)=>{s.executionGeneration=2;return find(tx,s,c,m);};await assert.rejects(g.current());assert.equal(g.scope.executionGeneration,1);
+ const h=fixture();h.registration.bytes=[1];await assert.rejects(h.current());assert.equal(h.counts().bodyReads,0);
+});

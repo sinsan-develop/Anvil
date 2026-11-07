@@ -1,5 +1,17 @@
 # P02 기존 코딩 Agent 지원 대조
 
+compile-only 새1회9fb5fe19/runabbe0980 결과 FAIL/exit1, csc54156/status1/signalnull/118ms·NONZERO만 확인했다. 허용source CS진단0이라 직접 이유는 UNKNOWN이다. helper/native/Job/handshake0, 등록root독립부재·보호7hash/runtime 불변. 원 Codex smoke FAIL/6능력 미검증을 유지하고 재시도0이며 순수16 PASS와 혼동하지 않는다.
+
+FN06 compile 진단보존 준비: 최초 실제 QA_COMPILE_FAILED는 FAIL/직접원인 UNKNOWN으로 보존한다. 직접16 순수 PASS/타입0은 예외 정규화와 별도 compile-only 입력/단1회 dispatcher만 증명한다. 실제 compile/도구/handshake/OS·6능력은 이번 준비에서 실행0이다. helper/native/Job 실행으로 진행하지 않는 compile-only 별도7값 정책/새 후보 검증은 실제 시작조건을 PMO가 전달한 뒤만 실행한다. 기존 지원등급은 올리지 않는다.
+
+A 제한 실제1회(source629fb70c/run56d83f93)는1 FAIL/exit1 QA_COMPILE_FAILED다(시험21211.9689ms). csc 호출시도1에서 중단되어 helper/native/Job/stdio·두메시지0, handshake/6능력/OS통제는 미실행·미검증이다. 실제compiler exit/timeout/진단은 wrapper에서 보존되지 않아 직접원인 미확정이다. 등록root독립부재·보호7hash/원runtime 불변을 확인했고 추가시도0이다. 순수11/타입·정적검수와 이 실제실패를 구분한다.
+
+A 정적 검수1회 C0/I2/M0 후 Main 한 pass 보정: 정상 transport 병합 프레임은 직접 RED2→순수11 PASS로, raw cleanup/Job 조회 분리는 C# 정적 보정만 확인했다. 준비 최종 sourcehash 39111ada9ff079143507db5c2986e1f42d3f0679519ba524a82775dddc26cbac. 실제compile/native/handshake/OS고아회수·6능력은0/미검증이고 독립 재검수 C0/I0를 주장하지 않는다. PMO의 exactSHA/시간창·단1회 시작조건을 기다리는 준비 후보이지 실제 Agent 연결완료가 아니다.
+
+FN06 실제 handshake 후보 소스 준비: CodexHandshakeHost.cs 및 codex-handshake-0161.test.ts를 추가했으나 compile/Job/native/stdio는 미실행이다. 단1회 실측 전 exact private SHA/host sourcehash·run/시간창·원runtime 보존을 PMO가 확인한다. 순수9건/타입과 C# 리터럴 정적대조는 Windows 소유/프로토콜/6능력 실측 등급을 올리지 않는다. 새 전용 Job 마지막handle 자동종료 정책은 별도 AV3-PMO-FN06-HANDSHAKE-OWNERSHIP-01 범위만이며 공유Job/범용회수/파일·계정·network 격리는 제공하지 않는다.
+
+FN06-HANDSHAKE-0161-01 부분 준비: 신규 순수 gate/unit만 기존 codec으로 고정 initialize→정확 결과→initialized 2메시지·상한·시각/EOF 입력을 비교한다. 직접8건은 모의 입력에 대한 메모리 동작이며 실제 native/stdio/Job·계정·모델/6능력 증거가 아니다. actualExecutionVerified=false/ownership UNVERIFIED/workAccepted=false를 유지한다. native host/integration은 아직 미작성, root/컴파일/실제 실행0이다. 자동 Job 종료는 별도 PMO 승인 경계이며 공개 지원표의 실제 연결 등급을 올리지 않는다.
+
 상태: **조사 중 / 실제 연동 미검증**. 2026-10-16 Main 어울. 상위: 설계 r8 §9·12·13, 계획 r7 P02·FN06/FN07·IX02/04. 기존 조사 증거는 유지하고 상위 개정 참조만 맞췄다. 이 문서는 기술 선택이나 외부 API 비용/인증 변경 승인서가 아니다.
 
 ## 1. 확인 등급
@@ -23,6 +35,10 @@ Codex 명령은 `C:\Users\cyhuh\AppData\Roaming\npm\codex.ps1`, Claude는 `C:\Us
 Codex는 버전/도움말 조회 중 자신의 임시 arg0/PATH alias 정리·생성에 접근 거부 경고를 내고 버전/도움말은 반환했다. CLI 실행 환경 경고로 분리한다. ACL·임시파일·PATH를 고치거나 성공한 읽기 명령을 반복하지 않는다. 실제 연동 시험 전에 영향이 있는지 확인하되 제품 장애로 소급하지 않는다.
 
 ## 3. Codex 후보 — App Server
+
+FN06-CODEX-CODEC-01의 오프라인 codec은 위 고정 정의를 기존 Ajv strict로 검증해 메모리 wire·응답 상관·digest 관측을 제공한다. 한정 검토 C0/I2/M1 후 Main 보정·최종 순수 합성23건/typecheck 결과는 WORK_STATUS에 분리했다(재리뷰 없음). 선도착 식별의 유한 미결박/정확 응답 대조·신규 요청 보류, 수명 id 재사용 금지/소진 차단과 송신 복제 전 예산을 확인했다. 이것은 실제 도구 연결/handshake·6능력·OS 메모리 quota의 실측이 아니며 승인 응답은 서버 결정 소비 미연결로 항상 차단한다.
+
+2026-10-17 AV3-PMO-FN06-SCHEMA-0161-01에서 설치된 정확0.161.0 native exporter 단1회(566ms/exit0)로 stable JSON315개를 고정했다. [공개 schema 지문](../../contracts/vendor/codex/0.161.0/schema-manifest.json)에 버전·exe SHA256·upstream tag/commit·파일별 hash·license와 한계를 기록했다. JSON 파싱/로컬 ref 대조·지정 민감표식 검사만 수행했으며 실제 handshake·세션/turn·파일 변경·승인·중지/회수·6능력, 네트워크 관측과 binary 재현 일치는 여전히 미검증이다. 정의의 존재를 실제 연동 확인으로 올리지 않는다.
 
 근거: [공식 App Server 문서](https://learn.chatgpt.com/docs/app-server). 로컬 도움말에서도 `codex app-server`와 기본 `stdio://` transport를 확인했다.
 
@@ -80,3 +96,12 @@ Codex는 버전/도움말 조회 중 자신의 임시 arg0/PATH alias 정리·�
 | 6 허가 경로/쓰기 통제 | 실행기/공식 sandbox·승인 경계 결합 필요, 이탈 통제 미확인 | 공식 권한/실행기 결합 필요, 선택 경로·이탈 통제 미확인 | 미확인 · 소스/실행 환경 허가 필요 | 미확인 · 소스/실행 환경 허가 필요 | 4후보 모두 미확인·실행 근거 없음 |
 
 각 후보의 제품/버전·공식 출처·관측 시점은 §2~4에 연결하고, 실제 근거가 생기면 해당 칸에 실행 ID·환경·검증 버전/시각·정상/중요 실패·회수 증거를 붙인다. 후보/계정 경로별 비용·공식 사용 허용 미결정은 §4·TECH_DECISIONS를 유지한다. 필수 통제 미지원이면 그 후보/역할 제외 또는 공식 대안 검토, 미확인이면 실제 변경 역할 준비 완료로 표시하지 않는다. 임무별 해당 없음은 이유와 검토 주체를 따로 기록한다. 문서 근거를 더 확보해 P02를 마무리하더라도 실제 go/no-go는 FN06/07의 안전 기반 뒤 실측으로만 판정한다.
+
+
+## 2026-11-01 FN07 내부 source 프로토콜 기준
+실제 provider/인증·비용 선택과 분리하여 SDK 0.3.224의 공개 객체 메시지를 순수 정규화 구현의 기술 기준으로 고정한다. 공식 npm tarball SHA512 a4N8RcNf+8zqiTJjsntzJuYy3z/+J9K06/kVkZefNmAI8Yp4TmTZ+tpxUpKY8zhS8VewAxKSl9h0o/u7hKIdnA==, sdk.d.ts SHA256556277033B15112811922D84EC8DC846D446CCE7BD9AA27765C52A9C09869575, package의 claudeCodeVersion2.1.224 명시를 메모리 읽기로 대조했다. 이것을 CLI stream-json/control wire 또는 설치된 CLI의 실제 지원 근거로 바꾸지 않는다. SDK/CLI import·실행·계정/키/DB·비용/서비스/Agent 호출0이다.
+내부 codec은 사용자 입력의 미전송 준비와 session/uuid 대조·고정 envelope의 digest 사실만 제공한다. SDK 성공·도구 완료를 Anvil 승인·업무 합격·capability 실측으로 승격하지 않는다. SDK의 추가 메시지 분기·중첩 구조 전체/실제 transport·6함수·계정 교체/중지·OS 회수는 미구현 또는 미검증으로 남는다. 상세 범위는 FN07_CLAUDE_SDK_MESSAGE_NORMALIZATION_IMPLEMENTATION_20261101.md(SHA C69DF128D2A66F3AB5C8373DE2482D7A22E5B3153714FA571B00644E654FB8AE)이며 source 구현/검수 전 상태다.
+
+
+### 2026-11-01 FN07 source 부분 검수 결과
+고정 SDK 객체 codec3을 구현했고 Main 최종 신규17PASS(225.6213ms)/type·diff·신규공백0, 독립 보완 범위 C0/I0·최종3지문을 확인했다. 입력 준비물은 내부 보호 포트에만 불변 사본으로 전달하며, 공급자 success/error와 Anvil 권한·업무 합격·실제 지원을 분리한다. 결과 불명·잘못된 비동기 포트의 native Promise 거절은 UNKNOWN으로 남기고 capture 재호출0이다. 실제 SDK/CLI·6능력·계정 교체·서버/화면·OS 회수는 미실행/미구현이며 실제 연동 등급은 올리지 않는다. 상세 FN07_CLAUDE_SDK_MESSAGE_NORMALIZATION_RESULT_20261101.md 및 WORK_STATUS.

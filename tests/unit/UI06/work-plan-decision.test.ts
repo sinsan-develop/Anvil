@@ -1,0 +1,23 @@
+import assert from'node:assert/strict';import{test}from'node:test';
+import{ApiClient,ApiError}from'../../../apps/web/src/api/client.ts';
+import{workPlanReviewCriteria}from'../../../apps/server/modules/traceability/work-plan-reviews.ts';
+const pid='51c0439f-791e-4bb5-8471-70938d6afaf1',uid='32b5f276-13e6-4d8a-b93f-27a15d21c788',ref={id:'a6f30000-0000-4000-8000-000000000090',version:1,contentHash:'1'.repeat(64)},at='2026-10-16T05:00:00Z',session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)};
+function target(){return{planRef:ref,headVersion:1,confirmedVersion:null,criteria:workPlanReviewCriteria,contentReviews:[],confirmation:null,validation:{validForConfirmation:true,issues:[],sourceRefs:[ref,ref],screenReviewRefs:[]},currentConfirmationValid:false,activatedAsBaseline:false,observedAt:at};}
+test('계획 검토는 다른 주체·중단·전송 후 판단 변경을 차단하고 단절 뒤 같은 명령을 유지한다',async()=>{
+ const m=await import('../../../apps/web/src/features/design-trace/work-plan-decision-api.ts').catch(()=>null);assert.ok(m,'계획 결정 Web 연결 필요');
+ const b=m.newWorkPlanDecision(pid,target()as any,session as any,1,'REVIEW');b.items=b.items.map(i=>({...i,outcome:'ACCEPTED',reason:'합성 원문·업무 대조'}));b.outcome='ACCEPTED';b.reason='실제 인수 아닌 합성 검토';b.pending=m.prepareWorkPlanDecision(b,session as any);const captured=structuredClone(b.pending),calls:any[]=[];let fail=true;
+ const client=new ApiClient(async(input,init)=>{const c=JSON.parse(String(init?.body));calls.push(c);if(fail){fail=false;throw Error('lost');}return Response.json({operationId:uid,commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:ref.id,version:1,serverReceivedAt:at,data:{ref,status:'REVIEW_RECORDED',reviewRef:{id:uid,targetRef:ref,criteriaVersion:1,outcome:'ACCEPTED'}}});});
+ await assert.rejects(m.sendWorkPlanDecision(client,b,{...session,user:{id:pid}}as any,()=>true));await assert.rejects(m.sendWorkPlanDecision(client,b,session as any,()=>false));assert.equal(calls.length,0);
+ await assert.rejects(m.sendWorkPlanDecision(client,b,session as any,()=>true),(e:unknown)=>e instanceof ApiError&&e.code==='CONNECTION_LOST');assert.deepEqual(b.pending,captured);
+ await assert.rejects(m.sendWorkPlanDecision(client,{...b,reason:'전송 뒤 변경'},session as any,()=>true));assert.equal(calls.length,1);assert.equal((await m.sendWorkPlanDecision(client,b,session as any,()=>true)).kind,'REVIEW');assert.deepEqual(calls[0],calls[1]);
+});
+test('계획 별도 확정은 최신 적합·현재 준비상태와 명시 확인을 요구하고 위조된 실행 활성화를 거절한다',async()=>{
+ const m=await import('../../../apps/web/src/features/design-trace/work-plan-decision-api.ts').catch(()=>null);assert.ok(m,'계획 별도 확정 Web 연결 필요');
+ const t=target(),rr={id:uid,targetRef:ref,criteriaVersion:1,outcome:'ACCEPTED'},review={ref:rr,criteria:workPlanReviewCriteria,items:workPlanReviewCriteria.items.map(i=>({criterionId:i.criterionId,outcome:'ACCEPTED',reason:'합성 판단',evidenceRefs:[]})),reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'합성 검토',reviewedAt:at,serverSequence:1};(t.contentReviews as any[]).push(review);
+ const b=m.newWorkPlanDecision(pid,t as any,session as any,1,'CONFIRM');assert.throws(()=>m.prepareWorkPlanDecision(b,session as any));b.acknowledged=true;
+ assert.throws(()=>m.prepareWorkPlanDecision({...b,target:{...b.target,validation:{...b.target.validation,validForConfirmation:false,issues:[{code:'NOT_READY',location:'plan',message:'미확인'}]}}},session as any));b.pending=m.prepareWorkPlanDecision(b,session as any);let forged=true;
+ const client=new ApiClient(async()=>Response.json({operationId:uid,commandId:b.pending!.commandId,projectId:pid,status:'APPLIED',targetId:ref.id,version:1,serverReceivedAt:at,data:{ref,status:'CONFIRMED',confirmationId:uid,reviewRefs:[rr],validation:t.validation,activatedAsBaseline:forged}}));await assert.rejects(m.sendWorkPlanDecision(client,b,session as any,()=>true));forged=false;assert.equal((await m.sendWorkPlanDecision(client,b,session as any,()=>true)).kind,'CONFIRM');
+});
+test('계획 검토·확정 조회는 GET만 사용하고 다른 원문 참조·가짜 유효 확정을 채택하지 않는다',async()=>{
+ const m=await import('../../../apps/web/src/features/design-trace/work-plan-decision-api.ts'),v=target(),calls:any[]=[];let value:any=v;const client=new ApiClient(async(input,init)=>{calls.push([input,init?.method]);return Response.json(value);}),plan:any={ref,documentRef:ref,designRef:ref,screenReviewRefs:[]};assert.equal((await m.readWorkPlanDecision(client,pid,plan)).confirmation,null);assert.equal(calls[0][1],'GET');value={...v,currentConfirmationValid:true};await assert.rejects(m.readWorkPlanDecision(client,pid,plan));value={...v,validation:{...v.validation,sourceRefs:[{...ref,version:2},ref]}};await assert.rejects(m.readWorkPlanDecision(client,pid,plan));assert.equal(calls.every(c=>c[1]==='GET'),true);
+});

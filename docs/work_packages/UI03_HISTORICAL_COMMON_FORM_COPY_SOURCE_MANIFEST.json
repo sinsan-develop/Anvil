@@ -1,0 +1,12 @@
+{
+  "kind": "UI03_HISTORICAL_COMMON_FORM_COPY_SOURCE_MANIFEST",
+  "baseline": "561b00470a84caeb68ed7f87d5dcbafb991da02a",
+  "workInstructionSha256": "59C3F20C63045781C9C5C19B0F18F52C5593994E27745189A28D9C88C963C056",
+  "files": [
+    {"path":"apps/web/src/features/methodologies/FormVersionComparison.tsx","sha256":"FEBD66FA4FB438B84340F8675EF2BF384AFC83F5E5CFBFCF5D216080F187602B"},
+    {"path":"apps/web/src/features/methodologies/FormsCatalog.tsx","sha256":"6336C10E799DDC45A97EC7E2DC260961A55D29A04572A159658D8969096F0492"},
+    {"path":"apps/web/src/features/methodologies/CommonFormEditor.tsx","sha256":"712B364E97E0AE92D306D1D2B7E6F966D1FCB532D7788DB5C35867F921330A17"},
+    {"path":"tests/browser/UI03/historical-form-copy.spec.ts","sha256":"70934DBDB5EA0B5D16D280930FA8C14E6D0808D9BCD8D452E9933113B1BF809C","gitBlobSha256":"3F6D5CBFDB4B2935F553AC117C2C1A645D8D4B0473FF3AF1B8D13BB22A80A142","normalization":"CRLF_TO_LF_ONLY"}
+  ],
+  "verification": {"typecheckExit":0,"diffCheckExit":0,"actualAppSyntheticApiEdgePassed":12,"failed":0,"skipped":0,"independentStaticReview":"C0/I0/M0","realDb":"NOT_RUN","served":"NOT_RUN","userAcceptance":"NOT_RUN"}
+}

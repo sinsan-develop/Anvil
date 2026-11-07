@@ -1,0 +1,16 @@
+{
+  "status": "ADOPTED_SOURCE_ONLY",
+  "date": "2026-10-30",
+  "authority": "신산님 직접 지시",
+  "instruction": "FN06 HUMAN r2 계약 승인해. 실제 DB·키·서비스·Agent 실행은 제외하고 기존 subagent에게 구현을 맡겨. 너는 검수·통합하면서 작업계획서 완료까지 계속 진행해.",
+  "decisionPacket": "docs/work_packages/FN06_CAPABILITY_REPORT_HUMAN_STORAGE_CANDIDATE_R2.md",
+  "decisionPacketSha256": "6546808480650288302FB6AAF674AE35D7A72744E2C85A693D6BB13AA2E6B7F8",
+  "option": "HUMAN r2",
+  "baseline": "64642dfbbb2e76b3b6fb36a365c3719bbebcb11e",
+  "scope": ["HUMAN 입력 DTO·신규 recordCapabilityReport 명령·원자 보관 코드", "고정 보호 GET·현재성 issue 분리", "UI11 작성·고정 조회·근거 수동 열기", "미적용 forward SQL·합성 검증·독립 검수·통합"],
+  "excluded": ["실제 DB 접속·SQL 적용·역할/grant/정책 부여", "실제 키·credential·Secret·인증서", "실제 서비스·Agent·Job·비용·Oracle", "CONNECTOR/TRUSTED_PROBE·OS/native/socket·실측", "격리 PG QA", "목록/latest/search·prepareExecution 자동 저장·C1 허가 해제"],
+  "invariants": ["HUMAN_CLAIM·CANDIDATE_ONLY", "원주장/시각/배열순서 불변", "서버6능력 UNVERIFIED/UNVERIFIED", "executionAuthorized=false", "dispatchPerformed=false", "effectiveForExecution=false", "기존 CAPABILITY_UNVERIFIED/NOT_AUTHORIZED 유지", "명시 AUTO 정책·재인증·현재제어 재확인 후 replay"],
+  "implementer": "기존 Primary subagent 단일 writer",
+  "controller": "Main 어울 검수·통합",
+  "completion": "전체 작업계획서 미완료"
+}

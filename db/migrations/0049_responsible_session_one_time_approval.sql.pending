@@ -1,0 +1,281 @@
+-- FN09/FN11/UI04 후보 원문만. 실제 compile/DML/COMMIT/RLS/경합 NOT_RUN.
+-- 0016 역할/현재성/세션/결박 guard, 0048 승인 wrapper chain과 실행 준비 차단을 보존한다.
+CREATE FUNCTION anvil.fn09_responsible_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(anvil.execution_json_shape(s,ARRAY['operation','targetRef','expectedVersion','payloadHash','baselineRefs','environmentRef','sourceScopes','limitsRef','requestedSubjectRef','controlGeneration'])
+ AND s->>'operation' IN('defineProjectRole','bindResponsibleSession') AND s->>'payloadHash' ~ '^[a-f0-9]{64}$'
+ AND s->'baselineRefs'='[]'::jsonb AND s->'sourceScopes'='[]'::jsonb AND s->'environmentRef'='null'::jsonb AND s->'limitsRef'='null'::jsonb
+ AND ((s->'targetRef'='null'::jsonb AND s->'expectedVersion'='0'::jsonb)
+ OR (s->>'operation'='bindResponsibleSession' AND EXISTS(SELECT 1 FROM anvil.role_bindings b WHERE b.project_id=pid
+ AND s->'targetRef'=jsonb_build_object('id',b.binding_id,'version',b.version,'contentHash',b.content_hash) AND s->'expectedVersion'=to_jsonb(b.version)))),false);
+$$;
+ALTER FUNCTION anvil.connection_candidate_approval_target_valid(uuid,jsonb) RENAME TO connection_candidate_approval_target_before_responsible;
+CREATE FUNCTION anvil.connection_candidate_approval_target_valid(pid uuid,s jsonb) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN s->>'operation' IN('defineProjectRole','bindResponsibleSession') THEN anvil.fn09_responsible_approval_target_valid(pid,s) ELSE anvil.connection_candidate_approval_target_before_responsible(pid,s) END;
+$$;
+CREATE FUNCTION anvil.fn09_responsible_payload(op text,s jsonb) RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
+ SELECT CASE WHEN op='defineProjectRole' THEN s-ARRAY['definedBy','definedAt'] WHEN op='bindResponsibleSession' THEN s-ARRAY['sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'] ELSE NULL END;
+$$;
+CREATE FUNCTION anvil.fn09_responsible_target(op text,s jsonb) RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
+ SELECT CASE WHEN op='defineProjectRole' THEN 'null'::jsonb WHEN op='bindResponsibleSession' THEN s->'existingSessionBindingRef' ELSE NULL END;
+$$;
+CREATE FUNCTION anvil.fn09_responsible_approval_execution_valid(pid uuid,cid uuid,did uuid,consumed boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE payload jsonb;op text;target jsonb;expected bigint;snapshot jsonb;
+BEGIN
+ SELECT c.operation,c.expected_version,c.result_ref->'data'->'snapshot' INTO op,expected,snapshot FROM anvil.commands c WHERE c.project_id=pid AND c.id=cid;
+ IF op NOT IN('defineProjectRole','bindResponsibleSession') OR snapshot IS NULL THEN RETURN false;END IF;
+ target=anvil.fn09_responsible_target(op,snapshot);
+ payload=anvil.fn09_responsible_payload(op,snapshot);
+ IF nullif(current_setting('anvil.responsible_session_payload',true),'')::jsonb IS DISTINCT FROM payload THEN RETURN false;END IF;
+ RETURN EXISTS(SELECT 1 FROM anvil.commands c
+ JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=did
+ JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=did AND d.decision='APPROVE' AND d.request_version=1
+ JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id AND r.scope_digest=d.scope_digest AND r.policy_ref=c.policy_ref
+ JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
+ JOIN anvil.projects p ON p.id=pid AND p.archived_at IS NULL
+ JOIN anvil.project_members m ON m.project_id=pid AND m.user_id=c.actor_id AND m.participation='OWNER' AND m.revoked_at IS NULL
+ JOIN anvil.permission_policies pp ON pp.project_id=pid AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
+ JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
+ WHERE c.project_id=pid AND c.id=cid AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation=op AND c.state='APPLIED'
+ AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
+ AND expected=COALESCE((target->>'version')::bigint,0) AND expected>=0
+ AND r.status=CASE WHEN consumed THEN 'CONSUMED' ELSE 'APPROVED' END AND r.version=CASE WHEN consumed THEN 3 ELSE 2 END
+ AND r.expires_at>clock_timestamp() AND c.approval_consumption_id IS NOT NULL AND c.expected_version=expected
+ AND c.command_id=r.candidate_command_id AND c.actor_id=r.created_by AND c.client_id=r.client_id
+ AND r.required_decider_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND r.request_json->>'controlGeneration'=c.control_generation::text AND r.action_scope_json->>'controlGeneration'=c.control_generation::text
+ AND r.action_scope_json->'requestedSubjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND r.action_scope_json->>'operation'=op AND r.action_scope_json->'targetRef'=target AND r.action_scope_json->'expectedVersion'=to_jsonb(expected)
+ AND anvil.fn09_responsible_approval_target_valid(pid,r.action_scope_json) AND r.scope_digest=anvil.execution_json_hash(r.action_scope_json)
+ AND r.action_scope_json->>'payloadHash'=anvil.execution_json_hash(payload)
+ AND d.decided_by=c.actor_id AND d.client_id=c.client_id AND d.control_generation=c.control_generation
+ AND d.decision_json->'policyRef'=c.policy_ref
+ AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.execution_json_hash(payload),'scopeDigest',r.scope_digest)
+ AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+ AND c.request_hash=anvil.execution_json_hash(jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'operation',op,'targetId',target->>'id','expectedVersion',expected,'baselineRefs','[]'::jsonb,
+ 'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',payload))
+ AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'projectId'=pid::text
+ AND c.result_ref->>'status'='APPLIED'
+ AND c.result_ref->'data'->>'status'=CASE WHEN op='defineProjectRole' THEN 'PROJECT_ROLE_DEFINED' ELSE 'RESPONSIBLE_SESSION_RESERVED' END
+ AND (op='defineProjectRole' OR (snapshot->>'state'='RESERVED' AND snapshot->'externalSessionHandleRef'='null'::jsonb AND snapshot->>'connectionReadiness'='CANDIDATE_ONLY' AND snapshot->'executionAuthorized'='false'::jsonb AND snapshot->'dispatchPerformed'='false'::jsonb))
+ AND c.result_ref->>'operationId'=c.operation_id::text
+ AND (SELECT count(*) FROM anvil.authorization_receipts x WHERE x.command_id=cid)=1
+ AND c.result_ref->'data'->'ref'->>'id'=c.result_ref->>'targetId' AND c.result_ref->'data'->'ref'->'version'=c.result_ref->'version'
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,
+ 'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+ AND (SELECT count(*) FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id)=1
+ AND EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.command_id=c.id AND a.operation_id=c.operation_id
+ AND a.outcome='APPLIED' AND a.scope_digest=ar.scope_digest AND a.policy_ref=c.policy_ref AND a.target_ref=c.result_ref->'data'->'ref'
+ AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.source_kind='HUMAN_COMMAND'
+ AND a.approval_ref=jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest))
+ AND EXISTS(SELECT 1 FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients cl ON cl.id=s.client_id AND cl.user_id=s.user_id
+ WHERE s.user_id=c.actor_id AND s.client_id=c.client_id AND s.revoked_at IS NULL AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL
+ AND s.credential_generation=u.credential_generation AND s.idle_expires_at>clock_timestamp() AND s.absolute_expires_at>clock_timestamp())
+ AND EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='REQUIRE_APPROVAL' AND rule->'limitPolicyRef'='null'::jsonb AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(pv.rules_json) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+ AND rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',pid)) AND (rule->'operations') ? op
+ AND rule->>'disposition'='DENY' AND (rule->>'expiresAt')::timestamptz>clock_timestamp())
+ AND (NOT consumed OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac
+ WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=c.id AND ac.decision_id=did
+ AND ac.scope_digest=r.scope_digest AND ac.policy_id=pp.id AND ac.policy_version=pp.head_version)));
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;
+$$;
+ALTER FUNCTION anvil.one_time_consumption_command_authorized(uuid,uuid,uuid) RENAME TO one_time_consumption_command_before_responsible;
+CREATE FUNCTION anvil.one_time_consumption_command_authorized(pid uuid,cid uuid,did uuid) RETURNS boolean LANGUAGE sql AS $$
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.approval_decisions d ON d.project_id=c.project_id AND d.id=did JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE c.project_id=pid AND c.id=cid AND (c.operation IN('defineProjectRole','bindResponsibleSession') OR r.action_scope_json->>'operation' IN('defineProjectRole','bindResponsibleSession')))
+ THEN anvil.fn09_responsible_approval_execution_valid(pid,cid,did,false) ELSE anvil.one_time_consumption_command_before_responsible(pid,cid,did) END;
+$$;
+
+
+ALTER FUNCTION anvil.execution_preparation_authorized(uuid,text) RENAME TO execution_preparation_authorized_before_responsible;
+CREATE FUNCTION anvil.execution_preparation_authorized(pid uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT anvil.execution_preparation_authorized_before_responsible(pid,op) OR (op IN('defineProjectRole','bindResponsibleSession') AND EXISTS(SELECT 1 FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id WHERE c.project_id=pid AND c.operation=op AND c.id::text=current_setting('anvil.command_id',true) AND anvil.fn09_responsible_approval_execution_valid(pid,c.id,ar.approval_decision_ref,true)));
+$$;
+CREATE OR REPLACE FUNCTION anvil.guard_responsible_session() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cmd anvil.commands%ROWTYPE;s jsonb;expected jsonb;payload jsonb;rid uuid;op text;status text;previous anvil.role_bindings%ROWTYPE;
+ parent anvil.project_roles%ROWTYPE;role_row anvil.project_roles%ROWTYPE;session_row anvil.agent_sessions%ROWTYPE;
+ assignment anvil.assignment_versions%ROWTYPE;draft anvil.assignment_draft_versions%ROWTYPE;candidate anvil.connection_candidate_versions%ROWTYPE;
+ target jsonb;approval jsonb;expected_version bigint;session_ref jsonb;assignment_key uuid;assignment_revision bigint;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO cmd FROM anvil.commands WHERE id::text=current_setting('anvil.command_id',true);
+ approval='null'::jsonb;
+ IF cmd.approval_consumption_id IS NOT NULL THEN
+  SELECT jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest) INTO approval FROM anvil.approval_consumptions ac
+  JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id
+  WHERE ac.project_id=NEW.project_id AND ac.id=cmd.approval_consumption_id AND ac.command_id=cmd.id;
+  IF approval IS NULL THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_APPROVAL_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ s=NEW.snapshot_json;
+ IF TG_TABLE_NAME='project_roles' THEN op='defineProjectRole';status='PROJECT_ROLE_DEFINED';rid=NEW.role_id;
+ ELSIF TG_TABLE_NAME='role_bindings' THEN op='bindResponsibleSession';status='RESPONSIBLE_SESSION_RESERVED';rid=NEW.binding_id;
+ ELSE op='bindResponsibleSession';status='RESPONSIBLE_SESSION_RESERVED';rid=NEW.session_id;END IF;
+ expected=jsonb_build_object('id',rid,'version',NEW.version,'contentHash',NEW.content_hash);
+ IF NOT COALESCE(anvil.execution_preparation_authorized(NEW.project_id,op),false) OR cmd.id IS NULL OR cmd.project_id IS DISTINCT FROM NEW.project_id
+  OR NEW.command_id IS DISTINCT FROM cmd.id OR NEW.created_by IS DISTINCT FROM cmd.actor_id OR NEW.client_id IS DISTINCT FROM cmd.client_id
+  OR NEW.content_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(s),'UTF8')),'hex')
+  OR cmd.result_ref->>'projectId' IS DISTINCT FROM NEW.project_id::text OR cmd.result_ref->>'status' IS DISTINCT FROM 'APPLIED'
+  OR cmd.result_ref->'data'->>'status' IS DISTINCT FROM status OR octet_length(anvil.assignment_draft_canonical(s))>2097152
+  THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_EXACT_CURRENT_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='project_roles' THEN
+  IF cmd.result_ref->'data'->'ref' IS DISTINCT FROM expected OR cmd.result_ref->'data'->'snapshot' IS DISTINCT FROM s OR NEW.version<>1
+   OR (SELECT count(*) FROM jsonb_object_keys(s))<>6 OR NOT(s ?& ARRAY['kind','stageRef','parentRoleRef','reason','definedBy','definedAt'])
+   OR jsonb_typeof(s->'kind') IS DISTINCT FROM 'string' OR s->>'kind' NOT IN('COORDINATOR','STAGE_OWNER')
+   OR jsonb_typeof(s->'reason') IS DISTINCT FROM 'string' OR NOT anvil.assignment_content_reason(s->>'reason')
+   OR jsonb_typeof(s->'definedAt') IS DISTINCT FROM 'string' OR s->'definedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+   OR (s->>'definedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp()) THEN RAISE EXCEPTION 'PROJECT_ROLE_INVALID' USING ERRCODE='42501';END IF;
+  IF s->>'kind'='COORDINATOR' THEN
+   IF s->'stageRef' IS DISTINCT FROM 'null'::jsonb OR s->'parentRoleRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'PROJECT_ROLE_INVALID' USING ERRCODE='42501';END IF;
+  ELSE
+   IF jsonb_typeof(s->'stageRef') IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(s->'stageRef'))<>2
+    OR NOT((s->'stageRef') ?& ARRAY['applicationRef','nodeId']) OR jsonb_typeof(s->'stageRef'->'nodeId') IS DISTINCT FROM 'string'
+    OR length(s->'stageRef'->>'nodeId')=0 OR jsonb_typeof(s->'parentRoleRef') IS DISTINCT FROM 'object'
+    THEN RAISE EXCEPTION 'PROJECT_ROLE_STAGE_FORMAT_REQUIRED' USING ERRCODE='42501';END IF;
+   SELECT * INTO parent FROM anvil.project_roles r WHERE r.project_id=NEW.project_id AND r.role_id::text=s->'parentRoleRef'->>'id' AND r.version=1;
+   IF parent.role_id IS NULL OR parent.snapshot_json->>'kind' IS DISTINCT FROM 'COORDINATOR'
+    OR s->'parentRoleRef' IS DISTINCT FROM jsonb_build_object('id',parent.role_id,'version',1,'contentHash',parent.content_hash)
+    OR NOT COALESCE(anvil.execution_role_stage_current(NEW.project_id,s->'stageRef'),false)
+    THEN RAISE EXCEPTION 'PROJECT_ROLE_CURRENT_STAGE_PARENT_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+  payload=s-ARRAY['definedBy','definedAt'];target='null'::jsonb;expected_version=0;
+ ELSIF TG_TABLE_NAME='agent_sessions' THEN
+  IF NEW.version<>1 OR (SELECT count(*) FROM jsonb_object_keys(s))<>6 OR s->>'state' IS DISTINCT FROM 'RESERVED' OR s->'externalSessionHandleRef' IS DISTINCT FROM 'null'::jsonb
+   OR s->'reservedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+   OR (s->>'reservedAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+   OR cmd.result_ref->'data'->'snapshot'->'sessionRef' IS DISTINCT FROM expected
+   OR s->'roleRef' IS DISTINCT FROM cmd.result_ref->'data'->'snapshot'->'roleRef' OR s->'connectionRef' IS DISTINCT FROM cmd.result_ref->'data'->'snapshot'->'connectionRef'
+   OR cmd.expected_version<>0 OR cmd.result_ref->'data'->'snapshot'->'existingSessionBindingRef' IS DISTINCT FROM 'null'::jsonb
+   OR cmd.request_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(jsonb_build_object(
+    'schemaVersion',1,'projectId',NEW.project_id,'commandId',cmd.command_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,
+    'operation','bindResponsibleSession','targetId','null'::jsonb,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',approval,
+    'payload',(cmd.result_ref->'data'->'snapshot')-ARRAY['sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'])),'UTF8')),'hex')
+   THEN RAISE EXCEPTION 'SESSION_RESERVATION_EXACT_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+  RETURN NEW;
+ ELSE
+  assignment_key=(s->'assignmentRef'->>'id')::uuid;assignment_revision=(s->'assignmentRef'->>'version')::bigint;
+  SELECT * INTO role_row FROM anvil.project_roles r WHERE r.project_id=NEW.project_id AND r.role_id=NEW.role_id;
+  SELECT * INTO session_row FROM anvil.agent_sessions a WHERE a.project_id=NEW.project_id AND a.session_id=NEW.session_id;
+  SELECT * INTO assignment FROM anvil.assignment_versions a WHERE a.project_id=NEW.project_id AND a.assignment_id=assignment_key AND a.version=assignment_revision;
+  SELECT * INTO draft FROM anvil.assignment_draft_versions d WHERE d.project_id=NEW.project_id AND d.draft_id=assignment_key AND d.version=assignment_revision;
+  SELECT v.* INTO candidate FROM anvil.connection_candidate_versions v JOIN anvil.connection_candidates h ON h.project_id=v.project_id AND h.id=v.candidate_id AND h.head_version=v.version
+   WHERE v.project_id=NEW.project_id AND v.candidate_id::text=s->'connectionRef'->>'id' AND v.version=(s->'connectionRef'->>'version')::bigint AND v.kind='CONNECTION_CANDIDATE' AND v.expires_at>clock_timestamp();
+  session_ref=jsonb_build_object('id',session_row.session_id,'version',session_row.version,'contentHash',session_row.content_hash);
+  IF role_row.role_id IS NULL OR session_row.session_id IS NULL OR assignment.assignment_id IS NULL OR draft.draft_id IS NULL OR candidate.candidate_id IS NULL
+   OR (SELECT count(*) FROM jsonb_object_keys(s))<>14 OR s->'generation' IS DISTINCT FROM to_jsonb(NEW.version)
+   OR s->'roleRef' IS DISTINCT FROM jsonb_build_object('id',role_row.role_id,'version',role_row.version,'contentHash',role_row.content_hash)
+   OR s->'assignmentRef' IS DISTINCT FROM jsonb_build_object('id',assignment.assignment_id,'version',assignment.version,'contentHash',assignment.content_hash)
+   OR s->'connectionRef' IS DISTINCT FROM jsonb_build_object('id',candidate.candidate_id,'version',candidate.version,'contentHash',candidate.content_hash)
+   OR s->'sessionRef' IS DISTINCT FROM session_ref OR s->'roleRef' IS DISTINCT FROM session_row.snapshot_json->'roleRef' OR s->'connectionRef' IS DISTINCT FROM session_row.snapshot_json->'connectionRef'
+   OR NOT COALESCE(anvil.assignment_draft_basis_current(NEW.project_id,draft.version_json->'basis'),false)
+   OR NOT EXISTS(SELECT 1 FROM anvil.assignment_drafts d WHERE d.project_id=NEW.project_id AND d.id=assignment_key AND d.head_version=assignment_revision)
+   OR jsonb_typeof(s->'reason') IS DISTINCT FROM 'string' OR NOT anvil.assignment_content_reason(s->>'reason') OR s->'boundBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+   OR (s->>'boundAt')::timestamptz IS DISTINCT FROM date_trunc('milliseconds',transaction_timestamp())
+   OR cmd.result_ref->'data'->'ref' IS DISTINCT FROM expected OR cmd.result_ref->'data'->'snapshot' IS DISTINCT FROM s
+   THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_CURRENT_BASIS_REQUIRED' USING ERRCODE='42501';END IF;
+  IF role_row.snapshot_json->>'kind'='STAGE_OWNER' AND (NOT COALESCE(anvil.execution_role_stage_current(NEW.project_id,role_row.snapshot_json->'stageRef'),false)
+    OR role_row.snapshot_json->'stageRef'->'applicationRef' IS DISTINCT FROM assignment.version_json->'definition'->'taskRef'->'applicationRef'
+    OR role_row.snapshot_json->'stageRef'->>'nodeId' IS DISTINCT FROM assignment.version_json->'definition'->'taskRef'->>'nodeId')
+   THEN RAISE EXCEPTION 'ROLE_STAGE_MISMATCH' USING ERRCODE='42501';END IF;
+  SELECT * INTO previous FROM anvil.role_bindings b WHERE b.project_id=NEW.project_id AND b.role_id=NEW.role_id ORDER BY b.version DESC LIMIT 1;
+  IF previous.binding_id IS NULL THEN
+   IF NEW.version<>1 OR s->'existingSessionBindingRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'SESSION_BASE_REQUIRED' USING ERRCODE='42501';END IF;
+   target='null'::jsonb;expected_version=0;
+  ELSE
+   IF NEW.binding_id IS DISTINCT FROM previous.binding_id OR NEW.version<>previous.version+1 OR NEW.session_id IS DISTINCT FROM previous.session_id
+    OR s->'existingSessionBindingRef' IS DISTINCT FROM jsonb_build_object('id',previous.binding_id,'version',previous.version,'contentHash',previous.content_hash)
+    THEN RAISE EXCEPTION 'SESSION_REPLACEMENT_REQUIRED' USING ERRCODE='42501';END IF;
+   target=to_jsonb(previous.binding_id);expected_version=previous.version;
+  END IF;
+  payload=s-ARRAY['sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'];
+ END IF;
+ IF cmd.expected_version IS DISTINCT FROM expected_version OR cmd.result_ref->'targetId' IS DISTINCT FROM to_jsonb(rid) OR cmd.result_ref->'version' IS DISTINCT FROM to_jsonb(NEW.version)
+  OR cmd.request_hash IS DISTINCT FROM encode(sha256(convert_to(anvil.assignment_draft_canonical(jsonb_build_object('schemaVersion',1,'projectId',NEW.project_id,'commandId',cmd.command_id,'clientId',cmd.client_id,'controlGeneration',cmd.control_generation,'operation',op,'targetId',target,'expectedVersion',expected_version,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',payload)),'UTF8')),'hex')
+  THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_REQUEST_HASH_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;
+$$;
+
+CREATE FUNCTION anvil.fn09_responsible_related(pid uuid,cid uuid,key uuid,op text) RETURNS boolean LANGUAGE sql AS $$
+ SELECT COALESCE(op IN('defineProjectRole','bindResponsibleSession')
+ OR EXISTS(SELECT 1 FROM anvil.project_roles x WHERE x.project_id=pid AND x.command_id=cid)
+ OR EXISTS(SELECT 1 FROM anvil.agent_sessions x WHERE x.project_id=pid AND x.command_id=cid)
+ OR EXISTS(SELECT 1 FROM anvil.role_bindings x WHERE x.project_id=pid AND x.command_id=cid)
+ OR EXISTS(SELECT 1 FROM anvil.approval_requests r WHERE r.project_id=pid AND r.candidate_command_id=key AND r.action_scope_json->>'operation' IN('defineProjectRole','bindResponsibleSession'))
+ OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=ar.approval_decision_ref JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id WHERE ar.command_id=cid AND r.action_scope_json->>'operation' IN('defineProjectRole','bindResponsibleSession'))
+ OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=pid AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=pid AND r.id=d.request_id WHERE ac.command_id=cid AND r.action_scope_json->>'operation' IN('defineProjectRole','bindResponsibleSession'))
+ OR EXISTS(SELECT 1 FROM anvil.audit_events a JOIN anvil.approval_requests r ON r.project_id=pid AND r.id::text=a.approval_ref->>'requestId' WHERE a.command_id=cid AND r.action_scope_json->>'operation' IN('defineProjectRole','bindResponsibleSession')),false);
+$$;
+CREATE FUNCTION anvil.fn09_responsible_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;c anvil.commands;did uuid;s jsonb;ref jsonb;payload jsonb;target jsonb;approval jsonb;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN RETURN NEW;END IF;
+ IF TG_TABLE_NAME='commands' THEN pid=NEW.project_id;cid=NEW.id;
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN pid=NEW.scope_id;cid=NEW.command_id;
+ ELSE pid=NEW.project_id;cid=NEW.command_id;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=pid;
+ IF NOT anvil.fn09_responsible_related(pid,cid,c.command_id,c.operation) THEN RETURN NEW;END IF;
+ IF c.id IS NULL OR c.operation NOT IN('defineProjectRole','bindResponsibleSession') OR c.state IS DISTINCT FROM 'APPLIED' THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_COMMAND_REQUIRED' USING ERRCODE='42501';END IF;
+ s=c.result_ref->'data'->'snapshot';ref=c.result_ref->'data'->'ref';target=anvil.fn09_responsible_target(c.operation,s);payload=anvil.fn09_responsible_payload(c.operation,s);
+ IF s IS NULL OR ref IS NULL OR s IS DISTINCT FROM (CASE WHEN c.operation='defineProjectRole' THEN (SELECT x.snapshot_json FROM anvil.project_roles x WHERE x.project_id=pid AND x.command_id=cid) ELSE (SELECT x.snapshot_json FROM anvil.role_bindings x WHERE x.project_id=pid AND x.command_id=cid) END)
+ OR (c.operation='defineProjectRole' AND ((SELECT count(*) FROM anvil.project_roles WHERE project_id=pid AND command_id=cid)<>1 OR EXISTS(SELECT 1 FROM anvil.role_bindings WHERE project_id=pid AND command_id=cid) OR EXISTS(SELECT 1 FROM anvil.agent_sessions WHERE project_id=pid AND command_id=cid)))
+ OR (c.operation='bindResponsibleSession' AND ((SELECT count(*) FROM anvil.role_bindings WHERE project_id=pid AND command_id=cid)<>1 OR EXISTS(SELECT 1 FROM anvil.project_roles WHERE project_id=pid AND command_id=cid) OR (SELECT count(*) FROM anvil.agent_sessions WHERE project_id=pid AND command_id=cid)<>CASE WHEN target='null'::jsonb THEN 1 ELSE 0 END))
+ THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_MATERIAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ IF (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=cid)<>1 OR (SELECT count(*) FROM anvil.audit_events WHERE command_id=cid)<>1
+ OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.audit_events a ON a.command_id=c.id WHERE ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+ AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND ar.policy_ref=c.policy_ref
+ AND ar.scope_digest=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref))
+ AND a.project_id=pid AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.target_ref=ref AND a.policy_ref=c.policy_ref AND a.operation_id=c.operation_id
+ AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest
+ AND (c.approval_consumption_id IS NOT NULL OR ar.approval_decision_ref IS NULL AND a.approval_ref IS NULL))
+ THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_COMMON_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ IF c.approval_consumption_id IS NULL THEN
+  IF c.payload_ref IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.approval_consumptions WHERE command_id=cid) OR NOT anvil.execution_preparation_authorized_before_responsible(pid,c.operation) THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_AUTO_REQUIRED' USING ERRCODE='42501';END IF;
+ ELSE
+  SELECT ar.approval_decision_ref INTO did FROM anvil.authorization_receipts ar WHERE ar.id=c.authorization_receipt_id AND ar.command_id=cid;
+  IF (SELECT count(*) FROM anvil.approval_consumptions WHERE command_id=cid)<>1 OR NOT COALESCE(anvil.fn09_responsible_approval_execution_valid(pid,cid,did,true),false) THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER fn09_responsible_commands_complete AFTER INSERT ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_authorization_receipts_complete AFTER INSERT ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_audit_events_complete AFTER INSERT ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_approval_consumptions_complete AFTER INSERT ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_project_roles_complete AFTER INSERT ON anvil.project_roles DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_agent_sessions_complete AFTER INSERT ON anvil.agent_sessions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE CONSTRAINT TRIGGER fn09_responsible_role_bindings_complete AFTER INSERT ON anvil.role_bindings DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_complete();
+CREATE FUNCTION anvil.fn09_responsible_command_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE protected_old boolean;protected_new boolean=false;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN
+  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+ END IF;
+ protected_old=anvil.fn09_responsible_related(OLD.project_id,OLD.id,OLD.command_id,OLD.operation);
+ IF TG_OP='UPDATE' THEN
+  protected_new=anvil.fn09_responsible_related(NEW.project_id,NEW.id,NEW.command_id,NEW.operation);
+ END IF;
+ IF COALESCE(protected_old,false) OR COALESCE(protected_new,false)
+ THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_APPROVAL_COMMAND_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn09_responsible_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_command_immutable();
+
+-- 최종 command의 소비/receipt/감사를 나중에 수정하거나 지우는 우회도 차단한다.
+CREATE FUNCTION anvil.fn09_responsible_link_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE old_command uuid;new_command uuid;
+BEGIN
+ IF current_user<>'anvil_v3_app' THEN IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;END IF;
+ old_command=OLD.command_id;IF TG_OP='UPDATE' THEN new_command=NEW.command_id;END IF;
+ IF EXISTS(SELECT 1 FROM anvil.commands c WHERE c.id IN(old_command,new_command) AND anvil.fn09_responsible_related(c.project_id,c.id,c.command_id,c.operation))
+ THEN RAISE EXCEPTION 'RESPONSIBLE_SESSION_APPROVAL_LINK_IMMUTABLE' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+END;
+$$;
+CREATE TRIGGER fn09_responsible_consumption_immutable BEFORE UPDATE OR DELETE ON anvil.approval_consumptions FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_link_immutable();
+CREATE TRIGGER fn09_responsible_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_link_immutable();
+CREATE TRIGGER fn09_responsible_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn09_responsible_link_immutable();

@@ -1,0 +1,74 @@
+import { ApiClient, ApiError } from '../../api/client.ts';
+import type { VersionRef } from '../../../../../contracts/generated-types.ts';
+import type { MethodologyGraph } from '../../../../../contracts/methodologies.ts';
+import { reviewRefFor, type FormVersion, type ContentReviewRef } from '../methodologies/forms-api.ts';
+
+export interface MethodSummary { ref: VersionRef; name: string; purpose: string; scope: 'SYSTEM' | 'USER_COMMON'; systemCode: string | null; status: 'DRAFT' | 'CONFIRMED'; sourceAvailable: boolean }
+export interface MethodPage { items: MethodSummary[]; nextCursor: string | null; hasMore: boolean; observedAt: string; baselineVersion: null }
+export interface MethodListOptions { scope?: 'SYSTEM' | 'USER_COMMON'; name?: string; status?: 'DRAFT' | 'CONFIRMED'; cursor?: string; limit?: number }
+export interface MethodVersion {
+  ref: VersionRef; name: string; purpose: string; scope: string; systemCode: string | null; graph: MethodologyGraph;
+  confirmation: { id: string; decision: 'CONFIRMED'; decided_at: string; decidedBy: string; reviewRefs: ContentReviewRef[] } | null;
+  contentReviewCriteria?: FormVersion['contentReviewCriteria'];
+  contentReviews?: FormVersion['contentReviews'];
+  validation: { validForConfirmation: boolean; issues: { code: string; location: string; severity: 'ERROR' | 'WARNING'; message: string }[] };
+  runtimeReadiness: 'PROJECT_BINDINGS_REQUIRED';
+}
+const idPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const validRef = (ref: VersionRef) => !!ref && typeof ref === 'object' && idPattern.test(ref.id) && Number.isSafeInteger(ref.version) && ref.version > 0 && /^[0-9a-f]{64}$/.test(ref.contentHash);
+const texts = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === 'string');
+function conditionShape(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const item = value as Record<string, unknown>, keys = Object.keys(item);
+  if (keys.length === 1 && ('all' in item || 'any' in item)) {
+    const children = item.all ?? item.any;
+    return Array.isArray(children) && children.length > 0 && children.every(conditionShape);
+  }
+  if (keys.length === 1 && 'not' in item) return conditionShape(item.not);
+  const field = item.fieldRef as Record<string, unknown> | null;
+  return keys.length === 3 && !!field && typeof field === 'object' && Object.keys(field).length === 2 && typeof field.nodeId === 'string'
+    && ['REVIEW_OUTCOME', 'USER_DECISION'].includes(String(field.field))
+    && (['EQ', 'NE'].includes(String(item.operator)) && typeof item.value === 'string'
+      || item.operator === 'IN' && texts(item.value) || item.operator === 'IS_PRESENT' && item.value === null);
+}
+export async function listMethods(client: ApiClient, options: MethodListOptions = {}): Promise<MethodPage> {
+  if (Object.keys(options).some(key => !['scope', 'name', 'status', 'cursor', 'limit'].includes(key)) || options.scope !== undefined && !['SYSTEM', 'USER_COMMON'].includes(options.scope)
+    || options.status !== undefined && !['DRAFT', 'CONFIRMED'].includes(options.status) || options.name !== undefined && (typeof options.name !== 'string' || options.name.length > 200)
+    || options.cursor !== undefined && (typeof options.cursor !== 'string' || !options.cursor.length || options.cursor.length > 4096)
+    || options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 200)) throw new ApiError('CLIENT_PATH_INVALID');
+  const query = new URLSearchParams(); for (const [key, value] of Object.entries(options)) if (value !== undefined) query.set(key, String(value));
+  const page = await client.get<MethodPage>('/api/v1/methodologies' + (query.size ? '?' + query.toString() : ''));
+  if (!page || !Array.isArray(page.items) || page.items.length > (options.limit ?? 50) || typeof page.hasMore !== 'boolean' || page.hasMore !== (page.nextCursor !== null) || page.hasMore && (!page.items.length || typeof page.nextCursor !== 'string' || !page.nextCursor.length || page.nextCursor.length > 4096 || page.nextCursor === options.cursor) || page.baselineVersion !== null || !Number.isFinite(Date.parse(page.observedAt))
+    || new Set(page.items.map(item => item?.ref?.id)).size !== page.items.length
+    || page.items.some(item => !item || !validRef(item.ref) || typeof item.name !== 'string' || typeof item.purpose !== 'string' || !['SYSTEM', 'USER_COMMON'].includes(item.scope) || !['DRAFT', 'CONFIRMED'].includes(item.status) || typeof item.sourceAvailable !== 'boolean' || item.systemCode !== null && typeof item.systemCode !== 'string')) throw new ApiError('RESPONSE_INVALID');
+  return page;
+}
+export async function getMethod(client: ApiClient, selected: MethodSummary): Promise<MethodVersion> {
+  if (!validRef(selected.ref)) throw new ApiError('CLIENT_PATH_INVALID');
+  const value = await client.get<MethodVersion>(`/api/v1/methodologies/${selected.ref.id}/versions/${selected.ref.version}`);
+  return validateMethodVersion(value, selected);
+}
+export function validateMethodVersion(value: MethodVersion, selected: Pick<MethodVersion, 'ref' | 'name' | 'purpose' | 'scope' | 'systemCode'>): MethodVersion {
+  if (!value || !validRef(value.ref) || value.ref.id !== selected.ref.id || value.ref.version !== selected.ref.version || value.ref.contentHash !== selected.ref.contentHash || value.name !== selected.name || value.purpose !== selected.purpose || value.scope !== selected.scope || value.systemCode !== selected.systemCode
+    || value.runtimeReadiness !== 'PROJECT_BINDINGS_REQUIRED' || !value.validation || typeof value.validation.validForConfirmation !== 'boolean' || !Array.isArray(value.validation.issues)
+    || value.validation.issues.some(issue => !issue || typeof issue.code !== 'string' || typeof issue.location !== 'string' || typeof issue.message !== 'string' || !['ERROR', 'WARNING'].includes(issue.severity))
+    || value.confirmation !== null && (!value.confirmation || !idPattern.test(value.confirmation.id) || value.confirmation.decision !== 'CONFIRMED' || !Number.isFinite(Date.parse(value.confirmation.decided_at))
+      || !idPattern.test(value.confirmation.decidedBy) || !Array.isArray(value.confirmation.reviewRefs) || !value.confirmation.reviewRefs.length || value.confirmation.reviewRefs.some(ref => !reviewRefFor(ref, value.ref) || ref.outcome !== 'ACCEPTED'))) throw new ApiError('RESPONSE_INVALID');
+  if (value.contentReviewCriteria !== undefined && (!value.contentReviewCriteria || !Number.isSafeInteger(value.contentReviewCriteria.criteriaVersion) || value.contentReviewCriteria.criteriaVersion < 1 || !Array.isArray(value.contentReviewCriteria.items) || !value.contentReviewCriteria.items.length || value.contentReviewCriteria.items.length > 200
+    || new Set(value.contentReviewCriteria.items.map(item => item?.criterionId)).size !== value.contentReviewCriteria.items.length || value.contentReviewCriteria.items.some(item => !item || typeof item.criterionId !== 'string' || typeof item.title !== 'string'))) throw new ApiError('RESPONSE_INVALID');
+  if (value.contentReviews !== undefined && (!Array.isArray(value.contentReviews) || value.contentReviews.length > 200 || value.contentReviews.some(review => !review || !reviewRefFor(review.ref, value.ref) || !Array.isArray(review.items)
+    || !review.reviewer || review.reviewer.kind !== 'HUMAN' || !idPattern.test(review.reviewer.userId) || typeof review.reviewer.sameAsTargetRecorder !== 'boolean' || review.sourceKind !== 'HUMAN_REVIEW' || typeof review.reason !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !Number.isSafeInteger(review.serverSequence) || review.serverSequence < 1))) throw new ApiError('RESPONSE_INVALID');
+  const graph = value.graph;
+  if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || typeof graph.entryNodeId !== 'string' || !texts(graph.terminalNodeIds)
+    || new Set(graph.nodes.map(node => node?.nodeId)).size !== graph.nodes.length
+    || graph.nodes.some(node => !node || typeof node.nodeId !== 'string' || typeof node.name !== 'string' || typeof node.purpose !== 'string' || !['HUMAN', 'AGENT', 'DECISION', 'JOIN'].includes(node.kind)
+      || !['USER', 'COORDINATOR', 'STAGE_OWNER'].includes(node.role) || !['AUTO', 'CASE_BY_CASE'].includes(node.mode)
+      || !node.taskScope || !texts(node.taskScope.included) || !texts(node.taskScope.excluded)
+      || node.limitPolicyRef !== null && !validRef(node.limitPolicyRef)
+      || node.requirements !== undefined && (!node.requirements || !texts(node.requirements.capabilities) || !texts(node.requirements.environment))
+      || node.joinRule !== undefined && (!node.joinRule || !['ALL', 'DECLARED_CONDITION'].includes(node.joinRule.mode) || node.joinRule.condition !== undefined && !conditionShape(node.joinRule.condition))
+      || !node.position || !Number.isFinite(node.position.x) || !Number.isFinite(node.position.y) || !texts(node.completionCriteria) || !texts(node.approvalBoundary) || !texts(node.recordRequirements)
+      || !Array.isArray(node.inputs) || !Array.isArray(node.outputs) || [...node.inputs, ...node.outputs].some(item => !item || typeof item.itemId !== 'string' || !validRef(item.formRef) || !texts(item.reviewCriteria)))
+    || graph.edges.some(edge => !edge || typeof edge.edgeId !== 'string' || typeof edge.fromNodeId !== 'string' || typeof edge.toNodeId !== 'string' || typeof edge.reason !== 'string' || !['SEQUENCE', 'BRANCH', 'JOIN', 'REWORK'].includes(edge.kind))) throw new ApiError('RESPONSE_INVALID');
+  return value;
+}

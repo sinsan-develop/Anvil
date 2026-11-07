@@ -1,0 +1,131 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {generateKeyPairSync,randomBytes,randomUUID,sign} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
+import {verifyExecutionChallengeRequest,verifyExecutionProof} from '../../../apps/server/modules/executions/execution-proof.ts';
+const m:any=await import('../../../apps/connector/runtime/execution-client.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+const hash=(v:unknown)=>contentHash(canonicalJson(v)),initial='2026-10-19T12:00:00.000Z';
+function fixture(mode:'EXECUTION'|'RECOVERY'='EXECUTION'){
+ const id=randomUUID(),eid=randomUUID(),ref={id,version:1,contentHash:'a'.repeat(64)},key=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=key.publicKey.export({format:'der',type:'spki'}).toString('base64url');
+ const scope={mode,projectId:id,connectorId:id,executionId:eid,executionGeneration:1,grantRef:ref,credentialGeneration:1};let clock=Date.parse(initial),challengeCalls=0,performCalls=0,signCalls=0,fault='',incomplete=false,tail=Promise.resolve(),lateResolve:(()=>void)|undefined;
+ const streams=new Map<string,any[]>(),issued=new Map<string,any>(),context=()=>({transport:'SYNTHETIC_ONLY',...scope,scopeDigest:'b'.repeat(64),publicKeyFingerprint:publicKeyFingerprint(spki),grantExpiresAt:'2026-10-19T12:01:00.000Z'});
+ const store:any={transport:'SYNTHETIC_ONLY',exclusive:async(s:any,fn:any)=>{const prior=tail;let release!:()=>void;tail=new Promise(r=>release=r);await prior;let rows=streams.get(s.requestKey);if(!rows){rows=[];streams.set(s.requestKey,rows);}try{return await fn({read:async()=>({complete:!incomplete,events:structuredClone(rows)}),appendAndSync:async(e:any)=>{if(fault==='sync'&&e.snapshot.state==='CHALLENGE_ATTEMPTED'){incomplete=true;throw Error('PRIVATE_TOKEN_SYNC');}rows!.push(structuredClone(e));}});}finally{release();}}};
+ const authority:any={transport:'SYNTHETIC_ONLY',current:async(v:any)=>({transport:'SYNTHETIC_ONLY',scope:structuredClone(scope),requestKey:v.requestKey,target:structuredClone(v.target),checkedAt:new Date(clock).toISOString(),expiresAt:context().grantExpiresAt})};
+ const signer:any={transport:'SYNTHETIC_ONLY',sign:async(_purpose:string,bytes:Buffer)=>{signCalls++;return sign('sha256',bytes,{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');}};
+ const transport:any={transport:'SYNTHETIC_ONLY',challenge:async(_s:any,request:any,signature:string)=>{
+  challengeCalls++;assert.equal([...streams.values()].flat().at(-1).snapshot.state,'CHALLENGE_ATTEMPTED');verifyExecutionChallengeRequest(spki,signature,request,request,context(),new Date(clock));if(fault==='challenge')throw Error('PRIVATE_TOKEN_CHALLENGE_LOST');
+  const challenge={id:randomUUID(),requestId:request.requestId,purpose:'EXECUTION_REQUEST',grantRef:ref,credentialGeneration:1,scopeDigest:context().scopeDigest,serverNonce:randomBytes(32).toString('base64url'),clientNonce:request.clientNonce,issuedAt:new Date(clock).toISOString(),expiresAt:new Date(clock+30000).toISOString()};
+  issued.set(challenge.id,{challenge,request});if(fault==='expired')clock+=31000;const out={ref:{id:challenge.id,version:1,contentHash:'c'.repeat(64)},challenge,credentialIssued:false,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};if(fault==='challengeMismatch')out.challenge.clientNonce=randomBytes(32).toString('base64url');return out;
+ },perform:async(_s:any,operation:any,challengeRef:any,proof:any,signature:string,bodyRaw:string)=>{
+  performCalls++;assert.equal([...streams.values()].flat().at(-1).snapshot.state,'REQUEST_ATTEMPTED');const x=issued.get(challengeRef.id),expected={requestId:x.request.requestId,...x.request.target,grantRef:ref,credentialGeneration:1,serverNonce:x.challenge.serverNonce};verifyExecutionProof(spki,signature,mode==='RECOVERY'?'EXECUTION_RECOVERY_REQUEST_PROOF':'EXECUTION_REQUEST_PROOF',proof,expected,context(),{issuedAt:x.challenge.issuedAt,expiresAt:x.challenge.expiresAt},new Date(clock));assert.equal(proof.bodyHash,hash(['MATERIAL','COMMANDS','STOP_INSTRUCTION'].includes(operation.kind)?null:JSON.parse(bodyRaw)));
+  if(fault==='perform')throw Error('PRIVATE_TOKEN_RESPONSE_LOST');if(fault==='timeout')await new Promise<void>(r=>lateResolve=r);
+  if(operation.kind==='STOP_INSTRUCTION'){assert.equal(mode,'RECOVERY');assert.equal(proof.method,'GET');assert.equal(proof.path,'/api/v1/connectors/'+id+'/executions/'+eid+'/recovery/stop-instruction');assert.equal(proof.queryHash,hash({}));const e:any={schemaVersion:1,commandId:id,issuedAt:new Date(clock).toISOString(),expiresAt:new Date(clock+20000).toISOString(),executorRegistrationRef:ref,context:{projectId:id,assignmentId:id,executionId:eid,executionGeneration:1,connectionRef:ref,environmentRef:ref,authorizationReceiptRef:ref,capabilityRef:ref,budgetRef:ref,sourceScopes:[{sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}]},operation:'REQUEST_STOP',payload:{sessionBindingRef:ref,stopScopeRef:ref}};if(fault==='stopStart'){e.operation='START_SESSION';e.payload={contextBundleRef:ref,optionsRef:ref};}if(fault==='stopScope')e.context.executionGeneration=2;e.envelopeHash=hash(e);const out:any={transport:'SYNTHETIC_ONLY',proofResultRef:ref,instruction:fault==='stopNone'?null:{commandRef:ref,envelope:e},expiresAt:new Date(clock+10000).toISOString(),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false,writerReleaseVerified:false};if(fault==='stopUnsafe')out.writerReleaseVerified=true;return out;}
+  if(operation.kind==='COMMANDS'){const body=JSON.parse(bodyRaw),query={waitMs:body.waitMs,...(body.afterCursor===null?{}:{afterCursor:body.afterCursor})};assert.equal(proof.method,'GET');assert.equal(proof.queryHash,hash(query));const sources=[{sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}],envelope:any={schemaVersion:1,commandId:id,issuedAt:new Date(clock).toISOString(),expiresAt:new Date(clock+20000).toISOString(),executorRegistrationRef:ref,context:{projectId:id,assignmentId:id,executionId:eid,executionGeneration:1,connectionRef:ref,environmentRef:ref,authorizationReceiptRef:ref,capabilityRef:ref,budgetRef:ref,sourceScopes:sources},operation:'START_SESSION',payload:{contextBundleRef:ref,optionsRef:ref}};envelope.envelopeHash=hash(envelope);const out:any={transport:'SYNTHETIC_ONLY',proofResultRef:ref,items:[{sequence:1,commandRef:ref,envelope}],nextCursor:'v1.'+'c'.repeat(43)+'.'+'s'.repeat(43),hasMore:false,observedAt:new Date(clock).toISOString(),expiresAt:new Date(clock+10000).toISOString(),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};if(fault==='pageUnsafe')out.executionAuthorized=true;if(fault==='pageScope'){out.items[0].envelope.context.executionGeneration=2;const{envelopeHash:_,...unsigned}=out.items[0].envelope;out.items[0].envelope.envelopeHash=hash(unsigned);}return out;}
+  if(operation.kind==='PERMIT')return{transport:'SYNTHETIC_ONLY',proofResultRef:ref,permit:{transport:'SYNTHETIC_ONLY',key:{projectId:id,executionId:eid,executionGeneration:1,commandId:id},envelopeHash:JSON.parse(bodyRaw).envelopeHash,grantRef:ref,permitRef:ref,checkedAt:new Date(clock).toISOString(),expiresAt:new Date(clock+10000).toISOString(),executionAuthorized:false,dispatchPerformed:false},nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  if(operation.kind==='MATERIAL'){const body=JSON.parse(bodyRaw),snapshot={sequence:1,scope:{projectId:id,executionId:eid,executionGeneration:1,commandId:id},envelopeHash:fault==='receiptTamper'?'f'.repeat(64):body.envelopeHash,manifestHash:'e'.repeat(64),materialRef:body.materialRef,recordedAt:new Date(clock).toISOString(),previousRef:null},out:any={transport:'SYNTHETIC_ONLY',proofResultRef:ref,partReceipt:{ref:{id,version:1,contentHash:hash(snapshot)},snapshot},nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};if(fault==='rawBytes')out.bytes='PRIVATE_MATERIAL';return out;}
+  const events=JSON.parse(bodyRaw).events,snapshot={execution:{projectId:id,executionId:eid,executionGeneration:1},highestContiguous:1,maxSequence:1,contiguousDigest:hash({previous:hash([]),eventHash:hash(events[0])}),gaps:[],storedCount:1,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:new Date(clock).toISOString()};if(fault==='unsafeAck')snapshot.writerReleaseVerified=true;
+  return{transport:'SYNTHETIC_ONLY',proofResultRef:ref,ack:{ref:{id,version:1,contentHash:hash(snapshot)},snapshot},nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+ }};
+ const body={envelopeHash:'d'.repeat(64),localAttemptRef:ref,sourceObservationRefs:[ref],osOwnershipRef:ref},permit={kind:'PERMIT',commandId:id,bodyRaw:canonicalJson(body)};
+ const event={projectId:id,executionId:eid,executionGeneration:1,sequence:1,eventId:randomUUID(),type:'UNKNOWN',commandId:id,envelopeHash:'d'.repeat(64),localRecordRef:ref,processRef:null,occurredAt:initial,reasonCode:'PROVIDER_RESPONSE_LOST'},observations={kind:'OBSERVATIONS',commandId:null,bodyRaw:canonicalJson({events:[event],batchHash:hash([event])})};
+ const make=()=>{assert.equal(typeof m.SyntheticExecutionClient,'function');return new m.SyntheticExecutionClient(store,authority,signer,transport,{clock:()=>clock,timeoutMs:20});};
+ return{scope,body,permit,observations,material:{kind:'MATERIAL',commandId:id,bodyRaw:canonicalJson({envelopeHash:'d'.repeat(64),materialRef:ref})},make,store,authority,signer,transport,streams,counts:()=>[challengeCalls,performCalls,signCalls],fault:(v:string)=>fault=v,advance:(ms:number)=>clock+=ms,releaseLate:()=>lateResolve?.(),incomplete:()=>incomplete=true};
+}
+
+test('보관 요청 읽기는 부재·만료된 원응답·미완료를 읽기만 하고 서명/전송/append하지 않는다',async()=>{
+ const f=fixture(),client=f.make();assert.equal(typeof client.readRecorded,'function');
+ const absent=await client.readRecorded(f.scope,f.permit);assert.equal(absent.result,null);assert.equal(absent.recordedAt,null);assert.equal(absent.readOnly,true);assert.equal(absent.currentAuthorityVerified,false);assert.deepEqual(f.counts(),[0,0,0]);assert.equal([...f.streams.values()].flat().length,0);
+ const sent=await client.execute(f.scope,f.permit);f.advance(120000);f.authority.current=async()=>assert.fail('NO_AUTHORITY');f.signer.sign=async()=>assert.fail('NO_SIGNER');f.transport.challenge=async()=>assert.fail('NO_CHALLENGE');f.transport.perform=async()=>assert.fail('NO_TRANSPORT');
+ const historic=await client.readRecorded(f.scope,f.permit);assert.deepEqual(historic.result,sent);assert.equal(historic.currentAuthorityVerified,false);assert.equal(historic.result.executionAuthorized,false);assert.equal(historic.result.ackAudited,false);historic.result.response.permit.permitRef.version=99;assert.deepEqual((await client.readRecorded(f.scope,f.permit)).result,sent);assert.deepEqual(f.counts(),[1,1,2]);
+ const rows=[...f.streams.values()][0]!;rows.splice(1);const before=structuredClone(rows),unfinished=await client.readRecorded(f.scope,f.permit);assert.equal(unfinished.result.state,'PREPARED');assert.deepEqual(rows,before);assert.deepEqual(f.counts(),[1,1,2]);
+});
+
+test('보관 요청 읽기는 원장 변조·불완전·다른 주체범위를 네트워크나 복구 append 없이 거절한다',async()=>{
+ for(const fault of ['tamper','incomplete','grant']){const f=fixture(),client=f.make();assert.equal(typeof client.readRecorded,'function');await client.execute(f.scope,f.permit);if(fault==='tamper')[...f.streams.values()][0]![0].snapshot.payload.signature='bad';if(fault==='incomplete')f.incomplete();const scope=fault==='grant'?{...f.scope,grantRef:{...f.scope.grantRef,version:2}}:f.scope,before=structuredClone([...f.streams.values()]);
+  await assert.rejects(client.readRecorded(scope,f.permit),/CLIENT_/);assert.deepEqual([...f.streams.values()],before);assert.deepEqual(f.counts(),[1,1,2]);
+ }
+});
+
+test('회수중지읽기는전용GET/null본문·별도purpose로서명해저장하고중지완료나writer회수로승격하지않는다',async()=>{
+ const f=fixture('RECOVERY'),operation={kind:'STOP_INSTRUCTION',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID()})},out=await f.make().execute(f.scope,operation);assert.equal(out.state,'RESPONSE_RECORDED');assert.equal(out.response.instruction.envelope.operation,'REQUEST_STOP');assert.equal(out.response.writerReleaseVerified,false);assert.equal(out.executionAuthorized,false);assert.equal(out.dispatchPerformed,false);assert.deepEqual(f.counts(),[1,1,2]);f.advance(120000);assert.deepEqual(await f.make().execute(f.scope,operation),out);assert.deepEqual(f.counts(),[1,1,2]);
+});
+test('회수중지없음은원null결과로보존하고응답유실UNKNOWN·동일pollId scope변경은새nonce로재시도하지않는다',async()=>{
+ const f=fixture('RECOVERY'),operation={kind:'STOP_INSTRUCTION',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID()})};f.fault('stopNone');const out=await f.make().execute(f.scope,operation);assert.equal(out.state,'RESPONSE_RECORDED');assert.equal(out.response.instruction,null);assert.deepEqual(await f.make().execute(f.scope,operation),out);assert.deepEqual(f.counts(),[1,1,2]);
+ const g=fixture('RECOVERY');g.fault('perform');const unknown=await g.make().execute(g.scope,operation);assert.equal(unknown.state,'UNKNOWN');assert.deepEqual(await g.make().execute(g.scope,operation),unknown);await assert.rejects(g.make().execute({...g.scope,credentialGeneration:2},operation),/CLIENT_REQUEST_CONFLICT/);assert.deepEqual(g.counts(),[1,1,2]);
+});
+test('회수중지읽기에START/다른실행/회수true응답은UNKNOWN이며일반scope·추가metadata는요청전거절한다',async()=>{
+ const operation={kind:'STOP_INSTRUCTION',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID()})};for(const fault of ['stopStart','stopScope','stopUnsafe']){const f=fixture('RECOVERY');f.fault(fault);const out=await f.make().execute(f.scope,operation);assert.equal(out.state,'UNKNOWN');assert.equal(out.reason,'INVALID_RESPONSE');assert.equal(out.response,null);assert.deepEqual(f.counts(),[1,1,2]);}
+ const f=fixture();await assert.rejects(f.make().execute(f.scope,operation),/CLIENT_OPERATION_INVALID/);const g=fixture('RECOVERY');await assert.rejects(g.make().execute(g.scope,{...operation,bodyRaw:canonicalJson({pollId:randomUUID(),reason:'PRIVATE_EXTRA'})}),/CLIENT_OPERATION_INVALID/);assert.deepEqual(f.counts(),[0,0,0]);assert.deepEqual(g.counts(),[0,0,0]);
+});
+test('명령페이지 GET은query만서명하고원응답을sync하며재조회/동시수신이Agent실행이나재전송을만들지않는다',async()=>{
+ const f=fixture(),operation={kind:'COMMANDS',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID(),afterCursor:null,waitMs:0})},[a,b]=await Promise.all([f.make().execute(f.scope,operation),f.make().execute(f.scope,operation)]);assert.deepEqual(a,b);assert.equal(a.state,'RESPONSE_RECORDED');assert.equal(a.response.items.length,1);assert.equal(a.dispatchPerformed,false);assert.equal(a.executionAuthorized,false);assert.deepEqual(f.counts(),[1,1,2]);f.advance(120000);assert.deepEqual(await f.make().execute(f.scope,operation),a);assert.deepEqual(f.counts(),[1,1,2]);
+});
+test('명령페이지 응답유실은 같은pollId UNKNOWN을보존하고선택변경·회수polling·추가자유필드는거절한다',async()=>{
+ const f=fixture(),body={pollId:randomUUID(),afterCursor:null,waitMs:0},operation={kind:'COMMANDS',commandId:null,bodyRaw:canonicalJson(body)};f.fault('perform');const a=await f.make().execute(f.scope,operation);assert.equal(a.state,'UNKNOWN');const count=f.counts();assert.deepEqual(await f.make().execute(f.scope,operation),a);await assert.rejects(f.make().execute(f.scope,{...operation,bodyRaw:canonicalJson({...body,waitMs:1})}));assert.deepEqual(f.counts(),count);const g=fixture('RECOVERY');await assert.rejects(g.make().execute(g.scope,operation));await assert.rejects(g.make().execute(g.scope,{...operation,bodyRaw:canonicalJson({...body,message:'PRIVATE'})}));assert.equal(g.streams.size,0);
+});
+test('페이지의권한true·다른실행봉투는정상수신으로기록하지않고UNKNOWN/INVALID_RESPONSE다',async()=>{for(const fault of ['pageUnsafe','pageScope']){const f=fixture();f.fault(fault);const a=await f.make().execute(f.scope,{kind:'COMMANDS',commandId:null,bodyRaw:canonicalJson({pollId:randomUUID(),afterCursor:null,waitMs:0})});assert.equal(a.state,'UNKNOWN');assert.equal(a.reason,'INVALID_RESPONSE');assert.equal(a.response,null);assert.equal(f.counts()[1],1);}});
+test('client는 서명 전후 정확 요청과 두 전송시도를 sync하고 재시작/동시 재조회는 같은 결과·nonce를 보존한다',async()=>{
+ const f=fixture(),[a,b]=await Promise.all([f.make().execute(f.scope,f.permit),f.make().execute(f.scope,f.permit)]);assert.deepEqual(a,b);assert.equal(a.state,'RESPONSE_RECORDED');assert.deepEqual(f.counts(),[1,1,2]);
+ const rows=[...f.streams.values()][0];assert(rows);assert.deepEqual(rows.map((e:any)=>e.snapshot.state),['PREPARED','CHALLENGE_ATTEMPTED','CHALLENGE_RECEIVED','REQUEST_ATTEMPTED','RESPONSE_RECORDED']);f.advance(120000);assert.deepEqual(await f.make().execute(f.scope,f.permit),a);assert.deepEqual(f.counts(),[1,1,2]);assert.equal(a.executionAuthorized,false);
+});
+test('challenge 또는 본요청 응답유실은 UNKNOWN이며 같은/다른 본문으로 새 nonce·자동 재전송을 만들지 않는다',async()=>{
+ for(const fault of ['challenge','perform']){const f=fixture();f.fault(fault);const a=await f.make().execute(f.scope,f.permit);assert.equal(a.state,'UNKNOWN');const counts=f.counts();assert.deepEqual(await f.make().execute(f.scope,f.permit),a);assert.deepEqual(f.counts(),counts);await assert.rejects(f.make().execute(f.scope,{...f.permit,bodyRaw:canonicalJson({...f.body,localAttemptRef:{...f.body.localAttemptRef,version:2}})}));assert.deepEqual(f.counts(),counts);}
+});
+test('시도 sync 불명/불완전·변조 기록은 전송 없이 보존하고 원문 오류를 숨긴다',async()=>{
+ const f=fixture();f.fault('sync');await assert.rejects(f.make().execute(f.scope,f.permit),(e:Error)=>!e.message.includes('PRIVATE_TOKEN'));assert.deepEqual(f.counts().slice(0,2),[0,0]);await assert.rejects(f.make().execute(f.scope,f.permit));assert.deepEqual(f.counts().slice(0,2),[0,0]);
+ const g=fixture();await g.make().execute(g.scope,g.permit);const rows=[...g.streams.values()][0];assert(rows);rows[0].snapshot.payload.scope.credentialGeneration=2;await assert.rejects(g.make().execute(g.scope,g.permit));assert.deepEqual(g.counts(),[1,1,2]);
+});
+test('만료/다른 clientNonce challenge는 proof를 전송하지 않고 유한 timeout 뒤 늦은 응답도 UNKNOWN을 바꾸지 않는다',async()=>{
+ for(const fault of ['expired','challengeMismatch']){const f=fixture();f.fault(fault);assert.equal((await f.make().execute(f.scope,f.permit)).state,'UNKNOWN');assert.equal(f.counts()[1],0);}
+ const f=fixture();f.fault('timeout');const a=await f.make().execute(f.scope,f.permit);assert.equal(a.state,'UNKNOWN');f.releaseLate();await Promise.resolve();assert.deepEqual(await f.make().execute(f.scope,f.permit),a);assert.equal(f.counts()[1],1);
+});
+test('실행/회수 관측의 정확 ACK를 보존하되 spool 삭제·writer 회수나 실행 완료로 승격하지 않는다',async()=>{
+ for(const mode of ['EXECUTION','RECOVERY'] as const){const f=fixture(mode),out=await f.make().execute(f.scope,f.observations);assert.equal(out.state,'RESPONSE_RECORDED');assert.equal(out.ackAudited,false);assert.equal(out.writerReleaseVerified,false);assert.equal(out.dispatchPerformed,false);assert.equal(out.response.ack.snapshot.highestContiguous,1);}
+ const f=fixture();f.fault('unsafeAck');assert.equal((await f.make().execute(f.scope,f.observations)).state,'UNKNOWN');assert.equal(f.counts()[1],1);
+});
+test('비합성/없는 필수 port·비밀 자유필드·회수 permit은 저장/전송하지 않는다',async()=>{
+ const f=fixture();assert.equal(typeof m.SyntheticExecutionClient,'function');for(const port of ['store','authority','signer','transport'] as const){const ports=[f.store,f.authority,f.signer,f.transport],i=['store','authority','signer','transport'].indexOf(port);ports[i]={...ports[i],transport:'REAL'};assert.throws(()=>new m.SyntheticExecutionClient(...ports,{clock:()=>Date.parse(initial),timeoutMs:20}));}
+ await assert.rejects(f.make().execute(f.scope,{...f.permit,bodyRaw:canonicalJson({...f.body,message:'PRIVATE_TOKEN'})}));const recovery=fixture('RECOVERY');await assert.rejects(recovery.make().execute(recovery.scope,recovery.permit));assert.equal(f.streams.size,0);assert.equal(recovery.streams.size,0);
+});
+test('서명 뒤 축소된 현재 기한이 시도 sync 중 지나면 perform0·UNKNOWN을 보존한다',async()=>{
+ const f=fixture(),sign=f.signer.sign,current=f.authority.current,exclusive=f.store.exclusive;let shortened=false;
+ f.signer.sign=async(...args:any[])=>{const out=await sign(...args);if(args[0]==='EXECUTION_REQUEST_PROOF')shortened=true;return out;};
+ f.authority.current=async(v:any)=>({...await current(v),expiresAt:shortened?'2026-10-19T12:00:05.000Z':'2026-10-19T12:01:00.000Z'});
+ f.store.exclusive=(s:any,fn:any)=>exclusive(s,(tx:any)=>fn({...tx,appendAndSync:async(e:any)=>{await tx.appendAndSync(e);if(e.snapshot.state==='REQUEST_ATTEMPTED')f.advance(6000);}}));
+ const out=await f.make().execute(f.scope,f.permit);assert.equal(out.state,'UNKNOWN');assert.equal(f.counts()[1],0);assert.equal([...f.streams.values()][0]?.at(-1).snapshot.state,'UNKNOWN');
+});
+test('제출 seq2가 ACK의 gap2에 남아 있으면 정상 hash라도 UNKNOWN/INVALID_RESPONSE이며 자동 재전송0이다',async()=>{
+ const f=fixture(),body=JSON.parse(f.observations.bodyRaw);body.events[0].sequence=2;body.batchHash=hash(body.events);const operation={...f.observations,bodyRaw:canonicalJson(body)},perform=f.transport.perform;
+ f.transport.perform=async(...args:any[])=>{const out=await perform(...args);Object.assign(out.ack.snapshot,{highestContiguous:1,maxSequence:3,gaps:[{from:2,to:2}],storedCount:2});out.ack.ref.contentHash=hash(out.ack.snapshot);return out;};
+ const first=await f.make().execute(f.scope,operation);assert.equal(first.state,'UNKNOWN');assert.equal(first.reason,'INVALID_RESPONSE');assert.deepEqual(await f.make().execute(f.scope,operation),first);assert.equal(f.counts()[1],1);
+});
+
+test('자료 GET의 null body를 서명하고 원 bytes 대신 sync된 정확 부분 수신 receipt만 요청 journal에 보존한다',async()=>{
+ const f=fixture(),out=await f.make().execute(f.scope,f.material);assert.equal(out.state,'RESPONSE_RECORDED');assert.deepEqual(f.counts(),[1,1,2]);const rows=[...f.streams.values()][0];assert(rows);assert.equal(rows[0].snapshot.payload.target.method,'GET');assert.equal(rows[0].snapshot.payload.target.bodyHash,hash(null));assert.equal(out.response.partReceipt.snapshot.materialRef.id,JSON.parse(f.material.bodyRaw).materialRef.id);assert(!Object.hasOwn(out.response,'bytes'));f.advance(120000);assert.deepEqual(await f.make().execute(f.scope,f.material),out);assert.deepEqual(f.counts(),[1,1,2]);
+});
+
+test('자료 receipt의 다른 봉투·원 bytes 혼입·회수 scope는 완료/재전송으로 승격하지 않는다',async()=>{
+ for(const fault of ['receiptTamper','rawBytes']){const f=fixture();f.fault(fault);const out=await f.make().execute(f.scope,f.material);assert.equal(out.state,'UNKNOWN');assert.equal(out.reason,'INVALID_RESPONSE');assert.deepEqual(await f.make().execute(f.scope,f.material),out);assert.equal(f.counts()[1],1);}
+ const f=fixture('RECOVERY');await assert.rejects(f.make().execute(f.scope,f.material));assert.deepEqual(f.counts(),[0,0,0]);
+});
+
+
+test('관측 transport의 선택 invocation 문맥은 같은 journal의 원request·전체issued·최소기한을 전달한다',async()=>{
+ const f=fixture(),originalChallenge=f.transport.challenge,originalPerform=f.transport.perform;let challengeContext:any,performContext:any;
+ f.transport.challenge=async(...args:any[])=>{challengeContext=args[4];return originalChallenge(...args);};
+ f.transport.perform=async(...args:any[])=>{performContext=args[7];return originalPerform(...args);};
+ const result=await f.make().execute(f.scope,f.observations),events=[...f.streams.values()][0]!,prepared=events[0].snapshot.payload,issued=events[2].snapshot.payload;
+ assert.equal(result.state,'RESPONSE_RECORDED');assert(challengeContext,'challenge는 원journal invocation을 전달해야 한다');assert(performContext,'perform은 전체issued 복원문맥을 전달해야 한다');
+ for(const c of [challengeContext,performContext]){assert.deepEqual(c.scope,f.scope);assert.equal(c.requestKey,events[0].snapshot.requestKey);assert.deepEqual(c.request,prepared.request);assert.deepEqual(c.operation,prepared.operation);assert.deepEqual(c.target,prepared.target);assert(Number.isSafeInteger(c.deadline));assert(c.deadline<=Date.parse(prepared.authorityExpiresAt));}
+ assert.equal(challengeContext.issued,null);assert.deepEqual(performContext.issued,issued);assert(performContext.deadline<=Date.parse(issued.challenge.expiresAt));assert.deepEqual(f.counts(),[1,1,2]);
+});
+
+
+test('기존 parent 없는 Client 성공은 signer·transport signal을 새로 abort하지 않으며 invocation 변조는 원 journal을 바꾸지 않는다',async()=>{
+ const f=fixture(),signals:AbortSignal[]=[],challenge=f.transport.challenge,perform=f.transport.perform,signer=f.signer.sign;
+ f.signer.sign=async(...args:any[])=>{signals.push(args[2]);return signer(...args);};
+ f.transport.challenge=async(...args:any[])=>{signals.push(args[3]);const c=args[4];assert(c);c.request.requestId=randomUUID();c.operation.bodyRaw='{}';c.scope.executionGeneration=99;c.deadline=0;return challenge(...args);};
+ f.transport.perform=async(...args:any[])=>{signals.push(args[6]);const c=args[7];assert(c);c.issued.challenge.serverNonce='changed';c.request.target.path='/wrong';return perform(...args);};
+ const result=await f.make().execute(f.scope,f.observations);assert.equal(result.state,'RESPONSE_RECORDED');assert.equal(signals.length,4);assert(signals.every(s=>s.aborted===false));const rows=[...f.streams.values()][0]!;assert.equal(rows[0].snapshot.payload.scope.executionGeneration,1);assert.equal(rows[0].snapshot.payload.operation.bodyRaw,f.observations.bodyRaw);assert.notEqual(rows[2].snapshot.payload.challenge.serverNonce,'changed');assert.deepEqual(f.counts(),[1,1,2]);
+});

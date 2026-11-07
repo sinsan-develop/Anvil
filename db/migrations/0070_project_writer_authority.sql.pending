@@ -1,0 +1,171 @@
+-- FN06 writer 권위 B / 저장 한도 A. SOURCE_ONLY, 미적용, manifest 미등록.
+-- 실제 권위/인증/서명 공급자·DB 권한 활성화가 아니다. 기존 SQL/표/역할은 변경하지 않는다.
+BEGIN;
+CREATE TABLE anvil.project_writer_authority_events(
+ project_id uuid NOT NULL REFERENCES anvil.projects(id),id uuid NOT NULL,version bigint NOT NULL CHECK(version=1),
+ authority_epoch bigint NOT NULL CHECK(authority_epoch BETWEEN 1 AND 9007199254740991),sequence bigint NOT NULL CHECK(sequence BETWEEN 1 AND 10000),
+ kind text NOT NULL CHECK(kind IN('BOUNDARY_OBSERVATION_REQUESTED','BOUNDARY_OBSERVATION_ACCEPTED','BOUNDARY_ESTABLISHED','RESERVED','NATIVE_CREATE_REQUESTED','OS_OBSERVATION_ACCEPTED','SOURCE_FENCE_OBSERVATION_ACCEPTED','ACTIVATED','REVOKE_REQUESTED','RECLAIM_CONFIRMED','EXPIRED','UNKNOWN')),
+ previous_ref jsonb NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),payload_json jsonb NOT NULL CHECK(jsonb_typeof(payload_json)='object'),
+ at timestamptz NOT NULL,expires_at timestamptz NOT NULL CHECK(expires_at>at),lease_id uuid,execution_id uuid,execution_generation bigint,
+ subject_json jsonb NOT NULL,registration_ref jsonb NOT NULL,host_fingerprint text NOT NULL CHECK(host_fingerprint~'^[0-9a-f]{64}$'),source_scopes_json jsonb NOT NULL,scope_hash text NOT NULL CHECK(scope_hash~'^[0-9a-f]{64}$'),
+ command_ref jsonb NOT NULL,authorization_receipt_ref jsonb NOT NULL,audit_ref jsonb NOT NULL,request_ref jsonb NOT NULL,nonce_digest text CHECK(nonce_digest~'^[0-9a-f]{64}$'),
+ previous_id uuid GENERATED ALWAYS AS((previous_ref->>'id')::uuid) STORED,previous_version bigint GENERATED ALWAYS AS((previous_ref->>'version')::bigint) STORED,previous_hash text GENERATED ALWAYS AS(previous_ref->>'contentHash') STORED,
+ request_id uuid GENERATED ALWAYS AS((request_ref->>'id')::uuid) STORED,request_version bigint GENERATED ALWAYS AS((request_ref->>'version')::bigint) STORED,request_hash text GENERATED ALWAYS AS(request_ref->>'contentHash') STORED,
+ PRIMARY KEY(project_id,id,version),UNIQUE(project_id,authority_epoch,sequence),UNIQUE(project_id,authority_epoch,id,version,content_hash),
+ CHECK((lease_id IS NULL AND execution_id IS NULL AND execution_generation IS NULL) OR (lease_id IS NOT NULL AND execution_id IS NOT NULL AND execution_generation BETWEEN 1 AND 9007199254740991)),
+ CHECK((sequence=1 AND previous_ref='null'::jsonb) OR(sequence>1 AND previous_id IS NOT NULL AND previous_version=1 AND previous_hash~'^[0-9a-f]{64}$')),
+ FOREIGN KEY(project_id,authority_epoch,previous_id,previous_version,previous_hash) REFERENCES anvil.project_writer_authority_events(project_id,authority_epoch,id,version,content_hash) DEFERRABLE INITIALLY DEFERRED,
+ FOREIGN KEY(project_id,authority_epoch,request_id,request_version,request_hash) REFERENCES anvil.project_writer_authority_events(project_id,authority_epoch,id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE UNIQUE INDEX project_writer_authority_reserved_once ON anvil.project_writer_authority_events(project_id,lease_id) WHERE kind='RESERVED';
+CREATE UNIQUE INDEX project_writer_authority_request_once ON anvil.project_writer_authority_events(project_id,request_id) WHERE kind IN('BOUNDARY_OBSERVATION_ACCEPTED','OS_OBSERVATION_ACCEPTED','SOURCE_FENCE_OBSERVATION_ACCEPTED');
+CREATE TABLE anvil.project_writer_authority_heads(
+ project_id uuid PRIMARY KEY REFERENCES anvil.projects(id),id uuid NOT NULL UNIQUE,authority_epoch bigint NOT NULL CHECK(authority_epoch BETWEEN 1 AND 9007199254740991),
+ head_generation bigint NOT NULL CHECK(head_generation BETWEEN 1 AND 9007199254740991),current_event_ref jsonb NOT NULL,
+ phase text NOT NULL CHECK(phase IN('UNKNOWN','EMPTY_AT','RESERVED','ACTIVE','RECLAIM_PENDING','RECLAIMED_AT')),
+ lease_id uuid,execution_id uuid,execution_generation bigint,registration_ref jsonb NOT NULL,scope_hash text NOT NULL CHECK(scope_hash~'^[0-9a-f]{64}$'),expires_at timestamptz NOT NULL,content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ event_id uuid GENERATED ALWAYS AS((current_event_ref->>'id')::uuid) STORED,event_version bigint GENERATED ALWAYS AS((current_event_ref->>'version')::bigint) STORED,event_hash text GENERATED ALWAYS AS(current_event_ref->>'contentHash') STORED,
+ CHECK((lease_id IS NULL AND execution_id IS NULL AND execution_generation IS NULL) OR(lease_id IS NOT NULL AND execution_id IS NOT NULL AND execution_generation BETWEEN 1 AND 9007199254740991)),
+ CHECK(phase<>'EMPTY_AT' OR lease_id IS NULL),CHECK(phase IN('UNKNOWN','EMPTY_AT') OR lease_id IS NOT NULL),
+ CHECK(event_id IS NOT NULL AND event_version=1 AND event_hash~'^[0-9a-f]{64}$'),
+ FOREIGN KEY(project_id,authority_epoch,event_id,event_version,event_hash) REFERENCES anvil.project_writer_authority_events(project_id,authority_epoch,id,version,content_hash) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE FUNCTION anvil.writer_authority_event_snapshot(v anvil.project_writer_authority_events) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('schemaVersion',1,'purpose','PROJECT_WRITER_AUTHORITY_EVENT','projectId',v.project_id,'authorityEpoch',v.authority_epoch,'sequence',v.sequence,'kind',v.kind,'previousRef',v.previous_ref,'leaseId',v.lease_id,'executionId',v.execution_id,'executionGeneration',v.execution_generation,'subject',v.subject_json,'registrationRef',v.registration_ref,'hostFingerprint',v.host_fingerprint,'sourceScopes',v.source_scopes_json,'scopeHash',v.scope_hash,'commandRef',v.command_ref,'authorizationReceiptRef',v.authorization_receipt_ref,'auditRef',v.audit_ref,'requestRef',v.request_ref,'nonceDigest',v.nonce_digest,'payload',v.payload_json,'at',to_char(v.at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(v.expires_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+$$;
+CREATE FUNCTION anvil.writer_authority_head_snapshot(v anvil.project_writer_authority_heads) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('schemaVersion',1,'purpose','PROJECT_WRITER_AUTHORITY_HEAD','headId',v.id,'projectId',v.project_id,'authorityEpoch',v.authority_epoch,'headGeneration',v.head_generation,'currentEventRef',v.current_event_ref,'phase',v.phase,'leaseId',v.lease_id,'executionId',v.execution_id,'executionGeneration',v.execution_generation,'registrationRef',v.registration_ref,'scopeHash',v.scope_hash,'expiresAt',to_char(v.expires_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+$$;
+CREATE FUNCTION anvil.writer_authority_ref(v jsonb) RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT COALESCE(anvil.execution_json_shape(v,ARRAY['id','version','contentHash']) AND jsonb_typeof(v->'id')='string' AND (v->>'id')~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' AND jsonb_typeof(v->'version')='number' AND (v->>'version')~'^[1-9][0-9]*$' AND (v->>'version')::numeric<=9007199254740991 AND jsonb_typeof(v->'contentHash')='string' AND (v->>'contentHash')~'^[0-9a-f]{64}$',false);
+$$;
+CREATE FUNCTION anvil.writer_authority_report_valid(r jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE k text;
+BEGIN
+ IF NOT anvil.execution_json_shape(r,ARRAY['schemaVersion','phase','purpose','installationId','projectId','authorityEpoch','leaseId','executionId','executionGeneration','expectedHeadRef','registrationRef','observerRef','requestRef','nonceDigest','scopeHash','factsHash','observedAt','expiresAt']) OR r->'schemaVersion'<>'1'::jsonb THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['installationId','projectId'] LOOP
+  IF NOT anvil.writer_authority_ref(jsonb_build_object('id',r->k,'version',1,'contentHash',repeat('0',64))) THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(r->'authorityEpoch') IS DISTINCT FROM 'number' OR (r->>'authorityEpoch')!~'^[1-9][0-9]*$' OR (r->>'authorityEpoch')::numeric>9007199254740991 THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['registrationRef','observerRef','requestRef'] LOOP IF NOT anvil.writer_authority_ref(r->k) THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY ARRAY['nonceDigest','scopeHash','factsHash'] LOOP IF jsonb_typeof(r->k) IS DISTINCT FROM 'string' OR (r->>k)!~'^[0-9a-f]{64}$' THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY ARRAY['observedAt','expiresAt'] LOOP
+  IF jsonb_typeof(r->k) IS DISTINCT FROM 'string' OR (r->>k)!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' OR to_char((r->>k)::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') IS DISTINCT FROM r->>k THEN RETURN false;END IF;
+ END LOOP;
+ IF (r->>'expiresAt')::timestamptz<=(r->>'observedAt')::timestamptz THEN RETURN false;END IF;
+ IF r->'phase'='"BOUNDARY_BOOTSTRAP"'::jsonb THEN
+  RETURN COALESCE(r->>'purpose' IN('WRITER_BOUNDARY','SOURCE_WRITE_BOUNDARY') AND r->'leaseId'='null'::jsonb AND r->'executionId'='null'::jsonb AND r->'executionGeneration'='null'::jsonb AND r->'expectedHeadRef'='null'::jsonb,false);
+ ELSIF r->'phase'='"LEASE_CURRENT"'::jsonb THEN
+  RETURN COALESCE(r->>'purpose' IN('WRITER_AUTHORITY','SOURCE_WRITE_FENCE') AND anvil.writer_authority_ref(r->'expectedHeadRef') AND anvil.writer_authority_ref(jsonb_build_object('id',r->'leaseId','version',1,'contentHash',repeat('0',64))) AND anvil.writer_authority_ref(jsonb_build_object('id',r->'executionId','version',1,'contentHash',repeat('0',64))) AND jsonb_typeof(r->'executionGeneration')='number' AND(r->>'executionGeneration')~'^[1-9][0-9]*$' AND(r->>'executionGeneration')::numeric<=9007199254740991,false);
+ END IF;
+ RETURN false;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+CREATE FUNCTION anvil.writer_authority_event_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE s jsonb;r jsonb;p anvil.project_writer_authority_events;q anvil.project_writer_authority_events;a anvil.project_writer_authority_events;z anvil.project_writer_authority_events;h anvil.project_writer_authority_heads;keys text[];n bigint;wrapper jsonb;expected jsonb;
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'WRITER_APPEND_ONLY';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO h FROM anvil.project_writer_authority_heads WHERE project_id=NEW.project_id FOR UPDATE;
+ IF h.project_id IS NOT NULL AND (h.authority_epoch<>NEW.authority_epoch OR h.registration_ref<>NEW.registration_ref OR h.scope_hash<>NEW.scope_hash) THEN RAISE EXCEPTION 'HEAD_HISTORY_CONFLICT';END IF;
+ SELECT * INTO p FROM anvil.project_writer_authority_events WHERE project_id=NEW.project_id AND authority_epoch=NEW.authority_epoch ORDER BY sequence DESC LIMIT 1;
+ IF (p.id IS NULL AND (NEW.sequence<>1 OR NEW.previous_ref<>'null'::jsonb)) OR(p.id IS NOT NULL AND(NEW.sequence<>p.sequence+1 OR NEW.previous_ref<>jsonb_build_object('id',p.id,'version',p.version,'contentHash',p.content_hash))) THEN RAISE EXCEPTION 'WRITER_CHAIN_INVALID';END IF;
+ s=anvil.writer_authority_event_snapshot(NEW);
+ IF NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(s) OR NEW.scope_hash IS DISTINCT FROM anvil.ownership_content_hash(NEW.source_scopes_json) OR NOT anvil.writer_authority_ref(NEW.registration_ref) OR NOT anvil.execution_json_shape(NEW.subject_json,ARRAY['userId','clientId','humanSessionId','controlGeneration','credentialGeneration']) THEN RAISE EXCEPTION 'WRITER_EVENT_INVALID';END IF;
+ FOREACH keys SLICE 1 IN ARRAY ARRAY[ARRAY['command_ref'],ARRAY['authorization_receipt_ref'],ARRAY['audit_ref'],ARRAY['request_ref']] LOOP
+  IF (to_jsonb(NEW)->keys[1])<>'null'::jsonb AND NOT anvil.writer_authority_ref(to_jsonb(NEW)->keys[1]) THEN RAISE EXCEPTION 'WRITER_REF_INVALID';END IF;
+ END LOOP;
+ keys=CASE NEW.kind WHEN 'BOUNDARY_OBSERVATION_REQUESTED' THEN ARRAY['purpose','expectedHeadRef'] WHEN 'NATIVE_CREATE_REQUESTED' THEN ARRAY['purpose','stage','expectedHeadRef','preparationRef','nativeFactoryRef'] WHEN 'BOUNDARY_OBSERVATION_ACCEPTED' THEN ARRAY['report','proofRef'] WHEN 'OS_OBSERVATION_ACCEPTED' THEN ARRAY['report','proofRef'] WHEN 'SOURCE_FENCE_OBSERVATION_ACCEPTED' THEN ARRAY['report','proofRef'] WHEN 'RESERVED' THEN ARRAY['expectedHeadRef','preparationRef','nativeFactoryRef'] WHEN 'REVOKE_REQUESTED' THEN ARRAY['expectedHeadRef'] WHEN 'UNKNOWN' THEN ARRAY['expectedHeadRef','reason'] WHEN 'EXPIRED' THEN ARRAY['expectedHeadRef','reason'] ELSE ARRAY['expectedHeadRef','writerObservationRef','sourceObservationRef'] END;
+ IF NOT anvil.execution_json_shape(NEW.payload_json,keys) THEN RAISE EXCEPTION 'WRITER_PAYLOAD_INVALID';END IF;
+ IF NEW.kind='BOUNDARY_OBSERVATION_REQUESTED' AND(NEW.lease_id IS NOT NULL OR NEW.payload_json->'expectedHeadRef'<>'null'::jsonb OR NEW.payload_json->>'purpose' NOT IN('WRITER_BOUNDARY','SOURCE_WRITE_BOUNDARY') OR NEW.nonce_digest IS NULL OR NEW.request_ref<>'null'::jsonb) THEN RAISE EXCEPTION 'WRITER_BOOTSTRAP_INVALID';END IF;
+ IF NEW.kind IN('BOUNDARY_OBSERVATION_ACCEPTED','OS_OBSERVATION_ACCEPTED','SOURCE_FENCE_OBSERVATION_ACCEPTED') AND((NEW.request_ref->>'id') IS NULL OR NEW.nonce_digest IS NULL OR NOT anvil.writer_authority_ref(NEW.payload_json->'proofRef')) THEN RAISE EXCEPTION 'WRITER_REQUEST_INVALID';END IF;
+ IF NEW.kind='NATIVE_CREATE_REQUESTED' AND(NEW.lease_id IS NULL OR NEW.nonce_digest IS NULL OR NOT anvil.writer_authority_ref(NEW.payload_json->'expectedHeadRef') OR NEW.payload_json->>'purpose' NOT IN('WRITER_AUTHORITY','SOURCE_WRITE_FENCE') OR NEW.payload_json->>'stage' NOT IN('ACTIVATE','RECLAIM')) THEN RAISE EXCEPTION 'WRITER_REQUEST_INVALID';END IF;
+ -- 원문 hash만으로 보고를 수용하지 않는다. exact 원 요청/목적/lease/nonce와 결박한다.
+ IF NOT anvil.writer_authority_ref(NEW.command_ref) OR NOT anvil.writer_authority_ref(NEW.authorization_receipt_ref) OR NOT anvil.writer_authority_ref(NEW.audit_ref) THEN RAISE EXCEPTION 'WRITER_COMMAND_PROOF_INVALID';END IF;
+ expected=CASE WHEN h.project_id IS NULL THEN 'null'::jsonb ELSE jsonb_build_object('id',h.id,'version',h.head_generation,'contentHash',h.content_hash) END;
+ IF NEW.kind IN('BOUNDARY_OBSERVATION_REQUESTED','NATIVE_CREATE_REQUESTED','BOUNDARY_ESTABLISHED','RESERVED','ACTIVATED','REVOKE_REQUESTED','RECLAIM_CONFIRMED','EXPIRED','UNKNOWN') AND NEW.payload_json->'expectedHeadRef' IS DISTINCT FROM expected THEN RAISE EXCEPTION 'WRITER_HEAD_CAS_INVALID';END IF;
+ IF NEW.kind='BOUNDARY_OBSERVATION_REQUESTED' AND(h.project_id IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.kind NOT IN('BOUNDARY_OBSERVATION_REQUESTED','BOUNDARY_OBSERVATION_ACCEPTED'))) THEN RAISE EXCEPTION 'HEAD_HISTORY_CONFLICT';END IF;
+ IF NEW.kind='RESERVED' THEN
+  IF h.project_id IS NULL OR h.phase NOT IN('EMPTY_AT','RECLAIMED_AT') OR h.expires_at<=NEW.at OR NEW.expires_at>h.expires_at OR NEW.lease_id IS NULL OR NEW.execution_id IS NULL OR NEW.execution_generation IS NULL OR NOT anvil.writer_authority_ref(NEW.payload_json->'preparationRef') OR NOT anvil.writer_authority_ref(NEW.payload_json->'nativeFactoryRef') OR EXISTS(SELECT 1 FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.kind='RESERVED' AND x.lease_id=NEW.lease_id) THEN RAISE EXCEPTION 'WRITER_RESERVATION_INVALID';END IF;
+ END IF;
+ IF NEW.kind='REVOKE_REQUESTED' THEN
+  IF h.project_id IS NULL OR h.phase NOT IN('RESERVED','ACTIVE','UNKNOWN','RECLAIM_PENDING') OR NEW.lease_id IS NULL OR NEW.lease_id IS DISTINCT FROM h.lease_id OR NEW.execution_id IS DISTINCT FROM h.execution_id OR NEW.execution_generation IS DISTINCT FROM h.execution_generation THEN RAISE EXCEPTION 'WRITER_REVOKE_INVALID';END IF;
+ END IF;
+ IF NEW.kind IN('UNKNOWN','EXPIRED') THEN
+  IF h.project_id IS NULL OR NEW.lease_id IS DISTINCT FROM h.lease_id OR NEW.execution_id IS DISTINCT FROM h.execution_id OR NEW.execution_generation IS DISTINCT FROM h.execution_generation OR NEW.payload_json->>'reason' NOT IN('DEADLINE','CANCELLED','COMMIT_UNKNOWN','OBSERVATION_UNKNOWN') THEN RAISE EXCEPTION 'WRITER_UNKNOWN_INVALID';END IF;
+ END IF;
+ IF NEW.kind='NATIVE_CREATE_REQUESTED' THEN
+  SELECT * INTO q FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.lease_id=NEW.lease_id AND x.kind='RESERVED';
+  IF q.id IS NULL OR NEW.execution_id IS DISTINCT FROM q.execution_id OR NEW.execution_generation IS DISTINCT FROM q.execution_generation OR NEW.payload_json->'preparationRef' IS DISTINCT FROM q.payload_json->'preparationRef' OR NEW.payload_json->'nativeFactoryRef' IS DISTINCT FROM q.payload_json->'nativeFactoryRef' OR NEW.lease_id IS DISTINCT FROM h.lease_id OR (NEW.payload_json->>'stage'='ACTIVATE' AND h.phase IS DISTINCT FROM 'RESERVED') OR (NEW.payload_json->>'stage'='RECLAIM' AND h.phase IS DISTINCT FROM 'RECLAIM_PENDING') OR NEW.expires_at>h.expires_at THEN RAISE EXCEPTION 'WRITER_PREPARATION_INVALID';END IF;
+ END IF;
+ IF NEW.kind IN('BOUNDARY_OBSERVATION_ACCEPTED','OS_OBSERVATION_ACCEPTED','SOURCE_FENCE_OBSERVATION_ACCEPTED') THEN
+  IF NOT anvil.writer_authority_report_valid(NEW.payload_json->'report') THEN RAISE EXCEPTION 'WRITER_REPORT_INVALID';END IF;r=NEW.payload_json->'report';
+  SELECT * INTO q FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.authority_epoch=NEW.authority_epoch AND x.id=(NEW.request_ref->>'id')::uuid AND x.version=(NEW.request_ref->>'version')::bigint AND x.content_hash=NEW.request_ref->>'contentHash';
+  IF q.id IS NULL OR q.kind NOT IN('BOUNDARY_OBSERVATION_REQUESTED','NATIVE_CREATE_REQUESTED') OR q.sequence>=NEW.sequence OR r->'requestRef' IS DISTINCT FROM NEW.request_ref OR r->>'purpose' IS DISTINCT FROM q.payload_json->>'purpose' OR r->>'nonceDigest' IS DISTINCT FROM q.nonce_digest OR NEW.nonce_digest IS DISTINCT FROM q.nonce_digest OR r->'registrationRef' IS DISTINCT FROM q.registration_ref OR NEW.registration_ref IS DISTINCT FROM q.registration_ref OR r->>'projectId' IS DISTINCT FROM NEW.project_id::text OR (r->>'authorityEpoch')::bigint<>NEW.authority_epoch OR r->>'scopeHash' IS DISTINCT FROM q.scope_hash OR NEW.scope_hash IS DISTINCT FROM q.scope_hash OR r->'leaseId' IS DISTINCT FROM COALESCE(to_jsonb(q.lease_id),'null'::jsonb) OR NEW.lease_id IS DISTINCT FROM q.lease_id OR r->'executionId' IS DISTINCT FROM COALESCE(to_jsonb(q.execution_id),'null'::jsonb) OR NEW.execution_id IS DISTINCT FROM q.execution_id OR r->'executionGeneration' IS DISTINCT FROM COALESCE(to_jsonb(q.execution_generation),'null'::jsonb) OR NEW.execution_generation IS DISTINCT FROM q.execution_generation OR r->'expectedHeadRef' IS DISTINCT FROM q.payload_json->'expectedHeadRef' OR r->'expectedHeadRef' IS DISTINCT FROM expected OR NEW.subject_json IS DISTINCT FROM q.subject_json OR NEW.command_ref IS DISTINCT FROM q.command_ref OR NEW.authorization_receipt_ref IS DISTINCT FROM q.authorization_receipt_ref OR NEW.audit_ref IS DISTINCT FROM q.audit_ref OR (r->>'observedAt')::timestamptz<q.at OR (r->>'observedAt')::timestamptz>NEW.at OR (r->>'expiresAt')::timestamptz<=NEW.at OR q.expires_at<=NEW.at OR NEW.expires_at>LEAST(q.expires_at,(r->>'expiresAt')::timestamptz) THEN RAISE EXCEPTION 'WRITER_REQUEST_INVALID';END IF;
+  IF (NEW.kind='BOUNDARY_OBSERVATION_ACCEPTED' AND(q.kind<>'BOUNDARY_OBSERVATION_REQUESTED' OR r->>'phase'<>'BOUNDARY_BOOTSTRAP')) OR(NEW.kind='OS_OBSERVATION_ACCEPTED' AND(q.kind<>'NATIVE_CREATE_REQUESTED' OR r->>'phase'<>'LEASE_CURRENT' OR r->>'purpose'<>'WRITER_AUTHORITY')) OR(NEW.kind='SOURCE_FENCE_OBSERVATION_ACCEPTED' AND(q.kind<>'NATIVE_CREATE_REQUESTED' OR r->>'phase'<>'LEASE_CURRENT' OR r->>'purpose'<>'SOURCE_WRITE_FENCE')) THEN RAISE EXCEPTION 'WRITER_REPORT_PURPOSE_INVALID';END IF;
+ END IF;
+ IF NEW.kind IN('BOUNDARY_ESTABLISHED','ACTIVATED','RECLAIM_CONFIRMED') THEN
+  IF NOT anvil.writer_authority_ref(NEW.payload_json->'writerObservationRef') OR NOT anvil.writer_authority_ref(NEW.payload_json->'sourceObservationRef') THEN RAISE EXCEPTION 'WRITER_OBSERVATIONS_INVALID';END IF;
+  SELECT * INTO a FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.authority_epoch=NEW.authority_epoch AND x.id=(NEW.payload_json->'writerObservationRef'->>'id')::uuid AND x.version=(NEW.payload_json->'writerObservationRef'->>'version')::bigint AND x.content_hash=NEW.payload_json->'writerObservationRef'->>'contentHash';
+  SELECT * INTO z FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.authority_epoch=NEW.authority_epoch AND x.id=(NEW.payload_json->'sourceObservationRef'->>'id')::uuid AND x.version=(NEW.payload_json->'sourceObservationRef'->>'version')::bigint AND x.content_hash=NEW.payload_json->'sourceObservationRef'->>'contentHash';
+  IF a.id IS NULL OR z.id IS NULL OR a.id=z.id OR a.sequence>=NEW.sequence OR z.sequence>=NEW.sequence OR a.request_ref IS NOT DISTINCT FROM z.request_ref OR a.command_ref IS DISTINCT FROM NEW.command_ref OR z.command_ref IS DISTINCT FROM NEW.command_ref OR a.authorization_receipt_ref IS DISTINCT FROM NEW.authorization_receipt_ref OR z.authorization_receipt_ref IS DISTINCT FROM NEW.authorization_receipt_ref OR a.audit_ref IS DISTINCT FROM NEW.audit_ref OR z.audit_ref IS DISTINCT FROM NEW.audit_ref OR a.registration_ref IS DISTINCT FROM NEW.registration_ref OR z.registration_ref IS DISTINCT FROM NEW.registration_ref OR a.scope_hash IS DISTINCT FROM NEW.scope_hash OR z.scope_hash IS DISTINCT FROM NEW.scope_hash OR a.lease_id IS DISTINCT FROM NEW.lease_id OR z.lease_id IS DISTINCT FROM NEW.lease_id OR a.execution_id IS DISTINCT FROM NEW.execution_id OR z.execution_id IS DISTINCT FROM NEW.execution_id OR a.execution_generation IS DISTINCT FROM NEW.execution_generation OR z.execution_generation IS DISTINCT FROM NEW.execution_generation OR a.payload_json->'report'->'expectedHeadRef' IS DISTINCT FROM expected OR z.payload_json->'report'->'expectedHeadRef' IS DISTINCT FROM expected OR NEW.at<a.at OR NEW.at<z.at OR NEW.at>=LEAST(a.expires_at,z.expires_at) OR NEW.expires_at>LEAST(a.expires_at,z.expires_at) THEN RAISE EXCEPTION 'WRITER_OBSERVATIONS_INVALID';END IF;
+  IF NEW.kind='BOUNDARY_ESTABLISHED' THEN
+   IF h.project_id IS NOT NULL OR NEW.lease_id IS NOT NULL OR a.kind<>'BOUNDARY_OBSERVATION_ACCEPTED' OR z.kind<>'BOUNDARY_OBSERVATION_ACCEPTED' OR a.payload_json->'report'->>'purpose'<>'WRITER_BOUNDARY' OR z.payload_json->'report'->>'purpose'<>'SOURCE_WRITE_BOUNDARY' THEN RAISE EXCEPTION 'WRITER_BOUNDARY_INVALID';END IF;
+  ELSE
+   IF a.kind<>'OS_OBSERVATION_ACCEPTED' OR z.kind<>'SOURCE_FENCE_OBSERVATION_ACCEPTED' OR a.payload_json->'report'->>'purpose'<>'WRITER_AUTHORITY' OR z.payload_json->'report'->>'purpose'<>'SOURCE_WRITE_FENCE' OR NEW.lease_id IS NULL OR NEW.lease_id IS DISTINCT FROM h.lease_id OR (NEW.kind='ACTIVATED' AND h.phase IS DISTINCT FROM 'RESERVED') OR (NEW.kind='RECLAIM_CONFIRMED' AND h.phase IS DISTINCT FROM 'RECLAIM_PENDING') THEN RAISE EXCEPTION 'WRITER_LEASE_INVALID';END IF;
+   IF EXISTS(SELECT 1 FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND(x.id=(a.request_ref->>'id')::uuid OR x.id=(z.request_ref->>'id')::uuid) AND(x.kind<>'NATIVE_CREATE_REQUESTED' OR x.payload_json->>'stage' IS DISTINCT FROM CASE NEW.kind WHEN 'ACTIVATED' THEN 'ACTIVATE' ELSE 'RECLAIM' END)) THEN RAISE EXCEPTION 'WRITER_LEASE_STAGE_INVALID';END IF;
+  END IF;
+ END IF;
+ wrapper=jsonb_build_object('ref',jsonb_build_object('id',NEW.id,'version',NEW.version,'contentHash',NEW.content_hash),'snapshot',s);
+ IF octet_length(convert_to(anvil.execution_authority_canonical(NEW.payload_json),'UTF8'))>2097152 OR octet_length(convert_to(anvil.execution_authority_canonical(wrapper),'UTF8'))>4194304 THEN RAISE EXCEPTION 'WRITER_CAPACITY_EXCEEDED';END IF;
+ -- 최종 head 교체 후의 합계만 지연 완결에서 검산한다.
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.writer_authority_head_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE e anvil.project_writer_authority_events;s jsonb;b bigint;phase text;
+BEGIN
+ IF TG_OP IN('DELETE','TRUNCATE') THEN RAISE EXCEPTION 'WRITER_HEAD_DELETE_DENIED';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=NEW.project_id FOR UPDATE;
+ SELECT * INTO e FROM anvil.project_writer_authority_events WHERE project_id=NEW.project_id AND id=(NEW.current_event_ref->>'id')::uuid AND version=1 AND content_hash=NEW.current_event_ref->>'contentHash';
+ phase=CASE e.kind WHEN 'BOUNDARY_ESTABLISHED' THEN 'EMPTY_AT' WHEN 'RESERVED' THEN 'RESERVED' WHEN 'ACTIVATED' THEN 'ACTIVE' WHEN 'REVOKE_REQUESTED' THEN 'RECLAIM_PENDING' WHEN 'RECLAIM_CONFIRMED' THEN 'RECLAIMED_AT' WHEN 'EXPIRED' THEN 'UNKNOWN' WHEN 'UNKNOWN' THEN 'UNKNOWN' ELSE NULL END;
+ IF phase IS NULL OR phase<>NEW.phase OR e.authority_epoch<>NEW.authority_epoch OR e.registration_ref<>NEW.registration_ref OR e.scope_hash<>NEW.scope_hash OR e.lease_id IS DISTINCT FROM NEW.lease_id OR e.execution_id IS DISTINCT FROM NEW.execution_id OR e.execution_generation IS DISTINCT FROM NEW.execution_generation OR e.expires_at<>NEW.expires_at THEN RAISE EXCEPTION 'WRITER_HEAD_EVENT_INVALID';END IF;
+ IF TG_OP='INSERT' THEN
+  IF NEW.head_generation<>1 OR NEW.phase<>'EMPTY_AT' OR e.payload_json->'expectedHeadRef'<>'null'::jsonb OR EXISTS(SELECT 1 FROM anvil.project_writer_authority_events x WHERE x.project_id=NEW.project_id AND x.kind NOT IN('BOUNDARY_OBSERVATION_REQUESTED','BOUNDARY_OBSERVATION_ACCEPTED') AND x.id<>e.id) THEN RAISE EXCEPTION 'HEAD_HISTORY_CONFLICT';END IF;
+ ELSE
+  IF NEW.project_id<>OLD.project_id OR NEW.id<>OLD.id OR NEW.authority_epoch<>OLD.authority_epoch OR NEW.head_generation<>OLD.head_generation+1 OR e.payload_json->'expectedHeadRef'<>jsonb_build_object('id',OLD.id,'version',OLD.head_generation,'contentHash',OLD.content_hash) THEN RAISE EXCEPTION 'WRITER_HEAD_CAS_INVALID';END IF;
+ END IF;
+ s=anvil.writer_authority_head_snapshot(NEW);IF NEW.content_hash IS DISTINCT FROM anvil.ownership_content_hash(s) THEN RAISE EXCEPTION 'WRITER_HEAD_HASH_INVALID';END IF;
+ RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.writer_authority_truncate_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$ BEGIN RAISE EXCEPTION 'WRITER_TRUNCATE_DENIED';END;$$;
+CREATE TRIGGER writer_authority_events_append BEFORE INSERT OR UPDATE OR DELETE ON anvil.project_writer_authority_events FOR EACH ROW EXECUTE FUNCTION anvil.writer_authority_event_guard();
+CREATE TRIGGER writer_authority_heads_cas BEFORE INSERT OR UPDATE OR DELETE ON anvil.project_writer_authority_heads FOR EACH ROW EXECUTE FUNCTION anvil.writer_authority_head_guard();
+CREATE TRIGGER writer_authority_events_no_truncate BEFORE TRUNCATE ON anvil.project_writer_authority_events FOR EACH STATEMENT EXECUTE FUNCTION anvil.writer_authority_truncate_guard();
+CREATE TRIGGER writer_authority_heads_no_truncate BEFORE TRUNCATE ON anvil.project_writer_authority_heads FOR EACH STATEMENT EXECUTE FUNCTION anvil.writer_authority_truncate_guard();
+-- 최종 state/head와 전체 epoch 합계를 같은 transaction의 지연 완결로 검산한다.
+CREATE FUNCTION anvil.writer_authority_final() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE p uuid=NEW.project_id;h anvil.project_writer_authority_heads;e anvil.project_writer_authority_events;n bigint;b bigint;states bigint;
+BEGIN
+ PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;
+ SELECT * INTO h FROM anvil.project_writer_authority_heads WHERE project_id=p FOR UPDATE;
+ SELECT * INTO e FROM anvil.project_writer_authority_events x WHERE x.project_id=p AND x.kind IN('BOUNDARY_ESTABLISHED','RESERVED','ACTIVATED','REVOKE_REQUESTED','RECLAIM_CONFIRMED','EXPIRED','UNKNOWN') ORDER BY authority_epoch DESC,sequence DESC LIMIT 1;
+ SELECT count(*) INTO states FROM anvil.project_writer_authority_events x WHERE x.project_id=p AND x.kind IN('BOUNDARY_ESTABLISHED','RESERVED','ACTIVATED','REVOKE_REQUESTED','RECLAIM_CONFIRMED','EXPIRED','UNKNOWN');
+ IF (e.id IS NULL AND h.project_id IS NOT NULL) OR(e.id IS NOT NULL AND(h.project_id IS NULL OR h.current_event_ref IS DISTINCT FROM jsonb_build_object('id',e.id,'version',e.version,'contentHash',e.content_hash) OR h.head_generation<>states)) THEN RAISE EXCEPTION 'WRITER_STATE_HEAD_INCOMPLETE';END IF;
+ SELECT count(*),COALESCE(sum(octet_length(convert_to(anvil.execution_authority_canonical(jsonb_build_object('ref',jsonb_build_object('id',x.id,'version',x.version,'contentHash',x.content_hash),'snapshot',anvil.writer_authority_event_snapshot(x))),'UTF8'))),0) INTO n,b FROM anvil.project_writer_authority_events x WHERE project_id=p;
+ IF h.project_id IS NOT NULL THEN b=b+octet_length(convert_to(anvil.execution_authority_canonical(jsonb_build_object('ref',jsonb_build_object('id',h.id,'version',h.head_generation,'contentHash',h.content_hash),'snapshot',anvil.writer_authority_head_snapshot(h))),'UTF8'));END IF;
+ -- 회수 전용 예약/환급 없음. head 이전 bytes를 중복 합산하지 않는다.
+ IF n>10000 OR b>67108864 THEN RAISE EXCEPTION 'WRITER_CAPACITY_EXCEEDED';END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER writer_authority_events_complete AFTER INSERT ON anvil.project_writer_authority_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.writer_authority_final();
+CREATE CONSTRAINT TRIGGER writer_authority_heads_complete AFTER INSERT OR UPDATE ON anvil.project_writer_authority_heads DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.writer_authority_final();
+ALTER TABLE anvil.project_writer_authority_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.project_writer_authority_events FORCE ROW LEVEL SECURITY;
+ALTER TABLE anvil.project_writer_authority_heads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.project_writer_authority_heads FORCE ROW LEVEL SECURITY;
+CREATE POLICY writer_authority_unavailable ON anvil.project_writer_authority_events USING(false) WITH CHECK(false);
+CREATE POLICY writer_authority_unavailable ON anvil.project_writer_authority_heads USING(false) WITH CHECK(false);
+REVOKE ALL ON anvil.project_writer_authority_events,anvil.project_writer_authority_heads FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON FUNCTION anvil.writer_authority_event_snapshot(anvil.project_writer_authority_events),anvil.writer_authority_head_snapshot(anvil.project_writer_authority_heads),anvil.writer_authority_ref(jsonb),anvil.writer_authority_event_guard(),anvil.writer_authority_head_guard(),anvil.writer_authority_truncate_guard(),anvil.writer_authority_report_valid(jsonb),anvil.writer_authority_final() FROM PUBLIC,anvil_v3_app;
+-- used/held/원장과의10GiB 합산은 source-only 모델에서 검산한다. 실제 공급자/권한/실행은 미등록이다.
+COMMIT;

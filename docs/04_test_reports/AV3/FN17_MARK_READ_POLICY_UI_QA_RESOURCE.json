@@ -1,0 +1,102 @@
+{
+  "status": "CLEANED_PASS_INDEPENDENT",
+  "root": "D:/tmp/anvil-v3-stage-b/ui11-notification-policy-20261027-01",
+  "owner": "SINSAN\\cyhuh",
+  "purpose": "FN11/FN17 기존 자료 정책 편집기의 표준 읽음 선택·명시 전송 합성 App 검수",
+  "lifetimeMinutes": 30,
+  "children": [
+    "bundle",
+    "results",
+    "temp",
+    "screenshots",
+    "playwright.config.mjs"
+  ],
+  "runtime": "기존 Node/Vite write:false·기존 Edge headless 임시 profile·실제 HTTP listener 없음",
+  "limits": {
+    "workers": 1,
+    "retries": 0,
+    "testTimeoutMs": 30000,
+    "expectTimeoutMs": 5000,
+    "globalTimeoutMs": 600000,
+    "trace": false,
+    "video": false,
+    "screenshots": "선택 검수 후 명시 PNG 최대1"
+  },
+  "exclusions": [
+    "실제DB/정책/계정",
+    "서비스/사용자브라우저",
+    "Agent/외부전송/OS알림허가",
+    "의존설치/기존bundlehelper수정"
+  ],
+  "preflight": "부모 D:/tmp 와 anvil-v3-stage-b directory/nonlink·소유자 확인, target 부재. 생성 직전 재확인 필요",
+  "cleanup": "종료/실패 즉시 exact root·부모/자식 owner/nonlink·소유 process 종료 확인 후 해당 root만 회수, 별도 부재/process0 확인",
+  "instances": [
+    {
+      "createdAtUtc": "2026-10-26T19:04:05.624Z",
+      "expiresAtUtc": "2026-10-26T19:34:05.624Z",
+      "files": {
+        "apps/web/src/features/connections/policy-editor-profile.ts": "B9CC9C5DEBDB8E75BC354E91AD1C6D0338DD41E832EFD47DF395A700EF55C7C0",
+        "apps/web/src/features/connections/CandidatePolicyPanel.tsx": "62F4EB8D4F8CBED54D5888AE03E3850C2390EBCC5EE5D62736E3BED71B8AE195",
+        "tests/unit/UI11/material-policy.test.ts": "4A9BF7C9E5E97467D3E6E6C5A398FA1F00A0D80136B72950D939C17081F6243E",
+        "tests/browser/UI11/material-policy.spec.ts": "F73E0E9264AB171C618124AB9A5E282254C3DCB86AE343A91BA05555E8BAC92D"
+      },
+      "cleanup": {
+        "checkedAtUtc": "2026-10-26T19:05:30.8607339Z",
+        "owner": "SINSAN\\cyhuh",
+        "resolved": "D:\\tmp\\anvil-v3-stage-b\\ui11-notification-policy-20261027-01",
+        "links": 0,
+        "processesBefore": 0,
+        "files": 15,
+        "directories": 12,
+        "bytes": 2163660.0,
+        "removedAtUtc": "2026-10-26T19:05:30.9210274Z",
+        "rootRemaining": false,
+        "independent": {
+          "atUtc": "2026-10-26T19:06:41.2527221Z",
+          "rootRemaining": false,
+          "processes": 0
+        }
+      },
+      "assets": [
+        {
+          "path": "assets/index-BKf6gZby.js",
+          "bytes": 1987860,
+          "sha256": "FD1DB78471A521083B7A0CC77C7162F2E20FA5C9F2C1C33B0CDA61DD4F95B244"
+        },
+        {
+          "path": "assets/index-BHDH6qmX.css",
+          "bytes": 10984,
+          "sha256": "BC67262F3704E1FC62ECC0F21B976BDD60A84893B25206197DA7D60E2B015E87"
+        },
+        {
+          "path": "index.html",
+          "bytes": 354,
+          "sha256": "DD08AEDFAA9C1FED8A77C339CE3EDFEE754C586845E24921BC10C8BDF7372BB6"
+        }
+      ],
+      "result": {
+        "tool": "61fd8b",
+        "exit": 0,
+        "stats": {
+          "startTime": "2026-10-26T19:04:21.222Z",
+          "duration": 6475.293000000001,
+          "expected": 5,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "sha256": "61F5A285F5032DA2A5A217775848DBC1546B468AD73FD69DAB1670A4FAD37075",
+        "scope": "새정책5개 합성Edge; 실정책/DB0",
+        "warning": "NO_COLOR/FORCE_COLOR 기존 환경 경고, 변경0"
+      },
+      "mainUnit": {
+        "tool": "bee132",
+        "pass": 9,
+        "fail": 0,
+        "skip": 0,
+        "durationMs": 343.7032
+      },
+      "independentReview": "4경로 C0/I0/M0"
+    }
+  ]
+}

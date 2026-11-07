@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "userAnswer": "FN16 보호참조 계약과 P03 R2 복제 1회 둘 다 승인해. 계속 진행해.",
+  "authority": "DIRECT_USER_THIS_THREAD",
+  "firstObservedApprovalAtUtc": "2026-10-28T05:07:58.000Z",
+  "expiresAtUtc": "2026-10-28T05:37:58.000Z",
+  "earlierReplyTimestampTakesPrecedence": true,
+  "maxRuns": 1,
+  "packetSha256": "662FEF2E1913B2CCF770052ED631D5C74A4D76C142A6FB543A379721F6D3A64B",
+  "sourceCommit": "8e9292d83c4ebe857919480b0d3468a0f7c1eaa3",
+  "controllerLfSha256": "532621070134EC7AE63151DEE3F25EFD7D49456CC7481E4C79401157E1695261",
+  "shellLfSha256": "CF6B604C2EBB3DC8552C9F341934CC00A5F7970AD8B2F17C1435DF6B14C0A9C8",
+  "candidateSha256": "467A5FFF50C0C22D76F283AF144A312E8BA7D805AA5E5F12AF52870FB63064AF",
+  "acceptedRisks": [
+    "writer and point-in-time consistency not proven",
+    "hardquota not enforced; additional preserved volume space",
+    "ACL/xattr unavailable-only uncertainty",
+    "numeric owner1001 loader/hash-execution race"
+  ],
+  "preserve": [
+    "original",
+    "R1 copy and ledger",
+    "R2 full or partial copy and ledger"
+  ],
+  "exclusions": [
+    "PG start",
+    "SQL",
+    "service recovery",
+    "Secret",
+    "permissions",
+    "Agent"
+  ],
+  "executor": "Anvil Main",
+  "actualExecutionVerified": false
+}

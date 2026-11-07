@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "status": "DELEGATED_SOURCE_PREPARATION_DECISION_ONLY",
+  "sourceThreadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+  "observedAt": "2026-10-27T13:49:01.792Z",
+  "basis": "신산님 승인 작업계획과 PMO 지시의 사용자 동일 위임",
+  "decision": "실행하지 않는 controller/shell·합성 포트 시험·정확 실행안 준비에 앞선 추가 사용자 결정 불필요; 단일 미래 복제 실행안에 preflight 포함 준비 가능",
+  "scopePath": "docs/contracts/P03_PG_COPY_PREPARATION_SCOPE_20261027.md",
+  "scopeSha256": "009EA66913339B31A08F53900515BD0B5F518F5AD114215AD2C65CB47B67C44E",
+  "allowed": [
+    "scripts/p03-pg-copy-host.ts",
+    "scripts/pg-recovery-copy.sh",
+    "tests/unit/P03/pg-recovery-copy-host.test.ts",
+    "tests/unit/P03/pg-recovery-copy-preparation.test.ts",
+    "docs/work_packages/P03_PG_COPY_EXECUTION_PLAN_20261027.md"
+  ],
+  "excluded": [
+    "실제 probe/create/copy/권한/PG/SQL/서비스",
+    "소진 R2 source/hash·원장 변경",
+    "실제 외부 Agent/Secret",
+    "실제 apply grant 작성·소비"
+  ],
+  "notExecutionGrant": true
+}

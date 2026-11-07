@@ -1,0 +1,28 @@
+{
+  "at": "2026-11-04T00:12:42.527Z",
+  "fullId": "f76f781bb4882ceabd8e192fcbb30ec36a307c5d6f573524036291f348ee4cf8",
+  "containerAbsent": true,
+  "nameAbsent": true,
+  "sourceRemoved": true,
+  "sourceClean": true,
+  "sourceHead": "21e9f48e538684c250c823be3af320c0c7f2f13b",
+  "processScan": {
+    "scanned": 230,
+    "matches": 0
+  },
+  "auditsPreserved": true,
+  "records": {
+    "owner.json": {
+      "bytes": 199,
+      "hash": "346bfc797e1d547d1b3fd9213b0aa952a00e63e6d8fe5e07e80c48b3a9ea50ea"
+    },
+    "slot-a1.intent.json": {
+      "bytes": 414,
+      "hash": "af0b248aa7ce62f2c6b7cc73f119e0f698997233dd75e1b696eefe3854be82e0"
+    },
+    "slot-a1.result.json": {
+      "bytes": 4061,
+      "hash": "af8e8ab33d89530ae30d4e9994738ed2990b55b2bc5125b8fa4a14cd14987b88"
+    }
+  }
+}
