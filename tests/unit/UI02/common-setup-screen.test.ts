@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';import {test,after,before} from 'node:test';import {build} from 'vite';import {fileURLToPath} from 'node:url';import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';import {emptyDraft} from '../../../apps/web/src/features/project-create/api.ts';
+import {exportMethodDraftFile} from '../../../apps/web/src/features/methodology-editor/method-draft-export.ts';
+import {emptyMethodBuffer} from '../../../apps/web/src/features/methodology-editor/common-api.ts';
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
@@ -48,3 +50,118 @@ test('사본 원문 닫기 뒤 늦은 성공·401은 원문을 다시 열거나 
 test('현재 원형조회403은 page/preview 동작만 회수하고 원선택과 명령을 보존한다',async()=>{let n=0;const selection={coordinatorToolRef:ref,codingToolRef:null,environmentRef:null},buffer={...emptyDraft(),ownerUserId:owner,input:{...emptyDraft().input,setupSelection:selection}},f=await mount('CommonSetupSelector',buffer,async()=>++n===1?Response.json(fixed()):Response.json({code:'FORBIDDEN'},{status:403}));try{await f.click('선택 원형 다시 보기 · 총괄 도구');await settle(()=>f.container.textContent.includes('총괄 도구로 선택'));await f.click('선택 원형 다시 보기 · 총괄 도구');await settle(()=>f.container.textContent.includes('FORBIDDEN'));assert.equal(f.container.textContent.includes('총괄 도구로 선택'),false);assert.deepEqual(f.get().input.setupSelection,selection);}finally{await f.close();}});
 test('현재 명령401은 고정 오류코드 종류와 무관하게 인증 상실을 알리고 원명령은 보존한다',async()=>{const f=await mount('CommonSetupSelector',{...emptyDraft(),ownerUserId:owner,commonSetupEditor:{kind:'TOOL',definition,reason:'원문',base:null}},async()=>Response.json({code:'SESSION_REVOKED'},{status:401}));try{await f.click('본인 공통 설정 저장');await settle(()=>f.get().commonSetupWork?.phase==='REJECTED');assert.equal(f.lost(),1);assert.equal(f.get().commonSetupWork.command.operation,'saveCommonSetupDefinition');}finally{await f.close();}});
 test('잘못된 모델 JSON 원문은 화면 재진입에도 보존되고 수정 전 저장은 차단된다',async()=>{const bodies:string[]=[],start={...emptyDraft(),ownerUserId:owner,commonSetupEditor:{kind:'TOOL',definition,reason:'원문',base:null}},transport=async(_p:string,init:RequestInit)=>{bodies.push(String(init.body));throw Error('SYNTHETIC_LOST');};let f=await mount('CommonSetupSelector',start,transport);const change=async(raw:string)=>{const textarea=nodes(f.container).find(n=>n.tagName==='TEXTAREA'&&n.getAttribute('id')?.endsWith('options'));assert.ok(textarea);const propsKey=Object.keys(textarea).find(k=>k.startsWith('__reactProps$'));assert.ok(propsKey);textarea.value=raw;await ui.React.act(async()=>{(textarea as any)[propsKey].onChange({target:{value:raw}});});};try{const bad='{"model":';await change(bad);assert.match(f.container.textContent,/올바른 JSON 객체/);const retained=f.get();assert.equal(retained.commonSetupEditor.modelOptionsText,bad);assert.equal(retained.commonSetupEditor.modelOptionsValid,false);assert.deepEqual(retained.commonSetupEditor.definition.modelOptions,definition.modelOptions);await f.close();f=await mount('CommonSetupSelector',retained,transport);const textarea=nodes(f.container).find(n=>n.tagName==='TEXTAREA'&&n.getAttribute('id')?.endsWith('options'));assert.ok(textarea);assert.equal((textarea as any)[Object.keys(textarea).find(k=>k.startsWith('__reactProps$'))!].value,bad);assert.match(f.container.textContent,/올바른 JSON 객체/);const save=nodes(f.container).find(n=>n.tagName==='BUTTON'&&n.textContent==='본인 공통 설정 저장');assert.ok(save);assert.equal(save.disabled,true);assert.equal(bodies.length,0);const valid=' { "model" : "auto", "literal" : "\\u0000" } ';await change(valid);const options=JSON.parse(valid);assert.deepEqual(f.get().commonSetupEditor.definition.modelOptions,options);const corrected=f.get();await f.close();f=await mount('CommonSetupSelector',corrected,transport);const restored=nodes(f.container).find(n=>n.tagName==='TEXTAREA'&&n.getAttribute('id')?.endsWith('options'));assert.ok(restored);assert.equal((restored as any)[Object.keys(restored).find(k=>k.startsWith('__reactProps$'))!].value,valid);await f.click('본인 공통 설정 저장');await settle(()=>f.get().commonSetupWork?.phase==='UNKNOWN');assert.equal(bodies.length,1);const wire=JSON.parse(bodies[0]!);assert.deepEqual(wire.payload.definition.modelOptions,options);assert.deepEqual(Object.keys(wire.payload).sort(),['definition','kind','reason']);assert.equal(JSON.stringify(wire).includes('modelOptionsText'),false);}finally{await f.close();}});
+
+const importedGraph={nodes:[{nodeId:'N1',name:'검토 단계',purpose:'원본 확인',kind:'HUMAN' as const,role:'USER' as const,mode:'CASE_BY_CASE' as const,position:{x:0,y:0},inputs:[],outputs:[],taskScope:{included:['확인'],excluded:[]},completionCriteria:['확인'],approvalBoundary:[],limitPolicyRef:null,recordRequirements:[]}],edges:[],entryNodeId:'N1',terminalNodeIds:['N1']};
+const importedSelection={kind:'NEW_PROJECT_DRAFT',name:'가져온 방법론',purpose:'가져온 목적',graph:importedGraph,sourceRefs:[],reviewRefs:[]};
+const methodFile=()=>exportMethodDraftFile({...emptyMethodBuffer(),ownerUserId:owner,name:importedSelection.name,purpose:importedSelection.purpose,graph:importedGraph,reason:'이유는 옮기지 않음'},owner,'PROJECT');
+const methodDraft=(selection:any=null)=>{const base=emptyDraft();return {...base,ownerUserId:owner,draftId:id,version:1,wizardStep:2,dirty:true,input:{...base.input,name:'프로젝트',purpose:'목적',desiredOutcome:'결과',methodologySelection:selection}};};
+const methodInput=(container:MemoryNode)=>nodes(container).find(n=>n.tagName==='INPUT'&&n.getAttribute('accept')==='.json,application/json');
+async function chooseMethodFile(container:MemoryNode,file:{size:number;text:()=>Promise<string>}){
+ const input=methodInput(container);assert.ok(input,'프로젝트 방법론 초안 파일 입력');
+ assert.equal(input.disabled,false);
+ const key=Object.keys(input).find(k=>k.startsWith('__reactProps$'));assert.ok(key);
+ const target={files:[file],value:'선택한 파일'};
+ await ui.React.act(async()=>{(input as any)[key].onChange({target,currentTarget:target});});
+ assert.equal(target.value,'');
+}
+async function confirmMethodReplacement(run:(decide:(yes:boolean)=>void,count:()=>number)=>Promise<void>){
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'confirm');let answer=false,calls=0;
+ Object.defineProperty(globalThis,'confirm',{value:()=>{calls++;return answer;},configurable:true});
+ try{await run(yes=>{answer=yes;},()=>calls);}finally{if(previous)Object.defineProperty(globalThis,'confirm',previous);else Reflect.deleteProperty(globalThis,'confirm');}
+}
+
+test('UI02 PROJECT 방법론 파일은 저장 전 로컬 초안이며 기존 저장과 재조회에 같은 선택을 보낸다',async()=>{
+ const calls:{path:string;method:string;body:any}[]=[];let stored:any;
+ const f=await mount('ProjectCreatePage',methodDraft(),async(path:string,init:RequestInit)=>{
+  const method=init.method??'GET',body=method==='PATCH'?JSON.parse(String(init.body)):null;
+  calls.push({path,method,body});
+  if(path==='/api/v1/project-drafts/'+id){
+   if(body)stored={draftId:id,version:body.expectedVersion+1,step:body.step,input:body.input,editable:true};
+   return Response.json(stored);
+  }
+  return Response.json({items:[],nextCursor:null});
+ });
+ try{
+  const raw=methodFile();await chooseMethodFile(f.container,{size:Buffer.byteLength(raw),text:async()=>raw});
+  await settle(()=>f.get().input.methodologySelection?.name===importedSelection.name);
+  assert.deepEqual(f.get().input.methodologySelection,importedSelection);
+  assert.equal(f.get().dirty,true);
+  assert.equal(calls.filter(call=>call.method!=='GET').length,0);
+  const form=nodes(f.container).find(n=>n.tagName==='FORM');assert.ok(form);
+  await ui.React.act(async()=>form.dispatchEvent({type:'submit'}));
+  await settle(()=>f.get().version===2&&!f.get().pendingCommand);
+  assert.deepEqual(calls.filter(call=>call.method!=='GET').map(call=>call.body.input.methodologySelection),[importedSelection]);
+  await settle(()=>calls.some(call=>call.path==='/api/v1/project-drafts/'+id&&call.method==='GET'));
+  await ui.React.act(async()=>f.props.onChange((p:any)=>({...p,input:{...p.input,methodologySelection:null}})));
+  await f.click('저장본 다시 조회');
+  await settle(()=>f.get().input.methodologySelection?.name===importedSelection.name);
+  assert.equal(calls.filter(call=>call.path==='/api/v1/project-drafts/'+id&&call.method==='GET').length,2);
+  assert.deepEqual(f.get().input.methodologySelection,importedSelection);
+ }finally{await f.close();}
+});
+
+test('UI02 방법론 파일의 오류와 교체 취소는 기존 선택을 보존한다',async()=>confirmMethodReplacement(async(decide,count)=>{
+ const existing={kind:'CONFIRMED_REFERENCE',versionRef:ref};let writes=0;
+ const f=await mount('ProjectCreatePage',methodDraft(existing),async(_path:string,init:RequestInit)=>{
+  if(init.method&&init.method!=='GET')writes++;
+  return Response.json({items:[],nextCursor:null});
+ });
+ try{
+  const valid=methodFile(),wrong=valid.replace('"PROJECT"','"USER_COMMON"'),sensitive=valid.replace(importedSelection.name,'Bearer SYNTHETIC_SENSITIVE_VALUE');let reads=0;
+  for(const file of [{size:wrong.length,text:async()=>wrong},{size:sensitive.length,text:async()=>sensitive},
+   {size:32,text:async()=>{throw new Error('로컬 원문 오류');}},{size:2097153,text:async()=>{reads++;return valid;}}]){
+   await chooseMethodFile(f.container,file);
+   await settle(()=>f.container.textContent.includes('방법론 초안 파일을 가져오지 못했습니다'));
+   assert.deepEqual(f.get().input.methodologySelection,existing);
+   assert.doesNotMatch(f.container.textContent,/SYNTHETIC_SENSITIVE_VALUE|로컬 원문 오류/);
+  }
+  assert.equal(reads,0);assert.equal(count(),0);
+  const good={size:Buffer.byteLength(valid),text:async()=>valid};
+  await chooseMethodFile(f.container,good);
+  await settle(()=>count()===1);
+  assert.deepEqual(f.get().input.methodologySelection,existing);
+  decide(true);
+  await chooseMethodFile(f.container,good);
+  await settle(()=>count()===2&&f.get().input.methodologySelection?.name===importedSelection.name);
+  assert.deepEqual(f.get().input.methodologySelection,importedSelection);
+  assert.equal(writes,0);
+ }finally{await f.close();}
+}));
+
+test('UI02 파일 읽기 중 초안·세션·클라이언트·단계·저장 잠금이 바뀌면 늦은 결과를 버린다',async()=>{
+ const raw=methodFile();
+ for(const change of ['DRAFT','SESSION','CLIENT','STEP','LOCK'] as const){
+  const start={...methodDraft(),dirty:false},f=await mount('ProjectCreatePage',start,async()=>Response.json({items:[],nextCursor:null}));
+  let release!:(raw:string)=>void;
+  try{
+   const pending=new Promise<string>(resolve=>{release=resolve;});
+   await chooseMethodFile(f.container,{size:Buffer.byteLength(raw),text:()=>pending});
+   if(change==='SESSION'){
+    f.props.session={...session,clientId:pid};await f.render();
+    f.props.session=session;await f.render();
+   }else if(change==='CLIENT'){
+    const client=f.props.client;
+    f.props.client=new ui.ApiClient(async()=>Response.json({items:[],nextCursor:null}));await f.render();
+    f.props.client=client;await f.render();
+   }else if(change==='STEP'){
+    await f.click('목적·소스로 이전');
+    await f.click('방법론·자료로 다음');
+   }else{
+    const patch=change==='DRAFT'?{draftId:pid}:{pendingCommand:{body:{commandId:pid}}};
+    await ui.React.act(async()=>f.props.onChange((p:any)=>({...p,...patch})));
+   }
+   let releaseNew:(value:string)=>void=()=>{};
+   if(change==='SESSION')await chooseMethodFile(f.container,{size:Buffer.byteLength(raw),text:()=>new Promise(resolve=>{releaseNew=resolve;})});
+   await ui.React.act(async()=>{release(raw);await pending;});
+   assert.equal(f.get().input.methodologySelection,null,change);
+   if(change==='SESSION'){
+    assert.equal(methodInput(f.container)?.disabled,true,'새 파일 읽기 잠금 보존');
+    await ui.React.act(async()=>{releaseNew(raw);});
+    assert.deepEqual(f.get().input.methodologySelection,importedSelection);
+   }
+   const input=methodInput(f.container);assert.ok(input,change);
+   assert.equal(input.disabled,change==='LOCK',change);
+   if(change==='LOCK')assert.equal(f.get().pendingCommand.body.commandId,pid);
+  }finally{await f.close();}
+ }
+});

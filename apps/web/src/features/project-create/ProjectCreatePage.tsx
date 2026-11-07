@@ -12,6 +12,7 @@ import {PinnedMethodRequirements} from './PinnedMethodRequirements.tsx';
 import {createDraftMutationGate} from './draft-mutation-gate.ts';
 import {DraftArtifactsPanel} from './DraftArtifactsPanel.tsx';
 import type {DraftStoredArtifact} from '../../../../../contracts/draft-artifacts.ts';
+import type {DraftMethodSelection} from '../../../../../contracts/project-drafts.ts';
 
 const nextLabels:Record<number,string>={1:'방법론·자료로 다음',2:'총괄·환경으로 다음',3:'생성 전 확인으로 다음'};
 const previousLabels:Record<number,string>={2:'목적·소스로 이전',3:'방법론·자료로 이전',4:'총괄·환경으로 이전'};
@@ -146,6 +147,18 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     <p>이동만으로 문서를 가져오거나 작업을 실행하지 않습니다. 대상 화면에서 현재 권한과 준비 상태를 다시 확인합니다.</p>
     <DraftArtifactsPanel protectedRecords={protectedArtifactRecords} onMetadata={acceptArtifactMetadata} client={client} session={session} buffer={buffer} onChange={onChange} disabled={pending || selectionBusy || setupWorkPending} readonly projectId={buffer.createdProject.id} run={mutation.run} onBusy={setSelectionBusy} onAuthenticationLost={onAuthenticationLost}/><ProjectSetupCopies client={client} session={session} projectId={buffer.createdProject.id} initialRefs={buffer.createdProject.setupCopyRefs} onAuthenticationLost={onAuthenticationLost}/><a href="#/projects">프로젝트 목록에서 확인</a></section>;
   const locked = pending || selectionBusy || setupWorkPending || !editable || !artifactRefsVisible || !!buffer.upload || !!buffer.pendingAction || !!buffer.pendingCommand;
+  const { user: { id: importUserId }, clientId: importClientId, csrfToken: importCsrf } = session;
+  function acceptImportedMethod(methodologySelection: DraftMethodSelection) {
+    onChange(previous => {
+      if (liveRead.current !== readIdentity || !readIdentity.mounted || locked || mutation.isBusy()
+        || session.user.id !== importUserId || session.clientId !== importClientId || session.csrfToken !== importCsrf
+        || previous.draftId !== buffer.draftId || previous.version !== buffer.version || draftWizardStep(previous) !== 2
+        || previous.ownerUserId && previous.ownerUserId !== importUserId || previous.input !== buffer.input
+        || previous.pendingCommand || previous.pendingAction || previous.upload || previous.createdProject
+        || previous.commonSetupWork && ['PREPARED', 'SENDING', 'UNKNOWN'].includes(previous.commonSetupWork.phase)) return previous;
+      return { ...previous, ownerUserId: importUserId, input: { ...previous.input, methodologySelection }, dirty: true };
+    });
+  }
   const confirmedSelection = buffer.input.methodologySelection?.kind === 'CONFIRMED_REFERENCE' || !!buffer.methodologyState?.confirmation && buffer.methodologyState.ref.version === buffer.version && !buffer.review?.dirty;
   const move=(target:number)=>{
     if (readonlyView) {
@@ -179,7 +192,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       <button disabled={pending || selectionBusy || setupWorkPending || !!buffer.upload || !!buffer.pendingAction || !!buffer.pendingCommand || !buffer.draftId} type="button" onClick={restore}>저장본 다시 조회</button>
     </form>
     {step === 3 ? <CommonSetupSelector client={client} session={session} buffer={displayBuffer} onChange={onChange} disabled={pending||!editable||!!buffer.upload||!!buffer.pendingAction||!!buffer.pendingCommand} onBusyChange={setSelectionBusy} onAuthenticationLost={onAuthenticationLost}/> : null}
-    {step === 2 ? <MethodologySelection client={client} previewContext={JSON.stringify([session.user.id, session.clientId, displayBuffer.draftId])} value={displayBuffer.input.methodologySelection} confirmed={!displayBuffer.dirty && !!displayBuffer.methodologyState?.confirmation} disabled={locked} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
+    {step === 2 ? <MethodologySelection client={client} previewContext={JSON.stringify([session.user.id, session.clientId, displayBuffer.draftId])} importContext={readIdentity} draftVersion={displayBuffer.version} onImport={acceptImportedMethod} value={displayBuffer.input.methodologySelection} confirmed={!displayBuffer.dirty && !!displayBuffer.methodologyState?.confirmation} disabled={locked} onChange={methodologySelection => onChange(previous => ({ ...previous, ownerUserId: session.user.id, input: { ...previous.input, methodologySelection }, dirty: true }))} onAuthenticationLost={onAuthenticationLost} onBusyChange={setSelectionBusy} /> : null}
     {step === 2 ? <DraftArtifactsPanel protectedRecords={protectedArtifactRecords} onMetadata={acceptArtifactMetadata} client={client} session={session} buffer={displayBuffer} onChange={onChange} disabled={pending || selectionBusy || setupWorkPending || !!buffer.pendingAction || !!buffer.pendingCommand} readonly={!editable} run={mutation.run} onBusy={setSelectionBusy} onAuthenticationLost={onAuthenticationLost}/> : null}
     {step === 2 ? <DraftReviewPanel buffer={displayBuffer} session={session} disabled={locked} onChange={onChange} onExecute={command => { void action(command); }} /> : null}
     {step===3||step===4?<DraftWizardReview artifactRefsVisible={artifactRefsVisible} buffer={displayBuffer} step={step} pinnedRequirements={step===3&&displayBuffer.input.methodologySelection?.kind==='CONFIRMED_REFERENCE'?<PinnedMethodRequirements client={client} userId={session.user.id} clientId={session.clientId} draftId={displayBuffer.draftId} reference={displayBuffer.input.methodologySelection.versionRef} onAuthenticationLost={onAuthenticationLost}/>:null}/>:null}
