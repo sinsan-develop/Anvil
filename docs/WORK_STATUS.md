@@ -17885,3 +17885,14 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 - Stage B 병행 읽기 대조에서 UI02 생성 2단계가 UI03에서 내보낸 PROJECT 방법론 초안 JSON을 열 수 없는 사용자 흐름을 확인했다. 화면 업무 카드의 가져오기 중 기존 parser와 NEW_PROJECT_DRAFT를 재사용할 수 있는 부분이다. 다음 단독 writer 범위는 UI02 입력·현재 초안 결박·집중 시험으로 좁히고 파일의 reason·확정/권한/출처는 생성 초안에 이월하지 않는다. 일반 문서·대화 원문 가져오기와 실제 DB 검증은 별도 미완료다.
 
 - 설치 순서 소스 동결. helper SHA256 0DBD658F…23F3CC1, 시험 D3795173…AB869DC. Primary·Main 신규7+인접5 PASS/skip0, Primary typecheck 및 Main diff check exit0, 독립 C0/I0/M0, 실행 오류0. 실제 Git 원문 112개 전부 전달, 0076 후반·0078 중간 실패 모형, 설치/원장 불명, 최종 원장 불일치, 입력 변경·현재성 상실 중단을 확인했다. 실제 적용·DB 원장·호출자 소유권·runner·IX01은 미검증이다.
+
+### Stage B UI02 프로젝트 생성 중 방법론 초안 가져오기 착수
+
+- SQL 설치 순서 PR53은 검수 head 5eaa6359에서 main 9edd04b3으로 병합됐다. Broker 42389446056 성공, 부모·트리 일치 및 종료 브랜치·태그·로컬 추적 ref 정리 확인. 새 codex/av3-ui02-method-import와 로컬 main은 원격과 각각 ahead/behind 0/0.
+- 기존 Primary 단일 writer에게 UI02 MethodologySelection.tsx, ProjectCreatePage.tsx, 기존 합성 화면 시험 tests/unit/UI02/common-setup-screen.test.ts만 배정했다. 업무 카드의 가져오기 흐름을 기존 PROJECT JSON 파서와 연결한다. 현재 생성 초안의 이름·목적·그래프에만 적용하고 별도 저장/검토·확정은 유지한다. 입력 오류, 현재 초안·세션 변경, 동시 작업에서 입력이나 잠금이 오염되지 않는지 확인한다. 착수 오류0.
+- 기존 API·SQL·권한·키·서비스·Agent 변경 없음. 실제 DB와 일반 문서·대화 보완 가져오기, IX01 실제 runner 연결은 미완료다.
+
+- 병합 기준선 9edd04b3에서 SQL 설치 순서 합성 smoke 7 PASS/skip0.
+
+- UI02 구현 동결. MethodologySelection A5F8DEBF…7C755C, ProjectCreatePage 3B9D0F22…0D7278, 화면 시험 7CEBB069…4E11C6. Primary는 신규 3건이 기존 파일 입력 부재로 RED였음을 확인했다. 첫 GREEN에서 기존 dirty 단계 전진 금지와 충돌한 시험 준비 오류1건을 저장된 clean 초안으로 보정했다. Primary·Main 집중/회귀 25 PASS/skip0, typecheck와 Vite 메모리 build(517 모듈) exit0, diff check exit0, 독립 C0/I0/M0.
+- 가져오기는 기존 PROJECT 파서와 2MiB 선검사를 사용한다. 현재 초안에 이름·목적·그래프만 반영하고 명시 중간 저장/재조회에서 같은 값이 확인됐다. 잘못된 파일·교체 취소·이탈·세션/클라이언트/초안/저장 잠금 변경 뒤 기존 입력과 새 읽기 잠금을 보존한다. 실제 브라우저 파일 선택·실DB는 미검증이다. 생성 전 초안 첨부를 공식 방법론 출처/검토에 연결하는 계약은 없으며, 기존 생성 후 보호 원문 가져오기를 유지한다.
