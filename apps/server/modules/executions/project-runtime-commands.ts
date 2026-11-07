@@ -29,6 +29,11 @@ export function enabledSyntheticHumanExecutionOperations(p:SyntheticHumanExecuti
 /** 기존 서비스가 자신의 HUMAN·제어·정책 transaction을 소유한다. 이 분기는 허가/DB를 만들지 않는다. */
 export async function dispatchSyntheticHumanExecution(p:SyntheticHumanExecutionPorts,token:string,csrf:string,request:ProjectCommand){
  checkSyntheticHumanExecutionPorts(p);if(typeof token!=='string'||token.length!==43||!/^[A-Za-z0-9_-]{43}$/.test(token))throw new AuthFailure('AUTH_REQUIRED',401);if(typeof csrf!=='string'||csrf.length!==43||!/^[A-Za-z0-9_-]{43}$/.test(csrf))throw new AuthFailure('CSRF_INVALID',403);
+ if(request.operation==='queueExecutionCommand'&&Object.hasOwn(request.payload,'originReuse')){
+  const queueDescriptor=Object.getOwnPropertyDescriptor(p,'queue'),queue=queueDescriptor&&'value'in queueDescriptor?queueDescriptor.value:null;
+  const accessDescriptor=queue&&typeof queue==='object'&&!types.isProxy(queue)?Object.getOwnPropertyDescriptor(queue,'access'):null;
+  if(request.targetId!==null||!accessDescriptor||!('value'in accessDescriptor)||!originReuseApprovalCapability(p,accessDescriptor.value))throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);
+ }
  const followup=request.operation==='queueExecutionCommand'&&request.targetId!==null&&p.instructions!==undefined;
  const service=request.operation==='queueExecutionCommand'?(followup?p.instructions:p.queue):request.operation==='requestExecutionStop'?p.stop:request.operation==='authorizeExecutionRecovery'?p.recovery:request.operation==='reviewUnderstanding'?p.understanding:request.operation==='revokeExecutionGrant'?p.revocations:null;if(!service)throw new AuthFailure('RUNTIME_OPERATION_INVALID',400);
 try{const result:any=await service.command(token,csrf,cloneV1(request));checkSyntheticHumanExecutionPorts(p);const s=result?.data?.snapshot;if(!result||result.projectId!==request.projectId||result.status!=='APPLIED'||(request.operation==='reviewUnderstanding'?s?.currentBinding?.transport:s?.transport)!=='SYNTHETIC_ONLY'||s.executionAuthorized!==false||s.dispatchPerformed!==false||s.writerReleaseVerified===true)throw new AuthFailure('RUNTIME_RESULT_INVALID',503);

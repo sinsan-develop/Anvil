@@ -67,13 +67,66 @@ test('요청0082 원 source·최단기한과 단일 R의 양방향 완결은 cal
  for(const table of ['approval_requests','commands','notifications','project_storage_reservations','project_storage_accounts'])assert(body(text,'fn09_origin_reuse_request_final_guard').includes('anvil.'+table));
 });
 
-test('결정0082는 v1 원봉인을 보존하고 v2 정확결정만 열며 소비와 새 일반권한은 열지 않는다',()=>{
+test('결정0082는 v1 원봉인·v2 세결정을 보존하고 v3 exact8 목적 소비만 추가한다',()=>{
  const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
- const state=body(s,'fn09_origin_reuse_request_record_valid');for(const token of ["r.version=1 AND r.status='PENDING'","RETURN n=0","r.version<>2 OR n<>1",'fn09_origin_reuse_decision_actual','approval_consumptions'])assert(state.includes(token),token);
+ const state=body(s,'fn09_origin_reuse_request_record_valid');assert(state.includes("r.version=3 AND r.status='CONSUMED'"));assert(state.includes('fn09_origin_reuse_consumption_actual'));for(const token of ["r.version=1 AND r.status='PENDING'","RETURN n=0","r.version<>2 OR n<>1",'fn09_origin_reuse_decision_actual','approval_consumptions'])assert(state.includes(token),token);
  const context=body(s,'fn09_origin_reuse_decision_context');for(const token of ['anvil.fn01_active(s,a,c)','FOR UPDATE','fn09_origin_reuse_request_seal_valid','expected_tx IS DISTINCT FROM txid_current()::text',"q->'schemaVersion' IS DISTINCT FROM '1'::jsonb","'decideApproval'",'humanSessionId','credentialGeneration','reauth_until','fn09_origin_reuse_request_source(p,e,true)','execution_policy_deadline'])assert(context.includes(token),token);
  const settle=body(s,'fn09_origin_reuse_decision_settle');for(const token of ['pg_current_xact_id()::xid','fn09_origin_reuse_decision_context','fn09_origin_reuse_decision_actual','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','actual_bytes>r.reserved_bytes'])assert(settle.includes(token),token);
  assert(!/CREATE TABLE|GRANT (?:SELECT|INSERT|UPDATE|DELETE|ALL) ON/i.test(s));assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.one_time_decision_command_authorized('));
  for(const name of ['quota_plan_valid','quota_settled_complete'])assert(body(s,name).includes('ORIGIN_REUSE_APPROVAL_DECISION'));
  const forward=body(s,'guard_one_time_approval_request');assert(forward.includes("OLD.version<>1 OR OLD.status IS DISTINCT FROM 'PENDING' OR NEW.version<>2"));assert(forward.includes('ORIGIN_REUSE_DECISION_REQUIRED'));
+ assert(forward.includes('ORIGIN_REUSE_CONSUMPTION_REQUIRED'));assert(forward.includes('one_time_consumption_command_authorized'));
+ const consumed=body(s,'one_time_consumption_command_authorized');assert(consumed.includes("IF c.operation='queueExecutionCommand' THEN"));assert(consumed.includes('FROM anvil.commands x WHERE x.project_id=pid AND x.id=cid AND x.xmin=pg_current_xact_id()::xid'));assert(consumed.includes('one_time_consumption_command_before_membership(pid,cid,did)'));
  const final=body(s,'fn09_origin_reuse_request_final_guard');assert(final.includes('fn09_origin_reuse_decision_complete(p,cid)'));assert(final.includes('anvil.approval_decisions'));assert(final.includes('ORIGIN_REUSE_DECISION_INCOMPLETE'));
+});
+
+
+test('소비0082는 exact8 승인 원형과 기존7키 START·SEND의 공통 graph 및 invoker 경계를 보존한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8'),complete=body(s,'fn08_start_material_complete'),queue=body(s,'execution_queue_authorized'),graph=body(s,'check_initial_execution_graph');
+ assert(complete.includes("r.version<>3 OR r.status IS DISTINCT FROM 'CONSUMED'"));assert(complete.includes("ad.decision IS DISTINCT FROM 'APPROVE'"));
+ assert(complete.includes("'payload','originReuse']"));assert(complete.includes("request=jsonb_set(jsonb_set(request,'{approvalRef}',approval),'{payload}',candidate)"));
+ assert(complete.includes("'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload'"),'일반 7키 원hash');
+ assert(complete.includes('NOT reuse AND(c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL)'));
+ assert(complete.includes("CASE WHEN reuse THEN approval ELSE NULL END"));
+ for(const name of ['material_registration_complete','material_target_required','material_descriptor_valid'])assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.'+name+'('),'원 SEND 위임 불변 '+name);
+ for(const token of ['FROM anvil.commands x WHERE x.project_id=pid AND x.id=cid AND x.xmin=pg_current_xact_id()::xid',"request_row.version<>3 OR request_row.status IS DISTINCT FROM 'CONSUMED'",'request_row.expires_at<=at_time','c.request_hash','s.reauth_until','execution_policy_deadline'])assert(queue.includes(token),token);
+ assert(graph.includes('CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object('));assert(graph.includes('deadline=LEAST(deadline,reuse_until,session.reauth_until,reuse_deadline)'));
+ const origin=readFileSync(new URL('../../../db/migrations/0074_project_membership_versions.sql.pending',import.meta.url),'utf8'),before=body(origin,'one_time_consumption_command_authorized'),after=body(s,'one_time_consumption_command_authorized');
+ const boundary=" IF c.operation IS DISTINCT FROM 'saveProjectMembership' THEN";assert.equal(after.slice(after.indexOf(boundary)).replace(/\r\n/g,'\n'),before.slice(before.indexOf(boundary)).replace(/\r\n/g,'\n'),'기존 membership/다른 목적 본문 canonical LF 동치');
+ for(const name of ['fn08_start_material_complete','one_time_consumption_command_authorized','execution_queue_authorized','check_initial_execution_graph']){const start=s.search(new RegExp('CREATE OR REPLACE FUNCTION anvil\\.'+name+'\\(')),end=s.indexOf('AS $$',start),declaration=s.slice(start,end);assert(!declaration.includes('SECURITY DEFINER'),'기존 invoker '+name);}
+ const final=body(s,'fn09_origin_reuse_request_final_guard');for(const token of ['ORIGIN_REUSE_CONSUMPTION_INCOMPLETE','fn09_origin_reuse_consumption_complete','anvil.approval_consumptions'])assert(final.includes(token),token);
+});
+
+
+test('소비 invoker는 app 비공개 R 표를 읽지 않고 privileged 정역 완결이 R·xmin·기한을 검산한다',()=>{
+ const quota=readFileSync(new URL('../../../db/migrations/0059_project_storage_quota.sql.pending',import.meta.url),'utf8'),s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ assert(quota.includes('REVOKE ALL ON anvil.project_storage_accounts,anvil.project_storage_reservations FROM PUBLIC,anvil_v3_app'));
+ for(const name of ['one_time_consumption_command_authorized','execution_queue_authorized','check_initial_execution_graph'])assert(!body(s,name).includes('anvil.project_storage_reservations'),'app invoker R 직접 SELECT0 '+name);
+ for(const [name,tokens]of [['fn09_origin_reuse_consumption_context',['anvil.fn01_active','fn09_origin_reuse_request_source(p,e,true)','expected_tx IS DISTINCT FROM txid_current()::text','reauth_until','until_at']],['fn09_origin_reuse_consumption_reserve',['fn09_origin_reuse_consumption_context','INSERT INTO anvil.project_storage_reservations','expected_tx IS DISTINCT FROM txid_current()::text']],['fn09_origin_reuse_consumption_settle',['x.xmin=pg_current_xact_id()::xid','fn09_origin_reuse_consumption_context','fn09_origin_reuse_consumption_actual','clock_timestamp()>=until_at']],['fn09_origin_reuse_consumption_complete',['fn09_origin_reuse_consumption_actual','fn09_registered_reservation_fixed_point']],['fn09_origin_reuse_request_final_guard',['fn09_origin_reuse_consumption_complete','ORIGIN_REUSE_CONSUMPTION_INCOMPLETE']]] as const)for(const token of tokens)assert(body(s,name).includes(token),name+' '+token);
+ assert(!/GRANT EXECUTE[^;]*fn09_origin_reuse_consumption_(?:context|actual|maximum|rows|complete)/.test(s));
+});
+
+
+test('소비 최종 guard는 신규 C의 누락·옛 R·만료·짧은 기한을 닫고 역사 완결은 시간 독립이다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8'),final=body(s,'fn09_origin_reuse_request_final_guard'),history=body(s,'fn09_origin_reuse_consumption_complete'),actual=body(s,'fn09_origin_reuse_consumption_actual'),graph=body(s,'check_initial_execution_graph');
+ const collect=final.slice(final.indexOf('FOR cid IN'),final.indexOf(' LOOP',final.indexOf('FOR cid IN')));
+ assert(collect.includes("UNION SELECT nc.id FROM anvil.commands nc WHERE nc.project_id=p AND nc.operation='queueExecutionCommand' AND nc.xmin=pg_current_xact_id()::xid"));for(const token of ['nc.approval_consumption_id IS NOT NULL','nc.payload_ref IS NOT NULL','ar.approval_decision_ref IS NOT NULL','ar.candidate_command_id=nc.command_id'])assert(collect.includes(token),token);
+ const current=final.slice(final.indexOf('-- 0017의 불변 queue 명령 guard'));
+ for(const token of ['current_reservation.id IS NULL','r.xmin=pg_current_xact_id()::xid',"current_reservation.phase IS DISTINCT FROM 'SETTLED'",'current_reservation.start_fence<>1','current_reservation.server_command_id IS DISTINCT FROM cid','current_reservation.external_command_id IS DISTINCT FROM current_command.command_id','current_reservation.command_hash IS DISTINCT FROM current_command.request_hash',"current_reservation.plan_hash IS DISTINCT FROM anvil.fn01_hash(current_reservation.plan_json-'planHash')",'current_reservation.authorized_until<=clock_timestamp()','fn09_origin_reuse_consumption_context','context_until IS DISTINCT FROM current_reservation.authorized_until',"jsonb_each_text(current_grant.snapshot_json->'binding'->'expires')","current_grant.snapshot_json->>'plannedAt'",'IS DISTINCT FROM grant_until'])assert(current.includes(token),token);
+ for(const text of [history,actual])assert(!/clock_timestamp|current_reservation|xmin=pg_current_xact_id/.test(text),'역사 leaf/complete에 현재 기한·Tx 재부과0');
+ assert(graph.includes("NOT reuse AND (gs->>'expiresAt')::timestamptz IS DISTINCT FROM deadline"));assert(graph.includes("reuse AND ((gs->>'expiresAt')::timestamptz>deadline"));
+ // SQL 인터프리터가 아닌 guard의 필수 경계 순수 모형이다. source의 각 필수 조건은 위에서 별도로 결박한다.
+ const currentBoundary=(x:{newCommand:boolean;hasR:boolean;hasConsumption:boolean;sameTx:boolean;sealed:boolean;until:number;grantUntil:number;now:number})=>!x.newCommand||x.hasR&&x.hasConsumption&&x.sameTx&&x.sealed&&x.now<x.until&&x.grantUntil===Math.min(x.until,20)&&x.now<x.grantUntil;
+ const normal={newCommand:true,hasR:true,hasConsumption:true,sameTx:true,sealed:true,until:20,grantUntil:20,now:10};assert(currentBoundary(normal));
+ for(const change of [{hasR:false},{hasConsumption:false},{sameTx:false},{sealed:false},{until:10},{until:15},{grantUntil:19}])assert.equal(currentBoundary({...normal,...change}),false,JSON.stringify(change));
+ assert(currentBoundary({...normal,until:15,grantUntil:15}),'R만 더 짧은 정상 grant');assert(currentBoundary({...normal,newCommand:false,now:1000}),'기존 완료 graph는 후속 quota 거래에서 원 역사 검산만 요구');
+});
+
+
+test('소비 SQL reuse AUTO는 EXECUTION 정체성만 고정하고 정확·더 넓은 source 포함은 원 helper에 위임한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8'),q=body(s,'execution_queue_authorized');
+ assert(!q.includes("rule->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','EXECUTION'"),'sourceScopes가 있는 정상 scope를 4키 exact로 거절하지 않는다');
+ for(const token of ["rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id)","rule->>'disposition'='AUTO'","rule->'limitPolicyRef'=q->'budgetPolicyRef'","rule->'targetScopes'->0->>'kind'='EXECUTION'","rule->'targetScopes'->0->>'projectId'=pid::text","rule->'targetScopes'->0->'executionGeneration'=q->'executionGeneration'","rule->'targetScopes'->0->>'executionId'=q->>'executionId'","anvil.execution_policy_deadline(reuse_rules,pid,(q->>'executionId')::uuid,(q->>'executionGeneration')::bigint,c.actor_id,'authorizeExecution',q->'budgetPolicyRef',q->'sourceScopes',at_time)"])assert(q.includes(token),token);
+ const old=readFileSync(new URL('../../../db/migrations/0017_execution_authority.sql',import.meta.url),'utf8'),helper=body(old,'execution_policy_deadline');assert(helper.includes('execution_source_scopes_valid'));assert(helper.includes('sourceScopes'));assert(helper.includes('DENY'));assert(helper.includes('REQUIRE_APPROVAL'));assert(helper.includes("NOT(scope ?& ARRAY['kind','projectId','executionId','executionGeneration','sourceScopes'])"),'원 helper의 누락 sourceScopes 거절');assert(helper.includes('anvil.execution_source_target_matches(b,requested,target,false)'),'다른 source 및 정당한 포함관계는 원 matcher');const target=body(old,'execution_source_target_matches');assert(target.includes('recursive'));assert(target.includes('relativePath'));
+
 });

@@ -9,16 +9,18 @@ test('원자료 요청 예약은 정확11/10인자와 R 자기비용·C/A/U/최�
  "'ORIGIN_REUSE_APPROVAL_REQUEST'","'origin_reuse_request'",'fn09_registered_cost_projection','fn09_registered_reservation_fixed_point','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','other_bytes','10737418240','REVOKE ALL','anvil_v3_migrator','SET search_path=pg_catalog'])assert(s.includes(text),text);
  const reserve=s.slice(s.indexOf('CREATE FUNCTION anvil.fn09_origin_reuse_request_reserve('),s.indexOf('CREATE FUNCTION anvil.fn09_origin_reuse_request_settle('));
  assert(reserve.includes("ids->>'serverCommandId'"));assert(reserve.includes("expected_tx IS DISTINCT FROM txid_current()::text"));
- const grants=s.match(/^GRANT EXECUTE[^;]*;/gm)||[];assert.equal(grants.length,1);assert(grants[0]!.includes('fn09_origin_reuse_request_reserve'));assert(grants[0]!.includes('fn09_origin_reuse_request_settle'));
+ const grants=s.match(/^GRANT EXECUTE[^;]*;/gm)||[];assert.equal(grants.length,2);assert(grants[0]!.includes('fn09_origin_reuse_request_reserve'));assert(grants[0]!.includes('fn09_origin_reuse_request_settle'));
  assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.quota_reserve('));
 });
 
-test('요청0082 ACL은 migrator의 내부 함수만 두고 app에는 목적별 고정 RPC 네 개만 추가한다',()=>{
+test('요청·결정·소비0082 ACL은 migrator 내부 함수와 목적별 고정 RPC 여섯 개만 둔다',()=>{
  const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
- const grant=s.match(/^GRANT EXECUTE[^;]*;/gm);assert.equal(grant?.length,1);
+ const grant=s.match(/^GRANT EXECUTE[^;]*;/gm);assert.equal(grant?.length,2);
  assert.equal(grant![0],"GRANT EXECUTE ON FUNCTION anvil.fn09_origin_reuse_request_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,jsonb,text,timestamptz),anvil.fn09_origin_reuse_request_settle(uuid,uuid,uuid,uuid,uuid,uuid,text,uuid,jsonb,text),anvil.fn09_origin_reuse_decision_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,jsonb,text,timestamptz),anvil.fn09_origin_reuse_decision_settle(uuid,uuid,uuid,uuid,uuid,uuid,text,uuid,jsonb,text) TO anvil_v3_app;");
+ assert.equal(grant![1],"GRANT EXECUTE ON FUNCTION anvil.fn09_origin_reuse_consumption_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,jsonb,text,timestamptz),anvil.fn09_origin_reuse_consumption_settle(uuid,uuid,uuid,uuid,uuid,uuid,text,uuid,jsonb,text) TO anvil_v3_app;");
+ const consumptionAcl=s.slice(s.indexOf('DO $origin_consumption_acl$'));for(const token of ["LIKE 'fn09_origin_reuse_consumption_%'",'ALTER FUNCTION %s OWNER TO anvil_v3_migrator','REVOKE ALL ON FUNCTION %s FROM PUBLIC,anvil_v3_app'])assert(consumptionAcl.includes(token),token);
  const acl=s.slice(s.indexOf('DO $origin_request_acl$'));for(const token of ["LIKE 'fn09_origin_reuse_request_%'","LIKE 'fn09_origin_reuse_decision_%'","ALTER FUNCTION %s OWNER TO anvil_v3_migrator","REVOKE ALL ON FUNCTION %s FROM PUBLIC,anvil_v3_app"])assert(acl.includes(token));
- assert(!/GRANT EXECUTE[^;]*fn09_origin_reuse_(?:request|decision)_(?:source|context|rows|actual|maximum|complete|record_valid)/.test(s));
+ assert(!/GRANT EXECUTE[^;]*fn09_origin_reuse_(?:request|decision|consumption)_(?:source|context|rows|actual|maximum|complete|record_valid)/.test(s));
  assert(s.includes('RETURN anvil.quota_plan_before_origin_reuse_request(v)'));assert(s.includes('RETURN anvil.quota_settled_before_origin_reuse_request(r)'));
 });
 
@@ -84,4 +86,19 @@ test('결정0082 전체 함수 원문은 중복 선언·열린 문자열·추가
  const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8'),names=[...s.matchAll(/^CREATE(?: OR REPLACE)? FUNCTION anvil\.([a-z0-9_]+)/gm)].map(m=>m[1]),bodies=[...s.matchAll(/AS \$\$([\s\S]*?)\$\$;/g)];
  assert.equal(new Set(names).size,names.length);assert.equal(bodies.length,names.length);assert.equal((s.match(/^COMMIT;$/gm)||[]).length,1);
  for(const body of bodies){let quote=false;const text=body[1]!;for(let n=0;n<text.length;n++){const c=text[n];if(!quote&&c==='-'&&text[n+1]==='-'){const end=text.indexOf('\n',n);n=end<0?text.length:end;continue;}if(c!=="'")continue;if(quote&&text[n+1]==="'"){n++;continue;}quote=!quote;}assert.equal(quote,false,'열린 SQL 문자열0');}
+});
+
+
+test('원자료 START 소비 계상은 신규 행과 v3-v2 차분만 귀속하고 private DAG를 유지한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const bodies=new Map([...s.matchAll(/CREATE(?: OR REPLACE)? FUNCTION anvil\.(fn09_origin_reuse_consumption_[a-z]+)\([\s\S]*?AS \$\$([\s\S]*?)\$\$;/g)].map(m=>[m[1]!,m[2]!]));
+ for(const name of ['context','maximum','rows','actual','reserve','settle','complete'])assert(bodies.has('fn09_origin_reuse_consumption_'+name),'실제 소비 함수 부재 '+name);
+ const actual=bodies.get('fn09_origin_reuse_consumption_actual')!;
+ assert(!/fn09_origin_reuse_request_(?:record_valid|actual|complete)|fn09_origin_reuse_consumption_complete/.test(actual),'leaf 봉인·행만 소비하고 현재 완결로 회귀하지 않는다');
+ for(const token of ['fn09_origin_reuse_request_seal_valid','fn09_origin_reuse_consumption_rows','projection(after_row)','projection(before_row)'])assert(actual.includes(token),token);
+ const rows=bodies.get('fn09_origin_reuse_consumption_rows')!;
+ for(const table of ['approval_consumptions','commands','authorization_receipts','audit_events','executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'])assert(rows.includes('anvil.'+table),table);
+ for(const table of ['notifications','execution_start_origins','execution_start_origin_reservations','approval_decisions','artifacts'])assert(!rows.includes('FROM anvil.'+table),'기존 행 재계상0 '+table);
+ const settle=bodies.get('fn09_origin_reuse_consumption_settle')!;for(const token of ['fn09_registered_reservation_fixed_point(actual_base,to_jsonb(r),r.reserved_bytes)','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','actual_bytes>r.reserved_bytes','expected_tx IS DISTINCT FROM txid_current()::text'])assert(settle.includes(token),token);
+ assert(s.includes("'ORIGIN_REUSE_APPROVAL_CONSUMPTION'"));assert(s.includes("'origin_reuse_consumption'"));
 });

@@ -25,11 +25,11 @@ export const isOriginReuseApproval=(view:ApprovalView)=>view?.request?.details?.
 /** 보관된 봉인과 관계만 검산한다. 현재 서버 권한·실행 허가를 만들지 않는다. */
 export async function validateOriginReuseApproval(view:ApprovalView,pid:string,id:string):Promise<ApprovalView>{
  try{
-  if(!exact(view,['request','requestRef','currentVersion','storedStatus','effectiveState','decision','consumption','expired','basisCurrent','executionAuthorized','observedAt']))bad();
+  if(!exact(view,['request','requestRef','currentVersion','storedStatus','effectiveState','decision','consumption','expired','basisCurrent','executionAuthorized','observedAt',...(view?.currentVersion===3?['originReuseOutcome']:[])]))bad();
   const v:any=view,r=v.request;
   if(!uuid(pid)||!uuid(id)||!exact(r,['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','originReuseEvidence','createdAt'])
    ||r.id!==id||r.projectId!==pid||r.version!==1||r.status!=='PENDING'||!validRef(v.requestRef)||v.requestRef.id!==id||v.requestRef.version!==1
-   ||![1,2].includes(v.currentVersion)||v.consumption!==null||v.executionAuthorized!==false
+   ||![1,2,3].includes(v.currentVersion)||v.currentVersion!==3&&v.consumption!==null||v.executionAuthorized!==false
    ||typeof v.expired!=='boolean'||typeof v.basisCurrent!=='boolean'||!iso(v.observedAt)||!iso(r.createdAt)||Date.parse(r.createdAt)>Date.parse(v.observedAt)
    ||!validRef(r.policyRef)||!positive(r.controlGeneration)||!exact(r.requestedBy,['kind','userId','clientId'])||r.requestedBy.kind!=='HUMAN'||!uuid(r.requestedBy.userId)||!uuid(r.requestedBy.clientId)
    ||!exact(r.requiredDecider,['kind','userId'])||r.requiredDecider.kind!=='HUMAN'||r.requiredDecider.userId!==r.requestedBy.userId)bad();
@@ -61,8 +61,16 @@ export async function validateOriginReuseApproval(view:ApprovalView,pid:string,i
   const {id:ignoredId,version,status,createdAt,...snapshot}=r;
   let storedStatus='PENDING';
   if(v.decision===null){if(v.currentVersion!==1)bad();}
-  else{if(v.currentVersion!==2||!exact(v.decision,['ref','id','requestId','requestVersion','requestRef','scopeDigest','decision','reason','decidedBy','controlGeneration','policyRef','decidedAt']))bad();
+  else{if(![2,3].includes(v.currentVersion)||!exact(v.decision,['ref','id','requestId','requestVersion','requestRef','scopeDigest','decision','reason','decidedBy','controlGeneration','policyRef','decidedAt']))bad();
    const {ref:decisionRef,...decision}=v.decision;await validateOriginDecision(decision,decisionRef,view);if(Date.parse(decision.decidedAt)>Date.parse(v.observedAt))bad();storedStatus=decisionStatus(decision.decision);}
+  if(v.currentVersion===3){
+   const used=v.consumption,outcome=v.originReuseOutcome,decision=v.decision;
+   if(!decision||decision.decision!=='APPROVE'||!exact(used,['id','status','commandId','serverCommandId','requestHash','scopeDigest','policyRef','consumedAt'])||!uuid(used.id)||!uuid(used.serverCommandId)||used.status!=='CONSUMED'
+    ||used.commandId!==d.candidateCommandId||!hash(used.requestHash)||used.scopeDigest!==r.scopeDigest||!same(used.policyRef,r.policyRef)||!iso(used.consumedAt)||Date.parse(used.consumedAt)<Date.parse(decision.decidedAt)||Date.parse(used.consumedAt)>=Date.parse(d.expiresAt)||Date.parse(used.consumedAt)>Date.parse(v.observedAt)
+    ||!exact(outcome,['commandId','requestHash','queueCommandRef','status','executionAuthorized','dispatchPerformed'])||outcome.commandId!==used.commandId||outcome.requestHash!==used.requestHash||!validRef(outcome.queueCommandRef)||outcome.queueCommandRef.version!==1||outcome.status!=='SYNTHETIC_QUEUE_STORED'||outcome.executionAuthorized!==false||outcome.dispatchPerformed!==false)bad();
+   const command={schemaVersion:1,projectId:pid,commandId:d.candidateCommandId,clientId:r.requestedBy.clientId,controlGeneration:r.controlGeneration,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:{requestId:id,decisionId:decision.id,scopeDigest:r.scopeDigest},payload:e.candidatePayload};
+   if(await wireHash(command)!==used.requestHash)bad();storedStatus='CONSUMED';
+  }
   const effective=['PENDING','APPROVED'].includes(storedStatus)?v.expired?'EXPIRED':v.basisCurrent?storedStatus:'REVOKED':storedStatus;
   if(v.storedStatus!==storedStatus||await wireHash(snapshot)!==v.requestRef.contentHash||new TextEncoder().encode(browserCanonical(v)).length>2*1024*1024
    ||v.expired!==(Date.parse(v.observedAt)>=Date.parse(d.expiresAt))||v.effectiveState!==effective)bad();
@@ -103,6 +111,7 @@ export async function sendOriginReuseDecision(client:ApiClient,raw:ApprovalView,
  const view=structuredClone(raw),command=structuredClone(rawCommand),transport=client.transport,owner=ownerCheck(session);
  const check=()=>{owner();if(!active()||client.transport!==transport)throw new ApiError('APPROVAL_CONTEXT_CHANGED',412);};check();
  await validateOriginReuseApproval(view,command.projectId,view.request.id);check();assertOriginReuseOwner(view,session);
+ if(view.currentVersion===3||view.consumption!==null)throw new ApiError('APPROVAL_NOT_PENDING',412);
  const p=command.payload;
  if(!exact(command,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||command.schemaVersion!==1||!uuid(command.commandId)||command.projectId!==view.request.projectId||command.clientId!==session.clientId||command.controlGeneration!==view.request.controlGeneration||command.operation!=='decideApproval'||command.targetId!==view.request.id||command.expectedVersion!==1||command.approvalRef!==null||!Array.isArray(command.baselineRefs)||command.baselineRefs.length
   ||!exact(p,['requestId','expectedVersion','scopeDigest','decision','reason'])||p.requestId!==view.request.id||p.expectedVersion!==1||p.scopeDigest!==view.request.scopeDigest||!['APPROVE','REJECT','REQUEST_CHANGE'].includes(String(p.decision))||!text(p.reason))throw new ApiError('APPROVAL_CANDIDATE_MISMATCH',409);

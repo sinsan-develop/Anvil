@@ -1,3 +1,4 @@
+import type {OriginReuseStartLease} from '../executions/execution-start-origin-reuse.ts';
 import {ProjectMemberships} from '../projects/project-memberships.ts';
 import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readCurrentControlGrant,ordinaryDocumentOperations,isOrdinaryControlOperation,copyControlData} from '../control-handoff/control-grant.ts';
@@ -224,7 +225,7 @@ export function isNodeDecisionReceiptIds(value:unknown,db:PoolClient,actor:Authe
  return !!s&&!s.used&&s.db===db&&s.query===db.query&&s.actor===actor&&s.actorId===actor.actorId&&s.clientId===actor.clientId&&s.generation===actor.credentialGeneration&&s.sessionId===actor.authSession?.id&&s.requestHash===contentHash(canonicalJson(request));
 }
 export interface ExecutionStartOriginReceiptIds extends RegisteredPreparationReceiptIds {readonly transactionId:string}
-type OriginReceiptState={db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;requestHash:string;used:boolean};
+type OriginReceiptState={db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;requestHash:string;used:boolean;start?:{lease:OriginReuseStartLease;matches:typeof import('../executions/execution-start-origin-reuse.ts').originReuseStartMatches}};
 const originReceiptReservations=new WeakMap<object,OriginReceiptState>();
 const originReceiptIdentity=(actor:AuthenticatedIdentity)=>canonicalJson({actorId:actor.actorId,clientId:actor.clientId,credentialGeneration:actor.credentialGeneration,session:actor.authSession});
 /** 같은 원자료 저장 Tx의 내부 ID만 고정한다. 실행 허가나 credential을 발급하지 않는다. */
@@ -241,6 +242,7 @@ export function isExecutionStartOriginReceiptIds(value:unknown,db:PoolClient,act
  return !!s&&!s.used&&request.operation==='registerExecutionStartOrigin'&&s.db===db&&s.query===db.query&&s.actor===actor&&s.identity===originReceiptIdentity(actor)&&s.requestHash===contentHash(canonicalJson(copyControlData(request,2097152)));
 }
 export interface OriginReuseRequestReceiptIds extends RegisteredPreparationReceiptIds {readonly transactionId:string}
+export interface OriginReuseConsumptionReceiptIds extends OriginReuseRequestReceiptIds {readonly writerClaimId:string;readonly outboxId:string}
 const reuseReceiptReservations=new WeakMap<object,OriginReceiptState>();
 export async function reserveOriginReuseRequestReceiptIds(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand):Promise<OriginReuseRequestReceiptIds>{
  const live=originReuseObservationContexts.get(db),query=db.query,identity=originReceiptIdentity(actor);
@@ -253,7 +255,17 @@ export async function reserveOriginReuseRequestReceiptIds(db:PoolClient,actor:Au
 export function isOriginReuseRequestReceiptIds(value:unknown,db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand):value is OriginReuseRequestReceiptIds{
  if(!value||typeof value!=='object')return false;const s=reuseReceiptReservations.get(value);
  return !!s&&!s.used&&s.db===db&&s.query===db.query&&s.actor===actor&&s.identity===originReceiptIdentity(actor)
-  &&(isOriginReuseObservationRequest(request)||request.operation==='decideApproval')&&s.requestHash===contentHash(canonicalJson(request));
+  &&(isOriginReuseObservationRequest(request)||request.operation==='decideApproval'||request.operation==='queueExecutionCommand'&&!!s.start&&s.start.matches(s.start.lease,db,actor,request))&&s.requestHash===contentHash(canonicalJson(request));
+}
+/** 원 queue 인증 콜백의 목적 lease만 내부 식별자를 예약한다. */
+export async function reserveOriginReuseConsumptionReceiptIds(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,lease:OriginReuseStartLease):Promise<OriginReuseConsumptionReceiptIds>{
+ const query=db.query,identity=originReceiptIdentity(actor),requestHash=contentHash(canonicalJson(copyControlData(request,2097152)));
+ const {originReuseStartMatches,originReuseStartState}=await import('../executions/execution-start-origin-reuse.ts');
+ if(query!==db.query||identity!==originReceiptIdentity(actor)||requestHash!==contentHash(canonicalJson(copyControlData(request,2097152))))throw new AuthFailure('ORIGIN_REUSE_REQUEST_OUTCOME_UNKNOWN',503);
+ if(!originReuseStartMatches(lease,db,actor,request)||request.operation!=='queueExecutionCommand')throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);
+ const observed=await originReuseStartState(lease,db,actor,request);
+ const rows=(await Reflect.apply(query,db,['SELECT txid_current()::text AS transaction_id'])).rows;await originReuseStartState(lease,db,actor,request);if(rows.length!==1||rows[0]?.transaction_id!==observed.transactionId||query!==db.query||identity!==originReceiptIdentity(actor)||requestHash!==contentHash(canonicalJson(copyControlData(request,2097152)))||!originReuseStartMatches(lease,db,actor,request))throw new AuthFailure('ORIGIN_REUSE_REQUEST_OUTCOME_UNKNOWN',503);
+ const ids=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),operationId:randomUUID(),authorizationReceiptId:randomUUID(),auditEventId:randomUUID(),writerClaimId:randomUUID(),outboxId:randomUUID(),transactionId:rows[0].transaction_id});reuseReceiptReservations.set(ids,{db,query,actor,identity,requestHash,used:false,start:{lease,matches:originReuseStartMatches}});return ids;
 }
 export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string, reserved?:ActivationReceiptIds) {
   const documentContext=consumeFn15DocumentContext(db,actor,request);
@@ -261,7 +273,7 @@ export async function persistProjectReceipt(db: PoolClient, actor: Authenticated
   if(nodeIds)nodeReceiptReservations.get(nodeIds)!.used=true;
   const originIds=isExecutionStartOriginReceiptIds(reserved,db,actor,request)?reserved:null;
   const reuseIds=isOriginReuseRequestReceiptIds(reserved,db,actor,request)?reserved:null;
-  if(isOriginReuseObservationRequest(request)&&!reuseIds)throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+  if((isOriginReuseObservationRequest(request)||request.operation==='queueExecutionCommand'&&Object.hasOwn(request.payload,'originReuse'))&&!reuseIds)throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
   const reuseState=reuseIds?reuseReceiptReservations.get(reuseIds)!:null;
   const receiptQuery=async(sql:string,args?:unknown[])=>{
     if(!reuseState)return db.query(sql,args);

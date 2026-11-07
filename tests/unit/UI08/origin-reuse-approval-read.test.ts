@@ -217,3 +217,40 @@ test('control 대기 중 부모 work 삭제도 원 readScope가 같더라도 결
  let release!:()=>void;const hold=new Promise<void>(r=>release=r),q=decisionReplies({holdControl:()=>hold}),m=await mounted(q.transport);
  try{await m.wait(()=>m.container.textContent.includes('PENDING 요청 보관'));await m.click('이 요청 결정 준비');await m.fillDecision('원 요청 명시 판단');await m.click('이번만 승인');await m.wait(()=>q.controls===1);await m.replaceDecision(null);await ui.React.act(async()=>release());await m.wait(()=>!m.busy());assert.equal(q.bodies.length,0);assert.equal(m.buffer.decision,null);assert(!m.container.textContent.includes('결정 저장 영수증'));}finally{release();await m.close();}
 });
+
+
+function consumedOriginView(){
+ const v=decidedView(currentStoredView()),r=v.request,command={schemaVersion:1,projectId:pid,commandId:r.details.candidateCommandId,clientId:cid,controlGeneration:r.controlGeneration,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:{requestId:rid,decisionId:v.decision.id,scopeDigest:r.scopeDigest},payload:r.originReuseEvidence.candidatePayload};
+ v.currentVersion=3;v.storedStatus='CONSUMED';v.effectiveState='CONSUMED';v.consumption={id:id(120),status:'CONSUMED',commandId:command.commandId,serverCommandId:id(121),requestHash:hash(command),scopeDigest:r.scopeDigest,policyRef:r.policyRef,consumedAt:v.decision.decidedAt};v.observedAt=v.consumption.consumedAt;
+ v.originReuseOutcome={commandId:command.commandId,requestHash:hash(command),queueCommandRef:ref(122),status:'SYNTHETIC_QUEUE_STORED',executionAuthorized:false,dispatchPerformed:false};return v;
+}
+
+test('원자료 GET v3는 불변 v1·APPROVE·원 exact8 명령 소비와 합성 queue 결과만 읽는다',async()=>{
+ const v=consumedOriginView(),q=replies(v),read:any=await readApproval(new ApiClient(q.transport),pid,rid);assert.equal(read.currentVersion,3);assert.equal(read.storedStatus,'CONSUMED');assert.deepEqual(read.request,v.request);assert.deepEqual(read.requestRef,v.requestRef);assert.deepEqual(read.consumption,v.consumption);assert.deepEqual(read.originReuseOutcome,v.originReuseOutcome);assert.equal(q.posts,0);
+});
+
+test('실제 원자료 v3 화면은 저장 outcome을 읽기전용으로 표시하고 결정·결박·START POST0이다',async()=>{
+ const v=consumedOriginView(),q=replies(v),m=await mounted(q.transport);try{await m.wait(()=>m.container.textContent.includes('합성 START 저장 결과'));assert(m.container.textContent.includes(v.originReuseOutcome.queueCommandRef.id));assert(m.container.textContent.includes(v.originReuseOutcome.requestHash));assert(m.container.textContent.includes('실제 실행 미관측'));for(const label of ['이번만 승인','거절','수정 요청','이 요청 결정 준비','같은 결정 명령 결과 확인','이 승인을 원 후보에 결박'])assert(!m.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===label),label);assert.equal(m.buffer.decision,null);assert.equal(q.posts,0);}finally{await m.close();}
+});
+
+
+test('원자료 v3 소비/outcome의 교차·변조·true 표식과 v2 혼입은 보호 GET에서 거절한다',async()=>{
+ const changes=[(v:any)=>delete v.originReuseOutcome,(v:any)=>v.originReuseOutcome.extra=true,(v:any)=>v.originReuseOutcome.dispatchPerformed=true,(v:any)=>v.originReuseOutcome.executionAuthorized=true,(v:any)=>v.originReuseOutcome.commandId=id(555),(v:any)=>v.originReuseOutcome.requestHash='a'.repeat(64),(v:any)=>v.originReuseOutcome.queueCommandRef.version=2,(v:any)=>v.consumption=null,(v:any)=>v.consumption.extra=true,(v:any)=>v.consumption.commandId=id(555),(v:any)=>v.consumption.scopeDigest='a'.repeat(64),(v:any)=>v.consumption.policyRef=ref(555),(v:any)=>v.consumption.requestHash='b'.repeat(64),(v:any)=>v.consumption.consumedAt=v.request.details.expiresAt,(v:any)=>v.currentVersion=2,(v:any)=>{v.decision.decision='REJECT';const{ref,...d}=v.decision;const{id,decidedAt,...body}=d;ref.contentHash=hash(body);},(v:any)=>v.request.requestedBy.clientId=id(555)];
+ for(const mutate of changes){const v=consumedOriginView();mutate(v);await assert.rejects(readApproval(new ApiClient(async()=>Response.json(v)),pid,rid),{code:'RESPONSE_INVALID'});}
+});
+
+test('원자료 v3의 401/403과 scope 이탈 뒤 늦은 GET은 저장 본문과 새 인증을 바꾸지 않는다',async()=>{
+ for(const status of [401,403]){let denied=false;const q=replies(consumedOriginView()),m=await mounted(async(url,init)=>denied&&!String(url).includes('/approvals?')?Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status}):q.transport(url,init));try{await m.wait(()=>m.container.textContent.includes('합성 START 저장 결과'));denied=true;await m.lookup();await m.wait(()=>!m.container.textContent.includes('합성 START 저장 결과'));assert.equal(q.posts,0);}finally{await m.close();}}
+ for(const change of ['user','client','transport','project','id'])for(const status of [0,401]){let release!:()=>void;const hold=new Promise<void>(r=>release=r),q=replies(consumedOriginView(),{hold:()=>hold,...(status?{status}: {})}),m=await mounted(q.transport);try{await m.wait(()=>q.details>0);if(change==='user')m.props.session.user.id=id(80);if(change==='client')m.props.session.clientId=id(80);if(change==='transport')m.props.client.transport=replies(consumedOriginView(),{status:403}).transport;if(change==='project')m.props.projectId=id(80);if(change==='id')m.props.requestId=id(80);await m.render();const auth=m.authLost,changes=m.changes;await ui.React.act(async()=>release());await m.flush();assert(!m.container.textContent.includes('합성 START 저장 결과'));assert.equal(m.authLost,auth);assert.equal(m.changes,changes);assert.equal(q.posts,0);}finally{release();await m.close();}}
+});
+
+test('원자료 v3 보호 읽기는 기존 UNKNOWN 결정 packet을 보존하고 모든 새 결정 POST0이다',async()=>{
+ const pending=await prepareApprovalDecision(pid,currentStoredView(),'APPROVE','원 UNKNOWN 판단',session,1),decision={requestId:rid,reason:'원 UNKNOWN 판단',acknowledged:true,pending,resultId:null,failure:{code:'CONNECTION_LOST',status:0},uncertain:true},initial={projectId:pid,ownerUserId:uid,ownerClientId:cid,selectedId:rid,request:null,decision},q=replies(consumedOriginView()),m=await mounted(q.transport,structuredClone(session),initial);
+ try{await m.wait(()=>m.container.textContent.includes('합성 START 저장 결과'));assert.deepEqual(m.buffer.decision,decision);for(const label of ['이번만 승인','거절','수정 요청','같은 결정 명령 결과 확인'])assert(!m.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===label));assert.equal(q.posts,0);}finally{await m.close();}
+});
+
+
+test('소비 v3는 보존 결정 packet의 sender 재호출도 POST 전에 readonly 거절한다',async()=>{
+ const command=await prepareApprovalDecision(pid,currentStoredView(),'APPROVE','보존된 원 판단',session,1),v=consumedOriginView(),q=replies(v);
+ await assert.rejects(sendOriginReuseDecision(new ApiClient(q.transport),v,command,session,()=>true),{code:'APPROVAL_NOT_PENDING'});assert.equal(q.posts,0);
+});
