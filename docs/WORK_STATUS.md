@@ -17945,3 +17945,15 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - FN09 등록 준비 UI08 복귀 동결. Editor DD91E691…956C50, App B0775D09…B58720, ApprovalsPage 0C5CD355…4FCA6A, 화면 시험 A4877091…B7AB5B. 최초 기존 일반 링크·복귀 미표시 RED 2건, Primary 직접7 PASS, Main 직접/인접18 PASS/skip0·typecheck·Vite 메모리 build 517·diff check exit0, 독립 C0/I0/M0. 착수 후 제품 검증 오류0.
 - 저장된 승인 요청으로만 이동하고, 같은 계정·기기·프로젝트의 원명령/임무·현재 유효한 미소비 승인이 일치할 때만 작업공간 복귀를 표시한다. 이동만으로 원 입력 복원·임무 선택·결박·저장·소비·실행은 시작하지 않는다. 실제 App 전환·타이머 경과·브라우저/DB는 미검증이다.
+
+### FN13/UI05 보관 기록 목록의 실제 라우트 소비 경계
+
+- 직전 UI08 PR57은 검수 head a26300ae에서 main caf2594ea55b64bfee7f35547b6bf062220630ab로 병합됐다. Broker 42394380053 성공과 원격 main·로컬 main·기준선 HEAD 일치를 확인했다. 병합 뒤 직접 smoke의 UI08/원 Editor 복귀 2 PASS/skip0, 실제 브라우저·DB는 미검증이다.
+- 신산님이 원격에 main만 보인 점을 지적했다. 당시 main은 로컬/원격 동일했고 PR57 종료 branch는 정리됐으나 다음 branch 생성·게시가 미완료였다. Main이 caf2594e에서 codex/av3-fn13-checkpoint-query를 생성·즉시 게시했고 ls-remote로 두 branch의 정확 SHA 일치, 작업 branch 및 main 각각 ahead/behind0/0을 확인했다. 기존 보존 자료는 변경하지 않았다.
+- 계획 FN13/UI05와 FN13_SERVER_CHECKPOINT_STORAGE_APPROVAL_20261031의 기존 보호 목록 GET 범위다. Fastify query의 원형을 cloneV1이 거절하는 소비 경계 가설을 기존 Primary 단일 writer에게 배정했다. 허용 파일은 apps/server/modules/projects/routes.ts와 tests/unit/FN13/checkpoint-routes.test.ts 두 개이며, 인증된 실제 buildApp.inject와 합성 저장소로 첫/다음 페이지·추가키/기존401을 TDD한다. Main은 검수·통합을 맡는다. 착수 오류0, 실제 DB·권한·키·서비스·Agent 미실행.
+
+- FN13 목록 경계 동결. routes.ts 079425934B32FEB01A06EE98667A17343FEE8E3549823B13DD70DDDB397930BB, checkpoint-routes.test.ts F2755BB8ACB440CD170F8DF7698BBF074F54239C9D04D2B3D11B7F5086B99BA0. Primary의 실제 인증 첫 GET은 503 RED 1건을 재현한 뒤 query 자체 속성을 일반 객체로 복사하는 한 곳을 보완해 동일 시험 GREEN으로 전환했다. 실 AccessRepository 잠금 인증·확정 임무/초안/내용검토·원 checkpoint/receipt/audit reader를 소비하며 저장 행만 합성 공급한다.
+- Main 직접 `node --test tests/unit/FN13/checkpoint-routes.test.ts tests/unit/FN13/project-checkpoints.test.ts tests/unit/UI05/checkpoint-api.test.ts` 30 PASS/skip0/exit0, `npm run typecheck` 및 `git diff --check` exit0. 기존 저장 quota 미연결412·교차 프로젝트/회수 회원·cursor 범위/기한·변조 거절을 유지했다. 실제 DB/RLS/COMMIT·브라우저·전체 FN13/작업계획 완료는 미확인이다. rollback은 이 단위 commit revert로 한정한다.
+- Primary 준비 조사에서 store 경로 유실에 따른 상위 위치 읽기1·추정 파일 부재1·PowerShell wildcard 미지원1이 있었고 코드/시험은 정확 대상에서 수행했다. Main 읽기에서도 추정된 service/workflow 파일 경로 각1 부재가 확인돼 실제 경로로 대조했다. WORK_STATUS 추가 suffix CRLF 형식 경고1은 추가 부분 LF로 보정했고 이후 diff check0. 같은 근본 원인의 구현 실패 반복0.
+
+- 독립 검수 exact2 C0/I0/M0, 집중 실제 라우트 합성1 PASS/skip0. writer 반환·허용3경로만 게시한다. 공개 API·SQL·정책 변경0.
