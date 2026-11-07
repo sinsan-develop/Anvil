@@ -32,7 +32,7 @@ test('원자료 요청0082는 보존 A0·P2 문법과 목적 한정 원장/알�
  for(const name of ['environment_configuration_commit','execution_policy_deadline','fn09_origin_reuse_request_context','fn09_origin_reuse_request_rows','fn09_origin_reuse_request_reserve','fn09_origin_reuse_request_settle','fn09_origin_reuse_request_complete'])assert(source.includes('FUNCTION anvil.'+name+'('),name);
  assert(source.includes('PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;'));
  const complete=body(source,'fn09_origin_reuse_request_complete');
- const closure=complete+body(source,'fn09_origin_reuse_request_actual')+body(source,'fn09_origin_reuse_request_notification')+body(source,'fn09_origin_reuse_request_record_valid')+body(source,'fn09_origin_reuse_request_rows');
+ const closure=complete+body(source,'fn09_origin_reuse_request_actual')+body(source,'fn09_origin_reuse_request_notification')+body(source,'fn09_origin_reuse_request_record_valid')+body(source,'fn09_origin_reuse_request_seal_valid')+body(source,'fn09_origin_reuse_request_rows');
  for(const name of ['approval_requests','commands','authorization_receipts','audit_events','notifications','project_storage_reservations'])assert(closure.includes('anvil.'+name),name);
  assert(complete.includes('fn09_origin_reuse_request_actual'));assert(body(source,'fn09_origin_reuse_request_actual').includes('fn09_origin_reuse_request_notification'));
  assert(complete.includes("r.phase IS DISTINCT FROM 'SETTLED'"));assert(complete.includes("r.part_kind IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_REQUEST'"));
@@ -47,7 +47,7 @@ test('요청0082 보존 A0/C0/C1 원바이트와 일반 승인 invoker 본문은
  assert.equal(createHash('sha256').update(raw.subarray(7,7+16423)).digest('hex'),'2a568dcd02be60817a5ec977e234dd4b555da07c0bdcf9a097775ad9b6bca203');
  const text=raw.toString(),original=readFileSync(new URL('../../../db/migrations/0073_control_handoff_acceptance.sql.pending',import.meta.url),'utf8').replace(/\r\n/g,'\n');
  const current=body(text,'guard_one_time_approval_request'),old=body(original,'guard_one_time_approval_request');
- const start=current.indexOf("\n IF NEW.action_scope_json->>'operation'='queueExecutionCommand'"),end=current.indexOf("\n IF TG_OP='UPDATE'",start);
+ const start=current.indexOf("\n IF NEW.action_scope_json->>'operation'='queueExecutionCommand'"),end=current.indexOf("\n IF TG_OP='UPDATE' THEN\n  IF OLD.version=2",start);
  assert(start>=0&&end>start);assert.equal(current.slice(0,start)+current.slice(end),old);
  const declaration=text.slice(text.indexOf('CREATE OR REPLACE FUNCTION anvil.guard_one_time_approval_request('),text.indexOf('AS $$',text.indexOf('CREATE OR REPLACE FUNCTION anvil.guard_one_time_approval_request(')));
  assert(!declaration.includes('SECURITY DEFINER'));assert(!declaration.includes('SET search_path'));
@@ -65,4 +65,15 @@ test('요청0082 원 source·최단기한과 단일 R의 양방향 완결은 cal
  assert(complete.includes('anvil.fn09_registered_reservation_fixed_point(actual_base,to_jsonb(r),r.reserved_bytes)'));
  assert(actual.includes('anvil.fn09_origin_reuse_request_rows(p,cid)'));assert(!actual.includes('execution_start_origins'));
  for(const table of ['approval_requests','commands','notifications','project_storage_reservations','project_storage_accounts'])assert(body(text,'fn09_origin_reuse_request_final_guard').includes('anvil.'+table));
+});
+
+test('결정0082는 v1 원봉인을 보존하고 v2 정확결정만 열며 소비와 새 일반권한은 열지 않는다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const state=body(s,'fn09_origin_reuse_request_record_valid');for(const token of ["r.version=1 AND r.status='PENDING'","RETURN n=0","r.version<>2 OR n<>1",'fn09_origin_reuse_decision_actual','approval_consumptions'])assert(state.includes(token),token);
+ const context=body(s,'fn09_origin_reuse_decision_context');for(const token of ['anvil.fn01_active(s,a,c)','FOR UPDATE','fn09_origin_reuse_request_seal_valid','expected_tx IS DISTINCT FROM txid_current()::text',"q->'schemaVersion' IS DISTINCT FROM '1'::jsonb","'decideApproval'",'humanSessionId','credentialGeneration','reauth_until','fn09_origin_reuse_request_source(p,e,true)','execution_policy_deadline'])assert(context.includes(token),token);
+ const settle=body(s,'fn09_origin_reuse_decision_settle');for(const token of ['pg_current_xact_id()::xid','fn09_origin_reuse_decision_context','fn09_origin_reuse_decision_actual','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','actual_bytes>r.reserved_bytes'])assert(settle.includes(token),token);
+ assert(!/CREATE TABLE|GRANT (?:SELECT|INSERT|UPDATE|DELETE|ALL) ON/i.test(s));assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.one_time_decision_command_authorized('));
+ for(const name of ['quota_plan_valid','quota_settled_complete'])assert(body(s,name).includes('ORIGIN_REUSE_APPROVAL_DECISION'));
+ const forward=body(s,'guard_one_time_approval_request');assert(forward.includes("OLD.version<>1 OR OLD.status IS DISTINCT FROM 'PENDING' OR NEW.version<>2"));assert(forward.includes('ORIGIN_REUSE_DECISION_REQUIRED'));
+ const final=body(s,'fn09_origin_reuse_request_final_guard');assert(final.includes('fn09_origin_reuse_decision_complete(p,cid)'));assert(final.includes('anvil.approval_decisions'));assert(final.includes('ORIGIN_REUSE_DECISION_INCOMPLETE'));
 });

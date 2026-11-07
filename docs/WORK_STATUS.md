@@ -18036,3 +18036,68 @@ npm run typecheck
 - Primary 준비오류는 Python인코딩·Vitevirtual entry·시험오류code/selector/새ID모델·해시검사기NameError·추정계약경로부재1을 제품RED와 구분했다. guard/실패기준 완화0. 실제served브라우저·HTTP서버/DB·SQL/권한/키/서비스/Agent0, 결정·소비·START는 후속 미완료로 보존한다. 다음 단위는 채택1EABB2AD §5의 같은 원요청 명시 결정 저장과 보호재조회이며 현재요청 역완결/계상 역사불변을 함께 구현해야 한다. 현재 branch 검수/통합/정리 후 순차착수한다.
 
 - UI08 최종 독립5경로 C0/I0/M0, 직접18 PASS/skip0/exit0(2d69d6), 최종hash일치4c8dff 및 backend14 manifest 불변/diffcheck0(f00b7b)를 인수했다. Main/Primary/독립검수의 source 한정 증거가 갖춰져 정확19경로(backend변경13+UI5+현황1)만 commit/push·PR로 통합한다. rollback은 이 단위 squash commit revert이며 실제DB 적용은 없다.
+
+
+### FN09 원 요청 결정 저장·보호 재조회 순차 착수
+
+- PR61은 검수head5abeb3f4d4fe40ed3e55ac6c5daa4c693fe276ff에서 main497e8b410ef675ae314640767dbc6cf58cdead20으로 병합됐다. Broker42405341950 completed/success, 정확부모34fdf6a8·검수head와동일tree·원격완료branch/tag부재를 확인했다. 첫smoke name-pattern은 FN09 실case를 선택하지 않아 그 file-level pass를 기능증거에서 제외했고 정확원case로 보정해 병합본12 PASS/skip0/exit0(51beb2)를 확인했다. 완료branch/추적ref는 정리됐으며 Main은 한정smoke 실행종료를 기다린 뒤 정리해야 하는 순서를 이번에는 종료관측 전에 진행한 점을 다음부터 바로잡는다. 복구main·원격동일tree가 확인됐고 실제자료삭제/손실은 없다.
+- 새 codex/av3-fn09-origin-decision-storage를 이 main에서 생성·즉시 private 게시했고 작업branch/main 각각 로컬/원격ahead/behind0/0(3be1e0)을 확인했다. 기존 보존자료 변경0이다.
+- 다음은 기존채택1EABB2AD §5·원WI78–79 안의 같은원요청 명시 APPROVE/REJECT/REQUEST_CHANGE 저장→원ID보호재조회다. 기존 요청의v1/PENDING·결정부재 완결과 가변row전체계상은 결정 후 역사불변과 함께 닫아야 한다. 기존0077 결정 D+C/A/U+(v2상태row−v1상태row) 투영을 목적한정 기준으로 대조한다. 원S/Q/P1·요청snapshot/hash·최초알림은 보존하고 소비/START는 후행이다. Primary는 아직읽기준비만수행하며 최종허용목록/내부상세를 Main이 결박한후 단일writer로TDD한다. 실제DB/GRANT/권한/키/서비스/Agent/SSH0, 새일반공개계약·상한확대0.
+
+- Main은 다음 내부상세를 기존채택 안에 고정했다. purpose ORIGIN_REUSE_APPROVAL_DECISION/part origin_reuse_decision, 결정명령서버ID를예약ID로 쓰며 결정D·원결정C/A/U·요청v2상태와v1/PENDING상태의실제비용차·결정R자기비용만 계상한다. 원S/Q·요청·최초알림 중복/새결정알림0. request snapshot/hash·원C/A/U/N/R은불변이다. RPC fn09_origin_reuse_decision_reserve는 request와같은11인자(s,a,c,p,q,ref,record,policy,ids,expected_tx,observed_until), settle은같은10인자(s,a,c,p,external_id,rid,sealed_hash,cid,result,expected_tx)로고정하며 exact형·봉인투영은원request/0077계약의목적한정검산을보존한다. observed_until은원현재성최단기한을축소만하며 권위가아니다.
+- Primary backend 허용10경로는 apps/server/modules/{approvals/project-approvals.ts,access/project-command.ts,projects/project-storage-quota.ts,executions/execution-start-origin-reuse.ts,projects/routes.ts}, db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending 및 tests/unit/{FN09/execution-start-origin-fixture.ts,FN09/execution-start-origin-routes.test.ts,FN08/execution-start-material-registration-schema.test.ts,FN13/project-storage-quota-schema.test.ts}다. Main은현황만소유한다. 기존decideApproval route에기존명시합성capability만전달하며 default/no-cap/위조cap은거절한다. 새인증/일반실행권한/HTTP경로는추가하지않는다.
+- 결정의현재보호관측은저장요청원문에서같은인증Tx·query·xid·원주체/제어/P2/S/Q/출처/원ContextOptions·최단기한으로재구성한다. v1결정0 또는v2정확결정1만허용하고v3/소비/START는거절한다. 역사요청봉인→결정원행/명령/영수증/감사→비용→정산→deferred역완결의비순환검산을유지한다. 세결정·원IDGET·같은결정/원요청replay추가0·두번째결정409·교차/만료/query/xid·rollback·COMMIT불명무재발행을실App합성모델로TDD한다. UI4후속연결은backend동결후별도GO이며현재쓰기제외다.
+- 준비조사 Main rg의Windows glob인자1회오류는실목록에서확인된정확0077/0082경로로재조회해정정했다. Primary도읽기준비의추정알림경로부재1·Windows glob1을실목록으로정정했다. 제품실패/파일변경0이며이후검색은정확경로또는rg --glob을사용한다. 착수시구현실패0, 실제DB/권한/키/서비스/Agent/사용자자료조사0.
+
+- 결정저장 첫 실제App RED는120694이다. APPROVE/REJECT/REQUEST_CHANGE 각각412 ORIGIN_REUSE_APPROVAL_NOT_CONNECTED≠200, 부모포함4FAIL/skip0/exit1을확보했다. 기존정상기준은유지하며 Primary가같은Tx보호관측·결정예약/저장연결을이어간다. 현재실행handle0·허용추가경로0, Main/검수자는제품쓰기0이다.
+
+- 읽기전용 후속순서 대조는 현재결정단위→채택1EABB§5의정확8키/non-null승인소비·같은Tx합성START/원결과재조회→FN06/FN08선택Agent실제START/첫지시생산→FN12/IX02실제결과·증거회수/독립검수다. 기존제출/원문조회/과거페이지를재개발하지않는다. 두후행실제생산/결과항목은현명시합성조립과미채택admission후보의부족계약을정확히대조해야하며, 현재소스누락이라고확정하거나합성권위를실제권위로승격하지않는다. 실제실행제외를소스구현전체차단근거로도삼지않는다. 현재Primary의결정단위는계속하며새작업추가/실환경실행0이다.
+
+- Main 후행계약읽기에서 basename만보고work_packages를추정한경로부재1이추가발생했다. 앞선같은유형3회예외와연결해이추정방식은금지하며 해당후행조사는중단했다. rg --files로실제docs/contracts/FN07_CLAUDE_EXECUTION_ADMISSION_PRODUCER_CANDIDATE_20261106.md를확인했고 앞으로인수자료에도정확경로를요구한다. 제품쓰기/실자료영향0, 현재Primary정상결정저장구현과검수는계속한다.
+
+- Main과독립검수자는결정cap이있는App의일반decideApproval도같은인증진입/원target잠금을거치는영향, 역사decision replay의현재읽기정책·기한·주체검산경계를최종회귀대상으로추가확인한다. 이는구현중source읽기의검수초점이며현재finding확정이나새기준완화가아니다. 실제잠금/DB는소스·합성검수와구분한다. Primary동일writer구현계속, Main제품쓰기0이다.
+
+- 결정단위 첫행동GREEN은e76a35의 실제App합성이다. 세결정저장→원IDGETv2→동일결정/원요청replay추가0→중복409가부모포함4 PASS/skip0/15323.9117ms/exit0이다. SQL실행/비용/역완결검증이나최종인수는아니다. Primary는0082결정계상·역사projection/비순환완결·중요음성을계속작성중이다. 중간type에서과한치환1건(별도함수originReuse이름)을확인해그추가줄만정정했으며동일근본원인반복실패0·추가경로0·실행handle0이다.
+
+- 후행실제생산의진짜미채택delta는docs/contracts/FN07_CLAUDE_EXECUTION_ADMISSION_PRODUCER_CANDIDATE_20261106.md40887B/SHA4125117462AD778E28B1EA7130EC52684E14812CBB1630A7DEB2F9BD0F5A19F8 §3.1의목적한정관측서명이다. 원등록owner의선택exe/cwd/root정체성관측을CLAUDE_EXECUTION_CONFIGURATION_OBSERVATION/challenge/H/E/ref/회수/최단기한으로검산하되host보고출처일뿐실제생성권위/새E·token/실행true를발급하지않는후보로한정한다. 프로그램/argv/env/Secret실행허용과CREATE_CLAUDE_PROCESS는별도미정이며이결정에숨기지않는다. 현재FN09결정·소비구현은기존채택안에서계속하고, 후행source착수전정확권한의미채택을PMO지원안건으로전달한다. 실키/DB/권한/서비스/Agent/SDK재조회/실자료관측0이다.
+
+- 결정TS조기독립읽기에서명확한결함후보는미확인이다(최종판정아님). 일반decide는고정AccessRepository인증/query/xid·현재controller/policy와target잠금뒤실제queue목적만private관측으로분기하고일반material/replay를유지한다. 역사Date(0)은previous있는입력재파싱한정이며앞선실ProjectApprovals.read의동일actor/client·현재AUTO읽기·S/Q/명령/receipt/audit/N검산및P2동일성을거친다. 외부JSON으로privateWeakMap출처를대체하지않는다. 최종일반목적회귀·SQL/잠금은동결후검수/실PG미검증구분으로남긴다. 독립파일쓰기·시험·실환경0이다.
+
+- PMO는후행FN07후보41251174 §2/3.1/5/10과현황17222/17233을직접대조하고 새서명목적의서버신뢰는인증의미delta라일반위임으로채택하지않는다고판단했다. PMO에서목적한정source/합성의미만신산님께1회질문하며본대화에중복질문하지않는다. 관측출처인증뿐이고CREATE/새E·token/실행true/argv·env·Secret/SESSIONclaim·실키/OS조회/DB/권한/서비스/Agent는제외다. 현FN09승인구현은영향없이계속한다. canonical/정확허용파일/합성검증안의읽기구체화는준비범위로계속하되새공개API/표/권한의미를임의선택하지않는다.
+
+- 후행관측준비의읽기대조에서기존SourceContentObserver의같은handle/filefacts/rawhash와등록proof검산은재사용근거가있지만, native-preparation-proof-signer는키mapping미등록SOURCE_ONLY_MODEL이고NativePreparationProofSource도caller/root/peer·키mapping미구현을명시한다. 기존signer를실제새목적생산자로보고하지않는다. canonicalPathDigest규칙·허용exe크기/설치root범위·불변versionEvidenceRef생산도미확정이다. 신규schema/합성observer4파일제안은아직GO하지않고완전한소유/수신선행을닫기전기능구현완료로대체하지않는다. 현결정저장구현은영향없이진행하며실관측·키접근0이다.
+
+- 결정SQL생산자부재RED d7fdb2→GREEN2ee60b, 직접SQL정적2파일33 PASS/skip0/472.0741ms/exit0(e5ed54)를인수했다. 실제App선택8abebb는세결정·원IDGET·양쪽replay/중복·quota/정산/XID/봉인/권한/등록회수/COMMIT불명17 PASS/skip0/20304.2766ms/exit0이다. 현재type54797관측은Primary소유이며감사/receipt오염·명시만료·위조cap음성및직접인접회귀/최종동결은진행중이다. 실제SQL/PG실행0으로구분한다.
+- 0082조기독립읽기는request_record_valid→decision_actual→request_seal_valid→request_source(false)의순환없음, request_rows의v1/PENDING투영·D+C/A/U+상태차분·새결정N/소비거절을대조했다. 일반guard마지막UPDATE분기이후본문은HEAD와동일(26576b)이다. 최종C/I/M·실PG/잠금판정은아니다. 독립준비PowerShell인용2·함수끝탐색1오탐은좁혀정정한도구오류이며제품실패/파일쓰기0이다.
+- Main현황추가Python문자열의개행따옴표구문오류1은미저장상태에서삼중따옴표로정정했다. 기존기록변경0이다.
+
+- backend제품/SQL6 부분동결을 Main이 raw지문검산했다. 경로정렬/각path·bytes·소문자sha256의JSON배열 SHA256 fc1b1e97b8bdc8527ac852eb7590359fcf5dfb2f45a2b8b9827cf855c57f8d33이며 Primary제출6개와모두일치한다. 시험4는아직Primary소유, Main현황만쓰기, 독립제품6검수진행중이다.
+- Main fresh 명령 node --experimental-test-module-mocks --test --test-name-pattern='원자료 요청의 세 명시 결정|원자료 명시 결정의' tests/unit/FN09/execution-start-origin-routes.test.ts 는18 PASS/skip0/exit0(6554e7→c0de72,21119.5114ms)이다. 세결정/원IDGET/양쪽replay·quota/정산/XID/봉인/권한/등록회수·위조cap·명시만료·COMMIT불명을실App합성모델로검산했다. 실제PG/잠금/SQL설치/권한/Agent·전체기능완료는아니다.
+
+- 부분동결 자체대조에서 결정목적의첫request-history읽기가원관측clock/xid재확인보다앞선순서임을확인했다. query함수동일·원Tx교체때다른거래이력을먼저읽지않게 project-command.ts와execution-start-origin-reuse.ts 두파일만동결해제·같은Primary보강GO다. 목적조회전원xid재검산/기존guarded transaction history읽기·정확XID음성RED→GREEN을수행한다. 나머지4동결·허용범위·새권한/포트0유지.
+- 직전독립6파일C0/I0/M0·18PASS(52c7c7→5388a0)와Main18PASS/fc1b…8d33은모두보강전exact6한정의과거증거로보존하며현재최종판정에재사용하지않는다. 독립SQL4검수는역사비용/상태차분·R·새N0/소비0·비순환/ACL4exactRPC·invoker본문보존을유지했고해제2개는새동결뒤재검수한다. 실제DB/키/서비스/Agent실행0이다.
+
+- 원xid순서반례8f7bb5는교체뒤보호조회가발생하는실제RED였고00160c는1 PASS/skip0/exit0 GREEN이다. P03 재동결AB494ED9…DAC3E, P18재동결21E567B3…4FAEC8을기준으로 Main fresh1 PASS/skip0/exit0(a3bff4), 독립delta C0/I0/M0·1PASS/skip0/exit0(e335a9)·시작/종료exact2일치(2e1913/7e6a4f)를확인했다. 정책중xid교체뒤보호요청/원자료조회0·결정예약0·HTTP412다. 일반결정전체회귀/실PG검증증거로승격하지않는다.
+- SQLdecision_context의exact11외피schemaVersion=1명시검사보강을위해0082만동결해제/T05음성보강중이다. 다른원형·비용/권한/기존request함수는보존한다. Primary에게남은자체대조를먼저묶어마친뒤최종10동결을반환하도록하여불필요한검수재실행을줄인다. 현재SQL최종판정은보류다.
+- backend최종동결뒤UI4소비선은기존decisions/api.ts·ApprovalsPage.tsx·origin-reuse-approval-api.ts와tests/unit/UI08/origin-reuse-approval-read.test.ts다(아직쓰기GO전). v2결정봉인/원requestRef·3결정관계·consumption:null/실행false를읽고현재동일owner/client/control과최신원요청조회뒤명시이유/확인으로만결정POST한다. documentControl/hash/POST/응답각비동기경계에원readScope소유를유지하고원결정packet/UNKNOWN은재생성하지않는다. 범용request제작·queue허용목록·결박/소비/START는계속닫는다. 기존PENDINGreadonly시험은새로채택하는의미없이이미채택§5의후속결정구현으로변경전후근거를기록하고대체정상/변조/현재성/UNKNOWN·기존일반목적회귀를검수한다.
+
+- 최종회귀에서직접3파일56PASS/1FAIL(93b5ff)은기존malformed/악성REPLAY순수거절이새entryclock뒤로옮겨진P18순서회귀다. 같은Primary가P18만동결해제·형상preflight를clock앞복원하고정상결정guarded/xid보강은유지한다. P03는재동결불변이며과거검수증거를현재P18최종에재사용하지않는다.
+- 인접100PASS/1FAIL(bb098b)은기존STARTcontext시험내부spawnSync10초ETIMEDOUT으로관측됐다. 실제기능실패와구분해정확한사례만단독1회확인하며timeout/기대값/skip완화·전체반복실행은하지않는다. type e59d84 exit0, 준비명령의responsible-session단수경로오타는실제responsible-sessions시험경로로좁혀확인한다. 독립검수에미완료/해제상태를통지했고최종10hash·고유집계후다시판정한다. 실DB/키/권한/서비스/Agent0이다.
+
+- backend10최종동결manifest는09c81e8d88fbe4a360499db821af9c6fd2c22819df870f10ff8d54fcf764cb9b(f7fdcc)다. 최종P18은45246B에서후속보강된200FFBA0…926127, SQL은123789B/7A3851C4…300F97이며typeb2d96c·import5/diff154a94 exit0이다. 직접57중malformed순서1회귀는474faa집중2PASS로해소, SQL최종34PASS6c2ce9·인접100PASS/timeout1 bb098b·정확responsible13PASS4ff028을분리해고유205중204PASS/timeout1미해소로보존한다. 단일전체205PASS주장0·commit/push0·현재handle0·writer반환이다.
+- Main은systematic-debugging스킬로timeout원인을인수했다. 기존10초/파일무변경의단계진단363a68→75cef5는PID193128/statusnull/signalSIGTERM/ETIMEDOUT10040ms, 모듈초기화/Context저장읽기/환경/credential/queue를지나receiver진입뒤멈췄다. 해당PID현재조회부재를확인했고강제종료/삭제0이다. 기존2+진단1의같은timeout증상3회뒤동일재실행은중단했다.
+- 새입력의원인대조로변경5모듈만Git497e8b41원문으로메모리loader에서대체한진단1회를수행했다. 첫준비93863c는JSreplace대체문자열의달러치환구문오류로시험전exit1이었고literal콜백으로정정했다. 대조1b0b5b→04fe28은5모듈대체표식을확인한PID200412/statusnull/SIGTERM/ETIMEDOUT10032ms, 동일receiver단계에서최종출력없음이다. loader진단오버헤드가있어이결과만으로기준선의정식시험FAIL/새변경무관을확정하지않는다. 실제rootcause·원시험PASS는아직미확정이며10초/기대값/skip변경·프로세스강제종료0이다.
+
+- 최종backend10의원manifest09c81e는명시허용목록순서였고Main/독립이통일한경로정렬path·bytes·소문자sha256 compactUTF8무개행manifest는972795f52cedab94e13b059504684d4180de810b161bcc579b60e6ba6732aaac이다(bb96ba/6796a9). 10개별bytes/hash는전달값과동일해파일변경이아니다. 독립최종source/미적용SQL/합성시험변경C0/I0/M0·표적5 PASS/skip0/exit0(2a7cb4→631597)를인수했다. 전체gate는기존STARTcontexttimeout1미해소로WARN/미통과이며자동병합하지않는다. 실제PG/ACL/잠금/COMMIT미검증·고정합성예약/정산을실SQL증거로승격하지않는다.
+- 같은branch에서기존Primary에위UI4의세결정저장/원GETv2소비를GO했다. backend10은동결보존하고Main은현황만소유한다. 기존채택§5의후속구현이며새API/SQL/인증/일반권한을추가하지않는다. 현재목적전용readonly거절을명시3결정에만연결하고request제작/결박/소비/START차단은유지한다. 원requestRef/P2/주체/기기/control/기한·결정ref/hash/내용관계와비동기readScope소유·UNKNOWN원packet무재생성을검수한다. Main은미해소timeout진단을병행하고UIsource를그이유로멈추지않는다.
+- Main진단PID193128/200412는현재alive0(943843)으로확인했고강제종료/삭제0이다. 원앞2실패의childPID/signal은출력부재로미확인상태를그대로구분한다. 전체계획은미완료다.
+
+- 읽기진단은materialFor당current→readPart→current와각current/읽기앞뒤inspect로#load7회, 원2자료의최초/동일proof/COMMIT유실재확인전체에서예상#load약49·보호Context약98의유한증폭을확인했다. 이는실제횟수측정이아닌source경로계산이며무한fallback순환근거는없다.
+- 이가설을구분하는별도메모리SQL계측1회(원파일/원10초불변, query함수body안count만추가)3ffc7f→244d87은PID180644/statusnull/SIGTERM/ETIMEDOUT10043ms다. 8.694초에READ_DONE·합성query69569/calls6787, 8.698초에두번째자료로전진했고9.843초query86000을기록했다. 따라서관측구간은멈춘await만이아니라유한보호재구성이계속진행함을증명한다. wrapperfallback중복count가능성이있어실DBroundtrip수나product성능측정으로확정하지않는다. 같은입력재실행/timeout완화/guard생략0이며원시험1FAIL은유지한다.
+
+- UI4의첫실제RED e08399는GETv2 RESPONSE_INVALID와정상prepareDecision APPROVAL_PURPOSE_READ_ONLY의2FAIL이다. 뒤읽기명령이포함된wrapper는exit0이었으므로Node시험실패2와shell종료값을구분해보존한다. 이후검증은원Node종료값을직접반환한다. backend10쓰기0·동일PrimaryUI4만쓰기·실환경0이다.
+
+- PMO는현재Stage의필수인접gate해소를기존계획/직접회귀보완범위로분리진행하라고지원했다. gate예외/정밀검증이월로우선전환하지않고, 정확WI에최소파일·원인·동일Tx/clock/xid/현재성/회수/기한/원proof불변·rollback을고정한다. 권한/current재사용의미를바꾸지않고await뒤변경·만료·회수/교차proof음성및원10초/기대값그대로PASS가필요하다. UI4writer와순차재배정하며새API/인증/실환경delta는그부분만반환한다.
+- 반복SQL단계계측이찾은receiver구간에한정해V8CPU샘플1회(10000합성query후profile종료,원10초유지)64009f→3915b7를수행했다. canonical.ts encode·GC·합성query본문이상위표본이며프로세스PID168128/statusnull/SIGTERM/ETIMEDOUT10038ms로원시험PASS는아니다. 이는변경없는전체시험재실행이아닌pure encode할당가설의원인계측이고실DB/키/서비스0이다. 값/권한/현재성캐시나검사생략대신canonicalJson의map/parts배열할당을줄이는순수출력동치후보만읽기/단발메모리비교로검토시켰다. 후보가출력/거절/관측순서동치와유의한개선근거를못내면제품쓰기GO하지않는다. 실제수정은UI4반환뒤별도WI/단일writer로만진행한다.
+
+- backend10동결·독립source검수와전체gate1FAIL을구분해동일branch의복구용WIPcheckpoint로backend10+현황만게시한다. UI4현재변경은stage하지않고같은Primary가계속소유한다. raw10정렬972795f5는불변이고HEAD변경만발생한다. 필수gate미충족에서main병합/전체완료주장0을유지한다.
