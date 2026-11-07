@@ -357,7 +357,7 @@ export function App() {
     }).finally(() => { if (current) setLoading(false); });
     return () => { current = false; };
   }, [retry]);
-  return <AppShell route={route} displayName={session?.user.displayName} onLogout={session ? () => { void logout(); } : undefined} endingSession={endingSession}>
+  return <AppShell route={route} projectAccess={session&&!loading&&!error&&!endingSession?{client,session,onAuthenticationLost:()=>{setSession(null);setError(new ApiError('AUTH_REQUIRED',401));}}:undefined} displayName={session?.user.displayName} onLogout={session ? () => { void logout(); } : undefined} endingSession={endingSession}>
     {session&&route.screen==='mobile'&&route.projectId?<MobileNavigation route={route} pane={mobilePane} onPaneChange={selectMobilePane}/>:null}
     <StatusView loading={loading} error={error} onRetry={() => setRetry(v => v + 1)}>
 {session&&route.screen==='control'&&route.projectId?<ControlAccessPage key={candidateKey} client={client} projectId={route.projectId} session={session} buffer={controlBuffers[controlKey]??null} onChange={changeControl} scope={controlScope.current} onAuthenticationLost={()=>{setSession(null);setError(new ApiError('AUTH_REQUIRED',401));}}/>:session&&route.screen==='transfers'&&route.projectId?<TransferPreparationPage session={session} preparation={{buffers:preparationRecords.current,onChange:changePreparation}} key={candidateKey+':'+JSON.stringify(route.assignmentRef??null)+':'+session.csrfToken} client={client} projectId={route.projectId} assignmentRef={route.assignmentRef} onAuthenticationLost={()=>{setSession(null);setError(new ApiError('AUTH_REQUIRED',401));}}/>:<>

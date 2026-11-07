@@ -17624,3 +17624,34 @@ PMO는 발급 전 증빙과 발급 후 사용 검사 분리→단발 귀속→�
 ## 418. 후보 문서 끝 공백 비의미 정리
 
 로컬 stage 뒤 diff 검사 9f0259가 미채택 발급 후보의 마지막 빈 CRLF 줄 1곳을 지적했다. 실제 suffix 0A0D0A와 양쪽 30273B/97B35B96을 확인하고 마지막 0D0A 두 바이트만 제거했다. 30271B/A5080F5C5A0B7AAEC812352B6F19FA981A1037B6BB0F29C88BF0DDA15E1FBD21 이며 원 본문/제품/시험/WI/결정안은 불변이다. 원 지문은 검토 당시 증거로 남기며 두 바이트를 되붙이면 복원된다. Main 비의미 재확인만 했고 DRAFT/NOT_ADOPTED/SOURCE_GO0과 실제 실행 제외를 유지한다.
+
+
+## 419. 합성 START 입력 로컬 보존·독립 Stage B 후속 선별
+
+0d5e7e는 9c1530e00d385bcdb364ce52e5552f1dabf61d37에 정확 소스/시험3+후보/지시/결과/현황6=9경로를 보존했다. 부모5bac8073, raw3 동일, tracked clean 및 보호3만 남음을 확인했다. 결과서 E1611C07에 최종 신규12·이전 인접15·독립 C0/I0/M0·실환경 미검증을 구분했다. 원격/PR/병합/배포0이다.
+
+후속 정책 A/B는 PMO에 정확 판단만 전달했다. 기존 Primary에게 Stage B 화면, 독립 담당자에게 FN01~05/FN11 서버의 이미 승인된 핵심 소비 누락을 읽기 전용으로 나눴다. 이미 통과한 작업을 반복하지 않고 새 권한/공개/저장 의미와 실제 DB/키/서비스/Agent/SDK 실행은 계속 제외한다. 결과에 따라 다음 한정 구현을 선택한다. 전체 계획 미완료다.
+
+
+## 420. 승인된 UI00 상단의 실제 접근 상태 조회 착수
+
+Stage B 독립 대조에서 FN03 실제 보호 관측 공급자는 미연결이며 기존 포트/소비·412 보존과 구분했다. UI00 카드 18~27행은 현재 역할·제어 기록을 요구하고 AppShell은 선택 프로젝트에서도 고정 미확인만 표시한다. Main은 기존 readProjectAccessSummary→보호 GET 재사용으로 새 API·DB·권한·명령 없이 사용 화면에 연결 가능한 누락으로 판정했다. 새 지시서 UI00_SHELL_PROJECT_ACCESS_READ_SOURCE_WI_20261107.md의 App·AppShell·신규 합성 DOM 시험 정확3을 기존 Primary에게 배정한다. 현재 실제 단계/Agent 권위·자동 조회·POST0이며 늦은 교차 문맥 응답과 거절/재조회·기존 탐색·입력을 보존한다. 실제 DB/권한/키/서비스/Agent/SDK 실행0, 전체 계획 미완료다.
+
+
+## 421. UI00 실제 App 행동 RED와 문맥·비노출 검수 보강
+
+기존 독립 담당자의 E9E149F0 사전검수 C0/I0/M1은 동일 Session 객체의 user/client 값 변이, 기존 미전송/UNKNOWN 원명령 보존·추가 POST0, 정상 응답의 제어 주체 ID/readiness 비노출과 브라우저 수신시각을 직접 단언하도록 제안했다. Main은 기존 정확3에 이 검수만 반영하도록 전달했다. 실제 App 로그인·프로젝트 이동 뒤 버튼 부재의 Primary ca5ade 행동 RED는 1FAIL·exit1이다. 앞선 7a9a9e는 합성 location.href 누락의 준비 오류1로 분리한다. 실제 환경/서버·DB·권한·키·서비스·Agent/SDK 실행0이다.
+
+
+## 422. UI00 독립22 검증·같은 문맥 조회 중 상태 보완
+
+Primary cc4504 신규5+인접17=22PASS/0fail/0skip, type13e717 및 메모리 Vite 0c47cd 517modules·diff0를 제출했다. Main63dee5는 App876B88D2/shell F7C6A482/시험 B96263EF의 지문과 diff0를 확인했고 44df19는 정확4 파일 신규5+인접17=22PASS/0fail/0cancel/0skip/0todo·1020.4588ms·exit0다. 합성 App의 버튼 부재 RED ca5ade→19f75b GREEN이며 실제 브라우저/DB/서비스는 미검증이다. Primary의 앱 하위 package.json 부재 조회1은 실제 루트 파일로 정정했다.
+
+독립 C0/I0/M2. M1은 동일 렌더에서 스칼라/transport만 바뀐 뒤 늦은 응답은 폐기되나 자기 loading이 남는 경계다. 같은 live scope·ticket의 자기 loading만 해제하고 새 문맥/언마운트 뒤 쓰지 않는 좁은 보완을 shell+신규 시험2에 맡겼다. App 및 다른 기대값은 동결한다. M2는 미전송 입력 보존/POST0은 검산했으나 불명 제어 명령 원 ID/body를 실제 App 시험으로 직접 단언하지 않은 한계다. 원 버퍼 코드 불변이며 미검증을 숨기지 않는다. 실제 DB/권한/키/서비스/Agent/SDK 실행0, 인수 전이다.
+
+
+## 423. UI00 공통 상단 프로젝트 접근 조회 소스 단위 인수
+
+M1은 4dc487 비활성 RED→5f29ca 재조회 GREEN, 동일 live scope·latest ticket·자기 loading만 해제하는 보완과 독립 변경분 C0/I0/M0로 해소했다. App876B88D2 불변, shell B5A76F80·시험2A365C27 동결이다. Main6672d6 최종 신규5PASS/0fail/0skip·979.9127ms·exit0와 2d93a2 raw3/diff0, 앞선 불변 인접17과 Primary type/메모리빌드를 구분한다. 결과 UI00_SHELL_PROJECT_ACCESS_READ_SOURCE_RESULT_20261107.md에 명시 보호GET·역할/제어 기록/수신시각·늦은 응답/권한오류·POST0을 기록한다. M2 UNKNOWN 원명령 직접 여정·실제 브라우저/DB/서비스/권한·Agent/SDK는 미검증이고 전체 UI00/계획 완료가 아니다.
+
+추가 Stage B 읽기 대조는 UI01 실제 단계/다음 행동 공급, UI02 실제 기준선 관측, UI03 적용 전환의 실제 실행/영향 근거, UI06 실행·시험 증거, UI10 실제 전달을 미완료 선행으로 확인했다. 이미 연결한 승인 이동·사본 생성·보호 원문/추적·보관 요청을 반복하지 않는다. 새 실행 정책·보호 공급자와 실제 실행 범위를 넓히지 않으며 독립 업무를 추가 확인한다.
