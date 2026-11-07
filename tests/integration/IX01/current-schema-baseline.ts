@@ -70,6 +70,11 @@ function expectedMigrations(input:unknown):SchemaMigrationBaseline[]{
   return migrations;
 }
 
+/** 고정 TSV를 검산한 후에만 실제로 읽어야 할 경로를 반환한다. */
+export function readCurrentSchemaManifest(historicalTsv:unknown):readonly SchemaMigrationBaseline[]{
+  return Object.freeze(expectedMigrations(historicalTsv).map(row=>Object.freeze(row)));
+}
+
 /** 적용 전 원시 SQL의 정확한 순서와 바이트를 검산한다. 실행을 승인하거나 실제 적용을 증명하지 않는다. */
 export function verifyCurrentSchemaSources(historicalTsv:unknown,orderedSql:unknown):readonly SchemaMigrationBaseline[]{
   const expected=expectedMigrations(historicalTsv),sourceError='IX01_CURRENT_SQL_BASELINE_INVALID';
