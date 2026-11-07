@@ -1058,10 +1058,10 @@ test('원 보호관측 뒤 재사용 요청 PENDING을 같은 거래에 계상�
  assert.equal(f.active(),false);
 });
 
-async function storedOriginDecisionJourney(){
- const f=await executionStartOriginFixture({connectorEnvironment:true,richContext:true,environmentDependencies:true,constitutionContext:true,approvedContext:true,snapshotRoot:true,originRequestStorage:true});
+async function storedOriginDecisionJourney(consuming=false){
+ const f=await executionStartOriginFixture({connectorEnvironment:true,richContext:true,environmentDependencies:true,constitutionContext:true,approvedContext:true,snapshotRoot:true,originRequestStorage:true,originConsumptionStorage:consuming});
  const {buildApp}=await import('../../../apps/server/app.ts'),{ProjectDocuments}=await import('../../../apps/server/modules/documents/project-documents.ts'),{ProjectInitialExecutionQueue}=await import('../../../apps/server/modules/executions/execution-commands.ts'),{createOriginReuseApprovalCapability}=await import('../../../apps/server/modules/executions/execution-start-origin-reuse.ts');
- let runtimeCalls=0;const forbidden=async()=>{runtimeCalls++;throw Error('UNEXPECTED_EXECUTION');},queue=new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
+ let runtimeCalls=0;const forbidden=async()=>{runtimeCalls++;throw Error('UNEXPECTED_EXECUTION');},queue=consuming?(await(await import('./execution-start-origin-fixture.ts')).createOriginConsumptionRuntime(f)).queue:new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
  const cap=createOriginReuseApprovalCapability(f.access,queue,f.sessions,new ProjectDocuments(f.root,undefined,'FN09_PLAN_PROOF'));
  const config={repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root};
  const app=buildApp({},undefined,config,{transport:'SYNTHETIC_ONLY',queue,originReuseApproval:cap,stop:{command:forbidden},recovery:{command:forbidden},understanding:{command:forbidden}});
@@ -1136,7 +1136,8 @@ test('원결정 정책 중 xid 교체는 목적 요청과 원자료 이력 첫 �
 
 
 test('원자료 P2 APPROVE의 exact8 START는 같은 거래 소비1·원큐·실자료등록과 원ID v3로 닫힌다',async()=>{
- const j=await storedOriginDecisionJourney();try{
+ const j=await storedOriginDecisionJourney(true);try{
+  const context=j.f.tables.contexts!.find(row=>row.id===j.f.preparation.data.snapshot.intent.contextBundleRef.id);assert(context);assert.deepEqual(context.manifest_json.missingRequired,[]);assert.deepEqual(context.manifest_json.excluded,[]);assert(context.manifest_json.items.every((item:any)=>item.includedState==='INCLUDED'&&item.issue===null));
   const decision=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide('APPROVE')});assert.equal(decision.statusCode,200,decision.body);
   const request=j.original.data.request,evidence=request.originReuseEvidence,command={...j.f.originCommand(),operation:'queueExecutionCommand',commandId:request.details.candidateCommandId,approvalRef:{requestId:request.id,decisionId:decision.json().targetId,scopeDigest:request.scopeDigest},payload:evidence.candidatePayload};
   const original=structuredClone(j.f.tables.origins),consumptions=j.f.tables.approvalConsumptions!.length,notifications=j.f.tables.notifications!.length;

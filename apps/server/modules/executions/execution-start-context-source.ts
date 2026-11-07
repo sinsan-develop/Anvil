@@ -18,6 +18,12 @@ import type {SyntheticStartMaterialSource} from './execution-start-material-regi
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 const reject=():never=>{throw new AuthFailure('START_CONTEXT_SOURCE_UNAVAILABLE',412);};
 const contextRead=ProjectContexts.prototype.readStartSource,resolve=ProjectContextSources.prototype.resolve,preparationRead=ProjectExecutionPreparations.prototype.read,definitionRead=ProjectConnectionDefinitions.prototype.read,environmentRead=ProjectEnvironments.prototype.read;
+
+function materialActor(value:AuthenticatedIdentity){
+ if(!value||typeof value!=='object'||![Object.prototype,null].includes(Object.getPrototypeOf(value))||Object.getOwnPropertySymbols(value).length)return reject();const descriptors=Object.getOwnPropertyDescriptors(value);
+ if(Object.values(descriptors).some(d=>!d.enumerable||!('value'in d)))return reject();const plain=Object.fromEntries(Object.entries(descriptors).map(([key,d])=>[key,d.value]));
+ const stamp=plain.reauthUntil;if(stamp!==null&&(!(stamp instanceof Date)||!Number.isFinite(Date.prototype.getTime.call(stamp))))return reject();plain.reauthUntil=stamp===null?null:Date.prototype.toISOString.call(stamp);const copied=cloneV1(plain);return{key:canonicalJson(copied),actor:{...copied,reauthUntil:stamp===null?null:new Date(copied.reauthUntil)} as AuthenticatedIdentity};
+}
 const stable=(f:ServerExecutionFactV1)=>{const{checkedAt:_,expires:__,writerState:___,...s}=f;return s;};
 export interface StartContextCurrent {
  readonly transport:'SYNTHETIC_ONLY';
@@ -36,13 +42,13 @@ export class SyntheticStartContextSource implements SyntheticStartMaterialSource
   const tx=async()=>{this.#assertPorts();if(db.query!==query)return reject();const rows=(await db.query('SELECT txid_current()::text AS transaction_id')).rows;if(db.query!==query||rows.length!==1||typeof rows[0]?.transaction_id!=='string'||!/^[1-9][0-9]*$/.test(rows[0].transaction_id))return reject();return rows[0].transaction_id as string;},original=await tx();
   const now=async()=>{if(db.query!==query)return reject();const rows=(await db.query('SELECT clock_timestamp() AS at')).rows;if(db.query!==query||rows.length!==1||!(rows[0]?.at instanceof Date)||!Number.isFinite(rows[0].at.getTime()))return reject();return rows[0].at.getTime() as number;};
   let first:{actor:AuthenticatedIdentity;fact:ServerExecutionFactV1;grantExpiresAt:string}|undefined,until=Number.MAX_SAFE_INTEGER,last=0;
-  const check=async()=>{if(await tx()!==original)return reject();const arg=cloneV1(scope),raw=cloneV1(await this.#current.call(this.#ports.current,db,arg));if(!same(arg,scope)||!recordV1(raw,['actor','fact','grantExpiresAt'])||!isoV1(raw.grantExpiresAt))return reject();
+  const check=async()=>{if(await tx()!==original)return reject();const arg=cloneV1(scope),input=await this.#current.call(this.#ports.current,db,arg);if(!recordV1(input,['actor','fact','grantExpiresAt']))return reject();const actorCopy=materialActor(input.actor),raw={actor:actorCopy.actor,fact:cloneV1(input.fact),grantExpiresAt:input.grantExpiresAt};if(!same(arg,scope)||!recordV1(raw,['actor','fact','grantExpiresAt'])||!isoV1(raw.grantExpiresAt))return reject();
    const fact=readServerExecutionFactV1(raw.fact);if(!['NONE','OWNED'].includes(fact.writerState)||executionFactChecks.some(k=>k!=='understanding'&&fact.checks[k].state!=='VERIFIED_CURRENT')||fact.intent.mode==='WORK'&&(fact.understandingReviewRef===null||fact.checks.understanding.state!=='VERIFIED_CURRENT'))return reject();const actor=raw.actor as unknown as AuthenticatedIdentity,a=actor?.authSession;
    if(!a||actor.actorId!==fact.subject.userId||actor.clientId!==fact.subject.clientId||actor.credentialGeneration!==fact.subject.credentialGeneration||a.id!==fact.subject.humanSessionId||!isoV1(a.idleExpiresAt)||!isoV1(a.absoluteExpiresAt)||fact.projectId!==scope.projectId||fact.executionId!==scope.executionId||fact.executionGeneration!==scope.executionGeneration||fact.registration.connectorId!==scope.connectorId||fact.subject.credentialGeneration!==scope.credentialGeneration)return reject();
    const at=await now();if(at<last||Date.parse(fact.checkedAt)>at)return reject();last=at;
-   if(first&&(!same(first.actor,actor)||!same(stable(first.fact),stable(fact))||first.grantExpiresAt!==raw.grantExpiresAt))return reject();
+   if(first&&(!same(materialActor(first.actor).key,materialActor(actor).key)||!same(stable(first.fact),stable(fact))||first.grantExpiresAt!==raw.grantExpiresAt))return reject();
    until=Math.min(until,Date.parse(raw.grantExpiresAt),Date.parse(a.idleExpiresAt),Date.parse(a.absoluteExpiresAt),Date.parse(fact.checkedAt)+30000,...Object.values(fact.expires).map(Date.parse));
-   if(until<=at||await tx()!==original)return reject();this.#assertPorts();first??={actor:cloneV1(actor),fact,grantExpiresAt:raw.grantExpiresAt};return {actor,fact,at,until};
+   if(until<=at||await tx()!==original)return reject();this.#assertPorts();first??={actor:materialActor(actor).actor,fact,grantExpiresAt:raw.grantExpiresAt};return {actor,fact,at,until};
   };
   await check();return {scope,check,first:()=>first!,until:()=>until,now};
  }
@@ -74,7 +80,7 @@ export class SyntheticStartContextSource implements SyntheticStartMaterialSource
   const end=await call.check(),until=Math.min(end.until,descriptor?Date.parse(descriptor.expiresAt):end.until,reuseLease?await assertOriginReuseSourceFinal(reuseLease,db,this,s):Infinity);if(until<=end.at)return reject();return{call,context,prep,bodies,options,until,reuseLease};
  }
  async describe(db:PoolClient,actor:AuthenticatedIdentity,scope:MaterialScope,request:ProjectCommand,rawFact:unknown){
-  const fact=readServerExecutionFactV1(rawFact),r=await this.#load(db,scope);if(!same(r.call.first().actor,actor)||!same(stable(r.call.first().fact),stable(fact))||request.projectId!==scope.projectId||request.clientId!==actor.clientId||request.controlGeneration!==fact.subject.controlGeneration||!same((request.payload as any)?.payload,{contextBundleRef:fact.intent.contextBundleRef,optionsRef:fact.preparationRef}))return reject();
+  const fact=readServerExecutionFactV1(rawFact),r=await this.#load(db,scope);if(!same(materialActor(r.call.first().actor).key,materialActor(actor).key)||!same(stable(r.call.first().fact),stable(fact))||request.projectId!==scope.projectId||request.clientId!==actor.clientId||request.controlGeneration!==fact.subject.controlGeneration||!same((request.payload as any)?.payload,{contextBundleRef:fact.intent.contextBundleRef,optionsRef:fact.preparationRef}))return reject();
   const refs=[r.context.ref,r.prep.ref],groups=r.bodies.map((bytes,index)=>({kind:index===0?'CONTEXT_BUNDLE':'START_OPTIONS',payloadRef:refs[index],source:{sourceRef:refs[index],bodyRef:refs[index],originRef:refs[index],contentHash:contentHash(bytes),sourceBytes:bytes.length,mediaType:'application/json'},parts:[{materialId:randomUUID(),partIndex:1,byteOffset:0,utf8Bytes:bytes.length,contentHash:contentHash(bytes)}]}));
   const result=readStartMaterialDescriptor({schemaVersion:1,purpose:'START_CONTEXT_OPTIONS_MATERIAL_V1',id:randomUUID(),sourceKind:'SYNTHETIC_REFERENCE_ONLY_V1',scope,commandId:request.commandId,payload:{contextBundleRef:refs[0],optionsRef:refs[1]},groups,expiresAt:new Date(r.until).toISOString()});await r.call.check();return result.descriptor;
  }

@@ -1,3 +1,5 @@
+import {currentOriginReuseStartLease,originReuseStartState} from '../executions/execution-start-origin-reuse.ts';
+import type {OriginReuseConsumptionReceiptIds} from '../access/project-command.ts';
 import {isNodeDecisionReceiptIds,type NodeDecisionReceiptIds} from '../access/project-command.ts';
 import {isExecutionStartOriginReceiptIds,type ExecutionStartOriginReceiptIds} from '../access/project-command.ts';
 import {isOriginReuseRequestReceiptIds,type OriginReuseRequestReceiptIds} from '../access/project-command.ts';
@@ -109,6 +111,27 @@ export class ProjectStorageQuota{
  readonly #nodeDecisions=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:NodeDecisionReceiptIds;tx:string;hash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
  readonly #startOrigins=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:ExecutionStartOriginReceiptIds;tx:string;planHash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
  readonly #originRequests=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:OriginReuseRequestReceiptIds;tx:string;planHash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
+ /** 실제 같은 인증 START lease와 registrar가 봉인한 descriptor에만 소비 예약을 결박한다. */
+ async reserveOriginReuseApprovalConsumption(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawRecord:unknown,policyRef:RuntimeRefV1,ids:OriginReuseConsumptionReceiptIds,rawResult:unknown,until:number):Promise<object>{
+  return this.#durable(async()=>{
+   const request=cloneV1(rawRequest),ref=cloneV1(rawRef),record:any=cloneV1(rawRecord),result:any=cloneV1(rawResult),query=db.query,identity=originActor(actor),source=currentOriginReuseStartLease(db,actor,request);
+   if(!source||request.operation!=='queueExecutionCommand'||!isOriginReuseRequestReceiptIds(ids,db,actor,request)||!recordV1(record,['schemaVersion','purpose','queueIntent','grant','reservation','materialPlan','writerClaimId','outboxId','recordedAt'])
+    ||record.schemaVersion!==1||record.purpose!=='ORIGIN_REUSE_APPROVAL_CONSUMPTION'||!refV1(ref)||ref.version!==1||hash(record.queueIntent)!==ref.contentHash
+    ||record.writerClaimId!==ids.writerClaimId||record.outboxId!==ids.outboxId||!uuidV1(ids.writerClaimId)||!uuidV1(ids.outboxId)||!isoV1(record.recordedAt)
+    ||!originSame(request.payload.permissionPolicyRef,policyRef)||!originSame(record.queueIntent.payload,request.payload.payload)||record.queueIntent.transport!=='SYNTHETIC_ONLY'||record.queueIntent.executionAuthorized!==false||record.queueIntent.dispatchPerformed!==false
+    ||result.operationId!==ids.operationId||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED'||!originSame(result.data,{ref,status:'SYNTHETIC_QUEUE_STORED',snapshot:record.queueIntent,executionAuthorized:false,dispatchPerformed:false}))fail();
+   const observed=await originReuseStartState(source,db,actor,request);
+   if(!Number.isFinite(until)||until>observed.until||!observed.materialDescriptor||!originSame(record.materialPlan?.descriptor,observed.materialDescriptor)
+    ||!originSame(record.grant?.ref,record.queueIntent.grantRef)||!originSame(record.reservation?.ref,record.queueIntent.reservationRef)||record.materialPlan.manifestRef?.contentHash!==hash(observed.materialDescriptor))fail();
+   const tx=await this.#registeredTx(db,query,ids.transactionId,until),sqlIds={serverCommandId:ids.serverCommandId,consumptionId:ids.consumptionId,operationId:ids.operationId,authorizationReceiptId:ids.authorizationReceiptId,auditEventId:ids.auditEventId,writerClaimId:ids.writerClaimId,outboxId:ids.outboxId};
+   const rows=(await Reflect.apply(query,db,['SELECT * FROM anvil.fn09_origin_reuse_consumption_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11)',[actor.authSession!.id,actor.actorId,actor.clientId,request.projectId,canonicalJson(request),canonicalJson(ref),canonicalJson(record),canonicalJson(policyRef),canonicalJson(sqlIds),tx,new Date(until).toISOString()]])).rows;
+   await this.#registeredTx(db,query,tx,until);await originReuseStartState(source,db,actor,request);
+   if(originActor(actor)!==identity||!isOriginReuseRequestReceiptIds(ids,db,actor,request))unknown();const row=rows.length===1?rows[0]:null;
+   if(!row||row.reservation_id!==ids.serverCommandId||row.transaction_id!==tx||row.record_hash!==ref.contentHash||!hashV1(row.plan_hash)||!isoV1(row.authorized_until)||Date.parse(row.authorized_until)>until||Date.parse(row.authorized_until)<Date.parse(record.grant.snapshot.expiresAt))unknown();
+   const reserved=quotaBytes(row.reserved_bytes),end=Math.min(until,Date.parse(row.authorized_until));if(reserved>PROJECT_STORAGE_CAP)unknown();await this.#registeredTx(db,query,tx,end);
+   const lease=Object.freeze({});this.#originRequests.set(lease,{db,query,actor,identity,request,ids,tx,planHash:row.plan_hash,reserved,until:end,resultHash:hash(result),phase:'RESERVED'});return lease;
+  });
+ }
  async reserveOriginReuseApprovalRequest(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawRecord:unknown,policyRef:RuntimeRefV1,ids:OriginReuseRequestReceiptIds,rawResult:unknown,until:number):Promise<object>{
   return this.#reserveOriginReuseApproval('request',db,actor,rawRequest,rawRef,rawRecord,policyRef,ids,rawResult,until);
  }
@@ -139,7 +162,7 @@ export class ProjectStorageQuota{
   await this.#durable(async()=>{
    const receipt=cloneV1(rawReceipt);if(originActor(actor)!==s.identity||receipt.id!==s.ids.serverCommandId||receipt.authorizationReceiptRef.id!==s.ids.authorizationReceiptId||hash(receipt.result)!==s.resultHash)unknown();
    await this.#registeredTx(db,s.query,s.tx,s.until);
-   const rows=(await Reflect.apply(s.query,db,[`SELECT * FROM anvil.fn09_origin_reuse_${s.request.operation==='decideApproval'?'decision':'request'}_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)`,[actor.authSession!.id,actor.actorId,actor.clientId,s.request.projectId,s.request.commandId,s.ids.serverCommandId,s.planHash,receipt.id,canonicalJson(receipt.result),s.tx]])).rows;
+   const rows=(await Reflect.apply(s.query,db,[`SELECT * FROM anvil.fn09_origin_reuse_${s.request.operation==='queueExecutionCommand'?'consumption':s.request.operation==='decideApproval'?'decision':'request'}_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)`,[actor.authSession!.id,actor.actorId,actor.clientId,s.request.projectId,s.request.commandId,s.ids.serverCommandId,s.planHash,receipt.id,canonicalJson(receipt.result),s.tx]])).rows;
    await this.#registeredTx(db,s.query,s.tx,s.until);if(originActor(actor)!==s.identity)unknown();const row=rows.length===1?rows[0]:null;
    if(!row||row.status!=='SETTLED'||row.reservation_id!==s.ids.serverCommandId||row.transaction_id!==s.tx||quotaBytes(row.settled_bytes)>s.reserved)unknown();
   },()=>true);

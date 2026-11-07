@@ -85,3 +85,18 @@ test('결정0082 전체 함수 원문은 중복 선언·열린 문자열·추가
  assert.equal(new Set(names).size,names.length);assert.equal(bodies.length,names.length);assert.equal((s.match(/^COMMIT;$/gm)||[]).length,1);
  for(const body of bodies){let quote=false;const text=body[1]!;for(let n=0;n<text.length;n++){const c=text[n];if(!quote&&c==='-'&&text[n+1]==='-'){const end=text.indexOf('\n',n);n=end<0?text.length:end;continue;}if(c!=="'")continue;if(quote&&text[n+1]==="'"){n++;continue;}quote=!quote;}assert.equal(quote,false,'열린 SQL 문자열0');}
 });
+
+
+test('원자료 START 소비 계상은 신규 행과 v3-v2 차분만 귀속하고 private DAG를 유지한다',()=>{
+ const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const bodies=new Map([...s.matchAll(/CREATE(?: OR REPLACE)? FUNCTION anvil\.(fn09_origin_reuse_consumption_[a-z]+)\([\s\S]*?AS \$\$([\s\S]*?)\$\$;/g)].map(m=>[m[1]!,m[2]!]));
+ for(const name of ['context','maximum','rows','actual','reserve','settle','complete'])assert(bodies.has('fn09_origin_reuse_consumption_'+name),'실제 소비 함수 부재 '+name);
+ const actual=bodies.get('fn09_origin_reuse_consumption_actual')!;
+ assert(!/fn09_origin_reuse_request_(?:record_valid|actual|complete)|fn09_origin_reuse_consumption_complete/.test(actual),'leaf 봉인·행만 소비하고 현재 완결로 회귀하지 않는다');
+ for(const token of ['fn09_origin_reuse_request_seal_valid','fn09_origin_reuse_consumption_rows','projection(after_row)','projection(before_row)'])assert(actual.includes(token),token);
+ const rows=bodies.get('fn09_origin_reuse_consumption_rows')!;
+ for(const table of ['approval_consumptions','commands','authorization_receipts','audit_events','executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'])assert(rows.includes('anvil.'+table),table);
+ for(const table of ['notifications','execution_start_origins','execution_start_origin_reservations','approval_decisions','artifacts'])assert(!rows.includes('FROM anvil.'+table),'기존 행 재계상0 '+table);
+ const settle=bodies.get('fn09_origin_reuse_consumption_settle')!;for(const token of ['fn09_registered_reservation_fixed_point(actual_base,to_jsonb(r),r.reserved_bytes)','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','actual_bytes>r.reserved_bytes','expected_tx IS DISTINCT FROM txid_current()::text'])assert(settle.includes(token),token);
+ assert(s.includes("'ORIGIN_REUSE_APPROVAL_CONSUMPTION'"));assert(s.includes("'origin_reuse_consumption'"));
+});

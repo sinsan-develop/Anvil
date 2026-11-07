@@ -18177,3 +18177,8 @@ npm run typecheck
 - 소비7함수/원0078 exact8승인 graph초안의정적명령 node --test --test-name-pattern="START 소비 계상은 신규 행" tests/unit/FN13/project-storage-quota-schema.test.ts는함수부재RED5f0886→GREEN9ea5db(1PASS/skip0/exit0)다. 토큰/DAG/행투영source증거일뿐SQL실행아니다. requestv3/기존invoker·quota·알림/deferred wrapper와fixture RPC비용모형·정상/음성·UI3는미완료로유지한다.
 - 독립SQL조기읽기는고정11행+자료N·총11+N·원seal/fn08graph·v3-v2만계상·decision역사v1→v2투영고정·정확8키/approvalRef 원hash·비순환DAG·reserve/settle2앱접점/다른helper차단을대조해현재명확누락후보를확인하지못했다. 최종판정/시험/SQL실행0이며완성·동결후재검수한다.
 - 파일argv glob문법오류는Primary2/독립읽기1로반복됐으므로Main이경로조회부분을직접인수해75a179의실제0062/0074/0075/0077/0078/0081/0082정확경로를전달했다. 제품writer인수/동시쓰기/새도구설정/권한변경은없고코드담당은기존Primary한명이다. 불명확한legacy경로는추측반복없이Main이확인한다.
+
+- tests/unit/FN08/execution-start-material-registration-schema.test.ts:70의이전단계기대(결정0082·소비폐쇄)를Main이ee9f0b/9077e1로읽었다. 이번직접채택1EABB§5의일회소비추가에맞춰목적별v3/exact8소비를검산하는제목/상태기대로정정할근거를확인했다. 원v1봉인/v2세결정/context/settle계상·새표/일반권한금지·one_time_decision_command_authorized미변경·다른목적본문/ACL은유지하고7키/null/SEND·비목적소비거절·v3정역graph를추가한다. 검사를삭제해통과시키는완화가아니며정확전후diff를검수한다. 아직실행/최종통과판정전이다.
+
+- 소비backend10/작성시험4를Primary444748에서부분동결했고Main b060b5가경로정렬14manifest e7055761661eaf7d61bb11420a4ef06c51bb0bccabcb039d20761615498a3a20와전raw일치를확인했다. T05전후diff는제목정정과v3/exact8소비추가검산이며기존v1/v2/context/settle/일반권한/다른목적assert는삭제하지않았음을Main이읽었다. 이14는복구용WIP이며정상GREEN/최종독립검수/새음성/회귀/UI/실PG는미완료다.
+- 동결14에서실행한type843643/session93280→0503f6 exit0와정상cd641d/session45708(PID168204)→dfa964 exit1/1FAIL/skip0(9448.2718ms)를회수했다. 새거절은PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN/503·reconcile-first·unsupported=[]로quota접점원인미확정1회이며앞선Context/ID거절과분리한다. 두handle모두terminal/live0·동결후파일쓰기0이다. 해제후마지막SQL/예약·정산횟수의합성진단으로원인을좁히고같은실패무변경재실행은하지않는다.

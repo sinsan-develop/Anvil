@@ -70,7 +70,11 @@ export async function readOriginStartQueueBasis(
   let until=mark+expiresAt-wall;
   const original=copyStartOrigin<ProjectCommand>(rawRequest),reuseLease=currentOriginReuseStartLease(db,actor,original);
   const {request,payload}=readStartRequest(original,!!reuseLease);
-  if(reuseLease){if(!originSame(rawSelection,(request.payload as any).originReuse))return mismatch();return readOriginReuseStartBasis(reuseLease,db,actor,request,copyStartOrigin(rawDemand));}
+  if(reuseLease){
+    const check=()=>{const at=Date.now(),now=performance.now();if(signal!==undefined&&signalAborted(signal)||at<wall||now<mark||now>=until)return currentRequired();wall=at;mark=now;};
+    check();if(!originSame(rawSelection,(request.payload as any).originReuse))return mismatch();
+    const result=await readOriginReuseStartBasis(reuseLease,db,actor,request,copyStartOrigin(rawDemand));check();return result;
+  }
   const selection=copyStartOrigin(rawSelection);
   const demand=copyStartOrigin(rawDemand);
   if(!recordV1(selection,['originRef','reservationRef'])||!refV1(selection.originRef)||!refV1(selection.reservationRef))return invalid();

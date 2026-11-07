@@ -67,13 +67,15 @@ test('요청0082 원 source·최단기한과 단일 R의 양방향 완결은 cal
  for(const table of ['approval_requests','commands','notifications','project_storage_reservations','project_storage_accounts'])assert(body(text,'fn09_origin_reuse_request_final_guard').includes('anvil.'+table));
 });
 
-test('결정0082는 v1 원봉인을 보존하고 v2 정확결정만 열며 소비와 새 일반권한은 열지 않는다',()=>{
+test('결정0082는 v1 원봉인·v2 세결정을 보존하고 v3 exact8 목적 소비만 추가한다',()=>{
  const s=readFileSync(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
- const state=body(s,'fn09_origin_reuse_request_record_valid');for(const token of ["r.version=1 AND r.status='PENDING'","RETURN n=0","r.version<>2 OR n<>1",'fn09_origin_reuse_decision_actual','approval_consumptions'])assert(state.includes(token),token);
+ const state=body(s,'fn09_origin_reuse_request_record_valid');assert(state.includes("r.version=3 AND r.status='CONSUMED'"));assert(state.includes('fn09_origin_reuse_consumption_actual'));for(const token of ["r.version=1 AND r.status='PENDING'","RETURN n=0","r.version<>2 OR n<>1",'fn09_origin_reuse_decision_actual','approval_consumptions'])assert(state.includes(token),token);
  const context=body(s,'fn09_origin_reuse_decision_context');for(const token of ['anvil.fn01_active(s,a,c)','FOR UPDATE','fn09_origin_reuse_request_seal_valid','expected_tx IS DISTINCT FROM txid_current()::text',"q->'schemaVersion' IS DISTINCT FROM '1'::jsonb","'decideApproval'",'humanSessionId','credentialGeneration','reauth_until','fn09_origin_reuse_request_source(p,e,true)','execution_policy_deadline'])assert(context.includes(token),token);
  const settle=body(s,'fn09_origin_reuse_decision_settle');for(const token of ['pg_current_xact_id()::xid','fn09_origin_reuse_decision_context','fn09_origin_reuse_decision_actual','used_bytes=used_bytes+actual_bytes','held_bytes=held_bytes-r.reserved_bytes','actual_bytes>r.reserved_bytes'])assert(settle.includes(token),token);
  assert(!/CREATE TABLE|GRANT (?:SELECT|INSERT|UPDATE|DELETE|ALL) ON/i.test(s));assert(!s.includes('CREATE OR REPLACE FUNCTION anvil.one_time_decision_command_authorized('));
  for(const name of ['quota_plan_valid','quota_settled_complete'])assert(body(s,name).includes('ORIGIN_REUSE_APPROVAL_DECISION'));
  const forward=body(s,'guard_one_time_approval_request');assert(forward.includes("OLD.version<>1 OR OLD.status IS DISTINCT FROM 'PENDING' OR NEW.version<>2"));assert(forward.includes('ORIGIN_REUSE_DECISION_REQUIRED'));
+ assert(forward.includes('ORIGIN_REUSE_CONSUMPTION_REQUIRED'));assert(forward.includes('one_time_consumption_command_authorized'));
+ const consumed=body(s,'one_time_consumption_command_authorized');assert(consumed.includes("IF c.operation='queueExecutionCommand' THEN"));assert(consumed.includes('sr.xmin=pg_current_xact_id()::xid'));assert(consumed.includes('one_time_consumption_command_before_membership(pid,cid,did)'));
  const final=body(s,'fn09_origin_reuse_request_final_guard');assert(final.includes('fn09_origin_reuse_decision_complete(p,cid)'));assert(final.includes('anvil.approval_decisions'));assert(final.includes('ORIGIN_REUSE_DECISION_INCOMPLETE'));
 });

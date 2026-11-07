@@ -1,3 +1,4 @@
+import {ProjectStorageQuota} from '../projects/project-storage-quota.ts';
 import {observeOriginReuseStart,releaseOriginReuseStart,originReuseStartState,type OriginReuseStartLease} from './execution-start-origin-reuse.ts';
 import {ProjectApprovals} from '../approvals/project-approvals.ts';
 import {readApprovalRef} from '../approvals/approval-input.ts';
@@ -124,6 +125,14 @@ export class ProjectInitialExecutionQueue {
           queuedAt:at.toISOString(),executionAuthorized:false,dispatchPerformed:false};
         const commandRef={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(queueIntent))};
         const ids=reuseLease?await reserveOriginReuseConsumptionReceiptIds(db,actor,request,reuseLease):undefined;
+        let consumptionQuota:ProjectStorageQuota|undefined,consumptionReservation:object|undefined;
+        if(reuseLease&&ids){
+          const observed=await originReuseStartState(reuseLease,db,actor,request),recordedAt=(await db.query('SELECT transaction_timestamp() AS at')).rows[0]?.at;
+          if(!(recordedAt instanceof Date)||!Number.isFinite(recordedAt.getTime()))throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);
+          const data={ref:commandRef,status:'SYNTHETIC_QUEUE_STORED',snapshot:queueIntent,executionAuthorized:false,dispatchPerformed:false},result={operationId:ids.operationId,commandId:request.commandId,projectId:request.projectId,status:'APPLIED',targetId:commandRef.id,version:1,data,evidenceRefs:[],warnings:[],serverReceivedAt:recordedAt.toISOString()};
+          consumptionQuota=new ProjectStorageQuota(this.access);
+          consumptionReservation=await consumptionQuota.reserveOriginReuseApprovalConsumption(db,actor,request,commandRef,{schemaVersion:1,purpose:'ORIGIN_REUSE_APPROVAL_CONSUMPTION',queueIntent,grant,reservation:reservation.record,materialPlan,writerClaimId:ids.writerClaimId,outboxId:ids.outboxId,recordedAt:recordedAt.toISOString()},policy.policyRef,ids,result,observed.until);
+        }
         const receipt=await persistProjectReceipt(db,actor,request,commandRef,{status:'SYNTHETIC_QUEUE_STORED',snapshot:queueIntent,executionAuthorized:false,dispatchPerformed:false},policy.policyRef,'EXPLICIT_SYNTHETIC_QUEUE_ONLY',ids);
         const authorizationRef=receipt.authorizationReceiptRef;
         const unsigned={schemaVersion:1,commandId:request.commandId,issuedAt:at.toISOString(),expiresAt:grant.snapshot.expiresAt,executorRegistrationRef:fact.registration.ref,
@@ -139,13 +148,15 @@ export class ProjectInitialExecutionQueue {
         await db.query('INSERT INTO anvil.usage_reservations(project_id,reservation_id,version,server_sequence,command_id,content_hash,snapshot_json,created_command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
           [request.projectId,b.ref.id,b.ref.version,b.snapshot.sequence,request.commandId,b.ref.contentHash,JSON.stringify(b.snapshot),receipt.id]);
         await db.query('INSERT INTO anvil.writer_claims(project_id,id,execution_id,generation,grant_id,grant_version,scope_json,expires_at,ownership_state,created_command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-          [request.projectId,randomUUID(),p.executionId,p.executionGeneration,grant.ref.id,1,JSON.stringify(basis.intent.sourceScopes),grant.snapshot.expiresAt,'SYNTHETIC_CLAIM',receipt.id]);
+          [request.projectId,ids?.writerClaimId??randomUUID(),p.executionId,p.executionGeneration,grant.ref.id,1,JSON.stringify(basis.intent.sourceScopes),grant.snapshot.expiresAt,'SYNTHETIC_CLAIM',receipt.id]);
         await db.query('INSERT INTO anvil.execution_commands(project_id,id,version,execution_id,generation,grant_id,grant_version,content_hash,envelope_hash,snapshot_json,authorization_ref,created_command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
           [request.projectId,commandRef.id,1,p.executionId,p.executionGeneration,grant.ref.id,1,commandRef.contentHash,envelope.envelopeHash,JSON.stringify(snapshot),JSON.stringify(authorizationRef),receipt.id]);
         await db.query('INSERT INTO anvil.delivery_outbox(id,project_id,command_id,kind,destination_ref,payload_ref,state,scope_digest) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
-          [randomUUID(),request.projectId,receipt.id,'EXECUTION_SYNTHETIC_ONLY',JSON.stringify({transport:'SYNTHETIC_ONLY',registrationRef:fact.registration.ref,executionId:p.executionId,generation:p.executionGeneration}),
+          [ids?.outboxId??randomUUID(),request.projectId,receipt.id,'EXECUTION_SYNTHETIC_ONLY',JSON.stringify({transport:'SYNTHETIC_ONLY',registrationRef:fact.registration.ref,executionId:p.executionId,generation:p.executionGeneration}),
             JSON.stringify({commandRef,grantRef:grant.ref,envelopeHash:envelope.envelopeHash}),'HELD_SYNTHETIC_ONLY',grant.snapshot.scopeDigest]);
         await SyntheticPgStartMaterialRegistration.prototype.register.call(materials,db,materialPlan,{ref:commandRef,snapshot},receipt.id);
+        if(reuseLease)await originReuseStartState(reuseLease,db,actor,request);
+        if(consumptionQuota&&consumptionReservation)await consumptionQuota.settleOriginReuseApprovalRequest(db,actor,consumptionReservation,receipt);
         if(reuseLease)await originReuseStartState(reuseLease,db,actor,request);
         return receipt.result;
         }finally{if(reuseLease)releaseOriginReuseStart(reuseLease);queueTransactions.delete(db);}

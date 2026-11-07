@@ -4,7 +4,7 @@ import {nodeDecisionFixture,H,id,artifactCalls} from '../FN10/node-decision-fixt
 export {H,id,artifactCalls};
 export {installNodeDecisionMemoryFS as installExecutionStartOriginMemoryFS} from '../FN10/node-decision-fixture.ts';
 /** 기존 순수 fixture의 실제 ArtifactStore/문서·계획을 재사용한다. 성공 보호 메서드는 바꾸지 않는다. */
-export async function executionStartOriginFixture(options:{unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean}={}){
+export async function executionStartOriginFixture(options:{unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean;originConsumptionStorage?:boolean}={}){
  const f=await nodeDecisionFixture(),{db,access,documents,pid,uid,cid}=f,raw=db.query;
  if(options.clockOffsetMs)f.advance(options.clockOffsetMs);
  const {documentOperations,persistProjectReceipt,currentPolicy,ProjectPolicyRepository}=await import('../../../apps/server/modules/access/project-command.ts');
@@ -15,6 +15,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const {ProjectKnowledge}=await import('../../../apps/server/modules/knowledge/knowledge.ts'),{ProjectConversations}=await import('../../../apps/server/modules/knowledge/conversations.ts');
  const {ProjectStorageQuota}=await import('../../../apps/server/modules/projects/project-storage-quota.ts'),{ProjectExecutionPreparations}=await import('../../../apps/server/modules/executions/project-execution-preparations.ts'),{ProjectStageQueue}=await import('../../../apps/server/modules/scheduling/stage-queue.ts'),{ProjectLimitPolicies}=await import('../../../apps/server/modules/executions/runtime-policy.ts');
  const tables:Record<string,any[]>={drafts:[],draftVersions:[],reviews:[],confirmations:[],roles:[],bindings:[],sessions:[],contexts:[],contextItems:[],preparations:[],limits:[],queue:[],origins:[],reservations:[]},receipts=new Map<string,any>(),audits=new Map<string,any>(),metadata=new Map<string,any>(),trace:string[]=[];
+ if(options.originConsumptionStorage)for(const name of ['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'])tables[name]=[];
  const richContext=options.connectorEnvironment===true&&options.richContext===true;
  if(richContext)Object.assign(tables,{knowledgeHeads:[],knowledgeVersions:[],knowledgeEvents:[],knowledgeReviews:[],conversations:[],messages:[]});
  const approvedContext=richContext&&options.approvedContext===true;
@@ -22,7 +23,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const constitutionContext=richContext&&options.constitutionContext===true;
  if(constitutionContext)Object.assign(tables,{constitutions:[],constitutionApplications:[]});
  const modes={readAllowed:true,sourceAllowed:true,sourceHead:1,commit:'NORMAL',settle:'NORMAL',tx:1,policyVersion:1,
-  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],originReadDisposition:'AUTO' as 'AUTO'|'REQUIRE_APPROVAL'|'DENY',requestQuota:'VERIFIED',requestFault:'NORMAL',requestUsed:0,requestHeld:0,requestOther:0,requestReserveCalls:0,requestSettleCalls:0,decisionReserveCalls:0,decisionSettleCalls:0,hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
+  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],originReadDisposition:'AUTO' as 'AUTO'|'REQUIRE_APPROVAL'|'DENY',requestQuota:'VERIFIED',requestFault:'NORMAL',requestUsed:0,requestHeld:0,requestOther:0,requestReserveCalls:0,requestSettleCalls:0,decisionReserveCalls:0,decisionSettleCalls:0,consumptionReserveCalls:0,consumptionSettleCalls:0,hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
  let savedReceipts:typeof receipts,savedAudits:typeof audits,savedRequestUsed=0,savedRequestHeld=0;
  const reauthUntil=options.connectorEnvironment?new Date(f.actor.authSession.absoluteExpiresAt):null;
  let registration:{row:Record<string,any>;connector:Record<string,any>}|undefined;
@@ -42,6 +43,68 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const rows=(values:any[])=>({rows:values,rowCount:values.length});
  db.query=async(sql:string,a:any[]=[])=>{
   trace.push(sql);modes.hook?.(sql);
+  if(options.originConsumptionStorage){
+   const selected=(name:string)=>tables[name]!.filter(r=>r.project_id===a[0]);
+   if(sql==='SELECT * FROM anvil.fn09_origin_reuse_consumption_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11)'){
+    modes.consumptionReserveCalls++;assert.equal(a.length,11);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+    if(modes.requestQuota==='UNVERIFIED')throw Object.assign(Error('PROJECT_STORAGE_QUOTA_UNVERIFIED'),{code:'P0001'});
+    const q=JSON.parse(a[4]),ref=JSON.parse(a[5]),record=JSON.parse(a[6]),policy=JSON.parse(a[7]),ids=JSON.parse(a[8]);
+    assert.deepEqual(Object.keys(ids).sort(),['serverCommandId','consumptionId','operationId','authorizationReceiptId','auditEventId','writerClaimId','outboxId'].sort());
+    assert.equal(q.operation,'queueExecutionCommand');assert.equal(q.targetId,null);assert.equal(q.expectedVersion,0);assert.equal(ref.version,1);assert.equal(H(record.queueIntent),ref.contentHash);assert.equal(record.purpose,'ORIGIN_REUSE_APPROVAL_CONSUMPTION');assert.equal(record.writerClaimId,ids.writerClaimId);assert.equal(record.outboxId,ids.outboxId);
+    const request=tables.approvalRequests!.find(r=>r.project_id===pid&&r.id===q.approvalRef.requestId),decision=tables.approvalDecisions!.find(d=>d.project_id===pid&&d.id===q.approvalRef.decisionId);assert(request&&decision&&request.version===2&&request.status==='APPROVED'&&decision.decision==='APPROVE');
+    assert.equal(decision.request_id,request.id);assert.equal(request.candidate_command_id,q.commandId);assert.equal(request.scope_digest,q.approvalRef.scopeDigest);assert.deepEqual(request.request_json.originReuseEvidence.candidatePayload,q.payload);assert.deepEqual(policy,request.policy_ref);assert.equal(request.created_by,uid);assert.equal(request.client_id,cid);
+    assert.equal(H(record.grant.snapshot),record.grant.ref.contentHash);assert.equal(H(record.reservation.snapshot),record.reservation.ref.contentHash);assert.equal(H(record.materialPlan.descriptor),record.materialPlan.manifestRef.contentHash);assert.deepEqual(record.materialPlan.descriptor.payload,q.payload.payload);
+    assert(!tables.approvalConsumptions!.some(u=>u.decision_id===decision.id));assert(!tables.reservations!.some(r=>r.id===ids.serverCommandId));
+    // 실제 SQL maximum/fixedpoint가 아닌, 기존 fixture와 같은 명시 상한 메모리 예약 모형이다.
+    const reserved=1_000_000;if(modes.requestUsed+modes.requestHeld+modes.requestOther+reserved>10737418240)throw Object.assign(Error('PROJECT_STORAGE_LIMIT_EXCEEDED'),{code:'P0001'});
+    const until=new Date(Math.min(Date.parse(a[10]),request.expires_at.getTime())).toISOString();assert(Date.parse(record.recordedAt)<Date.parse(until));
+    const plan={request:q,record,ref,ids,policyRef:policy,authorizedUntil:until,coverageGeneration:'1',purpose:'ORIGIN_REUSE_APPROVAL_CONSUMPTION',beforeRow:structuredClone(request)},planHash=H(plan);
+    tables.reservations!.push({id:ids.serverCommandId,part_kind:'ORIGIN_REUSE_APPROVAL_CONSUMPTION',part_key:'origin_reuse_consumption',actor_id:uid,client_id:cid,phase:'IO_STARTED',start_fence:1,plan_json:plan,plan_hash:planHash,transaction_id:String(modes.tx),reserved_bytes:reserved,settled_bytes:0});modes.requestHeld+=reserved;
+    const transaction_id=String(modes.tx);if(modes.requestFault==='XID_AFTER_RESERVE')modes.tx++;
+    return rows([{reservation_id:ids.serverCommandId,transaction_id,record_hash:ref.contentHash,plan_hash:planHash,reserved_bytes:String(reserved),authorized_until:until}]);
+   }
+   if(sql==='SELECT * FROM anvil.fn09_origin_reuse_consumption_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)'){
+    modes.consumptionSettleCalls++;assert.equal(a.length,10);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+    const r=tables.reservations!.find(r=>r.id===a[5]),command=f.commands.get(a[7]),receipt=receipts.get(a[7]),audit=audits.get(a[7]);assert(r&&command&&receipt&&audit&&r.part_kind==='ORIGIN_REUSE_APPROVAL_CONSUMPTION'&&r.phase==='IO_STARTED');assert.equal(r.transaction_id,String(modes.tx));assert.equal(r.id,command.id);assert.equal(r.plan_hash,a[6]);assert.equal(command.command_id,a[4]);assert.deepEqual(command.result_ref,JSON.parse(a[8]));assert.equal(command.request_hash,H(r.plan_json.request));
+    const plan=r.plan_json,used=tables.approvalConsumptions!.filter(u=>u.command_id===command.id);assert.equal(used.length,1);assert.equal(used[0].id,plan.ids.consumptionId);assert.equal(receipt.id,plan.ids.authorizationReceiptId);assert.equal(audit.event_id,plan.ids.auditEventId);
+    const request=tables.approvalRequests!.find(q=>q.id===plan.request.approvalRef.requestId&&q.project_id===pid);assert(request&&request.version===3&&request.status==='CONSUMED');assert.deepEqual({...request,version:2,status:'APPROVED'},plan.beforeRow);
+    const domains=['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'].flatMap(name=>{const owned=tables[name]!.filter(x=>x.project_id===pid&&(x.created_command_id??x.command_id)===command.id);assert(name==='execution_materials'?owned.length>=2:owned.length===1);return owned;});
+    const queued=tables.execution_commands!.find(x=>x.created_command_id===command.id)!,manifest=tables.execution_material_manifests!.find(x=>x.created_command_id===command.id)!;
+    assert.equal(queued.id,plan.ref.id);assert.equal(queued.content_hash,plan.ref.contentHash);assert.equal(queued.snapshot_json.envelope.commandId,plan.request.commandId);assert.deepEqual(manifest.snapshot_json,plan.record.materialPlan.descriptor);assert.equal(H(manifest.snapshot_json),manifest.content_hash);
+    assert.equal(tables.writer_claims!.find(x=>x.created_command_id===command.id)!.id,plan.ids.writerClaimId);assert.equal(tables.delivery_outbox!.find(x=>x.command_id===command.id)!.id,plan.ids.outboxId);assert.equal(tables.notifications!.filter(n=>n.source_command_id===command.id).length,0);
+    if(modes.settle==='LOST')throw Error('SETTLE_LOST');
+    const cost=(v:unknown)=>Buffer.byteLength(JSON.stringify(v));const actual=cost([used[0],command,receipt,audit,...domains,r])+cost({...request,version:3,status:'CONSUMED'})-cost({...request,version:2,status:'APPROVED'});assert(actual<=r.reserved_bytes);
+    r.phase='SETTLED';r.settled_bytes=actual;modes.requestUsed+=actual;modes.requestHeld-=r.reserved_bytes;
+    return rows([{status:'SETTLED',reservation_id:r.id,transaction_id:String(modes.tx),settled_bytes:String(modes.requestFault==='OVERSIZED_SETTLE'?r.reserved_bytes+1:actual)}]);
+   }
+
+   if(sql==='SELECT id FROM anvil.writer_claims WHERE project_id=$1 AND reclaimed_at IS NULL')return rows(selected('writer_claims').filter(r=>!r.reclaimed_at));
+   if(sql==='SELECT id FROM anvil.executions WHERE project_id=$1 AND id=$2')return rows(selected('executions').filter(r=>r.id===a[1]));
+   if(sql==='SELECT project_id,reservation_id,version,content_hash,snapshot_json,server_sequence,command_id FROM anvil.usage_reservations WHERE project_id=$1 ORDER BY server_sequence LIMIT 10001')return rows(selected('usage_reservations').sort((x,y)=>x.server_sequence-y.server_sequence));
+   if(sql==='SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1::uuid AND id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2')return rows(selected('execution_grants').filter(r=>r.id===a[1]&&r.version===a[2]&&r.content_hash===a[3]));
+   if(sql==='SELECT content_hash,snapshot_json,created_command_id FROM anvil.execution_commands WHERE project_id=$1::uuid AND id=$2::uuid AND version=1 LIMIT 2'||sql==='SELECT content_hash,snapshot_json FROM anvil.execution_commands WHERE project_id=$1::uuid AND id=$2::uuid AND version=1 LIMIT 2')return rows(selected('execution_commands').filter(r=>r.id===a[1]&&r.version===1));
+   if(sql==='SELECT count(*)::bigint AS count FROM anvil.execution_materials WHERE project_id=$1::uuid AND manifest_id=$2::uuid')return rows([{count:selected('execution_materials').filter(r=>r.manifest_id===a[1]).length}]);
+   if(sql==='SELECT d.snapshot_json,d.content_hash FROM anvil.execution_material_manifests d JOIN anvil.execution_commands e ON e.project_id=d.project_id AND e.created_command_id=d.created_command_id WHERE d.project_id=$1::uuid AND e.id=$2::uuid AND e.version=$3::bigint AND e.content_hash=$4::text LIMIT 2')return rows(selected('execution_commands').filter(r=>r.id===a[1]&&r.version===a[2]&&r.content_hash===a[3]).flatMap(r=>selected('execution_material_manifests').filter(d=>d.created_command_id===r.created_command_id)));
+   if(sql.startsWith('SELECT m.*,d.content_hash manifest_hash')){
+    assert(sql.includes('WHERE m.project_id=$1::uuid AND ')&&sql.endsWith(' LIMIT 2'));assert.equal(a[0],pid);
+    const byCommand='m.command_id=$2::uuid AND m.id=$3::uuid',byRef='m.id=$2::uuid AND m.version=$3::bigint AND m.content_hash=$4::text';assert(sql.includes(byCommand)||sql.includes(byRef));
+    return rows(selected('execution_materials').filter(r=>sql.includes(byCommand)?r.command_id===a[1]&&r.id===a[2]:r.id===a[1]&&r.version===a[2]&&r.content_hash===a[3]).map(r=>{const d=selected('execution_material_manifests').find(d=>d.id===r.manifest_id),e=selected('execution_commands').find(e=>e.id===r.command_record_id),g=selected('execution_grants').find(g=>g.id===r.grant_id&&g.version===r.grant_version);assert(d&&e&&g);return{...r,manifest_hash:d.content_hash,descriptor:d.snapshot_json,command_record_hash:e.content_hash,command_snapshot:e.snapshot_json,grant_hash:g.content_hash,grant_snapshot:g.snapshot_json};}));
+   }
+   if(sql.startsWith('SELECT count(*)::bigint AS project_count,COALESCE(sum(octet_length(anvil.execution_authority_canonical(snapshot_json)))')){
+    assert.equal(a[0],pid);const all=['execution_material_manifests','execution_materials'].flatMap(name=>selected(name)),own=all.filter(r=>r.grant_id===a[1]);return rows([{project_count:all.length,project_bytes:all.reduce((n,r)=>n+Buffer.byteLength(JSON.stringify(r.snapshot_json)),0),grant_count:own.length,grant_bytes:own.reduce((n,r)=>n+Buffer.byteLength(JSON.stringify(r.snapshot_json)),0)}]);
+   }
+   if(sql==='SELECT anvil.fn08_start_material_complete($1::uuid,$2::uuid) AS complete'){
+    const c=f.commands.get(a[1]),manifests=selected('execution_material_manifests').filter(r=>r.created_command_id===a[1]),queued=selected('execution_commands').filter(r=>r.created_command_id===a[1]);
+    const d=manifests[0],e=queued[0],parts=d?selected('execution_materials').filter(m=>m.manifest_id===d.id):[],used=tables.approvalConsumptions!.filter(u=>u.command_id===a[1]);
+    // 실제 SQL 함수 실행이 아닌 원 저장행의 제한된 메모리 완결 모델이다.
+    const complete=!!c&&manifests.length===1&&queued.length===1&&d.command_id===e.snapshot_json.envelope.commandId&&c.result_ref.data.ref.id===e.id&&c.result_ref.data.ref.contentHash===e.content_hash&&d.content_hash===H(d.snapshot_json)&&e.content_hash===H(Object.fromEntries(Object.entries(e.snapshot_json).filter(([key])=>key!=='envelope')))&&parts.length===d.snapshot_json.groups.reduce((n:number,g:any)=>n+g.parts.length,0)&&parts.every(m=>m.created_command_id===c.id&&m.content_hash===H(m.snapshot_json))&&(!c.approval_consumption_id||used.length===1&&used[0].id===c.approval_consumption_id);
+    return rows([{complete}]);
+   }
+   const domains:Record<string,string[]>={executions:['project_id','id','generation','transport','state','created_by','client_id','command_id'],execution_grants:['project_id','id','version','execution_id','generation','content_hash','snapshot_json','created_by','client_id','command_id'],usage_reservations:['project_id','reservation_id','version','server_sequence','command_id','content_hash','snapshot_json','created_command_id'],writer_claims:['project_id','id','execution_id','generation','grant_id','grant_version','scope_json','expires_at','ownership_state','created_command_id'],execution_commands:['project_id','id','version','execution_id','generation','grant_id','grant_version','content_hash','envelope_hash','snapshot_json','authorization_ref','created_command_id'],delivery_outbox:['id','project_id','command_id','kind','destination_ref','payload_ref','state','scope_digest'],execution_material_manifests:['project_id','id','version','execution_id','generation','grant_id','grant_version','credential_generation','command_id','created_command_id','content_hash','snapshot_json'],execution_materials:['project_id','id','version','manifest_id','execution_id','generation','grant_id','grant_version','credential_generation','command_id','command_record_id','created_command_id','content_hash','snapshot_json']};
+   const match=/^INSERT INTO anvil\.([a-z_]+)\(([^)]+)\) VALUES\(([^)]+)\)$/.exec(sql);
+   if(match&&domains[match[1]!]){const table=match[1]!,columns=match[2]!.split(','),values=match[3]!.split(',');assert.deepEqual(columns,domains[table]);assert.equal(columns.length,values.length);const row:Record<string,any>={};for(let n=0;n<columns.length;n++){const key=columns[n]!,value=values[n]!;assert(value==='1'||/^\$[1-9][0-9]*$/.test(value));const index=value==='1'?-1:Number(value.slice(1))-1;let v=index<0?1:a[index];if(['snapshot_json','scope_json','authorization_ref','destination_ref','payload_ref'].includes(key))v=JSON.parse(v);if(key==='expires_at')v=new Date(v);row[key]=v;}assert.equal(row.project_id,pid);assert(!tables[table]!.some(r=>r.project_id===row.project_id&&(r.id??r.reservation_id)===(row.id??row.reservation_id)));tables[table]!.push(row);return{rows:[],rowCount:1};}
+  }
+
   if(sql.startsWith('SELECT n.*,nr.read_at,nr.command_id read_command_id')){
    assert.equal(a[0],pid);assert.equal(a[1],uid);
    let selected=(tables.notifications??[]).filter(n=>n.project_id===a[0]&&n.recipient_user_id===a[1]);
@@ -417,8 +480,8 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
   const knowledge=new ProjectKnowledge(documents),conversations=new ProjectConversations(documents);
   const {knowledgeContentReviewCriteria}=await import('../../../apps/server/modules/knowledge/knowledge-reviews.ts');
   const scope={projectId:pid,stageRefs:[],taskRefs:[]};
-  const confirmKnowledge=async(kind:'PURPOSE'|'CONSTITUTION',title:string,bodyRef:typeof f.design.bodyRef,currentPolicyRef:typeof policyRef)=>{
-   const subject=kind==='PURPOSE'?'목적':'헌법';
+  const confirmKnowledge=async(kind:'PURPOSE'|'CONSTITUTION'|'DECISION',title:string,bodyRef:typeof f.design.bodyRef,currentPolicyRef:typeof policyRef)=>{
+   const subject=kind==='PURPOSE'?'목적':kind==='CONSTITUTION'?'헌법':'판단';
    const entry={kind,title,contentRef:bodyRef,sourceRefs:[{kind:'DOCUMENT_VERSION',...f.design.ref}],reason:'보호된 원문 근거',scope,relatedRefs:[]};
    const proposed=await run(actor=>knowledge.save(db,actor,command('saveKnowledge',{entry}),currentPolicyRef));
    const versionRef=proposed.data.ref;
@@ -431,6 +494,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
    return {versionRef,confirmationId:accepted.data.confirmationId};
   };
   const {versionRef:knowledgeRef}=await confirmKnowledge('PURPOSE','같은 프로젝트의 원 목적',f.design.bodyRef,policyRef);
+  const decisionSource=options.originConsumptionStorage?await confirmKnowledge('DECISION','소비 원문의 명시 판단',f.design.bodyRef,policyRef):undefined;
   const constitution=constitutionContext?await (async()=>{
    const {ProjectConstitutions}=await import('../../../apps/server/modules/knowledge/project-constitutions.ts');
    const constitutions=new ProjectConstitutions(knowledge);
@@ -452,9 +516,9 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
   const {conversationId,sourceRef:messageRef}=posted.data;
   const supersede=(currentPolicyRef:typeof policyRef)=>run(actor=>conversations.append(db,actor,
    command('appendConversation',instruction(conversationId,messageRef,f.design.bodyRef),{id:conversationId,version:1}),currentPolicyRef));
-  return {knowledgeRef,conversationId,messageRef,supersede,constitution};
+  return {knowledgeRef,conversationId,messageRef,supersede,constitution,decisionSource};
  })():undefined;
- const contextCommand=command('buildTaskContext',{assignmentRef:confirmed.data.ref,budgetRef:budget.data.ref,slots:contextSlotCodes.map(code=>({code,sources:code==='CURRENT_POSITION'?[{kind:'DOCUMENT_VERSION',versionRef:f.design.ref}]:richSources&&code==='PURPOSE_REASON'?[{kind:'KNOWLEDGE_VERSION',versionRef:richSources.knowledgeRef}]:richSources?.constitution&&code==='RULES_SCOPE'?[{kind:'KNOWLEDGE_VERSION',versionRef:richSources.constitution.current.application.versionRef}]:richSources&&code==='LATEST_INSTRUCTIONS'?[{kind:'USER_INSTRUCTION',conversationId:richSources.conversationId,messageRef:richSources.messageRef}]:[],reason:'명시 원문 또는 미선택'})),limits:{maxPartBytes:1024,maxParts:200},reason:'원 맥락'});
+ const contextCommand=command('buildTaskContext',{assignmentRef:confirmed.data.ref,budgetRef:budget.data.ref,slots:contextSlotCodes.map(code=>({code,sources:(code==='CURRENT_POSITION'||options.originConsumptionStorage&&['ACTUAL_GAPS','NEXT_ACTION'].includes(code))?[{kind:'DOCUMENT_VERSION',versionRef:f.design.ref}]:options.originConsumptionStorage&&richSources?.decisionSource&&code==='DECISIONS_REASON'?[{kind:'KNOWLEDGE_VERSION',versionRef:richSources.decisionSource.versionRef}]:richSources&&code==='PURPOSE_REASON'?[{kind:'KNOWLEDGE_VERSION',versionRef:richSources.knowledgeRef}]:richSources?.constitution&&code==='RULES_SCOPE'?[{kind:'KNOWLEDGE_VERSION',versionRef:richSources.constitution.current.application.versionRef}]:richSources&&code==='LATEST_INSTRUCTIONS'?[{kind:'USER_INSTRUCTION',conversationId:richSources.conversationId,messageRef:richSources.messageRef}]:[],reason:'명시 원문 또는 미선택'})),limits:{maxPartBytes:1024,maxParts:200},reason:'원 맥락'});
  const context=approvedContext?await (async()=>{
   const {ProjectApprovals}=await import('../../../apps/server/modules/approvals/project-approvals.ts');
   const approvals=new ProjectApprovals(documents),policies=new ProjectPolicyRepository(access);
@@ -474,4 +538,19 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const stage:any=await run(a=>queue.start(db,a,command('startStage',{stageRef:{applicationRef,nodeId:'choose'},methodologyApplicationRef:applicationRef,mode:'CASE_BY_CASE',startNodeRef:{applicationRef,nodeId:'choose'},endBoundaryRef:{applicationRef,nodeId:'choose'},baselineRefs:[f.plan.ref,applicationRef,f.design.ref,...(options.unrelatedStageBaseline?[f.planDoc.ref]:[])],budgetRef:budget.data.ref,reason:'원 대기 요청'}),policyRef));
  trace.length=0;const originCommand=()=>command('registerExecutionStartOrigin',{stageRequestRef:stage.data.ref,assignmentRef:confirmed.data.ref,preparationRef:preparation.data.ref,roleBindingRef:binding.data.ref,reason:'원자료 명시 결박'});
  return{...f,tables,receipts,audits,metadata,modes,trace,policy,policyRef,methods,plans,drafts,assignments,definitions,environments,candidates,limits,sessions,contexts,quota,preparations,queue,run,originCommand,stage,confirmed,binding,preparation,applicationRef,registration,...(richSources?{richSources}:{})};
+}
+
+
+/** 기존 FN08 명시 합성 fact 모델이다. 실제 current/OS/E 발급 증명이 아니며 S의 false 표식을 바꾸지 않는다. */
+export async function createOriginConsumptionRuntime(f:Awaited<ReturnType<typeof executionStartOriginFixture>>){
+ const {ProjectInitialExecutionQueue}=await import('../../../apps/server/modules/executions/execution-commands.ts'),{ProjectExecutionBudget}=await import('../../../apps/server/modules/executions/execution-budget.ts'),{readOriginStartQueueBasis}=await import('../../../apps/server/modules/executions/execution-start-origin-queue-basis.ts'),{SyntheticStartContextSource}=await import('../../../apps/server/modules/executions/execution-start-context-source.ts'),{SyntheticPgStartMaterialRegistration}=await import('../../../apps/server/modules/executions/execution-start-material-registration-store.ts'),{executionFactChecks,readServerExecutionFactV1}=await import('../../../contracts/runtime/server-execution-fact-v1.ts');
+ let activeActor:any,activeFact:any;
+ const source=new SyntheticStartContextSource({contexts:f.contexts,preparations:f.preparations,definitions:f.definitions,environments:f.environments,current:{transport:'SYNTHETIC_ONLY',current:async(db,scope)=>{assert.equal(db,f.db);assert(activeActor&&activeFact);assert.equal(scope.projectId,f.pid);assert.equal(scope.executionId,activeFact.executionId);return{actor:activeActor,fact:activeFact,grantExpiresAt:new Date(Math.min(...Object.values(activeFact.expires).map(v=>Date.parse(v as string)))).toISOString()};}}});
+ const registrar=new SyntheticPgStartMaterialRegistration(source),resolver={transport:'SYNTHETIC_ONLY' as const,basis:async(db:any,actor:any,request:any)=>readOriginStartQueueBasis(db,actor,request,request.payload.originReuse,{attempts:1,calls:1,spoolBytes:1024,cost:null,costStatus:'VERIFIED_NO_CHARGE'},{queue:f.queue,preparations:f.preparations,applications:f.methods,budgets:f.limits},{expiresAt:Date.now()+30000}),current:async(db:any,actor:any,request:any,basis:any,reservation:any)=>{
+  assert.equal(db,f.db);const origin=f.tables.origins!.find(r=>r.origin_id===request.payload.originReuse.originRef.id);assert(origin);const s=origin.snapshot_json,registration=f.registration!;assert(registration);
+  const {registrationRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');const regRef=registrationRef(registration.row as any);
+  const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0].at.toISOString(),ref=s.assignmentRef,bindings:Record<string,any[]>={subject:[ref],session:[s.roleBindingRef],registration:[regRef],permissionPolicy:[request.payload.permissionPolicyRef],basis:s.basisRefs,context:[s.contextBundleRef],capability:[basis.intent.capabilityRef],source:s.sourceScopes.map((scope:any)=>scope.observationRef),osFence:[s.environmentRef],budget:[reservation.record.ref],storage:[ref],understanding:[]};
+  activeActor=actor;activeFact=readServerExecutionFactV1({schemaVersion:1,purpose:'SERVER_EXECUTION_CURRENTNESS',transport:'SYNTHETIC_ONLY',projectId:f.pid,executionId:request.payload.executionId,executionGeneration:request.payload.executionGeneration,subject:{userId:actor.actorId,clientId:actor.clientId,humanSessionId:actor.authSession.id,controlGeneration:request.controlGeneration,credentialGeneration:actor.credentialGeneration},agentSession:{sessionRef:s.sessionBindingRef,roleBindingRef:s.roleBindingRef,credentialGeneration:actor.credentialGeneration},registration:{ref:regRef,connectorId:registration.row.connector_id,generation:registration.connector.generation,hostPublicKeyFingerprint:registration.connector.host_fingerprint},intent:basis.intent,preparationRef:s.preparationRef,permissionPolicyRef:request.payload.permissionPolicyRef,budgetReservationRef:reservation.record.ref,basisRefs:s.basisRefs,latestInstructionRefs:s.latestInstructionRefs,understandingReviewRef:null,checks:Object.fromEntries(executionFactChecks.map(name=>[name,{state:name==='understanding'?'NOT_REQUIRED':'VERIFIED_CURRENT',evidenceRefs:bindings[name]}])),writerState:'NONE',expires:Object.fromEntries(['humanSession','permissionPolicy','registration','budget','automaticScope'].map(name=>[name,actor.authSession.idleExpiresAt])),checkedAt:at,executionAuthorized:false,dispatchPerformed:false});return activeFact;
+ }};
+ return{queue:new ProjectInitialExecutionQueue(f.access,resolver,new ProjectExecutionBudget(f.limits),f.limits,registrar),source,registrar};
 }
