@@ -17802,3 +17802,12 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 - 다음 IX01 TC02는 정확한 승인 검토를 사용한 미확정 설계 차단을 합성 단위로 고정한다. 기존 Primary 한 명의 허용 경로는 tests/unit/IX01/work-plan-readiness-boundary.test.ts다. 역사 J3 시험/실행기와 J4 계획은 보존한다. 실제 IX01 PostgreSQL·브라우저·교차 접근은 미실행, 외부 승인 필요 조건 별도, 실행 오류0(착수 전).
 
 - IX01 TC02 시험 SHA256 755A49AB…66B56A68. Primary 4 PASS·typecheck exit0, Main 직접·인접 6 PASS/skip0, 독립 C0/I0/M0. 기존 역사 시험 SHA256 31EF5403…638F4 일치. 실제 WorkPlans에서 입력 오류/검토 누락/미확정/확정 준비를 분리하고 합성 SQL 쓰기0을 확인했다. 실제 DB·HTTP·브라우저·IX01 여정은 미검증이며 제품·기존 실행안은 그대로다. 이번 실행 오류0.
+
+### IX01 TM07 프로젝트 조회 격리 착수
+
+- PR45의 정확 head 4f5e10c2가 main 2432fe2c에 병합됐다. 작업 브랜치의 원격 ref 부재, 검수 head와 병합 트리 일치 확인. 개발 원격 main을 로컬에서 갱신했다.
+- 같은 격리 작업트리의 새 codex/av3-ix01-tm07을 정확 main 2432fe2c에서 열었다. 기존 Primary 단일 writer에게 tests/unit/IX01/project-read-isolation.test.ts 한 경로를 맡겼다. 목표는 두 사용자 자기 목록·상세 허용, 상대/미존재 동일 404, 검색·페이지의 노출 없음, 합성 DB 쓰기0이다. 기존 역사 fixture와 제품·실제 환경 변경 없음. 오류0(착수 전).
+
+- 시험은 실제 buildApp.inject와 ProjectsRepository, 합성 인증·SQL 행을 사용한다. 목록10 GET·상세6 GET에서 두 소유자 자기 조회와 상대/미존재 동일 404·검색 정보 비노출·쓰기0을 확인했다. 독립 M1의 SQL 조건 확장 공백은 공백 정규화 전체 조회 SQL과 OR TRUE 음성으로 보완했다. 최종 SHA256 06489803…974151, Primary 직접 3 PASS/typecheck exit0, Main 직접·인접 7 PASS/skip0. 실제 PostgreSQL·RLS·쿠키 인증·첨부와 IX01 전체는 미검증이다. 최초 읽기 도구 경계 1건은 읽기 전용 승인 호출로 정정했고 제품 실패0.
+
+- 독립 재검수 C0/I0/M0, 최초 M1 해소. 기존 역사 시험 및 제품 코드에는 변경이 없다.
