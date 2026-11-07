@@ -17819,3 +17819,13 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - 첨부 GET 합성 검증 완료. Primary 직접 4 PASS·typecheck exit0, Main 직접·인접 8 PASS/skip0·diff check exit0, 독립 C0/I0/M0. 시험 SHA256 02C85A1D…829A306A, 기존 역사 시험 SHA256 31EF5403…638F4 일치. 실제 라우트와 ArtifactStore에서 두 소유자의 원문·해시·헤더, 상대/미존재 동일 404, 조회 범위와 파일 접근 차단, 변조 503, 합성 쓰기·열린 파일0을 확인했다. 자식 시험 환경 상속과 TS7022 준비 오류 각1건 보정. 실제 PostgreSQL·RLS·실파일·브라우저 및 IX01 전체는 미검증.
 - Git 동기화 점검에서 작업 브랜치 게시와 별개로 로컬 main 참조가 2,252커밋 뒤처진 것을 확인했다. 체크아웃되지 않은 main만 ff 갱신해 GitHub main 및 작업 브랜치의 기준 SHA 9ff1e6c8과 일치시켰다. 기존 작업트리 변경은 보존했다.
+
+### IX01 TM07 지식 검색 격리 착수
+
+- 첨부 조회 PR47은 검수 head 4ef23447에서 main 2e5be13b로 병합됐다. Broker 42385755976 성공, 부모·트리 일치 및 원격 종료 브랜치·태그 제거를 확인했다. 병합 전 Main 직접·인접 시험 8 PASS/skip0.
+- 로컬 main을 2e5be13b로 갱신한 뒤 새 codex/av3-ix01-knowledge를 만들고 같은 SHA를 원격에 게시했다. 양쪽 브랜치 ahead/behind 0/0. 기존 Primary 단일 writer는 tests/unit/IX01/project-read-isolation.test.ts의 지식 검색 합성 검증만 담당한다. 정상 소유자, 교차 접근·존재·커서 비노출과 쓰기0을 확인하며 IX01 실제 DB·브라우저는 미검증이다. 착수 오류0.
+
+- 병합 기준선 2e5be13b에서 첨부·프로젝트 조회 smoke 4 PASS 및 작업계획 준비 경계 4 PASS, skip0. PR47의 종료 로컬 브랜치·추적 ref도 원격 정리와 트리 동일을 검산한 뒤 제거했다.
+- IX01 실제 여정 J3의 재개 조건만 확인했다. 지정 daon@SINSAN의 읽기 전용 SSH가 사용자명·호스트 출력 전에 banner exchange: Connection to UNKNOWN port -1: Connection refused(exit1)로 종료됐다. J3 승인 사용·QA 조회/생성·DB/서비스 변경0. 접속 오류1로 기록하고, 지식 검색 소스 검증은 진행한다.
+
+- 지식 검색 합성 검증 완료. Primary 시험 5 PASS·typecheck exit0, Main 직접·인접 13 PASS/skip0·diff check exit0, 독립 C0/I0/M0. 시험 SHA256 F8E4191C…9151036과 기존 J3 시험 SHA256 31EF5403…638F4 확인. 실제 검색→보호 지식 조회→원문·해시 검산에서 두 소유자의 자기 결과와 두 페이지, 상대 고유어·존재·커서 비노출, 사용자·프로젝트별 커서 결박, 거절 뒤 조회/서명/파일 접근0 및 쓰기0을 검증했다. 준비 중 검색 경로 오류는 읽기 경로 보정으로 해소했다. 제품 및 역사 J3 실행기는 그대로이며 실제 인증·DB/RLS·디스크·브라우저·IX01 여정은 미검증이다.
