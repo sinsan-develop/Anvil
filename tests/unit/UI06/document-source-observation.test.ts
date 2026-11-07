@@ -1,4 +1,5 @@
 import test,{before,after} from 'node:test';
+import {blankPlanTask} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 import assert from 'node:assert/strict';
 import type {PoolClient} from 'pg';
 import {AccessRepository,type AuthenticatedIdentity} from '../../../apps/server/modules/access/repository.ts';
@@ -93,7 +94,7 @@ const OriginalChannel=globalThis.MessageChannel,ownedChannels:MessageChannel[]=[
 class SourceOwnedChannel extends OriginalChannel{constructor(){super();ownedChannels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/design-trace/DocumentSourceLinks.tsx',import.meta.url)),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)),sourceApi=fileURLToPath(new URL('../../../apps/web/src/features/design-trace/source-link-command-api.ts',import.meta.url));
- const output=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:source-links-memory',name:'SourceLinksMemory',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'source-links-memory',resolveId(v){if(v.endsWith('virtual:source-links-memory'))return'\0source-links-memory';},load(v){if(v==='\0source-links-memory')return`import * as React from 'react';import{createRoot}from'react-dom/client';import{DocumentSourceLinks}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(api)};import * as sourceApi from${JSON.stringify(sourceApi)};import{App}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/App.tsx',import.meta.url)))};export{React,createRoot,DocumentSourceLinks,ApiClient,sourceApi,App};`;}}]});
+ const output=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:source-links-memory',name:'SourceLinksMemory',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'source-links-memory',resolveId(v){if(v.endsWith('virtual:source-links-memory'))return'\0source-links-memory';},load(v){if(v==='\0source-links-memory')return`import * as React from 'react';import{createRoot}from'react-dom/client';import{DocumentSourceLinks}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(api)};import * as sourceApi from${JSON.stringify(sourceApi)};import{App}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/App.tsx',import.meta.url)))};import{TraceViewer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/design-trace/TraceViewer.tsx',import.meta.url)))};export{React,createRoot,DocumentSourceLinks,ApiClient,sourceApi,App,TraceViewer};`;}}]});
  const built=Array.isArray(output)?output[0]:output;if(!built||!('output'in built))throw Error('MEMORY_BUILD_OUTPUT_REQUIRED');const chunk=built.output.find(v=>v.type==='chunk');if(!chunk||chunk.type!=='chunk')throw Error('MEMORY_CHUNK_REQUIRED');
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener:appAdd,removeEventListener:appRemove,getComputedStyle:()=>({}),location:appLocation};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:SourceOwnedChannel,location:appLocation,addEventListener:appAdd,removeEventListener:appRemove,fetch:appFetch})){savedDom.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
@@ -459,4 +460,201 @@ test('실제 React session없는 기존 읽기 전용 호출도 고정 이력을
  let release!:(r:Response)=>void;const pending=new Promise<Response>(done=>release=done),late=await mountSourceUI(url=>url.includes('/source-links?')?pending:undefined,false),lateResponse=Response.json(data.list);
  let parsed=false,parsedBody:unknown;const originalJson=lateResponse.json;lateResponse.json=async()=>{try{parsedBody=await Reflect.apply(originalJson,lateResponse,[]);return parsedBody;}finally{parsed=true;}};
  try{late.client.transport=async()=>{throw Error('REPLACED_TRANSPORT_NOT_CALLED');};release(lateResponse);await late.until(()=>parsed,'폐기 목록 원 JSON parse 정착');await late.flush();assert.deepEqual(parsedBody,data.list);assert.equal(late.container.textContent.includes('연결 보관'),false);assert.equal(late.lost(),0);}finally{release(lateResponse);await late.flush();await late.close();}
+});
+
+const traceDesignA={id:id(701),version:1,contentHash:'a'.repeat(64)},traceDesignB={id:id(702),version:2,contentHash:'b'.repeat(64)},traceProjectB=id(703);
+const traceAt='2026-11-03T00:00:00.000Z';
+function traceUIFixture(design:typeof traceDesignA,offset:number,mark:string,documentRef=design){
+ const task={...blankPlanTask(),taskCode:'TASK'+offset,title:mark+' 업무 원문'};
+ const snapshot={documentRef:{...design,id:id(offset+1)},designRef:design,screenReviewRefs:[],tasks:[task],dependencies:[],reason:'합성 계획',issues:[],relationalProjection:'STORED'};
+ const plan={ref:{id:id(offset+2),version:1,contentHash:contentHash(canonicalJson(snapshot))},status:'DRAFT',...snapshot,executionEvidence:'NOT_CONNECTED',observedAt:traceAt};
+ const from={kind:'PLAN_TASK',id:plan.ref.id,versionRef:plan.ref,localCode:task.taskCode},to={kind:'DOCUMENT_VERSION',id:documentRef.id,versionRef:documentRef};
+ const edgeData={from,to,relation:'IMPLEMENTS',reason:mark+' 연결 이유',designRefs:[design]};
+ const edge={id:id(offset+3),...edgeData,edgeHash:contentHash(canonicalJson(edgeData)),createdAt:traceAt};
+ function page(direction='FORWARD',nextCursor:string|null=null){return {designRef:design,direction,nodes:[{ref:from,title:mark+' 계획',designRefs:[design]},{ref:to,title:mark+' 설계',designRefs:[design]}],edges:[edge],traversal:[{edgeId:edge.id,from:direction==='FORWARD'?from:to,to:direction==='FORWARD'?to:from}],missingLinks:[],unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,hasMore:nextCursor!==null,nextCursor,observedAt:traceAt};}
+ return {plan,page,open:task.taskCode+' 연결 계획 업무 원문 보기',original:task.title,reason:edge.reason};
+}
+async function mountTraceUI(transport:typeof fetch){
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let lost=0;
+ const props={client:new ui.ApiClient(transport),projectId:pid,designRef:traceDesignA,onAuthenticationLost:()=>lost++};
+ const render=()=>ui.React.act(async()=>root.render(ui.React.createElement(ui.TraceViewer,props)));
+ const flush=()=>ui.React.act(async()=>{await new Promise<void>(r=>setImmediate(r));});
+ const until=async(predicate:()=>boolean)=>{for(let n=0;n<40&&!predicate();n++)await flush();assert(predicate(),'추적 UI 유한 정착');};
+ const click=async(label:string)=>{const visit=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(visit)];const button=visit(container).find(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.ok(button,label);assert.equal(button.disabled,false);await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0}));};
+ await render();
+ return {props,render,flush,until,click,container,lost:()=>lost,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+
+test('UI06 추적 범위를 바꾸면 새 조회 정착 전 옛 연결과 열린 계획 원문 및 조회를 회수한다',async()=>{
+ const a=traceUIFixture(traceDesignA,710,'이전'),b=traceUIFixture(traceDesignB,720,'현재'),calls:string[]=[];
+ let deliver!:(response:Response)=>void;
+ const held=new Promise<Response>(resolve=>{deliver=resolve;});
+ const f=await mountTraceUI(async(input,init)=>{
+  const path=String(input);assert.equal(init?.method,'GET');assert.equal(init?.credentials,'same-origin');calls.push(path);
+  if(path.startsWith('/api/v1/projects/'+pid+'/traces?'))return Response.json(a.page());
+  if(path==='/api/v1/projects/'+pid+'/work-plans/'+a.plan.ref.id+'/versions/1')return Response.json(a.plan);
+  if(path.startsWith('/api/v1/projects/'+traceProjectB+'/traces?'))return held;
+  if(path==='/api/v1/projects/'+traceProjectB+'/work-plans/'+b.plan.ref.id+'/versions/1')return Response.json(b.plan);
+  throw Error('UNEXPECTED_TRACE_SCOPE_REQUEST');
+ });
+ try{
+  await f.until(()=>f.container.textContent.includes(a.reason));await f.click(a.open);
+  await f.until(()=>f.container.textContent.includes(a.original));
+  f.props.projectId=traceProjectB;f.props.designRef=traceDesignB;await f.render();
+  assert.equal(f.container.textContent.includes(a.reason),false);
+  assert.equal(f.container.textContent.includes(a.original),false);
+  assert.equal(f.container.textContent.includes('계획 업무 원문 닫기'),false);
+  assert.equal(calls.some(path=>path.includes(traceProjectB+'/work-plans/'+a.plan.ref.id)),false);
+  deliver(Response.json(b.page()));
+  await f.until(()=>f.container.textContent.includes(b.reason));await f.click(b.open);
+  await f.until(()=>f.container.textContent.includes(b.original));
+  assert.equal(f.lost(),0);
+ }finally{deliver(Response.json(b.page()));await f.close();}
+});
+
+test('UI06 같은 클라이언트의 transport 교체와 복귀 뒤 옛 계획 성공·401은 새 상태나 인증을 바꾸지 않는다',async()=>{
+ for(const late of ['SUCCESS','AUTH'] as const){
+  const a=traceUIFixture(traceDesignA,730,'이전'),b=traceUIFixture(traceDesignA,740,'현재'),calls:string[]=[];
+  let deliver!:(response:Response)=>void,first=true;
+  const held=new Promise<Response>(resolve=>{deliver=resolve;});
+  const original:typeof fetch=async(input,init)=>{
+   const path=String(input);assert.equal(init?.method,'GET');calls.push('A:'+path);
+   if(path.includes('/traces?')){const current=first;first=false;return Response.json((current?a:b).page());}
+   if(path.includes('/work-plans/'+a.plan.ref.id+'/'))return held;
+   if(path.includes('/work-plans/'+b.plan.ref.id+'/'))return Response.json(b.plan);
+   throw Error('UNEXPECTED_TRACE_REQUEST');
+  };
+  const replacement:typeof fetch=async(input,init)=>{
+   const path=String(input);assert.equal(init?.method,'GET');calls.push('B:'+path);
+   if(path.includes('/traces?'))return Response.json(b.page());
+   throw Error('UNEXPECTED_REPLACEMENT_PLAN');
+  };
+  const f=await mountTraceUI(original);
+  try{
+   await f.until(()=>f.container.textContent.includes(a.reason));await f.click(a.open);
+   f.props.client.transport=replacement;await f.render();
+   assert.equal(f.container.textContent.includes(a.reason),false);
+   f.props.client.transport=original;await f.render();
+   await f.until(()=>f.container.textContent.includes(b.reason));await f.click(b.open);
+   await f.until(()=>f.container.textContent.includes(b.original));
+   deliver(late==='SUCCESS'?Response.json(a.plan):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.flush();
+   assert.equal(f.container.textContent.includes(a.original),false);
+   assert.equal(f.container.textContent.includes(b.original),true);
+   assert.equal(f.lost(),0);
+   assert.deepEqual(calls.map(path=>path.split(':')[0]),['A','A','B','A','A']);
+  }finally{deliver(Response.json(a.plan));await f.close();}
+ }
+});
+
+test('UI06 같은 추적 범위의 더 보기·방향 전환·새로고침은 기존 GET 순서와 대상 선택을 유지한다',async()=>{
+ const a=traceUIFixture(traceDesignA,750,'첫'),b=traceUIFixture(traceDesignA,760,'추가'),calls:URLSearchParams[]=[];
+ const f=await mountTraceUI(async(input,init)=>{
+  assert.equal(init?.method,'GET');const url=new URL(String(input),'https://anvil.invalid');
+  assert.equal(url.pathname,'/api/v1/projects/'+pid+'/traces');calls.push(url.searchParams);
+  const direction=url.searchParams.get('direction')!;
+  return Response.json(url.searchParams.has('cursor')?b.page(direction):a.page(direction,'page_two'));
+ });
+ try{
+  await f.until(()=>f.container.textContent.includes(a.reason));
+  await f.click('다음 업무 연결 더 보기');
+  await f.until(()=>f.container.textContent.includes(b.reason));
+  assert.equal(f.container.textContent.includes(a.reason),true);
+  const visit=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(visit)];
+  const direction=visit(f.container).find(n=>n.getAttribute('id')==='trace-direction');assert.ok(direction);
+  const key=Object.keys(direction).find(k=>k.startsWith('__reactProps$'));assert.ok(key);
+  await ui.React.act(async()=>{(direction as any)[key].onChange({target:{value:'REVERSE'}});});
+  await f.until(()=>f.container.textContent.includes('역방향 · 같은 저장 연결'));
+  assert.equal(f.container.textContent.includes(b.reason),false);
+  await f.click('업무 연결 새로고침');
+  await f.until(()=>calls.length===4&&f.container.textContent.includes(a.reason));
+  assert.deepEqual(calls.map(query=>[query.get('direction'),query.get('cursor')]),[['FORWARD',null],['FORWARD','page_two'],['REVERSE',null],['REVERSE',null]]);
+ }finally{await f.close();}
+});
+
+test('UI06 커밋되지 않은 추적 범위 렌더는 현재 화면의 조회를 폐기하지 않는다',async()=>{
+ const a=traceUIFixture(traceDesignA,770,'현재'),calls:string[]=[];
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ let deliver!:(response:Response)=>void,switchDesign!:(design:typeof traceDesignA)=>void,suspended=false;
+ const held=new Promise<Response>(resolve=>{deliver=resolve;});
+ const holdRender=new Promise<never>(()=>{});
+ const client=new ui.ApiClient(async(input:string|URL|Request)=>{
+  calls.push(String(input));return held;
+ });
+ function SuspendNewScope({design}: {design:typeof traceDesignA}){
+  if(design.id===traceDesignB.id){suspended=true;throw holdRender;}
+  return null;
+ }
+ function Harness(){
+  const [design,setDesign]=ui.React.useState(traceDesignA);
+  switchDesign=setDesign;
+  return ui.React.createElement(ui.React.Suspense,{fallback:'새 범위 대기'},
+   ui.React.createElement(ui.TraceViewer,{client,projectId:pid,designRef:design,onAuthenticationLost:()=>assert.fail('인증 상실 없음')}),
+   ui.React.createElement(SuspendNewScope,{design}));
+ }
+ const flush=()=>ui.React.act(async()=>{await new Promise<void>(resolve=>setImmediate(resolve));});
+ try{
+  await ui.React.act(async()=>root.render(ui.React.createElement(Harness)));
+  assert.equal(calls.length,1);
+  await ui.React.act(async()=>ui.React.startTransition(()=>switchDesign(traceDesignB)));
+  assert.equal(suspended,true);
+  assert.doesNotMatch(container.textContent,/새 범위 대기/);
+  assert.equal(calls.length,1);
+  deliver(Response.json(a.page()));
+  for(let n=0;n<40&&!container.textContent.includes(a.reason);n++)await flush();
+  assert.match(container.textContent,new RegExp(a.reason));
+  assert.equal(calls.length,1);
+ }finally{
+  deliver(Response.json(a.page()));
+  await ui.React.act(async()=>root.unmount());document.body.removeChild(container);
+ }
+});
+
+test('UI06 재렌더 전 transport가 바뀌면 이전 문서 메타데이터에서 새 원문 GET을 시작하지 않는다',async()=>{
+ const body='이전 문서의 합성 원문',title='이전 문서',formRef={...traceDesignA,id:id(780)};
+ const content={body:{artifactId:id(781),bytes:Buffer.byteLength(body),contentHash:contentHash(body),mediaType:'text/plain;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]};
+ const documentRef={id:id(782),version:1,contentHash:contentHash(canonicalJson({title,formRef,content,stageNodeRef:null}))};
+ const metadata={...documentRef,title,formRef,content,stageNodeRef:null,confirmed:false,validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:{criteriaVersion:1,formRef,items:[]},contentReviews:[]};
+ const a=traceUIFixture(traceDesignA,783,'이전',documentRef),base='/api/v1/projects/'+pid;
+ for(const swap of [false,true]){
+  let deliver!:(response:Response)=>void;
+  const held=new Promise<Response>(resolve=>{deliver=resolve;});
+  const files:string[]=[];
+  const file=(input:string|URL|Request)=>{const path=String(input);files.push(path);assert.equal(path,base+'/files/'+content.body.artifactId);return Response.json(null,{status:403});};
+  const readBody=(input:string|URL|Request)=>{const path=String(input);files.push(path);assert.equal(path,base+'/files/'+content.body.artifactId);return new Response(body,{headers:{'content-type':'application/octet-stream'}});};
+  const f=await mountTraceUI(async(input,init)=>{
+   const path=String(input);assert.equal(init?.method,'GET');
+   if(path.startsWith(base+'/traces?'))return Response.json(a.page());
+   if(path===base+'/documents/'+documentRef.id+'/versions/1')return held;
+   return readBody(input);
+  });
+  try{
+   await f.until(()=>f.container.textContent.includes(a.reason));await f.click('이전 설계 연결 문서 원문 보기');
+   if(swap)f.props.client.transport=async (input:RequestInfo|URL)=>file(input);
+   deliver(Response.json(metadata));
+   if(swap){for(let n=0;n<20;n++)await f.flush();assert.deepEqual(files,[]);assert.doesNotMatch(f.container.textContent,new RegExp(body));}
+   else{await f.until(()=>f.container.textContent.includes(body));assert.deepEqual(files,[base+'/files/'+content.body.artifactId]);}
+   assert.equal(f.lost(),0);
+  }finally{deliver(Response.json(metadata));await f.close();}
+ }
+});
+
+test('UI06 재렌더 전 transport가 바뀌면 늦은 계획 성공·401을 게시하지 않는다',async()=>{
+ const a=traceUIFixture(traceDesignA,790,'이전'),base='/api/v1/projects/'+pid;
+ for(const late of ['SUCCESS','AUTH'] as const){
+  let deliver!:(response:Response)=>void,unexpected=0;
+  const held=new Promise<Response>(resolve=>{deliver=resolve;});
+  const f=await mountTraceUI(async(input,init)=>{
+   const path=String(input);assert.equal(init?.method,'GET');
+   if(path.startsWith(base+'/traces?'))return Response.json(a.page());
+   assert.equal(path,base+'/work-plans/'+a.plan.ref.id+'/versions/1');return held;
+  });
+  try{
+   await f.until(()=>f.container.textContent.includes(a.reason));await f.click(a.open);
+   f.props.client.transport=async()=>{unexpected++;throw Error('교체 transport 조회 금지');};
+   deliver(late==='SUCCESS'?Response.json(a.plan):Response.json({code:'AUTH_REQUIRED'},{status:401}));
+   for(let n=0;n<20;n++)await f.flush();
+   assert.doesNotMatch(f.container.textContent,new RegExp(a.original+'|AUTH_REQUIRED'));
+   assert.equal(f.lost(),0);assert.equal(unexpected,0);
+  }finally{deliver(Response.json(a.plan));await f.close();}
+ }
 });
