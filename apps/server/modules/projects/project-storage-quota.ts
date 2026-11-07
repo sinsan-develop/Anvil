@@ -1,5 +1,6 @@
 import {isNodeDecisionReceiptIds,type NodeDecisionReceiptIds} from '../access/project-command.ts';
 import {isExecutionStartOriginReceiptIds,type ExecutionStartOriginReceiptIds} from '../access/project-command.ts';
+import {isOriginReuseRequestReceiptIds,type OriginReuseRequestReceiptIds} from '../access/project-command.ts';
 import {readExecutionStartOriginSnapshot,readExecutionStartOriginReservation,originSame,originActor} from '../executions/execution-start-origin-input.ts';
 import {types} from 'node:util';
 import {sourceEventQuotaPart} from '../documents/document-source-observation.ts';
@@ -13,7 +14,7 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {compileExecutionPreparationOptions,readExecutionPreparationInput} from '../executions/preparation-input.ts';
 import {ProjectConnectionDefinitions} from '../connections/project-connection-definitions.ts';
 import {ProjectEnvironments} from '../connections/project-environments.ts';
-import {cloneV1,recordV1,arrayV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,recordV1,arrayV1,refV1,hashV1,isoV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 export const PROJECT_STORAGE_CAP=10737418240n;
 function fail(code='PROJECT_STORAGE_QUOTA_INPUT_INVALID',status=422):never{throw new AuthFailure(code,status);}
 function unknown():never{return fail('PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN',503);}
@@ -107,6 +108,35 @@ export class ProjectStorageQuota{
  readonly #prepared=new WeakMap<object,PreparedState>();readonly #reserved=new WeakMap<object,BundleState>();readonly #started=new WeakMap<object,BundleState>();
  readonly #nodeDecisions=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:NodeDecisionReceiptIds;tx:string;hash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
  readonly #startOrigins=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:ExecutionStartOriginReceiptIds;tx:string;planHash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
+ readonly #originRequests=new WeakMap<object,{db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;request:ProjectCommand;ids:OriginReuseRequestReceiptIds;tx:string;planHash:string;reserved:bigint;until:number;resultHash:string;phase:'RESERVED'|'CLOSED'}>();
+ async reserveOriginReuseApprovalRequest(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawRecord:unknown,policyRef:RuntimeRefV1,ids:OriginReuseRequestReceiptIds,rawResult:unknown,until:number):Promise<object>{
+  return this.#durable(async()=>{
+   const request=cloneV1(rawRequest),ref=cloneV1(rawRef),record:any=cloneV1(rawRecord),result:any=cloneV1(rawResult),query=db.query,identity=originActor(actor);
+   if(!isOriginReuseRequestReceiptIds(ids,db,actor,request)||request.operation!=='requestApproval'||!refV1(ref)||ref.version!==1||record.id!==ref.id||record.version!==1||record.status!=='PENDING'
+    ||!Number.isFinite(until)||Date.parse(record.details.expiresAt)>until||!originSame(record.details,request.payload.details)
+    ||!originSame(record.originReuseEvidence?.candidatePayload,request.payload.candidatePayload)||!originSame(record.policyRef,policyRef)
+    ||hash(Object.fromEntries(Object.entries(record).filter(([key])=>!['id','version','status','createdAt'].includes(key))))!==ref.contentHash
+    ||result.operationId!==ids.operationId||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED'||!originSame(result.data,{ref,status:'APPROVAL_REQUESTED',request:record}))fail();
+   const tx=await this.#registeredTx(db,query,ids.transactionId,until),sqlIds={serverCommandId:ids.serverCommandId,operationId:ids.operationId,authorizationReceiptId:ids.authorizationReceiptId,auditEventId:ids.auditEventId};
+   const rows=(await Reflect.apply(query,db,['SELECT * FROM anvil.fn09_origin_reuse_request_reserve($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11)',[actor.authSession!.id,actor.actorId,actor.clientId,request.projectId,canonicalJson(request),canonicalJson(ref),canonicalJson(record),canonicalJson(policyRef),canonicalJson(sqlIds),tx,new Date(until).toISOString()]])).rows;
+   await this.#registeredTx(db,query,tx,until);
+   if(originActor(actor)!==identity||!isOriginReuseRequestReceiptIds(ids,db,actor,request))unknown();
+   const row=rows.length===1?rows[0]:null;
+   if(!row||row.reservation_id!==ids.serverCommandId||row.transaction_id!==tx||row.record_hash!==ref.contentHash||!hashV1(row.plan_hash)||!isoV1(row.authorized_until)||Date.parse(row.authorized_until)>until)unknown();
+   const reserved=quotaBytes(row.reserved_bytes),end=Math.min(until,Date.parse(row.authorized_until));if(reserved>PROJECT_STORAGE_CAP)unknown();
+   await this.#registeredTx(db,query,tx,end);const lease=Object.freeze({});this.#originRequests.set(lease,{db,query,actor,identity,request,ids,tx,planHash:row.plan_hash,reserved,until:end,resultHash:hash(result),phase:'RESERVED'});return lease;
+  });
+ }
+ async settleOriginReuseApprovalRequest(db:PoolClient,actor:AuthenticatedIdentity,lease:object,rawReceipt:{id:string;result:unknown;authorizationReceiptRef:RuntimeRefV1}):Promise<void>{
+  const s=this.#originRequests.get(lease);if(!s||s.phase!=='RESERVED'||s.db!==db||s.actor!==actor||s.query!==db.query)unknown();s.phase='CLOSED';
+  await this.#durable(async()=>{
+   const receipt=cloneV1(rawReceipt);if(originActor(actor)!==s.identity||receipt.id!==s.ids.serverCommandId||receipt.authorizationReceiptRef.id!==s.ids.authorizationReceiptId||hash(receipt.result)!==s.resultHash)unknown();
+   await this.#registeredTx(db,s.query,s.tx,s.until);
+   const rows=(await Reflect.apply(s.query,db,['SELECT * FROM anvil.fn09_origin_reuse_request_settle($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10)',[actor.authSession!.id,actor.actorId,actor.clientId,s.request.projectId,s.request.commandId,s.ids.serverCommandId,s.planHash,receipt.id,canonicalJson(receipt.result),s.tx]])).rows;
+   await this.#registeredTx(db,s.query,s.tx,s.until);if(originActor(actor)!==s.identity)unknown();const row=rows.length===1?rows[0]:null;
+   if(!row||row.status!=='SETTLED'||row.reservation_id!==s.ids.serverCommandId||row.transaction_id!==s.tx||quotaBytes(row.settled_bytes)>s.reserved)unknown();
+  },()=>true);
+ }
  async reserveExecutionStartOrigin(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawValue:unknown,policyRef:RuntimeRefV1,ids:ExecutionStartOriginReceiptIds,rawResult:unknown,until:number):Promise<object>{
   return this.#durable(async()=>{
    const request=cloneV1(rawRequest),value:any=cloneV1(rawValue),result:any=cloneV1(rawResult),s=readExecutionStartOriginSnapshot(value.snapshot),q=readExecutionStartOriginReservation(value.reservation.snapshot);

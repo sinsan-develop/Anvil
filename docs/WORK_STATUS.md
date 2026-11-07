@@ -17994,3 +17994,45 @@ node --experimental-test-module-mocks --test tests/unit/FN06/environment-version
 node --experimental-test-module-mocks --test tests/unit/FN08/execution-human-routes.test.ts tests/unit/FN08/execution-instruction-queue.test.ts tests/unit/FN07/claude-sdk-query-factory.test.ts
 npm run typecheck
 ```
+
+
+### FN09 요청 저장·계상의 기존 채택 범위 재확인과 착수
+
+- PR60은 head90ef0d9e58302add5495581bb229031a80b1c559에서 main34fdf6a8772c1c202a985faff84f711ba5127728로 병합됐고 Broker42398501405 success·정확부모/트리·종료branch/tag/추적ref 정리, merged-main 보호조립 smoke2 PASS/skip0를 확인했다. 새 codex/av3-fn09-origin-request-storage를 main에서 생성·즉시 게시하고 branch/main 각각 로컬/원격0/0을 확인했다.
+- 앞선 요청계상/RPC 추가 직접승인 필수 판단을 정정한다. 독립 읽기 재대조에서 채택1EABB2AD §5는 기존 승인 요청/결정/소비 원장·C/A/U·목적별 비용·최초 알림·같은Tx정산·0082·목적한정 내부함수/ACL을 포함하며, 원WI78–79는 정확 reserve/settle 인자·행투영·R자기비용·helper/ACL을 착수 전 Main과 닫도록 한다. 현재734575F7 말미의 새 purpose/part 명칭과 두RPC source는 이 내부상세다. 새HTTP/DTO/표·일반권한·상한확대나 해당RPC소스작성의 실제 플랫폼 거절 원문/결과는 확인되지 않았다. 미채택 제목·과거PMO질문대기만으로 소스구현을 차단한 이전 해석은 과도했다.
+- Main은 기존채택에 ORIGIN_REUSE_APPROVAL_REQUEST/origin_reuse_request, 원서버commandID 예약·PENDING/v1ref·요청+C/A/U+최초알림+R자기비용 각1·기존U/H/O/10GiB/coverage와 CAS, 원WI의 reserve11인자/settle10인자 및 observed_until 축소상계·원인증Tx/P2/봉인/저장행 재검산을 결박했다. 목적한정 PUBLIC차단·migrator소유·app두exactEXECUTE는 미적용 DDL source만 작성한다. 실제DB/GRANT/권한/키/서비스/Agent/SSH/사용자자료는 계속 제외하며 해당delta가 실제로 발생하거나 플랫폼이 정확행위를 거절하면 별도 반환한다.
+- 같은 Primary 단일writer에게 제품5(apps/server/modules/approvals/project-approvals.ts, access/project-command.ts, projects/project-storage-quota.ts, executions/execution-start-origin-reuse.ts, 신규 db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending), 시험4(FN09 origin fixture/routes, FN08 execution-start-material-registration-schema, FN13 project-storage-quota-schema), 원WI734575F7 불변복구1 총10경로를 배정했다. 제품 경로는 첫경로와 같이 apps/server/modules/ 아래, 시험은 tests/unit/ 아래다. Main은WORK_STATUS만소유. 추가경로는 사유/영향을 먼저 결박한다.
+- 구현 목표는 명시합성포트의 실제 App POST→PENDING/v1 COMMIT→같은actor/client 원ID 보호GET·원자계상이다. defaultApp미구성·7키START/SEND·badscope/권한/미확인quota/xid/변조/rollback/UNKNOWN 보호는 유지한다. 원ID분실새조회·결정/소비/START저장·전체fact/실제실행은 제외한다. B1 관측까지만412였던 양성을 요청저장으로 확장할 때 before/after·이유를 기록하고 실패기준을 느슨하게 하지 않는다. 원 보호자료는 읽기만 한다. PMO에 이 내부source경계 판단 정정을 전달했으며, 별개 IX01 실제QA 직접승인/WSL복구지원 요청은 유지한다. 착수오류0.
+
+- Primary 저장 단위 첫 행동 RED는 ORIGIN_REUSE_APPROVAL_NOT_CONNECTED 412≠200이며 unsupported SQL 목록은 비었다(2a7bc3). P03/P18 private 출처→P02 원 요청/C-A-U/최초 알림→P16 예약/정산을 연결한 첫 App POST→PENDING→원ID GET→원명령 replay·같은후보 다른명령409 여정1이 GREEN(8e16a2), typecheck exit0이다. 이는 명시 합성SQL 행 모델이고 실제SQL/비용식/COMMIT 검증이 아니다. 현재0082·정적계상·중요음성·전체직접회귀는 구현중이며 동결/완료는 아니다.
+- 첫 시험 준비503 두 출력은 공용fixture가 실제SERVER_DENIAL6인자를 APPLIED12인자로 처리한 오류였다. 실제거절감사행을 별도 모델링해 제품412 RED와 분리했고 guard/감사 삭제0이다. 동일모델의 pg_current_xact_id/txid_current ID·Date의DB JSON표현도 원형에 맞춰 보강했다. 미확인quota·xid·봉인·알림·원자rollback/UNKNOWN 반례를 계속 확인한다.
+- 별도 읽기 재대조에서 원FN03 WORK_STATUS450·02결과서79367A45와 승인기록8FCD0F6F는 직접답변01a1b4e5-b467-7fb2-b90a-9575d5d1f272에 따른208149cc/C5B10B35/FC575A2B 컴파일02 성공을 기록한다. 앞서main에서보이지않는다는이유로02미실행/새승인필수라본보고를정정한다. 컴파일은재실행하지않고 결과 원문/내구증빙·현재코드동일성의읽기인수를계속한다. 과거성공을DLL실행/원문읽기/전체FN03완료로승격하지않는다. 후속횟수확대의정확대상은원질문문맥확인전추정하지않는다.
+
+- FN03 02의 승인3475B/SHA8FCD0F6F…100438·결과서1665B/SHA79367A45…AB7B34·실제소진488B/SHA8E3EFE02…975EF·내구결과1176B/SHA39846B3D…87EB05를 인수했다. Main은 승인qaRoot가 가리키는 결과JSON의 지문과 PASS_COMPILE_ONLY/exit0·399ms·진단0·markerConsumed/processStarted/startOutcomeKnown/compilerImageMatched/exitObserved/출력EOF/durableResult/과거서명결박 true, DLL로드·새Authenticode관측 false를 직접 검산했다. 원소진marker 지문도 결과참조와 일치한다. 원stdout 자체일치는 과거bbc55c/5c3de0 보존기록 근거로 구분한다.
+- 실행208149cc와현재34fdf6a8의 SourceContentObserver.cs39004B/C714C4C1…E4482, SourceContentObserverSourceTests.cs17557B/8806E2A7…3AB08, 실행기31962B/FC575A2B…9CF09는 Git 원바이트동일이다. 같은 소스의 컴파일한정 검수를 재사용하고 컴파일02 재실행/재승인을 요청하지 않는다. QA·marker·DLL은 정상보존 상태로 남으며 자동정리0, DLL동작/ABI/PInvoke·네이티브 사용자파일I/O/LINK는 계속 미검증이다. 원준비물·실키·서비스·Agent 변경0. Main 첫결과읽기는 문서위치의상대경로를QA기준으로추정해부재1이었고, 실제승인qaRoot로대조해정정했다. PMO에도 이 완료증빙·앞선미실행판단정정을 전달했다.
+
+- 동결 전 독립 source 검수에서 Important 후보2를 발견해 같은 Primary에 필수 인접 보완을 결박했다. 신규 queueExecutionCommand 요청 알림을 기존 ProjectNotifications.#verify가 consumableOperations로 거절해 list/read503이 되는 경로와, 신규 originReuse #history가 authorizeMaterial(...readExecutionStartOrigins...,true)의 approvalRequired를 무시해 REQUIRE_APPROVAL 원문을 반환할 수 있는 경로다. 아직 실제RED 재현 전이므로 source후보로 구분한다.
+- 추가 허용은 apps/server/modules/notifications/project-notifications.ts·tests/unit/FN17/project-notifications.test.ts 정확2개다. 기존10+필수인접2=12경로이며 MainWORK_STATUS만 별도 소유한다. 새PENDING 뒤 알림 list/read·기존알림·원문무권한/변조를 검수하고 일반consumableOperations·결정/소비목록에queue를 추가하는 우회는 금지한다. 원GET은현재읽기정책AUTO→REQUIRE_APPROVAL/회수 음성을 재현해 기존거절패턴으로 보완한다. 같은 단일writer로 진행하며 실제 서비스·DB·권한·키·Agent 실행0.
+
+- Important2건은 aa7a40에서 실제합성RED로재현됐다. 새PENDING알림 list503≠200 및 같은actor/client의 읽기 REQUIRE_APPROVAL GET200(원문포함)≠412다. 목적전용 알림 parser/원명령hash와 approvalRequired 명시거절로 e65ed6의 부모여정/하위2 총3 PASS/exit0 GREEN이다. 일반consumableOperations·결정/소비목록은 그대로이며 최종동결과기존알림/직접인접회귀는진행중이다.
+- Main의 경로추정 읽기오류는 projects/project-checkpoints·pr-request workflow명·projects/project-pending-approvals 위치추정의 같은유형3건 누적으로 해당조사방식을중단·PMO예외보고했다. 이후 rg --files와 실제routes import로확인한 approvals/project-approvals.ts만읽어 기존목록은operation문자열·NOT_RECHECKED metadata로새목적을표시할수있음을확인했다. 추가목록API변경은필요없다. 제품/권한/삭제영향0·사용자조치불필요, Primary정상구현/검수는계속한다. 다음경로조회는파일목록·import확인후에만수행한다.
+
+
+### FN09 요청 저장 백엔드 검수와 UI08 조회 연결
+
+- 기존 Primary의 백엔드 허용14경로 동결 manifest는 3e2ebb9bd68c32a2c125675b03f72c9048d02f3203506d76c04ff5c7beced4bd다. Primary 직접·인접 고유212 PASS/skip0, Main의 직접61 PASS/skip0/exit0, 독립11 PASS/skip0 및 C0/I0/M0를 확인했다. 독립 시험 전후 동결지문과 diff check가 일치했다. Main 정확 명령은 node --experimental-test-module-mocks --test tests/unit/FN09/execution-start-origin-routes.test.ts tests/unit/FN17/project-notifications.test.ts tests/unit/FN17/notification-routes.test.ts tests/unit/FN09/execution-preparation-approval.test.ts 이다.
+- 두 Important는 새 요청 알림 조회503과 REQUIRE_APPROVAL 읽기 원문 노출의 실제 합성 RED를 재현한 뒤 해소했다. 인접 시험 준비2건은 기존 SQL 비교의 CRLF/LF만 정규화하고 합성 repository에 기존 필수 installationId를 제공해 보정했다. 제품 guard·실패 기대값·skip 기준은 완화하지 않았다. 실제 PG 구문/설치·ACL·잠금·COMMIT·DB·키·서비스·Agent 및 결정/소비/START는 여전히 미검증·미실행이다.
+- 같은 branch에서 기존 Primary 단일 writer에게 UI08 읽기 소비5경로를 추가 배정했다. apps/web/src/features/decisions/api.ts, ApprovalsPage.tsx, 신규 origin-reuse-approval-api.ts 및 tests/unit/UI08/approval-api.test.ts, 신규 origin-reuse-approval-read.test.ts다. 기존 backend14는 동결하고 Main은 이 현황만 소유한다. 목적 전용 원문/해시/참조/actor-client 검산과 현재 Session/transport 귀속 아래 PENDING을 표시하며 이 목적의 결정·결박·소비·실행은 계속 차단한다. 일반 목적의 기존 동작·same-origin을 유지한다.
+- 신산님 동기화 지적 직후 실제 git ls-remote로 main과 codex/av3-fn09-origin-request-storage 모두 34fdf6a8772c1c202a985faff84f711ba5127728임을 재확인했다. 로컬 main·작업 HEAD도 같은 SHA이며 각각 ahead/behind0/0이다. 현재 구현 dirty/untracked는 아직 미게시로 명확히 구분한다. 화면5경로 검수 후 정확 허용목록 commit/push·PR·검증 병합·정리를 수행한다. 기존 보존자료 수정0, 전체 계획은 미완료다.
+
+- Main의 UI 작업 중 backend14 재검산에서 manifest 작성기의 개별 digest를 대문자로 직렬화해 최초 비교1회 불일치했다. 개별14 바이트/해시는 모두 동결값과 같았으며 원 방식의 소문자 SHA256 JSON 직렬화로 3e2ebb9b…ed4bd 일치를 재확인했다. 제품 변경/동결 훼손은 없고 검사기 표현 오류1로 기록한다.
+
+- UI08 중간 직접16 PASS/skip0/exit0 보고를 인수했다. 실제 ApprovalsPage를 메모리 번들로 렌더링한 합성 DOM과 실제 GET decoder의 원문/근거·주체변조·결정/결박 POST0·늦은응답/401·transport 교체·명시 재조회 복구 증거다. 최종동결·Main fresh·독립검수는 아직 전이며 기존 일반목적의 동일 scope GET횟수/결정입력 보존 회귀를 같은 Primary가 추가 확인 중이다. 실제 브라우저/서버/DB 증거로 승격하지 않는다.
+
+- UI08 Main fresh 검증은 node --experimental-test-module-mocks --test tests/unit/UI08/origin-reuse-approval-read.test.ts tests/unit/UI08/approval-api.test.ts 의 17 PASS/skip0/exit0(0498e2)이다. npm run typecheck exit0(14ca00), Vite write:false 메모리 build518modules/3outputs exit0(b4196a), git diff --check exit0(43eed9)를 확인했다. 기존 일반목적 동일scope 재렌더 상세GET수·결정입력 보존과 늦은 목록401도 포함한다. Primary는 직접포함 인접9파일51 PASS/skip0 보고, 독립 최종검수는 진행중이며 게시 전이다.
+
+- UI5 최종 writer 반환. api.ts32113B/06737E46…F04D63, ApprovalsPage.tsx55013B/33E11BDC…DC2C50, 신규origin-reuse-approval-api.ts8050B/30590137…9F7350, approval-api.test.ts8200B/F1F6EC75…58C96B, 신규origin-reuse-approval-read.test.ts21481B/ABD9559F…16D251를 Main도 직접 검산했다. 서버 계약에 없는 dependencies 1000건 상한1조건을 제거하고 기존2MiB·정렬/중복·봉인 경계 회귀1개를 추가했다.
+- 보정 후 Main fresh 직접2파일18 PASS/skip0/exit0(da02b4), Vite메모리 build518modules/3outputs exit0(d6f355)이다. Primary 인접9파일51 PASS 뒤 건수경계1 추가의 고유52를 구분하며 단일52개 실행으로 보고하지 않는다. Primary 최종type83dbbb·diff/index a6ef76 exit0, backend14 불변1a5464, 시작/종료HEAD34fdf6a8 및 indexempty·실행handle0이다.
+- Primary 준비오류는 Python인코딩·Vitevirtual entry·시험오류code/selector/새ID모델·해시검사기NameError·추정계약경로부재1을 제품RED와 구분했다. guard/실패기준 완화0. 실제served브라우저·HTTP서버/DB·SQL/권한/키/서비스/Agent0, 결정·소비·START는 후속 미완료로 보존한다. 다음 단위는 채택1EABB2AD §5의 같은 원요청 명시 결정 저장과 보호재조회이며 현재요청 역완결/계상 역사불변을 함께 구현해야 한다. 현재 branch 검수/통합/정리 후 순차착수한다.
+
+- UI08 최종 독립5경로 C0/I0/M0, 직접18 PASS/skip0/exit0(2d69d6), 최종hash일치4c8dff 및 backend14 manifest 불변/diffcheck0(f00b7b)를 인수했다. Main/Primary/독립검수의 source 한정 증거가 갖춰져 정확19경로(backend변경13+UI5+현황1)만 commit/push·PR로 통합한다. rollback은 이 단위 squash commit revert이며 실제DB 적용은 없다.

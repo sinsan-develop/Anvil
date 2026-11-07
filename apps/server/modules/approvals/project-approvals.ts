@@ -9,12 +9,15 @@ import {UnderstandingReviewApprovalCandidates} from './understanding-review-appr
 const samePreparationPayload=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 import {ExecutionPreparationApprovalCandidates} from './execution-preparation-approval-candidate.ts';
 import {recordApprovalRequestNotification} from '../notifications/approval-notification-producer.ts';
+import {notificationFromRow} from '../notifications/notification-input.ts';
+import {ExecutionStartOriginStore} from '../executions/execution-start-origin-store.ts';
+const readStoredOrigin=ExecutionStartOriginStore.prototype.read;
 import {ProjectLimitPolicies} from '../executions/runtime-policy.ts';
 import {assertResponsibleSessionApprovalTarget} from '../assignments/responsible-sessions.ts';
 import{randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
 import{AuthFailure,type AuthenticatedIdentity,type AccessRepository}from'../access/repository.ts';
-import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,reserveRegisteredPreparationApprovalRequestReceiptIds,reserveRegisteredPreparationApprovalDecisionReceiptIds,type ProjectCommand}from'../access/project-command.ts';
+import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,reserveOriginReuseRequestReceiptIds,reserveRegisteredPreparationApprovalRequestReceiptIds,reserveRegisteredPreparationApprovalDecisionReceiptIds,type ProjectCommand}from'../access/project-command.ts';
 import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate,readApprovalListQuery,readOriginReuseApprovalRequest}from'./approval-input.ts';
 import type{ProjectListCodec}from'../projects/service.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
@@ -77,7 +80,7 @@ export class ProjectApprovals{
   await db.query('INSERT INTO anvil.approval_consumptions(id,project_id,decision_id,command_id,scope_digest,policy_id,policy_version) VALUES($1,$2,$3,$4,$5,$6,$7)',[consumptionId,c.projectId,approval.decisionId,serverCommandId,approval.scopeDigest,policyRef.id,policyRef.version]);
   const updated=await db.query("UPDATE anvil.approval_requests SET status='CONSUMED',version=3 WHERE project_id=$1 AND id=$2 AND version=2 AND status='APPROVED'",[c.projectId,approval.requestId]);if(updated.rowCount!==1)throw new AuthFailure('VERSION_CONFLICT',409);
  }
- async request(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
+ async request(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef,originSource?:import('../executions/execution-start-origin-reuse.ts').OriginReuseRequestSource){
   const initialRequestPolicy=await authorizeMaterial(db,actor,c);
   if(canonicalJson(initialRequestPolicy.ref)!==canonicalJson(policyRef))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
   const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!p)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
@@ -86,8 +89,24 @@ export class ProjectApprovals{
   const proposed=p.details as {actionScope?:{operation?:unknown}}|null|undefined;
   if(proposed?.actionScope?.operation==='queueExecutionCommand'){
    if(c.approvalRef!==null||c.baselineRefs.length)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
-   readOriginReuseApprovalRequest(p,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,now},c.commandId);
-   throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+   const parsed=readOriginReuseApprovalRequest(p,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,now},c.commandId);
+   const {matchesOriginReuseRequestSource}=await import('../executions/execution-start-origin-reuse.ts');
+   if(!this.#registeredQuota||!matchesOriginReuseRequestSource(originSource,db,actor,c))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+   const source=originSource,query=db.query;
+   const check=()=>{if(db.query!==query||!matchesOriginReuseRequestSource(source,db,actor,c))throw new AuthFailure('ORIGIN_REUSE_REQUEST_OUTCOME_UNKNOWN',503);};
+   const send=async(sql:string,args?:unknown[])=>{check();const result=await Reflect.apply(query,db,[sql,args]);check();return result;};
+   if((await send('SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2',[c.projectId,parsed.details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_REQUESTED',409);
+   if((await send('SELECT 1 FROM anvil.commands WHERE project_id=$1 AND actor_id=$2 AND command_id=$3',[c.projectId,actor.actorId,parsed.details.candidateCommandId])).rowCount)throw new AuthFailure('APPROVAL_CANDIDATE_ALREADY_APPLIED',409);
+   const details=parsed.details,id=randomUUID(),scopeDigest=contentHash(canonicalJson(details.actionScope));
+   const snapshot={projectId:c.projectId,details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:actor.actorId},policyRef,requestedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},controlGeneration:c.controlGeneration,originReuseEvidence:source.evidence};
+   const ref={id,version:1,contentHash:contentHash(canonicalJson(snapshot))},createdAt=(await send('SELECT transaction_timestamp() at')).rows[0].at.toISOString();
+   const request={id,version:1,status:'PENDING',...snapshot,createdAt},ids=await reserveOriginReuseRequestReceiptIds(db,actor,c);check();
+   const result={operationId:ids.operationId,commandId:c.commandId,projectId:c.projectId,status:'APPLIED',targetId:id,version:1,data:{ref,status:'APPROVAL_REQUESTED',request},evidenceRefs:[],warnings:[],serverReceivedAt:createdAt};
+   const lease=await this.#registeredQuota.reserveOriginReuseApprovalRequest(db,actor,c,ref,request,policyRef,ids,result,source.until);check();
+   const receipt=await persistProjectReceipt(db,actor,c,ref,{status:'APPROVAL_REQUESTED',request},policyRef,'EXPLICIT_ONE_TIME_APPROVAL_REQUEST',ids);check();
+   await send("INSERT INTO anvil.approval_requests(id,project_id,version,candidate_command_id,action_scope_json,scope_digest,details_json,required_decider_ref,status,expires_at,created_by,client_id,command_id,policy_ref,content_hash,request_json,created_at) VALUES($1,$2,1,$3,$4,$5,$6,$7,'PENDING',$8,$9,$10,$11,$12,$13,$14,$15)",[id,c.projectId,details.candidateCommandId,JSON.stringify(details.actionScope),scopeDigest,JSON.stringify(details),JSON.stringify(snapshot.requiredDecider),details.expiresAt,actor.actorId,actor.clientId,receipt.id,JSON.stringify(policyRef),ref.contentHash,JSON.stringify(request),createdAt]);
+   await recordApprovalRequestNotification(db,actor,{command:c,request,receipt,initialPolicyValidUntil:Math.min(initialRequestPolicy.validUntil,source.until)});check();
+   await this.#registeredQuota.settleOriginReuseApprovalRequest(db,actor,lease,receipt);check();return receipt.result;
   }
   const details=readApprovalDetails(p.details,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,allowedOperations:consumableOperations,now});
   const membership=details.actionScope.operation==='saveProjectMembership';
@@ -134,6 +153,7 @@ export class ProjectApprovals{
  async decide(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
   const p=readApprovalDecision(c.payload);if(c.targetId!==p.requestId||c.expectedVersion!==p.expectedVersion)throw new AuthFailure('APPROVAL_DECISION_INPUT_INVALID',422);
   const view=await this.read(db,actor,c.projectId,p.requestId),r=view.request;
+  if(r.details.actionScope.operation==='queueExecutionCommand')throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
   if(canonicalJson(r.requiredDecider)!==canonicalJson({kind:'HUMAN',userId:actor.actorId})||r.requestedBy.clientId!==actor.clientId||r.controlGeneration!==c.controlGeneration)throw new AuthFailure('APPROVAL_DECIDER_DENIED',403);
   if(view.currentVersion!==p.expectedVersion||view.storedStatus!=='PENDING'||view.decision)throw new AuthFailure('VERSION_CONFLICT',409);
   if(p.scopeDigest!==r.scopeDigest)throw new AuthFailure('APPROVAL_SCOPE_MISMATCH',409);
@@ -205,8 +225,36 @@ export class ProjectApprovals{
   const request=row.request_json;if(!request||typeof request!=='object')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   const{id:requestId,version,status,createdAt,...snapshot}=request,ref=row.result_ref?.data?.ref;
   if(requestId!==id||version!==1||status!=='PENDING'||createdAt!==row.created_at.toISOString()||snapshot.projectId!==pid||snapshot.requestedBy?.kind!=='HUMAN'||snapshot.requestedBy.userId!==row.created_by||snapshot.requestedBy.clientId!==row.client_id||row.actor_id!==row.created_by||row.command_client!==row.client_id||!isVersionRef(ref)||ref.id!==id||ref.version!==1||ref.contentHash!==row.content_hash||contentHash(canonicalJson(snapshot))!==row.content_hash||row.operation!=='requestApproval'||row.result_ref.status!=='APPLIED'||row.result_ref.data.status!=='APPROVAL_REQUESTED'||canonicalJson(row.result_ref.data.request)!==canonicalJson(request)||canonicalJson(snapshot.policyRef)!==canonicalJson(row.policy_ref)||canonicalJson(snapshot.details)!==canonicalJson(row.details_json)||snapshot.details?.candidateCommandId!==row.candidate_command_id||canonicalJson(snapshot.details?.actionScope)!==canonicalJson(row.action_scope_json)||snapshot.scopeDigest!==row.scope_digest||contentHash(canonicalJson(row.action_scope_json))!==row.scope_digest||canonicalJson(snapshot.requiredDecider)!==canonicalJson(row.required_decider_ref)||row.expires_at.toISOString()!==snapshot.details?.expiresAt)throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
-  if(snapshot.details?.actionScope?.operation==='queueExecutionCommand')throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
-  readApprovalDetails(snapshot.details,{actorId:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,allowedOperations,now:new Date(0)});
+  const originReuse=snapshot.details?.actionScope?.operation==='queueExecutionCommand';
+  if(originReuse){
+   if(actor.actorId!==row.created_by||actor.clientId!==row.client_id)throw new AuthFailure('NOT_FOUND',404);
+   if(Number(row.version)!==1||row.status!=='PENDING')throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+   const e=snapshot.originReuseEvidence;
+   if(!e||e.purpose!=='FN09_ORIGIN_REUSE_SYNTHETIC_START_V1'||e.projectId!==pid||e.candidateCommandId!==snapshot.details.candidateCommandId
+    ||e.candidatePayloadHash!==snapshot.details.actionScope.payloadHash||contentHash(canonicalJson(e.candidatePayload))!==e.candidatePayloadHash
+    ||canonicalJson(e.p2Ref)!==canonicalJson(row.policy_ref)||e.subject?.userId!==actor.actorId||e.subject?.clientId!==actor.clientId)throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+   readOriginReuseApprovalRequest({details:snapshot.details,candidatePayload:e.candidatePayload},{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:snapshot.controlGeneration,now:new Date(0)},row.result_ref.commandId);
+   const readPolicy=await authorizeMaterial(db,actor,{schemaVersion:1,projectId:pid,commandId:id,clientId:actor.clientId,controlGeneration:snapshot.controlGeneration,operation:'readExecutionStartOrigins',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{}},true);
+   if(readPolicy.approvalRequired)throw new AuthFailure('APPROVAL_REQUIRED',412);
+   const origin=await readStoredOrigin.call(new ExecutionStartOriginStore(),db,pid,e.originRef.id,e.originRef.version),s=origin.value.snapshot;
+   if(!samePreparationPayload(origin.value.ref,e.originRef)||!samePreparationPayload(origin.value.reservation.ref,e.reservationRef)
+    ||!samePreparationPayload(e.originCommand,{serverCommandId:origin.serverCommandId,commandId:origin.request.commandId,requestHash:contentHash(canonicalJson(origin.request))})
+    ||!samePreparationPayload(e.subject,s.subject)||!samePreparationPayload(e.execution,s.execution)||!samePreparationPayload(e.p1Ref,s.observedPolicyRef))throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+   for(const key of ['stageRequestRef','assignmentRef','roleBindingRef','sessionBindingRef','preparationRef','connectionRef','environmentRef','contextBundleRef','sourceScopes','budgetPolicyRef'] as const)
+    if(!samePreparationPayload(e[key],s[key]))throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+   const proof=(await db.query('SELECT c.*, (SELECT jsonb_agg(to_jsonb(a)) FROM anvil.authorization_receipts a WHERE a.command_id=c.id) reuse_receipts, (SELECT jsonb_agg(to_jsonb(a)) FROM anvil.audit_events a WHERE a.project_id=c.project_id AND a.command_id=c.id) reuse_audits, (SELECT jsonb_agg(to_jsonb(n)) FROM anvil.notifications n WHERE n.project_id=c.project_id AND n.source_command_id=c.id) reuse_notifications FROM anvil.commands c WHERE c.project_id=$1 AND c.id=$2',[pid,row.command_id])).rows[0];
+   const original={schemaVersion:1,projectId:pid,commandId:row.result_ref.commandId,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{details:snapshot.details,candidatePayload:e.candidatePayload}};
+   const digest=contentHash(canonicalJson({projectId:pid,actorId:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,requestHash:contentHash(canonicalJson(original)),policyRef:row.policy_ref,targetRef:ref}));
+   const receipts=proof?.reuse_receipts,audits=proof?.reuse_audits,notifications=proof?.reuse_notifications,receipt=receipts?.[0],audit=audits?.[0],notification=notifications?.[0];
+   if(!proof||proof.state!=='APPLIED'||proof.operation!=='requestApproval'||proof.actor_id!==row.created_by||proof.client_id!==row.client_id||proof.command_id!==original.commandId||proof.request_hash!==contentHash(canonicalJson(original))||proof.approval_consumption_id!==null||proof.payload_ref!==null
+    ||!samePreparationPayload(proof.result_ref,row.result_ref)||receipts?.length!==1||audits?.length!==1||notifications?.length!==1
+    ||receipt.id!==proof.authorization_receipt_id||receipt.command_id!==proof.id||receipt.scope_kind!=='PROJECT'||receipt.scope_id!==pid||receipt.scope_digest!==digest||receipt.approval_decision_ref!==null
+    ||!samePreparationPayload(receipt.subject_ref,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||!samePreparationPayload(receipt.policy_ref,row.policy_ref)
+    ||audit.command_id!==proof.id||audit.project_id!==pid||audit.operation_id!==proof.operation_id||audit.scope_digest!==digest||audit.outcome!=='APPLIED'||audit.source_kind!=='HUMAN_COMMAND'||audit.reason_code!=='EXPLICIT_ONE_TIME_APPROVAL_REQUEST'||audit.approval_ref!==null
+    ||!samePreparationPayload(audit.actor_ref,{kind:'HUMAN',userId:row.created_by})||audit.client_ref!==row.client_id||!samePreparationPayload(audit.target_ref,ref)||!samePreparationPayload(audit.policy_ref,row.policy_ref)
+    ||notification.approval_request_id!==id||notification.source_command_id!==proof.id||notification.request_content_hash!==ref.contentHash||Number(notification.request_version)!==1||notification.recipient_user_id!==row.created_by||notification.event_kind!=='APPROVAL_REQUESTED'||notification.channel!=='IN_APP'||notification.delivery_state!=='STORED_IN_APP')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+   notificationFromRow({...notification,created_at:new Date(notification.created_at),read_at:null});
+  }else readApprovalDetails(snapshot.details,{actorId:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,allowedOperations,now:new Date(0)});
   if(snapshot.details.actionScope.operation==='saveProjectMembership'){const candidate=await readStoredMembershipCandidate(db,actor,pid,snapshot.details,snapshot.membershipCandidate);await verifyMembershipApprovalRequest(db,pid,row,candidate);}
   else if(Object.hasOwn(snapshot,'membershipCandidate'))throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   if(snapshot.candidateKind!==undefined&&snapshot.candidateKind!=='ENVIRONMENT_DEFINITION'||snapshot.candidateKind==='ENVIRONMENT_DEFINITION'&&snapshot.details.actionScope.operation!=='saveEnvironment')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
