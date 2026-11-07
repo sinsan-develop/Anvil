@@ -17696,3 +17696,19 @@ PMO에 해당 통합과 다음 D4DCBC7F §4의 정책 A/B 선택 근거를 전�
 재개 후 두 번째 감사: 직전 턴은 동일 미채택 경계 재확인으로 기능 진전 없음이다. 750b29는 HEAD a8f30f58·현황2만 변경·패킷5579A6E9 불변, PMO cursor :12 idle/새 결정 없음임을 확인했다. 실행 중 작업 대기가 아니며 새 승인/반복 시험/코드/실환경 실행0이다. 새 감사 두 번째 턴으로 목표 active·전체 미완료를 유지한다.
 
 재개 후 세 번째 감사: c64d87은 HEAD a8f30f58·현황2만 dirty·패킷5579A6E9 불변·diff0, PMO cursor :12 idle/새 결정 없음과 두 담당자의 completed를 확인했다. 직전 두 턴은 같은 미채택 경계 재확인으로 기능 진전 없음이다. §428의 재개 뒤 연속3턴에서 같은 blocker가 유지됐으므로 목표를 BLOCKED로 다시 기록한다. 전체 미완료·정확 범위·재개 조건은 §427 그대로이며 새 승인 질문/반복 시험/제품/실환경/원격 실행0이다. 이는 완료나 paused가 아니다.
+
+
+## 429. 목표 재활성화·FN03 서명 검산 내부 누락 확인
+
+새 active 지시 뒤 이전 BLOCKED 감사는 초기화했다. 32783e/session26294→85c237은 HEAD fca9bf8d·tracked clean/보호3·미채택 FN09 A5579A6E9 유지를 확인했다. PMO cursor :13은 새 A결정 없음이다. 기존 전체 화면 검사는 반복하지 않고 FN03의 보호 관측 공급자 내부 증빙만 좁혔다. 기존 lineage/head/server-context는 UNVERIFIED/false이고 SOURCE_READ는 다른 purpose라 단순 adapter로 권위 승격할 수 없다.
+
+그러나 기존 채택 B source 계약의 §6/7/11 안에서 SOURCE_CONTENT의 실제 P256 수학적 서명 검산2는 아직 없음을 Primary와 독립 담당자가 확인했다. 원 proof-input은 목적별 bytes/signature만 만들고 node:crypto verify는 없다. 독립 C0/I0는 원 승인 §3:165~168/§11:365~367·WORK_STATUS:2434와 계약746D1FBA…F173를 확인했다. Main106bde/733b4c도 원 미검증 경계와 P256 parser/전용 domain을 대조했다. 새 source2에서 기존 원형 bytes·키형식/fingerprint·실제 서명 수학만 검사하고 현재 권위/등록·permit/nonce·실제 관측/LINK/실행은 계속 false다. FN03_SOURCE_CONTENT_SIGNATURE_SOURCE_WI_20261107.md로 같은 Primary에게 한정2를 맡기며 실제 키/DB/권한/서비스/Agent/파일조사/외부 실행0이다. 전체 목표는 active·미완료이고 이 내부 기능 진전을 FN09 정책 결정과 분리한다. Primary 경로 추정 오류2는 실제 파일 목록으로 교정했다.
+
+
+## 430. FN03 서명 수학적 검산 구현·독립49 검수
+
+기존 Primary는 WI E3DF68D2의 신규2를 동결했다. source3956B/5DEE24D1·시험14946B/06AEB813이며 원 proof-input/domain/parser/route/SQL은 불변이다. 실제 crypto P256의 정상3·wrong key/곡선/SPKI·변조/목적 및 등록/SOURCE_READ 교차·nonce/ref/기한·getter/Proxy·원 보관시각의 실패보고와 권위false를 확인했다. 소스와 시험 각각 독립 C0/I0/M0다.
+
+Main35ac89는 정확 신규/직접인접4파일 고유49PASS/0fail/0cancel/0skip/0todo·378.2511ms·exit0, 63636b typecheck exit0, bc6f61/39b663 raw2·diff0를 확인했다. 최초7bb2c9 export 부재10FAIL은 구조적 RED, 16f3b9 10PASS/da7095 신규12·dbd118 인접37은 별도 Primary 증거다. 시험 literal/배열 타입3진단은 fixture scope reader로 좁힌 준비 오류1로 해결했다. Primary Git worktree 오류는 Main 실제 Git 대조로 분리했다. 메모리 합성 key만 사용·저장/실키/실환경/외부0·live0다.
+
+결과 FN03_SOURCE_CONTENT_SIGNATURE_SOURCE_RESULT_20261107.md에 정확2·검증/미검증·복구를 기록한다. 이 단위는 서명 수학만 인수하고 registration/observation/current authority/execution/LINK false를 유지한다. DocumentSourceObservationPort의 실제 producer·현재 등록/permit/nonce·관측 검증 receipt는 여전히 미완료이며 FN09 A정책 결정을 대체하지 않는다. 전체 목표 active/미완료다.
