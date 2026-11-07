@@ -17811,3 +17811,11 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 - 시험은 실제 buildApp.inject와 ProjectsRepository, 합성 인증·SQL 행을 사용한다. 목록10 GET·상세6 GET에서 두 소유자 자기 조회와 상대/미존재 동일 404·검색 정보 비노출·쓰기0을 확인했다. 독립 M1의 SQL 조건 확장 공백은 공백 정규화 전체 조회 SQL과 OR TRUE 음성으로 보완했다. 최종 SHA256 06489803…974151, Primary 직접 3 PASS/typecheck exit0, Main 직접·인접 7 PASS/skip0. 실제 PostgreSQL·RLS·쿠키 인증·첨부와 IX01 전체는 미검증이다. 최초 읽기 도구 경계 1건은 읽기 전용 승인 호출로 정정했고 제품 실패0.
 
 - 독립 재검수 C0/I0/M0, 최초 M1 해소. 기존 역사 시험 및 제품 코드에는 변경이 없다.
+
+### IX01 TM07 첨부 조회 격리 착수
+
+- 게시 909fda97의 PR46 병합을 확인했다. 새 main 9ff1e6c8의 parent 및 검수 트리 일치, 원격 작업 브랜치/요청 태그 부재를 검산했다. Actions 목록 읽기의 TLS timeout 1회는 실제 ref·PR 조회로 대체 확인했고 요청 태그 재전송0.
+- 새 codex/av3-ix01-artifact를 정확 main 9ff1e6c8에서 만들자마자 원격에 게시했다. 로컬/원격 SHA 일치 및 ahead/behind 0/0. 기존 Primary 한 명에게 tests/unit/IX01/project-read-isolation.test.ts의 합성 첨부 GET 검증만 맡겼다. 자기 원문/hash, 상대·미존재 동일 404, 회원/첨부 스코프 검산 뒤만 파일 읽기를 허용하는지 확인한다. 실제 DB/파일·제품·기존 역사 자료 변경 없음, 시험 오류0(착수 전).
+
+- 첨부 GET 합성 검증 완료. Primary 직접 4 PASS·typecheck exit0, Main 직접·인접 8 PASS/skip0·diff check exit0, 독립 C0/I0/M0. 시험 SHA256 02C85A1D…829A306A, 기존 역사 시험 SHA256 31EF5403…638F4 일치. 실제 라우트와 ArtifactStore에서 두 소유자의 원문·해시·헤더, 상대/미존재 동일 404, 조회 범위와 파일 접근 차단, 변조 503, 합성 쓰기·열린 파일0을 확인했다. 자식 시험 환경 상속과 TS7022 준비 오류 각1건 보정. 실제 PostgreSQL·RLS·실파일·브라우저 및 IX01 전체는 미검증.
+- Git 동기화 점검에서 작업 브랜치 게시와 별개로 로컬 main 참조가 2,252커밋 뒤처진 것을 확인했다. 체크아웃되지 않은 main만 ff 갱신해 GitHub main 및 작업 브랜치의 기준 SHA 9ff1e6c8과 일치시켰다. 기존 작업트리 변경은 보존했다.
