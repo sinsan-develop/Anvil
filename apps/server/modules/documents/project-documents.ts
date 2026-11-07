@@ -32,10 +32,30 @@ interface ArtifactRef { artifactId: string; bytes: number; contentHash: string; 
 interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
 function exact(value: unknown, keys: string[]): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).sort().join(',') === [...keys].sort().join(','); }
 function artifactRef(value: unknown): value is ArtifactRef { return exact(value, ['artifactId', 'bytes', 'contentHash', 'mediaType']) && typeof value.artifactId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value.artifactId) && Number.isSafeInteger(value.bytes) && Number(value.bytes) >= 0 && Number(value.bytes) <= 20 * 1024 * 1024 && typeof value.contentHash === 'string' && /^[0-9a-f]{64}$/.test(value.contentHash) && typeof value.mediaType === 'string' && value.mediaType.length <= 200; }
+const readPlanArtifact=ArtifactStore.prototype.read;
 export class ProjectDocuments {
   #store: ArtifactStore | null;
   #proposalPlans=new WeakSet<DocumentProposalPlan>();
-  constructor(root?: string,sourceStore?:ArtifactStore) { if(sourceStore!==undefined&&(!(sourceStore instanceof ArtifactStore)||root!==undefined))throw new AuthFailure('ARTIFACT_STORAGE_CONFIGURATION_INVALID',422);this.#store = sourceStore??(root ? new ArtifactStore(root) : null); }
+  readonly #protectedPlanRead:typeof readPlanArtifact|null;
+  readonly #protectedPlanMethods:Readonly<Pick<ProjectDocuments,'version'|'originalText'>>|null;
+  constructor(root?: string,sourceStore?:ArtifactStore,mode?:'FN09_PLAN_PROOF') {
+    if(sourceStore!==undefined&&(!(sourceStore instanceof ArtifactStore)||root!==undefined))throw new AuthFailure('ARTIFACT_STORAGE_CONFIGURATION_INVALID',422);
+    if(mode==='FN09_PLAN_PROOF'&&(!root||sourceStore!==undefined))throw new AuthFailure('ARTIFACT_STORAGE_CONFIGURATION_INVALID',422);
+    this.#store=sourceStore??(root?new ArtifactStore(root):null);
+    this.#protectedPlanRead=mode==='FN09_PLAN_PROOF'?readPlanArtifact.bind(this.#store!):null;
+    this.#protectedPlanMethods=this.#protectedPlanRead?Object.freeze({version:readProtectedPlanVersion.bind(this),originalText:readProtectedPlanText.bind(this)}):null;
+    if(this.#protectedPlanMethods)Object.defineProperties(this,{
+      version:{value:this.#protectedPlanMethods.version},originalText:{value:this.#protectedPlanMethods.originalText},
+    });
+  }
+  /** 합성 계획 관측 조립의 원 receiver 여부만 확인한다. */
+  static isProtectedPlanReader(value:unknown):value is ProjectDocuments {
+    return typeof value==='object'&&value!==null&&#protectedPlanRead in value
+      &&Object.getPrototypeOf(value)===ProjectDocuments.prototype&&value.#protectedPlanRead!==null
+      &&value.#protectedPlanMethods!==null
+      &&Object.getOwnPropertyDescriptor(value,'version')?.value===value.#protectedPlanMethods.version
+      &&Object.getOwnPropertyDescriptor(value,'originalText')?.value===value.#protectedPlanMethods.originalText;
+  }
   /** 서버 내부 source 부모 명령의 기존 보호 Artifact reader/원 quota 연결. HTTP 입력으로 공급할 수 없다. */
   sourceQuota(access:AccessRepository){return new ProjectStorageQuota(access,this.#store??undefined,this);}
   async sourceArtifact(db:PoolClient,projectId:string,ref:ArtifactRef){return this.#artifact(db,projectId,ref);}
@@ -139,7 +159,10 @@ export class ProjectDocuments {
     if(row.state==='QUARANTINED')throw new AuthFailure('ARTIFACT_QUARANTINED',412);
     if (!this.#store) throw new AuthFailure('ARTIFACT_STORAGE_UNCONFIGURED', 412);
     if (row.storage_key !== `blobs/${projectId}/${ref.artifactId}`) throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED', 503);
-    const bytes=await (backupBudget===undefined?this.#store.read(projectId, ref.artifactId, ref):this.#store.read(projectId, ref.artifactId, ref,backupBudget));if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);assertStoredArtifactReadable(row,bytes);if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return bytes;
+    const bytes=this.#protectedPlanRead
+      ?await this.#protectedPlanRead(projectId,ref.artifactId,ref,backupBudget).catch(()=>{throw new AuthFailure('ARTIFACT_INTEGRITY_FAILED',503);})
+      :await (backupBudget===undefined?this.#store.read(projectId, ref.artifactId, ref):this.#store.read(projectId, ref.artifactId, ref,backupBudget));
+    if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);assertStoredArtifactReadable(row,bytes);if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);return bytes;
   }
   async originalText(db:PoolClient,projectId:string,ref:ArtifactRef,backupBudget?:ArtifactBackupReadBudget) {
     if(backupBudget!==undefined){
@@ -229,6 +252,7 @@ export class ProjectDocuments {
     return result;
   }
 }
+const readProtectedPlanVersion=ProjectDocuments.prototype.version,readProtectedPlanText=ProjectDocuments.prototype.originalText;
 export function registerProjectDocumentReads(app: FastifyInstance, options: AccessRoutesOptions, documents: ProjectDocuments, sourceLinks=new ProjectDocumentSourceLinks()) {
   const idSchema = { type: 'string', pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' };
   const codec = new ProjectListCodec(value => options.repository.signProjectCursor('DOCUMENTS:' + value));

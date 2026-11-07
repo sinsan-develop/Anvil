@@ -15,7 +15,7 @@ import{randomUUID}from'node:crypto';
 import type{PoolClient}from'pg';
 import{AuthFailure,type AuthenticatedIdentity,type AccessRepository}from'../access/repository.ts';
 import{authorizeMaterial,currentPolicy,persistProjectReceipt,projectMember,reserveRegisteredPreparationApprovalRequestReceiptIds,reserveRegisteredPreparationApprovalDecisionReceiptIds,type ProjectCommand}from'../access/project-command.ts';
-import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate,readApprovalListQuery}from'./approval-input.ts';
+import{readApprovalDetails,readApprovalDecision,readApprovalRef,assertApprovalCandidate,readApprovalListQuery,readOriginReuseApprovalRequest}from'./approval-input.ts';
 import type{ProjectListCodec}from'../projects/service.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{isVersionRef}from'../../../../contracts/references.ts';
@@ -83,6 +83,12 @@ export class ProjectApprovals{
   const p=c.payload;if(c.targetId!==null||c.expectedVersion!==0||!p)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
   const now=(await db.query('SELECT clock_timestamp() at')).rows[0].at as Date;
   // 요청 지원과 실제 소비는 별개다. 분리의 새 저장 보호/소비 연결 완료 전 실제 실행은 거절한다.
+  const proposed=p.details as {actionScope?:{operation?:unknown}}|null|undefined;
+  if(proposed?.actionScope?.operation==='queueExecutionCommand'){
+   if(c.approvalRef!==null||c.baselineRefs.length)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+   readOriginReuseApprovalRequest(p,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,now},c.commandId);
+   throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+  }
   const details=readApprovalDetails(p.details,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:c.controlGeneration,allowedOperations:consumableOperations,now});
   const membership=details.actionScope.operation==='saveProjectMembership';
   const environment=details.actionScope.operation==='saveEnvironment'&&Object.hasOwn(p,'candidatePayload');
@@ -199,11 +205,12 @@ export class ProjectApprovals{
   const request=row.request_json;if(!request||typeof request!=='object')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   const{id:requestId,version,status,createdAt,...snapshot}=request,ref=row.result_ref?.data?.ref;
   if(requestId!==id||version!==1||status!=='PENDING'||createdAt!==row.created_at.toISOString()||snapshot.projectId!==pid||snapshot.requestedBy?.kind!=='HUMAN'||snapshot.requestedBy.userId!==row.created_by||snapshot.requestedBy.clientId!==row.client_id||row.actor_id!==row.created_by||row.command_client!==row.client_id||!isVersionRef(ref)||ref.id!==id||ref.version!==1||ref.contentHash!==row.content_hash||contentHash(canonicalJson(snapshot))!==row.content_hash||row.operation!=='requestApproval'||row.result_ref.status!=='APPLIED'||row.result_ref.data.status!=='APPROVAL_REQUESTED'||canonicalJson(row.result_ref.data.request)!==canonicalJson(request)||canonicalJson(snapshot.policyRef)!==canonicalJson(row.policy_ref)||canonicalJson(snapshot.details)!==canonicalJson(row.details_json)||snapshot.details?.candidateCommandId!==row.candidate_command_id||canonicalJson(snapshot.details?.actionScope)!==canonicalJson(row.action_scope_json)||snapshot.scopeDigest!==row.scope_digest||contentHash(canonicalJson(row.action_scope_json))!==row.scope_digest||canonicalJson(snapshot.requiredDecider)!==canonicalJson(row.required_decider_ref)||row.expires_at.toISOString()!==snapshot.details?.expiresAt)throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+  if(snapshot.details?.actionScope?.operation==='queueExecutionCommand')throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
   readApprovalDetails(snapshot.details,{actorId:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,allowedOperations,now:new Date(0)});
   if(snapshot.details.actionScope.operation==='saveProjectMembership'){const candidate=await readStoredMembershipCandidate(db,actor,pid,snapshot.details,snapshot.membershipCandidate);await verifyMembershipApprovalRequest(db,pid,row,candidate);}
   else if(Object.hasOwn(snapshot,'membershipCandidate'))throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
-  const candidateEnvironment=snapshot.candidateKind==='ENVIRONMENT_DEFINITION'?await new EnvironmentApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   if(snapshot.candidateKind!==undefined&&snapshot.candidateKind!=='ENVIRONMENT_DEFINITION'||snapshot.candidateKind==='ENVIRONMENT_DEFINITION'&&snapshot.details.actionScope.operation!=='saveEnvironment')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+  const candidateEnvironment=snapshot.candidateKind==='ENVIRONMENT_DEFINITION'?await new EnvironmentApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidateActivation=snapshot.details.actionScope.operation==='activateDesignChange'?await new DesignActivationApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidatePlan=snapshot.details.actionScope.operation==='saveWorkPlanDraft'?await new WorkPlanApprovalCandidates().read(db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;
   const candidateBackupPolicy=snapshot.details.actionScope.operation==='saveBackupPolicy'?await new BackupPolicyApprovalCandidates()[backupPolicyHistory?'readPolicyHistory':'read'](db,actor,pid,id,{serverCommandId:row.command_id,createdBy:row.created_by,clientId:row.client_id,controlGeneration:snapshot.controlGeneration,policyRef:row.policy_ref,details:snapshot.details}):undefined;

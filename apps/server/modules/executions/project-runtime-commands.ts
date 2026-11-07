@@ -1,5 +1,7 @@
+import {types} from 'node:util';
 import {cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
-import {AuthFailure} from '../access/repository.ts';
+import {AuthFailure,type AccessRepository} from '../access/repository.ts';
+import {matchesOriginReuseApprovalCapability,type OriginReuseApprovalCapability} from './execution-start-origin-reuse.ts';
 import type {ProjectCommand} from '../access/project-command.ts';
 import type {ProjectInitialExecutionQueue} from './execution-commands.ts';
 import type {ProjectExecutionStops} from './execution-stop.ts';
@@ -11,11 +13,18 @@ import type {UnderstandingHistoryPort} from './understanding-history-routes.ts';
 export const syntheticHumanExecutionOperations=['queueExecutionCommand','requestExecutionStop','authorizeExecutionRecovery','reviewUnderstanding','revokeExecutionGrant'] as const;
 export interface SyntheticHumanExecutionPorts{
  understandingHistory?:UnderstandingHistoryPort;
+ readonly originReuseApproval?:OriginReuseApprovalCapability;
  readonly transport:'SYNTHETIC_ONLY';queue:Pick<ProjectInitialExecutionQueue,'command'>;stop:Pick<ProjectExecutionStops,'command'>;recovery:Pick<ProjectExecutionRecovery,'command'>;understanding:Pick<ProjectUnderstandingReviews,'command'>;
  revocations?:Pick<ProjectExecutionGrantRevocations,'command'>;
  instructions?:Pick<ProjectExecutionInstructionQueue,'command'|'transport'>;
 }
 export function checkSyntheticHumanExecutionPorts(p:SyntheticHumanExecutionPorts){if(p?.transport!=='SYNTHETIC_ONLY'||['queue','stop','recovery','understanding'].some(k=>typeof(p as any)[k]?.command!=='function')||p.revocations!==undefined&&typeof p.revocations?.command!=='function'||p.instructions!==undefined&&(p.instructions.transport!=='SYNTHETIC_ONLY'||typeof p.instructions.command!=='function'))throw new AuthFailure('SYNTHETIC_RUNTIME_REQUIRED',503);}
+export function originReuseApprovalCapability(p:SyntheticHumanExecutionPorts|undefined,access:AccessRepository):OriginReuseApprovalCapability|undefined{
+ if(!p||types.isProxy(p))return undefined;
+ const transport=Object.getOwnPropertyDescriptor(p,'transport'),capability=Object.getOwnPropertyDescriptor(p,'originReuseApproval'),queue=Object.getOwnPropertyDescriptor(p,'queue');
+ if(transport?.value==='SYNTHETIC_ONLY'&&capability&&'value'in capability&&queue&&'value'in queue
+  &&matchesOriginReuseApprovalCapability(capability.value,access,queue.value))return capability.value;
+}
 export function enabledSyntheticHumanExecutionOperations(p:SyntheticHumanExecutionPorts){checkSyntheticHumanExecutionPorts(p);return syntheticHumanExecutionOperations.filter(op=>op!=='revokeExecutionGrant'||p.revocations!==undefined);}
 /** 기존 서비스가 자신의 HUMAN·제어·정책 transaction을 소유한다. 이 분기는 허가/DB를 만들지 않는다. */
 export async function dispatchSyntheticHumanExecution(p:SyntheticHumanExecutionPorts,token:string,csrf:string,request:ProjectCommand){

@@ -17970,3 +17970,27 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - 후보 게시 b5f220b537a46f20c8f98231c779abc77d0e9f80은 원격 branch와 동일·tracked clean0/0이다. PMO에 정확 후보/소스/hash와 WSL 회복 근거 지원 및 신규 실제 실행 범위 결정을 전달했다. PMO 후속 turn 01a1b712-d28b-7cb0-b40e-876429afd291에서 후보 A05880F5…6185D를 대조하고 임시 인증키/권한을 포함하는 새112SQL/TC01/프로필의 직접 실행 승인을 신산님께 요청했다. WSL 회복은 여전히 미확인이라고 답했다. 실행 approval/plan/intent·새 QA는 발급/생성하지 않았다.
 - Main은 같은 승인 질문을 이 대화에 반복하지 않고, 별개 FN09→FN08의 현 증빙 공급 adapter가 기존 채택 계약 안에서 구현 가능한지 기존 읽기 담당자에게 구체 경계로 대조하게 했다. 실제 실행 제외가 source 구현 전체 금지를 의미한다고 추정하지 않으며, 부족한 계약과 미연결 구현을 실제 caller/guard로 구분한다. 전체 계획 미완료는 유지한다.
+
+
+### FN09 보존 보호 관측 소스의 통합 준비
+
+- 문서 PR59는 head aae7c788b1f043844645c58ac7f284db6d1112f1에서 main f57417e53fc93ea9584143f69432c1d3f05fa3e9로 병합됐고 Broker42397206148 success·정확 부모/트리·종료branch/tag/추적ref 정리를 확인했다. 후보는 여전히 미승인이며 실제 실행 권한을 발급하지 않았다. 다음 codex/av3-fn09-origin-observation-integration을 main에서 생성·즉시 게시하고 branch와main 각각 로컬/원격0/0을 확인했다.
+- 읽기 담당자는 기존 승인 상세1EABB2AD와 내부보호모드의 보존 소스/P18·T01/T03·B1 조립 일부가 통합본에 없음을 확인했다. 실제 fact12개 전체를 보호관측으로 대체하는 계약은 없지만, 명시합성resolver를 유지한 같은Tx private관측의 기존 채택 범위는 source 통합 대상으로 남는다. 그 범위만 기존 Primary에게 먼저 정확diff/허용목록/회귀계획을 읽기 대조하게 했다. 제품쓰기 착수 전 Main이 허용파일을 결박한다.
+- 원 상세계약29354B/1EABB2AD…E96522, 원P18 37941B/BD886A09…D4E8B4, 현WI39253B/734575F7…4EABB7은 원 보존자료로 읽기만 한다. WI의 역사23E4BD93 채택 시점과 뒤에 붙은 미채택 요청계상RPC를 구분하고, 미채택0082·요청reserve/settle·승인 저장/소비·START성공은 반입하지 않는다. 기존 보호자료/동결 바이트·일반START/SEND·최종412/도메인쓰기0를 보존한다. 이 선행 통합을 전체FN09/계획완료의 대체 성공으로 표시하지 않는다. 실제DB/권한/키/서비스/Agent·SSH/사용자자료 조사0, 준비오류0.
+
+- Primary가 읽기 대조한 최소 제품17/시험2 hunk에 Main GO를 결박했다. 대상은 approvals/{approval-input,project-approvals}.ts, access/project-command.ts, connections/{project-registration-reads,project-environment-resources,project-environments}.ts, executions/{runtime-policy,execution-commands,project-runtime-commands,execution-start-origin-reuse}.ts, projects/routes.ts, assignments/responsible-sessions.ts, documents/project-documents.ts, traceability/{design-index,work-plans}.ts, context/project-contexts.ts, knowledge/knowledge.ts 및 tests/unit/FN09/{execution-start-origin-fixture,execution-start-origin-routes.test}.ts다. 제품 경로는 apps/server/modules/ 아래이며 신규 P18 외에 현재 파일의 필요한 hunk만 포팅한다.
+- 기존 P10/P11 WIP·P12 정책인계/네번째command인자·T01 installOriginQueuePersistence helper·미채택0082/T05/T06·요청계상/승인저장/소비·전체fact생산은 제외한다. 최신 FN13 query 정규화와 일반 문서/START/SEND를 보존한다. 원 보호자료는 끝까지 읽기만 하며 이미 작성된 관측을 새 가짜 412 분기로 다시 만들지 않는다.
+- 후속 인수에 필요한 채택 상세계약 원문 docs/work_packages/FN09_ORIGIN_REUSE_DETAILED_CONTRACT_CANDIDATE_20261107.md도 동일 Primary가 불변 복구한다. Main 원바이트29354B/SHA1EABB2AD…E96522·LF75/CRLF0를 직접 확인했다. 제품17/시험2/불변문서1 총20경로이며 Main은 WORK_STATUS만 소유한다. 원 DRAFT 표시는 원시점 이력, 직접 채택은 원 현황477~478과 이 인수기록으로 대조한다. 실제 환경 실행0.
+
+- 보호관측 통합 동결20경로의 raw manifest는 경로 정렬 후 각 {path,bytes,sha256} JSON 행 배열 SHA256 1ccdf502f7083db6073655e4e9dc1ce8ff271380b165b0ab789cad4eb1626d02다. P18 BD886A09…D4E8B4/37941B·계약1EABB2AD…E96522/29354B는 원 보존 바이트와 동일하다. P12 0BA08528…7360C/16006B·routes29A0D5DD…844A1/91246B는 제외 정책 인계 hunk와 최신 FN13 보완을 보존한 통합 차이다. T01 103234AE…ACF80/68669B·T03 28E69291…A2CCA/80279B, 원 자료3개 종료 지문 불변. Primary writer 반환·live/pending0.
+- RED는 기존 시험 선택2의 parser 부재/P18 모듈 부재 2FAIL, 기존 source 통합 뒤 동일 선택2 GREEN이다. Primary T03/T02 26 + 직접영향11파일127 + 기본 HUMAN/SEND/factory3파일93 = 고유246 PASS/skip0, 선택2는 중복 합산하지 않았다. typecheck·변경17모듈 개별 import·diff check exit0.
+- Main 직접 `node --experimental-transform-types --experimental-test-module-mocks --disable-warning=ExperimentalWarning --test tests/unit/FN09/execution-start-origin-queue-basis.test.ts tests/unit/FN09/execution-start-origin-routes.test.ts tests/unit/FN13/checkpoint-routes.test.ts` 32 PASS/skip0/exit0, 최신 FN13 인증 목록/페이지와 이 통합의 같은Tx 관측·위조/회수·기한·원문변조·최종412/쓰기0를 검산했다. 독립 exact20 C0/I0/M0·집중2 PASS/skip0, 시험 뒤 raw manifest 불변·diff0.
+- Primary 준비 오류는 apply_patch 전달 인코딩 문맥 미일치1(미적용 후 정정), experimental mock 옵션 누락1, 감사 Python cp949 읽기1(UTF-8 명시 정정)이며 제품 RED와 구분한다. 독립 검수도 최초 mock 옵션 누락1을 정정했다. Main 동일 근본 원인 구현 오류 반복0. 실제 DB/SQL·권한·잠금·키·파일시스템·서비스·Agent·브라우저·전체fact/전체FN09/계획 완료는 미검증이다. rollback은 이 통합 commit revert로 한정하며 기존 보존 원문을 복원 대상으로 덮지 않는다.
+
+- Primary가 실행한 추가 회귀의 정확 명령은 다음과 같으며 모두 exit0이다.
+```powershell
+node --experimental-test-module-mocks --test tests/unit/FN09/execution-start-origin-routes.test.ts tests/unit/FN09/execution-start-origin-queue-basis.test.ts
+node --experimental-test-module-mocks --test tests/unit/FN06/environment-versions.test.ts tests/unit/FN06/environment-resources.test.ts tests/unit/FN08/runtime-policy.test.ts tests/unit/FN08/execution-command-ledger.test.ts tests/unit/FN08/execution-start-context-source.test.ts tests/unit/FN09/responsible-sessions.test.ts tests/unit/FN04/work-plan.test.ts tests/unit/FN05/context-approval-consumption.test.ts tests/unit/FN05/context-sources.test.ts tests/unit/FN03/document-source-observation.test.ts tests/unit/FN13/checkpoint-routes.test.ts
+node --experimental-test-module-mocks --test tests/unit/FN08/execution-human-routes.test.ts tests/unit/FN08/execution-instruction-queue.test.ts tests/unit/FN07/claude-sdk-query-factory.test.ts
+npm run typecheck
+```

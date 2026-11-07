@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {persistProjectReceipt,projectMember,type ProjectCommand} from '../access/project-command.ts';
-import type {ProjectDocuments} from '../documents/project-documents.ts';
+import {ProjectDocuments} from '../documents/project-documents.ts';
 import type {ProjectListCodec} from '../projects/service.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
@@ -18,9 +18,16 @@ import {ProjectWorkPlans} from '../traceability/work-plans.ts';
 
 export class ProjectKnowledge{
   #documents:ProjectDocuments;
-  constructor(documents:ProjectDocuments){this.#documents=documents;}
+  readonly #protectedPlans:Readonly<Pick<ProjectWorkPlans,'read'>>|null;
+  readonly #protectedConversation:ProjectConversations['readMessage']|null;
+  constructor(documents:ProjectDocuments){
+    this.#documents=documents;
+    const protectedPlan=ProjectDocuments.isProtectedPlanReader(documents);
+    this.#protectedPlans=protectedPlan?ProjectWorkPlans.protectedCurrentReader(documents):null;
+    this.#protectedConversation=protectedPlan?readProtectedKnowledgeConversation.bind(new ProjectConversations(documents)):null;
+  }
   async #verify(db:PoolClient,actor:AuthenticatedIdentity,pid:string,entry:KnowledgeEntry){
-    await verifyKnowledgeScope(db,pid,entry.scope,ref=>new ProjectWorkPlans(this.#documents).read(db,actor,pid,ref.id,ref.version));
+    await verifyKnowledgeScope(db,pid,entry.scope,ref=>(this.#protectedPlans??new ProjectWorkPlans(this.#documents)).read(db,actor,pid,ref.id,ref.version));
     const body=await this.#documents.originalText(db,pid,entry.contentRef);
     assertKnowledgeTextSafe(entry.title);assertKnowledgeTextSafe(entry.reason);assertKnowledgeTextSafe(body);
     for(const r of entry.sourceRefs){
@@ -34,7 +41,8 @@ export class ProjectKnowledge{
         assertKnowledgeTextSafe(await this.#documents.originalText(db,pid,{artifactId:r.id,bytes:Number(row.bytes),contentHash:row.content_hash,mediaType:row.media_type}));
       }else{
         const row=(await db.query('SELECT conversation_id FROM anvil.conversation_messages WHERE project_id=$1 AND id=$2',[pid,r.id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
-        const message=await new ProjectConversations(this.#documents).readMessage(db,actor,pid,row.conversation_id,r.id);
+        const message=await (this.#protectedConversation?this.#protectedConversation(db,actor,pid,row.conversation_id,r.id)
+          :new ProjectConversations(this.#documents).readMessage(db,actor,pid,row.conversation_id,r.id));
         if(message.sourceRef.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
         if(r.kind==='USER_INSTRUCTION'&&message.message.kind!=='USER_INSTRUCTION')throw new AuthFailure('KNOWLEDGE_SOURCE_KIND_MISMATCH',422);
       }
@@ -116,3 +124,4 @@ export class ProjectKnowledge{
     return{items,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,searchScope:'TITLE_REASON',observedAt:new Date().toISOString()};
   }
 }
+const readProtectedKnowledgeConversation=ProjectConversations.prototype.readMessage;

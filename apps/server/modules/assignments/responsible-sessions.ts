@@ -75,7 +75,15 @@ const bindingSelect = 'SELECT b.*' + commandColumns + 'FROM anvil.role_bindings 
 const sessionSelect = 'SELECT s.*' + commandColumns + 'FROM anvil.agent_sessions s LEFT JOIN anvil.commands c ON c.project_id=s.project_id AND c.id=s.command_id ';
 
 /** 기존 HUMAN 명령의 현재 제어/명시 정책 transaction 안에서만 호출한다. 예약은 실행 허가가 아니다. */
+// 순환 모듈의 클래스가 초기화된 뒤 최초 생성자에서 원 reader를 고정한다.
+let originalApprovalConsumptionReader:ProjectApprovals['readResponsibleSessionConsumption']|undefined;
+
 export class ResponsibleSessions {
+  /** 내부 조립에서만 쓰는 부작용 없는 실제 인스턴스 검산이다. */
+  static isRealInstance(value:unknown,approvalReader?:ProjectApprovals['readResponsibleSessionConsumption']):value is ResponsibleSessions {
+    return typeof value==='object'&&value!==null&&#definitionRead in value
+      &&(approvalReader===undefined||approvalReader===originalApprovalConsumptionReader);
+  }
   readonly methods: Pick<ProjectMethodologies, 'readApplication'>;
   readonly assignments: Pick<ProjectAssignmentConfirmations, 'read'>;
   readonly drafts: Pick<ProjectAssignmentDrafts, 'current'>;
@@ -83,6 +91,10 @@ export class ResponsibleSessions {
   readonly #definitionRead:ProjectConnectionDefinitions['read']|null;
   constructor(methods: Pick<ProjectMethodologies, 'readApplication'>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>,
     drafts: Pick<ProjectAssignmentDrafts, 'current'>, connections: Pick<ProjectConnectionCandidates, 'read'>, definitions?:ProjectConnectionDefinitions) {
+    if(originalApprovalConsumptionReader===undefined){
+      const reader=Object.getOwnPropertyDescriptor(ProjectApprovals.prototype,'readResponsibleSessionConsumption');
+      if(reader&&'value'in reader&&typeof reader.value==='function')originalApprovalConsumptionReader=reader.value;
+    }
     this.methods = methods; this.assignments = assignments; this.drafts = drafts; this.connections = connections;this.#definitionRead=definitions instanceof ProjectConnectionDefinitions?ProjectConnectionDefinitions.prototype.read.bind(definitions):null;
   }
   #envelope(request: ProjectCommand, operation: string, previous: VersionRef | null) {
@@ -100,7 +112,8 @@ export class ResponsibleSessions {
     const ar=row.receipt_rows[0],audit=row.audit_rows[0];let approvalRef=null;
     if(row.approval_consumption_id!==null){
       if(row.approval_rows.length!==1||row.approval_rows[0].id!==row.approval_consumption_id)throw Error('INTEGRITY');
-      const link=row.approval_rows[0],history=await new ProjectApprovals().readResponsibleSessionConsumption(db,actor,row.project_id,link.requestId),r=history.request,used=history.consumption;
+      if(!originalApprovalConsumptionReader)throw Error('INTEGRITY');
+      const link=row.approval_rows[0],history=await originalApprovalConsumptionReader.call(new ProjectApprovals(),db,actor,row.project_id,link.requestId),r=history.request,used=history.consumption;
       approvalRef={requestId:link.requestId,decisionId:link.decisionId,scopeDigest:r.scopeDigest};
       if(history.storedStatus!=='CONSUMED'||!used||history.decision?.decision!=='APPROVE'||history.decision.id!==link.decisionId
         ||used.id!==row.approval_consumption_id||used.serverCommandId!==row.server_command_id||used.commandId!==row.command_key||used.requestHash!==row.request_hash

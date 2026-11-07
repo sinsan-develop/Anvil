@@ -8,6 +8,7 @@ import {authorizeMaterial,currentPolicy,projectMember} from '../access/project-c
 import {ProjectListCodec} from '../projects/service.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
+import type {RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {registrationRef,connectorRef} from './project-registrations.ts';
 import {publicKeyFingerprint} from './registration-proof.ts';
 import {trustRegistrationOperations} from './trust-registration-input.ts';
@@ -22,6 +23,7 @@ export function trustScopeProjection(scope:any){
 
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+type OriginRegistrationSelection={projectId:string;registrationRef:RuntimeRefV1;connectorRef:RuntimeRefV1;originalPolicyRef:RuntimeRefV1;permissionPolicyRef:RuntimeRefV1;controlGeneration:number};
 export class ProjectRegistrationReads{
  readonly installationId:string;
  constructor(installationId:string){this.installationId=installationId;}
@@ -37,8 +39,8 @@ export class ProjectRegistrationReads{
   if(!rules.length||rules.some(r=>r.disposition==='DENY'))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
   return{control,policy,now,rules,validUntil:Math.min(...rules.map(r=>Date.parse(r.expiresAt)))};
  }
- async #record(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
-  const row=(await db.query('SELECT r.*,h.owner_user_id,h.client_id host_client,h.credential_generation host_credential_generation,h.generation,h.host_label,h.host_fingerprint,h.public_key_spki,h.status connector_state,h.revoked_at host_revoked_at,c.operation created_operation,c.actor_id created_actor,c.client_id created_client,c.state created_state,c.result_ref created_result FROM anvil.connector_registrations r JOIN anvil.connectors h ON h.project_id=r.project_id AND h.id=r.connector_id AND h.registration_id=r.id JOIN anvil.commands c ON c.project_id=r.project_id AND c.id=r.created_command_id WHERE r.project_id=$1 AND r.id=$2 AND r.requested_by=$3 AND r.client_id=$4',[pid,id,actor.actorId,actor.clientId])).rows[0];
+ async #record(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,lock=false){
+  const row=(await db.query('SELECT r.*,h.owner_user_id,h.client_id host_client,h.credential_generation host_credential_generation,h.generation,h.host_label,h.host_fingerprint,h.public_key_spki,h.status connector_state,h.revoked_at host_revoked_at,c.operation created_operation,c.actor_id created_actor,c.client_id created_client,c.state created_state,c.result_ref created_result FROM anvil.connector_registrations r JOIN anvil.connectors h ON h.project_id=r.project_id AND h.id=r.connector_id AND h.registration_id=r.id JOIN anvil.commands c ON c.project_id=r.project_id AND c.id=r.created_command_id WHERE r.project_id=$1 AND r.id=$2 AND r.requested_by=$3 AND r.client_id=$4'+(lock?' FOR SHARE OF r,h':''),[pid,id,actor.actorId,actor.clientId])).rows[0];
   if(!row)throw new AuthFailure('NOT_FOUND',404);
   try{
    const s=row.scope_json,created=row.created_result?.data,projection=trustScopeProjection(s);
@@ -47,6 +49,36 @@ export class ProjectRegistrationReads{
    if(row.proofed_at&&(!row.public_key_spki||!row.observed_host_fingerprint))throw Error();
   }catch{throw new AuthFailure('CONNECTOR_REGISTRATION_INTEGRITY_FAILED',503);}
   return row;
+ }
+ /** FN09 원 등록의 한정 관측. 일반 등록 현재성과 native 준비 권위는 발급하지 않는다. */
+ async observeStartOriginRegistration(db:PoolClient,actor:AuthenticatedIdentity,input:OriginRegistrationSelection){
+  const reject=()=>new AuthFailure('ORIGIN_REUSE_REGISTRATION_NOT_CURRENT',412);
+  const {projectId:pid,registrationRef:expectedRegistration,connectorRef:expectedConnector,originalPolicyRef,permissionPolicyRef,controlGeneration}=input;
+  const a=actor.authSession;
+  if(!a||!actor.reauthUntil)throw reject();
+  const sessions=(await db.query('SELECT s.id,s.idle_expires_at,s.absolute_expires_at,s.reauth_until FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients c ON c.id=s.client_id AND c.user_id=s.user_id WHERE s.id=$1 AND s.user_id=$2 AND s.client_id=$3 AND s.revoked_at IS NULL AND u.status=\'ACTIVE\' AND u.revoked_at IS NULL AND c.revoked_at IS NULL AND s.credential_generation=u.credential_generation AND s.credential_generation=$4 FOR SHARE OF u,s,c',[a.id,actor.actorId,actor.clientId,actor.credentialGeneration])).rows;
+  const session=sessions[0];
+  if(sessions.length!==1||session.id!==a.id)throw reject();
+  await projectMember(db,actor,pid,true);
+  const auth=await this.#authority(db,actor,pid);
+  if(Number(auth.control.generation)!==controlGeneration||!same(auth.policy.ref,permissionPolicyRef))throw reject();
+  const r=await this.#record(db,actor,pid,expectedRegistration.id,true);
+  const now=(await db.query('SELECT clock_timestamp() at')).rows[0]?.at;
+  const dates=[session.idle_expires_at,session.absolute_expires_at,session.reauth_until,r.expires_at,r.proofed_at,r.issued_at,now];
+  if(dates.some(d=>!(d instanceof Date)||!Number.isFinite(d.getTime())))throw reject();
+  const [idle,absolute,reauth,registrationExpiry,proofed,issued,observed]=dates.map(d=>d.getTime());
+  if(idle!==Date.parse(a.idleExpiresAt)||absolute!==Date.parse(a.absoluteExpiresAt)||reauth!==actor.reauthUntil.getTime()
+   ||r.session_id!==a.id||Number(r.credential_generation)!==actor.credentialGeneration||Number(r.control_generation)!==controlGeneration
+   ||!same(r.policy_ref,originalPolicyRef)||r.state!=='ISSUED'||r.connector_state!=='TRUSTED'||r.revoked_at!==null||r.host_revoked_at!==null
+   ||!r.public_key_spki||!Number.isSafeInteger(Number(r.failed_attempts))||Number(r.failed_attempts)<0||Number(r.failed_attempts)>=5
+   ||proofed>issued||issued>observed||!same(registrationRef(r),expectedRegistration)||!same(connectorRef(r,Number(r.generation)),expectedConnector))throw reject();
+  const rules=auth.policy.rules.filter(rule=>rule.subjectRef.kind==='HUMAN'&&rule.subjectRef.userId===actor.actorId
+   &&same(rule.targetScopes,[{kind:'PROJECT',projectId:pid}])&&rule.operations.includes('registerConnector')&&Date.parse(rule.expiresAt)>observed);
+  if(!rules.length||rules.some(rule=>rule.disposition==='DENY'))throw new AuthFailure('PROJECT_OPERATION_DENIED',403);
+  const until=Math.min(idle,absolute,reauth,registrationExpiry,auth.validUntil,...rules.map(rule=>Date.parse(rule.expiresAt)));
+  if(!Number.isFinite(until)||until<=observed)throw reject();
+  return{registrationRef:registrationRef(r),connectorRef:connectorRef(r,Number(r.generation)),
+   hostPublicKeyFingerprint:publicKeyFingerprint(r.public_key_spki),scopeDigest:r.scope_digest,observedAt:now.toISOString(),expiresAt:new Date(until).toISOString()};
  }
  /** 원 native 정책 아래 같은 row 검산을 소비한다. 기존 public read의 등록 정책은 바꾸지 않는다. */
  async nativePreparationRecord(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,command:ProjectCommand|null){

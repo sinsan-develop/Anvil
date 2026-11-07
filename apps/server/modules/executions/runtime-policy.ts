@@ -63,6 +63,12 @@ const select = `SELECT v.*,c.result_ref,c.operation,c.state,c.actor_id command_a
 
 /** 비실행 작성 경로. 현재 HUMAN 제어·명시 정책 transaction 안에서 사용하며 예산 예약/실행 허가를 발급하지 않는다. */
 export class ProjectLimitPolicies {
+  readonly #readLimitApproval:ProjectApprovals['readLimitPolicyConsumption']|null;
+  constructor(){
+    // 순환 import 초기화 이후 실제 인스턴스 생성 시에 원 메서드를 고정한다.
+    const reader=Object.getOwnPropertyDescriptor(ProjectApprovals.prototype,'readLimitPolicyConsumption');
+    this.#readLimitApproval=reader&&'value'in reader&&typeof reader.value==='function'?reader.value:null;
+  }
   #scope(scope: LimitScope, projectId: string) {
     if (scope.projectId !== projectId) throw new AuthFailure('LIMIT_POLICY_SCOPE_MISMATCH', 422);
     // executions의 정확 현재 세대 resolver를 연결하기 전 호출자 선언만으로 실행 범위를 만들지 않는다.
@@ -87,8 +93,8 @@ export class ProjectLimitPolicies {
       if(!Array.isArray(row.receipt_rows)||row.receipt_rows.length!==1||!Array.isArray(row.audit_rows)||row.audit_rows.length!==1||!Array.isArray(row.approval_rows))throw Error();
       const ar=row.receipt_rows[0],audit=row.audit_rows[0];let approvalRef=null;
       if(row.approval_consumption_id!==null){
-        if(row.approval_rows.length!==1||row.approval_rows[0].id!==row.approval_consumption_id)throw Error();
-        const link=row.approval_rows[0],history=await new ProjectApprovals().readLimitPolicyConsumption(db,actor,row.project_id,link.requestId),r=history.request,used=history.consumption;
+        if(!this.#readLimitApproval||row.approval_rows.length!==1||row.approval_rows[0].id!==row.approval_consumption_id)throw Error();
+        const link=row.approval_rows[0],history=await this.#readLimitApproval.call(new ProjectApprovals(),db,actor,row.project_id,link.requestId),r=history.request,used=history.consumption;
         approvalRef={requestId:link.requestId,decisionId:link.decisionId,scopeDigest:r.scopeDigest};
         if(history.storedStatus!=='CONSUMED'||!used||history.decision?.decision!=='APPROVE'||history.decision.id!==link.decisionId
           ||used.id!==row.approval_consumption_id||used.serverCommandId!==row.command_id||used.commandId!==row.command_key||used.requestHash!==row.request_hash

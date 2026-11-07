@@ -9,19 +9,149 @@ import {SourceReadRecords} from './source-read-records.ts';
 import {ProjectEnvironmentResources,environmentOwner,environmentReadPolicy,assertEnvironmentHistoryProof,environmentFailure,readEnvironmentCommand,loadEnvironmentRow,loadEnvironmentWriteRow,insertEnvironmentVersion,environmentWriteGuard,uniqueEnvironmentIssues} from './project-environment-resources.ts';
 import {verifyEnvironmentRegistrationEvidence} from './environment-registration-evidence.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {environmentHash,readEnvironmentInput,type EnvironmentInput,type HostRef,type MetadataKind,type MetadataSnapshot,type EnvironmentVersion,type EnvironmentSourceRoot} from '../../../../contracts/runtime/environment-configuration-v1.ts';
+import {environmentHash,hostId,readEnvironmentHostRef,readEnvironmentInput,type EnvironmentInput,type HostRef,type MetadataKind,type MetadataSnapshot,type EnvironmentVersion,type EnvironmentSourceRoot} from '../../../../contracts/runtime/environment-configuration-v1.ts';
+import type {RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+type OriginReuseReferenceReaders=Readonly<{
+ readMetadata:ProjectEnvironmentResources['readOriginReuseMetadata'];
+ readRoot:ProjectSourceRoots['read'];
+ readSnapshot:SourceReadRecords['readSnapshot'];
+ loadSnapshotGrant:SourceReadRecords['load'];
+}>;
 export class ProjectEnvironments{
  readonly access:AccessRepository;readonly resources:ProjectEnvironmentResources;readonly roots:ProjectSourceRoots;readonly observations:SourceReadRecords;
  constructor(access:AccessRepository){this.access=access;this.resources=new ProjectEnvironmentResources(access);this.roots=new ProjectSourceRoots(access);this.observations=new SourceReadRecords(access.installationId);}
  async #host(db:PoolClient,a:AuthenticatedIdentity,pid:string,h:HostRef,fresh:boolean,evidence:any[]){if(fresh)return this.resources.host(db,a,pid,h,evidence);if(h.kind==='CONNECTOR_STATUS'){const proof=evidence.filter(e=>same(e.connectorRef,h.connectorRef)&&same(e.registrationRef,h.registrationRef));if(proof.length!==1)environmentFailure();await verifyEnvironmentRegistrationEvidence(db,pid,proof[0]);}else{const v=await loadEnvironmentRow(db,a,pid,'ENVIRONMENT_HOST_DECLARATION',h.ref.id,h.ref.version);if(!same(v.ref,h.ref)||(v.snapshot as MetadataSnapshot).status!=='DECLARED')environmentFailure();}}
  async #resource(db:PoolClient,a:AuthenticatedIdentity,pid:string,kind:MetadataKind,ref:any,fresh:boolean){if(fresh){const v=await this.resources.read(db,a,pid,kind,ref.id,ref.version);if(!same(v.ref,ref)||v.snapshot.status!=='DECLARED'||v.current.configurationCurrentness!=='MATCHED')environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);return v.snapshot;}const v=await loadEnvironmentRow(db,a,pid,kind,ref.id,ref.version);if(!same(v.ref,ref)||(v.snapshot as MetadataSnapshot).status!=='DECLARED')environmentFailure();return v.snapshot as MetadataSnapshot;}
- async #snapshot(db:PoolClient,a:AuthenticatedIdentity,pid:string,ref:any,root:EnvironmentSourceRoot,host:HostRef){const v=await this.observations.readSnapshot(db,a,pid,ref.id);if(!v.rawAllowed||!same(v.snapshotRef,ref)||v.sourceRootRef.id!==root.sourceRootId||host.kind!=='CONNECTOR_STATUS'||!same(v.connectorRef,host.connectorRef)||v.report.root.state!=='OBSERVED'||v.report.root.facts===null)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);const grant=await this.observations.load(db,pid,v.grantRef.id);if(!same(grant.grantRef,v.grantRef)||!same(grant.scope.connectorRef,host.connectorRef)||!same(grant.scope.registrationRef,host.registrationRef)||!same(grant.scope.sourceRootRef,v.sourceRootRef))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);return v.sourceRootRef;}
+ async #snapshot(db:PoolClient,a:AuthenticatedIdentity,pid:string,ref:any,root:EnvironmentSourceRoot,host:HostRef,observations?:SourceReadRecords){const v=await (observations??this.observations).readSnapshot(db,a,pid,ref.id);if(!v.rawAllowed||!same(v.snapshotRef,ref)||v.sourceRootRef.id!==root.sourceRootId||host.kind!=='CONNECTOR_STATUS'||!same(v.connectorRef,host.connectorRef)||v.report.root.state!=='OBSERVED'||v.report.root.facts===null)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);const grant=await (observations??this.observations).load(db,pid,v.grantRef.id);if(!same(grant.grantRef,v.grantRef)||!same(grant.scope.connectorRef,host.connectorRef)||!same(grant.scope.registrationRef,host.registrationRef)||!same(grant.scope.sourceRootRef,v.sourceRootRef))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);return v.sourceRootRef;}
  async references(db:PoolClient,a:AuthenticatedIdentity,pid:string,input:EnvironmentInput,fresh:boolean,evidence:any[]){
  const hosts=[input.executionHostRef,...input.targetHostRefs,...input.sourceRoots.map(r=>r.registeredPathRef.hostRef)],unique=[...new Map(hosts.map(h=>[canonicalJson(h),h])).values()];for(const h of unique)await this.#host(db,a,pid,h,fresh,evidence);const rootRefs:any[]=[];
  for(const root of input.sourceRoots){const p=root.registeredPathRef,sourceRef=p.kind==='SOURCE_ROOT_DECLARATION'?p.sourceRootRef:await this.#snapshot(db,a,pid,p.snapshotRef,root,p.hostRef),source=await this.roots.read(db,a,pid,sourceRef.id,sourceRef.version);if(!source.rawAllowed||!same(source.ref,sourceRef)||source.ref.id!==root.sourceRootId||source.status!=='DECLARED'||fresh&&source.headVersion!==sourceRef.version)environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);const connector=source.snapshot.declaration.connectorId;if(connector!==null&&(p.hostRef.kind!=='CONNECTOR_STATUS'||p.hostRef.connectorRef.id!==connector))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);if(root.identityRef!==null){const identityRoot=await this.#snapshot(db,a,pid,root.identityRef.snapshotRef,root,p.hostRef);if(!same(identityRoot,sourceRef))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);}rootRefs.push({ref:sourceRef,hostRef:p.hostRef});}
  const secrets=new Map<string,MetadataSnapshot>();for(const r of input.secretRefs){const s=await this.#resource(db,a,pid,'SECRET_REFERENCE_METADATA',r.ref,fresh);if(!hosts.some(h=>same(h,s.definition.hostRef)))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);secrets.set(canonicalJson(r),s);}
  for(const r of input.commandProfileRefs){const p=await this.#resource(db,a,pid,'COMMAND_PROFILE_METADATA',r.ref,fresh),d=p.definition;if(!hosts.some(h=>same(h,d.hostRef))||!rootRefs.some(root=>same(root.ref,d.workingDirectory.sourceRootRef)&&same(root.hostRef,d.hostRef)))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);for(const slot of d.secretSlots){const secret=secrets.get(canonicalJson(slot.secretRef));if(!secret||!same(secret.definition.hostRef,d.hostRef))environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);}}
+ }
+ /** S/Q가 선택한 환경의 하위 원문과 P2 보호 읽기를 대조한다. 등록의 live 관측은 호출자가 같은 Tx에서 결박한다. */
+ async readOriginReuseReferences(db:PoolClient,a:AuthenticatedIdentity,pid:string,input:EnvironmentVersion,evidence:unknown[],p2:RuntimeRefV1,readers:OriginReuseReferenceReaders){
+  const reject=()=>environmentFailure('ENVIRONMENT_REFERENCE_UNAVAILABLE',412);
+  const resources=this.resources,roots=this.roots,observations=this.observations;
+  if(Object.getPrototypeOf(resources)!==ProjectEnvironmentResources.prototype||Object.hasOwn(resources,'readOriginReuseMetadata')
+   ||Object.getPrototypeOf(roots)!==ProjectSourceRoots.prototype||Object.hasOwn(roots,'read')
+   ||Object.getPrototypeOf(observations)!==SourceReadRecords.prototype||Object.hasOwn(observations,'readSnapshot')||Object.hasOwn(observations,'load'))return reject();
+  const {readMetadata,readRoot,readSnapshot,loadSnapshotGrant}=readers;
+  // readSnapshot 내부의 this.load도 원 grant reader로 고정한다.
+  const snapshotReaders=Object.freeze(Object.defineProperties(new SourceReadRecords(observations.installationId),{
+   readSnapshot:{value:readSnapshot},
+   load:{value:loadSnapshotGrant}
+  })) as SourceReadRecords;
+  let validUntil=Infinity;
+  const dependencies=new Map<string,{kind:MetadataKind|'SOURCE_ROOT_DECLARATION';ref:RuntimeRefV1}>();
+  const collect=(kind:MetadataKind|'SOURCE_ROOT_DECLARATION',ref:RuntimeRefV1)=>{
+   const key=kind+':'+ref.id,previous=dependencies.get(key);
+   if(previous&&!same(previous.ref,ref))return reject();
+   if(!previous)dependencies.set(key,{kind,ref:{id:ref.id,version:ref.version,contentHash:ref.contentHash}});
+  };
+  const metadata=async(kind:MetadataKind,ref:RuntimeRefV1)=>{
+   const stored=await readMetadata.call(resources,db,a,pid,kind,ref,input.policyRef,p2);
+   validUntil=Math.min(validUntil,stored.validUntil);
+   collect(kind,{id:stored.snapshot.id,version:stored.snapshot.version,contentHash:contentHash(canonicalJson(stored.snapshot))});
+   return stored;
+  };
+  type ConnectorHost=Extract<HostRef,{kind:'CONNECTOR_STATUS'}>;
+  const evidenceKey=(host:ConnectorHost)=>canonicalJson([host.connectorRef,host.registrationRef]);
+  const history=new Map<string,Record<string,unknown>>();
+  for(const item of evidence){
+   if(!item||typeof item!=='object'||!('connectorRef' in item)||!('registrationRef' in item))return reject();
+   const key=canonicalJson([item.connectorRef,item.registrationRef]);
+   if(history.has(key))return reject();
+   history.set(key,item as Record<string,unknown>);
+  }
+  const registrations=new Map<string,{host:ConnectorHost;history:Record<string,unknown>}>();
+  const seenHosts=new Map<string,HostRef>(),seenRegistrations=new Map<string,ConnectorHost>();
+  const declarations=new Map<string,{kind:string;evidenceKey:string|null}>();
+  const exactHost=(h:HostRef)=>{
+   const id=hostId(h),previous=seenHosts.get(id);
+   if(previous&&!same(previous,h))return reject();
+   seenHosts.set(id,h);
+  };
+  const assertHostEvidence=(stored:unknown[],key:string|null)=>{
+   if(key===null){if(stored.length!==0)return reject();return;}
+   if(stored.length!==1)return reject();
+   const item=stored[0];
+   if(!item||typeof item!=='object'||!('connectorRef'in item)||!('registrationRef'in item)
+    ||canonicalJson([item.connectorRef,item.registrationRef])!==key)return reject();
+  };
+  const visitHost=async(h:HostRef,parent=false):Promise<string|null>=>{
+   exactHost(h);
+   if(h.kind==='CONNECTOR_STATUS'){
+    const key=evidenceKey(h),proof=history.get(key),previous=seenRegistrations.get(h.registrationRef.id);
+    if(!proof||previous&&!same(previous,h))return reject();
+    seenRegistrations.set(h.registrationRef.id,h);
+    registrations.set(key,{host:h,history:proof});
+    return key;
+   }
+   const cached=declarations.get(h.ref.id);
+   if(cached){if(parent&&cached.kind!=='MACHINE')return reject();return cached.evidenceKey;}
+   const stored=await metadata('ENVIRONMENT_HOST_DECLARATION',h.ref),d=stored.snapshot.definition;
+   if(parent&&d.hostKind!=='MACHINE')return reject();
+   let key:string|null=null;
+   if(d.hostKind==='WSL_DISTRIBUTION'){
+    const parentHost=readEnvironmentHostRef(d.parentHostRef);
+    if(hostId(parentHost)===h.ref.id)return reject();
+    // 원 계약은 MACHINE 또는 connector 한 단계만 WSL 부모로 허용한다.
+    key=await visitHost(parentHost,true);
+   }
+   assertHostEvidence(stored.evidence,key);
+   declarations.set(h.ref.id,{kind:d.hostKind,evidenceKey:key});
+   return key;
+  };
+  const hosts=[input.executionHostRef,...input.targetHostRefs,...input.sourceRoots.map(r=>r.registeredPathRef.hostRef)];
+  const allowed=new Map<string,HostRef>();
+  for(const host of hosts){
+   const id=hostId(host),previous=allowed.get(id);
+   if(previous&&!same(previous,host))return reject();
+   allowed.set(id,host);
+  }
+  const keys=new Map<string,string|null>();
+  for(const host of allowed.values())keys.set(hostId(host),await visitHost(host));
+  if(history.size!==registrations.size)return reject();
+  const hostKey=(raw:unknown)=>{
+   const h=readEnvironmentHostRef(raw);
+   if(!same(allowed.get(hostId(h))??null,h))return reject();
+   return keys.get(hostId(h))!;
+  };
+  const rootRefs=new Map<string,{ref:RuntimeRefV1;host:HostRef}>();
+  for(const root of input.sourceRoots){
+   const path=root.registeredPathRef;
+   const ref=path.kind==='SOURCE_ROOT_DECLARATION'?path.sourceRootRef:await this.#snapshot(db,a,pid,path.snapshotRef,root,path.hostRef,snapshotReaders);
+   if(rootRefs.has(root.sourceRootId)||ref.id!==root.sourceRootId)return reject();
+   const source=await readRoot.call(roots,db,a,pid,ref.id,ref.version);
+   if(!source.rawAllowed||!same(source.ref,ref)||source.headVersion!==ref.version||source.status!=='DECLARED'||source.readiness!=='UNVERIFIED')return reject();
+   const connector=source.snapshot.declaration.connectorId;
+   if(connector!==null&&(path.hostRef.kind!=='CONNECTOR_STATUS'||path.hostRef.connectorRef.id!==connector))return reject();
+   if(root.identityRef!==null&&!same(await this.#snapshot(db,a,pid,root.identityRef.snapshotRef,root,path.hostRef,snapshotReaders),ref))return reject();
+   rootRefs.set(root.sourceRootId,{ref,host:path.hostRef});
+   collect('SOURCE_ROOT_DECLARATION',source.ref);
+  }
+  const secrets=new Map<string,HostRef>();
+  for(const secret of input.secretRefs){
+   const stored=await metadata('SECRET_REFERENCE_METADATA',secret.ref),host=readEnvironmentHostRef(stored.snapshot.definition.hostRef);
+   assertHostEvidence(stored.evidence,hostKey(host));
+   const key=canonicalJson(secret);
+   if(secrets.has(key))return reject();
+   secrets.set(key,host);
+  }
+  const profiles=new Set<string>();
+  for(const profile of input.commandProfileRefs){
+   const stored=await metadata('COMMAND_PROFILE_METADATA',profile.ref),d=stored.snapshot.definition,host=readEnvironmentHostRef(d.hostRef);
+   const root=rootRefs.get(d.workingDirectory.sourceRootRef.id);
+   assertHostEvidence(stored.evidence,hostKey(host));
+   if(profiles.has(profile.ref.id)||!root||!same(root.ref,d.workingDirectory.sourceRootRef)||!same(root.host,host))return reject();
+   profiles.add(profile.ref.id);
+   for(const slot of d.secretSlots)if(!same(secrets.get(canonicalJson(slot.secretRef))??null,host))return reject();
+  }
+  if(!Number.isFinite(validUntil))return reject();
+  const orderedDependencies=[...dependencies.keys()].sort().map(key=>dependencies.get(key)!);
+  return {validUntil,dependencies:orderedDependencies,registrations:[...registrations.values()].sort((a,b)=>a.host.connectorRef.id.localeCompare(b.host.connectorRef.id))};
  }
  async command(token:string,csrf:string,raw:ProjectCommand){const started=performance.now(),c=readEnvironmentCommand(raw,'ENVIRONMENT_VERSION');let input:EnvironmentInput;try{input=readEnvironmentInput(c.payload.environment);}catch{environmentFailure('ENVIRONMENT_INPUT_INVALID',422);}try{return await this.access.authenticated(token,csrf,async(db,a)=>{await currentProjectController(db,a,c);if(!a.reauthUntil||a.reauthUntil.getTime()<=Date.now())environmentFailure('REAUTHENTICATION_REQUIRED',412);const policy=await authorizeMaterial(db,a,c,true);
  const approvals=new ProjectApprovals();

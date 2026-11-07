@@ -1,4 +1,6 @@
 import {readMembershipCommand} from '../../../../contracts/runtime/project-membership-v1.ts';
+import {recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {copyControlData} from '../control-handoff/control-grant.ts';
 import {readUnderstandingReviewCommand} from '../executions/execution-understanding.ts';
 import {readExecutionIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
 import{AuthFailure}from'../access/repository.ts';
@@ -32,6 +34,24 @@ export function readApprovalDetails(value:unknown,context:ApprovalInputContext):
  if(s.operation==='linkDocumentSource'&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  if(s.operation==='proposeDocumentSourceChange'&&(!isVersionRef(s.targetRef)||s.targetRef.version!==1||s.expectedVersion!==1))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
  return structuredClone(value)as ApprovalDetails;
+}
+/** 원자료 재사용 승인 입력만 검산한다. 현재 원자료와 승인 발급 여부는 여기서 판정하지 않는다. */
+export function readOriginReuseApprovalRequest(value:unknown,context:Omit<ApprovalInputContext,'allowedOperations'>,requestCommandId:string){
+ const invalid=()=>new AuthFailure('APPROVAL_INPUT_INVALID',422);
+ let input:unknown;
+ try{input=copyControlData(value,2*1024*1024);}catch{throw invalid();}
+ if(!recordV1(input,['details','candidatePayload']))throw invalid();
+ const details=readApprovalDetails(input.details,{...context,allowedOperations:['queueExecutionCommand']});
+ const scope=details.actionScope,candidate=input.candidatePayload;
+ if(scope.targetRef!==null||scope.expectedVersion!==0||!recordV1(candidate,['preparationRef','executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','operation','payload','originReuse'])
+  ||!refV1(candidate.preparationRef)||!uuidV1(candidate.executionId)||!Number.isSafeInteger(candidate.executionGeneration)||candidate.executionGeneration<1
+  ||!refV1(candidate.permissionPolicyRef)||!refV1(candidate.budgetPolicyRef)||candidate.operation!=='START_SESSION'
+  ||!recordV1(candidate.payload,['contextBundleRef','optionsRef'])||!refV1(candidate.payload.contextBundleRef)||!refV1(candidate.payload.optionsRef)
+  ||!recordV1(candidate.originReuse,['originRef','reservationRef'])||!refV1(candidate.originReuse.originRef)||!refV1(candidate.originReuse.reservationRef)
+  ||candidate.originReuse.originRef.version!==1||candidate.originReuse.reservationRef.version!==1)throw invalid();
+ if(details.candidateCommandId===requestCommandId)throw new AuthFailure('APPROVAL_SELF_CANDIDATE_INVALID',422);
+ if(scope.payloadHash!==contentHash(canonicalJson(candidate)))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
+ return {details,candidatePayload:candidate};
 }
 /** 주체/기기·기준세대와 exact 후보만 대조한다. 승인 여부/만료 검사를 대체하지 않는다. */
 export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand,actorId:string,projectId:string){
