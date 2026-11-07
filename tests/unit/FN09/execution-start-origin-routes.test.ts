@@ -1133,3 +1133,15 @@ test('원결정 정책 중 xid 교체는 목적 요청과 원자료 이력 첫 �
   const after=j.f.trace.slice(changedAt);assert(!after.some(sql=>sql.includes('FROM anvil.approval_requests')||sql.includes('FROM anvil.execution_start_origins')),'xid 교체 뒤 보호 요청/원자료 조회0');assert.equal(j.f.modes.decisionReserveCalls,0);
  }finally{j.f.modes.hook=null;await j.app.close();}
 });
+
+
+test('원자료 P2 APPROVE의 exact8 START는 같은 거래 소비1·원큐·실자료등록과 원ID v3로 닫힌다',async()=>{
+ const j=await storedOriginDecisionJourney();try{
+  const decision=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide('APPROVE')});assert.equal(decision.statusCode,200,decision.body);
+  const request=j.original.data.request,evidence=request.originReuseEvidence,command={...j.f.originCommand(),operation:'queueExecutionCommand',commandId:request.details.candidateCommandId,approvalRef:{requestId:request.id,decisionId:decision.json().targetId,scopeDigest:request.scopeDigest},payload:evidence.candidatePayload};
+  const original=structuredClone(j.f.tables.origins),consumptions=j.f.tables.approvalConsumptions!.length,notifications=j.f.tables.notifications!.length;
+  const queued=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});assert.equal(queued.statusCode,200,queued.body+' '+JSON.stringify(j.f.state.unsupported));const result=queued.json();assert.equal(result.data.status,'SYNTHETIC_QUEUE_STORED');assert.equal(result.data.executionAuthorized,false);assert.equal(result.data.dispatchPerformed,false);
+  assert.equal(j.f.tables.approvalConsumptions!.length,consumptions+1);assert.equal(j.f.tables.notifications!.length,notifications);assert.deepEqual(j.f.tables.origins,original);
+  const read=await j.app.inject({method:'GET',url:j.readUrl,headers:j.headers});assert.equal(read.statusCode,200,read.body);const view=read.json();assert.equal(view.currentVersion,3);assert.equal(view.storedStatus,'CONSUMED');assert.deepEqual(view.request,j.original.data.request);assert.equal(view.consumption.commandId,command.commandId);assert.deepEqual(view.originReuseOutcome,{commandId:command.commandId,requestHash:(await approvalHash())(command),queueCommandRef:result.data.ref,status:'SYNTHETIC_QUEUE_STORED',executionAuthorized:false,dispatchPerformed:false});
+ }finally{await j.app.close();}
+});

@@ -1,3 +1,4 @@
+import {currentOriginReuseStartLease,readOriginReuseStartBasis} from './execution-start-origin-reuse.ts';
 import type {PoolClient} from 'pg';
 import {types} from 'node:util';
 import {contentHash} from '../../../../contracts/canonical.ts';
@@ -21,7 +22,7 @@ const mismatch=()=>originFailure('EXECUTION_BASIS_MISMATCH',409);
 const currentRequired=()=>originFailure('EXECUTION_START_ORIGIN_CURRENT_REQUIRED',412);
 const disconnected=()=>originFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
 
-function readStartRequest(raw:unknown){
+function readStartRequest(raw:unknown,reuse=false){
   const request=copyStartOrigin(raw);
   if(!recordV1(request,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
     ||request.schemaVersion!==1||!uuidV1(request.projectId)||!uuidV1(request.commandId)||!uuidV1(request.clientId)
@@ -29,7 +30,7 @@ function readStartRequest(raw:unknown){
     ||request.operation!=='queueExecutionCommand'||request.targetId!==null||request.expectedVersion!==0
     ||!Array.isArray(request.baselineRefs)||request.baselineRefs.length!==0)return invalid();
   const payload=request.payload;
-  if(!recordV1(payload,['preparationRef','executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','operation','payload'])
+  if(!recordV1(payload,['preparationRef','executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','operation','payload',...(reuse?['originReuse']:[])])
     ||!uuidV1(payload.executionId)||!Number.isSafeInteger(payload.executionGeneration)||Number(payload.executionGeneration)<1
     ||!refV1(payload.preparationRef)||!refV1(payload.permissionPolicyRef)||!refV1(payload.budgetPolicyRef)
     ||payload.operation!=='START_SESSION'||!recordV1(payload.payload,['contextBundleRef','optionsRef'])
@@ -67,7 +68,9 @@ export async function readOriginStartQueueBasis(
   let wall=Date.now();
   let mark=performance.now();
   let until=mark+expiresAt-wall;
-  const {request,payload}=readStartRequest(rawRequest);
+  const original=copyStartOrigin<ProjectCommand>(rawRequest),reuseLease=currentOriginReuseStartLease(db,actor,original);
+  const {request,payload}=readStartRequest(original,!!reuseLease);
+  if(reuseLease){if(!originSame(rawSelection,(request.payload as any).originReuse))return mismatch();return readOriginReuseStartBasis(reuseLease,db,actor,request,copyStartOrigin(rawDemand));}
   const selection=copyStartOrigin(rawSelection);
   const demand=copyStartOrigin(rawDemand);
   if(!recordV1(selection,['originRef','reservationRef'])||!refV1(selection.originRef)||!refV1(selection.reservationRef))return invalid();

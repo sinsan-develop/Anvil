@@ -1,3 +1,4 @@
+import {bindOriginReuseStartMaterial} from './execution-start-origin-reuse.ts';
 import type {PoolClient} from 'pg';
 import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../../contracts/runtime/validation-v1.ts';
@@ -65,7 +66,7 @@ export class SyntheticPgStartMaterialRegistration implements SyntheticInstructio
   if(!a||actor.actorId!==fact.subject.userId||actor.clientId!==fact.subject.clientId||a.id!==fact.subject.humanSessionId||actor.credentialGeneration!==s.credentialGeneration||request.projectId!==s.projectId||request.clientId!==actor.clientId||request.controlGeneration!==fact.subject.controlGeneration)return reject();
   const r=cloneV1(request),arg=cloneV1(s),f=cloneV1(fact),raw=await this.source.describe(db,cloneV1(actor),arg,r,f),plan=readStartMaterialDescriptor(raw);this.#port();
   if(!same(arg,s)||!same(r,request)||!same(f,fact)||!same(plan.descriptor.scope,s)||plan.descriptor.commandId!==request.commandId||!same(plan.descriptor.payload,(request.payload as any).payload)||!same(plan.descriptor.payload.contextBundleRef,fact.intent.contextBundleRef)||!same(plan.descriptor.payload.optionsRef,fact.preparationRef)||Date.parse(plan.descriptor.expiresAt)>Date.parse(grant.snapshot.expiresAt))return reject('MATERIAL_REGISTRATION_BINDING_CONFLICT');
-  await this.inspect(db,s,plan,fact,grant.snapshot.expiresAt);await this.#sameTx(db,tx);
+  await bindOriginReuseStartMaterial(db,actor,request,this,plan);  await this.inspect(db,s,plan,fact,grant.snapshot.expiresAt);await this.#sameTx(db,tx);
   this.#prepared.set(plan,{db,tx,actor:cloneV1(actor),request:cloneV1(request),fact,grant,plan:cloneV1(plan),used:false});return plan;
  }
  async #capacity(db:PoolClient,s:MaterialScope,rows:unknown[]){
@@ -82,6 +83,7 @@ export class SyntheticPgStartMaterialRegistration implements SyntheticInstructio
   const p=c.plan,d=p.descriptor,s=d.scope,record=readStartQueueRecord(rawRecord,s,await this.clock(db));
   assertStartFact(c.fact,s,record,await this.clock(db));
   if(record.snapshot.envelope.commandId!==d.commandId||!same(record.snapshot.payload,d.payload)||record.snapshot.envelope.expiresAt!==c.grant.snapshot.expiresAt)return reject();
+  await bindOriginReuseStartMaterial(db,c.actor,c.request,this,raw,record,createdCommandId);
   const materials=d.groups.flatMap((g,gi)=>g.parts.map((_,pi)=>this.material(p,record,gi,pi)));await this.#capacity(db,s,[d,...materials.map(m=>m.snapshot)]);await this.inspect(db,s,p,c.fact,c.grant.snapshot.expiresAt);
   const out=await db.query('INSERT INTO anvil.execution_material_manifests(project_id,id,version,execution_id,generation,grant_id,grant_version,credential_generation,command_id,created_command_id,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[s.projectId,d.id,s.executionId,s.executionGeneration,s.grantRef.id,s.grantRef.version,s.credentialGeneration,d.commandId,createdCommandId,p.manifestRef.contentHash,JSON.stringify(d)]);if(out.rowCount!==1)return reject('MATERIAL_REGISTRATION_INTEGRITY',503);
   for(const m of materials){const r=await db.query('INSERT INTO anvil.execution_materials(project_id,id,version,manifest_id,execution_id,generation,grant_id,grant_version,credential_generation,command_id,command_record_id,created_command_id,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',[s.projectId,m.ref.id,d.id,s.executionId,s.executionGeneration,s.grantRef.id,s.grantRef.version,s.credentialGeneration,d.commandId,record.ref.id,createdCommandId,m.ref.contentHash,JSON.stringify(m.snapshot)]);if(r.rowCount!==1)return reject('MATERIAL_REGISTRATION_INTEGRITY',503);}

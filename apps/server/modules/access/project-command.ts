@@ -1,3 +1,4 @@
+import {currentOriginReuseStartLease,originReuseStartMatches,type OriginReuseStartLease} from '../executions/execution-start-origin-reuse.ts';
 import {ProjectMemberships} from '../projects/project-memberships.ts';
 import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readCurrentControlGrant,ordinaryDocumentOperations,isOrdinaryControlOperation,copyControlData} from '../control-handoff/control-grant.ts';
@@ -108,7 +109,7 @@ export function matchesOriginReuseObservationContext(access:AccessRepository,db:
   &&(transactionId===undefined||transactionId===live.transactionId)
   &&context?.actor===actor&&context.actorId===actor.actorId&&context.clientId===actor.clientId
   &&context.session===actor.authSession&&context.credentialGeneration===actor.credentialGeneration
-  &&(isOriginReuseObservationRequest(request)||request.operation==='decideApproval')&&context.requestHash===contentHash(canonicalJson(copyControlData(request,2097152)));
+  &&(isOriginReuseObservationRequest(request)||request.operation==='decideApproval'||request.operation==='queueExecutionCommand'&&!!currentOriginReuseStartLease(db,actor,request))&&context.requestHash===contentHash(canonicalJson(copyControlData(request,2097152)));
 }
 /** 실제 인증 callback 안에서만 생산한다. 외부 setter나 caller verified flag는 없다. */
 async function withFn15DocumentContext<T>(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,work:()=>Promise<T>):Promise<T>{
@@ -255,13 +256,19 @@ export function isOriginReuseRequestReceiptIds(value:unknown,db:PoolClient,actor
  return !!s&&!s.used&&s.db===db&&s.query===db.query&&s.actor===actor&&s.identity===originReceiptIdentity(actor)
   &&(isOriginReuseObservationRequest(request)||request.operation==='decideApproval')&&s.requestHash===contentHash(canonicalJson(request));
 }
+/** 원 queue 인증 콜백의 목적 lease만 내부 식별자를 예약한다. */
+export async function reserveOriginReuseConsumptionReceiptIds(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,lease:OriginReuseStartLease):Promise<OriginReuseRequestReceiptIds>{
+ if(!originReuseStartMatches(lease,db,actor,request)||request.operation!=='queueExecutionCommand')throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);
+ const query=db.query,identity=originReceiptIdentity(actor),rows=(await Reflect.apply(query,db,['SELECT txid_current()::text AS transaction_id'])).rows;if(rows.length!==1||typeof rows[0]?.transaction_id!=='string'||query!==db.query||identity!==originReceiptIdentity(actor)||!originReuseStartMatches(lease,db,actor,request))throw new AuthFailure('ORIGIN_REUSE_REQUEST_OUTCOME_UNKNOWN',503);
+ const ids=Object.freeze({serverCommandId:randomUUID(),consumptionId:randomUUID(),operationId:randomUUID(),authorizationReceiptId:randomUUID(),auditEventId:randomUUID(),transactionId:rows[0].transaction_id});reuseReceiptReservations.set(ids,{db,query,actor,identity,requestHash:contentHash(canonicalJson(request)),used:false});return ids;
+}
 export async function persistProjectReceipt(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, ref: VersionRef | { artifactId: string; bytes: number; contentHash: string; mediaType: string }, data: Record<string, unknown>, policyRef: VersionRef | null, reasonCode: string, reserved?:ActivationReceiptIds) {
   const documentContext=consumeFn15DocumentContext(db,actor,request);
   const nodeIds=isNodeDecisionReceiptIds(reserved,db,actor,request)?reserved:null;
   if(nodeIds)nodeReceiptReservations.get(nodeIds)!.used=true;
   const originIds=isExecutionStartOriginReceiptIds(reserved,db,actor,request)?reserved:null;
   const reuseIds=isOriginReuseRequestReceiptIds(reserved,db,actor,request)?reserved:null;
-  if(isOriginReuseObservationRequest(request)&&!reuseIds)throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+  if((isOriginReuseObservationRequest(request)||request.operation==='queueExecutionCommand'&&Object.hasOwn(request.payload,'originReuse'))&&!reuseIds)throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
   const reuseState=reuseIds?reuseReceiptReservations.get(reuseIds)!:null;
   const receiptQuery=async(sql:string,args?:unknown[])=>{
     if(!reuseState)return db.query(sql,args);

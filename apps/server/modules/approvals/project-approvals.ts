@@ -1,3 +1,4 @@
+import {currentOriginReuseStartLease,originReuseStartState} from '../executions/execution-start-origin-reuse.ts';
 import {ProjectStorageQuota} from '../projects/project-storage-quota.ts';
 import {createMembershipApprovalCandidate,readStoredMembershipCandidate,assertCurrentMembershipCandidate,membershipCandidateCurrent,verifyMembershipApprovalRequest} from './project-membership-approval-target.ts';
 import {copyControlData,findCurrentControlGrant,ordinaryDocumentOperations} from '../control-handoff/control-grant.ts';
@@ -54,6 +55,7 @@ export class ProjectApprovals{
  async authorize(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef):Promise<{requestId:string;decisionId:string;scopeDigest:string;replay:boolean}>{
   const approval=readApprovalRef(c.approvalRef),view=await this.read(db,actor,c.projectId,approval.requestId),r=view.request;
   assertApprovalCandidate(r.details,c,actor.actorId,c.projectId);
+  if(r.details.actionScope.operation==='queueExecutionCommand'){const lease=currentOriginReuseStartLease(db,actor,c);if(!lease)throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);const source=await originReuseStartState(lease,db,actor,c);if(!samePreparationPayload(source.evidence,(r as any).originReuseEvidence)||!samePreparationPayload((r as any).originReuseEvidence.candidatePayload,c.payload))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(c.operation==='saveProjectMembership'){const stored=await(view.storedStatus==='CONSUMED'?readStoredMembershipCandidate(db,actor,c.projectId,r.details,r.membershipCandidate):assertCurrentMembershipCandidate(db,actor,c.projectId,r.details,r.membershipCandidate));if(canonicalJson(stored.command)!==canonicalJson({...c,approvalRef:null}))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(r.candidateKind==='ENVIRONMENT_DEFINITION'&&(!view.candidateEnvironment||!samePreparationPayload(view.candidateEnvironment.payload,c.payload)))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
   if(c.operation==='reviewUnderstanding'&&(!view.candidateUnderstanding||canonicalJson(view.candidateUnderstanding.command)!==canonicalJson({...c,approvalRef:null})))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);

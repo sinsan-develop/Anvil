@@ -1,3 +1,4 @@
+import type {MaterialScope} from './execution-material-registration-input.ts';
 import {types} from 'node:util';
 import type {PoolClient,QueryResult} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
@@ -25,7 +26,7 @@ import {ProjectConversations} from '../knowledge/conversations.ts';
 import {ExecutionStartOriginStore} from './execution-start-origin-store.ts';
 import {authorizeRuntimePolicy,ProjectLimitPolicies,type RuntimeAuthorizationInput} from './runtime-policy.ts';
 import {compileExecutionPreparationOptions,readExecutionPreparationInput} from './preparation-input.ts';
-import {matchesOriginReuseQueueIdentity,type ProjectInitialExecutionQueue} from './execution-commands.ts';
+import {matchesOriginReuseQueueIdentity,matchesOriginReuseQueueTransaction,type ProjectInitialExecutionQueue} from './execution-commands.ts';
 import {copyStartOrigin,originActor,originHash,originSame} from './execution-start-origin-input.ts';
 import {arrayV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readSourceScopesV1,type SourceScopeV1} from '../../../../contracts/runtime/source-scope-v1.ts';
@@ -116,6 +117,7 @@ function reusePurposeDeadline(rules:readonly ProjectPermissionRule[],actorId:str
 declare const originReuseApprovalBrand:unique symbol;
 export type OriginReuseApprovalCapability={readonly [originReuseApprovalBrand]:true};
 type OriginReuseAssignmentReaders={drafts:ProjectAssignmentDrafts;confirmations:ProjectAssignmentConfirmations;protectedDrafts?:ProjectAssignmentDrafts;protectedContexts?:ProjectContexts};
+const queueComposers=new WeakMap<object,OriginReuseApprovalCapability>();
 const approvalComposers=new WeakMap<object,{access:AccessRepository;queue:ProjectInitialExecutionQueue;sessions?:ResponsibleSessions;assignments?:OriginReuseAssignmentReaders;protectedPlanDocuments?:ProjectDocuments}>();
 export interface OriginReuseRequestSource {readonly evidence:Readonly<Record<string,any>>;readonly until:number;readonly transactionId:string}
 const requestSources=new WeakMap<object,{access:AccessRepository;db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;requestHash:string}>();
@@ -124,7 +126,7 @@ export function matchesOriginReuseRequestSource(value:unknown,db:PoolClient,acto
  if(!value||typeof value!=='object')return false;
  const source=requestSources.get(value);
  return !!source&&source.db===db&&source.query===db.query&&source.actor===actor&&source.identity===originActor(actor)
-  &&source.requestHash===originHash(request)&&matchesOriginReuseObservationContext(source.access,db,actor,request,(value as OriginReuseRequestSource).transactionId);
+  &&source.requestHash===originHash(request)&&(request.operation==='queueExecutionCommand'?matchesOriginReuseQueueTransaction(source.access,db,actor,request,(value as OriginReuseRequestSource).transactionId):matchesOriginReuseObservationContext(source.access,db,actor,request,(value as OriginReuseRequestSource).transactionId));
 }
 
 function originalAssignmentDrafts(sessions:ResponsibleSessions):ProjectAssignmentDrafts|undefined{
@@ -186,7 +188,7 @@ export function createOriginReuseApprovalCapability(access:AccessRepository,queu
   ||protectedPlanDocuments!==undefined&&sessions===undefined)return reject();
  const capability=Object.freeze(Object.create(null)) as OriginReuseApprovalCapability;
  const assignments=sessions===undefined?undefined:bindAssignmentReaders(sessions,protectedPlanDocuments);
- approvalComposers.set(capability,{access,queue,sessions,assignments,protectedPlanDocuments});
+ approvalComposers.set(capability,{access,queue,sessions,assignments,protectedPlanDocuments});if(sessions&&assignments&&protectedPlanDocuments)queueComposers.set(queue,capability);
  return capability;
 }
 
@@ -359,7 +361,7 @@ function assertObservationAccess(access:AccessRepository){
 
 type OriginReuseSelection={projectId:string;originRef:RuntimeRefV1;reservationRef:RuntimeRefV1;permissionPolicyRef:RuntimeRefV1};
 type OriginReuseApprovalObservation={assertBinding:(transactionId?:string)=>void;sessions:ResponsibleSessions;assignments:OriginReuseAssignmentReaders;
- candidate:ReturnType<typeof readOriginReuseApprovalRequest>['candidatePayload'];candidateCommandId:string;request:ProjectCommand;expiresAt:number};
+ candidate:ReturnType<typeof readOriginReuseApprovalRequest>['candidatePayload'];candidateCommandId:string;request:ProjectCommand;expiresAt:number;kind?:'START'};
 
 async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolClient,actor:AuthenticatedIdentity,
  {projectId,originRef,reservationRef,permissionPolicyRef}:OriginReuseSelection,approval?:OriginReuseApprovalObservation){
@@ -372,7 +374,7 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
  if(controls.length!==1||control.revoked_at!==null||control.actor_id!==actor.actorId||control.client_id!==actor.clientId
   ||!Number.isSafeInteger(generation)||generation<1)return reject();
  const checkRequestDeadline=(at:number,until:number)=>{
-  if(approval&&(!Number.isFinite(until)||!Number.isFinite(approval.expiresAt)||at>=approval.expiresAt||approval.expiresAt>until))return reject();
+  if(approval&&(!Number.isFinite(until)||!Number.isFinite(approval.expiresAt)||at>=Math.min(approval.expiresAt,until)||approval.kind!=='START'&&approval.expiresAt>until))return reject();
  };
  let approvalUntil=Infinity;
  if(approval){
@@ -380,6 +382,7 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
   if(!session||!uuidV1(session.id)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt))return reject();
   const sessionUntil=Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt),actor.reauthUntil?.getTime()??NaN);
   checkRequestDeadline(await tx.clock(),sessionUntil);
+  if(approval.kind==='START'){approvalUntil=Math.min(sessionUntil,approval.expiresAt);}else{
   const policy=await tx.step(()=>authorizeMaterial(locked,actor,approval.request,true));
   if(policy.approvalRequired||!originSame(policy.ref,permissionPolicyRef))return reject();
   const policyAt=await tx.clock();
@@ -388,7 +391,7 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
    &&Date.parse(rule.expiresAt)>policyAt);
   if(!rules.length||rules.some(rule=>rule.disposition!=='AUTO'))return reject();
   approvalUntil=Math.min(sessionUntil,policy.validUntil,...rules.map(rule=>Date.parse(rule.expiresAt)));
-  checkRequestDeadline(policyAt,approvalUntil);
+  checkRequestDeadline(policyAt,approvalUntil);}
  }
  const originPolicy=await tx.step(()=>authorizeMaterial(locked,actor,{schemaVersion:1,projectId,commandId:originRef.id,
   clientId:actor.clientId,controlGeneration:generation,operation:'readExecutionStartOrigins',targetId:null,expectedVersion:0,
@@ -551,3 +554,67 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
  }
  return{...selected,observedAt:new Date(at).toISOString(),expiresAt:new Date(until).toISOString(),executionAuthorized:false as const,...(requestSource?{requestSource}:{})};
 }
+
+
+declare const startReuseBrand:unique symbol;
+export type OriginReuseStartLease={readonly[startReuseBrand]:true};
+type StartReuseState={queue:ProjectInitialExecutionQueue;access:AccessRepository;db:PoolClient;query:PoolClient['query'];actor:AuthenticatedIdentity;identity:string;command:ProjectCommand;hash:string;tx:string;until:number;source:OriginReuseRequestSource;view:Awaited<ReturnType<typeof readApproval>>;composer:NonNullable<ReturnType<typeof approvalComposers.get>>;plan?:unknown;descriptor?:any;queueRef?:RuntimeRefV1;serverCommandId?:string};
+const startReuseLeases=new WeakMap<object,StartReuseState>(),startReuseByDatabase=new WeakMap<PoolClient,OriginReuseStartLease>();
+const startClosed=()=>new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);
+export function originReuseStartMatches(value:unknown,db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand):value is OriginReuseStartLease{
+ if(!value||typeof value!=='object')return false;const owner=startReuseLeases.get(value);
+ return !!owner&&owner.db===db&&owner.query===db.query&&owner.actor===actor&&owner.identity===originActor(actor)&&owner.hash===originHash(command)&&startReuseByDatabase.get(db)===value
+  &&matchesOriginReuseQueueTransaction(owner.access,db,actor,command,owner.tx)&&matchesOriginReuseRequestSource(owner.source,db,actor,command);
+}
+export function currentOriginReuseStartLease(db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand){const lease=startReuseByDatabase.get(db);return lease&&originReuseStartMatches(lease,db,actor,command)?lease:undefined;}
+async function startLeaseClock(owner:StartReuseState){
+ if(!originReuseStartMatches(startReuseByDatabase.get(owner.db),owner.db,owner.actor,owner.command))throw startClosed();
+ const rows=(await Reflect.apply(owner.query,owner.db,['SELECT txid_current()::text AS transaction_id'])).rows;
+ if(rows.length!==1||rows[0]?.transaction_id!==owner.tx||!originReuseStartMatches(startReuseByDatabase.get(owner.db),owner.db,owner.actor,owner.command))throw startClosed();
+ const final=(await Reflect.apply(owner.query,owner.db,['SELECT txid_current()::text AS transaction_id,clock_timestamp() AS observed_at'])).rows;if(final.length!==1||final[0]?.transaction_id!==owner.tx)throw startClosed();const at=final[0]?.observed_at;
+ if(!(at instanceof Date)||!Number.isFinite(at.getTime())||at.getTime()>=owner.until||!originReuseStartMatches(startReuseByDatabase.get(owner.db),owner.db,owner.actor,owner.command))throw startClosed();return at.getTime();
+}
+export async function observeOriginReuseStart(queue:ProjectInitialExecutionQueue,db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand):Promise<OriginReuseStartLease>{
+ const access=queue.access,capability=queueComposers.get(queue),composer=capability&&approvalComposers.get(capability);
+ const check=(tx?:string)=>{if(!composer||!composer.sessions||!composer.assignments||!matchesOriginReuseApprovalCapability(capability,access,queue)||!matchesOriginReuseQueueTransaction(access,db,actor,command,tx))throw startClosed();};check();
+ if(startReuseByDatabase.has(db))throw startClosed();
+ const approval=command.approvalRef;if(!recordV1(approval,['requestId','decisionId','scopeDigest'])||!uuidV1(approval.requestId)||!uuidV1(approval.decisionId))throw startClosed();
+ const entry=await observationTransaction(db,actor,check),view=await entry.step(()=>readApproval.call(new ProjectApprovals(),entry.guarded,actor,command.projectId,approval.requestId));
+ if(view.currentVersion!==2||view.storedStatus!=='APPROVED'||view.effectiveState!=='APPROVED'||view.consumption!==null||view.decision?.decision!=='APPROVE'||view.decision.id!==approval.decisionId||view.request.scopeDigest!==approval.scopeDigest||view.request.details.candidateCommandId!==command.commandId||!originSame((view.request as any).originReuseEvidence?.candidatePayload,command.payload))throw new AuthFailure('APPROVAL_NOT_USABLE',412);
+ const candidate=command.payload as any,evidence=(view.request as any).originReuseEvidence;
+ const observed=await observeOriginReuseInTransaction(access,db,actor,{projectId:command.projectId,originRef:candidate.originReuse.originRef,reservationRef:candidate.originReuse.reservationRef,permissionPolicyRef:candidate.permissionPolicyRef},{kind:'START',assertBinding:check,sessions:composer!.sessions!,assignments:composer!.assignments!,candidate,candidateCommandId:command.commandId,request:command,expiresAt:Date.parse(view.request.details.expiresAt)});
+ const source=observed.requestSource;if(!source||!matchesOriginReuseRequestSource(source,db,actor,command)||!originSame(source.evidence,evidence))throw startClosed();
+ const lease=Object.freeze(Object.create(null)) as OriginReuseStartLease,owner:StartReuseState={queue,access,db,query:db.query,actor,identity:originActor(actor),command:copyStartOrigin(command),hash:originHash(command),tx:source.transactionId,until:Math.min(source.until,Date.parse(view.request.details.expiresAt)),source,view,composer:composer!};
+ startReuseLeases.set(lease,owner);startReuseByDatabase.set(db,lease);try{await startLeaseClock(owner);return lease;}catch(error){releaseOriginReuseStart(lease);throw error;}
+}
+export function releaseOriginReuseStart(lease:OriginReuseStartLease){const owner=startReuseLeases.get(lease);if(owner){if(startReuseByDatabase.get(owner.db)===lease)startReuseByDatabase.delete(owner.db);requestSources.delete(owner.source);}startReuseLeases.delete(lease);}
+export async function originReuseStartState(lease:OriginReuseStartLease,db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand){if(!originReuseStartMatches(lease,db,actor,command))throw startClosed();const owner=startReuseLeases.get(lease)!;await startLeaseClock(owner);return{evidence:copyStartOrigin(owner.source.evidence),until:owner.until,transactionId:owner.tx,view:copyStartOrigin(owner.view)};}
+export async function observeOriginReuseStartEnvironment(db:PoolClient,source:object,scope:MaterialScope,descriptor?:unknown){
+ const lease=startReuseByDatabase.get(db),owner=lease&&startReuseLeases.get(lease);if(!owner)return null;
+ if(owner.queue.materials?.source!==source||scope.projectId!==owner.command.projectId||scope.executionId!==(owner.command.payload as any).executionId||scope.executionGeneration!==(owner.command.payload as any).executionGeneration||scope.credentialGeneration!==owner.actor.credentialGeneration||descriptor&&owner.descriptor&&!originSame(descriptor,owner.descriptor))throw startClosed();
+ await startLeaseClock(owner);const candidate=owner.command.payload as any;
+ const observed=await observeOriginReuseInTransaction(owner.access,db,owner.actor,{projectId:owner.command.projectId,originRef:candidate.originReuse.originRef,reservationRef:candidate.originReuse.reservationRef,permissionPolicyRef:candidate.permissionPolicyRef},{kind:'START',assertBinding:()=>{if(!originReuseStartMatches(lease,db,owner.actor,owner.command))throw startClosed();},sessions:owner.composer.sessions!,assignments:owner.composer.assignments!,candidate,candidateCommandId:owner.command.commandId,request:owner.command,expiresAt:Date.parse(owner.view.request.details.expiresAt)});
+ if(!observed.requestSource||!originSame(observed.requestSource.evidence,owner.source.evidence))throw startClosed();owner.until=Math.min(owner.until,observed.requestSource.until);requestSources.delete(observed.requestSource);await startLeaseClock(owner);return lease;
+}
+export function originReuseSourceLeaseMatches(lease:unknown,db:PoolClient,source:object,scope:MaterialScope){if(!lease||typeof lease!=='object')return false;const owner=startReuseLeases.get(lease);return !!owner&&originReuseStartMatches(lease,db,owner.actor,owner.command)&&owner.queue.materials?.source===source&&scope.projectId===owner.command.projectId&&scope.executionId===(owner.command.payload as any).executionId&&scope.executionGeneration===(owner.command.payload as any).executionGeneration&&scope.credentialGeneration===owner.actor.credentialGeneration;}
+export async function bindOriginReuseStartMaterial(db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand,registrar:object,plan:any,record?:{ref:RuntimeRefV1;snapshot:any},serverCommandId?:string){
+ const lease=currentOriginReuseStartLease(db,actor,command);if(!lease){if(Object.hasOwn(command.payload,'originReuse'))throw startClosed();return;}if(!originReuseStartMatches(lease,db,actor,command))throw startClosed();const owner=startReuseLeases.get(lease)!;if(owner.queue.materials!==registrar)throw startClosed();await startLeaseClock(owner);
+ if(!owner.plan){if(record||serverCommandId)throw startClosed();owner.plan=plan;owner.descriptor=copyStartOrigin(plan.descriptor);return;}
+ if(owner.plan!==plan||!originSame(owner.descriptor,plan.descriptor)||!record||!uuidV1(serverCommandId))throw startClosed();
+ const rows=(await Reflect.apply(owner.query,db,['SELECT content_hash,snapshot_json,created_command_id FROM anvil.execution_commands WHERE project_id=$1::uuid AND id=$2::uuid AND version=1 LIMIT 2',[command.projectId,record.ref.id]])).rows;
+ if(rows.length!==1||rows[0].created_command_id!==serverCommandId||rows[0].content_hash!==record.ref.contentHash||!originSame(rows[0].snapshot_json,record.snapshot)||record.snapshot.envelope.commandId!==command.commandId)throw startClosed();owner.queueRef=copyStartOrigin(record.ref);owner.serverCommandId=serverCommandId;await startLeaseClock(owner);
+}
+export function originReuseStartBodyMatches(db:PoolClient,source:object,scope:MaterialScope,commandRef:RuntimeRefV1){const lease=startReuseByDatabase.get(db),owner=lease&&startReuseLeases.get(lease);return !owner?false:originReuseSourceLeaseMatches(lease,db,source,scope)&&!!owner.queueRef&&originSame(owner.queueRef,commandRef);}
+
+/** 원 lease가 검산한 준비와 S의 정확 입력으로만 기존 합성 BudgetClaim을 생산한다. */
+export async function readOriginReuseStartBasis(lease:OriginReuseStartLease,db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand,demand:unknown){
+ if(!originReuseStartMatches(lease,db,actor,command))throw startClosed();const owner=startReuseLeases.get(lease)!;await startLeaseClock(owner);
+ const e=owner.source.evidence,stored=await readOrigin.call(new ExecutionStartOriginStore(),db,command.projectId,e.originRef.id,e.originRef.version),s=stored.value.snapshot;
+ const rows=(await Reflect.apply(owner.query,db,['SELECT p.*,c.result_ref,c.operation,c.state,c.actor_id command_actor,c.client_id command_client FROM anvil.execution_preparations p JOIN anvil.commands c ON c.project_id=p.project_id AND c.id=p.command_id WHERE p.project_id=$1 AND p.id=$2 AND p.version=$3',[command.projectId,s.preparationRef.id,s.preparationRef.version]])).rows;
+ if(rows.length!==1||rows[0].content_hash!==s.preparationRef.contentHash||originHash(rows[0].snapshot_json)!==s.preparationRef.contentHash||rows[0].operation!=='prepareExecution'||rows[0].state!=='APPLIED'||!originSame(rows[0].result_ref.data.snapshot,rows[0].snapshot_json))throw startClosed();
+ const {connectionKind:_,optionsFormat:__,...intent}=readExecutionPreparationInput(rows[0].snapshot_json.intent) as any;
+ const {readExecutionBudgetClaim}=await import('./execution-budget.ts');const claim=readExecutionBudgetClaim({projectId:command.projectId,executionId:s.execution.executionId,executionGeneration:s.execution.executionGeneration,commandId:command.commandId,assignmentRef:s.assignmentRef,stageRef:{applicationRef:s.taskRef.applicationRef,nodeId:s.taskRef.nodeId},policyRef:s.budgetPolicyRef,operation:'START_SESSION',demand});await startLeaseClock(owner);return{intent,claim};
+}
+
+export function originReuseSourceUntil(lease:OriginReuseStartLease){const owner=startReuseLeases.get(lease);if(!owner||!originReuseStartMatches(lease,owner.db,owner.actor,owner.command))throw startClosed();return owner.until;}
+export async function assertOriginReuseSourceFinal(lease:OriginReuseStartLease,db:PoolClient,source:object,scope:MaterialScope){if(!originReuseSourceLeaseMatches(lease,db,source,scope))throw startClosed();const owner=startReuseLeases.get(lease)!;await startLeaseClock(owner);if(!originReuseSourceLeaseMatches(lease,db,source,scope))throw startClosed();return owner.until;}

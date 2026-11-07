@@ -1,3 +1,7 @@
+import {observeOriginReuseStart,releaseOriginReuseStart,originReuseStartState,type OriginReuseStartLease} from './execution-start-origin-reuse.ts';
+import {ProjectApprovals} from '../approvals/project-approvals.ts';
+import {readApprovalRef} from '../approvals/approval-input.ts';
+import {originActor,originHash} from './execution-start-origin-input.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -7,7 +11,7 @@ import { readDispatchEnvelopeV1 } from '../../../../contracts/runtime/dispatch-e
 import { readServerExecutionFactV1, type ServerExecutionFactV1 } from '../../../../contracts/runtime/server-execution-fact-v1.ts';
 import { cloneV1, isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
 import { AccessRepository, AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
-import { currentProjectController, persistProjectReceipt, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
+import { reserveOriginReuseConsumptionReceiptIds,currentProjectController, persistProjectReceipt, projectReplay, recordProjectDenial, type ProjectCommand } from '../access/project-command.ts';
 import { ProjectExecutionBudget, type BudgetClaim } from './execution-budget.ts';
 import { authorizeRuntimePolicy, ProjectLimitPolicies } from './runtime-policy.ts';
 import { planSyntheticExecutionGrant } from './execution-grants.ts';
@@ -26,7 +30,7 @@ export interface SyntheticQueueResolver {
 }
 interface InitialQueueInput {
   preparationRef: VersionRef; executionId: string; executionGeneration: number; permissionPolicyRef: VersionRef; budgetPolicyRef: VersionRef;
-  operation: 'START_SESSION'; payload: {contextBundleRef: VersionRef; optionsRef: VersionRef};
+  originReuse?:{originRef:VersionRef;reservationRef:VersionRef};operation: 'START_SESSION'; payload: {contextBundleRef: VersionRef; optionsRef: VersionRef};
 }
 const same = (a:unknown,b:unknown) => canonicalJson(a) === canonicalJson(b);
 function input(request: ProjectCommand): InitialQueueInput {
@@ -36,7 +40,8 @@ function input(request: ProjectCommand): InitialQueueInput {
       ||request.schemaVersion!==1||!uuidV1(request.projectId)||!uuidV1(request.commandId)||!uuidV1(request.clientId)||!Number.isSafeInteger(request.controlGeneration)||request.controlGeneration<1
       ||request.operation!=='queueExecutionCommand'||request.targetId!==null||request.expectedVersion!==0||!Array.isArray(request.baselineRefs)||request.baselineRefs.length) return bad();
     const p=request.payload;
-    if (!recordV1(p,['preparationRef','executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','operation','payload'])
+    const reuse=Object.hasOwn(p,'originReuse');if(reuse){readApprovalRef(request.approvalRef);if(!recordV1(p.originReuse,['originRef','reservationRef'])||!refV1(p.originReuse.originRef)||!refV1(p.originReuse.reservationRef)||p.originReuse.originRef.version!==1||p.originReuse.reservationRef.version!==1)return bad();}
+    if (!recordV1(p,['preparationRef','executionId','executionGeneration','permissionPolicyRef','budgetPolicyRef','operation','payload',...(reuse?['originReuse']:[])])
       ||!refV1(p.preparationRef)||!uuidV1(p.executionId)||!Number.isSafeInteger(p.executionGeneration)||Number(p.executionGeneration)<1||!refV1(p.permissionPolicyRef)||!refV1(p.budgetPolicyRef)
       ||p.operation!=='START_SESSION'||!recordV1(p.payload,['contextBundleRef','optionsRef'])||!refV1(p.payload.contextBundleRef)||!refV1(p.payload.optionsRef)
       ||Buffer.byteLength(canonicalJson(request))>2*1024*1024) return bad();
@@ -49,6 +54,10 @@ function input(request: ProjectCommand): InitialQueueInput {
  * 후속 SEND_INSTRUCTION/회수·credential·wire fence는 별도 남은 C2/C3 구현이다.
  */
 const constructedQueueAccess=new WeakMap<object,AccessRepository>();
+const queueTransactions=new WeakMap<PoolClient,{access:AccessRepository;queue:ProjectInitialExecutionQueue;actor:AuthenticatedIdentity;identity:string;query:PoolClient['query'];hash:string;tx:string}>();
+const queueAuthenticate=AccessRepository.prototype.authenticated;
+export function matchesOriginReuseQueueTransaction(access:AccessRepository,db:PoolClient,actor:AuthenticatedIdentity,command:ProjectCommand,tx?:string){const owner=queueTransactions.get(db);return !!owner&&owner.access===access&&owner.actor===actor&&owner.identity===originActor(actor)&&owner.query===db.query&&owner.hash===originHash(command)&&(!tx||owner.tx===tx)&&matchesOriginReuseQueueIdentity(owner.queue,access)&&!Object.hasOwn(access,'authenticated')&&Object.getOwnPropertyDescriptor(AccessRepository.prototype,'authenticated')?.value===queueAuthenticate;}
+
 
 export class ProjectInitialExecutionQueue {
   readonly access: AccessRepository;
@@ -65,10 +74,15 @@ export class ProjectInitialExecutionQueue {
     const p=input(request);
     request=cloneV1(request);
     try {
-      return await this.access.authenticated(token,csrf,async(db,actor)=>{
+      const authenticated=p.originReuse?queueAuthenticate.bind(this.access):this.access.authenticated.bind(this.access);
+      return await authenticated(token,csrf,async(db,actor)=>{
+        let reuseLease:OriginReuseStartLease|undefined;try{
+        if(p.originReuse){if(queueTransactions.has(db)||Object.hasOwn(this.access,'authenticated')||AccessRepository.prototype.authenticated!==queueAuthenticate)throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);const query=db.query,identity=originActor(actor),rows=(await Reflect.apply(query,db,['SELECT txid_current()::text AS transaction_id'])).rows;if(query!==db.query||identity!==originActor(actor)||rows.length!==1||typeof rows[0]?.transaction_id!=='string'||!/^[1-9][0-9]*$/.test(rows[0].transaction_id))throw new AuthFailure('ORIGIN_REUSE_START_NOT_CONNECTED',412);queueTransactions.set(db,{access:this.access,queue:this,actor,identity,query,hash:originHash(request),tx:rows[0].transaction_id});}
+
         if(this.resolver.transport!=='SYNTHETIC_ONLY')throw new AuthFailure('SYNTHETIC_PROVIDER_REQUIRED',412);
         if(!actor.authSession||!uuidV1(actor.authSession.id)||!isoV1(actor.authSession.idleExpiresAt)||!isoV1(actor.authSession.absoluteExpiresAt))throw new AuthFailure('EXECUTION_HUMAN_SESSION_REQUIRED',412);
         await currentProjectController(db,actor,request);
+        if(p.originReuse){const previous=await projectReplay(db,actor,request);if(previous!==undefined){const approval=readApprovalRef(request.approvalRef),view=await new ProjectApprovals().read(db,actor,request.projectId,approval.requestId);if(view.currentVersion!==3||view.storedStatus!=='CONSUMED'||view.consumption?.commandId!==request.commandId||view.consumption?.requestHash!==originHash(request)||!same((view as any).originReuseOutcome?.queueCommandRef,(previous as any).data?.ref))throw new AuthFailure('APPROVAL_ALREADY_CONSUMED',409);if(!this.materials)throw new AuthFailure('MATERIAL_REGISTRATION_REQUIRED',412);await SyntheticPgStartMaterialRegistration.prototype.assertReplay.call(this.materials,db,actor,request,previous);return previous;}reuseLease=await observeOriginReuseStart(this,db,actor,request);}
         const raw=cloneV1(await this.resolver.basis(db,actor,cloneV1(request)));
         if(!recordV1(raw,['intent','claim']))throw new AuthFailure('EXECUTION_BASIS_INVALID',503);
         const basis:QueueBasis={intent:readExecutionIntentV1(raw.intent),claim:raw.claim};
@@ -78,8 +92,8 @@ export class ProjectInitialExecutionQueue {
           ||c.operation!=='START_SESSION'||!same(c.assignmentRef,basis.intent.assignmentRef)||!same(c.policyRef,p.budgetPolicyRef))throw new AuthFailure('EXECUTION_BASIS_MISMATCH',409);
         const policyInput={executionId:p.executionId,executionGeneration:p.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:basis.intent.sourceScopes};
         // 초기 queue는 authorizeExecution과 queue의 명시 범위를 모두 요구한다. 새 권한을 문자열 AUTO로 암묵 발급하지 않는다.
-        let executionPolicy=await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution'},policyInput,this.policies);
-        let policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);
+        let executionPolicy=await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution',...(p.originReuse?{approvalRef:null}:{})},policyInput,this.policies);
+        let policy=await authorizeRuntimePolicy(db,actor,p.originReuse?{...request,approvalRef:null}:request,policyInput,this.policies);
         if(!(this.materials instanceof SyntheticPgStartMaterialRegistration))throw new AuthFailure('MATERIAL_REGISTRATION_REQUIRED',412);
         const materials=this.materials,replay=await projectReplay(db,actor,request);if(replay!==undefined){await SyntheticPgStartMaterialRegistration.prototype.assertReplay.call(materials,db,actor,request,replay);return replay;}
         // 만료만으로 미확인 writer를 회수하지 않는다. project 잠금 아래 보수적으로 한 실행만 저장한다.
@@ -92,12 +106,13 @@ export class ProjectInitialExecutionQueue {
         if(fact.projectId!==request.projectId||fact.executionId!==p.executionId||fact.executionGeneration!==p.executionGeneration||!same(fact.intent,basis.intent)
           ||!same(fact.preparationRef,p.preparationRef)||!same(fact.permissionPolicyRef,p.permissionPolicyRef)||!same(fact.budgetReservationRef,reservation.record.ref)
           ||fact.subject.userId!==actor.actorId||fact.subject.clientId!==actor.clientId||fact.subject.humanSessionId!==actor.authSession.id||fact.subject.controlGeneration!==request.controlGeneration||fact.subject.credentialGeneration!==actor.credentialGeneration)throw new AuthFailure('EXECUTION_FACT_BINDING_MISMATCH',409);
-        executionPolicy=await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution'},policyInput,this.policies);
-        policy=await authorizeRuntimePolicy(db,actor,request,policyInput,this.policies);
+        executionPolicy=await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution',...(p.originReuse?{approvalRef:null}:{})},policyInput,this.policies);
+        policy=await authorizeRuntimePolicy(db,actor,p.originReuse?{...request,approvalRef:null}:request,policyInput,this.policies);
         const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
         if(!(at instanceof Date)||!Number.isFinite(at.getTime()))throw new AuthFailure('EXECUTION_CLOCK_INVALID',503);
         // 권한/예산 기한을 provider의 더 긴 주장으로 늘릴 수 없다.
-        fact.expires.permissionPolicy=new Date(Math.min(Date.parse(fact.expires.permissionPolicy),executionPolicy.validUntil,policy.validUntil)).toISOString();
+        const reuseUntil=reuseLease?(await originReuseStartState(reuseLease,db,actor,request)).until:Infinity;
+        fact.expires.permissionPolicy=new Date(Math.min(Date.parse(fact.expires.permissionPolicy),executionPolicy.validUntil,policy.validUntil,reuseUntil)).toISOString();
         fact.expires.humanSession=new Date(Math.min(Date.parse(fact.expires.humanSession),Date.parse(actor.authSession.idleExpiresAt),Date.parse(actor.authSession.absoluteExpiresAt))).toISOString();
         const grant=planSyntheticExecutionGrant(fact,at.toISOString());
         const materialPlan=await SyntheticPgStartMaterialRegistration.prototype.prepare.call(materials,db,actor,request,fact,grant);
@@ -108,7 +123,8 @@ export class ProjectInitialExecutionQueue {
           humanSessionId:actor.authSession.id,sourceScopes:basis.intent.sourceScopes,budgetPolicyRef:p.budgetPolicyRef,
           queuedAt:at.toISOString(),executionAuthorized:false,dispatchPerformed:false};
         const commandRef={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(queueIntent))};
-        const receipt=await persistProjectReceipt(db,actor,request,commandRef,{status:'SYNTHETIC_QUEUE_STORED',snapshot:queueIntent,executionAuthorized:false,dispatchPerformed:false},policy.policyRef,'EXPLICIT_SYNTHETIC_QUEUE_ONLY');
+        const ids=reuseLease?await reserveOriginReuseConsumptionReceiptIds(db,actor,request,reuseLease):undefined;
+        const receipt=await persistProjectReceipt(db,actor,request,commandRef,{status:'SYNTHETIC_QUEUE_STORED',snapshot:queueIntent,executionAuthorized:false,dispatchPerformed:false},policy.policyRef,'EXPLICIT_SYNTHETIC_QUEUE_ONLY',ids);
         const authorizationRef=receipt.authorizationReceiptRef;
         const unsigned={schemaVersion:1,commandId:request.commandId,issuedAt:at.toISOString(),expiresAt:grant.snapshot.expiresAt,executorRegistrationRef:fact.registration.ref,
           context:{projectId:request.projectId,assignmentId:basis.intent.assignmentRef.id,executionId:p.executionId,executionGeneration:p.executionGeneration,connectionRef:basis.intent.connectionRef,
@@ -130,7 +146,9 @@ export class ProjectInitialExecutionQueue {
           [randomUUID(),request.projectId,receipt.id,'EXECUTION_SYNTHETIC_ONLY',JSON.stringify({transport:'SYNTHETIC_ONLY',registrationRef:fact.registration.ref,executionId:p.executionId,generation:p.executionGeneration}),
             JSON.stringify({commandRef,grantRef:grant.ref,envelopeHash:envelope.envelopeHash}),'HELD_SYNTHETIC_ONLY',grant.snapshot.scopeDigest]);
         await SyntheticPgStartMaterialRegistration.prototype.register.call(materials,db,materialPlan,{ref:commandRef,snapshot},receipt.id);
+        if(reuseLease)await originReuseStartState(reuseLease,db,actor,request);
         return receipt.result;
+        }finally{if(reuseLease)releaseOriginReuseStart(reuseLease);queueTransactions.delete(db);}
       });
     } catch(error) { await recordProjectDenial(this.access,token,request.projectId,error);throw error; }
   }
