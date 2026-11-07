@@ -17563,3 +17563,19 @@ Main은 기존 fixture 보완안 읽기는 짧게 반환하고 T03/F01만 원 WI
 최종 시험 검수 I1/I2는 실제 queue.cancel/원 sourceAllowed 회수의 추가2로 해소돼 scoped C0/I0/M0다. T03은24400B/F0F7F4E3EFEC8A5105CAC87CDB1CEA7AC10B0F4FFF0B9F3B835A0B3836928598이며 기존20271B prefix8AB520F3 불변·F01 EEC04FE1 불변이다. Mainb246d1 추가2PASS/0fail/0skip·1617.958ms·exit0를 확인했다. 앞선 Main46/build/type/diff와 결합한 고유 신규48은 통과했고 인접6은 기존 fixture FAIL로 보존한다.
 
 Main은 신규 FN09_EXECUTION_START_ORIGIN_SOURCE_RESULT_20261107.md에 정확23 manifest·독립 검수/직접 검증·기존 인접 실패·미검증·복구/다음 업무를 기록했다. 판정은 승인된 source-only 구현·핵심 합성 검증 단위 인수이며 전체 FN09/Stage/계획·실제 사용환경 완료가 아니다. 현재23과 결과/현황2의 로컬 checkpoint만 준비하고 원격/PR/병합/배포는 하지 않는다. 다음은 기존 인접 fixture1의 정확 환경계상 SQL 응답 보완이며 제품/정책 기준을 낮추지 않는다.
+
+
+## 410. source-only checkpoint·기존 fixture1 한정 보완 착수
+
+579bb6은 bbd20aa549b3ac6774712389727ec44b767f45c2에 정확23+결과/현황3=26경로만 로컬 보존했다. 원격/PR/병합0·tracked clean/보호3만 남음을 확인했다. 줄바꿈 Git 경고는 원 raw 변경과 구분하며 뒤 지문으로 대조한다. 신규48/실환경제외·기존 인접6FAIL은 결과서B1CD9B48에 보존한다.
+
+다음은 별도 FN09_REGISTERED_FIXTURE_ACCOUNT_ADDENDUM_20261107.md의 TEST_ONLY_GO로 기존 등록 정의 시험1의 환경계상 SQL 응답만 추가한다. 시작349B2BCB·정확 인자/원 mode/정의 bytes·미생산 환경0을 공급하고 기존 guard/기대값을 보존한다. 새 complete:true/성공 fallback·제품 수정·실제 DB/권한 실행0이다. 같은 Primary가 단일 writer로 수행하고 Main은 검수/필요 한정 fresh 뒤 통합한다.
+
+
+## 411. 기존 등록 정의 시험 환경계상 모델 보완 검수
+
+부록 EF060FDE의 TEST_ONLY_GO에서 기존 Primary는 registered-definition-responsible-session.test.ts의 정확 environment_configuration_account SQL 한 분기만 추가했다. 원 Session/actor/client/project 인자를 exact 대조하고 used/held/coverage·정의 canonical_bytes 합산·미생산 환경/보고/승인 비용0을 공급한다. 기존 기대값·제품23·권한/용량 guard는 불변이며 complete:true/포괄 성공 fallback0이다. 독립 검수 C0/I0/M0와 한 줄 메모리 제거 후 원349B2BCB 지문 복원을 확인했다. 최종47857B/6D4DD0E6DE4921182DBED83629161FD772AC1412936AD6D9788FC41444C1DB6F이다.
+
+Primary940361 선택1PASS·3ac658 해당파일10PASS/0fail/0skip·1086.6014ms·type/diff0 뒤 Main f3ff93은 같은 파일 전체를 독립 실행해10PASS/0fail/0cancel/0skip/0todo·575.7019ms·exit0와 diff0/최종hash를 확인했다. 앞선 인접6FAIL은 과거 결과로 유지하며 이번 보완 후 해당파일 결과만 별도로 통과다. 신규 FN09 48·다른 인접4·build는 변경이 없어 반복하지 않았다. 실제 DB/SQL·권한·키·서비스·SDK/Agent·실자료 조사0이며 실제 환경계상/SQL 원자성·전체 FN09/Stage/계획 완료를 뜻하지 않는다.
+
+역치환 진단의 줄바꿈 처리 오류1은 정정해 원지문을 확인했고 제품/시험 실패와 분리했다. writer는 반환됐으며 Main은 정확 시험1+부록/현황3의 로컬 checkpoint를 준비한다. 다음 승인 범위의 독립 미완료 업무를 기존 담당자가 읽기 전용으로 선별 중이다. PMO는 앞선 bbd20aa5 보고를 접수했음을 compact 조회로 확인했고 중복 전송하지 않았다. 원격/PR/병합/배포0이다.

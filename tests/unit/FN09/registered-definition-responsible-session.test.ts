@@ -66,6 +66,7 @@ function definitionFixture(){
  if(sql.includes('FROM anvil.permission_policies p JOIN anvil.permission_policy_versions'))return{rows:[policy()]};
  if(sql==='SELECT clock_timestamp() AS at'||sql==='SELECT clock_timestamp() at')return{rows:[{at:new Date()}]};if(sql==='SELECT transaction_timestamp() AS at'||sql==='SELECT transaction_timestamp() at')return{rows:[{at}]};
  if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:commands.filter(r=>r.project_id===p[0]&&r.actor_id===p[1]&&r.command_id===p[2])};
+ if(sql==='SELECT * FROM anvil.environment_configuration_account($1,$2,$3,$4)'){assert.deepEqual(p,[actor.authSession.id,actor.actorId,actor.clientId,pid]);return{rows:[{used_bytes:mode.used,held_bytes:mode.heldBytes,coverage_state:mode.coverage,environment_heads:'0',environment_versions:'0',environment_bytes:'0',definition_bytes:rows.reduce((n,r)=>n+BigInt(r.canonical_bytes),0n).toString(),report_bytes:'0',approval_candidates:'0',approval_bytes:'0'}]};}
  if(sql.startsWith('SELECT * FROM anvil.quota_account'))return{rows:[{coverage_state:mode.coverage,used_bytes:mode.used,held_bytes:mode.heldBytes}]};
  if(sql==='SELECT id FROM anvil.agent_connections WHERE project_id=$1 AND id=$2')return{rows:heads.filter(r=>r.project_id===p[0]&&r.id===p[1])};
  if(sql==='SELECT canonical_bytes FROM anvil.definition_capability_reports WHERE project_id=$1 ORDER BY id'){assert.deepEqual(p,[pid]);return{rows:[]};}
