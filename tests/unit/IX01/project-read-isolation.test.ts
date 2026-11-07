@@ -19,7 +19,8 @@ const owners=[
 
 const artifactChild=process.env.ANVIL_IX01_ARTIFACT_MEMORY_CHILD==='1';
 const knowledgeChild=process.env.ANVIL_IX01_ARTIFACT_MEMORY_CHILD==='knowledge';
-const memoryChild=artifactChild||knowledgeChild;
+const documentChild=process.env.ANVIL_IX01_ARTIFACT_MEMORY_CHILD==='document';
+const memoryChild=artifactChild||knowledgeChild||documentChild;
 const expectedListSql=`SELECT p.id,p.name,p.purpose,p.version,to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS at
   FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id
   WHERE m.user_id=$1 AND m.revoked_at IS NULL AND ((p.archived_at IS NOT NULL)=$2)
@@ -62,11 +63,26 @@ const knowledgeSql=`SELECT k.id,k.head_version,to_char(k.created_at AT TIME ZONE
   AND ($7::text NOT IN ('PROPOSED','CONFIRMED') OR EXISTS(SELECT 1 FROM anvil.knowledge_events e WHERE e.project_id=k.project_id AND e.entry_id=k.id AND e.version=k.head_version AND e.kind='CONFIRMED')=($7::text='CONFIRMED'))
   ORDER BY k.created_at DESC,k.id DESC LIMIT $6`;
 
-async function fixture(artifactRoot?:string,knowledge=false){
+const documentTest='IX01 메모리 원문으로 정식 문서 버전 GET을 격리한다';
+const documentDefinition={formCode:'SOURCE_MEMORY_FORM',name:'합성 양식',purpose:'고정 버전 조회 검증',scope:'PROJECT',
+  authorRole:'작성',reviewerRole:'검토',confirmerRole:'확정',requiredInputs:[],
+  items:[{itemId:'intro',title:'내용',required:true,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['내용 확인']}],
+  authoringStandardRef:{id:id(82),version:1,contentHash:sha256(Buffer.from('합성 작성 기준'))}};
+const documentFormRef={id:id(83),version:1,contentHash:sha256(Buffer.from(canonicalJson(documentDefinition)))};
+const documentRows=owners.map((owner,index)=>{
+  const file=attachmentFiles[index]!,title='합성 정식 문서 '+(index+1),authorRef={kind:'HUMAN',userId:owner.userId};
+  const content={body:{artifactId:file.id,bytes:file.bytes.length,contentHash:sha256(file.bytes),mediaType:'text/plain;charset=utf-8'},
+    attachments:[],sections:[{itemId:'intro',anchor:'line:1'}],sourceRefs:[]};
+  const ref={id:id(84+index),version:1,contentHash:sha256(Buffer.from(canonicalJson({title,formRef:documentFormRef,stageNodeRef:null,content})))};
+  return {owner,ref,title,content,authorRef,eventId:id(86+index),reviewId:id(88+index),confirmed:index===0};
+});
+
+async function fixture(artifactRoot?:string,mode?:'knowledge'|'document'){
+  const knowledge=mode==='knowledge';
   const projects=owners.map(owner=>({id:owner.projectId,name:owner.name,purpose:owner.purpose,desired_outcome:'격리 조회 검수',
     version:1,created_at:new Date(at),updated_at:new Date(at),archived_at:null}));
   const memberships=owners.map(owner=>({projectId:owner.projectId,userId:owner.userId,participation:'OWNER',revokedAt:null}));
-  const calls:{kind:'LIST'|'DETAIL'|'SOURCE'|'MEMBER'|'ARTIFACT'|'KNOWLEDGE_SEARCH'|'KNOWLEDGE_READ';actorId:string;value?:unknown}[]=[],writes:string[]=[];
+  const calls:{kind:'LIST'|'DETAIL'|'SOURCE'|'MEMBER'|'ARTIFACT'|'KNOWLEDGE_SEARCH'|'KNOWLEDGE_READ'|'DOCUMENT'|'DOCUMENT_PART';actorId:string;value?:unknown}[]=[],writes:string[]=[];
   let cursorSigns=0;
 
   // 쿠키→인증 주체와 SQL 결과만 메모리 모형이다. 앱 라우트, ProjectsRepository, 오류 응답 및 목록 커서 결정은 실제 코드다.
@@ -171,6 +187,49 @@ async function fixture(artifactRoot?:string,knowledge=false){
               return {rows:[{state:'READY',storage_key:'blobs/'+owner.projectId+'/'+source.id,inspection_json:null}]};
             }
           }
+          if(mode==='document'){
+            const [pid,docId,version]=args;
+            const row=documentRows.find(candidate=>candidate.owner===owner)!;
+            const expectVersion=()=>assert.deepEqual(args,[owner.projectId,row.ref.id,1]);
+            const part=(name:string)=>calls.push({kind:'DOCUMENT_PART',actorId:owner.userId,value:name});
+            if(text==='SELECT v.*,d.confirmed_version FROM anvil.document_versions v JOIN anvil.documents d ON d.id=v.document_id AND d.project_id=v.project_id WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3'){
+              assert.equal(args.length,3);assert.equal(pid,owner.projectId);assert.equal(typeof docId,'string');assert.ok(version===1||version===2);
+              calls.push({kind:'DOCUMENT',actorId:owner.userId,value:args});
+              return {rows:row.ref.id===docId&&version===1?[{
+                document_id:row.ref.id,project_id:owner.projectId,version:1,title:row.title,
+                form_definition_id:documentFormRef.id,form_version:1,form_hash:documentFormRef.contentHash,
+                stage_ref_json:null,content_json:row.content,content_hash:row.ref.contentHash,source_refs_json:[],
+                author_ref_json:row.authorRef,created_at:new Date(at),confirmed_version:row.confirmed?1:null,
+                validation_json:{formatOnly:true},
+              }]:[]};
+            }
+            if(text==='SELECT * FROM anvil.artifacts WHERE id=$1 AND project_id=$2 AND content_hash=$3 AND bytes=$4 AND media_type=$5'){
+              const ref=row.content.body;
+              assert.deepEqual(args,[ref.artifactId,owner.projectId,ref.contentHash,ref.bytes,ref.mediaType]);part('ARTIFACT');
+              return {rows:[{state:'READY',storage_key:'blobs/'+owner.projectId+'/'+ref.artifactId,inspection_json:null}]};
+            }
+            if(text==='SELECT definition_json FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3'){
+              assert.deepEqual(args,[documentFormRef.id,1,documentFormRef.contentHash]);part('FORM');
+              return {rows:[{definition_json:documentDefinition}]};
+            }
+            if(text==="SELECT r.*,a.server_sequence FROM anvil.content_reviews r JOIN anvil.audit_events a ON a.project_id=r.project_id AND a.command_id=r.command_id WHERE r.scope_kind='PROJECT' AND r.project_id=$1 AND r.target_kind='DOCUMENT' AND r.target_id=$2 AND r.target_version=$3 AND r.target_hash=$4 ORDER BY a.server_sequence DESC LIMIT 200"){
+              assert.deepEqual(args,[owner.projectId,row.ref.id,1,row.ref.contentHash]);part('REVIEW');
+              return {rows:[{id:row.reviewId,criteria_version:1,outcome:'ACCEPTED',items_json:[{criterionId:'intro',outcome:'ACCEPTED',reason:'원문 대조'}],
+                reviewer_subject_ref:{...row.authorRef,sameAsTargetRecorder:true},source_kind:'HUMAN_REVIEW',reason:'합성 원문 검토',
+                created_at:new Date(at),server_sequence:1}]};
+            }
+            if(text==="SELECT event_kind,actor_ref,reason,created_at,id FROM anvil.document_version_events WHERE project_id=$1 AND document_id=$2 AND version=$3 UNION ALL SELECT 'CONFIRMED',jsonb_build_object('kind','HUMAN','userId',confirmed_by),'별도 명시 확정',created_at,id FROM anvil.document_confirmations WHERE project_id=$1 AND document_id=$2 AND version=$3 ORDER BY created_at,id"){
+              expectVersion();part('HISTORY');
+              return {rows:[{event_kind:'DRAFT_SAVED',actor_ref:row.authorRef,reason:'합성 문서 원본 저장',created_at:new Date(at),id:row.eventId},
+                ...(row.confirmed?[{event_kind:'CONFIRMED',actor_ref:row.authorRef,reason:'별도 명시 확정',created_at:new Date(at),id:id(92)}]:[])]};
+            }
+            if(text==='SELECT import_id FROM anvil.document_import_selections WHERE project_id=$1 AND document_id=$2 AND version=$3'){
+              expectVersion();part('IMPORT');return {rows:[]};
+            }
+            if(text==='SELECT p.id FROM anvil.document_proposals p WHERE p.project_id=$1 AND p.document_id=$2 AND (p.base_version=$3 OR EXISTS(SELECT 1 FROM anvil.document_proposal_selections s WHERE s.project_id=p.project_id AND s.proposal_id=p.id AND s.version=$3)) ORDER BY p.created_at,p.id'){
+              expectVersion();part('PROPOSAL');return {rows:[]};
+            }
+          }
           throw Error('UNMODELED_PROJECT_READ_SQL');
         },
       } as unknown as PoolClient;
@@ -239,7 +298,7 @@ if(!memoryChild)test('IX01 두 합성 OWNER의 직접 조회는 자신의 상세
   }finally{await f.app.close();assert.equal(f.app.server.listening,false);}
 });
 
-function runMemoryChild(kind:'1'|'knowledge'){
+function runMemoryChild(kind:'1'|'knowledge'|'document'){
   // 다른 시험과 ESM 모듈 캐시를 공유하지 않는 별도 Node 프로세스에서만 FS import를 대역한다.
   const env={...process.env,ANVIL_IX01_ARTIFACT_MEMORY_CHILD:kind};
   Reflect.deleteProperty(env,'NODE_TEST_CONTEXT');
@@ -254,6 +313,7 @@ function runMemoryChild(kind:'1'|'knowledge'){
 
 if(!memoryChild)test(attachmentTest,()=>runMemoryChild('1'));
 if(!memoryChild)test(knowledgeTest,()=>runMemoryChild('knowledge'));
+if(!memoryChild)test(documentTest,()=>runMemoryChild('document'));
 
 async function memoryFiles(){
   const root=resolve('never-created-ix01-attachment-memory-root');
@@ -349,7 +409,7 @@ if(knowledgeChild)test(knowledgeTest,async()=>{
   const {root,fsCalls,handles,blockedCalls,fsMock}=await memoryFiles();
   let f:Awaited<ReturnType<typeof fixture>>|undefined;
   try{
-    const running=await fixture(root,true);f=running;
+    const running=await fixture(root,'knowledge');f=running;
     const {ProjectListCodec}=await import('../../../apps/server/modules/projects/service.ts');
     const codec=new ProjectListCodec(value=>knowledgeSign('KNOWLEDGE:'+value));
     const filter=(projectId:string)=>({query:canonicalJson({projectId,query:'공통',kind:'FACT',status:'ACTIVE'}),archived:false,limit:1});
@@ -403,6 +463,52 @@ if(knowledgeChild)test(knowledgeTest,async()=>{
       assert.equal(fsCalls.length,hiddenFs);
     }
     assert.deepEqual(running.writes,[]);assert.deepEqual(blockedCalls,[]);assert.equal(handles.size,0);
+  }finally{
+    try{if(f){await f.app.close();assert.equal(f.app.server.listening,false);}}
+    finally{fsMock.restore();}
+  }
+});
+
+if(documentChild)test(documentTest,async()=>{
+  const {root,fsCalls,handles,blockedCalls,fsMock}=await memoryFiles();
+  let f:Awaited<ReturnType<typeof fixture>>|undefined;
+  try{
+    const running=await fixture(root,'document');f=running;
+    for(const [index,owner] of owners.entries()){
+      const own=documentRows[index]!,other=documentRows[1-index]!,ownFile=join(root,'blobs',owner.projectId,own.content.body.artifactId);
+      const get=(projectId:string,documentId:string,version:number)=>running.read(owner,'/'+projectId+'/documents/'+documentId+'/versions/'+version);
+      const member=(projectId:string)=>({kind:'MEMBER',actorId:owner.userId,value:projectId});
+      const document=(projectId:string,documentId:string,version:number)=>({kind:'DOCUMENT',actorId:owner.userId,value:[projectId,documentId,version]});
+      const start=running.calls.length,fsStart=fsCalls.length;
+      const found=await get(owner.projectId,own.ref.id,1);
+      assert.equal(found.statusCode,200,found.body);assert.equal(found.headers['cache-control'],'no-store');
+      const view=found.json();
+      assert.deepEqual({id:view.id,version:view.version,contentHash:view.contentHash},own.ref);
+      assert.equal(view.title,own.title);assert.equal(view.confirmed,own.confirmed);assert.deepEqual(view.authorRef,own.authorRef);
+      assert.deepEqual(view.formRef,documentFormRef);assert.deepEqual(view.content,own.content);
+      assert.deepEqual(view.validation,{formatOnly:true,validForConfirmation:true,issues:[]});
+      assert.deepEqual(view.contentReviewCriteria,{criteriaVersion:1,formRef:documentFormRef,items:[{criterionId:'intro',title:'내용',reviewCriteria:['내용 확인']}]});
+      const reviewRef={id:own.reviewId,targetRef:own.ref,criteriaVersion:1,outcome:'ACCEPTED'};
+      assert.deepEqual(view.reviewRefs,[reviewRef]);assert.deepEqual(view.contentReviews.map((review:{ref:unknown})=>review.ref),[reviewRef]);
+      assert.deepEqual(view.statusHistory.map((event:{kind:string;actorRef:unknown})=>[event.kind,event.actorRef]),
+        [['DRAFT_SAVED',own.authorRef],...(own.confirmed?[['CONFIRMED',own.authorRef]]:[])]);
+      assert.deepEqual(running.calls.slice(start),[member(owner.projectId),document(owner.projectId,own.ref.id,1),
+        ...['ARTIFACT','FORM','REVIEW','HISTORY','IMPORT','PROPOSAL'].map(value=>({kind:'DOCUMENT_PART',actorId:owner.userId,value}))]);
+      assert.deepEqual(fsCalls.slice(fsStart).filter(call=>call.kind==='readFile'||call.kind==='close'),[{kind:'readFile',path:ownFile},{kind:'close',path:ownFile}]);
+      assert.equal(handles.size,0);
+
+      for(const [pid,did,version,canReadProject] of [[other.owner.projectId,other.ref.id,1,false],[missingId,other.ref.id,1,false],
+        [owner.projectId,other.ref.id,1,true],[owner.projectId,id(93),1,true],[owner.projectId,own.ref.id,2,true]] as const){
+        const before=running.calls.length,filesBefore=fsCalls.length;
+        const denied=await get(pid,did,version);
+        assert.equal(denied.statusCode,404,denied.body);assert.equal(denied.headers['cache-control'],'no-store');
+        const {requestId,...body}=denied.json();assert.equal(typeof requestId,'string');assert.ok(requestId.length>0);
+        assert.deepEqual(body,{code:'NOT_FOUND',message:'요청을 처리하지 못했습니다',targetId:null,retryDisposition:'not-retryable',details:{}});
+        assert.deepEqual(running.calls.slice(before),[member(pid),...(canReadProject?[document(pid,did,version)]:[])]);
+        assert.equal(fsCalls.length,filesBefore);assert.equal(handles.size,0);
+      }
+    }
+    assert.equal(running.cursorSigns(),0);assert.deepEqual(running.writes,[]);assert.deepEqual(blockedCalls,[]);assert.equal(handles.size,0);
   }finally{
     try{if(f){await f.app.close();assert.equal(f.app.server.listening,false);}}
     finally{fsMock.restore();}
