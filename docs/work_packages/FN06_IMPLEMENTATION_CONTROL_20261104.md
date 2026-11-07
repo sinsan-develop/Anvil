@@ -3667,3 +3667,101 @@ Primary는 실제 보호 source·등록 준비 원자료 조립 단계다. fs mo
 읽기 결과는 실제 readApplication의 회원→적용 행→readApplicationSnapshot 호출선과 정확 snapshot {name,purpose,graph,sourceRef}(생성 초안만 draftConfirmationRef 추가), graph source_hash와 전체 snapshot_hash·행 sourceRef 동일성이다. application-read.test.ts의 실제 보호 읽기 원행 패턴과 application-snapshot.ts14~26, project-methodologies.ts19~23/122~137, project repository151~177을 근거로 Primary에게 전달했다. row/read를 override하는 기존 빈 프로젝트 시험은 정상 보호 생산 증거로 전용하지 않는다. 임무/실행 자료가 생긴 뒤 방법론 apply로 사후 보충하지 않는다. 조사는 읽기뿐이며 제품/시험 실행0·성공 guard 대역0이다.
 
 입력2 부분 인수 이후 전체 원자료 정상·저장/계상·GET2/UI05는 아직 미완료다. 같은 단일 writer가 정확23에서 계속하고 Main은 검수·통합을 맡는다. SDK 추가 읽기 실패/소진·실제 DB/권한/키/서비스/Agent 제외는 유지한다.
+
+
+## 382. 실제 보호 생산·재조회 조립 정상 제출
+
+Primary2b4303은 원 방법론→임무 초안/내용 검토/확정→역할/논리 세션 예약→context→등록 준비를 실제 클래스로 생산하고 같은 메모리 Tx의 보호 재조회로 소비한 선택1PASS/0FAIL/0skip·703.3717ms·exit0를 제출했다. 앞선 무결성 실패 원인은 AGENT requirements 선언, 환경 감사 correction_of의 기본 null, 등록 준비 quota RPC 모델의 인자/반환 원형 누락으로 나눴고 시험 원자료만 보강했다. 실제 보호 메서드 성공 override·제품 guard 완화·실SQL 실행으로 해결하지 않았다.
+
+이는 실제 클래스 조립의 개발 증거이며 Main fresh 실행이나 전체 S/Q 생산·저장/계상·0081·GET2/UI05 인수가 아니다. Main은 동일 조립이 불변이면 반복하지 말고 source 결합·내부 접점 안정 뒤 묶음별 동결 지문을 반환하도록 지시했다. Primary는 정확23에서 계속 작성 중·추가 경로 요구/기술 차단/live 실행 handle0이다. 실제 DB·권한·키·서비스·Agent/SDK 실행0·전체 계획 미완료를 유지한다.
+
+
+## 383. 보호 source 제품3 부분 검수·기준 포함관계 I1
+
+Primary는 P02 source10350B/BEDDD8257EA87E0636E5B7F7DD079BECE7EA136C68F121D817C9D1C6F2E47F96, P05 queue18809B/44CF1C4AC2AC9E3059B03E1380D95D8E581F2D59D188516EC711A36F1F347071, P06 준비22172B/FEF85317417E67660FE616A48CFB5D5BDEE3A623424DC094A6CAE49BDAE65009를 동결 제출했다. 0b5a8d sources7PASS/0fail/0skip·1681.4288ms, 3a3703 type0·622c6e diff/indexempty를 보존하되 전체 저장 인수가 아니다. T02 C9982985/F01 19839206은 이후 저장 조립 때문에 writer가 유지한 증거 지문이며 동결 제품과 구분한다. P02 모듈 부재0d76c4는 구조 RED, private 필드를 공개 필드로 오인한 e580df는 자체 구현 오류로 나눴다.
+
+Main58994a의 제품3/기존2 diff 읽기와 독립 C0/I1/M0에서 P02의 baseline 포함관계가 부모157/WI64와 반대임을 확인했다. stage.baselineRefs의 각 원 기준이 assignment.definition.baselineRefs와 preparation.basisRefs 양쪽에 있어야 하나 assignment.ref/preparation.ref 자체를 stage에 요구했다. 앞선7PASS를 적합 원 기준의 정상 증명으로 인수하지 않는다. 원 기준 집합으로 보강한 cdab81 선택2는1PASS/1FAIL/0skip·868.4952ms·exit1이며 적합 정상의 SOURCE_MISMATCH409를 행동 RED로 재현했다. 기준 누락 음성1PASS는 이 정상 실패와 분리한다.
+
+Main은 최종 검수 뒤 P02만 동결 해제·최소 보정을 허용했다. P05/P06은 추가 finding 없이 동결 유지하고 단일 Primary가 T02/F01와 GREEN·새 지문을 반환한다. 이는 승인 의미 안의 구현 해석 보정이며 guard 완화/새 범위 승인 요청이 아니다. 검토자의 Git diff 작업 트리 인식 오류는 원문 확인과 구분하고 Main의58994a 정확 diff 근거로 보완했다. 다른 제품/시험·실제 환경·SDK 재조회0, 전체 저장/계획 완료0이다.
+
+
+## 384. source I1 보정 재검수·현황 비절단 기록 복구
+
+P02는 stage의 각 기준 ref가 assignment.definition.baselineRefs와 preparation.basisRefs 양쪽에 포함되는지 검사하도록 최소 보정해 10393B/6DEBF08EDE63B9EFCDF1AD7D7E609B5F87A8C2235F7C51E838FBCB2200BE9EC7로 재동결했다. cdab81 RED 뒤 a914b9 전체 sources8PASS/0FAIL/0skip·1913.9152ms·exit0,66a4d2 type/diff0를 제출했다. 정상 fixture는 원 stage producer에 원 기준 refs를 전달하고 저장 후 hash 수선0이다. 독립 scoped 재검수는 I1 해소·C0/I0/M0이며 P05/P06 원지문 판정을 유지한다. T02 77F8ABE8/F01 E956BE20은 후속 작성 소유로 남아 있어 Main이 작성 중 시험을 중복 실행하지 않았다. Main fresh/전체 S/Q 저장·계상·SQL·route/UI 검수는 별도다.
+
+Main383 기록의 0c85ef는 WriteAllText가 ‘요청한 작업은, 사용자가 매핑한 구역이 열려 있는 상태인 파일에서 수행할 수 없습니다.’로 세션 내 docs/WORK_STATUS.md 절단 쓰기에 실패했다. PowerShell의 비종료 오류로 마지막 exit0이었으므로 기록 성공으로 보지 않았다.1155d7 읽기 대조는 기존 원문6094463B 보존·공식 사본6096377B에383 존재·기존 원문이 정확 접두사·통제 양쪽 동일을 확인했다. dfa5b7은 누락 suffix1914B만 AppendAllText로 추가해 SHA256 E2842C032C859136B1C006279749516070B689DE3D5B0E65F8E03273DE5144CF와 mirror 일치를 검산했다. 권한/잠금/ACL 변경·원문 삭제0이다. 이후 순수 누적은 비절단 append와 ErrorActionPreference Stop으로 기록하며 제품 실패와 분리한다.
+
+같은 Primary가 S/Q 저장·목적 ID/quota를 이어간다. SDK 재조회·실제 DB/권한/키/서비스/Agent0·전체 계획 완료0이다.
+
+
+## 385. 저장 구현과 독립인 다음 소비 접점 조사 배정
+
+기존 Primary는 정확23의 저장·ID·계상 연결을 계속하며 Main383ecc는 추가 허용경로 밖 제품 변경 없음·index empty만 확인했다. 기존 읽기 담당자에게 FN09 S/Q 후속의 기존 START envelope/authorizeExecution/E·첫 SEND 소비 접점을 296b224a 변경 전 원문과 부모65765A0B로 조사하도록 배정했다. 이미 알려진 FN07 미확인을 반복하지 않고 재사용 가능한 정상 단위와 남은 정확 공백·새 의미 필요 여부만 반환한다. 작성 중 파일·코드/문서 수정·시험·SDK/실환경 실행0이며 다음 구현을 미리 승인하는 작업이 아니다. Main은 결과를 계획·선행과 대조해 다음 업무를 선정한다.
+
+
+## 386. S/Q 저장 서비스 정상 제출·후속 실행 권위 경계
+
+Primarya0e9dd 선택1PASS/0FAIL/0skip·1176.8227ms·exit0는 S/Q store·목적 ID·quota lease를 실제 origin 서비스에 연결해 원 AccessRepository BEGIN→COMMIT→release 뒤 새 BEGIN→COMMIT→release 보호조회, 동일 command replay의 추가 저장/R/command0, 다른 command의 같은 stage409 및 exact GET을 검산했다. 앞선8c3d93 하위 저장1PASS는 중복 실행 모드로 고유 수에 더하지 않는다. RPC는 메모리 모델이고 0081 실제 설치/역완결·route/UI·Main fresh/독립 backend 인수는 미완료다. 같은 Primary는 COMMIT/정산 불명·후행 보호 거절·HOLD 정리를 보완한 뒤 backend 묶음을 동결한다.
+
+§385 읽기 결과는 기존 initial queue가 별도 resolver.basis/current를 요구하고 실행 intent exact11과 등록 준비 exact13이 분리되며, 기존 E가 grant 목적·자체 ID를 생산함을 재사용 접점으로 좁혔다. S/Q는 원자료와 식별 근거이지 VERIFIED_CURRENT fact·실제 START envelope·grant/E 발급·첫 SEND current를 자동 생산하지 않는다. 원 origin/S/Q를 후속 START/grant/E에 단발 귀속시킬 사용 조건은 현재 원자료 등록 승인과 구분되는 다음 의미다. 새 표/API가 반드시 필요하다고 결론내리지 않았고 항상412 투영을 새 기능으로 계산하지 않는다. 근거는 execution-commands22/57~59/69~113, execution-grants15~25, execution-intent-v1과 server-execution-fact-v1, execution-challenge-store68~76, execution-instruction-queue38~43/74~86이다.
+
+Main은 후속 공백을 현재 저장 업무의 차단 사유로 만들지 않고 정확23의 저장·조회/UI 완성에 집중하도록 전달했다. source-only·false 효과 경계와 실제 DB·권한·키·서비스·Agent/SDK 실행 제외를 유지한다. 전체 계획 미완료다.
+
+
+## 387. backend 불명·후행 보호·HOLD 직접 시험 제출
+
+Primary042eb2는 backend 직접8PASS/0FAIL/0skip·3921.9186ms·exit0를 제출했다. 실제 origin 서비스의 COMMIT 불명·정산 유실 뒤 성공/후행 새 auth/자동 추가 명령0, 확정 뒤 read 정책 회수의 본문 비노출, 저장 HOLD 취소 뒤 원 work 회수 전 BUSY·늦은 rollback/release, S/Q·C/A/U/R 관계 변조 거절을 포함한다. 새 시험의 오류명2곳은 원 repository COMMIT_LOST와 기존 PROJECT_OPERATION_DENIED에 정합한 준비 차이이며 제품 guard 변경0이다.
+
+현재 store의 R plan 원결박과 미적용 SQL 원형 접합을 마무리 중이라 신규 backend 제품4는 아직 동결 전이다. Main은 e665cf의 승인 목록 내 경로/indexempty만 확인했고 작성 중 본문/시험은 읽거나 실행하지 않았다. 실제 SQL/route/UI·Main fresh/독립 backend 인수는 미완료이며 제출 PASS를 이 범위로 승격하지 않는다. 단일 Primary 계속·실제 DB/권한/키/서비스/Agent/SDK 실행0이다.
+
+
+## 388. backend 기한 검수 I1·보호 수명 보완 지시
+
+새 backend4 동결은 P03 11942B/4C4162FE84B65C17D9D5A6CE1B6716355EAFBE926227FE8DBF780BDF73E6042B, P04 9710B/9181EBD41A6BAD21C00F44510B1F4279089C58132FF853E903D5D838AC17D029, P07 46544B/BF43D515D968D5E1AA9012197B3FB74F76F874B0EC3EF79AA07E8F82310E5A2B, P08 54319B/7FAB00770398596E7B58F910916346C04F539A6E2C623672CCDE37F1D45CA980다. Primary835a30 직접8PASS/0fail/0skip·3554.9798ms·52e255 type0·551919 diff/index/문자0을 제출했고 시험T03/T05/F01는 작성 소유다. Main a9aea0/de1904가 저장/서비스/정확 접합 diff를 읽었다. 독립 최초 C0/I0/M0 이후 Main 시계 질문의 한정 추가 검토에서 아래 I1을 확정했으므로 최초 판정을 전체 인수로 사용하지 않는다.
+
+P04는 DB clock으로 Session 기한을 확인한 뒤 DB 절대 until을 로컬 Date.now의 shrink/check/timer에 그대로 넘긴다. DB10:00:00/로컬09:59:00/Session10:00:05라면 실제5초 수명이 로컬 기본호출30초로 정착해 HOLD의 외부 종료가25초 늦어진다. 성공 본문이 만료 후 반환됐다는 증거가 아니라 최단 보호 수명에 따른 외부 정착 지연이다. 정책/한도도 같은 절대값 전달을 사용한다.
+
+### 동일 Primary 한정 재작업
+
+- P04 동결을 해제해 DB 관측 직전의 로컬 단조 mark와 DB 관측 시각의 잔여 수명을 결박한다. 기존 유한 호출 종료·시간 역행 거절·외부 UNKNOWN·원 work 정착 전 BUSY/자기 회수는 유지한다. await 뒤 now+수명으로 연장하지 않는다.
+- 필요 시 P02의 내부 guard 접점만 동결 해제한다. Source.load가 정책/한도 최소 기한을 알게 된 직후부터 하위 조회 HOLD에도 외부 수명에 반영돼야 한다. 처음 source 호출이 끝난 뒤에만 정책 기한을 전달하는 공백도 같은 보완에서 대조한다. 내부 callback/반환 메타데이터 기술 보완은 허용23 안에서 결정하며 새 공개 응답/권한/상한을 만들지 않는다.
+- 현재 작성 소유인 시험에서 로컬/DB 시계 차이와 정상·임박 만료/중간 HOLD의 실제 서비스 행동 RED→GREEN을 제시한다. 새 raw/hash와 재검수 범위를 반환한다. P03/P05/P06/P07/P08은 추가 finding 전 동결을 유지한다. 실제 DB·권한·키·서비스·Agent/SDK 실행0이다.
+
+읽기 준비 오류도 분리한다. Primary4d8bbe/55342d는 Windows rg 파일 인자 glob으로 OS error123 두 건, d445d4/88e10a는 추정 source basename 부재다. 파일/SQL 실행0이며365b77의 실제 rg --files 목록으로 정정했다. 같은 추정/파일 glob을 반복하지 않고 확인된 경로만 사용한다. 이는 제품 기능 실패나 권한 문제로 올리지 않는다. 전체 계획은 계속 미완료다.
+
+
+## 389. 사용자 중지 후 재개·기한 I1 연속 수행
+
+신산님은 목표를 paused로 전환했고 Main은 기존 Primary에게 중지를 전달·turn interrupt와 목표 paused 반환을 확인한 뒤 PMO에 알렸다. 이후 신산님의 active 전환과 계속 지시를 받아 재개한다. 중지 뒤의 완료/검증을 추정하지 않는다.6ef882는 HEAD296b224a·기존 dirty/보호3 보존·WI907FE547 불변을 확인했다. 현재 최신 목표 도구는 active이며 기존 Primary followup이 수락돼 running임을 확인했다. 새 agent/branch/자동화 생성0이다.
+
+같은 Primary는 §388의 P04/P02 시계 I1과 현재 소유 시험부터 이어간다. 중지 전 반례 작성/보정 상황·실행 handle을 먼저 대조하고 중복 실행/기존 완료 검사 반복 없이 진행한다. Main은 검수·통합/현황만 소유하며 실제 DB·권한·키·서비스·Agent/SDK 실행 제외와 SDK 추가 읽기 실패·소진은 유지한다. 재개 사실은 기존 PMO에 전달했다. 전체 작업계획은 미완료다.
+
+
+## 390. 시계 I1 재동결·중지 전후 증거 구분
+
+재개 후 Primary8ece86은 원 변경 보존·live/pending0을 확인했다. 중지 전 RED7b85cc(세 HOLD TIMEOUT)→GREENce6eb3(BOUND3)은 이미 종료된 결과로 보존하고 반복하지 않았다. 후속 RPC DB 기한 정상은 내부 fractional mark의 안전복사 거절 e6c264를 정수 보수절삭으로 보정한 뒤2edd20/c3509a 선택1PASS·3818.8771ms·exit0다. 직접영향33dffc는 음수 선택 패턴이 의도대로 제외되지 않아 실제18PASS/0fail/0skip·11706.651ms이며 선택2를 고유 수에 중복 가산하지 않는다.7b91f1 type0·df3d0c diff/문자/indexempty0, 다른 동결5 raw 불변이다.
+
+P02 10890B/00B8B784352B2A031A886A8C725D93ACC6C3B9F343DF796E4DF48C77F10B9A46, P04 10522B/8CDB5D32FD0CFFE69D661BF24E2F38AFD00B8DEF49008C1D754BF063C7C395A0를 재동결했다. DB 관측 전 performance mark와 DB 잔여를 단조 기한에 결박하고 첫 Session/정책/한도 관측을 즉시 내부 guard에 전달한다. 호출 end는 고정·RPC until은 같은 관측의 DB용 값으로 별도 환산하며 S/Q DB recordedAt/expiresAt은 보존한다. Main9a5945는 해당 원문을 읽었고 기존 검토자에게 이 delta만 독립 재검수를 배정했다. 시험/fixture는 후속 작성 소유이며 전체 fresh 검증은 아직 아니다.
+
+Primary는 같은23에서 미적용0081/형상 시험을 계속하며 실제 SQL/목록/route/UI는 미완료다. 실제 DB·권한·키·서비스·Agent/SDK 실행0·전체 계획 완료0을 유지한다.
+
+
+## 391. 시계 I1의 즉시 관측 반영 잔여·한정 재작업
+
+독립 재검수는 P04의 단조/DB 환산 보정을 인정했으나 P02 step이 정책/한도 결과 뒤 후속 check의 DB 조회를 기다린 다음에 반환하므로 짧은 기한 publish가 지연되는 잔여 I1을 확인했다. 호출/Session30초·정책2초가 반환된 직후 후속 guard가 HOLD되면 정책 기한 전달이 아직 없어 외부 정착이30초까지 남을 수 있다. 앞선 통과를 이 정확 구간의 증거로 승격하지 않는다. Main은 P02만 해제해 새 기한 관측 즉시 후속 대기 전 단조 타이머에 반영하고 정확 구간 RED→GREEN을 요구했다. P04 및 다른 동결 제품 판정은 유지한다.
+
+Primary0aa746의 Windows rg 파일 glob OS error123은 앞선 같은 준비 오류2 뒤 재발한 세 번째로 해당 추정/glob 조사 방식을 중단했다. 제품/SQL 실행·변경0이며 이미 확인된 정확 파일/함수만으로0081 작성은 계속 가능하다. Main은 조사 방식을 재허용하거나 새 권한/환경 변경으로 우회하지 않고 정확 경로만 사용하도록 지시했다. 이는 유효 Developer 기능 실패3회와 별개인 도구 조사 오류다. 단일 code writer·승인23·실환경제외·전체 계획 미완료를 유지한다.
+
+
+## 392. 즉시 기한 반영 보완 재동결·연속 수행 확인
+
+재개 후4a7b20/Primary7e9674는 HEAD296b224a·기존 변경 보존을 확인했다. 완료 handle80530은 b42edb exit0으로 회수돼 현재 live/pending0이며 재실행하지 않는다. §391 정확 RED0a2687→GREEN1db78b는 정책/한도 결과 직후 후속 guard HOLD 두 모드를 하나의 고유 시험으로 검산했다. type/diff86384e→b42edb exit0도 보존하며 중복 실행 수를 진도로 합산하지 않는다.
+
+P02 10959B/12A763D13E1B5AA756954D68C1FE61D6B7756BD9C1624B2B59BA33171F781423, P04 10522B/8CDB5D32FD0CFFE69D661BF24E2F38AFD00B8DEF49008C1D754BF063C7C395A0 불변으로 재동결을 접수했다. P02는 결과 직후 known callback으로 새 최소 단조 기한을 먼저 적용하고 후속 guard await를 진행한다. Main은 기존 읽기 담당자에게 이 delta만 독립 재검수를 맡겼으며 작성 중 시험T03 15CB0014/SQL·다른 제품은 검수 범위에 넣지 않았다. Primary는 남은0081·목록·route/UI를 계속한다. 전체 저장/실SQL·브라우저·계획 완료는 미검증이며 실제 DB·권한·키·서비스·Agent/SDK 실행0이다.
+
+
+## 393. 기한 I1 최종 scoped 재검수 해소
+
+독립 검토는 P02 결과 직후 정체성 검사→known→publish로 정책/한도의 새 최소 기한을 후속 DB guard 이전에 단조 타이머로 전달함을 확인해 §391 잔여 I1 해소·C0/I0/M0를 반환했다. P02 10959B/12A763D13E1B5AA756954D68C1FE61D6B7756BD9C1624B2B59BA33171F781423·P04 8CDB5D32 불변이며 HISTORY에 과거 한도 만료 소급0·기한 연장0이다. 수정/시험/실환경/SDK 실행 없는 scoped 검토로서 실제 SQL·전체 기능 인수와 구분한다.
+
+Main은 같은 Primary에게 동결 유지와0081/목록/route/UI 연속 구현을 전달하고 PMO에 해소/미완료·실환경제외를 보고했다. 최종 전체 동결 뒤 필요한 Main fresh를 수행하며 완료된 시험의 무조건 반복0이다. 제품/시험은 writer 소유로 유지하고 이번 checkpoint는 Main 현황/통제 문서2만 보존한다.
