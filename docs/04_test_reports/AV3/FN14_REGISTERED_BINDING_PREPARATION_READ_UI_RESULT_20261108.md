@@ -51,3 +51,11 @@ git diff --check
 ## 미검증·복구
 
 실제 DB/ACL·키·서비스·Agent/SSH·사용자 자료·실제 이전·served 브라우저·사용자 인수는 NOT_RUN이다. 준비기록과 조회를 실제 이전 권위로 승격하지 않는다. 통합/merged-main smoke·branch 정리는 WORK_STATUS에 기록한다. 복구는 해당 PR의 정상 revert이며 실제 DB 복구는 필요 없다.
+
+## Git 통합 확인
+
+- PR #65: https://github.com/sinsan-develop/Anvil/pull/65
+- source `03da97a1b086336fe1d1bc21babacf5a19576866` → merged main `e3c7dd1abe69c3a966a419f63c661b72ba1ddef0`.
+- 직접 부모 `285a1ff5d1fecea167ba452240e93f6587e92ac3`, source/merge tree `a768439c77d2c4797a901481c3eea2a2069e7364` 동일.
+- Broker `42426584769` success/exit0. clean local main을 정상 FF하고 merged 실제 Page 합성 smoke24 PASS/skip0/exit0(`f093f9`).
+- 종료 성공 뒤 remote branch/tag 부재·PR 복구 ref/main 동치·clean을 확인하고 완료 branch/추적 ref만 정상 삭제했다. 실제 서버/DB·권한·Agent·사용자 인수·전체 계획 완료는 아니다.
