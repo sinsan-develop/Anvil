@@ -17909,3 +17909,26 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - 재작업 동결. TraceViewer 57EC5D3C…7A1EE3, TraceDocumentOriginal 59BF6A98…8E0BD3, TracePlanTaskOriginal D6168C8F…0AA7C7, TraceScreenLink CA99637B…B69225, 시험 70ECD87D…433B04. 폐기된 렌더 1건과 부모 재렌더 없는 연결 교체 2건 RED 재현, 보완 후 Primary·Main 집중/인접 42 PASS/skip0·typecheck·Vite 메모리 build(517 모듈)·diff check exit0. Primary 합성 람다 타입 준비 오류 보정. 독립 C0/I0/M0로 I1/M1 해소. 실제 브라우저·DB 및 일반 App 교차 노출은 미검증/미입증이다.
 - 다음은 현재 IX01 격리 실행기의 실제 소비 경계다. 신규 고정 프로필, 소유 PG에서 이미 작성한 112개 설치/원장 검증, 인계 지문과 TC01 실제 App 호출을 연결한다. 현재 실행을 시작하지 않으며 역사 J3 실행권·자원을 재사용하지 않는다.
+
+### IX01 현 코드의 격리 TC01 실행기 소스 착수
+
+- UI06 PR55는 검수 head 4ee018b9에서 main 4f5cb435로 병합됐다. Broker 42391302138 성공, 부모·트리 일치 및 종료 브랜치·태그·로컬 추적 ref 정리 확인. 새 codex/av3-ix01-current-journey와 로컬 main은 원격과 각각 ahead/behind 0/0.
+- 기존 Primary 단일 writer에게 신규 runner scripts/qa-ix01-current-journey.ts, 신규 자식 tests/integration/IX01/current-methodology-journey.test.ts, 대응 합성 시험 및 기존 기준선 metadata export만 배정했다. 새 고정 격리 프로필의 소유·기한·단발 검산에서 112개 설치, 역할 회수/내부망, 실제 앱과 재인증 TC01 호출을 연결한다. 착수 오류0.
+- 코드·합성 검증만 진행한다. 현 실제 실행에는 WSL 접속과 새 정확 실행 승인·자원 식별·소진 원장이 별도로 필요하다. 역사 J3·기존 QA·DB·키·권한·서비스·Agent 실행0.
+
+- 병합 기준선 4f5cb435에서 UI06 신규/문맥 보호 smoke 6 PASS/skip0.
+
+- 승인 범위 병행 대조에서 UI06 단계별 문서 원문·양식 조회와 UI10 대화방 수동 선택·원문 조회는 이미 연결돼 있다. 남은 UI06 공식 산출물 항목별 귀속은 현재 문서가 단계와 양식만 결박하고 항목 ID를 저장하지 않는 점, UI10 출처 자동 이동은 현재 지식 참조에 대화방 ID가 없는 점이 각각 선행이다. 임의 매핑이나 기존 API 확대 없이 미완료로 유지한다.
+
+- Primary 첫 코드 체크포인트에서 고정 manifest 조회와 승인·단발·설치/인계 제어를 저장했다. 초기 Windows 명령 길이 206은 파일별 기록으로 해결했다. Main의 실행 효과 없는 Node v24 TAP 확인에서 정상 표식은 ok 1 - IX01…임을 재현했다. 초안 검사식을 실제 출력에 맞추도록 전달했으며 최종 시험은 아직이다.
+
+- 실행기·실제 자식 소스가 지정 경로에 연결됐다. Main이 임시 빈 시험으로 Node v24 기본 --test 자식의 추가 execArgv와 child-v8 표식을 재현했다. 기존 exact 자식 검사가 정상 호출도 거절하므로, 단일 전용 프로세스에서 --test-isolation=none 포함 고정 argv를 사용하는 계약과 검사를 맞추도록 전달했다. 임시 파일 정리, DB/WSL/실제 자식 호출0.
+
+- Primary 첫 동결 4파일. 실행기 97C9EB11…CFE69F, 자식 3E4DE3FE…DCB9A0, 합성 시험 4AF94317…C9B953, manifest 조회 1930F842…7D66DC. Primary·Main 직접/인접 19 PASS/skip0, typecheck·diff check exit0. Node/TAP와 초기 타입·Windows argv 준비 문제를 보정했다. 새 실행 승인 결박, SQL 112개, 역할 회수, TC01 자식, 정착 후 PG/network 정리 경로를 코드로 연결했다. 실제 도구·Docker none 전환·PostgreSQL·TC01·정리는 NOT_RUN이며 독립 검수 중이다. 원본·npm·격리 원문/감사 경로는 이번 자동 정리 대상에 포함하지 않는다.
+
+- 독립 C0/I1/M0. 동기 프로세스 호출 3곳의 기본 TERM은 직접 하위 프로세스가 무시하면 호출/UNKNOWN 기록을 반환하지 못할 수 있다. 기존 Primary에게 runner와 대응 시험 2경로만 반환해 직접 띄운 프로세스에 제한된 종료 상한을 보완하도록 했다. 시간 초과는 원격 SQL 취소나 QA 정리 증거가 아니며 불명 보존 원칙은 유지한다. 실제 종료 신호/WSL/PG 실행0.
+
+- I1 종료 상한 보완에서 실행기 200D6956…1C7ABE, 시험 437C1720…6C2BD8을 확인했다. 직접 실행한 무해한 Node 자식만 ETIMEDOUT/SIGKILL을 확인했고 원격 효과는 불명으로 보존한다. Primary·Main 직접/인접 20 PASS/skip0, typecheck·diff check exit0. 독립 C0/I0/M1에서 시작 제한 700ms의 CI 민감성만 남아 시험 한 파일에서 시작 여유를 늘리도록 반환했다.
+- 지정 daon@SINSAN 읽기 전용 SSH는 다시 banner exchange: Connection to UNKNOWN port -1: Connection refused(exit1). 실제 신규/역사 IX01 자원·승인 사용·SQL은 0이다. 실제 환경 선행과 별개로 승인된 소스 업무를 진행한다.
+
+- 마지막 M1은 시험만 3초로 보완했다. 최종 시험 SHA256 3DB410DB…B51786, Primary·Main 집중1 PASS/skip0, 제품/자식/manifest 동결본 유지. 앞선 독립 I1 해소 및 직접/인접20과 구분한다. 이 소스 검수를 실제 WSL·Docker·PostgreSQL·TC01 증거로 승격하지 않는다.
