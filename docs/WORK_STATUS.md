@@ -17874,3 +17874,14 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - 분리 보완 동결. 원문 사전 검증은 실제 원장을 받지 않으며, 원장 사후 검증은 외부 기대 목록 없이 내부 고정 기준에 대조한다. helper SHA256 8E0F8DDE…8638D9D, 시험 792FF159…318468. Primary·Main 직접 5 PASS/skip0, Primary typecheck exit0, Main diff check exit0, 독립 재검수 C0/I0/M0. 초기 Primary 타입 준비오류 5건 보정, 기존 역사 시험 SHA256 31EF5403…638F4 일치. 실제 설치·원장 조회·권한 검산·J3는 NOT_RUN.
 - 다음 단위는 신규 격리 QA의 설치 순서 포트에서 원문 그대로 전달하고 파일 전체 정상 종료 뒤만 원장에 기록하는 동작이다. 0076 후반 또는 0078 중간 실패는 부분 반영 가능성을 남기고 후속 파일/자식 시험을 열지 않는다. SQL 종료 불명과 원장 결과 불명을 구분하며 재시도·보충·자동 삭제를 하지 않는다.
+
+### IX01 현재 스키마 파일별 설치·원장 순서 착수
+
+- 검증기 PR52는 검수 head da0b8a22에서 main 547dd3ba로 병합됐다. Broker 42388809027 성공, 부모·트리 일치 및 종료 브랜치·태그·로컬 추적 ref 정리를 확인했다. 새 codex/av3-ix01-schema-install과 로컬 main은 원격과 각각 ahead/behind 0/0.
+- 기존 Primary 단일 writer에게 tests/integration/IX01/current-schema-installation.ts와 대응 unit 시험만 배정했다. 검증된 원문을 이미 소유권·기한에 결박된 주입 포트에 순서대로 넘기고 정상 종료 뒤만 원장 기록, 마지막에 실제 전달 원장 검증을 한다. 부분 반영/SQL 불명/원장 불명에서 후속 효과를 차단한다. 착수 오류0. 실제 SQL 실행·권한·서비스·새 자원·역사 J3 변경0, 실제 runner 연결과 통합 시험은 미완료다.
+
+- 병합 기준선 547dd3ba의 원문·원장 분리 검증 smoke 5 PASS/skip0.
+
+- Stage B 병행 읽기 대조에서 UI02 생성 2단계가 UI03에서 내보낸 PROJECT 방법론 초안 JSON을 열 수 없는 사용자 흐름을 확인했다. 화면 업무 카드의 가져오기 중 기존 parser와 NEW_PROJECT_DRAFT를 재사용할 수 있는 부분이다. 다음 단독 writer 범위는 UI02 입력·현재 초안 결박·집중 시험으로 좁히고 파일의 reason·확정/권한/출처는 생성 초안에 이월하지 않는다. 일반 문서·대화 원문 가져오기와 실제 DB 검증은 별도 미완료다.
+
+- 설치 순서 소스 동결. helper SHA256 0DBD658F…23F3CC1, 시험 D3795173…AB869DC. Primary·Main 신규7+인접5 PASS/skip0, Primary typecheck 및 Main diff check exit0, 독립 C0/I0/M0, 실행 오류0. 실제 Git 원문 112개 전부 전달, 0076 후반·0078 중간 실패 모형, 설치/원장 불명, 최종 원장 불일치, 입력 변경·현재성 상실 중단을 확인했다. 실제 적용·DB 원장·호출자 소유권·runner·IX01은 미검증이다.
