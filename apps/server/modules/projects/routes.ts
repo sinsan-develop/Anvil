@@ -80,7 +80,7 @@ import { ProjectBaselineSources } from './baseline-sources.ts';
 import { SourceReadRecords } from '../connections/source-read-records.ts';
 import { ArtifactStore } from '../../storage/artifact-store.ts';
 import {ProjectResultArtifacts} from '../results/project-result-artifacts.ts';
-import {syntheticHumanExecutionOperations,enabledSyntheticHumanExecutionOperations,checkSyntheticHumanExecutionPorts,dispatchSyntheticHumanExecution,type SyntheticHumanExecutionPorts} from '../executions/project-runtime-commands.ts';
+import {syntheticHumanExecutionOperations,enabledSyntheticHumanExecutionOperations,checkSyntheticHumanExecutionPorts,dispatchSyntheticHumanExecution,originReuseApprovalCapability,type SyntheticHumanExecutionPorts} from '../executions/project-runtime-commands.ts';
 import {ProjectResultSubmissions} from '../results/project-result-submissions.ts';
 import {ProjectResultReviewSources} from '../results/project-result-review-sources.ts';
 import {ProjectResultCriteria} from '../results/project-result-criteria.ts';
@@ -375,7 +375,7 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
       if(request.body.operation==='registerConnection'&&Object.hasOwn(request.body.payload,'definition'))return connectionDefinitions.command(token(request),csrf(request),request.body);
       if (['registerConnection', 'saveEnvironment'].includes(request.body.operation)) return connectionCandidates.command(token(request), csrf(request), request.body);
       if (trustRegistrationOperations.includes(request.body.operation as typeof trustRegistrationOperations[number])) return connectorRegistrations.command(token(request), csrf(request), request.body);
-      if(request.body.operation==='requestApproval') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>approvals.request(db,actor,request.body,policyRef));
+      if(request.body.operation==='requestApproval') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>approvals.request(db,actor,request.body,policyRef),undefined,originReuseApprovalCapability(syntheticExecution,options.repository));
       if (['copyMethodology', 'saveMethodologyDraft'].includes(request.body.operation)) return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => projectMethods.save(db, actor, request.body, policyRef));
       if (request.body.operation === 'confirmMethodology' || request.body.operation === 'recordContentReview' && request.body.payload.targetKind === 'METHODOLOGY') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => projectMethods.review(db, actor, request.body, policyRef));
       if (request.body.operation === 'applyMethodology') return policies.command(token(request), csrf(request), request.body, (db,actor,policyRef) => projectMethods.apply(db,actor,request.body,policyRef));

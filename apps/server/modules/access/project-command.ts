@@ -45,6 +45,19 @@ export function materialRules(value: unknown, projectId: string, actorId: string
       || !Array.isArray(rule.operations) || !rule.operations.length || rule.operations.length > 200 || rule.operations.some(item => typeof item !== 'string') || new Set(rule.operations).size !== rule.operations.length
       || typeof rule.disposition !== 'string' || !['AUTO', 'REQUIRE_APPROVAL', 'DENY'].includes(rule.disposition) || !isoV1(rule.expiresAt) || Date.parse(rule.expiresAt) <= now.getTime()) throw new AuthFailure('POLICY_INPUT_INVALID', 422);
     const scope = rule.targetScopes[0];
+    if (rule.operations.includes('reuseExecutionStartOrigin')) {
+      if (exact(scope, ['kind','projectId']) && scope.kind === 'PROJECT' && scope.projectId === projectId)
+        throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+      // 정책 전용 목적은 이 분기에서만 정확한 EXECUTION 범위를 확인하고 수락한다.
+      if (!exact(scope, ['kind','projectId','executionId','executionGeneration','sourceScopes']) || scope.kind !== 'EXECUTION' || scope.projectId !== projectId
+        || !uuidV1(scope.executionId) || !Number.isSafeInteger(scope.executionGeneration) || Number(scope.executionGeneration) < 1)
+        throw new AuthFailure('POLICY_INPUT_INVALID', 422);
+      try { readSourceScopesV1(scope.sourceScopes); } catch { throw new AuthFailure('POLICY_INPUT_INVALID', 422); }
+      if (!refV1(rule.limitPolicyRef) || rule.operations.some(item => item !== 'reuseExecutionStartOrigin' && !(runtimeOperations as readonly string[]).includes(item)))
+        throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
+      seen.add(rule.ruleId);
+      continue;
+    }
     if (exact(scope, ['kind','projectId']) && scope.kind === 'PROJECT' && scope.projectId === projectId) {
       if (rule.operations.some(item => !documentOperations.includes(item as typeof documentOperations[number])) || rule.limitPolicyRef !== null) throw new AuthFailure('POLICY_SCOPE_NOT_READY', 412);
     } else {
@@ -76,6 +89,27 @@ const fn15DocumentOperations=new Set(['saveDocumentDraft','recordContentReview',
 const fn15HeActors=new WeakSet<object>();
 type Fn15DocumentContext={actor:AuthenticatedIdentity;actorId:string;clientId:string;session:AuthenticatedIdentity['authSession'];credentialGeneration:number;request:ProjectCommand;requestHash:string;used:boolean};
 const fn15DocumentContexts=new WeakMap<PoolClient,Fn15DocumentContext>();
+const originReuseAuthentication=AccessRepository.prototype.authenticated;
+const originReuseObservationContexts=new WeakMap<PoolClient,{access:AccessRepository;query:PoolClient['query'];transactionId?:string}>();
+function originReuseAuthenticationMatches(access:AccessRepository){
+ const method=Object.getOwnPropertyDescriptor(AccessRepository.prototype,'authenticated');
+ return Object.getPrototypeOf(access)===AccessRepository.prototype&&!Object.hasOwn(access,'authenticated')
+  &&method!==undefined&&'value'in method&&method.value===originReuseAuthentication;
+}
+function isOriginReuseObservationRequest(request:ProjectCommand){
+ if(request.operation!=='requestApproval')return false;
+ const details=request.payload?.details as {actionScope?:{operation?:unknown}}|null|undefined,candidate=request.payload?.candidatePayload;
+ return details?.actionScope?.operation==='queueExecutionCommand'||!!candidate&&typeof candidate==='object'&&Object.hasOwn(candidate,'originReuse');
+}
+/** 현재 원 인증 거래와 고정 명령의 일치만 확인한다. */
+export function matchesOriginReuseObservationContext(access:AccessRepository,db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,transactionId?:string){
+ const live=originReuseObservationContexts.get(db),context=fn15DocumentContexts.get(db);
+ return live?.access===access&&live.query===db.query&&originReuseAuthenticationMatches(access)
+  &&(transactionId===undefined||transactionId===live.transactionId)
+  &&context?.actor===actor&&context.actorId===actor.actorId&&context.clientId===actor.clientId
+  &&context.session===actor.authSession&&context.credentialGeneration===actor.credentialGeneration
+  &&isOriginReuseObservationRequest(request)&&context.requestHash===contentHash(canonicalJson(copyControlData(request,2097152)));
+}
 /** 실제 인증 callback 안에서만 생산한다. 외부 setter나 caller verified flag는 없다. */
 async function withFn15DocumentContext<T>(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,work:()=>Promise<T>):Promise<T>{
  if(!fn15DocumentOperations.has(request.operation))return work();
@@ -274,11 +308,25 @@ export class ProjectPolicyRepository {
       await check();return result;
     });}catch(error){await recordProjectDenial(this.#access,token,original.projectId,error);throw error;}
   }
-  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>, registeredPreparationReplay?: (db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,result:unknown)=>Promise<void>) {
+  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>, registeredPreparationReplay?: (db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,result:unknown)=>Promise<void>, originReuseCapability?: import('../executions/execution-start-origin-reuse.ts').OriginReuseApprovalCapability) {
+    const observeReuse=isOriginReuseObservationRequest(request);
+    if(observeReuse){
+      if(!originReuseAuthenticationMatches(this.#access))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+      request=copyControlData(request,2097152);
+    }
     let exportDeadline=performance.now()+30000,exportStarted=false;
     let notificationDeadline=Infinity,notificationPolicyDeadline=Infinity;
     try {
-      const result=await this.#access.authenticated(token, csrf, async (db, actor) => withFn15DocumentContext(db,actor,request,async()=>{
+      const commandInTransaction=(db:PoolClient,actor:AuthenticatedIdentity)=>withFn15DocumentContext(db,actor,request,async()=>{
+        const observationQuery=observeReuse?db.query:undefined;
+        if(observeReuse&&!originReuseAuthenticationMatches(this.#access))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+        let transactionId:string|undefined;
+        if(observationQuery&&originReuseCapability!==undefined){
+          const {rows}=await Reflect.apply(observationQuery,db,['SELECT pg_current_xact_id_if_assigned()::text AS transaction_id, clock_timestamp() AS auth_observed_at']);
+          const xid=rows[0]?.transaction_id;
+          if(db.query!==observationQuery||!originReuseAuthenticationMatches(this.#access)||rows.length!==1||typeof xid!=='string'||!/^[1-9][0-9]*$/.test(xid))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+          transactionId=xid;
+        }
         await currentGeneralProjectController(db, actor, request);
         if(request.operation==='saveProjectMembership'&&(!actor.reauthUntil||actor.reauthUntil.getTime()<=Date.now()))throw new AuthFailure('REAUTHENTICATION_REQUIRED',412);
         if (request.operation !== 'savePermissionPolicy') {
@@ -290,6 +338,15 @@ export class ProjectPolicyRepository {
             if(request.baselineRefs.length||request.approvalRef!==null)throw new AuthFailure('CHECKPOINT_INPUT_INVALID',422);
           };await checkCheckpoint();
           const previous = await projectReplay(db, actor, request);
+          if(observeReuse){
+            if(previous!==undefined||!observationQuery||db.query!==observationQuery||!originReuseAuthenticationMatches(this.#access)||originReuseObservationContexts.has(db))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+            const {observeOriginReuseApprovalRequest}=await import('../executions/execution-start-origin-reuse.ts');
+            if(db.query!==observationQuery||!originReuseAuthenticationMatches(this.#access)||originReuseObservationContexts.has(db))throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+            originReuseObservationContexts.set(db,{access:this.#access,query:observationQuery,transactionId});
+            try{await observeOriginReuseApprovalRequest(originReuseCapability,this.#access,db,actor,request,policy.ref);}
+            finally{originReuseObservationContexts.delete(db);}
+            throw new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
+          }
           const checkNotificationDeadline=async()=>{
             if(request.operation!=='markNotificationRead')return;
             const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
@@ -345,7 +402,10 @@ export class ProjectPolicyRepository {
         else await db.query('UPDATE anvil.permission_policies SET head_version=$2 WHERE id=$1', [id, version]);
         await db.query('INSERT INTO anvil.permission_policy_versions(project_id,policy_id,version,rules_json,content_hash,reason,review_refs,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)', [request.projectId, id, version, JSON.stringify(rules), ref.contentHash, p.reason, '[]', actor.actorId, actor.clientId, receipt.id]);
         return receipt.result;
-      }));
+      });
+      const result=await (observeReuse
+        ?originReuseAuthentication.bind(this.#access)(token,csrf,commandInTransaction)
+        :this.#access.authenticated(token,csrf,commandInTransaction));
       // COMMIT 뒤 기한 초과는 이미 반영됐을 수 있다. 새 명령 대신 재인증 후 원 commandId로 조정한다.
       if(request.operation==='exportProject'&&performance.now()>=exportDeadline)throw new AuthFailure('EXPORT_RESULT_UNCERTAIN',503);
       if(request.operation==='markNotificationRead'&&(performance.now()>=notificationDeadline||performance.now()>=notificationPolicyDeadline))throw new AuthFailure('NOTIFICATION_READ_RESULT_UNCERTAIN',503);

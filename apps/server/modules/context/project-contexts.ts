@@ -21,7 +21,13 @@ const select = "SELECT b.*,c.operation,c.state,c.expected_version,c.actor_id com
 export class ProjectContexts {
  readonly sources: Pick<ProjectContextSources, 'resolve'>;
  readonly assignments: Pick<ProjectAssignmentConfirmations, 'read'>;
- constructor(sources: Pick<ProjectContextSources, 'resolve'>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>) { this.sources = sources; this.assignments = assignments; }
+ readonly #readContextApproval:ProjectApprovals['readContextConsumption']|null;
+ constructor(sources: Pick<ProjectContextSources, 'resolve'>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>) {
+  this.sources=sources;this.assignments=assignments;
+  // 순환 import 초기화 뒤 인스턴스를 만들 때 기존 승인 소비 함수만 결박한다.
+  const reader=Object.getOwnPropertyDescriptor(ProjectApprovals.prototype,'readContextConsumption');
+  this.#readContextApproval=reader&&'value'in reader&&typeof reader.value==='function'?reader.value:null;
+ }
  async save(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
   if (request.operation !== 'buildTaskContext' || request.targetId !== null || request.expectedVersion !== 0) throw new AuthFailure('VERSION_CONFLICT', 409);
   if (request.baselineRefs.length) throw new AuthFailure('REFERENCE_CONNECTION_PENDING', 412);
@@ -40,7 +46,8 @@ export class ProjectContexts {
    const manifest = row.manifest_json as Manifest, ref = { id: row.id, version: Number(row.version), contentHash: row.content_hash };
    let approvalRef=null;
    if(row.approval_consumption_id!==null){
-    const a=readApprovalRef(row.audit_approval_ref),v=await new ProjectApprovals().readContextConsumption(db,actor,row.project_id,a.requestId),used=v.consumption;
+    if(!this.#readContextApproval)throw Error();
+    const a=readApprovalRef(row.audit_approval_ref),v=await this.#readContextApproval.call(new ProjectApprovals(),db,actor,row.project_id,a.requestId),used=v.consumption;
     if(!used||v.storedStatus!=='CONSUMED'||v.currentVersion!==3||v.decision?.decision!=='APPROVE'||v.decision.id!==a.decisionId||v.request.scopeDigest!==a.scopeDigest||used.id!==row.approval_consumption_id||used.serverCommandId!==row.command_id||used.commandId!==row.command_external_id||used.requestHash!==row.request_hash||!same(used.policyRef,row.policy_ref)||row.authorization_approval_decision!==a.decisionId||!same(row.payload_ref,{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(row.request_payload)),scopeDigest:a.scopeDigest}))throw Error();
     approvalRef=a;
     assertApprovalCandidate(v.request.details,{schemaVersion:1,projectId:row.project_id,commandId:row.command_external_id,clientId:row.command_client,controlGeneration:Number(row.control_generation),operation:'buildTaskContext',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef,payload:row.request_payload},row.command_actor,row.project_id);

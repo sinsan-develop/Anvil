@@ -48,6 +48,8 @@ function input(request: ProjectCommand): InitialQueueInput {
  * 응답 APPLIED는 SYNTHETIC_QUEUE_STORED다. 실제 실행 허가/OS 소유·wire 성공을 표시하지 않는다.
  * 후속 SEND_INSTRUCTION/회수·credential·wire fence는 별도 남은 C2/C3 구현이다.
  */
+const constructedQueueAccess=new WeakMap<object,AccessRepository>();
+
 export class ProjectInitialExecutionQueue {
   readonly access: AccessRepository;
   readonly resolver: SyntheticQueueResolver;
@@ -57,6 +59,7 @@ export class ProjectInitialExecutionQueue {
   constructor(access:AccessRepository,resolver:SyntheticQueueResolver,budgets=new ProjectExecutionBudget(),policies:Pick<ProjectLimitPolicies,'resolveCurrent'>=new ProjectLimitPolicies(),materials?:SyntheticPgStartMaterialRegistration) {
     if(!resolver||resolver.transport!=='SYNTHETIC_ONLY'||typeof resolver.basis!=='function'||typeof resolver.current!=='function')throw new AuthFailure('SYNTHETIC_PROVIDER_REQUIRED',412);
     this.access=access;this.resolver=resolver;this.budgets=budgets;this.policies=policies;this.materials=materials;
+    constructedQueueAccess.set(this,access);
   }
   async command(token:string,csrf:string,request:ProjectCommand) {
     const p=input(request);
@@ -131,4 +134,12 @@ export class ProjectInitialExecutionQueue {
       });
     } catch(error) { await recordProjectDenial(this.access,token,request.projectId,error);throw error; }
   }
+}
+
+const originalInitialQueueCommand=ProjectInitialExecutionQueue.prototype.command;
+/** 조립 정체성만 검산한다. 원 queue 메서드를 호출하거나 권위를 공급하지 않는다. */
+export function matchesOriginReuseQueueIdentity(queue:unknown,access:AccessRepository):queue is ProjectInitialExecutionQueue {
+  if(!queue||typeof queue!=='object'||constructedQueueAccess.get(queue)!==access||Object.getPrototypeOf(queue)!==ProjectInitialExecutionQueue.prototype||Object.hasOwn(queue,'command'))return false;
+  const command=Object.getOwnPropertyDescriptor(ProjectInitialExecutionQueue.prototype,'command'),owner=Object.getOwnPropertyDescriptor(queue,'access');
+  return command!==undefined&&'value'in command&&command.value===originalInitialQueueCommand&&owner!==undefined&&'value'in owner&&owner.value===access;
 }

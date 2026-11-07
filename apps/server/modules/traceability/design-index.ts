@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
 import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
-import type { ProjectDocuments } from '../documents/project-documents.ts';
+import { ProjectDocuments } from '../documents/project-documents.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
@@ -17,7 +17,13 @@ function anchored(body:string,anchor:unknown,localCode:string,title?:string) {
 }
 export class ProjectDesignIndex {
   #documents:ProjectDocuments;
-  constructor(documents:ProjectDocuments) {this.#documents=documents;}
+  constructor(documents:ProjectDocuments,mode?:'FN09_PLAN_PROOF') {
+    this.#documents=documents;
+    if(mode==='FN09_PLAN_PROOF'){
+      if(!ProjectDocuments.isProtectedPlanReader(documents))throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+      Object.defineProperty(this,'read',{value:readProtectedDesign.bind(this)});
+    }
+  }
   async #source(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,ref:VersionRef,formCode:string) {
     const document=await this.#documents.version(db,actor,projectId,ref.id,ref.version);
     if(document.contentHash!==ref.contentHash) throw new AuthFailure('VERSION_CONFLICT',409);
@@ -74,3 +80,4 @@ export class ProjectDesignIndex {
     return {documentRef:ref,items,screenRegions,status:items.length?'INDEXED':'NOT_INDEXED',observedAt:new Date().toISOString()};
   }
 }
+const readProtectedDesign=ProjectDesignIndex.prototype.read;

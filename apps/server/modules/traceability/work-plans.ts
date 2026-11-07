@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {persistProjectReceipt,projectMember,type ProjectCommand} from '../access/project-command.ts';
-import type {ProjectDocuments} from '../documents/project-documents.ts';
+import {ProjectDocuments} from '../documents/project-documents.ts';
 import {ProjectDesignIndex} from './design-index.ts';
 import {analyzeWorkPlanCards,exactKeys,planText,type PlanTraceRef} from './work-plan-card.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
@@ -12,8 +12,16 @@ import type {ProjectListCodec} from '../projects/service.ts';
 import{acceptedWorkPlanReviews,workPlanReviewCriteria,workPlanReviews,writeWorkPlanReview}from'./work-plan-reviews.ts';
 
 export class ProjectWorkPlans {
-  #documents:ProjectDocuments;#index:ProjectDesignIndex;
+  #documents:ProjectDocuments;#index:ProjectDesignIndex;#protectedPlan=false;
   constructor(documents:ProjectDocuments){this.#documents=documents;this.#index=new ProjectDesignIndex(documents);}
+  /** 기존 read/decision 두 메서드만 보호 모드 receiver에 결박한다. */
+  static protectedCurrentReader(documents:ProjectDocuments):Readonly<Pick<ProjectWorkPlans,'read'|'decision'>> {
+    if(!ProjectDocuments.isProtectedPlanReader(documents))throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+    const plans=new ProjectWorkPlans(documents);
+    plans.#index=new ProjectDesignIndex(documents,'FN09_PLAN_PROOF');
+    plans.#protectedPlan=true;
+    return Object.freeze({read:readProtectedPlan.bind(plans),decision:decideProtectedPlan.bind(plans)});
+  }
   async #source(db:PoolClient,actor:AuthenticatedIdentity,pid:string,ref:VersionRef,kind:string){
     const document=await this.#documents.version(db,actor,pid,ref.id,ref.version);
     if(document.contentHash!==ref.contentHash) throw new AuthFailure('VERSION_CONFLICT',409);
@@ -109,7 +117,7 @@ export class ProjectWorkPlans {
     await db.query('UPDATE anvil.work_plans SET confirmed_version=$3,updated_at=now() WHERE project_id=$1 AND id=$2',[c.projectId,view.ref.id,view.ref.version]);return receipt.result;
   }
   async decision(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
-    const view=await this.read(db,actor,pid,id,version),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readiness(db,actor,pid,view);
+    const view=await (this.#protectedPlan?readProtectedPlan.call(this,db,actor,pid,id,version):this.read(db,actor,pid,id,version)),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readiness(db,actor,pid,view);
     const stored=(await db.query("SELECT f.*,c.result_ref,c.actor_id,c.client_id command_client,c.operation FROM anvil.work_plan_confirmations f JOIN anvil.commands c ON c.id=f.command_id AND c.project_id=f.project_id WHERE f.project_id=$1 AND f.plan_id=$2 AND f.version=$3",[pid,id,version])).rows[0];let confirmation=null;
     if(stored){const d=stored.result_ref?.data;if(stored.operation!=='confirmWorkPlan'||stored.actor_id!==stored.confirmed_by||stored.command_client!==stored.client_id||stored.result_ref?.status!=='APPLIED'||d?.status!=='CONFIRMED'||d.confirmationId!==stored.id||canonicalJson(d.ref)!==canonicalJson(view.ref)||stored.target_hash!==view.ref.contentHash||canonicalJson(d.reviewRefs)!==canonicalJson(stored.review_refs)||canonicalJson(d.validation)!==canonicalJson(stored.validation_json)||d.activatedAsBaseline!==false)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',503);confirmation={id:stored.id,planRef:view.ref,reviewRefs:stored.review_refs,validation:stored.validation_json,confirmedBy:{kind:'HUMAN',userId:stored.confirmed_by},confirmedAt:stored.created_at.toISOString()};}
     return{planRef:view.ref,headVersion:Number(row.head_version),confirmedVersion:row.confirmed_version===null?null:Number(row.confirmed_version),criteria:workPlanReviewCriteria,contentReviews:reviews,confirmation,validation,currentConfirmationValid:!!confirmation&&Number(row.head_version)===version&&Number(row.confirmed_version)===version&&reviews[0]?.ref.outcome==='ACCEPTED'&&validation.validForConfirmation,activatedAsBaseline:false,observedAt:new Date().toISOString()};
@@ -138,3 +146,4 @@ export class ProjectWorkPlans {
     return{items,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:new Date().toISOString()};
   }
 }
+const readProtectedPlan=ProjectWorkPlans.prototype.read,decideProtectedPlan=ProjectWorkPlans.prototype.decision;
