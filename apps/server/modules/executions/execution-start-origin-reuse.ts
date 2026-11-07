@@ -2,7 +2,7 @@ import {types} from 'node:util';
 import type {PoolClient,QueryResult} from 'pg';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
 import {authorizeMaterial,currentPolicy,matchesOriginReuseObservationContext,projectMember,type ProjectCommand,type ProjectPermissionRule} from '../access/project-command.ts';
-import {readOriginReuseApprovalRequest} from '../approvals/approval-input.ts';
+import {readApprovalDecision,readOriginReuseApprovalRequest} from '../approvals/approval-input.ts';
 import {ProjectApprovals} from '../approvals/project-approvals.ts';
 import {ProjectEnvironmentResources,environmentReadPolicy} from '../connections/project-environment-resources.ts';
 import {ProjectSourceRoots} from '../connections/project-source-roots.ts';
@@ -49,7 +49,7 @@ const readContextApproval=ProjectApprovals.prototype.readContextConsumption;
 const readKnowledge=ProjectKnowledge.prototype.read;
 const readConversation=ProjectConversations.prototype.readMessage;
 const readResponsibleSessionConsumption=ProjectApprovals.prototype.readResponsibleSessionConsumption;
-const requestApproval=ProjectApprovals.prototype.request,readApproval=ProjectApprovals.prototype.read;
+const requestApproval=ProjectApprovals.prototype.request,decideApproval=ProjectApprovals.prototype.decide,readApproval=ProjectApprovals.prototype.read;
 const readEnvironment=ProjectEnvironments.prototype.history;
 const readDefinition=ProjectConnectionDefinitions.prototype.read;
 const readReferences=ProjectEnvironments.prototype.readOriginReuseReferences;
@@ -284,11 +284,6 @@ export async function observeOriginReuseApprovalRequest(capability:OriginReuseAp
  const closed=()=>new AuthFailure('ORIGIN_REUSE_APPROVAL_NOT_CONNECTED',412);
  const assertContext=(transactionId?:string)=>{if(!matchesOriginReuseObservationContext(access,db,actor,request,transactionId))throw closed();};
  assertContext();
- if(request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null||request.baselineRefs.length)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
- const now=(await db.query('SELECT clock_timestamp() at')).rows[0]?.at;
- assertContext();
- if(!(now instanceof Date)||!Number.isFinite(now.getTime()))throw closed();
- const {details,candidatePayload:candidate}=readOriginReuseApprovalRequest(request.payload,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:request.controlGeneration,now},request.commandId);
  const composer=capability===undefined?undefined:approvalComposers.get(capability);
  const assertBinding=(transactionId?:string)=>{
   assertContext(transactionId);
@@ -296,24 +291,57 @@ export async function observeOriginReuseApprovalRequest(capability:OriginReuseAp
  };
  assertBinding();
  const sessions=composer?.sessions,assignments=composer?.assignments;
- if(!sessions||!assignments||!originSame(policyRef,candidate.permissionPolicyRef))throw closed();
+ if(!sessions||!assignments)throw closed();
+ const deciding=request.operation==='decideApproval';
+ // 오염된 과거 결과와 형상은 기존처럼 보호 관측을 시작하기 전에 거절한다.
+ if(previous!==undefined){const result=copyStartOrigin(previous) as any;if(!refV1(result?.data?.ref)||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED')throw closed();}
+ if(!deciding){
+  if(request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null||request.baselineRefs.length)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+  readOriginReuseApprovalRequest(request.payload,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:request.controlGeneration,now:new Date(0)},request.commandId);
+ }
+ const entry=await observationTransaction(db,actor,assertBinding);
+ const now=new Date(await entry.clock());
+ let decisionView:Awaited<ReturnType<typeof readApproval>>|undefined;
+ let candidate:ReturnType<typeof readOriginReuseApprovalRequest>['candidatePayload'],details:ReturnType<typeof readOriginReuseApprovalRequest>['details'];
+ if(deciding){
+  const input=readApprovalDecision(request.payload);
+  if(request.targetId!==input.requestId||request.expectedVersion!==1||request.approvalRef!==null||request.baselineRefs.length)throw new AuthFailure('APPROVAL_DECISION_INPUT_INVALID',422);
+  decisionView=await entry.step(()=>readApproval.call(new ProjectApprovals(),entry.guarded,actor,request.projectId,input.requestId));assertBinding();
+  const evidence=(decisionView.request as any).originReuseEvidence;
+  if(!evidence||evidence.purpose!=='FN09_ORIGIN_REUSE_SYNTHETIC_START_V1'||input.scopeDigest!==decisionView.request.scopeDigest)throw new AuthFailure('APPROVAL_SCOPE_MISMATCH',409);
+  ({details,candidatePayload:candidate}=readOriginReuseApprovalRequest({details:decisionView.request.details,candidatePayload:evidence.candidatePayload},{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:request.controlGeneration,now:previous===undefined?now:new Date(0)},request.commandId));
+ }else{
+  if(request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null||request.baselineRefs.length)throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
+  ({details,candidatePayload:candidate}=readOriginReuseApprovalRequest(request.payload,{actorId:actor.actorId,clientId:actor.clientId,controlGeneration:request.controlGeneration,now},request.commandId));
+ }
+ if(!originSame(policyRef,candidate.permissionPolicyRef))throw closed();
+ if(previous!==undefined&&deciding){
+  const result=copyStartOrigin(previous) as any,ref=result?.data?.ref;
+  if(!decisionView?.decision||decisionView.consumption!==null||!originSame(decisionView.decision.ref,ref)||!originSame(result.data?.decision,Object.fromEntries(Object.entries(decisionView.decision).filter(([key])=>key!=='ref')))
+   ||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED')throw closed();
+  assertBinding();return result;
+ }
  if(previous!==undefined){
   const result=copyStartOrigin(previous) as any,ref=result?.data?.ref;
   if(!refV1(ref)||result.commandId!==request.commandId||result.projectId!==request.projectId||result.status!=='APPLIED')throw closed();
-  const view=await readApproval.call(new ProjectApprovals(),db,actor,request.projectId,ref.id);
+  const view=await entry.step(()=>readApproval.call(new ProjectApprovals(),entry.guarded,actor,request.projectId,ref.id));
   assertBinding();
-  if(!originSame(view.requestRef,ref)||view.storedStatus!=='PENDING'||view.decision!==null||view.consumption!==null
+  if(!originSame(view.requestRef,ref)||view.consumption!==null
    ||!originSame(view.request,result.data.request)||!originSame(view.request.details,details)
    ||!originSame((view.request as any).originReuseEvidence?.candidatePayload,candidate))throw closed();
   return result;
  }
+ if(deciding&&(decisionView!.currentVersion!==1||decisionView!.storedStatus!=='PENDING'||decisionView!.decision))throw new AuthFailure('VERSION_CONFLICT',409);
+ if(deciding&&(decisionView!.effectiveState!=='PENDING'||!originSame(decisionView!.request.policyRef,policyRef)))throw new AuthFailure('APPROVAL_BASIS_NOT_CURRENT',412);
  const {originRef,reservationRef}=candidate.originReuse;
  let storing=false;
  try{
   const observed=await observeOriginReuseInTransaction(access,db,actor,{projectId:request.projectId,originRef,reservationRef,permissionPolicyRef:policyRef},{assertBinding,sessions,assignments,candidate,candidateCommandId:details.candidateCommandId,request,expiresAt:Date.parse(details.expiresAt)});
   const source=observed.requestSource;
   if(!source||!matchesOriginReuseRequestSource(source,db,actor,request))throw closed();
+  if(deciding&&!originSame(source.evidence,(decisionView!.request as any).originReuseEvidence))throw closed();
   storing=true;
+  if(deciding){try{return await decideApproval.call(new ProjectApprovals(undefined,access),db,actor,request,policyRef,source);}finally{requestSources.delete(source);}}
   try{return await requestApproval.call(new ProjectApprovals(undefined,access),db,actor,request,policyRef,source);}
   finally{requestSources.delete(source);}
  }catch(error){if(storing||!(error instanceof AuthFailure))throw error;}
@@ -356,7 +384,7 @@ async function observeOriginReuseInTransaction(access:AccessRepository,db:PoolCl
   if(policy.approvalRequired||!originSame(policy.ref,permissionPolicyRef))return reject();
   const policyAt=await tx.clock();
   const rules=policy.rules.filter(rule=>rule.subjectRef.kind==='HUMAN'&&rule.subjectRef.userId===actor.actorId
-   &&rule.operations.includes('requestApproval')&&rule.targetScopes.some(scope=>scope.kind==='PROJECT'&&scope.projectId===projectId)
+   &&rule.operations.includes(approval.request.operation)&&rule.targetScopes.some(scope=>scope.kind==='PROJECT'&&scope.projectId===projectId)
    &&Date.parse(rule.expiresAt)>policyAt);
   if(!rules.length||rules.some(rule=>rule.disposition!=='AUTO'))return reject();
   approvalUntil=Math.min(sessionUntil,policy.validUntil,...rules.map(rule=>Date.parse(rule.expiresAt)));

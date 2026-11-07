@@ -1057,3 +1057,79 @@ test('원 보호관측 뒤 재사용 요청 PENDING을 같은 거래에 계상�
  }finally{await app.close();}
  assert.equal(f.active(),false);
 });
+
+async function storedOriginDecisionJourney(){
+ const f=await executionStartOriginFixture({connectorEnvironment:true,richContext:true,environmentDependencies:true,constitutionContext:true,approvedContext:true,snapshotRoot:true,originRequestStorage:true});
+ const {buildApp}=await import('../../../apps/server/app.ts'),{ProjectDocuments}=await import('../../../apps/server/modules/documents/project-documents.ts'),{ProjectInitialExecutionQueue}=await import('../../../apps/server/modules/executions/execution-commands.ts'),{createOriginReuseApprovalCapability}=await import('../../../apps/server/modules/executions/execution-start-origin-reuse.ts');
+ let runtimeCalls=0;const forbidden=async()=>{runtimeCalls++;throw Error('UNEXPECTED_EXECUTION');},queue=new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
+ const cap=createOriginReuseApprovalCapability(f.access,queue,f.sessions,new ProjectDocuments(f.root,undefined,'FN09_PLAN_PROOF'));
+ const config={repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root};
+ const app=buildApp({},undefined,config,{transport:'SYNTHETIC_ONLY',queue,originReuseApproval:cap,stop:{command:forbidden},recovery:{command:forbidden},understanding:{command:forbidden}});
+ const headers={host:'anvil-synthetic.invalid',origin:config.origin,cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf},url='/api/v1/projects/'+f.pid+'/commands';
+ try{
+  const origin=await app.inject({method:'POST',url,headers,payload:f.originCommand()});assert.equal(origin.statusCode,200,origin.body);const{ref,snapshot,reservation}=origin.json().data;
+  f.modes.policyVersion=2;f.modes.runtimeRules=originRuntimeRules(f,snapshot);const p=f.policy(),policyRef={id:p.id,version:p.head_version,contentHash:p.content_hash};
+  const input=await reuseApprovalInput(f.actor.actorId,f.actor.clientId,new Date());Object.assign(input.candidatePayload,{preparationRef:snapshot.preparationRef,executionId:snapshot.execution.executionId,executionGeneration:snapshot.execution.executionGeneration,permissionPolicyRef:policyRef,budgetPolicyRef:snapshot.budgetPolicyRef,payload:{contextBundleRef:snapshot.contextBundleRef,optionsRef:snapshot.preparationRef},originReuse:{originRef:ref,reservationRef:reservation.ref}});input.details.actionScope.payloadHash=(await approvalHash())(input.candidatePayload);
+  const requestCommand={...f.originCommand(),operation:'requestApproval',payload:input};const saved=await app.inject({method:'POST',url,headers,payload:requestCommand});assert.equal(saved.statusCode,200,saved.body);
+  const original=saved.json(),readUrl=`/api/v1/projects/${f.pid}/approvals/${original.targetId}`;
+  const decide=(decision:'APPROVE'|'REJECT'|'REQUEST_CHANGE')=>({...f.originCommand(),operation:'decideApproval',targetId:original.targetId,expectedVersion:1,payload:{requestId:original.targetId,expectedVersion:1,scopeDigest:original.data.request.scopeDigest,decision,reason:'원 요청 명시 판단'}});
+  return{f,app,headers,url,original,requestCommand,readUrl,decide,config,queue,get runtimeCalls(){return runtimeCalls;}};
+ }catch(error){await app.close();throw error;}
+}
+test('원자료 요청의 세 명시 결정은 같은 거래에 계상되고 원 ID로 v2를 읽는다',async t=>{
+ for(const choice of ['APPROVE','REJECT','REQUEST_CHANGE'] as const)await t.test(choice,async()=>{
+  const j=await storedOriginDecisionJourney();try{
+   const counts={requests:j.f.tables.approvalRequests!.length,decisions:j.f.tables.approvalDecisions!.length,notifications:j.f.tables.notifications!.length,consumptions:j.f.tables.approvalConsumptions!.length};
+   const command=j.decide(choice),result=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});assert.equal(result.statusCode,200,result.body+' '+JSON.stringify(j.f.state.unsupported));
+   const decision=result.json();assert.equal(decision.data.status,'APPROVAL_DECIDED');assert.equal(decision.data.decision.decision,choice);
+   const read=await j.app.inject({method:'GET',url:j.readUrl,headers:j.headers});assert.equal(read.statusCode,200,read.body);const view=read.json();assert.equal(view.currentVersion,2);assert.equal(view.storedStatus,{APPROVE:'APPROVED',REJECT:'REJECTED',REQUEST_CHANGE:'CHANGE_REQUESTED'}[choice]);assert.deepEqual(view.request,j.original.data.request);assert.deepEqual(view.requestRef,j.original.data.ref);assert.deepEqual(view.decision.ref,decision.data.ref);assert.equal(view.consumption,null);assert.equal(view.executionAuthorized,false);
+   const after={commands:j.f.commands.size,receipts:j.f.receipts.size,audits:j.f.audits.size,reservations:j.f.tables.reservations!.length,used:j.f.modes.requestUsed};
+   const replay=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),decision);
+   const oldRequest=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.requestCommand});assert.equal(oldRequest.statusCode,200,oldRequest.body);assert.deepEqual(oldRequest.json(),j.original);
+   assert.deepEqual({commands:j.f.commands.size,receipts:j.f.receipts.size,audits:j.f.audits.size,reservations:j.f.tables.reservations!.length,used:j.f.modes.requestUsed},after);
+   const duplicate=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide(choice)});assert.equal(duplicate.statusCode,409,duplicate.body);
+   assert.equal(j.f.tables.approvalRequests!.length,counts.requests);assert.equal(j.f.tables.approvalDecisions!.length,counts.decisions+1);assert.equal(j.f.tables.notifications!.length,counts.notifications);assert.equal(j.f.tables.approvalConsumptions!.length,counts.consumptions);assert.deepEqual(j.f.state.unsupported,[]);
+   const decisionRow=j.f.tables.approvalDecisions!.find(row=>row.id===decision.targetId),audit=decisionRow&&j.f.audits.get(decisionRow.command_id);assert(audit);const originalAudit=structuredClone(audit);audit.actor_ref={kind:'HUMAN',userId:id(999)};
+   try{const corrupt=await j.app.inject({method:'GET',url:j.readUrl,headers:j.headers});assert.equal(corrupt.statusCode,503,corrupt.body);assert(!corrupt.body.includes('originReuseEvidence'));}finally{Object.assign(audit,originalAudit);}
+   assert.equal(j.runtimeCalls,0);
+  }finally{await j.app.close();}
+ });
+});
+
+test('원자료 명시 결정의 권한·봉인·계상·불명은 원 요청을 유지하며 재발행하지 않는다',async t=>{
+ const j=await storedOriginDecisionJourney();const{f,app,headers,url}=j;
+ const count=()=>({commands:f.commands.size,receipts:f.receipts.size,audits:f.audits.size,requests:f.tables.approvalRequests!.length,decisions:f.tables.approvalDecisions!.length,notifications:f.tables.notifications!.length,reservations:f.tables.reservations!.length,consumptions:f.tables.approvalConsumptions!.length,used:f.modes.requestUsed,held:f.modes.requestHeld});
+ try{
+  for(const mode of ['UNVERIFIED','CAP','SETTLE_LOST','XID_AFTER_RESERVE','OVERSIZED_SETTLE'])await t.test('결정 '+mode+' 원자 rollback',async()=>{
+   const before=count(),packet=j.decide('APPROVE'),original=structuredClone(packet);f.modes.requestQuota=mode==='UNVERIFIED'?'UNVERIFIED':'VERIFIED';f.modes.requestOther=mode==='CAP'?10737418240:0;f.modes.requestFault=mode;if(mode==='SETTLE_LOST')f.modes.settle='LOST';
+   try{const response=await app.inject({method:'POST',url,headers,payload:packet});assert.equal(response.statusCode,mode==='UNVERIFIED'?412:mode==='CAP'?429:503,response.body);assert(!response.body.includes('originReuseEvidence'));assert.deepEqual(packet,original);}
+   finally{f.modes.requestQuota='VERIFIED';f.modes.requestOther=0;f.modes.requestFault='NORMAL';f.modes.settle='NORMAL';}
+   assert.deepEqual(count(),before);const read=await app.inject({method:'GET',url:j.readUrl,headers});assert.equal(read.statusCode,200,read.body);assert.equal(read.json().currentVersion,1);assert.equal(read.json().decision,null);
+  });
+  for(const kind of ['scope','client','policy','registration','queryXid'])await t.test('현재 결정 '+kind+' 거절',async()=>{
+   const packet=j.decide('APPROVE'),before=count(),reserves=f.modes.decisionReserveCalls,registration=f.registration!.row;
+   if(kind==='scope')packet.payload.scopeDigest='f'.repeat(64);if(kind==='client')packet.clientId=id(990);if(kind==='policy')f.modes.policyVersion=3;if(kind==='registration')registration.revoked_at=new Date();
+   let shifted=false;if(kind==='queryXid')f.modes.hook=sql=>{if(!shifted&&sql.includes('FROM anvil.permission_policies')){shifted=true;f.modes.tx++;}};
+   try{const response=await app.inject({method:'POST',url,headers,payload:packet});assert.notEqual(response.statusCode,200,response.body);assert(!response.body.includes('originReuseEvidence'));assert.equal(f.modes.decisionReserveCalls,reserves);}
+   finally{f.modes.policyVersion=2;registration.revoked_at=null;f.modes.hook=null;}
+   assert.deepEqual(count(),before);
+  });
+  await t.test('default/no-cap와 위조 capability는 명시 결정을 저장하지 않는다',async()=>{
+   const{buildApp}=await import('../../../apps/server/app.ts');for(const fake of [false,true]){const denied=async()=>{throw Error('실행 금지');},noCap=fake?buildApp({},undefined,j.config,{transport:'SYNTHETIC_ONLY',queue:j.queue,originReuseApproval:{} as any,stop:{command:denied},recovery:{command:denied},understanding:{command:denied}}):buildApp({},undefined,j.config);try{const before=count(),response=await noCap.inject({method:'POST',url,headers,payload:j.decide('REJECT')});assert.equal(response.statusCode,412,response.body);assert.deepEqual(count(),before);}finally{await noCap.close();}}
+  });
+  await t.test('원 요청 명시 기한 이후에는 결정 예약과 도메인 쓰기0',async()=>{const before=count(),calls=f.modes.decisionReserveCalls;f.advance(30000);try{const response=await app.inject({method:'POST',url,headers,payload:j.decide('APPROVE')});assert.equal(response.statusCode,422,response.body);assert.equal(f.modes.decisionReserveCalls,calls);assert.deepEqual(count(),before);}finally{f.advance(-30000);}});
+  await t.test('결정 COMMIT 불명은 추가 예약·명령·후행 조회를 만들지 않는다',async()=>{
+   const packet=j.decide('REQUEST_CHANGE'),original=structuredClone(packet),calls=f.modes.decisionReserveCalls,start=f.trace.length;f.modes.commit='LOST';
+   try{const response=await app.inject({method:'POST',url,headers,payload:packet});assert.equal(response.statusCode,503,response.body);assert.equal(response.json().retryDisposition,'reconcile-first');assert.deepEqual(packet,original);assert.equal(f.modes.decisionReserveCalls,calls+1);const trace=f.trace.slice(start),commit=trace.indexOf('COMMIT');assert(commit>=0);assert(!trace.slice(commit+1).some(sql=>sql.startsWith('SELECT')||sql.startsWith('INSERT')||sql.startsWith('BEGIN')));}finally{f.modes.commit='NORMAL';}
+  });
+  assert.equal(j.runtimeCalls,0);assert.deepEqual(f.state.unsupported,[]);
+ }finally{await app.close();}
+});
+
+test('원결정 정책 중 xid 교체는 목적 요청과 원자료 이력 첫 조회 전 거절한다',async()=>{
+ const j=await storedOriginDecisionJourney();let changedAt=-1;
+ try{j.f.modes.hook=sql=>{if(changedAt<0&&sql.includes('FROM anvil.permission_policies')){changedAt=j.f.trace.length;j.f.modes.tx++;}};
+  const response=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide('APPROVE')});assert.equal(response.statusCode,412,response.body);assert(changedAt>=0);
+  const after=j.f.trace.slice(changedAt);assert(!after.some(sql=>sql.includes('FROM anvil.approval_requests')||sql.includes('FROM anvil.execution_start_origins')),'xid 교체 뒤 보호 요청/원자료 조회0');assert.equal(j.f.modes.decisionReserveCalls,0);
+ }finally{j.f.modes.hook=null;await j.app.close();}
+});

@@ -106,3 +106,10 @@ test('내구 client→실제 서명 nonce/자료→부분 sync→원문 없는 r
   const first=await client().execute(f.scope,operation);assert.equal(first.state,lost?'UNKNOWN':'RESPONSE_RECORDED');assert.equal(f.state().results.length,1);assert.equal(f.state().bindings.length,1);assert.equal(parts.length,1);assert.equal(syncs,1);assert.deepEqual(Buffer.from(blobs.get(parts[0].ref.id)!),f.bytes);const reads=f.reads();assert.deepEqual(await client().execute(f.scope,operation),first);assert.equal(sends,1);assert.equal(syncs,1);assert.equal(f.reads(),reads);assert(!JSON.stringify(requests).includes('합성 문서 첫 부분'));assert.equal(first.executionAuthorized,false);
  }
 });
+
+
+test('일반 합성 포트의 optional 검증 표식은 concrete 결합 출처가 아니며 원 전체 검산을 유지한다',async()=>{
+ const f=fixture();let forged=0;const transaction=f.store.transaction;f.store.transaction=async(s:any,fn:any)=>transaction(s,(tx:any)=>fn({...tx,readVerified:async()=>{forged++;return{};},verified:true}));
+ const out=await f.run();assert.deepEqual(Buffer.from(out.bytes),f.bytes);assert.equal(f.currents(),2);assert.equal(f.reads(),1);assert.equal(forged,0);
+ f.current.proof=null;const before=f.reads();await assert.rejects(f.run());assert.equal(f.reads(),before);assert.equal(forged,0);
+});

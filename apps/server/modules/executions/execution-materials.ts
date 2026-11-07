@@ -1,3 +1,4 @@
+import {authenticatedStartReadFor} from './execution-authenticated-materials.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1} from '../../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {executionFactChecks,readServerExecutionFactV1} from '../../../../contracts/runtime/server-execution-fact-v1.ts';
@@ -26,7 +27,9 @@ export class SyntheticExecutionMaterials{
  constructor(store:SyntheticMaterialStore){this.store=store;this.#port();}
  #port(){if(this.store?.transport!=='SYNTHETIC_ONLY'||typeof this.store.transaction!=='function')fail('SYNTHETIC_MATERIAL_STORE_REQUIRED');}
  async #current(tx:SyntheticMaterialTransaction,scope:SyntheticChallengeScope,commandId:string,materialId:string){
-  this.#port();const c=cloneV1(await tx.current(commandId,materialId)),now=await tx.clock();
+  this.#port();const c=cloneV1(await tx.current(commandId,materialId)),now=await tx.clock();return this.#verifyCurrent(c,now,scope,commandId,materialId);
+ }
+ #verifyCurrent(c:any,now:string,scope:SyntheticChallengeScope,commandId:string,materialId:string){
   if(!isoV1(now)||!recordV1(c,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','material','sourceState','proof'])||!same(c.grantRef,scope.grantRef)||!isoV1(c.grantExpiresAt)||!refV1(c.commandRef)||!refV1(c.authorizationReceiptRef)||c.sourceState!=='AVAILABLE')return fail('MATERIAL_CURRENT_REQUIRED');
   const snapshot:any=c.commandSnapshot,instruction=snapshot?.state==='SYNTHETIC_INSTRUCTION_QUEUED'?readSyntheticInstructionQueueRecord({ref:c.commandRef,snapshot},{projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration}):null;
   if(!instruction&&!recordV1(snapshot,[...queueKeys,'envelope']))return fail('MATERIAL_CURRENT_REQUIRED');
@@ -53,10 +56,12 @@ export class SyntheticExecutionMaterials{
   try{
    this.#port();if(!recordV1(rawScope,['mode','projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration'])||rawScope.mode!=='EXECUTION'||!uuidV1(rawScope.projectId)||!uuidV1(rawScope.connectorId)||!uuidV1(rawScope.executionId)||!positive(rawScope.executionGeneration)||!positive(rawScope.credentialGeneration)||!refV1(rawScope.grantRef)||!uuidV1(commandId)||!uuidV1(materialId))fail('MATERIAL_SCOPE_INVALID');const scope=cloneV1(rawScope) as unknown as SyntheticChallengeScope;
    return await this.store.transaction(cloneV1(scope),async tx=>{
-    const before=await this.#current(tx,scope,commandId as string,materialId as string),raw=await tx.readPart(cloneV1(before.material.ref));this.#port();if(!(raw instanceof Uint8Array)||raw.byteLength!==before.material.snapshot.utf8Bytes)fail('MATERIAL_BYTES_INVALID');const bytes=Buffer.from(raw);
+    const combined=authenticatedStartReadFor(tx,scope,commandId as string,materialId as string);try{
+    const before=combined?this.#verifyCurrent(cloneV1(await combined.before()),await tx.clock(),scope,commandId as string,materialId as string):await this.#current(tx,scope,commandId as string,materialId as string),raw=await(combined?combined.body(cloneV1(before.material.ref)):tx.readPart(cloneV1(before.material.ref)));this.#port();if(!(raw instanceof Uint8Array)||raw.byteLength!==before.material.snapshot.utf8Bytes)fail('MATERIAL_BYTES_INVALID');const bytes=Buffer.from(raw);
     if(contentHash(bytes)!==before.material.snapshot.contentHash)fail('MATERIAL_BYTES_INVALID');const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);assertKnowledgeTextSafe(text);
-    const final=await this.#current(tx,scope,commandId as string,materialId as string);if(final.binding!==before.binding||Date.parse(final.now)>=Math.min(before.deadline,final.deadline))fail('MATERIAL_CURRENT_CHANGED');const d=final.material.snapshot;
+    const final=combined?this.#verifyCurrent(cloneV1(await combined.after()),await tx.clock(),scope,commandId as string,materialId as string):await this.#current(tx,scope,commandId as string,materialId as string);if(final.binding!==before.binding||Date.parse(final.now)>=Math.min(before.deadline,final.deadline))fail('MATERIAL_CURRENT_CHANGED');const d=final.material.snapshot;
 return{validUntil:new Date(Math.min(before.deadline,final.deadline)).toISOString(),material:{transport:'SYNTHETIC_ONLY' as const,materialId,materialRef:cloneV1(final.material.ref),sourceRef:cloneV1(d.sourceRef),partIndex:d.partIndex,partCount:d.partCount,byteOffset:d.byteOffset,sourceBytes:d.sourceBytes,contentHash:d.contentHash,mediaType:d.mediaType,bytes:new Uint8Array(bytes),cacheControl:'no-store' as const,completeContextVerified:false,executionAuthorized:false,dispatchPerformed:false}};
+    }finally{combined?.close();}
    });
   }catch(error){if(error instanceof MaterialFailure)throw error;return fail('MATERIAL_UNAVAILABLE');}
  }

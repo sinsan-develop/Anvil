@@ -1,9 +1,17 @@
+import {concreteStartReadFor} from './execution-instruction-material-store.ts';
 import {canonicalJson} from '../../../../contracts/canonical.ts';
 import {cloneV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {SyntheticExecutionChallenges,type SyntheticChallengeScope,type SyntheticChallengeTransaction} from './execution-challenges.ts';
 import {SyntheticExecutionMaterials,type SyntheticMaterialTransaction} from './execution-materials.ts';
 import {executionTarget} from './execution-proof.ts';
+const authenticatedReads=new WeakMap<object,{tx:object;scope:SyntheticChallengeScope;proof:unknown;pins:Record<string,unknown>}>();
+/** 실제 materialFor가 만든 wrapper의 원 transaction 관계만 조회한다. */
+export function authenticatedStartReadFor(tx:object,scope:SyntheticChallengeScope,commandId:string,materialId:string){
+ const owner=authenticatedReads.get(tx);if(!owner)return null;if(!Object.entries(owner.pins).every(([key,value])=>Object.getOwnPropertyDescriptor(tx,key)?.value===value)||!same(owner.scope,scope))return reject();const read=concreteStartReadFor(owner.tx,scope,commandId,materialId);if(!read)return null;
+ const attach=(raw:unknown)=>{if(!recordV1(raw,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','material','sourceState']))return reject();return{...cloneV1(raw),proof:cloneV1(owner.proof)};};
+ const pin=()=>{if(authenticatedReads.get(tx)!==owner||!Object.entries(owner.pins).every(([key,value])=>Object.getOwnPropertyDescriptor(tx,key)?.value===value))return reject();};return{before:async()=>{pin();const out=await read.before();pin();return attach(out);},body:async(ref:RuntimeRefV1)=>{pin();const out=await read.body(ref);pin();return out;},after:async()=>{pin();const out=await read.after();pin();return attach(out);},close:read.close};
+}
 type Material=Awaited<ReturnType<SyntheticExecutionMaterials['read']>>;
 type Binding={target:unknown;materialRef:RuntimeRefV1;contentHash:string};
 export interface SyntheticAuthenticatedMaterialStore{
@@ -31,7 +39,7 @@ export class SyntheticAuthenticatedMaterials{
      const head=[...journal.events].reverse().find(e=>e.ref.id===challengeRef.id),current=cloneV1(await tx.challenges.current()),c:any=current.context;
      if(head?.snapshot.consumption&&!same(head.snapshot.consumption.resultRef,resultRef))return reject();
      const descriptor={kind:'SYNTHETIC_VERIFIED_REQUEST_PROOF',ref:cloneV1(resultRef),target,grantRef:cloneV1(scope.grantRef),credentialGeneration:scope.credentialGeneration,publicKeyFingerprint:c.publicKeyFingerprint,verifiedAt:head?.snapshot.consumption?.consumedAt??await tx.challenges.clock(),challengeExpiresAt:original.snapshot.publicChallenge.expiresAt};
-     const materials=new SyntheticExecutionMaterials({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{if(!same(s,scope))return reject();return fn({...tx.materials,current:async(cmd,part)=>{const basis=cloneV1(await tx.materials.current(cmd,part));if(!recordV1(basis,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','material','sourceState']))return reject();return{...basis,proof:cloneV1(descriptor)};}});}});
+     const materials=new SyntheticExecutionMaterials({transport:'SYNTHETIC_ONLY',transaction:async(s,fn)=>{if(!same(s,scope))return reject();const wrapped={...tx.materials,current:async(cmd:string,part:string)=>{const basis=cloneV1(await tx.materials.current(cmd,part));if(!recordV1(basis,['fact','grantRef','grantExpiresAt','commandRef','commandSnapshot','authorizationReceiptRef','material','sourceState']))return reject();return{...basis,proof:cloneV1(descriptor)};}};authenticatedReads.set(wrapped,{tx:tx.materials,scope:cloneV1(scope),proof:cloneV1(descriptor),pins:{clock:wrapped.clock,current:wrapped.current,readPart:wrapped.readPart}});try{return await fn(wrapped);}finally{authenticatedReads.delete(wrapped);}}});
      return materials.readWithDeadline(cloneV1(scope),commandId,materialId);
     };
     let first:Material|undefined;

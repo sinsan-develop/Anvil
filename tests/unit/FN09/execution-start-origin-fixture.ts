@@ -22,7 +22,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const constitutionContext=richContext&&options.constitutionContext===true;
  if(constitutionContext)Object.assign(tables,{constitutions:[],constitutionApplications:[]});
  const modes={readAllowed:true,sourceAllowed:true,sourceHead:1,commit:'NORMAL',settle:'NORMAL',tx:1,policyVersion:1,
-  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],originReadDisposition:'AUTO' as 'AUTO'|'REQUIRE_APPROVAL'|'DENY',requestQuota:'VERIFIED',requestFault:'NORMAL',requestUsed:0,requestHeld:0,requestOther:0,requestReserveCalls:0,requestSettleCalls:0,hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
+  registrationAllowed:true,registrationUntil:null as string|null,runtimeRules:[] as any[],originReadDisposition:'AUTO' as 'AUTO'|'REQUIRE_APPROVAL'|'DENY',requestQuota:'VERIFIED',requestFault:'NORMAL',requestUsed:0,requestHeld:0,requestOther:0,requestReserveCalls:0,requestSettleCalls:0,decisionReserveCalls:0,decisionSettleCalls:0,hook:null as null|((sql:string)=>void)};let saved:any,sequence=0;
  let savedReceipts:typeof receipts,savedAudits:typeof audits,savedRequestUsed=0,savedRequestHeld=0;
  const reauthUntil=options.connectorEnvironment?new Date(f.actor.authSession.absoluteExpiresAt):null;
  let registration:{row:Record<string,any>;connector:Record<string,any>}|undefined;
@@ -61,6 +61,34 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
   if(sql.startsWith('SELECT pg_current_xact_id_if_assigned()::text AS transaction_id, clock_timestamp() AS ')){
    const at=(await raw('SELECT clock_timestamp() AS at',[])).rows[0].at;
    return rows([{transaction_id:String(modes.tx),...(sql.endsWith('auth_observed_at')?{auth_observed_at:at}:{at})}]);
+  }
+  if(sql==='SELECT action_scope_json FROM anvil.approval_requests WHERE project_id=$1 AND id=$2 FOR UPDATE'){
+   assert.equal(a.length,2);return rows((tables.approvalRequests??[]).filter(r=>r.project_id===a[0]&&r.id===a[1]).map(r=>({action_scope_json:r.action_scope_json})));
+  }
+  if(sql.includes('fn09_origin_reuse_decision_reserve')){
+   modes.decisionReserveCalls++;if(!options.originRequestStorage||modes.requestQuota==='UNVERIFIED')throw Object.assign(Error('PROJECT_STORAGE_QUOTA_UNVERIFIED'),{code:'P0001'});
+   assert.equal(a.length,11);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+   const q=JSON.parse(a[4]),ref=JSON.parse(a[5]),record=JSON.parse(a[6]),policy=JSON.parse(a[7]),ids=JSON.parse(a[8]);
+   assert.equal(q.operation,'decideApproval');assert.equal(record.id,ref.id);assert.equal(q.targetId,record.requestId);assert.equal(record.requestVersion,1);assert.equal(record.scopeDigest,q.payload.scopeDigest);assert.equal(record.decision,q.payload.decision);assert.equal(record.reason,q.payload.reason);assert.deepEqual(record.decidedBy,{kind:'HUMAN',userId:uid,clientId:cid});assert.deepEqual(record.policyRef,policy);
+   const{id:_id,decidedAt:_at,...body}=record;assert.equal(H(body),ref.contentHash);assert.deepEqual(Object.keys(ids).sort(),['serverCommandId','operationId','authorizationReceiptId','auditEventId'].sort());
+   const request=tables.approvalRequests!.find(r=>r.project_id===pid&&r.id===q.targetId);assert(request&&request.version===1&&request.status==='PENDING');assert.deepEqual(record.requestRef,{id:request.id,version:1,contentHash:request.content_hash});assert.deepEqual(policy,request.policy_ref);assert.equal(request.created_by,uid);assert.equal(request.client_id,cid);
+   assert(!tables.approvalDecisions!.some(d=>d.project_id===pid&&d.request_id===request.id));assert(!tables.reservations!.some(r=>r.id===ids.serverCommandId));
+   const reserved=1_000_000;if(modes.requestUsed+modes.requestHeld+modes.requestOther+reserved>10737418240)throw Object.assign(Error('PROJECT_STORAGE_LIMIT_EXCEEDED'),{code:'P0001'});
+   assert(Date.parse(record.decidedAt)<Date.parse(a[10]));const until=new Date(Math.min(Date.parse(a[10]),request.expires_at.getTime())).toISOString();
+   const plan={request:q,record,ref,ids,policyRef:policy,authorizedUntil:until,coverageGeneration:'1',purpose:'ORIGIN_REUSE_APPROVAL_DECISION',beforeRow:JSON.parse(JSON.stringify(request))},planHash=H(plan);
+   tables.reservations!.push({id:ids.serverCommandId,part_kind:'ORIGIN_REUSE_APPROVAL_DECISION',part_key:'origin_reuse_decision',actor_id:uid,client_id:cid,phase:'IO_STARTED',start_fence:1,plan_json:plan,plan_hash:planHash,transaction_id:String(modes.tx),reserved_bytes:reserved,settled_bytes:0});modes.requestHeld+=reserved;
+   const transaction_id=String(modes.tx);if(modes.requestFault==='XID_AFTER_RESERVE')modes.tx++;
+   return rows([{reservation_id:ids.serverCommandId,transaction_id,record_hash:ref.contentHash,plan_hash:planHash,reserved_bytes:String(reserved),authorized_until:until}]);
+  }
+  if(sql.includes('fn09_origin_reuse_decision_settle')){
+   modes.decisionSettleCalls++;assert.equal(a.length,10);assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,uid,cid,pid]);assert.equal(a[9],String(modes.tx));
+   const r=tables.reservations!.find(r=>r.id===a[5]),command=f.commands.get(a[7]),receipt=receipts.get(a[7]),audit=audits.get(a[7]);assert(r&&command&&receipt&&audit);assert.equal(r.part_kind,'ORIGIN_REUSE_APPROVAL_DECISION');assert.equal(r.transaction_id,String(modes.tx));assert.equal(r.phase,'IO_STARTED');assert.equal(r.id,command.id);assert.equal(r.plan_hash,a[6]);assert.equal(command.command_id,a[4]);assert.deepEqual(command.result_ref,JSON.parse(a[8]));assert.equal(receipt.id,r.plan_json.ids.authorizationReceiptId);assert.equal(audit.event_id,r.plan_json.ids.auditEventId);
+   const decisions=tables.approvalDecisions!.filter(d=>d.project_id===pid&&d.command_id===command.id);assert.equal(decisions.length,1);const decision=decisions[0]!;assert.deepEqual(decision.decision_json,r.plan_json.record);assert.equal(decision.request_id,r.plan_json.request.targetId);
+   const request=tables.approvalRequests!.find(q=>q.id===decision.request_id&&q.project_id===pid);assert(request&&request.version===2);assert.equal(request.status,({APPROVE:'APPROVED',REJECT:'REJECTED',REQUEST_CHANGE:'CHANGE_REQUESTED'} as Record<string,string>)[decision.decision]);assert.equal((tables.notifications??[]).filter(n=>n.source_command_id===command.id).length,0);
+   if(modes.settle==='LOST')throw Error('SETTLE_LOST');
+   const cost=(v:unknown)=>Buffer.byteLength(JSON.stringify(v));const actual=cost([decision,command,receipt,audit,r])+cost(request)-cost(r.plan_json.beforeRow);assert(actual<=r.reserved_bytes);
+   r.phase='SETTLED';r.settled_bytes=actual;modes.requestUsed+=actual;modes.requestHeld-=r.reserved_bytes;
+   return rows([{status:'SETTLED',reservation_id:r.id,transaction_id:String(modes.tx),settled_bytes:String(modes.requestFault==='OVERSIZED_SETTLE'?r.reserved_bytes+1:actual)}]);
   }
   if(sql.includes('fn09_origin_reuse_request_reserve')){
    modes.requestReserveCalls++;
