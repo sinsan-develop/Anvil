@@ -18212,3 +18212,8 @@ npm run typecheck
 - 정적ACL RED9c71dd→GREEN26d4a4는1PASS이며최종 node --test tests/unit/FN08/execution-start-material-registration-schema.test.ts tests/unit/FN13/project-storage-quota-schema.test.ts(f35c3c)는38PASS/skip0/exit0이다. 새C/R·consumption부재/옛R Tx/만료R/짧은R와grant불일치·정상짧은R/과거후속current제외반례는소스결박+순수모형검증이며실PG의의미/ACL/COMMIT을입증하지않는다. SQL1재동결/나머지제품9/UI3동결·새실권한0을유지하며backend원문·경쟁음성과필수최소회귀를계속한다.
 
 - A754SQL독립재검수는1499행reuse정책targetScopes비교에sourceScopes가빠진exact배열이추가돼정상규칙을거절하는Important후보1을발견했다. 앞ACL보완의최종C/I0판정은보류한다. Primary에SQL1의이정확분기만재해제해기존소비context/reusePurposeDeadline과같은EXECUTION식별자/주체/limitPolicy/AUTO검산을유지하고source범위포함·DENY/REQUIRE_APPROVAL은원execution_policy_deadline에맡기도록지시했다. sourceScopes를그냥exact배열에붙여정당한더넓은grant를좁히는안도채택하지않는다. 정상/누락/다른범위반례와정확diff재검수전통과0이며새정책/권한변경0이다.
+
+- scope I1의정적RED6d6e5e→GREEN8aacf3/c895c6는1PASS/skip0/exit0이다. 보정SQL은230239B/SHA4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2,T05는22302B/SHAd505fb3ae7b0ab2bdd777036dc843512fdd55909ee7cdf6d3f79d6673e2aa1ac로재동결했다. Main238432가SQL원해시일치·1499를기존572/800/1241의동일EXECUTION필드대조와비교·diffcheck0을확인했고독립scoped재검수중이다. source범위는기존execution_policy_deadline에위임하며정적소스결박을실SQL의정상/누락/더넓은범위여정으로승격하지않는다. 제품9/UI3동결/실권한변경0을유지하고소비음성·최소회귀/type/build를계속한다.
+
+- 최종scope수정독립재검수73151d는C0/I0/M0이며SQL4cbc/T05d505해시직접일치·앞ACL역할분리와합쳐미해결C/I0이다. cd0552의동일정적2파일전체는39PASS/skip0/exit0(285.3765ms)이며실SQL실행아니다. SQL1/T05/FN13schema3파일을Primary가동결했고Main은이정확3+현황만부분복구checkpoint로게시한다. 최종인접/원10초/type/build·소비전체인수/병합전이다.
+- 현재3d9b45/session69642(PID143680)는유일live이며COMMIT후응답폐기+후행새Tx원문loan거절이31821.9587ms PASS로출력됐고별도2APPROVE의동일executionID경쟁사례가동일handle진행중이다. 부분출력을전체terminal결과로승격하거나재시작하지않는다.

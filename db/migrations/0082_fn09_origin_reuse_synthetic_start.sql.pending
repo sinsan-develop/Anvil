@@ -676,8 +676,8 @@ BEGIN
  RETURN anvil.fn17_notification_origin_before_origin_reuse_request(pid,rid,source_id,recipient,occurred,request_hash);
 EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
 
-CREATE FUNCTION anvil.fn09_origin_reuse_request_final_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE p uuid;cid uuid;account anvil.project_storage_accounts;used numeric;held numeric;
+CREATE FUNCTION anvil.fn09_origin_reuse_request_final_guard() RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE current_command anvil.commands;current_reservation anvil.project_storage_reservations;current_grant anvil.execution_grants;context_until timestamptz;grant_until timestamptz;origin_session uuid;p uuid;cid uuid;account anvil.project_storage_accounts;used numeric;held numeric;
 BEGIN
  IF TG_TABLE_NAME='authorization_receipts' THEN
   IF COALESCE(NEW.scope_kind,OLD.scope_kind)<>'PROJECT' THEN RETURN NULL;END IF;p=COALESCE(NEW.scope_id,OLD.scope_id);
@@ -689,11 +689,32 @@ BEGIN
   UNION SELECT r.id FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.part_kind IN('ORIGIN_REUSE_APPROVAL_REQUEST','ORIGIN_REUSE_APPROVAL_DECISION','ORIGIN_REUSE_APPROVAL_CONSUMPTION')
  UNION SELECT d.command_id FROM anvil.approval_decisions d JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE d.project_id=p AND r.action_scope_json->>'operation'='queueExecutionCommand'
  UNION SELECT c.id FROM anvil.commands c JOIN anvil.approval_requests r ON r.project_id=c.project_id AND r.id::text=c.result_ref#>>'{data,decision,requestId}' WHERE c.project_id=p AND r.action_scope_json->>'operation'='queueExecutionCommand'
+  UNION SELECT nc.id FROM anvil.commands nc WHERE nc.project_id=p AND nc.operation='queueExecutionCommand' AND nc.xmin=pg_current_xact_id()::xid AND(nc.approval_consumption_id IS NOT NULL OR nc.payload_ref IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=nc.id AND ar.approval_decision_ref IS NOT NULL) OR EXISTS(SELECT 1 FROM anvil.approval_requests ar WHERE ar.project_id=p AND ar.candidate_command_id=nc.command_id AND ar.action_scope_json->>'operation'='queueExecutionCommand'))
   UNION SELECT ac.command_id FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE ac.project_id=p AND r.action_scope_json->>'operation'='queueExecutionCommand'
   UNION SELECT n.source_command_id FROM anvil.notifications n JOIN anvil.approval_requests r ON r.project_id=n.project_id AND r.id=n.approval_request_id WHERE r.project_id=p AND r.action_scope_json->>'operation'='queueExecutionCommand'
  LOOP
-  IF EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid AND x.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION') OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE ac.project_id=p AND ac.command_id=cid AND r.action_scope_json->>'operation'='queueExecutionCommand') THEN
+  IF EXISTS(SELECT 1 FROM anvil.commands nc WHERE nc.project_id=p AND nc.id=cid AND nc.operation='queueExecutionCommand' AND nc.xmin=pg_current_xact_id()::xid AND(nc.approval_consumption_id IS NOT NULL OR nc.payload_ref IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.authorization_receipts ar WHERE ar.command_id=nc.id AND ar.approval_decision_ref IS NOT NULL) OR EXISTS(SELECT 1 FROM anvil.approval_requests ar WHERE ar.project_id=p AND ar.candidate_command_id=nc.command_id AND ar.action_scope_json->>'operation'='queueExecutionCommand'))) OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid AND x.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION') OR EXISTS(SELECT 1 FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id WHERE ac.project_id=p AND ac.command_id=cid AND r.action_scope_json->>'operation'='queueExecutionCommand') THEN
    IF NOT COALESCE(anvil.fn09_origin_reuse_consumption_complete(p,cid),false) THEN RAISE EXCEPTION 'ORIGIN_REUSE_CONSUMPTION_INCOMPLETE' USING ERRCODE='23514';END IF;
+   -- 0017의 불변 queue 명령 guard와 결합하여 이번 Tx의 신규 INSERT에만 현재성을 강제한다.
+   IF EXISTS(SELECT 1 FROM anvil.commands nc WHERE nc.project_id=p AND nc.id=cid AND nc.operation='queueExecutionCommand' AND nc.xmin=pg_current_xact_id()::xid) THEN
+    SELECT * INTO current_command FROM anvil.commands nc WHERE nc.project_id=p AND nc.id=cid AND nc.xmin=pg_current_xact_id()::xid;
+    SELECT * INTO current_reservation FROM anvil.project_storage_reservations r WHERE r.project_id=p AND r.id=cid AND r.xmin=pg_current_xact_id()::xid;
+    IF current_reservation.id IS NULL OR current_command.id IS NULL OR current_reservation.phase IS DISTINCT FROM 'SETTLED' OR current_reservation.start_fence<>1
+     OR current_reservation.server_command_id IS DISTINCT FROM cid OR current_reservation.actor_id IS DISTINCT FROM current_command.actor_id OR current_reservation.client_id IS DISTINCT FROM current_command.client_id
+     OR current_reservation.external_command_id IS DISTINCT FROM current_command.command_id OR current_reservation.command_hash IS DISTINCT FROM current_command.request_hash
+     OR current_reservation.plan_hash IS DISTINCT FROM anvil.fn01_hash(current_reservation.plan_json-'planHash') OR current_reservation.authorized_until<=clock_timestamp()
+     OR current_reservation.plan_json->'receiptIds'->>'serverCommandId' IS DISTINCT FROM cid::text OR current_reservation.plan_json->'receiptIds'->>'consumptionId' IS DISTINCT FROM current_command.approval_consumption_id::text
+     THEN RAISE EXCEPTION 'ORIGIN_REUSE_CONSUMPTION_CURRENT_REQUIRED' USING ERRCODE='23514';END IF;
+    SELECT (r.request_json->'originReuseEvidence'->'subject'->>'humanSessionId')::uuid INTO origin_session FROM anvil.approval_requests r WHERE r.project_id=p AND r.id::text=current_reservation.plan_json->'request'->'approvalRef'->>'requestId';
+    context_until=anvil.fn09_origin_reuse_consumption_context(origin_session,current_command.actor_id,current_command.client_id,p,current_reservation.plan_json->'request',current_reservation.plan_json->'requestRecord',current_reservation.plan_json->'policyRef',txid_current()::text,current_reservation.authorized_until);
+    SELECT * INTO current_grant FROM anvil.execution_grants g WHERE g.project_id=p AND g.command_id=cid;
+    SELECT min(value::timestamptz) INTO grant_until FROM jsonb_each_text(current_grant.snapshot_json->'binding'->'expires');
+    grant_until=LEAST(context_until,grant_until,(current_grant.snapshot_json->>'plannedAt')::timestamptz+interval '2 hours');
+    IF current_grant.id IS NULL OR context_until IS DISTINCT FROM current_reservation.authorized_until OR current_reservation.authorized_until<=clock_timestamp()
+     OR (current_grant.snapshot_json->>'expiresAt')::timestamptz IS DISTINCT FROM grant_until OR grant_until<=clock_timestamp()
+     THEN RAISE EXCEPTION 'ORIGIN_REUSE_CONSUMPTION_CURRENT_REQUIRED' USING ERRCODE='23514';END IF;
+   END IF;
+
   ELSIF EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid AND x.part_kind='ORIGIN_REUSE_APPROVAL_DECISION') OR EXISTS(SELECT 1 FROM anvil.approval_decisions d JOIN anvil.approval_requests q ON q.project_id=d.project_id AND q.id=d.request_id WHERE d.project_id=p AND d.command_id=cid AND q.action_scope_json->>'operation'='queueExecutionCommand') THEN
    IF NOT COALESCE(anvil.fn09_origin_reuse_decision_complete(p,cid),false) THEN RAISE EXCEPTION 'ORIGIN_REUSE_DECISION_INCOMPLETE' USING ERRCODE='23514';END IF;
   ELSIF NOT COALESCE(anvil.fn09_origin_reuse_request_complete(p,cid),false) THEN RAISE EXCEPTION 'ORIGIN_REUSE_REQUEST_INCOMPLETE' USING ERRCODE='23514';END IF;
@@ -1379,22 +1400,20 @@ BEGIN
    AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref=d.id AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
    AND c.request_hash=anvil.fn01_hash(q) AND c.payload_ref=jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',r.action_scope_json->>'payloadHash','scopeDigest',r.scope_digest)
    AND c.id::text=current_setting('anvil.command_id',true) AND c.actor_id::text=current_setting('anvil.actor_id',true) AND c.client_id::text=current_setting('anvil.client_id',true)
-   AND EXISTS(SELECT 1 FROM anvil.project_storage_reservations sr
-    JOIN anvil.auth_sessions a ON a.id::text=r.request_json->'originReuseEvidence'->'subject'->>'humanSessionId' AND a.user_id=c.actor_id AND a.client_id=c.client_id
+   AND EXISTS(SELECT 1 FROM anvil.auth_sessions a
     JOIN anvil.users u ON u.id=a.user_id AND u.status='ACTIVE' AND u.revoked_at IS NULL AND u.credential_generation=a.credential_generation
     JOIN anvil.clients cl ON cl.user_id=a.user_id AND cl.id=a.client_id AND cl.revoked_at IS NULL
     JOIN anvil.project_members pm ON pm.project_id=pid AND pm.user_id=c.actor_id AND pm.participation='OWNER' AND pm.revoked_at IS NULL
     JOIN anvil.project_control pc ON pc.project_id=pid AND pc.actor_id=c.actor_id AND pc.client_id=c.client_id AND pc.generation=c.control_generation AND pc.revoked_at IS NULL
     JOIN anvil.permission_policies pp ON pp.project_id=pid AND pp.id::text=c.policy_ref->>'id' AND pp.head_version::text=c.policy_ref->>'version'
     JOIN anvil.permission_policy_versions pv ON pv.project_id=pid AND pv.policy_id=pp.id AND pv.version=pp.head_version AND pv.content_hash=c.policy_ref->>'contentHash'
-    WHERE sr.project_id=pid AND sr.id=cid AND sr.xmin=pg_current_xact_id()::xid AND sr.actor_id=c.actor_id AND sr.client_id=c.client_id AND sr.external_command_id=c.command_id
-     AND sr.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION' AND sr.part_key='origin_reuse_consumption' AND sr.phase='IO_STARTED' AND sr.start_fence=1
-     AND sr.plan_hash=anvil.fn01_hash(sr.plan_json-'planHash') AND sr.command_hash=c.request_hash AND sr.plan_json->'request'=q AND sr.plan_json->'policyRef'=c.policy_ref
-     AND sr.plan_json->'receiptIds'->>'serverCommandId'=cid::text AND sr.plan_json->'receiptIds'->>'consumptionId'=c.approval_consumption_id::text
-     AND sr.plan_json->'receiptIds'->>'authorizationReceiptId'=ar.id::text AND sr.plan_json->'receiptIds'->>'operationId'=c.operation_id::text
+    WHERE a.id::text=r.request_json->'originReuseEvidence'->'subject'->>'humanSessionId' AND a.user_id=c.actor_id AND a.client_id=c.client_id
+     AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=pid AND x.id=cid AND x.xmin=pg_current_xact_id()::xid)
+     AND ar.scope_digest=anvil.fn01_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
+     AND (SELECT count(*) FROM anvil.audit_events au WHERE au.project_id=pid AND au.command_id=cid AND au.operation_id=c.operation_id AND au.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND au.client_ref=c.client_id AND au.target_ref=c.result_ref->'data'->'ref' AND au.policy_ref=c.policy_ref AND au.approval_ref=q->'approvalRef' AND au.scope_digest=ar.scope_digest AND au.outcome='APPLIED' AND au.source_kind='HUMAN_COMMAND' AND au.reason_code='EXPLICIT_SYNTHETIC_QUEUE_ONLY')=1
      AND a.revoked_at IS NULL AND a.idle_expires_at>clock_timestamp() AND a.absolute_expires_at>clock_timestamp() AND a.reauth_until>clock_timestamp()
      AND a.credential_generation::text=r.request_json->'originReuseEvidence'->'subject'->>'credentialGeneration'
-     AND sr.authorized_until>clock_timestamp() AND sr.authorized_until<=r.expires_at),false);
+     AND r.expires_at>clock_timestamp()),false);
  END IF;
  IF c.operation IS DISTINCT FROM 'saveProjectMembership' THEN RETURN anvil.one_time_consumption_command_before_membership(pid,cid,did);END IF;
  SELECT * INTO d FROM anvil.approval_decisions WHERE project_id=pid AND id=did;SELECT * INTO r FROM anvil.approval_requests WHERE project_id=pid AND id=d.request_id;SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
@@ -1406,21 +1425,22 @@ BEGIN
 END;$$;
 
 CREATE OR REPLACE FUNCTION anvil.execution_queue_authorized(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
-DECLARE reuse boolean=false;original jsonb;approval jsonb;sr anvil.project_storage_reservations;request_row anvil.approval_requests;decision_row anvil.approval_decisions;used anvil.approval_consumptions;c anvil.commands%ROWTYPE;r anvil.authorization_receipts%ROWTYPE;q jsonb;pv anvil.permission_policy_versions%ROWTYPE;
+DECLARE reuse boolean=false;original jsonb;approval jsonb;reuse_rules jsonb;reuse_deadline timestamptz;request_row anvil.approval_requests;decision_row anvil.approval_decisions;used anvil.approval_consumptions;c anvil.commands%ROWTYPE;r anvil.authorization_receipts%ROWTYPE;q jsonb;pv anvil.permission_policy_versions%ROWTYPE;
  s anvil.auth_sessions%ROWTYPE;b anvil.limit_policy_versions%ROWTYPE;at_time timestamptz=clock_timestamp();d1 timestamptz;d2 timestamptz;
 BEGIN
  PERFORM id FROM anvil.projects WHERE id=pid AND archived_at IS NULL FOR UPDATE;
  IF NOT FOUND THEN RETURN false;END IF;
  SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
  IF c.approval_consumption_id IS NOT NULL OR c.payload_ref IS NOT NULL THEN
-  reuse=true;SELECT * INTO sr FROM anvil.project_storage_reservations x WHERE x.project_id=pid AND x.id=cid AND x.xmin=pg_current_xact_id()::xid;
-  original=sr.plan_json->'request';approval=original->'approvalRef';
+  reuse=true;
   SELECT * INTO used FROM anvil.approval_consumptions x WHERE x.project_id=pid AND x.id=c.approval_consumption_id AND x.command_id=cid;
   SELECT * INTO decision_row FROM anvil.approval_decisions x WHERE x.project_id=pid AND x.id=used.decision_id;
   SELECT * INTO request_row FROM anvil.approval_requests x WHERE x.project_id=pid AND x.id=decision_row.request_id;
-  IF sr.id IS NULL OR used.id IS NULL OR decision_row.id IS NULL OR request_row.id IS NULL OR request_row.version<>3 OR request_row.status IS DISTINCT FROM 'CONSUMED' OR decision_row.decision IS DISTINCT FROM 'APPROVE'
-   OR sr.part_kind IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_CONSUMPTION' OR sr.part_key IS DISTINCT FROM 'origin_reuse_consumption' OR sr.phase NOT IN('IO_STARTED','SETTLED') OR sr.start_fence<>1 OR sr.authorized_until<=at_time
-   OR sr.actor_id IS DISTINCT FROM c.actor_id OR sr.client_id IS DISTINCT FROM c.client_id OR sr.external_command_id IS DISTINCT FROM c.command_id OR sr.command_hash IS DISTINCT FROM c.request_hash OR sr.plan_hash IS DISTINCT FROM anvil.fn01_hash(sr.plan_json-'planHash')
+  approval=jsonb_build_object('requestId',request_row.id,'decisionId',decision_row.id,'scopeDigest',request_row.scope_digest);original=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',approval,'payload',request_row.request_json->'originReuseEvidence'->'candidatePayload');
+  IF used.id IS NULL OR decision_row.id IS NULL OR request_row.id IS NULL OR request_row.version<>3 OR request_row.status IS DISTINCT FROM 'CONSUMED' OR decision_row.decision IS DISTINCT FROM 'APPROVE'
+   OR NOT EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=pid AND x.id=cid AND x.xmin=pg_current_xact_id()::xid)
+   OR NOT EXISTS(SELECT 1 FROM anvil.approval_consumptions x WHERE x.project_id=pid AND x.id=used.id AND x.command_id=cid AND x.xmin=pg_current_xact_id()::xid)
+   OR request_row.expires_at<=at_time
    OR original->'payload' IS DISTINCT FROM request_row.request_json->'originReuseEvidence'->'candidatePayload' OR anvil.fn01_hash(original) IS DISTINCT FROM c.request_hash
    OR approval IS DISTINCT FROM jsonb_build_object('requestId',request_row.id,'decisionId',decision_row.id,'scopeDigest',request_row.scope_digest)
    OR c.payload_ref IS DISTINCT FROM jsonb_build_object('kind','ONE_TIME_APPROVAL_SCOPE','payloadHash',anvil.fn01_hash(original->'payload'),'scopeDigest',request_row.scope_digest)
@@ -1428,7 +1448,7 @@ BEGIN
    OR request_row.scope_digest IS DISTINCT FROM used.scope_digest OR request_row.action_scope_json->>'operation' IS DISTINCT FROM 'queueExecutionCommand'
    OR decision_row.decided_by IS DISTINCT FROM c.actor_id OR decision_row.client_id IS DISTINCT FROM c.client_id OR decision_row.control_generation IS DISTINCT FROM c.control_generation
    OR used.policy_id::text IS DISTINCT FROM c.policy_ref->>'id' OR used.policy_version::text IS DISTINCT FROM c.policy_ref->>'version'
-   OR sr.plan_json->'receiptIds'->>'consumptionId' IS DISTINCT FROM used.id::text OR sr.plan_json->'receiptIds'->>'authorizationReceiptId' IS DISTINCT FROM c.authorization_receipt_id::text THEN RETURN false;END IF;
+   OR used.command_id IS DISTINCT FROM c.id THEN RETURN false;END IF;
  END IF;
 
  IF c.id IS NULL OR c.id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
@@ -1474,6 +1494,13 @@ BEGIN
  d1=anvil.execution_policy_deadline(pv.rules_json,pid,(q->>'executionId')::uuid,(q->>'executionGeneration')::bigint,c.actor_id,'authorizeExecution',q->'budgetPolicyRef',q->'sourceScopes',at_time);
  d2=anvil.execution_policy_deadline(pv.rules_json,pid,(q->>'executionId')::uuid,(q->>'executionGeneration')::bigint,c.actor_id,'queueExecutionCommand',q->'budgetPolicyRef',q->'sourceScopes',at_time);
  IF d1 IS NULL OR d2 IS NULL THEN RETURN false;END IF;
+ IF reuse THEN
+  SELECT jsonb_agg(jsonb_set(value,'{operations}','["authorizeExecution"]'::jsonb)) INTO reuse_rules FROM jsonb_array_elements(pv.rules_json) WHERE(value->'operations')?'reuseExecutionStartOrigin';
+  IF reuse_rules IS NULL OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(reuse_rules) rule WHERE rule->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND rule->>'disposition'='AUTO' AND rule->'limitPolicyRef'=q->'budgetPolicyRef' AND rule->'targetScopes'->0->>'kind'='EXECUTION' AND rule->'targetScopes'->0->>'projectId'=pid::text AND rule->'targetScopes'->0->'executionGeneration'=q->'executionGeneration' AND rule->'targetScopes'->0->>'executionId'=q->>'executionId' AND(rule->>'expiresAt')::timestamptz>at_time) THEN RETURN false;END IF;
+  reuse_deadline=anvil.execution_policy_deadline(reuse_rules,pid,(q->>'executionId')::uuid,(q->>'executionGeneration')::bigint,c.actor_id,'authorizeExecution',q->'budgetPolicyRef',q->'sourceScopes',at_time);
+  IF reuse_deadline IS NULL OR LEAST(reuse_deadline,request_row.expires_at,s.reauth_until)<=at_time THEN RETURN false;END IF;
+ END IF;
+
  SELECT * INTO r FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id AND scope_kind='PROJECT' AND scope_id=pid;
  IF r.id IS NULL OR r.policy_ref IS DISTINCT FROM c.policy_ref OR r.approval_decision_ref IS DISTINCT FROM CASE WHEN reuse THEN decision_row.id ELSE NULL END
   OR r.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
@@ -1488,7 +1515,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION anvil.check_initial_execution_graph(pid uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql AS $$
-DECLARE reuse boolean=false;origin_request jsonb;reuse_until timestamptz;c anvil.commands%ROWTYPE;e anvil.executions%ROWTYPE;g anvil.execution_grants%ROWTYPE;
+DECLARE reuse boolean=false;origin_request jsonb;reuse_until timestamptz;reuse_rules jsonb;reuse_deadline timestamptz;c anvil.commands%ROWTYPE;e anvil.executions%ROWTYPE;g anvil.execution_grants%ROWTYPE;
  u anvil.usage_reservations%ROWTYPE;w anvil.writer_claims%ROWTYPE;x anvil.execution_commands%ROWTYPE;o anvil.delivery_outbox%ROWTYPE;
  q jsonb;f jsonb;gs jsonb;us jsonb;env jsonb;intent jsonb;claim jsonb;auth_ref jsonb;deadline timestamptz;at_time timestamptz=clock_timestamp();
  policy anvil.permission_policy_versions%ROWTYPE;budget anvil.limit_policy_versions%ROWTYPE;session anvil.auth_sessions%ROWTYPE;field text;check_value jsonb;
@@ -1496,7 +1523,10 @@ BEGIN
  IF NOT anvil.execution_queue_authorized(pid,cid) THEN RETURN false;END IF;
  SELECT * INTO c FROM anvil.commands WHERE id=cid AND project_id=pid;q=c.result_ref->'data'->'snapshot';
  IF c.approval_consumption_id IS NOT NULL THEN
-  reuse=true;SELECT r.plan_json->'request',r.authorized_until INTO origin_request,reuse_until FROM anvil.project_storage_reservations r WHERE r.project_id=pid AND r.id=cid AND r.xmin=pg_current_xact_id()::xid AND r.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION' AND r.part_key='origin_reuse_consumption' AND r.phase IN('IO_STARTED','SETTLED');IF origin_request IS NULL OR reuse_until IS NULL THEN RETURN false;END IF;
+  reuse=true;SELECT jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',jsonb_build_object('requestId',r.id,'decisionId',d.id,'scopeDigest',r.scope_digest),'payload',r.request_json->'originReuseEvidence'->'candidatePayload'),r.expires_at INTO origin_request,reuse_until
+   FROM anvil.approval_consumptions ac JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id JOIN anvil.approval_requests r ON r.project_id=d.project_id AND r.id=d.request_id
+   WHERE ac.project_id=pid AND ac.id=c.approval_consumption_id AND ac.command_id=cid AND ac.xmin=pg_current_xact_id()::xid AND r.version=3 AND r.status='CONSUMED' AND d.decision='APPROVE';
+  IF origin_request IS NULL OR reuse_until IS NULL THEN RETURN false;END IF;
  END IF;
  SELECT * INTO e FROM anvil.executions WHERE project_id=pid AND command_id=cid;
  SELECT * INTO g FROM anvil.execution_grants WHERE project_id=pid AND command_id=cid;
@@ -1554,8 +1584,12 @@ BEGIN
   IF NOT anvil.execution_iso_valid(f->'expires'->field) THEN RETURN false;END IF;
   deadline=LEAST(deadline,(f->'expires'->>field)::timestamptz);
  END LOOP;
- IF reuse THEN deadline=LEAST(deadline,reuse_until);END IF;
- IF (gs->>'expiresAt')::timestamptz IS DISTINCT FROM deadline OR deadline<=at_time THEN RETURN false;END IF;
+ IF reuse THEN
+  SELECT jsonb_agg(jsonb_set(value,'{operations}','["authorizeExecution"]'::jsonb)) INTO reuse_rules FROM jsonb_array_elements(policy.rules_json) WHERE(value->'operations')?'reuseExecutionStartOrigin';
+  reuse_deadline=anvil.execution_policy_deadline(reuse_rules,pid,e.id,e.generation,c.actor_id,'authorizeExecution',q->'budgetPolicyRef',q->'sourceScopes',at_time);
+  IF reuse_deadline IS NULL OR session.reauth_until IS NULL THEN RETURN false;END IF;deadline=LEAST(deadline,reuse_until,session.reauth_until,reuse_deadline);
+ END IF;
+ IF (NOT reuse AND (gs->>'expiresAt')::timestamptz IS DISTINCT FROM deadline) OR (reuse AND ((gs->>'expiresAt')::timestamptz>deadline OR (gs->>'expiresAt')::timestamptz<=at_time)) OR deadline<=at_time THEN RETURN false;END IF;
  -- 실제 original request의 hash: 준비 ref는 불변 grant의 binding에서만 복원한다.
  IF NOT anvil.execution_preparation_ref_valid(f->'preparationRef') OR c.request_hash IS DISTINCT FROM CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object(
   'schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,
