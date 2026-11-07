@@ -17967,3 +17967,6 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - 실행 후보 최종18257B SHA256 A05880F5B405A57517FDFEDE78C46AC152B7760FCC606D7F959702815CD6185D. 독립 C0/I0/M0, Main도 Git blob14개·문서21행·SQL112 원바이트 총3264065B·순서838aca96…05a·ledger15b818ef…0119를 직접 검산했다. J3 횟수 확대 지시는 인정하며 현 소스/스키마/신규 프로필 차이만 남긴다. 문서작성 JS 문자열 구문오류1·EOF 공백1은 보정했고 Main 임시 검사기의 숫자 쉼표 처리 오류1은 같은 기준의 정확 수치 비교로 보정 후 exit0이다. 제품 변경/실환경 실행0.
 - 후보는 DRAFT/NOT_APPROVED다. gitHash/dockerHash·현재 호스트/경로 부재·새 approvalId/issuedAt/expiresAt은 미확인·미발급으로 남겼다. 직접 CLI timeout은 원격 SQL 정착을 증명하지 않고 정상 cleanup도 PG/network만 제거한다. source/node_modules·npm cache·artifact·감사·승인 형제 파일은 보존하며 UNKNOWN에 자동 재실행/후속조회/삭제 권한을 부여하지 않는다. 다음은 게시 후보를 PMO에 전달해 WSL 회복의 정확 지원 근거와 이 신규 실제 실행 범위 결정을 요청하는 것이다.
+
+- 후보 게시 b5f220b537a46f20c8f98231c779abc77d0e9f80은 원격 branch와 동일·tracked clean0/0이다. PMO에 정확 후보/소스/hash와 WSL 회복 근거 지원 및 신규 실제 실행 범위 결정을 전달했다. PMO 후속 turn 01a1b712-d28b-7cb0-b40e-876429afd291에서 후보 A05880F5…6185D를 대조하고 임시 인증키/권한을 포함하는 새112SQL/TC01/프로필의 직접 실행 승인을 신산님께 요청했다. WSL 회복은 여전히 미확인이라고 답했다. 실행 approval/plan/intent·새 QA는 발급/생성하지 않았다.
+- Main은 같은 승인 질문을 이 대화에 반복하지 않고, 별개 FN09→FN08의 현 증빙 공급 adapter가 기존 채택 계약 안에서 구현 가능한지 기존 읽기 담당자에게 구체 경계로 대조하게 했다. 실제 실행 제외가 source 구현 전체 금지를 의미한다고 추정하지 않으며, 부족한 계약과 미연결 구현을 실제 caller/guard로 구분한다. 전체 계획 미완료는 유지한다.
