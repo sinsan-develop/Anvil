@@ -18173,3 +18173,7 @@ npm run typecheck
 - 소비quota 조기독립읽기는ID의private결박/단발사용/예약전고정을확인했고정산마지막await중source/registrar/resolver메서드교체후원lease재검산누락가능성을전달했다. Primary는settle뒤originReuseStartState의실제xid+DB clock+원조합descriptor pins를검산한뒤반환하도록보완했으며음성재현은최종묶음에서확인한다. 현재SQL은rows/actual leaf와기존0078 graph의목적별정확승인원형분기를작성중이고context/maximum/RPC/최종guard는미완료다. 실제SQL/실환경/최종인수0이다.
 
 - reuse basis의조기return이원rawCall.expiresAt/signal/벽시계·단조상한을건너뛸수있는점을Main이전달했고Primary가d0f8f8에서최초/helper await뒤/반환직전의내장AbortSignal·벽시계역전·단조역전·호출expiresAt변환상한검산을유지하도록보완했다. DB lease기한과분리하며신규음성실행은최종묶음에남아있다. 최신v3 GET source뒤type243237/session14790→동일poll89c33e exit0·당시live0이며정상저장GREEN/SQL실행/최종검수아니다.
+
+- 소비7함수/원0078 exact8승인 graph초안의정적명령 node --test --test-name-pattern="START 소비 계상은 신규 행" tests/unit/FN13/project-storage-quota-schema.test.ts는함수부재RED5f0886→GREEN9ea5db(1PASS/skip0/exit0)다. 토큰/DAG/행투영source증거일뿐SQL실행아니다. requestv3/기존invoker·quota·알림/deferred wrapper와fixture RPC비용모형·정상/음성·UI3는미완료로유지한다.
+- 독립SQL조기읽기는고정11행+자료N·총11+N·원seal/fn08graph·v3-v2만계상·decision역사v1→v2투영고정·정확8키/approvalRef 원hash·비순환DAG·reserve/settle2앱접점/다른helper차단을대조해현재명확누락후보를확인하지못했다. 최종판정/시험/SQL실행0이며완성·동결후재검수한다.
+- 파일argv glob문법오류는Primary2/독립읽기1로반복됐으므로Main이경로조회부분을직접인수해75a179의실제0062/0074/0075/0077/0078/0081/0082정확경로를전달했다. 제품writer인수/동시쓰기/새도구설정/권한변경은없고코드담당은기존Primary한명이다. 불명확한legacy경로는추측반복없이Main이확인한다.
