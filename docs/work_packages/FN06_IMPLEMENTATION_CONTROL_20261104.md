@@ -3987,3 +3987,17 @@ Primary cc4504 신규5+인접17=22PASS/0fail/0skip, type13e717 및 메모리 Vit
 M1은 4dc487 비활성 RED→5f29ca 재조회 GREEN, 동일 live scope·latest ticket·자기 loading만 해제하는 보완과 독립 변경분 C0/I0/M0로 해소했다. App876B88D2 불변, shell B5A76F80·시험2A365C27 동결이다. Main6672d6 최종 신규5PASS/0fail/0skip·979.9127ms·exit0와 2d93a2 raw3/diff0, 앞선 불변 인접17과 Primary type/메모리빌드를 구분한다. 결과 UI00_SHELL_PROJECT_ACCESS_READ_SOURCE_RESULT_20261107.md에 명시 보호GET·역할/제어 기록/수신시각·늦은 응답/권한오류·POST0을 기록한다. M2 UNKNOWN 원명령 직접 여정·실제 브라우저/DB/서비스/권한·Agent/SDK는 미검증이고 전체 UI00/계획 완료가 아니다.
 
 추가 Stage B 읽기 대조는 UI01 실제 단계/다음 행동 공급, UI02 실제 기준선 관측, UI03 적용 전환의 실제 실행/영향 근거, UI06 실행·시험 증거, UI10 실제 전달을 미완료 선행으로 확인했다. 이미 연결한 승인 이동·사본 생성·보호 원문/추적·보관 요청을 반복하지 않는다. 새 실행 정책·보호 공급자와 실제 실행 범위를 넓히지 않으며 독립 업무를 추가 확인한다.
+
+
+## 424. UI00 로컬 통합·다음 정확 결정 전달
+
+20ad8c는 10a12f1ac9f462b6b2843031400957fef83d2abb에 UI00 소스/시험3+WI/결과/현황4=7경로만 보존했다. 부모9c1530e0·raw3불변·tracked clean 및 보호3만 남음을 확인했다. 시험 줄바꿈 Git 경고는 raw 불변과 분리한다. 결과서 AD26D179에 신규5·이전 인접17·독립 M1 해소·M2 미검증과 실제 브라우저/서비스/DB 미검증을 남겼다.
+
+PMO에 해당 통합과 다음 D4DCBC7F §4의 정책 A/B 선택 근거를 전달했다. 권장 A는 원 S/Q·과거 등록 정책 지문과 영수증을 보존하고 후속 START에 같은 실행 범위의 별도 명시 최신 정책을 결박한다. 제품 권한/데이터 의미가 결정되기 전 현 검사 변경0. 현재 확인한 Stage B의 남은 사용자 흐름은 실제 공급자·권한/계약 선행과 분리돼 있으며 기존 검사를 반복하지 않는다. 원격/PR/병합/배포·DB/권한/키/서비스/Agent/SDK 실행0이다. 전체 계획 미완료다.
+
+
+## 425. 후속 합성 START 정책 인계 A의 정확 결정 패킷
+
+기존 담당자의 UI04/UI05/UI08 후속 읽기에서는 이미 연결한 선택·승인·원문/부모 조회 외에 실제 세션·전달/실행/검수 생산자와 신규 관계 계약이 선행임을 확인했다. 미확인 실제 동작을 화면에서 성공으로 만들지 않았다. 실제 경로 대조 중 추정 basename 부재1은 중단하고 실제 Web 호출선으로 확인했다.
+
+기존 Primary가 FN09_START_POLICY_HANDOFF_A_DECISION_PACKET_20261107.md 11679B/5579A6E9를 작성·동결했고 Main599a79 및 독립 C0/I0/M0로 대조했다. 결정은 P1의 원 S/Q/C/A/U/R·기한을 보존하고 현재 보호 읽기·fresh 출처를 통과한 같은 실행에 한해 후속 명시 최신 P2의 두 runtime 규칙으로 기존 합성 START 저장을 연결할지다. 제품3/시험2, 원 만료의 grant 상계, 실제 queue/material/outbox 정상과 교차·회수·불명 검수가 구체화됐다. 기존 기본 basis/등록 FRESH/HISTORY·SQL/API/정책 UI는 보존하며 영속 origin 소비·actual current/grant/E/실행은 제외한다. 패킷 DRAFT/NOT_ADOPTED/SOURCE_GO0, 새 권한 의미는 결정 전 구현0이다. Git status 조회 접근 오류는 Main 현재 확인으로 대체하며 원 추정 execution-grant.ts 부재 오류는 실제 파일 목록으로 바로잡았다. PMO에 이 정확 한정 선택과 근거만 전달한다.
