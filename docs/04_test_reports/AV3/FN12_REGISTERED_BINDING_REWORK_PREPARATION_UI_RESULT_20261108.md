@@ -48,3 +48,11 @@ git diff --check
 ## 복구
 
 기존 승인 범위의 화면 소비 보완이며 실제 DB 복구는 필요 없다. 통합 뒤 복구는 해당 PR 정상 revert를 사용한다. 완료된 원자료 START/SEND·무관한 전수 검증은 반복하지 않았다.
+
+## Git 통합
+
+- PR #64: https://github.com/sinsan-develop/Anvil/pull/64
+- source head `513f7b3cbc8211ce59f11d7e9ff81fbc34905e51` → merged main `285a1ff5d1fecea167ba452240e93f6587e92ac3`.
+- 직접 부모 `44dfca069f0e1aacf3556eec4e11b4d30cdc258a`, source/merge tree `3f809dfba849148327bddc4199e7aca42467c2d1` 동일.
+- Broker `42425418527` success/exit0. local main 정상 FF 후 merged 화면/API smoke8 PASS/skip0/exit0(`4cca4d`).
+- 종료 성공 뒤 원격 branch/tag 부재·PR 복구 ref와 clean 상태를 확인하고 완료 branch/추적 ref만 정상 정리했다. 실제 서버 반영·DB·Agent·사용자 인수 및 전체 계획 완료는 아니다.
