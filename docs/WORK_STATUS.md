@@ -17896,3 +17896,16 @@ FN09 독립 확인에서 P2 환경을 저장하고 새 연결 정의를 만들 �
 
 - UI02 구현 동결. MethodologySelection A5F8DEBF…7C755C, ProjectCreatePage 3B9D0F22…0D7278, 화면 시험 7CEBB069…4E11C6. Primary는 신규 3건이 기존 파일 입력 부재로 RED였음을 확인했다. 첫 GREEN에서 기존 dirty 단계 전진 금지와 충돌한 시험 준비 오류1건을 저장된 clean 초안으로 보정했다. Primary·Main 집중/회귀 25 PASS/skip0, typecheck와 Vite 메모리 build(517 모듈) exit0, diff check exit0, 독립 C0/I0/M0.
 - 가져오기는 기존 PROJECT 파서와 2MiB 선검사를 사용한다. 현재 초안에 이름·목적·그래프만 반영하고 명시 중간 저장/재조회에서 같은 값이 확인됐다. 잘못된 파일·교체 취소·이탈·세션/클라이언트/초안/저장 잠금 변경 뒤 기존 입력과 새 읽기 잠금을 보존한다. 실제 브라우저 파일 선택·실DB는 미검증이다. 생성 전 초안 첨부를 공식 방법론 출처/검토에 연결하는 계약은 없으며, 기존 생성 후 보호 원문 가져오기를 유지한다.
+
+### Stage B UI06 추적 원문의 화면 문맥 전환 보호 착수
+
+- UI02 PR54는 검수 head 77fe185e에서 main ca39db3a로 병합됐다. Broker 42390195544 성공, 부모·트리 일치 및 종료 브랜치·태그·로컬 추적 ref 정리 확인. 새 codex/av3-ui06-trace-scope와 로컬 main은 원격과 각각 ahead/behind 0/0. 병합 기준선의 UI02 신규 smoke 3 PASS/skip0.
+- 동일 마운트의 프로젝트·설계·transport 전환에서 TraceViewer가 이전 연결/계획 원문 상태를 보유하는 경계를 확인했다. 일반 App 이동은 기존 재마운트가 있어 실제 교차 노출을 입증하지 않았다. 기존 Primary 한 명에게 TraceViewer.tsx와 tests/unit/UI06/document-source-observation.test.ts의 현재 문맥 검증·합성 RED/GREEN만 배정했다. 이전 자료 표시·잘못된 범위 GET·늦은 인증 반영을 막고 기존 정역/새로고침/페이지 조회를 보존한다. 착수 오류0.
+- 다운로드·공개 API·권한·실제 DB·서비스·Agent 변경 없음. UI06 실제 서버/브라우저와 IX01 실제 실행은 미검증이다.
+
+- 최초 Primary RED에서 프로젝트/전송 문맥 변경 뒤 옛 연결 노출 2건을 재현했다. 첫 GREEN 후보에서 Primary·Main 36 PASS/skip0, Primary typecheck·Vite 메모리 build exit0. Main·독립 검수에서 렌더 중 owner ref 갱신이 폐기된 렌더에도 남아 현재 화면의 응답을 막을 수 있음을 찾아, 같은 두 파일에서 실제 커밋된 문맥으로 판정하도록 반환했다. 일반 App 교차 노출은 미입증이며 실제 브라우저·DB 미검증.
+
+- 독립 C0/I1/M1. 부모가 다시 렌더되기 전에 같은 ApiClient의 transport가 바뀌면, 이전 문서 metadata 이후 다음 파일 GET과 늦은 계획 원문 게시가 자식 active 검사만 통과할 수 있다. 같은 Primary에게 기존 TraceDocumentOriginal·TracePlanTaskOriginal·TraceScreenLink에서 현재 문맥을 확인하도록 필요한 범위만 추가 배정했다. 부모 재렌더 없는 반례를 합성 시험에서 검증한다. 공개 API·실제 환경 변경0.
+
+- 재작업 동결. TraceViewer 57EC5D3C…7A1EE3, TraceDocumentOriginal 59BF6A98…8E0BD3, TracePlanTaskOriginal D6168C8F…0AA7C7, TraceScreenLink CA99637B…B69225, 시험 70ECD87D…433B04. 폐기된 렌더 1건과 부모 재렌더 없는 연결 교체 2건 RED 재현, 보완 후 Primary·Main 집중/인접 42 PASS/skip0·typecheck·Vite 메모리 build(517 모듈)·diff check exit0. Primary 합성 람다 타입 준비 오류 보정. 독립 C0/I0/M0로 I1/M1 해소. 실제 브라우저·DB 및 일반 App 교차 노출은 미검증/미입증이다.
+- 다음은 현재 IX01 격리 실행기의 실제 소비 경계다. 신규 고정 프로필, 소유 PG에서 이미 작성한 112개 설치/원장 검증, 인계 지문과 TC01 실제 App 호출을 연결한다. 현재 실행을 시작하지 않으며 역사 J3 실행권·자원을 재사용하지 않는다.
